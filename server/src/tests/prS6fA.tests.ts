@@ -235,4 +235,124 @@ export async function runPrS6fATests(t: YThucTestKit) {
     const lech = [...viec].filter((k) => !no.has(k)).concat([...no].filter((k) => !viec.has(k)));
     assert(no.size > 0 && lech.length === 0, `Việc ${viec.size} · Nợ ${no.size} · lệch: ${lech.join(' ; ')}`);
   });
+  // ------------------------------------------------------------------ khối 4 · Phân tích GV — đúng người, đúng tập
+  console.log('\nPR-S6F-a · (4) Phân tích GV: người dạy lúc thi, đúng tập, PA hiệu quả khớp Hiệu quả PA, chặn dò tên');
+  const nguCanh: any = await import('../platform/nguCanhRequest.ts');
+  const hq: any = await import('../phanTich/hieuQuaPa.ts');
+  const eff: any = await import('../cases/effectiveness.ts');
+  const now = () => new Date().toISOString();
+  const lopMoi = (code: string) => (intake.createClass(P.admin, {
+    code, branchId: MB, kind: 'FT', isFastTrack: true, route: 'LT1', startDate: '2026-08-24', startPeriodId: week.ensurePeriod('2026-08-24').id,
+  }) as any).id as number;
+  const emVaoLop = (lop: number) => {
+    const ten = `S6FA HV ${++seq}`;
+    intake.commitIntake(P.admin, { classId: lop, rows: [{ fullName: ten, target: 6.5, email: 'hv@demo.test' }], idempotencyKey: `s6fa-${seq}` });
+    const sid = get('SELECT id FROM students WHERE full_name = ?', ten).id as number;
+    conn.prepare("UPDATE enrollments SET started_at = '2026-08-03' WHERE student_id = ?").run(sid);
+    return { sid, cy: get("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'", sid).id as number };
+  };
+  const kq28 = (gv: number) => voiNgay('2026-09-28', () => (pt.phanTichGiaoVien(P.mbManager, { ct: 'ft', tu: tuanNay, den: tuanNay }).hang as any[]).find((h) => h.id === gv));
+
+  /* Em T: MB FT 101, MT3 tuần W3 SEP — L nhập 14/09 (đúng hạn), W2 chưa nhập. Chuyển lớp GIỮ khoá sang lớp Y (không phân công) từ W4 SEP. */
+  const eT = emVaoLop(MB_FT);
+  boLichTuTao(conn, eT.cy);
+  const aT = luotThu(conn, svc.createAttempt, P.admin, { studentId: eT.sid, cycleId: eT.cy, classId: MB_FT, no: 3, periodId: week.ensurePeriod(tuanNay).id });
+  svc.saveScore(P.admin, aT.id, 'listening', { rawScore: 30 }, TODAY);
+  const lopY = lopMoi('MB FT S6FA Y');
+
+  check('S6F-a (4a) · em chuyển lớp giữ khoá sau MT: ô L đúng hạn + Kết quả L vẫn tính cho GV lớp cũ; ô W2 trễ tính cho GV W2 lớp cũ; không ai ở lớp mới', () => {
+    const c0 = voiNgay('2026-09-28', () => pt.nguCanhPtGv(P.mbManager, { ct: 'ft', tu: tuanNay, den: tuanNay }));
+    const hanL = dongCham('2026-09-28').get(d.baiId(aT.id, 'listening'))?.han;
+    const gvA = c0.nguoiLuc(MB_FT, 'listening', hanL ?? TODAY);
+    const kqTruoc = kq28(gvA)?.ketQua.listening;
+    conn.prepare(`UPDATE enrollments SET status = 'transferred', ended_at = '2026-09-21' WHERE student_id = ? AND status = 'active'`).run(eT.sid);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', '2026-09-21', ?)`).run(eT.sid, lopY, now());
+    conn.prepare(`UPDATE assessment_attempts SET class_id = ? WHERE cycle_id = ? AND status = 'planned'`).run(lopY, eT.cy);
+    const dong = dongCham('2026-09-28');
+    const L = dong.get(d.baiId(aT.id, 'listening'));
+    const W2 = dong.get(d.baiId(aT.id, 'writing2'));
+    assert(gvA && L?.gv === gvA && L.dung && L.lop === 'MB FT 101', `L: ${JSON.stringify(L)} · GV A ${gvA}`);
+    assert(W2 && W2.gv === c0.nguoiLuc(MB_FT, 'writing2', W2.han) && !W2.dung && W2.lop === 'MB FT 101', `W2: ${JSON.stringify(W2)}`);
+    const kqSau = kq28(gvA)?.ketQua.listening;
+    assert(kqTruoc?.k === 'so' && kqSau?.tong === kqTruoc.tong && kqSau.lop.includes(MB_FT), `Kết quả L của A: ${JSON.stringify(kqTruoc)} → ${JSON.stringify(kqSau)}`);
+  });
+  check('S6F-a (4b) · vắng đã xác nhận / lượt huỷ / MT lịch sử → không ở Chấm điểm; (4c) ô tuần sau "đến", chưa nhập → không ở Chấm điểm', () => {
+    const e = emVaoLop(MB_FT);
+    boLichTuTao(conn, e.cy);
+    const a = luotThu(conn, svc.createAttempt, P.admin, { studentId: e.sid, cycleId: e.cy, classId: MB_FT, no: 3, periodId: week.ensurePeriod(tuanNay).id });
+    conn.prepare(`UPDATE attempt_skills SET sit_status = 'absent' WHERE attempt_id = ? AND skill = 'reading'`).run(a.id);
+    const lichSu = get(`SELECT id FROM assessment_attempts WHERE cycle_id = ? AND lich_su = 1 ORDER BY id LIMIT 1`, e.cy).id as number;
+    const h = emVaoLop(MB_FT);
+    boLichTuTao(conn, h.cy);
+    const huy = luotThu(conn, svc.createAttempt, P.admin, { studentId: h.sid, cycleId: h.cy, classId: MB_FT, no: 1, periodId: week.ensurePeriod(tuanNay).id });
+    conn.prepare(`UPDATE assessment_attempts SET status = 'cancelled' WHERE id = ?`).run(huy.id);
+    const dong = dongCham('2026-09-28');
+    assert(dong.has(d.baiId(a.id, 'listening')), 'ô L thường phải có mặt (đối chứng)');
+    assert(!dong.has(d.baiId(a.id, 'reading')), 'vắng đã xác nhận vẫn tính');
+    assert(!dong.has(d.baiId(lichSu, 'listening')), 'MT lịch sử vẫn tính');
+    assert(!dong.has(d.baiId(huy.id, 'listening')), 'lượt huỷ vẫn tính');
+    assert(!dongCham('2026-09-28', '2026-09-07').has(d.baiId(a.id, 'listening')), 'ô tuần sau "đến" vẫn tính');
+  });
+  check('S6F-a (4d) · Case FT GV báo, CHƯA có lỗi chính, 1 PA tự thêm có kết quả: ô "PA hiệu quả" = Hiệu quả PA lọc gv; Σ hàng = tóm tắt', () => {
+    const e = emVaoLop(MB_FT);
+    const gv = P.w2Teacher.userId;
+    const ca = Number(conn.prepare(`INSERT INTO sos_cases (student_id, cycle_id, category, topic, origin_kind, status, owner_user_id, created_at)
+      VALUES (?, ?, 'listening', 'listening', 'teacher_report', 'in_progress', ?, ?)`).run(e.sid, e.cy, gv, now()).lastInsertRowid);
+    const iv = Number(conn.prepare(`INSERT INTO case_interventions (case_id, kind, status, preset, started_date, completed_date, created_at)
+      VALUES (?, 'tutor', 'completed', 0, '2026-08-27', '2026-09-10', ?)`).run(ca, now()).lastInsertRowid);
+    conn.prepare(`INSERT INTO case_followups (case_id, intervention_id, observed_on, outcome, created_at) VALUES (?, ?, '2026-09-10', 'improved', ?)`).run(ca, iv, now());
+    const kh = { tu: '2026-08-24', den: tuanNay };
+    const o = (pt.phanTichGiaoVien(P.mbManager, { ct: 'ft', ...kh }).hang as any[]).find((h) => h.id === gv)?.paHieuQua;
+    const r = hq.hieuQuaPa(P.mbManager, { branchId: MB, ct: 'ft', soTuan: 4, gv, ...kh });
+    assert(o?.k === 'so' && o.tong === r.gvThem.tomTat.paCoKetQua && o.dung === r.gvThem.tomTat.caiThien, `ô ${JSON.stringify(o)} ≠ Hiệu quả PA ${JSON.stringify(r.gvThem.tomTat)}`);
+    const hang = [...r.gvThem.hang, ...(r.gvThem.gom?.hang ?? [])];
+    assert(hang.reduce((n: number, x: any) => n + x.soPa, 0) === r.gvThem.tomTat.paCoKetQua, `Σ hàng ≠ tóm tắt ${r.gvThem.tomTat.paCoKetQua}`);
+    const cpl = hang.find((x: any) => x.nhan === 'Case chưa phân loại lỗi');
+    assert(cpl && cpl.soPa >= 1 && hq.oHieuQuaPa(P.mbManager, { branchId: MB, ct: 'ft', soTuan: 4, gv, ...kh, dong: cpl.khoa, cot: 'pa' }).rows.some((x: any) => x.id === iv),
+      `hàng "Case chưa phân loại lỗi": ${JSON.stringify(cpl)}`);
+  });
+  check('S6F-a (4e) · PHỦ ĐỊNH: panel Chấm điểm với gv không có lớp ở chi nhánh → 404, không lộ tên', () => {
+    let loi: any = null;
+    try { pt.oChamDiemGv(P.cpManager, { ct: 'ft', gv: P.lrTeacher.userId }); } catch (e) { loi = e; }
+    assert(loi?.status === 404 && /không có lớp ở chi nhánh này/.test(loi.message), `${loi?.status} ${loi?.message}`);
+  });
+  check('S6F-a (4f) · KHÔNG N+1: thêm 2 lớp FT có em + lượt có điểm → số câu SQL của bảng không đổi', () => {
+    const dem = () => { const a = nguCanh.soCauSql(); nguCanh.trongBoNho(() => pt.phanTichGiaoVien(P.mbManager, { ct: 'ft', tu: tuanNay, den: tuanNay })); return nguCanh.soCauSql() - a; };
+    dem();
+    const truoc = dem();
+    for (const i of [1, 2]) {
+      const lop = lopMoi(`MB FT S6FA N${i}`);
+      conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at) VALUES (?,?, 'listening', 0, '2026-08-24', 'active', ?)`).run(P.lrTeacher.userId, lop, now());
+      const e = emVaoLop(lop);
+      boLichTuTao(conn, e.cy);
+      const a = luotThu(conn, svc.createAttempt, P.admin, { studentId: e.sid, cycleId: e.cy, classId: lop, no: 1, periodId: week.ensurePeriod(tuanNay).id });
+      svc.saveScore(P.admin, a.id, 'listening', { rawScore: 28 }, TODAY);
+    }
+    const sau = dem();
+    assert(sau === truoc, `${truoc} → ${sau} câu`);
+  });
+  check('S6F-a (4g) · queryPlans chia lô: 1 000 học viên → ≥ 3 câu (lô ≤ 400), không một câu IN 1 000 tham số', () => {
+    const ids = Array.from({ length: 1000 }, (_, i) => i + 1);
+    const a = nguCanh.soCauSql();
+    nguCanh.trongBoNho(() => eff.planOutcomes({ studentIds: ids }));
+    const n = nguCanh.soCauSql() - a;
+    assert(n >= 3, `${n} câu`);
+  });
+  check('S6F-a (4h) · Hiệu quả PA quy chế: hàng con theo thứ tự cố định (khoá INTERVENTION_KIND_LABEL), không theo số PA', () => {
+    const thu = Object.keys(d.INTERVENTION_KIND_LABEL);
+    for (const kh of [{ tu: '2026-06-15', den: tuanNay }, { tu: '2026-08-24', den: tuanNay }]) {
+      const r = hq.hieuQuaPa(P.mbManager, { branchId: MB, ct: 'ft', soTuan: 4, ...kh });
+      for (const h of r.quyChe.hang) {
+        const vt = (h.con ?? []).map((c: any) => thu.indexOf(c.khoa.split('|')[1]));
+        assert(vt.every((v: number, i: number) => i === 0 || vt[i - 1] <= v), `${h.nhan}: ${(h.con ?? []).map((c: any) => c.khoa).join(', ')}`);
+      }
+    }
+  });
+  check('S6F-a (4i) · panel Chấm điểm: ngày "sửa" đổi giờ nhật ký UTC sang ngày VN (20:00Z → hôm sau)', () => {
+    conn.prepare(`INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, entity_label, after_json, created_at)
+      VALUES (?, 'score.edit', 'assessment_attempt', ?, 'listening', '{"lyDo":"Chấm lại"}', '2026-09-22T20:00:00.000Z')`).run(P.admin.userId, aW.id);
+    const gv = voiNgay('2026-09-28', () => pt.nguCanhPtGv(P.mbManager, { ct: 'ft', tu: tuanNay, den: tuanNay }).nguoiLuc(MB_FT, 'listening', '2026-09-20'));
+    const dong = voiNgay('2026-09-28', () => pt.oChamDiemGv(P.mbManager, { ct: 'ft', tu: tuanNay, den: tuanNay, gv }).rows as any[]).find((r) => r.id === d.baiId(aW.id, 'listening'));
+    assert(dong?.sua === '2026-09-23', `sửa: ${JSON.stringify(dong)}`);
+  });
 }

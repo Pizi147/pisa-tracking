@@ -1,4 +1,4 @@
-import { db } from '../db.ts';
+import { db, theoLo } from '../db.ts';
 import { NOT_UNCONFIRMED_PRESET } from './sosState.ts';
 import { NGUONG_MINI_TEST } from '../../../shared/domain/cuoiKhoa.ts';
 import {
@@ -206,13 +206,14 @@ function inAttribution(u: Unit | null, att: Attribution): boolean {
 
 /** Truy vấn phương án đã kết thúc của một tập học viên — CHƯA gán đơn vị. */
 function queryPlans(sids: number[], scope: Scope) {
-  const ph = sids.map(() => '?').join(',');
-  const params: unknown[] = [...sids];
+  const params: unknown[] = [];
   let range = '';
   if (scope.fromDate) { range += ' AND COALESCE(iv.completed_date, iv.updated_at, iv.created_at) >= ?'; params.push(scope.fromDate); }
   /* PR-Pb2-a: so theo NGÀY (10 ký tự) — `toDate` là ngày trơn, mốc có giờ của chính ngày đó vẫn phải lọt. */
   if (scope.toDate) { range += ' AND substr(COALESCE(iv.completed_date, iv.updated_at, iv.created_at), 1, 10) <= ?'; params.push(scope.toDate); }
-  return (db()
+  /* PR-S6F-a: chia lô 400 em (≤ 900 tham số Turso) — chi nhánh lớn hơn 900 em không còn vỡ câu. */
+  const out: any[] = [];
+  theoLo(sids, (lo, ph) => { out.push(...(db()
     .prepare(
       /*
        * CHỐT 5 (PR-C mục 10.4): case NHẬP BÙ không vào mẫu số hiệu quả hỗ trợ — nó ghi lại
@@ -241,7 +242,8 @@ function queryPlans(sids: number[], scope: Scope) {
           AND ${NOT_UNCONFIRMED_PRESET('iv')}
           AND sc.origin_kind != 'backfill'${range}`,
     )
-    .all(...params) as any[]);
+    .all(...lo, ...params) as any[])); }, 400);
+  return out;
 }
 
 type PlanRow = ReturnType<typeof shapePlan>;

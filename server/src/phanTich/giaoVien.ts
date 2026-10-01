@@ -13,7 +13,7 @@ import {
 import { db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import { scopeFor, type Principal } from '../permissions.ts';
-import { addDays, badRequest, forbidden, notFound } from '../util.ts';
+import { BUSINESS_TZ, addDays, badRequest, forbidden, notFound } from '../util.ts';
 import { loadBundle, regularSkillViews, skillCells } from '../fasttrack/attempts.ts';
 import { allProgrammes } from '../normal/regular.ts';
 import { danhGiaMon } from '../classes/phanTichLop.ts';
@@ -96,7 +96,13 @@ type OBai = {
 };
 type NapBai = { o: OBai[]; attempts: Map<number, any>; bundle: ReturnType<typeof loadBundle> };
 
-/** Mọi ô điểm (một kỹ năng một lượt) có TUẦN THI CỦA CHÍNH Ô ĐÓ trong khoảng, ở lớp của chi nhánh + khung — `skillCells` / `regularSkillViews` như `scoreDebt.ts`. */
+/**
+ * Mọi ô điểm (một kỹ năng một lượt) có TUẦN THI CỦA CHÍNH Ô ĐÓ trong khoảng, ở lớp của chi nhánh + khung — `skillCells` / `regularSkillViews` như `scoreDebt.ts`.
+ * PR-S6F-a Q19: `classId` của ô = LỚP EM HỌC Ở TUẦN THI (ghi danh hiệu lực trong tuần đó, một câu theo lô) — chuyển lớp giữ khoá dời lượt `planned`
+ * sang lớp mới (`luatLoTrinh.ts`) nhưng ô đã thi vẫn tính cho người dạy em lúc thi. Không có ghi danh khớp → lớp của lượt.
+ * ponytail: chỉ nạp lượt ĐANG ở lớp của chi nhánh + khung — lượt đã dời sang lớp chi nhánh khác không còn ở bảng chi nhánh cũ (chuyển chi nhánh giữ khoá hiếm);
+ * cần thì nạp thêm theo ghi danh.
+ */
 export function napBai(p: Principal, c: NguCanhPtGv): NapBai {
   const conn = db();
   const rows: any[] = [];
@@ -118,14 +124,28 @@ export function napBai(p: Principal, c: NguCanhPtGv): NapBai {
   }
   const bundle = loadBundle(rows.map((r) => r.id));
   const programmes = allProgrammes();
+  const ghiDanh = new Map<number, { lop: number; tu: string; den: string | null }[]>();
+  for (const lo of theoLo([...new Set(rows.map((r) => r.student_id as number))])) {
+    for (const e of conn.prepare(
+      `SELECT student_id, class_id, substr(started_at, 1, 10) AS tu, substr(ended_at, 1, 10) AS den FROM enrollments WHERE student_id IN (${cho(lo.length)})`,
+    ).all(...lo) as any[]) (ghiDanh.get(e.student_id) ?? ghiDanh.set(e.student_id, []).get(e.student_id)!).push({ lop: e.class_id, tu: e.tu, den: e.den });
+  }
+  /* Lớp lúc thi: ghi danh bắt đầu trước hết tuần thi và chưa kết thúc trước tuần thi; nhiều dòng → dòng bắt đầu muộn nhất. */
+  const lopLucThi = (sid: number, tuan: string, lopLuot: number) => {
+    const cuoi = addDays(tuan, 6);
+    const ds = (ghiDanh.get(sid) ?? []).filter((e) => e.tu && e.tu <= cuoi && (!e.den || e.den > tuan));
+    return ds.length ? ds.reduce((x, y) => (y.tu > x.tu ? y : x)).lop : lopLuot;
+  };
   const o: OBai[] = [];
   for (const a of rows) {
     const scores = bundle.scores.get(a.id) ?? [];
     const chung = (skill: string, v: { weekStart: string | null; deadline: string | null; progress: string; noShow: boolean }) => {
       if (!v.weekStart || v.weekStart < c.tu || v.weekStart > c.den) return;
+      const lop = lopLucThi(a.student_id, v.weekStart, a.class_id);
+      if (!c.lop.has(lop)) return;   // lớp lúc thi ngoài chi nhánh + khung đang xem
       const row = scores.find((s) => s.skill === skill);
       o.push({
-        id: baiId(a.id, skill), attemptId: a.id, classId: a.class_id, studentId: a.student_id, hocVien: a.hv_ten, skill, tuan: v.weekStart, han: v.deadline,
+        id: baiId(a.id, skill), attemptId: a.id, classId: lop, studentId: a.student_id, hocVien: a.hv_ten, skill, tuan: v.weekStart, han: v.deadline,
         nhapDau: row?.nhap_dau_ngay ?? null, band: row?.band ?? null,
         coDiem: (row?.band ?? null) !== null || (row?.raw_score ?? null) !== null, tienDo: v.progress, noShow: v.noShow,
         dangHoc: !!a.dang_hoc, kck: !!a.khong_cam_ket, bai: nhanDotNgan(a.kind, a.attempt_no) ?? '',
@@ -377,19 +397,23 @@ export function phanTichGiaoVien(p: Principal, f: LocPtGv): PhanTichGvKq {
 
 /**
  * PANEL "Chấm điểm" của một GV (mockup 25 màn C): ĐÚNG các ô tạo nên số ở bảng (cùng `tapChamDiem`). Trễ trước, rồi lớp, rồi tên.
- * "Sửa sau": ô có lần sửa ghi lý do (RB-5) trong nhật ký — ngày sửa lấy từ nhật ký. ponytail: ngày nhật ký là giờ máy, không phải ngày nghiệp vụ.
+ * "Sửa sau": ô có lần sửa ghi lý do (RB-5) trong nhật ký — ngày sửa lấy từ nhật ký, đổi sang ngày giờ VN (PR-S6F-a).
+ * ponytail: ngày nhật ký là ngày MÁY (giờ VN), không phải ngày nghiệp vụ — bản demo đặt ngày demo thì "sửa" có thể sau "hôm nay"; ghi ngày nghiệp vụ
+ * vào `after_json` nếu cần khớp tuyệt đối.
  */
 export function oChamDiemGv(p: Principal, f: LocPtGv & { gv: number }): {
   ten: string; tenChiNhanh: string; khung: KhungPtGv; tu: string; den: string; n: number; tre: number; khongTinhVang: number;
   rows: (DongChamDiem & { sua: string | null })[];
 } {
   const c = nguCanhPtGv(p, f);
+  /* PR-S6F-a: chỉ GV có phân công ở lớp của chi nhánh + khung — không trả tên tài khoản bất kỳ qua `gv=`. */
+  const ten = c.pc.find((a) => a.gv === f.gv)?.ten;
+  if (!ten) throw notFound('Giáo viên không có lớp ở chi nhánh này.');
   const r = tapChamDiem(c, napBai(p, c));
   const rows = [...r.dong.values()].filter((d) => d.gv === f.gv);
   const conn = db();
-  const ten = (conn.prepare(`SELECT full_name FROM users WHERE id = ?`).get(f.gv) as any)?.full_name;
-  if (!ten) throw notFound('Không tìm thấy giáo viên này.');
-  /* Lần sửa có lý do: FT ghi theo lượt + nhãn kỹ năng, lớp thường theo dòng điểm — một câu mỗi lô. */
+  /* Lần sửa có lý do: FT ghi theo lượt + nhãn kỹ năng, lớp thường theo dòng điểm — một câu mỗi lô. Nhật ký ghi giờ UTC → ngày VN. */
+  const ngayVn = new Intl.DateTimeFormat('en-CA', { timeZone: BUSINESS_TZ, year: 'numeric', month: '2-digit', day: '2-digit' });
   const sua = new Map<number, string>();
   const attemptIds = [...new Set(rows.map((d) => Math.floor(d.id / 10)))];
   for (const lo of theoLo(attemptIds)) {
@@ -401,7 +425,7 @@ export function oChamDiemGv(p: Principal, f: LocPtGv & { gv: number }): {
        SELECT sc.attempt_id, sc.skill, MAX(al.created_at) FROM audit_logs al JOIN assessment_scores sc ON sc.id = al.entity_id
         WHERE al.entity_type = 'assessment_score' AND sc.attempt_id IN (${cho(lo.length)}) AND al.action IN ('regular.score', 'regular.score.override')
           AND al.after_json LIKE '%"lyDo"%' GROUP BY sc.attempt_id, sc.skill`,
-    ).all(...lo, ...lo) as any[]) sua.set(baiId(x.a, x.k), String(x.luc).slice(0, 10));
+    ).all(...lo, ...lo) as any[]) sua.set(baiId(x.a, x.k), ngayVn.format(new Date(String(x.luc))));
   }
   const out = rows.map((d) => ({ ...d, sua: sua.get(d.id) ?? null }))
     .sort((a, b) => Number(a.dung) - Number(b.dung) || a.lop.localeCompare(b.lop, 'vi') || a.hocVien.localeCompare(b.hocVien, 'vi') || a.id - b.id);

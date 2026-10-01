@@ -71,7 +71,8 @@ export function HieuQuaPa(props: PhamViPhanTich) {
       {d.con?.length ? (
         <HangNhom mo={mo.has(d.khoa)} onMo={() => doiMo(d.khoa)} nhan={d.nhan} tieuDe={tenDong(d)} className={DINH_TRAI}>{oSo(d, coNenDung)}</HangNhom>
       ) : (
-        <tr className={`hang-lon ${DINH_TRAI}`}><td className="px-3">{tenDong(d)}</td>{oSo(d, coNenDung)}</tr>
+        /* PR-S6F-a Q20: hàng "Case chưa phân loại lỗi" mờ — PA có thật nhưng chưa biết thuộc vấn đề nào. */
+        <tr className={`hang-lon ${DINH_TRAI}${d.khoa === 'chua-phan-loai' ? ' text-slate-400' : ''}`}><td className="px-3">{tenDong(d)}</td>{oSo(d, coNenDung)}</tr>
       )}
       {mo.has(d.khoa) && d.con?.map((c) => (
         <HangCon key={c.khoa} className={DINH_TRAI}><td>{tenDong(c)}</td>{oSo(c, coNenDung)}</HangCon>
@@ -170,7 +171,12 @@ export function HieuQuaPa(props: PhamViPhanTich) {
             <div className="border-t" style={{ borderColor: 'var(--line)' }}>
               <DongTomTat
                 chinh={`PA theo quy chế · ${data.quyChe.tomTat.paCoKetQua} PA có kết quả`}
-                phu={`${data.quyChe.tomTat.paCoKetQua ? `${data.quyChe.tomTat.caiThien} có cải thiện · ` : ''}PA bắt buộc theo quy chế — không so, không xếp hạng`} />
+                phu={`${data.quyChe.tomTat.paCoKetQua ? `${data.quyChe.tomTat.caiThien} có cải thiện · ` : ''}PA bắt buộc theo quy chế — không so, không xếp hạng`}
+                luat={props.ct === 'ft' ? (
+                  <NutLuat label="Cách đọc">
+                    <p className="m-0">Xếp theo mức SOS hiện tại của Case: Case trượt lại thì PA cũ hiện ở hàng mức mới.</p>
+                  </NutLuat>
+                ) : undefined} />
               {data.quyChe.hang.length === 0
                 ? <p className="m-0 px-4 pb-3 text-sm text-slate-400">Chưa có PA theo quy chế có kết quả trong {khoang}.</p>
                 : (
