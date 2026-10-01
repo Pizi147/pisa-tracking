@@ -11,6 +11,7 @@ import { typedResult } from './profile.ts';
 import { khoangTamDung } from './tamDung.ts';
 import { addDays } from '../util.ts';
 import { CO_THE_KHONG_THEO_DOI, awaitingCauseCaseIds } from '../cases/sosState.ts';
+import { loTrinhTinhTuan } from '../fasttrack/cycles.ts';
 
 /**
  * MÁY CHỦ CỦA TAB HÀNH TRÌNH (PR-Qb, spec §3.8; PR-VAI-b Task 9, mockup 26 bản 2 + bản 1) — trả dữ liệu THÔ; mọi nhãn, màu, tầng tính ở
@@ -293,7 +294,6 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
   });
 
   // -------------------------------------------------------------- chương theo lớp (mockup 26 bản 2)
-  const ftCuaNgay = (d: string) => [...ftCycles].sort((a, b) => a.started_at.localeCompare(b.started_at)).filter((c) => c.started_at <= d).at(-1) ?? ftCycles[0] ?? null;
   const gvcnCua = (e: any): string | null => {
     const den = e.ended_at ?? homNay;
     return gvcnRows.find((g) => g.class_id === e.class_id && g.effective_from <= den && (!g.effective_to || g.effective_to >= e.started_at))?.full_name
@@ -307,7 +307,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
      */
     const dangDung = e.status === 'paused' && !e.ended_at;
     const dangHoc = e.status === 'active' || dangDung;
-    const cy = ft ? ftCuaNgay(e.started_at) : null;
+    const cy = ft ? loTrinhTinhTuan(ftCycles, { dangHoc, ngayVao: e.started_at }) : null;   // PR-Dọn Q11: chương đang học → lộ trình đang chạy
     const batDau = cy ? cy.start_week ?? cy.started_at : null;
     const hienTai = cy && batDau && dangHoc ? tuanHocTai(batDau, homNay, dung) : null;
     const tuanHoc = cy && batDau ? {

@@ -83,7 +83,8 @@ export async function runPrS5fbTests(t: YThucTestKit) {
     boTro.nopKeHoachBoTro(ha, pa.id, { ...KH, performerUserId: cungCn.userId });
     assert(paBt(cGv.id).performer_user_id === cungCn.userId, 'GV cùng chi nhánh làm người dạy được');
     const q = khac.full_name as string;
-    assert(timNguoi(ha, { q, nhom: 'giao_vien', studentId: hv }).some((r) => r.id === khac.id), 'không lọc: vẫn tìm thấy GV chi nhánh khác');
+    /* PR-Dọn Q2: /ref/nguoi LUÔN theo phạm vi người xem — GVCN MB không còn thấy GV chỉ thuộc chi nhánh khác, kể cả khi không gửi `cungChiNhanh`. */
+    assert(!timNguoi(ha, { q, nhom: 'giao_vien', studentId: hv }).some((r) => r.id === khac.id), 'không lọc cungChiNhanh: vẫn không thấy GV chi nhánh khác (Q2)');
     assert(!timNguoi(ha, { q, nhom: 'giao_vien', studentId: hv, cungChiNhanh: true }).some((r) => r.id === khac.id), 'cungChiNhanh: không gợi ý GV chi nhánh khác');
   });
 

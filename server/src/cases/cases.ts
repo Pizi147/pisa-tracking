@@ -1,4 +1,4 @@
-import { db, tx } from '../db.ts';
+import { db, tx, vuaGhi } from '../db.ts';
 import { boTroCuaCase, chepKetQuaNhom, quyenBoTro, type BoTroDto } from './boTro.ts';
 import { ghiMiniTestTrongTx, kiemMiniTest } from '../normal/cuoiKhoa.ts';
 import {
@@ -21,14 +21,15 @@ import {
   SIGNAL_WITHDRAW_SCORE_FIXED, caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac, chanHoanThanh, laLanGhiCuoi, mocChuPa, programmeOf, quyetDinhChoPa, trangThaiCaseV4, viecTiepCuaCase, tenCaseSos, tenCaseThuong, nhanDot, tenMon, tenMonNgan,
   type CaseOutcome, type FollowUpOutcome, type InterventionKind,
 } from '../../../shared/domain/index.ts';
-import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
+import { addDays, badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, isCoreTeacherOf, napTruocPhamVi, require_, scopeFor, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { nho, trongBoNho } from '../platform/nguCanhRequest.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
-import { currentCycle } from '../fasttrack/cycles.ts';
+import { currentCycle, cyclesOf } from '../fasttrack/cycles.ts';
 import { expectationFor } from '../fasttrack/scoring.ts';
-import { khoangTamDung } from '../students/tamDung.ts';
+import { dongHocVien, khoangTamDung } from '../students/tamDung.ts';
+import { activeClassOf } from '../yThuc/access.ts';
 import { isRatioCycle, programmeCodeOfCycle } from '../normal/regular.ts';
 import { suggestCaseOwner } from './owner.ts';
 import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
@@ -149,7 +150,7 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
   const conn = db();
   const c = loadCase(caseId);
   if (!canCloseCase(p, c)) {
-    throw badRequest('Chỉ Quản lý, hoặc GVCN dạy đúng môn của Case, mới hoàn thành được Case này.');
+    throw forbidden('Chỉ Quản lý, hoặc GVCN dạy đúng môn của Case, mới hoàn thành được Case này.');
   }
   const outcome: string = input.outcome ?? '';
   if (!(CASE_OUTCOMES as readonly string[]).includes(outcome)) {
@@ -163,7 +164,7 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
    * GHI CHÚ BẮT BUỘC KHI HOÀN THÀNH CASE (mục 9.2). Bốn mức "thành công đến đâu" không nói được đã làm gì và vì sao kết thúc —
    * mà đó chính là câu người đọc hồ sơ ba tháng sau cần.
    */
-  const closeNote = (input.note ?? '').trim();
+  const closeNote = chuTuDo(input.note, 'Kết luận', 2000) ?? '';   // PR-Dọn (Q4, quét #24)
   if (closeNote.length < 10) {
     throw badRequest('Hoàn thành case thì phải ghi kết luận — ít nhất 10 ký tự.');
   }
@@ -266,7 +267,8 @@ export function setFollowUntil(p: Principal, caseId: number, date: string | null
  * Case không có môn (`topic` rỗng, dữ liệu cũ) thì GVCN vẫn được, để dữ liệu cũ không bị khoá.
  */
 export function canCloseCase(p: Principal, c: { class_id?: number | null; student_id?: number | null; topic?: string | null }): boolean {
-  if (can(p, PERMISSIONS.MEETING_EDIT, { branchId: null, anyScope: true })) return true;
+  /* PR-Dọn (rà thêm, ngoài 24 mục quét): bỏ dòng `can(MEETING_EDIT, { anyScope: true })` đứng đầu — nó cho Quản lý ở BẤT KỲ chi nhánh
+     hoàn thành Case của chi nhánh khác. Quản lý / Quản trị trong phạm vi đã đi qua `CASE_CLOSE` ngay dưới. */
   if (can(p, PERMISSIONS.CASE_CLOSE, { classId: c.class_id ?? null, studentId: c.student_id ?? null })) return true;
   if (!c.class_id || !isCoreTeacherOf(p, c.class_id)) return false;
   if (!c.topic) return true;
@@ -338,6 +340,12 @@ export function caseAccess(caseId: number) {
  *
  * Chống trùng bằng `idempotency_key`: bấm hai lần hoặc thử lại sau lỗi mạng chỉ ra một case.
  */
+/** Case đã tạo bằng khoá chống gửi đôi này (`sos_cases.idempotency_key`, UNIQUE) — chung cho Báo vấn đề và Nhập bù (PR-Dọn Q3). */
+function caseDaCoTheoKhoa(key: string | null | undefined): number | null {
+  if (!key) return null;
+  return (db().prepare('SELECT id FROM sos_cases WHERE idempotency_key = ?').get(key) as any)?.id ?? null;
+}
+
 export function reportIssue(p: Principal, input: {
   studentId: number;
   cycleId?: number | null;
@@ -403,12 +411,13 @@ export function reportIssue(p: Principal, input: {
    * case tên "Reading dưới kỳ vọng" do máy đặt, mô tả trống, phân loại "Chưa rõ" — mở ra
    * không biết em vướng gì, và không bảng tổng hợp nào đếm được.
    */
-  const title = (input.title ?? '').trim();
+  /* PR-Dọn (Q4, quét #24): tên ≤ 200, mô tả ≤ 2 000 ký tự. */
+  const title = chuTuDo(input.title, 'Tên Case', 200) ?? '';
   if (title.length < 6) {
     throw badRequest('Đặt tên cho case — một câu ngắn nói đúng vấn đề, ví dụ '
       + '"Reading: chưa xử lý được dạng True/False/Not Given".');
   }
-  const summary = (input.summary ?? '').trim();
+  const summary = chuTuDo(input.summary, 'Mô tả', 2000) ?? '';
   if (summary.length < 15) {
     throw badRequest('Cần mô tả vấn đề cụ thể hơn: em sai ở đâu, sai như thế nào.');
   }
@@ -420,11 +429,10 @@ export function reportIssue(p: Principal, input: {
   const urgency = input.urgency ?? DEFAULT_URGENCY;
   const detectedAt = input.detectedAt ?? demoToday();
   if (!isIsoDate(detectedAt)) throw badRequest('Ngày phát hiện không hợp lệ.');
+  if (detectedAt > demoToday()) throw badRequest('Ngày phát hiện không được ở tương lai.');   // PR-Dọn (quét #19)
   const key = input.idempotencyKey?.trim() || null;
-  if (key) {
-    const seen = conn.prepare('SELECT id FROM sos_cases WHERE idempotency_key = ?').get(key) as any;
-    if (seen) return caseDetail(p, seen.id);
-  }
+  const daCo = caseDaCoTheoKhoa(key);
+  if (daCo) return caseDetail(p, daCo);
 
   /* Lộ trình: gửi rõ thì dùng; không thì lộ trình đang mở. (PR-LT2a: không còn Case tạo từ tín hiệu — Giữa khoá tự tạo Case.) */
   const wantedCycleId = input.cycleId ?? null;
@@ -665,45 +673,6 @@ export function addIssues(caseId: number, actor: number | null, input: {
   for (const c of input.secondaryCodes ?? []) add(c, 'secondary', null);
 }
 
-/** Sửa phân loại vấn đề. Tối đa MỘT vấn đề chính — nhận định đổi được, có lịch sử. */
-export function setIssues(p: Principal, caseId: number, input: {
-  primaryCode?: string | null; secondaryCodes?: string[];
-  observation?: string | null; note?: string | null;
-}) {
-  const conn = db();
-  const c = loadCase(caseId);
-  require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
-    'Bạn không có quyền phân loại vấn đề cho case này.');
-  /* PR-S3F #8: Case tự tạo từ SOS chưa có nguyên nhân thì nguyên nhân chỉ đặt qua "Xác nhận Case" (mốc, mô tả, PA đi theo) — không đi đường vòng chỉ-API. */
-  const trangThaiSos = sosCaseState(caseId);
-  if (trangThaiSos.fromSos && !trangThaiSos.hasCause) {
-    throw badRequest('Case tự tạo từ SOS chưa xác nhận nguyên nhân — dùng "Xác nhận Case" để đặt nguyên nhân.');
-  }
-  for (const code of [input.primaryCode, ...(input.secondaryCodes ?? [])]) {
-    if (code && !issueBranchOf(code)) throw badRequest(`Mã vấn đề không hợp lệ: ${code}`);
-  }
-  if (laKhac(input.primaryCode)) {
-    const loi = kiemGhiRoKhac(input.observation);
-    if (loi) throw badRequest(`Phân loại "Khác": ${loi}.`);
-  }
-  return tx(() => {
-    const before = conn.prepare('SELECT * FROM case_issues WHERE case_id = ?').all(caseId);
-    conn.prepare('DELETE FROM case_issues WHERE case_id = ?').run(caseId);
-    // Chủ đề lấy từ chính bản ghi vấn đề — người phân loại không đổi được kỹ năng ở đây.
-    addIssues(caseId, p.userId, { ...input, topic: c.topic });
-    /* Q28-5: có nguyên nhân là một nửa điều kiện "Đang xử lý" của Case từ SOS. */
-    dongBoTrangThaiCase(caseId);
-    if (input.note !== undefined) {
-      conn.prepare('UPDATE sos_cases SET note = ?, updated_at = ? WHERE id = ?')
-        .run((input.note ?? '').trim() || null, nowIso(), caseId);
-    }
-    const after = conn.prepare('SELECT * FROM case_issues WHERE case_id = ?').all(caseId);
-    writeAudit({ actorUserId: p.userId, action: 'case.classify', entityType: 'sos_case', entityId: caseId,
-      entityLabel: `Case ${caseId}`, before, after });
-    return caseDetail(p, caseId);
-  });
-}
-
 // ---------------------------------------------------------------- tác động và xem lại
 
 /**
@@ -835,6 +804,8 @@ export function recordIntervention(p: Principal, caseId: number, input: {
   const performerName = nguoi?.name ?? null;
 
   return tx(() => {
+    /* PR-Dọn (quét #26): bấm đúp → trả lại PA vừa ghi. Nhập bù cố ý ghi nhiều dòng có thể giống nhau — không chặn. */
+    if (!input.backfill && vuaGhi('case_interventions', { case_id: caseId, kind: input.kind, description, recorded_by: p.userId })) return caseDetail(p, caseId);
     /*
      * HẠN QUẢN LÝ PHẢI TRẢ LỜI — `HAN_DUYET_NGAY` (5) ngày, tính cả ngày gửi (T54, K3-18, PR-N1).
      * Quá hạn KHÔNG chặn gì cả; nó nổi lên màn của Quản lý để một đề xuất không nằm
@@ -1133,27 +1104,39 @@ export function backfillCase(p: Principal, input: {
   metrics?: unknown;
   /** Người dùng đã thấy cảnh báo trùng nhập bù (chốt 6) và xác nhận đây là lần khác. */
   confirmDuplicate?: boolean;
+  /** PR-Dọn (Q3): khoá chống gửi đôi — một khoá cho mỗi lần mở form, như `/cases/report`. */
+  idempotencyKey?: string;
 }) {
   const conn = db();
   const today = demoToday();
+  /*
+   * PR-Dọn (Q1, quét #6): KIỂM QUYỀN TRƯỚC MỌI BƯỚC — câu kiểm trùng bên dưới trả tên + ngày Case của em; chạy trước khi kiểm quyền
+   * thì GV gửi `studentId` của chi nhánh khác đọc được Case nhập bù của em đó. Cùng ngữ cảnh với `reportIssue` (lớp đang học).
+   */
+  const lopDangHoc = (conn.prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status='active' ORDER BY id DESC LIMIT 1`)
+    .get(input.studentId) as any)?.class_id ?? null;
+  require_(p, PERMISSIONS.SOS_REPORT, { classId: lopDangHoc, studentId: input.studentId },
+    'Bạn chỉ báo được vấn đề của học viên trong phạm vi mình phụ trách.');
+  const key = typeof input.idempotencyKey === 'string' ? input.idempotencyKey.trim() || null : null;
   if (!isIsoDate(input.fromDate) || !isIsoDate(input.toDate)) {
     throw badRequest('Khoảng ngày "từ → đến" không hợp lệ.');
   }
   if (input.fromDate > input.toDate) throw badRequest('Ngày bắt đầu phải trước ngày kết thúc.');
   if (input.toDate > today) throw badRequest('Không nhập bù được một case kết thúc ở tương lai.');
 
-  if (!input.actions?.length) {
+  if (!Array.isArray(input.actions) || !input.actions.length) {
     throw badRequest('Ghi ít nhất một dòng "đã làm gì" — nhập bù mà không có việc gì đã làm thì không có gì để ghi.');
   }
+  if (input.actions.length > 50) throw badRequest('Tối đa 50 dòng "đã làm gì" cho một Case nhập bù.');   // PR-Dọn (Q6, quét #16)
   for (const [i, a] of input.actions.entries()) {
     if (!(FOLLOWUP_OUTCOMES as readonly string[]).includes(String(a.ketQua ?? ''))) throw badRequest(`Dòng PA ${i + 1}: chọn Kết quả PA.`);
     if (!isIsoDate(a.fromDate) || !isIsoDate(a.toDate)) throw badRequest('Một dòng "đã làm gì" có ngày không hợp lệ.');
     if (a.fromDate > a.toDate) throw badRequest('Một dòng "đã làm gì" có ngày bắt đầu sau ngày kết thúc.');
     if (a.toDate > today) throw badRequest('Không ghi được một việc đã xong ở ngày tương lai.');
-    if ((a.description ?? '').trim().length < 3) throw badRequest('Mỗi dòng "đã làm gì" phải nói rõ đã làm gì.');
+    if ((chuTuDo(a.description, `Dòng PA ${i + 1}`, 2000) ?? '').length < 3) throw badRequest('Mỗi dòng "đã làm gì" phải nói rõ đã làm gì.');
     chuanHoaNguoiThucHien(p, a, { nhom: 'giao_vien', batBuoc: true });
   }
-  const note = (input.note ?? '').trim();
+  const note = chuTuDo(input.note, 'Kết luận', 2000) ?? '';   // PR-Dọn (Q4, quét #24)
   /*
    * GHI CHÚ KẾT LUẬN BẮT BUỘC — "ngày quá khứ không tự chứng minh hiệu quả" (mục 2 sổ audio).
    * Giao diện đã chặn dưới 10 ký tự, nhưng chặn TAY ở đây nữa: đây là API thật, gọi thẳng
@@ -1173,31 +1156,34 @@ export function backfillCase(p: Principal, input: {
 
   const category = categoryOf((input.topic ?? '').trim() || null);
 
-  /*
-   * CHỐT 6 (mục 10.4): KHÔNG kích hoạt cảnh báo case trùng như đường thường (đường thường
-   * chặn khi hạng mục đã có case đang mở — case nhập bù đã đóng ngay khi tạo nên không đụng
-   * luật đó). NHƯNG phải cảnh báo khi trùng với MỘT CASE NHẬP BÙ KHÁC cùng khoảng thời gian
-   * — đó mới thật sự là nhập hai lần cùng một chuyện.
-   */
-  if (category && !input.confirmDuplicate) {
-    const overlap = conn
-      .prepare(
-        `SELECT id, title, detected_at, closed_at FROM sos_cases
-          WHERE student_id = ? AND category = ? AND origin_kind = 'backfill'
-            AND NOT (closed_at < ? OR detected_at > ?)
-          LIMIT 1`,
-      )
-      .get(input.studentId, category, input.fromDate, input.toDate) as any;
-    if (overlap) {
-      throw badRequest(
-        `Học viên này đã có một case nhập bù "${overlap.title ?? caseCategoryLabel(category)}" `
-        + `trùng khoảng ${overlap.detected_at} → ${overlap.closed_at} — có phải cùng một lần không?`,
-        { duplicateBackfill: { id: overlap.id, title: overlap.title, from: overlap.detected_at, to: overlap.closed_at } },
-      );
-    }
-  }
-
   return tx(() => {
+    /* PR-Dọn (Q3, quét #25): gửi lại cùng khoá → trả Case đã tạo. Kiểm TRONG giao dịch (BEGIN IMMEDIATE) để hai lần gửi sát nhau không cùng lọt. */
+    const daCo = caseDaCoTheoKhoa(key);
+    if (daCo) return caseDetail(p, daCo);
+    /*
+     * CHỐT 6 (mục 10.4): KHÔNG kích hoạt cảnh báo case trùng như đường thường (đường thường
+     * chặn khi hạng mục đã có case đang mở — case nhập bù đã đóng ngay khi tạo nên không đụng
+     * luật đó). NHƯNG phải cảnh báo khi trùng với MỘT CASE NHẬP BÙ KHÁC cùng khoảng thời gian
+     * — đó mới thật sự là nhập hai lần cùng một chuyện.
+     */
+    if (category && !input.confirmDuplicate) {
+      const overlap = conn
+        .prepare(
+          `SELECT id, title, detected_at, closed_at FROM sos_cases
+            WHERE student_id = ? AND category = ? AND origin_kind = 'backfill'
+              AND NOT (closed_at < ? OR detected_at > ?)
+            LIMIT 1`,
+        )
+        .get(input.studentId, category, input.fromDate, input.toDate) as any;
+      if (overlap) {
+        throw badRequest(
+          `Học viên này đã có một case nhập bù "${overlap.title ?? caseCategoryLabel(category)}" `
+          + `trùng khoảng ${overlap.detected_at} → ${overlap.closed_at} — có phải cùng một lần không?`,
+          { duplicateBackfill: { id: overlap.id, title: overlap.title, from: overlap.detected_at, to: overlap.closed_at } },
+        );
+      }
+    }
+
     const created = reportIssue(p, {
       studentId: input.studentId, cycleId: input.cycleId,
       topic: input.topic, primaryCode: input.primaryCode,
@@ -1205,6 +1191,7 @@ export function backfillCase(p: Principal, input: {
       detectedAt: input.fromDate,
       parallel: true,
       backfill: true,
+      idempotencyKey: key ?? undefined,
     }) as any;
 
     for (const a of input.actions) {
@@ -1263,6 +1250,9 @@ export function recordFollowUp(p: Principal, caseId: number, input: {
   }
 
   return tx(() => {
+    /* PR-Dọn (quét #26): bấm đúp → trả lại lần xem lại vừa ghi. */
+    if (vuaGhi('case_followups', { case_id: caseId, intervention_id: input.interventionId ?? null, observer_user_id: p.userId,
+      outcome: input.outcome ?? null, note: input.note ?? null })) return caseDetail(p, caseId);
     const info = conn
       .prepare(
         `INSERT INTO case_followups (case_id, intervention_id, observed_on, observer_user_id,
@@ -1307,7 +1297,7 @@ export function setDisposition(p: Principal, caseId: number, input: {
 
   if (closing) {
     if (!canCloseCase(p, c)) {
-      throw badRequest('Chỉ Quản lý, hoặc GVCN dạy đúng môn của Case, mới hoàn thành được Case này.');
+      throw forbidden('Chỉ Quản lý, hoặc GVCN dạy đúng môn của Case, mới hoàn thành được Case này.');
     }
     const disposition = input.disposition ?? c.disposition;
     if (!disposition) {
@@ -1769,6 +1759,15 @@ function khoaDsCase(userId: number, f: CaseFilters): string {
 }
 
 /**
+ * PR-Dọn (Q5, quét #8): LỚP CỦA MỘT CASE cho danh sách — lớp em ĐANG HỌC, chưa xếp lớp thì lớp của lượt. MỘT biểu thức cho bộ lọc
+ * `classId`/`branchId`, cho `branchId` trả về và cho lớp đưa vào `can()`: lọc theo lớp nào thì quyền xét theo đúng lớp đó (trước đây
+ * lọc theo lớp hiện tại mà xét quyền theo lớp của lượt → em chuyển chi nhánh thì QL cả hai chi nhánh và GVCN mới đều mất Case cũ).
+ * Bí danh cố định của câu `caseTrongPhamVi`: `cur` ghi danh đang học, `a` lượt, `cc`/`ac` lớp tương ứng.
+ */
+const LOP_CUA_CASE = 'COALESCE(cur.class_id, a.class_id)';
+const CN_CUA_CASE = 'COALESCE(cc.branch_id, ac.branch_id)';
+
+/**
  * PHẦN SQL + LỌC QUYỀN + DỰNG `MappedCase` của `listCases` — tách riêng để nhớ trong request theo bộ lọc SQL
  * (`khoaDsCase`), không phụ thuộc `queue`/`classKind`/`skill` (lọc trong bộ nhớ ở `listCases`, không đổi).
  */
@@ -1790,8 +1789,8 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
    *
    * Em chưa xếp lớp thì lấy lớp của bài — vẫn hơn là rơi ra khỏi mọi bộ lọc.
    */
-  if (f.classId) { where.push('COALESCE(cur.class_id, a.class_id) = ?'); params.push(f.classId); }
-  if (f.branchId) { where.push('COALESCE(cc.branch_id, ac.branch_id) = ?'); params.push(f.branchId); }
+  if (f.classId) { where.push(`${LOP_CUA_CASE} = ?`); params.push(f.classId); }
+  if (f.branchId) { where.push(`${CN_CUA_CASE} = ?`); params.push(f.branchId); }
   if (f.status) { where.push('sc.status = ?'); params.push(f.status); }
   if (f.cycleId) { where.push('COALESCE(sc.cycle_id, a.cycle_id) = ?'); params.push(f.cycleId); }
   if (f.origin) { where.push('sc.origin_kind = ?'); params.push(f.origin); }
@@ -1805,7 +1804,8 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
               COALESCE(sc.student_id, a.student_id) AS eff_student_id,
               COALESCE(sc.cycle_id, a.cycle_id) AS eff_cycle_id,
               COALESCE(a.class_id, cur.class_id) AS eff_class_id,
-              COALESCE(ac.branch_id, cc.branch_id) AS eff_branch_id,
+              ${LOP_CUA_CASE} AS lop_quyen_id,
+              ${CN_CUA_CASE} AS eff_branch_id,
               cur.class_id AS home_class_id,
               cc.branch_id AS home_branch_id,
               COALESCE(ac.code, cc.code) AS class_code,
@@ -1904,7 +1904,7 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
   if (!scopeFor(p, PERMISSIONS.ATTEMPT_VIEW).all) napTruocPhamVi(rows.map((r) => r.eff_student_id));
 
   const all: MappedCase[] = rows
-    .filter((r) => can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: r.eff_class_id, studentId: r.eff_student_id }))
+    .filter((r) => can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: r.lop_quyen_id, studentId: r.eff_student_id }))
     .map((r) => ({
       id: r.id,
       originKind: r.origin_kind,
@@ -2105,12 +2105,11 @@ function facetsOf(all: MappedCase[], f: CaseFilters) {
  */
 export function skillSupportBoard(p: Principal, studentId: number, cycleId?: number | null) {
   const conn = db();
-  const student = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
+  const student = dongHocVien(studentId);
   if (!student) throw notFound('Không tìm thấy học viên');
-  const enr = conn
-    .prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status='active' ORDER BY id DESC LIMIT 1`)
-    .get(studentId) as any;
-  require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId: enr?.class_id ?? null, studentId },
+  /* PR-Dọn (9c): lớp đang học qua `activeClassOf` (nhớ trong request) — cùng câu, không đọc lại. */
+  const lopDangHoc = activeClassOf(studentId);
+  require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId: lopDangHoc, studentId },
     'Bạn không có quyền xem học viên này.');
   dienMocQuyChe({ studentId });   // PR-SOS K3-14
 
@@ -2127,9 +2126,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
    * lần hỏi chung ở đây.
    */
 
-  const cycle = cycleId
-    ? (conn.prepare('SELECT * FROM learning_cycles WHERE id = ? AND student_id = ?').get(cycleId, studentId) as any)
-    : currentCycle(studentId);
+  const cycle = cycleId ? cyclesOf(studentId).find((c) => c.id === cycleId) : currentCycle(studentId);   // PR-Dọn (9d): cùng danh sách đã nhớ
 
   /*
    * ĐIỂM HAI LƯỢT GẦN NHẤT của từng ô nhập điểm, để nói được "tăng hay giảm".
@@ -2399,7 +2396,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
            * khác tên trường `class_id`/`eff_student_id`).
            */
           canEdit: can(p, PERMISSIONS.SOS_EDIT, {
-            classId: enr?.class_id ?? null, studentId,
+            classId: lopDangHoc, studentId,
             skill: c.topic ?? undefined,
           }),
           /*
@@ -2407,7 +2404,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
            * gỡ, nên thẻ tự nói: người xem có chốt được không, và còn gì đang chặn. Lấy đúng
            * hai hàm mà nút "Hoàn thành case" ở trang riêng vẫn hỏi — không phép tính thứ hai.
            */
-          canClose: canCloseCase(p, { class_id: enr?.class_id ?? null, student_id: studentId, topic: c.topic }),
+          canClose: canCloseCase(p, { class_id: lopDangHoc, student_id: studentId, topic: c.topic }),
           closeBlockers: c.status === 'done' ? [] : closeBlockers(c.id),
           /* Đủ thứ để vẽ MỘT THẺ CASE mà không phải gọi thêm một đường nữa (mục 1 · 2). */
           ...caseCardOf(c.id, c, soBangChung, boTroMap.get(c.id) ?? null),
@@ -2506,9 +2503,9 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>, bo
       mocChu: iv.preset === 1 ? mocChuPa({ span: iv.moc_quy_che ?? null, followupDue: iv.followup_due ?? null, mtKe: mtKe(iv), daXacNhan: !!iv.confirmed_at }, today) : null,
       lanCuoi: iv.status === 'started' && laLanGhiCuoi({ preset: iv.preset === 1, followupDue: iv.followup_due ?? null, actionDue: iv.action_due ?? null }, today),
       performer: iv.performer_user_name ?? iv.performer_name ?? null,
-      /** PR-VAI-b (Q2): người ghi kết quả PA — đúng cột Công việc dùng (`performer_user_id ?? recorded_by`, `mywork.ts` 2b). */
-      nguoiId: (iv.performer_user_id ?? iv.recorded_by ?? null) as number | null,
-      nguoiTen: (iv.performer_user_id ? iv.performer_user_name : iv.recorder_user_name) ?? null as string | null,
+      /** PR-VAI-b (Q2) → PR-Dọn: người ghi kết quả PA — người thực hiện, không có thì người phụ trách Case (cùng Công việc 2b và chỉ số pa-can-cap-nhat). */
+      nguoiId: (iv.performer_user_id ?? c.owner_user_id ?? null) as number | null,
+      nguoiTen: (iv.performer_user_id ? iv.performer_user_name : c.owner_name) ?? null as string | null,
       nhom: (iv.nhom_bo_tro ?? null) as string | null,
       status: iv.status as string,
       statusLabel: INTERVENTION_STATUS_LABEL[iv.status as keyof typeof INTERVENTION_STATUS_LABEL] ?? iv.status,
@@ -2674,41 +2671,6 @@ function supportLineOf(openIv: any[], lastDone: any | null, lastFollow: any | nu
     ].filter(Boolean).join(' ');
   }
   return null;
-}
-
-/**
- * ĐỔI NGƯỜI PHỤ TRÁCH CHÍNH của một case (mục 2.3).
- *
- * Đổi người phụ trách KHÔNG cấp thêm quyền cho ai: người mới vẫn chỉ làm được những gì vai
- * và phân công của họ cho phép. Nó chỉ trả lời câu "ai đang giữ việc này" — câu mà trước
- * vòng này không có chỗ nào trả lời được.
- */
-export function setCaseOwner(p: Principal, caseId: number, ownerUserId: number | null) {
-  const conn = db();
-  const c = loadCase(caseId);
-  require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
-    'Bạn không có quyền đổi người phụ trách case này.');
-  if (ownerUserId !== null) {
-    const u = conn.prepare("SELECT id, full_name FROM users WHERE id = ? AND status = 'active'").get(ownerUserId) as any;
-    if (!u) throw badRequest('Không tìm thấy người này, hoặc tài khoản đã ngừng hoạt động.');
-  }
-  return tx(() => {
-    const before = c.owner_user_id
-      ? ((conn.prepare('SELECT full_name FROM users WHERE id = ?').get(c.owner_user_id) as any)?.full_name ?? null)
-      : null;
-    conn.prepare('UPDATE sos_cases SET owner_user_id = ?, updated_at = ? WHERE id = ?')
-      .run(ownerUserId, nowIso(), caseId);
-    const after = ownerUserId
-      ? ((conn.prepare('SELECT full_name FROM users WHERE id = ?').get(ownerUserId) as any)?.full_name ?? null)
-      : null;
-    conn
-      .prepare(
-        `INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at)
-         VALUES (?, 'owner', ?, ?, ?, ?)`,
-      )
-      .run(caseId, before, after, p.userId, nowIso());
-    return caseDetail(p, caseId);
-  });
 }
 
 // ================================================================ điểm GV tự đánh giá

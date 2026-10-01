@@ -1,6 +1,6 @@
 import { chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
-  CHO_TAO_PRE_FOU, ENTRY_SKILLS, MOCK_FT_STUDY_WEEK, PERMISSIONS, PROGRAMME_TEMPLATES, chuanHoaMaLop, ghepMaLop, khoaMaLopSql, kiemSoLop,
+  CHO_TAO_PRE_FOU, ENTRY_SKILLS, PERMISSIONS, PROGRAMME_TEMPLATES, chuanHoaMaLop, ghepMaLop, khoaMaLopSql, kiemSoLop,
   moRongPhanCong, programmeOf, type Route, type SlotPhanCong,
   KCK, NGAY_SINH_TOI_THIEU, canNamGan, laKck, docEmail, docNgayNhap, laLichSu, nhanCotNhap, lichMtMacDinh, mtDaThiChuaQua, nhanDangCot, tuanBatDauMacDinh, tuanHocCuaMt, tuanLich, type VanDeNhap,
 } from '../../../shared/domain/index.ts';
@@ -173,6 +173,7 @@ export function previewIntake(
   if (!Array.isArray(input.rows) || input.rows.some((r) => !r || typeof r !== 'object' || Array.isArray(r))) {
     throw badRequest('Dữ liệu nhập không hợp lệ — cần danh sách dòng.');
   }
+  if (input.rows.length > 200) throw badRequest('Tối đa 200 học viên một lần thêm.');   // PR-Dọn (Q6, quét #16)
   input.rows.forEach((r, i) => kiemKieuO(r as Record<string, unknown>, COT_CHU, COT_SO, (k) => `Dòng ${i + 1} · ${nhanCotNhap(k)}`));
   kiemKieuO(input as Record<string, unknown>, ['defaultStartWeek'], [], () => 'Tuần bắt đầu');
 
@@ -209,10 +210,15 @@ export function previewIntake(
    * Gửi mà sai → báo ở cả lô và KHÔNG lặng lẽ thay bằng mặc định (dòng không tự ghi tuần sẽ báo thiếu).
    */
   const homNay = demoToday();
-  const w0 = input.defaultStartWeek ? docNgayNhap(input.defaultStartWeek, homNay, canNamGan(homNay)) : null;
+  const tuanMacDinh = tuanBatDauMacDinh({ lopThuong: ratio, khaiGiang: cls.start_date ?? null }, homNay);
+  /* PR-Dọn (Q17, VN21): cận năm chỉ áp khi tuần KHÁC mặc định của lớp — lớp khai giảng đã lâu vẫn thêm HV với tuần khai giảng. */
+  const docTuan = (v: string) => {
+    const w = docNgayNhap(v, homNay);
+    return w.iso && mondayOf(w.iso) !== tuanMacDinh ? docNgayNhap(v, homNay, canNamGan(homNay)) : w;
+  };
+  const w0 = input.defaultStartWeek ? docTuan(input.defaultStartWeek) : null;
   if (w0?.loi) issues.push({ row: 0, field: 'startWeek', message: w0.loi, muc: 'loi' });
-  const defaultWeek = w0?.loi ? null
-    : w0?.iso ? mondayOf(w0.iso) : tuanBatDauMacDinh({ lopThuong: ratio, khaiGiang: cls.start_date ?? null }, homNay);
+  const defaultWeek = w0?.loi ? null : w0?.iso ? mondayOf(w0.iso) : tuanMacDinh;
 
   /* TRÙNG HỒ SƠ đọc MỘT câu cho cả lô (PR-TOC), lọc theo ngày sinh từng dòng ở dưới. */
   const cungTen = new Map<string, any[]>();
@@ -286,7 +292,7 @@ export function previewIntake(
     /* TUẦN BẮT ĐẦU: ô trống thì dùng mặc định của cả lô. */
     let startWeek: string | null = defaultWeek;
     if (coDuLieu(r.startWeek)) {
-      const w = docNgayNhap(r.startWeek, homNay, canNamGan(homNay));
+      const w = docTuan(String(r.startWeek));
       startWeek = w.iso ? mondayOf(w.iso) : null;
       if (w.loi) loi('startWeek', w.loi);
     }
@@ -365,15 +371,6 @@ export function previewIntake(
     classCode: cls.code,
     defaultStartWeek: defaultWeek,
   };
-}
-
-/** Tuần MT gợi ý theo mốc tuần HỌC của FT. Chỉ là đề xuất, quản lý sửa được. */
-export function suggestMockWeeks(classStart: string | null, count = 3): string[] {
-  if (!classStart) return [];
-  return Array.from({ length: count }, (_, i) => {
-    const studyWeek = MOCK_FT_STUDY_WEEK[i + 1];
-    return studyWeek ? mondayOf(addDays(classStart, (studyWeek - 1) * 7)) : null;
-  }).filter((x): x is string => !!x);
 }
 
 /** `hangDaThem`: số dòng (theo lưới) đã thêm — panel bỏ các dòng đó, giữ dòng còn lỗi (K2-21). */

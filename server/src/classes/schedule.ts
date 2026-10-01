@@ -1,4 +1,5 @@
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
+import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
   CHUONG_TRINH_KHONG_CHIA_MON, boMonLich, CLASS_PHASE_LABEL, CO_DIEM_SQL, MOC_KE_TIEP_SQL, PERMISSIONS, kiemSoMtMoi, laLichSu, lichMtMacDinh, tuanHocCuaMt, tuanLich,
   PROGRAMME_TEMPLATES, kyHieuLop, nextStepsAfter, programmeOf, studyWeekOf,
@@ -376,7 +377,7 @@ const CLASS_ACTIVE_COUNT_SQL = `
     FROM enrollments e
     JOIN students s ON s.id = e.student_id
    WHERE e.class_id = ? AND e.status = 'active'
-     AND s.status = 'active' AND s.archived_at IS NULL`;
+     AND ${HV_DANG_HOC_SQL('s')}`;
 
 /**
  * TIẾN ĐỘ CỦA NHIỀU LỚP TRONG BA CÂU LỆNH — không phải ba câu MỖI LỚP.
@@ -399,7 +400,7 @@ export function mocKetKhoa(pr: TienDoMoc, homNay: string) {
   return { tuanCuoiKhoa: pr?.finalWeekStart ?? null, tuanKetThuc, hetKhoa, tuCuoiKhoa: hetKhoa || (!!pr?.finalWeekStart && thu2 >= pr.finalWeekStart) };
 }
 
-export function classProgressMany(classIds: number[], programmes?: Map<string, ProgrammeInfo>): Map<number, ClassProgress> {
+export function classProgressMany(classIds: number[]): Map<number, ClassProgress> {
   const out = new Map<number, ClassProgress>();
   if (!classIds.length) return out;
   const conn = db();
@@ -430,7 +431,7 @@ export function classProgressMany(classIds: number[], programmes?: Map<string, P
          FROM enrollments e
          JOIN students s ON s.id = e.student_id
         WHERE e.class_id IN (${ph}) AND e.status = 'active'
-          AND s.status = 'active' AND s.archived_at IS NULL
+          AND ${HV_DANG_HOC_SQL('s')}
         GROUP BY e.class_id`,
     )
     .all(demoToday(), ...classIds) as any[]) {
@@ -438,7 +439,7 @@ export function classProgressMany(classIds: number[], programmes?: Map<string, P
     canXepByClass.set(r.class_id, r.can_xep_lop ?? 0);
   }
 
-  const progs = programmes ?? allProgrammes();
+  const progs = allProgrammes();   // nhớ trong request (`nho`) — PR-Dọn Q22: bỏ tham số truyền tay
   for (const c of classes) {
     out.set(c.id, computeProgress(c, c.start_period_id ? periods.get(c.start_period_id) ?? null : null,
       counts.get(c.id) ?? 0, canXepByClass.get(c.id) ?? 0, progs));
@@ -558,7 +559,7 @@ export function tomTatMt(classId: number): { soEm: number; coMocSapToi: number; 
          FROM enrollments e
          JOIN students s ON s.id = e.student_id
          LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
-        WHERE e.class_id = ? AND e.status = 'active' AND s.status = 'active' AND s.archived_at IS NULL
+        WHERE e.class_id = ? AND e.status = 'active' AND ${HV_DANG_HOC_SQL('s')}
         GROUP BY s.id)`,
   ).get(mondayOf(demoToday()), classId) as any;
   return { soEm: r?.n ?? 0, coMocSapToi: r?.co_moc ?? 0, daXongMtCuoi: r?.xong ?? 0 };
@@ -573,26 +574,6 @@ export const CO_MOC_KE_TIEP_SQL = (cy: string) => `EXISTS (SELECT 1 FROM assessm
   WHERE a.cycle_id = ${cy}.id AND ${MOC_KE_TIEP_SQL('a', 'rp')})`;
 export const XONG_MT_CUOI_SQL = (cy: string) => `EXISTS (SELECT 1 FROM assessment_attempts a2 WHERE a2.cycle_id = ${cy}.id AND a2.kind = 'mock'
   AND a2.attempt_no >= (CASE WHEN ${cy}.route = 'RF' THEN ${lichMtMacDinh('RF').length} ELSE ${lichMtMacDinh('LT1').length} END) AND ${CO_DIEM_SQL('a2')})`;
-
-/**
- * NHỮNG LỚP ĐANG CÓ CHUYỆN CẦN BÁO — dùng cho màn việc và cho thanh lớp.
- *
- * Chỉ trả về lớp ở chặng ĐÁNG NÓI: sắp thi, đang thi, hoặc đã hết chương trình. Lớp đang
- * học bình thường không xuất hiện — một danh sách liệt kê cả những lớp không cần làm gì là
- * một danh sách không ai đọc.
- */
-export function classAlerts(classIds: number[]): Map<number, ClassProgress> {
-  const out = new Map<number, ClassProgress>();
-  for (const [id, pr] of classProgressMany(classIds)) {
-    if (pr.phase === 'progress_soon' || pr.phase === 'progress_week'
-      || pr.phase === 'final_soon' || pr.phase === 'final_week'
-      || (pr.phase === 'finished' && pr.activeStudents > 0)
-      || pr.phase === 'unknown') {
-      out.set(id, pr);
-    }
-  }
-  return out;
-}
 
 /**
  * Đổi tuần bắt đầu và mốc kiểm tra của lớp. Quyền: Admin CN và Quản lý CN (mục 7.6).
@@ -729,16 +710,14 @@ export function missingForClass(classId: number): { items: MissingInfo[]; missin
 }
 
 /** Bản hàng loạt — hai câu lệnh cho cả trang, không phải hai câu mỗi lớp. */
-export function missingForClasses(
-  classIds: number[],
-  programmes?: Map<string, ProgrammeInfo>,
-): Map<number, { items: MissingInfo[]; missingSkills: string[] }> {
+export function missingForClasses(classIds: number[]): Map<number, { items: MissingInfo[]; missingSkills: string[] }> {
   const out = new Map<number, { items: MissingInfo[]; missingSkills: string[] }>();
   if (!classIds.length) return out;
   const conn = db();
   const ph = classIds.map(() => '?').join(',');
 
   const classes = conn.prepare(`SELECT * FROM classes WHERE id IN (${ph})`).all(...classIds) as any[];
+  let programmes: Map<string, ProgrammeInfo> | undefined;   // nạp một lần, chỉ khi có lớp cần
   const byClass = new Map<number, any[]>();
   for (const a of conn
     .prepare(

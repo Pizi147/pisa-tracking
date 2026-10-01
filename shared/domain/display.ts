@@ -13,7 +13,7 @@
  *
  * Đặc tả: `thiet-ke/HE_GIAO_DIEN.md` §4–§7.
  */
-import { MONTH_CODE, mondayOfDate, owningMonthOf, weekNumberInMonthOf } from './week.ts';
+import { MONTH_CODE, mondayOfDate, owningMonthOf, tuanKetQuaCuaHan, weekNumberInMonthOf } from './week.ts';
 
 const DAY_MS = 86_400_000;
 const dayNumber = (iso: string) => Date.parse(`${iso.slice(0, 10)}T00:00:00Z`) / DAY_MS;
@@ -325,7 +325,7 @@ function maTuan(iso: string, homNay: string): string {
 /** Tiêu đề khối kết quả ở form Ghi kết quả (K3-17): tuần của hạn đang ghi; trễ ≥ 2 tuần thì nói khoảng + số tuần ghi bù. */
 export function nhanTuanGhiKetQua(actionDue: string | null, homNay: string): { tieuDe: string; soTuan: number } {
   if (!validIso(actionDue)) return { tieuDe: 'Kết quả tuần này', soTuan: 1 };
-  const dau = congNgay(mondayOfDate(actionDue), -7);
+  const dau = tuanKetQuaCuaHan(actionDue);   // PR-Dọn (6g): cùng hàm với `tuanCuaHanGhiKetQua`
   const cuoi = congNgay(mondayOfDate(homNay), -7);
   const soTuan = cuoi > dau ? Math.round(daysBetween(dau, cuoi) / 7) + 1 : 1;
   if (soTuan === 1) return { tieuDe: `Kết quả tuần ${maTuan(dau, homNay)}`, soTuan };

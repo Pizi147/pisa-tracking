@@ -230,7 +230,6 @@ export async function runPrMtTests(t: YThucTestKit) {
   const mywork: any = await import('../worklist/mywork.ts');
   const clsSvc: any = await import('../classes/classes.ts');
   const metrics: any = await import('../worklist/metrics.ts');
-  const pulse: any = await import('../worklist/branchpulse.ts');
   const standingSvc: any = await import('../students/standing.ts');
   const danhGia: any = await import('../worklist/danhGia.ts');
   const H1_BAT_DAU = addDays(tuanNay, -7 * 22);
@@ -246,7 +245,6 @@ export async function runPrMtTests(t: YThucTestKit) {
     viec: [P.lrTeacher, P.w1Teacher, P.sTeacher].map((u) => mywork.myWork(u).groups.find((g: any) => g.key === 'score')?.items.length ?? 0),
     badge: clsSvc.listClassSummaries(P.mbManager).rows.find((r: any) => r.id === MB101)?.needScores,
     chiSo: ['bai-qua-han-nhap-diem', 'do-phu-danh-gia'].map((id) => { const m = metrics.metricSet(P.admin, id); return [m.n, m.numeratorIds?.length ?? null, m.denominatorIds?.length ?? null]; }),
-    pulse: pulse.branchPulse(P.admin).people.map((x: any) => [x.id, x.mtPending, x.mtOverdue]),
   });
   const truoc = chup();
   const r5 = intake.commitIntake(P.admin, { classId: MB101,
@@ -447,7 +445,9 @@ export async function runPrMtTests(t: YThucTestKit) {
       WHERE r.attempt_id = ? AND r.skill = 'listening' AND r.status = 'pending'`).get(a8.id) as any;
     assert(r && r.move_no === 2 && r.requested_by === null && r.decide_by === '2026-09-27' && r.dich === '2026-09-28', JSON.stringify(r));
     assert(lich('listening').sit_status === 'absent', 'lịch giữ nguyên tới khi QL duyệt');
-    assert(absence.moTaDoiLan2(r) === 'Dời L · MT1 · lần 2 · Duyệt = L thi W1 OCT', absence.moTaDoiLan2(r));
+    /* PR-Dọn (Q14): `moTaDoiLan2` (chỉ phép kiểm gọi) đã xoá — gọi thẳng `chuTheDoiLan2`, như thẻ Chờ duyệt. */
+    const mo = absence.chuTheDoiLan2({ skill: r.skill, attemptNo: 1, moveNo: r.move_no, tuanDich: r.dich, homNay: TODAY });
+    assert(mo === 'Dời L · MT1 · lần 2 · Duyệt = L thi W1 OCT', mo);
   });
   check('PR-MT (8) · Hết Chủ nhật mà QL chưa trả lời → đề nghị hết hạn, huỷ phần thi (C09)', () => {
     demoCfg.setConfig('demo_date', '2026-09-28');

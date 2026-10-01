@@ -1,4 +1,5 @@
 import { db } from '../db.ts';
+import { dongHocVien } from '../students/tamDung.ts';
 import {
   HUONG_TIEP, NORMAL_LADDER, PERMISSIONS, nhanHuong, nhanTiepTheo, soSanhLop, trongHaiTuanCuoi,
   type Huong, type ProgrammeCode,
@@ -156,32 +157,6 @@ export function tiepTheoTheoHocVien(classIds: number[]): Map<number, BanGhiLoTri
 }
 
 /**
- * Số em CHƯA CÓ lộ trình tiếp theo của mỗi lớp (Q9): em `active`, không lưu trữ, không có
- * bản ghi hoặc `huong='chua_ro'`. Một câu, không quét theo từng em.
- */
-export function demChuaLoTrinh(classIds: number[]): Map<number, number> {
-  const out = new Map<number, number>();
-  if (!classIds.length) return out;
-  const conn = db();
-  const ph = classIds.map(() => '?').join(',');
-  for (const r of conn
-    .prepare(
-      `SELECT e.class_id, COUNT(*) n FROM enrollments e
-         JOIN students s ON s.id = e.student_id
-         LEFT JOIN lo_trinh_tiep_theo lt ON lt.student_id = e.student_id AND lt.class_id = e.class_id
-        WHERE e.class_id IN (${ph}) AND e.status = 'active'
-          AND s.status = 'active' AND s.archived_at IS NULL
-          AND (lt.id IS NULL OR lt.huong = 'chua_ro')
-          AND NOT EXISTS (SELECT 1 FROM lenh_chuyen_lop lc WHERE lc.student_id = e.student_id AND lc.trang_thai = 'cho')   -- PR-CT: em đã có lệnh không còn "chưa có hướng"
-        GROUP BY e.class_id`,
-    )
-    .all(...classIds) as any[]) {
-    out.set(r.class_id, r.n);
-  }
-  return out;
-}
-
-/**
  * Khối `lopHoc` ở cuối `studentProfile` (Task 3, `profile.ts`) — dòng dưới tên, nhắc chưa có
  * lộ trình, và cờ quyền của mọi nút ⋮ Hồ sơ HV liên quan tới lớp học (Q2, Q22).
  */
@@ -193,7 +168,7 @@ export function lopHocCua(p: Principal, studentId: number, current: any): {
   };
 } {
   const conn = db();
-  const s = conn.prepare('SELECT status, archived_at FROM students WHERE id = ?').get(studentId) as any;
+  const s = dongHocVien(studentId);
   const chiXem = !!s?.archived_at;
   if (chiXem) {
     return {

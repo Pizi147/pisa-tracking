@@ -182,7 +182,7 @@ export function khoaLopThuong(i: {
   else if (i.tuanHienTai !== null && i.tongTuan) tuan = tuanKhoa(Math.min(i.tuanHienTai, i.tongTuan), i.tongTuan);
   // Thứ tự ưu tiên dòng phụ (PR-LT): tiếp theo đã ghi › nhắc chưa ghi › kết thúc khoá.
   const phu = i.tiepTheo ? `tiếp theo: ${i.tiepTheo}`
-    : i.nhacLoTrinh ? 'chưa có lộ trình tiếp theo'
+    : i.nhacLoTrinh ? 'chưa có lệnh chuyển lớp'
     : i.tuanKetThuc ? `kết thúc ${tuanLich(i.tuanKetThuc, i.homNay)}` : null;
   return { chinh: tuan ? `${ma} · ${tuan}` : ma, phu };
 }
@@ -220,8 +220,9 @@ export function badgeLop(c: {
   const co: Partial<Record<BadgeLop['key'], BadgeLop>> = {};
   if (nXep > 0) {
     co['xep-lop'] = {
-      key: 'xep-lop', nhan: `${nXep} HV cần xếp lớp tiếp`, tone: 'warn',
-      title: c.needsPlacement ? 'Lớp đã hết khoá: những học viên này chưa được xếp lớp tiếp' : 'Những học viên này chưa có lộ trình tiếp theo',
+      /* PR-Dọn (Câu 2 = B): lớp chưa hết khoá → em chưa có lệnh chuyển lớp (cùng tập dòng Cần xử lý). */
+      key: 'xep-lop', nhan: c.needsPlacement ? `${nXep} HV cần xếp lớp tiếp` : `${nXep} HV chưa có lệnh chuyển lớp`, tone: 'warn',
+      title: c.needsPlacement ? 'Lớp đã hết khoá: những học viên này chưa được xếp lớp tiếp' : 'Quản lý ra lệnh ở ⋮ Chuyển lớp cả lớp',
     };
   }
   if (c.missingSkills.length) co['thieu-gv'] = { key: 'thieu-gv', nhan: `Thiếu GV ${c.missingSkills.map((k) => tenMonNgan(c.chuongTrinh, k)).join(', ')}`, tone: 'warn' };

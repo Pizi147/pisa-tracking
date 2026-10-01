@@ -6,10 +6,12 @@
  * (`duyetYeuCau` / `tuChoiYeuCau` / `traLoiYeuCau` ở yeuCau.ts) gọi `khiDuyet`/`khiTuChoi`/`khiTraLoi` TRONG giao dịch của hộp.
  * Hàm nguồn tự gọi `chotYeuCau` (idempotent) — đường cũ không qua hộp vẫn chốt đúng thẻ.
  */
+import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import type { Principal } from '../permissions.ts';
 import {
   INTERVENTION_KIND_LABEL, REGULAR_SKILLS, caseTopicLabel, duongHoSoHocVien, moTaBoTro, nhanDotNgan, nhanLoaiXuLy, outcomeLabelFor, shortDate, tenMonNgan, tuanLich,
   type InterventionKind, type LoaiYeuCau, type TrangThaiYc,
+  type TruongDeXuat,
 } from '../../../shared/domain/index.ts';
 import { caseTitleOf, respondToPlan } from '../cases/cases.ts';
 import { apDungKhongTheoDoi, tuChoiKhongTheoDoi } from '../cases/sosAuto.ts';
@@ -22,7 +24,7 @@ import { chotHanXuLy } from '../yThuc/trangThai.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest } from '../util.ts';
 import { reviseTarget, updateCycle } from '../fasttrack/cycles.ts';
-import { NHAN_TRUONG_DE_XUAT, TRUONG_TU_AP, hienTaiCua, type TruongDeXuat } from './deXuatSua.ts';
+import { NHAN_TRUONG_DE_XUAT, TRUONG_TU_AP, hienTaiCua } from './deXuatSua.ts';
 import { CO_THE_KHONG_THEO_DOI, awaitingCauseCaseIds } from '../cases/sosState.ts';
 import { khiDuyetKeHoach, khiTuChoiKeHoach } from '../cases/boTro.ts';
 import { chotYeuCau, taoYeuCau } from './yeuCau.ts';
@@ -154,7 +156,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       const kn = x ? tenMonNgan(x.ct ?? null, x.skill) : 'kỹ năng';   // MH2: G+V / P / Tổng hợp theo chương trình lớp
       const dot = x ? nhanDotNgan(x.kind, x.attempt_no) : null;
       return {
-        /* PR-MT (K4-04): thẻ Mock nói đủ trong một dòng — `Dời L · MT1 · lần 2 · Duyệt = L thi W1 OCT` (chuTheDoiLan2, chung với moTaDoiLan2). */
+        /* PR-MT (K4-04): thẻ Mock nói đủ trong một dòng — `Dời L · MT1 · lần 2 · Duyệt = L thi W1 OCT` (chuTheDoiLan2). */
         tieuDe: x?.kind === 'mock'
           ? chuTheDoiLan2({ skill: x.skill, attemptNo: x.attempt_no, moveNo: x.move_no, tuanDich: x.week_start ?? null, homNay: ngu.homNay, ct: x.ct ?? null })
           : `Dời ${kn}${dot ? ` ${dot}` : ''} lần ${x?.move_no ?? 2}`,
@@ -262,7 +264,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         `SELECT sc.id, sc.owner_user_id, COALESCE(sc.student_id, a.student_id) AS sid, a.class_id, sc.han_xac_nhan AS han
            FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
            JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
-          WHERE sc.status != 'done' AND s.archived_at IS NULL AND s.status = 'active'   /* K3-41: em Tạm dừng không bị Báo lên */
+          WHERE sc.status != 'done' AND ${HV_DANG_HOC_SQL('s')}   /* K3-41: em Tạm dừng không bị Báo lên */
             AND sc.han_xac_nhan < ?
             AND NOT EXISTS (SELECT 1 FROM yeu_cau_duyet y WHERE y.loai = 'bao_len_nguyen_nhan' AND y.doi_tuong_loai = 'sos_case'
                              AND y.doi_tuong_id = sc.id AND y.trang_thai = 'cho')`,
@@ -494,7 +496,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
           WHERE c.status = 'active' AND c.is_fast_track = 0
             AND (c.so_tuan IS NULL OR rp.week_start IS NULL OR date(rp.week_start, '+' || (c.so_tuan * 7) || ' days') <= ?)
             AND EXISTS (SELECT 1 FROM enrollments e JOIN students s ON s.id = e.student_id WHERE e.class_id = c.id AND e.status = 'active'
-                          AND s.status = 'active' AND s.archived_at IS NULL
+                          AND ${HV_DANG_HOC_SQL('s')}
                           AND NOT EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.student_id = e.student_id AND l.trang_thai = 'cho'))
             AND NOT EXISTS (SELECT 1 FROM yeu_cau_duyet y WHERE y.loai = 'bao_len_chua_lenh' AND y.doi_tuong_id = c.id AND y.trang_thai = 'cho')`,
       ).all(homNay) as any[]).map((r) => r.id as number);
@@ -510,14 +512,14 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     chet: {
       sql: `NOT EXISTS (SELECT 1 FROM classes c WHERE c.id = y.doi_tuong_id AND c.status = 'active')
          OR NOT EXISTS (SELECT 1 FROM enrollments e JOIN students s ON s.id = e.student_id WHERE e.class_id = y.doi_tuong_id AND e.status = 'active'
-              AND s.status = 'active' AND s.archived_at IS NULL AND NOT EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.student_id = e.student_id AND l.trang_thai = 'cho'))`,
+              AND ${HV_DANG_HOC_SQL('s')} AND NOT EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.student_id = e.student_id AND l.trang_thai = 'cho'))`,
       lyDo: 'Việc gốc đã xong',
     },
     nap: (conn, ds) => {
       const ids = ds.map((y) => y.id);
       return new Map((conn.prepare(
         `SELECT y.id, c.code AS lop, (SELECT COUNT(*) FROM enrollments e JOIN students s ON s.id = e.student_id
-            WHERE e.class_id = y.doi_tuong_id AND e.status = 'active' AND s.status = 'active' AND s.archived_at IS NULL
+            WHERE e.class_id = y.doi_tuong_id AND e.status = 'active' AND ${HV_DANG_HOC_SQL('s')}
               AND NOT EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.student_id = e.student_id AND l.trang_thai = 'cho')) AS n
            FROM yeu_cau_duyet y JOIN classes c ON c.id = y.doi_tuong_id WHERE y.id IN (${ids.map(() => '?').join(',')})`,
       ).all(...ids) as any[]).map((r) => [r.id as number, r]));

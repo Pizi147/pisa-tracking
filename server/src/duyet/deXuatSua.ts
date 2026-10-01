@@ -8,11 +8,9 @@ import { db, tx } from '../db.ts';
 import { badRequest, notFound } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
-import { KCK, PERMISSIONS, laKck } from '../../../shared/domain/index.ts';
+import { KCK, PERMISSIONS, TRUONG_DE_XUAT, laKck, type TruongDeXuat } from '../../../shared/domain/index.ts';
 import { taoYeuCau } from './yeuCau.ts';
 
-export const TRUONG_DE_XUAT = ['target', 'lo-trinh', 'lich-mt', 'khac'] as const;   // PR-CT: bỏ 'lop' — dùng Đề xuất chuyển lớp
-export type TruongDeXuat = (typeof TRUONG_DE_XUAT)[number];
 export const NHAN_TRUONG_DE_XUAT: Record<TruongDeXuat, string> = {
   target: 'target', 'lo-trinh': 'lộ trình', 'lich-mt': 'lịch MT', khac: 'thông tin khác',
 };

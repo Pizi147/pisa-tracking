@@ -478,6 +478,7 @@ export function apDungCaLop(p: Principal, o: {
     /* PR-DUYET (T44): target chỉ nhận khi sang FT (bắt buộc có) hoặc người gọi có `cycle.edit` — như Chuyển lớp một em. */
     /* Mọi em cùng MỘT lớp nguồn → kiểm quyền một lần theo lớp (không truy vấn theo từng em, Q20). */
     const coSuaTarget = can(p, PERMISSIONS.CYCLE_EDIT, { classId: o.fromClass.id });
+    /* FT→FT cũng nhận target: chỉ QL/QT gọi được (CYCLE_EDIT), vô hại — rà #117 (PR-Dọn VN03). */
     const params = o.dongs.flatMap((d) => [
       d.sid, (seqOf.get(d.sid) ?? 0) + 1, d.toClass.ft ? (d.toClass.route ?? 'LT1') : null, d.toClass.ma,
       d.toClass.ft || coSuaTarget ? d.mucTieu ?? null : null, d.thangThi ?? null,

@@ -156,7 +156,7 @@ export async function runPrLopTests(t: YThucTestKit) {
   });
   check('LOP (7) · Sửa thông tin lớp: chỉ đổi phần số; đổi lộ trình bị chặn khi lớp có HV (YC-2, K2-18)', () => {
     const lop = conn.prepare(`SELECT c.id FROM classes c WHERE c.code = 'MB FT 101'`).get() as any;
-    assertThrows(() => ttl.capNhatThongTinLop(P.admin, lop.id, { route: 'RF' }), /đã có \d+ học viên/, 'đổi lộ trình khi có HV');
+    assertThrows(() => ttl.capNhatThongTinLop(P.admin, lop.id, { loTrinh: 'RF' }), /đã có \d+ học viên/, 'đổi lộ trình khi có HV');
     assertThrows(() => ttl.capNhatThongTinLop(P.admin, lop.id, { so: '1O1' }), /Chỉ gõ số/, 'số sai');
   });
 

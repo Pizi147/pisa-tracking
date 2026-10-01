@@ -270,13 +270,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     assert(sit(hv.attemptId, 'writing').absence_move_count === 1, 'Máy phải tự dời buổi Writing lần 1');
   });
 
-  const pulse: any = await import('../worklist/branchpulse.ts');     // `check` không nhận hàm async — nạp ở ngoài
-  check('§6 · Bảng chi nhánh vẫn dựng được và cột nợ điểm của GV đọc từ scoreDebtCells', () => {
-    const r = pulse.branchPulse(P.mbManager, { branchId: mbBranch }) as any;
-    assert(r && Array.isArray(r.people), 'branchPulse phải trả danh sách người');
-    const src = fsMod.readFileSync(pathMod.join(REPO, 'server/src/worklist/branchpulse.ts'), 'utf8');
-    assert(src.includes('scoreDebtCells') && !/s\.band IS NULL/.test(src), 'branchpulse.ts còn đếm nợ điểm bằng band IS NULL');
-  });
+  /* PR-Dọn (Q14): phép kiểm "§6 · Bảng chi nhánh … branchPulse" xoá cùng `/branch-pulse` (web không gọi). */
 
   // ================================================================== 5. §6 worklist/signals.ts
 

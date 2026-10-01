@@ -1,4 +1,5 @@
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
+import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { addMilestone, followUntilAfter, taoCaseTuDong } from '../cases/sos.ts';
 import { dongBoBaoPh } from '../yThuc/phoiHop.ts';
 import { raiseSignal, reconcileCorrectedSignals } from '../cases/signals.ts';
@@ -38,6 +39,8 @@ import { baoLenCuoiKhoaDoiQuaHan, capNhatCuoiKhoaSauChuyen } from './cuoiKhoa.ts
 
 export type ProgrammeInfo = {
   code: string; name: string; weeks: number | null; scoringMode: string;
+  /** PR-Dọn (VN18): chương trình đã ngưng vẫn nạp — lớp cũ của nó vẫn xác định được cách chấm; chỉ danh sách để CHỌN lọc theo cờ này. */
+  active: boolean;
   skills: string[];
   checkpoints: { kind: AttemptKind; studyWeek: number }[];
 };
@@ -53,9 +56,9 @@ export function allProgrammes(): Map<string, ProgrammeInfo> {
   return nho('chuong-trinh', () => {
     const conn = db();
     const out = new Map<string, ProgrammeInfo>();
-    for (const p of conn.prepare(`SELECT * FROM programmes WHERE status = 'active'`).all() as any[]) {
+    for (const p of conn.prepare('SELECT * FROM programmes').all() as any[]) {
       out.set(p.code, {
-        code: p.code, name: p.name, weeks: p.weeks, scoringMode: p.scoring_mode,
+        code: p.code, name: p.name, weeks: p.weeks, scoringMode: p.scoring_mode, active: p.status === 'active',
         skills: [], checkpoints: [],
       });
     }
@@ -101,14 +104,14 @@ export function isRatioClass(classId: number | null | undefined): boolean {
  */
 export function programmeCodeOfCycle(cycleId: number | null | undefined): string | null {
   if (!cycleId) return null;
-  const row = db()
+  /* PR-Dọn (Task 9h): nhớ trong request GET — hồ sơ HV hỏi lại cùng lộ trình nhiều lần. */
+  return nho(`ct-lo-trinh:${cycleId}`, () => (db()
     .prepare(
       `SELECT c.programme_code AS code FROM assessment_attempts a
          JOIN classes c ON c.id = a.class_id
         WHERE a.cycle_id = ? AND c.programme_code IS NOT NULL LIMIT 1`,
     )
-    .get(cycleId) as any;
-  return row?.code ?? null;
+    .get(cycleId) as any)?.code ?? null);
 }
 
 /**
@@ -282,7 +285,7 @@ export function planRegularTests(p: Principal, classId: number, opts: {
     .prepare(
       `SELECT s.id FROM students s
          JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
-        WHERE e.class_id = ? AND s.archived_at IS NULL AND s.status = 'active'${
+        WHERE e.class_id = ? AND ${HV_DANG_HOC_SQL('s')}${
           chonEm ? ` AND s.id IN (${chonEm.map(() => '?').join(',')})` : ''}`,
     )
     .all(classId, ...(chonEm ?? [])) as any[];

@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { db } from '../db.ts';
 import { CHUONG_TRINH_KHONG_CHIA_MON, PERMISSIONS, luotSinhViec } from '../../../shared/domain/index.ts';
 import { ngayTaoLuot } from '../classes/schedule.ts';
@@ -157,7 +158,8 @@ export function luotSinhViecRow(a: any, homNay: string): boolean {
  * `studentsInScope(...)` là cùng một mảng cho cùng người xem/chi nhánh trong một request).
  */
 export function latestAttempts(studentIds: number[], pick: 'valid' | 'due', today: string): Map<number, AttemptEval> {
-  return nho(`luot-moi:${pick}:${today}:${studentIds.join(',')}`, () => {
+  /* PR-Dọn (9g): khoá nhớ ngắn — băm tập id (2 000 em từng là khoá hơn 10 000 ký tự). */
+  return nho(`luot-moi:${pick}:${today}:${createHash('sha1').update(studentIds.join(',')).digest('hex')}`, () => {
     const byStudent = attemptsNewestFirst(studentIds);
     const all = [...byStudent.values()].flat();
     const bundle = loadBundle(all.map((a) => a.id));

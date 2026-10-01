@@ -34,8 +34,6 @@ export type GoiYCuoiKhoa = {
   dai: DaiCuoiKhoa; tyLe: number; huong: HuongGoiY;
   /** 50–59%: chip "Quản lý cân nhắc" ở màn Chuyển lớp, bắt chọn trước khi gửi. */
   canQuanLy: boolean;
-  /** ponytail: bí danh của `canQuanLy` cho kế hoạch PR-CT viết trước chốt 30/09 — bỏ khi PR-CT đổi tên. */
-  canQl: boolean;
   boTroNeuLen: BoTroMienPhi | null;     // 50–59 (nếu Quản lý cho lên) và 60–69
   baoPhTvv: boolean;                    // < 50 (50–59 mà Quản lý chọn học lại thì máy chủ tự thêm — Q6)
   nhan: string;
@@ -74,7 +72,7 @@ export function goiYCuoiKhoa(x: { ct: string | null; tyLe: number | null; monTru
   const ke = tenBacKe(ct);
   const chung = { dai, tyLe: x.tyLe };
   const dong = (huong: HuongGoiY, canQuanLy: boolean, bo: BoTroMienPhi | null, baoPhTvv: boolean, nhan: string, nhanNgan: string, nhanExcel: string): GoiYCuoiKhoa => ({
-    ...chung, huong, canQuanLy, canQl: canQuanLy, boTroNeuLen: bo, baoPhTvv, nhan, nhanNgan, nhanExcel,
+    ...chung, huong, canQuanLy, boTroNeuLen: bo, baoPhTvv, nhan, nhanNgan, nhanExcel,
     nhanHuong: canQuanLy ? 'Quản lý cân nhắc' : huong === 'hoc_lai' ? `Học lại ${tenBac(ct)}` : `Lên ${ke}${dai === '60_69' && bo ? ' + bổ trợ' : ''}`,
   });
   if (dai === 'dat') return dong('len', false, null, false, 'Pass', '→ Pass', 'Pass');

@@ -1,4 +1,5 @@
 import { db, tx } from '../db.ts';
+import { nho } from '../platform/nguCanhRequest.ts';
 import {
   BASELINE_SOURCES, CO_DIEM_SQL, CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, CYCLE_STATUSES, PERMISSIONS, soMtKeTiep, tuanLich,
   KCK, canNamGan, docNgayNhap, laKck, mondayOfDate, ngay, type ExamPlan, type LuotSo, type Route,
@@ -11,6 +12,7 @@ import { addJourney, writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, mondayOf, periodById } from '../platform/week.ts';
 import { apLichMacDinh } from '../classes/schedule.ts';
 import { taoMtMacDinh } from './mtMacDinh.ts';
+import { activeRouteCodes } from '../platform/sysconfig.ts';
 
 /**
  * Lộ trình học của một học viên.
@@ -19,16 +21,31 @@ import { taoMtMacDinh } from './mtMacDinh.ts';
  * MT3 trở đi kỳ vọng luôn bằng target. Chỉ khi sang lộ trình mới (LT1 → LT2) mới đánh số
  * lại từ MT1, vì lúc đó học viên đã có target mới.
  */
+/** Mọi lộ trình của em theo `seq` — PR-Dọn (Task 9d): nhớ trong request GET (hồ sơ HV đọc lại ở lộ trình đang chạy, bảng kỹ năng). */
 export function cyclesOf(studentId: number) {
-  return db()
+  return nho(`ds-lo-trinh:${studentId}`, () => db()
     .prepare('SELECT * FROM learning_cycles WHERE student_id = ? ORDER BY seq')
-    .all(studentId) as any[];
+    .all(studentId) as any[]);
 }
 
+/** Lộ trình đang chạy có `seq` lớn nhất; không có thì lộ trình `seq` lớn nhất (= `ORDER BY (status = 'active') DESC, seq DESC`). */
 export function currentCycle(studentId: number) {
-  return (db()
-    .prepare(`SELECT * FROM learning_cycles WHERE student_id = ? ORDER BY (status = 'active') DESC, seq DESC LIMIT 1`)
-    .get(studentId) as any) ?? null;
+  const ds = cyclesOf(studentId);
+  return [...ds].reverse().find((c) => c.status === 'active') ?? ds.at(-1) ?? null;
+}
+
+/**
+ * PR-Dọn (Q11): MỘT cách chọn lộ trình để đếm "tuần học thứ n" — chương Hành trình, đầu hồ sơ, panel Chuyển lớp một em và cả lớp.
+ * Đang học (ghi danh `active`, hoặc `paused` chưa rời) → lộ trình ĐANG CHẠY; chương đã rời (hoặc không có lộ trình đang chạy) →
+ * lộ trình bắt đầu muộn nhất không sau ngày vào lớp (không có thì lộ trình đầu). Panel Chuyển lớp đọc thẳng `cy.status = 'active'`
+ * trong câu SQL của nó — đúng nhánh `dangHoc: true` của hàm này.
+ */
+export function loTrinhTinhTuan<T extends { status: string; started_at: string }>(cycles: readonly T[], o: { dangHoc: boolean; ngayVao: string }): T | null {
+  if (o.dangHoc) {
+    const chay = cycles.find((c) => c.status === 'active');
+    if (chay) return chay;
+  }
+  return [...cycles].sort((a, b) => a.started_at.localeCompare(b.started_at)).filter((c) => c.started_at <= o.ngayVao).at(-1) ?? cycles[0] ?? null;
 }
 
 export function cycleById(id: number) {
@@ -131,6 +148,8 @@ export function createCycle(p: Principal, input: {
   const student = conn.prepare('SELECT * FROM students WHERE id = ?').get(input.studentId) as any;
   if (!student) throw notFound('Không tìm thấy học viên');
   if (input.examPeriodId && !periodById(Number(input.examPeriodId))) throw badRequest('Tuần dự kiến thi không hợp lệ.');
+  /* PR-Dọn (quét #20): chỉ nhận mã lộ trình đang dùng trong danh mục (Quản trị › Danh mục). */
+  if (input.route != null && !activeRouteCodes().includes(String(input.route))) throw badRequest('Lộ trình không có trong danh mục đang dùng.');
   const startedAt = input.startedAt ?? nowIso().slice(0, 10);
   if (!isIsoDate(startedAt)) throw badRequest('Ngày bắt đầu không hợp lệ.');
   const t = docTarget(input.targetScore);
@@ -183,8 +202,14 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
     const ngoai = t.iso && t.iso !== (c.exam_date ?? c.exam_month) ? docNgayNhap(t.iso, demoToday(), { choThang: true, ...can }).loi : null;
     if (t.loi || ngoai) throw badRequest(`Thi dự kiến: ${t.loi ?? ngoai}`);
     const la = t.iso?.length === 10;
+    /*
+     * PR-Dọn (Q16, VN15): đổi từ NGÀY sang THÁNG thì bỏ tuần của ngày cũ — panel Kế hoạch gửi lại `examPeriodId` cũ trong state, nên
+     * chỉ giữ tuần gửi lên khi người dùng đã chọn tuần KHÁC. Tháng → tháng giữ như cũ (tuần chọn cho tháng vẫn đúng).
+     */
+    const ngaySangThang = !la && !!t.iso && !!c.exam_date;
+    const tuanChonMoi = patch.examPeriodId != null && patch.examPeriodId !== '' && Number(patch.examPeriodId) !== c.exam_period_id ? patch.examPeriodId : null;
     patch = { ...patch, examMonth: t.iso ? t.iso.slice(0, 7) : null, examDateGhi: la ? t.iso : null,
-      ...(la ? { examPeriodId: ensurePeriod(mondayOf(t.iso!)).id } : {}) };
+      ...(la ? { examPeriodId: ensurePeriod(mondayOf(t.iso!)).id } : ngaySangThang ? { examPeriodId: tuanChonMoi } : {}) };
   }
   /*
    * Cùng cận năm cho tuần / tháng gửi THẲNG (StudentPlanPanel gửi `startPeriodId`, `examPeriodId`; API cũ gửi `examMonth`) — cũng chỉ
@@ -203,16 +228,21 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
     if (loi) throw badRequest(`Thi dự kiến: ${loi}`);
   }
   /* PR-DUYET (T44): đổi target / lộ trình cần `cycle.edit` — chỉ khi giá trị THẬT SỰ đổi (panel gửi cả ô không sửa). Thi dự kiến giữ `student.edit` (Q7). */
-  /* Q29-1: targetScore nhận cả KCK — ghi kèm `khong_cam_ket` (khoá NỘI BỘ `khongCamKetGhi`, người gọi không gửi thẳng được). */
+  /* Q29-1: targetScore nhận cả KCK — `reviseTarget` ghi kèm `khong_cam_ket`. */
+  /*
+   * PR-Dọn (Q15, VN25): MỘT đường đổi target — đổi thật thì đi qua `reviseTarget` (ghi `cycle_target_revisions` + Hành trình), bắt
+   * `lyDo`; câu UPDATE chung không còn ghi target.
+   */
   let doiTarget = false;
-  patch = { ...patch, khongCamKetGhi: undefined };
-  if (patch.targetScore !== undefined) {
-    const t = docTarget(patch.targetScore);
+  const targetGui = patch.targetScore;
+  if (targetGui !== undefined) {
+    const t = docTarget(targetGui);
     doiTarget = t.target !== (c.target_score ?? null) || t.kck !== !!c.khong_cam_ket;
-    patch = { ...patch, targetScore: t.target, khongCamKetGhi: t.kck ? 1 : 0 };
   }
+  patch = { ...patch, targetScore: undefined, khongCamKetGhi: undefined };
   const doiLoTrinh = patch.route !== undefined && (patch.route ?? null) !== (c.route ?? null);
   if (doiTarget || doiLoTrinh) require_(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id }, CHI_QL_SUA);
+  if (doiTarget && !(typeof patch.lyDo === 'string' && patch.lyDo.trim())) throw badRequest('Ghi lý do đổi mục tiêu.');
   if (patch.status !== undefined && !(CYCLE_STATUSES as readonly string[]).includes(String(patch.status))) {
     throw badRequest('Trạng thái lộ trình không hợp lệ.');
   }
@@ -224,14 +254,14 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
   const closeOnEnd = patch.dongCaseKhiKetThuc === true
     && c.status === 'active' && patch.status !== undefined && patch.status !== 'active';
   const map: Record<string, string> = {
-    targetScore: 'target_score', route: 'route', note: 'note', status: 'status',
+    route: 'route', note: 'note', status: 'status',
     /*
      * Hai trường của vòng 4. Quyền sửa: Admin CN · Quản lý · GVCN của lớp (mục 7.5) —
      * `student.edit` đã bao đúng ba vai đó, nên không thêm quyền mới.
      */
     startPeriodId: 'start_period_id', examMonth: 'exam_month', examPeriodId: 'exam_period_id',
     /* Khoá NỘI BỘ (T9): người gọi gửi `examDate`, khối trên đổi thành `examDateGhi` đã kiểm. */
-    examDateGhi: 'exam_date', khongCamKetGhi: 'khong_cam_ket',
+    examDateGhi: 'exam_date',
   };
   const sets: string[] = []; const params: unknown[] = [];
   for (const [k, v] of Object.entries(patch)) {
@@ -254,11 +284,11 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
     }
     sets.push(`${map[k]} = ?`); params.push(v);
   }
-  if (!sets.length) return c;
+  if (!sets.length && !doiTarget) return c;
   params.push(cycleId);
   tx(() => {
-    db().prepare(`UPDATE learning_cycles SET ${sets.join(', ')} WHERE id = ?`).run(...params);
-    if (doiTarget) apTargetLuotChuaDiem(cycleId, patch.targetScore);
+    if (sets.length) db().prepare(`UPDATE learning_cycles SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+    if (doiTarget) reviseTarget(p, cycleId, { newTarget: targetGui, reason: patch.lyDo });
     if (patch.status !== undefined && patch.status !== 'active' && c.status === 'active') {
       db().prepare('UPDATE learning_cycles SET ended_at = COALESCE(ended_at, ?) WHERE id = ?').run(demoToday(), cycleId);
     }
