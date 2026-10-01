@@ -70,4 +70,14 @@ export async function runPrUxdTests(t: YThucTestKit) {
     assert(/px-2\.5 sm:px-3/.test(ht), 'HangTab chưa px-2.5 sm:px-3');
     assert(/scrollIntoView/.test(ht), 'HangTab chưa cuộn tab đang chọn vào tầm nhìn');
   });
+
+  // ------------------------------------------------------------------ Task 5 · Lịch Test điện thoại: bộ lọc gọn "Lọc", dải số một hàng
+  check('UXD (5) · Lịch Test: nhánh điện thoại (useDienThoai) với nút Lọc + IconGap, không ký tự ▾; Esc đóng khối Lọc', () => {
+    const lt = doc('web/src/modules/test/LichTestTab.tsx');
+    assert(/useDienThoai/.test(lt), 'LichTestTab chưa dùng useDienThoai');
+    assert(/Lọc\{/.test(lt) && /<IconGap\b/.test(lt), 'thiếu nút Lọc + IconGap');
+    assert(!lt.includes('▾'), 'LichTestTab còn ký tự ▾');
+    /* Dải số giữ 2×2 trên điện thoại (Câu 2 = A: ô "Nợ tuần trước · n lớp" xuống dòng ở 375 nên về 2×2). */
+    assert(/useEffect/.test(lt) && /Escape/.test(lt), 'khối Lọc chưa đóng bằng Esc');
+  });
 }
