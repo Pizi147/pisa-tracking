@@ -7,7 +7,7 @@ import { ChuyenLopPanel } from '../students/ChuyenLopPanel.tsx';
 import type { MucMenu } from '../../ui/MenuDong.tsx';
 import { MUC_MENU_DONG_HIEM, MUC_MENU_DONG_NHAN, duongHoSoHocVien, mucMenuDongHocVien, type ViecTiepTheo } from '@shared/domain/index.ts';
 
-/** `coTheChuyenTiep` = `class.edit` ở lớp (Quản lý — ra lệnh chuyển lớp); người chỉ có `coTheSuaHocVien` (GVCN) thì Đề xuất chuyển lớp. */
+/** `coTheChuyenTiep` = `class.edit` ở lớp (Quản lý — ra quyết định chuyển lớp); người chỉ có `coTheSuaHocVien` (GVCN) thì Đề xuất chuyển lớp. */
 export type QuyenDong = { coTheSuaHocVien: boolean; coTheBaoCase: boolean; coTheGhiViPham: boolean; coTheNhapDiem: boolean; coTheChuyenTiep?: boolean };
 export type DongChoMenu = { id: number; ten: string; dangHoc: boolean; nhapDiem: { nhan: string; den: string } | null };
 

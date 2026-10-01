@@ -116,7 +116,7 @@ export function AccountsAdmin() {
                   <td className="td text-xs text-slate-300">{u.email ?? <span className="text-rose-200">chưa có</span>}</td>
                   <td className="td">
                     <span className="flex flex-wrap gap-1">
-                      {u.roles.length === 0 && <span className="text-xs text-slate-500">chưa có vai</span>}
+                      {u.roles.length === 0 && <span className="text-xs text-slate-500">chưa có vai trò</span>}
                       {u.roles.map((g, i) => (
                         <Info key={i}>
                           {roleLabel(g.role) || g.roleName} · {g.branchName ?? 'Toàn hệ thống'}
@@ -141,7 +141,7 @@ export function AccountsAdmin() {
                     ) : (
                       <span className="inline-flex items-center gap-1.5">
                         <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setEditing(u)}>Sửa</button>
-                        <MenuDong nhan="Thêm thao tác" muc={[{ key: 'xoa', nhan: 'Xoá tài khoản', nguyHiem: true, onChon: () => setXoaId(u.id) }]} />
+                        <MenuDong nhan="Thao tác khác" muc={[{ key: 'xoa', nhan: 'Xoá tài khoản', nguyHiem: true, onChon: () => setXoaId(u.id) }]} />
                       </span>
                     )}
                   </td>
@@ -201,7 +201,7 @@ function PendingRow({ user, branches, onDone }: {
           {user.note && <div className="text-xs text-slate-400 mt-1">“{user.note}”</div>}
           {user.skills.length > 0 && (
             <div className="text-[11px] text-slate-500 mt-1">
-              Tự khai dạy được: {user.skills.map(skillLabel).join(', ')}
+              Kỹ năng phụ trách được: {user.skills.map(skillLabel).join(', ')}
             </div>
           )}
         </div>
@@ -344,7 +344,7 @@ function AccountDialog({ account, branches, onClose, onDone }: {
             <span className="label m-0">Vai trò và chi nhánh</span>
             <button className="btn btn-sm" type="button"
               onClick={() => setGrants([...grants, { role: 'teacher', branches: new Set() }])}>
-              + Thêm vai
+              + Thêm vai trò
             </button>
           </div>
           <div className="space-y-2">

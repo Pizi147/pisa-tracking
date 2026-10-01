@@ -14,7 +14,7 @@ import {
 
 /**
  * HIỆU QUẢ PA (PR-UX4, mockup 16 §4; PR-Pb2-a T61, K1-23, P9, P9b, P12) — hai khối:
- *   1. PA do giáo viên thêm: vấn đề (loại lỗi chính) → loại PA; "Nên dùng" chỉ ở loại PA đủ mẫu, cải thiện ≥ 70% và cao nhất trong vấn đề.
+ *   1. PA do giáo viên thêm: vấn đề (nhóm nguyên nhân chính) → loại PA; "Nên dùng" chỉ ở loại PA đủ mẫu, cải thiện ≥ 70% và cao nhất trong vấn đề.
  *   2. PA theo quy chế: FT theo SOS 1 · 2 · 3, lớp thường theo Bổ trợ Giữa khoá / sau Cuối khoá — thứ tự cố định, không so, không xếp hạng.
  * Lọc `gv` (người phụ trách Case) và khoảng `tu`/`den` đến từ URL (Hợp đồng a↔b: link từ hồ sơ GV / bảng giáo viên); tên GV lấy từ máy chủ.
  */
@@ -71,7 +71,7 @@ export function HieuQuaPa(props: PhamViPhanTich) {
       {d.con?.length ? (
         <HangNhom mo={mo.has(d.khoa)} onMo={() => doiMo(d.khoa)} nhan={d.nhan} tieuDe={tenDong(d)} className={DINH_TRAI}>{oSo(d, coNenDung)}</HangNhom>
       ) : (
-        /* PR-S6F-a Q20: hàng "Case chưa phân loại lỗi" mờ — PA có thật nhưng chưa biết thuộc vấn đề nào. */
+        /* PR-S6F-a Q20: hàng "Case chưa chọn nhóm nguyên nhân" mờ — PA có thật nhưng chưa biết thuộc vấn đề nào. */
         <tr className={`hang-lon ${DINH_TRAI}${d.khoa === 'chua-phan-loai' ? ' text-slate-400' : ''}`}><td className="px-3">{tenDong(d)}</td>{oSo(d, coNenDung)}</tr>
       )}
       {mo.has(d.khoa) && d.con?.map((c) => (
@@ -191,8 +191,8 @@ export function HieuQuaPa(props: PhamViPhanTich) {
 
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t px-4 py-2.5 text-xs text-slate-400" style={{ borderColor: 'var(--line)' }}>
               <span>Để số liệu đủ tin:</span>
-              <span><b className="font-semibold text-slate-100"><SoLieuO giaTri={data.chuaGhiKetQua} nguon={nguon('chua-ghi-ket-qua', 'pa')} tieuDe="PA đã xong, chưa ghi kết quả" /></b> PA đã xong chưa ghi kết quả</span>
-              <span><b className="font-semibold text-slate-100"><SoLieuO giaTri={data.caseChuaPhanLoai} nguon={nguon('case-chua-phan-loai', 'case')} tieuDe="Case chưa phân loại lỗi" /></b> Case chưa phân loại lỗi</span>
+              <span><b className="font-semibold text-slate-100"><SoLieuO giaTri={data.chuaGhiKetQua} nguon={nguon('chua-ghi-ket-qua', 'pa')} tieuDe="PA chờ ghi kết quả" /></b> PA chờ ghi kết quả</span>
+              <span><b className="font-semibold text-slate-100"><SoLieuO giaTri={data.caseChuaPhanLoai} nguon={nguon('case-chua-phan-loai', 'case')} tieuDe="Case chưa chọn nhóm nguyên nhân" /></b> Case chưa chọn nhóm nguyên nhân</span>
               <span title="PA có kết quả nhưng chưa có lần ghi danh nào cho biết em học ở đâu lúc làm PA — không tính vào bảng nào">
                 <b className="font-semibold text-slate-100"><SoLieuO giaTri={data.chuaRoNguon} nguon={nguon('chua-ro-nguon', 'pa')} tieuDe="PA chưa rõ nơi học lúc làm PA" /></b> PA chưa rõ nơi học lúc làm PA
               </span>

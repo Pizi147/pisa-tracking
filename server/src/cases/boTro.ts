@@ -16,7 +16,7 @@ import { ghiMoc } from './sosAuto.ts';
  * PA BỔ TRỢ GIỮA KHOÁ LỚP THƯỜNG (PR-LT2a, N1, M-03, M-05, Q-F) — phần ghi dữ liệu.
  *
  * PA Bổ trợ = `kind 'bo_tro'` + `preset = 1` + `moc_quy_che = 'den_cuoi_khoa'` — dùng lại trọn hạ tầng SOS v4 (chờ nguyên nhân, Xác nhận Case, Không cần
- * theo dõi, Báo lên, Ghi kết quả cuối). "Chưa chạy" = `UNCONFIRMED_PRESET` + `planned`: `confirmed_at`/`confirmed_by` chỉ được đặt bởi `chayPaBoTro`.
+ * theo dõi, Báo QL, Ghi kết quả cuối). "Chưa chạy" = `UNCONFIRMED_PRESET` + `planned`: `confirmed_at`/`confirmed_by` chỉ được đặt bởi `chayPaBoTro`.
  * Trạng thái kế hoạch đọc từ thẻ `yeu_cau_duyet` loại `ke_hoach_bo_tro` — không dùng `approval_state`.
  */
 
@@ -262,7 +262,7 @@ export function khiTuChoiKeHoach(p: Principal, yc: { id: number; du_lieu: string
   const nguoiDay = dong.find((r) => r.performer_user_id)?.performer_user_id as number | undefined;
   for (const uid of new Set([nguoiDay, yc.nguoi_xin].filter((x): x is number => !!x && x !== p.userId))) {
     notify({
-      userId: uid, kind: 'sos', title: 'Quản lý từ chối kế hoạch bổ trợ', body: `${lyDo.slice(0, 120)} — nộp lại trước ${ngay(hanXacNhan(today), today)}.`,
+      userId: uid, kind: 'sos', title: 'Bị từ chối · Kế hoạch bổ trợ', body: `${lyDo.slice(0, 120)} — nộp lại trước ${ngay(hanXacNhan(today), today)}.`,
       entityType: 'sos_case', entityId: dong[0]?.case_id ?? null, dedupKey: `ke-hoach-tu-choi:${yc.id}:${uid}`,
     });
   }

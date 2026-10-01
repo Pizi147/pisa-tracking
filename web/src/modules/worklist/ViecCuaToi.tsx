@@ -21,7 +21,7 @@ function hanNgan(it: WorkItem, homNay: string, ngan: (d: string) => string): { c
   if (!it.due) return { chu: 'quá hạn', mau: 'text-late' };
   const n = Math.round((Date.parse(homNay) - Date.parse(it.due.slice(0, 10))) / DAY);
   if (it.urgency === 'overdue') return { chu: n > 0 ? `quá hạn ${n} ngày` : 'quá hạn', mau: 'text-late' };
-  if (it.due.slice(0, 10) === homNay) return { chu: 'hạn hôm nay', mau: 'text-soon' };
+  if (it.due.slice(0, 10) === homNay) return { chu: 'Hạn hôm nay', mau: 'text-soon' };
   return { chu: `hạn ${ngan(it.due)}`, mau: 'text-slate-400' };
 }
 
@@ -85,7 +85,7 @@ export function ViecCuaToi() {
   return (
     <section className="card" aria-labelledby="viec-cua-toi">
       <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
-        <h2 id="viec-cua-toi" className="m-0 text-sm font-semibold text-slate-200">Việc của tôi · hôm nay</h2>
+        <h2 id="viec-cua-toi" className="sr-only">Việc hôm nay</h2>
         {data && tong}
       </header>
       {loading || !data ? <div className="p-4"><Skeleton rows={5} /></div> : data.scopeEmpty ? (
@@ -153,7 +153,7 @@ export function YeuCauCuaToi() {
           <span className="min-w-0">
             <b className="block text-[13px] font-semibold text-slate-100">{[x.nhanLoai, x.hocVien, x.lop].filter(Boolean).join(' · ')}</b>
             <span className="block text-xs text-slate-500">
-              {x.trangThai === 'tu_choi' ? `Quản lý từ chối${x.lyDoTuChoi ? `: "${x.lyDoTuChoi}"` : ''}` : x.tieuDe}
+              {x.trangThai === 'tu_choi' ? `Bị từ chối${x.lyDoTuChoi ? `: "${x.lyDoTuChoi}"` : ''}` : x.tieuDe}
             </span>
           </span>
           {x.trangThai === 'tu_choi' && (

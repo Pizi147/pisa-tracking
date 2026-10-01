@@ -36,7 +36,7 @@ function KetQuaGanNhatEm({ ketQua }: { ketQua: KetQuaVao | null }) {
   );
 }
 
-/** Một dòng nghĩa (≤ 60 ký tự) dưới mỗi hướng — để người chọn khỏi đoán "Học lại" hay "Bảo lưu" là gì. */
+/** Một dòng nghĩa (≤ 60 ký tự) dưới mỗi hướng — để người chọn khỏi đoán "Học lại" hay "Tạm dừng học (bảo lưu)" là gì. */
 const NGHIA_HUONG: Record<Huong, string> = {
   len_lop: 'Học tiếp chương trình kế của lớp thường',
   fast_track: 'Chuyển sang lộ trình luyện thi Fast Track',
@@ -50,7 +50,7 @@ const NGHIA_HUONG: Record<Huong, string> = {
 /**
  * LỘ TRÌNH TIẾP THEO (mockup 11-1, §3.9.1; PR-UX3 mockup 15 §8) — dự định cho một em SAU lớp đang học, ghi trước khi thật sự chuyển. Chỉ lớp
  * thường. MỘT panel `KhungPanel`: khối **Hướng đi** là danh sách dọc (nhãn đầy đủ + một dòng nghĩa), khối **Chi tiết** (lớp dự kiến ·
- * Fast Track: mục tiêu band + tháng thi 2 ô một hàng · ghi chú). PR-HVL (B9): đầu panel có khối **Kết quả gần nhất** của em (chính + hai dòng), và câu
+ * Fast Track: Target + tháng thi 2 ô một hàng · ghi chú). PR-HVL (B9): đầu panel có khối **Kết quả gần nhất** của em (chính + hai dòng), và câu
  * "Chỉ là dự định, chưa đổi lớp…" hiện THẲNG dưới tiêu đề khối Hướng đi (không còn ⓘ). Nằm ở: Học viên & Lớp / hồ sơ lớp → ⋯ dòng em → Lộ trình tiếp theo.
  */
 export function LoTrinhTiepPanel({ open, onClose, studentId, studentName, lop, onDone }: {
@@ -126,7 +126,7 @@ function NoiDungLoTrinhTiep({ onClose, studentId, studentName, lop, onDone }: {
       }}>
       <KetQuaGanNhatEm ketQua={data.ketQua} />
       {data.cuoiKhoa?.goiY && (
-        <Khoi tieuDe="Web gợi ý theo Cuối khoá">
+        <Khoi tieuDe="Hệ thống gợi ý theo Cuối khoá">
           <div className="flex flex-wrap items-baseline gap-x-2">
             <span className="text-sm font-bold tabular-nums text-slate-100">Cuối khoá {Math.round((data.cuoiKhoa.tyLe ?? 0) * 100)}%</span>
             {data.cuoiKhoa.monTruot.length > 0 && <span className="text-[12px] text-slate-500">không đạt {data.cuoiKhoa.monTruot.map((m) => tenMonNgan(lopHoc.ma, m)).join(', ')}</span>}
@@ -167,10 +167,10 @@ function NoiDungLoTrinhTiep({ onClose, studentId, studentName, lop, onDone }: {
           </Truong>
           {huong === 'fast_track' && (
             <Hang2>
-              <Truong nhan="Mục tiêu band" tuyChon>
+              <Truong nhan="Target" tuyChon>
                 <input className="field w-full" type="number" step="0.5" min={0} max={9} value={mucTieu} onChange={(e) => setMucTieu(e.target.value)} />
               </Truong>
-              <Truong nhan="Tháng dự kiến thi" tuyChon>
+              <Truong nhan="Dự kiến thi" tuyChon>
                 <ChonThang value={thangThi} onChange={setThangThi} chuaChon="Chưa chọn" />
               </Truong>
             </Hang2>

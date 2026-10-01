@@ -168,11 +168,11 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     const worse = d.nhanKhoiPa({ ten, status: 'completed', lastOutcome: 'worse', followupOverdue: false });
     assert(worse.tone === 'bad', `worse tone: ${worse.tone}`);
     const daXong = d.nhanKhoiPa({ ten, status: 'completed', lastOutcome: null, followupOverdue: false });
-    assert(daXong.tone === 'done' && daXong.dau === '■' && daXong.day.includes('Đã kết thúc'), `xong không kết quả: ${JSON.stringify(daXong)}`);
+    assert(daXong.tone === 'done' && daXong.dau === '■' && daXong.day.includes('Chờ ghi kết quả'), `xong không kết quả: ${JSON.stringify(daXong)}`);
     const running = d.nhanKhoiPa({ ten, status: 'started', lastOutcome: null, followupOverdue: false });
     assert(running.day === 'Reading · ▶ Đang thực hiện' && running.tone === 'run' && running.dau === '▶', `Đang chạy: ${JSON.stringify(running)}`);
     const late = d.nhanKhoiPa({ ten, status: 'planned', lastOutcome: null, followupOverdue: true });
-    assert(late.tone === 'late' && late.dau === '⚠' && late.day.includes('Quá hạn cập nhật'), `Quá hạn cập nhật: ${JSON.stringify(late)}`);
+    assert(late.tone === 'late' && late.dau === '⚠' && late.day.includes('Quá hạn'), `Quá hạn cập nhật: ${JSON.stringify(late)}`);
   });
 
   check('PR-Qb (1) → PR-SOS (K3-29) · trangThaiHop: nhãn §7.3 — Cần làm · chờ nguyên nhân / Chờ duyệt / Cần làm · chưa có PA / Đang làm · n tuần / Xong dd/mm / Đã huỷ', () => {
@@ -339,10 +339,10 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
       assert(n.dau === dau && n.tone === tone && !n.ten.includes('·'), `${JSON.stringify(o)} → ${JSON.stringify(n)}`);
     }
     const quaHan = dem({ status: 'started', followupOverdue: true, soNgayQuaHan: 2 });
-    assert(quaHan.day === 'Học tutor · ▶ Đang thực hiện · ⚠ Quá hạn cập nhật 2 ngày · từ W3 SEP', `Quá hạn: ${quaHan.day}`);
+    assert(quaHan.day === 'Học tutor · ▶ Đang thực hiện · Quá hạn · 2 ngày · từ W3 SEP', `Quá hạn: ${quaHan.day}`);
     assert(dem({ status: 'started' }).day === 'Học tutor · ▶ Đang thực hiện · từ W3 SEP', 'Đang chạy');
     assert(dem({ den: '2026-09-20', lastOutcome: 'improved' }).day === 'Học tutor · ✓ Tiến bộ rõ · W3 SEP → W3 SEP', 'Đã xong có kết quả');
-    assert(dem({}).day.includes('■ Đã kết thúc, chưa ghi kết quả'), 'Đã kết thúc chưa ghi');
+    assert(dem({}).day.includes('■ Chờ ghi kết quả'), 'Đã kết thúc chưa ghi');
   });
 
   check('PR-UX5 (1) · denKhoiPa: PA đang chạy kết thúc ở tuần hôm nay; có den giữ den; PA sắp tới giữ ngày bắt đầu (Q4)', () => {
@@ -432,7 +432,7 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     const r = hanhTrinhHocVien(P.admin, HV1, 'thuong');
     assert(r.lop.length === 2, `2 lớp: ${JSON.stringify(r.lop)}`);
     assert(r.lop[0].tu < r.lop[1].tu && !r.lop[0].chuyen && r.lop[1].chuyen, `Đúng thứ tự thời gian: ${JSON.stringify(r.lop)}`);
-    assert(r.tuanHoc?.loai === 'khoa', 'Lớp thường: hàng Tuần khoá');
+    assert(r.tuanHoc?.loai === 'khoa', 'Lớp thường: hàng Tuần học');
     // Sửa sau rà #75 (7): đếm TRỌN tuần chứa `tu` và tuần chứa `den` — thiếu +1 thì mọi khoá đều báo ít hơn 1 tuần.
     for (const x of r.chuong.filter((c: any) => !c.ft)) {
       const soTuanKyVong = Math.max(1, Math.round((Date.parse(x.den ?? r.homNay) - Date.parse(x.tu)) / (7 * 86_400_000)) + 1);

@@ -62,7 +62,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     eq(d.ngay('2028-02-29', '2028-01-01'), '29/02', 'Năm nhuận 2028 có 29/02');
     eq(d.ngayTheoGioVN('2026-02-31'), null, 'ngayTheoGioVN từ chối 31/02');
     eq(d.ngayTheoGioVN('2026-09-22'), '2026-09-22', 'ngày trần giữ nguyên');
-    assert(/chưa có hạn/.test(d.deadlineView({ kind: 'nhap-diem', due: '2026-02-31', today: '2026-09-14' }).text),
+    assert(/Chưa có hạn/.test(d.deadlineView({ kind: 'nhap-diem', due: '2026-02-31', today: '2026-09-14' }).text),
       'Hạn là ngày không tồn tại = chưa có hạn');
   });
 
@@ -192,7 +192,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     const v = d.viecTiepCuaEm({
       nhapDiem: { kyNang: ['listening', 'writing'], dot: 'Giữa khoá', quaHan: false },
       cases: [
-        { caseId: 1, topic: 'writing2', viecTiep: { chu: 'Đề ra PA', loaiHan: 'lap-pa', han: null } },
+        { caseId: 1, topic: 'writing2', viecTiep: { chu: 'Thêm PA', loaiHan: 'lap-pa', han: null } },
         { caseId: 2, topic: 'listening', viecTiep: { chu: 'Ghi kết quả PA Nghe podcast', loaiHan: 'cap-nhat-pa', han: '2026-09-13', paId: 9 } },
         { caseId: 3, topic: 'reading', viecTiep: { chu: 'Ghi kết quả PA Đọc báo', loaiHan: 'cap-nhat-pa', han: '2026-09-20', paId: 10 } },
         { caseId: 4, topic: 'speaking', viecTiep: null },
@@ -204,7 +204,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
       /* PR-S5F-b (mockup 21): việc ghi kết quả PA nói tuần của kết quả. */
       ['Ghi kết quả PA L · tuần W1 SEP', 'hạn hết T2 13/09', 1, 'danger', 'Ghi kết quả PA Nghe podcast · Listening · tuần W1 SEP · hạn hết T2 13/09 · quá hạn 1 ngày'],
       ['Nhập điểm L, W · Giữa khoá', null, null, 'warn', 'Nhập điểm L, W · Giữa khoá'],
-      ['Đề ra PA W2', null, null, 'warn', 'Đề ra PA · Writing Task 2'],
+      ['Thêm PA W2', null, null, 'warn', 'Thêm PA · Writing Task 2'],
       ['Ghi kết quả PA R · tuần W2 SEP', 'hạn hết T2 20/09', null, 'info', 'Ghi kết quả PA Đọc báo · Reading · tuần W2 SEP · hạn hết T2 20/09'],
     ], 'Thứ tự và chữ (Case không việc bị bỏ)');
     /* Ý kiểm cũ "Case nói trước" (chonCaseChinh) nay là thứ tự hàng của `hangCanHoTro` — kiểm ở prHvl.tests.ts (T19). */

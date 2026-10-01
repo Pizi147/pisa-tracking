@@ -211,7 +211,7 @@ export function MeetingBoard() {
 
           {/* ── hai khối thu gọn (Q16) — luôn có số ── */}
           <details>
-            <summary className="cursor-pointer text-sm text-slate-300 py-1">Việc đã giao ({soVanDaGiao})</summary>
+            <summary className="cursor-pointer text-sm text-slate-300 py-1">Việc được giao ({soVanDaGiao})</summary>
             <div className="pt-2"><ManagerTaskList periodId={periodId} /></div>
           </details>
           <details>
@@ -353,7 +353,7 @@ function NganBaoCao({ unit, cell, periodId, editable, editWindow, onClose, onSav
 
           {cell.history.length > 0 && (
             <details>
-              <summary className="text-[11px] text-slate-500 cursor-pointer">Lịch sử chỉnh sửa ({cell.history.length})</summary>
+              <summary className="text-[11px] text-slate-500 cursor-pointer">Lịch sử ({cell.history.length})</summary>
               <ul className="list-none p-0 m-0 mt-1 space-y-0.5">
                 {cell.history.map((h, i) => (
                   <li key={i} className="text-[11px] text-slate-500">

@@ -55,7 +55,7 @@ export type TrangThaiXuLy = 'dangXuLy' | 'thieuPa' | null;
 /**
  * Đúng luật của `weekly.ts`: đã có hỗ trợ thực sự diễn ra → đang xử lý; không thì thiếu PA nếu đủ điều kiện
  * `isNoPlanCase`. GIỮ NGUYÊN hệt `weekly.ts` (dùng chung hàm này, không sửa `weekly.ts`) — kể cả việc `dangXuLy`
- * không tự loại case đã `status = 'done'`. Bảng Tổng hợp cần đúng "tình trạng hiện tại" hơn (nhóm Xử lý), nên tự
+ * không tự loại Case đã `status = 'done'`. Bảng Tổng hợp cần đúng "tình trạng hiện tại" hơn (nhóm Xử lý), nên tự
  * lọc thêm `status` ở nơi gọi (`tinh()` dưới đây) thay vì đổi hàm thuần này.
  */
 export function trangThaiXuLy(

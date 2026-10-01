@@ -330,9 +330,9 @@ check('[12.1] Bộ demo có đủ độ đa dạng mà mục 11.4 yêu cầu', (
     ['kỹ năng không mock', one(`SELECT COUNT(*) n FROM attempt_skill_skips`)],
     ['hạn nhập điểm tự đặt',
       one(`SELECT COUNT(*) n FROM assessment_attempts WHERE deadline_override IS NOT NULL`)],
-    ['lộ trình đã đạt mục tiêu',
+    ['lộ trình đã đạt Target',
       one(`SELECT COUNT(*) n FROM learning_cycles WHERE outcome='reached'`)],
-    ['lộ trình chưa đạt mục tiêu',
+    ['lộ trình chưa đạt Target',
       one(`SELECT COUNT(*) n FROM learning_cycles WHERE outcome='not_reached'`)],
     ['học viên đã kết thúc học',
       one(`SELECT COUNT(*) n FROM students WHERE status='finished'`)],
@@ -1176,7 +1176,7 @@ check('Gửi null xoá điểm về trống, không biến thành 0', () => {
   const back = conn.prepare(`SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill='listening'`).get(a.id) as any;
   assert(back.band === scoring.bandFromRaw('listening', 30) && back.entered_by === teacher.userId, 'Nhập lại không lưu đúng');
 });
-check('PR-LT (4): Chuyển lớp KHÁC chương trình (FT → lớp thường) đóng khoá cũ, lượt chưa xong Ở LẠI lớp cũ (Q10, Q12 — sửa lại phép kiểm cũ ở đây từng cho lượt chưa xong luôn theo em sang mọi lớp đích, kể cả khác chương trình; PR-LT chốt: chỉ theo em khi GIỮ khoá). Dữ liệu TỰ DỰNG, không đụng BC FT 205/BC ELE 01 — hai lớp đó là bể chứa chung của nhiều phép kiểm khác (freshPlannedAttempt).', () => {
+check('PR-LT (4): Chuyển lớp KHÁC chương trình (FT → lớp thường) đóng khoá cũ, lượt chưa xong Ở LẠI lớp cũ (Q10, Q12 — sửa lại phép kiểm cũ ở đây từng cho lượt chưa xong luôn theo em sang mọi lớp chuyển đến, kể cả khác chương trình; PR-LT chốt: chỉ theo em khi GIỮ khoá). Dữ liệu TỰ DỰNG, không đụng BC FT 205/BC ELE 01 — hai lớp đó là bể chứa chung của nhiều phép kiểm khác (freshPlannedAttempt).', () => {
   const bc = (conn.prepare(`SELECT id FROM branches WHERE code = 'BC'`).get() as any).id as number;
   const now = new Date().toISOString();
   const fromCls = (intake.createClass(P.admin, {
@@ -1254,7 +1254,7 @@ check('Nhiều việc quanh MỘT vấn đề gom lại thành MỘT chương, k
     )
     .get() as any;
   assert(row, 'Dữ liệu mẫu thiếu vấn đề đã có tác động');
-  /* PR-VAI-b: chương theo lớp — một Case một khối trong chương (PA nằm trong khối Case), chỉ lặp ở chương sau khi Case đi theo em sang lớp mới. */
+  /* PR-VAI-b: chương theo lớp — một Case một khối trong chương (PA nằm trong khối Case), chỉ lặp ở chương sau khi Case bàn giao sang lớp mới. */
   const ch = hanhTrinhSvc.hanhTrinhHocVien(P.admin, row.sid, null).chuong as any[];
   const mine = ch.flatMap((c: any) => c.caseDong.filter((x: any) => x.caseId === row.cid));
   assert(ch.every((c: any) => c.caseDong.filter((x: any) => x.caseId === row.cid).length <= 1), `Vấn đề ${row.cid} bị tách thành nhiều khối trong một chương`);
@@ -1263,7 +1263,7 @@ check('Nhiều việc quanh MỘT vấn đề gom lại thành MỘT chương, k
 check('Target chốt tại lượt: sửa lộ trình không viết lại lịch sử', () => {
   const a = conn.prepare(`SELECT * FROM assessment_attempts WHERE status='done' ORDER BY id LIMIT 1`).get() as any;
   const before = a.target_at_attempt;
-  cycles.updateCycle(P.admin, a.cycle_id, { targetScore: 8, lyDo: 'Nâng mục tiêu' });
+  cycles.updateCycle(P.admin, a.cycle_id, { targetScore: 8, lyDo: 'Nâng Target' });
   const after = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(a.id) as any;
   assert(after.target_at_attempt === before, 'Sửa target đã viết lại lịch sử lượt cũ');
   assert((conn.prepare('SELECT target_score FROM learning_cycles WHERE id = ?').get(a.cycle_id) as any).target_score === 8,
@@ -1496,7 +1496,7 @@ check('[12.1] Lớp Normal không nhận target IELTS và band từng kỹ năng
   });
   assert(pv.ratio === true, 'Không nhận ra đây là lớp Normal');
   /* Q4: file trộn — cột FT dán vào lớp thường bị BỎ QUA có báo (lưu ý), không chặn dòng. */
-  assert(pv.rows[0].issues.some((i) => i.field === 'target' && /không có target/.test(i.message) && i.muc === 'luu_y'),
+  assert(pv.rows[0].issues.some((i) => i.field === 'target' && /không có Target/.test(i.message) && i.muc === 'luu_y'),
     'Lớp Normal vẫn nhận target IELTS');
   assert(pv.rows[0].issues.some((i) => i.field === 'entryListening' && i.muc === 'luu_y'),
     'Lớp Normal vẫn nhận band đầu vào từng kỹ năng');
@@ -2315,7 +2315,7 @@ check('MỌI phương án đều có chu kỳ và hạn — không có phương 
  * "Kéo dài theo dõi", "Chọn hướng xử lý" và "Đổi hướng xử lý" đã bỏ — bốn cái tên cho cùng
  * một câu hỏi thì hai case đóng giống nhau lại để lại hai dấu vết khác nhau.
  */
-check('[9.3] Hoàn thành case: một đường duy nhất, có kết luận và mọi phương án đã khép', () => {
+check('[9.3] Hoàn thành Case: một đường duy nhất, có kết luận và mọi phương án đã khép', () => {
   const c = cases.reportIssue(P.coreTeacher, {
     title: 'Vấn đề cần theo dõi ở kỹ năng này',
     primaryCode: 'student.listening.technique',
@@ -2333,7 +2333,7 @@ check('[9.3] Hoàn thành case: một đường duy nhất, có kết luận và
   // KẾT LUẬN LÀ BẮT BUỘC — bốn cái nhãn "tiến bộ đến đâu" không nói được đã làm gì cho em.
   assertThrows(
     () => cases.closeCaseOutcome(P.mbManager, c.id, { outcome: 'improved', note: 'ok' }),
-    /ghi kết luận/, 'Hoàn thành case mà không phải viết kết luận',
+    /ghi kết luận/, 'Hoàn thành Case mà không phải viết kết luận',
   );
 
   /*
@@ -2363,7 +2363,7 @@ check('[9.3] Hoàn thành case: một đường duy nhất, có kết luận và
     /chưa cập nhật kết quả/, 'Còn phương án chưa cập nhật mà vẫn đóng được',
   );
 
-  // Kết thúc phương án (tab "Kết thúc") → lúc này mới đóng được.
+  // Kết thúc PA (tab "Kết thúc") → lúc này mới đóng được.
   cases.updateResult(P.coreTeacher, ivId, {
     mode: 'end', outcome: 'improved', nextStep: 'complete',
     note: 'Em nghe bắt ý tốt hơn hẳn, đã hết buổi tutor cuối',
@@ -2466,7 +2466,7 @@ check('[9.1] Hai tab cập nhật kết quả: theo dõi tiếp thì không ph�
   const after = cases.updateResult(P.coreTeacher, ivId, {
     outcome: 'unchanged', note: 'Em có làm nhưng chưa đều, còn sai dạng T/F/NG',
   }) as any;
-  assert(after.interventions.length === before, 'Tiếp tục theo dõi mà lại sinh thêm một phương án');
+  assert(after.interventions.length === before, 'Theo dõi thêm mà lại sinh thêm một phương án');
   const iv2 = after.interventions.find((i: any) => i.id === ivId);
   assert(iv2.status === 'started', 'Theo dõi tiếp mà phương án lại bị khép lại');
   assert(iv2.cycleNo === 2, `Phải sang chu kỳ 2, đang là ${iv2.cycleNo}`);
@@ -2474,7 +2474,7 @@ check('[9.1] Hai tab cập nhật kết quả: theo dõi tiếp thì không ph�
     `Hạn ghi kết quả mới phải là hết Thứ Hai kế tiếp, đang là ${iv2.actionDue}`);
   assert(iv2.actionDue > demoToday(), 'Vừa cập nhật xong đã báo quá hạn');
 
-  // "Thay phương án" khép phương án cũ với lý do ĐƯỢC THAY THẾ, không phải đã thành công.
+  // "Thay PA" khép phương án cũ với lý do ĐƯỢC THAY THẾ, không phải đã thành công.
   const replaced = cases.updateResult(P.coreTeacher, ivId, {
     mode: 'end', outcome: 'worse', nextStep: 'propose', note: 'Tự học không ăn thua với em này',
     decisionNote: 'Tự học không ăn thua nên chuyển sang tutor',
@@ -3288,7 +3288,7 @@ check('Chọn loại trong nhóm Đề xuất TỨC LÀ xin duyệt, không ph�
     () => cases.recordIntervention(P.coreTeacher, c.id, {
       kind: 'reschedule_mt', description: 'Xin lùi MT3 cho em', status: 'planned',
     }),
-    /lùi cái gì/, 'Đề xuất lùi lịch thi không nói rõ đối tượng mà vẫn gửi được',
+    /dời cái gì/, 'Đề xuất lùi lịch thi không nói rõ đối tượng mà vẫn gửi được',
   );
   const r = cases.recordIntervention(P.coreTeacher, c.id, {
     kind: 'reschedule_mt', description: 'Xin lùi MT3 cho em', status: 'planned',
@@ -4491,12 +4491,12 @@ check('Chuyển tiếp: một dòng lỗi không làm hỏng cả lô', () => {
     fromClassId: src.id,
     moves: [
       { studentId: plan.students[0].id, toClassId: moi.id },
-      { studentId: plan.students[0].id, toClassId: null },   // cố ý thiếu lớp đích
+      { studentId: plan.students[0].id, toClassId: null },   // cố ý thiếu lớp chuyển đến
     ],
     effectiveDate: demoToday(),
   }) as any;
   assert(r.done.length === 1 && r.failed.length === 1, 'Lô phải có cả dòng xong lẫn dòng lỗi');
-  assert(/lớp đích/i.test(r.failed[0].message), `Lý do lỗi phải nói rõ: ${r.failed[0].message}`);
+  assert(/lớp chuyển đến/i.test(r.failed[0].message), `Lý do lỗi phải nói rõ: ${r.failed[0].message}`);
 });
 
 // ============================================================ 32. Vòng 5 — mục 7
@@ -5800,7 +5800,7 @@ check('[6.3] Bốn trường bắt buộc: tên, mô tả, mức độ hai bậc
     () => cases.reportIssue(P.admin, {
       ...base, title: 'Reading đọc chậm', summary: 'Em đọc kỹ từng câu nên hết giờ.',
     }),
-    /phân loại/, 'Mở được case không có phân loại vấn đề',
+    /nhóm nguyên nhân/, 'Mở được case không có nhóm nguyên nhân',
   );
 
   /* Mã mức cũ `normal` đã bỏ — gửi lên là bị từ chối, không phải âm thầm hạ xuống. (Chữ "Bình thường" nay là NHÃN của mã `attention`, T7.) */
@@ -6350,7 +6350,7 @@ check('[4.2] Case Giữa khoá tự tạo (PR-LT2a) nằm ở ĐÚNG hàng kỹ 
     .get() as any;
   assert(c, 'Bộ demo không còn Case Giữa khoá tự tạo nào');
   const board = (cases.skillSupportBoard(P.admin, c.student_id, c.cycle_id) as any).rows;
-  /* PR-UXF-b (R5-5): Case hiện ở ĐÚNG MỘT hàng cùng hạng mục — hàng chuẩn, hoặc nhóm "Từ lớp trước" khi em đã sang chương trình có TÊN MÔN khác (FOU G+V → BE Writing). */
+  /* PR-UXF-b (R5-5): Case hiện ở ĐÚNG MỘT hàng cùng hạng mục — hàng chuẩn, hoặc nhóm "Case bàn giao" khi em đã sang chương trình có TÊN MÔN khác (FOU G+V → BE Writing). */
   const hangCo = board.filter((r: any) => r.cases.some((x: any) => x.id === c.id));
   assert(hangCo.length === 1 && hangCo[0].category === c.category, `Case ${c.category} phải hiện ở đúng một hàng ${c.category}, đang ở: ${hangCo.map((r: any) => `${r.category}${r.tuLopTruoc ? '(từ lớp trước)' : ''}`).join(', ') || 'không hàng nào'}`);
 });
@@ -6617,7 +6617,7 @@ check('[13.4] Case chưa phân loại có hàng riêng, không bị dồn vào "
   const board = effectiveness.classIssueBoard(st.class_id, 'listening') as any;
   const un = board.rows.find((r: any) => r.code === '__unclassified__');
   assert(un && un.cases >= 1, 'Case chưa phân loại biến mất khỏi bảng phân tích');
-  assert(un.label === 'Chưa phân loại vấn đề', `Hàng chưa phân loại đang mang nhãn "${un.label}"`);
+  assert(un.label === 'Chưa chọn nhóm nguyên nhân', `Hàng chưa phân loại đang mang nhãn "${un.label}"`);
   /* Và nó phải là MỘT HÀNG KHÁC với hàng "Khác" — hai tập này cần hai người xử lý khác nhau. */
   assert(board.rows.filter((r: any) => r.code === '__unclassified__').length === 1,
     'Case chưa phân loại bị tách thành nhiều hàng');
@@ -7617,7 +7617,7 @@ check('PR-E · <KetQuaDot>: đủ điểm nhưng thiếu kỳ vọng thì không
 check('PR-E · <Han>: sáu loại hạn có sáu nhãn khác nhau, đúng bảng HE_GIAO_DIEN §4 (việc · mốc, PR-UX0 B-3)', () => {
   const t = (loai: any, han = '2026-09-23') => domain.deadlineView({ kind: loai, due: han, today: '2026-09-14' }).text;
   assert(t('xac-minh-sos') === 'Xác nhận nguyên nhân · hạn 23/09', `xac-minh-sos: "${t('xac-minh-sos')}"`);
-  assert(t('lap-pa') === 'Đề ra PA · hạn 23/09', `lap-pa: "${t('lap-pa')}"`);
+  assert(t('lap-pa') === 'Thêm PA · hạn 23/09', `lap-pa: "${t('lap-pa')}"`);
   assert(t('cap-nhat-pa') === 'Ghi kết quả tuần W3 SEP · hạn hết T2 23/09', `cap-nhat-pa: "${t('cap-nhat-pa')}"`);
   /* PR-YT4 (K5-24): `thuc-hien-y-thuc`, `hoan-thanh-y-thuc` bỏ — Ý thức dùng `xu-ly-vi-pham`. */
   assert(t('xu-ly-vi-pham') === 'Xử lý vi phạm · hạn 23/09', `xu-ly-vi-pham: "${t('xu-ly-vi-pham')}"`);
@@ -7659,7 +7659,7 @@ check('PR-E · <Han>: cập nhật phương án cũng đếm số ngày quá h�
 
 check('PR-E · <Han>: thiếu ngày hạn thì nói thẳng là chưa có hạn, không vẽ "Invalid Date"', () => {
   const v = domain.deadlineView({ kind: 'nhap-diem', due: null, today: '2026-09-14' });
-  assert(/chưa có hạn/.test(v.text) && v.han === 'chưa có hạn' && !/Invalid|NaN|undefined/.test(v.text), `Đang ghi "${v.text}"`);
+  assert(/Chưa có hạn/.test(v.text) && v.han === 'Chưa có hạn' && !/Invalid|NaN|undefined/.test(v.text), `Đang ghi "${v.text}"`);
 });
 
 check('PR-E · Ngày viết ngắn 14/09 trong cùng năm, có năm khi qua năm khác', () => {
@@ -7707,7 +7707,7 @@ check('PR-F · Sổ chỉ số: đúng hai mươi chỉ số (PR-N thêm pa-cho-
     assert(['hoc-vien', 'case', 'phuong-an', 'bai', 'bai-thi', 'dot-test', 'nghia-vu', 'vi-pham', 'bien-phap', 'luot-sos', 'lop', 'viec-van-hanh'].includes(m.donVi), `${m.id}: đơn vị lạ "${m.donVi}"`);
     assert(['hien-trang', 'phat-sinh-trong-ky', 'ket-qua-trong-ky'].includes(m.thoiGian), `${m.id}: thời gian lạ "${m.thoiGian}"`);
   }
-  assert(domain.metricById('hv-co-case-mo')?.ten === 'Học viên có case đang mở', 'metricById phải tra đúng chỉ số');
+  assert(domain.metricById('hv-co-case-mo')?.ten === 'Học viên có Case đang mở', 'metricById phải tra đúng chỉ số');
   assert(domain.metricById('khong-co') === null, 'metricById của mã lạ phải là null');
 });
 
@@ -7890,7 +7890,7 @@ check('PR-F · Đối soát F10 (nhãn): hai định nghĩa khác nhau thì hai 
   const overviewLabel = domain.metricById('hv-co-case-mo')!;
   assert(/kể cả em đã kết thúc khoá/.test(overviewLabel.tapDuDieuKien),
     `Tổng quan phải nói rõ nó đếm CẢ em đã kết thúc khoá mà case còn mở: "${overviewLabel.tapDuDieuKien}"`);
-  assert(overviewLabel.ten === 'Học viên có case đang mở', `Nhãn Tổng quan: "${overviewLabel.ten}"`);
+  assert(overviewLabel.ten === 'Học viên có Case đang mở', `Nhãn Tổng quan: "${overviewLabel.ten}"`);
   /* Thực trạng đếm em ĐANG HỌC — nhãn cột là "HV đang gặp", không phải nhãn của Tổng quan (kiểm cả ở giao diện). */
   assert(overviewLabel.ten !== 'HV đang gặp', 'Hai màn đang dùng chung một nhãn cho hai định nghĩa khác nhau');
 });
@@ -8343,7 +8343,7 @@ check('PR-H · Grep các chuỗi cũ của bảng chữ: không còn ở mã ngu
 });
 
 check('PR-H · Badge đếm nói rõ ĐẾM CỦA AI: việc riêng khác toàn lớp, và phạm vi có tên đúng bộ chữ', () => {
-  assert(domain.needScoresText('mine', 3) === 'Bạn cần chấm: 3 bài', `mine: "${domain.needScoresText('mine', 3)}"`);
+  assert(domain.needScoresText('mine', 3) === 'Cần chấm: 3 bài', `mine: "${domain.needScoresText('mine', 3)}"`);
   assert(domain.needScoresText('managed', 5) === 'Lớp còn 5 bài chưa nhập điểm', `managed: "${domain.needScoresText('managed', 5)}"`);
   assert(domain.needScoresText(null, 5) === 'Lớp còn 5 bài chưa nhập điểm', 'Không nói ai đang xem thì mặc định là toàn lớp');
   assert(domain.WORK_SCOPE_LABEL.mine === 'Tôi' && domain.WORK_SCOPE_LABEL.managed === 'Tất cả trong phạm vi',
@@ -8992,7 +8992,7 @@ await runPrGvTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, ad
 // ==================================================================== PR-LT2b (Cuối khoá lớp thường)
 const { runPrLt2bTests } = await import('./prLt2b.tests.ts');
 await runPrLt2bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
-// ==================================================================== PR-CT (lệnh chuyển lớp do Quản lý quyết + bàn giao)
+// ==================================================================== PR-CT (quyết định chuyển lớp do Quản lý quyết + bàn giao)
 const { runPrCtTests } = await import('./prCt.tests.ts');
 await runPrCtTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-S5F-a (sửa sau rà cuối đợt 5 — chuyển lớp, bàn giao, Cuối khoá)
@@ -9032,6 +9032,10 @@ await runPrUxdTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 
 const { runPrUxfBTests } = await import('./prUxfB.tests.ts');
 await runPrUxfBTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
+// ==================================================================== PR-S3 (chữ cuối trên web)
+const { runPrS3ChuTests } = await import('./prS3Chu.tests.ts');
+await runPrS3ChuTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0

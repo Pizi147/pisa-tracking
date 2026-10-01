@@ -15,7 +15,7 @@ import { NutChon } from '../../ui/ui.tsx';
 import { ComponentsField, componentsPayload } from './ChiTietKyNang.tsx';
 import {
   URGENCY_LEVELS, URGENCY_LABEL, issuesForTopic, DEFAULT_URGENCY, FOLLOWUP_OUTCOMES, GOI_Y_MO_TA_PA, outcomeLabelFor,
-  CASE_OUTCOMES, CASE_OUTCOME_LABEL, tenMon, tenMonNgan,
+  CASE_OUTCOMES, CASE_OUTCOME_LABEL, CHU_THEM_PA, tenMon, tenMonNgan,
   categoryOf, componentsFor, componentsAreCounts,
   nguoiThanhPayload, nguoiThieu, tuanLich, type NguoiChon, dsLoi, type LuatTruong, laKhac, kiemGhiRoKhac, KHAC_TOI_THIEU,
 } from '@shared/domain/index.ts';
@@ -163,7 +163,7 @@ export function QuickReport({
   /*
    * CẢNH BÁO CASE TRÙNG — mục 7.13.
    *
-   * Máy chủ từ chối lần gửi đầu và trả về CHÍNH case đang vướng, nên pop-up dựng được ngay
+   * Máy chủ từ chối lần gửi đầu và trả về CHÍNH Case đang vướng, nên pop-up dựng được ngay
    * mà không phải hỏi lại thêm một vòng mạng. Hai lựa chọn chỉ khác nhau đúng một cờ, và
    * nội dung người dùng vừa gõ được giữ nguyên ở cả hai đường — không bắt gõ lại.
    */
@@ -182,7 +182,7 @@ export function QuickReport({
         ...extra,
       });
       invalidate('/cases'); invalidate('/students'); invalidate('/overview');
-      toast.push('ok', extra.mergeIntoExisting ? 'Đã ghi vào case đang có' : 'Đã ghi nhận');
+      toast.push('ok', extra.mergeIntoExisting ? 'Đã ghi vào Case đang có' : 'Đã ghi nhận');
       setDup(null);
       setDaLuu({ id: res.id, tieuDe: res.title, gop: !!extra.mergeIntoExisting, canEdit: !!res.viewer?.canEdit, viecTiep: res.viecTiep ?? null });
     } catch (e: any) {
@@ -265,7 +265,7 @@ export function QuickReport({
   /* Ô lỗi (YC-12.5.2): lý do dưới ô khi rời ô; chân chỉ đếm "n ô cần sửa ↑" sau khi bấm nút chính — không toast trước khi gửi. */
   const LUAT: LuatTruong[] = [
     ...(students ? [{ khoa: 'hoc-vien', nhan: 'Học viên', chon: true }] : []),
-    { khoa: 'ky-nang', nhan: 'Kỹ năng', chon: true }, { khoa: 'phan-loai', nhan: 'Phân loại vấn đề', chon: true },
+    { khoa: 'ky-nang', nhan: 'Kỹ năng', chon: true }, { khoa: 'phan-loai', nhan: 'Nhóm nguyên nhân', chon: true },
     /* PR-NEN (T13): phân loại "Khác" → ô Ghi rõ ≥ 3 ký tự ngay dưới (OKhac); Mô tả chỉ còn luật 15 ký tự. */
     ...(laKhac(primaryCode) ? [{ khoa: 'ghi-ro', nhan: 'Ghi rõ', toiThieu: KHAC_TOI_THIEU }] : []),
     { khoa: 'ten', nhan: 'Tên Case', toiThieu: 6 },
@@ -276,7 +276,7 @@ export function QuickReport({
   const loi = dsLoi(LUAT, { 'hoc-vien': studentId, 'ky-nang': topic, 'phan-loai': primaryCode, 'ghi-ro': ghiRo, ten: title, 'mo-ta': summary,
     'tu-tuan': bfFrom, 'den-tuan': bfTo, 'ket-qua': bfOutcome, 'vi-sao': bfNote });
   if (mode === 'backfill' && bfFrom && bfTo && bfFrom > bfTo) loi.push({ khoa: 'den-tuan', nhan: 'Đến tuần', lyDo: 'Không được trước Từ tuần' });
-  if (mode === 'backfill' && !bfActions.some((a) => a.description.trim())) loi.push({ khoa: 'pa-0', nhan: 'Phương án đã áp dụng', lyDo: 'Chưa có PA nào' });
+  if (mode === 'backfill' && !bfActions.some((a) => a.description.trim())) loi.push({ khoa: 'pa-0', nhan: 'PA đã áp dụng', lyDo: 'Chưa có PA nào' });
   const thieu = loi.map((l) => l.nhan);
   const oLoi = lf.conThieu(loi);
   const loiCua = (khoa: string) => lf.loiCua(loi, khoa);
@@ -301,7 +301,7 @@ export function QuickReport({
           {daLuu.viecTiep && (
             <p className="m-0 flex flex-wrap items-center gap-2 text-xs text-slate-300">
               Việc tiếp: {daLuu.viecTiep.chu}{daLuu.viecTiep.han ? ` · hạn ${ngan(daLuu.viecTiep.han)}` : ''}
-              {daLuu.canEdit && onMoCase && daLuu.viecTiep.chu === 'Đề ra PA' && (
+              {daLuu.canEdit && onMoCase && daLuu.viecTiep.chu === CHU_THEM_PA && (
                 <button type="button" className="btn btn-sm" onClick={() => { const id = daLuu.id; reset(); onClose(); onMoCase(id, 'them-pa'); }}>+ Thêm PA</button>
               )}
             </p>
@@ -391,7 +391,7 @@ export function QuickReport({
         {/* Phân loại BẮT BUỘC (máy chủ cần `primaryCode`): select ≥ 5 lựa chọn, gợi ý của lựa chọn nằm ở `title` (Q6). */}
         {/* OKhac là <label> riêng → đặt ngay SAU Truong (không lồng label), cùng một khối để sát ô chọn. */}
         <div>
-          <Truong nhan="Phân loại vấn đề" batBuoc loi={loiCua('phan-loai')}>
+          <Truong nhan="Nhóm nguyên nhân" batBuoc loi={loiCua('phan-loai')}>
             <select className="field w-full" {...o('phan-loai')} value={primaryCode} disabled={!topic}
               title={causes.find((i) => i.code === primaryCode)?.hint}
               onChange={(e) => setPrimaryCode(e.target.value)}>
@@ -460,7 +460,7 @@ export function QuickReport({
                   <div key={i} className="rounded-lg border px-2.5 py-2" style={{ borderColor: 'var(--line)' }}>
                     {dangSua ? (
                       <div className="space-y-2">
-                        <input className="field w-full" {...(i === 0 ? o('pa-0') : {})} aria-label="Phương án đã áp dụng"
+                        <input className="field w-full" {...(i === 0 ? o('pa-0') : {})} aria-label="PA đã áp dụng"
                           placeholder={GOI_Y_MO_TA_PA} value={a.description}
                           onChange={(e) => setBfActions(bfActions.map((x, j) => (j === i ? { ...x, description: e.target.value } : x)))} />
                         {/* YC-12.5.3: kết quả của PA này — hàng PA hiện kết quả thay "Chưa có kết quả". */}

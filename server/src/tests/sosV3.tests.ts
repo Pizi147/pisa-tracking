@@ -49,8 +49,8 @@ export async function runSosV3Tests(t: YThucTestKit) {
 
   check('PR-T · T1 Nhãn loại phương án điền sẵn trùng nhãn hệ thống đang dùng (Xếp tự học · Học tutor)', () => {
     assert(domain.INTERVENTION_KIND_LABEL[domain.academicSupportFor(1, 1).kind] === 'Xếp tự học', 'self_study');
-    assert(domain.INTERVENTION_KIND_LABEL[domain.academicSupportFor(1, 3).kind] === 'Học tutor', 'tutor');
-    assert(domain.INTERVENTION_KIND_LABEL[domain.academicSupportFor(5, 1).kind] === 'Học tutor', 'MT5+ tutor (PR-SOS Câu 1 = A)');
+    assert(domain.INTERVENTION_KIND_LABEL[domain.academicSupportFor(1, 3).kind] === 'Học Tutor', 'tutor');
+    assert(domain.INTERVENTION_KIND_LABEL[domain.academicSupportFor(5, 1).kind] === 'Học Tutor', 'MT5+ tutor (PR-SOS Câu 1 = A)');
   });
 
   check('PR-T · T1 Mức SOS 0 hoặc ngoài 1–3 không có phương án điền sẵn; số MT nhỏ hơn 1 bị từ chối', () => {
@@ -87,7 +87,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(JSON.stringify(domain.COORDINATION_KINDS) === JSON.stringify(
       ['talk_student', 'talk_family', 'gvcn_meeting', 'cx_meeting_student', 'cx_meeting_family', 'other', 'bao_ph_tvv']), `Loại sai: ${domain.COORDINATION_KINDS}`);
     assert(JSON.stringify(domain.COORDINATION_KINDS.slice(0, 6).map((k: string) => domain.COORDINATION_KIND_LABEL[k])) === JSON.stringify([
-      'Trao đổi ngắn với HS', 'Trao đổi với gia đình', 'GVCN meeting với HS', 'CX / GĐCN meeting với HS', 'CX / GĐCN meeting với HS / PH', 'Khác']),
+      'Trao đổi ngắn với HV', 'Trao đổi với gia đình', 'GVCN meeting với HV', 'CX / GĐCN meeting với HV', 'CX / GĐCN meeting với HV / PH', 'Khác']),
     'Nhãn sáu loại sai');
     assert(!domain.COORDINATION_KINDS.some((k: string) => /report|family_report/.test(k)), 'Không dùng Report cho gia đình');
   });
@@ -98,11 +98,11 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(JSON.stringify(domain.COORDINATION_REMOVE_REASONS) === JSON.stringify(['not_needed', 'handled_otherwise', 'duplicate_measure', 'other', 'system_sos_changed', 'system_luot_huy']), 'Sáu mã lý do (PR-MT thêm system_luot_huy — huỷ cả lượt, T67)');
     assert(domain.COORDINATION_REMOVE_REASON_LABEL.not_needed === 'Không cần trong trường hợp này'
       && domain.COORDINATION_REMOVE_REASON_LABEL.handled_otherwise === 'Đã xử lý theo cách khác'
-      && domain.COORDINATION_REMOVE_REASON_LABEL.duplicate_measure === 'Trùng với phương án xử lý khác'
+      && domain.COORDINATION_REMOVE_REASON_LABEL.duplicate_measure === 'Trùng với lần xử lý khác'
       && domain.COORDINATION_REMOVE_REASON_LABEL.other === 'Khác', 'Nhãn bốn lý do sai');
     for (const c of domain.COORDINATION_REMOVE_REASONS) assert(domain.COORDINATION_REMOVE_REASON_LABEL[c], `Thiếu nhãn ${c}`);
     assert(JSON.stringify(domain.CASE_DISMISS_REASONS) === JSON.stringify(['special_circumstance', 'single_incident', 'other']), `Ba lý do đóng case sai: ${domain.CASE_DISMISS_REASONS}`);
-    assert(domain.CASE_DISMISS_REASON_LABEL.special_circumstance === 'Học sinh có lý do đặc biệt'
+    assert(domain.CASE_DISMISS_REASON_LABEL.special_circumstance === 'Học viên có lý do đặc biệt'
       && domain.CASE_DISMISS_REASON_LABEL.single_incident === 'Tình huống đơn lẻ' && domain.CASE_DISMISS_REASON_LABEL.other === 'Khác', 'Nhãn ba lý do đóng case sai');
     assert(domain.reasonNeedsText('other') && !domain.reasonNeedsText('not_needed') && !domain.reasonNeedsText('single_incident'), 'Chỉ `Khác` mới cần ô chữ');
   });
@@ -130,7 +130,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
 
   check('PR-T · T1 Trạng thái việc phối hợp và nhãn: pending · done · removed', () => {
     assert(JSON.stringify(domain.COORDINATION_STATUSES) === JSON.stringify(['pending', 'done', 'removed']), 'Ba trạng thái');
-    assert(domain.COORDINATION_STATUS_LABEL.pending === 'Cần xử lý' && domain.COORDINATION_STATUS_LABEL.done === 'Đã xong' && domain.COORDINATION_STATUS_LABEL.removed === 'Đã bỏ', 'Nhãn ba trạng thái');
+    assert(domain.COORDINATION_STATUS_LABEL.pending === 'Cần xử lý' && domain.COORDINATION_STATUS_LABEL.done === 'Xong' && domain.COORDINATION_STATUS_LABEL.removed === 'Đã bỏ', 'Nhãn ba trạng thái');
   });
 
   // ================================================================== T2 — schema + migrate
@@ -286,7 +286,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const count = (sql: string, ...a: unknown[]) => (get(sql, ...a)?.n ?? 0) as number;
 
-  /** Học viên MỚI, mục tiêu 7.0 (kỳ vọng MT1 6.0 · MT2 6.5 · MT3+ 7.0), riêng cho từng phép kiểm. */
+  /** Học viên MỚI, Target 7.0 (kỳ vọng MT1 6.0 · MT2 6.5 · MT3+ 7.0), riêng cho từng phép kiểm. */
   const makeStudent = (name: string): { id: number; cycleId: number } => {
     intake.commitIntake(P.admin, { classId: CLASS, rows: [{ fullName: `PT ${name}`, target: 7, email: 'hv@demo.test' }], idempotencyKey: `pt-${name}` });
     const st = get('SELECT id FROM students WHERE full_name = ?', `PT ${name}`);
@@ -643,7 +643,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(!/"followupOverdue":true/.test(flat), 'Bảng kỹ năng: gợi ý chưa xác nhận không được báo quá hạn');
   });
 
-  check('PR-T · (rà soát) Case đã ĐÓNG rồi sửa điểm nguồn: KHÔNG gửi thông báo "Xem lại case" (không còn gì để xem lại)', () => {
+  check('PR-T · (rà soát) Case đã ĐÓNG rồi sửa điểm nguồn: KHÔNG gửi thông báo "Xem lại Case" (không còn gì để xem lại)', () => {
     const f = freshSos('NOTE');
     xacNhanCaseW2(w2T, f); sosAuto.xacNhanPaQuyChe(w2T, f.w2Plan.id, { description: MO_TA_PA });   // PR-SOS: PA chạy khi xác nhận
     xongPaThu(f.w2Plan.id);
@@ -715,7 +715,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     const f = freshSos('CAUSE');
     const key = (id: number) => `cause:${id}`;
     const item = (who: any, id: number) => mywork(who).find((i: any) => i.key === key(id));
-    /* PR-DUYET (K1-57): Quản lý thấy dòng quá hạn của GV ở chế độ "Của GV (nhắc)" (`nguoi=tat-ca`); "Của tôi" không còn — thẻ Báo lên thay. */
+    /* PR-DUYET (K1-57): Quản lý thấy dòng quá hạn của GV ở chế độ "Của GV (nhắc)" (`nguoi=tat-ca`); "Của tôi" không còn — thẻ Báo QL thay. */
     const itemQl = (who: any, id: number) => (myworkSvc.myWork(who, { nguoi: 'tat-ca' }).items as any[]).find((i: any) => i.key === key(id));
     const due = domain.hanXacNhan(TODAY);   // PR-SOS: hạn ở `sos_cases.han_xac_nhan`
     const mine = item(w2T, f.w2.id);
@@ -729,7 +729,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     /* Quá hạn: hết ngày hạn mới tính (hạn = hôm qua). */
     conn.prepare('UPDATE sos_cases SET han_xac_nhan = ? WHERE id = ?').run(addDays(TODAY, -1), f.w2.id);
     const late = item(w2T, f.w2.id), mgr = itemQl(P.mbManager, f.w2.id);
-    assert(!item(P.mbManager, f.w2.id), 'Quản lý "Của tôi" còn dòng cause quá hạn của GV (K1-57: đã là thẻ Báo lên)');
+    assert(!item(P.mbManager, f.w2.id), 'Quản lý "Của tôi" còn dòng cause quá hạn của GV (K1-57: đã là thẻ Báo QL)');
     assert(late.urgency === 'overdue' && !/quá hạn/.test(late.reason) && late.tieuDe.startsWith('Xác nhận nguyên nhân'), `Quá hạn của GVBM: ${JSON.stringify(late)}`);
     assert(mgr && mgr.urgency === 'overdue' && mgr.mine === false && /chưa/.test(mgr.reason), `Quản lý thấy khi quá hạn: ${JSON.stringify(mgr)}`);
     assert(!itemQl(P.cpManager, f.w2.id) && !item(w1T, f.w2.id), 'Quản lý chi nhánh khác và GVBM kỹ năng khác không thấy dù quá hạn');
@@ -948,7 +948,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     const live = () => (phoiHop.coordinationOfClass(gvcn, CLASS) as any).pendingCount as number;
     const mine = () => (phoiHop.myCoordinationLines(gvcn) as any[]).find((l: any) => l.classId === CLASS);
     const before = live();
-    assert(mine()?.pendingCount === before && mine()?.text === `Lớp ${code} — ${before} lượt Phối hợp cần xử lý`,
+    assert(mine()?.pendingCount === before && mine()?.text === `Lớp ${code} — ${before} lượt Phối hợp SOS cần xử lý`,
       `Dòng trước khi xử lý: ${JSON.stringify(mine())} vs live ${before}`);
     for (const r of coordOf(f.a.id)) phoiHop.confirmCoordination(gvcn, r.id, { performedOn: TODAY });
     const after = live();

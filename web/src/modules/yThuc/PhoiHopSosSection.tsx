@@ -36,7 +36,7 @@ export type CoordTurn = {
  * để GVCN không nhầm hai việc. Chỉ đổi chữ hiển thị, không đổi mã.
  */
 const laMeetingCx = (k: string) => k === 'cx_meeting_student' || k === 'cx_meeting_family';
-const nhanMeetingSauMock = (k: string) => `Meeting CX/GĐCN (sau Mock) · ${k === 'cx_meeting_family' ? 'HS / PH' : 'HS'}`;
+const nhanMeetingSauMock = (k: string) => `Meeting CX/GĐCN (sau Mock) · ${k === 'cx_meeting_family' ? 'HV / PH' : 'HV'}`;
 
 /**
  * DANH SÁCH `Phối hợp SOS` (§7.2/§7.3, prototype v3 — PR-HV) — dùng chung cho tab lớp (`cot1="hocVien"`: cột 1 là tên
@@ -212,7 +212,7 @@ function ConfirmCoordinationForm({ actionId, onClose, onChanged }: {
         onChange={(e) => setNote(e.target.value)} />
       <BangChung ownerType="sos_coordination_action" ownerId={actionId} canEdit tieuDe="" />
       <div className="flex gap-1.5">
-        <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>Huỷ</button>
+        <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>Đóng</button>
         <button type="button" className="btn btn-sm btn-primary" disabled={busy || !performedOn || !!loiNguoi} title={loiNguoi ?? undefined} onClick={save}>Lưu</button>
       </div>
     </div>
@@ -254,7 +254,7 @@ function RemoveCoordinationForm({ actionId, onClose, onChanged }: {
       <OKhac hien={reasonNeedsText(reason)} value={text} onChange={setText} goiY="Ví dụ: Gia đình xin dời sang tuần sau" loi={loiGhiRo} />
       {missing && <p className="text-xs text-amber-200 m-0">{missing}</p>}
       <div className="flex gap-1.5">
-        <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>Huỷ</button>
+        <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>Đóng</button>
         <button type="button" className="btn btn-sm btn-primary" disabled={busy || !!missing || !!loiGhiRo} title={missing ?? loiGhiRo ?? undefined} onClick={save}>Bỏ việc này</button>
       </div>
     </div>
@@ -293,10 +293,10 @@ function AddCoordinationForm({ attemptId, existing, onClose, onChanged }: {
           </NutChon>
         ))}
       </div>
-      <OKhac hien={kind === 'other'} value={customName} onChange={setCustomName} nhan="Tên việc" goiY="Ví dụ: Gặp trợ giảng sau giờ học" loi={loiGhiRo} />
+      <OKhac hien={kind === 'other'} value={customName} onChange={setCustomName} nhan="Tên việc" goiY="Ví dụ: Gặp Tutor sau giờ học" loi={loiGhiRo} />
       {missing && <p className="text-xs text-amber-200 m-0">{missing}</p>}
       <div className="flex gap-1.5">
-        <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>Huỷ</button>
+        <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>Đóng</button>
         <button type="button" className="btn btn-sm btn-primary" disabled={busy || !!missing || !!loiGhiRo} title={missing ?? loiGhiRo ?? undefined} onClick={save}>Thêm</button>
       </div>
     </div>

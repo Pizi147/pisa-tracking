@@ -47,7 +47,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   const [busy, setBusy] = useState(false);
   const [moHet, setMoHet] = useState(false);
   const [daNhac, setDaNhac] = useState<string | null>((yc.duLieu?.daNhacLuc as string | null) ?? null);
-  /* PR-CT: Duyệt thẻ Đề xuất chuyển lớp = mở panel ra lệnh điền sẵn (Quản lý sửa lớp, tuần rồi `Duyệt và ra lệnh`). */
+  /* PR-CT: Duyệt thẻ Đề xuất chuyển lớp = mở panel ra lệnh điền sẵn (Quản lý sửa lớp, tuần rồi `Duyệt và quyết định`). */
   const [moChuyenLop, setMoChuyenLop] = useState(false);
   const nutMo = useRef<HTMLButtonElement | null>(null);
   /* "Xem thêm" chỉ khi chữ THẬT SỰ bị cắt ở 2 dòng (đo, không đoán theo số ký tự). */
@@ -121,7 +121,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   };
 
   const hanV = yc.hanDuyet ? deadlineView({ kind: 'duyet', due: yc.hanDuyet, today: homNay }) : null;
-  const tang1 = !hanV ? null : hanV.tone === 'overdue' ? `Quá hạn ${hanV.daysOverdue} ngày` : hanV.homNay ? 'Hạn hôm nay' : hanV.con ? hanV.con[0].toUpperCase() + hanV.con.slice(1) : null;
+  const tang1 = !hanV ? null : hanV.tone === 'overdue' ? `Quá hạn · ${hanV.daysOverdue} ngày` : hanV.homNay ? 'Hạn hôm nay' : hanV.con ? hanV.con[0].toUpperCase() + hanV.con.slice(1) : null;
   const tt = nhanTrangThaiYc(yc.trangThai, yc.tuDuyet);
   const nhanO = o?.loai === 'tu-choi' ? 'Lý do từ chối (người gửi sẽ đọc)' : o?.loai === 'tra-loi' ? 'Câu trả lời cho giáo viên' : 'Ghi chú việc đã xử lý ở màn gốc';
   /* Nút mở thêm một bước (chọn tuần / ghi chú) có dấu "…", như Từ chối… — Duyệt trơn là quyết ngay. */
@@ -206,7 +206,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
               )}
               {coNut && yc.kieuNut === 'nhac' && typeof yc.duLieu?.ownerId === 'number' && (
                 daNhac
-                  ? <span className="self-center whitespace-nowrap text-[12px] text-slate-400">✓ Đã nhắc {fmtTime(daNhac)}</span>
+                  ? <span className="self-center whitespace-nowrap text-[12px] text-slate-400">Đã nhắc {fmtTime(daNhac)}</span>
                   : <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={nhac}>
                     Nhắc {typeof yc.duLieu?.tenGv === 'string' ? yc.duLieu.tenGv : 'GV'}
                   </button>
@@ -238,9 +238,9 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
           )}
           {loiMay && <p role="alert" className="m-0 text-[12px] text-late">{loiMay}</p>}
           <div className="flex flex-wrap justify-end gap-1.5">
-            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={dongO} disabled={busy}>Thôi</button>
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={dongO} disabled={busy}>Đóng</button>
             <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={guiO} disabled={busy}>
-              {busy ? 'Đang gửi…' : o.loai === 'tu-choi' ? 'Gửi từ chối' : o.loai === 'tra-loi' ? 'Gửi trả lời' : o.loai === 'tuan' ? 'Duyệt dời' : 'Duyệt'}
+              {busy ? 'Đang gửi…' : o.loai === 'tu-choi' ? 'Gửi từ chối' : o.loai === 'tra-loi' ? 'Gửi trả lời' : o.loai === 'tuan' ? 'Trả lời đề nghị dời' : 'Duyệt'}
             </button>
           </div>
         </div>

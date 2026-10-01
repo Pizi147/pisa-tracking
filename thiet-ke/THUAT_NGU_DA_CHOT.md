@@ -1,5 +1,7 @@
 # Bảng thuật ngữ cần sửa — PISA Progress
 
+> **Đã thay bằng `THUAT_NGU_2026-10-01.md` (chủ sản phẩm 01–02/10/2026).** Bảng 22/09 dưới đây chỉ còn để tra lịch sử; chữ trên web theo bảng mới + mục "Đã chốt" của kế hoạch PR-S3.
+
 Soạn ngày 22/09/2026 · **1214 mục** · gồm chữ trên web hiện tại **và** các trang mới trong mockup đã duyệt.
 
 ## Cách điền (đọc trước khi điền)

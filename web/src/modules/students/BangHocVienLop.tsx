@@ -46,7 +46,7 @@ export type LopChoBang = {
 /**
  * CÁC HÀNG CON CỦA MỘT LỚP (đặc tả §3.6, mockup 07b A + 07c A + 10b §1; PR-UX0 N-2; PR-HVL M3). Trả về CÁC `<tr>` — bảng và tiêu đề
  * cột do trang Học viên & Lớp dựng MỘT lần cho mỗi nhóm khung. Bảy cột: Học viên (tên đậm, mã 6 số mờ) · Kết quả gần nhất (chính + tối đa
- * hai dòng chữ, không "…") · Mục tiêu (FT) / Khoá (lớp thường) · Sắp tới · Case · Việc tiếp theo (bấm được) · ⋯. Việc Nhập điểm trùng
+ * hai dòng chữ, không "…") · Target (FT) / Khoá (lớp thường) · Sắp tới · Case · Việc tiếp theo (bấm được) · ⋯. Việc Nhập điểm trùng
  * chữ ở ≥ 2 em thành MỘT hàng "Cả lớp" đầu lớp. `chiHien` = id học viên còn lại sau chip lọc / ô tìm (máy chủ tính); `null` = mọi em đang học.
  * Nằm ở: Học viên & Lớp (menu trái) → mở một lớp. Điện thoại (< 640 px, D2): `the` = mỗi em một `TheDong` thay vì `<tr>` (cùng dữ liệu, cùng thứ tự cột).
  */
@@ -116,7 +116,7 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
               )}
               dong={[
                 { nhan: 'Kết quả', noiDung: <KetQuaOHocVien k={k} standing={s.standing} thuong={thuong} /> },
-                { nhan: thuong ? 'Khoá' : 'Mục tiêu', noiDung: thuong
+                { nhan: thuong ? 'Khoá' : 'Target', noiDung: thuong
                   ? <>{khoa?.chinh}{khoa?.phu && <span className="block text-[11px] text-slate-500">{khoa.phu}</span>}</>
                   : <TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /> },
                 { nhan: 'Sắp tới', noiDung: sapToi ?? <span className="text-slate-600">—</span> },
@@ -165,7 +165,7 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
                 </>
               ) : <span className="tabular-nums text-slate-200"><TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /></span>}
             </td>
-            <td className="td whitespace-nowrap text-xs tabular-nums text-slate-300" title="Mốc kế tiếp đã xếp lịch">
+            <td className="td whitespace-nowrap text-xs tabular-nums text-slate-300" title="Test sắp tới đã xếp lịch">
               {sapToi ?? <span className="text-slate-600">—</span>}
             </td>
             <td className="td text-right tabular-nums"

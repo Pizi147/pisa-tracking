@@ -34,7 +34,7 @@ export const MOCK_FT_DEFAULT_ATTEMPTS = 3;
  *
  *     Pre FOU  →  FOU  →  BE  →  ELE  →  (hết bậc Normal)
  *
- * Và ở BẤT KỲ bậc nào, em cũng có thể lên thẳng FT nếu đủ trình. Nên khi một lớp Normal
+ * Và ở BẤT KỲ bậc nào, em cũng có thể lên thẳng FT nếu đủ trình. Nên khi một lớp thường
  * học hết chương trình, mỗi em luôn có ĐÚNG HAI đường (owner chốt 13/09/2026):
  *
  *     1. lên FT
@@ -51,7 +51,7 @@ export const NORMAL_LADDER: Partial<Record<ProgrammeCode, ProgrammeCode>> = {
   BE: 'ELE',
 };
 
-/** Hai đường đi tiếp của một em vừa học xong lớp Normal. Luôn có 'FT'. */
+/** Hai đường đi tiếp của một em vừa học xong lớp thường. Luôn có 'FT'. */
 export function nextStepsAfter(code: ProgrammeCode | null): ProgrammeCode[] {
   if (!code || code === 'FT') return [];
   const up = NORMAL_LADDER[code];
@@ -129,7 +129,7 @@ export function fmtExamMonth(v: string | null | undefined): string {
 export const ATTEMPT_STATUSES = ['planned', 'done', 'cancelled'] as const;
 export type AttemptStatus = (typeof ATTEMPT_STATUSES)[number];
 export const ATTEMPT_STATUS_LABEL: Record<AttemptStatus, string> = {
-  planned: 'Đã lên lịch', done: 'Đã xong', cancelled: 'Đã huỷ',
+  planned: 'Đã lên lịch', done: 'Xong', cancelled: 'Đã huỷ',
 };
 
 /**
@@ -147,7 +147,7 @@ export function nhanLuot(status: string, coDiem: number, yeuCau: number): string
  * PHẠM VI YÊU CẦU của một kỹ năng trong một đợt (mục 10.1).
  *
  * Mặc định MỌI kỹ năng đều nằm trong phạm vi. Quản lý có thể chốt TRƯỚC là đợt này chỉ
- * mock một số kỹ năng — trường hợp rất hiếm. Lớp Normal thì không: Progress/Final Test
+ * mock một số kỹ năng — trường hợp rất hiếm. Lớp thường thì không: Giữa khoá / Cuối khoá
  * luôn phải đủ bốn môn, không có thao tác miễn môn.
  *
  * "Ngoài phạm vi" KHÁC "vắng": vắng là em đã được xếp lịch mà không thi, và đợt đó vẫn
@@ -203,7 +203,7 @@ export const SKILL_PROGRESS_LABEL: Record<SkillProgress, string> = {
   scored: 'Đã có điểm',
   reschedule_pending: 'Chờ duyệt dời',
   cancelled: 'Đã huỷ phần thi',
-  lich_su: 'Nhập bù, không có hạn',
+  lich_su: 'Nhập bù, không tính hạn',
 };
 
 /**

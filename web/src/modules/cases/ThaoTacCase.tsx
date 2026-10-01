@@ -32,7 +32,7 @@ type ChungPanel = {
 // ==================================================================== Thêm PA
 
 /**
- * THÊM PHƯƠNG ÁN (mục 8.2). Danh mục theo nhóm case; người làm chọn từ tài khoản (PR-Form F-2). PR-SOS: bỏ ô ngày kết thúc (Q28-4);
+ * THÊM PHƯƠNG ÁN (mục 8.2). Danh mục theo nhóm Case; người làm chọn từ tài khoản (PR-Form F-2). PR-SOS: bỏ ô ngày kết thúc (Q28-4);
  * Mô tả gợi ý "hướng dẫn, trọng tâm, ai thực hiện" (Q28-1); PA đã làm trước đây là liên kết phụ cuối form (K3-18).
  */
 export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quayLai, onClose, onSaved }: ChungPanel & {
@@ -91,7 +91,7 @@ export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quay
         conThieu: lf.conThieu(loi),
         chinh: (
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>
-            {deXuat ? 'Gửi duyệt' : 'Thêm PA'}
+            {deXuat ? 'Gửi Quản lý duyệt' : 'Thêm PA'}
           </button>
         ),
       }}>
@@ -115,7 +115,7 @@ export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quay
               </optgroup>
             </select>
           </Truong>
-          <OKhac hien={laKhacPa} value={ghiRo} onChange={setGhiRo} nhan="Tên đề xuất" goiY="Ví dụ: Học kèm 1-1 với trợ giảng"
+          <OKhac hien={laKhacPa} value={ghiRo} onChange={setGhiRo} nhan="Tên đề xuất" goiY="Ví dụ: Học kèm 1-1 với Tutor"
             id={lf.oId('ghi-ro')} onBlur={lf.roi('ghi-ro')} loi={lf.hien('ghi-ro') ? kiemGhiRoKhac(ghiRo) : null} />
         </div>
         {kind === 'reschedule_mt' && (

@@ -14,7 +14,7 @@ export const MOC_KIEM_TRA_FT = 'Lịch Mock Test được xếp riêng cho từn
 export const MOC_KIEM_TRA_NORMAL = 'Các mốc kiểm tra được tính từ tuần khai giảng.';
 
 /** Trạng thái rỗng của khối phương án hỗ trợ (TU_DIEN_VA_CHU §2): nói THIẾU gì và ai điền được. */
-export const CHUA_CO_PHUONG_AN = 'Chưa có phương án hỗ trợ';
+export const CHUA_CO_PHUONG_AN = 'Chưa có PA';
 export const GOI_Y_THEM_PHUONG_AN = 'Thêm phương án hỗ trợ và người phụ trách.';
 
 /* PR-XLMT: "Kỹ năng không kiểm tra trong đợt này" / "Kiểm tra lại…" thay bằng `CHU_THAO_TAC` (T38: Bỏ kỹ năng khỏi đợt · Đưa lại vào đợt). */

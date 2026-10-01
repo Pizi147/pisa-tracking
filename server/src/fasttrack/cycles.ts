@@ -35,7 +35,7 @@ export function currentCycle(studentId: number) {
 }
 
 /**
- * PR-Dọn (Q11): MỘT cách chọn lộ trình để đếm "tuần học thứ n" — chương Hành trình, đầu hồ sơ, panel Chuyển lớp một em và cả lớp.
+ * PR-Dọn (Q11): MỘT cách chọn lộ trình để đếm "tuần học n" — chương Hành trình, đầu hồ sơ, panel Chuyển lớp một em và cả lớp.
  * Đang học (ghi danh `active`, hoặc `paused` chưa rời) → lộ trình ĐANG CHẠY; chương đã rời (hoặc không có lộ trình đang chạy) →
  * lộ trình bắt đầu muộn nhất không sau ngày vào lớp (không có thì lộ trình đầu). Panel Chuyển lớp đọc thẳng `cy.status = 'active'`
  * trong câu SQL của nó — đúng nhánh `dangHoc: true` của hàm này.
@@ -119,7 +119,7 @@ function docTarget(v: unknown): { target: number | null; kck: boolean } {
   if (laKck(v)) return { target: null, kck: true };
   if (v === null || v === undefined || v === '') return { target: null, kck: false };
   const n = Number(v);
-  if (!Number.isFinite(n) || n < 0 || n > 9) throw badRequest('Mục tiêu phải nằm trong khoảng 0–9, hoặc KCK (không cam kết).');
+  if (!Number.isFinite(n) || n < 0 || n > 9) throw badRequest('Target phải nằm trong khoảng 0–9, hoặc KCK (không cam kết).');
   return { target: n, kck: false };
 }
 const hienTarget = (target: number | null, kck: unknown) => (kck ? KCK : target ?? 'chưa có');
@@ -147,7 +147,7 @@ export function createCycle(p: Principal, input: {
   else require_(p, PERMISSIONS.STUDENT_EDIT, { studentId: input.studentId }, 'Bạn không có quyền mở lộ trình mới cho học viên này.');
   const student = conn.prepare('SELECT * FROM students WHERE id = ?').get(input.studentId) as any;
   if (!student) throw notFound('Không tìm thấy học viên');
-  if (input.examPeriodId && !periodById(Number(input.examPeriodId))) throw badRequest('Tuần dự kiến thi không hợp lệ.');
+  if (input.examPeriodId && !periodById(Number(input.examPeriodId))) throw badRequest('Dự kiến thi không hợp lệ.');
   /* PR-Dọn (quét #20): chỉ nhận mã lộ trình đang dùng trong danh mục (Quản trị › Danh mục). */
   if (input.route != null && !activeRouteCodes().includes(String(input.route))) throw badRequest('Lộ trình không có trong danh mục đang dùng.');
   const startedAt = input.startedAt ?? nowIso().slice(0, 10);
@@ -186,7 +186,7 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
   require_(p, PERMISSIONS.STUDENT_EDIT, { studentId: c.student_id });
-  kiemKieuO(patch, ['startWeek', 'examDate', 'note'], [], (k) => ({ startWeek: 'Tuần bắt đầu', examDate: 'Thi dự kiến', note: 'Ghi chú' })[k] ?? k);
+  kiemKieuO(patch, ['startWeek', 'examDate', 'note'], [], (k) => ({ startWeek: 'Tuần bắt đầu', examDate: 'Dự kiến thi', note: 'Ghi chú' })[k] ?? k);
   /* PR-TOC: cận năm (năm nay −3 … +3) chỉ áp khi giá trị ĐỔI — lộ trình cũ gửi lại đúng giá trị đang lưu không bị chặn. */
   const can = canNamGan(demoToday());
   if (patch.startWeek !== undefined) {           // Thông tin HV gửi Thứ Hai ISO từ ô ngày thống nhất kiểu tuần
@@ -200,7 +200,7 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
   if (patch.examDate !== undefined) {            // T9: ngày → lưu ngày + suy tháng, tuần; tháng → chỉ tháng; trống → xoá cả hai
     const t = docNgayNhap(patch.examDate, demoToday(), { choThang: true });
     const ngoai = t.iso && t.iso !== (c.exam_date ?? c.exam_month) ? docNgayNhap(t.iso, demoToday(), { choThang: true, ...can }).loi : null;
-    if (t.loi || ngoai) throw badRequest(`Thi dự kiến: ${t.loi ?? ngoai}`);
+    if (t.loi || ngoai) throw badRequest(`Dự kiến thi: ${t.loi ?? ngoai}`);
     const la = t.iso?.length === 10;
     /*
      * PR-Dọn (Q16, VN15): đổi từ NGÀY sang THÁNG thì bỏ tuần của ngày cũ — panel Kế hoạch gửi lại `examPeriodId` cũ trong state, nên
@@ -215,7 +215,7 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
    * Cùng cận năm cho tuần / tháng gửi THẲNG (StudentPlanPanel gửi `startPeriodId`, `examPeriodId`; API cũ gửi `examMonth`) — cũng chỉ
    * khi đổi. Id tuần không có thật để vòng ghi bên dưới báo như cũ.
    */
-  for (const [k, cot, nhan] of [['startPeriodId', 'start_period_id', 'Tuần bắt đầu'], ['examPeriodId', 'exam_period_id', 'Tuần dự kiến thi']] as const) {
+  for (const [k, cot, nhan] of [['startPeriodId', 'start_period_id', 'Tuần bắt đầu'], ['examPeriodId', 'exam_period_id', 'Dự kiến thi']] as const) {
     const v = patch[k];
     if (v == null || v === '' || Number(v) === c[cot]) continue;
     const tuan = periodById(Number(v))?.weekStart;
@@ -225,9 +225,9 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
   const thang = patch.examMonth ? String(patch.examMonth).slice(0, 7) : null;
   if (thang && thang !== c.exam_month && /^\d{4}-\d{2}$/.test(thang)) {
     const loi = docNgayNhap(thang, demoToday(), { choThang: true, ...can }).loi;
-    if (loi) throw badRequest(`Thi dự kiến: ${loi}`);
+    if (loi) throw badRequest(`Dự kiến thi: ${loi}`);
   }
-  /* PR-DUYET (T44): đổi target / lộ trình cần `cycle.edit` — chỉ khi giá trị THẬT SỰ đổi (panel gửi cả ô không sửa). Thi dự kiến giữ `student.edit` (Q7). */
+  /* PR-DUYET (T44): đổi target / lộ trình cần `cycle.edit` — chỉ khi giá trị THẬT SỰ đổi (panel gửi cả ô không sửa). Dự kiến thi giữ `student.edit` (Q7). */
   /* Q29-1: targetScore nhận cả KCK — `reviseTarget` ghi kèm `khong_cam_ket`. */
   /*
    * PR-Dọn (Q15, VN25): MỘT đường đổi target — đổi thật thì đi qua `reviseTarget` (ghi `cycle_target_revisions` + Hành trình), bắt
@@ -242,13 +242,13 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
   patch = { ...patch, targetScore: undefined, khongCamKetGhi: undefined };
   const doiLoTrinh = patch.route !== undefined && (patch.route ?? null) !== (c.route ?? null);
   if (doiTarget || doiLoTrinh) require_(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id }, CHI_QL_SUA);
-  if (doiTarget && !(typeof patch.lyDo === 'string' && patch.lyDo.trim())) throw badRequest('Ghi lý do đổi mục tiêu.');
+  if (doiTarget && !(typeof patch.lyDo === 'string' && patch.lyDo.trim())) throw badRequest('Ghi lý do đổi Target.');
   if (patch.status !== undefined && !(CYCLE_STATUSES as readonly string[]).includes(String(patch.status))) {
     throw badRequest('Trạng thái lộ trình không hợp lệ.');
   }
   /*
    * S16 CHỈ khi nơi gọi nói rõ "em thôi học" (`dongCaseKhiKetThuc: true`). Luồng "Lên lớp thường tiếp" (PR-LT) hoàn tất khoá cũ mà
-   * KHÔNG truyền cờ — Case đi theo em sang khoá mới (§3.9). Không cờ = không đóng gì. Cờ đọc riêng, không phải cột: `map` bỏ qua
+   * KHÔNG truyền cờ — Case bàn giao sang khoá mới (§3.9). Không cờ = không đóng gì. Cờ đọc riêng, không phải cột: `map` bỏ qua
    * khoá lạ nên nó không lọt vào câu UPDATE.
    */
   const closeOnEnd = patch.dongCaseKhiKetThuc === true
@@ -266,16 +266,16 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
   const sets: string[] = []; const params: unknown[] = [];
   for (const [k, v] of Object.entries(patch)) {
     if (!map[k] || v === undefined) continue;
-    if (k === 'examPeriodId' && v && !periodById(Number(v))) throw badRequest('Tuần dự kiến thi không hợp lệ.');
+    if (k === 'examPeriodId' && v && !periodById(Number(v))) throw badRequest('Dự kiến thi không hợp lệ.');
     /*
      * Tháng thi dạng 'YYYY-MM'. Nhận CẢ một ngày đầy đủ rồi cắt lấy tháng — ô chọn tháng
      * của trình duyệt trả về đúng dạng này, nhưng người dán tay hay dán cả ngày.
      */
     if (k === 'examMonth' && v) {
       const raw = String(v).slice(0, 7);
-      if (!/^\d{4}-\d{2}$/.test(raw)) throw badRequest('Tháng dự kiến thi phải có dạng MM/YYYY.');
+      if (!/^\d{4}-\d{2}$/.test(raw)) throw badRequest('Dự kiến thi phải có dạng MM/YYYY.');
       const mm = Number(raw.slice(5, 7));
-      if (mm < 1 || mm > 12) throw badRequest('Tháng dự kiến thi không hợp lệ.');
+      if (mm < 1 || mm > 12) throw badRequest('Dự kiến thi không hợp lệ.');
       sets.push('exam_month = ?'); params.push(raw);
       continue;
     }
@@ -297,14 +297,14 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
     }
   });
   const after = cycleById(cycleId);
-  // Đổi tuần dự kiến thi là sự kiện đáng ghi vào hành trình học.
+  // Đổi dự kiến thi là sự kiện đáng ghi vào hành trình học.
   if (patch.examPeriodId !== undefined && patch.examPeriodId !== c.exam_period_id) {
     const before = c.exam_period_id ? periodById(c.exam_period_id)?.code ?? null : null;
     const now = patch.examPeriodId ? periodById(Number(patch.examPeriodId)) : null;
     addJourney({
       studentId: c.student_id, eventType: 'exam_plan_changed',
       eventDate: now?.weekStart ?? nowIso().slice(0, 10),
-      title: 'Đổi tuần dự kiến thi IELTS',
+      title: 'Đổi dự kiến thi IELTS',
       detail: `${before ?? 'chưa có'} → ${now?.code ?? 'chưa có'}`,
       refTable: 'learning_cycles', refId: cycleId, createdBy: p.userId,
     });
@@ -386,7 +386,7 @@ export function setBaseline(p: Principal, cycleId: number, input: {
     // Bài dùng làm căn cứ phải là bài CỦA CHÍNH học viên này, nếu không thì con số đang
     // nói về một người khác.
     const a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
-    if (!a || a.student_id !== c.student_id) throw badRequest('Bài đánh giá không thuộc học viên này.');
+    if (!a || a.student_id !== c.student_id) throw badRequest('Bài kiểm tra không thuộc học viên này.');
   } else {
     if (score === null || score === undefined || score === ('' as any)) {
       throw badRequest('Nhập điểm xuất phát hoặc chọn một bài đánh giá làm căn cứ.');
@@ -406,7 +406,7 @@ export function setBaseline(p: Principal, cycleId: number, input: {
 /**
  * KẾT QUẢ CUỐI LỘ TRÌNH. Khác hẳn việc đóng lộ trình về mặt hành chính.
  *
- * Đóng lộ trình chỉ nói "không học theo lộ trình này nữa". Có đạt mục tiêu hay không là
+ * Đóng lộ trình chỉ nói "không học theo lộ trình này nữa". Có đạt Target hay không là
  * một kết luận riêng, phải có bằng chứng, và "chưa có căn cứ" là một câu trả lời hợp lệ.
  */
 export function setOutcome(p: Principal, cycleId: number, input: {
@@ -479,9 +479,9 @@ export function targetRevisions(cycleId: number) {
  * ĐỔI MỤC TIÊU. Không chấm lại quá khứ.
  *
  * Mỗi lượt đánh giá đã chốt giữ nguyên `target_at_attempt` của nó, nên kỳ vọng của MT2
- * hôm trước vẫn tính trên mục tiêu hồi đó. Đổi mục tiêu chỉ có hiệu lực từ ngày ghi trở
+ * hôm trước vẫn tính trên Target hồi đó. Đổi Target chỉ có hiệu lực từ ngày ghi trở
  * đi, và mỗi lần đổi phải có LÝ DO — nếu không, vài tháng sau không ai còn biết vì sao
- * mục tiêu của em này lại khác trong hồ sơ.
+ * Target của em này lại khác trong hồ sơ.
  */
 export function reviseTarget(p: Principal, cycleId: number, input: {
   /** Số, `null`/'' (chưa có) hoặc KCK / '-' / "không cam kết" (Q29-1). */
@@ -489,14 +489,14 @@ export function reviseTarget(p: Principal, cycleId: number, input: {
 }, o?: { daDuyet?: true }) {
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
-  /* `daDuyet`: chỉ lệnh chuyển lớp lúc thi hành truyền — lệnh đã được kiểm quyền lúc ra (như `applyTransition`). */
+  /* `daDuyet`: chỉ quyết định chuyển lớp lúc thi hành truyền — lệnh đã được kiểm quyền lúc ra (như `applyTransition`). */
   if (!o?.daDuyet) require_(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id }, CHI_QL_SUA);
   const { target, kck } = docTarget(input.newTarget);
   if (target === (c.target_score ?? null) && kck === !!c.khong_cam_ket) return { cycle: c, revision: null };
   const effectiveFrom = input.effectiveFrom ?? nowIso().slice(0, 10);
   if (!isIsoDate(effectiveFrom)) throw badRequest('Ngày hiệu lực không hợp lệ.');
   const reason = (input.reason ?? '').trim();
-  if (!reason) throw badRequest('Ghi lý do đổi mục tiêu.');
+  if (!reason) throw badRequest('Ghi lý do đổi Target.');
 
   return tx(() => {
     const conn = db();
@@ -511,7 +511,7 @@ export function reviseTarget(p: Principal, cycleId: number, input: {
     apTargetLuotChuaDiem(cycleId, target);
     addJourney({
       studentId: c.student_id, cycleId, eventType: 'target_change', eventDate: effectiveFrom,
-      title: `Đổi mục tiêu ${hienTarget(c.target_score, c.khong_cam_ket)} → ${hienTarget(target, kck)}`,
+      title: `Đổi Target ${hienTarget(c.target_score, c.khong_cam_ket)} → ${hienTarget(target, kck)}`,
       detail: reason, refTable: 'cycle_target_revisions', refId: Number(info.lastInsertRowid),
       createdBy: p.userId, dedupKey: `target-rev:${Number(info.lastInsertRowid)}`,
     });

@@ -58,16 +58,16 @@ export const YC_KE_HOACH = (iv: string, tt: string) => `EXISTS (SELECT 1 FROM ye
   AND y_b.doi_tuong_id = (SELECT MIN(i2.id) FROM case_interventions i2 WHERE i2.nhom_bo_tro = ${iv}.nhom_bo_tro))`;
 
 export type SosCaseState = {
-  /** Case do SOS tự tạo: có (hoặc từng có) phương án điền sẵn. Case tạo tay và case Normal thì không. */
+  /** Case do SOS tự tạo: có (hoặc từng có) phương án điền sẵn. Case tạo tay và Case Normal thì không. */
   fromSos: boolean;
-  /** Đã có phân loại nguyên nhân (vấn đề chính). */
+  /** Đã có nhóm nguyên nhân (vấn đề chính). */
   hasCause: boolean;
   /**
-   * `Chờ xác nhận nguyên nhân` (S04, S4-2): case từ SOS đang mở mà chưa có nguyên nhân. PR-SOS: không tính khi đang có thẻ
+   * `Chờ xác nhận nguyên nhân` (S04, S4-2): Case từ SOS đang mở mà chưa có nguyên nhân. PR-SOS: không tính khi đang có thẻ
    * "Không cần theo dõi" chờ Quản lý duyệt (T23 — việc đã chuyển sang Quản lý). Chỉ số `case-cho-xac-dinh-nguyen-nhan` đếm đúng tập này.
    */
   awaitingCause: boolean;
-  /** Hạn Xác nhận nguyên nhân / Xác nhận PA — `sos_cases.han_xac_nhan` (3 ngày tính cả ngày đầu). Chỉ có với case từ SOS. */
+  /** Hạn Xác nhận nguyên nhân / Xác nhận PA — `sos_cases.han_xac_nhan` (3 ngày tính cả ngày đầu). Chỉ có với Case từ SOS. */
   dueOn: string | null;
   /** Đóng vì `Không cần theo dõi` (S05). */
   dismissed: { code: string; label: string; text: string | null } | null;
@@ -79,7 +79,7 @@ export type SosCaseState = {
   boTro: { choNop: boolean; choDuyet: boolean; hanKeHoach: string | null } | null;
 };
 
-/** Điều kiện SQL "case `sc` đang có thẻ Không cần theo dõi chờ duyệt" — MỘT chỗ cho `awaitingCauseCaseIds` và thẻ Báo lên. */
+/** Điều kiện SQL "case `sc` đang có thẻ Không cần theo dõi chờ duyệt" — MỘT chỗ cho `awaitingCauseCaseIds` và thẻ Báo QL. */
 export const CO_THE_KHONG_THEO_DOI = (sc = 'sc') => `EXISTS (SELECT 1 FROM yeu_cau_duyet y_k WHERE y_k.loai = 'khong_theo_doi'
   AND y_k.doi_tuong_loai = 'sos_case' AND y_k.doi_tuong_id = ${sc}.id AND y_k.trang_thai = 'cho')`;
 
@@ -127,7 +127,7 @@ export function sosCaseState(caseId: number): SosCaseState {
   return sosCaseStateMany([caseId]).get(caseId) ?? { ...SOS_STATE_RONG };
 }
 
-/** Trong tập case cho trước, những case đang `Chờ xác nhận nguyên nhân` (một truy vấn cho cả tập, không hỏi từng case). MỘT định nghĩa. */
+/** Trong tập Case cho trước, những Case đang `Chờ xác nhận nguyên nhân` (một truy vấn cho cả tập, không hỏi từng Case). MỘT định nghĩa. */
 export function awaitingCauseCaseIds(caseIds: number[]): number[] {
   const out: number[] = [];
   for (let i = 0; i < caseIds.length; i += 400) {

@@ -47,7 +47,7 @@ export const PERMISSIONS = {
   /**
    * DỜI LỊCH MỘT KỸ NĂNG — sổ SCH-01/SCH-02. Tách khỏi `PLAN_WEEK` vì `PLAN_WEEK` còn kèm
    * theo xếp lịch Fast Track chủ động (`bulkPlan`), việc vẫn của riêng Quản lý. Quyền này chỉ
-   * mở cho GVCN (lớp Normal mình chủ nhiệm) và GVBM (đúng môn mình dạy, lớp Normal) — xem
+   * mở cho GVCN (lớp thường mình chủ nhiệm) và GVBM (đúng môn mình dạy, lớp thường) — xem
    * `teacherAllows` ở `server/src/permissions.ts`. Cấp thẳng `PLAN_WEEK` cho giáo viên để
    * "chữa tạm" sẽ vô tình mở luôn quyền xếp lịch Fast Track — sổ cấm rõ.
    */
@@ -73,7 +73,7 @@ export const PERMISSIONS = {
    *
    * Tách riêng khỏi `sos.edit` vì hai việc khác nhau, và bảng bộ lọc ở mục 6 tài liệu chốt
    * vòng 4 nói thẳng điều đó: Admin chi nhánh VẪN ghi nhận được xử lý (họ ghi hộ việc CS đã
-   * gọi phụ huynh) nhưng KHÔNG có bốn bộ lọc case — hồ sơ chuyên môn của từng em không phải
+   * gọi phụ huynh) nhưng KHÔNG có bốn bộ lọc Case — hồ sơ chuyên môn của từng em không phải
    * việc của văn phòng. Gộp hai quyền làm một thì không thể nói được câu đó.
    */
   CASE_VIEW: 'case.view',
@@ -82,10 +82,10 @@ export const PERMISSIONS = {
    * trong lớp đều báo được, kể cả trái môn: sổ §13.12 nói rõ "GV trong lớp có thể báo vấn
    * đề". Báo được KHÔNG có nghĩa được sửa/xử lý — đó là `SOS_EDIT`, siết theo đúng kỹ năng
    * (Học thuật) hoặc GVCN (Ý thức). Gộp chung hai quyền là đúng lỗ hổng AUTH-01: GV Listening
-   * "báo được" thì cũng "sửa được" case Reading trái môn.
+   * "báo được" thì cũng "sửa được" Case Reading trái môn.
    */
   SOS_REPORT: 'sos.report',
-  /** Sửa/xử lý một case ĐÃ CÓ — đúng kỹ năng mình dạy (Học thuật) hoặc GVCN (Ý thức). */
+  /** Sửa/xử lý một Case ĐÃ CÓ — đúng kỹ năng mình dạy (Học thuật) hoặc GVCN (Ý thức). */
   SOS_EDIT: 'sos.edit',
   /** Kết thúc theo dõi một case. GVCN của lớp và Quản lý — không phải mọi giáo viên. */
   CASE_CLOSE: 'case.close',
@@ -104,7 +104,7 @@ export const PERMISSIONS = {
   // --- Ý thức: vi phạm và biện pháp xử lý (PR-J, thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md mục 6) ---
   /**
    * GHI VI PHẠM (V01) — MỌI giáo viên có phân công dạy lớp đó, kể cả trái môn: cô dạy Writing thấy em đi muộn thì ghi được nhóm
-   * Chuyên cần. C02 KHÔNG áp cho Ý thức: C02 là luật của case học thuật, vi phạm không thuộc kỹ năng nào.
+   * Chuyên cần. C02 KHÔNG áp cho Ý thức: C02 là luật của Case học thuật, vi phạm không thuộc kỹ năng nào.
    */
   VIOLATION_RECORD: 'violation.record',
   /**
@@ -132,23 +132,23 @@ export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
 export const PERMISSION_LABEL: Record<string, string> = {
   'plan.week': 'Chốt tuần MT',
-  'schedule.move': 'Dời lịch một kỹ năng (lớp Normal, đúng phần phụ trách)',
-  'attempt.cancel': 'Huỷ lượt MT',
+  'schedule.move': 'Dời lịch thi (lớp thường, đúng phần phụ trách)',
+  'attempt.cancel': 'Huỷ cả lượt MT',
   'attempt.skip_skill': 'Đánh dấu kỹ năng không mock',
   'deadline.override': 'Đặt hạn nhập điểm riêng',
   'attempt.view': 'Xem lịch và kết quả MT',
   'score.edit': 'Nhập điểm kỹ năng được phân công',
   'score.override': 'Nhập bù điểm ngoài phân công',
   'estimate.edit': 'Cập nhật Đánh giá GV',
-  'case.view': 'Xem danh sách case học vụ',
+  'case.view': 'Xem danh sách Case học vụ',
   'sos.report': 'Báo vấn đề mới',
-  'sos.edit': 'Sửa và xử lý case học vụ (đúng kỹ năng hoặc GVCN)',
-  'case.close': 'Đóng case học vụ',
+  'sos.edit': 'Sửa và xử lý Case học vụ (đúng kỹ năng hoặc GVCN)',
+  'case.close': 'Đóng Case học vụ',
   'case.approve': 'Duyệt phương án học thuật',
   'class.assign': 'Phân công giáo viên vào lớp',
   'class.edit': 'Sửa tiến độ lớp (tuần bắt đầu, tuần kiểm tra)',
   'violation.record': 'Ghi vi phạm của học viên trong lớp mình dạy',
-  'discipline.manage': 'Xử lý Ý thức: sửa vi phạm của người khác, tạo và xác nhận phương án xử lý',
+  'discipline.manage': 'Xử lý Ý thức: sửa vi phạm của người khác, tạo và xác nhận lần xử lý',
   'discipline.stats': 'Xem thống kê Ý thức cả chi nhánh',
   'student.view': 'Xem hồ sơ học viên',
   'student.edit': 'Sửa hồ sơ học viên',
@@ -156,7 +156,7 @@ export const PERMISSION_LABEL: Record<string, string> = {
   'meeting.edit': 'Cập nhật báo cáo và ghi chú',
   'admin.config': 'Quản trị hệ thống',
   'request.approve': 'Duyệt yêu cầu trong hộp Chờ duyệt',
-  'cycle.edit': 'Sửa target, lộ trình học viên',
+  'cycle.edit': 'Sửa Target, lộ trình học viên',
 };
 
 /** Sự kiện hành trình học viên. Bộ lọc chỉ có 3 lựa chọn, xem JOURNEY_FILTERS. */
@@ -189,7 +189,7 @@ export const STUDENT_FILTERS: {
     hint: 'Học viên đang ở mức SOS 1, 2 hoặc 3 theo lượt MT gần nhất.' },
   { key: 'case_working', label: 'Case đang xử lý', needs: 'case.view',
     hint: 'Case đã có phương án và đang trong thời gian theo dõi.' },
-  { key: 'case_no_plan', label: 'Case thiếu PA học thuật', needs: 'case.view',
+  { key: 'case_no_plan', label: 'Case chưa có PA', needs: 'case.view',
     hint: 'Case đã mở nhưng chưa ai ghi sẽ làm gì cho em.' },
   { key: 'case_overdue', label: 'Case quá hạn cập nhật', needs: 'case.view',
     hint: 'Đã qua hẹn xem lại mà chưa ai cập nhật kết quả sau hỗ trợ.' },
@@ -228,7 +228,7 @@ export const WORK_SCOPE_LABEL: Record<WorkScope, string> = {
  * lớp — hai con số khác nhau cho hai câu hỏi khác nhau, nên chữ phải khác. Không bao giờ vừa nói "cả lớp" vừa dẫn tới việc riêng.
  */
 export function needScoresText(scope: WorkScope | null, n: number): string {
-  return scope === 'mine' ? `Bạn cần chấm: ${n} bài` : `Lớp còn ${n} bài chưa nhập điểm`;
+  return scope === 'mine' ? `Cần chấm: ${n} bài` : `Lớp còn ${n} bài chưa nhập điểm`;
 }
 export const WORK_SCOPE_HINT: Record<WorkScope, string> = {
   mine: 'Kỹ năng bạn được phân công dạy.',

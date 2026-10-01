@@ -277,7 +277,7 @@ export function saveUnitReport(
   const period = conn.prepare('SELECT * FROM report_periods WHERE id = ?').get(periodId) as any;
   if (!period) throw notFound('Không tìm thấy tuần báo cáo');
   if (patch.status && !(UNIT_STATUSES as readonly string[]).includes(patch.status)) {
-    throw badRequest('Tình trạng không hợp lệ.');
+    throw badRequest('Trạng thái không hợp lệ.');
   }
 
   const before = conn

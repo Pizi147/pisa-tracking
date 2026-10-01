@@ -131,9 +131,9 @@ export async function runPrKckTests(t: YThucTestKit) {
     assert(cy(x.sid).khong_cam_ket === 0 && cy(x.sid).target_score === 7, JSON.stringify(cy(x.sid)));
     assert(ls2[0].target_at_attempt === 6.5 && ls2.slice(1).every((a) => a.target_at_attempt === 7), JSON.stringify(ls2.map((a) => a.target_at_attempt)));
 
-    cycles.updateCycle(P.mbManager, x.cid, { targetScore: 'kck', lyDo: 'Em chưa cam kết mục tiêu' });      // PATCH lộ trình cũng nhận KCK
+    cycles.updateCycle(P.mbManager, x.cid, { targetScore: 'kck', lyDo: 'Em chưa cam kết Target' });      // PATCH lộ trình cũng nhận KCK
     assert(cy(x.sid).khong_cam_ket === 1 && luot(x.sid).slice(1).every((a) => a.target_at_attempt === null), 'PATCH KCK');
-    cycles.updateCycle(P.mbManager, x.cid, { targetScore: 6, lyDo: 'Em đặt lại mục tiêu' });
+    cycles.updateCycle(P.mbManager, x.cid, { targetScore: 6, lyDo: 'Em đặt lại Target' });
     assert(cy(x.sid).khong_cam_ket === 0 && cy(x.sid).target_score === 6, 'PATCH số bỏ KCK');
   });
 

@@ -19,7 +19,7 @@ import { allProgrammes, programmeByCode, type ProgrammeInfo } from '../normal/re
  * Hai câu hỏi của mục 7.6, và cả hai đều quy về một phép đếm tuần:
  *
  *   Lớp FT     em vào học tuần nào → MT1 tuần thứ 6, MT2 tuần 12, MT3 tuần 16 của em
- *   Lớp Normal lớp khai giảng tuần nào → lớp đang ở tuần thứ mấy trên mấy tuần
+ *   Lớp thường lớp khai giảng tuần nào → lớp đang ở tuần thứ mấy trên mấy tuần
  *
  * NGUYÊN TẮC LỚN NHẤT CỦA FILE NÀY: hệ thống chỉ ĐỀ XUẤT, không bao giờ ghi đè cái người
  * đã xếp. Owner nói rõ: "Đây là lịch mặc định; Quản lý chủ động xếp lại khi cần, và hệ
@@ -274,7 +274,7 @@ export function apLichMacDinhLo(yc: readonly YeuCauLichMt[], actorUserId: number
       'INSERT INTO journey_events (student_id, cycle_id, event_type, event_date, title, detail, ref_table, ref_id, created_by, created_at)',
       [...kqs].filter(([, kq]) => kq.created.length).map(([cycleId, kq]) => [goi.get(cycleId)!.cy.student_id, cycleId, 'mock_scheduled', ngayTao,
         `Lịch MT mặc định · ${kq.created.map((x) => `MT${x.attemptNo} ${tuanLich(x.weekStart, ngayTao)}`).join(' · ')}`,
-        kq.created.some((x) => x.lichSu) ? 'MT có tuần thi đã qua là MT lịch sử — nhập bù, không có hạn' : null,
+        kq.created.some((x) => x.lichSu) ? 'MT có tuần thi đã qua là MT lịch sử — nhập bù, không tính hạn' : null,
         'learning_cycles', cycleId, actorUserId, nowIso()]));
     chenNhieuDong(
       'INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, entity_label, before_json, after_json, created_at)',
@@ -300,14 +300,14 @@ export function applySuggestedMockWeeks(p: Principal, cycleId: number): { create
   return { created: r.created.length, moved: r.moved.length, kept: r.kept };
 }
 
-// ==================================================================== lớp Normal
+// ==================================================================== lớp thường
 
 export type ClassProgress = {
   programmeCode: ProgrammeCode | null;
   programmeName: string | null;
   /** Tổng số tuần của chương trình. NULL với lớp FT — FT không có số tuần cố định. */
   totalWeeks: number | null;
-  /** Lớp đang ở tuần học thứ mấy. NULL khi chưa khai tuần bắt đầu. */
+  /** Lớp đang ở tuần học mấy. NULL khi chưa khai tuần bắt đầu. */
   currentWeek: number | null;
   startPeriodId: number | null;
   startWeekStart: string | null;
@@ -372,7 +372,7 @@ const CLASS_ACTIVE_COUNT_SQL = `
             WHERE lt.student_id = e.student_id AND lt.class_id = e.class_id
               AND lt.huong = 'xep_sau' AND lt.ngay_xem_lai > ?
          ) OR EXISTS (
-           SELECT 1 FROM lenh_chuyen_lop lc WHERE lc.student_id = e.student_id AND lc.trang_thai = 'cho'   -- PR-CT: em đã có lệnh không còn "cần xếp lớp"
+           SELECT 1 FROM lenh_chuyen_lop lc WHERE lc.student_id = e.student_id AND lc.trang_thai = 'cho'   -- PR-CT: em đã có quyết định chuyển lớp không còn "cần xếp lớp"
          ) THEN 0 ELSE 1 END) can_xep_lop
     FROM enrollments e
     JOIN students s ON s.id = e.student_id
@@ -391,7 +391,7 @@ export type TienDoMoc = { phase?: string | null; finalWeekStart?: string | null;
 
 /**
  * PR-S5F-a: lớp thường đã tới Cuối khoá chưa / đã hết khoá chưa — so HÔM NAY với tuần Cuối khoá và tuần kết thúc, KHÔNG theo chặng (Quản lý dời
- * Cuối khoá sớm thì các tuần giữa Cuối khoá và tuần kết thúc là chặng `running`, nhưng vẫn là lúc ra lệnh chuyển lớp). Dải, việc, đề xuất đọc chung.
+ * Cuối khoá sớm thì các tuần giữa Cuối khoá và tuần kết thúc là chặng `running`, nhưng vẫn là lúc ra quyết định chuyển lớp). Dải, việc, đề xuất đọc chung.
  */
 export function mocKetKhoa(pr: TienDoMoc, homNay: string) {
   const tuanKetThuc = pr?.startWeekStart && pr.totalWeeks ? addDays(pr.startWeekStart, (pr.totalWeeks - 1) * 7) : null;
@@ -478,7 +478,7 @@ function computeProgress(
     : null;
 
   /*
-   * CHẶNG CỦA LỚP — owner yêu cầu 13/09/2026: lớp Normal phải TỰ BÁO khi đang trong tuần
+   * CHẶNG CỦA LỚP — owner yêu cầu 13/09/2026: lớp thường phải TỰ BÁO khi đang trong tuần
    * Progress Test, tuần Final Test, và khi đã hết chương trình.
    *
    * Vì sao báo TRƯỚC MỘT TUẦN chứ không chỉ báo trong tuần: đề kiểm tra và lịch phòng phải
@@ -657,7 +657,7 @@ const miss = (key: MissingInfo['key']): MissingInfo => ({ key, ...MISSING_LABEL[
  * Đây KHÔNG phải việc trong hàng đợi công việc — không có hạn, không ai bị thúc. Nó chỉ cần
  * được nhìn thấy bởi vai có trách nhiệm.
  *
- * Lớp Normal KHÔNG bị nhắc tháng thi: các em đó chưa thi IELTS, nhắc là nhắc sai.
+ * Lớp thường KHÔNG bị nhắc tháng thi: các em đó chưa thi IELTS, nhắc là nhắc sai.
  */
 export function missingForStudent(input: {
   cycle: {

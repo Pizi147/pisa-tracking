@@ -142,7 +142,7 @@ export function NganXuatMt({ khung: khungDau, chiNhanh, lop, thoiGianMacDinh, on
     : `Mã · Tên · Chi nhánh · Lớp · Bài · Tuần · điểm % từng môn · % tổng · Trạng thái lượt${cot === 'day-du' ? ' · điểm, tổng và tuần từng môn · Người nhập' : ''}`;
 
   return (
-    <KhungPanel tieuDe={khung === 'ft' ? 'Xuất kết quả Mock Test' : 'Xuất kết quả Test lớp thường'} onDong={onDong}
+    <KhungPanel tieuDe={'Xuất kết quả Test'} onDong={onDong}
       chan={{
         huy: { onClick: onDong },
         phu: <span className="hidden min-w-0 truncate text-xs text-slate-400 sm:inline" title={xtHienTai?.tenTep}>{xtHienTai?.tenTep}</span>,

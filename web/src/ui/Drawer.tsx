@@ -46,7 +46,7 @@ export function ConfirmDialog({ open, onClose, onConfirm, title, body, confirmLa
     <Modal open={open} onClose={onClose} title={title} width="max-w-md"
       footer={
         <>
-          <button className="btn" onClick={onClose} disabled={busy}>Huỷ</button>
+          <button className="btn" onClick={onClose} disabled={busy}>Đóng</button>
           <button className={`btn ${danger ? 'btn-danger' : 'btn-primary'}`} onClick={onConfirm} disabled={busy}>
             {busy ? 'Đang xử lý…' : confirmLabel}
           </button>

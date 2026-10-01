@@ -17,7 +17,7 @@ const ACCEPT = ATTACHMENT_EXTENSIONS.map((e) => `.${e}`).join(',');
 
 /**
  * KHỐI "BẰNG CHỨNG" DÙNG CHUNG (PR-N N6, thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md §4.5) — một khối cho mọi chỗ cần tệp hoặc
- * liên kết: case học thuật, phương án, và (PR-J) vi phạm, biện pháp xử lý.
+ * liên kết: Case học thuật, phương án, và (PR-J) vi phạm, biện pháp xử lý.
  *
  *   + Đính kèm tệp   |   + Thêm liên kết   →   danh sách: tên đọc được · người tải · ngày
  *
@@ -263,7 +263,7 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = 'Bằng chứn
             <button type="button" className="btn btn-sm btn-primary" disabled={linkBusy || !url.trim()} onClick={() => void saveLink()}>
               {linkBusy ? 'Đang lưu…' : 'Lưu'}
             </button>
-            <button type="button" className="btn btn-sm" disabled={linkBusy} onClick={() => { setLinkOpen(false); setLinkError(null); }}>Huỷ</button>
+            <button type="button" className="btn btn-sm" disabled={linkBusy} onClick={() => { setLinkOpen(false); setLinkError(null); }}>Đóng</button>
           </span>
           {linkError && <p className="text-[11px] text-bad m-0 sm:col-span-3" role="alert">{linkError}</p>}
         </div>

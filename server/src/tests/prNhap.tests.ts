@@ -35,12 +35,12 @@ export async function runPrNhapTests(t: YThucTestKit) {
   });
 
   check('NHAP (1) · nhanDangCot theo tiêu đề (YC-5.2)', () => {
-    const r = d.nhanDangCot(['Họ và tên *', 'Ngày sinh', 'E-mail', 'Thi dự kiến', 'Ghi chú', 'STT', 'Lộ trình', 'Họ tên']);
+    const r = d.nhanDangCot(['Họ và tên *', 'Ngày sinh', 'E-mail', 'Dự kiến thi', 'Ghi chú', 'STT', 'Lộ trình', 'Họ tên']);
     assert(JSON.stringify(r.cot) === JSON.stringify(['fullName', 'dob', 'email', 'examDate', null, null, 'route', null]), JSON.stringify(r.cot));
     assert(JSON.stringify(r.boQua) === JSON.stringify(['Ghi chú', 'Họ tên']), JSON.stringify(r.boQua));
   });
 
-  check('NHAP (1) · cotLuoiNhap: lớp thường 4 cột, FT 12 cột (… Thi dự kiến · Đã thi tới MT · Tuần bắt đầu)', () => {
+  check('NHAP (1) · cotLuoiNhap: lớp thường 4 cột, FT 12 cột (… Dự kiến thi · Đã thi tới MT · Tuần bắt đầu)', () => {
     const thuong = d.cotLuoiNhap(true).map((c) => c.key).join(',');
     assert(thuong === 'fullName,dob,email,startWeek', thuong);
     const ft = d.cotLuoiNhap(false).map((c) => c.key);
@@ -88,7 +88,7 @@ export async function runPrNhapTests(t: YThucTestKit) {
     assert(g.cotBoQua.join() === 'Ghi chú', JSON.stringify(g.cotBoQua));
   });
 
-  check('NHAP (3) · xem trước FT: ngày không có thật, thiếu email, thi dự kiến tháng, lộ trình theo lớp', () => {
+  check('NHAP (3) · xem trước FT: ngày không có thật, thiếu email, dự kiến thi tháng, lộ trình theo lớp', () => {
     const pv = intake.previewIntake(P.admin, { classId: ft, rows: [
       { fullName: 'A', dob: '31/02/2010', email: 'a@b.vn' },
       { fullName: 'B' },
@@ -171,7 +171,7 @@ export async function runPrNhapTests(t: YThucTestKit) {
     cycles.updateCycle(P.coreTeacher, cid, { examDate: '05/2027' });
     const b = cy();
     assert(b.exam_date === null && b.exam_month === '2027-05', JSON.stringify(b));
-    t.assertThrows(() => cycles.updateCycle(P.coreTeacher, cid, { examDate: '13/2027' }), /Thi dự kiến/, 'tháng 13');
+    t.assertThrows(() => cycles.updateCycle(P.coreTeacher, cid, { examDate: '13/2027' }), /Dự kiến thi/, 'tháng 13');
     cycles.updateCycle(P.coreTeacher, cid, { startWeek: '2026-10-07' });
     assert(cy().sw === '2026-10-05', String(cy().sw));
   });
@@ -226,7 +226,7 @@ export async function runPrNhapTests(t: YThucTestKit) {
     assert(coLuuY === mt1LichSu, `MT1 lịch sử=${mt1LichSu} nhưng lưu ý=${coLuuY}`);
   });
 
-  check('NHAP (7) · PR-DUYET: GVCN vẫn đặt target + thi dự kiến lúc THÊM MỚI (cycle.edit chỉ chặn SỬA)', () => {
+  check('NHAP (7) · PR-DUYET: GVCN vẫn đặt target + dự kiến thi lúc THÊM MỚI (cycle.edit chỉ chặn SỬA)', () => {
     const r = intake.commitIntake(P.coreTeacher, { classId: ft, idempotencyKey: 'nhap-7-gvcn',
       rows: [{ fullName: 'Nhập GVCN Đặt Target', email: 'gv@demo.test', target: '6.5', examDate: '05/2027' }] });
     assert(r.added === 1, JSON.stringify(r.failed));

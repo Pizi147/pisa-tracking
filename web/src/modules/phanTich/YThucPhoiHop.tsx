@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { useSession } from '../../lib/session.tsx';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { Card, Empty, ErrorState, NhanTrangThai, Skeleton, Th } from '../../ui/ui.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
@@ -22,8 +22,7 @@ const nhanNhom = (x: DongHvCanChuY) => (x.nhom === 'qua_han'
   : <Nhan tone={x.nhom === 'bat_buoc' ? 'soon' : 'wait'}>{NHOM_EM_LABEL[x.nhom]}</Nhan>);
 
 export function YThucPhoiHop(props: PhamViPhanTich) {
-  const { session } = useSession();
-  const demoDate = session?.demoDate ?? null;
+  const demoDate = useNgayNghiepVu().homNay || null;
   const query = thamSoLoc(props);
   const { data, loading, error, reload } = useApi<YThucPhanTichKetQua>(`/phan-tich/y-thuc?${query}`, [query]);
   const nguon = (dong: string, cot: string) => `/phan-tich/y-thuc/o?${query}&dong=${encodeURIComponent(dong)}&cot=${encodeURIComponent(cot)}`;
@@ -45,9 +44,9 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
     const moTa = [tenChiNhanh ?? 'Tất cả chi nhánh', KHOANG_LABEL[props.tg], tenLop, `dữ liệu đến ${ngay(demoDate)}`].filter(Boolean).join(' · ');
     const hv: (string | number)[][] = [
       [`Học viên cần chú ý · ${moTa}`], [],
-      ['Học viên', 'Lớp', 'Trạng thái', 'Bậc hiện tại', 'Bậc kế', 'Vi phạm', 'Chưa xử lý', 'Xử lý gần nhất', 'Ngày'],
-      ...data.hvCanChuY.map((x) => [x.ten, x.lop ?? '', NHOM_EM_LABEL[x.nhom], x.bac ?? 'Chưa bậc nào', x.bacKe ?? '', x.viPham, x.chuaXuLy,
-        x.bienPhapGanNhat ?? '', x.ngay ? ngay(x.ngay, demoDate) : '']),
+      ['Học viên', 'Lớp', 'Trạng thái', 'Bậc hiện tại', 'Bậc kế', 'Vi phạm', 'Chưa xử lý', 'Lần xử lý gần nhất', 'Ngày'],
+      ...data.hvCanChuY.map((x) => [x.ten, x.lop ?? '', NHOM_EM_LABEL[x.nhom], x.bac ?? 'Chưa xử lý lần nào', x.bacKe ?? '', x.viPham, x.chuaXuLy,
+        `${x.bienPhapGanNhat ?? ''}${x.lanXuLyMoi ? ` (mới hơn: ${x.lanXuLyMoi.ten} · ${x.lanXuLyMoi.nhan})` : ''}`, x.ngay ? ngay(x.ngay, demoDate) : '']),
     ];
     const dongLop = (x: DongLopViPham, thut: boolean): (string | number)[] => [
       `${thut ? '  ' : ''}${x.nhan}`, x.viPham, x.chuaXuLy, x.hvCoViPham, x.siSo ?? '', nhanSoVoiTruoc(x.soVoiTruoc).chu, x.gvcn ?? '',
@@ -60,13 +59,13 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
     ];
     const pa: (string | number)[][] = [
       [`Xử lý đã xong trong kỳ theo loại · ${moTa}`], [],
-      ['Loại xử lý', 'Đã xong'],
+      ['Loại xử lý', 'Xong'],
       ...KHOA_LOAI_XU_LY.filter((k) => k !== 'loai-cu' || data.bienPhapTheoLoai[k]).map((k) => [nhanLoaiXuLy(k), data.bienPhapTheoLoai[k] ?? 0]),
     ];
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(hv), 'HV can chu y');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(lop), 'Lop nhieu vi pham');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(pa), 'Xu ly theo loai');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(hv), 'HV cần chú ý');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(lop), 'Lớp nhiều vi phạm');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(pa), 'Xử lý theo loại');
     XLSX.writeFile(wb, `y-thuc-${ngay(demoDate).split('/').join('-')}.xlsx`);
   }
 
@@ -102,7 +101,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
             <Th hint="Bậc cao nhất đã xử lý trên thang (kể cả bậc khai trước khi dùng web)">Bậc hiện tại</Th>
             <Th hint="Lần xử lý bắt buộc kế tiếp; WL 3 cần QL duyệt">Bậc kế</Th>
             <Th align="right" hint="Trong khoảng đang lọc">Vi phạm</Th><Th align="right" hint="Mới · Cần xử lý · Quá hạn (Đã ghi nhận không tính)">Chưa xử lý</Th>
-            <Th hint="Lần xử lý đã xong gần nhất">Xử lý gần nhất</Th>
+            <Th hint="Lần xử lý đã xong gần nhất; lần mới hơn còn chờ duyệt hoặc bị từ chối hiện ở dòng dưới, kèm trạng thái">Lần xử lý gần nhất</Th>
           </tr>
         </thead>
         <tbody>
@@ -111,12 +110,13 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
               <td className="td sticky-col"><Link to={duongHoSoHocVien(x.studentId, { tab: 'y-thuc' })} className="link font-semibold">{x.ten}</Link></td>
               <td className="td text-slate-300">{x.lop ?? ''}</td>
               <td className="td">{nhanNhom(x)}</td>
-              <td className="td text-slate-200">{x.bac ?? <span className="text-faint">Chưa bậc nào</span>}</td>
+              <td className="td text-slate-200">{x.bac ?? <span className="text-faint">Chưa xử lý lần nào</span>}</td>
               <td className="td text-slate-300">{x.bacKe}</td>
               <td className="td text-right tabular-nums"><SoLieuO giaTri={x.viPham} nguon={nguon(`hv:${x.studentId}`, 'vi-pham')} tieuDe={`${x.ten} · vi phạm`} /></td>
               <td className="td text-right tabular-nums"><SoLieuO giaTri={x.chuaXuLy} nguon={nguon(`hv:${x.studentId}`, 'chua-xu-ly')} tieuDe={`${x.ten} · chưa xử lý`} /></td>
               <td className="td truncate text-slate-300" title={x.bienPhapGanNhat ?? undefined}>
                 {x.bienPhapGanNhat ? `${x.bienPhapGanNhat}${x.ngay ? ` · ${ngay(x.ngay, demoDate)}` : ''}` : <span className="text-faint">—</span>}
+                {x.lanXuLyMoi && <div className="text-[11px] text-wait">{x.lanXuLyMoi.ten} · {x.lanXuLyMoi.nhan}</div>}
               </td>
             </tr>
           ))}
@@ -156,7 +156,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
                       <thead>
                         <tr>
                           <Th className="sticky-col">Lớp / nhóm vi phạm</Th><Th align="right">Vi phạm</Th><Th align="right">Chưa xử lý</Th>
-                          <Th align="right" hint="Học viên có vi phạm / sĩ số lớp">HV có VP</Th>
+                          <Th align="right" hint="Học viên có vi phạm / sĩ số lớp">HV có vi phạm</Th>
                           <Th align="right" className="pr-5" hint="So với khoảng cùng độ dài liền trước">± kỳ trước</Th><Th>GVCN</Th>
                         </tr>
                       </thead>

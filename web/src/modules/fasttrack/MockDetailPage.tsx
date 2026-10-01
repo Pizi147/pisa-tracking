@@ -36,7 +36,7 @@ import { usePeriods } from '../../ui/Filters.tsx';
 
 type Detail = {
   id: number;
-  /** `mock` với Fast Track; `progress` / `final` là bài của lớp Normal — màn khác hẳn. */
+  /** `mock` với Fast Track; `progress` / `final` là bài của lớp thường — màn khác hẳn. */
   kind: string;
   student: { id: number; name: string; code: string };
   cycle: { id: number; seq: number; route: string | null; target: number | null; khongCamKet?: boolean; examPlan: ExamPlan };
@@ -58,7 +58,7 @@ type Detail = {
   history: any[];
   /** Điểm: ai sửa, trước → sau (PR-I). */
   scoreHistory: ScoreHistoryRow[];
-  /** PR-MT (T34): MT lịch sử — nhập bù, không có hạn, không luồng vắng. */
+  /** PR-MT (T34): MT lịch sử — nhập bù, không tính hạn, không luồng vắng. */
   lichSu: boolean;
   viewer: {
     canPlanWeek: boolean; canCancel: boolean; canHandleAbsence: boolean;
@@ -140,7 +140,7 @@ export default function MockDetailPage() {
   if (loading || !data) return <Skeleton rows={10} />;
 
   /*
-   * CHẶN CỬA: bài của lớp Normal KHÔNG được dựng bằng màn này.
+   * CHẶN CỬA: bài của lớp thường KHÔNG được dựng bằng màn này.
    *
    * Màn Mock Test gọi mọi lượt là "MT{n}", chấm theo band và so với kỳ vọng target — cả ba
    * thứ đó đều sai với một bài Progress Test. Mọi đường dẫn trong hệ thống đã trỏ đúng màn,
@@ -193,7 +193,7 @@ export default function MockDetailPage() {
   const laRf = d.cycle.route === 'RF';
   const dong2 = [
     d.period ? `${tuanLich(d.period.weekStart, homNay)} · ${d.period.range}` : 'Chưa chốt tuần',
-    d.classCode, d.cycle.route ? `Lộ trình ${d.cycle.route}` : null, d.lichSu ? 'Nhập bù, không có hạn' : null,
+    d.classCode, d.cycle.route ? `Lộ trình ${d.cycle.route}` : null, d.lichSu ? 'Nhập bù, không tính hạn' : null,
   ].filter(Boolean).join(' · ');
   const moODiem = (k: KyNangLon) => { setMoO(k); document.getElementById('dai-diem')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
 
@@ -216,15 +216,15 @@ export default function MockDetailPage() {
       {/* A. ĐẦU TRANG — ai · đợt nào · kết luận gì, trong ba dòng. */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <button className="btn btn-sm btn-ghost mb-1" onClick={() => navigate(-1)}>← Quay lại</button>
+          <button className="btn btn-sm btn-ghost mb-1 min-h-[44px] sm:min-h-0" onClick={() => navigate(-1)}>← Quay lại</button>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <h1 className="text-lg font-semibold text-slate-100 min-w-0 break-words">
-              {d.student.name} <span className="text-slate-500 text-sm">· {d.student.code}</span>
+              <span className="mr-2 text-sm font-medium text-slate-400">Hồ sơ Mock Test ·</span>{d.student.name} <span className="text-slate-500 text-sm">· {d.student.code}</span>
               <span className="text-slate-300 text-base font-medium whitespace-nowrap"> · MT{d.attemptNo}{d.lichSu && <> <ChipLichSu /></>}</span>
             </h1>
             {cancelled && <Tag>Đã huỷ</Tag>}
             {coKhoa && !cancelled && <Tag title={KHOA_HOAN_TAT_HINT}>Đã hoàn tất</Tag>}
-            {laRf && <span className="text-xs text-slate-400" title="Lộ trình RF — kỳ vọng mọi MT bằng target.">RF</span>}
+            {laRf && <span className="text-xs text-slate-400" title="Lộ trình RF — kỳ vọng mọi MT bằng Target.">RF</span>}
             <ChonDot hienTai={d.id} ds={dsDot.data?.rows ?? []} homNay={homNay} onChon={(r) => navigate(attemptHref(r))} />
           </div>
           <p className="text-xs text-slate-500 mt-0.5 m-0" title={d.branchName ? `Lớp lúc đánh giá: ${d.classCode ?? '—'} · ${d.branchName}` : undefined}>
@@ -249,7 +249,7 @@ export default function MockDetailPage() {
         <KetQuaDot coDiem={d.result.scoredRequired} yeuCau={d.result.required.length} dat={passed}
           sos={d.result.sosLevel ?? null} />
         <span className="text-sm text-slate-400 tabular-nums">
-          Kỳ vọng {fmtBand(d.result.expectation)}{laRf && d.result.expectation !== null ? ' = target' : ''}
+          Kỳ vọng {fmtBand(d.result.expectation)}{laRf && d.result.expectation !== null ? ' = Target' : ''}
         </span>
         {d.deadlineOverride && (
           <Tag title={d.deadlineOverride.reason ?? undefined}>
@@ -281,13 +281,13 @@ export default function MockDetailPage() {
               ? <>{tuanLich(d.period.weekStart, homNay)} <span className="text-slate-500 text-xs">({d.period.range})</span></>
               : <Tag pending>Chưa chốt tuần</Tag>}
           </Info>
-          <Info label="Thi thật dự kiến"><ExamPlanText plan={d.cycle.examPlan} /></Info>
-          <Info label="Mục tiêu tại thời điểm đánh giá">
+          <Info label="Dự kiến thi"><ExamPlanText plan={d.cycle.examPlan} /></Info>
+          <Info label="Target tại thời điểm đánh giá">
             <TargetText band={d.targetAtAttempt} kck={d.targetAtAttempt === null && d.cycle.khongCamKet} />
           </Info>
           {d.studyWeekHint && (
             <Info label="Mốc gợi ý" title="Tuần học của chương trình và mã tuần lịch là hai khái niệm khác nhau.">
-              Tuần học FT {d.studyWeekHint}
+              Tuần học {d.studyWeekHint}
             </Info>
           )}
         </dl>
@@ -296,7 +296,7 @@ export default function MockDetailPage() {
       {/* D. LỊCH KIỂM TRA — MỘT bảng làm việc: lịch, tình trạng, thao tác từng bài (điểm đã ở dải trên). */}
       <SkillWorkTable d={d} onMoDiem={moODiem} onDone={reload} onOpenHistory={openHistory} />
 
-      {/* E. LỊCH SỬ THAY ĐỔI — thu gọn cuối trang. Hồ sơ Test không còn khối case (rule book §17.5). */}
+      {/* E. LỊCH SỬ THAY ĐỔI — thu gọn cuối trang. Hồ sơ Test không còn khối Case (rule book §17.5). */}
       <HistoryCard d={d} />
 
       <WeekModal open={weekOpen} onClose={() => setWeekOpen(false)} attemptId={d.id}
@@ -463,7 +463,7 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory }: {
         </div>
 
         <div role="cell">
-          <Label>Lịch kiểm tra</Label>
+          <Label>Lịch Test</Label>
           {!r.required ? <span className="text-slate-500 text-xs">—</span>
             : r.periodCode
               ? <>{tuanLich(r.weekStart, homNay)} <span className="text-slate-500 text-xs block sm:inline">({r.weekRange})</span></>
@@ -475,7 +475,7 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory }: {
         </div>
 
         <div role="cell" className="space-y-1">
-          <Label>Tình trạng và hạn</Label>
+          <Label>Trạng thái và hạn</Label>
           {r.required && (
             <Status kind={prog === 'scored' ? 'done'
               /* MT lịch sử: nhập bù, không hạn — xám như việc "không tính hạn", không màu chờ. */
@@ -485,7 +485,7 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory }: {
             </Status>
           )}
           {/* Đã có điểm thì chip trạng thái đã nói đủ; hạn chỉ còn nghĩa khi bài còn nợ. */}
-          {/* MT lịch sử không có hạn (T34) — chip tình trạng "Nhập bù, không có hạn" đã nói đủ. */}
+          {/* MT lịch sử không có hạn (T34) — chip tình trạng "Nhập bù, không tính hạn" đã nói đủ. */}
           {prog !== 'scored' && !d.lichSu && <div><DeadlinePill cell={c} /></div>}
           {ownsSchedule && r.absenceMoveCount > 0 && (
             <div className="text-[11px] text-amber-200">Đã dời do vắng {r.absenceMoveCount} lần</div>
@@ -528,7 +528,7 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory }: {
       : d.cells.filter((x) => x.assessedSkill === 'writing' && coDiemO(x)).map((x) => x.skill));
 
   return (
-    <Card title="Lịch kiểm tra"
+    <Card title="Lịch Test"
       action={<div className="flex items-center gap-2">
         {d.splitWeeks && <Tag>Đợt này thi ở nhiều tuần</Tag>}
         <button type="button" className="btn btn-sm" onClick={onOpenHistory}>Lịch sử</button>
@@ -542,12 +542,12 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory }: {
       {d.cells.length === 0 ? (
         <Empty title="Lớp này chưa cấu hình kỹ năng nào" />
       ) : (
-        <div role="table" aria-label="Lịch kiểm tra theo kỹ năng">
+        <div role="table" aria-label="Lịch Test theo kỹ năng">
           <div role="row"
             className={`${ROW_GRID} hidden px-2 pb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500`}>
             <div role="columnheader">Kỹ năng</div>
-            <div role="columnheader">Lịch kiểm tra</div>
-            <div role="columnheader">Tình trạng và hạn</div>
+            <div role="columnheader">Lịch Test</div>
+            <div role="columnheader">Trạng thái và hạn</div>
             <div role="columnheader" className="text-right">Thao tác</div>
           </div>
           {cells.map(renderRow)}
@@ -560,7 +560,7 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory }: {
         </SectionNote>
       )}
       {d.result.complete && !d.result.evaluable && (
-        <SectionNote>Đã đủ điểm nhưng lộ trình chưa có mục tiêu, nên chưa tính được kỳ vọng và SOS.</SectionNote>
+        <SectionNote>Đã đủ điểm nhưng lộ trình chưa có Target, nên chưa tính được kỳ vọng và SOS.</SectionNote>
       )}
 
       {hop && (
@@ -586,7 +586,7 @@ function Label({ children }: { children: React.ReactNode }) {
 function HistoryCard({ d }: { d: Detail }) {
   return (
     <div id="lich-su">
-      <Card title="Lịch sử thay đổi">
+      <Card title="Lịch sử">
         <DongThoiGianLuot history={d.history} scoreHistory={d.scoreHistory} />
       </Card>
     </div>
@@ -631,7 +631,7 @@ function WeekModal({ open, onClose, attemptId, currentPeriodId, batBuocLyDo, onD
         <label className="block">
           <span className="label">Tuần mới</span>
           <select className="field" value={periodId ?? ''} onChange={(e) => setPeriodId(Number(e.target.value) || null)}>
-            <option value="">Chọn tuần…</option>
+            <option value="">Chọn tuần</option>
             {(periods.data ?? []).map((p) => <option key={p.id} value={p.id}>{tuanLich(p.weekStart, homNay)} · {p.range}</option>)}
           </select>
         </label>
@@ -715,7 +715,7 @@ function CancelDialog({ open, onClose, attemptId, attemptNo, heQua, onDone }: {
     <ConfirmDialog
       open={open} onClose={onClose} danger busy={busy}
       title={caLuot ? `Huỷ cả lượt MT${attemptNo}` : `Huỷ phần còn lại của MT${attemptNo}`}
-      confirmLabel={caLuot ? 'Huỷ cả lượt' : 'Huỷ phần còn lại'}
+      confirmLabel={caLuot ? `Huỷ cả lượt MT${attemptNo}` : 'Huỷ phần còn lại'}
       body={
         <div className="space-y-2">
           <p>
@@ -790,9 +790,9 @@ function AbsenceMoveModal({ open, row, detail, onClose, onDone }: {
       footer={result
         ? <button className="btn btn-primary" onClick={close}>Đóng</button>
         : <>
-          <button className="btn" onClick={close} disabled={busy}>Huỷ</button>
+          <button className="btn" onClick={close} disabled={busy}>Đóng</button>
           <button className="btn btn-primary" disabled={busy} onClick={submit}>
-            {busy ? 'Đang xử lý…' : 'Xử lý việc vắng'}
+            {busy ? 'Đang xử lý…' : 'Xếp lại bài vắng'}
           </button>
         </>}>
       {result ? (

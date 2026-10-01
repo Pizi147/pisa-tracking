@@ -186,10 +186,10 @@ export function nhanKhoiPa(
     if (ketQua) {
       return { ten, dau: ketQua.dau, tone: ketQua.tone, day: ghep(ten, `${ketQua.dau} ${outcomeLabelFor(pa.lastOutcome!)}`, khoang) };
     }
-    return { ten, dau: '■', tone: 'done', day: ghep(ten, '■ Đã kết thúc, chưa ghi kết quả', khoang) };
+    return { ten, dau: '■', tone: 'done', day: ghep(ten, '■ Chờ ghi kết quả', khoang) };
   }
   if (pa.followupOverdue) {
-    const quaHan = `⚠ Quá hạn cập nhật${pa.soNgayQuaHan ? ` ${pa.soNgayQuaHan} ngày` : ''}`;
+    const quaHan = `Quá hạn${pa.soNgayQuaHan ? ` · ${pa.soNgayQuaHan} ngày` : ''}`;
     return { ten, dau: '⚠', tone: 'late', day: ghep(ten, '▶ Đang thực hiện', quaHan, khoang) };
   }
   return { ten, dau: '▶', tone: 'run', day: ghep(ten, '▶ Đang thực hiện', khoang) };
@@ -245,7 +245,7 @@ export function khoiCho(v: { cho?: 'nguyen-nhan' | 'ke-hoach' | null; soPa: numb
   return v.pa.length ? null : 'Chờ xác nhận PA';
 }
 
-/** Hàng Tuần học / Tuần khoá của trục (Q31-11): FT = tuần học thứ n của em (bỏ tuần Tạm dừng, tuần dừng → null); lớp thường = tuần khoá 1…n. */
+/** Hàng Tuần học / Tuần học của trục (Q31-11): FT = tuần học n của em (bỏ tuần Tạm dừng, tuần dừng → null); lớp thường = tuần khoá 1…n. */
 export function soTuanCot(
   t: { loai: 'ft'; ds: readonly { batDau: string; tu: string; den: string | null }[] } | { loai: 'khoa'; ds: readonly { batDau: string; tong: number | null; tu: string; den: string | null }[] } | null,
   dung: readonly { tu: string; den: string | null }[],
@@ -392,7 +392,7 @@ export function nhanGhim(a: {
     const so = `MT${a.attemptNo}`;   // bản gọn (điện thoại) không kèm "lịch sử"
     const mt = a.lichSu ? `${so} lịch sử` : so;
     const tuan = a.tuan ? tuanLich(a.tuan, a.homNay) : null;
-    if (a.soCoDiem === 0) return { chu: mt, gon: so, day: ghep(mt, tuan, a.lichSu ? 'nhập bù, không có hạn' : 'chưa có điểm'), mau: 'tam', hai: [so, ''] };
+    if (a.soCoDiem === 0) return { chu: mt, gon: so, day: ghep(mt, tuan, a.lichSu ? 'nhập bù, không tính hạn' : 'chưa có điểm'), mau: 'tam', hai: [so, ''] };
     if (a.soCoDiem < a.soYeuCau) {
       return { chu: `${mt} · đang chấm`, gon: so, day: ghep(mt, tuan, `đang chấm ${a.soCoDiem}/${a.soYeuCau} kỹ năng`), mau: 'tam', hai: [so, `${a.soCoDiem}/${a.soYeuCau}`] };
     }
@@ -490,7 +490,7 @@ export type HangLuoi = {
 };
 
 /**
- * SỐ HÀNG CỦA LƯỚI DUY NHẤT (1-based; PR-VAI-b, mockup 26 bản 1): hàng 1 tháng, 2 tuần, [Tuần học / Tuần khoá], [Lớp], [Đợt Test]; mỗi hộp
+ * SỐ HÀNG CỦA LƯỚI DUY NHẤT (1-based; PR-VAI-b, mockup 26 bản 1): hàng 1 tháng, 2 tuần, [Tuần học / Tuần học], [Lớp], [Đợt Test]; mỗi hộp
  * một hàng khe 10px, một hàng đầu, rồi mỗi Case MỘT HÀNG KHUNG (Case = khung rỗng) + `so` hàng tầng PA (PA = khối đặc; tầng đầu
  * `minmax(30px, auto)`, tầng thêm 30px; Case chưa có PA vẫn một hàng cho khối "chờ"); cuối hộp thêm một hàng `auto` nếu có "+n vấn đề cũ hơn".
  * `khung` = [hàng đầu, hàng sau cùng + 1). `hangCuoi` = hàng sau cùng của cả lưới + 1.
@@ -526,7 +526,7 @@ export type LopChuong = {
   enrollmentId: number; classId: number; code: string; ngan: string; nhan: string; ct: string | null; ft: boolean;
   tu: string; den: string | null; dangHoc: boolean; soTuan: number | null; tuanHoc: { tu: number | null; den: number | null; dangDung: boolean } | null;
   gvcn: string | null; endKind: string | null; status: string; endReason: string | null;
-  /** Lệnh chuyển lớp (đã chuyển) RỜI lớp này — Quản lý ra lệnh; `xacNhan` = GVCN lớp cũ đã xác nhận bàn giao. */
+  /** Quyết định chuyển lớp (đã chuyển) RỜI lớp này — Quản lý ra lệnh; `xacNhan` = GVCN lớp cũ đã xác nhận bàn giao. */
   lenh: { id: number; xacNhan: boolean } | null;
 };
 export type CaseChuongVao = {
@@ -537,7 +537,7 @@ export type CaseChuong = {
   caseId: number; ten: string; kyNang: string; sos: number | null;
   /** Đợt Test mà Case xong ở đó (`MT2`, `Cuối khoá`) — chỉ ở chương Case đóng. */
   xongO: string | null;
-  /** Case còn đi tiếp sang lớp sau — ghi ở chương cũ ("Case đi theo em sang MB FT 101"). */
+  /** Case còn đi tiếp sang lớp sau — ghi ở chương cũ ("Case bàn giao sang MB FT 101"). */
   diTheoSang: string | null;
   pa: { id: number; ten: string; tone: TonePaChuong }[];
 };
@@ -558,7 +558,7 @@ const RA_THEO_END_KIND: Record<string, RaChuong['loai']> = {
  * CHIA ĐƯỜNG ĐI CỦA EM THÀNH CHƯƠNG (Q14) — một chương = một ghi danh, cũ → mới.
  *   Case thuộc chương chứa NGÀY MỞ; còn mở qua chương sau / đóng ở chương sau → hiện ở chương sau, chương cũ ghi `diTheoSang`.
  *   PA thuộc chương chứa ngày BẮT ĐẦU PA. Ghim Test theo `class_id` của lượt. Không việc, hạn, người giữ việc.
- *   "Vì sao sang lớp sau" (`ra`) = kết thúc vì (`end_kind`) + lệnh chuyển đã thi hành ("Quản lý ra lệnh").
+ *   "Vì sao sang lớp sau" (`ra`) = kết thúc vì (`end_kind`) + quyết định chuyển lớp đã thi hành ("Quản lý ra lệnh").
  */
 /** Chân chương "lên lớp" (mockup 26): "Lên FT" · "Lên BE" · kèm bổ trợ miễn phí "Lên FT + bổ trợ S" (tên môn ngắn theo chương trình lớp cũ). */
 export function chuLen(sau: { ft: boolean; ct: string | null } | null, bo: BoTroMienPhi | null, ctCu: string | null): string {
@@ -604,8 +604,8 @@ export function chiaChuong<G extends { classId: number | null; tuan: string | nu
     const ra: RaChuong | null = l.dangHoc ? null : {
       loai,
       chu: loai === 'len' ? chuLen(sau, boTroCuaChuong(l.classId), l.ct) : loai === 'chuyen' ? 'Chuyển lớp' : loai === 'hoc-lai' ? 'Học lại'
-        : loai === 'bao-luu' ? 'Bảo lưu' : loai === 'dung' ? 'Dừng học' : loai === 'ket-thuc' ? 'Kết thúc học' : l.status === 'paused' ? 'Tạm dừng học' : 'Rời lớp',
-      how: l.lenh ? 'Quản lý ra lệnh' : loai === 'len' ? 'theo Cuối khoá' : l.endReason,
+        : loai === 'bao-luu' ? 'Tạm dừng học (bảo lưu)' : loai === 'dung' ? 'Dừng học hẳn' : loai === 'ket-thuc' ? 'Kết thúc học' : l.status === 'paused' ? 'Tạm dừng học' : 'Rời lớp',
+      how: l.lenh ? 'Quản lý quyết định' : loai === 'len' ? 'theo Cuối khoá' : l.endReason,
       tu: sau?.tu ?? null,
       docBanGiao: l.lenh?.xacNhan ? { lenhId: l.lenh.id, lopNguonId: l.classId } : null,
     };
@@ -623,7 +623,7 @@ export function chiaChuong<G extends { classId: number | null; tuan: string | nu
 
 /** "Lặp lại qua các lớp" (mockup 26): kỹ năng có Case ở ≥ 2 chương — máy tự viết dòng cảnh báo. */
 export function lapLaiQuaLop(chuong: readonly { code: string; caseDong: readonly { caseId: number; kyNang: string }[] }[]): { kyNang: string; lop: string[] }[] {
-  /* Case đi theo em sang lớp sau vẫn là MỘT Case — chỉ tính ở chương nó mở (lần gặp đầu, chương xếp cũ → mới). */
+  /* Case bàn giao sang lớp sau vẫn là MỘT Case — chỉ tính ở chương nó mở (lần gặp đầu, chương xếp cũ → mới). */
   const daGap = new Set<number>();
   const theoKn = new Map<string, string[]>();
   for (const c of chuong) {

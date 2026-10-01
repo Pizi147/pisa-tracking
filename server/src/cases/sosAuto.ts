@@ -29,7 +29,7 @@ export { UNCONFIRMED_PRESET, NOT_UNCONFIRMED_PRESET, PA_QUY_CHE_CHUA_GHI } from 
  * Chỉ lượt Mock Test FAST TRACK mới đi qua đây (Q-V3-1). Lớp thường KHÔNG có SOS: Giữa khoá tự tạo Case + PA Bổ trợ (PR-LT2a, `cases/boTro.ts`), Cuối khoá không tín
  * hiệu (LT2b) — không phương án điền sẵn theo mức SOS, không Phối hợp SOS.
  *
- * `cases/sos.ts` (nơi sở hữu `raiseSignalsForResult`, `taoCaseTuDong`) quyết định KHI NÀO tạo hay gắn case; file này lo phần "PA theo quy chế":
+ * `cases/sos.ts` (nơi sở hữu `raiseSignalsForResult`, `taoCaseTuDong`) quyết định KHI NÀO tạo hay gắn Case; file này lo phần "PA theo quy chế":
  *   · dựng PA theo bảng MT × mức SOS (`shared/domain/sos.ts`) — PA "CHỜ XÁC NHẬN", KHÔNG tự chạy (Q28-3),
  *   · đồng bộ PA quy chế chờ xác nhận khi mức SOS của lượt đổi (Q24),
  *   · Xác nhận Case → Xác nhận PA, Không cần theo dõi (thẻ Chờ duyệt) — phần dưới.
@@ -40,8 +40,8 @@ export { UNCONFIRMED_PRESET, NOT_UNCONFIRMED_PRESET, PA_QUY_CHE_CHUA_GHI } from 
  */
 
 /**
- * Lượt này có phải Mock Test Fast Track không. Chỉ lượt Mock của lớp chấm theo band mới tự tạo case / phối hợp; Progress/Final Test của
- * lớp Normal (chấm theo tỷ lệ) thì không.
+ * Lượt này có phải Mock Test Fast Track không. Chỉ lượt Mock của lớp chấm theo band mới tự tạo Case / phối hợp; Giữa khoá / Cuối khoá của
+ * lớp thường (chấm theo tỷ lệ) thì không.
  */
 export function isFastTrackMock(attempt: { kind?: string | null }, scoringMode: 'band' | 'ratio'): boolean {
   return (attempt.kind ?? 'mock') === 'mock' && scoringMode === 'band';
@@ -49,7 +49,7 @@ export function isFastTrackMock(attempt: { kind?: string | null }, scoringMode: 
 
 /**
  * NGÀY THI DỰ KIẾN của lộ trình, chỉ khi ĐÃ CHỐT TUẦN (`examPlanOf` mức `week`): hết Chủ nhật của tuần thi. Mới biết tháng thì để TRỐNG —
- * bịa một ngày là tạo hạn giả. (Đặc tả §4: "ngày thi dự kiến nếu có".)
+ * bịa một ngày là tạo hạn giả. (Đặc tả §4: "dự kiến thi nếu có".)
  */
 export function examDateOf(cycleId: number | null | undefined): string | null {
   if (!cycleId) return null;
@@ -93,11 +93,11 @@ export function createPresetPlan(input: {
 /**
  * ĐỒNG BỘ PA QUY CHẾ CHỜ XÁC NHẬN với mức SOS hiện tại của lượt (PR-N1 Q24, PR-SOS).
  *
- * Điểm thường được nhập từng kỹ năng, bởi từng GVBM, vào những lúc khác nhau — nên case đầu tiên ra đời khi lượt mới ở SOS1, trước khi
+ * Điểm thường được nhập từng kỹ năng, bởi từng GVBM, vào những lúc khác nhau — nên Case đầu tiên ra đời khi lượt mới ở SOS1, trước khi
  * SOS3 xuất hiện. Đặc tả §4 nói phương án theo MỨC SOS CỦA CẢ LƯỢT, nên PA chờ xác nhận phải theo mức mới nhất. PA đã xác nhận thì
  * không bao giờ bị đụng.
  *
- * Áp cho case mà lượt này mở (`opened`) hoặc trượt lại (`repeat`): PA chờ xác nhận chưa chạy nên đi theo hàng MT mới nhất.
+ * Áp cho Case mà lượt này mở (`opened`) hoặc trượt lại (`repeat`): PA chờ xác nhận chưa chạy nên đi theo hàng MT mới nhất.
  */
 export function resyncUnconfirmedPresets(
   attempt: { id: number; attempt_no: number; cycle_id?: number | null },
@@ -123,7 +123,7 @@ export function resyncUnconfirmedPresets(
   }
 }
 
-/** Ghi hành trình + audit + báo GVBM (người phụ trách) cho một case vừa được SOS tự tạo. `hanXacNhan` = `sos_cases.han_xac_nhan`. */
+/** Ghi hành trình + audit + báo GVBM (người phụ trách) cho một Case vừa được SOS tự tạo. `hanXacNhan` = `sos_cases.han_xac_nhan`. */
 export function announceAutoCase(input: {
   caseId: number; studentId: number; cycleId: number | null; skillLabel: string; attemptNo: number;
   sosLevel: number | null; ownerUserId: number | null; detectedOn: string; hanXacNhan: string; actorUserId: number | null;
@@ -149,7 +149,7 @@ export function announceAutoCase(input: {
       .get(input.studentId) as any)?.code ?? null;
     notify({
       userId: input.ownerUserId, kind: 'sos',
-      title: `Xác nhận nguyên nhân ${input.skillLabel} — ${[st?.full_name, lop].filter(Boolean).join(' · ')}`,
+      title: `Xác nhận nguyên nhân ${input.skillLabel} · ${[st?.full_name, lop].filter(Boolean).join(' · ')}`,
       body: `Case mới sau ${input.dot === 'giua-khoa' ? 'Giữa khoá' : `MT${input.attemptNo}`}: ${ten} · hạn ${ngay(input.hanXacNhan, demoToday())}`,
       entityType: 'sos_case', entityId: input.caseId, dedupKey: `sos-case:${input.caseId}`,
     });
@@ -158,7 +158,7 @@ export function announceAutoCase(input: {
 
 // ---------------------------------------------------------------- Xác nhận Case · Xác nhận PA · Không cần theo dõi (S4-2…S4-7)
 
-const EDIT_MESSAGE = 'Bạn chỉ xử lý được case của kỹ năng mình được phân công (hoặc là Quản lý trong phạm vi).';
+const EDIT_MESSAGE = 'Bạn chỉ xử lý được Case của kỹ năng mình được phân công (hoặc là Quản lý trong phạm vi).';
 
 /** Ghi một mốc của Case (khoá chống trùng tuỳ chọn). Viết tại chỗ để không import vòng `sos.ts`. */
 export function ghiMoc(caseId: number, kind: MilestoneKind, on: string, note: string | null, actor: number | null, dedupKey: string | null = null) {
@@ -189,7 +189,7 @@ export function xacNhanCase(p: Principal, caseId: number, input: {
 }) {
   const conn = db();
   const c = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(caseId) as any;
-  if (!c) throw notFound('Không tìm thấy case');
+  if (!c) throw notFound('Không tìm thấy Case');
   caseAccess(caseId).requireEdit(p, EDIT_MESSAGE);
   const st = sosCaseState(caseId);
   if (!st.fromSos) throw badRequest('Chỉ Case tự tạo từ kết quả Test mới có bước Xác nhận Case.');
@@ -198,7 +198,7 @@ export function xacNhanCase(p: Principal, caseId: number, input: {
   if (st.choDuyetKhongTheoDoi) throw badRequest('Case đang chờ Quản lý duyệt "Không cần theo dõi" — chờ trả lời rồi mới xác nhận.');
   const ct = c.cycle_id ? (conn.prepare('SELECT programme_code ct FROM learning_cycles WHERE id = ?').get(c.cycle_id) as any)?.ct ?? null : null;
   const primaryCode = String(input.primaryCode ?? '').trim();
-  if (!primaryCode) throw badRequest('Chọn phân loại nguyên nhân.');
+  if (!primaryCode) throw badRequest('Chọn nhóm nguyên nhân.');
   if (!issueBranchOf(primaryCode) || !issuesForTopic(c.topic, ct).some((i) => i.code === primaryCode)) {
     throw badRequest(`Phân loại đã chọn không thuộc bộ phân loại của ${caseTopicLabel(c.topic, ct)}.`);
   }
@@ -315,7 +315,7 @@ export function banGiaoPaQuyChe(studentId: number, toClassId: number, actorUserI
   }
 }
 /**
- * EM QUAY LẠI HỌC (K3-41, Q14): Tạm dừng dừng hạn Case bằng cách LỌC em `inactive` khỏi Việc / Báo lên; quay lại thì hạn tính lại từ ngày
+ * EM QUAY LẠI HỌC (K3-41, Q14): Tạm dừng dừng hạn Case bằng cách LỌC em `inactive` khỏi Việc / Báo QL; quay lại thì hạn tính lại từ ngày
  * quay lại — Case còn chờ (nguyên nhân / xác nhận PA) nhận hạn xác nhận mới, PA đang chạy nhận hạn ghi kết quả mới. Chạy trong tx của nơi gọi.
  */
 export function datLaiHanCase(studentId: number, homNay: string) {
@@ -400,7 +400,7 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
 /**
  * `KHÔNG CẦN THEO DÕI` (S4-5…S4-7, T23, YC-12.4): GVBM đúng kỹ năng (C02) hoặc Quản lý trong phạm vi GỬI Quản lý duyệt một thẻ `khong_theo_doi`
  * kèm lý do chọn nhanh. Case CHƯA đóng: hàng Case "Chờ Quản lý duyệt · không theo dõi", việc Xác nhận nguyên nhân rời Việc của GVBM và không
- * sinh Báo lên (`awaitingCauseCaseIds` loại thẻ đang chờ). Duyệt → `apDungKhongTheoDoi`; Từ chối → `tuChoiKhongTheoDoi` (hạn mới 3 ngày).
+ * sinh Báo QL (`awaitingCauseCaseIds` loại thẻ đang chờ). Duyệt → `apDungKhongTheoDoi`; Từ chối → `tuChoiKhongTheoDoi` (hạn mới 3 ngày).
  *
  * Chỉ khi Case còn CHỜ NGUYÊN NHÂN (S4-2: hai lựa chọn loại trừ, Q4) — đã xác nhận nguyên nhân thì kết thúc bằng Hoàn thành Case.
  * QL kiêm GVBM tự gửi thì tự duyệt được như mọi thẻ (Q-D, Câu hỏi 2 = A: thẻ ghi "tự duyệt", báo Quản trị).
@@ -408,7 +408,7 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
 export function guiKhongTheoDoi(p: Principal, caseId: number, input: { reasonCode?: string | null; reasonText?: string | null }) {
   const conn = db();
   const c = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(caseId) as any;
-  if (!c) throw notFound('Không tìm thấy case');
+  if (!c) throw notFound('Không tìm thấy Case');
   caseAccess(caseId).requireEdit(p, EDIT_MESSAGE);
   if (c.status === 'done') throw badRequest('Case này đã đóng rồi.');
   const st = sosCaseState(caseId);
@@ -460,7 +460,7 @@ export function guiKhongTheoDoi(p: Principal, caseId: number, input: { reasonCod
 export function apDungKhongTheoDoi(conn: any, yc: { doi_tuong_id: number; du_lieu: string | null; ly_do: string | null }, nguoiDuyet: number) {
   const caseId = yc.doi_tuong_id;
   const c = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(caseId) as any;
-  if (!c) throw notFound('Không tìm thấy case');
+  if (!c) throw notFound('Không tìm thấy Case');
   if (c.status === 'done') throw badRequest('Case này đã đóng rồi.');
   let d: { reasonCode?: string; reasonText?: string | null } = {};
   try { d = JSON.parse(yc.du_lieu ?? '{}'); } catch { d = {}; }
@@ -495,8 +495,8 @@ export function apDungKhongTheoDoi(conn: any, yc: { doi_tuong_id: number; du_lie
 /** QUẢN LÝ TỪ CHỐI "Không cần theo dõi" (trong tx của hộp): Case về chờ nguyên nhân, hạn mới 3 ngày từ ngày từ chối; báo GVBM phụ trách. */
 export function tuChoiKhongTheoDoi(conn: any, yc: { doi_tuong_id: number; nguoi_xin: number | null }, nguoiDuyet: number, lyDo: string) {
   const caseId = yc.doi_tuong_id;
-  const c = conn.prepare('SELECT id, owner_user_id FROM sos_cases WHERE id = ?').get(caseId) as any;
-  if (!c) throw notFound('Không tìm thấy case');
+  const c = conn.prepare('SELECT id, owner_user_id, (SELECT full_name FROM students WHERE id = sos_cases.student_id) AS hv FROM sos_cases WHERE id = ?').get(caseId) as any;
+  if (!c) throw notFound('Không tìm thấy Case');
   const today = demoToday();
   const han = hanXacNhan(today);
   conn.prepare('UPDATE sos_cases SET han_xac_nhan = ?, updated_at = ? WHERE id = ?').run(han, nowIso(), caseId);
@@ -504,8 +504,8 @@ export function tuChoiKhongTheoDoi(conn: any, yc: { doi_tuong_id: number; nguoi_
   /* Người xin đã nhận "Quản lý từ chối: …" từ hộp; GVBM phụ trách khác người xin thì báo riêng. */
   if (c.owner_user_id && c.owner_user_id !== yc.nguoi_xin && c.owner_user_id !== nguoiDuyet) {
     notify({
-      userId: c.owner_user_id, kind: 'sos', title: `Quản lý từ chối: ${lyDo}`.slice(0, 200),
-      body: `Không cần theo dõi bị từ chối — xác nhận nguyên nhân trước hết ${ngay(han, today)}`,
+      userId: c.owner_user_id, kind: 'sos', title: `Bị từ chối · Không cần theo dõi · ${c.hv ?? 'học viên'}`.slice(0, 200),
+      body: `${lyDo.slice(0, 120)} — xác nhận nguyên nhân trước hết ${ngay(han, today)}`,
       entityType: 'sos_case', entityId: caseId, dedupKey: `tu_choi_ktd:${caseId}:${today}`,
     });
   }

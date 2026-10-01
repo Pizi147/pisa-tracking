@@ -25,7 +25,7 @@ import type { BoTro } from './NopKeHoachPanel.tsx';
  * thẻ; kết quả các tuần trước ở "Lịch sử cập nhật" thu gọn).
  *
  * Phần THÂN (`ThanCase`) dùng chung cho mọi lối vào: ngăn Case (`NganCase`, một panel đổi nội dung theo `view`) và trang riêng
- * `/hoc-thuat/case/:id` (`CasePanel`, có hàng nút mở ngăn Case). Các thao tác (Ghi kết quả · Thêm PA · Hoàn thành · Trả lời)
+ * `/hoc-thuat/Case/:id` (`CasePanel`, có hàng nút mở ngăn Case). Các thao tác (Ghi kết quả · Thêm PA · Hoàn thành · Trả lời)
  * KHÔNG còn hộp thoại đè lên ngăn — ngăn Case đổi nội dung và có dòng "← Case Listening" để về.
  */
 
@@ -53,20 +53,20 @@ export type CaseDetail = {
   sosLevel: number | null; urgency: string | null;
   summary: string | null; headline: string; detectedAt: string; reportedBy: string | null;
   status: string; disposition: string | null; dispositionNote: string | null; closedAt: string | null;
-  /** Tên case tự sinh theo mốc mới nhất, ví dụ "MT2 - Listening dưới kỳ vọng". */
+  /** Tên Case tự sinh theo mốc mới nhất, ví dụ "MT2 - Listening dưới kỳ vọng". */
   title: string | null;
-  /** Hạng mục — đơn vị của case từ vòng 4. */
+  /** Hạng mục — đơn vị của Case từ vòng 4. */
   category: string | null; categoryLabel: string | null;
   /** Mã chương trình lộ trình Case (MH2). */
   chuongTrinh?: string | null;
-  /** Case mở song song có chủ ý với một case khác cùng hạng mục. */
+  /** Case mở song song có chủ ý với một Case khác cùng hạng mục. */
   parallel: boolean;
   /** Lớp chấm điểm đạt/tổng (Normal) hay band 0–9 (Fast Track). */
   ratio: boolean;
   /** Các hạng mục hợp lệ để ghi điểm giáo viên tự chấm. */
   categories: { code: string; label: string }[];
   note: string | null;
-  /** Hạn BÁO KẾT QUẢ của cả case — khác hạn ghi kết quả từng phương án. */
+  /** Hạn BÁO KẾT QUẢ của cả Case — khác hạn ghi kết quả từng phương án. */
   followUntil: string | null; followOverdue: boolean;
   /** Kết quả chung đã chốt. */
   outcome: string | null; outcomeLabel: string | null;
@@ -194,7 +194,7 @@ export function ThanCase({ data, onViec }: { data: CaseDetail; onViec: (v: ViewC
         ) : null}
         {lichSu.length > 0 && (
           <details>
-            <summary className="cursor-pointer text-xs text-slate-400">Lịch sử cập nhật ({lichSu.length})</summary>
+            <summary className="cursor-pointer text-xs text-slate-400">Lịch sử ({lichSu.length})</summary>
             <ol className="m-0 mt-2 list-none space-y-2 border-l p-0 pl-3" style={{ borderColor: 'var(--line)' }}>
               {lichSu.map((m) => (
                 <li key={m.key} className="text-xs">
@@ -235,7 +235,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
   /* PR-SOS (Q28-4): không còn "dự kiến kết thúc"; PA quy chế nói mốc riêng. PR-UXF-b: khoảng PA nói MÃ TUẦN (`từ W3 SEP` · `W3 SEP → W1 OCT`), cùng hàm với hàng PA ở bảng kỹ năng. */
   const ketThuc = iv.completedDate ?? null;
   const khoang = chuKhoangPa({ startedOn: batDau, completedOn: ketThuc }, homNay) ?? (ketThuc ? `đến ${tuanLich(ketThuc, homNay)}` : null);
-  const nguoi = iv.performer ? `${iv.performer}${iv.byProxy && iv.recordedBy ? ` (${iv.recordedBy} nhập hộ)` : ''}` : 'Chưa có người làm';
+  const nguoi = iv.performer ? `${iv.performer}${iv.byProxy && iv.recordedBy ? ` (${iv.recordedBy} nhập hộ)` : ''}` : 'Chưa có người thực hiện';
   return (
     <li className="rounded-lg border px-3 py-2.5 surface-2" style={{ borderColor: 'var(--line)' }} data-pa-id={iv.id}>
       <div className="flex flex-wrap items-center gap-1.5">
@@ -247,7 +247,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
         <Nhan tone={toneTrangThaiPa(iv.status)}>{chuaChay ? (choKeHoachDuyet ? 'Chờ Quản lý duyệt' : 'Chờ kế hoạch') : iv.awaitingConfirmation ? 'Chờ xác nhận' : INTERVENTION_STATUS_LABEL[iv.status as keyof typeof INTERVENTION_STATUS_LABEL] ?? iv.status}</Nhan>
         {choDuyet && <Nhan tone="wait" title={iv.approvalDue ? `Hạn Quản lý trả lời ${ngan(iv.approvalDue)}` : undefined}>Chờ Quản lý duyệt</Nhan>}
         {iv.approvalState === 'approved' && <Nhan tone="done">Đã duyệt</Nhan>}
-        {iv.approvalState === 'declined' && <Nhan tone="muted">Không duyệt</Nhan>}
+        {iv.approvalState === 'declined' && <Nhan tone="muted">Bị từ chối</Nhan>}
         <span className="flex-1" />
         {hanGhi && !choDuyet && (data.tamDungTu ? <NhanTamDung tu={data.tamDungTu} /> : hanGhi.tone === 'overdue' && <QuaHan ngay={hanGhi.daysOverdue} />)}
       </div>

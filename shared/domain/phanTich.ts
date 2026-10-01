@@ -4,7 +4,7 @@
  * Cùng tinh thần `tongQuan.ts` (PR-Pa): không con số nào tính ở đây — số luôn đến từ lõi tập ID
  * ở máy chủ (`server/src/phanTich/*.ts`). File này chỉ giữ những gì máy chủ và web PHẢI đồng ý với
  * nhau: góc nhìn, khoảng thời gian, bộ kỹ năng theo chương trình, cột bảng Tổng hợp, màu ô kết quả,
- * loại lỗi chung, "Nên dùng", bước tiếp theo của Ý thức, và cách xuất Excel từ đúng dữ liệu đang hiện.
+ * nhóm nguyên nhân chung, "Nên dùng", bước tiếp theo của Ý thức, và cách xuất Excel từ đúng dữ liệu đang hiện.
  */
 import {
   CASE_CATEGORY_LABEL, CASE_CATEGORY_SHORT, FT_CASE_CATEGORIES, NORMAL_CASE_CATEGORIES,
@@ -119,7 +119,7 @@ export const THEO_DONG_LABEL: Record<TheoDong, string> = {
 export const THEO_DONG_COT_DAU: Record<TheoDong, string> = {
   tuan: 'Tuần', lop: 'Lớp', dot: 'Đợt', cn: 'Chi nhánh',
 };
-/** Danh từ đếm dùng cho nhãn dòng Tổng — "Cộng {n} tuần", "Cộng {n} lớp"… */
+/** Danh từ đếm dùng cho nhãn dòng Tổng — "Tổng {n} tuần", "Tổng {n} lớp"… */
 export const THEO_DONG_DANH_TU: Record<TheoDong, string> = {
   tuan: 'tuần', lop: 'lớp', dot: 'đợt', cn: 'chi nhánh',
 };
@@ -151,7 +151,7 @@ const NHAN_NHOM_KY_NANG: Record<ChuongTrinh, string> = {
   thuong: 'Chưa đạt theo môn (đếm HV)',
 };
 export function nhomCotLabel(nhom: NhomCot, ct: ChuongTrinh): string {
-  if (nhom === 'ket-qua') return 'Kết quả Test (đếm lượt)';
+  if (nhom === 'ket-qua') return 'Kết quả Test';
   if (nhom === 'xu-ly') return 'Xử lý (tình trạng hiện tại)';
   return NHAN_NHOM_KY_NANG[ct];
 }
@@ -225,7 +225,7 @@ export function oKhongApDung(c: CotTongHop, coDot: { giua: boolean; cuoi: boolea
 const COT_XU_LY: CotTongHop[] = [
   { khoa: 'hvCoCase', nhom: 'xu-ly', donVi: 'hoc-vien', nhan: () => 'HV có Case',
     goiY: 'Học viên có ít nhất một Case sinh từ các lượt trong dòng — một em nhiều Case vẫn tính một lần.' },
-  { khoa: 'case', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Case', goiY: 'Case sinh từ các lượt trong dòng — là tình trạng HÔM NAY của case, không phải lúc lượt được chấm.' },
+  { khoa: 'case', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Case', goiY: 'Case sinh từ các lượt trong dòng — là tình trạng HÔM NAY của Case, không phải lúc lượt được chấm.' },
   /* PR-SOS (K1-20): bốn cột theo MỘT nhãn trạng thái Case (`trangThaiCaseV4`) — tình trạng hôm nay. */
   { khoa: 'choNguyenNhan', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Chờ nguyên nhân',
     goiY: 'Case chưa xác nhận nguyên nhân — trong ngoặc là số đã quá hạn 3 ngày.' },
@@ -280,10 +280,10 @@ export function mauOKetQua(khoaCot: string, v: number): MauOKetQua | null {
   return null;
 }
 
-// ------------------------------------------------------------------ vấn đề HV: loại lỗi chung, họ kỹ năng (Q3, Q5)
+// ------------------------------------------------------------------ vấn đề HV: nhóm nguyên nhân chung, họ kỹ năng (Q3, Q5)
 
 /**
- * LOẠI LỖI CHUNG (Q3) — công tắc "Gộp theo loại lỗi chung". Một mã có thể nằm ở nhiều nhóm: Reading/Listening chỉ có
+ * LOẠI LỖI CHUNG (Q3) — công tắc "Gộp theo nhóm nguyên nhân chung". Một mã có thể nằm ở nhiều nhóm: Reading/Listening chỉ có
  * mục `language` (Từ vựng / ngữ pháp) nên mục đó tính ở cả Ngữ pháp lẫn Từ vựng.
  */
 export const LOI_CHUNG: readonly { khoa: string; nhan: string; ma: readonly string[] }[] = [
@@ -394,7 +394,7 @@ export type TongHopKetQua = {
   scopeEmpty: boolean;
 };
 
-/** Tổng hợp vấn đề HV (PR-UX4): hàng lớn = kỹ năng (hoặc loại lỗi chung), hàng con = loại lỗi (hoặc kỹ năng · loại lỗi). */
+/** Tổng hợp vấn đề HV (PR-UX4): hàng lớn = kỹ năng (hoặc nhóm nguyên nhân chung), hàng con = nhóm nguyên nhân (hoặc kỹ năng · nhóm nguyên nhân). */
 export type DongVanDeHv = {
   khoa: string; nhan: string; loai: 'ky-nang' | 'loi' | 'chung' | 'gom';
   soHv: number; soLop: number;
@@ -445,6 +445,8 @@ export type HieuQuaPaKetQua = {
 export type DongHvCanChuY = {
   studentId: number; ten: string; lop: string | null; viPham: number; chuaXuLy: number;
   bienPhapGanNhat: string | null; ngay: string | null;
+  /** G-058: lần xử lý MỚI HƠN lần đã xong gần nhất, còn đang chờ duyệt / bị từ chối — kèm nhãn trạng thái. */
+  lanXuLyMoi: { ten: string; nhan: string } | null;
   /** PR-YT4 (K1-25): nhóm em (Quá hạn · Bắt buộc xử lý · Chờ QL duyệt), bậc hiện tại và bậc kế trên thang. */
   nhom: 'qua_han' | 'bat_buoc' | 'cho_duyet'; bac: string | null; bacKe: string | null;
 };
@@ -481,6 +483,6 @@ export function bangXuatTongHop(
     out.push(dong(r, false));
     for (const con of r.con ?? []) out.push(dong(con, true));
   }
-  out.push([`Cộng ${kq.hang.length} ${THEO_DONG_DANH_TU[kq.theo]}`, ...cols.map((c) => (oKhongApDung(c, kq.tongCoDot) ? '—' : kq.tong[c.khoa] ?? 0))]);
+  out.push([`Tổng ${kq.hang.length} ${THEO_DONG_DANH_TU[kq.theo]}`, ...cols.map((c) => (oKhongApDung(c, kq.tongCoDot) ? '—' : kq.tong[c.khoa] ?? 0))]);
   return out;
 }

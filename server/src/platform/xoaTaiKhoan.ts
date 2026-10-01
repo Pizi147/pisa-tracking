@@ -27,7 +27,7 @@ const c = (bang: string, cot: string, loai: Loai, nhan: string) => ({ bang, cot,
 const DV = 'dau_vet' as const;
 const TL = 'thiet_lap' as const;
 
-/** 80 cột FK trỏ `users.id` (PR-HSM thêm `assessment_scores.examiner_user_id`; PR-LT2b thêm 2; PR-CT thêm 4 cột lệnh chuyển lớp / bàn giao) (bảng tham chiếu của kế hoạch). `nhan` gộp dòng "Có dấu vết" của panel. */
+/** 80 cột FK trỏ `users.id` (PR-HSM thêm `assessment_scores.examiner_user_id`; PR-LT2b thêm 2; PR-CT thêm 4 cột quyết định chuyển lớp / bàn giao) (bảng tham chiếu của kế hoạch). `nhan` gộp dòng "Có dấu vết" của panel. */
 export const COT_TRO_TAI_KHOAN: readonly { bang: string; cot: string; loai: Loai; nhan: string }[] = [
   /* thiết lập (9) — xoá hẳn thì xoá theo; xoá mềm xử lý riêng (Q11) */
   c('user_roles', 'user_id', TL, 'vai trò'), c('user_permissions', 'user_id', TL, 'quyền riêng'), c('user_emails', 'user_id', TL, 'email phụ'),
@@ -47,13 +47,13 @@ export const COT_TRO_TAI_KHOAN: readonly { bang: string; cot: string; loai: Loai
   c('case_interventions', 'performer_user_id', DV, 'Case'), c('case_interventions', 'recorded_by', DV, 'Case'),
   c('case_interventions', 'approval_by', DV, 'Case'), c('case_interventions', 'confirmed_by', DV, 'Case'),
   c('case_issues', 'created_by', DV, 'Case'), c('case_milestones', 'created_by', DV, 'Case'), c('case_sources', 'created_by', DV, 'Case'),
-  c('case_signals', 'owner_user_id', DV, 'tín hiệu'), c('case_signals', 'resolved_by', DV, 'tín hiệu'),
+  c('case_signals', 'owner_user_id', DV, 'Case chờ xác nhận nguyên nhân'), c('case_signals', 'resolved_by', DV, 'Case chờ xác nhận nguyên nhân'),
   c('cycle_target_revisions', 'actor_user_id', DV, 'lộ trình'),
-  c('discipline_measures', 'owner_user_id', DV, 'PA xử lý'), c('discipline_measures', 'performed_by', DV, 'PA xử lý'),
-  c('discipline_measures', 'confirmed_by', DV, 'PA xử lý'), c('discipline_measures', 'created_by', DV, 'PA xử lý'),
+  c('discipline_measures', 'owner_user_id', DV, 'lần xử lý'), c('discipline_measures', 'performed_by', DV, 'lần xử lý'),
+  c('discipline_measures', 'confirmed_by', DV, 'lần xử lý'), c('discipline_measures', 'created_by', DV, 'lần xử lý'),
   c('journey_events', 'created_by', DV, 'hành trình'), c('lo_trinh_tiep_theo', 'updated_by', DV, 'lộ trình tiếp theo'),
   c('lo_trinh_tiep_theo', 'quyet_boi', DV, 'lộ trình tiếp theo'), c('mini_test', 'ghi_boi', DV, 'Mini Test'),
-  c('measure_violations', 'added_by', DV, 'PA xử lý'),
+  c('measure_violations', 'added_by', DV, 'lần xử lý'),
   c('skill_move_requests', 'requested_by', DV, 'xin dời lịch'), c('skill_move_requests', 'decided_by', DV, 'xin dời lịch'),
   c('sos_case_history', 'actor_user_id', DV, 'Case'),
   c('sos_cases', 'outcome_by', DV, 'Case'), c('sos_cases', 'owner_user_id', DV, 'Case'), c('sos_cases', 'reported_by', DV, 'Case'),
@@ -71,7 +71,7 @@ export const COT_TRO_TAI_KHOAN: readonly { bang: string; cot: string; loai: Loai
   c('violation_history', 'actor_user_id', DV, 'vi phạm'), c('violations', 'reported_by', DV, 'vi phạm'), c('violations', 'invalidated_by', DV, 'vi phạm'),
   c('violations', 'ghi_nhan_boi', DV, 'vi phạm'),
   c('y_thuc_khai_bac', 'khai_boi', DV, 'khai bậc Ý thức'), c('y_thuc_khai_bac', 'sua_boi', DV, 'khai bậc Ý thức'),
-  c('lenh_chuyen_lop', 'nguoi_ra_lenh', DV, 'lệnh chuyển lớp'), c('lenh_chuyen_lop', 'huy_boi', DV, 'lệnh chuyển lớp'),
+  c('lenh_chuyen_lop', 'nguoi_ra_lenh', DV, 'quyết định chuyển lớp'), c('lenh_chuyen_lop', 'huy_boi', DV, 'quyết định chuyển lớp'),
   c('lenh_chuyen_lop', 'xac_nhan_boi', DV, 'bàn giao'), c('ban_giao_mon', 'nguoi_ghi', DV, 'bàn giao'),
 ];
 

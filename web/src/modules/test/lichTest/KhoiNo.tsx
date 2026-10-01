@@ -82,7 +82,7 @@ export function KhoiNo({ no, mo, onMo, chiQuaHan, onBoQuaHan, dongMo, onMoDong, 
         phu={
           <>
             {soLop} lớp
-            {baiQuaHan > 0 && <span className="ml-2 font-bold text-late">⚠ Quá hạn {baiQuaHan} bài</span>}
+            {baiQuaHan > 0 && <span className="ml-2 font-bold text-late">Quá hạn · {baiQuaHan} bài</span>}
           </>
         }>
         {chiQuaHan && (
@@ -123,7 +123,7 @@ export function KhoiNo({ no, mo, onMo, chiQuaHan, onBoQuaHan, dongMo, onMoDong, 
                   aria-expanded={dangMo}
                   title={dangMo ? 'Thu lưới lại' : d.duocCham ? 'Mở lưới ngay dưới dòng, chỉ các em còn nợ' : 'Xem lưới (môn người khác dạy)'}
                   onClick={() => onMoDong(dangMo ? null : d, i)}>
-                  {dangMo ? 'Thu' : d.duocCham && !xong ? 'Chấm' : 'Xem'}
+                  {dangMo ? 'Thu' : d.duocCham && !xong ? 'Nhập điểm' : 'Xem'}
                 </button>
               );
               return (

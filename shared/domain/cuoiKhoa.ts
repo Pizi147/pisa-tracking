@@ -40,7 +40,7 @@ export type GoiYCuoiKhoa = {
   nhanNgan: string;
   /** Chữ ô "Hướng gợi ý" ở Excel: `Học lại FOU` · `QL cân nhắc` · `Lên BE + bổ trợ` · `Pass`. */
   nhanExcel: string;
-  /** PR-S5F-a (mockup 20, cột "Web gợi ý" của màn Chuyển lớp): HƯỚNG — `Lên BE` · `Lên BE + bổ trợ` · `Học lại FOU` · `Quản lý cân nhắc`. */
+  /** PR-S5F-a (mockup 20, cột "Hệ thống gợi ý" của màn Chuyển lớp): HƯỚNG — `Lên BE` · `Lên BE + bổ trợ` · `Học lại FOU` · `Quản lý cân nhắc`. */
   nhanHuong: string;
 };
 
@@ -127,7 +127,7 @@ export function chuHopKetLuan(x: HopKetLuanVao): HopKetLuan {
       daDanhDau: x.ketLuanFt?.dat !== null && x.ketLuanFt?.dat !== undefined,
       trangThai: x.ketLuanFt?.dat === true ? 'Đạt'
         : x.ketLuanFt?.dat === false
-          ? `Không đạt · ${x.ketLuanFt.nguyenNhan === 'hoc_sinh' ? 'Học sinh' : `Trung tâm${x.ketLuanFt.mon.length ? ` · ${x.ketLuanFt.mon.map((m) => tenMonNgan(ct, m)).join(', ')}` : ''}`}`
+          ? `Không đạt · ${x.ketLuanFt.nguyenNhan === 'hoc_sinh' ? 'Học viên' : `Trung tâm${x.ketLuanFt.mon.length ? ` · ${x.ketLuanFt.mon.map((m) => tenMonNgan(ct, m)).join(', ')}` : ''}`}`
           : 'Chưa đánh dấu',
     }
     : null;

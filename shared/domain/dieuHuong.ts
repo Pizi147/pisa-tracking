@@ -95,7 +95,7 @@ export function tabTestMacDinh(nav: NavQuyen): TabTest | null {
  */
 export function duongLichTest(o: { classId?: number | null; periodId?: number | null; kn?: string | null; branchId?: number | null } = {}) {
   const q = new URLSearchParams();
-  if (o.branchId) q.set('branchId', String(o.branchId));
+  if (o.branchId) q.set('cn', String(o.branchId));
   if (o.periodId) q.set('periodId', String(o.periodId));
   if (o.classId) q.set('classId', String(o.classId));
   if (o.kn) q.set('kn', o.kn);
@@ -105,9 +105,9 @@ export function duongLichTest(o: { classId?: number | null; periodId?: number | 
 // ---------------------------------------------------------------- Công việc
 
 const TAB_CONG_VIEC: readonly TabCongViec[] = ['cho-duyet', 'ho-tro', 'yeu-cau', 'van-hanh', 'bao-cao'];
-/** PR-DUYET (K1-29): "Hỗ trợ học viên" → "Việc học viên". */
+/** PR-DUYET (K1-29) đổi thành "Việc học viên"; PR-S3 (A-012, chủ sản phẩm 01/10) trả về "Hỗ trợ học viên". */
 export const TAB_CONG_VIEC_LABEL: Record<TabCongViec, string> = {
-  'cho-duyet': 'Chờ duyệt', 'ho-tro': 'Việc học viên', 'yeu-cau': 'Yêu cầu của tôi', 'van-hanh': 'Vận hành', 'bao-cao': 'Báo cáo đơn vị',
+  'cho-duyet': 'Chờ duyệt', 'ho-tro': 'Hỗ trợ học viên', 'yeu-cau': 'Yêu cầu của tôi', 'van-hanh': 'Vận hành', 'bao-cao': 'Báo cáo đơn vị',
 };
 export const DUONG_TAB_CONG_VIEC: Record<TabCongViec, string> = {
   'cho-duyet': '/cong-viec/cho-duyet', 'ho-tro': '/cong-viec', 'yeu-cau': '/cong-viec/yeu-cau',

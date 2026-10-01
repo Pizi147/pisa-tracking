@@ -52,7 +52,7 @@ export type ViecDauTrang = 'tien-do' | 'chuyen-tiep' | 'ban-giao' | 'phan-cong' 
 /**
  * ĐẦU TRANG HỒ SƠ LỚP (đặc tả §3.7, mockup 06c §1; PR-HVL K2-14, B4, E7, K2-13). Nằm ở: Học viên & Lớp → Hồ sơ lớp → đầu trang.
  *   dòng 1  "Hồ sơ lớp" · mã · chương trình | MỘT nút chính theo chặng (`nutChinhDauTrang`: + Học viên khi lớp rỗng · Chuyển tiếp lớp · n em khi lớp thường
- *           cuối khoá · Nhập điểm Test khi còn bài chờ nhập) · tối đa 2 nút phụ (Nhập điểm Test · + Học viên · + Case; thừa vào ⋮) · ⋮
+ *           cuối khoá · Nhập điểm khi còn bài chờ nhập) · tối đa 2 nút phụ (Nhập điểm · + Học viên · + Case; thừa vào ⋮) · ⋮
  *   ⋮       Tuần khai giảng (FT) / Lịch kiểm tra (lớp thường) · Chuyển tiếp lớp (khi không phải nút chính) · nút phụ thừa · Sửa phân công ·
  *           Sửa thông tin lớp · (đường kẻ) Xoá / Kết thúc lớp
  *   dòng 2  chi nhánh · LT (bọc `<abbr>` "Lộ trình 1") · n học viên · W{n}/{tổng} · khai giảng — hộp nhỏ "GVCN tên"; lớp thường cuối khoá: "Cuối khoá: 6/8 em có đủ điểm"
@@ -101,16 +101,16 @@ export function DauTrangLop({ data, periodId, onViec, onBanGiao }: {
     coTheChuyenTiep: data.viewer.coTheChuyenTiep, soEmChuyen: s?.canXepLop ?? 0,
   });
   const phu: { key: string; nhan: string; lam: () => void }[] = [
-    ...(data.viewer.canEnterScores && chinh.loai !== 'nhap-diem' ? [{ key: 'nhap-diem', nhan: 'Nhập điểm Test', lam: () => navigate(nhapDiem) }] : []),
+    ...(data.viewer.canEnterScores && chinh.loai !== 'nhap-diem' ? [{ key: 'nhap-diem', nhan: 'Nhập điểm', lam: () => navigate(nhapDiem) }] : []),
     ...(data.viewer.canAddStudents && chinh.loai !== 'them-hv' ? [{ key: 'hoc-vien', nhan: '+ Học viên', lam: () => onViec('hoc-vien') }] : []),
     ...(data.viewer.canReportCase ? [{ key: 'case', nhan: '+ Case', lam: () => onViec('case') }] : []),
   ];
   const menu: MucMenu[] = [
     /* E7: panel FT tên "Tuần khai giảng", lớp thường "Lịch kiểm tra". Xuất Excel (PR-XUAT) chép vào mảng này, sau "Sửa thông tin lớp". */
-    ...(data.viewer.canEditProgress ? [{ key: 'tien-do', nhan: thuong ? 'Lịch kiểm tra' : 'Tuần khai giảng', onChon: () => onViec('tien-do') }] : []),
-    /* PR-CT (Q30-1): Quản lý RA LỆNH — lớp thường "Chuyển lớp cả lớp…", lớp FT (gộp / tách lớp, đổi lộ trình) "Chuyển nhiều em…". GVCN không thấy. */
-    ...(thuong && data.viewer.coTheChuyenTiep ? [{ key: 'chuyen-tiep', nhan: 'Chuyển lớp cả lớp…', onChon: () => onViec('chuyen-tiep') }] : []),
-    ...(!thuong && data.dai?.viewer.coTheChuyenNhieuEm ? [{ key: 'chuyen-tiep', nhan: 'Chuyển nhiều em…', onChon: () => onViec('chuyen-tiep') }] : []),
+    ...(data.viewer.canEditProgress ? [{ key: 'tien-do', nhan: thuong ? 'Lịch Test của lớp' : 'Tuần khai giảng', onChon: () => onViec('tien-do') }] : []),
+    /* PR-CT (Q30-1): Quản lý RA LỆNH — lớp thường "Chuyển tiếp lớp…", lớp FT (gộp / tách lớp, đổi lộ trình) "Chuyển tiếp lớp…". GVCN không thấy. */
+    ...(thuong && data.viewer.coTheChuyenTiep ? [{ key: 'chuyen-tiep', nhan: 'Chuyển tiếp lớp…', onChon: () => onViec('chuyen-tiep') }] : []),
+    ...(!thuong && data.dai?.viewer.coTheChuyenNhieuEm ? [{ key: 'chuyen-tiep', nhan: 'Chuyển tiếp lớp…', onChon: () => onViec('chuyen-tiep') }] : []),
     ...phu.slice(2).map((x) => ({ key: x.key, nhan: x.nhan, onChon: x.lam })),
     ...(data.viewer.canAssign ? [{ key: 'phan-cong', nhan: 'Sửa phân công', onChon: () => onViec('phan-cong') }] : []),
     ...(data.viewer.canEditProgress ? [{ key: 'thong-tin', nhan: 'Sửa thông tin lớp', onChon: () => onViec('thong-tin') }] : []),
@@ -148,7 +148,7 @@ export function DauTrangLop({ data, periodId, onViec, onBanGiao }: {
             : chinh.loai ? (
               <button type="button" className="btn btn-sm btn-primary" onClick={() => onViec(chinh.loai === 'them-hv' ? 'hoc-vien' : 'chuyen-tiep')}>{chinh.nhan}</button>
             ) : null}
-          <MenuDong muc={menu} bieuTuong="⋮" nhan="Thêm thao tác" />
+          <MenuDong muc={menu} bieuTuong="⋮" nhan="Thao tác khác" />
         </div>
       </div>
 

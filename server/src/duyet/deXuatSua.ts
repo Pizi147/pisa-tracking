@@ -49,9 +49,9 @@ export function guiDeXuatSua(p: Principal, studentId: number, body: { truong?: u
     if (!kck && (body.moi === '' || body.moi == null || !Number.isFinite(n) || n < 0 || n > 9 || Math.round(n * 2) !== n * 2)) {
       throw badRequest('Target mới là một band từ 0 đến 9, bước 0.5 — hoặc KCK (không cam kết).');
     }
-    if (!ht.cycle) throw badRequest('Em chưa có lộ trình đang chạy để đổi target.');
+    if (!ht.cycle) throw badRequest('Em chưa có lộ trình đang chạy để đổi Target.');
     moi = kck ? KCK : n; cu = ht.cycle.khong_cam_ket ? KCK : ht.cycle.target_score ?? null;
-    if (cu === moi) throw badRequest('Target mới trùng target hiện tại.');
+    if (cu === moi) throw badRequest('Target mới trùng Target hiện tại.');
   } else if (truong === 'lo-trinh') {
     const code = String(body.moi ?? '').trim();
     if (!conn.prepare(`SELECT 1 FROM routes WHERE code = ? AND status = 'active'`).get(code)) throw badRequest('Chọn một lộ trình còn dùng.');

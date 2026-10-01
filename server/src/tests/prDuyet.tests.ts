@@ -118,7 +118,7 @@ export async function runPrDuyetTests(t: YThucTestKit) {
       assert(daDuyet.filter((x) => x === id).length === 1, 'khiDuyet chạy lại');
       assert(yc.chotYeuCau(conn, { doiTuongLoai: 'thu', doiTuongId: docThe(id).doi_tuong_id }, 'duyet', {}) === 0, 'chốt lần hai phải trả 0');
       const kq = conn.prepare(`SELECT title FROM notifications WHERE user_id = ? AND kind = 'duyet_ket_qua' AND entity_id = ?`).all(P.coreTeacher.userId, id) as any[];
-      assert(kq.length === 1 && /đã duyệt/.test(kq[0].title), JSON.stringify(kq));
+      assert(kq.length === 1 && /Đã duyệt/.test(kq[0].title), JSON.stringify(kq));
       assert(maLoi(() => yc.duyetYeuCau(P.cpManager, tao())) === 403, 'QL CP duyệt thẻ MB');
       assert(maLoi(() => yc.duyetYeuCau(P.coreTeacher, tao())) === 403, 'GVCN duyệt');
     });
@@ -320,10 +320,10 @@ export async function runPrDuyetTests(t: YThucTestKit) {
     assert(muc.join() === 'de-xuat-sua' && d.NHAN_VIEC_QUAN_LY['de-xuat-sua'] === 'Đề xuất sửa thông tin…', muc.join());
   });
 
-  // ---------------------------------------------------------------- khối 7: Báo lên Case chờ nguyên nhân quá hạn (K1-57) + Nhắc
+  // ---------------------------------------------------------------- khối 7: Báo QL Case chờ nguyên nhân quá hạn (K1-57) + Nhắc
   const { awaitingCauseCaseIds } = await import('../cases/sosState.ts');
   const { nhacViec } = await import('../worklist/nhacViec.ts');
-  check('DUYET (7) · Case chờ nguyên nhân quá hạn → MỘT thẻ Báo lên (quét lần hai không thêm); QL "Của tôi" không còn dòng cause, "tat-ca" vẫn có; Nhắc trỏ đúng dòng; có nguyên nhân → tự đóng', () => {
+  check('DUYET (7) · Case chờ nguyên nhân quá hạn → MỘT thẻ Báo QL (quét lần hai không thêm); QL "Của tôi" không còn dòng cause, "tat-ca" vẫn có; Nhắc trỏ đúng dòng; có nguyên nhân → tự đóng', () => {
     const ung = conn.prepare(`SELECT sc.id, sc.owner_user_id FROM sos_cases sc
       WHERE sc.status != 'done' AND sc.owner_user_id IS NOT NULL AND sc.owner_user_id != ?
         AND EXISTS (SELECT 1 FROM case_signals g WHERE g.case_id = sc.id AND g.status = 'linked') ORDER BY sc.id`).all(P.admin.userId) as any[];
@@ -334,12 +334,12 @@ export async function runPrDuyetTests(t: YThucTestKit) {
     yc.quetYeuCau(TODAY); yc.quetYeuCau(TODAY);
     const dem = () => (conn.prepare(`SELECT COUNT(*) n FROM yeu_cau_duyet WHERE loai = 'bao_len_nguyen_nhan' AND doi_tuong_id = ? AND trang_thai = 'cho'`)
       .get(kase.id) as any).n;
-    assert(dem() === 1, `số thẻ Báo lên: ${dem()}`);
+    assert(dem() === 1, `số thẻ Báo QL: ${dem()}`);
     const the = yc.hopChoDuyet(P.admin).the.find((x: any) => x.loai === 'bao_len_nguyen_nhan' && x.duLieu?.viecKey === `cause:${kase.id}`);
     assert(the && the.kieuNut === 'nhac' && the.nguoiXin === null && the.phanLoai === 'bao-len' && the.hanDuyet === t.addDays(TODAY, -2)
       && the.dong[0].startsWith('Không cần duyệt'), JSON.stringify(the));
-    assert(maLoi(() => yc.duyetYeuCau(P.admin, the.id)) === 400, 'Báo lên duyệt được');
-    assert(!conn.prepare(`SELECT 1 FROM notifications WHERE kind = 'duyet_qua_han' AND entity_id = ?`).get(the.id), 'Báo lên sinh duyet_qua_han (Q13)');
+    assert(maLoi(() => yc.duyetYeuCau(P.admin, the.id)) === 400, 'Báo QL duyệt được');
+    assert(!conn.prepare(`SELECT 1 FROM notifications WHERE kind = 'duyet_qua_han' AND entity_id = ?`).get(the.id), 'Báo QL sinh duyet_qua_han (Q13)');
     const khoa = (w: any) => w.items.map((it: any) => it.key);
     assert(!khoa(myworkSvc.myWork(P.admin, {})).includes(`cause:${kase.id}`), 'QL "Của tôi" còn dòng cause của GV khác');
     const tatCa = myworkSvc.myWork(P.admin, { nguoi: 'tat-ca' }).items.find((it: any) => it.key === `cause:${kase.id}`);
@@ -406,7 +406,7 @@ export async function runPrDuyetTests(t: YThucTestKit) {
     assert(!!conn.prepare(`SELECT 1 FROM notifications WHERE user_id = ? AND kind = 'duyet_moi' AND entity_id = ? AND dedup_key LIKE 'bo_sung:%'`)
       .get(P.mbManager.userId, lan1.id), 'QL không được báo lại');
   });
-  check('DUYET (R2) · một hàm đếm: số badge/dải = chip "Tất cả" của hộp; quá hạn = số thẻ đỏ (gồm Báo lên)', () => {
+  check('DUYET (R2) · một hàm đếm: số badge/dải = chip "Tất cả" của hộp; quá hạn = số thẻ đỏ (gồm Báo QL)', () => {
     const hop = yc.hopChoDuyet(P.mbManager);
     const dem = yc.demYeuCau(P.mbManager);
     const tq = tongQuanSvc.tongQuanQuanLy(P.mbManager, { branchId: null, ct: 'ft' }).choDuyet;
@@ -432,7 +432,7 @@ export async function runPrDuyetTests(t: YThucTestKit) {
       assert(!dto.dong.some((x: string) => x.includes('tự huỷ')), JSON.stringify(dto.dong));
     }
   });
-  check('DUYET (R7) · GVCN chuyển lớp FT → FT: PR-CT (Q30-1) đổi kỳ vọng thành 403 (chỉ Quản lý ra lệnh); QL gửi mucTieu thì nhận', () => {
+  check('DUYET (R7) · GVCN chuyển lớp FT → FT: PR-CT (Q30-1) đổi kỳ vọng thành 403 (chỉ Quản lý quyết định); QL gửi mucTieu thì nhận', () => {
     const chuyen = (who: any, muc: number) => {
       const { sid } = hvMoi();
       conn.prepare('UPDATE learning_cycles SET target_score = 6.5 WHERE student_id = ?').run(sid);
@@ -450,11 +450,11 @@ export async function runPrDuyetTests(t: YThucTestKit) {
 export async function runPrDuyetDemoTests(t: YThucTestKit) {
   const { check, assert, P, conn } = t;
   const yc: any = await import('../duyet/yeuCau.ts');
-  check('DUYET (11) · Demo: hộp QL MB có thẻ Học thuật · Thông tin HV · Báo lên, ≥ 1 quá hạn, ≥ 1 tự đóng, ≥ 1 tự duyệt được; Hà có thẻ đã duyệt + bị từ chối', () => {
+  check('DUYET (11) · Demo: hộp QL MB có thẻ Học thuật · Thông tin HV · Báo QL, ≥ 1 quá hạn, ≥ 1 tự đóng, ≥ 1 tự duyệt được; Hà có thẻ đã duyệt + bị từ chối', () => {
     const hop = yc.hopChoDuyet(P.mbManager);
     for (const k of ['hoc-thuat', 'thong-tin-hv', 'bao-len']) assert(hop.dem[k] >= 1, `thiếu phân loại ${k}: ${JSON.stringify(hop.dem)}`);
-    /* PR-YT4 (K1-55): chip Ý thức có đề xuất WL 3 của Lương Gia Bảo; Báo lên có Ý thức quá hạn. */
-    assert(hop.dem['y-thuc'] >= 1 && hop.the.some((x: any) => x.loai === 'bao_len_y_thuc'), `Ý thức / Báo lên Ý thức: ${JSON.stringify(hop.dem)}`);
+    /* PR-YT4 (K1-55): chip Ý thức có đề xuất WL 3 của Lương Gia Bảo; Báo QL có Ý thức quá hạn. */
+    assert(hop.dem['y-thuc'] >= 1 && hop.the.some((x: any) => x.loai === 'bao_len_y_thuc'), `Ý thức / Báo QL Ý thức: ${JSON.stringify(hop.dem)}`);
     assert(hop.the.some((x: any) => x.hanDuyet && x.hanDuyet < t.TODAY && x.kieuNut !== 'nhac'), 'không có thẻ quá hạn');
     assert(hop.the.some((x: any) => x.loai === 'xin_y_kien'), 'không có Xin ý kiến');
     assert(hop.the.some((x: any) => x.nguoiXinId === P.mbManager.userId), 'không có thẻ QL tự gửi');

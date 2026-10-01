@@ -4,7 +4,7 @@ import {
   ASSESSED_SKILLS, BASELINE_SOURCE_LABEL, CYCLE_OUTCOME_LABEL, ENTRY_SKILLS,
   ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, JOURNEY_GROUP, PERMISSIONS,
   caseHeadline, duongCase, issueLabel, caseCategoryLabel, categoryOf, fmtExamMonth, cauTomTat, ketQuaTestGanNhat, oHocThuat, oSapToi, oYThuc,
-  MEASURE_KIND_LABEL, THANG, nhanLoaiXuLy, programmeOf, tenBacKe, tenMonNgan, mocKeTiep, quaHan, studyWeekOf, tenMon, tuanHocTai, tuanLich,
+  MEASURE_KIND_LABEL, THANG, bacHoacNgoaiThang, nhanLoaiXuLy, programmeOf, tenBacKe, tenMonNgan, mocKeTiep, quaHan, studyWeekOf, tenMon, tuanHocTai, tuanLich,
   type AssessedSkill, type EntrySkill, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { outcomeGroup } from '../cases/effectiveness.ts';
@@ -39,7 +39,7 @@ import { trangThaiYThuc } from '../yThuc/trangThai.ts';
  * Ba nguyên tắc xuyên suốt:
  *   1. THIẾU CĂN CỨ THÌ GHI "CHƯA RÕ", không dựng số thay thế.
  *   2. MỌI SO SÁNH PHẢI CÙNG THANG VÀ CÙNG LỘ TRÌNH. Điểm lộ trình trước không nói gì
- *      về mục tiêu lộ trình sau.
+ *      về Target lộ trình sau.
  *   3. KHÔNG DỰNG NHÃN TỔNG HỢP kiểu "đang ổn / có nguy cơ" khi chưa có quy tắc được
  *      chốt. Chỉ nói hai điều tách bạch: SO VỚI CHECKPOINT và CẦN CHÚ Ý.
  */
@@ -64,7 +64,7 @@ function cycleLabel(c: any): string {
 /**
  * Kết luận một lượt đánh giá bằng ĐÚNG bộ máy của loại lớp đó.
  *
- * Lớp Normal chấm theo tỷ lệ điểm đạt/tổng điểm, không có band và không có mục tiêu IELTS. Đưa
+ * Lớp thường chấm theo tỷ lệ điểm đạt/tổng điểm, không có band và không có Target IELTS. Đưa
  * lượt của lớp thường qua bộ máy FT thì mọi kỹ năng đều "chưa có band" và hồ sơ hiện ra
  * một bảng trống — sai mà trông như thiếu dữ liệu.
  */
@@ -132,7 +132,7 @@ function checkpointView(attempts: any[]) {
     }
     const r = t.ft!;
     if (r.sosLevel === null) {
-      // Đủ điểm mà thiếu mục tiêu là một tình trạng RIÊNG, phải nói ra chứ không im lặng.
+      // Đủ điểm mà thiếu Target là một tình trạng RIÊNG, phải nói ra chứ không im lặng.
       if (r.complete && r.expectation === null) {
         return {
           attemptNo: a.attempt_no, kind: a.kind, mode: 'ielts' as const,
@@ -175,7 +175,7 @@ function checkpointView(attempts: any[]) {
  * trong bốn là quy tắc về những thứ KHÔNG được làm:
  *
  * 1. MỘT THANG ĐIỂM MỘT LOẠT. Lớp Fast Track vẽ band 0–9 cùng đường kỳ vọng của từng mốc;
- *    lớp Normal vẽ ĐIỂM GỐC dạng 13/30, tỷ lệ chỉ để đọc cho dễ. Hai bài khác đề khác thang
+ *    lớp thường vẽ ĐIỂM GỐC dạng 13/30, tỷ lệ chỉ để đọc cho dễ. Hai bài khác đề khác thang
  *    không phải là hai điểm so được thẳng với nhau, nên không quy hết về phần trăm rồi vẽ
  *    một đường mượt.
  * 2. ĐIỂM CHÍNH THỨC VÀ ĐIỂM CÔ TỰ CHẤM LÀ HAI LOẠI. Chúng nằm cùng một biểu đồ nhưng
@@ -233,7 +233,7 @@ function progressOf(
     }
   }
 
-  /* ------------------------------------ điểm cô tự chấm, lấy từ các lần cập nhật case */
+  /* ------------------------------------ điểm cô tự chấm, lấy từ các lần cập nhật Case */
   if (caseIds.length) {
     const rows = conn
       .prepare(
@@ -281,7 +281,7 @@ function progressOf(
    * thời gian; nó không viết "nhờ tutor nên tăng một band", vì thứ tự thời gian không phải
    * là quan hệ nhân quả và không ai đo được cái phản chứng.
    *
-   * Nhóm THEO CASE để nhiều phương án không đổ thành một rừng vạch — một case là một dải.
+   * Nhóm THEO CASE để nhiều phương án không đổ thành một rừng vạch — một Case là một dải.
    */
   const bands = new Map<string, any[]>();
   if (caseIds.length) {
@@ -387,7 +387,7 @@ function boOVaCau(i: {
   const a = kq ? attempts.find((x) => x.id === kq.attemptId) : null;
   const ratio = a?.mode === 'ratio';
   const dauDot = (x: any) => (x.mode === 'ratio' ? (x.kind === 'final' ? 'Cuối khoá' : 'Giữa khoá') : `MT${x.attemptNo}`);
-  const tenKn = new Map(board.rows.filter((r) => !r.tuLopTruoc).map((r) => [r.category as string, r.label as string]));   // PR-UXF-b (R5-5): nhóm "Từ lớp trước" không đè tên hàng chuẩn
+  const tenKn = new Map(board.rows.filter((r) => !r.tuLopTruoc).map((r) => [r.category as string, r.label as string]));   // PR-UXF-b (R5-5): nhóm "Case bàn giao" không đè tên hàng chuẩn
   const vi = em?.viPham ? [...em.viPham.values()] as any[] : [];
   const quaHanYt = Math.max(0, ...vi.map((t) => t.quaHanNgay ?? 0)) || null;
   /* PR-UXF-b (Q14): MỘT số vi phạm còn mở — ô Ý thức (`soMo`) và panel Tạm dừng ("n vi phạm Ý thức đang chờ xử lý") cùng đọc nó. */
@@ -425,7 +425,7 @@ function boOVaCau(i: {
     },
     hocThuat: oHocThuat(board.rows, s.status === 'inactive' ? i.thongTin.tamDung?.tu ?? null : null),
     yThuc: oYThuc(em ? {
-      bacTen: em.bac > 0 ? MEASURE_KIND_LABEL[THANG[em.bac - 1] as keyof typeof MEASURE_KIND_LABEL] ?? null : null,
+      bacTen: bacHoacNgoaiThang(em.bac, em.xuLy),
       nhom: em.nhom ?? null, soBatBuoc: em.soBatBuoc ?? 0, keTiep, han: em.han ?? null, quaHanNgay: quaHanYt, deXuat: deXuatCho,
       soMo: soViPhamMo, tamDung: !!em.tamDung || s.status === 'inactive',
     } : null),
@@ -448,7 +448,7 @@ function boOVaCau(i: {
 
 /**
  * DÒNG THÔNG TIN ĐẦU HỒ SƠ (PR-VAI-b Task 1, mockup 24 A/C/D1) — "em là ai":
- *   FT          MB FT 101 · LT1 · target 6.5 · tuần học thứ 9 · thi dự kiến 06/2027 · GVCN …
+ *   FT          MB FT 101 · LT1 · target 6.5 · tuần học 9 · dự kiến thi 06/2027 · GVCN …
  *   lớp thường  MB FOU 15 · FOU · tuần học 7/10 · Cuối khoá W4 OCT · GVCN …
  * FT đếm tuần học bằng `tuanHocTai` (PR-S6F-b D17 — một hàm cho đầu hồ sơ, chương Hành trình, panel Chuyển lớp / Lên lớp): bỏ tuần Tạm dừng; em đang dừng thì số dừng ở tuần trước tuần dừng.
  */
@@ -482,14 +482,14 @@ function dongThongTin(i: {
       ? (i.startWeekSel && i.startWeekSel.cycleId === dangChay.id ? i.startWeekSel.weekStart
         : (db().prepare('SELECT week_start FROM report_periods WHERE id = ?').get(dangChay.start_period_id) as any)?.week_start ?? null)
       : dangChay.started_at ?? null;
-    /* Đang dừng: tuần học đứng ở tuần ngay trước tuần Tạm dừng (mockup 24 D1 "tuần học thứ 14 · đang dừng"); dừng ngay tuần đầu → "đang dừng". */
+    /* Đang dừng: tuần học đứng ở tuần ngay trước tuần Tạm dừng (mockup 24 D1 "tuần học 14 · đang dừng"); dừng ngay tuần đầu → "đang dừng". */
     const th = batDau ? tuanHocTai(batDau, today, dung) : null;
     if (th) tuanHoc = { tuan: th.tuan, tong: null, dangDung: th.dangDung };
     const ke = i.keSel && i.keSel.cycleId === dangChay.id ? i.keSel.ke : examPlanOf(dangChay);
     const gt = ke.confidence === 'none' ? null
       : ke.confidence === 'month' ? fmtExamMonth(ke.month)
       : dangChay.exam_date ? ke.label : tuanLich(ke.weekStart, today);
-    if (gt) thiDuKien = { nhan: 'thi dự kiến', gt };
+    if (gt) thiDuKien = { nhan: 'dự kiến thi', gt };
   }
   return {
     lop: current.class_code as string, lopId: current.class_id as number,
@@ -663,7 +663,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   const trajectory = (isRatioCycle(selected ?? {}) ? [] : ASSESSED_SKILLS).map((skill) => {
     const points: SkillPoint[] = [];
     if (baseline?.bands?.[skill] !== null && baseline?.bands?.[skill] !== undefined) {
-      points.push({ kind: 'baseline', label: 'Đầu vào', week: null, band: baseline.bands[skill], detail: baseline.sourceLabel });
+      points.push({ kind: 'baseline', label: 'Điểm đầu vào', week: null, band: baseline.bands[skill], detail: baseline.sourceLabel });
     }
     for (const a of [...attemptRows].sort((x, y) => x.attempt_no - y.attempt_no)) {
       if (a.status === 'cancelled') continue;
@@ -933,9 +933,9 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     /*
      * TÌNH TRẠNG HỌC THUẬT HIỆN TẠI — lấy từ KẾT QUẢ BÀI GẦN NHẤT (mục 2.1).
      *
-     * Đây là thứ thay cho `concerns.maxSos` cũ. `maxSos` đọc mức SOS đã đóng băng trong case
-     * còn mở, nên một em thi MT3 đạt hết mà case MT2 chưa đóng vẫn bị gọi là SOS 1 ngay trên
-     * thẻ tên. Nay mức SOS chỉ nói về BÀI, còn case là một con số đếm riêng.
+     * Đây là thứ thay cho `concerns.maxSos` cũ. `maxSos` đọc mức SOS đã đóng băng trong Case
+     * còn mở, nên một em thi MT3 đạt hết mà Case MT2 chưa đóng vẫn bị gọi là SOS 1 ngay trên
+     * thẻ tên. Nay mức SOS chỉ nói về BÀI, còn Case là một con số đếm riêng.
      */
     standing: standingNow,
     /** Câu tóm tắt một dòng, dựng ở máy chủ để mọi màn nói y hệt nhau. */

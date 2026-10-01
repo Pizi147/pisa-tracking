@@ -34,7 +34,7 @@ type EmChup = {
 };
 export type DemoYThuc = { em: Record<string, EmChup>; the: { loai: string; trangThai: string; hv: string; han: string | null; bangChung: string | null; lyDoTuChoi: string | null }[] };
 
-/** PR-YT4 (Task 11): chụp trạng thái Ý thức của các em trong bộ demo (một cửa `trangThaiYThuc`) + thẻ Ý thức / Báo lên Ý thức. */
+/** PR-YT4 (Task 11): chụp trạng thái Ý thức của các em trong bộ demo (một cửa `trangThaiYThuc`) + thẻ Ý thức / Báo QL Ý thức. */
 export async function chupDemoYThuc(conn: any, homNay: string): Promise<DemoYThuc> {
   const { trangThaiYThuc } = await import('../yThuc/trangThai.ts');
   const hs = conn.prepare(`SELECT DISTINCT s.id, s.full_name FROM students s JOIN violations v ON v.student_id = s.id`).all() as any[];
@@ -119,17 +119,17 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(e.ke === 'report_1' && !e.canQl && t.addDays(TODAY, 0) === e.han, 'bậc kế / hạn');
   });
 
-  check('YT4 (11) · DEMO (c) Phạm Bảo Ngọc: 3 vi phạm ghi 07–09/09 → "Quá hạn 1 ngày" (vì chưa xử lý), có thẻ Báo lên Ý thức', () => {
+  check('YT4 (11) · DEMO (c) Phạm Bảo Ngọc: 3 vi phạm ghi 07–09/09 → "Quá hạn 1 ngày" (vì chưa xử lý), có thẻ Báo QL Ý thức', () => {
     const e = em('Phạm Bảo Ngọc');
     const q = e.vp.filter((v) => v.t === 'qua_han');
     assert(e.nhom === 'qua_han' && q.length === 3 && q.every((v) => v.nhan === 'Quá hạn 1 ngày' && v.lyDo === 'xu-ly'), JSON.stringify(e.vp));
-    assert(the('bao_len_y_thuc', 'Phạm Bảo Ngọc').some((x) => x.trangThai === 'cho'), 'thẻ Báo lên');
+    assert(the('bao_len_y_thuc', 'Phạm Bảo Ngọc').some((x) => x.trangThai === 'cho'), 'thẻ Báo QL');
   });
 
-  check('YT4 (11) · DEMO (d) Vũ Hải Đăng: 1 vi phạm cô Trang ghi 04/09, chưa ai xem → Quá hạn (lý do "chưa xem"), có thẻ Báo lên', () => {
+  check('YT4 (11) · DEMO (d) Vũ Hải Đăng: 1 vi phạm cô Trang ghi 04/09, chưa ai xem → Quá hạn (lý do "chưa xem"), có thẻ Báo QL', () => {
     const e = em('Vũ Hải Đăng');
     assert(e.nhom === 'qua_han' && e.vp.length === 1 && e.vp[0].t === 'qua_han' && e.vp[0].lyDo === 'xem' && !e.vp[0].ghiNhan, JSON.stringify(e.vp));
-    assert(the('bao_len_y_thuc', 'Vũ Hải Đăng').some((x) => x.trangThai === 'cho'), 'thẻ Báo lên');
+    assert(the('bao_len_y_thuc', 'Vũ Hải Đăng').some((x) => x.trangThai === 'cho'), 'thẻ Báo QL');
   });
 
   check('YT4 (11) · DEMO (e) Nguyễn Minh An: Report 1 → Report 2 → WL 1 (có tệp) → bậc kế "Report 4 + Meeting CX/GĐCN"; một vi phạm Mới', () => {

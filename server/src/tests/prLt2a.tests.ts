@@ -572,7 +572,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     /* G4: kế hoạch bị từ chối → việc Nộp kế hoạch của GVBM S */
     const g4 = chiTiet(P.admin, cs('Mai Hải Long', 'speaking').id);
     assert(g4.trangThaiV4.k === 'cho-ke-hoach' && theKhCua('Mai Hải Long', 'speaking') === 'tu_choi' && g4.boTro.keHoach.lyDoTuChoi, JSON.stringify([g4.trangThaiV4, g4.boTro?.keHoach]));
-    /* G5: Báo lên + Không cần theo dõi chờ */
+    /* G5: Báo QL + Không cần theo dõi chờ */
     assert(get(`SELECT han_xac_nhan h FROM sos_cases WHERE id = ?`, cs('Phan Khánh Linh', 'listening').id).h < TODAY, 'hạn xác nhận G5 đã quá');
     assert(v4('Ngô Gia Hân', 'speaking').k === 'cho-duyet-khong-theo-doi', JSON.stringify(v4('Ngô Gia Hân', 'speaking')));
     /* G6: Khoa (không phải người dạy FOU) đã xác nhận → GVCN Hà có việc Nộp kế hoạch bổ trợ, hạn hôm nay + 2; Trang có việc cho G4 */

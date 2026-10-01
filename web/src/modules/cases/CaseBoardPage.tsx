@@ -4,7 +4,7 @@ import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { duongHoSoHocVien } from '@shared/domain/index.ts';
 
 /**
- * `/hoc-thuat/case/:id` — link sâu cũ (thông báo, email, link đã lưu). PR-Pb2-a (Q5) → PR-Dọn: mọi Case đều có học viên, nên chỉ còn
+ * `/hoc-thuat/Case/:id` — link sâu cũ (thông báo, email, link đã lưu). PR-Pb2-a (Q5) → PR-Dọn: mọi Case đều có học viên, nên chỉ còn
  * chuyển về hồ sơ HV mở sẵn Ngăn Case. Route giữ ở `App.tsx` để link cũ vẫn mở được.
  */
 export function CaseRoutePage() {

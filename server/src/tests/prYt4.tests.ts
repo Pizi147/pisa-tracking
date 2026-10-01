@@ -517,10 +517,10 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const sid = hv();
     ghiVp(gvbm, sid, addDays(TODAY, -2)); ghiVp(gvbm, sid, addDays(TODAY, -1));
     const moi = thongBao(gvcn.userId, `yt-moi:${sid}:%`);
-    assert(moi.length === 1 && /^Vi phạm mới — YT4 HV \d+ \(BTVN\) · ghi nhận hoặc xử lý trước \d\d\/\d\d$/.test(moi[0].title) && /mo=xu-ly/.test(moi[0].duong), JSON.stringify(moi.map((x) => x.title)));
+    assert(moi.length === 1 && /^Vi phạm mới · YT4 HV \d+ \(BTVN\) · ghi nhận hoặc xử lý trước \d\d\/\d\d$/.test(moi[0].title) && /mo=xu-ly/.test(moi[0].duong), JSON.stringify(moi.map((x) => x.title)));
     ghiVp(gvbm, sid, TODAY);
     const bb = thongBao(gvcn.userId, `yt-bat-buoc:${sid}:%`);
-    assert(bb.length === 1 && /có 3 vi phạm trong 2 tuần — cần xử lý trước \d\d\/\d\d/.test(bb[0].title), JSON.stringify(bb.map((x) => x.title)));
+    assert(bb.length === 1 && /3 vi phạm trong 2 tuần · trước \d\d\/\d\d/.test(bb[0].title), JSON.stringify(bb.map((x) => x.title)));
     ghiVp(gvbm, sid, TODAY);
     assert(thongBao(gvcn.userId, `yt-bat-buoc:${sid}:%`).length === 1, 'không đôi');
     const sid2 = hv(); ghiVp(gvcn, sid2);
@@ -533,7 +533,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const w1 = xl(gvcn, sid, [ghiVp(gvbm, sid)]);
     assert(thongBao(P.mbManager.userId, `yt-xu-ly:${r1.id}`).length === 0, 'Report 1 không báo');
     const n = thongBao(P.mbManager.userId, `yt-xu-ly:${w1.id}`);
-    assert(n.length === 1 && n[0].title === `Đã xử lý WL 1 — ${xuLy.xemXuLy(gvcn, w1.id).ten} · để biết` && !/không cần duyệt/.test(n[0].body ?? ''), JSON.stringify(n));
+    assert(n.length === 1 && n[0].title === `Đã xử lý WL 1 · ${xuLy.xemXuLy(gvcn, w1.id).ten} · để biết` && !/không cần duyệt/.test(n[0].body ?? ''), JSON.stringify(n));
   });
   check('YT4 (4) · Đã thực hiện chỉ cho lần xử lý QL đã duyệt; lần xử lý đã xong → 400', () => {
     const sid = hv(); const m = xl(gvcn, sid, [ghiVp(gvbm, sid)]);
@@ -549,7 +549,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(hs.demCuoi.tong === 2 && hs.demCuoi.theoNhom.length === 2 && hs.canManage && !hs.coTheKhai, JSON.stringify(hs.demCuoi));
   });
 
-  // ------------------------------------------------------------------ Task 5 · Đề xuất QL duyệt (thẻ y_thuc) + Báo lên (bao_len_y_thuc)
+  // ------------------------------------------------------------------ Task 5 · Đề xuất QL duyệt (thẻ y_thuc) + Báo QL (bao_len_y_thuc)
   const theCho = (loai: string, doiTuongId: number) => conn.prepare(`SELECT * FROM yeu_cau_duyet WHERE loai = ? AND doi_tuong_id = ? ORDER BY id DESC`).get(loai, doiTuongId) as any;
   const deXuatGui = (who: any, sid: number, kind: string, ids: number[], extra: Record<string, unknown> = {}) => {
     const nhap = xuLy.deXuat(who, sid, { kind, violationIds: ids, note: 'Em vi phạm nhiều lần, cần QL quyết', ...extra });
@@ -625,7 +625,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const kq = yc.duyetYeuCau(P.mbManager, theCho('y_thuc', m.id).id);
     assert(kq.tuDuyet === true && theCho('y_thuc', m.id).tu_duyet === 1 && xuLy.xemXuLy(P.mbManager, m.id).nhan === 'Gặp phụ huynh tại trung tâm', JSON.stringify(kq));
   });
-  check('YT4 (5) · Báo lên: em Quá hạn → MỘT thẻ bao_len_y_thuc (không nút duyệt, GVCN là chủ việc); quét lần hai không thêm', () => {
+  check('YT4 (5) · Báo QL: em Quá hạn → MỘT thẻ bao_len_y_thuc (không nút duyệt, GVCN là chủ việc); quét lần hai không thêm', () => {
     const sid = hv(); ba3(sid, addDays(TODAY, -12));
     yc.quetYeuCau(TODAY);
     yc.quetYeuCau(TODAY);
@@ -635,7 +635,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const the = yc.hopChoDuyet(P.mbManager, { studentId: sid }).the.find((x: any) => x.loai === 'bao_len_y_thuc');
     assert(the.tieuDe === 'Ý thức quá hạn · 3 vi phạm chưa xử lý' && the.kieuNut === 'nhac' && the.dong[0] === 'Không cần duyệt — để QL biết và nhắc.', JSON.stringify(the));
   });
-  check('YT4 (5) · Báo lên tự đóng khi hết lý do (xử lý xong) — "Việc gốc đã xong"; em Tạm dừng không Báo lên (T65)', () => {
+  check('YT4 (5) · Báo QL tự đóng khi hết lý do (xử lý xong) — "Việc gốc đã xong"; em Tạm dừng không Báo QL (T65)', () => {
     const sid = hv(); const ids = ba3(sid, addDays(TODAY, -12));
     yc.quetYeuCau(TODAY);
     xl(gvcn, sid, ids);
@@ -645,9 +645,9 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const sid2 = hv(); ba3(sid2, addDays(TODAY, -12));
     conn.prepare(`UPDATE students SET status = 'inactive' WHERE id = ?`).run(sid2);
     yc.quetYeuCau(TODAY);
-    assert(!theCho('bao_len_y_thuc', sid2), 'Tạm dừng không Báo lên');
+    assert(!theCho('bao_len_y_thuc', sid2), 'Tạm dừng không Báo QL');
   });
-  check('YT4 (5) · Báo lên cả "Mới quá 5 ngày chưa ai xem" (V4-5) và "đã duyệt chưa thực hiện quá 5 ngày" (K3-37)', () => {
+  check('YT4 (5) · Báo QL cả "Mới quá 5 ngày chưa ai xem" (V4-5) và "đã duyệt chưa thực hiện quá 5 ngày" (K3-37)', () => {
     const sid = hv(); vpDb(sid, addDays(TODAY, -8));
     const sid2 = hv(); const v2 = ghiVp(gvbm, sid2);
     const m = deXuatGui(gvcn, sid2, 'suspension', [v2]);
@@ -723,7 +723,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(it && !it.mine && it.ownerId === gvcn.userId && it.nhac?.ownerId === gvcn.userId, JSON.stringify(it));
     assert(!viec(P.mbManager, `yt_xu_ly:${sid}`), 'Của tôi');
   });
-  check('YT4 (6) · Nhắc từ thẻ Báo lên Ý thức (viecKey) → đúng GVCN; bấm chuông mở tab lớp chọn sẵn em', () => {
+  check('YT4 (6) · Nhắc từ thẻ Báo QL Ý thức (viecKey) → đúng GVCN; bấm chuông mở tab lớp chọn sẵn em', () => {
     const sid = hv(); ba3(sid, addDays(TODAY, -12));
     yc.quetYeuCau(TODAY);
     const du = JSON.parse(theCho('bao_len_y_thuc', sid).du_lieu);
@@ -852,9 +852,9 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(payload && !/\bkind\b/.test(payload) && /bacDaThay/.test(payload), payload);
     assert(/status === 409/.test(s) && /Bậc vừa đổi — đã mở lại với bậc mới/.test(s), '409');
   });
-  check('YT4 (8) · Đề xuất QL duyệt: nháp → bằng chứng bắt buộc → "Gửi QL duyệt · trả lời trong 5 ngày"; đóng giữa chừng xoá nháp', () => {
+  check('YT4 (8) · Đề xuất QL duyệt: nháp → bằng chứng bắt buộc → "Gửi Quản lý duyệt · trả lời trong 5 ngày"; đóng giữa chừng xoá nháp', () => {
     const s = docW(`${YT}/XacNhanXuLyPanel.tsx`);
-    assert(/y-thuc\/de-xuat/.test(s) && /\/gui`/.test(s) && /Gửi QL duyệt · trả lời trong 5 ngày/.test(s), 'luồng');
+    assert(/y-thuc\/de-xuat/.test(s) && /\/gui`/.test(s) && /Gửi Quản lý duyệt · trả lời trong 5 ngày/.test(s), 'luồng');
     assert(/api\.del\(`\/y-thuc\/xu-ly\/\$\{daLuu\.id\}`\)/.test(s) && /Cần đính kèm tệp hoặc liên kết/.test(s), 'xoá nháp + bằng chứng');
     assert(/Cần xử lý nặng hơn/.test(s) && /Khai bậc trước/.test(s), 'liên kết Đề xuất + dòng Khai bậc (Q7)');
   });
@@ -873,7 +873,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   });
   check('YT4 (9) · Tab lớp M6: hai khung + tab "Xử lý · Vi phạm" dưới md; không còn bốn chip, hai chế độ, ô tick, khoảng ngày', () => {
     const s = docW(`${YT}/ClassYThucCard.tsx`);
-    assert(/md:grid-cols-\[minmax\(0,22rem\)_minmax\(0,1fr\)\]/.test(s) && /label: 'Xử lý'/.test(s) && /label: 'Vi phạm'/.test(s), 'hai khung');
+    assert(/md:grid-cols-\[minmax\(0,22rem\)_minmax\(0,1fr\)\]/.test(s) && /label: 'Theo xử lý'/.test(s) && /label: 'Theo vi phạm'/.test(s), 'hai khung');
     assert(!/BO_LOC_PHU|hopBoLocPhu|tuNgayTheoKhoang|byTime|type="checkbox"|Theo thời gian/.test(s), 'bộ lọc v3');
     assert(/NHOM_EM\.filter/.test(s) && /params\.get\('mo'\)/.test(s) && /'Phối hợp'/.test(s), 'nhóm em, ?mo, tab Phối hợp');
   });

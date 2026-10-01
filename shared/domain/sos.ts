@@ -7,7 +7,7 @@
  * MẢNG DỮ LIỆU — không phải chuỗi `if` rải rác — nên đổi luật là đổi một dòng ở đây, và phép kiểm đọc đúng bảng đó.
  *
  * SOS Event KHÔNG có bảng riêng: nó là chính lượt Mock Test Fast Track (`assessment_attempts`) có `sos_level ≥ 1` (đặc tả §2).
- * Lớp Normal không có gì trong file này (Q-V3-1): Normal giữ mô hình tín hiệu cũ.
+ * Lớp thường không có gì trong file này (Q-V3-1): Normal giữ mô hình tín hiệu cũ.
  */
 import type { InterventionKind } from './cases.ts';
 
@@ -32,7 +32,7 @@ function chuNhatCuaTuan(date: string): string {
  * ĐẾN KHI NÀO của một phương án điền sẵn — quyết định cách tính ngày dự kiến kết thúc (`followup_due`).
  *   one_month     "1 tháng"          → Chủ nhật đầu tiên SAU (ngày tạo + 30 ngày)
  *   until_next_mt "đến MT{n+1}"      → Chủ nhật của tuần kỹ năng muộn nhất của lượt MT kế tiếp, nếu đã có lịch
- *   until_exam    "đến lúc thi"      → ngày thi dự kiến, nếu có
+ *   until_exam    "đến lúc thi"      → dự kiến thi, nếu có
  * PR-SOS: bỏ `expert` (MT5+ "Khác") — chủ sản phẩm chốt 29/09 Câu 1 = A.
  */
 export const ACADEMIC_SUPPORT_SPANS = ['one_month', 'until_next_mt', 'until_exam'] as const;
@@ -103,11 +103,11 @@ export const COORDINATION_KINDS = [
 ] as const;
 export type CoordinationKind = (typeof COORDINATION_KINDS)[number];
 export const COORDINATION_KIND_LABEL: Record<CoordinationKind, string> = {
-  talk_student: 'Trao đổi ngắn với HS',
+  talk_student: 'Trao đổi ngắn với HV',
   talk_family: 'Trao đổi với gia đình',
-  gvcn_meeting: 'GVCN meeting với HS',
-  cx_meeting_student: 'CX / GĐCN meeting với HS',
-  cx_meeting_family: 'CX / GĐCN meeting với HS / PH',
+  gvcn_meeting: 'GVCN meeting với HV',
+  cx_meeting_student: 'CX / GĐCN meeting với HV',
+  cx_meeting_family: 'CX / GĐCN meeting với HV / PH',
   other: 'Khác',
   bao_ph_tvv: 'Báo phụ huynh qua TVV',
 };
@@ -115,7 +115,7 @@ export const COORDINATION_KIND_LABEL: Record<CoordinationKind, string> = {
 export const COORDINATION_STATUSES = ['pending', 'done', 'removed'] as const;
 export type CoordinationStatus = (typeof COORDINATION_STATUSES)[number];
 export const COORDINATION_STATUS_LABEL: Record<CoordinationStatus, string> = {
-  pending: 'Cần xử lý', done: 'Đã xong', removed: 'Đã bỏ',
+  pending: 'Cần xử lý', done: 'Xong', removed: 'Đã bỏ',
 };
 
 /** BỐN lý do người dùng chọn nhanh khi bỏ một việc (P06) — chỉ `Khác` hiện ô chữ. */
@@ -126,7 +126,7 @@ export type CoordinationRemoveReason = (typeof COORDINATION_REMOVE_REASONS)[numb
 export const COORDINATION_REMOVE_REASON_LABEL: Record<CoordinationRemoveReason, string> = {
   not_needed: 'Không cần trong trường hợp này',
   handled_otherwise: 'Đã xử lý theo cách khác',
-  duplicate_measure: 'Trùng với phương án xử lý khác',
+  duplicate_measure: 'Trùng với lần xử lý khác',
   other: 'Khác',
   system_sos_changed: 'Điểm được sửa — mức SOS không còn cần việc này',
   system_luot_huy: 'Lượt Test đã huỷ',
@@ -136,7 +136,7 @@ export const COORDINATION_REMOVE_REASON_LABEL: Record<CoordinationRemoveReason, 
 export const CASE_DISMISS_REASONS = ['special_circumstance', 'single_incident', 'other'] as const;
 export type CaseDismissReason = (typeof CASE_DISMISS_REASONS)[number];
 export const CASE_DISMISS_REASON_LABEL: Record<CaseDismissReason, string> = {
-  special_circumstance: 'Học sinh có lý do đặc biệt',
+  special_circumstance: 'Học viên có lý do đặc biệt',
   single_incident: 'Tình huống đơn lẻ',
   other: 'Khác',
 };

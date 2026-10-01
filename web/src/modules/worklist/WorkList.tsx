@@ -17,7 +17,7 @@ export type WorkItem = {
   tieuDe: string;
   ownerId: number | null; owner: string | null; mine: boolean;
   due: string | null; statusLabel: string;
-  /** Bài/case liên quan — ô thứ hai của dòng việc: "MT2", "Giữa khoá", "Case". */
+  /** Bài/Case liên quan — ô thứ hai của dòng việc: "MT2", "Giữa khoá", "Case". */
   contextLabel: string | null;
   /** Số học viên trong một dòng việc gom. NULL khi dòng chỉ nói về một em. */
   count: number | null;
@@ -41,7 +41,7 @@ export function DongViec({ it, onOpen, nutPhu }: {
 }) {
   const loaiHan = LOAI_HAN_CUA_VIEC[it.group];
   /* Lớp chỉ hiện khi dòng đang nói về MỘT EM — dòng gom đã lấy chính tên lớp làm tiêu đề phụ. */
-  /* "Chuyển lớp cả lớp · lớp · n HV" (PR-S5F-a, mockup 20): tiêu đề đã có lớp và số em — dòng phụ không nhắc lại. */
+  /* "Chuyển tiếp lớp · lớp · n HV" (PR-S5F-a, mockup 20): tiêu đề đã có lớp và số em — dòng phụ không nhắc lại. */
   const gomLop = it.group === 'placement';
   const dongPhu = [
     gomLop ? null : it.studentName,
@@ -65,7 +65,7 @@ export function DongViec({ it, onOpen, nutPhu }: {
         </span>
       </button>
       <span className="col-start-2 text-xs sm:col-start-auto [&>span]:text-xs">
-        {it.due ? <Han loai={loaiHan ?? 'viec-van-hanh'} han={it.due} haiDong /> : <span className="text-slate-500">không có hạn</span>}
+        {it.due ? <Han loai={loaiHan ?? 'viec-van-hanh'} han={it.due} haiDong /> : <span className="text-slate-500">Chưa có hạn</span>}
       </span>
       <span className="col-start-2 flex items-center gap-2 sm:col-start-auto sm:justify-end">
         {nutPhu}

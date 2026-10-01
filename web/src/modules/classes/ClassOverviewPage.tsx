@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { invalidate } from '../../lib/api.ts';
-import { useSession } from '../../lib/session.tsx';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { usePeriods } from '../../ui/Filters.tsx';
@@ -28,7 +28,7 @@ import { DOT_XUAT_FT, DOT_XUAT_THUONG, TAB_HO_SO_LOP, TAB_HO_SO_LOP_NHAN, tabHoS
  */
 export default function ClassOverviewPage() {
   const { classId } = useParams();
-  const { session } = useSession();
+  const { homNay } = useNgayNghiepVu();
   const [params, setParams] = useSearchParams();
   const tab = tabHoSoLop(params.get('tab'));
   const cheDo: 'diem' | 'can-ho-tro' = params.get('che-do') === 'can-ho-tro' ? 'can-ho-tro' : 'diem';
@@ -43,11 +43,11 @@ export default function ClassOverviewPage() {
   const roster = useApi<any[]>(classId && viec === 'case' ? `/classes/${classId}/roster` : null, [classId, viec]);
 
   useEffect(() => {
-    if (periodId === null && periods.data?.length && session) {
-      const cur = periods.data.find((p) => p.weekStart <= session.demoDate && p.weekEnd >= session.demoDate);
+    if (periodId === null && periods.data?.length && homNay) {
+      const cur = periods.data.find((p) => p.weekStart <= homNay && p.weekEnd >= homNay);
       setPeriodId(cur?.id ?? periods.data[0].id);
     }
-  }, [periods.data, periodId, session]);
+  }, [periods.data, periodId, homNay]);
 
   /*
    * LỐI VÀO TỪ VIỆC ĐỎ / BADGE "Hết khoá" (PR-LT): `?viec=chuyen-tiep` mở panel Chuyển tiếp
@@ -94,11 +94,11 @@ export default function ClassOverviewPage() {
         <TabHocVienLop lop={data} cheDo={cheDo} onCheDo={(m) => doiThamSo({ 'che-do': m === 'diem' ? null : m })}
           onDoi={xong} onThemHocVien={() => setViec('hoc-vien')} />
       )}
-      {tab === 'y-thuc' && <ClassYThucCard classId={data.id} />}
+      {tab === 'y-thuc' && <ClassYThucCard classId={data.id} thuong={thuong} />}
       {tab === 'phan-tich' && <PhanTichLopTab classId={data.id} />}
 
       {viec === 'tien-do' && (
-        <ClassProgressPanel classId={data.id} classCode={data.code} tieuDe={thuong ? 'Lịch kiểm tra' : 'Tuần khai giảng'}
+        <ClassProgressPanel classId={data.id} classCode={data.code} tieuDe={thuong ? 'Lịch Test của lớp' : 'Tuần khai giảng'}
           onClose={dong} onDone={xong} onChuyenTiep={data.viewer.coTheChuyenTiep ? () => setViec('chuyen-tiep') : undefined} />
       )}
       <TransitionPanel classId={data.id} open={viec === 'chuyen-tiep'} onClose={dong} onDone={xong} />

@@ -7,11 +7,11 @@ import { Han } from '../../ui/Han.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { NHAN_XET_TOI_THIEU, ngay, tuanLich, type PhieuBanGiaoDto, type PhieuEm } from '@shared/domain/index.ts';
+import { CHU_CHUYEN_LOP, NHAN_XET_TOI_THIEU, ngay, tuanLich, type PhieuBanGiaoDto, type PhieuEm } from '@shared/domain/index.ts';
 
 /**
  * BÀN GIAO (PR-CT, §3.1f Q30-2, mockup 20 màn F · G · đọc bàn giao) — MỘT panel, ba dạng theo người mở:
- *   F  GVCN lớp cũ (hoặc Quản lý xác nhận thay): trái danh sách em + trạng thái phiếu, phải phiếu của em đang chọn — Web tự điền (chỉ đọc), mỗi môn một câu của
+ *   F  GVCN lớp cũ (hoặc Quản lý xác nhận thay): trái danh sách em + trạng thái phiếu, phải phiếu của em đang chọn — Hệ thống tự điền (chỉ đọc), mỗi môn một câu của
  *      GVBM (Nhắc · Điền thay), Nhận xét chung (bắt buộc ≥ 15 ký tự) → Xác nhận bàn giao. ↑/↓ đi từng em. Dưới 820 px: danh sách trên, phiếu dưới.
  *   G  GVBM của môn: bảng mỗi em một câu, lưu khi rời ô.
  *   Đọc: GV / Quản lý lớp mới, hoặc bất kỳ ai không ghi được — cùng bố cục F, chỉ đọc, hiện "Xác nhận bởi …".
@@ -108,11 +108,11 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload }: Chung) {
           <p className="m-0 px-4 pt-2 text-right text-[11px] text-slate-400">Xác nhận được khi đủ nhận xét chung. Môn chưa có thông tin sẽ ghi “GVBM chưa bàn giao”.</p>
         ) : undefined,
         chinh: ghi && em && !em.xacNhan ? (
-          <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={xacNhan} disabled={busy || !nhap.trim()} title={!nhap.trim() ? 'Viết nhận xét chung trước khi xác nhận' : undefined}>Xác nhận bàn giao</button>
+          <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={xacNhan} disabled={busy || !nhap.trim()} title={!nhap.trim() ? 'Viết nhận xét chung trước khi xác nhận' : undefined}>{CHU_CHUYEN_LOP.banGiao}</button>
         ) : undefined,
         conThieu: daBam && thieu && em && ghi ? [{ nhan: 'Nhận xét chung', oId: 'o-nhan-xet' }] : undefined,
       }}>
-      {dto.ds.length === 0 && <p className="mt-3 text-sm text-slate-400">Chưa có lệnh chuyển nào cần bàn giao.</p>}
+      {dto.ds.length === 0 && <p className="mt-3 text-sm text-slate-400">Chưa có quyết định chuyển lớp nào cần bàn giao.</p>}
       {em && (
         <div className="grid gap-4 pt-3 md:grid-cols-[280px_minmax(0,1fr)]">
           <ul ref={dsRef} role="listbox" aria-label="Học viên cần bàn giao" onKeyDown={phim}
@@ -126,7 +126,7 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload }: Chung) {
                   <Nhan tone={e.phieu.khoa === 'da-xac-nhan' ? 'ok' : e.phieu.khoa === 'mon' ? 'soon' : 'muted'}>{e.phieu.nhan}</Nhan>
                 </div>
                 <div className="truncate text-[11px] text-slate-500">
-                  {e.lopDich ? `→ ${e.lopDich.code} · ${tuanLich(e.tuan, homNay)}` : e.huong === 'bao_luu' ? `Bảo lưu${e.ngayXemLai ? ` · xem lại ${tuanLich(e.ngayXemLai, homNay)}` : ''}` : tuanLich(e.tuan, homNay)}
+                  {e.lopDich ? `→ ${e.lopDich.code} · ${tuanLich(e.tuan, homNay)}` : e.huong === 'bao_luu' ? `Tạm dừng học (bảo lưu)${e.ngayXemLai ? ` · xem lại ${tuanLich(e.ngayXemLai, homNay)}` : ''}` : tuanLich(e.tuan, homNay)}
                 </div>
               </li>
             ))}
@@ -141,8 +141,8 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload }: Chung) {
               {em.xacNhan && <Nhan tone="ok">Đã xác nhận</Nhan>}
             </div>
 
-            <section aria-label="Web tự điền" className="surface-2 rounded-lg p-3">
-              <h4 className="mb-2 mt-0 text-[11px] font-extrabold uppercase tracking-[.06em] text-slate-500">Web tự điền · chỉ đọc{em.tuDienDaChup && ' · chụp lúc xác nhận'}</h4>
+            <section aria-label="Hệ thống tự điền" className="surface-2 rounded-lg p-3">
+              <h4 className="mb-2 mt-0 text-[11px] font-extrabold uppercase tracking-[.06em] text-slate-500">Hệ thống tự điền · chỉ đọc{em.tuDienDaChup && ' · chụp lúc xác nhận'}</h4>
               {em.tuDien ? (
                 <div className={dong}>
                   <span className="text-slate-500">Kết quả</span><span className="text-slate-200">{em.tuDien.ketQua}</span>
@@ -182,7 +182,7 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload }: Chung) {
                             placeholder="Viết một câu…" onChange={(e) => setDienThay({ ...dienThay, chu: e.target.value })}
                             onKeyDown={(e) => { if (e.key === 'Enter') void luuDienThay(); if (e.key === 'Escape') { e.stopPropagation(); setDienThay(null); } }} />
                           <button type="button" className="btn btn-sm btn-primary" disabled={!dienThay.chu.trim()} onClick={luuDienThay}>Lưu</button>
-                          <button type="button" className="btn btn-sm" onClick={() => setDienThay(null)}>Thôi</button>
+                          <button type="button" className="btn btn-sm" onClick={() => setDienThay(null)}>Đóng</button>
                         </span>
                       )}
                     </div>

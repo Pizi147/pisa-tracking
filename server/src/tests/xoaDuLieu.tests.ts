@@ -76,7 +76,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     assert(hv(sid).archived_at === null, 'Quay lại học không được lưu trữ');
   });
 
-  check('PR-XOA L3 · Chuyển tiếp lớp › Dừng học → em thôi học và đã ở Lưu trữ', () => {
+  check('PR-XOA L3 · Chuyển tiếp lớp › Dừng học hẳn → em thôi học và đã ở Lưu trữ', () => {
     const cls = taoLop(9);
     const sid = taoHV(cls);
     const r = transitionSvc.applyTransition(P.mbManager, {
@@ -84,7 +84,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     }) as any;
     assert(r.failed.length === 0, JSON.stringify(r.failed));
     const s = hv(sid);
-    assert(s.status === 'finished' && s.archived_at === TODAY, `Dừng học phải lưu trữ: ${JSON.stringify(s)}`);
+    assert(s.status === 'finished' && s.archived_at === TODAY, `Dừng học hẳn phải lưu trữ: ${JSON.stringify(s)}`);
   });
 
   /** Database kiểu cũ: schema hiện tại, gỡ `users.deleted_at`; hai em đã thôi học mà chưa lưu trữ, một em đang học. */
@@ -291,7 +291,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     ins(`INSERT INTO mini_test (student_id, cycle_id, tu_attempt_id, nhom_bo_tro, so_buoi, ngay_du_kien, han) VALUES (?,?,?, 'mt:x', 2, ?, ?)`, sid, y1, a1, TODAY, TODAY);
     const q1 = ins(`INSERT INTO yeu_cau_duyet (loai, phan_loai, doi_tuong_loai, doi_tuong_id, hoc_vien_id, lop_id, nguoi_xin, tao_luc)
                     VALUES ('de_xuat_pa', 'hoc-thuat', 'intervention', ?, ?, ?, ?, ?)`, i1, sid, FT, U, now);
-    /* PR-CT: lệnh chuyển lớp của em (trỏ thẻ Chờ duyệt q1) + một dòng bàn giao môn */
+    /* PR-CT: quyết định chuyển lớp của em (trỏ thẻ Chờ duyệt q1) + một dòng bàn giao môn */
     const l1 = ins(`INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, huong, boi_canh, tuan_bat_dau, nguoi_ra_lenh, ngay_ra_lenh, tu_yeu_cau_id, tao_luc)
                     VALUES (?,?, 'bao_luu', 'giua-khoa', '2026-10-05', ?, ?, ?, ?)`, sid, FT, U, TODAY, q1, now);
     ins(`INSERT INTO ban_giao_mon (lenh_id, mon, noi_dung, nguoi_ghi, ghi_luc) VALUES (?, 'reading', 'Thử', ?, ?)`, l1, U, now);

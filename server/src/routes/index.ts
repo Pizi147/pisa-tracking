@@ -392,7 +392,7 @@ api.get('/ref/units', requireAuth, wrap((req) => {
  */
 api.get('/my-work', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  lenhSvc.quetLenhDenHan();   // PR-CT: lệnh chuyển lớp tới Thứ Hai thì thi hành (chạy lặp an toàn)
+  lenhSvc.quetLenhDenHan();   // PR-CT: quyết định chuyển lớp tới Thứ Hai thì thi hành (chạy lặp an toàn)
   const p = principalOf(req);
   const branchId = qInt(req, 'branchId');
   const nguoi = thamSoNguoi(qStr(req, 'nguoi'));
@@ -546,7 +546,7 @@ api.post('/xuat-mt', requireAuth, wrap((req) => {
   if (typeof f === 'string') throw badRequest(f);
   return xuatMtSvc.xuatExcel(principalOf(req), f);
 }));
-/* Tổng hợp vấn đề HV (PR-UX4): đếm HV theo loại lỗi. `loi=chinh` chỉ lỗi chính; `gop=1` gộp theo loại lỗi chung. */
+/* Tổng hợp vấn đề HV (PR-UX4): đếm HV theo nhóm nguyên nhân. `loi=chinh` chỉ lỗi chính; `gop=1` gộp theo nhóm nguyên nhân chung. */
 const filterVanDeHvOf = (req: Request) => ({
   branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')),
   classId: qInt(req, 'lop') ?? null, soTuan: khoangTuThamSo(qStr(req, 'tg')),
@@ -811,7 +811,7 @@ api.get('/classes/:id/roster', requireAuth, wrap((req) => {
 }));
 
 /*
- * BẢNG PHÂN TÍCH VẤN ĐỀ CỦA MỘT LỚP (mục 13.4). Đường cũ của Bảng Ý thức của lớp (đếm số đợt case) đã bỏ 21/09/2026:
+ * BẢNG PHÂN TÍCH VẤN ĐỀ CỦA MỘT LỚP (mục 13.4). Đường cũ của Bảng Ý thức của lớp (đếm số đợt Case) đã bỏ 21/09/2026:
  * Ý thức nay là vi phạm và biện pháp xử lý, dữ liệu ba khu vực ở `GET /classes/:id/y-thuc`.
  */
 api.get('/classes/:id/issue-board', requireAuth, wrap((req) => {
@@ -902,7 +902,7 @@ api.delete('/attachments/:id', requireAuth, wrap(async (req) => {
 
 /**
  * Ý THỨC — VI PHẠM VÀ BIỆN PHÁP XỬ LÝ (PR-J, 21/09/2026). Module thứ chín: mọi đường đi qua `server/src/yThuc/`, nơi kiểm quyền ở MÁY
- * CHỦ (đặc tả mục 6) — giao diện chỉ ẩn nút cho gọn mắt. Không có đường nào tạo case Ý thức: mô hình đó đã bỏ.
+ * CHỦ (đặc tả mục 6) — giao diện chỉ ẩn nút cho gọn mắt. Không có đường nào tạo Case Ý thức: mô hình đó đã bỏ.
  */
 const yThucBody = (req: Request) => (req.body ?? {}) as Record<string, any>;
 
@@ -1159,7 +1159,7 @@ api.post('/intake/commit', requireAuth, wrap((req) => {
 
 // ============================================================ Lớp thường (FOU/BE/ELE)
 
-/** Bảng nhập điểm của lớp Normal: điểm đạt / tổng điểm, đạt từ 70%. */
+/** Bảng nhập điểm của lớp thường: điểm đạt / tổng điểm, đạt từ 70%. */
 api.get('/regular/classes/:classId/sheet', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return regularSvc.regularSheet(principalOf(req), pInt(req, 'classId'), qStr(req, 'kind'));
@@ -1222,7 +1222,7 @@ api.put('/cycles/:id/baseline', requireAuth, wrap((req) => {
   return cycleSvc.setBaseline(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 
-/** Kết luận cuối lộ trình. Đóng lộ trình về hành chính KHÁC với đạt mục tiêu. */
+/** Kết luận cuối lộ trình. Đóng lộ trình về hành chính KHÁC với đạt Target. */
 api.put('/cycles/:id/outcome', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return cycleSvc.setOutcome(principalOf(req), pInt(req, 'id'), req.body ?? {});
@@ -1241,7 +1241,7 @@ api.post('/students/:id/de-xuat-chuyen-lop', requireAuth, wrap((req) => {
   return lenhSvc.guiDeXuatChuyenLop(principalOf(req), pInt(req, 'id'), { toClassId: b.toClassId ? Number(b.toClassId) : null, tuan: typeof b.tuan === 'string' ? b.tuan : null, lyDo: b.lyDo });
 }));
 
-/** Đổi mục tiêu: có hiệu lực từ ngày ghi trở đi, KHÔNG chấm lại các lượt đã chốt. */
+/** Đổi Target: có hiệu lực từ ngày ghi trở đi, KHÔNG chấm lại các lượt đã chốt. */
 api.post('/cycles/:id/target-revision', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return cycleSvc.reviseTarget(principalOf(req), pInt(req, 'id'), req.body ?? {});
@@ -1271,7 +1271,7 @@ api.get('/classes/:id/progress', requireAuth, wrap((req) => {
 
 /**
  * KẾ HOẠCH CHUYỂN TIẾP khi lớp học hết chương trình (mục 6.1) — chỉ đọc.
- * Trả về chương trình kế tiếp theo luồng mặc định, lớp đích đang có, và danh sách học viên.
+ * Trả về chương trình kế tiếp theo luồng mặc định, lớp chuyển đến đang có, và danh sách học viên.
  */
 api.get('/classes/:id/transition', requireAuth, wrap((req) => {
   maybeSimulateReadError();
@@ -1280,7 +1280,7 @@ api.get('/classes/:id/transition', requireAuth, wrap((req) => {
 }));
 
 /**
- * PR-CT (Q30-1): RA LỆNH chuyển lớp (không chuyển ngay) — Quản lý lớp nguồn quyết em nào · lớp đích · tuần bắt đầu; tới Thứ Hai đó web tự thi hành
+ * PR-CT (Q30-1): RA LỆNH chuyển lớp (không chuyển ngay) — Quản lý lớp nguồn quyết em nào · lớp chuyển đến · tuần bắt đầu; tới Thứ Hai đó web tự thi hành
  * (`thiHanhLenhDenHan`). GVCN, GVBM → 403.
  */
 api.post('/classes/:id/transition', requireAuth, wrap((req) => {
@@ -1492,7 +1492,7 @@ api.get('/tong-quan/chi-nhanh/o', requireAuth, wrap((req) => {
 
 api.get('/cases/:id', requireAuth, wrap((req) => caseSvc.caseDetail(principalOf(req), pInt(req, 'id'))));
 
-/** Ghi một tác động. Một case có nhiều tác động. */
+/** Ghi một tác động. Một Case có nhiều tác động. */
 api.post('/cases/:id/interventions', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return caseSvc.recordIntervention(principalOf(req), pInt(req, 'id'), req.body ?? {});
@@ -1500,7 +1500,7 @@ api.post('/cases/:id/interventions', requireAuth, wrap((req) => {
 
 /**
  * CASE TỪ SOS (SOS v4, PR-SOS): GVBM đúng kỹ năng hoặc Quản lý Xác nhận Case (nguyên nhân) → Xác nhận PA theo quy chế, hoặc gửi
- * "Không cần theo dõi" cho Quản lý duyệt. Quyền kiểm ở máy chủ theo ĐÚNG kỹ năng của case (C02). Đường cũ `/confirm`, `/replace` đã gỡ.
+ * "Không cần theo dõi" cho Quản lý duyệt. Quyền kiểm ở máy chủ theo ĐÚNG kỹ năng của Case (C02). Đường cũ `/confirm`, `/replace` đã gỡ.
  */
 api.post('/cases/:id/xac-nhan', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -1638,9 +1638,9 @@ api.post('/cases/:id/followups', requireAuth, wrap((req) => {
 /*
  * ĐƯỜNG "HƯỚNG XỬ LÝ" ĐÃ BỎ (mục 9.3).
  *
- * Case chỉ còn MỘT đường kết thúc: nút "Hoàn thành case" → POST /cases/:id/outcome. Giữ hai
+ * Case chỉ còn MỘT đường kết thúc: nút "Hoàn thành Case" → POST /cases/:id/outcome. Giữ hai
  * đường đóng song song là giữ hai dấu vết khác nhau cho cùng một việc, và sớm muộn sẽ có
- * case đóng được ở đường này mà màn hình ở đường kia bảo là chưa đóng được.
+ * Case đóng được ở đường này mà màn hình ở đường kia bảo là chưa đóng được.
  *
  * Bản ghi cũ vẫn đọc được hướng xử lý của mình; chỉ không sửa qua đường riêng nữa.
  */
@@ -1650,7 +1650,7 @@ api.post('/cases/:id/followups', requireAuth, wrap((req) => {
 /*
  * BA ENDPOINT LIÊN HỆ ĐÃ BỎ Ở VÒNG 4.
  *
- * Hai việc trao đổi nay là hai PHƯƠNG ÁN của case Ý thức/Khác, nên chúng đi chung đường với
+ * Hai việc trao đổi nay là hai PHƯƠNG ÁN của Case Ý thức/Khác, nên chúng đi chung đường với
  * mọi phương án khác: `POST /cases/:id/interventions` để thêm, `POST /interventions/:id` để
  * đánh dấu đã làm. Ít hơn ba đường, và không còn chỗ nào phải cộng hai nguồn lại.
  */
@@ -1671,7 +1671,7 @@ api.get('/students', requireAuth, wrap((req) => {
  * HỒ SƠ HỌC VIÊN theo ĐÚNG MỘT LỘ TRÌNH.
  *
  * `cycleId` gửi tường minh; không có thì lấy lộ trình đang chạy. Không bao giờ trộn dữ
- * liệu hai lộ trình vào một khung nhìn, vì mục tiêu và thang điểm của chúng khác nhau.
+ * liệu hai lộ trình vào một khung nhìn, vì Target và thang điểm của chúng khác nhau.
  */
 api.get('/students/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();
@@ -1690,7 +1690,7 @@ api.post('/students/:id/transfer', requireAuth, wrap((req) => {
     toClassId, effectiveDate, reasonCode, reasonNote, handoverNote, noHandoverNote, receiverUserId,
     nguoiNhan, mucTieu, thangThi,
   } = req.body ?? {};
-  if (!toClassId) throw badRequest('Cần chọn lớp đích.');
+  if (!toClassId) throw badRequest('Cần chọn lớp chuyển đến.');
   /* PR-CT: panel mới gửi thẳng `lyDo` (một ô chữ ≥ 3 ký tự); đường lý do chọn nhanh cũ giữ cho phép kiểm và client cũ. */
   const lyDoTuDo = typeof req.body?.lyDo === 'string' ? chuTuDo(req.body.lyDo, 'Lý do chuyển lớp', 2000) ?? '' : '';   // PR-Dọn (Q4, quét #24)
   if (req.body?.lyDo !== undefined && lyDoTuDo.length < 3) throw badRequest('Ghi lý do chuyển lớp (ít nhất 3 ký tự).');
@@ -1727,14 +1727,14 @@ api.post('/students/:id/transfer', requireAuth, wrap((req) => {
     });
 }));
 
-/** Q3: danh sách chi nhánh + lớp đích cho panel Chuyển lớp — không lộ học viên lớp khác. */
+/** Q3: danh sách chi nhánh + lớp chuyển đến cho panel Chuyển lớp — không lộ học viên lớp khác. */
 api.get('/chuyen-lop/lop-dich', requireAuth, wrap((req) => {
   const sid = qInt(req, 'studentId');
   if (!sid) throw badRequest('Cần studentId.');
   return luatLoTrinhSvc.lopDichChoChuyen(principalOf(req), sid);
 }));
 
-/** Case đang mở + luật áp dụng khi đã chọn lớp đích (Q13, Q14). */
+/** Case đang mở + luật áp dụng khi đã chọn lớp chuyển đến (Q13, Q14). */
 api.get('/students/:id/chuyen-lop', requireAuth, wrap((req) => {
   const toClassId = qInt(req, 'toClassId');
   return luatLoTrinhSvc.xemChuyenLop(principalOf(req), pInt(req, 'id'), toClassId ?? null);

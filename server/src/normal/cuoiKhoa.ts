@@ -140,14 +140,14 @@ export function cuoiKhoaTheoHocVien(classId: number, sids?: readonly number[], o
 
 // ==================================================================== Sau khi chuyển lớp (T70, M-01, M-21, K2-28, K5-61)
 
-/** Một em vừa được chuyển ở `apDungCaLop` / `apDungMotDong`. Chỉ hướng lên / học lại — bảo lưu, dừng học không đi qua đây. */
+/** Một em vừa được chuyển ở `apDungCaLop` / `apDungMotDong`. Chỉ hướng lên / học lại — tạm dừng học (bảo lưu), dừng học hẳn không đi qua đây. */
 export type DongSauChuyen = {
   sid: number; fromClassId: number; toClassId: number; toFt: boolean;
   huong: 'len_lop' | 'fast_track' | 'hoc_lai'; ngay: string;
 };
 
 const CHU_BO_TRO = (n: number, tuan: number, ten: string | null) =>
-  `${n} buổi miễn phí${ten ? ` (${ten})` : ''} · ${tuan} tuần · Mini Test sau buổi cuối · không tính phí học sinh, không tính lương giáo viên`;
+  `${n} buổi miễn phí${ten ? ` (${ten})` : ''} · ${tuan} tuần · Mini Test sau buổi cuối · không tính phí học viên, không tính lương giáo viên`;
 const MO_TA_TUTOR = 'Tutor 10 buổi/kỹ năng · tính vào buổi Free, có lương GV';
 
 /** Case `chuyen_cap` mở ở lộ trình mới cho (em, hạng mục) — dùng Case đang mở nếu có (khoá chống trùng, M-01). Trả id + `moi`. */
@@ -261,13 +261,13 @@ export function sauChuyenCuoiKhoa(p: Principal, dongs: readonly DongSauChuyen[])
     });
   }
   const tyLe = tyLeTongLo([...luotCua.values()].map((l) => l.id));
-  /* Tuần khai giảng lớp đích (Q4): PA bổ trợ bắt đầu ở thứ Hai sau ngày chuyển, không sớm hơn tuần khai giảng. */
+  /* Tuần khai giảng lớp chuyển đến (Q4): PA bổ trợ bắt đầu ở thứ Hai sau ngày chuyển, không sớm hơn tuần khai giảng. */
   const khaiGiang = new Map<number, string | null>();
   theoLo([...new Set(dongs.map((d) => d.toClassId))], (lo, ph) => {
     for (const r of conn.prepare(`SELECT c.id, rp.week_start FROM classes c LEFT JOIN report_periods rp ON rp.id = c.start_period_id WHERE c.id IN (${ph})`).all(...lo) as any[]) khaiGiang.set(r.id, r.week_start ?? null);
   });
 
-  /* Pha 1 — tính thuần: mỗi em → các "ô" (em × môn) cần Case + PA bổ trợ. Đọc một lần: Mini Test đã có · GVCN lớp đích. */
+  /* Pha 1 — tính thuần: mỗi em → các "ô" (em × môn) cần Case + PA bổ trợ. Đọc một lần: Mini Test đã có · GVCN lớp chuyển đến. */
   const daCoMt = new Set<string>();
   theoLo([...new Set([...luotCua.values()].map((l) => l.id))], (lo, ph) => {
     for (const r of conn.prepare(`SELECT student_id, tu_attempt_id FROM mini_test WHERE tu_attempt_id IN (${ph})`).all(...lo) as any[]) daCoMt.add(`${r.student_id}:${r.tu_attempt_id}`);
@@ -426,7 +426,7 @@ function hoanThanhCaseMiniTest(conn: any, caseId: number, p: Principal, ghiChu: 
 
 /**
  * GHI MINI TEST — MỘT hàm cho mọi đường (K1-41). Chạy TRONG tx của nơi gọi (`updateResult` lần ghi cuối, hoặc `ghiMiniTest`).
- * ≥ 70% → mọi Case của nhóm tự Hoàn thành (Q5). < 70% → Case để mở + thẻ Báo lên cho Quản lý (thông báo do `taoYeuCau`). Trả `dat`.
+ * ≥ 70% → mọi Case của nhóm tự Hoàn thành (Q5). < 70% → Case để mở + thẻ Báo QL cho Quản lý (thông báo do `taoYeuCau`). Trả `dat`.
  */
 export function ghiMiniTestTrongTx(conn: any, p: Principal, mt: any, x: { tyLe: number; ngay: string }): { dat: boolean } {
   conn.prepare('UPDATE mini_test SET ty_le = ?, ngay_lam = ?, ghi_boi = ?, ghi_luc = ? WHERE id = ?').run(x.tyLe, x.ngay, p.userId, nowIso(), mt.id);
@@ -521,7 +521,7 @@ export function ghiKetLuanFt(p: Principal, sid: number, input: { dat?: unknown; 
       ftCycle = (conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1`).get(sid) as any)?.id ?? null;
     }
   }
-  if (!lopBeEle) throw badRequest('Chỉ lớp BE/ELE (hoặc em vừa lên Fast Track từ BE/ELE) mới có kỳ vọng đầu ra.');
+  if (!lopBeEle) throw badRequest('Chỉ lớp BE/ELE (hoặc em vừa lên FT từ BE/ELE) mới có kỳ vọng đầu ra.');
   /* PR-S5F-a: kết luận kỳ vọng đầu ra dựa trên bài Cuối khoá — chưa có bài thì không ghi (không chèn dòng "chưa rõ" vào Lộ trình tiếp theo). */
   if (!conn.prepare(`SELECT 1 FROM assessment_attempts WHERE student_id = ? AND class_id = ? AND kind = 'final' AND status != 'cancelled' LIMIT 1`).get(sid, lopBeEle)) {
     throw badRequest('Em chưa có bài Cuối khoá ở lớp này — chưa đánh dấu kỳ vọng đầu ra được.');
@@ -530,10 +530,10 @@ export function ghiKetLuanFt(p: Principal, sid: number, input: { dat?: unknown; 
   const dat = input.dat;
   let nguyenNhan: string | null = null, mon: string[] = [], ghiChu: string | null = null;
   if (!dat) {
-    if (input.nguyenNhan !== 'trung_tam' && input.nguyenNhan !== 'hoc_sinh') throw badRequest('Chọn nguyên nhân: Trung tâm hoặc Học sinh.');
+    if (input.nguyenNhan !== 'trung_tam' && input.nguyenNhan !== 'hoc_sinh') throw badRequest('Chọn nguyên nhân: Trung tâm hoặc Học viên.');
     nguyenNhan = input.nguyenNhan;
     ghiChu = String(input.ghiChu ?? '').trim() || null;
-    if (nguyenNhan === 'hoc_sinh' && (ghiChu ?? '').length < 15) throw badRequest('Nguyên nhân Học sinh thì ghi phương án case-by-case, ít nhất 15 ký tự.');
+    if (nguyenNhan === 'hoc_sinh' && (ghiChu ?? '').length < 15) throw badRequest('Nguyên nhân Học viên thì ghi phương án case-by-case, ít nhất 15 ký tự.');
     if (nguyenNhan === 'trung_tam') {
       const cuoi = conn.prepare(`SELECT id FROM assessment_attempts WHERE student_id = ? AND class_id = ? AND kind = 'final' AND status != 'cancelled' ORDER BY id DESC LIMIT 1`).get(sid, lopBeEle) as any;
       const t = cuoi ? tyLeTongLo([cuoi.id]).get(cuoi.id) : undefined;
@@ -563,7 +563,7 @@ export function ghiKetLuanFt(p: Principal, sid: number, input: { dat?: unknown; 
   });
 }
 
-/** K4-23 vế 2: bài Cuối khoá bị dời quá tuần cuối khoá → MỘT thẻ Báo lên (không duyệt, QL nhắc GVCN). Chạy trong tx của `reportRegularNoShow`. */
+/** K4-23 vế 2: bài Cuối khoá bị dời quá tuần cuối khoá → MỘT thẻ Báo QL (không duyệt, QL nhắc GVCN). Chạy trong tx của `reportRegularNoShow`. */
 export function baoLenCuoiKhoaDoiQuaHan(conn: any, a: { id: number; student_id: number; class_id: number }): void {
   const gvcn = (conn.prepare(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active' LIMIT 1`).get(a.class_id) as any)?.user_id ?? null;
   const lyDo = 'Bài Cuối khoá bị dời quá tuần cuối khoá của lớp';

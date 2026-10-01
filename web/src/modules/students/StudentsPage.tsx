@@ -62,7 +62,8 @@ export default function StudentsPage() {
   const [params, setParams] = useSearchParams();
   const doc = docThamSoLoc(params.get('view'));
   const q = params.get('q') ?? '';
-  const branchId = params.get('branchId') ? Number(params.get('branchId')) : null;
+  const cnUrl = params.get('cn') ?? params.get('branchId');
+  const branchId = cnUrl ? Number(cnUrl) : null;
   const phamViUrl = params.get('phamVi');
   const sapXep: SapXep = params.get('sx') === 'chu-y' ? 'chu-y' : 'ten';
   const chiLop = params.get('classId') ? Number(params.get('classId')) : null;
@@ -119,14 +120,14 @@ export default function StudentsPage() {
     return m;
   }, [data, loc]);
 
-  if ('chuyenDen' in doc) return <Navigate to={`${doc.chuyenDen}${branchId ? `?branchId=${branchId}` : ''}`} replace />;
+  if ('chuyenDen' in doc) return <Navigate to={`${doc.chuyenDen}${branchId ? `?cn=${branchId}` : ''}`} replace />;
 
   const lopHien = (data?.rows ?? []).filter((c) => (khung === 'tat-ca' || khungCua(c.scoringMode) === khung)
     && (!chiLop || c.id === chiLop) && (!dangLoc || idsTheoLop.has(c.id)));
-  /* M3, K2-03: nhóm theo kiểu lớp (Fast Track trước, lớp thường sau) — mỗi nhóm một khối tiêu đề cột riêng: "Mục tiêu" cho FT, "Khoá" cho lớp thường. */
+  /* M3, K2-03: nhóm theo kiểu lớp (Fast Track trước, lớp thường sau) — mỗi nhóm một khối tiêu đề cột riêng: "Target" cho FT, "Khoá" cho lớp thường. */
   const nhomLop = (['ft', 'thuong'] as const)
     .map((k) => ({ k, lop: lopHien.filter((c) => khungCua(c.scoringMode) === k) })).filter((g) => g.lop.length > 0);
-  const tieuDeCot = (k: 'ft' | 'thuong') => ['Học viên', 'Kết quả gần nhất', k === 'ft' ? 'Mục tiêu' : 'Khoá', 'Sắp tới', 'Case', 'Việc tiếp theo', ''];
+  const tieuDeCot = (k: 'ft' | 'thuong') => ['Học viên', 'Kết quả gần nhất', k === 'ft' ? 'Target' : 'Khoá', 'Sắp tới', 'Case', 'Việc tiếp theo', ''];
   const openIds = lopMoSan({
     thamSoOpen: openRaw === null ? null : openRaw === '-' ? []
       : openRaw.split(',').map(Number).filter((n) => Number.isFinite(n) && n > 0),
@@ -166,13 +167,13 @@ export default function StudentsPage() {
           value={draftQ} onChange={(e) => setDraftQ(e.target.value)} />
         {pv && pv.coThe.length > 1 && (
           <select className="field w-auto" aria-label="Phạm vi" value={pv.dangDung}
-            onChange={(e) => setParam({ phamVi: e.target.value, branchId: null, open: null })}>
+            onChange={(e) => setParam({ phamVi: e.target.value, cn: null, branchId: null, open: null })}>
             {pv.coThe.map((v) => <option key={v} value={v}>Phạm vi: {PHAM_VI_NHAN[v]}</option>)}
           </select>
         )}
         {pv?.dangDung === 'chi-nhanh' && (branches.data?.length ?? 0) > 1 && (
           <select className="field w-auto" aria-label="Chi nhánh" value={pv.chiNhanh ?? ''}
-            onChange={(e) => setParam({ phamVi: 'chi-nhanh', branchId: e.target.value, open: null })}>
+            onChange={(e) => setParam({ phamVi: 'chi-nhanh', cn: e.target.value, branchId: null, open: null })}>
             {(branches.data ?? []).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
           </select>
         )}
@@ -191,7 +192,7 @@ export default function StudentsPage() {
         {chips.map((k) => (
           <button key={k} type="button" title={LOC_HOC_VIEN_NHAN[k].goiY} aria-pressed={loc === k}
             onClick={() => setParam({ view: k === 'tat-ca' ? null : k, open: null })}
-            className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-semibold cursor-pointer ${
+            className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-semibold cursor-pointer max-sm:min-h-[44px] ${
               loc === k
                 ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)] border-[color:var(--accent-line)]'
                 : 'bg-transparent text-slate-400 border-slate-300/20 hover:bg-white/5'
@@ -219,7 +220,7 @@ export default function StudentsPage() {
         </Card>
       ) : (
         /*
-         * Mỗi NHÓM khung (Fast Track · Lớp thường) là một <section> có khối tiêu đề cột riêng ("Mục tiêu" / "Khoá"); trong nhóm mỗi lớp MỘT
+         * Mỗi NHÓM khung (Fast Track · Lớp thường) là một <section> có khối tiêu đề cột riêng ("Target" / "Khoá"); trong nhóm mỗi lớp MỘT
          * bảng riêng (cùng colgroup nên cột thẳng nhau) — PR-UX0 N-2; menu ⋯ vẽ ra ngoài (portal).
          * YC-11.1 (PR-N1): từ 768px bỏ khung cuộn ngang; khối tiêu đề là khối dính riêng theo <main>, hàng lớp đang mở dính ngay dưới nó
          * (`.hang-lon-dinh`). Khối tiêu đề dính chỉ trong <section> của nhóm mình (bẫy sticky: `sticky` bị chặn trong phần tử cha) nên hai
@@ -284,7 +285,7 @@ function CotBangLop() {
 
 /**
  * HÀNG LỚN của một lớp (đặc tả §3.6; PR-UX0 N-2): ▸ · mã (mở Hồ sơ lớp) · chương trình · n HV · GVCN · tối đa 2 badge (+n) · ⋯.
- * ⋯ của lớp: Hồ sơ lớp · Nhập điểm Test (Q11, Q6) · + Học viên — chỉ mục người xem làm được.
+ * ⋯ của lớp: Hồ sơ lớp · Nhập điểm (Q11, Q6) · + Học viên — chỉ mục người xem làm được.
  */
 function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, the = false }: {
   lop: LopTrenTrang; mo: boolean; onDoiMo: () => void; chiHien: Set<number> | null; sapXep: SapXep;
@@ -315,7 +316,7 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, the =
   const mucLop: MucMenu[] = [
     { key: 'ho-so', nhan: 'Hồ sơ lớp', onChon: () => navigate(`/hoc-vien/lop/${lop.id}`) },
     ...(lop.viewer.coTheNhapDiem
-      ? [{ key: 'nhap-diem', nhan: 'Nhập điểm Test', onChon: () => navigate(thuong ? `/bang-diem-thuong/${lop.id}` : `/nhap-diem/${lop.id}`) }]
+      ? [{ key: 'nhap-diem', nhan: 'Nhập điểm', onChon: () => navigate(thuong ? `/bang-diem-thuong/${lop.id}` : `/nhap-diem/${lop.id}`) }]
       : []),
     ...(lop.viewer.coTheSuaHocVien ? [{ key: 'them', nhan: '+ Học viên', onChon: onThemHocVien }] : []),
   ];
@@ -348,7 +349,7 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, the =
               </span>
             </span>
           </button>
-          <MenuDong muc={mucLop} nhan="Thao tác với lớp" />
+          <MenuDong muc={mucLop} nhan="Thao tác khác" />
         </div>
         {(cacBadge.length > 0 || menuBadgeAn) && <div className="flex flex-wrap items-center gap-1.5 px-3 pb-2">{cacBadge}{menuBadgeAn}</div>}
         {mo && <BangHocVienLop the lop={lop} chiHien={chiHien} sapXep={sapXep} onDoi={onDoi} soCot={1} />}
@@ -374,7 +375,7 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, the =
         <td className="px-3" colSpan={3}>
           <span className="flex items-center justify-end gap-1.5">{cacBadge}{menuBadgeAn}</span>
         </td>
-        <td className="px-2 text-center"><MenuDong muc={mucLop} nhan="Thao tác với lớp" /></td>
+        <td className="px-2 text-center"><MenuDong muc={mucLop} nhan="Thao tác khác" /></td>
       </HangNhom>
       {mo && <BangHocVienLop lop={lop} chiHien={chiHien} sapXep={sapXep} onDoi={onDoi} soCot={7} />}
     </tbody>

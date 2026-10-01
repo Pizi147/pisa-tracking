@@ -14,7 +14,7 @@ import { DongXinYKien, type XinYKien } from './DongXinYKien.tsx';
 import { KhongTheoDoiForm } from '../yThuc/CaseSosControls.tsx';
 import type { BoTro } from './NopKeHoachPanel.tsx';
 import {
-  ATTEMPT_KIND_SHORT, OUTCOME_MARK, OUTCOME_TONE, chuKetQuaPa, duongDotTest, chuKhoangPa, dangChay, deadlineView, tienDoCase, tuanLich, viecTiepHang, viecTiepPhuongAn,
+  ATTEMPT_KIND_SHORT, OUTCOME_MARK, OUTCOME_TONE, chuKetQuaPa, chuTamDung, duongDotTest, chuKhoangPa, dangChay, deadlineView, tienDoCase, tuanLich, viecTiepHang, viecTiepPhuongAn,
   type AttemptKind, type DeadlineKind, type DeadlineView, type TrangThai, type TrangThaiCaseV4,
 } from '@shared/domain/index.ts';
 
@@ -25,10 +25,10 @@ import {
  *
  *   kỹ năng · kết quả gần nhất · vấn đề đang theo dõi · việc tiếp theo
  *
- * BẤM MỘT HÀNG THÌ CASE MỞ RA NGAY BÊN DƯỚI hàng đó. Một kỹ năng có nhiều case thì mỗi case
+ * BẤM MỘT HÀNG THÌ CASE MỞ RA NGAY BÊN DƯỚI hàng đó. Một kỹ năng có nhiều Case thì mỗi Case
  * là MỘT THẺ RIÊNG, đóng mở độc lập — mở cái này không đóng cái kia.
  *
- * THỨ TỰ: case đang xử lý và mới cập nhật ở trên, case đã hoàn thành ở dưới. Người mở hồ sơ
+ * THỨ TỰ: Case đang xử lý và mới cập nhật ở trên, Case đã hoàn thành ở dưới. Người mở hồ sơ
  * hỏi "giờ đang thế nào", không hỏi "ba tháng trước bắt đầu ra sao".
  */
 
@@ -63,7 +63,7 @@ type Plan = {
 };
 type CaseCard = {
   id: number; title: string; status: string;
-  /** Chủ đề gốc của case (§7.5, PR-K) — để mở đúng danh mục phân loại khi "Xác định nguyên nhân". */
+  /** Chủ đề gốc của Case (§7.5, PR-K) — để mở đúng danh mục phân loại khi "Xác định nguyên nhân". */
   topic: string | null;
   /** Case tự tạo từ SOS: chờ xác nhận nguyên nhân, hạn xác nhận, thẻ Không cần theo dõi, lý do huỷ (§3.2, §7.5, PR-SOS). */
   sos: {
@@ -87,7 +87,7 @@ type CaseCard = {
   issueCode: string | null; issueLabel: string | null;
   summary: string | null;
   canEdit: boolean;
-  /** Người xem chốt được case không, và còn gì đang chặn — thẻ tự nói, không phải mở khối thứ hai. */
+  /** Người xem chốt được Case không, và còn gì đang chặn — thẻ tự nói, không phải mở khối thứ hai. */
   canClose: boolean; closeBlockers: string[];
   plans: Plan[];
   attempts: { attemptNo: number; week: string | null; attemptKind?: string | null }[];
@@ -95,12 +95,12 @@ type CaseCard = {
   outcomeLabel: string | null; outcomeNote: string | null; closedOn: string | null;
   /** NHẬP BÙ (PR-C Task 3, chốt 7) — ai ghi lại, ghi lúc nào. Null khi ghi tại chỗ như bình thường. */
   backfilledBy: string | null; backfilledOn: string | null;
-  /** Số bằng chứng của case (PR-HV) — nhãn "Bằng chứng (n)" thu gọn. */
+  /** Số bằng chứng của Case (PR-HV) — nhãn "Bằng chứng (n)" thu gọn. */
   attachmentCount: number;
 };
 export type Row = {
   category: string; label: string; short: string;
-  /** PR-UXF-b (R5-5): nhóm "Từ lớp trước" — mã lớp cũ của Case có tên môn khác chương trình đang xem (G+V ≠ Writing). Hàng chuẩn: null. */
+  /** PR-UXF-b (R5-5): nhóm "Case bàn giao" — mã lớp cũ của Case có tên môn khác chương trình đang xem (G+V ≠ Writing). Hàng chuẩn: null. */
   tuLopTruoc?: string | null;
   /** Mã chương trình lộ trình — bộ nguyên nhân theo môn (T57: FOU G+V / P, Pre FOU Tổng hợp). */
   chuongTrinh?: string | null;
@@ -133,10 +133,10 @@ export type Row = {
 };
 
 const STATE_LABEL: Record<Row['state'], string> = {
-  none: 'Không có case',
+  none: 'Không có Case mở',
   /* Q28-5: Case từ SOS chưa xác nhận đủ nguyên nhân + PA do người xác nhận. */
   chua_xu_ly: 'Chưa xử lý',
-  no_plan: 'Chưa có phương án',
+  no_plan: 'Chưa có PA',
   working: 'Đang xử lý',
   done: 'Đã kết thúc',
 };
@@ -152,7 +152,7 @@ export function NhanTamDung({ tu }: { tu: string }) {
   return (
     <span className="inline-flex items-center whitespace-nowrap rounded-md bg-soon-bg px-1.5 py-0.5 text-[11.5px] font-semibold tabular-nums text-soon"
       title="Em đang Tạm dừng học — mọi hạn đang dừng; quay lại học thì hạn tính lại từ ngày quay lại">
-      Tạm dừng từ {tu.slice(8, 10)}/{tu.slice(5, 7)}
+      {chuTamDung(`${tu.slice(8, 10)}/${tu.slice(5, 7)}`, true)}
     </span>
   );
 }
@@ -162,7 +162,7 @@ export const TamDungCtx = createContext<string | null>(null);
 /** Việc mở ngăn Case từ bảng này (Q3): không còn form trải trong trang. `viec` không có = mở view Case. PR-SOS: + Xác nhận Case / PA. */
 export type MoCase = { viec?: 'ghi-ket-qua' | 'them-pa' | 'xac-nhan' | 'xac-nhan-pa' | 'ke-hoach'; paId?: number };
 
-/** Khoá hàng: nhóm "Từ lớp trước" cùng `category` với hàng chuẩn của chương trình mới (G+V ↔ Writing) nên cần khoá riêng. */
+/** Khoá hàng: nhóm "Case bàn giao" cùng `category` với hàng chuẩn của chương trình mới (G+V ↔ Writing) nên cần khoá riêng. */
 export const khoaHang = (r: { category: string; tuLopTruoc?: string | null }) => (r.tuLopTruoc ? `${r.category}@truoc` : r.category);
 
 export function SkillBoard({ rows, loading, error, onRetry, selected, onPick, onReport, onChanged, onMoCase, tamDungTu = null }: {
@@ -200,7 +200,7 @@ export function SkillBoard({ rows, loading, error, onRetry, selected, onPick, on
           return (
             <tbody key={khoa}>
               {r.tuLopTruoc && !rows[i - 1]?.tuLopTruoc && (
-                <tr><th colSpan={4} scope="colgroup" className="px-3 pb-1 pt-3 text-left text-[12px] font-semibold uppercase tracking-wide text-slate-400">Từ lớp trước</th></tr>
+                <tr><th colSpan={4} scope="colgroup" className="px-3 pb-1 pt-3 text-left text-[12px] font-semibold uppercase tracking-wide text-slate-400">Case bàn giao</th></tr>
               )}
               <SkillRows row={r} open={selected === khoa}
                 onToggle={() => onPick(selected === khoa ? null : khoa)}
@@ -412,7 +412,7 @@ function HangCase({ c, ngan, onChanged, onMoCase }: {
           <span className="flex min-w-0 items-center gap-1.5">
             <button type="button" aria-expanded={mo} aria-label={`${mo ? 'Thu gọn' : 'Mở'} Case ${c.title}`} title={mo ? 'Thu gọn' : 'Mở'}
               onClick={() => setMo(!mo)}
-              className="inline-flex h-5 w-5 shrink-0 appearance-none items-center justify-center rounded border-0 bg-transparent p-0 text-slate-400 hover:text-slate-100">
+              className="max-sm:relative max-sm:before:absolute max-sm:before:-inset-3 max-sm:before:content-[''] inline-flex h-5 w-5 shrink-0 appearance-none items-center justify-center rounded border-0 bg-transparent p-0 text-slate-400 hover:text-slate-100">
               <MuiTen mo={mo} />
             </button>
             <NhanLoai loai="Case" />
@@ -510,7 +510,7 @@ function HangPA({ p, c, ngan, onMoCase }: {
   const chuaChay = !!p.chuaChay;
   const choDuyetKh = chuaChay && c.boTro?.keHoach?.trangThai === 'cho';
   const chung = c.boTro?.chung && c.boTro.mon.length > 1 ? `PA chung · ${c.boTro.mon.map((m) => m.tenMon).join(', ')}` : null;
-  const dongPhu = [p.performer ?? 'chưa có người làm', khoang, chung,
+  const dongPhu = [p.performer ?? 'chưa có người thực hiện', khoang, chung,
     p.closedReason === 'superseded' ? 'được thay' : p.revisions.length > 0 ? `điều chỉnh ${p.revisions.length} lần` : null].filter(Boolean).join(' · ');
   return (
     <HangCon className="hang-pa">
@@ -631,7 +631,7 @@ export function DongMt({ row }: { row: Row }) {
     <>
       {row.bandAttemptNo ? (row.ratio ? boNamCungNam(row.bandWeek, homNay) : row.bandAttemptId
         ? <Link to={duongDotTest({ id: row.bandAttemptId, kind: 'mock' }, row.category)} className="link tabular-nums"
-          title={`Mở hồ sơ Mock · MT${row.bandAttemptNo} · ${row.label}`} onClick={(e) => e.stopPropagation()}>MT{row.bandAttemptNo}</Link>
+          title={`Mở Hồ sơ Mock Test · MT${row.bandAttemptNo} · ${row.label}`} onClick={(e) => e.stopPropagation()}>MT{row.bandAttemptNo}</Link>
         : `MT${row.bandAttemptNo}`) : ''}
       {row.ratio
         ? (row.missed === false ? ' · đạt' : row.missed === true ? ' · chưa đạt' : '')

@@ -39,7 +39,7 @@ const ACT_MESSAGE = 'Chỉ giáo viên chủ nhiệm của lớp em đang học 
 // ---------------------------------------------------------------- điền sẵn và đồng bộ theo mức SOS (P01–P03)
 
 /**
- * ĐỒNG BỘ VIỆC PHỐI HỢP ĐIỀN SẴN với mức SOS hiện tại của lượt. Gọi từ CÙNG điểm với việc tự tạo case (`cases/sos.ts`), mỗi lần điểm của lượt đổi.
+ * ĐỒNG BỘ VIỆC PHỐI HỢP ĐIỀN SẴN với mức SOS hiện tại của lượt. Gọi từ CÙNG điểm với việc tự tạo Case (`cases/sos.ts`), mỗi lần điểm của lượt đổi.
  * Hàm của điểm nhập, nên cho ra cùng kết quả dù gọi bao nhiêu lần (P01):
  *
  *   · việc còn thiếu trong bảng §5.3 → THÊM (P01 lần đầu, P02 khi mức SOS tăng). Khoá duy nhất (lượt, loại, tên) chặn nhân đôi;
@@ -126,7 +126,7 @@ export function dongBoBaoPh(attempt: { id: number; student_id: number; class_id?
   const mon = monTruot.map((s) => tenMonNgan(ct, s)).join(', ');
   for (const g of conn.prepare(`SELECT DISTINCT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active'`).all(attempt.class_id) as any[]) {
     notify({
-      userId: g.user_id, kind: 'phoi_hop', title: `Giữa khoá: ${hv?.full_name ?? ''} không đạt ${mon} — Báo phụ huynh qua TVV`,
+      userId: g.user_id, kind: 'phoi_hop', title: `Báo phụ huynh qua TVV · ${hv?.full_name ?? ''} · Giữa khoá không đạt ${mon}`,
       body: 'Tạo task cho TVV trên Base với 4 nội dung, rồi đánh dấu đã làm.',
       entityType: 'assessment_attempt', entityId: attempt.id, dedupKey: `bao-ph:${attempt.id}`,
     });
@@ -359,7 +359,7 @@ export function myCoordinationLines(p: Principal) {
     const pendingCount = dem.get(classId) ?? 0;
     if (pendingCount > 0 && ma.has(classId)) {
       const code = ma.get(classId)!;
-      lines.push({ classId, className: code, pendingCount, text: `Lớp ${code} — ${pendingCount} lượt Phối hợp cần xử lý` });
+      lines.push({ classId, className: code, pendingCount, text: `Lớp ${code} — ${pendingCount} lượt Phối hợp SOS cần xử lý` });
     }
   }
   return lines;

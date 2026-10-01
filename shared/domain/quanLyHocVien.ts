@@ -80,10 +80,10 @@ const NHOM_VIEC: Record<ViecQuanLy, NhomViecQuanLy> = {
 };
 /** Một dòng hệ quả (mockup 24 B) — chỉ mục có hệ quả mới có. */
 const PHU_VIEC: Partial<Record<ViecQuanLy, string>> = {
-  'lo-trinh': 'target, thi dự kiến, lịch MT',
+  'lo-trinh': 'Target, dự kiến thi, lịch MT',
   'de-xuat-sua': 'Quản lý duyệt rồi mới đổi',
-  'chuyen-lop': 'chọn lớp đích và tuần bắt đầu',
-  'de-xuat-chuyen-lop': 'Quản lý duyệt rồi ra lệnh',
+  'chuyen-lop': 'chọn lớp chuyển đến và tuần bắt đầu',
+  'de-xuat-chuyen-lop': 'Quản lý duyệt rồi quyết định',
   'tam-dung': 'mọi hạn của em dừng · giữ lớp, lộ trình',
   'quay-lai': 'hạn tính lại từ ngày quay lại',
   'ket-thuc': 'đóng lộ trình · hồ sơ chỉ xem',

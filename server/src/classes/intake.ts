@@ -24,7 +24,7 @@ import { taoMtMacDinhLo } from '../fasttrack/mtMacDinh.ts';
 /**
  * CỘT CỦA BẢNG NHẬP THEO ĐÚNG CHƯƠNG TRÌNH CỦA LỚP (mục 12.1).
  *
- *   Fast Track   Họ tên · Ngày sinh · Email · OVR · L · R · W · S · Target · Thi dự kiến · Tuần bắt đầu
+ *   Fast Track   Họ tên · Ngày sinh · Email · OVR · L · R · W · S · Target · Dự kiến thi · Tuần bắt đầu
  *   Lớp thường   Họ tên · Ngày sinh · Email · Tuần bắt đầu   (YC-5.2, K2-41 — bộ cột ở `cotLuoiNhap`)
  *
  * LỚP KHÔNG CÒN LÀ MỘT CỘT. Nó được chọn MỘT LẦN ở đầu panel, và cả lô vào lớp đó. Bản
@@ -59,7 +59,7 @@ export type IntakeRow = {
   entryWriting?: number | string | null;
   entrySpeaking?: number | string | null;
   target?: number | string | null;
-  /** T9 · Thi dự kiến: `dd/mm/yyyy` (ngày) hoặc `mm/yyyy` (tháng). Xem trước trả ISO `yyyy-mm-dd` / `yyyy-mm`. */
+  /** T9 · Dự kiến thi: `dd/mm/yyyy` (ngày) hoặc `mm/yyyy` (tháng). Xem trước trả ISO `yyyy-mm-dd` / `yyyy-mm`. */
   examDate?: string;
   /** K2-33(1) · Đã thi tới MT (0–8, lớp FT): em cũ đã thi ngoài web tới MT mấy — web tạo sẵn các lượt đó (MT lịch sử) để nhập điểm bù. */
   daThiToiMt?: number | string | null;
@@ -264,7 +264,7 @@ export function previewIntake(
     }
 
     let target: number | typeof KCK | null = null;
-    if (ratio) { if (coDuLieu(r.target) || laKck(r.target)) luuY('target', 'Bỏ qua — lớp thường không có target'); }
+    if (ratio) { if (coDuLieu(r.target) || laKck(r.target)) luuY('target', 'Bỏ qua — lớp thường không có Target'); }
     else if (laKck(r.target)) target = KCK;          // Q29-1: KCK / '-' = không cam kết (khác ô trống = chưa có)
     else {
       const t = bandOf(r.target);
@@ -468,7 +468,7 @@ export function commitIntake(
        * phiếu đó. Không suy cái này ra cái kia: thiếu vài môn thì để trống đúng những môn thiếu, và có đủ bốn môn cũng không tính
        * lại OVR — làm tròn của IELTS không phải trung bình cộng.
        *
-       * T9: thi dự kiến là NGÀY → lưu ngày + suy tháng, tuần; là THÁNG → chỉ tháng.
+       * T9: dự kiến thi là NGÀY → lưu ngày + suy tháng, tuần; là THÁNG → chỉ tháng.
        */
       const route = cls.route ?? null;
       const examDateOf = (r: (typeof ok)[number]) => (r.examDate?.length === 10 ? r.examDate : null);
@@ -501,7 +501,7 @@ export function commitIntake(
       chenNhieuDong(
         'INSERT INTO journey_events (student_id, event_type, event_date, title, detail, ref_table, ref_id, created_by, created_at)',
         ok.map((r, i) => [sids[i], 'cycle_start', startWeek(r), route ? `Bắt đầu lộ trình ${route}` : 'Bắt đầu khoá học',
-          r.target ? `Target ${r.target}` : 'Chưa có target', 'learning_cycles', cycOf.get(sids[i]), p.userId, now]));
+          r.target ? `Target ${r.target}` : 'Chưa có Target', 'learning_cycles', cycOf.get(sids[i]), p.userId, now]));
 
       /* M1: lịch MT mặc định tạo ngay, MT đã qua là MT lịch sử (T33, T34). Tuần do hệ thống tính, không lấy từ file dán. */
       if (cls.is_fast_track && route) {
@@ -538,7 +538,7 @@ export function commitIntake(
 export function createClass(p: Principal, input: {
   code: string; branchId: number; kind: string; route?: Route | null;
   isFastTrack?: boolean; startDate?: string | null; skills?: string[]; note?: string | null;
-  /** Tuần khai giảng — với lớp Normal đây là mốc gốc của hai kỳ kiểm tra. */
+  /** Tuần khai giảng — với lớp thường đây là mốc gốc của hai kỳ kiểm tra. */
   startPeriodId?: number | null;
   /** Lớp này học tiếp từ lớp nào — giữ sợi dây FOU → BE → FT. */
   previousClassId?: number | null;

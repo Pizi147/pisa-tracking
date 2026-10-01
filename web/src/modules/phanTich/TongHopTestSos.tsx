@@ -2,6 +2,7 @@ import { Fragment, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { Card, Empty, ErrorState, SCORE_CHIP, Skeleton, Th } from '../../ui/ui.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { DINH_TRAI, SoO as SoLieuO } from './dungChung.tsx';
@@ -53,7 +54,7 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
   branchId: number | null; ct: ChuongTrinh; tg: Khoang; classId: number | null;
 }) {
   const { session } = useSession();
-  const demoDate = session?.demoDate ?? null;
+  const demoDate = useNgayNghiepVu().homNay || null;
   const [params, setParams] = useSearchParams();
   const theo: TheoDong = (THEO_DONG as readonly string[]).includes(params.get('theo') ?? '') ? (params.get('theo') as TheoDong) : 'tuan';
   const setTheo = (v: TheoDong) => {
@@ -132,7 +133,7 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
     const aoa = bangXuatTongHop(data, cotHien, moTa);
     const ws = XLSX.utils.aoa_to_sheet(aoa);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Tong hop');
+    XLSX.utils.book_append_sheet(wb, ws, 'Tổng hợp');
     const ten = ngay(demoDate).split('/').join('-');
     XLSX.writeFile(wb, `${ct === 'thuong' ? 'tong-hop-test' : 'tong-hop-test-sos'}-${ten}.xlsx`);   // D8: lớp thường không chữ SOS
   }
@@ -267,7 +268,7 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
                 ))}
                 <tr className="border-t" style={{ borderColor: 'var(--line-strong)' }}>
                   <td className="td sticky-col font-semibold text-slate-200 whitespace-nowrap">
-                    Cộng {data.hang.length} {THEO_DONG_DANH_TU[theo]}
+                    Tổng {data.hang.length} {THEO_DONG_DANH_TU[theo]}
                   </td>
                   {cols.map((c) => (
                     <td key={c.khoa} className="td text-right tabular-nums font-semibold">{oCell({ khoa: 'tong', nhan: 'Tổng', o: data.tong, coDot: data.tongCoDot }, c)}</td>

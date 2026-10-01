@@ -242,7 +242,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at) VALUES (?,?,?,?, '2026-01-01', 'active', ?)`)
       .run(userId, classId, skill, skill === null ? 1 : 0, new Date().toISOString());
   };
-  /** Lớp đích thử (khai giảng tuần chuyển), GVCN = `P.normalCoreTeacher`, tuỳ chọn GVBM Listening = `P.lrTeacher`. */
+  /** Lớp chuyển đến thử (khai giảng tuần chuyển), GVCN = `P.normalCoreTeacher`, tuỳ chọn GVBM Listening = `P.lrTeacher`. */
   /** Một GV bộ môn KHÁC GVCN (`P.lrTeacher` trùng người với `P.normalCoreTeacher` ở bộ demo). */
   const gvbmKhac = (conn.prepare(`SELECT user_id FROM teacher_assignments WHERE user_id != ? AND skill IS NOT NULL AND is_core = 0 LIMIT 1`).get(P.normalCoreTeacher.userId) as any).user_id as number;
   const taoLopDich = (kind: 'FOU' | 'BE' | 'ELE', gvbmL = false) => {
@@ -290,7 +290,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     const mt = conn.prepare('SELECT * FROM mini_test WHERE student_id = ?').all(s0) as any[];
     const lich = d.lichBoTro({ batDau: NGAY_CHUYEN, soTuan: 1 });
     assert(mt.length === 1 && mt[0].han === lich.hanMiniTest && mt[0].ngay_du_kien === lich.ngayMiniTest && mt[0].so_buoi === 2 && mt[0].ty_le === null, JSON.stringify(mt));
-    /* Không phải Case SOS: không chờ nguyên nhân, không ở việc `cause`, không Báo lên nguyên nhân. */
+    /* Không phải Case SOS: không chờ nguyên nhân, không ở việc `cause`, không Báo QL nguyên nhân. */
     const st = sosState.sosCaseState(cc.id);
     assert(!st.fromSos && !st.awaitingCause, JSON.stringify(st));
     assert(!(sosState.awaitingCauseCaseIds([cc.id]) as number[]).includes(cc.id), 'Case Cuối khoá không được chờ nguyên nhân');
@@ -412,7 +412,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
   };
   const ghiCuoi = (who: any, paId: number, mini: any) => casesMod.updateResult(who, paId, { outcome: 'improved', note: 'Em làm bài Mini Test khá hơn hẳn', observedOn: TODAY, miniTest: mini });
 
-  check('LT2b (6) · Mini Test 72%: ghi ở MỘT PA → cả nhóm khép, một dòng mini_test, mọi Case tự Hoàn thành, không thẻ Báo lên', () => {
+  check('LT2b (6) · Mini Test 72%: ghi ở MỘT PA → cả nhóm khép, một dòng mini_test, mọi Case tự Hoàn thành, không thẻ Báo QL', () => {
     const x = dungMiniTest();
     assert(x.pa.length === 2 && x.mt.ty_le === null, 'dữ liệu dựng');
     ghiCuoi(P.mbManager, x.pa[0].id, { tyLe: 72, ngay: TODAY });
@@ -423,7 +423,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     assert(!conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_mini_test' AND doi_tuong_id = ?`).get(x.mt.id), 'đạt thì không thẻ');
     assertThrows(() => ghiCuoi(P.mbManager, x.pa[1].id, { tyLe: 72, ngay: TODAY }), /đã kết thúc/, 'PA đã khép không ghi lại');
   });
-  check('LT2b (6) · Mini Test 58%: Case còn mở + MỘT thẻ Báo lên cho Quản lý; Hoàn thành Case bằng tay → thẻ tự đóng', () => {
+  check('LT2b (6) · Mini Test 58%: Case còn mở + MỘT thẻ Báo QL cho Quản lý; Hoàn thành Case bằng tay → thẻ tự đóng', () => {
     const x = dungMiniTest();
     ghiCuoi(P.mbManager, x.pa[0].id, { tyLe: 58, ngay: TODAY });
     assert(x.cases.every((c) => (conn.prepare('SELECT status FROM sos_cases WHERE id = ?').get(c.id) as any).status !== 'done'), 'Case phải còn mở');
@@ -482,7 +482,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     cuoiSvc.ghiKetLuanFt(P.mbManager, s, { dat: true });
     assert(cuoiKhoaMod.cuoiKhoaTheoHocVien(be.classId).get(s).ketLuanFt.dat === true, 'đọc lại kết luận');
   });
-  check('LT2b (7) · Cuối khoá dời quá tuần cuối khoá → MỘT thẻ Báo lên; Giữa khoá dời quá → không thẻ; nhập đủ điểm → tự đóng', () => {
+  check('LT2b (7) · Cuối khoá dời quá tuần cuối khoá → MỘT thẻ Báo QL; Giữa khoá dời quá → không thẻ; nhập đủ điểm → tự đóng', () => {
     const l = taoLop('BE', 1);
     const s = l.sids[0];
     const luot = l.luot.get(s)!;
@@ -495,7 +495,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     try { regularMod.reportRegularNoShow(P.admin, luot, 'listening', true, TODAY); } catch (e: any) { loi = e.message; }
     const sau = (conn.prepare(`SELECT COUNT(*) n FROM yeu_cau_duyet WHERE loai = 'bao_len_cuoi_khoa' AND doi_tuong_id = ?`).get(luot) as any).n;
     if (loi) console.log('      (bỏ qua nhánh dời: ' + loi + ')');
-    else assert(sau === 1 && (conn.prepare(`SELECT COUNT(*) n FROM yeu_cau_duyet WHERE loai = 'bao_len_cuoi_khoa'`).get() as any).n === truoc + 1, 'phải có đúng một thẻ Báo lên');
+    else assert(sau === 1 && (conn.prepare(`SELECT COUNT(*) n FROM yeu_cau_duyet WHERE loai = 'bao_len_cuoi_khoa'`).get() as any).n === truoc + 1, 'phải có đúng một thẻ Báo QL');
     const giua = conn.prepare(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'progress' AND class_id = ?`).get(s, l.classId) as any;
     if (giua) { try { regularMod.reportRegularNoShow(P.admin, giua.id, 'listening', true, TODAY); } catch { /* chưa tới tuần */ } }
     assert(!conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_cuoi_khoa' AND doi_tuong_id = ?`).get(giua?.id ?? -1), 'Giữa khoá dời quá không có thẻ');
@@ -549,7 +549,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
   const hv = (ten: string) => (conn.prepare('SELECT id FROM students WHERE full_name = ?').get(ten) as any).id as number;
   const lopHienTai = (sid: number) => conn.prepare(`SELECT c.code FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = ? AND e.status = 'active'`).get(sid) as any;
   const caseChuyenCap = (sid: number) => conn.prepare(`SELECT sc.* FROM sos_cases sc WHERE sc.student_id = ? AND sc.origin_kind = 'chuyen_cap' ORDER BY sc.id`).all(sid) as any[];
-  check('LT2b (10) · demo D10–D11: bốn dải ở MB BE 04; 64% lên ELE 02 có Case + PA + Mini Test chưa ghi; Mini Test 58% có thẻ Báo lên', () => {
+  check('LT2b (10) · demo D10–D11: bốn dải ở MB BE 04; 64% lên ELE 02 có Case + PA + Mini Test chưa ghi; Mini Test 58% có thẻ Báo QL', () => {
     const trang = hv('Hồ Thu Trang'), khoi = hv('Đặng Minh Khôi'), ngoc = hv('Vương Bảo Ngọc'), huy = hv('Tạ Đức Huy'), vy = hv('Lâm Khánh Vy');
     assert(lopHienTai(trang).code === 'MB BE 03' && lopHienTai(khoi).code === 'MB BE 04' && lopHienTai(ngoc).code === 'MB ELE 02' && lopHienTai(huy).code === 'MB BE 04', 'lớp hiện tại');
     const bao = conn.prepare(`SELECT status, preset FROM sos_coordination_actions WHERE student_id = ? AND kind = 'bao_ph_tvv'`).all(trang) as any[];
@@ -564,7 +564,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     assert(cn.length === 2 && cn.every((c) => c.status === 'in_progress') && mtNgoc.ty_le === null, JSON.stringify({ n: cn.length, mt: mtNgoc }));
     const mtVy = conn.prepare('SELECT * FROM mini_test WHERE student_id = ?').get(vy) as any;
     assert(mtVy.ty_le === 0.58 && caseChuyenCap(vy).every((c) => c.status !== 'done'), 'Mini Test 58%: Case còn mở');
-    assert(conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_mini_test' AND doi_tuong_id = ? AND trang_thai = 'cho'`).get(mtVy.id), 'thẻ Báo lên Mini Test');
+    assert(conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_mini_test' AND doi_tuong_id = ? AND trang_thai = 'cho'`).get(mtVy.id), 'thẻ Báo QL Mini Test');
     assert(JSON.stringify(duyetMod.hopChoDuyet(ql, {})).includes('Mini Test chưa đạt'), 'hộp Chờ duyệt của QL có thẻ Mini Test');
   });
   check('LT2b (10) · demo D12–D13: Pre FOU 52% lên FOU; Trung tâm → Case FT + Tutor; Học sinh → không Case, có ghi chú', () => {

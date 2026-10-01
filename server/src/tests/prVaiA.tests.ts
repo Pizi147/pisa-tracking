@@ -157,7 +157,7 @@ export async function runPrVaiATests(t: YThucTestKit) {
     assert(metricsSvc.rowsFor('viec-van-hanh', [goc.id])[0].href === `/cong-viec?mo-viec=${goc.id}`, 'dòng mở đúng việc');
   });
 
-  check('VAI-a (2b) · hv-chua-co-lenh-chuyen: Σ theo lớp = count việc "Chuyển lớp cả lớp" của myWork(QL); ra lệnh cho một em → −1', () => {
+  check('VAI-a (2b) · hv-chua-co-lenh-chuyen: Σ theo lớp = count việc "Chuyển tiếp lớp" của myWork(QL); ra quyết định cho một em → −1', () => {
     const cid = classId('MB FOU 12');
     const pr = schedule.classProgress(cid);
     const cu = conn.prepare('SELECT final_week_override, progress_week_override FROM classes WHERE id = ?').get(cid) as any;
@@ -177,7 +177,7 @@ export async function runPrVaiATests(t: YThucTestKit) {
       const sid = r0.ids.find((id: number) => (conn.prepare(`SELECT 1 FROM enrollments WHERE student_id = ? AND class_id = ? AND status = 'active'`).get(id, cid)));
       lenh = Number(conn.prepare(`INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, huong, boi_canh, tuan_bat_dau, nguoi_ra_lenh, ngay_ra_lenh, tao_luc)
         VALUES (?, ?, 'bao_luu', 'cuoi_khoa', ?, ?, ?, ?)`).run(sid, cid, t.addDays(week.mondayOf(TODAY), 7), P.mbManager.userId, TODAY, NOW).lastInsertRowid);
-      eq(hai().n, r0.n - 1, 'ra lệnh cho một em → −1');
+      eq(hai().n, r0.n - 1, 'ra quyết định cho một em → −1');
       eq(metricsSvc.metricSet(P.cpManager, 'hv-chua-co-lenh-chuyen', {}).ids.filter((id: number) => r0.ids.includes(id)), [], 'phủ định: QL CP không thấy em MB');
     } finally {
       if (lenh) conn.prepare('DELETE FROM lenh_chuyen_lop WHERE id = ?').run(lenh);
@@ -308,14 +308,14 @@ export async function runPrVaiATests(t: YThucTestKit) {
 
   // ================================================================== Task 4 · dải Chờ duyệt theo chi nhánh
   const yc: any = await import('../duyet/yeuCau.ts');
-  check('VAI-a (4a) · demYeuCau(QL, { branchId }) = hopChoDuyet(QL, { branchId }).dem (cùng demHop); quaHan: true ra đúng số quá hạn; Báo lên theo loại cộng lại = baoLen', () => {
+  check('VAI-a (4a) · demYeuCau(QL, { branchId }) = hopChoDuyet(QL, { branchId }).dem (cùng demHop); quaHan: true ra đúng số quá hạn; Báo QL theo loại cộng lại = baoLen', () => {
     for (const branchId of [MB, null]) {
       const dem = yc.demYeuCau(P.mbManager, { branchId });
       const hop = yc.hopChoDuyet(P.mbManager, { branchId });
-      eq([dem.cho, dem.baoLen], [hop.dem['tat-ca'], hop.dem['bao-len']], `cn ${branchId}: tổng, Báo lên`);
+      eq([dem.cho, dem.baoLen], [hop.dem['tat-ca'], hop.dem['bao-len']], `cn ${branchId}: tổng, Báo QL`);
       eq(dem.chip, hop.dem, `cn ${branchId}: chip từng phân loại`);
       eq(yc.hopChoDuyet(P.mbManager, { branchId, quaHan: true }).the.length, dem.quaHan, `cn ${branchId}: số thẻ khi lọc quá hạn = k quá hạn`);
-      eq(Object.values(dem.baoLenTheoLoai).reduce((s: number, n: any) => s + n, 0), dem.baoLen, 'Báo lên theo loại cộng lại = baoLen');
+      eq(Object.values(dem.baoLenTheoLoai).reduce((s: number, n: any) => s + n, 0), dem.baoLen, 'Báo QL theo loại cộng lại = baoLen');
     }
     const khong = yc.demYeuCau(P.admin);
     const co = yc.demYeuCau(P.admin, {});
@@ -378,7 +378,7 @@ export async function runPrVaiATests(t: YThucTestKit) {
   const REPO = pathM.resolve(fileURLToPath(new URL('../../../../', import.meta.url)));
 
   check('VAI-a (6a) · T75: tên nhóm, khoá ghi_ket_qua_pa (không còn "result" trong mywork.ts), hạn cap-nhat-pa; gomNhomViec một tham số', () => {
-    eq(Object.values(d.NHOM_VIEC_LABEL), ['Chấm điểm', 'Case học thuật', 'Ý thức', 'Lớp & vận hành'], 'tên nhóm');
+    eq(Object.values(d.NHOM_VIEC_LABEL), ['Chấm điểm', 'Case học thuật', 'Ý thức & Phối hợp', 'Vận hành'], 'tên nhóm');
     eq([d.nhomViecCua('ghi_ket_qua_pa'), d.LOAI_HAN_CUA_VIEC.ghi_ket_qua_pa], ['case-hoc-thuat', 'cap-nhat-pa'], 'khoá mới');
     eq([d.nhomViecCua('phoi_hop_sos'), d.nhomViecCua('khai_bac'), d.nhomViecCua('ky_vong_dau_ra')], ['case-hoc-thuat', 'y-thuc', 'van-hanh'], 'ba loại mới');
     const src = fs.readFileSync(pathM.join(REPO, 'server/src/worklist/mywork.ts'), 'utf8');
@@ -406,7 +406,7 @@ export async function runPrVaiATests(t: YThucTestKit) {
       for (const it of viec) {
         thay++;
         eq(it.count, phoiHop.coordinationOfClass(gv, it.classId).pendingCount, `lớp ${it.classCode}: count = số lượt tab Phối hợp`);
-        assert(it.due === null && it.urgency === 'normal' && it.actionLabel === 'Mở Phối hợp' && it.href.endsWith('?tab=y-thuc&sub=phoi-hop'), JSON.stringify(it));
+        assert(it.due === null && it.urgency === 'normal' && it.actionLabel === 'Mở Phối hợp SOS' && it.href.endsWith('?tab=y-thuc&sub=phoi-hop'), JSON.stringify(it));
       }
       eq(viec.length, phoiHop.myCoordinationLines(gv).length, 'một dòng mỗi lớp của myCoordinationLines');
     }
@@ -426,7 +426,7 @@ export async function runPrVaiATests(t: YThucTestKit) {
 
   // ================================================================== Task 7 · khai bậc Ý thức HS cũ · kỳ vọng đầu ra
   const xuLy: any = await import('../yThuc/xuLy.ts');
-  check('VAI-a (7a) · Khai bậc Ý thức HS cũ: một việc mỗi lớp GVCN, em tạo trong 14 ngày còn khai được; khai xong → giảm; em tạo 20 ngày trước không tính; GVBM không có', () => {
+  check('VAI-a (7a) · Khai bậc Ý thức HV cũ: một việc mỗi lớp GVCN, em tạo trong 14 ngày còn khai được; khai xong → giảm; em tạo 20 ngày trước không tính; GVBM không có', () => {
     const cid = classId('MB FT 101');
     const viec = () => (mywork.myWork(P.coreTeacher).items as any[]).find((i) => i.group === 'khai_bac' && i.classId === cid);
     const n0 = viec()?.count ?? 0;
@@ -436,14 +436,14 @@ export async function runPrVaiATests(t: YThucTestKit) {
       conn.prepare('UPDATE students SET created_at = ? WHERE id = ?').run(`${t.addDays(TODAY, -20)}T08:00:00.000Z`, cu.sid);
       const v = viec();
       assert(v && v.count === n0 + 2, `hai em mới → +2: ${JSON.stringify(v)}`);
-      assert(v.due === null && v.urgency === 'normal' && /^Khai bậc Ý thức HS cũ · MB FT 101 · \d+ em$/.test(v.tieuDe) && d.nhomViecCua(v.group) === 'y-thuc', 'chữ, nhóm, không hạn');
+      assert(v.due === null && v.urgency === 'normal' && /^Khai bậc Ý thức HV cũ · MB FT 101 · \d+ em$/.test(v.tieuDe) && d.nhomViecCua(v.group) === 'y-thuc', 'chữ, nhóm, không hạn');
       xuLy.khaiBac(P.coreTeacher, a.sid, { bac: 1, ghiChu: 'Report 1 trước khi dùng web' });
       eq(viec()?.count ?? 0, n0 + 1, 'khai xong một em → giảm');
       assert(!(mywork.myWork(P.subjectTeacher).items as any[]).some((i) => i.group === 'khai_bac'), 'GVBM không có việc khai bậc');
     } finally { for (const x of [a, b, cu]) { conn.prepare('DELETE FROM y_thuc_khai_bac WHERE student_id = ?').run(x.sid); don(x.sid); } }
   });
 
-  check('VAI-a (7b) · Kỳ vọng đầu ra: số việc của QL MB = metricSet("hv-len-ft-chua-ky-vong", { branchId: MB }).n (hai đường); nhóm Lớp & vận hành; QL CP không thấy', () => {
+  check('VAI-a (7b) · Kỳ vọng đầu ra: số việc của QL MB = metricSet("hv-len-ft-chua-ky-vong", { branchId: MB }).n (hai đường); nhóm Vận hành; QL CP không thấy', () => {
     const hv = taoHv('MB BE 04', null);
     try {
       conn.prepare(`INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id, status, created_at)
@@ -454,7 +454,7 @@ export async function runPrVaiATests(t: YThucTestKit) {
       const n = metricsSvc.metricSet(P.mbManager, 'hv-len-ft-chua-ky-vong', { branchId: MB }).n;
       assert(n >= 1, 'em vừa dựng phải vào tập');
       eq(viec(P.mbManager, { branchId: MB }).length, n, 'số việc = số chỉ số');
-      assert(viec(P.mbManager).some((i) => i.studentId === hv.sid && d.nhomViecCua(i.group) === 'van-hanh'), 'nhóm Lớp & vận hành');
+      assert(viec(P.mbManager).some((i) => i.studentId === hv.sid && d.nhomViecCua(i.group) === 'van-hanh'), 'nhóm Vận hành');
       assert(!viec(P.cpManager).some((i) => i.studentId === hv.sid), 'QL CP không thấy em MB');
       assert(!viec(P.coreTeacher).length, 'GV không có việc này');
     } finally { don(hv.sid); }
@@ -603,7 +603,7 @@ export async function runPrVaiATests(t: YThucTestKit) {
     assert(/kind: 'discipline_de_biet'/.test(doc('server/src/yThuc/xuLy.ts')), 'discipline_de_biet');
     assert(/'bo_tro_mien_phi', 'Mang theo PA Bổ trợ miễn phí'/.test(doc('server/src/normal/cuoiKhoa.ts')), 'bo_tro_mien_phi');
     assert(/'duyet_tu_choi' : 'duyet_ket_qua'/.test(doc('server/src/duyet/yeuCau.ts')), 'duyet_tu_choi');
-    assert(/title: `Xác nhận nguyên nhân \$\{input\.skillLabel\} — /.test(doc('server/src/cases/sosAuto.ts')), 'tiêu đề Case mới');
+    assert(/title: `Xác nhận nguyên nhân \$\{input\.skillLabel\} · /.test(doc('server/src/cases/sosAuto.ts')), 'tiêu đề Case mới');
   });
 
   // ================================================================== Task 11 · dòng Nợ ghi tên GV · sắp lớp soSanhLop

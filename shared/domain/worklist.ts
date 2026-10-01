@@ -12,9 +12,9 @@ export const BRANCH_REPORT_CATEGORIES = [
 
 /** Tutor part-time là đơn vị báo cáo riêng, không phải chi nhánh thứ sáu. */
 export const TUTOR_REPORT_CATEGORIES = [
-  { key: 'tutor_count', label: 'Số lượng tutor', hint: '' },
+  { key: 'tutor_count', label: 'Số lượng Tutor', hint: '' },
   { key: 'tutor_quality', label: 'Chất lượng dạy học', hint: '' },
-  { key: 'tutor_other', label: 'Các vấn đề khác', hint: '' },
+  { key: 'tutor_other', label: 'Vấn đề khác', hint: '' },
 ] as const;
 
 export const UNIT_STATUSES = ['ok', 'watch', 'problem'] as const;
@@ -34,12 +34,12 @@ export const TASK_TYPE_LABEL: Record<TaskType, string> = {
  *
  * Đây là hạng mục quản lý vận hành, KHÔNG phải một hệ CRM: giới hạn bốn nhóm là để nó không
  * phình thành nơi chứa mọi việc của trung tâm. Việc nào không thuộc bốn nhóm này thì hoặc là
- * một case của học viên, hoặc là chuyện ngoài phạm vi phần mềm.
+ * một Case của học viên, hoặc là chuyện ngoài phạm vi phần mềm.
  */
 export const TASK_GROUPS = ['student_parent', 'curriculum', 'teacher', 'tutor'] as const;
 export type TaskGroup = (typeof TASK_GROUPS)[number];
 export const TASK_GROUP_LABEL: Record<TaskGroup, string> = {
-  student_parent: 'Học sinh / Phụ huynh',
+  student_parent: 'Học viên / Phụ huynh',
   curriculum: 'Giáo trình',
   teacher: 'Giáo viên',
   tutor: 'Tutor',
@@ -59,8 +59,8 @@ export const TASK_PROGRESS = ['not_started', 'doing', 'done', 'paused', 'stopped
 export type TaskProgress = (typeof TASK_PROGRESS)[number];
 export const TASK_PROGRESS_LABEL: Record<TaskProgress, string> = {
   not_started: 'Chưa bắt đầu',
-  doing: 'Tiếp tục xử lý',
-  done: 'Đã hoàn thành',
+  doing: 'Đang xử lý',
+  done: 'Xong',
   paused: 'Tạm ngưng',
   stopped: 'Dừng hẳn',
 };

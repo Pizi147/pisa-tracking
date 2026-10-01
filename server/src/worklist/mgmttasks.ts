@@ -15,7 +15,7 @@ import { caseAccess } from '../cases/cases.ts';
 /**
  * TIẾN ĐỘ CÔNG VIỆC — công việc quản lý vận hành (mục 8).
  *
- * KHÔNG phải case của học viên, và cố ý không có tầng "phương án xử lý": Quản lý tạo việc,
+ * KHÔNG phải Case của học viên, và cố ý không có tầng "phương án xử lý": Quản lý tạo việc,
  * giao việc, cập nhật tiến độ. Thêm một quy trình xin duyệt vào đây là biến một cuốn sổ tay
  * thành một thủ tục hành chính.
  *
@@ -30,7 +30,7 @@ import { caseAccess } from '../cases/cases.ts';
  *    nào; dừng hẳn là đã quyết định không làm. Cả hai bắt buộc ghi lý do (PR-Ra: Tạm ngưng
  *    còn bắt buộc thêm người cần hỗ trợ + ngày xem lại — Q10).
  * 4. LIÊN KẾT CASE LÀ CĂN CỨ, KHÔNG PHẢI ĐIỀU KHIỂN (mục 8.7). Hoàn thành việc quản lý
- *    KHÔNG đóng case nào, và cũng không tự tạo phương án cho em nào.
+ *    KHÔNG đóng Case nào, và cũng không tự tạo phương án cho em nào.
  */
 
 export type TaskFilter = {
@@ -258,7 +258,7 @@ export function listMgmtTasks(p: Principal, f: TaskFilter = {}) {
   };
 }
 
-/** Một công việc, kèm việc con, lịch sử cập nhật, lịch sử dời hạn và các case làm căn cứ. */
+/** Một công việc, kèm việc con, lịch sử cập nhật, lịch sử dời hạn và các Case làm căn cứ. */
 export function mgmtTaskDetail(p: Principal, taskId: number) {
   const conn = db();
   const t = conn.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as any;
@@ -409,7 +409,7 @@ export function createMgmtTask(p: Principal, input: {
     parent = conn.prepare('SELECT * FROM tasks WHERE id = ?').get(input.parentTaskId) as any;
     if (!parent) throw notFound('Không tìm thấy công việc cha.');
     /* MỘT TẦNG (mục 8.6): việc con của một việc con là chỗ bảng bắt đầu không đọc được nữa. */
-    if (parent.parent_task_id) throw badRequest('Công việc con chỉ có một tầng.');
+    if (parent.parent_task_id) throw badRequest('Việc con chỉ có một tầng.');
     /* PR-Dọn (quét #5b): việc con chỉ gắn vào việc cha mình quản lý được — không tạo việc con ở chi nhánh khác. */
     if (!coQuyenViec(p, parent)) throw forbidden('Bạn không quản lý công việc cha này.');
   }
@@ -559,7 +559,7 @@ export function updateMgmtTask(p: Principal, taskId: number, input: {
     if (openSubs.length > 0) {
       const verb = input.progress === 'done' ? 'hoàn thành' : 'dừng hẳn';
       throw badRequest(
-        `Còn ${openSubs.length} công việc con chưa khép lại: ${tenViecConMo(openSubs.map((s) => s.title))}. `
+        `Còn ${openSubs.length} việc con chưa khép lại: ${tenViecConMo(openSubs.map((s) => s.title))}. `
         + `Khép chúng trước rồi mới ${verb} việc này.`,
       );
     }

@@ -68,7 +68,7 @@ export function ChipKyNang({ kn, attemptId, loai, khaiGiang, tongTuan, deXuat, n
       <div className={bao}>
         {lichSu && <span className="self-start"><ChipLichSu /></span>}
         {loai === 'ft' ? (
-          <Link to={duongDotTest({ id: attemptId })} className={`${cls} no-underline`} title="Đã thi — mở hồ sơ đợt">{noiDung}</Link>
+          <Link to={duongDotTest({ id: attemptId })} className={`${cls} no-underline`} title="Đã thi — mở Hồ sơ Mock Test">{noiDung}</Link>
         ) : (
           <button type="button" className={cls} title="Đã thi — xem" onClick={(e) => onMo(null, e.currentTarget)}>{noiDung}</button>
         )}

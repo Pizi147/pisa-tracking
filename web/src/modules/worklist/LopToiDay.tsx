@@ -34,7 +34,7 @@ export function LopToiDay() {
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (data && !data.coFt && !data.coThuong) return null;
   const so = (h: Hang, cot: 'duoiKyVong' | 'sos' | 'caseMo' | 'bai-cho' | 'bai-qua-han', n: number, ten: string, className = 'font-semibold') => (
-    <SoLieuO giaTri={n} nguon={`/tong-quan/lop-toi-day/o?ct=${ct}&classId=${h.classId}&cot=${cot}`} tieuDe={`${h.code} · ${ten}`} className={className} />
+    <SoLieuO giaTri={n} nguon={`/tong-quan/lop-toi-day/o?ct=${ct}&classId=${h.classId}&cot=${cot}`} tieuDe={`${h.code} · ${ten}`} className={`${className} max-sm:relative max-sm:before:absolute max-sm:before:-inset-x-2 max-sm:before:-inset-y-3 max-sm:before:content-['']`} />
   );
   /**
    * D10: số BÀI (máy chủ) — có bài quá hạn thì hiện phần quá hạn (đỏ), không thì số bài chờ chấm; bấm ra đúng các bài đó. Bảng: "15 quá hạn"
@@ -46,7 +46,7 @@ export function LopToiDay() {
     if (!h.baiCho && !gon) return <span className="tabular-nums text-slate-500">0</span>;
     return (
       <>
-        {qua ? so(h, 'bai-qua-han', h.baiQuaHan, 'bài quá hạn nhập', `font-semibold text-late ${gon ? 'font-bold' : ''}`)
+        {qua ? so(h, 'bai-qua-han', h.baiQuaHan, 'bài quá hạn chưa nhập điểm', `font-semibold text-late ${gon ? 'font-bold' : ''}`)
           : so(h, 'bai-cho', h.baiCho, 'bài chờ chấm', `font-semibold ${gon ? 'font-bold' : ''}`)}
         <span className="text-xs text-slate-500">{gon ? nhan : ` ${nhan}`}</span>
       </>
@@ -77,7 +77,7 @@ export function LopToiDay() {
               <div className="grid grid-cols-3 gap-1.5 text-lg">
                 <div className="flex flex-col items-start">{so(h, 'duoiKyVong', h.duoiKyVong, nhanDuoi.toLowerCase())}<span className="text-xs text-slate-500">{nhanDuoi.toLowerCase()}</span></div>
                 {laThuong
-                  ? <div className="flex flex-col items-start">{so(h, 'caseMo', h.caseMo, 'Case mở')}<span className="text-xs text-slate-500">Case mở</span></div>
+                  ? <div className="flex flex-col items-start">{so(h, 'caseMo', h.caseMo, 'Case đang mở')}<span className="text-xs text-slate-500">Case đang mở</span></div>
                   : <div className="flex flex-col items-start">{so(h, 'sos', h.sos ?? 0, 'SOS')}<span className="text-xs text-slate-500">SOS</span></div>}
                 <div className="flex flex-col items-start">{baiCham(h, true)}</div>
               </div>
@@ -93,8 +93,8 @@ export function LopToiDay() {
                 {laThuong && <th className="px-3 py-2 font-semibold">Tuần học</th>}
                 <th className="px-3 py-2 text-right font-semibold">Học viên</th><th className="px-3 py-2 text-right font-semibold">{nhanDuoi}</th>
                 {!laThuong && <th className="px-3 py-2 text-right font-semibold">SOS</th>}
-                <th className="px-3 py-2 text-right font-semibold">Case mở</th><th className="px-3 py-2 text-right font-semibold">Bài chờ chấm</th>
-                <th className="px-4 py-2 font-semibold">Test kế tiếp</th>
+                <th className="px-3 py-2 text-right font-semibold">Case đang mở</th><th className="px-3 py-2 text-right font-semibold">Bài chờ chấm</th>
+                <th className="px-4 py-2 font-semibold">Test sắp tới</th>
               </tr>
             </thead>
             <tbody className="tabular-nums">

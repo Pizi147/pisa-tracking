@@ -17,7 +17,7 @@ import {
 /**
  * TAB HÀNH TRÌNH (PR-Qb, spec §3.8; PR-UX5; PR-VAI-b — mockup 26 bản 2 + bản 1). Đầu tab: CHƯƠNG THEO LỚP (`ChuongLop`). Dưới: TRỤC TUẦN
  * — MỘT LƯỚI CSS cho trục lẫn mọi hộp kỹ năng:
- *   tháng (tên giữa, ngoặc trải đúng số tuần) · tuần · Tuần học (FT: tuần học thứ n của em, bỏ tuần Tạm dừng) / Tuần khoá (lớp thường) ·
+ *   tháng (tên giữa, ngoặc trải đúng số tuần) · tuần · Tuần học (FT: tuần học n của em, bỏ tuần Tạm dừng) / Tuần học (lớp thường) ·
  *   Lớp (đoạn mỗi lớp, biểu tượng chuyển lớp) · Đợt Test (mỗi đợt gọn một cột tuần, hai dòng `MT1 / 5.5`) · dải sọc vàng Tạm dừng ·
  *   mỗi kỹ năng một hộp: Case = KHUNG RỖNG viền theo SOS từ tuần mở tới tuần xong; PA = KHỐI ĐẶC ở hàng dưới (tầng `xepTang`); khối chờ viền đứt tím.
  * Mọi nhãn/tầng/badge/bố cục tính ở `shared/domain/hanhTrinh.ts` — file này chỉ vẽ.
@@ -171,7 +171,7 @@ export function HanhTrinh({ studentId, active, onOpenCase }: {
   /* Các đoạn hàng liền nhau (không có khe): phần trục rồi từng khung hộp — phần trục bắt đầu ở hàng 2 (dưới hàng tháng). */
   const doanLuoi: [number, number][] = [[2, hang.hop.length ? hang.hop[0].khung[0] - 1 : hang.hangCuoi], ...hang.hop.map((h) => h.khung)];
   const hangTruocHop = hang.hangTuanHoc ?? 3;
-  const tuanHocNhan = data.tuanHoc?.loai === 'khoa' ? 'Tuần khoá' : 'Tuần học';
+  const tuanHocNhan = 'Tuần học';
 
   return (
     <div className="space-y-3">
@@ -258,7 +258,7 @@ export function HanhTrinh({ studentId, active, onOpenCase }: {
             ))}
             <div aria-hidden className="pointer-events-none z-[1] self-end border-b" style={{ gridRow: 2, gridColumn: '1 / -1', height: 0 }} />
 
-            {/* ---- hàng Tuần học (FT, tuần học thứ n của em — bỏ tuần Tạm dừng) / Tuần khoá (lớp thường) */}
+            {/* ---- hàng Tuần học (FT, tuần học n của em — bỏ tuần Tạm dừng) / Tuần học (lớp thường) */}
             {hang.hangTuanHoc && (
               <>
                 <CotGhim hang={hang.hangTuanHoc} cotTen={boCuc.cotTen} nen="var(--surface)" className="items-center px-3 text-[11px] text-faint">{tuanHocNhan}</CotGhim>
@@ -402,7 +402,7 @@ function HopKyNang({ hop, vi, vanDe, soAn, truc, boCuc, rongTuan, homNay, onOpen
                         <i className={`mx-[5px] text-[11px] font-bold not-italic ${LECH[m.lech.dau]}`} title={LECH_TITLE[m.lech.dau]}>{m.lech.chu}</i>
                       )}
                       {href
-                        ? <Link to={href} title={`${m.title} · mở hồ sơ Mock`} className={`${lop} no-underline hover:underline`}>{m.chu}</Link>
+                        ? <Link to={href} title={`${m.title} · mở Hồ sơ Mock Test`} className={`${lop} no-underline hover:underline`}>{m.chu}</Link>
                         : <b title={m.title} className={lop}>{m.chu}</b>}
                     </Fragment>
                   );
@@ -416,7 +416,7 @@ function HopKyNang({ hop, vi, vanDe, soAn, truc, boCuc, rongTuan, homNay, onOpen
               </Nhan>
             </span>
           ) : (
-            <span className="ml-1.5 text-[12px] text-faint">Không có Case</span>
+            <span className="ml-1.5 text-[12px] text-faint">Không có Case mở</span>
           )}
         </div>
       </div>
@@ -504,7 +504,7 @@ function VanDeHang({ v, vi, cuoi, truc, boCuc, rongTuan, homNay, onOpenCase }: {
           <NhanLoai loai="PA" cho={coPaCho || (!!cho && v.pa.length === 0)} />
           <span className="truncate">{boCuc.xuongDong
             ? (v.pa.length ? String(v.pa.length) : 'chưa có')
-            : [v.pa.length ? `${v.pa.length} phương án` : 'chưa có PA', v.nguoi].filter(Boolean).join(' · ')}</span>
+            : [v.pa.length ? `${v.pa.length} PA` : 'chưa có PA', v.nguoi].filter(Boolean).join(' · ')}</span>
         </span>
       </CotGhim>
       {cho && v.pa.length === 0 ? (

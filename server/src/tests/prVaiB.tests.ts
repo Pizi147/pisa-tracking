@@ -41,10 +41,10 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     try { fn(); } finally { conn.prepare(`DELETE FROM journey_events WHERE id IN (${ids.map(() => '?').join(',')})`).run(...ids); }
   };
 
-  // ------------------------------------------------------------------ khối 1 · tuần học thứ n + khoảng Tạm dừng + dòng thông tin
-  check('VAI-b (1) · chuTuanHoc: lớp thường "tuần học 3/8", FT "tuần học thứ 9" (không mẫu số)', () => {
+  // ------------------------------------------------------------------ khối 1 · tuần học n + khoảng Tạm dừng + dòng thông tin
+  check('VAI-b (1) · chuTuanHoc: lớp thường "tuần học 3/8", FT "tuần học 9" (không mẫu số)', () => {
     assert(d.chuTuanHoc(3, 8) === 'tuần học 3/8', d.chuTuanHoc(3, 8));
-    assert(d.chuTuanHoc(9, null) === 'tuần học thứ 9', d.chuTuanHoc(9, null));
+    assert(d.chuTuanHoc(9, null) === 'tuần học 9', d.chuTuanHoc(9, null));
   });
 
   check('VAI-b (1) · tuanHocFt: bỏ tuần Tạm dừng; tuần đang dừng / trước tuần bắt đầu → null; dừng và quay lại cùng tuần → không trừ', () => {
@@ -77,7 +77,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     }));
   });
 
-  check('VAI-b (1) · studentProfile: FT "tuần học thứ n" = tuanHocFt (tuần bắt đầu lộ trình, bỏ tuần dừng); lớp thường tong = số tuần khoá; không FT nào tong 16', () => {
+  check('VAI-b (1) · studentProfile: FT "tuần học n" = tuanHocFt (tuần bắt đầu lộ trình, bỏ tuần dừng); lớp thường tong = số tuần khoá; không FT nào tong 16', () => {
     const ft = emCuaLop('MB FT 101');
     const cy = get(`SELECT cy.*, rp.week_start FROM learning_cycles cy LEFT JOIN report_periods rp ON rp.id = cy.start_period_id
       WHERE cy.student_id = ? AND cy.status = 'active'`, ft);
@@ -236,7 +236,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     const td = cau({ ...day, dacBiet: { loai: 'tam-dung', tu: '2026-09-07' } });
     assert(td[0].chu === 'Tạm dừng từ 07/09' && td[0].tone === 'warn' && td.length === 3 && !td.some((m) => m.chu.startsWith('Ý thức')), JSON.stringify(td));
     const kck = cau({ dacBiet: { loai: 'kck' }, ketQua: { ...KQ_FT, kck: true, sos: null }, hoTro: ['Reading'] });
-    assert(chu(kck).join(' · ') === 'KCK · không đặt kỳ vọng MT, không SOS · MT1 Overall 5.5: đang hỗ trợ Reading', JSON.stringify(kck));
+    assert(chu(kck).join(' · ') === 'KCK · không đặt kỳ vọng MT, không SOS · MT1 OVR 5.5: đang hỗ trợ Reading', JSON.stringify(kck));
     const sc = cau({ dacBiet: { loai: 'sap-chuyen', lop: 'MB FT 103', tuan: '2026-10-05' } });
     assert(sc[0].chu === 'Sắp chuyển MB FT 103 từ W2 OCT' && sc[0].tone === 'accent', JSON.stringify(sc));
     const kt = cau({ ...day, dacBiet: { loai: 'ket-thuc' } });
@@ -282,8 +282,8 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     s = st({ ratio: true, bacKe: 'BE', next: { dau: 'Cuối khoá', attemptNo: 2, tuan: '2026-10-19', kyVong: null, soPhan: 4, final: true } });
     assert(s.gt === 'Cuối khoá · W4 OCT' && s.phu === '4 môn · xét lên BE', JSON.stringify(s));
     s = st({ sauCuoiKhoa: { tuanKetThuc: '2026-10-19' } });
-    assert(s.gt === 'Chuyển lớp' && s.phu === 'chờ Quản lý ra lệnh · lớp kết thúc W4 OCT', JSON.stringify(s));
-    assert(st({ ketLuan: 'Đạt mục tiêu' }).gt === 'Kết luận: Đạt mục tiêu', 'kết luận');
+    assert(s.gt === 'Chuyển lớp' && s.phu === 'chờ Quản lý quyết định · lớp kết thúc W4 OCT', JSON.stringify(s));
+    assert(st({ ketLuan: 'Đạt Target' }).gt === 'Kết luận: Đạt Target', 'kết luận');
   });
 
   check('VAI-b (3) · HAI ĐƯỜNG: ô Học thuật = số hàng Case mở của /skill-board (bốn vai); câu tóm tắt nêu việc quá hạn của NGƯỜI KHÁC cho mọi người xem (Q31-8)', () => {
@@ -389,7 +389,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     }
     const qt = d.mucQuanLyHocVien(vai[0]) as any[];
     const m = (k: string) => qt.find((x) => x.key === k);
-    assert(m('chuyen-lop').phu === 'chọn lớp đích và tuần bắt đầu' && m('tam-dung').phu === 'mọi hạn của em dừng · giữ lớp, lộ trình'
+    assert(m('chuyen-lop').phu === 'chọn lớp chuyển đến và tuần bắt đầu' && m('tam-dung').phu === 'mọi hạn của em dừng · giữ lớp, lộ trình'
       && m('ket-thuc').phu === 'đóng lộ trình · hồ sơ chỉ xem' && m('xoa-hoc-vien').phu === 'chỉ Quản trị hệ thống thấy dòng này', JSON.stringify(qt));
     assert(m('tam-dung').keTruoc === 'dam' && !m('ket-thuc').keTruoc && m('xoa-hoc-vien').keTruoc === 'do' && m('xoa-hoc-vien').nguyHiem, 'vạch đậm / đỏ');
     assert(!/▾/.test(fs.readFileSync(path.join(REPO, 'web/src/ui/Menu.tsx'), 'utf8')), 'Menu còn ký tự ▾ (phải SVG)');
@@ -494,12 +494,12 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     assert(ch[2].ghim.length === 1 && ch[3].ghim[0].nhanNgan === 'MT2', 'ghim theo lớp');
     assert(ch[2].tamDung.length === 1 && ch[3].tamDung.length === 0, 'Tạm dừng nằm đúng chương');
     assert(ch[0].ra.chu === 'Lên FOU' && ch[0].ra.how === 'theo Cuối khoá' && ch[0].ra.tu === '2026-03-09', JSON.stringify(ch[0].ra));
-    assert(ch[2].ra.loai === 'chuyen' && ch[2].ra.how === 'Quản lý ra lệnh' && ch[2].ra.docBanGiao?.lenhId === 9, JSON.stringify(ch[2].ra));
+    assert(ch[2].ra.loai === 'chuyen' && ch[2].ra.how === 'Quản lý quyết định' && ch[2].ra.docBanGiao?.lenhId === 9, JSON.stringify(ch[2].ra));
     assert(ch[3].ra === null, 'chương đang học không có "ra"');
     assert(!/"(han|nguoi|ownerId|endKind|lenh)"/.test(JSON.stringify(ch)), 'chương không kể việc / hạn / người giữ việc');
   });
 
-  check('VAI-b (9) · lapLaiQuaLop: kỹ năng có Case ở ≥ 2 lớp → một dòng; một lớp → không; Case đi theo em sang lớp mới không tính lặp', () => {
+  check('VAI-b (9) · lapLaiQuaLop: kỹ năng có Case ở ≥ 2 lớp → một dòng; một lớp → không; Case bàn giao sang lớp mới không tính lặp', () => {
     const c = (code: string, ds: [number, string][]) => ({ code, caseDong: ds.map(([caseId, kyNang]) => ({ caseId, kyNang })) });
     const r = d.lapLaiQuaLop([c('BE 06', [[1, 'Speaking']]), c('FT 104', [[2, 'Reading']]), c('FT 101', [[2, 'Reading'], [3, 'Speaking']])]);
     assert(r.length === 1 && r[0].kyNang === 'Speaking' && r[0].lop.join() === 'BE 06,FT 101', JSON.stringify(r));
@@ -525,7 +525,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     assert(!('episodes' in (studentProfile(P.admin, 1) as any)), 'hồ sơ còn episodes');
   });
 
-  check('VAI-b (9) · Chân chương có lệnh chuyển đã xác nhận bàn giao → "Đọc bàn giao" (PR-CT Q17 không mất); số câu cố định khi thêm lớp cũ (Q20)', () => {
+  check('VAI-b (9) · Chân chương có quyết định chuyển lớp đã xác nhận bàn giao → "Đọc bàn giao" (PR-CT Q17 không mất); số câu cố định khi thêm lớp cũ (Q20)', () => {
     const sid = emCuaLop('MB FT 101');
     const lop = get(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active'`, sid).class_id;
     const n1 = demTruyVan(() => { hanhTrinhHocVien(P.admin, sid, null); });
@@ -540,7 +540,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
       const n2 = demTruyVan(() => { hanhTrinhHocVien(P.admin, sid, null); });
       const ch = (hanhTrinhHocVien(P.admin, sid, null) as any).chuong.find((c: any) => c.classId === cu);
       conn.prepare('DELETE FROM lenh_chuyen_lop WHERE id = ?').run(lenh);
-      assert(ch?.ra?.docBanGiao?.lenhId === lenh && ch.ra.how === 'Quản lý ra lệnh', JSON.stringify(ch?.ra));
+      assert(ch?.ra?.docBanGiao?.lenhId === lenh && ch.ra.how === 'Quản lý quyết định', JSON.stringify(ch?.ra));
       assert(n2 - n1 <= 1, `thêm lớp cũ tăng câu SQL: ${n1} → ${n2}`);
     } finally { conn.prepare(`DELETE FROM enrollments WHERE id IN (${ids.map(() => '?').join(',')})`).run(...ids); }
   });
@@ -560,7 +560,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     for (const f of ['web/src/modules/students/LichSuLop.tsx', 'server/src/classes/lichSuLop.ts']) assert(!fs.existsSync(path.join(REPO, f)), `${f} chưa xoá`);
     const ch = doc('web/src/modules/students/ChuongLop.tsx');
     assert(!/`\/mock-test\//.test(ch) && /duongDotTest\(/.test(ch) && /e\.stopPropagation\(\)/.test(ch), 'ghim chương phải qua duongDotTest, bấm ghim không kích hoạt thẻ');
-    assert(/Đọc bàn giao/.test(ch) && /Lặp lại qua các lớp/.test(ch) && /Case đi theo em sang/.test(ch), 'thẻ chương thiếu Đọc bàn giao / Lặp lại / đi theo');
+    assert(/Đọc bàn giao/.test(ch) && /Lặp lại qua các lớp/.test(ch) && /Case bàn giao sang/.test(ch), 'thẻ chương thiếu Đọc bàn giao / Lặp lại / đi theo');
     assert(!/text-\[11px\][^"]*"[^>]*>\s*\{?(c\.gvcn|khiChuong)/.test(ch), 'người / thời gian 12 px');
   });
   // ------------------------------------------------------------------ khối 11 · Trục tuần nâng cấp (mockup 26 bản 1; Q18, Q19, R5-2, Q31-11)

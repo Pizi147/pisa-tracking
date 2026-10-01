@@ -67,7 +67,7 @@ export function KhoiCanXuLy({ branchId }: { branchId: number | null }) {
           {data.canXuLy.map((x) => (
             <TheDong key={x.metricId}
               dau={<span className="flex items-start gap-2"><NhanTrangThai t={x.trangThai} />{viec(x)}</span>}
-              dong={[{ nhan: 'Người giữ việc', noiDung: nguoi(x) }, { nhan: 'Hạn', noiDung: han(x) }, { nhan: '', noiDung: nut(x) }]} />
+              dong={[{ nhan: 'Người phụ trách', noiDung: nguoi(x) }, { nhan: 'Hạn', noiDung: han(x) }, { nhan: '', noiDung: nut(x) }]} />
           ))}
         </div>
       ) : (
@@ -77,7 +77,7 @@ export function KhoiCanXuLy({ branchId }: { branchId: number | null }) {
             <thead>
               <tr className="text-left text-[11.5px] font-semibold text-slate-400">
                 <th className="px-4 py-2 font-semibold">Trạng thái</th><th className="px-3 py-2 font-semibold">Việc</th>
-                <th className="px-3 py-2 font-semibold">Người giữ việc</th><th className="px-3 py-2 font-semibold">Hạn</th>
+                <th className="px-3 py-2 font-semibold">Người phụ trách</th><th className="px-3 py-2 font-semibold">Hạn</th>
                 <th className="px-4 py-2"><span className="sr-only">Mở việc</span></th>
               </tr>
             </thead>
@@ -106,7 +106,7 @@ export function KhoiCanXuLy({ branchId }: { branchId: number | null }) {
 
 /**
  * DẢI CHỜ DUYỆT (PR-DUYET, K1-01, M8) — khối riêng trên Cần xử lý: số là tầng 1, một nút mở hộp. Ẩn khi hộp trống.
- * Cùng số với chip "Tất cả" và badge Công việc (`demHop`): Báo lên nằm TRONG tổng, nói rõ là "gồm".
+ * Cùng số với chip "Tất cả" và badge Công việc (`demHop`): Báo QL nằm TRONG tổng, nói rõ là "gồm".
  */
 export function DaiChoDuyet({ branchId }: { branchId: number | null }) {
   /* Cùng đường với Cần xử lý — `useApi` gộp GET đang bay nên máy chủ chỉ tính một lần (D14). Lỗi thì báo gọn, không biến mất. */
@@ -114,7 +114,7 @@ export function DaiChoDuyet({ branchId }: { branchId: number | null }) {
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   const d = data?.choDuyet;
   if (!d?.cho) return null;
-  /* Q17: theo chi nhánh đang chọn; "k quá hạn" và "n Báo lên" mở hộp đã lọc đúng các thẻ đó (cùng `demHop`). */
+  /* Q17: theo chi nhánh đang chọn; "k quá hạn" và "n Báo QL" mở hộp đã lọc đúng các thẻ đó (cùng `demHop`). */
   const cn = branchId ? `&cn=${branchId}` : '';
   const phu = dongPhuChoDuyet(d);
   return (
@@ -129,7 +129,7 @@ export function DaiChoDuyet({ branchId }: { branchId: number | null }) {
         )}
         {d.baoLen > 0 && (
           <Link to={`/cong-viec/cho-duyet?phan=bao-len${cn}`} className="no-underline text-slate-300 hover:underline">
-            gồm <b className="text-lg font-bold text-slate-100">{d.baoLen}</b> Báo lên
+            gồm <b className="text-lg font-bold text-slate-100">{d.baoLen}</b> Báo QL
           </Link>
         )}
         {phu && <span className="basis-full text-xs text-slate-500 sm:basis-auto">{phu}</span>}

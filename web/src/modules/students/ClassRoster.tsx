@@ -174,7 +174,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents }: {
           <thead>
             <tr>
               <Th hint="Tên em, và một câu về kết quả mốc gần nhất của em." className="sticky-col">Học viên</Th>
-              <Th align="right" hint="Điểm mục tiêu của lộ trình em đang học. KCK = không cam kết đầu ra, không tính SOS.">Target</Th>
+              <Th align="right" hint="Điểm Target của lộ trình em đang học. KCK = không cam kết đầu ra, không tính SOS.">Target</Th>
               <Th hint="Kỳ thi IELTS thật, ở đúng mức chắc chắn đang biết: tuần, hoặc mới có tháng, hoặc chưa xác định.">
                 Dự kiến thi
               </Th>
@@ -211,7 +211,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents }: {
                     </span>
                     {/*
                       DƯỚI TÊN CHỈ CÒN KẾT LUẬN — một nhãn nhỏ có màu (PR-HV, chủ sản phẩm 22/09): "MTx:", "mới có
-                      điểm k/n kỹ năng", "còn n case đang theo dõi" đã bỏ vì cột Mốc và cột Theo dõi đã nói.
+                      điểm k/n kỹ năng", "còn n Case đang theo dõi" đã bỏ vì cột Mốc và cột Theo dõi đã nói.
                     */}
                     <span className="block mt-1"><KetLuan row={s} /></span>
                   </td>
@@ -330,10 +330,10 @@ function Band({ v, kyVong, faded, soSanh = true, lichSu = false }: { v: number |
  * CỘT THEO DÕI — MỘT hành động chính, rồi mới tới thông tin phụ (mục 5.2).
  *
  * Bản trước xếp chồng ba bốn nhãn cùng nói một chuyện: "Nhập điểm R", "Quá hạn nhập điểm",
- * "SOS 1", "2 case chưa xong". Nay:
+ * "SOS 1", "2 Case chưa xong". Nay:
  *
  *   dòng 1  MỘT việc chính, kèm mốc của nó — màu đỏ = quá hạn (không lặp chữ "quá hạn nhập điểm")
- *   dòng 2  "{n} case" · "{n} case bàn giao" — chỉ số đếm (PR-HV, chủ sản phẩm 22/09: bỏ nhãn "Cần bàn giao" riêng,
+ *   dòng 2  "{n} Case" · "{n} Case bàn giao" — chỉ số đếm (PR-HV, chủ sản phẩm 22/09: bỏ nhãn "Cần bàn giao" riêng,
  *           đã gộp vào dòng này)
  */
 function FollowCell({ row, classId }: { row: RosterRow; classId: number }) {
@@ -366,7 +366,7 @@ function FollowCell({ row, classId }: { row: RosterRow; classId: number }) {
  * CỘT "TRẠNG THÁI" RIÊNG ĐÃ BỎ (mục 5.2) — nội dung của nó chuyển thành MỘT CÂU dưới tên em.
  *
  * Nhãn "Đúng tiến độ" cũng bỏ theo: nó là một lời hứa mà một kết quả đơn lẻ không đủ căn cứ
- * để nói. Thay bằng câu nói rõ căn cứ: "MT2 đạt kỳ vọng · còn 2 case đang theo dõi".
+ * để nói. Thay bằng câu nói rõ căn cứ: "MT2 đạt kỳ vọng · còn 2 Case đang theo dõi".
  *
  * DẢI TIẾN TRÌNH MT cũng bỏ khỏi bảng lớp: cột "Mốc" nay đã nói mốc nào ứng với hàng điểm
  * nào, và toàn bộ hành trình vẫn mở được ở hồ sơ từng em.

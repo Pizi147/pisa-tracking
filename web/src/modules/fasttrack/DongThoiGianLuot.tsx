@@ -20,7 +20,7 @@ const NHAN_VIEC: Record<string, { chu: string; loai: Loai }> = {
   cancelled: { chu: 'Huỷ cả lượt', loai: 'huy' }, skill_part_cancelled: { chu: 'Huỷ phần còn lại', loai: 'huy' }, reopened: { chu: 'Mở lại', loai: 'lich' },
   skill_sit_status: { chu: 'Trạng thái thi', loai: 'lich' }, completion_week: { chu: 'Tuần dự kiến hoàn tất', loai: 'lich' },
 };
-const SIT: Record<string, string> = { scheduled: 'Theo lịch', sat: 'Đã thi', absent: 'Vắng', cancelled: 'Đã huỷ phần thi', required: 'Trong đợt', skipped: 'Bỏ khỏi đợt' };
+const SIT: Record<string, string> = { scheduled: 'Theo lịch', sat: 'Đã thi', absent: 'Vắng', cancelled: 'Đã huỷ phần thi', required: 'Trong đợt', skipped: 'Đã bỏ khỏi đợt' };
 
 /** Biểu tượng 12 px bằng SVG — ký tự Unicode nhỏ của Inter ở cỡ này thành dấu chấm (bẫy đã gặp 28/09). */
 function BieuTuong({ loai }: { loai: Loai }) {
@@ -74,7 +74,7 @@ export function DongThoiGianLuot({ history, scoreHistory, ct = null, gioiHan = 5
         ))}
       </ol>
       {dong.length > gioiHan && (
-        <button type="button" className="btn btn-sm btn-ghost mt-2" onClick={() => setHet((v) => !v)}>
+        <button type="button" className="btn btn-sm btn-ghost mt-2 min-h-[44px] sm:min-h-0" onClick={() => setHet((v) => !v)}>
           {het ? 'Thu gọn' : `Xem hết ${dong.length}`}
         </button>
       )}

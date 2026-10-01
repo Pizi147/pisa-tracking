@@ -29,7 +29,7 @@ export type ThamSoHoSo = {
 const KY_NANG_HOP_LE = ['listening', 'reading', 'writing', 'writing1', 'writing2', 'speaking'];
 
 /**
- * Dựng `/hoc-vien/{id}` + query — thứ tự tham số CỐ ĐỊNH `lo-trinh, tab, dot, kn, case, pa, giai-doan, viec`
+ * Dựng `/hoc-vien/{id}` + query — thứ tự tham số CỐ ĐỊNH `lo-trinh, tab, dot, kn, Case, pa, giai-doan, viec`
  * để mọi chỗ sinh ra cùng một chuỗi cho cùng một trạng thái (dễ so sánh, dễ kiểm).
  *
  * `tab` chỉ ghi khi khác mặc định ('hoc-thuat') VÀ không có `dot`/`kn` — có một trong hai thì trang luôn
@@ -119,7 +119,7 @@ export type ThongBaoRow = {
 const LOAI_CAN_LAM = new Set([
   'nhac_viec', 'nhac_ban_giao', 'duyet_moi', 'duyet_qua_han', 'duyet_tu_choi', 'sos', 'sos_new', 'discipline', 'schedule_move', 'phoi_hop',
   'dang_ky', 'lenh_loi', 'ban_giao', 'overdue_score', 'overdue_task',
-  'bao_len',   // PR-S6F-a Q12: thẻ Báo lên đang chờ chính Quản lý quyết
+  'bao_len',   // PR-S6F-a Q12: thẻ Báo QL đang chờ chính Quản lý quyết
 ]);
 export function nhomThongBao(n: { kind: string | null; con_viec?: number | null }): 'can-lam' | 'de-biet' {
   if (n.con_viec === 0) return 'de-biet';

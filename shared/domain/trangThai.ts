@@ -1,6 +1,6 @@
 /**
  * NGỮ PHÁP TRẠNG THÁI §7.3 — một dòng một nhãn; màu điểm/SOS không mượn.
- * Sáu nhãn dùng chung cho việc, case, phối hợp: Cần làm · Đang làm · Chờ duyệt · Quá hạn · Xong · Đã huỷ.
+ * Sáu nhãn dùng chung cho việc, Case, phối hợp: Cần làm · Đang làm · Chờ duyệt · Quá hạn · Xong · Đã huỷ.
  */
 export const TRANG_THAI = ['can-lam', 'dang-lam', 'cho-duyet', 'qua-han', 'xong', 'da-huy'] as const;
 export type TrangThai = (typeof TRANG_THAI)[number];
@@ -28,7 +28,7 @@ export function trangThaiPhoiHop(status: string | null | undefined): TrangThai {
   return 'can-lam';
 }
 
-/** Trạng thái case (đóng/huỷ/mở/chưa xử lý/chưa có kế hoạch/đang xử lý) → nhãn chung. `chua_xu_ly`: Case từ SOS chưa đủ nguyên nhân (N1 Q28-5). */
+/** Trạng thái Case (đóng/huỷ/mở/chưa xử lý/chưa có kế hoạch/đang xử lý) → nhãn chung. `chua_xu_ly`: Case từ SOS chưa đủ nguyên nhân (N1 Q28-5). */
 export function trangThaiCaseDong(state: string | null | undefined): TrangThai {
   if (state === 'done' || state === 'closed') return 'xong';
   if (state === 'dismissed' || state === 'cancelled') return 'da-huy';

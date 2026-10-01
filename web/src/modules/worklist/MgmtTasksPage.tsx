@@ -43,10 +43,7 @@ const KIND: Record<string, 'doing' | 'waiting' | 'done' | 'idle'> = {
   not_started: 'idle', doing: 'idle', done: 'done', paused: 'waiting', stopped: 'idle',
 };
 
-const TRANG_THAI_LABEL: Record<TrangThaiLoc, string> = {
-  mo: 'Đang mở', not_started: 'Chưa bắt đầu', doing: 'Tiếp tục xử lý', paused: 'Tạm ngưng',
-  stopped: 'Dừng hẳn', done: 'Đã hoàn thành', 'tat-ca': 'Mọi trạng thái',
-};
+const TRANG_THAI_LABEL: Record<TrangThaiLoc, string> = { mo: 'Đang mở', ...TASK_PROGRESS_LABEL, 'tat-ca': 'Mọi trạng thái' };
 
 const idOfNguoi = (v: NguoiChon | null, myId: number | null): number | null => {
   if (!v) return null;
@@ -62,7 +59,7 @@ const tenNgoaiCua = (v: NguoiChon | null): string | null => (v?.kieu === 'ngoai'
  *
  * PR-Ra: hàng số ở đầu tab bấm được (Q8, bốn câu hỏi CHỒNG NHAU có chủ ý), hàng lọc Nhóm ·
  * Trạng thái · Người phụ trách đứng cùng một hàng (§18.4: không quá 10 nút), bảng 5 cột với
- * Việc con thay "Cập nhật gần nhất" (Q7). Đây là công việc quản lý vận hành, không phải case
+ * Việc con thay "Cập nhật gần nhất" (Q7). Đây là công việc quản lý vận hành, không phải Case
  * của học viên — không có tầng "phương án xử lý", không có quy trình xin duyệt.
  */
 export function TasksBoard() {
@@ -160,7 +157,7 @@ export function TasksBoard() {
             );
           })}
         </div>
-        {data?.canEdit && <button className="btn btn-primary" onClick={() => setCreating(true)}>+ Công việc</button>}
+        {data?.canEdit && <button className="btn btn-primary" onClick={() => setCreating(true)}>+ Giao việc</button>}
       </div>
 
       <Card bodyClass="p-0"
@@ -209,7 +206,7 @@ export function TasksBoard() {
               </colgroup>
               <thead>
                 <tr>
-                  <Th hint="Bấm một dòng để mở chi tiết, việc con và lịch sử cập nhật.">Việc</Th>
+                  <Th hint="Bấm một dòng để mở chi tiết, việc con và lịch sử.">Việc</Th>
                   <Th hint="Người chịu trách nhiệm làm. Người theo dõi chỉ xem, không sửa được.">Người phụ trách</Th>
                   <Th hint="Quá hạn tính theo hạn HIỆN TẠI (giữ nguyên luật cũ) — hạn đã dời hiện ở dòng phụ.">Hạn</Th>
                   <Th hint="Tạm ngưng là còn sống, tiếp tục được bất kỳ lúc nào; dừng hẳn là đã quyết định không làm.">Trạng thái</Th>
@@ -273,7 +270,7 @@ export function TasksBoard() {
   );
 }
 
-/** Chi tiết một công việc: hạn + lịch sử dời hạn, việc con, lịch sử cập nhật, case làm căn cứ. */
+/** Chi tiết một công việc: hạn + lịch sử dời hạn, việc con, lịch sử cập nhật, Case làm căn cứ. */
 export function NganViecVanHanh({ taskId, onClose, onDone }: {
   taskId: number | null; onClose: () => void; onDone: () => void;
 }) {
@@ -333,7 +330,7 @@ export function NganViecVanHanh({ taskId, onClose, onDone }: {
               {data.viewer.canEdit && (
                 <>
                   <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setEditing(true)}>Sửa</button>
-                  <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setAddingSub(true)}>+ Công việc con</button>
+                  <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setAddingSub(true)}>+ Việc con</button>
                 </>
               )}
             </div>
@@ -342,7 +339,7 @@ export function NganViecVanHanh({ taskId, onClose, onDone }: {
           {/* ─────────────────────────────────────────── việc con, một tầng */}
           <section>
             <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-2">
-              Công việc con
+              Việc con
               {data.subtasks.length > 0 && (
                 <span className="text-slate-500 font-normal tabular-nums ml-2">
                   {data.subtasks.filter((x: any) => x.progress === 'done').length}/{data.subtasks.length} hoàn thành
@@ -372,7 +369,7 @@ export function NganViecVanHanh({ taskId, onClose, onDone }: {
 
           {/* ─────────────────────────────────────────── lịch sử cập nhật */}
           <section>
-            <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-2">Lịch sử cập nhật</h3>
+            <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-2">Lịch sử</h3>
             {data.updates.length === 0 ? (
               <p className="text-xs text-slate-500 m-0">Chưa có cập nhật nào.</p>
             ) : (
@@ -395,7 +392,7 @@ export function NganViecVanHanh({ taskId, onClose, onDone }: {
                 Case làm căn cứ
                 {/* ⓘ bấm được (không chỉ rê chuột — luật "không thao tác nào chỉ hiện khi hover"). */}
                 <NutLuat label="Về Case làm căn cứ">
-                  Liên kết này chỉ là CĂN CỨ. Hoàn thành công việc quản lý KHÔNG đóng case nào, và cũng không tự tạo phương án cho em nào.
+                  Liên kết này chỉ là CĂN CỨ. Hoàn thành công việc quản lý KHÔNG đóng Case nào, và cũng không tự tạo phương án cho em nào.
                 </NutLuat>
               </h3>
               <ul className="list-none p-0 m-0 space-y-1 text-xs text-slate-300">
@@ -450,7 +447,7 @@ function UpdateDialog({ open, onClose, task, onDone }: {
     <Modal open={open} onClose={onClose} title="Cập nhật tiến độ"
       footer={
         <>
-          <button className="btn" onClick={onClose} disabled={busy}>Huỷ</button>
+          <button className="btn" onClick={onClose} disabled={busy}>Đóng</button>
           <button className="btn btn-primary" disabled={busy || (needReason && !reason.trim()) || helpThieu || reviewThieu || chanKhepLai}
             onClick={async () => {
               setBusy(true);
@@ -482,7 +479,7 @@ function UpdateDialog({ open, onClose, task, onDone }: {
         </Field>
         {chanKhepLai && (
           <Alert>
-            Còn {conChuaXong.length} công việc con chưa khép lại: {conChuaXong.slice(0, 2).map((t) => `"${t}"`).join(', ')}
+            Còn {conChuaXong.length} việc con chưa khép lại: {conChuaXong.slice(0, 2).map((t) => `"${t}"`).join(', ')}
             {conChuaXong.length > 2 ? ` và ${conChuaXong.length - 2} việc khác` : ''}.
           </Alert>
         )}
@@ -535,7 +532,7 @@ function SuaViec({ open, onClose, task, onDone }: {
     <Modal open={open} onClose={onClose} title="Sửa công việc"
       footer={
         <>
-          <button className="btn" onClick={onClose} disabled={busy}>Huỷ</button>
+          <button className="btn" onClick={onClose} disabled={busy}>Đóng</button>
           <button className="btn btn-primary" disabled={busy || !title.trim() || (canDoi && lyDoDoiHan.trim().length < 2)}
             onClick={async () => {
               setBusy(true);
@@ -624,10 +621,10 @@ function CreateTask({ open, onClose, onDone, branchId, parent, defaultGroup, uni
 
   return (
     <Modal open={open} onClose={onClose} width="max-w-lg"
-      title={parent ? `Công việc con của "${parent.title}"` : 'Công việc mới'}
+      title={parent ? `Việc con của "${parent.title}"` : 'Công việc mới'}
       footer={
         <>
-          <button className="btn" onClick={onClose} disabled={busy}>Huỷ</button>
+          <button className="btn" onClick={onClose} disabled={busy}>Đóng</button>
           <button className="btn btn-primary" disabled={busy || !title.trim()}
             onClick={async () => {
               setBusy(true);

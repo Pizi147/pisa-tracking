@@ -29,7 +29,7 @@ export const SCORING_MODE_LABEL: Record<ScoringMode, string> = {
  * Ngưỡng đạt của cách chấm theo tỷ lệ. Xét trên tỷ lệ CHÍNH XÁC, không làm tròn % rồi mới xét.
  *
  * Gọi là "điểm đạt / tổng điểm" chứ không phải "số câu đúng / tổng số câu": Writing và
- * Speaking của lớp Normal chấm theo thang điểm, không đếm câu. Một cái tên chỉ đúng với
+ * Speaking của lớp thường chấm theo thang điểm, không đếm câu. Một cái tên chỉ đúng với
  * Listening và Reading thì hai môn kia phải gõ vào một ô mang tên sai.
  *
  * MỘT NGƯỠNG CHO TOÀN HỆ THỐNG. Nhập điểm, kết luận đợt, tín hiệu, hồ sơ, bảng lớp, bảng
@@ -40,7 +40,7 @@ export const RATIO_PASS_THRESHOLD = 0.7;
 /**
  * NGƯỠNG CŨ, giữ lại để ĐỌC ĐƯỢC LỊCH SỬ chứ không để tính.
  *
- * Owner nâng ngưỡng đạt của lớp Normal từ 60% lên 70% sau PR15. Điểm gốc không bị sửa và
+ * Owner nâng ngưỡng đạt của lớp thường từ 60% lên 70% sau PR15. Điểm gốc không bị sửa và
  * kết luận đã ghi không bị xoá, nhưng một bài 62% trước đây đọc là "đạt" thì từ nay đọc là
  * "trượt". Ai đối chiếu với biên bản cũ cần biết vì sao hai bên lệch nhau, nên căn cứ của
  * quy tắc cũ được ghi ở đây và trong nhật ký nâng cấp, thay vì chỉ lặng lẽ biến mất.
@@ -262,7 +262,7 @@ export function caseHeadline(c: {
   const ratio = !!c.attemptKind && c.attemptKind !== 'mock';
   const where = ratio
     ? (ATTEMPT_KIND_SHORT[c.attemptKind as AttemptKind] ?? 'Bài kiểm tra')
-    : c.attemptNo ? `MT${c.attemptNo}` : 'Bài đánh giá';
+    : c.attemptNo ? `MT${c.attemptNo}` : 'Bài kiểm tra';
   const derived = level === null ? `${where}: chưa đủ căn cứ kết luận`
     : level === 0 ? (ratio ? `${where}: đạt tất cả các môn` : `${where}: đạt kỳ vọng ở mọi kỹ năng`)
     : ratio ? `${where}: ${level >= 3 ? 'từ 3' : level} môn chưa đạt`

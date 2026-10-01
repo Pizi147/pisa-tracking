@@ -103,7 +103,7 @@ export function ChuongLop({ chuong, lapLai, homNay, onChon }: {
         <p key={l.kyNang} className="m-0 flex items-start gap-2.5 rounded-[10px] px-3 py-[9px] text-[13px] text-slate-200" style={{ background: 'var(--surface-2)' }}>
           <span className="mt-[3px] text-late"><IconCanhBao /></span>
           <span><b className="font-semibold">Lặp lại qua các lớp:</b> {l.kyNang} có Case ở {l.lop.join(', ').replace(/, ([^,]*)$/, ' và $1')}.{' '}
-            <span className="text-slate-400">Máy tự viết dòng này khi một kỹ năng có Case ở hai lớp trở lên.</span></span>
+            <span className="text-slate-400">Hệ thống tự viết dòng này khi một kỹ năng có Case ở hai lớp trở lên.</span></span>
         </p>
       ))}
     </section>
@@ -167,7 +167,7 @@ function TheChuong({ c, homNay, onChon }: { c: ChuongWeb; homNay: string; onChon
                   ))}
                 </span>
               )}
-              {x.diTheoSang && <span className="text-[12px] text-slate-400">Case đi theo em sang {x.diTheoSang}</span>}
+              {x.diTheoSang && <span className="text-[12px] text-slate-400">Case bàn giao sang {x.diTheoSang}</span>}
             </div>
           ))}
         </div>

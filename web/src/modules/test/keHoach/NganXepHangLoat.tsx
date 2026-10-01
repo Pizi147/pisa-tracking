@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, invalidate } from '../../../lib/api.ts';
 import { useApi } from '../../../lib/useApi.ts';
-import { useSession } from '../../../lib/session.tsx';
+import { useNgayNghiepVu } from '../../../ui/ngayNghiepVu.ts';
 import { KhungPanel, Khoi } from '../../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../../ui/loiForm.tsx';
 import { Nhan, type ToneNhan } from '../../../ui/Nhan.tsx';
@@ -41,7 +41,6 @@ export function NganXepHangLoat({ lopThuong, classIdBanDau, coFt, onDoiKhung, on
   onClose: () => void; onDone: () => void;
 }) {
   const toast = useToast();
-  const { session } = useSession();
   /* Q3: chip chương trình lọc lớp (chỉ chương trình có lớp), rồi chọn MỘT lớp — tuần đề xuất khác nhau theo lớp. */
   const dsCt = useMemo(() => [...new Set(lopThuong.map((l) => l.chuongTrinh).filter((c): c is string => !!c))].sort(), [lopThuong]);
   const lopBanDau = lopThuong.find((l) => l.id === classIdBanDau) ?? lopThuong.find((l) => l.hvChuaCoLich > 0) ?? lopThuong[0] ?? null;
@@ -93,7 +92,8 @@ export function NganXepHangLoat({ lopThuong, classIdBanDau, coFt, onDoiKhung, on
   const [chonKn, setChonKn] = useState<Record<KyNangKH, boolean>>(() => Object.fromEntries(O_KE_HOACH.map((k) => [k, true])) as Record<KyNangKH, boolean>);
   const [tuan, setTuan] = useState<Record<KyNangKH, Tuan | null>>(() => Object.fromEntries(O_KE_HOACH.map((k) => [k, null])) as Record<KyNangKH, Tuan | null>);
   const [ap, setAp] = useState<Tuan | null>(null);
-  const homNay = session?.demoDate ? mondayOfDate(session.demoDate) : null;
+  const nghiepVu = useNgayNghiepVu().homNay;
+  const homNay = nghiepVu ? mondayOfDate(nghiepVu) : null;
   useEffect(() => {
     if (!dotKey || !dot) return;
     let huy = false;

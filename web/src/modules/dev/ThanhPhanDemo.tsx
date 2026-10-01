@@ -157,7 +157,7 @@ export default function ThanhPhanDemo() {
           </table>
         </div>
         <div className="mt-3 overflow-hidden rounded-lg border" style={{ borderColor: 'var(--line)' }}>
-          <KhoiNhom id="demo-khoi" mo={moNhom.a} onMo={() => setMoNhom((s2) => ({ ...s2, a: !s2.a }))} nhan="Nhập điểm Test" tieuDe="Nhập điểm Test" dem={2}
+          <KhoiNhom id="demo-khoi" mo={moNhom.a} onMo={() => setMoNhom((s2) => ({ ...s2, a: !s2.a }))} nhan="Nhập điểm" tieuDe="Nhập điểm" dem={2}
             phu={<span className="font-bold text-late">⚠ 1 quá hạn</span>}>
             <div className="py-2 pr-3 text-xs">Dòng việc mẫu <QuaHan ngay={4} /></div>
           </KhoiNhom>
@@ -257,7 +257,7 @@ export default function ThanhPhanDemo() {
             <div style={{ maxWidth: 300 }}><WeekPicker periodId={p2} onPeriod={setP2} label="Tuần khai giảng" scope="planning" /></div>
           </Cell>
           <Cell title="Cho bỏ trống (clearable) — chưa chọn thì ghi 'Chưa xác định'">
-            <div style={{ maxWidth: 600 }}><WeekPicker periodId={p3} onPeriod={setP3} label="Tuần dự kiến thi" scope="planning" clearable /></div>
+            <div style={{ maxWidth: 600 }}><WeekPicker periodId={p3} onPeriod={setP3} label="Dự kiến thi" scope="planning" clearable /></div>
           </Cell>
           <Cell title="Trong panel và hộp thoại — popover phải nổi lên trên, không bị cắt">
             <div className="flex gap-2">

@@ -32,7 +32,7 @@ type AdminData = {
 const TABS = [
   { key: 'accounts', label: 'Tài khoản' },
   { key: 'catalog', label: 'Lộ trình & chương trình' },
-  { key: 'config', label: 'Quyền và nhật ký' },
+  { key: 'config', label: 'Quyền & nhật ký' },
 ] as const;
 
 export default function AdminPage() {
@@ -84,7 +84,7 @@ function ConfigTab({ data, onDone }: { data: AdminData; onDone: () => void }) {
                 <Th className="sticky-col" hint="Mỗi dòng là một việc cụ thể. Dấu tích nghĩa là vai đó được làm việc này.">Quyền</Th>
                 {data.roles.map((r) => (
                   <Th key={r.key} align="center"
-                    hint={`Bấm một ô trong cột này để bật hoặc tắt quyền đó cho vai ${r.name}.`}>
+                    hint={`Bấm một ô trong cột này để bật hoặc tắt quyền đó cho vai trò ${r.name}.`}>
                     {r.name}
                   </Th>
                 ))}
@@ -169,7 +169,7 @@ function PermCell({ roleKey, roleName, perm, granted, onDone }: {
     <button
       type="button"
       disabled={busy}
-      title={`${granted ? 'Bỏ' : 'Cấp'} quyền "${perm.name}" cho vai ${roleName}`}
+      title={`${granted ? 'Bỏ' : 'Cấp'} quyền "${perm.name}" cho vai trò ${roleName}`}
       className={`w-full py-1.5 bg-transparent border-0 text-sm ${
         granted ? 'text-sky-200' : 'text-slate-600'
       } ${busy ? 'opacity-50' : 'hover:bg-white/5 cursor-pointer'}`}
@@ -180,8 +180,8 @@ function PermCell({ roleKey, roleName, perm, granted, onDone }: {
             roleKey, permissionKey: perm.key, granted: !granted,
           });
           toast.push('ok', granted
-            ? `Đã bỏ "${perm.name}" khỏi vai ${roleName}`
-            : `Đã cấp "${perm.name}" cho vai ${roleName}`);
+            ? `Đã bỏ "${perm.name}" khỏi vai trò ${roleName}`
+            : `Đã cấp "${perm.name}" cho vai trò ${roleName}`);
           onDone();
         } catch (e: any) {
           toast.push('error', e?.message ?? 'Không lưu được');

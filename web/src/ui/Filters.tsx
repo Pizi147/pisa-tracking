@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useApi } from '../lib/useApi.ts';
 import { useSession } from '../lib/session.tsx';
+import { useNgayNghiepVu } from './ngayNghiepVu.ts';
 import { api } from '../lib/api.ts';
 import { useToast } from './Toast.tsx';
 import { addDaysStr } from '../lib/format.ts';
@@ -83,18 +84,17 @@ export function WeekPicker({ periodId, onPeriod, label = 'Tuần', scope, cleara
   scope?: 'planning';
   /**
    * Cho phép BỎ TRỐNG. Chỉ bật ở những chỗ mà "chưa biết" là một câu trả lời hợp lệ —
-   * tuần dự kiến thi là ví dụ: ép chọn thì người ta chọn bừa rồi không ai sửa lại.
+   * dự kiến thi là ví dụ: ép chọn thì người ta chọn bừa rồi không ai sửa lại.
    */
   clearable?: boolean;
 }) {
-  const { session } = useSession();
   const toast = useToast();
   /*
    * `demoDate` là NGUỒN DUY NHẤT cho "hôm nay" (sổ §13.8: demo dùng ngày demo, thật dùng hôm
    * nay thực tế — cả hai đều đi qua trường này, KHÔNG đọc đồng hồ trình duyệt). Component này
    * chỉ render sau khi phiên đăng nhập đã tải (App.tsx chặn trước đó), nên `session` luôn có.
    */
-  const today = session?.demoDate ?? '';
+  const today = useNgayNghiepVu().homNay;
   const todayWeekStart = today ? mondayOfDate(today) : '';
 
   const { data } = usePeriodWindow(periodId, scope);

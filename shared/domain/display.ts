@@ -209,7 +209,7 @@ export function attemptProgressView(i: AttemptProgressInput): AttemptProgressVie
       /* PR-N1 A4: "x/y môn đạt" — không nhãn đỏ nào mở đầu bằng "Đạt" ("0/4 môn đạt · SOS 3"). */
       /* PR-LT2a (T58): lớp thường không có chữ SOS — chỉ `x/y môn đạt`. */
       text: ratio ? `${required - soChuaDatThat}/${required} ${donVi} đạt` : `Đã đủ điểm · SOS ${sos}`,
-      tone: 'danger', overall: 'not-passed', overallText: ratio ? 'Chưa đạt' : 'Chưa đạt kỳ vọng', passBadge: false,
+      tone: 'danger', overall: 'not-passed', overallText: ratio ? 'Chưa đạt' : 'Dưới kỳ vọng', passBadge: false,
     };
   }
   if (passed === true) {
@@ -220,8 +220,8 @@ export function attemptProgressView(i: AttemptProgressInput): AttemptProgressVie
   }
   if (passed === false) {
     return {
-      text: ratio ? `Chưa đạt ${required}/${required} ${donVi}` : 'Đã đủ điểm · Overall chưa đạt kỳ vọng',
-      tone: 'danger', overall: 'not-passed', overallText: ratio ? 'Chưa đạt' : 'Chưa đạt kỳ vọng', passBadge: false,
+      text: ratio ? `Chưa đạt ${required}/${required} ${donVi}` : 'Đã đủ điểm · Overall dưới kỳ vọng',
+      tone: 'danger', overall: 'not-passed', overallText: ratio ? 'Chưa đạt' : 'Dưới kỳ vọng', passBadge: false,
     };
   }
   return {
@@ -254,10 +254,13 @@ export type DeadlineKind = (typeof DEADLINE_KINDS)[number];
  * PR-UX0 (B-2/B-3): "việc" là tiêu đề dòng ở chỗ hiện hạn, còn `<Han>` chỉ nói mốc ("hạn hết T2 28/09").
  * PR-N1 (R-PA1/R-PA3): hạn ghi kết quả tuần là HẾT THỨ HAI tuần kế tiếp; việc có hạn nói rõ tuần ("Ghi kết quả tuần W4 SEP").
  */
+/** D-046: một chữ cho việc lập PA; nơi so khớp (việc học viên, ngăn Case) dùng hằng này, không so chuỗi hiển thị. */
+export const CHU_THEM_PA = 'Thêm PA';
+
 const DEADLINE_VIEC: Record<DeadlineKind, { viec: string; tien: 'hạn' | 'hạn hết T2' | 'dự kiến kết thúc' }> = {
   /* PR-NEN Q16: giữ khoá `xac-minh-sos`, chữ đổi theo thuật ngữ chốt (như N1 Q4). */
   'xac-minh-sos': { viec: 'Xác nhận nguyên nhân', tien: 'hạn' },
-  'lap-pa': { viec: 'Đề ra PA', tien: 'hạn' },
+  'lap-pa': { viec: CHU_THEM_PA, tien: 'hạn' },
   'cap-nhat-pa': { viec: 'Ghi kết quả PA', tien: 'hạn hết T2' },
   'nhap-diem': { viec: 'Nhập điểm', tien: 'hạn' },
   'du-kien-ket-thuc': { viec: 'Dự kiến kết thúc', tien: 'dự kiến kết thúc' },
@@ -338,12 +341,15 @@ export function nhanTuanGhiKetQua(actionDue: string | null, homNay: string): { t
  * LUẬT HIỆN HẠN (PR-UX0, B-3): việc · mốc · quá hạn/hôm nay · hẹn — mỗi thông tin nói MỘT lần.
  * Quá hạn đếm số ngày từ hạn GỐC cho mọi loại, kể cả `cap-nhat-pa` (mockup 17 #1, #21).
  */
+/** C-004: một chữ cho "việc không đặt hạn"; nơi so khớp (hồ sơ HV, thẻ kỹ năng) dùng hằng này, không so chuỗi hiển thị. */
+export const CHUA_CO_HAN = 'Chưa có hạn';
+
 export function deadlineView(i: DeadlineInput): DeadlineView {
   const { viec, tien } = DEADLINE_VIEC[i.kind];
   if (!validIso(i.due)) {
     return {
-      text: `${viec} · chưa có hạn`, tone: 'neutral', daysOverdue: null, title: null,
-      viec, han: 'chưa có hạn', homNay: false, quaHan: null, hen: null, con: null,
+      text: `${viec} · ${CHUA_CO_HAN}`, tone: 'neutral', daysOverdue: null, title: null,
+      viec, han: CHUA_CO_HAN, homNay: false, quaHan: null, hen: null, con: null,
     };
   }
   const han = `${tien} ${shortDate(i.due, i.today)}`;

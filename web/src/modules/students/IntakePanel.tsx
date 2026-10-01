@@ -33,7 +33,7 @@ const GOI_Y_COT: Partial<Record<CotNhap, string>> = {
   dob: 'Gõ dd/mm/yyyy.',
   baselineScore: 'Con số trên phiếu điểm chính thức. Nhập độc lập với bốn môn — không phải trung bình cộng.',
   entryWriting: 'Writing TỔNG trên phiếu điểm — không chia W1/W2.',
-  target: `Band 0–9, bước 0,5. Gõ KCK (hoặc -) nếu em không cam kết đầu ra: không kỳ vọng MT, không tính SOS. Bỏ trống = chưa có target.`,
+  target: `Band 0–9, bước 0,5. Gõ KCK (hoặc -) nếu em không cam kết đầu ra: không kỳ vọng MT, không tính SOS. Bỏ trống = chưa có Target.`,
   examDate: 'Gõ dd/mm/yyyy nếu đã biết ngày, mm/yyyy nếu mới biết tháng.',
   daThiToiMt: 'Em cũ đã thi tới MT mấy ngoài web — web tạo sẵn các lượt đó là MT lịch sử để nhập điểm bù. Bỏ trống = em mới.',
   startWeek: 'Theo tuần chọn ở đầu panel; đổi riêng từng dòng được.',
@@ -132,7 +132,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
       setMoDong(null);
       setKetQua(r);
       if (r.added > 0) onDone();
-      else toast.push('info', 'Chưa thêm được dòng nào — xem cột Tình trạng.');
+      else toast.push('info', 'Chưa thêm được dòng nào — xem cột Trạng thái.');
     } catch (e: any) {
       toast.push('error', e.message);        // giữ nguyên lưới đang nhập để thử lại
     } finally { setBusy(false); }
@@ -146,7 +146,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
     : startWeek ? 'Đổi ở đây thì mọi dòng chưa sửa tay đổi theo.'
     : !cls.start_date ? 'Lớp chưa có ngày khai giảng nên mặc định tuần này. Đổi ở đây thì mọi dòng chưa sửa tay đổi theo.'
     : lopThuong ? 'Lấy sẵn tuần khai giảng của lớp. Đổi ở đây thì mọi dòng chưa sửa tay đổi theo.'
-    : 'Lấy sẵn tuần khai giảng của lớp. Em vào muộn thì đổi tuần — cột Tình trạng báo trước MT nào sẽ là MT lịch sử.';
+    : 'Lấy sẵn tuần khai giảng của lớp. Em vào muộn thì đổi tuần — cột Trạng thái báo trước MT nào sẽ là MT lịch sử.';
 
   const hoSoLop = classId ? `/hoc-vien/lop/${classId}` : null;
 
@@ -246,7 +246,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
                     {c.nhan}{c.batBuoc && <span className="text-bad"> *</span>}
                   </Th>
                 ))}
-                <Th>Tình trạng</Th>
+                <Th>Trạng thái</Th>
               </tr>
             </thead>
             <tbody>

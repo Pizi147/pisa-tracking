@@ -89,7 +89,7 @@ export async function runPrTocTests(t: YThucTestKit) {
     assert(!!loiO(pv(`01/01/${nam + 1}`), 'dob'), 'sau hôm nay vẫn lỗi');
   });
 
-  check(`TOC (3) · Tuần bắt đầu, thi dự kiến trong năm nay −3 … +3 (${nam - 3}–${nam + 3}); ngoài khoảng là lỗi, kể cả tuần cả lô`, () => {
+  check(`TOC (3) · Tuần bắt đầu, dự kiến thi trong năm nay −3 … +3 (${nam - 3}–${nam + 3}); ngoài khoảng là lỗi, kể cả tuần cả lô`, () => {
     const pv = (r: any, extra: any = {}) => intake.previewIntake(P.admin, { classId: ft, rows: [{ fullName: 'Nk', email: 'nk@demo.test', ...r }], ...extra });
     assert(!!loiO(pv({ startWeek: `05/01/${nam - 4}` }), 'startWeek'), 'tuần bắt đầu năm −4');
     assert(!!loiO(pv({ startWeek: `05/01/${nam + 4}` }), 'startWeek'), 'tuần bắt đầu năm +4');
@@ -125,7 +125,7 @@ export async function runPrTocTests(t: YThucTestKit) {
     assertThrows(() => intake.commitIntake(P.admin, { classId: 999999, rows: [] }), /Không tìm thấy lớp/, 'lớp không tồn tại → 404');
   });
 
-  check('TOC (3) · Thông tin HV: ô chữ sai kiểu → 400, ngày sinh trước 1900 → 400; tuần bắt đầu / thi dự kiến ngoài khoảng → 400', () => {
+  check('TOC (3) · Thông tin HV: ô chữ sai kiểu → 400, ngày sinh trước 1900 → 400; tuần bắt đầu / dự kiến thi ngoài khoảng → 400', () => {
     const sid = (conn.prepare(`SELECT id FROM students WHERE full_name = 'Tốc Lô Một'`).get() as any).id;
     const cy = conn.prepare('SELECT * FROM learning_cycles WHERE student_id = ?').get(sid) as any;
     for (const [k, v] of [['fullName', { a: 1 }], ['note', ['x']], ['email', 1], ['consultantName', {}]] as const) {
@@ -134,7 +134,7 @@ export async function runPrTocTests(t: YThucTestKit) {
     ma400(() => updateStudent(P.admin, sid, { dob: '1899-12-31' }), /Ngày sinh.*1900/, 'ngày sinh 1899');
     assert((updateStudent(P.admin, sid, { dob: '1900-01-01' }) as any).dob === '1900-01-01', 'ngày sinh 1900 hợp lệ');
     ma400(() => updateCycle(P.admin, cy.id, { startWeek: `${nam + 4}-01-05` }), /Tuần bắt đầu/, 'tuần năm +4');
-    ma400(() => updateCycle(P.admin, cy.id, { examDate: `${nam + 4}-05` }), /Thi dự kiến/, 'thi năm +4');
+    ma400(() => updateCycle(P.admin, cy.id, { examDate: `${nam + 4}-05` }), /Dự kiến thi/, 'thi năm +4');
     ma400(() => updateCycle(P.admin, cy.id, { startWeek: { x: 1 } }), /Tuần bắt đầu/, 'tuần là object');
     /* Lộ trình cũ ngoài khoảng: gửi lại ĐÚNG giá trị đang lưu thì không bị chặn (panel/API gửi cả ô không sửa). */
     const cu = ensurePeriod(`${nam - 5}-03-02`);
@@ -145,8 +145,8 @@ export async function runPrTocTests(t: YThucTestKit) {
     /* Rà #121 (5): id tuần / tháng gửi THẲNG (StudentPlanPanel) cũng qua cận năm, cũng chỉ khi đổi. */
     updateCycle(P.admin, cy.id, { startPeriodId: cu.id, examPeriodId: thiCu.id, examMonth: `${nam - 5}-06` });
     ma400(() => updateCycle(P.admin, cy.id, { startPeriodId: ensurePeriod(`${nam + 4}-03-04`).id }), /Tuần bắt đầu/, 'startPeriodId năm +4');
-    ma400(() => updateCycle(P.admin, cy.id, { examPeriodId: ensurePeriod(`${nam - 4}-03-04`).id }), /Tuần dự kiến thi/, 'examPeriodId năm −4');
-    ma400(() => updateCycle(P.admin, cy.id, { examMonth: `${nam + 4}-02` }), /Thi dự kiến/, 'examMonth năm +4');
+    ma400(() => updateCycle(P.admin, cy.id, { examPeriodId: ensurePeriod(`${nam - 4}-03-04`).id }), /Dự kiến thi/, 'examPeriodId năm −4');
+    ma400(() => updateCycle(P.admin, cy.id, { examMonth: `${nam + 4}-02` }), /Dự kiến thi/, 'examMonth năm +4');
     updateCycle(P.admin, cy.id, { startPeriodId: ensurePeriod(`${nam}-03-02`).id, examMonth: `${nam + 1}-02` });
   });
 

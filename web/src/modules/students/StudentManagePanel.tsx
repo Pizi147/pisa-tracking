@@ -200,7 +200,7 @@ function KetLuanLoTrinhPanel({ studentName, lop, onClose, onDone, cycle, attempt
     <KhungPanel tieuDe={NHAN_VIEC.outcome} hocVien={studentName} lop={lop} onDong={onClose}
       chan={{ chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy}>Lưu</button> }}>
       <Khoi tieuDe="Kết luận"
-        luat="Đóng lộ trình chỉ nói “không học theo lộ trình này nữa”. Có đạt mục tiêu hay không là kết luận riêng. Em học lại thì mở một lộ trình MỚI. KHÔNG lấy một lượt Mock Test làm kết quả thi thật: MT chấm nội bộ, không có phòng thi và không có chứng chỉ.">
+        luat="Đóng lộ trình chỉ nói “không học theo lộ trình này nữa”. Có đạt Target hay không là kết luận riêng. Em học lại thì mở một lộ trình MỚI. KHÔNG lấy một lượt Mock Test làm kết quả thi thật: MT chấm nội bộ, không có phòng thi và không có chứng chỉ.">
         <Truong nhan="Kết luận" batBuoc>
           <select className="field w-full" value={outcome} onChange={(e) => setOutcome(e.target.value)}>
             {CYCLE_OUTCOMES.map((o) => <option key={o} value={o}>{CYCLE_OUTCOME_LABEL[o]}</option>)}
@@ -228,7 +228,7 @@ function KetLuanLoTrinhPanel({ studentName, lop, onClose, onDone, cycle, attempt
 }
 
 /**
- * THÔNG TIN HỌC VIÊN — mục 1 của menu (mục 5.1). Với lớp Fast Track, mục tiêu và kế hoạch thi thật sửa ở mục `Lộ trình`; với lớp thường,
+ * THÔNG TIN HỌC VIÊN — mục 1 của menu (mục 5.1). Với lớp Fast Track, Target và kế hoạch thi thật sửa ở mục `Lộ trình`; với lớp thường,
  * giai đoạn đang học đọc ở đây, sửa `Lộ trình tiếp theo` ở mục riêng (PR-LT).
  */
 function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, attempts }: ChungViec & {
@@ -306,7 +306,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
           <input className="field w-full" type="email" inputMode="email" autoComplete="off" {...lf.o(loi, 'email')}
             value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Ví dụ: an.nguyen@gmail.com" />
         </Truong>
-        <Truong nhan="Người tư vấn" tuyChon>
+        <Truong nhan="Tư vấn viên" tuyChon>
           <input className="field w-full" value={consultantName} onChange={(e) => setConsultant(e.target.value)} />
         </Truong>
         <Truong nhan="Ghi chú" tuyChon>
@@ -317,7 +317,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
         <Khoi tieuDe="Giai đoạn đang học"
           luat={cycle.ratio
             ? 'Giai đoạn là chương trình đang học; tuần kết thúc suy ra từ tuần bắt đầu và độ dài chương trình. Ghi dự định sau lớp này ở mục Lộ trình tiếp theo.'
-            : 'Sửa mục tiêu, kế hoạch thi thật, điểm đầu vào và lịch MT ở mục Lộ trình. Đổi mục tiêu ở đâu cũng bắt ghi lý do và ngày hiệu lực.'}>
+            : 'Sửa Target, kế hoạch thi thật, điểm đầu vào và lịch MT ở mục Lộ trình. Đổi Target ở đâu cũng bắt ghi lý do và ngày hiệu lực.'}>
           <Truong nhan="Tuần bắt đầu" batBuoc loi={lf.loiCua(loi, 'tuan')} phu={cauDoi}>
             <ONgay kieu="tuan" id={lf.oId('tuan')} onBlur={lf.roi('tuan')} invalid={!!lf.loiCua(loi, 'tuan')}
               value={tuan} onChange={setTuan} />
@@ -330,7 +330,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
           ) : (
             <p className="m-0 text-sm text-slate-200">
               {cycle.label}
-              {cycle.target !== null && cycle.target !== undefined && <span className="text-slate-500"> · mục tiêu {fmtBand(cycle.target)}</span>}
+              {cycle.target !== null && cycle.target !== undefined && <span className="text-slate-500"> · Target {fmtBand(cycle.target)}</span>}
               {cycle.examPlan?.confidence !== 'none' && <span className="text-slate-500"> · dự kiến thi {cycle.examPlan?.label}</span>}
             </p>
           )}

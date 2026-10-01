@@ -5,7 +5,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { fmtBand } from '../../lib/format.ts';
 import { DongXinYKien } from './DongXinYKien.tsx';
 import {
-  OUTCOME_MARK, OUTCOME_TONE, chuKetQuaPa, chuKhoangPa, dangChay, deadlineView, tienDoCase, xepTheKyNang,
+  CHUA_CO_HAN, OUTCOME_MARK, OUTCOME_TONE, chuKetQuaPa, chuKhoangPa, dangChay, deadlineView, tienDoCase, xepTheKyNang,
 } from '@shared/domain/index.ts';
 import {
   DongMt, NhanLoai, NhanTamDung, SCORE_CHIP_ROW, TamDungCtx, TenCase, gapText,
@@ -24,7 +24,7 @@ export function TheKyNangDs({ rows, onMoCase }: { rows: SkillBoardRow[]; onMoCas
         ? <TheGon key={row.category} row={row} onMoCase={onMoCase} />
         : <TheKyNang key={row.category} row={row} onMoCase={onMoCase} />))}
       {/* PR-UXF-b (R5-5): Case của lớp trước có tên môn khác — nhóm riêng cuối bảng, không nằm ở thẻ Writing / Speaking của chương trình mới. */}
-      {rows.some((r) => r.tuLopTruoc) && <h3 className="m-0 px-1 pt-2 text-[12px] font-semibold uppercase tracking-wide text-slate-400">Từ lớp trước</h3>}
+      {rows.some((r) => r.tuLopTruoc) && <h3 className="m-0 px-1 pt-2 text-[12px] font-semibold uppercase tracking-wide text-slate-400">Case bàn giao</h3>}
       {rows.filter((r) => r.tuLopTruoc).map((row) => <TheKyNang key={`${row.category}@truoc`} row={row} onMoCase={onMoCase} />)}
     </div>
   );
@@ -111,7 +111,7 @@ function KhoiCase({ c, onMoCase }: { c: CaseCard; onMoCase: (caseId: number, o?:
             {v.loaiHan === 'cap-nhat-pa' && han ? han.viec : v.chu}
             {/* Em Tạm dừng: mọi hạn đang dừng → nhãn vàng thay hạn (cùng luật DongHan ở bảng). */}
             {tamDung && han ? <> <NhanTamDung tu={tamDung} /></> : <>
-              {han && han.han !== 'chưa có hạn' && <span className="text-slate-400"> · {han.han}</span>}
+              {han && han.han !== CHUA_CO_HAN && <span className="text-slate-400"> · {han.han}</span>}
               {han?.quaHan && <span className="inline-flex items-center gap-1 font-semibold text-bad"> <IconCanhBao />{han.quaHan}</span>}
             </>}
           </span>
@@ -140,7 +140,7 @@ function KhoiPa({ p, c, onMoCase }: { p: Plan; c: CaseCard; onMoCase: (caseId: n
       <button type="button" onClick={() => onMoCase(c.id, { paId: p.id })} className="flex w-full min-w-0 items-center gap-1.5 border-0 bg-transparent p-0 text-left text-[12.5px] font-semibold text-slate-100">
         <NhanLoai loai="PA" cho={choKh} /><span className="min-w-0 truncate">{p.name}</span>
       </button>
-      <div className="mt-0.5 truncate text-[12px] text-slate-400">{[p.performer ?? 'chưa có người làm', khoang].filter(Boolean).join(' · ')}</div>
+      <div className="mt-0.5 truncate text-[12px] text-slate-400">{[p.performer ?? 'chưa có người thực hiện', khoang].filter(Boolean).join(' · ')}</div>
       <DongXinYKien x={p.xinYKien} ngan={ngan} />
       {p.lastOutcomeLabel && (
         <div className="mt-1">

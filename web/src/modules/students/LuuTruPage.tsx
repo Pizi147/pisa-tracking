@@ -30,7 +30,8 @@ export default function LuuTruPage() {
   const toast = useToast();
   const [params, setParams] = useSearchParams();
   const tab: TabLuuTru = params.get('tab') === 'hv' ? 'hv' : 'lop';
-  const branchId = params.get('branchId') ? Number(params.get('branchId')) : null;
+  const cnUrl = params.get('cn') ?? params.get('branchId');
+  const branchId = cnUrl ? Number(cnUrl) : null;
   const q = params.get('q') ?? '';
   const [draftQ, setDraftQ] = useState(q);
 
@@ -76,14 +77,14 @@ export default function LuuTruPage() {
           value={draftQ} onChange={(e) => setDraftQ(e.target.value)} />
         {(branches.data?.length ?? 0) > 1 && (
           <select className="field w-auto" aria-label="Chi nhánh" value={branchId ?? ''}
-            onChange={(e) => setParam({ branchId: e.target.value || null })}>
+            onChange={(e) => setParam({ cn: e.target.value || null, branchId: null })}>
             <option value="">Mọi chi nhánh</option>
             {(branches.data ?? []).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
           </select>
         )}
       </div>
 
-      <HangTab ariaLabel="Khu Lưu trữ" value={tab} onChange={(k) => setParam({ tab: k === 'lop' ? null : k })}
+      <HangTab ariaLabel="Lưu trữ" value={tab} onChange={(k) => setParam({ tab: k === 'lop' ? null : k })}
         tabs={[
           { key: 'lop', label: 'Lớp đã kết thúc', so: data?.lop.length },
           { key: 'hv', label: 'Học viên đã lưu trữ', so: data?.hocVien.length },

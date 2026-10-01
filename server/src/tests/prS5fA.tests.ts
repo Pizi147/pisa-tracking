@@ -58,7 +58,7 @@ export async function runPrS5fATests(t: YThucTestKit) {
   // ------------------------------------------------------------------ (1) lệnh bị luật từ chối không kẹt
   /* Lệnh còn chờ của các bộ kiểm trước (và bộ demo) đến hạn cùng Thứ Hai — dọn để số đếm chỉ tính lệnh của khối này. */
   conn.prepare(`UPDATE lenh_chuyen_lop SET trang_thai = 'huy' WHERE trang_thai = 'cho'`).run();
-  check('S5F-a (1) · lệnh bị luật từ chối ("chương trình kế tiếp"): đọc trang cùng ngày không ghi DB/nhật ký; GVCN đề xuất được; QL sửa sang tuần mới → chuyển; huỷ được; KCK không cần vai người ra lệnh', () => {
+  check('S5F-a (1) · lệnh bị luật từ chối ("chương trình kế tiếp"): đọc trang cùng ngày không ghi DB/nhật ký; GVCN đề xuất được; QL sửa sang tuần mới → chuyển; huỷ được; KCK không cần vai người ra quyết định', () => {
     const nguon = lopMoi({ kind: 'FOU', tuanHienTai: 9 });
     const dich = lopMoi({ kind: 'BE', tuanHienTai: 1 });
     const dich2 = lopMoi({ kind: 'BE', tuanHienTai: 1 });
@@ -67,7 +67,7 @@ export async function runPrS5fATests(t: YThucTestKit) {
     const [e1, e2] = [hocVien(nguon, 'FOU', false).sid, hocVien(nguon, 'FOU', false).sid];
     const r = lenh.raLenh(P.mbManager, { lopNguonId: nguon, boiCanh: 'cuoi-khoa', tuanChung: null, dongs: [dongCua(e1, 'len_lop', dich), dongCua(e2, 'len_lop', dich)] });
     assert(r.ok.length === 2, JSON.stringify(r));
-    conn.prepare(`UPDATE classes SET programme_code = 'FOU' WHERE id = ?`).run(dich);   // lớp đích đổi chương trình trước Thứ Hai
+    conn.prepare(`UPDATE classes SET programme_code = 'FOU' WHERE id = ?`).run(dich);   // lớp chuyển đến đổi chương trình trước Thứ Hai
     const kq = chay(THU_HAI);
     assert(kq.daChuyen === 0 && /chương trình kế tiếp/.test(lenhCua(e1).loi) && lenhCua(e1).thu_ngay === THU_HAI, `${JSON.stringify(kq)} ${JSON.stringify(lenhCua(e1))}`);
     assert(demNhatKy(nguon) === 0, `không em nào chuyển → không nhật ký, có ${demNhatKy(nguon)}`);
@@ -76,9 +76,9 @@ export async function runPrS5fATests(t: YThucTestKit) {
     const n = demTruyVan(() => { kq2 = lenh.thiHanhLenhDenHan(THU_HAI); });   // không đổi ngày demo: không có gì để làm
     assert(n === 1 && kq2.daChuyen === 0 && kq2.loi === 0, `${n} câu · ${JSON.stringify(kq2)}`);
     /* GVCN gửi Đề xuất chuyển lớp dù em đang có lệnh lỗi. */
-    const thu = vaoNgay(t.addDays(THU_HAI, 2), () => maLoi(() => lenh.guiDeXuatChuyenLop(gvcn, e2, { lyDo: 'Lớp đích không mở, xin xếp lớp khác cho em' })));
+    const thu = vaoNgay(t.addDays(THU_HAI, 2), () => maLoi(() => lenh.guiDeXuatChuyenLop(gvcn, e2, { lyDo: 'Lớp chuyển đến không mở, xin xếp lớp khác cho em' })));
     assert(thu === 'không ném', `GVCN đề xuất: ${thu}`);
-    /* Thứ Tư: QL sửa lệnh e1 sang tuần sau + lớp đích đúng chương trình; huỷ lệnh e2. */
+    /* Thứ Tư: QL sửa quyết định e1 sang tuần sau + lớp chuyển đến đúng chương trình; huỷ quyết định e2. */
     const THU_TU = t.addDays(THU_HAI, 2);
     vaoNgay(THU_TU, () => {
       assert(maLoi(() => lenh.suaLenh(P.mbManager, lenhCua(e1).id, { lyDo: 'giữ tuần cũ' })) === 400, 'giữ tuần đã qua → 400');
@@ -91,7 +91,7 @@ export async function runPrS5fATests(t: YThucTestKit) {
     assert(kq3.daChuyen === 1 && get(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active'`, e1).class_id === dich2, JSON.stringify(kq3));
     assert(demNhatKy(nguon) >= 1, 'có chuyển → có nhật ký');
 
-    /* KCK: người ra lệnh đã mất vai Quản lý (thay bằng GV không có cycle.edit) → vẫn chuyển, Target KCK, KHÔNG có "Đổi mục tiêu 5 → KCK". */
+    /* KCK: người ra quyết định đã mất vai Quản lý (thay bằng GV không có cycle.edit) → vẫn chuyển, Target KCK, KHÔNG có "Đổi Target 5 → KCK". */
     const nguonFt = lopMoi({ kind: 'BE', tuanHienTai: 10 });
     const ft = lopMoi({ kind: 'FT', ft: true, route: 'LT1', tuanHienTai: 1 });
     const k = hocVien(nguonFt, 'BE', false).sid;
@@ -100,7 +100,7 @@ export async function runPrS5fATests(t: YThucTestKit) {
     assert(chay(TUAN[1]).daChuyen === 1 && lenhCua(k).trang_thai === 'da_chuyen', `KCK: ${JSON.stringify(lenhCua(k))}`);
     const cy = get(`SELECT * FROM learning_cycles WHERE student_id = ? AND status = 'active'`, k);
     assert(cy.khong_cam_ket === 1 && cy.target_score === null, JSON.stringify(cy));
-    assert(!get(`SELECT 1 FROM journey_events WHERE student_id = ? AND title LIKE 'Đổi mục tiêu%'`, k), 'không ghi số tạm ra Hành trình');
+    assert(!get(`SELECT 1 FROM journey_events WHERE student_id = ? AND title LIKE 'Đổi Target%'`, k), 'không ghi số tạm ra Hành trình');
   });
 
   // ------------------------------------------------------------------ dựng chung cho (2)–(10)
@@ -224,7 +224,7 @@ export async function runPrS5fATests(t: YThucTestKit) {
     assert(!/ketLuanFt\.nhan/.test(src) && /chuHopKetLuan\(/.test(src), 'TransitionPanel');
   });
 
-  check('S5F-a (9) · Quản lý dời Cuối khoá sớm (tuần 6/8): tuần 8 (chặng "running") vẫn có dải Kết thúc khoá + việc "Chuyển lớp cả lớp"', () => {
+  check('S5F-a (9) · Quản lý dời Cuối khoá sớm (tuần 6/8): tuần 8 (chặng "running") vẫn có dải Kết thúc khoá + việc "Chuyển tiếp lớp"', () => {
     const lop = lopMoi({ kind: 'FOU', tuanHienTai: 8 });
     conn.prepare('UPDATE classes SET final_week_override = 6 WHERE id = ?').run(lop);
     hocVien(lop, 'FOU', false);
@@ -236,7 +236,7 @@ export async function runPrS5fATests(t: YThucTestKit) {
     assert(viec?.group === 'placement', `việc: ${JSON.stringify(viec ?? null)}`);
   });
 
-  check('S5F-a (10) · GVCN đề xuất chuyển em lớp thường ĐÃ HẾT KHOÁ → duyệt ra lệnh hướng cuối khoá (lên lớp), không "giữa khoá / chuyển lớp"', () => {
+  check('S5F-a (10) · GVCN đề xuất chuyển em lớp thường ĐÃ HẾT KHOÁ → duyệt ra quyết định hướng cuối khoá (lên lớp), không "giữa khoá / chuyển lớp"', () => {
     const lop = lopMoi({ kind: 'FOU', tuanHienTai: 9 });
     const dich = lopMoi({ kind: 'BE', tuanHienTai: 1 });
     ganGv(lop, GV[0], null, true);
@@ -254,7 +254,7 @@ export async function runPrS5fATests(t: YThucTestKit) {
   const { migratePrCt } = await import('../migrate/prCt.ts');
   const { studentProfile } = await import('../students/profile.ts');
 
-  check('S5F-a (11) · cột "Web gợi ý" ghi HƯỚNG (Lên BE · Lên BE + bổ trợ · Quản lý cân nhắc · Học lại FOU), không "→ Pass"; hồ sơ lớp có dải Kết thúc khoá thì bỏ chip "cần xếp lớp tiếp"', () => {
+  check('S5F-a (11) · cột "Hệ thống gợi ý" ghi HƯỚNG (Lên BE · Lên BE + bổ trợ · Quản lý cân nhắc · Học lại FOU), không "→ Pass"; hồ sơ lớp có dải Kết thúc khoá thì bỏ chip "cần xếp lớp tiếp"', () => {
     const h = (tyLe: number, truot: string[] = []) => d.goiYCuoiKhoa({ ct: 'FOU', tyLe, monTruot: truot }).nhanHuong;
     assert(h(0.8) === 'Lên BE' && h(0.65, ['reading']) === 'Lên BE + bổ trợ' && h(0.55, ['reading']) === 'Quản lý cân nhắc' && h(0.4) === 'Học lại FOU',
       [h(0.8), h(0.65, ['reading']), h(0.55, ['reading']), h(0.4)].join(' | '));

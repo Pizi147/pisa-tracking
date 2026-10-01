@@ -56,7 +56,7 @@ export function nhacViec(p: Principal, i: { key: string; ownerId: number }): { d
   const body = catThanBao([row.studentName, row.contextLabel, row.reason].filter(Boolean).join(' · '));
   notify({
     userId: i.ownerId, kind: 'nhac_viec',
-    title: `${p.fullName} nhắc: ${row.actionLabel}`,
+    title: `${row.actionLabel}${row.studentName ? ` · ${row.studentName}` : ''} · ${p.fullName} nhắc`,
     body, entityType: 'nhac_viec', entityId: null, dedupKey,
     /* PR-DUYET (K5-12): bấm chuông về đúng chỗ làm việc đó (hồ sơ HV / Ngăn Case), không phải trang Công việc chung. */
     duong: row.href ?? null,

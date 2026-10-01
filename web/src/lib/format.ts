@@ -82,7 +82,7 @@ export function toneTheoNhan<T extends string>(text: string, tone: T): T | SosTo
   const m = /^SOS\s*([123])\b/.exec(text);
   return m ? sosTone(Number(m[1])) : tone;
 }
-/** Ba trạng thái case phải khác nhau ngay từ màu, không cần mở chi tiết mới biết. */
+/** Ba trạng thái Case phải khác nhau ngay từ màu, không cần mở chi tiết mới biết. */
 export function caseStatusTone(status: string | null): Tone {
   return (CASE_STATUS_TONE[status as keyof typeof CASE_STATUS_TONE] ?? 'neutral') as Tone;
 }
@@ -125,7 +125,7 @@ export function caseTone(status: string | null): Tone {
 /**
  * ĐƯỜNG DẪN TỚI ĐIỂM CỦA MỘT LƯỢT ĐÁNH GIÁ — chọn ĐÚNG MÀN theo loại bài.
  *
- * Đây là lỗi owner chỉ ra ở mục 6.3: hồ sơ một em lớp Normal, bấm vào bài giữa khoá thì màn
+ * Đây là lỗi owner chỉ ra ở mục 6.3: hồ sơ một em lớp thường, bấm vào bài giữa khoá thì màn
  * Mock Test mở ra và hiện "MT1" cho một bài Progress Test. Hai loại bài có hai màn riêng vì
  * chúng chấm theo hai cách khác nhau; mở nhầm màn là đọc sai cả kết quả.
  *

@@ -169,7 +169,7 @@ function RouteDialog({ row, onClose, onDone }: { row: RouteRow; onClose: () => v
   return (
     <KhungPanel tieuDe={`Sửa lộ trình ${row.code}`} onDong={onClose}
       chan={{
-        huy: { nhan: 'Huỷ', onClick: onClose, disabled: busy },
+        huy: { nhan: 'Đóng', onClick: onClose, disabled: busy },
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={save} disabled={busy || !f.name.trim()}>Lưu</button>,
       }}>
       <div className="space-y-4 pt-3">
@@ -227,7 +227,7 @@ function ProgrammeDialog({ row, onClose, onDone }: {
   return (
     <KhungPanel tieuDe={`Sửa chương trình ${kh ?? row.name}`} onDong={onClose}
       chan={{
-        huy: { nhan: 'Huỷ', onClick: onClose, disabled: busy },
+        huy: { nhan: 'Đóng', onClick: onClose, disabled: busy },
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={save} disabled={busy || !f.name.trim()}>Lưu</button>,
       }}>
       <div className="space-y-4 pt-3">

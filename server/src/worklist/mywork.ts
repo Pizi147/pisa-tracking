@@ -1,7 +1,7 @@
 import { db, theoLo } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
-  ATTEMPT_KIND_SHORT,
+  ATTEMPT_KIND_SHORT, CHU_CHUYEN_LOP,
   INTERVENTION_KIND_LABEL, PERMISSIONS,
   SOS_LABEL, URGENCY_LABEL, caseHeadline, caseTopicLabel, cycleDeadline,
   duongHoSoHocVien, duongLichTest, nhanDotNgan, planDueDate, urgencyFromSos,
@@ -65,7 +65,7 @@ export type WorkItem = {
   /** Nhãn MỨC ĐỘ của học viên — chỉ có ở việc liên quan tới một vấn đề đang mở. */
   level: { tone: 'ok' | 'info' | 'warn' | 'danger'; text: string } | null;
   reason: string;
-  /** Nút động từ ngắn: "Nhập điểm", "Đề ra PA", "Ghi kết quả". */
+  /** Nút động từ ngắn: "Nhập điểm", "Thêm PA", "Ghi kết quả". */
   actionLabel: string;
   /**
    * TIÊU ĐỀ DÒNG (PR-UX0, B-2): động từ + đối tượng — "Nhập điểm L, R", "Ghi kết quả PA Reading". Việc cần làm là
@@ -119,7 +119,7 @@ export type WorkGroupKey =
   | 'phoi_hop_sos' | 'khai_bac' | 'ky_vong_dau_ra'
   /* PR-YT4 (K5 §3 dòng 6–8): việc Ý thức THẬT có hạn — thay nhắc mềm W01–W06. */
   | 'yt_xu_ly' | 'yt_xem' | 'yt_thuc_hien'
-  /* PR-CT (Q30-2): bàn giao khi có lệnh chuyển lớp — một việc mỗi lớp (GVCN), mỗi (lớp, môn) (GVBM). */
+  /* PR-CT (Q30-2): bàn giao khi có quyết định chuyển lớp — một việc mỗi lớp (GVCN), mỗi (lớp, môn) (GVBM). */
   | 'ban_giao';
 
 /**
@@ -132,7 +132,7 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   /*
    * XÁC ĐỊNH NGUYÊN NHÂN (rulebook v3, S04) — Case tự tạo từ Mock Test FT và từ Giữa khoá lớp thường (PR-LT2a).
    *
-   * Mock FT nay TỰ TẠO case cho kỹ năng trượt kèm phương án điền sẵn, nên không còn tín hiệu nào để "xác minh". Việc còn lại của GVBM đúng kỹ năng có
+   * Mock FT nay TỰ TẠO Case cho kỹ năng trượt kèm phương án điền sẵn, nên không còn tín hiệu nào để "xác minh". Việc còn lại của GVBM đúng kỹ năng có
    * đúng hạn ba ngày: xác định nguyên nhân, hoặc đóng `Không cần theo dõi`. PA theo quy chế đã tự chạy từ lúc tạo (PR-N1, S4-1) — không còn vế
    * "xác nhận PA gợi ý". Không có dòng này thì hạn ba ngày vô hình.
    */
@@ -164,13 +164,13 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   },
   /* PR-VAI-a (K1-15, Q15): em cũ mới vào web (14 ngày) mà chưa khai bậc Ý thức trước khi dùng web. */
   khai_bac: {
-    label: 'Khai bậc Ý thức HS cũ',
+    label: 'Khai bậc Ý thức HV cũ',
     hint: 'Em đã học ở trung tâm trước khi có web — khai bậc xử lý Ý thức đã có để thang tính tiếp đúng. Không có hạn; qua 14 ngày thì thôi nhắc.',
   },
   /* PR-VAI-a (K5-11): em BE/ELE lên Fast Track — Quản lý đánh dấu Đạt / Không đạt kỳ vọng đầu ra. */
   ky_vong_dau_ra: {
     label: 'Đánh dấu kỳ vọng đầu ra',
-    hint: 'Em có lệnh lên Fast Track từ BE/ELE và đã có bài Cuối khoá — đánh dấu Đạt hoặc Không đạt kỳ vọng đầu ra ở Kết luận khoá.',
+    hint: 'Em có quyết định lên FT từ BE/ELE và đã có bài Cuối khoá — đánh dấu Đạt hoặc Không đạt kỳ vọng đầu ra ở Kết luận khoá.',
   },
 
   /* PR-LT2b (M-05, T47): Mini Test sau bổ trợ miễn phí — hạn = ngày buổi cuối + 2. */
@@ -181,7 +181,7 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
 
   /* ---------------------------------------------------- ba nhóm học thuật chính (mục 3.2) */
   score: {
-    label: 'Nhập điểm Test',
+    label: 'Nhập điểm',
     hint: 'Học viên đã làm bài rồi mà kỹ năng này chưa có điểm. Các em cùng lớp, cùng bài, cùng kỹ năng gom thành một dòng để nhập một lượt.',
   },
   no_plan: {
@@ -199,12 +199,12 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
     hint: 'Case đang mở mà chưa ai nhận điều phối. Chọn người phụ trách trước, vì mọi việc sau đó đều treo vào chỗ này.',
   },
   placement: {
-    label: 'Chuyển lớp cả lớp',
-    hint: 'Lớp tới tuần Cuối khoá mà còn em chưa có lệnh chuyển lớp. Quản lý ra lệnh (lên lớp, học lại, bảo lưu, dừng học) trước hết tuần kết thúc — việc này không tự xảy ra.',
+    label: 'Chuyển tiếp lớp',
+    hint: 'Lớp tới tuần Cuối khoá mà còn em chưa có quyết định chuyển lớp. Quản lý quyết định (lên lớp, học lại, tạm dừng học (bảo lưu), dừng học hẳn) trước hết tuần kết thúc — việc này không tự xảy ra.',
   },
   missing_data: {
-    label: 'Thiếu dữ liệu cần cho đánh giá',
-    hint: 'Thiếu những thông tin mà không có thì không đánh giá hay lên kế hoạch được: bài chưa xếp vào tuần nào, học viên FT chưa có mục tiêu, MT lịch sử chưa nhập (không tính hạn).',
+    label: 'Thiếu dữ liệu đánh giá',
+    hint: 'Thiếu những thông tin mà không có thì không đánh giá hay lên kế hoạch được: bài chưa xếp vào tuần nào, học viên FT chưa có Target, MT lịch sử chưa nhập (không tính hạn).',
   },
   /* ---------------------------------------------------- Ý thức (PR-YT4, V4-2…V4-5, K3-37) — người nhận = GVCN lớp đang học */
   yt_xu_ly: {
@@ -221,10 +221,10 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   },
   ban_giao: {
     label: 'Bàn giao',
-    hint: 'Lớp có lệnh chuyển lớp: GVBM ghi một câu mỗi em cho môn mình (2 ngày), GVCN gom lại, viết nhận xét chung rồi Xác nhận bàn giao (3 ngày, tính cả ngày ra lệnh). Quá hạn thì Quản lý được báo — em vẫn chuyển đúng tuần.',
+    hint: 'Lớp có quyết định chuyển lớp: GVBM ghi một câu mỗi em cho môn mình (2 ngày), GVCN gom lại, viết nhận xét chung rồi GVCN xác nhận bàn giao (3 ngày, tính cả ngày ra quyết định). Quá hạn thì Quản lý được báo — em vẫn chuyển đúng tuần.',
   },
   mgmt: {
-    label: 'Công việc được giao',
+    label: 'Việc được giao',
     hint: 'Công việc quản lý hoặc việc con được giao cho bạn ở bảng Tiến độ công việc.',
   },
 };
@@ -261,7 +261,7 @@ function urgencyOf(date: string | null, today: string): WorkUrgency {
   return 'normal';
 }
 
-/** Đuôi tiêu đề: " Reading" hay "" khi case không có kỹ năng. `ct` = chương trình lớp (FOU "Grammar + Vocabulary"). */
+/** Đuôi tiêu đề: " Reading" hay "" khi Case không có kỹ năng. `ct` = chương trình lớp (FOU "Grammar + Vocabulary"). */
 const duoiKyNang = (topic: string | null | undefined, ct: string | null) => (topic ? ` ${caseTopicLabel(topic, ct)}` : '');
 
 /**
@@ -278,7 +278,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   if (scope.none) return { summary: { total: 0, overdue: 0, today: 0 }, groups: [], scopeEmpty: true, xemNguoiKhac: false };
 
   const conn = db();
-  quetYeuCau(today);   // PR-DUYET (K5-17): thẻ chết tự đóng, Báo lên tự tạo — một lần mỗi request
+  quetYeuCau(today);   // PR-DUYET (K5-17): thẻ chết tự đóng, Báo QL tự tạo — một lần mỗi request
   const items: WorkItem[] = [];
   /*
    * Chương trình + cách chấm của MỌI lớp, nạp lười (MH2 tên môn, MH4 khung) — dùng lại bảng lớp và bảng chương trình
@@ -382,7 +382,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
        * "cả lớp" cho một học viên là một câu nói vòng vo.
        */
       const only = students.size === 1 ? [...students.entries()][0] : null;
-      const where = only ? only[1] : (first.classCode ? `Lớp ${first.classCode}` : 'Bài đánh giá');
+      const where = only ? only[1] : (first.classCode ? `Lớp ${first.classCode}` : 'Bài kiểm tra');
       out.push({
         key: `score:${k}`,
         group: 'score', urgency: u,
@@ -547,13 +547,13 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       classId, classCode: code,
       attemptId: null, attemptNo: null, caseId: null, level: null,
       contextLabel: pr.phase === 'finished' ? `Hết ${pr.totalWeeks} tuần` : `Tuần Cuối khoá`, count: nChua,
-      reason: `${nChua} em chưa có lệnh chuyển`,
-      tieuDe: `Chuyển lớp cả lớp · ${code} · ${nChua} HV`,   // mockup 20 (PR-S5F-a): lớp · số em chưa có lệnh
-      actionLabel: 'Chuyển lớp cả lớp',
+      reason: `${nChua} em chưa có quyết định chuyển lớp`,
+      tieuDe: `Chuyển tiếp lớp · ${code} · ${nChua} HV`,   // mockup 20 (PR-S5F-a): lớp · số em chưa có lệnh
+      actionLabel: 'Chuyển tiếp lớp',
       href: `/hoc-vien/lop/${classId}?viec=chuyen-tiep`,
       /* Việc của cả lớp, không của riêng ai — nên không gán người phụ trách. */
       ownerId: null, owner: null, mine: false,
-      due: null, statusLabel: 'Chờ lệnh chuyển lớp',
+      due: null, statusLabel: CHU_CHUYEN_LOP.chua,
     });
   }
 
@@ -626,9 +626,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
 
     /*
      * HẠN PHẢI CÓ PHƯƠNG ÁN THEO MỨC ĐỘ (mục 8.3): Gấp 3 ngày, Bình thường 5 ngày, tính cả
-     * ngày đầu. Chỉ áp cho case học thuật.
+     * ngày đầu. Chỉ áp cho Case học thuật.
      *
-     * Trước vòng 7 hạn này bằng nguyên một chu kỳ hỗ trợ (hai tuần), nên một case Gấp nằm
+     * Trước vòng 7 hạn này bằng nguyên một chu kỳ hỗ trợ (hai tuần), nên một Case Gấp nằm
      * im mười ba ngày vẫn chưa bị coi là chậm. Nay mức độ quyết định hạn — và đó là lý do
      * mức độ chỉ còn hai bậc, mỗi bậc một con số.
      */
@@ -650,8 +650,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       reason: head,
       contextLabel: nhanDot(c.attempt_kind, c.attempt_no),
       count: null,
-      tieuDe: `Đề ra PA học thuật${duoiKyNang(c.topic, ctCua(c.eff_class_id))}`,
-      actionLabel: 'Đề ra PA',
+      tieuDe: `Thêm PA học thuật${duoiKyNang(c.topic, ctCua(c.eff_class_id))}`,
+      actionLabel: 'Thêm PA',
       href: `/hoc-vien/${c.eff_student_id}`,
       /* PR-Dọn (Q10): người làm = người phụ trách Case (cùng `support:{caseId}` ở hồ sơ em); Case chưa ai phụ trách thì để trống. */
       ownerId: c.owner_user_id ?? null, owner: null, mine: c.owner_user_id != null && c.owner_user_id === p.userId,
@@ -659,13 +659,13 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     });
   }
 
-  // ------------------------------------- 3b. case TỰ TẠO TỪ SOS: Xác nhận nguyên nhân · Xác nhận PA (S4-2, §3.1d)
+  // ------------------------------------- 3b. Case TỰ TẠO TỪ SOS: Xác nhận nguyên nhân · Xác nhận PA (S4-2, §3.1d)
   /*
    * MỘT DÒNG MỖI CASE (nguyên nhân) / MỖI PA (xác nhận PA). Hạn = `sos_cases.han_xac_nhan` (3 ngày tính cả ngày đầu), hết ngày hạn mới tính
    * quá hạn. "Chờ nguyên nhân" là của `awaitingCauseCaseIds` (đã loại thẻ Không cần theo dõi đang chờ).
    *
-   * AI THẤY: người phụ trách case (GVBM đúng kỹ năng); "Của GV (nhắc)" liệt kê dòng của GV cho Quản lý. Em Tạm dừng không sinh dòng (K3-41).
-   * Mọi trường hợp đều kiểm đúng quyền sửa case theo kỹ năng (C02).
+   * AI THẤY: người phụ trách Case (GVBM đúng kỹ năng); "Của GV (nhắc)" liệt kê dòng của GV cho Quản lý. Em Tạm dừng không sinh dòng (K3-41).
+   * Mọi trường hợp đều kiểm đúng quyền sửa Case theo kỹ năng (C02).
    */
   const cotCase = `sc.id, sc.topic, sc.summary, sc.origin_kind, sc.sos_level, sc.urgency, sc.owner_user_id, sc.attempt_id,
               COALESCE(sc.student_id, a.student_id) AS eff_student_id,
@@ -700,7 +700,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     const u = urgencyOf(c.due ?? null, today);
     const mine = c.owner_user_id === p.userId;
     /*
-     * PR-DUYET (K1-57) + PR-SOS (K5-05): QL không có dòng này ở "Của tôi" — quá hạn thì nó là thẻ Báo lên ở hộp Chờ duyệt. "Của GV (nhắc)"
+     * PR-DUYET (K1-57) + PR-SOS (K5-05): QL không có dòng này ở "Của tôi" — quá hạn thì nó là thẻ Báo QL ở hộp Chờ duyệt. "Của GV (nhắc)"
      * (`nguoi=tat-ca`) liệt kê dòng của GV kèm tên như mọi nhóm khác.
      */
     const cuaGv = tatCa && can(p, PERMISSIONS.CASE_APPROVE, { classId: c.eff_class_id, studentId: c.eff_student_id });
@@ -808,7 +808,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       contextLabel: nhanDot(r.attempt_kind, r.attempt_no), count: null,
       reason: 'Tạo task cho TVV trên Base: kết quả, môn khó khăn, nguyên nhân, phương án hỗ trợ và khả năng học lại.',
       tieuDe: `Báo phụ huynh qua TVV · ${r.full_name ?? 'Học viên'} · ${laCuoiKhoa ? `Cuối khoá${phanTramCuoi.get(r.attempt_id) ?? ''}` : 'Giữa khoá'}`,
-      actionLabel: 'Mở Phối hợp',
+      actionLabel: 'Mở Phối hợp SOS',
       href: duongHoSoHocVien(r.student_id, { tab: 'y-thuc', sub: 'phoi-hop' }),
       ownerId: gvcn || (laCuoiKhoa && cuaGv) ? p.userId : laCuoiKhoa ? null : r.gvcn_id ?? null, owner: null, mine: gvcn || (laCuoiKhoa && cuaGv),
       due: null, statusLabel: 'Chưa làm',
@@ -825,7 +825,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       studentId: null, studentName: `Lớp ${l.className}`, classId: l.classId, classCode: l.className,
       attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: 'Phối hợp SOS', count: l.pendingCount,
       reason: `${l.pendingCount} lượt Phối hợp SOS chưa xong`,
-      tieuDe: `Phối hợp SOS · ${l.className} · ${l.pendingCount} lượt`, actionLabel: 'Mở Phối hợp',
+      tieuDe: `Phối hợp SOS · ${l.className} · ${l.pendingCount} lượt`, actionLabel: 'Mở Phối hợp SOS',
       href: `/hoc-vien/lop/${l.classId}?tab=y-thuc&sub=phoi-hop`,
       ownerId: p.userId, owner: null, mine: true, due: null, statusLabel: 'Chưa xong',
     });
@@ -901,9 +901,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
           key: `target:${h.id}`, group: 'missing_data', urgency: 'normal',
           studentId: h.id, studentName: h.full_name, classId: h.class_id, classCode: h.class_code,
           attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: null, count: null,
-          reason: 'Chưa có target nên chưa tính được kỳ vọng từng MT',
-          tieuDe: 'Điền target', actionLabel: 'Điền target', href: `/hoc-vien/${h.id}`,
-          ownerId: p.userId, owner: null, mine: true, due: null, statusLabel: 'Chưa có target',
+          reason: 'Chưa có Target nên chưa tính được kỳ vọng từng MT',
+          tieuDe: 'Điền Target', actionLabel: 'Điền Target', href: `/hoc-vien/${h.id}`,
+          ownerId: p.userId, owner: null, mine: true, due: null, statusLabel: 'Chưa có Target',
         });
       }
     }
@@ -916,7 +916,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       studentId: null, studentName: `Lớp ${l.classCode}`, classId: l.classId, classCode: l.classCode,
       attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: null, count: l.soEm,
       reason: `Nhập MT lịch sử · ${l.soEm} em · không tính hạn`,
-      tieuDe: 'Nhập MT lịch sử', actionLabel: 'Nhập điểm', href: l.href,
+      tieuDe: 'Nhập điểm MT lịch sử', actionLabel: 'Nhập điểm', href: l.href,
       ownerId: p.userId, owner: null, mine: true, due: null, statusLabel: 'Không tính hạn',
     });
   }
@@ -951,7 +951,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
           studentId: r.sid, studentName: r.full_name ?? 'Học viên', classId: r.class_id ?? null, classCode: r.class_code ?? null,
           attemptId: null, attemptNo: r.attempt_no ?? null, caseId: r.case_id, level: null, contextLabel: null, count: null,
           reason: `PA theo quy chế ${thi ? 'đến lúc thi' : `đến MT${(r.attempt_no ?? 0) + 1}`} đang chạy nhưng chưa có ${thi ? 'ngày thi' : 'lịch'}`,
-          tieuDe: thi ? `Nhập ngày thi dự kiến · ${r.full_name ?? 'Học viên'}` : `Xếp lịch MT${(r.attempt_no ?? 0) + 1} cho ${r.full_name ?? 'Học viên'}`,
+          tieuDe: thi ? `Nhập dự kiến thi · ${r.full_name ?? 'Học viên'}` : `Xếp lịch MT${(r.attempt_no ?? 0) + 1} cho ${r.full_name ?? 'Học viên'}`,
           actionLabel: thi ? 'Nhập ngày thi' : 'Xếp lịch', href: r.sid ? `/hoc-vien/${r.sid}` : '/hoc-vien',
           ownerId: p.userId, owner: null, mine: true, due: null, statusLabel: 'Chưa có lịch',
         });
@@ -959,7 +959,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     }
   }
 
-  // ------------------------------------------------- 5. case chưa có người phụ trách
+  // ------------------------------------------------- 5. Case chưa có người phụ trách
   /*
    * "CHƯA CÓ NGƯỜI PHỤ TRÁCH" LÀ MỘT VIỆC, KHÔNG PHẢI MỘT Ô TRỐNG (mục 2.3 · 3.2).
    *
@@ -1019,7 +1019,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
 
   // ------------------------------------------------- 5b. Ý thức (PR-YT4) — việc thật có hạn, người nhận = GVCN lớp ĐANG học
   /*
-   * Một cửa trạng thái (`trangThaiYThuc`): quét Báo lên ở đầu request đã nạp các em này, nên ở đây không tốn thêm câu nào ngoài câu
+   * Một cửa trạng thái (`trangThaiYThuc`): quét Báo QL ở đầu request đã nạp các em này, nên ở đây không tốn thêm câu nào ngoài câu
    * ứng viên. Em Tạm dừng không sinh việc (T65). Dòng hết khi làm xong ở bất cứ đâu (Ghi nhận / Xác nhận xử lý / Đề xuất / Đã thực hiện).
    */
   {
@@ -1050,7 +1050,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         studentId: ds.length === 1 ? ds[0].id : null, studentName: ds.length === 1 ? ds[0].full_name : `Lớp ${ds[0].code}`,
         classId: lopId, classCode: ds[0].code, attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: 'Ý thức', count: ds.length,
         reason: `${ds.length} em mới vào web chưa khai bậc Ý thức đã có trước đó`,
-        tieuDe: `Khai bậc Ý thức HS cũ · ${ds[0].code} · ${ds.length} em`, actionLabel: 'Khai bậc',
+        tieuDe: `Khai bậc Ý thức HV cũ · ${ds[0].code} · ${ds.length} em`, actionLabel: 'Khai bậc',
         /* Đường đã có: tab Ý thức của lớp, chọn sẵn em đầu tiên và mở panel Khai bậc (`mo=khai`). */
         href: `/hoc-vien/lop/${lopId}?tab=y-thuc&hv=${ds[0].id}&mo=khai`,
         ownerId: p.userId, owner: null, mine: true, due: null, statusLabel: 'Chưa khai bậc',
@@ -1080,7 +1080,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       }
       if (em.soMoi > 0) {
         items.push({ ...chung, key: `yt_xem:${r.id}`, group: 'yt_xem', urgency: urgencyOf(em.hanXem, today),
-          reason: `${em.soMoi} vi phạm chưa ai xem`, tieuDe: `Ghi nhận ${em.soMoi} vi phạm mới · ${r.ten}`, actionLabel: 'Ghi nhận',
+          reason: `${em.soMoi} vi phạm chưa xem`, tieuDe: `Ghi nhận ${em.soMoi} vi phạm mới · ${r.ten}`, actionLabel: 'Ghi nhận',
           href: duongLop(em.lopId, r.id, '&loc=moi'), due: em.hanXem, statusLabel: 'Mới' });
       }
       /* PR-S3F #7: MỘT việc cho MỖI lần xử lý đã duyệt (khoá theo id lần xử lý) — hai đề xuất cùng lúc không che nhau. */
@@ -1108,8 +1108,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       items.push({
         key: `ky_vong:${r.id}`, group: 'ky_vong_dau_ra', urgency: 'normal',
         studentId: r.id, studentName: r.ten, classId: r.lopNguonId, classCode: r.lopNguon,
-        attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: 'Lên Fast Track', count: null,
-        reason: 'Em BE/ELE lên Fast Track đã có bài Cuối khoá — đánh dấu Đạt hoặc Không đạt kỳ vọng đầu ra',
+        attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: 'Lên FT', count: null,
+        reason: 'Em BE/ELE lên FT đã có bài Cuối khoá — đánh dấu Đạt hoặc Không đạt kỳ vọng đầu ra',
         tieuDe: `Đánh dấu kỳ vọng đầu ra · ${r.ten}`, actionLabel: 'Mở hồ sơ',
         href: duongHoSoHocVien(r.id, { loTrinh: cuoiKhoaCua.get(r.id), muc: 'ket-luan-khoa' }), ownerId: p.userId, owner: null, mine: true, due: null, statusLabel: 'Chưa đánh dấu',
       });

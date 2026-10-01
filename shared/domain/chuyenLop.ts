@@ -1,7 +1,7 @@
 /**
  * LỆNH CHUYỂN LỚP + BÀN GIAO — luật thuần (PR-CT, đặc tả §3.1f Q30-1…Q30-4, mockup 20).
  *
- * Quản lý ra lệnh: em nào, lớp đích nào, tuần bắt đầu (Thứ Hai, từ tuần sau trở đi). Tới Thứ Hai đó web tự thi hành
+ * Quản lý ra lệnh: em nào, lớp chuyển đến nào, tuần bắt đầu (Thứ Hai, từ tuần sau trở đi). Tới Thứ Hai đó web tự thi hành
  * bằng luật lộ trình đang có (`lenLop.ts`). Có lệnh → phiếu bàn giao: GVBM ghi một câu mỗi em (hạn 2 ngày), GVCN lớp
  * cũ xác nhận (hạn 3 ngày, tính cả ngày ra lệnh). Một nguồn cho máy chủ và web.
  */
@@ -9,6 +9,24 @@ import { hanTheoNgay } from './cases.ts';
 import type { HuongGoiY } from './cuoiKhoa.ts';
 import { tuanLich } from './hienThiNgay.ts';
 import { mondayOfDate } from './week.ts';
+
+/**
+ * PR-S3 (chủ sản phẩm 02/10): bộ chữ chuyển lớp — MỘT nơi. Quyết định của Quản lý (6 hướng) gọi là "Quyết định chuyển lớp"; chữ "lệnh"
+ * không còn trên màn. Ba trạng thái tách rõ: `chua` (chưa ai quyết) · `choDuyetDeXuat` (GV đã đề xuất, Quản lý chưa duyệt) ·
+ * `sapChuyen(tuần)` (đã có quyết định, chưa tới tuần chuyển). Bàn giao luôn là "GVCN xác nhận bàn giao".
+ * Định danh (bảng `lenh_chuyen_lop`, route `/lenh-chuyen`, khoá nhật ký `lenh_chuyen.*`) KHÔNG đổi.
+ */
+export const CHU_CHUYEN_LOP = {
+  quyetDinh: 'Quyết định chuyển lớp',
+  sua: 'Sửa quyết định…',
+  huy: 'Huỷ quyết định',
+  giu: 'Giữ quyết định',
+  luu: 'Lưu quyết định',
+  chua: 'Chưa có quyết định chuyển lớp',
+  choDuyetDeXuat: 'Chờ QL duyệt đề xuất',
+  sapChuyen: (tuan: string) => `Sắp chuyển · từ ${tuan}`,
+  banGiao: 'GVCN xác nhận bàn giao',
+} as const;
 
 export const HUONG_LENH = ['len_lop', 'hoc_lai', 'fast_track', 'chuyen_lop', 'bao_luu', 'dung_hoc'] as const;
 export type HuongLenh = (typeof HUONG_LENH)[number];
@@ -38,9 +56,9 @@ export function hanBanGiao(ngayRaLenh: string): { gvbm: string; gvcn: string } {
   return { gvbm: hanTheoNgay(ngayRaLenh, 2), gvcn: hanTheoNgay(ngayRaLenh, 3) };
 }
 
-/** Mọi hướng có phiếu bàn giao trừ Dừng học (Q16). */
+/** Mọi hướng có phiếu bàn giao trừ Dừng học hẳn (Q16). */
 export const coPhieu = (h: HuongLenh): boolean => h !== 'dung_hoc';
-/** Bảo lưu và Dừng học không có lớp đích. */
+/** Tạm dừng học (bảo lưu) và Dừng học hẳn không có lớp chuyển đến. */
 export const canLopDich = (h: HuongLenh): boolean => h !== 'bao_luu' && h !== 'dung_hoc';
 
 export type MucTieuLenh = number | 'KCK';
@@ -56,7 +74,7 @@ export function kiemDongLenh(d: {
   lyDo: string | null; khacGoiY: boolean; mucTieu: MucTieuLenh | null; ngayXemLai: string | null;
 }): string | null {
   if (!d.huong) return 'Chọn hướng cho em';
-  if (canLopDich(d.huong) && !d.lopDichId) return 'Chọn lớp đích';
+  if (canLopDich(d.huong) && !d.lopDichId) return 'Chọn lớp chuyển đến';
   if (!tuanHopLe(d.tuan, d.homNay)) return 'Tuần bắt đầu phải từ tuần sau trở đi';
   const canLyDo = d.khacGoiY || d.huong === 'chuyen_lop' || d.huong === 'bao_luu' || d.huong === 'dung_hoc';
   if (canLyDo && (d.lyDo ?? '').trim().length < LY_DO_LENH_TOI_THIEU) return 'Ghi lý do ngắn';
@@ -66,7 +84,7 @@ export function kiemDongLenh(d: {
 }
 
 /**
- * PR-UXF-a Q1 (K2-25): hướng Quản lý chọn có KHÁC Web gợi ý (luật Cuối khoá) không. Gợi ý 'len' khớp len_lop và fast_track; 'hoc_lai'
+ * PR-UXF-a Q1 (K2-25): hướng Quản lý chọn có KHÁC Hệ thống gợi ý (luật Cuối khoá) không. Gợi ý 'len' khớp len_lop và fast_track; 'hoc_lai'
  * khớp hoc_lai. Gợi ý null (chưa đủ điểm / 50–59 % Quản lý cân nhắc) → false. Máy chủ tự tính — không tin web.
  */
 export function khacGoiY(huong: HuongLenh | null, goiY: { huong: HuongGoiY } | null | undefined): boolean {
@@ -76,13 +94,13 @@ export function khacGoiY(huong: HuongLenh | null, goiY: { huong: HuongGoiY } | n
 
 export type DongTomTatLenh = {
   ten: string; huong: HuongLenh | null;
-  /** Mã lớp đích, đã kèm lộ trình nếu FT ("MB FT 105 · LT1"). */
+  /** Mã lớp chuyển đến, đã kèm lộ trình nếu FT ("MB FT 105 · LT1"). */
   lopDich?: string | null; tuan?: string | null; mucTieu?: MucTieuLenh | null; ngayXemLai?: string | null;
   /** Câu phụ của em (PA bổ trợ, việc báo phụ huynh… — LT2b đưa vào), nối sau danh sách tên. */
   ghiChu?: string | null;
 };
 
-/** Câu tóm tắt màn C — một câu mỗi nhóm (hướng × lớp đích × tuần), liệt kê tên em; "Chưa gửi: …" cho em chưa quyết. */
+/** Câu tóm tắt màn C — một câu mỗi nhóm (hướng × lớp chuyển đến × tuần), liệt kê tên em; "Chưa gửi: …" cho em chưa quyết. */
 export function tomTatLenh(ds: readonly DongTomTatLenh[], homNay: string): string[] {
   const thuTu: HuongLenh[] = ['len_lop', 'fast_track', 'chuyen_lop', 'hoc_lai', 'bao_luu', 'dung_hoc'];
   const nhom = new Map<string, DongTomTatLenh[]>();
@@ -97,15 +115,15 @@ export function tomTatLenh(ds: readonly DongTomTatLenh[], homNay: string): strin
     .map((g) => {
       const { huong, lopDich, tuan, ngayXemLai } = g[0];
       const tu = tuan ? ` từ ${tuanLich(tuan, homNay)}` : '';
-      const ten = g.map((x) => (huong === 'fast_track' && x.mucTieu != null ? `${x.ten}, target ${x.mucTieu}` : x.ten)).join(', ');
+      const ten = g.map((x) => (huong === 'fast_track' && x.mucTieu != null ? `${x.ten}, Target ${x.mucTieu}` : x.ten)).join(', ');
       const phu = g.filter((x) => x.ghiChu).map((x) => ` ${x.ten} ${x.ghiChu}.`).join('');
       const dau = `${g.length} em`;
       const than = huong === 'len_lop' ? `${dau} lên ${lopDich}${tu}`
-        : huong === 'fast_track' ? `${dau} lên Fast Track ${lopDich}${tu}`
+        : huong === 'fast_track' ? `${dau} lên FT ${lopDich}${tu}`
         : huong === 'chuyen_lop' ? `${dau} chuyển sang ${lopDich}${tu}`
         : huong === 'hoc_lai' ? `${dau} học lại ${lopDich}${tu}`
-        : huong === 'bao_luu' ? `${dau} bảo lưu${ngayXemLai ? `, xem lại ${tuanLich(ngayXemLai, homNay)}` : ''}`
-        : `${dau} dừng học${tu}`;
+        : huong === 'bao_luu' ? `${dau} tạm dừng học (bảo lưu)${ngayXemLai ? `, xem lại ${tuanLich(ngayXemLai, homNay)}` : ''}`
+        : `${dau} dừng học hẳn${tu}`;
       return `${than} (${ten}).${phu}`;
     });
   if (chuaGui.length) cau.push(`Chưa gửi: ${chuaGui.join(', ')} (chưa quyết).`);
@@ -128,7 +146,7 @@ export type DaiLop = {
   banGiaoMon: { mon: string; monNgan: string; daGhi: number; tong: number; han: string | null }[];
   /** Phía lớp ĐÍCH (H). */
   sapNhan: { n: number; tuLop: { id: number; code: string }[]; tuan: string; daXacNhan: number } | null;
-  /** PR-S5F-a: lệnh của lớp (nguồn) đã tới tuần mà CHƯA chuyển được — chỉ Quản lý thấy, để sửa tuần/lớp đích hoặc huỷ. */
+  /** PR-S5F-a: lệnh của lớp (nguồn) đã tới tuần mà CHƯA chuyển được — chỉ Quản lý thấy, để sửa tuần/lớp chuyển đến hoặc huỷ. */
   chuaChuyenDuoc: { n: number; loi: string } | null;
   viewer: { coTheRaLenh: boolean; coTheChuyenNhieuEm: boolean; laGvcn: boolean; xacNhanDuoc: boolean };
 };
@@ -139,7 +157,7 @@ export type DaiHocVien = {
   nguoiRaLenh: string | null; ngayRaLenh: string;
   banGiao: { soMon: number; daGhi: number; hanGvcn: string | null; daXacNhan: boolean; nguoiXacNhan: string | null; ngayXacNhan: string | null; thay: boolean } | null;
   loi: string | null;
-  /** Nút theo vai: bàn giao (GVCN / Quản lý thay) · bàn giao môn (GVBM) · huỷ lệnh (Quản lý, lệnh còn chờ — kể cả chưa chuyển được) · đọc bàn giao (đã xác nhận / đã chuyển). */
+  /** Nút theo vai: bàn giao (GVCN / Quản lý thay) · bàn giao môn (GVBM) · huỷ quyết định (Quản lý, lệnh còn chờ — kể cả chưa chuyển được) · đọc bàn giao (đã xác nhận / đã chuyển). */
   nut: ('ban-giao' | 'ban-giao-mon' | 'huy-lenh' | 'doc-ban-giao')[];
   mon: { ma: string; ngan: string } | null;
 };

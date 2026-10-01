@@ -24,7 +24,7 @@ import { baoLenCuoiKhoaDoiQuaHan, capNhatCuoiKhoaSauChuyen } from './cuoiKhoa.ts
 /**
  * LỚP THƯỜNG (Foundation / Beginner / Elementary).
  *
- * Dùng CHUNG bảng dữ liệu và CHUNG hệ thống case SOS với lớp FT — cùng `assessment_attempts`,
+ * Dùng CHUNG bảng dữ liệu và CHUNG hệ thống Case SOS với lớp FT — cùng `assessment_attempts`,
  * `assessment_scores`, `sos_cases`. Chỉ khác ba thứ:
  *
  *   1. CÁCH CHẤM: nhập `điểm đạt / tổng điểm`, đạt từ 70% trở lên (ngưỡng owner chốt sau
@@ -92,7 +92,7 @@ export function programmeOfClass(classId: number): ProgrammeInfo | null {
   return programmeByCode(c?.programme_code);
 }
 
-/** Lớp này có chấm theo tỷ lệ điểm đạt/tổng điểm không (tức là lớp Normal). */
+/** Lớp này có chấm theo tỷ lệ điểm đạt/tổng điểm không (tức là lớp thường). */
 export function isRatioClass(classId: number | null | undefined): boolean {
   if (!classId) return false;
   return programmeOfClass(classId)?.scoringMode === 'ratio';
@@ -115,7 +115,7 @@ export function programmeCodeOfCycle(cycleId: number | null | undefined): string
 }
 
 /**
- * Lộ trình này chấm theo TỶ LỆ (lớp Normal) hay theo BAND (Fast Track).
+ * Lộ trình này chấm theo TỶ LỆ (lớp thường) hay theo BAND (Fast Track).
  *
  * Ưu tiên mã chương trình ghi trên chính lộ trình. Dữ liệu cũ có thể thiếu mã đó, nên còn
  * một đường tra dự phòng: lớp của các bài kiểm tra trong lộ trình. Không có căn cứ nào thì
@@ -130,7 +130,7 @@ export function isRatioCycle(c: { id?: number | null; route?: string | null; pro
   return programmeByCode(programmeCodeOfCycle(c.id))?.scoringMode === 'ratio';
 }
 
-/** Bộ hạng mục case đúng với chương trình của lộ trình này. */
+/** Bộ hạng mục Case đúng với chương trình của lộ trình này. */
 export function caseCategoriesOfCycle(c: any): readonly CaseCategory[] {
   return caseCategoriesFor(isRatioCycle(c) ? 'ratio' : 'ielts_band', c?.programme_code ?? programmeCodeOfCycle(c?.id));
 }
@@ -196,7 +196,7 @@ export function evaluateRegular(
    * KẾT LUẬN TẠM THỜI CHỈ ĐƯỢC ĐI LÊN, KHÔNG ĐƯỢC ĐI XUỐNG "ĐẠT".
    *
    * Một môn dưới ngưỡng là kết luận được NGAY — nhập nốt ba môn kia cũng không làm môn đó
-   * đạt lại, nên mở case luôn để người dạy bắt tay vào sớm.
+   * đạt lại, nên mở Case luôn để người dạy bắt tay vào sớm.
    *
    * Nhưng ba môn đạt mà môn thứ tư chưa nhập thì KHÔNG kết luận được gì: môn còn thiếu có
    * thể chính là môn em trượt. Ghi "Đạt kỳ vọng" lúc đó là báo an toàn giả, và người đọc
@@ -708,7 +708,7 @@ export function reportRegularNoShow(
           });
         }
       }
-      /* PR-LT2b (K4-23 vế 2): Cuối khoá dời quá tuần cuối khoá của lớp → thẻ Báo lên cho Quản lý (Giữa khoá không có thẻ). */
+      /* PR-LT2b (K4-23 vế 2): Cuối khoá dời quá tuần cuối khoá của lớp → thẻ Báo QL cho Quản lý (Giữa khoá không có thẻ). */
       if (a.kind === 'final' && a.class_id) {
         const cuoi = classProgress(a.class_id).finalWeekStart;
         if (cuoi && moi.weekStart > cuoi) baoLenCuoiKhoaDoiQuaHan(conn, a);
@@ -738,10 +738,10 @@ export function reportRegularNoShow(
 }
 
 /**
- * Tính lại kết luận sau khi nhập điểm và mở/cập nhật case SOS.
+ * Tính lại kết luận sau khi nhập điểm và mở/cập nhật Case SOS.
  *
  * Dùng CHUNG bảng `sos_cases` với lớp FT — cùng một hệ thống theo dõi xử lý, chỉ khác cách
- * sinh ra mức SOS. Sửa điểm làm đổi mức thì GIỮ case và lịch sử, không xoá đi làm lại.
+ * sinh ra mức SOS. Sửa điểm làm đổi mức thì GIỮ Case và lịch sử, không xoá đi làm lại.
  */
 export function refreshRegularOutcome(p: Principal, attemptId: number) {
   const conn = db();
@@ -827,7 +827,7 @@ function taoCaseGiuaKhoa(p: Principal, a: any, r: RegularResult) {
         .run(a.id, followUntilAfter(a), nowIso(), existing.id);
       if (signal.status === 'pending') {
         conn.prepare(`UPDATE case_signals SET status = 'linked', case_id = ?, resolved_by = ?, resolved_at = ?, resolution_note = ?, updated_at = ? WHERE id = ?`)
-          .run(existing.id, p.userId, nowIso(), 'Nối vào case đang mở của môn này — cùng một vấn đề, thêm một bằng chứng.', nowIso(), signal.id);
+          .run(existing.id, p.userId, nowIso(), 'Nối vào Case đang mở của môn này — cùng một vấn đề, thêm một bằng chứng.', nowIso(), signal.id);
       }
     } else if (!(signal.status === 'linked' && signal.case_id != null)) {
       open.push(taoCaseTuDong(p, {

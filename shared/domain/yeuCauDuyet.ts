@@ -10,7 +10,7 @@ import type { TrangThai } from './trangThai.ts';
 export const PHAN_LOAI = ['hoc-thuat', 'y-thuc', 'lich-thi', 'thong-tin-hv', 'bao-len'] as const;
 export type PhanLoai = (typeof PHAN_LOAI)[number];
 export const PHAN_LOAI_LABEL: Record<PhanLoai, string> = {
-  'hoc-thuat': 'Học thuật', 'y-thuc': 'Ý thức', 'lich-thi': 'Lịch thi', 'thong-tin-hv': 'Thông tin HV', 'bao-len': 'Báo lên',
+  'hoc-thuat': 'Học thuật', 'y-thuc': 'Ý thức', 'lich-thi': 'Lịch thi', 'thong-tin-hv': 'Thông tin HV', 'bao-len': 'Báo QL',
 };
 
 /**
@@ -24,7 +24,7 @@ export type LoaiYeuCau = (typeof LOAI_YEU_CAU)[number];
 export const TRANG_THAI_YC = ['cho', 'duyet', 'tu_choi', 'tu_dong', 'da_tra_loi'] as const;
 export type TrangThaiYc = (typeof TRANG_THAI_YC)[number];
 
-/** Báo lên = 'nhac' (K1-57: không duyệt, chỉ nhắc) · Xin ý kiến = 'tra-loi' (T64) · còn lại Duyệt/Từ chối. */
+/** Báo QL = 'nhac' (K1-57: không duyệt, chỉ nhắc) · Xin ý kiến = 'tra-loi' (T64) · còn lại Duyệt/Từ chối. */
 export type KieuNut = 'duyet-tu-choi' | 'tra-loi' | 'nhac';
 
 export type LoaiYcMeta = {
@@ -42,17 +42,17 @@ export const LOAI_YC_META: Record<LoaiYeuCau, LoaiYcMeta> = {
   xin_y_kien: { phanLoai: 'hoc-thuat', nhan: 'Xin ý kiến', kieuNut: 'tra-loi', hanNgay: HAN_DUYET_NGAY, hangLoat: false },
   lich_thi: { phanLoai: 'lich-thi', nhan: 'Dời lịch thi lần 2', kieuNut: 'duyet-tu-choi', hanNgay: null, hangLoat: true },
   sua_thong_tin: { phanLoai: 'thong-tin-hv', nhan: 'Đề xuất sửa', kieuNut: 'duyet-tu-choi', hanNgay: HAN_DUYET_NGAY, hangLoat: false },
-  bao_len_nguyen_nhan: { phanLoai: 'bao-len', nhan: 'Case chờ nguyên nhân quá hạn', kieuNut: 'nhac', hanNgay: null, hangLoat: false },
+  bao_len_nguyen_nhan: { phanLoai: 'bao-len', nhan: 'Case quá hạn xác nhận nguyên nhân', kieuNut: 'nhac', hanNgay: null, hangLoat: false },
   /* PR-SOS (S4-5, T23): GVBM xin không theo dõi Case SOS chờ nguyên nhân — Quản lý duyệt trong 5 ngày. */
   khong_theo_doi: { phanLoai: 'hoc-thuat', nhan: 'Không cần theo dõi', kieuNut: 'duyet-tu-choi', hanNgay: 5, hangLoat: false },
   /* PR-YT4 (V4-9, V4-10): Meeting CX/GĐCN · WL 3 · Đình chỉ · Khác — QL duyệt trong 5 ngày. */
   y_thuc: { phanLoai: 'y-thuc', nhan: 'Xử lý Ý thức cần duyệt', kieuNut: 'duyet-tu-choi', hanNgay: HAN_DUYET_NGAY, hangLoat: false },
   /* PR-YT4 (V4-4, V4-5, K3-37, Q9): một thẻ mỗi em — không duyệt, QL biết và nhắc. */
   bao_len_y_thuc: { phanLoai: 'bao-len', nhan: 'Ý thức quá hạn', kieuNut: 'nhac', hanNgay: null, hangLoat: false },
-  /* PR-CT (Q30-1, Q30-2, Q30-4): GVCN đề xuất chuyển lớp (5 ngày) · Báo lên bàn giao quá hạn 3 ngày (một thẻ mỗi lớp nguồn) · Báo lên lớp hết khoá còn em chưa có lệnh. */
+  /* PR-CT (Q30-1, Q30-2, Q30-4): GVCN đề xuất chuyển lớp (5 ngày) · Báo QL bàn giao quá hạn 3 ngày (một thẻ mỗi lớp nguồn) · Báo QL lớp hết khoá còn em chưa có lệnh. */
   de_xuat_chuyen_lop: { phanLoai: 'thong-tin-hv', nhan: 'Đề xuất chuyển lớp', kieuNut: 'duyet-tu-choi', hanNgay: 5, hangLoat: false },
   bao_len_ban_giao: { phanLoai: 'bao-len', nhan: 'Bàn giao quá hạn', kieuNut: 'nhac', hanNgay: null, hangLoat: false },
-  bao_len_chua_lenh: { phanLoai: 'bao-len', nhan: 'Lớp hết khoá còn em chưa có lệnh', kieuNut: 'nhac', hanNgay: null, hangLoat: false },
+  bao_len_chua_lenh: { phanLoai: 'bao-len', nhan: 'Lớp hết khoá · chưa có quyết định chuyển lớp', kieuNut: 'nhac', hanNgay: null, hangLoat: false },
   /* PR-LT2a (T54, M-05): kế hoạch bài giảng PA bổ trợ Giữa khoá — Quản lý duyệt trong 3 ngày (tính cả ngày gửi). */
   ke_hoach_bo_tro: { phanLoai: 'hoc-thuat', nhan: 'Kế hoạch bổ trợ', kieuNut: 'duyet-tu-choi', hanNgay: 3, hangLoat: false },
   /* PR-LT2b (M-05, T76): Mini Test dưới 70% — QL xử lý case-by-case. Bài Cuối khoá dời quá tuần cuối khoá (K4-23) — QL biết và nhắc. */
@@ -81,7 +81,7 @@ export function demChip(ds: readonly { phanLoai: PhanLoai }[]): Record<KhoaChip,
 
 /**
  * MỘT HÀM ĐẾM cho mọi con số của hộp (chip, badge Công việc, dải Tổng quan): `tong` = mọi thẻ đang chờ trong hộp (bằng chip
- * "Tất cả", GỒM Báo lên) · `quaHan` = thẻ đỏ (hạn đã qua, gồm Báo lên) · `baoLen` = trong đó số thẻ Báo lên (không cần duyệt).
+ * "Tất cả", GỒM Báo QL) · `quaHan` = thẻ đỏ (hạn đã qua, gồm Báo QL) · `baoLen` = trong đó số thẻ Báo QL (không cần duyệt).
  */
 export function demHop(ds: readonly { phanLoai: PhanLoai; hanDuyet: string | null }[], homNay: string) {
   const chip = demChip(ds);
@@ -103,7 +103,7 @@ export function sapThe<T extends { hanDuyet: string | null; taoLuc: string }>(ds
   });
 }
 
-/** QL tự gửi rồi tự duyệt (Q-D). Người xin `null` = hệ thống (Báo lên) → không bao giờ là tự duyệt. */
+/** QL tự gửi rồi tự duyệt (Q-D). Người xin `null` = hệ thống (Báo QL) → không bao giờ là tự duyệt. */
 export function laTuDuyet(nguoiXin: number | null, nguoiDuyet: number): boolean {
   return nguoiXin !== null && nguoiXin === nguoiDuyet;
 }
@@ -147,7 +147,7 @@ export type TheYeuCauDto = {
   lopId: number | null;
   lop: string | null;
   nguoiXinId: number | null;
-  /** `null` = hệ thống (Báo lên). */
+  /** `null` = hệ thống (Báo QL). */
   nguoiXin: string | null;
   nguoiDuyet: string | null;
   lyDo: string | null;
@@ -162,15 +162,15 @@ export type TheYeuCauDto = {
   duLieu: Record<string, unknown> | null;
 };
 
-/** `cho` = mọi thẻ đang chờ trong hộp (= chip "Tất cả", gồm Báo lên); `quaHan` = thẻ đỏ; `baoLen` = trong đó Báo lên — xem `demHop`. */
+/** `cho` = mọi thẻ đang chờ trong hộp (= chip "Tất cả", gồm Báo QL); `quaHan` = thẻ đỏ; `baoLen` = trong đó Báo QL — xem `demHop`. */
 export type DemYeuCau = {
   cho: number; quaHan: number; baoLen: number; cuaToiCho: number; cuaToiTuChoi: number;
-  /** PR-VAI-a (Q17): chip từng phân loại + số thẻ Báo lên theo loại (dòng phụ dải Chờ duyệt) — chỉ người duyệt. */
+  /** PR-VAI-a (Q17): chip từng phân loại + số thẻ Báo QL theo loại (dòng phụ dải Chờ duyệt) — chỉ người duyệt. */
   chip?: Record<KhoaChip, number>;
   baoLenTheoLoai?: Partial<Record<string, number>>;
 };
 
-/** Dòng phụ dải Chờ duyệt: "Học thuật 3 · Ý thức 1 · Báo lên 3 (2 Case chờ nguyên nhân quá hạn, 1 Ý thức quá hạn)". Phân loại 0 bỏ. */
+/** Dòng phụ dải Chờ duyệt: "Học thuật 3 · Ý thức 1 · Báo QL 3 (2 Case chờ nguyên nhân quá hạn, 1 Ý thức quá hạn)". Phân loại 0 bỏ. */
 export function dongPhuChoDuyet(d: DemYeuCau): string {
   if (!d.chip) return '';
   return PHAN_LOAI.filter((k) => d.chip![k] > 0).map((k) => {
@@ -181,7 +181,7 @@ export function dongPhuChoDuyet(d: DemYeuCau): string {
   }).join(' · ');
 }
 
-/** PR-S4F #14: thẻ Báo lên không có người để Nhắc (`duLieu.ownerId` rỗng) — ghi rõ vì sao thay cho nút Nhắc. */
+/** PR-S4F #14: thẻ Báo QL không có người để Nhắc (`duLieu.ownerId` rỗng) — ghi rõ vì sao thay cho nút Nhắc. */
 export const nhanKhongNguoiNhac = (loai: string): string =>
   loai === 'bao_len_nguyen_nhan' ? 'Case chưa có người phụ trách' : 'Lớp chưa có GVCN';
 

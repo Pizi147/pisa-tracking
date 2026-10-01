@@ -7,9 +7,11 @@
  *   tab từ địa chỉ `?tab=`            → `parseHoSoTab`        (Task 2)
  *   ô "Kết quả Test gần nhất"         → `ketQuaTestGanNhat`   (Task 3)
  *   đếm vi phạm theo nhóm             → `demTheoNhomViPham`   (Task 4)
- *   tiến độ case, việc tiếp của PA    → `tienDoCase`, `viecTiepPhuongAn` (Task 6)
+ *   tiến độ Case, việc tiếp của PA    → `tienDoCase`, `viecTiepPhuongAn` (Task 6)
  */
-import { ATTEMPT_SKILL_UNITS, deadlineView, type DeadlineKind } from './display.ts';
+import { ATTEMPT_SKILL_UNITS, CHUA_CO_HAN, deadlineView, type DeadlineKind } from './display.ts';
+import { NHAN_TRANG_THAI } from './trangThai.ts';
+import { chuTamDung } from './students.ts';
 import { tuanLich } from './hienThiNgay.ts';
 import { VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, type ViolationCategory } from './yThuc.ts';
 
@@ -44,22 +46,24 @@ export function demTheoNhomViPham(vs: readonly { category: string }[]): {
   };
 }
 
-// ====================================================================== thẻ case và khối phương án (Q8)
+// ====================================================================== thẻ Case và khối phương án (Q8)
 
-/** Một phương án học thuật như thẻ case trả về (`Plan` ở `SkillBoard.tsx`) — chỉ các trường luật này cần. */
+/** Một phương án học thuật như thẻ Case trả về (`Plan` ở `SkillBoard.tsx`) — chỉ các trường luật này cần. */
 export type PhuongAnTomTat = {
   status: string; lastOutcome: string | null; preset: boolean; confirmedAt: string | null;
   pendingApproval: boolean; approvalDue: string | null;
   actionDue: string | null; actionOverdue: boolean; completedOn: string | null;
   /** PR-SOS: PA theo quy chế chờ xác nhận (Q28-3) · lần ghi tới là "Ghi kết quả cuối" (T22). */
   choXacNhan?: boolean; lanCuoi?: boolean;
+  /** A10: lý do đóng (`superseded` = PA bị PA khác thay) — PA bị thay không trông như "Đã kết thúc". */
+  closedReason?: string | null;
 };
 export const dangChay = (p: { status: string }) => p.status === 'planned' || p.status === 'started';
 
 /**
- * Cột 2 đầu thẻ case: `{n} PA · {k} có kết quả` + việc gần nhất có hạn (`tiep`). Chỉ xét PA ĐANG CHẠY; case đã xong → không
+ * Cột 2 đầu thẻ case: `{n} PA · {k} có kết quả` + việc gần nhất có hạn (`tiep`). Chỉ xét PA ĐANG CHẠY; Case đã xong → không
  * có việc tiếp. Thứ tự: PA đang chạy ĐÃ QUÁ HẠN (sớm nhất) → PA chờ Quản lý → PA có hạn làm sớm
- * nhất → nghĩa vụ cập nhật hằng tuần của case (chủ sản phẩm chốt 22/09: việc đã trễ nói trước việc đang chờ người khác).
+ * nhất → nghĩa vụ cập nhật hằng tuần của Case (chủ sản phẩm chốt 22/09: việc đã trễ nói trước việc đang chờ người khác).
  * Hạn DỰ KIẾN XONG (followupDue) KHÔNG phải hạn (F11) — không dùng.
  */
 export function tienDoCase(plans: readonly PhuongAnTomTat[], c: { status: string; followUntil: string | null; followOverdue: boolean }): {
@@ -77,10 +81,10 @@ export function tienDoCase(plans: readonly PhuongAnTomTat[], c: { status: string
     const choDuyet = chay.find((p) => p.pendingApproval);
     const coHan = chay.filter((p) => p.actionDue).sort((a, b) => a.actionDue!.localeCompare(b.actionDue!))[0];
     const quaHanRoi = chay.filter((p) => p.actionDue && p.actionOverdue).sort((a, b) => a.actionDue!.localeCompare(b.actionDue!))[0];
-    if (quaHanRoi) tiep = { text: 'Ghi kết quả PA', due: quaHanRoi.actionDue, overdue: true };
+    if (quaHanRoi) tiep = { text: 'Ghi kết quả', due: quaHanRoi.actionDue, overdue: true };
     else if (choDuyet) tiep = { text: 'Chờ Quản lý trả lời', due: choDuyet.approvalDue, overdue: false };
-    else if (coHan) tiep = { text: 'Ghi kết quả PA', due: coHan.actionDue, overdue: coHan.actionOverdue };
-    else if (c.followUntil) tiep = { text: 'Ghi kết quả PA', due: c.followUntil, overdue: c.followOverdue };
+    else if (coHan) tiep = { text: 'Ghi kết quả', due: coHan.actionDue, overdue: coHan.actionOverdue };
+    else if (c.followUntil) tiep = { text: 'Ghi kết quả', due: c.followUntil, overdue: c.followOverdue };
   }
   return { coKetQua, tong, text, tiep };
 }
@@ -94,7 +98,7 @@ export function viecTiepPhuongAn(p: PhuongAnTomTat): {
   if (p.choXacNhan) return { loai: 'cho-xac-nhan', text: 'Chờ xác nhận', due: null, overdue: false };
   if (p.lanCuoi && dangChay(p)) return { loai: 'ghi-cuoi', text: 'Ghi kết quả cuối', due: p.actionDue, overdue: p.actionOverdue };
   if (dangChay(p)) return { loai: 'ghi-ket-qua', text: 'Ghi kết quả', due: p.actionDue, overdue: p.actionOverdue };
-  return { loai: 'da-xong', text: 'Đã kết thúc', due: p.completedOn, overdue: false };
+  return { loai: 'da-xong', text: p.closedReason === 'superseded' ? 'Được thay thế' : 'Đã kết thúc', due: p.completedOn, overdue: false };
 }
 
 // ====================================================================== ô "Việc cần làm tiếp" (Q7)
@@ -193,7 +197,7 @@ export function cauTomTat(i: DauVaoCau): ManhCau[] {
   const d = i.dacBiet;
   const m0: ManhCau | null = !d ? null
     : d.loai === 'ket-thuc' ? { chu: 'Đã kết thúc', tone: null }
-    : d.loai === 'tam-dung' ? { chu: `Tạm dừng từ ${ngayNgan(d.tu)}`, tone: 'warn' }
+    : d.loai === 'tam-dung' ? { chu: chuTamDung(ngayNgan(d.tu), true), tone: 'warn' }
     : d.loai === 'sap-chuyen' ? { chu: `Sắp chuyển ${d.lop} từ ${tuanLich(d.tuan, i.homNay)}`, tone: 'accent' }
     : { chu: 'KCK · không đặt kỳ vọng MT, không SOS', tone: null };
 
@@ -205,7 +209,7 @@ export function cauTomTat(i: DauVaoCau): ManhCau[] {
   else if (k.ratio) {
     const dau = k.phanTram !== null ? `${k.dau} ${k.phanTram}%` : `${k.dau} ${k.soDat}/${k.soMon} môn đạt`;
     m1 = { chu: k.monTruot.length ? `${dau}: không đạt ${noiVa(k.monTruot)}` : dau, tone: k.monTruot.length ? 'warn' : null };
-  } else if (k.kck) m1 = { chu: voiHoTro(k.overall !== null ? `${k.dau} Overall ${k.overall.toFixed(1)}` : k.dau), tone: null };
+  } else if (k.kck) m1 = { chu: voiHoTro(k.overall !== null ? `${k.dau} OVR ${k.overall.toFixed(1)}` : k.dau), tone: null };
   else if (k.sos) m1 = { chu: voiHoTro(`${k.dau} SOS ${k.sos}`), tone: toneSos(k.sos) };
   else if (k.dat) m1 = { chu: voiHoTro(`${k.dau} đạt kỳ vọng`), tone: null };
   else m1 = { chu: voiHoTro(`${k.dau} chưa đủ điểm`), tone: null };
@@ -240,8 +244,6 @@ export function cauTomTat(i: DauVaoCau): ManhCau[] {
   return !k && !m0 && ds.length === 1 ? [{ chu: 'Chưa có kết quả Test', tone: null }, ...ds] : ds;
 }
 
-const NHAN_TRANG_THAI_O: Record<string, string> = { 'qua-han': 'Quá hạn', 'can-lam': 'Cần làm', 'cho-duyet': 'Chờ duyệt', 'dang-lam': 'Đang làm' };
-
 /** Ô "Học thuật" (K3-03, Q7): số = số Case MỞ của chính bảng kỹ năng; mỗi Case một dòng `W2 · Quá hạn · ghi kết quả`. */
 export function oHocThuat(rows: readonly {
   short: string | null; label: string; category: string; missed: boolean | null;
@@ -264,8 +266,8 @@ export function oHocThuat(rows: readonly {
         : /^Xác nhận PA/.test(v) ? 'xác nhận PA'
         : /kế hoạch/.test(v) ? 'kế hoạch bổ trợ' : null;
       /* T65 + Q13 (UXF-b): em Tạm dừng — MỌI hạn dừng: "Quá hạn" và "Cần làm" đổi thành nhãn vàng "Tạm dừng từ dd/mm" (chỉ đổi chữ). */
-      if (tamDungTu && (t === 'qua-han' || t === 'can-lam')) dong.push({ kn: r.short ?? r.label, nhan: `Tạm dừng từ ${ngayNgan(tamDungTu)}`, t: 'tam-dung', viec: null, category: r.category });
-      else dong.push({ kn: r.short ?? r.label, nhan: NHAN_TRANG_THAI_O[t] ?? 'Đang làm', t, viec, category: r.category });
+      if (tamDungTu && (t === 'qua-han' || t === 'can-lam')) dong.push({ kn: r.short ?? r.label, nhan: chuTamDung(ngayNgan(tamDungTu), true), t: 'tam-dung', viec: null, category: r.category });
+      else dong.push({ kn: r.short ?? r.label, nhan: NHAN_TRANG_THAI[t] ?? NHAN_TRANG_THAI['dang-lam'], t, viec, category: r.category });
       const b = c.boTro;
       if (b && b.keHoach?.trangThai === 'cho' && !nhom.has(b.nhom)) {
         nhom.add(b.nhom);
@@ -276,7 +278,7 @@ export function oHocThuat(rows: readonly {
   /* Gấp lên trước: Quá hạn › Cần làm › Chờ duyệt › Đang làm (trong nhóm giữ thứ tự bảng). */
   const thuTu = ['qua-han', 'tam-dung', 'can-lam', 'cho-duyet', 'dang-lam'];
   dong.sort((a, b) => thuTu.indexOf(a.t) - thuTu.indexOf(b.t));
-  if (!dong.length) phu = rows.some((r) => r.missed === true) ? 'không có Case mở' : 'mọi kỹ năng đạt';
+  if (!dong.length) phu = rows.some((r) => r.missed === true) ? 'Không có Case mở' : 'mọi kỹ năng đạt';
   return { so: dong.length, dong, phu };
 }
 
@@ -296,7 +298,7 @@ export function oYThuc(y: {
   return { tren, gt, phu: 'không có vi phạm mở', tone: null };
 }
 
-/** Ô "Sắp tới" (Q7): mốc kế tiếp — FT MT + kỳ vọng; lớp thường Giữa/Cuối khoá + xét lên; sau Cuối khoá chờ lệnh chuyển; đã khép → kết luận. */
+/** Ô "Sắp tới" (Q7): mốc kế tiếp — FT MT + kỳ vọng; lớp thường Giữa/Cuối khoá + xét lên; sau Cuối khoá chờ quyết định chuyển lớp; đã khép → kết luận. */
 export function oSapToi(i: {
   ketLuan: string | null; sauCuoiKhoa: { tuanKetThuc: string | null } | null;
   next: { dau: string; attemptNo: number; tuan: string | null; kyVong: number | null; soPhan: number; final: boolean } | null;
@@ -306,7 +308,7 @@ export function oSapToi(i: {
 }): { tren: string; gt: string; phu: string | null } {
   if (i.ketLuan) return { tren: 'lộ trình đã khép', gt: `Kết luận: ${i.ketLuan}`, phu: null };
   if (i.sauCuoiKhoa) {
-    return { tren: 'sau Cuối khoá', gt: 'Chuyển lớp', phu: `chờ Quản lý ra lệnh${i.sauCuoiKhoa.tuanKetThuc ? ` · lớp kết thúc ${tuanLich(i.sauCuoiKhoa.tuanKetThuc, i.homNay)}` : ''}` };
+    return { tren: 'sau Cuối khoá', gt: 'Chuyển lớp', phu: `chờ Quản lý quyết định${i.sauCuoiKhoa.tuanKetThuc ? ` · lớp kết thúc ${tuanLich(i.sauCuoiKhoa.tuanKetThuc, i.homNay)}` : ''}` };
   }
   const n = i.next;
   if (!n) return { tren: 'mốc kế tiếp', gt: 'Chưa có mốc', phu: 'chưa xếp lịch Test' };
@@ -345,8 +347,8 @@ export function viecTiepHang(cases: readonly {
   const d = v.loaiHan && v.han ? deadlineView({ kind: v.loaiHan, due: v.han, today: homNay }) : null;
   const nguoi = c.nguoiLam?.ten ?? null;
   return {
-    viec: v.chu, han: d && d.han !== 'chưa có hạn' ? d.han : null, quaHan: d?.quaHan ?? null, homNay: !!d?.homNay, nguoi,
-    title: [d && d.han !== 'chưa có hạn' ? d.text : v.chu, nguoi].filter(Boolean).join(' · '),
+    viec: v.chu, han: d && d.han !== CHUA_CO_HAN ? d.han : null, quaHan: d?.quaHan ?? null, homNay: !!d?.homNay, nguoi,
+    title: [d && d.han !== CHUA_CO_HAN ? d.text : v.chu, nguoi].filter(Boolean).join(' · '),
   };
 }
 

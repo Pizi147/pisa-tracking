@@ -280,7 +280,7 @@ export async function runPrDonATests(t: YThucTestKit) {
     assert(!/phOf\(i\.studentIds\.length\)/.test(docNguon('server/src/keHoach/keHoachTest.ts')), 'còn IN thô theo studentIds');
   });
 
-  check('Dọn-a (3b) · #16 trần mảng: Thêm HV 201 dòng → 400; lệnh chuyển lớp 501 dòng → 400; nhập bù 51 dòng PA → 400', () => {
+  check('Dọn-a (3b) · #16 trần mảng: Thêm HV 201 dòng → 400; quyết định chuyển lớp 501 dòng → 400; nhập bù 51 dòng PA → 400', () => {
     const e = loiCua(() => intake.previewIntake(P.mbManager, { classId: classId('MB FOU 12'), rows: Array.from({ length: 201 }, (_, k) => ({ fullName: `Em ${k}` })) }));
     assert(e?.status === 400 && /Tối đa 200/.test(e.message), `201 dòng: ${e?.status} ${e?.message}`);
     const e2 = loiCua(() => lenh.raLenh(P.mbManager, { lopNguonId: classId('MB FOU 12'), boiCanh: 'cuoi-khoa', tuanChung: null,
@@ -392,7 +392,7 @@ export async function runPrDonATests(t: YThucTestKit) {
     assert(e?.status === 400 && /MT lịch sử không vào luồng vắng/.test(e.message), `MT lịch sử: ${e?.status} ${e?.message}`);
   });
 
-  check('Dọn-a (4b) · VN15 thi dự kiến ngày 07/12/2026 → tháng 01/2027: exam_period_id NULL, examPlanOf là tháng; chọn tuần khác cho tháng thì giữ (Q16)', () => {
+  check('Dọn-a (4b) · VN15 dự kiến thi ngày 07/12/2026 → tháng 01/2027: exam_period_id NULL, examPlanOf là tháng; chọn tuần khác cho tháng thì giữ (Q16)', () => {
     const { cy } = emMoi('MB FT 101');
     cyclesSvc.updateCycle(P.mbManager, cy, { examDate: '2026-12-07' });
     const truoc = get('SELECT exam_period_id FROM learning_cycles WHERE id = ?', cy);
@@ -511,7 +511,7 @@ export async function runPrDonATests(t: YThucTestKit) {
   const thongBao: any = await import('../platform/thongBao.ts');
   const itemsCua = (p: any, f: any = {}) => (mw.myWork(p, f).groups as any[]).flatMap((x) => x.items);
 
-  check('Dọn-a (6a) · Q10 "Đề ra PA": người làm = người phụ trách Case (A) ở Công việc của A (mine), của B (không mine) và ở hồ sơ em — cùng khoá support:{caseId}', () => {
+  check('Dọn-a (6a) · Q10 "Thêm PA": người làm = người phụ trách Case (A) ở Công việc của A (mine), của B (không mine) và ở hồ sơ em — cùng khoá support:{caseId}', () => {
     const { sid } = emMoi('MB FT 101');
     const A = P.lrTeacher;
     /* B: một GV khác cũng dạy lớp này (GV L có thể kiêm GVCN). */
@@ -771,8 +771,8 @@ export async function runPrDonATests(t: YThucTestKit) {
     assert(!/luot-moi:\$\{pick\}:\$\{today\}:\$\{studentIds\.join/.test(docNguon('server/src/worklist/danhGia.ts')), 'khoá còn ghép thô cả mảng id');
   });
 
-  // ------------------------------------------------------------------ khối 10 · seed demo và badge "em chưa có lệnh chuyển lớp" (Câu 2 = B)
-  console.log('\nPR-Dọn-a · (10) Seed hạn Thứ Hai, câu demo không hàm ý ca học; badge lớp = em chưa có lệnh chuyển lớp');
+  // ------------------------------------------------------------------ khối 10 · seed demo và badge "em chưa có quyết định chuyển lớp" (Câu 2 = B)
+  console.log('\nPR-Dọn-a · (10) Seed hạn Thứ Hai, câu demo không hàm ý ca học; badge lớp = em chưa có quyết định chuyển lớp');
   const lenhSvc: any = await import('../classes/lenhChuyen.ts');
   const classesSvc: any = await import('../classes/classes.ts');
   check('Dọn-a (10a) · bộ demo: mọi hạn ghi kết quả PA (action_due) là Thứ Hai', () => {
@@ -789,7 +789,7 @@ export async function runPrDonATests(t: YThucTestKit) {
     const n = get(`SELECT COUNT(*) n FROM assessment_attempts a JOIN classes c ON c.id = a.class_id WHERE c.programme_code = 'PREFOU' AND a.kind = 'progress'`).n;
     assert(n === 0, `${n} lượt Giữa khoá ở lớp Pre FOU`);
   });
-  check('Dọn-a (10d) · Câu 2 = B: badge "n HV chưa có lệnh chuyển lớp" của lớp = số em của dòng Cần xử lý (lopChoLenhChuyen) = số em có cờ ở bảng học viên; em có lệnh chờ → không cờ', () => {
+  check('Dọn-a (10d) · Câu 2 = B: badge "n HV chưa có quyết định chuyển lớp" của lớp = số em của dòng Cần xử lý (lopChoLenhChuyen) = số em có cờ ở bảng học viên; em có lệnh chờ → không cờ', () => {
     const lop = lenhSvc.lopChoLenhChuyen(P.mbManager, MB, TODAY) as any[];
     assert(lop.length > 0, 'dữ liệu demo: cần một lớp thường đã tới Cuối khoá còn em chưa có lệnh');
     const tom = classesSvc.listClassSummaries(P.mbManager, { branchId: MB }).rows as any[];
@@ -802,6 +802,6 @@ export async function runPrDonATests(t: YThucTestKit) {
     }
     const b = d.badgeLop({ vai: 'ql', needsPlacement: false, canXepLop: 0, soChuaLoTrinhTiep: 3, missingSkills: [], soBaiChoCham: 0, needScoresTitle: null, phase: 'running', missingCount: 0 });
     const x = [...b.hien, ...b.an].find((y: any) => y.key === 'xep-lop');
-    assert(x?.nhan === '3 HV chưa có lệnh chuyển lớp' && x.title === 'Quản lý ra lệnh ở ⋮ Chuyển lớp cả lớp', JSON.stringify(x));
+    assert(x?.nhan === '3 HV chưa có quyết định chuyển lớp' && x.title === 'Quản lý quyết định ở ⋮ Chuyển tiếp lớp', JSON.stringify(x));
   });
 }

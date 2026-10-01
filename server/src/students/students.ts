@@ -129,7 +129,7 @@ export function latestResult(studentId: number) {
  * NHỮNG THỨ CÒN DỞ khi một em sắp chuyển lớp — để màn hình bày sẵn, người chuyển không phải
  * chép tay (mục 6.4).
  *
- * Trước vòng này, chuyển lớp xong là case còn mở rơi vào khoảng trống: giáo viên cũ không
+ * Trước vòng này, chuyển lớp xong là Case còn mở rơi vào khoảng trống: giáo viên cũ không
  * còn dạy em, giáo viên mới không biết em đang dở chuyện gì. Nay chuyển lớp BẮT BUỘC có
  * thông tin bàn giao, và đây là nguồn để viết thông tin đó.
  */
@@ -162,24 +162,24 @@ export function handoverBrief(studentId: number) {
 }
 
 export function transferStudent(p: Principal, studentId: number, toClassId: number, effectiveDate: string, reason: string, handover?: {
-  /** Ghi chú bàn giao — BẮT BUỘC khi em còn case chưa xong. */
+  /** Ghi chú bàn giao — BẮT BUỘC khi em còn Case chưa xong. */
   note?: string | null;
-  /** Chọn rõ "Không có lưu ý" (RB-3) — chỉ nhận khi em không còn case dở. */
+  /** Chọn rõ "Không có lưu ý" (RB-3) — chỉ nhận khi em không còn Case dở. */
   noNote?: boolean;
-  /** Người tiếp nhận CŨ — áp dụng cho MỌI case còn mở (giữ tương thích phép kiểm cũ). `nguoiNhan` thắng nếu có (Q14). */
+  /** Người tiếp nhận CŨ — áp dụng cho MỌI Case còn mở (giữ tương thích phép kiểm cũ). `nguoiNhan` thắng nếu có (Q14). */
   receiverUserId?: number | null;
   /** caseId → userId người nhận (Q14, panel Chuyển lớp gợi ý theo Case). */
   nguoiNhan?: Record<number, number> | null;
-  /** Sang Fast Track (thật): bắt buộc (Q7). */
+  /** Lên FT (thật): bắt buộc (Q7). */
   mucTieu?: number | null;
   thangThi?: string | null;
 }) {
   /*
    * Q3 (chủ sản phẩm 23/09): quyền kiểm Ở LỚP NGUỒN — GVCN của lớp đó (hoặc QL phạm vi lớp đó).
-   * KHÔNG đòi quyền ở lớp đích: GVCN chuyển được sang MỌI chi nhánh đang hoạt động.
+   * KHÔNG đòi quyền ở lớp chuyển đến: GVCN chuyển được sang MỌI chi nhánh đang hoạt động.
    *
    * Em CHƯA TỪNG ghi danh (xếp lớp lần đầu, không phải "chuyển lớp") thì không có lớp nguồn để
-   * kiểm theo Q3 — giữ đúng luật cũ: quyền theo phạm vi của em (branch_id) VÀ quyền ở lớp đích.
+   * kiểm theo Q3 — giữ đúng luật cũ: quyền theo phạm vi của em (branch_id) VÀ quyền ở lớp chuyển đến.
    */
   const enr = lopHienTaiCua(studentId);
   if (enr) {
@@ -187,10 +187,10 @@ export function transferStudent(p: Principal, studentId: number, toClassId: numb
     require_(p, PERMISSIONS.CLASS_EDIT, { classId: enr.class_id }, 'Bạn không có quyền chuyển lớp học viên này.');
   } else {
     require_(p, PERMISSIONS.STUDENT_EDIT, { studentId }, 'Bạn không có quyền chuyển lớp học viên này.');
-    require_(p, PERMISSIONS.STUDENT_EDIT, { classId: toClassId }, 'Lớp đích nằm ngoài phạm vi bạn được cấp quyền.');
+    require_(p, PERMISSIONS.STUDENT_EDIT, { classId: toClassId }, 'Lớp chuyển đến nằm ngoài phạm vi bạn được cấp quyền.');
   }
   const toClass = lopDichHopLe(toClassId, enr?.class_id ?? -1);
-  if (!toClass) throw badRequest('Lớp đích không hợp lệ.');
+  if (!toClass) throw badRequest('Lớp chuyển đến không hợp lệ.');
   if (!isIsoDate(effectiveDate)) throw badRequest('Ngày hiệu lực không hợp lệ.');
 
   const why = String(reason ?? '').trim();
@@ -203,14 +203,14 @@ export function transferStudent(p: Principal, studentId: number, toClassId: numb
   const typed = (handover?.note ?? '').trim();
   if (brief.cases.length > 0 && !typed) {
     throw badRequest(
-      `Em còn ${brief.cases.length} case chưa xong. Ghi thông tin bàn giao để người nhận lớp `
+      `Em còn ${brief.cases.length} Case chưa xong. Ghi thông tin bàn giao để người nhận lớp `
       + 'biết em đang vướng gì và đang làm dở đến đâu.',
     );
   }
   if (!typed && !handover?.noNote) throw badRequest(`Ghi lưu ý bàn giao, hoặc chọn "${NO_HANDOVER_NOTE}".`);
   const handoverNote = typed || NO_HANDOVER_NOTE;
 
-  /* Q7: chuyển THẬT sang Fast Track (không phải chỉ ghi dự định) bắt buộc Mục tiêu band. Không áp dụng khi xếp lớp lần đầu. */
+  /* Q7: chuyển THẬT sang Fast Track (không phải chỉ ghi dự định) bắt buộc Target. Không áp dụng khi xếp lớp lần đầu. */
   if (enr) {
     const luatXem = luatDoiLop(
       { ma: (enr.programme_code ?? null) as ProgrammeCode | null, ft: !!enr.is_fast_track, lt: enr.route },
@@ -218,7 +218,7 @@ export function transferStudent(p: Principal, studentId: number, toClassId: numb
       'giua-khoa',
     );
     if (luatXem.canMucTieu && (handover?.mucTieu === null || handover?.mucTieu === undefined)) {
-      throw badRequest('Chuyển sang Fast Track cần Mục tiêu band.');
+      throw badRequest('Lên FT cần Target.');
     }
   }
 
@@ -360,7 +360,7 @@ export function updateStudent(p: Principal, studentId: number, patch: any) {
   /* Kiểm ở biên (PR-NHAP): họ tên không rỗng, ngày sinh có thật và không sau hôm nay, email đúng dạng (trống → NULL, T8). */
   patch = { ...patch };
   kiemKieuO(patch, ['fullName', 'dob', 'email', 'consultantName', 'note'], [],
-    (k) => ({ fullName: 'Họ tên', dob: 'Ngày sinh', email: 'Email', consultantName: 'Người tư vấn', note: 'Ghi chú' })[k] ?? k);
+    (k) => ({ fullName: 'Họ tên', dob: 'Ngày sinh', email: 'Email', consultantName: 'Tư vấn viên', note: 'Ghi chú' })[k] ?? k);
   if (patch.fullName !== undefined) {
     patch.fullName = String(patch.fullName ?? '').trim();
     if (!patch.fullName) throw badRequest('Họ tên không được trống.');

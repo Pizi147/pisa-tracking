@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { chuTuanHoc, deadlineView, type DeadlineKind, type TheYeuCauDto } from '@shared/domain/index.ts';
+import { chuTamDung, chuTuanHoc, deadlineView, type DeadlineKind, type TheYeuCauDto } from '@shared/domain/index.ts';
 import { TargetText } from '../../ui/ui.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
@@ -22,7 +22,7 @@ export type Viec = {
 
 /**
  * DÒNG THÔNG TIN — "em là ai" (mockup 24 A/C/D1).
- *   FT          MB FT 101 · LT1 · target 6.5 · tuần học thứ 9 · thi dự kiến 06/2027 · GVCN …
+ *   FT          MB FT 101 · LT1 · target 6.5 · tuần học 9 · dự kiến thi 06/2027 · GVCN …
  *   lớp thường  MB FOU 15 · FOU · tuần học 7/10 · Cuối khoá W4 OCT · GVCN …   (không target, FT không bao giờ "n/16")
  */
 export function DongThongTin({ tt }: { tt: any }) {
@@ -30,7 +30,7 @@ export function DongThongTin({ tt }: { tt: any }) {
   const muc: ReactNode[] = [
     <b key="lop">{tt.lop}</b>,
     tt.loTrinh && <b key="lt">{tt.loTrinh}</b>,
-    tt.target !== null && <span key="tg">target <b><TargetText band={tt.target === 'KCK' ? null : tt.target} kck={tt.target === 'KCK'} /></b></span>,
+    tt.target !== null && <span key="tg">Target <b><TargetText band={tt.target === 'KCK' ? null : tt.target} kck={tt.target === 'KCK'} /></b></span>,
     tt.tuanHoc && <span key="tuan"><b className="tabular-nums">{chuTuanHoc(tt.tuanHoc.tuan, tt.tuanHoc.tong, tt.tuanHoc.dangDung)}</b></span>,
     tt.thiDuKien && <span key="thi">{tt.thiDuKien.nhan} <b className="tabular-nums">{tt.thiDuKien.gt}</b></span>,
     tt.gvcn && <span key="gv">GVCN <b>{tt.gvcn}</b></span>,
@@ -91,15 +91,15 @@ export function ThanhViec({ viec, homNay, onLam }: { viec: { cuaBan: Viec[]; ngu
   const qh = dau.quaHanNgay !== null;
   const ds = mo === 'ban' ? con : mo === 'khac' ? viec.nguoiKhac : [];
   return (
-    <section aria-label="Việc của bạn với học viên này">
+    <section aria-label="Việc của tôi với học viên này">
       <div className={`flex flex-wrap items-center gap-x-3.5 gap-y-2 rounded-[10px] px-3 py-[9px] ${qh
         ? 'bg-bad-bg shadow-[inset_3px_0_0_rgb(var(--bad-rgb))]' : 'bg-[color:var(--surface-2)] shadow-[inset_3px_0_0_var(--accent)]'}`}>
-        <span className="whitespace-nowrap text-[11.5px] font-bold uppercase tracking-[.04em] text-slate-400">Việc của bạn</span>
+        <span className="whitespace-nowrap text-[11.5px] font-bold uppercase tracking-[.04em] text-slate-400">Việc của tôi</span>
         <span className="min-w-0 flex-1 basis-full text-[13.5px] text-slate-100 sm:basis-auto">
           <ChuViec chu={dau.chu} /> {dau.han && <HanViec x={dau} homNay={homNay} chiQuaHan />}
         </span>
         {dau.mo && <button type="button" className="btn btn-primary btn-sm min-h-[44px] w-full sm:min-h-0 sm:w-auto" onClick={() => onLam(dau)}>{dau.nut}</button>}
-        {con.length > 0 && <NutGap mo={mo === 'ban'} onClick={() => setMo(mo === 'ban' ? null : 'ban')}>{con.length} việc khác của bạn</NutGap>}
+        {con.length > 0 && <NutGap mo={mo === 'ban'} onClick={() => setMo(mo === 'ban' ? null : 'ban')}>{con.length} việc khác của tôi</NutGap>}
         {viec.nguoiKhac.length > 0 && (
           <NutGap mo={mo === 'khac'} onClick={() => setMo(mo === 'khac' ? null : 'khac')}>{viec.nguoiKhac.length} việc của người khác</NutGap>
         )}
@@ -206,7 +206,7 @@ export function BonO({ o, homNay, onDot, onKn, onYThuc, kyNangHref }: {
       const href = kyNangHref?.(d.kn, d.attemptId ?? null) ?? null;
       return (
         <span key={d.kn}>{i > 0 && ' · '}{href
-          ? <Link to={href} className="link" title={`Mở hồ sơ Mock · ${kq.nhan.split(' · ')[0]} · ${d.ngan}`}>{d.ngan}</Link>
+          ? <Link to={href} className="link" title={`Mở Hồ sơ Mock Test · ${kq.nhan.split(' · ')[0]} · ${d.ngan}`}>{d.ngan}</Link>
           : d.ngan}</span>
       );
     })}</>
@@ -222,7 +222,7 @@ export function BonO({ o, homNay, onDot, onKn, onYThuc, kyNangHref }: {
       <O nhan="Kết quả gần nhất" tren={kq?.nhan} phu={phuKq} title="Mở đợt Test này ở bảng Học thuật" phuNgoai={!!kyNangHref && !!k.duoi?.length}
         onClick={kq ? () => onDot(kq.attemptId) : undefined}>
         {k.kck && kq
-          ? <span className="rounded-md border px-2 text-[15px] leading-6 tabular-nums text-slate-300" style={{ borderColor: 'var(--line-strong)' }}>Overall {k.overall !== null ? k.overall.toFixed(1) : '—'}</span>
+          ? <span className="rounded-md border px-2 text-[15px] leading-6 tabular-nums text-slate-300" style={{ borderColor: 'var(--line-strong)' }}>OVR {k.overall !== null ? k.overall.toFixed(1) : '—'}</span>
           : giaTriKq}
       </O>
       <O nhan="Học thuật" title="Mở bảng kỹ năng ở Case gấp nhất"
@@ -246,7 +246,7 @@ export function BonO({ o, homNay, onDot, onKn, onYThuc, kyNangHref }: {
         phu={<span className={y.tone === 'danger' ? 'font-semibold text-bad' : y.tone === 'warn' ? 'font-semibold text-soon' : y.tone === 'wait' ? 'text-wait' : ''}>{y.phu}</span>}>
         <span className={y.tren ? '' : 'text-[15px]'}>{y.gt}</span>
       </O>
-      <O nhan="Sắp tới" tren={s.tren} phu={s.phu} title="Mở đợt Test kế tiếp ở bảng Học thuật"
+      <O nhan="Sắp tới" tren={s.tren} phu={s.phu} title="Mở đợt Test sắp tới ở bảng Học thuật"
         onClick={s.attemptId ? () => onDot(s.attemptId) : undefined}>
         <span className="text-[15px] tabular-nums">{s.gt}</span>
       </O>
@@ -265,7 +265,7 @@ export function DaiTamDung({ tamDung }: { tamDung: { tu: string; lyDo: string | 
     <section aria-label="Học viên đang tạm dừng" className="flex items-start gap-2.5 rounded-[10px] bg-soon-bg px-3 py-2.5 shadow-[inset_3px_0_0_rgb(var(--soon-rgb))]">
       <span className="mt-[3px] text-soon"><IconTamDung /></span>
       <span className="min-w-0 text-[13px] text-slate-100">
-        <b className="font-semibold text-soon">Tạm dừng từ {ngayDung}</b> · mọi hạn đang dừng
+        <b className="font-semibold text-soon">{chuTamDung(ngayDung)}</b> · mọi hạn đang dừng
         {tamDung.lyDo && <> · lý do: {tamDung.lyDo}</>}
         {tamDung.boi && <> · người ghi: {tamDung.boi}</>}
         <span className="block text-[12px] text-slate-400">Quay lại học thì hạn tính lại từ ngày quay lại</span>

@@ -19,7 +19,7 @@ export type KetQuaChotVang = { ngay: string; daChot: number; daChuyen: number; b
 
 export function chotVangDinhKy(o: {
   ngay?: string; chot?: (ngay: string) => number; daKhoiTao?: () => boolean;
-  /** PR-CT: thi hành lệnh chuyển lớp tới Thứ Hai (mặc định `thiHanhLenhDenHan`); trả số em đã chuyển. */
+  /** PR-CT: thi hành quyết định chuyển lớp tới Thứ Hai (mặc định `thiHanhLenhDenHan`); trả số em đã chuyển. */
   chuyen?: (ngay: string) => number;
 } = {}): KetQuaChotVang {
   const batDau = Date.now();

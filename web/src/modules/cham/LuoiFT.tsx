@@ -122,7 +122,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
             <Th className="sticky-col" hint="Cột này đứng yên khi cuộn ngang, để không lạc mất đang nhập cho em nào.">Học viên</Th>
             {cot.mt && <Th hint="Số thứ tự lượt Mock Test (MT) trong lộ trình của em.">MT</Th>}
             {cot.trangThai && <Th hint="Lượt đã chấm xong, đang chờ, hay đã huỷ.">Trạng thái</Th>}
-            {cot.han && <Th hint="Hạn chấm tính riêng cho từng môn, từ tuần thi của chính môn đó: hết thứ Tư của tuần kế tiếp. Quản lý đặt được hạn riêng.">Hạn nhập</Th>}
+            {cot.han && <Th hint="Hạn chấm tính riêng cho từng môn, từ tuần thi của chính môn đó: hết thứ Tư của tuần kế tiếp. Quản lý đặt được hạn riêng.">Hạn chấm</Th>}
             {RAW_SKILLS.map((s) => (
               <Th key={s} align="right" className={toCot(s)} hint={`${skillLabel(s)} — nhập số câu đúng (0–40), máy tự quy ra band.`}>
                 {skillShort(s)} <span className="normal-case text-slate-500">(số câu)</span>
@@ -140,8 +140,8 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
                 <div className="flex justify-end"><NutGvCham value={gvCot} onChange={setGvCot} /></div>
               )}
             </Th>
-            <Th align="right" hint="Mức mong đợi của chính lượt này, tính theo mục tiêu tại thời điểm đó.">Kỳ vọng</Th>
-            <Th align="right" hint="Band tổng, chỉ có khi đã đủ điểm mọi kỹ năng bắt buộc.">Overall</Th>
+            <Th align="right" hint="Mức mong đợi của chính lượt này, tính theo Target tại thời điểm đó.">Kỳ vọng</Th>
+            <Th align="right" hint="Band tổng, chỉ có khi đã đủ điểm mọi kỹ năng bắt buộc.">OVR</Th>
             <Th hint="Số kỹ năng dưới kỳ vọng của lượt này — đó chính là mức SOS.">Kết quả</Th>
           </tr>
         </thead>
@@ -339,7 +339,7 @@ export function DauLuu({ status, error, onRetry, soLoi = 0, lon = false }: {
   if (soLoi > 0 || status === 'error') {
     return (
       <span className="inline-flex items-center gap-1 whitespace-nowrap font-semibold text-bad" role="alert"
-        title={error ? `Chưa lưu được: ${error}` : 'Chưa lưu được'}>
+        title={error ? `Không lưu được: ${error}` : 'Không lưu được'}>
         {chuOChuaLuu(Math.max(soLoi, 1))}
         {/* Điện thoại: dòng chỉ một kỹ năng, nút "Lưu lại" 44px nằm ngay ở ô — không lặp hai nút sát nhau. */}
         {onRetry && !lon && (
@@ -377,7 +377,7 @@ export function DauO({ tt, loi, onLuuLai, lon = false }: {
   const cho = lon ? 'inline-flex items-center' : 'absolute bottom-0.5 right-1 leading-none';
   if (tt === 'loi') {
     return (
-      <button type="button" onClick={onLuuLai} title={`Chưa lưu được${loi ? `: ${loi}` : ''}. Bấm để lưu lại.`}
+      <button type="button" onClick={onLuuLai} title={`Không lưu được${loi ? `: ${loi}` : ''}. Bấm để lưu lại.`}
         className={`${cho} appearance-none border-0 bg-transparent p-0 text-xs font-semibold text-bad underline ${lon ? 'min-h-[44px] px-1 text-xs' : ''}`}>
         Lưu lại
       </button>

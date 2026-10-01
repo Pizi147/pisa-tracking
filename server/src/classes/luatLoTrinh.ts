@@ -36,7 +36,7 @@ export function lopHienTaiCua(studentId: number): any {
     .get(studentId) as any;
 }
 
-/** Q3: quyền kiểm Ở LỚP NGUỒN — GVCN lớp đó (hoặc QL phạm vi lớp đó), KHÔNG đòi quyền ở lớp đích. */
+/** Q3: quyền kiểm Ở LỚP NGUỒN — GVCN lớp đó (hoặc QL phạm vi lớp đó), KHÔNG đòi quyền ở lớp chuyển đến. */
 export function coTheChuyenLop(p: Principal, sid: number): { enr: any } | null {
   const enr = lopHienTaiCua(sid);
   if (!enr) return null;
@@ -44,7 +44,7 @@ export function coTheChuyenLop(p: Principal, sid: number): { enr: any } | null {
   return { enr };
 }
 
-/** Lớp đích hợp lệ: tồn tại, `status='active'`, khác lớp nguồn. Không kiểm quyền ở đây (Q3). */
+/** Lớp chuyển đến hợp lệ: tồn tại, `status='active'`, khác lớp nguồn. Không kiểm quyền ở đây (Q3). */
 export function lopDichHopLe(toClassId: number, lopNguonId: number): any | null {
   const lop = db().prepare('SELECT * FROM classes WHERE id = ?').get(toClassId) as any;
   if (!lop || lop.status !== 'active' || lop.id === lopNguonId) return null;
@@ -53,12 +53,12 @@ export function lopDichHopLe(toClassId: number, lopNguonId: number): any | null 
 
 // ---------------------------------------------------------------- GET /chuyen-lop/lop-dich (Q3)
 
-/** Danh sách lớp đích cho GVCN chọn — MỌI chi nhánh, không lộ số/tên học viên lớp khác. */
+/** Danh sách lớp chuyển đến cho GVCN chọn — MỌI chi nhánh, không lộ số/tên học viên lớp khác. */
 export function lopDichChoChuyen(p: Principal, sid: number) {
   const enr = lopHienTaiCua(sid);
   if (!enr) throw badRequest('Học viên không đang học lớp nào.');
-  /* PR-CT: danh sách lớp là dữ liệu chỉ đọc, không lộ học viên — GVCN cần nó để chọn "Lớp muốn chuyển tới" khi Đề xuất chuyển lớp. Ra lệnh vẫn chỉ Quản lý (`raLenh`). */
-  require_(p, PERMISSIONS.STUDENT_EDIT, { classId: enr.class_id }, 'Bạn không có quyền xem lớp đích của học viên này.');
+  /* PR-CT: danh sách lớp là dữ liệu chỉ đọc, không lộ học viên — GVCN cần nó để chọn "Lớp chuyển đến" khi Đề xuất chuyển lớp. Ra lệnh vẫn chỉ Quản lý (`raLenh`). */
+  require_(p, PERMISSIONS.STUDENT_EDIT, { classId: enr.class_id }, 'Bạn không có quyền xem lớp chuyển đến của học viên này.');
   const conn = db();
   const branches = conn.prepare(`SELECT id, name FROM branches WHERE status = 'active' ORDER BY name`).all() as any[];
   const lopRows = conn
@@ -87,7 +87,7 @@ export function lopDichChoChuyen(p: Principal, sid: number) {
 
 // ---------------------------------------------------------------- người nhận Case gợi ý (Q14)
 
-/** Mỗi Case đang mở → người gợi ý nhận ở lớp đích: GV đúng môn → GVCN lớp đích → giữ người cũ (null). */
+/** Mỗi Case đang mở → người gợi ý nhận ở lớp chuyển đến: GV đúng môn → GVCN lớp chuyển đến → giữ người cũ (null). */
 export function nguoiNhanGoiY(caseRows: readonly { id: number; category: string | null }[], toClassId: number): Map<number, { id: number; ten: string } | null> {
   const out = new Map<number, { id: number; ten: string } | null>();
   if (!caseRows.length) return out;
@@ -116,7 +116,7 @@ export function nguoiNhanGoiY(caseRows: readonly { id: number; category: string 
 
 // ---------------------------------------------------------------- thông báo nơi nhận (Q21)
 
-/** GVCN lớp đích (luôn) + mọi QL có grant chi nhánh đích (chỉ khi đổi chi nhánh) — trừ chính người bấm. */
+/** GVCN lớp chuyển đến (luôn) + mọi QL có grant chi nhánh đích (chỉ khi đổi chi nhánh) — trừ chính người bấm. */
 export function thongBaoChuyenVao(i: {
   sid: number; tenHocVien: string; enrollmentMoiId: number; actorUserId: number | null;
   tuMa: string; tuChiNhanh: string; doiChiNhanh: boolean; lyDo: string | null;
@@ -207,7 +207,7 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
   const conn = db();
   const enr = lopHienTaiCua(d.sid);
   const toClass = conn.prepare('SELECT * FROM classes WHERE id = ?').get(d.toClassId) as any;
-  if (!toClass) throw notFound('Không tìm thấy lớp đích');
+  if (!toClass) throw notFound('Không tìm thấy lớp chuyển đến');
 
   /* Xếp lớp LẦN ĐẦU (chưa từng ghi danh) — không có khoá cũ để đóng, không luật lộ trình nào áp dụng. */
   if (!enr) {
@@ -255,7 +255,7 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
   if (luat.khoa === 'dong-mo') {
     if (curCycle) conn.prepare(`UPDATE learning_cycles SET status = 'completed', ended_at = ? WHERE id = ?`).run(d.ngay, curCycle.id);
     const seq = ((conn.prepare('SELECT MAX(seq) n FROM learning_cycles WHERE student_id = ?').get(d.sid) as any)?.n ?? 0) + 1;
-    const route = denLop.ft ? (toClass.route ?? curCycle?.route ?? 'LT1') : null;   // lộ trình mới = lộ trình lớp đích (M-20)
+    const route = denLop.ft ? (toClass.route ?? curCycle?.route ?? 'LT1') : null;   // lộ trình mới = lộ trình lớp chuyển đến (M-20)
     const startPeriodId = denLop.ft ? ensurePeriod(mondayOf(d.ngay)).id : (toClass.start_period_id ?? null);
     const moiId = Number(conn
       .prepare(
@@ -327,7 +327,7 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
 
 // ---------------------------------------------------------------- GET /students/:id/chuyen-lop
 
-/** Case đang mở + luật áp dụng nếu đã chọn lớp đích — bày sẵn cho panel Chuyển lớp (Q13, Q14). */
+/** Case đang mở + luật áp dụng nếu đã chọn lớp chuyển đến — bày sẵn cho panel Chuyển lớp (Q13, Q14). */
 export function xemChuyenLop(p: Principal, sid: number, toClassId?: number | null) {
   const enr = lopHienTaiCua(sid);
   if (!enr) throw badRequest('Học viên không đang học lớp nào.');
@@ -346,7 +346,7 @@ export function xemChuyenLop(p: Principal, sid: number, toClassId?: number | nul
   let doiChiNhanh = false;
   if (toClassId) {
     const toClass = lopDichHopLe(toClassId, enr.class_id);
-    if (!toClass) throw badRequest('Lớp đích không hợp lệ.');
+    if (!toClass) throw badRequest('Lớp chuyển đến không hợp lệ.');
     const tuLop: LoaiLop = { ma: (enr.programme_code ?? null) as ProgrammeCode | null, ft: !!enr.is_fast_track, lt: enr.route };
     const denLop: LoaiLop = { ma: (toClass.programme_code ?? null) as ProgrammeCode | null, ft: !!toClass.is_fast_track, lt: toClass.route };
     luat = luatDoiLop(tuLop, denLop, 'giua-khoa');
@@ -359,7 +359,7 @@ export function xemChuyenLop(p: Principal, sid: number, toClassId?: number | nul
       lop: { id: enr.class_id, code: enr.code }, ma: (enr.programme_code ?? null) as ProgrammeCode | null,
       ft: !!enr.is_fast_track, chiNhanhId: enr.branch_id, route: (enr.route ?? null) as string | null,
       tuanHoc: (() => {
-        /* PR-UXF-a Q6 (Q31-11): FT không giới hạn tuần — "tuần học thứ n" của EM (từ tuần bắt đầu lộ trình, bỏ tuần Tạm dừng), không mẫu số. */
+        /* PR-UXF-a Q6 (Q31-11): FT không giới hạn tuần — "tuần học n" của EM (từ tuần bắt đầu lộ trình, bỏ tuần Tạm dừng), không mẫu số. */
         if (enr.is_fast_track) {
           const bd = conn.prepare(`SELECT sp.week_start FROM learning_cycles cy JOIN report_periods sp ON sp.id = cy.start_period_id
                                     WHERE cy.student_id = ? AND cy.status = 'active'`).get(sid) as any;
@@ -376,7 +376,7 @@ export function xemChuyenLop(p: Principal, sid: number, toClassId?: number | nul
       goiY: toClassId ? (goiY.get(c.id) ?? null) : null,
     })),
     luat, canLuuY: openCases.length === 0, doiChiNhanh,
-    /** PR-CT: lệnh đang chờ của em (nếu có) — panel mở ở chế độ sửa + Huỷ lệnh. */
+    /** PR-CT: lệnh đang chờ của em (nếu có) — panel mở ở chế độ sửa + Huỷ quyết định. */
     lenh: (() => {
       const l = conn.prepare(`SELECT id, huong, lop_dich_id, tuan_bat_dau, muc_tieu, khong_cam_ket, ngay_thi, ly_do, loi FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho'`).get(sid) as any;
       return l ? {
@@ -405,7 +405,7 @@ export type DongCaLop = {
  * của những em sang FT (ngoại lệ duy nhất được phép, S17).
  *
  * Mọi dòng trong `dongs` đứng CÙNG lớp nguồn (`boiCanh = 'cuoi-khoa'`, từ luôn là lớp thường) —
- * nên `luatDoiLop` luôn ra `khoa = 'dong-mo'` bất kể lớp đích, và lượt Test chưa làm luôn Ở LẠI
+ * nên `luatDoiLop` luôn ra `khoa = 'dong-mo'` bất kể lớp chuyển đến, và lượt Test chưa làm luôn Ở LẠI
  * lớp cũ (Q12) — không cần đọc/ghi `assessment_attempts` ở đây.
  */
 export function apDungCaLop(p: Principal, o: {
@@ -534,7 +534,7 @@ export function apDungCaLop(p: Principal, o: {
     const rows = o.dongs.map(() => '(?,?,?,?,NULL,NULL,?,?)').join(',');
     const params = o.dongs.flatMap((d) => [
       d.sid, 'promote', o.ngay,
-      d.huong === 'fast_track' ? `Chuyển sang Fast Track ${d.toClass.code}`
+      d.huong === 'fast_track' ? `Lên FT ${d.toClass.code}`
         : d.huong === 'hoc_lai' ? `Học lại ${d.toClass.code}` : `Lên lớp ${d.toClass.code}`,
       p.userId, now,
     ]);
@@ -548,7 +548,7 @@ export function apDungCaLop(p: Principal, o: {
 }
 
 /**
- * Bảo lưu cả lô — MỘT UPDATE học viên, ghi `end_reason` THEO NHÓM lý do (số nhóm bị chặn bởi số
+ * Tạm dừng học (bảo lưu) cả lô — MỘT UPDATE học viên, ghi `end_reason` THEO NHÓM lý do (số nhóm bị chặn bởi số
  * lý do KHÁC NHAU trong lô, không phải theo từng em), MỘT INSERT hành trình. Ghi `created_by`
  * đúng người bấm xác nhận (sửa sau rà PR #86, vấn đề 7c — trước đây ghi NULL).
  */
@@ -574,7 +574,7 @@ export function apDungBaoLuuCaLop(p: Principal, o: { fromClassId: number; ngay: 
       .run(lyDo, o.fromClassId, ...sids);
   }
   const rows = o.dongs.map(() => '(?,?,?,?,NULL,NULL,?,?)').join(',');
-  const params = o.dongs.flatMap((d) => [d.sid, 'pause', o.ngay, `Bảo lưu — ${d.lyDo}`, p.userId, now]);
+  const params = o.dongs.flatMap((d) => [d.sid, 'pause', o.ngay, `Tạm dừng học (bảo lưu) — ${d.lyDo}`, p.userId, now]);
   conn
     .prepare(
       `INSERT INTO journey_events (student_id, event_type, event_date, title, ref_table, ref_id, created_by, created_at)

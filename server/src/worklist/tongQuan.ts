@@ -1,7 +1,7 @@
 import { db } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
-  ASSESSED_SKILLS, ATTEMPT_KIND_SHORT, CAN_XU_LY, baiId, MOC_KE_TIEP_SQL, PERMISSIONS, type AttemptKind, tenMon, tenMonNgan, chonDiemDangChuY, sapCanXuLy,
+  ASSESSED_SKILLS, ATTEMPT_KIND_SHORT, CAN_XU_LY, CHUA_CO_HAN, baiId, MOC_KE_TIEP_SQL, PERMISSIONS, type AttemptKind, tenMon, tenMonNgan, chonDiemDangChuY, sapCanXuLy,
   duongHoSoHocVien, nguoiGiuViecChu, soSanhLop, tuanCuaHanGhiKetQua, tuanLich,
   type ChuongTrinh, type DiemChuY, type DongCanXuLyGoc, type MaCanXuLy, type UngVienChuY,
 } from '../../../shared/domain/index.ts';
@@ -32,7 +32,7 @@ const laQuanLy = (p: Principal) => {
  */
 /** Một dòng Cần xử lý đã dựng đủ bốn cột (K1-06, Q4, Q24): nhãn trạng thái · việc · Người giữ việc · Hạn · nút đúng việc. */
 export type DongCanXuLy = DongCanXuLyGoc & {
-  /** Chữ đứng TRƯỚC con số ("Chuyển lớp cả lớp · MB FOU 12 ·"). */
+  /** Chữ đứng TRƯỚC con số ("Chuyển tiếp lớp · MB FOU 12 ·"). */
   truoc?: string;
   phu: string;
   /** Vế nối sau nhãn ("3 Case chưa có người nhận"). */
@@ -92,7 +92,7 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null }) {
   const ten = new Map<number, string>(nguoiIds.length
     ? (db().prepare(`SELECT id, full_name FROM users WHERE id IN (${nguoiIds.map(() => '?').join(',')})`).all(...nguoiIds) as any[]).map((u) => [u.id, u.full_name])
     : []);
-  const chuaCoHan = { chu: 'chưa có hạn' };
+  const chuaCoHan = { chu: CHUA_CO_HAN };
 
   const canXuLy: DongCanXuLy[] = dongs.map((x) => {
     const r = sets.get(x.metricId)!;
@@ -129,7 +129,7 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null }) {
           : lenhQuaHan ? { chu: `quá hạn từ ${tuanLich(addDays(ketThuc, 7), today)}`, quaHan: true as const }
           : { chu: `trước ${tuanLich(addDays(ketThuc, 7), today)}` };
         if (lop.length === 1) {
-          return { ...x, ...chung, truoc: `Chuyển lớp cả lớp · ${lop[0].code} ·`, nhan: 'em chưa có lệnh',
+          return { ...x, ...chung, truoc: `Chuyển tiếp lớp · ${lop[0].code} ·`, nhan: 'em chưa có quyết định chuyển lớp',
             phu: ketThuc ? `Lớp kết thúc ${tuanLich(ketThuc, today)}` : '', han, den: `/hoc-vien/lop/${lop[0].classId}?viec=chuyen-tiep` };
         }
         return { ...x, ...chung, truoc: `${lop.length} lớp ·`, phu: tachTheoLop(r.unit, r.ids), han, den: null };
@@ -288,7 +288,7 @@ export function oLopToiDay(p: Principal, f: { ct: 'ft' | 'thuong'; classId: numb
   if (!l) throw forbidden('Bạn không dạy lớp này.');
   const ids = tap.get(f.classId)![cot];
   const unit = cot === 'caseMo' ? 'case' : cot === 'baiCho' || cot === 'baiQuaHan' ? 'bai' : 'hoc-vien';
-  const nhan = cot === 'caseMo' ? 'Case đang mở' : cot === 'sos' ? 'học viên có SOS' : cot === 'baiCho' ? 'bài chờ chấm' : cot === 'baiQuaHan' ? 'bài quá hạn nhập'
+  const nhan = cot === 'caseMo' ? 'Case đang mở' : cot === 'sos' ? 'học viên có SOS' : cot === 'baiCho' ? 'bài chờ chấm' : cot === 'baiQuaHan' ? 'bài quá hạn chưa nhập điểm'
     : f.ct === 'thuong' ? 'học viên chưa đạt' : 'học viên dưới kỳ vọng';
   return { n: ids.length, tieuDe: `${l.code} · ${ids.length} ${nhan}`, rows: rowsFor(unit, ids) };
 }

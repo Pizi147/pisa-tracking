@@ -26,7 +26,7 @@ import {
 import { HangTab } from '../../ui/HangTab.tsx';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
 import { ChipLichSu } from '../../ui/Nhan.tsx';
-import { useSession } from '../../lib/session.tsx';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
 import { DaiHocVienChuyen } from '../classes/DaiChuyenLop.tsx';
 
@@ -42,9 +42,9 @@ type Profile = any;
  *
  * BỐ CỤC (chủ sản phẩm chốt 22/09/2026, spec PR-HV/PR-Qb — thay ba tầng của bản 13/09):
  *
- *   Đầu trang    EM NÀY LÀ AI          tên, {khoá đang học lớp thường | mục tiêu FT}, GVCN; nút Lộ trình · + Case · ⋮
+ *   Đầu trang    EM NÀY LÀ AI          tên, {khoá đang học lớp thường | Target FT}, GVCN; nút Lộ trình · + Case · ⋮
  *   Bốn ô số     LIẾC MỘT CÁI, BẤM ĐƯỢC  Kết quả Test gần nhất · Kỹ năng cần hỗ trợ · Case đang mở · Việc cần làm tiếp
- *   Ba tab       Học thuật (mặc định: bảng kỹ năng + case, rồi Mock Test) · Ý thức & Phối hợp · Hành trình theo giai đoạn
+ *   Ba tab       Học thuật (mặc định: bảng kỹ năng + Case, rồi Mock Test) · Ý thức & Phối hợp · Hành trình theo giai đoạn
  *
  * Tab nằm NGAY DƯỚI đầu trang, không dồn xuống cuối; tab nhớ qua địa chỉ `?tab=` — có `?dot=`/`?kn=` thì
  * luôn mở Học thuật (R7, Q10). Hành trình vẽ MỘT trục theo lịch thật cho MỖI giai đoạn (Lớp thường | Fast
@@ -57,13 +57,12 @@ type Profile = any;
  * Ai chỉ cần liếc nhanh thì dừng ở tầng 1–2 và không phải cuộn dòng nào.
  *
  * Toàn bộ dữ liệu thuộc về MỘT lộ trình. Đổi lộ trình ở đầu trang là đổi cả trang — không
- * bao giờ trộn hai lộ trình vào một khung nhìn, vì mục tiêu và thang điểm của chúng khác nhau.
+ * bao giờ trộn hai lộ trình vào một khung nhìn, vì Target và thang điểm của chúng khác nhau.
  */
 export default function StudentDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { session } = useSession();
-  const homNay = session?.demoDate ?? null;
+  const homNay = useNgayNghiepVu().homNay || null;
   const [params, setParams] = useSearchParams();
   /* R7/R8c/Q9/Q10 (PR-Qb): MỘT hàm đọc mọi tham số của hồ sơ — không còn đọc lẻ từng khoá. */
   const p = docThamSoHoSo((k) => params.get(k));
@@ -76,8 +75,8 @@ export default function StudentDetailPage() {
   /** Ngăn Case (Q9) mở do BẤM trong trang (khối PA, ⋮ …) — mở do URL (`?case=`) đọc thẳng từ `p`. */
   const [openCase, setOpenCase] = useState<OpenCase>(null);
   /*
-   * HẠNG MỤC ĐANG LỌC — một state duy nhất nối bảng kỹ năng với khối case bên dưới.
-   * Bấm "Reading" ở bảng trên là khối dưới chỉ còn case Reading; bấm lại thì bỏ lọc.
+   * HẠNG MỤC ĐANG LỌC — một state duy nhất nối bảng kỹ năng với khối Case bên dưới.
+   * Bấm "Reading" ở bảng trên là khối dưới chỉ còn Case Reading; bấm lại thì bỏ lọc.
    */
   const [skillPick, setSkillPick] = useState<string | null>(null);
   /** Dải chọn lộ trình — chỉ bày khi người dùng hỏi tới, không chiếm chỗ mặc định. */
@@ -181,7 +180,7 @@ export default function StudentDetailPage() {
         và việc tiếp theo là gì — mỗi câu một ô, đọc được trong một cái liếc.
       */}
       <div>
-        <button className="btn btn-sm btn-ghost mb-1.5" onClick={() => navigate(-1)}>← Quay lại</button>
+        <button className="btn btn-sm btn-ghost mb-1.5 min-h-[44px] sm:min-h-0" onClick={() => navigate(-1)}>← Quay lại</button>
         {data.lopHoc?.chiXem && (
           <DaiChiXem>Học viên đã lưu trữ{data.archivedAt ? ` ${ngay(data.archivedAt, homNay)}` : ''} — chỉ xem</DaiChiXem>
         )}
@@ -203,14 +202,14 @@ export default function StudentDetailPage() {
 
             <div className="flex flex-wrap gap-2 items-start">
               {data.journeyStrip?.length > 1 && (
-                <button type="button" className="btn" aria-expanded={cycleOpen}
+                <button type="button" className="btn min-h-[44px] sm:min-h-0" aria-expanded={cycleOpen}
                   onClick={() => setCycleOpen(!cycleOpen)}>Lộ trình <span className="text-slate-400"><MuiTen mo={cycleOpen} /></span></button>
               )}
               {data.viewer.canReport && !data.lopHoc?.chiXem && (
-                <button className="btn btn-primary" onClick={() => setReportOpen(true)}>+ Case</button>
+                <button className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => setReportOpen(true)}>+ Case</button>
               )}
               {/* ⋮ = MENU THẢ; mỗi mục mở THẲNG panel của việc đó (Q10). Không có quyền nào → Menu không vẽ gì. */}
-              <Menu label="⋮" className="btn" items={mucQuanLyHocVien({
+              <Menu label="⋮" className="btn min-h-[44px] sm:min-h-0" items={mucQuanLyHocVien({
                 canEdit: data.viewer.canEdit, lopHoc: data.lopHoc ?? null, cycle: cy, status: data.status, coTheXoa: !!data.viewer.coTheXoa,
                 deXuatSua: !!data.viewer.coTheDeXuatSua,
               }).map((m) => ({
@@ -273,15 +272,15 @@ export default function StudentDetailPage() {
         ]} />
 
       {tab === 'hoc-thuat' && (!cy ? (
-        <Empty title="Học viên chưa có lộ trình nào" hint="Mở lộ trình để bắt đầu theo dõi mục tiêu và các mốc đánh giá." />
+        <Empty title="Học viên chưa có lộ trình nào" hint="Mở lộ trình để bắt đầu theo dõi Target và các mốc đánh giá." />
       ) : (
         <>
           {/*
             KHỐI CHÍNH CỦA HỒ SƠ (mục 4.2). Bấm một hàng thì nội dung mở ra NGAY DƯỚI hàng
-            đó — biểu đồ của chính kỹ năng ấy, các case đang mở, lịch sử đã kết thúc.
+            đó — biểu đồ của chính kỹ năng ấy, các Case đang mở, lịch sử đã kết thúc.
 
-            Khối "Case và kết quả hỗ trợ" tách riêng ở dưới đã BỎ: nó kể lại đúng những case
-            mà bảng này vừa tóm tắt, nên cùng một case hiện hai lần trên một trang, và bấm
+            Khối "Case và kết quả hỗ trợ" tách riêng ở dưới đã BỎ: nó kể lại đúng những Case
+            mà bảng này vừa tóm tắt, nên cùng một Case hiện hai lần trên một trang, và bấm
             một hàng ở đây thì phải cuộn xuống chỗ khác mới thấy kết quả.
           */}
           {/* PR-LT2b (M-05): ô Mini Test ở đầu tab (lộ trình mới có bổ trợ miễn phí) · hộp Kết luận khoá (lớp thường đã có điểm Cuối khoá). */}
@@ -308,25 +307,25 @@ export default function StudentDetailPage() {
 
           {/*
             TÊN KHỐI GỌI ĐÚNG THEO CHƯƠNG TRÌNH (mục 7.11): lớp Fast Track là "Mock Test",
-            lớp Normal là "Kết quả kiểm tra". Cụm "Điểm qua các lượt" đã bỏ — nó không phải
+            lớp thường là "Kết quả kiểm tra". Cụm "Điểm qua các lượt" đã bỏ — nó không phải
             tiếng Việt ai dùng, và nó đúng với cả hai loại lớp nên chẳng nói được gì.
           */}
-          <Card title={cy.ratio ? 'Kết quả kiểm tra' : 'Mock Test'} bodyClass="p-0">
+          <Card title={cy.ratio ? 'Kết quả Test' : 'Mock Test'} bodyClass="p-0">
             {data.attempts.length === 0 ? (
               <div className="p-4"><Empty title="Chưa có lượt đánh giá nào trong lộ trình này" /></div>
             ) : cy.ratio ? <RatioAttempts attempts={data.attempts} dotId={p.dot} homNay={homNay} ct={cy.programmeCode ?? null} onOpen={(a) => navigate(attemptHref(a))} />
               : <>
                 {/* RF: kỳ vọng mọi MT bằng target — nói một lần ở đầu khối, không lặp ở từng hàng. */}
-                {cy.route === 'RF' && <p className="m-0 px-3 pt-2 text-xs text-slate-500">Lộ trình RF — kỳ vọng mọi MT bằng target.</p>}
+                {cy.route === 'RF' && <p className="m-0 px-3 pt-2 text-xs text-slate-500">Lộ trình RF — kỳ vọng mọi MT bằng Target.</p>}
                 <IeltsAttempts attempts={data.attempts} dotId={p.dot} homNay={homNay} onOpen={(a) => navigate(attemptHref(a))} />
               </>}
             <div className="p-3">
               {cy.targetRevisions.length > 0 && (
                 <p className="text-xs text-slate-500 mt-2 mb-0">
-                  Mục tiêu đã đổi {cy.targetRevisions.length} lần — lần gần nhất {tuanLich(cy.targetRevisions[0].effectiveFrom, homNay)}:
+                  Target đã đổi {cy.targetRevisions.length} lần — lần gần nhất {tuanLich(cy.targetRevisions[0].effectiveFrom, homNay)}:
                   {' '}<TargetText band={cy.targetRevisions[0].oldTarget} kck={cy.targetRevisions[0].oldKck} /> → <TargetText band={cy.targetRevisions[0].newTarget} kck={cy.targetRevisions[0].newKck} />
                   {cy.targetRevisions[0].reason && ` (${cy.targetRevisions[0].reason})`}.
-                  {' '}Các lượt đã chốt vẫn giữ kỳ vọng tính theo mục tiêu lúc đó.
+                  {' '}Các lượt đã chốt vẫn giữ kỳ vọng tính theo Target lúc đó.
                 </p>
               )}
               {cy.outcome && (
@@ -346,7 +345,7 @@ export default function StudentDetailPage() {
 
       {tab === 'y-thuc' && (
         <Card bodyClass="p-4">
-          <StudentYThucSection studentId={data.id} onGoAcademic={() => setTab('hoc-thuat')} />
+          <StudentYThucSection studentId={data.id} thuong={!!cy.ratio} onGoAcademic={() => setTab('hoc-thuat')} />
         </Card>
       )}
 
@@ -447,7 +446,7 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen }: {
   /* G5: điểm một kỹ năng mở hồ sơ Mock cuộn tới đúng kỹ năng (Tab vào được; hàng bảng vẫn bấm mở đợt). */
   const diemKyNang = (a: any, k: 'listening' | 'reading' | 'writing' | 'speaking') => (
     a.bands?.[k] != null
-      ? <Link to={duongDotTest(a, k)} className="link" title={`Mở hồ sơ Mock · MT${a.attemptNo} · ${skillLabel(k)}`} onClick={(e) => e.stopPropagation()}>{fmtBand(a.bands[k])}</Link>
+      ? <Link to={duongDotTest(a, k)} className="link" title={`Mở Hồ sơ Mock Test · MT${a.attemptNo} · ${skillLabel(k)}`} onClick={(e) => e.stopPropagation()}>{fmtBand(a.bands[k])}</Link>
       : fmtBand(a.bands?.[k])
   );
   /*
@@ -497,8 +496,8 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen }: {
             <Th hint="Tuần kế hoạch của lượt này. Một lượt chỉ thuộc đúng một tuần — không có ngày thi cụ thể.">Tuần</Th>
             <Th align="right" hint="Band Listening">L</Th><Th align="right" hint="Band Reading">R</Th>
             <Th align="right" hint="Band Writing — gộp từ W1 và W2">W</Th><Th align="right" hint="Band Speaking">S</Th>
-            <Th align="right" hint="Band tổng của lượt, tính theo quy tắc IELTS. Thiếu một kỹ năng thì chưa có Overall.">Overall</Th>
-            <Th align="right" hint="Mức mong đợi của chính đợt Test đó, tính theo mục tiêu tại thời điểm ấy. Đổi mục tiêu không chấm lại quá khứ.">Kỳ vọng</Th>
+            <Th align="right" hint="Band tổng của lượt, tính theo quy tắc IELTS. Thiếu một kỹ năng thì chưa có Overall.">OVR</Th>
+            <Th align="right" hint="Mức mong đợi của chính đợt Test đó, tính theo Target tại thời điểm ấy. Đổi Target không chấm lại quá khứ.">Kỳ vọng</Th>
             <Th hint="Tiến độ chấm và kết luận của đợt: số kỹ năng dưới kỳ vọng — chính là mức SOS. Thiếu điểm thì chưa kết luận.">Kết quả</Th>
           </tr>
         </thead>
@@ -575,7 +574,7 @@ function RatioAttempts({ attempts, dotId, homNay, onOpen, ct = null }: {
             dong={[
               { nhan: 'Điểm từng phần', noiDung: chipMon(a) },
               { nhan: 'Lớp', noiDung: a.classCode ?? '—' },
-              { nhan: 'Hồ sơ', noiDung: <Link to={attemptHref(a)} className="link text-[11px]">Hồ sơ đợt ›</Link> },
+              { nhan: 'Bảng điểm', noiDung: <Link to={attemptHref(a)} className="link text-[11px]">Bảng điểm đợt ›</Link> },
             ]} />
         ))}
       </div>
@@ -606,7 +605,7 @@ function RatioAttempts({ attempts, dotId, homNay, onOpen, ct = null }: {
               <td className="td">
                 <KetQuaThuongO a={a} ct={ct} />
                 {a.provisional && <div className="text-xs text-slate-400">mới {a.scored}/{a.required} môn</div>}
-                <Link to={attemptHref(a)} className="link text-[11px]" onClick={(e) => e.stopPropagation()}>Hồ sơ đợt ›</Link>
+                <Link to={attemptHref(a)} className="link text-[11px]" onClick={(e) => e.stopPropagation()}>Bảng điểm đợt ›</Link>
               </td>
             </tr>
           ))}

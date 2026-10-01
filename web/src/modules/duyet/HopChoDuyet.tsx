@@ -92,11 +92,11 @@ export function HopChoDuyet() {
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-end gap-2">
-        <BoLocDoan ariaLabel="Phân loại" value={phan} onChange={(k) => setParam('phan', k === 'tat-ca' ? null : k)}
+        <BoLocDoan ariaLabel="Loại yêu cầu" value={phan} onChange={(k) => setParam('phan', k === 'tat-ca' ? null : k)}
           muc={[{ key: 'tat-ca' as KhoaChip, nhan: 'Tất cả', so: dem?.['tat-ca'] ?? null },
             ...PHAN_LOAI.map((k) => ({ key: k as KhoaChip, nhan: PHAN_LOAI_LABEL[k], so: dem?.[k] ?? null }))]} />
         <BoLocDoan ariaLabel="Trạng thái" value={xem} onChange={(k) => setParam('xem', k === 'cho' ? null : k)}
-          muc={[{ key: 'cho', nhan: 'Đang chờ' }, { key: 'da-xu-ly', nhan: 'Đã xử lý (30 ngày)' }]} />
+          muc={[{ key: 'cho', nhan: 'Chờ duyệt' }, { key: 'da-xu-ly', nhan: 'Đã xử lý (30 ngày)' }]} />
         <BranchFilter branchId={branchId} onBranch={(id) => setParam('cn', id ? String(id) : null)} />
         {quaHan && (
           <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" title="Bỏ lọc quá hạn" onClick={() => setParam('qua-han', null)}>

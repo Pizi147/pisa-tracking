@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, invalidate } from '../../../lib/api.ts';
 import { useApi } from '../../../lib/useApi.ts';
-import { useSession } from '../../../lib/session.tsx';
+import { useNgayNghiepVu } from '../../../ui/ngayNghiepVu.ts';
 import { KhungPanel, Khoi, Truong } from '../../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../../ui/loiForm.tsx';
 import { useToast } from '../../../ui/Toast.tsx';
@@ -51,8 +51,7 @@ export function NganXepLichMt({ lopDs, lopMoSan, coThuong, onDoiKhung, onClose, 
   onClose: () => void; onDone: () => void;
 }) {
   const toast = useToast();
-  const { session } = useSession();
-  const homNay = session?.demoDate ?? null;
+  const homNay = useNgayNghiepVu().homNay || null;
   /* Chi nhánh (QL một chi nhánh thì `BranchFilter` tự ẩn): danh sách lớp để "+ lớp" tải lại theo chi nhánh; lớp đã chọn giữ nguyên. */
   const [branchId, setBranchId] = useState<number | null>(null);
   const dsLop = useApi<DanhSachLop>(branchId ? `/ke-hoach-test/lop?branchId=${branchId}` : null);

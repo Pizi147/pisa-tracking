@@ -150,7 +150,7 @@ export function danhGiaMon(a: any, scores: readonly any[], prog: ProgrammeInfo |
 /**
  * DANH SÁCH SAU MỘT SỐ Ở BẢNG VẤN ĐỀ / HIỆU QUẢ PA CỦA MỘT KỸ NĂNG (PR-HVL, M5, G-10) — `GET /classes/:id/issue-board/o`. Tính bằng CHÍNH `issueBoard`
  * (`classIssueBoard`): số ở ô = độ dài tập `tong` / `plans[].ids`, danh sách khi bấm = chính tập đó, không đếm lần hai.
- * `cot`: hv · case · dang-theo-doi · da-co-pa · da-xong · thanh-cong (Case) · pa-dang · pa-da · pa-thanh-cong (PA, kèm `kind`).
+ * `cot`: hv · Case · dang-theo-doi · da-co-pa · da-xong · thanh-cong (Case) · pa-dang · pa-da · pa-thanh-cong (PA, kèm `kind`).
  */
 export function oPhanTichLop(p: Principal, classId: number, category: string, cot: string, kind: string | null): { n: number; tieuDe: string; rows: MetricRow[] } {
   require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
@@ -158,7 +158,7 @@ export function oPhanTichLop(p: Principal, classId: number, category: string, co
   const mon = caseCategoryLabel(category);
   const caseCot: Record<string, [number[], string]> = {
     hv: [b.tong?.hvGapVanDe ?? [], 'học viên đang gặp vấn đề'], case: [b.tong?.caseTatCa ?? [], 'Case'],
-    'dang-theo-doi': [b.tong?.dangTheoDoi ?? [], 'Case đang theo dõi'], 'da-co-pa': [b.tong?.daCoPa ?? [], 'Case đã có phương án'],
+    'dang-theo-doi': [b.tong?.dangTheoDoi ?? [], 'Case đang theo dõi'], 'da-co-pa': [b.tong?.daCoPa ?? [], 'Case đã có PA'],
     'da-xong': [b.tong?.daXong ?? [], 'Case đã xong'], 'thanh-cong': [b.tong?.thanhCong ?? [], 'Case đã xong và thành công'],
   };
   const c = caseCot[cot];

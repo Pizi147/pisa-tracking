@@ -49,7 +49,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     assert(k({ hasCause: true, coPaChoXacNhan: false, status: 'in_progress' }).k === 'dang-lam', 'đang làm');
     assert(k({ fromSos: false, hasCause: false, coPaChoXacNhan: false }).k === 'dang-lam', 'Case tay');
   });
-  check('SOS (1) · viecTiepCuaCase: thứ tự nguyên nhân → chờ duyệt → Xác nhận PA → Ghi kết quả cuối → Ghi kết quả PA → Hoàn thành → Đề ra PA', () => {
+  check('SOS (1) · viecTiepCuaCase: thứ tự nguyên nhân → chờ duyệt → Xác nhận PA → Ghi kết quả cuối → Ghi kết quả PA → Hoàn thành → Thêm PA', () => {
     const c = { status: 'open' as const, fromSos: true, hasCause: false, dismissed: false, systemClosed: false, choDuyetKhongTheoDoi: false, coPaChoXacNhan: true, hanXacNhan: '2026-09-16' };
     const pa = (x: object) => ({ id: 1, ten: 'Tutor', batBuoc: true, choXacNhan: false, xong: false, actionDue: '2026-09-28', followupDue: '2026-10-18', ...x });
     const hom = '2026-09-22';
@@ -62,7 +62,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     const g = d.viecTiepCuaCase(chay, [pa({ id: 2, ten: 'A', batBuoc: false, followupDue: null, actionDue: '2026-09-21' }), pa({})], hom);
     assert(g?.chu === 'Ghi kết quả PA A' && g.loaiHan === 'cap-nhat-pa' && g.han === '2026-09-21', JSON.stringify(g));
     assert(d.viecTiepCuaCase(chay, [pa({ xong: true })], hom)?.chu === 'Hoàn thành Case', 'hoàn thành');
-    assert(d.viecTiepCuaCase({ ...chay, fromSos: false }, [], hom)?.loaiHan === 'lap-pa', 'Đề ra PA');
+    assert(d.viecTiepCuaCase({ ...chay, fromSos: false }, [], hom)?.loaiHan === 'lap-pa', 'Thêm PA');
     assert(d.viecTiepCuaCase({ ...chay, status: 'done' }, [], hom) === null, 'xong → không việc');
     const cu = JSON.stringify([d.viecTiepCuaCase(c, [], hom), xn, g]);
     assert(!/Xác minh SOS|gợi ý|Chờ QL/.test(cu), cu);
@@ -167,19 +167,19 @@ export async function runPrSosTests(t: YThucTestKit) {
     const keys = (myworkSvc.myWork(P.admin, { nguoi: 'tat-ca' }).items as any[]).map((i: any) => i.key as string);
     assert(!keys.includes(`action:${iv.id}`) && !keys.includes(`review:${iv.id}`), 'PA chờ xác nhận sinh việc Ghi kết quả');
   });
-  check('SOS (3) · Thông báo: GVBM một "Xác nhận nguyên nhân Listening — em · lớp" (thân "Case mới sau MT1: …") + hạn; GVCN "SOS 3 — {tên}"; GV W1 không nhận gì', () => {
+  check('SOS (3) · Thông báo: GVBM một "Xác nhận nguyên nhân Listening · em · lớp" (thân "Case mới sau MT1: …") + hạn; GVCN "SOS 3 · {tên}"; GV W1 không nhận gì', () => {
     const { st, a } = mt1Sos3('T3b');
     const c = caseOf(st.id, 'listening');
     /* Mức SOS trong tên là mức LÚC Case ra đời (nhập L trước → SOS 1); Speaking nhập sau cùng → SOS 3. */
     const nL = all(`SELECT * FROM notifications WHERE entity_type = 'sos_case' AND entity_id = ?`, c.id);
     /* PR-VAI-a (K1-42, Q20): tiêu đề = việc + em + lớp; thân "Case mới sau MT1: [MT1] Listening không đạt [SOS n] · hạn dd/mm". */
-    assert(nL.length === 1 && nL[0].user_id === gvKyNang('listening') && /^Xác nhận nguyên nhân Listening — /.test(nL[0].title)
+    assert(nL.length === 1 && nL[0].user_id === gvKyNang('listening') && /^Xác nhận nguyên nhân Listening · /.test(nL[0].title)
       && /^Case mới sau MT1: \[MT1\] Listening không đạt \[SOS \d\] · hạn /.test(nL[0].body) && nL[0].body.endsWith(d.ngay(d.hanXacNhan(TODAY), TODAY)), JSON.stringify(nL));
     const nS = all(`SELECT * FROM notifications WHERE entity_type = 'sos_case' AND entity_id = ?`, caseOf(st.id, 'speaking').id);
-    assert(nS.length === 1 && nS[0].title.startsWith('Xác nhận nguyên nhân Speaking — ') && nS[0].body.includes('[MT1] Speaking không đạt [SOS 3]'), JSON.stringify(nS));
+    assert(nS.length === 1 && nS[0].title.startsWith('Xác nhận nguyên nhân Speaking · ') && nS[0].body.includes('[MT1] Speaking không đạt [SOS 3]'), JSON.stringify(nS));
     /* GVCN nhận một thông báo mỗi lần mức SOS của lượt lên (khoá theo mức, có sẵn) — chỉ GVCN. */
     const nA = all(`SELECT * FROM notifications WHERE entity_type = 'assessment_attempt' AND entity_id = ? ORDER BY id`, a.id);
-    assert(nA.length >= 1 && nA.every((n: any) => n.user_id === gvcn()) && nA[nA.length - 1].title === `SOS 3 — ${st.name}`, JSON.stringify(nA));
+    assert(nA.length >= 1 && nA.every((n: any) => n.user_id === gvcn()) && nA[nA.length - 1].title === `SOS 3 · ${st.name}`, JSON.stringify(nA));
     const w1 = P.w1Teacher.userId;
     const cuaW1 = all(`SELECT n.id FROM notifications n WHERE n.user_id = ? AND ((n.entity_type = 'assessment_attempt' AND n.entity_id = ?)
       OR (n.entity_type = 'sos_case' AND n.entity_id IN (SELECT id FROM sos_cases WHERE student_id = ?)))`, w1, a.id, st.id);
@@ -222,7 +222,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     const { st } = mt1Sos3('T4a');
     const c = caseOf(st.id, 'listening');
     const gv = P.admin;
-    assertThrows(() => sosAuto.xacNhanCase(gv, c.id, { ...XN, primaryCode: '' }), /Chọn phân loại nguyên nhân/, 'thiếu nguyên nhân');
+    assertThrows(() => sosAuto.xacNhanCase(gv, c.id, { ...XN, primaryCode: '' }), /Chọn nhóm nguyên nhân/, 'thiếu nguyên nhân');
     assertThrows(() => sosAuto.xacNhanCase(gv, c.id, { ...XN, urgency: '' }), /mức độ gấp/, 'thiếu mức gấp');
     assertThrows(() => sosAuto.xacNhanCase(gv, c.id, { ...XN, moTa: 'ngắn quá' }), /ít nhất 15/, 'mô tả ngắn');
     sosAuto.xacNhanCase(gv, c.id, { ...XN, tenGiua: 'Listening Part 1–2 không đạt' });
@@ -252,7 +252,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     assert(pa.batBuoc && pa.mocChu === 'đến MT2 · chưa có lịch' && pa.lanCuoi === false && !pa.awaitingConfirmation, JSON.stringify(pa));
   });
 
-  // ------------------------------------------------------------------ Task 5 · Không cần theo dõi = thẻ Chờ duyệt; Báo lên đọc han_xac_nhan
+  // ------------------------------------------------------------------ Task 5 · Không cần theo dõi = thẻ Chờ duyệt; Báo QL đọc han_xac_nhan
   const yc: any = await import('../duyet/yeuCau.ts');
   const effectiveness: any = await import('../cases/effectiveness.ts');
   const theKtd = (caseId: number) => get(`SELECT * FROM yeu_cau_duyet WHERE loai = 'khong_theo_doi' AND doi_tuong_id = ? ORDER BY id DESC LIMIT 1`, caseId);
@@ -307,10 +307,10 @@ export async function runPrSosTests(t: YThucTestKit) {
     assert(sau.status === 'open' && sau.han_xac_nhan === d.hanXacNhan(TODAY), JSON.stringify(sau));
     assert(get(`SELECT note FROM case_milestones WHERE case_id = ? AND kind = 'ql_tu_choi_khong_theo_doi'`, c.id)?.note === 'Em trượt hai kỹ năng, cần theo dõi', 'mốc từ chối');
     assert(all(`SELECT title FROM notifications WHERE user_id = ? AND entity_type = 'yeu_cau_duyet' AND entity_id = ?`, owner.userId, the.id)
-      .some((n: any) => /Quản lý từ chối: Em trượt/.test(n.title)), 'GVBM không nhận thông báo từ chối');
+      .some((n: any) => /Bị từ chối: Em trượt/.test(n.title)), 'GVBM không nhận thông báo từ chối');
     assert(sosState.sosCaseState(c.id).awaitingCause, 'về chờ nguyên nhân');
   });
-  check('SOS (5) · Case đóng vì lý do khác (sửa điểm thành đạt) → thẻ tự đóng (S4-7); Báo lên: quá hạn → thẻ; đang chờ thẻ không theo dõi → không thẻ; có nguyên nhân → tự đóng', () => {
+  check('SOS (5) · Case đóng vì lý do khác (sửa điểm thành đạt) → thẻ tự đóng (S4-7); Báo QL: quá hạn → thẻ; đang chờ thẻ không theo dõi → không thẻ; có nguyên nhân → tự đóng', () => {
     const { st, a } = mt1Sos3('T5d');
     const cS = caseOf(st.id, 'speaking');
     sosAuto.guiKhongTheoDoi(P.admin, cS.id, { reasonCode: 'single_incident' });
@@ -322,11 +322,11 @@ export async function runPrSosTests(t: YThucTestKit) {
     sosAuto.guiKhongTheoDoi(P.admin, cR.id, { reasonCode: 'single_incident' });
     yc.quetYeuCau(TODAY);
     const baoLen = (id: number) => get(`SELECT * FROM yeu_cau_duyet WHERE loai = 'bao_len_nguyen_nhan' AND doi_tuong_id = ? ORDER BY id DESC LIMIT 1`, id);
-    assert(baoLen(cL.id)?.trang_thai === 'cho' && baoLen(cL.id).han_duyet === addDays(TODAY, -1), 'Case quá hạn thiếu thẻ Báo lên');
-    assert(!baoLen(cR.id), 'Case đang chờ thẻ không theo dõi vẫn bị Báo lên');
+    assert(baoLen(cL.id)?.trang_thai === 'cho' && baoLen(cL.id).han_duyet === addDays(TODAY, -1), 'Case quá hạn thiếu thẻ Báo QL');
+    assert(!baoLen(cR.id), 'Case đang chờ thẻ không theo dõi vẫn bị Báo QL');
     ghiNguyenNhan(cL.id);
     yc.quetYeuCau(TODAY);
-    assert(baoLen(cL.id).trang_thai === 'tu_dong', 'Báo lên chưa tự đóng khi có nguyên nhân');
+    assert(baoLen(cL.id).trang_thai === 'tu_dong', 'Báo QL chưa tự đóng khi có nguyên nhân');
   });
 
   // ------------------------------------------------------------------ Task 6 · PA bắt buộc: Ghi kết quả cuối, khoá Thay/Kết thúc, mốc, Hoàn thành
@@ -385,7 +385,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     const pa = (cases.caseDetail(P.w2Teacher, c.id) as any).interventions.find((x: any) => x.id === iv.id);
     assert(pa.status === 'started' && pa.followupDue === null && pa.mocChu === 'đến lúc thi · chưa có ngày thi', JSON.stringify(pa));
     const viec = (myworkSvc.myWork(P.mbManager, {}).items as any[]).find((x: any) => x.key === `moc:${iv.id}`);
-    assert(viec && viec.tieuDe === `Nhập ngày thi dự kiến · ${st.name}`, JSON.stringify(viec));
+    assert(viec && viec.tieuDe === `Nhập dự kiến thi · ${st.name}`, JSON.stringify(viec));
     const tuanThi = weekSvc.mondayOf(addDays(TODAY, 70));
     conn.prepare('UPDATE learning_cycles SET exam_period_id = ? WHERE id = ?').run(weekSvc.ensurePeriod(tuanThi).id, st.cycleId);
     cases.caseDetail(P.w2Teacher, c.id);
@@ -422,7 +422,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     assert(!ds.some((i) => i.key === `cause:${c.id}` || i.key === `action:${iv.id}`), 'còn dòng cause hoặc Ghi kết quả cho PA chờ xác nhận');
     assert(d.nhomViecCua('xac_nhan_pa') === 'case-hoc-thuat' && d.LOAI_HAN_CUA_VIEC.xac_nhan_pa === 'xac-minh-sos', 'nhóm / loại hạn');
   });
-  check('SOS (7) · Em Tạm dừng: không dòng cause / Xác nhận PA / Ghi kết quả, không Báo lên; Quay lại → hạn tính lại từ ngày quay lại (K3-41)', () => {
+  check('SOS (7) · Em Tạm dừng: không dòng cause / Xác nhận PA / Ghi kết quả, không Báo QL; Quay lại → hạn tính lại từ ngày quay lại (K3-41)', () => {
     const { st } = mt2W2('T7b');
     const c = cvL(st); const cS = caseOf(st.id, 'speaking');
     const { iv } = (() => {
@@ -436,7 +436,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     const khoa = (myworkSvc.myWork(P.admin, { nguoi: 'tat-ca' }).items as any[]).map((i: any) => i.key as string);
     assert(!khoa.includes(`cause:${c.id}`) && !khoa.includes(`action:${iv.id}`), 'em Tạm dừng còn dòng việc Case');
     yc.quetYeuCau(TODAY);
-    assert(!get(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_nguyen_nhan' AND doi_tuong_id = ? AND trang_thai = 'cho'`, c.id), 'em Tạm dừng bị Báo lên');
+    assert(!get(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_nguyen_nhan' AND doi_tuong_id = ? AND trang_thai = 'cho'`, c.id), 'em Tạm dừng bị Báo QL');
     studentsSvc.setStudentStatus(P.admin, st.id, 'active', TODAY, 'Quay lại học');
     assert(get('SELECT han_xac_nhan h FROM sos_cases WHERE id = ?', c.id).h === d.hanXacNhan(TODAY), 'hạn xác nhận chưa tính lại');
     assert(get('SELECT action_due h FROM case_interventions WHERE id = ?', iv.id).h === d.weeklyUpdateDue(TODAY), 'hạn ghi kết quả chưa tính lại');

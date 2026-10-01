@@ -12,7 +12,7 @@ export function MuiTenMo({ mo, onMo, nhan }: { mo: boolean; onMo: () => void; nh
   return (
     <button type="button" title={chu} aria-label={`${chu} ${nhan}`} aria-expanded={mo}
       onClick={(e) => { e.stopPropagation(); onMo(); }}
-      className="inline-flex h-4 w-4 shrink-0 appearance-none items-center justify-center border-0 bg-transparent p-0 leading-none text-slate-400 hover:text-slate-100">
+      className="max-sm:relative max-sm:before:absolute max-sm:before:-inset-3.5 max-sm:before:content-[''] inline-flex h-4 w-4 shrink-0 appearance-none items-center justify-center border-0 bg-transparent p-0 leading-none text-slate-400 hover:text-slate-100">
       {/* PR-S4F #13: SVG 8 px — ký tự ▸/▾ ở cỡ nhỏ (Be Vietnam Pro/Inter) chỉ còn như một dấu chấm. */}
       <svg aria-hidden viewBox="0 0 8 8" width="8" height="8" className={`transition-transform ${mo ? 'rotate-90' : ''}`}>
         <path d="M2.5 1 6 4 2.5 7" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />

@@ -77,7 +77,7 @@ export function skipsOf(attemptId: number): AssessedSkill[] {
 }
 
 /**
- * Nạp điểm, kỹ năng không mock và case của NHIỀU lượt bằng ba truy vấn.
+ * Nạp điểm, kỹ năng không mock và Case của NHIỀU lượt bằng ba truy vấn.
  * Danh sách lớp và danh sách lượt đều dùng hàm này thay vì hỏi lại theo từng dòng.
  */
 export type AttemptBundle = {
@@ -423,7 +423,7 @@ export function skillCells(
 /**
  * LỊCH VÀ HẠN TỪNG MÔN CỦA MỘT BÀI LỚP NORMAL.
  *
- * Lớp Normal chấm theo `điểm đạt / tổng điểm`, không có band và không tách W1/W2, nên nó
+ * Lớp thường chấm theo `điểm đạt / tổng điểm`, không có band và không tách W1/W2, nên nó
  * dùng đúng bốn môn L/R/W/S — trùng với bộ kỹ năng đánh giá. Nhờ vậy nó dùng lại được
  * nguyên bảng lịch kỹ năng, chỉ khác một chỗ: HẠN CHẤM là hết Chủ nhật của chính tuần thi
  * môn đó, thay vì thứ Tư tuần sau như Fast Track.
@@ -609,7 +609,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
       /*
        * LỚP NORMAL CŨNG TÁCH LỊCH THEO MÔN (mục 10.1): bốn môn có thể trải hai ba tuần.
        * Nên "đã đến lúc phải nhập điểm" phải hỏi theo TỪNG MÔN, không hỏi theo tuần của
-       * cả bài. Hạn của lớp Normal là hết Chủ nhật của chính tuần thi môn đó.
+       * cả bài. Hạn của lớp thường là hết Chủ nhật của chính tuần thi môn đó.
        */
       const views = regularSkillViews(a, bundle.skillRows.get(a.id), scores, today, regularSkills);
       const pendingOf = (k: string) => {
@@ -705,7 +705,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
       id: a.id,
       /*
        * LOẠI BÀI phải đi kèm mọi dòng, để giao diện mở ĐÚNG màn.
-       * Bài giữa/cuối khoá của lớp Normal mà mở bằng màn Mock Test thì nó hiện ra "MT1" —
+       * Bài giữa/cuối khoá của lớp thường mà mở bằng màn Mock Test thì nó hiện ra "MT1" —
        * đúng lỗi owner báo ở mục 6.3.
        */
       kind: a.kind,
@@ -789,7 +789,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
     /* MT lịch sử (T34) không phải "thiếu điểm" — khớp đếm `missing_scores` ở signals.ts. */
     case 'missing_scores': mapped = mapped.filter((m) => m.status !== 'cancelled' && !m.lichSu && !m.complete && m.scoredRequired > 0); break;
     case 'overdue': mapped = mapped.filter((m) => m.overdueSkills > 0); break;
-    /* CÙNG luật với huy hiệu ở bảng lớp: case có mức SOS > 0 và chưa xong. Case không mang mức SOS (giáo viên báo) không phải case SOS. */
+    /* CÙNG luật với huy hiệu ở bảng lớp: Case có mức SOS > 0 và chưa xong. Case không mang mức SOS (giáo viên báo) không phải Case SOS. */
     case 'sos_open': mapped = mapped.filter((m) => m.caseId && m.caseStatus !== 'done' && (m.caseLevel ?? 0) > 0); break;
   }
   return { rows: mapped, scopeEmpty: false };
@@ -904,7 +904,7 @@ export function attemptDetail(p: Principal, attemptId: number) {
 
   return {
     id: a.id,
-    /** Loại bài. Màn này CHỈ dựng cho `mock`; loại khác phải chuyển sang màn của lớp Normal. */
+    /** Loại bài. Màn này CHỈ dựng cho `mock`; loại khác phải chuyển sang màn của lớp thường. */
     kind: a.kind,
     student: { id: a.student_id, name: a.full_name, code: a.student_code },
     cycle: { id: a.cycle_id, seq: a.cycle_seq, route: a.route, target: a.target_score, khongCamKet: !!a.khong_cam_ket, examPlan: examPlanOf(a) },
@@ -961,8 +961,8 @@ export function attemptDetail(p: Principal, attemptId: number) {
       reason: h.reason, actorName: h.actor_name, createdAt: h.created_at,
     })),
     /*
-     * HỒ SƠ TEST KHÔNG CÒN KHỐI CASE (PR-I, rule book §17.5): vấn đề, phương án và việc gắn với case nằm ở hồ sơ
-     * học viên và bảng case — nên payload này không còn `sosCase` · `caseSteps` · `caseHistory` · `tasks`.
+     * HỒ SƠ TEST KHÔNG CÒN KHỐI CASE (PR-I, rule book §17.5): vấn đề, phương án và việc gắn với Case nằm ở hồ sơ
+     * học viên và bảng Case — nên payload này không còn `sosCase` · `caseSteps` · `caseHistory` · `tasks`.
      * Điểm sửa được ai, lúc nào thì có ở `scoreHistory`.
      */
     scoreHistory: scoreHistoryOf(attemptId),
@@ -981,7 +981,7 @@ export function attemptDetail(p: Principal, attemptId: number) {
        * Xác nhận đã thi / vắng CHO TỪNG KỸ NĂNG — cùng quyền với việc dời lịch kỹ năng đó
        * (sổ SCH-01, SCH-02: một capability, không lệch giữa hai thao tác). Không còn một cờ
        * `canSetSitStatus` chung cho cả đợt — giao diện đọc `moveableSkills` theo từng kỹ
-       * năng, đúng cho cả Quản lý (mọi kỹ năng) lẫn GVCN/GVBM lớp Normal (đúng phần phụ trách).
+       * năng, đúng cho cả Quản lý (mọi kỹ năng) lẫn GVCN/GVBM lớp thường (đúng phần phụ trách).
        */
       moveableSkills: a.class_id ? moveableSkills(p, a.class_id, ENTRY_SKILLS) : [],
       canOverrideDeadline: can(p, PERMISSIONS.DEADLINE_OVERRIDE, { classId: a.class_id }),
@@ -1163,7 +1163,7 @@ function hasAnyBand(attemptId: number, skill: string): boolean {
 /**
  * ĐỔI PHẠM VI YÊU CẦU của một kỹ năng trong đợt.
  *
- * Luật nằm ở nơi sở hữu lịch kỹ năng — kể cả hai điều cấm quan trọng: lớp Normal không có
+ * Luật nằm ở nơi sở hữu lịch kỹ năng — kể cả hai điều cấm quan trọng: lớp thường không có
  * thao tác miễn môn, và không bỏ một môn khỏi phạm vi SAU khi đã xác nhận em vắng môn đó.
  * Ở đây chỉ còn việc tính lại kết luận của đợt sau khi phạm vi đổi.
  */
@@ -1350,7 +1350,7 @@ function luuNhanXet(
  * Tính lại trạng thái lượt và mức SOS từ dữ liệu hiện có.
  *
  * "Đã xong" = đã có điểm mọi kỹ năng BẮT BUỘC, không suy từ việc ngày kế hoạch đã trôi qua.
- * Sửa điểm làm đổi mức SOS thì case giữ nguyên ID, hành động và lịch sử.
+ * Sửa điểm làm đổi mức SOS thì Case giữ nguyên ID, hành động và lịch sử.
  */
 function refreshOutcome(p: Principal, attemptId: number) {
   const conn = db();
@@ -1372,23 +1372,23 @@ function refreshOutcome(p: Principal, attemptId: number) {
    *
    * `raiseSignalsForResult` ở trên lo chiều "trượt". Chiều còn lại — một ô vừa được sửa từ
    * trượt thành ĐẠT — cũng phải được dọn, nếu không hệ thống sẽ giữ mãi một tín hiệu và có
-   * khi cả một case dựng trên một con số đã biết là sai.
+   * khi cả một Case dựng trên một con số đã biết là sai.
    *
    * Phân biệt then chốt của mục 9.4 nằm ở đây: nhập sai rồi sửa KHÁC với thi lại rồi tiến
    * bộ. Nên đường này KHÔNG ghi mốc "đã tiến bộ" nào cả — nó chỉ rút lại thứ không còn căn
-   * cứ. Và case đã có việc thật diễn ra thì không bị đụng tới, chỉ được nhắc xem lại.
+   * cứ. Và Case đã có việc thật diễn ra thì không bị đụng tới, chỉ được nhắc xem lại.
    */
   reconcileCorrectedScores(p, attemptId, result);
 }
 
 /**
- * Những ô nhập điểm nay đã ĐẠT kỳ vọng thì rút lại tín hiệu tương ứng, và xử lý case đi kèm.
+ * Những ô nhập điểm nay đã ĐẠT kỳ vọng thì rút lại tín hiệu tương ứng, và xử lý Case đi kèm.
  *
  * Hai nhánh, đúng như mục 9.4:
  *
- *   · case CHỈ có căn cứ từ con số vừa sửa  → rút khỏi danh sách đang xử lý với lý do rõ
+ *   · Case CHỈ có căn cứ từ con số vừa sửa  → rút khỏi danh sách đang xử lý với lý do rõ
  *     ràng, huỷ các phương án chưa ai làm, giữ nguyên toàn bộ lịch sử.
- *   · case còn căn cứ khác (mốc từ đợt khác, quan sát, phương án đã chạy) → GIỮ, và báo
+ *   · Case còn căn cứ khác (mốc từ đợt khác, quan sát, phương án đã chạy) → GIỮ, và báo
  *     người phụ trách xem lại xem có cần theo tiếp không. Không xoá việc đã diễn ra.
  */
 function reconcileCorrectedScores(p: Principal, attemptId: number, result: AttemptResult) {
@@ -1784,7 +1784,7 @@ export { notify };
 /**
  * ĐƯỜNG DẪN TỚI ĐIỂM CỦA MỘT LƯỢT — chọn ĐÚNG MÀN theo loại bài.
  *
- * Bài `mock` về màn Mock Test; bài giữa/cuối khoá của lớp Normal về bảng điểm của lớp đó.
+ * Bài `mock` về màn Mock Test; bài giữa/cuối khoá của lớp thường về bảng điểm của lớp đó.
  * Mở nhầm màn là đọc sai cả kết quả: màn Mock Test gọi mọi lượt là "MT{n}" và chấm theo
  * band, cả hai đều sai với một bài Progress Test.
  *

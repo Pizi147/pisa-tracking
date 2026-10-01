@@ -241,7 +241,7 @@ function dongCoBan(r: Tinh, khoa: string, nhan: string, loai: DongVanDeHv['loai'
 
 const laKhac = (ma: string) => issueLabel(ma) === 'Khác';
 
-/** Nhãn hàng con: chế độ kỹ năng chỉ có tên loại lỗi (kỹ năng là hàng cha); chế độ gộp kèm kỹ năng ("Writing · Ngữ pháp"). */
+/** Nhãn hàng con: chế độ kỹ năng chỉ có tên nhóm nguyên nhân (kỹ năng là hàng cha); chế độ gộp kèm kỹ năng ("Writing · Ngữ pháp"). */
 function nhanConCua(gop: boolean, khoaCon: string, x: { ho: HoKyNang; ma: string }): string {
   if (!gop) return issueLabel(x.ma);
   if (khoaCon.endsWith('|khac')) return 'Khác';
@@ -289,7 +289,7 @@ export function vanDeHv(p: Principal, f: FilterVanDeHv): VanDeHvKetQua {
       phu = nhieuNhat ? NHAN_HO[nhieuNhat.x.ho] : null;
       if (g.khoa === 'ngu-phap' || g.khoa === 'tu-vung') goiY = GOI_Y_LANGUAGE;
     } else {
-      nhan = `${conRows.length} loại lỗi chỉ có ở một kỹ năng`;
+      nhan = `${conRows.length} nhóm nguyên nhân chỉ có ở một kỹ năng`;
       const ungVien = conRows.filter((c) => c.d.nhan !== 'Khác');
       const nhieuNhat = ungVien.length ? ungVien.reduce((best, c) => (c.d.soHv > best.d.soHv ? c : best)) : null;
       phu = nhieuNhat ? NHAN_HO[nhieuNhat.x.ho] : null;
@@ -334,7 +334,7 @@ function nhanDayDu(r: Tinh, f: FilterVanDeHv, khoa: string): string {
   }
   if (khoa.startsWith('gom:mot')) {
     const x = r.nhanCon.get(khoa);
-    return khoa.includes('|') ? (x ? nhanConCua(f.gop, khoa, x) : 'Khác') : 'Loại lỗi chỉ có ở một kỹ năng';
+    return khoa.includes('|') ? (x ? nhanConCua(f.gop, khoa, x) : 'Khác') : 'Nhóm nguyên nhân chỉ có ở một kỹ năng';
   }
   return khoa;
 }
@@ -404,7 +404,7 @@ function dongHv(r: Tinh, m: Muc, hvIds: number[], nhan: string, classId?: number
     const lop = classId ? r.maLop.get(classId)
       : [...(r.lopCuaHv.get(row.id) ?? [])].map((k) => r.maLop.get(k)).filter(Boolean).sort()[0];
     const dot = c?.attemptId && c.kind ? nhanDot(c.kind, c.attemptNo) : 'GV báo';
-    const sub = [gan.vai === 'primary' ? 'Lỗi chính' : 'Lỗi phụ', lop, c ? `Case ${catNgan(c)}` : null, dot, c?.owner ?? null]
+    const sub = [gan.vai === 'primary' ? 'Vấn đề chính' : 'Yếu tố đi kèm', lop, c ? `Case ${catNgan(c)}` : null, dot, c?.owner ?? null]
       .filter(Boolean).join(' · ');
     return { ...row, href: `/hoc-vien/${row.id}`, sub: catMotDong(sub) };
   });

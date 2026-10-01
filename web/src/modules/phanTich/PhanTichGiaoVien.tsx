@@ -22,7 +22,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 /** Chú thích nổi từng cột — chữ theo "Định nghĩa từng cột" của mockup 25 (Một mục là · Tử số). */
 const GIAI: Record<string, (ft: boolean) => string> = {
   'dang-day': (ft) => `Ngữ cảnh, không phải chỉ số. Số ${ft ? 'lớp Fast Track' : 'lớp thường'} giáo viên có phân công (GVCN hoặc một môn) ở chi nhánh này, và số học viên các lớp đó, tính ở cuối khoảng.`,
-  'cham-diem': () => 'Một mục là một ô điểm: một học viên × một bài × một kỹ năng giáo viên được phân công lúc tới hạn, tuần thi trong khoảng. Đúng hạn khi lần nhập đầu không muộn hơn hạn nhập; sửa điểm sau đó không tính. Quá hạn mà chưa nhập là trễ. Không tính: vắng đã xác nhận, huỷ, "không có bài", học viên tạm dừng, ô chưa tới hạn.',
+  'cham-diem': () => 'Một mục là một ô điểm: một học viên × một bài × một kỹ năng giáo viên được phân công lúc tới hạn, tuần thi trong khoảng. Đúng hạn khi lần nhập đầu không muộn hơn hạn chấm; sửa điểm sau đó không tính. Quá hạn mà chưa nhập là trễ. Không tính: vắng đã xác nhận, huỷ, "không có bài", học viên tạm dừng, ô chưa tới hạn.',
   'ghi-pa': (ft) => `${ft ? '' : 'Lớp thường ngắn nên Case, PA ít; cột để mờ. '}Một mục là một lần phải ghi kết quả PA (mỗi tuần theo dõi) ở Case giáo viên phụ trách, hạn ghi trong khoảng. Đúng hạn khi ghi trước hạn; quá hạn mà chưa ghi là trễ.`,
   'vi-pham': () => 'Chỉ lớp giáo viên làm GVCN. Một mục là một vi phạm thành "Cần xử lý", hạn xử lý trong khoảng. Đúng hạn khi GVCN xác nhận xử lý, hoặc gửi đề xuất cho Quản lý, trước hạn. Thời gian chờ Quản lý duyệt không tính cho GVCN.',
   'pa-hieu-qua': () => 'PA giáo viên tự thêm vào Case (không tính PA theo quy chế, PA bổ trợ) đã có kết quả cuối trong khoảng. Số trên: PA có tiến bộ (cùng luật góc nhìn Hiệu quả PA) / PA đã có kết quả cuối.',
@@ -254,7 +254,7 @@ function TheGv({ kq, onChamDiem }: { kq: PhanTichGvKq; onChamDiem: (h: HangPtGv)
       {kq.hang.map((h) => {
         const d = duong(kq, h);
         const dong: { nhan: string; noiDung: ReactNode; o: OPtGv | undefined }[] = [
-          { nhan: 'Chấm điểm đúng hạn', o: h.chamDiem, noiDung: <OSo o={h.chamDiem} onBam={() => onChamDiem(h)} /> },
+          { nhan: 'Chấm đúng hạn', o: h.chamDiem, noiDung: <OSo o={h.chamDiem} onBam={() => onChamDiem(h)} /> },
           { nhan: 'Ghi kết quả PA đúng hạn', o: h.ghiKetQuaPa, noiDung: <OSo o={h.ghiKetQuaPa} den={d.ghiPa} mo={!ft} /> },
           { nhan: 'Xử lý vi phạm đúng hạn', o: h.xuLyViPham, noiDung: <OSo o={h.xuLyViPham} den={d.viPham} /> },
           ...(ft ? [{ nhan: 'PA hiệu quả', o: h.paHieuQua, noiDung: <OSo o={h.paHieuQua} den={d.pa} /> }] : []),
@@ -305,7 +305,7 @@ function PanelChamDiem({ kq, h, onDong }: { kq: PhanTichGvKq; h: HangPtGv; onDon
   const rows = (data?.rows ?? []).filter((r) => !chiTre || !r.dung);
   const khoang = `${tuanLich(kq.tu, homNay)} – ${tuanLich(kq.den, homNay)}`;
   return (
-    <KhungPanel tieuDe={`Chấm điểm đúng hạn · ${h.ten}`} rong="rong" onDong={onDong}
+    <KhungPanel tieuDe={`Chấm đúng hạn · ${h.ten}`} rong="rong" onDong={onDong}
       ngCanh={data ? (
         <span className="text-xs text-slate-400">
           {kq.khung === 'ft' ? 'Fast Track' : 'Lớp thường'} · {data.tenChiNhanh} · tuần thi <span className="tabular-nums">{khoang}</span> ·{' '}
@@ -334,7 +334,7 @@ function PanelChamDiem({ kq, h, onDong }: { kq: PhanTichGvKq; h: HangPtGv; onDon
               <colgroup><col style={{ width: '20%' }} /><col style={{ width: '23%' }} /><col style={{ width: '11%' }} /><col style={{ width: '11%' }} /><col style={{ width: '16%' }} /><col style={{ width: '19%' }} /></colgroup>
               <thead><tr className="whitespace-nowrap">
                 <th className="th">Học viên</th><th className="th">Lớp · bài · kỹ năng</th><th className="th">Tuần thi</th>
-                <th className="th text-right">Hạn nhập</th><th className="th text-right">Lần nhập đầu</th><th className="th">Kết quả</th>
+                <th className="th text-right">Hạn chấm</th><th className="th text-right">Lần nhập đầu</th><th className="th">Kết quả</th>
               </tr></thead>
               <tbody>
                 {rows.map((r) => (
@@ -349,7 +349,7 @@ function PanelChamDiem({ kq, h, onDong }: { kq: PhanTichGvKq; h: HangPtGv; onDon
                     </td>
                     <td className="td">
                       <span className={`inline-flex items-center gap-1 whitespace-nowrap text-xs font-semibold ${r.dung ? 'text-ok' : 'text-bad'}`}>
-                        <Dau ok={r.dung} />{r.dung ? 'Đúng hạn' : `Trễ ${r.tre} ngày`}
+                        <Dau ok={r.dung} />{r.dung ? 'Đúng hạn' : `Quá hạn · ${r.tre} ngày`}
                       </span>
                       {!r.dung && !r.nhapDau && <span className="block text-xs text-slate-400">tới hôm nay {ngay(homNay, homNay)}</span>}
                       {r.dung && r.sua && <span className="block text-xs text-slate-400">lần sửa không tính</span>}

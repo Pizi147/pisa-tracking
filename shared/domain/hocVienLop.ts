@@ -10,6 +10,8 @@ import { goiYCuoiKhoa } from './cuoiKhoa.ts';
 import type { ViecTiepCase } from './sosV4.ts';
 import type { NhanYThucEm } from './yThuc.ts';
 import { tuanKhoa, tuanLich } from './hienThiNgay.ts';
+import { CHU_CHUYEN_LOP } from './chuyenLop.ts';
+import { NHAN_TRANG_THAI } from './trangThai.ts';
 import { CLASS_PHASE_LABEL, type ClassPhase } from './fasttrack.ts';
 
 // ---------------------------------------------------------------- chung
@@ -42,9 +44,9 @@ export const LOC_HOC_VIEN = ['tat-ca', 'can-lam', 'qua-han', 'cho-duyet', 'sos',
 export type LocHocVien = (typeof LOC_HOC_VIEN)[number];
 export const LOC_HOC_VIEN_NHAN: Record<LocHocVien, { nhan: string; goiY: string; can: string | null }> = {
   'tat-ca': { nhan: 'Tất cả', goiY: 'Mọi học viên đang học trong các lớp đang hiện.', can: null },
-  'can-lam': { nhan: 'Cần làm', goiY: 'Có việc quá hạn hoặc việc hạn ngắn (xác nhận, xử lý vi phạm).', can: null },
-  'qua-han': { nhan: 'Quá hạn', goiY: 'Có việc đã quá hạn (xác nhận, ghi kết quả, xử lý vi phạm) — cùng số với badge "HV quá hạn việc".', can: null },
-  'cho-duyet': { nhan: 'Chờ duyệt', goiY: 'Có yêu cầu đang chờ Quản lý duyệt.', can: null },
+  'can-lam': { nhan: NHAN_TRANG_THAI['can-lam'], goiY: 'Có việc quá hạn hoặc việc hạn ngắn (xác nhận, xử lý vi phạm).', can: null },
+  'qua-han': { nhan: NHAN_TRANG_THAI['qua-han'], goiY: 'Có việc đã quá hạn (xác nhận, ghi kết quả, xử lý vi phạm) — cùng số với badge "HV quá hạn việc".', can: null },
+  'cho-duyet': { nhan: NHAN_TRANG_THAI['cho-duyet'], goiY: 'Có yêu cầu đang chờ Quản lý duyệt.', can: null },
   sos: { nhan: 'Đang SOS', goiY: 'Chỉ Fast Track: Mock gần nhất ở mức SOS 1–3.', can: 'case.view' },
   thieu_tt: { nhan: 'Thiếu thông tin', goiY: 'Hồ sơ còn thiếu thông tin cần để xếp lịch và theo dõi.', can: null },
 };
@@ -168,7 +170,7 @@ export function ketQuaGanNhat(k: KetQuaVao | null): KetQuaHien {
 
 /**
  * PR-UXF-a K2-05 (Q5): em lớp thường "có mốc đánh giá tiếp theo" = còn lượt planned, HOẶC đã có bài Cuối khoá (không huỷ) — hết khoá
- * không còn mốc nào; việc tiếp theo là lệnh chuyển lớp. Một luật cho badge Thiếu thông tin ở Học viên & Lớp và bảng lớp.
+ * không còn mốc nào; việc tiếp theo là quyết định chuyển lớp. Một luật cho badge Thiếu thông tin ở Học viên & Lớp và bảng lớp.
  */
 export const coMocTiepTheoThuong = (o: { soLuotKeHoach: number; coCuoiKhoa: boolean }): boolean => o.soLuotKeHoach > 0 || o.coCuoiKhoa;
 
@@ -184,7 +186,7 @@ export function khoaLopThuong(i: {
   else if (i.tuanHienTai !== null && i.tongTuan) tuan = tuanKhoa(Math.min(i.tuanHienTai, i.tongTuan), i.tongTuan);
   // Thứ tự ưu tiên dòng phụ (PR-LT): tiếp theo đã ghi › nhắc chưa ghi › kết thúc khoá.
   const phu = i.tiepTheo ? `tiếp theo: ${i.tiepTheo}`
-    : i.nhacLoTrinh ? 'chưa có lệnh chuyển lớp'
+    : i.nhacLoTrinh ? CHU_CHUYEN_LOP.chua.toLowerCase()
     : i.tuanKetThuc ? `kết thúc ${tuanLich(i.tuanKetThuc, i.homNay)}` : null;
   return { chinh: tuan ? `${ma} · ${tuan}` : ma, phu };
 }
@@ -222,9 +224,9 @@ export function badgeLop(c: {
   const co: Partial<Record<BadgeLop['key'], BadgeLop>> = {};
   if (nXep > 0) {
     co['xep-lop'] = {
-      /* PR-Dọn (Câu 2 = B): lớp chưa hết khoá → em chưa có lệnh chuyển lớp (cùng tập dòng Cần xử lý). */
-      key: 'xep-lop', nhan: c.needsPlacement ? `${nXep} HV cần xếp lớp tiếp` : `${nXep} HV chưa có lệnh chuyển lớp`, tone: 'warn',
-      title: c.needsPlacement ? 'Lớp đã hết khoá: những học viên này chưa được xếp lớp tiếp' : 'Quản lý ra lệnh ở ⋮ Chuyển lớp cả lớp',
+      /* PR-Dọn (Câu 2 = B): lớp chưa hết khoá → em chưa có quyết định chuyển lớp (cùng tập dòng Cần xử lý). */
+      key: 'xep-lop', nhan: c.needsPlacement ? `${nXep} HV cần xếp lớp tiếp` : `${nXep} HV ${CHU_CHUYEN_LOP.chua.toLowerCase()}`, tone: 'warn',
+      title: c.needsPlacement ? 'Lớp đã hết khoá: những học viên này chưa được xếp lớp tiếp' : 'Quản lý quyết định ở ⋮ Chuyển tiếp lớp',
     };
   }
   if (c.missingSkills.length) co['thieu-gv'] = { key: 'thieu-gv', nhan: `Thiếu GV ${c.missingSkills.map((k) => tenMonNgan(c.chuongTrinh, k)).join(', ')}`, tone: 'warn' };
@@ -397,7 +399,7 @@ export function viecTiepCuaEm(i: {
       const tuan = v.loaiHan === 'cap-nhat-pa' ? d.viec.replace(/^Ghi kết quả /, '') : null;
       out.push({ viec: tuan ? `${viec} · ${tuan}` : viec, han: d.han, quaHanNgay: d.daysOverdue, tone, dich, title: `${goc}${tuan ? ` · ${tuan}` : ''} · ${d.han}${d.quaHan ? ` · ${d.quaHan}` : ''}` });
     } else {
-      /* Chưa có hạn: Đề ra PA (Case tay chưa có PA) vẫn là việc phải làm; "Hoàn thành Case" chỉ nhắc. */
+      /* Chưa có hạn: Thêm PA (Case tay chưa có PA) vẫn là việc phải làm; "Hoàn thành Case" chỉ nhắc. */
       out.push({ viec, han: null, quaHanNgay: null, tone: v.loaiHan === 'lap-pa' ? 'warn' : 'info', dich, title: goc });
     }
   }
@@ -522,14 +524,14 @@ export function sapEmCanHoTro<T extends { ten: string; cases: readonly { quaHan:
 // ---------------------------------------------------------------- nút chính đầu hồ sơ lớp (K2-14)
 
 export type NutChinh = { loai: 'them-hv' | 'chuyen-tiep' | 'nhap-diem' | null; nhan: string };
-/** MỘT nút chính theo chặng của lớp: lớp rỗng → thêm học viên · lớp thường cuối khoá → chuyển tiếp · còn điểm cần nhập → Nhập điểm Test. */
+/** MỘT nút chính theo chặng của lớp: lớp rỗng → thêm học viên · lớp thường cuối khoá → chuyển tiếp · còn điểm cần nhập → Nhập điểm. */
 export function nutChinhDauTrang(i: {
   thuong: boolean; phase: string; needsPlacement: boolean; soHocVien: number;
   coTheThemHv: boolean; coTheNhapDiem: boolean; coTheChuyenTiep: boolean; soEmChuyen: number;
 }): NutChinh {
   if (i.soHocVien === 0 && i.coTheThemHv) return { loai: 'them-hv', nhan: '+ Học viên' };
-  /* PR-CT: "Chuyển lớp cả lớp…" nằm ở dải Kết thúc khoá ngay dưới tên lớp (mockup 20 — A), không còn là nút chính đầu trang. */
-  if (i.coTheNhapDiem) return { loai: 'nhap-diem', nhan: 'Nhập điểm Test' };
+  /* PR-CT: "Chuyển tiếp lớp…" nằm ở dải Kết thúc khoá ngay dưới tên lớp (mockup 20 — A), không còn là nút chính đầu trang. */
+  if (i.coTheNhapDiem) return { loai: 'nhap-diem', nhan: 'Nhập điểm' };
   return { loai: null, nhan: '' };
 }
 

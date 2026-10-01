@@ -15,7 +15,7 @@ const TRONG = new Set(['', '-', '–', '—', 'n/a']);
 
 /**
  * Ô ngày của bảng dán / ô gõ tay (C10, YC-5.3). Nhận `dd/mm/yyyy`, `d/m/yyyy` (dấu / . -) và ISO `yyyy-mm-dd` (giá trị của ô ngày
- * thống nhất + lời gọi nội bộ). `choThang` (Thi dự kiến, T9): nhận thêm `mm/yyyy` / `yyyy-mm` → trả tháng `yyyy-mm`.
+ * thống nhất + lời gọi nội bộ). `choThang` (Dự kiến thi, T9): nhận thêm `mm/yyyy` / `yyyy-mm` → trả tháng `yyyy-mm`.
  * KHÔNG nhận `dd/mm` thiếu năm, KHÔNG đoán `mm/dd`. Ô trống hoặc "-" → { iso: null, loi: null }.
  */
 export function docNgayNhap(raw: unknown, homNay: string,
@@ -39,7 +39,7 @@ export function docNgayNhap(raw: unknown, homNay: string,
 
 /** PR-TOC — cận năm của ô ngày nhập, chặn năm gõ nhầm (0208, 2206…). Ngày sinh: từ 1900 tới hôm nay. */
 export const NGAY_SINH_TOI_THIEU = '1900-01-01';
-/** PR-TOC — tuần bắt đầu học, thi dự kiến: trong khoảng năm nay −3 … năm nay +3. */
+/** PR-TOC — tuần bắt đầu học, dự kiến thi: trong khoảng năm nay −3 … năm nay +3. */
 export function canNamGan(homNay: string): { toiThieu: string; toiDa: string } {
   const y = Number(homNay.slice(0, 4));
   return { toiThieu: `${y - 3}-01-01`, toiDa: `${y + 3}-12-31` };
@@ -112,13 +112,13 @@ const COT_DAU: CotLuoi[] = [
   { key: 'fullName', nhan: 'Họ và tên', batBuoc: true }, { key: 'dob', nhan: 'Ngày sinh' }, { key: 'email', nhan: 'Email', batBuoc: true },
 ];
 const COT_FT: CotLuoi[] = [
-  { key: 'baselineScore', nhan: 'OVR', so: true }, { key: 'entryListening', nhan: 'L', so: true },
+  { key: 'baselineScore', nhan: 'Overall', so: true }, { key: 'entryListening', nhan: 'L', so: true },
   { key: 'entryReading', nhan: 'R', so: true }, { key: 'entryWriting', nhan: 'W', so: true },
-  { key: 'entrySpeaking', nhan: 'S', so: true }, { key: 'target', nhan: 'Target', so: true }, { key: 'examDate', nhan: 'Thi dự kiến' },
+  { key: 'entrySpeaking', nhan: 'S', so: true }, { key: 'target', nhan: 'Target', so: true }, { key: 'examDate', nhan: 'Dự kiến thi' },
   { key: 'daThiToiMt', nhan: 'Đã thi tới MT', so: true },
 ];
 const COT_TUAN: CotLuoi = { key: 'startWeek', nhan: 'Tuần bắt đầu', batBuoc: true };
-/** YC-5.2 thứ tự cột. FT: Họ tên · Ngày sinh · Email · OVR · L · R · W · S · Target · Thi dự kiến · Đã thi tới MT (K2-33) · Tuần bắt đầu.
+/** YC-5.2 thứ tự cột. FT: Họ tên · Ngày sinh · Email · OVR · L · R · W · S · Target · Dự kiến thi · Đã thi tới MT (K2-33) · Tuần bắt đầu.
  *  Lớp thường (Pre FOU · FOU · BE · ELE): Họ tên · Ngày sinh · Email · Tuần bắt đầu (K2-41). Cột Tình trạng do giao diện vẽ. */
 export const cotLuoiNhap = (lopThuong: boolean): CotLuoi[] => (lopThuong ? [...COT_DAU, COT_TUAN] : [...COT_DAU, ...COT_FT, COT_TUAN]);
 const NHAN_KHAC: Record<string, string> = { classCode: 'Lớp', route: 'Lộ trình', consultant: 'Tư vấn viên' };

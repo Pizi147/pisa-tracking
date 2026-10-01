@@ -18,11 +18,11 @@ import { loTrinhTinhTuan } from '../fasttrack/cycles.ts';
  * `shared/domain/hanhTrinh.ts` bên nhận.
  *
  *   chuong   em đã đi qua những lớp nào (một ghi danh một chương) — `chiaChuong`; thay `/lich-su-lop` và khối "Mốc học tập"
- *   lop · tamDung · tuanHoc   hàng Lớp, dải Tạm dừng, hàng Tuần học / Tuần khoá của trục tuần (giai đoạn đang xem)
+ *   lop · tamDung · tuanHoc   hàng Lớp, dải Tạm dừng, hàng Tuần học / Tuần học của trục tuần (giai đoạn đang xem)
  *   giaiDoan · ghim · hop     trục tuần như cũ, vẫn theo `?giai-doan=`
  *
  * NGÂN SÁCH TRUY VẤN (Q20): số câu CỐ ĐỊNH, không theo số lớp / số Case — lộ trình (kèm tuần bắt đầu), lượt (JOIN lớp: chương trình
- * lấy từ JOIN, không `programmeOfClass` từng lớp), điểm, lịch kỹ năng, Case, PA, lần ghi kết quả, ghi danh + lớp, GVCN, lệnh chuyển,
+ * lấy từ JOIN, không `programmeOfClass` từng lớp), điểm, lịch kỹ năng, Case, PA, lần ghi kết quả, ghi danh + lớp, GVCN, quyết định chuyển lớp,
  * khoảng Tạm dừng, bảng chương trình (`allProgrammes` MỘT lần — `programmeByCode` chỉ nhớ trong request GET, gọi ngoài request thì mỗi
  * Case / lượt lại đọc bảng). Lượt cũ chưa có dòng lịch kỹ năng: kỹ năng bỏ qua lấy theo lô từ `attempt_skill_skips` (cùng luật `skipsOf`).
  * Danh sách `IN` đi qua `theoLo`.
@@ -30,7 +30,7 @@ import { loTrinhTinhTuan } from '../fasttrack/cycles.ts';
 
 type GiaiDoanLoai = 'thuong' | 'ft';
 
-/** Hạng mục case ↔ hộp kỹ năng đang xem: writing1/2 ghép vào "writing" khi hộp là lớp thường, ngược lại bỏ. */
+/** Hạng mục Case ↔ hộp kỹ năng đang xem: writing1/2 ghép vào "writing" khi hộp là lớp thường, ngược lại bỏ. */
 function anhXaHangMuc(category: string | null, boHop: readonly CaseCategory[]): CaseCategory | null {
   if (!category) return null;
   if ((boHop as readonly string[]).includes(category)) return category as CaseCategory;
@@ -122,7 +122,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
     typed.set(a.id, typedResult(a, { scores: scoresByAttempt.get(a.id) ?? [], skips: skipsByAttempt.get(a.id) ?? [], prog: a.class_id ? progOf(a.class_programme) : null }));
   }
 
-  // -------------------------------------------------------------- (4) case · (5) PA · (6) lần ghi kết quả — của MỌI lộ trình
+  // -------------------------------------------------------------- (4) Case · (5) PA · (6) lần ghi kết quả — của MỌI lộ trình
   const caseRows = conn
     .prepare(
       `SELECT sc.*, a.attempt_no AS attempt_no, a.kind AS attempt_kind, ${CO_THE_KHONG_THEO_DOI('sc')} AS co_the_ktd,
@@ -152,7 +152,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
   fuRows.sort((x, y) => String(x.observed_on).localeCompare(String(y.observed_on)) || x.id - y.id);
   for (const r of fuRows) if (r.intervention_id != null) lastOutcomeOf.set(r.intervention_id, r.outcome);
 
-  // -------------------------------------------------------------- (7) ghi danh + lớp · (8) GVCN · (9) lệnh chuyển · (10) Tạm dừng
+  // -------------------------------------------------------------- (7) ghi danh + lớp · (8) GVCN · (9) quyết định chuyển lớp · (10) Tạm dừng
   const enr = conn.prepare(
     `SELECT e.*, c.code AS class_code, c.programme_code AS class_programme, c.is_fast_track, c.so_tuan, rp.week_start AS class_start
        FROM enrollments e JOIN classes c ON c.id = e.class_id LEFT JOIN report_periods rp ON rp.id = c.start_period_id
@@ -303,7 +303,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
     const ft = !!e.is_fast_track;
     /*
      * PR-S6F-b (D17): ghi danh `paused` chưa có ngày rời = em đang Tạm dừng (setStudentStatus đổi mọi ghi danh active/paused theo trạng thái em;
-     * thôi học thì thành `completed`) — chương đó vẫn là chương ĐANG HỌC, không chân "Bảo lưu". Tuần học qua `tuanHocTai` (= đầu hồ sơ).
+     * thôi học thì thành `completed`) — chương đó vẫn là chương ĐANG HỌC, không chân "Tạm dừng học (bảo lưu)". Tuần học qua `tuanHocTai` (= đầu hồ sơ).
      */
     const dangDung = e.status === 'paused' && !e.ended_at;
     const dangHoc = e.status === 'active' || dangDung;
@@ -320,7 +320,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
     const target = cy ? (cy.khong_cam_ket ? 'KCK' : cy.target_score != null ? Number(cy.target_score).toFixed(1) : null) : null;
     return {
       enrollmentId: e.id, classId: e.class_id, code: e.class_code, ngan: String(e.class_code).split(' ').slice(1).join(' ') || e.class_code,
-      nhan: ft ? ['FT', cy?.route, dangHoc ? 'đang học' : target ? `target ${target}` : null].filter(Boolean).join(' · ') : `${e.class_programme ?? '—'} · lớp thường`,
+      nhan: ft ? ['FT', cy?.route, dangHoc ? 'đang học' : target ? `Target ${target}` : null].filter(Boolean).join(' · ') : `${e.class_programme ?? '—'} · lớp thường`,
       ct: e.class_programme ?? null, ft, tu: e.started_at, den: e.ended_at ?? null, dangHoc,
       soTuan: ft ? null : soTuanGiua(e.started_at, e.ended_at ?? homNay), tuanHoc,
       gvcn: gvcnCua(e), endKind: e.end_kind ?? null, status: e.status, endReason: e.end_reason ?? null,
@@ -341,7 +341,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
   /* Chương chỉ kể đợt ĐÃ có điểm (kết quả), không kể lượt còn chờ. */
   const chuong = chiaChuong({ lop, ghim: ghimMoi.filter((g) => g.soCoDiem > 0), cases: casesChuong, tamDung: dung, homNay });
 
-  // -------------------------------------------------------------- hàng Lớp · Tuần học / Tuần khoá của trục (giai đoạn đang xem)
+  // -------------------------------------------------------------- hàng Lớp · Tuần học / Tuần học của trục (giai đoạn đang xem)
   const chuongGd = chuong.filter((c) => (giaiDoan === 'ft' ? c.ft : !c.ft));
   const lopTruc = chuongGd.map((c, k) => ({ code: c.code, ngan: c.ngan, gvcn: c.gvcn, tu: c.tu, den: c.den, chuyen: k > 0 }));
   const tuanHoc = giaiDoan === 'ft'

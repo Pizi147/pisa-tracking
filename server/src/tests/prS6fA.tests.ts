@@ -314,9 +314,9 @@ export async function runPrS6fATests(t: YThucTestKit) {
     assert(o?.k === 'so' && o.tong === r.gvThem.tomTat.paCoKetQua && o.dung === r.gvThem.tomTat.caiThien, `ô ${JSON.stringify(o)} ≠ Hiệu quả PA ${JSON.stringify(r.gvThem.tomTat)}`);
     const hang = [...r.gvThem.hang, ...(r.gvThem.gom?.hang ?? [])];
     assert(hang.reduce((n: number, x: any) => n + x.soPa, 0) === r.gvThem.tomTat.paCoKetQua, `Σ hàng ≠ tóm tắt ${r.gvThem.tomTat.paCoKetQua}`);
-    const cpl = hang.find((x: any) => x.nhan === 'Case chưa phân loại lỗi');
+    const cpl = hang.find((x: any) => x.nhan === 'Case chưa chọn nhóm nguyên nhân');
     assert(cpl && cpl.soPa >= 1 && hq.oHieuQuaPa(P.mbManager, { branchId: MB, ct: 'ft', soTuan: 4, gv, ...kh, dong: cpl.khoa, cot: 'pa' }).rows.some((x: any) => x.id === iv),
-      `hàng "Case chưa phân loại lỗi": ${JSON.stringify(cpl)}`);
+      `hàng "Case chưa chọn nhóm nguyên nhân": ${JSON.stringify(cpl)}`);
   });
   check('S6F-a (4e) · PHỦ ĐỊNH: panel Chấm điểm với gv không có lớp ở chi nhánh → 404, không lộ tên', () => {
     let loi: any = null;
@@ -363,7 +363,7 @@ export async function runPrS6fATests(t: YThucTestKit) {
     assert(dong?.sua === '2026-09-23', `sửa: ${JSON.stringify(dong)}`);
   });
   // ------------------------------------------------------------------ khối 10 · chuông + Phối hợp SOS (Q11, Q12)
-  console.log('\nPR-S6F-a · (10) Chuông: Báo lên ở Cần làm; Phối hợp SOS chỉ lượt Mock FT');
+  console.log('\nPR-S6F-a · (10) Chuông: Báo QL ở Cần làm; Phối hợp SOS chỉ lượt Mock FT');
   const phoiHop: any = await import('../yThuc/phoiHop.ts');
   const tb: any = await import('../platform/thongBao.ts');
   const tbMoi = (userId: number, kind: string, entityType: string, entityId: number) =>
@@ -391,7 +391,7 @@ export async function runPrS6fATests(t: YThucTestKit) {
     conn.prepare(`INSERT INTO sos_coordination_actions (attempt_id, student_id, kind, status, created_at) VALUES (?, ?, 'bao_ph_tvv', 'pending', ?)`).run(aW.id, eW.sid, now());
     assert(coLop(P.coreTeacher, MB_FT), 'lượt Mock FT chưa xong phải còn dòng Phối hợp SOS');
   });
-  check('S6F-a (10b) · thông báo Báo lên: thẻ đang chờ → Cần làm; thẻ đã xử lý → Để biết', () => {
+  check('S6F-a (10b) · thông báo Báo QL: thẻ đang chờ → Cần làm; thẻ đã xử lý → Để biết', () => {
     const the = theMoi({ loai: 'khong_theo_doi', doiTuongLoai: 'sos_case', doiTuongId: 999001, hv: eW.sid, lop: MB_FT, nguoiXin: P.coreTeacher.userId, trangThai: 'cho' });
     const id = tbMoi(P.mbManager.userId, 'bao_len', 'yeu_cau_duyet', the);
     const cho = nhomCua(P.mbManager.userId, id);
@@ -439,7 +439,7 @@ export async function runPrS6fATests(t: YThucTestKit) {
     conn.prepare(`UPDATE violations SET han_xu_ly = '2026-09-01', phan_hoi_ngay = '2026-09-02' WHERE id = ?`).run(daPh);
     const hanCu = get('SELECT han_xu_ly FROM violations WHERE id = ?', ids[0]).han_xu_ly;
     assert(hanCu, 'vi phạm bắt buộc phải có hạn chốt trước khi chuyển');
-    /* Thi hành lệnh Thứ Hai 21/09 (lệnh chuyển lớp chạy đầu tuần): mốc vào lớp mới sau mốc bắt buộc → hạn dời. */
+    /* Thi hành lệnh Thứ Hai 21/09 (quyết định chuyển lớp chạy đầu tuần): mốc vào lớp mới sau mốc bắt buộc → hạn dời. */
     const em = voiNgay('2026-09-21', () => {
       ltt.apDungMotDong(P.mbManager, { sid, toClassId: lopY, ngay: '2026-09-21', boiCanh: 'giua-khoa', lyDo: 'Chuyển lớp cho phép kiểm' });
       return tt.trangThaiYThuc([sid]).get(sid);
@@ -485,7 +485,7 @@ export async function runPrS6fATests(t: YThucTestKit) {
     if (l2) lenh.huyLenh(P.mbManager, l2.id, 'Dọn phép kiểm');
     assert(r2.ok.length === 1 && l2?.khac_goi_y === 1, `có lý do: ${JSON.stringify(r2)} · ${JSON.stringify(l2)}`);
   });
-  /* PR-Dọn (Q6): lệnh chuyển lớp tối đa 500 dòng — phép kiểm gửi đúng trần (không còn 1 000). */
+  /* PR-Dọn (Q6): quyết định chuyển lớp tối đa 500 dòng — phép kiểm gửi đúng trần (không còn 1 000). */
   check('S6F-a (11e) · raLenh 500 dòng (trần Q6, đa số không thuộc lớp) → "Học viên không thuộc lớp này", không câu SQL nào quá 900 tham số', () => {
     const be04 = classId('MB BE 04');
     const tuan = (d.tuanChonDuoc(TODAY) as string[])[0];

@@ -56,14 +56,14 @@ export type MoveRequest = {
 
 const skillName = (s: string) => tenMon(null, s);   // gồm cả tong_hop (Pre FOU) — không hiện mã máy
 
-/** Lớp Normal huỷ LỊCH HẸN, Fast Track huỷ PHẦN THI. Hai hệ quả khác nhau (mục 10.6). */
+/** Lớp thường huỷ LỊCH HẸN, Fast Track huỷ PHẦN THI. Hai hệ quả khác nhau (mục 10.6). */
 function isRatio(attempt: any): boolean {
   return scoringModeOf(attempt) === 'ratio';
 }
 
 function loadAttempt(attemptId: number): any {
   const a = db().prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
-  if (!a) throw notFound('Không tìm thấy đợt kiểm tra');
+  if (!a) throw notFound('Không tìm thấy lượt kiểm tra');
   return a;
 }
 
@@ -595,12 +595,12 @@ function notifyPlanners(
   attempt: any, message: string, refId: number, actor: number | null,
   opts: { entityType?: string; dedupBase?: string } = {},
   /** PR-VAI-a (K1-42, Q20): tiêu đề = việc + em + lớp — không còn một tiêu đề lịch thi chung chung cho mọi trường hợp. */
-  viec = 'Xử lý lịch thi',
+  viec = 'Xếp lại lịch thi',
 ) {
   const conn = db();
   const ai = conn.prepare('SELECT s.full_name AS hv, (SELECT code FROM classes WHERE id = ?) AS lop FROM students s WHERE s.id = ?')
     .get(attempt.class_id ?? null, attempt.student_id) as any;
-  const tieuDe = [viec, [ai?.hv, ai?.lop].filter(Boolean).join(' · ')].filter(Boolean).join(' — ');
+  const tieuDe = [viec, [ai?.hv, ai?.lop].filter(Boolean).join(' · ')].filter(Boolean).join(' · ');
   const cls = attempt.class_id
     ? (conn.prepare('SELECT branch_id FROM classes WHERE id = ?').get(attempt.class_id) as any)
     : null;
@@ -751,7 +751,7 @@ export function settleGroup(
       )
       .all(attempt.class_id, ...entrySkillsOf(assessed as AssessedSkill)) as any[]) {
       notify({
-        userId: t.user_id, kind: 'tu_doi_lich', title: 'Đã tự dời bài không dự thi',   // PR-VAI-a (Q19): tin để biết, tách khỏi schedule_move
+        userId: t.user_id, kind: 'tu_doi_lich', title: `Đã tự dời bài không dự thi · ${em}`,   // PR-VAI-a (Q19): tin để biết, tách khỏi schedule_move
         body: `Đã tự dời ${skillName(assessed)} của ${em} · MT${attempt.attempt_no} sang ${tuanMoi} (vắng lần 1).`,
         entityType: 'assessment_attempt', entityId: attemptId,
         dedupKey: `no_show:${attemptId}:${assessed}:${weekEnd.slice(0, 10)}:${t.user_id}`,
@@ -849,7 +849,7 @@ export function baoVang(p: Principal, attemptId: number, skill: string, lyDo: st
   const loi = kiemLyDoThaoTac('Báo vắng', lyDo);
   if (loi) throw badRequest(loi);
   const row = ensureSkillRows(attemptId).find((r) => r.skill === skill);
-  if (!row?.required) throw badRequest(`${skillName(skill)} không nằm trong đợt này.`);
+  if (!row?.required) throw badRequest(`${skillName(skill)} không nằm trong lượt này.`);
   if (row.sit_status !== 'scheduled' || !row.planned_period_id || !row.week_start || !row.week_end) {
     throw badRequest(`${skillName(skill)} không còn chờ thi (đã thi, đang vắng hoặc đã huỷ) — không báo vắng được.`);
   }

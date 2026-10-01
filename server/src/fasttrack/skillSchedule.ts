@@ -19,7 +19,7 @@ import {
  * không lệch nhau.
  *
  *   Quản lý / Quản trị  → `PLAN_WEEK` (như cũ, mọi loại lớp).
- *   GVCN / GVBM         → `SCHEDULE_MOVE` (mới) — CHỈ lớp Normal, CHỈ lớp/môn mình phụ trách.
+ *   GVCN / GVBM         → `SCHEDULE_MOVE` (mới) — CHỈ lớp thường, CHỈ lớp/môn mình phụ trách.
  *
  * Không gộp thành một quyền — cấp `PLAN_WEEK` cho giáo viên sẽ vô tình mở luôn xếp lịch Fast
  * Track chủ động (`bulkPlan`), đúng cái sổ cấm.
@@ -41,7 +41,7 @@ function requireMoveSkillSchedule(
  * LỊCH THI THEO TỪNG KỸ NĂNG — nơi sở hữu DUY NHẤT của mục 10.
  *
  * Trước vòng 7 một đợt MT chỉ có MỘT tuần và MỘT hạn chấm dùng chung cho cả bốn kỹ năng.
- * Ngoài đời thì không phải vậy: FT hay thi R/L/W một buổi rồi Speaking tuần sau, lớp Normal
+ * Ngoài đời thì không phải vậy: FT hay thi R/L/W một buổi rồi Speaking tuần sau, lớp thường
  * có thể trải bốn môn ra hai ba tuần. Hệ quả của mô hình cũ rất cụ thể và rất sai: dời
  * Speaking sang tuần sau là gia hạn luôn cho ba môn đã thi xong từ tuần trước.
  *
@@ -140,7 +140,7 @@ export function ensureSkillRows(attemptId: number): SkillRow[] {
   if (bo.every((k) => existing.some((r) => r.skill === k))) return sortRows(existing, bo);
 
   const a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
-  if (!a) throw notFound('Không tìm thấy đợt kiểm tra');
+  if (!a) throw notFound('Không tìm thấy lượt kiểm tra');
   /* Kỹ năng bị đánh dấu "không mock" ở mô hình cũ chuyển thẳng thành "ngoài phạm vi". */
   const legacySkips = new Set(
     (conn.prepare('SELECT skill FROM attempt_skill_skips WHERE attempt_id = ?').all(attemptId) as any[])
@@ -503,12 +503,12 @@ export function checkWeekVsNeighbours(input: {
       if (input.newWeekStart < o.last_week) {
         blockers.push(
           `${labelDot(o.attempt_no, o.kind)} có phần thi ở tuần ${tuanLich(o.last_week)}. `
-          + 'Phần thi của đợt sau không được xếp trước phần cuối của đợt trước.',
+          + 'Phần thi của lượt sau không được xếp trước phần cuối của lượt trước.',
         );
       } else if (input.newWeekStart === o.last_week) {
         blockers.push(
           `Trùng tuần ${tuanLich(o.last_week)} với ${labelDot(o.attempt_no, o.kind)} (${knTai(o, o.last_week)}). `
-          + 'Hai đợt không thi cùng một tuần.',
+          + 'Hai lượt không thi cùng một tuần.',
         );
       } else if (daysBetween(o.last_week, input.newWeekStart) === 7) {
         warnings.push(`Chỉ cách ${labelDot(o.attempt_no, o.kind)} đúng một tuần.`);
@@ -517,12 +517,12 @@ export function checkWeekVsNeighbours(input: {
       if (input.newWeekStart > o.first_week) {
         blockers.push(
           `${labelDot(o.attempt_no, o.kind)} đã có phần thi ở tuần ${tuanLich(o.first_week)}. `
-          + 'Phần thi của đợt trước không được xếp vượt qua đợt kế tiếp.',
+          + 'Phần thi của lượt trước không được xếp vượt qua lượt kế tiếp.',
         );
       } else if (input.newWeekStart === o.first_week) {
         blockers.push(
           `Trùng tuần ${tuanLich(o.first_week)} với ${labelDot(o.attempt_no, o.kind)} (${knTai(o, o.first_week)}). `
-          + 'Hai đợt không thi cùng một tuần.',
+          + 'Hai lượt không thi cùng một tuần.',
         );
       } else if (daysBetween(input.newWeekStart, o.first_week) === 7) {
         warnings.push(`Chỉ cách ${labelDot(o.attempt_no, o.kind)} đúng một tuần.`);
@@ -539,7 +539,7 @@ export function checkSkillWeekMove(input: {
 }): ScheduleCheck {
   const conn = db();
   const a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(input.attemptId) as any;
-  if (!a) return { blockers: ['Không tìm thấy đợt kiểm tra'], warnings: [] };
+  if (!a) return { blockers: ['Không tìm thấy lượt kiểm tra'], warnings: [] };
   return checkWeekVsNeighbours({
     cycleId: a.cycle_id, attemptNo: a.attempt_no, excludeAttemptId: input.attemptId,
     newWeekStart: input.newWeekStart,
@@ -555,7 +555,7 @@ function daysBetween(a: string, b: string): number {
 function loadOne(attemptId: number, skill: string): { attempt: any; row: SkillRow } {
   if (!boMonCuaLuot(db(), attemptId).includes(skill)) throw badRequest('Kỹ năng không hợp lệ.');
   const attempt = db().prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
-  if (!attempt) throw notFound('Không tìm thấy đợt kiểm tra');
+  if (!attempt) throw notFound('Không tìm thấy lượt kiểm tra');
   const rows = ensureSkillRows(attemptId);
   const row = rows.find((r) => r.skill === skill)!;
   return { attempt, row };
@@ -691,7 +691,7 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
  *
  * Ba lần chặn, mỗi lần đóng đúng một đường lách mà đề bài nêu tên:
  *
- *   1. Lớp Normal không có thao tác miễn môn — Progress/Final Test luôn phải đủ bốn môn.
+ *   1. Lớp thường không có thao tác miễn môn — Giữa khoá / Cuối khoá luôn phải đủ bốn môn.
  *   2. Không bỏ một môn khỏi phạm vi sau khi đã xác nhận em VẮNG môn đó. Làm thế là biến
  *      một đợt thiếu kết quả thành "hoàn tất" mà không ai phải giải thích gì.
  *   3. Bỏ môn phải có lý do, và dấu vắng cũ vẫn nằm nguyên trong lịch sử.
@@ -709,7 +709,7 @@ export function setSkillScope(
   if (!required) {
     if (scoringModeOf(attempt) === 'ratio') {
       throw badRequest(
-        'Lớp Normal luôn phải đủ bốn môn L/R/W/S. Không có thao tác miễn môn để hoàn tất Progress/Final Test.',
+        'Lớp thường luôn phải đủ bốn môn L/R/W/S. Không có thao tác miễn môn để hoàn tất Giữa khoá / Cuối khoá.',
       );
     }
     /* K4-13 (PR-XLMT): đã có điểm → dùng "Huỷ điểm"; đã tới tuần thi → dùng "Báo vắng". */

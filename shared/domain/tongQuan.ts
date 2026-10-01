@@ -31,7 +31,7 @@ export const NHOM_VIEC = ['cham-diem', 'case-hoc-thuat', 'y-thuc', 'van-hanh'] a
 export type NhomViec = (typeof NHOM_VIEC)[number];
 /** T75 (PR-VAI-a Q13): "Ý thức" (Phối hợp SOS nay là việc thật ở Case học thuật), "Lớp & vận hành". */
 export const NHOM_VIEC_LABEL: Record<NhomViec, string> = {
-  'cham-diem': 'Chấm điểm', 'case-hoc-thuat': 'Case học thuật', 'y-thuc': 'Ý thức', 'van-hanh': 'Lớp & vận hành',
+  'cham-diem': 'Chấm điểm', 'case-hoc-thuat': 'Case học thuật', 'y-thuc': 'Ý thức & Phối hợp', 'van-hanh': 'Vận hành',
 };
 /**
  * Loại việc của `mywork.ts` → 4 nhóm (PR-DUYET bỏ `decide`, `decide_move` — thẻ ở hộp Chờ duyệt). PR-YT4: ba loại việc Ý thức có hạn thật.
@@ -51,7 +51,7 @@ export function nhomViecCua(loai: string): NhomViec { return NHOM_CUA_LOAI[loai]
 export const LOAI_HAN_CUA_VIEC: Partial<Record<string, DeadlineKind>> = {
   cause: 'xac-minh-sos', xac_nhan_pa: 'xac-minh-sos', ke_hoach_bo_tro: 'ke-hoach-bo-tro', mini_test: 'mini-test', no_plan: 'lap-pa', ghi_ket_qua_pa: 'cap-nhat-pa', score: 'nhap-diem',
   yt_xu_ly: 'xu-ly-vi-pham', yt_xem: 'xu-ly-vi-pham', yt_thuc_hien: 'xu-ly-vi-pham',
-  ban_giao: 'viec-van-hanh',
+  ban_giao: 'viec-van-hanh', mgmt: 'viec-van-hanh',
 };
 
 export type ViecGom = { group: string; urgency: 'overdue' | 'today' | 'normal'; due: string | null };
@@ -98,14 +98,14 @@ export const CAN_XU_LY: readonly {
   quaHan?: true;
   canQuyenDuyet?: true;
 }[] = [
-  { metricId: 'bai-qua-han-nhap-diem', nhan: 'bài chưa nhập điểm quá hạn', nut: 'Xem và nhắc', cuaNguoiXem: false, quaHan: true },
+  { metricId: 'bai-qua-han-nhap-diem', nhan: 'bài quá hạn chưa nhập điểm', nut: 'Xem và nhắc', cuaNguoiXem: false, quaHan: true },
   { metricId: 'pa-can-cap-nhat', nhan: 'PA chưa ghi kết quả', nut: 'Xem và nhắc', cuaNguoiXem: false, quaHan: true },
   /* PR-VAI-a Q8: bốn việc "của Bạn" — mỗi dòng một chỉ số gọi đúng hàm màn khác đang dùng. */
   { metricId: 'van-hanh-can-quyet-dinh', nhan: 'việc Vận hành cần quyết định', nut: 'Mở Vận hành', cuaNguoiXem: true },
-  { metricId: 'hv-chua-co-lenh-chuyen', nhan: 'em chưa có lệnh chuyển lớp', nut: 'Mở chuyển lớp', cuaNguoiXem: true },
+  { metricId: 'hv-chua-co-lenh-chuyen', nhan: 'em chưa có quyết định chuyển lớp', nut: 'Mở chuyển lớp', cuaNguoiXem: true },
   { metricId: 'lop-thieu-gv-mon', nhan: 'lớp thiếu GV môn', nut: 'Sửa phân công', cuaNguoiXem: true },
   { metricId: 'hv-ft-xong-mt-cuoi-chua-mt-ke', nhan: 'học viên FT xong MT3, chưa có MT kế tiếp', nut: 'Kế hoạch Test', cuaNguoiXem: true },
-  { metricId: 'hv-len-ft-chua-ky-vong', nhan: 'học viên lên Fast Track chưa đánh dấu kỳ vọng đầu ra', nut: 'Mở hồ sơ', cuaNguoiXem: true },
+  { metricId: 'hv-len-ft-chua-ky-vong', nhan: 'học viên lên FT chưa đánh dấu kỳ vọng đầu ra', nut: 'Mở hồ sơ', cuaNguoiXem: true },
 ];
 export const CAN_XU_LY_TOI_DA = 10;
 export type DongCanXuLyGoc = {

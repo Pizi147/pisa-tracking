@@ -233,7 +233,7 @@ async function runTask9(t: YThucTestKit, d: any) {
     assert(!doc('server/src/worklist/tongQuan.ts').includes('chờ hàng "Chưa phân công"'), 'chú thích ponytail cũ');
   });
 
-  check('S6F-b (9) · "em chưa có lệnh chuyển lớp": hạn (tuần sau tuần kết thúc) đã qua → Quá hạn, chữ "quá hạn từ {tuần}"', () => {
+  check('S6F-b (9) · "em chưa có quyết định chuyển lớp": hạn (tuần sau tuần kết thúc) đã qua → Quá hạn, chữ "quá hạn từ {tuần}"', () => {
     const lop = lopChoLenhChuyen(P.mbManager, null, TODAY) as any[];
     const ketThuc = lop.map((l) => l.moc.tuanKetThuc).filter(Boolean).sort()[0] as string | undefined;
     const dong = (tq.tongQuanQuanLy(P.mbManager, {}).canXuLy as any[]).find((x) => x.metricId === 'hv-chua-co-lenh-chuyen');
@@ -280,7 +280,7 @@ async function runTask8(t: YThucTestKit, d: any) {
       WHERE e.student_id = ? AND e.status = 'active' ORDER BY ta.id LIMIT 1`, sid)?.id as number | undefined;
 
   // ------------------------------------------------------------------ Task 8 · hồ sơ HV — mọi việc của em (D5)
-  check('S6F-b (8) · HAI ĐƯỜNG "Đề ra PA" (Q5): Case tay chưa PA → việc support:{caseId} ở hồ sơ của người phụ trách = việc ở Công việc (cùng khoá, cùng hạn); GV khác thấy ở "việc người khác"; quá hạn → câu tóm tắt nêu', () => {
+  check('S6F-b (8) · HAI ĐƯỜNG "Thêm PA" (Q5): Case tay chưa PA → việc support:{caseId} ở hồ sơ của người phụ trách = việc ở Công việc (cùng khoá, cùng hạn); GV khác thấy ở "việc người khác"; quá hạn → câu tóm tắt nêu', () => {
     const sid = get(`SELECT e.student_id id FROM enrollments e JOIN students s ON s.id = e.student_id WHERE e.class_id = ? AND e.status = 'active' AND s.status = 'active' AND s.id <= ? ORDER BY s.id DESC LIMIT 1`,
       classId('MB FT 101'), seedMax.students).id as number;
     const c = reportIssue(P.w2Teacher, { studentId: sid, title: 'Reading: chưa nối được logic đoạn', summary: 'Đọc hiểu sai logic đoạn văn — S6F-b', topic: 'reading', primaryCode: 'student.reading.logic', urgency: 'attention' }) as any;
@@ -291,7 +291,7 @@ async function runTask8(t: YThucTestKit, d: any) {
     const key = `support:${caseId}`;
     const x = viecCua(po, sid).cuaBan.find((v) => v.key === key);
     const it = (myWork(po, {}) as any).items.find((i: any) => i.key === key);
-    assert(x && x.loai === 'de-ra-pa' && x.nguoi.id === owner && /^Đề ra PA/.test(x.chu), `hồ sơ: ${JSON.stringify(viecCua(po, sid).cuaBan.map((v) => v.key))}`);
+    assert(x && x.loai === 'de-ra-pa' && x.nguoi.id === owner && /^Thêm PA/.test(x.chu), `hồ sơ: ${JSON.stringify(viecCua(po, sid).cuaBan.map((v) => v.key))}`);
     assert(it && it.studentId === sid && it.due === x.han, `Công việc: ${JSON.stringify(it && { due: it.due })} ≠ hạn ${x?.han}`);
     const gvcn = gvcnCua(sid)!;
     if (gvcn !== owner) {
@@ -300,7 +300,7 @@ async function runTask8(t: YThucTestKit, d: any) {
     }
     conn.prepare('UPDATE sos_cases SET detected_at = ? WHERE id = ?').run(addDays(TODAY, -15), caseId);
     const cau = (hs(po, sid).tomTat as { chu: string }[]).map((m) => m.chu).join(' · ');
-    assert(/Đề ra PA.*quá hạn/.test(cau), `câu tóm tắt: ${cau}`);
+    assert(/Thêm PA.*quá hạn/.test(cau), `câu tóm tắt: ${cau}`);
     conn.prepare(`UPDATE sos_cases SET status = 'done' WHERE id = ?`).run(caseId);
   });
 
@@ -405,7 +405,7 @@ async function runTask7(t: YThucTestKit, d: any) {
   const datBatDau = (batDau: string | null) => run('UPDATE learning_cycles SET start_period_id = ? WHERE id = ?', batDau ? week.ensurePeriod(batDau).id : em.sp, em.cy);
 
   // ------------------------------------------------------------------ Task 7 · Hành trình
-  check('S6F-b (7) · em Tạm dừng (ghi danh paused): chương lớp hiện tại vẫn ĐANG HỌC, không chân "Bảo lưu"; tuần học = tuanHocTai = đầu hồ sơ ("tuần học thứ 14 · đang dừng")', () => {
+  check('S6F-b (7) · em Tạm dừng (ghi danh paused): chương lớp hiện tại vẫn ĐANG HỌC, không chân "Tạm dừng học (bảo lưu)"; tuần học = tuanHocTai = đầu hồ sơ ("tuần học 14 · đang dừng")', () => {
     assert(em, 'bộ demo phải có em FT một ghi danh');
     datBatDau(w(-15));
     run(`UPDATE students SET status = 'inactive' WHERE id = ?`, em.id);
@@ -496,11 +496,11 @@ async function runTask6(t: YThucTestKit, d: any) {
     assert(js(d.tuanHocTai(w(-1), TODAY, dang)) === js({ tuan: null, dangDung: true }), 'dừng ngay tuần đầu');
     assert(d.tuanHocTai(w(1), TODAY, []) === null, 'trước tuần bắt đầu');
     assert(js(d.tuanHocTai(w(-15), TODAY, [{ tu: w(-4), den: w(-2) }])) === js({ tuan: 14, dangDung: false }), 'dừng 2 tuần đã quay lại');
-    assert(d.chuTuanHoc(14, null, true) === 'tuần học thứ 14 · đang dừng' && d.chuTuanHoc(null, null, true) === 'đang dừng', d.chuTuanHoc(14, null, true));
-    assert(d.chuTuanHoc(3, 8) === 'tuần học 3/8' && d.chuTuanHoc(9, null) === 'tuần học thứ 9', 'chữ cũ giữ');
+    assert(d.chuTuanHoc(14, null, true) === 'tuần học 14 · đang dừng' && d.chuTuanHoc(null, null, true) === 'đang dừng', d.chuTuanHoc(14, null, true));
+    assert(d.chuTuanHoc(3, 8) === 'tuần học 3/8' && d.chuTuanHoc(9, null) === 'tuần học 9', 'chữ cũ giữ');
   });
 
-  /* Em FT "sạch" của bộ demo; phép kiểm đặt lộ trình bắt đầu 15 tuần trước tuần này (tuần này = tuần học thứ 16), ghi Tạm dừng hôm qua (Chủ nhật — tuần trước). */
+  /* Em FT "sạch" của bộ demo; phép kiểm đặt lộ trình bắt đầu 15 tuần trước tuần này (tuần này = tuần học 16), ghi Tạm dừng hôm qua (Chủ nhật — tuần trước). */
   const em = get(`SELECT s.id, cy.id cy, cy.start_period_id sp, e.class_id lop FROM enrollments e JOIN students s ON s.id = e.student_id
       JOIN classes c ON c.id = e.class_id JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
      WHERE e.status = 'active' AND s.status = 'active' AND s.archived_at IS NULL AND c.is_fast_track = 1 AND c.status = 'active' AND s.id <= ?
@@ -524,14 +524,14 @@ async function runTask6(t: YThucTestKit, d: any) {
     caLop: (transitionPlan(P.mbManager, em.lop) as any).students.find((s: any) => s.id === em.id)?.tuanHoc,
   });
 
-  check('S6F-b (6) · ba nơi (đầu hồ sơ, panel Chuyển lớp một em, panel cả lớp) CÙNG { tuan: 14, dangDung: true } khi em đang dừng; chữ "tuần học thứ 14 · đang dừng"', () => {
+  check('S6F-b (6) · ba nơi (đầu hồ sơ, panel Chuyển lớp một em, panel cả lớp) CÙNG { tuan: 14, dangDung: true } khi em đang dừng; chữ "tuần học 14 · đang dừng"', () => {
     assert(em, 'bộ demo phải có em FT sạch');
     datBatDau(w(-15));
     try { assert((studentProfile(P.admin, em.id) as any).dauHoSo.thongTin.tuanHoc?.tuan === 16, `tiền đề em ${em.id}: ${JSON.stringify((studentProfile(P.admin, em.id) as any).dauHoSo.thongTin)}`); } finally { datBatDau(null); }
     voiDung(addDays(TODAY, -1), w(-15), () => {
       for (const [noi, v] of Object.entries(baNoi())) {
         assert(v && v.tuan === 14 && v.dangDung === true && v.tong === null, `${noi}: ${JSON.stringify(v)}`);
-        assert(d.chuTuanHoc(v.tuan, v.tong, v.dangDung) === 'tuần học thứ 14 · đang dừng', noi);
+        assert(d.chuTuanHoc(v.tuan, v.tong, v.dangDung) === 'tuần học 14 · đang dừng', noi);
       }
     });
   });

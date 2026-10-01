@@ -205,7 +205,7 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved, on
               </select>
             </Truong>
             <OKhac hien={newKind === 'other_proposal'} value={newGhiRo} onChange={setNewGhiRo} nhan="Tên đề xuất"
-              goiY="Ví dụ: Học kèm 1-1 với trợ giảng"
+              goiY="Ví dụ: Học kèm 1-1 với Tutor"
               id={lf.oId('ghi-ro')} onBlur={lf.roi('ghi-ro')} loi={lf.hien('ghi-ro') ? kiemGhiRoKhac(newGhiRo) : null} />
           </div>
           <Truong nhan="Nội dung" batBuoc loi={loiCua('pa-moi')}>
@@ -247,7 +247,7 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved, on
   };
 
   return (
-    <KhungPanel tieuDe={lanCuoi ? 'Ghi kết quả cuối' : 'Ghi kết quả PA'} hocVien={hocVien} lop={lop} quayLai={quayLai} onDong={onClose}
+    <KhungPanel tieuDe={lanCuoi ? 'Ghi kết quả cuối' : 'Ghi kết quả'} hocVien={hocVien} lop={lop} quayLai={quayLai} onDong={onClose}
       ngCanh={(
         <span className="flex items-center gap-1.5">
           <span className="truncate" title={tenPa}>{tenPa}{pa.cycleNo && pa.cycleNo > 1 ? ` · Đợt ${pa.cycleNo}` : ''}</span>
@@ -259,7 +259,7 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved, on
         conThieu: lf.conThieu(loi),
         chinh: (
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>
-            {busy ? 'Đang lưu…' : lanCuoi ? 'Lưu kết quả cuối' : decision ? NUT_LUU_KET_QUA[decision] : 'Lưu kết quả'}
+            {busy ? 'Đang lưu…' : lanCuoi ? 'Ghi kết quả cuối' : decision ? NUT_LUU_KET_QUA[decision] : 'Ghi kết quả'}
           </button>
         ),
       }}>

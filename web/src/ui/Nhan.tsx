@@ -40,7 +40,7 @@ export function Nhan({ tone, dut, title, onClick, children }: {
  */
 export function ChipLichSu() {
   return (
-    <span title="MT lịch sử — tuần thi đã qua trước khi lượt này được tạo; nhập bù, không có hạn"
+    <span title="MT lịch sử — tuần thi đã qua trước khi lượt này được tạo; nhập bù, không tính hạn"
       className="inline-flex items-center whitespace-nowrap rounded border border-muted-line px-[5px] align-middle text-[11.5px] font-normal leading-4 text-muted">
       lịch sử
     </span>
