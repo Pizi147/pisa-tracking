@@ -66,20 +66,26 @@ export function nhapDiemTheoEm(p: Principal, classIds: readonly number[], homNay
   /* Lớp người xem có VIỆC nhập điểm: đang được phân công, hoặc vai không phải giáo viên có SCORE_EDIT ở lớp (Quản trị) — như `mySkills`. */
   const day = new Set(p.assignments.filter((a) => activeAt(a, homNay)).map((a) => a.classId));
   const lop = [...new Set(classIds)].filter((id) => day.has(id) || can(p, PERMISSIONS.SCORE_EDIT, { classId: id }));
-  const out = new Map<number, NhapDiemViec & { thuTu: number }>();
+  const out = new Map<number, NhapDiemViec & { thuTu: number; hanQua?: string | null }>();
   if (!lop.length) return out;
   for (const a of listAttempts(p, { classIds: lop, chiDangHoc: true }).rows as any[]) {
     const cho = (a.myPendingDetail ?? []) as { skill: string; deadline: string | null; overdue: boolean }[];
     if (a.status === 'cancelled' || !cho.length || lopCua(a.studentId) !== a.classId) continue;
-    const x = out.get(a.studentId) ?? { kyNang: [], dot: null, quaHan: false, han: null, thuTu: Infinity };
+    const x = out.get(a.studentId) ?? { kyNang: [], dot: null, quaHan: false, han: null, thuTu: Infinity, hanQua: null };
     for (const c of cho) {
       if (!x.kyNang.includes(c.skill)) x.kyNang.push(c.skill);
       if (c.overdue) x.quaHan = true;
       if (c.deadline && (!x.han || c.deadline < x.han)) x.han = c.deadline;
+      if (c.overdue && c.deadline && (!x.hanQua || c.deadline < x.hanQua)) x.hanQua = c.deadline;
     }
     /* Đợt = lượt còn nợ SỚM NHẤT (như bảng lớp đọc timeline từ đầu). */
     if (a.attemptNo < x.thuTu) { x.thuTu = a.attemptNo; x.dot = a.kind === 'mock' ? `MT${a.attemptNo}` : ATTEMPT_KIND_SHORT[a.kind as AttemptKind] ?? a.kind; }
     out.set(a.studentId, x);
+  }
+  /* PR-S6F-a Q6: có ô quá hạn thì hạn hiện là hạn của ô quá hạn — hạn sớm của ô chưa quá hạn không làm em "trễ". */
+  for (const x of out.values()) {
+    if (x.hanQua) x.han = x.hanQua;
+    delete x.hanQua;
   }
   return out;
 }

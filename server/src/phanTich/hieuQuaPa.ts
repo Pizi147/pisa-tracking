@@ -111,6 +111,11 @@ const NHAN_QUY_CHE: Record<string, string> = {
   'qc:gk': 'Bổ trợ Giữa khoá', 'qc:mt': 'Bổ trợ sau Cuối khoá', 'qc:khac': 'PA theo quy chế khác',
 };
 const THU_TU_QUY_CHE = Object.keys(NHAN_QUY_CHE);
+/** PR-S6F-a Q8: hàng con (loại PA) của khối quy chế theo thứ tự cố định — không xếp theo số PA. */
+const THU_TU_LOAI = Object.keys(INTERVENTION_KIND_LABEL);
+/** PR-S6F-a Q20: PA GV thêm của Case chưa có lỗi chính — một hàng riêng để Σ hàng = tóm tắt = `paCoKetQua` (cột "PA hiệu quả" bảng GV). */
+const KHOA_CHUA_PHAN_LOAI = 'chua-phan-loai';
+/* ponytail: FT xếp theo mức SOS HIỆN TẠI của Case (Q22) — Case trượt lại thì PA cũ hiện ở hàng mức mới; ghi mức vào PA lúc sinh nếu cần mức lúc chạy. */
 function khoaQuyChe(r: Plan, ct: ChuongTrinh): string {
   if (ct === 'ft') return r.sos && r.sos > 0 ? `qc:sos${Math.min(r.sos, 3)}` : 'qc:khac';
   if (r.nhomBoTro?.startsWith('gk:')) return 'qc:gk';
@@ -152,7 +157,7 @@ function tinh(p: Principal, f: FilterHieuQuaPa) {
     const ho = hoKyNang(ma0 ? issueBranchOf(ma0) : null) ?? hoKyNang(r.category);
     if (!ho && (r.category === 'tong_hop' || issueBranchOf(ma0) === 'tong_hop')) continue;   // Pre FOU không thuộc họ kỹ năng
     const ma = ma0 && issueBranchOf(ma0) ? ma0 : ho && ma0 ? `student.${ho}.other` : null;
-    if (!ma || !ho) { caseChuaPhanLoai.add(r.caseId); continue; }
+    if (!ma || !ho) { caseChuaPhanLoai.add(r.caseId); them(KHOA_CHUA_PHAN_LOAI, 'Case chưa phân loại lỗi', r); continue; }
     const cha = `vd:${ma}`;
     them(cha, `${NHAN_HO_KY_NANG[ho]} · ${issueLabel(ma)}`, r);
     them(`${cha}|${r.kind}`, nhanKind(r.kind), r, cha);
@@ -192,23 +197,29 @@ export function hieuQuaPa(p: Principal, f: FilterHieuQuaPa): HieuQuaPaKetQua {
   const lon: DongHieuQuaPa[] = [];
   const quyChe: DongHieuQuaPa[] = [];
   for (const khoa of r.tap.keys()) {
-    if (khoa.includes('|')) continue;
+    if (khoa.includes('|') || khoa === KHOA_CHUA_PHAN_LOAI) continue;
     const con = [...(r.conCua.get(khoa) ?? [])].map((k) => dongOf(r, k));
     if (khoa.startsWith('vd:')) {
       con.sort(xepSo);
       for (const c of con) c.nenDung = nenDung(c, con.filter((x) => x !== c));
       lon.push({ ...dongOf(r, khoa), con });
-    } else quyChe.push({ ...dongOf(r, khoa), ...(con.length ? { con: con.sort(xepSo) } : {}) });
+    } else {
+      con.sort((a, b) => THU_TU_LOAI.indexOf(a.khoa.split('|')[1]) - THU_TU_LOAI.indexOf(b.khoa.split('|')[1]));
+      quyChe.push({ ...dongOf(r, khoa), ...(con.length ? { con } : {}) });
+    }
   }
   lon.sort(xepSo);
   quyChe.sort((a, b) => THU_TU_QUY_CHE.indexOf(a.khoa) - THU_TU_QUY_CHE.indexOf(b.khoa));
   const cong = (ds: DongHieuQuaPa[], k: 'soPa' | 'caiThien') => ds.reduce((s, x) => s + x[k], 0);
   const chinh = lon.filter((d) => d.soPa > 2);
   const it = lon.filter((d) => d.soPa <= 2);
+  /* Q20: hàng "Case chưa phân loại lỗi" luôn đứng cuối bảng chính (không vào nhóm "vấn đề khác"), vào tóm tắt — không có "Nên dùng". */
+  const chuaPhanLoai = r.tap.has(KHOA_CHUA_PHAN_LOAI) ? [dongOf(r, KHOA_CHUA_PHAN_LOAI)] : [];
+  const tatCa = [...lon, ...chuaPhanLoai];
   return {
     gvThem: {
-      tomTat: { paCoKetQua: cong(lon, 'soPa'), caiThien: cong(lon, 'caiThien'), vanDeDuDuLieu: lon.filter((d) => d.soPa >= NGUONG_IT_DU_LIEU).length },
-      hang: chinh,
+      tomTat: { paCoKetQua: cong(tatCa, 'soPa'), caiThien: cong(tatCa, 'caiThien'), vanDeDuDuLieu: lon.filter((d) => d.soPa >= NGUONG_IT_DU_LIEU).length },
+      hang: [...chinh, ...chuaPhanLoai],
       gom: it.length ? { soVanDe: it.length, hang: it } : null,
     },
     quyChe: { tomTat: { paCoKetQua: cong(quyChe, 'soPa'), caiThien: cong(quyChe, 'caiThien') }, hang: quyChe },

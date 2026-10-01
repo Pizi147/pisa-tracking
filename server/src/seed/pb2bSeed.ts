@@ -26,7 +26,7 @@ export function buNgayPb2b(conn: any): void {
   conn.prepare(
     `UPDATE assessment_scores SET nhap_dau_ngay = MIN(COALESCE(result_date, substr(entered_at, 1, 10), ?), ?)
       WHERE nhap_dau_ngay IS NULL
-        AND (raw_score IS NOT NULL OR band IS NOT NULL OR c1 IS NOT NULL OR c2 IS NOT NULL OR c3 IS NOT NULL OR c4 IS NOT NULL)`,
+        AND (raw_score IS NOT NULL OR band IS NOT NULL)`,   // PR-S6F-a (Q18): ô thiếu tiêu chí (band NULL) chưa có lần nhập đầu
   ).run(DEMO_DATE, DEMO_DATE);
   conn.prepare(
     `UPDATE violations SET phan_hoi_ngay = (

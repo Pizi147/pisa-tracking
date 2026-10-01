@@ -1,5 +1,11 @@
 import { db, theoLo } from '../db.ts';
 
+/**
+ * PR-S6F-a (Q2): MỘT điều kiện SQL "em ĐANG HỌC" cho nợ điểm và các số tính cho giáo viên — Tạm dừng, Kết thúc học, đã lưu trữ đều
+ * không sinh nợ, không vào badge "n bài chờ chấm", Lịch Test, bảng Phân tích GV (Chấm điểm, Xử lý vi phạm). `s` là bí danh `students`.
+ */
+export const HV_DANG_HOC_SQL = (s: string) => `${s}.status = 'active' AND ${s}.archived_at IS NULL`;
+
 export type KhoangTamDung = { tu: string; den: string | null; lyDo: string | null; boiId: number | null };
 
 /**
