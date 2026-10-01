@@ -1,5 +1,5 @@
 import { db } from '../db.ts';
-import { ATTEMPT_KIND_SHORT, addDaysIso, baiId, duongCase, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, metricById, tachBaiId, tenMon, tenMonNgan, tuanLich, type AttemptKind, type ChiSo, type ChuongTrinh } from '../../../shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, addDaysIso, baiId, duongCase, duongDotTest, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, metricById, tachBaiId, tenMon, tenMonNgan, tuanLich, type AttemptKind, type ChiSo, type ChuongTrinh } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { classScopeSql, scopeFor, type Principal, type Scope } from '../permissions.ts';
 import { badRequest, forbidden, HttpError, notFound } from '../util.ts';
@@ -142,7 +142,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[]): MetricRow[] {
         byId.set(x.id, {
           id: x.id, title: `${ten} · ${r.full_name} · ${tenMonNgan(r.programme_code ?? null, x.skill)}`,
           sub: [r.student_code, r.class_code, tuan ? tuanLich(tuan, homNay) : null].filter(Boolean).join(' · '),
-          href: r.kind === 'mock' || !r.class_id ? `/mock-test/${r.id}` : `/bang-diem-thuong/${r.class_id}?kind=${r.kind}`,
+          href: duongDotTest({ id: r.id, kind: r.kind, classId: r.class_id }, x.skill),   // PR-UXF-b: có kỹ năng → hồ sơ Mock cuộn tới đúng ô (lớp thường bỏ kn)
         });
       }
     } else if (unit === 'dot-test' || unit === 'bai-thi') {
@@ -157,7 +157,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[]): MetricRow[] {
         byId.set(r.id, {
           id: r.id, title: `${name} · ${r.full_name}`,
           sub: [r.student_code, r.class_code, r.period_code].filter(Boolean).join(' · '),
-          href: r.kind === 'mock' || !r.class_id ? `/mock-test/${r.id}` : `/bang-diem-thuong/${r.class_id}?kind=${r.kind}`,
+          href: duongDotTest({ id: r.id, kind: r.kind, classId: r.class_id }),
         });
       }
     } else if (unit === 'nghia-vu') {

@@ -105,6 +105,8 @@ export type KetQuaVao = {
   attemptLabel: string | null;
   /** `mock` · `progress` · `final` (T58: lượt Cuối khoá đủ điểm hiện % tổng). */
   attemptKind?: string | null;
+  /** PR-UXF-b (G5): id + lớp của lượt đó — ô Kết quả gần nhất link tới đợt qua `duongDotTest`. */
+  attemptId?: number | null; attemptClassId?: number | null;
   sosLevel: number | null; provisional: boolean;
   scored: number; required: number; failed: number | null;
   overall: number | null; expectation: number | null;

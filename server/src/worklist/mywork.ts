@@ -1110,7 +1110,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     const ids = sc.none ? [] : hvLenFtChuaKyVong(sc, f.branchId ?? null);
     if (ids.length) {
       for (const r of conn.prepare(
-        `SELECT s.id, s.full_name, e.class_id, c.code FROM students s
+        `SELECT s.id, s.full_name, e.class_id, c.code,
+                (SELECT a.cycle_id FROM assessment_attempts a WHERE a.student_id = s.id AND a.kind = 'final' AND a.status != 'cancelled' ORDER BY a.id DESC LIMIT 1) AS cycle_cuoi
+           FROM students s
            LEFT JOIN enrollments e ON e.student_id = s.id AND e.status = 'active' LEFT JOIN classes c ON c.id = e.class_id
           WHERE s.id IN (${ids.map(() => '?').join(',')}) ORDER BY s.full_name`,
       ).all(...ids) as any[]) {
@@ -1120,7 +1122,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
           attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: 'Lên Fast Track', count: null,
           reason: 'Em BE/ELE lên Fast Track đã có bài Cuối khoá — đánh dấu Đạt hoặc Không đạt kỳ vọng đầu ra',
           tieuDe: `Đánh dấu kỳ vọng đầu ra · ${r.full_name}`, actionLabel: 'Mở hồ sơ',
-          href: duongHoSoHocVien(r.id), ownerId: p.userId, owner: null, mine: true, due: null, statusLabel: 'Chưa đánh dấu',
+          href: duongHoSoHocVien(r.id, { loTrinh: r.cycle_cuoi ?? undefined, muc: 'ket-luan-khoa' }), ownerId: p.userId, owner: null, mine: true, due: null, statusLabel: 'Chưa đánh dấu',
         });
       }
     }

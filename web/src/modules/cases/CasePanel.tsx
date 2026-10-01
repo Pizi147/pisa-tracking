@@ -197,7 +197,7 @@ export function ThanCase({ data, onViec }: { data: CaseDetail; onViec: (v: ViewC
             <ol className="m-0 mt-2 list-none space-y-2 border-l p-0 pl-3" style={{ borderColor: 'var(--line)' }}>
               {lichSu.map((m) => (
                 <li key={m.key} className="text-xs">
-                  <span className="block text-[11px] tabular-nums text-slate-500">{ngan(m.on)}{m.dot ? ` · ${m.dot}` : ''}</span>
+                  <span className="block text-[11px] tabular-nums text-slate-500">{ngan(m.on)}{m.dot ? <> · {m.dotHref ? <Link to={m.dotHref} className="link">{m.dot}</Link> : m.dot}</> : ''}</span>
                   <span className="flex flex-wrap items-center gap-1.5 text-slate-200">{m.tieuDe}{m.badge}</span>
                   {m.than}
                 </li>
@@ -324,7 +324,7 @@ function KhoaNho() {
 
 // ==================================================================== lịch sử cập nhật (thu gọn)
 
-type MucLichSu = { key: string; on: string; dot: string | null; tieuDe: ReactNode; badge: ReactNode; than: ReactNode };
+type MucLichSu = { key: string; on: string; dot: string | null; dotHref?: string | null; tieuDe: ReactNode; badge: ReactNode; than: ReactNode };
 
 const MILESTONE_TITLE: Record<string, string> = {
   repeat: 'Trượt lại',
@@ -368,7 +368,7 @@ function buildLichSu(data: CaseDetail, ngan: (d: string | null | undefined) => s
   for (const m of data.milestones ?? []) {
     if (m.kind === 'opened') continue;   // ngày mở và người tạo đã ở khối Vấn đề
     out.push({
-      key: `m${m.id}`, on: m.occurredOn, dot: m.attemptNo ? (m.dot ?? `MT${m.attemptNo}`) : null,
+      key: `m${m.id}`, on: m.occurredOn, dot: m.attemptNo ? (m.dot ?? `MT${m.attemptNo}`) : null, dotHref: m.href ?? null,
       tieuDe: MILESTONE_TITLE[m.kind] ?? m.kind,
       badge: (
         <>

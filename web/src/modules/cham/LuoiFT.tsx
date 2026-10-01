@@ -7,7 +7,7 @@ import {
 import {
   fmtBand, skillLabel, skillShort, sosLabel, sosTone,
 } from '../../lib/format.ts';
-import { ENTRY_SKILLS, chuOChuaLuu, ngay, nhanLuot, tuanLich, type NguoiChon, type TrangThaiLuuO } from '@shared/domain/index.ts';
+import { ENTRY_SKILLS, chuOChuaLuu, duongDotTest, ngay, nhanLuot, tuanLich, type NguoiChon, type TrangThaiLuuO } from '@shared/domain/index.ts';
 import { NutGvCham, useGvChamCot } from './GvCham.tsx';
 
 /** Dữ liệu lưới FT — chính là `cham.ft` (`classScoreSheet` ở máy chủ). */
@@ -234,7 +234,7 @@ function SheetRow({ row, rowIndex, active, cot, tuanDangXem, onReload, gvMacDinh
     <tr className={`row-hover h-16 ${active ? 'row-active' : ''}`} data-hv={row.studentId}>
       <td className="td py-1.5 sticky-col">
         <div className="flex items-center gap-1 min-w-0">
-          <Link className="link block truncate" to={`/mock-test/${row.attemptId}`} title={row.studentName}>{row.studentName}</Link>
+          <Link className="link block truncate" to={duongDotTest({ id: row.attemptId })} title={row.studentName}>{row.studentName}</Link>
           {row.hoanTat && (
             <Info title={`Hết Chủ nhật ${ngay(row.chuNhatCuoi)}. ${KHOA_HOAN_TAT_HINT}`}>Đã hoàn tất</Info>
           )}

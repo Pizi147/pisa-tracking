@@ -32,7 +32,7 @@ import { khoangTamDung } from '../students/tamDung.ts';
 import { isRatioCycle, programmeCodeOfCycle } from '../normal/regular.ts';
 import { suggestCaseOwner } from './owner.ts';
 import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
-import { PLAN_DECISIONS, decisionToStep, tuanLich, type PlanDecision } from '../../../shared/domain/index.ts';
+import { PLAN_DECISIONS, decisionToStep, duongDotTest, tuanLich, type PlanDecision } from '../../../shared/domain/index.ts';
 import { apDungDieuChinh, chuanHoaDieuChinh, lichSuDieuChinhCuaCase } from './planRevisions.ts';
 import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
 import { dienMocQuyChe, tenGiuaCua } from './sosAuto.ts';
@@ -107,13 +107,16 @@ export function caseTitleOf(c: {
 export function milestonesOf(caseId: number) {
   return (db()
     .prepare(
-      `SELECT m.*, u.full_name AS actor_name, (SELECT a.kind FROM assessment_attempts a WHERE a.id = m.attempt_id) AS attempt_kind FROM case_milestones m
+      `SELECT m.*, u.full_name AS actor_name, (SELECT a.kind FROM assessment_attempts a WHERE a.id = m.attempt_id) AS attempt_kind,
+             (SELECT a.class_id FROM assessment_attempts a WHERE a.id = m.attempt_id) AS attempt_class_id FROM case_milestones m
          LEFT JOIN users u ON u.id = m.created_by
         WHERE m.case_id = ? ORDER BY m.occurred_on, m.id`,
     )
     .all(caseId) as any[])
     .map((m) => ({
       id: m.id, kind: m.kind, attemptId: m.attempt_id, attemptNo: m.attempt_no, dot: m.attempt_kind ? nhanDot(m.attempt_kind, m.attempt_no) : null,
+      /* PR-UXF-b (G5): mốc MT bấm được tới đúng đợt (FT → hồ sơ Mock; lớp thường → bảng điểm lớp). */
+      href: m.attempt_id ? duongDotTest({ id: m.attempt_id, kind: m.attempt_kind, classId: m.attempt_class_id }) : null,
       band: m.band, expectation: m.expectation, sosLevel: m.sos_level,
       occurredOn: m.occurred_on, note: m.note, actorName: m.actor_name,
     }));

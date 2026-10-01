@@ -15,7 +15,7 @@ import { MissingBadge } from './MissingBadge.tsx';
 import { CanhBaoYThuc } from '../classes/CanhBaoYThuc.tsx';
 import { duongViecTiep, nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from '../classes/thaoTacDongHocVien.tsx';
 import {
-  ketQuaGanNhat, khoaLopThuong, maHocVienNgan, sapXepHocVien, tachViecChung, tuanLich,
+  duongDotTest, ketQuaGanNhat, khoaLopThuong, maHocVienNgan, sapXepHocVien, tachViecChung, tuanLich,
   type KetQuaVao, type SapXep, type ViecTiepTheo,
 } from '@shared/domain/index.ts';
 
@@ -202,15 +202,16 @@ function KetQuaOHocVien({ k, standing, thuong }: { k: ReturnType<typeof ketQuaGa
             title={k.sosTamThoi ? 'Tạm thời: chưa đủ điểm các môn' : undefined}>{k.sos}{k.sosTamThoi ? ' tạm thời' : ''}</Level>
         )}
       </span>
-      {k.dong1 && <span className="block text-[12px] leading-4 text-slate-500"><DongCham chu={k.dong1} /></span>}
+      {k.dong1 && <span className="block text-[12px] leading-4 text-slate-500"><DongCham chu={k.dong1} lienKet={standing?.attemptId && standing.attemptLabel ? { nhan: standing.attemptLabel, den: duongDotTest({ id: standing.attemptId, kind: standing.attemptKind, classId: standing.attemptClassId }) } : undefined} /></span>}
       {k.dong2 && <span className="block text-[12px] leading-4 text-slate-500"><DongCham chu={k.dong2} /></span>}
     </>
   );
 }
 
 /** PR-S4F #11: dòng "a · b · c" chỉ xuống dòng Ở DẤU "·" (không bẻ "…có / điểm", không để "W ·" đứng riêng ở 375 px). */
-function DongCham({ chu }: { chu: string }) {
-  return <>{chu.split(' · ').flatMap((x, i) => [i ? ' ' : null, <span key={i} className="whitespace-nowrap">{i ? '· ' : ''}{x}</span>])}</>;
+/** PR-UXF-b (G5): `lienKet` biến tên lượt ở đầu dòng 1 ("MT3") thành link tới đợt (`duongDotTest`). */
+function DongCham({ chu, lienKet }: { chu: string; lienKet?: { nhan: string; den: string } }) {
+  return <>{chu.split(' · ').flatMap((x, i) => [i ? ' ' : null, <span key={i} className="whitespace-nowrap">{i ? '· ' : ''}{i === 0 && lienKet && x.startsWith(lienKet.nhan) ? <><Link to={lienKet.den} className="link">{lienKet.nhan}</Link>{x.slice(lienKet.nhan.length)}</> : x}</span>])}</>;
 }
 
 /** Hàng "Cả lớp" (Q6, B8): việc Nhập điểm chung của cả lớp — chữ + hạn + số em + link tới lưới nhập điểm; dùng cho bảng và thẻ. */

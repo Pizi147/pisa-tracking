@@ -22,6 +22,8 @@ export type ThamSoHoSo = {
   viec?: 'ghi-ket-qua' | 'ke-hoach';
   /** Tab con của Ý thức & Phối hợp (PR-LT2a): `phoi-hop` — Việc Báo phụ huynh qua TVV mở thẳng thẻ Phối hợp. */
   sub?: 'phoi-hop';
+  /** PR-UXF-b (Q10): hồ sơ cuộn tới một khối — `ket-luan-khoa` (hộp Kết luận khoá, `id="ket-luan-khoa"`). */
+  muc?: 'ket-luan-khoa';
 };
 
 const KY_NANG_HOP_LE = ['listening', 'reading', 'writing', 'writing1', 'writing2', 'speaking'];
@@ -44,6 +46,7 @@ export function duongHoSoHocVien(studentId: number, o: ThamSoHoSo = {}): string 
   if (o.giaiDoan) q.set('giai-doan', o.giaiDoan);
   if (o.viec) q.set('viec', o.viec);
   if (o.sub) q.set('sub', o.sub);
+  if (o.muc) q.set('muc', o.muc);
   const s = q.toString();
   return `/hoc-vien/${studentId}${s ? `?${s}` : ''}`;
 }
@@ -94,6 +97,7 @@ export function docThamSoHoSo(get: (k: string) => string | null): ThamSoHoSo {
   const viec = get('viec');
   if (viec === 'ghi-ket-qua' || viec === 'ke-hoach') o.viec = viec;
   if (get('sub') === 'phoi-hop') o.sub = 'phoi-hop';
+  if (get('muc') === 'ket-luan-khoa') o.muc = 'ket-luan-khoa';
   return o;
 }
 
@@ -161,10 +165,10 @@ export function duongThongBao(n: ThongBaoRow): string | null {
       if (n.kind === 'sos') {
         return n.student_id != null ? duongHoSoHocVien(n.student_id, { dot: n.attempt_id ?? n.entity_id }) : null;
       }
-      if (n.kind === 'schedule_move' || n.kind === 'tu_doi_lich') return `/mock-test/${n.attempt_id ?? n.entity_id}`;
+      if (n.kind === 'schedule_move' || n.kind === 'tu_doi_lich') return duongDotTest({ id: n.attempt_id ?? n.entity_id });
       return null;
     case 'skill_move_requests':
-      return n.attempt_id != null ? `/mock-test/${n.attempt_id}` : null;
+      return n.attempt_id != null ? duongDotTest({ id: n.attempt_id }) : null;
     case 'discipline_measure':
       return n.student_id != null ? duongHoSoHocVien(n.student_id, { tab: 'y-thuc' }) : null;
     /* PR-DUYET (K1-41): đăng ký tài khoản mới → Quản trị (tab mặc định là Tài khoản, khối Đăng ký chờ duyệt). */

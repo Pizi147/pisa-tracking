@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { gomChip, tenMon, tenMonNgan, nhanTuanKhoa, tuanLich, type ChipKH, type KyNangKH } from '@shared/domain/index.ts';
+import { duongDotTest, gomChip, tenMon, tenMonNgan, nhanTuanKhoa, tuanLich, type ChipKH, type KyNangKH } from '@shared/domain/index.ts';
 import type { KnO } from './kieu.ts';
 import { ChipLichSu } from '../../../ui/Nhan.tsx';
 
@@ -68,7 +68,7 @@ export function ChipKyNang({ kn, attemptId, loai, khaiGiang, tongTuan, deXuat, n
       <div className={bao}>
         {lichSu && <span className="self-start"><ChipLichSu /></span>}
         {loai === 'ft' ? (
-          <Link to={`/mock-test/${attemptId}`} className={`${cls} no-underline`} title="Đã thi — mở hồ sơ đợt">{noiDung}</Link>
+          <Link to={duongDotTest({ id: attemptId })} className={`${cls} no-underline`} title="Đã thi — mở hồ sơ đợt">{noiDung}</Link>
         ) : (
           <button type="button" className={cls} title="Đã thi — xem" onClick={(e) => onMo(null, e.currentTarget)}>{noiDung}</button>
         )}

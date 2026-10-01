@@ -128,4 +128,78 @@ export async function runPrUxfBTests(t: YThucTestKit) {
     assert(!/Thi \$\{cell\.weekRange/.test(se) && /tuanLich\(cell\.weekStart/.test(se), 'ô nhập điểm FT còn khoảng ngày');
     assert(!/14\/09 – 20\/09/.test(doc('web/src/modules/dev/ThanhPhanDemo.tsx')), 'trang mẫu còn khoảng ngày');
   });
+
+  // ------------------------------------------------------------------ Task 5 · một đường tới lượt Test (G5) + neo Kết luận khoá
+  const attemptsSvc: any = await import('../fasttrack/attempts.ts');
+  const metricsSvc: any = await import('../worklist/metrics.ts');
+  const myworkSvc: any = await import('../worklist/mywork.ts');
+  const MB = (t.conn.prepare(`SELECT id FROM branches WHERE code = 'MB'`).get() as any).id;
+  check('UXF-b (5) · attemptHref (máy chủ) = duongDotTest với mọi mẫu (mock · progress có lớp · final không lớp · final có lớp)', () => {
+    for (const a of [{ id: 1 }, { id: 2, kind: 'mock' }, { id: 3, kind: 'progress', classId: 7 }, { id: 4, kind: 'final', classId: null }, { id: 5, kind: 'final', classId: 9 }]) {
+      assert(attemptsSvc.attemptHref(a) === d.duongDotTest(a), `${JSON.stringify(a)}: ${attemptsSvc.attemptHref(a)} ≠ ${d.duongDotTest(a)}`);
+    }
+  });
+  check('UXF-b (5) · quét chuỗi: không nơi nào tự ghép "/mock-test/${…}" hay "/bang-diem-thuong/${…}?kind=" (chỉ duongHoSo.ts, route App.tsx, và lối vào bảng điểm cả lớp thaoTacDongHocVien.tsx — không có id lượt)', () => {
+    const co: string[] = [];
+    const quet = (dir: string) => {
+      for (const e of fs.readdirSync(path.join(REPO, dir), { withFileTypes: true })) {
+        const rel = `${dir}/${e.name}`;
+        if (e.isDirectory()) { if (e.name !== 'tests' && e.name !== 'node_modules') quet(rel); continue; }
+        if (!/\.tsx?$/.test(e.name) || ['App.tsx', 'thaoTacDongHocVien.tsx'].includes(e.name) || rel.endsWith('shared/domain/duongHoSo.ts')) continue;
+        const s = doc(rel);
+        if (/\/mock-test\/\$\{/.test(s) || /\/bang-diem-thuong\/\$\{[^}]*\}\?kind=/.test(s)) co.push(rel);
+      }
+    };
+    for (const dir of ['web/src', 'server/src', 'shared']) quet(dir);
+    assert(co.length === 0, `còn tự ghép: ${co.join(', ')}`);
+  });
+  check('UXF-b (5) · dòng "bài quá hạn nhập điểm" (Cần xử lý): lượt FT mở hồ sơ Mock kèm ?kn= đúng kỹ năng của ô; lớp thường bỏ kn', () => {
+    const o = metricsSvc.metricSet(t.P.mbManager, 'bai-qua-han-nhap-diem', { branchId: MB });
+    const rows = metricsSvc.rowsFor('bai', o.ids);
+    assert(rows.length > 0, 'seed không có bài quá hạn');
+    for (const r of rows) {
+      const { attemptId, skill } = d.tachBaiId(r.id);
+      const a = t.conn.prepare('SELECT kind, class_id FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
+      const muon = d.duongDotTest({ id: attemptId, kind: a.kind, classId: a.class_id }, skill);
+      assert(r.href === muon, `${r.href} ≠ ${muon}`);
+      if (a.kind === 'mock') assert(/\?kn=(listening|reading|writing1|writing2|speaking)$/.test(r.href), r.href);
+      else assert(!/kn=/.test(r.href), r.href);
+    }
+  });
+  check('UXF-b (5) · duongHoSoHocVien/docThamSoHoSo: muc=ket-luan-khoa đi-về; muc lạ bị bỏ', () => {
+    assert(d.duongHoSoHocVien(5, { muc: 'ket-luan-khoa' }) === '/hoc-vien/5?muc=ket-luan-khoa', d.duongHoSoHocVien(5, { muc: 'ket-luan-khoa' }));
+    const url = d.duongHoSoHocVien(5, { loTrinh: 4, muc: 'ket-luan-khoa' });
+    assert(/lo-trinh=4/.test(url) && /muc=ket-luan-khoa/.test(url), url);
+    const q = new URLSearchParams(url.split('?')[1]);
+    assert(d.docThamSoHoSo((k: string) => q.get(k)).muc === 'ket-luan-khoa', 'đọc lại');
+    assert(d.docThamSoHoSo((k: string) => (k === 'muc' ? 'xyz' : null)).muc === undefined, 'muc lạ');
+  });
+  check('UXF-b (5) · việc "Đánh dấu kỳ vọng đầu ra" (QL): href mở hồ sơ cuộn tới hộp Kết luận khoá (muc=ket-luan-khoa) — kèm lo-trinh của lộ trình có bài Cuối khoá', () => {
+    const src = doc('server/src/worklist/mywork.ts');
+    assert(/muc: 'ket-luan-khoa'/.test(src), 'mywork.ts chưa gắn muc');
+    const items = (myworkSvc.myWork(t.P.mbManager, {}) as any).items.filter((x: any) => x.group === 'ky_vong_dau_ra');
+    for (const x of items) assert(/muc=ket-luan-khoa/.test(x.href) && /lo-trinh=\d+/.test(x.href), x.href);
+  });
+  check('UXF-b (5) · mốc MT trong lịch sử Case: có đường tới đợt qua duongDotTest', () => {
+    const m = t.conn.prepare('SELECT case_id FROM case_milestones WHERE attempt_id IS NOT NULL LIMIT 1').get() as any;
+    assert(m, 'seed không có mốc MT');
+    const ms = (casesSvc.milestonesOf(m.case_id) as any[]).filter((x) => x.attemptId);
+    for (const x of ms) {
+      const a = t.conn.prepare('SELECT kind, class_id FROM assessment_attempts WHERE id = ?').get(x.attemptId) as any;
+      assert(x.href === d.duongDotTest({ id: x.attemptId, kind: a.kind, classId: a.class_id }), `${x.href}`);
+    }
+  });
+  check('UXF-b (5) · PHỦ ĐỊNH: người ngoài phạm vi vẫn không mở được lượt của lớp khác (kn chỉ là chỗ cuộn, không đổi quyền)', () => {
+    const a = t.conn.prepare(`SELECT a.id FROM assessment_attempts a JOIN classes c ON c.id = a.class_id JOIN branches b ON b.id = c.branch_id WHERE b.code = 'MB' AND a.kind = 'mock' LIMIT 1`).get() as any;
+    t.assertThrows(() => attemptsSvc.attemptDetail(t.P.cpManager, a.id), /phạm vi/, 'QL CP mở lượt MT của MB');
+  });
+  check('UXF-b (5) · quét chữ: lưới chấm, một kỹ năng, chip Lịch Test, Kết quả gần nhất, hồ sơ HV (muc + id) dùng đường chung', () => {
+    assert(/duongDotTest\(/.test(doc('web/src/modules/cham/LuoiFT.tsx')), 'LuoiFT');
+    assert(/duongDotTest\(\{ id: row\.attemptId \}, k\)/.test(doc('web/src/modules/cham/MotKyNang.tsx')), 'MotKyNang (kn)');
+    assert(/duongDotTest\(/.test(doc('web/src/modules/test/keHoach/ChipKyNang.tsx')), 'ChipKyNang');
+    assert(/duongDotTest\(/.test(doc('web/src/modules/students/BangHocVienLop.tsx')), 'Kết quả gần nhất');
+    assert(/duongDotTest\(/.test(doc('web/src/modules/cases/CasePanel.tsx')) || /m\.href/.test(doc('web/src/modules/cases/CasePanel.tsx')), 'lịch sử Case');
+    assert(/p\.muc === 'ket-luan-khoa'/.test(doc('web/src/modules/students/StudentDetailPage.tsx')), 'StudentDetailPage đọc muc');
+    assert(/id="ket-luan-khoa"/.test(doc('web/src/modules/students/KetLuanKhoa.tsx')), 'KetLuanKhoa thiếu id');
+  });
 }

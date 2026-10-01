@@ -43,6 +43,8 @@ export type Standing = {
   attemptId: number | null;
   attemptNo: number | null;
   attemptKind: string | null;
+  /** PR-UXF-b (G5): lớp của lượt đó — để link tới đợt (`duongDotTest`) chọn đúng màn. */
+  attemptClassId: number | null;
   /** "MT2", "Cuối khoá" — tên người đọc, để câu tóm tắt nói rõ mức này của bài nào. */
   attemptLabel: string | null;
   periodCode: string | null;
@@ -118,7 +120,7 @@ export function standingLine(s: Standing): string {
 
 const EMPTY = (studentId: number, cycleId: number | null): Standing => ({
   studentId, cycleId, mode: null,
-  attemptId: null, attemptNo: null, attemptKind: null, attemptLabel: null, periodCode: null,
+  attemptId: null, attemptNo: null, attemptKind: null, attemptClassId: null, attemptLabel: null, periodCode: null,
   sosLevel: null, provisional: false, scored: 0, required: 0, failed: null,
   overall: null, expectation: null, belowSkills: [], failedSkills: [], chuongTrinh: null, khongChiaMon: false, tyLeTong: null,
   nextAttemptNo: null, nextAttemptLabel: null, nextPeriodCode: null, nextWeekStart: null,
@@ -249,6 +251,7 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
       s.attemptId = a.id;
       s.attemptNo = a.attempt_no;
       s.attemptKind = a.kind ?? 'mock';
+      s.attemptClassId = a.class_id ?? null;
       s.attemptLabel = labelOf(a.kind, a.attempt_no);
       s.periodCode = a.period_code ?? null;
 
