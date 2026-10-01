@@ -277,7 +277,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     return classId ? lopMap.get(classId) ?? null : null;
   };
   const ctCua = (classId: number | null | undefined) => lopCua(classId)?.ct ?? null;
-  const attempts = listAttempts(p, { branchId: f.branchId ?? undefined }).rows
+  /* PR-UXF-a T65: em Tạm dừng không sinh việc nhập điểm. */
+  const attempts = listAttempts(p, { branchId: f.branchId ?? undefined, chiDangHoc: true }).rows
     .filter((a: any) => a.status !== 'cancelled');
   /*
    * PR-Ra: "Tất cả trong phạm vi" (Q1) — chỉ người xem được người khác (Quản lý/Quản trị) mới
@@ -400,7 +401,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
 
   /* PR-Ra Q1: "Tất cả trong phạm vi" cộng thêm bài chưa chấm của GIÁO VIÊN KHÁC trong phạm vi. */
   if (tatCa) {
-    const managedAttempts = listAttempts(p, { branchId: f.branchId ?? undefined, scope: 'managed' }).rows
+    const managedAttempts = listAttempts(p, { branchId: f.branchId ?? undefined, scope: 'managed', chiDangHoc: true }).rows
       .filter((a: any) => a.status !== 'cancelled');
     const classIds = [...new Set(managedAttempts.map((a: any) => a.classId).filter((x: any): x is number => x !== null))];
     /* Người phụ trách môn — môn trùng người (nhiều giáo viên cùng dạy một kỹ năng) thì người ĐẦU thắng. */

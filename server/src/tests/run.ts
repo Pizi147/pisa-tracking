@@ -8167,7 +8167,7 @@ check('PR-F · Sổ chỉ số: đúng hai mươi chỉ số (PR-N thêm pa-cho-
     for (const f of fields) {
       assert(typeof m[f] === 'string' && m[f].trim().length > 0, `Chỉ số ${m.id} thiếu trường "${f}"`);
     }
-    assert(['hoc-vien', 'case', 'phuong-an', 'bai-thi', 'dot-test', 'nghia-vu', 'vi-pham', 'bien-phap', 'luot-sos'].includes(m.donVi), `${m.id}: đơn vị lạ "${m.donVi}"`);
+    assert(['hoc-vien', 'case', 'phuong-an', 'bai', 'bai-thi', 'dot-test', 'nghia-vu', 'vi-pham', 'bien-phap', 'luot-sos'].includes(m.donVi), `${m.id}: đơn vị lạ "${m.donVi}"`);
     assert(['hien-trang', 'phat-sinh-trong-ky', 'ket-qua-trong-ky'].includes(m.thoiGian), `${m.id}: thời gian lạ "${m.thoiGian}"`);
   }
   assert(domain.metricById('hv-co-case-mo')?.ten === 'Học viên có case đang mở', 'metricById phải tra đúng chỉ số');

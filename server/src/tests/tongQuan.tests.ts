@@ -229,9 +229,9 @@ export async function runTongQuanTests(t: YThucTestKit) {
     eq(ids('case-xac-dinh-nguyen-nhan-qua-han'), quaHan, 'Lệch tập');
   });
 
-  await checkAsync('PR-Pa · Chỉ số bai-qua-han-nhap-diem = lượt có ô điểm quá hạn (cùng hàm scoreDebtCells của bảng chấm); GV chỉ thấy lớp mình', async () => {
+  await checkAsync('PR-Pa · Chỉ số bai-qua-han-nhap-diem = BÀI (ô điểm, PR-UXF-a) quá hạn (cùng hàm scoreDebtCells của bảng chấm); GV chỉ thấy lớp mình', async () => {
     const debt: any = await import('../worklist/scoreDebt.ts');
-    const want = [...new Set((debt.scoreDebtCells(P.admin, TODAY, null) as any[]).filter((x) => x.overdue).map((x) => x.attemptId))]
+    const want = [...new Set((debt.scoreDebtCells(P.admin, TODAY, null) as any[]).filter((x) => x.overdue).map((x) => d.baiId(x.attemptId, x.skill)))]
       .sort((a: number, b: number) => a - b);
     eq(ids('bai-qua-han-nhap-diem'), want, 'Quản trị');
     const gv = metricsSvc.metricSet(P.lrTeacher, 'bai-qua-han-nhap-diem', {}).ids as number[];
@@ -239,7 +239,7 @@ export async function runTongQuanTests(t: YThucTestKit) {
       .all(P.lrTeacher.userId) as any[]).map((r) => r.class_id));
     assert(gv.length > 0, 'GV Listening MB FT 101 phải có ít nhất một lượt quá hạn nhập điểm trong bộ demo — nếu không, vòng kiểm bên dưới vô nghĩa');
     for (const a of gv) {
-      const cl = (conn.prepare('SELECT class_id FROM assessment_attempts WHERE id = ?').get(a) as any).class_id;
+      const cl = (conn.prepare('SELECT class_id FROM assessment_attempts WHERE id = ?').get(d.tachBaiId(a).attemptId) as any).class_id;
       assert(lopGv.has(cl), `GV thấy lượt của lớp không dạy: ${a}`);
     }
   });
@@ -267,10 +267,10 @@ export async function runTongQuanTests(t: YThucTestKit) {
       const lopGv = new Set((conn.prepare(`SELECT class_id FROM teacher_assignments WHERE user_id = ? AND status = 'active'`)
         .all(lai.userId) as any[]).map((r) => r.class_id as number));
       const branchOf = (cid: number) => (conn.prepare('SELECT branch_id FROM classes WHERE id = ?').get(cid) as any).branch_id as number;
-      const want = [...new Set(cells.filter((x) => lopGv.has(x.classId) || branchOf(x.classId) === cp).map((x) => x.attemptId as number))]
+      const want = [...new Set(cells.filter((x) => lopGv.has(x.classId) || branchOf(x.classId) === cp).map((x) => d.baiId(x.attemptId, x.skill) as number))]
         .sort((a, b) => a - b);
       const got = metricsSvc.metricSet(lai, 'bai-qua-han-nhap-diem', {}).ids as number[];
-      assert(!got.includes(ngoaiLop.attemptId), `Lọt lượt ${ngoaiLop.attemptId} của lớp MB mình không dạy — quyền lớp bị nới thành cả chi nhánh`);
+      assert(!got.some((id) => d.tachBaiId(id).attemptId === ngoaiLop.attemptId), `Lọt lượt ${ngoaiLop.attemptId} của lớp MB mình không dạy — quyền lớp bị nới thành cả chi nhánh`);
       eq(got, want, 'Phạm vi lai = (lớp mình dạy) ∪ (chi nhánh được cấp)');
     } finally {
       conn.prepare('DELETE FROM user_roles WHERE id = ?').run(grant);

@@ -15,7 +15,11 @@ import { allProgrammes } from '../normal/regular.ts';
  *
  * `branchIds = null` là không lọc; `[]` là phạm vi rỗng → rỗng (hợp đồng số liệu, luật 3).
  */
-export type DebtCell = { attemptId: number; classId: number; skill: string; userId: number; overdue: boolean };
+/**
+ * `userId` null = môn CHƯA PHÂN CÔNG giáo viên — vẫn là nợ (PR-UXF-a Q8: không giấu nợ; bảng Theo giáo viên có hàng "Chưa phân công").
+ * `weekStart` = Thứ Hai tuần thi của CHÍNH môn đó (dòng bấm ra ghi `W2 SEP` của môn, không tuần của lượt).
+ */
+export type DebtCell = { attemptId: number; classId: number; skill: string; userId: number | null; overdue: boolean; weekStart: string };
 
 /** Tiến độ KHÔNG phải nợ điểm: vắng đã xác nhận, huỷ phần thi, ngoài phạm vi, đang chờ Quản lý duyệt dời, MT lịch sử (T34). */
 const NOT_DEBT = new Set(['absent', 'cancelled', 'skipped', 'reschedule_pending', 'lich_su']);
@@ -26,7 +30,8 @@ export function scoreDebtCells(p: Principal, today: string, branchIds: number[] 
   settleNoShows(today);
   const conn = db();
   /* PR-MT (M3, K4-01): MT lịch sử không bao giờ là nợ — bỏ từ câu SQL (phủ Theo giáo viên, bai-qua-han-nhap-diem, Tổng quan). */
-  const where = [`a.status != 'cancelled'`, `cl.status = 'active'`, LUOT_TINH_NO_SQL('a')];
+  /* PR-UXF-a T65: em Tạm dừng (hoặc đã lưu trữ) không sinh nợ điểm — mọi hạn dừng. Hồ sơ HV vẫn hiện ô (đường riêng). */
+  const where = [`a.status != 'cancelled'`, `cl.status = 'active'`, `s.status = 'active'`, `s.archived_at IS NULL`, LUOT_TINH_NO_SQL('a')];
   const args: unknown[] = [];
   if (branchIds) { where.push(`cl.branch_id IN (${branchIds.map(() => '?').join(',')})`); args.push(...branchIds); }
   const rows = conn
@@ -34,6 +39,7 @@ export function scoreDebtCells(p: Principal, today: string, branchIds: number[] 
       `SELECT a.*, pg.scoring_mode, cl.programme_code, rp.week_start AS period_start, rp.week_end AS period_end, rp.code AS period_code
          FROM assessment_attempts a
          JOIN classes cl ON cl.id = a.class_id
+         JOIN students s ON s.id = a.student_id
          LEFT JOIN programmes pg ON pg.code = cl.programme_code
          LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
         WHERE ${where.join(' AND ')}
@@ -59,10 +65,12 @@ export function scoreDebtCells(p: Principal, today: string, branchIds: number[] 
     .all(...args, today, today) as any[];
   if (!rows.length) return [];
 
+  /* PR-UXF-a: phân công ĐANG HIỆU LỰC (như `lopCuaGv`) — GV hết hiệu lực không còn bị gán bài. */
   const teacherOf = new Map<string, number>();
   for (const r of conn
-    .prepare(`SELECT class_id, skill, user_id FROM teacher_assignments WHERE status = 'active' AND skill IS NOT NULL ORDER BY id`)
-    .all() as any[]) {
+    .prepare(`SELECT class_id, skill, user_id FROM teacher_assignments
+               WHERE status = 'active' AND skill IS NOT NULL AND effective_from <= ? AND (effective_to IS NULL OR effective_to >= ?) ORDER BY id`)
+    .all(today, today) as any[]) {
     const k = `${r.class_id}|${r.skill}`;
     if (!teacherOf.has(k)) teacherOf.set(k, r.user_id);
   }
@@ -79,15 +87,13 @@ export function scoreDebtCells(p: Principal, today: string, branchIds: number[] 
       for (const skill of bo) {
         const v = views.get(skill);
         if (!v || !v.required || v.scored || !v.weekStart || v.weekStart > today || NOT_DEBT.has(v.progress)) continue;
-        const userId = teacherOf.get(`${a.class_id}|${skill}`);
-        if (userId) out.push({ attemptId: a.id, classId: a.class_id, skill, userId, overdue: v.overdue });
+        out.push({ attemptId: a.id, classId: a.class_id, skill, userId: teacherOf.get(`${a.class_id}|${skill}`) ?? null, overdue: v.overdue, weekStart: v.weekStart });
       }
     } else {
       /* Không truyền `hoanTat` (R11) có chủ ý: nợ điểm đọc band/noShow/lịch, không đọc canEdit/khoa — đỡ 3 câu SQL. */
       for (const c of skillCells(p, a, scores, bundle.skips.get(a.id) ?? [], today, skillRows)) {
         if (!c.required || c.band !== null || c.noShow !== null || !c.weekStart || c.weekStart > today || NOT_DEBT.has(c.progress)) continue;
-        const userId = teacherOf.get(`${a.class_id}|${c.skill}`);
-        if (userId) out.push({ attemptId: a.id, classId: a.class_id, skill: c.skill, userId, overdue: c.overdue });
+        out.push({ attemptId: a.id, classId: a.class_id, skill: c.skill, userId: teacherOf.get(`${a.class_id}|${c.skill}`) ?? null, overdue: c.overdue, weekStart: c.weekStart });
       }
     }
   }

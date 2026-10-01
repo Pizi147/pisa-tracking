@@ -25,7 +25,7 @@ export type ChiSo = {
   /** Câu hỏi mà con số trả lời, viết đủ chữ. */
   cauHoi: string;
   /** Đơn vị đếm. Ba đơn vị học viên · case · phương án KHÔNG BAO GIỜ cộng vào nhau. */
-  donVi: 'hoc-vien' | 'case' | 'phuong-an' | 'bai-thi' | 'dot-test' | 'nghia-vu' | 'vi-pham' | 'bien-phap' | 'luot-sos';
+  donVi: 'hoc-vien' | 'case' | 'phuong-an' | 'bai' | 'bai-thi' | 'dot-test' | 'nghia-vu' | 'vi-pham' | 'bien-phap' | 'luot-sos';
   /** Mô tả MẪU SỐ (tập đủ điều kiện), viết đủ chữ. */
   tapDuDieuKien: string;
   thoiGian: 'hien-trang' | 'phat-sinh-trong-ky' | 'ket-qua-trong-ky';
@@ -74,10 +74,10 @@ export const METRICS: readonly ChiSo[] = [
   },
   {
     id: 'bai-qua-han-nhap-diem', ten: 'Bài chưa nhập điểm quá hạn',
-    cauHoi: 'Bao nhiêu lượt Test có ô điểm đã quá hạn nhập mà người được phân công chưa nhập?',
-    donVi: 'bai-thi',
-    tapDuDieuKien: 'Lượt Test (không huỷ, lớp đang hoạt động) có ít nhất một ô điểm còn nợ đã quá hạn — cùng luật với ô ở bảng chấm: lớp thường theo số câu đúng, hạn Chủ nhật tuần thi môn đó; Fast Track theo band, dấu "-" theo cặp W1/W2. Vắng đã xác nhận, huỷ phần thi, chờ duyệt dời không phải nợ.',
-    thoiGian: 'hien-trang', khuTrung: 'Mỗi lượt Test chỉ đếm 1 lần', drilldown: '/metrics/bai-qua-han-nhap-diem',
+    cauHoi: 'Bao nhiêu bài (một kỹ năng của một em trong một lượt) đã quá hạn nhập điểm mà chưa nhập?',
+    donVi: 'bai',
+    tapDuDieuKien: 'Bài = một ô điểm (T53 Q2: FT W1 và W2 là hai bài) của lượt không huỷ, lớp đang hoạt động, em đang học (Tạm dừng không sinh nợ — T65), đã quá hạn — cùng luật với ô ở bảng chấm: lớp thường theo số câu đúng, hạn Chủ nhật tuần thi môn đó; Fast Track theo band, dấu "-" theo cặp W1/W2. Vắng đã xác nhận, huỷ phần thi, chờ duyệt dời không phải nợ. Môn chưa phân công giáo viên vẫn tính (bảng Theo giáo viên có hàng "Chưa phân công").',
+    thoiGian: 'hien-trang', khuTrung: 'Mỗi ô điểm chỉ đếm 1 lần', drilldown: '/metrics/bai-qua-han-nhap-diem',
   },
   {
     id: 'case-chua-co-nguoi-phu-trach', ten: 'Case chưa có người phụ trách',
@@ -250,7 +250,7 @@ export const METRICS: readonly ChiSo[] = [
  * tuyệt đối không cộng vào nhau, nên mỗi con số PHẢI đi kèm đơn vị của nó.
  */
 export const METRIC_UNIT_LABEL: Record<ChiSo['donVi'], string> = {
-  'hoc-vien': 'học viên', case: 'case', 'phuong-an': 'PA học thuật', 'bai-thi': 'bài thi',
+  'hoc-vien': 'học viên', case: 'case', 'phuong-an': 'PA học thuật', bai: 'bài', 'bai-thi': 'bài thi',
   'dot-test': 'đợt Test', 'nghia-vu': 'nghĩa vụ',
   'vi-pham': 'vi phạm', 'bien-phap': 'phương án xử lý', 'luot-sos': 'lượt',
 };

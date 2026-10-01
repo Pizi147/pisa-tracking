@@ -1,5 +1,5 @@
 import { db } from '../db.ts';
-import { nhanLoaiXuLy, PERMISSIONS, VIOLATION_CATEGORY_LABEL, metricById, tenMon, type ChiSo, type ChuongTrinh, type LoaiBoQuen } from '../../../shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, baiId, nhanLoaiXuLy, PERMISSIONS, VIOLATION_CATEGORY_LABEL, metricById, tachBaiId, tenMon, tenMonNgan, tuanLich, type AttemptKind, type ChiSo, type ChuongTrinh, type LoaiBoQuen } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { scopeFor, type Principal } from '../permissions.ts';
 import { badRequest, forbidden, HttpError, notFound } from '../util.ts';
@@ -11,6 +11,7 @@ import { isYThucMetric, yThucMetric, YTHUC_METRIC_IDS } from '../yThuc/thongKe.t
 import { PHOI_HOP_METRIC_IDS, isPhoiHopMetric, phoiHopMetric } from '../yThuc/phoiHop.ts';
 import { locTheoChuongTrinh } from './chuongTrinh.ts';
 import { scoreDebtCells } from './scoreDebt.ts';
+import { assessedSkillOf } from '../fasttrack/scoring.ts';
 import { boQuen } from '../phanTich/boQuen.ts';
 
 /**
@@ -92,6 +93,32 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[]): MetricRow[] {
           WHERE iv.id IN (${ph})`,
       ).all(...chunk) as any[]) {
         byId.set(r.id, { id: r.id, title: r.title, sub: [r.full_name, r.student_code].filter(Boolean).join(' · '), href: `/hoc-thuat/case/${r.case_id}` });
+      }
+    } else if (unit === 'bai') {
+      /* PR-UXF-a Q7: một dòng = một BÀI (ô điểm). "MT2 · Tên em · R"; dòng phụ ghi TUẦN THI CỦA MÔN (`W2 SEP`), không tuần của lượt. */
+      const tach = chunk.map((id) => ({ id, ...tachBaiId(id) }));
+      const at = [...new Set(tach.map((x) => x.attemptId))];
+      const pa = at.map(() => '?').join(',');
+      const luot = new Map((conn.prepare(
+        `SELECT a.id, a.kind, a.attempt_no, a.class_id, c.programme_code, c.code AS class_code, s.full_name, s.student_code, pr.week_start
+           FROM assessment_attempts a JOIN students s ON s.id = a.student_id
+           LEFT JOIN classes c ON c.id = a.class_id LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
+          WHERE a.id IN (${pa})`,
+      ).all(...at) as any[]).map((r) => [r.id as number, r]));
+      const tuanMon = new Map((conn.prepare(
+        `SELECT k.attempt_id, k.skill, rp.week_start FROM attempt_skills k JOIN report_periods rp ON rp.id = k.planned_period_id WHERE k.attempt_id IN (${pa})`,
+      ).all(...at) as any[]).map((r) => [`${r.attempt_id}|${r.skill}`, r.week_start as string]));
+      const homNay = demoToday();
+      for (const x of tach) {
+        const r = luot.get(x.attemptId);
+        if (!r) continue;
+        const tuan = tuanMon.get(`${x.attemptId}|${x.skill}`) ?? tuanMon.get(`${x.attemptId}|${assessedSkillOf(x.skill)}`) ?? r.week_start ?? null;
+        const ten = r.kind === 'mock' ? `MT${r.attempt_no}` : ATTEMPT_KIND_SHORT[r.kind as AttemptKind] ?? r.kind;
+        byId.set(x.id, {
+          id: x.id, title: `${ten} · ${r.full_name} · ${tenMonNgan(r.programme_code ?? null, x.skill)}`,
+          sub: [r.student_code, r.class_code, tuan ? tuanLich(tuan, homNay) : null].filter(Boolean).join(' · '),
+          href: r.kind === 'mock' || !r.class_id ? `/mock-test/${r.id}` : `/bang-diem-thuong/${r.class_id}?kind=${r.kind}`,
+        });
       }
     } else if (unit === 'dot-test' || unit === 'bai-thi') {
       /* Lượt Test: FT mở hồ sơ Test; bài của lớp Normal mở bảng điểm thường của lớp. */
@@ -381,11 +408,11 @@ function causeOverdue(caseIds: number[], today: string): number[] {
 }
 
 /**
- * Lượt có ô điểm QUÁ HẠN nhập, trong phạm vi. `scoreDebtCells` chỉ lọc theo chi nhánh; ở đây áp đúng luật của `classScopeSql`:
+ * BÀI (ô điểm — PR-UXF-a Q7) QUÁ HẠN nhập, trong phạm vi; id = `baiId`. `scoreDebtCells` chỉ lọc theo chi nhánh; ở đây áp đúng luật của `classScopeSql`:
  * giữ ô khi lớp thuộc chi nhánh được cấp HOẶC là lớp mình dạy. Người vừa dạy lớp vừa có quyền chi nhánh không được nới thành
  * cả chi nhánh của lớp mình chỉ dạy.
  */
-function overdueScoreAttempts(p: Principal, branchId: number | null, today: string): number[] {
+function overdueScoreBai(p: Principal, branchId: number | null, today: string): number[] {
   const sc = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   if (sc.none) return [];
   const conn = db();
@@ -402,7 +429,7 @@ function overdueScoreAttempts(p: Principal, branchId: number | null, today: stri
   const cells = scoreDebtCells(p, today, branches).filter((x) => x.overdue);
   const ids = new Set<number>();
   if (sc.all) {
-    for (const x of cells) ids.add(x.attemptId);
+    for (const x of cells) ids.add(baiId(x.attemptId, x.skill));
   } else {
     const branchOf = new Map<number, number>();
     const classIds = [...new Set(cells.map((x) => x.classId))];
@@ -414,7 +441,7 @@ function overdueScoreAttempts(p: Principal, branchId: number | null, today: stri
     }
     const myBranches = new Set<number>(sc.branchIds), myClasses = new Set<number>(sc.classIds);
     for (const x of cells) {
-      if (myClasses.has(x.classId) || myBranches.has(branchOf.get(x.classId) ?? -1)) ids.add(x.attemptId);
+      if (myClasses.has(x.classId) || myBranches.has(branchOf.get(x.classId) ?? -1)) ids.add(baiId(x.attemptId, x.skill));
     }
   }
   return [...ids].sort((a, b) => a - b);
@@ -475,7 +502,7 @@ function metricSetGoc(
     case 'case-xac-dinh-nguyen-nhan-qua-han':
       return done(causeOverdue(awaitingCauseCaseIds(openCases().map((c: any) => c.id as number)), today));
     case 'bai-qua-han-nhap-diem':
-      return done(overdueScoreAttempts(p, scope.branchId, today));
+      return done(overdueScoreBai(p, scope.branchId, today));
     case 'case-chua-co-nguoi-phu-trach':
       return done(openCases().filter((c: any) => !c.ownerUserId).map((c: any) => c.id as number));
     case 'case-cho-xac-dinh-nguyen-nhan':

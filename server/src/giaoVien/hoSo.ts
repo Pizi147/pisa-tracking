@@ -5,7 +5,7 @@
  * Không xếp hạng, không so sánh giữa người (Q30-5): chỉ số của MỘT người, hoặc bảng sắp theo tên.
  */
 import {
-  ENTRY_SKILLS, ENTRY_SKILL_SHORT, PERMISSIONS, chuongTrinhTuThamSo, demViecTheoNhom, duongThe, laCotOGv, roleLabel, tenMonNgan,
+  ENTRY_SKILLS, ENTRY_SKILL_SHORT, PERMISSIONS, baiId, chuongTrinhTuThamSo, demViecTheoNhom, duongThe, laCotOGv, roleLabel, tenMonNgan,
   type ChuongTrinh, type CotOGv, type NhomViec,
 } from '../../../shared/domain/index.ts';
 import { db } from '../db.ts';
@@ -253,16 +253,8 @@ export function oHoSoGv(p: Principal, gvId: number, q: ThamSoO): { n: number; ti
   }
   if (cot === 'chua-nhap' || cot === 'qua-han') {
     const o = noDiemCuaGv(p, gvId, homNay, chonLop).filter((d) => cot === 'chua-nhap' || d.overdue);
-    const goc = new Map(rowsFor('bai-thi', [...new Set(o.map((d) => d.attemptId))]).map((r) => [r.id, r]));
-    const ctLop = new Map(chonLop.map((l) => [l.id, l.ct]));
-    const thuTu = new Map<number, number>();
-    const rows = o.map((d) => {
-      const k = thuTu.get(d.attemptId) ?? 0;
-      thuTu.set(d.attemptId, k + 1);
-      return { ...goc.get(d.attemptId)!, id: d.attemptId * 10 + k,        // id duy nhất cho mỗi ô (một lượt ≤ 5 ô)
-        title: `${goc.get(d.attemptId)!.title} · ${tenMonNgan(ctLop.get(d.classId), d.skill)}` };
-    });
-    return ket(rows, (n) => `${n} ô điểm ${cot === 'chua-nhap' ? 'chưa nhập' : 'quá hạn nhập'}`);
+    /* PR-UXF-a Q7: mỗi dòng một BÀI (`baiId`) — CÙNG dựng dòng với ô "bài chưa nhập điểm quá hạn" ở Tổng quan (`rowsFor('bai')`). */
+    return ket(rowsFor('bai', o.map((d) => baiId(d.attemptId, d.skill))), (n) => `${n} bài ${cot === 'chua-nhap' ? 'chưa nhập' : 'quá hạn nhập'}`);
   }
 
   // cot === 'ket-qua': ô đạt/tổng của một lớp ở một mốc
@@ -280,7 +272,8 @@ export function oHoSoGv(p: Principal, gvId: number, q: ThamSoO): { n: number; ti
 // ------------------------------------------------------------------ bảng giáo viên của một chi nhánh (Q11, K1-28) — không xếp hạng, không hàng tổng
 
 export type HangGv = { id: number; ten: string; lop: number; hocVien: number; chuaNhap: number; quaHan: number; caseMo: number; caseQuaHan: number };
-export type BangGv = { cn: number; tenChiNhanh: string; ct: ChuongTrinh; hang: HangGv[] };
+/** `chuaPhanCong` (PR-UXF-a Q8): bài của môn CHƯA phân công giáo viên — không phải một người, nên không nằm trong `hang`; Σ hàng + phần này = ô Tổng quan. */
+export type BangGv = { cn: number; tenChiNhanh: string; ct: ChuongTrinh; hang: HangGv[]; chuaPhanCong: { chuaNhap: number; quaHan: number } | null };
 
 /**
  * Mỗi hàng = MỘT người, chỉ số của chính người đó trong chi nhánh `cn` và khung `ct`; sắp theo TÊN. Số câu SQL không tăng theo số GV / lớp / Case:
@@ -345,5 +338,8 @@ export function bangGvChiNhanh(p: Principal, q: { cn?: number | null; ct?: strin
     if (h.lop || h.chuaNhap || h.caseMo) hang.push(h);                      // bỏ hàng toàn 0
   }
   hang.sort((a, b) => a.ten.localeCompare(b.ten, 'vi') || a.id - b.id);
-  return { cn, tenChiNhanh: cb.name, ct, hang };
+  /* PR-UXF-a Q8: bài của môn CHƯA PHÂN CÔNG giáo viên vẫn là nợ — dòng riêng cuối bảng (không phải người, không hồ sơ) để Σ = ô Tổng quan. */
+  const chuaPc = no.filter((d) => d.userId === null && locKhung(ct, bang.get(d.classId)?.isFastTrack ? 'ft' : 'thuong'));
+  return { cn, tenChiNhanh: cb.name, ct, hang,
+    chuaPhanCong: chuaPc.length ? { chuaNhap: chuaPc.length, quaHan: chuaPc.filter((d) => d.overdue).length } : null };
 }

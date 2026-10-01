@@ -252,4 +252,86 @@ export async function runPrUxfATests(t: YThucTestKit) {
     assert(tpF.tuanHoc.tuan === xf.tuan, 'hai đường: panel cả lớp = panel một em');
     for (const x of [tp, luatLoTrinh.xemChuyenLop(P.mbManager, F.sid)]) assert(!/"tong":16/.test(JSON.stringify(x)), 'không payload FT nào có tong 16');
   });
+
+  // ==================================================================== Task 5 · một đơn vị "bài" + em Tạm dừng không nợ
+  const metricsSvc: any = await import('../worklist/metrics.ts');
+  const hoSoGv: any = await import('../giaoVien/hoSo.ts');
+  const debt: any = await import('../worklist/scoreDebt.ts');
+  const mywork: any = await import('../worklist/mywork.ts');
+  const cham: any = await import('../cham/canCham.ts');
+  const attempts: any = await import('../fasttrack/attempts.ts');
+  const baiQuaHan = (p: any, f: any = {}) => metricsSvc.metricSet(p, 'bai-qua-han-nhap-diem', f);
+
+  check('UXF-a (5) · baiId: cùng ô ra cùng id; FT W1 và W2 là hai bài; kỹ năng lạ → ném lỗi; tachBaiId là ngược', () => {
+    assert(d.baiId(123, 'writing1') !== d.baiId(123, 'writing2'), 'W1, W2 hai bài');
+    assert(d.baiId(123, 'reading') === d.baiId(123, 'reading'), 'ổn định');
+    const x = d.tachBaiId(d.baiId(987, 'speaking'));
+    assert(x.attemptId === 987 && x.skill === 'speaking', JSON.stringify(x));
+    let nem = false; try { d.baiId(1, 'ielts'); } catch { nem = true; }
+    assert(nem, 'kỹ năng lạ phải ném');
+  });
+
+  check('UXF-a (5) · hai đường: ô bai-qua-han-nhap-diem (QL MB) = số dòng = Σ "Bài quá hạn" bảng Theo giáo viên (gồm Chưa phân công); mỗi hàng GV = số dòng hồ sơ GV; dòng ghi tuần thi của MÔN', () => {
+    const o = baiQuaHan(P.mbManager, { branchId: MB });
+    const rows = metricsSvc.rowsFor('bai', o.ids);
+    assert(o.n === o.ids.length && rows.length === o.n && o.n > 0, `n ${o.n} · ids ${o.ids.length} · rows ${rows.length}`);
+    const bang = hoSoGv.bangGvChiNhanh(P.mbManager, { cn: MB });
+    const tong = bang.hang.reduce((n: number, h: any) => n + h.quaHan, 0) + (bang.chuaPhanCong?.quaHan ?? 0);
+    assert(tong === o.n, `Σ bảng GV (gồm Chưa phân công) ${tong} ≠ ô ${o.n}`);
+    for (const h of bang.hang.filter((x: any) => x.quaHan > 0)) {
+      const r = hoSoGv.oHoSoGv(P.mbManager, h.id, { cot: 'qua-han', cn: MB });
+      assert(r.rows.length === h.quaHan, `${h.ten}: hồ sơ ${r.rows.length} ≠ bảng ${h.quaHan}`);
+      for (const x of r.rows) assert(o.ids.includes(x.id), `id bài ${x.id} của hồ sơ không có trong ô`);
+    }
+    const cells = (debt.scoreDebtCells(P.admin, TODAY, [MB]) as any[]).filter((c) => c.overdue);
+    const c0 = cells[0];
+    const dong = metricsSvc.rowsFor('bai', [d.baiId(c0.attemptId, c0.skill)])[0];
+    assert(dong.sub.includes(d.tuanLich(c0.weekStart, TODAY)), `dòng phải ghi tuần thi của môn ${d.tuanLich(c0.weekStart, TODAY)}: ${dong.sub}`);
+  });
+
+  check('UXF-a (5) · PHỦ ĐỊNH quyền: GVBM chỉ thấy bài lớp mình; QL chi nhánh CP không thấy bài MB', () => {
+    const lopL = new Set(pL.assignments.map((a: any) => a.classId));
+    for (const id of baiQuaHan(pL).ids) {
+      const cl = get('SELECT class_id FROM assessment_attempts WHERE id = ?', d.tachBaiId(id).attemptId).class_id;
+      assert(lopL.has(cl), `GVBM thấy bài lớp không dạy: ${id}`);
+    }
+    assert(baiQuaHan(pL).ids.includes(d.baiId(luotX, 'listening')), 'GVBM L thấy bài L của X');
+    const cpIds = baiQuaHan(P.cpManager).ids as number[];
+    assert(!cpIds.some((id) => get('SELECT c.branch_id FROM assessment_attempts a JOIN classes c ON c.id = a.class_id WHERE a.id = ?', d.tachBaiId(id).attemptId).branch_id === MB), 'QL CP thấy bài MB');
+  });
+
+  check('UXF-a (5) · T65: Tạm dừng em có ô quá hạn → ô Tổng quan, bảng GV, hồ sơ GV, Việc, dòng Nợ Lịch Test đều giảm đúng 1 bài; Quay lại → tăng lại; hồ sơ (lượt) vẫn còn ô', () => {
+    const tuanNay = week.ensurePeriod(d.mondayOfDate(TODAY)).id;
+    const doc = () => ({
+      o: baiQuaHan(P.mbManager, { branchId: MB }).n as number,
+      bang: hoSoGv.bangGvChiNhanh(P.mbManager, { cn: MB }).hang.find((h: any) => h.id === gvMb[0])?.quaHan ?? 0,
+      hoSo: hoSoGv.oHoSoGv(P.mbManager, gvMb[0], { cot: 'qua-han', cn: MB }).rows.length as number,
+      /* Việc nhập điểm L ở lớp thử — X là em duy nhất nợ ô L ở lớp này. */
+      viec: (mywork.myWork(pL).items as any[]).some((i) => String(i.href ?? '').includes(`classId=${LOP}`) && String(i.href ?? '').includes('kn=listening')),
+      no: (cham.lichTest(pL, tuanNay, null, TODAY, { classId: LOP }).no as any[]).reduce((n, x) => n + x.conBai, 0) as number,
+    });
+    const truoc = doc();
+    assert(truoc.viec && truoc.no >= 1, `trước: ${JSON.stringify(truoc)}`);
+    conn.prepare(`UPDATE students SET status = 'inactive' WHERE id = ?`).run(X.sid);
+    const dung = doc();
+    conn.prepare(`UPDATE students SET status = 'active' WHERE id = ?`).run(X.sid);
+    const lai = doc();
+    assert(dung.o === truoc.o - 1 && dung.bang === truoc.bang - 1 && dung.hoSo === truoc.hoSo - 1 && !dung.viec && dung.no === truoc.no - 1,
+      `Tạm dừng phải giảm đúng 1: trước ${JSON.stringify(truoc)} · dừng ${JSON.stringify(dung)}`);
+    assert(JSON.stringify(lai) === JSON.stringify(truoc), `Quay lại phải về như cũ: ${JSON.stringify(lai)}`);
+    conn.prepare(`UPDATE students SET status = 'inactive' WHERE id = ?`).run(X.sid);
+    const conO = (attempts.listAttempts(P.admin, { classId: LOP }).rows as any[]).find((a) => a.id === luotX);
+    conn.prepare(`UPDATE students SET status = 'active' WHERE id = ?`).run(X.sid);
+    assert(conO && conO.overdueSkills === 1, 'hồ sơ (danh sách lượt không lọc) vẫn hiện ô L');
+  });
+
+  check('UXF-a (5) · GV hết hiệu lực phân công (effective_to < hôm nay) không được gán bài — bài sang "Chưa phân công"', () => {
+    const pc = get(`SELECT id FROM teacher_assignments WHERE user_id = ? AND class_id = ? AND skill = 'listening'`, gvMb[0], LOP).id;
+    conn.prepare('UPDATE teacher_assignments SET effective_to = ? WHERE id = ?').run(t.addDays(TODAY, -1), pc);
+    const o = (debt.scoreDebtCells(P.admin, TODAY, [MB]) as any[]).find((c) => c.attemptId === luotX && c.skill === 'listening');
+    const chuaPc = hoSoGv.bangGvChiNhanh(P.mbManager, { cn: MB }).chuaPhanCong;
+    conn.prepare('UPDATE teacher_assignments SET effective_to = NULL WHERE id = ?').run(pc);
+    assert(o && o.userId === null, `ô L phải chưa phân công: ${JSON.stringify(o)}`);
+    assert(chuaPc && chuaPc.quaHan >= 1, 'hàng Chưa phân công có bài');
+  });
 }

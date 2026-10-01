@@ -40,6 +40,8 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/tong-quan/chi-nhanh/o?cot=caseMo&khoa=tong' },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/branch-pulse' },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/metrics/case-mo' },
+  /* PR-UXF-a Task 5: danh sách bấm ra "bài chưa nhập điểm quá hạn" — mỗi dòng một bài (ô điểm). */
+  { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/metrics/bai-qua-han-nhap-diem?rows=1' },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/metrics/hv-sos-hien-tai' },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/metrics/hv-duoi-ky-vong-mon' },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/metrics/hv-co-case-mo' },
@@ -249,6 +251,8 @@ export const TRAN: Record<string, number> = {
   'QT /branch-pulse': 40,
   'QL /metrics/case-mo': 28,
   'QT /metrics/case-mo': 25,
+  'QL /metrics/bai-qua-han-nhap-diem?rows=1': 35,   // PR-UXF-a Task 5: đo 25 → max(25+10, ⌈25×1.3⌉)
+  'QT /metrics/bai-qua-han-nhap-diem?rows=1': 33,   // PR-UXF-a Task 5: đo 23
   'QL /metrics/hv-sos-hien-tai': 29,
   'QT /metrics/hv-sos-hien-tai': 29,
   'QL /metrics/hv-duoi-ky-vong-mon': 29,

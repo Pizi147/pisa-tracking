@@ -11,13 +11,13 @@ import { TenGiaoVien } from '../classes/TenGiaoVien.tsx';
  * (`/giao-vien/:id/o`, cùng hàm với số). Tên mở hồ sơ giáo viên. Không có cột "Việc quá hạn" tổng: phải tính Công việc từng người (chậm) — xem hồ sơ.
  */
 type Hang = { id: number; ten: string; lop: number; hocVien: number; chuaNhap: number; quaHan: number; caseMo: number; caseQuaHan: number };
-type Bang = { cn: number; tenChiNhanh: string; ct: ChuongTrinh; hang: Hang[] };
+type Bang = { cn: number; tenChiNhanh: string; ct: ChuongTrinh; hang: Hang[]; chuaPhanCong: { chuaNhap: number; quaHan: number } | null };
 
 const COT: { key: keyof Omit<Hang, 'id' | 'ten'>; cot: string; nhan: string; goiY?: string; rong: string }[] = [
   { key: 'lop', cot: 'lop', nhan: 'Lớp', goiY: 'Lớp người này đang dạy trong chi nhánh, theo khung đang chọn.', rong: '9%' },
   { key: 'hocVien', cot: 'hoc-vien', nhan: 'Học viên', goiY: 'Học viên đang học ở các lớp trên (một em học hai lớp chỉ đếm một lần).', rong: '11%' },
-  { key: 'chuaNhap', cot: 'chua-nhap', nhan: 'Ô điểm chưa nhập', goiY: 'Một ô = một kỹ năng của một bài, tuần thi đã bắt đầu. Cùng số với Lịch Test.', rong: '16%' },
-  { key: 'quaHan', cot: 'qua-han', nhan: 'Quá hạn nhập', goiY: 'Trong số ô chưa nhập, phần đã qua hạn nhập điểm.', rong: '14%' },
+  { key: 'chuaNhap', cot: 'chua-nhap', nhan: 'Bài chưa nhập', goiY: 'Một bài = một kỹ năng của một em trong một lượt (FT W1 và W2 là hai bài), tuần thi đã bắt đầu. Em Tạm dừng không tính.', rong: '16%' },
+  { key: 'quaHan', cot: 'qua-han', nhan: 'Bài quá hạn', goiY: 'Trong số bài chưa nhập, phần đã qua hạn — cùng số với "bài chưa nhập điểm quá hạn" ở Cần xử lý.', rong: '14%' },
   { key: 'caseMo', cot: 'case-mo', nhan: 'Case phụ trách', goiY: 'Case đang mở mà người này là NGƯỜI PHỤ TRÁCH chính — không phải mọi Case của lớp họ dạy.', rong: '14%' },
   { key: 'caseQuaHan', cot: 'case-qua-han', nhan: 'Case quá hạn', goiY: 'Trong số Case phụ trách, phần có việc tiếp đã qua hạn.', rong: '14%' },
 ];
@@ -49,6 +49,17 @@ export function BangGiaoVienChiNhanh({ branchId, ct }: { branchId: number | null
                 ))}
               </tr>
             ))}
+            {data.chuaPhanCong && (
+              /* PR-UXF-a Q8: bài của môn chưa phân công giáo viên — chữ mờ, không hồ sơ để mở; Σ cột = ô ở Cần xử lý. */
+              <tr>
+                <td className="td sticky-col whitespace-nowrap text-slate-400" title="Môn chưa có giáo viên được phân công — phân công ở hồ sơ lớp">Chưa phân công</td>
+                {COT.map((c) => (
+                  <td key={c.key} className="td text-right tabular-nums text-slate-400">
+                    {c.key === 'chuaNhap' ? data.chuaPhanCong!.chuaNhap : c.key === 'quaHan' ? data.chuaPhanCong!.quaHan : '—'}
+                  </td>
+                ))}
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

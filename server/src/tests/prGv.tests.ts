@@ -249,7 +249,8 @@ export async function runPrGvTests(t: YThucTestKit) {
     const ten = b.hang.map((h) => h.ten);
     assert(JSON.stringify(ten) === JSON.stringify([...ten].sort((x, y) => x.localeCompare(y, 'vi'))), 'sắp theo tên');
     assert(new Set(b.hang.map((h) => h.id)).size === b.hang.length, 'mỗi người một hàng');
-    assert(Object.keys(b).join() === 'cn,tenChiNhanh,ct,hang' && b.hang.every((h) => Object.keys(h).join() === 'id,ten,lop,hocVien,chuaNhap,quaHan,caseMo,caseQuaHan'), 'không trường tổng/trung bình/xếp hạng');
+    /* PR-UXF-a Q8: `chuaPhanCong` = bài môn chưa phân công (không phải người, không phải tổng). */
+    assert(Object.keys(b).join() === 'cn,tenChiNhanh,ct,hang,chuaPhanCong' && b.hang.every((h) => Object.keys(h).join() === 'id,ten,lop,hocVien,chuaNhap,quaHan,caseMo,caseQuaHan'), 'không trường tổng/trung bình/xếp hạng');
     assert(b.hang.every((h) => h.lop || h.chuaNhap || h.caseMo), 'bỏ hàng toàn 0');
   });
 

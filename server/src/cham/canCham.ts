@@ -217,7 +217,8 @@ export function noTuanTruoc(
 ): { dong: DongNo[]; quaHanBai: number; quaHanBaiKhung: Record<Khung, number> } {
   if (f.classIds && !f.classIds.size) return { dong: [], quaHanBai: 0, quaHanBaiKhung: { ft: 0, thuong: 0 } };
   const motLop = f.classIds && f.classIds.size === 1 ? [...f.classIds][0] : undefined;
-  const { rows } = listAttempts(p, { branchId: f.branchId ?? undefined, classId: motLop, scope: 'managed' });
+  /* PR-UXF-a T65: em Tạm dừng không sinh nợ điểm (Lịch Test + khối Nợ). */
+  const { rows } = listAttempts(p, { branchId: f.branchId ?? undefined, classId: motLop, scope: 'managed', chiDangHoc: true });
   /* Một câu mỗi LỚP (như `isRatioClass` trước đây), không mỗi dòng: cách chấm + mã chương trình. */
   const lopInfo = new Map<number, { mode: CheDo; ct: string | null }>();
   const lopOf = (classId: number) => {

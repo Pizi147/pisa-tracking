@@ -18,7 +18,7 @@ export function overview(p: Principal, periodId: number, branchId?: number) {
   const period = periodById(periodId);
   if (!period) throw new Error('Không tìm thấy kỳ');
 
-  const all = listAttempts(p, { branchId }).rows;
+  const all = listAttempts(p, { branchId, chiDangHoc: true }).rows;   // PR-UXF-a T65
 
   // Tuần kết quả LUÔN là tuần của lượt, nên một lượt không bị đếm vào hai tuần.
   const inWeek = all.filter((m) => m.period?.id === periodId);

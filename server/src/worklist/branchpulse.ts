@@ -290,6 +290,7 @@ function peopleOf(
    */
   const debtScope = branchId ? [branchId] : branchIds;
   for (const d of scoreDebtCells(p, today, debtScope)) {
+    if (d.userId === null) continue;   // môn chưa phân công: không cộng cho ai (PR-UXF-a Q8 — hàng riêng ở bảng Theo giáo viên)
     const row = people.get(d.userId);
     if (!row) continue;
     row.mtPending += 1;
