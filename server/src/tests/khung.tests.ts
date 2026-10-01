@@ -87,7 +87,7 @@ export async function runKhungTests(t: YThucTestKit) {
       && d.DUONG_TAB_CONG_VIEC['cho-duyet'] === '/cong-viec/cho-duyet', 'Đường dẫn tab');
     assert(d.khuVucHienThi(QL).find((k: any) => k.key === 'cong-viec')?.to === '/cong-viec/cho-duyet'
       && d.khuVucHienThi(GV).find((k: any) => k.key === 'cong-viec')?.to === '/cong-viec', 'Mục Công việc: QL vào thẳng Chờ duyệt');
-    assert(Object.values(d.TAB_TONG_QUAN_LABEL).join(',') === 'Tổng quan,Phân tích', 'Chữ tab Tổng quan (O3)');
+    assert(Object.values(d.TAB_TONG_QUAN_LABEL).join(',') === 'Việc hôm nay,Phân tích', 'Chữ tab Tổng quan (O3; PR-VAI-a K1-10: \"Việc hôm nay\")');
   });
 
   check('PR-O · O5/O7 Mọi đường dẫn cũ về đúng chỗ, giữ bộ lọc, không vòng lặp', () => {

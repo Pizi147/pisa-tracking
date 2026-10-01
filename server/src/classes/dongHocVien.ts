@@ -7,15 +7,16 @@
  * riêng rồi gọi `listCases(p, {})` KHÔNG lọc phạm vi gì để lấy Case — quét mọi Case trong hệ thống, chậm hàng chục giây
  * trên Turso. Xem `.superpowers/sdd/2026-09-22-pr-qa-hoc-vien-lop/task-17-planning-fix-report.md`.
  */
-import { PERMISSIONS, viecTiepCuaEm, type CaseViec, type NhanYThucEm, type ViecTiepTheo } from '../../../shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, PERMISSIONS, viecTiepCuaEm, type AttemptKind, type CaseViec, type NhanYThucEm, type ViecTiepTheo } from '../../../shared/domain/index.ts';
 import { db } from '../db.ts';
-import { can, isCoreTeacherOf, type Principal } from '../permissions.ts';
+import { activeAt, can, isCoreTeacherOf, type Principal } from '../permissions.ts';
 import { emCoBaoPhChuaLam } from '../yThuc/phoiHop.ts';
 import { emConMiniTest, nguoiGhiMiniTest } from '../normal/cuoiKhoa.ts';
 import { emCuaLop, nhanNhomEm, trangThaiYThuc } from '../yThuc/trangThai.ts';
 import { listCases, type MappedCase } from '../cases/cases.ts';
 import { chiTietCaseMo } from '../cases/caseLop.ts';
 import { quetYeuCau } from '../duyet/yeuCau.ts';
+import { listAttempts } from '../fasttrack/attempts.ts';
 
 /**
  * PR-YT4: nhãn Ý thức ở dòng em — `Quá hạn` / `Cần xử lý` (nhóm `qua_han` | `bat_buoc` của `trangThaiYThuc`), không còn "{n} vi phạm".
@@ -54,19 +55,50 @@ export function caseViecTheoHocVien(p: Principal, classId: number): Map<number, 
   return out;
 }
 
+export type NhapDiemViec = { kyNang: string[]; dot: string | null; quaHan: boolean; han: string | null };
+
+/**
+ * PR-UXF-a VN29: việc NHẬP ĐIỂM của CHÍNH người xem theo em — MỘT luật cho cột "Việc tiếp theo" của bảng lớp, chip Cần làm / Quá hạn
+ * và badge "n HV quá hạn việc" (Học viên & Lớp, đầu hồ sơ lớp). Nguồn = `myPendingDetail` của `listAttempts` (cùng hàng đợi nhập điểm của trang Công việc),
+ * chỉ lớp người xem có việc nhập điểm (không có → rỗng, không câu SQL nào), chỉ em đang học (T65), chỉ lượt ở lớp em ĐANG học (`lopCua`).
+ */
+export function nhapDiemTheoEm(p: Principal, classIds: readonly number[], homNay: string, lopCua: (sid: number) => number | undefined): Map<number, NhapDiemViec> {
+  /* Lớp người xem có VIỆC nhập điểm: đang được phân công, hoặc vai không phải giáo viên có SCORE_EDIT ở lớp (Quản trị) — như `mySkills`. */
+  const day = new Set(p.assignments.filter((a) => activeAt(a, homNay)).map((a) => a.classId));
+  const lop = [...new Set(classIds)].filter((id) => day.has(id) || can(p, PERMISSIONS.SCORE_EDIT, { classId: id }));
+  const out = new Map<number, NhapDiemViec & { thuTu: number }>();
+  if (!lop.length) return out;
+  for (const a of listAttempts(p, { classIds: lop, chiDangHoc: true }).rows as any[]) {
+    const cho = (a.myPendingDetail ?? []) as { skill: string; deadline: string | null; overdue: boolean }[];
+    if (a.status === 'cancelled' || !cho.length || lopCua(a.studentId) !== a.classId) continue;
+    const x = out.get(a.studentId) ?? { kyNang: [], dot: null, quaHan: false, han: null, thuTu: Infinity };
+    for (const c of cho) {
+      if (!x.kyNang.includes(c.skill)) x.kyNang.push(c.skill);
+      if (c.overdue) x.quaHan = true;
+      if (c.deadline && (!x.han || c.deadline < x.han)) x.han = c.deadline;
+    }
+    /* Đợt = lượt còn nợ SỚM NHẤT (như bảng lớp đọc timeline từ đầu). */
+    if (a.attemptNo < x.thuTu) { x.thuTu = a.attemptNo; x.dot = a.kind === 'mock' ? `MT${a.attemptNo}` : ATTEMPT_KIND_SHORT[a.kind as AttemptKind] ?? a.kind; }
+    out.set(a.studentId, x);
+  }
+  return out;
+}
+
 export type ViecEm = { viec: ViecTiepTheo[]; choDuyet: boolean };
 /**
  * SỐ LIỆU VIỆC THEO LỚP — MỘT hàm cho trang Học viên & Lớp (chip Cần làm / Chờ duyệt, badge `qua-han` / `cho-duyet` của hộp lớp) và
  * `classOverview` (badge đầu hồ sơ lớp): cùng em, cùng Case, cùng luật `viecTiepCuaEm` → hai màn không lệch (G-10).
  *
  * Số câu SQL cố định theo lô: `chiTietCaseMo` (4) + Ý thức (`trangThaiYThuc`, 3) + thẻ chờ duyệt (1). Case truyền vào là tập đã lọc quyền
- * (`listCases`); em không có trong `emTheoLop` bị bỏ. Nhập điểm KHÔNG tính ở đây (Q3: đã có badge "bài chờ chấm").
+ * (`listCases`); em không có trong `emTheoLop` bị bỏ. Nhập điểm: PR-UXF-a VN29 nhận `nhapDiemTheoEm` (cùng nguồn với bảng lớp).
  * Ý thức: chỉ lớp người xem có `STUDENT_VIEW` (cùng luật `canhBaoTheoHocVien`), bỏ em Tạm dừng (PR-S3F #12).
  * `soChoDuyet` chỉ với người duyệt được ở lớp đó (`REQUEST_APPROVE`); người khác 0.
  */
 export function viecHocVienTheoLop(p: Principal, o: {
   emTheoLop: ReadonlyMap<number, readonly number[]>; cases: readonly MappedCase[]; homNay: string;
   chuongTrinhTheoLop?: ReadonlyMap<number, string | null>;
+  /** PR-UXF-a VN29: nhập điểm của người xem theo em (`nhapDiemTheoEm`) — dựng MỘT lần cho cả trang. */
+  nhapDiemTheoEm?: ReadonlyMap<number, NhapDiemViec>;
 }): { theoEm: Map<number, ViecEm>; soChoDuyet: Map<number, number>; soEmQuaHan: Map<number, number> } {
   /* Một em có thể còn ghi danh `active` ở nhiều lớp (dữ liệu chuyển lớp dở) — đếm cho MỖI lớp em đang có mặt, việc của em tính một lần. */
   const lopCua = new Map<number, number[]>();
@@ -111,7 +143,7 @@ export function viecHocVienTheoLop(p: Principal, o: {
   const soEmQuaHan = new Map<number, number>();
   for (const [id, lops] of lopCua) {
     const viec = viecTiepCuaEm({
-      nhapDiem: null, cases: caseCua.get(id) ?? [], yThuc: yThuc.get(id) ?? null, homNay: o.homNay, chuongTrinh: o.chuongTrinhTheoLop?.get(lops[0]) ?? null,
+      nhapDiem: o.nhapDiemTheoEm?.get(id) ?? null, cases: caseCua.get(id) ?? [], yThuc: yThuc.get(id) ?? null, homNay: o.homNay, chuongTrinh: o.chuongTrinhTheoLop?.get(lops[0]) ?? null,
       baoPh: baoPhEm.has(id) && lops.some((l) => isCoreTeacherOf(p, l, o.homNay)),
       miniTest: lops.map((l) => nguoiGhiMiniTest(p, l, miniTestEm.get(id))).find(Boolean) ?? null,
     });

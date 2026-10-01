@@ -7,7 +7,7 @@
  */
 import { db } from '../db.ts';
 import {
-  ENTRY_SKILLS, MOC_KE_TIEP_SQL, PERMISSIONS, chuanHoaMaLop, coMocTiepTheo, demLoc, mondayOfDate, phamViCoThe, phamViMacDinh,
+  ENTRY_SKILLS, MOC_KE_TIEP_SQL, PERMISSIONS, chuanHoaMaLop, coMocTiepTheo, coMocTiepTheoThuong, demLoc, mondayOfDate, phamViCoThe, phamViMacDinh,
   type LocHocVien, type PhamVi,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -19,7 +19,7 @@ import { standingFor } from '../students/standing.ts';
 import { listCases } from '../cases/cases.ts';
 import { allProgrammes } from '../normal/regular.ts';
 import { danhSachLuuTru } from './luuTru.ts';
-import { viecHocVienTheoLop } from './dongHocVien.ts';
+import { nhapDiemTheoEm, viecHocVienTheoLop } from './dongHocVien.ts';
 
 export type LopHocVienLop = ClassSummary & {
   gvcn: { id: number; name: string } | null;
@@ -110,6 +110,7 @@ export function danhSachHocVienLop(
             cy.id AS cycle_id, cy.start_period_id, cy.exam_month, cy.target_score, cy.khong_cam_ket, cy.baseline_attempt_id, cy.baseline_score,
             cy.route, cy.exam_period_id,
             (SELECT COUNT(*) FROM assessment_attempts a WHERE a.cycle_id = cy.id AND a.status = 'planned') AS so_luot_ke_hoach,
+            EXISTS (SELECT 1 FROM assessment_attempts a WHERE a.cycle_id = cy.id AND a.kind = 'final' AND a.status != 'cancelled') AS co_cuoi_khoa,
             /* K2-05: FT đếm theo luật mốc kế tiếp (lichMt.ts) — MT lịch sử / tuần đã qua không phải "mốc tiếp theo". */
             (SELECT COUNT(*) FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id
               WHERE a.cycle_id = cy.id AND ${MOC_KE_TIEP_SQL('a', 'rp')}) AS so_moc_ke_tiep,
@@ -149,6 +150,7 @@ export function danhSachHocVienLop(
   for (const h of hv) emTheoLop.set(h.class_id, [...(emTheoLop.get(h.class_id) ?? []), h.id as number]);
   const vl = viecHocVienTheoLop(p, {
     emTheoLop, cases: allCases, homNay: today, chuongTrinhTheoLop: new Map(lops.map((r) => [r.id, r.programmeCode ?? null])),
+    nhapDiemTheoEm: nhapDiemTheoEm(p, ids, today, (sid) => lopCuaHv.get(sid)),
   });
 
   /*
@@ -218,7 +220,7 @@ export function danhSachHocVienLop(
       hasNextMilestone: h.status !== 'active' ? undefined
         : laFt.get(h.class_id)
           ? coMocTiepTheo({ coMoc: h.so_moc_ke_tiep > 0, route: h.route ?? null, mtCuoi: h.mt_cuoi, coNgayThi: !!(h.exam_month || h.exam_period_id) })
-          : h.so_luot_ke_hoach > 0,
+          : coMocTiepTheoThuong({ soLuotKeHoach: h.so_luot_ke_hoach, coCuoiKhoa: !!h.co_cuoi_khoa }),
     });
     if (thieu.length) loc.push('thieu_tt');
     return { id: h.id as number, classId: h.class_id as number, loc, khung: ft ? 'ft' as const : 'thuong' as const };

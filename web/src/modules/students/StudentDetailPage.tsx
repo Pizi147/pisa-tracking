@@ -1,13 +1,13 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { BoLocDoan, Card, DaiChiXem, Empty, ErrorState, Info, Level, Outcome, Skeleton, Status, TargetText, Th} from '../../ui/ui.tsx';
+import { BoLocDoan, Card, DaiChiXem, Empty, ErrorState, Info, Level, Outcome, Skeleton, TargetText, Th} from '../../ui/ui.tsx';
 import { Modal } from '../../ui/Drawer.tsx';
 import { cuonOnDinh } from '../../lib/cuonOnDinh.ts';
-import { SkillBoard, type SkillBoardRow } from '../cases/SkillBoard.tsx';
+import { MuiTen, SkillBoard, type SkillBoardRow } from '../cases/SkillBoard.tsx';
 import { KetLuanKhoa, MiniTestO } from './KetLuanKhoa.tsx';
 import { HanhTrinh } from './HanhTrinh.tsx';
-import { LichSuLop } from './LichSuLop.tsx';
+import { BonO, CauTomTat, DaiChoDuyet, DaiTamDung, DongThongTin, ThanhViec, type Viec } from './DauHoSo.tsx';
 import { NganCase } from './NganCase.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
 import { StudentPlanPanel } from './StudentPlanPanel.tsx';
@@ -20,14 +20,14 @@ import {
   attemptStatusLabel, fmtBand, skillLabel, skillShort, sosTone, studentStatusLabel,
 } from '../../lib/format.ts';
 import {
-  HO_SO_TAB_LABEL, JOURNEY_EVENT_LABEL, caseCategoriesFor, tenMonNgan, docThamSoHoSo, duongHoSoHocVien,
-  deadlineView, khoaLopThuong, ketQuaTestGanNhat, nhanKetQuaThuong, CHUONG_TRINH_KHONG_CHIA_MON, ngay, tuanLich, type HoSoTab,
+  HO_SO_TAB_LABEL, NHAN_NHOM_VIEC_QUAN_LY, duongDotTest, JOURNEY_EVENT_LABEL, caseCategoriesFor, tenMonNgan, docThamSoHoSo, duongHoSoHocVien,
+  nhanKetQuaThuong, CHUONG_TRINH_KHONG_CHIA_MON, ngay, tuanLich, type HoSoTab,
 } from '@shared/domain/index.ts';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
-import { Han } from '../../ui/Han.tsx';
-import { QuaHan, ChipLichSu } from '../../ui/Nhan.tsx';
+import { ChipLichSu } from '../../ui/Nhan.tsx';
 import { useSession } from '../../lib/session.tsx';
+import { useDienThoai } from '../../ui/TheDong.tsx';
 import { DaiHocVienChuyen } from '../classes/DaiChuyenLop.tsx';
 
 type OpenCase = { caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'them-pa' | 'xac-nhan' | 'xac-nhan-pa' | 'ke-hoach' } | null;
@@ -70,6 +70,7 @@ export default function StudentDetailPage() {
   const q = p.loTrinh ? `?cycleId=${p.loTrinh}` : p.dot != null ? `?attemptId=${p.dot}` : '';
   const { data, loading, error, reload } = useApi<Profile>(id ? `/students/${id}${q}` : null, [p.loTrinh, p.dot]);
   const [viecQuanLy, setViecQuanLy] = useState<ViecQuanLy | null>(null);
+  const dienThoai = useDienThoai();
   const [planOpen, setPlanOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   /** Ngăn Case (Q9) mở do BẤM trong trang (khối PA, ⋮ …) — mở do URL (`?case=`) đọc thẳng từ `p`. */
@@ -90,7 +91,7 @@ export default function StudentDetailPage() {
    */
   /* Lộ trình ĐANG XEM, không phải tham số trên URL: không có tham số thì là lộ trình đang chạy. */
   const boardCycleId: number | null = data?.cycle?.id ?? null;
-  const board = useApi<{ rows: SkillBoardRow[] }>(
+  const board = useApi<{ rows: SkillBoardRow[]; tamDungTu?: string | null }>(
     id && boardCycleId ? `/students/${id}/skill-board?cycleId=${boardCycleId}` : null,
     [id, boardCycleId],
   );
@@ -149,6 +150,15 @@ export default function StudentDetailPage() {
     navigate(duongHoSoHocVien(data.id, { kn, loTrinh: p.loTrinh }));
   };
 
+  /** Nút động từ của thanh việc: mở đúng Ngăn Case / tab Ý thức / trang bàn giao. */
+  const lamViec = (x: Viec) => {
+    const m = x.mo;
+    if (!m) return;
+    if (m.loai === 'case') setOpenCase({ caseId: m.caseId, paId: m.paId, viec: m.viec });
+    else if (m.loai === 'tab') navigate(duongHoSoHocVien(data.id, { tab: m.tab, sub: m.sub }));
+    else navigate(m.href);
+  };
+
   const setCycle = (cid: number) => {
     const next = new URLSearchParams(params);
     if (cid === data.cycles.find((c: any) => c.status === 'active')?.id) next.delete('lo-trinh');
@@ -186,44 +196,13 @@ export default function StudentDetailPage() {
                 {data.status !== 'active' && <Info>{studentStatusLabel(data.status)}</Info>}
                 {data.archivedAt && <Info>Đã lưu trữ</Info>}
               </h1>
-              <p className="text-xs text-slate-400 mt-1 mb-0">
-                {/*
-                  ĐẦU HỒ SƠ LỚP THƯỜNG (Q18): {mã lớp} · GVCN {tên} · {khoá đang học}, KHÔNG tên
-                  chương trình, KHÔNG "Mục tiêu"/"Dự kiến thi" (Q18, §3.8 dòng cuối) — dùng đúng
-                  hàm `khoaLopThuong` mà cột Khoá của hồ sơ lớp (PR-Qa) đã dùng, để hai chỗ luôn
-                  nói cùng một câu. `tiepTheo`/`nhacLoTrinh` từ `data.lopHoc` (PR-LT, Task 3).
-                */}
-                {data.currentClass?.khoa
-                  ? (() => {
-                    const { chinh, phu } = khoaLopThuong({
-                      maChuongTrinh: data.currentClass.khoa.ma,
-                      tuanHienTai: data.currentClass.khoa.tuanHienTai,
-                      tongTuan: data.currentClass.khoa.tongTuan,
-                      tuanKetThuc: data.currentClass.khoa.tuanKetThuc,
-                      tiepTheo: data.lopHoc?.tiepTheo ?? null,
-                      nhacLoTrinh: data.lopHoc?.nhacLoTrinh ?? false,
-                      homNay: homNay ?? '',
-                    });
-                    return (
-                      <>
-                        {data.currentClass.code}
-                        {data.currentClass.coreTeacher && <> · GVCN {data.currentClass.coreTeacher}</>}
-                        {' · '}{chinh}{phu ? ` · ${phu}` : ''}
-                      </>
-                    );
-                  })()
-                  : data.currentClass
-                    ? <>{data.currentClass.code} · {data.currentClass.programme ?? data.currentClass.branchName}
-                        {data.currentClass.coreTeacher && <> · GVCN {data.currentClass.coreTeacher}</>}</>
-                    : 'Chưa xếp lớp'}
-                {cy && !cy.ratio && (cy.target !== null || cy.khongCamKet) && <> · mục tiêu <TargetText band={cy.target} kck={cy.khongCamKet} /></>}
-              </p>
+              <DongThongTin tt={data.dauHoSo.thongTin} />
             </div>
 
             <div className="flex flex-wrap gap-2 items-start">
               {data.journeyStrip?.length > 1 && (
                 <button type="button" className="btn" aria-expanded={cycleOpen}
-                  onClick={() => setCycleOpen(!cycleOpen)}>Lộ trình <span aria-hidden className="text-[11px] text-slate-400">{cycleOpen ? '▾' : '▸'}</span></button>
+                  onClick={() => setCycleOpen(!cycleOpen)}>Lộ trình <span className="text-slate-400"><MuiTen mo={cycleOpen} /></span></button>
               )}
               {data.viewer.canReport && !data.lopHoc?.chiXem && (
                 <button className="btn btn-primary" onClick={() => setReportOpen(true)}>+ Case</button>
@@ -233,11 +212,14 @@ export default function StudentDetailPage() {
                 canEdit: data.viewer.canEdit, lopHoc: data.lopHoc ?? null, cycle: cy, status: data.status, coTheXoa: !!data.viewer.coTheXoa,
                 deXuatSua: !!data.viewer.coTheDeXuatSua,
               }).map((m) => ({
-                label: m.nhan, danger: m.nguyHiem, keTruoc: m.keTruoc,
+                label: m.nhan, danger: m.nguyHiem, keTruoc: m.keTruoc, hint: m.phu, nhom: NHAN_NHOM_VIEC_QUAN_LY[m.nhom],
                 onClick: () => (m.key === 'lo-trinh' ? setPlanOpen(true) : setViecQuanLy(m.key)),
               }))} />
             </div>
           </div>
+
+          {/* PR-VAI-b (Q6): câu tóm tắt máy viết — "em đang thế nào", dưới vạch mảnh của khung thông tin. */}
+          <CauTomTat manh={data.dauHoSo.tomTat} />
 
           {/*
             DẢI LỘ TRÌNH chỉ bày khi được hỏi tới. Nó là thứ dùng vài lần một khoá, không đáng
@@ -254,6 +236,9 @@ export default function StudentDetailPage() {
         </div>
       </div>
 
+      {/* PR-VAI-b (T65, mockup 24 D1): dải vàng Tạm dừng — đọc TRƯỚC bốn ô vì nó đổi nghĩa mọi con số bên dưới. */}
+      <DaiTamDung tamDung={data.dauHoSo.thongTin.tamDung} />
+
       {/* PR-CT (mockup 20 — E): dải Sắp chuyển / Đã chuyển ngay dưới dòng thông tin đầu trang; nút theo vai do máy chủ quyết. */}
       <DaiHocVienChuyen dai={data.dai ?? null} homNay={homNay}
         onLam={(k) => {
@@ -262,10 +247,16 @@ export default function StudentDetailPage() {
           navigate(`/hoc-vien/lop/${d.lopNguon.id}?viec=ban-giao&lenh=${d.lenhId}${k === 'ban-giao-mon' && d.mon ? `&mon=${d.mon.ma}` : ''}`);
         }} />
 
-      {/* BỐN Ô SỐ (Q7, R8c/Q11) — bốn câu hỏi, không phải một phép chia. LUÔN hiện phía trên hàng tab, kể cả khi chưa có lộ trình (spec §4.1; chủ sản phẩm chốt 22/09 sau rà soát). */}
-      <HeaderStats data={data} rows={skillRows} homNay={homNay}
-        onOpenDot={(attemptId) => navigate(duongHoSoHocVien(data.id, { dot: attemptId }))}
-        onOpenKn={moKyNang} />
+      {/* BỐN Ô (PR-VAI-b, K3-03, T72): Kết quả gần nhất · Học thuật · Ý thức · Sắp tới — mỗi ô một nguồn, bấm mở đúng chỗ sinh số. */}
+      <BonO o={data.dauHoSo.o} homNay={homNay}
+        onDot={(attemptId) => navigate(duongHoSoHocVien(data.id, { dot: attemptId, loTrinh: p.loTrinh }))}
+        onKn={moKyNang} onYThuc={() => setTab('y-thuc')}
+        kyNangHref={(kn) => (data.dauHoSo.o?.ketQua?.kq && !data.dauHoSo.o.ketQua.ratio ? duongDotTest({ id: data.dauHoSo.o.ketQua.kq.attemptId, kind: 'mock' }, kn) : null)} />
+
+      {/* PR-VAI-b (K3-01, T72): việc gấp nhất của NGƯỜI XEM với em; không có việc thì không vẽ gì. */}
+      <ThanhViec viec={data.dauHoSo.viec} homNay={homNay} onLam={lamViec} />
+      {/* PR-VAI-b (V1/K3-47): Quản lý duyệt ngay trong hồ sơ — chỗ của thanh việc (Quản lý không có việc học thuật với em). */}
+      {data.viewer.coTheDuyet && <DaiChoDuyet studentId={data.id} homNay={homNay} onDoi={reload} />}
 
       {/*
         BA TAB NGAY DƯỚI ĐẦU TRANG (D2, spec 2026-09-22): Học thuật (mặc định) · Ý thức & Phối hợp · Hành trình.
@@ -299,8 +290,8 @@ export default function StudentDetailPage() {
           )}
           {/* id để R8c/kn cuộn tới đúng khung này (Task 5) — không sửa SkillBoard. */}
           <div id="bang-ky-nang">
-            <Card title="Tiến độ và hỗ trợ theo kỹ năng"
-              action={<span className="text-xs text-slate-500">Bấm một hàng để mở chi tiết ngay bên dưới</span>}
+            <Card title={dienThoai ? 'Tiến độ theo kỹ năng · Case gấp lên trước' : 'Tiến độ và hỗ trợ theo kỹ năng'}
+              action={dienThoai ? undefined : <span className="text-xs text-slate-500">Bấm một hàng để mở chi tiết ngay bên dưới</span>}
               bodyClass="p-0">
               <SkillBoard rows={skillRows}
                 loading={board.loading} error={board.error} onRetry={board.reload}
@@ -308,7 +299,8 @@ export default function StudentDetailPage() {
                 onPick={setSkillPick}
                 onReport={() => setReportOpen(true)}
                 onChanged={() => { board.reload(); reload(); }}
-                onMoCase={(caseId, o) => setOpenCase({ caseId, paId: o?.paId, viec: o?.viec })} />
+                onMoCase={(caseId, o) => setOpenCase({ caseId, paId: o?.paId, viec: o?.viec })}
+                tamDungTu={board.data?.tamDungTu ?? null} />
             </Card>
           </div>
 
@@ -358,15 +350,13 @@ export default function StudentDetailPage() {
 
       {tab === 'hanh-trinh' && (
         <Card title="Hành trình học tập" bodyClass="p-4 space-y-4">
-          {/* LỊCH SỬ LỚP (PR-LT, §3.8 dòng cuối) — đứng TRÊN trục tuần, mỗi lớp em từng học một dòng. */}
-          <LichSuLop studentId={data.id} active={tab === 'hanh-trinh'} />
           {/*
             TRỤC TUẦN THEO LỊCH THẬT, MỖI GIAI ĐOẠN MỘT TRỤC (§3.8, PR-Qb) — thay dòng thời gian
             cũ vẽ lại đúng biểu đồ điểm đã có ở khối trên. Tự gọi máy chủ riêng theo giai đoạn
             đang chọn, chỉ khi tab này đang mở.
           */}
+          {/* PR-VAI-b: chương theo lớp (thay Lịch sử lớp) + trục tuần — một đường `/hanh-trinh`. */}
           <HanhTrinh studentId={data.id} active={tab === 'hanh-trinh'}
-            episodes={data.episodes} allEpisodes={data.allEpisodes}
             onOpenCase={(caseId, paId) => setOpenCase({ caseId, paId })} />
         </Card>
       )}
@@ -409,114 +399,6 @@ export default function StudentDetailPage() {
 }
 
 // ==================================================================== khối nhỏ
-
-/**
- * BỐN Ô SỐ Ở ĐẦU HỒ SƠ (Q7, spec PR-HV §4.1) — bốn câu hỏi khác nhau, cố ý không cộng thành gì.
- *
- *   Kết quả Test gần nhất   bài vừa rồi ra sao — đúng câu của <KetQuaDot>; lớp Normal KHÔNG bịa Overall
- *   Kỹ năng cần hỗ trợ      giờ đang yếu ở đâu — số kỹ năng dưới kỳ vọng, kèm tên
- *   Case đang mở            còn bao nhiêu việc chưa xong — số case, và số PA đang theo dõi
- *   Việc cần làm tiếp       phải làm gì, trước ngày nào — câu có động từ do máy chủ dựng (`headline.next`)
- *
- * Mỗi ô nói ĐÚNG MỘT điều. BỐN Ô ĐỀU BẤM ĐƯỢC (R8c, Q11) — mỗi ô dẫn đúng chỗ tạo ra con số đó.
- * Giá trị `—`/`0` không bấm được (không có gì để mở).
- */
-function HeaderStats({ data, rows, homNay, onOpenDot, onOpenKn }: {
-  data: any; rows: SkillBoardRow[] | null; homNay: string | null;
-  onOpenDot: (attemptId: number) => void; onOpenKn: (kn: string | null | undefined) => void;
-}) {
-  const scored = (rows ?? []).filter((r) => r.band !== null);
-  const below = scored.filter((r) => r.missed === true);
-  /* PR-S3F #5: môn có điểm mà không có kỳ vọng (em KCK, chưa target) không được tính là "đạt kỳ vọng". */
-  const khongKyVong = scored.filter((r) => r.missed === null).length;
-  const daDatHet = scored.length > 0 && khongKyVong === 0;
-  const openCases = (rows ?? []).flatMap((r) => r.cases.map((c) => ({ ...c, category: r.category })))
-    .filter((c) => c.status !== 'done');
-  /* PR-S3F #10: PA "Chờ xác nhận" (Q28-3) chưa chạy — không tính vào "đang theo dõi", ghi riêng. */
-  const songPlans = openCases.flatMap((c) => c.plans).filter((p) => p.status === 'planned' || p.status === 'started');
-  const choXacNhan = songPlans.filter((p) => p.choXacNhan).length;
-  /* PR-LT2a: PA Bổ trợ chờ kế hoạch được duyệt cũng chưa chạy. PR-S5F-b: Case còn chờ nguyên nhân thì PA của nó chờ NGUYÊN NHÂN,
-     chưa tới bước kế hoạch — đếm riêng, không gọi "chờ kế hoạch". */
-  const chuaChayCua = (cs: typeof openCases) => cs.flatMap((c) => c.plans).filter((p) => (p.status === 'planned' || p.status === 'started') && p.chuaChay).length;
-  const choNguyenNhan = chuaChayCua(openCases.filter((c) => c.sos?.awaitingCause));
-  const choKeHoach = chuaChayCua(openCases.filter((c) => !c.sos?.awaitingCause));
-  const runningPlans = songPlans.length - choXacNhan - choNguyenNhan - choKeHoach;
-  const next = data.headline?.next ?? null;
-  const kq = ketQuaTestGanNhat(data.attempts ?? [], homNay);
-  const cheDo = data.cycle?.ratio ? 'ratio' as const : 'ielts' as const;
-
-  return (
-    <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-      <Stat label="Kết quả Test gần nhất"
-        value={kq ? kq.nhan : '—'}
-        onClick={kq ? () => onOpenDot(kq.attemptId) : undefined}
-        title="Mở đợt Test này ở bảng Học thuật"
-        sub={kq
-          ? (kq.phanTram !== null ? `${kq.phanTram}% tổng` : kq.dungKetQuaDot
-            ? <KetQuaDot coDiem={kq.coDiem} yeuCau={kq.yeuCau} dat={kq.dat} sos={kq.sos} cheDo={cheDo} soMonChuaDat={kq.soMonChuaDat} />
-            : `${kq.coDiem}/${kq.yeuCau} phần có điểm`)
-          : 'chưa có điểm nào'} />
-
-      <Stat label="Kỹ năng cần hỗ trợ"
-        value={String(below.length)}
-        tone={below.length ? 'danger' : scored.length > khongKyVong ? 'ok' : undefined}
-        onClick={below.length ? () => onOpenKn(below[0].category) : undefined}
-        title="Mở bảng kỹ năng ở đúng môn chưa đạt đầu tiên"
-        sub={below.length
-          ? below.map((r) => r.label).join(' · ')
-          : !scored.length ? 'chưa có điểm nào'
-          : daDatHet ? (cheDo === 'ratio' ? 'mọi môn đạt' : 'mọi môn đạt kỳ vọng')
-          : khongKyVong === scored.length ? (data.cycle?.khongCamKet ? 'KCK · không đặt kỳ vọng' : 'chưa có kỳ vọng')
-          : 'các môn có kỳ vọng đều đạt'} />
-
-      <Stat label="Case đang mở"
-        value={String(openCases.length)}
-        tone={openCases.length ? 'warn' : undefined}
-        onClick={openCases.length ? () => onOpenKn(openCases[0].category) : undefined}
-        title="Mở bảng kỹ năng ở kỹ năng của Case mở đầu tiên"
-        sub={openCases.length ? `${runningPlans} PA đang theo dõi${choXacNhan ? ` · ${choXacNhan} chờ xác nhận` : ''}${choNguyenNhan ? ` · ${choNguyenNhan} chờ nguyên nhân` : ''}${choKeHoach ? ` · ${choKeHoach} chờ kế hoạch` : ''}` : 'không có case nào đang mở'} />
-
-      <Stat label="Việc cần làm tiếp" nho
-        value={next?.text ?? 'Không có'}
-        tone={next?.overdue ? 'danger' : undefined}
-        onClick={next ? () => onOpenKn(next.category) : undefined}
-        title="Mở bảng kỹ năng ở đúng kỹ năng của việc này"
-        sub={next?.loai === 'cap-nhat-pa' && next.due
-          /* PR-N1 (K3 §4c, mockup 20): việc ghi kết quả PA nói TUẦN + hạn hết Thứ Hai + quá hạn n ngày — cùng luật <Han>. */
-          ? (() => {
-            const v = deadlineView({ kind: 'cap-nhat-pa', due: next.due, today: homNay ?? '' });
-            return <span className="tabular-nums">{v.viec.replace(/^Ghi kết quả /, '')} · {v.han}{v.quaHan && <> <QuaHan ngay={v.daysOverdue} /></>}</span>;
-          })()
-          : next?.due
-          ? (next.overdue
-            ? <QuaHan ngay={Math.max(1, Math.round((Date.parse(`${(homNay ?? '').slice(0, 10)}T00:00:00Z`) - Date.parse(`${next.due.slice(0, 10)}T00:00:00Z`)) / 86_400_000))} />
-            : `hạn ${ngay(next.due, homNay)}`)
-          : next ? 'chưa đặt hạn' : 'không có việc nào đang chờ'} />
-    </div>
-  );
-}
-
-function Stat({ label, value, sub, tone, nho, onClick, title }: {
-  label: string; value: string; sub?: ReactNode; tone?: 'ok' | 'warn' | 'danger';
-  /** Giá trị là một câu chữ (ô "Việc cần làm tiếp"): chữ nhỏ hơn, cho xuống dòng. */
-  nho?: boolean;
-  /** Có thì cả ô vẽ thành nút bấm được (R8c) — không có thì vẫn là thẻ tĩnh như cũ. */
-  onClick?: () => void; title?: string;
-}) {
-  const color = tone === 'danger' ? 'text-rose-300'
-    : tone === 'warn' ? 'text-amber-200'
-    : tone === 'ok' ? 'text-emerald-300' : 'text-slate-100';
-  const Khung = onClick ? 'button' : 'div';
-  return (
-    <Khung type={onClick ? 'button' : undefined} onClick={onClick}
-      className={`rounded-xl border px-3 py-2.5 min-w-0 text-left w-full appearance-none bg-transparent group ${onClick ? '' : ''}`}
-      style={{ borderColor: 'var(--line)' }} title={onClick ? title : undefined}>
-      <span className="block text-[11px] text-slate-500">{label}</span>
-      <span className={`block font-semibold mt-0.5 break-words ${nho ? 'text-sm leading-snug' : 'text-lg leading-tight'} ${color} ${onClick ? 'group-hover:underline' : ''}`}>{value}</span>
-      {sub && <span className="block text-[11px] text-slate-500 mt-0.5">{sub}</span>}
-    </Khung>
-  );
-}
 
 /**
  * BẢNG MOCK TEST của hồ sơ HV (F8, K4-33). Nằm ở: Học viên & Lớp › hồ sơ học viên › tab Học thuật › khối "Mock Test".
@@ -577,10 +459,14 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen }: {
                 <td className="td whitespace-nowrap">
                   {a.weekStart ? tuanLich(a.weekStart, homNay) : <Info pending>Chưa có tuần</Info>}
                 </td>
-                <td className={so}>{fmtBand(a.bands?.listening)}</td>
-                <td className={so}>{fmtBand(a.bands?.reading)}</td>
-                <td className={so}>{fmtBand(a.bands?.writing)}</td>
-                <td className={so}>{fmtBand(a.bands?.speaking)}</td>
+                {(['listening', 'reading', 'writing', 'speaking'] as const).map((k) => (
+                  <td key={k} className={so}>
+                    {/* G5: ô kỹ năng mở hồ sơ Mock cuộn tới đúng kỹ năng (Tab vào được; hàng vẫn bấm mở đợt). */}
+                    {a.bands?.[k] != null
+                      ? <Link to={duongDotTest(a, k)} className="link" title={`Mở hồ sơ Mock · MT${a.attemptNo} · ${skillLabel(k)}`} onClick={(e) => e.stopPropagation()}>{fmtBand(a.bands[k])}</Link>
+                      : fmtBand(a.bands?.[k])}
+                  </td>
+                ))}
                 <td className={`${so} text-slate-100`}>{fmtBand(a.overall)}</td>
                 <td className={so}>{fmtBand(a.expectation)}</td>
                 <td className="td">
@@ -662,73 +548,6 @@ function KetQuaThuongO({ a, ct }: { a: any; ct: string | null }) {
       <Level tone={a.sosLevel === null ? (kq.dat ? 'ok' : 'muted') : sosTone(a.sosLevel)}>{kq.chinh}</Level>
       {kq.phu && <div className="text-xs text-slate-400">{kq.phu}</div>}
     </>
-  );
-}
-
-/**
- * MỘT CHƯƠNG của hành trình.
- *
- * Chương có nhiều sự kiện thì mặc định gấp lại, chỉ hiện dòng mở đầu và số việc bên trong —
- * người đọc quét cả năm tháng trong một màn hình, mở ra khi thực sự muốn xem chi tiết.
- */
-export function Episode({ ep, onOpenCase }: { ep: any; onOpenCase: (id: number) => void }) {
-  const [open, setOpen] = useState(false);
-  const navigate = useNavigate();
-  /* PR-CT (Q17): chương có sự kiện Xác nhận bàn giao → nút mở lại phiếu (chỉ đọc nếu người xem không phải GVCN lớp cũ). */
-  const banGiao = ep.events.find((e: any) => e.banGiao?.lopNguonId)?.banGiao ?? null;
-  const many = ep.events.length > 1;
-  const caseId = ep.kind === 'case' ? Number(String(ep.link).split('/').pop()) : null;
-
-  return (
-    <li className="rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>
-      <div className="flex flex-wrap items-baseline gap-2">
-        <span className="text-xs text-slate-500 tabular-nums">
-          {ep.from === ep.to ? ngay(ep.from) : `${ngay(ep.from)} → ${ngay(ep.to)}`}
-        </span>
-        <span className="text-sm text-slate-100 min-w-0">{ep.title}</span>
-        {many && <Info>{ep.events.length} mốc</Info>}
-      </div>
-
-      {/*
-        Chương một sự kiện: tiêu đề ĐÃ LÀ nội dung, chỉ hiện thêm phần chi tiết nếu có.
-        Lặp lại y hệt tiêu đề ngay bên dưới chỉ làm hành trình dài gấp đôi mà không thêm gì.
-      */}
-      {!many && ep.events[0].detail && (
-        <p className="text-xs text-slate-400 mt-1 mb-0">{ep.events[0].detail}</p>
-      )}
-      {open && many && (
-        <ol className="mt-2 space-y-1 list-none p-0 m-0">
-          {ep.events.map((e: any) => (
-            <li key={e.id} className="flex gap-3 items-start">
-              <span className="text-[11px] text-slate-500 w-20 shrink-0 tabular-nums pt-0.5">{ngay(e.eventDate)}</span>
-              <span className="min-w-0">
-                <span className="block text-sm text-slate-200">
-                  {e.title}
-                  <span className="text-[11px] text-slate-500 ml-2">
-                    {JOURNEY_EVENT_LABEL[e.eventType] ?? e.eventType}
-                  </span>
-                </span>
-                {e.detail && <span className="block text-xs text-slate-400">{e.detail}</span>}
-              </span>
-            </li>
-          ))}
-        </ol>
-      )}
-
-      <div className="flex gap-2 mt-1">
-        {many && (
-          <button className="btn btn-sm btn-ghost" onClick={() => setOpen((v) => !v)}>
-            {open ? 'Thu gọn' : `Xem ${ep.events.length} mốc`}
-          </button>
-        )}
-        {caseId && (
-          <button className="btn btn-sm btn-ghost" onClick={() => onOpenCase(caseId)}>Mở vấn đề</button>
-        )}
-        {banGiao && (
-          <button className="btn btn-sm btn-ghost" onClick={() => navigate(`/hoc-vien/lop/${banGiao.lopNguonId}?viec=ban-giao&lenh=${banGiao.lenhId}`)}>Đọc bàn giao</button>
-        )}
-      </div>
-    </li>
   );
 }
 

@@ -84,7 +84,8 @@ export function mocChupVaoLop(code: string | null | undefined): [number | null, 
 }
 
 export function programmeOfClass(classId: number): ProgrammeInfo | null {
-  const c = db().prepare('SELECT programme_code FROM classes WHERE id = ?').get(classId) as any;
+  /* PR-VAI-b: nhớ trong một request GET (`nho`) — hồ sơ HV hỏi lại cùng lớp cho từng lượt (`typedResult`), mỗi lần một lượt mạng Turso. */
+  const c = nho(`ct-lop:${classId}`, () => db().prepare('SELECT programme_code FROM classes WHERE id = ?').get(classId) as any);
   return programmeByCode(c?.programme_code);
 }
 

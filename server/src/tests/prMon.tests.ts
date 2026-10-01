@@ -215,7 +215,7 @@ export async function runPrMonTests(t: YThucTestKit) {
     assert(no(l.classId).length === 0, 'còn nợ sau khi đủ điểm');
   });
   check('MON (4) · quét danh sách 4 môn viết tay ở máy chủ: chỉ bảng trắng', () => {
-    const TRANG = ['metrics.ts', 'boQuen.ts', 'vanDeHv.ts', 'phanTich.ts', 'keHoachTest.ts'];
+    const TRANG = ['metrics.ts', 'vanDeHv.ts', 'phanTich.ts', 'keHoachTest.ts'];
     const mau = [/\[\s*'listening',\s*'reading',\s*'writing',\s*'speaking'\s*\]/];
     const lo = quet('server/src').filter((f) => !/\/(tests|seed)\/|\/migrate/.test(f) && !TRANG.includes(path.basename(f)))
       .filter((f) => mau.some((m) => m.test(doc(f))));
@@ -277,9 +277,9 @@ export async function runPrMonTests(t: YThucTestKit) {
     const v = viMod.recordViolation(ha, { studentId: l.sids[0], category: 'homework', description: 'Không làm bài tập về nhà hai buổi liền.' });
     assert(v.violation.skill === null, `môn tự điền: ${v.violation.skill}`);
   });
-  check('MON (5) · bỏ quên không nối FOU → BE: khoá họ khác nhau (K5-57)', () => {
-    const src = doc('server/src/phanTich/boQuen.ts');
-    assert(src.includes('khoaHo(hopLe[0]) === khoaHo(hopLe[1])') && src.includes("=== 'FOU' ? 'FOU' : 'thuong'"), 'boQuen chưa so khoá họ');
+  /* PR-VAI-a (Q7): boQuen.ts đã gỡ cùng dòng "2 lần Test" — không còn nơi nối hai lượt FOU → BE, K5-57 hết đối tượng. */
+  check('MON (5) · bỏ quên không nối FOU → BE (K5-57) — PR-VAI-a: boQuen.ts đã gỡ', () => {
+    assert(!quet('server/src').some((f) => path.basename(f) === 'boQuen.ts'), 'boQuen.ts còn');
   });
   // ------------------------------------------------------------------ Task 6 · tên môn phía máy chủ
   const mywork: any = await import('../worklist/mywork.ts');

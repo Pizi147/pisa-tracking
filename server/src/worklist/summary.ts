@@ -1,7 +1,7 @@
 import { db } from '../db.ts';
 import {
   CASE_CATEGORY_LABEL, CASE_CATEGORY_SHORT,
-  PERMISSIONS, SOS_LABEL,
+  PERMISSIONS, SOS_LABEL, soSanhLop,
 } from '../../../shared/domain/index.ts';
 import { scopeFor, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -157,8 +157,9 @@ export function branchSummary(p: Principal, f: { branchId?: number | null } = {}
   }>();
   const branches = conn.prepare('SELECT id, code, name FROM branches ORDER BY id').all() as any[];
   const classes = conn
-    .prepare(`SELECT id, code, branch_id, is_fast_track FROM classes WHERE status = 'active' ORDER BY branch_id, code`)
+    .prepare(`SELECT id, code, branch_id, is_fast_track FROM classes WHERE status = 'active'`)
     .all() as any[];
+  classes.sort((a, b) => soSanhLop({ code: a.code, branchId: a.branch_id }, { code: b.code, branchId: b.branch_id }));   // PR-UXF-a U1
   if (byBranch) {
     for (const b of branches) {
       if (!cases.some((c) => c.branchId === b.id) && scope.branchIds && !scope.branchIds.includes(b.id)) continue;

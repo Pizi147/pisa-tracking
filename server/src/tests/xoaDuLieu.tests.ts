@@ -533,8 +533,9 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
   check('PR-XOA (3) · mucQuanLyHocVien + coTheXoa: "Xoá học viên" là mục CUỐI, nguyHiem + keTruoc; mục khác không có cờ', () => {
     const ds = d.mucQuanLyHocVien({ canEdit: true, lopHoc: { quyen: quyenDu }, cycle: { ratio: false }, status: 'active', coTheXoa: true });
     const cuoi = ds[ds.length - 1];
-    assert(cuoi.key === 'xoa-hoc-vien' && cuoi.nhan === 'Xoá học viên' && cuoi.nguyHiem === true && cuoi.keTruoc === true, JSON.stringify(cuoi));
-    assert(ds.slice(0, -1).every((m) => !m.nguyHiem && !m.keTruoc), 'chỉ mục Xoá mới đỏ và có đường kẻ');
+    /* PR-VAI-b (K3-48): vạch trước Xoá nay là vạch ĐỎ (`keTruoc: 'do'`); vạch đậm (`dam`) chỉ trước Tạm dừng / Quay lại / Kết thúc. */
+    assert(cuoi.key === 'xoa-hoc-vien' && cuoi.nhan === 'Xoá học viên' && cuoi.nguyHiem === true && cuoi.keTruoc === 'do', JSON.stringify(cuoi));
+    assert(ds.slice(0, -1).every((m) => !m.nguyHiem && (!m.keTruoc || (m.keTruoc === 'dam' && ['tam-dung', 'quay-lai', 'ket-thuc'].includes(m.key)))), 'chỉ mục Xoá mới đỏ và có vạch đỏ');
   });
 
   check('PR-XOA (3) · không coTheXoa → không có mục Xoá; GVBM (không mục nào) + coTheXoa false → menu rỗng', () => {
@@ -709,7 +710,8 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at)
                   VALUES (?, ?, 'reading', 0, '2026-01-01', 'active', ?)`).run(g.id, t.classId('MB FOU 12'), new Date().toISOString());
     const x2 = xoaTK.xemXoaTaiKhoan(P.admin, g.id);
-    assert(x2.canhBao.includes('Lớp MB FOU 12, MB FT 101 sẽ thiếu GV môn Reading.') && x2.canhBao.filter((c) => /thiếu GV môn/.test(c)).length === 1,
+    /* PR-UXF-a U1: lớp sắp theo `soSanhLop` (không theo chữ cái). */
+    assert(x2.canhBao.includes('Lớp MB FT 101, MB FOU 12 sẽ thiếu GV môn Reading.') && x2.canhBao.filter((c) => /thiếu GV môn/.test(c)).length === 1,
       x2.canhBao.join(' | '));
     assert(x.canhBao.some((c) => c === `Còn ${cs.length} Case/việc đang giao cho người này — đổi người phụ trách sau khi xoá.`), x.canhBao.join(' | '));
   });

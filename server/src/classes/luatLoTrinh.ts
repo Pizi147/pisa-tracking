@@ -1,6 +1,6 @@
 import { THAM_SO_TOI_DA, db, theoLo, tx } from '../db.ts';
 import {
-  PERMISSIONS, luatDoiLop, tuanChonDuoc, type LoaiLop, type LuatDoiLop, type ProgrammeCode,
+  PERMISSIONS, luatDoiLop, tuanChonDuoc, tuanHocFt, type LoaiLop, type LuatDoiLop, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, notFound, nowIso } from '../util.ts';
@@ -14,6 +14,7 @@ import { isRatioClass, programmeByCode, taoBaiThuongMacDinh } from '../normal/re
 import { sauChuyenCuoiKhoa } from '../normal/cuoiKhoa.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { trangThaiYThuc } from '../yThuc/trangThai.ts';
+import { khoangTamDung } from '../students/tamDung.ts';
 
 /**
  * LUẬT LỘ TRÌNH — MỘT CHỖ (PR-LT, §3.9) dùng chung cho Chuyển lớp một em (`students.ts`) và
@@ -355,8 +356,15 @@ export function xemChuyenLop(p: Principal, sid: number, toClassId?: number | nul
       lop: { id: enr.class_id, code: enr.code }, ma: (enr.programme_code ?? null) as ProgrammeCode | null,
       ft: !!enr.is_fast_track, chiNhanhId: enr.branch_id, route: (enr.route ?? null) as string | null,
       tuanHoc: (() => {
+        /* PR-UXF-a Q6 (Q31-11): FT không giới hạn tuần — "tuần học thứ n" của EM (từ tuần bắt đầu lộ trình, bỏ tuần Tạm dừng), không mẫu số. */
+        if (enr.is_fast_track) {
+          const bd = conn.prepare(`SELECT sp.week_start FROM learning_cycles cy JOIN report_periods sp ON sp.id = cy.start_period_id
+                                    WHERE cy.student_id = ? AND cy.status = 'active'`).get(sid) as any;
+          const tuan = bd ? tuanHocFt(bd.week_start, mondayOf(demoToday()), khoangTamDung([sid])[sid] ?? []) : null;
+          return tuan ? { tuan, tong: null } : null;
+        }
         const pr = classProgressMany([enr.class_id]).get(enr.class_id);
-        return pr?.currentWeek && pr.totalWeeks && pr.currentWeek >= 1 ? { tuan: pr.currentWeek, tong: pr.totalWeeks } : null;
+        return pr?.currentWeek && pr.totalWeeks && pr.currentWeek >= 1 ? { tuan: pr.currentWeek, tong: pr.totalWeeks as number | null } : null;
       })(),
     },
     caseMo: openCases.map((c) => ({

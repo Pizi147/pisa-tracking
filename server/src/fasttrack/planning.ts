@@ -1,5 +1,5 @@
 import { db, tx } from '../db.ts';
-import { ASSESSED_SKILLS, PERMISSIONS, type AssessedSkill } from '../../../shared/domain/index.ts';
+import { ASSESSED_SKILLS, PERMISSIONS, soSanhLop, type AssessedSkill } from '../../../shared/domain/index.ts';
 import { badRequest, nowIso } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -164,6 +164,8 @@ export function noPlanQueue(
         ORDER BY c.code, s.full_name`,
     )
     .all(...params) as any[];
+  /* PR-UXF-a U1: lớp sắp theo `soSanhLop` (MB FT 9 trước MB FT 10), trong lớp theo tên như SQL. */
+  rows.sort((a, b) => soSanhLop({ code: a.class_code, branchId: a.branch_id }, { code: b.class_code, branchId: b.branch_id }));
 
   const inScope = rows.filter((r) => can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: r.class_id, studentId: r.student_id }));
 

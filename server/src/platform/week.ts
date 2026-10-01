@@ -94,6 +94,14 @@ export function isOverdue(deadline: string, today: string): boolean {
   return today > deadline;
 }
 
+/**
+ * PR-UXF-a Q10 (T53 Q2): MỘT luật quá hạn nhập điểm — chỉ khi TUẦN THI ĐÃ HẾT (qua Chủ nhật) VÀ đã qua hạn. Áp cứng cả khi hạn bị
+ * đặt đè sớm hơn Chủ nhật tuần thi: tuần còn chạy thì chưa ai trễ. Mọi chỗ (ô bảng chấm, Lịch Test, khối Nợ, Việc, chỉ số) đọc qua đây.
+ */
+export function quaHanNhapDiem(han: string | null | undefined, tuanThi: string | null | undefined, today: string): boolean {
+  return !!han && !!tuanThi && addDays(mondayOf(tuanThi), 6) < today && isOverdue(han, today);
+}
+
 // ---------------------------------------------------------------- lưu kỳ
 
 export function ensurePeriod(date: string): { id: number } & WeekInfo {

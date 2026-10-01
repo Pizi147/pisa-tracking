@@ -10,6 +10,7 @@ import { catDongPhu } from './hocVienLop.ts';
 import { ngay } from './hienThiNgay.ts';
 import { mondayOfDate } from './week.ts';
 import { TASK_GROUPS, TASK_PROGRESS_CLOSED, type TaskGroup, type TaskProgress } from './worklist.ts';
+import { NHOM_VIEC, nhomViecCua, type NhomViec } from './tongQuan.ts';
 
 const DAY_MS = 86_400_000;
 const addDaysIso = (iso: string, n: number): string =>
@@ -20,10 +21,10 @@ const daysBetweenIso = (from: string, to: string): number =>
 // ====================================================================== Hỗ trợ học viên — lọc nhanh
 
 /** Bốn câu hỏi về hạn (đặc tả §3.4, thắng thiết kế §18.4 cũ — xem "Mâu thuẫn nguồn ↔ mã thật" #5). */
-export const LOC_NHANH = ['tat-ca', 'qua-han', 'hom-nay', 'tuan-nay'] as const;
+export const LOC_NHANH = ['tat-ca', 'qua-han', 'hom-nay', 'tuan-nay', 'den-het-tuan'] as const;
 export type LocNhanh = (typeof LOC_NHANH)[number];
 export const LOC_NHANH_LABEL: Record<LocNhanh, string> = {
-  'tat-ca': 'Tất cả', 'qua-han': 'Quá hạn', 'hom-nay': 'Hôm nay', 'tuan-nay': 'Tuần này',
+  'tat-ca': 'Tất cả', 'qua-han': 'Quá hạn', 'hom-nay': 'Hôm nay', 'tuan-nay': 'Tuần này', 'den-het-tuan': 'Đến hết tuần',
 };
 
 /** Việc dòng Hỗ trợ học viên tối thiểu cần có — trùng `WorkItem` của `mywork.ts`. */
@@ -38,10 +39,33 @@ export function khopLocNhanh(it: MucLocNhanh, loc: LocNhanh, homNay: string): bo
   if (loc === 'tat-ca') return true;
   if (loc === 'qua-han') return it.urgency === 'overdue';
   if (loc === 'hom-nay') return it.urgency === 'today';
+  if (loc === 'den-het-tuan') return trongKhoiHomNay(it, homNay);
   if (!it.due) return false;
   const d = it.due.slice(0, 10);
   const chuNhat = addDaysIso(mondayOfDate(homNay), 6);
   return d >= homNay && d <= chuNhat;
+}
+
+/**
+ * KHỐI "VIỆC CỦA TÔI · HÔM NAY" (PR-VAI-a Q1): việc QUÁ HẠN + việc có hạn từ hôm nay đến hết CHỦ NHẬT tuần này. Việc không hạn không vào.
+ * MỘT luật cho khối trên Tổng quan GV, chip "Đến hết tuần" ở Công việc và "Xem hết (n)" trên điện thoại.
+ */
+export function trongKhoiHomNay(it: MucLocNhanh, homNay: string): boolean {
+  if (it.urgency === 'overdue') return true;
+  if (!it.due) return false;
+  const d = it.due.slice(0, 10);
+  return d >= homNay && d <= addDaysIso(mondayOfDate(homNay), 6);
+}
+
+/**
+ * ĐIỆN THOẠI "HÔM NAY" (Q2, T53 Q8): 3 dòng đầu của CÙNG danh sách `trongKhoiHomNay`, không chia nhóm — quá hạn lâu nhất → hạn hôm nay →
+ * hạn gần. `soXemHet` = độ dài cả danh sách = số chip "Đến hết tuần" ở Công việc.
+ */
+export function baViecDau<T extends MucLocNhanh>(items: readonly T[], homNay: string): { ds: T[]; soXemHet: number } {
+  const w = (it: T) => (it.urgency === 'overdue' ? 0 : it.urgency === 'today' ? 1 : 2);
+  const ds = items.filter((it) => trongKhoiHomNay(it, homNay))
+    .sort((a, b) => w(a) - w(b) || (a.due ?? '9999').localeCompare(b.due ?? '9999'));
+  return { ds: ds.slice(0, 3), soXemHet: ds.length };
 }
 
 /** Số việc ở mỗi ô lọc nhanh — ĐÃ áp Loại việc đang chọn, CHƯA áp chính lọc nhanh (facet không tự lọc chính nó). */
@@ -51,6 +75,17 @@ export function demLocNhanh<T extends MucLocNhanh & { group: string }>(
   const base = !loai || loai === 'tat-ca' ? items : items.filter((it) => it.group === loai);
   const out = {} as Record<LocNhanh, number>;
   for (const loc of LOC_NHANH) out[loc] = base.filter((it) => khopLocNhanh(it, loc, homNay)).length;
+  return out;
+}
+
+/**
+ * PR-UXF-a F5: hàng chip Nhóm việc — ĐÃ áp lọc nhanh `loc`, CHƯA áp nhóm. "Tất cả" = Σ nhóm — nên ở mặc định (không lọc) nó bằng ô "Tất cả"
+ * của Lọc nhanh (cùng việc; nhắc mềm đã thành việc thật ở PR-VAI-a K5-10).
+ */
+export function demNhomChip<T extends MucLocNhanh & { group: string }>(items: T[], loc: LocNhanh, homNay: string): Record<NhomViec | 'tat-ca', number> {
+  const out = Object.fromEntries([...NHOM_VIEC, 'tat-ca'].map((k) => [k, 0])) as Record<NhomViec | 'tat-ca', number>;
+  for (const it of items) if (khopLocNhanh(it, loc, homNay)) out[nhomViecCua(it.group)] += 1;
+  out['tat-ca'] = NHOM_VIEC.reduce((n, k) => n + out[k], 0);
   return out;
 }
 
@@ -65,6 +100,22 @@ export function demLoaiViec<T extends MucLocNhanh & { group: string }>(
   }
   return out;
 }
+
+/** "Bài chờ chấm" của bảng Lớp tôi dạy (Q12): Σ số bài của việc Chấm điểm cùng lớp trong `/my-work` — cùng nguồn khối việc; `quaHan` = phần quá hạn. */
+export function baiChoChamTheoLop(items: readonly { group: string; classId: number | null; count: number | null; urgency: string }[]) {
+  const out = new Map<number, { tong: number; quaHan: number }>();
+  for (const it of items) {
+    if (it.group !== 'score' || !it.classId) continue;
+    const x = out.get(it.classId) ?? { tong: 0, quaHan: 0 };
+    x.tong += it.count ?? 1;
+    if (it.urgency === 'overdue') x.quaHan += it.count ?? 1;
+    out.set(it.classId, x);
+  }
+  return out;
+}
+
+/** Khung mặc định của bảng Lớp tôi dạy (Q31-1): dạy cả hai → Fast Track; chỉ lớp thường → Lớp thường. */
+export const khungMacDinhGv = (coFt: boolean, coThuong: boolean): 'ft' | 'thuong' => (!coFt && coThuong ? 'thuong' : 'ft');
 
 // ====================================================================== Người phụ trách
 

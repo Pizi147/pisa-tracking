@@ -302,7 +302,7 @@ export function sauChuyenCuoiKhoa(p: Principal, dongs: readonly DongSauChuyen[])
       mtRows.push([d.sid, toCycle, luot.id, `mt:${luot.id}`, b.soBuoi, lich.ngayMiniTest, lich.hanMiniTest]);
       nhatKy.push([d.sid, toCycle, 'intervention', d.ngay, `Cuối khoá ${phanTram}% — bổ trợ miễn phí ${b.soBuoi} buổi · Mini Test hạn ${ngay(lich.hanMiniTest, d.ngay)}`, p.userId, nowIso()]);
       for (const g of chuNhiem.get(d.toClassId) ?? []) {
-        thongBao.push([g, 'sos', 'Mang theo PA Bổ trợ miễn phí', `Cuối khoá ${phanTram}% — Mini Test hạn ${ngay(lich.hanMiniTest, d.ngay)}.`, 'student', d.sid, `bo-tro-mien-phi:${luot.id}:${g}`, nowIso(), null]);
+        thongBao.push([g, 'bo_tro_mien_phi', 'Mang theo PA Bổ trợ miễn phí', `Cuối khoá ${phanTram}% — Mini Test hạn ${ngay(lich.hanMiniTest, d.ngay)}.`, 'student', d.sid, `bo-tro-mien-phi:${luot.id}:${g}`, nowIso(), null]);
       }
       emCoBoTro.push(d.sid);
     }

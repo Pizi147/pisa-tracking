@@ -17,7 +17,7 @@ import {
   ScoreError, assessedSkillOf, bandFromCriteria, bandFromRaw, entrySkillsOf, evaluateAttempt,
   failingEntrySkills, isCriteriaSkill, isRawSkill, type AttemptResult,
 } from './scoring.ts';
-import { weekInfo } from '../platform/week.ts';
+import { quaHanNhapDiem, weekInfo } from '../platform/week.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import {
   completionWeekOf, ensureSkillRows, loadSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf,
@@ -385,8 +385,7 @@ export function skillCells(
       deadline: view.deadline,
       deadlineSource: view.deadlineSource,
       /* Quá hạn tính trên Ô NÀY: W2 còn trống thì W2 quá hạn, W1 đã nộp thì không. */
-      overdue: required && !cellScored && !!view.deadline && !!view.weekStart
-        && view.weekStart <= today && view.deadline < today
+      overdue: required && !cellScored && quaHanNhapDiem(view.deadline, view.weekStart, today)   // PR-UXF-a Q10: cùng luật `viewSkill`
         && progress !== 'absent' && progress !== 'cancelled' && !attempt.lich_su
         /* Đã báo "không có bài" thì không nợ điểm ở ô này — hạn nhập điểm chỉ áp cho bài CÓ thực hiện. */
         && noShow === null,
@@ -537,6 +536,10 @@ export type AttemptFilters = {
   q?: string;
   /** Phạm vi đếm bài cần chấm — mặc định theo vai nếu không truyền (`defaultWorkScope`). */
   scope?: WorkScope;
+  /** PR-UXF-a: chỉ lượt của các lớp này (≤ 900 id — `theoLo` không cần vì một trang không tới số đó). */
+  classIds?: readonly number[];
+  /** PR-UXF-a T65: chỉ em đang học (không Tạm dừng, không lưu trữ) — em Tạm dừng không sinh nợ điểm. */
+  chiDangHoc?: boolean;
 };
 
 /**
@@ -586,6 +589,11 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
 
   if (f.branchId) { where.push('c.branch_id = ?'); params.push(f.branchId); }
   if (f.classId) { where.push('a.class_id = ?'); params.push(f.classId); }
+  if (f.classIds) {
+    if (!f.classIds.length) return { rows: [], scopeEmpty: false };
+    where.push(`a.class_id IN (${f.classIds.map(() => '?').join(',')})`); params.push(...f.classIds);
+  }
+  if (f.chiDangHoc) where.push(`s.status = 'active' AND s.archived_at IS NULL`);
   if (f.studentId) { where.push('a.student_id = ?'); params.push(f.studentId); }
   if (f.status) { where.push('a.status = ?'); params.push(f.status); }
   // Tuần kết quả LUÔN là tuần kế hoạch của lượt, kể cả khi các kỹ năng mock lệch tuần.
@@ -701,7 +709,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
         myPendingDetail: mineSkills
           .map((k) => ({ skill: k, v: pendingOf(k) }))
           .filter((x) => !!x.v)
-          .map((x) => ({ skill: x.skill, deadline: x.v!.deadline, weekCode: x.v!.periodCode })),
+          .map((x) => ({ skill: x.skill, deadline: x.v!.deadline, weekCode: x.v!.periodCode, overdue: !!x.v!.overdue })),
         /* Tập bài cần chấm THEO PHẠM VI ĐANG XEM — cùng hàm với badge ở danh sách lớp. */
         pendingSkills: pending,
         /* Hạn và tuần của CHÍNH các môn còn nợ theo phạm vi đang xem — Cần chấm cần hạn của cả dòng, không chỉ phần của tôi. */
@@ -709,7 +717,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
           const v = views.get(k);
           return {
             skill: k, deadline: v?.deadline ?? null, periodId: v?.periodId ?? null,
-            weekCode: v?.periodCode ?? null, weekStart: v?.weekStart ?? null,
+            weekCode: v?.periodCode ?? null, weekStart: v?.weekStart ?? null, overdue: !!v?.overdue,
             moved: monDoiLich(scores.find((x) => x.skill === k), v?.periodId ?? null, v?.absenceMoveCount ?? 0),
           };
         }),
@@ -785,7 +793,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
       /* Bài đã báo "-" không còn là việc phải chấm — cùng luật với `pendingSkillsOf`, không hai luật đếm. */
       myPendingDetail: cells
         .filter((c) => c.mine && c.band === null && awaitingScore(c.progress) && !c.noShow)
-        .map((c) => ({ skill: c.skill, deadline: c.deadline, weekCode: c.periodCode })),
+        .map((c) => ({ skill: c.skill, deadline: c.deadline, weekCode: c.periodCode, overdue: !!c.overdue })),
       /* Tập bài cần chấm THEO PHẠM VI ĐANG XEM — cùng hàm với badge ở danh sách lớp. */
       pendingSkills: pending,
       /* Hạn và tuần của CHÍNH các môn còn nợ theo phạm vi đang xem — cùng ý như nhánh lớp thường. */
@@ -794,7 +802,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
         const lich = bundle.skillRows.get(a.id)?.find((r) => r.skill === c?.assessedSkill);
         return {
           skill: k, deadline: c?.deadline ?? null, periodId: c?.periodId ?? null,
-          weekCode: c?.periodCode ?? null, weekStart: c?.weekStart ?? null,
+          weekCode: c?.periodCode ?? null, weekStart: c?.weekStart ?? null, overdue: !!c?.overdue,
           moved: monDoiLich(scores.find((x) => x.skill === k), c?.periodId ?? null, lich?.absence_move_count ?? 0),
         };
       }),

@@ -17,13 +17,13 @@ import {
 } from '../permissions.ts';
 import {
   ATTEMPT_KIND_SHORT, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, LUOT_TINH_NO_SQL, PERMISSIONS, boMonLich, khungCua, lopTuMo, tenMonNgan, type Khung, nhanLopLichTest, noShowStateOf,
-  trangThaiChamLabel, type AssessedSkill, type AttemptKind, type LoaiNhanLop, type PhamViLichTest,
+  soSanhLop, trangThaiChamLabel, type AssessedSkill, type AttemptKind, type LoaiNhanLop, type PhamViLichTest,
 } from '../../../shared/domain/index.ts';
 import { classScoreSheet, conBaiCanCham, listAttempts, type MonDoiLich } from '../fasttrack/attempts.ts';
 import { pendingMovesFor } from '../fasttrack/absence.ts';
 import { assessedSkillOf, entrySkillsOf } from '../fasttrack/scoring.ts';
 import { allProgrammes, isRatioClass, programmeOfClass, regularSheet } from '../normal/regular.ts';
-import { isOverdue, skillScoreDeadline, weekInfo } from '../platform/week.ts';
+import { quaHanNhapDiem, skillScoreDeadline, weekInfo } from '../platform/week.ts';
 
 export function chamSheet(
   p: Principal, classId: number, opts: { periodId?: number | null; kind?: string | null } = {},
@@ -88,6 +88,8 @@ export type DongNo = {
   /** Người xem có dạy lớp này → "Chờ GV khác"; không dạy → "Chờ chấm". */
   coDayLop: boolean;
   hrefDayDu: string;
+  /** PR-VAI-a (UX-B5, Q23): tên GV đang nợ các ô của dòng (từ `pendingOwners`, sắp theo tên, không trùng); môn chưa phân công → "chưa phân công". */
+  gvNo: string[];
 };
 
 /** Tên đợt trên dòng: FT gọi MT{n}; lớp thường gọi "Giữa khoá"/"Cuối khoá" — không bao giờ gọi đợt lớp thường là MT. */
@@ -131,7 +133,7 @@ export function mtLichSuChuaNhap(p: Principal, o: { classIds?: number[] | null; 
   }
   return [...theoLop].map(([classId, l]) => ({
     classId, classCode: l.classCode, soEm: l.em.size, href: `/nhap-diem/${classId}${l.periodId ? `?periodId=${l.periodId}` : ''}`,
-  }));
+  })).sort((a, b) => soSanhLop({ code: a.classCode }, { code: b.classCode }));   // PR-UXF-a U1
 }
 
 /** Chia lô cho câu `IN (...)` — SQLite giới hạn số tham số của một câu lệnh. */
@@ -217,7 +219,8 @@ export function noTuanTruoc(
 ): { dong: DongNo[]; quaHanBai: number; quaHanBaiKhung: Record<Khung, number> } {
   if (f.classIds && !f.classIds.size) return { dong: [], quaHanBai: 0, quaHanBaiKhung: { ft: 0, thuong: 0 } };
   const motLop = f.classIds && f.classIds.size === 1 ? [...f.classIds][0] : undefined;
-  const { rows } = listAttempts(p, { branchId: f.branchId ?? undefined, classId: motLop, scope: 'managed' });
+  /* PR-UXF-a T65: em Tạm dừng không sinh nợ điểm (Lịch Test + khối Nợ). */
+  const { rows } = listAttempts(p, { branchId: f.branchId ?? undefined, classId: motLop, scope: 'managed', chiDangHoc: true });
   /* Một câu mỗi LỚP (như `isRatioClass` trước đây), không mỗi dòng: cách chấm + mã chương trình. */
   const lopInfo = new Map<number, { mode: CheDo; ct: string | null }>();
   const lopOf = (classId: number) => {
@@ -230,9 +233,11 @@ export function noTuanTruoc(
 
   type ChiTiet = {
     skill: string; deadline: string | null; periodId: number | null; weekCode: string | null; weekStart: string | null;
+    /** PR-UXF-a Q10: cờ quá hạn của CHÍNH ô (`viewSkill.overdue`) — không tự tính lại từ hạn. */
+    overdue: boolean;
     moved: MonDoiLich | null;
   };
-  type Gom = DongNo & { _hs: Set<number>; _aid: Set<number> };
+  type Gom = DongNo & { _hs: Set<number>; _aid: Set<number>; _gv: Set<string>; _chuaPc: boolean };
   type Doi = {
     key: string; skill: string; hv: string; attemptId: number; moved: MonDoiLich;
     sangTuan: string | null; sangTuanStart: string | null;
@@ -254,8 +259,8 @@ export function noTuanTruoc(
           kind: a.kind, attemptNo: a.attemptNo ?? null, dotLabel: dotLabelOf(a.kind, a.attemptNo ?? null),
           periodId: x.periodId, weekStart: x.weekStart,
           kyNang: [], kyNangLabel: '', conBai: 0, soHv: 0, attemptIds: [], han: null, quaHan: false, luiLich: null,
-          cuaToi: false, duocCham: false, coDayLop: f.lopCuaToi.has(a.classId), hrefDayDu: '',
-          _hs: new Set(), _aid: new Set(),
+          cuaToi: false, duocCham: false, coDayLop: f.lopCuaToi.has(a.classId), hrefDayDu: '', gvNo: [],
+          _hs: new Set(), _aid: new Set(), _gv: new Set(), _chuaPc: false,
         };
         gom.set(key, cu);
       }
@@ -263,8 +268,10 @@ export function noTuanTruoc(
       cu.conBai += 1;
       cu._hs.add(a.studentId);
       cu._aid.add(a.id);
+      const gv = (a.pendingOwners ?? {})[x.skill] ?? null;   // cùng nguồn tên với lượt (listAttempts) — không câu SQL mới
+      if (gv) cu._gv.add(gv); else cu._chuaPc = true;
       if (x.deadline && (!cu.han || x.deadline < cu.han)) cu.han = x.deadline;
-      if (x.deadline && isOverdue(x.deadline, today)) { quaHanBai += 1; quaHanBaiKhung[khungCua(lopOf(a.classId).mode)] += 1; }
+      if (x.overdue) { cu.quaHan = true; quaHanBai += 1; quaHanBaiKhung[khungCua(lopOf(a.classId).mode)] += 1; }
       /* Lùi lịch CHỈ khi có bằng chứng dời thật (`moved` — dấu "-" hoặc dời do vắng), không suy từ thứ tự tuần. */
       if (x.moved) {
         doi.push({
@@ -277,15 +284,15 @@ export function noTuanTruoc(
   const luiLichOf = dungLuiLich(doi);
 
   const dong: DongNo[] = [...gom.values()].map((d) => {
-    const { _hs, _aid, ...rest } = d;
+    const { _hs, _aid, _gv, _chuaPc, ...rest } = d;
     const kyNang = [...d.kyNang].sort(theoThuTu);
     return {
       ...rest,
       kyNang,
       kyNangLabel: kyNangLabelOf(d.mode, kyNang, d.chuongTrinh),
       soHv: _hs.size,
+      gvNo: [...[..._gv].sort((x, y) => x.localeCompare(y, 'vi')), ...(_chuaPc ? ['chưa phân công'] : [])],
       attemptIds: [..._aid],
-      quaHan: !!d.han && isOverdue(d.han, today),
       luiLich: luiLichOf.get(d.key) ?? null,
       cuaToi: mySkills(p, d.classId, kyNang).length > 0,
       duocCham: editableSkills(p, d.classId, kyNang).length > 0,
@@ -294,9 +301,10 @@ export function noTuanTruoc(
         : `/nhap-diem/${d.classId}?kind=${encodeURIComponent(d.kind)}`,
     };
   });
-  /* Quá hạn trước, rồi hạn tăng dần, rồi mã lớp. */
-  dong.sort((x, y) => (Number(y.quaHan) - Number(x.quaHan))
-    || (x.han ?? '9999').localeCompare(y.han ?? '9999') || x.classCode.localeCompare(y.classCode));
+  /* PR-UXF-a (UX-F7, U1): NHÓM THEO LỚP (`soSanhLop` — MB FT 9 trước MB FT 10); trong lớp: quá hạn trước, rồi hạn tăng dần, rồi tuần thi. */
+  dong.sort((x, y) => soSanhLop({ code: x.classCode }, { code: y.classCode })
+    || (Number(y.quaHan) - Number(x.quaHan)) || (x.han ?? '9999').localeCompare(y.han ?? '9999')
+    || (x.weekStart ?? '').localeCompare(y.weekStart ?? ''));
   return { dong, quaHanBai, quaHanBaiKhung };
 }
 
@@ -545,13 +553,14 @@ export function lichTest(
       /* Hạn theo đúng thứ tự của `viewSkill`: hạn riêng của môn → hạn riêng của đợt → hạn mặc định theo tuần môn. */
       const han = r.han_mon ?? r.han_dot ?? skillScoreDeadline(mode === 'ratio' ? 'ratio' : 'band', tuan.week_start);
       if (!lop._hanNo || han < lop._hanNo) lop._hanNo = han;
-      if (!chuaToiHan && isOverdue(han, today)) {
+      if (!chuaToiHan && quaHanNhapDiem(han, tuan.week_start, today)) {   // PR-UXF-a Q10
         d.quaHan = true; lop.quaHan = true; quaHanTuan += con.length; quaHanTuanKhung[khungCua(lop.mode)] += con.length;
       }
     }
   }
 
-  const lop: LopLichTest[] = [...byLop.values()].map(({ dong, _dot, _kn, _hanNo, ...l }) => ({
+  /* PR-UXF-a U1: lớp sắp theo `soSanhLop` (không theo chữ — "MB FT 10" không đứng trước "MB FT 9"). */
+  const lop: LopLichTest[] = [...byLop.values()].sort((a, b) => soSanhLop({ code: a.classCode }, { code: b.classCode })).map(({ dong, _dot, _kn, _hanNo, ...l }) => ({
     ...l,
     dotLabel: _dot.join(', '),
     kyNangTuan: [...new Set([..._kn].map((k) => assessedSkillOf(k)))].sort(theoThuTu),

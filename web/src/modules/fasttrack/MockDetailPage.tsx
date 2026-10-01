@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { cuonOnDinh } from '../../lib/cuonOnDinh.ts';
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
@@ -26,6 +27,7 @@ import {
 import {
   ATTEMPT_KIND_SHORT, CHU_THAO_TAC, LY_DO_TOI_THIEU, kiemTruong, mondayOfDate, nhanLuot, thaoTacKyNang, trangThaiTT, tuanLich,
   type AttemptKind, type TheYeuCauDto, type ThaoTac,
+  docKnMock,
 } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
@@ -120,6 +122,19 @@ export default function MockDetailPage() {
   const [cancelOpen, setCancelOpen] = useState(false);
   /* PR-HSM: ô lớn đang mở khung sửa — nút chính "Nhập điểm / Sửa điểm" của bảng dưới cũng mở đúng ô này. */
   const [moO, setMoO] = useState<KyNangLon | null>(null);
+  /*
+   * G5 / E.4 (PR-VAI-b): `?kn=` — "MT2 · Speaking" ở hồ sơ HV mở thẳng ô Speaking + cuộn tới dải điểm, một lần khi dữ liệu có (như hồ sơ HV R7).
+   * Đợt không có ô kỹ năng đó → không cuộn, không lỗi.
+   */
+  const [thamSo] = useSearchParams();
+  const knUrl = docKnMock(thamSo.get('kn'));
+  useEffect(() => {
+    if (!data || !knUrl) return undefined;
+    if (!data.cells.some((c) => (c.skill === 'writing1' || c.skill === 'writing2' ? 'writing' : c.skill) === knUrl)) return undefined;
+    setMoO(knUrl);
+    return cuonOnDinh(() => document.getElementById('dai-diem'), null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [!!data, knUrl]);
 
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (loading || !data) return <Skeleton rows={10} />;

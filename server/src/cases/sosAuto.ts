@@ -143,10 +143,13 @@ export function announceAutoCase(input: {
     entityLabel: `${st?.full_name ?? ''} · ${input.skillLabel}`, after: { attemptNo: input.attemptNo, sosLevel: input.sosLevel },
   });
   if (input.ownerUserId) {
+    /* PR-VAI-a (K1-42, Q20): tiêu đề = việc + em + lớp; thân nói Case sinh ra từ đợt nào và hạn. */
+    const lop = (db().prepare(`SELECT c.code FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = ? AND e.status = 'active' ORDER BY e.id DESC LIMIT 1`)
+      .get(input.studentId) as any)?.code ?? null;
     notify({
       userId: input.ownerUserId, kind: 'sos',
-      title: `Case mới: ${ten}${st?.full_name ? ` — ${st.full_name}` : ''}`,
-      body: `Xác nhận nguyên nhân trước hết ${ngay(input.hanXacNhan, demoToday())}`,
+      title: `Xác nhận nguyên nhân ${input.skillLabel} — ${[st?.full_name, lop].filter(Boolean).join(' · ')}`,
+      body: `Case mới sau ${input.dot === 'giua-khoa' ? 'Giữa khoá' : `MT${input.attemptNo}`}: ${ten} · hạn ${ngay(input.hanXacNhan, demoToday())}`,
       entityType: 'sos_case', entityId: input.caseId, dedupKey: `sos-case:${input.caseId}`,
     });
   }

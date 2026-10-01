@@ -322,7 +322,7 @@ export async function runPrS5fATests(t: YThucTestKit) {
     const f = hocVien(be2, 'BE', false).sid;
     const af = cuoiKhoa(be2, f, [20, 12, 20, null]);
     ck.ghiKetLuanFt(P.mbManager, f, { dat: false, nguyenNhan: 'trung_tam', mon: ['reading'] });
-    lenh.raLenh(P.mbManager, { lopNguonId: be2, boiCanh: 'cuoi-khoa', tuanChung: null, dongs: [dongCua(f, 'fast_track', ft, { mucTieu: 6, khacGoiY: true, lyDo: 'Phụ huynh xin lên FT' })] });
+    lenh.raLenh(P.mbManager, { lopNguonId: be2, boiCanh: 'cuoi-khoa', tuanChung: null, dongs: [dongCua(f, 'fast_track', ft, { mucTieu: 6, lyDo: 'Phụ huynh xin lên FT' })] });
     daChuyen(f, THU_HAI);
     const tutor = () => get(`SELECT COUNT(*) n FROM sos_cases WHERE student_id = ? AND title LIKE 'Kỳ vọng đầu ra%'`, f).n as number;
     assert(tutor() === 0, 'chưa đủ điểm: chưa có Case Tutor');

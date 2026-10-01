@@ -52,8 +52,19 @@ export const CASE_CATEGORIES = [
   'listening', 'reading', 'writing1', 'writing2', 'writing', 'speaking', 'tong_hop',
 ] as const;
 export type CaseCategory = (typeof CASE_CATEGORIES)[number];
-/** PR-UXF-a Q7 (chép nguyên văn cho PR-Pb2-b — PR merge sau giữ MỘT bản): bài = ô nhập; FT W1, W2 là hai bài. id ổn định cho ô số, bảng GV, hồ sơ GV. */
-export const baiId = (attemptId: number, skill: string) => attemptId * 10 + (CASE_CATEGORIES as readonly string[]).indexOf(skill);
+
+/**
+ * PR-UXF-a Q7 (T53 Q2): id ổn định của một BÀI = một ô điểm (lượt × kỹ năng) — cùng id ở ô số Tổng quan, bảng Theo giáo viên, hồ sơ GV.
+ * Kỹ năng ngoài danh sách → ném lỗi, không để trùng id.
+ * ponytail: ≤ 10 kỹ năng (hệ số 10); thêm kỹ năng thứ 11 thì đổi hệ số.
+ */
+export function baiId(attemptId: number, skill: string): number {
+  const k = (CASE_CATEGORIES as readonly string[]).indexOf(skill);
+  if (k < 0) throw new Error(`baiId: kỹ năng lạ "${skill}"`);
+  return attemptId * 10 + k;
+}
+/** Ngược của `baiId`. */
+export const tachBaiId = (id: number): { attemptId: number; skill: string } => ({ attemptId: Math.floor(id / 10), skill: CASE_CATEGORIES[id % 10] });
 
 export const CASE_CATEGORY_LABEL: Record<CaseCategory, string> = {
   listening: 'Listening',

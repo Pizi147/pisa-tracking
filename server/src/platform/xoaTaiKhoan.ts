@@ -13,7 +13,7 @@
  * đang giao cho người này (Q12).
  */
 import { db, tx } from '../db.ts';
-import { PERMISSIONS, tenMon } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, soSanhLop, tenMon } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, notFound, nowIso } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
@@ -116,7 +116,7 @@ function docNguoi(userId: number, homNay: string): Nguoi {
               WHERE r.key = 'system_admin' AND ur.status = 'active' AND u2.status = 'active' AND u2.id != u.id) AS so_qt_khac,
             (SELECT group_concat(code, ', ') FROM (SELECT DISTINCT c.code FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
               WHERE ta.user_id = u.id AND ta.is_core = 1 AND ta.status = 'active' AND c.status = 'active'
-                AND (ta.effective_to IS NULL OR ta.effective_to >= ?2) ORDER BY c.code)) AS lop_gvcn
+                AND (ta.effective_to IS NULL OR ta.effective_to >= ?2))) AS lop_gvcn
        FROM users u WHERE u.id = ?1`,
   ).get(userId, homNay) as Nguoi | undefined;
   if (!u || u.approval_state === 'pending') throw notFound('Không tìm thấy tài khoản.');
@@ -126,7 +126,8 @@ function docNguoi(userId: number, homNay: string): Nguoi {
 function lyDoChan(p: Principal, u: Nguoi): string | null {
   if (u.id === p.userId) return 'Không tự xoá tài khoản của chính mình.';
   if (u.la_qt && u.status === 'active' && u.so_qt_khac === 0) return 'Đây là Quản trị hệ thống cuối cùng.';
-  if (u.lop_gvcn) return `Đổi GVCN lớp ${u.lop_gvcn} trước.`;
+  /* PR-UXF-a U1: group_concat không hứa thứ tự — sắp bằng soSanhLop. */
+  if (u.lop_gvcn) return `Đổi GVCN lớp ${u.lop_gvcn.split(', ').sort((a, b) => soSanhLop({ code: a }, { code: b })).join(', ')} trước.`;
   return null;
 }
 
@@ -155,8 +156,9 @@ export function xemXoaTaiKhoan(p: Principal, userId: number): XemXoaTaiKhoan {
     `SELECT DISTINCT c.code, c.programme_code, ta.skill FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
       WHERE ta.user_id = ?1 AND ta.skill IS NOT NULL AND ta.status = 'active' AND c.status = 'active'
         AND (ta.effective_to IS NULL OR ta.effective_to >= ?2)
-      ORDER BY c.code, ta.skill`,
+      ORDER BY ta.skill`,
   ).all(userId, homNay) as { code: string; programme_code: string | null; skill: string }[];
+  mon.sort((a, b) => soSanhLop(a, b));   // PR-UXF-a U1 (sort ổn định giữ thứ tự môn trong lớp)
   /* Gộp theo môn — một GV Speaking dạy 4 lớp là MỘT dòng "Lớp A, B, C, D sẽ thiếu GV môn Speaking.", không phải bốn. */
   const theoMon = new Map<string, string[]>();
   /* Gộp theo TÊN MÔN hiện ra (MH2): ô `writing` là "Writing" ở BE nhưng "Grammar + Vocabulary" ở FOU. */

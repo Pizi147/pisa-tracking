@@ -84,6 +84,7 @@ export function meetingBoard(p: Principal, periodId: number, opts: { month?: str
         })
     : [];
   const monthIds = monthPeriods.map((r) => r.id);
+  const soTuanDaBatDau = monthPeriods.filter((r) => r.week_start <= demoToday()).length;
   const scope = monthIds.length
     ? { kind: 'month' as const, month: opts.month!, weeks: monthPeriods.map((r) => r.code), editable: false }
     : { kind: 'week' as const, month: null, weeks: [period.code], editable: true };
@@ -177,8 +178,10 @@ export function meetingBoard(p: Principal, periodId: number, opts: { month?: str
       const mineAll = saved.filter((x) => x.category_key === c.key);
       /* Kỳ tháng: lần báo cáo GẦN NHẤT là điều đơn vị nói sau cùng (đã tới theo period_id tăng dần từ query (2)). */
       const r = monthIds.length ? mineAll[mineAll.length - 1] : mineAll[0];
+      /* PR-UXF-a (Q11): kỳ tháng chỉ tính tuần ĐÃ NỘP — nháp không phải điều đơn vị đã báo. */
+      const daNopTuan = mineAll.filter((x) => trangThaiO({ status: x.status ?? null, note: x.note ?? null, submittedAt: x.submitted_at ?? null }) === 'da-nop');
       const worstStatus = monthIds.length
-        ? mineAll.map((x) => x.status).filter(Boolean)
+        ? daNopTuan.map((x) => x.status).filter(Boolean)
           .sort((a, b) => (RANK[b] ?? 0) - (RANK[a] ?? 0))[0] ?? null
         : null;
       const group = TASK_GROUP_OF_CATEGORY[c.key] ?? null;
@@ -204,8 +207,9 @@ export function meetingBoard(p: Principal, periodId: number, opts: { month?: str
         evidenceCount: r ? evidenceOf.get(r.id) ?? 0 : 0,
         /* Chỉ có ở kỳ tháng: tuần nặng nhất đã xuất hiện, và đã báo cáo mấy tuần trên mấy. */
         worstStatus,
-        weeksReported: monthIds.length ? mineAll.filter((x) => x.status).length : null,
-        weeksTotal: monthIds.length ? monthIds.length : null,
+        /* PR-UXF-a (Q11): "n/m tuần" = tuần ĐÃ NỘP / tuần ĐÃ BẮT ĐẦU trong tháng (tuần tương lai chưa ai báo được). */
+        weeksReported: monthIds.length ? daNopTuan.length : null,
+        weeksTotal: monthIds.length ? soTuanDaBatDau : null,
         history: hist,
       };
     });
@@ -228,12 +232,9 @@ export function meetingBoard(p: Principal, periodId: number, opts: { month?: str
         else if (c.status === 'problem') acc.problem += 1;
         else if (c.status === 'watch') acc.watch += 1;
         else acc.ok += 1;
-        /* PR-Ra Q13: `ok`/`watch`/`problem` ở trên giữ NGUYÊN ý cũ (đếm theo `status` thô, cho phép kiểm [18.2-14]).
-           `daNop`/`nhap`/`chua` là ba số MỚI, chỉ đếm ô ĐÃ NỘP là "đã báo cáo". */
-        if (c.trangThai === 'da-nop') acc.daNop += 1;
-        else if (c.trangThai === 'nhap') acc.nhap += 1;
-        else acc.chua += 1;
       }
+      /* PR-UXF-a F4 (Q11): `daNop`/`nhap`/`chua` đếm ĐƠN VỊ (trạng thái hàng) — đúng thứ mà chip bấm lọc ra (`u.trangThai.ma`). */
+      acc[u.trangThai.ma === 'da-nop' ? 'daNop' : u.trangThai.ma === 'nhap' ? 'nhap' : 'chua'] += 1;
       return acc;
     },
     { total: 0, ok: 0, watch: 0, problem: 0, notReported: 0, daNop: 0, nhap: 0, chua: 0 },

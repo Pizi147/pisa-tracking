@@ -167,15 +167,16 @@ export async function runPrSosTests(t: YThucTestKit) {
     const keys = (myworkSvc.myWork(P.admin, { nguoi: 'tat-ca' }).items as any[]).map((i: any) => i.key as string);
     assert(!keys.includes(`action:${iv.id}`) && !keys.includes(`review:${iv.id}`), 'PA chờ xác nhận sinh việc Ghi kết quả');
   });
-  check('SOS (3) · Thông báo: GVBM một "Case mới: [MT1] Listening không đạt [SOS 3]" + hạn; GVCN "SOS 3 — {tên}"; GV W1 không nhận gì', () => {
+  check('SOS (3) · Thông báo: GVBM một "Xác nhận nguyên nhân Listening — em · lớp" (thân "Case mới sau MT1: …") + hạn; GVCN "SOS 3 — {tên}"; GV W1 không nhận gì', () => {
     const { st, a } = mt1Sos3('T3b');
     const c = caseOf(st.id, 'listening');
     /* Mức SOS trong tên là mức LÚC Case ra đời (nhập L trước → SOS 1); Speaking nhập sau cùng → SOS 3. */
     const nL = all(`SELECT * FROM notifications WHERE entity_type = 'sos_case' AND entity_id = ?`, c.id);
-    assert(nL.length === 1 && nL[0].user_id === gvKyNang('listening') && /^Case mới: \[MT1\] Listening không đạt \[SOS \d\] — /.test(nL[0].title)
-      && nL[0].body === `Xác nhận nguyên nhân trước hết ${d.ngay(d.hanXacNhan(TODAY), TODAY)}`, JSON.stringify(nL));
+    /* PR-VAI-a (K1-42, Q20): tiêu đề = việc + em + lớp; thân "Case mới sau MT1: [MT1] Listening không đạt [SOS n] · hạn dd/mm". */
+    assert(nL.length === 1 && nL[0].user_id === gvKyNang('listening') && /^Xác nhận nguyên nhân Listening — /.test(nL[0].title)
+      && /^Case mới sau MT1: \[MT1\] Listening không đạt \[SOS \d\] · hạn /.test(nL[0].body) && nL[0].body.endsWith(d.ngay(d.hanXacNhan(TODAY), TODAY)), JSON.stringify(nL));
     const nS = all(`SELECT * FROM notifications WHERE entity_type = 'sos_case' AND entity_id = ?`, caseOf(st.id, 'speaking').id);
-    assert(nS.length === 1 && nS[0].title.startsWith('Case mới: [MT1] Speaking không đạt [SOS 3]'), JSON.stringify(nS));
+    assert(nS.length === 1 && nS[0].title.startsWith('Xác nhận nguyên nhân Speaking — ') && nS[0].body.includes('[MT1] Speaking không đạt [SOS 3]'), JSON.stringify(nS));
     /* GVCN nhận một thông báo mỗi lần mức SOS của lượt lên (khoá theo mức, có sẵn) — chỉ GVCN. */
     const nA = all(`SELECT * FROM notifications WHERE entity_type = 'assessment_attempt' AND entity_id = ? ORDER BY id`, a.id);
     assert(nA.length >= 1 && nA.every((n: any) => n.user_id === gvcn()) && nA[nA.length - 1].title === `SOS 3 — ${st.name}`, JSON.stringify(nA));
@@ -412,7 +413,8 @@ export async function runPrSosTests(t: YThucTestKit) {
     const iv = plansOf(c.id)[0];
     const cause = viecCua(P.w2Teacher).find((i) => i.key === `cause:${c.id}`);
     assert(cause && cause.tieuDe === `Xác nhận nguyên nhân Writing Task 2 · ${st.name}` && cause.due === c.han_xac_nhan && cause.actionLabel === 'Xác nhận nguyên nhân', JSON.stringify(cause));
-    assert(profileSvc.studentProfile(P.w2Teacher, st.id).headline.next?.text === 'Xác nhận nguyên nhân Writing Task 2', 'đầu hồ sơ chưa dùng việc tiếp v4');
+    /* PR-VAI-b (Q5): `headline.next` → `dauHoSo.viec.cuaBan` — GVBM W2 thấy "Xác nhận nguyên nhân Writing Task 2" là việc của mình. */
+    assert(profileSvc.studentProfile(P.w2Teacher, st.id).dauHoSo.viec.cuaBan[0]?.chu === 'Xác nhận nguyên nhân Writing Task 2', 'đầu hồ sơ chưa dùng việc tiếp v4');
     sosAuto.xacNhanCase(P.w2Teacher, c.id, { primaryCode: W2_CODE, urgency: 'attention', moTa: 'Em viết lạc đề ở Task 2, lập luận yếu.' });
     const ds = viecCua(P.w2Teacher);
     const xn = ds.find((i) => i.key === `xnpa:${iv.id}`);
@@ -466,7 +468,9 @@ export async function runPrSosTests(t: YThucTestKit) {
     const hangCase = hamCua(sb, 'HangCase');
     assert(!/<Level/.test(hangCase) && /<NhanTrangThai/.test(hangCase) && /<TenCase/.test(hangCase), 'hàng Case: SOS chỉ trong chip tên, một nhãn trạng thái');
     assert(!/followupDue/.test(hamCua(sb, 'HangPA')), 'HangPA còn hiện dự kiến kết thúc');
-    assert(/viecTiep/.test(hamCua(sb, 'nextStepOf')), 'nextStepOf chưa dùng việc tiếp v4');
+    /* PR-VAI-b (Task 6): `nextStepOf` → hàm thuần `viecTiepHang` (shared), vẫn đọc việc tiếp v4. */
+    const hs = doc('shared/domain/hoSoHocVien.ts');
+    assert(/viecTiepHang\(row\.cases/.test(sb) && /viecTiep/.test(hs.slice(hs.indexOf('export function viecTiepHang'))), 'nextStepOf chưa dùng việc tiếp v4');
     assert(/Chưa đạt · không mở Case/.test(sb) && /Không theo dõi \(Quản lý duyệt/.test(sb), 'CotCase thiếu chữ K3-06');
     assert((sb.match(/<CotPhai/g) ?? []).length >= 4 && /khoiSos/.test(sb), 'cột phải / khoiSos');
   });

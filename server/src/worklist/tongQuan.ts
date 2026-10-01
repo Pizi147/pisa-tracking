@@ -1,16 +1,18 @@
 import { db } from '../db.ts';
 import {
-  ASSESSED_SKILLS, ATTEMPT_KIND_SHORT, shortDate, CAN_XU_LY, PERMISSIONS, type AttemptKind, SOS_LABEL, caseTopicLabel, tenMon, chonDiemDangChuY, sapCanXuLy,
+  ASSESSED_SKILLS, ATTEMPT_KIND_SHORT, CAN_XU_LY, MOC_KE_TIEP_SQL, PERMISSIONS, type AttemptKind, tenMon, tenMonNgan, chonDiemDangChuY, sapCanXuLy,
+  duongHoSoHocVien, nguoiGiuViecChu, soSanhLop, tuanCuaHanGhiKetQua, tuanLich,
   type ChuongTrinh, type DiemChuY, type DongCanXuLyGoc, type MaCanXuLy, type UngVienChuY,
 } from '../../../shared/domain/index.ts';
+import { lopChoLenhChuyen } from '../classes/lenhChuyen.ts';
 import { demoToday } from '../demoConfig.ts';
-import { addDays, forbidden } from '../util.ts';
-import { can, scopeFor, type Principal } from '../permissions.ts';
-import { listCases } from '../cases/cases.ts';
-import { nhanNhomEm, trangThaiYThuc } from '../yThuc/trangThai.ts';
-import { latestAttempts, studentsInScope } from './danhGia.ts';
-import { metricSet } from './metrics.ts';
-import { tachTheoLop } from './chuongTrinh.ts';
+import { addDays, badRequest, forbidden } from '../util.ts';
+import { activeAt, can, scopeFor, type Principal } from '../permissions.ts';
+import { latestAttempts } from './danhGia.ts';
+import { classProgressMany } from '../classes/schedule.ts';
+import { mondayOf } from '../platform/week.ts';
+import { CT_LOP, metricSet, rowsFor } from './metrics.ts';
+import { lopCuaTap, tachTheoLop } from './chuongTrinh.ts';
 import { demYeuCau, quetYeuCau } from '../duyet/yeuCau.ts';
 
 /**
@@ -18,10 +20,48 @@ import { demYeuCau, quetYeuCau } from '../duyet/yeuCau.ts';
  * chọn chỉ số nào lên khối nào, xếp thứ tự và viết dòng phụ.
  */
 
-export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh }) {
+const laQuanLy = (p: Principal) => {
   if (scopeFor(p, PERMISSIONS.MEETING_VIEW).none) throw forbidden('Khối này dành cho Quản lý.');
+};
+
+/**
+ * TẦNG 1 CỦA QUẢN LÝ (PR-VAI-a Q5): Cần xử lý + dải Chờ duyệt — LUÔN GỘP HAI KHUNG (không nhận `ct`, không truyền `program`), nên đổi
+ * công tắc Fast Track · Lớp thường ở phần Số liệu không làm số ở đây đổi.
+ */
+/** Một dòng Cần xử lý đã dựng đủ bốn cột (K1-06, Q4, Q24): nhãn trạng thái · việc · Người giữ việc · Hạn · nút đúng việc. */
+export type DongCanXuLy = DongCanXuLyGoc & {
+  /** Chữ đứng TRƯỚC con số ("Chuyển lớp cả lớp · MB FOU 12 ·"). */
+  truoc?: string;
+  phu: string;
+  /** Vế nối sau nhãn ("3 Case chưa có người nhận"). */
+  kem?: string;
+  /** Chú thích khi rê chuột (Q9: "Lộ trình RF: xong MT2"). */
+  goiY?: string;
+  nguoi: 'ban' | { dau: string; phu: string; ids: number[] };
+  han: { ngay: string; loai: 'cap-nhat-pa' | 'viec-van-hanh' } | { chu: string; quaHan?: true };
+  /** Nút mở thẳng chỗ làm; `null` = nhiều đích → mở panel danh sách của chỉ số. */
+  den: string | null;
+};
+
+/** G-3: dòng phụ ≤ 60 ký tự — bớt mục cho tới khi vừa, phần còn lại thành "+k lớp". */
+function dongPhuGon(muc: string[]): string {
+  for (let k = Math.min(2, muc.length); k >= 1; k--) {
+    const s = [...muc.slice(0, k), ...(muc.length > k ? [`+${muc.length - k} lớp`] : [])].join(' · ');
+    if (s.length <= 60) return s;
+    if (k === 1) return `${s.slice(0, 59)}…`;
+  }
+  return '';
+}
+
+const NGAY_MS = 86_400_000;
+const soNgay = (tu: string, den: string) => Math.round((Date.parse(`${den.slice(0, 10)}T00:00:00Z`) - Date.parse(`${tu.slice(0, 10)}T00:00:00Z`)) / NGAY_MS);
+
+export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null }) {
+  laQuanLy(p);
   quetYeuCau();   // PR-DUYET (K5-17)
-  const base = { branchId: f.branchId ?? null, program: f.ct };
+  const today = demoToday();
+  const base = { branchId: f.branchId ?? null };
+  const cn = f.branchId ? `&cn=${f.branchId}` : '';
 
   /* CẦN XỬ LÝ — mỗi dòng một chỉ số của sổ. */
   const sets = new Map<MaCanXuLy, ReturnType<typeof metricSet>>();
@@ -31,12 +71,91 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null; ct: 
     sets.set(x.metricId, r);
     dem[x.metricId] = r.n;
   }
+  /* Vận hành: tiêu đề + hạn đọc MỘT câu cho cả tập (rowsFor không trả hạn thô). Quá hạn khi có việc đã qua hạn. */
+  const vh = sets.get('van-hanh-can-quyet-dinh')!.ids;
+  const viecVh = vh.length
+    ? db().prepare(`SELECT t.id, t.title, t.due_date, b.name AS cn FROM tasks t LEFT JOIN branches b ON b.id = t.branch_id
+        WHERE t.id IN (${vh.map(() => '?').join(',')}) ORDER BY t.due_date IS NULL, t.due_date, t.id`).all(...vh) as any[]
+    : [];
+  const hanVh: string | null = viecVh.find((t) => t.due_date)?.due_date ?? null;
   const coQuyenDuyet = can(p, PERMISSIONS.CASE_APPROVE, { anyScope: true });
-  const canXuLy: (DongCanXuLyGoc & { phu: string })[] = sapCanXuLy(dem, coQuyenDuyet).map((x) => {
+  const dongs = sapCanXuLy(dem, coQuyenDuyet, { 'van-hanh-can-quyet-dinh': !!hanVh && hanVh < today });
+
+  /* Tên người giữ việc của MỌI dòng GV trễ — một câu (Q4); tập người lấy từ `chiTiet` của chính tập ID. */
+  const nguoiIds = [...new Set(dongs.filter((x) => !x.cuaNguoiXem).flatMap((x) => [...(sets.get(x.metricId)!.chiTiet?.values() ?? [])].flatMap((c) => c.nguoi)))];
+  const ten = new Map<number, string>(nguoiIds.length
+    ? (db().prepare(`SELECT id, full_name FROM users WHERE id IN (${nguoiIds.map(() => '?').join(',')})`).all(...nguoiIds) as any[]).map((u) => [u.id, u.full_name])
+    : []);
+  const chuaCoHan = { chu: 'chưa có hạn' };
+
+  const canXuLy: DongCanXuLy[] = dongs.map((x) => {
     const r = sets.get(x.metricId)!;
-    return { ...x, phu: tachTheoLop(r.unit, r.ids) };
+    if (!x.cuaNguoiXem) {
+      const ct = [...(r.chiTiet?.values() ?? [])];
+      const ids = [...new Set(ct.flatMap((c) => c.nguoi))];
+      const g = nguoiGiuViecChu(ids.map((id) => ten.get(id) ?? `#${id}`));
+      const nguoi = { ...g, ids };
+      if (x.metricId === 'bai-qua-han-nhap-diem') {
+        const ngay = ct.flatMap((c) => c.han).map((h) => soNgay(h, today)).filter((n) => n > 0);
+        const a = Math.min(...ngay), b = Math.max(...ngay);
+        return { ...x, phu: tachTheoLop(r.unit, r.ids), nguoi,
+          han: ngay.length ? { chu: a === b ? `quá hạn ${a} ngày` : `quá hạn ${a}–${b} ngày`, quaHan: true as const } : chuaCoHan,
+          den: `/cong-viec?nhom=cham-diem&loc=qua-han${cn}` };
+      }
+      /* pa-can-cap-nhat: "PA chưa ghi kết quả tuần W4 SEP" — tuần của hạn cũ nhất (Q25); dòng phụ theo khung. */
+      const lop = lopCuaTap(r.unit, r.ids);
+      const soFt = r.ids.filter((id) => lop.get(id)?.isFt === true).length;
+      const soThuong = r.ids.filter((id) => lop.get(id)?.isFt === false).length;
+      return { ...x,
+        nhan: r.hanCu ? `${x.nhan} ${tuanCuaHanGhiKetQua(r.hanCu, today)}` : x.nhan,
+        phu: [soFt ? `Fast Track ${soFt}` : '', soThuong ? `Lớp thường ${soThuong}` : ''].filter(Boolean).join(' · '),
+        nguoi, han: r.hanCu ? { ngay: r.hanCu, loai: 'cap-nhat-pa' as const } : chuaCoHan,
+        den: `/cong-viec?nhom=case-hoc-thuat&loc=qua-han${cn}` };
+    }
+    const chung = { nguoi: 'ban' as const, han: chuaCoHan };
+    switch (x.metricId) {
+      case 'van-hanh-can-quyet-dinh':
+        return { ...x, ...chung, phu: dongPhuGon(viecVh.map((t) => [t.title, t.cn].filter(Boolean).join(' · '))),
+          han: hanVh ? { ngay: hanVh, loai: 'viec-van-hanh' as const } : chuaCoHan, den: `/cong-viec/van-hanh?hang=can-quyet-dinh${cn}` };
+      case 'hv-chua-co-lenh-chuyen': {
+        /* Cùng hàm với chỉ số (Q8b) — lấy lớp + tuần kết thúc để viết chữ và hạn "trước {tuần}". */
+        const lop = lopChoLenhChuyen(p, base.branchId, today);
+        const ketThuc = lop.map((l) => l.moc.tuanKetThuc).filter((w): w is string => !!w).sort()[0] ?? null;
+        const han = ketThuc ? { chu: `trước ${tuanLich(addDays(ketThuc, 7), today)}` } : chuaCoHan;
+        if (lop.length === 1) {
+          return { ...x, ...chung, truoc: `Chuyển lớp cả lớp · ${lop[0].code} ·`, nhan: 'em chưa có lệnh',
+            phu: ketThuc ? `Lớp kết thúc ${tuanLich(ketThuc, today)}` : '', han, den: `/hoc-vien/lop/${lop[0].classId}?viec=chuyen-tiep` };
+        }
+        return { ...x, ...chung, truoc: `${lop.length} lớp ·`, phu: tachTheoLop(r.unit, r.ids), han, den: null };
+      }
+      case 'lop-thieu-gv-mon': {
+        /* Q6: dòng phụ "MB BE 06 thiếu W · HD FT 108 thiếu S" — cùng dòng panel (`rowsFor('lop')`); kèm số Case chưa có người nhận (chỉ số giữ). */
+        const lop = rowsFor('lop', r.ids);
+        const k = metricSet(p, 'case-chua-co-nguoi-phu-trach', base).n;
+        // ponytail: vế "m bài chưa có người chấm" chờ hàng "Chưa phân công" của PR-UXF-a (chưa merge) — thêm ở cổng gộp.
+        return { ...x, ...chung, phu: dongPhuGon(lop.map((l) => `${l.title} ${l.sub}`.trim())),
+          ...(k ? { kem: `${k} Case chưa có người nhận` } : {}), den: lop.length === 1 ? lop[0].href : null };
+      }
+      case 'hv-ft-xong-mt-cuoi-chua-mt-ke': {
+        const lop = [...new Set([...lopCuaTap(r.unit, r.ids).values()].map((l) => l.classId).filter((id): id is number => !!id))];
+        return { ...x, ...chung, phu: tachTheoLop(r.unit, r.ids), goiY: 'Lộ trình RF: xong MT2',
+          den: lop.length === 1 ? `/test/ke-hoach?classId=${lop[0]}` : null };
+      }
+      default:   // hv-len-ft-chua-ky-vong
+        return { ...x, ...chung, phu: tachTheoLop(r.unit, r.ids), den: r.ids.length === 1 ? duongHoSoHocVien(r.ids[0]) : null };
+    }
   });
 
+  /* PR-DUYET (Q8): số của hộp Chờ duyệt — đọc từ hộp, không thêm chỉ số vào sổ. */
+  return { canXuLy, choDuyet: demYeuCau(p, { branchId: base.branchId }) };
+}
+
+/**
+ * ĐIỂM ĐÁNG CHÚ Ý (tầng 3, theo khung) — tách khỏi Cần xử lý (PR-VAI-a Q5) để đổi công tắc chỉ tải lại khối này.
+ */
+export function diemChuY(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh }): DiemChuY[] {
+  laQuanLy(p);
+  const base = { branchId: f.branchId ?? null, program: f.ct };
   /* ĐIỂM ĐÁNG CHÚ Ý — ba luật (plan Q6), mỗi ứng viên là một chỉ số có sẵn. */
   const ung: UngVienChuY[] = [];
   /* `hv-duoi-ky-vong-mon` là chỉ số khung Fast Track: 4 kỹ năng đánh giá (MH5). */
@@ -45,91 +164,111 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null; ct: 
     ung.push({ loai: 'mon-duoi-ky-vong', metricId: 'hv-duoi-ky-vong-mon', extra: { skill }, tu: r.n,
       mau: r.denominatorIds?.length ?? 0, nhanMon: tenMon(null, skill) });
   }
+  /* PR-VAI-a (Q11): lớp thường nói theo CHƯƠNG TRÌNH ("FOU: 5/22 học viên chưa đạt …") — cùng chỉ số, thêm `ctLop`; câu và danh sách một hàm. */
+  for (const ctLop of f.ct === 'thuong' ? CT_LOP : []) {
+    const r = metricSet(p, 'hv-duoi-ky-vong-mon', { ...base, ctLop });
+    if (!r.n) continue;
+    /* Tên bài chỉ khi mọi em trong câu cùng một loại bài ở lượt mới nhất; không thì "ở bài gần nhất". */
+    const loai = new Set([...latestAttempts(r.ids, 'valid', demoToday()).values()].map((a) => a.kind));
+    const tenBai = loai.size === 1 ? ATTEMPT_KIND_SHORT[[...loai][0] as AttemptKind] ?? null : null;
+    ung.push({ loai: 'lop-chua-dat', metricId: 'hv-duoi-ky-vong-mon', extra: { ctLop }, tu: r.n, mau: r.denominatorIds?.length ?? 0,
+      nhanMon: ctLop === 'PREFOU' ? 'Pre FOU' : ctLop, tenBai });
+  }
   const tl = metricSet(p, 'ty-le-co-cai-thien', base);
   ung.push({ loai: 'pa-cai-thien', metricId: 'ty-le-co-cai-thien', tu: tl.numeratorIds?.length ?? 0, mau: tl.n });
   const from = addDays(demoToday(), -30);
   const dh = metricSet(p, 'dung-han-cap-nhat', { ...base, from });
   ung.push({ loai: 'dung-han', metricId: 'dung-han-cap-nhat', extra: { from }, tu: dh.numeratorIds?.length ?? 0, mau: dh.n });
-  const diemDangChuY: DiemChuY[] = chonDiemDangChuY(ung, f.ct);
-
-  /* PR-DUYET (Q8): số của hộp Chờ duyệt — đọc từ hộp, không thêm chỉ số vào sổ. */
-  return { canXuLy, diemDangChuY, choDuyet: demYeuCau(p) };
+  return chonDiemDangChuY(ung, f.ct);
 }
 
-export type DongHvCanHoTro = {
-  studentId: number; ten: string; lop: string | null;
-  huyHieu: { text: string; tone: 'info' | 'warn' | 'danger' | 'late' } | null;
-  phu: string;
-};
-
 /**
- * HỌC VIÊN CẦN HỖ TRỢ — khối của giáo viên (§3.2, mockup 02 bản GV). Em ĐANG HỌC ở lớp người xem được xem, có SOS ≥ 1 ở
- * đợt mới nhất hợp lệ, hoặc Case đang mở, hoặc cảnh báo vi phạm 5 ngày. Mọi phần dùng lại hàm có sẵn (không luật mới):
- * `latestAttempts` (SOS), `listCases` (Case), `pa-can-cap-nhat` (PA quá hạn), `warningsFor` (vi phạm).
+ * LỚP TÔI DẠY — tầng 3 của Tổng quan giáo viên (PR-VAI-a Q12, mockup 23 màn A/C; thay "Học viên cần hỗ trợ"). Một hàng mỗi lớp người xem có
+ * phân công HIỆU LỰC HÔM NAY, theo khung. Mỗi cột số là tập của CHÍNH chỉ số trong sổ (`hv-duoi-ky-vong-mon`, `hv-sos-hien-tai`, `case-mo`) chia theo
+ * lớp bằng `lopCuaTap` — cùng hàm bộ lọc khung và bảng chi nhánh — nên bấm số (`oLopToiDay`) ra đúng những em tạo nên nó.
+ * FT: không cột tuần khoá (FT không giới hạn tuần); lớp thường: không SOS. "Bài chờ chấm" tính ở web từ `/my-work` (cùng nguồn khối việc).
  */
-export function hocVienCanHoTro(p: Principal): { rows: DongHvCanHoTro[]; tong: number } {
+type TapLop = { duoiKyVong: number[]; sos: number[]; caseMo: number[] };
+function tinhLopToiDay(p: Principal, ct: 'ft' | 'thuong') {
   const today = demoToday();
-  const sids = studentsInScope(p, null);
-  if (!sids.length) return { rows: [], tong: 0 };
-  const trong = new Set(sids);
-  const latest = latestAttempts(sids, 'valid', today);
-
-  const caseCua = new Map<number, { n: number; mon: Set<string> }>();
-  const caseHv = new Map<number, number>();
-  for (const c of listCases(p, {}).rows as any[]) {
-    if (c.state === 'done' || !c.studentId || !trong.has(c.studentId)) continue;
-    caseHv.set(c.id, c.studentId);
-    const x = caseCua.get(c.studentId) ?? { n: 0, mon: new Set<string>() };
-    x.n += 1;
-    if (c.topic) x.mon.add(caseTopicLabel(c.topic, c.chuongTrinh));
-    caseCua.set(c.studentId, x);
+  const conn = db();
+  const cua = new Map<number, { core: boolean; skills: string[] }>();
+  for (const a of p.assignments) {
+    if (!activeAt(a, today)) continue;
+    const x = cua.get(a.classId) ?? { core: false, skills: [] };
+    if (a.isCore) x.core = true;
+    if (a.skill && !x.skills.includes(a.skill)) x.skills.push(a.skill);
+    cua.set(a.classId, x);
   }
-  const paQuaHan = new Map<number, number>();
-  const pa = metricSet(p, 'pa-can-cap-nhat', {}).ids;
-  for (let i = 0; i < pa.length; i += 400) {
-    const chunk = pa.slice(i, i + 400);
-    for (const r of db().prepare(`SELECT case_id FROM case_interventions WHERE id IN (${chunk.map(() => '?').join(',')})`)
-      .all(...chunk) as any[]) {
-      const sid = caseHv.get(r.case_id);
-      if (sid) paQuaHan.set(sid, (paQuaHan.get(sid) ?? 0) + 1);
+  const ids = [...cua.keys()];
+  const lop = ids.length ? (conn.prepare(
+    `SELECT c.id, c.code, c.programme_code AS ct, c.is_fast_track AS ft, c.route,
+            (SELECT COUNT(*) FROM enrollments e JOIN students s ON s.id = e.student_id
+              WHERE e.class_id = c.id AND e.status = 'active' AND s.status = 'active' AND s.archived_at IS NULL) AS so_hv
+       FROM classes c WHERE c.status = 'active' AND c.id IN (${ids.map(() => '?').join(',')})`,
+  ).all(...ids) as any[]) : [];
+  const soFt = lop.filter((l) => !!l.ft).length, soThuong = lop.length - soFt;
+  const coFt = soFt > 0, coThuong = soThuong > 0;
+  const trong = lop.filter((l) => !!l.ft === (ct === 'ft')).sort((a, b) => soSanhLop({ code: a.code }, { code: b.code }));
+  const tap = new Map<number, TapLop>(trong.map((l) => [l.id as number, { duoiKyVong: [], sos: [], caseMo: [] }]));
+  const chia = (metricId: string, cot: keyof TapLop) => {
+    const r = metricSet(p, metricId, { program: ct });
+    for (const [id, l] of lopCuaTap(r.unit, r.ids)) if (l.classId && tap.has(l.classId)) tap.get(l.classId)![cot].push(id);
+  };
+  if (trong.length) {
+    chia('hv-duoi-ky-vong-mon', 'duoiKyVong');
+    if (ct === 'ft') chia('hv-sos-hien-tai', 'sos');
+    chia('case-mo', 'caseMo');
+  }
+  return { cua, trong, tap, coFt, coThuong, soFt, soThuong, today };
+}
+
+export function lopToiDay(p: Principal, f: { ct: 'ft' | 'thuong' }) {
+  const { cua, trong, tap, coFt, coThuong, soFt, soThuong, today } = tinhLopToiDay(p, f.ct);
+  const conn = db();
+  /* Test kế tiếp — FT: lượt mốc kế tiếp sớm nhất của lớp (`MOC_KE_TIEP_SQL`); lớp thường: mốc Giữa/Cuối khoá kế tiếp của lớp. */
+  const keTiep = new Map<number, string>();
+  if (trong.length && f.ct === 'ft') {
+    for (const r of conn.prepare(
+      `SELECT a.class_id, a.attempt_no, rp.week_start FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id
+        WHERE a.kind = 'mock' AND a.class_id IN (${trong.map(() => '?').join(',')}) AND ${MOC_KE_TIEP_SQL('a', 'rp')}
+        ORDER BY rp.week_start, a.attempt_no`,
+    ).all(...trong.map((l) => l.id), mondayOf(today)) as any[]) {
+      if (!keTiep.has(r.class_id)) keTiep.set(r.class_id, `MT${r.attempt_no} · ${tuanLich(r.week_start, today)}`);
     }
   }
-  const yThuc = trangThaiYThuc(sids, today);
+  const tienDo = f.ct === 'thuong' && trong.length ? classProgressMany(trong.map((l) => l.id)) : new Map();
+  const thu2 = mondayOf(today);
+  return {
+    ct: f.ct, coFt, coThuong,
+    rows: trong.map((l) => {
+      const c = cua.get(l.id)!;
+      const ten = (k: string) => (f.ct === 'ft' ? tenMon(l.ct, k) : tenMonNgan(l.ct, k));
+      const pr = tienDo.get(l.id);
+      const moc = pr?.progressWeekStart && pr.progressWeekStart >= thu2 ? `Giữa khoá · ${tuanLich(pr.progressWeekStart, today)}`
+        : pr?.finalWeekStart && pr.finalWeekStart >= thu2 ? `Cuối khoá · ${tuanLich(pr.finalWeekStart, today)}` : null;
+      const t = tap.get(l.id)!;
+      return {
+        classId: l.id as number, code: l.code as string, route: l.route ?? null, ct: l.ct ?? null,
+        toiDay: [c.core ? 'GVCN' : null, c.skills.map(ten).join(', ') || null].filter(Boolean).join(' · '),
+        tuanHoc: f.ct === 'thuong' && pr?.currentWeek && pr.totalWeeks ? `tuần ${Math.min(pr.currentWeek, pr.totalWeeks)}/${pr.totalWeeks}` : null,
+        hocVien: l.so_hv as number,
+        duoiKyVong: t.duoiKyVong.length, sos: f.ct === 'ft' ? t.sos.length : null, caseMo: t.caseMo.length,
+        testKeTiep: f.ct === 'ft' ? keTiep.get(l.id) ?? null : moc,
+        testTuanNay: (f.ct === 'ft' ? keTiep.get(l.id) : moc)?.endsWith(tuanLich(thu2, today)) ?? false,
+      };
+    }),
+  };
+}
 
-  const info = new Map<number, { ten: string; lop: string | null }>();
-  for (let i = 0; i < sids.length; i += 400) {
-    const chunk = sids.slice(i, i + 400);
-    for (const r of db().prepare(
-      `SELECT s.id, s.full_name,
-              (SELECT c.code FROM enrollments e JOIN classes c ON c.id = e.class_id
-                WHERE e.student_id = s.id AND e.status = 'active' ORDER BY e.id DESC LIMIT 1) AS lop
-         FROM students s WHERE s.id IN (${chunk.map(() => '?').join(',')})`,
-    ).all(...chunk) as any[]) info.set(r.id, { ten: r.full_name, lop: r.lop ?? null });
-  }
-
-  const rows: (DongHvCanHoTro & { _sos: number; _case: number })[] = [];
-  for (const sid of sids) {
-    const ev = latest.get(sid);
-    const sos = ev?.sosLevel ?? 0;
-    const cs = caseCua.get(sid);
-    const cb = nhanNhomEm(yThuc.get(sid));
-    const coCanhBao = !!cb;
-    if (sos <= 0 && !cs && !coCanhBao) continue;
-    /* MH7: Pre FOU không chia môn — nhãn là bài + % tổng ("Cuối khoá 55%"), không "SOS 1". */
-    const phanTram = ev?.khongChiaMon && ev.tyLeTong != null
-      ? `${ATTEMPT_KIND_SHORT[ev.kind as AttemptKind] ?? 'Bài'} ${Math.round(ev.tyLeTong * 100)}%` : null;
-    const huyHieu = sos > 0 && phanTram ? { text: phanTram, tone: 'warn' as const }
-      : sos > 0
-      ? { text: `${SOS_LABEL[sos as 1 | 2 | 3]}${ev?.provisional ? ' · tạm thời' : ''}`, tone: (sos >= 3 ? 'danger' : sos === 2 ? 'warn' : 'info') as 'info' | 'warn' | 'danger' }
-      : cb ? { text: cb.nhom === 'qua_han' ? 'Ý thức · Quá hạn' : 'Ý thức · Cần xử lý', tone: cb.nhom === 'qua_han' ? 'late' as const : 'warn' as const } : null;
-    const k = paQuaHan.get(sid) ?? 0;
-    const phu = cs
-      ? [`${cs.n} Case`, k ? `${k} PA quá hạn` : [...cs.mon].join(', ')].filter(Boolean).join(' · ')
-      : cb ? `${cb.so} vi phạm chưa xử lý${cb.han ? ` · hạn ${shortDate(cb.han, today)}` : ''}` : '';
-    rows.push({ studentId: sid, ten: info.get(sid)?.ten ?? 'Học viên', lop: info.get(sid)?.lop ?? null, huyHieu,
-      phu: phu.length > 60 ? `${phu.slice(0, 57)}…` : phu, _sos: sos, _case: cs?.n ?? 0 });
-  }
-  rows.sort((a, b) => b._sos - a._sos || b._case - a._case || a.ten.localeCompare(b.ten, 'vi'));
-  const out = rows.map(({ _sos, _case, ...r }) => r);
-  return { rows: out, tong: out.length };
+/** Một ô của "Lớp tôi dạy" → đúng những em/Case tạo nên số đó (cùng `tinhLopToiDay`). Lớp không dạy → 403. */
+export function oLopToiDay(p: Principal, f: { ct: 'ft' | 'thuong'; classId: number; cot: string }) {
+  if (!['duoiKyVong', 'sos', 'caseMo'].includes(f.cot)) throw badRequest('Cột không hợp lệ.');
+  const { trong, tap } = tinhLopToiDay(p, f.ct);
+  const l = trong.find((x) => x.id === f.classId);
+  if (!l) throw forbidden('Bạn không dạy lớp này.');
+  const ids = tap.get(f.classId)![f.cot as keyof TapLop];
+  const unit = f.cot === 'caseMo' ? 'case' : 'hoc-vien';
+  const nhan = f.cot === 'caseMo' ? 'Case đang mở' : f.cot === 'sos' ? 'học viên có SOS' : f.ct === 'thuong' ? 'học viên chưa đạt' : 'học viên dưới kỳ vọng';
+  return { n: ids.length, tieuDe: `${l.code} · ${ids.length} ${nhan}`, rows: rowsFor(unit, ids) };
 }

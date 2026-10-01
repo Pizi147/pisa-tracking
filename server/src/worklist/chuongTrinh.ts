@@ -1,5 +1,5 @@
 import { db } from '../db.ts';
-import type { ChiSo, ChuongTrinh } from '../../../shared/domain/index.ts';
+import { tachBaiId, type ChiSo, type ChuongTrinh } from '../../../shared/domain/index.ts';
 import { parseObligation } from './metrics.ts';
 
 /**
@@ -12,6 +12,7 @@ import { parseObligation } from './metrics.ts';
  *   tín hiệu            lớp của tín hiệu
  *   bài / lượt          lớp của lượt
  *   vi phạm / PA xử lý  qua học viên
+ *   lớp                 chính lớp đó (PR-VAI-a)
  * Chương trình = `classes.is_fast_track`. Không tìm được lớp → `isFt = null`: chỉ có mặt ở chỉ số gộp (không lọc khung).
  * Truy vấn theo lô 400 — không một câu mỗi phần tử.
  */
@@ -82,6 +83,18 @@ export function lopCuaTap(unit: ChiSo['donVi'], ids: number[]): Map<number, LopC
       for (const r of theoLo(ids, (chunk, ph) => conn.prepare(
         `SELECT a.id, c.id AS class_id, c.code, c.is_fast_track FROM assessment_attempts a
            LEFT JOIN classes c ON c.id = a.class_id WHERE a.id IN (${ph})`).all(...chunk) as any[])) out.set(r.id, lopTu(r));
+      return out;
+    }
+    case 'bai': {
+      /* PR-UXF-a Q7: bài = ô điểm của một lượt → lớp của lượt (`tachBaiId`). */
+      const luot = lopCuaTap('bai-thi', [...new Set(ids.map((id) => tachBaiId(id).attemptId))]);
+      return new Map(ids.map((id) => [id, luot.get(tachBaiId(id).attemptId) ?? RONG]));
+    }
+    case 'lop': {
+      /* PR-VAI-a: phần tử là chính lớp đó. */
+      const out = new Map<number, LopCuaPhanTu>();
+      for (const r of theoLo(ids, (chunk, ph) => conn.prepare(
+        `SELECT id, id AS class_id, code, is_fast_track FROM classes WHERE id IN (${ph})`).all(...chunk) as any[])) out.set(r.id, lopTu(r));
       return out;
     }
     case 'vi-pham':

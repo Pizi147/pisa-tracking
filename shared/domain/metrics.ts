@@ -25,7 +25,7 @@ export type ChiSo = {
   /** Câu hỏi mà con số trả lời, viết đủ chữ. */
   cauHoi: string;
   /** Đơn vị đếm. Ba đơn vị học viên · case · phương án KHÔNG BAO GIỜ cộng vào nhau. */
-  donVi: 'hoc-vien' | 'case' | 'phuong-an' | 'bai-thi' | 'dot-test' | 'nghia-vu' | 'vi-pham' | 'bien-phap' | 'luot-sos';
+  donVi: 'hoc-vien' | 'case' | 'phuong-an' | 'bai' | 'bai-thi' | 'dot-test' | 'nghia-vu' | 'vi-pham' | 'bien-phap' | 'luot-sos' | 'lop' | 'viec-van-hanh';
   /** Mô tả MẪU SỐ (tập đủ điều kiện), viết đủ chữ. */
   tapDuDieuKien: string;
   thoiGian: 'hien-trang' | 'phat-sinh-trong-ky' | 'ket-qua-trong-ky';
@@ -74,10 +74,10 @@ export const METRICS: readonly ChiSo[] = [
   },
   {
     id: 'bai-qua-han-nhap-diem', ten: 'Bài chưa nhập điểm quá hạn',
-    cauHoi: 'Bao nhiêu lượt Test có ô điểm đã quá hạn nhập mà người được phân công chưa nhập?',
-    donVi: 'bai-thi',
-    tapDuDieuKien: 'Lượt Test (không huỷ, lớp đang hoạt động) có ít nhất một ô điểm còn nợ đã quá hạn — cùng luật với ô ở bảng chấm: lớp thường theo số câu đúng, hạn Chủ nhật tuần thi môn đó; Fast Track theo band, dấu "-" theo cặp W1/W2. Vắng đã xác nhận, huỷ phần thi, chờ duyệt dời không phải nợ.',
-    thoiGian: 'hien-trang', khuTrung: 'Mỗi lượt Test chỉ đếm 1 lần', drilldown: '/metrics/bai-qua-han-nhap-diem',
+    cauHoi: 'Bao nhiêu bài (một kỹ năng của một em trong một lượt) đã quá hạn nhập điểm mà chưa nhập?',
+    donVi: 'bai',
+    tapDuDieuKien: 'Bài = một ô điểm (T53 Q2: FT W1 và W2 là hai bài) của lượt không huỷ, lớp đang hoạt động, em đang học (Tạm dừng không sinh nợ — T65), đã quá hạn — cùng luật với ô ở bảng chấm: lớp thường theo số câu đúng, hạn Chủ nhật tuần thi môn đó; Fast Track theo band, dấu "-" theo cặp W1/W2. Vắng đã xác nhận, huỷ phần thi, chờ duyệt dời không phải nợ. Môn chưa phân công giáo viên vẫn tính (bảng Theo giáo viên có hàng "Chưa phân công").',
+    thoiGian: 'hien-trang', khuTrung: 'Mỗi ô điểm chỉ đếm 1 lần', drilldown: '/metrics/bai-qua-han-nhap-diem',
   },
   {
     id: 'case-chua-co-nguoi-phu-trach', ten: 'Case chưa có người phụ trách',
@@ -235,24 +235,52 @@ export const METRICS: readonly ChiSo[] = [
     tapDuDieuKien: 'Trong các lượt SOS: lượt có ít nhất một việc và mọi việc đều đã xong hoặc đã bỏ (kèm lý do). "Hoàn thành" là SUY RA, không lưu.',
     thoiGian: 'phat-sinh-trong-ky', khuTrung: 'Mỗi lượt Test chỉ đếm 1 lần', drilldown: '/metrics/phoi-hop-hoan-thanh',
   },
-  /* PR-UX4: hai việc "bỏ quên" của "Chưa ai nhận" cũ — hiện thành hai dòng Cần xử lý ở Tổng quan QL. */
+  /* PR-VAI-a (K1-09, V8, K5-11, Q8): bốn việc "của Bạn" ở Cần xử lý — mỗi chỉ số gọi đúng hàm màn khác đang dùng. */
   {
-    id: 'hv-can-ho-tro-2-lan-chua-case', ten: 'Học viên cần hỗ trợ 2 lần Test liền, chưa có Case mở',
-    cauHoi: 'Bao nhiêu học viên dưới kỳ vọng / chưa đạt cùng một kỹ năng ở hai lần Test liền nhau mà chưa có Case mở cho kỹ năng đó?',
-    donVi: 'hoc-vien',
-    tapDuDieuKien: 'Học viên đang học trong phạm vi có HAI lượt hợp lệ mới nhất (đã có điểm, kể cả tạm thời) cùng dưới kỳ vọng (Fast Track) / chưa đạt (lớp thường) ở một họ kỹ năng (W1, W2 và Writing là một họ), mà không có Case đang mở cùng họ. Case đã đóng không chặn.',
-    thoiGian: 'hien-trang', khuTrung: 'Mỗi học viên chỉ đếm 1 lần', drilldown: '/metrics/hv-can-ho-tro-2-lan-chua-case',
+    id: 'van-hanh-can-quyet-dinh', ten: 'Việc Vận hành cần quyết định',
+    cauHoi: 'Bao nhiêu việc Vận hành đang chờ Quản lý quyết định?',
+    donVi: 'viec-van-hanh',
+    tapDuDieuKien: 'Việc Vận hành (gốc) trong phạm vi mà tạm ngưng đã tới ngày xem lại, hoặc mọi việc con đã khép mà việc cha chưa khép — đúng hàng số "cần quyết định" của tab Vận hành.',
+    thoiGian: 'hien-trang', khuTrung: 'Mỗi việc chỉ đếm 1 lần', drilldown: '/metrics/van-hanh-can-quyet-dinh',
   },
-];
+  {
+    id: 'hv-chua-co-lenh-chuyen', ten: 'Học viên chưa có lệnh chuyển lớp',
+    cauHoi: 'Bao nhiêu em của lớp thường đã tới tuần Cuối khoá mà Quản lý chưa ra lệnh chuyển lớp?',
+    donVi: 'hoc-vien',
+    tapDuDieuKien: 'Em đang học ở lớp thường (không FT) đang mở, từ tuần Cuối khoá tính theo hôm nay, chưa có lệnh chuyển lớp đang chờ — cùng hàm với việc "Chuyển lớp cả lớp" của Quản lý.',
+    thoiGian: 'hien-trang', khuTrung: 'Mỗi học viên chỉ đếm 1 lần', drilldown: '/metrics/hv-chua-co-lenh-chuyen',
+  },
+  {
+    id: 'hv-ft-xong-mt-cuoi-chua-mt-ke', ten: 'Học viên FT xong MT cuối, chưa có MT kế tiếp',
+    cauHoi: 'Bao nhiêu em Fast Track đã xong MT cuối của lịch mặc định mà chưa có mốc đánh giá kế tiếp?',
+    donVi: 'hoc-vien',
+    tapDuDieuKien: 'Em đang học lớp FT, lộ trình đang chạy, đã có MT có điểm ở số thứ tự ≥ số MT của lịch mặc định (LT: MT3, RF: MT2), không có lượt MT sắp tới, chưa có ngày/tháng thi — cùng luật với dòng "đã xong MT cuối" của panel Tuần khai giảng.',
+    thoiGian: 'hien-trang', khuTrung: 'Mỗi học viên chỉ đếm 1 lần', drilldown: '/metrics/hv-ft-xong-mt-cuoi-chua-mt-ke',
+  },
+  {
+    id: 'hv-len-ft-chua-ky-vong', ten: 'Học viên lên FT chưa đánh dấu kỳ vọng đầu ra',
+    cauHoi: 'Bao nhiêu em BE/ELE có lệnh lên Fast Track mà Quản lý chưa đánh dấu Đạt / Không đạt kỳ vọng đầu ra?',
+    donVi: 'hoc-vien',
+    tapDuDieuKien: 'Em có lệnh chuyển lớp hướng Fast Track (đang chờ hoặc đã chuyển) từ lớp BE/ELE, đã có bài Cuối khoá ở lớp đó, chưa có kết luận kỳ vọng đầu ra ở Lộ trình tiếp theo của lớp đó.',
+    thoiGian: 'hien-trang', khuTrung: 'Mỗi học viên chỉ đếm 1 lần', drilldown: '/metrics/hv-len-ft-chua-ky-vong',
+  },
+  /* PR-VAI-a (K1-05, Q6): gốc của "Case chưa có người phụ trách" — lớp có môn mà chưa ai dạy. Dòng Cần xử lý "Sửa phân công". */
+  {
+    id: 'lop-thieu-gv-mon', ten: 'Lớp thiếu giáo viên môn',
+    cauHoi: 'Bao nhiêu lớp đang mở có môn/kỹ năng chưa được phân công giáo viên?',
+    donVi: 'lop',
+    tapDuDieuKien: 'Lớp đang mở trong phạm vi người xem được phân công giáo viên, có ít nhất một môn của chương trình chưa có giáo viên đang dạy — cùng hàm với badge "Thiếu GV" ở Học viên & Lớp. Pre FOU không chia môn (GVCN dạy luôn) nên không tính.',
+    thoiGian: 'hien-trang', khuTrung: 'Mỗi lớp chỉ đếm 1 lần', drilldown: '/metrics/lop-thieu-gv-mon',
+  },];
 
 /**
  * Tên đơn vị để nói cho người đọc — `18 học viên`, `32 case`. Ba đơn vị học viên · case · phương án
  * tuyệt đối không cộng vào nhau, nên mỗi con số PHẢI đi kèm đơn vị của nó.
  */
 export const METRIC_UNIT_LABEL: Record<ChiSo['donVi'], string> = {
-  'hoc-vien': 'học viên', case: 'case', 'phuong-an': 'PA học thuật', 'bai-thi': 'bài thi',
+  'hoc-vien': 'học viên', case: 'case', 'phuong-an': 'PA học thuật', bai: 'bài', 'bai-thi': 'bài thi',
   'dot-test': 'đợt Test', 'nghia-vu': 'nghĩa vụ',
-  'vi-pham': 'vi phạm', 'bien-phap': 'phương án xử lý', 'luot-sos': 'lượt',
+  'vi-pham': 'vi phạm', 'bien-phap': 'phương án xử lý', 'luot-sos': 'lượt', lop: 'lớp', 'viec-van-hanh': 'việc Vận hành',
 };
 
 /** Tra một chỉ số theo mã; mã lạ trả null (không đoán). */

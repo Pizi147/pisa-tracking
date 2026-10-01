@@ -6,6 +6,7 @@
  * cũ xác nhận (hạn 3 ngày, tính cả ngày ra lệnh). Một nguồn cho máy chủ và web.
  */
 import { hanTheoNgay } from './cases.ts';
+import type { HuongGoiY } from './cuoiKhoa.ts';
 import { tuanLich } from './hienThiNgay.ts';
 import { mondayOfDate } from './week.ts';
 
@@ -62,6 +63,15 @@ export function kiemDongLenh(d: {
   if (canLopDich(d.huong) && d.lopDichFt && !d.nguonFt && !mucTieuHopLe(d.mucTieu)) return 'Ghi Target (hoặc KCK)';
   if (d.huong === 'bao_luu' && !d.ngayXemLai) return 'Chọn tuần xem lại';
   return null;
+}
+
+/**
+ * PR-UXF-a Q1 (K2-25): hướng Quản lý chọn có KHÁC Web gợi ý (luật Cuối khoá) không. Gợi ý 'len' khớp len_lop và fast_track; 'hoc_lai'
+ * khớp hoc_lai. Gợi ý null (chưa đủ điểm / 50–59 % Quản lý cân nhắc) → false. Máy chủ tự tính — không tin web.
+ */
+export function khacGoiY(huong: HuongLenh | null, goiY: { huong: HuongGoiY } | null | undefined): boolean {
+  if (!huong || !goiY?.huong) return false;
+  return goiY.huong === 'hoc_lai' ? huong !== 'hoc_lai' : !(huong === 'len_lop' || huong === 'fast_track');
 }
 
 export type DongTomTatLenh = {

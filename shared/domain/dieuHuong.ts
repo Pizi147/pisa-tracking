@@ -130,7 +130,8 @@ export function tabCongViecTuDuong(seg: string | undefined): TabCongViec | null 
 
 // ---------------------------------------------------------------- Tổng quan
 
-export const TAB_TONG_QUAN_LABEL: Record<TabTongQuan, string> = { 'tong-quan': 'Tổng quan', 'phan-tich': 'Phân tích' };
+/** PR-VAI-a (K1-10, Q10): tab đầu đổi tên "Việc hôm nay" — không lặp chữ "Tổng quan" của menu. */
+export const TAB_TONG_QUAN_LABEL: Record<TabTongQuan, string> = { 'tong-quan': 'Việc hôm nay', 'phan-tich': 'Phân tích' };
 
 // ---------------------------------------------------------------- Đường dẫn cũ
 
@@ -142,7 +143,7 @@ const voiThamSo = (path: string, q: URLSearchParams) => {
 /**
  * PR-Pb2-a (Q4, T59, K1 §4b): Danh sách Case đã bỏ — tham số của nó đi THẲNG tới đích mới, một bước. Không có tham số cũ → null.
  *   `hang-doi=due`            → Công việc · Case học thuật quá hạn (giữ `cn`)
- *   `hang-doi=<bỏ quên>`      → Tổng quan (giữ `cn`, `ct`) — dòng Cần xử lý của nó mở đúng tập
+ *   `hang-doi=<bỏ quên>`      → Tổng quan (giữ `cn`, `ct`) — dòng Cần xử lý của nó đã gỡ (PR-VAI-a Q7)
  *   góc `danh-sach` / `hang-doi` khác / `tinh-hinh` / `ky-nang` → Vấn đề HV (giữ `cn`, `ct`)
  */
 function phanTichCu(q: URLSearchParams): string | null {

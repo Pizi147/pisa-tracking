@@ -160,7 +160,7 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
   check('UX3 (2) · việc "Ghi kết quả" mở thẳng ngăn Case đúng PA: href có case=, pa=, viec=ghi-ket-qua; nhãn không còn "Cập nhật"', () => {
     let thay = 0;
     for (const who of nguoiXem) {
-      const nhom = (myworkSvc.myWork(who, {}).groups as any[]).find((g) => g.key === 'result');
+      const nhom = (myworkSvc.myWork(who, {}).groups as any[]).find((g) => g.key === 'ghi_ket_qua_pa');
       if (!nhom) continue;
       assert(nhom.label === 'Ghi kết quả PA', `nhãn nhóm: ${nhom.label}`);
       for (const it of nhom.items) {
@@ -358,7 +358,8 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     const q = { ghiLoTrinhTiep: true, chuyenLop: true, tamDung: true, quayLai: false, ketThuc: true, luuTru: true, boLuuTru: false };
     const ds = d.mucQuanLyHocVien({ canEdit: true, lopHoc: { quyen: q }, cycle: { ratio: false }, status: 'active' }).map((x: any) => x.key);
     assert(ds[0] === 'info' && ds[ds.length - 1] === 'luu-tru', ds.join());
-    assert(ds.indexOf('lo-trinh-tiep') < ds.indexOf('chuyen-lop') && ds.indexOf('chuyen-lop') < ds.indexOf('outcome'), ds.join());
+    /* PR-VAI-b (K3-48): menu chia nhóm Thông tin · Lộ trình · Lớp — Kết luận lộ trình về nhóm Lộ trình, TRƯỚC Chuyển lớp (nhóm Lớp). */
+    assert(ds.indexOf('lo-trinh-tiep') < ds.indexOf('chuyen-lop') && ds.indexOf('outcome') < ds.indexOf('chuyen-lop'), ds.join());
     const xong = d.mucQuanLyHocVien({ canEdit: true, lopHoc: { quyen: q }, cycle: null, status: 'finished' }).map((x: any) => x.key);
     assert(!xong.includes('tam-dung') && !xong.includes('ket-thuc'), xong.join());
     assert(d.mucQuanLyHocVien({ canEdit: true, lopHoc: null, cycle: null, status: 'active' }).map((x: any) => x.nhan).join() === 'Thông tin học viên', 'chỉ có Thông tin');
@@ -377,12 +378,14 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
   });
 
   check('UX3 (5) · SkillBoard: hạn ghi kết quả chỉ từ actionDue (followupDue là ngày dự kiến kết thúc, không phải hạn — F11)', () => {
-    const src = docSach('web/src/modules/cases/SkillBoard.tsx');
-    const m = /function nextStepOf[\s\S]*?\r?\n}\r?\n/.exec(src);
-    assert(m, 'không thấy nextStepOf');
-    assert(!/followupDue/.test(m![0]), 'nextStepOf dùng followupDue làm hạn');
+    /* PR-VAI-b (Task 6): `nextStepOf` chuyển thành hàm thuần `viecTiepHang` (shared) — SkillBoard gọi nó cho cột Việc tiếp. */
+    assert(/viecTiepHang\(row\.cases, homNay\)/.test(docSach('web/src/modules/cases/SkillBoard.tsx')), 'SkillBoard không dùng viecTiepHang');
+    const src = docSach('shared/domain/hoSoHocVien.ts');
+    const m = /export function viecTiepHang[\s\S]*?\r?\n}\r?\n/.exec(src);
+    assert(m, 'không thấy viecTiepHang');
+    assert(!/followupDue/.test(m![0]), 'viecTiepHang dùng followupDue làm hạn');
     /* PR-SOS (K3-07): việc tiếp + hạn do máy chủ tính (`viecTiepCuaCase` — hạn ghi kết quả từ actionDue). */
-    assert(/viecTiep/.test(m![0]), 'nextStepOf phải dùng việc tiếp v4 (hạn từ actionDue ở máy chủ)');
+    assert(/viecTiep/.test(m![0]), 'viecTiepHang phải dùng việc tiếp v4 (hạn từ actionDue ở máy chủ)');
   });
 
   check('UX3 (4) · Ghi kết quả: không gửi người thực hiện khi không đổi (payload adjust chỉ có trường đã đổi)', () => {

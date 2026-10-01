@@ -1,7 +1,7 @@
 import { db } from '../db.ts';
-import { duongCase, nhanLoaiXuLy, PERMISSIONS, VIOLATION_CATEGORY_LABEL, metricById, tenMon, type ChiSo, type ChuongTrinh, type LoaiBoQuen } from '../../../shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, addDaysIso, baiId, duongCase, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, metricById, tachBaiId, tenMon, tenMonNgan, tuanLich, type AttemptKind, type ChiSo, type ChuongTrinh } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { scopeFor, type Principal } from '../permissions.ts';
+import { classScopeSql, scopeFor, type Principal, type Scope } from '../permissions.ts';
 import { badRequest, forbidden, HttpError, notFound } from '../util.ts';
 import { listCases } from '../cases/cases.ts';
 import { NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds } from '../cases/sosState.ts';
@@ -11,7 +11,11 @@ import { isYThucMetric, yThucMetric, YTHUC_METRIC_IDS } from '../yThuc/thongKe.t
 import { PHOI_HOP_METRIC_IDS, isPhoiHopMetric, phoiHopMetric } from '../yThuc/phoiHop.ts';
 import { locTheoChuongTrinh } from './chuongTrinh.ts';
 import { scoreDebtCells } from './scoreDebt.ts';
-import { boQuen } from '../phanTich/boQuen.ts';
+import { assessedSkillOf } from '../fasttrack/scoring.ts';
+import { CO_MOC_KE_TIEP_SQL, XONG_MT_CUOI_SQL, missingForClasses } from '../classes/schedule.ts';
+import { lopChoLenhChuyen } from '../classes/lenhChuyen.ts';
+import { listMgmtTasks } from './mgmttasks.ts';
+import { mondayOf } from '../platform/week.ts';
 
 /**
  * TẬP ID CỦA TỪNG CHỈ SỐ — nơi duy nhất sinh ra cả CON SỐ lẫn DANH SÁCH KHI BẤM VÀO (hợp đồng số liệu).
@@ -43,6 +47,13 @@ export type MetricResult = {
   splits?: { tamThoi: number[]; ketQuaCuoi: number[] };
   /** Chỉ số chia theo loại (`bien-phap-theo-loai`): mỗi loại một tập; hợp của chúng đúng bằng `ids`. */
   byKind?: Record<string, number[]>;
+  /**
+   * PR-VAI-a (Q24–Q25): người giữ việc + hạn của TỪNG phần tử, đọc trong CÙNG câu sinh tập (bài: ô nợ điểm; PA: `action_due` + người thực
+   * hiện). Cột "Người giữ việc", "Hạn" của Cần xử lý và `hanCu` của ô số đọc từ đây — không câu thứ hai, không luật thứ hai.
+   */
+  chiTiet?: Map<number, { nguoi: number[]; han: string[] }>;
+  /** Hạn cũ nhất của tập (sau bộ lọc khung) — ô "PA quá hạn ghi kết quả" ghi "tuần W4 SEP" từ đây. */
+  hanCu?: string | null;
   /** Phạm vi rỗng — không có gì để đếm. KHÔNG được hiểu thành toàn hệ thống. */
   empty: boolean;
   note: string | null;
@@ -52,7 +63,11 @@ export type MetricResult = {
 const EMPTY_NOTE = 'Không có dữ liệu trong phạm vi';
 
 /** Một dòng của panel danh sách: đủ để người đọc nhận ra bản ghi và bấm sang đúng chỗ. */
-export type MetricRow = { id: number; title: string; sub: string; href: string };
+export type MetricRow = {
+  id: number; title: string; sub: string; href: string;
+  /** PR-VAI-a (Q26): dòng Case/PA — người phụ trách/thực hiện và hạn (xác nhận nguyên nhân / ghi kết quả), 12 px ở panel. */
+  nguoi?: string | null; han?: string | null;
+};
 
 /**
  * DỰNG DÒNG CHO MỘT TẬP ID — chỉ "tô màu" tập đã có (tên, lớp, đường dẫn), KHÔNG lọc thêm gì.
@@ -75,23 +90,60 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[]): MetricRow[] {
       }
     } else if (unit === 'case') {
       for (const r of conn.prepare(
-        `SELECT sc.id, sc.title, COALESCE(sc.category, sc.topic) AS mon, cy.programme_code AS ct, s.id AS sid, s.full_name, s.student_code, sc.status
+        `SELECT sc.id, sc.title, COALESCE(sc.category, sc.topic) AS mon, cy.programme_code AS ct, s.id AS sid, s.full_name, s.student_code, sc.status,
+                sc.han_xac_nhan, u.full_name AS nguoi
            FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
            LEFT JOIN learning_cycles cy ON cy.id = sc.cycle_id
            LEFT JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
+           LEFT JOIN users u ON u.id = sc.owner_user_id
           WHERE sc.id IN (${ph})`,
       ).all(...chunk) as any[]) {
-        /* MH2: tên môn theo chương trình của lộ trình (FOU "G+V"), không chữ thô "listening". */
-        byId.set(r.id, { id: r.id, title: r.title ?? (r.mon ? tenMon(r.ct ?? null, r.mon) : `Case ${r.id}`), sub: [r.full_name, r.student_code].filter(Boolean).join(' · '), href: duongCase(r.sid, r.id) });
+        /* MH2: tên môn theo chương trình của lộ trình (FOU "G+V"), không chữ thô "listening". K1-06 (Q26): mở hồ sơ HV ở Ngăn Case. */
+        byId.set(r.id, {
+          id: r.id, title: r.title ?? (r.mon ? tenMon(r.ct ?? null, r.mon) : `Case ${r.id}`), sub: [r.full_name, r.student_code].filter(Boolean).join(' · '),
+          href: duongCase(r.sid, r.id), nguoi: r.nguoi ?? null, han: r.han_xac_nhan ?? null,
+        });
       }
     } else if (unit === 'phuong-an') {
       for (const r of conn.prepare(
-        `SELECT iv.id, iv.case_id, COALESCE(NULLIF(iv.description, ''), iv.kind) AS title, s.id AS sid, s.full_name, s.student_code
+        `SELECT iv.id, iv.case_id, COALESCE(NULLIF(iv.description, ''), iv.kind) AS title, s.id AS sid, s.full_name, s.student_code, iv.action_due,
+                COALESCE(pu.full_name, NULLIF(iv.performer_name, ''), ou.full_name) AS nguoi
            FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
            LEFT JOIN students s ON s.id = sc.student_id
+           LEFT JOIN users pu ON pu.id = iv.performer_user_id
+           LEFT JOIN users ou ON ou.id = sc.owner_user_id
           WHERE iv.id IN (${ph})`,
       ).all(...chunk) as any[]) {
-        byId.set(r.id, { id: r.id, title: r.title, sub: [r.full_name, r.student_code].filter(Boolean).join(' · '), href: duongCase(r.sid, r.case_id) });
+        byId.set(r.id, {
+          id: r.id, title: r.title, sub: [r.full_name, r.student_code].filter(Boolean).join(' · '),
+          href: duongCase(r.sid, r.case_id), nguoi: r.nguoi ?? null, han: r.action_due ?? null,
+        });
+      }
+    } else if (unit === 'bai') {
+      /* PR-UXF-a Q7: một dòng = một BÀI (ô điểm). "MT2 · Tên em · R"; dòng phụ ghi TUẦN THI CỦA MÔN (`W2 SEP`), không tuần của lượt. */
+      const tach = chunk.map((id) => ({ id, ...tachBaiId(id) }));
+      const at = [...new Set(tach.map((x) => x.attemptId))];
+      const pa = at.map(() => '?').join(',');
+      const luot = new Map((conn.prepare(
+        `SELECT a.id, a.kind, a.attempt_no, a.class_id, c.programme_code, c.code AS class_code, s.full_name, s.student_code, pr.week_start
+           FROM assessment_attempts a JOIN students s ON s.id = a.student_id
+           LEFT JOIN classes c ON c.id = a.class_id LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
+          WHERE a.id IN (${pa})`,
+      ).all(...at) as any[]).map((r) => [r.id as number, r]));
+      const tuanMon = new Map((conn.prepare(
+        `SELECT k.attempt_id, k.skill, rp.week_start FROM attempt_skills k JOIN report_periods rp ON rp.id = k.planned_period_id WHERE k.attempt_id IN (${pa})`,
+      ).all(...at) as any[]).map((r) => [`${r.attempt_id}|${r.skill}`, r.week_start as string]));
+      const homNay = demoToday();
+      for (const x of tach) {
+        const r = luot.get(x.attemptId);
+        if (!r) continue;
+        const tuan = tuanMon.get(`${x.attemptId}|${x.skill}`) ?? tuanMon.get(`${x.attemptId}|${assessedSkillOf(x.skill)}`) ?? r.week_start ?? null;
+        const ten = r.kind === 'mock' ? `MT${r.attempt_no}` : ATTEMPT_KIND_SHORT[r.kind as AttemptKind] ?? r.kind;
+        byId.set(x.id, {
+          id: x.id, title: `${ten} · ${r.full_name} · ${tenMonNgan(r.programme_code ?? null, x.skill)}`,
+          sub: [r.student_code, r.class_code, tuan ? tuanLich(tuan, homNay) : null].filter(Boolean).join(' · '),
+          href: r.kind === 'mock' || !r.class_id ? `/mock-test/${r.id}` : `/bang-diem-thuong/${r.class_id}?kind=${r.kind}`,
+        });
       }
     } else if (unit === 'dot-test' || unit === 'bai-thi') {
       /* Lượt Test: FT mở hồ sơ Test; bài của lớp Normal mở bảng điểm thường của lớp. */
@@ -119,11 +171,11 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[]): MetricRow[] {
            LEFT JOIN students s ON s.id = sc.student_id WHERE iv.id IN (${phi})`,
       ).all(...ivIds) as any[]) byIv.set(r.id, r);
       for (const id of chunk) {
-        const { interventionId, cycle } = parseObligation(id);
+        const { interventionId, cycle, k } = parseObligation(id);
         const r = byIv.get(interventionId);
         if (!r) continue;
         byId.set(id, {
-          id, title: `${r.title} · chu kỳ ${cycle}`,
+          id, title: `${r.title} · chu kỳ ${cycle}${k ? ` · tuần ghi bù thứ ${k + 1}` : ''}`,
           sub: [r.full_name, r.student_code].filter(Boolean).join(' · '), href: duongCase(r.sid, r.case_id),
         });
       }
@@ -149,6 +201,20 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[]): MetricRow[] {
         const state = r.status === 'done' ? `đã thực hiện ${String(r.performed_on ?? '').slice(8, 10)}/${String(r.performed_on ?? '').slice(5, 7)}`
           : r.status === 'cho_duyet' ? 'Chờ Quản lý duyệt' : r.status === 'da_duyet' ? 'Đã duyệt · chờ thực hiện' : 'nháp';
         byId.set(r.id, { id: r.id, title: name, sub: [r.full_name, r.student_code, state].filter(Boolean).join(' · '), href: `/hoc-vien/${r.student_id}` });
+      }
+    } else if (unit === 'viec-van-hanh') {
+      /* PR-VAI-a: việc Vận hành cần quyết định — dòng mở đúng việc (ngăn Vận hành ở Công việc). */
+      for (const r of conn.prepare(
+        `SELECT t.id, t.title, t.due_date, b.name AS branch_name FROM tasks t LEFT JOIN branches b ON b.id = t.branch_id WHERE t.id IN (${ph})`,
+      ).all(...chunk) as any[]) {
+        byId.set(r.id, { id: r.id, title: r.title, sub: [r.branch_name ?? 'Toàn hệ thống', r.due_date ? `hạn ${String(r.due_date).slice(8, 10)}/${String(r.due_date).slice(5, 7)}` : null].filter(Boolean).join(' · '), href: `/cong-viec?mo-viec=${r.id}` });
+      }
+    } else if (unit === 'lop') {
+      /* PR-VAI-a: dòng lớp thiếu GV môn mở hồ sơ lớp với panel Sửa phân công mở sẵn. */
+      const thieu = missingForClasses(chunk);
+      for (const r of conn.prepare(`SELECT id, code, programme_code AS ct FROM classes WHERE id IN (${ph})`).all(...chunk) as any[]) {
+        const mon = (thieu.get(r.id)?.missingSkills ?? []).map((k) => tenMonNgan(r.ct ?? null, k)).join(', ');
+        byId.set(r.id, { id: r.id, title: r.code, sub: mon ? `thiếu ${mon}` : '', href: `/hoc-vien/lop/${r.id}?viec=phan-cong` });
       }
     } else if (unit === 'luot-sos') {
       /* Phối hợp SOS (PR-T): dòng lượt Mock có SOS mở hồ sơ học viên — sub-tab `Phối hợp SOS` là việc của PR-K. */
@@ -177,6 +243,7 @@ export function metricResponse(r: MetricResult, withRows: boolean) {
     denominator: r.denominatorIds ? r.denominatorIds.length : null,
     splits: r.splits ? { tamThoi: r.splits.tamThoi.length, ketQuaCuoi: r.splits.ketQuaCuoi.length } : null,
     byKind: r.byKind ? Object.fromEntries(Object.entries(r.byKind).map(([k, v]) => [k, v.length])) : null,
+    ...(r.hanCu !== undefined ? { hanCu: r.hanCu } : {}),
     empty: r.empty, note: r.note, today: r.today,
   };
   if (!withRows) return lean;
@@ -191,7 +258,8 @@ export const LISTED_METRICS: readonly string[] = [
   'hv-sos-hien-tai', 'hv-duoi-ky-vong-mon', 'hv-co-case-mo', 'case-mo',
   'case-xac-dinh-nguyen-nhan-qua-han', 'bai-qua-han-nhap-diem', 'case-chua-co-nguoi-phu-trach',
   'case-cho-xac-dinh-nguyen-nhan', 'case-thieu-pa', 'pa-can-cap-nhat', 'pa-cho-duyet', 'pa-co-ket-qua', 'ty-le-co-cai-thien',
-  'dung-han-cap-nhat', 'do-phu-danh-gia', 'hv-can-ho-tro-2-lan-chua-case',
+  'dung-han-cap-nhat', 'do-phu-danh-gia', 'lop-thieu-gv-mon',
+  'van-hanh-can-quyet-dinh', 'hv-chua-co-lenh-chuyen', 'hv-ft-xong-mt-cuoi-chua-mt-ke', 'hv-len-ft-chua-ky-vong',
   ...YTHUC_METRIC_IDS,
   ...PHOI_HOP_METRIC_IDS,
 ];
@@ -201,13 +269,19 @@ export const CHI_SO_GOP = new Set<string>([...YTHUC_METRIC_IDS, ...PHOI_HOP_METR
 
 /** Kỹ năng ĐÁNH GIÁ mà `hv-duoi-ky-vong-mon` nhận — chỉ số của khung Fast Track (MH5), không có môn lớp thường. */
 const SKILLS_FOR_METRIC = ['listening', 'reading', 'writing', 'speaking'] as const;
+/** PR-VAI-a (Q11): chương trình lớp thường nhận ở `ctLop`. */
+export const CT_LOP = ['FOU', 'BE', 'ELE', 'PREFOU'] as const;
 
 /**
  * NGHĨA VỤ CẬP NHẬT = MỘT PHƯƠNG ÁN × MỘT CHU KỲ. Mã số của nó là `id phương án × 1000 + số chu kỳ` (chu kỳ
  * không bao giờ tới 1000) để đi qua cùng đường `ids: number[]` như mọi chỉ số khác.
  */
-export const obligationId = (interventionId: number, cycle: number) => interventionId * 1000 + cycle;
-export const parseObligation = (id: number) => ({ interventionId: Math.floor(id / 1000), cycle: id % 1000 });
+/**
+ * PR-UXF-a Q13 (U7/K3-17): một nghĩa vụ = (PA, đợt, tuần thứ k của khoảng ghi bù). Ghi bù N tuần = N nghĩa vụ trễ.
+ * ponytail: ≤ 999 đợt mỗi PA và ≤ 999 tuần mỗi đợt (hệ số 1e3); vượt thì đổi hệ số.
+ */
+export const obligationId = (interventionId: number, cycle: number, k = 0) => interventionId * 1_000_000 + cycle * 1000 + k;
+export const parseObligation = (id: number) => ({ interventionId: Math.floor(id / 1_000_000), cycle: Math.floor(id / 1000) % 1000, k: id % 1000 });
 
 /**
  * NGHĨA VỤ CẬP NHẬT ĐÃ QUA HẠN của một tập case (`dung-han-cap-nhat`).
@@ -219,6 +293,14 @@ export const parseObligation = (id: number) => ({ interventionId: Math.floor(id 
  * "Đã qua hạn" là hạn < ngày dữ liệu — cùng luật với `pa-can-cap-nhat`. Không tính phương án chờ duyệt (chưa được
  * chạy nên chưa có nghĩa vụ) và không tính case nhập bù (không có hạn cập nhật). Ý thức không còn case (21/09/2026).
  */
+/**
+ * Các tuần (k = 0…N−1) của khoảng ghi bù có hạn ĐÃ QUA trước `den` (ngày ghi, hoặc hôm nay khi chưa ghi). N = `nhanTuanGhiKetQua(hạn, den).soTuan`
+ * — cùng hàm với tiêu đề "ghi bù N tuần" ở form ghi kết quả; chặn thêm "hạn tuần k đã qua" để hạn Chủ nhật của dữ liệu cũ không đếm dư một tuần.
+ */
+function tuanTre(due: string, den: string): number[] {
+  return Array.from({ length: nhanTuanGhiKetQua(due, den).soTuan }, (_, k) => k).filter((k) => addDaysIso(due, 7 * k) < den);
+}
+
 function obligations(caseIds: number[], today: string, from: string | null, to: string | null) {
   const inPeriod = (due: string) => (!from || due >= from) && (!to || due <= to);
   const den = new Map<number, boolean>();           // id nghĩa vụ → hoàn thành đúng hạn
@@ -227,13 +309,16 @@ function obligations(caseIds: number[], today: string, from: string | null, to: 
     const ph = chunk.map(() => '?').join(',');
     for (const r of db()
       .prepare(
-        `SELECT f.intervention_id AS iv, f.cycle_no AS cycle, MIN(f.cycle_due) AS due, MIN(f.late) AS late
+        `SELECT f.intervention_id AS iv, f.cycle_no AS cycle, MIN(f.cycle_due) AS due, MIN(f.late) AS late, MIN(f.observed_on) AS ghi
            FROM case_followups f
           WHERE f.case_id IN (${ph}) AND f.intervention_id IS NOT NULL AND f.cycle_no IS NOT NULL AND f.cycle_due IS NOT NULL
           GROUP BY f.intervention_id, f.cycle_no`,
       )
       .all(...chunk) as any[]) {
-      if (r.due < today && inPeriod(r.due)) den.set(obligationId(r.iv, r.cycle), r.late === 0);
+      if (r.due >= today) continue;
+      /* Đúng hạn: một nghĩa vụ đúng. Trễ: mỗi tuần ghi bù là một nghĩa vụ trễ. */
+      const ks = r.late === 0 ? [0] : tuanTre(r.due, r.ghi ?? today);
+      for (const k of ks) if (inPeriod(addDaysIso(r.due, 7 * k))) den.set(obligationId(r.iv, r.cycle, k), r.late === 0);
     }
     for (const r of db()
       .prepare(
@@ -245,7 +330,8 @@ function obligations(caseIds: number[], today: string, from: string | null, to: 
             AND NOT EXISTS (SELECT 1 FROM case_followups f WHERE f.intervention_id = iv.id AND f.cycle_no = iv.cycle_no)`,
       )
       .all(...chunk, today) as any[]) {
-      if (inPeriod(r.due)) den.set(obligationId(r.id, r.cycle), false);
+      /* Chưa ghi: mỗi tuần đã bỏ quên là một nghĩa vụ trễ (PA bỏ quên nhiều tuần không còn chỉ tính 1). */
+      for (const k of tuanTre(r.due, today)) if (inPeriod(addDaysIso(r.due, 7 * k))) den.set(obligationId(r.id, r.cycle, k), false);
     }
   }
   const ids = [...den.keys()].sort((x, y) => x - y);
@@ -295,13 +381,16 @@ const RUNNING = `('planned','started')`;
  * PHƯƠNG ÁN CẦN CẬP NHẬT: đang theo dõi, KHÔNG chờ duyệt, và quá hạn cập nhật tuần. Khác "quá hạn
  * làm" (F11) — đây là hạn cập nhật KẾT QUẢ, không phải hạn thực hiện.
  */
-function overdueUpdatePlans(caseIds: number[], today: string): number[] {
-  const out: number[] = [];
+function overdueUpdatePlans(caseIds: number[], today: string): { ids: number[]; chiTiet: NonNullable<MetricResult['chiTiet']> } {
+  const ids: number[] = [];
+  const chiTiet: NonNullable<MetricResult['chiTiet']> = new Map();
   for (let i = 0; i < caseIds.length; i += 400) {
     const chunk = caseIds.slice(i, i + 400);
-    out.push(...(db()
+    /* PR-VAI-a (Q24–Q25): hạn + người thực hiện (không có thì người phụ trách Case) trong CÙNG câu. */
+    for (const r of db()
       .prepare(
-        `SELECT iv.id FROM case_interventions iv
+        `SELECT iv.id, iv.action_due, COALESCE(iv.performer_user_id, sc.owner_user_id) AS nguoi FROM case_interventions iv
+           JOIN sos_cases sc ON sc.id = iv.case_id
           WHERE iv.case_id IN (${chunk.map(() => '?').join(',')})
             AND iv.status IN ${RUNNING}
             AND COALESCE(iv.approval_state, '') != 'pending'
@@ -309,9 +398,12 @@ function overdueUpdatePlans(caseIds: number[], today: string): number[] {
             AND iv.action_due IS NOT NULL AND iv.action_due < ?
           ORDER BY iv.id`,
       )
-      .all(...chunk, today) as any[]).map((r) => r.id as number));
+      .all(...chunk, today) as any[]) {
+      ids.push(r.id);
+      chiTiet.set(r.id, { nguoi: r.nguoi ? [r.nguoi] : [], han: [r.action_due] });
+    }
   }
-  return out;
+  return { ids, chiTiet };
 }
 
 /**
@@ -354,11 +446,18 @@ export function metricSet(
     program?: ChuongTrinh | null;
     /** Q19 (P14) — CHỈ Ý thức và Phối hợp SOS nhận lớp; chỉ số khác có `classId` → 400 (không âm thầm bỏ qua). */
     classId?: number | null;
+    /** PR-VAI-a (Q11): CHỈ `hv-duoi-ky-vong-mon` — chương trình lớp đang học (FOU · BE · ELE · PREFOU); mã lạ → 400. */
+    ctLop?: string | null;
   } = {},
 ): MetricResult {
-  const r = metricSetGoc(p, id, f);
+  const r = locKhung(id, metricSetGoc(p, id, f), f.program ?? null);
+  /* Q25: hạn cũ nhất tính SAU bộ lọc khung — "tuần W4 SEP" của ô Fast Track chỉ từ PA Fast Track. */
+  return r.chiTiet ? { ...r, hanCu: r.ids.flatMap((x) => r.chiTiet!.get(x)?.han ?? []).sort()[0] ?? null } : r;
+}
+
+function locKhung(id: string, r: MetricResult, program: ChuongTrinh | null): MetricResult {
   /* PR-Pb2-a (Q2, K1-18): Ý thức + Phối hợp SOS là khối GỘP — bỏ qua khung ở đúng một chỗ này. */
-  const ct = CHI_SO_GOP.has(id) ? null : f.program ?? null;
+  const ct = CHI_SO_GOP.has(id) ? null : program;
   if (!ct) return r;
   const moi = [...new Set([...r.ids, ...(r.numeratorIds ?? []), ...(r.denominatorIds ?? [])])];
   const giu = new Set(locTheoChuongTrinh(r.unit, moi, ct));
@@ -385,13 +484,14 @@ function causeOverdue(caseIds: number[], today: string): number[] {
 }
 
 /**
- * Lượt có ô điểm QUÁ HẠN nhập, trong phạm vi. `scoreDebtCells` chỉ lọc theo chi nhánh; ở đây áp đúng luật của `classScopeSql`:
+ * BÀI (ô điểm — PR-UXF-a Q7) QUÁ HẠN nhập, trong phạm vi; id = `baiId`. `scoreDebtCells` chỉ lọc theo chi nhánh; ở đây áp đúng luật của `classScopeSql`:
  * giữ ô khi lớp thuộc chi nhánh được cấp HOẶC là lớp mình dạy. Người vừa dạy lớp vừa có quyền chi nhánh không được nới thành
  * cả chi nhánh của lớp mình chỉ dạy.
  */
-function overdueScoreAttempts(p: Principal, branchId: number | null, today: string): number[] {
+function overdueScoreBai(p: Principal, branchId: number | null, today: string): { ids: number[]; chiTiet: NonNullable<MetricResult['chiTiet']> } {
   const sc = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
-  if (sc.none) return [];
+  const chiTiet: NonNullable<MetricResult['chiTiet']> = new Map();
+  if (sc.none) return { ids: [], chiTiet };
   const conn = db();
   let branches: number[] | null = null;
   if (branchId) branches = [branchId];
@@ -405,8 +505,17 @@ function overdueScoreAttempts(p: Principal, branchId: number | null, today: stri
   }
   const cells = scoreDebtCells(p, today, branches).filter((x) => x.overdue);
   const ids = new Set<number>();
+  /* PR-VAI-a (Q24): người phụ trách và hạn của từng ô đã giữ — cột "Người giữ việc", "Hạn" của Cần xử lý. */
+  /* PR-UXF-a Q7: khoá theo BÀI (`baiId`) — mỗi bài một người (môn chưa phân công: không có người, Q8) và một hạn. */
+  const them = (x: (typeof cells)[number]) => {
+    const id = baiId(x.attemptId, x.skill);
+    ids.add(id);
+    const c = chiTiet.get(id) ?? chiTiet.set(id, { nguoi: [], han: [] }).get(id)!;
+    if (x.userId !== null && !c.nguoi.includes(x.userId)) c.nguoi.push(x.userId);
+    if (x.han) c.han.push(x.han);
+  };
   if (sc.all) {
-    for (const x of cells) ids.add(x.attemptId);
+    for (const x of cells) them(x);
   } else {
     const branchOf = new Map<number, number>();
     const classIds = [...new Set(cells.map((x) => x.classId))];
@@ -418,10 +527,40 @@ function overdueScoreAttempts(p: Principal, branchId: number | null, today: stri
     }
     const myBranches = new Set<number>(sc.branchIds), myClasses = new Set<number>(sc.classIds);
     for (const x of cells) {
-      if (myClasses.has(x.classId) || myBranches.has(branchOf.get(x.classId) ?? -1)) ids.add(x.attemptId);
+      if (myClasses.has(x.classId) || myBranches.has(branchOf.get(x.classId) ?? -1)) them(x);
     }
   }
-  return [...ids].sort((a, b) => a - b);
+  return { ids: [...ids].sort((a, b) => a - b), chiTiet };
+}
+
+/**
+ * LỚP THIẾU GV MÔN (PR-VAI-a, K1-05): lớp đang mở trong phạm vi phân công, có môn chưa ai dạy — gọi đúng `missingForClasses`, hàm của badge
+ * "Thiếu GV" ở Học viên & Lớp (Pre FOU không chia môn nên tự không tính). Môn thiếu cho dòng phụ / panel do `rowsFor('lop')` đọc lại.
+ */
+export function lopThieuGvMon(sc: Scope, branchId: number | null): number[] {
+  const cs = classScopeSql(sc);
+  const lop = (db().prepare(
+    `SELECT c.id FROM classes c WHERE ${cs.sql} AND c.status = 'active'${branchId ? ' AND c.branch_id = ?' : ''} ORDER BY c.id`,
+  ).all(...cs.params, ...(branchId ? [branchId] : [])) as any[]).map((c) => c.id as number);
+  const thieu = missingForClasses(lop);
+  return lop.filter((id) => (thieu.get(id)?.missingSkills.length ?? 0) > 0);
+}
+
+/** K5-11: em lên FT từ BE/ELE chưa được đánh dấu kỳ vọng đầu ra — một câu; phạm vi theo LỚP NGUỒN (nơi có bài Cuối khoá). */
+export function hvLenFtChuaKyVong(sc: Scope, branchId: number | null): number[] {
+  const cs = classScopeSql(sc);
+  return (db().prepare(
+    `SELECT DISTINCT l.student_id AS id FROM lenh_chuyen_lop l
+       JOIN classes c ON c.id = l.lop_nguon_id JOIN students s ON s.id = l.student_id
+      WHERE l.huong = 'fast_track' AND l.trang_thai IN ('cho', 'da_chuyen') AND c.programme_code IN ('BE', 'ELE')
+        AND s.status = 'active' AND s.archived_at IS NULL
+        AND ${cs.sql}${branchId ? ' AND c.branch_id = ?' : ''}
+        AND EXISTS (SELECT 1 FROM assessment_attempts a WHERE a.student_id = l.student_id AND a.class_id = l.lop_nguon_id
+                      AND a.kind = 'final' AND a.status != 'cancelled')
+        AND NOT EXISTS (SELECT 1 FROM lo_trinh_tiep_theo lt WHERE lt.student_id = l.student_id AND lt.class_id = l.lop_nguon_id
+                          AND lt.ky_vong_dat IS NOT NULL)
+      ORDER BY l.student_id`,
+  ).all(...cs.params, ...(branchId ? [branchId] : [])) as any[]).map((r) => r.id as number);
 }
 
 /**
@@ -430,7 +569,7 @@ function overdueScoreAttempts(p: Principal, branchId: number | null, today: stri
  */
 function metricSetGoc(
   p: Principal, id: string,
-  f: { branchId?: number | null; skill?: string | null; from?: string | null; to?: string | null; kind?: string | null; classId?: number | null } = {},
+  f: { branchId?: number | null; skill?: string | null; from?: string | null; to?: string | null; kind?: string | null; classId?: number | null; ctLop?: string | null } = {},
 ): MetricResult {
   const metric = metricById(id);
   if (!metric) throw notFound(`Không tìm thấy chỉ số "${id}".`);
@@ -439,6 +578,9 @@ function metricSetGoc(
   }
   /* Q19: chỉ Ý thức và Phối hợp SOS lọc theo lớp — chỉ số khác nhận `classId` thì từ chối thẳng, không âm thầm bỏ qua. */
   if (f.classId && !isYThucMetric(id) && !isPhoiHopMetric(id)) throw badRequest('Chỉ số này chưa lọc theo lớp.');
+  if (f.ctLop && (id !== 'hv-duoi-ky-vong-mon' || !(CT_LOP as readonly string[]).includes(f.ctLop))) {
+    throw badRequest(`Chương trình "${f.ctLop}" không hợp lệ cho chỉ số này.`);
+  }
   const today = demoToday();
   const scope = resolveScope(p, f.branchId);
   const done = (ids: number[], extra: Partial<MetricResult> = {}): MetricResult => ({
@@ -478,15 +620,19 @@ function metricSetGoc(
       return done(openCases().filter((c: any) => c.state === 'no_plan').map((c: any) => c.id as number));
     case 'case-xac-dinh-nguyen-nhan-qua-han':
       return done(causeOverdue(awaitingCauseCaseIds(openCases().map((c: any) => c.id as number)), today));
-    case 'bai-qua-han-nhap-diem':
-      return done(overdueScoreAttempts(p, scope.branchId, today));
+    case 'bai-qua-han-nhap-diem': {
+      const r = overdueScoreBai(p, scope.branchId, today);
+      return done(r.ids, { chiTiet: r.chiTiet });
+    }
     case 'case-chua-co-nguoi-phu-trach':
       return done(openCases().filter((c: any) => !c.ownerUserId).map((c: any) => c.id as number));
     case 'case-cho-xac-dinh-nguyen-nhan':
       /* Case TỪ SOS đang mở mà chưa có nguyên nhân, không có thẻ Không cần theo dõi đang chờ (K5-51) — cùng định nghĩa với `caseDetail().sos`. */
       return done(awaitingCauseCaseIds(openCases().map((c: any) => c.id as number)));
-    case 'pa-can-cap-nhat':
-      return done(overdueUpdatePlans(openCases().map((c: any) => c.id as number), today));
+    case 'pa-can-cap-nhat': {
+      const r = overdueUpdatePlans(openCases().map((c: any) => c.id as number), today);
+      return done(r.ids, { chiTiet: r.chiTiet });
+    }
     case 'pa-cho-duyet':
       return done(pendingApprovalPlans(openCases().map((c: any) => c.id as number)));
     case 'hv-sos-hien-tai': {
@@ -499,15 +645,59 @@ function metricSetGoc(
         throw badRequest(`Môn "${skill}" không hợp lệ — chọn một trong Listening, Reading, Writing, Speaking.`);
       }
       const r = hvDuoiKyVongMon(p, branchId ?? null, today, skill);
-      return done(r.ids, { denominatorIds: r.denominatorIds });
+      if (!f.ctLop) return done(r.ids, { denominatorIds: r.denominatorIds });
+      /* Q11: câu lớp thường theo chương trình ("FOU: 5/22 học viên chưa đạt") — lọc cả tử lẫn mẫu theo chương trình lớp em ĐANG học, theo lô. */
+      const giu = new Set<number>();
+      for (let i = 0; i < r.denominatorIds.length; i += 400) {
+        const lo = r.denominatorIds.slice(i, i + 400);
+        for (const x of db().prepare(
+          `SELECT e.student_id FROM enrollments e JOIN classes c ON c.id = e.class_id
+            WHERE e.status = 'active' AND c.programme_code = ? AND e.student_id IN (${lo.map(() => '?').join(',')})`,
+        ).all(f.ctLop, ...lo) as any[]) giu.add(x.student_id);
+      }
+      return done(r.ids.filter((x) => giu.has(x)), { denominatorIds: r.denominatorIds.filter((x) => giu.has(x)) });
     }
     case 'do-phu-danh-gia': {
       const r = doPhuDanhGia(p, branchId ?? null, today);
       return done(r.ids, { numeratorIds: r.numeratorIds });
     }
-    case 'hv-can-ho-tro-2-lan-chua-case':
-      /* PR-UX4: một hàm `boQuen`, nhớ trong request — số ở Cần xử lý, Danh sách Case và bảng đều cùng tập. */
-      return done(boQuen(p, branchId ?? null, today)['can-ho-tro-2-lan'].map((r) => r.studentId).sort((a, b) => a - b));
+    /* ---------------------------------------------- PR-VAI-a Q8: bốn việc "của Bạn" ở Cần xử lý — mỗi chỉ số gọi đúng hàm màn khác dùng */
+    case 'van-hanh-can-quyet-dinh': {
+      /* (a) cùng `listMgmtTasks` + `khopHang('can-quyet-dinh')` của hàng số tab Vận hành — không câu SQL mới. */
+      const r = listMgmtTasks(p, { branchId: scope.branchId, hang: 'can-quyet-dinh' });
+      if (r.scopeEmpty) return { ...done([]), empty: true, note: EMPTY_NOTE };
+      return done(r.rows.map((x: any) => x.id as number));
+    }
+    case 'hv-chua-co-lenh-chuyen':
+      /* (b) cùng `lopChoLenhChuyen` của việc "Chuyển lớp cả lớp" (`myWork`) — em chưa có lệnh của lớp thường đã tới Cuối khoá. */
+      return done([...new Set(lopChoLenhChuyen(p, scope.branchId, today).flatMap((x) => x.emIds))].sort((a, b) => a - b));
+    case 'hv-ft-xong-mt-cuoi-chua-mt-ke': {
+      /* (c) cùng hai điều kiện của `tomTatMt` (`XONG_MT_CUOI_SQL`, `CO_MOC_KE_TIEP_SQL`) + `coMocTiepTheo`: có ngày/tháng thi thì đã có mốc. */
+      const sc = scopeFor(p, PERMISSIONS.PLAN_WEEK);
+      if (sc.none) return { ...done([]), empty: true, note: EMPTY_NOTE };
+      const cs = classScopeSql(sc);
+      return done((db().prepare(
+        `SELECT DISTINCT s.id FROM enrollments e JOIN classes c ON c.id = e.class_id JOIN students s ON s.id = e.student_id
+           JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
+          WHERE e.status = 'active' AND c.status = 'active' AND c.is_fast_track = 1 AND s.status = 'active' AND s.archived_at IS NULL
+            AND ${cs.sql}${scope.branchId ? ' AND c.branch_id = ?' : ''}
+            AND cy.exam_month IS NULL AND cy.exam_period_id IS NULL AND cy.exam_date IS NULL
+            AND ${XONG_MT_CUOI_SQL('cy')} AND NOT ${CO_MOC_KE_TIEP_SQL('cy')}
+          ORDER BY s.id`,
+      ).all(...cs.params, ...(scope.branchId ? [scope.branchId] : []), mondayOf(today)) as any[]).map((r) => r.id as number));
+    }
+    case 'hv-len-ft-chua-ky-vong': {
+      /* (d) K5-11: em có lệnh lên Fast Track từ BE/ELE, đã có bài Cuối khoá ở lớp nguồn, Quản lý chưa đánh dấu kỳ vọng đầu ra (`ghiKetLuanFt`). */
+      const sc = scopeFor(p, PERMISSIONS.REQUEST_APPROVE);
+      if (sc.none) return { ...done([]), empty: true, note: EMPTY_NOTE };
+      return done(hvLenFtChuaKyVong(sc, scope.branchId));
+    }
+    case 'lop-thieu-gv-mon': {
+      /* K1-05: phạm vi PHÂN CÔNG (Quản lý, Quản trị) — giáo viên không phân công được nên nhận tập rỗng có nhãn, như chỉ số QL khác. */
+      const sc = scopeFor(p, PERMISSIONS.CLASS_ASSIGN);
+      if (sc.none) return { ...done([]), empty: true, note: EMPTY_NOTE };
+      return done(lopThieuGvMon(sc, scope.branchId));
+    }
     case 'dung-han-cap-nhat': {
       /* Nghĩa vụ của MỌI case học thuật trong phạm vi — kể cả case đã đóng: nghĩa vụ đã đến hạn vẫn là chuyện đã xảy ra. */
       const caseIds = listCases(p, { branchId }).rows

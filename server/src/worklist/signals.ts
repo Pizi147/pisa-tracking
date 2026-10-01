@@ -1,8 +1,9 @@
 import { db } from '../db.ts';
-import { LUOT_TINH_NO_SQL, PERMISSIONS } from '../../../shared/domain/index.ts';
+import { PERMISSIONS } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { require_, scopeFor, type Principal } from '../permissions.ts';
 import { reportEditWindow } from '../platform/week.ts';
+import { metricSet } from './metrics.ts';
 
 /**
  * VIỆC SINH RA TỪ DỮ LIỆU.
@@ -21,7 +22,7 @@ import { reportEditWindow } from '../platform/week.ts';
 export type Signal = {
   /** Khoá ổn định theo nguồn, không đổi giữa các lần tải trang. */
   key: string;
-  kind: 'no_plan' | 'missing_scores' | 'sos_open' | 'report_due';
+  kind: 'no_plan' | 'missing_scores' | 'sos_open' | 'pa_can_cap_nhat' | 'report_due';
   label: string;
   count: number;
   /** Vai trò nào cần xử lý — để mỗi người thấy đúng việc của mình. */
@@ -31,6 +32,11 @@ export type Signal = {
   branchName: string | null;
   /** Đường dẫn mở đúng những bản ghi tạo nên con số này. */
   href: string;
+  /**
+   * PR-UXF-a K1-37 (Q12): tín hiệu lấy số từ SỔ CHỈ SỐ — web mở danh sách bằng chính chỉ số này (`/metrics/:id?branchId=`), nên
+   * `count` = số dòng mở ra. null = tín hiệu riêng của trang (chưa có tuần MT, báo cáo tuần), mở bằng `href`.
+   */
+  metricId: string | null;
 };
 
 /** Chi nhánh người dùng được nhìn, theo đúng phạm vi của grant. */
@@ -57,13 +63,20 @@ export function signalsFor(p: Principal, f: { branchId?: number | null; periodId
 
   const push = (
     kind: Signal['kind'], branchId: number, count: number,
-    label: string, owner: Signal['owner'], tone: Signal['tone'], href: string,
+    label: string, owner: Signal['owner'], tone: Signal['tone'], href: string, metricId: string | null = null,
   ) => {
     if (count > 0) {
       out.push({
         key: `${kind}:branch:${branchId}`, kind, label, count, owner, tone,
-        branchId, branchName: nameOf.get(branchId) ?? null, href,
+        branchId, branchName: nameOf.get(branchId) ?? null, href, metricId,
       });
+    }
+  };
+  /* PR-UXF-a K1-37 (Q12): (b), (c) đọc sổ chỉ số — một cửa, cùng tập với ô Cần xử lý ở Tổng quan; không SQL đếm riêng. */
+  const tuSo = (kind: Signal['kind'], metricId: string, owner: Signal['owner'], tone: Signal['tone'], nhan: (n: number) => string) => {
+    for (const b of branches) {
+      const n = metricSet(p, metricId, { branchId: b.id }).n;
+      push(kind, b.id, n, nhan(n), owner, tone, `/metrics/${metricId}?branchId=${b.id}`, metricId);
     }
   };
 
@@ -87,43 +100,12 @@ export function signalsFor(p: Principal, f: { branchId?: number | null; periodId
          'manager', 'info', `/hoc-vien?view=no_plan&branchId=${r.branch_id}`);
   }
 
-  // 2. Thiếu điểm — tự hết khi giáo viên nhập đủ. Lớp thường "có điểm" = có SỐ CÂU ĐÚNG (không bao giờ có band); FT giữ nguyên luật cũ.
-  //    MT lịch sử (T34) không phải nợ điểm — nhắc riêng bằng dòng mờ ở Lịch Test.
-  for (const r of conn
-    .prepare(
-      `SELECT c.branch_id, COUNT(*) AS n FROM assessment_attempts a
-         JOIN classes c ON c.id = a.class_id
-         LEFT JOIN programmes pg ON pg.code = c.programme_code
-         JOIN students s ON s.id = a.student_id
-         JOIN report_periods rp ON rp.id = a.planned_period_id
-        WHERE a.status != 'cancelled' AND s.archived_at IS NULL AND c.branch_id IN (${ph})
-          AND a.planned_period_id IS NOT NULL AND rp.week_start <= ? AND ${LUOT_TINH_NO_SQL('a')}
-          AND CASE WHEN COALESCE(pg.scoring_mode, '') = 'ratio'
-                THEN (SELECT COUNT(*) FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.raw_score IS NOT NULL)
-                     < (SELECT COUNT(*) FROM programme_skills ps WHERE ps.programme_code = c.programme_code)
-                ELSE (SELECT COUNT(*) FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.band IS NOT NULL)
-                     < (4 - (SELECT COUNT(*) FROM attempt_skill_skips k WHERE k.attempt_id = a.id))
-              END
-        GROUP BY c.branch_id`,
-    )
-    .all(...ids, today) as any[]) {
-    push('missing_scores', r.branch_id, r.n, `${r.n} bài Test còn thiếu điểm`,
-         'teacher', 'warn', `/hoc-vien?view=missing_scores&branchId=${r.branch_id}`);
-  }
+  // 2. Bài chưa nhập điểm quá hạn — đơn vị BÀI (ô điểm), tự hết khi giáo viên nhập. MT lịch sử, em Tạm dừng không phải nợ (sổ chỉ số).
+  tuSo('missing_scores', 'bai-qua-han-nhap-diem', 'teacher', 'warn', (n) => `${n} bài chưa nhập điểm quá hạn`);
 
-  // 3. Case SOS chưa xử lý xong — đếm CASE, không phải học viên.
-  for (const r of conn
-    .prepare(
-      `SELECT c.branch_id, COUNT(*) AS n FROM sos_cases sc
-         JOIN assessment_attempts a ON a.id = sc.attempt_id
-         JOIN classes c ON c.id = a.class_id
-        WHERE sc.status != 'done' AND sc.sos_level > 0 AND c.branch_id IN (${ph})
-        GROUP BY c.branch_id`,
-    )
-    .all(...ids) as any[]) {
-    push('sos_open', r.branch_id, r.n, `${r.n} case SOS chưa xử lý xong`,
-         'manager', 'danger', `/hoc-vien?view=sos_open&branchId=${r.branch_id}`);
-  }
+  // 3. Case / PA quá hạn — đếm CASE và PA (hai đơn vị, hai dòng), không học viên.
+  tuSo('sos_open', 'case-xac-dinh-nguyen-nhan-qua-han', 'teacher', 'danger', (n) => `${n} Case quá hạn xác nhận nguyên nhân`);
+  tuSo('pa_can_cap_nhat', 'pa-can-cap-nhat', 'teacher', 'warn', (n) => `${n} PA cần cập nhật kết quả`);
 
   // 4. Báo cáo tuần còn trống — chỉ nhắc khi cửa sổ cập nhật ĐANG MỞ.
   if (f.periodId) {

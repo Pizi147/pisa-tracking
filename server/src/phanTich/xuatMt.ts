@@ -1,7 +1,7 @@
 import { db } from '../db.ts';
 import {
   PERMISSIONS, ROUTE_NAME, XUAT_TOI_DA_BYTE, XUAT_TOI_DA_LUOT, soTenVi, nhanXetW, tenGvCham, bangBoLoc, bangFT, bangThuong, goiYCuoiKhoa, dongXemTruoc, dongXemTruocThuong, moTaBoLoc, nhanDot, phanTram,
-  tenMon, tenSheetThuong, tenTepXuatMt, trangThaiLuotXuat,
+  soSanhLop, tenMon, tenSheetThuong, tenTepXuatMt, trangThaiLuotXuat,
   type BoLocXuatMt, type Cell, type DongFT, type DongThuong,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -63,8 +63,9 @@ function danhSachPhamVi(v: PhamViXuat): PhamViDanhSach {
   const lop = (conn.prepare(
     `SELECT c.id, c.code, c.branch_id, c.is_fast_track, c.status,
             (SELECT COUNT(*) FROM enrollments e WHERE e.class_id = c.id AND e.status = 'active') AS so_hv
-       FROM classes c WHERE ${cs.sql} ORDER BY c.code`,
-  ).all(...cs.params) as any[]).map((r) => ({ id: r.id, ma: r.code, chiNhanhId: r.branch_id, ft: !!r.is_fast_track, daKetThuc: r.status === 'finished', soHv: r.so_hv }));
+       FROM classes c WHERE ${cs.sql}`,
+  ).all(...cs.params) as any[]).map((r) => ({ id: r.id, ma: r.code, chiNhanhId: r.branch_id, ft: !!r.is_fast_track, daKetThuc: r.status === 'finished', soHv: r.so_hv }))
+    .sort((a, b) => soSanhLop({ code: a.ma }, { code: b.ma }));   // PR-UXF-a U1
   const ids = v.tatCa ? [] : [...new Set([...v.chiNhanh, ...lop.map((l) => l.chiNhanhId)])];
   const chiNhanh = ((v.tatCa || ids.length)
     ? conn.prepare(v.tatCa ? `SELECT id, name FROM branches WHERE status = 'active' ORDER BY name`
@@ -199,7 +200,7 @@ export function duLieuXuatMt(p: Principal, f: BoLocXuatMt, toiDa = XUAT_TOI_DA_L
   if (luot.length > toiDa) throw badRequest(`Quá ${String(toiDa).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} lượt — thu hẹp chi nhánh hoặc thời gian.`);
   /* PR-S4F #12: trong mỗi chi nhánh × lớp, xếp theo TÊN rồi họ (SQL chỉ xếp được theo chuỗi họ tên đầy đủ). */
   const thuTuKind = (k: string) => (k === 'progress' ? 0 : k === 'final' ? 1 : 2);
-  luot.sort((a, b) => String(a.branch_name ?? '').localeCompare(String(b.branch_name ?? ''), 'vi') || String(a.class_code).localeCompare(String(b.class_code), 'vi')
+  luot.sort((a, b) => String(a.branch_name ?? '').localeCompare(String(b.branch_name ?? ''), 'vi') || soSanhLop({ code: String(a.class_code ?? '') }, { code: String(b.class_code ?? '') })
     || soTenVi(a.full_name, b.full_name) || a.student_id - b.student_id || thuTuKind(a.kind) - thuTuKind(b.kind) || a.attempt_no - b.attempt_no);
 
   const bundle = loadBundle(luot.map((a) => a.id));

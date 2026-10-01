@@ -161,7 +161,7 @@ export function xacNhanXuLy(p: Principal, studentId: number, v: XuLyVao): XuLyVi
     if (BAC_BAO_QL.has(ke.kind)) {
       for (const uid of quanLyCua(studentId)) {
         if (uid === p.userId) continue;
-        notify({ userId: uid, kind: 'discipline', title: `Đã xử lý ${MEASURE_KIND_LABEL[ke.kind]} — ${hv.full_name} · để biết`,
+        notify({ userId: uid, kind: 'discipline_de_biet', title: `Đã xử lý ${MEASURE_KIND_LABEL[ke.kind]} — ${hv.full_name} · để biết`,
           entityType: 'discipline_measure', entityId: mId, dedupKey: `yt-xu-ly:${mId}`, duong: duongHoSoHocVien(studentId, { tab: 'y-thuc' }) });
       }
     }

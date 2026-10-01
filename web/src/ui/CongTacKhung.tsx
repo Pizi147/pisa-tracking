@@ -6,7 +6,7 @@ import { BoLocDoan } from './ui.tsx';
  * được); tham số `loai` trên đường dẫn thắng (nơi gọi đọc URL trước `khungDaNho`). Chỉ một khung có dữ liệu → không vẽ gì.
  */
 export type KhungLoc = 'ft' | 'thuong' | 'tat-ca';
-type Trang = 'lich-test' | 'ke-hoach-test' | 'cong-viec' | 'hoc-vien-lop' | 'phan-tich-gv';
+type Trang = 'lich-test' | 'ke-hoach-test' | 'cong-viec' | 'hoc-vien-lop' | 'tong-quan' | 'phan-tich-gv';
 
 const khoa = (trang: Trang) => `pisa.khung.${trang}`;
 const hopLe = (v: unknown): v is KhungLoc => v === 'ft' || v === 'thuong' || v === 'tat-ca';

@@ -407,14 +407,14 @@ export async function runLenLopTests(t: YThucTestKit) {
     assert(r7.soChuaLoTrinhTiep === 2, `W7/8 phải 2: ${r7.soChuaLoTrinhTiep}`);
   });
 
-  check('PR-LT (3) · myWork: việc "Chưa có lộ trình tiếp theo" chỉ có với GVCN của lớp, không có với GVBM và QL', () => {
+  check('PR-LT (3) · myWork: PR-VAI-a (Q27) — không ai còn việc "Ghi lộ trình tiếp theo" (GVCN, GVBM, QL "Tất cả"); Quản lý quyết chuyển lớp', () => {
     const cls = taoLopThuong3(7);
     const gvcn = ganGVCN3(cls, P.normalCoreTeacher.userId);
     taoHocVien3(cls, 'FOU');
-    const co = (p: any) => (myworkSvc.myWork(p, {}) as any).items.some((i: any) => i.group === 'next_step' && i.classId === cls);
-    assert(co(gvcn), 'GVCN phải thấy việc');
-    assert(!co(P.normalSubjectTeacher), 'GVBM không thấy việc (không phải GVCN của lớp)');
-    assert(!co(P.mbManager), 'QL không thấy việc next_step (đã có việc đỏ Hết khoá riêng — Q5)');
+    const co = (p: any, f: any = {}) => (myworkSvc.myWork(p, f) as any).items.some((i: any) => i.group === 'next_step');
+    assert(!co(gvcn), 'GVCN không còn việc next_step');
+    assert(!co(P.normalSubjectTeacher), 'GVBM không có việc next_step');
+    assert(!co(P.mbManager, { nguoi: 'tat-ca' }), 'QL (Tất cả) không có việc next_step');
   });
 
   check('PR-LT (3) · canXepLop trừ em "xếp sau" còn hạn xem lại; hết đỏ khi mọi em có hướng; qua ngày xem lại thì đỏ lại (Q9)', () => {
@@ -878,7 +878,10 @@ export async function runLenLopTests(t: YThucTestKit) {
 
   console.log('\nPR-LT (8) · Máy chủ: Lịch sử lớp ở tab Hành trình (Q18)');
 
-  const lichSuLopSvc = await import('../classes/lichSuLop.ts');
+  /* PR-VAI-b (Q15): bảng Lịch sử lớp (`/lich-su-lop`) thay bằng CHƯƠNG THEO LỚP của tab Hành trình — cùng các ý kiểm, đọc `chuong` (cũ → mới). */
+  const { hanhTrinhHocVien } = await import('../students/hanhTrinh.ts');
+  const { nhanGhim } = await import('../../../shared/domain/index.ts');
+  const chuongCua = (p: any, sid: number) => hanhTrinhHocVien(p, sid, null).chuong as any[];
 
   check('PR-LT (8) · em lên lớp: hai dòng, dòng cũ "Lên lớp" + "Cuối khoá n/4 môn đạt"', () => {
     const { cls } = taoLopHetKhoa5(9, 0);
@@ -893,11 +896,12 @@ export async function runLenLopTests(t: YThucTestKit) {
     transitionSvc.applyTransition(P.mbManager, {
       fromClassId: cls, effectiveDate: TODAY3, dongs: [{ studentId: sid, huong: 'len_lop', toClassId: be }],
     });
-    const rows = lichSuLopSvc.lichSuLop(P.admin, sid) as any[];
-    assert(rows.length === 2, `Phải đúng 2 dòng: ${rows.length}`);
-    assert(rows[0].lop.id === be && rows[0].dangHoc === true, `Dòng mới nhất phải là lớp mới, đang học: ${JSON.stringify(rows[0])}`);
-    assert(rows[1].lop.id === cls && rows[1].ketThucVi === 'Lên lớp', `Dòng cũ phải "Lên lớp": ${JSON.stringify(rows[1])}`);
-    assert(rows[1].ketQua === 'Cuối khoá 4/4 môn đạt', `Kết quả dòng cũ: ${rows[1].ketQua}`);
+    const rows = chuongCua(P.admin, sid);
+    assert(rows.length === 2, `Phải đúng 2 chương: ${rows.length}`);
+    assert(rows[1].classId === be && rows[1].dangHoc === true, `Chương mới nhất phải là lớp mới, đang học: ${JSON.stringify(rows[1])}`);
+    assert(rows[0].classId === cls && rows[0].ra?.loai === 'len' && rows[0].ra.chu === 'Lên BE', `Chương cũ phải "Lên BE": ${JSON.stringify(rows[0].ra)}`);
+    const g = rows[0].ghim.find((x: any) => x.attemptId === attemptId);
+    assert(g && g.soDat === 4 && g.soYeuCau === 4 && /^Cuối/.test(nhanGhim(g).chu), `Kết quả chương cũ: ${JSON.stringify(g)}`);
   });
 
   check('PR-LT (8) · em chuyển lớp: "Chuyển lớp" + đúng lý do đã ghi lúc chuyển', () => {
@@ -906,10 +910,10 @@ export async function runLenLopTests(t: YThucTestKit) {
     const { sid } = taoHV4({ clsId: from, ma: 'FOU', ft: false });
     const gvcn = ganGVCN3(from, P.normalCoreTeacher.userId);
     studentsSvc4.transferStudent(P.admin, sid, to, TODAY3, 'Đổi lịch học', { noNote: true });
-    const rows = lichSuLopSvc.lichSuLop(P.admin, sid) as any[];
-    assert(rows.length === 2, `Phải đúng 2 dòng: ${rows.length}`);
-    assert(rows[1].lop.id === from && rows[1].ketThucVi === 'Chuyển lớp', `Dòng cũ phải "Chuyển lớp": ${JSON.stringify(rows[1])}`);
-    assert(rows[1].ketQua === 'Đổi lịch học', `Kết quả dòng cũ phải là lý do đã ghi lúc chuyển: ${rows[1].ketQua}`);
+    const rows = chuongCua(P.admin, sid);
+    assert(rows.length === 2, `Phải đúng 2 chương: ${rows.length}`);
+    assert(rows[0].classId === from && rows[0].ra?.loai === 'chuyen' && rows[0].ra.chu === 'Chuyển lớp', `Chương cũ phải "Chuyển lớp": ${JSON.stringify(rows[0].ra)}`);
+    assert(rows[0].ra.how === 'Đổi lịch học', `Chương cũ phải nói lý do đã ghi lúc chuyển: ${rows[0].ra.how}`);
   });
 
   check('PR-LT (8) · dòng cũ (trước PR-LT) không có end_kind vẫn suy đúng "Kết thúc vì" theo status cũ (Q18)', () => {
@@ -921,21 +925,21 @@ export async function runLenLopTests(t: YThucTestKit) {
     conn.prepare(
       `INSERT INTO enrollments (student_id, class_id, status, started_at, ended_at, created_at) VALUES (?,?, 'completed', ?, ?, ?)`,
     ).run(sid, cls2, addDays3(TODAY3, -60), addDays3(TODAY3, -30), now);
-    const rows = lichSuLopSvc.lichSuLop(P.admin, sid) as any[];
-    const oldRow = rows.find((r) => r.lop.id === cls2);
-    assert(oldRow?.ketThucVi === 'Kết thúc học', `Dòng cũ 'completed' không end_kind phải suy "Kết thúc học": ${JSON.stringify(oldRow)}`);
+    const rows = chuongCua(P.admin, sid);
+    const oldRow = rows.find((r) => r.classId === cls2);
+    assert(oldRow?.ra?.chu === 'Kết thúc học', `Chương cũ 'completed' không end_kind phải suy "Kết thúc học": ${JSON.stringify(oldRow?.ra)}`);
   });
 
   check('PR-LT (8) · GV ngoài phạm vi (chi nhánh khác) xem lịch sử lớp → 403', () => {
     const cls = taoLop4({ branchId: MB3, kind: 'FOU', ft: false, tuanHienTai: 2 });
     const { sid } = taoHV4({ clsId: cls, ma: 'FOU', ft: false });
-    assertThrows(() => lichSuLopSvc.lichSuLop(P.cpManager, sid), /phạm vi/, 'QL chi nhánh CP không được xem lịch sử lớp em ở MB');
+    assertThrows(() => hanhTrinhHocVien(P.cpManager, sid, null), /phạm vi/, 'QL chi nhánh CP không được xem chương theo lớp của em ở MB');
   });
 
   check('PR-LT (8) · Đếm câu SQL: ba câu cố định, không tăng theo số lớp em đã học qua', () => {
     const cls = taoLop4({ branchId: MB3, kind: 'FOU', ft: false, tuanHienTai: 2 });
     const { sid } = taoHV4({ clsId: cls, ma: 'FOU', ft: false });
-    const n1 = demTruyVan5(() => { lichSuLopSvc.lichSuLop(P.admin, sid); });
+    const n1 = demTruyVan5(() => { hanhTrinhHocVien(P.admin, sid, null); });
     const now = new Date().toISOString();
     for (let i = 0; i < 6; i += 1) {
       const clsX = taoLop4({ branchId: MB3, kind: 'FOU', ft: false, tuanHienTai: 2 });
@@ -944,8 +948,8 @@ export async function runLenLopTests(t: YThucTestKit) {
          VALUES (?,?, 'transferred', ?, ?, 'chuyen_lop', ?)`,
       ).run(sid, clsX, addDays3(TODAY3, -100 + i), addDays3(TODAY3, -90 + i), now);
     }
-    const n2 = demTruyVan5(() => { lichSuLopSvc.lichSuLop(P.admin, sid); });
-    assert(n2 - n1 <= 1, `Thêm 6 lớp cũ không được tăng nhiều câu SQL (ba câu cố định): ${n1} → ${n2}`);
+    const n2 = demTruyVan5(() => { hanhTrinhHocVien(P.admin, sid, null); });
+    assert(n2 - n1 <= 1, `Thêm 6 lớp cũ không được tăng nhiều câu SQL (số câu cố định, Q20): ${n1} → ${n2}`);
   });
 
   // ==================================================================== Task 9 — Khu Lưu trữ + chế độ chỉ xem
@@ -1078,7 +1082,7 @@ export async function runLenLopTests(t: YThucTestKit) {
     assert(enr.status === 'active', 'Không đổi gì khi lớp đích không hợp lệ');
   });
 
-  check('PR-LT (rà #86) · lichSuLop: em KHÔNG có điểm Cuối khoá dù bạn cùng lớp có điểm — dòng lịch sử không lộ "đạt" của bạn', () => {
+  check('PR-LT (rà #86) · chương theo lớp (thay lichSuLop): em KHÔNG có điểm Cuối khoá dù bạn cùng lớp có điểm — dòng lịch sử không lộ "đạt" của bạn', () => {
     const { cls } = taoLopHetKhoa5(9, 0);
     const { sid: sidCoDiem, cycleId: cyCoDiem } = taoHV4({ clsId: cls, ma: 'FOU', ft: false });
     const { sid: sidKhongDiem } = taoHV4({ clsId: cls, ma: 'FOU', ft: false });
@@ -1089,9 +1093,9 @@ export async function runLenLopTests(t: YThucTestKit) {
     const insScore = conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total, entered_at) VALUES (?,?,?,?,?)`);
     for (const sk of ['listening', 'reading', 'writing', 'speaking']) insScore.run(attemptId, sk, 10, 10, TODAY3);
     studentsSvc4.setStudentStatus(P.mbManager, sidKhongDiem, 'finished', TODAY3, 'Nghỉ hẳn');
-    const rows = lichSuLopSvc.lichSuLop(P.admin, sidKhongDiem) as any[];
-    const dongLop = rows.find((r) => r.lop.id === cls);
-    assert(dongLop && dongLop.ketQua === null, `Em không có điểm không được lộ kết quả của bạn cùng lớp: ${JSON.stringify(dongLop)}`);
+    const rows = chuongCua(P.admin, sidKhongDiem);
+    const dongLop = rows.find((r) => r.classId === cls);
+    assert(dongLop && dongLop.ghim.length === 0, `Em không có điểm không được lộ kết quả của bạn cùng lớp: ${JSON.stringify(dongLop?.ghim)}`);
   });
 
   check('PR-LT (rà #86) · transferStudent sang Fast Track: thangThi lưu đúng vào learning_cycles.exam_month', () => {
