@@ -18,6 +18,7 @@ import { loadBundle, regularSkillViews, skillCells } from '../fasttrack/attempts
 import { allProgrammes } from '../normal/regular.ts';
 import { danhGiaMon } from '../classes/phanTichLop.ts';
 import { metricSet, parseObligation } from '../worklist/metrics.ts';
+import { mocTreNhapDiem, quaHanNhapDiem } from '../platform/week.ts';
 import { paCoKetQua } from './hieuQuaPa.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 
@@ -153,8 +154,9 @@ export type DongChamDiem = {
   nhapDau: string | null; tre: number | null; dung: boolean;
 };
 /**
- * Q13, Q20: ô có tuần thi trong khoảng, gán cho người được phân công ở HẠN NHẬP. Đúng hạn ⇔ `nhap_dau_ngay ≤ hạn` (sửa sau không tính); chưa nhập
- * mà hôm nay > hạn = trễ. Không tính: vắng / huỷ / ngoài phạm vi / chờ duyệt dời / MT lịch sử / dấu "-" / em không đang học (Q2) / ô chưa tới hạn chưa nhập.
+ * Q13, Q20: ô có tuần thi trong khoảng, gán cho người được phân công ở HẠN NHẬP. Đúng hạn ⇔ `nhap_dau_ngay ≤ mốc trễ` (sửa sau không tính);
+ * chưa nhập mà đã quá hạn = trễ. PR-S6F-a Q6: mốc trễ = `mocTreNhapDiem` (max(hạn, Chủ nhật tuần thi)), quá hạn = `quaHanNhapDiem` — một luật
+ * với Nợ điểm / Việc / Lịch Test; số ngày trễ đếm từ mốc. Panel vẫn hiện HẠN (mốc chỉ để tính). Không tính: vắng / huỷ / ngoài phạm vi / chờ duyệt dời / MT lịch sử / dấu "-" / em không đang học (Q2) / ô chưa tới hạn chưa nhập.
  */
 export function tapChamDiem(c: NguCanhPtGv, nap: NapBai): { tap: Tap; dong: Map<number, DongChamDiem & { gv: number }>; khongTinh: Map<number, number> } {
   const tap: Tap = new Map();
@@ -166,15 +168,16 @@ export function tapChamDiem(c: NguCanhPtGv, nap: NapBai): { tap: Tap; dong: Map<
     const gv = kyNangPhuTrach(l.ct, x.skill).map((k) => c.nguoiLuc(x.classId, k, x.han!)).find((g) => g != null) ?? null;
     if (gv == null) continue;
     const boQua = KHONG_TINH.has(x.tienDo) || x.noShow || !x.dangHoc;
-    if (boQua || (!x.nhapDau && c.homNay <= x.han)) {
+    if (boQua || (!x.nhapDau && !quaHanNhapDiem(x.han, x.tuan, c.homNay))) {
       if (x.tienDo === 'absent') khongTinh.set(gv, (khongTinh.get(gv) ?? 0) + 1);
       continue;
     }
-    const dung = !!x.nhapDau && x.nhapDau <= x.han;
+    const moc = mocTreNhapDiem(x.han, x.tuan);
+    const dung = !!x.nhapDau && x.nhapDau <= moc;
     them(tap, gv, x.id, dung);
     dong.set(x.id, {
       id: x.id, gv, studentId: x.studentId, hocVien: x.hocVien, lop: l.ma, bai: x.bai, mon: tenMonNgan(l.ct, x.skill), tuan: x.tuan, han: x.han,
-      nhapDau: x.nhapDau, dung, tre: dung ? null : ngayCach(x.han, x.nhapDau ?? c.homNay),
+      nhapDau: x.nhapDau, dung, tre: dung ? null : ngayCach(moc, x.nhapDau ?? c.homNay),
     });
   }
   return { tap, dong, khongTinh };

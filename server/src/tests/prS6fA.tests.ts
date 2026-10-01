@@ -170,4 +170,69 @@ export async function runPrS6fATests(t: YThucTestKit) {
     assert(viTay.length === 0, `còn viết tay: ${viTay.join(', ')}`);
     assert(/HV_DANG_HOC_SQL/.test(fs.readFileSync(path.join(goc, 'students/tamDung.ts'), 'utf8')), 'thiếu HV_DANG_HOC_SQL');
   });
+  // ------------------------------------------------------------------ khối 3 · một luật quá hạn nhập điểm (Q6)
+  console.log('\nPR-S6F-a · (3) Một luật quá hạn nhập điểm: Việc, cột Việc tiếp theo, bảng GV');
+  const mw: any = await import('../worklist/mywork.ts');
+  const dhv: any = await import('../classes/dongHocVien.ts');
+  const { loadPrincipal } = await import('../permissions.ts');
+  const gvL = () => loadPrincipal(P.lrTeacher.userId);
+  /* Em W: MT6 tuần W3 SEP (đang chạy — hôm nay 14/09 Thứ Hai), hạn L / R đặt đè 13/09. MT6 để nhóm việc chỉ có em W. */
+  const eW = emMoi('MB FT 101');
+  boLichTuTao(conn, eW.cy);
+  const aW = luotThu(conn, svc.createAttempt, P.admin, { studentId: eW.sid, cycleId: eW.cy, classId: MB_FT, no: 6, periodId: week.ensurePeriod(tuanNay).id });
+  conn.prepare(`UPDATE attempt_skills SET deadline_override = '2026-09-13' WHERE attempt_id = ? AND skill IN ('listening', 'reading')`).run(aW.id);
+  /* Em V: MT5 tuần W1 SEP (đã hết), hạn mặc định đã qua. */
+  const eV = emMoi('MB FT 101');
+  boLichTuTao(conn, eV.cy);
+  const aV = voiNgay(tuanW1, () => luotThu(conn, svc.createAttempt, P.admin, { studentId: eV.sid, cycleId: eV.cy, classId: MB_FT, no: 5, periodId: week.ensurePeriod(tuanW1).id }));
+  const viecL = (aid: number) => (mw.myWork(gvL()).groups as any[]).flatMap((g) => g.items)
+    .find((it: any) => it.group === 'score' && it.attemptId === aid);
+
+  check('S6F-a (3a) · quaHanNhapDiem giữ kết quả 6 ca cũ; mocTreNhapDiem = max(hạn, Chủ nhật tuần thi)', () => {
+    const ca: [string | null, string | null, string, boolean][] = [
+      [null, '2026-09-07', '2026-09-30', false], ['2026-09-10', null, '2026-09-30', false],
+      ['2026-09-13', '2026-09-14', '2026-09-14', false], ['2026-09-13', '2026-09-14', '2026-09-21', true],
+      ['2026-09-22', '2026-09-14', '2026-09-22', false], ['2026-09-22', '2026-09-14', '2026-09-23', true],
+    ];
+    for (const [han, tuan, hom, ky] of ca) assert(week.quaHanNhapDiem(han, tuan, hom) === ky, `${han} · ${tuan} · ${hom}`);
+    assert(week.mocTreNhapDiem?.('2026-09-13', '2026-09-16') === '2026-09-20' && week.mocTreNhapDiem('2026-09-22', '2026-09-14') === '2026-09-22', 'mocTreNhapDiem');
+  });
+  check('S6F-a (3b) · tuần thi CHƯA hết, hạn đè đã qua: việc "Nhập điểm L" của GV không "Quá hạn", không vào summary.overdue; cột Việc tiếp theo không đỏ', () => {
+    const it = viecL(aW.id);
+    assert(it && it.urgency !== 'overdue', `việc: ${JSON.stringify(it && { urgency: it.urgency, due: it.due })}`);
+    const nd = dhv.nhapDiemTheoEm(gvL(), [MB_FT], TODAY, () => MB_FT).get(eW.sid);
+    assert(nd && !nd.quaHan, `nhapDiemTheoEm: ${JSON.stringify(nd)}`);
+    const v = d.viecTiepCuaEm({ nhapDiem: nd, cases: [], yThuc: null, homNay: TODAY })[0];
+    assert(v && v.tone !== 'danger' && v.quaHanNgay === null && !/quá hạn/.test(v.title), `Việc tiếp theo: ${JSON.stringify(v)}`);
+  });
+  check('S6F-a (3c) · bảng GV: ô tuần chưa hết chưa tính; nhập 19/09 (còn trong tuần) → đúng hạn; nhập 21/09 → trễ 1 ngày (đếm từ Chủ nhật 20/09)', () => {
+    assert(!dongCham(TODAY).has(d.baiId(aW.id, 'listening')), 'ô tuần đang chạy đã bị tính');
+    svc.saveScore(P.admin, aW.id, 'listening', { rawScore: 30 }, '2026-09-19');
+    const L = dongCham('2026-09-19').get(d.baiId(aW.id, 'listening'));
+    assert(L?.dung && L.tre === null, `L: ${JSON.stringify(L)}`);
+    svc.saveScore(P.admin, aW.id, 'reading', { rawScore: 30 }, '2026-09-21');
+    const R = dongCham('2026-09-21').get(d.baiId(aW.id, 'reading'));
+    assert(R && !R.dung && R.tre === 1 && R.han === '2026-09-13', `R: ${JSON.stringify(R)}`);
+  });
+  check('S6F-a (3d) · tuần thi ĐÃ hết, qua hạn: cả bốn đường quá hạn (Việc, Việc tiếp theo, Nợ điểm, bảng GV)', () => {
+    const it = viecL(aV.id);
+    assert(it?.urgency === 'overdue', `việc: ${JSON.stringify(it && { urgency: it.urgency, due: it.due })}`);
+    const nd = dhv.nhapDiemTheoEm(gvL(), [MB_FT], TODAY, () => MB_FT).get(eV.sid);
+    assert(nd?.quaHan && d.viecTiepCuaEm({ nhapDiem: nd, cases: [], yThuc: null, homNay: TODAY })[0].tone === 'danger', `nhapDiemTheoEm: ${JSON.stringify(nd)}`);
+    assert((debt.scoreDebtCells(P.admin, TODAY, [MB]) as any[]).some((x) => x.attemptId === aV.id && x.skill === 'listening' && x.overdue), 'Nợ điểm');
+    const r = dongCham(TODAY, tuanW1).get(d.baiId(aV.id, 'listening'));
+    assert(r && !r.dung, `bảng GV: ${JSON.stringify(r)}`);
+  });
+  check('S6F-a (3e) · HAI ĐƯỜNG: (lớp, đợt) của việc nhập điểm "Quá hạn" của GV = (lớp, đợt) có ô Nợ điểm quá hạn của GV', () => {
+    const g = gvL();
+    const viec = new Set((mw.myWork(g).groups as any[]).flatMap((x) => x.items)
+      .filter((it: any) => it.group === 'score' && it.mine && it.urgency === 'overdue').map((it: any) => `${it.classId}|${it.attemptNo}|${it.contextLabel}`));
+    const luot = new Map((conn.prepare(`SELECT id, class_id, attempt_no, kind FROM assessment_attempts`).all() as any[]).map((a) => [a.id, a]));
+    const no = new Set((debt.scoreDebtCells(P.admin, TODAY, null) as any[]).filter((x) => x.overdue && x.userId === g.userId).map((x) => {
+      const a = luot.get(x.attemptId);
+      return `${a.class_id}|${a.attempt_no}|${a.kind && a.kind !== 'mock' ? d.ATTEMPT_KIND_SHORT[a.kind] : `MT${a.attempt_no}`}`;
+    }));
+    const lech = [...viec].filter((k) => !no.has(k)).concat([...no].filter((k) => !viec.has(k)));
+    assert(no.size > 0 && lech.length === 0, `Việc ${viec.size} · Nợ ${no.size} · lệch: ${lech.join(' ; ')}`);
+  });
 }

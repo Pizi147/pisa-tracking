@@ -153,6 +153,7 @@ export function useSaveScore(attemptId: number, onSaved?: () => void) {
       invalidate('/overview');
       invalidate('/classes');
       invalidate('/students');
+      invalidate('/my-work');   // PR-S6F-a: badge quá hạn của GV tải lại sau khi nhập điểm
       tt.thanhCong(skill);
       onSaved?.();
       return true;

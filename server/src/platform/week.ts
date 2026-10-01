@@ -95,11 +95,20 @@ export function isOverdue(deadline: string, today: string): boolean {
 }
 
 /**
+ * PR-S6F-a Q6: MỐC TRỄ nhập điểm = max(hạn, Chủ nhật tuần thi) — hạn đặt đè sớm hơn Chủ nhật vẫn chưa trễ khi tuần còn chạy.
+ * Bảng Phân tích GV đo "đúng hạn" (`nhap_dau_ngay ≤ mốc`) và số ngày trễ từ mốc này.
+ */
+export function mocTreNhapDiem(han: string, tuanThi: string): string {
+  const cn = addDays(mondayOf(tuanThi), 6);
+  return han > cn ? han : cn;
+}
+
+/**
  * PR-UXF-a Q10 (T53 Q2): MỘT luật quá hạn nhập điểm — chỉ khi TUẦN THI ĐÃ HẾT (qua Chủ nhật) VÀ đã qua hạn. Áp cứng cả khi hạn bị
  * đặt đè sớm hơn Chủ nhật tuần thi: tuần còn chạy thì chưa ai trễ. Mọi chỗ (ô bảng chấm, Lịch Test, khối Nợ, Việc, chỉ số) đọc qua đây.
  */
 export function quaHanNhapDiem(han: string | null | undefined, tuanThi: string | null | undefined, today: string): boolean {
-  return !!han && !!tuanThi && addDays(mondayOf(tuanThi), 6) < today && isOverdue(han, today);
+  return !!han && !!tuanThi && isOverdue(mocTreNhapDiem(han, tuanThi), today);
 }
 
 // ---------------------------------------------------------------- lưu kỳ
