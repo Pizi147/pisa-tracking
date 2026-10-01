@@ -57,4 +57,17 @@ export async function runPrUxdTests(t: YThucTestKit) {
     }
     assert(hong.length === 0, hong.join(' · '));
   });
+
+  // ------------------------------------------------------------------ Task 4 · Hồ sơ HV điện thoại: thẻ Mock Test / Kết quả kiểm tra, hàng tab vừa màn
+  check('UXD (4) · hồ sơ HV: IeltsAttempts và RatioAttempts có nhánh điện thoại vẽ TheDong; HangTab px-2.5 sm:px-3 + scrollIntoView', () => {
+    const sdp = doc('web/src/modules/students/StudentDetailPage.tsx');
+    for (const ten of ['IeltsAttempts', 'RatioAttempts']) {
+      const f = than(sdp, ten);
+      assert(f.length > 0, `không thấy ${ten}`);
+      assert(/useDienThoai\(\)/.test(f) && /<TheDong\b/.test(f), `${ten} thiếu nhánh điện thoại (useDienThoai + TheDong)`);
+    }
+    const ht = doc('web/src/ui/HangTab.tsx');
+    assert(/px-2\.5 sm:px-3/.test(ht), 'HangTab chưa px-2.5 sm:px-3');
+    assert(/scrollIntoView/.test(ht), 'HangTab chưa cuộn tab đang chọn vào tầm nhìn');
+  });
 }
