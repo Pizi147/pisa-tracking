@@ -200,7 +200,7 @@ export function SkillBoard({ rows, loading, error, onRetry, selected, onPick, on
           return (
             <tbody key={khoa}>
               {r.tuLopTruoc && !rows[i - 1]?.tuLopTruoc && (
-                <tr><td colSpan={4} className="px-3 pb-1 pt-3 text-[12px] font-semibold uppercase tracking-wide text-slate-400">Từ lớp trước</td></tr>
+                <tr><th colSpan={4} scope="colgroup" className="px-3 pb-1 pt-3 text-left text-[12px] font-semibold uppercase tracking-wide text-slate-400">Từ lớp trước</th></tr>
               )}
               <SkillRows row={r} open={selected === khoa}
                 onToggle={() => onPick(selected === khoa ? null : khoa)}
@@ -262,7 +262,7 @@ function SkillRows({ row, open, onToggle, onReport, onChanged, onMoCase }: {
             {row.tuLopTruoc ? <span className="ml-2 text-[12px] font-normal text-slate-400">từ {row.tuLopTruoc}</span> : <Trend row={row} />}
           </span>
         )}>
-        <td className="px-3 font-normal"><ScoreCell row={row} /></td>
+        <td className="px-3 font-normal">{row.tuLopTruoc ? <span className="text-xs text-faint">—</span> : <ScoreCell row={row} />}</td>
         <td className="px-3 font-normal"><CotCase row={row} /></td>
         <td className="px-3 font-normal">
           {buoc ? (

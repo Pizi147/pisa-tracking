@@ -185,7 +185,7 @@ function BangGv({ kq, onChamDiem }: { kq: PhanTichGvKq; onChamDiem: (h: HangPtGv
   const bl = 'border-l border-[color:var(--line)]';
   const rongKq = ft ? 60 : 72;
   return (
-    <div className="table-scroll rounded-lg border" style={{ borderColor: 'var(--line)' }} role="region" aria-label="Bảng Phân tích giáo viên, cuộn ngang" tabIndex={0}>
+    <div className="table-scroll min-h-[13rem] rounded-lg border" style={{ borderColor: 'var(--line)' }} role="region" aria-label="Bảng Phân tích giáo viên, cuộn ngang" tabIndex={0}>
       <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: ft ? '1000px' : '820px' }}>
         <colgroup>
           <col style={{ width: 176 }} /><col style={{ width: 80 }} /><col style={{ width: 88 }} /><col style={{ width: 112 }} /><col style={{ width: 108 }} />

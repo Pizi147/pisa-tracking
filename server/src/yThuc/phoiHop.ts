@@ -1,4 +1,4 @@
-import { db, tx } from '../db.ts';
+import { db, theoLo, tx } from '../db.ts';
 import {
   COORDINATION_KINDS, COORDINATION_KIND_LABEL, COORDINATION_REMOVE_REASON_LABEL, COORDINATION_STATUS_LABEL,
   CHUONG_TRINH_KHONG_CHIA_MON, COORDINATION_USER_REMOVE_REASONS, SIGNAL_WITHDRAW_SCORE_FIXED, coordinationSummary, moTaBoTro, nhanDot, nhanKetQuaThuong, noiDungBaoPh, tenMon, tenMonNgan, kiemGhiRoKhac, reasonNeedsText, sosCoordinationFor,
@@ -140,16 +140,15 @@ export function dongBoBaoPh(attempt: { id: number; student_id: number; class_id?
  */
 export function monBoKhoiBaoPh(attemptIds: readonly number[]): Map<number, Set<string>> {
   const out = new Map<number, Set<string>>();
-  for (let i = 0; i < attemptIds.length; i += 400) {
-    const lo = attemptIds.slice(i, i + 400);
+  theoLo(attemptIds, (lo, ph) => {
     for (const r of db().prepare(
       `SELECT cs.attempt_id, cs.skill FROM case_signals cs JOIN sos_cases c ON c.id = cs.case_id
-        WHERE cs.attempt_id IN (${lo.map(() => '?').join(',')}) AND cs.skill IS NOT NULL AND c.status = 'done'
+        WHERE cs.attempt_id IN (${ph}) AND cs.skill IS NOT NULL AND c.status = 'done'
           AND (c.dismiss_reason_code IS NOT NULL OR c.outcome_note LIKE ?)`,
     ).all(...lo, `${SIGNAL_WITHDRAW_SCORE_FIXED}%`) as any[]) {
       const ds = out.get(r.attempt_id) ?? new Set<string>(); out.set(r.attempt_id, ds); ds.add(r.skill);
     }
-  }
+  });
   return out;
 }
 

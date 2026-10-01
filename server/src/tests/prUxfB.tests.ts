@@ -338,7 +338,7 @@ export async function runPrUxfBTests(t: YThucTestKit) {
   check('UXF-b (9) · quét chữ: regular.ts gọi monBaoPh; monBoKhoiBaoPh theo lô (một câu), không SQL trong vòng lặp từng môn', () => {
     assert(/dongBoBaoPh\(a, monBaoPh\(a\.id,/.test(doc('server/src/normal/regular.ts')), 'regular.ts');
     const ph = doc('server/src/yThuc/phoiHop.ts');
-    assert(/export function monBoKhoiBaoPh\(attemptIds/.test(ph) && /for \(let i = 0; i < attemptIds\.length; i \+= 400\)/.test(ph), 'monBoKhoiBaoPh theo lô');
+    assert(/export function monBoKhoiBaoPh\(attemptIds/.test(ph) && /theoLo\(attemptIds,/.test(ph), 'monBoKhoiBaoPh theo lô');
   });
 
   // ------------------------------------------------------------------ Task 10 · Case G+V không nằm hàng Writing sau khi em lên BE (R5-5, Câu 3 = A)
@@ -382,6 +382,11 @@ export async function runPrUxfBTests(t: YThucTestKit) {
     const { loadPrincipal } = await_perm;
     let nem = false; try { casesSvc.skillSupportBoard(loadPrincipal(gv.id), emDaChuyen.sid); } catch { nem = true; }
     assert(nem, 'GV không dạy em phải bị chặn');
+  });
+  check('UXF-b (11) · polish: khung bảng Phân tích GV đủ cao cho một chú thích nổi khi bảng 1–2 hàng (Q18); nhóm "Từ lớp trước" có tiêu đề ngữ nghĩa; thẻ Xin ý kiến trên 375 px cho xuống dòng', () => {
+    assert(/table-scroll min-h-\[13rem\]/.test(doc('web/src/modules/phanTich/PhanTichGiaoVien.tsx')), 'Q18 min-height');
+    assert(/<th colSpan=\{4\} scope="colgroup"[^>]*>Từ lớp trước/.test(doc('web/src/modules/cases/SkillBoard.tsx')) && /<h3[^>]*>Từ lớp trước/.test(doc('web/src/modules/cases/TheKyNang.tsx')), 'tiêu đề nhóm');
+    assert(/<DongXinYKien x=\{p\.xinYKien\} ngan=\{ngan\} \/>/.test(doc('web/src/modules/cases/TheKyNang.tsx')), 'thẻ 375 px không cắt dòng Xin ý kiến');
   });
   check('UXF-b (10) · R5-5: không thêm câu SQL theo số Case (lớp của Case đọc cùng câu nạp Case); quét chữ web có nhóm + dòng phụ "từ <lớp>"', () => {
     assert(/AS ct_attempt/.test(doc('server/src/cases/cases.ts')), 'cases.ts: chương trình của lớp Case đọc cùng câu SQL nạp Case (không câu mới)');
