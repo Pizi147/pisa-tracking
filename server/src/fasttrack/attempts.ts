@@ -1674,8 +1674,12 @@ export function saveScore(
     const comment = matHet ? null : nxGt !== undefined ? nxGt : existing?.comment ?? null;
     const exUser = matHet ? null : gv !== undefined ? gv?.userId ?? null : existing?.examiner_user_id ?? null;
     const exName = matHet ? null : gv !== undefined ? gv?.name ?? null : existing?.examiner_name ?? null;
-    /* PR-Pb2-b (Q13): ngày NGHIỆP VỤ lần đầu ô có điểm — sửa sau giữ nguyên, ô mất hết điểm về NULL (nhập lại tính lần đầu mới). */
-    const nhapDau = hasValue ? existing?.nhap_dau_ngay ?? today : null;
+    /*
+     * PR-Pb2-b (Q13): ngày NGHIỆP VỤ lần đầu ô có điểm — sửa sau giữ nguyên, ô mất hết điểm về NULL (nhập lại tính lần đầu mới).
+     * PR-S6F-a (Q18, P0): "có điểm" = điểm THẬT (điểm thô hoặc band) — ô tiêu chí mới gõ 1/4 (band còn NULL) chưa phải lần nhập đầu.
+     */
+    const coDiemThat = raw !== null || band !== null;
+    const nhapDau = coDiemThat ? existing?.nhap_dau_ngay ?? today : null;
     if (existing) {
       conn
         .prepare(

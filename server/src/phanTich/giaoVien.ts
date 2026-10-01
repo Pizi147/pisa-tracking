@@ -93,7 +93,7 @@ type OBai = {
 type NapBai = { o: OBai[]; attempts: Map<number, any>; bundle: ReturnType<typeof loadBundle> };
 
 /** Mọi ô điểm (một kỹ năng một lượt) có TUẦN THI CỦA CHÍNH Ô ĐÓ trong khoảng, ở lớp của chi nhánh + khung — `skillCells` / `regularSkillViews` như `scoreDebt.ts`. */
-function napBai(p: Principal, c: NguCanhPtGv): NapBai {
+export function napBai(p: Principal, c: NguCanhPtGv): NapBai {
   const conn = db();
   const rows: any[] = [];
   for (const lo of theoLo([...c.lop.keys()])) {
