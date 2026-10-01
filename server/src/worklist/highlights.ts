@@ -60,14 +60,14 @@ export type Highlights = {
 };
 
 /** Lớp mà người đang xem được nhìn, đã lọc theo chi nhánh và chương trình đang chọn. */
-function visibleClasses(p: Principal, branchId: number | null, program: ChuongTrinh = 'ca-hai') {
+function visibleClasses(p: Principal, branchId: number | null, program: ChuongTrinh | null = null) {
   const scope = scopeFor(p, PERMISSIONS.STUDENT_VIEW);
   if (scope.none) return null;
   const conn = db();
   const where: string[] = ["c.status = 'active'"];
   const args: any[] = [];
   if (branchId) { where.push('c.branch_id = ?'); args.push(branchId); }
-  if (program !== 'ca-hai') { where.push('c.is_fast_track = ?'); args.push(program === 'ft' ? 1 : 0); }
+  if (program) { where.push('c.is_fast_track = ?'); args.push(program === 'ft' ? 1 : 0); }
   if (!scope.all && scope.branchIds?.length) {
     where.push(`c.branch_id IN (${scope.branchIds.map(() => '?').join(',')})`);
     args.push(...scope.branchIds);
@@ -80,7 +80,7 @@ function visibleClasses(p: Principal, branchId: number | null, program: ChuongTr
 export function highlights(p: Principal, f: { branchId?: number | null; program?: ChuongTrinh | null } = {}): Highlights {
   const conn = db();
   const today = demoToday();
-  const classes = visibleClasses(p, f.branchId ?? null, f.program ?? 'ca-hai');
+  const classes = visibleClasses(p, f.branchId ?? null, f.program ?? null);
   if (classes === null) return { weeks: [], examMonthOnly: { months: [], students: 0 }, scopeEmpty: true };
 
   const thisMonday = mondayOf(today);

@@ -23,7 +23,7 @@ const COT: { key: keyof Omit<Hang, 'id' | 'ten'>; cot: string; nhan: string; goi
 ];
 
 export function BangGiaoVienChiNhanh({ branchId, ct }: { branchId: number | null; ct: ChuongTrinh }) {
-  const tham = [branchId ? `cn=${branchId}` : '', ct === 'ca-hai' ? '' : `ct=${ct}`].filter(Boolean).join('&');
+  const tham = [branchId ? `cn=${branchId}` : '', `ct=${ct}`].filter(Boolean).join('&');
   const { data, loading, error, reload } = useApi<Bang>(`/giao-vien${tham ? `?${tham}` : ''}`, [branchId, ct]);
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (loading || !data) return <div className="p-4"><Skeleton rows={4} /></div>;

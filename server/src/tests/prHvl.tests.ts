@@ -480,12 +480,14 @@ export async function runPrHvlTests(t: YThucTestKit) {
     const success = CATS_FT.reduce((n, cat) => n + effMod.classIssueBoard(LOP_FT, cat).plans.reduce((m: number, p: any) => m + p.success, 0), 0);
     eq(success, tatCa.filter((r: any) => CATS_FT.includes(r.category) && r.group === 'success').length, 'Σ thành công');
     /* Hiệu quả PA (52 tuần): cùng tập trừ PA ngoài khung và PA của Case chưa có lỗi chính. */
-    const hq = hqpMod.hieuQuaPa(P.admin, { ct: 'tat-ca', classId: LOP_FT, soTuan: 52 });
+    const hq = hqpMod.hieuQuaPa(P.admin, { ct: 'ft', classId: LOP_FT, soTuan: 52 });
     const trongKhung = effMod.planOutcomes({ classId: LOP_FT, fromDate: d.tuDauKhoang(TODAY, 52) }).filter((r: any) => r.group !== 'undetermined');
     const coLoiChinh = new Set((conn.prepare(`SELECT DISTINCT case_id FROM case_issues WHERE role = 'primary'`).all() as any[]).map((r) => r.case_id));
-    const kyVong = trongKhung.filter((r: any) => coLoiChinh.has(r.caseId) && r.category !== 'tong_hop').length;
-    eq(hq.tomTat.paCoKetQua, kyVong, 'Hiệu quả PA = PA có kết quả trong khung 52 tuần, Case đã có lỗi chính');
-    assert(tong >= hq.tomTat.paCoKetQua, 'Bảng lớp (mọi thời gian, mọi Case) không thể ít hơn Hiệu quả PA');
+    /* PR-Pb2-a: tách PA GV thêm (cần lỗi chính) / PA theo quy chế (không cần). */
+    const kyVong = trongKhung.filter((r: any) => !r.quyChe && coLoiChinh.has(r.caseId) && r.category !== 'tong_hop').length;
+    eq(hq.gvThem.tomTat.paCoKetQua, kyVong, 'Hiệu quả PA (GV thêm) = PA có kết quả trong khung 52 tuần, Case đã có lỗi chính');
+    eq(hq.quyChe.tomTat.paCoKetQua, trongKhung.filter((r: any) => r.quyChe).length, 'Hiệu quả PA (quy chế) = mọi PA quy chế có kết quả trong khung');
+    assert(tong >= hq.gvThem.tomTat.paCoKetQua + hq.quyChe.tomTat.paCoKetQua, 'Bảng lớp (mọi thời gian, mọi Case) không thể ít hơn Hiệu quả PA');
   });
 
   check('PR-HVL (6) · K2-40: lớp FOU có dòng đầu "Cả bài" (không mở rộng), n/N HV đạt theo % tổng ≥ ngưỡng chung; Pre FOU không có dòng này; lớp FT không có', () => {
