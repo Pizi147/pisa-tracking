@@ -1,5 +1,5 @@
 import { db } from '../db.ts';
-import { ATTEMPT_KIND_SHORT, baiId, nhanLoaiXuLy, PERMISSIONS, VIOLATION_CATEGORY_LABEL, metricById, tachBaiId, tenMon, tenMonNgan, tuanLich, type AttemptKind, type ChiSo, type ChuongTrinh, type LoaiBoQuen } from '../../../shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, addDaysIso, baiId, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, metricById, tachBaiId, tenMon, tenMonNgan, tuanLich, type AttemptKind, type ChiSo, type ChuongTrinh, type LoaiBoQuen } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { scopeFor, type Principal } from '../permissions.ts';
 import { badRequest, forbidden, HttpError, notFound } from '../util.ts';
@@ -146,11 +146,11 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[]): MetricRow[] {
            LEFT JOIN students s ON s.id = sc.student_id WHERE iv.id IN (${phi})`,
       ).all(...ivIds) as any[]) byIv.set(r.id, r);
       for (const id of chunk) {
-        const { interventionId, cycle } = parseObligation(id);
+        const { interventionId, cycle, k } = parseObligation(id);
         const r = byIv.get(interventionId);
         if (!r) continue;
         byId.set(id, {
-          id, title: `${r.title} · chu kỳ ${cycle}`,
+          id, title: `${r.title} · chu kỳ ${cycle}${k ? ` · tuần ghi bù thứ ${k + 1}` : ''}`,
           sub: [r.full_name, r.student_code].filter(Boolean).join(' · '), href: `/hoc-thuat/case/${r.case_id}`,
         });
       }
@@ -230,8 +230,12 @@ const SKILLS_FOR_METRIC = ['listening', 'reading', 'writing', 'speaking'] as con
  * NGHĨA VỤ CẬP NHẬT = MỘT PHƯƠNG ÁN × MỘT CHU KỲ. Mã số của nó là `id phương án × 1000 + số chu kỳ` (chu kỳ
  * không bao giờ tới 1000) để đi qua cùng đường `ids: number[]` như mọi chỉ số khác.
  */
-export const obligationId = (interventionId: number, cycle: number) => interventionId * 1000 + cycle;
-export const parseObligation = (id: number) => ({ interventionId: Math.floor(id / 1000), cycle: id % 1000 });
+/**
+ * PR-UXF-a Q13 (U7/K3-17): một nghĩa vụ = (PA, đợt, tuần thứ k của khoảng ghi bù). Ghi bù N tuần = N nghĩa vụ trễ.
+ * ponytail: ≤ 999 đợt mỗi PA và ≤ 999 tuần mỗi đợt (hệ số 1e3); vượt thì đổi hệ số.
+ */
+export const obligationId = (interventionId: number, cycle: number, k = 0) => interventionId * 1_000_000 + cycle * 1000 + k;
+export const parseObligation = (id: number) => ({ interventionId: Math.floor(id / 1_000_000), cycle: Math.floor(id / 1000) % 1000, k: id % 1000 });
 
 /**
  * NGHĨA VỤ CẬP NHẬT ĐÃ QUA HẠN của một tập case (`dung-han-cap-nhat`).
@@ -243,6 +247,14 @@ export const parseObligation = (id: number) => ({ interventionId: Math.floor(id 
  * "Đã qua hạn" là hạn < ngày dữ liệu — cùng luật với `pa-can-cap-nhat`. Không tính phương án chờ duyệt (chưa được
  * chạy nên chưa có nghĩa vụ) và không tính case nhập bù (không có hạn cập nhật). Ý thức không còn case (21/09/2026).
  */
+/**
+ * Các tuần (k = 0…N−1) của khoảng ghi bù có hạn ĐÃ QUA trước `den` (ngày ghi, hoặc hôm nay khi chưa ghi). N = `nhanTuanGhiKetQua(hạn, den).soTuan`
+ * — cùng hàm với tiêu đề "ghi bù N tuần" ở form ghi kết quả; chặn thêm "hạn tuần k đã qua" để hạn Chủ nhật của dữ liệu cũ không đếm dư một tuần.
+ */
+function tuanTre(due: string, den: string): number[] {
+  return Array.from({ length: nhanTuanGhiKetQua(due, den).soTuan }, (_, k) => k).filter((k) => addDaysIso(due, 7 * k) < den);
+}
+
 function obligations(caseIds: number[], today: string, from: string | null, to: string | null) {
   const inPeriod = (due: string) => (!from || due >= from) && (!to || due <= to);
   const den = new Map<number, boolean>();           // id nghĩa vụ → hoàn thành đúng hạn
@@ -251,13 +263,16 @@ function obligations(caseIds: number[], today: string, from: string | null, to: 
     const ph = chunk.map(() => '?').join(',');
     for (const r of db()
       .prepare(
-        `SELECT f.intervention_id AS iv, f.cycle_no AS cycle, MIN(f.cycle_due) AS due, MIN(f.late) AS late
+        `SELECT f.intervention_id AS iv, f.cycle_no AS cycle, MIN(f.cycle_due) AS due, MIN(f.late) AS late, MIN(f.observed_on) AS ghi
            FROM case_followups f
           WHERE f.case_id IN (${ph}) AND f.intervention_id IS NOT NULL AND f.cycle_no IS NOT NULL AND f.cycle_due IS NOT NULL
           GROUP BY f.intervention_id, f.cycle_no`,
       )
       .all(...chunk) as any[]) {
-      if (r.due < today && inPeriod(r.due)) den.set(obligationId(r.iv, r.cycle), r.late === 0);
+      if (r.due >= today) continue;
+      /* Đúng hạn: một nghĩa vụ đúng. Trễ: mỗi tuần ghi bù là một nghĩa vụ trễ. */
+      const ks = r.late === 0 ? [0] : tuanTre(r.due, r.ghi ?? today);
+      for (const k of ks) if (inPeriod(addDaysIso(r.due, 7 * k))) den.set(obligationId(r.iv, r.cycle, k), r.late === 0);
     }
     for (const r of db()
       .prepare(
@@ -269,7 +284,8 @@ function obligations(caseIds: number[], today: string, from: string | null, to: 
             AND NOT EXISTS (SELECT 1 FROM case_followups f WHERE f.intervention_id = iv.id AND f.cycle_no = iv.cycle_no)`,
       )
       .all(...chunk, today) as any[]) {
-      if (inPeriod(r.due)) den.set(obligationId(r.id, r.cycle), false);
+      /* Chưa ghi: mỗi tuần đã bỏ quên là một nghĩa vụ trễ (PA bỏ quên nhiều tuần không còn chỉ tính 1). */
+      for (const k of tuanTre(r.due, today)) if (inPeriod(addDaysIso(r.due, 7 * k))) den.set(obligationId(r.id, r.cycle, k), false);
     }
   }
   const ids = [...den.keys()].sort((x, y) => x - y);

@@ -421,4 +421,31 @@ export async function runPrUxfATests(t: YThucTestKit) {
       conn.prepare('DELETE FROM reporting_units WHERE id = ?').run(unitId);
     }
   });
+
+  // ==================================================================== Task 8 · "Đúng hạn cập nhật": ghi bù N tuần = N lần trễ (U7 / K3-17)
+  check('UXF-a (8) · ghi bù 3 tuần = 3 nghĩa vụ trễ (cùng N với chữ "ghi bù 3 tuần"); chưa ghi quá 2 tuần = 2 trễ; ghi đúng hạn = 1 đúng; n = số dòng; lọc khung còn đúng', () => {
+    const caseId = get(`SELECT id FROM sos_cases WHERE student_id = ? AND category = 'listening'`, X.sid).id as number;
+    const pa = (due: string) => Number(conn.prepare(
+      `INSERT INTO case_interventions (case_id, kind, description, status, action_due, cycle_no, created_at) VALUES (?, 'tutor', 'UXF-a PA', 'started', ?, 1, ?)`,
+    ).run(caseId, due, NOW).lastInsertRowid);
+    const fu = (iv: number, due: string, ghi: string, late: number) => conn.prepare(
+      `INSERT INTO case_followups (case_id, intervention_id, observed_on, outcome, cycle_no, cycle_due, late, created_at) VALUES (?, ?, ?, 'partial', 1, ?, ?, ?)`,
+    ).run(caseId, iv, ghi, due, late, NOW);
+    const truoc = metricsSvc.metricSet(P.admin, 'dung-han-cap-nhat', {});
+    const ghiBu = pa('2026-09-28'); fu(ghiBu, '2026-08-24', '2026-09-08', 1);   // hạn Thứ Hai 24/08, ghi 08/09
+    const boQuen = pa('2026-08-31');                                              // chưa ghi, hạn 31/08 → tới 14/09 trễ 2 tuần
+    const dungHan = pa('2026-09-28'); fu(dungHan, '2026-09-07', '2026-09-06', 0);
+    const r = metricsSvc.metricSet(P.admin, 'dung-han-cap-nhat', {});
+    const moi = (r.ids as number[]).filter((id) => !(truoc.ids as number[]).includes(id));
+    const cua = (iv: number) => moi.filter((id) => metricsSvc.parseObligation(id).interventionId === iv);
+    const dung = (iv: number) => cua(iv).filter((id) => (r.numeratorIds as number[]).includes(id)).length;
+    assert(cua(ghiBu).length === 3 && dung(ghiBu) === 0, `ghi bù: ${cua(ghiBu).length} nghĩa vụ, ${dung(ghiBu)} đúng`);
+    assert(/ghi bù 3 tuần/.test(d.nhanTuanGhiKetQua('2026-08-24', '2026-09-08').tieuDe), d.nhanTuanGhiKetQua('2026-08-24', '2026-09-08').tieuDe);
+    assert(cua(boQuen).length === 2 && dung(boQuen) === 0, `bỏ quên: ${cua(boQuen).length}`);
+    assert(cua(dungHan).length === 1 && dung(dungHan) === 1, `đúng hạn: ${cua(dungHan).length}/${dung(dungHan)}`);
+    assert(r.n === r.ids.length && metricsSvc.rowsFor('nghia-vu', r.ids).length === r.n, 'n = ids = số dòng');
+    const khung = (ct: string) => metricsSvc.metricSet(P.admin, 'dung-han-cap-nhat', { program: ct }).ids as number[];
+    const ft = khung('ft'), thuong = khung('thuong');
+    for (const id of [...cua(ghiBu), ...cua(boQuen), ...cua(dungHan)]) assert(thuong.includes(id) && !ft.includes(id), `lọc khung: ${id} (lớp thường)`);
+  });
 }
