@@ -22,11 +22,13 @@ import { quyenBoTro } from '../cases/boTro.ts';
 import { tyLeTongLo } from '../normal/cuoiKhoa.ts';
 import { myCoordinationLines } from '../yThuc/phoiHop.ts';
 import { hvLenFtChuaKyVong } from './metrics.ts';
+import { phanCongDangHieuLuc } from './scoreDebt.ts';
 import { dienMocQuyChe } from '../cases/sosAuto.ts';
 import { settleNoShows, sweepExpiredMoves } from '../fasttrack/absence.ts';
 import { demYeuCau, quetYeuCau } from '../duyet/yeuCau.ts';
 import { mtLichSuChuaNhap } from '../cham/canCham.ts';
 import { trangThaiYThuc, ungVienVaThe } from '../yThuc/trangThai.ts';
+import { khaiDuoc } from '../yThuc/xuLy.ts';
 
 /**
  * VIỆC CỦA CHÍNH NGƯỜI ĐANG XEM.
@@ -423,18 +425,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     const managedAttempts = listAttempts(p, { branchId: f.branchId ?? undefined, scope: 'managed', chiDangHoc: true }).rows
       .filter((a: any) => a.status !== 'cancelled');
     const classIds = [...new Set(managedAttempts.map((a: any) => a.classId).filter((x: any): x is number => x !== null))];
-    /* Người phụ trách môn — môn trùng người (nhiều giáo viên cùng dạy một kỹ năng) thì người ĐẦU thắng. */
-    const ownerOf = new Map<string, number>();
-    if (classIds.length) {
-      const ph = classIds.map(() => '?').join(',');
-      for (const r of conn
-        .prepare(`SELECT class_id, skill, user_id FROM teacher_assignments
-                    WHERE class_id IN (${ph}) AND status = 'active' AND skill IS NOT NULL ORDER BY id`)
-        .all(...classIds) as any[]) {
-        const key = `${r.class_id}|${r.skill}`;
-        if (!ownerOf.has(key)) ownerOf.set(key, r.user_id);
-      }
-    }
+    /* Người phụ trách môn — PR-Dọn (Q13): CÙNG luật với Nợ điểm và Lịch Test (`phanCongDangHieuLuc`). */
+    const ownerOf = new Map([...phanCongDangHieuLuc(classIds, today)].map(([k, v]) => [k, v.userId]));
     const khacDongs: BaiChuaCham[] = [];
     for (const a of managedAttempts as any[]) {
       for (const c of (a.pendingDetail ?? []) as any[]) {
@@ -467,7 +459,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   const ghiKetQua = conn
     .prepare(
       `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.action_due, iv.followup_due, iv.preset, iv.nhom_bo_tro,
-              iv.performer_user_id, iv.performer_name, COALESCE(iv.performer_user_id, iv.recorded_by) AS owner_id,
+              iv.performer_user_id, iv.performer_name, COALESCE(iv.performer_user_id, sc.owner_user_id) AS owner_id,   -- PR-Dọn: cùng người giữ việc với chỉ số pa-can-cap-nhat
               sc.topic, sc.sos_level, sc.urgency, sc.summary, sc.origin_kind, sc.attempt_id,
               COALESCE(sc.student_id, a.student_id) AS eff_student_id,
               COALESCE(a.class_id, cur.class_id) AS eff_class_id,
@@ -663,8 +655,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       tieuDe: `Đề ra PA học thuật${duoiKyNang(c.topic, ctCua(c.eff_class_id))}`,
       actionLabel: 'Đề ra PA',
       href: c.eff_student_id ? `/hoc-vien/${c.eff_student_id}` : `/hoc-thuat/case/${c.id}`,
-      /* Chưa ai nhận — và đó chính là vấn đề, nên để trống chứ không gán bừa cho người xem. */
-      ownerId: null, owner: null, mine: false,
+      /* PR-Dọn (Q10): người làm = người phụ trách Case (cùng `support:{caseId}` ở hồ sơ em); Case chưa ai phụ trách thì để trống. */
+      ownerId: c.owner_user_id ?? null, owner: null, mine: c.owner_user_id != null && c.owner_user_id === p.userId,
       due: deadline, statusLabel: 'Chưa có PA học thuật',
     });
   }
@@ -1052,7 +1044,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     for (const r of emMoi) {
       const em = trang.get(r.id);
       if (f.branchId && r.branch_id !== f.branchId) continue;
-      if (!em || em.tamDung || em.gvcnId !== p.userId || !em.chuoi.length || em.soXuLyChuoi > 0 || em.tungKhai) continue;
+      if (!em || em.gvcnId !== p.userId || !khaiDuoc(em)) continue;   // PR-Dọn (6f): cùng luật với hồ sơ em
       khaiTheoLop.set(r.class_id, [...(khaiTheoLop.get(r.class_id) ?? []), r]);
     }
     for (const [lopId, ds] of khaiTheoLop) {
@@ -1108,22 +1100,17 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   /* CÙNG hàm `hvLenFtChuaKyVong` với chỉ số `hv-len-ft-chua-ky-vong` ở Cần xử lý — số việc = số của chỉ số (hai đường). */
   {
     const sc = scopeFor(p, PERMISSIONS.REQUEST_APPROVE);
-    const ids = sc.none ? [] : hvLenFtChuaKyVong(sc, f.branchId ?? null);
-    if (ids.length) {
-      for (const r of conn.prepare(
-        `SELECT s.id, s.full_name, e.class_id, c.code FROM students s
-           LEFT JOIN enrollments e ON e.student_id = s.id AND e.status = 'active' LEFT JOIN classes c ON c.id = e.class_id
-          WHERE s.id IN (${ids.map(() => '?').join(',')}) ORDER BY s.full_name`,
-      ).all(...ids) as any[]) {
-        items.push({
-          key: `ky_vong:${r.id}`, group: 'ky_vong_dau_ra', urgency: 'normal',
-          studentId: r.id, studentName: r.full_name, classId: r.class_id ?? null, classCode: r.code ?? null,
-          attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: 'Lên Fast Track', count: null,
-          reason: 'Em BE/ELE lên Fast Track đã có bài Cuối khoá — đánh dấu Đạt hoặc Không đạt kỳ vọng đầu ra',
-          tieuDe: `Đánh dấu kỳ vọng đầu ra · ${r.full_name}`, actionLabel: 'Mở hồ sơ',
-          href: duongHoSoHocVien(r.id), ownerId: p.userId, owner: null, mine: true, due: null, statusLabel: 'Chưa đánh dấu',
-        });
-      }
+    const ds = sc.none ? [] : hvLenFtChuaKyVong(sc, f.branchId ?? null).sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
+    /* PR-Dọn: lớp ghi trên dòng = LỚP NGUỒN của lệnh (nơi có bài Cuối khoá), một dòng mỗi em. */
+    for (const r of ds) {
+      items.push({
+        key: `ky_vong:${r.id}`, group: 'ky_vong_dau_ra', urgency: 'normal',
+        studentId: r.id, studentName: r.ten, classId: r.lopNguonId, classCode: r.lopNguon,
+        attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: 'Lên Fast Track', count: null,
+        reason: 'Em BE/ELE lên Fast Track đã có bài Cuối khoá — đánh dấu Đạt hoặc Không đạt kỳ vọng đầu ra',
+        tieuDe: `Đánh dấu kỳ vọng đầu ra · ${r.ten}`, actionLabel: 'Mở hồ sơ',
+        href: duongHoSoHocVien(r.id), ownerId: p.userId, owner: null, mine: true, due: null, statusLabel: 'Chưa đánh dấu',
+      });
     }
   }
 

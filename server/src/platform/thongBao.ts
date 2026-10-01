@@ -40,7 +40,10 @@ export function thongBaoCua(userId: number) {
                     WHEN n.entity_type = 'yeu_cau_duyet' AND n.kind = 'duyet_tu_choi' THEN
                       CASE WHEN ycd.trang_thai = 'tu_choi' AND NOT EXISTS (SELECT 1 FROM yeu_cau_duyet y2
                              WHERE y2.id > ycd.id AND y2.loai = ycd.loai AND y2.nguoi_xin IS ycd.nguoi_xin
-                               AND y2.hoc_vien_id IS ycd.hoc_vien_id AND y2.lop_id IS ycd.lop_id) THEN 1 ELSE 0 END
+                               AND y2.hoc_vien_id IS ycd.hoc_vien_id AND y2.lop_id IS ycd.lop_id
+                               /* PR-Dọn: thẻ gửi lại phải cùng ĐỐI TƯỢNG (thẻ cho Case B không xoá việc của thẻ bị từ chối ở Case A).
+                                  ponytail: nối thẻ cũ → thẻ mới bằng cột riêng nếu sau này có luồng gửi lại khác đối tượng. */
+                               AND y2.doi_tuong_loai IS ycd.doi_tuong_loai AND y2.doi_tuong_id IS ycd.doi_tuong_id) THEN 1 ELSE 0 END
                   END AS con_viec
              FROM notifications n
              LEFT JOIN sos_cases sc ON n.entity_type = 'sos_case' AND sc.id = n.entity_id

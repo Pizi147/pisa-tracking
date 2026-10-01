@@ -6,6 +6,7 @@ import {
   type AssessedSkill, type EntrySkill, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
+import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
 import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { dotHoanTat, dotHoanTatMany, quyenSuaSauHoanTat } from './hoanTat.ts';
 import {
@@ -549,21 +550,13 @@ export type AttemptFilters = {
  * Danh sách ở phạm vi quản lý là để ĐÔN ĐỐC nên phải kèm tên; nạp theo từng lớp một lần,
  * đừng hỏi lại cho từng hàng — một trang danh sách có thể có hàng chục lượt.
  */
+/** PR-Dọn (Q13): GV chấm của từng (lớp, môn) theo luật phân công chung `phanCongDangHieuLuc` (đang hiệu lực, dòng đầu thắng). */
 function ownersByClass(classIds: number[]): Map<number, Record<string, string>> {
   const map = new Map<number, Record<string, string>>();
-  if (!classIds.length) return map;
-  const ids = [...new Set(classIds)];
-  const ph = ids.map(() => '?').join(',');
-  const rows = db()
-    .prepare(
-      `SELECT ta.class_id, ta.skill, u.full_name FROM teacher_assignments ta
-         JOIN users u ON u.id = ta.user_id
-        WHERE ta.class_id IN (${ph}) AND ta.status = 'active' AND ta.skill IS NOT NULL`,
-    )
-    .all(...ids) as any[];
-  for (const r of rows) {
-    if (!map.has(r.class_id)) map.set(r.class_id, {});
-    map.get(r.class_id)![r.skill] = r.full_name;
+  for (const [k, v] of phanCongDangHieuLuc(classIds, demoToday())) {
+    const [lop, mon] = k.split('|');
+    if (!map.has(+lop)) map.set(+lop, {});
+    map.get(+lop)![mon] = v.ten;
   }
   return map;
 }

@@ -1,4 +1,4 @@
-import { db } from '../db.ts';
+import { db, theoLo } from '../db.ts';
 import { LUOT_TINH_NO_SQL, boMonLich } from '../../../shared/domain/index.ts';
 import type { Principal } from '../permissions.ts';
 import { loadBundle, regularSkillViews, skillCells } from '../fasttrack/attempts.ts';
@@ -23,6 +23,25 @@ export type DebtCell = { attemptId: number; classId: number; skill: string; user
 
 /** Tiến độ KHÔNG phải nợ điểm: vắng đã xác nhận, huỷ phần thi, ngoài phạm vi, đang chờ Quản lý duyệt dời, MT lịch sử (T34). */
 const NOT_DEBT = new Set(['absent', 'cancelled', 'skipped', 'reschedule_pending', 'lich_su']);
+
+/**
+ * PR-Dọn (Q13): MỘT luật phân công cho "người giữ việc" (Nợ điểm), "GV chấm" (Lịch Test) và "người khác" (Công việc) — phân công
+ * `active`, đang hiệu lực tại `ngay`; nhiều dòng cùng (lớp, môn) thì dòng `id` nhỏ nhất thắng (như `teacherOf` cũ). Khoá `lớp|môn`.
+ */
+export function phanCongDangHieuLuc(classIds: readonly number[], ngay: string): Map<string, { userId: number; ten: string }> {
+  const out = new Map<string, { userId: number; ten: string }>();
+  theoLo([...new Set(classIds)], (lo, ph) => {
+    for (const r of db()
+      .prepare(`SELECT ta.class_id, ta.skill, ta.user_id, u.full_name FROM teacher_assignments ta JOIN users u ON u.id = ta.user_id
+                 WHERE ta.class_id IN (${ph}) AND ta.status = 'active' AND ta.skill IS NOT NULL
+                   AND ta.effective_from <= ? AND (ta.effective_to IS NULL OR ta.effective_to >= ?) ORDER BY ta.id`)
+      .all(...lo, ngay, ngay) as any[]) {
+      const k = `${r.class_id}|${r.skill}`;
+      if (!out.has(k)) out.set(k, { userId: r.user_id, ten: r.full_name });
+    }
+  });
+  return out;
+}
 
 export function scoreDebtCells(p: Principal, today: string, branchIds: number[] | null): DebtCell[] {
   if (Array.isArray(branchIds) && branchIds.length === 0) return [];
@@ -65,15 +84,8 @@ export function scoreDebtCells(p: Principal, today: string, branchIds: number[] 
     .all(...args, today, today) as any[];
   if (!rows.length) return [];
 
-  /* PR-UXF-a: phân công ĐANG HIỆU LỰC (như `lopCuaGv`) — GV hết hiệu lực không còn bị gán bài. */
-  const teacherOf = new Map<string, number>();
-  for (const r of conn
-    .prepare(`SELECT class_id, skill, user_id FROM teacher_assignments
-               WHERE status = 'active' AND skill IS NOT NULL AND effective_from <= ? AND (effective_to IS NULL OR effective_to >= ?) ORDER BY id`)
-    .all(today, today) as any[]) {
-    const k = `${r.class_id}|${r.skill}`;
-    if (!teacherOf.has(k)) teacherOf.set(k, r.user_id);
-  }
+  /* PR-UXF-a → PR-Dọn (Q13): phân công ĐANG HIỆU LỰC, một luật chung (`phanCongDangHieuLuc`). */
+  const teacherOf = new Map([...phanCongDangHieuLuc([...new Set(rows.map((r) => r.class_id as number))], today)].map(([k, v]) => [k, v.userId]));
 
   const bundle = loadBundle(rows.map((r) => r.id));
   const programmes = allProgrammes();          // một lần cho cả bảng, không mỗi lượt một câu

@@ -507,4 +507,130 @@ export async function runPrDonATests(t: YThucTestKit) {
       });
     } finally { conn.prepare(`UPDATE programmes SET status = 'active' WHERE code = 'BE'`).run(); }
   });
+
+  // ------------------------------------------------------------------ khối 6 · việc và người làm: mỗi cặp một nguồn
+  console.log('\nPR-Dọn-a · (6) Việc và người làm — mỗi cặp một nguồn');
+  const metrics: any = await import('../worklist/metrics.ts');
+  const studentsSvc: any = await import('../students/students.ts');
+  const xuLy: any = await import('../yThuc/xuLy.ts');
+  const thongBao: any = await import('../platform/thongBao.ts');
+  const itemsCua = (p: any, f: any = {}) => (mw.myWork(p, f).groups as any[]).flatMap((x) => x.items);
+
+  check('Dọn-a (6a) · Q10 "Đề ra PA": người làm = người phụ trách Case (A) ở Công việc của A (mine), của B (không mine) và ở hồ sơ em — cùng khoá support:{caseId}', () => {
+    const { sid } = emMoi('MB FT 101');
+    const A = P.lrTeacher;
+    /* B: một GV khác cũng dạy lớp này (GV L có thể kiêm GVCN). */
+    const B = loadPrincipal(get(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND status = 'active' AND user_id != ? LIMIT 1`, classId('MB FT 101'), A.userId).user_id);
+    const c = cases.reportIssue(B, { studentId: sid, topic: 'listening', title: 'Case chưa có PA Dọn-a', summary: 'Case chưa có PA dùng cho phép kiểm Q10.',
+      primaryCode: d.issuesForTopic('listening')[0].code, idempotencyKey: `dona-q10-${sid}` });
+    conn.prepare('UPDATE sos_cases SET owner_user_id = ? WHERE id = ?').run(A.userId, c.id);
+    const k = `support:${c.id}`;
+    const cuaA = itemsCua(A).find((i: any) => i.key === k);
+    assert(cuaA && cuaA.mine === true && cuaA.ownerId === A.userId, `A: ${JSON.stringify(cuaA && { mine: cuaA.mine, ownerId: cuaA.ownerId })}`);
+    const cuaB = itemsCua(B).find((i: any) => i.key === k);
+    assert(!cuaB || (cuaB.mine === false && cuaB.ownerId === A.userId), `B: ${JSON.stringify(cuaB && { mine: cuaB.mine, ownerId: cuaB.ownerId })}`);
+    const v = profileSvc.studentProfile(A, sid).dauHoSo.viec;
+    const hs = [...(v.cuaBan ?? []), ...(v.nguoiKhac ?? [])].find((x: any) => x.key === k);
+    assert(hs && (hs.nguoi?.id ?? hs.nguoiId) === A.userId, `hồ sơ: ${JSON.stringify(hs)}`);
+  });
+
+  check('Dọn-a (6b) · kỳ vọng đầu ra: em có HAI ghi danh đang học → đúng MỘT dòng ky_vong:{id}; số dòng = chỉ số; lớp trên dòng = lớp nguồn của lệnh', () => {
+    /* Dựng tay: em lớp BE (có bài Cuối khoá tự tạo) có lệnh lên Fast Track đang chờ. */
+    const lopBe = 'MB BE 04';
+    const { sid, cy } = emMoi(lopBe);
+    if (!get(`SELECT 1 FROM assessment_attempts WHERE student_id = ? AND kind = 'final'`, sid)) {
+      conn.prepare(`INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, status, created_at) VALUES (?, ?, 99, 'final', ?, 'planned', ?)`)
+        .run(cy, sid, classId(lopBe), new Date().toISOString());
+    }
+    conn.prepare(`INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, lop_dich_id, huong, boi_canh, tuan_bat_dau, nguoi_ra_lenh, ngay_ra_lenh, trang_thai, tao_luc)
+      VALUES (?, ?, ?, 'fast_track', 'cuoi-khoa', ?, ?, ?, 'cho', ?)`).run(sid, classId(lopBe), classId('MB FT 101'), t.addDays(tuanNay, 7), P.mbManager.userId, TODAY, new Date().toISOString());
+    const ds = metrics.hvLenFtChuaKyVong({ all: true, branchIds: [], classIds: [], none: false }, null) as any[];
+    const em = ds.find((r) => r.id === sid);
+    assert(em && em.lopNguonId === classId(lopBe), `hvLenFtChuaKyVong: ${JSON.stringify(em)}`);
+    const lopKhac = get(`SELECT id FROM classes WHERE status = 'active' AND id != ? AND branch_id = (SELECT branch_id FROM classes WHERE id = ?) LIMIT 1`, em.lopNguonId, em.lopNguonId).id;
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`).run(em.id, lopKhac, TODAY, new Date().toISOString());
+    const ql = loadPrincipal(get(`SELECT ur.user_id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'manager' AND ur.status = 'active'
+      AND ur.branch_id = (SELECT branch_id FROM classes WHERE id = ?) LIMIT 1`, em.lopNguonId).user_id);
+    const dong = itemsCua(ql).filter((i: any) => i.group === 'ky_vong_dau_ra');
+    const cuaEm = dong.filter((i: any) => i.key === `ky_vong:${em.id}`);
+    assert(cuaEm.length === 1 && cuaEm[0].classId === em.lopNguonId, `dòng của em: ${JSON.stringify(cuaEm.map((i: any) => i.classId))} · lớp nguồn ${em.lopNguonId}`);
+    assert(dong.length === metrics.metricSet(ql, 'hv-len-ft-chua-ky-vong', {}).n, `số dòng ${dong.length} ≠ chỉ số`);
+  });
+
+  check('Dọn-a (6c) · pa-can-cap-nhat = Ghi kết quả PA: nhóm 3 PA bổ trợ chung quá hạn → 1; cùng người giữ việc; em Tạm dừng → không có ở cả hai', () => {
+    const { sid } = emMoi('MB FOU 12');
+    const c = cases.reportIssue(P.normalCoreTeacher, { studentId: sid, topic: 'reading', title: 'Case bổ trợ chung Dọn-a', summary: 'Case dùng cho phép kiểm PA bổ trợ chung.',
+      primaryCode: d.issuesForTopic('reading')[0].code, idempotencyKey: `dona-6c-${sid}` });
+    const han = t.addDays(tuanNay, -7);
+    const ivIds = ['listening', 'reading', 'writing'].map((mon) => Number(conn.prepare(
+      `INSERT INTO case_interventions (case_id, kind, description, performer_user_id, recorded_by, status, started_date, action_due, cycle_no, nhom_bo_tro, created_at)
+       VALUES (?, 'bo_tro', ?, NULL, ?, 'started', ?, ?, 1, ?, ?)`).run(c.id, `Bổ trợ chung ${mon}`, P.normalCoreTeacher.userId, t.addDays(han, -14), han, `dona-nhom-${sid}`, new Date().toISOString()).lastInsertRowid));
+    const ql = P.mbManager;
+    const chiSo = () => metrics.metricSet(ql, 'pa-can-cap-nhat', {});
+    const viec = () => itemsCua(ql, { nguoi: 'tat-ca' }).filter((i: any) => i.group === 'ghi_ket_qua_pa' && i.caseId === c.id);
+    const cs = chiSo();
+    const cuaCs = cs.ids.filter((id: number) => ivIds.includes(id));
+    const v = viec();
+    assert(cuaCs.length === 1 && v.length === 1 && cuaCs[0] === Math.min(...ivIds) && v[0].key === `action:${cuaCs[0]}`, JSON.stringify({ chiSo: cuaCs, viec: v.map((i: any) => i.key) }));
+    const nguoiCs = cs.chiTiet?.get(cuaCs[0])?.nguoi?.[0] ?? null;
+    assert(nguoiCs === v[0].ownerId, `người giữ việc: chỉ số ${nguoiCs} · Công việc ${v[0].ownerId}`);
+    studentsSvc.setStudentStatus(P.admin, sid, 'inactive', TODAY, 'Tạm dừng thử Dọn-a');
+    assert(!chiSo().ids.some((id: number) => ivIds.includes(id)) && viec().length === 0, 'em Tạm dừng vẫn còn ở chỉ số / Công việc');
+  });
+
+  check('Dọn-a (6d) · Q13 lớp/môn có hai phân công, một hiệu lực từ tương lai → Nợ điểm, GV chấm (Lịch Test) và "người khác" (Công việc) ra cùng người', () => {
+    const lop = classId('MB FT 101');
+    const hienTai = get(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND skill = 'listening' AND status = 'active' ORDER BY id LIMIT 1`, lop).user_id;
+    const sau = P.w2Teacher.userId === hienTai ? P.w1Teacher.userId : P.w2Teacher.userId;
+    const idSau = Number(conn.prepare(`INSERT INTO teacher_assignments (class_id, user_id, skill, is_core, status, effective_from, created_at) VALUES (?, ?, 'listening', 0, 'active', ?, ?)`)
+      .run(lop, sau, t.addDays(TODAY, 30), new Date().toISOString()).lastInsertRowid);
+    try {
+      const ten = get('SELECT full_name FROM users WHERE id = ?', hienTai).full_name;
+      const no = (debt.scoreDebtCells(P.admin, TODAY, [MB]) as any[]).filter((x) => x.classId === lop && x.skill === 'listening');
+      const lich = (svc.listAttempts(P.mbManager, { classId: lop }).rows as any[]).filter((a) => a.pendingOwners && 'listening' in a.pendingOwners);
+      const khac = itemsCua(P.mbManager, { nguoi: 'tat-ca' }).filter((i: any) => i.group === 'score' && i.classId === lop && /Listening|L\b/.test(`${i.tieuDe} ${i.reason}`));
+      assert(no.length > 0 && no.every((x) => x.userId === hienTai), `Nợ điểm: ${[...new Set(no.map((x) => x.userId))]}`);
+      assert(lich.length > 0 && lich.every((a) => a.pendingOwners.listening === ten), `Lịch Test: ${[...new Set(lich.map((a) => a.pendingOwners.listening))]}`);
+      assert(khac.every((i: any) => i.ownerId === hienTai), `Công việc: ${[...new Set(khac.map((i: any) => i.ownerId))]}`);
+    } finally { conn.prepare('DELETE FROM teacher_assignments WHERE id = ?').run(idSau); }
+  });
+
+  check('Dọn-a (6e) · thông báo "bị từ chối" của thẻ Case A vẫn còn việc sau khi cùng người gửi thẻ cùng loại cho Case B của cùng em', () => {
+    const { sid } = emMoi('MB FT 101');
+    const moCase = (ten: string) => cases.reportIssue(P.lrTeacher, { studentId: sid, topic: 'listening', title: ten, summary: 'Case dùng cho phép kiểm thông báo từ chối.',
+      primaryCode: d.issuesForTopic('listening')[0].code, idempotencyKey: `dona-6e-${ten}-${sid}` });
+    const deXuat = (caseId: number, moTa: string) => {
+      const r = cases.recordIntervention(P.lrTeacher, caseId, { kind: 'tutor', description: moTa, status: 'planned', needsApproval: true, performerSelf: true });
+      return get(`SELECT id FROM yeu_cau_duyet WHERE loai = 'de_xuat_pa' AND doi_tuong_id = ?`, r.interventions[r.interventions.length - 1].id).id as number;
+    };
+    const a = moCase('Case A Dọn-a');
+    const b = cases.reportIssue(P.lrTeacher, { studentId: sid, topic: 'listening', title: 'Case B Dọn-a', summary: 'Case dùng cho phép kiểm thông báo từ chối.',
+      primaryCode: d.issuesForTopic('listening')[0].code, idempotencyKey: `dona-6e-B-${sid}`, parallel: true });
+    const theA = deXuat(a.id, 'Tutor 1-1 cho Case A');
+    yc.tuChoiYeuCau(P.mbManager, theA, 'Chưa đủ căn cứ cho PA này');
+    deXuat(b.id, 'Tutor 1-1 cho Case B');
+    const tb = (thongBao.thongBaoCua(P.lrTeacher.userId) as any[]).find((x) => x.kind === 'duyet_tu_choi' && x.entity_id === theA);
+    assert(tb && tb.con_viec === 1, `thông báo từ chối Case A: ${JSON.stringify(tb && { con_viec: tb.con_viec })}`);
+  });
+
+  check('Dọn-a (6f) · khai bậc: em mới Tạm dừng → coTheKhai false ở hồ sơ và Công việc không có việc khai bậc của em', () => {
+    const lop = 'MB FT 101';
+    const { sid } = emMoi(lop);
+    const gvcn = gvcnCua(lop);
+    const truoc = xuLy.yThucHocVien(gvcn, sid).coTheKhai;
+    studentsSvc.setStudentStatus(P.admin, sid, 'inactive', TODAY, 'Tạm dừng thử khai bậc');
+    const sau = xuLy.yThucHocVien(gvcn, sid).coTheKhai;
+    const coViec = itemsCua(gvcn).some((i: any) => i.group === 'khai_bac' && (i.studentId === sid || String(i.href).includes(`hv=${sid}`)));
+    assert(truoc === true && sau === false && !coViec, JSON.stringify({ truoc, sau, coViec }));
+    assert(/khaiDuoc\(em\)/.test(docNguon('server/src/worklist/mywork.ts')) && /coTheKhai: canManage && khaiDuoc\(em\)/.test(docNguon('server/src/yThuc/xuLy.ts')), 'hai đường không gọi chung khaiDuoc');
+  });
+
+  check('Dọn-a (6g) · 8 hạn Thứ Hai liên tiếp: chữ tuần ở Cần xử lý (tuanCuaHanGhiKetQua) = tuần ở tiêu đề form Ghi kết quả (nhanTuanGhiKetQua)', () => {
+    for (let k = 0; k < 8; k++) {
+      const han = t.addDays('2026-09-07', 7 * k);
+      const a = d.tuanCuaHanGhiKetQua(han, han);
+      const b = d.nhanTuanGhiKetQua(han, han).tieuDe.replace(/^Kết quả /, '');
+      assert(a === b && d.tuanKetQuaCuaHan(han) === t.addDays(han, -7), `${han}: "${a}" ≠ "${b}"`);
+    }
+  });
 }
