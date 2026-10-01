@@ -97,4 +97,10 @@ export async function runPrUxdTests(t: YThucTestKit) {
     assert(/route: string \| null/.test(sp), 'LopTrenTrang chưa có route');
     assert((sp.match(/lop\.route/g) ?? []).length >= 1 && (sp.match(/\bchuLop\b/g) ?? []).length >= 3, 'dòng phụ chưa dùng chuLop (thẻ + bảng)');
   });
+
+  // ------------------------------------------------------------------ Task 7 · Sót 375 ở màn GV hằng ngày
+  check('UXD (7) · KetLuanKhoa: chip hướng gợi ý xuống dòng được (whitespace-normal), không đẩy hồ sơ HV tràn ngang ở 375 px', () => {
+    const kl = doc('web/src/modules/students/KetLuanKhoa.tsx');
+    assert(/\[&>span\]:max-w-full \[&>span\]:whitespace-normal/.test(kl), 'chip hướng gợi ý của KetLuanKhoa chưa cho xuống dòng');
+  });
 }
