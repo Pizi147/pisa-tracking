@@ -236,4 +236,47 @@ export async function runPrUxfBTests(t: YThucTestKit) {
     assert(/<DongXinYKien/.test(doc('web/src/modules/cases/TheKyNang.tsx')), 'KhoiPa');
     assert(/Quản lý duyệt · hạn/.test(doc('web/src/modules/cases/SkillBoard.tsx')) && !/Quản lý hạn /.test(doc('web/src/modules/cases/SkillBoard.tsx')), 'R5-3');
   });
+
+  // ------------------------------------------------------------------ Task 7 · panel Tạm dừng đếm vi phạm (O2) + em sau khi Quản lý từ chối (VN26)
+  const profileSvc: any = await import('../students/profile.ts');
+  const ytTrangThai: any = await import('../yThuc/trangThai.ts');
+  const ytBoard: any = await import('../yThuc/board.ts');
+  check('UXF-b (7) · O2: hồ sơ trả soViPhamMo = số vi phạm còn mở của trangThaiYThuc (cùng nguồn với ô Ý thức); em không vi phạm → 0', () => {
+    const ids = (t.conn.prepare('SELECT DISTINCT student_id AS id FROM violations LIMIT 25').all() as any[]).map((r) => r.id as number);
+    assert(ids.length > 0, 'seed không có vi phạm');
+    let max = 0;
+    for (const id of ids) {
+      const em = ytTrangThai.trangThaiYThuc([id], t.TODAY).get(id);
+      const n = [...em.viPham.values()].filter((x: any) => x.t !== 'da_xu_ly').length;
+      const h = profileSvc.studentProfile(t.P.admin, id).dauHoSo;
+      assert(h.soViPhamMo === n, `HV ${id}: hồ sơ ${h.soViPhamMo} ≠ ${n}`);
+      const m = /(\d+) vi phạm mở/.exec(h.o.yThuc.phu ?? '');
+      if (m) assert(+m[1] === n, `HV ${id}: ô Ý thức "${h.o.yThuc.phu}" ≠ ${n}`);
+      max = Math.max(max, n);
+    }
+    assert(max >= 2, `demo phải có em ≥ 2 vi phạm mở (cao nhất ${max})`);
+    const khong = t.conn.prepare('SELECT s.id FROM students s WHERE NOT EXISTS (SELECT 1 FROM violations v WHERE v.student_id = s.id) LIMIT 1').get() as any;
+    assert(profileSvc.studentProfile(t.P.admin, khong.id).dauHoSo.soViPhamMo === 0, 'em không vi phạm');
+  });
+  check('UXF-b (7) · VN26: dongEm.tuChoi = biện pháp Quản lý đã từ chối mà vi phạm còn mở; em vào bắt buộc vì ≥ 3 vi phạm → null', () => {
+    const duc = t.conn.prepare(`SELECT id FROM students WHERE full_name = 'Kiều Minh Đức'`).get() as any;
+    const emDuc = ytTrangThai.trangThaiYThuc([duc.id], t.TODAY).get(duc.id);
+    const dd = ytBoard.dongEm(emDuc, 'Kiều Minh Đức', 'x', t.TODAY);
+    assert(/^Đình chỉ/.test(dd.tuChoi?.nhan ?? ''), JSON.stringify(dd.tuChoi));
+    const hv = (t.conn.prepare('SELECT DISTINCT student_id AS id FROM violations').all() as any[]).map((r) => r.id as number);
+    const trang = ytTrangThai.trangThaiYThuc(hv, t.TODAY);
+    let khong = 0;
+    for (const id of hv) {
+      const em = trang.get(id); const x = ytBoard.dongEm(em, 'a', 'b', t.TODAY);
+      const coTuChoi = em.xuLy.some((m: any) => m.status === 'tu_choi');
+      if (!coTuChoi) { assert(x.tuChoi === null, `HV ${id}: không có lần từ chối mà tuChoi ≠ null`); khong += 1; }
+    }
+    assert(khong > 0, 'phải có em không bị từ chối để kiểm vế null');
+  });
+  check('UXF-b (7) · quét chữ: panel Tạm dừng có câu "n vi phạm Ý thức đang chờ xử lý"; dòng em Ý thức nhánh tuChoi không in "vi phạm / 2 tuần"', () => {
+    assert(/vi phạm Ý thức đang chờ xử lý/.test(doc('web/src/modules/students/StudentManagePanel.tsx')) && /soViPhamMo=\{data\.dauHoSo\?\.soViPhamMo\}/.test(doc('web/src/modules/students/StudentDetailPage.tsx')), 'O2');
+    const cy = doc('web/src/modules/yThuc/ClassYThucCard.tsx');
+    const nhanh = cy.slice(cy.indexOf('x.tuChoi ?'), cy.indexOf('x.soBatBuoc > 0'));
+    assert(nhanh.includes('chọn cách xử lý khác') && !/vi phạm \/ 2 tuần/.test(nhanh), 'VN26');
+  });
 }

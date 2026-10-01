@@ -28,7 +28,7 @@ import { DeXuatSuaPanel } from '../duyet/DeXuatSuaPanel.tsx';
 export { mucQuanLyHocVien, type LopHocQuyen, type ViecQuanLy };
 const NHAN_VIEC = NHAN_VIEC_QUAN_LY;
 
-export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempts, onDone }: {
+export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempts, onDone, soViPhamMo = 0 }: {
   /** Việc đang mở; `null` = không mở gì. `lo-trinh` do nơi gọi mở (StudentPlanPanel), không qua đây. */
   viec: ViecQuanLy | null; onClose: () => void;
   student: {
@@ -40,6 +40,8 @@ export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempt
   cycle: any | null;
   attempts: any[];
   onDone: () => void;
+  /** PR-UXF-b (O2): số vi phạm Ý thức còn mở — lấy từ dữ liệu hồ sơ đã nạp (một nguồn với ô Ý thức), không gọi thêm. */
+  soViPhamMo?: number;
 }) {
   if (!viec || viec === 'lo-trinh') return null;
   const xong = () => { onDone(); onClose(); };
@@ -48,8 +50,8 @@ export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempt
     case 'lo-trinh-tiep': return <LoTrinhTiepPanel open {...chung} />;
     case 'chuyen-lop': return <ChuyenLopPanel open cheDo="lenh" {...chung} />;
     case 'de-xuat-chuyen-lop': return <ChuyenLopPanel open cheDo="de-xuat" {...chung} />;
-    case 'tam-dung': return <TrangThaiPanel {...chung} status="inactive" />;
-    case 'quay-lai': return <TrangThaiPanel {...chung} status="active" />;
+    case 'tam-dung': return <TrangThaiPanel {...chung} status="inactive" soViPhamMo={soViPhamMo} />;
+    case 'quay-lai': return <TrangThaiPanel {...chung} status="active" soViPhamMo={soViPhamMo} />;
     case 'ket-thuc': return <TrangThaiPanel {...chung} status="finished" />;
     case 'luu-tru': return <LuuTruPanel {...chung} boLuuTru={false} />;
     case 'bo-luu-tru': return <LuuTruPanel {...chung} boLuuTru />;
@@ -72,7 +74,7 @@ type ChungViec = { studentId: number; studentName: string; lop?: string | null; 
  * TẠM DỪNG HỌC / QUAY LẠI HỌC / KẾT THÚC HỌC (PR-LT, §3.9.4, Q9). Cùng một panel, ba trạng thái — lý do bắt buộc khi dừng/kết thúc; ngày hiệu
  * lực tuỳ chọn (mặc định hôm nay ở máy chủ).
  */
-function TrangThaiPanel({ studentId, studentName, lop, onClose, onDone, status }: ChungViec & { status: 'active' | 'inactive' | 'finished' }) {
+function TrangThaiPanel({ studentId, studentName, lop, onClose, onDone, status, soViPhamMo = 0 }: ChungViec & { status: 'active' | 'inactive' | 'finished'; soViPhamMo?: number }) {
   const toast = useToast();
   const [lyDo, setLyDo] = useState('');
   const [ngayHl, setNgayHl] = useState('');
@@ -88,6 +90,10 @@ function TrangThaiPanel({ studentId, studentName, lop, onClose, onDone, status }
   const soPa = caseMo.flatMap((c) => c.plans).filter((pl) => pl.status === 'started').length;
   const heQuaCase = soCho + soPa > 0
     ? `${soCho} Case chờ xác nhận · ${soPa} PA đang chạy — ${status === 'inactive' ? 'tạm dừng hạn; Quay lại thì hạn tính lại từ ngày quay lại' : 'hạn tính lại từ ngày quay lại'}.`
+    : null;
+  /* O2 (Q14): vi phạm Ý thức còn mở cũng dừng hạn khi Tạm dừng, và tính lại từ ngày Quay lại. */
+  const heQuaYThuc = status !== 'finished' && soViPhamMo > 0
+    ? `${soViPhamMo} vi phạm Ý thức đang chờ xử lý — ${status === 'inactive' ? 'tạm dừng hạn; Quay lại thì hạn tính lại từ ngày quay lại' : 'hạn tính lại từ ngày quay lại'}.`
     : null;
   const loi = dsLoi(canDoLuon ? [] : [{ khoa: 'ly-do', nhan: 'Lý do', toiThieu: 1 }], { 'ly-do': lyDo });
 
@@ -111,8 +117,8 @@ function TrangThaiPanel({ studentId, studentName, lop, onClose, onDone, status }
       }}>
       <Khoi tieuDe={tieuDe}
         luat={status === 'finished' ? 'Case còn mở sẽ được hệ thống đóng “Học viên kết thúc khoá”. Hồ sơ vào khu Lưu trữ (chỉ xem).'
-          : status === 'inactive' ? ['Em nghỉ một thời gian, giữ lớp và lộ trình để quay lại sau.', heQuaCase].filter(Boolean).join(' ')
-          : heQuaCase ?? undefined}>
+          : status === 'inactive' ? ['Em nghỉ một thời gian, giữ lớp và lộ trình để quay lại sau.', heQuaCase, heQuaYThuc].filter(Boolean).join(' ')
+          : [heQuaCase, heQuaYThuc].filter(Boolean).join(' ') || undefined}>
         {!canDoLuon && (
           <Truong nhan="Lý do" batBuoc loi={lf.loiCua(loi, 'ly-do')}>
             <input className="field w-full" {...lf.o(loi, 'ly-do')} value={lyDo} onChange={(e) => setLyDo(e.target.value)} />

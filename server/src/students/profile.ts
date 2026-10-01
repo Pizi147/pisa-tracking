@@ -389,6 +389,8 @@ function boOVaCau(i: {
   const tenKn = new Map(board.rows.map((r) => [r.category as string, r.label as string]));
   const vi = em?.viPham ? [...em.viPham.values()] as any[] : [];
   const quaHanYt = Math.max(0, ...vi.map((t) => t.quaHanNgay ?? 0)) || null;
+  /* PR-UXF-b (Q14): MỘT số vi phạm còn mở — ô Ý thức (`soMo`) và panel Tạm dừng ("n vi phạm Ý thức đang chờ xử lý") cùng đọc nó. */
+  const soViPhamMo = vi.filter((t) => t.t !== 'da_xu_ly').length;
   const deXuatCho = em?.deXuat?.status === 'cho_duyet' ? nhanLoaiXuLy(em.deXuat.kind, em.deXuat.customName) : null;
   const keTiep = em?.keTiep ? MEASURE_KIND_LABEL[em.keTiep.kind as keyof typeof MEASURE_KIND_LABEL] ?? null : null;
 
@@ -424,7 +426,7 @@ function boOVaCau(i: {
     yThuc: oYThuc(em ? {
       bacTen: em.bac > 0 ? MEASURE_KIND_LABEL[THANG[em.bac - 1] as keyof typeof MEASURE_KIND_LABEL] ?? null : null,
       nhom: em.nhom ?? null, soBatBuoc: em.soBatBuoc ?? 0, keTiep, han: em.han ?? null, quaHanNgay: quaHanYt, deXuat: deXuatCho,
-      soMo: vi.filter((t) => t.t !== 'da_xu_ly').length, tamDung: !!em.tamDung || s.status === 'inactive',
+      soMo: soViPhamMo, tamDung: !!em.tamDung || s.status === 'inactive',
     } : null),
     sapToi: {
       ...oSapToi({
@@ -440,7 +442,7 @@ function boOVaCau(i: {
       attemptId: nextA?.id ?? null,
     },
   };
-  return { tomTat, o };
+  return { tomTat, o, soViPhamMo };
 }
 
 /**
@@ -961,7 +963,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     })(),
     /** PR-VAI-b: đầu hồ sơ "hiểu trong 30 giây" (mockup 24) — em là ai · em đang thế nào · bốn ô · việc của bạn. */
     dauHoSo: {
-      thongTin, viec, tomTat: dau.tomTat, o: dau.o,
+      thongTin, viec, tomTat: dau.tomTat, o: dau.o, soViPhamMo: dau.soViPhamMo,
       /** Kỹ năng dưới kỳ vọng ở đợt gần nhất (tên ngắn) — dựng từ CÙNG bảng kỹ năng bên dưới, hai chỗ không nói ngược nhau (mục 4.1). */
       duoi: board.rows.filter((r) => r.missed === true).map((r) => (r.short ?? r.label) as string),
     },

@@ -394,7 +394,7 @@ export default function StudentDetailPage() {
           dob: data.dob ?? null, email: data.email ?? null, consultantName: data.consultantName ?? null, note: data.note ?? null,
           status: data.status,
         }}
-        cycle={cy} attempts={data.attempts} onDone={reload}
+        cycle={cy} attempts={data.attempts} onDone={reload} soViPhamMo={data.dauHoSo?.soViPhamMo}
       />
     </div>
   );
