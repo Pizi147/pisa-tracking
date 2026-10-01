@@ -413,7 +413,8 @@ export async function runPrSosTests(t: YThucTestKit) {
     const iv = plansOf(c.id)[0];
     const cause = viecCua(P.w2Teacher).find((i) => i.key === `cause:${c.id}`);
     assert(cause && cause.tieuDe === `Xác nhận nguyên nhân Writing Task 2 · ${st.name}` && cause.due === c.han_xac_nhan && cause.actionLabel === 'Xác nhận nguyên nhân', JSON.stringify(cause));
-    assert(profileSvc.studentProfile(P.w2Teacher, st.id).headline.next?.text === 'Xác nhận nguyên nhân Writing Task 2', 'đầu hồ sơ chưa dùng việc tiếp v4');
+    /* PR-VAI-b (Q5): `headline.next` → `dauHoSo.viec.cuaBan` — GVBM W2 thấy "Xác nhận nguyên nhân Writing Task 2" là việc của mình. */
+    assert(profileSvc.studentProfile(P.w2Teacher, st.id).dauHoSo.viec.cuaBan[0]?.chu === 'Xác nhận nguyên nhân Writing Task 2', 'đầu hồ sơ chưa dùng việc tiếp v4');
     sosAuto.xacNhanCase(P.w2Teacher, c.id, { primaryCode: W2_CODE, urgency: 'attention', moTa: 'Em viết lạc đề ở Task 2, lập luận yếu.' });
     const ds = viecCua(P.w2Teacher);
     const xn = ds.find((i) => i.key === `xnpa:${iv.id}`);
@@ -467,7 +468,9 @@ export async function runPrSosTests(t: YThucTestKit) {
     const hangCase = hamCua(sb, 'HangCase');
     assert(!/<Level/.test(hangCase) && /<NhanTrangThai/.test(hangCase) && /<TenCase/.test(hangCase), 'hàng Case: SOS chỉ trong chip tên, một nhãn trạng thái');
     assert(!/followupDue/.test(hamCua(sb, 'HangPA')), 'HangPA còn hiện dự kiến kết thúc');
-    assert(/viecTiep/.test(hamCua(sb, 'nextStepOf')), 'nextStepOf chưa dùng việc tiếp v4');
+    /* PR-VAI-b (Task 6): `nextStepOf` → hàm thuần `viecTiepHang` (shared), vẫn đọc việc tiếp v4. */
+    const hs = doc('shared/domain/hoSoHocVien.ts');
+    assert(/viecTiepHang\(row\.cases/.test(sb) && /viecTiep/.test(hs.slice(hs.indexOf('export function viecTiepHang'))), 'nextStepOf chưa dùng việc tiếp v4');
     assert(/Chưa đạt · không mở Case/.test(sb) && /Không theo dõi \(Quản lý duyệt/.test(sb), 'CotCase thiếu chữ K3-06');
     assert((sb.match(/<CotPhai/g) ?? []).length >= 4 && /khoiSos/.test(sb), 'cột phải / khoiSos');
   });

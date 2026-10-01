@@ -1,15 +1,19 @@
-import { useState, type ReactNode } from 'react';
+import { createContext, useContext, useState, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { Empty, ErrorState, NhanTrangThai, Outcome, SCORE_CHIP, SCORE_TEXT, Skeleton, type ScoreTone } from '../../ui/ui.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { fmtBand } from '../../lib/format.ts';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
-import { Nhan, QuaHan } from '../../ui/Nhan.tsx';
+import { Nhan } from '../../ui/Nhan.tsx';
+import { IconCanhBao } from '../../ui/BieuTuong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { useDienThoai } from '../../ui/TheDong.tsx';
+import { TheKyNangDs } from './TheKyNang.tsx';
 import { type BanDieuChinh } from './CapNhatTuan.tsx';
 import { KhongTheoDoiForm } from '../yThuc/CaseSosControls.tsx';
 import type { BoTro } from './NopKeHoachPanel.tsx';
 import {
-  ATTEMPT_KIND_SHORT, OUTCOME_MARK, OUTCOME_TONE, dangChay, deadlineView, tienDoCase, tuanLich, viecTiepPhuongAn,
+  ATTEMPT_KIND_SHORT, OUTCOME_MARK, OUTCOME_TONE, chuKetQuaPa, duongDotTest, chuKhoangPa, dangChay, deadlineView, tienDoCase, tuanLich, viecTiepHang, viecTiepPhuongAn,
   type AttemptKind, type DeadlineKind, type DeadlineView, type TrangThai, type TrangThaiCaseV4,
 } from '@shared/domain/index.ts';
 
@@ -72,6 +76,8 @@ type CaseCard = {
   /** PR-SOS (§7.3, K3-07): MỘT nhãn trạng thái + MỘT việc tiếp (máy chủ tính bằng `sosV4.ts`). */
   trangThaiV4: { k: TrangThaiCaseV4; t: TrangThai; chu: string; han: string | null };
   viecTiep: { chu: string; loaiHan: DeadlineKind | null; han: string | null; paId?: number } | null;
+  /** PR-VAI-b (Q3): người làm việc tiếp — máy chủ tính một chỗ (`nguoiLamCua`); "Quản lý" khi chờ duyệt (vai, không tên). */
+  nguoiLam?: { id: number | null; ten: string | null } | null;
   urgency: string | null; sosLevel: number | null;
   carriedOver: boolean; parallel: boolean;
   openedOn: string | null; touchedOn: string | null;
@@ -94,6 +100,8 @@ export type Row = {
   /** Mã chương trình lộ trình — bộ nguyên nhân theo môn (T57: FOU G+V / P, Pre FOU Tổng hợp). */
   chuongTrinh?: string | null;
   band: number | null; bandAttemptNo: number | null; bandWeek: string | null;
+  /** PR-VAI-b (G5): id lượt của `bandAttemptNo` — liên kết hồ sơ Mock cuộn tới kỹ năng. */
+  bandAttemptId?: number | null;
   expectation: number | null; missed: boolean | null;
   /** PR-S3F #5: lộ trình KCK (không cam kết) — `missed` null vì không có kỳ vọng, KHÔNG phải "đạt". */
   kck?: boolean;
@@ -131,11 +139,28 @@ const STATE_KIND: Record<Row['state'], 'doing' | 'waiting' | 'done' | 'idle'> = 
   none: 'idle', chua_xu_ly: 'waiting', no_plan: 'waiting', working: 'doing', done: 'done',
 };
 
+/**
+ * NHÃN TẠM DỪNG (T65, Q11) — em đang Tạm dừng thì mọi hạn dừng: nhãn vàng `Tạm dừng từ 21/09` thay "Quá hạn" và "⚠ quá hạn n ngày" ở bảng
+ * kỹ năng, Ngăn Case. Chỉ đổi chữ (máy chủ đã lọc em Tạm dừng khỏi số liệu). Ngày dd/mm — ngày của sự việc.
+ */
+export function NhanTamDung({ tu }: { tu: string }) {
+  return (
+    <span className="inline-flex items-center whitespace-nowrap rounded-md bg-soon-bg px-1.5 py-0.5 text-[11.5px] font-semibold tabular-nums text-soon"
+      title="Em đang Tạm dừng học — mọi hạn đang dừng; quay lại học thì hạn tính lại từ ngày quay lại">
+      Tạm dừng từ {tu.slice(8, 10)}/{tu.slice(5, 7)}
+    </span>
+  );
+}
+/** Ngày Tạm dừng của em (null = đang học) — đọc ở mọi hàng của bảng mà không truyền tay qua từng tầng. */
+export const TamDungCtx = createContext<string | null>(null);
+
 /** Việc mở ngăn Case từ bảng này (Q3): không còn form trải trong trang. `viec` không có = mở view Case. PR-SOS: + Xác nhận Case / PA. */
 export type MoCase = { viec?: 'ghi-ket-qua' | 'them-pa' | 'xac-nhan' | 'xac-nhan-pa' | 'ke-hoach'; paId?: number };
 
-export function SkillBoard({ rows, loading, error, onRetry, selected, onPick, onReport, onChanged, onMoCase }: {
+export function SkillBoard({ rows, loading, error, onRetry, selected, onPick, onReport, onChanged, onMoCase, tamDungTu = null }: {
   rows: Row[] | null;
+  /** PR-VAI-b (T65): em đang Tạm dừng → ngày dừng; "Quá hạn" thành nhãn vàng. */
+  tamDungTu?: string | null;
   loading?: boolean;
   error?: { message: string; hint?: string } | null;
   onRetry?: () => void;
@@ -146,12 +171,16 @@ export function SkillBoard({ rows, loading, error, onRetry, selected, onPick, on
   /** Mở ngăn Case (một panel) — Ghi kết quả / Thêm PA / xem Case đều đi qua đây. */
   onMoCase: (caseId: number, o?: MoCase) => void;
 }) {
+  const dienThoai = useDienThoai();
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={onRetry} />;
   if (loading || !rows) return <Skeleton rows={6} />;
   if (!rows.length) return <Empty title="Chưa có hạng mục nào để theo dõi" />;
+  /* PR-VAI-b (UX-D3): < 640 px chỉ vẽ THẺ (không vẽ bảng rồi ẩn) — bảng 4 cột ở 375 px phải cuộn ngang, GV không thấy cột Việc tiếp. */
+  if (dienThoai) return <TamDungCtx.Provider value={tamDungTu}><TheKyNangDs rows={rows} onMoCase={onMoCase} /></TamDungCtx.Provider>;
 
   /* MỘT bảng, tiêu đề cột MỘT lần, mỗi kỹ năng một <tbody> (hàng lớn + hàng con khi mở) — cùng khuôn với Học viên & Lớp. */
   return (
+    <TamDungCtx.Provider value={tamDungTu}>
     <div className="overflow-x-auto">
       <table className="w-full min-w-[680px] table-fixed text-sm">
         <colgroup><col className="w-[24%]" /><col className="w-[17%]" /><col className="w-[28%]" /><col className="w-[31%]" /></colgroup>
@@ -167,17 +196,30 @@ export function SkillBoard({ rows, loading, error, onRetry, selected, onPick, on
         ))}
       </table>
     </div>
+    </TamDungCtx.Provider>
   );
 }
 
-/** Hạn của việc tiếp theo, một dòng dưới chữ việc: "⚠ quá hạn 15 ngày" (đỏ) · "hôm nay" (vàng) · "hạn hết T2 31/08" (mờ). Chỗ DUY NHẤT nói quá hạn của kỹ năng. */
-function DongHan({ v }: { v: DeadlineView | null }) {
-  if (!v || v.han === 'chưa có hạn') return null;
+/**
+ * Dòng phụ của cột Việc tiếp (12 px, Q22): `hạn hết 02/10 · Đỗ Thanh Tùng` · quá hạn: ⚠ SVG + `quá hạn 3 ngày` đỏ + người · hôm nay vàng.
+ * Em Tạm dừng: nhãn vàng thay MỌI hạn (T65 — "mọi hạn đang dừng", kể cả hạn chưa tới), giữ người. Chỗ DUY NHẤT nói quá hạn của kỹ năng.
+ */
+function DongHan({ v }: { v: NonNullable<ReturnType<typeof viecTiepHang>> }) {
+  const tamDung = useContext(TamDungCtx);
+  if (tamDung && (v.quaHan || v.homNay || v.han)) {
+    return (
+      <span className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[12px] text-slate-400">
+        <NhanTamDung tu={tamDung} />{v.nguoi && <span className="truncate">{v.nguoi}</span>}
+      </span>
+    );
+  }
+  if (!v.han && !v.nguoi) return null;
   return (
-    <span className="block whitespace-nowrap text-[11px] font-normal">
-      {v.tone === 'overdue' ? <QuaHan ngay={v.daysOverdue} />
+    <span className="block truncate text-[12px] font-normal tabular-nums text-slate-400">
+      {v.quaHan ? <span className="inline-flex items-center gap-1 font-semibold text-bad"><IconCanhBao />{v.quaHan}</span>
         : v.homNay ? <span className="font-semibold text-soon">hôm nay</span>
-        : <span className="text-slate-500">{v.han}</span>}
+        : v.han}
+      {v.nguoi && <>{v.han || v.quaHan ? ' · ' : ''}{v.nguoi}</>}
     </span>
   );
 }
@@ -195,7 +237,7 @@ function SkillRows({ row, open, onToggle, onReport, onChanged, onMoCase }: {
     if (done(a) !== done(b)) return done(a) - done(b);
     return (b.touchedOn ?? '').localeCompare(a.touchedOn ?? '') || b.id - a.id;
   });
-  const buoc = nextStepOf(row, homNay);
+  const buoc = viecTiepHang(row.cases, homNay);
 
   return (
     <>
@@ -211,10 +253,10 @@ function SkillRows({ row, open, onToggle, onReport, onChanged, onMoCase }: {
         <td className="px-3 font-normal">
           {buoc ? (
             <span className="block min-w-0 font-normal" title={buoc.title}>
-              <span className="block truncate text-xs text-slate-100">{buoc.viec}</span>
-              <DongHan v={buoc.han} />
+              <span className="block truncate text-[12px] text-slate-100">{buoc.viec}</span>
+              <DongHan v={buoc} />
             </span>
-          ) : <span className="text-xs text-slate-600">—</span>}
+          ) : <span className="text-xs text-faint" title="Không có việc tiếp">—</span>}
         </td>
       </HangNhom>
 
@@ -242,6 +284,7 @@ function SkillRows({ row, open, onToggle, onReport, onChanged, onMoCase }: {
  */
 function CotCase({ row }: { row: Row }) {
   const { ngan } = useNgayNghiepVu();
+  const tamDung = useContext(TamDungCtx);
   const c = row.cases.find((x) => x.id === row.caseId) ?? row.cases.find((x) => x.status !== 'done') ?? row.cases[0];
   if (c) {
     const tt = c.trangThaiV4;
@@ -249,7 +292,7 @@ function CotCase({ row }: { row: Row }) {
       <span className="block min-w-0 font-normal">
         <span className="block truncate text-xs text-slate-200" title={c.title}><TenCase c={c} /></span>
         <span className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-slate-400">
-          <NhanTrangThai t={tt.t} />
+          {tamDung && tt.t === 'qua-han' ? <NhanTamDung tu={tamDung} /> : <NhanTrangThai t={tt.t} />}
           <span>{tt.k === 'huy-khong-theo-doi' ? `Không theo dõi (Quản lý duyệt ${ngan(c.closedOn)})`
             : tt.k === 'dang-lam' ? tienDoCase(c.plans, c).text : tt.k === 'xong' ? (c.outcomeLabel ?? '') : tt.chu}</span>
           {row.parallelCount > 1 && <span>· {row.parallelCount} Case song song</span>}
@@ -287,7 +330,7 @@ export function TenCase({ c }: { c: Pick<CaseCard, 'title' | 'tenSos'> }) {
 }
 
 /** Mũi tên gập/mở vẽ SVG 8px (ký tự ▸/▾ ở cỡ nhỏ của Inter chỉ còn như một dấu chấm). */
-function MuiTen({ mo }: { mo: boolean }) {
+export function MuiTen({ mo }: { mo: boolean }) {
   return (
     <svg aria-hidden viewBox="0 0 8 8" width="8" height="8" className={`transition-transform ${mo ? 'rotate-90' : ''}`}>
       <path d="M2.5 1 6 4 2.5 7" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -302,6 +345,16 @@ export function KhoaQuyChe() {
       <path d="M4 5.25V3.75a2 2 0 0 1 4 0v1.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
     </svg>
   );
+}
+
+/**
+ * NHÃN LOẠI (Q13, luật chung cả hồ sơ — mockup 24, 26): `Case` = khung RỖNG (viền chữ chính, không nền) · `PA` = khối ĐẶC (nền `line-strong`);
+ * PA chờ Quản lý duyệt kế hoạch: nền tím nhạt.
+ */
+export function NhanLoai({ loai, cho }: { loai: 'Case' | 'PA'; cho?: boolean }) {
+  const lop = loai === 'Case' ? 'border border-current text-slate-100'
+    : cho ? 'bg-wait-bg text-wait' : 'bg-[color:var(--line-strong)] text-slate-100';
+  return <span className={`inline-flex shrink-0 items-center rounded px-[5px] text-[11px] font-bold leading-[15px] ${lop}`}>{loai}</span>;
 }
 
 /** Màu vạch trái 3px của hàng Case theo nhãn trạng thái (token có sẵn — không màu mới). */
@@ -324,6 +377,7 @@ function HangCase({ c, ngan, onChanged, onMoCase }: {
   const [mo, setMo] = useState(!daXong);
   const [moXong, setMoXong] = useState(false);
   const tt = c.trangThaiV4;
+  const tamDung = useContext(TamDungCtx);
   const td = tienDoCase(c.plans, c);
   const chay = c.plans.filter(dangChay);
   const xong = c.plans.filter((p) => !dangChay(p));
@@ -347,20 +401,21 @@ function HangCase({ c, ngan, onChanged, onMoCase }: {
               className="inline-flex h-5 w-5 shrink-0 appearance-none items-center justify-center rounded border-0 bg-transparent p-0 text-slate-400 hover:text-slate-100">
               <MuiTen mo={mo} />
             </button>
-            <span className="min-w-0 truncate text-xs font-bold text-slate-100" title={c.title}><TenCase c={c} /></span>
+            <NhanLoai loai="Case" />
+            <span className="min-w-0 truncate text-[12.5px] font-bold text-slate-100" title={c.title}><TenCase c={c} /></span>
           </span>
-          {dongPhu && <span className="block truncate pl-[26px] text-[11px] text-slate-500" title={dongPhu}>{dongPhu}</span>}
+          {dongPhu && <span className="block truncate pl-[26px] text-[12px] text-slate-500" title={dongPhu}>{dongPhu}</span>}
         </td>
         <td className="td">
           <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-            <NhanTrangThai t={tt.t} title={tt.chu} />
-            <span className="text-[11px] text-slate-300">
+            {tamDung && tt.t === 'qua-han' ? <NhanTamDung tu={tamDung} /> : <NhanTrangThai t={tt.t} title={tt.chu} />}
+            <span className="text-[12px] text-slate-300">
               {tt.k === 'dang-lam' ? td.text : tt.k === 'xong' ? null : tt.chu}
             </span>
           </span>
-          {tt.han && !daXong && <span className="mt-0.5 block"><Han loai={tt.k === 'cho-ke-hoach' ? 'ke-hoach-bo-tro' : 'xac-minh-sos'} han={tt.han} /></span>}
-          {tt.k === 'cho-duyet-ke-hoach' && c.boTro?.keHoach?.hanDuyet && <span className="mt-0.5 block text-[11px] text-wait tabular-nums">Quản lý hạn {ngan(c.boTro.keHoach.hanDuyet)}</span>}
-          {daXong && c.outcomeLabel && <span className="mt-0.5 block text-[11px] text-slate-500">Kết luận: {c.outcomeLabel}</span>}
+          {tt.han && !daXong && !(tamDung && tt.t === 'qua-han') && <span className="mt-0.5 block"><Han loai={tt.k === 'cho-ke-hoach' ? 'ke-hoach-bo-tro' : 'xac-minh-sos'} han={tt.han} /></span>}
+          {tt.k === 'cho-duyet-ke-hoach' && c.boTro?.keHoach?.hanDuyet && <span className="mt-0.5 block text-[12px] text-wait tabular-nums">Quản lý hạn {ngan(c.boTro.keHoach.hanDuyet)}</span>}
+          {daXong && c.outcomeLabel && <span className="mt-0.5 block text-[12px] text-slate-500">Kết luận: {c.outcomeLabel}</span>}
         </td>
         <td className="td">
           {choNguyenNhan && c.canEdit ? (
@@ -404,7 +459,7 @@ function HangCase({ c, ngan, onChanged, onMoCase }: {
       {mo && xong.length > 0 && (
         <HangCon className="hang-pa">
           <td className="td" colSpan={4}>
-            <button type="button" className="link inline-flex appearance-none items-center gap-1 border-0 bg-transparent p-0 text-[11px]" aria-expanded={moXong}
+            <button type="button" className="link inline-flex appearance-none items-center gap-1 border-0 bg-transparent p-0 text-[12px]" aria-expanded={moXong}
               onClick={() => setMoXong(!moXong)}>
               <MuiTen mo={moXong} /> {xong.length} PA đã xong
             </button>
@@ -426,11 +481,13 @@ function HangPA({ p, c, ngan, onMoCase }: {
   onMoCase: (caseId: number, o?: MoCase) => void;
 }) {
   const { homNay } = useNgayNghiepVu();
+  const tamDung = useContext(TamDungCtx);
   const v = viecTiepPhuongAn(p);
   const han = p.actionDue ? deadlineView({ kind: 'cap-nhat-pa', due: p.actionDue, today: homNay }) : null;
   /* PR-S5F-b: PA Bổ trợ nói TUẦN (`từ W3 SEP`), không ngày — thời gian trên màn ưu tiên mã tuần. */
   const boTro = p.kind === 'bo_tro' && !!c.boTro;
-  const khoang = p.startedOn ? `từ ${boTro ? tuanLich(p.startedOn, homNay) : ngan(p.startedOn)}${p.completedOn ? ` → ${ngan(p.completedOn)}` : ''}` : null;
+  /* Q19: khoảng PA nói MÃ TUẦN (`từ W3 SEP · đến MT2 · W4 OCT`), không dd/mm. PA Bổ trợ: mốc đã nằm trong tên. */
+  const khoang = chuKhoangPa({ startedOn: p.startedOn, completedOn: p.completedOn, mocChu: boTro ? null : p.mocChu }, homNay);
   const chuaLich = !!p.mocChu && /chưa có (lịch|ngày thi)/.test(p.mocChu);
   /* PR-S5F-b (mockup LT2a): tên PA Bổ trợ = `Bổ trợ 2 buổi/tuần · đến Cuối khoá · W4 OCT · trừ buổi Free` — mốc nằm trong tên, không lặp ở dòng phụ. */
   const ten = boTro ? `Bổ trợ ${c.boTro!.buoiMoiTuan} buổi/tuần · ${p.mocChu ?? 'đến Cuối khoá'} · trừ buổi Free` : p.name;
@@ -441,30 +498,32 @@ function HangPA({ p, c, ngan, onMoCase }: {
     p.closedReason === 'superseded' ? 'được thay' : p.revisions.length > 0 ? `điều chỉnh ${p.revisions.length} lần` : null].filter(Boolean).join(' · ');
   return (
     <HangCon className="hang-pa">
-      <td className="td" colSpan={2}>
-        <div className="flex min-w-0 items-center gap-1.5 pl-5">
-          <span className={`shrink-0 rounded border px-1 text-[11px] font-semibold leading-4 ${choDuyetKh ? 'border-dashed border-current text-wait' : 'border-[color:var(--line-strong)] text-slate-400'}`}>PA</span>
+      <td className="td relative" colSpan={2}>
+        {/* Đường nối nhỏ từ Case xuống (mockup 24 `.kb tr.hp td:first-child::before`) — PA này thuộc Case trên. */}
+        <span aria-hidden className="absolute left-[22px] top-0 h-4 w-[11px] rounded-bl-md border-b-[1.5px] border-l-[1.5px]" style={{ borderColor: 'var(--line-strong)' }} />
+        <div className="flex min-w-0 items-center gap-1.5 pl-[30px]">
+          <NhanLoai loai="PA" cho={choDuyetKh} />
           <button type="button" onClick={() => onMoCase(c.id, { paId: p.id })} title="Mở PA trong ngăn Case"
             className={`min-w-0 appearance-none border-0 bg-transparent p-0 text-left text-xs text-slate-100 hover:underline ${boTro ? '' : 'truncate'}`}>
             {ten}
           </button>
           {p.batBuoc && (
-            <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-[11px] text-slate-400" title={p.kind === 'bo_tro' ? 'PA Bổ trợ bắt buộc đến Cuối khoá — không thay, không kết thúc sớm' : 'PA theo quy chế SOS — không thay, không kết thúc sớm'}>
+            <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-[12px] text-slate-400" title={p.kind === 'bo_tro' ? 'PA Bổ trợ bắt buộc đến Cuối khoá — không thay, không kết thúc sớm' : 'PA theo quy chế SOS — không thay, không kết thúc sớm'}>
               <KhoaQuyChe />theo quy chế
             </span>
           )}
         </div>
-        <span className="block truncate pl-5 text-[11px] text-slate-500" title={dongPhu}>
+        <span className="block truncate pl-[30px] text-[12px] text-slate-400" title={dongPhu}>
           {dongPhu}
-          {p.mocChu && !boTro && <span className={chuaLich ? 'text-soon' : ''}> · {p.mocChu}</span>}
+          {chuaLich && <span className="text-soon"> · chưa có lịch</span>}
         </span>
       </td>
       <td className="td">
         {p.lastOutcomeLabel ? (
           <Outcome tone={OUTCOME_TONE[p.lastOutcome ?? ''] ?? 'muted'} mark={OUTCOME_MARK[p.lastOutcome ?? '']} title={p.lastNote ?? undefined}>
-            {p.lastOutcomeLabel}{p.lastOutcomeOn ? ` · ${ngan(p.lastOutcomeOn)}` : ''}
+            {chuKetQuaPa(p.lastOutcomeLabel, p.lastOutcomeOn, homNay)}
           </Outcome>
-        ) : <span className="text-[11px] text-slate-500">{v.loai === 'cho-xac-nhan' || chuaChay ? 'Chưa bắt đầu' : 'Chưa có kết quả'}</span>}
+        ) : <span className="text-[12px] text-slate-500">{v.loai === 'cho-xac-nhan' || chuaChay ? 'Chưa bắt đầu' : 'Chưa có kết quả'}</span>}
       </td>
       <td className="td">
         {chuaChay ? (
@@ -491,7 +550,8 @@ function HangPA({ p, c, ngan, onMoCase }: {
                 {v.loai === 'ghi-cuoi' ? 'Ghi kết quả cuối' : 'Ghi kết quả'}
               </button>
             ) : undefined}
-            phu={han?.han} />
+            phu={tamDung && han?.tone === 'overdue' ? <NhanTamDung tu={tamDung} />
+              : han ? <>{han.viec} · {han.han}{han.quaHan && <span className="inline-flex items-center gap-1 font-semibold text-bad"> <IconCanhBao />{han.quaHan}</span>}</> : null} />
         ) : <CotPhai phu={<NhanTrangThai t={p.closedReason === 'khong_theo_doi' || p.status === 'cancelled' ? 'da-huy' : 'xong'} />} />}
       </td>
     </HangCon>
@@ -536,20 +596,31 @@ function ScoreCell({ row }: { row: Row }) {
         {value}
       </span>
       {!row.ratio && g !== null && (
-        <span className={`text-[11px] ml-1.5 font-medium ${scoreToneText(row)}`}>{gapText(g)}</span>
+        <span className={`text-[12px] ml-1.5 font-medium ${scoreToneText(row)}`}>{gapText(g)}</span>
       )}
-      <span className="block text-xs text-slate-400 mt-0.5">
-        {row.bandAttemptNo ? (row.ratio ? boNamCungNam(row.bandWeek, homNay) : `MT${row.bandAttemptNo}`) : ''}
-        {row.ratio
-          ? (row.missed === false ? ' · đạt' : row.missed === true ? ' · chưa đạt' : '')
-          : row.expectation !== null ? ` · kỳ vọng ${fmtBand(row.expectation)}` : ''}
-      </span>
+      <span className="block text-[12px] text-slate-400 mt-0.5"><DongMt row={row} /></span>
       {!row.ratio && t !== null && row.trendFrom !== null && (
         <span className="block text-xs text-slate-400">
           {t > 0 ? `Tăng ${t}` : t < 0 ? `Giảm ${Math.abs(t)}` : 'Không đổi'} so với MT{row.trendFrom}
         </span>
       )}
     </div>
+  );
+}
+
+/** Dòng dưới ô điểm: `MT1 · kỳ vọng 5.5` · KCK: `MT1 · KCK` · lớp thường: `W4 SEP · đạt`. Bảng và thẻ điện thoại dùng chung. */
+export function DongMt({ row }: { row: Row }) {
+  const { homNay } = useNgayNghiepVu();
+  return (
+    <>
+      {row.bandAttemptNo ? (row.ratio ? boNamCungNam(row.bandWeek, homNay) : row.bandAttemptId
+        ? <Link to={duongDotTest({ id: row.bandAttemptId, kind: 'mock' }, row.category)} className="link tabular-nums"
+          title={`Mở hồ sơ Mock · MT${row.bandAttemptNo} · ${row.label}`} onClick={(e) => e.stopPropagation()}>MT{row.bandAttemptNo}</Link>
+        : `MT${row.bandAttemptNo}`) : ''}
+      {row.ratio
+        ? (row.missed === false ? ' · đạt' : row.missed === true ? ' · chưa đạt' : '')
+        : row.kck ? ' · KCK' : row.expectation !== null ? ` · kỳ vọng ${fmtBand(row.expectation)}` : ''}
+    </>
   );
 }
 
@@ -560,12 +631,14 @@ function boNamCungNam(code: string | null, homNay: string): string {
   return m && m[2] === homNay.slice(0, 4) ? m[1] : code;
 }
 
-function gapText(gap: number): string {
+export function gapText(gap: number): string {
   if (gap === 0) return 'đạt kỳ vọng';
   return gap < 0 ? `thiếu ${Math.abs(gap)}` : `vượt ${gap}`;
 }
 
 /* Bảng bốn màu điểm nằm ở MỘT chỗ duy nhất: `ui.tsx` (SCORE_CHIP / SCORE_TEXT). */
+/** Chip điểm của một hàng — thẻ điện thoại dùng chung với ô điểm của bảng. */
+export const SCORE_CHIP_ROW = (row: Row): string => SCORE_CHIP[scoreToneFamily(row)];
 function scoreToneFamily(row: Row): ScoreTone {
   if (row.band === null) return 'slate';
   if (row.ratio) {
@@ -601,17 +674,6 @@ function outcomeTone(outcome: string | null): string {
   return 'text-amber-200';
 }
 
-/**
- * Việc tiếp theo của cả hàng — MỘT việc (động từ + đối tượng) + hạn tách riêng (B-2/B-3). PR-SOS (K3-07): lấy `viecTiepCuaCase` của Case
- * đang mở gấp nhất (máy chủ tính sẵn).
- */
-function nextStepOf(row: Row, homNay: string): { viec: string; han: DeadlineView | null; title: string } | null {
-  const dong = (viec: string, han: DeadlineView | null) => ({ viec, han, title: han && han.han !== 'chưa có hạn' ? han.text : viec });
-  const viec = row.cases.filter((c) => c.status !== 'done' && c.viecTiep).map((c) => c.viecTiep!)
-    .sort((a, b) => (a.han ?? '9999').localeCompare(b.han ?? '9999'))[0];
-  if (!viec) return null;
-  return dong(viec.chu, viec.loaiHan && viec.han ? deadlineView({ kind: viec.loaiHan, due: viec.han, today: homNay }) : null);
-}
 /**
  * ĐƯỜNG ĐI CỦA ĐIỂM qua các lượt, vẽ bằng chữ chứ không bằng đồ hoạ.
  *
@@ -667,7 +729,7 @@ function CotPhai({ nut, phu }: { nut?: ReactNode; phu?: ReactNode }) {
   return (
     <span className="flex flex-col items-start gap-1">
       {nut && <span className="flex flex-wrap items-center gap-1.5">{nut}</span>}
-      {phu && <span className="text-[11px] tabular-nums text-slate-500">{phu}</span>}
+      {phu && <span className="text-[12px] tabular-nums text-slate-500">{phu}</span>}
     </span>
   );
 }

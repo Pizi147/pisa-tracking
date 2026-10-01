@@ -107,10 +107,15 @@ export async function runPrS5fbTests(t: YThucTestKit) {
     sosAuto.xacNhanCase(gvOf('MB FOU 12', 'speaking'), cP.id, XN('speaking'));
     boTro.nopKeHoachBoTro(ha, paBt(cP.id).id, KH);
     const the = get(`SELECT han_duyet FROM yeu_cau_duyet WHERE loai = 'ke_hoach_bo_tro' AND hoc_vien_id = ? ORDER BY id DESC`, hv);
-    const next = profile.studentProfile(P.mbManager, hv).headline.next;
-    assert(/^Chờ Quản lý duyệt kế hoạch/.test(next?.text ?? '') && next.due === the.han_duyet && !!the.han_duyet, `việc tiếp: ${JSON.stringify(next)} · hạn thẻ ${the?.han_duyet}`);
-    const web = doc('students/StudentDetailPage.tsx');
-    assert(/chờ nguyên nhân/.test(web) && /awaitingCause/.test(web), 'ô Case đếm riêng PA của Case chờ nguyên nhân');
+    /* PR-VAI-b (Q5): `headline.next` → `dauHoSo.viec` — việc chờ Quản lý duyệt kế hoạch nằm ở "việc của người khác", người làm "Quản lý". */
+    const next = profile.studentProfile(P.mbManager, hv).dauHoSo.viec.nguoiKhac.find((x: any) => x.loai === 'cho-duyet' && /kế hoạch/.test(x.chu));
+    assert(next && /chờ Quản lý duyệt kế hoạch$/.test(next.chu) && next.han === the.han_duyet && !!the.han_duyet && next.nguoi.ten === 'Quản lý', `việc tiếp: ${JSON.stringify(next)} · hạn thẻ ${the?.han_duyet}`);
+    /* PR-VAI-b (K3-03): ô "Case" cũ thay bằng ô Học thuật — mỗi Case một dòng, Case chờ nguyên nhân tách khỏi Case chờ kế hoạch. */
+    const o = d.oHocThuat([{ short: 'P', label: 'P', category: 'speaking', missed: true, cases: [
+      { status: 'open', trangThaiV4: { t: 'can-lam' }, viecTiep: { chu: 'Xác nhận nguyên nhân' } },
+      { status: 'open', trangThaiV4: { t: 'cho-duyet' }, viecTiep: { chu: 'Chờ Quản lý duyệt kế hoạch' } },
+    ] }]);
+    assert(o.dong.map((x: any) => `${x.nhan}|${x.viec}`).join() === 'Cần làm|nguyên nhân,Chờ duyệt|kế hoạch bổ trợ', `ô Học thuật tách chờ nguyên nhân / chờ kế hoạch: ${JSON.stringify(o.dong)}`);
   });
 
   // ------------------------------------------------------------------ 7 · Dòng PA Bổ trợ có mã tuần
@@ -119,7 +124,9 @@ export async function runPrS5fbTests(t: YThucTestKit) {
     assert(moc === d.mocChuBoTro('2026-10-18', '2026-09-14') && /^đến Cuối khoá · W\d [A-Z]{3}$/.test(moc), moc);
     assert(d.mocChuPa({ span: 'den_cuoi_khoa', followupDue: null, mtKe: null, daXacNhan: false }, '2026-09-14') === 'đến Cuối khoá', 'không có mốc thì không bịa tuần');
     const web = doc('cases/SkillBoard.tsx');
-    assert(/buổi\/tuần · \$\{p\.mocChu \?\? 'đến Cuối khoá'\} · trừ buổi Free/.test(web) && /tuanLich\(p\.startedOn/.test(web), 'tên PA Bổ trợ có mốc + trừ buổi Free; từ W..');
+    /* PR-VAI-b (Q19): khoảng PA qua `chuKhoangPa` (mã tuần cho MỌI PA, không riêng Bổ trợ). */
+    assert(/buổi\/tuần · \$\{p\.mocChu \?\? 'đến Cuối khoá'\} · trừ buổi Free/.test(web) && /chuKhoangPa\(\{ startedOn: p\.startedOn/.test(web)
+      && d.chuKhoangPa({ startedOn: '2026-09-16', completedOn: null, mocChu: null }, '2026-09-14') === 'từ W3 SEP', 'tên PA Bổ trợ có mốc + trừ buổi Free; từ W..');
   });
 
   // ------------------------------------------------------------------ 8 · Case rút do sửa điểm

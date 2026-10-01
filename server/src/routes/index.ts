@@ -55,7 +55,6 @@ import * as banGiaoSvc from '../classes/banGiao.ts';
 import * as loTrinhTiepSvc from '../classes/loTrinhTiep.ts';
 import * as cuoiKhoaSvc from '../normal/cuoiKhoa.ts';
 import * as luatLoTrinhSvc from '../classes/luatLoTrinh.ts';
-import * as lichSuLopSvc from '../classes/lichSuLop.ts';
 import * as hocVienLopSvc from '../classes/hocVienLop.ts';
 import * as luuTruSvc from '../classes/luuTru.ts';
 import * as phanTichLopSvc from '../classes/phanTichLop.ts';
@@ -1735,17 +1734,11 @@ api.get('/students/:id/skill-board', requireAuth, wrap((req) => {
 api.get('/students/:id/case-topics', requireAuth, wrap((req) =>
   caseSvc.caseTopicsOf(principalOf(req), pInt(req, 'id'), qInt(req, 'cycleId'))));
 
-/** Tab Hành trình (PR-Qb): trục tuần theo giai đoạn (lớp thường | Fast Track), một câu trả lời cho cả giai đoạn. */
+/** Tab Hành trình (PR-Qb; PR-VAI-b): chương theo lớp + trục tuần theo giai đoạn (lớp thường | Fast Track) — thay `/lich-su-lop`. */
 api.get('/students/:id/hanh-trinh', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   const gd = qStr(req, 'giai-doan');
   return hanhTrinhHocVien(principalOf(req), pInt(req, 'id'), gd === 'thuong' || gd === 'ft' ? gd : null);
-}));
-
-/** Lịch sử lớp (PR-LT, Q18) — đầu tab Hành trình: mỗi enrollment một dòng, kết thúc vì, kết quả. */
-api.get('/students/:id/lich-su-lop', requireAuth, wrap((req) => {
-  maybeSimulateReadError();
-  return lichSuLopSvc.lichSuLop(principalOf(req), pInt(req, 'id'));
 }));
 
 /** Ghi một lần xem lại sau hỗ trợ. Một tác động có thể xem lại nhiều lần. */

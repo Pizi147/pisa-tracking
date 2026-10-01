@@ -57,6 +57,23 @@ const soNguyenDuong = (v: string | null): number | undefined => {
   return Number(v);
 };
 
+/**
+ * G5 / E.4 (PR-VAI-b Q24): MỘT đường tới kết quả một đợt Test của em. FT → hồ sơ Mock `/mock-test/{id}` (+ `?kn=` để cuộn tới kỹ năng);
+ * lớp thường → bảng điểm lớp thường như cũ (BỎ `kn` — bảng đó chưa có ô kỹ năng để cuộn). Không ai tự ghép `/mock-test/`.
+ * Quyền không đổi: hồ sơ Mock tự kiểm quyền như cũ (`kn` chỉ là chỗ cuộn).
+ */
+export function duongDotTest(d: { id: number; kind?: string | null; classId?: number | null }, kn?: string | null): string {
+  if (d.kind && d.kind !== 'mock' && d.classId) return `/bang-diem-thuong/${d.classId}?kind=${d.kind}`;
+  const k = kn && KY_NANG_HOP_LE.includes(kn) ? kn : null;
+  return `/mock-test/${d.id}${k ? `?kn=${k}` : ''}`;
+}
+
+/** `kn` trên URL hồ sơ Mock → ô lớn: writing1/writing2/writing → 'writing'; lạ → null. */
+export function docKnMock(kn: string | null | undefined): 'listening' | 'reading' | 'writing' | 'speaking' | null {
+  if (kn === 'writing' || kn === 'writing1' || kn === 'writing2') return 'writing';
+  return kn === 'listening' || kn === 'reading' || kn === 'speaking' ? kn : null;
+}
+
 /** Đọc ngược `ThamSoHoSo` từ URL — tham số sai dạng bị BỎ QUA (không ném lỗi, khớp round-trip với hàm dựng). */
 export function docThamSoHoSo(get: (k: string) => string | null): ThamSoHoSo {
   const o: ThamSoHoSo = {};

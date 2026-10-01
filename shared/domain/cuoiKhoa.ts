@@ -47,7 +47,7 @@ export type GoiYCuoiKhoa = {
 };
 
 /** Tên hiện của chương trình đích: lớp kế theo bậc, ELE → FT. */
-const tenBacKe = (ct: ProgrammeCode): string => {
+export const tenBacKe = (ct: ProgrammeCode): string => {
   const ke = NORMAL_LADDER[ct];
   return ke ? kyHieuLop(ke, null) ?? ke : 'FT';
 };

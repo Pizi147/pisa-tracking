@@ -5,6 +5,7 @@ import { Card, Empty, ErrorState, Level, Outcome, Skeleton } from '../../ui/ui.t
 import { BangChung } from '../../ui/BangChung.tsx';
 import { Khoi } from '../../ui/KhungPanel.tsx';
 import { Nhan, QuaHan, type ToneNhan } from '../../ui/Nhan.tsx';
+import { NhanTamDung } from './SkillBoard.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { CHUA_CO_PHUONG_AN, GOI_Y_THEM_PHUONG_AN } from '../../ui/chu.ts';
 import { caseStatusLabel, fmtBand, skillLabel, sosLabel, sosTone } from '../../lib/format.ts';
@@ -40,6 +41,8 @@ export type CaseDetail = {
   /** PR-LT2a: khối PA Bổ trợ Giữa khoá (nhóm, môn, người dạy, kế hoạch) — null nếu Case không có PA bổ trợ. */
   boTro?: BoTro | null;
   trangThaiV4?: { k: string; t: TrangThai; chu: string; han: string | null };
+  /** PR-VAI-b (T65): em đang Tạm dừng → ngày dừng; "quá hạn" thành nhãn vàng. */
+  tamDungTu?: string | null;
   viecTiep?: { chu: string; loaiHan: string | null; han: string | null; paId?: number } | null;
   yeuCauCase?: any;
   topic?: string | null;
@@ -247,7 +250,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
         {iv.approvalState === 'approved' && <Nhan tone="done">Đã duyệt</Nhan>}
         {iv.approvalState === 'declined' && <Nhan tone="muted">Không duyệt</Nhan>}
         <span className="flex-1" />
-        {hanGhi && hanGhi.tone === 'overdue' && !choDuyet && <QuaHan ngay={hanGhi.daysOverdue} />}
+        {hanGhi && hanGhi.tone === 'overdue' && !choDuyet && (data.tamDungTu ? <NhanTamDung tu={data.tamDungTu} /> : <QuaHan ngay={hanGhi.daysOverdue} />)}
       </div>
       {iv.description && <p className="m-0 mt-1 text-sm text-slate-300">{iv.description}</p>}
       {iv.kind === 'bo_tro' && bt?.chung && bt.mon.length > 1 && (

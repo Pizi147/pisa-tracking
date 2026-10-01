@@ -533,8 +533,9 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
   check('PR-XOA (3) · mucQuanLyHocVien + coTheXoa: "Xoá học viên" là mục CUỐI, nguyHiem + keTruoc; mục khác không có cờ', () => {
     const ds = d.mucQuanLyHocVien({ canEdit: true, lopHoc: { quyen: quyenDu }, cycle: { ratio: false }, status: 'active', coTheXoa: true });
     const cuoi = ds[ds.length - 1];
-    assert(cuoi.key === 'xoa-hoc-vien' && cuoi.nhan === 'Xoá học viên' && cuoi.nguyHiem === true && cuoi.keTruoc === true, JSON.stringify(cuoi));
-    assert(ds.slice(0, -1).every((m) => !m.nguyHiem && !m.keTruoc), 'chỉ mục Xoá mới đỏ và có đường kẻ');
+    /* PR-VAI-b (K3-48): vạch trước Xoá nay là vạch ĐỎ (`keTruoc: 'do'`); vạch đậm (`dam`) chỉ trước Tạm dừng / Quay lại / Kết thúc. */
+    assert(cuoi.key === 'xoa-hoc-vien' && cuoi.nhan === 'Xoá học viên' && cuoi.nguyHiem === true && cuoi.keTruoc === 'do', JSON.stringify(cuoi));
+    assert(ds.slice(0, -1).every((m) => !m.nguyHiem && (!m.keTruoc || (m.keTruoc === 'dam' && ['tam-dung', 'quay-lai', 'ket-thuc'].includes(m.key)))), 'chỉ mục Xoá mới đỏ và có vạch đỏ');
   });
 
   check('PR-XOA (3) · không coTheXoa → không có mục Xoá; GVBM (không mục nào) + coTheXoa false → menu rỗng', () => {
