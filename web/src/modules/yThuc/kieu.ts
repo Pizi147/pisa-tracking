@@ -51,6 +51,7 @@ export type DongEm = {
   moiTuoi: number | null;
   deXuat: { nhan: string; status: 'cho_duyet' | 'da_duyet'; han: string | null } | null;
   xuLyGanNhat: { nhan: string; ngay: string } | null;
+  tuChoi: { nhan: string } | null;
 };
 
 export type BangYThucLop = {

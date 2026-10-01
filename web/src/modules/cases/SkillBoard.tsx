@@ -10,6 +10,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { TheKyNangDs } from './TheKyNang.tsx';
 import { type BanDieuChinh } from './CapNhatTuan.tsx';
+import { DongXinYKien, type XinYKien } from './DongXinYKien.tsx';
 import { KhongTheoDoiForm } from '../yThuc/CaseSosControls.tsx';
 import type { BoTro } from './NopKeHoachPanel.tsx';
 import {
@@ -44,6 +45,8 @@ type Plan = {
   actionDue: string | null; actionOverdue: boolean;
   followupDue: string | null; followupOverdue: boolean;
   pendingApproval: boolean; approvalDue: string | null;
+  /** PR-UXF-b (O1): thẻ Xin ý kiến gần nhất của PA (máy chủ nạp một câu cho cả bảng). */
+  xinYKien?: XinYKien;
   lastOutcome: string | null; lastOutcomeLabel: string | null;
   lastOutcomeOn: string | null; lastNote: string | null;
   /** PR-S2: khép lại vì sao (`superseded` = Được thay thế) và PA nào thay nó. */
@@ -97,6 +100,8 @@ type CaseCard = {
 };
 export type Row = {
   category: string; label: string; short: string;
+  /** PR-UXF-b (R5-5): nhóm "Từ lớp trước" — mã lớp cũ của Case có tên môn khác chương trình đang xem (G+V ≠ Writing). Hàng chuẩn: null. */
+  tuLopTruoc?: string | null;
   /** Mã chương trình lộ trình — bộ nguyên nhân theo môn (T57: FOU G+V / P, Pre FOU Tổng hợp). */
   chuongTrinh?: string | null;
   band: number | null; bandAttemptNo: number | null; bandWeek: string | null;
@@ -116,7 +121,7 @@ export type Row = {
   sosLevel: number | null; attemptsSpanned: number; parallelCount: number;
   followUntil: string | null; followOverdue: boolean;
   outcome: string | null; outcomeLabel: string | null;
-  supportLine: string | null; openActions: number;
+  openActions: number;
   overdueActionDue: string | null; pendingApproval: boolean;
   points: {
     attemptNo: number; band: number; expectation: number | null;
@@ -157,6 +162,9 @@ export const TamDungCtx = createContext<string | null>(null);
 /** Việc mở ngăn Case từ bảng này (Q3): không còn form trải trong trang. `viec` không có = mở view Case. PR-SOS: + Xác nhận Case / PA. */
 export type MoCase = { viec?: 'ghi-ket-qua' | 'them-pa' | 'xac-nhan' | 'xac-nhan-pa' | 'ke-hoach'; paId?: number };
 
+/** Khoá hàng: nhóm "Từ lớp trước" cùng `category` với hàng chuẩn của chương trình mới (G+V ↔ Writing) nên cần khoá riêng. */
+export const khoaHang = (r: { category: string; tuLopTruoc?: string | null }) => (r.tuLopTruoc ? `${r.category}@truoc` : r.category);
+
 export function SkillBoard({ rows, loading, error, onRetry, selected, onPick, onReport, onChanged, onMoCase, tamDungTu = null }: {
   rows: Row[] | null;
   /** PR-VAI-b (T65): em đang Tạm dừng → ngày dừng; "Quá hạn" thành nhãn vàng. */
@@ -187,13 +195,19 @@ export function SkillBoard({ rows, loading, error, onRetry, selected, onPick, on
         <thead>
           <tr><th className="th">Kỹ năng</th><th className="th">Gần nhất</th><th className="th">Case</th><th className="th">Việc tiếp</th></tr>
         </thead>
-        {rows.map((r) => (
-          <tbody key={r.category}>
-            <SkillRows row={r} open={selected === r.category}
-              onToggle={() => onPick(selected === r.category ? null : r.category)}
-              onReport={onReport} onChanged={onChanged} onMoCase={onMoCase} />
-          </tbody>
-        ))}
+        {rows.map((r, i) => {
+          const khoa = khoaHang(r);
+          return (
+            <tbody key={khoa}>
+              {r.tuLopTruoc && !rows[i - 1]?.tuLopTruoc && (
+                <tr><th colSpan={4} scope="colgroup" className="px-3 pb-1 pt-3 text-left text-[12px] font-semibold uppercase tracking-wide text-slate-400">Từ lớp trước</th></tr>
+              )}
+              <SkillRows row={r} open={selected === khoa}
+                onToggle={() => onPick(selected === khoa ? null : khoa)}
+                onReport={onReport} onChanged={onChanged} onMoCase={onMoCase} />
+            </tbody>
+          );
+        })}
       </table>
     </div>
     </TamDungCtx.Provider>
@@ -245,10 +259,10 @@ function SkillRows({ row, open, onToggle, onReport, onChanged, onMoCase }: {
         tieuDe={(
           <span className="block min-w-0 font-normal">
             <span className="text-sm font-extrabold text-slate-100">{row.label}</span>
-            <Trend row={row} />
+            {row.tuLopTruoc ? <span className="ml-2 text-[12px] font-normal text-slate-400">từ {row.tuLopTruoc}</span> : <Trend row={row} />}
           </span>
         )}>
-        <td className="px-3 font-normal"><ScoreCell row={row} /></td>
+        <td className="px-3 font-normal">{row.tuLopTruoc ? <span className="text-xs text-faint">—</span> : <ScoreCell row={row} />}</td>
         <td className="px-3 font-normal"><CotCase row={row} /></td>
         <td className="px-3 font-normal">
           {buoc ? (
@@ -417,7 +431,7 @@ function HangCase({ c, ngan, onChanged, onMoCase }: {
           {tt.han && !daXong && (tamDung
             ? tt.t !== 'qua-han' && <span className="mt-0.5 block"><NhanTamDung tu={tamDung} /></span>
             : <span className="mt-0.5 block"><Han loai={tt.k === 'cho-ke-hoach' ? 'ke-hoach-bo-tro' : 'xac-minh-sos'} han={tt.han} /></span>)}
-          {tt.k === 'cho-duyet-ke-hoach' && c.boTro?.keHoach?.hanDuyet && <span className="mt-0.5 block text-[12px] text-wait tabular-nums">Quản lý hạn {ngan(c.boTro.keHoach.hanDuyet)}</span>}
+          {tt.k === 'cho-duyet-ke-hoach' && c.boTro?.keHoach?.hanDuyet && <span className="mt-0.5 block text-[12px] text-wait tabular-nums">Quản lý duyệt · hạn {ngan(c.boTro.keHoach.hanDuyet)}</span>}
           {daXong && c.outcomeLabel && <span className="mt-0.5 block text-[12px] text-slate-500">Kết luận: {c.outcomeLabel}</span>}
         </td>
         <td className="td">
@@ -518,6 +532,7 @@ function HangPA({ p, c, ngan, onMoCase }: {
         <span className="block truncate pl-[30px] text-[12px] text-slate-400" title={dongPhu}>
           {dongPhu}
         </span>
+        <span className="block pl-[30px]"><DongXinYKien x={p.xinYKien} ngan={ngan} gon /></span>
       </td>
       <td className="td">
         {p.lastOutcomeLabel ? (

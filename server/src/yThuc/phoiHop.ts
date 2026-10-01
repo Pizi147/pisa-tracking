@@ -1,7 +1,7 @@
-import { db, tx } from '../db.ts';
+import { db, theoLo, tx } from '../db.ts';
 import {
   COORDINATION_KINDS, COORDINATION_KIND_LABEL, COORDINATION_REMOVE_REASON_LABEL, COORDINATION_STATUS_LABEL,
-  CHUONG_TRINH_KHONG_CHIA_MON, COORDINATION_USER_REMOVE_REASONS, coordinationSummary, moTaBoTro, nhanDot, nhanKetQuaThuong, noiDungBaoPh, tenMon, tenMonNgan, kiemGhiRoKhac, reasonNeedsText, sosCoordinationFor,
+  CHUONG_TRINH_KHONG_CHIA_MON, COORDINATION_USER_REMOVE_REASONS, SIGNAL_WITHDRAW_SCORE_FIXED, coordinationSummary, moTaBoTro, nhanDot, nhanKetQuaThuong, noiDungBaoPh, tenMon, tenMonNgan, kiemGhiRoKhac, reasonNeedsText, sosCoordinationFor,
   type CoordinationKind, type CoordinationRemoveReason, type CoordinationStatus,
 } from '../../../shared/domain/index.ts';
 import { napTruocPhamVi, type Principal } from '../permissions.ts';
@@ -133,6 +133,43 @@ export function dongBoBaoPh(attempt: { id: number; student_id: number; class_id?
   }
 }
 
+/**
+ * MÔN BỊ BỎ KHỎI BÁO PHỤ HUYNH (PR-UXF-b R5-4, Câu 2 = A): Báo PH tính THEO CASE của bài Giữa khoá, không theo môn trượt. Môn nào có Case (nối qua tín hiệu của
+ * CHÍNH bài đó) đã được Quản lý duyệt "Không cần theo dõi" hoặc bị rút vì sửa điểm thì không còn trong việc; Case đang mở HOẶC đã xong bình thường vẫn tính.
+ * Môn trượt chưa có Case nào (lớp không tự tạo Case) vẫn tính — chỉ bỏ khi nhà trường đã quyết không theo dõi. MỘT câu theo lô 400 cho cả tập bài.
+ */
+export function monBoKhoiBaoPh(attemptIds: readonly number[]): Map<number, Set<string>> {
+  const out = new Map<number, Set<string>>();
+  theoLo(attemptIds, (lo, ph) => {
+    for (const r of db().prepare(
+      `SELECT cs.attempt_id, cs.skill FROM case_signals cs JOIN sos_cases c ON c.id = cs.case_id
+        WHERE cs.attempt_id IN (${ph}) AND cs.skill IS NOT NULL AND c.status = 'done'
+          AND (c.dismiss_reason_code IS NOT NULL OR c.outcome_note LIKE ?)`,
+    ).all(...lo, `${SIGNAL_WITHDRAW_SCORE_FIXED}%`) as any[]) {
+      const ds = out.get(r.attempt_id) ?? new Set<string>(); out.set(r.attempt_id, ds); ds.add(r.skill);
+    }
+  });
+  return out;
+}
+
+/** "Môn tính" của Báo PH một bài: môn đang trượt trừ `monBoKhoiBaoPh`. */
+export const monBaoPh = (attemptId: number, monTruot: string[]): string[] => {
+  const bo = monBoKhoiBaoPh([attemptId]).get(attemptId);
+  return bo ? monTruot.filter((s) => !bo.has(s)) : monTruot;
+};
+
+/**
+ * Đồng bộ lại Báo PH của MỘT bài Giữa khoá sau khi Case của nó đổi trạng thái (Quản lý duyệt "Không cần theo dõi", mở lại). Môn trượt lấy từ tín hiệu còn hiệu lực
+ * của chính bài (cùng nguồn `turnsOf`). Bài không phải Giữa khoá lớp thường: không làm gì.
+ */
+export function dongBoBaoPhCuaBai(attemptId: number) {
+  const conn = db();
+  const a = conn.prepare(`SELECT id, student_id, class_id, kind FROM assessment_attempts WHERE id = ?`).get(attemptId) as any;
+  if (!a || a.kind !== 'progress') return;
+  const mon = (conn.prepare(`SELECT DISTINCT skill FROM case_signals WHERE attempt_id = ? AND status != 'withdrawn' AND skill IS NOT NULL ORDER BY id`).all(attemptId) as any[]).map((r) => r.skill as string);
+  dongBoBaoPh(a, monBaoPh(attemptId, mon));
+}
+
 /** Những em (trong `studentIds`) còn việc Báo phụ huynh qua TVV CHƯA làm — MỘT câu theo lô 400 (cột Việc tiếp theo của GVCN, PR-LT2a). */
 export function emCoBaoPhChuaLam(studentIds: readonly number[]): Set<number> {
   const out = new Set<number>();
@@ -224,6 +261,7 @@ function turnsOf(p: Principal, rows: any[]): CoordinationTurn[] {
     }
   }
   const chuongTrinh = allProgrammes();
+  const boBaoPh = monBoKhoiBaoPh(ids.filter((x) => (luot.get(x)?.kind ?? 'mock') !== 'mock'));
   for (const [attemptId, list] of byAttempt) {
     const a = luot.get(attemptId);
     if (!a || a.status === 'cancelled') continue;     // lượt đã huỷ không còn là SOS Event (khớp với chỉ số)
@@ -239,11 +277,13 @@ function turnsOf(p: Principal, rows: any[]): CoordinationTurn[] {
         kind: a.kind, ct: a.programme_code ?? null, scored: r.scored, required: r.required, failedSkills: skills, tyLeTong: r.tyLeTong,
         khongChiaMon: CHUONG_TRINH_KHONG_CHIA_MON.includes(a.programme_code),
       });
+      /* R5-4: Báo PH theo CASE — môn đã "Không cần theo dõi" / rút vì sửa điểm không nằm trong "môn khó khăn". */
+      const tinh = skills.filter((s) => !boBaoPh.get(attemptId)?.has(s));
       noiDung = noiDungBaoPh({
         ketQua: [ketQua.chinh, ketQua.phu].filter(Boolean).join(' · '),
-        monTruot: skills.map((s) => tenMonNgan(a.programme_code, s)),
-        nguyenNhan: skills.map((s) => nguyenNhan.get(`${a.student_id}:${s}`) ?? '').filter(Boolean),
-        boTro: skills[0] ? moTaBoTro(a.programme_code, skills[0]) : 'chưa có PA bổ trợ',
+        monTruot: tinh.map((s) => tenMonNgan(a.programme_code, s)),
+        nguyenNhan: tinh.map((s) => nguyenNhan.get(`${a.student_id}:${s}`) ?? '').filter(Boolean),
+        boTro: tinh[0] ? moTaBoTro(a.programme_code, tinh[0]) : 'chưa có PA bổ trợ',
       }) as string[];
     }
     out.push({

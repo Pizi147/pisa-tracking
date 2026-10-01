@@ -3,7 +3,7 @@
  * dùng `luoiThang`. Luật từng chỗ (không sau hôm nay, tuần về Thứ Hai…) truyền qua `LuatONgay`. Không đọc đồng hồ trình duyệt.
  */
 import { cuoiTuan, dsNgayGan, dsThang, dsTuan, type LuaChon } from './chonNgay.ts';
-import { ngay, tuanLich } from './hienThiNgay.ts';
+import { docTuanLich, ngay, tuanLich } from './hienThiNgay.ts';
 import { mondayOfDate } from './week.ts';
 
 export const KIEU_O_NGAY = ['ngay', 'tuan', 'thang', 'ngay-hoac-thang'] as const;
@@ -31,10 +31,10 @@ export function chotTuan(iso: string, homNay: string, luat: LuatONgay): string {
   return cuoiTuan(iso, luat.catHomNay === false || mondayOfDate(iso) > homNay ? undefined : homNay);
 }
 
-export function loiKhoangNgay(iso: string, homNay: string, luat: LuatONgay = {}): string | null {
+export function loiKhoangNgay(iso: string, homNay: string, luat: LuatONgay = {}, kieu?: KieuONgay): string | null {
   const la = iso.length === 7;                                   // giá trị là tháng thì so theo tháng
   const cat = (x: string) => (la ? x.slice(0, 7) : x);
-  const chu = (x: string) => (la ? `tháng ${thangHien(x)}` : x === homNay ? 'hôm nay' : ngay(x, homNay));
+  const chu = (x: string) => (la ? `tháng ${thangHien(x)}` : kieu === 'tuan' ? tuanLich(x, homNay) : x === homNay ? 'hôm nay' : ngay(x, homNay));
   if (luat.toiDa && iso > cat(luat.toiDa)) return `Không được sau ${chu(luat.toiDa)}`;
   if (luat.toiThieu && iso < cat(luat.toiThieu)) return `Không được trước ${chu(luat.toiThieu)}`;
   return null;
@@ -43,8 +43,14 @@ export function loiKhoangNgay(iso: string, homNay: string, luat: LuatONgay = {})
 export function docONgay(text: string, kieu: KieuONgay, homNay: string, luat: LuatONgay = {}): KetQuaDocNgay {
   const s = text.trim();
   if (!s) return { iso: null, loi: null };
+  const t2 = kieu === 'tuan' ? docTuanLich(s, homNay) : null;     // "W4 SEP" — mã tuần hiện trong ô cũng gõ lại được
+  if (t2) {
+    const iso = chotTuan(t2, homNay, luat);
+    const loi = loiKhoangNgay(iso, homNay, luat, kieu);
+    return loi ? { iso: null, loi } : { iso, loi: null };
+  }
   const phan = s.split(/[/.\-\s]+/).filter(Boolean);
-  const mauLoi = kieu === 'thang' ? 'Gõ dạng mm/yyyy' : 'Gõ dạng dd/mm/yyyy';
+  const mauLoi = kieu === 'thang' ? 'Gõ dạng mm/yyyy' : kieu === 'tuan' ? 'Gõ mã tuần như W4 SEP, hoặc một ngày trong tuần' : 'Gõ dạng dd/mm/yyyy';
   if (phan.length < 2 || phan.length > 3 || phan.some((x) => !/^\d{1,4}$/.test(x))) return { iso: null, loi: mauLoi };
   let iso: string | null;
   if (kieu === 'thang' || (kieu === 'ngay-hoac-thang' && phan.length === 2 && phan[1].length === 4)) {
@@ -58,7 +64,7 @@ export function docONgay(text: string, kieu: KieuONgay, homNay: string, luat: Lu
     if (!iso) return { iso: null, loi: 'Ngày không có thật' };
     if (kieu === 'tuan') iso = chotTuan(iso, homNay, luat);
   }
-  const loi = loiKhoangNgay(iso, homNay, luat);
+  const loi = loiKhoangNgay(iso, homNay, luat, kieu);
   return loi ? { iso: null, loi } : { iso, loi: null };
 }
 
@@ -71,10 +77,10 @@ export function docONgay(text: string, kieu: KieuONgay, homNay: string, luat: Lu
 export function chotONgay(text: string, value: string | null, kieu: KieuONgay, homNay: string, luat: LuatONgay = {}):
   { phat: string | null; text: string; loi: string | null } {
   const v = value || '';
-  if (text === hienONgay(v, kieu)) return { phat: null, text, loi: null };
+  if (text === hienONgay(v, kieu, homNay)) return { phat: null, text, loi: null };
   const r = docONgay(text, kieu, homNay, luat);
-  if (r.iso) return { phat: r.iso !== v ? r.iso : null, text: hienONgay(r.iso, kieu), loi: null };
-  if (!text.trim()) return { phat: v ? '' : null, text: hienONgay(v, kieu), loi: null };
+  if (r.iso) return { phat: r.iso !== v ? r.iso : null, text: hienONgay(r.iso, kieu, homNay), loi: null };
+  if (!text.trim()) return { phat: v ? '' : null, text: hienONgay(v, kieu, homNay), loi: null };
   return { phat: v ? '' : null, text, loi: r.loi };
 }
 
@@ -83,16 +89,18 @@ export function canDongBoONgay(text: string, value: string | null, kieu: KieuONg
   return (docONgay(text, kieu, homNay, luat).iso ?? '') !== (value || '');
 }
 
-export function hienONgay(iso: string | null | undefined, kieu: KieuONgay): string {
+/** Chữ trong ô. Ô tuần hiện MÃ TUẦN (`W4 AUG`) — khoảng ngày là chữ phụ (`phuONgay`); mã chỉ thêm năm khi khác năm `homNay`. */
+export function hienONgay(iso: string | null | undefined, kieu: KieuONgay, homNay?: string): string {
   if (!iso) return '';
   if (/^\d{4}-\d{2}$/.test(iso) || kieu === 'thang') return thangHien(iso);
+  if (kieu === 'tuan') return tuanLich(iso, homNay);
   return `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 }
 
 export function phuONgay(iso: string | null | undefined, kieu: KieuONgay, homNay: string): string {
   if (kieu !== 'tuan' || !iso) return '';
   const t2 = mondayOfDate(iso);
-  return `${tuanLich(t2, homNay)} · ${ngay(t2, homNay)} – ${ngay(cong(t2, 6), homNay)}`;
+  return `${ngay(t2, homNay)} – ${ngay(cong(t2, 6), homNay)}`;
 }
 
 

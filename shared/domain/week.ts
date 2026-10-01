@@ -62,11 +62,5 @@ export function weekCodeOf(date: string): string {
   return `W${weekNumberInMonthOf(start)} ${MONTH_CODE[month - 1]} ${year}`;
 }
 
-/** Mã ngắn để ghi trên trục chật — "W1 SEP", năm chỉ hiện khi đổi năm. */
-export function weekCodeShortOf(date: string): string {
-  const start = mondayOfDate(date);
-  const { month } = owningMonthOf(start);
-  return `W${weekNumberInMonthOf(start)} ${MONTH_CODE[month - 1]}`;
-}
 
 export { MONTH_CODE };

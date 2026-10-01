@@ -145,7 +145,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       lyDo: 'Đề nghị dời không còn chờ',
     },
     nap: (conn, ds) => napTheoDoiTuong(conn, ds,
-      `SELECT r.id, r.skill, r.move_no, r.attempt_id, a.attempt_no, a.kind, a.class_id, pr.code AS tuan, pr.week_start,
+      `SELECT r.id, r.skill, r.move_no, r.attempt_id, a.attempt_no, a.kind, a.class_id, pr.week_start,
               c.programme_code AS ct
          FROM skill_move_requests r JOIN assessment_attempts a ON a.id = r.attempt_id
          LEFT JOIN classes c ON c.id = a.class_id
@@ -161,11 +161,11 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
           ? chuTheDoiLan2({ skill: x.skill, attemptNo: x.attempt_no, moveNo: x.move_no, tuanDich: x.week_start ?? null, homNay: ngu.homNay, ct: x.ct ?? null })
           : `Dời ${kn}${dot ? ` ${dot}` : ''} lần ${x?.move_no ?? 2}`,
         dong: [
-          `${nguoiXin(yc, ngu)}: ${yc.ly_do || 'em vắng buổi thi'}${x?.tuan ? ` · đề nghị ${x.tuan}` : ''}`,
+          `${nguoiXin(yc, ngu)}: ${yc.ly_do || 'em vắng buổi thi'}${x?.week_start ? ` · đề nghị ${tuanLich(x.week_start, ngu.homNay)}` : ''}`,
           /* Chỉ nói "tự huỷ" khi thẻ còn chờ — thẻ đã quyết thì câu này sai. */
           ...(yc.trang_thai === 'cho' ? [`Hết ${ngay(yc.han_duyet, ngu)} chưa duyệt thì yêu cầu tự huỷ và phần thi bị huỷ.`] : []),
         ],
-        neuDuyet: x?.tuan ? `${kn} thi tuần ${x.tuan}.` : undefined,
+        neuDuyet: x?.week_start ? `${kn} thi tuần ${tuanLich(x.week_start, ngu.homNay)}.` : undefined,
         mo: x ? attemptHref({ id: x.attempt_id, kind: x.kind, classId: x.class_id }) : undefined,
         duLieu: x?.week_start ? { tuanDeNghi: x.week_start } : undefined,
       };

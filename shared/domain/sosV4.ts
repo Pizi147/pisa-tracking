@@ -25,7 +25,7 @@ export function mocQuyChe(span: AcademicSupportSpan, ctx: { ngayXacNhan: string;
 }
 
 /**
- * CHỮ MỐC của PA quy chế: `đến MT2 · W2 OCT` · `1 tháng · đến 18/10` · `đến lúc thi · chưa có ngày thi`. PA chưa xác nhận: chỉ phần đầu
+ * CHỮ MỐC của PA quy chế: `đến MT2 · W2 OCT` · `1 tháng · đến W3 OCT` · `đến lúc thi · chưa có ngày thi`. PA chưa xác nhận: chỉ phần đầu
  * (mốc tính lúc xác nhận). `mtKe` = số MT kế tiếp của lượt đã sinh PA.
  */
 export function mocChuPa(x: { span: string | null; followupDue: string | null; mtKe: number | null; daXacNhan: boolean }, homNay: string): string {
@@ -35,7 +35,7 @@ export function mocChuPa(x: { span: string | null; followupDue: string | null; m
   const dau = x.span === 'one_month' ? '1 tháng' : x.span === 'until_next_mt' ? (x.mtKe ? `đến MT${x.mtKe}` : 'đến MT kế tiếp')
     : x.span === 'until_exam' ? 'đến lúc thi' : '';
   if (!dau || !x.daXacNhan) return dau;
-  if (x.followupDue) return `${dau} · ${x.span === 'until_next_mt' ? tuanLich(x.followupDue, homNay) : `đến ${ngay(x.followupDue, homNay)}`}`;
+  if (x.followupDue) return `${dau} · ${x.span === 'until_next_mt' ? tuanLich(x.followupDue, homNay) : `đến ${x.span === 'until_exam' ? ngay(x.followupDue, homNay) : tuanLich(x.followupDue, homNay)}`}`;   // UXF-b (Q8): ngày chỉ cho ngày thi
   return `${dau} · ${x.span === 'until_exam' ? 'chưa có ngày thi' : 'chưa có lịch'}`;
 }
 

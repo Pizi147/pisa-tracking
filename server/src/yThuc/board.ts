@@ -32,6 +32,8 @@ export type DongEm = {
   moiTuoi: number | null;
   deXuat: { nhan: string; status: 'cho_duyet' | 'da_duyet'; han: string | null } | null;
   xuLyGanNhat: { nhan: string; ngay: string } | null;
+  /** PR-UXF-b (VN26): Quản lý ĐÃ TỪ CHỐI đề xuất mà vi phạm còn mở của em đi kèm — em về "bắt buộc xử lý" vì lý do này, không phải vì ≥ 3 vi phạm / 2 tuần. */
+  tuChoi: { nhan: string } | null;
 };
 
 export type DongThoiGianYt =
@@ -56,6 +58,9 @@ export function dongEm(em: EmYThuc, ten: string, maHv: string, homNay: string): 
     .map((v) => v.reportedOn).sort()[0] ?? null;
   const xong = em.xuLy.filter((m) => m.status === 'done' && m.performedOn).sort((a, b) => (b.performedOn ?? '').localeCompare(a.performedOn ?? ''))[0];
   const bacKind = em.bac > 0 ? THANG[em.bac - 1] : null;
+  const dangMo = new Set(viPham.filter(([, t]) => t.t !== 'da_xu_ly').map(([id]) => id));
+  const tuChoi = em.xuLy.filter((m) => m.status === 'tu_choi' && m.violationIds.some((id) => dangMo.has(id)))
+    .sort((a, b) => (b.quyetLuc ?? b.createdAt).localeCompare(a.quyetLuc ?? a.createdAt))[0];
   return {
     studentId: em.studentId, ten, maHv, bac: em.bac, bacNhan: bacKind ? MEASURE_KIND_LABEL[bacKind] : null,
     keTiep: em.keTiep ? { kind: em.keTiep.kind, nhan: MEASURE_KIND_LABEL[em.keTiep.kind], canQl: em.keTiep.canQl } : null,
@@ -65,6 +70,7 @@ export function dongEm(em: EmYThuc, ten: string, maHv: string, homNay: string): 
     moiTuoi: moiNgay ? ngayCach(moiNgay, homNay) : null,
     deXuat: em.deXuat ? { nhan: nhanLoaiXuLy(em.deXuat.kind, em.deXuat.customName), status: em.deXuat.status, han: em.deXuat.han } : null,
     xuLyGanNhat: xong ? { nhan: nhanLoaiXuLy(xong.kind, xong.customName), ngay: xong.performedOn! } : null,
+    tuChoi: tuChoi ? { nhan: nhanLoaiXuLy(tuChoi.kind, tuChoi.customName) } : null,
   };
 }
 

@@ -548,7 +548,7 @@ export function QuickReport({
       {mode === 'backfill' && bfDup && (
         <div className="mt-3.5 rounded-lg border p-3" style={{ borderColor: 'rgb(var(--soon-line-rgb))', background: 'rgb(var(--soon-bg-rgb))' }}>
           <p className="m-0 text-sm text-slate-100">
-            Đã có Case nhập bù <strong>“{bfDup.title}”</strong> trùng khoảng {ngan(bfDup.from)} → {ngan(bfDup.to)}. Cùng một lần?
+            Đã có Case nhập bù <strong>“{bfDup.title}”</strong> trùng khoảng {tuanLich(bfDup.from, homNay)} → {tuanLich(bfDup.to, homNay)}. Cùng một lần?
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
             <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => sendBackfill({ confirmDuplicate: true })}>Lần khác, vẫn ghi riêng</button>
@@ -559,7 +559,7 @@ export function QuickReport({
         <div className="mt-3.5 rounded-lg border p-3" style={{ borderColor: 'rgb(var(--soon-line-rgb))', background: 'rgb(var(--soon-bg-rgb))' }}>
           <p className="m-0 text-sm text-slate-100">
             Đã có Case <strong>“{dup.title}”</strong> chưa xử lý xong ở {dup.categoryLabel}.
-            <span className="text-slate-400"> Mở {ngan(dup.detectedAt)}{dup.interventionCount > 0 ? ` · ${dup.interventionCount} PA` : ' · chưa có PA'}.</span>
+            <span className="text-slate-400"> Mở {tuanLich(dup.detectedAt, homNay)}{dup.interventionCount > 0 ? ` · ${dup.interventionCount} PA` : ' · chưa có PA'}.</span>
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
             <button type="button" className="btn btn-primary btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => send({ mergeIntoExisting: true })}>Ghi vào Case đang có</button>

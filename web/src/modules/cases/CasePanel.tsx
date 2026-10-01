@@ -12,9 +12,10 @@ import { caseStatusLabel, fmtBand, skillLabel, sosLabel, sosTone } from '../../l
 import {
   INTERVENTION_KIND_LABEL, INTERVENTION_STATUS_LABEL,
   NEXT_STEP_LABEL, OUTCOME_MARK, OUTCOME_TONE,
-  deadlineView, outcomeLabelFor, tenMon, tuanLich, type TrangThai,
+  chuKhoangPa, deadlineView, outcomeLabelFor, tenMon, tuanLich, type TrangThai,
 } from '@shared/domain/index.ts';
 import { LichSuDieuChinh, type BanDieuChinh } from './CapNhatTuan.tsx';
+import { DongXinYKien } from './DongXinYKien.tsx';
 import { NganCase } from '../students/NganCase.tsx';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
 import type { BoTro } from './NopKeHoachPanel.tsx';
@@ -188,7 +189,7 @@ export function ThanCase({ data, onViec }: { data: CaseDetail; onViec: (v: ViewC
           <p className="m-0 text-sm text-slate-100">
             Đã kết luận{data.outcomeLabel && <>: <strong>{data.outcomeLabel}</strong></>}
             {data.outcomeNote && <span className="text-slate-400"> — {data.outcomeNote}</span>}
-            {data.closedAt && <span className="text-slate-500"> · kết thúc theo dõi {ngan(data.closedAt)}</span>}
+            {data.closedAt && <span className="text-slate-500"> · kết thúc theo dõi {tuanLich(data.closedAt, homNay)}</span>}
           </p>
         ) : null}
         {lichSu.length > 0 && (
@@ -197,7 +198,7 @@ export function ThanCase({ data, onViec }: { data: CaseDetail; onViec: (v: ViewC
             <ol className="m-0 mt-2 list-none space-y-2 border-l p-0 pl-3" style={{ borderColor: 'var(--line)' }}>
               {lichSu.map((m) => (
                 <li key={m.key} className="text-xs">
-                  <span className="block text-[11px] tabular-nums text-slate-500">{ngan(m.on)}{m.dot ? ` · ${m.dot}` : ''}</span>
+                  <span className="block text-[11px] tabular-nums text-slate-500">{ngan(m.on)}{m.dot ? <> · {m.dotHref ? <Link to={m.dotHref} className="link">{m.dot}</Link> : m.dot}</> : ''}</span>
                   <span className="flex flex-wrap items-center gap-1.5 text-slate-200">{m.tieuDe}{m.badge}</span>
                   {m.than}
                 </li>
@@ -231,11 +232,9 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
   const thayBang = iv.supersededBy ? all.find((x) => x.id === iv.supersededBy) ?? null : null;
   const thayCho = all.find((x) => x.supersededBy === iv.id) ?? null;
   const batDau = iv.startedDate ?? iv.plannedDate ?? null;
-  /* PR-SOS (Q28-4): không còn "dự kiến kết thúc" — khoảng ngày là `từ dd/mm` hoặc ngày xong thật; PA quy chế nói mốc riêng. */
+  /* PR-SOS (Q28-4): không còn "dự kiến kết thúc"; PA quy chế nói mốc riêng. PR-UXF-b: khoảng PA nói MÃ TUẦN (`từ W3 SEP` · `W3 SEP → W1 OCT`), cùng hàm với hàng PA ở bảng kỹ năng. */
   const ketThuc = iv.completedDate ?? null;
-  /* PR-S5F-b: PA Bổ trợ bắt đầu nói TUẦN (`từ W3 SEP`), như hàng PA ở bảng kỹ năng. */
-  const tu = (d: string) => (iv.kind === 'bo_tro' ? tuanLich(d, homNay) : ngan(d));
-  const khoang = batDau && ketThuc ? `${ngan(batDau)} → ${ngan(ketThuc)}` : batDau ? `từ ${tu(batDau)}` : ketThuc ? `đến ${ngan(ketThuc)}` : null;
+  const khoang = chuKhoangPa({ startedOn: batDau, completedOn: ketThuc }, homNay) ?? (ketThuc ? `đến ${tuanLich(ketThuc, homNay)}` : null);
   const nguoi = iv.performer ? `${iv.performer}${iv.byProxy && iv.recordedBy ? ` (${iv.recordedBy} nhập hộ)` : ''}` : 'Chưa có người làm';
   return (
     <li className="rounded-lg border px-3 py-2.5 surface-2" style={{ borderColor: 'var(--line)' }} data-pa-id={iv.id}>
@@ -271,16 +270,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
         </p>
       )}
       {/* PR-DUYET (T64): Xin ý kiến không dừng PA — dòng tím khi đang chờ, câu trả lời của QL khi đã có. */}
-      {iv.xinYKien?.trangThai === 'cho' && (
-        <p className="m-0 mt-1 text-xs text-wait tabular-nums">
-          Đã xin Quản lý hỗ trợ {ngan(iv.xinYKien.taoLuc)} · chờ trả lời{iv.xinYKien.hanDuyet ? ` · hạn ${ngan(iv.xinYKien.hanDuyet)}` : ''}
-        </p>
-      )}
-      {iv.xinYKien?.trangThai === 'da_tra_loi' && (
-        <p className="m-0 mt-1 border-l pl-3 text-xs text-slate-300" style={{ borderColor: 'var(--line)' }}>
-          Quản lý{iv.xinYKien.nguoiDuyet ? ` (${iv.xinYKien.nguoiDuyet})` : ''} trả lời {ngan(iv.xinYKien.xuLyLuc)}: {iv.xinYKien.traLoi}
-        </p>
-      )}
+      <DongXinYKien x={iv.xinYKien} ngan={ngan} />
       {revisions.length > 0 && (
         <details className="mt-1">
           <summary className="cursor-pointer text-[11px] text-slate-400">Đã điều chỉnh {revisions.length} lần</summary>
@@ -326,7 +316,7 @@ function KhoaNho() {
 
 // ==================================================================== lịch sử cập nhật (thu gọn)
 
-type MucLichSu = { key: string; on: string; dot: string | null; tieuDe: ReactNode; badge: ReactNode; than: ReactNode };
+type MucLichSu = { key: string; on: string; dot: string | null; dotHref?: string | null; tieuDe: ReactNode; badge: ReactNode; than: ReactNode };
 
 const MILESTONE_TITLE: Record<string, string> = {
   repeat: 'Trượt lại',
@@ -370,7 +360,7 @@ function buildLichSu(data: CaseDetail, ngan: (d: string | null | undefined) => s
   for (const m of data.milestones ?? []) {
     if (m.kind === 'opened') continue;   // ngày mở và người tạo đã ở khối Vấn đề
     out.push({
-      key: `m${m.id}`, on: m.occurredOn, dot: m.attemptNo ? (m.dot ?? `MT${m.attemptNo}`) : null,
+      key: `m${m.id}`, on: m.occurredOn, dot: m.attemptNo ? (m.dot ?? `MT${m.attemptNo}`) : null, dotHref: m.href ?? null,
       tieuDe: MILESTONE_TITLE[m.kind] ?? m.kind,
       badge: (
         <>

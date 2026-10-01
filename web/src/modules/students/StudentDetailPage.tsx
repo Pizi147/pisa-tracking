@@ -101,10 +101,10 @@ export default function StudentDetailPage() {
    * chỉ có nghĩa ở tab này. Đổi tab là `replace` để nút Quay lại của trình duyệt không phải bấm
    * nhiều lần, và xoá `dot`/`kn` vì người xem đã chủ động rời khỏi thứ hai tham số đó đang trỏ tới.
    */
-  const tab: HoSoTab = p.dot != null || p.kn ? 'hoc-thuat' : p.tab ?? 'hoc-thuat';
+  const tab: HoSoTab = p.dot != null || p.kn || p.muc ? 'hoc-thuat' : p.tab ?? 'hoc-thuat';
   const setTab = (t: HoSoTab) => {
     const next = new URLSearchParams(params);          // giữ nguyên 'lo-trinh'
-    next.delete('dot'); next.delete('kn');
+    next.delete('dot'); next.delete('kn'); next.delete('muc');
     if (t === 'hoc-thuat') next.delete('tab'); else next.set('tab', t);
     setParams(next, { replace: true });
   };
@@ -119,6 +119,8 @@ export default function StudentDetailPage() {
     if (!data) return;
     if (p.dot != null) {
       return cuonOnDinh(() => document.getElementById(`dot-${p.dot}`), document.getElementById('bang-ky-nang'));
+    } else if (p.muc === 'ket-luan-khoa') {
+      return cuonOnDinh(() => document.getElementById('ket-luan-khoa'), null);   // PR-UXF-b (Q10): việc "Đánh dấu kỳ vọng đầu ra" mở thẳng hộp Kết luận khoá
     } else if (p.kn && data.cycle) {
       const boHop = caseCategoriesFor(data.cycle.ratio ? 'ratio' : 'ielts_band', data.cycle.programmeCode);
       const mapped = anhXaKyNang(p.kn, boHop);
@@ -127,7 +129,7 @@ export default function StudentDetailPage() {
     }
     return undefined;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [!!data, p.dot, p.kn]);
+  }, [!!data, p.dot, p.kn, p.muc]);
 
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (loading || !data) return <Skeleton rows={10} />;
@@ -321,7 +323,7 @@ export default function StudentDetailPage() {
             <div className="p-3">
               {cy.targetRevisions.length > 0 && (
                 <p className="text-xs text-slate-500 mt-2 mb-0">
-                  Mục tiêu đã đổi {cy.targetRevisions.length} lần — lần gần nhất {ngay(cy.targetRevisions[0].effectiveFrom, homNay)}:
+                  Mục tiêu đã đổi {cy.targetRevisions.length} lần — lần gần nhất {tuanLich(cy.targetRevisions[0].effectiveFrom, homNay)}:
                   {' '}<TargetText band={cy.targetRevisions[0].oldTarget} kck={cy.targetRevisions[0].oldKck} /> → <TargetText band={cy.targetRevisions[0].newTarget} kck={cy.targetRevisions[0].newKck} />
                   {cy.targetRevisions[0].reason && ` (${cy.targetRevisions[0].reason})`}.
                   {' '}Các lượt đã chốt vẫn giữ kỳ vọng tính theo mục tiêu lúc đó.
@@ -392,7 +394,7 @@ export default function StudentDetailPage() {
           dob: data.dob ?? null, email: data.email ?? null, consultantName: data.consultantName ?? null, note: data.note ?? null,
           status: data.status,
         }}
-        cycle={cy} attempts={data.attempts} onDone={reload}
+        cycle={cy} attempts={data.attempts} onDone={reload} soViPhamMo={data.dauHoSo?.soViPhamMo}
       />
     </div>
   );

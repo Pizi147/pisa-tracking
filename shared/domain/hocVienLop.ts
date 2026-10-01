@@ -105,6 +105,8 @@ export type KetQuaVao = {
   attemptLabel: string | null;
   /** `mock` · `progress` · `final` (T58: lượt Cuối khoá đủ điểm hiện % tổng). */
   attemptKind?: string | null;
+  /** PR-UXF-b (G5): id + lớp của lượt đó — ô Kết quả gần nhất link tới đợt qua `duongDotTest`. */
+  attemptId?: number | null; attemptClassId?: number | null;
   sosLevel: number | null; provisional: boolean;
   scored: number; required: number; failed: number | null;
   overall: number | null; expectation: number | null;
@@ -333,7 +335,6 @@ export type CaseViec = { caseId: number; topic: string | null; viecTiep: ViecTie
 /** Bỏ tên PA dài, giữ động từ: "Xác nhận PA Ôn lại bài" → "Xác nhận PA L". */
 const RUT_GON = ['Xác nhận PA', 'Ghi kết quả cuối', 'Ghi kết quả PA'];
 const HANG_TONE = { danger: 0, warn: 1, info: 2 } as const;
-const boTienTo = (han: string) => han.replace(/^hạn /, '');
 
 /**
  * MỘT nguồn "việc tiếp theo" của em (K2-04, B8) — cột Việc tiếp theo (Học viên & Lớp), cột Theo dõi (bảng điểm FT), cột Việc tiếp
@@ -364,7 +365,7 @@ export function viecTiepCuaEm(i: {
       const v = deadlineView({ kind: 'nhap-diem', due: n.han, today: i.homNay });
       const tre = n.quaHan;
       out.push({
-        viec, han: boTienTo(v.han), quaHanNgay: tre ? v.daysOverdue : null, tone: tre ? 'danger' : 'warn', dich,
+        viec, han: v.han, quaHanNgay: tre ? v.daysOverdue : null, tone: tre ? 'danger' : 'warn', dich,
         title: `${viec} · ${v.han}${tre ? (v.quaHan ? ` · ${v.quaHan}` : ' · quá hạn') : ''}`,
       });
     } else {
@@ -374,7 +375,7 @@ export function viecTiepCuaEm(i: {
   if (i.miniTest) {
     const d = deadlineView({ kind: 'mini-test', due: i.miniTest.han, today: i.homNay });
     out.push({
-      viec: 'Ghi Mini Test', han: boTienTo(d.han), quaHanNgay: d.daysOverdue, tone: d.tone === 'overdue' ? 'danger' : 'warn',
+      viec: 'Ghi Mini Test', han: d.han, quaHanNgay: d.daysOverdue, tone: d.tone === 'overdue' ? 'danger' : 'warn',
       dich: i.miniTest.caseId ? { loai: 'case', caseId: i.miniTest.caseId, paId: i.miniTest.paId ?? undefined, ghiKetQua: true } : { loai: 'y-thuc' },
       title: `Ghi Mini Test · ${d.han}${d.quaHan ? ` · ${d.quaHan}` : ''}`,
     });
@@ -394,7 +395,7 @@ export function viecTiepCuaEm(i: {
       const tone = d.tone === 'overdue' ? 'danger' : v.loaiHan === 'xac-minh-sos' || v.loaiHan === 'ke-hoach-bo-tro' ? 'warn' : 'info';
       /* PR-S5F-b (mockup 21): ghi kết quả PA nói TUẦN của kết quả (`Ghi kết quả PA W1 · tuần W4 SEP`) — hạn Thứ Hai là của tuần trước nó. */
       const tuan = v.loaiHan === 'cap-nhat-pa' ? d.viec.replace(/^Ghi kết quả /, '') : null;
-      out.push({ viec: tuan ? `${viec} · ${tuan}` : viec, han: boTienTo(d.han), quaHanNgay: d.daysOverdue, tone, dich, title: `${goc}${tuan ? ` · ${tuan}` : ''} · ${d.han}${d.quaHan ? ` · ${d.quaHan}` : ''}` });
+      out.push({ viec: tuan ? `${viec} · ${tuan}` : viec, han: d.han, quaHanNgay: d.daysOverdue, tone, dich, title: `${goc}${tuan ? ` · ${tuan}` : ''} · ${d.han}${d.quaHan ? ` · ${d.quaHan}` : ''}` });
     } else {
       /* Chưa có hạn: Đề ra PA (Case tay chưa có PA) vẫn là việc phải làm; "Hoàn thành Case" chỉ nhắc. */
       out.push({ viec, han: null, quaHanNgay: null, tone: v.loaiHan === 'lap-pa' ? 'warn' : 'info', dich, title: goc });
@@ -404,7 +405,7 @@ export function viecTiepCuaEm(i: {
   if (y) {
     const dich: DichViec = { loai: 'y-thuc' };
     const d = y.han ? deadlineView({ kind: 'xu-ly-vi-pham', due: y.han, today: i.homNay }) : null;
-    const han = d ? boTienTo(d.han) : null;
+    const han = d ? d.han : null;
     if (y.nhom === 'qua_han') {
       const ngay = y.quaHanNgay ?? d?.daysOverdue ?? null;
       out.push({ viec: 'Xử lý vi phạm', han, quaHanNgay: ngay, tone: 'danger', dich, title: `Xử lý vi phạm${d ? ` · ${d.han}` : ''}${ngay !== null ? ` · quá hạn ${ngay} ngày` : ' · quá hạn'}` });

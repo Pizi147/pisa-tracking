@@ -1,7 +1,7 @@
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { addMilestone, followUntilAfter, taoCaseTuDong } from '../cases/sos.ts';
-import { dongBoBaoPh } from '../yThuc/phoiHop.ts';
+import { dongBoBaoPh, monBaoPh } from '../yThuc/phoiHop.ts';
 import { raiseSignal, reconcileCorrectedSignals } from '../cases/signals.ts';
 import {
   ATTEMPT_KIND_LABEL, ATTEMPT_KIND_SHORT, PERMISSIONS, RATIO_PASS_THRESHOLD, boMonLich, boTroGiuaKhoa,
@@ -769,7 +769,7 @@ export function refreshRegularOutcome(p: Principal, attemptId: number) {
    */
   // Case mở ngay khi kết luận được, không chờ đủ điểm.
   if (r.sosLevel !== null) taoCaseGiuaKhoa(p, a, r);
-  if (a.kind === 'progress') dongBoBaoPh(a, r.skills.filter((x) => x.outcome === 'fail').map((x) => x.skill));
+  if (a.kind === 'progress') dongBoBaoPh(a, monBaoPh(a.id, r.skills.filter((x) => x.outcome === 'fail').map((x) => x.skill)));   // PR-UXF-b (R5-4): theo Case, bỏ môn "Không cần theo dõi"
   /* PR-LT2b (Q30-4): Cuối khoá ĐỦ điểm mà em đã chuyển đi → luật Cuối khoá áp ở lộ trình mới. Không sinh tín hiệu / Case ở lớp cũ (T70). */
   if (a.kind === 'final' && r.complete) capNhatCuoiKhoaSauChuyen(p, a);
   return r;

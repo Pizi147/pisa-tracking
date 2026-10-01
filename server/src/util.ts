@@ -71,12 +71,6 @@ export function weekStartOf(d: string): string {
   return addDays(d, delta);
 }
 
-export function weekLabel(weekStart: string): string {
-  const end = addDays(weekStart, 6);
-  const f = (s: string) => s.slice(8, 10) + '/' + s.slice(5, 7);
-  return `${f(weekStart)} – ${f(end)}`;
-}
-
 export function nowIso(): string {
   return new Date().toISOString();
 }
@@ -114,11 +108,6 @@ export function pct(numerator: number, denominator: number): number | null {
 export function formatBand(n: number | null | undefined): string {
   if (n === null || n === undefined) return '—';
   return n.toFixed(1);
-}
-
-export function formatDateVi(d?: string | null): string {
-  if (!d) return '—';
-  return `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}`;
 }
 
 /** Sinh mã dạng PREFIX-000001 từ số thứ tự. */

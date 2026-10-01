@@ -263,8 +263,8 @@ export function oHocThuat(rows: readonly {
         : v === 'Xác nhận nguyên nhân' ? 'nguyên nhân'
         : /^Xác nhận PA/.test(v) ? 'xác nhận PA'
         : /kế hoạch/.test(v) ? 'kế hoạch bổ trợ' : null;
-      /* T65: em Tạm dừng — mọi hạn dừng, "Quá hạn" đổi thành nhãn vàng "Tạm dừng từ dd/mm" (chỉ đổi chữ). */
-      if (tamDungTu && t === 'qua-han') dong.push({ kn: r.short ?? r.label, nhan: `Tạm dừng từ ${ngayNgan(tamDungTu)}`, t: 'tam-dung', viec: null, category: r.category });
+      /* T65 + Q13 (UXF-b): em Tạm dừng — MỌI hạn dừng: "Quá hạn" và "Cần làm" đổi thành nhãn vàng "Tạm dừng từ dd/mm" (chỉ đổi chữ). */
+      if (tamDungTu && (t === 'qua-han' || t === 'can-lam')) dong.push({ kn: r.short ?? r.label, nhan: `Tạm dừng từ ${ngayNgan(tamDungTu)}`, t: 'tam-dung', viec: null, category: r.category });
       else dong.push({ kn: r.short ?? r.label, nhan: NHAN_TRANG_THAI_O[t] ?? 'Đang làm', t, viec, category: r.category });
       const b = c.boTro;
       if (b && b.keHoach?.trangThai === 'cho' && !nhom.has(b.nhom)) {

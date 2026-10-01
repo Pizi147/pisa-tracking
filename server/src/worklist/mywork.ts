@@ -1,4 +1,4 @@
-import { db } from '../db.ts';
+import { db, theoLo } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
   ATTEMPT_KIND_SHORT,
@@ -1099,6 +1099,11 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     const sc = scopeFor(p, PERMISSIONS.REQUEST_APPROVE);
     const ds = sc.none ? [] : hvLenFtChuaKyVong(sc, f.branchId ?? null).sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
     /* PR-Dọn: lớp ghi trên dòng = LỚP NGUỒN của lệnh (nơi có bài Cuối khoá), một dòng mỗi em. */
+    /* PR-UXF-b (Q10): lộ trình có bài Cuối khoá của em (một câu cho cả tập) — hồ sơ mở đúng lộ trình đó rồi cuộn tới hộp Kết luận khoá. */
+    const cuoiKhoaCua = new Map<number, number>();
+    theoLo(ds.map((r) => r.id), (lo, ph) => {
+      for (const r of conn.prepare(`SELECT a.student_id AS sid, a.cycle_id AS cid FROM assessment_attempts a WHERE a.student_id IN (${ph}) AND a.kind = 'final' AND a.status != 'cancelled' AND a.cycle_id IS NOT NULL ORDER BY a.id`).all(...lo) as any[]) cuoiKhoaCua.set(r.sid, r.cid);
+    });
     for (const r of ds) {
       items.push({
         key: `ky_vong:${r.id}`, group: 'ky_vong_dau_ra', urgency: 'normal',
@@ -1106,7 +1111,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: 'Lên Fast Track', count: null,
         reason: 'Em BE/ELE lên Fast Track đã có bài Cuối khoá — đánh dấu Đạt hoặc Không đạt kỳ vọng đầu ra',
         tieuDe: `Đánh dấu kỳ vọng đầu ra · ${r.ten}`, actionLabel: 'Mở hồ sơ',
-        href: duongHoSoHocVien(r.id), ownerId: p.userId, owner: null, mine: true, due: null, statusLabel: 'Chưa đánh dấu',
+        href: duongHoSoHocVien(r.id, { loTrinh: cuoiKhoaCua.get(r.id), muc: 'ket-luan-khoa' }), ownerId: p.userId, owner: null, mine: true, due: null, statusLabel: 'Chưa đánh dấu',
       });
     }
   }

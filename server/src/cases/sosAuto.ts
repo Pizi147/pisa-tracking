@@ -16,6 +16,7 @@ import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
 import { followUntilAfter } from './sos.ts';
 import { mondayOf } from '../platform/week.ts';
 import { taoYeuCau } from '../duyet/yeuCau.ts';
+import { dongBoBaoPhCuaBai } from '../yThuc/phoiHop.ts';
 import { PA_QUY_CHE_CHUA_GHI, UNCONFIRMED_PRESET, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
 import { ghiBanDieuChinh } from './planRevisions.ts';
 import { chayNeuKeHoachDaDuyet, kiemKeHoach, mocCuoiKhoa, nopKeHoachBoTro, phaiGuiKemKeHoach } from './boTro.ts';
@@ -483,6 +484,8 @@ export function apDungKhongTheoDoi(conn: any, yc: { doi_tuong_id: number; du_lie
     studentId: c.student_id, cycleId: c.cycle_id ?? null, eventType: 'case_closed', eventDate: today,
     title: 'Không cần theo dõi', detail: note, refTable: 'sos_cases', refId: caseId, createdBy: nguoiDuyet, dedupKey: `case_dismiss:${caseId}`,
   });
+  /* PR-UXF-b (R5-4): Báo phụ huynh theo CASE — môn của Case này rời việc Báo PH của mọi bài Giữa khoá nối với nó (còn môn khác thì việc còn; hết môn thì việc chưa làm tự rút). */
+  for (const r of conn.prepare(`SELECT DISTINCT attempt_id FROM case_signals WHERE case_id = ? AND attempt_id IS NOT NULL`).all(caseId) as any[]) dongBoBaoPhCuaBai(r.attempt_id);
   writeAudit({
     actorUserId: nguoiDuyet, action: 'case.dismiss', entityType: 'sos_case', entityId: caseId, entityLabel: note,
     before: { status: c.status }, after: { status: 'done', reason: code, cancelledPlans: cancelled },

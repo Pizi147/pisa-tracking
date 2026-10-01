@@ -1,0 +1,394 @@
+[
+ {
+  "ten": "01-phan-tich-gv-QL-1440-sang",
+  "loi": "ô tuần còn dd/mm/yyyy",
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "03-ho-so-lop-ft-QL-1440-sang",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "05-ho-so-hv-sap-chuyen-QL-1440-sang",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "06-cho-duyet-QL-1440-sang",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "09-viec-bai-qua-han-QL-1440-sang",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "11-viec-ky-vong-QL-1440-sang",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "13-ho-so-hv-tam-dung-QL-1440-sang",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "20-phan-tich-gv-thuong-q18-QL-1440-sang",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "18-ho-so-hv-hoc-thuat-fou-QL-1440-sang",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "07-ngan-case-hv2-GVCN-1440-sang",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "08-bang-ky-nang-xin-y-kien-GVCN-1440-sang",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "16-hoc-vien-lop-viec-tiep-GVCN-1440-sang",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "02-cham-diem-lop-ft-GVBM-1440-sang",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "19-mock-test-GVBM-1440-sang",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "01-phan-tich-gv-QL-1440-toi",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "03-ho-so-lop-ft-QL-1440-toi",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "05-ho-so-hv-sap-chuyen-QL-1440-toi",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "06-cho-duyet-QL-1440-toi",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "09-viec-bai-qua-han-QL-1440-toi",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "11-viec-ky-vong-QL-1440-toi",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "13-ho-so-hv-tam-dung-QL-1440-toi",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "20-phan-tich-gv-thuong-q18-QL-1440-toi",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "18-ho-so-hv-hoc-thuat-fou-QL-1440-toi",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "07-ngan-case-hv2-GVCN-1440-toi",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "08-bang-ky-nang-xin-y-kien-GVCN-1440-toi",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "16-hoc-vien-lop-viec-tiep-GVCN-1440-toi",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "02-cham-diem-lop-ft-GVBM-1440-toi",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "19-mock-test-GVBM-1440-toi",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "01-phan-tich-gv-QL-375-sang",
+  "loi": "ô tuần còn dd/mm/yyyy",
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "03-ho-so-lop-ft-QL-375-sang",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "05-ho-so-hv-sap-chuyen-QL-375-sang",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "06-cho-duyet-QL-375-sang",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "09-viec-bai-qua-han-QL-375-sang",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "11-viec-ky-vong-QL-375-sang",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "13-ho-so-hv-tam-dung-QL-375-sang",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "20-phan-tich-gv-thuong-q18-QL-375-sang",
+  "loi": "không tìm thấy chú thích / khung",
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "18-ho-so-hv-hoc-thuat-fou-QL-375-sang",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "07-ngan-case-hv2-GVCN-375-sang",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "08-bang-ky-nang-xin-y-kien-GVCN-375-sang",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "16-hoc-vien-lop-viec-tiep-GVCN-375-sang",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "02-cham-diem-lop-ft-GVBM-375-sang",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "19-mock-test-GVBM-375-sang",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "01-phan-tich-gv-QL-375-toi",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "03-ho-so-lop-ft-QL-375-toi",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "05-ho-so-hv-sap-chuyen-QL-375-toi",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "06-cho-duyet-QL-375-toi",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "09-viec-bai-qua-han-QL-375-toi",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "11-viec-ky-vong-QL-375-toi",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "13-ho-so-hv-tam-dung-QL-375-toi",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "20-phan-tich-gv-thuong-q18-QL-375-toi",
+  "loi": "không tìm thấy chú thích / khung",
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "18-ho-so-hv-hoc-thuat-fou-QL-375-toi",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "07-ngan-case-hv2-GVCN-375-toi",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "08-bang-ky-nang-xin-y-kien-GVCN-375-toi",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "16-hoc-vien-lop-viec-tiep-GVCN-375-toi",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "02-cham-diem-lop-ft-GVBM-375-toi",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ },
+ {
+  "ten": "19-mock-test-GVBM-375-toi",
+  "loi": null,
+  "co2026": null,
+  "tranNgang": null,
+  "loiConsole": []
+ }
+]

@@ -226,7 +226,7 @@ function DongEmO({ x, nhom, chon, homNay, onChon }: { x: DongEm; nhom: NhomEm; c
   const ke = x.keTiep ? <>bậc kế tiếp <b className="font-semibold text-slate-200">{x.keTiep.nhan}{x.keTiep.canQl ? ' · cần QL' : ''}</b></> : <>đã hết thang — chỉ còn Đề xuất QL duyệt</>;
   const chuDeXuat = x.deXuat && nhom !== 'cho_duyet' ? ` · 1 đề xuất ${x.deXuat.status === 'cho_duyet' ? 'chờ QL' : 'đã duyệt'}` : '';
   const phu = nhom === 'qua_han' || nhom === 'bat_buoc'
-    ? (x.soBatBuoc > 0 ? <>{x.soBatBuoc} vi phạm / 2 tuần · {ke}</> : <>{x.soMoi} vi phạm chưa ai xem</>)
+    ? (x.tuChoi ? <>Quản lý từ chối {x.tuChoi.nhan} · chọn cách xử lý khác · {ke}</> : x.soBatBuoc > 0 ? <>{x.soBatBuoc} vi phạm / 2 tuần · {ke}</> : <>{x.soMoi} vi phạm chưa ai xem</>)
     : nhom === 'cho_duyet' ? <>{x.deXuat?.nhan ?? 'Đề xuất'} · {x.deXuat?.status === 'da_duyet' ? 'đã duyệt, chờ thực hiện' : 'chờ QL duyệt'}</>
     : nhom === 'moi' ? <>{x.soMoi} vi phạm{x.moiTuoi !== null ? <> · <span className={x.moiTuoi >= 4 ? 'font-semibold text-soon' : ''}>{x.moiTuoi} ngày</span></> : null}</>
     : <>{x.xuLyGanNhat?.nhan ?? 'Đã xử lý'}{x.xuLyGanNhat ? ` · ${ngay(x.xuLyGanNhat.ngay, homNay)}` : ''}</>;

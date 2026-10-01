@@ -46,7 +46,7 @@ export function KetLuanKhoa({ studentId, studentName, lop, ct, cuoiKhoa, coTheKe
     } catch (e: any) { toast.push('error', e.message); }
   };
   return (
-    <section aria-label="Kết luận khoá" className="rounded-lg border p-3 space-y-1.5" style={{ borderColor: 'var(--line)' }}>
+    <section id="ket-luan-khoa" aria-label="Kết luận khoá" className="rounded-lg border p-3 space-y-1.5" style={{ borderColor: 'var(--line)' }}>
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
         <span className="text-lg font-bold tabular-nums text-slate-100">{h.chinh}</span>
         {h.phu && <span className="text-xs tabular-nums text-slate-400">{h.phu}</span>}

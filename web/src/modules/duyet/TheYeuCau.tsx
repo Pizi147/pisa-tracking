@@ -151,7 +151,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
           </div>
           <div className={`mt-1 text-[13px] leading-snug text-slate-300 ${gon ? '' : 'sm:pl-[6.5rem]'}`}>
             <div ref={khungDong} className={moHet ? '' : 'line-clamp-2'}>
-              {yc.dong.map((d, i) => <p key={i} className="m-0">{d}</p>)}
+              {yc.dong.map((d, i) => <p key={i} className="m-0 whitespace-pre-line">{d}</p>)}
             </div>
             {(biCat || moHet) && (
               <button type="button" className="mt-0.5 min-h-[44px] text-[12px] text-teal-300 hover:underline sm:min-h-0" onClick={() => setMoHet(!moHet)}

@@ -7,7 +7,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { Empty, Skeleton } from '../../ui/ui.tsx';
-import { chonKhiDoiTach, kiemPhanCong, nenTachFou, ngay, slotsTuO, tenMon } from '@shared/domain/index.ts';
+import { chonKhiDoiTach, kiemPhanCong, nenTachFou, slotsTuO, tenMon, tuanLich } from '@shared/domain/index.ts';
 import { LuoiPhanCong, NutTachFou, loiTaiO, useTachFou } from './ClassCreatePanel.tsx';
 
 /**
@@ -127,7 +127,7 @@ export function TeacherAssignPanel({ open, onClose, classId, classCode, onDone }
                 <ul className="m-0 mt-1.5 list-none space-y-1 p-0">
                   {data.past.map((h, i) => (
                     <li key={i} className="text-xs text-slate-500">
-                      {h.name} · {h.isCore ? 'GVCN' : tenMon(data?.programmeCode ?? null, h.skill ?? '')} · {ngay(h.from, homNay)}{h.to ? ` → ${ngay(h.to, homNay)}` : ''}
+                      {h.name} · {h.isCore ? 'GVCN' : tenMon(data?.programmeCode ?? null, h.skill ?? '')} · {tuanLich(h.from, homNay)}{h.to ? ` → ${tuanLich(h.to, homNay)}` : ''}
                     </li>
                   ))}
                 </ul>

@@ -268,7 +268,7 @@ export async function runPrS4fTests(t: YThucTestKit) {
     assert(standing.standingFor([e.sid]).get(e.sid).attemptId === e.aid, 'đủ một kỹ năng (L) thì là kết quả gần nhất');
     const b = docWeb('modules/students/BangHocVienLop.tsx');
     assert(b.includes('link max-w-full truncate font-semibold" title={s.fullName}') && b.includes('flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5'), 'tên: title + badge xuống dòng');
-    assert(b.includes('<DongCham chu={k.dong1} />') && b.slice(b.indexOf('function DongCham')).includes('whitespace-nowrap'), 'DongCham');
+    assert(b.includes('<DongCham chu={k.dong1}')   /* UXF-b: thêm lienKet (link tên lượt) */ && b.slice(b.indexOf('function DongCham')).includes('whitespace-nowrap'), 'DongCham');
     assert(docWeb('ui/TheDong.tsx').includes('grid-cols-[5.5rem_minmax(0,1fr)] items-baseline'), 'TheDong items-baseline');
     assert(docWeb('modules/classes/ClassIssueBoard.tsx').includes('td text-right tabular-nums"><TyLe'), 'Tỷ lệ tabular-nums');
     assert(docWeb('modules/classes/BangCanHoTro.tsx').includes('Case chờ Quản lý duyệt'), '"n Case chờ Quản lý duyệt"');

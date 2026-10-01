@@ -95,7 +95,7 @@ export function DaiHocVienChuyen({ dai, homNay, onLam }: {
       <Dai nhan={dai.loai === 'sap' ? 'Sắp chuyển' : 'Đã chuyển'} nut={nut.length ? <>{nut}</> : undefined}>
         {dai.loai === 'sap' ? (
           <>
-            {dich} từ {tuanLich(dai.tuan, h)} · lệnh của {dai.nguoiRaLenh ?? 'Quản lý'} ngày {ngay(dai.ngayRaLenh, h)}
+            {dich} từ {tuanLich(dai.tuan, h)} · lệnh của {dai.nguoiRaLenh ?? 'Quản lý'}
             {bg && <> · Bàn giao: {bg.daXacNhan ? 'GVCN đã xác nhận' : `đã có ${bg.daGhi}/${bg.soMon} môn`}{!bg.daXacNhan && bg.hanGvcn && <> · <Han loai="viec-van-hanh" han={bg.hanGvcn} /></>}</>}
           </>
         ) : (

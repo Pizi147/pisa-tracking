@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, ENTRY_SKILLS, ENTRY_SKILL_LABEL, MOCK_FT_STUDY_WEEK, NO_SHOW_OVERRIDDEN_NOTE,
+  ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, duongDotTest, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, ENTRY_SKILLS, ENTRY_SKILL_LABEL, MOCK_FT_STUDY_WEEK, NO_SHOW_OVERRIDDEN_NOTE,
   BAI_CO_NHAN_XET, PERMISSIONS, awaitingScore, cachHuyLuot, kiemLyDo, kiemLyDoThaoTac, kiemNhanXet, kiemSoMtMoi, laLichSu, ngay, noShowStateOf, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanLich,
   type CachHuy,
   type AssessedSkill, type EntrySkill, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
@@ -454,44 +454,6 @@ export function regularSkillViews(
   return out;
 }
 
-/**
- * MỘT CÂU nói rõ đợt này đang ở đâu — ví dụ của owner ở mục 10.1:
- *
- *     "MT3 · Có điểm 3/4 kỹ năng · Chờ Speaking tuần 21–27/9"
- *
- * Máy chủ dựng sẵn câu này để không màn hình nào tự ghép lấy và ghép mỗi nơi một kiểu.
- */
-export function scheduleHeadline(input: {
-  label: string;
-  cells: SkillCell[];
-  requiredSkills: AssessedSkill[];
-}): string {
-  const byAssessed = new Map<AssessedSkill, SkillCell[]>();
-  for (const c of input.cells) {
-    if (!byAssessed.has(c.assessedSkill)) byAssessed.set(c.assessedSkill, []);
-    byAssessed.get(c.assessedSkill)!.push(c);
-  }
-  const required = input.requiredSkills;
-  const scored = required.filter((k) => (byAssessed.get(k) ?? []).every((c) => c.band !== null));
-  const parts = [input.label, `Có điểm ${scored.length}/${required.length} kỹ năng`];
-
-  /* Môn còn thiếu SỚM NHẤT theo tuần thi — đó là thứ người đọc cần chờ, không phải cả danh sách. */
-  const waiting = required
-    .filter((k) => !scored.includes(k))
-    .map((k) => (byAssessed.get(k) ?? [])[0])
-    .filter(Boolean)
-    .sort((a, b) => (a.weekStart ?? '9999') < (b.weekStart ?? '9999') ? -1 : 1)[0];
-
-  if (waiting) {
-    const name = ASSESSED_SKILL_LABEL[waiting.assessedSkill];
-    if (waiting.progress === 'absent') parts.push(`${name} đã xác nhận vắng`);
-    else if (waiting.progress === 'cancelled') parts.push(`${name} đã huỷ phần thi`);
-    else if (!waiting.weekRange) parts.push(`${name} chưa xếp tuần`);
-    else parts.push(`Chờ ${name} tuần ${waiting.weekRange}`);
-  }
-  return parts.join(' · ');
-}
-
 // ---------------------------------------------------------------- danh sách
 
 /**
@@ -809,11 +771,6 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
       pendingWeeks: [...new Set(
         pending.map((k) => cells.find((c) => c.skill === k)?.periodCode).filter(Boolean),
       )],
-      /** Câu tóm tắt lịch tách tuần — mục 10.1. Danh sách hiện luôn, không phải mở chi tiết. */
-      scheduleHeadline: scheduleHeadline({
-        label: a.kind === 'mock' ? `MT${a.attempt_no}` : (a.period_code ?? ''),
-        cells, requiredSkills: result.required,
-      }),
       /** Các tuần thi khác nhau trong đợt — có nhiều hơn một tức là đợt này tách tuần. */
       skillWeeks: [...new Set(cells.filter((c) => c.required && c.periodCode).map((c) => c.periodCode))],
       caseStatus: bundle.cases.get(a.id)?.status ?? null,
@@ -979,10 +936,6 @@ export function attemptDetail(p: Principal, attemptId: number) {
     huy: huyDong ? { lyDo: huyDong.reason ?? null, ai: huyDong.actor_name ?? null, khi: huyDong.created_at } : null,
     /** Đợt này có tách tuần không — nhiều hơn một tuần trong các kỹ năng bắt buộc. */
     splitWeeks: [...new Set(scheduleRows.filter((r) => r.required && r.periodCode).map((r) => r.periodCode))].length > 1,
-    scheduleHeadline: scheduleHeadline({
-      label: a.kind === 'mock' ? `MT${a.attempt_no}` : (a.period_code ?? ''),
-      cells, requiredSkills: result.required,
-    }),
     scoringMode: mode,
     deadlineOverride: a.deadline_override
       ? {
@@ -1838,8 +1791,7 @@ export { notify };
  * Máy chủ dựng sẵn đường dẫn cho mọi danh sách việc, để không màn nào phải tự ghép lấy.
  */
 export function attemptHref(a: { id: number; kind?: string | null; classId?: number | null }): string {
-  if (!a.kind || a.kind === 'mock') return `/mock-test/${a.id}`;
-  return a.classId ? `/bang-diem-thuong/${a.classId}?kind=${a.kind}` : `/mock-test/${a.id}`;
+  return duongDotTest(a);   // PR-UXF-b (Q9): một đường — giữ tên để không sửa nơi gọi
 }
 
 /**

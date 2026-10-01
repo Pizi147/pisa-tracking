@@ -15,6 +15,7 @@ import { Link } from 'react-router-dom';
 import {
   ATTEMPT_KIND_SHORT, BAI_CO_NHAN_XET, ENTRY_SKILLS, ngay, tenMon, tenMonNgan, type AttemptKind, type NguoiChon,
 } from '@shared/domain/index.ts';
+import { duongDotTest } from '@shared/domain/index.ts';
 import { fmtBand } from '../../lib/format.ts';
 import { Info } from '../../ui/ui.tsx';
 import {
@@ -185,7 +186,7 @@ function DongFt({ row, k, nhieuMt, active, onReload, gvMacDinh, inputRef, onKeyD
     .filter(Boolean).join(' · ');
   const laSoCau = k === 'listening' || k === 'reading';
   return (
-    <DongHv studentId={row.studentId} active={active} ten={row.studentName} href={`/mock-test/${row.attemptId}`}
+    <DongHv studentId={row.studentId} active={active} ten={row.studentName} href={duongDotTest({ id: row.attemptId }, k)}
       phu={phu} phuTitle={kv !== null ? `Kỳ vọng (KV) của lượt này: ${fmtBand(kv)} · ${row.studentCode}` : undefined}
       luu={<DauLuu lon status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />}
       nhan={<NhanHoanTat hoanTat={row.hoanTat} chuNhatCuoi={row.chuNhatCuoi} />}>

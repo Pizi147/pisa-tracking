@@ -202,10 +202,10 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     });
     eq(v.map((x: any) => [x.viec, x.han, x.quaHanNgay, x.tone, x.title]), [
       /* PR-S5F-b (mockup 21): việc ghi kết quả PA nói tuần của kết quả. */
-      ['Ghi kết quả PA L · tuần W1 SEP', 'hết T2 13/09', 1, 'danger', 'Ghi kết quả PA Nghe podcast · Listening · tuần W1 SEP · hạn hết T2 13/09 · quá hạn 1 ngày'],
+      ['Ghi kết quả PA L · tuần W1 SEP', 'hạn hết T2 13/09', 1, 'danger', 'Ghi kết quả PA Nghe podcast · Listening · tuần W1 SEP · hạn hết T2 13/09 · quá hạn 1 ngày'],
       ['Nhập điểm L, W · Giữa khoá', null, null, 'warn', 'Nhập điểm L, W · Giữa khoá'],
       ['Đề ra PA W2', null, null, 'warn', 'Đề ra PA · Writing Task 2'],
-      ['Ghi kết quả PA R · tuần W2 SEP', 'hết T2 20/09', null, 'info', 'Ghi kết quả PA Đọc báo · Reading · tuần W2 SEP · hạn hết T2 20/09'],
+      ['Ghi kết quả PA R · tuần W2 SEP', 'hạn hết T2 20/09', null, 'info', 'Ghi kết quả PA Đọc báo · Reading · tuần W2 SEP · hạn hết T2 20/09'],
     ], 'Thứ tự và chữ (Case không việc bị bỏ)');
     /* Ý kiểm cũ "Case nói trước" (chonCaseChinh) nay là thứ tự hàng của `hangCanHoTro` — kiểm ở prHvl.tests.ts (T19). */
   });
@@ -384,7 +384,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     conn.prepare('DELETE FROM teacher_assignments WHERE id = ?').run(pcW);
     /* PR-N1 A6: máy chủ truyền hạn nhập điểm → việc trễ nói đủ "quá hạn n ngày". */
     // PR-MON (MH2): lớp FOU — ô W hiện G+V.
-    eq(row.viecTiepTheo[0], { viec: 'Nhập điểm G+V · Giữa khoá', han: '13/09', quaHanNgay: 1, tone: 'danger', dich: { loai: 'nhap-diem' }, title: 'Nhập điểm G+V · Giữa khoá · hạn 13/09 · quá hạn 1 ngày' }, 'Writing tuần 07/09 chưa có điểm, hạn CN 13/09 đã qua');
+    eq(row.viecTiepTheo[0], { viec: 'Nhập điểm G+V · Giữa khoá', han: 'hạn 13/09', quaHanNgay: 1, tone: 'danger', dich: { loai: 'nhap-diem' }, title: 'Nhập điểm G+V · Giữa khoá · hạn 13/09 · quá hạn 1 ngày' }, 'Writing tuần 07/09 chưa có điểm, hạn CN 13/09 đã qua');
     const t = row.timeline.find((x: any) => x.kind === 'progress');
     eq(t.tuanMon.writing, '2026-09-07', 'Tuần thi của môn Writing');
     assert(row.viecTiepTheo.every((v: any) => !/MT\d|kỳ vọng/.test(v.viec)), 'Chữ FT lọt vào lớp thường');

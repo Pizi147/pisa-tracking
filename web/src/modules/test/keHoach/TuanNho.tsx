@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { api } from '../../../lib/api.ts';
 import { addDaysStr } from '../../../lib/format.ts';
 import { WeekPicker } from '../../../ui/Filters.tsx';
-import { tuanLich } from '@shared/domain/index.ts';
+import { ngay, tuanLich } from '@shared/domain/index.ts';
+import { useNgayNghiepVu } from '../../../ui/ngayNghiepVu.ts';
 
 export type Tuan = { periodId: number; weekStart: string };
 
@@ -20,6 +21,7 @@ export function TuanNho({ d, goc, onTuan, nhanKhoa = null, toiThieu = null }: {
   /** PR-XLMT (K2-33): thứ Hai sớm nhất được chọn — nút ‹ không lùi qua tuần này (dời lượt có sẵn không vào tuần đã qua). */
   toiThieu?: string | null;
 }) {
+  const { homNay } = useNgayNghiepVu();
   const [busy, setBusy] = useState(false);
   const [rong, setRong] = useState(false);
   const co = d.weekStart ?? goc;
@@ -28,7 +30,7 @@ export function TuanNho({ d, goc, onTuan, nhanKhoa = null, toiThieu = null }: {
     setBusy(true);
     resolveTuan(addDaysStr(co, 7 * n)).then(onTuan).catch(() => { /* giữ tuần cũ */ }).finally(() => setBusy(false));
   };
-  const dm = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+  const khoang = (iso: string) => `${ngay(iso, homNay)} – ${ngay(addDaysStr(iso, 6), homNay)}`;
   const nut = 'btn flex-none min-h-[44px] min-w-[36px] justify-center px-2 sm:min-h-[32px]';
   return (
     <div className="min-w-0">
@@ -36,9 +38,9 @@ export function TuanNho({ d, goc, onTuan, nhanKhoa = null, toiThieu = null }: {
         <button type="button" className={nut} disabled={busy || !co || (!!toiThieu && co <= toiThieu)} onClick={() => buoc(-1)} aria-label="Tuần trước">‹</button>
         <button type="button" className="field flex min-h-[44px] min-w-0 flex-1 items-center justify-between gap-1 px-2 text-left text-xs sm:min-h-[32px]"
           aria-expanded={rong} onClick={() => setRong((v) => !v)}
-          title={d.weekStart ? `${dm(d.weekStart)} – ${dm(addDaysStr(d.weekStart, 6))} · bấm để chọn tuần khác` : 'Chọn tuần khác'}>
-          <span className="truncate text-slate-100">{d.weekStart ? tuanLich(d.weekStart) : 'Chọn tuần'}</span>
-          <span className="shrink-0 text-[11px] text-slate-500 max-[430px]:hidden">{d.weekStart ? `${dm(d.weekStart)}–${dm(addDaysStr(d.weekStart, 6))}` : ''}</span>
+          title={d.weekStart ? `${khoang(d.weekStart)} · bấm để chọn tuần khác` : 'Chọn tuần khác'}>
+          <span className="truncate text-slate-100">{d.weekStart ? tuanLich(d.weekStart, homNay) : 'Chọn tuần'}</span>
+          <span className="shrink-0 text-[11px] text-slate-500 max-[430px]:hidden">{d.weekStart ? khoang(d.weekStart) : ''}</span>
         </button>
         <button type="button" className={nut} disabled={busy || !co} onClick={() => buoc(1)} aria-label="Tuần sau">›</button>
       </div>

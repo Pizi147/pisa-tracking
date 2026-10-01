@@ -1,4 +1,4 @@
-import { db, tx, vuaGhi } from '../db.ts';
+import { db, theoLo, tx, vuaGhi } from '../db.ts';
 import { boTroCuaCase, chepKetQuaNhom, quyenBoTro, type BoTroDto } from './boTro.ts';
 import { ghiMiniTestTrongTx, kiemMiniTest } from '../normal/cuoiKhoa.ts';
 import {
@@ -33,7 +33,7 @@ import { activeClassOf } from '../yThuc/access.ts';
 import { isRatioCycle, programmeCodeOfCycle } from '../normal/regular.ts';
 import { suggestCaseOwner } from './owner.ts';
 import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
-import { PLAN_DECISIONS, decisionToStep, type PlanDecision } from '../../../shared/domain/index.ts';
+import { PLAN_DECISIONS, decisionToStep, duongDotTest, tuanLich, type PlanDecision } from '../../../shared/domain/index.ts';
 import { apDungDieuChinh, chuanHoaDieuChinh, lichSuDieuChinhCuaCase } from './planRevisions.ts';
 import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
 import { dienMocQuyChe, tenGiuaCua } from './sosAuto.ts';
@@ -108,13 +108,16 @@ export function caseTitleOf(c: {
 export function milestonesOf(caseId: number) {
   return (db()
     .prepare(
-      `SELECT m.*, u.full_name AS actor_name, (SELECT a.kind FROM assessment_attempts a WHERE a.id = m.attempt_id) AS attempt_kind FROM case_milestones m
+      `SELECT m.*, u.full_name AS actor_name, (SELECT a.kind FROM assessment_attempts a WHERE a.id = m.attempt_id) AS attempt_kind,
+             (SELECT a.class_id FROM assessment_attempts a WHERE a.id = m.attempt_id) AS attempt_class_id FROM case_milestones m
          LEFT JOIN users u ON u.id = m.created_by
         WHERE m.case_id = ? ORDER BY m.occurred_on, m.id`,
     )
     .all(caseId) as any[])
     .map((m) => ({
       id: m.id, kind: m.kind, attemptId: m.attempt_id, attemptNo: m.attempt_no, dot: m.attempt_kind ? nhanDot(m.attempt_kind, m.attempt_no) : null,
+      /* PR-UXF-b (G5): mốc MT bấm được tới đúng đợt (FT → hồ sơ Mock; lớp thường → bảng điểm lớp). */
+      href: m.attempt_id ? duongDotTest({ id: m.attempt_id, kind: m.attempt_kind, classId: m.attempt_class_id }) : null,
       band: m.band, expectation: m.expectation, sosLevel: m.sos_level,
       occurredOn: m.occurred_on, note: m.note, actorName: m.actor_name,
     }));
@@ -1178,7 +1181,7 @@ export function backfillCase(p: Principal, input: {
       if (overlap) {
         throw badRequest(
           `Học viên này đã có một case nhập bù "${overlap.title ?? caseCategoryLabel(category)}" `
-          + `trùng khoảng ${overlap.detected_at} → ${overlap.closed_at} — có phải cùng một lần không?`,
+          + `trùng khoảng ${tuanLich(overlap.detected_at, demoToday())} → ${tuanLich(overlap.closed_at, demoToday())} — có phải cùng một lần không?`,
           { duplicateBackfill: { id: overlap.id, title: overlap.title, from: overlap.detected_at, to: overlap.closed_at } },
         );
       }
@@ -2198,6 +2201,8 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
   const caseRows = conn
     .prepare(
       `SELECT *, (COALESCE(cycle_id, 0) != ?) AS carried_over, (SELECT cy.started_at FROM learning_cycles cy WHERE cy.id = sos_cases.cycle_id) AS lo_trinh_bat_dau,
+              (SELECT cl.programme_code FROM assessment_attempts a JOIN classes cl ON cl.id = a.class_id WHERE a.id = sos_cases.attempt_id) AS ct_attempt,
+              (SELECT cl.code FROM assessment_attempts a JOIN classes cl ON cl.id = a.class_id WHERE a.id = sos_cases.attempt_id) AS lop_attempt,
               (SELECT u.full_name FROM users u WHERE u.id = sos_cases.owner_user_id) AS owner_name FROM sos_cases
         WHERE student_id = ?
           AND (COALESCE(cycle_id, 0) = ? OR status != 'done')
@@ -2207,6 +2212,18 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
   /* AN-8: số bằng chứng của MỌI Case trên bảng — một câu hỏi, không phải một câu cho mỗi thẻ. */
   const soBangChung = demBangChungCase(caseRows.map((c) => c.id as number));
   const boTroMap = boTroCuaCase(p, caseRows.map((c) => c.id as number));   // PR-LT2a: theo TẬP, không hỏi từng Case
+  /* PR-UXF-b (O1): thẻ Xin ý kiến của MỌI PA trên bảng — một câu tìm PA có thẻ, rồi MỘT lần `theCuaDoiTuong` (rỗng thì không câu nào). Cùng luật chọn với Ngăn Case. */
+  const xinYKienCua = new Map<number, any>();
+  {
+    const idPa: number[] = [];
+    theoLo(caseRows.map((c) => c.id as number), (lo, ph) => {
+      for (const r of conn.prepare(`SELECT y.doi_tuong_id AS id FROM yeu_cau_duyet y JOIN case_interventions iv ON iv.id = y.doi_tuong_id
+         WHERE y.doi_tuong_loai = 'intervention' AND y.loai = 'xin_y_kien' AND iv.case_id IN (${ph})`).all(...lo) as any[]) idPa.push(r.id);
+    });
+    for (const y of theCuaDoiTuong('intervention', [...new Set(idPa)])) {
+      if (y.loai === 'xin_y_kien' && y.trangThai !== 'tu_dong' && !xinYKienCua.has(y.doiTuongId)) xinYKienCua.set(y.doiTuongId, y);
+    }
+  }
 
   /*
    * BỘ HẠNG MỤC THEO ĐÚNG CHƯƠNG TRÌNH EM ĐANG HỌC.
@@ -2242,10 +2259,21 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
    * phải có dòng — không thì bảng và thẻ tóm tắt nói "không có case" trong khi Case còn mở. Dòng thêm xếp sau các ô chuẩn.
    */
   const oChuan: readonly string[] = caseCategoriesFor(isRatioCycle(cycle) ? 'ratio' : 'ielts_band', ctBang);
-  const oNgoai = [...new Set(caseRows.filter((c) => c.status !== 'done' || !c.carried_over).map((c) => (c.category ?? categoryOf(c.topic)) as string | null)
+  /*
+   * PR-UXF-b (R5-5): Case ĐANG MỞ mà lớp của LƯỢT sinh ra nó (`ct_attempt`) có TÊN MÔN khác chương trình đang xem (FOU "G+V" / "P" → BE "Writing" / "Speaking") không nằm ở hàng cùng khoá
+   * dữ liệu — hàng Writing của BE đọc thành "em yếu Writing" (khi chuyển lớp, Case đi theo em sang lộ trình mới nên không dựa vào `carried_over`). Chúng thành nhóm "Từ lớp trước" cuối
+   * bảng, tên môn theo chương trình của LỚP đó. Tên giống nhau (L, R) giữ hàng. Chương trình / mã lớp đọc cùng câu SQL nạp Case (không thêm câu).
+   */
+  const tuLopTruoc = new Map<number, { ct: string | null; lop: string }>();
+  for (const c of caseRows) {
+    const cat = (c.category ?? categoryOf(c.topic)) as string | null;
+    if (c.status !== 'done' && cat && ctBang && c.ct_attempt && tenMonNgan(c.ct_attempt, cat) !== tenMonNgan(ctBang, cat)) tuLopTruoc.set(c.id, { ct: c.ct_attempt, lop: c.lop_attempt });
+  }
+  const oNgoai = [...new Set(caseRows.filter((c) => !tuLopTruoc.has(c.id) && (c.status !== 'done' || !c.carried_over)).map((c) => (c.category ?? categoryOf(c.topic)) as string | null)
     .filter((k): k is string => !!k && !oChuan.includes(k)))];
-  const rows = [...oChuan, ...oNgoai].map((category) => {
-    const points = byCategory.get(category) ?? [];
+  const dongKyNang = (category: string, thuCu?: { ct: string | null; lop: string; cases: any[] }) => {
+    /* Hàng "Từ lớp trước": không mượn điểm của lộ trình đang xem. */
+    const points = thuCu ? [] : byCategory.get(category) ?? [];
     const latest = points[points.length - 1] ?? null;
     const prev = points.length > 1 ? points[points.length - 2] : null;
 
@@ -2254,7 +2282,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
      * thì lấy cái đã đóng gần nhất — "đã từng có vấn đề và đã xử lý xong" là một câu trả
      * lời khác hẳn "chưa từng có vấn đề", và người dạy cần phân biệt hai câu đó.
      */
-    const mine = caseRows.filter((c) => (c.category ?? categoryOf(c.topic)) === category);
+    const mine = thuCu ? thuCu.cases : caseRows.filter((c) => !tuLopTruoc.has(c.id) && (c.category ?? categoryOf(c.topic)) === category);
     const primary = mine.find((c) => c.status !== 'done') ?? mine[0] ?? null;
 
     let interventions: any[] = [];
@@ -2272,15 +2300,6 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
         .get(primary.id) as any).n;
     }
     const openIv = interventions.filter((i) => i.status === 'planned' || i.status === 'started');
-    const lastDone = interventions.find((i) => i.status === 'completed') ?? null;
-    const lastFollow = primary
-      ? (conn
-          .prepare(
-            `SELECT outcome, observed_on, note FROM case_followups
-              WHERE case_id = ? ORDER BY observed_on DESC, id DESC LIMIT 1`,
-          )
-          .get(primary.id) as any)
-      : null;
 
     /*
      * TRẠNG THÁI HIỂN THỊ — bốn mức, và mỗi mức dẫn tới một việc khác nhau:
@@ -2300,9 +2319,11 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
 
     return {
       category,
-      label: tenMon(ctBang, category),
-      short: tenMonNgan(ctBang, category),
-      chuongTrinh: ctBang,
+      label: tenMon(thuCu ? thuCu.ct : ctBang, category),
+      short: tenMonNgan(thuCu ? thuCu.ct : ctBang, category),
+      chuongTrinh: thuCu ? thuCu.ct : ctBang,
+      /** PR-UXF-b (R5-5): mã lớp cũ của nhóm "Từ lớp trước" (dòng phụ "từ MB FOU 12"); null = hàng chuẩn. */
+      tuLopTruoc: thuCu ? thuCu.lop : null,
       /* Band MT gần nhất — chưa có điểm thì để trống chứ không ghi 0. */
       band: latest?.band ?? null,
       bandAttemptNo: latest?.attemptNo ?? null,
@@ -2360,8 +2381,6 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
         && primary.follow_until < demoToday(),
       outcome: primary?.outcome ?? null,
       outcomeLabel: primary?.outcome ? CASE_OUTCOME_LABEL[primary.outcome as CaseOutcome] ?? null : null,
-      /** Một dòng "đã hỗ trợ gì" dựng từ dữ liệu thật, không phải câu chung chung. */
-      supportLine: supportLineOf(openIv, lastDone, lastFollow),
       openActions: openIv.length,
       overdueActionDue: overdueAction?.action_due ?? null,
       /** Hạn ghi kết quả tuần gần nhất của PA đang chạy (bỏ PA chờ duyệt) — ô "Việc cần làm tiếp" dùng (K3-02). */
@@ -2407,7 +2426,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
           canClose: canCloseCase(p, { class_id: lopDangHoc, student_id: studentId, topic: c.topic }),
           closeBlockers: c.status === 'done' ? [] : closeBlockers(c.id),
           /* Đủ thứ để vẽ MỘT THẺ CASE mà không phải gọi thêm một đường nữa (mục 1 · 2). */
-          ...caseCardOf(c.id, c, soBangChung, boTroMap.get(c.id) ?? null),
+          ...caseCardOf(c.id, c, soBangChung, boTroMap.get(c.id) ?? null, xinYKienCua),
         }))
         .sort((a, b) => {
           const open = (x: typeof a) => (x.status === 'done' ? 1 : 0);
@@ -2417,7 +2436,17 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
           return b.id - a.id;
         }),
     };
-  });
+  };
+  const nhomTruoc = new Map<string, { ct: string | null; lop: string; cases: any[] }>();
+  for (const c of caseRows) {
+    const t = tuLopTruoc.get(c.id); if (!t) continue;
+    const k = `${c.category ?? categoryOf(c.topic)}|${t.ct}|${t.lop}`;
+    (nhomTruoc.get(k) ?? nhomTruoc.set(k, { ...t, cases: [] }).get(k)!).cases.push(c);
+  }
+  const rows = [
+    ...[...oChuan, ...oNgoai].map((category) => dongKyNang(category)),
+    ...[...nhomTruoc].map(([k, g]) => dongKyNang(k.split('|')[0], g)),
+  ];
 
   return { studentId, cycleId: cycle?.id ?? null, chuongTrinh: ctBang, rows, tamDungTu: tamDungTuCua(student) };
 }
@@ -2451,7 +2480,7 @@ export function demBangChungCase(caseIds: number[]): Map<number, number> {
  *
  * (Trước 21/09/2026 thẻ này còn trả "báo cáo nguồn" của case Ý thức; Ý thức nay là vi phạm và biện pháp xử lý ở một bảng riêng.)
  */
-function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>, boTro: BoTroDto | null = null) {
+function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>, boTro: BoTroDto | null = null, xinYKienCua: ReadonlyMap<number, unknown> = new Map()) {
   const conn = db();
   const today = demoToday();
 
@@ -2518,6 +2547,7 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>, bo
       followupOverdue: !!(open && iv.followup_due && iv.followup_due < today && !(iv.preset === 1 && !iv.confirmed_at)),
       pendingApproval: pending,
       approvalDue: pending ? iv.approval_due ?? null : null,
+      xinYKien: xinYKienCua.get(iv.id) ?? null,
       /*
        * PR-S2: KHÉP LẠI VÌ SAO và PA NÀO THAY NÓ. `superseded` = Được thay thế; `supersededBy` trỏ PA mới.
        * Hành trình (PR-Qb) nối các khối PA theo đúng chuỗi này.
@@ -2637,40 +2667,6 @@ function nguoiLamCua(v: { chu: string; paId?: number } | null, c: any, plans: { 
     : v.chu === 'Nộp kế hoạch bổ trợ' ? [boTro?.nguoiDay?.userId ?? null, boTro?.nguoiDay?.ten ?? null]
     : [c.owner_user_id ?? null, c.owner_name ?? null];
   return id ? { id, ten } : null;
-}
-
-/**
- * MỘT DÒNG "ĐÃ HỖ TRỢ GÌ" — ghép từ phương án đang làm, việc vừa xong và kết quả của nó.
- *
- * Cố ý KHÔNG viết câu chung chung kiểu "đang hỗ trợ". Người đọc cần biết hỗ trợ bằng CÁCH
- * NÀO và có ăn thua không; câu chung chung thì vẫn phải mở case ra mới biết, tức là dòng đó
- * không tiết kiệm được cú bấm nào.
- */
-function supportLineOf(openIv: any[], lastDone: any | null, lastFollow: any | null): string | null {
-  const name = (iv: any) => (iv.description ?? '').trim()
-    || INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] || iv.kind;
-  /*
-   * Ngày viết theo lối người Việt đọc (19/09), không phải lối máy lưu (2026-09-19).
-   * Dòng này ghép sẵn ở máy chủ nên phải tự định dạng — giao diện không tách ra được nữa.
-   */
-  const day = (d: string | null) => (d ? `${d.slice(8, 10)}/${d.slice(5, 7)}` : '');
-  if (openIv.length) {
-    const first = openIv[0];
-    const who = first.performer_name_user ?? first.performer_name ?? null;
-    return [
-      name(first),
-      who ? `· ${who}` : '· chưa có người thực hiện',
-      openIv.length > 1 ? `· và ${openIv.length - 1} việc nữa` : null,
-    ].filter(Boolean).join(' ');
-  }
-  if (lastDone) {
-    return [
-      name(lastDone),
-      lastDone.completed_date ? `· xong ${day(lastDone.completed_date)}` : null,
-      lastFollow?.outcome ? `· ${FOLLOWUP_OUTCOME_LABEL[lastFollow.outcome as FollowUpOutcome] ?? lastFollow.outcome}` : null,
-    ].filter(Boolean).join(' ');
-  }
-  return null;
 }
 
 // ================================================================ điểm GV tự đánh giá

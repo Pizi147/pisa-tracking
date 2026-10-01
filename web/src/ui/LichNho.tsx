@@ -213,10 +213,10 @@ export function LichNho({ kieu, value, homNay, luat, neo, onChon, onDong, goNgay
     >
       {goNgay && (
         <div className="mb-2">
-          <label className="label" htmlFor={idGo}>Gõ ngày</label>
+          <label className="label" htmlFor={idGo}>Gõ tuần hoặc ngày</label>
           <input
             id={idGo} className="field tabular-nums" inputMode="numeric" autoComplete="off"
-            placeholder="Ví dụ: 28/09/2026" value={text} aria-invalid={!!loiGo || undefined}
+            placeholder="W4 SEP hoặc 28/09" value={text} aria-invalid={!!loiGo || undefined}
             onChange={(e) => { setText(e.target.value); setLoiGo(null); }}
             onKeyDown={(e) => {
               if (e.key !== 'Enter') return;
