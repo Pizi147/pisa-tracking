@@ -1,0 +1,446 @@
+<section class="bia">
+  <div class="nhan">Pisa Tracking</div>
+  <h1>Sổ tay<br>Giáo viên</h1>
+  <p class="phu">Hướng dẫn làm việc hằng ngày trên web: chấm điểm, hỗ trợ học viên, ghi vi phạm, và những hạn bạn cần nhớ.</p>
+  <div class="ban">Bản 02/10/2026 · Dùng cho giáo viên chủ nhiệm (GVCN) và giáo viên bộ môn (GVBM)<br>Ảnh minh hoạ chụp từ bản demo; tên học viên và dữ liệu trong ảnh là dữ liệu giả.</div>
+</section>
+
+<h1 class="khong-ngat">Cách dùng sổ tay này</h1>
+<p>Mỗi mục trả lời một câu hỏi: <b>bạn cần làm gì, bấm ở đâu, và web sẽ chặn hay nhắc điều gì</b>. Sổ tay xếp theo việc bạn làm trong tuần, không theo thứ tự menu.</p>
+<div class="mo-ta">
+  <b>Cách đọc ảnh.</b> Mỗi ảnh có <span class="so" style="display:inline-block;vertical-align:middle">1</span> số đỏ khoanh trên màn hình. Danh sách dưới ảnh cho biết từng số là gì hoặc bấm để làm gì. Khung vàng <b>"Luật cần nhớ"</b> là điều web bắt buộc hoặc hạn bạn phải đúng. Khung đỏ <b>"Lưu ý"</b> là chỗ dễ nhầm.
+</div>
+
+<h2>Tìm nhanh: tôi muốn…</h2>
+<table class="tim-nhanh">
+  <tr><th>Tôi muốn…</th><th>Xem mục</th></tr>
+  <tr><td>Biết hôm nay phải làm gì</td><td>1</td></tr>
+  <tr><td>Nhập điểm Mock Test (Fast Track) hoặc điểm Giữa khoá / Cuối khoá (lớp thường)</td><td>2.2 – 2.6</td></tr>
+  <tr><td>Báo học viên không làm bài (dấu "-")</td><td>2.3, 2.5</td></tr>
+  <tr><td>Sửa hoặc huỷ một điểm đã nhập</td><td>2.7</td></tr>
+  <tr><td>Xử lý một Case do SOS tự tạo (xác nhận nguyên nhân, xác nhận PA)</td><td>3.2 – 3.3</td></tr>
+  <tr><td>Ghi kết quả PA hằng tuần</td><td>3.6</td></tr>
+  <tr><td>Xử lý môn dưới 70 % ở Giữa khoá (lớp thường), nộp kế hoạch bổ trợ</td><td>4.1 – 4.2</td></tr>
+  <tr><td>Ghi một vi phạm của học viên</td><td>5.1</td></tr>
+  <tr><td>Xử lý vi phạm theo thang (GVCN)</td><td>5.2 – 5.4</td></tr>
+  <tr><td>Thêm học viên mới vào lớp, báo vắng, đề xuất chuyển lớp, bàn giao (GVCN)</td><td>6</td></tr>
+  <tr><td>Biết yêu cầu mình gửi Quản lý đã được duyệt chưa</td><td>7.1</td></tr>
+  <tr><td>Biết hạn của từng việc</td><td>Phụ lục A</td></tr>
+</table>
+
+<h1>Phần 0. Bắt đầu</h1>
+
+<h2>0.1 Đăng nhập</h2>
+<p>Dùng email PISA do trung tâm cấp (đuôi <code>.pisa@gmail.com</code>) và mật khẩu của bạn. Nếu bạn là giáo viên mới và chưa có tài khoản, bấm <b>Giáo viên đăng ký</b>, khai chi nhánh rồi chờ Quản trị hệ thống duyệt. Quên mật khẩu thì nhờ Quản trị hệ thống đặt lại.</p>
+<fig id="g-00-dang-nhap"></fig>
+
+<h2>0.2 Bạn là ai trong web</h2>
+<p>Web chỉ có ba vai: <b>Quản trị hệ thống</b>, <b>Quản lý</b> (QL) và <b>Giáo viên</b>. Trong vai Giáo viên, việc bạn làm được phụ thuộc vào <b>lớp và kỹ năng bạn được phân công</b>:</p>
+<table>
+  <tr><th></th><th>GVCN (chủ nhiệm lớp)</th><th>GVBM (bộ môn)</th></tr>
+  <tr><td><b>Nhập điểm</b></td><td>Ô của môn mình dạy</td><td>Ô của môn mình dạy</td></tr>
+  <tr><td><b>Case, PA</b></td><td>Chỉ Case đúng môn mình dạy</td><td>Chỉ Case đúng môn mình dạy</td></tr>
+  <tr><td><b>Ghi vi phạm</b></td><td>Có</td><td>Có (kể cả trái môn)</td></tr>
+  <tr><td><b>Xử lý vi phạm theo thang, Phối hợp SOS</b></td><td>Có (lớp em đang học)</td><td>Chỉ xem</td></tr>
+  <tr><td><b>Thêm học viên, báo vắng, đề xuất chuyển lớp, bàn giao, Kết luận khoá</b></td><td>Có (lớp mình chủ nhiệm)</td><td>Bàn giao: ghi phần môn mình</td></tr>
+  <tr><td><b>Xuất Excel kết quả Test</b></td><td>Có</td><td>Không</td></tr>
+</table>
+<p><b>GV Speaking chấm chéo:</b> nếu bạn được phân công Speaking ở một lớp Fast Track, bạn nhập được ô S của mọi lớp Fast Track cùng chi nhánh. Đây chỉ là quyền nhập; ô S vẫn là việc của GV được phân công ở lớp đó.</p>
+
+<h2>0.3 Làm quen màn hình</h2>
+<fig id="g-01-khung"></fig>
+<p>Thanh trên có bốn mục: <b>Tổng quan</b>, <b>Học viên & Lớp</b>, <b>Test</b>, <b>Công việc</b>. Số đỏ cạnh <b>Công việc</b> là số việc quá hạn của bạn. Chuông <b>Thông báo</b> chia hai nhóm: <b>Cần làm</b> (việc đang chờ bạn) và <b>Để biết</b>. Bấm tên bạn để mở <b>Hồ sơ cá nhân</b>, <b>Hồ sơ giáo viên</b> hoặc <b>Đăng xuất</b>.</p>
+
+<h2>0.4 Đọc thời gian và màu</h2>
+<div class="luat"><b>Luật cần nhớ</b>
+<ul>
+  <li>Tuần chạy từ <b>Thứ Hai đến Chủ nhật</b>. <b>W3 SEP</b> là tuần thứ 3 của tháng 9. Ngày cụ thể chỉ hiện cho hạn, ngày thi, ngày sinh và nhật ký.</li>
+  <li>Mọi hạn "n ngày" là <b>ngày lịch liên tiếp, tính cả ngày đầu</b>. Không có "ngày làm việc".</li>
+  <li>Màu điểm: <b>đỏ</b> dưới kỳ vọng · <b>xanh dương</b> bằng kỳ vọng · <b>xanh lá</b> vượt · <b>xám</b> chưa đủ dữ liệu.</li>
+</ul></div>
+
+<h1>Phần 1. Nhịp một tuần</h1>
+<p>Phần lớn hạn trên web rơi vào <b>Thứ Hai</b>, <b>Thứ Tư</b> và <b>Chủ nhật</b>. Nhớ ba ngày này là đủ.</p>
+<table>
+  <tr><th style="width:20%">Ngày</th><th>Điều xảy ra</th><th style="width:30%">Bạn cần làm</th></tr>
+  <tr><td><b>Thứ Hai</b></td><td>Sáng sớm web <b>chốt dấu "-"</b> của tuần trước (Fast Track). Đây cũng là <b>hạn ghi kết quả PA</b> của tuần vừa qua, và là ngày <b>quyết định chuyển lớp có hiệu lực</b>.</td><td>Ghi kết quả PA tuần trước (hết hôm nay).</td></tr>
+  <tr><td><b>Thứ Tư</b></td><td>Hạn chấm bài Fast Track của tuần thi trước đó.</td><td>Nhập xong điểm Mock Test.</td></tr>
+  <tr><td><b>Chủ nhật</b></td><td>Hết hạn sửa dấu "-". Hạn chấm lớp thường (hết Chủ nhật của tuần thi).</td><td>Sửa "-" nếu em đã có bài; chấm xong lớp thường.</td></tr>
+</table>
+<h2>Mỗi ngày bắt đầu ở "Việc hôm nay"</h2>
+<fig id="g-02-viec-hom-nay"></fig>
+<p>Làm theo thứ tự: <b>quá hạn → hạn hôm nay → còn lại trong tuần</b>. Mỗi dòng có nút hành động riêng; bấm là mở đúng chỗ cần làm. Việc có hạn đến hết Chủ nhật tuần này cũng hiện ở đây.</p>
+
+<h1>Phần 2. Chấm và nhập điểm Test</h1>
+
+<h2>2.1 Tìm bài cần chấm</h2>
+<fig id="g-03-lich-test"></fig>
+<p>Vào <b>Test › Lịch Test</b>. Bài bạn phải chấm có nhãn <b>Chờ bạn chấm</b>. Bài của tuần trước chưa chấm xong nằm ở khối nợ. Bấm vào lớp để mở lưới nhập điểm.</p>
+
+<h2>2.2 Nhập điểm Fast Track (Mock Test)</h2>
+<fig id="g-04-luoi-ft"></fig>
+<ol class="buoc">
+  <li>Mở lưới của lớp từ <b>Lịch Test</b> hoặc từ nút <b>Nhập điểm</b> ở Việc hôm nay.</li>
+  <li>Nhập vào ô của <b>môn bạn dạy</b>. Ô khác chỉ để xem. Điểm tự lưu khi bạn rời ô; trạng thái lưu hiện cạnh ô.</li>
+  <li>Writing và Speaking nhập theo bốn tiêu chí; bạn có thể ghi <b>nhận xét</b> cho từng bài W1, W2, S (tối đa 1000 ký tự, không bắt buộc).</li>
+  <li>Speaking: chọn <b>GV chấm</b> một lần ở đầu cột S; web nhớ cho lớp và tuần đó.</li>
+</ol>
+<div class="luat"><b>Luật cần nhớ</b>
+<ul>
+  <li>L và R nhập <b>số câu đúng</b>; web đổi ra band. W1 và W2 là <b>hai ô riêng</b>; Writing tổng cần cả hai.</li>
+  <li>Ô <b>trống</b> chỉ là chưa nhập, không phải 0 và không phải vắng.</li>
+  <li>Hạn chấm: <b>hết Thứ Tư</b> tuần kế tiếp tuần thi của kỹ năng đó.</li>
+</ul></div>
+
+<h2>2.3 Dấu "-" ở Fast Track: em không làm bài</h2>
+<fig id="g-05-dau-gach-ft"></fig>
+<p>Nếu em có lịch thi tuần này nhưng <b>không làm bài</b>, gõ <b>-</b> vào ô kỹ năng đó (với Writing và Speaking, một dấu "-" ở một tiêu chí là đủ báo). Dấu "-" khác điểm 0 và không xoá các môn khác.</p>
+<div class="luat"><b>Luật cần nhớ</b>
+<ul>
+  <li>Bạn <b>sửa được đến hết Chủ nhật</b>. Nếu em nộp bài muộn, nhập điểm thật thay cho "-": lần vắng đó không được tính.</li>
+  <li>Hết Chủ nhật mà còn "-": bài thành <b>Không dự thi</b>.</li>
+  <li><b>Lần đầu</b> web tự dời kỹ năng đó sang tuần kế và báo GVCN, GVBM. <b>Từ lần hai</b> thành đề nghị chờ Quản lý duyệt; không được duyệt đến hết Chủ nhật tuần gửi thì phần thi bị huỷ (điểm các phần đã làm vẫn giữ), và chỉ Quản lý khôi phục được.</li>
+  <li>Ô đã có điểm thật thì không dùng "-" để xoá được; dùng <b>Sửa điểm</b> kèm lý do (mục 2.7).</li>
+</ul></div>
+
+<h2>2.4 Nhập điểm lớp thường</h2>
+<fig id="g-06-luoi-thuong"></fig>
+<p>Lớp thường nhập <b>điểm đạt</b> và <b>tổng điểm</b> của từng môn; web tự tính <b>% tổng</b> và hiện <b>Đạt</b> hoặc <b>Chưa đạt</b>.</p>
+<div class="luat"><b>Luật cần nhớ</b>
+<ul>
+  <li>Một môn <b>đạt khi từ 70 % trở lên</b>, so trên tỷ lệ chính xác (7/10 đạt; 23/33 chưa đạt).</li>
+  <li>Môn của từng chương trình: BE và ELE gồm <b>L · R · W · S</b>. <b>FOU</b> gồm <b>L · R · G+V · P</b>. <b>Pre FOU</b> không chia môn: một ô <b>Tổng hợp</b>, chỉ có bài Cuối khoá.</li>
+  <li>Hạn chấm: <b>hết Chủ nhật</b> của tuần thi.</li>
+  <li>Lớp thường <b>không có chữ SOS</b> ở bất kỳ đâu.</li>
+</ul></div>
+
+<h2>2.5 Dấu "-" ở lớp thường</h2>
+<fig id="g-07-dau-gach-thuong"></fig>
+<p>Lớp thường cũng dùng dấu "-". Khi bạn ghi "-" cho một môn, <b>môn đó dời sang tuần sau</b> ngay. Sang tuần mới, nếu em vẫn không làm bài, bạn ghi "-" thêm một lần nữa. Lần vắng thứ hai trở đi web báo GVCN.</p>
+<div class="luat"><b>Luật cần nhớ</b>
+<ul>
+  <li>Bài cứ dời tuần cho đến khi <b>có điểm</b> hoặc <b>Quản lý xác nhận huỷ kết quả môn đó</b>.</li>
+  <li>Khi em vắng nhiều tuần liền, báo Quản lý để Quản lý xác nhận huỷ kết quả. Nút này của Quản lý đang được bổ sung vào web; trong lúc đó hãy trao đổi trực tiếp với Quản lý.</li>
+  <li>Nếu web báo <b>"Nhờ Quản lý dời lịch ở Kế hoạch Test"</b>, nghĩa là lần dời vướng bài kế tiếp (ví dụ Giữa khoá không qua được tuần Cuối khoá). Dấu "-" chưa được lưu; nhờ Quản lý xếp lại.</li>
+</ul></div>
+
+<h2>2.6 Việc không phải của bạn</h2>
+<p>Dời lịch thi Fast Track, bỏ kỹ năng khỏi đợt, xếp lịch Mock Test, thi lại và huỷ lượt là việc của <b>Quản lý</b>. Với lớp thường, GVCN và GVBM đúng môn dời được lịch của môn mình.</p>
+
+<h2>2.7 Sửa hoặc huỷ một điểm đã nhập</h2>
+<fig id="g-08-sua-huy-diem"></fig>
+<ol class="buoc">
+  <li>Bấm vào ô đã có điểm, chọn <b>Sửa điểm</b> hoặc <b>Huỷ điểm</b>.</li>
+  <li>Nhập <b>lý do</b> (ít nhất 5 ký tự) rồi xác nhận. Web giữ lại bản trước trong lịch sử.</li>
+</ol>
+<div class="luat"><b>Luật cần nhớ</b>
+<ul>
+  <li>Sau khi cả đợt đã <b>hoàn tất</b>, GVBM không sửa được nữa; chỉ Quản lý sửa.</li>
+  <li>Sửa điểm nhập nhầm có thể làm Case do SOS tự tạo tự huỷ (nếu chưa có PA do người xác nhận hoặc kết quả tuần). Case có căn cứ khác thì giữ lại và báo "cần xem lại".</li>
+</ul></div>
+
+<h2>2.8 Hồ sơ Mock của một học viên</h2>
+<fig id="g-09-ho-so-mock"></fig>
+<p>Đầu hồ sơ là năm ô điểm lớn: <b>L · R · W · S · Overall</b>, kèm kỳ vọng và mức SOS. Nhãn <b>Tạm thời</b> nghĩa là còn thiếu điểm; <b>Đã đủ điểm</b> là có đủ các môn bắt buộc. Overall chỉ có khi đủ cả bốn kỹ năng.</p>
+<div class="luat"><b>Luật cần nhớ</b>
+<ul>
+  <li>Kỳ vọng: <b>MT1 = Target − 1.0</b>, <b>MT2 = Target − 0.5</b>, <b>MT3 trở đi = Target</b>. Lộ trình RF: mọi MT bằng Target.</li>
+  <li>Em có Target <b>KCK</b> (không cam kết) không có kỳ vọng và không có SOS tự động; vẫn có lịch thi, điểm và Case tạo tay.</li>
+  <li>SOS đếm theo bốn kỹ năng: 1 kỹ năng dưới kỳ vọng là SOS 1, 2 là SOS 2, từ 3 trở lên là SOS 3. W1 và W2 không tính thành hai môn.</li>
+</ul></div>
+
+<h1>Phần 3. Khi có SOS: Case và PA</h1>
+<p>Dành cho <b>GVBM đúng kỹ năng</b> (GVCN cũng chỉ xử lý Case đúng môn mình dạy). <b>PA</b> là phương án hỗ trợ cụ thể cho một học viên.</p>
+
+<h2>3.1 Web tự tạo Case</h2>
+<fig id="g-11-bang-ky-nang"></fig>
+<p>Khi một Mock Test Fast Track có kỹ năng dưới kỳ vọng, web <b>tự tạo Case</b> cho từng kỹ năng đó, kèm một <b>PA theo quy chế</b> ở trạng thái <b>Chờ xác nhận</b>. Case mới hiện là <b>Chưa xử lý</b> cho đến khi bạn xác nhận nguyên nhân <b>và</b> có PA do người xác nhận. Bạn nhận thông báo; GVCN của lớp nhận thông báo "SOS n".</p>
+
+<h2>3.2 Trong 3 ngày: chọn một trong hai</h2>
+<fig id="g-12-xac-nhan-nguyen-nhan"></fig>
+<p>Bạn có <b>3 ngày</b> (tính cả ngày đầu) kể từ ngày Case ra đời để chọn <b>một</b> trong hai:</p>
+<ul>
+  <li><b>Xác nhận nguyên nhân:</b> chọn nhóm nguyên nhân, mức gấp, viết mô tả (từ 15 ký tự) rồi bấm <b>Xác nhận Case</b>.</li>
+  <li><b>Không cần theo dõi:</b> chọn lý do (em có lý do đặc biệt, tình huống đơn lẻ, hoặc khác).</li>
+</ul>
+<div class="luat"><b>Luật cần nhớ</b>
+<ul>
+  <li><b>Không cần theo dõi</b> không đóng Case ngay. Yêu cầu của bạn thành một thẻ gửi <b>Quản lý duyệt trong 5 ngày</b>. Duyệt thì Case và PA được huỷ; bị từ chối (Quản lý bắt buộc ghi lý do) thì Case quay về "chờ xác nhận nguyên nhân" với hạn mới 3 ngày.</li>
+  <li>Hai việc "xác nhận nguyên nhân" và "xác nhận PA" dùng <b>cùng một hạn 3 ngày</b>.</li>
+</ul></div>
+
+<h2>3.3 Xác nhận PA theo quy chế</h2>
+<fig id="g-13-xac-nhan-pa"></fig>
+<p>Sau khi xác nhận nguyên nhân, mở PA đang <b>Chờ xác nhận</b> và bấm <b>Xác nhận PA</b>: kiểm tra mô tả, chọn người thực hiện. PA chạy từ ngày bạn xác nhận.</p>
+<div class="luat"><b>Luật cần nhớ</b>
+<ul>
+  <li>PA theo quy chế <b>không tự chạy</b>, <b>không xoá</b>, <b>không thay</b> và <b>không kết thúc sớm</b>. Bạn chỉ đổi được người thực hiện.</li>
+  <li>Mốc kết thúc theo bảng quy chế: <b>1 tháng</b> · <b>đến MT kế tiếp</b> · <b>đến lúc thi</b>. Từ MT5 trở đi là Tutor đến lúc thi.</li>
+</ul></div>
+
+<h2>3.4 Tạo Case bằng tay</h2>
+<fig id="g-14-tao-case"></fig>
+<p>Thấy một vấn đề mà web chưa tự tạo Case? Bấm <b>+ Case</b>, chọn học viên, kỹ năng, mức độ, viết mô tả (bắt buộc).</p>
+<div class="luat"><b>Luật cần nhớ</b>
+<ul>
+  <li>Case tạo tay cần có PA trong <b>5 ngày</b> (<b>Bình thường</b>) hoặc <b>3 ngày</b> (<b>Gấp</b>), tính từ ngày tạo.</li>
+  <li>Kỹ năng đang có Case chờ xác nhận nguyên nhân thì không tạo thêm Case song song; hãy mở Case đó.</li>
+</ul></div>
+
+<h2>3.5 Thêm PA do bạn chọn</h2>
+<fig id="g-15-them-pa"></fig>
+<p>Trong Ngăn Case bấm <b>Thêm PA</b>: chọn loại PA, <b>người thực hiện</b> (gõ từ 3 ký tự để tìm), mô tả, và đính kèm file hoặc link nếu có. PA ngoài danh mục có sẵn (Hỗ trợ học thuật, Khác) phải gửi <b>Quản lý duyệt</b> trước khi chạy. PA thường chạy cho đến khi bạn bấm Kết thúc PA; không có ô "dự kiến kết thúc".</p>
+
+<h2>3.6 Ghi kết quả PA hằng tuần: hạn hết Thứ Hai</h2>
+<fig id="g-16-ghi-ket-qua-pa"></fig>
+<p>Mỗi PA đang chạy cần một lần ghi kết quả mỗi tuần. Kết quả của tuần <b>Thứ Hai → Chủ nhật</b> phải ghi xong <b>trước hết Thứ Hai tuần kế</b> (ví dụ tuần 07–13/09 → hạn hết Thứ Hai 14/09). Ghi vào Chủ nhật hay Thứ Hai đều tính là đúng tuần.</p>
+<ol class="buoc">
+  <li>Chọn một trong ba: <b>Giữ nguyên</b>, <b>Điều chỉnh</b> (ghi người và mô tả mới), hoặc <b>Xin hỗ trợ QL</b>.</li>
+  <li>Chọn mức kết quả: <b>Có tiến bộ · Tiến bộ một phần · Không tiến bộ · Kém hơn · Chưa đủ dữ liệu</b>, thêm ghi chú.</li>
+</ol>
+<div class="luat"><b>Luật cần nhớ</b>
+<ul>
+  <li><b>Xin hỗ trợ QL</b> không dừng PA. Nó gửi một thẻ "Xin ý kiến" (5 ngày); Quản lý trả lời bằng chữ.</li>
+  <li><b>Chưa đủ dữ liệu</b> là chưa kết luận: PA vẫn theo dõi và không vào thống kê hiệu quả. Đừng dùng nó để tránh ghi kết quả.</li>
+  <li>Quy tắc này áp cho <b>mọi PA học thuật</b>, không áp cho Ý thức và Phối hợp SOS.</li>
+</ul></div>
+
+<h2>3.7 Kết quả cuối và Hoàn thành Case</h2>
+<fig id="g-17-ghi-ket-qua-cuoi"></fig>
+<p>Khi PA theo quy chế chạm mốc, form đổi thành <b>Ghi kết quả cuối</b>. Chỉ sau đó mới <b>Hoàn thành Case</b> được; trước đó nút này bị chặn. Hoàn thành Case là kết luận cho cả vấn đề; đóng một PA không tự đóng Case.</p>
+
+<h1>Phần 4. Lớp thường: Giữa khoá và Cuối khoá</h1>
+
+<h2>4.1 Giữa khoá có môn dưới 70 %</h2>
+<fig id="g-20-giua-khoa-case"></fig>
+<p>Với lớp FOU, BE, ELE, môn dưới 70 % ở Giữa khoá được web <b>tự tạo Case</b> tên <b>"[Giữa khoá] {môn} không đạt"</b> kèm <b>PA Bổ trợ</b> bắt buộc đến Cuối khoá. Không có chữ SOS ở lớp thường.</p>
+<div class="luat"><b>Luật cần nhớ</b>
+<ul>
+  <li>GVBM đúng môn xác nhận nguyên nhân trong <b>3 ngày</b>.</li>
+  <li><b>FOU:</b> 2 buổi bổ trợ mỗi tuần, <b>chung</b> cho mọi môn trượt; người dạy mặc định là GVCN. <b>BE, ELE:</b> 1 buổi mỗi tuần cho mỗi môn trượt; người dạy mặc định là GVBM của môn.</li>
+  <li><b>Pre FOU</b> không có Giữa khoá.</li>
+</ul></div>
+
+<h2>4.2 Nộp kế hoạch bài giảng bổ trợ</h2>
+<fig id="g-21-ke-hoach-bo-tro"></fig>
+<p>Người dạy bổ trợ nộp <b>kế hoạch bài giảng</b>: nội dung em còn yếu và kế hoạch dạy; mỗi ô từ 15 ký tự. Hạn nộp <b>3 ngày</b>; Quản lý duyệt trong <b>3 ngày</b>. Duyệt xong PA mới chạy; bị từ chối thì giữ nguyên nhân, nộp lại với hạn mới 3 ngày. Với FOU, GVBM chỉ dạy một môn không nộp hộ và không ghi kết quả PA chung; việc đó thuộc người dạy bổ trợ, GVCN hoặc Quản lý.</p>
+
+<h2>4.3 Báo phụ huynh qua TVV (GVCN)</h2>
+<fig id="g-22-bao-ph-tvv"></fig>
+<p>Khi một bài Giữa khoá có môn trượt, GVCN có việc <b>Báo phụ huynh qua TVV</b>. Nội dung cần nói: kết quả, môn gặp khó khăn, nguyên nhân, PA và khả năng học lại. Việc này không có hạn.</p>
+
+<h2>4.4 Cuối khoá và Mini Test</h2>
+<fig id="g-23-bang-diem-cuoi-khoa"></fig>
+<fig id="g-24-ket-luan-cuoi-khoa"></fig>
+<p><b>% Cuối khoá</b> là tổng điểm đạt chia tổng điểm cả bốn môn (chỉ có khi đủ môn). Web hiện dải và <b>hướng gợi ý</b>; Quản lý quyết định khi ra quyết định chuyển lớp.</p>
+<table>
+  <tr><th>% Cuối khoá</th><th>Hướng gợi ý</th></tr>
+  <tr><td>Dưới 50 %</td><td>Học lại; báo phụ huynh qua TVV (việc của Quản lý)</td></tr>
+  <tr><td>50 – 59 %</td><td><b>Quản lý cân nhắc</b>: học lại, hoặc lên lớp kèm bổ trợ</td></tr>
+  <tr><td>60 – 69 %</td><td>Lên lớp kèm <b>bổ trợ miễn phí</b></td></tr>
+  <tr><td>Từ 70 %</td><td>Lên lớp</td></tr>
+</table>
+<fig id="g-25-mini-test"></fig>
+<div class="luat"><b>Luật cần nhớ</b>
+<ul>
+  <li>Em lên lớp từ dải 50 – 69 % có <b>PA Bổ trợ miễn phí</b> (không tính lương giáo viên) và <b>Mini Test một lần</b>.</li>
+  <li>Mini Test từ <b>70 %</b>: Case tự hoàn thành. Dưới 70 %: Case còn mở và web báo Quản lý. Sửa điểm Mini Test đã ghi chỉ Quản lý làm, kèm lý do.</li>
+  <li>Em thiếu điểm Cuối khoá vẫn được chuyển lớp; điểm nhập sau áp ở lộ trình mới.</li>
+</ul></div>
+
+<h1>Phần 5. Ý thức và Phối hợp</h1>
+
+<h2>5.1 Ghi một vi phạm (mọi giáo viên trong lớp)</h2>
+<fig id="g-30-ghi-vi-pham"></fig>
+<p>Bấm <b>+ Ghi vi phạm</b> ở danh sách học viên hoặc hồ sơ học viên. Bắt buộc: <b>học viên, ngày xảy ra, nhóm, mô tả</b>. Nhóm gồm Chuyên cần · BTVN · Thái độ / hành vi · Kỷ luật lớp học · Khác. Môn, tệp hoặc link là tuỳ chọn. Nếu cùng em, cùng nhóm, cùng ngày đã có bản ghi, web nhắc bạn nhưng vẫn cho tạo mới.</p>
+<div class="luat"><b>Luật cần nhớ</b>
+<ul>
+  <li>Ghi sai thì <b>sửa hoặc xoá</b> được. GVBM sửa, xoá vi phạm do chính mình ghi; GVCN lớp em đang học sửa, xoá được mọi vi phạm của em.</li>
+  <li>Ý thức nằm <b>ngoài mọi bảng hiệu quả hỗ trợ</b>: gia đình đã nhận báo cáo không có nghĩa em tiến bộ.</li>
+</ul></div>
+
+<h2>5.2 Thang xử lý 6 bậc (chỉ GVCN lớp em đang học)</h2>
+<fig id="g-31-thang-xu-ly"></fig>
+<p>Mỗi lần xử lý, web điền sẵn <b>bậc kế tiếp</b> trên thang. Bạn không chọn bậc.</p>
+<p style="text-align:center"><b>Report 1 → Report 2 → WL 1 → Report 4 + Meeting CX/GĐCN → WL 2 → WL 3</b><br><span style="color:#667085;font-size:9pt">WL = thư cảnh cáo</span></p>
+<fig id="g-32-xac-nhan-xu-ly"></fig>
+<ol class="buoc">
+  <li>Bấm <b>Xác nhận xử lý</b>. Chọn các vi phạm gộp vào lần xử lý này (mặc định là mọi vi phạm chưa xử lý; bỏ tick nếu không gộp).</li>
+  <li>Điền ngày thực hiện (không sau hôm nay), người thực hiện, và mô tả (từ 10 ký tự). Tệp hoặc link không bắt buộc.</li>
+</ol>
+<div class="luat"><b>Luật cần nhớ</b>
+<ul>
+  <li>Thang <b>bắt buộc theo thứ tự</b> và <b>không lùi</b>, kể cả khi xoá vi phạm. Bậc 1 đến 5 GVCN tự làm; không hỏi tiến bộ.</li>
+  <li>Một lần xử lý có thể gộp nhiều vi phạm khác nhóm, khác môn, khác ngày. Một Report gộp ba vi phạm vẫn đếm là <b>một</b> Report.</li>
+  <li>Thang tính theo lộ trình: Fast Track sang lộ trình mới thì về Report 1. Lớp thường đếm <b>liên tục</b> qua Pre FOU → FOU → BE → ELE; về Report 1 khi sang Fast Track hoặc nghỉ học. Em chuyển lớp thì hạn xử lý tính lại từ ngày vào lớp mới.</li>
+</ul></div>
+
+<h2>5.3 "Bắt buộc xử lý" và Quá hạn</h2>
+<fig id="g-33-bat-buoc-qua-han"></fig>
+<p>Mỗi vi phạm có một nhãn: <b>Mới · Đã ghi nhận · Cần xử lý · Quá hạn · Chờ QL duyệt · Đã xử lý</b>. Nút <b>Ghi nhận</b> nghĩa là "GVCN đã xem, chưa cần biện pháp".</p>
+<div class="luat"><b>Luật cần nhớ</b>
+<ul>
+  <li>Từ <b>3 vi phạm</b> (mọi nhóm) chưa nằm trong lần xử lý nào, xảy ra trong <b>tuần này và tuần trước</b>: em chuyển sang <b>Cần xử lý</b>. Nút "Ghi nhận" biến mất; chỉ còn <b>Xác nhận xử lý</b>. Hạn <b>5 ngày</b> tính từ ngày ghi vi phạm thứ 3 lên web.</li>
+  <li>Vi phạm <b>Mới</b> quá 5 ngày chưa ai ghi nhận hoặc xử lý cũng thành <b>Quá hạn</b>. Quá hạn thì Quản lý nhận thẻ <b>Báo QL</b> (một thẻ mỗi em).</li>
+  <li>Em <b>Tạm dừng học</b> thì mọi hạn dừng, không thành Quá hạn.</li>
+</ul></div>
+
+<h2>5.4 WL 3 và các loại ngoài thang cần Quản lý duyệt</h2>
+<fig id="g-34-de-xuat-ql-duyet"></fig>
+<p>Bậc <b>WL 3</b> và ba loại nằm ngoài thang (<b>Meeting CX/GĐCN</b> đứng riêng, <b>Đình chỉ học tạm thời</b>, <b>Khác</b>) không tự làm được. Quy trình:</p>
+<ol class="buoc">
+  <li>GVCN <b>đề xuất</b>: viết mô tả và đính kèm <b>ít nhất một tệp hoặc link bằng chứng</b> (bắt buộc). Với "Khác", ghi rõ nội dung (từ 3 ký tự).</li>
+  <li>Quản lý duyệt trong <b>5 ngày</b>.</li>
+  <li>Được duyệt: bạn thực hiện rồi bấm <b>Đã thực hiện</b> trong <b>5 ngày</b> kể từ ngày duyệt. Bị từ chối: vi phạm về <b>Cần xử lý</b>, bậc giữ nguyên.</li>
+</ol>
+<p>Loại ngoài thang <b>không đẩy bậc</b>. Riêng bậc 4 <b>Report 4 + Meeting CX/GĐCN</b> là một lần xử lý trong thang và không cần Quản lý duyệt; còn <b>Meeting CX/GĐCN</b> đứng riêng thì cần duyệt.</p>
+<div class="luu-y"><b>Lưu ý</b>Quản lý chỉ nhận thông báo "để biết" khi GVCN xử lý WL 1, Report 4 + Meeting và WL 2. Report 1 và Report 2 không báo.</div>
+
+<h2>5.5 Khai bậc cho học sinh cũ</h2>
+<fig id="g-35-khai-bac"></fig>
+<p>Học sinh đã từng bị xử lý ngoài đời trước khi dùng web: GVCN (hoặc Quản lý) <b>khai bậc một lần</b>, ví dụ "đã xử lý: bậc 2", để lần xử lý kế tiếp là WL 1. Chỉ khai được khi chuỗi chưa có lần xử lý nào, bậc tối đa là 5; sửa lại chỉ Quản lý làm. Việc "Khai bậc" hiện cho các em có hồ sơ tạo trong 14 ngày gần nhất.</p>
+
+<h2>5.6 Phối hợp SOS (GVCN)</h2>
+<fig id="g-36-phoi-hop-sos"></fig>
+<p>Khi Mock Test Fast Track có SOS, GVCN có việc <b>Phối hợp SOS</b>: trao đổi với học sinh, gia đình, hoặc họp. Việc được điền sẵn theo bảng MT × mức SOS; bạn <b>xác nhận đã làm</b> hoặc <b>bỏ kèm lý do</b>. Việc này không có hạn, không phải vi phạm và không phải Case. Lớp thường không có Phối hợp SOS (chỉ có việc <b>Báo phụ huynh qua TVV</b>, mục 4.3).</p>
+
+<h2>5.7 Xem Ý thức của cả lớp</h2>
+<fig id="g-37-y-thuc-lop"></fig>
+<p>Hồ sơ lớp có tab <b>Ý thức & Phối hợp</b> với hai phần <b>Vi phạm & xử lý</b> và <b>Phối hợp SOS</b>; mặc định xem theo từng học sinh. Em nào đang <b>Cần xử lý</b> hay <b>Quá hạn</b> hiện nhãn rõ ở đầu danh sách.</p>
+
+<h1>Phần 6. Việc riêng của GVCN</h1>
+
+<h2>6.1 Danh sách học viên và lớp</h2>
+<fig id="g-10-hoc-vien-lop"></fig>
+<p>Vào <b>Học viên & Lớp</b>. Dùng ô tìm hoặc các chip lọc: <b>Tất cả · Cần làm · Quá hạn · Chờ duyệt · Đang SOS · Thiếu thông tin</b>. Mỗi hàng học viên có cột <b>Việc tiếp theo</b> bấm được và menu ⋯ với các thao tác nhanh (Ghi vi phạm, Case, Nhập điểm, Lộ trình tiếp theo, Đề xuất chuyển lớp).</p>
+
+<h2>6.2 Hồ sơ lớp</h2>
+<fig id="g-40-ho-so-lop"></fig>
+<p>Hồ sơ lớp có nút chính theo chặng của lớp, dạng xem <b>Điểm</b> hoặc <b>Ý thức</b>, và tab <b>Cần hỗ trợ</b> liệt kê em đang có Case mở, mỗi Case một dòng với PA đang làm và việc kế tiếp.</p>
+
+<h2>6.3 Hồ sơ một học viên</h2>
+<fig id="g-48-tab-ho-so-hoc-vien"></fig>
+<p>Hồ sơ có các tab <b>Học thuật</b>, <b>Ý thức & Phối hợp</b>, <b>Hành trình</b>. Dải việc của em chỉ hiện việc <b>của chính bạn</b>. Menu ⋮ có <b>Tạm dừng học</b> và <b>Dừng học hẳn</b> (GVCN làm được, hiệu lực ngay), cùng các mục sửa thông tin.</p>
+<div class="luu-y"><b>Lưu ý</b>Bạn tự sửa được họ tên, ngày sinh, email, tuần bắt đầu và thi dự kiến. <b>Target</b> và <b>lộ trình</b> thì chỉ Quản lý sửa; bạn bấm <b>Đề xuất sửa</b> kèm lý do (từ 15 ký tự) và chờ Quản lý duyệt.</div>
+
+<h2>6.4 Thêm học viên mới</h2>
+<fig id="g-41-them-hoc-vien"></fig>
+<ol class="buoc">
+  <li>Bấm <b>+ Học viên</b>, <b>chọn lớp trước</b>, rồi dán bảng danh sách vào đúng lớp đó.</li>
+  <li>Bảng dán phải có <b>dòng tiêu đề</b> chứa "Họ và tên". Bắt buộc: họ tên, <b>email</b>, tuần bắt đầu.</li>
+  <li>Sửa hoặc xoá các dòng báo lỗi. Dòng lỗi ở lại để bạn sửa; các dòng tốt vẫn thêm được.</li>
+</ol>
+<div class="luat"><b>Luật cần nhớ</b>
+<ul>
+  <li>Em vào lớp Fast Track có lộ trình tự có <b>MT1, MT2, MT3</b> (tuần học 6, 12, 16; lộ trình RF: MT1, MT2 ở tuần 4, 8). Tuần do web tính từ tuần bắt đầu của em.</li>
+  <li>Em vào muộn: web xem trước "n MT sẽ là MT lịch sử". Điền cột <b>Đã thi tới MT</b> (0–8) để tạo sẵn MT lịch sử.</li>
+  <li>Thiếu Target không chặn việc thêm em; web tạo việc nhắc <b>Điền Target</b> cho GVCN.</li>
+</ul></div>
+
+<h2>6.5 Báo vắng và xếp lại bài vắng</h2>
+<fig id="g-42-bao-vang"></fig>
+<p>Ngoài cách gõ "-", GVCN báo vắng được từ menu của từng kỹ năng ở hồ sơ Mock: chọn <b>Báo vắng</b> và ghi <b>lý do</b> (từ 5 ký tự). Mục này mở từ <b>Thứ Hai</b> của tuần thi. Báo vắng chốt ngay: lần đầu máy tự dời sang tuần kế; từ lần hai chờ Quản lý duyệt (xem mục 2.3). Bài vắng đã xác nhận không nhập điểm được trong lưới; muốn nhập bù, nhờ Quản lý <b>Xếp lại bài vắng</b>.</p>
+<p><b>MT lịch sử:</b> với em mới vào lớp mà tuần thi đã qua, GVCN nhập được ô trống của cả 4 kỹ năng. MT lịch sử không có nợ, hạn hay quá hạn, không nhận dấu "-". Sau lần nhập cuối <b>7 ngày</b> thì khoá sửa.</p>
+
+<h2>6.6 Đề xuất chuyển lớp</h2>
+<fig id="g-43-de-xuat-chuyen-lop"></fig>
+<p>GVCN <b>không tự chuyển lớp</b>. Việc chuyển lớp là <b>Quyết định chuyển lớp</b> do Quản lý đưa ra. Bạn có thể <b>đề xuất</b>: chọn hướng (lên lớp, học lại, FT, chuyển lớp, tạm dừng học, dừng học hẳn), lớp chuyển đến và <b>lý do từ 15 ký tự</b>. Đề xuất hiện là <b>Chờ QL duyệt đề xuất</b>.</p>
+<div class="luat"><b>Luật cần nhớ</b>
+<ul>
+  <li>Quyết định có <b>tuần bắt đầu là Thứ Hai</b>, từ tuần sau trở đi. Đến Thứ Hai đó web <b>tự thực hiện</b>; hiện nhãn <b>Sắp chuyển · từ {tuần}</b>.</li>
+  <li>Em đang Tạm dừng học thì chưa chuyển lớp được; nhờ Quản lý bấm "Quay lại học" trước.</li>
+  <li>Lên Fast Track cần có <b>Target</b> (hoặc KCK).</li>
+</ul></div>
+
+<h2>6.7 Bàn giao khi em chuyển lớp</h2>
+<fig id="g-44-ban-giao"></fig>
+<p>Khi có quyết định chuyển lớp, lớp cũ phải bàn giao thông tin cho lớp mới (trừ hướng Dừng học hẳn):</p>
+<ol class="buoc">
+  <li><b>GVBM</b> ghi <b>một câu cho mỗi em</b>, phần môn mình dạy, trong <b>2 ngày</b> (tối đa 300 ký tự).</li>
+  <li><b>GVCN lớp cũ</b> viết nhận xét chung (từ 15 ký tự) rồi bấm <b>GVCN xác nhận bàn giao</b> trong <b>3 ngày</b>. GVCN điền thay được phần GVBM chưa ghi.</li>
+</ol>
+<p>Quá hạn không chặn việc chuyển; lệnh vẫn chạy đúng tuần, và web báo Quản lý. Quản lý điền hoặc xác nhận thay khi lớp không có GVCN.</p>
+
+<h2>6.8 Lộ trình tiếp theo (lớp thường)</h2>
+<fig id="g-26-lo-trinh-tiep-theo"></fig>
+<p>Ở lớp thường, GVCN ghi <b>dự định</b> cho từng em ở panel Lộ trình tiếp theo (lên lớp, học lại, FT…). Đây chỉ là ghi chú để Quản lý tham khảo, không phải quyết định. Quản lý quyết định chuyển lớp cho mọi em khi lớp tới tuần kết thúc.</p>
+
+<h1>Phần 7. Yêu cầu gửi Quản lý, hồ sơ giáo viên</h1>
+
+<h2>7.1 Yêu cầu của tôi</h2>
+<fig id="g-45-yeu-cau-cua-toi"></fig>
+<p>Mọi việc bạn gửi Quản lý quyết (đề xuất PA ngoài danh mục, không cần theo dõi, xin ý kiến, đề xuất sửa Target hoặc lộ trình, đề xuất chuyển lớp, đề xuất xử lý Ý thức, kế hoạch bổ trợ) đều thành <b>một thẻ</b>. Xem trạng thái ở <b>Công việc › Yêu cầu của tôi</b>: <b>Chờ duyệt</b> hoặc <b>Bị từ chối</b> (kèm lý do). Bấm <b>Sửa và gửi lại</b> khi bị từ chối.</p>
+<div class="luat"><b>Luật cần nhớ</b>
+<ul>
+  <li>Giáo viên <b>không bao giờ duyệt</b>. Quản lý kiêm giáo viên tự gửi thì được tự duyệt; thẻ ghi "tự duyệt".</li>
+  <li>Hạn Quản lý duyệt: <b>5 ngày</b>; kế hoạch bổ trợ <b>3 ngày</b>. Quá hạn thì web nhắc Quản lý, không tự đóng thẻ.</li>
+</ul></div>
+
+<h2>7.2 Công việc: việc hỗ trợ học viên</h2>
+<fig id="g-47-viec-hoc-vien"></fig>
+<p>Trang <b>Công việc › Hỗ trợ học viên</b> gom mọi việc của bạn. Chip <b>Đến hết tuần</b> hiện việc có hạn đến hết Chủ nhật. Việc chia theo bốn nhóm: <b>Chấm điểm · Case học thuật · Ý thức · Lớp & vận hành</b>.</p>
+
+<h2>7.3 Hồ sơ giáo viên của bạn</h2>
+<fig id="g-46-ho-so-giao-vien"></fig>
+<p>Hồ sơ chỉ để xem, gồm năm khối: <b>Việc đang có · Lớp đang dạy · Kết quả gần nhất · Case đang phụ trách · Yêu cầu đã gửi</b>. Số trên mỗi ô là số dòng bạn thấy khi bấm vào. Không có điểm KPI, không xếp hạng giáo viên. Bạn chỉ xem được hồ sơ của chính mình, không xem hồ sơ đồng nghiệp.</p>
+<p>Một bài nhập điểm tính <b>đúng hạn</b> khi lần nhập đầu tiên không muộn hơn hạn; tính <b>quá hạn</b> khi tuần thi đã hết và đã qua hạn.</p>
+
+<h1>Phần 8. Hỏi nhanh</h1>
+<table>
+  <tr><th style="width:36%">Tình huống</th><th>Cách xử lý</th></tr>
+  <tr><td>Không thấy lớp trong danh sách</td><td>Chọn <b>Phạm vi</b> "Lớp tôi dạy"; nếu vẫn không thấy, lớp chưa phân công bạn. Báo Quản lý.</td></tr>
+  <tr><td>Ô điểm chỉ xem, không nhập được</td><td>Bạn chưa được phân công kỹ năng đó ở lớp này. Nhờ Quản lý kiểm phân công.</td></tr>
+  <tr><td>Ô hiện "vắng", không có ô nhập</td><td>Bài đã xác nhận vắng. Nhờ Quản lý <b>Xếp lại bài vắng</b> hoặc <b>Khôi phục</b> rồi mới nhập.</td></tr>
+  <tr><td>Báo "Không lưu được"</td><td>Giữ nguyên trang, kiểm kết nối rồi thử lại. Nội dung bạn gõ vẫn còn trong ô.</td></tr>
+  <tr><td>Gõ "-" bị chặn ở lớp thường</td><td>Lần dời vướng bài kế tiếp. Nhờ Quản lý dời lịch ở Kế hoạch Test (mục 2.5).</td></tr>
+  <tr><td>Không bấm được Hoàn thành Case</td><td>PA theo quy chế chưa tới mốc. Đợi mốc rồi Ghi kết quả cuối (mục 3.7).</td></tr>
+  <tr><td>Không sửa được điểm sau khi đợt đã xong</td><td>Đợt đã hoàn tất. Nhờ Quản lý sửa.</td></tr>
+  <tr><td>Muốn đổi Target hoặc lộ trình của em</td><td>Bấm <b>Đề xuất sửa</b> kèm lý do (mục 6.3).</td></tr>
+  <tr><td>Một vi phạm đã Quá hạn</td><td>Vào hồ sơ em, bấm <b>Xác nhận xử lý</b>. Quản lý đã nhận thẻ Báo QL; xử lý xong thẻ tự đóng.</td></tr>
+  <tr><td>Không xem được hồ sơ của đồng nghiệp</td><td>Đúng thiết kế: giáo viên chỉ xem hồ sơ giáo viên của chính mình.</td></tr>
+</table>
+
+<h1>Phụ lục A. Bảng hạn</h1>
+<table>
+  <tr><th style="width:42%">Việc</th><th>Hạn</th></tr>
+  <tr><td>Chấm bài Fast Track</td><td>Hết <b>Thứ Tư</b> tuần kế tiếp tuần thi của kỹ năng đó</td></tr>
+  <tr><td>Chấm bài lớp thường</td><td>Hết <b>Chủ nhật</b> của tuần thi</td></tr>
+  <tr><td>Sửa dấu "-" (Fast Track)</td><td>Hết Chủ nhật tuần thi; sau đó chốt vào sáng Thứ Hai</td></tr>
+  <tr><td>Xác nhận nguyên nhân SOS và xác nhận PA</td><td><b>3 ngày</b> kể từ ngày Case ra đời</td></tr>
+  <tr><td>Có PA cho Case tạo tay</td><td>Bình thường <b>5 ngày</b> · Gấp <b>3 ngày</b></td></tr>
+  <tr><td>Ghi kết quả PA hằng tuần</td><td>Hết <b>Thứ Hai</b> tuần kế</td></tr>
+  <tr><td>Nộp kế hoạch bổ trợ (Giữa khoá)</td><td><b>3 ngày</b></td></tr>
+  <tr><td>Xử lý vi phạm (Ý thức)</td><td><b>5 ngày</b> kể từ ngày ghi lên web (hoặc ngày vi phạm thứ 3 nếu bắt buộc); sau khi Quản lý duyệt: <b>5 ngày</b> để bấm Đã thực hiện</td></tr>
+  <tr><td>Bàn giao khi chuyển lớp</td><td>GVBM <b>2 ngày</b> · GVCN <b>3 ngày</b></td></tr>
+  <tr><td>Quản lý duyệt một thẻ</td><td><b>5 ngày</b> (kế hoạch bổ trợ <b>3 ngày</b>; dời lịch lần 2 hết Chủ nhật tuần gửi)</td></tr>
+  <tr><td>Mini Test sau Cuối khoá</td><td>Chủ nhật tuần cuối PA, cộng <b>2 ngày</b></td></tr>
+  <tr><td>Khoá sửa điểm</td><td>Sau khi đợt hoàn tất (GVBM); MT lịch sử <b>7 ngày</b> sau lần nhập cuối</td></tr>
+</table>
+
+<h1 class="khong-ngat" style="break-before:auto;margin-top:12mm">Phụ lục B. Thuật ngữ</h1>
+<table>
+  <tr><th style="width:28%">Từ</th><th>Nghĩa</th></tr>
+  <tr><td><b>QL</b></td><td>Quản lý</td></tr>
+  <tr><td><b>GVCN / GVBM</b></td><td>Giáo viên chủ nhiệm / giáo viên bộ môn</td></tr>
+  <tr><td><b>Fast Track (FT)</b></td><td>Lớp luyện thi IELTS theo Mock Test; có lộ trình LT1, LT2 hoặc RF (Refire)</td></tr>
+  <tr><td><b>Lớp thường</b></td><td>Lớp theo chương trình Pre FOU, FOU, BE, ELE, có Giữa khoá và Cuối khoá</td></tr>
+  <tr><td><b>Mock Test (MT)</b></td><td>Bài thi thử IELTS của lớp Fast Track; MT1, MT2, …</td></tr>
+  <tr><td><b>Target</b></td><td>Band mục tiêu thi thật của học viên. <b>KCK</b> là không cam kết</td></tr>
+  <tr><td><b>Kỳ vọng</b></td><td>Điểm học viên nên đạt ở một lượt MT, tính từ Target</td></tr>
+  <tr><td><b>SOS 1 / 2 / 3</b></td><td>Số kỹ năng dưới kỳ vọng trong một lượt MT (chỉ Fast Track)</td></tr>
+  <tr><td><b>Case</b></td><td>Một vấn đề học tập cụ thể của một học viên ở một kỹ năng</td></tr>
+  <tr><td><b>PA</b></td><td>Phương án hỗ trợ: việc cụ thể giáo viên làm cho học viên để giải quyết Case</td></tr>
+  <tr><td><b>PA theo quy chế</b></td><td>PA web điền sẵn theo mức SOS; không sửa, không thay, không kết thúc sớm</td></tr>
+  <tr><td><b>PA Bổ trợ</b></td><td>Buổi học thêm cho lớp thường sau Giữa khoá hoặc Cuối khoá</td></tr>
+  <tr><td><b>Mini Test</b></td><td>Bài kiểm tra ngắn một lần sau bổ trợ miễn phí</td></tr>
+  <tr><td><b>Vi phạm</b></td><td>Một sự việc về ý thức của học viên (chuyên cần, BTVN, thái độ, kỷ luật, khác)</td></tr>
+  <tr><td><b>Lần xử lý</b></td><td>Một bước xử lý trên thang 6 bậc, do GVCN thực hiện</td></tr>
+  <tr><td><b>WL</b></td><td>Thư cảnh cáo (WL 1, WL 2, WL 3)</td></tr>
+  <tr><td><b>Phối hợp SOS</b></td><td>Việc trao đổi với học sinh, gia đình khi có SOS (GVCN); lớp thường chỉ có "Phối hợp"</td></tr>
+  <tr><td><b>Báo QL</b></td><td>Thẻ web gửi Quản lý khi có việc quá hạn cần nhắc; Quản lý chỉ có nút Nhắc</td></tr>
+  <tr><td><b>Quyết định chuyển lớp</b></td><td>Quyết định của Quản lý chuyển một em sang lớp khác, có tuần bắt đầu là Thứ Hai</td></tr>
+  <tr><td><b>Bàn giao</b></td><td>Thông tin lớp cũ ghi cho lớp mới khi em chuyển lớp</td></tr>
+  <tr><td><b>Tạm dừng học</b></td><td>Em nghỉ một thời gian; mọi hạn của em dừng (còn gọi là bảo lưu)</td></tr>
+  <tr><td><b>MT lịch sử</b></td><td>Lượt MT em đã thi trước khi vào web; nhập bù điểm, không có nợ hay hạn</td></tr>
+  <tr><td><b>Mã tuần (W2 OCT)</b></td><td>Tuần thứ 2 của tháng 10 (tuần chạy Thứ Hai → Chủ nhật)</td></tr>
+</table>

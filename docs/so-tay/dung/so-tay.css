@@ -1,0 +1,52 @@
+:root { --xanh: #12355b; --xanh-nhat: #e8f0f9; --do: #e11d48; --chu: #1d2939; --xam: #667085; --vang: #fff8e6; --vang-vien: #f0c36d; --dovien: #fde8ec; }
+* { box-sizing: border-box; }
+html { font-family: 'Be Vietnam Pro', Arial, sans-serif; color: var(--chu); font-size: 10.2pt; line-height: 1.5; }
+body { margin: 0; }
+h1, h2, h3 { color: var(--xanh); line-height: 1.25; margin: 0; }
+h1 { font-size: 20pt; margin: 0 0 6mm; padding-bottom: 3mm; border-bottom: 2.5px solid var(--xanh); break-before: page; }
+h1.khong-ngat { break-before: auto; }
+h2 { font-size: 13pt; margin: 8mm 0 3mm; break-after: avoid; }
+h3 { font-size: 11pt; margin: 5mm 0 2mm; break-after: avoid; }
+p { margin: 0 0 2.5mm; }
+ul, ol { margin: 0 0 3mm; padding-left: 5.5mm; }
+li { margin-bottom: 1mm; }
+b, strong { font-weight: 600; }
+code, kbd { font-family: 'Be Vietnam Pro', Arial, sans-serif; background: #f2f4f7; border: 1px solid #d0d5dd; border-radius: 3px; padding: 0 3px; font-size: 9.2pt; }
+.nut { display: inline-block; background: #fff; border: 1px solid #98a2b3; border-radius: 4px; padding: 0 5px; font-weight: 500; font-size: 9.4pt; white-space: nowrap; }
+
+/* Bìa */
+.bia { height: 255mm; display: flex; flex-direction: column; justify-content: center; break-after: page; }
+.bia .nhan { color: var(--do); font-weight: 700; letter-spacing: .08em; font-size: 10pt; text-transform: uppercase; }
+.bia h1 { font-size: 34pt; border: 0; margin: 4mm 0 4mm; padding: 0; break-before: auto; }
+.bia .phu { font-size: 13pt; color: var(--xam); max-width: 130mm; }
+.bia .ban { margin-top: 18mm; color: var(--xam); font-size: 9.5pt; border-top: 1px solid #d0d5dd; padding-top: 4mm; }
+
+/* Khung luật / lưu ý */
+.luat, .luu-y { border-radius: 6px; padding: 3mm 4mm; margin: 3mm 0 4mm; break-inside: avoid; }
+.luat { background: var(--vang); border: 1px solid var(--vang-vien); border-left: 4px solid #d99a1e; }
+.luu-y { background: var(--dovien); border: 1px solid #f4a8b6; border-left: 4px solid var(--do); }
+.luat > b:first-child, .luu-y > b:first-child { display: block; margin-bottom: 1mm; font-size: 9.6pt; text-transform: uppercase; letter-spacing: .04em; }
+.luat ul, .luu-y ul { margin-bottom: 0; }
+.mo-ta { background: var(--xanh-nhat); border-radius: 6px; padding: 3mm 4mm; margin: 3mm 0 4mm; break-inside: avoid; }
+
+/* Ảnh có khoanh số */
+figure.anh { margin: 3mm 0 5mm; break-inside: avoid; }
+figure.anh img { display: block; width: 100%; max-height: 120mm; object-fit: contain; object-position: left top; border: 1px solid #d0d5dd; border-radius: 6px; }
+.tieu-de-anh { font-size: 8.8pt; color: var(--xam); margin: 1.2mm 0 1.5mm; }
+.chu-thich { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: 1fr; gap: 1mm; }
+.chu-thich li { display: flex; gap: 2.5mm; align-items: flex-start; margin: 0; font-size: 9.4pt; }
+.so { flex: 0 0 auto; width: 5.2mm; height: 5.2mm; border-radius: 50%; background: var(--do); color: #fff; font-weight: 700; font-size: 8.4pt; line-height: 5.2mm; text-align: center; margin-top: .4mm; }
+.thieu-anh { border: 1.5px dashed var(--do); color: var(--do); padding: 6mm; text-align: center; margin: 3mm 0; font-size: 9pt; }
+
+/* Bảng */
+table { border-collapse: collapse; width: 100%; margin: 2mm 0 4mm; font-size: 9.4pt; break-inside: auto; }
+th, td { border: 1px solid #d0d5dd; padding: 1.6mm 2.4mm; text-align: left; vertical-align: top; }
+th { background: var(--xanh-nhat); color: var(--xanh); font-weight: 600; }
+tr { break-inside: avoid; }
+
+/* Mục lục / tìm nhanh */
+.tim-nhanh td:first-child { width: 62%; }
+.so-muc { color: var(--do); font-weight: 700; }
+.buoc { counter-reset: b; list-style: none; padding: 0; }
+.buoc li { counter-increment: b; display: flex; gap: 2.5mm; margin-bottom: 1.6mm; }
+.buoc li::before { content: counter(b); flex: 0 0 auto; width: 5.4mm; height: 5.4mm; border-radius: 50%; background: var(--xanh); color: #fff; font-weight: 600; font-size: 8.6pt; line-height: 5.4mm; text-align: center; margin-top: .3mm; }
