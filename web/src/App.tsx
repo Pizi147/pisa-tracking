@@ -1,4 +1,4 @@
-import { Suspense, lazy, type ReactNode } from 'react';
+import { Suspense, lazy, useEffect, type ReactNode } from 'react';
 import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useSession } from './lib/session.tsx';
 import { useApi } from './lib/useApi.ts';
@@ -6,21 +6,24 @@ import { DemoBar } from './modules/platform/DemoBar.tsx';
 import { LA_BAN_CHINH } from './lib/banChinh.ts';
 import { Header } from './modules/platform/Header.tsx';
 import { Skeleton } from './ui/ui.tsx';
-import OverviewPage from './modules/worklist/OverviewPage.tsx';
-import MockDetailPage from './modules/fasttrack/MockDetailPage.tsx';
-import ChamDiemPage from './modules/cham/ChamDiemPage.tsx';
-import StudentsPage from './modules/students/StudentsPage.tsx';
-import ClassOverviewPage from './modules/classes/ClassOverviewPage.tsx';
-import StudentDetailPage from './modules/students/StudentDetailPage.tsx';
-import LuuTruPage from './modules/students/LuuTruPage.tsx';
-import { CaseRoutePage } from './modules/cases/CaseBoardPage.tsx';
-import TestPage from './modules/test/TestPage.tsx';
-import CongViecPage from './modules/congViec/CongViecPage.tsx';
-import AdminPage from './modules/platform/AdminPage.tsx';
-import ProfilePage from './modules/platform/ProfilePage.tsx';
-import { HoSoGiaoVienPage } from './modules/giaoVien/HoSoGiaoVienPage.tsx';
 import WelcomePage from './modules/platform/WelcomePage.tsx';
 import { NAV_RONG, duongMoi, khuVucCuaDuong, khuVucHienThi, type DemYeuCau, type KhuVuc, type KhuVucMuc } from '@shared/domain/index.ts';
+
+/* Tách gói theo trang (PR-TOCDO): trang nào mở mới tải; sau khi mở xong, nạp ngầm các trang còn lại để chuyển trang không phải chờ. */
+const OverviewPage = lazy(() => import('./modules/worklist/OverviewPage.tsx'));
+const MockDetailPage = lazy(() => import('./modules/fasttrack/MockDetailPage.tsx'));
+const ChamDiemPage = lazy(() => import('./modules/cham/ChamDiemPage.tsx'));
+const StudentsPage = lazy(() => import('./modules/students/StudentsPage.tsx'));
+const ClassOverviewPage = lazy(() => import('./modules/classes/ClassOverviewPage.tsx'));
+const StudentDetailPage = lazy(() => import('./modules/students/StudentDetailPage.tsx'));
+const LuuTruPage = lazy(() => import('./modules/students/LuuTruPage.tsx'));
+const CaseRoutePage = lazy(() => import('./modules/cases/CaseBoardPage.tsx').then((m) => ({ default: m.CaseRoutePage })));
+const TestPage = lazy(() => import('./modules/test/TestPage.tsx'));
+const CongViecPage = lazy(() => import('./modules/congViec/CongViecPage.tsx'));
+const AdminPage = lazy(() => import('./modules/platform/AdminPage.tsx'));
+const ProfilePage = lazy(() => import('./modules/platform/ProfilePage.tsx'));
+const HoSoGiaoVienPage = lazy(() => import('./modules/giaoVien/HoSoGiaoVienPage.tsx').then((m) => ({ default: m.HoSoGiaoVienPage })));
+const NAP_SAN = [() => import('./modules/worklist/OverviewPage.tsx'), () => import('./modules/fasttrack/MockDetailPage.tsx'), () => import('./modules/cham/ChamDiemPage.tsx'), () => import('./modules/students/StudentsPage.tsx'), () => import('./modules/classes/ClassOverviewPage.tsx'), () => import('./modules/students/StudentDetailPage.tsx'), () => import('./modules/students/LuuTruPage.tsx'), () => import('./modules/cases/CaseBoardPage.tsx'), () => import('./modules/test/TestPage.tsx'), () => import('./modules/congViec/CongViecPage.tsx'), () => import('./modules/platform/AdminPage.tsx'), () => import('./modules/platform/ProfilePage.tsx'), () => import('./modules/giaoVien/HoSoGiaoVienPage.tsx')];
 
 /**
  * Trang thử thành phần dùng chung (PR-E Step 9) — CHỈ có khi chạy `npm run dev`. Điều kiện đứng
@@ -100,6 +103,13 @@ export default function App() {
   const so: SoBadge = dem?.cho ? { n: dem.cho, quaHan: !!dem.quaHan, sr: `${dem.cho} thẻ trong hộp Chờ duyệt${dem.quaHan ? `, ${dem.quaHan} quá hạn` : ''}` }
     : gv?.quaHan ? { n: gv.quaHan, quaHan: true, sr: `${gv.quaHan} việc quá hạn` } : null;
 
+  const daDangNhap = !!session?.authenticated;
+  useEffect(() => {
+    if (!daDangNhap) return;
+    const t = setTimeout(() => NAP_SAN.forEach((nap) => { nap().catch(() => {}); }), 1500);
+    return () => clearTimeout(t);
+  }, [daDangNhap]);
+
   if (loading) return <div className="p-8 max-w-4xl mx-auto"><Skeleton rows={8} /></div>;
   if (!session?.authenticated) return <WelcomePage />;
 
@@ -136,6 +146,7 @@ export default function App() {
       </header>
 
       <main id="noi-dung" tabIndex={-1} className="flex-1 overflow-y-auto p-4 md:p-5 pb-20 md:pb-5 outline-none" key={location.pathname.split('/')[1]}>
+        <Suspense fallback={<div className="p-8 max-w-4xl mx-auto"><Skeleton rows={8} /></div>}>
         <Routes>
           <Route path="/" element={<OverviewPage tab="tong-quan" />} />
           <Route path="/phan-tich"
@@ -165,6 +176,7 @@ export default function App() {
           )}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </Suspense>
       </main>
 
       {/* Điện thoại: thanh dưới 4 nút (G-11). z-30 — dưới menu tài khoản/thông báo ở đầu trang (z-40), Drawer/Modal (z-50),
