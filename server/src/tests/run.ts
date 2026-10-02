@@ -9041,6 +9041,10 @@ await runPrS3ChuTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 const { runPrDeployTests } = await import('./prDeploy.tests.ts');
 await runPrDeployTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
+// ==================================================================== PR-Dọn-b (giao diện quản trị, Vận hành, lưu trữ, việc nhỏ)
+const { runPrDonBTests } = await import('./prDonB.tests.ts');
+await runPrDonBTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

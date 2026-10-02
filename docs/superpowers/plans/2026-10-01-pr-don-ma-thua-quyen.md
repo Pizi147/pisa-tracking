@@ -1,4 +1,5 @@
 # PR-Dọn · Mã thừa + quyền + an toàn — Kế hoạch
+| 02/10 | 0 | **Dọn-b** · **Claude Opus 5.5** (phương án B của bổ sung 02/10; gợi ý là Sonnet 5.5). Nhánh `pr-don-b-giao-dien` từ `e8b6dea7` (S3, DEPLOY, UXF-b, UXD đã merge — không cần cổng gộp). **Mốc B: 2334 đạt + tốc độ 33 đạt**, typecheck 0 lỗi; 1 ✗ là tiến trình con `migrate` sập segfault (mã 3221225477) ở DEPLOY-1c, không phải lỗi mã. Đã có sẵn trên main: P0 `POST /tasks` và `/ref/periods/resolve` (PR-DEPLOY 0b), nhãn Vận hành theo THUAT_NGU (PR-S3). Khối `prDonB`: **22/23 đỏ trên main** (12a xanh sẵn — giữ làm khoá). Chạy khối riêng bằng bộ chạy tạm (không commit) cho nhanh; `npm run check` đủ ở cuối. |
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or
 > superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
