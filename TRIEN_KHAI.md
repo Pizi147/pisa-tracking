@@ -12,7 +12,7 @@ Kế hoạch kỹ thuật phía sau: `docs/superpowers/plans/2026-09-21-ban-chin
 ### 0.1. Mở PowerShell **đúng thư mục dự án**
 
 1. Mở **File Explorer**, đi tới thư mục dự án:
-   `C:\Users\Admin\Downloads\Github\Pisa students tracking\pisa-tracking`
+   `D:\Github\Pisa-tracking`
 2. Bấm vào **thanh địa chỉ** ở trên cùng (chỗ hiện đường dẫn), xoá hết, gõ `powershell`, bấm **Enter**.
 3. Một cửa sổ xanh/đen hiện ra, dòng cuối có chữ `...pisa-tracking>` — đúng thư mục rồi.
 
