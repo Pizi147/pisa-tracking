@@ -178,7 +178,7 @@ export const coMocTiepTheoThuong = (o: { soLuotKeHoach: number; coCuoiKhoa: bool
 
 export function khoaLopThuong(i: {
   maChuongTrinh: string | null; tuanHienTai: number | null; tongTuan: number | null;
-  tuanKetThuc: string | null; tiepTheo: string | null; homNay: string; nhacLoTrinh?: boolean;
+  tuanKetThuc: string | null; tiepTheo: string | null; homNay: string; nhacLoTrinh?: boolean; choDuyetChuyen?: boolean;
 }): { chinh: string; phu: string | null } {
   const ma = i.maChuongTrinh ?? '—';
   let tuan: string | null = null;
@@ -186,6 +186,7 @@ export function khoaLopThuong(i: {
   else if (i.tuanHienTai !== null && i.tongTuan) tuan = tuanKhoa(Math.min(i.tuanHienTai, i.tongTuan), i.tongTuan);
   // Thứ tự ưu tiên dòng phụ (PR-LT): tiếp theo đã ghi › nhắc chưa ghi › kết thúc khoá.
   const phu = i.tiepTheo ? `tiếp theo: ${i.tiepTheo}`
+    : i.choDuyetChuyen ? CHU_CHUYEN_LOP.choDuyetDeXuat.toLowerCase()
     : i.nhacLoTrinh ? CHU_CHUYEN_LOP.chua.toLowerCase()
     : i.tuanKetThuc ? `kết thúc ${tuanLich(i.tuanKetThuc, i.homNay)}` : null;
   return { chinh: tuan ? `${ma} · ${tuan}` : ma, phu };

@@ -956,6 +956,20 @@ export async function runPrCtTests(t: YThucTestKit) {
     assert(profileSvc.studentProfile(P.mbManager, em7[6]).dai.loi === 'Lớp chuyển đến đã kết thúc' && profileSvc.studentProfile(g7, em7[6]).dai.loi === null, 'lỗi chỉ Quản lý thấy');
     conn.prepare('UPDATE lenh_chuyen_lop SET loi = NULL WHERE id = ?').run(lenh7[6].id);
   });
+  check('S3 nốt · Đề xuất chuyển lớp đang chờ: dải hồ sơ em "cho-duyet", em không còn bị đếm "chưa có quyết định", hết khi QL duyệt', () => {
+    const lop = lopMoi({ kind: 'FOU', tuanHienTai: 4 });
+    ganGv(lop, GV[0].userId, null, true);
+    const gCn = loadPrincipal(GV[0].userId);
+    const dich = lopMoi({ kind: 'FOU', tuanHienTai: 4 });
+    const e = hocVien(lop, 'FOU', false).sid;
+    assert(dai.daiHocVien(gCn, e) === null && lenh.emChuaCoLenh([lop]).get(lop)?.includes(e), 'chưa đề xuất: chưa có dải, em còn bị đếm');
+    const r = lenh.guiDeXuatChuyenLop(gCn, e, { toClassId: dich, tuan: TUAN[0], lyDo: 'Phụ huynh xin chuyển sang lớp khác giờ học.' });
+    const dx = dai.daiHocVien(gCn, e);
+    assert(dx?.loai === 'cho-duyet' && dx.lopDich?.id === dich && dx.tuan === TUAN[0] && dx.nguoiRaLenh, JSON.stringify(dx));
+    assert(!lenh.emChuaCoLenh([lop]).get(lop)?.includes(e) && lenh.emChoDuyetChuyenLop([e]).has(e), 'đề xuất chờ: không đếm "chưa có quyết định"');
+    yc.duyetYeuCau(P.mbManager, r.id, { duLieu: { lopDichId: dich, tuan: TUAN[0] } });
+    assert(dai.daiHocVien(gCn, e)?.loai === 'sap' && !lenh.emChoDuyetChuyenLop([e]).has(e), 'duyệt xong: thành dải "Sắp chuyển"');
+  });
   check('CT (7f) · dải "Sắp chuyển" → "Đã chuyển" (≤ 14 ngày) → hết; xác nhận rồi có nút Đọc bàn giao; hồ sơ em chưa có lệnh: dai null', () => {
     const e = em7[0];
     assert(profileSvc.studentProfile(P.mbManager, e).dai.nut.includes('doc-ban-giao'), 'đã xác nhận → Đọc bàn giao');

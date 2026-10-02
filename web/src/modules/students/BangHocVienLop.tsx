@@ -33,6 +33,7 @@ export type DongRoster = {
   /** PR-LT: cột Khoá "tiếp theo: …" và cờ chưa có lộ trình tiếp theo (chỉ lớp thường). */
   tiepTheo: string | null;
   chuaLoTrinh: boolean;
+  choDuyetChuyen?: boolean;
 };
 
 export type LopChoBang = {
@@ -76,7 +77,7 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
   const denChung = chung ? nhapDiemCua(lop.id, thuong, rows.find((s) => s.timeline.some((t) => t.myPending.length))?.timeline ?? [])?.den ?? null : null;
   const khoaCua = (s: DongRoster) => thuong
     ? khoaLopThuong({ maChuongTrinh: lop.programmeCode, tuanHienTai: lop.currentWeek, tongTuan: lop.totalWeeks,
-        tuanKetThuc: lop.tuanKetThuc, tiepTheo: s.tiepTheo, nhacLoTrinh: !!lop.nhacLoTrinh && s.chuaLoTrinh, homNay })
+        tuanKetThuc: lop.tuanKetThuc, tiepTheo: s.tiepTheo, nhacLoTrinh: !!lop.nhacLoTrinh && s.chuaLoTrinh, choDuyetChuyen: s.choDuyetChuyen, homNay })
     : null;
 
   const trong = (n: ReactNode) => (the ? <div>{n}</div> : <HangCon><td colSpan={soCot}>{n}</td></HangCon>);

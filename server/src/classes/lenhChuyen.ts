@@ -482,7 +482,7 @@ function thiHanhGiuaKhoa(p: Principal, g: any, con: any[]): { id: number; loi: s
 
 // ==================================================================== đếm, đề xuất chuyển lớp (Task 6)
 
-/** Em `active` CHƯA CÓ quyết định chuyển lớp đang chờ của mỗi lớp (chưa quyết = chưa có lệnh, Q3/Q30-4). Một câu cho cả lô lớp. */
+/** Em `active` CHƯA CÓ quyết định chuyển lớp đang chờ của mỗi lớp (chưa quyết = chưa có lệnh, Q3/Q30-4). Em đã có ĐỀ XUẤT chờ Quản lý duyệt không tính (đã có thẻ ở Chờ duyệt). Một câu cho cả lô lớp. */
 export function emChuaCoLenh(classIds: readonly number[]): Map<number, number[]> {
   const out = new Map<number, number[]>();
   theoLo([...classIds], (lo, ph) => {
@@ -490,8 +490,19 @@ export function emChuaCoLenh(classIds: readonly number[]): Map<number, number[]>
       `SELECT e.class_id, e.student_id FROM enrollments e JOIN students s ON s.id = e.student_id
         WHERE e.class_id IN (${ph}) AND e.status = 'active' AND ${HV_DANG_HOC_SQL('s')}
           AND NOT EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.student_id = e.student_id AND l.trang_thai = 'cho')
+          AND NOT EXISTS (SELECT 1 FROM yeu_cau_duyet y WHERE y.trang_thai = 'cho' AND y.loai = 'de_xuat_chuyen_lop' AND y.doi_tuong_loai = 'student:chuyen-lop' AND y.doi_tuong_id = e.student_id)
         ORDER BY e.class_id, e.student_id`,
     ).all(...lo) as any[]) (out.get(r.class_id) ?? out.set(r.class_id, []).get(r.class_id)!).push(r.student_id);
+  });
+  return out;
+}
+/** Em (trong `sids`) có đề xuất chuyển lớp CÒN CHỜ Quản lý duyệt — cột Khoá của danh sách lớp. */
+export function emChoDuyetChuyenLop(sids: readonly number[]): Set<number> {
+  const out = new Set<number>();
+  theoLo([...sids], (lo, ph) => {
+    for (const r of db().prepare(
+      `SELECT doi_tuong_id AS id FROM yeu_cau_duyet WHERE trang_thai = 'cho' AND loai = 'de_xuat_chuyen_lop' AND doi_tuong_loai = 'student:chuyen-lop' AND doi_tuong_id IN (${ph})`,
+    ).all(...lo) as any[]) out.add(r.id);
   });
   return out;
 }
