@@ -43,7 +43,7 @@
 Hiện có hai họ badge: `Nhan` (bo tròn hẳn, đậm 700, không viền, `ui/Nhan.tsx:26`) và `NhanTrangThai`/ClassRoster/MissingBadge
 (bo `rounded-md`, 600, có viền, `ui/ui.tsx:525`, `students/ClassRoster.tsx:285`, `students/MissingBadge.tsx:32`).
 Cỡ chữ có 4 mức (11 / 11,5 / 12 / 12,5 px) và 3 chiều cao dòng cho cùng một chip "Quá hạn"/"Cần làm".
-- [ ] **H1. Ba kiểu chip, mỗi kiểu một nghĩa** (đề xuất planning 02/10, chờ chủ sản phẩm xác nhận Q-H; chưa xác nhận thì làm H2–H6 trước):
+- [ ] **H1. Ba kiểu chip, mỗi kiểu một nghĩa** (chủ sản phẩm chốt 02/10, Q-H):
   - **Tròn hẳn, nền đặc** (`Nhan`): trạng thái của học viên hoặc lớp (Cần chú ý, Tốt, Chờ chấm, SOS). Số tạm thì viền đứt (`dut`).
   - **Góc vuông bo nhẹ, viền liền** (`NhanTrangThai`): trạng thái của **việc** (Cần làm, Đang làm, Chờ duyệt, Quá hạn, Xong, Đã huỷ).
     ClassRoster `:285` và MissingBadge `:32` dùng chung kiểu này.
@@ -130,7 +130,7 @@ Cỡ chữ có 4 mức (11 / 11,5 / 12 / 12,5 px) và 3 chiều cao dòng cho c�
 - Không tràn ngang ở 375 px trên mọi trang/panel đã đo.
 
 ## Câu hỏi cho chủ sản phẩm
-- **Q-H:** (đang chờ) Xác nhận cách chia ba kiểu chip ở H1.
+- **Q-H:** ĐÃ CHỐT 02/10: ba kiểu chip như H1.
 - **Q-K:** ĐÃ CHỐT 02/10: 12 px cho chữ nội dung.
 - **Q-D:** ĐÃ CHỐT 02/10: tách "Để QL biết" (J5b).
 - **Q-B:** Chờ duyệt có cần "Duyệt nhiều" / "Nhắc tất cả" không?

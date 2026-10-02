@@ -360,6 +360,7 @@ Thêm dòng mới ở cuối, có ngày. **Không xoá dòng cũ** — ghi "thay
 ---
 | 02/10/2026 | Chữ mang nội dung (meta dòng, nhãn ô, lời nhắc) tối thiểu **12 px**; tiêu đề cột bảng và badge giữ 11–11,5 px | Chủ sản phẩm, critique 02/10 (Q-K) |
 | 02/10/2026 | Tách mục "Không cần duyệt — để QL biết" khỏi **Chờ duyệt** thành nhóm "Để QL biết"; badge Chờ duyệt chỉ đếm mục cần bấm Duyệt | Chủ sản phẩm, critique 02/10 (Q-D) |
+| 02/10/2026 | Badge ba kiểu: **tròn đặc** = trạng thái học viên/lớp (tạm thì viền đứt) · **vuông viền liền** = trạng thái việc · **vuông viền đứt khi tạm** = kết quả điểm (`KetQuaDot`); cùng cỡ 11,5 px | Chủ sản phẩm, critique 02/10 (Q-H) |
 
 ## 4. Lộ trình và phụ thuộc
 
@@ -1959,7 +1960,7 @@ Nguồn: `thiet-ke/DANH_GIA_GIAO_DIEN_2026-09-26.md` (77 trang/panel, 27 đỏ �
 
 ### 12.21. Critique toàn web 02/10 — làm cả 5 gói (chủ sản phẩm chốt 02/10)
 
-Nguồn: `/impeccable critique` 02/10 (26/40, tăng từ 24/40). Kế hoạch: `docs/superpowers/plans/2026-10-02-ux-sau-critique.md`, gồm năm gói UX-G → UX-K và bảng "File → mục". UX-G (trạng thái sai/lệch màu, Lịch Test cắt nút, thông báo dùng giờ thật) làm trước. Đã chốt: chữ nội dung tối thiểu 12 px; tách "Để QL biết" khỏi Chờ duyệt. Còn chờ: Q-H (ba kiểu chip), Q-B.
+Nguồn: `/impeccable critique` 02/10 (26/40, tăng từ 24/40). Kế hoạch: `docs/superpowers/plans/2026-10-02-ux-sau-critique.md`, gồm năm gói UX-G → UX-K và bảng "File → mục". UX-G (trạng thái sai/lệch màu, Lịch Test cắt nút, thông báo dùng giờ thật) làm trước. Đã chốt: chữ nội dung tối thiểu 12 px; tách "Để QL biết" khỏi Chờ duyệt. Badge ba kiểu như H1 (Q-H). Còn chờ: Q-B.
 
 ### 13.1. Trước mỗi commit
 
