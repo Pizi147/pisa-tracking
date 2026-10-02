@@ -1,7 +1,7 @@
 import { db, theoLo, tx, vuaGhi } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
-  BRANCH_REPORT_CATEGORIES, ENTRY_SKILLS, PERMISSIONS, tenMon,
+  BRANCH_REPORT_CATEGORIES, ENTRY_SKILLS, PERMISSIONS, tenMon, tuanLich,
   TASK_PROGRESS, TASK_PROGRESS_LABEL, TASK_TYPES,
   TUTOR_REPORT_CATEGORIES, UNIT_STATUSES, trangThaiDonVi, trangThaiO, type DueState,
 } from '../../../shared/domain/index.ts';
@@ -87,7 +87,7 @@ export function meetingBoard(p: Principal, periodId: number, opts: { month?: str
   const monthIds = monthPeriods.map((r) => r.id);
   const soTuanDaBatDau = monthPeriods.filter((r) => r.week_start <= demoToday()).length;
   const scope = monthIds.length
-    ? { kind: 'month' as const, month: opts.month!, weeks: monthPeriods.map((r) => r.code), editable: false }
+    ? { kind: 'month' as const, month: opts.month!, weeks: monthPeriods.map((r) => tuanLich(r.week_start, demoToday())), editable: false }
     : { kind: 'week' as const, month: null, weeks: [period.code], editable: true };
 
   if (!units.length) {
@@ -291,7 +291,7 @@ export function saveUnitReport(
     if (!effectiveStatus) throw badRequest('Chọn mức trước khi nộp.');
   } else {
     if (demoToday() < period.week_start) {
-      throw badRequest(window.reason ?? `Tuần ${period.code ?? ''} chưa bắt đầu — chưa có gì để báo cáo.`.trim());
+      throw badRequest(window.reason ?? `Tuần ${tuanLich(period.week_start, demoToday())} chưa bắt đầu — chưa có gì để báo cáo.`);
     }
     if (before?.submitted_at && !window.open) {
       throw badRequest('Báo cáo này đã nộp và tuần đã khoá — chỉ Quản trị hệ thống mở lại được.');

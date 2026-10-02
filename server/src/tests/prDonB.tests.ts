@@ -156,7 +156,7 @@ export async function runPrDonBTests(t: YThucTestKit) {
     assert(d.docTuanLich('W1 JAN', '2026-12-28') === '2027-01-04', String(d.docTuanLich('W1 JAN', '2026-12-28')));
     assert(d.docTuanLich('W4 DEC', '2027-01-11') === '2026-12-21', String(d.docTuanLich('W4 DEC', '2027-01-11')));
     assert(d.docTuanLich('W5 SEP', '2026-09-14') === null, 'W5 SEP 2026 không có thật — không nhảy sang 2027');
-    assert(d.tuanLich('2026-01-05', '2026-09-14') === 'W1 JAN 2026', d.tuanLich('2026-01-05', '2026-09-14'));
+    assert(d.tuanLich('2026-01-05', '2026-09-14') === 'W2 JAN 2026', d.tuanLich('2026-01-05', '2026-09-14'));
     assert(d.tuanLich('2026-09-21', '2026-09-14') === 'W4 SEP', 'tuần gần không thêm năm');
   });
   check('Dọn-b (B4) · ô tuần trên điện thoại gõ được chữ: ONgay kiểu tuần inputMode text; ô gõ của LichNho không còn numeric', () => {

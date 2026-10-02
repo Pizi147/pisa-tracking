@@ -225,7 +225,7 @@ export async function runPrUxfBTests(t: YThucTestKit) {
   check('UXF-b (6) · Q13 oHocThuat: em Tạm dừng → mọi dòng có hạn (Quá hạn VÀ Cần làm) là "Tạm dừng từ dd/mm"; Chờ duyệt / Đang làm giữ; không Tạm dừng → như cũ', () => {
     const hang = (tt: string) => [{ short: 'R', label: 'Reading', category: 'reading', missed: true,
       cases: [{ status: 'open', trangThaiV4: { t: tt }, viecTiep: { chu: 'Xác nhận PA' }, plans: [] }] }];
-    const dung = (tt: string) => d.oHocThuat(hang(tt), '2026-09-10').dong[0];
+    const dung = (tt: string) => d.oHocThuat(hang(tt), '2026-09-10', '2026-09-14').dong[0];
     for (const tt of ['can-lam', 'qua-han']) assert(dung(tt).t === 'tam-dung' && dung(tt).nhan === 'Tạm dừng từ 10/09', `${tt}: ${JSON.stringify(dung(tt))}`);
     for (const tt of ['cho-duyet', 'dang-lam']) assert(dung(tt).t === tt, `${tt}: ${dung(tt).t}`);
     assert(d.oHocThuat(hang('can-lam')).dong[0].t === 'can-lam', 'không Tạm dừng → Cần làm');
