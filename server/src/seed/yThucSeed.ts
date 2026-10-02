@@ -21,7 +21,7 @@ import { DEMO_DATE } from './journeys.ts';
  *   (g) Kiều Minh Đức    đề xuất Đình chỉ bị từ chối → vi phạm về Cần xử lý
  *   (i) Tô Ngọc Hân      HS cũ khai bậc 2 (H5) → Xác nhận xử lý · WL 1
  *   (j) Quách Thành Nam  3 vi phạm 31/08–02/09, chuyển sang MB FT 102 ngày 12/09 → vẫn Cần xử lý, hạn 16/09 (M-08)
- *   (k) Mạc Tuấn Kiệt    khai WL 1 → Report 4 + Meeting → WL 2 → bậc kế WL 3 · cần QL
+ *   (k) Mạc Tuấn Kiệt    khai WL 1 → Report 4 + Meeting → Report 5 → bậc kế WL 2
  *   (l) Nguyễn Bảo Trâm  lớp thường HD FOU 05 → HD BE 21, khoá trước có Report 1 → bậc kế Report 2 (một chuỗi — Q-C)
  *   (m) Hà Phương Linh   Meeting CX/GĐCN QL duyệt + Đã thực hiện → Đã xử lý, bậc giữ Report 1 (M-11)
  * Thêm: Đặng Thu Vân (BC, QL nhập hộ + vi phạm Mới quá hạn) · Ngô Hải Yến (CP) · Trần Hải Kiên (HD, sang FT thì chuỗi thang mới).
@@ -53,7 +53,7 @@ type VSeed = {
 /** Lần xử lý THANG đã xong (Xác nhận xử lý một bước — V4-9). */
 type MSeed = {
   key: string;
-  kind: 'report_1' | 'report_2' | 'wl_1' | 'report_4_meeting' | 'wl_2';
+  kind: 'report_1' | 'report_2' | 'wl_1' | 'report_4_meeting' | 'report_5' | 'wl_2';
   performedOn: string;
   performer: string;
   /** Người bấm, nếu khác người thực hiện (QL nhập hộ). */
@@ -161,10 +161,10 @@ export const Y_THUC_SEEDS: StudentYThuc[] = [
     ],
   },
 
-  /* ============================================================ (f) Lương Gia Bảo — khai bậc 5 (WL 2) + 3 vi phạm → đề xuất WL 3 chờ QL */
+  /* ============================================================ (f) Lương Gia Bảo — khai bậc 6 (WL 2) + 3 vi phạm → đề xuất WL 3 chờ QL */
   {
     moi: { ten: 'Lương Gia Bảo', target: 6.5 },
-    khai: { bac: 5, thang: '2026-07', ghiChu: 'WL 2 tháng 7 ở lớp cũ, QL Vy ký', on: '2026-08-17' },
+    khai: { bac: 6, thang: '2026-07', ghiChu: 'WL 2 tháng 7 ở lớp cũ, QL Vy ký', on: '2026-08-17' },
     violations: [
       { key: 'f1', on: '2026-09-07', category: 'attendance', skill: null, by: 'T_HA', text: 'Nghỉ hai buổi liền không báo' },
       { key: 'f2', on: '2026-09-08', category: 'conduct', skill: 'speaking', by: 'T_TRANG', text: 'Cãi lại giáo viên trong giờ Speaking' },
@@ -210,7 +210,7 @@ export const Y_THUC_SEEDS: StudentYThuc[] = [
     chuyen: { lop: 'MB FT 102', ngay: '2026-09-12', lyDo: 'Chuyển sang lớp LT2 theo nguyện vọng gia đình' },
   },
 
-  /* ============================================================ (k) Mạc Tuấn Kiệt — khai WL 1 → Report 4 + Meeting → WL 2; một vi phạm Mới */
+  /* ============================================================ (k) Mạc Tuấn Kiệt — khai WL 1 → Report 4 + Meeting → Report 5; một vi phạm Mới */
   {
     moi: { ten: 'Mạc Tuấn Kiệt', target: 6.0 },
     khai: { bac: 3, thang: '2026-07', ghiChu: 'WL 1 tháng 7 ở lớp cũ', on: '2026-08-17' },
@@ -226,8 +226,8 @@ export const Y_THUC_SEEDS: StudentYThuc[] = [
     measures: [
       { key: 'km1', kind: 'report_4_meeting', performedOn: '2026-08-28', performer: 'T_HA', note: 'Gửi Report 4, gặp em cùng CX sau giờ học.', violations: ['k1', 'k2', 'k3'] },
       {
-        key: 'km2', kind: 'wl_2', performedOn: '2026-09-09', performer: 'T_HA', note: 'Gửi Warning Letter 2, bố em ký nhận tại trung tâm.',
-        violations: ['k4', 'k5', 'k6'], evidence: ['WL 2 — Mạc Tuấn Kiệt.pdf'],
+        key: 'km2', kind: 'report_5', performedOn: '2026-09-09', performer: 'T_HA', note: 'Gửi Report 5 cho phụ huynh, bố em đã đọc và hẹn nhắc em.',
+        violations: ['k4', 'k5', 'k6'],
       },
     ],
   },

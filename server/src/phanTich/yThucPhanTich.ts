@@ -1,6 +1,6 @@
 import { db } from '../db.ts';
 import {
-  XU_LY_STATUS_LABEL, bacHoacNgoaiThang, khoaLoaiXuLy, nhanLoaiXuLy, MEASURE_KIND_LABEL, THANG, VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL,
+  XU_LY_STATUS_LABEL, bacHoacNgoaiThang, khoaLoaiXuLy, nhanLoaiXuLy, VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL,
   type ChuongTrinh, type DongHvCanChuY, type DongLopViPham, type ViolationCategory, type YThucPhanTichKetQua,
 } from '../../../shared/domain/index.ts';
 import { badRequest, forbidden } from '../util.ts';
@@ -130,7 +130,7 @@ function tinh(p: Principal, f: FilterYThuc) {
       viPham: trongKy.length, chuaXuLy: chua.length,
       bienPhapGanNhat: gan ? nhanLoaiXuLy(gan.kind, gan.customName) : null, ngay: gan?.performedOn ?? null,
       nhom: em.nhom, bac: bacHoacNgoaiThang(em.bac, em.xuLy), lanXuLyMoi,
-      bacKe: em.keTiep ? `${MEASURE_KIND_LABEL[em.keTiep.kind]}${em.keTiep.canQl ? ' · cần QL' : ''}` : 'Hết thang',
+      bacKe: nhanLoaiXuLy(em.keTiep.kind),
     });
     hvTap.set(sid, { vpKy: trongKy.map((v) => v.id), chua: chua.map((v) => v.id) });
   }

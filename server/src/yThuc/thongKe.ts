@@ -1,6 +1,6 @@
 import { db } from '../db.ts';
 import {
-  KHOA_LOAI_XU_LY, PERMISSIONS, NHOM_TRANG_THAI_KHOA, THANG, khoaLoaiXuLy, khoaNhomTrangThai,
+  BAC_REPORT_TIEP, KHOA_LOAI_XU_LY, PERMISSIONS, NHOM_TRANG_THAI_KHOA, THANG, khoaLoaiXuLy, khoaNhomTrangThai,
   type NhomViPhamKhoa, type TrangThaiViPhamKhoa,
 } from '../../../shared/domain/index.ts';
 import { scopeFor, type Principal } from '../permissions.ts';
@@ -34,8 +34,8 @@ export const YTHUC_METRIC_IDS = [
   'bien-phap-da-thuc-hien', 'bien-phap-cho-duyet', 'bien-phap-theo-loai', 'vi-pham-theo-nhom', 'hv-theo-bac',
 ] as const;
 
-/** Khoá `byKind` của `hv-theo-bac`: bậc 0 (chưa bậc nào) … 6 (WL 3). */
-export const KHOA_BAC = ['0', ...THANG.map((_, i) => String(i + 1))] as const;
+/** Khoá `byKind` của `hv-theo-bac`: bậc 0 (chưa bậc nào) … 6 (WL 2), `7` = Report 7 trở lên (sau WL 2 thang không có đỉnh). */
+export const KHOA_BAC = ['0', ...THANG.map((_, i) => String(i + 1)), String(BAC_REPORT_TIEP)] as const;
 
 export const isYThucMetric = (id: string): boolean => (YTHUC_METRIC_IDS as readonly string[]).includes(id);
 
@@ -205,15 +205,15 @@ export function yThucMetric(
       return { none: false, byKind, ids: rows.map((r) => r.id as number) };
     }
     case 'hv-theo-bac': {
-      /* PR-YT4: em ĐANG HỌC trong phạm vi, chia theo bậc hiện tại trên thang (0 = chưa bậc nào … 6 = WL 3) — bậc của cửa trạng thái. */
-      if (f.kind && !(KHOA_BAC as readonly string[]).includes(f.kind)) throw badRequest('Bậc không hợp lệ (0–6).');
+      /* PR-YT4: em ĐANG HỌC trong phạm vi, chia theo bậc hiện tại trên thang (0 = chưa bậc nào … 6 = WL 2, 7 = Report 7 trở lên) — bậc của cửa trạng thái. */
+      if (f.kind && !(KHOA_BAC as readonly string[]).includes(f.kind)) throw badRequest('Bậc không hợp lệ (0–7, 7 = Report 7 trở lên).');
       const b = branchSql('c.branch_id', scope.branchIds), cl = classSql('e.class_id', f.classId);
       const ids = all(
         `SELECT DISTINCT e.student_id AS id FROM enrollments e JOIN classes c ON c.id = e.class_id JOIN students s ON s.id = e.student_id
           WHERE e.status = 'active' AND s.archived_at IS NULL AND ${b.sql} AND ${cl.sql} ORDER BY e.student_id`, ...b.args, ...cl.args);
       const trang = trangThaiYThuc(ids, today);
       const byKind = Object.fromEntries(KHOA_BAC.map((k) => [k, [] as number[]])) as Record<string, number[]>;
-      for (const id of ids) byKind[String(trang.get(id)?.bac ?? 0)].push(id);
+      for (const id of ids) byKind[String(Math.min(trang.get(id)?.bac ?? 0, BAC_REPORT_TIEP))].push(id);
       const picked = f.kind ? { [f.kind]: byKind[f.kind] } : byKind;
       return { none: false, byKind: picked, ids: Object.values(picked).flat().sort((x, y) => x - y) };
     }

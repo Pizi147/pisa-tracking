@@ -1,8 +1,8 @@
 # Ý thức — Vi phạm và Biện pháp xử lý
 
 > **v4 thay bản này (29/09/2026, PR-YT4).** Từ PR-YT4, luật Ý thức theo đặc tả `docs/superpowers/specs/2026-09-27-nang-cap-sau-deploy-design.md`
-> §5.4–§5.8: Ghi nhận / Xác nhận xử lý, thang bắt buộc (Report 1 → … → WL 3), 3 vi phạm / 2 tuần phải xử lý trong 5 ngày, QL duyệt
-> WL 3 · Meeting CX/GĐCN · Đình chỉ · Khác, Khai bậc. Chín loại biện pháp, "Đang chuẩn bị", chuỗi Thư cảnh cáo và cảnh báo quá 5 ngày
+> §5.4–§5.8: Ghi nhận / Xác nhận xử lý, thang bắt buộc (Report 1 → … → WL 2 → Report 7, 8…; sửa 02/10), 3 vi phạm / 2 tuần phải xử lý trong 5 ngày, QL duyệt
+> WL 3 (ngoài thang) · Meeting CX/GĐCN · Đình chỉ · Khác, Khai bậc. Chín loại biện pháp, "Đang chuẩn bị", chuỗi Thư cảnh cáo và cảnh báo quá 5 ngày
 > dưới đây **hết hiệu lực** — giữ làm lịch sử.
 
 > **⚠ BẢN v3 (tối 21/09/2026) THAY MỘT PHẦN FILE NÀY** — đọc `thiet-ke/SOS_VA_PHOI_HOP_V3.md` mục 1 trước.

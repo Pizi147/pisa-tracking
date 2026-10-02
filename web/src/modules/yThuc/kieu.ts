@@ -24,7 +24,7 @@ export type YThucHocVien = {
   studentId: number; ten: string; maHv: string; homNay: string;
   canManage: boolean; canRecord: boolean; canSuaKhai: boolean; coTheKhai: boolean;
   chuoi: { nhan: string; cycleIds: number[]; soXuLy: number };
-  bac: number; bacNhan: string | null; keTiep: { kind: string; nhan: string; bac: number; canQl: boolean } | null;
+  bac: number; bacNhan: string | null; keTiep: { kind: string; nhan: string; bac: number; canQl: boolean };
   dongThang: BacThangDong[];
   khai: { bac: number; thang: string | null; ghiChu: string; boi: string | null; luc: string; coTheSua: boolean } | null;
   nhom: NhomEm | null; han: string | null; hanXem: string | null; soBatBuoc: number; soMoi: number; quaHanNgay: number | null;
@@ -46,7 +46,7 @@ export type XuLyView = {
 
 export type DongEm = {
   studentId: number; ten: string; maHv: string; bac: number; bacNhan: string | null;
-  keTiep: { kind: string; nhan: string; canQl: boolean } | null;
+  keTiep: { kind: string; nhan: string; canQl: boolean };
   soMo: number; soBatBuoc: number; soMoi: number; han: string | null; hanXem: string | null; quaHanNgay: number | null;
   moiTuoi: number | null;
   deXuat: { nhan: string; status: 'cho_duyet' | 'da_duyet'; han: string | null } | null;

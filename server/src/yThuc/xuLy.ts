@@ -11,8 +11,8 @@
  */
 import { db, tx } from '../db.ts';
 import {
-  MEASURE_KIND_LABEL, NGOAI_THANG, PERMISSIONS, THANG, VIOLATION_CATEGORY_LABEL, XU_LY_STATUS_LABEL,
-  bacCuaLoai, dongThang, duongHoSoHocVien, kiemGhiRoKhac, macDinhTick, nhanLoaiXuLy, shortDate,
+  NGOAI_THANG, PERMISSIONS, THANG, VIOLATION_CATEGORY_LABEL, XU_LY_STATUS_LABEL,
+  bacCuaLoai, dongThang, duongHoSoHocVien, kindCuaBac, kiemGhiRoKhac, macDinhTick, nhanLoaiXuLy, shortDate,
   type MeasureKind, type TheYeuCauDto, type ViolationCategory,
 } from '../../../shared/domain/index.ts';
 import { can, require_, type Principal } from '../permissions.ts';
@@ -152,8 +152,6 @@ export function xacNhanXuLy(p: Principal, studentId: number, v: XuLyVao): XuLyVi
       throw conflict('Bậc đã đổi, mở lại panel.', { bac: em.bac });
     }
     const ke = em.keTiep;
-    if (!ke) throw badRequest('Em đã qua WL 3 — chỉ còn Đề xuất QL duyệt (Đình chỉ, Meeting CX/GĐCN, Khác).');
-    if (ke.canQl) throw badRequest(`Bậc kế tiếp là ${MEASURE_KIND_LABEL[ke.kind]} — cần Đề xuất QL duyệt.`);
     const info = db().prepare(
       `INSERT INTO discipline_measures (student_id, cycle_id, class_id, kind, status, owner_user_id, note, performed_on, performed_by,
                                         performer_name, confirmed_by, confirmed_at, idempotency_key, created_at, created_by)
@@ -164,11 +162,11 @@ export function xacNhanXuLy(p: Principal, studentId: number, v: XuLyVao): XuLyVi
     for (const vid of ids) { link.run(mId, vid, p.userId, nowIso()); noteMeasureChange(vid, null, mId, p.userId); }
     ghiPhanHoi(ids);
     writeAudit({ actorUserId: p.userId, action: 'discipline.handle', entityType: 'discipline_measure', entityId: mId,
-      entityLabel: `${hv.student_code} · ${MEASURE_KIND_LABEL[ke.kind]}`, after: { kind: ke.kind, bac: ke.bac, violations: ids, performedOn } });
+      entityLabel: `${hv.student_code} · ${nhanLoaiXuLy(ke.kind)}`, after: { kind: ke.kind, bac: ke.bac, violations: ids, performedOn } });
     if (BAC_BAO_QL.has(ke.kind)) {
       for (const uid of quanLyCua(studentId)) {
         if (uid === p.userId) continue;
-        notify({ userId: uid, kind: 'discipline_de_biet', title: `Đã xử lý ${MEASURE_KIND_LABEL[ke.kind]} · ${hv.full_name} · để biết`,
+        notify({ userId: uid, kind: 'discipline_de_biet', title: `Đã xử lý ${nhanLoaiXuLy(ke.kind)} · ${hv.full_name} · để biết`,
           entityType: 'discipline_measure', entityId: mId, dedupKey: `yt-xu-ly:${mId}`, duong: duongHoSoHocVien(studentId, { tab: 'y-thuc' }) });
       }
     }
@@ -216,8 +214,8 @@ export function suaKhaiBac(p: Principal, studentId: number, v: { bac?: unknown; 
 
 function kiemKhai(v: { bac?: unknown; thang?: unknown; ghiChu?: unknown }) {
   const bac = Number(v.bac);
-  /* Khai tối đa bậc 5 (WL 2): WL 3 luôn cần QL duyệt nên không khai tay được. */
-  if (!Number.isInteger(bac) || bac < 1 || bac > 5) throw badRequest('Chọn bậc đã xử lý: Report 1 … WL 2.');
+  /* Khai tối đa bậc 6 (WL 2) — hết mạch chính. ponytail: em đã qua Report 7+ trước khi dùng web thì khai WL 2, tăng dần trên web. */
+  if (!Number.isInteger(bac) || bac < 1 || bac > THANG.length) throw badRequest('Chọn bậc đã xử lý: Report 1 … WL 2.');
   const thangStr = String(v.thang ?? '').trim();
   if (thangStr && !/^\d{4}-(0[1-9]|1[0-2])$/.test(thangStr)) throw badRequest('Tháng xử lý không hợp lệ.');
   const ghiChu = String(v.ghiChu ?? '').trim();
@@ -325,8 +323,8 @@ export function yThucHocVien(p: Principal, studentId: number, o: { phamVi?: 'chu
     canSuaKhai: can(p, PERMISSIONS.REQUEST_APPROVE, { studentId }) && !!em.khai?.coTheSua,
     coTheKhai: canManage && khaiDuoc(em),
     chuoi: { nhan: em.nhanChuoi, cycleIds: em.chuoi, soXuLy: em.xuLy.filter((m) => m.status === 'done' && m.cycleId != null && em.chuoi.includes(m.cycleId)).length },
-    bac: em.bac, bacNhan: em.bac > 0 ? MEASURE_KIND_LABEL[THANG[em.bac - 1]] : null,
-    keTiep: em.keTiep ? { kind: em.keTiep.kind, nhan: MEASURE_KIND_LABEL[em.keTiep.kind], bac: em.keTiep.bac, canQl: em.keTiep.canQl } : null,
+    bac: em.bac, bacNhan: em.bac > 0 ? nhanLoaiXuLy(kindCuaBac(em.bac)) : null,
+    keTiep: { kind: em.keTiep.kind, nhan: nhanLoaiXuLy(em.keTiep.kind), bac: em.keTiep.bac, canQl: em.keTiep.canQl },
     dongThang: dongThang(em.bac, em.khai),
     khai: em.khai,
     nhom: em.nhom, han: em.han, hanXem: em.hanXem, soBatBuoc: em.soBatBuoc, soMoi: em.soMoi, quaHanNgay: quaHan,
@@ -381,7 +379,7 @@ export function laGvcnDangHoc(p: Principal, studentId: number): boolean {
 // ---------------------------------------------------------------- Đề xuất QL duyệt (V4-9, V4-10, Q10, Q11, T30) — thẻ `y_thuc`
 
 /**
- * Bước 1: tạo NHÁP (`nhap`, nội bộ, không vào trạng thái) để có chủ cho tệp/liên kết bằng chứng. Loại: WL 3 (chỉ khi là bậc kế) ·
+ * Bước 1: tạo NHÁP (`nhap`, nội bộ, không vào trạng thái) để có chủ cho tệp/liên kết bằng chứng. Loại: WL 3 (bất kỳ lúc nào, không đẩy bậc) ·
  * Meeting CX/GĐCN · Đình chỉ học tạm thời · Khác (tên ≥ 3 ký tự — T30). Mô tả ≥ 10 ký tự.
  */
 export function deXuat(p: Principal, studentId: number, v: { kind?: unknown; customName?: unknown; violationIds?: unknown; note?: unknown }) {
@@ -389,10 +387,8 @@ export function deXuat(p: Principal, studentId: number, v: { kind?: unknown; cus
   requireManageDiscipline(p, studentId, MANAGE_MESSAGE);
   const kind = String(v.kind ?? '') as MeasureKind;
   const em = emCua(studentId);
-  if (kind === 'wl_3') {
-    if (em.keTiep?.kind !== 'wl_3') throw badRequest(`WL 3 chỉ đề xuất được khi là bậc kế tiếp (bậc kế đang là ${em.keTiep ? MEASURE_KIND_LABEL[em.keTiep.kind] : 'không còn'}).`);
-  } else if (!(NGOAI_THANG as readonly string[]).includes(kind)) {
-    throw badRequest('Chọn loại cần QL duyệt: Meeting CX/GĐCN · WL 3 · Đình chỉ học tạm thời · Khác.');
+  if (!(NGOAI_THANG as readonly string[]).includes(kind)) {
+    throw badRequest('Chọn loại cần QL duyệt: WL 3 · Meeting CX/GĐCN · Đình chỉ học tạm thời · Khác.');
   }
   let customName: string | null = null;
   if (kind === 'other') {
@@ -440,7 +436,7 @@ export function guiDeXuat(p: Principal, measureId: number) {
     taoYeuCau(db(), {
       loai: 'y_thuc', doiTuongLoai: 'discipline_measure', doiTuongId: measureId, hocVienId: m.student_id, lopId: em.lopId,
       nguoiXin: p.userId, lyDo: m.note, bangChung: tep,
-      duLieu: { kind: m.kind, customName: m.custom_name ?? null, bacKe: ngoaiThang && em.keTiep ? MEASURE_KIND_LABEL[em.keTiep.kind] : null, soViPham: vIds.length, soTep: tep.length },
+      duLieu: { kind: m.kind, customName: m.custom_name ?? null, bacKe: ngoaiThang ? nhanLoaiXuLy(em.keTiep.kind) : null, soViPham: vIds.length, soTep: tep.length },
     });
     writeAudit({ actorUserId: p.userId, action: 'discipline.propose', entityType: 'discipline_measure', entityId: measureId,
       entityLabel: `${hv.student_code} · gửi QL ${nhanLoaiXuLy(m.kind, m.custom_name)}`, after: { bangChung: tep } });

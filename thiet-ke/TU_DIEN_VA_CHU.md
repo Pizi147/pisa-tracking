@@ -139,7 +139,7 @@ Nguồn: đặc tả `docs/superpowers/specs/2026-09-27-nang-cap-sau-deploy-desi
 | Nút ghi một vi phạm (menu dòng, tab lớp, tab HV) | `+ Ghi vi phạm` · tiêu đề panel `Ghi vi phạm` | "Ghi nhận vi phạm" |
 | GVCN đã xem, không cần xử lý | `Ghi nhận` (nút) · `Đã ghi nhận · vẫn tính` (nhãn) | "bỏ qua", "đã đọc" |
 | GVCN xử lý một nhóm vi phạm theo thang | `Xác nhận xử lý · {bậc}` · một dòng thời gian gọi là `lần xử lý` | "biện pháp", "phương án", "PA" |
-| Thang xử lý | `Report 1 → Report 2 → WL 1 → Report 4 + Meeting CX/GĐCN → WL 2 → WL 3` · dòng thang `Thang (LT1)` / `Thang (lớp thường)` | "Thư cảnh cáo", "Warning" |
+| Thang xử lý | `Report 1 → Report 2 → WL 1 → Report 4 + Meeting CX/GĐCN → Report 5 → WL 2 → Report 7 → Report 8 → …` (WL 3 ngoài thang, cần QL) · dòng thang `Thang (LT1)` / `Thang (lớp thường)` | "Thư cảnh cáo", "Warning" |
 | Loại cần QL duyệt | `Đề xuất QL duyệt` → `Gửi QL duyệt · trả lời trong 5 ngày` · sau duyệt `Đã thực hiện` | "xin phép", "trình" |
 | Em bị xử lý trước khi dùng web | `Khai bậc` (một lần) · QL `Sửa bậc đã khai` | "nhập lịch sử" |
 | Sáu nhãn của một vi phạm | `Mới` · `Đã ghi nhận` · `Cần xử lý` · `Quá hạn {n} ngày` · `Chờ QL duyệt` (hoặc `Đã duyệt · chờ thực hiện`) · `Đã xử lý · {bậc}` | "Chưa xử lý", "Đang chuẩn bị" |

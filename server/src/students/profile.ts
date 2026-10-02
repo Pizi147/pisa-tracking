@@ -4,7 +4,7 @@ import {
   ASSESSED_SKILLS, BASELINE_SOURCE_LABEL, CYCLE_OUTCOME_LABEL, ENTRY_SKILLS,
   ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, JOURNEY_GROUP, PERMISSIONS,
   caseHeadline, duongCase, issueLabel, caseCategoryLabel, categoryOf, fmtExamMonth, cauTomTat, ketQuaTestGanNhat, oHocThuat, oSapToi, oYThuc,
-  MEASURE_KIND_LABEL, THANG, bacHoacNgoaiThang, nhanLoaiXuLy, programmeOf, tenBacKe, tenMonNgan, mocKeTiep, quaHan, studyWeekOf, tenMon, tuanHocTai, tuanLich,
+  bacHoacNgoaiThang, nhanLoaiXuLy, programmeOf, tenBacKe, tenMonNgan, mocKeTiep, quaHan, studyWeekOf, tenMon, tuanHocTai, tuanLich,
   type AssessedSkill, type EntrySkill, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { outcomeGroup } from '../cases/effectiveness.ts';
@@ -393,7 +393,7 @@ function boOVaCau(i: {
   /* PR-UXF-b (Q14): MỘT số vi phạm còn mở — ô Ý thức (`soMo`) và panel Tạm dừng ("n vi phạm Ý thức đang chờ xử lý") cùng đọc nó. */
   const soViPhamMo = vi.filter((t) => t.t !== 'da_xu_ly').length;
   const deXuatCho = em?.deXuat?.status === 'cho_duyet' ? nhanLoaiXuLy(em.deXuat.kind, em.deXuat.customName) : null;
-  const keTiep = em?.keTiep ? MEASURE_KIND_LABEL[em.keTiep.kind as keyof typeof MEASURE_KIND_LABEL] ?? null : null;
+  const keTiep = em?.keTiep ? nhanLoaiXuLy(em.keTiep.kind) : null;
 
   const tomTat = cauTomTat({
     dacBiet: s.status === 'finished' ? { loai: 'ket-thuc' }

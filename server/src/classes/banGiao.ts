@@ -1,6 +1,6 @@
 import { db, theoLo, tx } from '../db.ts';
 import {
-  MEASURE_KIND_LABEL, NHAN_XET_TOI_THIEU, PERMISSIONS, THANG, boMonLich, programmeOf, coPhieu, kyNangPhuTrach, tenMon, tenMonNgan, trangThaiPhieu,
+  NHAN_XET_TOI_THIEU, PERMISSIONS, kindCuaBac, nhanLoaiXuLy, boMonLich, programmeOf, coPhieu, kyNangPhuTrach, tenMon, tenMonNgan, trangThaiPhieu,
 } from '../../../shared/domain/index.ts';
 import { badRequest, conflict, forbidden, notFound, nowIso } from '../util.ts';
 import { can, type Principal } from '../permissions.ts';
@@ -104,7 +104,7 @@ function tuDienTheoLo(nguon: { id: number; ct: string | null }, ds: { id: number
   for (const l of ds) {
     const em = yt.get(l.student_id);
     const goiY = l.lop_dich_id ? goiYTheoDich.get(l.lop_dich_id) : undefined;
-    const bacTen = em && em.bac > 0 ? `Đã qua ${MEASURE_KIND_LABEL[THANG[em.bac - 1]] ?? `bậc ${em.bac}`}` : 'Chưa có xử lý';
+    const bacTen = em && em.bac > 0 ? `Đã qua ${nhanLoaiXuLy(kindCuaBac(em.bac))}` : 'Chưa có xử lý';
     const cho = em ? em.soBatBuoc + em.soMoi : 0;
     const n = baiChuaLam.get(l.student_id) ?? 0;
     out.set(l.id, {

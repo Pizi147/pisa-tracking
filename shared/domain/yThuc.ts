@@ -72,44 +72,64 @@ export function monViPham(ct: string | null | undefined): readonly string[] {
 // ================================================================ LUẬT v4 (PR-YT4, đặc tả 27/09 §5.4) — MỘT HÀM TRẠNG THÁI
 
 /**
- * THANG BẮT BUỘC (V4-8, Q27-1). Bậc = vị trí + 1 (Q3: không lưu cột bậc — bậc đọc từ `kind`). WL = thư cảnh cáo.
- * Bậc 4 là MỘT lần xử lý (Report 4 kèm Meeting CX/GĐCN), không cần QL. Bậc 6 (WL 3) cần QL duyệt.
+ * THANG BẮT BUỘC (V4-8, Q27-1; chủ sản phẩm sửa 02/10). Bậc = vị trí + 1 (Q3: không lưu cột bậc — bậc đọc từ `kind`). WL = thư cảnh cáo.
+ * Mạch chính: Report 1 › Report 2 › WL 1 › Report 4 + Meeting CX/GĐCN › Report 5 › WL 2. Bậc 4 là MỘT lần xử lý (Report 4 kèm
+ * Meeting CX/GĐCN). Không bậc nào trong thang cần QL.
+ * SAU WL 2: Report 7, 8, 9… tăng số mãi (`report_N`, N ≥ 7, số = bậc) — KHÔNG liệt kê ở đây vì không có giới hạn trên.
+ * WL 3 và mọi phương án khác chỉ đi bằng đề xuất QL duyệt (`NGOAI_THANG`).
  */
-export const THANG = ['report_1', 'report_2', 'wl_1', 'report_4_meeting', 'wl_2', 'wl_3'] as const;
-/** Ngoài thang (V4-9): luôn cần QL, KHÔNG đẩy bậc (T28, M-11). */
-export const NGOAI_THANG = ['meeting_cx', 'suspension', 'other'] as const;
+export const THANG = ['report_1', 'report_2', 'wl_1', 'report_4_meeting', 'report_5', 'wl_2'] as const;
+/** Bậc đầu tiên sau `THANG` (Report 7). */
+export const BAC_REPORT_TIEP = THANG.length + 1;
+/** Ngoài thang (V4-9): luôn cần QL, KHÔNG đẩy bậc (T28, M-11). WL 3 nằm ở đây từ 02/10. */
+export const NGOAI_THANG = ['wl_3', 'meeting_cx', 'suspension', 'other'] as const;
 export const MEASURE_KINDS = [...THANG, ...NGOAI_THANG] as const;
 export type MeasureKind = (typeof MEASURE_KINDS)[number];
-export type BacThang = (typeof THANG)[number];
 export const MEASURE_KIND_LABEL: Record<MeasureKind, string> = {
-  report_1: 'Report 1', report_2: 'Report 2', wl_1: 'WL 1', report_4_meeting: 'Report 4 + Meeting CX/GĐCN', wl_2: 'WL 2', wl_3: 'WL 3',
-  meeting_cx: 'Meeting CX/GĐCN', suspension: 'Đình chỉ học tạm thời', other: 'Khác',
+  report_1: 'Report 1', report_2: 'Report 2', wl_1: 'WL 1', report_4_meeting: 'Report 4 + Meeting CX/GĐCN', report_5: 'Report 5', wl_2: 'WL 2',
+  wl_3: 'WL 3', meeting_cx: 'Meeting CX/GĐCN', suspension: 'Đình chỉ học tạm thời', other: 'Khác',
 };
+
+/** `report_7`, `report_8`… (sau WL 2) → số; loại khác → 0. Số < 7 không hợp lệ (đã có trong `THANG`). */
+const soReportTiep = (kind: string): number => {
+  const m = /^report_(\d+)$/.exec(kind);
+  return m && Number(m[1]) >= BAC_REPORT_TIEP ? Number(m[1]) : 0;
+};
+
+/** `kind` của một bậc (≥ 1): trong thang → tên cố định; sau WL 2 → `report_{bậc}`. */
+export function kindCuaBac(bac: number): string {
+  return bac <= THANG.length ? THANG[bac - 1] : `report_${bac}`;
+}
 
 /** Tên một lần xử lý. `Khác` có tên riêng thì dùng tên riêng. Loại lạ (dòng cũ còn sót trong DB thử — Q2) → `Xử lý (loại cũ)`. */
 export function nhanLoaiXuLy(kind: string, customName?: string | null): string {
   if (kind === 'other' && customName?.trim()) return customName.trim();
+  if (kind === 'report_tiep') return `Report ${BAC_REPORT_TIEP} trở lên`;
+  const n = soReportTiep(kind);
+  if (n) return `Report ${n}`;
   return (MEASURE_KIND_LABEL as Record<string, string>)[kind] ?? 'Xử lý (loại cũ)';
 }
 
 /**
- * Khoá thống kê "theo loại" (Excel, `bien-phap-theo-loai`): chín loại v4 + `loai-cu` cho dòng lạ của dữ liệu cũ (Q2) — để tổng các loại
- * luôn bằng tổng chỉ số.
+ * Khoá thống kê "theo loại" (Excel, `bien-phap-theo-loai`): mười loại + `report_tiep` (gộp Report 7 trở lên) + `loai-cu` cho dòng lạ
+ * của dữ liệu cũ (Q2) — để tổng các loại luôn bằng tổng chỉ số.
  */
-export const KHOA_LOAI_XU_LY = [...MEASURE_KINDS, 'loai-cu'] as const;
+export const KHOA_LOAI_XU_LY = [...MEASURE_KINDS, 'report_tiep', 'loai-cu'] as const;
 export type KhoaLoaiXuLy = (typeof KHOA_LOAI_XU_LY)[number];
 export function khoaLoaiXuLy(kind: string): KhoaLoaiXuLy {
+  if (soReportTiep(kind)) return 'report_tiep';
   return (MEASURE_KINDS as readonly string[]).includes(kind) ? (kind as MeasureKind) : 'loai-cu';
 }
 
-/** Cần QL duyệt: WL 3 và mọi loại ngoài thang (V4-8, V4-9). */
-export function canQl(kind: MeasureKind): boolean {
-  return kind === 'wl_3' || (NGOAI_THANG as readonly string[]).includes(kind);
+/** Cần QL duyệt: mọi loại ngoài thang, gồm WL 3 (V4-8, V4-9). Mọi bậc trong thang và Report 7+ do GVCN tự xác nhận. */
+export function canQl(kind: string): boolean {
+  return (NGOAI_THANG as readonly string[]).includes(kind);
 }
 
-/** Bậc (1–6) của một loại trong thang; 0 khi ngoài thang hoặc loại lạ. */
+/** Bậc (≥ 1) của một loại trong thang, kể cả Report 7+; 0 khi ngoài thang hoặc loại lạ. */
 export function bacCuaLoai(kind: string): number {
-  return (THANG as readonly string[]).indexOf(kind) + 1;
+  const i = (THANG as readonly string[]).indexOf(kind);
+  return i >= 0 ? i + 1 : soReportTiep(kind);
 }
 
 /**
@@ -237,18 +257,16 @@ export function bacHienTai(xuLyDone: readonly { kind: string }[], khaiBac: numbe
  * xử lý NGOÀI thang (Đình chỉ, Meeting CX/GĐCN, Khác) → lần xử lý đó; không có gì → `null` (màn ghi "Chưa xử lý lần nào").
  */
 export function bacHoacNgoaiThang(bac: number, xuLy: readonly { kind: string; status: string; performedOn: string | null; customName?: string | null }[]): string | null {
-  if (bac > 0) return MEASURE_KIND_LABEL[THANG[bac - 1]];
+  if (bac > 0) return nhanLoaiXuLy(kindCuaBac(bac));
   const ngoai = xuLy.filter((m) => m.status === 'done' && (NGOAI_THANG as readonly string[]).includes(m.kind))
     .sort((a, c) => (c.performedOn ?? '').localeCompare(a.performedOn ?? ''))[0];
   return ngoai ? nhanLoaiXuLy(ngoai.kind, ngoai.customName) : null;
 }
 
-/** Bậc kế tiếp; `null` = hết thang (đã WL 3 — Q11: chỉ còn đề xuất ngoài thang). */
-export function bacKeTiep(bac: number): { kind: BacThang; bac: number; canQl: boolean } | null {
+/** Bậc kế tiếp — không bao giờ hết thang: sau WL 2 là Report 7, 8… (02/10). WL 3 và phương án khác chỉ qua đề xuất QL. */
+export function bacKeTiep(bac: number): { kind: string; bac: number; canQl: boolean } {
   const b = Math.max(0, bac);
-  if (b >= THANG.length) return null;
-  const kind = THANG[b];
-  return { kind, bac: b + 1, canQl: canQl(kind) };
+  return { kind: kindCuaBac(b + 1), bac: b + 1, canQl: false };
 }
 
 export type NhomEm = 'qua_han' | 'bat_buoc' | 'cho_duyet' | 'moi' | 'da_xu_ly';
@@ -288,15 +306,17 @@ export function macDinhTick(ds: readonly { id: number; t: TrangThaiVp; occurredO
 }
 
 /**
- * MỘT DÒNG THANG: sáu bậc, mỗi bậc một trạng thái — `qua` (đã xử lý trên web) · `khai` (khai trước khi dùng web, H5) · `lan-nay`
- * (bậc kế tiếp) · `sau`.
+ * MỘT DÒNG THANG: sáu bậc của mạch chính + Report 7 (luôn hiện, để thấy thang còn đi tiếp) và thêm một ô cho mỗi bậc em đã vượt
+ * qua WL 2. Mỗi bậc một trạng thái — `qua` (đã xử lý trên web) · `khai` (khai trước khi dùng web, H5) · `lan-nay` (bậc kế tiếp) · `sau`.
  */
 export function dongThang(bac: number, khai: { bac: number } | null): {
-  kind: BacThang; nhan: string; trangThai: 'qua' | 'khai' | 'lan-nay' | 'sau'; canQl: boolean;
+  kind: string; nhan: string; trangThai: 'qua' | 'khai' | 'lan-nay' | 'sau'; canQl: boolean;
 }[] {
-  return THANG.map((kind, i) => {
+  const tong = Math.max(BAC_REPORT_TIEP, bac + 1);
+  return Array.from({ length: tong }, (_, i) => {
     const b = i + 1;
+    const kind = kindCuaBac(b);
     const trangThai = b <= bac ? (khai && b <= khai.bac ? 'khai' : 'qua') : b === bac + 1 ? 'lan-nay' : 'sau';
-    return { kind, nhan: MEASURE_KIND_LABEL[kind], trangThai, canQl: canQl(kind) };
+    return { kind, nhan: nhanLoaiXuLy(kind), trangThai, canQl: false };
   });
 }

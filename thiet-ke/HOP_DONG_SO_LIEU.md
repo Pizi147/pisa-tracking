@@ -145,7 +145,7 @@ Mọi nhãn/nhóm đọc từ **một hàm trạng thái** (`trangThaiYThuc` →
 | `hv-can-xu-ly` | Học viên cần xử lý | học viên | hiện trạng | Em thuộc nhóm `Quá hạn` hoặc `Bắt buộc xử lý` (≥ 3 vi phạm tuần này + tuần trước; Mới quá 5 ngày; đã duyệt quá 5 ngày chưa thực hiện) |
 | `bien-phap-da-thuc-hien` | Lần xử lý đã xong | lần xử lý | kết quả trong kỳ | `status = 'done'` theo `performed_on`; đề xuất chờ / đã duyệt chưa thực hiện **không** tính |
 | `bien-phap-cho-duyet` | Đề xuất Ý thức chờ QL duyệt | lần xử lý | hiện trạng | `status = 'cho_duyet'` (thay `bien-phap-dang-chuan-bi` — không còn "Đang chuẩn bị") |
-| `bien-phap-theo-loai` | Xử lý theo loại | lần xử lý | kết quả trong kỳ | Sáu bậc thang (Report 1 … WL 3) + ba loại ngoài thang + `loai-cu` cho dòng lạ của dữ liệu cũ |
+| `bien-phap-theo-loai` | Xử lý theo loại | lần xử lý | kết quả trong kỳ | Sáu bậc thang (Report 1 … WL 2) + `report_tiep` (gộp Report 7 trở lên) + bốn loại ngoài thang (WL 3 · Meeting CX/GĐCN · Đình chỉ · Khác) + `loai-cu` cho dòng lạ của dữ liệu cũ |
 | `hv-theo-bac` | Học viên theo bậc Ý thức | học viên | hiện trạng | Em đang học, byKind `0`…`6` = bậc hiện tại (max lần xử lý xong trong chuỗi, bậc khai) |
 
 ### 5.1. Ba chỉ số cũ phải sửa định nghĩa

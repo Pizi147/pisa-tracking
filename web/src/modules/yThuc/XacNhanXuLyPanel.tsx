@@ -20,7 +20,7 @@ const MO_TA_MIN = 10;
 const lamMoi = () => DUONG_LAM_MOI_Y_THUC.forEach((d) => invalidate(d));
 
 /** Loại cần QL duyệt (V4-9): WL 3 chỉ khi là bậc kế (Q11) — thứ tự bày theo độ nặng. */
-const LOAI_DE_XUAT = ['meeting_cx', 'wl_3', 'suspension', 'other'] as const;
+const LOAI_DE_XUAT = ['wl_3', 'meeting_cx', 'suspension', 'other'] as const;
 
 /**
  * XÁC NHẬN XỬ LÝ — MỘT BƯỚC (V4-7, mockup M6) + chế độ ĐỀ XUẤT QL DUYỆT (V4-9, V4-10).
@@ -54,9 +54,6 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', onClose,
   const idempotencyKey = useMemo(() => `xu-ly:${studentId}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`, [studentId]);
   const nhap = useApi<XuLyView>(daLuu?.loai === 'nhap' ? `/y-thuc/xu-ly/${daLuu.id}` : null, [daLuu?.id]);
 
-  /* Bậc kế cần QL hoặc hết thang → chỉ còn Đề xuất. */
-  const chiDeXuat = !!d && (!d.keTiep || d.keTiep.canQl);
-  useEffect(() => { if (chiDeXuat) setCheDo('de-xuat'); }, [chiDeXuat]);
   useEffect(() => {
     if (!d) return;
     setChon(new Set(d.macDinh.tick));
@@ -167,7 +164,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', onClose,
 
   /* ---------------------------------------------------------------- bước 1 */
   const bacKe = d.keTiep;
-  const loaiDuoc = LOAI_DE_XUAT.filter((k) => k !== 'wl_3' || bacKe?.kind === 'wl_3');
+  const loaiDuoc = LOAI_DE_XUAT;
   const dongVp = (v: ViPhamV4) => (
     <li key={v.id}>
       {/* Cả dòng là nhãn của ô tick — bấm vào chữ cũng chọn (vùng chạm ≥ 44px trên điện thoại). */}
@@ -216,21 +213,19 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', onClose,
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2" id={lf.oId('loai')}>
             {loaiDuoc.map((k) => (
               <NutChon key={k} chon={loai === k} onClick={() => setLoai(k)}>
-                {MEASURE_KIND_LABEL[k]}{k === 'wl_3' ? ' (bậc kế)' : ''}
+                {MEASURE_KIND_LABEL[k]}
               </NutChon>
             ))}
           </div>
           {lf.loiCua(loi, 'loai') && <p className="m-0 text-[11px] text-late">{lf.loiCua(loi, 'loai')}</p>}
           <OKhac hien={loai === 'other'} value={tenKhac} onChange={setTenKhac} goiY="Ví dụ: Gặp phụ huynh tại trung tâm"
             id={lf.oId('ghi-ro')} onBlur={lf.roi('ghi-ro')} loi={lf.hien('ghi-ro') ? kiemGhiRoKhac(tenKhac) : null} />
-          {bacKe && !chiDeXuat && (
+          {bacKe && (
             <p className="m-0 text-[11px] text-slate-500">Duyệt đề xuất ngoài thang không đổi bậc — bậc kế vẫn là {bacKe.nhan}.</p>
           )}
-          {!chiDeXuat && (
-            <button type="button" className="link appearance-none border-0 bg-transparent p-0 min-h-[44px] sm:min-h-0 text-left text-xs" onClick={() => { setCheDo('xu-ly'); lf.datLai(); }}>
-              ← Quay lại Xác nhận xử lý
-            </button>
-          )}
+          <button type="button" className="link appearance-none border-0 bg-transparent p-0 min-h-[44px] sm:min-h-0 text-left text-xs" onClick={() => { setCheDo('xu-ly'); lf.datLai(); }}>
+            ← Quay lại Xác nhận xử lý
+          </button>
         </Khoi>
       )}
 

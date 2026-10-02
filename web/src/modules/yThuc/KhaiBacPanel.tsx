@@ -7,12 +7,12 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { NutChon } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { MEASURE_KIND_LABEL, THANG, dsLoi } from '@shared/domain/index.ts';
+import { THANG, dsLoi, kindCuaBac, nhanLoaiXuLy } from '@shared/domain/index.ts';
 import { DUONG_LAM_MOI_Y_THUC, type YThucHocVien } from './kieu.ts';
 
 const GHI_CHU_MIN = 3;
-/** Khai tối đa bậc 5 (WL 2) — WL 3 luôn cần QL duyệt nên không khai tay. */
-const BAC_KHAI = THANG.slice(0, 5);
+/** Khai tối đa bậc 6 (WL 2) — hết mạch chính; Report 7+ chỉ đi tiếp trên web. */
+const BAC_KHAI = THANG;
 
 /**
  * KHAI BẬC — "em đã bị xử lý trước khi dùng web" (H5, T27). Một lần cho mỗi chuỗi thang, chỉ khi chuỗi chưa có lần xử lý nào trên web;
@@ -48,7 +48,7 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone }: {
       if (sua) await api.put(`/students/${studentId}/y-thuc/khai-bac`, body);
       else await api.post(`/students/${studentId}/y-thuc/khai-bac`, body);
       DUONG_LAM_MOI_Y_THUC.forEach((x) => invalidate(x));
-      toast.push('ok', `Đã xác nhận cấp bậc ${MEASURE_KIND_LABEL[BAC_KHAI[bac - 1]]} cho ${d.ten}. Lần xử lý kế tiếp: ${bac < 6 ? MEASURE_KIND_LABEL[THANG[bac]] : 'Đề xuất QL duyệt'}.`);
+      toast.push('ok', `Đã xác nhận cấp bậc ${nhanLoaiXuLy(BAC_KHAI[bac - 1])} cho ${d.ten}. Lần xử lý kế tiếp: ${nhanLoaiXuLy(kindCuaBac(bac + 1))}.`);
       onClose(); onDone?.();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
@@ -63,11 +63,11 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone }: {
       <Khoi tieuDe="Bậc cao nhất đã xử lý trước khi dùng web">
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2" role="group" aria-label="Bậc đã xử lý" {...lf.o(loi, 'bac')}>
           {BAC_KHAI.map((k, i) => (
-            <NutChon key={k} chon={bac === i + 1} onClick={() => setBac(i + 1)}>{MEASURE_KIND_LABEL[k]}</NutChon>
+            <NutChon key={k} chon={bac === i + 1} onClick={() => setBac(i + 1)}>{nhanLoaiXuLy(k)}</NutChon>
           ))}
         </div>
         {lf.loiCua(loi, 'bac') && <p className="m-0 text-[11px] text-late">Chọn bậc cao nhất em đã bị xử lý</p>}
-        {bac > 0 && <p className="m-0 text-[11px] text-slate-500">Lần xử lý kế tiếp của em: {MEASURE_KIND_LABEL[THANG[bac]]}{bac === 5 ? ' (cần QL duyệt)' : ''}.</p>}
+        {bac > 0 && <p className="m-0 text-[11px] text-slate-500">Lần xử lý kế tiếp của em: {nhanLoaiXuLy(kindCuaBac(bac + 1))}.</p>}
       </Khoi>
       <Khoi tieuDe="Chi tiết">
         <Truong nhan="Tháng xử lý" tuyChon>

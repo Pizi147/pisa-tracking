@@ -72,7 +72,7 @@ Danh sách xung đột đầy đủ (J1–J15): `thiet-ke/BRAINSTORM_FEEDBACK_20
 | Q27-8 | Thêm chương trình **Pre FOU** (5 tuần, sửa được, chỉ Cuối khoá) | T51, L2, §6.6 |
 | Q27-9 | Hạn ghi kết quả PA học thuật hằng tuần: **hết Thứ Hai** | §5.6 (R-PA1…5) |
 | Q27-10 | **Phân tích** vẫn là tab trong Tổng quan; góc nhìn "Danh sách Case" sửa lại hoặc bỏ | T53 Q7, §4.9 |
-| Q27-11 | Thang xử lý hiện **một dòng**; thư cảnh cáo ký hiệu **WL 1, WL 2, WL 3** | V4-8, M6 |
+| Q27-11 | Thang xử lý hiện **một dòng**; thư cảnh cáo ký hiệu **WL 1, WL 2** (WL 3 ngoài thang — sửa 02/10) | V4-8, M6 |
 | Q27-12 | Rà lại **toàn bộ** logic + workflow mọi trang/panel và mọi kế hoạch chưa làm theo luật mới; làm nổi bật đúng chỗ | §4.9 (kết quả rà), §7.5 |
 | Q27-13 | **Hệ môn học** (chỉnh sau): Pre FOU không chia môn, học theo unit, một bài Cuối khoá tổng hợp; FOU 4 môn **L · R · G+V · P**; BE, ELE **L · R · W · S**; kỹ năng GV "phụ trách được" luôn chỉ **L · R · W1 · W2 · S**; tên môn lớp thường chỉ hiện ở bài test, bảng điểm, hồ sơ lớp/HV; bộ lọc không dày — **tách hẳn khung FT và khung Lớp thường** | §5.7 (MH1–MH9), PR-MON |
 
@@ -197,7 +197,7 @@ Ký hiệu ⚠ = điểm tôi ít chắc nhất, nên xem trước.
 | T25 | "2 tuần" của Ý thức (12.6.1) | **Tuần này + tuần trước** (Thứ Hai → Chủ nhật). Đếm mọi vi phạm trong khoảng đó **chưa nằm trong một lần xử lý** — vi phạm đã "Ghi nhận" **vẫn được đếm** |
 | T26 | Hạn 5 ngày Ý thức | Tính từ ngày vi phạm thứ 3 (ngày việc xử lý thành bắt buộc). Vi phạm chưa ai Ghi nhận / Xử lý sau 5 ngày cũng thành Quá hạn + báo QL |
 | T27 | Thang theo lộ trình | FT: đếm trong một lộ trình, sang lộ trình mới thì về Report 1 (Y02). **Lớp thường: đếm liên tục qua chuỗi lớp thường** (Pre FOU → FOU → BE → ELE, kể cả học lại); về Report 1 khi sang FT hoặc nghỉ học (Q-C). **HS cũ**: GVCN hoặc QL khai **một lần** "đã xử lý trước khi dùng web: bậc n" (có nhật ký; chỗ đặt: T73) |
-| T28 | Bậc 4, 6 và ngoài thang | Bậc 4 = một lần xử lý gồm hai phần **Report 4 + Meeting CX/GĐCN**, không cần QL. Bậc 6 = **WL 3** (cần QL). **Đình chỉ** và **Meeting CX/GĐCN đứng riêng** đề xuất được bất cứ lúc nào (cần QL), **không** đẩy bậc |
+| T28 | Bậc 4 và ngoài thang | Bậc 4 = một lần xử lý gồm hai phần **Report 4 + Meeting CX/GĐCN**, không cần QL. **[SỬA 02/10]** Bậc 6 = **WL 2**; sau đó Report 7, 8… tăng mãi, GVCN tự làm; **WL 3** chuyển ra ngoài thang (cần QL, đề xuất bất kỳ lúc nào). **Đình chỉ** và **Meeting CX/GĐCN đứng riêng** đề xuất được bất cứ lúc nào (cần QL), **không** đẩy bậc |
 | T29 | Biện pháp cần QL | Ba bước: **Đề xuất** (mô tả + bằng chứng bắt buộc) → **QL duyệt** trong 5 ngày → GVCN bấm **"Đã thực hiện"** (ngày). Report, WL 1, WL 2: **một bước** "Xác nhận xử lý", tệp **không bắt buộc** (theo 12.6.2) |
 | T30 | "Khác" trong xử lý | Chỉ còn trong nhánh "Đề xuất QL duyệt" (Khác + ghi rõ) |
 | T31 | Chữ "Ghi nhận" | Nút ghi vi phạm đổi thành **"+ Ghi vi phạm"**. "Ghi nhận" từ nay chỉ có một nghĩa: GVCN đã xem, không cần biện pháp |
@@ -315,7 +315,7 @@ Cột **Hiện trạng** là kết quả đọc mã thật trên `main` @ 705ca9
 | YC-12.6.1 | Không phải lúc nào cũng cần report/biện pháp; ≥ 3 lỗi trong 2 tuần → bắt buộc xử lý; xử lý ngay nếu nghiêm trọng; > 5 ngày chưa xử lý → quá hạn + báo QL | §5.4 luật V4-1…V4-6; T25, T26 | PR-YT4 |
 | YC-12.6.2 | Bỏ bước trung gian (tổng hợp → ghi PA → bắt đầu → xác nhận) → **Xác nhận xử lý** một bước; không bắt buộc tệp; bắt buộc mô tả; bỏ "Xoá PA" | §5.4 V4-7; panel mockup **M6** | PR-YT4 |
 | YC-12.6.3 | Ghi nhận thông thường khác biệt rõ với Đã xử lý | §5.4 bảng trạng thái vi phạm | PR-YT4 |
-| YC-12.6.4 | Thang Report 1 → Report 2 → WL 1 → Report 4 + Meeting CX/GĐCN → WL 2 (WL = thư cảnh cáo, chủ sản phẩm 27/09); QL duyệt Meeting CX/GĐCN, WL 3, Đình chỉ trong 5 ngày; ngoại lệ Report 4; mỗi lần trình QL có mô tả + bằng chứng; bỏ 2 loại meeting + trao đổi ngắn | §5.4 V4-8…V4-12; Q27-1; T27–T32 | PR-YT4 |
+| YC-12.6.4 | Thang Report 1 → Report 2 → WL 1 → Report 4 + Meeting CX/GĐCN → Report 5 → WL 2 → Report 7, 8… (WL = thư cảnh cáo, chủ sản phẩm 27/09, sửa 02/10); QL duyệt Meeting CX/GĐCN, WL 3, Đình chỉ trong 5 ngày; ngoại lệ Report 4; mỗi lần trình QL có mô tả + bằng chứng; bỏ 2 loại meeting + trao đổi ngắn | §5.4 V4-8…V4-12; Q27-1; T27–T32 | PR-YT4 |
 
 ### 4.7. Test / Mock Test (yêu cầu 13)
 
@@ -462,7 +462,7 @@ hai hàng tiêu chí, trạng thái huỷ / lịch sử / vắng) · M11 (đặt
 | V4-5 | Vi phạm `Mới` quá 5 ngày chưa ai Ghi nhận/Xử lý → cũng Báo lên (thay cảnh báo mềm W01–W06) |
 | V4-6 | Ghi nhận **không** đẩy bậc. Ghi nhận xong vẫn đếm vào luật ≥ 3 (T25) |
 | V4-7 | **Xác nhận xử lý = một bước** (panel M6): danh sách vi phạm đưa vào (mặc định: mọi vi phạm chưa xử lý của em, tick bỏ được) · bậc (tự điền, không chọn) · ngày thực hiện (≤ hôm nay) · người thực hiện · **Mô tả bắt buộc** · tệp **tuỳ chọn**. Lưu là xong. Không có "Đang chuẩn bị", không có "Xoá PA" |
-| V4-8 | **Thang bắt buộc** (Q27-1), đếm theo lộ trình (T27). Ký hiệu thư cảnh cáo là **WL** (chủ sản phẩm 27/09): bậc 1 `Report 1` · bậc 2 `Report 2` · bậc 3 `WL 1` · bậc 4 `Report 4 + Meeting CX/GĐCN` (một lần xử lý, không cần QL) · bậc 5 `WL 2` · bậc 6 `WL 3` (**cần QL**). Trên màn hình thang là **một dòng** không xuống hàng (bậc đã qua thu gọn thành ✓ khi hẹp) |
+| V4-8 | **Thang bắt buộc** (Q27-1), đếm theo lộ trình (T27). Ký hiệu thư cảnh cáo là **WL** (chủ sản phẩm 27/09): bậc 1 `Report 1` · bậc 2 `Report 2` · bậc 3 `WL 1` · bậc 4 `Report 4 + Meeting CX/GĐCN` (một lần xử lý, không cần QL) · bậc 5 `Report 5` · bậc 6 `WL 2` · bậc 7 trở đi `Report 7`, `Report 8`… (tăng mãi, số = bậc, GVCN tự làm). **[SỬA 02/10]** `WL 3` KHÔNG còn là bậc của thang: là loại ngoài thang, **cần QL**, đề xuất bất kỳ lúc nào, không đẩy bậc. Trên màn hình thang là **một dòng** không xuống hàng (bậc đã qua thu gọn thành ✓ khi hẹp) |
 | V4-9 | Ngoài thang, luôn **cần QL**: `Meeting CX/GĐCN` (đứng riêng), `Đình chỉ học tạm thời`, `Khác` (ghi rõ). Không đẩy bậc (T28) |
 | V4-10 | Đề xuất cần QL: bắt buộc **mô tả + bằng chứng** (tệp hoặc liên kết). QL duyệt trong **5 ngày** (lịch, theo yêu cầu 12.6.4). Quá hạn → thẻ đỏ + báo Quản trị. Duyệt → GVCN bấm **Đã thực hiện** (ngày). Từ chối → vi phạm quay về `Cần xử lý`, bậc giữ nguyên |
 | V4-11 | Bỏ khỏi danh sách chọn: `GV trao đổi ngắn với HV`, `GV meeting với HV`, `CX / GĐCN meeting với HV / PH` (bản cũ). Dữ liệu cũ giữ (T32) |

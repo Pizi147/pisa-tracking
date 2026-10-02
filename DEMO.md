@@ -42,7 +42,7 @@ màn đăng nhập.
 
 Một **Vi phạm** do giáo viên ghi (**+ Ghi vi phạm**). GVCN lớp **đang học** đóng từng vi phạm bằng **Ghi nhận** (đã xem, không
 cần xử lý — vẫn đếm) hoặc **Xác nhận xử lý** (một lần xử lý theo **thang**: Report 1 → Report 2 → WL 1 → Report 4 + Meeting CX/GĐCN
-→ WL 2 → WL 3). **3 vi phạm trong tuần này + tuần trước** → bắt buộc xử lý trong **5 ngày** tính từ ngày ghi lên web (không còn nút
+→ Report 5 → WL 2 → Report 7, 8… tăng mãi). **3 vi phạm trong tuần này + tuần trước** → bắt buộc xử lý trong **5 ngày** tính từ ngày ghi lên web (không còn nút
 Ghi nhận). WL 3, Meeting CX/GĐCN, Đình chỉ, Khác → **Đề xuất QL duyệt** (có bằng chứng; QL trả lời trong 5 ngày; duyệt xong GVCN ghi
 **Đã thực hiện** trong 5 ngày). Em bị xử lý trước khi dùng web: **Khai bậc** một lần ở dòng thang. Nhãn của vi phạm suy ra từ một
 hàm (`trangThaiYThuc`): *Mới · Đã ghi nhận · Cần xử lý · Quá hạn n ngày · Chờ QL duyệt · Đã xử lý · {bậc}*. Quá hạn → thẻ
@@ -58,11 +58,11 @@ Bộ demo nằm ở `server/src/seed/yThucSeed.ts` (dựng sau khi đặt ngày 
 | c | **Phạm Bảo Ngọc** | Report 1 tháng 8; 3 vi phạm ghi 07–09/09 | `Quá hạn 1 ngày`, thẻ Báo lên |
 | d | **Vũ Hải Đăng** | 1 vi phạm cô Trang ghi 04/09, chưa ai xem | `Quá hạn 6 ngày` (chưa xem), thẻ Báo lên |
 | e | **Nguyễn Minh An** | Report 1 → Report 2 → WL 1 (có tệp) + 1 vi phạm Mới | bậc kế `Report 4 + Meeting CX/GĐCN`; nhóm *Mới* |
-| f | **Lương Gia Bảo** | khai bậc 5 (WL 2) + 3 vi phạm → đề xuất WL 3 | nhóm *Chờ QL duyệt*; thẻ Ý thức có bằng chứng, hạn 15/09 |
+| f | **Lương Gia Bảo** | khai bậc 6 (WL 2) + 3 vi phạm → đề xuất WL 3 (ngoài thang) | nhóm *Chờ QL duyệt*; thẻ Ý thức có bằng chứng, hạn 15/09 |
 | g | **Kiều Minh Đức** | đề xuất Đình chỉ bị QL từ chối 12/09 | vi phạm về `Cần xử lý`, hạn 16/09; lý do từ chối ở dòng thời gian |
 | i | **Tô Ngọc Hân** | HS cũ khai "bậc 2" (H5) | thang: Report 1, Report 2 `khai`; nút `Xác nhận xử lý · WL 1` |
 | j | **Quách Thành Nam** | 3 vi phạm 31/08–02/09 rồi **chuyển sang MB FT 102** ngày 12/09 (D15) | ở lớp mới vẫn `Cần xử lý` (dính), hạn đặt lại 16/09 (M-08) |
-| k | **Mạc Tuấn Kiệt** | khai WL 1 → Report 4 + Meeting → WL 2 (có tệp) + 1 vi phạm Mới | bậc kế `WL 3 · cần QL` → panel mở thẳng Đề xuất |
+| k | **Mạc Tuấn Kiệt** | khai WL 1 → Report 4 + Meeting → Report 5 + 1 vi phạm Mới | bậc kế `WL 2` |
 | l | **Nguyễn Bảo Trâm** (HD BE 21) | lớp thường FOU → BE, Report 1 ở khoá FOU | cùng một chuỗi thang → bậc kế `Report 2` |
 | m | **Hà Phương Linh** | Report 1; Meeting CX/GĐCN QL duyệt 04/09, Đã thực hiện 08/09 | `Đã xử lý · Meeting CX/GĐCN`, bậc giữ Report 1 (M-11) |
 
@@ -381,9 +381,9 @@ Nguồn đầy đủ: đặc tả `docs/superpowers/specs/2026-09-27-nang-cap-sa
 | **Ai ghi** | Giáo viên có phân công ở lớp của em. GVCN lớp tự ghi → tự *Đã ghi nhận* (Q5) |
 | **Sáu nhãn** | *Mới · Đã ghi nhận · Cần xử lý · Quá hạn n ngày · Chờ QL duyệt (hoặc Đã duyệt · chờ thực hiện) · Đã xử lý · {bậc}* — một hàm quyết, không lưu |
 | **Bắt buộc** | 3 vi phạm chưa xử lý trong tuần này + tuần trước (Đã ghi nhận vẫn đếm) → Cần xử lý, hạn 5 ngày từ ngày ghi lên web; quá hạn → thẻ Báo lên |
-| **Thang** | Report 1 → Report 2 → WL 1 → Report 4 + Meeting CX/GĐCN → WL 2 → WL 3. Bậc do **máy chủ** quyết (panel cũ → 409). FT: một thang mỗi lộ trình; lớp thường: một thang cho cả chuỗi khoá liền nhau |
+| **Thang** | Report 1 → Report 2 → WL 1 → Report 4 + Meeting CX/GĐCN → Report 5 → WL 2 → Report 7 → Report 8 → … (không có đỉnh). Bậc do **máy chủ** quyết (panel cũ → 409). FT: một thang mỗi lộ trình; lớp thường: một thang cho cả chuỗi khoá liền nhau |
 | **Cần QL duyệt** | WL 3 · Meeting CX/GĐCN · Đình chỉ · Khác → Đề xuất có bằng chứng; QL trả lời trong 5 ngày; từ chối → vi phạm về Cần xử lý; duyệt → GVCN ghi *Đã thực hiện* trong 5 ngày |
-| **Khai bậc** | Em bị xử lý trước khi dùng web: GVCN khai một lần (Report 1 … WL 2) khi chuỗi chưa có lần xử lý nào; chỉ QL sửa |
+| **Khai bậc** | Em bị xử lý trước khi dùng web: GVCN khai một lần (Report 1 … WL 2, tức bậc 1–6) khi chuỗi chưa có lần xử lý nào; chỉ QL sửa |
 | **Quyền** | Ghi nhận / Xác nhận xử lý / Đề xuất / Khai bậc: **GVCN lớp đang học** (không phải GVBM), Quản lý và Quản trị theo phạm vi. QL duyệt ở hộp Chờ duyệt |
 | **Chỉ số** | vi phạm tổng · cần xử lý · theo nhóm · học viên có vi phạm · học viên cần xử lý · lần xử lý đã xong · chờ duyệt · theo loại · học viên theo bậc. Mỗi chỉ số **một hàm trả tập ID** |
 
