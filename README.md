@@ -88,6 +88,13 @@ thì mở trình duyệt và vào địa chỉ: **<http://localhost:5173>**
 
 Để dừng ứng dụng, quay lại Terminal và bấm `Ctrl + C`.
 
+**Báo trùng cổng** (`EADDRINUSE` hoặc `Port 5173 is in use`): thường là một cửa sổ khác còn đang chạy `npm run dev` — tắt nó đi. Muốn chạy song
+song thì đổi cổng (PowerShell), rồi vào địa chỉ mới, ví dụ <http://localhost:5180>:
+
+```powershell
+$env:PORT='4100'; $env:WEB_PORT='5180'; npm run dev
+```
+
 ---
 
 ## 5. Đăng nhập thử
