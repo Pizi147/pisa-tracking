@@ -97,7 +97,7 @@ export function KhoiCanXuLy({ branchId }: { branchId: number | null }) {
       )}
       <footer className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t px-4 py-2.5 text-xs" style={{ borderColor: 'var(--line)' }}>
         <span className="text-slate-500">"Xem và nhắc" mở Công việc đã lọc sẵn, có tên từng người và nút Nhắc</span>
-        <Link to="/cong-viec" className="link">Tất cả việc trong Công việc →</Link>
+        <Link to="/cong-viec" className="link max-sm:py-3 max-sm:-my-3">Tất cả việc trong Công việc →</Link>
       </footer>
       {mo && <DanhSachSoLieu id={mo.id} giaTri={mo.n} phamVi={phamVi} open onClose={() => setMo(null)} />}
     </section>
@@ -123,12 +123,12 @@ export function DaiChoDuyet({ branchId }: { branchId: number | null }) {
       <span className="flex min-w-0 flex-1 basis-[16rem] flex-wrap items-baseline gap-x-3.5 gap-y-1 text-sm tabular-nums text-slate-300">
         <span><b className="text-lg font-bold text-slate-100">{d.cho}</b> chờ</span>
         {d.quaHan > 0 && (
-          <Link to={`/cong-viec/cho-duyet?qua-han=1${cn}`} className="no-underline text-slate-300 hover:underline">
+          <Link to={`/cong-viec/cho-duyet?qua-han=1${cn}`} className="no-underline text-slate-300 hover:underline max-sm:py-3 max-sm:-my-3">
             <b className="text-lg font-bold text-late">{d.quaHan}</b> quá hạn
           </Link>
         )}
         {d.baoLen > 0 && (
-          <Link to={`/cong-viec/cho-duyet?phan=bao-len${cn}`} className="no-underline text-slate-300 hover:underline">
+          <Link to={`/cong-viec/cho-duyet?phan=bao-len${cn}`} className="no-underline text-slate-300 hover:underline max-sm:py-3 max-sm:-my-3">
             gồm <b className="text-lg font-bold text-slate-100">{d.baoLen}</b> Báo QL
           </Link>
         )}

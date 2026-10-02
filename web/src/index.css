@@ -203,6 +203,13 @@
   }
   .field:focus { border-color: var(--accent); }
   .field:disabled { opacity: 0.6; background: var(--o-nhap-tat); }
+  /*
+   * K3 (PR-HK1): vùng bấm trên điện thoại ≥ 40px. Chỉ màn < 640px (= `max-sm:`), desktop giữ mật độ cũ.
+   * Chữ bấm được nằm trong dòng (tên HV, số mở danh sách) nới bằng `max-sm:py-3 max-sm:-my-3` ngay ở chỗ dùng — không đổi bố cục.
+   */
+  @media not all and (min-width: 640px) {
+    .btn, .field { min-height: 40px; }
+  }
   .label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 0.25rem; font-weight: 500; }
 
   .th {

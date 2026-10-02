@@ -26,7 +26,7 @@ export function SoLieuO(props: Props) {
   return (
     <>
       <button type="button" onClick={() => setOpen(true)}
-        className={`appearance-none bg-transparent border-0 p-0 cursor-pointer tabular-nums underline decoration-dotted underline-offset-4 hover:text-white ${className}`}
+        className={`appearance-none bg-transparent border-0 p-0 max-sm:py-3 max-sm:-my-3 cursor-pointer tabular-nums underline decoration-dotted underline-offset-4 hover:text-white ${className}`}
         aria-label={`${props.nhan ?? giaTri} — ${ten}. Bấm để xem danh sách`}>{props.nhan ?? giaTri}</button>
       {props.id !== undefined
         ? <DanhSachSoLieu id={props.id} giaTri={giaTri} phamVi={props.phamVi} extra={props.extra} open={open} onClose={() => setOpen(false)} />

@@ -141,8 +141,8 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
                 onChange={(e) => chon.onChange(e.target.checked)} aria-label={`Chọn: ${yc.tieuDe}`} />
             )}
             {!gon && (
-              <span className="w-24 shrink-0 truncate rounded border px-1.5 py-0.5 text-center text-[11px] font-semibold text-slate-300"
-                style={{ borderColor: 'var(--line-strong)' }}>{yc.nhanPhanLoai}</span>
+              /* PR-HK1 H4: chip nền nhạt, không viền — viền xám làm nhãn trông như nút thao tác. */
+              <span className="w-24 shrink-0 truncate rounded bg-muted-bg px-1.5 py-0.5 text-center text-[11px] font-semibold text-muted">{yc.nhanPhanLoai}</span>
             )}
             <p className="m-0 min-w-0 text-sm leading-snug">
               <b className="font-semibold text-slate-100">{yc.tieuDe}</b>

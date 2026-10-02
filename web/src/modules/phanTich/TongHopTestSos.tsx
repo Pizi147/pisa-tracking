@@ -40,7 +40,7 @@ const MAU_O: Record<MauOKetQua, string> = {
   sos3: 'bg-sos3-bg text-sos3 font-semibold', tam: 'text-muted', xam: 'text-faint',
 };
 
-/** Chú giải màu ở đầu bảng: năm chip nhỏ, tooltip từng chip là chú giải của cột đó. */
+/** Chú giải màu ở đầu bảng: ô màu nhỏ + chữ (PR-HK1 H5: chú giải, không bấm được — nên không mang kiểu chip/nút); tooltip là chú giải cột. */
 const CHU_GIAI: { khoa: string; nhan: string; chip: keyof typeof SCORE_CHIP }[] = [
   { khoa: 'dat', nhan: 'Đạt', chip: 'emerald' }, { khoa: 'sos1', nhan: 'SOS 1', chip: 'sos1' },
   { khoa: 'sos2', nhan: 'SOS 2', chip: 'sos2' }, { khoa: 'sos3', nhan: 'SOS 3', chip: 'sos3' },   // chữ thật lấy từ cột theo ct (khung thường: n môn trượt)
@@ -193,15 +193,16 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
           <div role="radiogroup" aria-label="Cách xếp dòng" className="inline-flex rounded-lg border overflow-hidden" style={{ borderColor: 'var(--line)' }}>
             {THEO_DONG.filter((k) => k !== 'cn' || !anCotChiNhanh).map((k) => (
               <button key={k} type="button" role="radio" aria-checked={theo === k} onClick={() => setTheo(k)}
-                className={`px-3 py-1 text-xs border-0 cursor-pointer ${theo === k ? 'bg-doing-bg text-doing font-semibold' : 'bg-transparent text-slate-400 hover:text-slate-200'}`}>
+                className={`px-3 py-1 text-xs border-0 cursor-pointer max-sm:min-h-10 ${theo === k ? 'bg-doing-bg text-doing font-semibold' : 'bg-transparent text-slate-400 hover:text-slate-200'}`}>
                 {THEO_DONG_LABEL[k]}
               </button>
             ))}
           </div>
-          {!laThuong && <span className="flex flex-wrap items-center gap-1" role="group" aria-label="Chú giải màu kết quả">
+          {!laThuong && <span className="flex flex-wrap items-center gap-x-3 gap-y-1" role="group" aria-label="Chú giải màu kết quả">
             {CHU_GIAI.map((g) => (
               <span key={g.khoa} title={allCols.find((c) => c.khoa === g.khoa)?.goiY}
-                className={`inline-flex items-center rounded-md border px-1.5 text-xs font-medium leading-4 ${SCORE_CHIP[g.chip]}`}>
+                className="inline-flex items-center gap-1 text-xs text-slate-400">
+                <span aria-hidden className={`h-2.5 w-2.5 shrink-0 rounded-sm border ${SCORE_CHIP[g.chip]}`} />
                 {allCols.find((c) => c.khoa === g.khoa)?.nhan(ct) ?? g.nhan}
               </span>
             ))}
