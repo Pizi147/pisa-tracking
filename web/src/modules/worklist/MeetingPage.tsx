@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
@@ -7,7 +7,7 @@ import { Card, Empty, ErrorState, Info, NutChon, Outcome, Skeleton, Status, Th }
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { WeekPicker, usePeriodWindow, resolveWeek } from '../../ui/Filters.tsx';
 import { SignalList } from './SignalList.tsx';
-import { ManagerTaskList, ManagerTasks } from './ManagerTasks.tsx';
+import { ManagerTaskList } from './ManagerTasks.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { fmtDate, fmtDateTime, fmtThu, unitStatusLabel, unitTone } from '../../lib/format.ts';
 import { UNIT_STATUSES } from '@shared/domain/index.ts';
@@ -121,7 +121,8 @@ export function MeetingBoard() {
             <option value="month">Tháng</option>
           </select>
         </label>
-        <ManagerTasks periodId={periodId} />
+        {/* Câu 1 = A (K1-36): MỘT cửa giao việc ở Vận hành — ở đây chỉ còn đường dẫn. */}
+        <Link to="/cong-viec/van-hanh?tao=1" className="link self-center pb-2 text-xs">Giao việc ở Vận hành ›</Link>
       </div>
 
       {/* Cửa sổ nộp — hoặc dòng phụ cho biết đang đọc cả tháng. */}
@@ -386,7 +387,7 @@ function NganBaoCao({ unit, cell, periodId, editable, editWindow, onClose, onSav
   );
 }
 
-type MoViecRow = { id: number; title: string; progressLabel: string; due: string | null; group: string | null };
+type MoViecRow = { id: number; title: string; progressLabel: string; due: string | null; group: string | null; branchId: number | null };
 
 /** "+ Chọn việc": việc Vận hành CHƯA KHÉP của chi nhánh đơn vị — việc cùng nhóm lên đầu (Q14). */
 function ChonViec({ branchId, reportId, taskGroup, periodId, onLinked, onCreateNew }: {
@@ -400,9 +401,11 @@ function ChonViec({ branchId, reportId, taskGroup, periodId, onLinked, onCreateN
   const [q, setQ] = useState('');
 
   const rows = useMemo(() => {
-    const list = (data?.rows ?? []).filter((r) => !q.trim() || r.title.toLowerCase().includes(q.trim().toLowerCase()));
+    /* Đơn vị không thuộc chi nhánh nào (Tutor part-time): chỉ việc "Toàn hệ thống" — không trộn việc của mọi chi nhánh vào ô chọn của Quản trị. */
+    const list = (data?.rows ?? []).filter((r) => (branchId !== null || r.branchId === null)
+      && (!q.trim() || r.title.toLowerCase().includes(q.trim().toLowerCase())));
     return [...list].sort((a, b) => (a.group === taskGroup ? -1 : 0) - (b.group === taskGroup ? -1 : 0));
-  }, [data, q, taskGroup]);
+  }, [data, q, taskGroup, branchId]);
 
   const noi = async (taskId: number) => {
     try {

@@ -6,9 +6,10 @@ import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { WeekPicker } from '../../ui/Filters.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { Field, SectionNote, Skeleton, Status } from '../../ui/ui.tsx';
+import { useLoiForm } from '../../ui/loiForm.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { MOC_KIEM_TRA_NORMAL } from '../../ui/chu.ts';
-import { kyHieuLop, lichMtMacDinh, tuanLich } from '@shared/domain/index.ts';
+import { kyHieuLop, lichMtMacDinh, tuanLich, type LoiTruong } from '@shared/domain/index.ts';
 
 type Progress = {
   programmeCode: string | null; programmeName: string | null;
@@ -56,6 +57,7 @@ export function ClassProgressPanel({ classId, classCode, tieuDe, onClose, onDone
   const [finalWeek, setFinalWeek] = useState<string>('');
   const [touched, setTouched] = useState(false);
   const [busy, setBusy] = useState(false);
+  const lf = useLoiForm();
 
   /* Nạp giá trị hiện tại MỘT LẦN — nếu không thì mỗi lần tải lại sẽ xoá cái người đang gõ. */
   if (data && !touched) {
@@ -64,7 +66,18 @@ export function ClassProgressPanel({ classId, classCode, tieuDe, onClose, onDone
     if (finalWeek === '' && data.finalOverridden && data.finalWeek) setFinalWeek(String(data.finalWeek));
   }
 
+  const laLopThuong = !!data?.totalWeeks;
+  /* Báo sớm dưới ô — máy chủ vẫn kiểm (tuần trong khoá, Giữa khoá trước Cuối khoá). */
+  const ngoaiKhoa = (v: string) => v.trim() !== '' && (!Number.isInteger(Number(v)) || Number(v) < 1 || Number(v) > (data?.totalWeeks ?? 0));
+  const loi: LoiTruong[] = !data ? [] : [
+    ...(laLopThuong && !startPeriodId ? [{ khoa: 'khai-giang', nhan: 'Tuần khai giảng', lyDo: 'Chưa chọn' }] : []),
+    ...(laLopThuong && data.coGiuaKhoa && ngoaiKhoa(progressWeek) ? [{ khoa: 'giua-khoa', nhan: 'Tuần thi Giữa khoá', lyDo: `Từ 1 đến ${data.totalWeeks}` }] : []),
+    ...(laLopThuong && ngoaiKhoa(finalWeek) ? [{ khoa: 'cuoi-khoa', nhan: 'Tuần thi Cuối khoá', lyDo: `Từ 1 đến ${data.totalWeeks}` }] : []),
+  ];
+
   const save = async () => {
+    lf.bam();
+    if (loi.length > 0 || busy) return;
     setBusy(true);
     try {
       await api.patch(`/classes/${classId}/progress`, {
@@ -78,12 +91,11 @@ export function ClassProgressPanel({ classId, classCode, tieuDe, onClose, onDone
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
 
-  const laLopThuong = !!data?.totalWeeks;
-
   return (
     <KhungPanel tieuDe={tieuDe} lop={classCode} onDong={onClose}
       chan={{
         huy: { nhan: 'Đóng', onClick: onClose, disabled: busy },
+        conThieu: lf.conThieu(loi),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={save} disabled={busy}>Lưu</button>,
       }}>
       {loading || !data ? <div className="pt-3"><Skeleton rows={5} /></div> : (
@@ -95,10 +107,12 @@ export function ClassProgressPanel({ classId, classCode, tieuDe, onClose, onDone
             )}
           </div>
 
-          <Field as="div" label="Tuần khai giảng" required={laLopThuong}
+          <Field as="div" label="Tuần khai giảng" required={laLopThuong} loi={lf.loiCua(loi, 'khai-giang')}
             hint={laLopThuong ? `Tuần này là tuần học 1 của lớp. ${MOC_KIEM_TRA_NORMAL}` : 'Tuần bắt đầu mặc định khi thêm học viên vào lớp.'}>
-            <WeekPicker periodId={startPeriodId} label={null} scope="planning"
-              onPeriod={(id) => { setTouched(true); setStartPeriodId(id); }} />
+            <div {...lf.o(loi, 'khai-giang')}>
+              <WeekPicker periodId={startPeriodId} label={null} scope="planning"
+                onPeriod={(id) => { setTouched(true); setStartPeriodId(id); }} />
+            </div>
           </Field>
 
           {laLopThuong ? (
@@ -106,17 +120,17 @@ export function ClassProgressPanel({ classId, classCode, tieuDe, onClose, onDone
               <div className={`grid gap-3 ${data.coGiuaKhoa ? 'sm:grid-cols-2' : ''}`}>
                 {/* K2-23: Pre FOU chỉ có Cuối khoá — không vẽ ô Giữa khoá. */}
                 {data.coGiuaKhoa && (
-                  <Field label="Tuần thi Giữa khoá (tuần học)"
+                  <Field label="Tuần thi Giữa khoá (tuần học)" loi={lf.loiCua(loi, 'giua-khoa')}
                     hint={`Mặc định của ${kyHieuLop(data.programmeCode, null) ?? data.programmeCode}: tuần ${data.progressOverridden ? '—' : data.progressWeek ?? '—'}. Để trống là dùng mặc định.`}>
                     <input type="number" min={1} max={data.totalWeeks ?? undefined} className="field w-full"
-                      value={progressWeek} placeholder={String(data.progressWeek ?? '')}
+                      {...lf.o(loi, 'giua-khoa')} value={progressWeek} placeholder={String(data.progressWeek ?? '')}
                       onChange={(e) => { setTouched(true); setProgressWeek(e.target.value); }} />
                   </Field>
                 )}
-                <Field label="Tuần thi Cuối khoá (tuần học)"
+                <Field label="Tuần thi Cuối khoá (tuần học)" loi={lf.loiCua(loi, 'cuoi-khoa')}
                   hint="Để trống là dùng mốc mặc định của chương trình.">
                   <input type="number" min={1} max={data.totalWeeks ?? undefined} className="field w-full"
-                    value={finalWeek} placeholder={String(data.finalWeek ?? '')}
+                    {...lf.o(loi, 'cuoi-khoa')} value={finalWeek} placeholder={String(data.finalWeek ?? '')}
                     onChange={(e) => { setTouched(true); setFinalWeek(e.target.value); }} />
                 </Field>
               </div>

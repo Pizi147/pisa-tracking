@@ -4,9 +4,10 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { BoLocDoan, Card, Field, Forbidden, Info, NutChon, SectionNote, Skeleton, Th} from '../../ui/ui.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
+import { useLoiForm } from '../../ui/loiForm.tsx';
 import { fmtDate, skillLabel } from '../../lib/format.ts';
 import { ChonKyNang } from './ProfilePage.tsx';
-import { PERMISSION_LABEL, ROLES, ROLE_LABEL, ngay, roleLabel, type Role } from '@shared/domain/index.ts';
+import { PERMISSION_LABEL, ROLES, ROLE_LABEL, dsLoi, ngay, roleLabel, type LoiTruong, type Role } from '@shared/domain/index.ts';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { XoaTaiKhoanPanel } from './XoaTaiKhoanPanel.tsx';
 
@@ -291,7 +292,20 @@ function AccountDialog({ account, branches, onClose, onDone }: {
     .filter((g) => g.role)
     .map((g) => ({ role: g.role, branches: [...g.branches] }));
 
+  /* Báo sớm dưới ô — máy chủ vẫn kiểm đủ (`checkEmail`, `checkPassword`, "Cấp ít nhất một vai trò"). */
+  const lf = useLoiForm();
+  const email = form.email.trim().toLowerCase();
+  const loi: LoiTruong[] = [
+    ...(!editing ? dsLoi([{ khoa: 'ho-ten', nhan: 'Họ và tên', toiThieu: 1 }], { 'ho-ten': form.fullName }) : []),
+    ...(!editing && !email.endsWith('.pisa@gmail.com') ? [{ khoa: 'email', nhan: 'Email đăng nhập', lyDo: email ? 'Phải có đuôi .pisa@gmail.com' : 'Chưa điền' }] : []),
+    ...(!editing && form.password.length < 6 ? [{ khoa: 'mat-khau', nhan: 'Mật khẩu ban đầu', lyDo: `Cần ít nhất 6 ký tự (đang có ${form.password.length})` }] : []),
+    ...(!editing && payloadRoles().length === 0 ? [{ khoa: 'vai-tro', nhan: 'Vai trò', lyDo: 'Cấp ít nhất một vai trò' }] : []),
+    ...(editing && newPassword && newPassword.length < 6 ? [{ khoa: 'mat-khau-moi', nhan: 'Đặt lại mật khẩu', lyDo: `Cần ít nhất 6 ký tự (đang có ${newPassword.length})` }] : []),
+  ];
+
   const save = () => {
+    lf.bam();
+    if (loi.length > 0 || busy) return undefined;
     if (editing) {
       return run(async () => {
         await api.put(`/admin/accounts/${account!.id}/roles`, { roles: payloadRoles() });
@@ -309,30 +323,31 @@ function AccountDialog({ account, branches, onClose, onDone }: {
     <KhungPanel tieuDe={editing ? 'Sửa tài khoản' : 'Tạo tài khoản'} hocVien={editing ? account!.fullName : null} rong="rong" onDong={onClose}
       chan={{
         huy: { nhan: 'Đóng', onClick: onClose, disabled: busy },
+        conThieu: lf.conThieu(loi),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={save} disabled={busy}>Lưu</button>,
       }}>
       <div className="space-y-4 pt-3">
         {!editing && (
           <>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Họ và tên" required>
-                <input className="field w-full" value={form.fullName}
+              <Field label="Họ và tên" required loi={lf.loiCua(loi, 'ho-ten')}>
+                <input className="field w-full" maxLength={100} {...lf.o(loi, 'ho-ten')} value={form.fullName}
                   onChange={(e) => setForm({ ...form, fullName: e.target.value })} />
               </Field>
               <Field label="Chức danh" hint="Chỉ để hiển thị, không ảnh hưởng quyền.">
-                <input className="field w-full" value={form.title}
+                <input className="field w-full" maxLength={100} value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })} />
               </Field>
-              <Field label="Email đăng nhập" required hint="Phải có đuôi .pisa@gmail.com.">
-                <input className="field w-full" type="email" value={form.email}
+              <Field label="Email đăng nhập" required hint="Phải có đuôi .pisa@gmail.com." loi={lf.loiCua(loi, 'email')}>
+                <input className="field w-full" type="email" {...lf.o(loi, 'email')} value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })} />
               </Field>
-              <Field label="Mật khẩu ban đầu" required hint="Người dùng đổi lại ở hồ sơ cá nhân.">
-                <input className="field w-full" value={form.password}
+              <Field label="Mật khẩu ban đầu" required hint="Người dùng đổi lại ở hồ sơ cá nhân." loi={lf.loiCua(loi, 'mat-khau')}>
+                <input className="field w-full" {...lf.o(loi, 'mat-khau')} value={form.password}
                   onChange={(e) => setForm({ ...form, password: e.target.value })} />
               </Field>
               <Field label="Số điện thoại">
-                <input className="field w-full" value={form.phone}
+                <input className="field w-full" maxLength={20} value={form.phone}
                   onChange={(e) => setForm({ ...form, phone: e.target.value })} />
               </Field>
             </div>
@@ -347,7 +362,8 @@ function AccountDialog({ account, branches, onClose, onDone }: {
               + Thêm vai trò
             </button>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2" {...lf.o(loi, 'vai-tro')}>
+            {lf.loiCua(loi, 'vai-tro') && <p className="m-0 text-[11px] text-late">{lf.loiCua(loi, 'vai-tro')}</p>}
             {grants.map((g, i) => (
               <div key={i} className="surface-2 rounded-lg p-2.5 flex flex-wrap items-center gap-2">
                 <select className="field w-44" value={g.role}
@@ -427,8 +443,8 @@ function AccountDialog({ account, branches, onClose, onDone }: {
             </div>
 
             <Field label="Đặt lại mật khẩu"
-              hint="Hệ thống chưa có luồng quên mật khẩu — đặt lại mật khẩu ở đây. Bỏ trống nếu không đổi.">
-              <input className="field w-full" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+              hint="Hệ thống chưa có luồng quên mật khẩu — đặt lại mật khẩu ở đây. Bỏ trống nếu không đổi." loi={lf.loiCua(loi, 'mat-khau-moi')}>
+              <input className="field w-full" {...lf.o(loi, 'mat-khau-moi')} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
             </Field>
           </>
         )}
