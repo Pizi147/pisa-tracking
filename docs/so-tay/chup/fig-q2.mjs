@@ -63,7 +63,7 @@ export const ANH_Q2 = [
     ],
   },
   {
-    id: 'q-20-lich-test-ql', tieu_de: 'Test › Lịch Test (Quản lý)', user: QL, url: '/test/lich', w: 1280,
+    id: 'q-20-lich-test-ql', cao: 760, tieu_de: 'Test › Lịch Test (Quản lý)', user: QL, url: '/test/lich', w: 1280,
     vung: (p) => p.locator('main').first(),
     marks: [
       { n: 1, loc: (p) => p.getByRole('tab', { name: 'Kế hoạch Test' }).locator('xpath=..'), ghi: 'Hai tab: "Lịch Test" và "Kế hoạch Test" (tab này chỉ Quản lý có).' },
@@ -162,7 +162,7 @@ export const ANH_Q2 = [
     ],
   },
   {
-    id: 'q-40-viec-hoc-vien-ql', tieu_de: 'Công việc › Hỗ trợ học viên (Quản lý)', user: QL, url: '/cong-viec', w: 1280,
+    id: 'q-40-viec-hoc-vien-ql', cao: 760, tieu_de: 'Công việc › Hỗ trợ học viên (Quản lý)', user: QL, url: '/cong-viec', w: 1280,
     buoc: async (p) => { await p.getByRole('tab', { name: /Hỗ trợ học viên/ }).click().catch(() => {}); await p.waitForTimeout(600); },
     vung: (p) => p.locator('main').first(),
     marks: [
@@ -205,7 +205,7 @@ export const ANH_Q2 = [
     ],
   },
   {
-    id: 'q-45-ho-so-gv-ql', tieu_de: 'Hồ sơ giáo viên (Quản lý xem)', user: QL, url: '/giao-vien/7', w: 1280,
+    id: 'q-45-ho-so-gv-ql', cao: 760, tieu_de: 'Hồ sơ giáo viên (Quản lý xem)', user: QL, url: '/giao-vien/7', w: 1280,
     vung: (p) => p.locator('main').first(),
     marks: [
       { n: 1, loc: (p) => p.getByText(/Quản lý đang xem/).first(), pad: 4, ghi: 'Dòng nhắc bạn đang xem với tư cách Quản lý, chỉ tính lớp, Case, yêu cầu trong chi nhánh.' },

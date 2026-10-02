@@ -111,7 +111,7 @@ export const ANH_Q1 = [
     ],
   },
   {
-    id: 'q-13-menu-hoc-vien-ql', tieu_de: 'Hồ sơ học viên: menu ⋮ của Quản lý', user: QL, url: '/hoc-vien/50', w: 1280,
+    id: 'q-13-menu-hoc-vien-ql', cao: 760, tieu_de: 'Hồ sơ học viên: menu ⋮ của Quản lý', user: QL, url: '/hoc-vien/50', w: 1280,
     buoc: async (p) => {
       await p.setViewportSize({ width: 1280, height: 1200 });
       await p.waitForTimeout(300);

@@ -9,14 +9,16 @@ const ten = process.argv[2] || 'giao-vien';
 const GOC = path.resolve('docs/so-tay');
 const noiDung = fs.readFileSync(path.join(GOC, 'noi-dung', `${ten}.html`), 'utf8');
 const css = fs.readFileSync(path.join(GOC, 'dung', 'so-tay.css'), 'utf8');
-const TIEU_DE = { 'giao-vien': 'Sổ tay Giáo viên', 'quan-ly': 'Sổ tay Quản lý' }[ten] || ten;
+const TIEU_DE = { 'giao-vien': 'Sổ tay Giáo viên', 'quan-ly': 'Sổ tay Quản lý', 'giao-vien-gon': 'Sổ tay Giáo viên (gọn)', 'quan-ly-gon': 'Sổ tay Quản lý (gọn)' }[ten] || ten;
 
 const dacTa = Object.fromEntries(ANH.map((a) => [a.id, a]));
 const thieu = [];
 
 function thayAnh(html) {
   // <fig id="g-04-luoi-ft"></fig>  hoặc  <fig id="…" cap="Tiêu đề riêng"></fig>
-  return html.replace(/<fig id="([^"]+)"(?: cap="([^"]*)")?\s*><\/fig>/g, (_, id, cap) => {
+  return html.replace(/<fig id="([^"]+)"((?: (?:cap|ct)="[^"]*")*)\s*><\/fig>/g, (_, id, at) => {
+    const cap = /cap="([^"]*)"/.exec(at)?.[1];
+    const ct = /ct="([^"]*)"/.exec(at)?.[1]?.split(',').map(Number);
     const a = dacTa[id];
     const tep = path.join(GOC, 'anh', `${id}.png`);
     if (!a || !fs.existsSync(tep)) {
@@ -24,11 +26,14 @@ function thayAnh(html) {
       return `<div class="thieu-anh">[Ảnh ${id} chưa có]</div>`;
     }
     const dong = (a.marks || [])
-      .filter((m) => m.ghi)
+      .filter((m) => m.ghi && (!ct || ct.includes(m.n)))
       .map((m) => `<li><span class="so">${m.n}</span><span>${m.ghi}</span></li>`)
       .join('');
     const tieuDe = cap || a.tieu_de || '';
-    return `<figure class="anh"><img src="../anh/${id}.png" alt="${tieuDe.replace(/"/g, '&quot;')}">${
+    const bm = fs.readFileSync(tep);
+    const cr = bm.readUInt32BE(16) / 2, ca = bm.readUInt32BE(20) / 2;
+    const dung = cr < 760 || ca / cr > 1.0 ? ' doc' : '';
+    return `<figure class="anh${dung}"><img src="../anh/${id}.png" alt="${tieuDe.replace(/"/g, '&quot;')}">${
       tieuDe ? `<figcaption class="tieu-de-anh">${tieuDe}</figcaption>` : ''
     }${dong ? `<ol class="chu-thich">${dong}</ol>` : ''}</figure>`;
   });
