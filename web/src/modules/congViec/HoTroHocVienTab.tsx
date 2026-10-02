@@ -7,6 +7,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { BoLocDoan, Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { BranchFilter } from '../../ui/Filters.tsx';
 import { fmtTime } from '../../lib/format.ts';
+import { nhacTatCa } from '../../lib/nhacTatCa.ts';
 import { NhomViec } from '../worklist/NhomViec.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import type { WorkGroup, WorkItem } from '../worklist/WorkList.tsx';
@@ -103,6 +104,17 @@ export function HoTroHocVienTab() {
     } catch (e: any) { toast.push('error', e.message); } finally { setDangNhac((s) => ({ ...s, [it.key]: false })); }
   };
 
+  /* Q-B · Nhắc tất cả: mọi dòng đang lọc còn nhắc được (chưa nhắc hôm nay). */
+  const canNhac = useMemo(() => cuoiItems.filter((it) => it.nhac && !it.nhac.daNhacLuc), [cuoiItems]);
+  const [nhacLo, setNhacLo] = useState(false);
+  const bamNhacTatCa = async () => {
+    if (nhacLo || !canNhac.length) return;
+    setNhacLo(true);
+    const xong = new Map((await nhacTatCa(canNhac.map((it) => ({ key: it.key, ownerId: it.nhac!.ownerId })), toast)).map((r) => [r.key, r.daNhacLuc]));
+    setData((prev) => (prev ? { ...prev, items: prev.items.map((x) => (x.nhac && xong.has(x.key) ? { ...x, nhac: { ...x.nhac, daNhacLuc: xong.get(x.key)! } } : x)) } : prev) as Work);
+    setNhacLo(false);
+  };
+
   const nutPhu = (it: WorkItem) => {
     if (it.nhac) {
       if (it.nhac.daNhacLuc) return <span className="text-[11px] text-slate-500 whitespace-nowrap">Đã nhắc {fmtTime(it.nhac.daNhacLuc)}</span>;
@@ -144,6 +156,12 @@ export function HoTroHocVienTab() {
           muc={[{ key: 'tat-ca', nhan: 'Tất cả', so: demNhom['tat-ca'] },
             ...NHOM_VIEC.map((k) => ({ key: k, nhan: NHOM_VIEC_LABEL[k], so: demNhom[k] }))]} />
         <BranchFilter branchId={branchId} onBranch={(id) => setParam('cn', id ? String(id) : null)} />
+        {canNhac.length > 1 && (
+          <button type="button" className="btn btn-sm ml-auto min-h-[44px] sm:min-h-0" disabled={nhacLo} onClick={bamNhacTatCa}
+            title="Gửi nhắc cho người phụ trách của mọi việc đang hiện, chưa nhắc hôm nay">
+            {nhacLo ? 'Đang nhắc…' : `Nhắc tất cả (${canNhac.length})`}
+          </button>
+        )}
       </div>
 
       {loading && <Card><Skeleton rows={8} /></Card>}

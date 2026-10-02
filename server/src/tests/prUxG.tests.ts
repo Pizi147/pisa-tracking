@@ -122,4 +122,31 @@ export async function runPrUxGTests(t: YThucTestKit) {
     const s = doc('web/src/modules/yThuc/ThangYThuc.tsx');
     assert(/viPham/.test(s) && /da_xu_ly/.test(s) && /const coNut = [^;]*coViPhamMo/.test(s), 'ThangYThuc chưa chặn nút theo vi phạm mở');
   });
+
+  // ------------------------------------------------------------------ Q-B · Duyệt nhiều / Nhắc tất cả (chủ sản phẩm 02/10)
+  console.log('\nUX-G · Q-B Duyệt nhiều, Nhắc tất cả');
+  const loiMa = (fn: () => unknown): number | string => { try { fn(); return 'không ném'; } catch (e: any) { return e?.status ?? String(e?.message ?? e); } };
+  await checkAsync('QB-a · nhacNhieu: mỗi dòng đi đúng đường nhacViec (một thông báo mỗi dòng, nhắc lại trong ngày không gửi thêm); dòng bịa báo riêng, dòng khác vẫn xong; GV 403; rỗng / quá 100 → 400', async () => {
+    const { nhacNhieu } = await import('../worklist/nhacViec.ts');
+    const { myWork } = await import('../worklist/mywork.ts');
+    const dong = (myWork(P.admin, { nguoi: 'tat-ca' }) as any).items.filter((it: any) => it.nhac && !it.nhac.daNhacLuc).slice(0, 3)
+      .map((it: any) => ({ key: it.key, ownerId: it.nhac.ownerId }));
+    assert(dong.length >= 2, `bộ demo thiếu việc nhắc được (${dong.length})`);
+    const dem = () => (conn.prepare(`SELECT COUNT(*) n FROM notifications WHERE kind = 'nhac_viec'`).get() as any).n;
+    const truoc = dem();
+    const r = nhacNhieu(P.admin, [...dong, { key: 'score:bia-khong-ton-tai', ownerId: dong[0].ownerId }]);
+    assert(r.ok.length === dong.length && r.loi.length === 1 && r.loi[0].key === 'score:bia-khong-ton-tai', JSON.stringify(r));
+    assert(dem() - truoc === dong.length, `thông báo thêm ${dem() - truoc} ≠ ${dong.length}`);
+    const r2 = nhacNhieu(P.admin, dong);
+    assert(r2.ok.length === dong.length && dem() - truoc === dong.length, 'nhắc lại trong ngày gửi thêm');
+    assert(r2.ok.every((x: any, i: number) => x.daNhacLuc === r.ok[i].daNhacLuc), 'giờ nhắc đổi');
+    assert(loiMa(() => nhacNhieu(P.coreTeacher, dong)) === 403, 'GV nhắc được');
+    assert(loiMa(() => nhacNhieu(P.admin, [])) === 400 && loiMa(() => nhacNhieu(P.admin, Array(101).fill(dong[0]))) === 400, 'rỗng / quá 100 không bị chặn');
+  });
+  check('QB-b · web: Duyệt nhiều ở cả "Tất cả" (có "Chọn hết" cùng loại); "Nhắc tất cả" ở hộp Chờ duyệt và ở Công việc › Của GV, cùng một hàm nhacTatCa', () => {
+    const hop = doc('web/src/modules/duyet/HopChoDuyet.tsx');
+    assert(/const choHangLoat = xem === 'cho';/.test(hop) && /Chọn hết/.test(hop) && /Nhắc tất cả/.test(hop) && /nhacTatCa\(/.test(hop), 'HopChoDuyet thiếu Duyệt nhiều / Nhắc tất cả');
+    const tab = doc('web/src/modules/congViec/HoTroHocVienTab.tsx');
+    assert(/Nhắc tất cả/.test(tab) && /nhacTatCa\(/.test(tab), 'HoTroHocVienTab thiếu Nhắc tất cả');
+  });
 }

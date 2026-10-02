@@ -85,7 +85,7 @@ import { khungPtGvTuThamSo } from '../../../shared/domain/index.ts';   // PR-Pb2
 import { metricResponse, metricSet, rowsFor } from '../worklist/metrics.ts';
 import { myWork, viecCuaNguoi } from '../worklist/mywork.ts';
 import { bangGvChiNhanh, hoSoGiaoVien, ketQuaHoSoGv, oHoSoGv, viecHoSoGv } from '../giaoVien/hoSo.ts';
-import { nhacViec } from '../worklist/nhacViec.ts';
+import { nhacNhieu, nhacViec } from '../worklist/nhacViec.ts';
 import * as caseSvc from '../cases/cases.ts';
 import * as regularSvc from '../normal/regular.ts';
 import * as chamSvc from '../cham/canCham.ts';
@@ -417,6 +417,8 @@ api.post('/my-work/nhac', requireAuth, wrap((req) => {
   if (!key || !ownerId) throw badRequest('Thiếu key hoặc ownerId.');
   return nhacViec(principalOf(req), { key, ownerId });
 }));
+
+api.post('/my-work/nhac-nhieu', requireAuth, wrap((req) => nhacNhieu(principalOf(req), (req.body ?? {}).dong)));
 
 // ============================================================ Mock Test
 

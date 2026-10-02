@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
+import { nhacTatCa } from '../../lib/nhacTatCa.ts';
 import { BoLocDoan, Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { BranchFilter } from '../../ui/Filters.tsx';
 import { NganCase } from '../students/NganCase.tsx';
@@ -28,8 +29,9 @@ export function useTheNhanManh(ds: TheYeuCauDto[] | undefined): number | null {
 
 /**
  * CÔNG VIỆC › CHỜ DUYỆT (PR-DUYET, M8, Q27-3) — MỘT hộp cho mọi thứ "ai đó xin Quản lý quyết". Chip phân loại đủ 6 kể cả số 0 (Q12),
- * Đang chờ / Đã xử lý 30 ngày, chi nhánh. Thẻ quá hạn đứng đầu (máy chủ xếp). Duyệt hàng loạt: chỉ khi đang lọc một phân loại, chỉ
- * các thẻ cùng MỘT loại cho phép hàng loạt; thẻ lỗi báo riêng, thẻ khác vẫn xong.
+ * Đang chờ / Đã xử lý 30 ngày, chi nhánh. Thẻ quá hạn đứng đầu (máy chủ xếp). Duyệt nhiều (Q-B, 02/10): ở cả "Tất cả" lẫn từng phân loại,
+ * chỉ các thẻ cùng MỘT loại cho phép hàng loạt (chọn khác loại thì bỏ lô cũ); "Chọn hết" lấy mọi thẻ cùng loại; thẻ lỗi báo riêng, thẻ khác vẫn xong.
+ * Nhắc tất cả: thẻ Báo lên chưa nhắc hôm nay.
  */
 export function HopChoDuyet() {
   const toast = useToast();
@@ -67,10 +69,25 @@ export function HopChoDuyet() {
   useEffect(() => { setChon(new Set()); }, [url]);
   const ds = data?.the ?? [];
   const loaiChon = useMemo(() => ds.find((x) => chon.has(x.id))?.loai ?? null, [ds, chon]);
-  const choHangLoat = xem === 'cho' && phan !== 'tat-ca';
+  const choHangLoat = xem === 'cho';
   const [ngan, setNgan] = useState<number | null>(null);
 
   const xong = () => { reload(); invalidate('/yeu-cau/dem'); };
+  /* Chọn hết: mọi thẻ duyệt hàng loạt được CÙNG loại với lô đang chọn (chưa chọn gì → loại của thẻ đầu), tối đa 50 như máy chủ. */
+  const duyetDuoc = ds.filter((x) => x.hangLoat && x.trangThai === 'cho');
+  const loaiHet = loaiChon ?? duyetDuoc[0]?.loai ?? null;
+  const cungLoai = duyetDuoc.filter((x) => x.loai === loaiHet).slice(0, 50);
+  /* Nhắc tất cả: thẻ Báo lên có người nhận, chưa nhắc hôm nay. */
+  const canNhac = xem === 'cho' ? ds.filter((x) => x.trangThai === 'cho' && x.kieuNut === 'nhac' && typeof x.duLieu?.ownerId === 'number'
+    && typeof x.duLieu?.viecKey === 'string' && !x.duLieu?.daNhacLuc) : [];
+  const [nhacLo, setNhacLo] = useState(false);
+  const bamNhacTatCa = async () => {
+    if (nhacLo) return;
+    setNhacLo(true);
+    await nhacTatCa(canNhac.map((x) => ({ key: x.duLieu!.viecKey as string, ownerId: x.duLieu!.ownerId as number })), toast);
+    setNhacLo(false);
+    xong();
+  };
   const duyetNhieu = async () => {
     if (busy || !chon.size) return;
     setBusy(true);
@@ -110,6 +127,22 @@ export function HopChoDuyet() {
         )}
       </div>
       {xem === 'cho' && ds.length > 1 && <p className="m-0 text-[12px] text-slate-400">Xếp: quá hạn trước → hạn gần nhất</p>}
+      {(cungLoai.length > 1 || canNhac.length > 1) && (
+        <div className="flex flex-wrap items-center gap-2">
+          {cungLoai.length > 1 && chon.size < cungLoai.length && (
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setChon(new Set(cungLoai.map((x) => x.id)))}
+              title="Chọn mọi yêu cầu cùng loại để duyệt một lần">
+              Chọn hết {cungLoai.length} · {cungLoai[0].nhanLoai}
+            </button>
+          )}
+          {canNhac.length > 1 && (
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={nhacLo} onClick={bamNhacTatCa}
+              title="Gửi nhắc cho người phụ trách của mọi thẻ Báo lên chưa nhắc hôm nay">
+              {nhacLo ? 'Đang nhắc…' : `Nhắc tất cả (${canNhac.length})`}
+            </button>
+          )}
+        </div>
+      )}
 
       {theLac && (
         <p role="status" className="m-0 flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2 text-[13px] text-slate-300"

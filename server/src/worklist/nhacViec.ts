@@ -7,7 +7,7 @@
  */
 import { db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
-import { forbidden, notFound } from '../util.ts';
+import { badRequest, forbidden, notFound } from '../util.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { can, loadPrincipal, scopeFor, type Principal } from '../permissions.ts';
 import { PERMISSIONS } from '../../../shared/domain/index.ts';
@@ -16,7 +16,7 @@ import { myWork } from './mywork.ts';
 const THAN_BAO_TOI_DA = 200;
 const catThanBao = (s: string): string => (s.length <= THAN_BAO_TOI_DA ? s : `${s.slice(0, THAN_BAO_TOI_DA - 1)}…`);
 
-export function nhacViec(p: Principal, i: { key: string; ownerId: number }): { daNhacLuc: string } {
+export function nhacViec(p: Principal, i: { key: string; ownerId: number }, dungLai?: Map<number, any>): { daNhacLuc: string } {
   if (!can(p, PERMISSIONS.CASE_APPROVE, { anyScope: true })) throw forbidden('Bạn chỉ xem được việc của mình.');
   if (p.userId === i.ownerId) throw forbidden('Không tự nhắc chính mình.');
 
@@ -39,7 +39,9 @@ export function nhacViec(p: Principal, i: { key: string; ownerId: number }): { d
     }
   }
 
-  const w = myWork(target) as any;
+  /* `dungLai`: nhắc nhiều dòng của cùng một người thì dựng `myWork` của người đó MỘT lần. */
+  let w = dungLai?.get(i.ownerId);
+  if (!w) { w = myWork(target) as any; dungLai?.set(i.ownerId, w); }
   const row = w.items.find((it: any) => it.key === i.key);
   if (!row) throw notFound(`Việc này không còn trong danh sách của ${target.fullName}.`);
   if (!can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: row.classId, studentId: row.studentId })) {
@@ -67,4 +69,23 @@ export function nhacViec(p: Principal, i: { key: string; ownerId: number }): { d
     .prepare(`SELECT created_at FROM notifications WHERE user_id = ? AND dedup_key = ?`)
     .get(i.ownerId, dedupKey) as any;
   return { daNhacLuc: created.created_at };
+}
+
+/**
+ * NHẮC TẤT CẢ (Q-B, chủ sản phẩm 02/10): mỗi dòng đi đúng đường `nhacViec` (cùng kiểm quyền, cùng chống nhắc trùng trong ngày) — dòng lỗi báo
+ * riêng, dòng khác vẫn xong. Tối đa 100 dòng một lượt.
+ */
+export function nhacNhieu(p: Principal, dong: unknown): { ok: { key: string; daNhacLuc: string }[]; loi: { key: string; loi: string }[] } {
+  if (!can(p, PERMISSIONS.CASE_APPROVE, { anyScope: true })) throw forbidden('Bạn chỉ xem được việc của mình.');
+  if (!Array.isArray(dong) || !dong.length || dong.length > 100) throw badRequest('Chọn từ 1 đến 100 việc để nhắc.');
+  const dungLai = new Map<number, any>();
+  const ok: { key: string; daNhacLuc: string }[] = [];
+  const loi: { key: string; loi: string }[] = [];
+  for (const d of dong as { key?: unknown; ownerId?: unknown }[]) {
+    const key = String(d?.key ?? '');
+    const ownerId = Number(d?.ownerId);
+    if (!key || !Number.isInteger(ownerId) || ownerId <= 0) { loi.push({ key, loi: 'Thiếu key hoặc ownerId.' }); continue; }
+    try { ok.push({ key, ...nhacViec(p, { key, ownerId }, dungLai) }); } catch (e: any) { loi.push({ key, loi: e?.message ?? 'Không nhắc được.' }); }
+  }
+  return { ok, loi };
 }
