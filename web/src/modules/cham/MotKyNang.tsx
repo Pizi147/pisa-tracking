@@ -112,7 +112,7 @@ function DongHv({ studentId, active, ten, href, phu, phuTitle, phuDo = false, lu
       style={{ borderColor: 'var(--line)' }}>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1 min-w-0">
-          <Link className="link block truncate" to={href} title={ten}>{ten}</Link>
+          <Link className="link block truncate max-sm:py-3 max-sm:-my-3" to={href} title={ten}>{ten}</Link>
           {nhan}
         </div>
         <div className="flex items-center gap-1.5 text-[11px] text-slate-500 min-w-0 tabular-nums">

@@ -109,7 +109,7 @@ export function PhanTich() {
           style={{ borderColor: 'var(--line)' }}>
           {GOC_NHIN.map((k) => (
             <button key={k} type="button" role="radio" aria-checked={goc === k} onClick={() => setGoc(k)}
-              className={`px-3 py-1.5 text-sm border-0 cursor-pointer whitespace-nowrap ${
+              className={`px-3 py-1.5 text-sm border-0 cursor-pointer whitespace-nowrap max-sm:min-h-10 ${
                 goc === k
                   ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)] font-semibold'
                   : 'bg-transparent text-slate-400 hover:text-slate-200'

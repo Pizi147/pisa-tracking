@@ -415,7 +415,7 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
       data-hv={row.studentId}>
       <td className="td py-1.5 sticky-col">
         <div className="flex items-center gap-1 min-w-0">
-          <Link className="link block truncate" to={`/hoc-vien/${row.studentId}`} title={row.studentName}>{row.studentName}</Link>
+          <Link className="link block truncate max-sm:py-3 max-sm:-my-3" to={`/hoc-vien/${row.studentId}`} title={row.studentName}>{row.studentName}</Link>
           {row.hoanTat && (
             <Info title={`Hết Chủ nhật ${ngay(row.chuNhatCuoi)}. Chỉ Quản lý sửa được điểm — nhờ Quản lý hiệu chỉnh, kèm lý do.`}>
               Đã hoàn tất

@@ -68,9 +68,9 @@ Cỡ chữ có 4 mức (11 / 11,5 / 12 / 12,5 px) và 3 chiều cao dòng cho c�
   - `worklist/MeetingPage.tsx:320`
   - `ui/HangNhom.tsx:67` · `ui/HangTab.tsx:33` · `App.tsx:49`
   - `yThuc/NhanViPham.tsx:42` · `ui/ui.tsx:115,195,215,249`
-- [ ] **H3.** Bỏ dấu "·" thừa ở đầu badge Mock Test: "· Chưa có điểm · 0/4 kỹ năng".
-- [ ] **H4.** Nhãn nhóm "Báo QL / Học thuật / Ý thức" ở Chờ duyệt đang trông như nút (viền xám giống nút thao tác). Đổi sang chip không viền.
-- [ ] **H5.** Chú giải Đạt/SOS1/2/3/Tạm thời ở Phân tích: nếu là chú giải thì không có kiểu nút; nếu là bộ lọc thì có trạng thái bật/tắt rõ ràng.
+- [x] **H3.** Bỏ dấu "·" thừa ở đầu badge Mock Test: "· Chưa có điểm · 0/4 kỹ năng".
+- [x] **H4.** Nhãn nhóm "Báo QL / Học thuật / Ý thức" ở Chờ duyệt đang trông như nút (viền xám giống nút thao tác). Đổi sang chip không viền.
+- [x] **H5.** Chú giải Đạt/SOS1/2/3/Tạm thời ở Phân tích: nếu là chú giải thì không có kiểu nút; nếu là bộ lọc thì có trạng thái bật/tắt rõ ràng.
 - [ ] **H6.** Chip "+1" ở dòng lớp đang giấu việc (desktop chỉ hiện khi rê chuột): bấm vào thì mở được danh sách.
 
 ## Gói UX-I — Panel và form · ƯU TIÊN 3 (P2)
@@ -117,13 +117,13 @@ Cỡ chữ có 4 mức (11 / 11,5 / 12 / 12,5 px) và 3 chiều cao dòng cho c�
   - Ô "—" kèm chữ "chưa có dữ liệu" ngay dưới "chưa có điểm" ở hồ sơ HV đang nói một ý hai lần.
 
 ## Gói UX-K — Mật độ, bộ lọc, điện thoại · ƯU TIÊN 5 (P2–P3)
-- [ ] **K1. Bộ lọc Học viên & Lớp:**
+- [~] **K1. Bộ lọc Học viên & Lớp:** (PR-HK1 xong phần điện thoại; gộp dropdown "Loại lớp" để sau deploy vì đổi giao diện desktop)
   - Hai hàng "Tất cả" khác kiểu (dạng chia đoạn `Tất cả 19` và dạng viên thuốc `Tất cả 95`): gộp thành một hàng, thêm dropdown "Loại lớp".
-  - Trên điện thoại, hàng chip trôi khỏi màn và nút ⋯ rơi xuống dòng riêng.
+  - [x] Trên điện thoại, hàng chip trôi khỏi màn và nút ⋯ rơi xuống dòng riêng. (PR-HK1: mép mờ + khối nút)
 - [ ] **K2. Phân tích › Tổng hợp:**
   - Tiêu đề cột bị cắt ("TẠM THỜ", "CHƯA ĐI"); ô "16 (1 quá hạn)" xuống dòng. Sửa: tiêu đề nhóm gọn và dính trên, ghi "16 ⚠1".
   - Có hơn 15 nút điều khiển: gom "Cột hiện" và hai nút xuất vào menu ⋯.
-- [ ] **K3. Vùng bấm trên điện thoại ≥ 40 px** (đo ở 375 px):
+- [x] **K3. Vùng bấm trên điện thoại ≥ 40 px** (đo ở 375 px):
   - `.btn-sm` (28 px), nút ⋯ (28×28).
   - Link tên học viên ở /test và /nhap-diem (20 px); số bấm được ở Tổng quan (10–20×24).
   - Tab Phân tích (32 px); `.field`/select (36–37 px).

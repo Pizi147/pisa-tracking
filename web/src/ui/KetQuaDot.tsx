@@ -15,8 +15,9 @@ function hoMau(tone: ProgressTone, overall: string, soMon: number | null): Score
 /**
  * Mỗi trạng thái có biểu tượng riêng — màu không bao giờ đứng một mình. Số tạm thời (đợt còn thiếu điểm) dùng ◌ + viền đứt;
  * đợt đã đủ điểm mà có SOS thì màu theo mức SOS + dấu ● — ⚠ chỉ dành cho quá hạn (G-4).
+ * Xám (chưa có điểm, chưa đủ điểm) không có dấu: "·" đứng đầu đọc như dấu ngăn thừa (PR-HK1 H3); chữ đã nói đủ.
  */
-const TONE_MARK: Record<ProgressTone, string> = { muted: '·', danger: '●', info: '✓', ok: '✓' };
+const TONE_MARK: Record<ProgressTone, string> = { muted: '', danger: '●', info: '✓', ok: '✓' };
 
 /**
  * MỘT CÂU DUY NHẤT CHO TIẾN ĐỘ MỘT ĐỢT TEST (HE_GIAO_DIEN §5, đóng MT-P01 và MT-P02).
@@ -54,14 +55,14 @@ export function KetQuaDot({ coDiem, yeuCau, dat, sos, phan = 'cau', cheDo, soMon
   const v = attemptProgressView({ scored: coDiem, required: yeuCau, passed: dat, sos, cheDo, soMonChuaDat });
   const tone: ProgressTone = phan === 'overall' && v.overall === 'incomplete' ? 'muted' : v.tone;
   /* ⚠ chỉ nghĩa quá hạn (G-4): số tạm thời dùng ◌ (viền đứt), không dùng ⚠. */
-  const mark = phan === 'overall' ? (v.passBadge ? '✓' : '·') : tone === 'danger' && v.overall === 'incomplete' ? '◌' : TONE_MARK[tone];
+  const mark = phan === 'overall' ? (v.passBadge ? '✓' : '') : tone === 'danger' && v.overall === 'incomplete' ? '◌' : TONE_MARK[tone];
   const soMon = cheDo === 'ratio' ? (soMonChuaDat ?? sos) : sos;
   const mau = hoMau(tone, v.overall, soMon);
   return (
     <span
       data-overall={v.overall} data-pass-badge={v.passBadge} title={v.title}
       className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium ${SCORE_CHIP[mau]} ${v.overall === 'incomplete' ? 'border-dashed' : ''}`}>
-      <span aria-hidden>{mark}</span>
+      {mark && <span aria-hidden>{mark}</span>}
       {phan === 'overall'
         ? (v.overall === 'not-passed' && duoiKyVong?.length ? `Dưới kỳ vọng: ${duoiKyVong.join(' · ')}` : v.overallText)
         : v.text}

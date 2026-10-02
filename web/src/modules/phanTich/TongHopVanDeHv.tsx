@@ -83,7 +83,7 @@ export function TongHopVanDeHv(props: PhamViPhanTich) {
         {([['', 'Vấn đề chính + đi kèm', 'Vấn đề chính và yếu tố đi kèm của Case'], ['chinh', 'Chỉ vấn đề chính', 'Chỉ Vấn đề chính của Case']] as const).map(([v, nhan, tip]) => (
           <button key={v} type="button" role="radio" aria-checked={chiChinh === (v === 'chinh')} title={tip}
             onClick={() => datTham('loi', v || null)}
-            className={`px-3 py-1 text-xs border-0 cursor-pointer ${chiChinh === (v === 'chinh') ? 'bg-doing-bg text-doing font-semibold' : 'bg-transparent text-slate-400 hover:text-slate-200'}`}>
+            className={`px-3 py-1 text-xs border-0 cursor-pointer max-sm:min-h-10 ${chiChinh === (v === 'chinh') ? 'bg-doing-bg text-doing font-semibold' : 'bg-transparent text-slate-400 hover:text-slate-200'}`}>
             {nhan}
           </button>
         ))}

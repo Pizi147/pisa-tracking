@@ -68,7 +68,7 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
   );
   const tenLop = (h: Hang) => (
     <span className="whitespace-nowrap">
-      <Link to={`/hoc-vien/lop/${h.id}`} className="link">{h.nhan}</Link>
+      <Link to={`/hoc-vien/lop/${h.id}`} className="link max-sm:py-3 max-sm:-my-3">{h.nhan}</Link>
     </span>
   );
   return (
@@ -96,7 +96,7 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
                     <HangNhom mo={mo.has(h.khoa)} onMo={() => setMo((s) => { const n = new Set(s); n.has(h.khoa) ? n.delete(h.khoa) : n.add(h.khoa); return n; })}
                       nhan={h.nhan} className={DINH_TRAI}
                       tieuDe={(
-                        <button type="button" className="link appearance-none bg-transparent border-0 p-0 cursor-pointer font-extrabold"
+                        <button type="button" className="link appearance-none bg-transparent border-0 p-0 max-sm:py-3 max-sm:-my-3 cursor-pointer font-extrabold"
                           onClick={() => navigate(`/?cn=${h.id}${thamSoCt(ct)}`)}>{h.nhan}</button>
                       )}>
                       {COT.map((c) => o(h, c.key, h.o[c.key]))}

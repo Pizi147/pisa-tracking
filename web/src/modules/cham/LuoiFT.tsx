@@ -234,7 +234,7 @@ function SheetRow({ row, rowIndex, active, cot, tuanDangXem, onReload, gvMacDinh
     <tr className={`row-hover h-16 ${active ? 'row-active' : ''}`} data-hv={row.studentId}>
       <td className="td py-1.5 sticky-col">
         <div className="flex items-center gap-1 min-w-0">
-          <Link className="link block truncate" to={duongDotTest({ id: row.attemptId })} title={row.studentName}>{row.studentName}</Link>
+          <Link className="link block truncate max-sm:py-3 max-sm:-my-3" to={duongDotTest({ id: row.attemptId })} title={row.studentName}>{row.studentName}</Link>
           {row.hoanTat && (
             <Info title={`Hết Chủ nhật ${ngay(row.chuNhatCuoi)}. ${KHOA_HOAN_TAT_HINT}`}>Đã hoàn tất</Info>
           )}

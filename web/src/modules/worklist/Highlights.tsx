@@ -73,7 +73,7 @@ export function LichSapToi({ branchId, ct }: { branchId: number | null; ct: Chuo
             <li key={x.key} className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-baseline gap-3 px-4 py-2 text-sm">
               <b className="tabular-nums font-semibold text-slate-200">{x.tuan}</b>
               <span className="min-w-0 text-slate-300">
-                {x.den ? <Link to={x.den} className="text-slate-200 no-underline hover:underline">{x.chu}</Link> : x.chu}
+                {x.den ? <Link to={x.den} className="text-slate-200 no-underline hover:underline max-sm:py-3 max-sm:-my-3">{x.chu}</Link> : x.chu}
                 {x.tuanNay && <span className="ml-1.5 text-xs text-slate-500">tuần này</span>}
               </span>
             </li>

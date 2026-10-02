@@ -134,7 +134,7 @@ export function SoLieu({ id, giaTri, phamVi, rong, className = '', extra, nhan, 
           <button type="button" onClick={() => setHowTo(true)} aria-expanded={howTo} aria-describedby={howTo ? idCachTinh : undefined}
             onFocus={() => setHowTo(true)} onBlur={() => setHowTo(false)}
             onKeyDown={(e) => { if (e.key === 'Escape' && howTo) { e.stopPropagation(); setHowTo(false); } }}
-            className="appearance-none bg-transparent border-0 p-0 cursor-pointer text-[11px] text-slate-500 hover:text-slate-300 whitespace-nowrap">Cách tính</button>
+            className="appearance-none bg-transparent border-0 p-0 max-sm:py-3 max-sm:-my-3 cursor-pointer text-[11px] text-slate-500 hover:text-slate-300 whitespace-nowrap">Cách tính</button>
           {howTo && (
             <div id={idCachTinh} role="tooltip" className="card absolute right-0 top-full z-30 mt-1.5 w-[min(20rem,calc(100vw-2.5rem))] p-3 shadow-2xl">
               <CachTinh cs={cs} />
@@ -145,7 +145,7 @@ export function SoLieu({ id, giaTri, phamVi, rong, className = '', extra, nhan, 
       <div className="mt-2 flex items-baseline gap-1.5 flex-wrap">
         {clickable ? (
           <button type="button" onClick={() => setOpen(true)}
-            className={`appearance-none bg-transparent border-0 p-0 cursor-pointer text-2xl font-semibold tabular-nums underline decoration-dotted underline-offset-4 hover:text-white ${mau}`}
+            className={`appearance-none bg-transparent border-0 p-0 max-sm:py-1.5 max-sm:-my-1.5 cursor-pointer text-2xl font-semibold tabular-nums underline decoration-dotted underline-offset-4 hover:text-white ${mau}`}
             aria-label={`${giaTri} ${dv} — ${nhan ?? cs.ten}. Bấm để xem danh sách`}>{giaTri}</button>
         ) : (
           <span className="text-2xl font-semibold tabular-nums text-slate-500">{giaTri}</span>

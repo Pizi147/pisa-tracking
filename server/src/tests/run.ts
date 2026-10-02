@@ -9049,6 +9049,10 @@ await runPrDonBTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 const { runPrUxGTests } = await import('./prUxG.tests.ts');
 await runPrUxGTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
+// ==================================================================== PR-HK1 (trước deploy: H3–H5; K1/K3 đo bằng Playwright)
+const { runPrHk1Tests } = await import('./prHk1.tests.ts');
+runPrHk1Tests({ check, assert });
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

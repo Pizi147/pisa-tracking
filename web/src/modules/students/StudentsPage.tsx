@@ -146,20 +146,22 @@ export default function StudentsPage() {
     <div className="page space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         <h1 className="text-lg font-semibold text-slate-100 m-0">Học viên & Lớp</h1>
-        <div className="flex-1" />
-        {/*
-          * "+ Lớp mới"/"+ Học viên" (điểm a rà soát cuối): KHÔNG dùng `can()` phía client — hàm đó chỉ kiểm vai có quyền
-          * `student.edit` theo danh sách tĩnh, không có ngữ cảnh branchId/classId, nên GVCN/GVBM luôn thấy nút dù bấm vào
-          * chắc chắn ra 403 (`hasAssignment` đòi `ctx.classId`/`ctx.branchId` cụ thể). Dùng đúng cờ máy chủ đã tính theo
-          * TỪNG lớp/chi nhánh thay vào đó.
-          */}
-        {data?.coTheTaoLop && <button type="button" className="btn btn-sm" onClick={() => setTaoLop(true)}>+ Lớp mới</button>}
-        {(data?.rows ?? []).some((r) => r.viewer.coTheSuaHocVien) && (
-          <button type="button" className="btn btn-sm btn-primary" onClick={() => setThem(null)}>+ Học viên</button>
-        )}
-        <MenuDong nhan="Thao tác trang" muc={[
-          { key: 'luu-tru', nhan: nhanLuuTru(data?.demLuuTru ?? { lop: 0, hv: 0 }), onChon: () => navigate('/hoc-vien/luu-tru') },
-        ]} />
+        {/* K1 (PR-HK1): nút và ⋯ đi cùng một khối — màn hẹp thì cả khối xuống dòng, ⋯ không rơi xuống dòng riêng. */}
+        <div className="ml-auto flex items-center gap-2">
+          {/*
+            * "+ Lớp mới"/"+ Học viên" (điểm a rà soát cuối): KHÔNG dùng `can()` phía client — hàm đó chỉ kiểm vai có quyền
+            * `student.edit` theo danh sách tĩnh, không có ngữ cảnh branchId/classId, nên GVCN/GVBM luôn thấy nút dù bấm vào
+            * chắc chắn ra 403 (`hasAssignment` đòi `ctx.classId`/`ctx.branchId` cụ thể). Dùng đúng cờ máy chủ đã tính theo
+            * TỪNG lớp/chi nhánh thay vào đó.
+            */}
+          {data?.coTheTaoLop && <button type="button" className="btn btn-sm" onClick={() => setTaoLop(true)}>+ Lớp mới</button>}
+          {(data?.rows ?? []).some((r) => r.viewer.coTheSuaHocVien) && (
+            <button type="button" className="btn btn-sm btn-primary" onClick={() => setThem(null)}>+ Học viên</button>
+          )}
+          <MenuDong nhan="Thao tác trang" muc={[
+            { key: 'luu-tru', nhan: nhanLuuTru(data?.demLuuTru ?? { lop: 0, hv: 0 }), onChon: () => navigate('/hoc-vien/luu-tru') },
+          ]} />
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -188,7 +190,8 @@ export default function StudentsPage() {
       <CongTacKhung trang="hoc-vien-lop" coTatCa value={khung}
         dem={{ 'tat-ca': data?.rows.length, ft: soLopTheoKhung.ft, thuong: soLopTheoKhung.thuong }}
         onChange={(k) => setParam({ khung: k === 'tat-ca' ? null : k, open: null })} />
-      <div className="flex gap-1.5 overflow-x-auto pb-1" role="group" aria-label="Lọc học viên">
+      {/* K1: điện thoại cuộn ngang, mép phải mờ báo còn chip; pr-8 để chip cuối cuộn ra khỏi vùng mờ. */}
+      <div className="flex gap-1.5 overflow-x-auto pb-1 max-sm:pr-8 max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)]" role="group" aria-label="Lọc học viên">
         {chips.map((k) => (
           <button key={k} type="button" title={LOC_HOC_VIEN_NHAN[k].goiY} aria-pressed={loc === k}
             onClick={() => setParam({ view: k === 'tat-ca' ? null : k, open: null })}

@@ -25,7 +25,7 @@ export const TONE_TRANG_THAI = { 'cho-cham': 'wait', 'cho-duyet': 'wait' } as co
 /**
  * MỘT BADGE = MỘT TRẠNG THÁI NGẮN (≤ 3 từ + số; B-1). Xanh dương = đang chạy · tím = chờ (`TONE_TRANG_THAI`) · vàng = cần chú ý ·
  * xám = chưa bắt đầu, thông tin · xanh lá = ổn · đỏ = chỉ SOS 3 và "Chưa đạt" · viền đứt (`dut`) = số tạm.
- * Có `onClick` thì là nút (≥ 28px cao); không thì chỉ là chữ.
+ * Có `onClick` thì là nút (≥ 28px cao; điện thoại nới vùng bấm ẩn lên 44px — PR-HK1 K3); không thì chỉ là chữ.
  */
 export function Nhan({ tone, dut, title, onClick, children }: {
   tone: ToneNhan; dut?: boolean; title?: string; onClick?: () => void; children: ReactNode;
@@ -34,7 +34,7 @@ export function Nhan({ tone, dut, title, onClick, children }: {
     dut ? 'bg-transparent border border-dashed border-current' : ''}`;
   if (onClick) {
     return (
-      <button type="button" title={title} onClick={onClick} className={`${cls} min-h-[28px] hover:brightness-125`}>{children}</button>
+      <button type="button" title={title} onClick={onClick} className={`${cls} relative min-h-[28px] hover:brightness-125 max-sm:after:absolute max-sm:after:-inset-y-2 max-sm:after:inset-x-0 max-sm:after:content-['']`}>{children}</button>
     );
   }
   return <span title={title} className={cls}>{children}</span>;

@@ -268,7 +268,7 @@ export default function MockDetailPage() {
       <KhoiNhanXet cells={d.cells} save={save} />
 
       <details className="rounded-lg border px-3 py-2" style={{ borderColor: 'var(--line)' }}>
-        <summary className="cursor-pointer text-sm text-slate-300">Thông tin đợt Mock Test</summary>
+        <summary className="cursor-pointer text-sm text-slate-300 max-sm:py-2.5 max-sm:-my-2.5">Thông tin đợt Mock Test</summary>
         <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-4 m-0 mt-3">
           <Info label="Trạng thái">
             <Status kind={d.status === 'done' ? 'done' : cancelled ? 'idle' : 'doing'}>
