@@ -284,7 +284,7 @@ export type YThucHocVien = {
   /** Liên kết "Khai bậc" (Q7, Q8): người xem xử lý được, chuỗi chưa có lần xử lý, em chưa từng khai. */
   coTheKhai: boolean;
   chuoi: { nhan: string; cycleIds: number[]; soXuLy: number };
-  bac: number; bacNhan: string | null; keTiep: { kind: string; nhan: string; bac: number; canQl: boolean } | null;
+  bac: number; bacNhan: string | null; keTiep: { kind: string; nhan: string; bac: number };
   dongThang: ReturnType<typeof dongThang>;
   khai: EmYThuc['khai'];
   nhom: EmYThuc['nhom']; han: string | null; hanXem: string | null; soBatBuoc: number; soMoi: number; quaHanNgay: number | null;
@@ -324,7 +324,7 @@ export function yThucHocVien(p: Principal, studentId: number, o: { phamVi?: 'chu
     coTheKhai: canManage && khaiDuoc(em),
     chuoi: { nhan: em.nhanChuoi, cycleIds: em.chuoi, soXuLy: em.xuLy.filter((m) => m.status === 'done' && m.cycleId != null && em.chuoi.includes(m.cycleId)).length },
     bac: em.bac, bacNhan: em.bac > 0 ? nhanLoaiXuLy(kindCuaBac(em.bac)) : null,
-    keTiep: { kind: em.keTiep.kind, nhan: nhanLoaiXuLy(em.keTiep.kind), bac: em.keTiep.bac, canQl: em.keTiep.canQl },
+    keTiep: { kind: em.keTiep.kind, nhan: nhanLoaiXuLy(em.keTiep.kind), bac: em.keTiep.bac },
     dongThang: dongThang(em.bac, em.khai),
     khai: em.khai,
     nhom: em.nhom, han: em.han, hanXem: em.hanXem, soBatBuoc: em.soBatBuoc, soMoi: em.soMoi, quaHanNgay: quaHan,

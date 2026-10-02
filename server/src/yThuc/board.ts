@@ -24,7 +24,7 @@ import { violationsOfStudents } from './violations.ts';
 export type DongEm = {
   studentId: number; ten: string; maHv: string;
   bac: number; bacNhan: string | null;
-  keTiep: { kind: string; nhan: string; canQl: boolean } | null;
+  keTiep: { kind: string; nhan: string };
   /** Vi phạm chưa nằm trong lần xử lý nào (Mới · Đã ghi nhận · Cần xử lý · Quá hạn). */
   soMo: number; soBatBuoc: number; soMoi: number;
   han: string | null; hanXem: string | null; quaHanNgay: number | null;
@@ -62,7 +62,7 @@ export function dongEm(em: EmYThuc, ten: string, maHv: string, homNay: string): 
     .sort((a, b) => (b.quyetLuc ?? b.createdAt).localeCompare(a.quyetLuc ?? a.createdAt))[0];
   return {
     studentId: em.studentId, ten, maHv, bac: em.bac, bacNhan: em.bac > 0 ? nhanLoaiXuLy(kindCuaBac(em.bac)) : null,
-    keTiep: { kind: em.keTiep.kind, nhan: nhanLoaiXuLy(em.keTiep.kind), canQl: em.keTiep.canQl },
+    keTiep: { kind: em.keTiep.kind, nhan: nhanLoaiXuLy(em.keTiep.kind) },
     soMo: viPham.filter(([, t]) => t.t === 'moi' || t.t === 'da_ghi_nhan' || t.t === 'can_xu_ly' || t.t === 'qua_han').length,
     soBatBuoc: em.soBatBuoc, soMoi: em.soMoi, han: em.han, hanXem: em.hanXem,
     quaHanNgay: Math.max(0, ...viPham.map(([, t]) => t.quaHanNgay ?? 0)) || null,

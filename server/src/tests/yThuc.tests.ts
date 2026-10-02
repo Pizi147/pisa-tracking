@@ -28,7 +28,7 @@ export type YThucTestKit = {
 };
 
 type EmChup = {
-  id: number; lop: string | null; nhom: string | null; bac: number; ke: string | null; canQl: boolean; han: string | null; khai: number | null;
+  id: number; lop: string | null; nhom: string | null; bac: number; ke: string | null; han: string | null; khai: number | null;
   deXuat: { kind: string; status: string; han: string | null } | null;
   vp: { id: number; t: string; nhan: string; han: string | null; lyDo: string | null; lop: string | null; ghiNhan: boolean }[];
 };
@@ -44,7 +44,7 @@ export async function chupDemoYThuc(conn: any, homNay: string): Promise<DemoYThu
   for (const h of hs) {
     const e = trang.get(h.id)!;
     em[h.full_name] = {
-      id: h.id, lop: lopCode(e.lopId), nhom: e.nhom, bac: e.bac, ke: e.keTiep?.kind ?? null, canQl: !!e.keTiep?.canQl, han: e.han, khai: e.khai?.bac ?? null,
+      id: h.id, lop: lopCode(e.lopId), nhom: e.nhom, bac: e.bac, ke: e.keTiep?.kind ?? null, han: e.han, khai: e.khai?.bac ?? null,
       deXuat: e.deXuat ? { kind: e.deXuat.kind, status: e.deXuat.status, han: e.deXuat.han } : null,
       vp: e.dsViPham.map((v) => {
         const k = e.viPham.get(v.id)!;
@@ -116,7 +116,7 @@ export async function runYThucTests(t: YThucTestKit) {
   check('YT4 (11) · DEMO (b) Lê Quang Huy: 3 vi phạm 08–10/09 ghi 10/09 → Cần xử lý, hạn hôm nay (còn 1 ngày), bậc kế Report 1', () => {
     const e = em('Lê Quang Huy');
     assert(e.nhom === 'bat_buoc' && e.vp.length === 3 && e.vp.every((v) => v.t === 'can_xu_ly' && v.han === TODAY), JSON.stringify(e.vp));
-    assert(e.ke === 'report_1' && !e.canQl && t.addDays(TODAY, 0) === e.han, 'bậc kế / hạn');
+    assert(e.ke === 'report_1' && t.addDays(TODAY, 0) === e.han, 'bậc kế / hạn');
   });
 
   check('YT4 (11) · DEMO (c) Phạm Bảo Ngọc: 3 vi phạm ghi 07–09/09 → "Quá hạn 1 ngày" (vì chưa xử lý), có thẻ Báo QL Ý thức', () => {
@@ -156,7 +156,7 @@ export async function runYThucTests(t: YThucTestKit) {
 
   check('YT4 (11) · DEMO (i) Tô Ngọc Hân: HS cũ khai bậc 2 (H5) → bậc kế WL 1, GVCN tự Xác nhận xử lý được (không cần QL)', () => {
     const e = em('Tô Ngọc Hân');
-    assert(e.khai === 2 && e.bac === 2 && e.ke === 'wl_1' && !e.canQl, JSON.stringify(e));
+    assert(e.khai === 2 && e.bac === 2 && e.ke === 'wl_1', JSON.stringify(e));
   });
 
   check('YT4 (11) · DEMO (j) Quách Thành Nam (D15): 3 vi phạm ở MB FT 101, chuyển sang MB FT 102 ngày 12/09 → vẫn Cần xử lý (dính), hạn đặt lại 16/09 (M-08)', () => {
@@ -167,7 +167,7 @@ export async function runYThucTests(t: YThucTestKit) {
 
   check('YT4 (11) · DEMO (k) Mạc Tuấn Kiệt: khai WL 1 → Report 4 + Meeting → Report 5 → bậc kế "WL 2" (không cần QL)', () => {
     const e = em('Mạc Tuấn Kiệt');
-    assert(e.khai === 3 && e.bac === 5 && e.ke === 'wl_2' && !e.canQl, JSON.stringify(e));
+    assert(e.khai === 3 && e.bac === 5 && e.ke === 'wl_2', JSON.stringify(e));
   });
 
   check('YT4 (11) · DEMO (l) Nguyễn Bảo Trâm: lớp thường FOU → BE, Report 1 ở khoá trước vẫn cùng chuỗi → bậc kế Report 2 (Q-C)', () => {

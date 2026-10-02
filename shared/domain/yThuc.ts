@@ -264,9 +264,9 @@ export function bacHoacNgoaiThang(bac: number, xuLy: readonly { kind: string; st
 }
 
 /** Bậc kế tiếp — không bao giờ hết thang: sau WL 2 là Report 7, 8… (02/10). WL 3 và phương án khác chỉ qua đề xuất QL. */
-export function bacKeTiep(bac: number): { kind: string; bac: number; canQl: boolean } {
+export function bacKeTiep(bac: number): { kind: string; bac: number } {
   const b = Math.max(0, bac);
-  return { kind: kindCuaBac(b + 1), bac: b + 1, canQl: false };
+  return { kind: kindCuaBac(b + 1), bac: b + 1 };
 }
 
 export type NhomEm = 'qua_han' | 'bat_buoc' | 'cho_duyet' | 'moi' | 'da_xu_ly';
@@ -310,13 +310,13 @@ export function macDinhTick(ds: readonly { id: number; t: TrangThaiVp; occurredO
  * qua WL 2. Mỗi bậc một trạng thái — `qua` (đã xử lý trên web) · `khai` (khai trước khi dùng web, H5) · `lan-nay` (bậc kế tiếp) · `sau`.
  */
 export function dongThang(bac: number, khai: { bac: number } | null): {
-  kind: string; nhan: string; trangThai: 'qua' | 'khai' | 'lan-nay' | 'sau'; canQl: boolean;
+  kind: string; nhan: string; trangThai: 'qua' | 'khai' | 'lan-nay' | 'sau';
 }[] {
   const tong = Math.max(BAC_REPORT_TIEP, bac + 1);
   return Array.from({ length: tong }, (_, i) => {
     const b = i + 1;
     const kind = kindCuaBac(b);
     const trangThai = b <= bac ? (khai && b <= khai.bac ? 'khai' : 'qua') : b === bac + 1 ? 'lan-nay' : 'sau';
-    return { kind, nhan: nhanLoaiXuLy(kind), trangThai, canQl: false };
+    return { kind, nhan: nhanLoaiXuLy(kind), trangThai };
   });
 }

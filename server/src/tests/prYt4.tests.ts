@@ -96,7 +96,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(d.bacHienTai([{ kind: 'report_1' }, { kind: 'meeting_cx' }], 2) === 2, 'khai thắng');
     assert(d.bacHienTai([{ kind: 'wl_1' }], null) === 3 && d.bacHienTai([], null) === 0, 'từ kind');
     assert(d.bacKeTiep(2)!.kind === 'wl_1' && d.bacKeTiep(0)!.kind === 'report_1' && d.bacKeTiep(0)!.bac === 1, 'kế');
-    assert(d.bacKeTiep(5).kind === 'wl_2' && d.bacKeTiep(4).canQl === false && d.bacKeTiep(6).kind === 'report_7', 'sau WL 2 là Report 7, không hết thang');
+    assert(d.bacKeTiep(5).kind === 'wl_2' && d.bacKeTiep(6).kind === 'report_7', 'sau WL 2 là Report 7, không hết thang');
   });
   check('YT4 (1) · canQl / nhãn loại: WL 3 + ngoài thang cần QL; loại lạ → "Xử lý (loại cũ)"', () => {
     assert(d.canQl('wl_3') && d.canQl('suspension') && d.canQl('meeting_cx') && d.canQl('other') && !d.canQl('report_4_meeting') && !d.canQl('report_5') && !d.canQl('wl_2') && !d.canQl('report_8'), 'canQl');
@@ -115,15 +115,14 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     ], '2026-09-16');
     assert(r.tick.join() === '1,3,4' && r.cuHon.join() === '2', JSON.stringify(r));
   });
-  check('YT4 (1) · dongThang(2, khai 2) → hai bậc "khai", bậc 3 "lần này", sáu bậc mạch chính + Report 7, không bậc nào cần QL', () => {
+  check('YT4 (1) · dongThang(2, khai 2) → hai bậc "khai", bậc 3 "lần này", sáu bậc mạch chính + Report 7', () => {
     const t2 = d.dongThang(2, { bac: 2 });
     assert(t2.map((x) => x.trangThai).join() === 'khai,khai,lan-nay,sau,sau,sau,sau', t2.map((x) => x.trangThai).join());
     assert(t2.map((x) => x.nhan).join('|') === 'Report 1|Report 2|WL 1|Report 4 + Meeting CX/GĐCN|Report 5|WL 2|Report 7', t2.map((x) => x.nhan).join('|'));
-    assert(!t2.some((x) => x.canQl), 'không bậc nào cần QL');
     assert(d.dongThang(3, { bac: 2 }).map((x) => x.trangThai).join() === 'khai,khai,qua,lan-nay,sau,sau,sau', 'qua sau khai');
   });
   check('YT4 (1) · Sau WL 2 thang không có đỉnh: Report 7, 8, 9… (số = bậc), không cần QL; WL 3 ngoài thang', () => {
-    assert(d.bacKeTiep(5).kind === 'wl_2' && d.bacKeTiep(6).kind === 'report_7' && d.bacKeTiep(7).kind === 'report_8' && !d.bacKeTiep(12).canQl, 'bậc kế');
+    assert(d.bacKeTiep(5).kind === 'wl_2' && d.bacKeTiep(6).kind === 'report_7' && d.bacKeTiep(7).kind === 'report_8', 'bậc kế');
     assert(d.bacCuaLoai('report_5') === 5 && d.bacCuaLoai('wl_2') === 6 && d.bacCuaLoai('report_9') === 9 && d.bacCuaLoai('report_3') === 0 && d.bacCuaLoai('wl_3') === 0, 'bậc của loại');
     assert(d.nhanLoaiXuLy('report_5') === 'Report 5' && d.nhanLoaiXuLy('report_9') === 'Report 9' && d.nhanLoaiXuLy('report_3') === 'Xử lý (loại cũ)', 'nhãn');
     assert(d.khoaLoaiXuLy('report_9') === 'report_tiep' && d.khoaLoaiXuLy('report_5') === 'report_5' && d.bacHienTai([{ kind: 'wl_2' }, { kind: 'report_7' }, { kind: 'wl_3' }], null) === 7, 'khoá thống kê + bậc hiện tại');
