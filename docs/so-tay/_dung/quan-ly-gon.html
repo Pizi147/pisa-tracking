@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><title>Sổ tay Quản lý (gọn) — Pisa Tracking</title>
+<link rel="stylesheet" href="../../../node_modules/@fontsource/be-vietnam-pro/400.css">
+<link rel="stylesheet" href="../../../node_modules/@fontsource/be-vietnam-pro/500.css">
+<link rel="stylesheet" href="../../../node_modules/@fontsource/be-vietnam-pro/600.css">
+<link rel="stylesheet" href="../../../node_modules/@fontsource/be-vietnam-pro/700.css">
+<style>:root { --xanh: #12355b; --xanh-nhat: #e8f0f9; --do: #e11d48; --chu: #1d2939; --xam: #667085; --vang: #fff8e6; --vang-vien: #f0c36d; --dovien: #fde8ec; }
+* { box-sizing: border-box; }
+html { font-family: 'Be Vietnam Pro', Arial, sans-serif; color: var(--chu); font-size: 10.2pt; line-height: 1.5; }
+body { margin: 0; }
+h1, h2, h3 { color: var(--xanh); line-height: 1.25; margin: 0; }
+h1 { font-size: 20pt; margin: 0 0 6mm; padding-bottom: 3mm; border-bottom: 2.5px solid var(--xanh); break-before: page; }
+h1.khong-ngat { break-before: auto; }
+h2 { font-size: 13pt; margin: 8mm 0 3mm; break-after: avoid; }
+h3 { font-size: 11pt; margin: 5mm 0 2mm; break-after: avoid; }
+p { margin: 0 0 2.5mm; }
+ul, ol { margin: 0 0 3mm; padding-left: 5.5mm; }
+li { margin-bottom: 1mm; }
+b, strong { font-weight: 600; }
+code, kbd { font-family: 'Be Vietnam Pro', Arial, sans-serif; background: #f2f4f7; border: 1px solid #d0d5dd; border-radius: 3px; padding: 0 3px; font-size: 9.2pt; }
+.nut { display: inline-block; background: #fff; border: 1px solid #98a2b3; border-radius: 4px; padding: 0 5px; font-weight: 500; font-size: 9.4pt; white-space: nowrap; }
+
+/* Bìa */
+.bia { height: 255mm; display: flex; flex-direction: column; justify-content: center; break-after: page; }
+.bia .nhan { color: var(--do); font-weight: 700; letter-spacing: .08em; font-size: 10pt; text-transform: uppercase; }
+.bia h1 { font-size: 34pt; border: 0; margin: 4mm 0 4mm; padding: 0; break-before: auto; }
+.bia .phu { font-size: 13pt; color: var(--xam); max-width: 130mm; }
+.bia .ban { margin-top: 18mm; color: var(--xam); font-size: 9.5pt; border-top: 1px solid #d0d5dd; padding-top: 4mm; }
+
+/* Khung luật / lưu ý */
+.luat, .luu-y { border-radius: 6px; padding: 3mm 4mm; margin: 3mm 0 4mm; break-inside: avoid; }
+.luat { background: var(--vang); border: 1px solid var(--vang-vien); border-left: 4px solid #d99a1e; }
+.luu-y { background: var(--dovien); border: 1px solid #f4a8b6; border-left: 4px solid var(--do); }
+.luat > b:first-child, .luu-y > b:first-child { display: block; margin-bottom: 1mm; font-size: 9.6pt; text-transform: uppercase; letter-spacing: .04em; }
+.luat ul, .luu-y ul { margin-bottom: 0; }
+.mo-ta { background: var(--xanh-nhat); border-radius: 6px; padding: 3mm 4mm; margin: 3mm 0 4mm; break-inside: avoid; }
+
+/* Ảnh có khoanh số */
+figure.anh { margin: 3mm 0 5mm; break-inside: avoid; }
+figure.anh img { display: block; width: 100%; height: auto; border: 1px solid #d0d5dd; border-radius: 6px; }
+.tieu-de-anh { font-size: 8.8pt; color: var(--xam); margin: 1.2mm 0 1.5mm; }
+.chu-thich { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: 1fr; gap: 1mm; }
+.chu-thich li { display: flex; gap: 2.5mm; align-items: flex-start; margin: 0; font-size: 9.4pt; }
+.so { flex: 0 0 auto; width: 5.2mm; height: 5.2mm; border-radius: 50%; background: var(--do); color: #fff; font-weight: 700; font-size: 8.4pt; line-height: 5.2mm; text-align: center; margin-top: .4mm; }
+.thieu-anh { border: 1.5px dashed var(--do); color: var(--do); padding: 6mm; text-align: center; margin: 3mm 0; font-size: 9pt; }
+
+/* Bảng */
+table { border-collapse: collapse; width: 100%; margin: 2mm 0 4mm; font-size: 9.4pt; break-inside: auto; }
+th, td { border: 1px solid #d0d5dd; padding: 1.6mm 2.4mm; text-align: left; vertical-align: top; }
+th { background: var(--xanh-nhat); color: var(--xanh); font-weight: 600; }
+tr { break-inside: avoid; }
+
+/* Mục lục / tìm nhanh */
+.tim-nhanh td:first-child { width: 62%; }
+.so-muc { color: var(--do); font-weight: 700; }
+.buoc { counter-reset: b; list-style: none; padding: 0; }
+.buoc li { counter-increment: b; position: relative; padding-left: 8mm; margin-bottom: 1.6mm; }
+.buoc li::before { content: counter(b); position: absolute; left: 0; top: .3mm; width: 5.4mm; height: 5.4mm; border-radius: 50%; background: var(--xanh); color: #fff; font-weight: 600; font-size: 8.6pt; line-height: 5.4mm; text-align: center; }
+
+/* Ảnh dọc (panel bên phải, ảnh cao): ảnh bên trái, chú thích bên phải để không phải thu nhỏ. */
+figure.anh.doc { display: grid; grid-template-columns: 104mm 1fr; column-gap: 5mm; align-items: start; }
+figure.anh.doc img { grid-row: 1 / span 2; }
+figure.anh.doc .tieu-de-anh { grid-column: 2; }
+figure.anh.doc .chu-thich { grid-column: 2; }
+</style></head><body>
+<section class="bia">
+  <div class="nhan">Pisa Tracking</div>
+  <h1>Sổ tay<br>Quản lý · bản gọn</h1>
+  <p class="phu">Những việc Quản lý làm hằng tuần và những hạn không được trễ. Bản đầy đủ có thêm từng màn hình.</p>
+  <div class="ban">Bản 02/10/2026 · Quản lý chi nhánh<br>Chỉ nói phần khác với giáo viên. Ảnh chụp từ bản demo; dữ liệu trong ảnh là giả.</div>
+</section>
+
+<h1 class="khong-ngat">1. Nhớ năm điều</h1>
+<div class="luat"><b>Luật cần nhớ</b>
+<ul>
+  <li>Bạn làm việc trong <b>chi nhánh của mình</b> và làm được mọi việc giáo viên làm. Tuần chạy <b>Thứ Hai → Chủ nhật</b>; hạn "n ngày" là ngày lịch, tính cả ngày đầu.</li>
+  <li><b>Chỉ Quản lý</b>: đổi Target và lộ trình, ra lệnh chuyển lớp, tạo lớp và phân công, xếp lịch Mock Test, dời lịch thi Fast Track, sửa điểm sau khi đợt hoàn tất, đánh dấu kỳ vọng đầu ra.</li>
+  <li>Mọi việc "xin Quản lý quyết" là <b>một thẻ</b> trong <b>Công việc › Chờ duyệt</b>. Giáo viên không bao giờ duyệt.</li>
+  <li>Thẻ quá hạn chỉ báo, <b>không tự đóng</b> (trừ lịch thi: hết hạn thì huỷ phần thi). Việc quét thẻ chỉ chạy khi có người mở web.</li>
+  <li>Em đang <b>Tạm dừng</b>: mọi hạn của em dừng. Muốn chuyển lớp phải bấm <b>Quay lại học</b> trước.</li>
+</ul></div>
+
+<h2>Nhịp một tuần</h2>
+<table>
+  <tr><th style="width:18%">Ngày</th><th>Việc</th></tr>
+  <tr><td><b>Thứ Hai</b></td><td>Web chốt dấu "-" tuần trước; <b>lệnh chuyển lớp tự chạy</b>. Xem bài vừa bị chốt "Không dự thi" và em vừa chuyển lớp.</td></tr>
+  <tr><td><b>Giữa tuần</b></td><td>Duyệt thẻ, nhắc giáo viên trễ việc. Hạn chấm Fast Track là Thứ Tư.</td></tr>
+  <tr><td><b>Chủ nhật</b></td><td>Hạn trả lời đề nghị <b>dời lịch lần 2</b> của tuần gửi. Không trả lời thì phần thi bị huỷ.</td></tr>
+  <tr><td><b>Thứ Bảy–CN</b></td><td>Nộp Báo cáo đơn vị hằng tuần (cửa sổ mở từ Thứ Bảy đến hết Chủ nhật).</td></tr>
+</table>
+
+<h1>2. Mỗi ngày bắt đầu ở Tổng quan</h1>
+<figure class="anh"><img src="../anh/q-01-tong-quan.png" alt="Tổng quan › Việc hôm nay"><figcaption class="tieu-de-anh">Tổng quan › Việc hôm nay</figcaption><ol class="chu-thich"><li><span class="so">2</span><span>Dải "Chờ duyệt": tổng số thẻ đang chờ, số quá hạn và số thẻ Báo QL; dòng dưới chia theo phân loại.</span></li><li><span class="so">3</span><span>Bấm "Mở hộp duyệt" để vào Công việc › Chờ duyệt.</span></li><li><span class="so">4</span><span>"Cần xử lý": việc giáo viên đang trễ và việc chờ bạn sắp xếp, quá hạn xếp trên cùng.</span></li><li><span class="so">6</span><span>"Xem và nhắc" mở Công việc đã lọc sẵn, có tên từng người và nút Nhắc.</span></li></ol></figure>
+<p>Đọc từ trên xuống: dải <b>Chờ duyệt</b> (số thẻ chờ, quá hạn, và thẻ Báo QL), rồi <b>Cần xử lý</b> (việc giáo viên đang trễ và việc chờ bạn, quá hạn xếp trước). Phía dưới là <b>Số liệu</b> với công tắc Fast Track | Lớp thường (chỉ phần số đổi). Số gạch chân nào cũng bấm được để mở danh sách.</p>
+
+<h1>3. Dựng lớp, học viên và chuyển lớp</h1>
+<figure class="anh"><img src="../anh/q-11-tao-lop.png" alt="Panel &quot;Tạo lớp mới&quot;"><figcaption class="tieu-de-anh">Panel "Tạo lớp mới"</figcaption><ol class="chu-thich"><li><span class="so">1</span><span>Chọn Fast Track hoặc Lớp thường.</span></li><li><span class="so">4</span><span>Khối "Phân công": một môn một người, GVCN phải dạy ít nhất một môn.</span></li><li><span class="so">5</span><span>Bấm "Tạo lớp" khi phân công hợp lệ (nút mờ và có chú thích khi chưa đủ).</span></li></ol></figure>
+<div class="luat"><b>Luật cần nhớ</b>
+<ul>
+  <li><b>Tạo lớp</b>: một môn một người; GVCN phải dạy ít nhất một môn. FOU thường 2 giáo viên (L·R·G+V và P); Pre FOU chỉ GVCN. Lớp đã có học viên không đổi được chương trình.</li>
+  <li><b>Thêm học viên</b>: dán bảng có dòng tiêu đề "Họ và tên"; email bắt buộc. Fast Track nhập <b>Target</b> (hoặc <b>KCK</b> = không kỳ vọng, không SOS tự động).</li>
+  <li><b>Đổi Target/lộ trình</b>: ⋮ › Lộ trình, ghi lý do và ngày hiệu lực. GVCN chỉ đề xuất, thẻ nằm ở phân loại "Thông tin HV".</li>
+</ul></div>
+<figure class="anh"><img src="../anh/q-17-chuyen-lop-ca-lop.png" alt="Panel &quot;Chuyển lớp&quot; cả lớp (bước 1)"><figcaption class="tieu-de-anh">Panel "Chuyển lớp" cả lớp (bước 1)</figcaption><ol class="chu-thich"><li><span class="so">1</span><span>Mỗi em một dòng: chọn hướng đi, lớp đích; cột kết quả Cuối khoá giúp quyết định.</span></li><li><span class="so">3</span><span>"Tiếp tục · n em" sang bước xem lại, rồi "Gửi lệnh chuyển n em".</span></li></ol></figure>
+<ol class="buoc">
+  <li>Lớp hết khoá hiện dải đỏ <b>"Kết thúc khoá"</b>; bấm <b>Chuyển tiếp lớp…</b> (một em lẻ: ⋮ › <b>Chuyển lớp…</b>).</li>
+  <li>Chọn tuần bắt đầu (Thứ Hai, từ tuần sau trở đi), hướng đi và lớp đích cho từng em, rồi <b>Tiếp tục</b> và gửi lệnh. Lệnh tự chạy sáng Thứ Hai; còn "chờ" thì <b>Huỷ lệnh</b> được.</li>
+  <li>Chọn khác "Hệ thống gợi ý" phải ghi lý do. Lên FT bắt buộc có Target. <b>Em thiếu điểm Cuối khoá vẫn chuyển được.</b> Lớp thường tới tuần kết thúc thì mọi em phải có lệnh, nếu không bạn nhận thẻ Báo QL.</li>
+  <li>Gợi ý theo % Cuối khoá: &lt; 50 học lại · 50–59 bạn cân nhắc · 60–69 lên kèm bổ trợ miễn phí · ≥ 70 lên.</li>
+</ol>
+
+<h1>4. Lịch Mock Test (Fast Track)</h1>
+<figure class="anh"><img src="../anh/q-21-ke-hoach-test.png" alt="Test › Kế hoạch Test"><figcaption class="tieu-de-anh">Test › Kế hoạch Test</figcaption><ol class="chu-thich"><li><span class="so">2</span><span>"Cần xếp lại (n)": học viên có kỹ năng vắng hoặc phần thi đã huỷ.</span></li><li><span class="so">3</span><span>"Xếp lịch MT…" xếp nhiều em một lần.</span></li><li><span class="so">5</span><span>Chip kỹ năng: màu xanh dương = đã xếp, xám = đã thi, vàng = dời vì vắng, tím = chờ duyệt, gạch ngang = đã huỷ phần thi. Bấm chip để sửa.</span></li></ol></figure>
+<p>Vào <b>Test › Kế hoạch Test</b> (tab chỉ Quản lý có). Mỗi hàng là một học viên, mỗi cột là một đợt. Màu chip: <b>xanh dương</b> đã xếp · <b>xám ✓</b> đã thi · <b>vàng</b> dời vì vắng · <b>cam</b> vắng cần xếp lại · <b>tím</b> chờ bạn duyệt dời · <b>gạch ngang</b> đã huỷ phần thi · <b>nét đứt</b> chưa xếp. Bấm chip để sửa lịch của em, hoặc <b>Xếp lịch MT…</b> để xếp nhiều lớp một lần.</p>
+<div class="luat"><b>Luật cần nhớ</b>
+<ul>
+  <li>Dời khi tuần thi đã bắt đầu thì phải ghi lý do. <b>Thi lại</b>: điểm cũ xoá khỏi ô nhưng giữ trong Lịch sử. <b>Huỷ cả lượt</b> đóng mọi Case, PA quy chế và Phối hợp sinh từ lượt đó (không tính thất bại). Tối đa MT8.</li>
+  <li><b>Dấu "-"</b>: hết Chủ nhật còn "-" là <b>Không dự thi</b>. Lần 1 web tự dời sang tuần kế. Lần 2 thành thẻ chờ bạn (hạn hết Chủ nhật tuần gửi); bạn từ chối hoặc để hết hạn thì <b>huỷ phần thi</b> (giữ các phần khác). Chỉ Quản lý khôi phục.</li>
+  <li>Lớp thường: bài còn "-" thì dời sang tuần sau, lặp lại. <b>Nút Quản lý huỷ kết quả môn chưa có trên web</b>, nên bài vướng đợt kế phải nhờ bạn dời lịch ở Kế hoạch Test.</li>
+</ul></div>
+
+<h1>5. Hộp Chờ duyệt</h1>
+<figure class="anh"><img src="../anh/q-30-cho-duyet.png" alt="Công việc › Chờ duyệt"><figcaption class="tieu-de-anh">Công việc › Chờ duyệt</figcaption><ol class="chu-thich"><li><span class="so">1</span><span>Năm phân loại: Học thuật · Ý thức · Lịch thi · Thông tin HV · Báo QL.</span></li><li><span class="so">3</span><span>Thẻ Báo QL chỉ để biết và nhắc, không có nút Duyệt.</span></li><li><span class="so">5</span><span>"Duyệt" và "Từ chối…" ở chân thẻ.</span></li><li><span class="so">6</span><span>"Nhắc {tên giáo viên}" gửi thông báo, không đổi trạng thái thẻ.</span></li></ol></figure>
+<table>
+  <tr><th style="width:20%">Phân loại</th><th>Thẻ</th><th style="width:22%">Hạn</th></tr>
+  <tr><td><b>Học thuật</b></td><td>Đề xuất PA · Xin ý kiến · Không cần theo dõi · Kế hoạch bổ trợ</td><td>5 ngày (bổ trợ 3 ngày)</td></tr>
+  <tr><td><b>Ý thức</b></td><td>WL 3, Meeting CX/GĐCN, Đình chỉ, Khác (cần bằng chứng)</td><td>5 ngày</td></tr>
+  <tr><td><b>Lịch thi</b></td><td>Dời lịch lần 2 · khôi phục phần đã huỷ</td><td>Hết Chủ nhật tuần gửi</td></tr>
+  <tr><td><b>Thông tin HV</b></td><td>Đề xuất sửa · Đề xuất chuyển lớp</td><td>5 ngày</td></tr>
+  <tr><td><b>Báo QL</b></td><td>Chỉ để biết và nhắc, không có nút Duyệt</td><td>Không hạn</td></tr>
+</table>
+<figure class="anh"><img src="../anh/q-31-tu-choi.png" alt="Thẻ đang mở ô &quot;Từ chối…&quot; (bắt buộc lý do)"><figcaption class="tieu-de-anh">Thẻ đang mở ô "Từ chối…" (bắt buộc lý do)</figcaption><ol class="chu-thich"><li><span class="so">1</span><span>Ô lý do: bắt buộc, ít nhất 3 ký tự; giáo viên sẽ đọc câu này.</span></li><li><span class="so">2</span><span>Bấm "Gửi từ chối" để từ chối; Esc để bỏ.</span></li></ol></figure>
+<ul>
+  <li><b>Từ chối…</b> bắt buộc lý do từ 3 ký tự. <b>Xin ý kiến</b> chỉ <b>Trả lời</b> bằng chữ. Thẻ Báo QL chỉ <b>Nhắc</b> giáo viên giữ việc và tự đóng khi việc xong.</li>
+  <li><b>Không cần theo dõi</b>: duyệt thì Case và PA chưa xong huỷ (ngoài hiệu quả PA); từ chối thì giáo viên có hạn mới 3 ngày. <b>Chuyển lớp</b>: "Duyệt…" mở panel điền sẵn, bấm xác nhận mới thành lệnh.</li>
+  <li>Duyệt hàng loạt chỉ khi lọc một phân loại và các thẻ cùng loại (Đề xuất PA, Dời lịch). Bạn vừa là Quản lý vừa dạy mà tự gửi thẻ thì <b>tự duyệt được</b> (ghi nhật ký).</li>
+</ul>
+
+<h1>6. Theo dõi chuyên môn</h1>
+<figure class="anh"><img src="../anh/q-40-viec-hoc-vien-ql.png" alt="Công việc › Hỗ trợ học viên (Quản lý)"><figcaption class="tieu-de-anh">Công việc › Hỗ trợ học viên (Quản lý)</figcaption><ol class="chu-thich"><li><span class="so">1</span><span>"Của tôi" hoặc "Của GV (nhắc)": xem việc của giáo viên để nhắc.</span></li><li><span class="so">3</span><span>"Nhắc" gửi thông báo cho giáo viên giữ việc; sau đó đổi thành "✓ Đã nhắc".</span></li></ol></figure>
+<p><b>Nhắc giáo viên</b>: Công việc › Hỗ trợ học viên, đổi <b>Việc của ai</b> sang "Của GV (nhắc)", lọc Quá hạn, bấm <b>Nhắc</b>. Từ Tổng quan, <b>Xem và nhắc</b> đưa thẳng tới đây.</p>
+<figure class="anh"><img src="../anh/q-04-phan-tich.png" alt="Phân tích › Tổng hợp Test + SOS"><figcaption class="tieu-de-anh">Phân tích › Tổng hợp Test + SOS</figcaption><ol class="chu-thich"><li><span class="so">1</span><span>Năm góc nhìn: Tổng hợp Test + SOS · Tổng hợp vấn đề HV · Hiệu quả PA · Ý thức · Giáo viên.</span></li><li><span class="so">2</span><span>Khoảng thời gian: 4 tuần, 8 tuần, 12 tuần hoặc 6 tháng.</span></li><li><span class="so">4</span><span>Cách xếp dòng: theo tuần, lớp, đợt hoặc chi nhánh.</span></li></ol></figure>
+<div class="luat"><b>Luật cần nhớ khi đọc số</b>
+<ul>
+  <li>Năm góc nhìn: Test + SOS · Vấn đề HV · Hiệu quả PA · Ý thức · Giáo viên. Đọc <b>n/N trước, phần trăm sau</b>; dưới 5 mục thì không tô màu, không kết luận.</li>
+  <li>"Chưa đủ dữ liệu" nằm ngoài tỷ lệ. <b>Ý thức nằm ngoài mọi bảng hiệu quả.</b> PA theo quy chế không xếp hạng, không "Nên dùng".</li>
+  <li>Phân tích giáo viên: <b>không KPI, không xếp hạng</b>, sắp theo tên. Đỏ dưới 50 % · vàng 50–69 % · xanh từ 70 %. <b>Đúng hạn</b> = lần nhập điểm đầu không muộn hơn hạn.</li>
+</ul></div>
+
+<h1>7. Vận hành và Báo cáo đơn vị</h1>
+<figure class="anh"><img src="../anh/q-41-van-hanh.png" alt="Công việc › Vận hành"><figcaption class="tieu-de-anh">Công việc › Vận hành</figcaption><ol class="chu-thich"><li><span class="so">1</span><span>Nút "+ Giao việc" tạo việc mới, có thể giao cho người ngoài hệ thống.</span></li><li><span class="so">3</span><span>Bảng việc: người phụ trách, hạn, trạng thái (Cần làm · Đang làm · Tạm ngưng · Đã dừng · Xong) và tiến độ việc con.</span></li></ol></figure>
+<p><b>Công việc › Vận hành</b>: bốn con số là bốn câu hỏi (quá hạn, chờ người khác, cần quyết định, vừa hoàn thành); bấm số để lọc. <b>+ Giao việc</b> tạo việc, giao được cho người ngoài hệ thống. Trạng thái: Cần làm · Đang làm · Tạm ngưng · Đã dừng · Xong. <b>Tạm ngưng</b> phải ghi lý do và ngày xem lại.</p>
+<p><b>Báo cáo đơn vị</b> (Công việc › Báo cáo đơn vị): mỗi tuần, bấm ô của bảng, chọn <b>Ổn · Cần theo dõi · Có vấn đề</b>, ghi bằng chứng cụ thể, rồi <b>Lưu nháp</b> hoặc <b>Nộp</b>. Nộp từ <b>Thứ Bảy đến hết Chủ nhật</b>; sau đó chỉ Quản trị hệ thống mở lại được.</p>
+
+<h1>8. Khi dữ liệu sai</h1>
+<table>
+  <tr><th style="width:34%">Cần sửa</th><th>Cách làm</th></tr>
+  <tr><td>Điểm nhập sai</td><td>Sửa mọi lúc, lý do từ 5 ký tự, có nhật ký. "Huỷ điểm" ở menu Thao tác khác.</td></tr>
+  <tr><td>Lịch thi sai</td><td>Kế hoạch Test, bấm chip, đổi tuần (có lý do nếu tuần đã bắt đầu).</td></tr>
+  <tr><td>"Không dự thi" sai hoặc phần thi đã huỷ</td><td>Chỉ Quản lý sửa hoặc khôi phục.</td></tr>
+  <tr><td>Target hoặc lộ trình sai</td><td>⋮ › Lộ trình.</td></tr>
+  <tr><td>Lệnh chuyển lớp sai</td><td>Huỷ lệnh còn "chờ", rồi ra lệnh lại.</td></tr>
+  <tr><td>Xoá học viên, lớp, tài khoản</td><td>Chỉ Quản trị hệ thống.</td></tr>
+</table>
+
+</body></html>
