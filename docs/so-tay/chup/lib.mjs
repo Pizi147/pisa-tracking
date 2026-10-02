@@ -51,7 +51,7 @@ async function nowKhung(page, w, toiDa = 3200) {
  * marks: [{ n, loc: (page) => Locator, pad?: number }]; vung: (page) => Locator — chỉ chụp vùng này (mặc định: từ đầu trang tới dưới dấu thấp nhất).
  * Trả về { file, thieu: [n…] } (thieu = số không tìm được phần tử).
  */
-export async function khoanhVaChup(page, w, id, marks, { vung, le = 24, nowChieuCao = true, panel = false } = {}) {
+export async function khoanhVaChup(page, w, id, marks, { vung, le = 24, nowChieuCao = true, panel = false, cao = 0 } = {}) {
   await anDemo(page);
   if (nowChieuCao && !panel) await nowKhung(page, w);
   const rects = [];
@@ -98,6 +98,7 @@ export async function khoanhVaChup(page, w, id, marks, { vung, le = 24, nowChieu
     const maxY = Math.max(...rects.map((r) => r.y + r.h), 200);
     clip = { x: 0, y: 0, width: vp.width, height: Math.min(vp.height, maxY + 60) };
   }
+  if (cao && clip.height > cao) clip.height = cao;
   fs.mkdirSync(OUT, { recursive: true });
   const file = path.join(OUT, `${id}.png`);
   await page.screenshot({ path: file, clip });
@@ -114,6 +115,6 @@ export async function chayMotAnh(browser, fig, cache) {
   await page.waitForTimeout(600);
   if (fig.buoc) await fig.buoc(page);
   await page.waitForTimeout(300);
-  const kq = await khoanhVaChup(page, w, fig.id, fig.marks, { vung: fig.vung, le: fig.le, panel: fig.panel });
+  const kq = await khoanhVaChup(page, w, fig.id, fig.marks, { vung: fig.vung, le: fig.le, panel: fig.panel, cao: fig.cao });
   return kq;
 }

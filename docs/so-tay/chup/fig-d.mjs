@@ -229,7 +229,8 @@ export const ANH_D = [
     user: HA,
     url: '/hoc-vien/lop/3?tab=y-thuc',
     w: W,
-    vung: (p) => p.locator('section[aria-label^="Quá hạn"]').first().locator('xpath=../..'),
+    vung: (p) => p.locator('main').first(),
+    cao: 800,
     le: 18,
     marks: [
       { n: 1, loc: (p) => p.locator('section[aria-label^="Quá hạn"]'), ghi: 'QUÁ HẠN: các em đã quá hạn xử lý (hiện "⚠ quá hạn n ngày"); việc gấp nhất.' },

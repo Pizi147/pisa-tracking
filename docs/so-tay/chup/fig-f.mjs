@@ -86,7 +86,7 @@ export const ANH_F = [
     ],
   },
   {
-    id: 'g-48-tab-ho-so-hoc-vien', tieu_de: 'Hồ sơ học viên: tab và menu ⋮', user: 7, url: '/hoc-vien/50', w: 1280,
+    id: 'g-48-tab-ho-so-hoc-vien', cao: 760, tieu_de: 'Hồ sơ học viên: tab và menu ⋮', user: 7, url: '/hoc-vien/50', w: 1280,
     buoc: async (p) => {
       await p.setViewportSize({ width: 1280, height: 1200 });
       await p.waitForTimeout(300);

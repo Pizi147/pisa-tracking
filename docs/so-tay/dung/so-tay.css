@@ -31,7 +31,7 @@ code, kbd { font-family: 'Be Vietnam Pro', Arial, sans-serif; background: #f2f4f
 
 /* Ảnh có khoanh số */
 figure.anh { margin: 3mm 0 5mm; break-inside: avoid; }
-figure.anh img { display: block; width: 100%; max-height: 120mm; object-fit: contain; object-position: left top; border: 1px solid #d0d5dd; border-radius: 6px; }
+figure.anh img { display: block; width: 100%; height: auto; border: 1px solid #d0d5dd; border-radius: 6px; }
 .tieu-de-anh { font-size: 8.8pt; color: var(--xam); margin: 1.2mm 0 1.5mm; }
 .chu-thich { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: 1fr; gap: 1mm; }
 .chu-thich li { display: flex; gap: 2.5mm; align-items: flex-start; margin: 0; font-size: 9.4pt; }
@@ -48,5 +48,11 @@ tr { break-inside: avoid; }
 .tim-nhanh td:first-child { width: 62%; }
 .so-muc { color: var(--do); font-weight: 700; }
 .buoc { counter-reset: b; list-style: none; padding: 0; }
-.buoc li { counter-increment: b; display: flex; gap: 2.5mm; margin-bottom: 1.6mm; }
-.buoc li::before { content: counter(b); flex: 0 0 auto; width: 5.4mm; height: 5.4mm; border-radius: 50%; background: var(--xanh); color: #fff; font-weight: 600; font-size: 8.6pt; line-height: 5.4mm; text-align: center; margin-top: .3mm; }
+.buoc li { counter-increment: b; position: relative; padding-left: 8mm; margin-bottom: 1.6mm; }
+.buoc li::before { content: counter(b); position: absolute; left: 0; top: .3mm; width: 5.4mm; height: 5.4mm; border-radius: 50%; background: var(--xanh); color: #fff; font-weight: 600; font-size: 8.6pt; line-height: 5.4mm; text-align: center; }
+
+/* Ảnh dọc (panel bên phải, ảnh cao): ảnh bên trái, chú thích bên phải để không phải thu nhỏ. */
+figure.anh.doc { display: grid; grid-template-columns: 104mm 1fr; column-gap: 5mm; align-items: start; }
+figure.anh.doc img { grid-row: 1 / span 2; }
+figure.anh.doc .tieu-de-anh { grid-column: 2; }
+figure.anh.doc .chu-thich { grid-column: 2; }
