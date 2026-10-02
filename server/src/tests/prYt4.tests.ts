@@ -98,8 +98,9 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(d.bacKeTiep(2)!.kind === 'wl_1' && d.bacKeTiep(0)!.kind === 'report_1' && d.bacKeTiep(0)!.bac === 1, 'kế');
     assert(d.bacKeTiep(5).kind === 'wl_2' && d.bacKeTiep(6).kind === 'report_7', 'sau WL 2 là Report 7, không hết thang');
   });
-  check('YT4 (1) · canQl / nhãn loại: WL 3 + ngoài thang cần QL; loại lạ → "Xử lý (loại cũ)"', () => {
-    assert(d.canQl('wl_3') && d.canQl('suspension') && d.canQl('meeting_cx') && d.canQl('other') && !d.canQl('report_4_meeting') && !d.canQl('report_5') && !d.canQl('wl_2') && !d.canQl('report_8'), 'canQl');
+  check('YT4 (1) · WL 3 + ngoài thang cần QL (NGOAI_THANG); bậc trong thang và Report 7+ thì không; loại lạ → "Xử lý (loại cũ)"', () => {
+    const ngoai = (k: string) => (d.NGOAI_THANG as readonly string[]).includes(k);
+    assert(['wl_3', 'suspension', 'meeting_cx', 'other'].every(ngoai) && !['report_4_meeting', 'report_5', 'wl_2', 'report_8'].some(ngoai), 'ngoài thang');
     assert(d.nhanLoaiXuLy('talk_short') === 'Xử lý (loại cũ)' && d.nhanLoaiXuLy('other', 'Gặp PH') === 'Gặp PH' && d.nhanLoaiXuLy('wl_2') === 'WL 2', 'nhãn');
   });
   check('YT4 (1) · nhomEm: vừa chờ duyệt vừa quá hạn → Quá hạn; đã xử lý 7 ngày gần nhất', () => {

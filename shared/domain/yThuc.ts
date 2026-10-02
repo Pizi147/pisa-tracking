@@ -121,11 +121,6 @@ export function khoaLoaiXuLy(kind: string): KhoaLoaiXuLy {
   return (MEASURE_KINDS as readonly string[]).includes(kind) ? (kind as MeasureKind) : 'loai-cu';
 }
 
-/** Cần QL duyệt: mọi loại ngoài thang, gồm WL 3 (V4-8, V4-9). Mọi bậc trong thang và Report 7+ do GVCN tự xác nhận. */
-export function canQl(kind: string): boolean {
-  return (NGOAI_THANG as readonly string[]).includes(kind);
-}
-
 /** Bậc (≥ 1) của một loại trong thang, kể cả Report 7+; 0 khi ngoài thang hoặc loại lạ. */
 export function bacCuaLoai(kind: string): number {
   const i = (THANG as readonly string[]).indexOf(kind);
