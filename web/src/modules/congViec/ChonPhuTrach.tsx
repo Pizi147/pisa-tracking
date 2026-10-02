@@ -107,7 +107,7 @@ export function ChonPhuTrach({ value, valueName, onChange, chiChonGv }: {
               if (v?.kieu === 'tai_khoan') { onChange(v.id, v.ten); setTen(v.ten); }
               dongVeNut();
             }}
-            nhom="giao_vien" choToi={false} choNgoai={false} trongPhamVi
+            nhom="giao_vien" choToi={false} choNgoai={false}
             ariaLabel="Chọn giáo viên" tuMo
           />
         </div>

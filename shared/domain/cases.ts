@@ -909,15 +909,6 @@ export const NEXT_STEP_LABEL: Record<NextStep, string> = {
   propose: 'Thay PA',
   ask_manager: 'Xin hỗ trợ từ Quản lý',
 };
-export const NEXT_STEP_HINT: Record<NextStep, string> = {
-  complete: 'Khép lại phương án này. Case chỉ đóng được khi mọi phương án đã khép.',
-  monitor: 'Ghi kết quả đợt theo dõi vừa rồi và mở một đợt theo dõi mới.',
-  continue: 'Giữ nguyên phương án, mở đợt mới để làm tiếp.',
-  adjust: 'Cùng phương án, sửa mô tả, người thực hiện hoặc ngày dự kiến kết thúc. Bản cũ giữ trong lịch sử.',
-  propose: 'Khép phương án cũ với lý do "Được thay thế" và mở phương án mới.',
-  ask_manager: 'Ghi kết quả tuần như Giữ nguyên và gửi câu hỏi cho Quản lý. PA vẫn chạy.',
-};
-
 /** Kết quả tốt được phép khép lại; kết quả chưa tốt BẮT BUỘC đi tiếp. */
 const GOOD_OUTCOMES = ['improved', 'partial'];
 export function nextStepsFor(outcome: string): NextStep[] {

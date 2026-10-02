@@ -133,7 +133,7 @@ export async function runKhungTests(t: YThucTestKit) {
       assert(d.khuVucHienThi(n).length === 4, `${ten}: ${tabs(n)}`);
       assert(d.tabTestHienThi(n).join(',') === 'lich,ke-hoach', `${ten} tab Test: ${tabs(n)}`);
       assert(d.tabCongViecHienThi(n).join(',') === 'cho-duyet,ho-tro,van-hanh,bao-cao', `${ten} tab Công việc: ${tabs(n)}`);
-      assert(n.analysis && n.academic, `${ten} phải thấy Phân tích`);
+      assert(n.analysis, `${ten} phải thấy Phân tích`);
     }
     assert(navOf(t.P.admin).admin && !navOf(t.P.mbManager).admin, 'Chỉ Quản trị thấy màn Quản trị');
   });
@@ -143,13 +143,8 @@ export async function runKhungTests(t: YThucTestKit) {
       const n = navOf(p);
       assert(tabs(n) === 'tong-quan,hoc-vien,test,cong-viec|lich|ho-tro,yeu-cau|false|false', `${ten}: ${tabs(n)}`);
       assert(d.tabTestMacDinh(n) === 'lich', `${ten} mở Test vào ${d.tabTestMacDinh(n)}`);
-      assert(!n.mgmtTasks && !n.meeting, `${ten} không được thấy Vận hành / Báo cáo đơn vị`);
+      assert(!n.workOps && !n.workReports, `${ten} không được thấy Vận hành / Báo cáo đơn vị`);
     }
   });
 
-  check('PR-O · O6 Cờ cũ giữ đúng nghĩa (mã chưa chuyển vẫn chạy)', () => {
-    const n = navOf(t.P.mbManager);
-    assert(n.mocks === n.test && n.academic === n.analysis && n.meeting === n.workReports && n.mgmtTasks === n.workOps,
-      `Cờ cũ lệch cờ mới: ${JSON.stringify(n)}`);
-  });
 }

@@ -5010,7 +5010,7 @@ check('[11] Nhãn: mỗi trạng thái có đúng một tên và một họ nhã
     assert(domain.OUTCOME_TONE[bad] !== 'ok', `Kết quả ${bad} lại được tô xanh như tin tốt`);
   }
   for (const ns of domain.NEXT_STEPS) {
-    assert(domain.NEXT_STEP_LABEL[ns] && domain.NEXT_STEP_HINT[ns], `Bước ${ns} thiếu tên hoặc lời giải thích`);
+    assert(domain.NEXT_STEP_LABEL[ns], `Bước ${ns} thiếu tên`);   // PR-Dọn-b: NEXT_STEP_HINT không nơi nào đọc → xoá
   }
 });
 
