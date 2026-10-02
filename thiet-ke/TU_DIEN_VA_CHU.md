@@ -532,3 +532,13 @@ Lớp thường **không có chữ SOS ở bất kỳ đâu** (chủ sản phẩ
 | Việc cần làm | `Ghi Mini Test · {HV}` · `Báo phụ huynh qua TVV · {HV} · Cuối khoá 45%` (việc của Quản lý) | — |
 | Kết thúc lớp | `Còn treo: n Mini Test chưa ghi` (không chặn) | — |
 | Đầu hồ sơ lớp | `Cuối khoá: 7/8 em có đủ điểm · 1 em Quản lý cân nhắc` | — |
+
+## 15. UX-G — 02/10/2026 · trạng thái nói đúng
+
+| Chỗ | Chữ | Không viết |
+|---|---|---|
+| Câu tóm tắt đầu hồ sơ HV, ô Kết quả gần nhất (đợt chưa đủ điểm) | `MT3 SOS 1 tạm thời: đang hỗ trợ Speaking` · `SOS 1 tạm thời · 1/4 kỹ năng` | `SOS 1` trơn khi còn thiếu điểm |
+| Ô Ý thức đầu hồ sơ HV, chưa có vi phạm | `Không có vi phạm` (không dòng phụ) | `Chưa xử lý lần nào` khi không có vi phạm nào |
+| Chuông, giờ thông báo ghi sau ngày nghiệp vụ (demo) | `Ghi nhận 02/10 22:57` (tooltip: `Ngày nghiệp vụ … · Ghi nhận …`) | ngày tương lai trơ trọi |
+| Việc Báo phụ huynh qua TVV | `Nhờ TVV báo phụ huynh (4 nội dung), xong thì đánh dấu đã làm` | `Tạo task cho TVV trên Base` |
+| Yêu cầu của tôi, thẻ bị từ chối | nhãn `Bị từ chối` | `Cần làm` |

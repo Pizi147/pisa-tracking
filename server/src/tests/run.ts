@@ -9045,6 +9045,10 @@ await runPrDeployTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P
 const { runPrDonBTests } = await import('./prDonB.tests.ts');
 await runPrDonBTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
+// ==================================================================== UX-G (trạng thái nói đúng, một màu một nghĩa)
+const { runPrUxGTests } = await import('./prUxG.tests.ts');
+await runPrUxGTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

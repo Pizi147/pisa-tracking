@@ -127,7 +127,7 @@ export function dongBoBaoPh(attempt: { id: number; student_id: number; class_id?
   for (const g of conn.prepare(`SELECT DISTINCT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active'`).all(attempt.class_id) as any[]) {
     notify({
       userId: g.user_id, kind: 'phoi_hop', title: `Báo phụ huynh qua TVV · ${hv?.full_name ?? ''} · Giữa khoá không đạt ${mon}`,
-      body: 'Tạo task cho TVV trên Base với 4 nội dung, rồi đánh dấu đã làm.',
+      body: 'Nhờ TVV báo phụ huynh (4 nội dung), xong thì đánh dấu đã làm.',
       entityType: 'assessment_attempt', entityId: attempt.id, dedupKey: `bao-ph:${attempt.id}`,
     });
   }

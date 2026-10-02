@@ -3,7 +3,7 @@ import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
   ATTEMPT_KIND_SHORT, CHU_CHUYEN_LOP,
   INTERVENTION_KIND_LABEL, PERMISSIONS,
-  SOS_LABEL, URGENCY_LABEL, caseHeadline, caseTopicLabel, cycleDeadline,
+  SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, cycleDeadline,
   duongHoSoHocVien, duongLichTest, nhanDotNgan, planDueDate, urgencyFromSos,
   khungCua, laLanGhiCuoi, tenMon, tenMonNgan, tenNhomMon, REGULAR_SKILLS, MEASURE_KIND_LABEL, nhanLoaiXuLy, soSanhLop,
   type Khung, type AttemptKind, type InterventionKind,
@@ -63,7 +63,7 @@ export type WorkItem = {
   attemptNo: number | null;
   caseId: number | null;
   /** Nhãn MỨC ĐỘ của học viên — chỉ có ở việc liên quan tới một vấn đề đang mở. */
-  level: { tone: 'ok' | 'info' | 'warn' | 'danger'; text: string } | null;
+  level: { tone: 'ok' | 'info' | 'warn' | 'danger' | 'neutral'; text: string } | null;
   reason: string;
   /** Nút động từ ngắn: "Nhập điểm", "Thêm PA", "Ghi kết quả". */
   actionLabel: string;
@@ -154,7 +154,7 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   /* PR-LT2a (N3, T45): GVCN báo phụ huynh qua TVV — không hạn (M-05). */
   phoi_hop: {
     label: 'Báo phụ huynh qua TVV',
-    hint: 'Tạo task cho TVV trên Base với 4 nội dung, rồi đánh dấu đã làm.',
+    hint: 'Nhờ TVV báo phụ huynh (4 nội dung), xong thì đánh dấu đã làm.',
   },
 
   /* PR-VAI-a (K5-10, Q14): Phối hợp SOS của GVCN là VIỆC THẬT — một dòng mỗi lớp chủ nhiệm, không hạn (P10). */
@@ -243,11 +243,11 @@ function sosTone(level: number | null): 'ok' | 'info' | 'warn' | 'danger' {
  * Nhãn MỨC ĐỘ của em, lấy từ case: SOS 1/2/3 nếu vấn đề sinh ra từ một bài đánh giá,
  * còn giáo viên tự báo thì chưa có bài nên chỉ có mức độ gấp.
  */
-function levelOf(c: { sos_level: number | null; urgency: string | null }): WorkItem['level'] {
+export function levelOf(c: { sos_level: number | null; urgency: string | null }): WorkItem['level'] {
   if (c.sos_level !== null) return { tone: sosTone(c.sos_level), text: SOS_LABEL[c.sos_level as 0 | 1 | 2 | 3] };
   if (c.urgency && c.urgency !== 'normal') {
     return {
-      tone: c.urgency === 'urgent' ? 'danger' : 'warn',
+      tone: URGENCY_TONE[c.urgency] === 'danger' ? 'danger' : 'neutral',   // UX-G G2: "Bình thường" không tô vàng
       text: URGENCY_LABEL[c.urgency as keyof typeof URGENCY_LABEL],
     };
   }
@@ -806,7 +806,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       classId: r.cur_class_id, classCode: r.class_code ?? null,
       attemptId: r.attempt_id, attemptNo: r.attempt_no ?? null, caseId: null, level: null,
       contextLabel: nhanDot(r.attempt_kind, r.attempt_no), count: null,
-      reason: 'Tạo task cho TVV trên Base: kết quả, môn khó khăn, nguyên nhân, phương án hỗ trợ và khả năng học lại.',
+      reason: 'Nhờ TVV báo phụ huynh (4 nội dung), xong thì đánh dấu đã làm: kết quả, môn khó khăn, nguyên nhân, phương án hỗ trợ và khả năng học lại.',
       tieuDe: `Báo phụ huynh qua TVV · ${r.full_name ?? 'Học viên'} · ${laCuoiKhoa ? `Cuối khoá${phanTramCuoi.get(r.attempt_id) ?? ''}` : 'Giữa khoá'}`,
       actionLabel: 'Mở Phối hợp SOS',
       href: duongHoSoHocVien(r.student_id, { tab: 'y-thuc', sub: 'phoi-hop' }),

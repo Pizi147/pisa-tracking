@@ -60,6 +60,8 @@ Thấy một sắc xanh thứ tư trong màn nào là lỗi cần gỡ, không p
 | Vượt kỳ vọng | `success` (xanh lá) | Không dùng xanh lá cho bất kỳ nghĩa nào khác trên ô điểm |
 | Chưa đủ dữ liệu | `muted` (xám) | Khác điểm 0. Khác ô trống |
 
+**Một trạng thái, một màu (UX-G G2):** bảng `TONE_TRANG_THAI` ở `web/src/ui/Nhan.tsx` — chờ chấm, chờ duyệt cùng tông `wait` (tím); xanh dương chỉ là "đang chạy"; mức độ "Bình thường" trung tính.
+
 Trạng thái quy trình (Chờ nhập điểm, Chờ QL duyệt…) dùng **tone trung tính + nhãn chữ**,
 không mượn bốn màu điểm. Rule book mục 3.5.
 

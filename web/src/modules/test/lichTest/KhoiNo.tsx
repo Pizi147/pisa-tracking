@@ -1,6 +1,6 @@
 import { Fragment, useMemo } from 'react';
 import { KhoiNhom } from '../../../ui/HangNhom.tsx';
-import { Nhan } from '../../../ui/Nhan.tsx';
+import { Nhan, TONE_TRANG_THAI } from '../../../ui/Nhan.tsx';
 import { Han } from '../../../ui/Han.tsx';
 import { chuOChuaLuu, tenMon, tenMonNgan, tuanLich } from '@shared/domain/index.ts';
 import type { DongNo } from './kieu.ts';
@@ -25,12 +25,15 @@ function kyNangCua(d: DongNo, homNay: string): { chu: string; goiY: string; phu:
   return { chu: phu ? chu : `${chu} · lùi lịch`, goiY: `${tenMon(d.chuongTrinh, l.kyNang)}: lùi lịch${tu}${sang}${ai}\nCòn nợ: ${tatCa}`, phu };
 }
 
+/** Cột thao tác: nút "Nhập điểm" 86 px + đệm ô 2×12 — hẹp hơn thì nút lòi khỏi khung `card` và bị cắt (UX-G G4). */
+const COT_THAO_TAC = 112;
+
 /** Dòng Nợ là của ai: chờ mình · chờ GV khác (mình dạy lớp) · chờ chấm (Quản lý). Dòng đã chấm xong (Q14) → "Đã chấm ✓". */
 function NhanDong({ d, xong, chuaLuu = 0 }: { d: DongNo; xong: boolean; chuaLuu?: number }) {
   if (chuaLuu > 0) return <Nhan tone="bad" title="Ô viền đỏ chưa lưu được — bấm Lưu lại ở ô đó.">{chuOChuaLuu(chuaLuu)}</Nhan>;
   if (xong) return <Nhan tone="done">Đã chấm <span className="font-normal" aria-hidden>✓</span></Nhan>;
-  if (d.cuaToi) return <Nhan tone="soon">Chờ bạn chấm</Nhan>;
-  return <Nhan tone="wait">{d.coDayLop ? 'Chờ GV khác' : 'Chờ chấm'}</Nhan>;
+  if (d.cuaToi) return <Nhan tone={TONE_TRANG_THAI['cho-cham']}>Chờ bạn chấm</Nhan>;
+  return <Nhan tone={TONE_TRANG_THAI['cho-cham']}>{d.coDayLop ? 'Chờ GV khác' : 'Chờ chấm'}</Nhan>;
 }
 
 /**
@@ -96,11 +99,11 @@ export function KhoiNo({ no, mo, onMo, chiQuaHan, onBoQuaHan, dongMo, onMoDong, 
         )}
         <table className="w-full text-sm" style={{ tableLayout: 'fixed' }}>
           <colgroup>
-            {hep ? (<><col /><col style={{ width: 72 }} /></>) : (
+            {hep ? (<><col /><col style={{ width: COT_THAO_TAC }} /></>) : (
               <>
                 {/* E5: ba cột đầu cùng độ rộng với bảng lớp (`COT_DAU_LICH_TEST`) — hai bảng thẳng cột. */}
                 {COT_DAU_LICH_TEST.map((w, i) => <col key={i} style={{ width: w }} />)}
-                <col style={{ width: 80 }} /><col style={{ width: 190 }} /><col style={{ width: 150 }} /><col /><col style={{ width: 84 }} />
+                <col style={{ width: 80 }} /><col style={{ width: 190 }} /><col style={{ width: 150 }} /><col /><col style={{ width: COT_THAO_TAC }} />
               </>
             )}
           </colgroup>
@@ -156,7 +159,7 @@ export function KhoiNo({ no, mo, onMo, chiQuaHan, onBoQuaHan, dongMo, onMoDong, 
                         <td className="td text-right tabular-nums text-slate-200">{xong ? 0 : d.conBai} <span className="text-[11px] text-slate-500">bài</span></td>
                         <td className="td whitespace-nowrap">{xong ? <span className="text-slate-600">—</span> : <Han loai="nhap-diem" han={d.han} />}</td>
                         {/* PR-VAI-a (UX-B5, Q23): ai đang nợ — 12 px, cắt gọn, đủ tên khi rê chuột. */}
-                        <td className="td truncate text-xs text-slate-300" title={d.gvNo.join(', ')}>{d.gvNo.join(', ') || '—'}</td>
+                        <td className="td text-xs leading-4 text-slate-300 [overflow-wrap:anywhere]" title={d.gvNo.join(', ')}>{d.gvNo.join(', ') || '—'}</td>
                         <td className="td"><NhanDong d={d} xong={xong} chuaLuu={chuaLuu[`no:${d.key}`]} /></td>
                         <td className="td text-right">{nut}</td>
                       </>

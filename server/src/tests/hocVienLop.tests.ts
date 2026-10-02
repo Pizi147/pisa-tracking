@@ -143,7 +143,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     eq(gv.hien.map((x: any) => x.nhan), ['3 bài chờ chấm', '1 HV quá hạn việc'], 'B4: GV — việc của mình trước');
     eq(gv.an.map((x: any) => x.key), ['chang', 'thieu-gv', 'thieu-tt', 'xep-lop', 'cho-duyet'], 'Phần gom (GV)');
     eq([...ql.hien, ...ql.an].find((x: any) => x.key === 'qua-han').tone, 'danger', 'qua-han tone danger');
-    eq([...ql.hien, ...ql.an].find((x: any) => x.key === 'cho-duyet').tone, 'info', 'cho-duyet tone info');
+    eq([...ql.hien, ...ql.an].find((x: any) => x.key === 'cho-duyet').tone, 'wait', 'cho-duyet tone wait');
     const c = d.badgeLop({ vai: 'gv', needsPlacement: false, canXepLop: 8, missingSkills: [], soBaiChoCham: 0, needScoresTitle: null, phase: 'running', missingCount: 0 });
     eq(c.hien, [], 'Không còn badge "Case mở" (K2-06)');
     assert(!/Progress|Final/.test(Object.values(d.CLASS_PHASE_LABEL).join(' ')), 'CLASS_PHASE_LABEL còn Progress/Final');

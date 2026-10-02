@@ -17,24 +17,24 @@
 - Nút huỷ theo luật S3: không dùng "Huỷ" trần; form có thay đổi thì dùng "Huỷ thay đổi" (như Dọn-b 15).
 - Mỗi gói: phép kiểm trước (đỏ) → sửa → `npm run check` → ảnh 1440/375 sáng/tối → `/impeccable audit` → `/ponytail-review`.
 
-## Gói UX-G — Trạng thái nói đúng, một màu một nghĩa · ƯU TIÊN 1 (P1)
-- [ ] **G1. SOS tạm thời mất chữ "tạm thời" ở hồ sơ HV.** Bùi Thảo Vy: ở hồ sơ lớp là `SOS 1 tạm thời`; ở ô "Kết quả gần nhất"
+## Gói UX-G — Trạng thái nói đúng, một màu một nghĩa · ƯU TIÊN 1 (P1) · ✅ XONG 02/10 (nhánh `claude/happy-dirac-8cxe3k`, phép kiểm `prUxG.tests.ts`, ảnh `thiet-ke/anh/ux-g/`)
+- [x] **G1. SOS tạm thời mất chữ "tạm thời" ở hồ sơ HV.** Bùi Thảo Vy: ở hồ sơ lớp là `SOS 1 tạm thời`; ở ô "Kết quả gần nhất"
   và banner "MT3 SOS 1: đang hỗ trợ Speaking" của hồ sơ HV lại là `SOS 1` đặc (mới có điểm 1/4 phần).
   Sửa: cho ô và banner đi qua `<KetQuaDot>`. File: `web/src/modules/students/DauHoSo.tsx:223`, `shared/domain/hoSoHocVien.ts:204`.
   Phép kiểm: hồ sơ HV có lượt chưa đủ 4 kỹ năng thì không được trả nhãn SOS mà thiếu `tamThoi`.
-- [ ] **G2. Một trạng thái, một màu.** Có một bảng trạng thái → tone duy nhất trong `web/src/ui/Nhan.tsx`, mọi chỗ khác tra bảng này:
+- [x] **G2. Một trạng thái, một màu.** Có một bảng trạng thái → tone duy nhất trong `web/src/ui/Nhan.tsx`, mọi chỗ khác tra bảng này:
   - "Chờ chấm" (tím `wait`) và "Chờ bạn chấm" (vàng `soon`) ở `web/src/modules/test/lichTest/KhoiNo.tsx:32-33` dùng chung một tone.
   - "x chờ duyệt" ở danh sách lớp và đầu hồ sơ lớp đang màu xanh dương, trong khi xanh dương nghĩa là "đang chạy". Đổi sang tone chờ.
   - Mức độ Case "Bình thường" ở Tổng quan GV đang là chip vàng. Đổi sang trung tính.
   - "Cần làm" trên yêu cầu bị từ chối ("Yêu cầu của tôi") đổi thành "Bị từ chối".
-- [ ] **G3. Thông báo dùng giờ thật thay vì ngày nghiệp vụ.** Thông báo hiện `02/10 22:57` trong khi ngày demo là 14/09.
+- [x] **G3. Thông báo dùng giờ thật thay vì ngày nghiệp vụ.** Thông báo hiện `02/10 22:57` trong khi ngày demo là 14/09.
   Sửa theo `web/src/ui/ngayNghiepVu.ts`. Đồng thời sửa chữ "Tạo task cho TVV trên Base…" thành
   "Nhờ TVV báo phụ huynh (4 nội dung), xong thì đánh dấu đã làm".
   File: `web/src/modules/platform/Header.tsx:17-21`, `server/src/yThuc/phoiHop.ts:130`, `server/src/worklist/mywork.ts:157`.
-- [ ] **G4. Lịch Test bị cắt cột thao tác.** Nút "Nhập điểm" bị cắt mép phải ở 1440 và ở thẻ 375, vì bảng rộng hơn
+- [x] **G4. Lịch Test bị cắt cột thao tác.** Nút "Nhập điểm" bị cắt mép phải ở 1440 và ở thẻ 375, vì bảng rộng hơn
   `card overflow-hidden`. Sửa: cột "GV chấm" có max-width và cho xuống dòng; cột thao tác luôn nằm trong khung.
   File: `web/src/modules/test/lichTest/KhoiNo.tsx:80, 126`.
-- [ ] **G5. Ý thức khi 0 vi phạm.** Tab vẫn hiện hai nút chính "Xác nhận xử lý" và "Đề xuất QL duyệt", và ô "Chưa xử lý lần nào"
+- [x] **G5. Ý thức khi 0 vi phạm.** Tab vẫn hiện hai nút chính "Xác nhận xử lý" và "Đề xuất QL duyệt", và ô "Chưa xử lý lần nào"
   đọc như cảnh báo. Sửa: ẩn hai nút khi không có vi phạm mở; ô ghi "Không có vi phạm".
   File: `web/src/modules/yThuc/StudentYThucSection.tsx`, `shared/domain/hoSoHocVien.ts:289`.
   ⚠ Đối chiếu quyết định 02/10 (commit `cec29ba`: "xử lý được cả khi mới 1 vi phạm"): chỉ ẩn khi **0** vi phạm.
