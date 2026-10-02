@@ -85,7 +85,7 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, canEditCycle = t
       );
       invalidate('/attempts'); invalidate('/classes'); invalidate('/students');
       toast.push('ok',
-        `Đã xếp lịch: thêm ${r.created} lượt, dời ${r.moved} lượt`
+        `Đã lên lịch: thêm ${r.created} lượt, dời ${r.moved} lượt`
         + (r.kept ? `, giữ nguyên ${r.kept} lượt đã chốt tay` : ''));
       sugg.reload(); onDone();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }

@@ -142,14 +142,14 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
   const v = data.viecTiep ?? null;
   const nutChinh = (() => {
     if (!data.viewer.canEdit || !canDong) return undefined;
-    const nut = (chu: string, lam: () => void) => <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={lam}>{chu}</button>;
+    const nut = (chu: string, lam: () => void, title?: string) => <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" title={title} onClick={lam}>{chu}</button>;
     if (v?.chu === 'Xác nhận nguyên nhân') return nut('Xác nhận nguyên nhân', () => setView({ loai: 'xac-nhan' }));
     if (v?.chu === 'Nộp kế hoạch bổ trợ' && data.boTro?.coTheNop) {
       const pa = (data.interventions ?? []).find((x: any) => x.kind === 'bo_tro' && x.chuaChay);
       if (pa) return nut('Nộp kế hoạch bổ trợ', () => setView({ loai: 'ke-hoach', paId: pa.id }));
     }
     if (v?.chu.startsWith('Xác nhận PA') && v.paId) return nut('Xác nhận PA', () => setView({ loai: 'xac-nhan-pa', paId: v.paId! }));
-    if (v?.chu.startsWith('Ghi kết quả') && v.paId) return nut(v.chu, () => setView({ loai: 'ghi-ket-qua', paId: v.paId! }));
+    if (v?.chu.startsWith('Ghi kết quả') && v.paId) return nut(v.chu.startsWith('Ghi kết quả cuối') ? 'Ghi kết quả cuối' : 'Ghi kết quả', () => setView({ loai: 'ghi-ket-qua', paId: v.paId! }), v.chu);  /* tên PA là chữ người dạy gõ (có thể dài) — chỉ để ở tooltip; nút nào cũng đã có "Ghi kết quả" riêng ở thẻ PA */
     if (ht?.an || !data.viewer.canClose) return undefined;
     return (
       <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0"

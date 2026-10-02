@@ -201,7 +201,8 @@ export function BonO({ o, homNay, onDot, onKn, onYThuc, kyNangHref }: {
     : k.kck ? null
     : kq.sos ? <span className={`rounded-md px-2 font-bold leading-6 tabular-nums ${CHIP_SOS_O[Math.min(3, kq.sos)]}`}>SOS {kq.sos}</span>
     : kq.dat ? <span className="text-ok">Đạt kỳ vọng</span> : 'Chưa đủ điểm';
-  const duoi = k.duoi?.length ? (
+  /* Chưa có đợt nào chấm xong (kq null) mà vẫn có kỹ năng "dưới kỳ vọng" từ bảng Học thuật: không có tên đợt để ghi → không vẽ dòng này (trước đây sập cả hồ sơ). */
+  const duoi = kq && k.duoi?.length ? (
     <>dưới kỳ vọng: {k.duoi.map((d: any, i: number) => {
       const href = kyNangHref?.(d.kn, d.attemptId ?? null) ?? null;
       return (
