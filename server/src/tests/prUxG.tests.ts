@@ -31,10 +31,10 @@ export async function runPrUxGTests(t: YThucTestKit) {
     for (const { id } of conn.prepare(`SELECT id FROM students`).all() as { id: number }[]) {
       const dh = (studentProfile(P.admin, id) as any).dauHoSo;
       const kq = dh?.o?.ketQua?.kq;
-      if (!kq || dh.o.ketQua.ratio || !kq.sos || kq.coDiem >= kq.yeuCau) continue;
+      if (!kq || dh.o.ketQua.ratio || dh.o.ketQua.kck || !kq.sos || kq.coDiem >= kq.yeuCau) continue;   // KCK không có SOS trên câu
       coTam++;
       const banner = dh.tomTat.find((m: any) => /SOS \d/.test(m.chu));
-      assert(banner && /SOS \d tạm thời/.test(banner.chu), `em ${id}: banner "${banner?.chu}" thiếu "tạm thời" (${kq.coDiem}/${kq.yeuCau})`);
+      assert(banner && /SOS \d tạm thời/.test(banner.chu), `em ${id}: banner "${banner?.chu}" thiếu "tạm thời" (${kq.coDiem}/${kq.yeuCau}) ${JSON.stringify(dh.tomTat)}`);
     }
     assert(coTam > 0, 'bộ demo không có em nào SOS tạm thời — phép kiểm rỗng');
   });
