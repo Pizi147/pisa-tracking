@@ -150,7 +150,7 @@ export function useSaveScore(attemptId: number, onSaved?: () => void) {
     try {
       await api.put(`/attempts/${attemptId}/scores/${skill}`, patch);
       invalidate('/attempts');
-      invalidate('/overview');
+      invalidate('/tong-quan');
       invalidate('/classes');
       invalidate('/students');
       invalidate('/my-work');   // PR-S6F-a: badge quá hạn của GV tải lại sau khi nhập điểm

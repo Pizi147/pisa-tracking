@@ -39,7 +39,7 @@ export function XoaHocVienPanel({ studentId, studentName, lop, onClose }: {
     try {
       await api.post(`/students/${studentId}/xoa`, { maXacNhan: go.trim() });
       invalidate('/students'); invalidate('/hoc-vien-lop'); invalidate('/classes');
-      invalidate('/overview'); invalidate('/my-work'); invalidate('/cases');
+      invalidate('/tong-quan'); invalidate('/my-work'); invalidate('/cases');
       toast.push('ok', `Đã xoá học viên ${d.ma}`);
       onClose();
       navigate('/hoc-vien', { replace: true });

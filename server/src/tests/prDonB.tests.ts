@@ -193,15 +193,15 @@ export async function runPrDonBTests(t: YThucTestKit) {
     assert(g3.id === g2.id, 'bấm đúp vẫn trả việc cũ');
   });
   check('Dọn-b (C2) · lý do đổi Target và lý do đề xuất chuyển lớp đi qua chuTuDo (trần 2 000 ký tự)', () => {
-    const cy = get(`SELECT cy.id FROM learning_cycles cy JOIN students s ON s.id = cy.student_id WHERE cy.status = 'active' AND s.status = 'active' ORDER BY cy.id LIMIT 1`);
-    assert(/Tối đa 2000 ký tự/.test(loiCua(() => cycles.reviseTarget(P.admin, cy.id, { newTarget: 6.5, reason: 'x'.repeat(2001) }))), 'reviseTarget');
+    const cy = get(`SELECT cy.id, cy.target_score t FROM learning_cycles cy JOIN students s ON s.id = cy.student_id WHERE cy.status = 'active' AND s.status = 'active' ORDER BY cy.id LIMIT 1`);
+    assert(/Tối đa 2000 ký tự/.test(loiCua(() => cycles.reviseTarget(P.admin, cy.id, { newTarget: cy.t === 8 ? 7.5 : 8, reason: 'x'.repeat(2001) }))), 'reviseTarget');
     const em = get(`SELECT e.student_id id FROM enrollments e JOIN students s ON s.id = e.student_id WHERE e.status = 'active' AND s.status = 'active'
       AND NOT EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.student_id = e.student_id AND l.trang_thai = 'cho') ORDER BY e.student_id LIMIT 1`);
     assert(/Tối đa 2000 ký tự/.test(loiCua(() => lenh.guiDeXuatChuyenLop(P.admin, em.id, { lyDo: 'y'.repeat(2001) }))), 'guiDeXuatChuyenLop');
   });
   check('Dọn-b (C3) · điện thoại: bấm chuông / tài khoản đóng ô tìm (không chồng hai khung); web không còn invalidate(\'/overview\') (route đã xoá)', () => {
     const h = doc('web/src/modules/platform/Header.tsx');
-    assert((h.match(/setMoTimDt\(false\)/g) ?? []).length >= 3, 'Header');
+    assert(/notifications\.reload\(\);[^\n]*setMoTimDt\(false\)/.test(h) && /'account'\); setMoTimDt\(false\)/.test(h), 'Header: chuông + tài khoản phải đóng ô tìm');
     const sot = webSrc().filter((x) => x.s.includes("invalidate('/overview')")).map((x) => x.f);
     assert(sot.length === 0, sot.join(', '));
   });

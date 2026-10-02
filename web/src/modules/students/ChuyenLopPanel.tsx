@@ -100,7 +100,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
   const loi = dsLoi(LUAT, { lop: toClassId, tuan, 'ly-do': lyDo, 'muc-tieu': mucTieu });
   const mucTieuGui = mucTieu.trim().toUpperCase() === 'KCK' ? 'KCK' : mucTieu.trim() ? Number(mucTieu) : undefined;
   const xong = (chu: string) => {
-    invalidate('/students'); invalidate('/attempts'); invalidate('/overview'); invalidate('/cases'); invalidate('/classes'); invalidate('/hoc-vien-lop');
+    invalidate('/students'); invalidate('/attempts'); invalidate('/tong-quan'); invalidate('/cases'); invalidate('/classes'); invalidate('/hoc-vien-lop');
     invalidate('/my-work'); invalidate('/yeu-cau'); invalidate('/lenh-chuyen');
     toast.push('ok', chu);
     onDone?.(); onClose();

@@ -638,7 +638,9 @@ export function createTask(p: Principal, input: any) {
 
   return tx(() => {
     /* PR-Dọn (quét #26): bấm đúp → trả lại việc vừa tạo (việc giao GV toả PA cho từng em — gửi đôi là nhân đôi PA). */
-    const cu = vuaGhi('tasks', { title: input.title.trim(), kind, class_id: lop?.id ?? null, branch_id: branchId, created_by: p.userId });
+    /* Khoá đủ trường nghiệp vụ (rà Dọn-a P2): cùng tiêu đề nhưng khác kỹ năng / người / hạn là HAI việc, không gộp lặng lẽ. */
+    const cu = vuaGhi('tasks', { title: input.title.trim(), kind, class_id: lop?.id ?? null, branch_id: branchId, created_by: p.userId,
+      topic: kind === 'teacher_task' ? (input.topic ?? null) : null, assignee_user_id: input.assigneeUserId ?? null, due_date: input.dueDate ?? null });
     if (cu) return conn.prepare('SELECT * FROM tasks WHERE id = ?').get(cu);
     const n = (conn.prepare('SELECT COUNT(*) AS n FROM tasks').get() as any).n as number;
     const code = padCode('CV', n + 1, 4);

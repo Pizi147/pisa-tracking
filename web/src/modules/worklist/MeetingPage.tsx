@@ -288,7 +288,7 @@ function NganBaoCao({ unit, cell, periodId, editable, editWindow, onClose, onSav
     setBusy(nop ? 'nop' : 'nhap');
     try {
       await api.put(`/meeting/units/${unit.unitId}/reports/${cell.key}`, { periodId, status: status || null, note, nop });
-      invalidate('/meeting'); invalidate('/overview'); invalidate('/signals');
+      invalidate('/meeting'); invalidate('/tong-quan'); invalidate('/signals');
       onSaved();
       toast.push('ok', nop ? 'Đã nộp' : 'Đã lưu nháp');
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(null); }

@@ -6,7 +6,7 @@ import {
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
-import { badRequest, isIsoDate, kiemKieuO, notFound, nowIso } from '../util.ts';
+import { badRequest, chuTuDo, isIsoDate, kiemKieuO, notFound, nowIso } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, mondayOf, periodById } from '../platform/week.ts';
@@ -495,7 +495,7 @@ export function reviseTarget(p: Principal, cycleId: number, input: {
   if (target === (c.target_score ?? null) && kck === !!c.khong_cam_ket) return { cycle: c, revision: null };
   const effectiveFrom = input.effectiveFrom ?? nowIso().slice(0, 10);
   if (!isIsoDate(effectiveFrom)) throw badRequest('Ngày hiệu lực không hợp lệ.');
-  const reason = (input.reason ?? '').trim();
+  const reason = chuTuDo(input.reason, 'Lý do', 2000) ?? '';   // rà Dọn-a P2 (Q4): kiểu + trần, không cắt ngầm
   if (!reason) throw badRequest('Ghi lý do đổi Target.');
 
   return tx(() => {

@@ -619,7 +619,7 @@ function WeekModal({ open, onClose, attemptId, currentPeriodId, batBuocLyDo, onD
           setBusy(true);
           try {
             const r = await api.post<any>(`/attempts/${attemptId}/week`, { periodId, reason, force: true });
-            invalidate('/attempts'); invalidate('/overview'); invalidate('/classes');
+            invalidate('/attempts'); invalidate('/tong-quan'); invalidate('/classes');
             onDone(); onClose();
             toast.push('ok', r?.keptInPlace?.length
               ? `Đã dời ${r.moved.length} kỹ năng. Giữ nguyên lịch của ${r.keptInPlace.length} kỹ năng đã thi hoặc đã có điểm.`
@@ -665,7 +665,7 @@ function DeadlineModal({ open, onClose, detail, onDone }: {
     setBusy(true);
     try {
       await api.post(`/attempts/${detail.id}/deadline`, { deadline: value, reason });
-      invalidate('/attempts'); invalidate('/overview');
+      invalidate('/attempts'); invalidate('/tong-quan');
       onDone(); onClose();
       toast.push('ok', value ? `Đã dời hạn chấm cả đợt tới ${fmtDate(value)}` : 'Đã quay lại hạn mặc định');
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
@@ -732,7 +732,7 @@ function CancelDialog({ open, onClose, attemptId, attemptNo, heQua, onDone }: {
         setBusy(true);
         try {
           await api.post(`/attempts/${attemptId}/cancel`, { reason, cach: heQua.cachDuoc });
-          invalidate('/attempts'); invalidate('/overview');
+          invalidate('/attempts'); invalidate('/tong-quan');
           onDone(); onClose(); toast.push('ok', caLuot ? `Đã huỷ cả lượt MT${attemptNo}` : 'Đã huỷ phần còn lại');
         } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
       }}
@@ -777,7 +777,7 @@ function AbsenceMoveModal({ open, row, detail, onClose, onDone }: {
         /* Bấm hai lần hay mạng chập không được thành hai lần dời. */
         idempotencyKey: `${detail.id}:${skills.join('+')}:${reason}`,
       });
-      invalidate('/attempts'); invalidate('/overview'); invalidate('/classes'); invalidate('/my-work');
+      invalidate('/attempts'); invalidate('/tong-quan'); invalidate('/classes'); invalidate('/my-work');
       onDone();
       setResult(res.outcomes ?? []);
       toast.push('ok', 'Đã xử lý việc vắng');
@@ -868,7 +868,7 @@ function TraLoiDeNghiModal({ row, detail, onClose, onDone }: {
   const ds = useApi<{ the: TheYeuCauDto[] }>(`/yeu-cau?studentId=${detail.student.id}&phanLoai=lich-thi`);
   const the = ds.data?.the.find((y) => y.loai === 'lich_thi' && y.doiTuongId === row.pendingMove?.id) ?? null;
   const xong = () => {
-    invalidate('/attempts'); invalidate('/overview'); invalidate('/classes'); invalidate('/my-work'); invalidate('/yeu-cau');
+    invalidate('/attempts'); invalidate('/tong-quan'); invalidate('/classes'); invalidate('/my-work'); invalidate('/yeu-cau');
     onDone(); onClose();
   };
   return (

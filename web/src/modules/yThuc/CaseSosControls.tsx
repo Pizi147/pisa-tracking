@@ -21,7 +21,7 @@ import {
  * Không còn Xác nhận / Sửa / Thay PA gợi ý, không tệp đính kèm, không ngày kết thúc tự chọn (Q28-4).
  */
 
-const invalidateCases = () => { invalidate('/cases'); invalidate('/students'); invalidate('/overview'); invalidate('/my-work'); invalidate('/yeu-cau'); };
+const invalidateCases = () => { invalidate('/cases'); invalidate('/students'); invalidate('/tong-quan'); invalidate('/my-work'); invalidate('/yeu-cau'); };
 
 type ChungPanel = {
   hocVien?: string | null; lop?: string | null;

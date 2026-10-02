@@ -447,7 +447,9 @@ export function createMgmtTask(p: Principal, input: {
 
   return tx(() => {
     /* PR-Dọn (quét #26): bấm đúp → trả lại việc vừa tạo. */
-    const cu = vuaGhi('tasks', { title, kind: 'branch_ops', branch_id: taskBranchId, parent_task_id: input.parentTaskId ?? null, created_by: p.userId });
+    /* Khoá đủ trường nghiệp vụ (rà Dọn-a P2): cùng tiêu đề nhưng khác người phụ trách / hạn là HAI việc, không gộp lặng lẽ. */
+    const cu = vuaGhi('tasks', { title, kind: 'branch_ops', branch_id: taskBranchId, parent_task_id: input.parentTaskId ?? null, created_by: p.userId,
+      assignee_user_id: input.assigneeUserId ?? null, assignee_name: assigneeName, due_date: input.due ?? null });
     if (cu) return mgmtTaskDetail(p, cu);
     const info = conn
       .prepare(

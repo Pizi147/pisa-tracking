@@ -125,7 +125,7 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, tuanDaBa
     setBusy(true);
     try {
       const cau = await goi(!!canhBao);
-      invalidate('/attempts'); invalidate('/overview'); invalidate('/classes'); invalidate('/ke-hoach-test'); invalidate('/my-work');
+      invalidate('/attempts'); invalidate('/tong-quan'); invalidate('/classes'); invalidate('/ke-hoach-test'); invalidate('/my-work');
       toast.push('ok', cau);
       onDone(); dong();
     } catch (e: any) {
