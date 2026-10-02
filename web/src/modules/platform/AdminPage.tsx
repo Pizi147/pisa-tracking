@@ -130,7 +130,7 @@ function ConfigTab({ data, onDone }: { data: AdminData; onDone: () => void }) {
           <div className="sticky bottom-0 flex flex-wrap items-center gap-2 border-t px-4 py-2.5" style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>
             <span className="text-xs tabular-nums text-slate-400" role="status">{doi.size ? `${doi.size} thay đổi` : 'Chưa đổi ô nào'}</span>
             <span className="flex-1" />
-            <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={huy}>Huỷ</button>
+            <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={huy}>Huỷ thay đổi</button>
             <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !doi.size} onClick={luu}>{busy ? 'Đang lưu…' : 'Lưu'}</button>
           </div>
         )}
@@ -140,7 +140,7 @@ function ConfigTab({ data, onDone }: { data: AdminData; onDone: () => void }) {
             Không vai trò nào mặc định thấy toàn hệ thống: chỉ grant không gắn chi nhánh mới phủ toàn bộ.
             <br />
             Bấm "Sửa quyền", đổi các ô cần đổi rồi bấm Lưu một lần — chỉ các ô đã đổi được gửi, mỗi ô một dòng nhật ký ở cuối trang
-            (sửa bảng quyền là việc phải tra lại được). Huỷ thì không ghi gì. Hai quyền <strong>Cấu hình hệ thống</strong> và
+            (sửa bảng quyền là việc phải tra lại được). Bấm "Huỷ thay đổi" thì không ghi gì. Hai quyền <strong>Cấu hình hệ thống</strong> và
             <strong> Xem học viên</strong> của vai Quản trị hệ thống KHÔNG gỡ được: gỡ xong thì không
             còn ai vào lại được màn này.
             <br />

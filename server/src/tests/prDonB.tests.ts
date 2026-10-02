@@ -97,9 +97,9 @@ export async function runPrDonBTests(t: YThucTestKit) {
     const route = fs.readFileSync(path.join(ROOT, 'server/src/routes/index.ts'), 'utf8');
     assert(/role-permissions[\s\S]{0,300}thayDoi/.test(route), 'route chưa đọc thayDoi');
   });
-  check('Dọn-b (13b) · bảng quyền: nút "Sửa quyền" mở chế độ sửa; chân "n thay đổi · Lưu · Huỷ"; ô không bấm được khi chưa sửa', () => {
+  check('Dọn-b (13b) · bảng quyền: nút "Sửa quyền" mở chế độ sửa; chân "n thay đổi · Huỷ thay đổi · Lưu"; ô không bấm được khi chưa sửa', () => {
     const s = doc('web/src/modules/platform/AdminPage.tsx');
-    assert(s.includes('Sửa quyền') && s.includes('thay đổi') && /'Lưu'|>Lưu</.test(s) && s.includes('>Huỷ<') && s.includes('disabled={!dangSua'), 'AdminPage');
+    assert(s.includes('Sửa quyền') && s.includes('thay đổi') && /'Lưu'|>Lưu</.test(s) && s.includes('>Huỷ thay đổi<') && s.includes('disabled={!dangSua'), 'AdminPage');
     assert(s.includes('thayDoi'), 'Lưu gửi thayDoi');
   });
   check('Dọn-b (13c/13e) · Lưu trữ: Bỏ lưu trữ có Hoàn tác (lưu trữ lại em); dòng không mờ opacity-70', () => {
