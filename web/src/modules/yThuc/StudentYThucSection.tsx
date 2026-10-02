@@ -21,7 +21,7 @@ const MO_VP = new Set(['moi', 'can_xu_ly', 'qua_han']);
 /**
  * TAB `Ý THỨC & PHỐI HỢP` CỦA HỒ SƠ HỌC VIÊN (PR-YT4, K3 §4f, §7.5 "tầng 1 = thanh việc"). Từ trên xuống:
  *   1. THANH VIỆC (chỉ khi có): bắt buộc · quá hạn (đã báo QL) · đề xuất chờ QL · đã duyệt chờ "Đã thực hiện" · vi phạm mới chưa xem.
- *   2. Thang một dòng (+ Khai bậc / Đề xuất QL duyệt).
+ *   2. Khối Thang xử lý vi phạm: thang một dòng + hai nút `Xác nhận xử lý` · `Đề xuất QL duyệt` (+ Xác nhận cấp bậc vi phạm từ trước).
  *   3. Bộ lọc MỘT hàng `Tất cả · Cần xử lý n · Chờ duyệt · Đã xử lý` + nhóm vi phạm; phạm vi mặc định = chuỗi thang này, `Xem cả lịch sử`.
  *   4. Dòng thời gian TRỘN (vi phạm + lần xử lý, mới nhất trước) — lần xử lý là dòng đậm có vạch trái; vi phạm có nhãn + `Ghi nhận`;
  *      KHÔNG ô tick (B7 cũ bỏ — K3-48).
@@ -66,7 +66,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong = false }:
     try {
       await api.post(`/students/${studentId}/y-thuc/ghi-nhan`, { violationIds: ids });
       DUONG_LAM_MOI_Y_THUC.forEach((x) => invalidate(x));
-      toast.push('ok', `Đã ghi nhận ${ids.length} vi phạm — vẫn tính vào luật 3 vi phạm / 2 tuần.`);
+      toast.push('ok', `Đã ghi nhận ${ids.length} vi phạm`);
       reload();
     } catch (e: any) { toast.push('error', e.message); }
   };
@@ -102,7 +102,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong = false }:
       <span className="flex flex-wrap items-center justify-end gap-1.5">
         <NhanViPham t={x.trangThai} nhan={x.nhanTrangThai} />
         {coGhiNhan(x.id) && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => void ghiNhan([x.id])}
-          title="Đã xem, không cần xử lý — vẫn đếm vào luật 3 vi phạm / 2 tuần">Ghi nhận</button>}
+          title="Đã xem, không cần xử lý">Ghi nhận</button>}
       </span>
     ),
     mo: moViPhamId === x.id,
@@ -123,16 +123,16 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong = false }:
       {sub === 'vi-pham' && (
         <>
           <ThanhViec d={d} homNay={homNay}
-            onXuLy={() => mo({ loai: 'xu-ly', studentId })}
             onDaThucHien={(id) => mo({ loai: 'da-thuc-hien', id })}
             onGhiNhan={() => void ghiNhan(d.viPham.filter((v) => coGhiNhan(v.id)).map((v) => v.id))} />
           <ThangYThuc d={d} homNay={homNay}
             onKhai={d.canManage ? () => mo({ loai: 'khai', studentId }) : undefined}
+            onXuLy={() => mo({ loai: 'xu-ly', studentId })}
             onDeXuat={d.canManage ? () => mo({ loai: 'xu-ly', studentId, cheDo: 'de-xuat' }) : undefined} />
           {d.canSuaKhai && d.khai && (
             <p className="m-0 text-[11px] text-slate-500">
-              Đã khai {d.khai.bac > 0 ? `bậc ${d.khai.bac}` : ''} ngày {ngay(d.khai.luc, homNay)}.{' '}
-              <button type="button" className="link inline-flex items-center appearance-none border-0 bg-transparent p-0 min-h-[44px] sm:min-h-0" onClick={() => mo({ loai: 'khai', studentId, sua: true })}>Sửa bậc đã khai</button>
+              Đã xác nhận cấp bậc vi phạm{d.khai.bac > 0 ? ` (bậc ${d.khai.bac})` : ''} ngày {ngay(d.khai.luc, homNay)}.{' '}
+              <button type="button" className="link inline-flex items-center appearance-none border-0 bg-transparent p-0 min-h-[44px] sm:min-h-0" onClick={() => mo({ loai: 'khai', studentId, sua: true })}>Sửa cấp bậc</button>
             </p>
           )}
 
@@ -170,11 +170,13 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong = false }:
   );
 }
 
-/** THANH VIỆC — tầng 1 của tab HV (§7.5): MỘT câu việc + MỘT nút. Không có việc thì không vẽ. */
-function ThanhViec({ d, homNay, onXuLy, onDaThucHien, onGhiNhan }: {
-  d: YThucHocVien; homNay: string; onXuLy: () => void; onDaThucHien: (id: number) => void; onGhiNhan: () => void;
+/**
+ * THANH VIỆC — tầng 1 của tab HV (§7.5): MỘT câu việc (+ nút Ghi nhận / Đánh dấu đã thực hiện). Nút Xác nhận xử lý / Đề xuất QL duyệt nằm
+ * ở khối Thang ngay dưới — một chỗ, không lặp. Không có việc thì không vẽ.
+ */
+function ThanhViec({ d, homNay, onDaThucHien, onGhiNhan }: {
+  d: YThucHocVien; homNay: string; onDaThucHien: (id: number) => void; onGhiNhan: () => void;
 }) {
-  const ke = d.keTiep && !d.keTiep.canQl ? `Xác nhận xử lý · ${d.keTiep.nhan}` : 'Đề xuất QL duyệt';
   const nut = (nhan: string, onClick: () => void) => (d.canManage
     ? <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={onClick}>{nhan}</button> : null);
   let tone = '';
@@ -183,7 +185,6 @@ function ThanhViec({ d, homNay, onXuLy, onDaThucHien, onGhiNhan }: {
   if (d.nhom === 'qua_han' && d.soBatBuoc > 0) {
     tone = 'border-late-line bg-late-bg text-late';
     cau = <>{d.soBatBuoc} vi phạm bắt buộc xử lý · quá hạn {d.quaHanNgay ?? ''} ngày{d.daBaoQl ? ' · đã báo QL' : ''}</>;
-    hanh = nut(ke, onXuLy);
   } else if (d.deXuat?.status === 'da_duyet') {
     tone = d.deXuat.quaHan ? 'border-late-line bg-late-bg text-late' : 'border-wait-line bg-wait-bg text-wait';
     cau = <>Đã duyệt {d.deXuat.nhan}{d.deXuat.han ? ` · ghi "Đã thực hiện" trước ${ngay(d.deXuat.han, homNay)}` : ''}{d.deXuat.quaHan && d.daBaoQl ? ' · đã báo QL' : ''}</>;
@@ -191,7 +192,6 @@ function ThanhViec({ d, homNay, onXuLy, onDaThucHien, onGhiNhan }: {
   } else if (d.soBatBuoc > 0) {
     tone = 'border-soon-line bg-soon-bg text-soon';
     cau = <>{d.soBatBuoc} vi phạm trong tuần này + tuần trước → bắt buộc xử lý{d.han ? ` · hạn ${ngay(d.han, homNay)}` : ''}</>;
-    hanh = nut(ke, onXuLy);
   } else if (d.deXuat?.status === 'cho_duyet') {
     tone = 'border-wait-line bg-wait-bg text-wait';
     cau = <>Đề xuất {d.deXuat.nhan} · chờ QL{d.deXuat.han ? ` · hạn ${ngay(d.deXuat.han, homNay)}` : ''}</>;

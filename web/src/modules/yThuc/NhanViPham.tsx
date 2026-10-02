@@ -32,13 +32,13 @@ const LOP: Record<TrangThaiVp, string> = {
 
 /**
  * NHÃN MỘT VI PHẠM (PR-YT4, đặc tả §5.4) — đúng MỘT nhãn: Mới · Đã ghi nhận · Cần xử lý · Quá hạn n ngày · Chờ QL duyệt (hoặc
- * "Đã duyệt · chờ thực hiện") · Đã xử lý · {bậc}. `nhan` đến từ máy chủ (một hàm trạng thái) — không tự dựng chữ ở đây, trừ
- * "Đã ghi nhận · vẫn tính": nói rõ vi phạm đã xem vẫn đếm vào luật 3 vi phạm / 2 tuần (V4-6).
+ * "Đã duyệt · chờ thực hiện") · Đã xử lý · {bậc}. `nhan` đến từ máy chủ (một hàm trạng thái) — không tự dựng chữ ở đây.
+ * Đã ghi nhận chỉ ghi "Đã ghi nhận" (chủ sản phẩm 02/10 — bỏ "· vẫn tính").
  */
 export function NhanViPham({ t, nhan, title }: { t: TrangThaiVp; nhan: string; title?: string }) {
-  const chu = t === 'da_ghi_nhan' ? 'Đã ghi nhận · vẫn tính' : nhan;
+  const chu = t === 'da_ghi_nhan' ? 'Đã ghi nhận' : nhan;
   return (
-    <span title={title ?? (t === 'da_ghi_nhan' ? 'GVCN đã xem, không cần xử lý — vẫn đếm vào luật 3 vi phạm trong 2 tuần' : undefined)}
+    <span title={title ?? (t === 'da_ghi_nhan' ? 'GVCN đã xem, không cần xử lý' : undefined)}
       className={`inline-flex items-center gap-1 whitespace-nowrap rounded-md border px-1.5 py-0.5 text-[11.5px] font-semibold tabular-nums ${LOP[t]}`}>
       {t === 'da_ghi_nhan' && <DauTich />}
       {chu}

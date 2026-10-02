@@ -206,6 +206,29 @@ export async function runPrDonBTests(t: YThucTestKit) {
     assert(sot.length === 0, sot.join(', '));
   });
 
+  // ------------------------------------------------------------------ khối YT · Ý thức hồ sơ HV (chủ sản phẩm 02/10)
+  console.log('\nPR-Dọn-b · (YT) Ý thức: chữ cấp bậc, Đã ghi nhận, nút xử lý đồng bộ hồ sơ HV / hồ sơ lớp');
+  check('Dọn-b (YT1) · không còn chữ "Khai bậc" / "đã khai" trên màn; dùng "Đã có mức độ vi phạm từ trước?" + "Xác nhận cấp bậc vi phạm"', () => {
+    const sot = webSrc().filter((x) => /[Kk]hai bậc|[Đđ]ã khai|bậc khai/.test(x.s)).map((x) => x.f);
+    assert(sot.length === 0, sot.join(', '));
+    const svSot = ['server/src/worklist/mywork.ts', 'server/src/yThuc/xuLy.ts', 'shared/domain/nhatKy.ts'].filter((f) => /[Kk]hai bậc|bậc khai/.test(doc(f)));
+    assert(svSot.length === 0, svSot.join(', '));
+    const th = doc('web/src/modules/yThuc/ThangYThuc.tsx');
+    assert(th.includes('Đã có mức độ vi phạm từ trước?') && th.includes('Xác nhận cấp bậc vi phạm'), 'ThangYThuc');
+  });
+  check('Dọn-b (YT2) · nhãn vi phạm đã xem chỉ "Đã ghi nhận" (không "· vẫn tính"); toast không nhắc "vẫn tính"', () => {
+    const sot = webSrc().filter((x) => x.f.includes('/yThuc/') && /vẫn tính|vẫn đếm/.test(x.s)).map((x) => x.f);
+    assert(sot.length === 0, sot.join(', '));
+  });
+  check('Dọn-b (YT3–5) · khối Thang có hai nút cùng cỡ "Xác nhận xử lý" + "Đề xuất QL duyệt"; nút không kèm tên bậc; hồ sơ HV và hồ sơ lớp cùng truyền onXuLy (xử lý được cả khi mới 1 vi phạm)', () => {
+    const th = doc('web/src/modules/yThuc/ThangYThuc.tsx');
+    assert(/className="btn btn-primary[^"]*" onClick=\{onXuLy\}>Xác nhận xử lý</.test(th) && /onClick=\{onDeXuat\}>Đề xuất QL duyệt</.test(th) && !th.includes('Đề xuất QL duyệt…'), 'ThangYThuc');
+    const sotBac = webSrc().filter((x) => x.f.includes('/yThuc/') && /Xác nhận xử lý\$\{|`Xác nhận xử lý ·|Xác nhận xử lý · \$\{/.test(x.s)).map((x) => x.f);
+    assert(sotBac.length === 0, sotBac.join(', '));
+    for (const f of ['web/src/modules/yThuc/StudentYThucSection.tsx', 'web/src/modules/yThuc/ClassYThucCard.tsx']) assert(/<ThangYThuc[\s\S]{0,400}onXuLy=/.test(doc(f)), f);
+    assert(/phu: cheDo === 'xu-ly'[\s\S]{0,300}Đề xuất QL duyệt<\/button>/.test(doc('web/src/modules/yThuc/XacNhanXuLyPanel.tsx')), 'panel: Đề xuất là nút ở chân');
+  });
+
   // ------------------------------------------------------------------ khối A · mã cũ Dọn-a / S3 để lại
   console.log('\nPR-Dọn-b · (A) Mã cũ để lại');
   check('Dọn-b (A1) · web không gửi trongPhamVi (máy chủ đã luôn lọc theo phạm vi)', () => {

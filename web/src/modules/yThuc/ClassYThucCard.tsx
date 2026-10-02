@@ -23,12 +23,12 @@ import { DUONG_LAM_MOI_Y_THUC, type BangYThucLop, type DongEm, type ViPhamV4, ty
  *
  *   Trái "Xử lý": em theo nhóm của CỬA TRẠNG THÁI — Quá hạn › Bắt buộc xử lý › Chờ QL duyệt › Mới, chưa ghi nhận › Đã xử lý (7 ngày);
  *   nhóm rỗng không vẽ. Lọc trạng thái CHÍNH LÀ khung này (Q14) — không chip phụ, không hai chế độ, không ô tick.
- *   Phải "Vi phạm": chưa chọn em → dòng thời gian cả lớp (có tên em, không thang, không Xác nhận xử lý); chọn em → thang một dòng +
- *   vi phạm của em (nhãn + `Ghi nhận`) + chân câu M6 và MỘT nút chính. Bộ lọc duy nhất: nhóm vi phạm.
+ *   Phải "Vi phạm": chưa chọn em → dòng thời gian cả lớp (có tên em, không thang, không Xác nhận xử lý); chọn em → khối Thang (hai nút) +
+ *   vi phạm của em (nhãn + `Ghi nhận`) + chân câu M6. Bộ lọc duy nhất: nhóm vi phạm.
  *   Dưới `md`: hai khung thành hai tab `Xử lý · Vi phạm`; chọn em → sang tab Vi phạm.
  *
  * Việc / thông báo mở `?tab=y-thuc&hv={id}&mo=xu-ly` (hoặc `mo=da-thuc-hien&xl={id}`) → chọn sẵn em, mở panel (một lần).
- * GVBM (K2-39): đọc được hai khung, KHÔNG thấy Ghi nhận / Xác nhận xử lý / Khai bậc; vẫn có `+ Ghi vi phạm`.
+ * GVBM (K2-39): đọc được hai khung, KHÔNG thấy Ghi nhận / Xác nhận xử lý / Xác nhận cấp bậc; vẫn có `+ Ghi vi phạm`.
  */
 /** `thuong`: lớp thường — tab "Phối hợp" (không có chữ SOS); lớp FT: "Phối hợp SOS" (chủ sản phẩm 02/10). */
 export function ClassYThucCard({ classId, thuong = false }: { classId: number; thuong?: boolean }) {
@@ -62,7 +62,7 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
     const moGi = params.get('mo');
     if (hv) { setChonHv(hv); setKhungDt('vi-pham'); }
     if (hv && moGi === 'xu-ly') mo({ loai: 'xu-ly', studentId: hv });
-    if (hv && moGi === 'khai') mo({ loai: 'khai', studentId: hv });   // PR-VAI-a (K1-15): việc "Khai bậc Ý thức HS cũ"
+    if (hv && moGi === 'khai') mo({ loai: 'khai', studentId: hv });   // PR-VAI-a (K1-15): việc "Xác nhận cấp bậc vi phạm HV cũ"
     const xl = Number(params.get('xl')) || null;
     if (moGi === 'da-thuc-hien' && xl) mo({ loai: 'da-thuc-hien', id: xl });
     if (moGi || params.get('loc')) {
@@ -84,7 +84,7 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
     try {
       await api.post(`/students/${v.studentId}/y-thuc/ghi-nhan`, { violationIds: [v.id] });
       DUONG_LAM_MOI_Y_THUC.forEach((x) => invalidate(x));
-      toast.push('ok', 'Đã ghi nhận — vẫn tính vào luật 3 vi phạm / 2 tuần.');
+      toast.push('ok', 'Đã ghi nhận');
       lamMoi();
     } catch (e: any) { toast.push('error', e.message); }
   };
@@ -144,6 +144,7 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
           <div className="border-b px-3 py-2.5" style={{ borderColor: 'var(--line)' }}>
             <ThangYThuc d={hv} homNay={homNay}
               onKhai={hv.canManage ? () => mo({ loai: 'khai', studentId: hv.studentId }) : undefined}
+              onXuLy={() => mo({ loai: 'xu-ly', studentId: hv.studentId })}
               onDeXuat={hv.canManage ? () => mo({ loai: 'xu-ly', studentId: hv.studentId, cheDo: 'de-xuat' }) : undefined} />
           </div>
           <div className="p-3">
@@ -159,7 +160,7 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
                     <span className="flex flex-wrap items-center justify-end gap-1.5">
                       <NhanViPham t={v.trangThai} nhan={v.nhanTrangThai} />
                       {coGhiNhan && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => void ghiNhan(v)}
-                        title="Đã xem, không cần xử lý — vẫn đếm vào luật 3 vi phạm / 2 tuần">Ghi nhận</button>}
+                        title="Đã xem, không cần xử lý">Ghi nhận</button>}
                     </span>
                   ),
                   mo: moViPhamId === v.id,
@@ -173,7 +174,6 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
               rong={<Empty title={nhomVp ? 'Em không có vi phạm nào thuộc nhóm này' : 'Em chưa có vi phạm nào'} />} />
           </div>
           <ChanEm hv={hv} homNay={homNay}
-            onXuLy={() => mo({ loai: 'xu-ly', studentId: hv.studentId })}
             onDaThucHien={(id) => mo({ loai: 'da-thuc-hien', id })} />
         </>
       )}
@@ -250,20 +250,19 @@ function DongEmO({ x, nhom, chon, homNay, onChon }: { x: DongEm; nhom: NhomEm; c
   );
 }
 
-/** Chân khung phải khi đã chọn em: MỘT câu nói vì sao (M6) + MỘT nút chính. Chỉ người xử lý được mới thấy nút. */
-function ChanEm({ hv, homNay, onXuLy, onDaThucHien }: { hv: YThucHocVien; homNay: string; onXuLy: () => void; onDaThucHien: (id: number) => void }) {
+/**
+ * Chân khung phải khi đã chọn em: MỘT câu nói vì sao (M6). Nút Xác nhận xử lý / Đề xuất QL duyệt ở khối Thang phía trên (một chỗ, như hồ sơ HV);
+ * ở đây chỉ còn "Đã thực hiện…" khi QL đã duyệt đề xuất.
+ */
+function ChanEm({ hv, homNay, onDaThucHien }: { hv: YThucHocVien; homNay: string; onDaThucHien: (id: number) => void }) {
   const cau = hv.soBatBuoc > 0
     ? `Em có ${hv.soBatBuoc} vi phạm trong tuần này + tuần trước → phải xử lý${hv.han ? `, hạn ${ngay(hv.han, homNay)}` : ''}; không còn nút Ghi nhận.`
     : hv.deXuat?.status === 'cho_duyet' ? `Đề xuất ${hv.deXuat.nhan} đang chờ QL${hv.deXuat.han ? ` (hạn ${ngay(hv.deXuat.han, homNay)})` : ''}.`
     : hv.deXuat?.status === 'da_duyet' ? `QL đã duyệt ${hv.deXuat.nhan} — ghi "Đã thực hiện"${hv.deXuat.han ? ` trước ${ngay(hv.deXuat.han, homNay)}` : ''}.`
     : hv.soMoi > 0 ? 'Vi phạm mới: Ghi nhận (không cần xử lý) hoặc Xác nhận xử lý nếu cần.'
     : 'Không có vi phạm nào cần làm. Vẫn Xác nhận xử lý được khi vi phạm nghiêm trọng.';
-  const nut = !hv.canManage ? null
-    : hv.deXuat?.status === 'da_duyet' ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => onDaThucHien(hv.deXuat!.id)}>Đã thực hiện…</button>
-    : hv.deXuat?.status === 'cho_duyet' ? null
-    : <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onXuLy}>
-        {!hv.keTiep || hv.keTiep.canQl ? 'Đề xuất QL duyệt' : `Xác nhận xử lý · ${hv.keTiep.nhan}`}
-      </button>;
+  const nut = hv.canManage && hv.deXuat?.status === 'da_duyet'
+    ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => onDaThucHien(hv.deXuat!.id)}>Đã thực hiện…</button> : null;
   return (
     <div className="flex flex-wrap items-center gap-2 border-t px-3 py-2.5" style={{ borderColor: 'var(--line)' }}>
       <p className="m-0 min-w-0 flex-1 text-xs text-slate-400">{cau}</p>

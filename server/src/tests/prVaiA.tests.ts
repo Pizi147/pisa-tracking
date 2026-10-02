@@ -436,7 +436,7 @@ export async function runPrVaiATests(t: YThucTestKit) {
       conn.prepare('UPDATE students SET created_at = ? WHERE id = ?').run(`${t.addDays(TODAY, -20)}T08:00:00.000Z`, cu.sid);
       const v = viec();
       assert(v && v.count === n0 + 2, `hai em mới → +2: ${JSON.stringify(v)}`);
-      assert(v.due === null && v.urgency === 'normal' && /^Khai bậc Ý thức HV cũ · MB FT 101 · \d+ em$/.test(v.tieuDe) && d.nhomViecCua(v.group) === 'y-thuc', 'chữ, nhóm, không hạn');
+      assert(v.due === null && v.urgency === 'normal' && /^Xác nhận cấp bậc vi phạm HV cũ · MB FT 101 · \d+ em$/.test(v.tieuDe) && d.nhomViecCua(v.group) === 'y-thuc', 'chữ, nhóm, không hạn');
       xuLy.khaiBac(P.coreTeacher, a.sid, { bac: 1, ghiChu: 'Report 1 trước khi dùng web' });
       eq(viec()?.count ?? 0, n0 + 1, 'khai xong một em → giảm');
       assert(!(mywork.myWork(P.subjectTeacher).items as any[]).some((i) => i.group === 'khai_bac'), 'GVBM không có việc khai bậc');

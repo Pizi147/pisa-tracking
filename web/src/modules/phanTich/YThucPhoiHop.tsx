@@ -98,7 +98,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
         <thead>
           <tr>
             <Th className="sticky-col">Học viên</Th><Th>Lớp</Th><Th>Trạng thái</Th>
-            <Th hint="Bậc cao nhất đã xử lý trên thang (kể cả bậc khai trước khi dùng web)">Bậc hiện tại</Th>
+            <Th hint="Bậc cao nhất đã xử lý trên thang (kể cả cấp bậc vi phạm đã xác nhận từ trước khi dùng web)">Bậc hiện tại</Th>
             <Th hint="Lần xử lý bắt buộc kế tiếp; WL 3 cần QL duyệt">Bậc kế</Th>
             <Th align="right" hint="Trong khoảng đang lọc">Vi phạm</Th><Th align="right" hint="Mới · Cần xử lý · Quá hạn (Đã ghi nhận không tính)">Chưa xử lý</Th>
             <Th hint="Lần xử lý đã xong gần nhất; lần mới hơn còn chờ duyệt hoặc bị từ chối hiện ở dòng dưới, kèm trạng thái">Lần xử lý gần nhất</Th>

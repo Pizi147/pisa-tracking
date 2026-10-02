@@ -34,7 +34,7 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone }: {
   }, [studentId, sua, d?.khai?.bac]);
 
   if (!studentId) return null;
-  const tieuDe = sua ? 'Sửa bậc đã khai' : 'Khai bậc';
+  const tieuDe = sua ? 'Sửa cấp bậc vi phạm' : 'Xác nhận cấp bậc vi phạm';
   if (!d) return <KhungPanel tieuDe={tieuDe} onDong={onClose}><p className="mt-3 text-sm text-slate-400">Đang tải…</p></KhungPanel>;
 
   const loi = dsLoi([{ khoa: 'bac', nhan: 'Bậc', chon: true }, { khoa: 'ghi-chu', nhan: 'Ghi chú', toiThieu: GHI_CHU_MIN }],
@@ -48,17 +48,17 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone }: {
       if (sua) await api.put(`/students/${studentId}/y-thuc/khai-bac`, body);
       else await api.post(`/students/${studentId}/y-thuc/khai-bac`, body);
       DUONG_LAM_MOI_Y_THUC.forEach((x) => invalidate(x));
-      toast.push('ok', `Đã khai ${MEASURE_KIND_LABEL[BAC_KHAI[bac - 1]]} cho ${d.ten}. Lần xử lý kế tiếp: ${bac < 6 ? MEASURE_KIND_LABEL[THANG[bac]] : 'Đề xuất QL duyệt'}.`);
+      toast.push('ok', `Đã xác nhận cấp bậc ${MEASURE_KIND_LABEL[BAC_KHAI[bac - 1]]} cho ${d.ten}. Lần xử lý kế tiếp: ${bac < 6 ? MEASURE_KIND_LABEL[THANG[bac]] : 'Đề xuất QL duyệt'}.`);
       onClose(); onDone?.();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
 
   return (
     <KhungPanel tieuDe={tieuDe} hocVien={d.ten} onDong={onClose}
-      ngCanh={<span className="truncate">Thang {d.chuoi.nhan === 'lớp thường' ? 'lớp thường' : d.chuoi.nhan} · khai một lần, chỉ QL sửa sau</span>}
+      ngCanh={<span className="truncate">Thang {d.chuoi.nhan === 'lớp thường' ? 'lớp thường' : d.chuoi.nhan} · xác nhận một lần, chỉ QL sửa sau</span>}
       chan={{
         conThieu: lf.conThieu(loi),
-        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>{sua ? 'Lưu' : 'Khai bậc'}</button>,
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>{sua ? 'Lưu' : 'Xác nhận'}</button>,
       }}>
       <Khoi tieuDe="Bậc cao nhất đã xử lý trước khi dùng web">
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2" role="group" aria-label="Bậc đã xử lý" {...lf.o(loi, 'bac')}>
