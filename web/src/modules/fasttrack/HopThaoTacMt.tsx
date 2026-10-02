@@ -83,7 +83,7 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, tuanDaBa
       case 'xep-lai':
       case 'doi-lich':
         await api.post(`${goc}/week`, { periodId: tuan!.periodId, reason: lyDoGui ?? null, force });
-        return `${t === 'doi-lich' ? 'Đã dời' : 'Đã xếp'} lịch thi ${mon} sang ${tuanLich(tuan!.weekStart)}`;
+        return `${t === 'doi-lich' ? 'Đã dời lịch thi' : 'Đã lên lịch thi'} ${mon} ${t === 'doi-lich' ? 'sang' : 'vào'} ${tuanLich(tuan!.weekStart)}`;
       case 'khoi-phuc':
         await api.post(`${goc}/restore`, { periodId: tuan!.periodId, reason: lyDoGui ?? null });
         return `Đã khôi phục ${mon} và đặt ${tuanLich(tuan!.weekStart)}`;

@@ -237,7 +237,7 @@ export default function MockDetailPage() {
             /* R16 — mở lưới cả lớp đúng TUẦN của đợt đang xem, không phải tuần hôm nay. */
             <Link className="btn no-underline"
               to={`/nhap-diem/${d.classId}${d.period ? `?periodId=${d.period.id}` : ''}`}>
-              Nhập điểm cả lớp
+              Nhập điểm
             </Link>
           )}
           <Menu label="Chỉnh lịch" items={headerItems} className="btn" />

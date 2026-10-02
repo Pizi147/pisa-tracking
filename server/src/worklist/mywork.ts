@@ -327,7 +327,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   type BaiChuaCham = {
     classId: number | null; classCode: string | null; attemptNo: number | null; kind: string | null;
     attemptId: number; studentId: number; studentName: string;
-    skill: string; deadline: string | null; ownerId: number | null; overdue: boolean;
+    skill: string; deadline: string | null; ownerId: number | null; overdue: boolean; periodId: number | null;
   };
   /*
    * PR-Ra Q1: tách phần gom thành một hàm dùng chung cho "việc của mình" (ownerId luôn là
@@ -350,7 +350,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
           kind: d.kind, testLabel, skill: d.skill, skillLabel,
           /* PR-UX1 Q13: bấm Chấm mở Lịch Test đúng lớp, con trỏ vào môn này; bài không có lớp giữ hồ sơ lượt. */
           students: new Map(), due: null,
-          href: d.classId ? duongLichTest({ classId: d.classId, kn: d.skill }) : attemptHref({ id: d.attemptId, kind: d.kind, classId: d.classId }),
+          href: d.classId ? duongLichTest({ classId: d.classId, kn: d.skill, periodId: d.periodId }) : attemptHref({ id: d.attemptId, kind: d.kind, classId: d.classId }),
           attemptId: d.attemptId, ownerId: d.ownerId, quaHan: false,
         };
         buckets.set(k, b);
@@ -414,7 +414,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       minhDongs.push({
         classId: a.classId ?? null, classCode: a.classCode ?? null, attemptNo: a.attemptNo ?? null,
         kind: a.kind ?? null, attemptId: a.id, studentId: a.studentId, studentName: a.studentName,
-        skill: c.skill, deadline: c.deadline, ownerId: p.userId, overdue: !!c.overdue,
+        skill: c.skill, deadline: c.deadline, ownerId: p.userId, overdue: !!c.overdue, periodId: c.periodId ?? null,
       });
     }
   }
@@ -435,7 +435,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         khacDongs.push({
           classId: a.classId ?? null, classCode: a.classCode ?? null, attemptNo: a.attemptNo ?? null,
           kind: a.kind ?? null, attemptId: a.id, studentId: a.studentId, studentName: a.studentName,
-          skill: c.skill, deadline: c.deadline, ownerId, overdue: !!c.overdue,
+          skill: c.skill, deadline: c.deadline, ownerId, overdue: !!c.overdue, periodId: c.periodId ?? null,
         });
       }
     }
