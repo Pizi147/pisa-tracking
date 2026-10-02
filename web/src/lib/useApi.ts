@@ -7,9 +7,22 @@ import { ApiError, api, onInvalidate } from './api.ts';
  * không dùng lại một lời gọi bắt đầu TRƯỚC khi ghi).
  */
 const dangBay = new Map<string, Promise<unknown>>();
+/*
+ * PR-TOCDO: BẢN VỪA XEM — vào lại một trang đã mở thì hiện ngay dữ liệu lần trước, rồi tải lại nền và thay bằng bản mới (máy chủ ở xa, mỗi lượt gọi
+ * ~0,3 s; trước đây mỗi lần đổi trang đều hiện khung chờ). Bị xoá cùng lúc với `dangBay`: đổi tài khoản (prefix = null) là xoá sạch, nên không
+ * lộ dữ liệu của tài khoản trước; ghi dữ liệu xong thì xoá đúng các đường dẫn bị ảnh hưởng.
+ */
+const daXem = new Map<string, unknown>();
+const DA_XEM_TOI_DA = 60;
 onInvalidate((prefix) => {
   for (const k of [...dangBay.keys()]) if (prefix === null || k.startsWith(prefix)) dangBay.delete(k);
+  for (const k of [...daXem.keys()]) if (prefix === null || k.startsWith(prefix)) daXem.delete(k);
 });
+function nhoBanXem(path: string, d: unknown) {
+  daXem.delete(path);
+  daXem.set(path, d);
+  if (daXem.size > DA_XEM_TOI_DA) daXem.delete(daXem.keys().next().value as string);
+}
 function getChung<T>(path: string): Promise<T> {
   const cu = dangBay.get(path) as Promise<T> | undefined;
   if (cu) return cu;
@@ -39,7 +52,7 @@ export type ApiState<T> = {
  * khiến bản nháp của người dùng bị mất.
  */
 export function useApi<T>(path: string | null, deps: unknown[] = []): ApiState<T> {
-  const [data, setDataState] = useState<T | null>(null);
+  const [data, setDataState] = useState<T | null>(() => (path ? (daXem.get(path) as T | undefined) ?? null : null));
   const [fetching, setFetching] = useState(!!path);
   const [error, setError] = useState<ApiError | null>(null);
   const [tick, setTick] = useState(0);
@@ -64,7 +77,7 @@ export function useApi<T>(path: string | null, deps: unknown[] = []): ApiState<T
     }
     // Đổi sang truy vấn khác thì mới bỏ dữ liệu cũ đi.
     if (currentPath.current !== path) {
-      setDataState(null);
+      setDataState((daXem.get(path) as T | undefined) ?? null);
       currentPath.current = path;
     }
     const seq = ++latest.current;
@@ -73,6 +86,7 @@ export function useApi<T>(path: string | null, deps: unknown[] = []): ApiState<T
     getChung<T>(path)
       .then((d) => {
         if (seq !== latest.current) return;   // bỏ qua phản hồi cũ
+        nhoBanXem(path, d);
         setDataState(d);
         setFetching(false);
       })
