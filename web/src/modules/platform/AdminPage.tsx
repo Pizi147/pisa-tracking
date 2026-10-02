@@ -196,7 +196,7 @@ function PermCell({ roleName, perm, granted, doi, dangSua, onBam }: {
       disabled={!dangSua}
       aria-pressed={dangSua ? co : undefined}
       title={dangSua ? `${co ? 'Bỏ' : 'Cấp'} quyền "${perm.name}" cho vai trò ${roleName}` : 'Bấm "Sửa quyền" để đổi'}
-      className={`w-full min-h-[36px] bg-transparent text-sm tabular-nums ${co ? 'text-sky-200' : 'text-slate-600'} ${
+      className={`w-full min-h-[44px] sm:min-h-[36px] bg-transparent text-sm tabular-nums ${co ? 'text-sky-200' : 'text-slate-600'} ${
         doi ? 'rounded-md border border-[color:var(--accent-line)]' : 'border border-transparent'} ${dangSua ? 'cursor-pointer hover:bg-white/5' : 'cursor-default'}`}
       onClick={onBam}
     >

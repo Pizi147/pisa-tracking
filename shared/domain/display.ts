@@ -353,7 +353,7 @@ export function deadlineView(i: DeadlineInput): DeadlineView {
     };
   }
   /* C-khác (Dọn-b 14a): hạn có giờ (ISO UTC) đổi sang NGÀY giờ Việt Nam trước khi so — 18:30Z ngày 21 là 01:30 ngày 22 ở VN. */
-  const ngayVn = (s: string) => ngayTheoGioVN(s) ?? s.slice(0, 10);
+  const ngayVn = (s: string) => ngayTheoGioVN(s)!;   // đã qua validIso
   const han = `${tien} ${shortDate(ngayVn(i.due), i.today)}`;
   /* PR-N1 (R-PA3): hạn Thứ Hai là hạn của kết quả TUẦN TRƯỚC nó — "Ghi kết quả tuần W4 SEP · hạn hết T2 28/09". */
   const viecHien = i.kind === 'cap-nhat-pa' ? `Ghi kết quả tuần ${maTuan(congNgay(i.due, -7), i.today)}` : viec;
