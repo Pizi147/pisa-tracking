@@ -1,4 +1,4 @@
-# UX sau critique toàn web 02/10 — Kế hoạch (CHƯA LÀM, chờ chủ sản phẩm chọn gói)
+# UX sau critique toàn web 02/10 — Kế hoạch (chủ sản phẩm chọn làm CẢ 5 gói, 02/10)
 
 > **Nguồn:** `/impeccable critique` (session planning 02/10/2026) trên dữ liệu demo 14/09. Hai đánh giá độc lập:
 > A: soát thiết kế, khoảng 75 ảnh 1440/375; B: bộ dò `impeccable detect` + overlay trình duyệt trên 11 trang/panel.
@@ -43,7 +43,12 @@
 Hiện có hai họ badge: `Nhan` (bo tròn hẳn, đậm 700, không viền, `ui/Nhan.tsx:26`) và `NhanTrangThai`/ClassRoster/MissingBadge
 (bo `rounded-md`, 600, có viền, `ui/ui.tsx:525`, `students/ClassRoster.tsx:285`, `students/MissingBadge.tsx:32`).
 Cỡ chữ có 4 mức (11 / 11,5 / 12 / 12,5 px) và 3 chiều cao dòng cho cùng một chip "Quá hạn"/"Cần làm".
-- [ ] **H1.** Chủ sản phẩm chốt (câu hỏi Q-H): chỉ giữ `Nhan`, hay giữ hai họ có nghĩa riêng (trạng thái và thuộc tính)?
+- [ ] **H1. Ba kiểu chip, mỗi kiểu một nghĩa** (đề xuất planning 02/10, chờ chủ sản phẩm xác nhận Q-H; chưa xác nhận thì làm H2–H6 trước):
+  - **Tròn hẳn, nền đặc** (`Nhan`): trạng thái của học viên hoặc lớp (Cần chú ý, Tốt, Chờ chấm, SOS). Số tạm thì viền đứt (`dut`).
+  - **Góc vuông bo nhẹ, viền liền** (`NhanTrangThai`): trạng thái của **việc** (Cần làm, Đang làm, Chờ duyệt, Quá hạn, Xong, Đã huỷ).
+    ClassRoster `:285` và MissingBadge `:32` dùng chung kiểu này.
+  - **Góc vuông, viền đứt khi tạm** (`KetQuaDot`): kết quả điểm. Giữ nguyên như đã chốt 26/09.
+  - Cả ba thống nhất cỡ chữ 11,5 px và một chiều cao dòng (hiện có 4 cỡ và 3 chiều cao dòng).
 - [ ] **H2.** Gom các chip làm riêng lẻ về họ đã chốt:
   - `test/lichTest/KhoiNo.tsx:91` · `test/LichTestTab.tsx:272`
   - `giaoVien/HoSoGiaoVienPage.tsx:168,175`
@@ -87,6 +92,10 @@ Cỡ chữ có 4 mức (11 / 11,5 / 12 / 12,5 px) và 3 chiều cao dòng cho c�
 - [ ] **J4. Bỏ lời giải thích viết cho người làm app** ở Tổng quan QL ("Gộp hai khung · …", "Chỉ phần số đổi theo khung · …"),
   hoặc chuyển vào ⓘ.
 - [ ] **J5.** Dòng tóm tắt Chờ duyệt "gồm 9 Báo QL (1 Mini Test chưa đạt, 2 Case…)" đổi thành hàng chip đếm.
+- [ ] **J5b. Tách "Để QL biết" khỏi Chờ duyệt** (chủ sản phẩm chốt 02/10, Q-D). Các mục "Không cần duyệt — để QL biết"
+  (9/22 trong demo) chuyển sang một nhóm hoặc tab riêng "Để QL biết". Chờ duyệt chỉ còn mục có nút Duyệt, và badge đếm
+  Chờ duyệt chỉ đếm những mục đó. Tìm file nguồn: `web/src/modules/duyet/*`, `server/src/` (nguồn danh sách duyệt).
+  Phép kiểm: số trên badge Chờ duyệt bằng số dòng có nút Duyệt.
 - [ ] **J6. Cột "TARGET"** (chữ hoa, tiếng Anh) ở Học viên & Lớp đổi thành "Mục tiêu".
 - [ ] **J7.** Bỏ chữ "Bạn" lặp ở mỗi dòng (31 việc) của Tổng quan GV.
 - [ ] **J8.** Chữ bị cắt mất nghĩa: "Ghi kết q…" (Theo dõi ở trang lớp), "Cao Khánh Linh, Lê …", "L, R, W1, W…". Cho xuống dòng
@@ -121,9 +130,9 @@ Cỡ chữ có 4 mức (11 / 11,5 / 12 / 12,5 px) và 3 chiều cao dòng cho c�
 - Không tràn ngang ở 375 px trên mọi trang/panel đã đo.
 
 ## Câu hỏi cho chủ sản phẩm
-- **Q-H:** Giữ một họ badge (`Nhan`) hay hai họ có nghĩa riêng?
-- **Q-K:** Cỡ chữ tối thiểu cho chữ nội dung là 12 px?
-- **Q-D:** 9/22 mục ở Chờ duyệt là "Không cần duyệt — để QL biết". Tách ra danh sách "Để QL biết" riêng không?
+- **Q-H:** (đang chờ) Xác nhận cách chia ba kiểu chip ở H1.
+- **Q-K:** ĐÃ CHỐT 02/10: 12 px cho chữ nội dung.
+- **Q-D:** ĐÃ CHỐT 02/10: tách "Để QL biết" (J5b).
 - **Q-B:** Chờ duyệt có cần "Duyệt nhiều" / "Nhắc tất cả" không?
 
 ## File → mục
@@ -137,4 +146,5 @@ Cỡ chữ có 4 mức (11 / 11,5 / 12 / 12,5 px) và 3 chiều cao dòng cho c�
 | `cases/*` (form Tạo Case) | I2 |
 | `students/StudentsPage`, panel Thêm HV | I3, J6, K1 |
 | `phanTich/*` | H5, K2 |
+| `duyet/*` | H4, J5, J5b |
 | `index.css` (`.btn-sm`, `.field`) | K3 |

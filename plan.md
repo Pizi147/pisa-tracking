@@ -358,6 +358,8 @@ Thêm dòng mới ở cuối, có ngày. **Không xoá dòng cũ** — ghi "thay
 | 26/09/2026 | **Sau đánh giá giao diện toàn web** (`thiet-ke/DANH_GIA_GIAO_DIEN_2026-09-26.md`, 24/40): (1) giữ nguyên thang SOS 1 vàng / SOS 2 cam / SOS 3 đỏ để đồng bộ; **SOS tạm thời mang màu của mức SOS đó**, viền đứt, luôn có chữ "tạm thời" (thay dòng "đỏ" ở HE_GIAO_DIEN §5; đã sửa file đó); (2) thứ tự sửa: **"sửa sai sự thật" trước** (gói UX-A, UX-B); (3) **chưa sửa ngay**, ghép vào các prompt UI sắp tới theo bảng "File → mục" của `docs/superpowers/plans/2026-09-26-ux-sau-danh-gia.md` | Chủ sản phẩm |
 
 ---
+| 02/10/2026 | Chữ mang nội dung (meta dòng, nhãn ô, lời nhắc) tối thiểu **12 px**; tiêu đề cột bảng và badge giữ 11–11,5 px | Chủ sản phẩm, critique 02/10 (Q-K) |
+| 02/10/2026 | Tách mục "Không cần duyệt — để QL biết" khỏi **Chờ duyệt** thành nhóm "Để QL biết"; badge Chờ duyệt chỉ đếm mục cần bấm Duyệt | Chủ sản phẩm, critique 02/10 (Q-D) |
 
 ## 4. Lộ trình và phụ thuộc
 
@@ -1955,9 +1957,9 @@ Ghi theo yêu cầu chủ sản phẩm sau rà soát PR #52 (làm sau, không l�
 
 Nguồn: `thiet-ke/DANH_GIA_GIAO_DIEN_2026-09-26.md` (77 trang/panel, 27 đỏ · 39 vàng · 11 xanh). Kế hoạch: `docs/superpowers/plans/2026-09-26-ux-sau-danh-gia.md`, gồm sáu gói UX-A → UX-F và bảng "File → mục". **Mọi prompt UI mới chạm file nằm trong bảng đó phải ghép các mục tương ứng**, hoặc ghi rõ lý do không ghép. Có một lỗi nhỏ nên cân nhắc làm sớm dù chưa tới đợt: **A1**, ký tự 0x08 trong regex SOS ở `web/src/lib/format.ts:85` làm SOS 1 hiện màu xanh dương ở Tổng quan GV và Công việc. Câu hỏi chặn Q1, Q2, Q4–Q8 nằm cuối file kế hoạch.
 
-### 12.21. Critique toàn web 02/10 — kế hoạch chờ chọn gói
+### 12.21. Critique toàn web 02/10 — làm cả 5 gói (chủ sản phẩm chốt 02/10)
 
-Nguồn: `/impeccable critique` 02/10 (26/40, tăng từ 24/40). Kế hoạch: `docs/superpowers/plans/2026-10-02-ux-sau-critique.md`, gồm năm gói UX-G → UX-K và bảng "File → mục". UX-G (trạng thái sai/lệch màu, Lịch Test cắt nút, thông báo dùng giờ thật) làm trước. Câu hỏi Q-H, Q-K, Q-D, Q-B nằm cuối file.
+Nguồn: `/impeccable critique` 02/10 (26/40, tăng từ 24/40). Kế hoạch: `docs/superpowers/plans/2026-10-02-ux-sau-critique.md`, gồm năm gói UX-G → UX-K và bảng "File → mục". UX-G (trạng thái sai/lệch màu, Lịch Test cắt nút, thông báo dùng giờ thật) làm trước. Đã chốt: chữ nội dung tối thiểu 12 px; tách "Để QL biết" khỏi Chờ duyệt. Còn chờ: Q-H (ba kiểu chip), Q-B.
 
 ### 13.1. Trước mỗi commit
 
