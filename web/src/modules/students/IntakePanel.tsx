@@ -5,8 +5,9 @@ import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { Field, Outcome, Th } from '../../ui/ui.tsx';
+import { useLoiForm } from '../../ui/loiForm.tsx';
 import {
-  KCK, cotLuoiNhap, duongDotTest, laKck, nhanCotNhap, tuanBatDauMacDinh, type CotNhap, type VanDeNhap,
+  KCK, cotLuoiNhap, dsLoi, duongDotTest, laKck, nhanCotNhap, tuanBatDauMacDinh, type CotNhap, type VanDeNhap,
 } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
@@ -74,6 +75,9 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
   const [moDong, setMoDong] = useState<number | null>(null);
   const [ketQua, setKetQua] = useState<KetQua | null>(null);
   const [busy, setBusy] = useState(false);
+  /* O5: ô của cả lô báo lỗi dưới ô; lỗi từng dòng vẫn ở cột Trạng thái (máy chủ xem trước + kiểm lại khi thêm). */
+  const lf = useLoiForm();
+  const loiLo = dsLoi([{ khoa: 'lop', nhan: 'Thêm vào lớp', chon: true }], { lop: classId });
   const [pasteText, setPasteText] = useState('');
   // Khoá idempotency giữ nguyên trong một lần thêm (bấm hai lần / thử lại sau lỗi mạng không tạo trùng); thêm xong thì đổi khoá.
   const idempotencyKey = useRef(moiKhoa());
@@ -119,7 +123,8 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
   const canSua = pv ? hangCoDuLieu.filter((i) => coLoi(i)).length : 0;
 
   const commit = async () => {
-    if (busy) return;
+    lf.bam();
+    if (busy || loiLo.length > 0) return;
     setBusy(true);
     try {
       const r = await api.post<KetQua>('/intake/commit', {
@@ -155,6 +160,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
       ngCanh="Chọn lớp, rồi dán từ Excel/Google Sheets hoặc gõ thẳng vào lưới"
       chan={{
         huy: { nhan: 'Đóng', onClick: onClose, disabled: busy },
+        conThieu: lf.conThieu(loiLo),
         phu: pv && hangCoDuLieu.length > 0 && (
           <span className="text-xs text-slate-400 tabular-nums">
             {san} dòng sẵn sàng
@@ -164,7 +170,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
         ),
         chinh: (
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={commit}
-            disabled={busy || !classId || !pv || san === 0}>
+            disabled={busy || (!!classId && (!pv || san === 0))}>
             {busy ? 'Đang lưu…' : san > 0 ? `Thêm ${san} học viên` : 'Thêm học viên'}
           </button>
         ),
@@ -172,8 +178,8 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
       <div className="space-y-4 pt-3">
         {/* LỚP VÀ TUẦN BẮT ĐẦU — hai quyết định của CẢ LÔ, đặt ở trên cùng: lớp quyết định lưới có những cột nào. */}
         <div className="surface-2 rounded-lg p-3 grid gap-3 sm:grid-cols-2">
-          <Field label="Thêm vào lớp" required hint="Cột “Lớp” và “Lộ trình” trong file dán sẽ bị bỏ qua — theo lớp chọn ở đây.">
-            <select className="field w-full" value={classId ?? ''}
+          <Field label="Thêm vào lớp" required hint="Cột “Lớp” và “Lộ trình” trong file dán sẽ bị bỏ qua — theo lớp chọn ở đây." loi={lf.loiCua(loiLo, 'lop')}>
+            <select className="field w-full" {...lf.o(loiLo, 'lop')} value={classId ?? ''}
               onChange={(e) => { setClassId(Number(e.target.value) || null); setStartWeek(''); setKetQua(null); setPreview(null); }}>
               <option value="">Chọn lớp…</option>
               {(classes.data ?? []).map((c: any) => (

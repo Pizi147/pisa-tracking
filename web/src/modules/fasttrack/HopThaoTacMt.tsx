@@ -83,10 +83,10 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, tuanDaBa
       case 'xep-lai':
       case 'doi-lich':
         await api.post(`${goc}/week`, { periodId: tuan!.periodId, reason: lyDoGui ?? null, force });
-        return `${t === 'doi-lich' ? 'Đã dời lịch thi' : 'Đã lên lịch thi'} ${mon} ${t === 'doi-lich' ? 'sang' : 'vào'} ${tuanLich(tuan!.weekStart)}`;
+        return `${t === 'doi-lich' ? 'Đã dời lịch thi' : 'Đã lên lịch thi'} ${mon} ${t === 'doi-lich' ? 'sang' : 'vào'} ${tuanLich(tuan!.weekStart, homNay)}`;
       case 'khoi-phuc':
         await api.post(`${goc}/restore`, { periodId: tuan!.periodId, reason: lyDoGui ?? null });
-        return `Đã khôi phục ${mon} và đặt ${tuanLich(tuan!.weekStart)}`;
+        return `Đã khôi phục ${mon} và đặt ${tuanLich(tuan!.weekStart, homNay)}`;
       case 'doi-han':
         await api.post(`${goc}/deadline`, { deadline: han, reason: lyDoGui ?? null });
         return `Đã dời hạn chấm ${mon} tới ${ngay(han)}`;
@@ -102,7 +102,7 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, tuanDaBa
           return r?.moved ? `Đã báo vắng ${mon} — dời sang ${r.tuanMoi ?? 'tuần sau'}` : `Đã báo vắng ${mon}`;
         }
         const r = await api.post<{ daDoi: boolean; tuanMoi: string | null; choDuyet: boolean }>(`${goc}/bao-vang`, { lyDo: lyDoGui });
-        if (r.daDoi) return `Đã tự dời ${mon} sang ${tuanLich(r.tuanMoi)} (vắng lần 1)`;
+        if (r.daDoi) return `Đã tự dời ${mon} sang ${tuanLich(r.tuanMoi, homNay)} (vắng lần 1)`;
         return r.choDuyet ? `Đã gửi Quản lý duyệt dời ${mon} (vắng lần 2)` : `Đã báo vắng ${mon}`;
       }
       case 'huy-diem': {
@@ -125,7 +125,7 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, tuanDaBa
     setBusy(true);
     try {
       const cau = await goi(!!canhBao);
-      invalidate('/attempts'); invalidate('/overview'); invalidate('/classes'); invalidate('/ke-hoach-test'); invalidate('/my-work');
+      invalidate('/attempts'); invalidate('/tong-quan'); invalidate('/classes'); invalidate('/ke-hoach-test'); invalidate('/my-work');
       toast.push('ok', cau);
       onDone(); dong();
     } catch (e: any) {

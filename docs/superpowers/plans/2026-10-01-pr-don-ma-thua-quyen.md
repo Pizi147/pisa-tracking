@@ -1,4 +1,11 @@
 # PR-Dọn · Mã thừa + quyền + an toàn — Kế hoạch
+| 02/10 | 0 | **Dọn-b** · **Claude Opus 5.5** (phương án B của bổ sung 02/10; gợi ý là Sonnet 5.5). Nhánh `pr-don-b-giao-dien` từ `e8b6dea7` (S3, DEPLOY, UXF-b, UXD đã merge — không cần cổng gộp). **Mốc B: 2334 đạt + tốc độ 33 đạt**, typecheck 0 lỗi; 1 ✗ là tiến trình con `migrate` sập segfault (mã 3221225477) ở DEPLOY-1c, không phải lỗi mã. Đã có sẵn trên main: P0 `POST /tasks` và `/ref/periods/resolve` (PR-DEPLOY 0b), nhãn Vận hành theo THUAT_NGU (PR-S3). Khối `prDonB`: **22/23 đỏ trên main** (12a xanh sẵn — giữ làm khoá). Chạy khối riêng bằng bộ chạy tạm (không commit) cho nhanh; `npm run check` đủ ở cuối. |
+| 02/10 | 11+12 | Khối (11)(12) đỏ trên main (12a xanh sẵn). `useLoiForm` cho 6 form (Tài khoản, Danh mục ×2, Thêm HV, Lộ trình HV + Target/điểm đầu vào, Tuần khai giảng, Vận hành ×3); `Field` nhận `loi` như `Truong`. `ManagerTasks` không còn form (Câu 1 = A: form gộp vào "+ Giao việc" của Vận hành) nên là 6 tệp, không 7. **Lệch Q25:** theo bổ sung 02/10 A, giữ chữ THUAT_NGU (Chưa bắt đầu · Đang xử lý · Tạm ngưng · Dừng hẳn · Xong); `NhanTrangThai` thêm `chu` để giữ kiểu nhãn chung. **12d:** Báo cáo đơn vị không có bộ lọc chi nhánh → đơn vị Tutor chỉ liệt kê việc "Toàn hệ thống" (cùng chi nhánh việc tạo từ ô Tutor). Việc giao GV gắn tuần đang chạy (`/ref/period-window`). |
+| 02/10 | 13 | Khối (13) đỏ trên main. `setRolePermissions` (kiểm hết khoá trước, một `tx`, mỗi ô một nhật ký; `ponytail:` 3–4 câu/ô ≤ 200 ô). Nút "Huỷ thay đổi" (luật S3, không "Huỷ" trần — check lần 1 bắt). Kết thúc lớp: FT "chuyển lớp từng em hoặc chuyển nhiều em", lớp thường "Quyết định chuyển lớp cho cả lớp" (`CHU_CHUYEN_LOP`), `conTreo` thêm "Sắp chuyển · từ W.. (n em)". |
+| 02/10 | 14 | Khối (14) đỏ trên main. `deadlineView` dùng `ngayTheoGioVN` có sẵn ở `display.ts` (không thêm `ngayVn` mới); BangChung `contains(relatedTarget)`; `scoreHistoryOf` thêm `score.nhan_xet` (bỏ dòng chỉ đổi GV chấm). |
+| 02/10 | 14b | B2 `monTinhBaoPh` (việc đã làm chỉ trừ môn đóng trước ngày làm). B3 `docTuanLich` chọn tuần gần nhất ±6 tháng; **thêm:** `tuanLich` bỏ năm chỉ khi đọc ngược ra đúng tuần (tuần cùng năm nhưng xa hơn nửa năm nay có năm — giữ ô tuần gõ lại không nhảy năm). Sửa kỳ vọng `prVaiB`, `prUxfB (6)` (truyền `homNay`). B6 thêm danh sách tuần của kỳ tháng ở Báo cáo đơn vị. B7 không sửa. |
+| 02/10 | 14c/A | C: `vuaGhi` khoá thêm người/hạn/kỹ năng; PA thay thế (`thayThe`) không qua chặn; `chuTuDo` cho 2 lý do; chú thích `week.ts`; Header đóng ô tìm; `invalidate('/overview')` (19 chỗ) → `/tong-quan`. A: gỡ `trongPhamVi`, 4 cờ cũ, `NEXT_STEP_HINT`, import chết. **Phép kiểm xoá cùng mã chết: 1** ("PR-O · O6 Cờ cũ giữ đúng nghĩa"); sửa 2 (khung O6 dùng cờ mới; run.ts bước PA bỏ `NEXT_STEP_HINT`). P2 không làm → thân PR "Chuyển cho PR khác". |
+| 02/10 | 15 | Bấm thử Playwright kênh Chrome (API 4187 · Vite 5387, DB riêng): KIỂM 11 (nhãn, một nút, panel lồng + Esc), 12 (2 thay đổi, Huỷ), 13 (Hoàn tác trả em về Lưu trữ), 15 (Tạo tài khoản 3 ô lỗi) ở 1440/375 sáng/tối; không cuộn ngang trang. impeccable `detect` 0 phát hiện; audit tay: ô bảng quyền 44 px trên điện thoại. `/ponytail-review`: lean (1 shrink). **Check cuối: 2357 đạt + tốc độ 33 + typecheck 0** (mốc 2334 + 23 prDonB − 1 xoá + DEPLOY-1c hết sập). |
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or
 > superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -869,3 +876,34 @@ Chọn một:
 - **Task 14b** (sau Task 14): mục B ở trên (trừ B1).
 - **Task 14c**: mục C ở trên.
 - Task 15 bấm thử thêm: ô tuần trên điện thoại gõ "W1 JAN".
+
+---
+
+## Việc chưa làm sau PR-Dọn-b (#172, 02/10) — planning xếp vào PR sau
+
+### Đã chốt (chủ sản phẩm 02/10)
+- **B7 · Case G+V sau khi em lên BE:** **GV Writing của lớp BE xử lý** (người phụ trách Case = GV ô `writing` lớp mới, luật S5F-a / M-04 hiện có ở `server/src/normal/cuoiKhoa.ts:240-245`). **Giữ nguyên mã, không sửa.** Ghi vào Rulebook khi rà tài liệu.
+
+### Còn treo — P2 rà Dọn-a (`docs/superpowers/reviews/2026-10-02-ra-dot-6-luot-2/don-a.md`)
+| # | Việc | Chỗ | Vì sao chưa làm |
+|---|---|---|---|
+| 1 | Badge "n HV chưa có lệnh chuyển lớp" ≠ số dòng có cờ ở bảng học viên khi em đã có "tiếp theo: …" — dòng phụ ưu tiên cờ "chưa có quyết định chuyển lớp" khi lớp đang nhắc; phép kiểm 10d thêm vế "số dòng có cờ" | `shared/domain/hocVienLop.ts:186-188`, `server/src/classes/classes.ts:126, :669` | đổi luật hiển thị dòng phụ — cần planning chốt chữ |
+| 2 | `pa-can-cap-nhat` (chỉ số) và "Ghi kết quả PA" (Công việc) chọn PA đại diện nhóm bổ trợ trên hai tập khác nhau → ô = 1, danh sách = 0. Một hàm chọn đại diện dùng chung, cùng điều kiện lọc | `server/src/worklist/metrics.ts:401-404`, `server/src/worklist/mywork.ts:486-495` | chạm số liệu Tổng quan (HOP_DONG_SO_LIEU §1) — nên làm riêng, có phép kiểm số = dòng |
+| 3 | Q11 "một hàm chọn lộ trình": đầu hồ sơ, panel Chuyển lớp, luật lộ trình vẫn tự chọn `cy.status='active'` → em đang học không có lộ trình active thì Hành trình có "tuần học thứ n" còn hai nơi kia không | `server/src/fasttrack/cycles.ts:43-49` (`loTrinhTinhTuan`); `profile.ts:773`, `transition.ts:66`, `luatLoTrinh.ts:366` | đổi luật lộ trình — kế hoạch cấm tự đổi |
+| 4 | `completeIntervention` còn sống dù route đã xoá; chỉ phép kiểm gọi | `server/src/cases/cases.ts:1019`; phép kiểm `dieuChinhPa.tests.ts:358`, `prS3f.tests.ts:205`, `run.ts:3704`, `sosV3.tests.ts:699` | xoá phải viết lại 4 phép kiểm sang đường còn sống |
+| 5 | Task 9 (f): `lopHocCua` vẫn tính `tiepTheo` / `nhacLoTrinh` theo luật cũ (web không đọc) — bỏ khỏi `lopHocCua` | `server/src/classes/loTrinhTiep.ts:184-201` | không chặn (hồ sơ đã ≤ 90 câu) |
+| 6 | (9b) "JSON hồ sơ HV giống hệt" chưa thành phép kiểm bền — lưu ảnh chụp JSON 4 vai × 3 em | `server/src/tests/prDonA.tests.ts` khối 9 | tuỳ chọn |
+
+### Còn treo — rà tích hợp / UXD (`tich-hop-uxd.md`)
+| # | Việc | Chỗ |
+|---|---|---|
+| 7 | Thanh trên điện thoại theo mockup 23 C: nút trong suốt < 640 px, biểu tượng 20 px, số chưa đọc nằm góc biểu tượng | `web/src/modules/platform/Header.tsx:192-208`; mockup `thiet-ke/mockup/23-tong-quan-theo-vai.html:240-245, :584-588` — **planning quyết có làm không** |
+
+### Còn treo — thấy khi làm Dọn-b
+| # | Việc | Chỗ |
+|---|---|---|
+| 8 | Báo cáo đơn vị › kỳ tháng còn hiện tháng thô `2026-09` ("Đang đọc cả tháng …") → `thangHien` / "09/2026" | `web/src/modules/worklist/MeetingPage.tsx` (khối `scope.kind === 'month'`) |
+| 9 | Báo cáo đơn vị không có bộ lọc chi nhánh: `ChonViec` của đơn vị Tutor đang chỉ liệt kê việc "Toàn hệ thống". Nếu muốn "chi nhánh đang xem" thật thì cần thêm bộ lọc chi nhánh cho trang | `web/src/modules/worklist/MeetingPage.tsx` (`ChonViec`) |
+| 10 | Bấm thử trên giao diện còn thiếu: panel Kết thúc lớp (KIỂM 14), dòng "Nhận xét" ở hồ sơ Mock (KIỂM 16), gõ "W1 JAN" ở ô tuần trên điện thoại thật (đã kiểm `inputMode` bằng quét mã) | đưa vào lượt bấm thử của PR-DEPLOY |
+| 11 | Lỗi dưới ô (`Field loi` / `Truong loi`) chưa nối `aria-describedby` với ô — trình đọc màn hình chỉ nghe "không hợp lệ", không nghe lý do. Sửa ở hai thành phần chung là đủ cho mọi form | `web/src/ui/ui.tsx` (`Field`), `web/src/ui/KhungPanel.tsx` (`Truong`) |
+| 12 | Đổi `tuanLich` (tuần cùng năm nhưng xa hơn nửa năm có năm) lệch nhẹ luật G-6 — cập nhật câu luật ở Rulebook / `hienThiNgay.ts` đầu tệp nếu chủ sản phẩm giữ | `shared/domain/hienThiNgay.ts:1-10` |

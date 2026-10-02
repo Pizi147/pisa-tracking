@@ -160,7 +160,7 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved, on
         };
       }
       await api.post(`/interventions/${pa.id}/result`, body);
-      invalidate('/cases'); invalidate('/my-work'); invalidate('/students'); invalidate('/overview');
+      invalidate('/cases'); invalidate('/my-work'); invalidate('/students'); invalidate('/tong-quan');
       toast.push('ok', lanCuoi ? 'Đã ghi kết quả cuối — PA theo quy chế kết thúc' : DA_LUU[decision as PlanDecision]);
       onSaved();
     } catch (e: any) {

@@ -562,7 +562,7 @@ export function restoreCancelledSkill(p: Principal, attemptId: number, skill: st
   const period = db().prepare('SELECT * FROM report_periods WHERE id = ?').get(periodId) as any;
   if (!period) throw notFound('Không tìm thấy tuần.');
   if (period.week_start <= demoToday()) {
-    throw badRequest(`Tuần ${period.code} đã bắt đầu. Chọn một tuần chưa tới.`);
+    throw badRequest(`Tuần ${tuanLich(period.week_start, demoToday())} đã bắt đầu. Chọn một tuần chưa tới.`);
   }
   const check = checkSkillWeekMove({ attemptId, skill: skill as AssessedSkill, newWeekStart: period.week_start });
   if (check.blockers.length) throw badRequest(check.blockers.join(' '));

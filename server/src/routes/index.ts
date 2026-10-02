@@ -1935,6 +1935,8 @@ api.patch('/mgmt-tasks/:id', requireAuth, wrap((req) =>
 
 api.put('/admin/role-permissions', requireAuth, wrap((req) => {
   const b = req.body ?? {};
+  /* UX-C7 (Q23): chế độ "Sửa quyền" gửi `thayDoi: [{ roleKey, permissionKey, granted }]` — một lần lưu, một giao dịch. Dạng một ô cũ vẫn nhận. */
+  if (b.thayDoi !== undefined) return sysconfigSvc.setRolePermissions(principalOf(req), b.thayDoi);
   return sysconfigSvc.setRolePermission(principalOf(req), {
     roleKey: String(b.roleKey ?? ''),
     permissionKey: String(b.permissionKey ?? ''),

@@ -1,7 +1,7 @@
 import { db, theoLo, tx } from '../db.ts';
 import {
   COORDINATION_KINDS, COORDINATION_KIND_LABEL, COORDINATION_REMOVE_REASON_LABEL, COORDINATION_STATUS_LABEL,
-  CHUONG_TRINH_KHONG_CHIA_MON, COORDINATION_USER_REMOVE_REASONS, SIGNAL_WITHDRAW_SCORE_FIXED, coordinationSummary, moTaBoTro, nhanDot, nhanKetQuaThuong, noiDungBaoPh, tenMon, tenMonNgan, kiemGhiRoKhac, reasonNeedsText, sosCoordinationFor,
+  CHUONG_TRINH_KHONG_CHIA_MON, COORDINATION_USER_REMOVE_REASONS, SIGNAL_WITHDRAW_SCORE_FIXED, coordinationSummary, moTaBoTro, ngayTheoGioVN, nhanDot, nhanKetQuaThuong, noiDungBaoPh, tenMon, tenMonNgan, kiemGhiRoKhac, reasonNeedsText, sosCoordinationFor,
   type CoordinationKind, type CoordinationRemoveReason, type CoordinationStatus,
 } from '../../../shared/domain/index.ts';
 import { napTruocPhamVi, type Principal } from '../permissions.ts';
@@ -138,25 +138,30 @@ export function dongBoBaoPh(attempt: { id: number; student_id: number; class_id?
  * CHÍNH bài đó) đã được Quản lý duyệt "Không cần theo dõi" hoặc bị rút vì sửa điểm thì không còn trong việc; Case đang mở HOẶC đã xong bình thường vẫn tính.
  * Môn trượt chưa có Case nào (lớp không tự tạo Case) vẫn tính — chỉ bỏ khi nhà trường đã quyết không theo dõi. MỘT câu theo lô 400 cho cả tập bài.
  */
-export function monBoKhoiBaoPh(attemptIds: readonly number[]): Map<number, Set<string>> {
-  const out = new Map<number, Set<string>>();
+export function monBoKhoiBaoPh(attemptIds: readonly number[]): Map<number, Map<string, string>> {
+  const out = new Map<number, Map<string, string>>();
   theoLo(attemptIds, (lo, ph) => {
     for (const r of db().prepare(
-      `SELECT cs.attempt_id, cs.skill FROM case_signals cs JOIN sos_cases c ON c.id = cs.case_id
+      `SELECT cs.attempt_id, cs.skill, COALESCE(c.closed_at, c.updated_at) AS dong FROM case_signals cs JOIN sos_cases c ON c.id = cs.case_id
         WHERE cs.attempt_id IN (${ph}) AND cs.skill IS NOT NULL AND c.status = 'done'
           AND (c.dismiss_reason_code IS NOT NULL OR c.outcome_note LIKE ?)`,
     ).all(...lo, `${SIGNAL_WITHDRAW_SCORE_FIXED}%`) as any[]) {
-      const ds = out.get(r.attempt_id) ?? new Set<string>(); out.set(r.attempt_id, ds); ds.add(r.skill);
+      const ds = out.get(r.attempt_id) ?? new Map<string, string>(); out.set(r.attempt_id, ds);
+      ds.set(r.skill, ngayTheoGioVN(r.dong) ?? String(r.dong ?? '').slice(0, 10));
     }
   });
   return out;
 }
 
-/** "Môn tính" của Báo PH một bài: môn đang trượt trừ `monBoKhoiBaoPh`. */
-export const monBaoPh = (attemptId: number, monTruot: string[]): string[] => {
-  const bo = monBoKhoiBaoPh([attemptId]).get(attemptId);
-  return bo ? monTruot.filter((s) => !bo.has(s)) : monTruot;
-};
+/**
+ * "Môn tính" của Báo PH: môn trượt trừ môn đã bỏ (`bo`: môn → ngày đóng Case). Việc ĐÃ LÀM (`daLamNgay`) giữ đúng nội dung đã báo phụ huynh —
+ * chỉ trừ môn có Case đóng TRƯỚC ngày làm (rà UXF-b P2: duyệt "Không cần theo dõi" sau đó không viết lại việc đã làm).
+ */
+export function monTinhBaoPh(monTruot: readonly string[], bo: ReadonlyMap<string, string> | undefined, daLamNgay: string | null): string[] {
+  return monTruot.filter((s) => { const dong = bo?.get(s); return dong === undefined || (daLamNgay !== null && dong >= daLamNgay); });
+}
+
+export const monBaoPh = (attemptId: number, monTruot: string[]): string[] => monTinhBaoPh(monTruot, monBoKhoiBaoPh([attemptId]).get(attemptId), null);
 
 /**
  * Đồng bộ lại Báo PH của MỘT bài Giữa khoá sau khi Case của nó đổi trạng thái (Quản lý duyệt "Không cần theo dõi", mở lại). Môn trượt lấy từ tín hiệu còn hiệu lực
@@ -267,24 +272,25 @@ function turnsOf(p: Principal, rows: any[]): CoordinationTurn[] {
     if (!a || a.status === 'cancelled') continue;     // lượt đã huỷ không còn là SOS Event (khớp với chỉ số)
     const laMock = (a.kind ?? 'mock') === 'mock';
     let skills = kyNang.get(attemptId) ?? [];
-    let sosLevel: number | null = null, ketQua: CoordinationTurn['ketQua'] = null, noiDung: string[] | null = null;
+    let sosLevel: number | null = null, ketQua: CoordinationTurn['ketQua'] = null;
+    let noiDungCua: ((daLamNgay: string | null) => string[]) | null = null;
     if (laMock) sosLevel = resultOf(a, bundle.scores.get(a.id) ?? [], bundle.skips.get(a.id) ?? []).sosLevel;
     else {
       /* Lớp thường: KHÔNG có mức SOS — chữ kết quả qua `nhanKetQuaThuong`, đọc từ điểm đã nạp (không SQL, không `resultOf` FT). */
       const r = evaluateRegular(chuongTrinh.get(a.programme_code)?.skills ?? [], bundle.scores.get(a.id) ?? [], a.programme_code);
       skills = r.skills.filter((x) => x.outcome === 'fail').map((x) => x.skill);
-      ketQua = nhanKetQuaThuong({
+      const kq = ketQua = nhanKetQuaThuong({
         kind: a.kind, ct: a.programme_code ?? null, scored: r.scored, required: r.required, failedSkills: skills, tyLeTong: r.tyLeTong,
         khongChiaMon: CHUONG_TRINH_KHONG_CHIA_MON.includes(a.programme_code),
       });
-      /* R5-4: Báo PH theo CASE — môn đã "Không cần theo dõi" / rút vì sửa điểm không nằm trong "môn khó khăn". */
-      const tinh = skills.filter((s) => !boBaoPh.get(attemptId)?.has(s));
-      noiDung = noiDungBaoPh({
-        ketQua: [ketQua.chinh, ketQua.phu].filter(Boolean).join(' · '),
+      /* R5-4: Báo PH theo CASE — môn đã "Không cần theo dõi" / rút vì sửa điểm không nằm trong "môn khó khăn". Việc đã làm: chỉ môn đóng trước ngày làm. */
+      const truot = skills;
+      noiDungCua = (daLamNgay) => { const tinh = monTinhBaoPh(truot, boBaoPh.get(attemptId), daLamNgay); return noiDungBaoPh({
+        ketQua: [kq.chinh, kq.phu].filter(Boolean).join(' · '),
         monTruot: tinh.map((s) => tenMonNgan(a.programme_code, s)),
         nguyenNhan: tinh.map((s) => nguyenNhan.get(`${a.student_id}:${s}`) ?? '').filter(Boolean),
         boTro: tinh[0] ? moTaBoTro(a.programme_code, tinh[0]) : 'chưa có PA bổ trợ',
-      }) as string[];
+      }) as string[]; };
     }
     out.push({
       attemptId, attemptNo: a.attempt_no, studentId: a.student_id, studentName: a.full_name, studentCode: a.student_code,
@@ -292,7 +298,8 @@ function turnsOf(p: Principal, rows: any[]): CoordinationTurn[] {
       sosLevel, nhanDot: laMock ? null : nhanDot(a.kind, a.attempt_no), ketQua,
       skills, skillLabels: skills.map((s) => tenMon(a.programme_code, s)),
       summary: coordinationSummary(list.map((r) => r.status)),
-      actions: list.map((r) => ({ ...shapeAction(r, attachments), noiDung: r.kind === 'bao_ph_tvv' ? noiDung : null })),
+      actions: list.map((r) => ({ ...shapeAction(r, attachments),
+        noiDung: r.kind === 'bao_ph_tvv' && noiDungCua ? noiDungCua(r.status === 'done' ? r.performed_on ?? null : null) : null })),
       canAct: canManageDiscipline(p, a.student_id),
     });
   }

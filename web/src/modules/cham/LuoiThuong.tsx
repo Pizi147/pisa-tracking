@@ -201,7 +201,7 @@ export function useLuuThuong(attemptId: number, onReload: () => void, ct: string
       /* Không `invalidate('/cham')`: Lịch Test tự tải lại dải số GỘP 1,5 s sau lần lưu cuối (PR-UX1 Q14) qua `onReload` —
          tải lại mỗi ô làm nặng Turso. Lưới (`/classes/:id/cham`) vẫn tải lại qua `/classes`. */
       invalidate('/regular'); invalidate('/classes'); invalidate('/attempts');
-      invalidate('/students'); invalidate('/overview');
+      invalidate('/students'); invalidate('/tong-quan');
       invalidate('/my-work');   // PR-S6F-a: badge quá hạn của GV tải lại sau khi nhập điểm
       tt.thanhCong(skill);
       onReload();

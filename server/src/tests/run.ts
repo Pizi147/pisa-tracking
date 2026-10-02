@@ -5010,7 +5010,7 @@ check('[11] Nhãn: mỗi trạng thái có đúng một tên và một họ nhã
     assert(domain.OUTCOME_TONE[bad] !== 'ok', `Kết quả ${bad} lại được tô xanh như tin tốt`);
   }
   for (const ns of domain.NEXT_STEPS) {
-    assert(domain.NEXT_STEP_LABEL[ns] && domain.NEXT_STEP_HINT[ns], `Bước ${ns} thiếu tên hoặc lời giải thích`);
+    assert(domain.NEXT_STEP_LABEL[ns], `Bước ${ns} thiếu tên`);   // PR-Dọn-b: NEXT_STEP_HINT không nơi nào đọc → xoá
   }
 });
 
@@ -9040,6 +9040,10 @@ await runPrS3ChuTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== PR-DEPLOY (chuẩn bị reset bản chính)
 const { runPrDeployTests } = await import('./prDeploy.tests.ts');
 await runPrDeployTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
+// ==================================================================== PR-Dọn-b (giao diện quản trị, Vận hành, lưu trữ, việc nhỏ)
+const { runPrDonBTests } = await import('./prDonB.tests.ts');
+await runPrDonBTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0

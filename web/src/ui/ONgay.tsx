@@ -65,7 +65,7 @@ export function ONgay({ kieu, value, onChange, toiThieu, toiDa, moc, catHomNay, 
     <span className="block min-w-0">
       <span className="flex min-w-0 items-stretch gap-1.5">
         <input id={idO} className={`field min-w-0 flex-1 tabular-nums${gon && (invalid || loi) ? ' border-late' : ''}`}
-          title={gon ? [phu, loi].filter(Boolean).join(' · ') || undefined : undefined} inputMode="numeric" autoComplete="off" value={text} disabled={disabled}
+          title={gon ? [phu, loi].filter(Boolean).join(' · ') || undefined : undefined} inputMode={kieu === 'tuan' ? 'text' : 'numeric'} autoComplete="off" value={text} disabled={disabled}
           placeholder={goiY ?? (kieu === 'thang' ? 'mm/yyyy' : kieu === 'tuan' ? 'W4 SEP hoặc dd/mm' : 'dd/mm/yyyy')} aria-label={ariaLabel} aria-invalid={invalid || !!loi || undefined}
           aria-describedby={gon ? undefined : [phu && `${idO}-phu`, loi && `${idO}-loi`].filter(Boolean).join(' ') || undefined}
           onChange={(e) => setText(e.target.value)} onBlur={() => { chot(); onBlur?.(); }}

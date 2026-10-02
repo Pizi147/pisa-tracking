@@ -652,8 +652,9 @@ export function reportRegularNoShow(
        */
       if (existing?.no_show_period_id && existing.no_show_period_id !== row.planned_period_id
         && String(row.week_start) > today) {
-        return { moved: false, tuanCu: tuanCua(existing.no_show_period_id)?.code ?? null,
-          tuanMoi: row.period_code, result: regularResultOf(attemptId) };
+        const tc = tuanCua(existing.no_show_period_id);
+        return { moved: false, tuanCu: tc ? tuanLich(tc.week_start, today) : null,
+          tuanMoi: tuanLich(row.week_start, today), result: regularResultOf(attemptId) };
       }
       /*
        * Lần ghi ĐẦU cũng cần tuần thi của môn đã tới (phán quyết controller, cùng điều kiện với lần hai): chưa tới tuần
@@ -688,7 +689,7 @@ export function reportRegularNoShow(
       }
       /* Dời bằng ĐÚNG hàm dời lịch chung — `force` chỉ vượt được cảnh báo, không bao giờ vượt được chặn. */
       setSkillWeek(p, attemptId, skill, moi.id, {
-        reason: lyDo !== undefined ? `Báo vắng: ${lyDo.trim()}` : `Báo "-": em không làm bài tuần ${cu.code ?? '?'} — môn này dời sang tuần sau (C08).`,
+        reason: lyDo !== undefined ? `Báo vắng: ${lyDo.trim()}` : `Báo "-": em không làm bài tuần ${tuanLich(cu.weekStart, today)} — môn này dời sang tuần sau (C08).`,
         force: true, today, ghiBuDau: true,
       });
       writeAudit({
@@ -713,12 +714,13 @@ export function reportRegularNoShow(
         const cuoi = classProgress(a.class_id).finalWeekStart;
         if (cuoi && moi.weekStart > cuoi) baoLenCuoiKhoaDoiQuaHan(conn, a);
       }
-      return { moved: true, tuanCu: cu.code ?? null, tuanMoi: moi.code, result: regularResultOf(attemptId) };
+      /* Rà UXF-b P2 (B5 sót): tuần trả về là CHỮ trên màn (toast) — mã tuần theo `tuanLich`, không phải khoá dữ liệu có năm. */
+      return { moved: true, tuanCu: tuanLich(cu.weekStart, today), tuanMoi: tuanLich(moi.weekStart, today), result: regularResultOf(attemptId) };
     }
 
     /* Gỡ dấu: trả môn về đúng tuần đã lưu trong chính dòng điểm. */
     if (!existing?.no_show_period_id) {
-      return { moved: false, tuanCu: null, tuanMoi: row.period_code, result: regularResultOf(attemptId) };
+      return { moved: false, tuanCu: null, tuanMoi: row.week_start ? tuanLich(row.week_start, today) : null, result: regularResultOf(attemptId) };
     }
     const ve = tuanCua(existing.no_show_period_id);
     if (existing.no_show_period_id !== row.planned_period_id) {
@@ -733,7 +735,7 @@ export function reportRegularNoShow(
       actorUserId: p.userId, action: 'regular.no_show_cleared', entityType: 'assessment_attempt', entityId: attemptId,
       entityLabel: skill, before: { week: row.period_code }, after: { week: ve?.code ?? null, noShow: false },
     });
-    return { moved: true, tuanCu: row.period_code, tuanMoi: ve?.code ?? null, result: regularResultOf(attemptId) };
+    return { moved: true, tuanCu: row.week_start ? tuanLich(row.week_start, today) : null, tuanMoi: ve ? tuanLich(ve.week_start, today) : null, result: regularResultOf(attemptId) };
   });
 }
 

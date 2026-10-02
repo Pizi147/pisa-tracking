@@ -31,7 +31,7 @@ export function XoaLopPanel({ classId, classCode, onClose }: { classId: number; 
     setBusy(true);
     try {
       await api.post(`/classes/${classId}/xoa`, { maLop: go.trim() });
-      invalidate('/classes'); invalidate('/hoc-vien-lop'); invalidate('/overview');
+      invalidate('/classes'); invalidate('/hoc-vien-lop'); invalidate('/tong-quan');
       toast.push('ok', `Đã xoá lớp ${classCode}`);
       onClose();
       navigate('/hoc-vien', { replace: true });
@@ -77,7 +77,7 @@ export function KetThucLopPanel({ classId, classCode, onClose, onDone }: { class
     setBusy(true);
     try {
       await api.post(`/classes/${classId}/ket-thuc`, {});
-      invalidate('/classes'); invalidate('/hoc-vien-lop'); invalidate('/overview');
+      invalidate('/classes'); invalidate('/hoc-vien-lop'); invalidate('/tong-quan');
       toast.push('ok', `Đã kết thúc lớp ${classCode}`);
       onDone(); onClose();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }

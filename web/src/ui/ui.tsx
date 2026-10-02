@@ -315,8 +315,10 @@ export function KpiTile({ label, value, tone = 'neutral', to, sub }: {
  * chuyển cú bấm vào chữ sang nút ĐẦU TIÊN — với bộ chọn tuần đó là "Tuần trước", nên bấm vào
  * nhãn thì tuần nhảy lùi.
  */
-export function Field({ label, children, hint, required, as = 'label' }: {
+export function Field({ label, children, hint, required, loi, as = 'label' }: {
   label: string; children: ReactNode; hint?: string; required?: boolean; as?: 'label' | 'div';
+  /** Lý do lỗi dưới ô (`useLoiForm().loiCua`) — viền ô đỏ như `Truong`. */
+  loi?: string | null;
 }) {
   /* Ô ngày bên trong báo id → nhãn không bọc nút lịch (`BaoOTrongNhan`, như `Truong`). Thẻ khung chỉ theo props (không dựng lại ô). */
   const [idO, setIdO] = useState<string | null>(null);
@@ -329,8 +331,10 @@ export function Field({ label, children, hint, required, as = 'label' }: {
     <BaoOTrongNhan.Provider value={setIdO}>
       <Wrap className="block" {...nhom}>
         {troO ? <label htmlFor={troO} className="label">{chu}</label> : <span id={idNhan} className="label">{chu}</span>}
-        {children}
+        {/* Luôn cùng một lớp bọc (như `Truong`): bọc/bỏ bọc theo `loi` làm ô dựng lại → mất focus khi đang gõ. */}
+        <div className={loi ? 'contents [&_.field]:border-late [&_.field]:ring-1 [&_.field]:ring-late/40' : 'contents'}>{children}</div>
         {hint && <span className="block text-[11px] text-slate-500 mt-1">{hint}</span>}
+        {loi && <span className="mt-1 block text-[11px] text-late">{loi}</span>}
       </Wrap>
     </BaoOTrongNhan.Provider>
   );
@@ -513,7 +517,11 @@ const NHAN_LOP: Record<TrangThai, string> = {
   'cho-duyet': 'border-wait-line bg-wait-bg text-wait', 'qua-han': 'border-late-line bg-late-bg text-late',
   xong: 'border-transparent text-done', 'da-huy': 'border-transparent text-slate-500 line-through decoration-1',
 };
-export function NhanTrangThai({ t, soNgay, title }: { t: TrangThai; soNgay?: number | null; title?: string }) {
+export function NhanTrangThai({ t, soNgay, title, chu }: {
+  t: TrangThai; soNgay?: number | null; title?: string;
+  /** Chữ riêng của một loại việc (Vận hành: THUAT_NGU C-069…C-073) — kiểu nhãn vẫn theo `t`. */
+  chu?: string;
+}) {
   return <span title={title} className={`inline-flex items-center whitespace-nowrap rounded-md border px-1.5 py-0.5 text-[11.5px] font-semibold tabular-nums ${NHAN_LOP[t]}`}>
-    {chuTrangThai(t, soNgay)}</span>;
+    {chu ?? chuTrangThai(t, soNgay)}</span>;
 }

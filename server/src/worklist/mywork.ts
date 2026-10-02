@@ -164,8 +164,8 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   },
   /* PR-VAI-a (K1-15, Q15): em cũ mới vào web (14 ngày) mà chưa khai bậc Ý thức trước khi dùng web. */
   khai_bac: {
-    label: 'Khai bậc Ý thức HV cũ',
-    hint: 'Em đã học ở trung tâm trước khi có web — khai bậc xử lý Ý thức đã có để thang tính tiếp đúng. Không có hạn; qua 14 ngày thì thôi nhắc.',
+    label: 'Xác nhận cấp bậc vi phạm HV cũ',
+    hint: 'Em đã học ở trung tâm trước khi có web — xác nhận cấp bậc vi phạm đã có để thang tính tiếp đúng. Không có hạn; qua 14 ngày thì thôi nhắc.',
   },
   /* PR-VAI-a (K5-11): em BE/ELE lên Fast Track — Quản lý đánh dấu Đạt / Không đạt kỳ vọng đầu ra. */
   ky_vong_dau_ra: {
@@ -1049,11 +1049,11 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         key: `khai_bac:${lopId}`, group: 'khai_bac', urgency: 'normal',
         studentId: ds.length === 1 ? ds[0].id : null, studentName: ds.length === 1 ? ds[0].full_name : `Lớp ${ds[0].code}`,
         classId: lopId, classCode: ds[0].code, attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: 'Ý thức', count: ds.length,
-        reason: `${ds.length} em mới vào web chưa khai bậc Ý thức đã có trước đó`,
-        tieuDe: `Khai bậc Ý thức HV cũ · ${ds[0].code} · ${ds.length} em`, actionLabel: 'Khai bậc',
+        reason: `${ds.length} em mới vào web chưa xác nhận cấp bậc vi phạm đã có trước đó`,
+        tieuDe: `Xác nhận cấp bậc vi phạm HV cũ · ${ds[0].code} · ${ds.length} em`, actionLabel: 'Xác nhận cấp bậc',
         /* Đường đã có: tab Ý thức của lớp, chọn sẵn em đầu tiên và mở panel Khai bậc (`mo=khai`). */
         href: `/hoc-vien/lop/${lopId}?tab=y-thuc&hv=${ds[0].id}&mo=khai`,
-        ownerId: p.userId, owner: null, mine: true, due: null, statusLabel: 'Chưa khai bậc',
+        ownerId: p.userId, owner: null, mine: true, due: null, statusLabel: 'Chưa xác nhận cấp bậc',
       });
     }
     if (tatCa) napTruocPhamVi(uv.map((r) => r.id));   // `can()` từng em bên dưới đọc bộ nhớ, không N+1

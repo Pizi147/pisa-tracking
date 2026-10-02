@@ -33,7 +33,7 @@ const LOAI_DE_XUAT = ['meeting_cx', 'wl_3', 'suspension', 'other'] as const;
 export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', onClose, onDone, onKhai }: {
   studentId: number | null; cheDo?: 'xu-ly' | 'de-xuat';
   onClose: () => void; onDone?: () => void;
-  /** Mở panel Khai bậc (Q7): chuỗi chưa có lần xử lý nào và em chưa từng khai. */
+  /** Mở panel Xác nhận cấp bậc vi phạm (Q7): chuỗi chưa có lần xử lý nào và em chưa từng xác nhận. */
   onKhai?: (studentId: number) => void;
 }) {
   const toast = useToast();
@@ -188,8 +188,13 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', onClose,
     <KhungPanel tieuDe={tieuDe} hocVien={d.ten} onDong={onClose}
       chan={{
         conThieu: lf.conThieu(loi) ?? (lf.daBam && loiNguoi ? [{ nhan: 'Người thực hiện', lyDo: loiNguoi }] : undefined),
+        /* Chủ sản phẩm 02/10: Đề xuất QL duyệt là nút cùng cỡ cạnh Xác nhận xử lý, không phải dòng chữ nhỏ. */
+        phu: cheDo === 'xu-ly' && d.canManage
+          ? <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy} title="Cần xử lý nặng hơn: Meeting CX/GĐCN, WL 3, Đình chỉ…"
+              onClick={() => { setCheDo('de-xuat'); lf.datLai(); }}>Đề xuất QL duyệt</button>
+          : undefined,
         chinh: cheDo === 'xu-ly'
-          ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luuXuLy}>Xác nhận xử lý{bacKe ? ` · ${bacKe.nhan}` : ''}</button>
+          ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luuXuLy}>Xác nhận xử lý</button>
           : <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={taoNhap}>Tiếp: đính kèm bằng chứng</button>,
       }}>
       {cheDo === 'xu-ly' && bacKe ? (
@@ -201,8 +206,8 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', onClose,
           <p className="m-0 text-[11px] text-slate-500">Bậc tự điền theo thang — không chọn.</p>
           {d.chuoi.soXuLy === 0 && !d.khai && d.coTheKhai && onKhai && (
             <p className="m-0 text-[11.5px] text-slate-400">
-              Em đã bị xử lý trước khi dùng web?{' '}
-              <button type="button" className="link inline-flex items-center appearance-none border-0 bg-transparent p-0 min-h-[44px] sm:min-h-0" onClick={() => onKhai(d.studentId)}>Khai bậc trước</button>
+              Đã có mức độ vi phạm từ trước?{' '}
+              <button type="button" className="link inline-flex items-center appearance-none border-0 bg-transparent p-0 min-h-[44px] sm:min-h-0" onClick={() => onKhai(d.studentId)}>Xác nhận cấp bậc vi phạm trước</button>
             </p>
           )}
         </Khoi>
@@ -223,7 +228,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', onClose,
           )}
           {!chiDeXuat && (
             <button type="button" className="link appearance-none border-0 bg-transparent p-0 min-h-[44px] sm:min-h-0 text-left text-xs" onClick={() => { setCheDo('xu-ly'); lf.datLai(); }}>
-              ← Quay lại Xác nhận xử lý{bacKe ? ` · ${bacKe.nhan}` : ''}
+              ← Quay lại Xác nhận xử lý
             </button>
           )}
         </Khoi>
@@ -268,12 +273,6 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', onClose,
         {cheDo === 'xu-ly' && <p className="m-0 text-[11px] text-slate-500">Tệp hoặc liên kết (không bắt buộc) đính kèm sau khi lưu.</p>}
       </Khoi>
 
-      {cheDo === 'xu-ly' && d.canManage && (
-        <p className="mt-3 mb-0 text-xs text-slate-400">
-          Cần xử lý nặng hơn (Meeting CX/GĐCN, WL 3, Đình chỉ…)?{' '}
-          <button type="button" className="link inline-flex items-center appearance-none border-0 bg-transparent p-0 min-h-[44px] sm:min-h-0" onClick={() => { setCheDo('de-xuat'); lf.datLai(); }}>Đề xuất QL duyệt</button>
-        </p>
-      )}
     </KhungPanel>
   );
 }

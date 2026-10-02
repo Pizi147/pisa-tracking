@@ -60,7 +60,15 @@ export default function LuuTruPage() {
     try {
       await api.post(`/students/${id}/unarchive`, {});
       invalidate('/hoc-vien-lop'); invalidate(`/students/${id}`);
-      toast.push('ok', 'Đã bỏ lưu trữ');
+      /* UX-C8 (Q24): Hoàn tác = lưu trữ lại em. ponytail: ngày lưu trữ mới = hôm nay; ngày gốc vẫn ở nhật ký `student.unarchive` (before). */
+      toast.hoanTac('Đã bỏ lưu trữ', async () => {
+        try {
+          await api.post(`/students/${id}/archive`, {});
+          invalidate('/hoc-vien-lop'); invalidate(`/students/${id}`);
+          toast.push('ok', 'Đã đưa lại vào Lưu trữ');
+          reload();
+        } catch (e: any) { toast.push('error', e.message); }
+      }, { key: `bo-luu-tru:${id}` });
       reload();
     } catch (e: any) { toast.push('error', e.message); }
   };
@@ -98,7 +106,7 @@ export default function LuuTruPage() {
           : <div className="space-y-1.5">
               {data.lop.map((l) => (
                 <Link key={l.id} to={`/hoc-vien/lop/${l.id}`}
-                  className="card flex flex-wrap items-center gap-x-2 gap-y-1 p-3 no-underline opacity-70 hover:opacity-100">
+                  className="card flex flex-wrap items-center gap-x-2 gap-y-1 p-3 no-underline">
                   <span className="font-semibold text-slate-200">{l.code}</span>
                   <span className="text-xs text-slate-500">
                     {l.tenChuongTrinh ?? l.ma ?? '—'} · {l.chiNhanh}
@@ -117,7 +125,7 @@ export default function LuuTruPage() {
           ? <Card><Empty title="Chưa có học viên nào được lưu trữ" /></Card>
           : <div className="space-y-1.5">
               {data.hocVien.map((s) => (
-                <div key={s.id} className="card flex flex-wrap items-center gap-x-2 gap-y-1 p-3 opacity-70 hover:opacity-100">
+                <div key={s.id} className="card flex flex-wrap items-center gap-x-2 gap-y-1 p-3">
                   <Link to={`/hoc-vien/${s.id}`} className="link font-semibold">{s.fullName}</Link>
                   <span className="text-[11px] tabular-nums text-slate-500">{s.studentCode}</span>
                   <span className="text-xs text-slate-500">

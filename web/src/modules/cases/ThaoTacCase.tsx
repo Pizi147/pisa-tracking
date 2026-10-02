@@ -79,7 +79,7 @@ export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quay
         needsApproval: deXuat,
         ...(laKhacPa ? { ghiRoKhac: ghiRo.trim() } : {}),
       });
-      invalidate('/cases'); invalidate('/students'); invalidate('/overview');
+      invalidate('/cases'); invalidate('/students'); invalidate('/tong-quan');
       toast.push('ok', deXuat ? 'Đã gửi Quản lý duyệt' : 'Đã ghi lại');
       onSaved();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }

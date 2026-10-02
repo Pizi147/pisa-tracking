@@ -269,7 +269,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
       boTro: { nhom: 'n1', chung: true, buoiMoiTuan: 2, keHoach: { trangThai: 'cho' } } })] }]);
     assert(bt.phu === 'PA Bổ trợ chung · 2 buổi/tuần · kế hoạch chờ Quản lý' && bt.dong[0].nhan === 'Chờ duyệt', JSON.stringify(bt));
     assert(d.oHocThuat([{ short: 'L', label: 'L', category: 'listening', missed: false, cases: [] }]).phu === 'mọi kỹ năng đạt', 'không Case');
-    const y = d.oYThuc({ bacTen: 'Report 1', nhom: 'bat_buoc', soBatBuoc: 3, keTiep: 'Report 2', han: '2026-10-04', quaHanNgay: null, deXuat: null, soMo: 3, tamDung: false });
+    const y = d.oYThuc({ bacTen: 'Report 1', nhom: 'bat_buoc', soBatBuoc: 3, keTiep: 'Report 2', han: '2026-10-04', quaHanNgay: null, deXuat: null, soMo: 3, tamDung: false }, '2026-09-14');
     assert(y.gt === 'Report 1' && y.tren === 'bậc đã xử lý' && y.phu === '3 vi phạm / 2 tuần → bắt buộc Report 2 · hạn hết 04/10' && y.tone === 'warn', JSON.stringify(y));
     const y0 = d.oYThuc(null);
     assert(y0.gt === 'Chưa xử lý lần nào' && y0.phu === 'không có vi phạm mở', JSON.stringify(y0));

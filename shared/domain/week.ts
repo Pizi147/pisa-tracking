@@ -25,7 +25,6 @@ export function mondayOfDate(date: string): string {
   return iso(t + (dow === 0 ? -6 : 1 - dow) * DAY_MS);
 }
 
-/** Tháng sở hữu tuần = tháng chứa ngày thứ Năm. */
 /**
  * PR-Dọn (6g): TUẦN của kết quả mà hạn `han` (Thứ Hai) đòi ghi — Thứ Hai tuần TRƯỚC tuần chứa hạn. MỘT hàm cho chữ tuần ở Cần xử lý
  * (`tuanCuaHanGhiKetQua`) và tiêu đề form Ghi kết quả (`nhanTuanGhiKetQua`).
@@ -34,6 +33,7 @@ export function tuanKetQuaCuaHan(han: string): string {
   return iso(ms(mondayOfDate(han)) - 7 * DAY_MS);
 }
 
+/** Tháng sở hữu tuần = tháng chứa ngày thứ Năm. */
 export function owningMonthOf(weekStart: string): { year: number; month: number } {
   const th = new Date(ms(weekStart) + 3 * DAY_MS);
   return { year: th.getUTCFullYear(), month: th.getUTCMonth() + 1 };

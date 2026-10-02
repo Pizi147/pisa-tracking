@@ -6,10 +6,14 @@ import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { WeekPicker } from '../../ui/Filters.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
+import { useLoiForm } from '../../ui/loiForm.tsx';
 import { Empty, Field, NutChon, SectionNote, Skeleton, Status, TargetText, Th} from '../../ui/ui.tsx';
 import { addDaysStr } from '../../lib/format.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { BASELINE_SOURCES, BASELINE_SOURCE_LABEL, GIAI_THICH_KCK, KCK, duongDotTest, ngay, tuanLich } from '@shared/domain/index.ts';
+import { BASELINE_SOURCES, BASELINE_SOURCE_LABEL, GIAI_THICH_KCK, KCK, dsLoi, duongDotTest, ngay, tuanLich, type LoiTruong } from '@shared/domain/index.ts';
+
+/** Band 0–9, bước 0.5 — cùng luật máy chủ (máy chủ vẫn kiểm lại). */
+const laBand = (s: string) => s.trim() !== '' && Number.isFinite(Number(s)) && Number(s) >= 0 && Number(s) <= 9 && Number(s) * 2 === Math.round(Number(s) * 2);
 
 type Suggested = {
   attemptNo: number; studyWeek: number; periodId: number; weekStart: string; code: string;
@@ -52,6 +56,7 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, canEditCycle = t
   const [examPeriodId, setExamPeriodId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [touched, setTouched] = useState(false);
+  const lf = useLoiForm();
 
   const cy = cycle.data;
   /* Chỉ nạp giá trị hiện tại MỘT LẦN, nếu không thì mỗi lần tải lại sẽ xoá cái người đang gõ. */
@@ -64,7 +69,11 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, canEditCycle = t
   /* Q9: đã có NGÀY thi thì tuần suy từ ngày — ô tuần chỉ hiện khi mới biết tháng (hoặc chưa biết gì). */
   const hienTuanThi = !/^\d{4}-\d{2}-\d{2}$/.test(thiDuKien);
 
+  const loi = cy ? dsLoi([{ khoa: 'tuan-bat-dau', nhan: 'Tuần bắt đầu học', chon: true }], { 'tuan-bat-dau': startPeriodId }) : [];
+
   const save = async () => {
+    lf.bam();
+    if (loi.length > 0 || busy) return;
     setBusy(true);
     try {
       await api.patch(`/cycles/${cycleId}`, {
@@ -103,14 +112,17 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, canEditCycle = t
     <KhungPanel tieuDe="Lộ trình" hocVien={studentName} rong="rong" onDong={onClose}
       chan={{
         huy: { nhan: 'Đóng', onClick: onClose, disabled: busy },
+        conThieu: lf.conThieu(loi),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={save} disabled={busy}>Lưu</button>,
       }}>
       {cycle.loading ? <div className="pt-3"><Skeleton rows={6} /></div> : (
         <div className="space-y-4 pt-3">
-          <Field as="div" label="Tuần bắt đầu học" required
+          <Field as="div" label="Tuần bắt đầu học" required loi={lf.loiCua(loi, 'tuan-bat-dau')}
             hint="Tuần này là TUẦN HỌC THỨ 1 của em. Lịch MT mặc định tính ra từ đây.">
-            <WeekPicker periodId={startPeriodId} label={null}
-              onPeriod={(id) => { setTouched(true); setStartPeriodId(id); }} />
+            <div {...lf.o(loi, 'tuan-bat-dau')}>
+              <WeekPicker periodId={startPeriodId} label={null}
+                onPeriod={(id) => { setTouched(true); setStartPeriodId(id); }} />
+            </div>
           </Field>
 
           {/*
@@ -252,8 +264,17 @@ function TargetAndBaseline({ cycleId, cy, canEditCycle, onDeXuatSua, onDone }: {
   const [score, setScore] = useState('');
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
+  const lfT = useLoiForm();
+  const lfB = useLoiForm();
+  const loiT: LoiTruong[] = [
+    ...(!kck && !laBand(newTarget) ? [{ khoa: 'target-moi', nhan: 'Target mới', lyDo: newTarget ? 'Band từ 0 đến 9, bước 0.5 — hoặc chọn KCK' : 'Chưa điền' }] : []),
+    ...dsLoi([{ khoa: 'ly-do-target', nhan: 'Lý do', toiThieu: 1 }, { khoa: 'hieu-luc', nhan: 'Có hiệu lực từ ngày', chon: true }], { 'ly-do-target': reason, 'hieu-luc': effectiveFrom }),
+  ];
+  const loiB: LoiTruong[] = laBand(score) ? [] : [{ khoa: 'diem-dau-vao', nhan: 'Điểm đầu vào', lyDo: score ? 'Band từ 0 đến 9, bước 0.5' : 'Chưa điền' }];
 
   const saveTarget = async () => {
+    lfT.bam();
+    if (loiT.length > 0 || busy) return;
     setBusy(true);
     try {
       await api.post(`/cycles/${cycleId}/target-revision`, {
@@ -262,17 +283,19 @@ function TargetAndBaseline({ cycleId, cy, canEditCycle, onDeXuatSua, onDone }: {
       });
       invalidate('/cycles'); invalidate('/students'); invalidate('/attempts');
       toast.push('ok', 'Đã đổi Target');
-      setOpenTarget(false); setReason(''); onDone();
+      setOpenTarget(false); setReason(''); lfT.datLai(); onDone();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
 
   const saveBaseline = async () => {
+    lfB.bam();
+    if (loiB.length > 0 || busy) return;
     setBusy(true);
     try {
       await api.put(`/cycles/${cycleId}/baseline`, { source, note, score });
       invalidate('/cycles'); invalidate('/students');
       toast.push('ok', 'Đã ghi điểm đầu vào');
-      setOpenBaseline(false); onDone();
+      setOpenBaseline(false); lfB.datLai(); onDone();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
 
@@ -300,25 +323,27 @@ function TargetAndBaseline({ cycleId, cy, canEditCycle, onDeXuatSua, onDone }: {
       </div>
       {openTarget && canEditCycle && (
         <div className="space-y-2">
-          <Field label="Target mới" required as="div" hint={`KCK: ${GIAI_THICH_KCK}.`}>
+          <Field label="Target mới" required as="div" hint={`KCK: ${GIAI_THICH_KCK}.`} loi={lfT.loiCua(loiT, 'target-moi')}>
             <span className="flex flex-wrap items-center gap-2">
-              <input className="field max-w-[8rem]" type="number" step="0.5" min={0} max={9} aria-label="Target mới"
-                value={newTarget} disabled={kck} onChange={(e) => setNewTarget(e.target.value)} />
+              <input className="field max-w-[8rem]" type="number" inputMode="decimal" step="0.5" min={0} max={9} aria-label="Target mới"
+                {...lfT.o(loiT, 'target-moi')} value={newTarget} disabled={kck} onChange={(e) => setNewTarget(e.target.value)} />
               {!cy?.khong_cam_ket && (
                 <NutChon nho chon={kck} onClick={() => { setKck(!kck); setNewTarget(''); }}>Không cam kết (KCK)</NutChon>
               )}
             </span>
           </Field>
-          <Field label="Lý do" required
+          <Field label="Lý do" required loi={lfT.loiCua(loiT, 'ly-do-target')}
             hint="Vài tháng sau, đây là thứ duy nhất giải thích vì sao Target đổi.">
-            <input className="field" value={reason} onChange={(e) => setReason(e.target.value)}
-              placeholder="Gia đình lùi kế hoạch du học sang năm sau" />
+            <input className="field" maxLength={2000} {...lfT.o(loiT, 'ly-do-target')} value={reason} onChange={(e) => setReason(e.target.value)}
+              placeholder="Ví dụ: Gia đình lùi kế hoạch du học sang năm sau" />
           </Field>
-          <Field label="Có hiệu lực từ ngày" required
+          <Field label="Có hiệu lực từ ngày" required loi={lfT.loiCua(loiT, 'hieu-luc')}
             hint="Ghi vào lịch sử đổi Target. MT đã có điểm giữ kỳ vọng cũ; MT chưa có điểm theo Target mới.">
-            <ONgay kieu="ngay" value={effectiveFrom} onChange={setEffectiveFrom} />
+            <ONgay kieu="ngay" value={effectiveFrom} onChange={setEffectiveFrom}
+              id={lfT.oId('hieu-luc')} onBlur={lfT.roi('hieu-luc')} invalid={!!lfT.loiCua(loiT, 'hieu-luc')} />
           </Field>
-          <button className="btn btn-primary btn-sm" disabled={busy || !reason.trim() || (!newTarget && !kck)}
+          {lfT.daBam && loiT.length > 0 && <p className="m-0 text-[11px] text-slate-500">{loiT.length} ô cần sửa ↑</p>}
+          <button className="btn btn-primary btn-sm" disabled={busy}
             onClick={saveTarget}>
             {busy ? 'Đang lưu…' : 'Lưu Target mới'}
           </button>
@@ -351,15 +376,15 @@ function TargetAndBaseline({ cycleId, cy, canEditCycle, onDeXuatSua, onDone }: {
               {BASELINE_SOURCES.map((x) => <option key={x} value={x}>{BASELINE_SOURCE_LABEL[x]}</option>)}
             </select>
           </Field>
-          <Field label="Điểm đầu vào" required>
-            <input className="field max-w-[8rem]" type="number" step="0.5" min={0} max={9}
-              value={score} onChange={(e) => setScore(e.target.value)} />
+          <Field label="Điểm đầu vào" required loi={lfB.loiCua(loiB, 'diem-dau-vao')}>
+            <input className="field max-w-[8rem]" type="number" inputMode="decimal" step="0.5" min={0} max={9}
+              {...lfB.o(loiB, 'diem-dau-vao')} value={score} onChange={(e) => setScore(e.target.value)} />
           </Field>
           <Field label="Ghi chú">
-            <input className="field" value={note} onChange={(e) => setNote(e.target.value)}
-              placeholder="Điểm IELTS thi tại BC tháng 3/2026" />
+            <input className="field" maxLength={2000} value={note} onChange={(e) => setNote(e.target.value)}
+              placeholder="Ví dụ: Điểm IELTS thi tại BC tháng 3/2026" />
           </Field>
-          <button className="btn btn-primary btn-sm" disabled={busy || !score} onClick={saveBaseline}>
+          <button className="btn btn-primary btn-sm" disabled={busy} onClick={saveBaseline}>
             {busy ? 'Đang lưu…' : 'Lưu điểm đầu vào'}
           </button>
           <SectionNote>

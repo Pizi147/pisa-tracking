@@ -1,18 +1,9 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { api, invalidate } from '../../lib/api.ts';
-import { useToast } from '../../ui/Toast.tsx';
-import { Modal } from '../../ui/Drawer.tsx';
-import { ONgay } from '../../ui/ONgay.tsx';
-import { Card, Empty, Field, NutChon, SectionNote, Skeleton, Task } from '../../ui/ui.tsx';
+import { Card, Empty, Skeleton, Task } from '../../ui/ui.tsx';
 import { fmtDate } from '../../lib/format.ts';
-import {
-  ENTRY_SKILLS, ENTRY_SKILL_LABEL,
-} from '@shared/domain/index.ts';
 
 /**
- * VIỆC QUẢN LÝ GIAO — hai loại khác hẳn nhau, nên hai lối tạo khác nhau.
+ * VIỆC QUẢN LÝ GIAO — hai loại khác hẳn nhau (tạo ở MỘT cửa "+ Giao việc" của Vận hành, Câu 1 = A; đây chỉ còn danh sách).
  *
  *   VIỆC CHI NHÁNH   giáo trình, vận hành. Không gắn học viên nào.
  *   VIỆC GIAO GIÁO VIÊN  gắn lớp và kỹ năng, và TOẢ RA thành phương án của từng em.
@@ -28,22 +19,6 @@ type TaskRow = {
   assigneeName: string | null; dueDate: string | null; progress: string;
   studentCount?: number;
 };
-
-export function ManagerTasks({ periodId }: { periodId: number | null }) {
-  const [open, setOpen] = useState(false);
-  const list = useApi<{ rows: TaskRow[] }>(periodId ? `/tasks?periodId=${periodId}` : null, [periodId, open]);
-
-  return (
-    <>
-      <button className="btn btn-primary" onClick={() => setOpen(true)}>+ Giao việc</button>
-      <TaskDialog open={open} onClose={() => setOpen(false)} periodId={periodId}
-        onDone={() => { list.reload(); invalidate('/tasks'); }} />
-      {list.data && list.data.rows.length > 0 && (
-        <div className="hidden" aria-hidden>{list.data.rows.length}</div>
-      )}
-    </>
-  );
-}
 
 /** Danh sách việc của tuần đang xem, tách khỏi nút tạo để đặt được ở chỗ khác trên trang. */
 export function ManagerTaskList({ periodId }: { periodId: number | null }) {
@@ -81,106 +56,3 @@ export function ManagerTaskList({ periodId }: { periodId: number | null }) {
     </Card>
   );
 }
-
-function TaskDialog({ open, onClose, periodId, onDone }: {
-  open: boolean; onClose: () => void; periodId: number | null; onDone: () => void;
-}) {
-  const toast = useToast();
-  const [kind, setKind] = useState<'branch_ops' | 'teacher_task'>('branch_ops');
-  const [title, setTitle] = useState('');
-  const [note, setNote] = useState('');
-  const [dueDate, setDueDate] = useState('');
-  const [classId, setClassId] = useState('');
-  const [topic, setTopic] = useState('');
-  const [busy, setBusy] = useState(false);
-  const classes = useApi<{ rows: { id: number; code: string; studentCount: number }[] }>(
-    open ? '/classes' : null, [open],
-  );
-
-  const topics: readonly string[] = ENTRY_SKILLS;
-  const topicLabel = (k: string) => ENTRY_SKILL_LABEL[k as keyof typeof ENTRY_SKILL_LABEL] ?? k;
-  const cls = classes.data?.rows.find((c) => String(c.id) === classId);
-
-  const submit = async () => {
-    if (!title.trim()) { toast.push('error', 'Cần nội dung công việc.'); return; }
-    if (kind === 'teacher_task' && (!classId || !topic)) {
-      toast.push('error', 'Việc giao giáo viên phải chọn lớp và kỹ năng.'); return;
-    }
-    setBusy(true);
-    try {
-      await api.post('/tasks', {
-        kind, title, note: note.trim() || undefined, periodId: periodId ?? undefined,
-        dueDate: dueDate || undefined,
-        classId: kind === 'teacher_task' ? Number(classId) : undefined,
-        topic: kind === 'teacher_task' ? topic : undefined,
-      });
-      invalidate('/tasks'); invalidate('/cases'); invalidate('/students'); invalidate('/my-work');
-      toast.push('ok', kind === 'teacher_task'
-        ? `Đã giao việc cho ${cls?.studentCount ?? 0} em` : 'Đã tạo việc');
-      onDone(); onClose();
-      setTitle(''); setNote(''); setDueDate(''); setClassId(''); setTopic('');
-    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
-  };
-
-  return (
-    <Modal open={open} onClose={onClose} title="Giao việc"
-      footer={
-        <>
-          <button className="btn" onClick={onClose}>Đóng</button>
-          <button className="btn btn-primary" disabled={busy} onClick={submit}>Giao</button>
-        </>
-      }>
-      <div className="space-y-3">
-        <Field label="Loại việc">
-          <div className="flex gap-1 flex-wrap">
-            <NutChon nho chon={kind === 'branch_ops'} onClick={() => setKind('branch_ops')}>Việc chi nhánh</NutChon>
-            <NutChon nho chon={kind === 'teacher_task'} onClick={() => setKind('teacher_task')}>Giao giáo viên</NutChon>
-          </div>
-        </Field>
-
-        <Field label="Nội dung" required>
-          <input className="field" value={title} onChange={(e) => setTitle(e.target.value)}
-            placeholder={kind === 'branch_ops'
-              ? 'Rà lại giáo trình Unit 5, phần bài luyện quá ít'
-              : 'Tăng 15 phút luyện nghe chi tiết mỗi buổi'} />
-        </Field>
-
-        {kind === 'teacher_task' && (
-          <>
-            <Field label="Lớp" required>
-              <select className="field" value={classId} onChange={(e) => setClassId(e.target.value)}>
-                <option value="">Chọn lớp</option>
-                {(classes.data?.rows ?? []).map((c) => (
-                  <option key={c.id} value={c.id}>{c.code} · {c.studentCount} em</option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Kỹ năng nào" required>
-              <div className="flex gap-1 flex-wrap">
-                {topics.map((k) => (
-                  <NutChon key={k} nho chon={topic === k} onClick={() => setTopic(k)}>{topicLabel(k)}</NutChon>
-                ))}
-              </div>
-            </Field>
-            <SectionNote>
-              Việc này sẽ hiện trong hồ sơ của <strong>{cls ? `${cls.studentCount} em lớp ${cls.code}` : 'từng em trong lớp'}</strong>,
-              ở đúng ô kỹ năng đã chọn — nhưng vẫn là <strong>một việc</strong>, cập nhật một lần.
-              Em nào chưa có vấn đề ở kỹ năng đó thì hệ thống mở một vấn đề mới, ghi rõ là
-              mở theo yêu cầu Quản lý, và đưa thẳng vào <em>đang xử lý</em> — nó đã có phương án rồi,
-              chính là việc này.
-            </SectionNote>
-          </>
-        )}
-
-        <Field label="Hạn">
-          <ONgay kieu="ngay" value={dueDate} onChange={setDueDate} />
-        </Field>
-        <Field label="Ghi chú">
-          <input className="field" value={note} onChange={(e) => setNote(e.target.value)} />
-        </Field>
-      </div>
-    </Modal>
-  );
-}
-
-export { Link };

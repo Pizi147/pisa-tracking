@@ -20,7 +20,7 @@ import { nho } from './nguCanhRequest.ts';
  * vẽ trục thời gian của hành trình, và hai bản cài đặt cho một quy ước thì sớm muộn hai chỗ
  * gọi cùng một tuần bằng hai cái tên. Ở đây chỉ còn phần đụng tới database.
  */
-import { MONTH_CODE, owningMonthOf, weekNumberInMonthOf } from '../../../shared/domain/index.ts';
+import { MONTH_CODE, owningMonthOf, tuanLich, weekNumberInMonthOf } from '../../../shared/domain/index.ts';
 
 export function mondayOf(date: string): string {
   const d = parseDate(date);
@@ -240,7 +240,7 @@ export function reportEditWindow(
 
   if (today < period.week_start) {
     return { ...base, open: false, locked: false,
-      reason: `Tuần ${period.code ?? ''} chưa bắt đầu — chưa có gì để báo cáo.`.trim() };
+      reason: `Tuần ${tuanLich(period.week_start, today)} chưa bắt đầu — chưa có gì để báo cáo.` };
   }
   if (today < opensOn) {
     return { ...base, open: false, locked: false,

@@ -4,7 +4,8 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Card, Field, Forbidden, Info, SectionNote, Skeleton, Th } from '../../ui/ui.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
-import { THU_TU_KY_HIEU, kyHieuLop, oPhanCong, skillShort, type KyHieuLop } from '@shared/domain/index.ts';
+import { useLoiForm } from '../../ui/loiForm.tsx';
+import { THU_TU_KY_HIEU, dsLoi, kyHieuLop, oPhanCong, skillShort, type KyHieuLop, type LoiTruong } from '@shared/domain/index.ts';
 
 type RouteRow = {
   code: string; name: string; note: string | null; seq: number; status: string; inUse: number;
@@ -156,8 +157,12 @@ function RouteDialog({ row, onClose, onDone }: { row: RouteRow; onClose: () => v
   const toast = useToast();
   const [f, setF] = useState({ name: row.name, note: row.note ?? '', active: row.status === 'active' });
   const [busy, setBusy] = useState(false);
+  const lf = useLoiForm();
+  const loi = dsLoi([{ khoa: 'ten', nhan: 'Tên gọi', toiThieu: 1 }], { ten: f.name });
 
   const save = async () => {
+    lf.bam();
+    if (loi.length > 0 || busy) return;
     setBusy(true);
     try {
       await api.put('/admin/routes', { code: row.code, name: f.name, note: f.note, status: f.active ? 'active' : 'inactive' });
@@ -170,14 +175,15 @@ function RouteDialog({ row, onClose, onDone }: { row: RouteRow; onClose: () => v
     <KhungPanel tieuDe={`Sửa lộ trình ${row.code}`} onDong={onClose}
       chan={{
         huy: { nhan: 'Đóng', onClick: onClose, disabled: busy },
-        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={save} disabled={busy || !f.name.trim()}>Lưu</button>,
+        conThieu: lf.conThieu(loi),
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={save} disabled={busy}>Lưu</button>,
       }}>
       <div className="space-y-4 pt-3">
-        <Field label="Tên gọi" required>
-          <input className="field w-full" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
+        <Field label="Tên gọi" required loi={lf.loiCua(loi, 'ten')}>
+          <input className="field w-full" maxLength={200} {...lf.o(loi, 'ten')} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
         </Field>
         <Field label="Ghi chú">
-          <input className="field w-full" value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} />
+          <input className="field w-full" maxLength={2000} value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} />
         </Field>
         <label className="flex items-center gap-2 text-sm text-slate-200">
           <input type="checkbox" checked={f.active} onChange={(e) => setF({ ...f, active: e.target.checked })} />
@@ -208,8 +214,20 @@ function ProgrammeDialog({ row, onClose, onDone }: {
   });
   const [busy, setBusy] = useState(false);
   const kh = kyHieuLop(row.code, null);
+  const lf = useLoiForm();
+  /* Máy chủ vẫn kiểm đủ (`sysconfig.ts`); ở đây chỉ báo sớm dưới ô. */
+  const soTuan = f.weeks.trim() === '' ? null : Number(f.weeks);
+  const ngoaiKhoa = (v: string) => v.trim() !== '' && soTuan !== null && (!Number.isInteger(Number(v)) || Number(v) < 1 || Number(v) > soTuan);
+  const loi: LoiTruong[] = [
+    ...dsLoi([{ khoa: 'ten', nhan: 'Tên gọi', toiThieu: 1 }], { ten: f.name }),
+    ...(soTuan !== null && (!Number.isInteger(soTuan) || soTuan < 1 || soTuan > 104) ? [{ khoa: 'so-tuan', nhan: 'Số tuần', lyDo: 'Từ 1 đến 104' }] : []),
+    ...(coGiuaKhoa && ngoaiKhoa(f.progressWeek) ? [{ khoa: 'giua-khoa', nhan: 'Tuần Giữa khoá', lyDo: `Từ 1 đến ${soTuan}` }] : []),
+    ...(ngoaiKhoa(f.finalWeek) ? [{ khoa: 'cuoi-khoa', nhan: 'Tuần Cuối khoá', lyDo: `Từ 1 đến ${soTuan}` }] : []),
+  ];
 
   const save = async () => {
+    lf.bam();
+    if (loi.length > 0 || busy) return;
     setBusy(true);
     try {
       const kq = await api.put<KetQuaLuu>('/admin/programmes', {
@@ -228,19 +246,20 @@ function ProgrammeDialog({ row, onClose, onDone }: {
     <KhungPanel tieuDe={`Sửa chương trình ${kh ?? row.name}`} onDong={onClose}
       chan={{
         huy: { nhan: 'Đóng', onClick: onClose, disabled: busy },
-        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={save} disabled={busy || !f.name.trim()}>Lưu</button>,
+        conThieu: lf.conThieu(loi),
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={save} disabled={busy}>Lưu</button>,
       }}>
       <div className="space-y-4 pt-3">
-        <Field label="Tên gọi" required>
-          <input className="field w-full" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
+        <Field label="Tên gọi" required loi={lf.loiCua(loi, 'ten')}>
+          <input className="field w-full" maxLength={200} {...lf.o(loi, 'ten')} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
         </Field>
         <p className="text-xs text-slate-500">
           {row.scoringMode === 'ratio' ? 'Chấm theo tỷ lệ' : 'Chấm theo band IELTS'} · {boMon(row)}
         </p>
 
         <div className="grid gap-4 sm:grid-cols-3">
-          <Field label="Số tuần" hint={row.weeks ? undefined : 'Để trống nếu khoá không cố định (như lớp FT).'}>
-            <input type="number" min={1} max={104} className="field w-full tabular-nums" value={f.weeks}
+          <Field label="Số tuần" hint={row.weeks ? undefined : 'Để trống nếu khoá không cố định (như lớp FT).'} loi={lf.loiCua(loi, 'so-tuan')}>
+            <input type="number" min={1} max={104} className="field w-full tabular-nums" {...lf.o(loi, 'so-tuan')} value={f.weeks}
               onChange={(e) => setF({
                 ...f, weeks: e.target.value,
                 /* Cuối khoá đang = số tuần thì đi theo số tuần mới (5 → 6 thì Cuối khoá cũng 6). */
@@ -248,14 +267,14 @@ function ProgrammeDialog({ row, onClose, onDone }: {
               })} />
           </Field>
           {f.weeks.trim() !== '' && coGiuaKhoa && (
-            <Field label="Tuần Giữa khoá">
-              <input type="number" min={1} className="field w-full tabular-nums" value={f.progressWeek}
+            <Field label="Tuần Giữa khoá" loi={lf.loiCua(loi, 'giua-khoa')}>
+              <input type="number" min={1} className="field w-full tabular-nums" {...lf.o(loi, 'giua-khoa')} value={f.progressWeek}
                 onChange={(e) => setF({ ...f, progressWeek: e.target.value })} />
             </Field>
           )}
           {f.weeks.trim() !== '' && (
-            <Field label="Tuần Cuối khoá" hint="Bỏ trống = số tuần.">
-              <input type="number" min={1} className="field w-full tabular-nums" value={f.finalWeek} placeholder={f.weeks}
+            <Field label="Tuần Cuối khoá" hint="Bỏ trống = số tuần." loi={lf.loiCua(loi, 'cuoi-khoa')}>
+              <input type="number" min={1} className="field w-full tabular-nums" {...lf.o(loi, 'cuoi-khoa')} value={f.finalWeek} placeholder={f.weeks}
                 onChange={(e) => setF({ ...f, finalWeek: e.target.value })} />
             </Field>
           )}

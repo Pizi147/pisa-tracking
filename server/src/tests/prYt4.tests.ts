@@ -465,7 +465,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const hs = xuLy.yThucHocVien(gvcn, sid);
     assert(hs.dongThang.filter((x: any) => x.trangThai === 'khai').length === 2 && hs.dongThang[2].trangThai === 'lan-nay' && !hs.coTheKhai, 'thang');
     const l = loiCua(() => xuLy.khaiBac(gvcn, sid, { bac: 3, ghiChu: 'khai lần hai' }));
-    assert(l.status === 400 && /đã khai bậc/.test(l.msg), l.msg);
+    assert(l.status === 400 && /đã xác nhận cấp bậc vi phạm/.test(l.msg), l.msg);
   });
   check('YT4 (4) · Sửa khai: GVCN 403, QL sửa được khi chuỗi chưa có lần xử lý; sau lần xử lý đầu → 400 (sửa lẫn khai)', () => {
     const sid = hv();
@@ -836,15 +836,17 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   });
   check('YT4 (8) · Thang MỘT dòng: flex-nowrap, không flex-wrap; bậc đã qua thu thành dấu tích dưới sm; dấu tích là SVG (không ký tự ✓)', () => {
     const s = docW(`${YT}/ThangYThuc.tsx`);
-    assert(/flex-nowrap/.test(s) && /whitespace-nowrap/.test(s) && !/flex-wrap(?!\s*:)/.test(s.replace(/flex-nowrap/g, '')), 'một dòng');
+    /* Chủ sản phẩm 02/10: khối Thang có hàng nút (được xuống dòng) — luật "một dòng" chỉ áp cho chính thang (`<ol`). */
+    const thang = /<ol[^>]*>/.exec(s)?.[0] ?? '';
+    assert(/flex-nowrap/.test(thang) && /whitespace-nowrap/.test(thang) && !/flex-wrap/.test(thang.replace(/flex-nowrap/g, '')), 'một dòng');
     assert(/hidden sm:inline/.test(s) && /<DauTich/.test(s) && !/✓/.test(boChuThich(s)), 'thu gọn + SVG');
     assert(/<svg/.test(docW(`${YT}/NhanViPham.tsx`)) && /strokeWidth="1.5"/.test(docW(`${YT}/NhanViPham.tsx`)), 'SVG nét 1.5');
   });
-  check('YT4 (8) · NhanViPham đủ sáu trạng thái §5.4; "Đã ghi nhận" chữ xám, không nền, kèm "vẫn tính"', () => {
+  check('YT4 (8) · NhanViPham đủ sáu trạng thái §5.4; "Đã ghi nhận" chữ xám, không nền (chủ sản phẩm 02/10: bỏ "· vẫn tính")', () => {
     const s = docW(`${YT}/NhanViPham.tsx`);
     for (const t of d.TRANG_THAI_VP) assert(new RegExp(`\\b${t}:`).test(s), `thiếu ${t}`);
     const dong = /da_ghi_nhan: '([^']*)'/.exec(s)?.[1] ?? '';
-    assert(!/bg-/.test(dong) && /text-slate-400/.test(dong) && /Đã ghi nhận · vẫn tính/.test(s), dong);
+    assert(!/bg-/.test(dong) && /text-slate-400/.test(dong) && /'Đã ghi nhận'/.test(s) && !/vẫn tính/.test(boChuThich(s)), dong);
   });
   check('YT4 (8) · Xác nhận xử lý: client KHÔNG gửi loại (bậc máy chủ quyết), gửi bacDaThay; 409 → mở lại "Bậc vừa đổi"', () => {
     const s = docW(`${YT}/XacNhanXuLyPanel.tsx`);
@@ -856,7 +858,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const s = docW(`${YT}/XacNhanXuLyPanel.tsx`);
     assert(/y-thuc\/de-xuat/.test(s) && /\/gui`/.test(s) && /Gửi Quản lý duyệt · trả lời trong 5 ngày/.test(s), 'luồng');
     assert(/api\.del\(`\/y-thuc\/xu-ly\/\$\{daLuu\.id\}`\)/.test(s) && /Cần đính kèm tệp hoặc liên kết/.test(s), 'xoá nháp + bằng chứng');
-    assert(/Cần xử lý nặng hơn/.test(s) && /Khai bậc trước/.test(s), 'liên kết Đề xuất + dòng Khai bậc (Q7)');
+    assert(/Cần xử lý nặng hơn/.test(s) && /Xác nhận cấp bậc vi phạm trước/.test(s), 'nút Đề xuất + dòng Xác nhận cấp bậc (Q7)');
   });
   check('YT4 (8) · Khai bậc: năm bậc (Report 1 … WL 2), tháng tuỳ chọn, ghi chú ≥ 3; QL sửa bằng PUT', () => {
     const s = docW(`${YT}/KhaiBacPanel.tsx`);
@@ -877,9 +879,10 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(!/BO_LOC_PHU|hopBoLocPhu|tuNgayTheoKhoang|byTime|type="checkbox"|Theo thời gian/.test(s), 'bộ lọc v3');
     assert(/NHOM_EM\.filter/.test(s) && /params\.get\('mo'\)/.test(s) && /'Phối hợp'/.test(s), 'nhóm em, ?mo, tab Phối hợp');
   });
-  check('YT4 (9) · GVBM (canManage = false) không thấy Ghi nhận / Xác nhận xử lý / Khai bậc trên tab lớp; vẫn có + Ghi vi phạm (canRecord)', () => {
+  check('YT4 (9) · GVBM (canManage = false) không thấy Ghi nhận / Xác nhận xử lý / Xác nhận cấp bậc trên tab lớp; vẫn có + Ghi vi phạm (canRecord)', () => {
     const s = docW(`${YT}/ClassYThucCard.tsx`);
-    assert(/const coGhiNhan = hv\.canManage &&/.test(s) && /const nut = !hv\.canManage \? null/.test(s) && /onKhai=\{hv\.canManage \?/.test(s), 'ẩn theo quyền');
+    assert(/const coGhiNhan = hv\.canManage &&/.test(s) && /const nut = hv\.canManage &&/.test(s) && /const coNut = d\.canManage/.test(docW(`${YT}/ThangYThuc.tsx`))
+      && /onKhai=\{hv\.canManage \?/.test(s), 'ẩn theo quyền');
     assert(/d\.canRecord \? <button[\s\S]{0,200}?\+ Ghi vi phạm/.test(s), '+ Ghi vi phạm');
   });
   check('YT4 (9) · Phối hợp (K3-38): "Meeting CX/GĐCN (sau Mock)" + chữ phụ "không phải xử lý vi phạm, không cần QL duyệt"', () => {

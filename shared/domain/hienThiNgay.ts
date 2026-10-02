@@ -27,24 +27,32 @@ export function tuanLich(d: string | null | undefined, homNay?: string | null): 
   const ma = `W${weekNumberInMonthOf(start)} ${MONTH_CODE[month - 1]}`;
   const h = ngayTheoGioVN(homNay);
   if (!h) return ma;
-  return owningMonthOf(mondayOfDate(h)).year === year ? ma : `${ma} ${year}`;
+  /* Không năm chỉ khi gõ lại đúng mã đó ra đúng tuần này (`docTuanLich` chọn tuần gần hôm nay nhất) — tuần xa hơn nửa năm có năm. */
+  return owningMonthOf(mondayOfDate(h)).year === year && docTuanLich(ma, h) === start ? ma : `${ma} ${year}`;
 }
 
 /**
  * Bộ ĐỌC, đối ngẫu của `tuanLich` (không phải bộ định dạng thứ hai): "W4 SEP" / "w4 sep 2027" → Thứ Hai của tuần đó.
- * Không có năm = năm của tuần chứa `homNay` (đúng chiều ngược của `tuanLich`). Tuần không có thật (W5 SEP 2026) hoặc chữ lạ → null.
+ * Không có năm = tuần mang mã đó GẦN `homNay` nhất, trong ±6 tháng (rà UXF-b P2: cuối 12/2026 gõ "W1 JAN" là tháng 1/2027, không lùi một năm).
+ * Tuần không có thật (W5 SEP 2026) hoặc chữ lạ → null. `tuanLich` chỉ bỏ năm khi chính hàm này đọc ngược ra đúng tuần.
  */
 export function docTuanLich(text: string, homNay: string): string | null {
   const m = /^W([1-6])\s+([A-Z]{3})(?:\s+(\d{4}))?$/i.exec(text.trim());
   const h = ngayTheoGioVN(homNay);
   const thang = m ? MONTH_CODE.indexOf(m[2].toUpperCase()) : -1;
   if (!m || !h || thang < 0) return null;
-  const nam = m[3] ? +m[3] : owningMonthOf(mondayOfDate(h)).year;
-  const dau = new Date(Date.UTC(nam, thang, 1));
-  const thuNamDau = (4 - dau.getUTCDay() + 7) % 7;                      // tuần 1 = tuần chứa Thứ Năm đầu tiên của tháng
-  const t2 = new Date(dau.getTime() + (thuNamDau - 3 + 7 * (+m[1] - 1)) * 86_400_000).toISOString().slice(0, 10);
-  const { year, month } = owningMonthOf(t2);
-  return year === nam && month === thang + 1 ? t2 : null;
+  const thu2 = (nam: number): string | null => {
+    const dau = new Date(Date.UTC(nam, thang, 1));
+    const thuNamDau = (4 - dau.getUTCDay() + 7) % 7;                    // tuần 1 = tuần chứa Thứ Năm đầu tiên của tháng
+    const t2 = new Date(dau.getTime() + (thuNamDau - 3 + 7 * (+m[1] - 1)) * 86_400_000).toISOString().slice(0, 10);
+    const { year, month } = owningMonthOf(t2);
+    return year === nam && month === thang + 1 ? t2 : null;
+  };
+  if (m[3]) return thu2(+m[3]);
+  const nam = owningMonthOf(mondayOfDate(h)).year;
+  const cach = (t2: string) => Math.abs(Date.parse(t2) - Date.parse(h)) / 86_400_000;
+  return [nam - 1, nam, nam + 1].map(thu2).filter((t2): t2 is string => t2 !== null && cach(t2) <= 183)
+    .sort((a, b) => cach(a) - cach(b))[0] ?? null;
 }
 
 export function tuanKhoa(n: number, tong: number): string {

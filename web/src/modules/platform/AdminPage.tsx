@@ -61,6 +61,26 @@ export default function AdminPage() {
 }
 
 function ConfigTab({ data, onDone }: { data: AdminData; onDone: () => void }) {
+  const toast = useToast();
+  /* UX-C7 (Q23): chế độ Sửa — ô bấm được, đổi tạm; Lưu gửi chỉ các ô đã đổi trong MỘT lần (một giao dịch, mỗi ô một dòng nhật ký). */
+  const [dangSua, setDangSua] = useState(false);
+  const [doi, setDoi] = useState<ReadonlySet<string>>(new Set());
+  const [busy, setBusy] = useState(false);
+  const khoa = (r: string, p: string) => `${r}|${p}`;
+  const coSan = (r: string, p: string) => !!data.matrix[r]?.includes(p);
+  const bam = (r: string, p: string) => setDoi((s) => { const n = new Set(s); if (n.has(khoa(r, p))) n.delete(khoa(r, p)); else n.add(khoa(r, p)); return n; });
+  const huy = () => { setDoi(new Set()); setDangSua(false); };
+  const luu = async () => {
+    if (!doi.size || busy) return;
+    setBusy(true);
+    try {
+      const thayDoi = [...doi].map((k) => { const [roleKey, permissionKey] = k.split('|'); return { roleKey, permissionKey, granted: !coSan(roleKey, permissionKey) }; });
+      await api.put('/admin/role-permissions', { thayDoi });
+      toast.push('ok', `Đã lưu ${thayDoi.length} thay đổi quyền`);
+      setDoi(new Set()); setDangSua(false); onDone();
+    } catch (e: any) { toast.push('error', e?.message ?? 'Không lưu được'); }
+    finally { setBusy(false); }
+  };
   return (
     <div className="space-y-4">
 
@@ -76,7 +96,8 @@ function ConfigTab({ data, onDone }: { data: AdminData; onDone: () => void }) {
         ))}
       </div>
 
-      <Card title="Quyền theo vai trò" bodyClass="p-0">
+      <Card title="Quyền theo vai trò" bodyClass="p-0"
+        action={!dangSua && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setDangSua(true)}>Sửa quyền</button>}>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -84,7 +105,7 @@ function ConfigTab({ data, onDone }: { data: AdminData; onDone: () => void }) {
                 <Th className="sticky-col" hint="Mỗi dòng là một việc cụ thể. Dấu tích nghĩa là vai đó được làm việc này.">Quyền</Th>
                 {data.roles.map((r) => (
                   <Th key={r.key} align="center"
-                    hint={`Bấm một ô trong cột này để bật hoặc tắt quyền đó cho vai trò ${r.name}.`}>
+                    hint={`Bấm "Sửa quyền", rồi bấm một ô trong cột này để bật hoặc tắt quyền đó cho vai trò ${r.name}.`}>
                     {r.name}
                   </Th>
                 ))}
@@ -96,8 +117,8 @@ function ConfigTab({ data, onDone }: { data: AdminData; onDone: () => void }) {
                   <td className="td sticky-col text-slate-200">{p.name} <span className="text-[11px] text-slate-500">{p.key}</span></td>
                   {data.roles.map((r) => (
                     <td key={r.key} className="td text-center p-0">
-                      <PermCell roleKey={r.key} roleName={r.name} perm={p}
-                        granted={!!data.matrix[r.key]?.includes(p.key)} onDone={onDone} />
+                      <PermCell roleName={r.name} perm={p} granted={coSan(r.key, p.key)} doi={doi.has(khoa(r.key, p.key))}
+                        dangSua={dangSua && !busy} onBam={() => bam(r.key, p.key)} />
                     </td>
                   ))}
                 </tr>
@@ -105,13 +126,21 @@ function ConfigTab({ data, onDone }: { data: AdminData; onDone: () => void }) {
             </tbody>
           </table>
         </div>
+        {dangSua && (
+          <div className="sticky bottom-0 flex flex-wrap items-center gap-2 border-t px-4 py-2.5" style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>
+            <span className="text-xs tabular-nums text-slate-400" role="status">{doi.size ? `${doi.size} thay đổi` : 'Chưa đổi ô nào'}</span>
+            <span className="flex-1" />
+            <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={huy}>Huỷ thay đổi</button>
+            <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !doi.size} onClick={luu}>{busy ? 'Đang lưu…' : 'Lưu'}</button>
+          </div>
+        )}
         <div className="p-3">
           <SectionNote>
             Quyền = quyền của vai trò × phạm vi chi nhánh của CHÍNH grant đó × phân công lớp/kỹ năng.
             Không vai trò nào mặc định thấy toàn hệ thống: chỉ grant không gắn chi nhánh mới phủ toàn bộ.
             <br />
-            Bấm một ô là đổi ngay, và mỗi lần đổi đều ghi vào nhật ký ở cuối trang — sửa bảng quyền
-            là việc phải tra lại được. Hai quyền <strong>Cấu hình hệ thống</strong> và
+            Bấm "Sửa quyền", đổi các ô cần đổi rồi bấm Lưu một lần — chỉ các ô đã đổi được gửi, mỗi ô một dòng nhật ký ở cuối trang
+            (sửa bảng quyền là việc phải tra lại được). Bấm "Huỷ thay đổi" thì không ghi gì. Hai quyền <strong>Cấu hình hệ thống</strong> và
             <strong> Xem học viên</strong> của vai Quản trị hệ thống KHÔNG gỡ được: gỡ xong thì không
             còn ai vào lại được màn này.
             <br />
@@ -153,42 +182,25 @@ function ConfigTab({ data, onDone }: { data: AdminData; onDone: () => void }) {
 }
 
 /**
- * MỘT Ô TRONG BẢNG QUYỀN — bấm là đổi ngay, không có nút "Lưu" riêng.
- *
- * Cố ý không làm kiểu "sửa cả bảng rồi bấm Lưu": một lần lưu cả bảng là một lần có thể ghi đè
- * thay đổi của người khác mà không ai biết. Đổi từng ô thì mỗi lần đổi là một dòng nhật ký
- * riêng, tra lại được ai bật cái gì lúc nào.
+ * MỘT Ô TRONG BẢNG QUYỀN (UX-C7, Q23). Chỉ bấm được trong chế độ "Sửa quyền"; bấm là ĐỔI TẠM (chưa lưu), ô đã đổi có viền + chữ "đổi"
+ * (không chỉ dựa vào màu). Lưu gửi chỉ các ô đã đổi — không ghi đè cả bảng, mỗi ô một dòng nhật ký.
  */
-function PermCell({ roleKey, roleName, perm, granted, onDone }: {
-  roleKey: string; roleName: string; perm: { key: string; name: string };
-  granted: boolean; onDone: () => void;
+function PermCell({ roleName, perm, granted, doi, dangSua, onBam }: {
+  roleName: string; perm: { key: string; name: string };
+  granted: boolean; doi: boolean; dangSua: boolean; onBam: () => void;
 }) {
-  const toast = useToast();
-  const [busy, setBusy] = useState(false);
+  const co = doi ? !granted : granted;
   return (
     <button
       type="button"
-      disabled={busy}
-      title={`${granted ? 'Bỏ' : 'Cấp'} quyền "${perm.name}" cho vai trò ${roleName}`}
-      className={`w-full py-1.5 bg-transparent border-0 text-sm ${
-        granted ? 'text-sky-200' : 'text-slate-600'
-      } ${busy ? 'opacity-50' : 'hover:bg-white/5 cursor-pointer'}`}
-      onClick={async () => {
-        setBusy(true);
-        try {
-          await api.put('/admin/role-permissions', {
-            roleKey, permissionKey: perm.key, granted: !granted,
-          });
-          toast.push('ok', granted
-            ? `Đã bỏ "${perm.name}" khỏi vai trò ${roleName}`
-            : `Đã cấp "${perm.name}" cho vai trò ${roleName}`);
-          onDone();
-        } catch (e: any) {
-          toast.push('error', e?.message ?? 'Không lưu được');
-        } finally { setBusy(false); }
-      }}
+      disabled={!dangSua}
+      aria-pressed={dangSua ? co : undefined}
+      title={dangSua ? `${co ? 'Bỏ' : 'Cấp'} quyền "${perm.name}" cho vai trò ${roleName}` : 'Bấm "Sửa quyền" để đổi'}
+      className={`w-full min-h-[44px] sm:min-h-[36px] bg-transparent text-sm tabular-nums ${co ? 'text-sky-200' : 'text-slate-600'} ${
+        doi ? 'rounded-md border border-[color:var(--accent-line)]' : 'border border-transparent'} ${dangSua ? 'cursor-pointer hover:bg-white/5' : 'cursor-default'}`}
+      onClick={onBam}
     >
-      {granted ? 'có' : '—'}
+      {co ? 'có' : '—'}{doi && <span className="ml-1 text-[11px] text-slate-400">đổi</span>}
     </button>
   );
 }

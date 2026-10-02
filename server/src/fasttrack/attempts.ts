@@ -825,26 +825,39 @@ export function scoreHistoryOf(attemptId: number) {
          FROM audit_logs l LEFT JOIN users u ON u.id = l.actor_user_id
          JOIN assessment_attempts a ON a.id = l.entity_id
         WHERE l.entity_type = 'assessment_attempt' AND l.entity_id = ? AND l.created_at >= a.created_at
-          AND l.action IN ('score.edit', 'score.lich_su', 'score.override', 'score.no_show', 'score.no_show_cleared')
+          AND l.action IN ('score.edit', 'score.lich_su', 'score.override', 'score.no_show', 'score.no_show_cleared', 'score.nhan_xet')
         ORDER BY l.id DESC`,
     )
     .all(attemptId) as any[];
-  return rows.map((l) => {
+  /* Dn7: nhận xét W/S — trước → sau rút gọn 80 ký tự; lần chỉ đổi GV chấm (nhận xét giữ nguyên) không thành dòng. */
+  const rutGon = (s: unknown) => { const t = typeof s === 'string' ? s.trim() : ''; return !t ? 'Trống' : t.length > 80 ? `${t.slice(0, 79)}…` : t; };
+  return rows.flatMap<{
+    id: number; kind: 'edit' | 'override' | 'no_show' | 'nhan_xet'; skill: string; skillLabel: string;
+    before: string; after: string; actorName: string | null; createdAt: string; lyDo: string | null;
+  }>((l) => {
     const before = l.before_json ? JSON.parse(l.before_json) : null;
     const after = l.after_json ? JSON.parse(l.after_json) : null;
+    if (l.action === 'score.nhan_xet') {
+      if ((before?.comment ?? null) === (after?.comment ?? null)) return [];
+      return [{
+        id: l.id, kind: 'nhan_xet' as const, skill: l.entity_label as string, skillLabel: tenMon(null, l.entity_label),
+        before: rutGon(before?.comment), after: rutGon(after?.comment),
+        actorName: l.actor_name as string | null, createdAt: l.created_at as string, lyDo: null as string | null,
+      }];
+    }
     const afterText = l.action === 'score.no_show' ? 'Báo "-" (không có bài)'
       : l.action === 'score.no_show_cleared' ? 'Gỡ dấu "-"'
       : scoreSummaryText(after);
-    return {
+    return [{
       id: l.id,
-      kind: l.action === 'score.override' ? 'override' : l.action === 'score.edit' || l.action === 'score.lich_su' ? 'edit' : 'no_show',
+      kind: (l.action === 'score.override' ? 'override' : l.action === 'score.edit' || l.action === 'score.lich_su' ? 'edit' : 'no_show') as 'override' | 'edit' | 'no_show',
       skill: l.entity_label as string,
       skillLabel: tenMon(null, l.entity_label),   // gồm cả môn lớp thường (trước đây `writing` hiện mã thô)
       before: scoreSummaryText(before), after: afterText,
       actorName: l.actor_name as string | null, createdAt: l.created_at as string,
       /* RB-5 — lý do hiệu chỉnh nằm ngay trong bản "sau" của nhật ký; lần nhập đầu không có. */
       lyDo: (after && typeof after === 'object' ? (after as any).lyDo ?? null : null) as string | null,
-    };
+    }];
   });
 }
 

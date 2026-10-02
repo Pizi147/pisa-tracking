@@ -199,7 +199,7 @@ export function Header() {
 
       <div className="sm:relative">
         <button ref={nutThongBao} className="btn btn-sm min-h-[44px] sm:min-h-0"
-          onClick={() => { if (openMenu !== 'notif') notifications.reload(); setOpenMenu(openMenu === 'notif' ? null : 'notif'); }}
+          onClick={() => { if (openMenu !== 'notif') notifications.reload(); setOpenMenu(openMenu === 'notif' ? null : 'notif'); setMoTimDt(false); }}
           aria-label={`Thông báo${unread ? `, ${unread} chưa đọc` : ''}`} aria-expanded={openMenu === 'notif'}>
           <span className="hidden sm:inline">Thông báo</span>
           {/* Chuông nét mảnh 14 px thay emoji (luật "dấu nhỏ gọn"). */}
@@ -271,7 +271,7 @@ export function Header() {
       <CongTacGiaoDien />
 
       <div className="relative">
-        <button ref={nutTaiKhoan} className="btn btn-sm min-h-[44px] min-w-[44px] justify-center sm:min-h-0 sm:min-w-0" onClick={() => setOpenMenu(openMenu === 'account' ? null : 'account')}
+        <button ref={nutTaiKhoan} className="btn btn-sm min-h-[44px] min-w-[44px] justify-center sm:min-h-0 sm:min-w-0" onClick={() => { setOpenMenu(openMenu === 'account' ? null : 'account'); setMoTimDt(false); }}
           aria-label={`Tài khoản ${hoTen}`} aria-expanded={openMenu === 'account'}>
           <span aria-hidden className="grid h-[30px] w-[30px] place-items-center rounded-full text-[13px] font-bold sm:hidden"
             style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}>{chuCaiDau}</span>

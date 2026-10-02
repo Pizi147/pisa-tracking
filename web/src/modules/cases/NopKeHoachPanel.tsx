@@ -21,7 +21,7 @@ export type BoTro = {
   hanKeHoach: string | null; coTheNop: boolean; phaiGuiKem: boolean; denKhi: string | null;
 };
 
-export const invalidateKeHoach = () => { invalidate('/cases'); invalidate('/students'); invalidate('/overview'); invalidate('/my-work'); invalidate('/yeu-cau'); };
+export const invalidateKeHoach = () => { invalidate('/cases'); invalidate('/students'); invalidate('/tong-quan'); invalidate('/my-work'); invalidate('/yeu-cau'); };
 
 /** Người dạy bổ trợ mặc định = người máy đã gán (GVCN với FOU, GVBM với BE/ELE). */
 export const nguoiDayMacDinh = (b: BoTro | null): NguoiChon | null =>

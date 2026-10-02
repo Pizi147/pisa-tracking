@@ -4,10 +4,10 @@ import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
-import { Alert, Card, Empty, ErrorState, Field, Forbidden, Info, NutChon, SectionNote, Skeleton, Status, Th } from '../../ui/ui.tsx';
-import { Modal } from '../../ui/Drawer.tsx';
+import { Alert, Card, Empty, ErrorState, Field, Forbidden, Info, NhanTrangThai, NutChon, SectionNote, Skeleton, Th } from '../../ui/ui.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
-import { BranchFilter } from '../../ui/Filters.tsx';
+import { BranchFilter, resolveWeek } from '../../ui/Filters.tsx';
+import { useLoiForm } from '../../ui/loiForm.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -15,9 +15,9 @@ import { ONgay } from '../../ui/ONgay.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { fmtDate } from '../../lib/format.ts';
 import {
-  HANG_SO, HANG_SO_LABEL, TASK_GROUPS, TASK_GROUP_LABEL, TASK_PROGRESS, TASK_PROGRESS_LABEL,
-  TASK_PROGRESS_NEEDS_REASON, TRANG_THAI_LOC, catDongPhu, dongHanDaDoi,
-  type HangSo, type NguoiChon, type TrangThaiLoc,
+  ENTRY_SKILLS, ENTRY_SKILL_LABEL, HANG_SO, HANG_SO_LABEL, TASK_GROUPS, TASK_GROUP_LABEL, TASK_PROGRESS, TASK_PROGRESS_LABEL,
+  TASK_PROGRESS_NEEDS_REASON, TRANG_THAI_LOC, catDongPhu, dongHanDaDoi, dsLoi,
+  type HangSo, type LoiTruong, type NguoiChon, type TrangThai, type TrangThaiLoc,
 } from '@shared/domain/index.ts';
 
 type Row = {
@@ -37,11 +37,12 @@ type Row = {
   lastUpdate: { on: string; progressLabel: string; note: string | null; by: string | null } | null;
 };
 
-/** Trạng thái công việc dùng cùng họ nhãn với cả hệ thống (mục 10). */
-const KIND: Record<string, 'doing' | 'waiting' | 'done' | 'idle'> = {
-  /* PR-N1 A8: "Tiếp tục xử lý" trung tính — xanh dương chỉ còn cho ô điểm. */
-  not_started: 'idle', doing: 'idle', done: 'done', paused: 'waiting', stopped: 'idle',
-};
+/**
+ * Trạng thái việc Vận hành vẽ bằng NHÃN CHUNG (`NhanTrangThai`, brainstorm C.2 — K1-35/V4): kiểu nhãn theo họ chung, chữ giữ bộ chữ riêng
+ * của việc (THUAT_NGU C-069…C-073, chủ sản phẩm 02/10 — "Đã dừng" là nhãn khoá học của HV nên không dùng cho việc).
+ */
+const NHAN: Record<string, TrangThai> = { not_started: 'can-lam', doing: 'dang-lam', paused: 'cho-duyet', stopped: 'da-huy', done: 'xong' };
+const NhanViec = ({ progress, label }: { progress: string; label: string }) => <NhanTrangThai t={NHAN[progress] ?? 'can-lam'} chu={label} />;
 
 const TRANG_THAI_LABEL: Record<TrangThaiLoc, string> = { mo: 'Đang mở', ...TASK_PROGRESS_LABEL, 'tat-ca': 'Mọi trạng thái' };
 
@@ -242,7 +243,7 @@ export function TasksBoard() {
                         )}
                       </td>
                       <td className="td">
-                        <Status kind={KIND[r.progress] ?? 'idle'}>{r.progressLabel}</Status>
+                        <NhanViec progress={r.progress} label={r.progressLabel} />
                         {phuTrangThai && <div className="text-[11px] text-slate-500 mt-0.5" title={phuTrangThaiDu}>{phuTrangThai}</div>}
                       </td>
                       <td className="td text-xs">
@@ -288,7 +289,7 @@ export function NganViecVanHanh({ taskId, onClose, onDone }: {
       {data && (
         <div className="space-y-4 pt-3">
           <div className="flex flex-wrap items-center gap-2">
-            <Status kind={KIND[data.progress] ?? 'idle'}>{data.progressLabel}</Status>
+            <NhanViec progress={data.progress} label={data.progressLabel} />
             <Han loai="viec-van-hanh" han={data.due} />
             {data.assigneeName && <Info>{data.assigneeName}{data.assigneeNgoai ? ' · ngoài hệ thống' : ''}</Info>}
             {data.watcherName && <Info>theo dõi: {data.watcherName}</Info>}
@@ -354,7 +355,7 @@ export function NganViecVanHanh({ taskId, onClose, onDone }: {
                   <li key={x.id} className="rounded-lg border px-3 py-2" style={{ borderColor: 'var(--line)' }}>
                     <span className="flex flex-wrap items-center gap-2">
                       <span className={`text-sm ${x.overdue ? 'text-rose-300' : 'text-slate-100'}`}>{x.title}</span>
-                      <Status kind={KIND[x.progress] ?? 'idle'}>{x.progressLabel}</Status>
+                      <NhanViec progress={x.progress} label={x.progressLabel} />
                     </span>
                     <span className="block text-[11px] tabular-nums text-slate-500 mt-0.5">
                       {x.assigneeName ?? 'chưa giao'}
@@ -377,7 +378,7 @@ export function NganViecVanHanh({ taskId, onClose, onDone }: {
                 {data.updates.map((u: any) => (
                   <li key={u.id} className="text-xs border-l-2 pl-3" style={{ borderColor: 'var(--accent-line)' }}>
                     <span className="text-slate-500 tabular-nums">{fmtDate(u.on)}</span>
-                    <span className="ml-2"><Status kind={KIND[u.progress] ?? 'idle'}>{u.progressLabel}</Status></span>
+                    <span className="ml-2"><NhanViec progress={u.progress} label={u.progressLabel} /></span>
                     {u.by && <span className="text-slate-500 ml-2">{u.by}</span>}
                     {u.note && <div className="text-slate-400 mt-0.5">{u.note}</div>}
                   </li>
@@ -421,12 +422,13 @@ export function NganViecVanHanh({ taskId, onClose, onDone }: {
   );
 }
 
-/** Ghi một lần cập nhật — cách DUY NHẤT trạng thái công việc đổi. */
+/** Ghi một lần cập nhật — cách DUY NHẤT trạng thái công việc đổi. Panel mở đè ngăn chi tiết (`longTrong`). */
 function UpdateDialog({ open, onClose, task, onDone }: {
   open: boolean; onClose: () => void; task: any; onDone: () => void;
 }) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
+  const lf = useLoiForm();
   const [progress, setProgress] = useState(task.progress);
   const [note, setNote] = useState('');
   const [reason, setReason] = useState('');
@@ -435,40 +437,44 @@ function UpdateDialog({ open, onClose, task, onDone }: {
     ? { kieu: 'tai_khoan', id: task.helpUserId, ten: task.helpName ?? '' }
     : task.helpName ? { kieu: 'ngoai', ten: task.helpName } : null);
   const [busy, setBusy] = useState(false);
+  if (!open) return null;
   const needReason = (TASK_PROGRESS_NEEDS_REASON as readonly string[]).includes(progress);
   const needHelp = progress === 'paused';
-  const helpThieu = needHelp && !help;
-  const reviewThieu = needHelp && (!reviewOn || reviewOn < homNay);
   /* Q11: Hoàn thành/Dừng hẳn việc CHA còn con mở đều bị chặn — không phải chỉ Hoàn thành. */
   const conChuaXong: string[] = task.openSubTitles ?? [];
   const chanKhepLai = (progress === 'done' || progress === 'stopped') && conChuaXong.length > 0;
+  const loi: LoiTruong[] = [
+    ...(needReason ? dsLoi([{ khoa: 'ly-do', nhan: 'Lý do', toiThieu: 1 }], { 'ly-do': reason }) : []),
+    ...(needHelp ? dsLoi([{ khoa: 'ho-tro', nhan: 'Cần ai hỗ trợ', chon: true }], { 'ho-tro': help }) : []),
+    ...(needHelp && (!reviewOn || reviewOn < homNay) ? [{ khoa: 'xem-lai', nhan: 'Ngày xem lại', lyDo: reviewOn ? 'Từ hôm nay trở đi' : 'Chưa chọn' }] : []),
+  ];
+
+  const luu = async () => {
+    lf.bam();
+    if (loi.length > 0 || chanKhepLai || busy) return;
+    setBusy(true);
+    try {
+      await api.post(`/mgmt-tasks/${task.id}/update`, {
+        progress, note: note || null, reason: reason || null,
+        reviewOn: needHelp ? (reviewOn || null) : null,
+        helpUserId: help?.kieu === 'tai_khoan' ? help.id : null,
+        helpName: help?.kieu === 'ngoai' ? help.ten : null,
+      });
+      invalidate('/mgmt-tasks');
+      toast.push('ok', 'Đã cập nhật'); onDone(); onClose();
+    } catch (e: any) { toast.push('error', e?.message ?? 'Không lưu được'); }
+    finally { setBusy(false); }
+  };
 
   return (
-    <Modal open={open} onClose={onClose} title="Cập nhật tiến độ"
-      footer={
-        <>
-          <button className="btn" onClick={onClose} disabled={busy}>Đóng</button>
-          <button className="btn btn-primary" disabled={busy || (needReason && !reason.trim()) || helpThieu || reviewThieu || chanKhepLai}
-            onClick={async () => {
-              setBusy(true);
-              try {
-                await api.post(`/mgmt-tasks/${task.id}/update`, {
-                  progress, note: note || null, reason: reason || null,
-                  reviewOn: needHelp ? (reviewOn || null) : null,
-                  helpUserId: help?.kieu === 'tai_khoan' ? help.id : null,
-                  helpName: help?.kieu === 'ngoai' ? help.ten : null,
-                });
-                invalidate('/mgmt-tasks');
-                toast.push('ok', 'Đã cập nhật'); onDone(); onClose();
-              } catch (e: any) { toast.push('error', e?.message ?? 'Không lưu được'); }
-              finally { setBusy(false); }
-            }}>
-            Lưu
-          </button>
-        </>
-      }>
-      <div className="space-y-3">
-        <Field label="Trạng thái">
+    <KhungPanel tieuDe="Cập nhật tiến độ" hocVien={task.title} longTrong onDong={onClose}
+      chan={{
+        huy: { onClick: onClose, disabled: busy },
+        conThieu: chanKhepLai ? [{ nhan: 'Việc con', lyDo: `Còn ${conChuaXong.length} việc con chưa khép lại` }] : lf.conThieu(loi),
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>{busy ? 'Đang lưu…' : 'Lưu'}</button>,
+      }}>
+      <div className="space-y-3 pt-3">
+        <Field label="Trạng thái" as="div">
           <div className="flex flex-wrap gap-1.5">
             {TASK_PROGRESS.map((s) => (
               <NutChon key={s} nho chon={progress === s} onClick={() => setProgress(s)}>
@@ -484,26 +490,29 @@ function UpdateDialog({ open, onClose, task, onDone }: {
           </Alert>
         )}
         {needReason && (
-          <Field label="Lý do" required
+          <Field label="Lý do" required loi={lf.loiCua(loi, 'ly-do')}
             hint="Một việc tự nhiên im lặng mà không ai biết vì sao là thứ vài tháng sau không ai giải thích được.">
-            <input className="field" value={reason} onChange={(e) => setReason(e.target.value)} />
+            <input className="field" maxLength={2000} {...lf.o(loi, 'ly-do')} value={reason} onChange={(e) => setReason(e.target.value)} />
           </Field>
         )}
         {needHelp && (
           <>
-            <Field label="Cần ai hỗ trợ" required>
-              <ChonNguoi value={help} onChange={setHelp} nhom="nhan_vien" choToi={false} choNgoai ariaLabel="Người cần hỗ trợ" />
+            <Field label="Cần ai hỗ trợ" required loi={lf.loiCua(loi, 'ho-tro')}>
+              <div {...lf.o(loi, 'ho-tro')}>
+                <ChonNguoi value={help} onChange={setHelp} nhom="nhan_vien" choToi={false} choNgoai ariaLabel="Người cần hỗ trợ" />
+              </div>
             </Field>
-            <Field label="Ngày xem lại" required hint="Từ ngày cập nhật trở đi.">
-              <ONgay kieu="ngay" value={reviewOn} onChange={setReviewOn} toiThieu={homNay} />
+            <Field label="Ngày xem lại" required hint="Từ ngày cập nhật trở đi." loi={lf.loiCua(loi, 'xem-lai')}>
+              <ONgay kieu="ngay" value={reviewOn} onChange={setReviewOn} toiThieu={homNay}
+                id={lf.oId('xem-lai')} onBlur={lf.roi('xem-lai')} invalid={!!lf.loiCua(loi, 'xem-lai')} />
             </Field>
           </>
         )}
         <Field label="Ghi chú">
-          <textarea className="field" rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
+          <textarea className="field" rows={2} maxLength={2000} value={note} onChange={(e) => setNote(e.target.value)} />
         </Field>
       </div>
-    </Modal>
+    </KhungPanel>
   );
 }
 
@@ -513,6 +522,7 @@ function SuaViec({ open, onClose, task, onDone }: {
 }) {
   const toast = useToast();
   const { session } = useSession();
+  const lf = useLoiForm();
   const [title, setTitle] = useState(task.title);
   const [group, setGroup] = useState(task.group ?? 'curriculum');
   const [assignee, setAssignee] = useState<NguoiChon | null>(task.assigneeUserId
@@ -524,40 +534,44 @@ function SuaViec({ open, onClose, task, onDone }: {
   const [lyDoDoiHan, setLyDoDoiHan] = useState('');
   const [note, setNote] = useState(task.note ?? '');
   const [busy, setBusy] = useState(false);
+  if (!open) return null;
 
-  const doiHan = due !== task.due;
-  const canDoi = !!task.due && doiHan;
+  const canDoi = !!task.due && due !== task.due;
+  const loi = dsLoi([
+    { khoa: 'ten', nhan: 'Tên công việc', toiThieu: 1 },
+    ...(canDoi ? [{ khoa: 'ly-do-han', nhan: 'Lý do dời hạn', toiThieu: 2 }] : []),
+  ], { ten: title, 'ly-do-han': lyDoDoiHan });
+
+  const luu = async () => {
+    lf.bam();
+    if (loi.length > 0 || busy) return;
+    setBusy(true);
+    try {
+      await api.patch(`/mgmt-tasks/${task.id}`, {
+        title, group,
+        assigneeUserId: idOfNguoi(assignee, session?.user?.id ?? null),
+        assigneeName: tenNgoaiCua(assignee),
+        watcherUserId: idOfNguoi(watcher, session?.user?.id ?? null),
+        due: due || null,
+        lyDoDoiHan: canDoi ? lyDoDoiHan.trim() : null,
+        note: note || null,
+      });
+      invalidate('/mgmt-tasks');
+      toast.push('ok', 'Đã lưu'); onDone(); onClose();
+    } catch (e: any) { toast.push('error', e?.message ?? 'Không lưu được'); }
+    finally { setBusy(false); }
+  };
 
   return (
-    <Modal open={open} onClose={onClose} title="Sửa công việc"
-      footer={
-        <>
-          <button className="btn" onClick={onClose} disabled={busy}>Đóng</button>
-          <button className="btn btn-primary" disabled={busy || !title.trim() || (canDoi && lyDoDoiHan.trim().length < 2)}
-            onClick={async () => {
-              setBusy(true);
-              try {
-                await api.patch(`/mgmt-tasks/${task.id}`, {
-                  title, group,
-                  assigneeUserId: idOfNguoi(assignee, session?.user?.id ?? null),
-                  assigneeName: tenNgoaiCua(assignee),
-                  watcherUserId: idOfNguoi(watcher, session?.user?.id ?? null),
-                  due: due || null,
-                  lyDoDoiHan: canDoi ? lyDoDoiHan.trim() : null,
-                  note: note || null,
-                });
-                invalidate('/mgmt-tasks');
-                toast.push('ok', 'Đã lưu'); onDone(); onClose();
-              } catch (e: any) { toast.push('error', e?.message ?? 'Không lưu được'); }
-              finally { setBusy(false); }
-            }}>
-            Lưu
-          </button>
-        </>
-      }>
-      <div className="space-y-3">
-        <Field label="Tên công việc" required>
-          <input className="field" value={title} onChange={(e) => setTitle(e.target.value)} />
+    <KhungPanel tieuDe="Sửa công việc" hocVien={task.title} longTrong onDong={onClose}
+      chan={{
+        huy: { onClick: onClose, disabled: busy },
+        conThieu: lf.conThieu(loi),
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>{busy ? 'Đang lưu…' : 'Lưu'}</button>,
+      }}>
+      <div className="space-y-3 pt-3">
+        <Field label="Tên công việc" required loi={lf.loiCua(loi, 'ten')}>
+          <input className="field" maxLength={200} {...lf.o(loi, 'ten')} value={title} onChange={(e) => setTitle(e.target.value)} />
         </Field>
         <Field label="Nhóm" required>
           <select className="field" value={group} onChange={(e) => setGroup(e.target.value)}>
@@ -574,15 +588,16 @@ function SuaViec({ open, onClose, task, onDone }: {
           <ONgay kieu="ngay" value={due} onChange={setDue} />
         </Field>
         {canDoi && (
-          <Field label="Lý do dời hạn" required hint="2–200 ký tự — hạn cũ vẫn hiện lại ở cột Hạn, không mất.">
-            <input className="field" value={lyDoDoiHan} onChange={(e) => setLyDoDoiHan(e.target.value)} placeholder="Chờ duyệt ngân sách nhà cung cấp" />
+          <Field label="Lý do dời hạn" required hint="2–200 ký tự — hạn cũ vẫn hiện lại ở cột Hạn, không mất." loi={lf.loiCua(loi, 'ly-do-han')}>
+            <input className="field" maxLength={200} {...lf.o(loi, 'ly-do-han')} value={lyDoDoiHan} onChange={(e) => setLyDoDoiHan(e.target.value)}
+              placeholder="Ví dụ: Chờ duyệt ngân sách nhà cung cấp" />
           </Field>
         )}
         <Field label="Ghi chú">
-          <textarea className="field" rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
+          <textarea className="field" rows={2} maxLength={2000} value={note} onChange={(e) => setNote(e.target.value)} />
         </Field>
       </div>
-    </Modal>
+    </KhungPanel>
   );
 }
 
@@ -592,6 +607,17 @@ function addDaysIso(iso: string, n: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+type LoaiViec = 'chi-nhanh' | 'giao-gv';
+
+/**
+ * "+ GIAO VIỆC" — MỘT cửa (K1-36, Câu 1 = A). Hai loại việc khác hẳn nhau nên form chọn trước:
+ *
+ *   Việc chi nhánh              giáo trình, vận hành. Không gắn học viên nào → `/mgmt-tasks`.
+ *   Giao GV theo lớp + kỹ năng  gắn lớp và kỹ năng, TOẢ RA thành PA của từng em → `/tasks` (máy chủ suy chi nhánh từ lớp).
+ *
+ * "Toả ra": giao cho lớp mười ba em vẫn là MỘT việc, cập nhật MỘT lần — tạo mười ba bản sao thì GV bỏ qua và số tiến độ thành rác.
+ * Việc con và việc tạo từ ô Báo cáo đơn vị luôn là việc chi nhánh (không hiện lựa chọn).
+ */
 function CreateTask({ open, onClose, onDone, branchId, parent, defaultGroup, unitReportId, veKyHop }: {
   open: boolean; onClose: () => void; onDone: () => void;
   branchId: number | null; parent?: any;
@@ -604,7 +630,14 @@ function CreateTask({ open, onClose, onDone, branchId, parent, defaultGroup, uni
   const toast = useToast();
   const navigate = useNavigate();
   const { session } = useSession();
-  const branches = useApi<any[]>(open ? '/ref/branches' : null);
+  const lf = useLoiForm();
+  const chiChiNhanh = !!parent || !!unitReportId;
+  const [loai, setLoai] = useState<LoaiViec>('chi-nhanh');
+  const giaoGv = !chiChiNhanh && loai === 'giao-gv';
+  const branches = useApi<any[]>(open && !parent ? '/ref/branches' : null, [open]);
+  const classes = useApi<{ rows: { id: number; code: string; studentCount: number }[] }>(open && giaoGv ? '/classes' : null, [open, giaoGv]);
+  /* Việc giao GV gắn tuần đang chạy — hiện ở Báo cáo đơn vị › "Việc được giao" của tuần đó (như trước khi gộp cửa). */
+  const tuanNay = useApi<{ id: number | null; weekStart: string; isAnchor: boolean }[]>(open && giaoGv ? '/ref/period-window' : null, [open, giaoGv]);
   const [title, setTitle] = useState('');
   const [group, setGroup] = useState<string>(parent?.group ?? defaultGroup ?? 'curriculum');
   const [assignee, setAssignee] = useState<NguoiChon | null>(null);
@@ -613,65 +646,118 @@ function CreateTask({ open, onClose, onDone, branchId, parent, defaultGroup, uni
    * HẠN VIỆC CON mặc định = hạn cha trừ MỘT NGÀY (mục 8.6), và sửa được ngay tại đây.
    * Hạn cha đã là quá khứ thì để TRỐNG chứ không đưa ra một mặc định vô nghĩa.
    */
-  const defaultDue = parent?.due ? addDaysIso(parent.due, -1) : '';
-  const [due, setDue] = useState(defaultDue);
+  const [due, setDue] = useState(parent?.due ? addDaysIso(parent.due, -1) : '');
   const [branch, setBranch] = useState(String(parent?.branchId ?? branchId ?? ''));
+  const [classId, setClassId] = useState('');
+  const [topic, setTopic] = useState('');
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
+  if (!open) return null;
+
+  const cls = classes.data?.rows.find((c) => String(c.id) === classId);
+  const loi = dsLoi([
+    { khoa: 'ten', nhan: giaoGv ? 'Nội dung' : 'Tên công việc', toiThieu: 1 },
+    ...(giaoGv ? [{ khoa: 'lop', nhan: 'Lớp', chon: true }, { khoa: 'ky-nang', nhan: 'Kỹ năng', chon: true }] : []),
+  ], { ten: title, lop: classId, 'ky-nang': topic });
+
+  const tao = async () => {
+    lf.bam();
+    if (loi.length > 0 || busy) return;
+    setBusy(true);
+    try {
+      if (giaoGv) {
+        const neo = tuanNay.data?.find((p) => p.isAnchor);
+        const periodId = neo?.id ?? (neo ? (await resolveWeek(neo.weekStart)).id : undefined);
+        await api.post('/tasks', {
+          kind: 'teacher_task', title, note: note.trim() || undefined, periodId, dueDate: due || undefined,
+          classId: Number(classId), topic,
+        });
+        invalidate('/tasks'); invalidate('/cases'); invalidate('/students'); invalidate('/my-work');
+        toast.push('ok', `Đã giao việc cho ${cls?.studentCount ?? 0} em lớp ${cls?.code ?? ''}`.trim());
+      } else {
+        await api.post('/mgmt-tasks', {
+          title, group,
+          assigneeUserId: idOfNguoi(assignee, session?.user?.id ?? null),
+          assigneeName: tenNgoaiCua(assignee),
+          watcherUserId: idOfNguoi(watcher, session?.user?.id ?? null),
+          due: due || null, branchId: branch || null, note: note || null,
+          parentTaskId: parent?.id ?? null,
+          unitReportId: unitReportId ?? null,
+        });
+        invalidate('/mgmt-tasks');
+        toast.push('ok', 'Đã tạo công việc');
+      }
+      setTitle(''); setNote(''); setClassId(''); setTopic(''); lf.datLai();
+      onDone(); onClose();
+      if (unitReportId && veKyHop) navigate(`/cong-viec/bao-cao?periodId=${veKyHop}`);
+    } catch (e: any) { toast.push('error', e?.message ?? 'Không lưu được'); }
+    finally { setBusy(false); }
+  };
 
   return (
-    <Modal open={open} onClose={onClose} width="max-w-lg"
-      title={parent ? `Việc con của "${parent.title}"` : 'Công việc mới'}
-      footer={
-        <>
-          <button className="btn" onClick={onClose} disabled={busy}>Đóng</button>
-          <button className="btn btn-primary" disabled={busy || !title.trim()}
-            onClick={async () => {
-              setBusy(true);
-              try {
-                await api.post('/mgmt-tasks', {
-                  title, group,
-                  assigneeUserId: idOfNguoi(assignee, session?.user?.id ?? null),
-                  assigneeName: tenNgoaiCua(assignee),
-                  watcherUserId: idOfNguoi(watcher, session?.user?.id ?? null),
-                  due: due || null, branchId: branch || null, note: note || null,
-                  parentTaskId: parent?.id ?? null,
-                  unitReportId: unitReportId ?? null,
-                });
-                invalidate('/mgmt-tasks');
-                toast.push('ok', 'Đã tạo công việc');
-                setTitle(''); setNote(''); onDone(); onClose();
-                if (unitReportId && veKyHop) navigate(`/cong-viec/bao-cao?periodId=${veKyHop}`);
-              } catch (e: any) { toast.push('error', e?.message ?? 'Không lưu được'); }
-              finally { setBusy(false); }
-            }}>
-            Tạo
-          </button>
-        </>
-      }>
-      <div className="space-y-3">
-        <Field label="Tên công việc" required>
-          <input className="field" value={title} onChange={(e) => setTitle(e.target.value)}
-            placeholder={parent ? 'Soạn phần Listening' : 'Xây dựng giáo trình Beginner'} />
-        </Field>
-        {!parent && (
-          <Field label="Nhóm" required>
-            <select className="field" value={group} onChange={(e) => setGroup(e.target.value)}>
-              {TASK_GROUPS.map((g) => <option key={g} value={g}>{TASK_GROUP_LABEL[g]}</option>)}
-            </select>
+    <KhungPanel tieuDe={parent ? 'Việc con' : 'Giao việc'} hocVien={parent?.title ?? null} longTrong={!!parent} onDong={onClose}
+      chan={{
+        huy: { onClick: onClose, disabled: busy },
+        conThieu: lf.conThieu(loi),
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={tao}>{busy ? 'Đang lưu…' : giaoGv ? 'Giao' : 'Tạo'}</button>,
+      }}>
+      <div className="space-y-3 pt-3">
+        {!chiChiNhanh && (
+          <Field label="Loại việc" as="div">
+            <div className="flex flex-wrap gap-1.5">
+              <NutChon nho chon={loai === 'chi-nhanh'} onClick={() => { setLoai('chi-nhanh'); lf.datLai(); }}>Việc chi nhánh</NutChon>
+              <NutChon nho chon={loai === 'giao-gv'} onClick={() => { setLoai('giao-gv'); lf.datLai(); }}>Giao GV theo lớp + kỹ năng</NutChon>
+            </div>
           </Field>
         )}
-        <Field label="Người phụ trách">
-          <ChonNguoi value={assignee} onChange={setAssignee} nhom="nhan_vien" choToi choNgoai macDinhTrong="Chưa giao" />
+        <Field label={giaoGv ? 'Nội dung' : 'Tên công việc'} required loi={lf.loiCua(loi, 'ten')}>
+          <input className="field" maxLength={200} {...lf.o(loi, 'ten')} value={title} onChange={(e) => setTitle(e.target.value)}
+            placeholder={parent ? 'Ví dụ: Soạn phần Listening' : giaoGv ? 'Ví dụ: Tăng 15 phút luyện nghe chi tiết mỗi buổi' : 'Ví dụ: Xây dựng giáo trình Beginner'} />
         </Field>
-        <Field label="Người theo dõi" hint="Nhìn thấy công việc nhưng KHÔNG sửa được.">
-          <ChonNguoi value={watcher} onChange={setWatcher} nhom="nhan_vien" choToi choNgoai={false} macDinhTrong="Không có" />
-        </Field>
-        <Field label="Hạn"
-          hint={parent ? 'Mặc định là hạn của việc cha trừ một ngày — sửa được ngay.' : undefined}>
+        {giaoGv ? (
+          <>
+            <Field label="Lớp" required loi={lf.loiCua(loi, 'lop')}>
+              <select className="field" {...lf.o(loi, 'lop')} value={classId} onChange={(e) => setClassId(e.target.value)}>
+                <option value="">Chọn lớp</option>
+                {(classes.data?.rows ?? []).map((c) => (
+                  <option key={c.id} value={c.id}>{c.code} · {c.studentCount} em</option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Kỹ năng" required as="div" loi={lf.loiCua(loi, 'ky-nang')}>
+              <div className="flex flex-wrap gap-1.5" {...lf.o(loi, 'ky-nang')}>
+                {ENTRY_SKILLS.map((k) => (
+                  <NutChon key={k} nho chon={topic === k} onClick={() => setTopic(k)}>{ENTRY_SKILL_LABEL[k]}</NutChon>
+                ))}
+              </div>
+            </Field>
+            <SectionNote>
+              Việc này hiện trong hồ sơ của <strong>{cls ? `${cls.studentCount} em lớp ${cls.code}` : 'từng em trong lớp'}</strong>, ở đúng
+              ô kỹ năng đã chọn — nhưng vẫn là <strong>một việc</strong>, cập nhật một lần. Em nào chưa có Case ở kỹ năng đó thì hệ thống mở
+              Case mới, ghi rõ là mở theo yêu cầu QL, và đưa thẳng vào <em>đang xử lý</em> — PA chính là việc này.
+            </SectionNote>
+          </>
+        ) : (
+          <>
+            {!parent && (
+              <Field label="Nhóm" required>
+                <select className="field" value={group} onChange={(e) => setGroup(e.target.value)}>
+                  {TASK_GROUPS.map((g) => <option key={g} value={g}>{TASK_GROUP_LABEL[g]}</option>)}
+                </select>
+              </Field>
+            )}
+            <Field label="Người phụ trách">
+              <ChonNguoi value={assignee} onChange={setAssignee} nhom="nhan_vien" choToi choNgoai macDinhTrong="Chưa giao" />
+            </Field>
+            <Field label="Người theo dõi" hint="Nhìn thấy công việc nhưng KHÔNG sửa được.">
+              <ChonNguoi value={watcher} onChange={setWatcher} nhom="nhan_vien" choToi choNgoai={false} macDinhTrong="Không có" />
+            </Field>
+          </>
+        )}
+        <Field label="Hạn" hint={parent ? 'Mặc định là hạn của việc cha trừ một ngày — sửa được ngay.' : undefined}>
           <ONgay kieu="ngay" value={due} onChange={setDue} />
         </Field>
-        {!parent && (
+        {!parent && !giaoGv && (
           <Field label="Chi nhánh">
             <select className="field" value={branch} onChange={(e) => setBranch(e.target.value)}>
               <option value="">Toàn hệ thống</option>
@@ -682,9 +768,9 @@ function CreateTask({ open, onClose, onDone, branchId, parent, defaultGroup, uni
           </Field>
         )}
         <Field label="Ghi chú">
-          <textarea className="field" rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
+          <textarea className="field" rows={2} maxLength={2000} value={note} onChange={(e) => setNote(e.target.value)} />
         </Field>
       </div>
-    </Modal>
+    </KhungPanel>
   );
 }

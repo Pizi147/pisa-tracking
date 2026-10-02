@@ -185,14 +185,14 @@ export function khaiBac(p: Principal, studentId: number, v: { bac?: unknown; tha
   const { bac, thang, ghiChu } = kiemKhai(v);
   return tx(() => {
     const em = emCua(studentId);
-    if (!em.chuoi.length) throw badRequest('Em chưa có lộ trình — chưa khai bậc được.');
-    if (em.khai) throw badRequest('Chuỗi này đã khai bậc — cần sửa thì nhờ Quản lý.');
-    if (em.soXuLyChuoi > 0) throw badRequest('Chuỗi này đã có lần xử lý trên web — không khai bậc nữa.');
+    if (!em.chuoi.length) throw badRequest('Em chưa có lộ trình — chưa xác nhận cấp bậc vi phạm được.');
+    if (em.khai) throw badRequest('Chuỗi này đã xác nhận cấp bậc vi phạm — cần sửa thì nhờ Quản lý.');
+    if (em.soXuLyChuoi > 0) throw badRequest('Chuỗi này đã có lần xử lý trên web — không xác nhận cấp bậc nữa.');
     db().prepare(
       `INSERT INTO y_thuc_khai_bac (student_id, chuoi_cycle_id, bac, thang, ghi_chu, khai_boi, khai_luc) VALUES (?,?,?,?,?,?,?)`,
     ).run(studentId, em.chuoi[0], bac, thang, ghiChu, p.userId, demoToday());
     writeAudit({ actorUserId: p.userId, action: 'discipline.declare_level', entityType: 'student', entityId: studentId,
-      entityLabel: `${hv.student_code} · khai bậc ${bac}`, after: { bac, thang, ghiChu, chuoi: em.chuoi[0] } });
+      entityLabel: `${hv.student_code} · cấp bậc ${bac}`, after: { bac, thang, ghiChu, chuoi: em.chuoi[0] } });
     return { ok: true as const, bac };
   });
 }
@@ -200,16 +200,16 @@ export function khaiBac(p: Principal, studentId: number, v: { bac?: unknown; tha
 /** Chỉ QL (`request.approve` trong phạm vi em), chỉ khi chuỗi chưa có lần xử lý nào. */
 export function suaKhaiBac(p: Principal, studentId: number, v: { bac?: unknown; thang?: unknown; ghiChu?: unknown }) {
   const hv = hocVien(studentId);
-  require_(p, PERMISSIONS.REQUEST_APPROVE, { studentId }, 'Chỉ Quản lý sửa được bậc đã khai.');
+  require_(p, PERMISSIONS.REQUEST_APPROVE, { studentId }, 'Chỉ Quản lý sửa được cấp bậc vi phạm đã xác nhận.');
   const { bac, thang, ghiChu } = kiemKhai(v);
   return tx(() => {
     const em = emCua(studentId);
-    if (!em.khai) throw badRequest('Chuỗi này chưa khai bậc.');
-    if (em.soXuLyChuoi > 0) throw badRequest('Chuỗi này đã có lần xử lý trên web — không sửa bậc khai nữa.');
+    if (!em.khai) throw badRequest('Chuỗi này chưa xác nhận cấp bậc vi phạm.');
+    if (em.soXuLyChuoi > 0) throw badRequest('Chuỗi này đã có lần xử lý trên web — không sửa cấp bậc nữa.');
     db().prepare(`UPDATE y_thuc_khai_bac SET bac = ?, thang = ?, ghi_chu = ?, sua_boi = ?, sua_luc = ? WHERE student_id = ? AND chuoi_cycle_id = ?`)
       .run(bac, thang, ghiChu, p.userId, demoToday(), studentId, em.chuoi[0]);
     writeAudit({ actorUserId: p.userId, action: 'discipline.declare_level_edit', entityType: 'student', entityId: studentId,
-      entityLabel: `${hv.student_code} · sửa khai bậc`, before: { bac: em.khai.bac }, after: { bac, thang, ghiChu } });
+      entityLabel: `${hv.student_code} · sửa cấp bậc`, before: { bac: em.khai.bac }, after: { bac, thang, ghiChu } });
     return { ok: true as const, bac };
   });
 }

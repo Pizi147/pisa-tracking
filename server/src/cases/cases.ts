@@ -718,6 +718,8 @@ export function recordIntervention(p: Principal, caseId: number, input: {
   ghiRoKhac?: string | null;
   /** NHẬP BÙ (PR-C Task 3) — xem ghi chú đầy đủ ở `reportIssue`. Chảy tiếp từ đó. */
   backfill?: boolean;
+  /** PA THAY THẾ (nhánh "propose" của Ghi kết quả, rà Dọn-a P2): không qua chặn bấm đúp — nếu không, PA mới trùng loại + mô tả với PA vừa ghi bị gộp và `superseded_by` trỏ về chính nó. */
+  thayThe?: boolean;
 }) {
   const conn = db();
   const c = loadCase(caseId);
@@ -814,7 +816,7 @@ export function recordIntervention(p: Principal, caseId: number, input: {
 
   return tx(() => {
     /* PR-Dọn (quét #26): bấm đúp → trả lại PA vừa ghi. Nhập bù cố ý ghi nhiều dòng có thể giống nhau — không chặn. */
-    if (!input.backfill && vuaGhi('case_interventions', { case_id: caseId, kind: input.kind, description, recorded_by: p.userId })) return caseDetail(p, caseId);
+    if (!input.backfill && !input.thayThe && vuaGhi('case_interventions', { case_id: caseId, kind: input.kind, description, recorded_by: p.userId })) return caseDetail(p, caseId);
     /*
      * HẠN QUẢN LÝ PHẢI TRẢ LỜI — `HAN_DUYET_NGAY` (5) ngày, tính cả ngày gửi (T54, K3-18, PR-N1).
      * Quá hạn KHÔNG chặn gì cả; nó nổi lên màn của Quản lý để một đề xuất không nằm
@@ -3026,6 +3028,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
        * nối sang phương án mới, để lịch sử không đọc thành "đã hoàn thành tốt đẹp".
        */
       const detail = recordIntervention(p, iv.case_id, {
+        thayThe: true,
         kind: input.newPlan!.kind,
         description: input.newPlan!.description ?? null,
         performerSelf: input.newPlan!.performerSelf ?? false,

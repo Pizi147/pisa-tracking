@@ -541,7 +541,7 @@ export function guiDeXuatChuyenLop(p: Principal, sid: number, v: { toClassId?: n
   if (!enr || hv.status !== 'active' || hv.archived_at) throw badRequest('Học viên không đang học lớp nào — không đề xuất chuyển lớp được.');
   /* GVCN của lớp em đang học (`student.edit` ở lớp với vai Giáo viên đã siết về GVCN); Quản lý cũng gửi được → tự duyệt (Q-D). */
   require_(p, PERMISSIONS.STUDENT_EDIT, { classId: enr.class_id }, 'Chỉ GVCN lớp em đang học mới gửi được đề xuất chuyển lớp.');
-  const lyDo = typeof v.lyDo === 'string' ? v.lyDo.trim() : '';
+  const lyDo = chuTuDo(v.lyDo, 'Lý do', 2000) ?? '';   // rà Dọn-a P2 (Q4): kiểu + trần, không cắt ngầm
   if (lyDo.length < NHAN_XET_TOI_THIEU) throw badRequest(`Ghi lý do (ít nhất ${NHAN_XET_TOI_THIEU} ký tự) để Quản lý có căn cứ duyệt.`);
   const toClassId = v.toClassId ? Number(v.toClassId) : null;
   if (toClassId && !lopDichHopLe(toClassId, enr.class_id)) throw badRequest('Lớp chuyển đến không hợp lệ.');

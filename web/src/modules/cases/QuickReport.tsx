@@ -181,7 +181,7 @@ export function QuickReport({
         idempotencyKey,
         ...extra,
       });
-      invalidate('/cases'); invalidate('/students'); invalidate('/overview');
+      invalidate('/cases'); invalidate('/students'); invalidate('/tong-quan');
       toast.push('ok', extra.mergeIntoExisting ? 'Đã ghi vào Case đang có' : 'Đã ghi nhận');
       setDup(null);
       setDaLuu({ id: res.id, tieuDe: res.title, gop: !!extra.mergeIntoExisting, canEdit: !!res.viewer?.canEdit, viecTiep: res.viecTiep ?? null });
@@ -221,7 +221,7 @@ export function QuickReport({
         metrics: componentsPayload(category, bfMetrics, componentsAreCounts(category)),
         ...extra,
       });
-      invalidate('/cases'); invalidate('/students'); invalidate('/overview');
+      invalidate('/cases'); invalidate('/students'); invalidate('/tong-quan');
       toast.push('ok', 'Đã ghi lại Case đã xong');
       setBfDup(null);
       setDaLuu({ id: res.id, tieuDe: res.title, gop: false, canEdit: !!res.viewer?.canEdit });

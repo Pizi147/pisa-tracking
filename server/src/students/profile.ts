@@ -423,12 +423,12 @@ function boOVaCau(i: {
       duoi: board.rows.filter((r) => r.missed === true).map((r) => ({ ngan: (r.short ?? r.label) as string, kn: r.category as string, attemptId: (r.bandAttemptId ?? null) as number | null })),
       huong: ratio && a?.kind === 'final' ? i.huong : null,
     },
-    hocThuat: oHocThuat(board.rows, s.status === 'inactive' ? i.thongTin.tamDung?.tu ?? null : null),
+    hocThuat: oHocThuat(board.rows, s.status === 'inactive' ? i.thongTin.tamDung?.tu ?? null : null, today),
     yThuc: oYThuc(em ? {
       bacTen: bacHoacNgoaiThang(em.bac, em.xuLy),
       nhom: em.nhom ?? null, soBatBuoc: em.soBatBuoc ?? 0, keTiep, han: em.han ?? null, quaHanNgay: quaHanYt, deXuat: deXuatCho,
       soMo: soViPhamMo, tamDung: !!em.tamDung || s.status === 'inactive',
-    } : null),
+    } : null, today),
     sapToi: {
       ...oSapToi({
         ketLuan: s.status === 'finished' ? (selected?.outcome ? CYCLE_OUTCOME_LABEL[selected.outcome as keyof typeof CYCLE_OUTCOME_LABEL] ?? 'Kết thúc học' : 'Kết thúc học') : null,
