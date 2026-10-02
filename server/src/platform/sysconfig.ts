@@ -245,3 +245,26 @@ export function setRolePermission(p: Principal, input: {
     return { ok: true, changed: true };
   });
 }
+
+/**
+ * UX-C7 (Q23): chế độ "Sửa quyền" gửi CHỈ các ô đã đổi, lưu MỘT lần. Kiểm hết khoá trước (sai một khoá → 400, không ghi ô nào), rồi ghi trong
+ * MỘT giao dịch qua đúng đường một ô ở trên — mỗi ô một dòng nhật ký, luật khoá quyền Quản trị giữ nguyên (ném giữa chừng → cuộn lại cả lô).
+ * Vẫn không ghi đè cả bảng: ô không gửi giữ nguyên, nên hai người sửa hai ô khác nhau không đè nhau.
+ */
+export function setRolePermissions(p: Principal, thayDoi: unknown) {
+  require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, 'Chỉ Quản trị hệ thống mới sửa được bảng quyền.');
+  if (!Array.isArray(thayDoi) || thayDoi.length === 0) throw badRequest('Chưa có ô nào thay đổi.');
+  if (thayDoi.length > 200) throw badRequest('Tối đa 200 ô một lần lưu.');
+  const conn = db();
+  const vai = new Set((conn.prepare('SELECT key FROM roles').all() as { key: string }[]).map((r) => r.key));
+  const quyen = new Set((conn.prepare('SELECT key FROM permissions').all() as { key: string }[]).map((r) => r.key));
+  const ds = thayDoi.map((x: any, i) => {
+    const roleKey = String(x?.roleKey ?? ''), permissionKey = String(x?.permissionKey ?? '');
+    if (!vai.has(roleKey)) throw badRequest(`Ô ${i + 1}: không có vai trò "${roleKey}".`);
+    if (!quyen.has(permissionKey)) throw badRequest(`Ô ${i + 1}: không có quyền "${permissionKey}".`);
+    if (typeof x?.granted !== 'boolean') throw badRequest(`Ô ${i + 1}: thiếu bật/tắt.`);
+    return { roleKey, permissionKey, granted: x.granted as boolean };
+  });
+  // ponytail: mỗi ô 3–4 câu SQL qua đường một ô (≤ 200 ô, chỉ Quản trị bấm Lưu); gom câu nếu bảng quyền lớn lên nhiều.
+  return tx(() => ({ ok: true, changed: ds.filter((o) => setRolePermission(p, o).changed).length }));
+}

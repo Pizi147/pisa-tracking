@@ -9,7 +9,7 @@
  *                (cùng luật lớp tự kết thúc của PR-LT), lớp vào khu Lưu trữ (chỉ xem) + `audit_logs`.
  */
 import { db, tx } from '../db.ts';
-import { PERMISSIONS } from '../../../shared/domain/index.ts';
+import { CHU_CHUYEN_LOP, PERMISSIONS, tuanLich } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, notFound } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
@@ -25,9 +25,9 @@ const BANG_DU_LIEU: [string, string][] = [
 
 function docLop(classId: number) {
   const c = db().prepare(
-    `SELECT c.id, c.code, c.status, c.finished_at, b.name AS branch_name
+    `SELECT c.id, c.code, c.status, c.finished_at, c.is_fast_track, b.name AS branch_name
        FROM classes c JOIN branches b ON b.id = c.branch_id WHERE c.id = ?`,
-  ).get(classId) as { id: number; code: string; status: string; finished_at: string | null; branch_name: string } | undefined;
+  ).get(classId) as { id: number; code: string; status: string; finished_at: string | null; is_fast_track: number; branch_name: string } | undefined;
   if (!c) throw notFound('Không tìm thấy lớp');
   return c;
 }
@@ -51,7 +51,18 @@ export function tinhTrangLop(classId: number) {
   if (nHocTiep > 0) gan.push(`${nHocTiep} lớp học tiếp từ lớp này`);
   /* PR-LT2b (K2-35): việc còn treo — KHÔNG chặn Kết thúc lớp, chỉ nói ra: Mini Test của em từ lớp này chưa ghi. */
   const nMiniTest = dem(`SELECT COUNT(*) n FROM mini_test m JOIN assessment_attempts a ON a.id = m.tu_attempt_id WHERE a.class_id = ? AND m.ty_le IS NULL`, classId);
-  return { soTungGhiDanh, soDangHoc, gan, coDuLieu: soTungGhiDanh > 0 || gan.length > 0, conTreo: nMiniTest > 0 ? `Còn treo: ${nMiniTest} Mini Test chưa ghi` : null };
+  /* K2-35: quyết định chuyển lớp CHƯA tới tuần chuyển — nói ra cùng chỗ (chữ chuyển lớp một nguồn `CHU_CHUYEN_LOP`, tuần là mã tuần). */
+  const cho = conn.prepare(`SELECT COUNT(*) n, MIN(tuan_bat_dau) tu FROM lenh_chuyen_lop WHERE lop_nguon_id = ? AND trang_thai = 'cho'`).get(classId) as { n: number; tu: string | null };
+  const treo = [
+    nMiniTest > 0 ? `${nMiniTest} Mini Test chưa ghi` : null,
+    cho.n > 0 && cho.tu ? `${CHU_CHUYEN_LOP.sapChuyen(tuanLich(cho.tu, demoToday()))} (${cho.n} em)` : null,
+  ].filter(Boolean);
+  return { soTungGhiDanh, soDangHoc, gan, coDuLieu: soTungGhiDanh > 0 || gan.length > 0, conTreo: treo.length ? `Còn treo: ${treo.join(' · ')}` : null };
+}
+
+/** Câu chặn Kết thúc lớp khi còn em đang học — nói đúng việc phải làm theo loại lớp (K2-35): FT chuyển từng em, lớp thường ra MỘT quyết định cho cả lớp. */
+function lyDoConEm(c: { is_fast_track: number }, soDangHoc: number): string {
+  return `Còn ${soDangHoc} học viên đang học — ${c.is_fast_track ? 'chuyển lớp từng em hoặc chuyển nhiều em' : `${CHU_CHUYEN_LOP.quyetDinh} cho cả lớp`} trước.`;
 }
 
 /** GET /classes/:id/xoa-ket-thuc — cho panel biết nên hiện nút nào và vì sao. Chỉ Quản trị hệ thống. */
@@ -67,7 +78,7 @@ export function xemXoaKetThuc(p: Principal, classId: number) {
     coTheXoa: !t.coDuLieu,
     coTheKetThuc: !daKetThuc && t.soDangHoc === 0,
     lyDoChanKetThuc: daKetThuc ? 'Lớp đã kết thúc.'
-      : t.soDangHoc > 0 ? `Còn ${t.soDangHoc} học viên đang học — chuyển tiếp lớp hoặc chuyển lớp trước.` : null,
+      : t.soDangHoc > 0 ? lyDoConEm(c, t.soDangHoc) : null,
   };
 }
 
@@ -98,7 +109,7 @@ export function ketThucLop(p: Principal, classId: number) {
   if (c.status === 'finished') throw badRequest('Lớp đã kết thúc.');
   const t = tinhTrangLop(classId);
   if (t.soDangHoc > 0) {
-    throw badRequest(`Còn ${t.soDangHoc} học viên đang học — chuyển tiếp lớp hoặc chuyển lớp trước.`);
+    throw badRequest(lyDoConEm(c, t.soDangHoc));
   }
   const ngay = demoToday();
   const conn = db();
