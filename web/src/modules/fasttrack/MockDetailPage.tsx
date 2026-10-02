@@ -74,7 +74,7 @@ type Detail = {
 };
 
 type ScoreHistoryRow = {
-  id: number; kind: 'edit' | 'override' | 'no_show'; skill: string; skillLabel: string;
+  id: number; kind: 'edit' | 'override' | 'no_show' | 'nhan_xet'; skill: string; skillLabel: string;
   before: string; after: string; actorName: string | null; createdAt: string;
   /** RB-5 — lý do sửa điểm đã nhập (lần nhập đầu không có). */
   lyDo: string | null;

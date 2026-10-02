@@ -3,7 +3,7 @@ import { fmtDateTime } from '../../lib/format.ts';
 import { CHU_THAO_TAC, tenMon } from '@shared/domain/index.ts';
 
 type LichSuLich = { id: number; action: string; field: string | null; oldValue: string | null; newValue: string | null; reason: string | null; actorName: string | null; createdAt: string };
-type LichSuDiem = { id: number; kind: 'edit' | 'override' | 'no_show'; skill: string; before: string; after: string; actorName: string | null; createdAt: string; lyDo: string | null };
+type LichSuDiem = { id: number; kind: 'edit' | 'override' | 'no_show' | 'nhan_xet'; skill: string; before: string; after: string; actorName: string | null; createdAt: string; lyDo: string | null };
 
 type Loai = 'lich' | 'diem' | 'vang' | 'huy';
 
@@ -47,8 +47,10 @@ export function DongThoiGianLuot({ history, scoreHistory, ct = null, gioiHan = 5
       return { key: `l${h.id}`, at: h.createdAt ?? '', loai: n.loai, viec: n.chu, mon: mon(h.field), doi: doi || null, ai: h.actorName, lyDo: h.reason };
     }),
     ...scoreHistory.map((h) => {
-      const huy = h.kind !== 'no_show' && h.after === 'Trống';
-      const viec = huy ? CHU_THAO_TAC['huy-diem'] : h.kind === 'no_show' ? 'Dấu "-"' : h.kind === 'override' ? 'Hiệu chỉnh điểm' : CHU_THAO_TAC['sua-diem'];
+      /* Dn7: nhận xét W/S cùng dòng thời gian (biểu tượng bút như dòng điểm); xoá nhận xét không phải "huỷ điểm". */
+      const nhanXet = h.kind === 'nhan_xet';
+      const huy = !nhanXet && h.kind !== 'no_show' && h.after === 'Trống';
+      const viec = nhanXet ? 'Nhận xét' : huy ? CHU_THAO_TAC['huy-diem'] : h.kind === 'no_show' ? 'Dấu "-"' : h.kind === 'override' ? 'Hiệu chỉnh điểm' : CHU_THAO_TAC['sua-diem'];
       return { key: `d${h.id}`, at: h.createdAt, loai: (huy ? 'huy' : h.kind === 'no_show' ? 'vang' : 'diem') as Loai, viec, mon: mon(h.skill), doi: `${h.before} → ${h.after}`, ai: h.actorName, lyDo: h.lyDo };
     }),
   ].sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));

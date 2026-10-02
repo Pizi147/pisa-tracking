@@ -134,7 +134,10 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = 'Bằng chứn
     e.preventDefault();
     setIsDragging(true);
   };
-  const onDragLeave = () => setIsDragging(false);
+  /* Rê qua phần tử CON cũng bắn dragleave ở khung — chỉ tắt khi con trỏ ra hẳn khỏi khung ngoài (không nhấp nháy viền). */
+  const onDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setIsDragging(false);
+  };
   const onDrop = (e: React.DragEvent<HTMLDivElement>) => {
     if (!canEdit) return;
     e.preventDefault();

@@ -352,32 +352,34 @@ export function deadlineView(i: DeadlineInput): DeadlineView {
       viec, han: CHUA_CO_HAN, homNay: false, quaHan: null, hen: null, con: null,
     };
   }
-  const han = `${tien} ${shortDate(i.due, i.today)}`;
+  /* C-khác (Dọn-b 14a): hạn có giờ (ISO UTC) đổi sang NGÀY giờ Việt Nam trước khi so — 18:30Z ngày 21 là 01:30 ngày 22 ở VN. */
+  const ngayVn = (s: string) => ngayTheoGioVN(s) ?? s.slice(0, 10);
+  const han = `${tien} ${shortDate(ngayVn(i.due), i.today)}`;
   /* PR-N1 (R-PA3): hạn Thứ Hai là hạn của kết quả TUẦN TRƯỚC nó — "Ghi kết quả tuần W4 SEP · hạn hết T2 28/09". */
   const viecHien = i.kind === 'cap-nhat-pa' ? `Ghi kết quả tuần ${maTuan(congNgay(i.due, -7), i.today)}` : viec;
-  const base = validIso(i.originalDue) ? i.originalDue : i.due;
+  const base = ngayVn(validIso(i.originalDue) ? i.originalDue : i.due);
   const duKien = i.kind === 'du-kien-ket-thuc';
   let daysOverdue: number | null = null;
   let quaHan: string | null = null;
   let tone: DeadlineTone = duKien ? 'neutral' : 'waiting';
 
   /* "Dự kiến kết thúc" không bao giờ quá hạn — nó không phải một nghĩa vụ. */
-  if (!duKien && i.today > base.slice(0, 10)) {
+  if (!duKien && i.today > base) {
     tone = 'overdue';
     daysOverdue = daysBetween(base, i.today);
     quaHan = nhanQuaHan(daysOverdue);
   }
-  const homNay = !duKien && i.today === base.slice(0, 10);
+  const homNay = !duKien && i.today === base;
   const hen = validIso(i.reschedule) ? `hẹn xử lý ${shortDate(i.reschedule, i.today)}` : null;
   const con = i.kind === 'duyet' && !quaHan ? `còn ${daysBetween(i.today, base) + 1} ngày` : null;
   const text = duKien
     ? [han.charAt(0).toUpperCase() + han.slice(1), hen].filter(Boolean).join(' · ')
     : [viecHien, han, quaHan, con, homNay ? 'hôm nay' : null, hen].filter(Boolean).join(' · ');
 
-  const moved = validIso(i.originalDue) && i.originalDue.slice(0, 10) !== i.due.slice(0, 10);
+  const moved = validIso(i.originalDue) && ngayVn(i.originalDue) !== ngayVn(i.due);
   return {
     text, tone, daysOverdue, quaHan, homNay, hen, con, viec: viecHien, han,
-    title: moved ? `Hạn gốc ${shortDate(i.originalDue, i.today)}` : null,
+    title: moved ? `Hạn gốc ${shortDate(ngayVn(i.originalDue as string), i.today)}` : null,
   };
 }
 
