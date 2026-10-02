@@ -1955,6 +1955,10 @@ Ghi theo yêu cầu chủ sản phẩm sau rà soát PR #52 (làm sau, không l�
 
 Nguồn: `thiet-ke/DANH_GIA_GIAO_DIEN_2026-09-26.md` (77 trang/panel, 27 đỏ · 39 vàng · 11 xanh). Kế hoạch: `docs/superpowers/plans/2026-09-26-ux-sau-danh-gia.md`, gồm sáu gói UX-A → UX-F và bảng "File → mục". **Mọi prompt UI mới chạm file nằm trong bảng đó phải ghép các mục tương ứng**, hoặc ghi rõ lý do không ghép. Có một lỗi nhỏ nên cân nhắc làm sớm dù chưa tới đợt: **A1**, ký tự 0x08 trong regex SOS ở `web/src/lib/format.ts:85` làm SOS 1 hiện màu xanh dương ở Tổng quan GV và Công việc. Câu hỏi chặn Q1, Q2, Q4–Q8 nằm cuối file kế hoạch.
 
+### 12.21. Critique toàn web 02/10 — kế hoạch chờ chọn gói
+
+Nguồn: `/impeccable critique` 02/10 (26/40, tăng từ 24/40). Kế hoạch: `docs/superpowers/plans/2026-10-02-ux-sau-critique.md`, gồm năm gói UX-G → UX-K và bảng "File → mục". UX-G (trạng thái sai/lệch màu, Lịch Test cắt nút, thông báo dùng giờ thật) làm trước. Câu hỏi Q-H, Q-K, Q-D, Q-B nằm cuối file.
+
 ### 13.1. Trước mỗi commit
 
 ```bash
@@ -2006,6 +2010,7 @@ Nói **cái gì đổi trên màn hình**, bằng tiếng Việt, không tên h�
 
 | Ngày | Ai | Đổi gì và vì sao |
 |---|---|---|
+| 02/10/2026 | Claude (session planning, `/impeccable critique`) | Thêm mục 12.21 và kế hoạch `2026-10-02-ux-sau-critique.md` sau critique toàn web (trang, panel, chữ, badge) |
 | 30/09/2026 | Claude (session code PR-LT2b, nhánh `pr-lt2b-cuoi-khoa`, Sonnet 5.5) | 30/09 PR-LT2b: Cuối khoá lớp thường — % tổng → dải (< 50 · 50–59 · 60–69 · ≥ 70) + hướng gợi ý; sau chuyển: Case `chuyen_cap` (không phải Case SOS) + PA Bổ trợ miễn phí + Mini Test một lần mỗi em, Báo PH qua TVV (việc của Quản lý), Case Tutor FT; Kết luận kỳ vọng đầu ra BE/ELE; điểm nhập sau khi đã chuyển áp ở lộ trình mới (Q30-4). Bỏ thẻ Quyết định Cuối khoá (Q30-3). |
 | 30/09/2026 | Claude (session code PR-LT2a, nhánh `pr-lt2a-giua-khoa`, Sonnet 5.5) | 30/09 PR-LT2a: Giữa khoá tự tạo Case + PA Bổ trợ (FOU chung 2 buổi/tuần), kế hoạch bài giảng qua Quản lý, Báo PH qua TVV, bỏ tín hiệu lớp thường, bỏ nhãn SOS lớp thường, M1b. |
 | 29/09/2026 | Claude (session code PR-SOS, nhánh `pr-sos-sos-v4`, Opus 5.5) | 29/09 PR-SOS: SOS v4 — PA quy chế chờ xác nhận, Xác nhận Case → Xác nhận PA, Không cần theo dõi qua Quản lý, Ghi kết quả cuối, bỏ Dự kiến kết thúc, HangCase/HangPA. **Migrate** `server/src/migrate/prSos.ts`: 2 cột `sos_cases.han_xac_nhan`, `case_interventions.moc_quy_che`; gỡ `migratePaQuyChe` của PR-N1. Kế hoạch `docs/superpowers/plans/2026-09-29-pr-sos-sos-v4.md` |
