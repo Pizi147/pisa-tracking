@@ -152,7 +152,8 @@ export type DaiLop = {
 };
 
 export type DaiHocVien = {
-  loai: 'sap' | 'da';
+  /** `cho-duyet` = GVCN đã đề xuất, Quản lý chưa duyệt (chưa có lệnh: `lenhId` 0, `huong` rỗng, `nguoiRaLenh` là người gửi, `tuan` có thể rỗng). */
+  loai: 'sap' | 'da' | 'cho-duyet';
   lenhId: number; lopNguon: { id: number; code: string }; lopDich: { id: number; code: string } | null; huong: string; tuan: string;
   nguoiRaLenh: string | null; ngayRaLenh: string;
   banGiao: { soMon: number; daGhi: number; hanGvcn: string | null; daXacNhan: boolean; nguoiXacNhan: string | null; ngayXacNhan: string | null; thay: boolean } | null;

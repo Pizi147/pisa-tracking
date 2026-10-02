@@ -22,7 +22,7 @@ import { cuoiKhoaTheoHocVien, emConMiniTest, nguoiGhiMiniTest } from '../normal/
 import { classProgressMany, missingForClasses, missingForStudent, mocKetKhoa, type TienDoMoc } from './schedule.ts';
 import { canhBaoTheoHocVien, caseViecTheoHocVien, nhapDiemTheoEm, soEmCanXuLyYThuc, viecHocVienTheoLop } from './dongHocVien.ts';
 import { tiepTheoTheoHocVien } from './loTrinhTiep.ts';
-import { emChuaCoLenh } from './lenhChuyen.ts';
+import { emChuaCoLenh, emChoDuyetChuyenLop } from './lenhChuyen.ts';
 import { daiLop } from './daiChuyenLop.ts';
 import { listCases } from '../cases/cases.ts';
 import { emCoBaoPhChuaLam } from '../yThuc/phoiHop.ts';
@@ -419,6 +419,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
   const tiepTheoLop = tiepTheoTheoHocVien([classId]);
   /* PR-Dọn (Câu 2 = B): cờ dòng = em chưa có quyết định chuyển lớp chờ (cùng `emChuaCoLenh` của badge lớp; badge chỉ bật từ tuần Cuối khoá). */
   const chuaCoLenh = new Set(isRatio ? emChuaCoLenh([classId]).get(classId) ?? [] : []);
+  const choDuyetChuyen = isRatio ? emChoDuyetChuyenLop(sids) : new Set<number>();
   const maChuongTrinhHienTai = (prog?.code ?? null) as ProgrammeCode | null;
   /* PR-UXF-a K2-12: % tổng + Hướng gợi ý Cuối khoá — CÙNG hàm panel Chuyển lớp đọc, một lần cho cả lớp. */
   const cuoiKhoaLop = isRatio ? cuoiKhoaTheoHocVien(classId, undefined, { daRoi: finished }) : null;
@@ -667,6 +668,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
       /* Cột Khoá "tiếp theo: …" (PR-LT, Q1/Q4) — chỉ có nghĩa cho lớp thường còn đang học. */
       tiepTheo: isRatio ? nhanTiepTheo(tiepTheoLop.get(s.id) ?? null, maChuongTrinhHienTai) : null,
       chuaLoTrinh: isRatio && chuaCoLenh.has(s.id),
+      choDuyetChuyen: choDuyetChuyen.has(s.id),
       cuoiKhoa: (() => { const e = cuoiKhoaLop?.get(s.id); return e ? { tyLe: e.tyLe, goiY: e.goiY } : null; })(),
     };
   });

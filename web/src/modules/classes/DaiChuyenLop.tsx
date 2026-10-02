@@ -89,6 +89,13 @@ export function DaiHocVienChuyen({ dai, homNay, onLam }: {
     dai.nut.includes('huy-lenh') ? nutBtn('huy-lenh', CHU_CHUYEN_LOP.huy) : null,
     dai.nut.includes('doc-ban-giao') ? nutBtn('doc-ban-giao', 'Đọc bàn giao') : null,
   ].filter(Boolean);
+  if (dai.loai === 'cho-duyet') {
+    return (
+      <Dai nhan={CHU_CHUYEN_LOP.choDuyetDeXuat}>
+        {dai.lopDich ? `Sang ${dai.lopDich.code}` : 'Chưa chọn lớp chuyển đến'}{dai.tuan && ` · từ ${tuanLich(dai.tuan, h)}`} · đề xuất của {dai.nguoiRaLenh ?? 'GVCN'}
+      </Dai>
+    );
+  }
   const dich = dai.lopDich ? `Sang ${dai.lopDich.code}` : dai.huong === 'bao_luu' ? 'Tạm dừng học (bảo lưu)' : 'Rời lớp';
   return (
     <div className="space-y-1">

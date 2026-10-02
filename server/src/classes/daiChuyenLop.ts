@@ -84,7 +84,7 @@ export function daiHocVien(p: Principal, studentId: number): DaiHocVien | null {
       WHERE l.student_id = ? AND (l.trang_thai = 'cho' OR (l.trang_thai = 'da_chuyen' AND l.tuan_bat_dau >= ?))
       ORDER BY l.id DESC LIMIT 1`,
   ).get(studentId, addDays(homNay, -14)) as any;
-  if (!l) return null;
+  if (!l) return deXuatDangCho(conn, studentId);
   const pc = phanCongO(conn, p.userId, l.lop_nguon_id);
   const ra = coTheRaLenh(p, l.lop_nguon_id);
   const daGhi = new Set<string>(String(l.mon_da_ghi ?? '').split(',').filter(Boolean));
@@ -109,5 +109,22 @@ export function daiHocVien(p: Principal, studentId: number): DaiHocVien | null {
     loi: ra ? l.loi ?? null : null,   // "Chưa chuyển được: …" chỉ cho Quản lý
     nut,
     mon: monToi ? { ma: monToi, ngan: tenMonNgan(l.ct, monToi) } : null,
+  };
+}
+
+/** Chưa có lệnh nhưng GVCN đã gửi đề xuất chuyển lớp còn chờ Quản lý (`yeu_cau_duyet`) → dải "Chờ QL duyệt đề xuất". */
+function deXuatDangCho(conn: ReturnType<typeof db>, studentId: number): DaiHocVien | null {
+  const y = conn.prepare(
+    `SELECT y.lop_id, y.du_lieu, y.tao_luc, u.full_name AS gui, n.code AS nguon
+       FROM yeu_cau_duyet y LEFT JOIN users u ON u.id = y.nguoi_xin LEFT JOIN classes n ON n.id = y.lop_id
+      WHERE y.trang_thai = 'cho' AND y.loai = 'de_xuat_chuyen_lop' AND y.doi_tuong_loai = 'student:chuyen-lop' AND y.doi_tuong_id = ?`,
+  ).get(studentId) as any;
+  if (!y) return null;
+  let d: { lopDichId?: number | null; tuan?: string | null } = {};
+  try { d = y.du_lieu ? JSON.parse(y.du_lieu) : {}; } catch { d = {}; }
+  const dich = d.lopDichId ? conn.prepare('SELECT id, code FROM classes WHERE id = ?').get(d.lopDichId) as any : null;
+  return {
+    loai: 'cho-duyet', lenhId: 0, lopNguon: { id: y.lop_id, code: y.nguon }, lopDich: dich ? { id: dich.id, code: dich.code } : null, huong: '',
+    tuan: d.tuan ?? '', nguoiRaLenh: y.gui ?? null, ngayRaLenh: y.tao_luc, banGiao: null, loi: null, nut: [], mon: null,
   };
 }
