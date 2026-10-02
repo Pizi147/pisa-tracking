@@ -404,7 +404,7 @@ function boOVaCau(i: {
       dau: dauDot(a), ratio, sos: kq.sos, dat: kq.dat, overall: a.overall ?? null, kck,
       soDat: ratio ? (a.skills ?? []).filter((x: any) => x.outcome === 'pass').length : 0, soMon: a.required,
       monTruot: ratio ? (a.skills ?? []).filter((x: any) => x.outcome === 'fail').map((x: any) => tenMonNgan(ct, x.skill)) : [],
-      phanTram: kq.phanTram,
+      phanTram: kq.phanTram, coDiem: kq.coDiem,
     } : null,
     hoTro: board.rows.filter((r) => r.cases.some((c: any) => c.status !== 'done')).map((r) => r.label as string),
     viec: [...viec.cuaBan, ...viec.nguoiKhac].map((v) => ({ loai: v.loai, chu: v.chu, quaHanNgay: v.quaHanNgay, kyNangTen: v.kyNang ? tenKn.get(v.kyNang) ?? null : null })),

@@ -177,6 +177,8 @@ export type DauVaoCau = {
   ketQua: {
     dau: string; ratio: boolean; sos: number | null; dat: boolean | null; overall: number | null; kck: boolean;
     soDat: number; soMon: number; monTruot: string[]; phanTram: number | null;
+    /** Số kỹ năng đã có điểm (FT). Thiếu so với `soMon` thì SOS chỉ là số tạm → câu phải ghi "tạm thời" (UX-G G1). */
+    coDiem?: number;
   } | null;
   /** Tên đầy đủ các kỹ năng có Case đang mở. */
   hoTro: string[];
@@ -209,7 +211,7 @@ export function cauTomTat(i: DauVaoCau): ManhCau[] {
     const dau = k.phanTram !== null ? `${k.dau} ${k.phanTram}%` : `${k.dau} ${k.soDat}/${k.soMon} môn đạt`;
     m1 = { chu: k.monTruot.length ? `${dau}: không đạt ${noiVa(k.monTruot)}` : dau, tone: k.monTruot.length ? 'warn' : null };
   } else if (k.kck) m1 = { chu: voiHoTro(k.overall !== null ? `${k.dau} OVR ${k.overall.toFixed(1)}` : k.dau), tone: null };
-  else if (k.sos) m1 = { chu: voiHoTro(`${k.dau} SOS ${k.sos}`), tone: toneSos(k.sos) };
+  else if (k.sos) m1 = { chu: voiHoTro(`${k.dau} SOS ${k.sos}${k.coDiem !== undefined && k.coDiem < k.soMon ? ' tạm thời' : ''}`), tone: toneSos(k.sos) };
   else if (k.dat) m1 = { chu: voiHoTro(`${k.dau} đạt kỳ vọng`), tone: null };
   else m1 = { chu: voiHoTro(`${k.dau} chưa đủ điểm`), tone: null };
 
@@ -286,9 +288,10 @@ export function oYThuc(y: {
   bacTen: string | null; nhom: string | null; soBatBuoc: number; keTiep: string | null; han: string | null; quaHanNgay: number | null;
   deXuat: string | null; soMo: number; tamDung: boolean;
 } | null, homNay: string | null = null): { tren: string | null; gt: string; phu: string; tone: 'danger' | 'warn' | 'wait' | null } {
-  const gt = y?.bacTen ?? 'Chưa xử lý lần nào';
   const tren = y?.bacTen ? 'bậc đã xử lý' : null;
-  if (!y) return { tren, gt, phu: 'không có vi phạm mở', tone: null };
+  /* UX-G G5: chưa xử lý lần nào VÀ không có vi phạm mở → "Không có vi phạm" (không đọc như cảnh báo), dòng phụ bỏ vì lặp ý. */
+  if (!y || (!y.bacTen && !y.soMo && !y.deXuat)) return { tren, gt: 'Không có vi phạm', phu: '', tone: null };
+  const gt = y.bacTen ?? 'Chưa xử lý lần nào';
   const vp = `${y.soBatBuoc} vi phạm / 2 tuần → bắt buộc ${y.keTiep ?? 'xử lý'}`;
   if (y.nhom === 'qua_han' && !y.tamDung) return { tren, gt, phu: `${vp} · quá hạn${y.quaHanNgay ? ` ${y.quaHanNgay} ngày` : ''}`, tone: 'danger' };
   if (y.nhom === 'bat_buoc' && !y.tamDung) return { tren, gt, phu: `${vp}${y.han ? ` · hạn hết ${ngay(y.han, homNay)}` : ''}`, tone: 'warn' };

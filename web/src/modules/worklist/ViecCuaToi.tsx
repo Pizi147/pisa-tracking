@@ -149,7 +149,7 @@ export function YeuCauCuaToi() {
       </header>
       {!ds ? <div className="p-4"><Skeleton rows={3} /></div> : the.map((x) => (
         <div key={x.id} className="grid grid-cols-[78px_minmax(0,1fr)] items-start gap-x-3 gap-y-1 border-t px-4 py-2.5 first-of-type:border-t-0" style={{ borderColor: 'var(--line)' }}>
-          <NhanTrangThai t={x.trangThai === 'tu_choi' ? 'can-lam' : 'cho-duyet'} />
+          <NhanTrangThai t={x.trangThai === 'tu_choi' ? 'can-lam' : 'cho-duyet'} chu={x.trangThai === 'tu_choi' ? 'Bị từ chối' : undefined} />   {/* còn việc phải làm (Sửa và gửi lại) → kiểu "Cần làm", chữ nói đúng trạng thái (G2) */}
           <span className="min-w-0">
             <b className="block text-[13px] font-semibold text-slate-100">{[x.nhanLoai, x.hocVien, x.lop].filter(Boolean).join(' · ')}</b>
             <span className="block text-xs text-slate-500">

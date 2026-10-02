@@ -17,7 +17,13 @@ const NHAN: Record<ToneNhan, string> = {
 };
 
 /**
- * MỘT BADGE = MỘT TRẠNG THÁI NGẮN (≤ 3 từ + số; B-1). Xanh dương = đang chạy · vàng = chờ / cần chú ý ·
+ * MỘT BẢNG TRẠNG THÁI → TONE (UX-G G2): cùng một trạng thái thì cùng một màu ở mọi chỗ — chỗ nào cần màu của trạng thái đó
+ * thì tra bảng này, không tự chọn tone. `wait` (tím) = đang chờ một người làm: chờ chấm, chờ duyệt.
+ */
+export const TONE_TRANG_THAI = { 'cho-cham': 'wait', 'cho-duyet': 'wait', 'da-cham': 'done' } as const satisfies Record<string, ToneNhan>;
+
+/**
+ * MỘT BADGE = MỘT TRẠNG THÁI NGẮN (≤ 3 từ + số; B-1). Xanh dương = đang chạy · tím = chờ (`TONE_TRANG_THAI`) · vàng = cần chú ý ·
  * xám = chưa bắt đầu, thông tin · xanh lá = ổn · đỏ = chỉ SOS 3 và "Chưa đạt" · viền đứt (`dut`) = số tạm.
  * Có `onClick` thì là nút (≥ 28px cao); không thì chỉ là chữ.
  */
@@ -47,9 +53,9 @@ export function ChipLichSu() {
   );
 }
 
-/** Tone của luật badge hộp lớp (`badgeLop`) → tone `Nhan`: đỏ · vàng · xanh dương · xám. */
-export function toneNhanTuBadge(t: 'danger' | 'warn' | 'info' | 'muted'): ToneNhan {
-  return t === 'danger' ? 'bad' : t === 'warn' ? 'soon' : t === 'info' ? 'doing' : 'muted';
+/** Tone của luật badge hộp lớp (`badgeLop`) → tone `Nhan`: đỏ · vàng · xanh dương · tím (chờ) · xám. */
+export function toneNhanTuBadge(t: 'danger' | 'warn' | 'info' | 'wait' | 'muted'): ToneNhan {
+  return t === 'danger' ? 'bad' : t === 'warn' ? 'soon' : t === 'info' ? 'doing' : t === 'wait' ? TONE_TRANG_THAI['cho-duyet'] : 'muted';
 }
 
 /**

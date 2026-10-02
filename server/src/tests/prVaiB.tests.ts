@@ -272,7 +272,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     const y = d.oYThuc({ bacTen: 'Report 1', nhom: 'bat_buoc', soBatBuoc: 3, keTiep: 'Report 2', han: '2026-10-04', quaHanNgay: null, deXuat: null, soMo: 3, tamDung: false }, '2026-09-14');
     assert(y.gt === 'Report 1' && y.tren === 'bậc đã xử lý' && y.phu === '3 vi phạm / 2 tuần → bắt buộc Report 2 · hạn hết 04/10' && y.tone === 'warn', JSON.stringify(y));
     const y0 = d.oYThuc(null);
-    assert(y0.gt === 'Chưa xử lý lần nào' && y0.phu === 'không có vi phạm mở', JSON.stringify(y0));
+    assert(y0.gt === 'Không có vi phạm' && y0.phu === '', JSON.stringify(y0));
     const st = (o: Record<string, unknown>) => d.oSapToi({ ketLuan: null, sauCuoiKhoa: null, ratio: false, kck: false, bacKe: null, homNay: HN,
       next: { dau: 'MT2', attemptNo: 2, tuan: '2026-10-19', kyVong: 6, soPhan: 5, final: false }, ...o });
     let s = st({});

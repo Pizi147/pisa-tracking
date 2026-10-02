@@ -14,7 +14,7 @@ import type { BacThangDong, YThucHocVien } from './kieu.ts';
  * khi em mới có MỘT vi phạm (GV muốn report luôn) — giống hồ sơ lớp. Có đề xuất đang chờ / đã duyệt thì ẩn (việc đó ở thanh việc).
  */
 export function ThangYThuc({ d, homNay, onKhai, onXuLy, onDeXuat }: {
-  d: Pick<YThucHocVien, 'dongThang' | 'chuoi' | 'khai' | 'coTheKhai' | 'canManage' | 'keTiep' | 'deXuat'>;
+  d: Pick<YThucHocVien, 'dongThang' | 'chuoi' | 'khai' | 'coTheKhai' | 'canManage' | 'keTiep' | 'deXuat' | 'viPham'>;
   homNay: string;
   /** Có khi người xem xác nhận được cấp bậc từ trước (Q7, Q8). */
   onKhai?: () => void;
@@ -23,7 +23,9 @@ export function ThangYThuc({ d, homNay, onKhai, onXuLy, onDeXuat }: {
 }) {
   const nhanChuoi = d.chuoi.nhan === 'lớp thường' ? 'lớp thường' : d.chuoi.nhan;
   const khaiTitle = d.khai ? `xác nhận ${ngay(d.khai.luc, homNay)}${d.khai.boi ? ` · ${d.khai.boi}` : ''}${d.khai.ghiChu ? ` — ${d.khai.ghiChu}` : ''}` : undefined;
-  const coNut = d.canManage && !d.deXuat;
+  /* UX-G G5: không có vi phạm nào chưa xử lý xong thì không có gì để xác nhận / đề xuất — ẩn cả hai nút (≥ 1 vi phạm là hiện, quyết định 02/10). */
+  const coViPhamMo = d.viPham.some((v) => v.trangThai !== 'da_xu_ly');
+  const coNut = d.canManage && !d.deXuat && coViPhamMo;
   const xuLyDuoc = coNut && !!onXuLy && !!d.keTiep && !d.keTiep.canQl;
   return (
     <section className="surface-2 space-y-2 rounded-lg border px-3 py-2.5" style={{ borderColor: 'var(--line-strong)' }}

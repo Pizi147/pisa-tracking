@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { chuTamDung, chuTuanHoc, deadlineView, type DeadlineKind, type TheYeuCauDto } from '@shared/domain/index.ts';
 import { TargetText } from '../../ui/ui.tsx';
+import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
 import { IconCanhBao, IconGap, IconTamDung } from '../../ui/BieuTuong.tsx';
@@ -143,7 +144,6 @@ export function CauTomTat({ manh }: { manh: { chu: string; tone: string | null }
   );
 }
 
-const CHIP_SOS_O: Record<number, string> = { 1: 'bg-sos1-bg text-sos1', 2: 'bg-sos2-bg text-sos2', 3: 'bg-sos3-bg text-sos3' };
 const MAU_NHAN: Record<string, string> = {
   'qua-han': 'bg-bad-bg text-bad', 'can-lam': 'border border-[color:var(--line-strong)] text-slate-200', 'cho-duyet': 'bg-wait-bg text-wait',
   'dang-lam': 'bg-[color:var(--surface-2)] text-slate-200', 'tam-dung': 'bg-soon-bg text-soon',
@@ -199,7 +199,7 @@ export function BonO({ o, homNay, onDot, onKn, onYThuc, kyNangHref }: {
   const giaTriKq = !kq ? '—'
     : k.ratio ? (kq.phanTram !== null ? `Cuối khoá ${kq.phanTram}%` : kq.dat === null ? `${kq.coDiem}/${kq.yeuCau} môn có điểm` : `${kq.yeuCau - (kq.soMonChuaDat ?? 0)}/${kq.yeuCau} môn đạt`)
     : k.kck ? null
-    : kq.sos ? <span className={`rounded-md px-2 font-bold leading-6 tabular-nums ${CHIP_SOS_O[Math.min(3, kq.sos)]}`}>SOS {kq.sos}</span>
+    : kq.sos ? <KetQuaDot coDiem={kq.coDiem} yeuCau={kq.yeuCau} dat={kq.dat} sos={kq.sos} />   /* G1: một câu chung, giữ "tạm thời" + viền đứt */
     : kq.dat ? <span className="text-ok">Đạt kỳ vọng</span> : 'Chưa đủ điểm';
   /* Chưa có đợt nào chấm xong (kq null) mà vẫn có kỹ năng "dưới kỳ vọng" từ bảng Học thuật: không có tên đợt để ghi → không vẽ dòng này (trước đây sập cả hồ sơ). */
   const duoi = kq && k.duoi?.length ? (
@@ -216,6 +216,7 @@ export function BonO({ o, homNay, onDot, onKn, onYThuc, kyNangHref }: {
     : k.ratio ? (k.huong ? <>{k.huong}{k.duoi?.length ? <> · không đạt: {k.duoi.map((d: any) => d.ngan).join(' · ')}</> : null}</>
       : k.duoi?.length ? <>Không đạt: {k.duoi.map((d: any) => d.ngan).join(' · ')}</> : null)
     : k.kck ? 'KCK · không đặt kỳ vọng MT'
+    : kq.sos && kq.coDiem < kq.yeuCau ? duoi   /* KetQuaDot đã ghi "n/4 kỹ năng" */
     : <>{kq.coDiem}/{kq.yeuCau} phần có điểm{duoi && <> · {duoi}</>}</>;
   const gap = h.dong[0];
   return (

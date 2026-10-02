@@ -406,3 +406,16 @@ export function businessDateText(businessDate: string, recordedAt: string | null
   if (r === businessDate.slice(0, 10)) return b;
   return `Ngày nghiệp vụ ${b} · Ghi nhận ${shortDate(r, today)}`;
 }
+
+/**
+ * GIỜ MỘT THÔNG BÁO (UX-G G3): hôm nay (ngày nghiệp vụ) chỉ giờ; ngày trước thì `dd/mm giờ`. Ghi nhận SAU ngày nghiệp vụ — chỉ có ở bản demo
+ * (đồng hồ thật chạy trước ngày demo) — ghi thẳng `Ghi nhận dd/mm giờ`: không giả làm ngày nghiệp vụ, cũng không để ngày tương lai trơ trọi (§7).
+ */
+export function thoiGianThongBao(iso: string | null | undefined, homNay: string): string {
+  const ngayVn = ngayTheoGioVN(iso);
+  if (!iso || !ngayVn) return '';
+  const gio = new Date(iso).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Ho_Chi_Minh' });
+  if (ngayVn === homNay) return gio;
+  const dm = `${shortDate(ngayVn, homNay)} ${gio}`;
+  return ngayVn > homNay ? `Ghi nhận ${dm}` : dm;
+}

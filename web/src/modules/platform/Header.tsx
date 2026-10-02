@@ -7,19 +7,12 @@ import { Info } from '../../ui/ui.tsx';
 import { CongTacGiaoDien } from '../../ui/CongTacGiaoDien.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { roleLabel, skillShort } from '../../lib/format.ts';
-import { buocDanhSach, chuanHoaMaLop, duongThongBao, ngayTheoGioVN, noiDenThongBao, nhomThongBao } from '@shared/domain/index.ts';
+import { buocDanhSach, chuanHoaMaLop, duongThongBao, ngayTheoGioVN, noiDenThongBao, nhomThongBao, thoiGianThongBao } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useToast } from '../../ui/Toast.tsx';
 
 type SearchHit = { id: number; studentCode: string; fullName: string; classCode: string | null };
 
-/** Giờ của một thông báo (Q21): hôm nay chỉ giờ, ngày khác thêm ngày — giờ Việt Nam. */
-function gioThongBao(iso: string | null | undefined, homNay: string, ngan: (d: string) => string): string {
-  const ngayVn = ngayTheoGioVN(iso);
-  if (!iso || !ngayVn) return '';
-  const gio = new Date(iso).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Ho_Chi_Minh' });
-  return ngayVn === homNay ? gio : `${ngan(ngayVn)} ${gio}`;
-}
 type LopRef = { id: number; code: string; student_count: number };
 
 /** Thanh phải: tìm học viên + lớp (K1-43), thông báo, tài khoản. Không lặp lại điều hướng chính. */
@@ -46,7 +39,7 @@ export function Header() {
   const nutTaiKhoan = useRef<HTMLButtonElement>(null);
   const idDs = useId();
   const notifications = useApi<any[]>('/notifications');
-  const { homNay, ngan } = useNgayNghiepVu();
+  const { homNay, nhan } = useNgayNghiepVu();
   /* Danh sách lớp trong phạm vi: đọc một lần (useApi nhớ sẵn), lọc tại chỗ theo mã chuẩn hoá — gõ "ft101" ra MB FT 101. */
   const lopRef = useApi<LopRef[]>('/ref/classes');
   const timDu = q.trim().length >= 2;
@@ -250,7 +243,7 @@ export function Header() {
                         <span className={`text-[13px] leading-snug text-slate-100 ${n.read_at ? 'font-normal' : 'font-semibold'}`}>
                           {!n.read_at && <span className="sr-only">Chưa đọc: </span>}{n.title}
                         </span>
-                        <time className="whitespace-nowrap pt-px text-xs tabular-nums text-slate-500">{gioThongBao(n.created_at, homNay, ngan)}</time>
+                        <time className="whitespace-nowrap pt-px text-xs tabular-nums text-slate-500" title={nhan(homNay, n.created_at)}>{thoiGianThongBao(n.created_at, homNay)}</time>
                         {n.body && <span className="col-start-2 text-xs text-slate-400">{n.body}</span>}
                         {toi && (
                           <span className="col-start-2 inline-flex items-center gap-1 text-xs text-[color:var(--accent)]">

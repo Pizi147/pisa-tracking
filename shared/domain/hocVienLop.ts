@@ -196,7 +196,7 @@ export function khoaLopThuong(i: {
 
 export type BadgeLop = {
   key: 'xep-lop' | 'thieu-gv' | 'cham' | 'chang' | 'thieu-tt' | 'cho-duyet' | 'qua-han'; nhan: string;
-  tone: 'danger' | 'warn' | 'info' | 'muted';
+  tone: 'danger' | 'warn' | 'info' | 'wait' | 'muted';
   /** Câu đầy đủ cho tooltip (PR-UX0, B-1: badge là danh từ + số, câu dài nằm ở đây). */
   title?: string;
 };
@@ -234,7 +234,7 @@ export function badgeLop(c: {
   if (c.soBaiChoCham > 0) co.cham = { key: 'cham', nhan: `${c.soBaiChoCham} bài chờ chấm`, tone: 'warn', title: c.needScoresTitle ?? undefined };
   if (CHANG_THI.includes(c.phase)) co.chang = { key: 'chang', nhan: CLASS_PHASE_LABEL[c.phase as ClassPhase], tone: 'info' };
   if (c.missingCount > 0) co['thieu-tt'] = { key: 'thieu-tt', nhan: `Thiếu ${c.missingCount} thông tin`, tone: 'warn' };
-  if (c.soChoDuyet) co['cho-duyet'] = { key: 'cho-duyet', nhan: `${c.soChoDuyet} chờ duyệt`, tone: 'info', title: 'Yêu cầu đang chờ Quản lý duyệt' };
+  if (c.soChoDuyet) co['cho-duyet'] = { key: 'cho-duyet', nhan: `${c.soChoDuyet} chờ duyệt`, tone: 'wait', title: 'Yêu cầu đang chờ Quản lý duyệt' };
   if (c.soEmQuaHan) co['qua-han'] = { key: 'qua-han', nhan: `${c.soEmQuaHan} HV quá hạn việc`, tone: 'danger', title: 'Học viên có việc đã quá hạn (xác nhận, ghi kết quả, xử lý vi phạm)' };
   const all = THU_TU_BADGE[c.vai].flatMap((k) => (co[k] ? [co[k]!] : []));
   return { hien: all.slice(0, 2), an: all.slice(2) };
