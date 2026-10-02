@@ -1,4 +1,4 @@
-import { db, tx, vuaGhi } from '../db.ts';
+import { db, theoLo, tx, vuaGhi } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
   BRANCH_REPORT_CATEGORIES, ENTRY_SKILLS, PERMISSIONS, tenMon,
@@ -496,6 +496,38 @@ export function listTasks(p: Principal, f: TaskFilters = {}) {
   return { rows: mapped, scopeEmpty: false };
 }
 
+/** PR-DEPLOY (0b-1): trần số em / người theo dõi trong MỘT lần giao việc (thân yêu cầu không có trần thì một thân 12 MB giữ khoá ghi Turso rất lâu). */
+const TRAN_EM_GIAO_VIEC = 500;
+const TRAN_NGUOI_THEO_DOI = 50;
+
+/**
+ * Em ĐANG HỌC của lớp `classId` (ghi danh `active`). `can` = danh sách em web gửi: chỉ giữ giao với lớp, đọc qua `theoLo` ≤ 900 tham số.
+ * `can = null` → cả lớp. Em ngoài lớp không bị lặng lẽ bỏ: máy chủ trả 400 ở nơi gọi (xem `docEmGiaoViec`).
+ */
+function emCuaLop(conn: ReturnType<typeof db>, classId: number, can: readonly number[] | null): number[] {
+  const goc = `SELECT s.id FROM enrollments e JOIN students s ON s.id = e.student_id
+                WHERE e.class_id = ? AND e.status = 'active' AND ${HV_DANG_HOC_SQL('s')}`;
+  if (!can) return (conn.prepare(`${goc} ORDER BY s.id`).all(classId) as any[]).map((r) => r.id as number);
+  const co = new Set<number>();
+  theoLo(can, (lo, ph) => {
+    for (const r of conn.prepare(`${goc} AND s.id IN (${ph})`).all(classId, ...lo) as any[]) co.add(r.id as number);
+  });
+  return [...co];
+}
+
+/** `studentIds` do web gửi → số nguyên dương, bỏ trùng, ≤ 500, MỌI em phải đang học ở `classId`; không có (null/undefined) → null = cả lớp. */
+function docEmGiaoViec(conn: ReturnType<typeof db>, classId: number, raw: unknown): number[] | null {
+  if (raw === undefined || raw === null) return null;
+  if (!Array.isArray(raw)) throw badRequest('Danh sách học viên không hợp lệ.');
+  if (raw.length > TRAN_EM_GIAO_VIEC) throw badRequest(`Mỗi lần giao việc tối đa ${TRAN_EM_GIAO_VIEC} học viên.`);
+  const so = raw.map((x) => (typeof x === 'number' || (typeof x === 'string' && /^\d+$/.test(x)) ? Number(x) : NaN));
+  if (so.some((n) => !Number.isSafeInteger(n) || n <= 0)) throw badRequest('Danh sách học viên có mã không hợp lệ.');
+  const ids = [...new Set(so)];
+  if (!ids.length) return null;
+  if (emCuaLop(conn, classId, ids).length !== ids.length) throw badRequest('Có học viên không thuộc lớp này.');
+  return ids;
+}
+
 /**
  * VIỆC QUẢN LÝ GIAO CHO GIÁO VIÊN, TOẢ RA THÀNH PHƯƠNG ÁN CỦA TỪNG EM.
  *
@@ -511,20 +543,13 @@ export function listTasks(p: Principal, f: TaskFilters = {}) {
  */
 function fanOutToStudents(
   conn: ReturnType<typeof db>, taskId: number, actorId: number | null,
-  input: { classId?: number | null; studentIds?: unknown; topic?: string; title: string },
+  input: { classId: number; studentIds: readonly number[] | null; topic?: string; title: string },
 ) {
   const topic = (input.topic ?? '').trim();
   if (!topic) throw badRequest('Việc giao giáo viên phải chọn kỹ năng.');
   if (!(ENTRY_SKILLS as readonly string[]).includes(topic)) throw badRequest('Kỹ năng không hợp lệ.');
 
-  const ids = Array.isArray(input.studentIds) && input.studentIds.length
-    ? input.studentIds.map(Number).filter((n) => Number.isFinite(n) && n > 0)
-    : (conn
-        .prepare(
-          `SELECT s.id FROM enrollments e JOIN students s ON s.id = e.student_id
-            WHERE e.class_id = ? AND e.status = 'active' AND ${HV_DANG_HOC_SQL('s')}`,
-        )
-        .all(input.classId ?? 0) as any[]).map((r) => r.id as number);
+  const ids = input.studentIds ?? emCuaLop(conn, input.classId, null);
   if (!ids.length) throw badRequest('Không có học viên nào để giao việc.');
 
   const today = demoToday();
@@ -568,26 +593,52 @@ function fanOutToStudents(
 
 export function createTask(p: Principal, input: any) {
   const conn = db();
-  const branchId = input.branchId ?? (input.unitId
-    ? (conn.prepare('SELECT branch_id FROM reporting_units WHERE id = ?').get(input.unitId) as any)?.branch_id ?? null
-    : null);
-  require_(p, PERMISSIONS.MEETING_EDIT, { branchId, anyScope: branchId === null }, 'Bạn không có quyền tạo công việc.');
-  if (!chuTuDo(input.title, 'Nội dung công việc', 200)) throw badRequest('Cần nội dung công việc.');   // PR-Dọn (Q4): kiểu + trần
-  if (input.dueDate && !isIsoDate(input.dueDate)) throw badRequest('Hạn không hợp lệ.');
-  // `Loại` đã bỏ khỏi form; cột cũ giữ nguyên giá trị lịch sử, việc mới ghi mặc định.
-  const taskType = 'in_period';
   /*
    * HAI LOẠI VIỆC KHÁC HẲN NHAU. `branch_ops` là chuyện giáo trình/vận hành, không gắn học
    * viên nào. `teacher_task` gắn lớp và kỹ năng, và toả ra thành phương án của từng em.
    */
   const kind = input.kind === 'teacher_task' ? 'teacher_task' : 'branch_ops';
-  if (kind === 'teacher_task' && !input.classId && !(input.studentIds ?? []).length) {
-    throw badRequest('Việc giao giáo viên phải chọn lớp hoặc chọn học viên.');
+
+  /*
+   * PR-DEPLOY (0b-1, P0 rà đợt 6 lượt 2): CHI NHÁNH CỦA VIỆC DO MÁY CHỦ TỰ SUY — từ lớp (việc giao GV) hoặc đơn vị báo cáo —
+   * không tin `branchId` web gửi. Quyền kiểm theo chi nhánh THẬT của lớp, nên QL chi nhánh này không giao việc (và không sinh
+   * Case + PA) vào em của chi nhánh khác. `branchId` web gửi chỉ dùng khi không có lớp / đơn vị, và nếu lệch thì bị từ chối.
+   */
+  let lop: { id: number; branch_id: number | null } | null = null;
+  if (kind === 'teacher_task') {
+    const classId = Number(input.classId);
+    if (!Number.isSafeInteger(classId) || classId <= 0) throw badRequest('Việc giao giáo viên phải chọn lớp.');
+    lop = (conn.prepare('SELECT id, branch_id FROM classes WHERE id = ?').get(classId) as any) ?? null;
+    if (!lop) throw badRequest('Không tìm thấy lớp.');
   }
+  const donVi = input.unitId
+    ? (conn.prepare('SELECT branch_id FROM reporting_units WHERE id = ?').get(input.unitId) as any) ?? null
+    : null;
+  const goc: number | null = lop ? lop.branch_id : (donVi?.branch_id ?? null);
+  const gui: number | null = input.branchId == null ? null : Number(input.branchId);
+  if (gui !== null && !Number.isSafeInteger(gui)) throw badRequest('Chi nhánh không hợp lệ.');
+  let branchId: number | null = goc ?? gui;
+  if (branchId === null && !(donVi && !lop)) {
+    /* Việc "Toàn hệ thống" (không chi nhánh) chỉ của người có quyền toàn hệ thống; QL một chi nhánh → việc của chi nhánh đó.
+       Ngoại lệ: việc của đơn vị không thuộc chi nhánh nào (Tutor part-time) giữ "Toàn hệ thống" như trước (rà Dọn-a P0). */
+    const co = p.grants.filter((g) => g.permissions.has(PERMISSIONS.MEETING_EDIT));
+    if (!co.some((g) => g.branchId === null)) {
+      const cn = [...new Set(co.map((g) => g.branchId as number))];
+      if (cn.length === 1) branchId = cn[0];
+      else if (cn.length > 1) throw badRequest('Chọn chi nhánh cho công việc.');
+    }
+  }
+  require_(p, PERMISSIONS.MEETING_EDIT, { branchId, classId: lop?.id ?? null, anyScope: branchId === null }, 'Bạn không có quyền tạo công việc.');
+  if (gui !== null && branchId !== null && gui !== branchId) throw badRequest('Chi nhánh của việc không khớp với lớp / đơn vị đã chọn.');
+  if (!chuTuDo(input.title, 'Nội dung công việc', 200)) throw badRequest('Cần nội dung công việc.');   // PR-Dọn (Q4): kiểu + trần
+  if (input.dueDate && !isIsoDate(input.dueDate)) throw badRequest('Hạn không hợp lệ.');
+  // `Loại` đã bỏ khỏi form; cột cũ giữ nguyên giá trị lịch sử, việc mới ghi mặc định.
+  const taskType = 'in_period';
+  const emGiao = lop ? docEmGiaoViec(conn, lop.id, input.studentIds) : null;
 
   return tx(() => {
     /* PR-Dọn (quét #26): bấm đúp → trả lại việc vừa tạo (việc giao GV toả PA cho từng em — gửi đôi là nhân đôi PA). */
-    const cu = vuaGhi('tasks', { title: input.title.trim(), kind, class_id: input.classId ?? null, branch_id: branchId, created_by: p.userId });
+    const cu = vuaGhi('tasks', { title: input.title.trim(), kind, class_id: lop?.id ?? null, branch_id: branchId, created_by: p.userId });
     if (cu) return conn.prepare('SELECT * FROM tasks WHERE id = ?').get(cu);
     const n = (conn.prepare('SELECT COUNT(*) AS n FROM tasks').get() as any).n as number;
     const code = padCode('CV', n + 1, 4);
@@ -599,7 +650,7 @@ export function createTask(p: Principal, input: any) {
                             created_by, created_at)
          VALUES (?,?,?,?,?,?,?,?,?,?,?, 'not_started', ?,?,?,?,?,?)`,
       )
-      .run(code, input.periodId ?? null, taskType, kind, input.classId ?? null,
+      .run(code, input.periodId ?? null, taskType, kind, lop?.id ?? null,
            kind === 'teacher_task' ? (input.topic ?? null) : null,
            input.title.trim(), input.unitId ?? null, branchId,
            input.assigneeUserId ?? null, input.dueDate ?? null, input.note ?? null,
@@ -607,7 +658,7 @@ export function createTask(p: Principal, input: any) {
            p.userId, nowIso());
     const id = Number(info.lastInsertRowid);
     setFollowers(conn, id, p.userId, branchId, input.followerIds);
-    const touched = kind === 'teacher_task' ? fanOutToStudents(conn, id, p.userId, { ...input, title: input.title }) : 0;
+    const touched = lop ? fanOutToStudents(conn, id, p.userId, { classId: lop.id, studentIds: emGiao, topic: input.topic, title: input.title }) : 0;
     writeAudit({ actorUserId: p.userId, action: 'task.create', entityType: 'task', entityId: id,
       entityLabel: code, after: { title: input.title, dueDate: input.dueDate, kind, students: touched } });
     return conn.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
@@ -638,10 +689,16 @@ function setFollowers(
       wanted.set(r.user_id, 'auto');
     }
   }
-  for (const id of Array.isArray(manualIds) ? manualIds : []) {
-    const n = Number(id);
-    if (Number.isFinite(n) && n > 0) wanted.set(n, 'manual');
-  }
+  const tay = Array.isArray(manualIds) ? manualIds : [];
+  if (tay.length > TRAN_NGUOI_THEO_DOI) throw badRequest(`Tối đa ${TRAN_NGUOI_THEO_DOI} người theo dõi.`);
+  const ungVien = [...new Set(tay.map(Number).filter((n) => Number.isSafeInteger(n) && n > 0))];
+  /* PR-DEPLOY (0b-1): người theo dõi do tay chỉ nhận người ĐANG có vai trong phạm vi của việc (chi nhánh của việc hoặc toàn hệ thống); việc Toàn hệ thống → ai đang hoạt động cũng được. */
+  theoLo(ungVien, (lo, ph) => {
+    const trongPhamVi = branchId
+      ? conn.prepare(`SELECT DISTINCT user_id FROM user_roles WHERE status = 'active' AND (branch_id = ? OR branch_id IS NULL) AND user_id IN (${ph})`).all(branchId, ...lo)
+      : conn.prepare(`SELECT id AS user_id FROM users WHERE status = 'active' AND id IN (${ph})`).all(...lo);
+    for (const r of trongPhamVi as any[]) wanted.set(r.user_id, 'manual');
+  });
   // Người theo dõi không phải người làm: nếu đã là người phụ trách thì không nhân đôi.
   const t = conn.prepare('SELECT assignee_user_id FROM tasks WHERE id = ?').get(taskId) as any;
   if (t?.assignee_user_id) wanted.delete(t.assignee_user_id);

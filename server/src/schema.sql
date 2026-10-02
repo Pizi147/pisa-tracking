@@ -906,7 +906,13 @@ CREATE TABLE sos_cases (
    */
   system_close_reason TEXT,
   /* PR-SOS (K5-06 · Q28-3): hạn Xác nhận nguyên nhân + Xác nhận PA — 3 ngày tính cả ngày đầu (hanXacNhan). Case tay NULL. Không dấu phẩy (DROP COLUMN) */
-  han_xac_nhan TEXT
+  han_xac_nhan TEXT,
+  /*
+   * PR-DEPLOY (0b-3 · R5-5): LỚP và CHƯƠNG TRÌNH GỐC lúc Case mở — không đổi khi em chuyển lớp hay lên chương trình khác. Trigger `trg_sos_cases_goc` ghi
+   * khi INSERT nên mọi đường mở Case đều có. Không REFERENCES có chủ ý: xoá lớp không được vướng Case. Không dấu phẩy ở chú thích này (DROP COLUMN)
+   */
+  goc_class_id INTEGER,
+  goc_programme_code TEXT
 );
 /*
  * MỘT HỌC VIÊN × MỘT HẠNG MỤC = MỘT CASE.
@@ -932,6 +938,19 @@ CREATE UNIQUE INDEX idx_case_dedup ON sos_cases(dedup_key);
 CREATE INDEX idx_case_student_category ON sos_cases(student_id, cycle_id, category);
 CREATE INDEX idx_case_student_topic ON sos_cases(student_id, cycle_id, topic);
 CREATE INDEX idx_case_follow_until ON sos_cases(follow_until) WHERE follow_until IS NOT NULL;
+
+/* PR-DEPLOY (0b-3): lớp gốc = lớp của lượt sinh Case, không có lượt thì lớp em ĐANG HỌC lúc mở; chương trình gốc = chương trình của lớp đó. Có sẵn giá trị (khôi phục sao lưu) thì giữ. */
+CREATE TRIGGER trg_sos_cases_goc AFTER INSERT ON sos_cases WHEN NEW.goc_class_id IS NULL
+BEGIN
+  UPDATE sos_cases SET goc_class_id = COALESCE(
+    (SELECT a.class_id FROM assessment_attempts a WHERE a.id = NEW.attempt_id),
+    (SELECT e.class_id FROM enrollments e
+      WHERE e.student_id = COALESCE(NEW.student_id, (SELECT a.student_id FROM assessment_attempts a WHERE a.id = NEW.attempt_id)) AND e.status = 'active'
+      ORDER BY e.id DESC LIMIT 1))
+  WHERE id = NEW.id;
+  UPDATE sos_cases SET goc_programme_code = (SELECT c.programme_code FROM classes c WHERE c.id = sos_cases.goc_class_id)
+  WHERE id = NEW.id AND goc_class_id IS NOT NULL;
+END;
 
 /*
  * BẢNG `student_contacts` ĐÃ BỎ Ở VÒNG 4.
@@ -1413,6 +1432,7 @@ CREATE TABLE tasks (
   assignee_name TEXT
 );
 CREATE INDEX idx_task_period ON tasks(period_id);
+CREATE INDEX idx_task_parent ON tasks(parent_task_id);   -- PR-DEPLOY (DEP-2c): migrate (`migrateMgmtTasks`) đã có, schema.sql thiếu
 CREATE INDEX idx_task_assignee ON tasks(assignee_user_id);
 
 /*

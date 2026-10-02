@@ -32,6 +32,7 @@ import { dongHocVien, khoangTamDung } from '../students/tamDung.ts';
 import { activeClassOf } from '../yThuc/access.ts';
 import { isRatioCycle, programmeCodeOfCycle } from '../normal/regular.ts';
 import { suggestCaseOwner } from './owner.ts';
+import { caseKhacChuongTrinh, chuongTrinhCuaLop } from './sos.ts';
 import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
 import { PLAN_DECISIONS, decisionToStep, duongDotTest, tuanLich, type PlanDecision } from '../../../shared/domain/index.ts';
 import { apDungDieuChinh, chuanHoaDieuChinh, lichSuDieuChinhCuaCase } from './planRevisions.ts';
@@ -294,7 +295,9 @@ function loadCase(caseId: number) {
     )
     .get(caseId) as any;
   if (!c) throw notFound('Không tìm thấy Case');
-  c.class_id = c.attempt_class_id ?? c.current_class_id ?? null;
+  /* PR-DEPLOY (0b-2): LỚP HIỆN TẠI của em trước, lớp của lượt chỉ khi em không còn ghi danh `active` — cùng một biểu thức với `listCases`
+     (`LOP_CUA_CASE`, Q5 Dọn-a): dòng thấy ở danh sách thì mở được, đóng được. Lớp của lượt giữ ở `attempt_class_id` để hiển thị. */
+  c.class_id = c.current_class_id ?? c.attempt_class_id ?? null;
   return c;
 }
 
@@ -495,9 +498,12 @@ export function reportIssue(p: Principal, input: {
   const dedupKey = caseDedupKey({
     category, studentId: input.studentId, cycleId: cycle?.id ?? null, parallel: input.parallel,
   });
-  const existing = dedupKey
+  const caCu = dedupKey
     ? (conn.prepare(`SELECT * FROM sos_cases WHERE dedup_key = ? AND status != 'done'`).get(dedupKey) as any)
     : null;
+  /* PR-DEPLOY (0b-3 · R5-5): Case MỞ Ở CHƯƠNG TRÌNH KHÁC (FOU "G+V" của em đã lên BE) không phải "Case đang có" của hạng mục này — báo mới mở Case mới, Case cũ nhả khoá ở bước ghi. */
+  const caChuongTrinhKhac = !!caCu && caseKhacChuongTrinh(caCu, chuongTrinhCuaLop(activeClassOf(input.studentId)));
+  const existing = caChuongTrinhKhac ? null : caCu;
 
   /* PR-SOS K3-23 (M4): Case SOS cùng kỹ năng đang chờ xác nhận nguyên nhân → không gộp, không mở song song — xác nhận ở Case đó. */
   if (existing && sosCaseState(existing.id).awaitingCause) {
@@ -573,8 +579,8 @@ export function reportIssue(p: Principal, input: {
      * đây là tái diễn hay là một vấn đề khác.
      */
     if (dedupKey) {
-      conn.prepare(`UPDATE sos_cases SET dedup_key = NULL, updated_at = ? WHERE dedup_key = ? AND status = 'done'`)
-        .run(nowIso(), dedupKey);
+      conn.prepare(`UPDATE sos_cases SET dedup_key = NULL, updated_at = ? WHERE dedup_key = ? AND (status = 'done' OR id = ?)`)
+        .run(nowIso(), dedupKey, caChuongTrinhKhac ? caCu.id : 0);
     }
     const info = conn
       .prepare(
@@ -1529,7 +1535,8 @@ export function caseDetail(p: Principal, caseId: number) {
       decisionNote: (f.decision_note ?? null) as string | null,
     }));
 
-  const ctCase: string | null = cycle ? cycle.programme_code ?? programmeCodeOfCycle(cycle.id) : null;
+  /* PR-DEPLOY (0b-3): chương trình GỐC của Case (lúc mở) trước, rồi mới tới chương trình lộ trình — Case "G+V" của em đã lên BE vẫn ghi "G+V", bộ nguyên nhân của FOU. */
+  const ctCase: string | null = c.goc_programme_code ?? (cycle ? cycle.programme_code ?? programmeCodeOfCycle(cycle.id) : null);
   const hoanThanh = c.status === 'done' ? null : chanHoanThanhCua(caseId);
   const history = conn
     .prepare(
@@ -1813,7 +1820,7 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
               cc.branch_id AS home_branch_id,
               COALESCE(ac.code, cc.code) AS class_code,
               COALESCE(ac.is_fast_track, cc.is_fast_track) AS class_is_ft,
-              COALESCE(ac.programme_code, cc.programme_code) AS class_ct,
+              COALESCE(sc.goc_programme_code, ac.programme_code, cc.programme_code) AS class_ct,
               s.full_name, s.student_code,
               a.attempt_no, a.kind AS attempt_kind,
               u.full_name AS reporter_name,
@@ -2201,8 +2208,8 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
   const caseRows = conn
     .prepare(
       `SELECT *, (COALESCE(cycle_id, 0) != ?) AS carried_over, (SELECT cy.started_at FROM learning_cycles cy WHERE cy.id = sos_cases.cycle_id) AS lo_trinh_bat_dau,
-              (SELECT cl.programme_code FROM assessment_attempts a JOIN classes cl ON cl.id = a.class_id WHERE a.id = sos_cases.attempt_id) AS ct_attempt,
-              (SELECT cl.code FROM assessment_attempts a JOIN classes cl ON cl.id = a.class_id WHERE a.id = sos_cases.attempt_id) AS lop_attempt,
+              goc_programme_code AS ct_attempt,
+              (SELECT cl.code FROM classes cl WHERE cl.id = sos_cases.goc_class_id) AS lop_attempt,
               (SELECT u.full_name FROM users u WHERE u.id = sos_cases.owner_user_id) AS owner_name FROM sos_cases
         WHERE student_id = ?
           AND (COALESCE(cycle_id, 0) = ? OR status != 'done')
@@ -2260,7 +2267,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
    */
   const oChuan: readonly string[] = caseCategoriesFor(isRatioCycle(cycle) ? 'ratio' : 'ielts_band', ctBang);
   /*
-   * PR-UXF-b (R5-5): Case ĐANG MỞ mà lớp của LƯỢT sinh ra nó (`ct_attempt`) có TÊN MÔN khác chương trình đang xem (FOU "G+V" / "P" → BE "Writing" / "Speaking") không nằm ở hàng cùng khoá
+   * PR-UXF-b (R5-5): Case ĐANG MỞ mà lớp GỐC lúc mở nó (`ct_attempt` = `sos_cases.goc_programme_code`, PR-DEPLOY 0b-3 — không còn đọc theo lượt: lượt đổi theo thời gian, Case tay không có lượt) có TÊN MÔN khác chương trình đang xem (FOU "G+V" / "P" → BE "Writing" / "Speaking") không nằm ở hàng cùng khoá
    * dữ liệu — hàng Writing của BE đọc thành "em yếu Writing" (khi chuyển lớp, Case bàn giao sang lộ trình mới nên không dựa vào `carried_over`). Chúng thành nhóm "Case bàn giao" cuối
    * bảng, tên môn theo chương trình của LỚP đó. Tên giống nhau (L, R) giữ hàng. Chương trình / mã lớp đọc cùng câu SQL nạp Case (không thêm câu).
    */

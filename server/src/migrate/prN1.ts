@@ -40,7 +40,9 @@ export function migrateTrangThaiCaseSos(conn: any, applied: string[]) {
   if (r.changes) applied.push(`Tính lại trạng thái ${r.changes} Case từ SOS theo luật Q28-5 (Chưa xử lý tới khi xác nhận nguyên nhân + PA)`);
 }
 
-export function migratePrN1(conn: any, applied: string[]) {
+export function migratePrN1(conn: any, applied: string[], dbMoi = false) {
+  /* DB mới (khoi_tao_moi_at) không có dữ liệu kiểu cũ — bỏ qua (DEP-2): hạn Chủ nhật đặt tay của PA đang chạy là dữ liệu thật, không dời. */
+  if (dbMoi) { migrateTrangThaiCaseSos(conn, applied); return; }
   const r = conn.prepare(`UPDATE case_interventions SET action_due = date(action_due, '+1 day'), updated_at = ? WHERE ${dieuKien()}`)
     .run(new Date().toISOString());
   if (r.changes) applied.push(`Dời hạn ghi kết quả của ${r.changes} PA đang chạy từ Chủ nhật sang Thứ Hai (R-PA5)`);

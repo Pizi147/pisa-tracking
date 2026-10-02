@@ -123,6 +123,20 @@ export function followUntilAfter(attempt: any): string | null {
 }
 
 /**
+ * PR-DEPLOY (0b-3 · R5-5): Case đang mở có CHƯƠNG TRÌNH GỐC (`goc_programme_code`, ghi lúc Case mở, không đổi khi em chuyển lớp) KHÁC chương trình em đang học
+ * thì lần trượt mới ở chương trình mới KHÔNG nối vào Case đó — mở Case mới. Chỉ so khi cả hai đều biết (lớp Fast Track không có mã chương trình → không đổi gì).
+ */
+export function caseKhacChuongTrinh(c: { goc_programme_code?: string | null }, ctMoi: string | null | undefined): boolean {
+  return !!c.goc_programme_code && !!ctMoi && c.goc_programme_code !== ctMoi;
+}
+
+/** Mã chương trình của lớp (null: lớp không có mã — Fast Track — hoặc không có lớp). */
+export function chuongTrinhCuaLop(classId: number | null | undefined): string | null {
+  if (!classId) return null;
+  return ((db().prepare('SELECT programme_code FROM classes WHERE id = ?').get(classId) as any)?.programme_code ?? null) as string | null;
+}
+
+/**
  * TÌM HOẶC MỞ CASE CHO MỘT HẠNG MỤC — và đây là chỗ vòng 4 khác hẳn vòng 3.
  *
  * Khoá gộp là `(học viên, lộ trình, hạng mục)`, KHÔNG có lượt MT trong đó. Nên MT2 trượt lại
@@ -149,7 +163,11 @@ export function upsertCategoryCase(
 
   const followUntil = followUntilAfter(attempt);
 
-  if (!existing) {
+  /* PR-DEPLOY (0b-3): Case MỞ của chương trình khác (FOU "G+V" → BE "Writing") nhả khoá cho Case mới; Case cũ giữ nguyên mọi thứ, vẫn là Case "Từ lớp trước". */
+  const cuaChuongTrinhKhac = !!existing && existing.status !== 'done' && caseKhacChuongTrinh(existing, chuongTrinhCuaLop(attempt.class_id));
+  if (cuaChuongTrinhKhac) conn.prepare('UPDATE sos_cases SET dedup_key = NULL, updated_at = ? WHERE id = ?').run(nowIso(), existing.id);
+
+  if (!existing || cuaChuongTrinhKhac) {
     const info = conn
       .prepare(
         `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, topic, category,

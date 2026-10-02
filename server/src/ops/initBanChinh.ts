@@ -16,6 +16,13 @@ import { KHONG_NOI_BO } from './saoLuu.ts';
 
 export type ChiNhanh = { code: string; name: string };
 
+/**
+ * BẢNG ĐƯỢC CÓ DÒNG ngay sau `init-ban-chinh` (dữ liệu nền + chi nhánh + MỘT tài khoản + dấu `demo_config`). MỘT danh sách cho phép kiểm
+ * (`banChinh.tests.ts`) và lệnh chỉ đọc `kiem-sau-init` (PR-DEPLOY Q5). Mọi bảng khác của database vừa init phải rỗng.
+ */
+export const BANG_NEN_INIT: readonly string[] = ['permissions', 'roles', 'role_permissions', 'routes', 'programmes', 'programme_skills',
+  'programme_checkpoints', 'branches', 'reporting_units', 'users', 'user_roles', 'student_code_seq', 'demo_config'];
+
 /** Mã của đơn vị báo cáo "Tutor part-time" (như `seed.ts`). `reporting_units.code` là UNIQUE nên chi nhánh không được dùng mã này. */
 const MA_TUTOR = 'TUTOR';
 

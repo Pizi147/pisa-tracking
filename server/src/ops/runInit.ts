@@ -30,6 +30,25 @@ try { chiNhanh = docDanhSachChiNhanh(process.env.CHI_NHANH!); } catch (e) {
 const dsChiNhanh = chiNhanh.map((c) => `${c.code} (${c.name})`).join(', ');
 const { moTaDichDb } = await import('../moiTruong.ts');
 console.log(`[init-ban-chinh] Đích: ${moTaDichDb(DB_PATH)}`);
+/* PR-DEPLOY (5b): reset tại chỗ (xoá rồi tạo lại database cùng tên) thì kho tệp cùng tên còn tệp cũ — cảnh báo, không chặn (kiểm cần biến Netlify). */
+{
+  const siteID = process.env.NETLIFY_SITE_ID?.trim();
+  const token = process.env.NETLIFY_AUTH_TOKEN?.trim();
+  const { tenKhoTep } = await import('../platform/khoTep.ts');
+  if (siteID && token) {
+    try {
+      const { getStore } = await import('@netlify/blobs');
+      const { demTepKho } = await import('./xoaKhoTep.ts');
+      const n = await demTepKho(getStore({ name: tenKhoTep(DB_PATH), siteID, token }));
+      if (n) console.log(`[init-ban-chinh] CẢNH BÁO: kho tệp ${tenKhoTep(DB_PATH)} còn ${n} tệp cũ — chạy npm run xoa-kho-tep (TRIEN_KHAI.md mục 1a) rồi mới cho mọi người dùng.`);
+      else console.log(`[init-ban-chinh] Kho tệp ${tenKhoTep(DB_PATH)}: trống.`);
+    } catch (e) {
+      console.log(`[init-ban-chinh] Không kiểm được kho tệp (${(e as Error).message}) — tự kiểm bằng npm run xoa-kho-tep.`);
+    }
+  } else {
+    console.log(`[init-ban-chinh] Chưa kiểm kho tệp ${tenKhoTep(DB_PATH)} (thiếu NETLIFY_SITE_ID/NETLIFY_AUTH_TOKEN) — reset tại chỗ thì chạy npm run xoa-kho-tep trước.`);
+  }
+}
 console.log(`[init-ban-chinh] Sẽ khởi tạo database ${DB_PATH} (không in token) với các chi nhánh: ${dsChiNhanh}`);
 console.log('[init-ban-chinh] Đang kiểm database rồi ghi trong MỘT giao dịch — database ở xa nên có thể mất vài phút, đừng đóng cửa sổ.');
 

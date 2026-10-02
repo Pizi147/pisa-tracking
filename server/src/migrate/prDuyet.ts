@@ -76,11 +76,13 @@ export function napYeuCauTuNguonCu(conn: any): { pa: number; doi: number } {
 const coCot = (conn: any, bang: string, cot: string) =>
   (conn.prepare('SELECT name FROM pragma_table_info(?)').all(bang) as any[]).some((c) => c.name === cot);
 
-export function migratePrDuyet(conn: any, applied: string[]) {
+export function migratePrDuyet(conn: any, applied: string[], dbMoi = false) {
   tx(() => {
     conn.exec(SQL_BANG_YEU_CAU);
     if (!coCot(conn, 'tasks', 'assignee_name')) conn.exec('ALTER TABLE tasks ADD COLUMN assignee_name TEXT');
     if (!coCot(conn, 'notifications', 'duong')) conn.exec('ALTER TABLE notifications ADD COLUMN duong TEXT');
+    /* DB mới (khoi_tao_moi_at) không có dữ liệu kiểu cũ — bỏ qua (DEP-2): thẻ đã từ chối/đóng không được sinh lại từ nguồn cũ. */
+    if (dbMoi) return;
     const { pa, doi } = napYeuCauTuNguonCu(conn);
     if (pa + doi > 0) applied.push(`Hộp Chờ duyệt: tạo ${pa + doi} thẻ (Đề xuất PA ${pa} · Dời lịch ${doi})`);
   });

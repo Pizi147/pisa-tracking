@@ -54,6 +54,46 @@ async function checkAsync(name: string, fn: () => Promise<void>) {
 function assert(cond: unknown, msg: string) { if (!cond) throw new Error(msg); }
 
 const conn = db();
+
+/*
+ * PR-DEPLOY (Task 3b, Q7): THƯỚC ĐO GIỚI HẠN TURSO. Lỗi Turso chỉ lộ trên máy thật (23/09): > 900 tham số / câu, UNION dài, tham số đặt tên bị bỏ qua.
+ * Ghi lại MỌI câu SQL (văn bản + tham số) khi `doTurso.bat` — bật SAU khi nhân dữ liệu ×3, tới hết các đường đo + đường ghi lô; kiểm cuối file.
+ * Móc ở prototype `prepare` (gắn văn bản câu vào statement) và bốn hàm chạy của Statement — không đổi hành vi, chỉ đếm.
+ */
+type CauDo = { nhan: string; thamSo: number; ve: number; datTen: boolean; sql: string };
+const doTurso = { bat: false, nhan: '(ngoài request)', soCau: 0, nangThamSo: [] as CauDo[], nangVe: [] as CauDo[], datTen: [] as CauDo[] };
+{
+  const dbProto = Object.getPrototypeOf(conn);
+  const prepGoc = dbProto.prepare;
+  dbProto.prepare = function (this: unknown, sql: string) {
+    const st = prepGoc.call(this, sql);
+    Object.defineProperty(st, '__sql', { value: sql });
+    return st;
+  };
+  const stProto = Object.getPrototypeOf(prepGoc.call(conn, 'SELECT 1'));
+  const boChuoi = (sql: string) => sql.replace(/'(?:[^']|'')*'/g, "''").replace(/--[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
+  const giuTop = (ds: CauDo[], c: CauDo, khoa: 'thamSo' | 've') => {
+    ds.push(c); ds.sort((a, b) => b[khoa] - a[khoa]); ds.length = Math.min(ds.length, 5);
+  };
+  for (const m of ['get', 'all', 'run', 'iterate'] as const) {
+    const goc = stProto[m];
+    stProto[m] = function (this: any, ...args: unknown[]) {
+      if (doTurso.bat && this.__sql) {
+        const sach = boChuoi(this.__sql);
+        const coDoiTuong = args.some((a) => a !== null && typeof a === 'object' && !Array.isArray(a) && !Buffer.isBuffer(a));
+        const c: CauDo = {
+          nhan: doTurso.nhan, thamSo: args.flat().length, ve: (sach.match(/\bUNION\b/gi) ?? []).length + 1,
+          datTen: coDoiTuong || /(^|[^A-Za-z0-9_'"])[:@$][A-Za-z_]/.test(sach), sql: this.__sql.replace(/\s+/g, ' ').slice(0, 120),
+        };
+        doTurso.soCau++;
+        giuTop(doTurso.nangThamSo, c, 'thamSo');
+        giuTop(doTurso.nangVe, c, 've');
+        if (c.datTen && doTurso.datTen.length < 5) doTurso.datTen.push(c);
+      }
+      return goc.apply(this, args);
+    };
+  }
+}
 const classId = (code: string) => (conn.prepare('SELECT id FROM classes WHERE code = ?').get(code) as any).id as number;
 
 function userByRole(roleKey: string, branchCode: string | null) {
@@ -131,6 +171,7 @@ function urlFor(mau: string): string {
 }
 
 async function callHttpUser(userId: number, method: string, url: string, body?: unknown) {
+  doTurso.nhan = `${method} ${url}`;
   const headers: Record<string, string> = { 'content-type': 'application/json' };
   headers.cookie = `pisa_demo_session=${createSession(userId)}`;
   const res = await fetch(`http://127.0.0.1:${port}/api${url}`, {
@@ -670,6 +711,7 @@ function nhanDuLieu(n: number): { hvTruoc: number; hvSau: number; caseTruoc: num
           cycle_id: sc.cycle_id ? (idLoTrinh.get(sc.cycle_id) ?? null) : null,
           attempt_id: sc.attempt_id ? (idLuot.get(sc.attempt_id) ?? null) : null,
           dedup_key: null, // chỉ mục duy nhất — nhiều NULL vẫn hợp lệ trong SQLite
+          idempotency_key: null, // PR-DEPLOY: cột UNIQUE — Case tay của bộ demo (D18) có khoá
           previous_case_id: sc.previous_case_id ? (banCase.get(sc.previous_case_id) ?? null) : null,
         });
         banCase.set(sc.id, scMoi);
@@ -687,6 +729,7 @@ function nhanDuLieu(n: number): { hvTruoc: number; hvSau: number; caseTruoc: num
 }
 
 const soNhanDuLieu = nhanDuLieu(3);
+doTurso.bat = true;   // PR-DEPLOY (Q7): từ đây ghi mọi câu SQL — mọi (đường × vai) sau nhân dữ liệu + mọi đường ghi lô
 /*
  * PR-SOS: bản sao chép cả `sos_cases.han_xac_nhan` → Case chờ nguyên nhân quá hạn của bản sao sinh thẻ Báo QL ở lần quét ĐẦU (việc ghi
  * một lần, không phải số câu đọc). Quét trước khi đo để phép so "trước/sau" chỉ đo đường đọc.
@@ -885,6 +928,18 @@ await checkAsync(`PR-LT2a (M1b) · Thêm 30 em lớp thường (POST /intake/com
   assert(coBai === 30, `Em nào vào lớp thường cũng có bài Cuối khoá: ${coBai}/30`);
   console.log(`      (đo: 30 em, ${r.n} câu)`);
   assert(r.n <= TRAN_GHI_LO.themHocVien30Thuong, `${r.n} câu > trần ${TRAN_GHI_LO.themHocVien30Thuong}`);
+});
+
+check('PR-DEPLOY (3b) · Giới hạn Turso trên mọi (đường × vai) sau nhân dữ liệu ×3 + mọi đường ghi lô: mỗi câu ≤ 900 tham số, ≤ 20 vế UNION, 0 tham số đặt tên', () => {
+  doTurso.bat = false;
+  const dong = (c: CauDo) => `${c.nhan} · ${c.thamSo} tham số · ${c.ve} vế · ${c.sql}`;
+  console.log(`      (đo ${doTurso.soCau} lần chạy câu SQL)`);
+  console.log('      5 câu nặng nhất theo tham số:'); for (const c of doTurso.nangThamSo) console.log(`        ${dong(c)}`);
+  console.log('      5 câu nặng nhất theo vế UNION:'); for (const c of doTurso.nangVe) console.log(`        ${dong(c)}`);
+  assert(doTurso.soCau > 1000, `thước đo không bắt được câu nào (${doTurso.soCau}) — móc sai chỗ`);
+  assert((doTurso.nangThamSo[0]?.thamSo ?? 0) <= 900, `vượt 900 tham số: ${dong(doTurso.nangThamSo[0])}`);
+  assert((doTurso.nangVe[0]?.ve ?? 0) <= 20, `vượt 20 vế UNION: ${dong(doTurso.nangVe[0])}`);
+  assert(doTurso.datTen.length === 0, `tham số đặt tên: ${doTurso.datTen.map(dong).join(' | ')}`);
 });
 
 console.log('');

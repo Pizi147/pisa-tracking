@@ -34,7 +34,7 @@ export function dienMocLop(conn: any): number {
      WHERE so_tuan IS NULL AND programme_code IS NOT NULL AND programme_code != 'FT'`).run().changes;
 }
 
-export function migratePrLop(conn: any, applied: string[]) {
+export function migratePrLop(conn: any, applied: string[], dbMoi = false) {
   const now = new Date().toISOString();
   tx(() => {
     const moi = ['so_tuan', 'tuan_giua_khoa', 'tuan_cuoi_khoa'].filter((c) => !coCot(conn, c));
@@ -51,13 +51,16 @@ export function migratePrLop(conn: any, applied: string[]) {
       conn.prepare("INSERT INTO programme_checkpoints (programme_code, kind, study_week) VALUES ('PREFOU', 'final', 5)").run();
       applied.push('Thêm chương trình Pre FOU (5 tuần, chỉ Cuối khoá, một điểm Tổng hợp)');
     }
-    const dien = dienMocLop(conn);
-    if (dien) applied.push(`Chụp số tuần cho ${dien} lớp thường đang có`);
-    const kh = keHoachDoiTenLop(conn);
-    for (const x of kh.doi) conn.prepare('UPDATE classes SET code = ? WHERE id = ?').run(x.moi, x.id);
-    if (kh.doi.length) applied.push(`Đổi tên ${kh.doi.length} lớp sang mẫu mới (T2)`);
-    const boQua = kh.vaCham.length + kh.khongTheoMau.length;
-    if (boQua) applied.push(`Giữ nguyên tên ${boQua} lớp trùng/không theo mẫu — xem lệnh chạy thử đổi tên lớp`);
+    /* DB mới (khoi_tao_moi_at) không có dữ liệu kiểu cũ — bỏ qua (DEP-2): tên lớp và số tuần do Quản lý đặt là dữ liệu thật, không đổi. */
+    if (!dbMoi) {
+      const dien = dienMocLop(conn);
+      if (dien) applied.push(`Chụp số tuần cho ${dien} lớp thường đang có`);
+      const kh = keHoachDoiTenLop(conn);
+      for (const x of kh.doi) conn.prepare('UPDATE classes SET code = ? WHERE id = ?').run(x.moi, x.id);
+      if (kh.doi.length) applied.push(`Đổi tên ${kh.doi.length} lớp sang mẫu mới (T2)`);
+      const boQua = kh.vaCham.length + kh.khongTheoMau.length;
+      if (boQua) applied.push(`Giữ nguyên tên ${boQua} lớp trùng/không theo mẫu — xem lệnh chạy thử đổi tên lớp`);
+    }
     const trung = conn.prepare(`SELECT ${khoaMaLopSql()} AS k FROM classes GROUP BY k HAVING COUNT(*) > 1 LIMIT 1`).get();
     if (!trung && !conn.prepare("SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = 'ux_classes_ma_chuan'").get()) {
       conn.exec(`CREATE UNIQUE INDEX ux_classes_ma_chuan ON classes (${khoaMaLopSql()})`);

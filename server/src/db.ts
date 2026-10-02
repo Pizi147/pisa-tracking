@@ -236,9 +236,10 @@ function choKhoaGhi<T>(lam: () => T): T {
     } catch (e) {
       if (!laLoiBan(e)) throw e;
       const daCho = Date.now() - batDau;
-      const nghi = Math.min(50 * 2 ** lan, 400);
+      /* PR-DEPLOY: lần nghỉ cuối cắt cho vừa hạn chờ — bỏ cuộc ĐÚNG ~CHO_KHOA_GHI_MS trên mọi máy (trước đây bỏ cuộc ở 4,6–5 s tuỳ tốc độ mỗi lần thử). */
+      const nghi = Math.min(50 * 2 ** lan, 400, CHO_KHOA_GHI_MS - daCho);
       const con = conLaiMs();
-      if (daCho + nghi > CHO_KHOA_GHI_MS || (con !== null && con - nghi < KHONG_MO_GIAO_DICH_KHI_CON_MS)) {
+      if (nghi <= 0 || (con !== null && con - nghi < KHONG_MO_GIAO_DICH_KHI_CON_MS)) {
         console.warn(`[turso] database bận quá ${daCho} ms (${lan + 1} lần) — trả "máy chủ đang bận", chưa ghi gì`);
         throw new HttpError(503, 'Máy chủ đang bận, chưa lưu gì. Thử lại sau ít phút.');
       }

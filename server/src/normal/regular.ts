@@ -1,6 +1,6 @@
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
-import { addMilestone, followUntilAfter, taoCaseTuDong } from '../cases/sos.ts';
+import { addMilestone, caseKhacChuongTrinh, chuongTrinhCuaLop, followUntilAfter, taoCaseTuDong } from '../cases/sos.ts';
 import { dongBoBaoPh, monBaoPh } from '../yThuc/phoiHop.ts';
 import { raiseSignal, reconcileCorrectedSignals } from '../cases/signals.ts';
 import {
@@ -795,9 +795,12 @@ function taoCaseGiuaKhoa(p: Principal, a: any, r: RegularResult) {
     .all(a.student_id, a.cycle_id ?? 0) as any[];
   // Ngày phát hiện = thứ Hai của TUẦN bài kiểm tra; không còn ngày làm bài riêng.
   const detectedAt = weekStartOf(a) ?? demoToday();
+  /* PR-DEPLOY (0b-3 · R5-5): Case MỞ Ở CHƯƠNG TRÌNH KHÁC (FOU "G+V" của em đã lên BE) không phải của bài này — không ghi mốc "đã đạt", không nối lần trượt. */
+  const ctBai = chuongTrinhCuaLop(a.class_id);
+  const cuaBaiNay = (c: any) => !caseKhacChuongTrinh(c, ctBai);
   for (const c of open) {
     const cat = c.category ?? categoryOf(c.topic);
-    if (!cat || !passingCats.has(cat) || coCanCuLuotNay.get(c.id, a.id, c.id, a.id)) continue;
+    if (!cat || !passingCats.has(cat) || !cuaBaiNay(c) || coCanCuLuotNay.get(c.id, a.id, c.id, a.id)) continue;
     addMilestone({
       caseId: c.id, kind: 'passed', attemptId: a.id, attemptNo: a.attempt_no, sosLevel: null,
       occurredOn: detectedAt, createdBy: p.userId, dedupKey: `mt:${a.id}:${c.id}:passed`,
@@ -810,7 +813,7 @@ function taoCaseGiuaKhoa(p: Principal, a: any, r: RegularResult) {
   for (const skill of failing) {
     const category = categoryOf(skill);
     if (!category) continue;
-    const existing = open.find((c: any) => (c.category ?? categoryOf(c.topic)) === category) ?? null;
+    const existing = open.find((c: any) => (c.category ?? categoryOf(c.topic)) === category && cuaBaiNay(c)) ?? null;
     const signal = raiseSignal({
       actorUserId: p.userId, studentId: a.student_id, cycleId: a.cycle_id ?? null, attemptId: a.id, classId: a.class_id ?? null,
       skill, category, sosLevel: null, detectedOn: detectedAt, silent: true,

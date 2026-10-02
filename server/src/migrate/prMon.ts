@@ -33,7 +33,9 @@ export function demCaseFouNguyenNhanIelts(conn: any): { soCase: number; mau: { c
   return { soCase, mau };
 }
 
-export function migratePrMon(conn: any, applied: string[]) {
+export function migratePrMon(conn: any, applied: string[], dbMoi = false) {
+  /* DB mới (khoi_tao_moi_at) không có dữ liệu kiểu cũ — bỏ qua (DEP-2): bộ demo chép kỹ năng phân công lớp thường (`writing`) sang user_skills. */
+  if (dbMoi) return;
   tx(() => {
     const truoc = (conn.prepare(`SELECT COUNT(*) AS n FROM user_skills WHERE skill IN ${MA_CU}`).get() as any).n;
     if (!truoc) return;

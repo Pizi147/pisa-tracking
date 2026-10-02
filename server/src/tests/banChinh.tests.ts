@@ -461,7 +461,7 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
   });
 
   console.log('\nPR-Z2 · 5. Khởi tạo bản chính (init-ban-chinh) và thêm chi nhánh (them-chi-nhanh) — chạy trên FILE TẠM riêng');
-  const { initBanChinh, docDanhSachChiNhanh, themChiNhanh } = await import('../ops/initBanChinh.ts');
+  const { BANG_NEN_INIT, initBanChinh, docDanhSachChiNhanh, themChiNhanh } = await import('../ops/initBanChinh.ts');
   const { napDuLieuNen } = await import('../seed/duLieuNen.ts');
   const cryptoMod = await import('node:crypto');
   const schemaSql = fs.readFileSync(SCHEMA_PATH, 'utf8');
@@ -532,15 +532,17 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
     const o = moDbTam();
     try {
       initBanChinh(o.conn, O);
-      const DUOC_CO_DONG = new Set(['permissions', 'roles', 'role_permissions', 'routes', 'programmes', 'programme_skills',
-        'programme_checkpoints', 'branches', 'reporting_units', 'users', 'user_roles', 'student_code_seq',
-        'demo_config']);   // PR-Z2c-b: chỉ dòng dấu ngưỡng — nội dung kiểm CHÍNH XÁC ở dưới
+      const DUOC_CO_DONG = new Set(BANG_NEN_INIT);   // PR-DEPLOY (Q5): một danh sách với `kiem-sau-init`; demo_config kiểm CHÍNH XÁC ở dưới
       const sai = cacBang(o.conn).filter((b) => !DUOC_CO_DONG.has(b) && dem(o.conn, b) > 0).map((b) => `${b}=${dem(o.conn, b)}`);
       assert(sai.length === 0, `Bảng có dữ liệu không được phép: ${sai.join(', ')}`);
       /* PR-Z2c-b: demo_config chỉ được có đúng dòng dấu ngưỡng đạt lớp Normal (napDuLieuNen ghi — để migrate lần đầu không ghi
          audit "đổi luật" sai). Vẫn: không ngày demo, không kịch bản, không seeded_at. */
-      const cauHinh = cacBang(o.conn).includes('demo_config') ? o.conn.prepare('SELECT key, value FROM demo_config').all() : null;
-      assert(JSON.stringify(cauHinh) === '[{"key":"normal_pass_threshold","value":"0.7"}]', `demo_config chỉ được có dấu ngưỡng 0.7: ${JSON.stringify(cauHinh)}`);
+      /* PR-DEPLOY (DEP-1, DEP-2): thêm đúng hai khoá dấu — khoá backfill Lưu trữ + dấu DB mới (giá trị = giờ init). */
+      const cauHinh = cacBang(o.conn).includes('demo_config') ? o.conn.prepare('SELECT key, value FROM demo_config ORDER BY key').all() as any[] : null;
+      assert(JSON.stringify(cauHinh?.map((r) => r.key)) === '["khoi_tao_moi_at","normal_pass_threshold","xoa_du_lieu_backfill_at"]'
+        && cauHinh!.find((r) => r.key === 'normal_pass_threshold').value === '0.7'
+        && cauHinh!.filter((r) => r.key !== 'normal_pass_threshold').every((r) => r.value === O.now),
+        `demo_config chỉ được có dấu ngưỡng 0.7 + hai khoá dấu: ${JSON.stringify(cauHinh)}`);
       assert(cacBang(o.conn).length === cacBang(t.conn).length, `Phải có đủ bảng như schema: ${cacBang(o.conn).length} / ${cacBang(t.conn).length}`);
     } finally { dongLai(o); }
   });

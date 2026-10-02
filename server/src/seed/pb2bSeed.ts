@@ -13,6 +13,8 @@ import { expectationFor } from '../fasttrack/scoring.ts';
 import { planRegularTests, saveRegularScore } from '../normal/regular.ts';
 import { recordViolation } from '../yThuc/violations.ts';
 import { xacNhanXuLy } from '../yThuc/xuLy.ts';
+import { recordIntervention, reportIssue, updateResult } from '../cases/cases.ts';
+import { issuesForTopic } from '../../../shared/domain/index.ts';
 
 /**
  * PR-Pb2-b (Task 1) — BÙ ba cột ngày nghiệp vụ cho dữ liệu seed dựng thẳng bằng SQL (không qua `saveScore` / `recordViolation` / xử lý).
@@ -67,6 +69,7 @@ export function buNgayPb2b(conn: any): void {
  *              4 ô S quá hạn chưa nhập (trễ) · 2 ô L nhập trễ · 1 ô L nhập đúng hạn rồi sửa sau hạn (vẫn đúng hạn) · tiến bộ so MT1.
  *              ponytail: bộ demo GỌN (≈ 20 lượt) — phép đo PR-TD "nhân dữ liệu ×3" của tocDo.run.ts nhạy với mốc lô 900 lượt của `loadBundle`.
  *              Vi phạm: em 1 ba vi phạm xử lý ĐÚNG hạn, em 2 ba vi phạm xử lý TRỄ (GVCN Vinh).
+ *              PR-DEPLOY: 2 PA GV thêm có kết quả cuối 11/09 (Hương · Listening em 3, Duyên · W1 em 1) → cột "PA hiệu quả" có số.
  *   MB FOU 14  5 em · Giữa khoá W2 SEP: Bình L R G+V (L 5/5 · R 3/5 · G+V 2/5), Ngọc P — một ô P chưa nhập (trễ).
  */
 export function buildPb2bDemo(ctx: BuildCtx): { gv: number; lop: number } {
@@ -163,6 +166,26 @@ export function buildPb2bDemo(ctx: BuildCtx): { gv: number; lop: number } {
   };
   viPham(em[1].id, ['2026-09-01', '2026-09-02', '2026-09-03'], '2026-09-07', '2026-09-05');
   viPham(em[2].id, ['2026-09-02', '2026-09-03', '2026-09-05'], '2026-09-09', '2026-09-11');
+
+  /*
+   * PR-DEPLOY (DEP-5, rà pb2-b.md:117-120): cột "PA hiệu quả" cần PA GIÁO VIÊN THÊM (`preset = 0`) có KẾT QUẢ CUỐI trong W1–W3 SEP — không thì
+   * phải mở 13 tuần mới thấy. Hương: Case tay Listening em 3 (em đạt L ở MT2, không vướng Case SOS) → PA Tutor xong 11/09 "Có tiến bộ".
+   * Duyên: Case tay Writing Task 1 em 1 → PA Bài tập thêm xong 11/09 "Tiến bộ một phần". Dựng bằng hàm nghiệp vụ (báo Case → PA → ghi kết quả).
+   */
+  const paGvThem = (sid: number, topic: string, chu: number, kind: string, tieuDe: string, outcome: string) => {
+    const nn = issuesForTopic(topic, null)[0].code;
+    const c = reportIssue(admin, {
+      studentId: sid, topic, primaryCode: nn, title: tieuDe, ownerUserId: chu, detectedAt: '2026-09-07',
+      summary: 'Em làm sai lặp lại cùng một dạng bài trong hai tuần liền, cần luyện riêng.', idempotencyKey: `pb2b-pa-${sid}-${topic}`,
+    } as any) as any;
+    const iv = recordIntervention(admin, c.id, {
+      kind, description: `${tieuDe} — luyện riêng 2 buổi/tuần`, status: 'started', startedDate: '2026-09-07', performerUserId: chu,
+    }) as any;
+    const ivId = (iv?.interventions?.[0]?.id ?? (conn.prepare('SELECT MAX(id) AS id FROM case_interventions WHERE case_id = ?').get(c.id) as any).id) as number;
+    updateResult(admin, ivId, { decision: 'end', outcome, observedOn: '2026-09-11', completedOn: '2026-09-11', note: 'Bài kiểm tra nhỏ cuối đợt làm tốt hơn hẳn.' } as any);
+  };
+  paGvThem(em[3].id, 'listening', huong, 'tutor', 'Listening: nghe sót số và tên riêng', 'improved');
+  paGvThem(em[1].id, 'writing1', duyen, 'extra_homework', 'Writing Task 1: mô tả xu hướng chưa đủ số liệu', 'partial');
 
   // ---------------------------------------------------------------- MB FOU 14 + MB FOU 16 (FOU hai giáo viên, mockup 25 màn B)
   const fou14 = lop('MB FOU 14', 'FOU', null, '2026-08-17', binh, { listening: binh, reading: binh, writing: binh, speaking: ngoc });
