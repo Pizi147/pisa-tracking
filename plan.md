@@ -361,6 +361,7 @@ Thêm dòng mới ở cuối, có ngày. **Không xoá dòng cũ** — ghi "thay
 | 02/10/2026 | Chữ mang nội dung (meta dòng, nhãn ô, lời nhắc) tối thiểu **12 px**; tiêu đề cột bảng và badge giữ 11–11,5 px | Chủ sản phẩm, critique 02/10 (Q-K) |
 | 02/10/2026 | Tách mục "Không cần duyệt — để QL biết" khỏi **Chờ duyệt** thành nhóm "Để QL biết"; badge Chờ duyệt chỉ đếm mục cần bấm Duyệt | Chủ sản phẩm, critique 02/10 (Q-D) |
 | 02/10/2026 | Badge ba kiểu: **tròn đặc** = trạng thái học viên/lớp (tạm thì viền đứt) · **vuông viền liền** = trạng thái việc · **vuông viền đứt khi tạm** = kết quả điểm (`KetQuaDot`); cùng cỡ 11,5 px | Chủ sản phẩm, critique 02/10 (Q-H) |
+| 02/10/2026 | Trước deploy chỉ làm **K3, K1, H3, H4, H5** (PR-HK1). H1/H2, K2, K5, K6, K7 để **sau deploy**, gộp với lượt chụp lại ảnh sổ tay | Chủ sản phẩm 02/10 (cần deploy sớm) |
 
 ## 4. Lộ trình và phụ thuộc
 
@@ -1960,7 +1961,7 @@ Nguồn: `thiet-ke/DANH_GIA_GIAO_DIEN_2026-09-26.md` (77 trang/panel, 27 đỏ �
 
 ### 12.21. Critique toàn web 02/10 — làm cả 5 gói (chủ sản phẩm chốt 02/10)
 
-Nguồn: `/impeccable critique` 02/10 (26/40, tăng từ 24/40). Kế hoạch: `docs/superpowers/plans/2026-10-02-ux-sau-critique.md`, gồm năm gói UX-G → UX-K và bảng "File → mục". UX-G (trạng thái sai/lệch màu, Lịch Test cắt nút, thông báo dùng giờ thật) làm trước. Đã chốt: chữ nội dung tối thiểu 12 px; tách "Để QL biết" khỏi Chờ duyệt. Badge ba kiểu như H1 (Q-H). Còn chờ: Q-B.
+Nguồn: `/impeccable critique` 02/10 (26/40, tăng từ 24/40). Kế hoạch: `docs/superpowers/plans/2026-10-02-ux-sau-critique.md`, gồm năm gói UX-G → UX-K và bảng "File → mục". UX-G (trạng thái sai/lệch màu, Lịch Test cắt nút, thông báo dùng giờ thật) làm trước. Đã chốt: chữ nội dung tối thiểu 12 px; tách "Để QL biết" khỏi Chờ duyệt. Badge ba kiểu như H1 (Q-H). Q-B đã giải quyết. **Trước deploy chỉ làm PR-HK1 (K3, K1, H3, H4, H5)**; H1/H2, K2, K5, K6, K7 để sau deploy, làm cùng lúc chụp lại ảnh sổ tay.
 
 ### 13.1. Trước mỗi commit
 
@@ -2013,6 +2014,7 @@ Nói **cái gì đổi trên màn hình**, bằng tiếng Việt, không tên h�
 
 | Ngày | Ai | Đổi gì và vì sao |
 |---|---|---|
+| 02/10/2026 | Claude (session planning) | Chia H/K thành đợt trước và sau deploy; ghi trạng thái Q-B; thêm prompt PR-HK1 vào kế hoạch UX 02/10 |
 | 02/10/2026 | Claude (session planning, `/impeccable critique`) | Thêm mục 12.21 và kế hoạch `2026-10-02-ux-sau-critique.md` sau critique toàn web (trang, panel, chữ, badge) |
 | 30/09/2026 | Claude (session code PR-LT2b, nhánh `pr-lt2b-cuoi-khoa`, Sonnet 5.5) | 30/09 PR-LT2b: Cuối khoá lớp thường — % tổng → dải (< 50 · 50–59 · 60–69 · ≥ 70) + hướng gợi ý; sau chuyển: Case `chuyen_cap` (không phải Case SOS) + PA Bổ trợ miễn phí + Mini Test một lần mỗi em, Báo PH qua TVV (việc của Quản lý), Case Tutor FT; Kết luận kỳ vọng đầu ra BE/ELE; điểm nhập sau khi đã chuyển áp ở lộ trình mới (Q30-4). Bỏ thẻ Quyết định Cuối khoá (Q30-3). |
 | 30/09/2026 | Claude (session code PR-LT2a, nhánh `pr-lt2a-giua-khoa`, Sonnet 5.5) | 30/09 PR-LT2a: Giữa khoá tự tạo Case + PA Bổ trợ (FOU chung 2 buổi/tuần), kế hoạch bài giảng qua Quản lý, Báo PH qua TVV, bỏ tín hiệu lớp thường, bỏ nhãn SOS lớp thường, M1b. |

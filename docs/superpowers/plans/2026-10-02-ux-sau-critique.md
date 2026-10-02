@@ -39,6 +39,17 @@
   File: `web/src/modules/yThuc/StudentYThucSection.tsx`, `shared/domain/hoSoHocVien.ts:289`.
   ⚠ Đối chiếu quyết định 02/10 (commit `cec29ba`: "xử lý được cả khi mới 1 vi phạm"): chỉ ẩn khi **0** vi phạm.
 
+## Chia đợt H và K theo deploy (chủ sản phẩm chốt 02/10: cần deploy sớm)
+
+| Đợt | Mục | Lý do |
+|---|---|---|
+| **TRƯỚC deploy** (PR-HK1) | **K3**, **K1**, **H3**, **H4**, **H5** | GV dùng điện thoại nhiều. K3/K1 là CSS gọn, rủi ro thấp; H3–H5 sửa nhỏ, ít file |
+| **SAU deploy** | **H1/H2** | Gom ba kiểu badge đụng khoảng 15 file: rủi ro hồi quy lớn ngay trước deploy, làm lỗi thời 24 ảnh sổ tay QL/GV |
+| **SAU deploy** | **K2, K5, K7** | K5 chỉ ảnh hưởng bản demo; K2, K7 là chỉnh bố cục, không gấp |
+| **SAU deploy** | **K6** (chữ nội dung 11 → 12 px) | Cần chụp lại ảnh sổ tay |
+
+Các mục sau deploy làm chung một đợt với việc chụp lại ảnh sổ tay (`docs/so-tay/`), để chỉ chụp lại một lần.
+
 ## Gói UX-H — Badge một họ · ƯU TIÊN 2 (P2)
 Hiện có hai họ badge: `Nhan` (bo tròn hẳn, đậm 700, không viền, `ui/Nhan.tsx:26`) và `NhanTrangThai`/ClassRoster/MissingBadge
 (bo `rounded-md`, 600, có viền, `ui/ui.tsx:525`, `students/ClassRoster.tsx:285`, `students/MissingBadge.tsx:32`).
@@ -133,7 +144,10 @@ Cỡ chữ có 4 mức (11 / 11,5 / 12 / 12,5 px) và 3 chiều cao dòng cho c�
 - **Q-H:** ĐÃ CHỐT 02/10: ba kiểu chip như H1.
 - **Q-K:** ĐÃ CHỐT 02/10: 12 px cho chữ nội dung.
 - **Q-D:** ĐÃ CHỐT 02/10: tách "Để QL biết" (J5b).
-- **Q-B:** Chờ duyệt có cần "Duyệt nhiều" / "Nhắc tất cả" không?
+- **Q-B:** ĐÃ GIẢI QUYẾT 02/10. "Duyệt nhiều" vốn đã có nhưng bị ẩn: chỉ hiện khi lọc đúng một phân loại. Đã mở ở tab
+  "Tất cả" và thêm nút "Chọn hết n" (cùng loại, tối đa 50 như máy chủ). "Nhắc tất cả (n)" là nút mới, đặt ở hộp Chờ duyệt
+  (thẻ Báo lên) và ở Công việc › "Của GV". Máy chủ nhắc lại trong cùng ngày thì không gửi thêm thông báo.
+  Lưu ý: mỗi việc vẫn là một thông báo, nên GV nợ 10 việc sẽ nhận 10 thông báo.
 
 ## File → mục
 | File | Mục |
@@ -148,3 +162,71 @@ Cỡ chữ có 4 mức (11 / 11,5 / 12 / 12,5 px) và 3 chiều cao dòng cho c�
 | `phanTich/*` | H5, K2 |
 | `duyet/*` | H4, J5, J5b |
 | `index.css` (`.btn-sm`, `.field`) | K3 |
+
+## Prompt cho session code
+
+### PR-HK1 — trước deploy (dán nguyên khối)
+```
+/ponytail lite
+
+Làm PR-HK1 trong docs/superpowers/plans/2026-10-02-ux-sau-critique.md: các mục K3, K1, H3, H4, H5. CHỈ năm mục này.
+Đây là đợt trước deploy, nên giữ diff nhỏ và rủi ro thấp. Không đụng H1/H2, K2, K5, K6, K7 (để sau deploy).
+Nhánh mới từ main: pr-hk1-dien-thoai-badge.
+
+Đọc trước: CLAUDE.md, mục "0. Luật chung" và "Chia đợt H và K theo deploy" trong file kế hoạch, thiet-ke/HE_GIAO_DIEN.md.
+
+Việc cần làm:
+- K3: trên điện thoại, mọi vùng bấm cao ít nhất 40 px. CHỈ dùng `max-sm:`, desktop giữ nguyên mật độ. Gồm:
+  - `.btn-sm`, nút ⋯ (đang 28×28)
+  - `.field` và select (đang 36–37 px)
+  - tab Phân tích (đang 32 px)
+  - link tên học viên ở /test và /nhap-diem (đang 20 px), số bấm được ở Tổng quan (10–20×24)
+  Ưu tiên sửa ở index.css. Link nằm trong chữ thì nới vùng bấm bằng padding hoặc pseudo-element, không đổi bố cục.
+- K1 (Học viên & Lớp):
+  - Ở 375 px, hàng chip lọc không được trôi khỏi màn: cho cuộn ngang có mép mờ, hoặc xuống dòng.
+  - Nút ⋯ không được rơi xuống dòng riêng.
+  - Phần gộp hai hàng "Tất cả" thành dropdown "Loại lớp" chỉ làm nếu diff nhỏ. Nếu lớn thì ghi lại để sau deploy.
+- H3: bỏ dấu "·" thừa ở đầu badge Mock Test ("· Chưa có điểm · 0/4 kỹ năng").
+- H4: nhãn nhóm "Báo QL / Học thuật / Ý thức" ở Chờ duyệt chuyển sang chip không viền, để không trông như nút.
+- H5: chú giải Đạt/SOS1/2/3/Tạm thời ở Phân tích. Kiểm xem đó là chú giải hay bộ lọc:
+  - là chú giải thì bỏ kiểu nút;
+  - là bộ lọc thì có trạng thái bật/tắt rõ ràng (aria-pressed).
+
+Cách làm và kiểm:
+1. Mục nào có logic thì viết phép kiểm trước. Riêng CSS thì kiểm bằng ảnh và đo kích thước.
+2. `npm run check` phải xanh.
+3. `npm run seed && npm run dev`, chụp ảnh 375 và 1440, sáng và tối, ở: Tổng quan, Học viên & Lớp, /test, /nhap-diem,
+   Chờ duyệt, Phân tích, Mock Test.
+4. Đo bằng Playwright ở 375 px: không phần tử bấm được nào cao dưới 40 px (bỏ qua demo bar), không tràn ngang.
+5. Ảnh 1440 phải giống trước khi sửa, trừ H3–H5.
+6. `/impeccable audit` cho các màn đã sửa, rồi `/ponytail-review`.
+
+Xong thì:
+- đánh dấu [x] trong file kế hoạch, thêm một dòng vào mục 14 của plan.md;
+- mở PR, không tự merge, liệt kê chú thích `ponytail:`;
+- báo cho chủ sản phẩm: ảnh sổ tay nào trong docs/so-tay/ bị lệch vì đợt này.
+```
+
+### PR-HK2 — sau deploy (H1/H2, K2, K5, K6, K7)
+```
+/ponytail lite
+
+Làm PR-HK2 trong docs/superpowers/plans/2026-10-02-ux-sau-critique.md: các mục H1, H2, K2, K5, K6, K7, cộng phần K1 còn lại
+nếu PR-HK1 đã hoãn. Chỉ làm sau khi bản chính đã deploy. Nhánh mới từ main: pr-hk2-badge-chu.
+Đọc trước: CLAUDE.md, mục 0 và các mục trên trong file kế hoạch, plan.md mục 3 (dòng 02/10: chữ 12 px, ba kiểu badge),
+thiet-ke/HE_GIAO_DIEN.md.
+
+- H1/H2: ba kiểu chip đã chốt.
+  - Tròn đặc (`Nhan`): trạng thái học viên/lớp.
+  - Vuông viền liền (`NhanTrangThai`): trạng thái việc.
+  - `KetQuaDot`: kết quả điểm, giữ nguyên.
+  - Cả ba cùng cỡ 11,5 px và một chiều cao dòng. Gom các chip làm riêng lẻ liệt kê ở H2.
+  - Thêm phép kiểm quét mã: không còn `rounded-full` làm badge ngoài ui/Nhan.tsx.
+- K6: chữ nội dung tối thiểu 12 px; tiêu đề cột và badge giữ 11–11,5 px. Sửa theo từng file, không thay hàng loạt.
+- K2: Phân tích bị cắt tiêu đề cột; ô "16 (1 quá hạn)" đổi thành "16 ⚠1"; gom "Cột hiện" và nút xuất vào menu ⋯.
+- K5: demo bar trên điện thoại còn một dòng hoặc gập được.
+- K7: dùng một kiểu icon ⋯ ở mọi chỗ.
+
+Kiểm như PR-HK1 (check, ảnh 1440/375 sáng/tối, audit, ponytail-review). Chụp lại toàn bộ ảnh sổ tay QL/GV trong
+docs/so-tay/ trong cùng PR. Đánh dấu [x], thêm dòng mục 14, mở PR, không tự merge.
+```
