@@ -61,7 +61,9 @@ Mỗi session: nhánh mới **từ main mới nhất**; PR nào thêm migrate d�
 
 ## Prompt cho từng session (dán nguyên khối)
 
-Phần chung — mọi prompt đều ngầm gồm đoạn này:
+Đợt 1 đã có đủ kế hoạch chi tiết (GVa, GVb, BC, LM), mỗi file có mục **Skill bắt buộc** (superpowers · ponytail · impeccable).
+
+Phần chung — mọi prompt đều ngầm gồm đoạn này (skill: superpowers writing-plans/brainstorming/subagent-driven-development/test-driven-development/verification-before-completion/requesting-code-review/finishing-a-development-branch; `/ponytail lite` hoặc full + `/ponytail-review`; `/impeccable critique|layout|clarify|harden` + `audit`):
 ```
 Đọc trước: CLAUDE.md, docs/superpowers/plans/2026-10-03-lo-trinh-tong-hop-viec-chua-lam.md (mục Quyết định, "Áp cho mọi PR").
 Nếu PR chưa có kế hoạch chi tiết: dùng skill writing-plans viết docs/superpowers/plans/2026-10-03-pr-<mã>-….md
@@ -75,7 +77,7 @@ mô tả PR báo từng ID (tái hiện/bác bỏ, file, phép kiểm, ảnh), l
 ### Đợt 1
 **PR-GVa — Giao việc: dữ liệu + form**
 ```
-Làm PR-GVa (nhánh pr-gva-giao-viec). Chưa có kế hoạch chi tiết → viết trước.
+Làm PR-GVa theo prompt cuối file docs/superpowers/plans/2026-10-03-pr-gva-giao-viec.md (GVa-1 → GVa-4, đã có kế hoạch + mục Skill bắt buộc). Nhánh pr-gva-giao-viec.
 Phạm vi: F01/D13, F03, F04 trong báo cáo rà #172–#176 (tóm tắt + tiêu chí nghiệm thu ở lộ trình tổng hợp).
 - F01/D13: bỏ chặn trùng 10 giây theo tiêu đề (vuaGhi, server/src/db.ts ~319; mgmttasks.ts ~448–474; createTask ở meeting.ts; grep các chỗ khác dùng vuaGhi: PA, followup)
   → cột idempotency_key + unique index, mỗi lần MỞ form một mã (theo mẫu idempotencyKey của Thêm học viên). Retry cùng mã không nhân đôi;
@@ -89,20 +91,20 @@ Phạm vi: F01/D13, F03, F04 trong báo cáo rà #172–#176 (tóm tắt + tiêu
 ```
 /ponytail lite
 Làm PR-LM theo mục "D. Prompt cho session code › PR-LM" trong docs/superpowers/plans/2026-10-03-pr-phien-lich-mt-dieu-huong-sua-lop.md
-(Task LM-1 → LM-5). Nhánh pr-lm-lich-mt-linh-hoat. Thêm từ lộ trình: I5 (chữ hồ sơ Mock "Thi bù tuần này (lần 1)", placeholder nhận xét thành ví dụ,
+(Task LM-1 → LM-7, kế hoạch đã gồm I5 = LM-6, I4 lịch MT = LM-7). Nhánh pr-lm-lich-mt-linh-hoat. Tóm tắt: I5 (chữ hồ sơ Mock "Thi bù tuần này (lần 1)", placeholder nhận xét thành ví dụ,
 fasttrack/NhanXet.tsx:109) và I4 phần MockDetailPage/HopThaoTacMt (Drawer → KhungPanel).
 ```
 **PR-BC — Báo cáo đơn vị + Quản trị**
 ```
 /ponytail lite
-Làm PR-BC (nhánh pr-bc-bao-cao-quan-tri): L2 và L3 theo docs/superpowers/plans/2026-10-03-pr-l1-popover-bao-cao-loc-gv.md (KHÔNG làm L1 — L1 thuộc PR-DH),
+Làm PR-BC theo prompt cuối file docs/superpowers/plans/2026-10-03-pr-bc-bao-cao-quan-tri.md (BC-1 → BC-6, đã có kế hoạch + Skill bắt buộc; D9 chốt bằng brainstorming ở BC-2). Nhánh pr-bc-bao-cao-quan-tri. Tóm tắt phạm vi: L2 và L3 theo docs/superpowers/plans/2026-10-03-pr-l1-popover-bao-cao-loc-gv.md (KHÔNG làm L1 — L1 thuộc PR-DH),
 cộng D8 (kỳ tháng "2026-09" → "09/2026", MeetingPage scope month), D9 bộ lọc chi nhánh Báo cáo đơn vị (chủ sản phẩm 03/10 đồng ý làm; L2 cũ ghi "không làm" — nay làm),
-J10 phần Quản trị (ẩn cột "Quyền cấp riêng" khi rỗng). Viết thêm task cho D8/D9/J10 vào cuối kế hoạch L1 trước khi làm.
+J10 phần Quản trị (ẩn cột "Quyền cấp riêng" khi rỗng). 
 ```
 **PR-GVb — Chờ duyệt**
 ```
 /ponytail lite
-Làm PR-GVb (nhánh pr-gvb-cho-duyet). Chưa có kế hoạch chi tiết → viết trước.
+Làm PR-GVb theo prompt cuối file docs/superpowers/plans/2026-10-03-pr-gvb-cho-duyet.md (GVb-1 → GVb-9, đã có kế hoạch + mục Skill bắt buộc; giả định G1–G7 chủ sản phẩm duyệt khi đọc PR). Nhánh pr-gvb-cho-duyet.
 - D01/Q-B: HopChoDuyet.tsx:70 (choHangLoat loại tab "Tất cả") → duyệt nhiều ở "Tất cả", "Chọn hết n", "Nhắc tất cả (n)"; đặc tả Q-B ở
   docs/superpowers/plans/2026-10-02-ux-sau-critique.md (~147–155): trần 50, cùng loại, đúng phạm vi quyền, không nhắc lặp trong ngày (worklist/nhacViec.ts),
   báo thành công một phần. Sửa kế hoạch UX 02/10: Q-B ghi CHƯA LÀM cho tới PR này.
