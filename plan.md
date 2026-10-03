@@ -2014,6 +2014,7 @@ Nói **cái gì đổi trên màn hình**, bằng tiếng Việt, không tên h�
 
 | Ngày | Ai | Đổi gì và vì sao |
 |---|---|---|
+| 03/10/2026 | Claude (session planning) | Thêm kế hoạch `2026-10-03-pr-l1-popover-bao-cao-loc-gv.md` (PR-L1): L1 popover "Thiếu n" bị hàng dưới che; L2 thanh điều khiển Báo cáo đơn vị (chưa có kế hoạch trước đó); L3 lọc/phân loại giáo viên theo chi nhánh ở Quản trị › Tài khoản |
 | 02/10/2026 | Claude (session planning) | Chia H/K thành đợt trước và sau deploy; ghi trạng thái Q-B; thêm prompt PR-HK1 vào kế hoạch UX 02/10 |
 | 02/10/2026 | Claude (session planning, `/impeccable critique`) | Thêm mục 12.21 và kế hoạch `2026-10-02-ux-sau-critique.md` sau critique toàn web (trang, panel, chữ, badge) |
 | 30/09/2026 | Claude (session code PR-LT2b, nhánh `pr-lt2b-cuoi-khoa`, Sonnet 5.5) | 30/09 PR-LT2b: Cuối khoá lớp thường — % tổng → dải (< 50 · 50–59 · 60–69 · ≥ 70) + hướng gợi ý; sau chuyển: Case `chuyen_cap` (không phải Case SOS) + PA Bổ trợ miễn phí + Mini Test một lần mỗi em, Báo PH qua TVV (việc của Quản lý), Case Tutor FT; Kết luận kỳ vọng đầu ra BE/ELE; điểm nhập sau khi đã chuyển áp ở lộ trình mới (Q30-4). Bỏ thẻ Quyết định Cuối khoá (Q30-3). |
