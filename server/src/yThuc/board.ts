@@ -1,6 +1,6 @@
 import { db } from '../db.ts';
 import {
-  MEASURE_KIND_LABEL, NHOM_EM, PERMISSIONS, THANG, XU_LY_STATUS_LABEL, nhanLoaiXuLy,
+  NHOM_EM, PERMISSIONS, XU_LY_STATUS_LABEL, kindCuaBac, nhanLoaiXuLy,
   type NhomEm, type TrangThaiVp,
 } from '../../../shared/domain/index.ts';
 import { can, type Principal } from '../permissions.ts';
@@ -24,7 +24,7 @@ import { violationsOfStudents } from './violations.ts';
 export type DongEm = {
   studentId: number; ten: string; maHv: string;
   bac: number; bacNhan: string | null;
-  keTiep: { kind: string; nhan: string; canQl: boolean } | null;
+  keTiep: { kind: string; nhan: string };
   /** Vi phạm chưa nằm trong lần xử lý nào (Mới · Đã ghi nhận · Cần xử lý · Quá hạn). */
   soMo: number; soBatBuoc: number; soMoi: number;
   han: string | null; hanXem: string | null; quaHanNgay: number | null;
@@ -57,13 +57,12 @@ export function dongEm(em: EmYThuc, ten: string, maHv: string, homNay: string): 
   const moiNgay = em.dsViPham.filter((v) => { const t = em.viPham.get(v.id); return t?.t === 'moi' || t?.lyDoQuaHan === 'xem'; })
     .map((v) => v.reportedOn).sort()[0] ?? null;
   const xong = em.xuLy.filter((m) => m.status === 'done' && m.performedOn).sort((a, b) => (b.performedOn ?? '').localeCompare(a.performedOn ?? ''))[0];
-  const bacKind = em.bac > 0 ? THANG[em.bac - 1] : null;
   const dangMo = new Set(viPham.filter(([, t]) => t.t !== 'da_xu_ly').map(([id]) => id));
   const tuChoi = em.xuLy.filter((m) => m.status === 'tu_choi' && m.violationIds.some((id) => dangMo.has(id)))
     .sort((a, b) => (b.quyetLuc ?? b.createdAt).localeCompare(a.quyetLuc ?? a.createdAt))[0];
   return {
-    studentId: em.studentId, ten, maHv, bac: em.bac, bacNhan: bacKind ? MEASURE_KIND_LABEL[bacKind] : null,
-    keTiep: em.keTiep ? { kind: em.keTiep.kind, nhan: MEASURE_KIND_LABEL[em.keTiep.kind], canQl: em.keTiep.canQl } : null,
+    studentId: em.studentId, ten, maHv, bac: em.bac, bacNhan: em.bac > 0 ? nhanLoaiXuLy(kindCuaBac(em.bac)) : null,
+    keTiep: { kind: em.keTiep.kind, nhan: nhanLoaiXuLy(em.keTiep.kind) },
     soMo: viPham.filter(([, t]) => t.t === 'moi' || t.t === 'da_ghi_nhan' || t.t === 'can_xu_ly' || t.t === 'qua_han').length,
     soBatBuoc: em.soBatBuoc, soMoi: em.soMoi, han: em.han, hanXem: em.hanXem,
     quaHanNgay: Math.max(0, ...viPham.map(([, t]) => t.quaHanNgay ?? 0)) || null,

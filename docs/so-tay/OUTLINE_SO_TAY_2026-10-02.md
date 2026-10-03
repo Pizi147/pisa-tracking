@@ -69,10 +69,10 @@ Bằng chứng đối chiếu từng luật (nguồn, `file:line`, trạng thái
 - **5.1 Ghi vi phạm** (mọi GV trong lớp) `[G11]` 📷 ① học viên ② ngày ③ nhóm (5 nhóm) ④ mô tả ⑤ cảnh báo trùng
   ⚖ Sai thì sửa hoặc xoá thẳng; GVBM sửa/xoá vi phạm do mình ghi
 - **5.2 Chỉ GVCN: Thang xử lý 6 bậc** 📷 ① thang một dòng, bậc đã qua ✓ ② bậc kế tiếp ③ chọn vi phạm gộp ④ mô tả (≥ 10 ký tự) ⑤ Xác nhận xử lý
-  ⚖ **Bắt buộc theo thứ tự:** Report 1 → Report 2 → WL 1 → Report 4 + Meeting CX/GĐCN → WL 2 → WL 3 (WL = thư cảnh cáo) · bậc 1–5 tự làm · bậc không lùi
+  ⚖ **Bắt buộc theo thứ tự:** Report 1 → Report 2 → WL 1 → Report 4 + Meeting CX/GĐCN → Report 5 → WL 2 → Report 7 → Report 8 → … (WL = thư cảnh cáo) · mọi bậc trong thang tự làm · bậc không lùi
 - **5.3 "Bắt buộc xử lý" và Quá hạn** 📷 ① nhãn Mới / Đã ghi nhận / **Cần xử lý** / **Quá hạn** ② hạn 5 ngày
   ⚖ Từ 3 vi phạm trong tuần này + tuần trước → bắt buộc xử lý, nút "Ghi nhận" biến mất · quá 5 ngày → Quá hạn + Báo lên Quản lý
-- **5.4 WL 3 và các loại ngoài thang cần Quản lý duyệt** 📷 ① Đề xuất ② bằng chứng (bắt buộc) ③ trạng thái Chờ QL duyệt ④ nút Đã thực hiện
+- **5.4 WL 3 và các loại ngoài thang cần Quản lý duyệt** (WL 3 không còn là bậc cuối của thang) 📷 ① Đề xuất ② bằng chứng (bắt buộc) ③ trạng thái Chờ QL duyệt ④ nút Đã thực hiện
   ⚖ Meeting CX/GĐCN đứng riêng, Đình chỉ học tạm thời, Khác (ghi rõ ≥ 3 ký tự): ngoài thang, không đẩy bậc
 - **5.5 Khai bậc cho học sinh cũ** (GVCN, một lần)
 - **5.6 Phối hợp SOS** 📷 ① việc trao đổi ② Xác nhận ③ Bỏ kèm lý do · ⚖ Chỉ sinh từ Mock FT; không hạn
@@ -151,7 +151,7 @@ Thứ Hai: xem bài vừa bị chốt "Không dự thi", đề nghị dời mớ
 - **5.3 Đọc số đúng** — ⚖ n/N trước phần trăm · mẫu nhỏ không kết luận · "Chưa đủ dữ liệu" ngoài tỷ lệ · Ý thức ngoài mọi bảng hiệu quả · PA quy chế tách riêng, không "Nên dùng"
 - **5.4 Phân tích giáo viên và hồ sơ giáo viên** `[Q13]` — không KPI, không xếp hạng, sắp theo tên; hàng "Chưa phân công"; màu chỉ ở ô kết quả
 - **5.5 Cuối khoá lớp thường:** đánh dấu kỳ vọng đầu ra BE/ELE lên FT; Mini Test không đạt thì Báo lên; PA bổ trợ miễn phí
-- **5.6 Thông báo Quản lý nhận được:** WL 1, Report 4 + Meeting, WL 2 (để biết) · thẻ mới trong Chờ duyệt · Báo lên
+- **5.6 Thông báo Quản lý nhận được:** WL 1, Report 4 + Meeting, WL 2 (để biết; Report 1, 2, 5, 7+ không báo) · thẻ mới trong Chờ duyệt · Báo lên
 
 ## Phần 6. Vận hành và Báo cáo đơn vị
 - **6.1 Vận hành** `[Q11]` 📷 ① hàng số bấm lọc ② bảng việc ③ trạng thái (Cần làm · Đang làm · Tạm ngưng · Đã dừng · Xong) ④ giao việc (người ngoài hệ thống được)

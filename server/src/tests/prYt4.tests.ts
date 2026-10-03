@@ -92,14 +92,15 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const c = [{ id: 1, seq: 1, route: null, status: 'abandoned' }, { id: 2, seq: 2, route: null, status: 'active' }];
     assert(d.chuoiThang(c, 2).join() === '2' && d.chuoiThang(c, 1).join() === '1', d.chuoiThang(c, 2).join());
   });
-  check('YT4 (1) · bậc: max(lần xử lý xong, khai); ngoài thang không đẩy; bậc kế và hết thang', () => {
+  check('YT4 (1) · bậc: max(lần xử lý xong, khai); ngoài thang không đẩy; bậc kế không bao giờ hết', () => {
     assert(d.bacHienTai([{ kind: 'report_1' }, { kind: 'meeting_cx' }], 2) === 2, 'khai thắng');
     assert(d.bacHienTai([{ kind: 'wl_1' }], null) === 3 && d.bacHienTai([], null) === 0, 'từ kind');
     assert(d.bacKeTiep(2)!.kind === 'wl_1' && d.bacKeTiep(0)!.kind === 'report_1' && d.bacKeTiep(0)!.bac === 1, 'kế');
-    assert(d.bacKeTiep(5)!.canQl === true && d.bacKeTiep(4)!.canQl === false && d.bacKeTiep(6) === null, 'WL 3 cần QL, hết thang null');
+    assert(d.bacKeTiep(5).kind === 'wl_2' && d.bacKeTiep(6).kind === 'report_7', 'sau WL 2 là Report 7, không hết thang');
   });
-  check('YT4 (1) · canQl / nhãn loại: WL 3 + ngoài thang cần QL; loại lạ → "Xử lý (loại cũ)"', () => {
-    assert(d.canQl('wl_3') && d.canQl('suspension') && d.canQl('meeting_cx') && d.canQl('other') && !d.canQl('report_4_meeting'), 'canQl');
+  check('YT4 (1) · WL 3 + ngoài thang cần QL (NGOAI_THANG); bậc trong thang và Report 7+ thì không; loại lạ → "Xử lý (loại cũ)"', () => {
+    const ngoai = (k: string) => (d.NGOAI_THANG as readonly string[]).includes(k);
+    assert(['wl_3', 'suspension', 'meeting_cx', 'other'].every(ngoai) && !['report_4_meeting', 'report_5', 'wl_2', 'report_8'].some(ngoai), 'ngoài thang');
     assert(d.nhanLoaiXuLy('talk_short') === 'Xử lý (loại cũ)' && d.nhanLoaiXuLy('other', 'Gặp PH') === 'Gặp PH' && d.nhanLoaiXuLy('wl_2') === 'WL 2', 'nhãn');
   });
   check('YT4 (1) · nhomEm: vừa chờ duyệt vừa quá hạn → Quá hạn; đã xử lý 7 ngày gần nhất', () => {
@@ -115,11 +116,19 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     ], '2026-09-16');
     assert(r.tick.join() === '1,3,4' && r.cuHon.join() === '2', JSON.stringify(r));
   });
-  check('YT4 (1) · dongThang(2, khai 2) → hai bậc "khai", bậc 3 "lần này", WL 3 cần QL', () => {
+  check('YT4 (1) · dongThang(2, khai 2) → hai bậc "khai", bậc 3 "lần này", sáu bậc mạch chính + Report 7', () => {
     const t2 = d.dongThang(2, { bac: 2 });
-    assert(t2.map((x) => x.trangThai).join() === 'khai,khai,lan-nay,sau,sau,sau', t2.map((x) => x.trangThai).join());
-    assert(t2[5].canQl && t2[3].nhan === 'Report 4 + Meeting CX/GĐCN', 'WL 3');
-    assert(d.dongThang(3, { bac: 2 }).map((x) => x.trangThai).join() === 'khai,khai,qua,lan-nay,sau,sau', 'qua sau khai');
+    assert(t2.map((x) => x.trangThai).join() === 'khai,khai,lan-nay,sau,sau,sau,sau', t2.map((x) => x.trangThai).join());
+    assert(t2.map((x) => x.nhan).join('|') === 'Report 1|Report 2|WL 1|Report 4 + Meeting CX/GĐCN|Report 5|WL 2|Report 7', t2.map((x) => x.nhan).join('|'));
+    assert(d.dongThang(3, { bac: 2 }).map((x) => x.trangThai).join() === 'khai,khai,qua,lan-nay,sau,sau,sau', 'qua sau khai');
+  });
+  check('YT4 (1) · Sau WL 2 thang không có đỉnh: Report 7, 8, 9… (số = bậc), không cần QL; WL 3 ngoài thang', () => {
+    assert(d.bacKeTiep(5).kind === 'wl_2' && d.bacKeTiep(6).kind === 'report_7' && d.bacKeTiep(7).kind === 'report_8', 'bậc kế');
+    assert(d.bacCuaLoai('report_5') === 5 && d.bacCuaLoai('wl_2') === 6 && d.bacCuaLoai('report_9') === 9 && d.bacCuaLoai('report_3') === 0 && d.bacCuaLoai('wl_3') === 0, 'bậc của loại');
+    assert(d.nhanLoaiXuLy('report_5') === 'Report 5' && d.nhanLoaiXuLy('report_9') === 'Report 9' && d.nhanLoaiXuLy('report_3') === 'Xử lý (loại cũ)', 'nhãn');
+    assert(d.khoaLoaiXuLy('report_9') === 'report_tiep' && d.khoaLoaiXuLy('report_5') === 'report_5' && d.bacHienTai([{ kind: 'wl_2' }, { kind: 'report_7' }, { kind: 'wl_3' }], null) === 7, 'khoá thống kê + bậc hiện tại');
+    const t8 = d.dongThang(8, null);
+    assert(t8.length === 9 && t8[8].nhan === 'Report 9' && t8[8].trangThai === 'lan-nay' && t8[7].trangThai === 'qua', 'thang dài thêm theo bậc');
   });
 
   // ------------------------------------------------------------------ Task 2 · migrate cấu trúc
@@ -479,9 +488,9 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const sid2 = hv(); xl(gvcn, sid2, [ghiVp(gvbm, sid2)]);
     assert(/đã có lần xử lý/.test(loiCua(() => xuLy.khaiBac(gvcn, sid2, { bac: 2, ghiChu: 'Khai sau khi xử lý' })).msg), 'khai sau lần xử lý');
   });
-  check('YT4 (4) · Khai bậc: bậc ngoài 1–5 hoặc ghi chú < 3 ký tự → 400', () => {
+  check('YT4 (4) · Khai bậc: bậc ngoài 1–6 hoặc ghi chú < 3 ký tự → 400', () => {
     const sid = hv();
-    assert(/Report 1 … WL 2/.test(loiCua(() => xuLy.khaiBac(gvcn, sid, { bac: 6, ghiChu: 'WL 3' })).msg), 'bậc 6');
+    assert(/Report 1 … WL 2/.test(loiCua(() => xuLy.khaiBac(gvcn, sid, { bac: 7, ghiChu: 'Report 7' })).msg), 'bậc 7');
     assert(/ít nhất 3 ký tự/.test(loiCua(() => xuLy.khaiBac(gvcn, sid, { bac: 2, ghiChu: 'x' })).msg), 'ghi chú');
   });
   check('YT4 (4) · Xoá vi phạm trong lần xử lý đã xong (V4-12): lần xử lý còn, bậc KHÔNG lùi', () => {
@@ -505,13 +514,13 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const f = em(sid);
     assert(f.bac === 0 && f.keTiep.kind === 'report_1' && f.nhanChuoi === 'LT1', JSON.stringify({ c: f.chuoi, b: f.bac }));
   });
-  check('YT4 (4) · Hết thang (đã WL 3): Xác nhận xử lý → 400 "chỉ còn Đề xuất" (Q11)', () => {
+  check('YT4 (4) · WL 3 đã thực hiện là ngoài thang: không đẩy bậc, vẫn Xác nhận xử lý được ở bậc kế (Report 1)', () => {
     const sid = hv();
     conn.prepare(`INSERT INTO discipline_measures (student_id, cycle_id, kind, status, performed_on, note, created_at, created_by)
       VALUES (?, (SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'), 'wl_3', 'done', ?, 'WL 3', ?, ?)`)
       .run(sid, sid, addDays(TODAY, -5), new Date().toISOString(), gvcn.userId);
-    assert(em(sid).bac === 6 && em(sid).keTiep === null, 'bậc 6');
-    assert(/chỉ còn Đề xuất/.test(loiCua(() => xl(gvcn, sid, [ghiVp(gvbm, sid)])).msg), 'chặn');
+    assert(em(sid).bac === 0 && em(sid).keTiep.kind === 'report_1', 'bậc giữ 0');
+    assert(xl(gvcn, sid, [ghiVp(gvbm, sid)]).kind === 'report_1', 'vẫn xử lý được');
   });
   check('YT4 (4) · Thông báo GVCN: người khác ghi → "Vi phạm mới … trước dd/mm"; lần ghi thứ 3 → "có 3 vi phạm trong 2 tuần"; không đôi trong ngày; GVCN tự ghi không tự báo', () => {
     const sid = hv();
@@ -539,12 +548,12 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const sid = hv(); const m = xl(gvcn, sid, [ghiVp(gvbm, sid)]);
     assert(/QL đã duyệt/.test(loiCua(() => xuLy.daThucHien(gvcn, m.id, { performedOn: TODAY })).msg), 'chặn');
   });
-  check('YT4 (4) · GET /students/:id/y-thuc: thang một dòng 6 bậc, tick mặc định (K3-36), dòng thời gian trộn, dòng đếm cuối theo nhóm', () => {
+  check('YT4 (4) · GET /students/:id/y-thuc: thang một dòng 6 bậc + Report 7, tick mặc định (K3-36), dòng thời gian trộn, dòng đếm cuối theo nhóm', () => {
     const sid = hv();
     const a = ghiVp(gvbm, sid, addDays(TODAY, -1)); ghiVp(gvbm, sid, TODAY, 'attendance');
     xl(gvcn, sid, [a]);
     const hs = xuLy.yThucHocVien(gvcn, sid);
-    assert(hs.dongThang.length === 6 && hs.dongThang[0].trangThai === 'qua' && hs.dongThang[1].trangThai === 'lan-nay', 'thang');
+    assert(hs.dongThang.length === 7 && hs.dongThang[0].trangThai === 'qua' && hs.dongThang[1].trangThai === 'lan-nay', 'thang');
     assert(hs.macDinh.tick.length === 1 && hs.dongThoiGian.some((x: any) => x.loai === 'xu-ly' && x.nhan === 'Report 1'), 'tick + dòng xử lý');
     assert(hs.demCuoi.tong === 2 && hs.demCuoi.theoNhom.length === 2 && hs.canManage && !hs.coTheKhai, JSON.stringify(hs.demCuoi));
   });
@@ -558,9 +567,9 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   };
   const attachments: any = await import('../platform/attachments.ts');
 
-  check('YT4 (5) · Đề xuất: WL 3 khi chưa là bậc kế → 400; loại lạ → 400; "Khác" thiếu tên → 400', () => {
+  check('YT4 (5) · Đề xuất: WL 3 đề xuất được bất kỳ lúc nào (không cần là bậc kế); loại trong thang → 400; "Khác" thiếu tên → 400', () => {
     const sid = hv(); const v = ghiVp(gvbm, sid);
-    assert(/chỉ đề xuất được khi là bậc kế tiếp/.test(loiCua(() => xuLy.deXuat(gvcn, sid, { kind: 'wl_3', violationIds: [v], note: 'Đề xuất WL 3 sớm' })).msg), 'WL 3');
+    assert(xuLy.deXuat(gvcn, sid, { kind: 'wl_3', violationIds: [v], note: 'Đề xuất WL 3 sớm' }).kind === 'wl_3', 'WL 3 bất kỳ lúc nào');
     assert(/Chọn loại cần QL duyệt/.test(loiCua(() => xuLy.deXuat(gvcn, sid, { kind: 'report_2', violationIds: [v], note: 'Loại trong thang' })).msg), 'loại lạ');
     assert(/Khác/.test(loiCua(() => xuLy.deXuat(gvcn, sid, { kind: 'other', customName: 'x', violationIds: [v], note: 'Loại khác thiếu tên' })).msg), 'Khác');
   });
@@ -611,13 +620,13 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(e.viPham.get(v).t === 'can_xu_ly' && e.han === addDays(TODAY, 4) && e.bac === 0, JSON.stringify(e.viPham.get(v)));
     assert(theCho('y_thuc', m.id).ly_do_tu_choi === 'Chưa đủ căn cứ để đình chỉ' && thongBao(gvcn.userId, `duyet_ket_qua:${theId}`).length === 1, 'thẻ + thông báo');
   });
-  check('YT4 (5) · WL 3 (bậc kế) duyệt + Đã thực hiện → bậc 6, hết thang', () => {
+  check('YT4 (5) · WL 3 duyệt + Đã thực hiện → ngoài thang, bậc GIỮ 6 (WL 2), bậc kế vẫn Report 7', () => {
     const sid = hv();
-    xuLy.khaiBac(gvcn, sid, { bac: 5, ghiChu: 'WL 2 tháng 8 (giấy)' });
+    xuLy.khaiBac(gvcn, sid, { bac: 6, ghiChu: 'WL 2 tháng 8 (giấy)' });
     const m = deXuatGui(gvcn, sid, 'wl_3', [ghiVp(gvbm, sid)]);
     yc.duyetYeuCau(P.mbManager, theCho('y_thuc', m.id).id);
     xuLy.daThucHien(gvcn, m.id, { performedOn: TODAY });
-    assert(em(sid).bac === 6 && em(sid).keTiep === null, `bậc ${em(sid).bac}`);
+    assert(em(sid).bac === 6 && em(sid).keTiep.kind === 'report_7', `bậc ${em(sid).bac}`);
   });
   check('YT4 (5) · QL tự gửi đề xuất → tự duyệt được, thẻ ghi "tự duyệt" (Q-D)', () => {
     const sid = hv();
@@ -770,10 +779,10 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     xuLy.daThucHien(gvcn, d2.id, { performedOn: TODAY });
     assert(da().includes(d2.id), 'Đã thực hiện thì tính');
   });
-  check('YT4 (7) · bien-phap-theo-loai: chín loại v4 (+ loai-cu cho dòng cũ, Q2) tách riêng; lọc kind; tổng = bien-phap-da-thuc-hien', () => {
+  check('YT4 (7) · bien-phap-theo-loai: mười loại (+ report_tiep = Report 7+, loai-cu cho dòng cũ, Q2) tách riêng; lọc kind; tổng = bien-phap-da-thuc-hien', () => {
     const sid = hv(); xl(gvcn, sid, [ghiVp(gvbm, sid)]); const r2 = xl(gvcn, sid, [ghiVp(gvbm, sid)]);
     const r = ms7('bien-phap-theo-loai');
-    assert(Object.keys(r.byKind).join() === [...d.MEASURE_KINDS, 'loai-cu'].join(), Object.keys(r.byKind).join());
+    assert(Object.keys(r.byKind).join() === [...d.MEASURE_KINDS, 'report_tiep', 'loai-cu'].join(), Object.keys(r.byKind).join());
     assert(r.byKind.report_2.includes(r2.id) && !r.byKind.report_1.includes(r2.id), 'Report 2 riêng');
     assert(ms7('bien-phap-theo-loai', { kind: 'report_2' }).ids.join() === r.byKind.report_2.join(), 'lọc kind');
     assert(r.ids.length === ms7('bien-phap-da-thuc-hien').ids.length, 'tổng các loại = tổng chỉ số');
@@ -785,11 +794,11 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(!ms7('bien-phap-cho-duyet').ids.includes(m.id), 'ra');
     assert(d.metricById('bien-phap-dang-chuan-bi') === null && d.metricById('bien-phap-cho-duyet'), 'sổ chỉ số');
   });
-  check('YT4 (7) · hv-theo-bac: em đang học chia bậc 0–6 theo cửa trạng thái; khai bậc 2 → khoá "2"', () => {
+  check('YT4 (7) · hv-theo-bac: em đang học chia bậc 0–7 (7 = Report 7+) theo cửa trạng thái; khai bậc 2 → khoá "2"', () => {
     const sid = hv(); xuLy.khaiBac(gvcn, sid, { bac: 2, ghiChu: 'Report 2 (giấy)' });
     const s0 = hv();
     const r = ms7('hv-theo-bac');
-    assert(Object.keys(r.byKind).join() === '0,1,2,3,4,5,6' && r.byKind['2'].includes(sid) && r.byKind['0'].includes(s0), JSON.stringify(Object.keys(r.byKind)));
+    assert(Object.keys(r.byKind).join() === '0,1,2,3,4,5,6,7' && r.byKind['2'].includes(sid) && r.byKind['0'].includes(s0), JSON.stringify(Object.keys(r.byKind)));
     assert(ms7('hv-theo-bac', { kind: '2' }).ids.includes(sid) && /không hợp lệ/.test(loiCua(() => ms7('hv-theo-bac', { kind: '9' })).msg), 'lọc kind');
   });
   check('YT4 (7) · Ý thức nằm NGOÀI bảng hiệu quả hỗ trợ: xử lý / đề xuất không đổi pa-co-ket-qua, ty-le-co-cai-thien', () => {
@@ -860,9 +869,9 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(/api\.del\(`\/y-thuc\/xu-ly\/\$\{daLuu\.id\}`\)/.test(s) && /Cần đính kèm tệp hoặc liên kết/.test(s), 'xoá nháp + bằng chứng');
     assert(/Cần xử lý nặng hơn/.test(s) && /Xác nhận cấp bậc vi phạm trước/.test(s), 'nút Đề xuất + dòng Xác nhận cấp bậc (Q7)');
   });
-  check('YT4 (8) · Khai bậc: năm bậc (Report 1 … WL 2), tháng tuỳ chọn, ghi chú ≥ 3; QL sửa bằng PUT', () => {
+  check('YT4 (8) · Khai bậc: sáu bậc (Report 1 … WL 2), tháng tuỳ chọn, ghi chú ≥ 3; QL sửa bằng PUT', () => {
     const s = docW(`${YT}/KhaiBacPanel.tsx`);
-    assert(/THANG\.slice\(0, 5\)/.test(s) && /GHI_CHU_MIN = 3/.test(s) && /api\.put\(/.test(s) && /kieu="thang"/.test(s), 'khai bậc');
+    assert(/BAC_KHAI = THANG;/.test(s) && /GHI_CHU_MIN = 3/.test(s) && /api\.put\(/.test(s) && /kieu="thang"/.test(s), 'khai bậc');
   });
   check('YT4 (8) · + Ghi vi phạm (T31): tiêu đề "Ghi vi phạm", KHÔNG chọn sẵn nhóm (K3-35), nhóm bắt buộc chọn', () => {
     const s = docW(`${YT}/RecordViolationPanel.tsx`);

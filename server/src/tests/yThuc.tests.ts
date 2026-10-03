@@ -28,7 +28,7 @@ export type YThucTestKit = {
 };
 
 type EmChup = {
-  id: number; lop: string | null; nhom: string | null; bac: number; ke: string | null; canQl: boolean; han: string | null; khai: number | null;
+  id: number; lop: string | null; nhom: string | null; bac: number; ke: string | null; han: string | null; khai: number | null;
   deXuat: { kind: string; status: string; han: string | null } | null;
   vp: { id: number; t: string; nhan: string; han: string | null; lyDo: string | null; lop: string | null; ghiNhan: boolean }[];
 };
@@ -44,7 +44,7 @@ export async function chupDemoYThuc(conn: any, homNay: string): Promise<DemoYThu
   for (const h of hs) {
     const e = trang.get(h.id)!;
     em[h.full_name] = {
-      id: h.id, lop: lopCode(e.lopId), nhom: e.nhom, bac: e.bac, ke: e.keTiep?.kind ?? null, canQl: !!e.keTiep?.canQl, han: e.han, khai: e.khai?.bac ?? null,
+      id: h.id, lop: lopCode(e.lopId), nhom: e.nhom, bac: e.bac, ke: e.keTiep?.kind ?? null, han: e.han, khai: e.khai?.bac ?? null,
       deXuat: e.deXuat ? { kind: e.deXuat.kind, status: e.deXuat.status, han: e.deXuat.han } : null,
       vp: e.dsViPham.map((v) => {
         const k = e.viPham.get(v.id)!;
@@ -116,7 +116,7 @@ export async function runYThucTests(t: YThucTestKit) {
   check('YT4 (11) · DEMO (b) Lê Quang Huy: 3 vi phạm 08–10/09 ghi 10/09 → Cần xử lý, hạn hôm nay (còn 1 ngày), bậc kế Report 1', () => {
     const e = em('Lê Quang Huy');
     assert(e.nhom === 'bat_buoc' && e.vp.length === 3 && e.vp.every((v) => v.t === 'can_xu_ly' && v.han === TODAY), JSON.stringify(e.vp));
-    assert(e.ke === 'report_1' && !e.canQl && t.addDays(TODAY, 0) === e.han, 'bậc kế / hạn');
+    assert(e.ke === 'report_1' && t.addDays(TODAY, 0) === e.han, 'bậc kế / hạn');
   });
 
   check('YT4 (11) · DEMO (c) Phạm Bảo Ngọc: 3 vi phạm ghi 07–09/09 → "Quá hạn 1 ngày" (vì chưa xử lý), có thẻ Báo QL Ý thức', () => {
@@ -139,9 +139,9 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(wl1 && one(`SELECT COUNT(*) n FROM attachments WHERE owner_type = 'discipline_measure' AND owner_id = ?`, wl1.id).n === 1, 'WL 1 có tệp');
   });
 
-  check('YT4 (11) · DEMO (f) Lương Gia Bảo: khai bậc 5 + 3 vi phạm → đề xuất WL 3 chờ QL, thẻ Ý thức có bằng chứng, hạn duyệt còn 2 ngày', () => {
+  check('YT4 (11) · DEMO (f) Lương Gia Bảo: khai bậc 6 (WL 2) + 3 vi phạm → đề xuất WL 3 chờ QL, thẻ Ý thức có bằng chứng, hạn duyệt còn 2 ngày', () => {
     const e = em('Lương Gia Bảo');
-    assert(e.khai === 5 && e.nhom === 'cho_duyet' && e.vp.every((v) => v.t === 'cho_duyet'), JSON.stringify(e));
+    assert(e.khai === 6 && e.nhom === 'cho_duyet' && e.vp.every((v) => v.t === 'cho_duyet'), JSON.stringify(e));
     assert(e.deXuat?.kind === 'wl_3' && e.deXuat.status === 'cho_duyet' && e.deXuat.han === t.addDays(TODAY, 1), JSON.stringify(e.deXuat));
     const c = the('y_thuc', 'Lương Gia Bảo');
     assert(c.length === 1 && c[0].trangThai === 'cho' && JSON.parse(c[0].bangChung ?? '[]').length === 1 && c[0].han === t.addDays(TODAY, 1), JSON.stringify(c));
@@ -156,7 +156,7 @@ export async function runYThucTests(t: YThucTestKit) {
 
   check('YT4 (11) · DEMO (i) Tô Ngọc Hân: HS cũ khai bậc 2 (H5) → bậc kế WL 1, GVCN tự Xác nhận xử lý được (không cần QL)', () => {
     const e = em('Tô Ngọc Hân');
-    assert(e.khai === 2 && e.bac === 2 && e.ke === 'wl_1' && !e.canQl, JSON.stringify(e));
+    assert(e.khai === 2 && e.bac === 2 && e.ke === 'wl_1', JSON.stringify(e));
   });
 
   check('YT4 (11) · DEMO (j) Quách Thành Nam (D15): 3 vi phạm ở MB FT 101, chuyển sang MB FT 102 ngày 12/09 → vẫn Cần xử lý (dính), hạn đặt lại 16/09 (M-08)', () => {
@@ -165,9 +165,9 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(e.nhom === 'bat_buoc' && e.han === '2026-09-16' && e.vp.every((v) => v.t === 'can_xu_ly'), JSON.stringify(e.vp));
   });
 
-  check('YT4 (11) · DEMO (k) Mạc Tuấn Kiệt: khai WL 1 → Report 4 + Meeting → WL 2 → bậc kế "WL 3" cần QL', () => {
+  check('YT4 (11) · DEMO (k) Mạc Tuấn Kiệt: khai WL 1 → Report 4 + Meeting → Report 5 → bậc kế "WL 2" (không cần QL)', () => {
     const e = em('Mạc Tuấn Kiệt');
-    assert(e.khai === 3 && e.bac === 5 && e.ke === 'wl_3' && e.canQl, JSON.stringify(e));
+    assert(e.khai === 3 && e.bac === 5 && e.ke === 'wl_2', JSON.stringify(e));
   });
 
   check('YT4 (11) · DEMO (l) Nguyễn Bảo Trâm: lớp thường FOU → BE, Report 1 ở khoá trước vẫn cùng chuỗi → bậc kế Report 2 (Q-C)', () => {
@@ -641,10 +641,10 @@ export async function runYThucTests(t: YThucTestKit) {
   const r1Cu = await call(gvcn, 'POST', `/students/${hs.id}/y-thuc/xu-ly`, { violationIds: [hv[1]], performedOn: TODAY, note: 'Bấm từ panel cũ còn bậc 0', bacDaThay: 0 });
   const gvbmRead = await call(gvbm, 'GET', `/y-thuc/xu-ly/${r1.json?.id}`);
   const hs5 = makeStudent('HTTP WL3');
-  const hv5 = violations(hs5.id, 2);
-  const khai5 = await call(gvcn, 'POST', `/students/${hs5.id}/y-thuc/khai-bac`, { bac: 5, ghiChu: 'Đã WL 2 tháng 8 (giấy)' });
-  const wl3XuLy = await call(gvcn, 'POST', `/students/${hs5.id}/y-thuc/xu-ly`, { violationIds: hv5, performedOn: TODAY, note: 'Thử xử lý WL 3 một bước' });
-  const wl3Nhap = await call(gvcn, 'POST', `/students/${hs5.id}/y-thuc/de-xuat`, { kind: 'wl_3', violationIds: hv5, note: 'Đề xuất WL 3 sau WL 2' });
+  const hv5 = violations(hs5.id, 4);
+  const khai5 = await call(gvcn, 'POST', `/students/${hs5.id}/y-thuc/khai-bac`, { bac: 6, ghiChu: 'Đã WL 2 tháng 8 (giấy)' });
+  const wl3XuLy = await call(gvcn, 'POST', `/students/${hs5.id}/y-thuc/xu-ly`, { violationIds: hv5.slice(0, 2), performedOn: TODAY, note: 'Sau WL 2 là Report 7, tự xác nhận được' });
+  const wl3Nhap = await call(gvcn, 'POST', `/students/${hs5.id}/y-thuc/de-xuat`, { kind: 'wl_3', violationIds: hv5.slice(2), note: 'Đề xuất WL 3 sau WL 2' });
   const wl3GuiKhongTep = await call(gvcn, 'POST', `/y-thuc/xu-ly/${wl3Nhap.json?.id}/gui`);
   const wl3Link = await call(gvcn, 'POST', '/attachments/link', { ownerType: 'discipline_measure', ownerId: wl3Nhap.json?.id, url: 'https://example.com/wl3', displayName: 'Thư WL 3' });
   const wl3Gui = await call(gvcn, 'POST', `/y-thuc/xu-ly/${wl3Nhap.json?.id}/gui`);
@@ -672,11 +672,11 @@ export async function runYThucTests(t: YThucTestKit) {
     for (const k of ['nhom', 'dongThoiGian']) assert(k in (gvbmBoard.json ?? {}), `Tab Ý thức của lớp thiếu khung ${k} (M6)`);
   });
 
-  check('PR-J · #5 (PR-YT4) Gọi thẳng HTTP: bậc do máy chủ quyết (Report 1), panel cũ → 409; khai bậc 5 → WL 3 không Xác nhận một bước được (400), đề xuất thiếu bằng chứng → 400, có liên kết → gửi được', () => {
+  check('PR-J · #5 (PR-YT4) Gọi thẳng HTTP: bậc do máy chủ quyết (Report 1), panel cũ → 409; khai WL 2 → bậc kế Report 7 xác nhận một bước được (200), WL 3 chỉ đi bằng đề xuất: thiếu bằng chứng → 400, có liên kết → gửi được', () => {
     assert(r1.status === 200 && r1.json?.kind === 'report_1' && r1.json?.status === 'done', `Lần đầu: ${r1.status} ${JSON.stringify(r1.json)}`);
     assert(r1Cu.status === 409 && /Bậc đã đổi/.test(r1Cu.json?.error ?? ''), `Panel cũ: ${r1Cu.status} ${r1Cu.json?.error}`);
-    assert(khai5.status === 200, `Khai bậc 5: ${khai5.status} ${khai5.json?.error}`);
-    assert(wl3XuLy.status === 400 && /WL 3 — cần Đề xuất QL duyệt/.test(wl3XuLy.json?.error ?? ''), `WL 3 một bước: ${wl3XuLy.status} ${wl3XuLy.json?.error}`);
+    assert(khai5.status === 200, `Khai bậc 6: ${khai5.status} ${khai5.json?.error}`);
+    assert(wl3XuLy.status === 200 && wl3XuLy.json?.kind === 'report_7' && wl3XuLy.json?.status === 'done', `Sau WL 2 một bước: ${wl3XuLy.status} ${JSON.stringify(wl3XuLy.json)}`);
     assert(wl3Nhap.status === 200 && wl3GuiKhongTep.status === 400 && /đính kèm tệp hoặc liên kết/.test(wl3GuiKhongTep.json?.error ?? ''), `Gửi không tệp: ${wl3GuiKhongTep.status} ${wl3GuiKhongTep.json?.error}`);
     assert(wl3Link.status === 200 && wl3Gui.status === 200 && wl3Gui.json?.status === 'cho_duyet', `Có liên kết thì gửi được: ${wl3Gui.status} ${wl3Gui.json?.error}`);
   });

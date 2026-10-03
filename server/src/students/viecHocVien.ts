@@ -1,5 +1,5 @@
 import { db } from '../db.ts';
-import { CHU_THEM_PA, MEASURE_KIND_LABEL, PERMISSIONS, hanBanGiao, nhanLoaiXuLy, tenMon, tuanLich, type DaiHocVien } from '../../../shared/domain/index.ts';
+import { CHU_THEM_PA, PERMISSIONS, hanBanGiao, nhanLoaiXuLy, tenMon, tuanLich, type DaiHocVien } from '../../../shared/domain/index.ts';
 import { can, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, diffDays } from '../util.ts';
@@ -133,7 +133,7 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
   /* Ý thức: bắt buộc xử lý, chưa có đề xuất chờ duyệt → GVCN (`mywork.ts` 5b). */
   const em = n.yThuc;
   if (em && !em.tamDung && em.gvcnId && em.soBatBuoc > 0 && !em.coChoDuyet) {
-    const ke = em.keTiep ? MEASURE_KIND_LABEL[em.keTiep.kind as keyof typeof MEASURE_KIND_LABEL] : 'đề xuất Quản lý duyệt';
+    const ke = nhanLoaiXuLy(em.keTiep.kind);
     ds.push({ key: `yt_xu_ly:${sid}`, loai: 'y-thuc', chu: `Xác nhận xử lý Ý thức · ${ke}`, kyNang: null, caseId: null, paId: null,
       han: em.han, tone: 'warn', nguoiId: em.gvcnId, nut: 'Xác nhận xử lý', mo: { loai: 'tab', tab: 'y-thuc' } });
   }

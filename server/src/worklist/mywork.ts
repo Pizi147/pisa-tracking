@@ -5,7 +5,7 @@ import {
   INTERVENTION_KIND_LABEL, PERMISSIONS,
   SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, cycleDeadline,
   duongHoSoHocVien, duongLichTest, nhanDotNgan, planDueDate, urgencyFromSos,
-  khungCua, laLanGhiCuoi, tenMon, tenMonNgan, tenNhomMon, REGULAR_SKILLS, MEASURE_KIND_LABEL, nhanLoaiXuLy, soSanhLop,
+  khungCua, laLanGhiCuoi, tenMon, tenMonNgan, tenNhomMon, REGULAR_SKILLS, nhanLoaiXuLy, soSanhLop,
   type Khung, type AttemptKind, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -1071,7 +1071,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       };
       const quaHan = [...em.viPham.values()];
       if (em.soBatBuoc > 0 && !em.coChoDuyet) {
-        const ke = em.keTiep ? MEASURE_KIND_LABEL[em.keTiep.kind] : 'Đề xuất QL duyệt';
+        const ke = nhanLoaiXuLy(em.keTiep.kind);
         items.push({ ...chung, key: `yt_xu_ly:${r.id}`, group: 'yt_xu_ly', urgency: urgencyOf(em.han, today),
           reason: `${em.soBatBuoc} vi phạm trong 2 tuần — bắt buộc xử lý`,
           tieuDe: `Xử lý vi phạm · ${r.ten} (${em.soBatBuoc}) · bậc kế tiếp: ${ke}`, actionLabel: 'Xác nhận xử lý',

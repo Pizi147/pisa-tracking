@@ -224,7 +224,7 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
 
 /** Một dòng em ở khung trái: tên · dòng phụ theo nhóm · hạn (cột phải thẳng hàng). Cả dòng là một nút chọn em. */
 function DongEmO({ x, nhom, chon, homNay, onChon }: { x: DongEm; nhom: NhomEm; chon: boolean; homNay: string; onChon: () => void }) {
-  const ke = x.keTiep ? <>bậc kế tiếp <b className="font-semibold text-slate-200">{x.keTiep.nhan}{x.keTiep.canQl ? ' · cần QL' : ''}</b></> : <>đã hết thang — chỉ còn Đề xuất QL duyệt</>;
+  const ke = <>bậc kế tiếp <b className="font-semibold text-slate-200">{x.keTiep.nhan}</b></>;
   const chuDeXuat = x.deXuat && nhom !== 'cho_duyet' ? ` · 1 đề xuất ${x.deXuat.status === 'cho_duyet' ? 'chờ QL' : 'đã duyệt'}` : '';
   const phu = nhom === 'qua_han' || nhom === 'bat_buoc'
     ? (x.tuChoi ? <>Quản lý từ chối {x.tuChoi.nhan} · chọn cách xử lý khác · {ke}</> : x.soBatBuoc > 0 ? <>{x.soBatBuoc} vi phạm / 2 tuần · {ke}</> : <>{x.soMoi} vi phạm chưa xem</>)
