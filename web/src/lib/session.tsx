@@ -31,6 +31,8 @@ export type Session = {
   nav?: NavQuyen;
   /** Máy chủ đang chạy bản chính (`laBanChinh()`): ẩn nhãn "Bản demo nội bộ". */
   banChinh?: boolean;
+  /** PR-PH: chỉ có ở web — lần tải lại phiên vừa lỗi mạng/máy chủ (phiên vẫn coi là còn). */
+  loiKetNoi?: string;
 };
 
 type Ctx = {
@@ -55,10 +57,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const reload = useCallback(async () => {
     try {
       setSession(await api.get<Session>('/demo/session'));
-    } catch {
-      // Không gọi được máy chủ (chưa seed, hoặc API chưa chạy). Vẫn phải thoát trạng thái
-      // tải để màn hình chào hiển thị hướng dẫn xử lý thay vì treo ở skeleton.
-      setSession({ authenticated: false, demoDate: '', scenario: 'normal' });
+    } catch (e) {
+      /*
+       * PR-PH (03/10): lỗi mạng / 5xx / 503 KHÔNG có nghĩa là đã đăng xuất (cookie vẫn đúng — tải lại là vào được).
+       * Đã có phiên → giữ nguyên, chỉ báo mất kết nối. Chưa có phiên (lần tải đầu) → màn chào kèm lỗi để biết đường xử lý
+       * (máy chủ chưa chạy / chưa seed), như trước.
+       */
+      const loi = e instanceof Error ? e.message : 'Không gọi được máy chủ.';
+      setSession((cu) => cu?.authenticated ? { ...cu, loiKetNoi: loi } : { authenticated: false, demoDate: '', scenario: 'normal', loiKetNoi: loi });
     } finally {
       setLoading(false);
     }

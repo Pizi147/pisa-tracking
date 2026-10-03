@@ -90,7 +90,7 @@ function NutDay({ muc, active, so }: { muc: KhuVucMuc; active: boolean; so: SoBa
   );
 }
 export default function App() {
-  const { session, loading } = useSession();
+  const { session, loading, reload } = useSession();
   const location = useLocation();
   /* Một lần mỗi lần đổi trang (không hỏi lặp theo giờ); chỉ người duyệt được (Q10). */
   const dem = useApi<DemYeuCau>(session?.authenticated && session.nav?.workApprove ? '/yeu-cau/dem' : null, [location.pathname]).data;
@@ -127,6 +127,14 @@ export default function App() {
       <a href="#noi-dung" onClick={(e) => { e.preventDefault(); document.getElementById('noi-dung')?.focus(); }}
         className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[110] btn btn-sm">Bỏ qua tới nội dung</a>
       {!banChinh && <DemoBar />}
+      {/* PR-PH: mất kết nối khi tải lại phiên KHÔNG phải đăng xuất — giữ nguyên màn, chỉ báo và cho thử lại. */}
+      {session.loiKetNoi && (
+        <div role="alert" className="shrink-0 flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-3 sm:px-4 py-2 text-xs"
+          style={{ borderColor: 'rgb(var(--soon-line-rgb))', background: 'rgb(var(--soon-bg-rgb))', color: 'rgb(var(--soon-rgb))' }}>
+          <span>Mất kết nối tới máy chủ — dữ liệu trên màn có thể chưa mới. Bạn vẫn đang đăng nhập.</span>
+          <button type="button" className="btn btn-sm" onClick={() => { void reload(); }}>Thử lại</button>
+        </div>
+      )}
       <header className="relative shrink-0 border-b bg-[color:var(--surface)]" style={{ borderColor: 'var(--line)' }}>
         <div className="flex items-center gap-3 px-3 sm:px-4 h-14 min-w-0">
           <div className="flex items-center gap-2 shrink-0">

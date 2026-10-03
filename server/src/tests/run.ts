@@ -9053,6 +9053,10 @@ await runPrUxGTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 const { runPrHk1Tests } = await import('./prHk1.tests.ts');
 runPrHk1Tests({ check, assert });
 
+// ==================================================================== PR-PH (phiên đăng nhập không báo đăng xuất giả)
+const { runPrPhTests } = await import('./prPh.tests.ts');
+runPrPhTests({ check, assert });
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
