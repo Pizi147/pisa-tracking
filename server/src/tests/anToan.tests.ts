@@ -584,6 +584,22 @@ export async function runAnToanTests(t: AnToanTestKit) {
     assert(!moLai && !/\[turso\]/.test(log) && /hỏng đĩa giả/.test(log), `moLai=${moLai} log: ${log}`);
   });
 
+  await checkAsync('PR-PH · lỗi Turso KHÁC "stream not found" ở bước kiểm phiên → 500 có mã, KHÔNG phải 401 "đăng nhập lại", KHÔNG phải authenticated:false', async () => {
+    for (const loi of ['Hrana(Http("error sending request for url"))', 'SQLITE_IOERR: hỏng đĩa giả', 'fetch failed: ECONNRESET']) {
+      const { kq: s } = await giaLoi(/FROM demo_sessions/, loi, () => goi('GET', '/demo/session', { cookie: cookieLuong }));
+      assert(s.status === 500 && /Có lỗi · mã/.test(s.json?.error ?? ''), `/demo/session với "${loi}": ${s.status} ${JSON.stringify(s.json)}`);
+      const { kq: r } = await giaLoi(/FROM demo_sessions/, loi, () => goi('GET', '/ref/branches', { cookie: cookieLuong }));
+      assert(r.status === 500 && !/đăng nhập/i.test(r.json?.error ?? ''), `/ref/branches với "${loi}": ${r.status} ${JSON.stringify(r.json)}`);
+    }
+  });
+
+  await checkAsync('PR-PH · không có cookie / cookie sai vẫn là 401 (không đổi hành vi đúng)', async () => {
+    const r = await goi('GET', '/ref/branches', { cookie: 'pisa_demo_session=khong-ton-tai' });
+    assert(r.status === 401 && /đăng nhập/i.test(r.json?.error ?? ''), `${r.status} ${JSON.stringify(r.json)}`);
+    const s = await goi('GET', '/demo/session', { cookie: 'pisa_demo_session=khong-ton-tai' });
+    assert(s.status === 200 && s.json?.authenticated === false, `${s.status} ${JSON.stringify(s.json)}`);
+  });
+
   await checkAsync('Z2c-b/c · POST mất luồng → KHÔNG thử lại (tránh ghi hai lần): 500 có mã, không ghi dòng nào — nhưng VẪN bỏ kết nối chết (A2), log một dòng [turso] "KHÔNG thử lại"', async () => {
     const tk = taoTaiKhoan('anz2b.post');
     const dem = () => JSON.stringify([

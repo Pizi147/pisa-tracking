@@ -78,11 +78,14 @@ export function attachPrincipal(req: Request, _res: Response, next: NextFunction
       req.sessionToken = token;
     }
   } catch (e) {
-    /* PR-Z2c-b: mất luồng Turso KHÔNG phải "chưa đăng nhập" — nuốt đi là người dùng bị đẩy ra màn đăng nhập. Đưa sang bộ thử lại. */
-    if (laLoiMatLuongTurso(e)) { next(e); return; }
-    /* Z2c-e: 503 "đang bận" (chờ khoá ghi quá hạn, db.ts) cũng không phải "chưa đăng nhập" — trả đúng câu đó. */
-    if (e instanceof HttpError) { next(e); return; }
-    /* session trỏ tới user đã bị xoá sau khi reset seed */
+    /*
+     * PR-PH (03/10): KHÔNG nuốt lỗi nào ở đây. Lỗi khi kiểm phiên là lỗi máy chủ/kết nối, không phải "chưa đăng nhập" —
+     * nuốt đi thì requireAuth trả 401 "Đăng nhập lại" trong khi phiên vẫn tốt (tải lại trang là hết: lỗi chủ sản phẩm báo 03/10).
+     * Mất luồng Turso → bộ thử lại (Z2c-b); 503 đang bận → đúng câu đó (Z2c-e); còn lại → 500 có mã (traLoiLoi).
+     * User bị xoá đã được câu JOIN của resolveSession lọc, không cần nhánh nuốt.
+     */
+    next(e);
+    return;
   }
   next();
 }
