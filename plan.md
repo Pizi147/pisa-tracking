@@ -2014,6 +2014,7 @@ Nói **cái gì đổi trên màn hình**, bằng tiếng Việt, không tên h�
 
 | Ngày | Ai | Đổi gì và vì sao |
 |---|---|---|
+| 03/10/2026 | Claude (session planning) | Thêm kế hoạch `2026-10-03-pr-phien-lich-mt-dieu-huong-sua-lop.md` (9 yêu cầu chủ sản phẩm 03/10, chia 4 PR): PR-PH báo đăng xuất giả (attachPrincipal nuốt lỗi Turso → 401); PR-LM lịch MT chỉnh ở panel Lộ trình, dời vượt thì huỷ lịch lượt bị vượt có xác nhận (Q-0310-1/2 đổi quyết định 23/09 và Q6), một ô Dự kiến thi (đổi Q9), hộp xếp lịch rộng; PR-DH cột Dự kiến thi, Sắp tới có kỳ vọng/Thi thật, Trước/Sau ở hồ sơ HV và lớp, hàng chip; PR-SL sửa thông tin cả lớp |
 | 03/10/2026 | Claude (session planning) | Thêm kế hoạch `2026-10-03-pr-l1-popover-bao-cao-loc-gv.md` (PR-L1): L1 popover "Thiếu n" bị hàng dưới che; L2 thanh điều khiển Báo cáo đơn vị (chưa có kế hoạch trước đó); L3 lọc/phân loại giáo viên theo chi nhánh ở Quản trị › Tài khoản |
 | 02/10/2026 | Claude (session planning) | Chia H/K thành đợt trước và sau deploy; ghi trạng thái Q-B; thêm prompt PR-HK1 vào kế hoạch UX 02/10 |
 | 02/10/2026 | Claude (session planning, `/impeccable critique`) | Thêm mục 12.21 và kế hoạch `2026-10-02-ux-sau-critique.md` sau critique toàn web (trang, panel, chữ, badge) |
