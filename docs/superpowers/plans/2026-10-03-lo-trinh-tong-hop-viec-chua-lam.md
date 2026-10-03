@@ -8,6 +8,8 @@
 - **F01 = D13:** chống gửi trùng bằng **mã idempotency mỗi lần mở form** (cột `idempotency_key`), bỏ chặn trùng 10 giây theo tiêu đề. Áp cho `/tasks`, việc Vận hành, PA, followup.
 - **F02:** lưu **bản chụp nội dung lúc xác nhận** từ nay; việc đã làm trước đó ghi "Chưa lưu nội dung lúc báo — dưới đây là nội dung hiện tại". Không điền ngược.
 - **U01:** "chờ chấm" màu **tím `wait`** ở mọi nơi.
+- **Bị từ chối:** chip kiểu Cần làm ở mọi nơi (chủ sản phẩm 03/10).
+- **Tách PR-GV** thành GVa (nghiệp vụ) / GVb (Chờ duyệt) theo báo cáo rà §8.4.
 - **D01/Q-B:** làm (session planning chọn thời điểm): gộp vào PR Giao việc & Duyệt. Sửa kế hoạch UX 02/10 ghi Q-B **chưa làm** cho tới khi xong.
 
 ## Thứ tự PR
@@ -15,7 +17,8 @@
 | # | PR | Gồm | Vì sao gộp / thứ tự | Cỡ |
 |---|---|---|---|---|
 | 1 | **PR-PH** (đang làm) | Báo đăng xuất giả (PH-1..3) | Lỗi người dùng thấy hằng ngày | S |
-| 2 | **PR-GV · Giao việc & Duyệt** | F01/D13 idempotency key · F03 chi nhánh form · F04 khoá gửi khi chưa có kỳ (máy chủ cũng chặn) · D01/Q-B duyệt nhiều ở "Tất cả" + Chọn hết + Nhắc tất cả · J5 hàng chip đếm Chờ duyệt · J5b tách "Để QL biết" · U01 | Cùng `MgmtTasksPage`, `meeting.ts`, `mgmttasks.ts`, `HopChoDuyet`; lỗi mất dữ liệu nên đi sớm | L |
+| 2a | **PR-GVa · Giao việc (dữ liệu + form)** | F01/D13 idempotency key · F03 chi nhánh form · F04 khoá gửi khi chưa có kỳ (máy chủ cũng chặn) | Báo cáo rà #172–#176 §8.4: tách sửa nghiệp vụ khỏi UX | M |
+| 2b | **PR-GVb · Chờ duyệt** | D01/Q-B duyệt nhiều ở "Tất cả" + Chọn hết + Nhắc tất cả · J5 · J5b "Để QL biết" · U01 tím `wait` · chip "Bị từ chối" = kiểu **Cần làm** mọi nơi | Cùng `HopChoDuyet`, tone trạng thái | M |
 | 3 | **PR-PHH · Báo PH lưu bản chụp** | F02 (cột snapshot + migrate, hiển thị "đã báo" vs "hiện tại") | Có migrate, tách riêng để dễ rà | M |
 | 4 | **PR-LM · Lịch MT** | LM-1..5 · I5 chữ hồ sơ Mock ("Thi bù tuần này (lần 1)", ví dụ nhận xét) · I4 phần MockDetail/HopThaoTacMt Drawer→KhungPanel | Cùng `MockDetailPage`, `HopThaoTacMt` | L |
 | 5 | **PR-DH · Học viên & Lớp + hồ sơ** | DH-1..5 · L1 popover "Thiếu n" · K1 (phần desktop: gộp "Tất cả" + Loại lớp = DH-5) · H6 chip "+1" bấm được · D1 badge chuyển lớp khớp số dòng · J6 "Target"(kiểm thuật ngữ) · J8 chữ bị cắt · J10 bỏ "chưa có dữ liệu" lặp ở hồ sơ HV | Cùng `StudentsPage`, `BangHocVienLop`, `MissingBadge`, hồ sơ | L |
@@ -34,3 +37,9 @@ UX-D7 bảng→thẻ điện thoại · Thêm HV dạng thẻ điện thoại ·
 
 ## Đã chốt không làm
 GV-C1 chấm đúng hạn lịch sử · góc Phân tích › Giáo viên cũ · mockup 26 bản 3–4 · Q12 em tạm dừng · ba ý tưởng §20.1 · B7 (giữ mã).
+
+## Áp cho mọi PR (từ báo cáo rà #172–#176 §8)
+- Lỗi: viết phép kiểm **thất bại trên DB test** trước, sửa theo nguyên nhân; không làm phép khớp chuỗi nguồn cho xanh khi kiểm được hành vi.
+- Bấm thử trình duyệt 375 và 1440, sáng/tối, ít nhất 3 vai: toàn hệ thống, quản lý chi nhánh, GV.
+- Mô tả PR báo từng ID: đã tái hiện / bác bỏ (lý do), file sửa, phép kiểm bảo vệ, ảnh, giới hạn còn lại.
+- Danh sách bấm thử chưa kiểm chứng (#174 §6.2): panel Chuyển lớp đè demo bar → PR-DH; chữ "Khác" mơ hồ, trang lưu trữ thiếu trạng thái rỗng, hồ sơ cá nhân nhiều khoảng trống → PR-HK2. Xác nhận có thật rồi mới sửa.
