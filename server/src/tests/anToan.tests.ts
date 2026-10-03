@@ -600,6 +600,11 @@ export async function runAnToanTests(t: AnToanTestKit) {
     assert(s.status === 200 && s.json?.authenticated === false, `${s.status} ${JSON.stringify(s.json)}`);
   });
 
+  await checkAsync('PR-PH · mọi phản hồi /api có Cache-Control: no-store (phiên không bị cache ở trình duyệt/CDN)', async () => {
+    const r = await goi('GET', '/demo/session', { cookie: cookieLuong });
+    assert(/no-store/.test(String(r.cacheControl ?? '')), `cache-control: ${r.cacheControl}`);
+  });
+
   await checkAsync('Z2c-b/c · POST mất luồng → KHÔNG thử lại (tránh ghi hai lần): 500 có mã, không ghi dòng nào — nhưng VẪN bỏ kết nối chết (A2), log một dòng [turso] "KHÔNG thử lại"', async () => {
     const tk = taoTaiKhoan('anz2b.post');
     const dem = () => JSON.stringify([

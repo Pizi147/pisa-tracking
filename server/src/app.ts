@@ -31,6 +31,8 @@ export function createApp() {
   app.use(cookieParser());
   app.use(demGio);
   app.use(moNguCanhRequest);
+  /* PR-PH: phản hồi API (nhất là /demo/session) không bao giờ được cache ở trình duyệt/CDN (đặt trước mọi thứ để cả phản hồi lỗi cũng có). */
+  app.use('/api', (_req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
   /* AN-4: đặt trước attachPrincipal — gọi health kèm cookie cũ cũng không tốn một lượt hỏi phiên. */
   app.get('/api/health', taoSuKhoe());
 
