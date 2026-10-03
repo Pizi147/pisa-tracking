@@ -21,6 +21,11 @@
 - Đổi tên/xoá file thì sửa `CODE_MAP.md` trong cùng commit.
 - Xong mỗi PR: đánh dấu `[x]` ở file này, thêm một dòng mục 14 `plan.md`, mở PR (không tự merge), liệt kê chú thích `ponytail:`.
 
+## Skill bắt buộc (mọi PR trong file này)
+- **superpowers:** `anthropic-skills:subagent-driven-development` chạy kế hoạch từng Task; `test-driven-development` cho mỗi Task (phép kiểm đỏ trước); `systematic-debugging` khi gặp lỗi/phép kiểm hỏng bất ngờ; `brainstorming` nếu phát sinh việc cần chủ sản phẩm quyết (dừng, hỏi, không tự chọn); `verification-before-completion` trước khi báo xong; `requesting-code-review` trước khi mở PR; `finishing-a-development-branch` để chốt nhánh (mở PR, không merge).
+- **ponytail:** PR có giao diện gõ `/ponytail lite` đầu phiên; PR chỉ máy chủ giữ `full`. `/ponytail-review` trước khi mở PR; liệt kê mọi chú thích `ponytail:` trong mô tả PR.
+- **impeccable:** lệnh theo từng Task (ghi ở dòng "Skill:" đầu mỗi Task) — giữ nguyên, chỉ trong phạm vi PR; `/impeccable audit` trước **mọi** PR có giao diện.
+
 ---
 
 ## A. Yêu cầu gốc (03/10) và đối chiếu kế hoạch cũ
@@ -65,6 +70,7 @@ Nhánh: `pr-ph-phien-dang-nhap`. Không sửa giao diện → `ponytail` mức `
 3. Web không xử lý 401 riêng (`web/src/lib/api.ts:46-62`) — chữ "đăng nhập lại" chỉ là thông điệp lỗi của máy chủ hiện như mọi lỗi khác, nên tải lại là hết.
 
 ### Task PH-1: `attachPrincipal` không biến lỗi máy chủ thành "chưa đăng nhập"
+Skill: test-driven-development (máy chủ, ponytail full)
 
 **Files:**
 - Modify: `server/src/auth.ts:72-88`
@@ -125,6 +131,7 @@ export function attachPrincipal(req: Request, _res: Response, next: NextFunction
 - [ ] **Step 5: Commit** — `git commit -am "PR-PH: kiểm phiên gặp lỗi máy chủ trả 500 có mã, không trả 401 đăng nhập lại"`
 
 ### Task PH-2: Web — lỗi khi tải phiên không đẩy ra màn đăng nhập
+Skill: test-driven-development · systematic-debugging
 
 **Files:**
 - Modify: `web/src/lib/session.tsx:55-65` (`reload`)
@@ -193,6 +200,7 @@ Thêm `loiKetNoi?: string` vào kiểu `Session` trong file này. Lần tải th
 - [ ] **Step 7: Commit** — `git commit -am "PR-PH: web giữ phiên khi mất kết nối, dải Thử lại thay màn đăng nhập"`
 
 ### Task PH-3: Chống cache phản hồi API
+Skill: test-driven-development (máy chủ)
 **Files:** Modify `server/src/app.ts` (middleware trước router `/api`). Test: `server/src/tests/anToan.tests.ts`, cạnh PH-1 (đã có `goi`, `cookieLuong`).
 
 - [ ] **Step 1: Phép đỏ** (trong `anToan.tests.ts`, cạnh PH-1):
@@ -224,6 +232,7 @@ Nhánh: `pr-lm-lich-mt-linh-hoat`. Có giao diện → `/ponytail lite`; impecca
 - Route: `/ke-hoach-test/dot/kiem :467`, `/ke-hoach-test/dot :475`, `/attempts/:id/week :628`, `/attempts/:id/skills/:skill/week :650` (`server/src/routes/index.ts`).
 
 ### Task LM-1: Luật "dời vượt → huỷ lịch lượt bị vượt" (máy chủ, Q-0310-1/2, D1–D4)
+Skill: test-driven-development (máy chủ) · impeccable clarify (chữ cảnh báo)
 
 **Files:**
 - Modify: `shared/domain/lichMt.ts` (thêm `luotBiVuot`), `shared/domain/index.ts` (re-export)
@@ -349,6 +358,7 @@ const nhanLuot = (x: { attemptNo: number; kind: string }) => (x.kind === 'mock' 
 - [ ] **Step 9: Commit** — `"PR-LM (1): dời vượt lượt sau → huỷ lịch lượt bị vượt có xác nhận; MT lịch sử đổi tuần được; POST /attempts/:id/bo-tuan"`
 
 ### Task LM-2: Panel Lộ trình — một ô "Dự kiến thi" (mục 2, Q-0310-5)
+Skill: test-driven-development · impeccable layout
 
 **Files:** Modify `web/src/modules/students/StudentPlanPanel.tsx:65-82,128-150`. Test: `prLm.tests.ts` (quét nguồn).
 
@@ -366,6 +376,7 @@ const nhanLuot = (x: { attemptNo: number; kind: string }) => (x.kind === 'mock' 
 - [ ] **Step 4:** `npm run check` → **Step 5:** commit `"PR-LM (2): panel Lộ trình một ô Dự kiến thi"`.
 
 ### Task LM-3: Hộp xếp lịch MT (ảnh 4) — rộng hơn, một thanh chọn tuần
+Skill: test-driven-development · impeccable layout, harden (popover)
 
 **Files:** Modify `web/src/modules/test/keHoach/HopKyNang.tsx:194,218,276,293`, `web/src/modules/test/keHoach/TuanNho.tsx:19-61`, `web/src/ui/Filters.tsx:80-202` (thêm `toiThieu`). Test: `prLm.tests.ts` (quét nguồn).
 
@@ -383,6 +394,7 @@ const nhanLuot = (x: { attemptNo: number; kind: string }) => (x.kind === 'mock' 
 - [ ] **Step 4:** `npm run check` + ảnh 1440/375 hộp mở ở Kế hoạch Test (MT đang chạy, MT có cảnh báo huỷ lịch, popover lịch mở) → **Step 5:** commit `"PR-LM (3): hộp xếp lịch rộng, một thanh chọn tuần, cảnh báo huỷ lịch"`.
 
 ### Task LM-4: "Dời lịch thi cả đợt" (ảnh 2) — chọn tuần dễ, không bỏ cảnh báo
+Skill: test-driven-development · impeccable clarify
 
 **Files:** Modify `web/src/modules/fasttrack/MockDetailPage.tsx:160-184,599-649`.
 
@@ -395,6 +407,7 @@ const nhanLuot = (x: { attemptNo: number; kind: string }) => (x.kind === 'mock' 
 - [ ] **Step 4:** `npm run check` + ảnh → **Step 5:** commit `"PR-LM (4): Dời lịch cả đợt dùng WeekPicker, giữ cảnh báo, báo huỷ lịch lượt bị vượt"`.
 
 ### Task LM-5: Panel Lộ trình — chỉnh lịch MT ngay tại bảng (mục 2, 3)
+Skill: test-driven-development · impeccable layout
 
 **Files:**
 - Modify: `web/src/modules/students/StudentPlanPanel.tsx:163-235`
@@ -419,12 +432,45 @@ const nhanLuot = (x: { attemptNo: number; kind: string }) => (x.kind === 'mock' 
   - Sau mỗi thao tác: tải lại `suggested-mocks` và báo toast một dòng ("Đã dời MT1 sang W4 JUL · huỷ lịch MT2").
 - [ ] **Step 4:** `npm run check` + ảnh panel ở 4 trạng thái → **Step 5:** commit `"PR-LM (5): panel Lộ trình xếp/dời/huỷ lịch/nhập điểm MT tại chỗ"`.
 
+### Task LM-6: Chữ hồ sơ Mock (I5 của `2026-10-02-ux-sau-critique.md:95-97`)
+Skill: test-driven-development · impeccable clarify
+
+**Files:**
+- Modify: `web/src/modules/fasttrack/ODiemLon.tsx:57-60` (nhánh `l.doiTu && l.absenceMoveCount > 0` dựng chữ `vắng · dời sang ${tuanLich(l.weekStart, homNay)} · lần ${l.absenceMoveCount}`).
+- Modify: `web/src/modules/fasttrack/NhanXet.tsx:109` (`placeholder="Không bắt buộc"`).
+- Test: `prLm.tests.ts` (hàm thuần + quét nguồn).
+
+- [ ] **Step 1: Phép đỏ** — tách phần chọn chữ của nhánh trên thành hàm thuần `chuDoiVang(l, homNay)` (cùng file, export để kiểm): (a) `weekStart` thuộc tuần của `homNay` → `chu === 'Thi bù tuần này (lần 1)'` với `absenceMoveCount = 1`; (b) tuần khác → giữ chữ dạng `vắng · dời sang W4 SEP · lần 2` (mã tuần, không ngày); `title` giữ nguyên câu "Dời từ … sang …". Quét nguồn: `NhanXet.tsx` không còn `"Không bắt buộc"`, placeholder bắt đầu "Ví dụ:".
+- [ ] **Step 2: Đỏ** → **Step 3: Sửa (impeccable `clarify`):**
+  - Tuần đang xem = tuần thi bù → "Thi bù tuần này (lần N)"; so tuần bằng hàm tuần sẵn có (`shared/domain`, cùng nguồn với `tuanLich`), không so chuỗi.
+  - Placeholder nhận xét: `"Ví dụ: Nghe phần 3 còn chậm, cần luyện thêm dạng điền bảng"` (luật `KhungPanel`: chữ mẫu bắt đầu "Ví dụ:"); giữ `maxLength={NHAN_XET_TOI_DA}`, lưu khi blur / Ctrl+Enter như cũ.
+- [ ] **Step 4:** `npm run check` + ảnh hồ sơ MT có ô thi bù (tuần này / tuần khác) 1440/375 → **Step 5:** commit `"PR-LM (6): chữ thi bù và chữ mẫu nhận xét ở hồ sơ MT"`.
+
+### Task LM-7: MockDetailPage + HopThaoTacMt: `Modal` (Drawer) → `KhungPanel` (I4, phần lịch MT — `2026-10-02-ux-sau-critique.md:93-94`)
+Skill: test-driven-development · impeccable layout, harden
+
+**Files:**
+- Modify: `web/src/modules/fasttrack/MockDetailPage.tsx` — import `:10` (`ConfirmDialog, Modal` từ `../../ui/Drawer.tsx`); các hộp `WeekModal :599-649` (`<Modal :613`, đã đổi ở LM-4 — làm SAU LM-4), `DeadlineModal :652-704` (`:675`), `AbsenceMoveModal :753-863` (`:789`), `TraLoiDeNghiModal :865+` (`:875`). `CancelDialog :706` (`ConfirmDialog`) giữ — hộp xác nhận, không phải panel.
+- Modify: `web/src/modules/fasttrack/HopThaoTacMt.tsx` — import `:4`, `<Modal :140-145>` (chân: "Đóng" trái, nút chính phải, chữ "Vẫn dời vào tuần này" khi `canhBao`).
+- Dùng: `web/src/ui/KhungPanel.tsx` (`KhungPanel` + `chan: { huy, xoa, phu, chinh, conThieu }`, `khoPanelChung` — mở panel mới thì thay, không chồng).
+- Test: `prLm.tests.ts` (quét nguồn).
+
+- [ ] **Step 1: Phép đỏ** — quét nguồn: `MockDetailPage.tsx` và `HopThaoTacMt.tsx` không import `Modal` từ `Drawer.tsx` (chỉ còn `ConfirmDialog` ở MockDetailPage); có `<KhungPanel`; không có nút chữ trần `>Huỷ<` ở chân (luật S3). Phép hành vi cũ của các hộp (lưu tuần, hạn, xử lý vắng, trả lời đề nghị, thao tác MT) giữ nguyên, phải vẫn xanh.
+- [ ] **Step 2: Đỏ** → **Step 3: Sửa (impeccable `layout`, `harden`):**
+  - Chỉ đổi khung: `title` → `tieuDe` (+ `hocVien`, `lop` từ `detail`), nội dung → thân, `footer` → `chan`. Không đổi gọi API, `force`, lý do ≥ `LY_DO_TOI_THIEU`, điều kiện bật/tắt nút.
+  - Luật S3 chân: chưa sửa → `huy.nhan = 'Đóng'`, đã sửa (theo state ô) → `'Huỷ thay đổi'`; thao tác nguy hiểm (`bo-ky-nang`, `huy-diem`) giữ nút chính màu đỏ; đang lưu → "Đang lưu…" và khoá nút.
+  - Lỗi máy chủ hiện trong panel (`Truong loi` / dòng lỗi trên chân), không đóng panel, không mất chữ đã gõ.
+  - 375 px toàn màn, nút ≥ 40 px; Esc đóng như `onDong` (hỏi nếu đã sửa — như các panel KhungPanel khác).
+- [ ] **Step 4:** `npm run check` + ảnh từng hộp 1440/375 sáng/tối → **Step 5:** commit `"PR-LM (7): hộp thao tác hồ sơ MT dùng KhungPanel, giữ hành vi"`.
+
 **Nghiệm thu PR-LM:**
 1. Ảnh 1: panel Lộ trình một ô Dự kiến thi; mỗi hàng MT có nút xếp/dời/nhập điểm; không phải vào hồ sơ MT.
 2. Ảnh 2: chọn tuần bằng ‹ › + lịch, không cuộn danh sách; tuần đã qua bị khoá với MT đang chạy.
 3. Ảnh 4: hộp đủ rộng, không chữ "W…", mỗi kỹ năng một thanh chọn tuần.
 4. Mục 8: dời MT1 sau MT2 → chữ đỏ trên hộp; Lưu → hộp xác nhận nêu MT2; xác nhận → MT2 "Chưa xếp lịch"; MT2 có điểm → chặn, không có nút lưu. Dời MT lịch sử được.
-5. `/impeccable audit` các màn: panel Lộ trình, hồ sơ MT (hộp Dời cả đợt), Kế hoạch Test (HopKyNang) — 1440/375 sáng/tối.
+5. LM-6: ô thi bù đang ở tuần này ghi "Thi bù tuần này (lần 1)"; ô nhận xét có chữ mẫu "Ví dụ: …".
+6. LM-7: mọi hộp thao tác của hồ sơ MT mở dạng `KhungPanel` (ngăn phải / toàn màn 375), chân theo luật S3, hành vi y như trước.
+7. `/impeccable audit` các màn: panel Lộ trình, hồ sơ MT (hộp Dời cả đợt, các panel thao tác), Kế hoạch Test (HopKyNang) — 1440/375 sáng/tối.
 
 ---
 
@@ -435,6 +481,7 @@ Nhánh: `pr-dh-bang-dieu-huong`. Có giao diện → `/ponytail lite`; impeccabl
 **Bản đồ code:** `web/src/modules/students/StudentsPage.tsx` (chip `:184-208`, cột `CotBangLop :299-306`, tiêu đề cột, `HopLop :312-392`), `BangHocVienLop.tsx` (ô "Sắp tới" `:147-148,169-171`, thẻ điện thoại `:96-134`), `server/src/students/standing.ts:78-83,140,217-224` (`nextAttemptLabel`, `nextWeekStart`), `shared/domain/lichMt.ts:111-121` (`mocKeTiep`, `MOC_KE_TIEP_SQL`), `server/src/fasttrack/scoring.ts:110` (`expectationFor`), `server/src/fasttrack/cycles.ts:86-115` (`examPlanOf`), roster `classes.ts:609,615-622` (đã trả `examPlan`), `StudentDetailPage.tsx:183` (Quay lại = `navigate(-1)`), `ClassOverviewPage.tsx` + `DauTrangLop.tsx` (chưa có Quay lại), `shared/domain/duongHoSo.ts:38-52`.
 
 ### Task DH-1: "Sắp tới" thêm kỳ vọng, hết MT thì "Thi thật" (mục 5, D5)
+Skill: test-driven-development (hàm thuần chuSapToi)
 
 **Files:** Create `shared/domain/sapToi.ts` (+ re-export). Modify `server/src/students/standing.ts` (thêm `nextKyVong`, `conLuotChuaXep`, `examPlan`), `BangHocVienLop.tsx:147-171`. Test: `server/src/tests/prDh.tests.ts` (mới) + `run.ts`.
 
@@ -496,6 +543,7 @@ export function chuSapToi(o: {
 - [ ] **Step 6:** `npm run check` → **Step 7:** commit `"PR-DH (1): Sắp tới có kỳ vọng, hết MT thì Thi thật"`.
 
 ### Task DH-2: Cột "Dự kiến thi" (mục 5)
+Skill: test-driven-development · impeccable layout
 
 **Files:** Modify `StudentsPage.tsx:299-306` (+ tiêu đề cột), `BangHocVienLop.tsx` (ô mới + thẻ điện thoại). Test: quét nguồn trong `prDh.tests.ts`.
 
@@ -508,6 +556,7 @@ export function chuSapToi(o: {
 - [ ] **Step 4:** `npm run check` + ảnh → **Step 5:** commit `"PR-DH (2): cột Dự kiến thi ở Học viên & Lớp"`.
 
 ### Task DH-3: Học viên trước / sau trong hồ sơ học viên (mục 4, Q-0310-4)
+Skill: test-driven-development (hàm thuần keBen)
 
 **Files:**
 - Create: `shared/domain/dieuHuongHoSo.ts` (+ re-export) — hàm thuần.
@@ -551,6 +600,7 @@ export function keBen(ds: readonly number[], id: number): { truoc: number | null
 - [ ] **Step 6:** commit `"PR-DH (3): hồ sơ học viên có Trước/Sau theo danh sách vừa mở"`.
 
 ### Task DH-4: Lớp trước / sau + Quay lại ở hồ sơ lớp (mục 4)
+Skill: test-driven-development · impeccable layout
 
 **Files:** Modify `StudentsPage.tsx` (`HopLop` link "Hồ sơ lớp" truyền `ds` loại `lop` theo thứ tự lớp đang hiện), `DauTrangLop.tsx` (thêm `ThanhTruocSau` trên `header.card`). Fallback `dsDuPhong` = thứ tự `GET /hoc-vien-lop` (`rows`) không lọc.
 
@@ -558,6 +608,7 @@ export function keBen(ds: readonly number[], id: number): { truoc: number | null
 - [ ] **Step 2:** sửa → `npm run check` → bấm thử: từ Học viên & Lớp (khung Fast Track) mở lớp 1 → Sau sang lớp 2 cùng khung → **Step 3:** commit `"PR-DH (4): hồ sơ lớp có Quay lại và Lớp trước/sau"`.
 
 ### Task DH-5: Hàng chip đầu trang Học viên & Lớp (mục 6)
+Skill: test-driven-development · impeccable critique (vùng đầu trang) → layout
 
 **Files:** Modify `StudentsPage.tsx:138-208`.
 
@@ -581,6 +632,7 @@ Nhánh: `pr-sl-sua-ca-lop`. Có giao diện → `/ponytail lite`; impeccable `la
 **Bản đồ code:** `IntakePanel.tsx` (mẫu panel lưới, `KhungPanel rong="toan"`), `shared/domain/nhapHocVien.ts` (`cotLuoiNhap`), `server/src/classes/intake.ts` (mẫu preview/commit có `idempotencyKey`), `server/src/students/students.ts:353-390` (`updateStudent`), `server/src/fasttrack/cycles.ts` (`updateCycle :185`, `setBaseline :361`, `reviseTarget :486`), quyền `STUDENT_EDIT` / `CYCLE_EDIT` (`server/src/permissions.ts:396-407`), menu ⋮ `DauTrangLop.tsx:108-123`.
 
 ### Task SL-1: Máy chủ — xem trước và lưu hàng loạt, tất cả hoặc không gì
+Skill: test-driven-development (máy chủ, một giao dịch)
 
 **Files:**
 - Create: `server/src/classes/suaCaLop.ts`
@@ -610,6 +662,7 @@ Nhánh: `pr-sl-sua-ca-lop`. Có giao diện → `/ponytail lite`; impeccable `la
 - [ ] **Step 4:** `npm run check` xanh → **Step 5:** commit `"PR-SL (1): máy chủ sửa thông tin cả lớp, xem trước + lưu một giao dịch"`.
 
 ### Task SL-2: Panel "Sửa thông tin cả lớp"
+Skill: test-driven-development · impeccable layout, harden
 
 **Files:**
 - Create: `web/src/modules/students/SuaCaLopPanel.tsx`
@@ -657,12 +710,15 @@ Xong: đánh dấu [x], thêm dòng mục 14 plan.md, /ponytail-review, mở PR 
 ```
 /ponytail lite
 
-Làm PR-LM trong docs/superpowers/plans/2026-10-03-pr-phien-lich-mt-dieu-huong-sua-lop.md (Task LM-1 → LM-5). Nhánh mới từ main: pr-lm-lich-mt-linh-hoat.
+Làm PR-LM trong docs/superpowers/plans/2026-10-03-pr-phien-lich-mt-dieu-huong-sua-lop.md (Task LM-1 → LM-7). Nhánh mới từ main: pr-lm-lich-mt-linh-hoat.
+Skill: anthropic-skills:subagent-driven-development (từng Task) · test-driven-development mỗi Task · systematic-debugging khi lỗi · brainstorming nếu cần chủ sản phẩm quyết · verification-before-completion trước khi báo xong · requesting-code-review + finishing-a-development-branch trước khi mở PR.
 Đọc trước: CLAUDE.md, mục A, B (Q-0310-1..5, D1–D6), "Global Constraints", "PR-LM" và mục C (rủi ro tuần NULL); thiet-ke/HE_GIAO_DIEN.md.
 - LM-1 máy chủ trước, có phép kiểm đỏ; phép cũ về "vượt qua lượt kế tiếp" chỉ sửa đúng chỗ hành vi đổi theo Q-0310-1.
-- LM-2..LM-5 giao diện: impeccable `layout` (LM-3, LM-5), `clarify` (chữ cảnh báo đỏ, hộp xác nhận, LM-4), `harden` (popover lịch LM-3).
+- LM-2..LM-7 giao diện: /impeccable layout (LM-2, LM-3, LM-5, LM-7), /impeccable clarify (chữ cảnh báo đỏ, hộp xác nhận, LM-4, LM-6), /impeccable harden (popover lịch LM-3, LM-7).
+- LM-6: chữ "Thi bù tuần này (lần N)" (ODiemLon.tsx:57-60), chữ mẫu nhận xét "Ví dụ: …" (NhanXet.tsx:109).
+- LM-7: làm SAU LM-4; MockDetailPage + HopThaoTacMt đổi Modal → KhungPanel, chỉ đổi khung, chân theo luật S3.
 - grep mọi chỗ đọc planned_period_id, kiểm với lượt bỏ tuần, ghi danh sách vào mô tả PR.
-Kiểm: npm run check; npm run seed && npm run dev; ảnh 1440/375 sáng/tối: panel Lộ trình (4 trạng thái hàng MT, dải nhập điểm mở), hồ sơ MT (hộp Dời cả đợt có cảnh báo), Kế hoạch Test (HopKyNang + popover lịch + hộp xác nhận huỷ lịch).
+Kiểm: npm run check; npm run seed && npm run dev; ảnh 1440/375 sáng/tối: panel Lộ trình (4 trạng thái hàng MT, dải nhập điểm mở), hồ sơ MT (hộp Dời cả đợt có cảnh báo), Kế hoạch Test (HopKyNang + popover lịch + hộp xác nhận huỷ lịch), hồ sơ MT (ô thi bù, các panel thao tác KhungPanel).
 /impeccable audit các màn đã sửa → /ponytail-review. Xong: [x], dòng mục 14 plan.md, mở PR, liệt kê ponytail:, báo ảnh sổ tay lệch.
 ```
 
@@ -671,9 +727,10 @@ Kiểm: npm run check; npm run seed && npm run dev; ảnh 1440/375 sáng/tối: 
 /ponytail lite
 
 Làm PR-DH trong docs/superpowers/plans/2026-10-03-pr-phien-lich-mt-dieu-huong-sua-lop.md (Task DH-1 → DH-5). Nhánh mới từ main SAU khi PR-LM đã merge: pr-dh-bang-dieu-huong.
+Skill: anthropic-skills:subagent-driven-development (từng Task) · test-driven-development mỗi Task · systematic-debugging khi lỗi · brainstorming nếu cần chủ sản phẩm quyết · verification-before-completion trước khi báo xong · requesting-code-review + finishing-a-development-branch trước khi mở PR.
 Đọc trước: CLAUDE.md, mục A, B (Q-0310-4, D5), "Global Constraints", "PR-DH".
 - DH-1/DH-3 hàm thuần chuSapToi, keBen có phép kiểm đỏ trước.
-- DH-5: /impeccable critique chỉ vùng đầu trang Học viên & Lớp, rồi `layout`.
+- DH-2, DH-4: /impeccable layout. DH-5: /impeccable critique chỉ vùng đầu trang Học viên & Lớp, rồi /impeccable layout.
 Kiểm: npm run check; ảnh 1440/375 sáng/tối Học viên & Lớp (cột mới, Sắp tới 3 dạng), hồ sơ HV và hồ sơ lớp (thanh Trước/Sau); bấm thử Trước/Sau với bộ lọc "Cần làm" và với link mở thẳng.
 /impeccable audit → /ponytail-review. Xong: [x], dòng mục 14 plan.md, mở PR, liệt kê ponytail:, báo ảnh sổ tay lệch.
 ```
@@ -683,9 +740,10 @@ Kiểm: npm run check; ảnh 1440/375 sáng/tối Học viên & Lớp (cột m�
 /ponytail lite
 
 Làm PR-SL trong docs/superpowers/plans/2026-10-03-pr-phien-lich-mt-dieu-huong-sua-lop.md (Task SL-1 → SL-2). Nhánh mới từ main: pr-sl-sua-ca-lop.
+Skill: anthropic-skills:subagent-driven-development (từng Task) · test-driven-development mỗi Task · systematic-debugging khi lỗi · brainstorming nếu cần chủ sản phẩm quyết · verification-before-completion trước khi báo xong · requesting-code-review + finishing-a-development-branch trước khi mở PR.
 Đọc trước: CLAUDE.md, mục B (Q-0310-3), "Global Constraints", "PR-SL"; IntakePanel.tsx làm mẫu.
 - SL-1 máy chủ: phép kiểm đỏ trước; gọi lại updateStudent / updateCycle / setBaseline / reviseTarget, không viết lại luật; một giao dịch.
-- SL-2: impeccable `layout` + `harden`; không có ô dán Excel; luật S3 cho nút chân panel.
+- SL-2: /impeccable layout + /impeccable harden; không có ô dán Excel; luật S3 cho nút chân panel.
 Kiểm: npm run check; ảnh 1440/375 sáng/tối panel (chưa sửa / có lỗi / có Target đổi); bấm thử bằng tài khoản Quản lý và GVCN.
 /impeccable audit → /ponytail-review. Xong: [x], dòng mục 14 plan.md, cập nhật CODE_MAP.md, mở PR, liệt kê ponytail:.
 ```
