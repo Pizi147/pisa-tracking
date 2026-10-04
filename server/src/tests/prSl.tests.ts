@@ -13,12 +13,13 @@ export async function runPrSlTests(t: YThucTestKit) {
   const QL = P.mbManager.userId, GVCN = P.coreTeacher.userId;
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
-  const emCua = (lop: number) => all(
+  /* Mỗi em MỘT dòng: lộ trình đang chạy seq lớn nhất — đúng lộ trình máy chủ sửa (em có thể có hai lộ trình đang chạy). */
+  const emCua = (lop: number) => [...new Map(all(
     `SELECT s.id AS sid, s.full_name, s.email, cy.id AS cid, cy.route, cy.target_score, rp.week_start AS tuan
        FROM enrollments e JOIN students s ON s.id = e.student_id
        JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
        LEFT JOIN report_periods rp ON rp.id = cy.start_period_id
-      WHERE e.class_id = ? AND e.status = 'active' ORDER BY s.id`, lop);
+      WHERE e.class_id = ? AND e.status = 'active' ORDER BY s.id, cy.seq`, lop).map((r) => [r.sid, r] as const)).values()];
   const em = emCua(ft);
   assert(em.length >= 6, `seed: MB FT 101 cần ≥ 6 em, có ${em.length}`);
   const soAudit = (sid: number) => get(`SELECT COUNT(*) n FROM audit_logs WHERE action = 'student.update' AND entity_id = ?`, sid).n as number;
