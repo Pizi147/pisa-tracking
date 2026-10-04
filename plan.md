@@ -128,8 +128,8 @@ PR-PHH: chưa chạy migrate trên bản sao DB bản chính → bước tập d
   `aria-describedby` (`ui/ui.tsx` Field, `ui/KhungPanel.tsx` Truong).
 
 ### PR-DL · Điểm theo lớp (L) — kế hoạch có sẵn (DL-0→7), mockup đã duyệt
-- Nhập điểm cả lớp theo từng lượt (FT: MT1, MT2, … kể cả lịch sử; lớp thường: bài theo lịch riêng của lớp). DL-0 sai giả
-  định G2 thì dừng hỏi. `DauTrangLop.tsx`: chỉ thêm một mục menu ⋮.
+- Nhập điểm cả lớp theo từng lượt (FT: MT1, MT2, … kể cả lịch sử; lớp thường: hai bảng Giữa khoá / Cuối khoá, nhận diện theo `kind` —
+  DL-0 04/10 chủ sản phẩm chốt, không có "bài thêm"). `DauTrangLop.tsx`: chỉ thêm một mục menu ⋮.
 
 ### PR-U12 · Kết quả kiểm tra lớp thường ở hồ sơ HV (S) — kế hoạch `2026-10-04-pr-u12-ket-qua-lop-thuong.md`
 - Chủ sản phẩm 04/10: **làm, giống bảng Mock Test** (K4-33): ô kết quả nói một lần ("Chờ n môn" khi chấm dở), bấm tên bài là mở,
@@ -139,6 +139,10 @@ PR-PHH: chưa chạy migrate trên bản sao DB bản chính → bước tập d
 - Chủ sản phẩm 04/10 tối: em 50–59% → GVCN ghi **đề xuất**, Quản lý quyết lúc chuyển lớp (không thẻ Chờ duyệt) · "Chưa rõ" + "Xếp sau"
   **gộp hẳn** thành "Chưa quyết" (migrate `prK26`) · **làm** "Ghi lộ trình tiếp theo cả lớp" (menu ⋮ hồ sơ lớp).
 - Hướng gợi ý theo Cuối khoá đứng đầu, các hướng khác thu vào "Hướng khác ▾".
+
+### PR-TEN · Đổi tên bài lớp thường (S, sau đợt 3, trước HK2)
+- Chủ sản phẩm 04/10 (lúc làm PR-DL): "Giữa khoá" → **Progress Test**, "Cuối khoá" → **Final Test**, **cả nhãn dài** ("Bài kiểm tra
+  giữa/cuối khoá") — thay ở mọi nơi (web, thông báo, báo cáo, sổ tay; ~940 chỗ / ~130 file). Làm sau khi U12, DL, K26, SL merge để tránh xung đột.
 
 ### PR-HK2 · Badge & chữ, chụp lại sổ tay (L, cuối cùng) — kế hoạch có sẵn một phần
 - `2026-10-02-ux-sau-critique.md`: **H1/H2** ba họ chip · **K1** còn lại (nếu DH chưa làm hết) · **K2** Phân tích › Tổng hợp ·

@@ -12,6 +12,15 @@
 
 **Phụ thuộc / thứ tự:** chạy **sau PR-LM** (lượt "chưa xếp lịch" có tuần NULL phải hiện "Chưa có lịch MTn"; dòng ghi chú trỏ về panel Lộ trình của PR-LM). `DauTrangLop.tsx` cũng bị PR-DH (`ThanhTruocSau`) và PR-SL sửa: xếp **sau PR-DH**; nếu PR-SL chưa merge thì rebase và chỉ thêm một mục vào `MenuDong`, không đổi chỗ khác. Không phụ thuộc PR-NT.
 
+> **Kết quả DL-0 (04/10, chủ sản phẩm đã quyết):** Giả định G2 sai một phần. Lớp thường có **đúng một attempt không huỷ cho mỗi
+> `(cycle, kind)`** (`regular.ts:338`, `:409`); `attempt_no` đánh số theo lộ trình **từng em** (em vào sau Giữa khoá có Cuối khoá
+> mang số 1, bạn khác số 2), nên **không** dùng làm khoá chung cả lớp. Không có "bài thêm" / "lần 2" (thi lại = dời tuần trên cùng
+> attempt). Chủ sản phẩm chốt: **bài lớp thường nhận diện chỉ bằng `kind`** → mã lượt `thuong:progress` / `thuong:final`, mỗi lớp
+> tối đa hai bảng; `regularSheet` dùng nguyên tham số `kind` sẵn có, **không thêm `attemptNo`**. Nhãn lấy từ `ATTEMPT_KIND_SHORT`
+> (không viết cứng chữ). Đổi tên toàn web "Giữa khoá/Cuối khoá" → "Progress Test/Final Test" (cả nhãn dài) là **PR riêng sau đợt 3**
+> (plan.md mục 4), không làm ở PR-DL. Các chỗ bên dưới nói `thuong:final:1`, `attemptNo` lớp thường, "Cuối khoá · lần 2", "bài thêm"
+> được thay bằng quyết định này.
+
 ## Global Constraints
 - CLAUDE.md: tinh chỉnh, không làm lại. Giữ Be Vietnam Pro (chữ số Inter), bảng màu, bố cục hồ sơ lớp và trang Test. Thời gian trên màn dùng **mã tuần** `W3 JUL`, không hiện ngày.
 - Khối ở hồ sơ lớp **kín đáo**: mặc định thu gọn (trừ khi mở bằng mục ⋮), chỉ một chip trạng thái "MT2 còn 3 ô trống".
@@ -51,21 +60,21 @@ Skill: test-driven-development
 
 **Interfaces:**
 ```ts
-export type MaLuot = { loai: 'mt'; so: number } | { loai: 'thuong'; kind: 'progress' | 'final'; so: number };
-export function docMaLuot(s: string): MaLuot | null;   // 'mt:2' | 'thuong:final:1'; sai → null
+export type MaLuot = { loai: 'mt'; so: number } | { loai: 'thuong'; kind: 'progress' | 'final' };
+export function docMaLuot(s: string): MaLuot | null;   // 'mt:2' | 'thuong:final'; sai → null
 export function vietMaLuot(m: MaLuot): string;
 export type TomTatLuot = { ma: string; nhan: string; tuanStart: string | null; lichSu: boolean;
   duDiem: number; coLich: number; oTrong: number };
 export function luotMacDinh(ds: TomTatLuot[]): string | null; // lượt GẦN NHẤT (tuần lớn nhất, null xếp cuối) còn oTrong>0; không có → lượt cuối
-export function nhanLuot(m: MaLuot): string;            // 'MT2' | 'Giữa khoá' | 'Cuối khoá' | 'Cuối khoá · lần 2'
+export function nhanLuot(m: MaLuot): string;            // 'MT2' | ATTEMPT_KIND_SHORT[kind] (hôm nay 'Giữa khoá' | 'Cuối khoá')
 ```
 - [ ] Viết kiểm đỏ:
 ```ts
 import { docMaLuot, vietMaLuot, luotMacDinh, nhanLuot } from '../../../shared/domain/index.ts';
 export function runPrDlTests(check: (name: string, fn: () => void) => void) {
   check('DL-1 mã lượt đọc/viết hai chiều', () => {
-    for (const s of ['mt:1', 'mt:12', 'thuong:progress:1', 'thuong:final:2']) assert.equal(vietMaLuot(docMaLuot(s)!), s);
-    for (const s of ['', 'mt:0', 'mt:-1', 'mt:x', 'thuong:mid:1', 'mt:2;drop']) assert.equal(docMaLuot(s), null);
+    for (const s of ['mt:1', 'mt:12', 'thuong:progress', 'thuong:final']) assert.equal(vietMaLuot(docMaLuot(s)!), s);
+    for (const s of ['', 'mt:0', 'mt:-1', 'mt:x', 'thuong:mid', 'thuong:final:1', 'mt:01', 'mt:2;drop']) assert.equal(docMaLuot(s), null);
   });
   check('DL-1 lượt mặc định = gần nhất còn ô trống', () => {
     const l = (ma: string, tuanStart: string | null, oTrong: number) =>
@@ -76,7 +85,7 @@ export function runPrDlTests(check: (name: string, fn: () => void) => void) {
   });
   check('DL-1 nhãn lượt', () => {
     assert.equal(nhanLuot({ loai: 'mt', so: 2 }), 'MT2');
-    assert.equal(nhanLuot({ loai: 'thuong', kind: 'final', so: 2 }), 'Cuối khoá · lần 2');
+    assert.equal(nhanLuot({ loai: 'thuong', kind: 'final' }), ATTEMPT_KIND_SHORT.final);
   });
 }
 ```
@@ -107,8 +116,8 @@ Skill: test-driven-development
 
 **Files:** sửa `server/src/normal/regular.ts:854–900`; thêm kiểm.
 
-- [ ] `regularSheet(p, classId, kind?, today?, attemptNo?)`: thêm `AND a.attempt_no = ?` khi có `attemptNo` (theo kết quả DL-0). Không đổi khi bỏ trống.
-- [ ] Kiểm đỏ: lớp thường có Giữa khoá đã qua (có điểm) + Cuối khoá chưa thi; `regularSheet(gvcn, lop, 'progress', today, 1)` có điểm cũ; HV vào lớp sau bài Giữa khoá (không có attempt) **không** có hàng; lớp đổi lịch riêng (attempt_skills tuần khác mặc định) vẫn ra đúng bài.
+- [ ] (Theo DL-0) **Không đổi chữ ký** `regularSheet(p, classId, kind?, today?)`: tham số `kind` sẵn có đã chọn đúng một bài. Task này chỉ thêm phép kiểm khoá hành vi dưới đây; chỉ sửa mã nếu kiểm đỏ.
+- [ ] Kiểm đỏ: lớp thường có Giữa khoá đã qua (có điểm) + Cuối khoá chưa thi; `regularSheet(gvcn, lop, 'progress', today)` có điểm cũ; HV vào lớp sau bài Giữa khoá (không có attempt) **không** có hàng; lớp đổi lịch riêng (attempt_skills tuần khác mặc định) vẫn ra đúng bài.
 - [ ] Commit: `refactor(dl): regularSheet chọn theo bài`.
 
 ### Task DL-4: Dịch vụ + đường đọc diem-theo-luot
