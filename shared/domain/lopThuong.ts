@@ -35,6 +35,18 @@ export function tenCaseThuong(x: { dot: 'progress' | 'final'; giua: string }): s
 }
 
 /**
+ * PR-U12: tên bài trong bảng hồ sơ — `Giữa khoá` / `Cuối khoá`; bảng có ≥ 2 bài cùng loại thì đánh số theo thời gian
+ * (`attemptNo` tăng dần — bảng xếp mới trước, nên không đánh theo thứ tự hàng).
+ */
+export function tenBaiThuong(
+  rows: readonly { kind: string; attemptNo: number }[], a: { kind: string; attemptNo: number },
+): string {
+  const ten = a.kind === 'final' ? 'Cuối khoá' : 'Giữa khoá';
+  const cung = rows.filter((r) => (r.kind === 'final') === (a.kind === 'final'));
+  return cung.length > 1 ? `${ten} ${cung.filter((r) => r.attemptNo <= a.attemptNo).length}` : ten;
+}
+
+/**
  * MỘT chữ kết quả lớp thường cho mọi nơi (T58): Giữa khoá `2/4 môn đạt` + phu `Không đạt: G+V P`; Pre FOU và đủ môn có `pct` (% tổng).
  * KHÔNG bao giờ có chữ "SOS". LT2b thêm hướng Cuối khoá SAU chữ này.
  */
