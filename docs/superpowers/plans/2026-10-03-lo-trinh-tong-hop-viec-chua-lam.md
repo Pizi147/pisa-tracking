@@ -5,6 +5,8 @@
 > Chủ sản phẩm 03/10: **đã deploy** → các việc ghi "sau deploy" được mở khoá. Gộp việc cùng màn/cùng file vào một PR.
 
 ## Quyết định 04/10
+- **PR-QU làm đầu tiên:** GVCN phân công GV bộ môn lớp mình (không cần duyệt, báo QL); quyền **Tạo lớp** tách riêng, cấp được theo chi nhánh; **tạo lớp hàng loạt** (loại, lộ trình, số lớp, phân công; trộn nhiều chi nhánh được); màn quyền chia nhóm + bảng vai × quyền + ô tích cấp riêng + sửa quyền mặc định của vai; không cấp lẻ quyền Quản trị; **GVBM/GVCN đóng Case môn phụ trách**, báo QL.
+- **Deploy sau mỗi đợt** (bảng Deploy bên dưới).
 - Lớp thường cũng có **Target + Dự kiến thi** (ghi đè K2-41): Thêm HV, dán Excel, sửa thông tin → PR-NT. PR-SL và PR-DH (cột Dự kiến thi) áp cho cả lớp thường.
 - Dán Excel **không bắt buộc hàng tiêu đề** → PR-NT (NT-3).
 - Lớp thường lên lớp: **Target + Dự kiến thi mang sang lớp mới** → PR-NT (thêm vào NT-1/NT-4, sửa `luatLoTrinh.ts:265`).
@@ -62,12 +64,22 @@ Mỗi session: nhánh mới **từ main mới nhất**; PR nào thêm migrate d�
 
 | Đợt | Chạy cùng lúc | Vì sao không đụng nhau | Phải chờ |
 |---|---|---|---|
-| **1** | **GVa** · **LM** · **BC** · **GVb** · **NT** | GVa: `worklist/mgmttasks.ts`, `meeting.ts`, `MgmtTasksPage` · LM: lịch MT (`skillSchedule`, `keHoachTest`, `StudentPlanPanel`, `MockDetailPage`, `HopKyNang`) · BC: `MeetingPage.tsx` (web), `AccountsAdmin` · GVb: `duyet/*`, `hocVienLop.ts:234` | — |
-| **2** | **PHH** · **DH** | PHH: `yThuc/phoiHop.ts` + migrate · DH: `StudentsPage`, `BangHocVienLop`, `MissingBadge`, `standing.ts` | PHH chờ GVa (hai migrate liền nhau dễ lệch thứ tự) · DH chờ LM (cần lượt "chưa xếp lịch") |
-| **3** | **SL** · **SO** | SL: panel/form (`KhungPanel`, `IntakePanel`, `DauTrangLop`, Case, Ghi vi phạm) · SO: máy chủ số liệu + gỡ migrate cũ | SL chờ DH (`DauTrangLop` dùng `ThanhTruocSau`) · SO chờ GVa, PHH (gỡ mã migrate sau khi migrate mới đã vào) |
-| **3b** | **DL** (Điểm theo lớp) | Chạy cùng SL/SO được; chỉ thêm một mục vào menu ⋮ `DauTrangLop` — PR nào merge sau thì gộp main vào | LM, DH |
-| **4** | **U12** | Bảng kết quả lớp thường | SO (D3 một hàm chọn lộ trình) |
+| **0** | **QU** (Quyền + Tạo lớp hàng loạt) · cùng lúc được: **GVa**, **LM** | QU: quyền (`people.ts`, `permissions.ts`, `nhomQuyen.ts`), tạo lớp (`intake.ts` phần tạo lớp, `ClassCreatePanel`), `TeacherAssignPanel`, `AccountsAdmin` (khối cấp quyền), đóng Case · GVa: Giao việc · LM: lịch MT — ba vùng tách nhau | — |
+| **1** | **GVb** · **BC** · **NT** | GVb: Chờ duyệt · BC: Báo cáo đơn vị + bộ lọc Tài khoản · NT: Thêm HV lớp thường (`intake.ts` phần thêm HV) | Chờ QU (BC cùng `AccountsAdmin`; NT cùng `intake.ts`; GVb cùng danh mục quyền) |
+| **2** | **PHH** · **DH** | PHH: `yThuc/phoiHop.ts` + migrate · DH: `StudentsPage`, `BangHocVienLop`, `MissingBadge`, `standing.ts` | PHH chờ GVa · DH chờ LM |
+| **3** | **SL** · **SO** · **DL** | SL: panel/form · SO: máy chủ số liệu + gỡ migrate cũ · DL: Điểm theo lớp (chỉ thêm một mục menu ⋮ hồ sơ lớp) | SL, DL chờ DH · DL chờ LM · SO chờ GVa, PHH |
+| **4** | **U12** | Bảng kết quả lớp thường | SO |
 | **5** | **HK2** (một mình, cuối cùng) | Đụng ~15+ file khắp web, chụp lại toàn bộ sổ tay | Mọi PR trên đã merge |
+
+## Deploy (chủ sản phẩm 04/10: deploy sau mỗi đợt)
+| Mốc | Sau khi merge | Bấm thử trước khi deploy | Lưu ý |
+|---|---|---|---|
+| **D0** | QU + GVa + LM | Cấp/gỡ quyền riêng, sửa quyền vai (xem số người bị ảnh hưởng), GVCN đổi GV bộ môn, tạo 3 lớp một lần, GVBM đóng Case; giao việc 2 lần cùng tiêu đề; dời MT vượt + hộp xác nhận | **Có migrate** (GVa: `idempotency_key`). Sao lưu DB trước. Báo QL/GV: quyền mới, GVCN phân công được |
+| **D1** | GVb + BC + NT | Duyệt nhiều ở "Tất cả", Báo cáo đơn vị, Thêm HV lớp thường dán Excel không tiêu đề | Không migrate |
+| **D2** | PHH + DH | Báo PH đã làm giữ nội dung; bảng Học viên & Lớp cột mới, Trước/Sau | **Có migrate** (PHH) |
+| **D3** | SL + SO + DL | Sửa cả lớp, Điểm theo lớp (FT + lớp thường, bài đã qua) | SO gỡ mã migrate cũ — chạy `npm run check` trên bản sao DB thật trước |
+| **D4** | U12 | Bảng kết quả lớp thường | — |
+| **D5** | HK2 | Toàn web 375/1440 sáng/tối; chụp lại sổ tay | Đổi giao diện rộng — báo GV trước |
 
 ## Prompt cho từng session (dán nguyên khối)
 
@@ -82,6 +94,12 @@ Sau đó thực hiện bằng subagent-driven-development (mỗi task một suba
 Phép kiểm trước (đỏ) → sửa → npm run check xanh → bấm thử 375/1440 sáng/tối, 3 vai → /impeccable audit (nếu có giao diện) → /ponytail-review.
 Xong: đánh dấu [x] kế hoạch, thêm dòng mục 14 plan.md, cập nhật CODE_MAP.md nếu thêm/xoá file, mở PR (không tự merge),
 mô tả PR báo từng ID (tái hiện/bác bỏ, file, phép kiểm, ảnh), liệt kê chú thích ponytail:, ảnh sổ tay bị lệch.
+```
+
+### Đợt 0
+**PR-QU — Quyền + Tạo lớp hàng loạt** (làm đầu tiên; GVa, LM chạy cùng lúc được)
+```
+Làm PR-QU theo prompt cuối file docs/superpowers/plans/2026-10-04-pr-qu-quyen-tao-lop.md (QU-1 → QU-8, gồm mục "Chủ sản phẩm trả lời 04/10"). Nhánh pr-qu-quyen-tao-lop.
 ```
 
 ### Đợt 1
