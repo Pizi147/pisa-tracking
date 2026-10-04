@@ -16,7 +16,8 @@ import { NutLuat } from '../../ui/NutLuat.tsx';
 import { fmtDate } from '../../lib/format.ts';
 import {
   ENTRY_SKILLS, ENTRY_SKILL_LABEL, HANG_SO, HANG_SO_LABEL, TASK_GROUPS, TASK_GROUP_LABEL, TASK_PROGRESS, TASK_PROGRESS_LABEL,
-  TASK_PROGRESS_NEEDS_REASON, TRANG_THAI_LOC, catDongPhu, dongHanDaDoi, dsLoi, moiKhoaGui,
+  TASK_PROGRESS_NEEDS_REASON, TRANG_THAI_LOC, catDongPhu, dongHanDaDoi, dsLoi, duocGiao, giaTriDauGiaoViec, moiKhoaGui,
+  trangThaiKyGiao, tuanLich,
   type HangSo, type LoiTruong, type NguoiChon, type TrangThai, type TrangThaiLoc,
 } from '@shared/domain/index.ts';
 
@@ -618,7 +619,7 @@ type LoaiViec = 'chi-nhanh' | 'giao-gv';
  * "Toả ra": giao cho lớp mười ba em vẫn là MỘT việc, cập nhật MỘT lần — tạo mười ba bản sao thì GV bỏ qua và số tiến độ thành rác.
  * Việc con và việc tạo từ ô Báo cáo đơn vị luôn là việc chi nhánh (không hiện lựa chọn).
  */
-function CreateTask({ open, onClose, onDone, branchId, parent, defaultGroup, unitReportId, veKyHop }: {
+type CreateTaskProps = {
   open: boolean; onClose: () => void; onDone: () => void;
   branchId: number | null; parent?: any;
   /** Mở từ một mục báo cáo kỳ họp thì nhóm đã biết trước — đỡ một lần chọn và một lần chọn sai. */
@@ -626,39 +627,55 @@ function CreateTask({ open, onClose, onDone, branchId, parent, defaultGroup, uni
   /** PR-Ra R6: tạo từ ô báo cáo đơn vị — tự nối, rồi quay về đúng tuần đó. */
   unitReportId?: number | null;
   veKyHop?: string | null;
-}) {
+};
+
+/**
+ * PR-GVa (F03): VỎ của form — mỗi lần đóng → mở là MỘT lần mở mới, ruột mount lại theo `key`. Nhờ vậy giá trị đầu (chi nhánh theo bộ
+ * lọc / việc cha lúc mở), khoá gửi và lỗi form đều mới mỗi lần mở; rerender trong lúc mở không ghi đè lựa chọn của người dùng.
+ * Trước đây ruột luôn mount (chỉ `return null` khi đóng) nên state đầu là của lần dựng trang: lọc "Tất cả", đổi sang A rồi mở → việc vẫn lưu "Toàn hệ thống".
+ */
+function CreateTask(props: CreateTaskProps) {
+  const lan = useRef(0);
+  const moTruoc = useRef(false);
+  if (props.open && !moTruoc.current) lan.current += 1;   // đóng → mở: một lần mở mới
+  moTruoc.current = props.open;
+  return props.open ? <CreateTaskForm key={lan.current} {...props} /> : null;
+}
+
+function CreateTaskForm({ onClose, onDone, branchId, parent, defaultGroup, unitReportId, veKyHop }: CreateTaskProps) {
   const toast = useToast();
   const navigate = useNavigate();
   const { session } = useSession();
+  const { homNay } = useNgayNghiepVu();
   const lf = useLoiForm();
   const chiChiNhanh = !!parent || !!unitReportId;
   const [loai, setLoai] = useState<LoaiViec>('chi-nhanh');
   const giaoGv = !chiChiNhanh && loai === 'giao-gv';
-  const branches = useApi<any[]>(open && !parent ? '/ref/branches' : null, [open]);
-  const classes = useApi<{ rows: { id: number; code: string; studentCount: number }[] }>(open && giaoGv ? '/classes' : null, [open, giaoGv]);
+  const branches = useApi<any[]>(!parent ? '/ref/branches' : null, []);
+  const classes = useApi<{ rows: { id: number; code: string; studentCount: number }[] }>(giaoGv ? '/classes' : null, [giaoGv]);
   /* Việc giao GV gắn tuần đang chạy — hiện ở Báo cáo đơn vị › "Việc được giao" của tuần đó (như trước khi gộp cửa). */
-  const tuanNay = useApi<{ id: number | null; weekStart: string; isAnchor: boolean }[]>(open && giaoGv ? '/ref/period-window' : null, [open, giaoGv]);
+  const tuanNay = useApi<{ id: number | null; weekStart: string; code?: string; isAnchor: boolean }[]>(giaoGv ? '/ref/period-window' : null, [giaoGv]);
+  /* F04: chưa rõ tuần (đang tải, lỗi, không có tuần neo) thì KHÔNG giao — việc giao GV thiếu kỳ không hiện ở danh sách tuần nào. */
+  const ky = trangThaiKyGiao(tuanNay);
+  /* Giá trị đầu tính MỘT lần lúc mở (F03). Hạn việc con = hạn cha trừ một ngày (mục 8.6); hạn cha đã qua thì để trống. */
+  const [dau] = useState(() => giaTriDauGiaoViec({ branchId, parent, defaultGroup }, homNay));
   const [title, setTitle] = useState('');
-  const [group, setGroup] = useState<string>(parent?.group ?? defaultGroup ?? 'curriculum');
+  const [group, setGroup] = useState<string>(dau.group);
   const [assignee, setAssignee] = useState<NguoiChon | null>(null);
   const [watcher, setWatcher] = useState<NguoiChon | null>(null);
-  /*
-   * HẠN VIỆC CON mặc định = hạn cha trừ MỘT NGÀY (mục 8.6), và sửa được ngay tại đây.
-   * Hạn cha đã là quá khứ thì để TRỐNG chứ không đưa ra một mặc định vô nghĩa.
-   */
-  const [due, setDue] = useState(parent?.due ? addDaysIso(parent.due, -1) : '');
-  const [branch, setBranch] = useState(String(parent?.branchId ?? branchId ?? ''));
+  const [due, setDue] = useState(dau.due);
+  const [branch, setBranch] = useState(dau.branch);
   const [classId, setClassId] = useState('');
   const [topic, setTopic] = useState('');
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   /*
    * PR-GVa (F01 = D13): MỘT khoá gửi cho MỘT lần mở form. Bấm đúp / thử lại sau lỗi mạng gửi lại đúng khoá này nên máy chủ trả việc
-   * đã có. KHÔNG đổi khoá khi lỗi; chỉ lần mở mới có khoá mới.
+   * đã có. KHÔNG đổi khoá khi lỗi; lần mở mới (vỏ mount lại ruột) mới có khoá mới.
    */
   const khoa = useRef(moiKhoaGui('cv'));
-  useEffect(() => { if (open) khoa.current = moiKhoaGui('cv'); }, [open]);
-  if (!open) return null;
+  const daSua = !!(title || note || classId || topic || assignee || watcher) || loai !== 'chi-nhanh'
+    || group !== dau.group || due !== dau.due || branch !== dau.branch;
 
   const cls = classes.data?.rows.find((c) => String(c.id) === classId);
   const loi = dsLoi([
@@ -668,12 +685,17 @@ function CreateTask({ open, onClose, onDone, branchId, parent, defaultGroup, uni
 
   const tao = async () => {
     lf.bam();
-    if (loi.length > 0 || busy) return;
+    if (loi.length > 0 || busy || (giaoGv && !duocGiao(ky, busy))) return;
     setBusy(true);
     try {
       if (giaoGv) {
-        const neo = tuanNay.data?.find((p) => p.isAnchor);
-        const periodId = neo?.id ?? (neo ? (await resolveWeek(neo.weekStart)).id : undefined);
+        if (ky.loai !== 'co') return;
+        let periodId = ky.id;
+        if (periodId === null) {
+          /* Tuần neo chưa có hàng → xin id thật đúng lúc gửi. Lỗi thì báo và KHÔNG gửi việc nào. */
+          try { periodId = (await resolveWeek(ky.weekStart)).id; }
+          catch { toast.push('error', 'Chưa xác định được tuần — bấm Thử lại.'); return; }
+        }
         await api.post('/tasks', {
           kind: 'teacher_task', title, note: note.trim() || undefined, periodId, dueDate: due || undefined,
           classId: Number(classId), topic, idempotencyKey: khoa.current,
@@ -694,7 +716,7 @@ function CreateTask({ open, onClose, onDone, branchId, parent, defaultGroup, uni
         invalidate('/mgmt-tasks');
         toast.push('ok', 'Đã tạo công việc');
       }
-      setTitle(''); setNote(''); setClassId(''); setTopic(''); lf.datLai();
+      /* Đóng form; giao tiếp là mở lại → giá trị đầu đúng ngữ cảnh lúc đó và khoá gửi mới. */
       onDone(); onClose();
       if (unitReportId && veKyHop) navigate(`/cong-viec/bao-cao?periodId=${veKyHop}`);
     } catch (e: any) { toast.push('error', e?.message ?? 'Không lưu được'); }
@@ -704,9 +726,9 @@ function CreateTask({ open, onClose, onDone, branchId, parent, defaultGroup, uni
   return (
     <KhungPanel tieuDe={parent ? 'Việc con' : 'Giao việc'} hocVien={parent?.title ?? null} longTrong={!!parent} onDong={onClose}
       chan={{
-        huy: { onClick: onClose, disabled: busy },
+        huy: { nhan: daSua ? 'Huỷ thay đổi' : 'Đóng', onClick: onClose, disabled: busy },
         conThieu: lf.conThieu(loi),
-        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={tao}>{busy ? 'Đang lưu…' : giaoGv ? 'Giao' : 'Tạo'}</button>,
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || (giaoGv && !duocGiao(ky, busy))} onClick={tao}>{busy ? 'Đang lưu…' : giaoGv ? 'Giao' : 'Tạo'}</button>,
       }}>
       <div className="space-y-3 pt-3">
         {!chiChiNhanh && (
@@ -737,6 +759,20 @@ function CreateTask({ open, onClose, onDone, branchId, parent, defaultGroup, uni
                   <NutChon key={k} nho chon={topic === k} onClick={() => setTopic(k)}>{ENTRY_SKILL_LABEL[k]}</NutChon>
                 ))}
               </div>
+            </Field>
+            <Field label="Tuần" as="div">
+              {ky.loai === 'co' ? (
+                <p className="m-0 text-sm tabular-nums">{tuanLich(ky.weekStart, homNay)}</p>
+              ) : ky.loai === 'dang-tai' ? (
+                <p className="m-0 text-sm text-slate-500" role="status">Đang lấy tuần hiện tại…</p>
+              ) : (
+                <div className="flex flex-wrap items-center gap-2" role="alert">
+                  <p className="m-0 text-sm text-bad">
+                    {ky.loai === 'loi' ? 'Chưa lấy được tuần hiện tại nên chưa giao được.' : 'Không xác định được tuần hiện tại nên chưa giao được.'}
+                  </p>
+                  <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={tuanNay.reload}>Thử lại</button>
+                </div>
+              )}
             </Field>
             <SectionNote>
               Việc này hiện trong hồ sơ của <strong>{cls ? `${cls.studentCount} em lớp ${cls.code}` : 'từng em trong lớp'}</strong>, ở đúng

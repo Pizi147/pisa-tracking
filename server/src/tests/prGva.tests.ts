@@ -26,6 +26,7 @@ export async function runPrGvaTests(t: AnToanTestKit) {
   const util: any = await import('../util.ts');
   const d: any = await import('../../../shared/domain/index.ts');
   const kg: any = await load('../../../shared/domain/khoaGui.ts');
+  const cv: any = await import('../../../shared/domain/congViec.ts');
   const dem = (sql: string, ...a: unknown[]) => (conn.prepare(sql).get(...a) as any).n as number;
   const MB = (conn.prepare(`SELECT id FROM branches WHERE code = 'MB'`).get() as any).id as number;
   const lopMb = (conn.prepare(`SELECT id FROM classes WHERE code = 'MB FT 101'`).get() as any).id as number;
@@ -209,6 +210,39 @@ export async function runPrGvaTests(t: AnToanTestKit) {
     }
     assert(soCho >= 3, `phải thấy ít nhất 3 chỗ gửi (2 ở form Giao việc, 1 ở Thêm PA), thấy ${soCho}`);
     assert(loi.length === 0, loi.join(' | '));
+  });
+
+  // ================================================================== GVa-4 · form mở theo ngữ cảnh (F03) + khoá gửi khi chưa có kỳ (F04 web)
+
+  check('GVa-4 · giaTriDauGiaoViec: "Tất cả" → rỗng; A → A; việc cha thắng bộ lọc; nhóm mặc định; hạn con = hạn cha − 1, quá khứ thì trống', () => {
+    assert(cv.giaTriDauGiaoViec({ branchId: null }, '2026-10-03').branch === '', 'tất cả');
+    assert(cv.giaTriDauGiaoViec({ branchId: 2 }, '2026-10-03').branch === '2', 'A');
+    assert(cv.giaTriDauGiaoViec({ branchId: 2, parent: { branchId: 3, group: 'teacher' } }, '2026-10-03').branch === '3', 'cha thắng');
+    assert(cv.giaTriDauGiaoViec({ branchId: 2, parent: { branchId: null } }, '2026-10-03').branch === '', 'cha Toàn hệ thống thắng bộ lọc A');
+    assert(cv.giaTriDauGiaoViec({ branchId: 2, parent: { branchId: 3, group: 'teacher' } }, '2026-10-03').group === 'teacher', 'nhóm theo cha');
+    assert(cv.giaTriDauGiaoViec({ branchId: 2, defaultGroup: 'tutor' }, '2026-10-03').group === 'tutor', 'nhóm biết trước');
+    assert(cv.giaTriDauGiaoViec({ branchId: 2 }, '2026-10-03').group === 'curriculum', 'nhóm mặc định');
+    assert(cv.giaTriDauGiaoViec({ branchId: 2, parent: { due: '2026-10-10' } }, '2026-10-03').due === '2026-10-09', 'hạn cha − 1');
+    assert(cv.giaTriDauGiaoViec({ branchId: 2, parent: { due: '2026-10-03' } }, '2026-10-03').due === '', 'hạn cha − 1 đã qua → trống');
+    assert(d.giaTriDauGiaoViec === cv.giaTriDauGiaoViec && d.trangThaiKyGiao === cv.trangThaiKyGiao && d.duocGiao === cv.duocGiao, 're-export');
+  });
+
+  check('GVa-4 · trangThaiKyGiao + duocGiao: đang tải / lỗi 503 / không neo → không cho giao; neo id null vẫn cho (sẽ resolve)', () => {
+    assert(cv.trangThaiKyGiao({ loading: true, error: null, data: null }).loai === 'dang-tai', 'tải');
+    assert(cv.trangThaiKyGiao({ loading: false, error: { status: 503 }, data: null }).loai === 'loi', 'lỗi');
+    assert(cv.trangThaiKyGiao({ loading: false, error: { status: 503 }, data: [{ id: 1, weekStart: '2026-09-28', isAnchor: true }] }).loai === 'loi', 'lỗi thắng dữ liệu cũ');
+    assert(cv.trangThaiKyGiao({ loading: false, error: null, data: [{ id: 1, weekStart: '2026-09-28', isAnchor: false }] }).loai === 'khong-neo', 'không neo');
+    const k = cv.trangThaiKyGiao({ loading: false, error: null, data: [{ id: null, weekStart: '2026-09-28', code: 'W5 SEP 2026', isAnchor: true }] });
+    assert(k.loai === 'co' && k.id === null && k.weekStart === '2026-09-28' && cv.duocGiao(k, false) && !cv.duocGiao(k, true), 'neo không id vẫn giao, busy thì không');
+    for (const loai of ['dang-tai', 'loi', 'khong-neo']) assert(!cv.duocGiao({ loai }, false), `${loai} không cho giao`);
+  });
+
+  check('GVa-4 · (quét nguồn, bất đắc dĩ) CreateTask mount lại theo key mỗi lần mở; state đầu từ giaTriDauGiaoViec; nút Giao theo duocGiao', () => {
+    const src = doc('web/src/modules/worklist/MgmtTasksPage.tsx');
+    assert(!src.includes('useState(String(parent?.branchId ?? branchId'), 'còn state chi nhánh tính một lần lúc trang dựng (F03)');
+    assert(/<CreateTaskForm key=\{/.test(src), 'CreateTaskForm phải có key= (mỗi lần mở một lần mount)');
+    assert(/giaTriDauGiaoViec\(/.test(src) && /trangThaiKyGiao\(/.test(src) && /duocGiao\(/.test(src), 'form phải dùng luật chung');
+    assert(!/if \(!open\) return null;/.test(src.slice(src.indexOf('function CreateTaskForm'))), 'thân form không còn tự ẩn — vỏ quyết định');
   });
 
   // ------------------------------------------------------------------ HTTP: gửi đồng thời cùng khoá
