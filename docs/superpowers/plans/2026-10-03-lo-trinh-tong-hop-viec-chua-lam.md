@@ -4,6 +4,10 @@
 > (F01–F04, U01, D01 — **cả 6 vẫn còn trên main**, đã kiểm lại 03/10); 9 yêu cầu 03/10 (`2026-10-03-pr-phien-lich-mt-dieu-huong-sua-lop.md`).
 > Chủ sản phẩm 03/10: **đã deploy** → các việc ghi "sau deploy" được mở khoá. Gộp việc cùng màn/cùng file vào một PR.
 
+## Quyết định 04/10
+- Lớp thường cũng có **Target + Dự kiến thi** (ghi đè K2-41): Thêm HV, dán Excel, sửa thông tin → PR-NT. PR-SL và PR-DH (cột Dự kiến thi) áp cho cả lớp thường.
+- Dán Excel **không bắt buộc hàng tiêu đề** → PR-NT (NT-3).
+
 ## Quyết định 03/10 (bổ sung)
 - **F01 = D13:** chống gửi trùng bằng **mã idempotency mỗi lần mở form** (cột `idempotency_key`), bỏ chặn trùng 10 giây theo tiêu đề. Áp cho `/tasks`, việc Vận hành, PA, followup.
 - **F02:** lưu **bản chụp nội dung lúc xác nhận** từ nay; việc đã làm trước đó ghi "Chưa lưu nội dung lúc báo — dưới đây là nội dung hiện tại". Không điền ngược.
@@ -53,7 +57,7 @@ Mỗi session: nhánh mới **từ main mới nhất**; PR nào thêm migrate d�
 
 | Đợt | Chạy cùng lúc | Vì sao không đụng nhau | Phải chờ |
 |---|---|---|---|
-| **1** | **GVa** · **LM** · **BC** · **GVb** | GVa: `worklist/mgmttasks.ts`, `meeting.ts`, `MgmtTasksPage` · LM: lịch MT (`skillSchedule`, `keHoachTest`, `StudentPlanPanel`, `MockDetailPage`, `HopKyNang`) · BC: `MeetingPage.tsx` (web), `AccountsAdmin` · GVb: `duyet/*`, `hocVienLop.ts:234` | — |
+| **1** | **GVa** · **LM** · **BC** · **GVb** · **NT** | GVa: `worklist/mgmttasks.ts`, `meeting.ts`, `MgmtTasksPage` · LM: lịch MT (`skillSchedule`, `keHoachTest`, `StudentPlanPanel`, `MockDetailPage`, `HopKyNang`) · BC: `MeetingPage.tsx` (web), `AccountsAdmin` · GVb: `duyet/*`, `hocVienLop.ts:234` | — |
 | **2** | **PHH** · **DH** | PHH: `yThuc/phoiHop.ts` + migrate · DH: `StudentsPage`, `BangHocVienLop`, `MissingBadge`, `standing.ts` | PHH chờ GVa (hai migrate liền nhau dễ lệch thứ tự) · DH chờ LM (cần lượt "chưa xếp lịch") |
 | **3** | **SL** · **SO** | SL: panel/form (`KhungPanel`, `IntakePanel`, `DauTrangLop`, Case, Ghi vi phạm) · SO: máy chủ số liệu + gỡ migrate cũ | SL chờ DH (`DauTrangLop` dùng `ThanhTruocSau`) · SO chờ GVa, PHH (gỡ mã migrate sau khi migrate mới đã vào) |
 | **4** | **U12** | Bảng kết quả lớp thường | SO (D3 một hàm chọn lộ trình) |
@@ -75,6 +79,11 @@ mô tả PR báo từng ID (tái hiện/bác bỏ, file, phép kiểm, ảnh), l
 ```
 
 ### Đợt 1
+**PR-NT — Target + Dự kiến thi cho lớp thường, dán Excel không cần tiêu đề** (chủ sản phẩm 04/10, ưu tiên sớm)
+```
+Làm PR-NT theo prompt cuối file docs/superpowers/plans/2026-10-04-pr-nt-target-thi-lop-thuong.md (NT-1 → NT-5). Nhánh pr-nt-target-thi-lop-thuong.
+Không migrate; chạy song song với GVa/GVb/BC/LM được.
+```
 **PR-GVa — Giao việc: dữ liệu + form**
 ```
 Làm PR-GVa theo prompt cuối file docs/superpowers/plans/2026-10-03-pr-gva-giao-viec.md (GVa-1 → GVa-4, đã có kế hoạch + mục Skill bắt buộc). Nhánh pr-gva-giao-viec.
