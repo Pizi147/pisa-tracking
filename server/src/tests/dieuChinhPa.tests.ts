@@ -96,8 +96,10 @@ export async function runDieuChinhPaTests(t: YThucTestKit) {
     assert(applied.length === 1 && /PR-S2/.test(applied[0]), `Phải báo đúng một dòng PR-S2: ${applied.join(' | ')}`);
     const fresh = new SqliteDb(':memory:');
     fresh.exec(SCHEMA);
+    /* PR-GVa thêm `case_followups.idempotency_key` ở bước migrate của mình (sau PR-S2) — so PR-S2 trên phần schema của đúng bước này. */
+    const sauPrS2 = (db: any, tb: string) => colsOf(db, tb).filter((c) => !c.startsWith('idempotency_key:'));
     for (const tb of ['case_intervention_revisions', 'case_followups']) {
-      assert(JSON.stringify(colsOf(m, tb)) === JSON.stringify(colsOf(fresh, tb)),
+      assert(JSON.stringify(sauPrS2(m, tb)) === JSON.stringify(sauPrS2(fresh, tb)),
         `${tb} sau nâng cấp khác schema.sql:\n  ${colsOf(m, tb).join(',')}\n  ${colsOf(fresh, tb).join(',')}`);
     }
     assert(JSON.stringify(idxOf(m, 'case_intervention_revisions')) === JSON.stringify(idxOf(fresh, 'case_intervention_revisions')),

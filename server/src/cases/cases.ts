@@ -1,4 +1,4 @@
-import { db, theoLo, tx, vuaGhi } from '../db.ts';
+import { db, laTrungKhoa, theoKhoaGui, theoLo, tx } from '../db.ts';
 import { boTroCuaCase, chepKetQuaNhom, quyenBoTro, type BoTroDto } from './boTro.ts';
 import { ghiMiniTestTrongTx, kiemMiniTest } from '../normal/cuoiKhoa.ts';
 import {
@@ -9,7 +9,7 @@ import {
   isNoPlanCase,
   issuesForTopic,
   CASE_CATEGORY_SHORT, CASE_CATEGORIES, CASE_CATEGORY_LABEL, FOLLOWUP_OUTCOME_LABEL, ratioResult,
-  caseCategoriesFor, componentsAreCounts, componentsFor, type CaseCategory,
+  caseCategoriesFor, chuanKhoaGui, componentsAreCounts, componentsFor, type CaseCategory,
   CASE_OUTCOME_LABEL, SYSTEM_CLOSE_REASON_LABEL, caseCategoryLabel, caseDedupKey, caseHeadline, caseTitle, categoryOf,
   type SystemCloseReason,
   NEXT_STEP_LABEL, isProposalKind, outcomeLabelFor,
@@ -720,6 +720,8 @@ export function recordIntervention(p: Principal, caseId: number, input: {
   backfill?: boolean;
   /** PA THAY THẾ (nhánh "propose" của Ghi kết quả, rà Dọn-a P2): không qua chặn bấm đúp — nếu không, PA mới trùng loại + mô tả với PA vừa ghi bị gộp và `superseded_by` trỏ về chính nó. */
   thayThe?: boolean;
+  /** PR-GVa (F01 = D13): mã của MỘT lần mở form — gửi lại cùng mã trả Case với PA đã ghi, không ghi PA thứ hai. */
+  idempotencyKey?: string | null;
 }) {
   const conn = db();
   const c = loadCase(caseId);
@@ -814,9 +816,13 @@ export function recordIntervention(p: Principal, caseId: number, input: {
   const performerUserId = nguoi?.userId ?? null;
   const performerName = nguoi?.name ?? null;
 
-  return tx(() => {
-    /* PR-Dọn (quét #26): bấm đúp → trả lại PA vừa ghi. Nhập bù cố ý ghi nhiều dòng có thể giống nhau — không chặn. */
-    if (!input.backfill && !input.thayThe && vuaGhi('case_interventions', { case_id: caseId, kind: input.kind, description, recorded_by: p.userId })) return caseDetail(p, caseId);
+  /*
+   * PR-GVa (F01 = D13): gửi lại CÙNG khoá của lần mở form → trả Case với PA đã ghi. Kiểm quyền / dữ liệu ở trên chạy TRƯỚC khi tra khoá.
+   * Nhập bù và PA thay thế đi theo đường khác (nhiều dòng có thể giống nhau, cố ý) — không dùng khoá.
+   */
+  const khoa = input.backfill || input.thayThe ? null : chuanKhoaGui(input.idempotencyKey);
+  const taoMoi = () => tx(() => {
+    if (theoKhoaGui('case_interventions', 'recorded_by', p.userId, khoa)) return caseDetail(p, caseId);
     /*
      * HẠN QUẢN LÝ PHẢI TRẢ LỜI — `HAN_DUYET_NGAY` (5) ngày, tính cả ngày gửi (T54, K3-18, PR-N1).
      * Quá hạn KHÔNG chặn gì cả; nó nổi lên màn của Quản lý để một đề xuất không nằm
@@ -855,15 +861,15 @@ export function recordIntervention(p: Principal, caseId: number, input: {
                                          recorded_by, status, planned_date, started_date, completed_date,
                                          followup_due, action_due, cycle_no, cycle_started_on,
                                          needs_approval, approval_state, approval_due,
-                                         reschedule_target, created_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,1,?,?,?,?,?,?)`,
+                                         reschedule_target, created_at, idempotency_key)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,1,?,?,?,?,?,?,?)`,
       )
       .run(caseId, input.kind, description,
            performerUserId, performerName, p.userId, effStatus,
            input.plannedDate ?? null, input.startedDate ?? null, input.completedDate ?? null,
            null, cycleDue, cycleStart,
            needsApproval ? 1 : 0, needsApproval ? 'pending' : null, approvalDue,
-           rescheduleTarget, nowIso());
+           rescheduleTarget, nowIso(), khoa);
     const id = Number(info.lastInsertRowid);
     const performerDisplayName = performerName
       ?? (performerUserId
@@ -894,6 +900,12 @@ export function recordIntervention(p: Principal, caseId: number, input: {
       entityId: id, entityLabel: `Case ${caseId} · ${input.kind}`, after: { status } });
     return caseDetail(p, caseId);
   });
+  try { return taoMoi(); }
+  catch (e) {
+    /* Hai lần gửi đồng thời cùng khoá: lần thua vấp unique index → trả Case với PA lần thắng đã ghi. */
+    if (laTrungKhoa(e) && theoKhoaGui('case_interventions', 'recorded_by', p.userId, khoa)) return caseDetail(p, caseId);
+    throw e;
+  }
 }
 
 /**
@@ -1237,6 +1249,8 @@ export function backfillCase(p: Principal, input: {
 export function recordFollowUp(p: Principal, caseId: number, input: {
   interventionId?: number | null; observedOn?: string | null;
   outcome?: string | null; note?: string | null; evidenceAttemptId?: number | null;
+  /** PR-GVa (F01 = D13): mã của MỘT lần mở form — gửi lại cùng mã không ghi lần xem lại thứ hai. */
+  idempotencyKey?: string | null;
 }) {
   const conn = db();
   const c = loadCase(caseId);
@@ -1260,18 +1274,18 @@ export function recordFollowUp(p: Principal, caseId: number, input: {
     if (!a || a.student_id !== c.eff_student_id) throw badRequest('Bằng chứng không thuộc học viên này.');
   }
 
-  return tx(() => {
-    /* PR-Dọn (quét #26): bấm đúp → trả lại lần xem lại vừa ghi. */
-    if (vuaGhi('case_followups', { case_id: caseId, intervention_id: input.interventionId ?? null, observer_user_id: p.userId,
-      outcome: input.outcome ?? null, note: input.note ?? null })) return caseDetail(p, caseId);
+  /* PR-GVa (F01 = D13): gửi lại CÙNG khoá của lần mở form → trả Case với lần xem lại đã ghi. Kiểm quyền / dữ liệu ở trên chạy TRƯỚC. */
+  const khoa = chuanKhoaGui(input.idempotencyKey);
+  const taoMoi = () => tx(() => {
+    if (theoKhoaGui('case_followups', 'observer_user_id', p.userId, khoa)) return caseDetail(p, caseId);
     const info = conn
       .prepare(
         `INSERT INTO case_followups (case_id, intervention_id, observed_on, observer_user_id,
-                                     outcome, note, evidence_attempt_id, created_at)
-         VALUES (?,?,?,?,?,?,?,?)`,
+                                     outcome, note, evidence_attempt_id, created_at, idempotency_key)
+         VALUES (?,?,?,?,?,?,?,?,?)`,
       )
       .run(caseId, input.interventionId ?? null, observedOn, p.userId,
-           input.outcome ?? null, input.note ?? null, input.evidenceAttemptId ?? null, nowIso());
+           input.outcome ?? null, input.note ?? null, input.evidenceAttemptId ?? null, nowIso(), khoa);
     const id = Number(info.lastInsertRowid);
     addJourney({
       studentId: c.eff_student_id, cycleId: c.eff_cycle_id,
@@ -1283,6 +1297,11 @@ export function recordFollowUp(p: Principal, caseId: number, input: {
     });
     return caseDetail(p, caseId);
   });
+  try { return taoMoi(); }
+  catch (e) {
+    if (laTrungKhoa(e) && theoKhoaGui('case_followups', 'observer_user_id', p.userId, khoa)) return caseDetail(p, caseId);
+    throw e;
+  }
 }
 
 // ---------------------------------------------------------------- vòng đời

@@ -186,10 +186,11 @@ export async function runPrDonBTests(t: YThucTestKit) {
     const v2 = mgmt.createMgmtTask(P.mbManager, { title: 'Dọn-b C1 kiểm sổ', group: 'curriculum', branchId: mb, assigneeUserId: u2 });
     assert(v1.id !== v2.id, 'việc Vận hành bị gộp');
     const lop = classId('MB FT 101');
-    const g1 = meeting.createTask(P.mbManager, { kind: 'teacher_task', classId: lop, topic: 'listening', title: 'Dọn-b C1 luyện thêm' });
-    const g2 = meeting.createTask(P.mbManager, { kind: 'teacher_task', classId: lop, topic: 'reading', title: 'Dọn-b C1 luyện thêm' });
+    const g1 = meeting.createTask(P.mbManager, { kind: 'teacher_task', classId: lop, topic: 'listening', title: 'Dọn-b C1 luyện thêm', idempotencyKey: 'donb-c1-g1' });
+    const g2 = meeting.createTask(P.mbManager, { kind: 'teacher_task', classId: lop, topic: 'reading', title: 'Dọn-b C1 luyện thêm', idempotencyKey: 'donb-c1-g2' });
     assert(g1.id !== g2.id, 'việc giao GV bị gộp');
-    const g3 = meeting.createTask(P.mbManager, { kind: 'teacher_task', classId: lop, topic: 'reading', title: 'Dọn-b C1 luyện thêm' });
+    /* PR-GVa: bấm đúp = gửi lại cùng khoá của lần mở form. */
+    const g3 = meeting.createTask(P.mbManager, { kind: 'teacher_task', classId: lop, topic: 'reading', title: 'Dọn-b C1 luyện thêm', idempotencyKey: 'donb-c1-g2' });
     assert(g3.id === g2.id, 'bấm đúp vẫn trả việc cũ');
   });
   check('Dọn-b (C2) · lý do đổi Target và lý do đề xuất chuyển lớp đi qua chuTuDo (trần 2 000 ký tự)', () => {

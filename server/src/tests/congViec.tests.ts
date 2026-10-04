@@ -115,8 +115,8 @@ export async function runCongViecTests(t: YThucTestKit) {
     assert(applied.length === 1 && /PR-Ra/.test(applied[0]), `Phải báo đúng một dòng PR-Ra: ${applied.join(' | ')}`);
     const fresh = new SqliteDb(':memory:');
     fresh.exec(SCHEMA);
-    /* PR-DUYET thêm `tasks.assignee_name` ở bước migrate của mình (sau PR-Ra) — so PR-Ra trên phần schema của đúng bước này. */
-    const sauPrRa = (db: any, tb: string) => colsOf(db, tb).filter((c) => !(tb === 'tasks' && c.startsWith('assignee_name:')));
+    /* PR-DUYET thêm `tasks.assignee_name`, PR-GVa thêm `tasks.idempotency_key` ở bước migrate của mình (sau PR-Ra) — so PR-Ra trên phần schema của đúng bước này. */
+    const sauPrRa = (db: any, tb: string) => colsOf(db, tb).filter((c) => !(tb === 'tasks' && (c.startsWith('assignee_name:') || c.startsWith('idempotency_key:'))));
     for (const tb of ['tasks', 'task_history', 'unit_reports', 'unit_report_history', 'unit_report_task_links']) {
       assert(JSON.stringify(colsOf(m, tb)) === JSON.stringify(sauPrRa(fresh, tb)),
         `${tb} sau nâng cấp khác schema.sql:\n  ${colsOf(m, tb).join(',')}\n  ${colsOf(fresh, tb).join(',')}`);

@@ -1107,8 +1107,10 @@ CREATE TABLE case_interventions (
   moc_quy_che TEXT,
   /* PR-LT2a (M-03, M-05): nhóm PA bổ trợ Giữa khoá (`gk:{lượt}` FOU · `gk:{lượt}:{môn}` BE/ELE) + hạn nộp kế hoạch. NULL với PA khác. */
   nhom_bo_tro TEXT,
-  han_ke_hoach TEXT
+  han_ke_hoach TEXT,
+  idempotency_key TEXT                -- PR-GVa: một mã cho mỗi lần mở form (gửi lại cùng mã → trả dòng đã có)
 );
+CREATE UNIQUE INDEX ux_case_interventions_khoa_gui ON case_interventions(recorded_by, idempotency_key) WHERE idempotency_key IS NOT NULL;
 -- Việc đang chờ duyệt là thứ Quản lý phải tìm nhanh, nên có chỉ số riêng.
 CREATE INDEX idx_intervention_approval ON case_interventions(approval_state)
   WHERE approval_state = 'pending';
@@ -1168,8 +1170,10 @@ CREATE TABLE case_followups (
    * hoặc ghi chú khi Giữ nguyên hoặc Kết thúc (tuỳ chọn).
    */
   remaining_issue TEXT,
-  decision_note TEXT
+  decision_note TEXT,
+  idempotency_key TEXT                -- PR-GVa: một mã cho mỗi lần mở form (gửi lại cùng mã → trả dòng đã có)
 );
+CREATE UNIQUE INDEX ux_case_followups_khoa_gui ON case_followups(observer_user_id, idempotency_key) WHERE idempotency_key IS NOT NULL;
 CREATE INDEX idx_followup_case ON case_followups(case_id);
 
 /*
@@ -1429,8 +1433,10 @@ CREATE TABLE tasks (
   help_user_id INTEGER REFERENCES users(id),
   help_name TEXT,
   -- PR-DUYET (NEN Q12): người phụ trách NGOÀI hệ thống, gõ tay (ví dụ "Tổ chuyên môn") — chỉ khi assignee_user_id NULL; không nhận thông báo.
-  assignee_name TEXT
+  assignee_name TEXT,
+  idempotency_key TEXT                -- PR-GVa: một mã cho mỗi lần mở form (gửi lại cùng mã → trả dòng đã có)
 );
+CREATE UNIQUE INDEX ux_tasks_khoa_gui ON tasks(created_by, idempotency_key) WHERE idempotency_key IS NOT NULL;
 CREATE INDEX idx_task_period ON tasks(period_id);
 CREATE INDEX idx_task_parent ON tasks(parent_task_id);   -- PR-DEPLOY (DEP-2c): migrate (`migrateMgmtTasks`) đã có, schema.sql thiếu
 CREATE INDEX idx_task_assignee ON tasks(assignee_user_id);

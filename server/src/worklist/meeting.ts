@@ -1,7 +1,7 @@
-import { db, theoLo, tx, vuaGhi } from '../db.ts';
+import { db, laTrungKhoa, theoKhoaGui, theoLo, tx } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
-  BRANCH_REPORT_CATEGORIES, ENTRY_SKILLS, PERMISSIONS, tenMon, tuanLich,
+  BRANCH_REPORT_CATEGORIES, ENTRY_SKILLS, PERMISSIONS, chuanKhoaGui, tenMon, tuanLich,
   TASK_PROGRESS, TASK_PROGRESS_LABEL, TASK_TYPES,
   TUTOR_REPORT_CATEGORIES, UNIT_STATUSES, trangThaiDonVi, trangThaiO, type DueState,
 } from '../../../shared/domain/index.ts';
@@ -636,11 +636,13 @@ export function createTask(p: Principal, input: any) {
   const taskType = 'in_period';
   const emGiao = lop ? docEmGiaoViec(conn, lop.id, input.studentIds) : null;
 
-  return tx(() => {
-    /* PR-Dọn (quét #26): bấm đúp → trả lại việc vừa tạo (việc giao GV toả PA cho từng em — gửi đôi là nhân đôi PA). */
-    /* Khoá đủ trường nghiệp vụ (rà Dọn-a P2): cùng tiêu đề nhưng khác kỹ năng / người / hạn là HAI việc, không gộp lặng lẽ. */
-    const cu = vuaGhi('tasks', { title: input.title.trim(), kind, class_id: lop?.id ?? null, branch_id: branchId, created_by: p.userId,
-      topic: kind === 'teacher_task' ? (input.topic ?? null) : null, assignee_user_id: input.assigneeUserId ?? null, due_date: input.dueDate ?? null });
+  /*
+   * PR-GVa (F01 = D13): gửi lại CÙNG khoá của lần mở form → trả việc đã có (việc giao GV toả PA cho từng em — gửi đôi là nhân đôi PA).
+   * Mọi kiểm quyền / dữ liệu ở trên chạy TRƯỚC khi tra khoá. Không khoá thì luôn là việc mới.
+   */
+  const khoa = chuanKhoaGui(input.idempotencyKey);
+  const taoMoi = () => tx(() => {
+    const cu = theoKhoaGui('tasks', 'created_by', p.userId, khoa);
     if (cu) return conn.prepare('SELECT * FROM tasks WHERE id = ?').get(cu);
     const n = (conn.prepare('SELECT COUNT(*) AS n FROM tasks').get() as any).n as number;
     const code = padCode('CV', n + 1, 4);
@@ -649,15 +651,15 @@ export function createTask(p: Principal, input: any) {
         `INSERT INTO tasks (code, period_id, task_type, kind, class_id, topic, title,
                             reporting_unit_id, branch_id, assignee_user_id,
                             due_date, progress, note, source_type, source_unit_report_id, source_sos_case_id,
-                            created_by, created_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?, 'not_started', ?,?,?,?,?,?)`,
+                            created_by, created_at, idempotency_key)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?, 'not_started', ?,?,?,?,?,?,?)`,
       )
       .run(code, input.periodId ?? null, taskType, kind, lop?.id ?? null,
            kind === 'teacher_task' ? (input.topic ?? null) : null,
            input.title.trim(), input.unitId ?? null, branchId,
            input.assigneeUserId ?? null, input.dueDate ?? null, input.note ?? null,
            input.sourceType ?? 'manual', input.sourceUnitReportId ?? null, input.sourceSosCaseId ?? null,
-           p.userId, nowIso());
+           p.userId, nowIso(), khoa);
     const id = Number(info.lastInsertRowid);
     setFollowers(conn, id, p.userId, branchId, input.followerIds);
     const touched = lop ? fanOutToStudents(conn, id, p.userId, { classId: lop.id, studentIds: emGiao, topic: input.topic, title: input.title }) : 0;
@@ -665,6 +667,13 @@ export function createTask(p: Principal, input: any) {
       entityLabel: code, after: { title: input.title, dueDate: input.dueDate, kind, students: touched } });
     return conn.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
   });
+  try { return taoMoi(); }
+  catch (e) {
+    /* Hai lần gửi đồng thời cùng khoá: lần thua vấp unique index → trả việc lần thắng đã ghi. */
+    const cu = laTrungKhoa(e) ? theoKhoaGui('tasks', 'created_by', p.userId, khoa) : null;
+    if (cu) return conn.prepare('SELECT * FROM tasks WHERE id = ?').get(cu);
+    throw e;
+  }
 }
 
 /**

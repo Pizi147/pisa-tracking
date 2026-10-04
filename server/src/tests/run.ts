@@ -9057,6 +9057,10 @@ runPrHk1Tests({ check, assert });
 const { runPrPhTests } = await import('./prPh.tests.ts');
 runPrPhTests({ check, assert });
 
+// ==================================================================== PR-GVa (giao việc: khoá gửi, chi nhánh form, kỳ)
+const { runPrGvaTests } = await import('./prGva.tests.ts');
+await runPrGvaTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P });
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
