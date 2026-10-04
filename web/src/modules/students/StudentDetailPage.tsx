@@ -394,6 +394,7 @@ export default function StudentDetailPage() {
           status: data.status,
         }}
         cycle={cy} attempts={data.attempts} onDone={reload} soViPhamMo={data.dauHoSo?.soViPhamMo}
+        canEditCycle={!!data.viewer.canEditCycle} onDeXuatSua={() => setViecQuanLy('de-xuat-sua')}
       />
     </div>
   );

@@ -7,7 +7,7 @@ import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { Field, Outcome, Th } from '../../ui/ui.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import {
-  KCK, cotLuoiNhap, dsLoi, duongDotTest, laKck, nhanCotNhap, tuanBatDauMacDinh, type CotNhap, type VanDeNhap,
+  KCK, cotLuoiNhap, dsLoi, duongDotTest, laKck, nhanCotNhap, tuanBatDauMacDinh, type CachDoc, type CotNhap, type VanDeNhap,
 } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
@@ -34,7 +34,7 @@ const GOI_Y_COT: Partial<Record<CotNhap, string>> = {
   dob: 'Gõ dd/mm/yyyy.',
   baselineScore: 'Con số trên phiếu điểm chính thức. Nhập độc lập với bốn môn — không phải trung bình cộng.',
   entryWriting: 'Writing TỔNG trên phiếu điểm — không chia W1/W2.',
-  target: `Band 0–9, bước 0,5. Gõ KCK (hoặc -) nếu em không cam kết đầu ra: không kỳ vọng MT, không tính SOS. Bỏ trống = chưa có Target.`,
+  target: `Band 0–9, bước 0,5. Gõ KCK (hoặc -) nếu em không cam kết đầu ra: không kỳ vọng MT, không tính SOS. Bỏ trống = chưa có Target. Lớp thường: chỉ để theo dõi.`,
   examDate: 'Gõ dd/mm/yyyy nếu đã biết ngày, mm/yyyy nếu mới biết tháng.',
   daThiToiMt: 'Em cũ đã thi tới MT mấy ngoài web — web tạo sẵn các lượt đó là MT lịch sử để nhập điểm bù. Bỏ trống = em mới.',
   startWeek: 'Theo tuần chọn ở đầu panel; đổi riêng từng dòng được.',
@@ -53,7 +53,8 @@ function MuiTen({ mo }: { mo: boolean }) {
 /**
  * Thêm nhiều học viên trong một lần (M2, YC-5.1…5.4).
  *
- * Dán vùng bảng CÓ DÒNG TIÊU ĐỀ từ Excel/Google Sheets (cột nhận theo tên), hoặc gõ thẳng vào lưới. Hàng cao đều: lỗi/lưu ý dồn về
+ * Dán vùng bảng từ Excel/Google Sheets — có dòng tiêu đề thì cột nhận theo tên; không có thì theo thứ tự cột của lưới (PR-NT 04/10) —
+ * hoặc gõ thẳng vào lưới. Hàng cao đều: lỗi/lưu ý dồn về
  * cột Tình trạng, bấm mở một dòng chi tiết. Dòng lỗi không khoá cả lô — dòng sẵn sàng được thêm, dòng lỗi ở lại để sửa (K2-21).
  * Máy chủ soát lại từng dòng theo phạm vi quyền trước khi ghi.
  */
@@ -79,6 +80,8 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
   const lf = useLoiForm();
   const loiLo = dsLoi([{ khoa: 'lop', nhan: 'Thêm vào lớp', chon: true }], { lop: classId });
   const [pasteText, setPasteText] = useState('');
+  /* PR-NT: giữ nội dung vừa dán + cách đã đọc để đổi cách đọc (tiêu đề ↔ học viên) mà không phải dán lại. */
+  const [daDan, setDaDan] = useState<{ text: string; cach: CachDoc | null } | null>(null);
   // Khoá idempotency giữ nguyên trong một lần thêm (bấm hai lần / thử lại sau lỗi mạng không tạo trùng); thêm xong thì đổi khoá.
   const idempotencyKey = useRef(moiKhoa());
 
@@ -92,16 +95,16 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
   const doiLuoi = (f: (rs: Row[]) => Row[]) => { setRows(f); setPreview(null); };
   const setCell = (i: number, key: CotNhap, v: string) => doiLuoi((rs) => rs.map((r, j) => (j === i ? { ...r, [key]: v } : r)));
 
-  const handlePaste = async (text: string) => {
+  const handlePaste = async (text: string, coTieuDe?: boolean) => {
     if (!text.trim()) return;
     try {
-      const r = await api.post<{ rows: Row[]; cotBoQua: string[] }>('/intake/parse', { text });
+      const r = await api.post<{ rows: Row[]; cotBoQua: string[]; cach: CachDoc | null }>('/intake/parse', { text, classId, coTieuDe });
       if (!r.rows.length) { toast.push('error', 'Không đọc được dòng nào từ nội dung đã dán.'); return; }
       doiLuoi(() => r.rows);
-      setMoDong(null); setKetQua(null); setPasteText('');
-      toast.push('ok', `Đã đọc ${r.rows.length} dòng${r.cotBoQua.length ? ` · bỏ qua cột ${r.cotBoQua.join(', ')}` : ''}.`);
+      setMoDong(null); setKetQua(null); setPasteText(''); setDaDan({ text, cach: r.cach });
     } catch (e: any) { toast.push('error', e.message); }
   };
+  const cach = daDan?.cach ?? null;
 
   const runPreview = useCallback(async () => {
     if (!classId) { setPreview(null); return; }
@@ -136,7 +139,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
       doiLuoi((rs) => { const con = rs.filter((_, j) => !daThem.has(j + 1)); return con.length ? con : [{}]; });
       setMoDong(null);
       setKetQua(r);
-      if (r.added > 0) onDone();
+      if (r.added > 0) { onDone(); setDaDan(null); }
       else toast.push('info', 'Chưa thêm được dòng nào — xem cột Trạng thái.');
     } catch (e: any) {
       toast.push('error', e.message);        // giữ nguyên lưới đang nhập để thử lại
@@ -180,7 +183,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
         <div className="surface-2 rounded-lg p-3 grid gap-3 sm:grid-cols-2">
           <Field label="Thêm vào lớp" required hint="Cột “Lớp” và “Lộ trình” trong file dán sẽ bị bỏ qua — theo lớp chọn ở đây." loi={lf.loiCua(loiLo, 'lop')}>
             <select className="field w-full" {...lf.o(loiLo, 'lop')} value={classId ?? ''}
-              onChange={(e) => { setClassId(Number(e.target.value) || null); setStartWeek(''); setKetQua(null); setPreview(null); }}>
+              onChange={(e) => { setClassId(Number(e.target.value) || null); setStartWeek(''); setKetQua(null); setPreview(null); setDaDan(null); }}>
               <option value="">Chọn lớp…</option>
               {(classes.data ?? []).map((c: any) => (
                 <option key={c.id} value={c.id}>{c.code}{c.programme_name ? ` · ${c.programme_name}` : ''}</option>
@@ -203,7 +206,10 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
             <textarea
               className="field font-mono text-xs"
               rows={3}
-              placeholder="Dán vùng bảng có dòng tiêu đề (Họ và tên, Ngày sinh, Email, …) — cột nhận theo tên, không theo thứ tự"
+              disabled={!classId}
+              placeholder={classId
+                ? 'Dán từ Excel, có hoặc không có dòng tiêu đề. Không có tiêu đề thì web đọc theo thứ tự cột của lưới bên dưới.'
+                : 'Chọn lớp trước'}
               value={pasteText}
               onChange={(e) => setPasteText(e.target.value)}
               onPaste={(e) => {
@@ -213,11 +219,29 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
             />
           </label>
           <div className="flex items-end">
-            <button type="button" className="btn btn-sm min-h-[44px] w-full justify-center sm:min-h-0" onClick={() => void handlePaste(pasteText)} disabled={!pasteText.trim()}>
+            <button type="button" className="btn btn-sm min-h-[44px] w-full justify-center sm:min-h-0" onClick={() => void handlePaste(pasteText)} disabled={!classId || !pasteText.trim()}>
               Đọc nội dung đã dán
             </button>
           </div>
         </div>
+
+        {/* PR-NT: nói rõ web đã đọc vùng dán thế nào, đổi được bằng một nút (không dùng toast — toast tự tắt). */}
+        {cach && daDan && (
+          <div className="text-xs text-slate-300 space-y-1" role="status">
+            <p className="m-0">
+              {cach.coTieuDe
+                ? <>Đã đọc theo dòng tiêu đề{cach.boQua.length ? ` · bỏ qua cột ${cach.boQua.join(', ')}` : ''}.</>
+                : <>Đã đọc theo thứ tự cột: {cach.thuTu.map((k) => nhanCotNhap(k)).join(' · ')}.</>}
+              {' '}
+              <button type="button" className="link inline-flex min-h-[44px] items-center appearance-none border-0 bg-transparent p-0 text-xs align-baseline sm:min-h-0"
+                onClick={() => void handlePaste(daDan.text, !cach.coTieuDe)}>
+                {cach.coTieuDe ? 'Dòng đầu là học viên?' : 'Dòng đầu là tiêu đề?'}
+              </button>
+            </p>
+            {cach.thua > 0 && <p className="m-0 text-soon">Mỗi dòng dư {cach.thua} ô ở cuối — đã bỏ. Kiểm lại thứ tự cột.</p>}
+            {cach.thieu > 0 && <p className="m-0 text-slate-400">{cach.thieu} cột cuối để trống — điền thêm trên lưới nếu cần.</p>}
+          </div>
+        )}
 
         {ketQua && ketQua.added > 0 && (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -238,7 +262,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
         )}
 
         <div className="overflow-x-auto">
-          <table className="w-full table-fixed text-sm" style={{ minWidth: lopThuong ? 740 : 1300 }}>
+          <table className="w-full table-fixed text-sm" style={{ minWidth: lopThuong ? 960 : 1300 }}>
             <colgroup>
               <col style={{ width: 32 }} />
               {cols.map((c) => <col key={c.key} style={{ width: RONG[c.key] }} />)}
