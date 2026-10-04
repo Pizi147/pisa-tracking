@@ -112,4 +112,55 @@ export async function runPrSoTests(t: YThucTestKit) {
     }
     assert(lech.length === 0, lech.join('; '));
   });
+
+  // ------------------------------------------------------------------ SO-3 · D4 xoá completeIntervention, tín hiệu, dọn khoá gửi
+  console.log('\nPR-SO · (3) D4 xoá completeIntervention · tín hiệu em đã kết thúc · dọn khoá gửi cũ');
+  const signals: any = await import('../cases/signals.ts');
+  const sosAuto: any = await import('../cases/sosAuto.ts');
+  check('SO-3a (D4) · cases.ts không còn completeIntervention; khép PA quy chế trước mốc qua updateResult vẫn bị chặn, PA còn chạy', () => {
+    assert(!('completeIntervention' in cases), 'completeIntervention còn export');
+    const sid = emMoi('MB FT 101');
+    const c = cases.reportIssue(P.lrTeacher, { studentId: sid, topic: 'listening', title: 'Case SO-3a', summary: 'Case dùng cho phép kiểm khép PA quy chế sớm.',
+      primaryCode: d.issuesForTopic('listening')[0].code, idempotencyKey: `prso-3a-${sid}` });
+    const iv = Number(conn.prepare(
+      `INSERT INTO case_interventions (case_id, kind, description, performer_user_id, recorded_by, status, started_date, action_due, followup_due, preset, confirmed_at, cycle_no, created_at)
+       VALUES (?, 'tutor', 'PA quy chế SO-3a', ?, ?, 'started', ?, ?, ?, 1, ?, 1, ?)`).run(c.id, P.lrTeacher.userId, P.lrTeacher.userId, addDays(TODAY, -7), addDays(TODAY, 7),
+      addDays(TODAY, 28), new Date().toISOString(), new Date().toISOString()).lastInsertRowid);
+    let loi: any = null;
+    try { cases.updateResult(P.admin, iv, { decision: 'end', outcome: 'improved', note: 'Em nghe tốt hơn hẳn sau hai tuần' }); } catch (e) { loi = e; }
+    assert(loi?.status === 400 && /không kết thúc sớm/.test(loi.message), `updateResult end: ${loi?.status} ${loi?.message}`);
+    assert(get('SELECT status FROM case_interventions WHERE id = ?', iv).status === 'started', 'PA bị khép');
+    void sosAuto;
+  });
+
+  check('SO-3b · em đã kết thúc học, tín hiệu đã thu hồi; raiseSignal lại cùng khoá (sửa điểm xuống dưới kỳ vọng) → vẫn withdrawn, case_id giữ', () => {
+    const sid = emMoi('MB FT 101');
+    const at = get('SELECT id, cycle_id, class_id FROM assessment_attempts WHERE student_id = ? ORDER BY id LIMIT 1', sid)
+      ?? get(`SELECT id, cycle_id, class_id FROM assessment_attempts WHERE cycle_id = (SELECT id FROM learning_cycles WHERE student_id = ? ORDER BY id LIMIT 1) ORDER BY id LIMIT 1`, sid);
+    assert(at, 'dựng dữ liệu: em cần một lượt thi');
+    const goi = () => signals.raiseSignal({ actorUserId: null, studentId: sid, cycleId: at.cycle_id, attemptId: at.id, classId: at.class_id, skill: 'listening',
+      category: 'listening', band: 4, expectation: 5.5, detectedOn: TODAY, silent: true });
+    const sg = goi();
+    const c = cases.reportIssue(P.lrTeacher, { studentId: sid, topic: 'listening', title: 'Case SO-3b', summary: 'Case dùng cho phép kiểm tín hiệu em đã kết thúc.',
+      primaryCode: d.issuesForTopic('listening')[0].code, idempotencyKey: `prso-3b-${sid}` });
+    studentsSvc.setStudentStatus(P.admin, sid, 'finished', TODAY, 'Kết thúc thử SO-3b');
+    conn.prepare(`UPDATE case_signals SET status = 'withdrawn', case_id = ?, withdrawn_reason = 'Điểm đã sửa' WHERE id = ?`).run(c.id, sg.id);
+    const sau = goi();
+    assert(sau.id === sg.id && sau.status === 'withdrawn' && sau.case_id === c.id, JSON.stringify({ status: sau.status, case_id: sau.case_id }));
+  });
+
+  check('SO-3c · tạo lớp hàng loạt: khoá bulkclass:/intake: cũ > 7 ngày bị dọn; khoá mới 1 ngày và khoá cấu hình còn', () => {
+    const iso = (ngay: number) => new Date(Date.now() - ngay * 864e5).toISOString();
+    const ghi = (k: string, ngay: number) => conn.prepare('INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES (?, ?, ?)').run(k, '{}', iso(ngay));
+    ghi('bulkclass:1:x', 8); ghi('intake:1:2:y', 8); ghi('bulkclass:1:moi', 1);
+    const MB = get(`SELECT id FROM branches WHERE code = 'MB'`).id;
+    const cauHinh = (conn.prepare(`SELECT key FROM demo_config WHERE key NOT LIKE 'bulkclass:%' AND key NOT LIKE 'intake:%'`).all() as any[]).map((x) => x.key);
+    assert(cauHinh.length > 0, 'dựng dữ liệu: cần khoá cấu hình');
+    const r = intake.taoLopHangLoat(P.mbManager, { rows: [{ branchId: MB, chuongTrinh: 'FT', loTrinh: 'LT1', so: '9861' }], idempotencyKey: 'prso-3c' });
+    assert(r.ok, JSON.stringify(r));
+    const con = (k: string) => !!get('SELECT 1 x FROM demo_config WHERE key = ?', k);
+    assert(!con('bulkclass:1:x') && !con('intake:1:2:y'), 'khoá cũ còn');
+    assert(con('bulkclass:1:moi') && con(`bulkclass:${P.mbManager.userId}:prso-3c`), 'khoá mới mất');
+    assert(cauHinh.every(con), 'khoá cấu hình mất');
+  });
 }

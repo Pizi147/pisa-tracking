@@ -3700,9 +3700,8 @@ check('Case đã đóng mà MT sau trượt lại → MỞ CASE MỚI nối vào
       }
       sosAutoSvc.xacNhanPaQuyChe(mgr, iv.id, { description: 'Tutor kèm Reading hai buổi mỗi tuần, cô Hà chữa bài.' });
     }
-    /* PR-S3F #8 (T22): PA quy chế không khép sớm qua `completeIntervention` — phép kiểm này chỉ cần "PA đã xong" để chốt Case. */
-    if (row.preset === 1) conn.prepare(`UPDATE case_interventions SET status = 'completed', completed_date = ?, updated_at = ? WHERE id = ?`).run(demoToday(), new Date().toISOString(), iv.id);
-    else cases.completeIntervention(mgr, iv.id, { doneOn: demoToday() });
+    /* PR-S3F #8 (T22): PA quy chế không khép sớm — phép kiểm này chỉ cần "PA đã xong" để chốt Case (PR-SO: `completeIntervention` đã xoá). */
+    conn.prepare(`UPDATE case_interventions SET status = 'completed', completed_date = ?, updated_at = ? WHERE id = ?`).run(demoToday(), new Date().toISOString(), iv.id);
   }
   cases.closeCaseOutcome(mgr, c.id, {
     outcome: 'much_better', note: 'Em đọc nhanh hơn hẳn', decision: 'end',
