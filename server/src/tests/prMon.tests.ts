@@ -64,7 +64,6 @@ export async function runPrMonTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ Task 2 · migrate kỹ năng phụ trách được
-  const mig: any = await import('../migrate/prMon.ts');
   const accounts: any = await import('../platform/accounts.ts');
   const clsMod: any = await import('../classes/classes.ts');
   const kyNangCua = (id: number) => (conn.prepare('SELECT skill FROM user_skills WHERE user_id = ? ORDER BY skill').all(id) as any[]).map((r) => r.skill).join(',');
@@ -76,34 +75,7 @@ export async function runPrMonTests(t: YThucTestKit) {
   const giu = new Map([A, B, C].map((id) => [id, kyNangCua(id).split(',').filter(Boolean)]));
   const traLai = () => { for (const [id, ds] of giu) datKyNang(id, ds); };
 
-  check('MON (2) · chạy thử chỉ đọc: keHoachDoiKyNang đúng người, bảng không đổi', () => {
-    try {
-      datKyNang(A, ['writing']); datKyNang(B, ['writing1', 'writing']); datKyNang(C, ['pronunciation']);
-      const dem = () => (conn.prepare('SELECT COUNT(*) AS n, GROUP_CONCAT(user_id || skill) AS h FROM user_skills').get() as any);
-      const truoc = dem();
-      const kh = mig.keHoachDoiKyNang(conn);
-      const cua = (id: number) => kh.find((x: any) => x.userId === id);
-      assert(cua(A)?.moi.join() === 'writing1,writing2' && cua(B)?.moi.join() === 'writing1,writing2' && cua(C)?.moi.join() === 'speaking',
-        JSON.stringify([cua(A), cua(B), cua(C)]));
-      const sau = dem();
-      assert(truoc.n === sau.n && truoc.h === sau.h, 'chạy thử đã ghi vào bảng');
-      const fou = mig.demCaseFouNguyenNhanIelts(conn);
-      assert(typeof fou.soCase === 'number' && fou.mau.length <= 20, 'đếm Case FOU');
-    } finally { traLai(); }
-  });
-  check('MON (2) · migrate user_skills: W lớp thường → W1 + W2, Pron → S; chạy lần 2 không đổi gì (MH1, K5-29)', () => {
-    try {
-      datKyNang(A, ['writing']); datKyNang(B, ['writing1', 'writing']); datKyNang(C, ['pronunciation']);
-      const applied: string[] = [];
-      mig.migratePrMon(conn, applied);
-      assert(applied.length === 1, JSON.stringify(applied));
-      assert(kyNangCua(A) === 'writing1,writing2' && kyNangCua(B) === 'writing1,writing2' && kyNangCua(C) === 'speaking',
-        `${kyNangCua(A)} | ${kyNangCua(B)} | ${kyNangCua(C)}`);
-      mig.migratePrMon(conn, applied);
-      assert(applied.length === 1, 'lần 2 lại thêm dòng applied');
-      assert(!(conn.prepare("SELECT 1 FROM user_skills WHERE skill IN ('writing','prep_writing','pronunciation')").get()), 'còn mã cũ');
-    } finally { traLai(); }
-  });
+  /* PR-SO (DEP-gỡ): hai phép "MON (2) chạy thử" và "MON (2) migrate user_skills" xoá cùng `migrate/prMon.ts` (DB cũ đã xoá). */
   await checkAsync('MON (2) · MH1: /auth/info và allSkills đúng 5 mã; setSkills(writing) → W1 + W2; GV thường PUT kỹ năng → 403', async () => {
     const { createApp } = await import('../app.ts');
     const may = createApp().listen(0);

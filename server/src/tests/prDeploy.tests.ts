@@ -376,7 +376,7 @@ export async function runPrDeployTests(t: YThucTestKit) {
       assert(c.prepare("SELECT 1 FROM sqlite_master WHERE type = 'trigger' AND name = 'trg_sos_cases_goc'").get(), 'thiếu trigger');
     } finally { c.close(); }
   });
-  check('DEPLOY-2e · DB cũ (không có dấu khoi_tao_moi_at) vẫn chạy bước chuyển dữ liệu cũ: PA đang chạy hạn Chủ nhật được dời Thứ Hai (migratePrN1)', () => {
+  check('DEPLOY-2e · PR-SO (DEP-gỡ): DB KHÔNG có dấu khoi_tao_moi_at cũng không còn bước chuyển dữ liệu cũ — PA hạn Chủ nhật giữ nguyên', () => {
     const f = dbInit((c) => {
       c.prepare("DELETE FROM demo_config WHERE key = 'khoi_tao_moi_at'").run();
       const st = Number(c.prepare(`INSERT INTO students (student_code, full_name, normalized_name, status, created_at) VALUES ('PISA-900002', 'Em DB cũ', 'em db cu', 'active', '2026-09-01')`).run().lastInsertRowid);
@@ -387,7 +387,7 @@ export async function runPrDeployTests(t: YThucTestKit) {
     const c = new Database(f, { readonly: true });
     try {
       const r = c.prepare(`SELECT action_due FROM case_interventions WHERE description = 'PA cũ'`).get() as any;
-      assert(r.action_due === '2026-10-05', `DB cũ phải dời hạn Chủ nhật: ${r.action_due}`);
+      assert(r.action_due === '2026-10-04', `migrate còn dời hạn Chủ nhật: ${r.action_due}`);
     } finally { c.close(); }
   });
 

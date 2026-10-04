@@ -163,4 +163,51 @@ export async function runPrSoTests(t: YThucTestKit) {
     assert(con('bulkclass:1:moi') && con(`bulkclass:${P.mbManager.userId}:prso-3c`), 'khoá mới mất');
     assert(cauHinh.every(con), 'khoá cấu hình mất');
   });
+
+  // ------------------------------------------------------------------ SO-4 · DEP-gỡ: gỡ mã chuyển dữ liệu cũ (DB cũ đã xoá)
+  console.log('\nPR-SO · (4) DEP-gỡ: không còn lệnh chạy thử DB cũ; DB init → migrate hai lần không đổi gì');
+  const fs = await import('node:fs');
+  const pathMod = await import('node:path');
+  const os = await import('node:os');
+  const cp = await import('node:child_process');
+  const { fileURLToPath, pathToFileURL } = await import('node:url');
+  const REPO = pathMod.resolve(fileURLToPath(new URL('../../../../', import.meta.url)));
+  check('SO-4a · package.json không còn chay-thu:* và kiem-lop-mo-coi; server/src/migrate không còn chayThu*.ts, không còn kiemLopMoCoi.ts', () => {
+    const scripts = Object.keys(JSON.parse(fs.readFileSync(pathMod.join(REPO, 'package.json'), 'utf8')).scripts);
+    assert(!scripts.some((k) => k.startsWith('chay-thu:') || k === 'kiem-lop-mo-coi'), scripts.join(','));
+    const thua = fs.readdirSync(pathMod.join(REPO, 'server/src/migrate')).filter((f) => f.startsWith('chayThu'));
+    assert(!thua.length && !fs.existsSync(pathMod.join(REPO, 'server/src/ops/kiemLopMoCoi.ts')), thua.join(','));
+  });
+  const { default: Database } = await import('libsql');
+  const { SCHEMA_PATH } = await import('../db.ts');
+  const { initBanChinh } = await import('../ops/initBanChinh.ts');
+  check('SO-4b · DB dựng bằng initBanChinh → migrate (nhánh Turso) hai lần: applied rỗng cả hai lần, số dòng mọi bảng không đổi', () => {
+    const thuMuc = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'prso-'));
+    try {
+      const f = pathMod.join(thuMuc, 'init.sqlite');
+      const c0 = new Database(f);
+      initBanChinh(c0, { adminEmail: 'prso.pisa@gmail.com', adminPassword: 'MatKhauPrSo2026', chiNhanh: [{ code: 'MB', name: 'Monbay' }],
+        now: '2026-10-04T00:00:00Z', schemaSql: fs.readFileSync(SCHEMA_PATH, 'utf8') });
+      c0.close();
+      const lib = pathToFileURL(pathMod.join(REPO, 'dist-server/server/src/migrate.js')).href;
+      const chay = (): string[] => {
+        const r = cp.spawnSync(process.execPath, ['--input-type=module', '-e', `const m = await import(${JSON.stringify(lib)}); console.log('@@' + JSON.stringify(m.migrate().applied));`], {
+          env: { ...process.env, TURSO_DATABASE_URL: 'file:' + f.replace(/\\/g, '/'), TURSO_AUTH_TOKEN: 'x', BAN_CHINH: '', PISA_DB: '' }, encoding: 'utf8', timeout: 300_000 });
+        if (r.status !== 0) throw new Error(`migrate lỗi: ${String(r.stderr).slice(-400)}`);
+        return JSON.parse(String(r.stdout).split('@@').pop()!.trim());
+      };
+      const dem = () => {
+        const c = new Database(f, { readonly: true });
+        try {
+          return JSON.stringify((c.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all() as any[])
+            /* `case_engine_migrated_at` là mốc lần chạy migrate (như DEPLOY-1c), không phải dữ liệu. */
+            .map((b) => [b.name, (c.prepare(`SELECT COUNT(*) n FROM "${b.name}"${b.name === 'demo_config' ? " WHERE key != 'case_engine_migrated_at'" : ''}`).get() as any).n]));
+        } finally { c.close(); }
+      };
+      const truoc = dem();
+      const a1 = chay(); const a2 = chay();
+      assert(a1.length === 0 && a2.length === 0, `${JSON.stringify(a1)} | ${JSON.stringify(a2)}`);
+      assert(dem() === truoc, 'số dòng đổi sau migrate');
+    } finally { fs.rmSync(thuMuc, { recursive: true, force: true }); }
+  });
 }
