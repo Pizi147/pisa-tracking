@@ -21,6 +21,8 @@ type CoordAction = {
   removeReasonLabel: string | null; attachmentCount: number;
   /** Báo phụ huynh qua TVV (PR-LT2a): bốn nội dung GVCN chuyển cho TVV — null với việc khác. */
   noiDung?: string[] | null;
+  /** PR-PHH: việc đã xong mà chưa lưu bản chụp (xác nhận trước PR-PHH) — `noiDung` là nội dung hiện tại. */
+  noiDungLaHienTai?: boolean;
 };
 export type CoordTurn = {
   attemptId: number; attemptNo: number; studentId: number; studentName: string;
@@ -149,7 +151,8 @@ function ActionRow({ a, canAct, onChanged }: { a: CoordAction; canAct: boolean; 
           {dongPhu && <span className="block text-[11px] text-slate-500 mt-0.5">{dongPhu}</span>}
           {a.noiDung && a.noiDung.length > 0 && (
             <details className="mt-1">
-              <summary className="cursor-pointer text-[11px] text-slate-400">Nội dung gửi TVV ({a.noiDung.length})</summary>
+              <summary className="cursor-pointer text-[11px] text-slate-400">{a.status === 'done' ? 'Nội dung đã báo TVV' : 'Nội dung gửi TVV'} ({a.noiDung.length})</summary>
+              {a.noiDungLaHienTai && <p className="m-0 mt-1 text-[11px] text-slate-500">Chưa lưu nội dung lúc báo — dưới đây là nội dung hiện tại</p>}
               <ol className="m-0 mt-1 space-y-1 pl-4 text-xs text-slate-300">
                 {a.noiDung.map((x, i) => <li key={i}>{x}</li>)}
               </ol>
