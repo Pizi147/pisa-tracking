@@ -251,7 +251,7 @@ Skill: test-driven-development (máy chủ) · impeccable clarify (chữ cảnh 
   - Phản hồi kiểm trước (`/ke-hoach-test/dot/kiem`): thêm `seHuyLich: Array<{ attemptId: number; nhan: string; tuan: string }>`
   - Thân lưu (`/ke-hoach-test/dot`, `/attempts/:id/week`, `/attempts/:id/skills/:skill/week`): thêm `xacNhanHuyLich?: boolean`. Thiếu xác nhận mà có lượt bị vượt → 409 `{ error, details: { seHuyLich } }`.
 
-- [ ] **Step 1: Phép kiểm luật thuần (đỏ)** — `server/src/tests/prLm.tests.ts`:
+- [x] **Step 1: Phép kiểm luật thuần (đỏ)** — `server/src/tests/prLm.tests.ts`:
 
 ```ts
 /** PHÉP KIỂM PR-LM — lịch MT linh hoạt: dời vượt lượt sau thì huỷ lịch lượt bị vượt (chủ sản phẩm 03/10, Q-0310-1/2). */
@@ -300,9 +300,9 @@ await runPrLmMayChu({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 ```
 (`runPrLmMayChu` viết ở Step 5; tạm export một hàm rỗng để build qua.)
 
-- [ ] **Step 2: Chạy, thấy đỏ** — `npm test 2>&1 | grep -A2 "PR-LM"` → FAIL "d.luotBiVuot is not a function".
+- [x] **Step 2: Chạy, thấy đỏ** — `npm test 2>&1 | grep -A2 "PR-LM"` → FAIL "d.luotBiVuot is not a function".
 
-- [ ] **Step 3: Viết `luotBiVuot`** trong `shared/domain/lichMt.ts` (dùng `tuanLich` + `labelOf`/nhãn lượt có sẵn trong file; nếu `labelOf` ở chỗ khác thì import đúng chỗ đó):
+- [x] **Step 3: Viết `luotBiVuot`** trong `shared/domain/lichMt.ts` (dùng `tuanLich` + `labelOf`/nhãn lượt có sẵn trong file; nếu `labelOf` ở chỗ khác thì import đúng chỗ đó):
 
 ```ts
 /** Một lượt khác trong cùng lộ trình, đủ để biết lượt đang dời có VƯỢT nó không (PR-LM, chủ sản phẩm 03/10). */
@@ -327,9 +327,9 @@ const nhanLuot = (x: { attemptNo: number; kind: string }) => (x.kind === 'mock' 
 ```
 (Đọc `lichMt.ts` trước: dùng hàm đặt nhãn lượt **đã có** — `labelOf` ở `:130` theo báo cáo — đừng viết hàm thứ hai.) Re-export `luotBiVuot`, `LuotLanCan` trong `shared/domain/index.ts`.
 
-- [ ] **Step 4: Chạy** — 3 phép PR-LM (1) PASS.
+- [x] **Step 4: Chạy** — 3 phép PR-LM (1) PASS.
 
-- [ ] **Step 5: Phép kiểm máy chủ (đỏ)** — thêm `runPrLmMayChu` vào `prLm.tests.ts`. Theo mẫu tạo học viên/lộ trình/lượt của `runPrXlmtMayChu` (`prXlmt.tests.ts`, đọc phần "khối 2" để lấy hàm dựng dữ liệu và cách gọi HTTP với cookie Quản lý). Các trường hợp phải có (mỗi trường hợp một `checkAsync`, dữ liệu riêng, `TODAY` của harness):
+- [x] **Step 5: Phép kiểm máy chủ (đỏ)** — thêm `runPrLmMayChu` vào `prLm.tests.ts`. Theo mẫu tạo học viên/lộ trình/lượt của `runPrXlmtMayChu` (`prXlmt.tests.ts`, đọc phần "khối 2" để lấy hàm dựng dữ liệu và cách gọi HTTP với cookie Quản lý). Các trường hợp phải có (mỗi trường hợp một `checkAsync`, dữ liệu riêng, `TODAY` của harness):
   1. Lộ trình có MT1 (tuần T+1), MT2 (T+4), MT3 (T+8), chưa điểm. `POST /ke-hoach-test/dot/kiem` dời cả 4 kỹ năng MT1 sang T+5 → `seHuyLich` = [MT2], không có blocker "vượt qua lượt kế tiếp".
   2. Như (1) nhưng `POST /ke-hoach-test/dot` **không** có `xacNhanHuyLich` → 409, `details.seHuyLich[0].nhan === 'MT2'`, DB không đổi (so `planned_period_id` trước/sau).
   3. Như (1) với `xacNhanHuyLich: true` → 200; MT1 ở T+5; mọi kỹ năng MT2 `planned_period_id IS NULL`, `plan_source='manual'`; `assessment_attempts.planned_period_id` của MT2 NULL; MT2 vẫn `status='planned'`, `attempt_no=2`; MT3 không đổi; có dòng audit `attempt.unschedule` với `doVuotBoi` = id MT1.
@@ -342,9 +342,9 @@ const nhanLuot = (x: { attemptNo: number; kind: string }) => (x.kind === 'mock' 
   10. `POST /attempts/:id/bo-tuan {lyDo}` (nút "Huỷ lịch" ở panel): lượt chưa điểm → 200 bỏ tuần; lượt có điểm → 400; lý do < 5 ký tự → 400; GV không có quyền xếp lịch → 403.
   11. Sau khi MT2 bỏ tuần: `mocKeTiep` / `standingFor` không lấy MT2 làm "Sắp tới" (không có tuần) và không lỗi; Kế hoạch Test (`GET` lưới kế hoạch của lớp) hiện MT2 ở trạng thái `chua-xep`.
 
-- [ ] **Step 6: Chạy, thấy đỏ** — `npm test 2>&1 | grep -B1 -A3 "PR-LM (2)"`.
+- [x] **Step 6: Chạy, thấy đỏ** — `npm test 2>&1 | grep -B1 -A3 "PR-LM (2)"`.
 
-- [ ] **Step 7: Viết máy chủ**
+- [x] **Step 7: Viết máy chủ**
   - `kiemVuot(attemptId, tuanCuoiMoi)` trong `skillSchedule.ts`: đọc các lượt khác cùng `cycle_id` (một câu SQL như `checkWeekVsNeighbours :474-483`, thêm `MIN(week_start)` theo lượt, `EXISTS` điểm (dùng câu kiểm điểm mà `hasScore` đang dùng) và `EXISTS sit_status='sat'`), dựng `LuotLanCan[]`, gọi `luotBiVuot`.
   - `boTuanLuot(p, attemptId, { lyDo, doVuotBoi })`: quyền như `setPlanningWeek` (`PLAN_WEEK`) cho lượt đó; `kiemLyDoThaoTac('Huỷ lịch', lyDo)` (bắt buộc khi gọi thẳng; khi gọi từ dời vượt, lý do = lý do của lần dời hoặc mặc định `Huỷ lịch vì MT{n} dời sang {tuần}`); chặn nếu có điểm/đã thi; `UPDATE attempt_skills SET planned_period_id=NULL, plan_source='manual' WHERE attempt_id=? AND required=1 AND sit_status='scheduled' AND <không có điểm>`; `UPDATE assessment_attempts SET planned_period_id=NULL, plan_source='manual'`; huỷ đề nghị dời đang chờ của lượt đó **nếu có** theo cách `setSkillWeek` đang xử lý đề nghị chờ duyệt (đọc đoạn "ĐANG CÓ ĐỀ NGHỊ DỜI CHỜ DUYỆT" — nếu luật là chặn thì chặn với câu rõ: "MT2 đang có đề nghị dời chờ duyệt — duyệt hoặc từ chối trước"); `writeAudit({ action: 'attempt.unschedule', after: { lyDo, doVuotBoi } })`.
   - `setSkillWeek` / `setPlanningWeek` / `luuDot`: **trước** khi gọi `checkSkillWeekMove`/`checkWeekVsNeighbours`, tính `tuanCuoiMoi` = tuần muộn nhất của lượt sau khi dời (cả đợt: tuần mới; từng kỹ năng: max(tuần mới, tuần của các kỹ năng khác còn lịch)) → `kiemVuot`. `chan` → 400. `biVuot` không rỗng và không có `huyLichVuot` → `throw new HttpError(409, 'Lưu sẽ huỷ lịch ' + nhãn + '. Xác nhận để tiếp tục.', { seHuyLich })`. Có xác nhận → trong **cùng transaction** gọi `boTuanLuot` cho từng lượt bị vượt rồi mới dời (lúc đó `checkWeekVsNeighbours` không còn thấy lượt bị vượt vì JOIN `report_periods` bỏ dòng tuần NULL).
@@ -354,15 +354,15 @@ const nhanLuot = (x: { attemptNo: number; kind: string }) => (x.kind === 'mock' 
   - Route: đọc `xacNhanHuyLich === true` từ body ở 4 route; thêm `api.post('/attempts/:id/bo-tuan', requireAuth, wrap((req) => boTuanLuot(req.principal!, Number(req.params.id), { lyDo: req.body?.lyDo })))`.
   - `apLichMacDinhLo` (`schedule.ts:153+`, "Áp lịch cho N lượt"): **chỉ** chạm lượt `auto` như cũ; lượt đã bỏ tuần là `manual` nên không bị áp lại — đúng ý "không ghi đè cái Quản lý đã xếp".
 
-- [ ] **Step 8: Chạy** — `npm run check` xanh, kể cả `prXlmt`, `prMt`, `keHoachTest` (những phép cũ về "vượt qua lượt kế tiếp" sẽ đỏ: sửa kỳ vọng của chúng **chỉ** ở chỗ hành vi đã đổi theo Q-0310-1 — 409 cần xác nhận thay vì 400 — và ghi chú `// PR-LM 03/10: đổi theo Q-0310-1` cạnh dòng sửa; không xoá phép).
-- [ ] **Step 9: Commit** — `"PR-LM (1): dời vượt lượt sau → huỷ lịch lượt bị vượt có xác nhận; MT lịch sử đổi tuần được; POST /attempts/:id/bo-tuan"`
+- [x] **Step 8: Chạy** — `npm run check` xanh, kể cả `prXlmt`, `prMt`, `keHoachTest` (những phép cũ về "vượt qua lượt kế tiếp" sẽ đỏ: sửa kỳ vọng của chúng **chỉ** ở chỗ hành vi đã đổi theo Q-0310-1 — 409 cần xác nhận thay vì 400 — và ghi chú `// PR-LM 03/10: đổi theo Q-0310-1` cạnh dòng sửa; không xoá phép).
+- [x] **Step 9: Commit** — `"PR-LM (1): dời vượt lượt sau → huỷ lịch lượt bị vượt có xác nhận; MT lịch sử đổi tuần được; POST /attempts/:id/bo-tuan"`
 
 ### Task LM-2: Panel Lộ trình — một ô "Dự kiến thi" (mục 2, Q-0310-5)
 Skill: test-driven-development · impeccable layout
 
 **Files:** Modify `web/src/modules/students/StudentPlanPanel.tsx:65-82,128-150`. Test: `prLm.tests.ts` (quét nguồn).
 
-- [ ] **Step 1: Phép đỏ (quét nguồn, trong `runPrLmTests`)**
+- [x] **Step 1: Phép đỏ (quét nguồn, trong `runPrLmTests`)**
 
 ```ts
   check('PR-LM (2) · panel Lộ trình chỉ còn MỘT ô Dự kiến thi (ONgay), không còn WeekPicker tuần thi / examPeriodId', async () => {
@@ -372,8 +372,8 @@ Skill: test-driven-development · impeccable layout
     assert(!/examPeriodId/.test(s) && !/hienTuanThi/.test(s), 'bỏ examPeriodId và hienTuanThi');
   });
 ```
-- [ ] **Step 2: Đỏ** → **Step 3: Sửa:** xoá `hienTuanThi`, state `examPeriodId`, khối `WeekPicker` `:144-150` và chú thích `:128-136` (thay bằng một dòng: "Q-0310-5: một ô — ngày hoặc tháng; ngày thì máy chủ tự suy tuần để đếm ngược"); thân PATCH chỉ còn `{ startPeriodId, examDate: thiDuKien || null }`. Chữ gợi ý dưới ô: "Biết ngày thì gõ dd/mm/yyyy (hệ thống đếm ngược); mới biết tháng thì gõ mm/yyyy." Máy chủ không đổi (`updateCycle` đã suy tuần từ ngày và xoá tuần khi đổi từ ngày sang tháng).
-- [ ] **Step 4:** `npm run check` → **Step 5:** commit `"PR-LM (2): panel Lộ trình một ô Dự kiến thi"`.
+- [x] **Step 2: Đỏ** → **Step 3: Sửa:** xoá `hienTuanThi`, state `examPeriodId`, khối `WeekPicker` `:144-150` và chú thích `:128-136` (thay bằng một dòng: "Q-0310-5: một ô — ngày hoặc tháng; ngày thì máy chủ tự suy tuần để đếm ngược"); thân PATCH chỉ còn `{ startPeriodId, examDate: thiDuKien || null }`. Chữ gợi ý dưới ô: "Biết ngày thì gõ dd/mm/yyyy (hệ thống đếm ngược); mới biết tháng thì gõ mm/yyyy." Máy chủ không đổi (`updateCycle` đã suy tuần từ ngày và xoá tuần khi đổi từ ngày sang tháng).
+- [x] **Step 4:** `npm run check` → **Step 5:** commit `"PR-LM (2): panel Lộ trình một ô Dự kiến thi"`.
 
 ### Task LM-3: Hộp xếp lịch MT (ảnh 4) — rộng hơn, một thanh chọn tuần
 Skill: test-driven-development · impeccable layout, harden (popover)
@@ -383,28 +383,28 @@ Skill: test-driven-development · impeccable layout, harden (popover)
 **Interfaces:**
 - Produces: `WeekPicker` thêm prop `toiThieu?: string` (ISO thứ Hai; nút ‹ và ngày trong `LichNho` trước tuần đó bị khoá, `aria-disabled`). `TuanNho` bấm phần giữa **mở popover lịch** (`LichNho` qua `createPortal`, mẫu `MissingBadge`/PR-L1) thay vì chèn thêm `WeekPicker` bên dưới.
 
-- [ ] **Step 1: Phép đỏ (quét nguồn)**: `HopKyNang.tsx` không còn `w-[372px]`; `TuanNho` trong `HopKyNang` có `toiThieu`; `TuanNho.tsx` không render `<WeekPicker`; `Filters.tsx` có `toiThieu`.
-- [ ] **Step 2: Đỏ** → **Step 3: Sửa (impeccable `layout` + `harden`):**
+- [x] **Step 1: Phép đỏ (quét nguồn)**: `HopKyNang.tsx` không còn `w-[372px]`; `TuanNho` trong `HopKyNang` có `toiThieu`; `TuanNho.tsx` không render `<WeekPicker`; `Filters.tsx` có `toiThieu`.
+- [x] **Step 2: Đỏ** → **Step 3: Sửa (impeccable `layout` + `harden`):**
   - Hộp rộng `w-[min(520px,calc(100vw-32px))]` từ ≥ 640 px; dưới 640 px giữ bottom sheet.
   - Lưới hàng: `20px · 96px · minmax(0,1fr) · auto` — cột tuần đủ cho "W3 JUN · 15/06 – 21/06" **không cắt chữ** (bỏ `truncate` ở mã tuần; khoảng ngày được xuống dòng nếu thiếu chỗ, mã tuần thì không).
   - Một thanh chọn mỗi kỹ năng: `‹ [W3 JUN 15/06–21/06] ›`; bấm giữa → popover lịch tháng có nút "Tuần này" bên trong; chọn xong đóng popover. Không còn hàng `WeekPicker` thứ hai, không còn nút "Tuần này" lẻ dưới hàng Listening.
   - `toiThieu` = thứ Hai tuần này cho MT đang chạy; MT lịch sử (D3) không đặt `toiThieu`.
   - Cảnh báo "Chặn: …" giữ màu đỏ hiện có; thêm dòng **đỏ** từ `seHuyLich` của kiểm trước (LM-1): "Lưu sẽ huỷ lịch MT2 (W3 JUL) và MT3 (W1 SEP) — hai lượt này về Chưa xếp lịch." (impeccable `clarify` chốt chữ).
   - Bấm "Lưu" khi `seHuyLich` không rỗng → hộp xác nhận nhỏ (dùng component xác nhận có sẵn trong `web/src/ui/`, tìm `XacNhan`/`ConfirmDialog`; không tự viết mới): tiêu đề "Huỷ lịch MT2, MT3?"; thân liệt kê từng lượt + tuần đang có; nút "Quay lại" và "Huỷ lịch và lưu" (tone nguy hiểm). Xác nhận → gửi `xacNhanHuyLich: true`. Máy chủ trả 409 (dữ liệu đổi giữa chừng) → mở lại hộp với `details.seHuyLich` mới.
-- [ ] **Step 4:** `npm run check` + ảnh 1440/375 hộp mở ở Kế hoạch Test (MT đang chạy, MT có cảnh báo huỷ lịch, popover lịch mở) → **Step 5:** commit `"PR-LM (3): hộp xếp lịch rộng, một thanh chọn tuần, cảnh báo huỷ lịch"`.
+- [x] **Step 4:** `npm run check` + ảnh 1440/375 hộp mở ở Kế hoạch Test (MT đang chạy, MT có cảnh báo huỷ lịch, popover lịch mở) → **Step 5:** commit `"PR-LM (3): hộp xếp lịch rộng, một thanh chọn tuần, cảnh báo huỷ lịch"`.
 
 ### Task LM-4: "Dời lịch thi cả đợt" (ảnh 2) — chọn tuần dễ, không bỏ cảnh báo
 Skill: test-driven-development · impeccable clarify
 
 **Files:** Modify `web/src/modules/fasttrack/MockDetailPage.tsx:160-184,599-649`.
 
-- [ ] **Step 1: Phép đỏ (quét nguồn)**: `WeekModal` không còn `<select` và không còn `force: true` cố định; có `WeekPicker` với `toiThieu`.
-- [ ] **Step 2: Đỏ** → **Step 3: Sửa:**
+- [x] **Step 1: Phép đỏ (quét nguồn)**: `WeekModal` không còn `<select` và không còn `force: true` cố định; có `WeekPicker` với `toiThieu`.
+- [x] **Step 2: Đỏ** → **Step 3: Sửa:**
   - Thay `<select>` bằng `WeekPicker scope="planning" toiThieu={MT đang chạy ? thứ Hai tuần này : undefined}` (‹ tuần › + lịch tháng + "Tuần này") — cùng kiểu chọn tuần như mọi nơi khác.
   - Đổi tuần → gọi `/ke-hoach-test/dot/kiem` cho mọi kỹ năng còn dời được → hiện cảnh báo một tuần (vàng) và `seHuyLich` (đỏ) ngay trong hộp. Bỏ `force:true` cố định: có cảnh báo một tuần thì nút đổi thành "Vẫn dời vào tuần này" (gửi `force:true`); có `seHuyLich` thì đi qua hộp xác nhận như LM-3.
   - Rút đoạn giải thích `:642-645` thành 2 dòng: "Các kỹ năng chưa thi chuyển sang cùng một tuần; kỹ năng đã thi hoặc có điểm giữ nguyên. Muốn tách Speaking thì dời ở dòng kỹ năng." (impeccable `clarify`).
   - Menu "Chỉnh lịch": "Dời lịch thi cả đợt" hiện cho cả MT lịch sử (D3) — tuần đích đã qua hợp lệ thì máy chủ cho.
-- [ ] **Step 4:** `npm run check` + ảnh → **Step 5:** commit `"PR-LM (4): Dời lịch cả đợt dùng WeekPicker, giữ cảnh báo, báo huỷ lịch lượt bị vượt"`.
+- [x] **Step 4:** `npm run check` + ảnh → **Step 5:** commit `"PR-LM (4): Dời lịch cả đợt dùng WeekPicker, giữ cảnh báo, báo huỷ lịch lượt bị vượt"`.
 
 ### Task LM-5: Panel Lộ trình — chỉnh lịch MT ngay tại bảng (mục 2, 3)
 Skill: test-driven-development · impeccable layout
@@ -418,8 +418,8 @@ Skill: test-driven-development · impeccable layout
 **Interfaces:**
 - Consumes: LM-1 (`/ke-hoach-test/dot/kiem` có `seHuyLich`, `/ke-hoach-test/dot` có `xacNhanHuyLich`, `/attempts/:id/bo-tuan`), LM-3 (`HopKyNang` rộng, có xác nhận huỷ lịch), `xepMoi` (`/ke-hoach-test/xep-moi`, tạo cả MT lịch sử), `DaiODiemLon` (`web/src/modules/fasttrack/ODiemLon.tsx:68`).
 
-- [ ] **Step 1: Phép đỏ** — máy chủ: `GET /cycles/:id/suggested-mocks` của học viên có MT1 (có điểm), MT2 (đã xếp), MT3 (bỏ tuần) trả đúng `trangThai` `co-diem`/`da-xep`/`chua-xep` và `kyNang` 4 dòng mỗi lượt. Quét nguồn: `HangLichMt.tsx` tồn tại, có các chữ "Dời lịch", "Huỷ lịch", "Nhập điểm"; `StudentPlanPanel.tsx` có "Thêm MT".
-- [ ] **Step 2: Đỏ** → **Step 3: Sửa (impeccable `layout`):**
+- [x] **Step 1: Phép đỏ** — máy chủ: `GET /cycles/:id/suggested-mocks` của học viên có MT1 (có điểm), MT2 (đã xếp), MT3 (bỏ tuần) trả đúng `trangThai` `co-diem`/`da-xep`/`chua-xep` và `kyNang` 4 dòng mỗi lượt. Quét nguồn: `HangLichMt.tsx` tồn tại, có các chữ "Dời lịch", "Huỷ lịch", "Nhập điểm"; `StudentPlanPanel.tsx` có "Thêm MT".
+- [x] **Step 2: Đỏ** → **Step 3: Sửa (impeccable `layout`):**
   - Cột "LỊCH KỸ NĂNG" (chỉ có link "Mở lịch kỹ năng") thay bằng cột thao tác: một nút chính theo trạng thái + menu ⋯:
     - `chua-xep` → nút "Xếp lịch" (mở `HopKyNang` cho lượt đó).
     - `da-xep` → nút "Dời lịch" (mở `HopKyNang`); ⋯: "Huỷ lịch" (hộp lý do ≥ 5 → `/attempts/:id/bo-tuan`), "Nhập điểm", "Mở hồ sơ MT".
@@ -430,7 +430,7 @@ Skill: test-driven-development · impeccable layout
   - Nút "Áp lịch cho N lượt" / "Lịch đã đúng" giữ nguyên chỗ và hành vi.
   - Panel rộng `rong` (720 px) giữ; 375 px bảng cuộn ngang trong khung, nút ≥ 40 px.
   - Sau mỗi thao tác: tải lại `suggested-mocks` và báo toast một dòng ("Đã dời MT1 sang W4 JUL · huỷ lịch MT2").
-- [ ] **Step 4:** `npm run check` + ảnh panel ở 4 trạng thái → **Step 5:** commit `"PR-LM (5): panel Lộ trình xếp/dời/huỷ lịch/nhập điểm MT tại chỗ"`.
+- [x] **Step 4:** `npm run check` + ảnh panel ở 4 trạng thái → **Step 5:** commit `"PR-LM (5): panel Lộ trình xếp/dời/huỷ lịch/nhập điểm MT tại chỗ"`.
 
 ### Task LM-6: Chữ hồ sơ Mock (I5 của `2026-10-02-ux-sau-critique.md:95-97`)
 Skill: test-driven-development · impeccable clarify
@@ -440,11 +440,11 @@ Skill: test-driven-development · impeccable clarify
 - Modify: `web/src/modules/fasttrack/NhanXet.tsx:109` (`placeholder="Không bắt buộc"`).
 - Test: `prLm.tests.ts` (hàm thuần + quét nguồn).
 
-- [ ] **Step 1: Phép đỏ** — tách phần chọn chữ của nhánh trên thành hàm thuần `chuDoiVang(l, homNay)` (cùng file, export để kiểm): (a) `weekStart` thuộc tuần của `homNay` → `chu === 'Thi bù tuần này (lần 1)'` với `absenceMoveCount = 1`; (b) tuần khác → giữ chữ dạng `vắng · dời sang W4 SEP · lần 2` (mã tuần, không ngày); `title` giữ nguyên câu "Dời từ … sang …". Quét nguồn: `NhanXet.tsx` không còn `"Không bắt buộc"`, placeholder bắt đầu "Ví dụ:".
-- [ ] **Step 2: Đỏ** → **Step 3: Sửa (impeccable `clarify`):**
+- [x] **Step 1: Phép đỏ** — tách phần chọn chữ của nhánh trên thành hàm thuần `chuDoiVang(l, homNay)` (cùng file, export để kiểm): (a) `weekStart` thuộc tuần của `homNay` → `chu === 'Thi bù tuần này (lần 1)'` với `absenceMoveCount = 1`; (b) tuần khác → giữ chữ dạng `vắng · dời sang W4 SEP · lần 2` (mã tuần, không ngày); `title` giữ nguyên câu "Dời từ … sang …". Quét nguồn: `NhanXet.tsx` không còn `"Không bắt buộc"`, placeholder bắt đầu "Ví dụ:".
+- [x] **Step 2: Đỏ** → **Step 3: Sửa (impeccable `clarify`):**
   - Tuần đang xem = tuần thi bù → "Thi bù tuần này (lần N)"; so tuần bằng hàm tuần sẵn có (`shared/domain`, cùng nguồn với `tuanLich`), không so chuỗi.
   - Placeholder nhận xét: `"Ví dụ: Nghe phần 3 còn chậm, cần luyện thêm dạng điền bảng"` (luật `KhungPanel`: chữ mẫu bắt đầu "Ví dụ:"); giữ `maxLength={NHAN_XET_TOI_DA}`, lưu khi blur / Ctrl+Enter như cũ.
-- [ ] **Step 4:** `npm run check` + ảnh hồ sơ MT có ô thi bù (tuần này / tuần khác) 1440/375 → **Step 5:** commit `"PR-LM (6): chữ thi bù và chữ mẫu nhận xét ở hồ sơ MT"`.
+- [x] **Step 4:** `npm run check` + ảnh hồ sơ MT có ô thi bù (tuần này / tuần khác) 1440/375 → **Step 5:** commit `"PR-LM (6): chữ thi bù và chữ mẫu nhận xét ở hồ sơ MT"`.
 
 ### Task LM-7: MockDetailPage + HopThaoTacMt: `Modal` (Drawer) → `KhungPanel` (I4, phần lịch MT — `2026-10-02-ux-sau-critique.md:93-94`)
 Skill: test-driven-development · impeccable layout, harden
@@ -455,13 +455,13 @@ Skill: test-driven-development · impeccable layout, harden
 - Dùng: `web/src/ui/KhungPanel.tsx` (`KhungPanel` + `chan: { huy, xoa, phu, chinh, conThieu }`, `khoPanelChung` — mở panel mới thì thay, không chồng).
 - Test: `prLm.tests.ts` (quét nguồn).
 
-- [ ] **Step 1: Phép đỏ** — quét nguồn: `MockDetailPage.tsx` và `HopThaoTacMt.tsx` không import `Modal` từ `Drawer.tsx` (chỉ còn `ConfirmDialog` ở MockDetailPage); có `<KhungPanel`; không có nút chữ trần `>Huỷ<` ở chân (luật S3). Phép hành vi cũ của các hộp (lưu tuần, hạn, xử lý vắng, trả lời đề nghị, thao tác MT) giữ nguyên, phải vẫn xanh.
-- [ ] **Step 2: Đỏ** → **Step 3: Sửa (impeccable `layout`, `harden`):**
+- [x] **Step 1: Phép đỏ** — quét nguồn: `MockDetailPage.tsx` và `HopThaoTacMt.tsx` không import `Modal` từ `Drawer.tsx` (chỉ còn `ConfirmDialog` ở MockDetailPage); có `<KhungPanel`; không có nút chữ trần `>Huỷ<` ở chân (luật S3). Phép hành vi cũ của các hộp (lưu tuần, hạn, xử lý vắng, trả lời đề nghị, thao tác MT) giữ nguyên, phải vẫn xanh.
+- [x] **Step 2: Đỏ** → **Step 3: Sửa (impeccable `layout`, `harden`):**
   - Chỉ đổi khung: `title` → `tieuDe` (+ `hocVien`, `lop` từ `detail`), nội dung → thân, `footer` → `chan`. Không đổi gọi API, `force`, lý do ≥ `LY_DO_TOI_THIEU`, điều kiện bật/tắt nút.
   - Luật S3 chân: chưa sửa → `huy.nhan = 'Đóng'`, đã sửa (theo state ô) → `'Huỷ thay đổi'`; thao tác nguy hiểm (`bo-ky-nang`, `huy-diem`) giữ nút chính màu đỏ; đang lưu → "Đang lưu…" và khoá nút.
   - Lỗi máy chủ hiện trong panel (`Truong loi` / dòng lỗi trên chân), không đóng panel, không mất chữ đã gõ.
   - 375 px toàn màn, nút ≥ 40 px; Esc đóng như `onDong` (hỏi nếu đã sửa — như các panel KhungPanel khác).
-- [ ] **Step 4:** `npm run check` + ảnh từng hộp 1440/375 sáng/tối → **Step 5:** commit `"PR-LM (7): hộp thao tác hồ sơ MT dùng KhungPanel, giữ hành vi"`.
+- [x] **Step 4:** `npm run check` + ảnh từng hộp 1440/375 sáng/tối → **Step 5:** commit `"PR-LM (7): hộp thao tác hồ sơ MT dùng KhungPanel, giữ hành vi"`.
 
 **Nghiệm thu PR-LM:**
 1. Ảnh 1: panel Lộ trình một ô Dự kiến thi; mỗi hàng MT có nút xếp/dời/nhập điểm; không phải vào hồ sơ MT.

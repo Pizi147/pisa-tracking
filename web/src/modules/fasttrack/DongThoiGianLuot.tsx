@@ -16,7 +16,7 @@ const NHAN_VIEC: Record<string, { chu: string; loai: Loai }> = {
   skill_deadline_set: { chu: CHU_THAO_TAC['doi-han'], loai: 'lich' }, skill_deadline_cleared: { chu: 'Bỏ dời hạn chấm', loai: 'lich' },
   skill_skipped: { chu: CHU_THAO_TAC['bo-ky-nang'], loai: 'huy' }, skill_restored: { chu: CHU_THAO_TAC['dua-lai'], loai: 'lich' },
   skill_no_show_settled: { chu: `${CHU_THAO_TAC['bao-vang']} / không dự thi`, loai: 'vang' },
-  skill_week_moved_absence: { chu: 'Dời do vắng', loai: 'vang' },
+  skill_week_moved_absence: { chu: 'Dời do vắng', loai: 'vang' }, skill_unscheduled: { chu: 'Huỷ lịch (về Chưa xếp lịch)', loai: 'huy' },
   cancelled: { chu: 'Huỷ cả lượt', loai: 'huy' }, skill_part_cancelled: { chu: 'Huỷ phần còn lại', loai: 'huy' }, reopened: { chu: 'Mở lại', loai: 'lich' },
   skill_sit_status: { chu: 'Trạng thái thi', loai: 'lich' }, completion_week: { chu: 'Tuần dự kiến hoàn tất', loai: 'lich' },
 };

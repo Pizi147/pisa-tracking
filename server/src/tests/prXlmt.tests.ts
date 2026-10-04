@@ -424,7 +424,7 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
   check('PR-XLMT (4) · Hộp thao tác chung: không lý do ghi cứng; nhãn nút và tiêu đề qua CHU_THAO_TAC; dòng thời gian dùng SVG', () => {
     const hop = docSach('web/src/modules/fasttrack/HopThaoTacMt.tsx');
     assert(!/GVCN xác minh|Quản lý chốt trước/.test(hop), 'hộp còn lý do ghi cứng');
-    assert(/const ten = CHU_THAO_TAC\[t\]/.test(hop) && /title=\{`\$\{ten\} · \$\{mon\}`\}/.test(hop) && /: ten\}/.test(hop), 'nhãn/tiêu đề phải qua CHU_THAO_TAC');
+    assert(/const ten = CHU_THAO_TAC\[t\]/.test(hop) && /(title|tieuDe)=\{`\$\{ten\} · \$\{mon\}`\}/.test(hop)   /* PR-LM: KhungPanel dùng tieuDe */ && /: ten\}/.test(hop), 'nhãn/tiêu đề phải qua CHU_THAO_TAC');
     assert(/tenMon\(ct, skill\)/.test(hop), 'tên môn phải qua tenMon');
     const dtg = docSach('web/src/modules/fasttrack/DongThoiGianLuot.tsx');
     assert(/<svg/.test(dtg) && !/[✓✕▸◌●○]/.test(dtg), 'biểu tượng dòng thời gian phải là SVG');

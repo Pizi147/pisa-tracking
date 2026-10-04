@@ -70,7 +70,7 @@ export function listStudents(p: Principal, f: { q?: string; branchId?: number; c
       .prepare(
         `SELECT a.id, a.attempt_no, a.status, pr.code AS period_code, pr.week_start
            FROM assessment_attempts a LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
-          WHERE a.student_id = ? AND a.status = 'planned' AND a.lich_su = 0 ORDER BY pr.week_start, a.attempt_no LIMIT 1`,
+          WHERE a.student_id = ? AND a.status = 'planned' AND a.lich_su = 0 ORDER BY pr.week_start IS NULL, pr.week_start, a.attempt_no LIMIT 1`,
       )
       .get(s.id) as any;   /* PR-MT: MT lịch sử (tuần thi đã qua) không phải "MT sắp tới" */
     const openCase = conn

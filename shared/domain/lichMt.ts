@@ -9,6 +9,8 @@
 import { MOCK_FT_STUDY_WEEK } from './fasttrack.ts';
 import { addDaysIso } from './sos.ts';
 import { mondayOfDate } from './week.ts';
+import { tuanLich } from './hienThiNgay.ts';
+import { nhanDot } from './phanTich.ts';
 
 export const CUA_SO_CASE_LICH_SU_NGAY = 28;
 /** T37: một lộ trình tối đa MT8. */
@@ -123,4 +125,45 @@ export const MOC_KE_TIEP_SQL = (a: string, rp: string) => `${a}.status = 'planne
 /** K2-05: em FT "có mốc đánh giá tiếp theo" = có mốc kế tiếp, HOẶC đã qua MT cuối của lịch mặc định và đã có ngày/tháng thi. */
 export function coMocTiepTheo(o: { coMoc: boolean; route: string | null; mtCuoi: number; coNgayThi: boolean }): boolean {
   return o.coMoc || (lichMtMacDinh(o.route).length > 0 && o.mtCuoi >= lichMtMacDinh(o.route).length && o.coNgayThi);
+}
+
+/** Một lượt khác trong cùng lộ trình, đủ để biết lượt đang dời có VƯỢT nó không (PR-LM, chủ sản phẩm 03/10). */
+export type LuotLanCan = { attemptId: number; attemptNo: number; kind: string; tuanDau: string | null; coDiem: boolean; daThi: boolean; huy: boolean };
+
+/**
+ * Q-0310-1/2 + D1: dời lượt `attemptNo` tới tuần cuối `tuanCuoiMoi` thì mọi lượt SAU có tuần sớm nhất ≤ tuần đó là "bị vượt" —
+ * huỷ lịch (bỏ tuần, giữ lượt) khi người dời xác nhận. Lượt bị vượt đã có điểm / đã thi → chặn: không bao giờ bỏ lịch phần đã thi.
+ * Bỏ qua lượt trước, lượt đã huỷ, lượt chưa xếp tuần (`tuanDau` null — không có gì để vượt).
+ */
+export function luotBiVuot(ds: readonly LuotLanCan[], o: { attemptNo: number; tuanCuoiMoi: string }): { biVuot: LuotLanCan[]; chan: string | null } {
+  const biVuot = ds
+    .filter((x) => x.attemptNo > o.attemptNo && !x.huy && x.tuanDau !== null && x.tuanDau.slice(0, 10) <= o.tuanCuoiMoi.slice(0, 10))
+    .sort((a, b) => a.attemptNo - b.attemptNo);
+  const vuong = biVuot.find((x) => x.coDiem) ?? biVuot.find((x) => x.daThi);
+  if (!vuong) return { biVuot, chan: null };
+  return {
+    biVuot,
+    chan: `${nhanDot(vuong.kind, vuong.attemptNo)} ${vuong.coDiem ? 'đã có điểm' : 'đã thi'} — không huỷ lịch được. `
+      + `Dời ${nhanDot(vuong.kind, o.attemptNo)} vào tuần trước ${tuanLich(vuong.tuanDau)}.`,
+  };
+}
+
+/** Dòng đỏ trên hộp xếp lịch (PR-LM): "Lưu sẽ huỷ lịch MT2 (W3 JUL) và MT3 (W1 SEP) — hai lượt này về Chưa xếp lịch." */
+export function cauSeHuyLich(ds: readonly { nhan: string; tuan: string }[], homNay?: string | null): string {
+  if (!ds.length) return '';
+  const ten = ds.map((x) => `${x.nhan} (${tuanLich(x.tuan, homNay)})`);
+  const ghep = ten.length === 1 ? ten[0] : `${ten.slice(0, -1).join(', ')} và ${ten[ten.length - 1]}`;
+  const so = ds.length === 1 ? 'lượt này' : ds.length === 2 ? 'hai lượt này' : `${ds.length} lượt này`;
+  return `Lưu sẽ huỷ lịch ${ghep} — ${so} về Chưa xếp lịch.`;
+}
+
+/**
+ * Dòng phụ ô điểm của kỹ năng ĐÃ DỜI DO VẮNG (hồ sơ MT, I5 — PR-LM LM-6): tuần thi bù là tuần đang xem → "Thi bù tuần này (lần N)";
+ * tuần khác → "vắng · dời sang W4 SEP · lần N" (mã tuần, không ngày). `title` giữ câu đầy đủ "Dời từ … sang …".
+ */
+export function chuDoiVang(l: { weekStart: string | null; doiTu: string | null; absenceMoveCount: number }, homNay: string): { chu: string; title: string } {
+  const tuan = tuanLich(l.weekStart, homNay);
+  const title = `Dời từ ${l.doiTu} sang ${tuan} (vắng lần ${l.absenceMoveCount}).`;
+  if (l.weekStart && homNay && mondayOfDate(l.weekStart) === mondayOfDate(homNay)) return { chu: `Thi bù tuần này (lần ${l.absenceMoveCount})`, title };
+  return { chu: `vắng · dời sang ${tuan} · lần ${l.absenceMoveCount}`, title };
 }

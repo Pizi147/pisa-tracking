@@ -1,8 +1,10 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { useGiuFocus } from './giuFocus.ts';
 
-export function Modal({ open, onClose, title, children, footer, width = 'max-w-lg' }: {
+export function Modal({ open, onClose, title, children, footer, width = 'max-w-lg', z = 'z-50' }: {
   open: boolean; onClose: () => void; title: ReactNode; children: ReactNode; footer?: ReactNode; width?: string;
+  /** Lớp z — hộp mở TRÊN một popover `z-[60]` (HopKyNang) cần cao hơn. */
+  z?: string;
 }) {
   useEffect(() => {
     if (!open) return;
@@ -12,18 +14,18 @@ export function Modal({ open, onClose, title, children, footer, width = 'max-w-l
   }, [open, onClose]);
 
   if (!open) return null;
-  return <KhungModal onClose={onClose} title={title} footer={footer} width={width}>{children}</KhungModal>;
+  return <KhungModal onClose={onClose} title={title} footer={footer} width={width} z={z}>{children}</KhungModal>;
 }
 
 /** Tách khỏi `Modal` để hook giữ focus chạy đúng lúc mở/đóng (Modal trả `null` khi `open = false`). */
-function KhungModal({ onClose, title, children, footer, width }: {
-  onClose: () => void; title: ReactNode; children: ReactNode; footer?: ReactNode; width: string;
+function KhungModal({ onClose, title, children, footer, width, z }: {
+  onClose: () => void; title: ReactNode; children: ReactNode; footer?: ReactNode; width: string; z: string;
 }) {
   const khung = useRef<HTMLDivElement>(null);
   useGiuFocus(khung);
   const idTen = useId();
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby={idTen}>
+    <div className={`fixed inset-0 ${z} flex items-center justify-center p-4`} role="dialog" aria-modal="true" aria-labelledby={idTen}>
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       <div ref={khung} tabIndex={-1} className={`relative w-full ${width} card shadow-2xl max-h-[88vh] flex flex-col -outline-offset-2`}>
         <header className="flex items-center justify-between px-5 py-3 border-b" style={{ borderColor: 'var(--line)' }}>
@@ -38,15 +40,16 @@ function KhungModal({ onClose, title, children, footer, width }: {
 }
 
 /** Xác nhận rõ ràng cho thao tác không dùng autosave (chuyển lớp, cảnh báo, import, đổi quyền). */
-export function ConfirmDialog({ open, onClose, onConfirm, title, body, confirmLabel = 'Xác nhận', danger, busy }: {
+export function ConfirmDialog({ open, onClose, onConfirm, title, body, confirmLabel = 'Xác nhận', danger, busy, closeLabel = 'Đóng', z }: {
   open: boolean; onClose: () => void; onConfirm: () => void; title: string;
   body: ReactNode; confirmLabel?: string; danger?: boolean; busy?: boolean;
+  closeLabel?: string; z?: string;
 }) {
   return (
-    <Modal open={open} onClose={onClose} title={title} width="max-w-md"
+    <Modal open={open} onClose={onClose} title={title} width="max-w-md" z={z}
       footer={
         <>
-          <button className="btn" onClick={onClose} disabled={busy}>Đóng</button>
+          <button className="btn" onClick={onClose} disabled={busy}>{closeLabel}</button>
           <button className={`btn ${danger ? 'btn-danger' : 'btn-primary'}`} onClick={onConfirm} disabled={busy}>
             {busy ? 'Đang xử lý…' : confirmLabel}
           </button>

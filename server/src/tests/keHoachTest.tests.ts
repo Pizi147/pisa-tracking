@@ -363,7 +363,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
       .get(mt2.attemptId) as any;
     assertThrows(
       () => keHoachMod.luuDot(P.mbManager, { attemptId: mt2.attemptId, kyNang: [{ skill: 'listening', periodId: per.id }], force: true }),
-      /Trùng tuần|vượt qua/, 'luuDot phải ném khi có bài bị chặn',
+      /Trùng tuần|vượt qua|không huỷ lịch được/, 'luuDot phải ném khi có bài bị chặn',   // PR-LM 03/10: đổi theo Q-0310-2 (MT3 có điểm → chặn, câu mới)
     );
     const after = conn.prepare(`SELECT planned_period_id FROM attempt_skills WHERE attempt_id=? AND skill='listening'`)
       .get(mt2.attemptId) as any;
@@ -935,7 +935,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
       () => keHoachMod.luuDot(P.mbManager, {
         attemptId: mt85.id, force: true, kyNang: [{ skill: 'listening', periodId: truocX.id }, { skill: 'speaking', periodId: y.id }],
       }),
-      /S: Trùng tuần/, 'S trùng tuần đầu MT2 phải chặn cả lần lưu',
+      /Lưu sẽ huỷ lịch MT2/, 'S trùng tuần đầu MT2 phải chặn cả lần lưu',   // PR-LM 03/10: đổi theo Q-0310-1 (trùng tuần = vượt → 409 cần xác nhận)
     );
     assert(tuanCua(mt85.id, 'listening').w === x.weekStart, 'L đổi được dù cả lần lưu bị chặn — không phải một tx');
   });

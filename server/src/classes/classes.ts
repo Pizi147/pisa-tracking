@@ -645,7 +645,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
             coCuoiKhoa: timeline.some((t) => t.kind === 'final' && t.status !== 'cancelled'),
           }) : coMocTiepTheo({
             coMoc: !!mocFt, route: s.route ?? null, coNgayThi: !!(s.exam_month || s.exam_period_id),
-            mtCuoi: Math.max(0, ...timeline.filter((t) => t.status !== 'cancelled').map((t) => t.attemptNo)),
+            mtCuoi: Math.max(0, ...timeline.filter((t) => t.status !== 'cancelled' && (t.status !== 'planned' || t.weekStart)).map((t) => t.attemptNo)),   // PR-LM: bỏ lượt đã huỷ lịch
           }))
           : undefined,
       }),

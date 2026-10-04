@@ -106,7 +106,7 @@ export function ONhanXet({ nhan, phu, giaTri, onLuu }: {
         </span>
       </span>
       <textarea ref={o} className="field mt-1 w-full resize-none text-sm leading-relaxed" rows={2} maxLength={NHAN_XET_TOI_DA}
-        value={nhap} placeholder="Không bắt buộc"
+        value={nhap} placeholder="Ví dụ: Nghe phần 3 còn chậm, cần luyện thêm dạng điền bảng"
         onChange={(e) => { sua.current = true; setNhap(e.target.value); if (tt !== 'dang') setTt('idle'); }}
         onBlur={() => void luu()}
         onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); void luu(); } }} />

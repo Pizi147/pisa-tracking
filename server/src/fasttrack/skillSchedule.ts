@@ -1,9 +1,10 @@
 import { db, tx } from '../db.ts';
 import {
-  ASSESSED_SKILLS, CHU_KY_NANG, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, boMonLich, kiemLyDoThaoTac, laLichSu, tenMon, tuanLich,
-  type AssessedSkill, type SitStatus, type SkillProgress,
+  ASSESSED_SKILLS, CHU_KY_NANG, CO_DIEM_SQL, KY_NANG_KE_HOACH, LY_DO_TOI_THIEU, PERMISSIONS, SIT_STATUSES, boMonLich, kiemLyDoThaoTac, kiemTuanDaQua,
+  laLichSu, luotBiVuot, nhanDot, tenMon, tuanLich,
+  type AssessedSkill, type LuotLanCan, type SitStatus, type SkillProgress,
 } from '../../../shared/domain/index.ts';
-import { badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
+import { HttpError, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, explain, require_, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { writeAudit } from '../platform/audit.ts';
@@ -464,6 +465,8 @@ export function checkWeekVsNeighbours(input: {
   attemptNo: number;
   excludeAttemptId: number | null;
   newWeekStart: string;
+  /** PR-LM: lượt sắp bị huỷ lịch vì bị vượt (đã xác nhận) — không còn là lượt lân cận. */
+  boQua?: readonly number[];
 }): ScheduleCheck {
   const conn = db();
   const blockers: string[] = [];
@@ -485,6 +488,7 @@ export function checkWeekVsNeighbours(input: {
     attempt_no: number; kind: string; first_week: string; last_week: string; rows: Array<{ skill: string; week: string }>;
   }>();
   for (const r of skillRows) {
+    if (input.boQua?.includes(r.id)) continue;
     const g = byAttempt.get(r.id);
     if (!g) byAttempt.set(r.id, { attempt_no: r.attempt_no, kind: r.kind, first_week: r.week_start, last_week: r.week_start, rows: [{ skill: r.skill, week: r.week_start }] });
     else {
@@ -536,14 +540,133 @@ export function checkSkillWeekMove(input: {
   attemptId: number;
   skill: string;
   newWeekStart: string;
+  boQua?: readonly number[];
 }): ScheduleCheck {
   const conn = db();
   const a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(input.attemptId) as any;
   if (!a) return { blockers: ['Không tìm thấy lượt kiểm tra'], warnings: [] };
   return checkWeekVsNeighbours({
     cycleId: a.cycle_id, attemptNo: a.attempt_no, excludeAttemptId: input.attemptId,
-    newWeekStart: input.newWeekStart,
+    newWeekStart: input.newWeekStart, boQua: input.boQua,
   });
+}
+
+// ---------------------------------------------------------------- PR-LM: dời vượt lượt sau → huỷ lịch lượt bị vượt
+
+export type LuotSeHuyLich = { attemptId: number; nhan: string; tuan: string };
+export type KiemVuot = { biVuot: LuotSeHuyLich[]; chan: string | null };
+
+/**
+ * Q-0310-1/2, D1 (chủ sản phẩm 03/10): lượt `attemptId` sau khi dời có tuần cuối `tuanCuoiMoi` → các lượt SAU bị vượt (huỷ lịch khi
+ * xác nhận) hoặc câu chặn (lượt bị vượt đã có điểm / đã thi / đang có đề nghị dời chờ duyệt). Chỉ lượt MT: Giữa khoá / Cuối khoá của
+ * lớp thường giữ luật chặn cũ (`checkWeekVsNeighbours`). Không ghi.
+ */
+export function kiemVuot(attemptId: number, tuanCuoiMoi: string): KiemVuot {
+  const conn = db();
+  const a = conn.prepare('SELECT id, cycle_id, attempt_no, kind FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
+  if (!a || a.kind !== 'mock') return { biVuot: [], chan: null };
+  const rows = conn.prepare(
+    `SELECT a.id, a.attempt_no, a.kind, a.status,
+            (SELECT MIN(pr.week_start) FROM attempt_skills k JOIN report_periods pr ON pr.id = k.planned_period_id
+              WHERE k.attempt_id = a.id AND k.required = 1 AND k.sit_status != 'cancelled') AS tuan_dau,
+            ${CO_DIEM_SQL('a')} AS co_diem,
+            EXISTS (SELECT 1 FROM attempt_skills k WHERE k.attempt_id = a.id AND k.required = 1 AND k.sit_status = 'sat') AS da_thi,
+            EXISTS (SELECT 1 FROM skill_move_requests r WHERE r.attempt_id = a.id AND r.status = 'pending') AS cho_duyet
+       FROM assessment_attempts a
+      WHERE a.cycle_id = ? AND a.attempt_no > ? AND a.status != 'cancelled'`,
+  ).all(a.cycle_id, a.attempt_no) as any[];
+  const ds: LuotLanCan[] = rows.map((r) => ({
+    attemptId: r.id, attemptNo: r.attempt_no, kind: r.kind, tuanDau: r.tuan_dau ?? null,
+    coDiem: !!r.co_diem, daThi: !!r.da_thi, huy: r.status === 'cancelled',
+  }));
+  const kq = luotBiVuot(ds, { attemptNo: a.attempt_no, tuanCuoiMoi });
+  let chan = kq.chan;
+  const cho = kq.biVuot.find((x) => rows.find((r) => r.id === x.attemptId)?.cho_duyet);
+  if (!chan && cho) chan = `${nhanDot(cho.kind, cho.attemptNo)} đang có đề nghị dời chờ duyệt — duyệt hoặc từ chối trước.`;
+  return {
+    biVuot: kq.biVuot.map((x) => ({ attemptId: x.attemptId, nhan: nhanDot(x.kind, x.attemptNo), tuan: x.tuanDau! })),
+    chan,
+  };
+}
+
+/** Tuần MUỘN NHẤT của lượt sau khi đặt `tuanMoi` cho các kỹ năng `doi` — các kỹ năng bắt buộc khác giữ tuần đang có. */
+export function tuanCuoiSauKhiDoi(rows: readonly SkillRow[], doi: ReadonlyMap<string, string>): string | null {
+  const tuan = rows
+    .filter((r) => r.required && r.sit_status !== 'cancelled')
+    .map((r) => doi.get(r.skill) ?? r.week_start)
+    .filter((w): w is string => !!w)
+    .map((w) => w.slice(0, 10));
+  return tuan.length ? tuan.sort()[tuan.length - 1] : null;
+}
+
+/** Câu 409 khi lưu sẽ huỷ lịch lượt bị vượt mà chưa xác nhận — `details.seHuyLich` để web mở hộp xác nhận. */
+export function canXacNhanHuyLich(biVuot: LuotSeHuyLich[]): HttpError {
+  return new HttpError(409, `Lưu sẽ huỷ lịch ${biVuot.map((x) => x.nhan).join(', ')}. Xác nhận để tiếp tục.`, { seHuyLich: biVuot });
+}
+
+/** Lý do ghi cho lượt bị vượt: lý do của lần dời nếu đủ dài, không thì câu mặc định "Huỷ lịch vì MT1 dời sang W4 OCT". */
+export const lyDoHuyVuot = (a: { kind: string; attempt_no: number }, tuanMoi: string, lyDo?: string | null) =>
+  (lyDo?.trim().length ?? 0) >= LY_DO_TOI_THIEU ? lyDo!.trim() : `Huỷ lịch vì ${nhanDot(a.kind, a.attempt_no)} dời sang ${tuanLich(tuanMoi)}`;
+
+/**
+ * HUỶ LỊCH một lượt (Q-0310-1) = BỎ TUẦN, GIỮ LƯỢT: lượt còn nguyên số và trạng thái `planned`, mọi kỹ năng bắt buộc đang chờ thi về
+ * "Chưa xếp lịch" (`planned_period_id = NULL`, `plan_source = 'manual'` để "Áp lịch" không tự xếp lại). Không đóng Case / việc.
+ * Lượt đã có điểm / đã thi → chặn (không bao giờ bỏ lịch phần đã thi). Gọi thẳng (nút "Huỷ lịch") phải có lý do ≥ 5 ký tự.
+ */
+export function boTuanLuot(p: Principal, attemptId: number, o: { lyDo?: string | null; doVuotBoi?: number }): { daBo: string[] } {
+  const conn = db();
+  const a = conn.prepare(`SELECT a.*, ${CO_DIEM_SQL('a')} AS co_diem FROM assessment_attempts a WHERE a.id = ?`).get(attemptId) as any;
+  if (!a) throw notFound('Không tìm thấy lượt kiểm tra');
+  require_(p, PERMISSIONS.PLAN_WEEK, { classId: a.class_id, studentId: a.student_id }, 'Chỉ Quản lý mới huỷ lịch được một lượt.');
+  const loi = kiemLyDoThaoTac('Huỷ lịch', o.lyDo);
+  if (loi) throw badRequest(loi);
+  const nhan = nhanDot(a.kind, a.attempt_no);
+  if (a.status === 'cancelled') throw badRequest(`${nhan} đã huỷ.`);
+  const rows = ensureSkillRows(attemptId);
+  if (a.co_diem) throw badRequest(`${nhan} đã có điểm — không huỷ lịch được.`);
+  if (rows.some((r) => r.required && r.sit_status === 'sat')) throw badRequest(`${nhan} đã thi — không huỷ lịch được.`);
+  const cho = conn.prepare(`SELECT 1 FROM skill_move_requests WHERE attempt_id = ? AND status = 'pending' LIMIT 1`).get(attemptId);
+  if (cho) throw badRequest(`${nhan} đang có đề nghị dời chờ duyệt — duyệt hoặc từ chối trước.`);
+  const bo = rows.filter((r) => r.required && r.sit_status === 'scheduled' && r.planned_period_id);
+  if (!bo.length) throw badRequest(`${nhan} chưa xếp lịch — không có gì để huỷ.`);
+  const lyDo = o.lyDo!.trim();
+
+  return tx(() => {
+    const now = nowIso();
+    for (const r of bo) {
+      conn.prepare(`UPDATE attempt_skills SET planned_period_id = NULL, plan_source = 'manual', updated_at = ? WHERE id = ?`).run(now, r.id);
+      logSchedule(attemptId, { action: 'skill_unscheduled', field: r.skill, oldValue: r.period_code, newValue: null, reason: lyDo, actor: p.userId });
+    }
+    recomputeCompletionWeek(attemptId, p.userId);
+    conn.prepare(`UPDATE assessment_attempts SET plan_source = 'manual', updated_at = ? WHERE id = ?`).run(now, attemptId);
+    writeAudit({
+      actorUserId: p.userId, action: 'attempt.unschedule', entityType: 'assessment_attempt', entityId: attemptId, entityLabel: nhan,
+      before: { tuan: bo.map((r) => `${r.skill}:${r.period_code}`) }, after: { lyDo, doVuotBoi: o.doVuotBoi ?? null },
+    });
+    return { daBo: bo.map((r) => r.skill) };
+  });
+}
+
+/**
+ * NGÀY TẠO của lượt theo lịch nghiệp vụ. `created_at` là giờ máy thật; ở demo đồng hồ nghiệp vụ có thể lùi hơn giờ thật, nên lấy
+ * ngày sớm hơn trong hai — bản chính `created_at` luôn ≤ hôm nay nên kết quả đúng bằng `created_at`.
+ */
+export function ngayTaoLuot(createdAt: string, homNay: string = demoToday()): string {
+  const d = createdAt.slice(0, 10); const h = homNay.slice(0, 10);
+  return d < h ? d : h;
+}
+
+/** M-13: tính lại cờ `lich_su` của lượt sau khi tuần đổi — tuần thi muộn nhất đã kết thúc trước ngày tạo CỦA CHÍNH LƯỢT. */
+export function tinhLaiLichSu(attemptId: number): void {
+  const conn = db();
+  const r = conn.prepare(
+    `SELECT a.created_at,
+            (SELECT MAX(p.week_end) FROM attempt_skills ask JOIN report_periods p ON p.id = ask.planned_period_id
+              WHERE ask.attempt_id = a.id AND ask.required = 1 AND ask.sit_status != 'cancelled') AS kt
+       FROM assessment_attempts a WHERE a.id = ?`).get(attemptId) as any;
+  if (!r) return;
+  conn.prepare('UPDATE assessment_attempts SET lich_su = ? WHERE id = ?')
+    .run(r.kt && laLichSu(r.kt, ngayTaoLuot(r.created_at)) ? 1 : 0, attemptId);
 }
 
 function daysBetween(a: string, b: string): number {
@@ -595,6 +718,8 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
   khiTao?: boolean;
   /** Dấu "-" lớp thường ghi bù (C08 Q4): ghi lại việc em vắng các tuần ĐÃ QUA — không phải quyết định dời, không chặn tuần đã qua. */
   ghiBuDau?: boolean;
+  /** PR-LM (Q-0310-1): người dời đã xác nhận huỷ lịch các lượt sau bị vượt. Thiếu mà có lượt bị vượt → 409. */
+  huyLichVuot?: boolean;
   today?: string;
 } = {}) {
   const { attempt, row } = loadOne(attemptId, skill);
@@ -609,26 +734,49 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
   if (!period) throw notFound('Không tìm thấy tuần');
   if (periodId === row.planned_period_id) throw badRequest('Tuần mới trùng tuần hiện tại.');
 
-  if (hasScore(attemptId, row.skill)) {
-    throw badRequest(
-      `${skill} đã có điểm ở đợt này. Phần đã thi giữ nguyên lịch thật; `
-      + 'muốn sửa lịch sử thì dùng hiệu chỉnh có lý do, không dời như một lịch tương lai.',
-    );
-  }
-  if (row.sit_status === 'sat') {
-    throw badRequest(`${skill} đã được xác nhận là đã thi. Việc còn lại là chấm, không phải dời lịch.`);
-  }
-  /* K2-33 (PR-XLMT, rà #126): tuần đã qua chỉ để TẠO MT lịch sử (`khiTao`, đã qua `kiemTuanDaQua`) — mọi đường dời lượt có sẵn đi qua đây. */
-  if (!opts.khiTao && !opts.ghiBuDau && laLichSu(period.week_end, opts.today ?? demoToday())) {
-    throw badRequest('Không dời vào tuần đã qua — chọn tuần từ tuần này trở đi.');
-  }
-  /* K4-15 (PR-XLMT): dời bài mà TUẦN THI ĐÃ BẮT ĐẦU phải có lý do; bài vắng giữ lý do mặc định "Quản lý xếp trực tiếp" (K4-12). */
-  if (!opts.khiTao && row.sit_status !== 'absent' && row.week_start && row.week_start.slice(0, 10) <= mondayOf(opts.today ?? demoToday())) {
-    const loi = kiemLyDoThaoTac('Dời lịch thi', opts.reason);
+  /*
+   * D3 (PR-LM, chủ sản phẩm 03/10): MT LỊCH SỬ đổi tuần được — kể cả kỹ năng đã có điểm — như SỬA HỒ SƠ: bắt buộc lý do, nhật ký,
+   * điểm giữ nguyên. Tuần đích đã qua theo đúng luật lúc tạo (`kiemTuanDaQua`, phải trước ngày em vào web); tuần tương lai thì lượt
+   * thành MT đang chạy (cờ `lich_su` tính lại sau khi lưu). MT đang chạy giữ mọi luật cũ.
+   */
+  const lichSu = !!attempt.lich_su && !opts.khiTao && !opts.ghiBuDau;
+  const homNay = opts.today ?? demoToday();
+  if (lichSu) {
+    const loi = kiemLyDoThaoTac('Sửa tuần MT lịch sử', opts.reason);
     if (loi) throw badRequest(loi);
+    if (laLichSu(period.week_end, homNay)) {
+      const vaoWeb = String((db().prepare('SELECT created_at FROM students WHERE id = ?').get(attempt.student_id) as any)?.created_at ?? '');
+      const qua = kiemTuanDaQua({ ketThuc: [period.week_end], ngayVaoWeb: vaoWeb, homNay, taoMoi: true });
+      if (qua.cau) throw badRequest(qua.cau);
+    }
+  } else {
+    if (hasScore(attemptId, row.skill)) {
+      throw badRequest(
+        `${skill} đã có điểm ở đợt này. Phần đã thi giữ nguyên lịch thật; `
+        + 'muốn sửa lịch sử thì dùng hiệu chỉnh có lý do, không dời như một lịch tương lai.',
+      );
+    }
+    if (row.sit_status === 'sat') {
+      throw badRequest(`${skill} đã được xác nhận là đã thi. Việc còn lại là chấm, không phải dời lịch.`);
+    }
+    /* K2-33 (PR-XLMT, rà #126): tuần đã qua chỉ để TẠO MT lịch sử (`khiTao`, đã qua `kiemTuanDaQua`) — mọi đường dời lượt có sẵn đi qua đây. */
+    if (!opts.khiTao && !opts.ghiBuDau && laLichSu(period.week_end, homNay)) {
+      throw badRequest('Không dời vào tuần đã qua — chọn tuần từ tuần này trở đi.');
+    }
+    /* K4-15 (PR-XLMT): dời bài mà TUẦN THI ĐÃ BẮT ĐẦU phải có lý do; bài vắng giữ lý do mặc định "Quản lý xếp trực tiếp" (K4-12). */
+    if (!opts.khiTao && row.sit_status !== 'absent' && row.week_start && row.week_start.slice(0, 10) <= mondayOf(homNay)) {
+      const loi = kiemLyDoThaoTac('Dời lịch thi', opts.reason);
+      if (loi) throw badRequest(loi);
+    }
   }
 
-  const check = checkSkillWeekMove({ attemptId, skill: row.skill, newWeekStart: period.week_start });
+  /* Q-0310-1/2 (PR-LM): dời vượt lượt sau → huỷ lịch lượt bị vượt, có xác nhận; lượt bị vượt đã có điểm / đã thi → chặn. */
+  const vuot = opts.khiTao ? { biVuot: [], chan: null } as KiemVuot
+    : kiemVuot(attemptId, tuanCuoiSauKhiDoi(ensureSkillRows(attemptId), new Map([[row.skill, period.week_start]]))!);
+  if (vuot.chan) throw badRequest(vuot.chan);
+  if (vuot.biVuot.length && !opts.huyLichVuot) throw canXacNhanHuyLich(vuot.biVuot);
+
+  const check = checkSkillWeekMove({ attemptId, skill: row.skill, newWeekStart: period.week_start, boQua: vuot.biVuot.map((x) => x.attemptId) });
   if (check.blockers.length) throw badRequest(check.blockers.join(' '));
   if (check.warnings.length && !opts.force) {
     throw badRequest(`${check.warnings.join(' ')} Xác nhận lại nếu vẫn muốn xếp vào tuần này.`);
@@ -656,6 +804,9 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
 
   return tx(() => {
     const conn = db();
+    for (const b of vuot.biVuot) {
+      boTuanLuot(p, b.attemptId, { lyDo: lyDoHuyVuot(attempt, period.week_start, opts.reason), doVuotBoi: attemptId });
+    }
     const oldCode = row.period_code;
     /*
      * K4-12 (PR-MT, Q10): Quản lý đổi tuần một kỹ năng ĐANG VẮNG = MỘT LẦN DỜI DO VẮNG — bộ đếm +1, để lần vắng sau thành lần 2
@@ -677,6 +828,7 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
       reason: opts.reason ?? (vang ? 'Quản lý xếp trực tiếp' : null), actor: p.userId,
     });
     const cw = recomputeCompletionWeek(attemptId, p.userId);
+    if (lichSu) tinhLaiLichSu(attemptId);
     writeAudit({
       actorUserId: p.userId, action: vang ? 'attempt.absence_move' : 'attempt.skill_week', entityType: 'assessment_attempt',
       entityId: attemptId, entityLabel: `${attempt.kind === 'mock' ? `MT${attempt.attempt_no}` : attempt.kind} · ${skill}`,

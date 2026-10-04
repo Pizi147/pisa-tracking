@@ -77,11 +77,13 @@ export function resolveWeek(weekStart: string): Promise<{ id: number }> {
  * chục tuần (sổ §13.8). `LichNho` vẽ qua PORTAL, `position: fixed`, tự lo vị trí, bấm ngoài và Esc (chỉ đóng lịch). Mã tuần HIỆN RA dạng `W3 SEP` qua `tuanLich` (G-6 — chỉ thêm năm khi khác năm), không có
  * hàm tính tuần thứ hai ở đây.
  */
-export function WeekPicker({ periodId, onPeriod, label = 'Tuần', scope, clearable }: {
+export function WeekPicker({ periodId, onPeriod, label = 'Tuần', scope, clearable, toiThieu }: {
   periodId: number | null; onPeriod: (id: number | null) => void;
   label?: string | null;
   /** 'planning' mở cửa sổ tuần XA về tương lai — xếp lịch MT là việc của tương lai. */
   scope?: 'planning';
+  /** PR-LM: thứ Hai sớm nhất được chọn (ISO) — nút ‹ và ngày trong lịch trước tuần đó bị khoá (MT đang chạy không dời vào tuần đã qua). */
+  toiThieu?: string;
   /**
    * Cho phép BỎ TRỐNG. Chỉ bật ở những chỗ mà "chưa biết" là một câu trả lời hợp lệ —
    * dự kiến thi là ví dụ: ép chọn thì người ta chọn bừa rồi không ai sửa lại.
@@ -160,7 +162,7 @@ export function WeekPicker({ periodId, onPeriod, label = 'Tuần', scope, cleara
         {/* NHÓM KHÔNG TÁCH HÀNG: mũi tên · trường tuần · mũi tên. */}
         <div className="flex flex-1 basis-[17rem] min-w-0 items-stretch gap-2">
           <button
-            type="button" className="btn flex-none h-11 px-3" disabled={busy}
+            type="button" className="btn flex-none h-11 px-3" disabled={busy || (!!toiThieu && !!shown && shown.weekStart <= toiThieu)}
             onClick={() => goAdjacent(-1)} aria-label={shown ? `Tuần trước · ${tuanLich(addDaysStr(shown.weekStart, -7), today)}` : 'Tuần trước'}
             title={shown ? `Tuần trước · ${tuanLich(addDaysStr(shown.weekStart, -7), today)}` : 'Tuần trước'}
           >‹</button>
@@ -194,7 +196,7 @@ export function WeekPicker({ periodId, onPeriod, label = 'Tuần', scope, cleara
       </div>
 
       {open && (
-        <LichNho kieu="tuan" goNgay value={shown?.weekStart ?? null} homNay={today} luat={{}} neo={field}
+        <LichNho kieu="tuan" goNgay value={shown?.weekStart ?? null} homNay={today} luat={toiThieu ? { toiThieu } : {}} neo={field}
           onChon={(t2) => { if (!busy) void pick(t2); }} onDong={() => setOpen(false)} />
       )}
     </div>
