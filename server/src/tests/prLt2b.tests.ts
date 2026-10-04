@@ -429,7 +429,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     assert(x.cases.every((c) => (conn.prepare('SELECT status FROM sos_cases WHERE id = ?').get(c.id) as any).status !== 'done'), 'Case phải còn mở');
     const the = conn.prepare(`SELECT * FROM yeu_cau_duyet WHERE loai = 'bao_len_mini_test' AND doi_tuong_id = ?`).all(x.mt.id) as any[];
     assert(the.length === 1 && the[0].trang_thai === 'cho' && the[0].hoc_vien_id === x.s, JSON.stringify(the));
-    const hop = (duyetMod.hopChoDuyet(P.mbManager, {}) as any);
+    const hop = (duyetMod.hopChoDuyet(P.mbManager, { xem: 'de-biet' }) as any);   // PR-GVb (J5b): Báo QL tách khỏi tab Chờ duyệt → tab Để QL biết
     assert(JSON.stringify(hop).includes('Mini Test chưa đạt'), 'thẻ phải hiện ở hộp Chờ duyệt của Quản lý');
     for (const c of x.cases) casesMod.closeCaseOutcome(P.mbManager, c.id, { outcome: 'improved', note: 'Đã trao đổi phụ huynh, em học thêm' });
     duyetMod.quetYeuCau();
@@ -565,7 +565,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     const mtVy = conn.prepare('SELECT * FROM mini_test WHERE student_id = ?').get(vy) as any;
     assert(mtVy.ty_le === 0.58 && caseChuyenCap(vy).every((c) => c.status !== 'done'), 'Mini Test 58%: Case còn mở');
     assert(conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_mini_test' AND doi_tuong_id = ? AND trang_thai = 'cho'`).get(mtVy.id), 'thẻ Báo QL Mini Test');
-    assert(JSON.stringify(duyetMod.hopChoDuyet(ql, {})).includes('Mini Test chưa đạt'), 'hộp Chờ duyệt của QL có thẻ Mini Test');
+    assert(JSON.stringify(duyetMod.hopChoDuyet(ql, { xem: 'de-biet' })).includes('Mini Test chưa đạt'), 'hộp Chờ duyệt của QL có thẻ Mini Test');   // PR-GVb (J5b): Báo QL tách khỏi tab Chờ duyệt → tab Để QL biết
   });
   check('LT2b (10) · demo D12–D13: Pre FOU 52% lên FOU; Trung tâm → Case FT + Tutor; Học sinh → không Case, có ghi chú', () => {
     const bao = hv('Ninh Gia Bảo');

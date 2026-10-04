@@ -783,7 +783,7 @@ export async function runPrCtTests(t: YThucTestKit) {
     ganGv(n2, GV[4].userId, null, true);
     ra(P.mbManager, n2, 'cuoi-khoa', [dongCua(hocVien(n2, 'FOU', false).sid, 'len_lop', d6)]);
     conn.prepare('UPDATE lenh_chuyen_lop SET han_gvcn = ? WHERE lop_nguon_id = ?').run(t.addDays(TODAY, -1), n2);
-    const hop = yc.hopChoDuyet(P.mbManager, {});
+    const hop = yc.hopChoDuyet(P.mbManager, { xem: 'de-biet' });   // PR-GVb (J5b): Báo QL tách khỏi tab Chờ duyệt → tab Để QL biết
     const t2 = hop.the.find((x: any) => x.loai === 'bao_len_ban_giao' && x.lopId === n2);
     assert(t2 && t2.kieuNut === 'nhac' && t2.tieuDe.startsWith('Bàn giao quá hạn') && t2.duLieu.ownerId === GV[4].userId && t2.dong[0].includes('1 em'), JSON.stringify(t2));
     lenh.huyLenh(P.mbManager, lenhCua(get('SELECT student_id FROM lenh_chuyen_lop WHERE lop_nguon_id = ?', n2).student_id).id, 'Em ở lại lớp');

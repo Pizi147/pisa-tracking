@@ -5,6 +5,14 @@
 export const TRANG_THAI = ['can-lam', 'dang-lam', 'cho-duyet', 'qua-han', 'xong', 'da-huy'] as const;
 export type TrangThai = (typeof TRANG_THAI)[number];
 
+/**
+ * MỘT BẢNG TRẠNG THÁI → TONE (UX-G G2; PR-GVb U01 chuyển từ `web/src/ui/Nhan.tsx` sang shared): cùng một trạng thái thì cùng một màu ở mọi
+ * chỗ — `Nhan` (web) và luật badge lớp (`badgeLop`) cùng đọc. `wait` (tím) = đang chờ một người làm: chờ chấm, chờ duyệt.
+ */
+export const TONE_TRANG_THAI = { 'cho-cham': 'wait', 'cho-duyet': 'wait' } as const;
+/** Bản cho tone badge lớp (`'danger'|'warn'|'info'|'wait'|'muted'`) — hai bảng hiện trùng giá trị, giữ hai tên để mỗi phía đọc đúng kiểu. */
+export const TONE_BADGE_TRANG_THAI = TONE_TRANG_THAI;
+
 /** Có chữ ký chỉ mục `string` để chỗ gọi đọc được bằng mã trạng thái thô (mã lạ → `undefined` lúc chạy). */
 export const NHAN_TRANG_THAI: Readonly<Record<TrangThai, string>> & Readonly<Record<string, string>> = {
   'can-lam': 'Cần làm',

@@ -1135,7 +1135,11 @@ api.post('/classes/:id/ket-thuc', requireAuth, wrap((req) => {
 api.post('/intake/parse', requireAuth, wrap((req) => {
   const text = String(req.body?.text ?? '');
   if (!text.trim()) throw badRequest('Chưa có nội dung để đọc.');
-  return intakeSvc.parsePaste(text);
+  /* PR-NT: không tiêu đề → đọc theo thứ tự cột lưới của lớp; `coTieuDe` = người dùng chọn cách đọc. Không ghi gì nên không cần quyền mới. */
+  return intakeSvc.parsePaste(text, {
+    classId: Number(req.body?.classId) || null,
+    coTieuDe: typeof req.body?.coTieuDe === 'boolean' ? req.body.coTieuDe : undefined,
+  });
 }));
 
 /** Xem trước: soát lỗi từng ô, gợi ý trùng hồ sơ. Vẫn không ghi gì. */
@@ -1564,7 +1568,7 @@ api.get('/yeu-cau', requireAuth, wrap((req) => {
   if (qStr(req, 'hop') === 'cua-toi') return yeuCauSvc.yeuCauCuaToi(p);
   const xem = qStr(req, 'xem');
   return yeuCauSvc.hopChoDuyet(p, {
-    phanLoai: (qStr(req, 'phanLoai') as any) ?? null, xem: xem === 'da-xu-ly' ? 'da-xu-ly' : 'cho',
+    phanLoai: (qStr(req, 'phanLoai') as any) ?? null, xem: xem === 'da-xu-ly' || xem === 'de-biet' ? xem : 'cho',
     studentId: qInt(req, 'studentId') ?? null, branchId: qInt(req, 'branchId') ?? null, classId: qInt(req, 'lop') ?? null,
     quaHan: qStr(req, 'quaHan') === '1',
   });
@@ -1573,6 +1577,11 @@ api.get('/yeu-cau/dem', requireAuth, wrap((req) => yeuCauSvc.demYeuCau(principal
 api.post('/yeu-cau/duyet-nhieu', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return yeuCauSvc.duyetNhieu(principalOf(req), (req.body ?? {}).ids);
+}));
+/* PR-GVb (Q-B): Nhắc tất cả — kiểm quyền từng thẻ ở `nhacNhieu`; đặt trước `/yeu-cau/:id/...`. */
+api.post('/yeu-cau/nhac-nhieu', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return yeuCauSvc.nhacNhieu(principalOf(req), (req.body ?? {}).ids);
 }));
 api.post('/yeu-cau/:id/duyet', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();

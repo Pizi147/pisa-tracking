@@ -11,7 +11,7 @@ import type { ViecTiepCase } from './sosV4.ts';
 import type { NhanYThucEm } from './yThuc.ts';
 import { tuanKhoa, tuanLich } from './hienThiNgay.ts';
 import { CHU_CHUYEN_LOP } from './chuyenLop.ts';
-import { NHAN_TRANG_THAI } from './trangThai.ts';
+import { NHAN_TRANG_THAI, TONE_BADGE_TRANG_THAI } from './trangThai.ts';
 import { CLASS_PHASE_LABEL, type ClassPhase } from './fasttrack.ts';
 
 // ---------------------------------------------------------------- chung
@@ -231,10 +231,10 @@ export function badgeLop(c: {
     };
   }
   if (c.missingSkills.length) co['thieu-gv'] = { key: 'thieu-gv', nhan: `Thiếu GV ${c.missingSkills.map((k) => tenMonNgan(c.chuongTrinh, k)).join(', ')}`, tone: 'warn' };
-  if (c.soBaiChoCham > 0) co.cham = { key: 'cham', nhan: `${c.soBaiChoCham} bài chờ chấm`, tone: 'warn', title: c.needScoresTitle ?? undefined };
+  if (c.soBaiChoCham > 0) co.cham = { key: 'cham', nhan: `${c.soBaiChoCham} bài chờ chấm`, tone: TONE_BADGE_TRANG_THAI['cho-cham'], title: c.needScoresTitle ?? undefined };
   if (CHANG_THI.includes(c.phase)) co.chang = { key: 'chang', nhan: CLASS_PHASE_LABEL[c.phase as ClassPhase], tone: 'info' };
   if (c.missingCount > 0) co['thieu-tt'] = { key: 'thieu-tt', nhan: `Thiếu ${c.missingCount} thông tin`, tone: 'warn' };
-  if (c.soChoDuyet) co['cho-duyet'] = { key: 'cho-duyet', nhan: `${c.soChoDuyet} chờ duyệt`, tone: 'wait', title: 'Yêu cầu đang chờ Quản lý duyệt' };
+  if (c.soChoDuyet) co['cho-duyet'] = { key: 'cho-duyet', nhan: `${c.soChoDuyet} chờ duyệt`, tone: TONE_BADGE_TRANG_THAI['cho-duyet'], title: 'Yêu cầu đang chờ Quản lý duyệt' };
   if (c.soEmQuaHan) co['qua-han'] = { key: 'qua-han', nhan: `${c.soEmQuaHan} HV quá hạn việc`, tone: 'danger', title: 'Học viên có việc đã quá hạn (xác nhận, ghi kết quả, xử lý vi phạm)' };
   const all = THU_TU_BADGE[c.vai].flatMap((k) => (co[k] ? [co[k]!] : []));
   return { hien: all.slice(0, 2), an: all.slice(2) };

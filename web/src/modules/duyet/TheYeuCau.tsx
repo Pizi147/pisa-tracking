@@ -21,7 +21,7 @@ import { ChuyenLopPanel } from '../students/ChuyenLopPanel.tsx';
 type O = { loai: 'tu-choi' | 'tra-loi' | 'ghi-chu' | 'tuan' } | null;
 const TOI_THIEU = 3;
 
-export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemPa }: {
+export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemPa, daNhacNgoai }: {
   yc: TheYeuCauDto;
   /** Sau khi thẻ đã được quyết (hoặc phát hiện đã bị người khác xử lý) — nơi gọi làm mới danh sách. */
   onXong: (id: number) => void;
@@ -33,6 +33,8 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   chon?: { checked: boolean; onChange: (v: boolean) => void } | null;
   /** Viền nhấn 2 giây khi mở từ `?the=`. */
   nhanManh?: boolean;
+  /** PR-GVb (Q-B): giờ vừa nhắc qua "Nhắc tất cả" ở hộp — thẻ hiện "Đã nhắc HH:mm" không cần tải lại. */
+  daNhacNgoai?: string;
   /** Xin ý kiến: "+ Thêm PA cho em" mở Thêm PA của Ngăn Case. */
   onThemPa?: (caseId: number) => void;
 }) {
@@ -205,8 +207,8 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
                 <span className="self-center whitespace-nowrap text-[12px] text-late">{nhanKhongNguoiNhac(yc.loai)}</span>
               )}
               {coNut && yc.kieuNut === 'nhac' && typeof yc.duLieu?.ownerId === 'number' && (
-                daNhac
-                  ? <span className="self-center whitespace-nowrap text-[12px] text-slate-400">Đã nhắc {fmtTime(daNhac)}</span>
+                daNhac ?? daNhacNgoai
+                  ? <span className="self-center whitespace-nowrap text-[12px] text-slate-400">Đã nhắc {fmtTime((daNhac ?? daNhacNgoai)!)}</span>
                   : <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={nhac}>
                     Nhắc {typeof yc.duLieu?.tenGv === 'string' ? yc.duLieu.tenGv : 'GV'}
                   </button>

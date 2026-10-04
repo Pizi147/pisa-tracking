@@ -175,7 +175,7 @@ export function duongThongBao(n: ThongBaoRow): string | null {
       return n.kind === 'dang_ky' ? '/quan-tri' : null;
     /* PR-DUYET (K5-13): chuông chỉ TRỎ thẻ — người xin về Yêu cầu của tôi, người duyệt về hộp Chờ duyệt. */
     case 'yeu_cau_duyet':
-      return duongThe(n.entity_id, n.kind === 'duyet_ket_qua' || n.kind === 'duyet_tu_choi' ? 'nguoi-xin' : 'duyet');
+      return duongThe(n.entity_id, n.kind === 'duyet_ket_qua' || n.kind === 'duyet_tu_choi' ? 'nguoi-xin' : n.kind === 'bao_len' ? 'de-biet' : 'duyet');
     /* PR-Ra Q5: người được Nhắc bấm chuông thì về thẳng danh sách có dòng vừa được nhắc. */
     case 'nhac_viec':
       return n.duong ?? '/cong-viec';

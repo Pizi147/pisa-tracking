@@ -360,7 +360,7 @@ Vài dòng gộp nhiều lựa chọn cùng loại bằng dấu " · " (ví dụ
 | g5-001 | Kỳ vọng | Nhập điểm, Hồ sơ Mock Test · cột | Điểm mà học viên nên đạt ở lượt này theo lộ trình. |  | Cả hai |  |  |
 | g5-002 | KV {điểm} | Lưới chấm điện thoại (mới) · nhãn | Điểm kỳ vọng (viết tắt KV) — trùng nghĩa với g5-001. | Viết tắt | Mockup mới | g5-001 (Kỳ vọng) | Ngắn: KV {điểm} · Đầy đủ: Kỳ vọng {điểm} |
 | g5-003 | Mục tiêu | Học viên & Lớp (mới) · cột | Điểm mục tiêu cuối cùng của học viên. |  | Mockup mới |  |  |
-| g5-004 | Dự kiến thi | Danh sách học viên của lớp · cột | Tháng dự kiến học viên đi thi IELTS thật. |  | Cả hai |  |  |
+| g5-004 | Dự kiến thi | Danh sách học viên của lớp · cột | Ngày hoặc tháng dự kiến học viên đi thi IELTS thật — FT và lớp thường (04/10). |  | Cả hai |  |  |
 | g5-005 | Mốc | Danh sách học viên của lớp · cột | Lượt kiểm tra (MT1, MT2… hoặc giữa/cuối khoá). |  | Cả hai |  | Ngắn: Mốc · Đầy đủ: Mốc kiểm tra |
 | g5-006 | Mốc kiểm tra | Danh sách học viên · tiêu đề | Các lần kiểm tra theo lộ trình — trùng nghĩa với g5-005. | Trùng nghĩa | Web hiện tại | g5-005 (Mốc) | Ngắn: Mốc · Đầy đủ: Mốc kiểm tra |
 | g5-007 | Theo dõi | Danh sách học viên của lớp · cột | Việc cần làm và số case của học viên. |  | Cả hai |  |  |
@@ -1131,7 +1131,7 @@ Vài dòng gộp nhiều lựa chọn cùng loại bằng dấu " · " (ví dụ
 | Mã | Chữ đang dùng | Ở đâu | Nghĩa là gì | Loại | Nguồn | Gợi ý | **Sửa thành** |
 |---|---|---|---|---|---|---|---|
 | g13-001 | Test | Thanh điều hướng mới · mục 3 (có số bài chờ chấm), Nhiều màn | Bài kiểm tra (gồm cả thi thử và kiểm tra giữa/cuối khoá). | Tiếng Anh | Cả hai | Kiểm tra |  |
-| g13-002 | Target | Danh sách học viên của lớp · cột, Danh sách học viên · cột | Điểm mục tiêu — trùng nghĩa với g5-003. | Tiếng Anh | Cả hai | g5-003 (Mục tiêu) |  |
+| g13-002 | Target | Danh sách học viên của lớp · cột, Danh sách học viên · cột · Thêm học viên · cột, Thông tin HV · ô | Điểm mục tiêu — trùng nghĩa với g5-003. Lớp thường chỉ để theo dõi (04/10). | Tiếng Anh | Cả hai | g5-003 (Mục tiêu) |  |
 | g13-003 | Lượt MT | Tổng hợp theo tuần · cột, Tổng hợp · cột, Kế hoạch | Một lần thi thử của một học viên. | Viết tắt | Cả hai |  |  |
 | g13-004 | MT | Nhiều màn · viết tắt | Mock Test — lượt thi thử (MT1, MT2… là lần thứ mấy). | Viết tắt | Cả hai | Thi thử |  |
 | g13-005 | MT{n} | Nhiều màn · nhãn lượt | Lượt thi thử thứ n. | Viết tắt | Cả hai | Thi thử lần {n} |  |
@@ -1302,3 +1302,6 @@ Vài dòng gộp nhiều lựa chọn cùng loại bằng dấu " · " (ví dụ
 | g14-106 | không có vấn đề | Hành trình (mới) · nhãn kỹ năng | Kỹ năng này không có case. |  | Mockup mới |  | Không có Case |
 | g14-107 | chưa ổn · đã ổn · đang theo dõi · chưa có phương án | Hành trình (mới) · nhãn tình hình kỹ năng | Tóm tắt tình hình từng kỹ năng. |  | Mockup mới |  | Cần hỗ trợ · Đã ổn · Đang theo dõi · Chưa có phương án |
 | g14-108 | Chào {tên} — hôm nay có {n} việc | Tổng quan GV (mới) · lời chào | Lời chào kèm số việc hôm nay. |  | Mockup mới |  |  |
+| nt-001 | Đã đọc theo thứ tự cột: … | Thêm học viên · ô dán | Bảng dán không có dòng tiêu đề — web đọc cột theo thứ tự của lưới (PR-NT 04/10). |  | Web hiện tại |  |  |
+| nt-002 | Dòng đầu là tiêu đề? | Thêm học viên · ô dán · nút | Đọc lại vùng vừa dán, coi dòng đầu là dòng tiêu đề. |  | Web hiện tại |  |  |
+| nt-003 | Dòng đầu là học viên? | Thêm học viên · ô dán · nút | Đọc lại vùng vừa dán, coi dòng đầu là một học viên (không phải tiêu đề). |  | Web hiện tại |  |  |

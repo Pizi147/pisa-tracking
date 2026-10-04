@@ -52,7 +52,7 @@ export const cotLuoiNhap = (lopThuong: boolean): CotLuoi[] =>
 ```
 (`COT_BAND` = 5 cột OVR/L/R/W/S, `COT_DA_THI` = `daThiToiMt`. Thứ tự FT giữ y nguyên. `nhanCotNhap` vẫn tra trên đủ bộ cột.)
 
-- [ ] **Bước 1: Viết phép kiểm đỏ** `server/src/tests/prNt.tests.ts` (cùng mẫu với `prNhap.tests.ts`):
+- [x] **Bước 1: Viết phép kiểm đỏ** `server/src/tests/prNt.tests.ts` (cùng mẫu với `prNhap.tests.ts`):
 ```ts
 /** PHÉP KIỂM PR-NT — Target + Dự kiến thi lớp thường (chủ sản phẩm 04/10), không tác dụng phụ FT, dán không cần tiêu đề. */
 import type { YThucTestKit } from './yThuc.tests.ts';
@@ -110,8 +110,8 @@ const { runPrNtTests } = await import('./prNt.tests.ts');
 await runPrNtTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 ```
 Chạy `npm run check` → 3 kiểm NT-1 đỏ. Kiểm `prNhap` cũ (dòng 47, 108) sẽ đỏ sau khi sửa: cập nhật theo luật mới, trong cùng commit.
-- [ ] **Bước 2: Sửa `nhapHocVien.ts`** theo Interfaces. Đổi chú thích dòng 120-122 thành "Quyết định chủ sản phẩm 04/10 (thay K2-41)…".
-- [ ] **Bước 3: Sửa `intake.ts:261-277`.** Bỏ hai câu `if (ratio) { … luuY('target', 'Bỏ qua — lớp thường không có Target') }` và `if (ratio) { … luuY('examDate', 'Bỏ qua — lớp thường chưa thi IELTS') }`. Target và examDate dùng chung một nhánh cho mọi lớp. Riêng câu lưu ý "Chưa có — vẫn thêm được, bổ sung sau để tính kỳ vọng…" chỉ hiện cho FT. Lớp thường để trống Target thì **không** có lưu ý, vì lớp thường không có kỳ vọng:
+- [x] **Bước 2: Sửa `nhapHocVien.ts`** theo Interfaces. Đổi chú thích dòng 120-122 thành "Quyết định chủ sản phẩm 04/10 (thay K2-41)…".
+- [x] **Bước 3: Sửa `intake.ts:261-277`.** Bỏ hai câu `if (ratio) { … luuY('target', 'Bỏ qua — lớp thường không có Target') }` và `if (ratio) { … luuY('examDate', 'Bỏ qua — lớp thường chưa thi IELTS') }`. Target và examDate dùng chung một nhánh cho mọi lớp. Riêng câu lưu ý "Chưa có — vẫn thêm được, bổ sung sau để tính kỳ vọng…" chỉ hiện cho FT. Lớp thường để trống Target thì **không** có lưu ý, vì lớp thường không có kỳ vọng:
 ```ts
     let target: number | typeof KCK | null = null;
     if (laKck(r.target)) target = KCK;
@@ -126,8 +126,8 @@ Chạy `npm run check` → 3 kiểm NT-1 đỏ. Kiểm `prNhap` cũ (dòng 47, 1
       if (t.loi) loi('examDate', t.loi); else examDate = t.iso ?? undefined; }
 ```
 Sửa chú thích khối dòng 254-256 thành "OVR, BỐN BAND, ĐÃ THI TỚI MT — chỉ Fast Track. Target, Dự kiến thi — mọi lớp (chủ sản phẩm 04/10)". Sửa chú thích dòng 28. Không đụng `:477-490`, vì câu INSERT đã ghi target/exam cho mọi em.
-- [ ] **Bước 4:** `npm run check` xanh (gồm kiểm prNhap đã cập nhật).
-- [ ] **Bước 5: Commit** `PR-NT-1: Thêm học viên lớp thường nhận Target + Dự kiến thi (chủ sản phẩm 04/10)`.
+- [x] **Bước 4:** `npm run check` xanh (gồm kiểm prNhap đã cập nhật).
+- [x] **Bước 5: Commit** `PR-NT-1: Thêm học viên lớp thường nhận Target + Dự kiến thi (chủ sản phẩm 04/10)`.
 
 ---
 
@@ -153,7 +153,7 @@ Skill: test-driven-development · systematic-debugging (nếu kiểm đỏ ở c
 | `classes/hocVienLop.ts:110,215`, `classes/classes.ts:609-632` | target, examPlan | chỉ hiển thị | để NT-5 |
 | `cases/sos.ts` `isFastTrackMock` | — | kind mock + FT | kiểm qua SOS tổng |
 
-- [ ] **Bước 1: Viết phép kiểm đỏ/xanh** (thêm vào `runPrNtTests`). Dùng em `nt-ghi1@demo.test` (Target 6, thi 20/05/2027) từ NT-1:
+- [x] **Bước 1: Viết phép kiểm đỏ/xanh** (thêm vào `runPrNtTests`). Dùng em `nt-ghi1@demo.test` (Target 6, thi 20/05/2027) từ NT-1:
 ```ts
   const em = conn.prepare(`SELECT s.id AS sid, cy.id AS cid FROM students s JOIN learning_cycles cy ON cy.student_id = s.id WHERE s.email = 'nt-ghi1@demo.test'`).get() as any;
   const prof: any = await import('../students/profile.ts');
@@ -194,9 +194,9 @@ Skill: test-driven-development · systematic-debugging (nếu kiểm đỏ ở c
   });
 ```
 Bước cuối (PA) chép khung tạo Case Giữa khoá lớp thường từ phép kiểm PR-LT2 hiện có (`grep -n "Giữa khoá" server/src/tests/*.ts`). Chạy và ghi lại kiểm nào đỏ.
-- [ ] **Bước 2: Chặn chỗ đỏ** theo nguyên nhân. Điều kiện chặn theo **chương trình** (`classes.is_fast_track` / `programmes.scoring_mode`), không theo việc "có target hay không". Mỗi điều kiện thêm vào thì ghi chú thích `/* PR-NT: Target lớp thường không bật FT (chủ sản phẩm 04/10) */`.
-- [ ] **Bước 3:** `npm run check` xanh. Chép bảng rà, có cột "kết quả", vào nháp mô tả PR.
-- [ ] **Bước 4: Commit** `PR-NT-2: Target lớp thường không bật logic FT — rà + phép kiểm`.
+- [x] **Bước 2: Chặn chỗ đỏ** theo nguyên nhân. Điều kiện chặn theo **chương trình** (`classes.is_fast_track` / `programmes.scoring_mode`), không theo việc "có target hay không". Mỗi điều kiện thêm vào thì ghi chú thích `/* PR-NT: Target lớp thường không bật FT (chủ sản phẩm 04/10) */`.
+- [x] **Bước 3:** `npm run check` xanh. Chép bảng rà, có cột "kết quả", vào nháp mô tả PR.
+- [x] **Bước 4: Commit** `PR-NT-2: Target lớp thường không bật logic FT — rà + phép kiểm`.
 
 ---
 
@@ -220,7 +220,7 @@ export function docDongDan(dong: string[][], lopThuong: boolean, coTieuDe?: bool
 export function parsePaste(text: string, o?: { classId?: number | null; coTieuDe?: boolean }): { rows: IntakeRow[]; cotBoQua: string[]; cach: CachDoc };
 ```
 
-- [ ] **Bước 1: Viết phép kiểm đỏ:**
+- [x] **Bước 1: Viết phép kiểm đỏ:**
 ```ts
   check('NT-3 · có tiêu đề: đọc theo tên như cũ, thứ tự tuỳ ý', () => {
     const r = intake.parsePaste('Email\tHọ và tên\tTarget\nx@y.vn\tAn\t6.5', { classId: thuong });
@@ -259,16 +259,16 @@ export function parsePaste(text: string, o?: { classId?: number | null; coTieuDe
   });
 ```
 Kiểm `prNhap.tests.ts:85-88` (`parsePaste` không tiêu đề thì ném lỗi): cập nhật theo luật mới. Có tiêu đề vẫn chạy như cũ, không cần classId.
-- [ ] **Bước 2: Luật thuần.** `laDongTieuDe`: chuẩn hoá bằng `chuanTieuDe`; khớp **nguyên ô** với `TIEU_DE` (không khớp một phần, nên "Email Nguyễn" không khớp). Điều kiện: (`fullName` khớp, hoặc ≥ 2 ô khớp) **và** không ô nào là dữ liệu (`docEmail(o).email`, `docNgayNhap(o).iso`, `/^\d+([.,]\d)?$/`). `docDongDan`: nếu `coTieuDe ?? laDongTieuDe(dong[0])` thì `nhanDangCot(dong[0])` và `batDau = 1`; ngược lại `cot = cotLuoiNhap(lopThuong).map(c => c.key)` và `batDau = 0`. Tính `thua`/`thieu` trên các dòng dữ liệu.
-- [ ] **Bước 3: `parsePaste`.** Dùng `docDongDan`. Phân loại lớp như `IntakePanel` (`scoring_mode === 'ratio'` qua `classes.programme_code` → `programmes`). Không tiêu đề và không có `classId` → `badRequest('Chọn lớp trước khi dán dữ liệu không có dòng tiêu đề — web đọc theo thứ tự cột của lớp.')`. Có tiêu đề nhưng thiếu cột Họ tên thì giữ lỗi cũ (`intake.ts:142`), đổi chữ cho đúng luật mới. Route `/intake/parse` truyền `classId: req.body?.classId ?? null`, `coTieuDe: typeof req.body?.coTieuDe === 'boolean' ? req.body.coTieuDe : undefined`. Không cần quyền mới, vì parse không ghi gì.
-- [ ] **Bước 4: Web `IntakePanel`.** `handlePaste(text, coTieuDe?)` gửi `{ text, classId, coTieuDe }`. Giữ `pasteGoc` trong state, chỉ xoá khi dán lần mới hoặc thêm xong, để đổi cách đọc mà không phải dán lại. Sau khi đọc, hiện một dòng ngay trên lưới (không dùng toast, vì toast tự tắt):
+- [x] **Bước 2: Luật thuần.** `laDongTieuDe`: chuẩn hoá bằng `chuanTieuDe`; khớp **nguyên ô** với `TIEU_DE` (không khớp một phần, nên "Email Nguyễn" không khớp). Điều kiện: (`fullName` khớp, hoặc ≥ 2 ô khớp) **và** không ô nào là dữ liệu (`docEmail(o).email`, `docNgayNhap(o).iso`, `/^\d+([.,]\d)?$/`). `docDongDan`: nếu `coTieuDe ?? laDongTieuDe(dong[0])` thì `nhanDangCot(dong[0])` và `batDau = 1`; ngược lại `cot = cotLuoiNhap(lopThuong).map(c => c.key)` và `batDau = 0`. Tính `thua`/`thieu` trên các dòng dữ liệu.
+- [x] **Bước 3: `parsePaste`.** Dùng `docDongDan`. Phân loại lớp như `IntakePanel` (`scoring_mode === 'ratio'` qua `classes.programme_code` → `programmes`). Không tiêu đề và không có `classId` → `badRequest('Chọn lớp trước khi dán dữ liệu không có dòng tiêu đề — web đọc theo thứ tự cột của lớp.')`. Có tiêu đề nhưng thiếu cột Họ tên thì giữ lỗi cũ (`intake.ts:142`), đổi chữ cho đúng luật mới. Route `/intake/parse` truyền `classId: req.body?.classId ?? null`, `coTieuDe: typeof req.body?.coTieuDe === 'boolean' ? req.body.coTieuDe : undefined`. Không cần quyền mới, vì parse không ghi gì.
+- [x] **Bước 4: Web `IntakePanel`.** `handlePaste(text, coTieuDe?)` gửi `{ text, classId, coTieuDe }`. Giữ `pasteGoc` trong state, chỉ xoá khi dán lần mới hoặc thêm xong, để đổi cách đọc mà không phải dán lại. Sau khi đọc, hiện một dòng ngay trên lưới (không dùng toast, vì toast tự tắt):
   - Không tiêu đề: **"Đã đọc theo thứ tự cột: Họ tên · Ngày sinh · Email · Target · Dự kiến thi · Tuần bắt đầu."** + nút phụ **"Dòng đầu là tiêu đề?"** (gọi lại với `coTieuDe: true`).
   - Có tiêu đề: **"Đã đọc theo dòng tiêu đề"** (+ "bỏ qua cột …" nếu có) + nút phụ **"Dòng đầu là học viên?"** (gọi lại với `coTieuDe: false`).
   - `thua > 0`: "Mỗi dòng dư {n} ô ở cuối — đã bỏ. Kiểm lại thứ tự cột." · `thieu > 0`: "{n} cột cuối để trống — điền thêm trên lưới nếu cần."
 
   Chữ hướng dẫn ô dán (dòng ~153 và nhãn ô dán): "Dán từ Excel, có hoặc không có dòng tiêu đề. Không có tiêu đề thì web đọc theo thứ tự cột của lưới bên dưới." Chưa chọn lớp thì ô dán ghi "Chọn lớp trước". Lưới lớp thường: `minWidth` dòng 241 từ 740 lên khoảng 960; bề rộng cột Target/Dự kiến thi lấy theo cột FT sẵn có (bảng bề rộng dòng 28). Chạy `/impeccable clarify` cho các chữ trên, rồi `/impeccable layout` cho lưới 6 cột ở 375/1440.
-- [ ] **Bước 5:** `npm run check` xanh. Bấm thử: dán có/không tiêu đề, FT và lớp thường, bấm đổi cách đọc qua lại, dòng đầu là tên người.
-- [ ] **Bước 6: Commit** `PR-NT-3: dán từ Excel không cần dòng tiêu đề, đọc theo thứ tự cột lưới, đổi được cách đọc`.
+- [x] **Bước 5:** `npm run check` xanh. Bấm thử: dán có/không tiêu đề, FT và lớp thường, bấm đổi cách đọc qua lại, dòng đầu là tên người.
+- [x] **Bước 6: Commit** `PR-NT-3: dán từ Excel không cần dòng tiêu đề, đọc theo thứ tự cột lưới, đổi được cách đọc`.
 
 ---
 
@@ -280,7 +280,7 @@ Hiện trạng: `StudentDetailPage.tsx:367-389`. Em lớp thường mở `ThongT
 **Files:**
 - Modify: `web/src/modules/students/StudentManagePanel.tsx:234-345`; `server/src/tests/prNt.tests.ts`. Máy chủ dùng nguyên `PATCH /cycles/:id` (`updateCycle`, `cycles.ts:185-291`), không sửa. Nếu kiểm đỏ thì mới sửa.
 
-- [ ] **Bước 1: Phép kiểm máy chủ** (bảo vệ quyền và lý do cho lộ trình lớp thường):
+- [x] **Bước 1: Phép kiểm máy chủ** (bảo vệ quyền và lý do cho lộ trình lớp thường):
 ```ts
   const cyc: any = await import('../fasttrack/cycles.ts');
   check('NT-4 · đổi Target lộ trình lớp thường: cần CYCLE_EDIT + lý do, ghi revision; GVCN bị chặn', () => {
@@ -302,13 +302,13 @@ Hiện trạng: `StudentDetailPage.tsx:367-389`. Em lớp thường mở `ThongT
   });
 ```
 (Tên cột revision và principal GVCN: đọc `cycles.ts:509` và harness `P` khi viết.)
-- [ ] **Bước 2: Web.** Trong khối "Giai đoạn đang học", nhánh `cycle.ratio`, thêm (giữ dòng tên chương trình):
+- [x] **Bước 2: Web.** Trong khối "Giai đoạn đang học", nhánh `cycle.ratio`, thêm (giữ dòng tên chương trình):
   - **Target** (tuỳ chọn): người có `cycle.edit` (lấy cờ quyền giống `StudentPlanPanel`) thấy ô band (`step 0.5`, 0–9) + lựa chọn KCK, giống ô Target ở `StudentPlanPanel`. Khi giá trị đổi so với ban đầu thì hiện thêm ô **"Lý do đổi Target"** (bắt buộc, vào `dsLoi`). Không có quyền: hiện chữ chỉ đọc `<TargetText>` + lối "Đề xuất sửa" sẵn có (`mucQuanLyHocVien`), không dựng lối mới.
   - **Dự kiến thi** (tuỳ chọn): `<ONgay kieu="thang">`, nhận ngày hoặc tháng giống `TransitionPanel.tsx:431`.
   - `luu()`: gom một `api.patch('/cycles/:id', { startWeek?, targetScore?, lyDo?, examDate? })`, chỉ gửi trường đã đổi. Sau đó `invalidate('/cycles')`, `invalidate('/students')`.
   - Đổi câu `luat` nhánh ratio: "Giai đoạn là chương trình đang học… Target và Dự kiến thi chỉ để theo dõi; lớp thường không tính kỳ vọng hay SOS theo Target. Đổi Target bắt ghi lý do." Chạy `/impeccable clarify` cho câu này và nhãn lý do, `/impeccable layout` cho khối.
-- [ ] **Bước 3:** `npm run check` xanh. Bấm thử với QL (sửa được, bắt lý do) và GVCN (chỉ đọc + Đề xuất sửa), ở 375 và 1440.
-- [ ] **Bước 4: Commit** `PR-NT-4: Thông tin HV lớp thường sửa Target (lý do, cycle.edit) + Dự kiến thi`.
+- [x] **Bước 3:** `npm run check` xanh. Bấm thử với QL (sửa được, bắt lý do) và GVCN (chỉ đọc + Đề xuất sửa), ở 375 và 1440.
+- [x] **Bước 4: Commit** `PR-NT-4: Thông tin HV lớp thường sửa Target (lý do, cycle.edit) + Dự kiến thi`.
 
 ---
 
@@ -324,7 +324,7 @@ Phạm vi hiển thị **tối thiểu** (danh sách chốt):
 
 **Interfaces:** kiểu trả `dauHoSo.thongTin` thêm `thiIelts: string | null` (lớp thường; FT vẫn dùng `thiDuKien`).
 
-- [ ] **Bước 1: Kiểm đỏ:**
+- [x] **Bước 1: Kiểm đỏ:**
 ```ts
   check('NT-5 · đầu hồ sơ lớp thường: có Target + thi IELTS dự kiến, vẫn giữ Cuối khoá', () => {
     conn.prepare("UPDATE learning_cycles SET target_score = 6.5, khong_cam_ket = 0, exam_month = '2027-05', exam_date = NULL, exam_period_id = NULL WHERE id = ?").run(em.cid);
@@ -334,12 +334,12 @@ Phạm vi hiển thị **tối thiểu** (danh sách chốt):
     assert(tt.thiIelts === '05/2027', JSON.stringify(tt));
   });
 ```
-- [ ] **Bước 2: `profile.ts`.** Dòng 498 bỏ `khoa ||`: target lấy từ `dangChay` cho mọi lớp (KCK → `'KCK'`). Trong nhánh `if (khoa)` (474-480), tính `thiIelts` bằng cùng công thức dòng 488-491 (`examPlanOf` → tháng / ngày / mã tuần). Sửa chú thích `DauHoSo.tsx:27` thành "lớp thường  MB FOU 15 · FOU · tuần học 7/10 · Cuối khoá W4 OCT · Target 5.5 · thi IELTS dự kiến 06/2027 · GVCN …". Web thêm một `<span>` sau Cuối khoá. `/impeccable layout` để kiểm dòng thông tin không tràn ở 375 (xuống dòng theo cụm như hiện tại).
-- [ ] **Bước 3: Rulebook.** Ở `thiet-ke/PISA-Rulebook-2026-09-19.md`: (a) thêm vào danh sách "ĐÃ THAY" đầu file (dòng ~9) cụm "Target/Dự kiến thi lớp thường (04/10)"; (b) ở §20.1 bảng (sau dòng 655, #14), thêm dòng mới: "Lớp thường có Target + Dự kiến thi (chủ sản phẩm 04/10, thay K2-41/YC-5.2): nhập ở Thêm học viên và Thông tin HV; đổi Target bắt lý do, `cycle.edit`; **không** kỳ vọng, SOS, MT, Case theo Target. Dán Excel không bắt buộc dòng tiêu đề." kèm tham chiếu file/dòng code. Ở §10 dòng 255, thêm ghi chú "[BỔ SUNG 04/10 — lớp thường cũng có Target/Dự kiến thi]". Chữ gốc giữ nguyên làm lịch sử.
-- [ ] **Bước 4: Thuật ngữ.** `thiet-ke/THUAT_NGU_DA_CHOT.md`: g5-004 "Dự kiến thi" (dòng 363) sửa nghĩa thành "Ngày hoặc tháng dự kiến học viên đi thi IELTS thật — FT và lớp thường (04/10)". g13-002 "Target" (dòng 1134) thêm "· Thêm học viên · cột, Thông tin HV · ô; lớp thường chỉ để theo dõi". Thêm dòng mới cho "Đã đọc theo thứ tự cột", "Dòng đầu là tiêu đề?", "Dòng đầu là học viên?" (vị trí Thêm học viên · ô dán, "Web hiện tại").
-- [ ] **Bước 5:** `npm run check` xanh. Bấm thử theo mục Nghiệm thu.
-- [ ] **Bước 6: Commit** `PR-NT-5: đầu hồ sơ lớp thường hiện Target + thi IELTS dự kiến; Rulebook + thuật ngữ (chủ sản phẩm 04/10)`.
-- [ ] **Bước 7: Cuối PR.** `/impeccable audit` → `/ponytail-review` → requesting-code-review → finishing-a-development-branch. Rebase main, mở PR, không merge.
+- [x] **Bước 2: `profile.ts`.** Dòng 498 bỏ `khoa ||`: target lấy từ `dangChay` cho mọi lớp (KCK → `'KCK'`). Trong nhánh `if (khoa)` (474-480), tính `thiIelts` bằng cùng công thức dòng 488-491 (`examPlanOf` → tháng / ngày / mã tuần). Sửa chú thích `DauHoSo.tsx:27` thành "lớp thường  MB FOU 15 · FOU · tuần học 7/10 · Cuối khoá W4 OCT · Target 5.5 · thi IELTS dự kiến 06/2027 · GVCN …". Web thêm một `<span>` sau Cuối khoá. `/impeccable layout` để kiểm dòng thông tin không tràn ở 375 (xuống dòng theo cụm như hiện tại).
+- [x] **Bước 3: Rulebook.** Ở `thiet-ke/PISA-Rulebook-2026-09-19.md`: (a) thêm vào danh sách "ĐÃ THAY" đầu file (dòng ~9) cụm "Target/Dự kiến thi lớp thường (04/10)"; (b) ở §20.1 bảng (sau dòng 655, #14), thêm dòng mới: "Lớp thường có Target + Dự kiến thi (chủ sản phẩm 04/10, thay K2-41/YC-5.2): nhập ở Thêm học viên và Thông tin HV; đổi Target bắt lý do, `cycle.edit`; **không** kỳ vọng, SOS, MT, Case theo Target. Dán Excel không bắt buộc dòng tiêu đề." kèm tham chiếu file/dòng code. Ở §10 dòng 255, thêm ghi chú "[BỔ SUNG 04/10 — lớp thường cũng có Target/Dự kiến thi]". Chữ gốc giữ nguyên làm lịch sử.
+- [x] **Bước 4: Thuật ngữ.** `thiet-ke/THUAT_NGU_DA_CHOT.md`: g5-004 "Dự kiến thi" (dòng 363) sửa nghĩa thành "Ngày hoặc tháng dự kiến học viên đi thi IELTS thật — FT và lớp thường (04/10)". g13-002 "Target" (dòng 1134) thêm "· Thêm học viên · cột, Thông tin HV · ô; lớp thường chỉ để theo dõi". Thêm dòng mới cho "Đã đọc theo thứ tự cột", "Dòng đầu là tiêu đề?", "Dòng đầu là học viên?" (vị trí Thêm học viên · ô dán, "Web hiện tại").
+- [x] **Bước 5:** `npm run check` xanh. Bấm thử theo mục Nghiệm thu.
+- [x] **Bước 6: Commit** `PR-NT-5: đầu hồ sơ lớp thường hiện Target + thi IELTS dự kiến; Rulebook + thuật ngữ (chủ sản phẩm 04/10)`.
+- [x] **Bước 7: Cuối PR.** `/impeccable audit` → `/ponytail-review` → requesting-code-review → finishing-a-development-branch. Rebase main, mở PR, không merge.
 
 ## Ảnh hưởng tới kế hoạch khác
 Session chạy các PR sau **phải** theo quyết định 04/10:

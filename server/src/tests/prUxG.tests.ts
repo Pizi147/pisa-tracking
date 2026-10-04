@@ -47,7 +47,9 @@ export async function runPrUxGTests(t: YThucTestKit) {
   // ------------------------------------------------------------------ G2 · một trạng thái, một màu
   console.log('\nUX-G · G2 một trạng thái một màu');
   check('G2a · Nhan.tsx có MỘT bảng TONE_TRANG_THAI; "Chờ chấm", "Chờ bạn chấm", "Chờ GV khác" ở Lịch Test cùng tra bảng đó', () => {
-    assert(/export const TONE_TRANG_THAI\b/.test(doc('web/src/ui/Nhan.tsx')), 'Nhan.tsx thiếu TONE_TRANG_THAI');
+    /* PR-GVb U01: bảng chuyển sang shared (`trangThai.ts`) để badge lớp cùng đọc; Nhan.tsx re-export. */
+    assert(/export const TONE_TRANG_THAI\b/.test(doc('shared/domain/trangThai.ts')) && /export \{ TONE_TRANG_THAI \}/.test(doc('web/src/ui/Nhan.tsx')),
+      'thiếu TONE_TRANG_THAI ở shared/domain/trangThai.ts hoặc re-export ở Nhan.tsx');
     const s = doc('web/src/modules/test/lichTest/KhoiNo.tsx');
     const dong = s.split('\n').filter((l) => /Chờ bạn chấm|Chờ GV khác|Chờ chấm/.test(l));
     assert(dong.length === 2, `KhoiNo: ${dong.length} dòng nhãn chờ chấm (mong 2)`);

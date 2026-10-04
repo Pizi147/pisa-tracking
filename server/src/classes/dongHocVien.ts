@@ -7,7 +7,7 @@
  * riêng rồi gọi `listCases(p, {})` KHÔNG lọc phạm vi gì để lấy Case — quét mọi Case trong hệ thống, chậm hàng chục giây
  * trên Turso. Xem `.superpowers/sdd/2026-09-22-pr-qa-hoc-vien-lop/task-17-planning-fix-report.md`.
  */
-import { ATTEMPT_KIND_SHORT, PERMISSIONS, viecTiepCuaEm, type AttemptKind, type CaseViec, type NhanYThucEm, type ViecTiepTheo } from '../../../shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, PERMISSIONS, nhomCuaLoai, viecTiepCuaEm, type AttemptKind, type CaseViec, type NhanYThucEm, type ViecTiepTheo } from '../../../shared/domain/index.ts';
 import { db } from '../db.ts';
 import { activeAt, can, isCoreTeacherOf, type Principal } from '../permissions.ts';
 import { emCoBaoPhChuaLam } from '../yThuc/phoiHop.ts';
@@ -132,7 +132,9 @@ export function viecHocVienTheoLop(p: Principal, o: {
   for (let i = 0; i < Math.max(nhomHv.length, nhomLop.length); i++) {
     const hv = nhomHv[i] ?? []; const lp = nhomLop[i] ?? [];
     const dk = [hv.length ? `hoc_vien_id IN (${hv.map(() => '?').join(',')})` : '', lp.length ? `lop_id IN (${lp.map(() => '?').join(',')})` : ''].filter(Boolean).join(' OR ');
-    for (const r of db().prepare(`SELECT id, hoc_vien_id, lop_id FROM yeu_cau_duyet WHERE trang_thai = 'cho' AND (${dk})`).all(...hv, ...lp) as any[]) {
+    for (const r of db().prepare(`SELECT id, loai, hoc_vien_id, lop_id FROM yeu_cau_duyet WHERE trang_thai = 'cho' AND (${dk})`).all(...hv, ...lp) as any[]) {
+      /* PR-GVb (J5b): "chờ duyệt" chỉ thẻ QL phải quyết — Báo QL nằm ở tab Để QL biết, không vào badge (cùng `nhomCuaLoai` của hộp). */
+      if (nhomCuaLoai(r.loai) === 'de-biet') continue;
       the.set(r.id, { hv: r.hoc_vien_id ?? null, lop: r.lop_id ?? null });
     }
   }

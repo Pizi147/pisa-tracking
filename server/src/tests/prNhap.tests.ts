@@ -40,9 +40,9 @@ export async function runPrNhapTests(t: YThucTestKit) {
     assert(JSON.stringify(r.boQua) === JSON.stringify(['Ghi chú', 'Họ tên']), JSON.stringify(r.boQua));
   });
 
-  check('NHAP (1) · cotLuoiNhap: lớp thường 4 cột, FT 12 cột (… Dự kiến thi · Đã thi tới MT · Tuần bắt đầu)', () => {
+  check('NHAP (1) · cotLuoiNhap: lớp thường 6 cột (PR-NT 04/10), FT 12 cột (… Dự kiến thi · Đã thi tới MT · Tuần bắt đầu)', () => {
     const thuong = d.cotLuoiNhap(true).map((c) => c.key).join(',');
-    assert(thuong === 'fullName,dob,email,startWeek', thuong);
+    assert(thuong === 'fullName,dob,email,target,examDate,startWeek', thuong);
     const ft = d.cotLuoiNhap(false).map((c) => c.key);
     assert(ft.length === 12 && ft[9] === 'examDate' && ft[10] === 'daThiToiMt' && ft[11] === 'startWeek', ft.join(','));
   });
@@ -105,11 +105,11 @@ export async function runPrNhapTests(t: YThucTestKit) {
     assert(pv.issues.every((i: any) => i.muc === 'loi' || i.muc === 'luu_y'), 'mọi vấn đề phải có muc');
   });
 
-  check('NHAP (3) · lớp thường: cột FT dán vào chỉ là lưu ý, không lỗi (Q4)', () => {
+  check('NHAP (3) · lớp thường: cột FT dán vào chỉ là lưu ý, không lỗi (Q4); Target/Dự kiến thi nay được nhận (PR-NT 04/10)', () => {
     const pv = intake.previewIntake(P.admin, { classId: thuong, rows: [{ fullName: 'E', email: 'e@f.vn', target: '6.5', baselineScore: '5', examDate: '05/2027' }] });
     const is = pv.rows[0].issues;
-    assert(is.length >= 3 && is.every((i: any) => i.muc === 'luu_y'), JSON.stringify(is));
-    assert(pv.rows[0].baselineScore === null && pv.rows[0].examDate === undefined, 'lớp thường vẫn giữ OVR/thi');
+    assert(is.some((i: any) => i.field === 'baselineScore') && is.every((i: any) => i.muc === 'luu_y'), JSON.stringify(is));
+    assert(pv.rows[0].baselineScore === null && pv.rows[0].target === 6.5 && pv.rows[0].examDate === '2027-05', 'OVR bỏ qua, target/thi nhận');
   });
 
   check('NHAP (3) · Mâu thuẫn #1: dòng chỉ có cảnh báo trùng hồ sơ vẫn được thêm', () => {

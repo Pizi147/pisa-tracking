@@ -71,7 +71,7 @@ export function tomTatHangLoat(viec: 'duyet' | 'nhac', ok: number, loi: readonly
 // DemYeuCau thêm: deBiet: number; deBietQuaHan: number
 ```
 
-- [ ] **Step 1: Viết phép kiểm đỏ** — `server/src/tests/prGvb.tests.ts`:
+- [x] **Step 1: Viết phép kiểm đỏ** — `server/src/tests/prGvb.tests.ts`:
 
 ```ts
 /** PHÉP KIỂM PR-GVb — Chờ duyệt: duyệt nhiều ở Tất cả, Để QL biết, chip đếm, tone chờ chấm, Bị từ chối. Harness do `run.ts` truyền vào. */
@@ -138,9 +138,9 @@ const { runPrGvbTests } = await import('./prGvb.tests.ts');
 await runPrGvbTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 ```
 
-- [ ] **Step 2: Chạy, thấy đỏ** — `npm test 2>&1 | grep -A3 "GVb"`. Mong đợi: lỗi `nhomCuaLoai is not a function`.
+- [x] **Step 2: Chạy, thấy đỏ** — `npm test 2>&1 | grep -A3 "GVb"`. Mong đợi: lỗi `nhomCuaLoai is not a function`.
 
-- [ ] **Step 3: Sửa** — trong `shared/domain/yeuCauDuyet.ts`:
+- [x] **Step 3: Sửa** — trong `shared/domain/yeuCauDuyet.ts`:
 
 ```ts
 /** PR-GVb (D01/Q-B): trần một lần duyệt / nhắc hàng loạt — máy chủ (`duyetNhieu`, `nhacNhieu`) và web cùng đọc. */
@@ -204,8 +204,8 @@ export function tomTatHangLoat(viec: 'duyet' | 'nhac', ok: number, loi: readonly
 
 `DemYeuCau` thêm `deBiet: number; deBietQuaHan: number;` (chú thích: "không cộng vào `cho`"). Re-export đã có qua `export * from './yeuCauDuyet.ts'` ở `shared/domain/index.ts` — kiểm lại, thiếu thì thêm.
 
-- [ ] **Step 4: Chạy lại** — `npm test`. GVb (1) xanh. Phép cũ sẽ đỏ ở chỗ gọi `demHop` thiếu `loai` → sửa ở GVb-2 (cùng commit nếu typecheck vỡ).
-- [ ] **Step 5: Commit** — `git commit -am "PR-GVb: luật thuần nhóm thẻ, đếm, chọn hàng loạt, tóm tắt kết quả"`
+- [x] **Step 4: Chạy lại** — `npm test`. GVb (1) xanh. Phép cũ sẽ đỏ ở chỗ gọi `demHop` thiếu `loai` → sửa ở GVb-2 (cùng commit nếu typecheck vỡ).
+- [x] **Step 5: Commit** — `git commit -am "PR-GVb: luật thuần nhóm thẻ, đếm, chọn hàng loạt, tóm tắt kết quả"`
 
 ### Task GVb-2: Máy chủ — một nguồn đếm cho badge, chip và danh sách; tab Để QL biết; duyetNhieu trả mã từng thẻ
 
@@ -221,7 +221,7 @@ export function tomTatHangLoat(viec: 'duyet' | 'nhac', ok: number, loi: readonly
 - Consumes: `demHop`, `nhomCuaLoai`, `TRAN_HANG_LOAT` (GVb-1).
 - Produces: `hopChoDuyet(p, { xem: 'cho' | 'de-biet' | 'da-xu-ly', … })` → `{ the, dem, demBiet: number, homNay, lopDangLoc }`; `demYeuCau` → thêm `deBiet`, `deBietQuaHan`; `duyetNhieu` → `loi: { id, loi, ma }[]`.
 
-- [ ] **Step 1: Phép kiểm đỏ** (thêm vào `runPrGvbTests`):
+- [x] **Step 1: Phép kiểm đỏ** (thêm vào `runPrGvbTests`):
 
 ```ts
   const yc = await import('../duyet/yeuCau.ts');
@@ -259,16 +259,16 @@ export function tomTatHangLoat(viec: 'duyet' | 'nhac', ok: number, loi: readonly
 ```
 (`taoHaiThePa`: chép đúng cách tạo thẻ PA ở `prDuyet.tests.ts` ~dòng 120–133, đổi `chi_nhanh_id`/`hoc_vien_id` của thẻ thứ hai sang học viên chi nhánh khác Monbay. Nếu tên `tongQuanQuanLy`/chữ ký khác, tra `server/src/worklist/tongQuan.ts:159` và gọi đúng hàm trả `choDuyet`.)
 
-- [ ] **Step 2: Chạy, thấy đỏ** — `xem: 'de-biet'` chưa có; `demBiet`/`deBiet` undefined; `ma` không có.
+- [x] **Step 2: Chạy, thấy đỏ** — `xem: 'de-biet'` chưa có; `demBiet`/`deBiet` undefined; `ma` không có.
 
-- [ ] **Step 3: Sửa** `server/src/duyet/yeuCau.ts`:
+- [x] **Step 3: Sửa** `server/src/duyet/yeuCau.ts`:
   - `hopChoDuyet`: kiểu `xem?: 'cho' | 'de-biet' | 'da-xu-ly'`. `de-biet` đọc cùng câu SQL của `cho` (`trang_thai = 'cho'`). Sau lọc chi nhánh/lớp: `const d = demHop(rows.map((r) => ({ loai: r.loai, phanLoai: metaCua(r.loai).phanLoai, hanDuyet: r.han_duyet })), homNay);` rồi `if (xem !== 'da-xu-ly') rows = rows.filter((r) => nhomCuaLoai(r.loai) === (xem === 'de-biet' ? 'de-biet' : 'can-quyet'));`. Trả `dem: d.chip, demBiet: d.deBiet`. Đã xử lý không lọc nhóm (lịch sử đủ).
   - `demYeuCau`: truyền `loai` vào `demHop`; `kq.deBiet = d.deBiet; kq.deBietQuaHan = d.deBietQuaHan;` khởi tạo `deBiet: 0, deBietQuaHan: 0`.
   - `duyetNhieu`: thay `ids.length > 50` bằng `ids.length > TRAN_HANG_LOAT` (chữ: `` `Chọn từ 1 đến ${TRAN_HANG_LOAT} yêu cầu để duyệt.` ``); mỗi `loi.push` thêm `ma` (`'Mã không hợp lệ'` → 400, không tìm thấy → 404, catch → `e?.status ?? 500`). Kiểm quyền từng thẻ **giữ nguyên** qua `duyetYeuCau` → `quyetDinh`.
   - `routes/index.ts:1563`: `xem: xem === 'da-xu-ly' || xem === 'de-biet' ? xem : 'cho'`.
   - Sửa kỳ vọng cũ ở `prDuyet.tests.ts:367, 414`: `baoLen` nay = `deBiet` (không nằm trong `cho`), `hop.dem['bao-len']` = 0 → đổi so sánh thành `dem.deBiet === yc.hopChoDuyet(P.mbManager, { xem: 'de-biet' }).the.length`. Ghi chú `// PR-GVb (J5b): Báo QL tách khỏi tổng`.
-- [ ] **Step 4: Chạy lại** — `npm test`: GVb (2) xanh, PR-DUYET, PR-Dọn-a (`duyetNhieu` 403 GV) vẫn xanh.
-- [ ] **Step 5: Commit** — `git commit -am "PR-GVb: một nguồn đếm Chờ duyệt (chỉ thẻ phải quyết), tab Để QL biết, duyetNhieu trả mã từng thẻ"`
+- [x] **Step 4: Chạy lại** — `npm test`: GVb (2) xanh, PR-DUYET, PR-Dọn-a (`duyetNhieu` 403 GV) vẫn xanh.
+- [x] **Step 5: Commit** — `git commit -am "PR-GVb: một nguồn đếm Chờ duyệt (chỉ thẻ phải quyết), tab Để QL biết, duyetNhieu trả mã từng thẻ"`
 
 ### Task GVb-3: Máy chủ — "Nhắc tất cả" (`POST /yeu-cau/nhac-nhieu`)
 
@@ -283,7 +283,7 @@ export function tomTatHangLoat(viec: 'duyet' | 'nhac', ok: number, loi: readonly
 - Consumes: `nhacViec(p, { key, ownerId })` (`server/src/worklist/nhacViec.ts:19`) — tự kiểm quyền dòng và chống nhắc lặp trong ngày.
 - Produces: `nhacNhieu(p, ids: unknown): { ok: { id: number; daNhacLuc: string; moi: boolean }[]; loi: { id: number; loi: string; ma: number }[] }`. `moi = false` khi hôm nay đã nhắc (không gửi thêm).
 
-- [ ] **Step 1: Phép kiểm đỏ**:
+- [x] **Step 1: Phép kiểm đỏ**:
 
 ```ts
   check('GVb (3) · nhacNhieu: GV → 403; >50 → 400; chỉ thẻ "nhac"; nhắc lần hai trong ngày không tạo thông báo mới', () => {
@@ -304,8 +304,8 @@ export function tomTatHangLoat(viec: 'duyet' | 'nhac', ok: number, loi: readonly
   });
 ```
 
-- [ ] **Step 2: Chạy, thấy đỏ** — `nhacNhieu is not a function`.
-- [ ] **Step 3: Sửa**:
+- [x] **Step 2: Chạy, thấy đỏ** — `nhacNhieu is not a function`.
+- [x] **Step 3: Sửa**:
 
 ```ts
 /** PR-GVb (Q-B): "Nhắc tất cả (n)" — từng thẻ gọi `nhacViec` (kiểm phạm vi TỪNG dòng + một thông báo / việc / ngày). Thẻ lỗi báo riêng. */
@@ -335,8 +335,8 @@ export function nhacNhieu(p: Principal, ids: unknown) {
 ```
 (Tên cột JSON thực tế: kiểm `YeuCauRow` — nếu là `du_lieu` đã parse thì bỏ `JSON.parse`. Tên trường `status` của `HttpError`: tra `server/src/util.ts`.)
 Route: `api.post('/yeu-cau/nhac-nhieu', requireAuth, wrap((req) => { maybeSimulateSaveFailure(); return yeuCauSvc.nhacNhieu(principalOf(req), (req.body ?? {}).ids); }));` — đặt **trước** `/yeu-cau/:id/...`.
-- [ ] **Step 4: Chạy lại** — xanh. Thêm `nhacNhieu`, `POST /yeu-cau/nhac-nhieu` vào `CODE_MAP.md:458`.
-- [ ] **Step 5: Commit** — `git commit -am "PR-GVb: Nhắc tất cả — nhacNhieu dùng lại nhacViec, kiểm quyền từng thẻ, không nhắc lặp trong ngày"`
+- [x] **Step 4: Chạy lại** — xanh. Thêm `nhacNhieu`, `POST /yeu-cau/nhac-nhieu` vào `CODE_MAP.md:458`.
+- [x] **Step 5: Commit** — `git commit -am "PR-GVb: Nhắc tất cả — nhacNhieu dùng lại nhacViec, kiểm quyền từng thẻ, không nhắc lặp trong ngày"`
 
 ### Task GVb-4: Web hộp Chờ duyệt — duyệt nhiều ở "Tất cả", "Chọn hết n", báo thành công một phần (D01/Q-B)
 
@@ -347,17 +347,17 @@ Route: `api.post('/yeu-cau/nhac-nhieu', requireAuth, wrap((req) => { maybeSimula
 
 **Interfaces:** Consumes `chonMot`, `chonHet`, `tomTatHangLoat`, `TRAN_HANG_LOAT`, `LOAI_YC_META`.
 
-- [ ] **Step 1: Phép kiểm** — luật đã có phép ở GVb-1 (chonMot/chonHet/tomTat). Phần nối giao diện kiểm bằng bấm thử (Step 4); không viết phép quét nguồn.
-- [ ] **Step 2: Sửa** `HopChoDuyet.tsx`:
+- [x] **Step 1: Phép kiểm** — luật đã có phép ở GVb-1 (chonMot/chonHet/tomTat). Phần nối giao diện kiểm bằng bấm thử (Step 4); không viết phép quét nguồn.
+- [x] **Step 2: Sửa** `HopChoDuyet.tsx`:
   - Dòng 70: `const choHangLoat = xem === 'cho';` (bỏ `&& phan !== 'tat-ca'`).
   - Dòng 131–135 (ô chọn): `onChange: (v) => setChon((s) => chonMot(ds, s, y.id, v))`; bỏ biến `loaiChon` khỏi chỗ chọn (giữ để hiện tên loại).
   - Thanh chọn (dòng 140+), trái → phải: `Đã chọn {chon.size} · {LOAI_YC_META[loaiChon].nhan}` · nút `Chọn hết {nHet}` khi `nHet > chon.size` (với `nHet = chonHet(ds, loaiChon).size`) · `Bỏ chọn` · `Duyệt {chon.size} yêu cầu` (primary). Khi `chonHet` bị cắt ở 50: chữ phụ `Tối đa ${TRAN_HANG_LOAT} một lần`.
   - Trong tab Tất cả, đầu danh sách một dòng gợi ý 12 px khi có ≥2 thẻ cùng loại hàng loạt và chưa chọn gì: "Đánh dấu ô ở thẻ để duyệt nhiều cùng loại." (clarify: một câu, không giải thích cách app chạy).
   - `duyetNhieu`: kiểu trả `loi: { id; loi; ma }[]`; toast một câu `tomTatHangLoat('duyet', r.ok.length, r.loi)` (tone `ok` khi không lỗi, `warn`/`error` khi có lỗi); vẫn giữ toast riêng từng thẻ lỗi nhưng gộp tối đa 3 dòng + "…và k thẻ khác".
   - Chú thích đầu hàm (dòng 30–34): "Duyệt hàng loạt: mọi tab (cả Tất cả), chỉ cùng MỘT loại `hangLoat`, tối đa 50 — PR-GVb D01/Q-B".
-- [ ] **Step 3: `npm run check`** xanh.
-- [ ] **Step 4: Bấm thử** — QL Monbay: tab Tất cả, chọn 2 thẻ Đề xuất PA → thanh hiện "Chọn hết n"; chọn sang thẻ Dời lịch → bỏ chọn cũ; Duyệt → toast "Đã duyệt 2/2". Quản trị: tạo 1 thẻ ngoài phạm vi QL bằng cách đổi chi nhánh lọc trong lúc thẻ đã chọn (hoặc gọi API với id ngoài phạm vi qua devtools) → "Đã duyệt 1/2 — 1 không có quyền". GV: không thấy hộp (403 như cũ).
-- [ ] **Step 5: Commit** — `git commit -am "PR-GVb: duyệt nhiều ở tab Tất cả, Chọn hết n, báo thành công một phần (D01/Q-B)"`
+- [x] **Step 3: `npm run check`** xanh.
+- [x] **Step 4: Bấm thử** — QL Monbay: tab Tất cả, chọn 2 thẻ Đề xuất PA → thanh hiện "Chọn hết n"; chọn sang thẻ Dời lịch → bỏ chọn cũ; Duyệt → toast "Đã duyệt 2/2". Quản trị: tạo 1 thẻ ngoài phạm vi QL bằng cách đổi chi nhánh lọc trong lúc thẻ đã chọn (hoặc gọi API với id ngoài phạm vi qua devtools) → "Đã duyệt 1/2 — 1 không có quyền". GV: không thấy hộp (403 như cũ).
+- [x] **Step 5: Commit** — `git commit -am "PR-GVb: duyệt nhiều ở tab Tất cả, Chọn hết n, báo thành công một phần (D01/Q-B)"`
 
 ### Task GVb-5: Web — tab "Để QL biết" + "Nhắc tất cả (n)" (J5b, Q-B)
 
@@ -368,17 +368,17 @@ Route: `api.post('/yeu-cau/nhac-nhieu', requireAuth, wrap((req) => { maybeSimula
 - Modify: `web/src/modules/duyet/TheYeuCau.tsx:112-121` (nút Nhắc nhận `daNhac` từ ngoài khi nhắc hàng loạt)
 - Modify: `web/src/App.tsx:96-103` (chữ `sr` badge: "thẻ cần duyệt")
 
-- [ ] **Step 1: Phép kiểm** — số badge = số dòng có nút đã kiểm ở GVb (2). Giao diện: bấm thử.
-- [ ] **Step 2: Sửa**:
+- [x] **Step 1: Phép kiểm** — số badge = số dòng có nút đã kiểm ở GVb (2). Giao diện: bấm thử.
+- [x] **Step 2: Sửa**:
   - `xem`: `params.get('xem')` ∈ `'cho' | 'de-biet' | 'da-xu-ly'`; ô Trạng thái: `[{ key: 'cho', nhan: 'Chờ duyệt', so: dem?.['tat-ca'] }, { key: 'de-biet', nhan: 'Để QL biết', so: data?.demBiet }, { key: 'da-xu-ly', nhan: 'Đã xử lý (30 ngày)' }]`.
   - Ô phân loại chỉ hiện ở `cho`, dùng `PHAN_LOAI_CAN_QUYET`; ở `de-biet` ẩn ô phân loại (một phân loại duy nhất). Link cũ `?phan=bao-len` → chuyển sang `?xem=de-biet` (một `useEffect` đổi URL, `replace: true`) để link ở thông báo/Tổng quan cũ không gãy.
   - Ở `de-biet`, trên danh sách: dòng 12 px "Không cần duyệt — để bạn biết và nhắc giáo viên." + nút `Nhắc tất cả ({n})` với `n` theo G5 (thẻ có `ownerId`, `viecKey`, chưa có `duLieu.daNhacLuc` hôm nay), ẩn khi n = 0; n > 50 → nút ghi "Nhắc 50 thẻ đầu" (thứ tự máy chủ: quá hạn trước).
   - Bấm → `api.post('/yeu-cau/nhac-nhieu', { ids })` → toast `tomTatHangLoat('nhac', r.ok.length, r.loi)`; thẻ trong `r.ok` hiện "Đã nhắc HH:mm" (truyền `daNhacLuc` xuống `TheYeuCau` qua prop `daNhacNgoai?: string`). Lỗi mạng: như `duyetNhieu` (làm mới danh sách).
   - Trạng thái rỗng `de-biet`: "Không có việc nào cần QL biết".
   - `App.tsx` `sr`: `${dem.cho} thẻ cần duyệt` (số đã chỉ còn thẻ phải quyết từ GVb-2).
-- [ ] **Step 3: `npm run check`** xanh.
-- [ ] **Step 4: Bấm thử** 3 vai: QL thấy badge = số thẻ tab Chờ duyệt (đếm bằng mắt, so số); tab Để QL biết không có nút Duyệt; Nhắc tất cả → toast; sau đó nút ẩn (n = 0 vì đã nhắc hôm nay). GV vào chuông thấy thông báo nhắc. Quản trị toàn hệ thống: số đúng mọi chi nhánh.
-- [ ] **Step 5: Commit** — `git commit -am "PR-GVb: tab Để QL biết tách khỏi Chờ duyệt, Nhắc tất cả (J5b, Q-B)"`
+- [x] **Step 3: `npm run check`** xanh.
+- [x] **Step 4: Bấm thử** 3 vai: QL thấy badge = số thẻ tab Chờ duyệt (đếm bằng mắt, so số); tab Để QL biết không có nút Duyệt; Nhắc tất cả → toast; sau đó nút ẩn (n = 0 vì đã nhắc hôm nay). GV vào chuông thấy thông báo nhắc. Quản trị toàn hệ thống: số đúng mọi chi nhánh.
+- [x] **Step 5: Commit** — `git commit -am "PR-GVb: tab Để QL biết tách khỏi Chờ duyệt, Nhắc tất cả (J5b, Q-B)"`
 
 ### Task GVb-6: Dải Chờ duyệt ở Tổng quan QL — hàng chip đếm (J5)
 
@@ -396,7 +396,7 @@ export type ChipDem = { key: string; nhan: string; so: number; den: string; quaH
 export function chipChoDuyet(d: DemYeuCau): ChipDem[];
 ```
 
-- [ ] **Step 1: Phép kiểm đỏ**:
+- [x] **Step 1: Phép kiểm đỏ**:
 
 ```ts
   check('GVb (6) · J5: chipChoDuyet — phân loại 0 bỏ; Để QL biết là chip riêng mở ?xem=de-biet; không còn câu "gồm … (…)"', () => {
@@ -408,9 +408,9 @@ export function chipChoDuyet(d: DemYeuCau): ChipDem[];
     assert(!('dongPhuChoDuyet' in d), 'hàm câu tóm tắt cũ còn sót');
   });
 ```
-- [ ] **Step 2: Đỏ** → **Step 3: Sửa**: viết `chipChoDuyet` (thứ tự `PHAN_LOAI_CAN_QUYET`, rồi `qua-han` nếu `quaHan > 0` với `quaHan: true`, rồi `de-biet` nếu `deBiet > 0`); xoá `dongPhuChoDuyet` và trường `baoLenTheoLoai` nếu không còn ai đọc (grep). `DaiChoDuyet`: giữ `Nhan wait "Chờ duyệt"` + số lớn `{d.cho} chờ duyệt`; thay ba link + dòng phụ bằng một hàng `Nhan` có `onClick` (dùng `navigate`), mỗi chip `${nhan} ${so}` tabular-nums; chip quá hạn tone `bad`, chip Để QL biết tone `muted`, phân loại tone `wait`. Ẩn dải khi `cho === 0 && deBiet === 0`. Điện thoại: hàng chip `flex-wrap`, vùng bấm ≥ 40 px (Nhan đã có).
-- [ ] **Step 4: Chạy lại + bấm thử** 1440/375 sáng/tối: bấm từng chip mở hộp đúng lọc.
-- [ ] **Step 5: Commit** — `git commit -am "PR-GVb: dải Chờ duyệt thành hàng chip đếm (J5)"`
+- [x] **Step 2: Đỏ** → **Step 3: Sửa**: viết `chipChoDuyet` (thứ tự `PHAN_LOAI_CAN_QUYET`, rồi `qua-han` nếu `quaHan > 0` với `quaHan: true`, rồi `de-biet` nếu `deBiet > 0`); xoá `dongPhuChoDuyet` và trường `baoLenTheoLoai` nếu không còn ai đọc (grep). `DaiChoDuyet`: giữ `Nhan wait "Chờ duyệt"` + số lớn `{d.cho} chờ duyệt`; thay ba link + dòng phụ bằng một hàng `Nhan` có `onClick` (dùng `navigate`), mỗi chip `${nhan} ${so}` tabular-nums; chip quá hạn tone `bad`, chip Để QL biết tone `muted`, phân loại tone `wait`. Ẩn dải khi `cho === 0 && deBiet === 0`. Điện thoại: hàng chip `flex-wrap`, vùng bấm ≥ 40 px (Nhan đã có).
+- [x] **Step 4: Chạy lại + bấm thử** 1440/375 sáng/tối: bấm từng chip mở hộp đúng lọc.
+- [x] **Step 5: Commit** — `git commit -am "PR-GVb: dải Chờ duyệt thành hàng chip đếm (J5)"`
 
 ### Task GVb-7: "n bài chờ chấm" tím `wait` như Lịch Test (U01)
 
@@ -429,7 +429,7 @@ export const TONE_TRANG_THAI = { 'cho-cham': 'wait', 'cho-duyet': 'wait' } as co
 export const TONE_BADGE_TRANG_THAI = { 'cho-cham': 'wait', 'cho-duyet': 'wait' } as const;
 ```
 
-- [ ] **Step 1: Phép kiểm đỏ**:
+- [x] **Step 1: Phép kiểm đỏ**:
 
 ```ts
   check('GVb (7) · U01: badge lớp "n bài chờ chấm" cùng tone với "Chờ chấm" ở Lịch Test (tím wait)', () => {
@@ -440,9 +440,9 @@ export const TONE_BADGE_TRANG_THAI = { 'cho-cham': 'wait', 'cho-duyet': 'wait' }
     assert(d.TONE_TRANG_THAI['cho-cham'] === 'wait' && d.TONE_BADGE_TRANG_THAI['cho-cham'] === 'wait', 'bảng tone lệch');
   });
 ```
-- [ ] **Step 2: Đỏ** (`tone 'warn'`). **Step 3: Sửa** như Files. Kiểm `toneNhanTuBadge('wait')` (`Nhan.tsx:56–59`) đã trả `TONE_TRANG_THAI['cho-duyet']` = `wait` → danh sách lớp hiện tím. Sửa assert cũ ở `hocVienLop.tests.ts`/`nenGiaoDien.tests.ts` nếu so `warn` cho `cham` (ghi `// PR-GVb U01`).
-- [ ] **Step 4: Chạy lại**; bấm thử Học viên & Lớp (GV, QL): badge chờ chấm tím, đặt cạnh Lịch Test cùng màu.
-- [ ] **Step 5: Commit** — `git commit -am "PR-GVb: chờ chấm ở danh sách lớp dùng tone wait như Lịch Test (U01)"`
+- [x] **Step 2: Đỏ** (`tone 'warn'`). **Step 3: Sửa** như Files. Kiểm `toneNhanTuBadge('wait')` (`Nhan.tsx:56–59`) đã trả `TONE_TRANG_THAI['cho-duyet']` = `wait` → danh sách lớp hiện tím. Sửa assert cũ ở `hocVienLop.tests.ts`/`nenGiaoDien.tests.ts` nếu so `warn` cho `cham` (ghi `// PR-GVb U01`).
+- [x] **Step 4: Chạy lại**; bấm thử Học viên & Lớp (GV, QL): badge chờ chấm tím, đặt cạnh Lịch Test cùng màu.
+- [x] **Step 5: Commit** — `git commit -am "PR-GVb: chờ chấm ở danh sách lớp dùng tone wait như Lịch Test (U01)"`
 
 ### Task GVb-8: Chip "Bị từ chối" = kiểu Cần làm ở mọi nơi
 
@@ -454,7 +454,7 @@ export const TONE_BADGE_TRANG_THAI = { 'cho-cham': 'wait', 'cho-duyet': 'wait' }
 - Modify: `web/src/modules/cases/CasePanel.tsx:250` (`<Nhan tone="muted">` → `<NhanTrangThai t="can-lam" chu="Bị từ chối" />`)
 - Đã đúng, không sửa: `web/src/modules/worklist/ViecCuaToi.tsx:152` (Tổng quan GV). Hộp duyệt + Yêu cầu của tôi đi qua `TheYeuCau.tsx:125` → `nhanTrangThaiYc`.
 
-- [ ] **Step 1: Phép kiểm đỏ**:
+- [x] **Step 1: Phép kiểm đỏ**:
 
 ```ts
   check('GVb (8) · "Bị từ chối" kiểu Cần làm ở hộp duyệt và Yêu cầu của tôi (cùng nhãn với Tổng quan GV)', () => {
@@ -462,9 +462,9 @@ export const TONE_BADGE_TRANG_THAI = { 'cho-cham': 'wait', 'cho-duyet': 'wait' }
     assert(n.t === 'can-lam' && n.chu === 'Bị từ chối', JSON.stringify(n));
   });
 ```
-- [ ] **Step 2: Đỏ.** **Step 3: Sửa** 3 file trên; `grep -rn "Bị từ chối" web/src` không còn chỗ dùng tone khác `can-lam`. (Quét nguồn chỉ ở bước tự kiểm này, không thành phép.)
-- [ ] **Step 4: Chạy lại; bấm thử** GV (Tổng quan GV, Yêu cầu của tôi), QL (hộp → Đã xử lý), Case có PA bị từ chối: cùng một kiểu chip.
-- [ ] **Step 5: Commit** — `git commit -am "PR-GVb: chip Bị từ chối kiểu Cần làm ở mọi nơi"`
+- [x] **Step 2: Đỏ.** **Step 3: Sửa** 3 file trên; `grep -rn "Bị từ chối" web/src` không còn chỗ dùng tone khác `can-lam`. (Quét nguồn chỉ ở bước tự kiểm này, không thành phép.)
+- [x] **Step 4: Chạy lại; bấm thử** GV (Tổng quan GV, Yêu cầu của tôi), QL (hộp → Đã xử lý), Case có PA bị từ chối: cùng một kiểu chip.
+- [x] **Step 5: Commit** — `git commit -am "PR-GVb: chip Bị từ chối kiểu Cần làm ở mọi nơi"`
 
 ### Task GVb-9: Sửa kế hoạch UX 02/10 (Q-B) và đánh dấu xong
 
@@ -472,11 +472,11 @@ export const TONE_BADGE_TRANG_THAI = { 'cho-cham': 'wait', 'cho-duyet': 'wait' }
 - Modify: `docs/superpowers/plans/2026-10-02-ux-sau-critique.md` — mục Q-B (~dòng 147–151) và J5/J5b (~104–108)
 - Modify: file này (đánh `[x]`), `plan.md` mục 14 (một dòng), `CODE_MAP.md:458`
 
-- [ ] **Step 1 (làm NGAY đầu PR, commit riêng):** thay đoạn Q-B bằng:
+- [x] **Step 1 (làm NGAY đầu PR, commit riêng):** thay đoạn Q-B bằng:
   `- **Q-B:** ĐÃ CHỐT 02/10 — **CHƯA LÀM → làm ở PR-GVb** (docs/superpowers/plans/2026-10-03-pr-gvb-cho-duyet.md). Đoạn ghi "Đã mở ở tab Tất cả…" trước đây sai: main vẫn chỉ duyệt nhiều khi lọc một phân loại (HopChoDuyet.tsx:70). Đặc tả giữ: Tất cả + "Chọn hết n" (cùng loại, ≤50), "Nhắc tất cả (n)", không nhắc lặp trong ngày, báo thành công một phần.`
   Commit: `git commit -am "Kế hoạch UX 02/10: Q-B ghi chưa làm, chuyển PR-GVb"`.
-- [ ] **Step 2 (cuối PR):** Q-B → "XONG ở PR-GVb (#…)" + giới hạn G5 (Công việc › Của GV chưa có Nhắc tất cả); J5, J5b → `[x]`; `CODE_MAP.md` dòng Hộp Chờ duyệt thêm `nhomCuaLoai`, `chonMot`, `chonHet`, `tomTatHangLoat`, `chipChoDuyet`, `nhacNhieu`, `TONE_TRANG_THAI` (shared); bỏ `dongPhuChoDuyet`.
-- [ ] **Step 3: Commit** — `git commit -am "PR-GVb: cập nhật kế hoạch, CODE_MAP"`
+- [x] **Step 2 (cuối PR):** Q-B → "XONG ở PR-GVb (#…)" + giới hạn G5 (Công việc › Của GV chưa có Nhắc tất cả); J5, J5b → `[x]`; `CODE_MAP.md` dòng Hộp Chờ duyệt thêm `nhomCuaLoai`, `chonMot`, `chonHet`, `tomTatHangLoat`, `chipChoDuyet`, `nhacNhieu`, `TONE_TRANG_THAI` (shared); bỏ `dongPhuChoDuyet`.
+- [x] **Step 3: Commit** — `git commit -am "PR-GVb: cập nhật kế hoạch, CODE_MAP"`
 
 ---
 

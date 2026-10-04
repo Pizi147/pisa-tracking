@@ -309,7 +309,9 @@ export async function runPrHvlTests(t: YThucTestKit) {
   });
 
   check('PR-HVL (3) · Chờ duyệt: số thẻ chờ theo lớp (QL/Quản trị thấy đúng số thẻ demo, GVBM 0); em có thẻ mang chip cho-duyet', () => {
-    const cho = conn.prepare(`SELECT hoc_vien_id, lop_id FROM yeu_cau_duyet WHERE trang_thai = 'cho'`).all() as any[];
+    /* PR-GVb (J5b): "chờ duyệt" chỉ thẻ QL phải quyết — Báo QL (kieuNut 'nhac') ở tab Để QL biết, không vào badge. */
+    const cho = (conn.prepare(`SELECT loai, hoc_vien_id, lop_id FROM yeu_cau_duyet WHERE trang_thai = 'cho'`).all() as any[])
+      .filter((y) => d.nhomCuaLoai(y.loai) === 'can-quyet');
     assert(cho.length > 0, 'Bộ demo phải có thẻ đang chờ');
     const mong = new Map<number, number>();
     for (const y of cho) { const l = y.lop_id ?? (y.hoc_vien_id ? lopHienTai(y.hoc_vien_id) : undefined); if (l) mong.set(l, (mong.get(l) ?? 0) + 1); }

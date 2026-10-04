@@ -6,7 +6,8 @@ Phiên bản 1.3 · 02/10/2026 · Cập nhật theo chốt mới nhất của ch
 > (đặc tả nâng cấp 27/09, các PR đến 01/10, lời chủ sản phẩm 02/10) và đã đối chiếu với code đang chạy; **mục 20 ưu tiên
 > hơn mọi mục khác khi trái**. Những chỗ sau trong mục 1–19 đã bị thay và có đánh dấu **[ĐÃ THAY — xem §20.x]**: hạn cập nhật PA
 > (Chủ nhật → hết Thứ Hai), "Dự kiến kết thúc", SOS FT điền sẵn và "Không cần theo dõi" đóng ngay, Ý thức (thang bậc: 6 bậc mạch chính rồi Report 7, 8… tăng mãi, hạn thật,
-> QL duyệt), SOS lớp thường, dấu "-" lớp thường (C08), môn lớp thường, sửa Target/lộ trình, chuyển lớp. Chữ gốc giữ nguyên làm lịch sử.
+> QL duyệt), SOS lớp thường, dấu "-" lớp thường (C08), môn lớp thường, sửa Target/lộ trình, chuyển lớp, Target/Dự kiến thi lớp thường
+> và dán Excel không cần tiêu đề (04/10, §20.1 dòng 19). Chữ gốc giữ nguyên làm lịch sử.
 >
 > **ĐỌC MỤC 19 RỒI MỤC 18 (lịch sử).** Mục 19 (tối 21/09, rulebook v3) ưu tiên hơn mục 18.
 >
@@ -249,10 +250,10 @@ Không bỏ sót các mục ngoài ba nhóm luật chính:
 | Tìm kiếm | HV, lớp và GV theo quyền; GV không tìm/xem hồ sơ chuyên môn đồng nghiệp |
 | Thêm HV | Chọn lớp trước, dán bảng vào đúng lớp đó; '-' ở thông tin nhập là thiếu dữ liệu, khác lệnh chờ bài ở ô chấm |
 | Đầu vào FT | Họ tên, ngày sinh, OVR/L/R/W/S, target, tuần bắt đầu; thông tin chưa có để thiếu hợp lệ |
-| Đầu vào Normal | OVR theo yêu cầu cũ; không ép target/lộ trình LT của FT |
+| Đầu vào Normal | OVR theo yêu cầu cũ; không ép target/lộ trình LT của FT **[BỔ SUNG 04/10 — lớp thường cũng có Target/Dự kiến thi, chỉ để theo dõi. Xem §20.1 dòng 19]** |
 | Tạo lớp | Phân công GVBM/GVCN ngay trong form; một môn một GV; GVCN dạy ít nhất một môn của lớp |
 | Chọn GV | Combobox gõ tìm; chỉ người được phân công giảng dạy tại CN, không suy từ quyền QL toàn hệ thống |
-| Thông tin HV | QL/GVCN sửa thông tin theo quyền: tên, ngày sinh, đầu vào, tư vấn viên, mục tiêu/lộ trình/thi dự kiến phù hợp chương trình. **[ĐÃ THAY 29/09 — Target và lộ trình chỉ QL sửa; GVCN "Đề xuất sửa". Xem §20.1 dòng 14]** |
+| Thông tin HV | QL/GVCN sửa thông tin theo quyền: tên, ngày sinh, đầu vào, tư vấn viên, mục tiêu/lộ trình/thi dự kiến phù hợp chương trình. **[ĐÃ THAY 29/09 — Target và lộ trình chỉ QL sửa; GVCN "Đề xuất sửa". Xem §20.1 dòng 14]** **[BỔ SUNG 04/10 — lớp thường cũng có Target/Dự kiến thi. Xem §20.1 dòng 19]** |
 | Thi thật FT | Có thể mới biết tháng, sau bổ sung tuần/ngày; không ép ngày giả và không hiện “chưa xác định tuần” cạnh tháng đã có |
 | Đổi target | Lý do và ngày hiệu lực; cùng nguồn dữ liệu giữa Thông tin HV và Lộ trình |
 | Lộ trình | QL chốt lịch MT; GVCN không có toàn quyền lịch FT chủ động chỉ vì được sửa thông tin lộ trình |
@@ -654,9 +655,10 @@ Nguồn: `thiet-ke/NGUON-Rule-v3-YThuc-PhoiHop-2026-09-21.md`. Đặc tả: `thi
 | 13 | §3.3, §10: Normal luôn đủ bốn môn L/R/W/S | **FOU** hiện L · R · **G+V** · **P**; **Pre FOU** không chia môn (một ô Tổng hợp, chỉ Cuối khoá); BE, ELE L · R · W · S | Q27-13 · `sd/normal.ts:156-163` · CODE-OK |
 | 14 | §10: QL/GVCN sửa mục tiêu, lộ trình | Chỉ **QL** sửa Target và lộ trình (`cycle.edit`, bắt lý do + ngày hiệu lực). GVCN bấm **Đề xuất sửa** (lý do ≥ 15 ký tự). GVCN vẫn tự sửa họ tên, ngày sinh, email, tuần bắt đầu, thi dự kiến | T44 · `ss/fasttrack/cycles.ts:244` · CODE-OK |
 | 15 | §10: Chuyển lớp (GVCN làm, có "Không có lưu ý") | Mọi lần chuyển lớp là **lệnh do Quản lý ra**; GVCN chỉ "Đề xuất chuyển lớp"; bàn giao có hạn riêng (mục 20.7) | Q30-1…4 · `ss/classes/lenhChuyen.ts` · CODE-OK |
-| 16 | §10: Thêm HV, '-' là thiếu dữ liệu | **Email bắt buộc khi thêm mới**; bảng dán **bắt buộc có dòng tiêu đề** chứa "Họ và tên"; dòng lỗi ở lại panel, không khoá cả lô | NHAP-1/2 · `ss/classes/intake.ts:245-250` · CODE-OK |
+| 16 | §10: Thêm HV, '-' là thiếu dữ liệu | **Email bắt buộc khi thêm mới**; bảng dán **bắt buộc có dòng tiêu đề** chứa "Họ và tên"; dòng lỗi ở lại panel, không khoá cả lô **[ĐÃ THAY 04/10 — dòng tiêu đề không bắt buộc, xem dòng 19]** | NHAP-1/2 · `ss/classes/intake.ts:245-250` · CODE-OK |
 | 17 | §19: Phối hợp SOS điền sẵn, GVCN xác nhận hoặc bỏ | Phối hợp SOS là **việc thật, một dòng mỗi lớp cho GVCN, không hạn**; chỉ sinh từ lượt Mock FT (lớp thường có việc "Báo phụ huynh qua TVV" riêng) | VAI-a·Q14 · `ss/yThuc/phoiHop.ts:307` · CODE-OK |
 | 18 | §9, §17.7: không có hộp duyệt chung | **Một hộp "Chờ duyệt"** cho Quản lý (mục 20.5) | Q27-3 · `sd/yeuCauDuyet.ts` · CODE-OK |
+| 19 | §10, K2-41/YC-5.2: lớp thường không có Target; dán Excel bắt buộc tiêu đề | **Lớp thường có Target + Dự kiến thi** (chủ sản phẩm 04/10): nhập ở Thêm học viên (lưới 6 cột: Họ tên · Ngày sinh · Email · Target · Dự kiến thi · Tuần bắt đầu) và Thông tin HV; đầu hồ sơ hiện cạnh Cuối khoá. Đổi Target bắt lý do + `cycle.edit` (GVCN: Đề xuất sửa); Dự kiến thi `student.edit`. **Không** kỳ vọng, SOS, MT, Case, việc "Điền Target" theo Target lớp thường; KCK lớp thường không loại em khỏi số liệu lớp thường. Lên lớp / học lại / chuyển giữa các lớp thường **mang theo** Target + Dự kiến thi. Dán Excel **không bắt buộc dòng tiêu đề**: không có thì đọc theo thứ tự cột lưới, panel nói rõ cách đã đọc và cho đổi bằng một nút | PR-NT · `sd/nhapHocVien.ts` (`cotLuoiNhap`, `docDongDan`) · `ss/classes/intake.ts` (`parsePaste`) · `ss/classes/luatLoTrinh.ts` · `ss/fasttrack/cycles.ts` (`apTargetLuotChuaDiem`) · CODE-OK |
 
 ### 20.2 Bảng hạn tổng hợp
 

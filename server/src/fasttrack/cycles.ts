@@ -129,7 +129,8 @@ const hienTarget = (target: number | null, kck: unknown) => (kck ? KCK : target 
  * cũ — lịch sử SOS không viết lại. Case SOS đang mở KHÔNG đụng tới (GV xử lý xong mới đóng).
  */
 function apTargetLuotChuaDiem(cycleId: number, target: number | null) {
-  db().prepare(`UPDATE assessment_attempts SET target_at_attempt = ? WHERE cycle_id = ? AND NOT ${CO_DIEM_SQL('assessment_attempts')}`)
+  /* PR-NT: Target lớp thường không bật FT (chủ sản phẩm 04/10) — chỉ lượt Mock mang target; Giữa/Cuối khoá giữ NULL. */
+  db().prepare(`UPDATE assessment_attempts SET target_at_attempt = ? WHERE cycle_id = ? AND kind = 'mock' AND NOT ${CO_DIEM_SQL('assessment_attempts')}`)
     .run(target, cycleId);
 }
 

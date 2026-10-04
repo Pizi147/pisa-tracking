@@ -2,7 +2,7 @@ import { chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
   CHO_TAO_PRE_FOU, ENTRY_SKILLS, PERMISSIONS, PROGRAMME_TEMPLATES, chuanHoaMaLop, ghepMaLop, khoaMaLopSql, kiemSoLop,
   moRongPhanCong, programmeOf, TOI_DA_DONG_TAO_LOP, type LoiDong, type Route, type SlotPhanCong,
-  KCK, NGAY_SINH_TOI_THIEU, canNamGan, laKck, docEmail, docNgayNhap, laLichSu, nhanCotNhap, lichMtMacDinh, mtDaThiChuaQua, nhanDangCot, tuanBatDauMacDinh, tuanHocCuaMt, tuanLich, type VanDeNhap,
+  KCK, NGAY_SINH_TOI_THIEU, canNamGan, laKck, docDongDan, docEmail, docNgayNhap, laDongTieuDe, laLichSu, nhanCotNhap, lichMtMacDinh, mtDaThiChuaQua, tuanBatDauMacDinh, tuanHocCuaMt, tuanLich, type CachDoc, type VanDeNhap,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { docSlots, ghiPhanCong, kiemTruocPhanCong } from './classes.ts';
@@ -25,7 +25,7 @@ import { taoMtMacDinhLo } from '../fasttrack/mtMacDinh.ts';
  * CỘT CỦA BẢNG NHẬP THEO ĐÚNG CHƯƠNG TRÌNH CỦA LỚP (mục 12.1).
  *
  *   Fast Track   Họ tên · Ngày sinh · Email · OVR · L · R · W · S · Target · Dự kiến thi · Tuần bắt đầu
- *   Lớp thường   Họ tên · Ngày sinh · Email · Tuần bắt đầu   (YC-5.2, K2-41 — bộ cột ở `cotLuoiNhap`)
+ *   Lớp thường   Họ tên · Ngày sinh · Email · Target · Dự kiến thi · Tuần bắt đầu   (chủ sản phẩm 04/10, thay K2-41 — bộ cột ở `cotLuoiNhap`)
  *
  * LỚP KHÔNG CÒN LÀ MỘT CỘT. Nó được chọn MỘT LẦN ở đầu panel, và cả lô vào lớp đó. Bản
  * trước để lớp thành một cột dán, nên một file bốn mươi dòng gõ sai mã lớp ở dòng ba mươi
@@ -33,8 +33,8 @@ import { taoMtMacDinhLo } from '../fasttrack/mtMacDinh.ts';
  * lô, không phải một ô dữ liệu lặp lại bốn mươi lần.
  *
  * KHÔNG BÀY TRƯỜNG CỦA FAST TRACK CHO LỚP NORMAL rồi bắt người dùng điền dấu '-'. Em lớp
- * Foundation không có target IELTS và không có band từng kỹ năng; hỏi là hỏi thừa, và một
- * cột thừa luôn được ai đó điền bừa.
+ * Foundation không có band đầu vào từng kỹ năng, không có MT; hỏi là hỏi thừa, và một
+ * cột thừa luôn được ai đó điền bừa. Target + Dự kiến thi thì có (04/10) — chỉ để theo dõi.
  */
 export type IntakeRow = {
   fullName?: string;
@@ -129,22 +129,31 @@ function bandOf(v: number | string | null | undefined): number | null | 'invalid
 /** Ô có dữ liệu thật (không tính trống / '-'). */
 const coDuLieu = (v: unknown) => !['', '-', '–', '—', 'n/a'].includes(String(v ?? '').trim().toLowerCase());
 
+/** Lớp chấm theo tỷ lệ (lớp thường) — chương trình quyết định bộ cột của lưới nhập. */
+function laLopThuong(programmeCode: string | null): boolean {
+  const pc = programmeCode ? programmeOf(programmeCode) ?? 'FT' : null;
+  return ((pc ? programmeByCode(pc)?.scoringMode ?? PROGRAMME_TEMPLATES[pc]?.scoringMode : null) ?? 'ielts_band') === 'ratio';
+}
+
 /**
- * Đọc TSV/CSV dán từ bảng tính. Cột nhận THEO TIÊU ĐỀ (YC-5.2), không theo thứ tự; dòng đầu bắt buộc là tiêu đề có "Họ và tên"
- * (chủ sản phẩm chốt 29/09 — file cũ chưa có cột Email mà đọc theo thứ tự thì lệch cột âm thầm).
+ * Đọc TSV/CSV dán từ bảng tính. Có dòng tiêu đề → cột nhận THEO TÊN (YC-5.2), thứ tự tuỳ ý. PR-NT (04/10): KHÔNG bắt buộc tiêu đề — không
+ * có thì đọc theo thứ tự cột lưới của đúng loại lớp (`docDongDan`), nên cần `classId`. `coTieuDe` = người dùng chọn cách đọc (bỏ đoán).
  */
-export function parsePaste(text: string): { rows: IntakeRow[]; cotBoQua: string[] } {
+export function parsePaste(text: string, o: { classId?: number | null; coTieuDe?: boolean } = {}): { rows: IntakeRow[]; cotBoQua: string[]; cach: CachDoc | null } {
   const lines = text.replace(/\r/g, '').split('\n').filter((l) => l.trim() !== '');
-  if (!lines.length) return { rows: [], cotBoQua: [] };
+  if (!lines.length) return { rows: [], cotBoQua: [], cach: null };
   const split = (l: string) => (l.includes('\t') ? l.split('\t') : l.split(',')).map((c) => c.trim());
-  const { cot, boQua } = nhanDangCot(split(lines[0]));
+  const dong = lines.map(split);
+  const lop = o.classId ? db().prepare('SELECT programme_code FROM classes WHERE id = ?').get(o.classId) as any : null;
+  const laTieuDe = o.coTieuDe ?? laDongTieuDe(dong[0]);
+  if (!laTieuDe && !lop) throw badRequest('Chọn lớp trước khi dán dữ liệu không có dòng tiêu đề — web đọc theo thứ tự cột của lớp.');
+  const { cot, batDau, cach } = docDongDan(dong, laLopThuong(lop?.programme_code ?? null), o.coTieuDe);
   if (!cot.includes('fullName')) {
-    throw badRequest('Dòng đầu phải là dòng tiêu đề, có cột "Họ và tên" (thêm Ngày sinh, Email… tuỳ bảng). Cột nhận theo tên, không theo thứ tự.');
+    throw badRequest('Dòng tiêu đề chưa có cột "Họ và tên". Thêm cột đó, hoặc bấm "Dòng đầu là học viên?" để đọc theo thứ tự cột của lưới.');
   }
   const homNay = demoToday();
   const rows: IntakeRow[] = [];
-  for (const line of lines.slice(1)) {
-    const cells = split(line);
+  for (const cells of dong.slice(batDau)) {
     const row: IntakeRow = {};
     cot.forEach((k, i) => { const v = cells[i]; if (k && v !== undefined && v !== '') (row as any)[k] = v; });
     /* Ô tuần của lưới là ô ngày thống nhất (giá trị ISO) — đổi sẵn chữ dán đọc được; đọc không được thì giữ chữ để xem trước báo lỗi. */
@@ -152,7 +161,7 @@ export function parsePaste(text: string): { rows: IntakeRow[]; cotBoQua: string[
     if (laKck(row.target)) row.target = KCK;    // Q29-1: '-' / "không cam kết" hiện thống nhất là KCK trên lưới
     if (Object.keys(row).length) rows.push(row);
   }
-  return { rows, cotBoQua: boQua };
+  return { rows, cotBoQua: cach.boQua, cach };
 }
 
 export function previewIntake(
@@ -201,9 +210,8 @@ export function previewIntake(
     };
   }
 
-  /* Chương trình quyết định bộ cột: Fast Track có band từng kỹ năng và target, Normal không. */
-  const pc = cls.programme_code ? programmeOf(cls.programme_code) ?? 'FT' : null;
-  const ratio = ((pc ? programmeByCode(pc)?.scoringMode ?? PROGRAMME_TEMPLATES[pc]?.scoringMode : null) ?? 'ielts_band') === 'ratio';
+  /* Chương trình quyết định bộ cột: Fast Track có band đầu vào từng kỹ năng, Normal không. */
+  const ratio = laLopThuong(cls.programme_code ?? null);
 
   /*
    * TUẦN BẮT ĐẦU CẢ LÔ (YC-5.4, K2-19): gửi lên thì đọc; không gửi thì mặc định (lớp thường: tuần khai giảng; FT vào muộn: tuần này).
@@ -250,8 +258,8 @@ export function previewIntake(
     else if (!email.email) loi('email', 'Chưa điền');
 
     /*
-     * OVR, BỐN BAND, TARGET, THI DỰ KIẾN — chỉ Fast Track. Lớp thường có dữ liệu ở đây là do file trộn: bỏ qua có báo (Q4),
-     * không chặn cả dòng — cùng cách với cột Lớp/Lộ trình.
+     * OVR, BỐN BAND, ĐÃ THI TỚI MT — chỉ Fast Track. Lớp thường có dữ liệu ở đây là do file trộn: bỏ qua có báo (Q4),
+     * không chặn cả dòng — cùng cách với cột Lớp/Lộ trình. Target, Dự kiến thi — mọi lớp (chủ sản phẩm 04/10).
      */
     const band: Record<string, number | null> = {};
     const COT_BAND = ['baselineScore', 'entryListening', 'entryReading', 'entryWriting', 'entrySpeaking'] as const;
@@ -264,18 +272,17 @@ export function previewIntake(
     }
 
     let target: number | typeof KCK | null = null;
-    if (ratio) { if (coDuLieu(r.target) || laKck(r.target)) luuY('target', 'Bỏ qua — lớp thường không có Target'); }
-    else if (laKck(r.target)) target = KCK;          // Q29-1: KCK / '-' = không cam kết (khác ô trống = chưa có)
+    if (laKck(r.target)) target = KCK;          // Q29-1: KCK / '-' = không cam kết (khác ô trống = chưa có)
     else {
       const t = bandOf(r.target);
       if (t === 'invalid') loi('target', 'Gõ band 0–9, bước 0,5 (ví dụ 6.5), hoặc KCK nếu em không cam kết');
-      else if (t === null) luuY('target', 'Chưa có — vẫn thêm được, bổ sung sau để tính kỳ vọng. Em không cam kết đầu ra thì gõ KCK');
+      /* Lớp thường không có kỳ vọng MT → trống Target không cần nhắc. */
+      else if (t === null) { if (!ratio) luuY('target', 'Chưa có — vẫn thêm được, bổ sung sau để tính kỳ vọng. Em không cam kết đầu ra thì gõ KCK'); }
       else target = t;
     }
 
     let examDate: string | undefined;
-    if (ratio) { if (coDuLieu(r.examDate)) luuY('examDate', 'Bỏ qua — lớp thường chưa thi IELTS'); }
-    else {
+    {
       const t = docNgayNhap(r.examDate, homNay, { choThang: true, toiThieu: homNay, toiDa: canNamGan(homNay).toiDa });
       if (t.loi) loi('examDate', t.loi);
       else examDate = t.iso ?? undefined;

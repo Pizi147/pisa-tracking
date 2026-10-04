@@ -1,4 +1,4 @@
-import { THAM_SO_TOI_DA, db, theoLo, tx } from '../db.ts';
+import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
   PERMISSIONS, luatDoiLop, tuanChonDuoc, tuanHocTai, type LoaiLop, type LuatDoiLop, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
@@ -257,14 +257,20 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
     const seq = ((conn.prepare('SELECT MAX(seq) n FROM learning_cycles WHERE student_id = ?').get(d.sid) as any)?.n ?? 0) + 1;
     const route = denLop.ft ? (toClass.route ?? curCycle?.route ?? 'LT1') : null;   // lộ trình mới = lộ trình lớp chuyển đến (M-20)
     const startPeriodId = denLop.ft ? ensurePeriod(mondayOf(d.ngay)).id : (toClass.start_period_id ?? null);
+    /* Q7: FT → FT giữ target cũ. Chủ sản phẩm 04/10 (PR-NT): lớp thường → lớp thường giữ cả Target lẫn Dự kiến thi. */
+    const giuTarget = (tuLop.ft && denLop.ft) || (!tuLop.ft && !denLop.ft);
+    const giuThi = !tuLop.ft && !denLop.ft && !d.thangThi;
     const moiId = Number(conn
       .prepare(
-        `INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, khong_cam_ket, exam_month, start_period_id, started_at, status, created_at)
-         VALUES (?,?,?,?,?,?,?,?,?, 'active', ?)`,
+        `INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, khong_cam_ket, exam_month, exam_date, exam_period_id,
+                                      start_period_id, started_at, status, created_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?, 'active', ?)`,
       )
-      .run(d.sid, seq, route, denLop.ma, mucTieu ?? (tuLop.ft && denLop.ft ? curCycle?.target_score ?? null : null),   // Q7: FT → FT giữ target cũ
-        mucTieu == null && tuLop.ft && denLop.ft && curCycle?.khong_cam_ket ? 1 : 0,   // … kể cả KCK (Q29-1)
-        d.thangThi ?? null, startPeriodId, d.ngay, nowIso()).lastInsertRowid);
+      .run(d.sid, seq, route, denLop.ma, mucTieu ?? (giuTarget ? curCycle?.target_score ?? null : null),
+        mucTieu == null && giuTarget && curCycle?.khong_cam_ket ? 1 : 0,   // … kể cả KCK (Q29-1)
+        giuThi ? curCycle?.exam_month ?? null : d.thangThi ?? null,
+        giuThi ? curCycle?.exam_date ?? null : null, giuThi ? curCycle?.exam_period_id ?? null : null,
+        startPeriodId, d.ngay, nowIso()).lastInsertRowid);
     if (denLop.ft) {
       taoMtMacDinh(moiId, { actorUserId: p.userId });   // M1: vào lớp FT / đổi LT ↔ RF = lộ trình mới có lịch MT mặc định
       if (tuLop.ft && curCycle) chuyenCaseSangLoTrinh(p.userId, d.sid, curCycle.id, moiId, route, d.ngay);   // K5-60
@@ -451,6 +457,13 @@ export function apDungCaLop(p: Principal, o: {
     }
   }
 
+  /* PR-NT (chủ sản phẩm 04/10): lên lớp / học lại lớp thường giữ Target + Dự kiến thi — đọc khoá cũ MỘT câu trước khi đóng. */
+  const khoaCu = new Map<number, any>();
+  theoLo(o.dongs.map((d) => d.sid), (lo, ph) => {
+    for (const c of conn.prepare(`SELECT student_id, target_score, khong_cam_ket, exam_month, exam_date, exam_period_id FROM learning_cycles
+                                   WHERE status = 'active' AND student_id IN (${ph})`).all(...lo) as any[]) khoaCu.set(c.student_id, c);
+  });
+
   // 4) Đóng khoá đang chạy — MỘT UPDATE (mọi dòng ở đây đều dong-mo).
   {
     const sids = o.dongs.map((d) => d.sid);
@@ -474,22 +487,25 @@ export function apDungCaLop(p: Principal, o: {
     /* Cùng một ngày hiệu lực cho cả lớp — chỉ cần MỘT lần ensurePeriod cho mọi em sang FT. */
     const ftPeriodId = o.dongs.some((d) => d.toClass.ft) ? ensurePeriod(mondayOf(o.ngay)).id : null;
 
-    const rows = o.dongs.map(() => '(?,?,?,?,?,?,?,?,\'active\',?)').join(',');
     /* PR-DUYET (T44): target chỉ nhận khi sang FT (bắt buộc có) hoặc người gọi có `cycle.edit` — như Chuyển lớp một em. */
     /* Mọi em cùng MỘT lớp nguồn → kiểm quyền một lần theo lớp (không truy vấn theo từng em, Q20). */
     const coSuaTarget = can(p, PERMISSIONS.CYCLE_EDIT, { classId: o.fromClass.id });
     /* FT→FT cũng nhận target: chỉ QL/QT gọi được (CYCLE_EDIT), vô hại — rà #117 (PR-Dọn VN03). */
-    const params = o.dongs.flatMap((d) => [
-      d.sid, (seqOf.get(d.sid) ?? 0) + 1, d.toClass.ft ? (d.toClass.route ?? 'LT1') : null, d.toClass.ma,
-      d.toClass.ft || coSuaTarget ? d.mucTieu ?? null : null, d.thangThi ?? null,
-      d.toClass.ft ? ftPeriodId : (startPeriodOf.get(d.toClassId) ?? null), o.ngay, now,
-    ]);
-    conn
-      .prepare(
-        `INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, exam_month, start_period_id, started_at, status, created_at)
-         VALUES ${rows}`,
-      )
-      .run(...params);
+    const params = o.dongs.map((d) => {
+      const mucTieu = d.toClass.ft || coSuaTarget ? d.mucTieu ?? null : null;
+      const cu = d.toClass.ft ? null : khoaCu.get(d.sid);   // lớp nguồn luôn là lớp thường → sang lớp thường thì giữ
+      const giuThi = !!cu && !d.thangThi;
+      return [
+        d.sid, (seqOf.get(d.sid) ?? 0) + 1, d.toClass.ft ? (d.toClass.route ?? 'LT1') : null, d.toClass.ma,
+        mucTieu ?? cu?.target_score ?? null, mucTieu == null && cu?.khong_cam_ket ? 1 : 0,
+        giuThi ? cu.exam_month ?? null : d.thangThi ?? null, giuThi ? cu.exam_date ?? null : null, giuThi ? cu.exam_period_id ?? null : null,
+        d.toClass.ft ? ftPeriodId : (startPeriodOf.get(d.toClassId) ?? null), o.ngay, 'active', now,
+      ];
+    });
+    /* 13 cột/em: `chenNhieuDong` tự chia lô theo trần tham số. */
+    chenNhieuDong(
+      `INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, khong_cam_ket, exam_month, exam_date, exam_period_id,
+                                    start_period_id, started_at, status, created_at)`, params);
     /* M1: em sang FT có lịch MT mặc định. INSERT nhiều dòng không trả id → đọc lại MỘT câu; tạo lượt theo lô (PR-TOC). */
     const ftSids = o.dongs.filter((d) => d.toClass.ft).map((d) => d.sid);
     if (ftSids.length) {

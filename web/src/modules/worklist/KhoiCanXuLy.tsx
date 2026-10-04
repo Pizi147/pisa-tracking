@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Card, ErrorState, NhanTrangThai, Skeleton } from '../../ui/ui.tsx';
 import { Han } from '../../ui/Han.tsx';
@@ -7,7 +7,7 @@ import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
 import { SoLieuO } from '../../ui/SoLieuO.tsx';
 import { DanhSachSoLieu } from '../../ui/SoLieu.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
-import { dongPhuChoDuyet, type ChuongTrinh, type DemYeuCau, type DiemChuY, type DongCanXuLyGoc } from '@shared/domain/index.ts';
+import { chipChoDuyet, type ChuongTrinh, type DemYeuCau, type DiemChuY, type DongCanXuLyGoc } from '@shared/domain/index.ts';
 
 /**
  * CẦN XỬ LÝ (PR-VAI-a, mockup 23 màn B, K1-06): bảng năm cột — nhãn trạng thái · việc · Người giữ việc · Hạn · nút đúng việc. Quá hạn lên
@@ -106,35 +106,31 @@ export function KhoiCanXuLy({ branchId }: { branchId: number | null }) {
 
 /**
  * DẢI CHỜ DUYỆT (PR-DUYET, K1-01, M8) — khối riêng trên Cần xử lý: số là tầng 1, một nút mở hộp. Ẩn khi hộp trống.
- * Cùng số với chip "Tất cả" và badge Công việc (`demHop`): Báo QL nằm TRONG tổng, nói rõ là "gồm".
+ * PR-GVb (J5, J5b): số lớn = thẻ PHẢI QUYẾT (cùng badge Công việc, `demHop`); dưới là MỘT hàng chip đếm (`chipChoDuyet`), mỗi chip mở hộp đã lọc.
  */
 export function DaiChoDuyet({ branchId }: { branchId: number | null }) {
   /* Cùng đường với Cần xử lý — `useApi` gộp GET đang bay nên máy chủ chỉ tính một lần (D14). Lỗi thì báo gọn, không biến mất. */
   const { data, error, reload } = useApi<Data>(branchId ? `/tong-quan/quan-ly?branchId=${branchId}` : '/tong-quan/quan-ly', [branchId]);
+  const navigate = useNavigate();
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   const d = data?.choDuyet;
-  if (!d?.cho) return null;
-  /* Q17: theo chi nhánh đang chọn; "k quá hạn" và "n Báo QL" mở hộp đã lọc đúng các thẻ đó (cùng `demHop`). */
-  const cn = branchId ? `&cn=${branchId}` : '';
-  const phu = dongPhuChoDuyet(d);
+  if (!d || (!d.cho && !d.deBiet)) return null;
+  /* Q17: theo chi nhánh đang chọn. */
+  const cn = branchId ? `cn=${branchId}` : '';
+  const chip = chipChoDuyet(d);
   return (
     <div className="card flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
       <Nhan tone="wait">Chờ duyệt</Nhan>
-      <span className="flex min-w-0 flex-1 basis-[16rem] flex-wrap items-baseline gap-x-3.5 gap-y-1 text-sm tabular-nums text-slate-300">
-        <span><b className="text-lg font-bold text-slate-100">{d.cho}</b> chờ</span>
-        {d.quaHan > 0 && (
-          <Link to={`/cong-viec/cho-duyet?qua-han=1${cn}`} className="no-underline text-slate-300 hover:underline max-sm:py-3 max-sm:-my-3">
-            <b className="text-lg font-bold text-late">{d.quaHan}</b> quá hạn
-          </Link>
-        )}
-        {d.baoLen > 0 && (
-          <Link to={`/cong-viec/cho-duyet?phan=bao-len${cn}`} className="no-underline text-slate-300 hover:underline max-sm:py-3 max-sm:-my-3">
-            gồm <b className="text-lg font-bold text-slate-100">{d.baoLen}</b> Báo QL
-          </Link>
-        )}
-        {phu && <span className="basis-full text-xs text-slate-500 sm:basis-auto">{phu}</span>}
+      <span className="text-sm tabular-nums text-slate-300"><b className="text-lg font-bold text-slate-100">{d.cho}</b> chờ duyệt</span>
+      <span className="flex min-w-0 flex-1 basis-[16rem] flex-wrap items-center gap-1.5 tabular-nums">
+        {chip.map((c) => (
+          <Nhan key={c.key} tone={c.quaHan ? 'bad' : c.key === 'de-biet' ? 'muted' : 'wait'} title={`Mở hộp: ${c.nhan}`}
+            onClick={() => navigate(`/cong-viec/cho-duyet${c.den}${cn ? `&${cn}` : ''}`)}>
+            {c.nhan} {c.so}
+          </Nhan>
+        ))}
       </span>
-      <Link to={`/cong-viec/cho-duyet${cn ? `?${cn.slice(1)}` : ''}`} className="btn btn-sm btn-primary min-h-[44px] no-underline sm:min-h-0">Mở hộp duyệt</Link>
+      <Link to={`/cong-viec/cho-duyet${cn ? `?${cn}` : ''}`} className="btn btn-sm btn-primary min-h-[44px] no-underline sm:min-h-0">Mở hộp duyệt</Link>
     </div>
   );
 }
