@@ -1,6 +1,6 @@
 /**
  * PR-MT (T34, T78, K5-22, K5-67): một cột `assessment_attempts.lich_su` (MT lịch sử, lưu lúc tạo). KHÔNG đổi dòng nào — lượt đang có
- * giữ `0` (đã chạy theo luật cũ, không ai bị tính lại nợ ngược). Hai hàm đọc dưới chỉ để `chay-thu:mt` báo, không sửa.
+ * giữ `0` (đã chạy theo luật cũ, không ai bị tính lại nợ ngược). Hai hàm đọc dưới chỉ đọc (phép kiểm PR-MT dùng).
  */
 import { CO_DIEM_SQL } from '../../../shared/domain/index.ts';
 

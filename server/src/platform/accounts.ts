@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { db, tx } from '../db.ts';
-import { ENTRY_SKILLS, PERMISSIONS, duocCapRieng } from '../../../shared/domain/index.ts';
+import { ENTRY_SKILLS, PERMISSIONS, duocCapRieng, lyDoCamCapRieng } from '../../../shared/domain/index.ts';
 import { badRequest, chuTuDo, forbidden, notFound, nowIso, padCode } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { notify, writeAudit } from './audit.ts';
@@ -448,9 +448,15 @@ export function setUserPermissions(p: Principal, userId: number, items: {
    * và quyền chỉ suy ra (`class.assign_subject`) không bao giờ cấp riêng, dù web có gửi lên.
    */
   const branchOf = new Map((conn.prepare('SELECT id, code FROM branches').all() as any[]).map((b) => [String(b.code).toUpperCase(), b.id as number]));
+  /* PR-SO (04/10): vai đang hoạt động của người được cấp — người chỉ có vai GV không cấp riêng được `plan.week` (`CAM_CAP_VAI`). */
+  const vai = (conn.prepare(
+    `SELECT DISTINCT r.key FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = ? AND ur.status = 'active'`,
+  ).all(userId) as any[]).map((r) => String(r.key));
   const sach = items.map((it: any) => {
     const permission = String(it?.permission ?? '');
     if (!duocCapRieng(permission)) throw badRequest(`Quyền này không cấp riêng được: "${permission}".`);
+    const cam = lyDoCamCapRieng(vai, permission);
+    if (cam) throw badRequest(cam);
     const code = it?.branchCode ? String(it.branchCode).toUpperCase() : null;
     if (code && !branchOf.has(code)) throw badRequest(`Không có chi nhánh mã "${it.branchCode}".`);
     const note = it?.note == null ? null : String(it.note).trim() || null;

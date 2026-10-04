@@ -3,11 +3,10 @@ import multer from 'multer';
 import { db, isInitialised } from '../db.ts';
 import { laBanChinh } from '../moiTruong.ts';
 import {
-  ENTRY_SKILLS, THEO_DONG, tenMonNgan,
+  ENTRY_SKILLS, THEO_DONG, tenMonNgan, canNamGan, docBoLocXuatMt, kiemGhiRoKhac, laKhac, soSanhLop, transferReasonText,
   PERMISSIONS, ROLE_LABEL, WORK_SCOPES, chuongTrinhTuThamSo, ctTuyChon, khoangTuThamSo, thamSoNguoi, tuDauKhoang,
   type Role, type TheoDong, type WorkScope,
 } from '../../../shared/domain/index.ts';
-import { canNamGan, docBoLocXuatMt, kiemGhiRoKhac, laKhac, soSanhLop, transferReasonText } from '../../../shared/domain/index.ts';
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
 import { HttpError, badRequest, chuTuDo, forbidden, isIsoDate, notFound, toInt } from '../util.ts';
 import { SESSION_COOKIE, createSession, destroySession, principalOf, requireAuth } from '../auth.ts';

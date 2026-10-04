@@ -1,6 +1,6 @@
 import { db } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
-import { ATTEMPT_KIND_SHORT, addDaysIso, baiId, duongCase, duongDotTest, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, metricById, tachBaiId, tenMon, tenMonNgan, tuanLich, type AttemptKind, type ChiSo, type ChuongTrinh } from '../../../shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, addDaysIso, daiDienNhomBoTro, baiId, duongCase, duongDotTest, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, metricById, tachBaiId, tenMon, tenMonNgan, tuanLich, type AttemptKind, type ChiSo, type ChuongTrinh } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { classScopeSql, scopeFor, type Principal, type Scope } from '../permissions.ts';
 import { badRequest, forbidden, HttpError, notFound } from '../util.ts';
@@ -384,34 +384,33 @@ const RUNNING = `('planned','started')`;
  * làm" (F11) — đây là hạn cập nhật KẾT QUẢ, không phải hạn thực hiện.
  */
 function overdueUpdatePlans(caseIds: number[], today: string): { ids: number[]; chiTiet: NonNullable<MetricResult['chiTiet']> } {
-  const ids: number[] = [];
-  const chiTiet: NonNullable<MetricResult['chiTiet']> = new Map();
+  const rows: any[] = [];
   for (let i = 0; i < caseIds.length; i += 400) {
     const chunk = caseIds.slice(i, i + 400);
     /*
      * PR-VAI-a (Q24–Q25): hạn + người thực hiện (không có thì người phụ trách Case) trong CÙNG câu. PR-Dọn: CÙNG tập với việc
-     * "Ghi kết quả PA" ở Công việc — em đang học (Tạm dừng dừng hạn, K3-41) và PA bổ trợ chung một dòng mỗi nhóm (id nhỏ nhất).
+     * "Ghi kết quả PA" ở Công việc — em đang học (Tạm dừng dừng hạn, K3-41). PR-SO (D2): PA bổ trợ chung chọn đại diện nhóm
+     * bằng `daiDienNhomBoTro` SAU khi gom mọi lô (nhóm có thể trải hai lô) — cùng hàm với Công việc.
      */
-    for (const r of db()
+    rows.push(...db()
       .prepare(
-        `SELECT iv.id, iv.action_due, COALESCE(iv.performer_user_id, sc.owner_user_id) AS nguoi FROM case_interventions iv
+        `SELECT iv.id, iv.kind, iv.nhom_bo_tro, iv.action_due, COALESCE(iv.performer_user_id, sc.owner_user_id) AS nguoi FROM case_interventions iv
            JOIN sos_cases sc ON sc.id = iv.case_id
            LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
            JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id) AND ${HV_DANG_HOC_SQL('s')}
           WHERE iv.case_id IN (${chunk.map(() => '?').join(',')})
-            AND (iv.kind != 'bo_tro' OR iv.nhom_bo_tro IS NULL
-                 OR iv.id = (SELECT MIN(i2.id) FROM case_interventions i2 WHERE i2.nhom_bo_tro = iv.nhom_bo_tro AND i2.status IN ${RUNNING}
-                               AND COALESCE(i2.approval_state, '') != 'pending' AND i2.action_due IS NOT NULL AND i2.action_due < ?))
             AND iv.status IN ${RUNNING}
             AND COALESCE(iv.approval_state, '') != 'pending'
             AND ${NOT_UNCONFIRMED_PRESET('iv')}
-            AND iv.action_due IS NOT NULL AND iv.action_due < ?
-          ORDER BY iv.id`,
+            AND iv.action_due IS NOT NULL AND iv.action_due < ?`,
       )
-      .all(...chunk, today, today) as any[]) {
-      ids.push(r.id);
-      chiTiet.set(r.id, { nguoi: r.nguoi ? [r.nguoi] : [], han: [r.action_due] });
-    }
+      .all(...chunk, today) as any[]);
+  }
+  const ids: number[] = [];
+  const chiTiet: NonNullable<MetricResult['chiTiet']> = new Map();
+  for (const r of daiDienNhomBoTro(rows).sort((a, b) => a.id - b.id)) {
+    ids.push(r.id);
+    chiTiet.set(r.id, { nguoi: r.nguoi ? [r.nguoi] : [], han: [r.action_due] });
   }
   return { ids, chiTiet };
 }

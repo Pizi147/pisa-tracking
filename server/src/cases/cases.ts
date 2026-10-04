@@ -409,7 +409,7 @@ export function reportIssue(p: Principal, input: {
   ownerUserId?: number | null;
   /**
    * NHẬP BÙ MỘT CASE ĐÃ XONG TỪ LÂU (PR-C Task 3, mục 10.3–10.4) — cờ chảy suốt cả chuỗi
-   * `reportIssue` → `recordIntervention` → `completeIntervention` → `closeCaseOutcome`.
+   * `reportIssue` → `recordIntervention` → `closeCaseOutcome`.
    *
    * Ba việc khác hẳn đường thường khi cờ này bật:
    *   · `origin_kind = 'backfill'` thay vì `'teacher_report'` — chốt 7, phân biệt được ghi
@@ -1043,86 +1043,6 @@ export function respondToPlan(p: Principal, interventionId: number, input: {
 }
 
 /**
- * ĐÁNH DẤU MỘT PHƯƠNG ÁN ĐÃ LÀM XONG — kèm NGÀY THỰC HIỆN.
- *
- * Đây là thao tác của mục 7.15: phương án thuộc Case Ý thức/Khác thường chỉ cần đúng hai
- * thứ này, ghi chú tuỳ chọn. Phương án học thuật cũng dùng chung đường này, rồi mới hẹn
- * ngày xem lại nếu cần.
- *
- * Bản trước, hai việc trao đổi có đường ghi riêng ở bảng Liên hệ, còn phương án hỗ trợ thì
- * KHÔNG có cách nào đánh dấu đã xong — chỉ ghi thêm một phương án mới. Nay một đường cho
- * tất cả.
- *
- * NGÀY KHÔNG ĐƯỢC Ở TƯƠNG LAI: ghi "đã làm" cho một ngày chưa tới là ghi một việc chưa xảy
- * ra, và mọi thống kê "đã hỗ trợ bao nhiêu em" sẽ đếm nhầm.
- */
-export function completeIntervention(p: Principal, interventionId: number, input: {
-  doneOn?: string | null; note?: string | null;
-  performerSelf?: boolean; performerUserId?: number | null; performerName?: string | null;
-}) {
-  const conn = db();
-  const iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(interventionId) as any;
-  if (!iv) throw notFound('Không tìm thấy phương án.');
-  const c = loadCase(iv.case_id);
-  require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
-    'Bạn không có quyền cập nhật phương án của Case này.');
-
-  if (iv.preset === 1 && !iv.confirmed_at) {
-    throw badRequest('Phương án điền sẵn này chưa được xác nhận — xác nhận (hoặc sửa / thay) trước khi ghi việc đã làm.');
-  }
-  if (iv.approval_state === 'pending') {
-    throw badRequest('Phương án này đang chờ Quản lý duyệt, chưa ghi là đã làm được.');
-  }
-  const doneOn = input.doneOn ?? demoToday();
-  /* PR-S3F #8 (T22): PA theo quy chế không khép sớm — chỉ khép ở lần ghi cuối (Ghi kết quả cuối), khi đã tới mốc. */
-  if (iv.preset === 1 && !laLanGhiCuoi({ preset: true, followupDue: iv.followup_due ?? null, actionDue: iv.action_due ?? null }, isIsoDate(doneOn) ? doneOn : demoToday())) {
-    throw badRequest('PA theo quy chế chưa tới mốc kết thúc — ghi kết quả từng tuần ở "Ghi kết quả PA"; PA chỉ khép ở lần ghi cuối.');
-  }
-  if (!isIsoDate(doneOn)) throw badRequest('Ngày thực hiện không hợp lệ.');
-  if (doneOn > demoToday()) throw badRequest('Không ghi được ngày thực hiện ở tương lai.');
-
-  return tx(() => {
-    /*
-     * NGƯỜI THỰC HIỆN chỉ ghi khi có lời khai rõ ràng. Người ghi vào hệ thống và người làm
-     * là hai vai khác nhau: Admin ghi hộ việc CS gọi phụ huynh thì người làm là CS.
-     */
-    const performerUserId = input.performerSelf ? p.userId : (input.performerUserId ?? iv.performer_user_id);
-    /* PR-S2 (S2): ghi chú KHÔNG ghi đè mô tả PA nữa (trước đây là ghi đè mất dấu). Ghi chú nằm ở hành trình và audit bên dưới. */
-    conn
-      .prepare(
-        `UPDATE case_interventions
-            SET status = 'completed', completed_date = ?,
-                started_date = COALESCE(started_date, ?),
-                performer_user_id = ?, performer_name = COALESCE(?, performer_name),
-                updated_at = ?
-          WHERE id = ?`,
-      )
-      .run(doneOn, doneOn, performerUserId ?? null, input.performerName ?? null,
-           nowIso(), interventionId);
-
-    /*
-     * Case còn ở "chưa ai làm gì" mà vừa có một việc xong thì nó đang được xử lý — đổi
-     * trạng thái để nó rời khỏi hàng đợi "chưa có phương án". Case đã đóng thì KHÔNG mở lại
-     * chỉ vì ai đó ghi bù một việc cũ.
-     */
-    dongBoTrangThaiCase(iv.case_id);
-
-    addJourney({
-      studentId: c.eff_student_id, cycleId: c.eff_cycle_id,
-      eventType: 'intervention', eventDate: doneOn,
-      title: `Đã làm: ${INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] ?? iv.kind}`,
-      detail: input.note ?? iv.description ?? null,
-      refTable: 'case_interventions', refId: interventionId, createdBy: p.userId,
-      dedupKey: `iv-done:${interventionId}`,
-    });
-    writeAudit({ actorUserId: p.userId, action: 'case.intervention.complete',
-      entityType: 'case_intervention', entityId: interventionId,
-      entityLabel: iv.description ?? iv.kind, after: { doneOn, note: input.note ?? null } });
-    return caseDetail(p, iv.case_id);
-  });
-}
-
-/**
  * NHẬP BÙ MỘT CASE ĐÃ XỬ LÝ XONG TỪ LÂU (PR-C Task 3, mục 10.3–10.4).
  *
  * Ghi lại trí nhớ, không phải một sự kiện mới — nên gọi lại ĐÚNG BA hàm của đường thường
@@ -1130,11 +1050,7 @@ export function completeIntervention(p: Principal, interventionId: number, input
  * cờ `backfill: true` chảy suốt `reportIssue`/`recordIntervention`. Không viết đường ghi
  * database song song — trùng luật là cách sinh ra lỗi lệch giữa hai đường.
  *
- * KHÁC MỘT CHỖ SO VỚI CÂU CHỮ GỐC Ở `plan.md`: chuỗi gốc viết là `recordIntervention` →
- * `completeIntervention`, nhưng `recordIntervention` đã tự nhận đủ `startedDate`/
- * `completedDate`/`status: 'completed'` trong MỘT lần gọi — gọi thêm `completeIntervention`
- * sau đó chỉ tạo thêm một dòng hành trình "Đã làm: …" trùng lặp với dòng "Hỗ trợ: …" đã có,
- * không thêm thông tin gì mới. Bỏ bước thừa đó, ghi rõ ở đây để không ai tưởng là bỏ sót.
+ * `recordIntervention` tự nhận đủ `startedDate`/`completedDate`/`status: 'completed'` trong MỘT lần gọi — không cần bước "đã làm" riêng.
  */
 export function backfillCase(p: Principal, input: {
   studentId: number; cycleId?: number | null;

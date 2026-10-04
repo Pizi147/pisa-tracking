@@ -84,6 +84,9 @@ export function raiseSignal(input: {
   const existing = key ? (conn.prepare('SELECT * FROM case_signals WHERE dedup_key = ?').get(key) as SignalRow | undefined) : undefined;
 
   if (existing) {
+    /* PR-SO: em đã kết thúc học → tín hiệu đã thu hồi KHÔNG mở lại (sửa điểm cũ không sinh việc xác minh cho em đã nghỉ). */
+    if (existing.status === 'withdrawn'
+      && (conn.prepare('SELECT status FROM students WHERE id = ?').get(existing.student_id) as any)?.status === 'finished') return existing;
     if (existing.status === 'withdrawn') {
       const raisedOn = input.raisedOn ?? demoToday();
       conn

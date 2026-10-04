@@ -90,6 +90,16 @@ export function lyDoCamVai(roleKey: string, quyen: string): string | null {
   return CAM_CAP_VAI[roleKey]?.find((x) => x.quyen === quyen)?.lyDo ?? null;
 }
 
+/**
+ * PR-SO (04/10): lý do không cấp RIÊNG quyền `quyen` cho người có các vai `roleKeys` (đang hoạt động), hoặc null. Chỉ cấm khi người đó có
+ * vai và MỌI vai đều cấm quyền này (người vừa GV vừa Quản lý vẫn cấp được). Máy chủ chặn bằng hàm này; web đọc cùng hàm để khoá ô.
+ */
+export function lyDoCamCapRieng(roleKeys: readonly string[], quyen: string): string | null {
+  if (!roleKeys.length) return null;
+  const lyDo = roleKeys.map((v) => CAM_CAP_VAI[v]?.find((x) => x.quyen === quyen)?.lyDo ?? null);
+  return lyDo.every(Boolean) ? lyDo[0] : null;
+}
+
 const TAT_CA = new Set<string>(Object.values(PERMISSIONS));
 
 /** Cấp riêng được không: có trong `PERMISSIONS`, không thuộc `KHONG_CAP_RIENG`, không phải quyền chỉ suy ra. */

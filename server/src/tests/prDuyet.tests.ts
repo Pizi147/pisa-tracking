@@ -53,25 +53,16 @@ export async function runPrDuyetTests(t: YThucTestKit) {
 
   const mig: any = await import('../migrate/prDuyet.ts');
   const { conn, TODAY } = t;
-  check('DUYET (2) · migrate hai lần: lần hai không thêm thẻ; PA chờ đều có thẻ, PA huỷ/Case đóng không; chạy thử chỉ đọc', () => {
+  check('DUYET (2) · migrate hai lần: lần hai không thêm thẻ; PA huỷ/Case đóng không có thẻ (PR-SO: bước chép thẻ từ luồng cũ + chạy thử đã gỡ)', () => {
     const dem = () => (conn.prepare('SELECT COUNT(*) n FROM yeu_cau_duyet').get() as any).n as number;
     const lan1: string[] = []; mig.migratePrDuyet(conn, lan1);
     const sau1 = dem();
     const lan2: string[] = []; mig.migratePrDuyet(conn, lan2);
     assert(dem() === sau1 && lan2.length === 0, `lần hai: ${sau1} → ${dem()} · ${lan2.join(' · ')}`);
-    const thieu = conn.prepare(`SELECT iv.id FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
-      WHERE iv.approval_state = 'pending' AND iv.status != 'cancelled' AND sc.status != 'done'
-        AND NOT EXISTS (SELECT 1 FROM yeu_cau_duyet y WHERE y.loai = 'de_xuat_pa' AND y.doi_tuong_id = iv.id AND y.trang_thai = 'cho')`).all() as any[];
-    assert(thieu.length === 0, `PA chờ thiếu thẻ: ${thieu.map((x) => x.id).join(',')}`);
     const thua = conn.prepare(`SELECT y.id FROM yeu_cau_duyet y JOIN case_interventions iv ON iv.id = y.doi_tuong_id
       JOIN sos_cases sc ON sc.id = iv.case_id
       WHERE y.loai = 'de_xuat_pa' AND y.trang_thai = 'cho' AND (iv.status = 'cancelled' OR sc.status = 'done')`).all() as any[];
     assert(thua.length === 0, `thẻ của PA huỷ/Case đóng: ${thua.map((x) => x.id).join(',')}`);
-    const doiThieu = (conn.prepare(`SELECT COUNT(*) n FROM skill_move_requests r WHERE r.status = 'pending'
-      AND NOT EXISTS (SELECT 1 FROM yeu_cau_duyet y WHERE y.loai = 'lich_thi' AND y.doi_tuong_id = r.id AND y.trang_thai = 'cho')`).get() as any).n;
-    assert(doiThieu === 0, `đề nghị dời thiếu thẻ: ${doiThieu}`);
-    const kh = mig.keHoachDuyet(conn);
-    assert(kh.mauPa.length === 0 && kh.mauDoi.length === 0 && typeof kh.gvcnMatQuyen === 'number' && dem() === sau1, 'chạy thử sau migrate: 0 thẻ mới, không ghi');
   });
 
   // ---------------------------------------------------------------- khối 3: lõi hộp, dùng một loại GIẢ đăng ký tạm
