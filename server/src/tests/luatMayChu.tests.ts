@@ -532,7 +532,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
 
   console.log('\nPR-S1 · 11. RB-6 — GVCN chỉ hoàn thành Case đúng môn mình dạy; Quản lý hoàn thành mọi Case trong phạm vi');
 
-  check('RB-6 · GVCN MB FT 101 (dạy L, R): hoàn thành được Case Listening, KHÔNG được Case Speaking; Quản lý được cả hai; GVBM Speaking không (luật cũ giữ)', () => {
+  check('RB-6 · GVCN MB FT 101 (dạy L, R): hoàn thành được Case Listening, KHÔNG được Case Speaking; Quản lý được cả hai; GVBM Speaking chỉ Case Speaking (PR-QU)', () => {
     const hv = taoHocVien({ classCode: 'MB FT 101', weekStart: '2026-09-07' });
     const mk = (topic: string) => cases.reportIssue(P.mbManager, {
       studentId: hv.sid, topic, title: `Case ${topic} (RB-6)`, summary: 'Case dựng riêng cho phép kiểm quyền hoàn thành Case.',
@@ -543,7 +543,9 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     assert(cases.canCloseCase(P.coreTeacher, ctx('listening')) === true, 'GVCN phải hoàn thành được Case môn mình dạy');
     assert(cases.canCloseCase(P.coreTeacher, ctx('speaking')) === false, 'GVCN hoàn thành được Case môn khác (4.15)');
     assert(cases.canCloseCase(P.mbManager, ctx('speaking')) === true, 'Quản lý phải hoàn thành được');
-    assert(cases.canCloseCase(P.sTeacher, ctx('speaking')) === false, 'GVBM không kiêm GVCN vẫn không hoàn thành Case (luật cũ)');
+    /* PR-QU (chủ sản phẩm 04/10): GVBM hoàn thành được Case ĐÚNG môn mình dạy, không được Case môn khác. */
+    assert(cases.canCloseCase(P.sTeacher, ctx('speaking')) === true, 'GVBM Speaking phải hoàn thành được Case Speaking (PR-QU)');
+    assert(cases.canCloseCase(P.sTeacher, ctx('listening')) === (P.sTeacher.userId === P.coreTeacher.userId), 'GVBM Speaking hoàn thành được Case Listening');
     assertThrows(() => cases.closeCaseOutcome(P.coreTeacher, sp.id, { outcome: 'improved', note: 'Em đã tiến bộ rõ ở phần nói.' }),
       /Quản lý|GVCN/, 'GVCN hoàn thành Case Speaking qua đường chốt kết quả');
     const card = (cases.skillSupportBoard(P.coreTeacher, hv.sid) as any).rows.flatMap((r: any) => r.cases);

@@ -49,15 +49,15 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'deadline.override', 'attempt.view', 'score.override', 'case.view', 'sos.report', 'sos.edit',
     'case.close', 'case.approve',
     'violation.record', 'discipline.manage', 'discipline.stats',
-    'class.assign', 'class.edit', 'student.view', 'student.edit',
+    'class.assign', 'class.edit', 'class.create', 'student.view', 'student.edit',
     'meeting.view', 'meeting.edit', 'admin.config', 'request.approve', 'cycle.edit',
   ],
   // Quản lý: chốt TUẦN của mọi lượt MT trong chi nhánh mình.
   manager: [
     'plan.week', 'schedule.move', 'attempt.cancel', 'attempt.skip_skill',
     'deadline.override', 'attempt.view',
-    // Quản lý đóng được case trong chi nhánh mình; GVCN đóng case lớp mình (kiểm theo phân công).
-    'case.view', 'sos.report', 'sos.edit', 'case.close', 'case.approve', 'class.assign', 'class.edit',
+    // Quản lý đóng được mọi Case trong chi nhánh mình; giáo viên đóng theo phân công (`teacherAllows`, PR-QU).
+    'case.view', 'sos.report', 'sos.edit', 'case.close', 'case.approve', 'class.assign', 'class.edit', 'class.create',
     'violation.record', 'discipline.manage', 'discipline.stats',
     'student.view', 'student.edit', 'meeting.view', 'meeting.edit', 'request.approve', 'cycle.edit',
   ],
@@ -75,8 +75,12 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
    * Ý thức (PR-J): `violation.record` rộng như `sos.report` — mọi giáo viên dạy lớp đó đều ghi được vi phạm. `discipline.manage`
    * bị `teacherAllows` siết xuống đúng GVCN của lớp. Giáo viên KHÔNG có `discipline.stats` — thống kê cả chi nhánh là của Quản lý.
    */
+  /*
+   * PR-QU (chủ sản phẩm 04/10): `case.close` — `teacherAllows` siết: Case học thuật đúng môn mình dạy, Case Ý thức chỉ GVCN.
+   * KHÔNG có `class.create` (cấp riêng được) và KHÔNG có `class.assign_subject` (quyền suy ra từ phân công GVCN).
+   */
   teacher: ['attempt.view', 'score.edit', 'estimate.edit', 'schedule.move',
-    'case.view', 'sos.report', 'sos.edit', 'student.view', 'student.edit',
+    'case.view', 'sos.report', 'sos.edit', 'case.close', 'student.view', 'student.edit',
     'violation.record', 'discipline.manage'],
 };
 

@@ -2487,7 +2487,7 @@ check('[9.1] Hai tab cập nhật kết quả: theo dõi tiếp thì không ph�
     'Không tạo phương án mới');
 });
 
-check('Chỉ GVCN của lớp và Quản lý mới đóng được case', () => {
+check('Đóng Case: Quản lý; GVCN (Ý thức + môn mình dạy); GVBM chỉ đúng môn mình dạy (PR-QU)', () => {
   /*
    * AUTH-01: `recordIntervention` nay đòi ĐÚNG kỹ năng mình dạy, nên case dựng ở đây phải
    * đúng kỹ năng của `P.subjectTeacher` — không cứng "listening" như trước AUTH-01.
@@ -2500,17 +2500,19 @@ check('Chỉ GVCN của lớp và Quản lý mới đóng được case', () => 
     primaryCode: domain.issuesForTopic(subjectSkill)[0].code,
     studentId: someStudent.id, topic: subjectSkill, summary: 'Thử quyền đóng — mô tả cụ thể cho phép kiểm này.', idempotencyKey: 'test-report-7', parallel: true,
   }) as any;
-  // Giáo viên bộ môn ghi nhận được nhưng không đóng.
+  /* PR-QU (chủ sản phẩm 04/10): GVBM đóng được Case ĐÚNG môn mình dạy — quyền qua, chỉ còn bị chặn vì chưa có phương án. */
   assertThrows(
     () => cases.setDisposition(P.subjectTeacher, c.id, { status: 'done', disposition: 'no_action' }),
-    /chủ nhiệm|Quản lý/, 'Giáo viên bộ môn đóng được case',
+    /Chưa hoàn thành Case được/, 'GVBM đóng Case đúng môn: phải qua quyền, chỉ bị chặn vì chưa có phương án',
   );
+  assert(cases.canCloseCase(P.subjectTeacher, { class_id: mbClass, student_id: someStudent.id, topic: subjectSkill }),
+    'GVBM phải đóng được Case đúng môn mình dạy (PR-QU)');
   assert(cases.canCloseCase(P.mbManager, { class_id: mbClass, student_id: someStudent.id }),
     'Quản lý phải đóng được case trong chi nhánh');
   assert(cases.canCloseCase(P.coreTeacher, { class_id: mbClass, student_id: someStudent.id }),
     'GVCN phải đóng được case lớp mình');
   assert(!cases.canCloseCase(P.subjectTeacher, { class_id: mbClass, student_id: someStudent.id }),
-    'Giáo viên bộ môn không được đóng case');
+    'Giáo viên bộ môn không được đóng Case Ý thức (không kỹ năng)');
   // Nhưng vẫn ghi nhận hỗ trợ được.
   cases.recordIntervention(P.subjectTeacher, c.id, {
     kind: 'teaching_adjust', description: 'Chữa kỹ hơn phần task 1',
@@ -7227,19 +7229,22 @@ check('Nhập bù · Ghi chú kết luận bắt buộc ngay ở máy chủ, kh�
   assert((conn.prepare('SELECT COUNT(*) n FROM sos_cases').get() as any).n === before, 'Ghi chú quá ngắn bị từ chối mà vẫn để lại một case');
 });
 
-check('Nhập bù · Chỉ GVCN/Quản lý mới CHỐT được — GVBM sai vai bị chặn, không tạo case nửa vời', () => {
+check('Nhập bù · Chỉ người đóng được Case mới CHỐT được — GVBM trái môn bị chặn, không tạo case nửa vời (PR-QU: GVBM đúng môn thì được)', () => {
   const enr8 = conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' LIMIT 1`)
     .get(mbClass) as any;
   const before = (conn.prepare('SELECT COUNT(*) n FROM sos_cases').get() as any).n;
+  const day = new Set((conn.prepare(`SELECT skill FROM teacher_assignments WHERE class_id = ? AND user_id = ? AND status = 'active' AND skill IS NOT NULL`)
+    .all(mbClass, P.subjectTeacher.userId) as any[]).map((r) => r.skill));
+  const traiMon = domain.ENTRY_SKILLS.find((k: string) => !day.has(k)) as string;
   assertThrows(() => cases.backfillCase(P.subjectTeacher, {
     studentId: enr8.student_id, cycleId: backfillCycle?.id,
-    topic: authSubjectSkill,
-    primaryCode: domain.issuesForTopic(authSubjectSkill)[0].code,
-    title: `${authSubjectSkill}: nhập bù bởi GVBM`, summary: 'GVBM tự nhập bù case kỹ năng mình dạy, nhưng không có quyền chốt.',
+    topic: traiMon,
+    primaryCode: domain.issuesForTopic(traiMon)[0].code,
+    title: `${traiMon}: nhập bù bởi GVBM trái môn`, summary: 'GVBM tự nhập bù case kỹ năng mình KHÔNG dạy, nên không có quyền chốt.',
     fromDate: '2026-01-20', toDate: '2026-01-25',
     actions: [{ ketQua: 'improved', description: 'Ôn bài với em', performerName: 'GV bộ môn', fromDate: '2026-01-20', toDate: '2026-01-25' }],
     outcome: 'improved', note: 'GVBM tự nhập, phải bị chặn ở bước chốt kết quả.',
-  }), /chủ nhiệm|Quản lý/, 'GVBM (không phải GVCN) tự chốt được case nhập bù');
+  }), /chủ nhiệm|Quản lý/, 'GVBM trái môn tự chốt được case nhập bù');
   const after = (conn.prepare('SELECT COUNT(*) n FROM sos_cases').get() as any).n;
   assert(before === after, 'GVBM bị chặn ở bước chốt nhưng vẫn để lại một case dở dang — cả chuỗi phải cùng một giao dịch');
 });
@@ -9056,6 +9061,10 @@ runPrHk1Tests({ check, assert });
 // ==================================================================== PR-PH (phiên đăng nhập không báo đăng xuất giả)
 const { runPrPhTests } = await import('./prPh.tests.ts');
 runPrPhTests({ check, assert });
+
+// ==================================================================== PR-QU (quyền tạo lớp, GVCN phân công, tạo lớp hàng loạt, Quản trị quyền)
+const { runPrQuTests } = await import('./prQu.tests.ts');
+await runPrQuTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0

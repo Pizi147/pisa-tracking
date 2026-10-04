@@ -38,7 +38,7 @@ export type HoSoLop = {
   dai: DaiLop | null;
   status?: string; finishedAt?: string | null;
   viewer: {
-    canPlanWeek: boolean; canAddStudents: boolean; canAssign: boolean; canEditProgress: boolean;
+    canPlanWeek: boolean; canAddStudents: boolean; canAssign: boolean; canAssignSubject?: boolean; canEditProgress: boolean;
     editableSkills: string[]; isCoreTeacher: boolean;
     canReportCase: boolean; canRecordViolation: boolean; canEnterScores: boolean;
     /** PR-LT: nút Chuyển tiếp lớp/badge — cùng luật CLASS_EDIT với canEditProgress, tên riêng cho rõ ý. */
@@ -112,7 +112,8 @@ export function DauTrangLop({ data, periodId, onViec, onBanGiao }: {
     ...(thuong && data.viewer.coTheChuyenTiep ? [{ key: 'chuyen-tiep', nhan: 'Chuyển tiếp lớp…', onChon: () => onViec('chuyen-tiep') }] : []),
     ...(!thuong && data.dai?.viewer.coTheChuyenNhieuEm ? [{ key: 'chuyen-tiep', nhan: 'Chuyển tiếp lớp…', onChon: () => onViec('chuyen-tiep') }] : []),
     ...phu.slice(2).map((x) => ({ key: x.key, nhan: x.nhan, onChon: x.lam })),
-    ...(data.viewer.canAssign ? [{ key: 'phan-cong', nhan: 'Sửa phân công', onChon: () => onViec('phan-cong') }] : []),
+    /* PR-QU (A): GVCN lớp này cũng thấy — đổi được GV bộ môn, ô GVCN chỉ đọc. */
+    ...(data.viewer.canAssign || data.viewer.canAssignSubject ? [{ key: 'phan-cong', nhan: 'Sửa phân công', onChon: () => onViec('phan-cong') }] : []),
     ...(data.viewer.canEditProgress ? [{ key: 'thong-tin', nhan: 'Sửa thông tin lớp', onChon: () => onViec('thong-tin') }] : []),
     /* PR-XUAT (Q8): GVCN của lớp hoặc người xếp lịch (Quản lý) — máy chủ xuất vẫn kiểm lại phạm vi. */
     ...(session?.nav?.xuatMt && (data.viewer.isCoreTeacher || data.viewer.canPlanWeek) ? [{ key: 'xuat-mt', nhan: 'Xuất Excel', onChon: () => onViec('xuat-mt') }] : []),
