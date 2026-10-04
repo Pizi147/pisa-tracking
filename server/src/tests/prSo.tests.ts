@@ -206,6 +206,9 @@ export async function runPrSoTests(t: YThucTestKit) {
       const a1 = chay(); const a2 = chay();
       assert(a1.length === 0 && a2.length === 0, `${JSON.stringify(a1)} | ${JSON.stringify(a2)}`);
       assert(dem() === truoc, 'số dòng đổi sau migrate');
-    } finally { fs.rmSync(thuMuc, { recursive: true, force: true }); }
+    } finally {
+      /* Windows: file DB vừa đóng ở tiến trình con có thể chưa nhả khoá — thử lại; lỗi dọn thư mục tạm không được che kết quả phép kiểm. */
+      try { fs.rmSync(thuMuc, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); } catch { /* bỏ qua */ }
+    }
   });
 }
