@@ -537,9 +537,9 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
       assert(sai.length === 0, `Bảng có dữ liệu không được phép: ${sai.join(', ')}`);
       /* PR-Z2c-b: demo_config chỉ được có đúng dòng dấu ngưỡng đạt lớp Normal (napDuLieuNen ghi — để migrate lần đầu không ghi
          audit "đổi luật" sai). Vẫn: không ngày demo, không kịch bản, không seeded_at. */
-      /* PR-DEPLOY (DEP-1, DEP-2): thêm đúng hai khoá dấu — khoá backfill Lưu trữ + dấu DB mới (giá trị = giờ init). */
+      /* PR-DEPLOY (DEP-1, DEP-2): thêm đúng hai khoá dấu — khoá backfill Lưu trữ + dấu DB mới (giá trị = giờ init). PR-QU: + khoá `case.close` GV. */
       const cauHinh = cacBang(o.conn).includes('demo_config') ? o.conn.prepare('SELECT key, value FROM demo_config ORDER BY key').all() as any[] : null;
-      assert(JSON.stringify(cauHinh?.map((r) => r.key)) === '["khoi_tao_moi_at","normal_pass_threshold","xoa_du_lieu_backfill_at"]'
+      assert(JSON.stringify(cauHinh?.map((r) => r.key)) === '["khoi_tao_moi_at","normal_pass_threshold","pr_qu_case_close_gv_at","xoa_du_lieu_backfill_at"]'
         && cauHinh!.find((r) => r.key === 'normal_pass_threshold').value === '0.7'
         && cauHinh!.filter((r) => r.key !== 'normal_pass_threshold').every((r) => r.value === O.now),
         `demo_config chỉ được có dấu ngưỡng 0.7 + hai khoá dấu: ${JSON.stringify(cauHinh)}`);

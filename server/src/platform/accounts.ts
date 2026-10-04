@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { db, tx } from '../db.ts';
-import { ENTRY_SKILLS, PERMISSIONS } from '../../../shared/domain/index.ts';
+import { ENTRY_SKILLS, PERMISSIONS, duocCapRieng } from '../../../shared/domain/index.ts';
 import { badRequest, chuTuDo, forbidden, notFound, nowIso, padCode } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { notify, writeAudit } from './audit.ts';
@@ -435,39 +435,58 @@ export function updateProfile(p: Principal, input: {
  */
 export function setUserPermissions(p: Principal, userId: number, items: {
   permission: string; branchCode?: string | null; note?: string | null;
-}[]) {
+}[], lyDo?: string | null) {
   require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, 'Chỉ Quản trị hệ thống cấp được quyền riêng.');
   const conn = db();
   const user = conn.prepare('SELECT * FROM users WHERE id = ?').get(userId) as any;
   if (!user) throw notFound('Không tìm thấy tài khoản.');
   if (user.status === 'deleted') throw badRequest('Tài khoản đã xoá.');   // PR-XOA: xoá mềm là khoá hẳn
+  if (!Array.isArray(items)) throw badRequest('Danh sách quyền không hợp lệ.');
+  if (items.length > 100) throw badRequest('Tối đa 100 quyền cấp riêng cho một người.');
+  /*
+   * PR-QU (D): KIỂM HẾT TRƯỚC, rồi mới xoá-ghi — một dòng sai thì không đụng gì. Whitelist ở MÁY CHỦ (`duocCapRieng`): `admin.config`
+   * và quyền chỉ suy ra (`class.assign_subject`) không bao giờ cấp riêng, dù web có gửi lên.
+   */
+  const branchOf = new Map((conn.prepare('SELECT id, code FROM branches').all() as any[]).map((b) => [String(b.code).toUpperCase(), b.id as number]));
+  const sach = items.map((it: any) => {
+    const permission = String(it?.permission ?? '');
+    if (!duocCapRieng(permission)) throw badRequest(`Quyền này không cấp riêng được: "${permission}".`);
+    const code = it?.branchCode ? String(it.branchCode).toUpperCase() : null;
+    if (code && !branchOf.has(code)) throw badRequest(`Không có chi nhánh mã "${it.branchCode}".`);
+    const note = it?.note == null ? null : String(it.note).trim() || null;
+    if (note && note.length > 200) throw badRequest('Ghi chú quyền tối đa 200 ký tự.');
+    return { permission, branchCode: code, branchId: code ? branchOf.get(code)! : null, note };
+  });
+  const nhan = (x: { permission: string; branchCode: string | null }) => `${x.permission}@${x.branchCode ?? '*'}`;
+  const truoc = (conn.prepare(
+    `SELECT p.key AS permission, b.code AS branchCode FROM user_permissions up JOIN permissions p ON p.id = up.permission_id
+       LEFT JOIN branches b ON b.id = up.branch_id WHERE up.user_id = ?`,
+  ).all(userId) as any[]).map(nhan).sort();
+  const sau = [...new Set(sach.map(nhan))].sort();
+  const them = sau.filter((x) => !truoc.includes(x));
+  const bot = truoc.filter((x) => !sau.includes(x));
+  const lyDoSach = String(lyDo ?? '').trim().slice(0, 200) || null;
   return tx(() => {
     conn.prepare('DELETE FROM user_permissions WHERE user_id = ?').run(userId);
-    for (const it of items ?? []) {
+    for (const it of sach) {
       const perm = conn.prepare('SELECT id FROM permissions WHERE key = ?').get(it.permission) as any;
       if (!perm) throw badRequest(`Không có quyền "${it.permission}".`);
-      let branchId: number | null = null;
-      if (it.branchCode) {
-        const b = conn.prepare('SELECT id FROM branches WHERE code = ?').get(String(it.branchCode).toUpperCase()) as any;
-        if (!b) throw badRequest(`Không có chi nhánh mã "${it.branchCode}".`);
-        branchId = b.id;
-      }
       conn
         .prepare(
           `INSERT INTO user_permissions (user_id, permission_id, branch_id, note, granted_by, created_at)
            VALUES (?,?,?,?,?,?) ON CONFLICT DO NOTHING`,
         )
-        .run(userId, perm.id, branchId, it.note ?? null, p.userId, nowIso());
+        .run(userId, perm.id, it.branchId, it.note ?? lyDoSach, p.userId, nowIso());
     }
-    writeAudit({
-      actorUserId: p.userId, action: 'user_permissions_set', entityType: 'users', entityId: userId,
-      entityLabel: user.full_name,
-      after: {
-        note: (items ?? []).map((i) => `${i.permission}${i.branchCode ? `@${i.branchCode}` : ' (toàn hệ thống)'}`).join(' · ')
-          || 'gỡ hết quyền riêng',
-      },
-    });
-    return { ok: true };
+    if (them.length || bot.length) {
+      writeAudit({
+        actorUserId: p.userId, action: 'user_permissions_set', entityType: 'users', entityId: userId,
+        entityLabel: user.full_name, before: { truoc },
+        after: { sau, them, bot, lyDo: lyDoSach,
+          note: sau.map((x) => x.replace('@*', ' (toàn hệ thống)')).join(' · ') || 'gỡ hết quyền riêng' },
+      });
+    }
+    return { ok: true, them, bot };
   });
 }
 

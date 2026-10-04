@@ -175,7 +175,7 @@ export function ThanCase({ data, onViec }: { data: CaseDetail; onViec: (v: ViewC
         luat={(
           <>
             <p className="m-0">Mỗi PA ghi kết quả hằng tuần, trước hết Thứ Hai tuần sau. Case chỉ hoàn thành được khi mọi PA đã khép.</p>
-            {chiXem && <p className="m-0">Chỉ Quản lý, hoặc GVCN dạy đúng môn của Case, mới hoàn thành được Case này. Bạn vẫn ghi được kết quả của từng PA.</p>}
+            {chiXem && <p className="m-0">Chỉ Quản lý, giáo viên dạy đúng môn của Case, hoặc GVCN (Case Ý thức) mới hoàn thành được Case này. Bạn vẫn ghi được kết quả của từng PA.</p>}
           </>
         )}>
         {dsPa.length === 0 ? (

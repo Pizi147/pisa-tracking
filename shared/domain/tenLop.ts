@@ -78,3 +78,56 @@ export const LUAT_LO_TRINH_HIEN: Record<string, { kyVong: string; lichMt: string
   LT2: { kyVong: '−1.0 · −0.5 · Target', lichMt: lichMtHien('LT2') },
   RF: { kyVong: 'Mọi MT = Target', lichMt: lichMtHien('RF') },
 };
+
+// ==================================================================== PR-QU (C): tạo nhiều lớp một lần
+
+/** Tối đa bấy nhiêu dòng một lần "Tạo n lớp" (G5). */
+export const TOI_DA_DONG_TAO_LOP = 30;
+export type TruongDongTaoLop = 'so' | 'chuongTrinh' | 'loTrinh' | 'tuan' | 'slots' | 'branchId';
+/** Lỗi của MỘT dòng lưới tạo lớp; `truong` trống = lỗi cả dòng. `dong` đếm từ 1 như người dùng thấy. */
+export type LoiDong = { dong: number; truong?: TruongDongTaoLop; loi: string };
+
+const tachSo = (s: string) => /^(\d{1,4})[A-Za-z]?$/.exec(s.trim());
+
+/**
+ * Số tiếp theo cho (chi nhánh, chương trình, lộ trình): lớn nhất trong các mã đã có cùng tiền tố (`tienTo` = phần trước số, ví dụ
+ * "MB FT", "MB FT RF", "MB Pre FOU") và các số đang soạn ở lưới, cộng 1. Giữ độ rộng số 0 đứng đầu ("03" → "04"); chữ cái cuối bỏ qua.
+ */
+export function goiYSoTiep(daCo: string[], dangSoan: string[], tienTo: string): string {
+  const goc = chuanHoaMaLop(tienTo);
+  const so: string[] = [];
+  for (const ma of daCo) {
+    const k = chuanHoaMaLop(ma);
+    if (!k.startsWith(goc)) continue;
+    const m = tachSo(k.slice(goc.length));
+    if (m) so.push(m[1]);
+  }
+  for (const s of dangSoan) { const m = tachSo(s); if (m) so.push(m[1]); }
+  if (!so.length) return '01';
+  const rong = Math.max(...so.map((x) => x.length));
+  const lon = Math.max(...so.map((x) => parseInt(x, 10)));
+  return String(Math.min(lon + 1, 9999)).padStart(rong, '0');
+}
+
+/** "+ Thêm n dòng giống dòng trên": chép mọi ô (chi nhánh, chương trình, lộ trình, tuần, GV), số tự tăng từ số của dòng gốc. */
+export function themDongGiong<T extends { so: string }>(dong: T, n: number, dangSoan: string[] = []): T[] {
+  const ra: T[] = [];
+  const da = [...dangSoan, dong.so];
+  for (let i = 0; i < Math.max(0, Math.floor(n)); i += 1) {
+    const so = goiYSoTiep([], da, '');
+    da.push(so);
+    ra.push({ ...dong, so });
+  }
+  return ra;
+}
+
+/** Gom lỗi theo dòng → ô, để lưới gắn đúng lỗi vào đúng ô; lỗi không có `truong` vào `chung`. Mỗi ô giữ lỗi ĐẦU TIÊN. */
+export function gopLoiTheoDong(loi: readonly LoiDong[]): Record<number, Partial<Record<TruongDongTaoLop | 'chung', string>>> {
+  const ra: Record<number, Partial<Record<TruongDongTaoLop | 'chung', string>>> = {};
+  for (const l of loi) {
+    const o = (ra[l.dong] ??= {});
+    const k = l.truong ?? 'chung';
+    o[k] ??= l.loi;
+  }
+  return ra;
+}

@@ -17,7 +17,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'case.preset.confirm': 'Xác nhận PA theo quy chế', 'case.preset.replace': 'Thay PA theo quy chế', 'case.confirm': 'Xác nhận Case', 'case.dismiss.request': 'Gửi Không cần theo dõi',
   'case.report': 'Tạo Case', 'case.report.merge': 'Ghi vào Case đang có', 'case.result.update': 'Ghi kết quả PA',
   'case.retired_score_fixed': 'Huỷ Case vì sửa điểm', 'case.system_close': 'Hệ thống đóng Case',
-  'class.assign': 'Phân công giáo viên', 'class.create': 'Tạo lớp', 'class.delete': 'Xoá lớp', 'class.finished': 'Kết thúc lớp',
+  'class.assign': 'Phân công giáo viên', 'class.create': 'Tạo lớp', 'class.bulk_create': 'Tạo nhiều lớp', 'class.delete': 'Xoá lớp', 'class.finished': 'Kết thúc lớp',
   'lenh_chuyen.tao': 'Quyết định chuyển lớp', 'lenh_chuyen.sua': 'Sửa quyết định chuyển lớp', 'lenh_chuyen.huy': 'Huỷ quyết định chuyển lớp',
   'lenh_chuyen.thi_hanh': 'Thi hành quyết định chuyển lớp', 'ban_giao.ghi_mon': 'Ghi bàn giao môn', 'ban_giao.xac_nhan': 'GVCN xác nhận bàn giao',
   'class.info': 'Sửa thông tin lớp', 'class.progress': 'Đổi tiến độ lớp', 'class.transition': 'Chuyển tiếp lớp',

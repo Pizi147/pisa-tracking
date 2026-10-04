@@ -1,5 +1,5 @@
 import { db, tx } from '../db.ts';
-import { LUAT_LO_TRINH_HIEN, PERMISSIONS, ROUTES as BUILTIN_ROUTES, ROUTE_NAME } from '../../../shared/domain/index.ts';
+import { LUAT_LO_TRINH_HIEN, PERMISSIONS, QUYEN_SUY_RA_GV, ROUTES as BUILTIN_ROUTES, ROUTE_NAME, lyDoCamVai } from '../../../shared/domain/index.ts';
 import { badRequest, notFound, nowIso } from '../util.ts';
 import { clearScoringModeCache } from '../fasttrack/skillSchedule.ts';
 import { require_, type Principal } from '../permissions.ts';
@@ -222,6 +222,9 @@ export function setRolePermission(p: Principal, input: {
       `Không gỡ được quyền "${perm.name}" khỏi vai ${role.name} — gỡ xong thì không còn ai vào được màn này.`,
     );
   }
+  /* PR-QU (D): ô cấm bật — SCH-01 (`plan.week` cho Giáo viên) và quyền chỉ suy ra (`class.assign_subject`). Lý do hiện nguyên văn. */
+  const cam = input.granted ? lyDoCamVai(role.key, perm.key) : null;
+  if (cam) throw badRequest(`Không bật được "${perm.name}" cho vai ${role.name}. ${cam}`);
 
   return tx(() => {
     const had = !!conn
@@ -240,7 +243,9 @@ export function setRolePermission(p: Principal, input: {
       entityType: 'role', entityId: role.id,
       entityLabel: `${role.name} · ${perm.name}`,
       /* Ghi cả hai đầu để tra lại được ai đổi cái gì, không chỉ trạng thái hiện tại. */
-      before: had ? 'có' : 'không', after: input.granted ? 'có' : 'không',
+      before: had ? 'có' : 'không',
+      /* PR-QU: kèm số tài khoản đang hoạt động đổi quyền theo ô này — tra lại được tầm ảnh hưởng của một lần bấm. */
+      after: { trangThai: input.granted ? 'có' : 'không', soNguoiAnhHuong: soNguoiCuaVai(role.key) },
     });
     return { ok: true, changed: true };
   });
@@ -267,4 +272,53 @@ export function setRolePermissions(p: Principal, thayDoi: unknown) {
   });
   // ponytail: mỗi ô 3–4 câu SQL qua đường một ô (≤ 200 ô, chỉ Quản trị bấm Lưu); gom câu nếu bảng quyền lớn lên nhiều.
   return tx(() => ({ ok: true, changed: ds.filter((o) => setRolePermission(p, o).changed).length }));
+}
+
+/** PR-QU (D): số tài khoản đang hoạt động mang vai này (bất kỳ chi nhánh) — "Ảnh hưởng n tài khoản" ở hộp xác nhận. */
+export function soNguoiCuaVai(roleKey: string): number {
+  return (db().prepare(
+    `SELECT COUNT(DISTINCT ur.user_id) n FROM user_roles ur JOIN roles r ON r.id = ur.role_id JOIN users u ON u.id = ur.user_id
+      WHERE r.key = ? AND ur.status = 'active' AND u.status = 'active' AND u.deleted_at IS NULL`,
+  ).get(roleKey) as any).n as number;
+}
+
+/** `GET /admin/roles/:key/permissions/:perm/impact` — trước khi bật/tắt một ô vai × quyền. */
+export function anhHuongOVai(p: Principal, roleKey: string, permissionKey: string) {
+  require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, 'Chỉ Quản trị hệ thống mới xem được phần này.');
+  const conn = db();
+  const role = conn.prepare('SELECT id, key FROM roles WHERE key = ?').get(roleKey) as any;
+  if (!role) throw notFound(`Không có vai trò "${roleKey}".`);
+  const perm = conn.prepare('SELECT id, key FROM permissions WHERE key = ?').get(permissionKey) as any;
+  if (!perm) throw notFound(`Không có quyền "${permissionKey}".`);
+  const dangCo = !!conn.prepare('SELECT 1 FROM role_permissions WHERE role_id = ? AND permission_id = ?').get(role.id, perm.id);
+  return {
+    soNguoiAnhHuong: soNguoiCuaVai(roleKey), dangCo,
+    /** Lý do ô này bị khoá theo chiều sẽ bấm (gỡ khi đang có / bật khi chưa có), hoặc null. */
+    khoa: dangCo
+      ? ((LOCKED[roleKey] ?? []).includes(permissionKey) ? 'Gỡ xong thì không còn ai vào được màn Quản trị.' : null)
+      : lyDoCamVai(roleKey, permissionKey),
+  };
+}
+
+/** `GET /admin/permissions/matrix` — vai × quyền từ DB, kèm quyền suy ra cho cột GVCN (chỉ đọc) và lý do các ô bị khoá. */
+export function maTranQuyen(p: Principal) {
+  require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, 'Chỉ Quản trị hệ thống mới xem được ma trận quyền.');
+  const conn = db();
+  const vai = conn.prepare("SELECT key, name_vi AS ten FROM roles WHERE status = 'active' ORDER BY id").all() as { key: string; ten: string }[];
+  const quyen = conn.prepare('SELECT key, name_vi AS ten FROM permissions ORDER BY id').all() as { key: string; ten: string }[];
+  const co = conn.prepare(
+    `SELECT r.key AS role_key, p.key AS perm_key FROM role_permissions rp JOIN roles r ON r.id = rp.role_id JOIN permissions p ON p.id = rp.permission_id`,
+  ).all() as any[];
+  const khoa: { vai: string; quyen: string; lyDo: string }[] = [];
+  for (const v of vai) {
+    for (const k of LOCKED[v.key] ?? []) khoa.push({ vai: v.key, quyen: k, lyDo: 'Không gỡ được: gỡ xong thì không còn ai vào được màn Quản trị.' });
+    for (const q of quyen) { const l = lyDoCamVai(v.key, q.key); if (l) khoa.push({ vai: v.key, quyen: q.key, lyDo: l }); }
+  }
+  return {
+    vai: vai.map((v) => ({ ...v, soNguoi: soNguoiCuaVai(v.key) })),
+    quyen,
+    co: Object.fromEntries(vai.map((v) => [v.key, co.filter((x) => x.role_key === v.key).map((x) => x.perm_key as string)])),
+    suyRaGv: QUYEN_SUY_RA_GV,
+    khoa,
+  };
 }

@@ -70,7 +70,7 @@ export const CAM_CAP_VAI: Record<string, { quyen: PermissionKey; lyDo: string }[
 export function duocCapRieng(k: string): boolean; // có trong PERMISSIONS và không thuộc KHONG_CAP_RIENG
 ```
 
-- [ ] **Bước 1: kiểm đỏ** trong `prQu.tests.ts`:
+- [x] **Bước 1: kiểm đỏ** trong `prQu.tests.ts`:
 ```ts
 import { PERMISSIONS, PERMISSION_LABEL, NHOM_QUYEN, MO_TA_QUYEN, duocCapRieng } from '../../../shared/domain/index.ts';
 export function runPrQuTests(ctx: { check: Function; assert: Function; assertThrows: Function; conn: any; P: any }) {
@@ -98,16 +98,16 @@ export function runPrQuTests(ctx: { check: Function; assert: Function; assertThr
 }
 ```
 Đăng ký ở cuối `run.ts`: `import { runPrQuTests } from './prQu.tests.ts';` và `runPrQuTests({ check, assert, assertThrows, conn, P });`.
-- [ ] **Bước 2:** chạy `npm run check` và thấy đỏ. Viết `nhomQuyen.ts` (đủ mọi quyền, gom theo các nhóm đang ghi trong chú thích ở `PERMISSIONS`). Thêm quyền vào `people.ts`. Chạy lại cho xanh. Chạy migrate hai lần trên DB test, không lỗi và số dòng không đổi.
-- [ ] **Bước 3:** commit `PR-QU QU-1: danh mục quyền theo nhóm + class.create, class.assign_subject`.
+- [x] **Bước 2:** chạy `npm run check` và thấy đỏ. Viết `nhomQuyen.ts` (đủ mọi quyền, gom theo các nhóm đang ghi trong chú thích ở `PERMISSIONS`). Thêm quyền vào `people.ts`. Chạy lại cho xanh. Chạy migrate hai lần trên DB test, không lỗi và số dòng không đổi.
+- [x] **Bước 3:** commit `PR-QU QU-1: danh mục quyền theo nhóm + class.create, class.assign_subject`.
 
 ### Task QU-2: `class.create` thay `student.edit` khi tạo lớp
 Skill: test-driven-development.
 
 **Files:** Modify `server/src/classes/intake.ts:603-606` (`require_(p, PERMISSIONS.CLASS_CREATE, { branchId }, 'Bạn không có quyền tạo lớp ở chi nhánh này.')`); `server/src/classes/hocVienLop.ts:69` (`coTheTaoLop` dùng `CLASS_CREATE`); `server/src/permissions.ts` (đảm bảo `teacherAllows` **không** trả true cho `class.create`).
 
-- [ ] **Bước 1: kiểm đỏ.** (a) Có một tài khoản chỉ có `student.edit` cấp riêng ở chi nhánh X, không có `class.create`: gọi `taoLopVaPhanCong` phải ném lỗi 403, và `coTheTaoLop=false`. (b) GV được cấp riêng `class.create` ở X (qua `user_permissions`) thì tạo lớp được ở X, ở Y thì bị 403. (c) Quản lý X tạo được lớp như trước, nghĩa là các phép kiểm PR-LOP cũ vẫn xanh.
-- [ ] **Bước 2:** sửa cho xanh. Commit `PR-QU QU-2: tạo lớp cần class.create`.
+- [x] **Bước 1: kiểm đỏ.** (a) Có một tài khoản chỉ có `student.edit` cấp riêng ở chi nhánh X, không có `class.create`: gọi `taoLopVaPhanCong` phải ném lỗi 403, và `coTheTaoLop=false`. (b) GV được cấp riêng `class.create` ở X (qua `user_permissions`) thì tạo lớp được ở X, ở Y thì bị 403. (c) Quản lý X tạo được lớp như trước, nghĩa là các phép kiểm PR-LOP cũ vẫn xanh.
+- [x] **Bước 2:** sửa cho xanh. Commit `PR-QU QU-2: tạo lớp cần class.create`.
 
 ### Task QU-3: GVCN phân công GV bộ môn (A)
 Skill: test-driven-development · systematic-debugging nếu `isCoreTeacherOf` lệch ngữ cảnh lớp.
@@ -125,7 +125,7 @@ if (!full) {
 }
 // ... kiemTruocPhanCong (giữ), ghi, writeAudit({... meta: { via: full ? 'quan_ly' : 'gvcn', truoc, sau }}), báo Quản lý chi nhánh khi via='gvcn'
 ```
-- [ ] **Bước 1: kiểm đỏ:**
+- [x] **Bước 1: kiểm đỏ:**
   1. GVCN lớp C đổi GV Reading thì thành công. Có audit `via:'gvcn'`. Có thông báo cho Quản lý chi nhánh.
   2. GVCN lớp C đổi ô GVCN (thêm, bỏ hoặc thay người) thì bị 403 và DB không đổi.
   3. GVCN lớp C sửa lớp D (không chủ nhiệm) thì bị 403.
@@ -133,7 +133,7 @@ if (!full) {
   5. Luật `kiemTruocPhanCong` vẫn chặn GVCN, ví dụ gán GV khác chi nhánh thì bị 400.
   6. `/ref/teachers?classId=C` với GVCN trả đúng GV của chi nhánh C. Không có `classId` thì bị 403.
   7. Viewer lớp C trả `canAssign=false, canAssignSubject=true` cho GVCN.
-- [ ] **Bước 2:** sửa cho xanh. Commit `PR-QU QU-3: GVCN phân công GV bộ môn lớp mình`.
+- [x] **Bước 2:** sửa cho xanh. Commit `PR-QU QU-3: GVCN phân công GV bộ môn lớp mình`.
 
 ### Task QU-4: Tạo lớp hàng loạt ở máy chủ (C)
 Skill: test-driven-development.
@@ -152,7 +152,7 @@ export function goiYSoTiep(daCo: string[], dangSoan: string[], tienTo: string): 
 export const TOI_DA_DONG_TAO_LOP = 30;
 ```
 Luật: kiểm quyền theo **từng** chi nhánh của từng dòng (`class.create`, và `class.assign` nếu dòng có slot) **trước** khi tra khoá. Khoá `bulkclass:${userId}:${key}`. Thử lại cùng khoá thì trả đúng kết quả cũ, không tạo thêm. Trùng mã có hai loại: so với DB và so với dòng khác trong lô. Quá 30 dòng hoặc 0 dòng thì trả 400. Lỗi ở dòng thứ N thì **không** có lớp nào được tạo.
-- [ ] **Bước 1: kiểm đỏ:**
+- [x] **Bước 1: kiểm đỏ:**
   1. 3 dòng hợp lệ thì tạo đủ 3 lớp có phân công, trong một tx.
   2. Dòng 2 trùng mã với dòng 1 thì `ok:false`, `loi[0].dong===2` và số lớp trong DB không đổi.
   3. Dòng 3 vi phạm luật phân công thì không có lớp nào được tạo.
@@ -163,7 +163,7 @@ Luật: kiểm quyền theo **từng** chi nhánh của từng dòng (`class.cre
   8. `goiYSoTiep(['MB FT LT1 03'], ['04'], …)` trả `'05'`.
   9. `POST /classes` một lớp trả dạng cũ `{id, code}`.
   10. Mô phỏng lỗi giữa tx (`maybeSimulateSaveFailure`) thì không còn dòng nào.
-- [ ] **Bước 2:** sửa cho xanh. Commit `PR-QU QU-4: tạo lớp hàng loạt một giao dịch, có khoá`.
+- [x] **Bước 2:** sửa cho xanh. Commit `PR-QU QU-4: tạo lớp hàng loạt một giao dịch, có khoá`.
 
 ### Task QU-5: Lưới nhiều dòng trong "+ Lớp mới" (C, web)
 Skill: test-driven-development (luật thuần của lưới ở `shared/domain`) · impeccable `layout`, `harden`, `clarify`.
@@ -171,9 +171,9 @@ Skill: test-driven-development (luật thuần của lưới ở `shared/domain`
 **Files:** Modify `web/src/modules/classes/ClassCreatePanel.tsx` (thêm chế độ nhiều dòng; một dòng là trường hợp riêng của lưới); `web/src/modules/students/StudentsPage.tsx:157,267` (giữ nút, gọi panel); `web/src/modules/classes/TeacherAssignPanel.tsx:30,93-96` (GVCN sửa được ô bộ môn, ô GVCN chỉ đọc kèm chữ "Đổi GVCN: nhờ Quản lý chi nhánh"; bỏ chữ cũ "Admin chi nhánh"); `web/src/modules/classes/DauTrangLop.tsx:115` (hiện nút Phân công khi `canAssign || canAssignSubject`).
 
 Mỗi dòng gồm: chi nhánh (chỉ các chi nhánh có `class.create`), loại/chương trình, lộ trình (chỉ hiện khi FT), số (tự gợi ý bằng `goiYSoTiep`, sửa được, hiện mã cuối như `MB FT LT1 05`), tuần khai giảng (mã tuần), GVCN, L/R/W/S (không bắt buộc). Thao tác nhanh: "+ Thêm n dòng giống dòng trên" (chép dòng, số tự tăng), xoá dòng. Nút "Kiểm tra" gọi `dryRun`, gắn lỗi vào đúng ô của đúng dòng. Nút "Tạo n lớp" chỉ bật khi không còn lỗi. Khoá idempotency tạo một lần cho mỗi lần mở panel (theo `moiKhoaGui` của PR-GVa nếu đã merge, nếu chưa thì dùng `crypto.randomUUID()`). Ở 375px mỗi dòng xếp thành thẻ dọc, không cuộn ngang trang.
-- [ ] **Bước 1:** kiểm đỏ cho luật thuần `themDongGiong(dong, n)` (số tăng, giữ chi nhánh, chương trình, lộ trình, tuần, GV) và `gopLoiTheoDong` trong `prQu.tests.ts`.
-- [ ] **Bước 2:** dựng giao diện. Chạy `/impeccable layout`, `harden`, `clarify`. Bấm thử lỗi một dòng, bấm đúp "Tạo", mất mạng rồi "Thử lại" (cùng khoá thì không tạo thêm).
-- [ ] **Bước 3:** commit `PR-QU QU-5: lưới tạo nhiều lớp + GVCN phân công trên web`.
+- [x] **Bước 1:** kiểm đỏ cho luật thuần `themDongGiong(dong, n)` (số tăng, giữ chi nhánh, chương trình, lộ trình, tuần, GV) và `gopLoiTheoDong` trong `prQu.tests.ts`.
+- [x] **Bước 2:** dựng giao diện. Chạy `/impeccable layout`, `harden`, `clarify`. Bấm thử lỗi một dòng, bấm đúp "Tạo", mất mạng rồi "Thử lại" (cùng khoá thì không tạo thêm).
+- [x] **Bước 3:** commit `PR-QU QU-5: lưới tạo nhiều lớp + GVCN phân công trên web`.
 
 ### Task QU-6: API Quản trị quyền an toàn (D, máy chủ)
 Skill: test-driven-development.
@@ -184,16 +184,16 @@ Luật:
 - `setUserPermissions`: mỗi `permission` phải qua `duocCapRieng`, nếu không thì trả 400 "Quyền này không cấp riêng được". Chi nhánh phải tồn tại. Ghi chú tối đa 200 ký tự. Audit ghi `{truoc, sau, them, bot}`, không chỉ danh sách mới.
 - Toggle vai: không gỡ được `admin.config` khỏi `system_admin` (đã có trong `LOCKED`, kiểm lại). Không bật được quyền thuộc `CAM_CAP_VAI` (ví dụ `teacher` + `plan.week` thì trả 400 kèm lý do SCH-01). `impact` trả số tài khoản đang hoạt động thuộc vai. Audit đã có, thêm `soNguoiAnhHuong`.
 - `matrix` trả vai × quyền từ DB, kèm `QUYEN_SUY_RA_GV` cho cột GVCN suy ra.
-- [ ] **Bước 1: kiểm đỏ:** cấp riêng `admin.config` thì bị 400. Cấp riêng quyền lạ thì bị 400. Audit có `them`/`bot` đúng. Gỡ `admin.config` khỏi `system_admin` thì bị 400. Bật `plan.week` cho `teacher` thì bị 400 và DB không đổi. `impact` đếm đúng. Người không có `admin.config` gọi `matrix` thì bị 403.
-- [ ] **Bước 2:** sửa cho xanh. Commit `PR-QU QU-6: whitelist cấp riêng, chặn lockout và SCH-01, ma trận`.
+- [x] **Bước 1: kiểm đỏ:** cấp riêng `admin.config` thì bị 400. Cấp riêng quyền lạ thì bị 400. Audit có `them`/`bot` đúng. Gỡ `admin.config` khỏi `system_admin` thì bị 400. Bật `plan.week` cho `teacher` thì bị 400 và DB không đổi. `impact` đếm đúng. Người không có `admin.config` gọi `matrix` thì bị 403.
+- [x] **Bước 2:** sửa cho xanh. Commit `PR-QU QU-6: whitelist cấp riêng, chặn lockout và SCH-01, ma trận`.
 
 ### Task QU-7: Màn Quản trị quyền (D, web)
 Skill: impeccable `critique` (đã chạy trước) → `layout`, `clarify`, `harden`.
 
 **Files:** Modify `web/src/modules/platform/AccountsAdmin.tsx:274,312,408-445` (ô chọn phẳng đổi thành checkbox theo `NHOM_QUYEN`, mỗi quyền có mô tả một câu và ghi chú phạm vi, chọn chi nhánh cho từng quyền, ô "Lý do" bắt buộc khi có thay đổi; quyền không cấp riêng được thì ẩn khỏi danh sách); màn Vai trò hiện có (tìm `setRolePermission` ở web) thêm ma trận: cột Quản trị hệ thống, Quản lý, GV, GVCN (suy ra, chỉ đọc, ghi "chỉ lớp chủ nhiệm"). Ô bật/tắt có hộp xác nhận "Ảnh hưởng n tài khoản". Ô bị khoá hiện lý do (lockout, SCH-01).
-- [ ] **Bước 1:** dựng theo nhóm, mỗi nhóm thu gọn được. Ở 375px ma trận thành danh sách theo nhóm, mỗi quyền một hàng có các chip vai.
-- [ ] **Bước 2:** chạy `/impeccable clarify` (mô tả quyền dùng ngôn ngữ giáo viên) và `harden` (lưu lỗi thì giữ lựa chọn, bấm đúp).
-- [ ] **Bước 3:** commit `PR-QU QU-7: màn Quản trị quyền theo nhóm + ma trận`.
+- [x] **Bước 1:** dựng theo nhóm, mỗi nhóm thu gọn được. Ở 375px ma trận thành danh sách theo nhóm, mỗi quyền một hàng có các chip vai.
+- [x] **Bước 2:** chạy `/impeccable clarify` (mô tả quyền dùng ngôn ngữ giáo viên) và `harden` (lưu lỗi thì giữ lựa chọn, bấm đúp).
+- [x] **Bước 3:** commit `PR-QU QU-7: màn Quản trị quyền theo nhóm + ma trận`.
 
 ## Phối hợp PR-BC
 PR-QU merge **trước**. PR-BC (`2026-10-03-pr-bc-bao-cao-quan-tri.md`) phải rebase lên PR-QU. Các vùng PR-QU đụng trong `web/src/modules/platform/AccountsAdmin.tsx`:
