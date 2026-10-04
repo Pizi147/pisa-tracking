@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
@@ -16,7 +16,7 @@ import { NutLuat } from '../../ui/NutLuat.tsx';
 import { fmtDate } from '../../lib/format.ts';
 import {
   ENTRY_SKILLS, ENTRY_SKILL_LABEL, HANG_SO, HANG_SO_LABEL, TASK_GROUPS, TASK_GROUP_LABEL, TASK_PROGRESS, TASK_PROGRESS_LABEL,
-  TASK_PROGRESS_NEEDS_REASON, TRANG_THAI_LOC, catDongPhu, dongHanDaDoi, dsLoi,
+  TASK_PROGRESS_NEEDS_REASON, TRANG_THAI_LOC, catDongPhu, dongHanDaDoi, dsLoi, moiKhoaGui,
   type HangSo, type LoiTruong, type NguoiChon, type TrangThai, type TrangThaiLoc,
 } from '@shared/domain/index.ts';
 
@@ -652,6 +652,12 @@ function CreateTask({ open, onClose, onDone, branchId, parent, defaultGroup, uni
   const [topic, setTopic] = useState('');
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
+  /*
+   * PR-GVa (F01 = D13): MỘT khoá gửi cho MỘT lần mở form. Bấm đúp / thử lại sau lỗi mạng gửi lại đúng khoá này nên máy chủ trả việc
+   * đã có. KHÔNG đổi khoá khi lỗi; chỉ lần mở mới có khoá mới.
+   */
+  const khoa = useRef(moiKhoaGui('cv'));
+  useEffect(() => { if (open) khoa.current = moiKhoaGui('cv'); }, [open]);
   if (!open) return null;
 
   const cls = classes.data?.rows.find((c) => String(c.id) === classId);
@@ -670,7 +676,7 @@ function CreateTask({ open, onClose, onDone, branchId, parent, defaultGroup, uni
         const periodId = neo?.id ?? (neo ? (await resolveWeek(neo.weekStart)).id : undefined);
         await api.post('/tasks', {
           kind: 'teacher_task', title, note: note.trim() || undefined, periodId, dueDate: due || undefined,
-          classId: Number(classId), topic,
+          classId: Number(classId), topic, idempotencyKey: khoa.current,
         });
         invalidate('/tasks'); invalidate('/cases'); invalidate('/students'); invalidate('/my-work');
         toast.push('ok', `Đã giao việc cho ${cls?.studentCount ?? 0} em lớp ${cls?.code ?? ''}`.trim());
@@ -683,6 +689,7 @@ function CreateTask({ open, onClose, onDone, branchId, parent, defaultGroup, uni
           due: due || null, branchId: branch || null, note: note || null,
           parentTaskId: parent?.id ?? null,
           unitReportId: unitReportId ?? null,
+          idempotencyKey: khoa.current,
         });
         invalidate('/mgmt-tasks');
         toast.push('ok', 'Đã tạo công việc');

@@ -10,6 +10,11 @@ import type { AnToanTestKit } from './anToan.tests.ts';
 export async function runPrGvaTests(t: AnToanTestKit) {
   const { check, checkAsync, assert, assertThrows, conn, TODAY, P } = t;
   console.log('\nPR-GVa · Giao việc: khoá gửi, kỳ của việc giao GV, form mở theo ngữ cảnh');
+  const fsMod = await import('node:fs');
+  const pathMod = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const REPO = pathMod.resolve(fileURLToPath(new URL('../../../../', import.meta.url)));
+  const doc = (rel: string) => fsMod.readFileSync(pathMod.join(REPO, rel), 'utf8');
   /** Mô-đun chưa có thì phép kiểm ĐỎ với câu nói rõ thiếu gì, không làm sập cả bộ (mẫu anToan.tests.ts). */
   const load = async (p: string): Promise<any> => import(p).catch((e) =>
     new Proxy({}, { get: (_x, k) => { if (k === 'then') return undefined; throw new Error(`Chưa có mô-đun ${p} (${String(k)}) — ${e.message}`); } }));
@@ -149,6 +154,28 @@ export async function runPrGvaTests(t: AnToanTestKit) {
     assert(dbMod.laTrungKhoa(new Error('UNIQUE constraint failed: tasks.created_by, tasks.idempotency_key')), 'lỗi khoá');
     assert(!dbMod.laTrungKhoa(new Error('UNIQUE constraint failed: tasks.code')), 'lỗi mã việc không phải lỗi khoá');
     assert(!('vuaGhi' in dbMod), 'vuaGhi phải xoá khi không còn ai gọi');
+  });
+
+  // ================================================================== GVa-2 · web gửi khoá, mỗi lần mở form một mã
+
+  check('GVa-2 · (quét nguồn — web chưa có trình chạy React test) mọi POST /mgmt-tasks, /tasks, /cases/:id/interventions gửi khoá tạo MỘT lần mỗi lần mở form', () => {
+    const tep = (dir: string): string[] => fsMod.readdirSync(pathMod.join(REPO, dir), { withFileTypes: true }).flatMap((e) =>
+      e.isDirectory() ? tep(`${dir}/${e.name}`) : /\.tsx?$/.test(e.name) ? [`${dir}/${e.name}`] : []);
+    const loi: string[] = [];
+    let soCho = 0;
+    for (const f of tep('web/src')) {
+      const src = doc(f);
+      let o = 0;
+      const re = /api\.post(?:<[^>]*>)?\((?:'\/mgmt-tasks'|'\/tasks'|`\/cases\/\$\{caseId\}\/interventions`)\s*,\s*\{([\s\S]*?)\}\);/g;
+      for (const m of src.matchAll(re)) {
+        soCho++; o++;
+        if (!/idempotencyKey:\s*\w+\.current/.test(m[1])) loi.push(`${f}: ${m[0].slice(0, 60)}… không gửi idempotencyKey: <ref>.current`);
+      }
+      if (o && /idempotencyKey/.test(src) && !/useRef\(moiKhoaGui\(|useMemo\(\(\) => moiKhoaGui\(/.test(src)) loi.push(`${f}: khoá phải tạo bằng useRef(moiKhoaGui(…)) — không sinh trong hàm tao/luu`);
+      if (/const (?:tao|luu) = async[\s\S]{0,1500}?moiKhoaGui\(/.test(src)) loi.push(`${f}: sinh khoá trong hàm gửi → thử lại sau lỗi mạng ra mã mới`);
+    }
+    assert(soCho >= 3, `phải thấy ít nhất 3 chỗ gửi (2 ở form Giao việc, 1 ở Thêm PA), thấy ${soCho}`);
+    assert(loi.length === 0, loi.join(' | '));
   });
 
   // ------------------------------------------------------------------ HTTP: gửi đồng thời cùng khoá
