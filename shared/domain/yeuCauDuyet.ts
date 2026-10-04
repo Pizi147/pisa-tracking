@@ -154,8 +154,10 @@ export function laTuDuyet(nguoiXin: number | null, nguoiDuyet: number): boolean 
   return nguoiXin !== null && nguoiXin === nguoiDuyet;
 }
 
-/** Đường tới đúng thẻ: người duyệt → hộp Chờ duyệt, người xin → Yêu cầu của tôi. */
-export function duongThe(id: number, vai: 'duyet' | 'nguoi-xin'): string {
+/** Đường tới đúng thẻ: người duyệt → hộp Chờ duyệt (Báo QL → tab Để QL biết), người xin → Yêu cầu của tôi. */
+export function duongThe(id: number, vai: 'duyet' | 'nguoi-xin' | 'de-biet'): string {
+  /* PR-GVb (J5b): thẻ Báo QL nằm ở tab Để QL biết. */
+  if (vai === 'de-biet') return `/cong-viec/cho-duyet?xem=de-biet&the=${id}`;
   return `/cong-viec/${vai === 'duyet' ? 'cho-duyet' : 'yeu-cau'}?the=${id}`;
 }
 

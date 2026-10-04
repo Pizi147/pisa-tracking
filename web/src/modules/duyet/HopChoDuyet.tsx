@@ -86,9 +86,11 @@ export function HopChoDuyet() {
   const coCapHangLoat = choHangLoat && !chon.size && ds.some((a, i) => a.hangLoat && ds.some((b, j) => j !== i && b.loai === a.loai));
   /* Để QL biết (G5): thẻ có người nhận + khoá việc, chưa nhắc hôm nay. `daNhacNgoai` = vừa nhắc hàng loạt. */
   const [daNhacNgoai, setDaNhacNgoai] = useState<Record<number, string>>({});
-  useEffect(() => { setDaNhacNgoai({}); }, [url]);
+  /* Thẻ vừa nhắc lỗi (việc không còn, ngoài phạm vi…) không tính lại vào n — bấm lại cũng lỗi y hệt. */
+  const [nhacLoi, setNhacLoi] = useState<Set<number>>(new Set());
+  useEffect(() => { setDaNhacNgoai({}); setNhacLoi(new Set()); }, [url]);
   const nhacDuoc = xem === 'de-biet'
-    ? ds.filter((x) => typeof x.duLieu?.ownerId === 'number' && typeof x.duLieu?.viecKey === 'string' && !x.duLieu?.daNhacLuc && !daNhacNgoai[x.id])
+    ? ds.filter((x) => typeof x.duLieu?.ownerId === 'number' && typeof x.duLieu?.viecKey === 'string' && !x.duLieu?.daNhacLuc && !daNhacNgoai[x.id] && !nhacLoi.has(x.id))
     : [];
   const [ngan, setNgan] = useState<number | null>(null);
 
@@ -120,6 +122,7 @@ export function HopChoDuyet() {
       const r = await api.post<{ ok: { id: number; daNhacLuc: string }[]; loi: { id: number; loi: string; ma: number }[] }>(
         '/yeu-cau/nhac-nhieu', { ids: nhacDuoc.slice(0, TRAN_HANG_LOAT).map((x) => x.id) });
       setDaNhacNgoai((s) => ({ ...s, ...Object.fromEntries(r.ok.map((x) => [x.id, x.daNhacLuc])) }));
+      setNhacLoi((s) => new Set([...s, ...r.loi.map((l) => l.id)]));
       baoKetQua('nhac', r.ok.length, r.loi);
     } catch (e: any) {
       toast.push('error', e instanceof ApiError ? e.message : 'Mất kết nối giữa chừng — danh sách đã làm mới để thấy thẻ nào đã nhắc.');

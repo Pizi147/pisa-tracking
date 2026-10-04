@@ -108,6 +108,12 @@ export async function runPrGvbTests(t: YThucTestKit) {
     }
   }
 
+  check('GVb (2) · J5b: chuông "Báo QL" mở thẳng tab Để QL biết (thẻ không còn ở tab Chờ duyệt); thông báo duyệt mới vẫn về Chờ duyệt', () => {
+    const tb = (kind: string) => d.duongThongBao({ entity_type: 'yeu_cau_duyet', entity_id: 7, kind } as any);
+    assert(tb('bao_len') === '/cong-viec/cho-duyet?xem=de-biet&the=7' && tb('duyet_moi') === '/cong-viec/cho-duyet?the=7'
+      && tb('duyet_ket_qua') === '/cong-viec/yeu-cau?the=7', `${tb('bao_len')} · ${tb('duyet_moi')} · ${tb('duyet_ket_qua')}`);
+  });
+
   // ---------------------------------------------------------------- GVb-3: Nhắc tất cả
   check('GVb (3) · nhacNhieu: GV → 403; >50 → 400; chỉ thẻ "nhac"; nhắc lần hai trong ngày không tạo thông báo mới', () => {
     assert(maLoi(() => yc.nhacNhieu(P.coreTeacher, [1])) === 403, 'GV');
