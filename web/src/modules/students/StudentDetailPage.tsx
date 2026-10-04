@@ -649,7 +649,8 @@ function KetQuaThuongO({ a, ct }: { a: any; ct: string | null }) {
     failedSkills: (a.skills ?? []).filter((s: any) => s.outcome === 'fail').map((s: any) => s.skill as string),
     tyLeTong: a.tyLeTong ?? null, khongChiaMon,
   });
-  if (!khongChiaMon ? a.scored < a.required : a.sosLevel === null && a.scored === 0) {
+  /* Lượt đã xong (`done`) mà thiếu môn = môn bị huỷ phần, không còn chờ → nói kết quả các môn đã chấm. */
+  if (!khongChiaMon ? a.scored < a.required && a.status !== 'done' : a.sosLevel === null && a.scored === 0) {
     if (a.status === 'cancelled') return <span className="text-muted">—</span>;
     return (
       <>

@@ -44,7 +44,11 @@ export async function runPrU12Tests(t: YThucTestKit) {
   });
 
   check('PR-U12 (2) · kết quả nói một lần: bỏ "mới x/y môn"; chưa đủ môn → "Chờ n môn"', () => {
+    assert(ratio.length > 0 && ketQua.length > 0, 'không tìm thấy hàm');
     assert(!ratio.includes('mới {a.scored}/{a.required} môn'), 'còn dòng "mới x/y môn"');
+    assert(/a\.status !== 'done'/.test(ketQua), 'lượt đã xong mà thiếu môn (huỷ phần) không được "Chờ"');
+    assert(/a\.status === 'cancelled'\) return <span className="text-muted">—<\/span>/.test(ketQua), 'lượt đã huỷ → "—"');
+    assert(/khongChiaMon \?|!khongChiaMon \?/.test(ketQua), 'Pre FOU giữ nhánh riêng (%)');
     assert(/a\.scored < a\.required/.test(ketQua), 'KetQuaThuongO chưa có nhánh chưa đủ môn');
     assert(ketQua.includes('Chờ {a.required - a.scored} môn'), 'thiếu chữ "Chờ n môn"');
   });
