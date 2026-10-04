@@ -92,7 +92,7 @@
   - Danh sách lựa chọn chỉ gồm chi nhánh **có trong `units`**. Người dùng chỉ thấy cái máy chủ đã cho, nên không lộ chi nhánh khác. Thứ tự là "Tất cả" trước, sau đó các chi nhánh theo thứ tự trong `units`, rồi "Tutor part-time" nếu có.
   - Có ít hơn 3 lựa chọn thực (không tính "Tất cả") thì trả `[]`, và giao diện ẩn bộ lọc. Quản lý một chi nhánh chỉ thấy MB và Tutor, nên với họ bộ lọc là thừa.
 
-- [ ] **Step 1: Viết phép kiểm đỏ.** Tạo `server/src/tests/prBc.tests.ts`:
+- [x] **Step 1: Viết phép kiểm đỏ.** Tạo `server/src/tests/prBc.tests.ts`:
 
 ```ts
 /** PHÉP KIỂM PR-BC — Báo cáo đơn vị (D8, D9) + Quản trị › Tài khoản (L3, J10). Luật thuần, gọi thẳng `shared/domain`. */
@@ -141,9 +141,9 @@ const { runPrBcTests } = await import('./prBc.tests.ts');
 await runPrBcTests({ check, assert });
 ```
 
-- [ ] **Step 2: Chạy `npm test`.** Kết quả mong đợi: các phép D9 **ĐỎ** (`d.locDonViBaoCao is not a function`). Phép D8 xanh ngay, vì hàm đã có; đây là phép bảo vệ chống hồi quy.
+- [x] **Step 2: Chạy `npm test`.** Kết quả mong đợi: các phép D9 **ĐỎ** (`d.locDonViBaoCao is not a function`). Phép D8 xanh ngay, vì hàm đã có; đây là phép bảo vệ chống hồi quy.
 
-- [ ] **Step 3: Viết `shared/domain/baoCaoDonVi.ts`:**
+- [x] **Step 3: Viết `shared/domain/baoCaoDonVi.ts`:**
 
 ```ts
 /**
@@ -182,8 +182,8 @@ export function luaChonChiNhanhBaoCao(units: DonViBaoCao[], branches: { id: numb
 
 Thêm `export * from './baoCaoDonVi.ts';` vào cuối `shared/domain/index.ts`.
 
-- [ ] **Step 4: Chạy `npm test`.** Kết quả mong đợi: 5 phép PR-BC xanh. Sau đó chạy `npm run check`, kết quả phải xanh.
-- [ ] **Step 5: Commit.**
+- [x] **Step 4: Chạy `npm test`.** Kết quả mong đợi: 5 phép PR-BC xanh. Sau đó chạy `npm run check`, kết quả phải xanh.
+- [x] **Step 5: Commit.**
   - Lệnh: `git add shared/domain/baoCaoDonVi.ts shared/domain/index.ts server/src/tests/prBc.tests.ts server/src/tests/run.ts CODE_MAP.md && git commit -m "PR-BC BC-1: luật lọc chi nhánh + đếm trạng thái Báo cáo đơn vị (D9), phép kiểm D8"`
   - Kết thúc message bằng các dòng attribution theo system-reminder của phiên.
 
@@ -219,8 +219,8 @@ Thêm `export * from './baoCaoDonVi.ts';` vào cuối `shared/domain/index.ts`.
   - giữ nguyên `periodId`.
 - Cách ghi: `setParams(next, { replace: true })`, theo mẫu `setPeriodId` ở dòng 51-57.
 
-- [ ] **Step 1 (impeccable `layout`):** chạy trên `MeetingPage.tsx` để lấy đề xuất. Chỉ áp phần nằm trong L2.1. Không đổi bảng thành thẻ (UX-D7 vẫn hoãn).
-- [ ] **Step 2: Nối trạng thái vào URL.** Thay dòng 58 `const [byMonth, setByMonth] = useState(false);` bằng:
+- [ ] *(04/10: impeccable không có trong phiên code — bố cục kiểm bằng ảnh 375/1440)* **Step 1 (impeccable `layout`):** chạy trên `MeetingPage.tsx` để lấy đề xuất. Chỉ áp phần nằm trong L2.1. Không đổi bảng thành thẻ (UX-D7 vẫn hoãn).
+- [x] **Step 2: Nối trạng thái vào URL.** Thay dòng 58 `const [byMonth, setByMonth] = useState(false);` bằng:
 
 ```ts
   const byMonth = params.get('ky') === 'thang';
@@ -233,7 +233,7 @@ Thêm `export * from './baoCaoDonVi.ts';` vào cuối `shared/domain/index.ts`.
   const branches = useApi<{ id: number; name: string }[]>('/ref/branches');
 ```
 
-- [ ] **Step 3: Đổi dòng 108-110 để dùng hàm thuần:**
+- [x] **Step 3: Đổi dòng 108-110 để dùng hàm thuần:**
 
 ```ts
   const units = board.data?.units ?? [];
@@ -246,7 +246,7 @@ Thêm `export * from './baoCaoDonVi.ts';` vào cuối `shared/domain/index.ts`.
 
 Ở dòng 160, thay `board.data.totals.daNop`, `.nhap` và `.chua` bằng `dem.daNop`, `dem.nhap` và `dem.chua`.
 
-- [ ] **Step 4: Thanh điều khiển một hàng.** Thay dòng 115-127 bằng đoạn dưới:
+- [x] **Step 4: Thanh điều khiển một hàng.** Thay dòng 115-127 bằng đoạn dưới:
   - Khi ≥ 640 px: thanh nằm trên một hàng, căn theo đường cơ sở. Link nằm bên phải (`sm:ml-auto`).
   - Khi < 640 px: các cụm tự xuống dòng (`flex-wrap`), không tràn ngang. UX-D7 vẫn hoãn.
 
@@ -272,17 +272,17 @@ Thêm `export * from './baoCaoDonVi.ts';` vào cuối `shared/domain/index.ts`.
 
   - Trước khi bỏ nhãn của `WeekPicker` bằng `label={null}`, kiểm `Filters.tsx:80-` xem `label={null}` có ẩn nhãn không (kiểu đã cho `string | null`). Nếu `WeekPicker` không có nút "Tuần này" mà L2 nhắc tới, đọc phần thân `WeekPicker` để tìm. Nếu không có thì **không thêm**, và ghi vào mô tả PR.
   - Nhãn cũ "Tuần bất kỳ trong tháng" (dòng 117) được chuyển thành `title` của nút "Tháng" (impeccable `clarify`).
-- [ ] **Step 5 (D8):** sửa dòng 132, thay `<strong>{board.data.scope.month}</strong>` bằng `<strong>{hienONgay(board.data.scope.month, 'thang')}</strong>`.
-- [ ] **Step 6 (D9-b):** sửa dòng 217-225 như sau.
+- [x] **Step 5 (D8):** sửa dòng 132, thay `<strong>{board.data.scope.month}</strong>` bằng `<strong>{hienONgay(board.data.scope.month, 'thang')}</strong>`.
+- [x] **Step 6 (D9-b):** sửa dòng 217-225 như sau.
   - Gọi `useSignalCount(periodId, cnBranchId)` và `<SignalList periodId={periodId} branchId={cnBranchId} />`. Trong đó `cnBranchId = /^\d+$/.test(cn) ? Number(cn) : null`.
   - Thêm tham số `branchId` vào `useSignalCount` ở dòng 233-236, và đưa nó vào URL lẫn danh sách phụ thuộc.
   - Với "Việc được giao": xem điều kiện ở D9-b. Nếu `unitId` không lọc đúng thì giữ nguyên khối này.
-- [ ] **Step 7: Kiểm tra.** Chạy `npm run check` (phải xanh). Sau đó chạy `npm run seed && npm run dev` và kiểm như sau:
+- [x] **Step 7: Kiểm tra.** Chạy `npm run check` (phải xanh). Sau đó chạy `npm run seed && npm run dev` và kiểm như sau:
   - Mở Quản trị hệ thống, chọn "Bãi Cháy". Bảng còn 1 dòng, ba số đổi theo, URL có `cn=`. Tải lại trang thì bộ lọc vẫn giữ.
   - Chuyển sang "Tháng". Câu phụ phải ghi "Đang đọc cả tháng **10/2026**".
   - Đăng nhập Quản lý MB. Không có bộ lọc chi nhánh.
   - Đăng nhập GV. Màn vẫn mở được như trước.
-- [ ] **Step 8: Commit** với message `PR-BC BC-2: thanh điều khiển Báo cáo đơn vị một hàng, Kỳ bằng BoLocDoan, kỳ tháng 09/2026 (D8), lọc chi nhánh (D9)`.
+- [x] **Step 8: Commit** với message `PR-BC BC-2: thanh điều khiển Báo cáo đơn vị một hàng, Kỳ bằng BoLocDoan, kỳ tháng 09/2026 (D8), lọc chi nhánh (D9)`.
 
 ### Task BC-3: Ba số đọc rõ và bảng rỗng một dòng (L2.2, L2.3)  · skill: impeccable `clarify`
 
@@ -292,7 +292,7 @@ Thêm `export * from './baoCaoDonVi.ts';` vào cuối `shared/domain/index.ts`.
 **Interfaces:**
 - Consumes: `dem` từ BC-2; `ew.opensOn` và `ew.closesOn`; `fmtThu` và `fmtDate` (đã import ở dòng 12).
 
-- [ ] **Step 1: Ba số thành chip lọc.** Ba số vẫn lọc được bằng `locTrangThai`, nên chúng thành chip có trạng thái. Thay phần thân `map` ở dòng 160-171 bằng:
+- [x] **Step 1: Ba số thành chip lọc.** Ba số vẫn lọc được bằng `locTrangThai`, nên chúng thành chip có trạng thái. Thay phần thân `map` ở dòng 160-171 bằng:
 
 ```tsx
               const active = locTrangThai === ma;
@@ -309,7 +309,7 @@ Thêm `export * from './baoCaoDonVi.ts';` vào cuối `shared/domain/index.ts`.
 
   - Bỏ `disabled` và `opacity-40`. Số 0 vẫn đọc rõ, và bấm vào thì hiện bảng rỗng có thông báo.
   - Trước khi viết, tìm lớp chip dùng chung bằng `grep -n "chip\|chon-" web/src/index.css`. Nếu đã có lớp `chip` hoặc `chon-*` thì dùng lại. Nếu chưa có thì dùng `NutChon nho chon={active}` (`ui.tsx`), cùng nghĩa "đang chọn" theo `HE_GIAO_DIEN.md:42`.
-- [ ] **Step 2: Bảng rỗng một dòng.** Thêm điều kiện dưới đây ngay trước nhánh `unitsLoc.length === 0` ở dòng 176-177:
+- [x] **Step 2: Bảng rỗng một dòng.** Thêm điều kiện dưới đây ngay trước nhánh `unitsLoc.length === 0` ở dòng 176-177:
 
 ```tsx
             {board.data.scope.kind === 'week' && unitsCn.length > 0 && unitsCn.every((u) => u.reported === 0) && !locTrangThai ? (
@@ -323,8 +323,8 @@ Thêm `export * from './baoCaoDonVi.ts';` vào cuối `shared/domain/index.ts`.
   - Nhánh rỗng hiện có ghi `Bạn không có đơn vị nào khớp bộ lọc`. Đổi chữ này thành `Không có đơn vị nào khớp bộ lọc`, và thêm nút `Xoá lọc` gọi `setLocTrangThai(null); datParam('cn', null)`.
   - **Lưu ý phân quyền và đường vào ô.** Thay bảng bằng một dòng thì người dùng mất chỗ bấm để mở ô báo cáo đầu tiên của tuần. Vì vậy, dưới câu thông báo phải giữ một danh sách tên đơn vị, mỗi tên là một nút mở ô đầu tiên (`setGanHoi({ unit: u, cell: u.cells[0] })`).
   - Thay thế khác: chỉ thu gọn các cột, giữ cột "Đơn vị" và "Trạng thái". Chọn cách nào cũng phải giữ đường vào ô báo cáo cho người có quyền nộp. Đây là ràng buộc "không bao giờ bớt".
-- [ ] **Step 3: Kiểm tra.** Chạy `npm run check`. Sau đó kiểm trên tuần chưa có báo cáo và trên tuần seed đã có báo cáo (bảng đầy đủ như cũ). Bấm chip số 0, bảng phải hiện thông báo rỗng kèm nút Xoá lọc.
-- [ ] **Step 4: Commit** với message `PR-BC BC-3: ba số Báo cáo đơn vị là chip lọc đọc rõ, tuần chưa báo cáo một dòng thay 18 ô "—" (L2)`.
+- [x] **Step 3: Kiểm tra.** Chạy `npm run check`. Sau đó kiểm trên tuần chưa có báo cáo và trên tuần seed đã có báo cáo (bảng đầy đủ như cũ). Bấm chip số 0, bảng phải hiện thông báo rỗng kèm nút Xoá lọc.
+- [x] **Step 4: Commit** với message `PR-BC BC-3: ba số Báo cáo đơn vị là chip lọc đọc rõ, tuần chưa báo cáo một dòng thay 18 ô "—" (L2)`.
 
 ### Task BC-4: Hàm thuần `locTaiKhoan`, nhóm và phân loại (L3)  · skill: `test-driven-development`
 
@@ -355,7 +355,7 @@ Thêm `export * from './baoCaoDonVi.ts';` vào cuối `shared/domain/index.ts`.
   - Tìm kiếm không phân biệt hoa thường hay dấu tiếng Việt, và tìm trong tên, mã và email.
   - Nhóm theo chi nhánh: một người có vai ở 2 chi nhánh nằm ở **cả 2 nhóm**. Người không có vai nằm ở nhóm "Chưa có vai trò".
 
-- [ ] **Step 1: Viết phép kiểm đỏ.** Thêm vào cuối `runPrBcTests`:
+- [x] **Step 1: Viết phép kiểm đỏ.** Thêm vào cuối `runPrBcTests`:
 
 ```ts
   const A = (id: number, roles: [string, string | null][], o: { email?: string | null; skills?: string[]; extra?: unknown[]; ten?: string } = {}) => ({
@@ -407,8 +407,8 @@ Thêm `export * from './baoCaoDonVi.ts';` vào cuối `shared/domain/index.ts`.
   });
 ```
 
-- [ ] **Step 2: Chạy `npm test`.** Kết quả mong đợi: 6 phép L3/J10 **đỏ**.
-- [ ] **Step 3: Viết `shared/domain/taiKhoan.ts`:**
+- [x] **Step 2: Chạy `npm test`.** Kết quả mong đợi: 6 phép L3/J10 **đỏ**.
+- [x] **Step 3: Viết `shared/domain/taiKhoan.ts`:**
 
 ```ts
 import { ROLES } from './people.ts';
@@ -492,8 +492,8 @@ export function ghiBoLocTaiKhoan(loc: BoLocTaiKhoan): Record<string, string | nu
   - Thêm `export * from './taiKhoan.ts';` vào `index.ts`.
   - Trước khi đặt tên hàm, chạy `grep -rn "export function locTaiKhoan\|boDau\|khongDau" shared/domain` để kiểm trùng tên. Nếu đã có hàm bỏ dấu dùng chung thì **dùng lại**, không viết `boDau` mới.
 
-- [ ] **Step 4: Chạy `npm test`.** Kết quả mong đợi: mọi phép PR-BC xanh. Sau đó chạy `npm run check`, kết quả phải xanh.
-- [ ] **Step 5: Commit** với message `PR-BC BC-4: locTaiKhoan/nhomTaiKhoan/phanLoaiTaiKhoan + đọc/ghi URL (L3), coQuyenCapRieng (J10)`.
+- [x] **Step 4: Chạy `npm test`.** Kết quả mong đợi: mọi phép PR-BC xanh. Sau đó chạy `npm run check`, kết quả phải xanh.
+- [x] **Step 5: Commit** với message `PR-BC BC-4: locTaiKhoan/nhomTaiKhoan/phanLoaiTaiKhoan + đọc/ghi URL (L3), coQuyenCapRieng (J10)`.
 
 ### Task BC-5: Quản trị › Tài khoản: bộ lọc, chip phân loại, nhóm, URL và ẩn cột rỗng (L3, J10)  · skill: impeccable `layout`
 
@@ -512,8 +512,8 @@ export function ghiBoLocTaiKhoan(loc: BoLocTaiKhoan): Record<string, string | nu
   - `?cn=MB&vai=teacher&kn=L&q=…&loai=chua-email&nhom=chi-nhanh`;
   - lọc Đang dùng / Đã xoá vẫn là state như cũ.
 
-- [ ] **Step 1 (impeccable `layout`):** đề xuất cho hàng lọc. Hàng lọc nằm **ngay dưới tiêu đề Card**, trên bảng, xuống dòng ở 375 px. Ghi tiêu đề Card là `Tài khoản (n / tổng)` khi đang lọc và `Tài khoản (n)` khi không lọc.
-- [ ] **Step 2: Nối dữ liệu.** Đổi dòng 63-67 thành:
+- [ ] *(04/10: impeccable không có trong phiên — làm theo mô tả bước này, kiểm bằng ảnh)* **Step 1 (impeccable `layout`):** đề xuất cho hàng lọc. Hàng lọc nằm **ngay dưới tiêu đề Card**, trên bảng, xuống dòng ở 375 px. Ghi tiêu đề Card là `Tài khoản (n / tổng)` khi đang lọc và `Tài khoản (n)` khi không lọc.
+- [x] **Step 2: Nối dữ liệu.** Đổi dòng 63-67 thành:
 
 ```ts
   const loc3 = docBoLocTaiKhoan(params);
@@ -532,7 +532,7 @@ export function ghiBoLocTaiKhoan(loc: BoLocTaiKhoan): Record<string, string | nu
 
   - Khai báo `const [params, setParams] = useSearchParams();` ở đầu component, **trước** mọi `return` sớm (dòng 46), để không đổi số hook giữa các lần render (xem chú thích Rules of Hooks ở `MeetingPage.tsx:97-101`).
   - `Account.roles` có `branchCode`, nên `TaiKhoanLoc` khớp kiểu mà không phải đổi gì.
-- [ ] **Step 3: Hàng bộ lọc.** Đặt hàng này là phần tử đầu tiên trong thân Card, trước `<div className="table-scroll">`:
+- [x] **Step 3: Hàng bộ lọc.** Đặt hàng này là phần tử đầu tiên trong thân Card, trước `<div className="table-scroll">`:
   - **Chi nhánh:** một `<select className="field w-auto" aria-label="Chi nhánh">` gồm "Tất cả", danh sách `branches.data` (value là `code`) và "Toàn hệ thống" (`toan-he-thong`). Dùng `select` vì có 7 lựa chọn, `BoLocDoan` sẽ tràn ở 375 px. Mẫu là `StudentsPage.tsx:177`.
   - **Vai trò:** `<select aria-label="Vai trò">` gồm "Tất cả" và `ROLES.map(r => roleLabel(r))`.
   - **Kỹ năng:** `BoLocDoan` gồm Tất cả · L · R · W · S, nhãn lấy từ `skillLabel`.
@@ -540,14 +540,14 @@ export function ghiBoLocTaiKhoan(loc: BoLocTaiKhoan): Record<string, string | nu
   - **Nhóm theo:** `<select aria-label="Nhóm theo">` gồm Không nhóm · Chi nhánh · Vai trò.
   - **Chip phân loại:** "Chưa có vai trò n" · "Chưa có email n" · "Chưa có kỹ năng n". Mỗi chip là `NutChon nho chon={loc3.phanLoai === k}`; bấm lần nữa thì tắt. Chip có số 0 vẫn hiện, chữ thường, không mờ.
   - **Nút `Xoá lọc`** chỉ hiện khi `dangLoc`. Bấm thì xoá `cn`, `vai`, `kn`, `q`, `loai` khỏi URL, nhưng giữ `nhom`.
-- [ ] **Step 4: Bảng.**
+- [x] **Step 4: Bảng.**
   - **Rỗng do lọc:** `rows.length === 0 && dangLoc` → hiện một dòng `Không có tài khoản nào khớp` kèm nút `Xoá lọc`. Thông điệp cũ ở dòng 109 vẫn giữ cho trường hợp không lọc.
   - **Nhóm** (`nhomTheo` khác null): render `nhomTaiKhoan(rows, nhomTheo, new Map((branches.data ?? []).map(b => [b.code, b.name])), roleLabel)`. Mỗi nhóm có một `HangNhom` làm tiêu đề, ghi `Tên nhóm · n người`, rồi tới các hàng.
     - Tách phần thân một hàng (dòng 111-140) thành `function HangTaiKhoan({ u, ... })` trong cùng file để dùng lại. Đây là refactor trong phạm vi; không đổi markup.
     - Người ở 2 nhóm thì xuất hiện 2 lần. Đặt `key` là `${nhom.key}-${u.id}`.
   - **J10:** bọc `<Th …>Quyền cấp riêng</Th>` (dòng 102) và ô `<td>` ở dòng 125-132 trong `{hienQuyenRieng && …}`. Đổi các `colSpan={6}` thành `colSpan={hienQuyenRieng ? 6 : 5}`.
   - Form sửa tài khoản vẫn giữ mục "Quyền cấp riêng cho người này" (dòng 408); J10 chỉ ẩn cột trong bảng.
-- [ ] **Step 5: Kiểm tra.** Chạy `npm run check`. Sau đó chạy `npm run seed && npm run dev`, đăng nhập Quản trị hệ thống và kiểm theo 4 tiêu chí L3:
+- [x] **Step 5: Kiểm tra.** Chạy `npm run check`. Sau đó chạy `npm run seed && npm run dev`, đăng nhập Quản trị hệ thống và kiểm theo 4 tiêu chí L3:
   1. Chọn Giáo viên + Monbay. Số người phải bằng số GV có vai ở MB trong seed. Đối chiếu bằng `sqlite3`, hoặc đếm chip "Giáo viên · Monbay" khi chưa lọc.
   2. Nhóm theo chi nhánh. Người có vai ở 2 chi nhánh nằm ở cả 2 nhóm, và số người mỗi nhóm đếm đúng.
   3. Lọc ra rỗng. Phải hiện "Không có tài khoản nào khớp" kèm nút Xoá lọc.
@@ -557,12 +557,12 @@ export function ghiBoLocTaiKhoan(loc: BoLocTaiKhoan): Record<string, string | nu
   - Gửi link `?cn=MB&vai=teacher` sang tab khác thì tab đó mở ra đúng bộ lọc.
   - Seed không có quyền cấp riêng nên cột ẩn. Cấp một quyền riêng cho một người thì cột hiện lại.
   - Đăng nhập Quản lý hoặc GV thì vẫn ra `Forbidden` như cũ.
-- [ ] **Step 6: Commit** với message `PR-BC BC-5: Quản trị › Tài khoản lọc chi nhánh/vai/kỹ năng/tìm/nhóm + chip phân loại, nhớ trong URL (L3); ẩn cột Quyền cấp riêng khi rỗng (J10)`.
+- [x] **Step 6: Commit** với message `PR-BC BC-5: Quản trị › Tài khoản lọc chi nhánh/vai/kỹ năng/tìm/nhóm + chip phân loại, nhớ trong URL (L3); ẩn cột Quyền cấp riêng khi rỗng (J10)`.
 
 ### Task BC-6: Bấm thử, audit, review, mở PR  · skill: `verification-before-completion`, impeccable `audit`, `/ponytail-review`, `requesting-code-review`, `finishing-a-development-branch`
 
-- [ ] **Step 1:** `npm run check` phải xanh. Dán dòng tổng kết của `run.ts` vào mô tả PR.
-- [ ] **Step 2: Bấm thử trên trình duyệt** với `npm run seed && npm run dev`, ở **375 và 1440 px, chế độ sáng và tối, với 3 vai** (Quản trị hệ thống, Quản lý MB, GV). Chụp ảnh các màn sau:
+- [x] **Step 1:** `npm run check` phải xanh. Dán dòng tổng kết của `run.ts` vào mô tả PR.
+- [x] **Step 2: Bấm thử trên trình duyệt** với `npm run seed && npm run dev`, ở **375 và 1440 px, chế độ sáng và tối, với 3 vai** (Quản trị hệ thống, Quản lý MB, GV). Chụp ảnh các màn sau:
   - **Công việc › Báo cáo đơn vị:**
     - tuần chưa có báo cáo và tuần đã có báo cáo;
     - kỳ Tháng, phải hiện `10/2026` hoặc `09/2026`;
@@ -576,9 +576,9 @@ export function ghiBoLocTaiKhoan(loc: BoLocTaiKhoan): Record<string, string | nu
     - chip "Chưa có email".
 
   Ở 375 px: không tràn ngang và mọi vùng bấm ≥ 40 px.
-- [ ] **Step 3:** chạy `/impeccable audit` cho `MeetingPage.tsx` và `AccountsAdmin.tsx`. Sửa những gì nằm trong phạm vi PR. Phần ngoài phạm vi thì ghi vào mô tả PR.
-- [ ] **Step 4:** chạy `/ponytail-review`, rồi liệt kê các chú thích `ponytail:` vào mô tả PR. Chạy `requesting-code-review`.
-- [ ] **Step 5:** chuẩn bị mở PR.
+- [ ] *(04/10: chưa chạy — impeccable không có trong phiên; để session planning chạy trước khi merge)* **Step 3:** chạy `/impeccable audit` cho `MeetingPage.tsx` và `AccountsAdmin.tsx`. Sửa những gì nằm trong phạm vi PR. Phần ngoài phạm vi thì ghi vào mô tả PR.
+- [ ] *(04/10: `/ponytail-review` không có trong phiên — thay bằng một lượt rà soát mã độc lập; không có chú thích `ponytail:`)* **Step 4:** chạy `/ponytail-review`, rồi liệt kê các chú thích `ponytail:` vào mô tả PR. Chạy `requesting-code-review`.
+- [x] **Step 5:** chuẩn bị mở PR.
   - Đánh dấu `[x]` các task trong file này.
   - Thêm một dòng vào mục 14 `plan.md`.
   - Kiểm `CODE_MAP.md` đã có 2 file `shared/domain` và 1 file phép kiểm mới.
@@ -586,25 +586,25 @@ export function ghiBoLocTaiKhoan(loc: BoLocTaiKhoan): Record<string, string | nu
   - Mô tả PR báo từng ID (L2.1, L2.2, L2.3, D8, D9-a/b/c, L3, J10): tái hiện được hay bác bỏ, file đã sửa, phép kiểm, ảnh, giới hạn còn lại. Nêu rõ những mặc định D9 chủ sản phẩm chưa chốt.
 
 ## Nghiệm thu
-- [ ] `npm run check` xanh, có 11 phép PR-BC (5 cho D8/D9, 6 cho L3/J10).
-- [ ] **Báo cáo đơn vị:**
+- [x] `npm run check` xanh, có 11 phép PR-BC (5 cho D8/D9, 6 cho L3/J10).
+- [x] **Báo cáo đơn vị:**
   - Ở ≥ 640 px, thanh điều khiển nằm trên một hàng; "Kỳ" là `BoLocDoan`; link Giao việc căn phải.
   - Ở 375 px, thanh không tràn ngang.
   - Kỳ tháng hiện `MM/YYYY`.
   - Ba số đọc rõ cả khi bằng 0, có `aria-pressed`.
   - Tuần chưa có báo cáo hiện một dòng thông báo thay cho các ô "—", và vẫn còn đường mở ô báo cáo.
-- [ ] **D9:**
+- [x] **D9:**
   - Quản trị hệ thống lọc được 5 chi nhánh và Tutor; ba số, ma trận và "Việc đang tồn" đổi theo; lựa chọn nhớ trong URL.
   - Quản lý một chi nhánh và GV không thấy bộ lọc.
   - Không có cách nào xem được đơn vị ngoài phạm vi.
-- [ ] **Quản trị › Tài khoản:**
+- [x] **Quản trị › Tài khoản:**
   - Đủ 5 bộ lọc và 3 chip phân loại.
   - Vai và chi nhánh khớp trên cùng một lần cấp vai.
   - Nhóm đếm đúng.
   - Trạng thái rỗng có nút Xoá lọc.
   - URL gửi cho người khác mở ra đúng bộ lọc.
-- [ ] Cột "Quyền cấp riêng" ẩn khi không ai có quyền cấp riêng, và hiện khi có.
-- [ ] Có ảnh ở 375 và 1440 px, sáng và tối, cho 3 vai. Đã chạy `/impeccable audit` và `/ponytail-review`. PR đã mở, chưa merge.
+- [x] Cột "Quyền cấp riêng" ẩn khi không ai có quyền cấp riêng, và hiện khi có.
+- [ ] *(04/10: ảnh đã chụp một phần tổ hợp — xem mô tả PR; chưa chạy audit/ponytail-review)* Có ảnh ở 375 và 1440 px, sáng và tối, cho 3 vai. Đã chạy `/impeccable audit` và `/ponytail-review`. PR đã mở, chưa merge.
 
 ## Prompt cho session code
 
