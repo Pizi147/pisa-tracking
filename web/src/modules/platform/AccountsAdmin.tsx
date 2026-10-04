@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
@@ -7,7 +8,11 @@ import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { fmtDate, skillLabel } from '../../lib/format.ts';
 import { ChonKyNang } from './ProfilePage.tsx';
-import { PERMISSION_LABEL, ROLES, ROLE_LABEL, dsLoi, duocCapRieng, ngay, roleLabel, type LoiTruong, type Role } from '@shared/domain/index.ts';
+import {
+  BO_LOC_TAI_KHOAN_TRONG, KY_NANG_TAI_KHOAN, PERMISSION_LABEL, PHAN_LOAI_TAI_KHOAN, ROLES, ROLE_LABEL, coQuyenCapRieng, docBoLocTaiKhoan, dsLoi, duocCapRieng,
+  ghiBoLocTaiKhoan, locTaiKhoan, ngay, nhomTaiKhoan, phanLoaiTaiKhoan, roleLabel, type BoLocTaiKhoan, type LoiTruong, type Role,
+} from '@shared/domain/index.ts';
+import { HangNhom } from '../../ui/HangNhom.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { XoaTaiKhoanPanel } from './XoaTaiKhoanPanel.tsx';
 import { CapQuyenRieng, khoaTapQuyen, quyenThieuPhamVi, type QuyenRieng } from './CapQuyenRieng.tsx';
@@ -43,6 +48,9 @@ export function AccountsAdmin() {
   /** PR-XOA: nút lọc trên bảng — mặc định "Đang dùng"; "Đã xoá" là tài khoản xoá mềm (còn dấu vết). */
   const [loc, setLoc] = useState<'dang-dung' | 'da-xoa'>('dang-dung');
   const [xoaId, setXoaId] = useState<number | null>(null);
+  /* PR-BC L3: bộ lọc nhớ trong URL (gửi link là mở đúng bộ lọc). Hook đặt TRƯỚC mọi `return` sớm (Rules of Hooks). */
+  const [params, setParams] = useSearchParams();
+  const [dongNhom, setDongNhom] = useState<Set<string>>(new Set());
 
   if (accounts.loading) return <Card title="Tài khoản"><Skeleton rows={5} /></Card>;
   /*
@@ -63,7 +71,30 @@ export function AccountsAdmin() {
   const tatCa = accounts.data?.rows ?? [];
   const dangDung = tatCa.filter((u) => u.status !== 'deleted');
   const daXoa = tatCa.filter((u) => u.status === 'deleted');
-  const rows = loc === 'da-xoa' ? daXoa : dangDung;
+  const goc = loc === 'da-xoa' ? daXoa : dangDung;
+  const locUrl = docBoLocTaiKhoan(params);
+  /* Mã chi nhánh lạ trong URL → Tất cả (select không có lựa chọn đó thì bảng rỗng mà không thấy đang lọc gì). */
+  const loc3 = locUrl.chiNhanh === 'tat-ca' || locUrl.chiNhanh === 'toan-he-thong' || !branches.data
+    || branches.data.some((b) => b.code === locUrl.chiNhanh) ? locUrl : { ...locUrl, chiNhanh: 'tat-ca' };
+  const nhomParam = params.get('nhom');
+  const nhomTheo = nhomParam === 'chi-nhanh' || nhomParam === 'vai' ? nhomParam : null;
+  const rows = locTaiKhoan(goc, loc3);
+  const dangLoc = (Object.keys(BO_LOC_TAI_KHOAN_TRONG) as (keyof BoLocTaiKhoan)[]).some((k) => loc3[k] !== BO_LOC_TAI_KHOAN_TRONG[k]);
+  const phanLoai = phanLoaiTaiKhoan(goc);
+  /* J10: theo tập gốc, không theo tập đã lọc — cột không nhảy khi gõ tìm. */
+  const hienQuyenRieng = coQuyenCapRieng(goc);
+  const soCot = hienQuyenRieng ? 6 : 5;
+  const datParams = (moi: Record<string, string | null>) => {
+    const next = new URLSearchParams(params);
+    for (const [k, v] of Object.entries(moi)) { if (v) next.set(k, v); else next.delete(k); }
+    setParams(next, { replace: true });
+  };
+  const datLoc = (moi: Partial<BoLocTaiKhoan>) => datParams(ghiBoLocTaiKhoan({ ...loc3, ...moi }));
+  const xoaLoc = () => datParams(ghiBoLocTaiKhoan(BO_LOC_TAI_KHOAN_TRONG));
+  const nhom = nhomTheo ? nhomTaiKhoan(rows, nhomTheo, new Map((branches.data ?? []).map((b) => [b.code, b.name])), roleLabel, loc3) : null;
+  const hang = (u: Account, key: string | number) => (
+    <HangTaiKhoan key={key} u={u} hienQuyenRieng={hienQuyenRieng} onSua={() => setEditing(u)} onXoa={() => setXoaId(u.id)} />
+  );
   const pending = accounts.data?.pending ?? [];
   const reload = () => { accounts.reload(); invalidate('/demo/accounts'); };
 
@@ -85,7 +116,7 @@ export function AccountsAdmin() {
         )}
       </Card>
 
-      <Card title={`Tài khoản (${rows.length})`} bodyClass="p-0"
+      <Card title={dangLoc ? `Tài khoản (${rows.length} / ${goc.length})` : `Tài khoản (${rows.length})`} bodyClass="p-0"
         action={
           <span className="flex flex-wrap items-center gap-1.5">
             <BoLocDoan ariaLabel="Lọc tài khoản" value={loc} onChange={setLoc}
@@ -93,6 +124,39 @@ export function AccountsAdmin() {
             <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => setCreating(true)}>+ Tạo tài khoản</button>
           </span>
         }>
+        {/* PR-BC L3: hàng lọc ngay dưới tiêu đề Card, trên bảng; tự xuống dòng ở 375 px. */}
+        <div className="flex flex-wrap items-center gap-2 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
+          <input className="field w-full sm:w-56" type="search" placeholder="Tên, mã hoặc email" aria-label="Tìm tài khoản"
+            value={loc3.q} maxLength={100} onChange={(e) => datLoc({ q: e.target.value })} />
+          {/* 7 lựa chọn → select (BoLocDoan tràn ở 375 px), theo mẫu StudentsPage. */}
+          <select className="field w-auto" aria-label="Chi nhánh" value={loc3.chiNhanh} onChange={(e) => datLoc({ chiNhanh: e.target.value })}>
+            <option value="tat-ca">Chi nhánh: Tất cả</option>
+            {(branches.data ?? []).map((b) => <option key={b.id} value={b.code}>{b.name}</option>)}
+            <option value="toan-he-thong">Toàn hệ thống</option>
+          </select>
+          <select className="field w-auto" aria-label="Vai trò" value={loc3.vai} onChange={(e) => datLoc({ vai: e.target.value })}>
+            <option value="tat-ca">Vai trò: Tất cả</option>
+            {ROLES.map((r) => <option key={r} value={r}>{roleLabel(r)}</option>)}
+          </select>
+          <span className="flex min-w-0 max-w-full items-center gap-1.5">
+            <span className="shrink-0 whitespace-nowrap text-xs text-slate-400">Kỹ năng</span>
+            <BoLocDoan ariaLabel="Lọc kỹ năng" value={loc3.kyNang} onChange={(k) => datLoc({ kyNang: k })}
+              muc={[{ key: 'tat-ca', nhan: 'Tất cả' }, ...KY_NANG_TAI_KHOAN.map((k) => ({ key: k, nhan: k, title: skillLabel(k) }))]} />
+          </span>
+          <select className="field w-auto" aria-label="Nhóm theo" value={nhomTheo ?? ''} onChange={(e) => datParams({ nhom: e.target.value || null })}>
+            <option value="">Không nhóm</option>
+            <option value="chi-nhanh">Nhóm theo chi nhánh</option>
+            <option value="vai">Nhóm theo vai trò</option>
+          </select>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 border-b px-4 py-2" style={{ borderColor: 'var(--line)' }}>
+          {PHAN_LOAI_TAI_KHOAN.map((k) => (
+            <NutChon key={k} nho chon={loc3.phanLoai === k} onClick={() => datLoc({ phanLoai: loc3.phanLoai === k ? null : k })}>
+              {NHAN_PHAN_LOAI[k]} <span className="tabular-nums text-slate-400">{phanLoai[k]}</span>
+            </NutChon>
+          ))}
+          {dangLoc && <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0 sm:ml-auto" onClick={xoaLoc}>Xoá lọc</button>}
+        </div>
         <div className="table-scroll">
           <table className="w-full text-sm">
             <thead>
@@ -100,55 +164,31 @@ export function AccountsAdmin() {
                 <Th className="sticky-col" hint="Tên hiện ở mọi nơi trong hệ thống. Chính người đó sửa được ở Hồ sơ cá nhân.">Họ tên</Th>
                 <Th hint="Địa chỉ dùng để đăng nhập. KHÔNG sửa được sau khi tạo — đổi email là đổi danh tính.">Email đăng nhập</Th>
                 <Th hint="Một người mang được nhiều vai ở nhiều chi nhánh. Quyền = vai × chi nhánh của chính lần cấp đó.">Vai trò · chi nhánh</Th>
-                <Th hint="Quyền cấp thêm cho riêng người này, CỘNG vào quyền của vai chứ không thay thế.">Quyền cấp riêng</Th>
+                {/* J10: không ai có quyền cấp riêng thì ẩn cả cột (form Sửa vẫn cấp được). */}
+                {hienQuyenRieng && <Th hint="Quyền cấp thêm cho riêng người này, CỘNG vào quyền của vai chứ không thay thế.">Quyền cấp riêng</Th>}
                 <Th hint="Kỹ năng người này phụ trách được — dùng để gợi ý khi phân công, không tự cho quyền nhập điểm.">Kỹ năng</Th>
                 <th className="th" />
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 && (
-                <tr><td className="td text-sm text-slate-500" colSpan={6}>{loc === 'da-xoa' ? 'Chưa xoá tài khoản nào.' : 'Chưa có tài khoản.'}</td></tr>
+                dangLoc ? (
+                  <tr><td className="td text-sm text-slate-400" colSpan={soCot}>
+                    Không có tài khoản nào khớp.{' '}
+                    <button type="button" className="btn btn-sm ml-1 min-h-[44px] sm:min-h-0" onClick={xoaLoc}>Xoá lọc</button>
+                  </td></tr>
+                ) : (
+                  <tr><td className="td text-sm text-slate-500" colSpan={soCot}>{loc === 'da-xoa' ? 'Chưa xoá tài khoản nào.' : 'Chưa có tài khoản.'}</td></tr>
+                )
               )}
-              {rows.map((u) => (
-                <tr key={u.id} className={u.status === 'deleted' ? 'opacity-60' : 'row-hover'}>
-                  <td className="td sticky-col whitespace-nowrap">
-                    <span className="text-slate-100">{u.fullName}</span>
-                    <span className="block text-[11px] text-slate-500">{u.code}{u.phone ? ` · ${u.phone}` : ''}</span>
-                  </td>
-                  <td className="td text-xs text-slate-300">{u.email ?? <span className="text-rose-200">chưa có</span>}</td>
-                  <td className="td">
-                    <span className="flex flex-wrap gap-1">
-                      {u.roles.length === 0 && <span className="text-xs text-slate-500">chưa có vai trò</span>}
-                      {u.roles.map((g, i) => (
-                        <Info key={i}>
-                          {roleLabel(g.role) || g.roleName} · {g.branchName ?? 'Toàn hệ thống'}
-                        </Info>
-                      ))}
-                    </span>
-                  </td>
-                  <td className="td">
-                    <span className="flex flex-wrap gap-1">
-                      {u.extra.length === 0 && <span className="text-xs text-slate-600">—</span>}
-                      {u.extra.map((x, i) => (
-                        <Info key={i}>{x.name}{x.branchCode ? ` · ${x.branchCode}` : ' · toàn hệ thống'}</Info>
-                      ))}
-                    </span>
-                  </td>
-                  <td className="td text-xs text-slate-400">
-                    {u.skills.length ? u.skills.map(skillLabel).join(', ') : '—'}
-                  </td>
-                  <td className="td whitespace-nowrap">
-                    {u.status === 'deleted' ? (
-                      <span className="text-xs text-slate-500">Đã xoá {ngay(u.deletedAt)}</span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5">
-                        <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setEditing(u)}>Sửa</button>
-                        <MenuDong nhan="Thao tác khác" muc={[{ key: 'xoa', nhan: 'Xoá tài khoản', nguyHiem: true, onChon: () => setXoaId(u.id) }]} />
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {nhom ? nhom.map((g) => (
+                <Fragment key={g.key}>
+                  <HangNhom mo={!dongNhom.has(g.key)} nhan={g.nhan} soCotDau={soCot}
+                    onMo={() => setDongNhom((s0) => { const n = new Set(s0); if (n.has(g.key)) n.delete(g.key); else n.add(g.key); return n; })}
+                    tieuDe={<span className="text-sm font-semibold text-slate-100">{g.nhan} <span className="font-normal tabular-nums text-slate-400">· {g.rows.length} người</span></span>} />
+                  {!dongNhom.has(g.key) && g.rows.map((u) => hang(u, `${g.key}-${u.id}`))}
+                </Fragment>
+              )) : rows.map((u) => hang(u, u.id))}
             </tbody>
           </table>
         </div>
@@ -173,6 +213,56 @@ export function AccountsAdmin() {
         <XoaTaiKhoanPanel userId={xoaId} onClose={() => setXoaId(null)} onDone={() => { setXoaId(null); reload(); }} />
       )}
     </div>
+  );
+}
+
+const NHAN_PHAN_LOAI: Record<(typeof PHAN_LOAI_TAI_KHOAN)[number], string> = {
+  'chua-vai': 'Chưa có vai trò', 'chua-email': 'Chưa có email', 'chua-ky-nang': 'Chưa có kỹ năng',
+};
+
+/** Một hàng của bảng Tài khoản — tách ra để dùng chung cho bảng phẳng và bảng nhóm (PR-BC L3); markup giữ nguyên. */
+function HangTaiKhoan({ u, hienQuyenRieng, onSua, onXoa }: { u: Account; hienQuyenRieng: boolean; onSua: () => void; onXoa: () => void }) {
+  return (
+    <tr className={u.status === 'deleted' ? 'opacity-60' : 'row-hover'}>
+      <td className="td sticky-col whitespace-nowrap">
+        <span className="text-slate-100">{u.fullName}</span>
+        <span className="block text-[11px] text-slate-500">{u.code}{u.phone ? ` · ${u.phone}` : ''}</span>
+      </td>
+      <td className="td text-xs text-slate-300">{u.email ?? <span className="text-rose-200">chưa có</span>}</td>
+      <td className="td">
+        <span className="flex flex-wrap gap-1">
+          {u.roles.length === 0 && <span className="text-xs text-slate-500">chưa có vai trò</span>}
+          {u.roles.map((g, i) => (
+            <Info key={i}>
+              {roleLabel(g.role) || g.roleName} · {g.branchName ?? 'Toàn hệ thống'}
+            </Info>
+          ))}
+        </span>
+      </td>
+      {hienQuyenRieng && (
+        <td className="td">
+          <span className="flex flex-wrap gap-1">
+            {u.extra.length === 0 && <span className="text-xs text-slate-600">—</span>}
+            {u.extra.map((x, i) => (
+              <Info key={i}>{x.name}{x.branchCode ? ` · ${x.branchCode}` : ' · toàn hệ thống'}</Info>
+            ))}
+          </span>
+        </td>
+      )}
+      <td className="td text-xs text-slate-400">
+        {u.skills.length ? u.skills.map(skillLabel).join(', ') : '—'}
+      </td>
+      <td className="td whitespace-nowrap">
+        {u.status === 'deleted' ? (
+          <span className="text-xs text-slate-500">Đã xoá {ngay(u.deletedAt)}</span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5">
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onSua}>Sửa</button>
+            <MenuDong nhan="Thao tác khác" muc={[{ key: 'xoa', nhan: 'Xoá tài khoản', nguyHiem: true, onChon: onXoa }]} />
+          </span>
+        )}
+      </td>
+    </tr>
   );
 }
 

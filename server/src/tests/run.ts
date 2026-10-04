@@ -9079,6 +9079,9 @@ await runPrNtTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, ad
 // ==================================================================== PR-GVb (Chờ duyệt: duyệt nhiều ở Tất cả, Để QL biết, U01)
 const { runPrGvbTests } = await import('./prGvb.tests.ts');
 await runPrGvbTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+// ==================================================================== PR-BC (Báo cáo đơn vị + Quản trị › Tài khoản)
+const { runPrBcTests } = await import('./prBc.tests.ts');
+await runPrBcTests({ check, assert });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
