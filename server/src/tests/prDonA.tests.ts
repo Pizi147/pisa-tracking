@@ -331,25 +331,25 @@ export async function runPrDonATests(t: YThucTestKit) {
     assert(e3?.status === 400 && /Tối đa 200/.test(e3.message), `tên Case: ${e3?.status} ${e3?.message}`);
   });
 
-  check('Dọn-a (3e) · #26 bấm đúp (cùng người, cùng nội dung, trong 10 giây) → MỘT PA, MỘT lần xem lại, MỘT việc Vận hành, MỘT việc /tasks', () => {
+  check('Dọn-a (3e) · #26 bấm đúp (cùng người, cùng khoá gửi — PR-GVa thay chặn 10 giây) → MỘT PA, MỘT lần xem lại, MỘT việc Vận hành, MỘT việc /tasks', () => {
     const { sid } = emMoi('MB FT 101');
     const c = cases.reportIssue(P.lrTeacher, { studentId: sid, topic: 'listening', title: 'Case thử bấm đúp', summary: 'Case dùng cho phép kiểm bấm đúp.',
       primaryCode: d.issuesForTopic('listening')[0].code, idempotencyKey: `dona-dup-${sid}` });
     const pa = { kind: 'tutor', description: 'Kèm 1-1 hai buổi một tuần', status: 'started', startedDate: TODAY, performerSelf: true };
-    cases.recordIntervention(P.lrTeacher, c.id, pa);
-    cases.recordIntervention(P.lrTeacher, c.id, pa);
+    cases.recordIntervention(P.lrTeacher, c.id, { ...pa, idempotencyKey: `dona-pa-${sid}` });
+    cases.recordIntervention(P.lrTeacher, c.id, { ...pa, idempotencyKey: `dona-pa-${sid}` });
     const nPa = get('SELECT COUNT(*) n FROM case_interventions WHERE case_id = ?', c.id).n;
-    const fu = { outcome: null, note: 'Em tiến bộ ở dạng điền từ.' };
+    const fu = { outcome: null, note: 'Em tiến bộ ở dạng điền từ.', idempotencyKey: `dona-fu-${sid}` };
     cases.recordFollowUp(P.lrTeacher, c.id, fu);
     cases.recordFollowUp(P.lrTeacher, c.id, fu);
     const nFu = get(`SELECT COUNT(*) n FROM case_followups WHERE case_id = ? AND note = ?`, c.id, fu.note).n;
-    const viec = { title: `Việc bấm đúp Dọn-a ${sid}`, group: 'teacher', branchId: MB };
+    const viec = { title: `Việc bấm đúp Dọn-a ${sid}`, group: 'teacher', branchId: MB, idempotencyKey: `dona-viec-${sid}` };
     const v1 = mgmt.createMgmtTask(P.mbManager, viec);
     const v2 = mgmt.createMgmtTask(P.mbManager, viec);
-    const t1 = meeting.createTask(P.mbManager, { title: `Việc /tasks bấm đúp ${sid}`, kind: 'branch_ops', branchId: MB });
-    const t2 = meeting.createTask(P.mbManager, { title: `Việc /tasks bấm đúp ${sid}`, kind: 'branch_ops', branchId: MB });
+    const t1 = meeting.createTask(P.mbManager, { title: `Việc /tasks bấm đúp ${sid}`, kind: 'branch_ops', branchId: MB, idempotencyKey: `dona-task-${sid}` });
+    const t2 = meeting.createTask(P.mbManager, { title: `Việc /tasks bấm đúp ${sid}`, kind: 'branch_ops', branchId: MB, idempotencyKey: `dona-task-${sid}` });
     assert(nPa === 1 && nFu === 1 && v1.id === v2.id && t1.id === t2.id, JSON.stringify({ nPa, nFu, v: [v1.id, v2.id], t: [t1.id, t2.id] }));
-    /* Nội dung khác → bản ghi mới (không chặn nhầm). */
+    /* Lần mở form mới (không khoá / khoá khác) → bản ghi mới (không chặn nhầm). */
     cases.recordIntervention(P.lrTeacher, c.id, { ...pa, description: 'Kèm 1-1 ba buổi một tuần' });
     assert(get('SELECT COUNT(*) n FROM case_interventions WHERE case_id = ?', c.id).n === 2, 'PA khác nội dung bị chặn nhầm');
   });

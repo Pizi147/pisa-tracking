@@ -311,17 +311,18 @@ export function theoLo<T>(ds: readonly T[], fn: (lo: T[], ph: string) => void, c
 }
 
 /**
- * PR-Dọn (quét #26): CHỐNG BẤM ĐÚP cho bảng CHƯA có cột `idempotency_key` — dòng khớp `khop` (cùng người, cùng đối tượng, cùng nội
- * dung; `IS ?` nên NULL khớp NULL) có `created_at` trong `giay` giây gần nhất → trả id của nó để nơi gọi trả lại bản đã có.
- * `bang` và tên cột chỉ do mã truyền vào (hằng), không bao giờ từ thân yêu cầu.
- * ponytail: chặn trùng 10 giây theo trạng thái; thêm cột khoá `idempotency_key` cho PA, followup, việc khi có migrate sau deploy.
+ * PR-GVa (F01 = D13): KHOÁ GỬI mỗi lần mở form. Dòng `bang` của `nguoiCot = nguoiId` có khoá `khoa` → id, không có → null.
+ * Khoá gắn người tạo: cùng mã từ người khác không trả dòng của người kia. `bang`/`nguoiCot` là hằng trong mã, không bao giờ từ thân yêu cầu.
+ * Nơi gọi kiểm quyền và dữ liệu nhập TRƯỚC rồi mới tra khoá.
  */
-export function vuaGhi(bang: string, khop: Record<string, unknown>, giay = 10): number | null {
-  const cot = Object.keys(khop);
-  const tu = new Date(Date.now() - giay * 1000).toISOString();
-  return (db().prepare(`SELECT id FROM ${bang} WHERE ${cot.map((c) => `${c} IS ?`).join(' AND ')} AND created_at >= ? ORDER BY id DESC LIMIT 1`)
-    .get(...Object.values(khop), tu) as any)?.id ?? null;
+export function theoKhoaGui(bang: 'tasks' | 'case_interventions' | 'case_followups', nguoiCot: string, nguoiId: number, khoa: string | null): number | null {
+  if (!khoa) return null;
+  return (db().prepare(`SELECT id FROM ${bang} WHERE ${nguoiCot} = ? AND idempotency_key = ?`).get(nguoiId, khoa) as any)?.id ?? null;
 }
+
+/** Lỗi do unique index khoá gửi (hai lần gửi đồng thời cùng khoá) — để nơi gọi đọc lại dòng đã có thay vì báo lỗi. */
+export const laTrungKhoa = (e: unknown): boolean =>
+  /UNIQUE constraint failed: \w+\.\w+, \w+\.idempotency_key/i.test(String((e as any)?.message ?? e));
 
 /** `INSERT INTO t (a, b, …)` + `VALUES (?,?,…),(…)` + `duoi` nhiều dòng một câu, chia lô theo trần tham số. Mọi dòng cùng số cột. */
 export function chenNhieuDong(dau: string, dong: readonly unknown[][], duoi = ''): void {

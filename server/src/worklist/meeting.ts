@@ -1,7 +1,7 @@
-import { db, theoLo, tx, vuaGhi } from '../db.ts';
+import { db, laTrungKhoa, theoKhoaGui, theoLo, tx } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
-  BRANCH_REPORT_CATEGORIES, ENTRY_SKILLS, PERMISSIONS, tenMon, tuanLich,
+  BRANCH_REPORT_CATEGORIES, ENTRY_SKILLS, PERMISSIONS, chuanKhoaGui, tenMon, tuanLich,
   TASK_PROGRESS, TASK_PROGRESS_LABEL, TASK_TYPES,
   TUTOR_REPORT_CATEGORIES, UNIT_STATUSES, trangThaiDonVi, trangThaiO, type DueState,
 } from '../../../shared/domain/index.ts';
@@ -9,7 +9,7 @@ import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, diffDays, forbidden, isIsoDate, notFound, nowIso, padCode } from '../util.ts';
 import { can, require_, scopeFor, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
-import { owningMonth, periodById, reportEditWindow } from '../platform/week.ts';
+import { ensurePeriod, owningMonth, periodById, reportEditWindow } from '../platform/week.ts';
 import { countAttachments } from '../platform/attachments.ts';
 
 export const DUE_SOON_DAYS = 3;
@@ -632,15 +632,30 @@ export function createTask(p: Principal, input: any) {
   if (gui !== null && branchId !== null && gui !== branchId) throw badRequest('Chi nhánh của việc không khớp với lớp / đơn vị đã chọn.');
   if (!chuTuDo(input.title, 'Nội dung công việc', 200)) throw badRequest('Cần nội dung công việc.');   // PR-Dọn (Q4): kiểu + trần
   if (input.dueDate && !isIsoDate(input.dueDate)) throw badRequest('Hạn không hợp lệ.');
+  /*
+   * PR-GVa (F04): việc giao GV KHÔNG BAO GIỜ thiếu kỳ — thiếu thì nó không hiện ở danh sách tuần nào. Gửi kỳ thì kỳ phải có thật;
+   * không gửi thì lấy tuần neo của `/ref/period-window` (tuần chứa hôm nay) — cùng luật web dùng qua `resolveWeek(neo.weekStart)`.
+   * Kiểm TRƯỚC `tx`: kỳ rác thì không có task, Case hay PA nào được tạo. Việc Vận hành (`branch_ops`) không theo kỳ — giữ như cũ.
+   */
+  let periodId: number | null = null;
+  if (input.periodId != null && input.periodId !== '') {
+    const n = Number(input.periodId);
+    if (!Number.isSafeInteger(n) || n <= 0 || !periodById(n)) throw badRequest('Kỳ không hợp lệ — tải lại trang rồi giao lại.');
+    periodId = n;
+  } else if (kind === 'teacher_task') {
+    periodId = ensurePeriod(demoToday()).id;
+  }
   // `Loại` đã bỏ khỏi form; cột cũ giữ nguyên giá trị lịch sử, việc mới ghi mặc định.
   const taskType = 'in_period';
   const emGiao = lop ? docEmGiaoViec(conn, lop.id, input.studentIds) : null;
 
-  return tx(() => {
-    /* PR-Dọn (quét #26): bấm đúp → trả lại việc vừa tạo (việc giao GV toả PA cho từng em — gửi đôi là nhân đôi PA). */
-    /* Khoá đủ trường nghiệp vụ (rà Dọn-a P2): cùng tiêu đề nhưng khác kỹ năng / người / hạn là HAI việc, không gộp lặng lẽ. */
-    const cu = vuaGhi('tasks', { title: input.title.trim(), kind, class_id: lop?.id ?? null, branch_id: branchId, created_by: p.userId,
-      topic: kind === 'teacher_task' ? (input.topic ?? null) : null, assignee_user_id: input.assigneeUserId ?? null, due_date: input.dueDate ?? null });
+  /*
+   * PR-GVa (F01 = D13): gửi lại CÙNG khoá của lần mở form → trả việc đã có (việc giao GV toả PA cho từng em — gửi đôi là nhân đôi PA).
+   * Mọi kiểm quyền / dữ liệu ở trên chạy TRƯỚC khi tra khoá. Không khoá thì luôn là việc mới.
+   */
+  const khoa = chuanKhoaGui(input.idempotencyKey);
+  const taoMoi = () => tx(() => {
+    const cu = theoKhoaGui('tasks', 'created_by', p.userId, khoa);
     if (cu) return conn.prepare('SELECT * FROM tasks WHERE id = ?').get(cu);
     const n = (conn.prepare('SELECT COUNT(*) AS n FROM tasks').get() as any).n as number;
     const code = padCode('CV', n + 1, 4);
@@ -649,15 +664,15 @@ export function createTask(p: Principal, input: any) {
         `INSERT INTO tasks (code, period_id, task_type, kind, class_id, topic, title,
                             reporting_unit_id, branch_id, assignee_user_id,
                             due_date, progress, note, source_type, source_unit_report_id, source_sos_case_id,
-                            created_by, created_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?, 'not_started', ?,?,?,?,?,?)`,
+                            created_by, created_at, idempotency_key)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?, 'not_started', ?,?,?,?,?,?,?)`,
       )
-      .run(code, input.periodId ?? null, taskType, kind, lop?.id ?? null,
+      .run(code, periodId, taskType, kind, lop?.id ?? null,
            kind === 'teacher_task' ? (input.topic ?? null) : null,
            input.title.trim(), input.unitId ?? null, branchId,
            input.assigneeUserId ?? null, input.dueDate ?? null, input.note ?? null,
            input.sourceType ?? 'manual', input.sourceUnitReportId ?? null, input.sourceSosCaseId ?? null,
-           p.userId, nowIso());
+           p.userId, nowIso(), khoa);
     const id = Number(info.lastInsertRowid);
     setFollowers(conn, id, p.userId, branchId, input.followerIds);
     const touched = lop ? fanOutToStudents(conn, id, p.userId, { classId: lop.id, studentIds: emGiao, topic: input.topic, title: input.title }) : 0;
@@ -665,6 +680,13 @@ export function createTask(p: Principal, input: any) {
       entityLabel: code, after: { title: input.title, dueDate: input.dueDate, kind, students: touched } });
     return conn.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
   });
+  try { return taoMoi(); }
+  catch (e) {
+    /* Hai lần gửi đồng thời cùng khoá: lần thua vấp unique index → trả việc lần thắng đã ghi. */
+    const cu = laTrungKhoa(e) ? theoKhoaGui('tasks', 'created_by', p.userId, khoa) : null;
+    if (cu) return conn.prepare('SELECT * FROM tasks WHERE id = ?').get(cu);
+    throw e;
+  }
 }
 
 /**

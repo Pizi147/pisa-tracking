@@ -56,7 +56,7 @@ export function theoKhoaGui(bang: 'tasks' | 'case_interventions' | 'case_followu
 export function laTrungKhoa(e: unknown): boolean;
 ```
 
-- [ ] **Bước 1: Viết phép kiểm đỏ** ở `server/src/tests/prGva.tests.ts`. Chép khung HTTP (`createApp().listen(0)`, `goi`, `taoTaiKhoan`, `dangNhap`) từ `anToan.tests.ts:128-156`. Dùng IP riêng `203.0.113.17x` và email bắt đầu bằng `gva`. Cuối file xoá `auth_attempts` của IP đó và đóng `may`.
+- [x] **Bước 1: Viết phép kiểm đỏ** ở `server/src/tests/prGva.tests.ts`. Chép khung HTTP (`createApp().listen(0)`, `goi`, `taoTaiKhoan`, `dangNhap`) từ `anToan.tests.ts:128-156`. Dùng IP riêng `203.0.113.17x` và email bắt đầu bằng `gva`. Cuối file xoá `auth_attempts` của IP đó và đóng `may`.
 ```ts
 import type { AnToanTestKit } from './anToan.tests.ts';
 export async function runPrGvaTests(t: AnToanTestKit) {
@@ -135,9 +135,9 @@ await runPrGvaTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P })
 ```
 Dùng tên vai thật trong `P` (`run.ts:216`); nếu không có `qlMB` thì lấy vai QL chi nhánh có sẵn ở đó.
 
-- [ ] **Bước 2: Chạy `npm test`.** Phải đỏ: không có mô-đun `khoaGui`, phép "hai việc khác group" trả cùng id (đây là tái hiện F01), migrate chưa có.
+- [x] **Bước 2: Chạy `npm test`.** Phải đỏ: không có mô-đun `khoaGui`, phép "hai việc khác group" trả cùng id (đây là tái hiện F01), migrate chưa có.
 
-- [ ] **Bước 3: Migrate** `server/src/migrate/prGva.ts`:
+- [x] **Bước 3: Migrate** `server/src/migrate/prGva.ts`:
 ```ts
 /** PR-GVa (F01 = D13): khoá gửi mỗi lần mở form. CHỈ THÊM — không đổi dòng nào, an toàn trên Turso đang chạy. Chạy lặp được. */
 const BANG: [bang: string, nguoi: string][] = [['tasks', 'created_by'], ['case_interventions', 'recorded_by'], ['case_followups', 'observer_user_id']];
@@ -151,7 +151,7 @@ export function migratePrGva(conn: any, applied: string[]) {
 ```
 Gọi trong `migrate.ts` sau `migratePrPb2b(conn, applied);`: `/* PR-GVa: khoá gửi (chỉ thêm). */ migratePrGva(conn, applied);`. Ở `schema.sql`, thêm `idempotency_key TEXT,  -- PR-GVa: một mã cho mỗi lần mở form` vào cả 3 bảng, và 3 câu `CREATE UNIQUE INDEX … WHERE idempotency_key IS NOT NULL` ngay sau mỗi bảng (mẫu ở `schema.sql:448`). Kiểm lại tên cột người ghi (`recorded_by`, `observer_user_id`) bằng cách đọc `schema.sql:1000-1140` trước khi viết.
 
-- [ ] **Bước 4: `db.ts`.** Thay `vuaGhi` (`db.ts:313-323`) bằng:
+- [x] **Bước 4: `db.ts`.** Thay `vuaGhi` (`db.ts:313-323`) bằng:
 ```ts
 export function theoKhoaGui(bang: 'tasks' | 'case_interventions' | 'case_followups', nguoiCot: string, nguoiId: number, khoa: string | null): number | null {
   if (!khoa) return null;
@@ -161,7 +161,7 @@ export const laTrungKhoa = (e: unknown) => /UNIQUE constraint failed: \w+\.\w+, 
 ```
 Chạy `grep -rn "vuaGhi" server/src`. Nơi gọi chỉ có `mgmttasks.ts`, `meeting.ts` và `cases.ts:819,1265`; sửa hết rồi xoá `vuaGhi`.
 
-- [ ] **Bước 5: `createMgmtTask`** (`mgmttasks.ts`). Thêm `idempotencyKey?: string | null` vào kiểu input (dòng 381). Mọi kiểm quyền, kiểm Case và kiểm báo cáo đơn vị (đến dòng 446) giữ nguyên **trước**. Thay khối `vuaGhi` ở dòng 448-451 bằng:
+- [x] **Bước 5: `createMgmtTask`** (`mgmttasks.ts`). Thêm `idempotencyKey?: string | null` vào kiểu input (dòng 381). Mọi kiểm quyền, kiểm Case và kiểm báo cáo đơn vị (đến dòng 446) giữ nguyên **trước**. Thay khối `vuaGhi` ở dòng 448-451 bằng:
 ```ts
 const khoa = chuanKhoaGui(input.idempotencyKey);
 const taoMoi = () => tx(() => {
@@ -175,13 +175,13 @@ catch (e) { const cu = laTrungKhoa(e) ? theoKhoaGui('tasks', 'created_by', p.use
 ```
 Ở route `/mgmt-tasks` (`routes/index.ts:1905`), thêm `idempotencyKey: b.idempotencyKey`.
 
-- [ ] **Bước 6: `createTask`** (`meeting.ts:638-660`). Làm theo cùng mẫu: `theoKhoaGui('tasks','created_by',p.userId,khoa)` trả `SELECT * FROM tasks WHERE id = ?`. INSERT thêm `idempotency_key`. Bọc try/catch `laTrungKhoa`. Route `/tasks` đã truyền nguyên `req.body`.
+- [x] **Bước 6: `createTask`** (`meeting.ts:638-660`). Làm theo cùng mẫu: `theoKhoaGui('tasks','created_by',p.userId,khoa)` trả `SELECT * FROM tasks WHERE id = ?`. INSERT thêm `idempotency_key`. Bọc try/catch `laTrungKhoa`. Route `/tasks` đã truyền nguyên `req.body`.
 
-- [ ] **Bước 7: PA và followup** (`cases.ts:819`, `:1265`). Đổi điều kiện `vuaGhi(...)` thành `theoKhoaGui('case_interventions','recorded_by',p.userId,khoa)` (followup dùng `case_followups` và `observer_user_id`). Giữ ngoại lệ `!input.backfill && !input.thayThe` của PA. INSERT thêm cột. Bọc try/catch `laTrungKhoa`, rồi trả `caseDetail(p, caseId)`.
+- [x] **Bước 7: PA và followup** (`cases.ts:819`, `:1265`). Đổi điều kiện `vuaGhi(...)` thành `theoKhoaGui('case_interventions','recorded_by',p.userId,khoa)` (followup dùng `case_followups` và `observer_user_id`). Giữ ngoại lệ `!input.backfill && !input.thayThe` của PA. INSERT thêm cột. Bọc try/catch `laTrungKhoa`, rồi trả `caseDetail(p, caseId)`.
 
-- [ ] **Bước 8:** `npm run check` phải xanh. Cập nhật `CODE_MAP.md`.
+- [x] **Bước 8:** `npm run check` phải xanh. Cập nhật `CODE_MAP.md`.
 
-- [ ] **Bước 9: Commit** `PR-GVa-1: khoá gửi mỗi lần mở form thay chặn trùng 10 giây (F01 = D13) + migrate chỉ thêm`.
+- [x] **Bước 9: Commit** `PR-GVa-1: khoá gửi mỗi lần mở form thay chặn trùng 10 giây (F01 = D13) + migrate chỉ thêm`.
 
 ### Task GVa-2: Web gửi khoá, mỗi lần mở form một mã
 Skill: test-driven-development · verification-before-completion.
@@ -191,10 +191,10 @@ Skill: test-driven-development · verification-before-completion.
 
 **Interfaces:** `moiKhoaGui` từ `@shared/domain` (dùng đúng đường import mà web đang dùng cho `shared/domain`).
 
-- [ ] **Bước 1: Phép kiểm đỏ** trong `prGva.tests.ts`. Đây là quét nguồn, chỉ dùng vì web chưa có trình chạy React test. Mỗi `api.post('/mgmt-tasks'`, `api.post('/tasks'`, `` api.post(`/cases/${caseId}/interventions` `` trong `web/src` phải gửi `idempotencyKey`. Khoá phải tạo bằng `useRef(moiKhoaGui(` hoặc `useMemo(() => moiKhoaGui(`, không sinh trong hàm `tao`/`luu` (sinh ở đó thì bấm lại sau lỗi mạng ra mã mới, nên lại thành hai việc).
-- [ ] **Bước 2:** Chạy kiểm, phải đỏ.
-- [ ] **Bước 3:** Trong `CreateTask`: `const khoa = useRef(moiKhoaGui('cv'));`. Gửi `idempotencyKey: khoa.current` trong **cả hai** nhánh POST (dòng 671 và 677). **Không** đổi khoá khi lỗi: thử lại giữ mã cũ nên máy chủ trả bản đã có. Mã mới chỉ sinh khi form mở lại (GVa-4 mount lại theo `key`). Trong `ThaoTacCase` làm như vậy cho PA.
-- [ ] **Bước 4:** `npm run check` phải xanh. **Commit** `PR-GVa-2: form Giao việc / PA gửi khoá mỗi lần mở`.
+- [x] **Bước 1: Phép kiểm đỏ** trong `prGva.tests.ts`. Đây là quét nguồn, chỉ dùng vì web chưa có trình chạy React test. Mỗi `api.post('/mgmt-tasks'`, `api.post('/tasks'`, `` api.post(`/cases/${caseId}/interventions` `` trong `web/src` phải gửi `idempotencyKey`. Khoá phải tạo bằng `useRef(moiKhoaGui(` hoặc `useMemo(() => moiKhoaGui(`, không sinh trong hàm `tao`/`luu` (sinh ở đó thì bấm lại sau lỗi mạng ra mã mới, nên lại thành hai việc).
+- [x] **Bước 2:** Chạy kiểm, phải đỏ.
+- [x] **Bước 3:** Trong `CreateTask`: `const khoa = useRef(moiKhoaGui('cv'));`. Gửi `idempotencyKey: khoa.current` trong **cả hai** nhánh POST (dòng 671 và 677). **Không** đổi khoá khi lỗi: thử lại giữ mã cũ nên máy chủ trả bản đã có. Mã mới chỉ sinh khi form mở lại (GVa-4 mount lại theo `key`). Trong `ThaoTacCase` làm như vậy cho PA.
+- [x] **Bước 4:** `npm run check` phải xanh. **Commit** `PR-GVa-2: form Giao việc / PA gửi khoá mỗi lần mở`.
 
 ### Task GVa-3: Máy chủ không lưu việc giao GV thiếu kỳ (F04 phía máy chủ)
 Skill: test-driven-development · systematic-debugging (tái hiện F04) · verification-before-completion.
@@ -207,7 +207,7 @@ Skill: test-driven-development · systematic-debugging (tái hiện F04) · veri
 - Mọi kiểm tra trên chạy **trước** `tx`. Lỗi thì không có task, Case hay PA nào được tạo.
 - `branch_ops` giữ `period_id` như cũ (việc Vận hành không theo kỳ).
 
-- [ ] **Bước 1: Phép kiểm đỏ:**
+- [x] **Bước 1: Phép kiểm đỏ:**
 ```ts
 check('GVa-3 · F04 tái hiện: teacher_task không gửi periodId → vẫn có kỳ = tuần hiện tại, hiện trong listTasks tuần đó', () => {
   const lop = (conn.prepare("SELECT id FROM classes WHERE status = 'active' ORDER BY id LIMIT 1").get() as any).id;
@@ -225,8 +225,8 @@ check('GVa-3 · periodId không tồn tại → 400, KHÔNG có task / Case / PA
 check('GVa-3 · periodId hợp lệ giữ nguyên; gửi lại cùng khoá không nhân đôi', () => { /* … */ });
 ```
 Đọc `listTasks` (`meeting.ts:~420-490`) để biết kiểu trả về thật (`rows` hay mảng), rồi sửa phép kiểm cho khớp.
-- [ ] **Bước 2:** Chạy, phải đỏ (`period_id` đang NULL).
-- [ ] **Bước 3: Sửa.** Ngay sau khối kiểm `dueDate` (`meeting.ts:~633`), thêm:
+- [x] **Bước 2:** Chạy, phải đỏ (`period_id` đang NULL).
+- [x] **Bước 3: Sửa.** Ngay sau khối kiểm `dueDate` (`meeting.ts:~633`), thêm:
 ```ts
 let periodId: number | null = null;
 if (input.periodId != null && input.periodId !== '') {
@@ -238,7 +238,7 @@ if (input.periodId != null && input.periodId !== '') {
 }
 ```
 Ở INSERT, đổi `input.periodId ?? null` thành `periodId`. Kiểm lại `periodById` có ném lỗi khi không thấy không; nếu có thì bắt lỗi rồi báo 400 như trên.
-- [ ] **Bước 4:** `npm run check` phải xanh. **Commit** `PR-GVa-3: máy chủ không lưu việc giao GV thiếu kỳ (F04)`.
+- [x] **Bước 4:** `npm run check` phải xanh. **Commit** `PR-GVa-3: máy chủ không lưu việc giao GV thiếu kỳ (F04)`.
 
 ### Task GVa-4: Form Giao việc mở theo ngữ cảnh (F03) + khoá gửi khi chưa có kỳ (F04 web)
 Skill: `/ponytail lite` · test-driven-development · systematic-debugging (tái hiện F03) · `/impeccable harden` (form) · `/impeccable clarify` (chữ lỗi, Thử lại) · verification-before-completion.
@@ -257,7 +257,7 @@ export function trangThaiKyGiao(s: { loading: boolean; error: unknown; data: { i
 export function duocGiao(ky: TrangThaiKy, busy: boolean): boolean;
 ```
 
-- [ ] **Bước 1: Phép kiểm đỏ** (luật thuần):
+- [x] **Bước 1: Phép kiểm đỏ** (luật thuần):
 ```ts
 const cv: any = await import('../../../shared/domain/congViec.ts');
 check('GVa-4 · giaTriDauGiaoViec: "Tất cả" → rỗng; A → A; việc cha thắng bộ lọc; nhóm mặc định', () => {
@@ -275,9 +275,9 @@ check('GVa-4 · trangThaiKyGiao + duocGiao: đang tải / lỗi 503 / không neo
 });
 ```
 Thêm một phép quét nguồn (bất đắc dĩ): `MgmtTasksPage.tsx` không còn dòng `useState(String(parent?.branchId ?? branchId` và `<CreateTask` có `key=`.
-- [ ] **Bước 2:** Chạy, phải đỏ. Tái hiện F03 trên trình duyệt: lọc "Tất cả", mở rồi đóng form, đổi lọc sang A, mở lại, tạo việc. Việc lưu với `branch_id` NULL. Ghi lại vào mô tả PR.
-- [ ] **Bước 3: Luật thuần.** Viết 3 hàm trong `congViec.ts`. `due`: lấy `addDaysIso(parent.due, -1)` khi kết quả ≥ `homNay`, nếu không thì `''` (khớp chú thích dòng 645-648 "hạn cha đã là quá khứ thì để trống"). Re-export ở `index.ts`.
-- [ ] **Bước 4: Mount lại khi mở (F03).** Tách `CreateTask` thành vỏ và ruột:
+- [x] **Bước 2:** Chạy, phải đỏ. Tái hiện F03 trên trình duyệt: lọc "Tất cả", mở rồi đóng form, đổi lọc sang A, mở lại, tạo việc. Việc lưu với `branch_id` NULL. Ghi lại vào mô tả PR.
+- [x] **Bước 3: Luật thuần.** Viết 3 hàm trong `congViec.ts`. `due`: lấy `addDaysIso(parent.due, -1)` khi kết quả ≥ `homNay`, nếu không thì `''` (khớp chú thích dòng 645-648 "hạn cha đã là quá khứ thì để trống"). Re-export ở `index.ts`.
+- [x] **Bước 4: Mount lại khi mở (F03).** Tách `CreateTask` thành vỏ và ruột:
 ```tsx
 function CreateTask(props: CreateTaskProps) {
   const lan = useRef(0); const moTruoc = useRef(false);
@@ -287,15 +287,15 @@ function CreateTask(props: CreateTaskProps) {
 }
 ```
 `CreateTaskForm` là thân hiện tại. Bỏ `if (!open) return null`. State đầu lấy từ `giaTriDauGiaoViec({ branchId, parent, defaultGroup }, homNay)` (dùng `useState(() => …)` để chỉ tính một lần lúc mount). Rerender trong lúc mở không ghi đè lựa chọn của người dùng. Mở lại thì state, khoá gửi (GVa-2) và `lf` đều mới. Sau khi tạo xong, `onClose()` đóng form; tạo liên tiếp nghĩa là mở lại, nên lại có giá trị đầu đúng và mã mới.
-- [ ] **Bước 5: Khoá gửi khi chưa có kỳ (F04).** `const ky = trangThaiKyGiao(tuanNay)` (chỉ khi `giaoGv`). Thêm `<Field label="Tuần">` hiện:
+- [x] **Bước 5: Khoá gửi khi chưa có kỳ (F04).** `const ky = trangThaiKyGiao(tuanNay)` (chỉ khi `giaoGv`). Thêm `<Field label="Tuần">` hiện:
   - `dang-tai`: "Đang lấy tuần hiện tại…"
   - `loi`: "Chưa lấy được tuần hiện tại nên chưa giao được." cùng nút phụ **Thử lại** (`tuanNay.reload()`)
   - `khong-neo`: "Không xác định được tuần hiện tại." cùng nút **Thử lại**
   - `co`: mã tuần (`W1 OCT`, chỉ đọc)
 
   Nút Giao `disabled={busy || (giaoGv && !duocGiao(ky, busy))}`. Trong `tao()`: nếu `ky.loai !== 'co'` thì return. `resolveWeek` lỗi thì toast "Chưa xác định được tuần — bấm Thử lại." và **không** POST. `/impeccable harden` rồi `/impeccable clarify` cho đúng các chữ này (chỉ trong form này).
-- [ ] **Bước 6:** `npm run check` phải xanh. Bấm thử theo mục Nghiệm thu (375/1440, sáng/tối, 3 vai). Mở DevTools, chặn hoặc làm chậm `/ref/period-window` để thử trạng thái tải chậm và 503.
-- [ ] **Bước 7: Commit** `PR-GVa-4: form Giao việc mở theo ngữ cảnh (F03), khoá gửi khi chưa có kỳ (F04)`.
+- [x] **Bước 6:** `npm run check` phải xanh. Bấm thử theo mục Nghiệm thu (375/1440, sáng/tối, 3 vai). Mở DevTools, chặn hoặc làm chậm `/ref/period-window` để thử trạng thái tải chậm và 503.
+- [x] **Bước 7: Commit** `PR-GVa-4: form Giao việc mở theo ngữ cảnh (F03), khoá gửi khi chưa có kỳ (F04)`.
 - [ ] **Bước 8: Cuối PR.** `/impeccable audit`, `/ponytail-review`, requesting-code-review, finishing-a-development-branch. Mở PR, không merge.
 
 ## Nghiệm thu

@@ -25,6 +25,7 @@ import { migratePrCt } from './migrate/prCt.ts';
 import { migratePrPb2b } from './migrate/prPb2b.ts';
 import { migratePrDeploy } from './migrate/prDeploy.ts';
 import { migratePrQu } from './migrate/prQu.ts';
+import { migratePrGva } from './migrate/prGva.ts';
 
 /**
  * Giá trị cũ của cột `track` cho case Ý thức. Mô hình Case Ý thức đã BỎ 21/09/2026 (rule book mục 18) — hằng số này chỉ để NÂNG CẤP
@@ -496,6 +497,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     /* PR-Pb2-b: ngày nhập đầu ô điểm + hạn xử lý chốt, ngày phản hồi vi phạm (chỉ cấu trúc). */ migratePrPb2b(conn, applied);
     /* PR-DEPLOY (0b-3): lớp + chương trình gốc của Case (chỉ cấu trúc; chép cho Case có sẵn chỉ khi vừa thêm cột). */ migratePrDeploy(conn, applied);
     /* PR-QU: `case.close` cho vai Giáo viên, một lần (`class.create` mới đã đi qua `migratePermissions`). */ migratePrQu(conn, applied);
+    /* PR-GVa: khoá gửi mỗi lần mở form cho việc, PA, lần xem lại (chỉ thêm). */ migratePrGva(conn, applied);
 
     /*
      * Case đã đóng theo hệ thống cũ mà không có hướng xử lý: ghi rõ là "đóng theo hệ thống

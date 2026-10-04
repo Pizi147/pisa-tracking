@@ -9065,6 +9065,9 @@ runPrPhTests({ check, assert });
 // ==================================================================== PR-QU (quyền tạo lớp, GVCN phân công, tạo lớp hàng loạt, Quản trị quyền)
 const { runPrQuTests } = await import('./prQu.tests.ts');
 await runPrQuTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+// ==================================================================== PR-GVa (giao việc: khoá gửi, chi nhánh form, kỳ)
+const { runPrGvaTests } = await import('./prGva.tests.ts');
+await runPrGvaTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0

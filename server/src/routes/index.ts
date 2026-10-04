@@ -1907,6 +1907,7 @@ api.post('/mgmt-tasks', requireAuth, wrap((req) => {
     parentTaskId: b.parentTaskId ? Number(b.parentTaskId) : null,
     caseIds: Array.isArray(b.caseIds) ? b.caseIds.map(Number) : [],
     unitReportId: b.unitReportId ? Number(b.unitReportId) : null,
+    idempotencyKey: b.idempotencyKey,   // PR-GVa: chuẩn hoá ở `chuanKhoaGui` (chuỗi lạ → không khoá)
   });
 }));
 
