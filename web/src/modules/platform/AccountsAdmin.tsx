@@ -7,9 +7,10 @@ import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { fmtDate, skillLabel } from '../../lib/format.ts';
 import { ChonKyNang } from './ProfilePage.tsx';
-import { PERMISSION_LABEL, ROLES, ROLE_LABEL, dsLoi, ngay, roleLabel, type LoiTruong, type Role } from '@shared/domain/index.ts';
+import { PERMISSION_LABEL, ROLES, ROLE_LABEL, dsLoi, duocCapRieng, ngay, roleLabel, type LoiTruong, type Role } from '@shared/domain/index.ts';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { XoaTaiKhoanPanel } from './XoaTaiKhoanPanel.tsx';
+import { CapQuyenRieng, khoaTapQuyen, quyenThieuPhamVi, type QuyenRieng } from './CapQuyenRieng.tsx';
 
 type Branch = { id: number; code: string; name: string };
 type RoleGrant = { role: string; roleName: string; branchCode: string | null; branchName: string | null };
@@ -271,9 +272,19 @@ function AccountDialog({ account, branches, onClose, onDone }: {
     }
     return [...m.entries()].map(([role, b]) => ({ role, branches: b }));
   });
-  const [extra, setExtra] = useState<{ permission: string; branchCode: string | null }[]>(
-    () => (account?.extra ?? []).map((x) => ({ permission: x.permission, branchCode: x.branchCode })),
+  /*
+   * PR-QU QU-7: quyền cấp riêng theo nhóm. Quyền cũ không còn cấp riêng được (ví dụ `admin.config`) thì không đưa vào form — máy chủ từ chối
+   * lưu chúng; lưu lần tới sẽ gỡ, và form nói trước điều đó (`quyenBo`). `chonQuyen` giữ cả quyền đã tick mà chưa chọn phạm vi.
+   */
+  const [extra, setExtra] = useState<QuyenRieng[]>(
+    () => (account?.extra ?? []).filter((x) => duocCapRieng(x.permission)).map((x) => ({ permission: x.permission, branchCode: x.branchCode })),
   );
+  const [chonQuyen, setChonQuyen] = useState<ReadonlySet<string>>(() => new Set(extra.map((x) => x.permission)));
+  const [lyDoQuyen, setLyDoQuyen] = useState('');
+  const quyenBo = (account?.extra ?? []).filter((x) => !duocCapRieng(x.permission));
+  const quyenDoi = !!account && khoaTapQuyen(extra) !== khoaTapQuyen(account.extra);
+  const thieuPhamVi = quyenThieuPhamVi(chonQuyen, extra);
+  const macDinhPhamVi = [...new Set((account?.roles ?? []).map((g) => g.branchCode).filter((b): b is string => !!b))];
   const [newPassword, setNewPassword] = useState('');
   /* K1-51, Q9: Quản trị sửa kỹ năng phụ trách được (5 ô L R W1 W2 S) — lưu qua `PUT /admin/accounts/:id/skills` khi đổi. */
   const [kyNang, setKyNang] = useState<Set<string>>(() => new Set(account?.skills ?? []));
@@ -291,6 +302,12 @@ function AccountDialog({ account, branches, onClose, onDone }: {
   const payloadRoles = () => grants
     .filter((g) => g.role)
     .map((g) => ({ role: g.role, branches: [...g.branches] }));
+  /* Chân panel: chưa đổi gì thì "Đóng", đã đổi thì "Huỷ thay đổi" — nói rõ bấm vào là bỏ những gì vừa sửa. */
+  const khoaVai = (ds: typeof grants) => ds.map((g) => `${g.role}:${[...g.branches].sort().join(',')}`).sort().join('|');
+  const [vaiGoc] = useState(() => khoaVai(grants));
+  const daDoi = editing
+    ? khoaVai(grants) !== vaiGoc || quyenDoi || !!newPassword || kyNangDoi
+    : Object.values(form).some((v) => v.trim()) || kyNang.size > 0;
 
   /* Báo sớm dưới ô — máy chủ vẫn kiểm đủ (`checkEmail`, `checkPassword`, "Cấp ít nhất một vai trò"). */
   const lf = useLoiForm();
@@ -301,6 +318,8 @@ function AccountDialog({ account, branches, onClose, onDone }: {
     ...(!editing && form.password.length < 6 ? [{ khoa: 'mat-khau', nhan: 'Mật khẩu ban đầu', lyDo: `Cần ít nhất 6 ký tự (đang có ${form.password.length})` }] : []),
     ...(!editing && payloadRoles().length === 0 ? [{ khoa: 'vai-tro', nhan: 'Vai trò', lyDo: 'Cấp ít nhất một vai trò' }] : []),
     ...(editing && newPassword && newPassword.length < 6 ? [{ khoa: 'mat-khau-moi', nhan: 'Đặt lại mật khẩu', lyDo: `Cần ít nhất 6 ký tự (đang có ${newPassword.length})` }] : []),
+    ...(editing && thieuPhamVi.length ? [{ khoa: 'quyen-rieng', nhan: 'Quyền cấp riêng', lyDo: `Chưa chọn phạm vi cho: ${thieuPhamVi.map((k) => PERMISSION_LABEL[k] ?? k).join(', ')}` }] : []),
+    ...(quyenDoi ? dsLoi([{ khoa: 'ly-do-quyen', nhan: 'Lý do đổi quyền', toiThieu: 1 }], { 'ly-do-quyen': lyDoQuyen.trim() }) : []),
   ];
 
   const save = () => {
@@ -309,7 +328,8 @@ function AccountDialog({ account, branches, onClose, onDone }: {
     if (editing) {
       return run(async () => {
         await api.put(`/admin/accounts/${account!.id}/roles`, { roles: payloadRoles() });
-        await api.put(`/admin/accounts/${account!.id}/permissions`, { items: extra });
+        /* Chỉ gửi khi tập quyền đổi: mỗi lần gửi là một dòng nhật ký kèm lý do. Lỗi thì giữ nguyên lựa chọn trên form để bấm Lưu lại. */
+        if (quyenDoi) await api.put(`/admin/accounts/${account!.id}/permissions`, { items: extra, lyDo: lyDoQuyen.trim() });
         if (newPassword) await api.post(`/admin/accounts/${account!.id}/password`, { password: newPassword });
         if (kyNangDoi) await api.put(`/admin/accounts/${account!.id}/skills`, { skills: [...kyNang] });
       }, 'Đã lưu tài khoản');
@@ -322,9 +342,9 @@ function AccountDialog({ account, branches, onClose, onDone }: {
   return (
     <KhungPanel tieuDe={editing ? 'Sửa tài khoản' : 'Tạo tài khoản'} hocVien={editing ? account!.fullName : null} rong="rong" onDong={onClose}
       chan={{
-        huy: { nhan: 'Đóng', onClick: onClose, disabled: busy },
+        huy: { nhan: daDoi ? 'Huỷ thay đổi' : 'Đóng', onClick: onClose, disabled: busy },
         conThieu: lf.conThieu(loi),
-        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={save} disabled={busy}>Lưu</button>,
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={save} disabled={busy}>{busy ? 'Đang lưu…' : 'Lưu'}</button>,
       }}>
       <div className="space-y-4 pt-3">
         {!editing && (
@@ -404,42 +424,37 @@ function AccountDialog({ account, branches, onClose, onDone }: {
               lý, nên phải có đường cấp riêng cho một người.
             */}
             <div>
-              <div className="flex items-center justify-between mb-1">
+              <div className="flex items-baseline justify-between gap-2 mb-1">
                 <span className="label m-0">Quyền cấp riêng cho người này</span>
-                <button className="btn btn-sm" type="button"
-                  onClick={() => setExtra([...extra, { permission: 'attempt.view', branchCode: null }])}>
-                  + Cấp thêm quyền
-                </button>
+                <span className="text-[11px] tabular-nums text-slate-500">{chonQuyen.size ? `${chonQuyen.size} quyền` : 'Chưa cấp riêng quyền nào'}</span>
               </div>
-              <div className="space-y-2">
-                {extra.length === 0 && (
-                  <p className="text-xs text-slate-500 m-0">
-                    Chưa cấp riêng quyền nào. Người này chỉ có quyền đến từ vai trò ở trên.
-                  </p>
-                )}
-                {extra.map((x, i) => (
-                  <div key={i} className="surface-2 rounded-lg p-2.5 flex flex-wrap items-center gap-2">
-                    <select className="field flex-1 min-w-[14rem]" value={x.permission}
-                      onChange={(e) => setExtra(extra.map((y, j) => (j === i ? { ...y, permission: e.target.value } : y)))}>
-                      {Object.entries(PERMISSION_LABEL).map(([k, label]) => (
-                        <option key={k} value={k}>{label}</option>
-                      ))}
-                    </select>
-                    <select className="field w-40" value={x.branchCode ?? ''}
-                      onChange={(e) => setExtra(extra.map((y, j) => (
-                        j === i ? { ...y, branchCode: e.target.value || null } : y)))}>
-                      <option value="">Toàn hệ thống</option>
-                      {branches.map((b) => <option key={b.code} value={b.code}>{b.name}</option>)}
-                    </select>
-                    <button className="btn btn-sm btn-ghost" type="button"
-                      onClick={() => setExtra(extra.filter((_, j) => j !== i))}>Gỡ</button>
-                  </div>
-                ))}
+              <div tabIndex={-1} {...lf.o(loi, 'quyen-rieng')}>
+                {lf.loiCua(loi, 'quyen-rieng') && <p className="m-0 mb-1 text-[11px] text-late">{lf.loiCua(loi, 'quyen-rieng')}</p>}
+                <CapQuyenRieng value={extra} chon={chonQuyen} branches={branches} macDinh={macDinhPhamVi}
+                  onChange={(v, c) => { setExtra(v); setChonQuyen(c); }} />
               </div>
-              <SectionNote>
-                Quyền ở đây <strong>cộng thêm</strong> vào quyền của vai trò, không thay thế. Chọn “Toàn hệ thống”
-                là cho phép người này nhìn vượt ra ngoài chi nhánh của họ.
-              </SectionNote>
+              {quyenBo.length > 0 && (
+                <p className="m-0 mt-1.5 text-[11px] text-slate-400">
+                  Không còn cấp riêng được, lưu lần này sẽ gỡ: {quyenBo.map((x) => x.name).join(', ')}.
+                </p>
+              )}
+              {quyenDoi && (
+                <div className="mt-2">
+                  <Field label="Lý do đổi quyền" required loi={lf.loiCua(loi, 'ly-do-quyen')}
+                    hint={`Ghi vào nhật ký để sau này tra lại vì sao người này có quyền đó. ${lyDoQuyen.length}/200 ký tự.`}>
+                    <input className="field w-full" maxLength={200} {...lf.o(loi, 'ly-do-quyen')} value={lyDoQuyen}
+                      placeholder="Ví dụ: Phụ trách nhập bù điểm khi giáo viên nghỉ, học kỳ này"
+                      onChange={(e) => setLyDoQuyen(e.target.value)} />
+                  </Field>
+                </div>
+              )}
+              <div className="mt-2">
+                <SectionNote>
+                  Quyền ở đây <strong>cộng thêm</strong> vào quyền của vai trò, không thay thế. Chọn “Toàn hệ thống”
+                  là cho phép người này làm việc đó ở mọi chi nhánh, vượt ra ngoài chi nhánh của họ. Quyền Quản trị và quyền
+                  tự có theo chủ nhiệm không cấp riêng nên không có trong danh sách.
+                </SectionNote>
+              </div>
             </div>
 
             <Field label="Đặt lại mật khẩu"

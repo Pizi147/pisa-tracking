@@ -59,3 +59,12 @@ export function notify(n: {
     )
     .run(n.userId, n.kind, n.title, n.body ?? null, n.entityType ?? null, n.entityId ?? null, n.dedupKey, nowIso(), n.duong ?? null);
 }
+
+/** Quản lý của một chi nhánh (kể cả Quản lý toàn hệ thống) còn hoạt động — người nhận thông báo "để biết" (PR-QU: GVCN phân công, GV đóng Case). */
+export function quanLyCuaChiNhanh(branchId: number): number[] {
+  return (db().prepare(
+    `SELECT DISTINCT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id JOIN users u ON u.id = ur.user_id
+      WHERE r.key = 'manager' AND ur.status = 'active' AND u.status = 'active' AND u.deleted_at IS NULL
+        AND (ur.branch_id IS NULL OR ur.branch_id = ?)`,
+  ).all(branchId) as any[]).map((r) => r.id as number);
+}

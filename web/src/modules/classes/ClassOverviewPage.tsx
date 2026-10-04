@@ -56,7 +56,7 @@ export default function ClassOverviewPage() {
    */
   useEffect(() => {
     const v = params.get('viec');
-    if (data && ((v === 'chuyen-tiep' && data.viewer.coTheChuyenTiep) || (v === 'phan-cong' && data.viewer.canAssign))) {
+    if (data && ((v === 'chuyen-tiep' && data.viewer.coTheChuyenTiep) || (v === 'phan-cong' && (data.viewer.canAssign || data.viewer.canAssignSubject)))) {
       setViec(v);
       doiThamSo({ viec: null });
     } else if (data && v === 'ban-giao') {

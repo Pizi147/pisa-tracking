@@ -22,10 +22,10 @@ import {
   type CaseOutcome, type FollowUpOutcome, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
-import { can, isCoreTeacherOf, napTruocPhamVi, require_, scopeFor, type Principal } from '../permissions.ts';
+import { can, napTruocPhamVi, require_, scopeFor, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { nho, trongBoNho } from '../platform/nguCanhRequest.ts';
-import { addJourney, notify, writeAudit } from '../platform/audit.ts';
+import { addJourney, notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
 import { currentCycle, cyclesOf } from '../fasttrack/cycles.ts';
 import { expectationFor } from '../fasttrack/scoring.ts';
 import { dongHocVien, khoangTamDung } from '../students/tamDung.ts';
@@ -154,7 +154,7 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
   const conn = db();
   const c = loadCase(caseId);
   if (!canCloseCase(p, c)) {
-    throw forbidden('Chỉ Quản lý, hoặc GVCN dạy đúng môn của Case, mới hoàn thành được Case này.');
+    throw forbidden('Chỉ Quản lý, giáo viên dạy đúng môn của Case, hoặc GVCN (Case Ý thức) mới hoàn thành được Case này.');
   }
   const outcome: string = input.outcome ?? '';
   if (!(CASE_OUTCOMES as readonly string[]).includes(outcome)) {
@@ -245,9 +245,11 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
       refTable: 'sos_cases', refId: caseId, createdBy: p.userId,
       dedupKey: `case_outcome:${caseId}:${closedOn}:end`,
     });
+    const quaGv = dongQuaGv(p, c);
     writeAudit({ actorUserId: p.userId, action: 'case.outcome', entityType: 'sos_case',
       entityId: caseId, entityLabel: caseTitleOf(c),
-      after: { outcome, closedOn } });
+      after: { outcome, closedOn, via: quaGv ? 'gv' : 'quan_ly' } });
+    if (quaGv) baoQuanLyCaseDong(p, caseId, c);
     return caseDetail(p, caseId);
   });
 }
@@ -264,19 +266,43 @@ export function setFollowUntil(p: Principal, caseId: number, date: string | null
 }
 
 /**
- * AI HOÀN THÀNH ĐƯỢC CASE — RB-6, quyết định 4.15 (22/09/2026), khớp C02.
- *   · Quản lý / Quản trị trong phạm vi: được.
- *   · GVCN của lớp: CHỈ Case đúng môn mình dạy. Case môn khác thì không, dù là lớp mình chủ nhiệm.
- *   · GVBM không kiêm GVCN: không (giữ luật cũ — 4.15 chỉ hỏi về GVCN).
- * Case không có môn (`topic` rỗng, dữ liệu cũ) thì GVCN vẫn được, để dữ liệu cũ không bị khoá.
+ * AI HOÀN THÀNH ĐƯỢC CASE — RB-6, quyết định 4.15 (22/09/2026), C02; mở rộng PR-QU (chủ sản phẩm 04/10):
+ *   · Quản lý / Quản trị trong phạm vi: mọi Case.
+ *   · Case học thuật: GV dạy ĐÚNG kỹ năng của Case ở lớp em (GVBM hay GVCN đều thế — GVCN không đóng Case trái môn, C02).
+ *   · Case Ý thức (không kỹ năng): GVCN lớp em đang học.
+ * Một luật, một chỗ: `CASE_CLOSE` + `teacherAllows`. `tong_hop` (lớp thường không có ô môn) rơi về GVCN như `sosEditCtx`.
  */
 export function canCloseCase(p: Principal, c: { class_id?: number | null; student_id?: number | null; topic?: string | null }): boolean {
   /* PR-Dọn (rà thêm, ngoài 24 mục quét): bỏ dòng `can(MEETING_EDIT, { anyScope: true })` đứng đầu — nó cho Quản lý ở BẤT KỲ chi nhánh
-     hoàn thành Case của chi nhánh khác. Quản lý / Quản trị trong phạm vi đã đi qua `CASE_CLOSE` ngay dưới. */
-  if (can(p, PERMISSIONS.CASE_CLOSE, { classId: c.class_id ?? null, studentId: c.student_id ?? null })) return true;
-  if (!c.class_id || !isCoreTeacherOf(p, c.class_id)) return false;
-  if (!c.topic) return true;
-  return can(p, PERMISSIONS.SOS_EDIT, { classId: c.class_id, studentId: c.student_id ?? undefined, skill: c.topic });
+     hoàn thành Case của chi nhánh khác. */
+  return can(p, PERMISSIONS.CASE_CLOSE, {
+    classId: c.class_id ?? null, studentId: c.student_id ?? null,
+    skill: c.topic && c.topic !== 'tong_hop' ? c.topic : undefined,
+  });
+}
+
+/**
+ * PR-QU: giáo viên (không phải Quản lý/Quản trị trong phạm vi) vừa hoàn thành Case → báo Quản lý chi nhánh của lớp (để biết, không
+ * duyệt) + đánh dấu `via:'gv'` cho nhật ký. Quản lý tự đóng thì không báo ai.
+ */
+function dongQuaGv(p: Principal, c: { class_id?: number | null; eff_student_id?: number | null }): boolean {
+  const ctx = { classId: c.class_id ?? null, studentId: c.eff_student_id ?? null };
+  return !p.grants.some((g) => g.roleKey !== 'teacher' && g.permissions.has(PERMISSIONS.CASE_CLOSE) && can({ ...p, grants: [g] }, PERMISSIONS.CASE_CLOSE, ctx));
+}
+function baoQuanLyCaseDong(p: Principal, caseId: number, c: { class_id?: number | null; eff_student_id?: number | null; topic?: string | null }) {
+  const conn = db();
+  const lop = c.class_id ? conn.prepare('SELECT branch_id, programme_code FROM classes WHERE id = ?').get(c.class_id) as any : null;
+  const hv = c.eff_student_id ? conn.prepare('SELECT full_name, branch_id FROM students WHERE id = ?').get(c.eff_student_id) as any : null;
+  const branchId = lop?.branch_id ?? hv?.branch_id ?? null;
+  if (!branchId) return;
+  const chuDe = c.topic ? `${tenMon(lop?.programme_code ?? null, c.topic)}` : 'Ý thức';
+  for (const id of quanLyCuaChiNhanh(branchId)) {
+    if (id === p.userId) continue;
+    notify({
+      userId: id, kind: 'case_dong_gv', title: `${p.fullName} đã đóng Case ${chuDe} của ${hv?.full_name ?? 'học viên'}`,
+      entityType: 'sos_case', entityId: caseId, dedupKey: `case_dong_gv:${caseId}:${nowIso().slice(0, 10)}`,
+    });
+  }
 }
 
 function loadCase(caseId: number) {
@@ -1308,7 +1334,7 @@ export function setDisposition(p: Principal, caseId: number, input: {
 
   if (closing) {
     if (!canCloseCase(p, c)) {
-      throw forbidden('Chỉ Quản lý, hoặc GVCN dạy đúng môn của Case, mới hoàn thành được Case này.');
+      throw forbidden('Chỉ Quản lý, giáo viên dạy đúng môn của Case, hoặc GVCN (Case Ý thức) mới hoàn thành được Case này.');
     }
     const disposition = input.disposition ?? c.disposition;
     if (!disposition) {
@@ -1388,10 +1414,12 @@ export function setDisposition(p: Principal, caseId: number, input: {
         dedupKey: `case_closed:${caseId}:${nowIso().slice(0, 10)}`,
       });
     }
+    const quaGv = closing && dongQuaGv(p, c);
     writeAudit({ actorUserId: p.userId, action: closing ? 'case.close' : 'case.disposition',
       entityType: 'sos_case', entityId: caseId, entityLabel: `Case ${caseId}`,
       before: { status: c.status, disposition: c.disposition },
-      after: { status: input.status ?? c.status, disposition: input.disposition ?? c.disposition } });
+      after: { status: input.status ?? c.status, disposition: input.disposition ?? c.disposition, ...(closing ? { via: quaGv ? 'gv' : 'quan_ly' } : {}) } });
+    if (quaGv) baoQuanLyCaseDong(p, caseId, c);
     return caseDetail(p, caseId);
   });
 }

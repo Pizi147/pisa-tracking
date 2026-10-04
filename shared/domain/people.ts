@@ -87,12 +87,25 @@ export const PERMISSIONS = {
   SOS_REPORT: 'sos.report',
   /** Sửa/xử lý một Case ĐÃ CÓ — đúng kỹ năng mình dạy (Học thuật) hoặc GVCN (Ý thức). */
   SOS_EDIT: 'sos.edit',
-  /** Kết thúc theo dõi một case. GVCN của lớp và Quản lý — không phải mọi giáo viên. */
+  /**
+   * Hoàn thành (đóng) một Case. Quản lý / Quản trị: mọi Case trong phạm vi. Giáo viên (PR-QU, chủ sản phẩm 04/10): Case học thuật
+   * thì GV dạy ĐÚNG kỹ năng đó ở lớp của em (GVCN cũng chỉ khi chính mình dạy kỹ năng đó — C02); Case Ý thức (không kỹ năng) thì
+   * GVCN lớp em đang học. Siết ở `teacherAllows`; GV đóng xong thì báo Quản lý chi nhánh.
+   */
   CASE_CLOSE: 'case.close',
   /** Duyệt phương án hỗ trợ giáo viên đề xuất. Chỉ Quản lý và Quản trị hệ thống. */
   CASE_APPROVE: 'case.approve',
   /** Phân công giáo viên dạy kỹ năng nào ở lớp nào. */
   CLASS_ASSIGN: 'class.assign',
+  /**
+   * PR-QU (B): TẠO LỚP — tách khỏi `student.edit`. Quản lý và Quản trị hệ thống có mặc định; cấp riêng được theo người và chi nhánh.
+   */
+  CLASS_CREATE: 'class.create',
+  /**
+   * PR-QU (A): GVCN phân công GV BỘ MÔN (L/R/W/S) cho lớp mình chủ nhiệm — KHÔNG đổi ô GVCN. Quyền SUY RA (GV có `is_core=1` ở lớp
+   * đó), không cấp theo vai, không cấp riêng — xem `can` ở `server/src/permissions.ts` và `QUYEN_CHI_SUY_RA` ở `nhomQuyen.ts`.
+   */
+  CLASS_ASSIGN_SUBJECT: 'class.assign_subject',
   /**
    * Sửa TIẾN ĐỘ của lớp: tuần bắt đầu, tuần Progress Test, tuần Final Test.
    *
@@ -146,6 +159,8 @@ export const PERMISSION_LABEL: Record<string, string> = {
   'case.close': 'Đóng Case học vụ',
   'case.approve': 'Duyệt phương án học thuật',
   'class.assign': 'Phân công giáo viên vào lớp',
+  'class.create': 'Tạo lớp',
+  'class.assign_subject': 'Phân công GV bộ môn lớp mình chủ nhiệm',
   'class.edit': 'Sửa tiến độ lớp (tuần bắt đầu, tuần kiểm tra)',
   'violation.record': 'Ghi vi phạm của học viên trong lớp mình dạy',
   'discipline.manage': 'Xử lý Ý thức: sửa vi phạm của người khác, tạo và xác nhận lần xử lý',

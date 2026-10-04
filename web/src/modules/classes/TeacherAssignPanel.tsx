@@ -27,7 +27,8 @@ type Teachers = {
   bySkill: { skill: string; userId: number; name: string; from: string }[];
   candidates: { id: number; name: string; code: string; title: string | null; classCount: number; inThisClass: boolean; skills?: string[] }[];
   past: { name: string; skill: string | null; isCore: boolean; from: string; to: string | null }[];
-  viewer: { canAssign: boolean };
+  /** PR-QU (A): `canAssignSubject` = GVCN lớp này — đổi được ô GV bộ môn, ô GVCN chỉ đọc. Quản lý có cả hai. */
+  viewer: { canAssign: boolean; canAssignSubject?: boolean };
 };
 
 export function TeacherAssignPanel({ open, onClose, classId, classCode, onDone }: {
@@ -64,6 +65,10 @@ export function TeacherAssignPanel({ open, onClose, classId, classCode, onDone }
 
   const oList = data ? fou.oList : [];
   const slots = slotsTuO(oList, chon);
+  const suaDuoc = !!data && (data.viewer.canAssign || !!data.viewer.canAssignSubject);
+  /* GVCN (không phải Quản lý): ô GVCN tách ra hàng chỉ đọc; lưới chỉ còn ô bộ môn. Lớp Pre FOU chỉ có ô GVCN → chỉ xem. */
+  const chiBoMon = !!data && !data.viewer.canAssign && !!data.viewer.canAssignSubject;
+  const oSua = chiBoMon ? oList.filter((o) => !o.laGvcn) : oList;
   const loiPc = data ? kiemPhanCong(data.programmeCode, data.skills, slots) : [];
   const loiO = (khoa: string) => (nhieuNguoi[khoa] && !chon[khoa]
     ? `Ô này đang có ${nhieuNguoi[khoa].length} người — chọn lại một người`
@@ -90,10 +95,10 @@ export function TeacherAssignPanel({ open, onClose, classId, classCode, onDone }
 
   return (
     <KhungPanel tieuDe="Sửa phân công" lop={classCode} onDong={onClose}
-      ngCanh={data && !data.viewer.canAssign ? <span className="text-slate-400">Chỉ xem: đổi phân công là việc của Quản lý và Admin chi nhánh.</span> : undefined}
+      ngCanh={data && !suaDuoc ? <span className="text-slate-400">Chỉ xem: đổi phân công là việc của Quản lý chi nhánh.</span> : undefined}
       chan={{
-        conThieu: data?.viewer.canAssign ? oLoi.map((o) => ({ nhan: o.nhan, oId: lf.oId(o.khoa) })) : undefined,
-        chinh: data?.viewer.canAssign
+        conThieu: suaDuoc ? oLoi.map((o) => ({ nhan: o.nhan, oId: lf.oId(o.khoa) })) : undefined,
+        chinh: suaDuoc
           ? (
             <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !data || oLoi.length > 0}
               title={oLoi[0] ? `${oLoi[0].nhan}: ${loiO(oLoi[0].khoa)}` : undefined} onClick={luu}>Lưu</button>
@@ -106,10 +111,22 @@ export function TeacherAssignPanel({ open, onClose, classId, classCode, onDone }
         <>
           <Khoi tieuDe="Phân công"
             luat="Chỉ nhập được điểm môn mình được phân công. Bỏ phân công KHÔNG xoá lịch sử: dòng cũ được đóng lại theo ngày, nên báo cáo cũ đọc lại vẫn thấy đúng ai dạy lúc đó; điểm đã nhập giữ nguyên tên người nhập.">
-            <LuoiPhanCong oList={oList} chon={chon} nguoi={nguoi} loi={loiO} oId={lf.oId} chiXem={!data.viewer.canAssign} chuongTrinh={data.programmeCode}
-              nhanTrong={(k) => nhieuNguoi[k]?.join(' · ')}
-              onChon={(khoa, v) => setChon((c) => ({ ...c, [khoa]: v }))} />
-            <NutTachFou fou={fou} chiXem={!data.viewer.canAssign} />
+            {chiBoMon && (
+              <div className="mb-1.5 grid grid-cols-[6rem_1fr] items-center gap-x-2.5" id={lf.oId('gvcn')}>
+                <span className="text-xs font-bold text-slate-200">GVCN</span>
+                <span className="text-sm text-slate-300">
+                  {data.core.map((c) => c.name).join(' · ') || 'Chưa có'}
+                  <span className="block text-[11px] text-slate-500">Đổi GVCN: nhờ Quản lý chi nhánh.</span>
+                  {loiO('gvcn') && <span className="block text-[11px] text-late">{loiO('gvcn')}</span>}
+                </span>
+              </div>
+            )}
+            {oSua.length > 0 && (
+              <LuoiPhanCong oList={oSua} chon={chon} nguoi={nguoi} loi={loiO} oId={lf.oId} chiXem={!suaDuoc} chuongTrinh={data.programmeCode}
+                nhanTrong={(k) => nhieuNguoi[k]?.join(' · ')}
+                onChon={(khoa, v) => setChon((c) => ({ ...c, [khoa]: v }))} />
+            )}
+            <NutTachFou fou={fou} chiXem={!suaDuoc} />
             <p className="m-0 text-[11px] text-slate-500">
               {oList.length === 1 ? 'Lớp Pre FOU không chia môn — GVCN dạy luôn.' : 'Mỗi ô một người. Một người nhận nhiều ô được.'}
             </p>
