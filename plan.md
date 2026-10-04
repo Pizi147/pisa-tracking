@@ -8,10 +8,13 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 - **Một nguồn duy nhất** cho: đã làm gì, còn gì, thứ tự, model, skill, prompt. Session planning sửa file này; session code
   chỉ thêm **một dòng** vào mục 11 (Nhật ký) khi xong PR.
 - Kế hoạch chi tiết (từng Task, từng bước) chỉ giữ cho **PR chưa làm**. PR merge xong → session planning xoá file chi tiết
-  của nó (git còn giữ). Hiện còn 4 file:
+  của nó (git còn giữ). Hiện còn 7 file:
 
 | File chi tiết | Dùng cho |
 |---|---|
+| `docs/superpowers/plans/2026-10-04-pr-phh-bao-ph-ban-chup.md` | PR-PHH (PHH-1→3) |
+| `docs/superpowers/plans/2026-10-04-pr-so-so-lieu-don-ma.md` | PR-SO (SO-1→5) |
+| `docs/superpowers/plans/2026-10-04-pr-u12-ket-qua-lop-thuong.md` | PR-U12 (U12-1→3) |
 | `docs/superpowers/plans/2026-10-03-pr-phien-lich-mt-dieu-huong-sua-lop.md` | PR-DH (DH-1→5), PR-SL (SL-1→2), mục A/B (quyết định 03/10) |
 | `docs/superpowers/plans/2026-10-03-pr-l1-popover-bao-cao-loc-gv.md` | PR-DH: mục L1 (popover "Thiếu n"). L2, L3 đã xong ở PR-BC |
 | `docs/superpowers/plans/2026-10-04-pr-dl-diem-theo-lop.md` | PR-DL (DL-0→7) |
@@ -111,14 +114,11 @@ Còn treo của các PR đã xong (đã đưa vào mục 4): PR-PH bước bấm
 | 04/10 | Điểm theo lớp: mockup `thiet-ke/mockup-diem-theo-lop-2026-10-04.html` đã duyệt | DL |
 | 04/10 | Deploy **sau mỗi đợt** | mục 5 |
 
-## 4. Việc chưa làm — 7 PR
+## 4. Việc chưa làm — 8 PR
 
-### PR-PHH · Báo PH lưu bản chụp (M, có migrate) — chưa có kế hoạch chi tiết
-- **F02.** `server/src/yThuc/phoiHop.ts` ~278–302 (`turnsOf`, `noiDungCua`) dựng nội dung `bao_ph_tvv` từ dữ liệu **hiện tại**.
-  Lưu bản chụp 4 nội dung (+ dữ liệu liên quan) lúc `confirmCoordination`; hiển thị "đã báo" vs "hiện tại".
-- Nghiệm thu: sửa điểm / nguyên nhân / đóng Case / thay PA sau xác nhận **không đổi** bản đã lưu; mở lại / xác nhận lại có
-  quy tắc phiên bản + audit; việc xác nhận trước khi có cột hiện câu "Chưa lưu nội dung lúc báo…", không điền ngược.
-- Migrate riêng `server/src/migrate/prPhh.ts`, chỉ thêm cột, chạy lặp được.
+### PR-PHH · Báo PH lưu bản chụp (M, có migrate) — kế hoạch `2026-10-04-pr-phh-bao-ph-ban-chup.md`
+- **F02.** Lưu 4 nội dung lúc xác nhận việc `bao_ph_tvv` (cột `noi_dung_luc_bao`, migrate `prPhh`); dòng cũ hiện "Chưa lưu nội
+  dung lúc báo — dưới đây là nội dung hiện tại", không điền ngược. Mã thật: việc đã xong **không mở lại được** → không cần quy tắc phiên bản.
 
 ### PR-DH · Học viên & Lớp + hồ sơ (L) — kế hoạch có sẵn, cần thêm task
 - DH-1 "Sắp tới" có kỳ vọng / "Thi thật" · DH-2 cột "Dự kiến thi" (**cả lớp thường**) · DH-3 hồ sơ HV Trước/Sau · DH-4 hồ sơ lớp
@@ -129,25 +129,12 @@ Còn treo của các PR đã xong (đã đưa vào mục 4): PR-PH bước bấm
   **J10** hồ sơ HV bỏ "chưa có dữ liệu" lặp · bấm thử panel Chuyển lớp có đè demo bar không (có thật mới sửa).
 - Kế hoạch viết trước khi LM, NT merge → **kiểm lại số dòng** trước khi làm.
 
-### PR-SO · Số liệu & dọn mã (M, chỉ máy chủ) — chưa có kế hoạch chi tiết
-Kiểm từng mục đã làm chưa (grep) trước khi sửa; đã có thì ghi "bác bỏ" trong mô tả PR.
-- **D2** một hàm chọn PA đại diện nhóm Bổ trợ cho `metrics.ts` ~401–404 và `mywork.ts` ~486–495 (dữ liệu nhiều PA cùng nhóm,
-  khác trạng thái/hạn/quyền).
-- **D3** một hàm chọn lộ trình (`loTrinhTinhTuan`) cho `cycles.ts`, `profile.ts` ~773, `transition.ts` ~66, `luatLoTrinh.ts` ~366.
-- **D4** xoá `completeIntervention` (viết lại 4 phép kiểm liên quan) · **D5** `lopHocCua` luật cũ.
-- **Cấm cấp riêng `plan.week` cho người chỉ có vai GV** · **dọn khoá `bulkclass:*`** cũ hơn 7 ngày.
-- **Việc nhỏ máy chủ** (từ `plan.md` cũ 12.15–12.19): thẻ Case đếm bằng chứng một `COUNT(*)` mỗi thẻ → một truy vấn theo lô
-  (`cases.ts` `caseCardOf` → `countAttachments()`); `confirmMeasure` để trống `performedBy` thì mặc định người đang đăng nhập;
-  `profile.ts` `canRecordViolation`/`canReport`/`canClose` dùng `activeClassOf` thay biến `current`; `recentByStudent` phép kiểm
-  so id 3 biện pháp mới nhất + chỉ gửi `kindLabel`; tín hiệu `withdrawn` của em đã kết thúc không "sống lại" khi sửa điểm;
-  `systemClose.ts` `ratioOfCycle` trùng `isRatioCycle` (tách mô-đun lá nếu gọn); import thứ hai `transferReasonText` ở
-  `routes/index.ts` gộp vào khối chung.
-- **An toàn:** giới hạn thử `/auth/login` (đã có `gioiHanThu.ts` → chỉ kiểm), `/auth/register` cần duyệt, lỗi 409/500 không
-  trả nguyên câu SQL, `/api/health` không hỏi DB mỗi lần (kiểm trước, chỉ sửa cái còn thiếu). Chạy `/security-review` cuối PR.
-- **DEP-gỡ:** gỡ mã chuyển dữ liệu cũ trong `migrate.ts`/`migrate/*.ts`, lệnh `chay-thu:*`, `kiem-lop-mo-coi`, khối "Lịch sử"
-  `TRIEN_KHAI.md` §11.1. **Giữ** dấu `khoi_tao_moi_at`, mọi migrate của PR mới (GVa, QU, PHH). Điều kiện: DB THỬ đã seed lại
-  (hoặc chủ sản phẩm chấp nhận bỏ DB THỬ cũ) — hỏi ở mục 7.
-- Ponytail **full**, không giao diện.
+### PR-SO · Số liệu & dọn mã (M, chỉ máy chủ) — kế hoạch `2026-10-04-pr-so-so-lieu-don-ma.md`
+- **D2** một hàm chọn PA đại diện nhóm Bổ trợ (Tổng quan ↔ Công việc khớp) · **cấm cấp riêng `plan.week` cho người chỉ có vai GV** ·
+  **D5** cờ nút ở hồ sơ HV khớp quyền route · **D4** xoá `completeIntervention` · **D3** (nhỏ) · tín hiệu của em đã kết thúc không
+  "sống lại" · dọn khoá `bulkclass:*`/`intake:*` cũ · **DEP-gỡ** mã chuyển dữ liệu cũ, `chay-thu:*`, `kiem-lop-mo-coi`.
+- Đã kiểm 04/10 và **bỏ** (đã làm ở PR khác): giới hạn thử đăng nhập/đăng ký, lỗi không lộ SQL, `/api/health`, đếm bằng chứng theo lô,
+  `canRecordViolation`, `confirmMeasure`, `recentByStudent`.
 
 ### PR-SL · Sửa cả lớp + panel/form (L) — kế hoạch có sẵn (SL-1, SL-2), cần thêm task
 - SL-1 máy chủ xem trước + lưu một giao dịch · SL-2 panel "Sửa thông tin cả lớp" (không dán Excel).
@@ -161,11 +148,18 @@ Kiểm từng mục đã làm chưa (grep) trước khi sửa; đã có thì ghi
 - Nhập điểm cả lớp theo từng lượt (FT: MT1, MT2, … kể cả lịch sử; lớp thường: bài theo lịch riêng của lớp). DL-0 sai giả
   định G2 thì dừng hỏi. `DauTrangLop.tsx`: chỉ thêm một mục menu ⋮.
 
-### PR-U12 · Kết quả kiểm tra lớp thường ở hồ sơ HV (S) — cần brainstorming trước
-- Bảng "Kết quả kiểm tra" lớp thường ở hồ sơ HV (`RatioAttempts`) theo **cùng mẫu K4-33** đã làm cho bảng Mock Test:
-  gộp Trạng thái + Kết quả thành một `<KetQuaDot>`, số căn phải `tabular-nums`, cả hàng bấm được (bỏ link "Hồ sơ đợt ›"),
-  có nhãn lịch sử / đã huỷ / dời. Nguồn: `thiet-ke/ra-27-09/K4.md` dòng K4-33.
-- Planning hỏi chủ sản phẩm (mục 7, câu 2) → viết kế hoạch ngắn → session code.
+### PR-U12 · Kết quả kiểm tra lớp thường ở hồ sơ HV (S) — kế hoạch `2026-10-04-pr-u12-ket-qua-lop-thuong.md`
+- Chủ sản phẩm 04/10: **làm, giống bảng Mock Test** (K4-33): ô kết quả nói một lần ("Chờ n môn" khi chấm dở), bấm tên bài là mở,
+  bỏ link "Bảng điểm đợt ›", nhãn lịch sử / đã huỷ / huỷ phần / dời; nhiều bài cùng loại thì đánh số.
+
+### PR-K26 · Lộ trình tiếp theo theo dải % Cuối khoá (M) — **cần brainstorming + mockup trước** (session planning)
+- Chủ sản phẩm 04/10: **làm K2-26** (`thiet-ke/ra-27-09/K2.md` dòng K2-26; Rulebook §20.6 dải < 50 · 50–59 · 60–69 · ≥ 70).
+- Đã có (PR-LT2b): đầu panel `LoTrinhTiepPanel.tsx` hiện `Cuối khoá 58% · không đạt …` + câu gợi ý.
+- Còn: (2) hướng gợi ý đứng đầu, các hướng khác thu vào "Hướng khác ▾" · (3) em 50–59%: nút chính **"Gửi QL quyết"** (thẻ Chờ duyệt
+  "Quyết định Cuối khoá", lý do bắt buộc) · (4) gộp "Chưa rõ"/"Xếp sau" thành một hướng "Chưa quyết · xem lại …" (đụng dữ liệu
+  `Huong` ở `shared/domain/lenLop.ts`) · (5) "Ghi hướng cho cả lớp" từ đầu hồ sơ lớp (GVCN).
+- Planning hỏi chủ sản phẩm: phần (3) có còn cần sau PR-CT (Quản lý đã quyết chuyển lớp)? (4) đổi dữ liệu hay chỉ đổi nhãn? (5) làm luôn hay hoãn?
+  → mockup → kế hoạch `2026-10-0x-pr-k26-…md` → session code.
 
 ### PR-HK2 · Badge & chữ, chụp lại sổ tay (L, cuối cùng) — kế hoạch có sẵn một phần
 - `2026-10-02-ux-sau-critique.md`: **H1/H2** ba họ chip · **K1** còn lại (nếu DH chưa làm hết) · **K2** Phân tích › Tổng hợp ·
@@ -177,47 +171,49 @@ Kiểm từng mục đã làm chưa (grep) trước khi sửa; đã có thì ghi
 
 ## 5. Đợt chạy, thứ tự merge, deploy
 
-**Đổi so với lộ trình 03/10 (đề xuất, chờ chủ sản phẩm duyệt — mục 7 câu 1):** PR-SO lên đợt 2 (chỉ máy chủ, không chờ giao
-diện), PR-U12 lên đợt 3 (U12 chỉ chờ DH, không cần chờ SO). Còn **3 đợt** thay vì 4.
+Chủ sản phẩm 04/10: **đồng ý gộp còn 3 đợt**; **deploy một lần ngay** (bản `main` hiện tại, gồm đợt 0–1), rồi **chỉ deploy lần
+nữa khi xong hết** mọi PR dưới đây (không deploy theo từng đợt).
 
-| Đợt | Chạy cùng lúc (mỗi PR một session) | Thứ tự merge | Vì sao không đụng nhau | Deploy sau đợt |
-|---|---|---|---|---|
-| **2** (ngay) | **PHH** · **DH** · **SO** | PHH → SO → DH | PHH: `phoiHop.ts` + migrate · SO: máy chủ số liệu, `migrate.ts` (gỡ mã cũ, giữ migrate PHH) · DH: `StudentsPage`, `BangHocVienLop`, `standing.ts`, hồ sơ. Chồng nhẹ: SO ↔ DH ở `profile.ts` (D3), SO ↔ PHH ở `run.ts`/`migrate` | **D2** — có migrate (PHH) + đã gỡ mã cũ: sao lưu, chạy `npm run check` trên **bản sao DB thật** trước. Bấm thử: báo PH đã làm giữ nội dung; bảng Học viên & Lớp cột mới, Trước/Sau |
-| **3** | **SL** · **DL** · **U12** (chờ DH merge) | U12 → DL → SL | SL: panel/form chung (`KhungPanel`, `IntakePanel`, Case, vi phạm) · DL: module điểm mới + một mục ⋮ · U12: một bảng ở hồ sơ HV. Chồng nhẹ: `DauTrangLop` (SL, DL thêm mục ⋮), `StudentDetailPage` (SL I4 ↔ U12). SL merge cuối: kiểm lại panel của DL theo luật I1 | **D3** — không migrate. Bấm thử: sửa cả lớp, Điểm theo lớp (FT + lớp thường, bài đã qua), bảng kết quả lớp thường |
-| **4** | **HK2** (một mình) | — | Đụng ~15+ file khắp web, chụp lại sổ tay một lần | **D4** — toàn web 375/1440 sáng/tối; báo GV trước vì đổi giao diện rộng |
+| Đợt | Chạy cùng lúc (mỗi PR một session) | Thứ tự merge | Vì sao không đụng nhau |
+|---|---|---|---|
+| **2** (ngay) | **PHH** · **DH** · **SO** | PHH → SO → DH | PHH: `phoiHop.ts` + migrate · SO: máy chủ số liệu, `migrate.ts` (gỡ mã cũ, giữ migrate PHH) · DH: `StudentsPage`, `BangHocVienLop`, `standing.ts`, hồ sơ. Chồng nhẹ: SO ↔ DH ở `profile.ts`, SO ↔ PHH ở `run.ts`/`migrate.ts` |
+| **3** | **U12** · **DL** · **SL** · **K26** (chờ DH merge; K26 chờ thêm kế hoạch) | U12 → DL → K26 → SL | U12: một bảng hồ sơ HV · DL: module điểm mới + một mục ⋮ · K26: `LoTrinhTiepPanel`, `lenLop.ts` · SL: panel/form chung. Chồng nhẹ: `DauTrangLop` (SL, DL, K26 thêm mục ⋮), `StudentDetailPage` (SL I4 ↔ U12). SL merge cuối: kiểm lại chân panel của DL, K26 theo luật I1 |
+| **4** | **HK2** (một mình) | — | Đụng ~15+ file khắp web, chụp lại sổ tay một lần |
 
-Deploy theo `TRIEN_KHAI.md` mục 8 (và 11.1 khi có migrate). **D0/D1 (đợt 0–1)**: chủ sản phẩm xác nhận đã deploy chưa — đợt 0 có
-migrate (GVa `idempotency_key`, QU).
+**Deploy lần sau (sau HK2)** — làm một lần cho cả 8 PR, theo `TRIEN_KHAI.md` mục 8 và 11.1:
+1. Sao lưu bản chính (`npm run sao-luu`).
+2. Tập dượt trên **bản sao DB bản chính** (DB tạm): `npm run migrate` hai lần (lần hai không đổi gì) — có migrate PHH và bản đã gỡ mã cũ của SO.
+3. Bấm thử 375/1440 sáng/tối, ba vai: báo PH đã làm giữ nội dung; Học viên & Lớp cột mới, Trước/Sau; sửa cả lớp; Điểm theo lớp
+   (FT + lớp thường, bài đã qua); bảng kết quả lớp thường; Lộ trình tiếp theo theo dải %; badge/chữ toàn web.
+4. Báo GV trước (đổi giao diện rộng), rồi deploy.
+
+DB THỬ (`pisatracking-demo`): không cần giữ tương thích; muốn dùng lại thì seed lại sau lần deploy sau.
 
 ## 6. Model, effort, skill cho từng PR
 Chọn model ở ô chọn model **trước khi dán prompt**. Subagent cùng model với session (không Haiku). Người rà: Opus 5.5, session khác.
 
 | PR | Khuyến nghị | Phương án B | Vì sao | Ponytail | Impeccable | Superpowers riêng |
 |---|---|---|---|---|---|---|
-| **PHH** | Opus 5.5 · High | Sonnet 5.5 · High | Có migrate + quy tắc phiên bản, dữ liệu báo phụ huynh không được sai | lite (giao diện nhỏ) | `clarify` (câu "đã báo"/"hiện tại") · `audit` | writing-plans (chưa có kế hoạch) |
+| **PHH** | Opus 5.5 · High | Sonnet 5.5 · High | Có migrate, dữ liệu báo phụ huynh không được sai | lite (giao diện nhỏ) | `clarify` · `audit` | — (kế hoạch có sẵn) |
 | **DH** | Opus 5.5 · High | Sonnet 5.5 · High | Giao diện rộng, nhiều cột; model nhỏ từng lọt lỗi hình | lite | `critique` (chỉ đầu trang, DH-5) · `layout` · `clarify` (J6, J8, J10) · `adapt` (375) · `audit` | writing-plans (thêm task cuối kế hoạch) |
-| **SO** | Opus 5.5 · XHigh | Fable 5.1 · High | Gỡ mã migrate + gom hàm số liệu dùng chung: sai là lệch số hoặc hỏng nâng cấp DB | full | — | writing-plans · `/security-review` cuối PR |
-| **SL** | Opus 5.5 · High | Fable 5.1 · High | Ghi nhiều bảng một giao dịch + đổi khung panel dùng chung | lite | `layout` · `harden` (lỗi dưới ô, D11) · `clarify` (I2, I3, I6) · `audit` | writing-plans (thêm task) |
+| **SO** | Opus 5.5 · XHigh | Fable 5.1 · High | Gỡ mã migrate + gom hàm số liệu dùng chung: sai là lệch số hoặc hỏng nâng cấp DB | full | — | `/security-review` cuối PR |
+| **U12** | Sonnet 5.5 · High | Opus 5.5 · Medium | Một bảng, theo mẫu đã có | lite | `layout` · `clarify` · `audit` | — |
 | **DL** | Opus 5.5 · High | Fable 5.1 · High | Tính năng mới, refactor `classScoreSheet`/`regularSheet` không được đổi kết quả cũ | lite | `layout` · `clarify` · `adapt` (375) · `audit` | brainstorming nếu DL-0 lệch G2 |
-| **U12** | Sonnet 5.5 · High | Opus 5.5 · Medium | Một bảng, theo mẫu đã có | lite | `layout` · `clarify` · `audit` | (planning: brainstorming + writing-plans trước) |
+| **K26** | Opus 5.5 · High | Fable 5.1 · High | Luật dải % + thẻ Chờ duyệt mới + có thể đổi dữ liệu hướng | lite | `layout` · `clarify` · `harden` · `audit` | (planning: brainstorming + mockup + writing-plans trước) |
+| **SL** | Opus 5.5 · High | Fable 5.1 · High | Ghi nhiều bảng một giao dịch + đổi khung panel dùng chung | lite | `layout` · `harden` (lỗi dưới ô, D11) · `clarify` (I2, I3, I6) · `audit` | writing-plans (thêm task) |
 | **HK2** | Opus 5.5 · High | Sonnet 5.5 · High | ~15+ file, giữ nhất quán ba họ chip; chụp ảnh sổ tay giao subagent | lite | `polish` · `clarify` (J) · `adapt` (K4, K5, D7) · `audit` toàn web | writing-plans (kế hoạch bổ sung) · dispatching-parallel-agents (chụp ảnh) |
 | Rà PR | Opus 5.5 · High (SO, SL: XHigh) | — | Người rà khác người code | — | — | requesting-code-review (phía rà), receiving-code-review (phía code khi nhận tin sửa) |
 | Session planning | Opus 5.5 · XHigh | Opus 5.5 · High | Viết kế hoạch + rà cần suy luận dài | — | `critique` khi cần | brainstorming · writing-plans · dispatching-parallel-agents |
 
-## 7. Chủ sản phẩm cần trả lời (gộp một lần)
-1. **Gộp đợt:** đồng ý đưa PR-SO lên đợt 2 và PR-U12 lên đợt 3 (còn 3 đợt)? — *Khuyến nghị: đồng ý.* Không đồng ý thì giữ lộ trình
-   03/10: SO đợt 3, U12 đợt 4 riêng.
-2. **U12:** bảng "Kết quả kiểm tra" lớp thường ở hồ sơ HV làm giống bảng Mock Test (một ô kết quả, số căn phải, bấm cả hàng)? —
-   *Khuyến nghị: có.*
-3. **DB THỬ** (`pisatracking-demo`) trước PR-SO: seed lại, hay bỏ? Gỡ mã chuyển dữ liệu cũ thì DB THỬ cũ không nâng cấp được nữa. —
-   *Khuyến nghị: seed lại sau D2.* Và: **D0/D1 đã deploy chưa?**
-4. **Treo lâu:** A12 tên PA "Điều chỉnh cách dạy" (giữ hay đổi?) · K2-26 gợi ý hướng lộ trình theo dải % (mặc định **bỏ**). —
-   *Khuyến nghị: giữ tên A12, bỏ K2-26.*
+## 7. Chủ sản phẩm đã trả lời 04/10
+1. Gộp đợt: **đồng ý** (3 đợt). 2. U12: **làm, giống bảng Mock Test**. 3. Deploy: **một lần ngay, lần sau khi xong hết** (mục 5).
+4. A12: **giữ tên** "Điều chỉnh cách dạy" (đóng). K2-26: **làm** → PR-K26 (còn 3 câu ở mục 4, hỏi khi soạn mockup).
 
 ## 8. Hoãn có chủ ý · Đã chốt không làm
 - **Hoãn:** UX-D7 bảng quản trị → thẻ trên điện thoại · Thêm HV dạng thẻ điện thoại · xu hướng Phân tích, xu hướng Phân tích GV
   (chờ 2–3 tháng dữ liệu) · KPI tháng GV · D15 hiệu quả PA theo SOS lúc sinh · taxonomy vấn đề · Công việc › "Của GV" "Nhắc tất cả"
   (GVb G5) · kho ý tưởng Rulebook §20.
+- **Đã chốt 04/10:** A12 giữ tên "Điều chỉnh cách dạy".
 - **Không làm:** GV-C1 chấm đúng hạn lịch sử · góc Phân tích › Giáo viên cũ · mockup 26 bản 3–4 · Q12 em tạm dừng · ba ý tưởng
   §20.1 · B7 (giữ mã) · C02 (giữ chặn) · `/api/health` hỏi DB và các mục "không cần làm" của bản chính (Blobs, thứ tự Tutor,
   `demo_config` mốc nâng cấp, `sao-luu` không giao dịch).
@@ -236,19 +232,14 @@ npm run check xanh (một lần một lúc) → bấm thử 375/1440 sáng/tối
 (tái hiện/bác bỏ, file, phép kiểm, ảnh), chú thích ponytail:, ảnh sổ tay lệch. Cổng PORT/WEB_PORT riêng, không 4000/5173.
 ```
 
-### 9.1. Đợt 2 — chạy ngay, ba session song song
+### 9.1. Đợt 2 — chạy ngay (sau khi deploy bản hiện tại), ba session song song
 
 **PR-PHH** — Opus 5.5 · High (B: Sonnet 5.5 · High)
 ```
 /ponytail lite
-Làm PR-PHH theo plan.md mục 4 "PR-PHH". Nhánh pr-phh-bao-ph-ban-chup.
-Chưa có kế hoạch chi tiết: dùng superpowers:writing-plans viết docs/superpowers/plans/2026-10-04-pr-phh-bao-ph-ban-chup.md
-(đọc mã thật server/src/yThuc/phoiHop.ts turnsOf/noiDungCua/confirmCoordination, nơi web hiện nội dung báo PH), rồi làm.
-F02: lưu bản chụp 4 nội dung lúc xác nhận; việc cũ hiện "Chưa lưu nội dung lúc báo — dưới đây là nội dung hiện tại",
-không điền ngược. Migrate riêng server/src/migrate/prPhh.ts chỉ thêm cột, chạy lặp được.
-Phép kiểm: sửa điểm / nguyên nhân / đóng Case / thay PA sau xác nhận không đổi bản đã lưu; xác nhận lại có phiên bản + audit.
-Giao diện nhỏ: /impeccable clarify cho câu "đã báo" vs "hiện tại", rồi /impeccable audit.
-Merge trước SO và DH.
+Làm PR-PHH theo docs/superpowers/plans/2026-10-04-pr-phh-bao-ph-ban-chup.md (PHH-1 → PHH-3, prompt chung plan.md mục 9.0).
+Nhánh pr-phh-bao-ph-ban-chup. Kiểm lại số dòng trong mã thật trước mỗi Task (kế hoạch viết 04/10 trên main 575e898d).
+Impeccable: PHH-2 /impeccable clarify, cuối /impeccable audit khối Phối hợp. Merge trước SO và DH.
 ```
 
 **PR-DH** — Opus 5.5 · High (B: Sonnet 5.5 · High)
@@ -268,25 +259,20 @@ Bấm thử Trước/Sau với bộ lọc "Cần làm" và với link mở thẳ
 
 **PR-SO** — Opus 5.5 · XHigh (B: Fable 5.1 · High)
 ```
-Làm PR-SO theo plan.md mục 4 "PR-SO". Nhánh pr-so-so-lieu-don-ma. Không giao diện: ponytail full.
-Chưa có kế hoạch chi tiết: dùng superpowers:writing-plans viết docs/superpowers/plans/2026-10-04-pr-so-so-lieu-don-ma.md.
-Với MỖI mục: grep mã thật xem đã làm chưa; đã có thì ghi "bác bỏ" kèm bằng chứng, không sửa.
-D2, D3: viết phép kiểm hành vi trên DB test trước (nhiều PA cùng nhóm khác trạng thái/hạn/quyền; nhiều lộ trình), gom về một
-hàm, mọi chỗ gọi dùng hàm đó; số trên màn không đổi (phép kiểm cũ xanh mà không sửa).
-DEP-gỡ: gỡ mã chuyển dữ liệu cũ, chay-thu:*, kiem-lop-mo-coi, khối Lịch sử TRIEN_KHAI.md §11.1; GIỮ khoi_tao_moi_at và mọi
-migrate của PR mới (QU, GVa, PHH). Sau khi gỡ: npm run seed lại DB máy dev + npm run migrate hai lần không đổi dòng nào.
-Trước khi dừng ở DEP-gỡ, hỏi chủ sản phẩm câu "DB THỬ seed lại hay bỏ" nếu plan.md mục 7 chưa có câu trả lời.
-Cuối PR chạy /security-review cho phần an toàn. Merge sau PHH (merge main vào nhánh, chạy lại check), trước DH.
+Làm PR-SO theo docs/superpowers/plans/2026-10-04-pr-so-so-lieu-don-ma.md (SO-1 → SO-5, prompt chung plan.md mục 9.0).
+Nhánh pr-so-so-lieu-don-ma. Không giao diện (trừ khoá một ô tích ở SO-2): ponytail full.
+SO-4 có cổng 🛑: kê danh sách mã định gỡ vào mô tả PR TRƯỚC khi xoá; không chắc thì giữ.
+Cuối PR /security-review trên diff. Merge sau PHH (merge origin/main vào nhánh, giữ migratePrPhh, chạy lại check), trước DH.
 ```
 
 ### 9.2. Đợt 3 — sau khi DH merge
 
-**PR-U12** — Sonnet 5.5 · High (B: Opus 5.5 · Medium). *Session planning brainstorming với chủ sản phẩm + viết kế hoạch ngắn trước.*
+**PR-U12** — Sonnet 5.5 · High (B: Opus 5.5 · Medium)
 ```
 /ponytail lite
-Làm PR-U12 theo docs/superpowers/plans/2026-10-0x-pr-u12-ket-qua-lop-thuong.md (planning viết) và plan.md mục 4 "PR-U12".
-Nhánh pr-u12-ket-qua-lop-thuong. Dùng lại <KetQuaDot> và cách bảng Mock Test ở hồ sơ HV đã làm (K4-33), không chép.
-Impeccable: /impeccable layout, /impeccable clarify, /impeccable audit. Merge đầu tiên trong đợt 3.
+Làm PR-U12 theo docs/superpowers/plans/2026-10-04-pr-u12-ket-qua-lop-thuong.md (U12-1 → U12-3, prompt chung plan.md mục 9.0).
+Nhánh pr-u12-ket-qua-lop-thuong. Impeccable: U12-1 /impeccable layout, U12-2 /impeccable clarify, cuối /impeccable audit.
+Merge đầu tiên trong đợt 3.
 ```
 
 **PR-DL** — Opus 5.5 · High (B: Fable 5.1 · High)
@@ -296,7 +282,15 @@ Làm PR-DL theo docs/superpowers/plans/2026-10-04-pr-dl-diem-theo-lop.md (DL-0 �
 Mockup đã duyệt: thiet-ke/mockup-diem-theo-lop-2026-10-04.html. DL-0 sai Giả định G2 thì dừng, hỏi chủ sản phẩm (brainstorming).
 Không thêm đường ghi điểm mới; không tự tạo lịch; sửa ô có điểm đi đường override có lý do; kiểm quyền trước khi đọc dữ liệu.
 Impeccable: DL-5, DL-6 /impeccable layout, /impeccable clarify, /impeccable adapt (375); cuối /impeccable audit.
-DauTrangLop: chỉ thêm một mục menu ⋮. Merge sau U12, trước SL.
+DauTrangLop: chỉ thêm một mục menu ⋮. Merge sau U12, trước K26 và SL.
+```
+
+**PR-K26** — Opus 5.5 · High (B: Fable 5.1 · High). *Prompt đầy đủ viết sau khi session planning brainstorm + mockup với chủ sản phẩm.*
+```
+/ponytail lite
+Làm PR-K26 theo docs/superpowers/plans/2026-10-0x-pr-k26-lo-trinh-tiep-theo-dai.md (planning viết) và plan.md mục 4 "PR-K26".
+Nhánh pr-k26-lo-trinh-tiep-theo. Impeccable: /impeccable layout, /impeccable clarify, /impeccable harden, cuối /impeccable audit.
+Merge sau DL, trước SL.
 ```
 
 **PR-SL** — Opus 5.5 · High (B: Fable 5.1 · High)
@@ -309,7 +303,7 @@ phép kiểm: cùng một dòng Excel FT dán vào lớp FT và lớp thường 
 Tuần bắt đầu); I1, I2, I3, I4 phần còn lại, I6 (docs/superpowers/plans/2026-10-02-ux-sau-critique.md mục UX-I); D11 aria-describedby.
 SL-1: gọi lại updateStudent / updateCycle / setBaseline / reviseTarget, không viết lại luật; một giao dịch; phép kiểm cookie QL và GVCN.
 Impeccable: /impeccable layout + /impeccable harden (SL-2, D11, I1), /impeccable clarify (I2, I3, I6), cuối /impeccable audit.
-Merge cuối đợt 3: merge main vào nhánh, kiểm lại chân panel của PR-DL theo luật I1.
+Merge cuối đợt 3: merge main vào nhánh, kiểm lại chân panel của PR-DL và PR-K26 theo luật I1.
 ```
 
 ### 9.3. Đợt 4 — sau khi mọi PR trên merge
@@ -366,4 +360,4 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
-| 04/10/2026 | Planning (Opus 5.5) · `ke-hoach-thong-nhat-04-10` | Gộp mọi kế hoạch vào plan.md này; xoá kế hoạch/kiểm kê/rà soát của PR đã merge; còn 7 PR, 3 đợt |
+| 04/10/2026 | Planning (Opus 5.5) · `ke-hoach-thong-nhat-04-10` | Gộp mọi kế hoạch vào plan.md này; xoá kế hoạch/kiểm kê/rà soát của PR đã merge. Chủ sản phẩm trả lời mục 7; kế hoạch PHH, SO, U12; thêm PR-K26; còn 8 PR, 3 đợt |
