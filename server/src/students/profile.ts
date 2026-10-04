@@ -449,7 +449,7 @@ function boOVaCau(i: {
 /**
  * DÒNG THÔNG TIN ĐẦU HỒ SƠ (PR-VAI-b Task 1, mockup 24 A/C/D1) — "em là ai":
  *   FT          MB FT 101 · LT1 · target 6.5 · tuần học 9 · dự kiến thi 06/2027 · GVCN …
- *   lớp thường  MB FOU 15 · FOU · tuần học 7/10 · Cuối khoá W4 OCT · GVCN …
+ *   lớp thường  MB FOU 15 · FOU · tuần học 7/10 · Cuối khoá W4 OCT · Target 5.5 · thi IELTS dự kiến 06/2027 · GVCN …   (PR-NT 04/10)
  * FT đếm tuần học bằng `tuanHocTai` (PR-S6F-b D17 — một hàm cho đầu hồ sơ, chương Hành trình, panel Chuyển lớp / Lên lớp): bỏ tuần Tạm dừng; em đang dừng thì số dừng ở tuần trước tuần dừng.
  */
 function dongThongTin(i: {
@@ -467,16 +467,25 @@ function dongThongTin(i: {
     ? (db().prepare('SELECT full_name FROM users WHERE id = ?').get(dangDung.boiId) as any)?.full_name ?? null
     : null;
   const tamDung = dangDung ? { tu: dangDung.tu, lyDo: dangDung.lyDo, boi } : null;
-  if (!current) return { lop: null, lopId: null, loTrinh: null, target: null, tuanHoc: null, thiDuKien: null, gvcn: null, tamDung };
+  if (!current) return { lop: null, lopId: null, loTrinh: null, target: null, tuanHoc: null, thiDuKien: null, thiIelts: null, gvcn: null, tamDung };
 
   let tuanHoc: { tuan: number | null; tong: number | null; dangDung: boolean } | null = null;
   let thiDuKien: { nhan: string; gt: string } | null = null;
+  /* PR-NT (04/10): lớp thường cũng có Dự kiến thi IELTS — cùng công thức nhãn với FT (tháng / ngày / mã tuần). */
+  const nhanThi = (cy: any) => {
+    const ke = i.keSel && i.keSel.cycleId === cy.id ? i.keSel.ke : examPlanOf(cy);
+    return ke.confidence === 'none' ? null
+      : ke.confidence === 'month' ? fmtExamMonth(ke.month)
+      : cy.exam_date ? ke.label : tuanLich(ke.weekStart, today);
+  };
+  let thiIelts: string | null = null;
   if (khoa) {
     if (khoa.tuanHienTai !== null && khoa.tuanHienTai >= 1 && khoa.tongTuan) {
       tuanHoc = { tuan: Math.min(khoa.tuanHienTai, khoa.tongTuan), tong: khoa.tongTuan, dangDung: !!dangDung };
     }
     const tuanCk = i.tuanCuoiKhoa ?? khoa.tuanKetThuc;
     if (tuanCk) thiDuKien = { nhan: 'Cuối khoá', gt: tuanLich(tuanCk, today) };
+    if (dangChay) thiIelts = nhanThi(dangChay);
   } else if (dangChay) {
     const batDau = dangChay.start_period_id
       ? (i.startWeekSel && i.startWeekSel.cycleId === dangChay.id ? i.startWeekSel.weekStart
@@ -485,18 +494,15 @@ function dongThongTin(i: {
     /* Đang dừng: tuần học đứng ở tuần ngay trước tuần Tạm dừng (mockup 24 D1 "tuần học 14 · đang dừng"); dừng ngay tuần đầu → "đang dừng". */
     const th = batDau ? tuanHocTai(batDau, today, dung) : null;
     if (th) tuanHoc = { tuan: th.tuan, tong: null, dangDung: th.dangDung };
-    const ke = i.keSel && i.keSel.cycleId === dangChay.id ? i.keSel.ke : examPlanOf(dangChay);
-    const gt = ke.confidence === 'none' ? null
-      : ke.confidence === 'month' ? fmtExamMonth(ke.month)
-      : dangChay.exam_date ? ke.label : tuanLich(ke.weekStart, today);
+    const gt = nhanThi(dangChay);
     if (gt) thiDuKien = { nhan: 'dự kiến thi', gt };
   }
   return {
     lop: current.class_code as string, lopId: current.class_id as number,
     /* FT: lộ trình LT1/RF… · lớp thường: mã chương trình. */
     loTrinh: khoa ? khoa.ma : dangChay?.route ?? null,
-    target: khoa || !dangChay ? null : dangChay.khong_cam_ket ? 'KCK' as const : (dangChay.target_score as number | null) ?? null,
-    tuanHoc, thiDuKien, gvcn: i.gvcn, tamDung,
+    target: !dangChay ? null : dangChay.khong_cam_ket ? 'KCK' as const : (dangChay.target_score as number | null) ?? null,
+    tuanHoc, thiDuKien, thiIelts, lopThuong: !!khoa, gvcn: i.gvcn, tamDung,
   };
 }
 
@@ -858,6 +864,8 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
         startPeriodId: selected.start_period_id ?? null,
         startWeek: startWeekSel,
         examMonth: selected.exam_month ?? null,
+        /* PR-NT: ô Dự kiến thi của Thông tin HV lớp thường nạp sẵn ngày (T9) — tháng thì lấy `examMonth`. */
+        examDate: selected.exam_date ?? null,
         examPeriodId: selected.exam_period_id ?? null,
         /*
          * LỚP NORMAL KHÔNG CÓ KẾ HOẠCH THI IELTS; cái tương đương là TUẦN KẾT THÚC CHƯƠNG

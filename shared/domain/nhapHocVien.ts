@@ -91,10 +91,11 @@ export const laKck = (v: unknown): boolean => {
   return /^[-–—]$/.test(s) || ['kck', 'khong cam ket'].includes(chuanTieuDe(s));
 };
 
+const BANG_TIEU_DE = new Map<string, CotNhap>(Object.entries(TIEU_DE).flatMap(([k, ds]) => ds.map((a) => [a, k as CotNhap] as const)));
+
 /** YC-5.2: cột dán nhận THEO TIÊU ĐỀ, không theo thứ tự. Cột lạ/lặp → `boQua` (báo người dán); cột lặp lấy cột đầu. */
 export function nhanDangCot(dongDau: string[]): { cot: (CotNhap | null)[]; boQua: string[] } {
-  const bang = new Map<string, CotNhap>();
-  for (const [k, ds] of Object.entries(TIEU_DE)) for (const a of ds) bang.set(a, k as CotNhap);
+  const bang = BANG_TIEU_DE;
   const daCo = new Set<CotNhap>();
   const boQua: string[] = [];
   const cot = dongDau.map((h) => {
@@ -111,18 +112,21 @@ export type CotLuoi = { key: CotNhap; nhan: string; batBuoc?: boolean; so?: bool
 const COT_DAU: CotLuoi[] = [
   { key: 'fullName', nhan: 'Họ và tên', batBuoc: true }, { key: 'dob', nhan: 'Ngày sinh' }, { key: 'email', nhan: 'Email', batBuoc: true },
 ];
-const COT_FT: CotLuoi[] = [
+const COT_BAND: CotLuoi[] = [
   { key: 'baselineScore', nhan: 'Overall', so: true }, { key: 'entryListening', nhan: 'L', so: true },
   { key: 'entryReading', nhan: 'R', so: true }, { key: 'entryWriting', nhan: 'W', so: true },
-  { key: 'entrySpeaking', nhan: 'S', so: true }, { key: 'target', nhan: 'Target', so: true }, { key: 'examDate', nhan: 'Dự kiến thi' },
-  { key: 'daThiToiMt', nhan: 'Đã thi tới MT', so: true },
+  { key: 'entrySpeaking', nhan: 'S', so: true },
 ];
+const COT_MUC_TIEU: CotLuoi[] = [{ key: 'target', nhan: 'Target', so: true }, { key: 'examDate', nhan: 'Dự kiến thi' }];
+const COT_DA_THI: CotLuoi = { key: 'daThiToiMt', nhan: 'Đã thi tới MT', so: true };
 const COT_TUAN: CotLuoi = { key: 'startWeek', nhan: 'Tuần bắt đầu', batBuoc: true };
-/** YC-5.2 thứ tự cột. FT: Họ tên · Ngày sinh · Email · OVR · L · R · W · S · Target · Dự kiến thi · Đã thi tới MT (K2-33) · Tuần bắt đầu.
- *  Lớp thường (Pre FOU · FOU · BE · ELE): Họ tên · Ngày sinh · Email · Tuần bắt đầu (K2-41). Cột Tình trạng do giao diện vẽ. */
-export const cotLuoiNhap = (lopThuong: boolean): CotLuoi[] => (lopThuong ? [...COT_DAU, COT_TUAN] : [...COT_DAU, ...COT_FT, COT_TUAN]);
+/** YC-5.2 thứ tự cột — quyết định chủ sản phẩm 04/10 (thay K2-41): lớp thường cũng có Target + Dự kiến thi.
+ *  FT: Họ tên · Ngày sinh · Email · OVR · L · R · W · S · Target · Dự kiến thi · Đã thi tới MT (K2-33) · Tuần bắt đầu.
+ *  Lớp thường (Pre FOU · FOU · BE · ELE): Họ tên · Ngày sinh · Email · Target · Dự kiến thi · Tuần bắt đầu. Cột Tình trạng do giao diện vẽ. */
+export const cotLuoiNhap = (lopThuong: boolean): CotLuoi[] =>
+  lopThuong ? [...COT_DAU, ...COT_MUC_TIEU, COT_TUAN] : [...COT_DAU, ...COT_BAND, ...COT_MUC_TIEU, COT_DA_THI, COT_TUAN];
 const NHAN_KHAC: Record<string, string> = { classCode: 'Lớp', route: 'Lộ trình', consultant: 'Tư vấn viên' };
-export const nhanCotNhap = (field: string) => [...COT_DAU, ...COT_FT, COT_TUAN].find((c) => c.key === field)?.nhan ?? NHAN_KHAC[field] ?? field;
+export const nhanCotNhap = (field: string) => cotLuoiNhap(false).find((c) => c.key === field)?.nhan ?? NHAN_KHAC[field] ?? field;
 
 /**
  * Tuần bắt đầu mặc định cho cả lô (YC-5.4). Planning chốt 29/09 (câu hỏi 1 của PR-MT, thay K2-19): mọi lớp lấy TUẦN KHAI GIẢNG —
@@ -132,4 +136,38 @@ export const nhanCotNhap = (field: string) => [...COT_DAU, ...COT_FT, COT_TUAN].
 export function tuanBatDauMacDinh(lop: { lopThuong: boolean; khaiGiang: string | null }, homNay: string): string | null {
   if (lop.khaiGiang) return mondayOfDate(lop.khaiGiang);
   return lop.lopThuong ? null : mondayOfDate(homNay);
+}
+
+/**
+ * PR-NT (yêu cầu bổ sung 04/10): dán từ Excel KHÔNG bắt buộc dòng tiêu đề. Dòng đầu là tiêu đề khi có ô khớp NGUYÊN Ô "Họ và tên" (hoặc
+ * bí danh) HOẶC ≥ 2 ô khớp tên cột đã biết, VÀ không ô nào trông như dữ liệu (email, ngày/tháng, số). Chống mất dữ liệu: nghiêng về
+ * "là học viên" — tên người ("Nguyễn Văn An", "Email Nguyễn") không khớp nguyên ô nên không bị nuốt; đoán sai thì người dùng đổi bằng một nút.
+ */
+export function laDongTieuDe(o: string[]): boolean {
+  const ten = o.map((c) => BANG_TIEU_DE.get(chuanTieuDe(c)) ?? null);
+  const khop = ten.filter(Boolean).length;
+  if (!ten.includes('fullName') && khop < 2) return false;
+  return !o.some((c) => {
+    const s = c.trim();
+    return !!s && (!!docEmail(s).email || !!docNgayNhap(s, '2100-12-31', { choThang: true }).iso || /^\d+([.,]\d+)?$/.test(s));
+  });
+}
+
+/** Cách web đã đọc vùng dán — trả về để panel nói rõ và cho đổi. `thua`: số ô có dữ liệu dư ở dòng dài nhất (bị bỏ); `thieu`: số cột lưới
+ *  không có ô ở dòng ngắn nhất (chỉ khi không tiêu đề). */
+export type CachDoc = { coTieuDe: boolean; daDoan: boolean; thuTu: CotNhap[]; boQua: string[]; thua: number; thieu: number };
+
+/** `coTieuDe`: undefined = tự đoán (`laDongTieuDe`); true/false = người dùng chọn. Không tiêu đề → cột theo `cotLuoiNhap(lopThuong)`. */
+export function docDongDan(dong: string[][], lopThuong: boolean, coTieuDe?: boolean): { cot: (CotNhap | null)[]; batDau: 0 | 1; cach: CachDoc } {
+  const laTieuDe = coTieuDe ?? laDongTieuDe(dong[0] ?? []);
+  const { cot, boQua } = laTieuDe ? nhanDangCot(dong[0] ?? []) : { cot: cotLuoiNhap(lopThuong).map((c) => c.key), boQua: [] };
+  const batDau = laTieuDe ? 1 : 0;
+  /* Độ dài "thật" của dòng: tới ô cuối có chữ (Excel hay kèm tab trống ở cuối). */
+  const dai = dong.slice(batDau).map((d) => { let n = d.length; while (n > 0 && !d[n - 1].trim()) n -= 1; return n; });
+  const thua = Math.max(0, ...dai.map((n) => n - cot.length));
+  const thieu = laTieuDe || !dai.length ? 0 : Math.max(0, cot.length - Math.min(...dai));
+  return {
+    cot, batDau,
+    cach: { coTieuDe: laTieuDe, daDoan: coTieuDe === undefined, thuTu: cot.filter((k): k is CotNhap => !!k), boQua, thua, thieu },
+  };
 }
