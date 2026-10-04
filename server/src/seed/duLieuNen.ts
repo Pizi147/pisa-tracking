@@ -64,6 +64,8 @@ export function napDuLieuNen(conn: any, now: string): { roleId: Map<string, numb
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('normal_pass_threshold', '0.7', now);
   /* DB mới chưa từng có em thôi học kiểu cũ — khoá trước để migrate không lưu trữ lại em QL đã Bỏ lưu trữ (DEP-1, `migrateXoaDuLieu`). */
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('xoa_du_lieu_backfill_at', now, now);
+  /* PR-QU: DB mới đã cấp `case.close` cho Giáo viên theo `ROLE_PERMISSIONS` — khoá trước để migrate không cấp lại ô Quản trị đã gỡ. */
+  conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_qu_case_close_gv_at', now, now);
   /* DẤU DB MỚI (DEP-2): database dựng bằng mã hiện hành (init / seed) không có dữ liệu kiểu cũ — các bước CHUYỂN DỮ LIỆU CŨ của migrate bỏ qua. */
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('khoi_tao_moi_at', now, now);
   return { roleId, permId };

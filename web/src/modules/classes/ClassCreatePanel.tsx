@@ -7,6 +7,7 @@ import { useLoiForm, type MucThieu } from '../../ui/loiForm.tsx';
 import { WeekPicker } from '../../ui/Filters.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { NutChon } from '../../ui/ui.tsx';
+import { LuoiTaoLop, dongMoi, type TrangThaiLuoi } from './LuoiTaoLop.tsx';
 import {
   CHO_TAO_PRE_FOU, ENTRY_SKILLS, PROGRAMME_TEMPLATES,
   chonKhiDoiTach, chuanHoaMaLop, dsLoi, ghepMaLop, kiemPhanCong, kiemSoLop, kyHieuLop, kyNangGoiY, locSoLop, nhanDayDuoc, oPhanCong, slotsTuO,
@@ -23,6 +24,7 @@ const CHUONG_TRINH_THUONG = ['PREFOU', 'FOU', 'BE', 'ELE'] as const;
  * Tên lớp do máy ghép `{CN} {ký hiệu} {số}`: người dùng chỉ chọn kiểu lớp/lộ trình/chương trình và gõ số (T1).
  * Mỗi ô phân công MỘT người (YC-4); lỗi luật phân công hiện ngay tại ô và khoá nút Tạo lớp (Q2) — cùng hàm máy chủ kiểm.
  * Lỗi ô thường theo PR-N1 (YC-12.5.2, `useLoiForm`): hiện khi rời ô / sau khi bấm; chân một dòng xám `n ô cần sửa ↑`.
+ * PR-QU (C): "Nhiều lớp" = lưới `LuoiTaoLop` (một lớp là trường hợp riêng); chỉ hiện khi mở từ "+ Lớp mới" (không `macDinh`).
  */
 export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
   onClose: () => void;
@@ -33,7 +35,8 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
 }) {
   const toast = useToast();
   const navigate = useNavigate();
-  const branches = useApi<Branch[]>('/ref/branches');
+  /* PR-QU (B): chỉ chi nhánh người này có `class.create`. */
+  const branches = useApi<Branch[]>('/ref/branches?muc=tao-lop');
   const routes = useApi<{ code: string; name: string }[]>('/ref/routes');
   const programmes = useApi<Programme[]>('/ref/programmes');
 
@@ -46,6 +49,9 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
   const [chon, setChon] = useState<Record<string, number | ''>>({});
   const lf = useLoiForm();
   const [busy, setBusy] = useState(false);
+  const [cheDo, setCheDo] = useState<'mot' | 'nhieu'>('mot');
+  /* Lưới giữ ở đây: đổi qua lại Một lớp / Nhiều lớp không mất dòng đang soạn. */
+  const [luoi, setLuoi] = useState<TrangThaiLuoi | null>(null);
 
   const teachers = useApi<{ id: number; name: string; classCount: number; skills?: string[] }[]>(
     branchId ? `/ref/teachers?branchId=${branchId}` : null, [branchId]);
@@ -110,6 +116,26 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
 
+  /* Không có `class.assign` (GV được cấp riêng `class.create`): máy chủ trả 403 danh sách GV → ẩn phân công, không báo lỗi. */
+  const ganDuoc = teachers.error?.status !== 403;
+
+  const nutCheDo = macDinh ? null : (
+    <PhanDoan nhan="Số lớp tạo" giaTri={cheDo} muc={[{ v: 'mot', nhan: 'Một lớp' }, { v: 'nhieu', nhan: 'Nhiều lớp' }]}
+      onChon={(v) => {
+        /* Lần đầu sang Nhiều lớp: dòng 1 lấy theo form một lớp. */
+        if (v === 'nhieu' && !luoi) {
+          setLuoi({ daSua: false, dong: [dongMoi({ branchId, chuongTrinh: ct, loTrinh, so, soTay: so !== '', startPeriodId })] });
+        }
+        setCheDo(v as 'mot' | 'nhieu');
+      }} />
+  );
+  if (cheDo === 'nhieu' && luoi) {
+    return (
+      <LuoiTaoLop cheDo={nutCheDo} luoi={luoi} branches={dsCn} onClose={onClose}
+        setLuoi={(f) => setLuoi((l) => (l ? f(l) : l))} />
+    );
+  }
+
   const loiPcDau = loiPc[0] ? `${oList.find((o) => o.khoa === loiPc[0].khoa || o.gop?.includes(loiPc[0].khoa))?.nhan ?? ''}: ${loiPc[0].lyDo}` : undefined;
 
   return (
@@ -122,6 +148,7 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
         conThieu,
       }}>
       <div className="space-y-3 pt-3.5">
+        {nutCheDo}
         <Truong nhan="Chi nhánh" batBuoc loi={loiHien('chi-nhanh')}>
           <select className="field w-full" {...o('chi-nhanh')} value={branchId ?? ''}
             onChange={(e) => { setBranchId(e.target.value ? Number(e.target.value) : null); setChon({}); }}>
@@ -168,7 +195,7 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
         {lopSeCo && <p className="m-0 text-xs text-slate-400 tabular-nums">Lớp này sẽ có: {lopSeCo}</p>}
       </div>
 
-      <Khoi tieuDe="Phân công">
+      {ganDuoc && <Khoi tieuDe="Phân công">
         <LuoiPhanCong oList={oList} chon={chon} nguoi={teachers.data ?? []} loi={loiPcO} oId={lf.oId} chuongTrinh={ct}
           onChon={(khoa, v) => setChon((c) => ({ ...c, [khoa]: v }))} />
         <NutTachFou fou={fou} />
@@ -177,7 +204,7 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
             ? 'Lớp Pre FOU không chia môn — GVCN dạy luôn.'
             : 'Mỗi ô một người. Một người nhận nhiều ô được. Thiếu ô nào vẫn tạo được lớp — bổ sung ở hồ sơ lớp.'}
         </p>
-      </Khoi>
+      </Khoi>}
     </KhungPanel>
   );
 }

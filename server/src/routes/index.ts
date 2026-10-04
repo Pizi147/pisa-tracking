@@ -219,8 +219,13 @@ api.put('/demo/config', requireAuth, wrap((req) => {
 
 api.get('/ref/branches', requireAuth, wrap((req) => {
   const p = principalOf(req);
-  const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   const all = db().prepare("SELECT id, code, name FROM branches WHERE status='active' ORDER BY id").all() as any[];
+  /* PR-QU (B): panel "+ Lớp mới" chỉ bày chi nhánh người này có `class.create`. */
+  if (req.query.muc === 'tao-lop') {
+    const duoc = new Set(hocVienLopSvc.chiNhanhTaoLop(p));
+    return all.filter((b) => duoc.has(b.id));
+  }
+  const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   if (scope.all) return all;
   const viaClass = scope.classIds.length
     ? (db().prepare(`SELECT DISTINCT branch_id AS id FROM classes WHERE id IN (${scope.classIds.map(() => '?').join(',')})`)
@@ -349,31 +354,8 @@ api.get('/ref/users', requireAuth, wrap((req) => {
  *
  * Kèm số lớp mỗi người đang dạy, để người phân công thấy ai đang gánh nhiều.
  */
-api.get('/ref/teachers', requireAuth, wrap((req) => {
-  const p = principalOf(req);
-  if (!can(p, PERMISSIONS.CLASS_ASSIGN, { anyScope: true })) return [];
-  const branchId = qInt(req, 'branchId');
-  /* PR-Dọn (quét #9): chi nhánh hỏi phải nằm trong phạm vi phân công của người xem; không gửi → mọi chi nhánh trong phạm vi. */
-  const scope = scopeFor(p, PERMISSIONS.CLASS_ASSIGN);
-  const cn = scope.all ? (branchId ? [branchId] : null) : scope.branchIds.filter((b) => !branchId || b === branchId);
-  if (cn && !cn.length) return [];
-  return db()
-    .prepare(
-      `SELECT u.id, u.code, u.full_name AS name, u.title,
-              (SELECT COUNT(DISTINCT ta.class_id) FROM teacher_assignments ta
-                WHERE ta.user_id = u.id AND ta.status = 'active') AS classCount,
-              (SELECT GROUP_CONCAT(us.skill) FROM user_skills us WHERE us.user_id = u.id) AS skills
-         FROM users u
-        WHERE u.status = 'active'
-          AND EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id
-                       WHERE ur.user_id = u.id AND ur.status = 'active' AND r.key IN ('teacher', 'manager')
-                         AND (ur.branch_id IS NULL${cn ? ` OR ur.branch_id IN (${cn.map(() => '?').join(',')})` : ' OR 1=1'}))
-        ORDER BY u.full_name`,
-    )
-    .all(...(cn ?? []))
-    /* MH6: kỹ năng tự khai (5 ô) — gợi ý phân công, không phải quyền. */
-    .map((u: any) => ({ ...u, skills: String(u.skills ?? '').split(',').filter(Boolean) }));
-}));
+api.get('/ref/teachers', requireAuth, wrap((req) =>
+  classSvc.giaoVienPhanCong(principalOf(req), { branchId: qInt(req, 'branchId'), classId: qInt(req, 'classId') })));
 
 api.get('/ref/units', requireAuth, wrap((req) => {
   const p = principalOf(req);
@@ -1090,6 +1072,16 @@ api.put('/classes/:id/teachers', requireAuth, wrap((req) => {
 api.post('/classes', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return intakeSvc.taoLopVaPhanCong(principalOf(req), req.body ?? {});
+}));
+
+/**
+ * PR-QU (C): tạo NHIỀU lớp một lần — `{ rows, idempotencyKey, dryRun }`. Tất cả hoặc không gì; lỗi theo dòng trả 200 `{ ok:false, loi }`
+ * để lưới gắn đúng ô (quyền sai vẫn 403 cả lô). `dryRun` = nút "Kiểm tra".
+ */
+api.post('/classes/bulk', requireAuth, wrap((req) => {
+  const b = req.body ?? {};
+  if (!b.dryRun) maybeSimulateSaveFailure();
+  return intakeSvc.taoLopHangLoat(principalOf(req), { rows: b.rows, idempotencyKey: b.idempotencyKey ?? null, dryRun: !!b.dryRun });
 }));
 
 // ============================================================ Học viên & Lớp · hồ sơ lớp (PR-Qa)
@@ -1925,6 +1917,7 @@ api.post('/mgmt-tasks', requireAuth, wrap((req) => {
     parentTaskId: b.parentTaskId ? Number(b.parentTaskId) : null,
     caseIds: Array.isArray(b.caseIds) ? b.caseIds.map(Number) : [],
     unitReportId: b.unitReportId ? Number(b.unitReportId) : null,
+    idempotencyKey: b.idempotencyKey,   // PR-GVa: chuẩn hoá ở `chuanKhoaGui` (chuỗi lạ → không khoá)
   });
 }));
 
@@ -1953,6 +1946,11 @@ api.put('/admin/role-permissions', requireAuth, wrap((req) => {
     granted: !!b.granted,
   });
 }));
+
+/** PR-QU (D): ma trận vai × quyền (+ quyền suy ra cho cột GVCN, + lý do ô khoá) và tầm ảnh hưởng của một ô trước khi bật/tắt. */
+api.get('/admin/permissions/matrix', requireAuth, wrap((req) => sysconfigSvc.maTranQuyen(principalOf(req))));
+api.get('/admin/roles/:key/permissions/:perm/impact', requireAuth, wrap((req) =>
+  sysconfigSvc.anhHuongOVai(principalOf(req), String(req.params.key), String(req.params.perm))));
 
 api.get('/admin/overview', requireAuth, wrap((req) => {
   const p = principalOf(req);
@@ -2086,7 +2084,7 @@ api.put('/admin/accounts/:id/skills', requireAuth, wrap((req) => accountSvc.setU
   principalOf(req), Number(req.params.id), Array.isArray(req.body?.skills) ? req.body.skills.map(String) : [],
 )));
 api.put('/admin/accounts/:id/permissions', requireAuth, wrap((req) => accountSvc.setUserPermissions(
-  principalOf(req), Number(req.params.id), Array.isArray(req.body?.items) ? req.body.items : [],
+  principalOf(req), Number(req.params.id), Array.isArray(req.body?.items) ? req.body.items : [], req.body?.lyDo ?? null,
 )));
 api.post('/admin/accounts/:id/password', requireAuth, wrap((req) => accountSvc.resetPassword(
   principalOf(req), Number(req.params.id), String(req.body?.password ?? ''),

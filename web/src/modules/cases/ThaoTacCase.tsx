@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
@@ -12,7 +12,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
   CASE_OUTCOMES, CASE_OUTCOME_LABEL, HAN_DUYET_NGAY, INTERVENTION_KIND_LABEL, RESCHEDULE_TARGETS, RESCHEDULE_TARGET_LABEL,
   componentsAreCounts, componentsFor, interventionKindsFor, isProposalKind,
-  GOI_Y_MO_TA_PA, nguoiThanhPayload, type NguoiChon, dsLoi, kiemGhiRoKhac, KHAC_TOI_THIEU,
+  GOI_Y_MO_TA_PA, nguoiThanhPayload, type NguoiChon, dsLoi, kiemGhiRoKhac, KHAC_TOI_THIEU, moiKhoaGui,
 } from '@shared/domain/index.ts';
 import { ComponentsField, componentsPayload } from './ChiTietKyNang.tsx';
 
@@ -55,6 +55,8 @@ export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quay
   const [rescheduleTarget, setRescheduleTarget] = useState<string>(RESCHEDULE_TARGETS[0]);
   const lf = useLoiForm();
   const [busy, setBusy] = useState(false);
+  /* PR-GVa (F01 = D13): một khoá gửi cho một lần mở panel — thử lại sau lỗi mạng không ghi PA thứ hai. */
+  const khoa = useRef(moiKhoaGui('pa'));
   /* Nhóm Đề xuất luôn phải có Quản lý trả lời. */
   const deXuat = isProposalKind(kind);
 
@@ -78,6 +80,7 @@ export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quay
         rescheduleTarget: kind === 'reschedule_mt' ? rescheduleTarget : undefined,
         needsApproval: deXuat,
         ...(laKhacPa ? { ghiRoKhac: ghiRo.trim() } : {}),
+        idempotencyKey: khoa.current,
       });
       invalidate('/cases'); invalidate('/students'); invalidate('/tong-quan');
       toast.push('ok', deXuat ? 'Đã gửi Quản lý duyệt' : 'Đã ghi lại');

@@ -7,12 +7,12 @@ import {
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { mondayOf } from '../platform/week.ts';
-import { badRequest, notFound, nowIso } from '../util.ts';
+import { badRequest, forbidden, notFound, nowIso } from '../util.ts';
 import {
   can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, mySkills, require_, scopeFor,
   type Principal,
 } from '../permissions.ts';
-import { writeAudit } from '../platform/audit.ts';
+import { notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
 import { loadBundle, pendingInputOf, regularSkillViews, resultOf, skillCells } from '../fasttrack/attempts.ts';
 import { examPlanOf } from '../fasttrack/cycles.ts';
 import { dotHoanTatMany, type HoanTatInfo } from '../fasttrack/hoanTat.ts';
@@ -782,13 +782,15 @@ function classOverviewThat(p: Principal, classId: number) {
      * không còn gì để sửa/nhập/gán nữa.
      */
     viewer: { ...(finished ? {
-      canPlanWeek: false, canAddStudents: false, canAssign: false, canEditProgress: false,
+      canPlanWeek: false, canAddStudents: false, canAssign: false, canAssignSubject: false, canEditProgress: false,
       editableSkills: [] as string[], isCoreTeacher: false,
       canReportCase: false, canRecordViolation: false, canEnterScores: false, coTheChuyenTiep: false,
     } : {
       canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { classId }),
       canAddStudents: can(p, PERMISSIONS.STUDENT_EDIT, { classId }),
       canAssign: can(p, PERMISSIONS.CLASS_ASSIGN, { classId }),
+      /** PR-QU (A): GVCN đổi được GV bộ môn lớp mình — nút Phân công hiện khi `canAssign || canAssignSubject`. */
+      canAssignSubject: can(p, PERMISSIONS.CLASS_ASSIGN, { classId }) || can(p, PERMISSIONS.CLASS_ASSIGN_SUBJECT, { classId }),
       /** Sửa tuần khai giảng và hai mốc kiểm tra — Admin CN và Quản lý CN (mục 7.6). */
       canEditProgress: can(p, PERMISSIONS.CLASS_EDIT, { classId }),
       editableSkills: editableSkills(p, classId, classSkills),
@@ -849,6 +851,43 @@ export function teacherCandidatesBranch(branchId: number, classId: number | null
     .all(classId, branchId) as any[];
 }
 
+/**
+ * GIÁO VIÊN CÓ THỂ PHÂN CÔNG (`GET /ref/teachers`) — cho form Tạo lớp (lớp chưa tồn tại) và GVCN phân công bộ môn.
+ * Quản lý: theo phạm vi `class.assign` (lọc `branchId` nếu gửi). PR-QU (A): người không có `class.assign` chỉ hỏi được cho CHÍNH lớp mình
+ * chủ nhiệm (`classId`) — trả GV của chi nhánh lớp đó; không có lớp / không phải GVCN → 403. Kèm số lớp mỗi người đang dạy.
+ */
+export function giaoVienPhanCong(p: Principal, q: { branchId?: number; classId?: number }) {
+  let cn: number[] | null;
+  if (!can(p, PERMISSIONS.CLASS_ASSIGN, { anyScope: true })) {
+    const lop = q.classId ? db().prepare('SELECT branch_id FROM classes WHERE id = ?').get(q.classId) as any : null;
+    if (!lop || !can(p, PERMISSIONS.CLASS_ASSIGN_SUBJECT, { classId: q.classId! })) {
+      throw forbidden('Chỉ Quản lý hoặc GVCN của lớp mới xem được danh sách giáo viên để phân công.');
+    }
+    cn = [lop.branch_id];
+  } else {
+    /* PR-Dọn (quét #9): chi nhánh hỏi phải nằm trong phạm vi phân công của người xem; không gửi → mọi chi nhánh trong phạm vi. */
+    const scope = scopeFor(p, PERMISSIONS.CLASS_ASSIGN);
+    cn = scope.all ? (q.branchId ? [q.branchId] : null) : scope.branchIds.filter((b) => !q.branchId || b === q.branchId);
+    if (cn && !cn.length) return [];
+  }
+  return (db()
+    .prepare(
+      `SELECT u.id, u.code, u.full_name AS name, u.title,
+              (SELECT COUNT(DISTINCT ta.class_id) FROM teacher_assignments ta
+                WHERE ta.user_id = u.id AND ta.status = 'active') AS classCount,
+              (SELECT GROUP_CONCAT(us.skill) FROM user_skills us WHERE us.user_id = u.id) AS skills
+         FROM users u
+        WHERE u.status = 'active'
+          AND EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id
+                       WHERE ur.user_id = u.id AND ur.status = 'active' AND r.key IN ('teacher', 'manager')
+                         AND (ur.branch_id IS NULL${cn ? ` OR ur.branch_id IN (${cn.map(() => '?').join(',')})` : ' OR 1=1'}))
+        ORDER BY u.full_name`,
+    )
+    .all(...(cn ?? [])) as any[])
+    /* MH6: kỹ năng tự khai (5 ô) — gợi ý phân công, không phải quyền. */
+    .map((u: any) => ({ ...u, skills: String(u.skills ?? '').split(',').filter(Boolean) }));
+}
+
 export function classTeachers(p: Principal, classId: number) {
   const conn = db();
   const cls = conn
@@ -859,6 +898,8 @@ export function classTeachers(p: Principal, classId: number) {
 
   const prog = programmeOfClass(classId);
   const canAssign = can(p, PERMISSIONS.CLASS_ASSIGN, { classId });
+  /** PR-QU (A): GVCN lớp này — sửa được ô GV bộ môn, ô GVCN chỉ đọc. */
+  const canAssignSubject = canAssign || can(p, PERMISSIONS.CLASS_ASSIGN_SUBJECT, { classId });
 
   const active = conn
     .prepare(
@@ -898,7 +939,7 @@ export function classTeachers(p: Principal, classId: number) {
       name: a.full_name, skill: a.skill, isCore: a.is_core === 1,
       from: a.effective_from, to: a.effective_to,
     })),
-    viewer: { canAssign },
+    viewer: { canAssign, canAssignSubject },
   };
 }
 
@@ -943,7 +984,9 @@ export function kiemTruocPhanCong(
  * thao tác thêm/bớt. Dòng không đổi GIỮ NGUYÊN `effective_from` (đóng rồi mở lại là bịa ra một lần đổi người); dòng bỏ thì kết
  * thúc (`ended` + `effective_to`), không xoá — báo cáo cũ phải tra được ai dạy lúc đó.
  */
-export function ghiPhanCong(p: Principal, classId: number, slots: SlotPhanCong[], ngay: string): { added: number; ended: number } {
+export function ghiPhanCong(p: Principal, classId: number, slots: SlotPhanCong[], ngay: string,
+  /** PR-QU: thêm vào nhật ký (`via`, `truoc`, `sau`). */
+  meta?: Record<string, unknown>): { added: number; ended: number } {
   const conn = db();
   const keyOf = (userId: number, skill: string | null, isCore: boolean | number) => `${userId}|${skill ?? ''}|${isCore ? 1 : 0}`;
   const wanted = new Map(slots.map((s) => [keyOf(s.userId, s.skill, s.isCore), s] as const));
@@ -972,29 +1015,52 @@ export function ghiPhanCong(p: Principal, classId: number, slots: SlotPhanCong[]
     const code = (conn.prepare('SELECT code FROM classes WHERE id = ?').get(classId) as any)?.code ?? null;
     writeAudit({
       actorUserId: p.userId, action: 'class.assign', entityType: 'class', entityId: classId,
-      entityLabel: code, after: { added, ended },
+      entityLabel: code, after: { added, ended, ...meta },
     });
   }
   return { added, ended };
 }
 
-/** Phân công GV của lớp đã có: kiểm ba luật TRƯỚC (`kiemTruocPhanCong`), rồi ghi trong một giao dịch. */
+/** Ô GVCN của một bức tranh phân công: dòng `isCore` + ô Tổng hợp Pre FOU (GVCN tự nhận, G2/T56) — GVCN không tự đổi ô này. */
+function oCore(slots: readonly { userId: number; skill: string | null; isCore: boolean }[]): string {
+  return slots.filter((s) => s.isCore || s.skill === 'tong_hop').map((s) => `${s.userId}|${s.isCore ? 'core' : s.skill}`).sort().join(',');
+}
+
+/**
+ * Phân công GV của lớp đã có: kiểm ba luật TRƯỚC (`kiemTruocPhanCong`), rồi ghi trong một giao dịch.
+ * PR-QU (A): Quản lý (`class.assign`) đổi mọi ô; GVCN của lớp (`class.assign_subject`, suy ra) chỉ đổi ô GV BỘ MÔN — chạm ô GVCN thì 403,
+ * không ghi gì. GVCN đổi thì nhật ký ghi `via:'gvcn'` kèm trước/sau, và Quản lý chi nhánh nhận thông báo (để biết, không duyệt — G3).
+ */
 export function setClassTeachers(p: Principal, classId: number, input: { slots?: TeacherSlot[] }) {
   const conn = db();
   const cls = conn.prepare('SELECT * FROM classes WHERE id = ?').get(classId) as any;
   if (!cls) throw notFound('Không tìm thấy lớp');
-  require_(p, PERMISSIONS.CLASS_ASSIGN, { classId },
-    'Chỉ Quản lý và Admin chi nhánh mới đổi được phân công giáo viên.');
+  const full = can(p, PERMISSIONS.CLASS_ASSIGN, { classId });
+  if (!full) {
+    require_(p, PERMISSIONS.CLASS_ASSIGN_SUBJECT, { classId, branchId: cls.branch_id },
+      'Chỉ Quản lý hoặc GVCN của lớp mới phân công giáo viên.');
+  }
 
   const prog = programmeOfClass(classId);
   const ct = prog?.code ?? null;
   const classSkills: string[] = prog?.skills ?? [...ENTRY_SKILLS];
   /* Pre FOU: GVCN tự nhận ô môn duy nhất — đổi GVCN thì ô đó đổi theo, dòng cũ kết thúc như mọi ô (T56). */
   const slots = moRongPhanCong(ct, classSkills, docSlots(input.slots));
+  const cu = (conn.prepare(`SELECT user_id, skill, is_core FROM teacher_assignments WHERE class_id = ? AND status = 'active'`).all(classId) as any[])
+    .map((a) => ({ userId: a.user_id as number, skill: a.skill as string | null, isCore: a.is_core === 1 }));
+  if (!full && oCore(cu) !== oCore(slots)) throw forbidden('GVCN chỉ đổi được GV bộ môn. Đổi GVCN thì nhờ Quản lý chi nhánh.');
   kiemTruocPhanCong(classId, cls.branch_id, ct, classSkills, slots);
 
+  const tom = (ds: typeof cu) => ds.map((x) => `${x.isCore ? 'GVCN' : x.skill}:${x.userId}`).sort();
   return tx(() => {
-    ghiPhanCong(p, classId, slots, demoToday());
+    const r = ghiPhanCong(p, classId, slots, demoToday(), { via: full ? 'quan_ly' : 'gvcn', truoc: tom(cu), sau: tom(slots) });
+    if (!full && (r.added || r.ended)) {
+      for (const id of quanLyCuaChiNhanh(cls.branch_id)) {
+        if (id === p.userId) continue;
+        notify({ userId: id, kind: 'phan_cong_gvcn', title: `${p.fullName} (GVCN) đã đổi phân công GV bộ môn lớp ${cls.code}`,
+          entityType: 'class', entityId: classId, dedupKey: `phan_cong_gvcn:${classId}:${nowIso()}`, duong: `/hoc-vien/lop/${classId}` });
+      }
+    }
     return classTeachers(p, classId);
   });
 }

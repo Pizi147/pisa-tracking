@@ -417,14 +417,27 @@ function teacherAllows(p: Principal, permission: string, ctx: Ctx): boolean {
       return hasAssignment(p, ctx, 'core') || hasAssignment(p, ctx, 'skill');
     }
 
+    /*
+     * PR-QU (chủ sản phẩm 04/10) — HOÀN THÀNH CASE: Case học thuật (`ctx.skill` có) → GV dạy ĐÚNG kỹ năng đó ở lớp của em; GVCN cũng chỉ
+     * khi chính mình dạy kỹ năng đó (C02). Case Ý thức (không kỹ năng) → GVCN lớp em đang học. Nơi gọi PHẢI truyền `skill` của Case.
+     */
+    case PERMISSIONS.CASE_CLOSE:
+      return ctx.skill ? hasAssignment(p, ctx, 'skill') : coreDangHoc(p, ctx);
+
+    /* PR-QU (A): GVCN phân công GV bộ môn — chỉ lớp mình chủ nhiệm, phải nêu `classId` (không có lớp thì không suy được). */
+    case PERMISSIONS.CLASS_ASSIGN_SUBJECT:
+      return !!ctx.classId && isCoreTeacherOf(p, ctx.classId, ctx.date ?? demoToday());
+
     default:
       return true;
   }
 }
 
 export function can(p: Principal, permission: string, ctx: Ctx = {}): boolean {
+  /* `class.assign_subject` là quyền SUY RA: không vai nào được cấp, grant `teacher` mang nó ngầm và `teacherAllows` siết về GVCN lớp đó. */
+  const suyRaGv = permission === PERMISSIONS.CLASS_ASSIGN_SUBJECT;
   for (const g of p.grants) {
-    if (!g.permissions.has(permission)) continue;
+    if (!g.permissions.has(permission) && !(suyRaGv && g.roleKey === 'teacher')) continue;
     if (!grantCovers(g, ctx)) continue;
     if (g.roleKey === 'teacher' && !teacherAllows(p, permission, ctx)) continue;
     return true;
@@ -456,6 +469,9 @@ export function explain(p: Principal, permission: string, ctx: Ctx): string {
       return 'Bạn chỉ dời được lịch lớp thường mình phụ trách — Fast Track vẫn do Quản lý xếp.';
     }
     if (permission === PERMISSIONS.VIOLATION_RECORD) return 'Bạn chỉ ghi được vi phạm của học viên trong lớp mình được phân công.';
+    if (permission === PERMISSIONS.CASE_CLOSE) {
+      return 'Bạn chỉ hoàn thành được Case đúng môn mình dạy — Case Ý thức thì chỉ GVCN của lớp.';
+    }
     if (permission === PERMISSIONS.DISCIPLINE_MANAGE) {
       return 'Chỉ giáo viên chủ nhiệm của lớp (hoặc Quản lý) mới xử lý được Ý thức; giáo viên bộ môn chỉ ghi và xem.';
     }

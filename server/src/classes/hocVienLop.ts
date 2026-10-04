@@ -62,11 +62,10 @@ export function danhSachHocVienLop(
     ? (conn.prepare(`SELECT id FROM branches WHERE status = 'active' ORDER BY id`).all() as any[]).map((r) => r.id as number)
     : scope.branchIds;
   /*
-   * "+ LỚP MỚI" đầu trang (điểm a rà soát cuối): không gắn với lớp đã tồn tại nào, nên không thể dùng cờ
-   * `viewer.coTheSuaHocVien` của một lớp cụ thể — kiểm riêng `STUDENT_EDIT` theo TỪNG chi nhánh người xem thấy được.
-   * Với GVCN/GVBM (`ctx.branchId` không đủ, `teacherAllows` đòi `ctx.classId` cho STUDENT_EDIT), luôn `false`.
+   * "+ LỚP MỚI" đầu trang: không gắn với lớp nào — PR-QU (B) kiểm `CLASS_CREATE` theo TỪNG chi nhánh đang hoạt động (không chỉ chi nhánh
+   * người xem thấy được: GV được cấp riêng `class.create` ở một chi nhánh vẫn chỉ "thấy" lớp mình dạy).
    */
-  const coTheTaoLop = duocXemChiNhanh.some((b) => can(p, PERMISSIONS.STUDENT_EDIT, { branchId: b }));
+  const coTheTaoLop = chiNhanhTaoLop(p).length > 0;
   /* Link cũ `/hoc-vien?branchId=` (bảng chi nhánh, báo cáo tuần) không ghi phạm vi → coi là xem MỘT chi nhánh. */
   const muon = f.phamVi ?? (f.branchId && coThe.includes('chi-nhanh') ? 'chi-nhanh' : null);
   const dangDung: PhamVi = (coThe as string[]).includes(muon ?? '') ? (muon as PhamVi) : phamViMacDinh(coThe, p.roleKeys.some((k) => k === 'manager' || k === 'system_admin'));
@@ -228,4 +227,10 @@ export function danhSachHocVienLop(
   });
 
   return { rows, scopeEmpty: false, phamVi, dem: demLoc(hocVien, 'tat-ca'), hocVien, coTheTaoLop, demLuuTru };
+}
+
+/** PR-QU (B): chi nhánh đang hoạt động mà người này tạo lớp được (`class.create` phủ chi nhánh đó). */
+export function chiNhanhTaoLop(p: Principal): number[] {
+  return (db().prepare(`SELECT id FROM branches WHERE status = 'active' ORDER BY id`).all() as any[])
+    .map((r) => r.id as number).filter((b) => can(p, PERMISSIONS.CLASS_CREATE, { branchId: b }));
 }

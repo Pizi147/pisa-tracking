@@ -249,3 +249,38 @@ export function trangThaiDonVi(o: OBaoCao[]): TrangThaiDonVi {
   if (states.every((s) => s === 'chua')) return { ma: 'chua', nhan: 'Chưa báo cáo', phu: null };
   return { ma: 'nhap', nhan: 'Nháp · chưa nộp', phu: `đã nộp ${daNop}/${total}` };
 }
+
+// ====================================================================== Form Giao việc (PR-GVa, F03 + F04)
+
+/** Ngữ cảnh lúc MỞ form Giao việc: bộ lọc chi nhánh của trang, việc cha (khi tạo việc con), nhóm biết trước (mở từ mục báo cáo). */
+export type NguCanhMoForm = { branchId: number | null; parent?: { branchId?: number | null; group?: string | null; due?: string | null } | null; defaultGroup?: string | null };
+
+/**
+ * Giá trị đầu của form Giao việc — tính MỘT lần lúc mở (F03: trước đây tính một lần lúc trang dựng, nên đổi bộ lọc rồi mở lại vẫn
+ * mang chi nhánh cũ). Có việc cha thì chi nhánh theo việc cha (ô chi nhánh không hiện với việc con); không thì theo bộ lọc —
+ * "Tất cả" → '' ("Toàn hệ thống"). Hạn việc con = hạn cha trừ một ngày (mục 8.6); kết quả đã qua thì để trống.
+ */
+export function giaTriDauGiaoViec(c: NguCanhMoForm, homNay: string): { branch: string; group: string; due: string } {
+  const p = c.parent ?? null;
+  const branch = p ? String(p.branchId ?? '') : String(c.branchId ?? '');
+  const group = p?.group ?? c.defaultGroup ?? 'curriculum';
+  const hanCon = p?.due ? addDaysIso(p.due, -1) : '';
+  return { branch, group, due: hanCon && hanCon >= homNay.slice(0, 10) ? hanCon : '' };
+}
+
+/** Kỳ (tuần) của việc giao GV, đọc từ `/ref/period-window`: đang tải · lỗi · không có tuần neo · đã rõ (id có thể null — resolve lúc gửi). */
+export type TrangThaiKy = { loai: 'dang-tai' } | { loai: 'loi' } | { loai: 'khong-neo' } | { loai: 'co'; id: number | null; weekStart: string; code: string };
+
+/** F04: chỉ 'co' mới cho giao. Lỗi thắng dữ liệu cũ còn trong bộ nhớ — không đoán tuần khi máy chủ vừa báo lỗi. */
+export function trangThaiKyGiao(s: { loading: boolean; error: unknown; data: { id: number | null; weekStart: string; code?: string; isAnchor: boolean }[] | null }): TrangThaiKy {
+  if (s.error) return { loai: 'loi' };
+  if (s.loading || !s.data) return { loai: 'dang-tai' };
+  const neo = s.data.find((p) => p.isAnchor);
+  if (!neo) return { loai: 'khong-neo' };
+  return { loai: 'co', id: neo.id, weekStart: neo.weekStart, code: neo.code ?? '' };
+}
+
+/** Nút Giao chỉ bật khi kỳ đã rõ ('co') và không đang lưu. */
+export function duocGiao(ky: TrangThaiKy, busy: boolean): boolean {
+  return ky.loai === 'co' && !busy;
+}

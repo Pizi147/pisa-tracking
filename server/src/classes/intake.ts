@@ -1,14 +1,14 @@
 import { chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
   CHO_TAO_PRE_FOU, ENTRY_SKILLS, PERMISSIONS, PROGRAMME_TEMPLATES, chuanHoaMaLop, ghepMaLop, khoaMaLopSql, kiemSoLop,
-  moRongPhanCong, programmeOf, type Route, type SlotPhanCong,
+  moRongPhanCong, programmeOf, TOI_DA_DONG_TAO_LOP, type LoiDong, type Route, type SlotPhanCong,
   KCK, NGAY_SINH_TOI_THIEU, canNamGan, laKck, docEmail, docNgayNhap, laLichSu, nhanCotNhap, lichMtMacDinh, mtDaThiChuaQua, nhanDangCot, tuanBatDauMacDinh, tuanHocCuaMt, tuanLich, type VanDeNhap,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { docSlots, ghiPhanCong, kiemTruocPhanCong } from './classes.ts';
 import { allProgrammes, mocChupVaoLop, programmeByCode, taoBaiThuongMacDinh } from '../normal/regular.ts';
 import { activeRouteCodes } from '../platform/sysconfig.ts';
-import { addDays, badRequest, isIsoDate, kiemKieuO, normalizeName, notFound, nowIso, padCode } from '../util.ts';
+import { HttpError, addDays, badRequest, isIsoDate, kiemKieuO, normalizeName, notFound, nowIso, padCode } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { ensurePeriods, mondayOf, periodById } from '../platform/week.ts';
@@ -543,7 +543,8 @@ export function createClass(p: Principal, input: {
   /** Lớp này học tiếp từ lớp nào — giữ sợi dây FOU → BE → FT. */
   previousClassId?: number | null;
 }) {
-  require_(p, PERMISSIONS.STUDENT_EDIT, { branchId: input.branchId }, 'Bạn không có quyền tạo lớp ở chi nhánh này.');
+  /* PR-QU (B): tạo lớp cần `class.create` — không còn ké `student.edit`. */
+  require_(p, PERMISSIONS.CLASS_CREATE, { branchId: input.branchId }, 'Bạn không có quyền tạo lớp ở chi nhánh này.');
   const conn = db();
   const branch = conn.prepare('SELECT * FROM branches WHERE id = ?').get(input.branchId) as any;
   if (!branch) throw notFound('Không tìm thấy chi nhánh');
@@ -596,39 +597,134 @@ export type TaoLopInput = {
   startPeriodId?: number | null; slots?: SlotPhanCong[]; previousClassId?: number | null; note?: string | null;
 };
 
+/** Một dòng đã qua kiểm — đủ để ghi. */
+type DongDaKiem = { dong: number; input: TaoLopInput; ct: string; loTrinh: string | null; code: string; tuanBatDau: string | null; slots: SlotPhanCong[] };
+
+/** Lỗi 400 của hàm kiểm dùng chung (`docSlots`, `kiemTruocPhanCong`) thành câu lỗi của dòng; lỗi khác ném tiếp. */
+function loiCua(e: unknown): string {
+  if (e instanceof HttpError && e.status === 400) return e.message;
+  throw e;
+}
+
+/**
+ * KIỂM MỘT DÒNG tạo lớp — thuần kiểm, không ghi. Trả lỗi theo ô của dòng (không ném) để lưới gắn đúng chỗ; lỗi quyền KHÔNG ở đây
+ * (`taoLopHangLoat` kiểm quyền cả lô trước). Trùng mã với DB kiểm ở đây; trùng giữa các dòng kiểm ở `taoLopHangLoat`.
+ */
+export function kiemDongTaoLop(input: TaoLopInput, dong: number): { ok: DongDaKiem } | { loi: LoiDong[] } {
+  const conn = db();
+  const loi: LoiDong[] = [];
+  const branch = Number.isInteger(input.branchId) ? conn.prepare('SELECT * FROM branches WHERE id = ?').get(input.branchId) as any : null;
+  if (!branch) loi.push({ dong, truong: 'branchId', loi: 'Chọn chi nhánh.' });
+  const ct = programmeOf(String(input.chuongTrinh ?? ''));
+  const prog = ct ? allProgrammes().get(ct) : null;
+  if (!ct || !prog) return { loi: [...loi, { dong, truong: 'chuongTrinh', loi: 'Chọn chương trình của lớp.' }] };
+  if (ct === 'PREFOU' && !CHO_TAO_PRE_FOU) loi.push({ dong, truong: 'chuongTrinh', loi: 'Lớp Pre FOU chưa mở — sẽ mở cùng đợt cập nhật hệ môn học.' });
+  const loTrinh = ct === 'FT' ? String(input.loTrinh ?? '') : null;
+  if (ct === 'FT' && !activeRouteCodes().includes(loTrinh!)) loi.push({ dong, truong: 'loTrinh', loi: 'Chọn lộ trình LT1, LT2 hoặc RF.' });
+  const loiSo = kiemSoLop(String(input.so ?? ''));
+  if (loiSo) loi.push({ dong, truong: 'so', loi: loiSo });
+  if (ct !== 'FT' && !input.startPeriodId) loi.push({ dong, truong: 'tuan', loi: 'Chọn tuần khai giảng — mốc Giữa/Cuối khoá đếm từ tuần này.' });
+  /* Lớp thường: ngày khai giảng = thứ Hai của tuần khai giảng (mốc Giữa/Cuối khoá đếm từ đây). */
+  const tuan = input.startPeriodId ? periodById(input.startPeriodId) : null;
+  if (input.startPeriodId && !tuan) loi.push({ dong, truong: 'tuan', loi: 'Tuần khai giảng không hợp lệ.' });
+  let slots: SlotPhanCong[] = [];
+  try {
+    slots = moRongPhanCong(ct, prog.skills, docSlots(input.slots));   // Pre FOU: GVCN tự nhận ô Tổng hợp (T56)
+    if (branch) kiemTruocPhanCong(null, branch.id, ct, prog.skills, slots);
+  } catch (e) { loi.push({ dong, truong: 'slots', loi: loiCua(e) }); }
+  if (loi.length || !branch) return { loi };
+  const code = ghepMaLop(branch.code, ct, loTrinh, String(input.so));
+  if (conn.prepare(`SELECT id FROM classes WHERE ${khoaMaLopSql()} = ?`).get(chuanHoaMaLop(code))) {
+    return { loi: [{ dong, truong: 'so', loi: `Đã có lớp ${code}.` }] };
+  }
+  return { ok: { dong, input, ct, loTrinh, code, tuanBatDau: tuan?.week_start ?? null, slots } };
+}
+
+/** GHI một dòng đã kiểm — gọi TRONG `tx`. */
+function ghiDongTaoLop(p: Principal, d: DongDaKiem): { dong: number; id: number; code: string } {
+  const lop = createClass(p, {
+    code: d.code, branchId: d.input.branchId, kind: d.ct, route: d.loTrinh as Route | null, isFastTrack: d.ct === 'FT',
+    startDate: d.tuanBatDau, startPeriodId: d.input.startPeriodId ?? null,
+    previousClassId: d.input.previousClassId ?? null, note: d.input.note ?? null,
+  }) as any;
+  if (d.slots.length) ghiPhanCong(p, lop.id, d.slots, demoToday());
+  return { dong: d.dong, id: lop.id as number, code: d.code };
+}
+
+export type DongTaoLop = TaoLopInput & { dong: number };
+export type KetQuaTaoLopHangLoat =
+  | { ok: true; lop: { dong: number; id: number; code: string }[] }
+  | { ok: false; loi: LoiDong[]; xemTruoc: { dong: number; code: string | null }[]; dryRun?: true };
+
+/**
+ * PR-QU (C): TẠO NHIỀU LỚP MỘT LẦN — tất cả hoặc không gì. Thứ tự (không bao giờ đảo):
+ *   1. Lô hợp lệ (1–30 dòng) → kiểm QUYỀN từng dòng theo chi nhánh của dòng (`class.create`; + `class.assign` nếu dòng có phân công) —
+ *      một dòng ngoài quyền thì 403 cả lô. Quyền kiểm TRƯỚC khi tra khoá: người khác gửi lại đúng khoá không đọc được kết quả cũ.
+ *   2. Khoá idempotency `bulkclass:{người gửi}:{khoá}` đã có → trả đúng kết quả cũ, không tạo thêm (bấm đúp, thử lại sau mất mạng).
+ *   3. Kiểm từng dòng (`kiemDongTaoLop`) + trùng mã GIỮA các dòng. Có lỗi, hoặc `dryRun` → trả lỗi từng dòng + mã xem trước, không ghi.
+ *   4. Ghi mọi dòng trong MỘT giao dịch; lỗi giữa chừng → cuộn lại hết.
+ */
+export function taoLopHangLoat(p: Principal, input: { rows: unknown; idempotencyKey?: string | null; dryRun?: boolean },
+  /** Chỉ phép kiểm: chạy sau khi ghi mỗi dòng (giả lập lỗi giữa giao dịch). */
+  sauMoiDong?: (i: number) => void): KetQuaTaoLopHangLoat {
+  const raw = input.rows;
+  if (!Array.isArray(raw) || raw.length === 0) throw badRequest('Chưa có dòng nào để tạo lớp.');
+  if (raw.length > TOI_DA_DONG_TAO_LOP) throw badRequest(`Tối đa ${TOI_DA_DONG_TAO_LOP} lớp một lần.`);
+  const rows: DongTaoLop[] = raw.map((r: any, i) => ({
+    ...(r && typeof r === 'object' ? r : {}), dong: i + 1, branchId: Number(r?.branchId),
+    startPeriodId: r?.startPeriodId == null || r?.startPeriodId === '' ? null : Number(r.startPeriodId),
+  }));
+  for (const r of rows) {
+    require_(p, PERMISSIONS.CLASS_CREATE, { branchId: r.branchId }, `Dòng ${r.dong}: bạn không có quyền tạo lớp ở chi nhánh này.`);
+    if (Array.isArray(r.slots) && r.slots.length) {
+      require_(p, PERMISSIONS.CLASS_ASSIGN, { branchId: r.branchId }, `Dòng ${r.dong}: bạn không có quyền phân công giáo viên ở chi nhánh này.`);
+    }
+  }
+  const conn = db();
+  const k = input.idempotencyKey ? String(input.idempotencyKey).trim().slice(0, 100) : '';
+  const key = k && !input.dryRun ? `bulkclass:${p.userId}:${k}` : null;
+  const daGhi = () => (key ? (conn.prepare('SELECT value FROM demo_config WHERE key = ?').get(key) as any) : null);
+  const seen = daGhi();
+  if (seen) return JSON.parse(seen.value) as KetQuaTaoLopHangLoat;
+
+  const loi: LoiDong[] = [];
+  const ok: DongDaKiem[] = [];
+  const xemTruoc: { dong: number; code: string | null }[] = [];
+  const maTrongLo = new Map<string, number>();
+  for (const r of rows) {
+    const kq = kiemDongTaoLop(r, r.dong);
+    if ('loi' in kq) { loi.push(...kq.loi); xemTruoc.push({ dong: r.dong, code: null }); continue; }
+    xemTruoc.push({ dong: r.dong, code: kq.ok.code });
+    const khoa = chuanHoaMaLop(kq.ok.code);
+    const truoc = maTrongLo.get(khoa);
+    if (truoc) { loi.push({ dong: r.dong, truong: 'so', loi: `Trùng tên ${kq.ok.code} với dòng ${truoc}.` }); continue; }
+    maTrongLo.set(khoa, r.dong);
+    ok.push(kq.ok);
+  }
+  if (loi.length || input.dryRun) return { ok: false, loi, xemTruoc, ...(input.dryRun ? { dryRun: true as const } : {}) };
+
+  return tx((): KetQuaTaoLopHangLoat => {
+    /* Đọc lại khoá TRONG giao dịch (đã giữ khoá ghi): hai lời gọi song song cùng khoá — lời gọi sau thấy kết quả của lời gọi trước. */
+    const vuaGhi = daGhi();
+    if (vuaGhi) return JSON.parse(vuaGhi.value) as KetQuaTaoLopHangLoat;
+    const lop = ok.map((d, i) => { const r = ghiDongTaoLop(p, d); sauMoiDong?.(i); return r; });
+    const out: KetQuaTaoLopHangLoat = { ok: true, lop };
+    if (lop.length > 1) {
+      writeAudit({ actorUserId: p.userId, action: 'class.bulk_create', entityType: 'class', entityLabel: `${lop.length} lớp`,
+        after: { codes: lop.map((l) => l.code) } });
+    }
+    if (key) conn.prepare('INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run(key, JSON.stringify(out), nowIso());
+    return out;
+  });
+}
+
 /**
  * YC-1/T5/L4: TẠO LỚP = MỘT lệnh, MỘT giao dịch (lớp + phân công). Tên lớp do máy ghép `{CN} {ký hiệu} {số}` (T1); kiểm tên + ba
  * luật phân công TRƯỚC, sai thì không ghi gì — không còn "lớp tàng hình" không ai phụ trách. Thiếu phân công vẫn tạo được (L4).
+ * PR-QU: một lớp = lô một dòng của `taoLopHangLoat` (một đường kiểm, một đường ghi); lỗi dòng → 400 với câu lỗi đầu tiên như cũ.
  */
-export function taoLopVaPhanCong(p: Principal, input: TaoLopInput): { id: number; code: string } {
-  require_(p, PERMISSIONS.STUDENT_EDIT, { branchId: input.branchId }, 'Bạn không có quyền tạo lớp ở chi nhánh này.');
-  const slots0 = docSlots(input.slots);
-  if (slots0.length) require_(p, PERMISSIONS.CLASS_ASSIGN, { branchId: input.branchId }, 'Bạn không có quyền phân công giáo viên ở chi nhánh này.');
-  const conn = db();
-  const branch = conn.prepare('SELECT * FROM branches WHERE id = ?').get(input.branchId) as any;
-  if (!branch) throw notFound('Không tìm thấy chi nhánh');
-  const ct = programmeOf(String(input.chuongTrinh ?? ''));
-  const prog = ct ? allProgrammes().get(ct) : null;
-  if (!ct || !prog) throw badRequest('Chọn chương trình của lớp.');
-  if (ct === 'PREFOU' && !CHO_TAO_PRE_FOU) throw badRequest('Lớp Pre FOU chưa mở — sẽ mở cùng đợt cập nhật hệ môn học.');
-  const loTrinh = ct === 'FT' ? String(input.loTrinh ?? '') : null;
-  if (ct === 'FT' && !activeRouteCodes().includes(loTrinh!)) throw badRequest('Chọn lộ trình LT1, LT2 hoặc RF.');
-  const loiSo = kiemSoLop(String(input.so ?? ''));
-  if (loiSo) throw badRequest(loiSo);
-  if (ct !== 'FT' && !input.startPeriodId) throw badRequest('Chọn tuần khai giảng — mốc Giữa/Cuối khoá đếm từ tuần này.');
-  /* Lớp thường: ngày khai giảng = thứ Hai của tuần khai giảng (mốc Giữa/Cuối khoá đếm từ đây). */
-  const tuan = input.startPeriodId ? periodById(input.startPeriodId) : null;
-  if (input.startPeriodId && !tuan) throw badRequest('Tuần khai giảng không hợp lệ.');
-  const slots = moRongPhanCong(ct, prog.skills, slots0);   // Pre FOU: GVCN tự nhận ô Tổng hợp (T56)
-  kiemTruocPhanCong(null, input.branchId, ct, prog.skills, slots);
-  const code = ghepMaLop(branch.code, ct, loTrinh, String(input.so));
-  return tx(() => {
-    const lop = createClass(p, {
-      code, branchId: input.branchId, kind: ct, route: loTrinh as Route | null, isFastTrack: ct === 'FT',
-      startDate: tuan?.week_start ?? null, startPeriodId: input.startPeriodId ?? null,
-      previousClassId: input.previousClassId ?? null, note: input.note ?? null,
-    }) as any;
-    if (slots.length) ghiPhanCong(p, lop.id, slots, demoToday());
-    return { id: lop.id as number, code };
-  });
+export function taoLopVaPhanCong(p: Principal, input: TaoLopInput & { idempotencyKey?: string | null }): { id: number; code: string } {
+  const r = taoLopHangLoat(p, { rows: [input], idempotencyKey: input.idempotencyKey ?? null });
+  if (!r.ok) throw badRequest(r.loi[0]?.loi ?? 'Không tạo được lớp.');
+  return { id: r.lop[0].id, code: r.lop[0].code };
 }

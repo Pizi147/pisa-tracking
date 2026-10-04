@@ -1,7 +1,7 @@
-import { db, tx, vuaGhi } from '../db.ts';
+import { db, laTrungKhoa, theoKhoaGui, tx } from '../db.ts';
 import {
   PERMISSIONS, TASK_GROUPS, TASK_PROGRESS, TASK_PROGRESS_CLOSED, TASK_PROGRESS_LABEL,
-  TASK_PROGRESS_NEEDS_REASON, facetVanHanh, locVanHanh,
+  TASK_PROGRESS_NEEDS_REASON, chuanKhoaGui, facetVanHanh, locVanHanh,
   type DongVanHanh, type HangSo, type TaskGroup, type TaskProgress, type TrangThaiLoc,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso, padCode } from '../util.ts';
@@ -388,6 +388,8 @@ export function createMgmtTask(p: Principal, input: {
   caseIds?: number[];
   /** PR-Ra (R6): tạo từ ô báo cáo đơn vị — tự nối vào `unit_report_task_links`. */
   unitReportId?: number | null;
+  /** PR-GVa (F01 = D13): mã của MỘT lần mở form — gửi lại cùng mã trả việc đã có. */
+  idempotencyKey?: string | null;
 }) {
   require_(p, PERMISSIONS.MEETING_EDIT, { branchId: input.branchId ?? null, anyScope: !input.branchId },
     'Chỉ Quản lý mới tạo được công việc quản lý.');
@@ -445,23 +447,25 @@ export function createMgmtTask(p: Principal, input: {
     sourceUnitReportId = input.unitReportId;
   }
 
-  return tx(() => {
-    /* PR-Dọn (quét #26): bấm đúp → trả lại việc vừa tạo. */
-    /* Khoá đủ trường nghiệp vụ (rà Dọn-a P2): cùng tiêu đề nhưng khác người phụ trách / hạn là HAI việc, không gộp lặng lẽ. */
-    const cu = vuaGhi('tasks', { title, kind: 'branch_ops', branch_id: taskBranchId, parent_task_id: input.parentTaskId ?? null, created_by: p.userId,
-      assignee_user_id: input.assigneeUserId ?? null, assignee_name: assigneeName, due_date: input.due ?? null });
+  /*
+   * PR-GVa (F01 = D13): bấm đúp / thử lại sau lỗi mạng gửi lại CÙNG khoá của lần mở form → trả việc đã có. Mọi kiểm quyền và kiểm dữ liệu
+   * ở trên chạy TRƯỚC khi tra khoá. Không khoá thì luôn là việc mới (không còn gộp theo tiêu đề trong 10 giây — từng nuốt group/note/watcher).
+   */
+  const khoa = chuanKhoaGui(input.idempotencyKey);
+  const taoMoi = () => tx(() => {
+    const cu = theoKhoaGui('tasks', 'created_by', p.userId, khoa);
     if (cu) return mgmtTaskDetail(p, cu);
     const info = conn
       .prepare(
         `INSERT INTO tasks (code, title, kind, task_type, group_key, parent_task_id,
                             branch_id, assignee_user_id, assignee_name, watcher_user_id, due_date,
-                            progress, note, source_type, source_unit_report_id, created_by, created_at)
-         VALUES (?,?, 'branch_ops', 'long_term', ?,?,?,?,?,?,?, 'not_started', ?,?,?,?,?)`,
+                            progress, note, source_type, source_unit_report_id, created_by, created_at, idempotency_key)
+         VALUES (?,?, 'branch_ops', 'long_term', ?,?,?,?,?,?,?, 'not_started', ?,?,?,?,?,?)`,
       )
       .run(nextCode(conn), title, parent?.group_key ?? input.group, input.parentTaskId ?? null,
            taskBranchId,
            input.assigneeUserId ?? null, assigneeName, input.watcherUserId ?? null,
-           input.due ?? null, (input.note ?? '').trim() || null, sourceType, sourceUnitReportId, p.userId, nowIso());
+           input.due ?? null, (input.note ?? '').trim() || null, sourceType, sourceUnitReportId, p.userId, nowIso(), khoa);
     const id = Number(info.lastInsertRowid);
 
     for (const caseId of caseIds) {
@@ -479,6 +483,13 @@ export function createMgmtTask(p: Principal, input: {
     });
     return mgmtTaskDetail(p, id);
   });
+  try { return taoMoi(); }
+  catch (e) {
+    /* Hai lần gửi đồng thời cùng khoá: lần thua vấp unique index → trả việc lần thắng đã ghi. */
+    const cu = laTrungKhoa(e) ? theoKhoaGui('tasks', 'created_by', p.userId, khoa) : null;
+    if (cu) return mgmtTaskDetail(p, cu);
+    throw e;
+  }
 }
 
 /**
