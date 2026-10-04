@@ -7244,7 +7244,7 @@ check('Nhập bù · Chỉ người đóng được Case mới CHỐT được �
     fromDate: '2026-01-20', toDate: '2026-01-25',
     actions: [{ ketQua: 'improved', description: 'Ôn bài với em', performerName: 'GV bộ môn', fromDate: '2026-01-20', toDate: '2026-01-25' }],
     outcome: 'improved', note: 'GVBM tự nhập, phải bị chặn ở bước chốt kết quả.',
-  }), /chủ nhiệm|Quản lý/, 'GVBM trái môn tự chốt được case nhập bù');
+  }), /chủ nhiệm|Quản lý|không có quyền/, 'GVBM trái môn tự chốt được case nhập bù');
   const after = (conn.prepare('SELECT COUNT(*) n FROM sos_cases').get() as any).n;
   assert(before === after, 'GVBM bị chặn ở bước chốt nhưng vẫn để lại một case dở dang — cả chuỗi phải cùng một giao dịch');
 });

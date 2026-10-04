@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate, onInvalidate } from '../../lib/api.ts';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
-import type { MucThieu } from '../../ui/loiForm.tsx';
+import { useLoiForm, type MucThieu } from '../../ui/loiForm.tsx';
 import { WeekPicker } from '../../ui/Filters.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import {
@@ -77,7 +77,9 @@ export function LuoiTaoLop({ cheDo, luoi, setLuoi, branches, onClose }: {
   const [khoaGui] = useState(() => crypto.randomUUID());
   const [busy, setBusy] = useState(false);
   const dangGui = useRef(false);
-  const [daBam, setDaBam] = useState(false);
+  /* Cùng nhịp lỗi của mọi form (PR-N1): lỗi ô hiện sau lần bấm đầu. */
+  const lf = useLoiForm();
+  const daBam = lf.daBam;
   const [soThem, setSoThem] = useState(1);
   /** Lỗi máy chủ theo khoá dòng; sửa dòng nào thì bỏ lỗi máy chủ của dòng đó. */
   const [loiMayChu, setLoiMayChu] = useState<Record<number, LoiO>>({});
@@ -200,7 +202,7 @@ export function LuoiTaoLop({ cheDo, luoi, setLuoi, branches, onClose }: {
 
   const anh = JSON.stringify(ds.map(({ k: _k, soTay: _s, ...r }) => r));
   const gui = async (dryRun: boolean) => {
-    setDaBam(true);
+    lf.bam();
     if (dangGui.current) return;
     if (soLoiWeb > 0) return;
     dangGui.current = true;
