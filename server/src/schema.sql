@@ -1774,7 +1774,8 @@ CREATE TABLE sos_coordination_actions (
   -- not_needed | handled_otherwise | duplicate_measure | other | system_sos_changed
   remove_reason_code TEXT, remove_reason_text TEXT,
   removed_by INTEGER REFERENCES users(id), removed_at TEXT,
-  created_at TEXT NOT NULL, updated_at TEXT
+  created_at TEXT NOT NULL, updated_at TEXT,
+  noi_dung_luc_bao TEXT                 -- PR-PHH: JSON mảng 4 chuỗi Báo PH lúc xác nhận (chỉ bao_ph_tvv); NULL = việc cũ/loại khác
 );
 CREATE UNIQUE INDEX uq_sca_attempt_kind ON sos_coordination_actions(attempt_id, kind, COALESCE(custom_name, ''));
 CREATE INDEX idx_sca_attempt ON sos_coordination_actions(attempt_id);
