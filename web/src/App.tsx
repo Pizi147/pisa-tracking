@@ -38,7 +38,7 @@ const ThanhPhanDemo = import.meta.env.DEV ? lazy(() => import('./modules/dev/Tha
  * Mục đang sáng tính theo khu vực của đường dẫn (`khuVucCuaDuong`), nên màn nhập điểm vẫn sáng mục Test.
  */
 /**
- * SỐ CẠNH MỤC "CÔNG VIỆC" — Quản lý (PR-DUYET K1-44, Q10): số thẻ trong hộp Chờ duyệt (= chip "Tất cả", `demHop`), đỏ khi có thẻ quá hạn.
+ * SỐ CẠNH MỤC "CÔNG VIỆC" — Quản lý (PR-DUYET K1-44, Q10): số thẻ PHẢI QUYẾT (= chip "Tất cả" tab Chờ duyệt, `demHop`; PR-GVb J5b: không gồm Để QL biết), đỏ khi có thẻ quá hạn.
  * Giáo viên (PR-VAI-a V2, Q16): số việc QUÁ HẠN của chính mình (`/my-work` → `summary.overdue`, PR-S6F-b D14), luôn đỏ. Thanh trên và thanh dưới cùng một số.
  */
 type SoBadge = { n: number; quaHan: boolean; sr: string } | null;
@@ -100,7 +100,7 @@ export default function App() {
    */
   const viecGv = useApi<{ summary: { overdue: number } }>(session?.authenticated && !session.nav?.workApprove && session.nav?.workSupport ? '/my-work' : null, []).data;
   const gv = viecGv ? { quaHan: viecGv.summary?.overdue ?? 0 } : null;
-  const so: SoBadge = dem?.cho ? { n: dem.cho, quaHan: !!dem.quaHan, sr: `${dem.cho} thẻ trong hộp Chờ duyệt${dem.quaHan ? `, ${dem.quaHan} quá hạn` : ''}` }
+  const so: SoBadge = dem?.cho ? { n: dem.cho, quaHan: !!dem.quaHan, sr: `${dem.cho} thẻ cần duyệt${dem.quaHan ? `, ${dem.quaHan} quá hạn` : ''}` }
     : gv?.quaHan ? { n: gv.quaHan, quaHan: true, sr: `${gv.quaHan} việc quá hạn` } : null;
 
   const daDangNhap = !!session?.authenticated;

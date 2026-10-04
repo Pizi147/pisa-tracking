@@ -308,21 +308,21 @@ export async function runPrVaiATests(t: YThucTestKit) {
 
   // ================================================================== Task 4 · dải Chờ duyệt theo chi nhánh
   const yc: any = await import('../duyet/yeuCau.ts');
-  check('VAI-a (4a) · demYeuCau(QL, { branchId }) = hopChoDuyet(QL, { branchId }).dem (cùng demHop); quaHan: true ra đúng số quá hạn; Báo QL theo loại cộng lại = baoLen', () => {
+  check('VAI-a (4a) · demYeuCau(QL, { branchId }) = hopChoDuyet(QL, { branchId }).dem (cùng demHop); quaHan: true ra đúng số quá hạn; Để QL biết = tab de-biet (PR-GVb J5b)', () => {
     for (const branchId of [MB, null]) {
       const dem = yc.demYeuCau(P.mbManager, { branchId });
       const hop = yc.hopChoDuyet(P.mbManager, { branchId });
-      eq([dem.cho, dem.baoLen], [hop.dem['tat-ca'], hop.dem['bao-len']], `cn ${branchId}: tổng, Báo QL`);
+      eq([dem.cho, dem.deBiet], [hop.dem['tat-ca'], hop.demBiet], `cn ${branchId}: tổng, Để QL biết`);   // PR-GVb (J5b): Báo QL tách khỏi tab Chờ duyệt → tab Để QL biết
       eq(dem.chip, hop.dem, `cn ${branchId}: chip từng phân loại`);
       eq(yc.hopChoDuyet(P.mbManager, { branchId, quaHan: true }).the.length, dem.quaHan, `cn ${branchId}: số thẻ khi lọc quá hạn = k quá hạn`);
-      eq(Object.values(dem.baoLenTheoLoai).reduce((s: number, n: any) => s + n, 0), dem.baoLen, 'Báo QL theo loại cộng lại = baoLen');
+      eq(yc.hopChoDuyet(P.mbManager, { branchId, xem: 'de-biet' }).the.length, dem.deBiet, `cn ${branchId}: tab Để QL biết = deBiet`);
     }
     const khong = yc.demYeuCau(P.admin);
     const co = yc.demYeuCau(P.admin, {});
     eq([khong.cho, khong.quaHan, khong.baoLen], [co.cho, co.quaHan, co.baoLen], 'không branchId → như cũ (badge App không đổi)');
     const moiCn = (conn.prepare('SELECT id FROM branches').all() as any[]).reduce((s, b) => s + yc.demYeuCau(P.admin, { branchId: b.id }).cho, 0);
     assert(moiCn <= khong.cho, 'tổng theo chi nhánh không vượt tổng cả hộp');
-    assert(typeof d.dongPhuChoDuyet(co) === 'string', 'dòng phụ');
+    assert(Array.isArray(d.chipChoDuyet(co)), 'hàng chip (PR-GVb J5 thay dòng phụ)');
   });
 
   check('VAI-a (4b) · phủ định: QL MB hỏi chi nhánh CP → 403; GV không có phần hộp (chỉ cuaToi*)', () => {

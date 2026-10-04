@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { nhanQuaHan } from '@shared/domain/index.ts';
+import { nhanQuaHan, TONE_TRANG_THAI } from '@shared/domain/index.ts';
 
 /**
  * "⚠ quá hạn 15 ngày" — chữ đỏ cam đậm, KHÔNG nền, KHÔNG khung (B-3). ⚠ chỉ nghĩa quá hạn (G-4).
@@ -16,11 +16,8 @@ const NHAN: Record<ToneNhan, string> = {
   doing: 'bg-doing-bg text-doing', wait: 'bg-wait-bg text-wait', muted: 'bg-muted-bg text-muted',
 };
 
-/**
- * MỘT BẢNG TRẠNG THÁI → TONE (UX-G G2): cùng một trạng thái thì cùng một màu ở mọi chỗ — chỗ nào cần màu của trạng thái đó
- * thì tra bảng này, không tự chọn tone. `wait` (tím) = đang chờ một người làm: chờ chấm, chờ duyệt.
- */
-export const TONE_TRANG_THAI = { 'cho-cham': 'wait', 'cho-duyet': 'wait' } as const satisfies Record<string, ToneNhan>;
+/** Bảng trạng thái → tone ở shared (PR-GVb U01) — re-export để chỗ gọi cũ (`KhoiNo`) không đổi import. */
+export { TONE_TRANG_THAI };
 
 /**
  * MỘT BADGE = MỘT TRẠNG THÁI NGẮN (≤ 3 từ + số; B-1). Xanh dương = đang chạy · tím = chờ (`TONE_TRANG_THAI`) · vàng = cần chú ý ·

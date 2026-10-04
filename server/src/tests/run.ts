@@ -9076,6 +9076,9 @@ await runPrGvaTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P })
 // ==================================================================== PR-NT (Target + Dự kiến thi lớp thường, dán không cần tiêu đề)
 const { runPrNtTests } = await import('./prNt.tests.ts');
 await runPrNtTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+// ==================================================================== PR-GVb (Chờ duyệt: duyệt nhiều ở Tất cả, Để QL biết, U01)
+const { runPrGvbTests } = await import('./prGvb.tests.ts');
+await runPrGvbTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
