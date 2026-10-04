@@ -264,7 +264,7 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
     cao('web/src/ui/HangNhom.tsx', /max-sm:before:-inset-3\.5/);
     cao('web/src/modules/test/LichTestTab.tsx', /min-h-\[44px\] px-1 text-xs/);
     cao('web/src/modules/fasttrack/MockDetailPage.tsx', /mb-1 min-h-\[44px\] sm:min-h-0" onClick=\{\(\) => navigate\(-1\)\}>← Quay lại/);
-    cao('web/src/modules/students/StudentDetailPage.tsx', /mb-1\.5 min-h-\[44px\] sm:min-h-0" onClick=\{\(\) => navigate\(-1\)\}>← Quay lại/);
+    cao('web/src/ui/ThanhTruocSau.tsx', /btn btn-sm btn-ghost min-h-\[44px\] sm:min-h-0[^']*';[\s\S]*← Quay lại/);   // PR-DH 04/10: nút Quay lại hồ sơ HV nay nằm trong ThanhTruocSau
     cao('web/src/modules/students/StudentDetailPage.tsx', /className="btn btn-primary min-h-\[44px\] sm:min-h-0" onClick=\{\(\) => setReportOpen\(true\)\}>\+ Case/);
     cao('web/src/modules/students/StudentsPage.tsx', /cursor-pointer max-sm:min-h-\[44px\]/);
     cao('web/src/modules/worklist/LopToiDay.tsx', /max-sm:before:-inset-y-3/);

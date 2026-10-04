@@ -1,4 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+
+const RONG = 240;   // 15rem — cùng bề rộng tối thiểu cũ
 
 /**
  * BADGE "THIẾU THÔNG TIN" — mục 7.5.
@@ -9,6 +12,9 @@ import { useState } from 'react';
  *
  * Bấm vào mới bung ra danh sách. Đây KHÔNG phải việc trong hàng đợi công việc — không có
  * hạn, không ai bị thúc — nên nó không được chiếm chỗ như một việc phải làm.
+ *
+ * PR-DH (L1): hộp danh sách vẽ RA NGOÀI bảng (portal → body, `fixed`, như `MenuDong`) — vẽ ngay trong ô thì bị hàng dưới
+ * che. Lật lên khi dưới không đủ chỗ; đóng khi bấm ngoài, Esc, cuộn, đổi cỡ màn.
  */
 export function MissingBadge({ items, className = '', gon = false }: {
   items: { key: string; label: string; who: string }[] | null | undefined;
@@ -17,15 +23,56 @@ export function MissingBadge({ items, className = '', gon = false }: {
   gon?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const nut = useRef<HTMLButtonElement>(null);
+  const hop = useRef<HTMLDivElement>(null);
+  const [viTri, setViTri] = useState<{ top: number; left: number } | null>(null);
+
+  useLayoutEffect(() => {
+    if (!open || !nut.current) { setViTri(null); return; }
+    const r = nut.current.getBoundingClientRect();
+    const cao = hop.current?.offsetHeight ?? 0;
+    const moXuong = r.bottom + 4 + cao <= window.innerHeight - 8 || r.top - 4 - cao < 8;
+    setViTri({
+      top: moXuong ? r.bottom + 4 : r.top - 4 - cao,
+      left: Math.max(8, Math.min(r.left, window.innerWidth - RONG - 8)),
+    });
+  }, [open, items?.length]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const bamNgoai = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (!hop.current?.contains(t) && !nut.current?.contains(t)) setOpen(false);
+    };
+    const phim = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.stopPropagation();
+      setOpen(false);
+      nut.current?.focus();
+    };
+    const dong = () => setOpen(false);
+    document.addEventListener('mousedown', bamNgoai);
+    document.addEventListener('keydown', phim, true);
+    window.addEventListener('scroll', dong, true);
+    window.addEventListener('resize', dong);
+    return () => {
+      document.removeEventListener('mousedown', bamNgoai);
+      document.removeEventListener('keydown', phim, true);
+      window.removeEventListener('scroll', dong, true);
+      window.removeEventListener('resize', dong);
+    };
+  }, [open]);
+
   if (!items?.length) return null;
 
   return (
     <span className={`relative inline-flex ${className}`}>
       <button
+        ref={nut}
         type="button"
-        className="appearance-none border-0 bg-transparent p-0 cursor-pointer"
+        className="relative appearance-none border-0 bg-transparent p-0 cursor-pointer max-sm:after:absolute max-sm:after:-inset-2.5 max-sm:after:content-['']"   /* điện thoại: vùng bấm ≥ 40 px (adapt, PR-DH) */
         aria-expanded={open}
-        title={items.map((i) => i.label).join(' · ')}
+        title={open ? undefined : items.map((i) => i.label).join(' · ')}
         onClick={(e) => { e.stopPropagation(); e.preventDefault(); setOpen((v) => !v); }}
       >
         {/* G-4: ⚠ chỉ nghĩa là quá hạn — thiếu thông tin là badge chữ (Q12). */}
@@ -34,10 +81,12 @@ export function MissingBadge({ items, className = '', gon = false }: {
         </span>
       </button>
 
-      {open && (
-        <span
-          className="absolute z-20 top-full left-0 mt-1 rounded-lg border p-2.5 shadow-lg min-w-[15rem]"
-          style={{ borderColor: 'var(--line-strong)', background: 'var(--surface-2)' }}
+      {/* Sự kiện React vẫn nổi lên cha qua portal (hàng bảng / thẻ có onClick riêng) → chặn ở đây. */}
+      {open && createPortal(
+        <div
+          ref={hop}
+          className="fixed z-[60] rounded-lg border p-2.5 shadow-lg"
+          style={{ width: RONG, borderColor: 'var(--line-strong)', background: 'var(--surface-2)', top: viTri?.top ?? 0, left: viTri?.left ?? 0, visibility: viTri ? 'visible' : 'hidden' }}
           onClick={(e) => { e.stopPropagation(); e.preventDefault(); }}
         >
           <span className="block text-[11px] text-slate-500 mb-1.5">Cần bổ sung sớm:</span>
@@ -50,7 +99,8 @@ export function MissingBadge({ items, className = '', gon = false }: {
               </span>
             ))}
           </span>
-        </span>
+        </div>,
+        document.body,
       )}
     </span>
   );

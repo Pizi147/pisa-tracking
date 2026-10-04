@@ -1,6 +1,8 @@
 import { Fragment, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
+import { api } from '../../lib/api.ts';
+import { ThanhTruocSau } from '../../ui/ThanhTruocSau.tsx';
 import { BoLocDoan, Card, DaiChiXem, Empty, ErrorState, Info, Level, Outcome, Skeleton, TargetText, Th} from '../../ui/ui.tsx';
 import { Modal } from '../../ui/Drawer.tsx';
 import { cuonOnDinh } from '../../lib/cuonOnDinh.ts';
@@ -180,7 +182,12 @@ export default function StudentDetailPage() {
         và việc tiếp theo là gì — mỗi câu một ô, đọc được trong một cái liếc.
       */}
       <div>
-        <button className="btn btn-sm btn-ghost mb-1.5 min-h-[44px] sm:min-h-0" onClick={() => navigate(-1)}>← Quay lại</button>
+        <ThanhTruocSau loai="hoc-vien" id={data.id}
+          duong={(sid) => duongHoSoHocVien(sid, { tab: p.tab })}
+          dsDuPhong={data.currentClass ? async () => {
+            const r = await api.get<{ id: number; fullName: string; archived: boolean }[]>(`/classes/${data.currentClass.id}/roster`);
+            return { ids: r.filter((x) => !x.archived).sort((a, b) => a.fullName.localeCompare(b.fullName, 'vi')).map((x) => x.id), nhan: `Lớp ${data.currentClass.code}` };
+          } : undefined} />
         {data.lopHoc?.chiXem && (
           <DaiChiXem>Học viên đã lưu trữ{data.archivedAt ? ` ${ngay(data.archivedAt, homNay)}` : ''} — chỉ xem</DaiChiXem>
         )}

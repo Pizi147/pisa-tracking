@@ -360,4 +360,5 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 04/10/2026 | PR-DH · `claude/keen-mccarthy-ahp0us` (nhánh gốc `pr-dh-bang-dieu-huong`) · Sonnet 5.5 | DH-1→13: Sắp tới có kỳ vọng / Thi thật, cột Dự kiến thi (cả lớp thường), Target + Dự kiến thi ở bảng điểm lớp thường, Trước/Sau hồ sơ HV + lớp, hàng chip gọn, popover Thiếu n, D1, J8, J10; sửa lệch 16 px của mọi panel. H6 đã có từ B4; J6 giữ "Target" chờ chủ sản phẩm. |
 | 04/10/2026 | Planning (Opus 5.5) · `ke-hoach-thong-nhat-04-10` | Gộp mọi kế hoạch vào plan.md này; xoá kế hoạch/kiểm kê/rà soát của PR đã merge. Chủ sản phẩm trả lời mục 7; kế hoạch PHH, SO, U12; thêm PR-K26; còn 8 PR, 3 đợt |

@@ -1,16 +1,18 @@
 import { Fragment, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { DaiChiXem } from '../../ui/ui.tsx';
 import { Nhan, toneNhanTuBadge } from '../../ui/Nhan.tsx';
 import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useApi } from '../../lib/useApi.ts';
+import { api } from '../../lib/api.ts';
+import { ThanhTruocSau } from '../../ui/ThanhTruocSau.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { TenGiaoVien } from './TenGiaoVien.tsx';
 import { DaiLopChuyen } from './DaiChuyenLop.tsx';
 import type { TinhTrangXoaKetThuc } from './XoaKetThucLopPanel.tsx';
 import {
-  ROUTE_NAME, badgeLop, duongLichTest, laVaiQuanLy, needScoresText, nhomGiaoVienBoMon, nutChinhDauTrang, tuanKhoa, tuanLich, type BadgeLop, type DaiLop, type NhomGiaoVien, type WorkScope,
+  ROUTE_NAME, badgeLop, khungCua, duongLichTest, laVaiQuanLy, needScoresText, nhomGiaoVienBoMon, nutChinhDauTrang, tuanKhoa, tuanLich, type BadgeLop, type DaiLop, type NhomGiaoVien, type WorkScope,
 } from '@shared/domain/index.ts';
 
 /** `GET /classes/:id/overview` (server/src/classes/classes.ts → classOverview). */
@@ -66,6 +68,7 @@ export function DauTrangLop({ data, periodId, onViec, onBanGiao }: {
   onBanGiao: (o: { lop?: number; mon?: string }) => void;
 }) {
   const navigate = useNavigate();
+  const [sp] = useSearchParams();
   const { session } = useSession();
   const { homNay } = useNgayNghiepVu();
   const thuong = data.programme?.scoringMode === 'ratio';
@@ -134,6 +137,13 @@ export function DauTrangLop({ data, periodId, onViec, onBanGiao }: {
 
   return (
     <header className="card space-y-2 p-3 sm:p-4">
+      {/* PR-DH (Q-0310-4): Quay lại + Lớp trước/sau theo danh sách vừa mở; mở thẳng bằng link thì theo các lớp cùng khung ở Học viên & Lớp. */}
+      <ThanhTruocSau loai="lop" id={data.id}
+        duong={(cid) => `/hoc-vien/lop/${cid}${sp.get('tab') ? `?tab=${sp.get('tab')}` : ''}`}
+        dsDuPhong={async () => {
+          const r = await api.get<{ rows: { id: number; scoringMode: string | null }[] }>('/hoc-vien-lop');
+          return { ids: r.rows.filter((c) => khungCua(c.scoringMode) === (thuong ? 'thuong' : 'ft')).map((c) => c.id), nhan: thuong ? 'Lớp thường' : 'Fast Track' };
+        }} />
       {data.status === 'finished' && (
         <DaiChiXem>Lớp đã kết thúc{data.finishedAt ? ` ${tuanLich(data.finishedAt, homNay)}` : ''} — chỉ xem</DaiChiXem>
       )}

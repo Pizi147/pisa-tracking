@@ -1,9 +1,9 @@
-import type { NhanYThucEm } from '@shared/domain/index.ts';
-import { useMemo, type ReactNode } from 'react';
+import type { ExamPlan, NguCanhDs, NhanYThucEm } from '@shared/domain/index.ts';
+import { useEffect, useMemo, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { Empty, Level, Skeleton, TargetText } from '../../ui/ui.tsx';
+import { Empty, ExamPlanText, Level, Skeleton, TargetText } from '../../ui/ui.tsx';
 import { QuaHan } from '../../ui/Nhan.tsx';
 import { DanhSachViecTiep } from '../../ui/ViecTiep.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
@@ -15,7 +15,7 @@ import { MissingBadge } from './MissingBadge.tsx';
 import { CanhBaoYThuc } from '../classes/CanhBaoYThuc.tsx';
 import { duongViecTiep, nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from '../classes/thaoTacDongHocVien.tsx';
 import {
-  duongDotTest, ketQuaGanNhat, khoaLopThuong, maHocVienNgan, sapXepHocVien, tachViecChung, tuanLich,
+  chuSapToi, duongDotTest, ketQuaGanNhat, khoaLopThuong, maHocVienNgan, sapXepHocVien, tachViecChung, tuanLich,
   type KetQuaVao, type SapXep, type ViecTiepTheo,
 } from '@shared/domain/index.ts';
 
@@ -23,8 +23,10 @@ import {
 export type DongRoster = {
   id: number; studentCode: string; fullName: string; status: string; archived: boolean;
   cycle: { target: number | null; khongCamKet?: boolean } | null;
-  /** + mốc kế tiếp cho cột "Sắp tới" (`nextAttemptLabel` · tuần của `nextWeekStart`). */
-  standing: (KetQuaVao & { nextAttemptLabel?: string | null; nextWeekStart?: string | null }) | null;
+  /** + mốc kế tiếp cho cột "Sắp tới" (`nextAttemptLabel` · tuần của `nextWeekStart` · kỳ vọng `nextKyVong`; `nhanLuotChuaXep` khi lượt đã bỏ tuần). */
+  standing: (KetQuaVao & { nextAttemptLabel?: string | null; nextWeekStart?: string | null; nextKyVong?: number | null; nhanLuotChuaXep?: string | null }) | null;
+  /** Dự kiến thi ở đúng mức chắc chắn đang có (cột "Dự kiến thi"; roster FT và lớp thường đều trả). */
+  examPlan: ExamPlan;
   openCases: number; handoverCases: number;
   missing: { key: string; label: string; who: string }[];
   canhBaoYThuc: NhanYThucEm | null;
@@ -51,8 +53,10 @@ export type LopChoBang = {
  * chữ ở ≥ 2 em thành MỘT hàng "Cả lớp" đầu lớp. `chiHien` = id học viên còn lại sau chip lọc / ô tìm (máy chủ tính); `null` = mọi em đang học.
  * Nằm ở: Học viên & Lớp (menu trái) → mở một lớp. Điện thoại (< 640 px, D2): `the` = mỗi em một `TheDong` thay vì `<tr>` (cùng dữ liệu, cùng thứ tự cột).
  */
-export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false }: {
+export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false, ds, onThuTu }: {
   lop: LopChoBang; chiHien: Set<number> | null; sapXep: SapXep; onDoi: () => void;
+  /** PR-DH (Q-0310-4): danh sách học viên đang hiện (đúng lọc + thứ tự) — đi cùng link tên em để hồ sơ có Trước/Sau; `onThuTu` báo thứ tự của lớp này lên trang. */
+  ds?: NguCanhDs; onThuTu?: (classId: number, ids: number[]) => void;
   /** Số cột của bảng ngoài — để hàng lỗi / đang tải / rỗng trải hết bề ngang. */
   soCot: number;
   /** Vẽ thẻ (điện thoại) thay vì hàng bảng. */
@@ -72,9 +76,22 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
       })),
     sapXep,
   ), [data, chiHien, sapXep]);
+  useEffect(() => { onThuTu?.(lop.id, rows.map((s) => s.id)); }, [rows]); // eslint-disable-line react-hooks/exhaustive-deps
   /* Q6/B8: việc chung của lớp lên hàng "Cả lớp", không lặp ở từng em. */
   const { chung, conLai } = useMemo(() => tachViecChung(rows.map((s) => ({ id: s.id, viec: s.viecTiepTheo }))), [rows]);
   const denChung = chung ? nhapDiemCua(lop.id, thuong, rows.find((s) => s.timeline.some((t) => t.myPending.length))?.timeline ?? [])?.den ?? null : null;
+  /** Ô "Sắp tới": chữ ngắn (`chuSapToi`) + tooltip đủ nghĩa — dùng chung cho hàng bảng và thẻ điện thoại. */
+  const sapToiCua = (s: DongRoster) => {
+    const st = s.standing;
+    const chu = chuSapToi({
+      nhanLuot: st?.nextAttemptLabel ?? null, tuanBatDau: st?.nextWeekStart ?? null, kyVong: st?.nextKyVong ?? null,
+      conLuotChuaXep: st?.nhanLuotChuaXep ?? null, duKienThi: s.examPlan ?? null, homNay, khung: thuong ? 'thuong' : 'ft',
+    });
+    const title = st?.nextAttemptLabel
+      ? `${st.nextAttemptLabel}${st.nextWeekStart ? ` · tuần thi ${tuanLich(st.nextWeekStart, homNay)}` : ''}${st.nextKyVong != null ? ` · kỳ vọng ${fmtBand(st.nextKyVong)}` : ''}`
+      : chu ?? undefined;
+    return { chu, title, thiThat: !!chu?.startsWith('Thi thật') };
+  };
   const khoaCua = (s: DongRoster) => thuong
     ? khoaLopThuong({ maChuongTrinh: lop.programmeCode, tuanHienTai: lop.currentWeek, tongTuan: lop.totalWeeks,
         tuanKetThuc: lop.tuanKetThuc, tiepTheo: s.tiepTheo, nhacLoTrinh: !!lop.nhacLoTrinh && s.chuaLoTrinh, choDuyetChuyen: s.choDuyetChuyen, homNay })
@@ -100,13 +117,12 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
         {rows.map((s) => {
           const k = ketQuaGanNhat(s.standing);
           const khoa = khoaCua(s);
-          const sapToi = s.standing?.nextAttemptLabel
-            ? `${s.standing.nextAttemptLabel}${s.standing.nextWeekStart ? ` · ${tuanLich(s.standing.nextWeekStart, homNay)}` : ''}` : null;
+          const sapToi = sapToiCua(s);
           return (
             <TheDong key={s.id} className={s.status !== 'active' ? 'row-muted' : ''}
               dau={(
                 <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                  <Link className="link font-semibold" to={`/hoc-vien/${s.id}`}>{s.fullName}</Link>
+                  <Link className="link font-semibold" to={`/hoc-vien/${s.id}`} state={{ ds }}>{s.fullName}</Link>
                   <span className="text-[11px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
                   <MissingBadge items={s.missing} gon />
                   <CanhBaoYThuc cb={s.canhBaoYThuc} />
@@ -120,7 +136,8 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
                 { nhan: thuong ? 'Khoá' : 'Target', noiDung: thuong
                   ? <>{khoa?.chinh}{khoa?.phu && <span className="block text-[11px] text-slate-500">{khoa.phu}</span>}</>
                   : <TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /> },
-                { nhan: 'Sắp tới', noiDung: sapToi ?? <span className="text-slate-600">—</span> },
+                { nhan: 'Dự kiến thi', noiDung: <ExamPlanText plan={s.examPlan} /> },
+                { nhan: 'Sắp tới', noiDung: sapToi.chu ? <span title={sapToi.title} className={sapToi.thiThat ? 'text-slate-400' : ''}>{sapToi.chu}</span> : <span className="text-slate-600">—</span> },
                 { nhan: 'Case', noiDung: s.openCases || <span className="text-slate-600">—</span> },
                 { nhan: 'Việc tiếp', noiDung: (
                   <DanhSachViecTiep viec={conLai.get(s.id) ?? []}
@@ -144,14 +161,13 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
       {rows.map((s) => {
         const k = ketQuaGanNhat(s.standing);
         const khoa = khoaCua(s);
-        const sapToi = s.standing?.nextAttemptLabel
-          ? `${s.standing.nextAttemptLabel}${s.standing.nextWeekStart ? ` · ${tuanLich(s.standing.nextWeekStart, homNay)}` : ''}` : null;
+        const sapToi = sapToiCua(s);
         return (
           <HangCon key={s.id} className={`row-hover ${s.status !== 'active' ? 'row-muted' : ''}`}>
             <td className="td h-14">
               {/* PR-S4F #11: tên được ưu tiên chỗ — badge xuống dòng khi chật; tên quá dài vẫn cắt nhưng có title. */}
               <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                <Link className="link max-w-full truncate font-semibold" title={s.fullName} to={`/hoc-vien/${s.id}`}>{s.fullName}</Link>
+                <Link className="link max-w-full truncate font-semibold" title={s.fullName} to={`/hoc-vien/${s.id}`} state={{ ds }}>{s.fullName}</Link>
                 <span className="shrink-0 text-[11px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
                 <MissingBadge items={s.missing} gon />
                 <CanhBaoYThuc cb={s.canhBaoYThuc} />
@@ -166,8 +182,9 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
                 </>
               ) : <span className="tabular-nums text-slate-200"><TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /></span>}
             </td>
-            <td className="td whitespace-nowrap text-xs tabular-nums text-slate-300" title="Test sắp tới đã xếp lịch">
-              {sapToi ?? <span className="text-slate-600">—</span>}
+            <td className="td text-xs"><ExamPlanText plan={s.examPlan} /></td>
+            <td className={`td text-xs tabular-nums ${sapToi.thiThat ? 'text-slate-400' : 'text-slate-300'}`} title={sapToi.title}>
+              {sapToi.chu ?? <span className="text-slate-600">—</span>}
             </td>
             <td className="td text-right tabular-nums"
               title={s.handoverCases ? `${s.handoverCases} Case bàn giao từ lớp trước` : undefined}>

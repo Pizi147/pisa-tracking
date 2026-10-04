@@ -16,8 +16,11 @@ import { TenGiaoVien } from '../classes/TenGiaoVien.tsx';
 import { BangHocVienLop } from './BangHocVienLop.tsx';
 import {
   LOC_HOC_VIEN, LOC_HOC_VIEN_NHAN, PHAM_VI_NHAN, badgeLop, chipHienLoc, demLoc, docThamSoLoc, duongLichTest, khungCua, laVaiQuanLy, lopMoSan, needScoresText,
-  type BadgeLop, type LocHocVien, type PhamVi, type SapXep, type WorkScope,
+  type BadgeLop, type LocHocVien, type NguCanhDs, type PhamVi, type SapXep, type WorkScope,
 } from '@shared/domain/index.ts';
+
+/** Ô chọn gọn của đầu trang: cùng cao 32 px với chip (điện thoại 44 px, `.field` đã có min-height 40). */
+const SELECT_GON = 'field h-8 w-auto !py-0 text-xs max-sm:min-h-[44px] max-sm:w-full';
 
 /** Một lớp của `GET /hoc-vien-lop` (server/src/classes/hocVienLop.ts → LopHocVienLop). */
 export type LopTrenTrang = {
@@ -74,6 +77,11 @@ export default function StudentsPage() {
   const [them, setThem] = useState<{ id: number; code: string } | null | 'dong'>('dong');
   const [taoLop, setTaoLop] = useState(false);
   const dienThoai = useDienThoai();
+  /* PR-DH (Q-0310-4): thứ tự học viên từng lớp ĐANG HIỆN (đã lọc + sắp xếp) do bảng báo lên — để link tên em mang theo danh sách. */
+  const [thuTu, setThuTu] = useState<Map<number, number[]>>(new Map());
+  const baoThuTu = useCallback((classId: number, ids: number[]) => setThuTu((cu) => (
+    cu.get(classId)?.join() === ids.join() ? cu : new Map(cu).set(classId, ids)
+  )), []);
 
   const setParam = useCallback((patch: Record<string, string | null>) => {
     const next = new URLSearchParams(params);
@@ -127,7 +135,8 @@ export default function StudentsPage() {
   /* M3, K2-03: nhóm theo kiểu lớp (Fast Track trước, lớp thường sau) — mỗi nhóm một khối tiêu đề cột riêng: "Target" cho FT, "Khoá" cho lớp thường. */
   const nhomLop = (['ft', 'thuong'] as const)
     .map((k) => ({ k, lop: lopHien.filter((c) => khungCua(c.scoringMode) === k) })).filter((g) => g.lop.length > 0);
-  const tieuDeCot = (k: 'ft' | 'thuong') => ['Học viên', 'Kết quả gần nhất', k === 'ft' ? 'Target' : 'Khoá', 'Sắp tới', 'Case', 'Việc tiếp theo', ''];
+  /* PR-DH (04/10): cột Dự kiến thi cho CẢ hai nhóm (lớp thường cũng có Target + Dự kiến thi sau PR-NT). */
+  const tieuDeCot = (k: 'ft' | 'thuong') => ['Học viên', 'Kết quả gần nhất', k === 'ft' ? 'Target' : 'Khoá', 'Dự kiến thi', 'Sắp tới', 'Case', 'Việc tiếp theo', ''];
   const openIds = lopMoSan({
     thamSoOpen: openRaw === null ? null : openRaw === '-' ? []
       : openRaw.split(',').map(Number).filter((n) => Number.isFinite(n) && n > 0),
@@ -141,6 +150,9 @@ export default function StudentsPage() {
   };
   const lopDangLoc = chiLop ? (data?.rows ?? []).find((c) => c.id === chiLop) : null;
   const pv = data?.phamVi;
+  /* Danh sách học viên = các lớp đang MỞ, theo thứ tự trên màn (Fast Track trước); danh sách lớp = các lớp cùng nhóm khung. */
+  const dsHocVien: NguCanhDs = { loai: 'hoc-vien', nhan: 'Học viên & Lớp', ids: nhomLop.flatMap((g) => g.lop).filter((c) => openIds.includes(c.id)).flatMap((c) => thuTu.get(c.id) ?? []) };
+  const dsLopCua = (g: { lop: LopTrenTrang[] }): NguCanhDs => ({ loai: 'lop', nhan: 'Lớp', ids: g.lop.map((c) => c.id) });
 
   return (
     <div className="page space-y-3">
@@ -164,51 +176,60 @@ export default function StudentsPage() {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <input className="field w-full sm:w-80" aria-label="Tìm" placeholder="🔍 Tìm tên, mã học viên hoặc mã lớp…"
-          value={draftQ} onChange={(e) => setDraftQ(e.target.value)} />
-        {pv && pv.coThe.length > 1 && (
-          <select className="field w-auto" aria-label="Phạm vi" value={pv.dangDung}
-            onChange={(e) => setParam({ phamVi: e.target.value, cn: null, branchId: null, open: null })}>
-            {pv.coThe.map((v) => <option key={v} value={v}>Phạm vi: {PHAM_VI_NHAN[v]}</option>)}
-          </select>
-        )}
-        {pv?.dangDung === 'chi-nhanh' && (branches.data?.length ?? 0) > 1 && (
-          <select className="field w-auto" aria-label="Chi nhánh" value={pv.chiNhanh ?? ''}
-            onChange={(e) => setParam({ phamVi: 'chi-nhanh', cn: e.target.value, branchId: null, open: null })}>
-            {(branches.data ?? []).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-          </select>
-        )}
-        <select className="field w-auto" aria-label="Cách xếp" value={sapXep}
-          onChange={(e) => setParam({ sx: e.target.value === 'chu-y' ? 'chu-y' : null })}>
-          <option value="ten">Xếp: Tên A→Z</option>
-          <option value="chu-y">Xếp: Cần chú ý trước</option>
-        </select>
-      </div>
+      {/*
+        * PR-DH (DH-5, mục 6) — đầu trang theo critique 04/10: MỘT trục trái (mép bảng), thang 8 px (8 giữa chip và giữa hai hàng, 16 tới bảng),
+        * chip và ô chọn cùng cao 32 px (điện thoại 44 px). Hàng A: tìm · Phạm vi · Chi nhánh. Hàng B: chip lọc bên trái; "Loại lớp" + "Xếp"
+        * bên phải từ 1024 px (hẹp hơn thì xuống dòng gọn). "Loại lớp" thay công tắc phân đoạn để hết hai chữ "Tất cả" cạnh nhau (K1).
+        */}
+      <div className="space-y-2 pb-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <input className="field w-full sm:w-80" aria-label="Tìm" placeholder="🔍 Tìm tên, mã học viên hoặc mã lớp…"
+            value={draftQ} onChange={(e) => setDraftQ(e.target.value)} />
+          {pv && pv.coThe.length > 1 && (
+            <select className={SELECT_GON} aria-label="Phạm vi" value={pv.dangDung}
+              onChange={(e) => setParam({ phamVi: e.target.value, cn: null, branchId: null, open: null })}>
+              {pv.coThe.map((v) => <option key={v} value={v}>Phạm vi: {PHAM_VI_NHAN[v]}</option>)}
+            </select>
+          )}
+          {pv?.dangDung === 'chi-nhanh' && (branches.data?.length ?? 0) > 1 && (
+            <select className={SELECT_GON} aria-label="Chi nhánh" value={pv.chiNhanh ?? ''}
+              onChange={(e) => setParam({ phamVi: 'chi-nhanh', cn: e.target.value, branchId: null, open: null })}>
+              {(branches.data ?? []).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+          )}
+        </div>
 
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-      <CongTacKhung trang="hoc-vien-lop" coTatCa value={khung}
-        dem={{ 'tat-ca': data?.rows.length, ft: soLopTheoKhung.ft, thuong: soLopTheoKhung.thuong }}
-        onChange={(k) => setParam({ khung: k === 'tat-ca' ? null : k, open: null })} />
-      {/* K1: điện thoại cuộn ngang, mép phải mờ báo còn chip; pr-8 để chip cuối cuộn ra khỏi vùng mờ. */}
-      <div className="flex gap-1.5 overflow-x-auto pb-1 max-sm:pr-8 max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)]" role="group" aria-label="Lọc học viên">
-        {chips.map((k) => (
-          <button key={k} type="button" title={LOC_HOC_VIEN_NHAN[k].goiY} aria-pressed={loc === k}
-            onClick={() => setParam({ view: k === 'tat-ca' ? null : k, open: null })}
-            className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-semibold cursor-pointer max-sm:min-h-[44px] ${
-              loc === k
-                ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)] border-[color:var(--accent-line)]'
-                : 'bg-transparent text-slate-400 border-slate-300/20 hover:bg-white/5'
-            }`}>
-            {LOC_HOC_VIEN_NHAN[k].nhan}<span className="tabular-nums text-slate-200">{dem[k]}</span>
-          </button>
-        ))}
-        {chiLop && (
-          <button type="button" className="btn btn-sm shrink-0" title="Bỏ lọc lớp" onClick={() => setParam({ classId: null })}>
-            Lớp {lopDangLoc?.code ?? chiLop} ✕
-          </button>
-        )}
-      </div>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 lg:flex-nowrap">
+          {/* K1: điện thoại cuộn ngang, mép phải mờ báo còn chip; pr-8 để chip cuối cuộn ra khỏi vùng mờ. Không `pb` (không để lộ thanh cuộn). */}
+          <div className="flex min-w-0 max-w-full items-center gap-2 overflow-x-auto [scrollbar-width:none] max-sm:pr-8 max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)] lg:flex-1" role="group" aria-label="Lọc học viên">
+            {chiLop && (
+              <button type="button" className="btn btn-sm shrink-0 sm:h-8" title="Bỏ lọc lớp" onClick={() => setParam({ classId: null })}>
+                Lớp {lopDangLoc?.code ?? chiLop} ✕
+              </button>
+            )}
+            {chips.map((k) => (
+              <button key={k} type="button" title={LOC_HOC_VIEN_NHAN[k].goiY} aria-pressed={loc === k}
+                onClick={() => setParam({ view: k === 'tat-ca' ? null : k, open: null })}
+                className={`inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-xs font-semibold cursor-pointer max-sm:min-h-[44px] ${
+                  loc === k
+                    ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)] border-[color:var(--accent-line)]'
+                    : 'bg-transparent text-slate-300 border-slate-300/30 hover:bg-white/5'
+                }`}>
+                {LOC_HOC_VIEN_NHAN[k].nhan}<span className="tabular-nums font-medium">{dem[k]}</span>
+              </button>
+            ))}
+          </div>
+          <div className="flex shrink-0 items-center gap-2 max-sm:grid max-sm:w-full max-sm:grid-cols-2 lg:ml-auto">
+            <CongTacKhung trang="hoc-vien-lop" coTatCa kieu="chon" value={khung}
+              dem={{ 'tat-ca': data?.rows.length, ft: soLopTheoKhung.ft, thuong: soLopTheoKhung.thuong }}
+              onChange={(k) => setParam({ khung: k === 'tat-ca' ? null : k, open: null })} />
+            <select className={SELECT_GON} aria-label="Cách xếp" value={sapXep}
+              onChange={(e) => setParam({ sx: e.target.value === 'chu-y' ? 'chu-y' : null })}>
+              <option value="ten">Xếp: Tên A→Z</option>
+              <option value="chu-y">Xếp: Cần chú ý trước</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       {trang.error && <ErrorState message={trang.error.message} hint={trang.error.hint} onRetry={trang.reload} />}
@@ -236,7 +257,7 @@ export default function StudentsPage() {
             <section key={g.k} className="space-y-2" aria-label={g.k === 'ft' ? 'Lớp Fast Track' : 'Lớp thường'}>
               {nhomLop.length > 1 && <h2 className="m-0 px-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{g.k === 'ft' ? 'Fast Track' : 'Lớp thường'}</h2>}
               {g.lop.map((c) => (
-                <HopLop key={c.id} the lop={c} mo={openIds.includes(c.id)} onDoiMo={() => doiMo(c.id)}
+                <HopLop key={c.id} the lop={c} mo={openIds.includes(c.id)} onDoiMo={() => doiMo(c.id)} dsHocVien={dsHocVien} dsLop={dsLopCua(g)} onThuTu={baoThuTu}
                   chiHien={dangLoc ? (idsTheoLop.get(c.id) ?? new Set()) : null} sapXep={sapXep}
                   onThemHocVien={() => setThem({ id: c.id, code: c.code })} onDoi={trang.reload} />
               ))}
@@ -245,16 +266,16 @@ export default function StudentsPage() {
           {!dienThoai && nhomLop.map((g) => (
             <section key={g.k} className="card overflow-x-auto md:overflow-visible" aria-label={g.k === 'ft' ? 'Lớp Fast Track' : 'Lớp thường'}>
               <div className="md:sticky md:top-0 md:z-10" aria-hidden>
-                <table className="w-full min-w-[860px] table-fixed text-sm">
+                <table className="w-full min-w-[960px] table-fixed text-sm">
                   <CotBangLop />
-                  <thead><tr>{tieuDeCot(g.k).map((t, i) => <th key={i} className={`th ${i === 4 ? 'text-right' : ''}`}>{t}</th>)}</tr></thead>
+                  <thead><tr>{tieuDeCot(g.k).map((t, i) => <th key={i} className={`th ${i === 5 ? 'text-right' : ''}`}>{t}</th>)}</tr></thead>
                 </table>
               </div>
               {g.lop.map((c) => (
-                <table key={c.id} className="w-full min-w-[860px] table-fixed text-sm" aria-label={`Lớp ${c.code}`}>
+                <table key={c.id} className="w-full min-w-[960px] table-fixed text-sm" aria-label={`Lớp ${c.code}`}>
                   <CotBangLop />
                   <thead className="sr-only"><tr>{tieuDeCot(g.k).map((t, i) => <th key={i}>{t || 'Thao tác'}</th>)}</tr></thead>
-                  <HopLop lop={c} mo={openIds.includes(c.id)} onDoiMo={() => doiMo(c.id)}
+                  <HopLop lop={c} mo={openIds.includes(c.id)} onDoiMo={() => doiMo(c.id)} dsHocVien={dsHocVien} dsLop={dsLopCua(g)} onThuTu={baoThuTu}
                     chiHien={dangLoc ? (idsTheoLop.get(c.id) ?? new Set()) : null} sapXep={sapXep}
                     onThemHocVien={() => setThem({ id: c.id, code: c.code })} onDoi={trang.reload} />
                 </table>
@@ -280,8 +301,8 @@ export default function StudentsPage() {
 function CotBangLop() {
   return (
     <colgroup>
-      <col className="w-[21%]" /><col className="w-[25%]" /><col className="w-[12%]" /><col className="w-[12%]" />
-      <col className="w-[5%]" /><col className="w-[22%]" /><col className="w-12" />
+      <col className="w-[19%]" /><col className="w-[20%]" /><col className="w-[10%]" /><col className="w-[11%]" />
+      <col className="w-[15%]" /><col className="w-[5%]" /><col className="w-[18%]" /><col className="w-12" />
     </colgroup>
   );
 }
@@ -290,8 +311,10 @@ function CotBangLop() {
  * HÀNG LỚN của một lớp (đặc tả §3.6; PR-UX0 N-2): ▸ · mã (mở Hồ sơ lớp) · chương trình · n HV · GVCN · tối đa 2 badge (+n) · ⋯.
  * ⋯ của lớp: Hồ sơ lớp · Nhập điểm (Q11, Q6) · + Học viên — chỉ mục người xem làm được.
  */
-function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, the = false }: {
+function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, dsHocVien, dsLop, onThuTu, the = false }: {
   lop: LopTrenTrang; mo: boolean; onDoiMo: () => void; chiHien: Set<number> | null; sapXep: SapXep;
+  /** PR-DH: danh sách đi cùng link sang hồ sơ em / hồ sơ lớp (Trước/Sau). */
+  dsHocVien: NguCanhDs; dsLop: NguCanhDs; onThuTu: (classId: number, ids: number[]) => void;
   onThemHocVien: () => void; onDoi: () => void;
   /** Điện thoại: thẻ gập thay cho `<tbody>` (cùng nội dung: mã · chương trình · n HV · GVCN · badge · ⋯). */
   the?: boolean;
@@ -317,7 +340,7 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, the =
       : x.key === 'qua-han' ? `/hoc-vien?view=qua-han&classId=${lop.id}`
       : null;
   const mucLop: MucMenu[] = [
-    { key: 'ho-so', nhan: 'Hồ sơ lớp', onChon: () => navigate(`/hoc-vien/lop/${lop.id}`) },
+    { key: 'ho-so', nhan: 'Hồ sơ lớp', onChon: () => navigate(`/hoc-vien/lop/${lop.id}`, { state: { ds: dsLop } }) },
     ...(lop.viewer.coTheNhapDiem
       ? [{ key: 'nhap-diem', nhan: 'Nhập điểm', onChon: () => navigate(thuong ? `/bang-diem-thuong/${lop.id}` : `/nhap-diem/${lop.id}`) }]
       : []),
@@ -355,7 +378,7 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, the =
           <MenuDong muc={mucLop} nhan="Thao tác khác" />
         </div>
         {(cacBadge.length > 0 || menuBadgeAn) && <div className="flex flex-wrap items-center gap-1.5 px-3 pb-2">{cacBadge}{menuBadgeAn}</div>}
-        {mo && <BangHocVienLop the lop={lop} chiHien={chiHien} sapXep={sapXep} onDoi={onDoi} soCot={1} />}
+        {mo && <BangHocVienLop the lop={lop} chiHien={chiHien} sapXep={sapXep} onDoi={onDoi} soCot={1} ds={dsHocVien} onThuTu={onThuTu} />}
       </div>
     );
   }
@@ -365,7 +388,7 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, the =
       <HangNhom mo={mo} onMo={onDoiMo} nhan={`lớp ${lop.code}`} soCotDau={3} className={mo ? 'hang-lon-dinh' : ''}
         tieuDe={
           <span className="flex min-w-0 items-baseline gap-2">
-            <Link to={`/hoc-vien/lop/${lop.id}`} className="shrink-0 font-extrabold text-slate-100 underline decoration-dotted underline-offset-4">
+            <Link to={`/hoc-vien/lop/${lop.id}`} state={{ ds: dsLop }} className="shrink-0 font-extrabold text-slate-100 underline decoration-dotted underline-offset-4">
               {lop.code}
             </Link>
             <span className="min-w-0 truncate text-[11px] font-normal text-slate-400"
@@ -375,12 +398,12 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, the =
             </span>
           </span>
         }>
-        <td className="px-3" colSpan={3}>
+        <td className="px-3" colSpan={4}>
           <span className="flex items-center justify-end gap-1.5">{cacBadge}{menuBadgeAn}</span>
         </td>
         <td className="px-2 text-center"><MenuDong muc={mucLop} nhan="Thao tác khác" /></td>
       </HangNhom>
-      {mo && <BangHocVienLop lop={lop} chiHien={chiHien} sapXep={sapXep} onDoi={onDoi} soCot={7} />}
+      {mo && <BangHocVienLop lop={lop} chiHien={chiHien} sapXep={sapXep} onDoi={onDoi} soCot={8} ds={dsHocVien} onThuTu={onThuTu} />}
     </tbody>
   );
 }

@@ -598,8 +598,8 @@ function ScoreCell({ row }: { row: Row }) {
   if (row.band === null) {
     return (
       <div className="whitespace-nowrap">
-        <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-base font-bold ${chip}`}>—</span>
-        <span className="block text-xs text-slate-400 mt-0.5">chưa có dữ liệu</span>
+        {/* PR-DH J10: cột Xu hướng bên cạnh đã ghi "chưa có điểm" — ở đây chỉ gạch, không nói lại. */}
+        <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-base font-bold ${chip}`} title="Chưa có điểm">—</span>
       </div>
     );
   }

@@ -71,7 +71,7 @@ Cỡ chữ có 4 mức (11 / 11,5 / 12 / 12,5 px) và 3 chiều cao dòng cho c�
 - [x] **H3.** Bỏ dấu "·" thừa ở đầu badge Mock Test: "· Chưa có điểm · 0/4 kỹ năng".
 - [x] **H4.** Nhãn nhóm "Báo QL / Học thuật / Ý thức" ở Chờ duyệt đang trông như nút (viền xám giống nút thao tác). Đổi sang chip không viền.
 - [x] **H5.** Chú giải Đạt/SOS1/2/3/Tạm thời ở Phân tích: nếu là chú giải thì không có kiểu nút; nếu là bộ lọc thì có trạng thái bật/tắt rõ ràng.
-- [ ] **H6.** Chip "+1" ở dòng lớp đang giấu việc (desktop chỉ hiện khi rê chuột): bấm vào thì mở được danh sách.
+- [x] **H6.** (PR-DH: kiểm 04/10 — `+n` đã bấm được từ PR-HVL B4) Chip "+1" ở dòng lớp đang giấu việc (desktop chỉ hiện khi rê chuột): bấm vào thì mở được danh sách.
 
 ## Gói UX-I — Panel và form · ƯU TIÊN 3 (P2)
 - [ ] **I1.** Nút ở chân panel: "Đóng" khi form chưa sửa, "Huỷ thay đổi" khi đã sửa (luật S3).
@@ -107,12 +107,12 @@ Cỡ chữ có 4 mức (11 / 11,5 / 12 / 12,5 px) và 3 chiều cao dòng cho c�
   (9/22 trong demo) chuyển sang một nhóm hoặc tab riêng "Để QL biết". Chờ duyệt chỉ còn mục có nút Duyệt, và badge đếm
   Chờ duyệt chỉ đếm những mục đó. Tìm file nguồn: `web/src/modules/duyet/*`, `server/src/` (nguồn danh sách duyệt).
   Phép kiểm: số trên badge Chờ duyệt bằng số dòng có nút Duyệt.
-- [ ] **J6. Cột "TARGET"** (chữ hoa, tiếng Anh) ở Học viên & Lớp đổi thành "Mục tiêu".
+- [~] **J6. Cột "TARGET"** (chữ hoa, tiếng Anh) ở Học viên & Lớp đổi thành "Mục tiêu".
 - [ ] **J7.** Bỏ chữ "Bạn" lặp ở mỗi dòng (31 việc) của Tổng quan GV.
-- [ ] **J8.** Chữ bị cắt mất nghĩa: "Ghi kết q…" (Theo dõi ở trang lớp), "Cao Khánh Linh, Lê …", "L, R, W1, W…". Cho xuống dòng
+- [x] **J8.** Chữ bị cắt mất nghĩa: "Ghi kết q…" (Theo dõi ở trang lớp), "Cao Khánh Linh, Lê …", "L, R, W1, W…". Cho xuống dòng
   hoặc rút gọn có chủ đích kèm title.
 - [ ] **J9.** Làm rõ "Xác nhận PA Tutor · đến lúc thi"; nút "– sửa" ở Nhập điểm; tiêu đề cột S "GV chấm: Tôi ⌄".
-- [ ] **J10.** Chi tiết nhỏ:
+- [x] **J10.** Chi tiết nhỏ:
   - Cột "Quyền cấp riêng" ở Quản trị toàn "—": ẩn khi rỗng.
   - Ô "—" kèm chữ "chưa có dữ liệu" ngay dưới "chưa có điểm" ở hồ sơ HV đang nói một ý hai lần.
 

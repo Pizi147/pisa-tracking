@@ -4,7 +4,7 @@ import {
   ASSESSED_SKILLS, CHUONG_TRINH_KHONG_CHIA_MON, PROGRAMME_TEMPLATES, REGULAR_SKILLS, SOS_LABEL, boMonLich, mocKeTiep,
 } from '../../../shared/domain/index.ts';
 import { entryBandsOf, loadBundle } from '../fasttrack/attempts.ts';
-import { evaluateAttempt } from '../fasttrack/scoring.ts';
+import { evaluateAttempt, expectationFor } from '../fasttrack/scoring.ts';
 import { allProgrammes, evaluateRegular } from '../normal/regular.ts';
 import { luotSinhViecRow } from '../worklist/danhGia.ts';
 
@@ -81,6 +81,10 @@ export type Standing = {
   nextPeriodCode: string | null;
   /** Thứ Hai tuần của mốc kế tiếp — cột "Sắp tới" (`MT4 · W3 NOV`) đọc bằng `tuanLich`. */
   nextWeekStart: string | null;
+  /** Kỳ vọng của lượt kế tiếp (Target tại thời điểm − 1.0 / 0.5 / 0 theo số MT, D5 03/10) — cột "Sắp tới" ghi `MT2 · W3 OCT · 5.5`. Lớp thường / KCK / chưa có Target: null. */
+  nextKyVong: number | null;
+  /** FT: nhãn lượt `planned`, không lịch sử, CHƯA có tuần, số nhỏ nhất (`MT2`) — "MT2 · chưa xếp" (sau khi huỷ lịch ở PR-LM). Lớp thường: null. */
+  nhanLuotChuaXep: string | null;
 
   /** Case đang theo dõi — ĐẾM CASE, không phải một mức độ. */
   openCases: number;
@@ -123,7 +127,7 @@ const EMPTY = (studentId: number, cycleId: number | null): Standing => ({
   attemptId: null, attemptNo: null, attemptKind: null, attemptClassId: null, attemptLabel: null, periodCode: null,
   sosLevel: null, provisional: false, scored: 0, required: 0, failed: null,
   overall: null, expectation: null, belowSkills: [], failedSkills: [], chuongTrinh: null, khongChiaMon: false, tyLeTong: null,
-  nextAttemptNo: null, nextAttemptLabel: null, nextPeriodCode: null, nextWeekStart: null,
+  nextAttemptNo: null, nextAttemptLabel: null, nextPeriodCode: null, nextWeekStart: null, nextKyVong: null, nhanLuotChuaXep: null,
   openCases: 0, handoverCases: 0,
 });
 
@@ -221,6 +225,11 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
       s.nextAttemptLabel = labelOf(moc.kind, moc.attempt_no);
       s.nextPeriodCode = moc.period_code ?? null;
       s.nextWeekStart = moc.weekStart ?? null;
+      if (!ratio) s.nextKyVong = expectationFor(moc.target_at_attempt ?? cycle.target_score ?? null, moc.attempt_no, moc.route ?? cycle.route);
+    }
+    if (!ratio) {
+      const chua = list.find((x) => x.status === 'planned' && !x.lich_su && !x.planned_period_id);   // `list` đã xếp theo attempt_no
+      if (chua) s.nhanLuotChuaXep = labelOf(chua.kind, chua.attempt_no);
     }
 
     /*
