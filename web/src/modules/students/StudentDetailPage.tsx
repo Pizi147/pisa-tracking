@@ -637,14 +637,27 @@ function RatioAttempts({ attempts, dotId, homNay, onOpen, ct = null }: {
   );
 }
 
-/** PR-LT2a (T58): kết quả một lượt lớp thường — `2/4 môn đạt` + `Không đạt: L R` (Giữa khoá), `64%` (Cuối khoá); không có chữ SOS. */
+/**
+ * PR-LT2a (T58): kết quả một lượt lớp thường — `2/4 môn đạt` + `Không đạt: L R` (Giữa khoá), `64%` (Cuối khoá); không có chữ SOS.
+ * PR-U12: nói MỘT lần — chưa đủ môn thì `Chờ n môn` (như `KetQuaDot` "Chờ n kỹ năng"), không kèm "mới x/y môn" hay "(đã chấm)";
+ * lượt đã huỷ mà chưa đủ môn không còn chờ gì → `—` (nhãn `đã huỷ` cạnh tên bài đã nói lý do). Pre FOU (không chia môn) giữ `%`.
+ */
 function KetQuaThuongO({ a, ct }: { a: any; ct: string | null }) {
-  if (a.sosLevel === null && a.scored === 0) return <Level tone="muted">Chờ {a.required - a.scored} môn</Level>;
+  const khongChiaMon = !!ct && CHUONG_TRINH_KHONG_CHIA_MON.includes(ct);
   const kq = nhanKetQuaThuong({
     kind: a.kind === 'final' ? 'final' : 'progress', ct, scored: a.scored, required: a.required,
     failedSkills: (a.skills ?? []).filter((s: any) => s.outcome === 'fail').map((s: any) => s.skill as string),
-    tyLeTong: a.tyLeTong ?? null, khongChiaMon: !!ct && CHUONG_TRINH_KHONG_CHIA_MON.includes(ct),
+    tyLeTong: a.tyLeTong ?? null, khongChiaMon,
   });
+  if (!khongChiaMon ? a.scored < a.required : a.sosLevel === null && a.scored === 0) {
+    if (a.status === 'cancelled') return <span className="text-muted">—</span>;
+    return (
+      <>
+        <Level tone="muted">Chờ {a.required - a.scored} môn</Level>
+        {kq.phu && <div className="text-xs text-slate-400">{kq.phu}</div>}
+      </>
+    );
+  }
   return (
     <>
       <Level tone={a.sosLevel === null ? (kq.dat ? 'ok' : 'muted') : sosTone(a.sosLevel)}>{kq.chinh}</Level>
