@@ -195,6 +195,8 @@ export type CoordinationAction = {
   attachmentCount: number;
   /** PR-LT2a (N3): 4 nội dung Báo phụ huynh qua TVV (chỉ việc `bao_ph_tvv`) — kết quả · môn khó khăn · nguyên nhân · phương án + khả năng học lại. */
   noiDung: string[] | null;
+  /** PR-PHH: true khi việc `bao_ph_tvv` đã xong mà chưa lưu bản chụp (xác nhận trước PR này) — `noiDung` là nội dung HIỆN TẠI, không phải nội dung đã báo. */
+  noiDungLaHienTai: boolean;
 };
 
 export type CoordinationTurn = {
@@ -224,8 +226,13 @@ function shapeAction(r: any, attachments: Map<number, number>): CoordinationActi
     removeReasonLabel: r.remove_reason_code ? COORDINATION_REMOVE_REASON_LABEL[r.remove_reason_code as CoordinationRemoveReason] ?? r.remove_reason_code : null,
     removeReasonText: r.remove_reason_text ?? null, removedAt: r.removed_at ?? null,
     attachmentCount: attachments.get(r.id) ?? 0,
-    noiDung: null,
+    noiDung: null, noiDungLaHienTai: false,
   };
+}
+
+/** Bản chụp đã lưu (4 chuỗi). JSON hỏng/sai hình → null: coi như dòng cũ, không làm sập trang. */
+function docBanChup(s: string | null): string[] | null {
+  try { const v = JSON.parse(s ?? 'null'); return Array.isArray(v) && v.length === 4 && v.every((x) => typeof x === 'string') ? v : null; } catch { return null; }
 }
 
 /** Dựng các "lượt" (một lượt = một SOS Event) từ một tập việc phối hợp đã lọc quyền. */
@@ -298,8 +305,13 @@ function turnsOf(p: Principal, rows: any[]): CoordinationTurn[] {
       sosLevel, nhanDot: laMock ? null : nhanDot(a.kind, a.attempt_no), ketQua,
       skills, skillLabels: skills.map((s) => tenMon(a.programme_code, s)),
       summary: coordinationSummary(list.map((r) => r.status)),
-      actions: list.map((r) => ({ ...shapeAction(r, attachments),
-        noiDung: r.kind === 'bao_ph_tvv' && noiDungCua ? noiDungCua(r.status === 'done' ? r.performed_on ?? null : null) : null })),
+      actions: list.map((r) => {
+        const x = shapeAction(r, attachments);
+        if (r.kind !== 'bao_ph_tvv' || !noiDungCua) return x;
+        /* PR-PHH: việc đã xong → bản chụp lúc xác nhận; dòng cũ (chưa có bản chụp) → nội dung hiện tại + cờ. */
+        const luu = r.status === 'done' ? docBanChup(r.noi_dung_luc_bao) : null;
+        return { ...x, noiDung: luu ?? noiDungCua(r.status === 'done' ? r.performed_on ?? null : null), noiDungLaHienTai: r.status === 'done' && !luu };
+      }),
       canAct: canManageDiscipline(p, a.student_id),
     });
   }
@@ -450,14 +462,17 @@ export function confirmCoordination(p: Principal, id: number, input: { performed
   const who = capText(input.performerName, 100, 'Tên người thực hiện');
   const note = capText(input.note, 1000, 'Ghi chú');
   tx(() => {
+    /* PR-PHH: bản chụp 4 nội dung bằng CHÍNH `turnsOf` đang dùng để hiển thị, tính như sau khi xong (ngày thực hiện) — trước UPDATE, cùng giao dịch. */
+    const chup = r.kind === 'bao_ph_tvv'
+      ? turnsOf(p, [{ ...r, status: 'done', performed_on: input.performedOn, noi_dung_luc_bao: null }])[0]?.actions[0]?.noiDung ?? null : null;
     db()
       .prepare(
-        `UPDATE sos_coordination_actions SET status = 'done', performed_on = ?, performed_by = ?, performer_name = ?, note = ?, updated_at = ? WHERE id = ?`,
+        `UPDATE sos_coordination_actions SET status = 'done', performed_on = ?, performed_by = ?, performer_name = ?, note = ?, noi_dung_luc_bao = ?, updated_at = ? WHERE id = ?`,
       )
-      .run(input.performedOn, who ? null : p.userId, who || null, note || null, nowIso(), id);
+      .run(input.performedOn, who ? null : p.userId, who || null, note || null, chup ? JSON.stringify(chup) : null, nowIso(), id);
     writeAudit({
       actorUserId: p.userId, action: 'sos_coordination.confirm', entityType: 'sos_coordination_action', entityId: id,
-      entityLabel: `${r.kind}${r.custom_name ? ` · ${r.custom_name}` : ''}`, before: { status: r.status }, after: { status: 'done', performedOn: input.performedOn },
+      entityLabel: `${r.kind}${r.custom_name ? ` · ${r.custom_name}` : ''}`, before: { status: r.status }, after: { status: 'done', performedOn: input.performedOn, ...(r.kind === 'bao_ph_tvv' ? { noiDungLuu: !!chup } : {}) },
     });
   });
   return viewOf(id);
