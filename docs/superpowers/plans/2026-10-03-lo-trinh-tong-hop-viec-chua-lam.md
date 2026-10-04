@@ -4,6 +4,11 @@
 > (F01–F04, U01, D01 — **cả 6 vẫn còn trên main**, đã kiểm lại 03/10); 9 yêu cầu 03/10 (`2026-10-03-pr-phien-lich-mt-dieu-huong-sua-lop.md`).
 > Chủ sản phẩm 03/10: **đã deploy** → các việc ghi "sau deploy" được mở khoá. Gộp việc cùng màn/cùng file vào một PR.
 
+## Quyết định sau rà soát đợt 0–1 (chủ sản phẩm)
+- **Cấm cấp riêng `plan.week` cho người chỉ có vai GV** (SCH-01 mở rộng tới quyền cấp riêng: `shared/domain/nhomQuyen.ts:96` `duocCapRieng` + `server/src/platform/accounts.ts`) → PR-SO, có phép kiểm.
+- **Một mẫu Excel chung cho mọi lớp:** dán không tiêu đề ở lớp thường đọc theo **đúng thứ tự cột của Fast Track** (`cotLuoiNhap(false)`); cột lớp thường không dùng (điểm đầu vào IELTS, đã thi tới MT) **tự bỏ qua kèm lưu ý**, không báo lỗi. Có tiêu đề thì vẫn khớp theo tên. Cập nhật câu "Đã đọc theo thứ tự cột…" cho lớp thường. Sửa `shared/domain/nhapHocVien.ts` (`docDongDan`) + phép kiểm `prNt.tests.ts`: cùng một dòng Excel FT dán vào lớp FT và lớp thường đều ra đúng Họ tên / Ngày sinh / Email / Target / Dự kiến thi / Tuần bắt đầu → **PR-SL** (cùng I3 panel Thêm HV).
+- Dọn khoá `bulkclass:*` trong `demo_config` (cũ hơn 7 ngày) → PR-SO.
+
 ## Quyết định 04/10
 - **PR-QU làm đầu tiên:** GVCN phân công GV bộ môn lớp mình (không cần duyệt, báo QL); quyền **Tạo lớp** tách riêng, cấp được theo chi nhánh; **tạo lớp hàng loạt** (loại, lộ trình, số lớp, phân công; trộn nhiều chi nhánh được); màn quyền chia nhóm + bảng vai × quyền + ô tích cấp riêng + sửa quyền mặc định của vai; không cấp lẻ quyền Quản trị; **GVBM/GVCN đóng Case môn phụ trách**, báo QL.
 - **Deploy sau mỗi đợt** (bảng Deploy bên dưới).
@@ -169,13 +174,13 @@ D1 badge "n HV chưa có lệnh chuyển lớp" khớp số dòng có cờ, J6 (
 ```
 /ponytail lite
 Làm PR-SL theo mục "D. Prompt cho session code › PR-SL" trong docs/superpowers/plans/2026-10-03-pr-phien-lich-mt-dieu-huong-sua-lop.md (SL-1, SL-2).
-Nhánh pr-sl-sua-ca-lop. Thêm từ lộ trình (ux-sau-critique.md mục UX-I): I1 "Đóng"/"Huỷ thay đổi" ở KhungPanel/Drawer, I2 form Tạo Case, I3 panel Thêm HV,
+Nhánh pr-sl-sua-ca-lop. Thêm: "Một mẫu Excel chung cho mọi lớp" (mục Quyết định sau rà soát đợt 0–1). Thêm từ lộ trình (ux-sau-critique.md mục UX-I): I1 "Đóng"/"Huỷ thay đổi" ở KhungPanel/Drawer, I2 form Tạo Case, I3 panel Thêm HV,
 I4 Drawer → KhungPanel phần còn lại (GvCham, ScoreEntry, NhanXet, DeleteViolationConfirm, StudentDetailPage), I6 panel Ghi vi phạm, D11 lỗi dưới ô nối
 aria-describedby (ui/ui.tsx Field, ui/KhungPanel.tsx Truong). Viết thêm task vào cuối kế hoạch.
 ```
 **PR-SO — Số liệu & dọn mã** (sau khi GVa, PHH merge)
 ```
-Làm PR-SO (nhánh pr-so-so-lieu-don-ma). Chưa có kế hoạch chi tiết → viết trước. Không giao diện → ponytail full.
+Làm PR-SO (nhánh pr-so-so-lieu-don-ma). Thêm: cấm cấp riêng plan.week cho người chỉ có vai GV; dọn khoá bulkclass:* cũ (mục Quyết định sau rà soát đợt 0–1). Chưa có kế hoạch chi tiết → viết trước. Không giao diện → ponytail full.
 - D2: một hàm chọn PA đại diện nhóm Bổ trợ dùng chung cho metrics.ts:401-404 và mywork.ts:486-495 (dựng dữ liệu nhiều PA cùng nhóm, khác trạng thái/hạn/quyền).
 - D3: một hàm chọn lộ trình (loTrinhTinhTuan) cho cycles.ts, profile.ts:773, transition.ts:66, luatLoTrinh.ts:366 (chủ sản phẩm 03/10 đồng ý).
 - D4 xoá completeIntervention (viết lại 4 phép kiểm liên quan), D5 lopHocCua luật cũ, 12.18 đếm bằng chứng theo lô, 12.19 việc nhỏ máy chủ (plan.md ~1946–1957).
