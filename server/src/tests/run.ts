@@ -9082,6 +9082,9 @@ await runPrGvbTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 // ==================================================================== PR-BC (Báo cáo đơn vị + Quản trị › Tài khoản)
 const { runPrBcTests } = await import('./prBc.tests.ts');
 await runPrBcTests({ check, assert });
+// ==================================================================== PR-SO (số liệu một nguồn & dọn mã máy chủ)
+const { runPrSoTests } = await import('./prSo.tests.ts');
+await runPrSoTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0

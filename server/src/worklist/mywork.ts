@@ -1,7 +1,7 @@
 import { db, theoLo } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
-  ATTEMPT_KIND_SHORT, CHU_CHUYEN_LOP,
+  ATTEMPT_KIND_SHORT, CHU_CHUYEN_LOP, daiDienNhomBoTro,
   INTERVENTION_KIND_LABEL, PERMISSIONS,
   SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, cycleDeadline,
   duongHoSoHocVien, duongLichTest, nhanDotNgan, planDueDate, urgencyFromSos,
@@ -482,25 +482,26 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     )
     .all(addDays(today, 1)) as any[];
   napTruocPhamVi(ghiKetQua.map((r) => r.eff_student_id));
-  /* PR-LT2a (M-03): PA bổ trợ chung gộp MỘT dòng mỗi nhóm (giữ id nhỏ nhất) — `reason` nêu các môn chung. */
+  /* PR-LT2a (M-03): PA bổ trợ chung gộp MỘT dòng mỗi nhóm — `reason` nêu các môn chung. */
   const monCuaNhom = new Map<string, string[]>();
-  const minNhom = new Map<string, number>();
   for (const r of ghiKetQua) {
     if (r.kind !== 'bo_tro' || !r.nhom_bo_tro) continue;
     monCuaNhom.set(r.nhom_bo_tro, [...(monCuaNhom.get(r.nhom_bo_tro) ?? []), r.topic]);
-    minNhom.set(r.nhom_bo_tro, Math.min(minNhom.get(r.nhom_bo_tro) ?? Infinity, r.id));
   }
-  for (const iv of ghiKetQua) {
-    if (f.branchId && iv.eff_branch_id !== f.branchId) continue;
-    if (iv.kind === 'bo_tro' && iv.nhom_bo_tro && minNhom.get(iv.nhom_bo_tro) !== iv.id) continue;
+  const duocThay = ghiKetQua.filter((iv) => {
+    if (f.branchId && iv.eff_branch_id !== f.branchId) return false;
     /* PR-S5F-b: lọc rẻ trước (việc của mình · lớp mình dạy · QL quá hạn), quyền sau — tính từ cột đã JOIN, không đọc lại từng Case. */
+    const mine = iv.owner_id === p.userId;
+    const qlQuaHan = urgencyOf(iv.action_due, today) === 'overdue' && can(p, PERMISSIONS.CASE_APPROVE, { classId: iv.eff_class_id, studentId: iv.eff_student_id });
+    if (!mine && !teachesClass(p, iv.eff_class_id) && !qlQuaHan) return false;
+    return iv.kind === 'bo_tro'
+      ? quyenBoTro(p, { ...iv, ctx: { classId: iv.eff_class_id ?? null, studentId: iv.eff_student_id ?? null, topic: iv.topic ?? null } })
+      : can(p, PERMISSIONS.SOS_EDIT, { classId: iv.eff_class_id, studentId: iv.eff_student_id, skill: iv.topic ?? undefined });
+  });
+  /* PR-SO (D2): chọn PA đại diện nhóm SAU phạm vi/quyền — cùng hàm với chỉ số `pa-can-cap-nhat`. */
+  for (const iv of daiDienNhomBoTro(duocThay)) {
     const u = urgencyOf(iv.action_due, today);
     const mine = iv.owner_id === p.userId;
-    const qlQuaHan = u === 'overdue' && can(p, PERMISSIONS.CASE_APPROVE, { classId: iv.eff_class_id, studentId: iv.eff_student_id });
-    if (!mine && !teachesClass(p, iv.eff_class_id) && !qlQuaHan) continue;
-    if (iv.kind === 'bo_tro'
-      ? !quyenBoTro(p, { ...iv, ctx: { classId: iv.eff_class_id ?? null, studentId: iv.eff_student_id ?? null, topic: iv.topic ?? null } })
-      : !can(p, PERMISSIONS.SOS_EDIT, { classId: iv.eff_class_id, studentId: iv.eff_student_id, skill: iv.topic ?? undefined })) continue;
     reviewedCases.add(iv.case_id);
     /* PR-SOS (T22, M-17): PA theo quy chế chạm mốc → "Ghi kết quả cuối" (PA thường không có mốc — Q28-4). */
     const tuanCuoi = laLanGhiCuoi({ preset: iv.preset === 1, followupDue: iv.followup_due ?? null, actionDue: iv.action_due ?? null }, today);
