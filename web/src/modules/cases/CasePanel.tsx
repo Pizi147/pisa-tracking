@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { Card, Empty, ErrorState, Level, Outcome, Skeleton } from '../../ui/ui.tsx';
+import { Card, Empty, ErrorState, Level, NhanTrangThai, Outcome, Skeleton } from '../../ui/ui.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { Khoi } from '../../ui/KhungPanel.tsx';
 import { Nhan, QuaHan, type ToneNhan } from '../../ui/Nhan.tsx';
@@ -247,7 +247,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
         <Nhan tone={toneTrangThaiPa(iv.status)}>{chuaChay ? (choKeHoachDuyet ? 'Chờ Quản lý duyệt' : 'Chờ kế hoạch') : iv.awaitingConfirmation ? 'Chờ xác nhận' : INTERVENTION_STATUS_LABEL[iv.status as keyof typeof INTERVENTION_STATUS_LABEL] ?? iv.status}</Nhan>
         {choDuyet && <Nhan tone="wait" title={iv.approvalDue ? `Hạn Quản lý trả lời ${ngan(iv.approvalDue)}` : undefined}>Chờ Quản lý duyệt</Nhan>}
         {iv.approvalState === 'approved' && <Nhan tone="done">Đã duyệt</Nhan>}
-        {iv.approvalState === 'declined' && <Nhan tone="muted">Bị từ chối</Nhan>}
+        {iv.approvalState === 'declined' && <NhanTrangThai t="can-lam" chu="Bị từ chối" />}
         <span className="flex-1" />
         {hanGhi && !choDuyet && (data.tamDungTu ? <NhanTamDung tu={data.tamDungTu} /> : hanGhi.tone === 'overdue' && <QuaHan ngay={hanGhi.daysOverdue} />)}
       </div>
