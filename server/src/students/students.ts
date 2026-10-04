@@ -348,16 +348,11 @@ export function unarchiveStudent(p: Principal, studentId: number) {
   return conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId);
 }
 
-export function updateStudent(p: Principal, studentId: number, patch: any) {
-  require_(p, PERMISSIONS.STUDENT_EDIT, { studentId });
-  const conn = db();
-  const s = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
-  if (!s) throw notFound();
-  // Target và ngày thi IELTS nằm ở LỘ TRÌNH, sửa qua updateCycle chứ không qua hồ sơ.
-  const map: Record<string, string> = {
-    fullName: 'full_name', note: 'note', dob: 'dob', consultantName: 'consultant_name', email: 'email',
-  };
-  /* Kiểm ở biên (PR-NHAP): họ tên không rỗng, ngày sinh có thật và không sau hôm nay, email đúng dạng (trống → NULL, T8). */
+/**
+ * Kiểm ở biên (PR-NHAP): họ tên không rỗng, ngày sinh có thật và không sau hôm nay, email đúng dạng (trống → NULL, T8). Trả bản đã chuẩn
+ * hoá; sai → 400. Chung cho `updateStudent` và Sửa cả lớp (PR-SL, kiểm trước khi ghi).
+ */
+export function chuanHoaSuaHoSo(patch: any) {
   patch = { ...patch };
   kiemKieuO(patch, ['fullName', 'dob', 'email', 'consultantName', 'note'], [],
     (k) => ({ fullName: 'Họ tên', dob: 'Ngày sinh', email: 'Email', consultantName: 'Tư vấn viên', note: 'Ghi chú' })[k] ?? k);
@@ -375,6 +370,19 @@ export function updateStudent(p: Principal, studentId: number, patch: any) {
     if (e.loi) throw badRequest('Email: ' + e.loi);
     patch.email = e.email;
   }
+  return patch;
+}
+
+export function updateStudent(p: Principal, studentId: number, patch: any) {
+  require_(p, PERMISSIONS.STUDENT_EDIT, { studentId });
+  const conn = db();
+  const s = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
+  if (!s) throw notFound();
+  // Target và ngày thi IELTS nằm ở LỘ TRÌNH, sửa qua updateCycle chứ không qua hồ sơ.
+  const map: Record<string, string> = {
+    fullName: 'full_name', note: 'note', dob: 'dob', consultantName: 'consultant_name', email: 'email',
+  };
+  patch = chuanHoaSuaHoSo(patch);
   const sets: string[] = []; const params: unknown[] = [];
   for (const [k, v] of Object.entries(patch)) {
     if (!map[k]) continue;

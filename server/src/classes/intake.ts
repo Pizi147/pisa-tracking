@@ -130,7 +130,7 @@ function bandOf(v: number | string | null | undefined): number | null | 'invalid
 const coDuLieu = (v: unknown) => !['', '-', '–', '—', 'n/a'].includes(String(v ?? '').trim().toLowerCase());
 
 /** Lớp chấm theo tỷ lệ (lớp thường) — chương trình quyết định bộ cột của lưới nhập. */
-function laLopThuong(programmeCode: string | null): boolean {
+export function laLopThuong(programmeCode: string | null): boolean {
   const pc = programmeCode ? programmeOf(programmeCode) ?? 'FT' : null;
   return ((pc ? programmeByCode(pc)?.scoringMode ?? PROGRAMME_TEMPLATES[pc]?.scoringMode : null) ?? 'ielts_band') === 'ratio';
 }
@@ -730,12 +730,12 @@ export function taoLopHangLoat(p: Principal, input: { rows: unknown; idempotency
 }
 
 /**
- * PR-SO (04/10): khoá chống gửi trùng của Thêm HV (`intake:*`) và Tạo lớp hàng loạt (`bulkclass:*`) chỉ cần sống qua lần bấm lại — dọn
+ * PR-SO (04/10): khoá chống gửi trùng của Thêm HV (`intake:*`), Tạo lớp hàng loạt (`bulkclass:*`) và Sửa cả lớp (`suacalop:*`, PR-SL) chỉ cần sống qua lần bấm lại — dọn
  * khoá cũ hơn 7 ngày ngay trước khi ghi khoá mới, để `demo_config` không phình mãi. Khoá cấu hình khác không đụng.
  */
 export function donKhoaGuiCu(conn: any, now: string): void {
   const moc = new Date(Date.parse(now) - 7 * 864e5).toISOString();
-  conn.prepare(`DELETE FROM demo_config WHERE (key LIKE 'bulkclass:%' OR key LIKE 'intake:%') AND updated_at < ?`).run(moc);
+  conn.prepare(`DELETE FROM demo_config WHERE (key LIKE 'bulkclass:%' OR key LIKE 'intake:%' OR key LIKE 'suacalop:%') AND updated_at < ?`).run(moc);
 }
 
 /**

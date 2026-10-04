@@ -873,6 +873,17 @@ await checkAsync(`PR-S3F · Công việc QL (nguoi=tat-ca) với 30 PA "đến l
   assert(r.n <= TRAN_GHI_LO.congViec30PaChuaNgayThi, `${r.n} câu > trần ${TRAN_GHI_LO.congViec30PaChuaNgayThi}`);
 });
 
+/* PR-SL: Sửa cả lớp gọi lần lượt hàm ghi một em (updateStudent…) trong MỘT giao dịch — số câu tăng theo số em; trần chốt mốc để PR sau không âm thầm làm nặng thêm. */
+await checkAsync(`PR-SL · Sửa cả lớp MB FT 101: xem trước + lưu 30 em đổi họ tên (POST /classes/:id/sua-ca-lop) ≤ ${TRAN_GHI_LO.xemTruocSuaCaLop30} / ${TRAN_GHI_LO.luuSuaCaLop30} câu SQL`, async () => {
+  const sids = (conn.prepare(`SELECT student_id AS id FROM enrollments WHERE class_id = ? AND status = 'active' ORDER BY student_id LIMIT 30`).all(LOP_FT) as any[]).map((x) => x.id);
+  const rows = sids.map((studentId, i) => ({ studentId, fullName: `Tốc Độ Sửa ${i + 1}` }));
+  const xem = await doGhi('QL', `/classes/${LOP_FT}/sua-ca-lop/xem-truoc`, { rows });
+  const luu = await doGhi('QL', `/classes/${LOP_FT}/sua-ca-lop`, { rows, idempotencyKey: 'pr-sl-30' });
+  assert(xem.status === 200 && luu.status === 200 && luu.json.daSua === sids.length, `${xem.status} ${luu.status} ${JSON.stringify(luu.json)}`);
+  console.log(`      (đo: ${sids.length} em, xem trước ${xem.n} câu, lưu ${luu.n} câu)`);
+  assert(xem.n <= TRAN_GHI_LO.xemTruocSuaCaLop30 && luu.n <= TRAN_GHI_LO.luuSuaCaLop30, `${xem.n} / ${luu.n} câu > trần`);
+});
+
 await checkAsync(`PR-S5F-b · Công việc GVCN + QL (nguoi=tat-ca) với 60 nhóm PA bổ trợ khắp hệ thống: số câu không tăng theo số nhóm (≤ +${TRAN_GHI_LO.congViec60NhomBoTro})`, async () => {
   const { demoToday } = await import('../demoConfig.ts');
   const { addDays } = await import('../util.ts');
