@@ -7,6 +7,11 @@
 ## Quyết định 04/10
 - Lớp thường cũng có **Target + Dự kiến thi** (ghi đè K2-41): Thêm HV, dán Excel, sửa thông tin → PR-NT. PR-SL và PR-DH (cột Dự kiến thi) áp cho cả lớp thường.
 - Dán Excel **không bắt buộc hàng tiêu đề** → PR-NT (NT-3).
+- Lớp thường lên lớp: **Target + Dự kiến thi mang sang lớp mới** → PR-NT (thêm vào NT-1/NT-4, sửa `luatLoTrinh.ts:265`).
+- Cột Target + Dự kiến thi ở bảng hồ sơ lớp thường: làm ở **PR-DH** (không phải PR-NT).
+- **"Vắng" ('-') thống nhất** giữa lưới cả lớp và màn từng kỹ năng, có **Hoàn tác** → PR-HK2 (cùng K4). (E8 kế hoạch 26/09 chốt.)
+- **C02: giữ chặn** — GVCN không dạy môn đó không ghi bù Case môn đó. Không làm gì.
+- **Điểm theo lớp** (nhập điểm hàng loạt theo từng lượt, cả bài đã qua, cả lớp thường theo lịch riêng của lớp) → **PR-DL**, mockup `thiet-ke/mockup-diem-theo-lop-2026-10-04.html`, kế hoạch `2026-10-04-pr-dl-diem-theo-lop.md`.
 
 ## Quyết định 03/10 (bổ sung)
 - **F01 = D13:** chống gửi trùng bằng **mã idempotency mỗi lần mở form** (cột `idempotency_key`), bỏ chặn trùng 10 giây theo tiêu đề. Áp cho `/tasks`, việc Vận hành, PA, followup.
@@ -34,7 +39,7 @@
 ## Chủ sản phẩm 03/10 duyệt thứ tự trên; DB cũ ĐÃ XOÁ (gỡ mã cũ ở PR-SO); đưa vào lộ trình: D9 → PR-BC, D7 → PR-HK2, D3 → PR-SO, U12 → PR riêng **PR-U12** sau PR-SO.
 
 ## Còn chờ quyết
-GVCN nhập bù Case môn mình không dạy (C02) · A12 tên PA "Điều chỉnh cách dạy" · K2-26 (mặc định bỏ).
+A12 tên PA "Điều chỉnh cách dạy" · K2-26 (mặc định bỏ).
 
 ## Hoãn có chủ ý (giữ nguyên)
 UX-D7 bảng→thẻ điện thoại · Thêm HV dạng thẻ điện thoại · xu hướng Phân tích (chờ 2–3 tháng dữ liệu) · KPI tháng GV · D15 hiệu quả PA theo SOS lúc sinh · taxonomy vấn đề · kho ý tưởng §20.
@@ -60,6 +65,7 @@ Mỗi session: nhánh mới **từ main mới nhất**; PR nào thêm migrate d�
 | **1** | **GVa** · **LM** · **BC** · **GVb** · **NT** | GVa: `worklist/mgmttasks.ts`, `meeting.ts`, `MgmtTasksPage` · LM: lịch MT (`skillSchedule`, `keHoachTest`, `StudentPlanPanel`, `MockDetailPage`, `HopKyNang`) · BC: `MeetingPage.tsx` (web), `AccountsAdmin` · GVb: `duyet/*`, `hocVienLop.ts:234` | — |
 | **2** | **PHH** · **DH** | PHH: `yThuc/phoiHop.ts` + migrate · DH: `StudentsPage`, `BangHocVienLop`, `MissingBadge`, `standing.ts` | PHH chờ GVa (hai migrate liền nhau dễ lệch thứ tự) · DH chờ LM (cần lượt "chưa xếp lịch") |
 | **3** | **SL** · **SO** | SL: panel/form (`KhungPanel`, `IntakePanel`, `DauTrangLop`, Case, Ghi vi phạm) · SO: máy chủ số liệu + gỡ migrate cũ | SL chờ DH (`DauTrangLop` dùng `ThanhTruocSau`) · SO chờ GVa, PHH (gỡ mã migrate sau khi migrate mới đã vào) |
+| **3b** | **DL** (Điểm theo lớp) | Chạy cùng SL/SO được; chỉ thêm một mục vào menu ⋮ `DauTrangLop` — PR nào merge sau thì gộp main vào | LM, DH |
 | **4** | **U12** | Bảng kết quả lớp thường | SO (D3 một hàm chọn lộ trình) |
 | **5** | **HK2** (một mình, cuối cùng) | Đụng ~15+ file khắp web, chụp lại toàn bộ sổ tay | Mọi PR trên đã merge |
 
@@ -81,7 +87,7 @@ mô tả PR báo từng ID (tái hiện/bác bỏ, file, phép kiểm, ảnh), l
 ### Đợt 1
 **PR-NT — Target + Dự kiến thi cho lớp thường, dán Excel không cần tiêu đề** (chủ sản phẩm 04/10, ưu tiên sớm)
 ```
-Làm PR-NT theo prompt cuối file docs/superpowers/plans/2026-10-04-pr-nt-target-thi-lop-thuong.md (NT-1 → NT-5). Nhánh pr-nt-target-thi-lop-thuong.
+Làm PR-NT theo prompt cuối file docs/superpowers/plans/2026-10-04-pr-nt-target-thi-lop-thuong.md (NT-1 → NT-5). Chủ sản phẩm 04/10: lên lớp thường thì MANG SANG Target + Dự kiến thi (luatLoTrinh.ts:265 hiện chỉ giữ FT→FT) — thêm task nhỏ có phép kiểm; cột ở bảng hồ sơ lớp thường để PR-DH. Nhánh pr-nt-target-thi-lop-thuong.
 Không migrate; chạy song song với GVa/GVb/BC/LM được.
 ```
 **PR-GVa — Giao việc: dữ liệu + form**
@@ -158,6 +164,13 @@ Làm PR-SO (nhánh pr-so-so-lieu-don-ma). Chưa có kế hoạch chi tiết → 
 - An toàn (plan.md 12.15/12.16): giới hạn thử /auth/login, /auth/register cần duyệt — kiểm cái nào đã làm trước khi sửa.
 - DEP-gỡ: DB cũ ĐÃ XOÁ (chủ sản phẩm 03/10) → gỡ mã chuyển dữ liệu cũ, lệnh chay-thu:*, kiem-lop-mo-coi, khối Lịch sử TRIEN_KHAI §11.1
   (docs/superpowers/plans/2026-10-02-pr-deploy-reset-ban-chinh.md ~19, 64, 370). Không gỡ migrate của PR mới (GVa, PHH).
+```
+
+### Đợt 3b
+**PR-DL — Điểm theo lớp** (sau khi LM, DH merge)
+```
+Làm PR-DL theo prompt cuối file docs/superpowers/plans/2026-10-04-pr-dl-diem-theo-lop.md (DL-0 → DL-7). Nhánh pr-dl-diem-theo-lop.
+Mockup đã duyệt: thiet-ke/mockup-diem-theo-lop-2026-10-04.html. DL-0 kiểm cách lưu lịch Test riêng của lớp thường — sai giả định G2 thì dừng hỏi chủ sản phẩm (brainstorming).
 ```
 
 ### Đợt 4
