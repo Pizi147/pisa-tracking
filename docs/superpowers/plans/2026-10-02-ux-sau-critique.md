@@ -102,8 +102,8 @@ Cỡ chữ có 4 mức (11 / 11,5 / 12 / 12,5 px) và 3 chiều cao dòng cho c�
 - [ ] **J3.** Cột "Cần xử lý" ở Tổng quan QL trộn "quá hạn từ W1 SEP" với "quá hạn 7 ngày". Dùng một cách ghi.
 - [ ] **J4. Bỏ lời giải thích viết cho người làm app** ở Tổng quan QL ("Gộp hai khung · …", "Chỉ phần số đổi theo khung · …"),
   hoặc chuyển vào ⓘ.
-- [ ] **J5.** Dòng tóm tắt Chờ duyệt "gồm 9 Báo QL (1 Mini Test chưa đạt, 2 Case…)" đổi thành hàng chip đếm.
-- [ ] **J5b. Tách "Để QL biết" khỏi Chờ duyệt** (chủ sản phẩm chốt 02/10, Q-D). Các mục "Không cần duyệt — để QL biết"
+- [x] **J5.** (PR-GVb) Dòng tóm tắt Chờ duyệt "gồm 9 Báo QL (1 Mini Test chưa đạt, 2 Case…)" đổi thành hàng chip đếm.
+- [x] **J5b. Tách "Để QL biết" khỏi Chờ duyệt** (PR-GVb) (chủ sản phẩm chốt 02/10, Q-D). Các mục "Không cần duyệt — để QL biết"
   (9/22 trong demo) chuyển sang một nhóm hoặc tab riêng "Để QL biết". Chờ duyệt chỉ còn mục có nút Duyệt, và badge đếm
   Chờ duyệt chỉ đếm những mục đó. Tìm file nguồn: `web/src/modules/duyet/*`, `server/src/` (nguồn danh sách duyệt).
   Phép kiểm: số trên badge Chờ duyệt bằng số dòng có nút Duyệt.
@@ -144,7 +144,7 @@ Cỡ chữ có 4 mức (11 / 11,5 / 12 / 12,5 px) và 3 chiều cao dòng cho c�
 - **Q-H:** ĐÃ CHỐT 02/10: ba kiểu chip như H1.
 - **Q-K:** ĐÃ CHỐT 02/10: 12 px cho chữ nội dung.
 - **Q-D:** ĐÃ CHỐT 02/10: tách "Để QL biết" (J5b).
-- **Q-B:** ĐÃ CHỐT 02/10 — **CHƯA LÀM → làm ở PR-GVb** (docs/superpowers/plans/2026-10-03-pr-gvb-cho-duyet.md). Đoạn ghi "Đã mở ở tab Tất cả…" trước đây sai: main vẫn chỉ duyệt nhiều khi lọc một phân loại (HopChoDuyet.tsx:70). Đặc tả giữ: Tất cả + "Chọn hết n" (cùng loại, ≤50), "Nhắc tất cả (n)", không nhắc lặp trong ngày, báo thành công một phần.
+- **Q-B:** ĐÃ CHỐT 02/10 — **XONG ở PR-GVb** (nhánh `pr-gvb-cho-duyet`): duyệt nhiều ở tab Tất cả + "Chọn hết n" (cùng loại, ≤ 50), "Nhắc tất cả (n)" ở tab Để QL biết, không nhắc lặp trong ngày, kết quả một câu "Đã duyệt 7/9 — 2 không có quyền". Giới hạn còn lại (G5): Công việc › "Của GV" chưa có "Nhắc tất cả".
 
 ## File → mục
 | File | Mục |
