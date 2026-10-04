@@ -520,7 +520,7 @@ function AccountDialog({ account, branches, onClose, onDone }: {
               </div>
               <div tabIndex={-1} {...lf.o(loi, 'quyen-rieng')}>
                 {lf.loiCua(loi, 'quyen-rieng') && <p className="m-0 mb-1 text-[11px] text-late">{lf.loiCua(loi, 'quyen-rieng')}</p>}
-                <CapQuyenRieng value={extra} chon={chonQuyen} branches={branches} macDinh={macDinhPhamVi}
+                <CapQuyenRieng value={extra} chon={chonQuyen} branches={branches} macDinh={macDinhPhamVi} vai={grants.map((g) => g.role).filter(Boolean)}
                   onChange={(v, c) => { setExtra(v); setChonQuyen(c); }} />
               </div>
               {quyenBo.length > 0 && (
