@@ -9092,6 +9092,10 @@ await runPrSoTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, ad
 const { runPrDhTests } = await import('./prDh.tests.ts');
 await runPrDhTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
+// ==================================================================== PR-DL (Điểm theo lớp)
+const { runPrDlTests } = await import('./prDl.tests.ts');
+await runPrDlTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
