@@ -21,17 +21,17 @@
 - Refactor `classScoreSheet` / `regularSheet` không được đổi kết quả cũ: toàn bộ phép kiểm đang có của `/classes/:id/cham` phải xanh mà **không sửa** phép kiểm cũ.
 - Hàm mới ở `shared/domain/*` re-export qua `shared/domain/index.ts`. File kiểm mới `server/src/tests/prDl.tests.ts` import và gọi ở **cuối** `server/src/tests/run.ts` (ngay trước khối in tổng kết `passed`/`failures`).
 - File mới → cập nhật `CODE_MAP.md` cùng commit (`cham/diemTheoLuot.ts`, `shared/domain/diemTheoLuot.ts`, `modules/cham/DiemTheoLop.tsx`, `modules/test/TabDiemLop.tsx`, `tests/prDl.tests.ts`).
-- Nhánh `pr-dl-diem-theo-lop`. Xong: đánh dấu `[x]`, thêm một dòng ở mục 14 `plan.md`, mở PR (không tự merge), liệt kê chú thích `ponytail:`.
+- Nhánh `pr-dl-diem-theo-lop`. Xong: đánh dấu `[x]`, thêm một dòng ở mục 11 `plan.md`, mở PR (không tự merge), liệt kê chú thích `ponytail:`.
 
 ## Skill bắt buộc
 | Lúc | Skill / lệnh |
 |---|---|
-| Đầu phiên | `anthropic-skills:subagent-driven-development`. Gõ `/ponytail lite` (PR có sửa giao diện) |
-| DL-0 (điều tra lịch Test lớp thường) | `anthropic-skills:brainstorming` nếu dữ liệu không như Giả định G2 — dừng, ghi lại, hỏi chủ sản phẩm |
-| Mỗi task | `anthropic-skills:test-driven-development`: kiểm đỏ, sửa, kiểm xanh |
+| Đầu phiên | `superpowers:subagent-driven-development`. Gõ `/ponytail lite` (PR có sửa giao diện) |
+| DL-0 (điều tra lịch Test lớp thường) | `superpowers:brainstorming` nếu dữ liệu không như Giả định G2 — dừng, ghi lại, hỏi chủ sản phẩm |
+| Mỗi task | `superpowers:test-driven-development`: kiểm đỏ, sửa, kiểm xanh |
 | DL-5, DL-6 (giao diện) | `/impeccable layout` (bảng + thanh lượt + danh sách lớp) · `/impeccable clarify` (chữ "Chưa có lịch…", chip, callout lịch sử) · `/impeccable adapt` (375: một kỹ năng một lúc, ‹ MT ›) |
-| Trước khi báo xong mỗi task | `anthropic-skills:verification-before-completion`: chạy `npm run check`, đọc kết quả |
-| Cuối PR | `/impeccable audit`, `/ponytail-review`, `anthropic-skills:requesting-code-review`, `anthropic-skills:finishing-a-development-branch` (mở PR, không merge) |
+| Trước khi báo xong mỗi task | `superpowers:verification-before-completion`: chạy `npm run check`, đọc kết quả |
+| Cuối PR | `/impeccable audit`, `/ponytail-review`, `superpowers:requesting-code-review`, `superpowers:finishing-a-development-branch` (mở PR, không merge) |
 
 ---
 
@@ -163,7 +163,7 @@ Skill: `/impeccable layout` · `/impeccable clarify`
 Skill: verification-before-completion
 
 - [ ] Thêm 2 dòng vào `server/src/tests/tocDoDuong.ts` cho `/classes/{lopFT}/diem-theo-luot/mt:2` và `/test/diem-lop` (vai QL, GV) theo mẫu sẵn có.
-- [ ] `CODE_MAP.md`, `plan.md` mục 14. `npm run check` xanh.
+- [ ] `CODE_MAP.md`, `plan.md` mục 11. `npm run check` xanh.
 - [ ] Commit: `chore(dl): đo tốc độ, CODE_MAP, plan`.
 
 ## Nghiệm thu
@@ -180,7 +180,7 @@ Skill: verification-before-completion
 ```
 Repo pisa-tracking, nhánh pr-dl-diem-theo-lop (tạo từ main SAU khi PR-LM và PR-DH đã merge).
 Đọc CLAUDE.md, rồi làm đúng kế hoạch docs/superpowers/plans/2026-10-04-pr-dl-diem-theo-lop.md, task DL-0 → DL-7.
-Đầu phiên: /ponytail lite; dùng anthropic-skills:subagent-driven-development. Mỗi task: test-driven-development
+Đầu phiên: /ponytail lite; dùng superpowers:subagent-driven-development. Mỗi task: test-driven-development
 (phép kiểm ở server/src/tests/prDl.tests.ts, gọi ở cuối run.ts), verification-before-completion (npm run check).
 Giao diện (DL-5, DL-6): /impeccable layout, /impeccable clarify, /impeccable adapt (375). Cuối: /impeccable audit,
 /ponytail-review, requesting-code-review, finishing-a-development-branch (mở PR, không merge).

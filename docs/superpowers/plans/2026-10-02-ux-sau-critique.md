@@ -199,7 +199,7 @@ Cách làm và kiểm:
 6. `/impeccable audit` cho các màn đã sửa, rồi `/ponytail-review`.
 
 Xong thì:
-- đánh dấu [x] trong file kế hoạch, thêm một dòng vào mục 14 của plan.md;
+- đánh dấu [x] trong file kế hoạch, thêm một dòng vào mục 11 của plan.md;
 - mở PR, không tự merge, liệt kê chú thích `ponytail:`;
 - báo cho chủ sản phẩm: ảnh sổ tay nào trong docs/so-tay/ bị lệch vì đợt này.
 ```
@@ -210,7 +210,7 @@ Xong thì:
 
 Làm PR-HK2 trong docs/superpowers/plans/2026-10-02-ux-sau-critique.md: các mục H1, H2, K2, K5, K6, K7, cộng phần K1 còn lại
 nếu PR-HK1 đã hoãn. Chỉ làm sau khi bản chính đã deploy. Nhánh mới từ main: pr-hk2-badge-chu.
-Đọc trước: CLAUDE.md, mục 0 và các mục trên trong file kế hoạch, plan.md mục 3 (dòng 02/10: chữ 12 px, ba kiểu badge),
+Đọc trước: CLAUDE.md, mục 0 và các mục trên trong file kế hoạch, mục "Câu hỏi cho chủ sản phẩm" (Q-H ba kiểu badge, Q-K chữ 12 px), plan.md mục 3–4,
 thiet-ke/HE_GIAO_DIEN.md.
 
 - H1/H2: ba kiểu chip đã chốt.
@@ -225,5 +225,5 @@ thiet-ke/HE_GIAO_DIEN.md.
 - K7: dùng một kiểu icon ⋯ ở mọi chỗ.
 
 Kiểm như PR-HK1 (check, ảnh 1440/375 sáng/tối, audit, ponytail-review). Chụp lại toàn bộ ảnh sổ tay QL/GV trong
-docs/so-tay/ trong cùng PR. Đánh dấu [x], thêm dòng mục 14, mở PR, không tự merge.
+docs/so-tay/ trong cùng PR. Đánh dấu [x], thêm dòng mục 11 plan.md, mở PR, không tự merge.
 ```

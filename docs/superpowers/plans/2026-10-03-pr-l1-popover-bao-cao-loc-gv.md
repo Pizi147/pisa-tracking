@@ -78,6 +78,6 @@ Cách làm và kiểm:
 4. 375 px: không tràn ngang, vùng bấm ≥ 40 px.
 5. `/impeccable audit` cho các màn đã sửa, rồi `/ponytail-review`.
 
-Xong thì: đánh dấu [x] ở file kế hoạch, thêm một dòng vào mục 14 của plan.md, mở PR (không tự merge), liệt kê chú thích `ponytail:`,
+Xong thì: đánh dấu [x] ở file kế hoạch, thêm một dòng vào mục 11 của plan.md, mở PR (không tự merge), liệt kê chú thích `ponytail:`,
 báo ảnh sổ tay nào trong docs/so-tay/ bị lệch.
 ```

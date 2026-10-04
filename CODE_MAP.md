@@ -56,17 +56,14 @@ Nếu bạn nghĩ theo "cái tôi thấy trên màn hình" chứ không theo tê
 
 | File | Dùng khi nào |
 |---|---|
-| **`plan.md`** | **Kế hoạch đang chạy.** Đọc trước khi code. File sống, có quy tắc bắt buộc cập nhật ở mục 0.2 |
+| **`plan.md`** | **Kế hoạch duy nhất** (04/10): đã làm, việc còn lại, thứ tự đợt, model + effort, skill, prompt cho session code và mẫu giao agent |
 | `CODE_MAP.md` | File này — muốn sửa chỗ nào thì mở file nào |
 | `DEMO.md` | Mở hồ sơ nào để xem tình huống nào (Ý thức v4 a–m + kịch bản học thuật) và những điều đã chốt / còn treo |
-| `vong7/BRIEF_OVERHAUL_SAU_PR15.md` | Đề bài nghiệp vụ gốc |
 | *(bốn nhóm file bàn giao và tham chiếu cũ)* | **ĐÃ XOÁ 21/09/2026:** BAN\_GIAO (bốn file), PISA\_Design\_Master\_Reference, PRODUCT\_DEMO\_SPEC, thư mục vong4. Đã bị `thiet-ke/` thay hẳn. `plan.md` mục 1.2 đã cảnh báo chúng là "lịch sử, không phải luật" — giữ lại chỉ tạo rủi ro đọc phải luật cũ. Cần tra lại thì dùng `git log` |
 | `thiet-ke/PISA-Rulebook-2026-09-19.md` | **Luật sản phẩm** do chủ sản phẩm chốt. **Mục 20 (02/10, đã đối chiếu code) ưu tiên hơn mọi mục**; mục 18 (21/09) ưu tiên hơn mục 17; mục 17 ưu tiên hơn mọi mô tả cũ mâu thuẫn |
 | `thiet-ke/SOS_VA_PHOI_HOP_V3.md` | **Mới nhất (tối 21/09).** SOS tự tạo case + điền sẵn phương án, Phối hợp SOS, xoá vi phạm, bố cục `Ý thức & Phối hợp`. Thắng `thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` ở chỗ khác nhau |
 | `TRIEN_KHAI.md` | Đưa bản chính lên Netlify + Turso (miễn phí), sao lưu, quay lại bản cũ |
-| `PROMPT_SESSION_CODE.md` | Prompt copy-dán cho session coding — **mục 0 là bảng model + effort cho từng PR** |
-| `PROMPT_BAN_GIAO_PLANNING.md` | Prompt bàn giao cho một session planning mới + tình trạng hiện tại |
-| `docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md` | Kế hoạch chi tiết bản chính, chia PR-Z2a/b/c |
+| *(prompt, lộ trình, kiểm kê, rà soát cũ)* | **ĐÃ XOÁ 04/10/2026:** `PROMPT_SESSION_CODE.md`, `PROMPT_BAN_GIAO_PLANNING.md`, `vong7/`, kế hoạch của PR đã merge, `docs/superpowers/reviews/`, các file kiểm kê — gộp vào `plan.md`. Tra lại bằng `git show 575e898d:<đường dẫn>` |
 | `thiet-ke/NGUON-Rule-Y-thuc-2026-09-21.md` | **Nguồn mới nhất** do chủ sản phẩm gửi 21/09/2026: bỏ hẳn mô hình Case Ý thức |
 | `thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md` | Đặc tả Ý thức **v3 (lịch sử)** — từ PR-YT4 luật theo đặc tả 27/09 §5.4–§5.8 (khối đầu file) |
 | `thiet-ke/BAN_DO_OVERHAUL.md` | **Yêu cầu nào của design plan đã có, cái nào chưa, PR nào làm.** Đọc trước khi tưởng "chỉ còn vài việc dọn" |
@@ -402,7 +399,7 @@ Quy tắc: **mọi chuyển lớp thật chỉ đi qua `thiHanhLenhDenHan`**; `a
 
 ### Tốc độ (PR-TD, tốc độ trên Turso)
 
-Kế hoạch: `docs/superpowers/plans/2026-09-23-pr-td-toc-do.md`.
+Kế hoạch cũ: `git show 575e898d:docs/superpowers/plans/2026-09-23-pr-td-toc-do.md`.
 
 | Muốn sửa | Mở file |
 |---|---|
@@ -416,7 +413,7 @@ Kế hoạch: `docs/superpowers/plans/2026-09-23-pr-td-toc-do.md`.
 
 ### Bản chính (Netlify + Turso, PR-Z2)
 
-Hướng dẫn cho chủ sản phẩm: `TRIEN_KHAI.md`. Kế hoạch: `docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md`.
+Hướng dẫn cho chủ sản phẩm: `TRIEN_KHAI.md`. Kế hoạch cũ: `git show 575e898d:docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md`.
 
 | Muốn sửa | Mở file |
 |---|---|

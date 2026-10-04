@@ -2,7 +2,7 @@
 
 Hai sổ tay: **Sổ Giáo viên** và **Sổ Quản lý**. Mỗi sổ xếp theo **việc người dùng làm trong tuần**, không theo menu. Luật lấy từ `thiet-ke/PISA-Rulebook-2026-09-19.md` **mục 20** (đã đối chiếu với code `main` ngày 02/10); tên màn, nút và tài khoản demo lấy từ [BAN_DO_MAN_HINH_2026-10-02.md](BAN_DO_MAN_HINH_2026-10-02.md) (mã `G1…G19`, `Q1…Q13`, `A1…A3`).
 
-Bằng chứng đối chiếu từng luật (nguồn, `file:line`, trạng thái) nằm ở [doi-chieu-02-10/](doi-chieu-02-10/): A đặc tả 27/09 · B kế hoạch 28–29/09 · C kế hoạch 30/09–01/10 · D luật đang chạy trong code (hạn, ma trận quyền, dấu "-", thông báo, vai).
+Bằng chứng đối chiếu từng luật (thư mục `doi-chieu-02-10/`) đã xoá 04/10 sau khi Rulebook mục 20 cập nhật xong — xem lại bằng `git show 575e898d:docs/so-tay/doi-chieu-02-10/`.
 
 **Ký hiệu.** 📷 một ảnh màn hình có số khoanh vùng, kèm danh sách số · ⚖ khung "Luật cần nhớ" (tối đa 3–4 dòng) · `[G9]` màn tương ứng trong bản đồ màn hình · **(chờ …)** mục còn phụ thuộc một việc chưa xong, xem phần "Việc phải xong trước khi chụp".
 

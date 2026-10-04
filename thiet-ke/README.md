@@ -61,6 +61,6 @@ ghi ở `plan.md`.
 
 ## Quy tắc cập nhật
 
-- Sửa file ở đây thì ghi một dòng vào `plan.md` mục 14 trong **cùng commit**.
+- Sửa file ở đây thì ghi một dòng vào `plan.md` mục 11 trong **cùng commit**.
 - Không thêm component mới vào `HE_GIAO_DIEN.md` nếu chưa có ít nhất hai màn dùng tới nó.
 - Không viết "TBD". Chưa chốt thì đưa vào `LUAT_CHO_CHOT.md` có mã C, không để trống ở đây.
