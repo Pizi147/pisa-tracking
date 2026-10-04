@@ -134,8 +134,9 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
     const nhom = gomBaiXemTruoc([...doiOk, ...canhBao]).map((g) => (
       `${g.kyNang.map((k) => tenMonNgan(ct, k)).join(' ')}: ${g.tu ? tuanLich(g.tu) : '—'} → ${g.den ? tuanLich(g.den) : '—'}`
     ));
-    return { tone: 'muted' as const, chu: `${nhom.join(' · ')} · không trùng đợt khác.` };
-  }, [bai, moi, coDoi]);   // eslint-disable-line react-hooks/exhaustive-deps
+    /* PR-LM: có lượt sau sẽ bị huỷ lịch thì dòng đỏ bên dưới nói — không ghi "không trùng đợt khác" mâu thuẫn với nó. */
+    return { tone: 'muted' as const, chu: seHuyLich.length ? `${nhom.join(' · ')}.` : `${nhom.join(' · ')} · không trùng đợt khác.` };
+  }, [bai, moi, coDoi, seHuyLich]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   /* K4-15: dời kỹ năng mà tuần thi cũ đã bắt đầu (không phải bài vắng) → bắt lý do, như bỏ kỹ năng. */
   const tuanDaBatDau = (k: KyNangKH) => !!homNay && !!kn[k]?.tuan && kn[k]!.tuan!.slice(0, 10) <= homNay;
