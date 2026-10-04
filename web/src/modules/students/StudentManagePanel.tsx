@@ -8,7 +8,7 @@ import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { fmtBand } from '../../lib/format.ts';
 import {
   CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, NHAN_VIEC_QUAN_LY, mucQuanLyHocVien, type LopHocQuyen, type ViecQuanLy, dsLoi, docEmail,
-  addDaysIso, tuanHocCuaMt, tuanLich,
+  addDaysIso, tuanHocCuaMt, tuanLich, GIAI_THICH_KCK, KCK,
 } from '@shared/domain/index.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -16,6 +16,8 @@ import { LoTrinhTiepPanel } from './LoTrinhTiepPanel.tsx';
 import { ChuyenLopPanel } from './ChuyenLopPanel.tsx';
 import { XoaHocVienPanel } from './XoaHocVienPanel.tsx';
 import { DeXuatSuaPanel } from '../duyet/DeXuatSuaPanel.tsx';
+import { laBand } from './StudentPlanPanel.tsx';
+import { NutChon, TargetText } from '../../ui/ui.tsx';
 
 /**
  * QUẢN LÝ HỌC VIÊN Ở HỒ SƠ (PR-UX3, Q10) — dấu ⋮ mở MENU THẢ (`Menu`) chứ không còn ngăn "Quản lý học viên" với danh sách việc rồi
@@ -28,7 +30,7 @@ import { DeXuatSuaPanel } from '../duyet/DeXuatSuaPanel.tsx';
 export { mucQuanLyHocVien, type LopHocQuyen, type ViecQuanLy };
 const NHAN_VIEC = NHAN_VIEC_QUAN_LY;
 
-export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempts, onDone, soViPhamMo = 0 }: {
+export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempts, onDone, soViPhamMo = 0, canEditCycle = false, onDeXuatSua }: {
   /** Việc đang mở; `null` = không mở gì. `lo-trinh` do nơi gọi mở (StudentPlanPanel), không qua đây. */
   viec: ViecQuanLy | null; onClose: () => void;
   student: {
@@ -42,6 +44,8 @@ export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempt
   onDone: () => void;
   /** PR-UXF-b (O2): số vi phạm Ý thức còn mở — lấy từ dữ liệu hồ sơ đã nạp (một nguồn với ô Ý thức), không gọi thêm. */
   soViPhamMo?: number;
+  /** PR-NT: Thông tin HV lớp thường — không có `cycle.edit` thì Target chỉ đọc + "Đề xuất sửa" (cùng luật `StudentPlanPanel`). */
+  canEditCycle?: boolean; onDeXuatSua?: () => void;
 }) {
   if (!viec || viec === 'lo-trinh') return null;
   const xong = () => { onDone(); onClose(); };
@@ -56,7 +60,7 @@ export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempt
     case 'luu-tru': return <LuuTruPanel {...chung} boLuuTru={false} />;
     case 'bo-luu-tru': return <LuuTruPanel {...chung} boLuuTru />;
     case 'outcome': return <KetLuanLoTrinhPanel {...chung} cycle={cycle} attempts={attempts} />;
-    case 'info': return <ThongTinPanel {...chung} student={student} cycle={cycle} attempts={attempts} />;
+    case 'info': return <ThongTinPanel {...chung} student={student} cycle={cycle} attempts={attempts} canEditCycle={canEditCycle} onDeXuatSua={onDeXuatSua} />;
     case 'xoa-hoc-vien': return <XoaHocVienPanel studentId={student.id} studentName={student.name} lop={lop} onClose={onClose} />;
     case 'de-xuat-sua': return (
       <DeXuatSuaPanel studentId={student.id} studentName={student.name} lop={lop} onClose={onClose}
@@ -229,11 +233,12 @@ function KetLuanLoTrinhPanel({ studentName, lop, onClose, onDone, cycle, attempt
 
 /**
  * THÔNG TIN HỌC VIÊN — mục 1 của menu (mục 5.1). Với lớp Fast Track, Target và kế hoạch thi thật sửa ở mục `Lộ trình`; với lớp thường,
- * giai đoạn đang học đọc ở đây, sửa `Lộ trình tiếp theo` ở mục riêng (PR-LT).
+ * giai đoạn đang học đọc ở đây, sửa `Lộ trình tiếp theo` ở mục riêng (PR-LT). PR-NT (04/10): lớp thường sửa Target + Dự kiến thi ở đây —
+ * chỉ để theo dõi, không kỳ vọng/SOS. Đổi Target bắt lý do + `cycle.edit` (máy chủ đi qua `reviseTarget`).
  */
-function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, attempts }: ChungViec & {
+function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, attempts, canEditCycle, onDeXuatSua }: ChungViec & {
   student: { id: number; name: string; dob?: string | null; email?: string | null; consultantName?: string | null; note?: string | null };
-  cycle: any | null; attempts: any[];
+  cycle: any | null; attempts: any[]; canEditCycle?: boolean; onDeXuatSua?: () => void;
 }) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
@@ -245,12 +250,22 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
   const [tuan, setTuan] = useState(tuanCu);
   const [consultantName, setConsultant] = useState(student.consultantName ?? '');
   const [note, setNote] = useState(student.note ?? '');
+  /* PR-NT: Target + Dự kiến thi lớp thường. Target: '' = chưa có, KCK = không cam kết, còn lại là band. */
+  const targetCu: string = cycle?.khongCamKet ? KCK : cycle?.target != null ? String(cycle.target) : '';
+  const [target, setTarget] = useState(targetCu);
+  const [lyDo, setLyDo] = useState('');
+  const thiCu: string = cycle?.examDate ?? cycle?.examMonth ?? '';
+  const [thi, setThi] = useState(thiCu);
+  const suaMucTieu = !!cycle?.ratio;
+  const doiTarget = suaMucTieu && !!canEditCycle && target !== targetCu;
   const lf = useLoiForm();
   const [busy, setBusy] = useState(false);
   const loi = dsLoi([{ khoa: 'ho-ten', nhan: 'Họ tên', toiThieu: 1 }], { 'ho-ten': fullName });
   const loiEmail = docEmail(email).loi;
   if (loiEmail) loi.push({ khoa: 'email', nhan: 'Email', lyDo: loiEmail });
   if (cycle && !tuan) loi.push({ khoa: 'tuan', nhan: 'Tuần bắt đầu', lyDo: 'Chưa chọn' });
+  if (doiTarget && target !== KCK && target !== '' && !laBand(target)) loi.push({ khoa: 'target', nhan: 'Target', lyDo: 'Band từ 0 đến 9, bước 0.5 — hoặc chọn KCK' });
+  if (doiTarget) loi.push(...dsLoi([{ khoa: 'ly-do-target', nhan: 'Lý do đổi Target', toiThieu: 1 }], { 'ly-do-target': lyDo }));
   const thieu = loi.map((l) => l.nhan);
   /*
    * M6, K2-33(2): đổi tuần bắt đầu của lộ trình FT thì máy chủ dời các lượt MT hệ thống tự xếp (`auto`), chưa làm, chưa có điểm — nói
@@ -279,9 +294,14 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
       await api.patch(`/students/${student.id}`, {
         fullName, dob: dob || null, email: email.trim() || null, consultantName: consultantName || null, note: note || null,
       });
-      /* Tuần bắt đầu nằm ở LỘ TRÌNH — chỉ gửi khi đổi (máy chủ kiểm lại, và tự dời lịch MT hệ thống đã xếp). */
-      if (cycle && tuan !== tuanCu) {
-        await api.patch(`/cycles/${cycle.id}`, { startWeek: tuan });
+      /* Tuần bắt đầu (+ Target, Dự kiến thi lớp thường) nằm ở LỘ TRÌNH — MỘT lời gọi, chỉ gửi trường đã đổi (máy chủ kiểm lại). */
+      const doi = {
+        ...(cycle && tuan !== tuanCu ? { startWeek: tuan } : {}),
+        ...(doiTarget ? { targetScore: target === '' ? null : target === KCK ? KCK : Number(target), lyDo: lyDo.trim() } : {}),
+        ...(suaMucTieu && thi !== thiCu ? { examDate: thi } : {}),
+      };
+      if (cycle && Object.keys(doi).length) {
+        await api.patch(`/cycles/${cycle.id}`, doi);
         invalidate('/cycles'); invalidate('/attempts');
       }
       invalidate('/students'); toast.push('ok', 'Đã lưu'); onDone();
@@ -316,17 +336,46 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
       {cycle && (
         <Khoi tieuDe="Giai đoạn đang học"
           luat={cycle.ratio
-            ? 'Giai đoạn là chương trình đang học; tuần kết thúc suy ra từ tuần bắt đầu và độ dài chương trình. Ghi dự định sau lớp này ở mục Lộ trình tiếp theo.'
+            ? 'Giai đoạn là chương trình đang học; tuần kết thúc suy ra từ tuần bắt đầu và độ dài chương trình. Target và Dự kiến thi chỉ để theo dõi — lớp thường không tính kỳ vọng hay SOS theo Target. Ghi dự định sau lớp này ở mục Lộ trình tiếp theo.'
             : 'Sửa Target, kế hoạch thi thật, điểm đầu vào và lịch MT ở mục Lộ trình. Đổi Target ở đâu cũng bắt ghi lý do và ngày hiệu lực.'}>
           <Truong nhan="Tuần bắt đầu" batBuoc loi={lf.loiCua(loi, 'tuan')} phu={cauDoi}>
             <ONgay kieu="tuan" id={lf.oId('tuan')} onBlur={lf.roi('tuan')} invalid={!!lf.loiCua(loi, 'tuan')}
               value={tuan} onChange={setTuan} />
           </Truong>
           {cycle.ratio ? (
-            <p className="m-0 text-sm text-slate-200">
-              {cycle.programmeName ?? cycle.label}
-              {cycle.endWeek && <span className="text-slate-500"> · kết thúc {tuanLich(cycle.endWeek.weekStart, homNay)}</span>}
-            </p>
+            <>
+              <p className="m-0 text-sm text-slate-200">
+                {cycle.programmeName ?? cycle.label}
+                {cycle.endWeek && <span className="text-slate-500"> · kết thúc {tuanLich(cycle.endWeek.weekStart, homNay)}</span>}
+              </p>
+              {canEditCycle ? (
+                <Truong nhan="Target" tuyChon loi={lf.loiCua(loi, 'target')} phu={`Band 0–9, bước 0,5. KCK: ${GIAI_THICH_KCK}.`}>
+                  <span className="flex flex-wrap items-center gap-2">
+                    <input className="field max-w-[8rem]" type="number" inputMode="decimal" step="0.5" min={0} max={9} aria-label="Target"
+                      {...lf.o(loi, 'target')} value={target === KCK ? '' : target} disabled={target === KCK}
+                      onChange={(e) => setTarget(e.target.value)} />
+                    <NutChon nho chon={target === KCK} onClick={() => setTarget(target === KCK ? '' : KCK)}>Không cam kết (KCK)</NutChon>
+                  </span>
+                </Truong>
+              ) : (
+                <div className="flex flex-wrap items-center gap-2 text-sm text-slate-200">
+                  <span>Target: {targetCu ? <strong><TargetText band={cycle.target ?? null} kck={!!cycle.khongCamKet} /></strong> : <span className="text-slate-500">chưa có</span>}</span>
+                  {onDeXuatSua && (
+                    <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={onDeXuatSua}
+                      title="Target do Quản lý sửa — gửi đề xuất để Quản lý duyệt">Đề xuất sửa</button>
+                  )}
+                </div>
+              )}
+              {doiTarget && (
+                <Truong nhan="Lý do đổi Target" batBuoc loi={lf.loiCua(loi, 'ly-do-target')} phu="Ghi vào Hành trình — sau này đọc lại biết vì sao Target đổi.">
+                  <input className="field w-full" maxLength={2000} {...lf.o(loi, 'ly-do-target')} value={lyDo}
+                    onChange={(e) => setLyDo(e.target.value)} placeholder="Ví dụ: Gia đình đổi kế hoạch thi" />
+                </Truong>
+              )}
+              <Truong nhan="Dự kiến thi" tuyChon phu="Biết ngày thì gõ dd/mm/yyyy; mới biết tháng thì gõ mm/yyyy.">
+                <ONgay kieu="ngay-hoac-thang" value={thi} goiY="dd/mm/yyyy hoặc mm/yyyy" onChange={setThi} />
+              </Truong>
+            </>
           ) : (
             <p className="m-0 text-sm text-slate-200">
               {cycle.label}

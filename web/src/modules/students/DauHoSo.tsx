@@ -24,16 +24,21 @@ export type Viec = {
 /**
  * DÒNG THÔNG TIN — "em là ai" (mockup 24 A/C/D1).
  *   FT          MB FT 101 · LT1 · target 6.5 · tuần học 9 · dự kiến thi 06/2027 · GVCN …
- *   lớp thường  MB FOU 15 · FOU · tuần học 7/10 · Cuối khoá W4 OCT · GVCN …   (không target, FT không bao giờ "n/16")
+ *   lớp thường  MB FOU 15 · FOU · tuần học 7/10 · Cuối khoá W4 OCT · Target 5.5 · thi IELTS dự kiến 06/2027 · GVCN …
+ *               (PR-NT 04/10: Target + thi IELTS chỉ hiện khi có; FT không bao giờ "n/16")
  */
 export function DongThongTin({ tt }: { tt: any }) {
   if (!tt?.lop) return <p className="mb-0 mt-1 text-[12.5px] text-slate-400">Chưa xếp lớp</p>;
+  const target = tt.target !== null && tt.target !== undefined
+    && <span key="tg">Target <b><TargetText band={tt.target === 'KCK' ? null : tt.target} kck={tt.target === 'KCK'} /></b></span>;
   const muc: ReactNode[] = [
     <b key="lop">{tt.lop}</b>,
     tt.loTrinh && <b key="lt">{tt.loTrinh}</b>,
-    tt.target !== null && <span key="tg">Target <b><TargetText band={tt.target === 'KCK' ? null : tt.target} kck={tt.target === 'KCK'} /></b></span>,
+    !tt.lopThuong && target,
     tt.tuanHoc && <span key="tuan"><b className="tabular-nums">{chuTuanHoc(tt.tuanHoc.tuan, tt.tuanHoc.tong, tt.tuanHoc.dangDung)}</b></span>,
     tt.thiDuKien && <span key="thi">{tt.thiDuKien.nhan} <b className="tabular-nums">{tt.thiDuKien.gt}</b></span>,
+    tt.lopThuong && target,
+    tt.thiIelts && <span key="ielts">thi IELTS dự kiến <b className="tabular-nums">{tt.thiIelts}</b></span>,
     tt.gvcn && <span key="gv">GVCN <b>{tt.gvcn}</b></span>,
   ].filter(Boolean);
   return (

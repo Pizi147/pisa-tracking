@@ -212,7 +212,8 @@ function tapKetQua(c: NguCanhPtGv, nap: NapBai): Map<string, Tap & { lop?: Map<n
   const progs = allProgrammes();
   const dat = new Map<number, boolean>();
   for (const a of nap.attempts.values()) {
-    if (a.khong_cam_ket) continue;
+    /* PR-NT: Target lớp thường không bật FT (chủ sản phẩm 04/10) — KCK chỉ bỏ lượt FT; lớp thường chấm tỷ lệ, không kỳ vọng nên vẫn tính. */
+    if (a.khong_cam_ket && a.scoring_mode !== 'ratio') continue;
     const prog = a.scoring_mode === 'ratio' ? progs.get(a.programme_code) ?? null : null;
     for (const m of danhGiaMon(a, nap.bundle.scores.get(a.id) ?? [], prog, a.target_score ?? null)?.mon ?? []) dat.set(baiId(a.id, m.skill), m.dat);
   }

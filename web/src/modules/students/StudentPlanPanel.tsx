@@ -13,7 +13,7 @@ import { HangLichMt, type BangLichMt } from './HangLichMt.tsx';
 import { BASELINE_SOURCES, BASELINE_SOURCE_LABEL, GIAI_THICH_KCK, KCK, dsLoi, type LoiTruong } from '@shared/domain/index.ts';
 
 /** Band 0–9, bước 0.5 — cùng luật máy chủ (máy chủ vẫn kiểm lại). */
-const laBand = (s: string) => s.trim() !== '' && Number.isFinite(Number(s)) && Number(s) >= 0 && Number(s) <= 9 && Number(s) * 2 === Math.round(Number(s) * 2);
+export const laBand = (s: string) => s.trim() !== '' && Number.isFinite(Number(s)) && Number(s) >= 0 && Number(s) <= 9 && Number(s) * 2 === Math.round(Number(s) * 2);
 
 /**
  * LỘ TRÌNH — mục 2 của menu hồ sơ học viên (mục 5.1), thay cho "Kế hoạch học".
