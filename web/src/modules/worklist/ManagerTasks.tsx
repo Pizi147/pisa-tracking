@@ -1,6 +1,7 @@
 import { useApi } from '../../lib/useApi.ts';
 import { Card, Empty, Skeleton, Task } from '../../ui/ui.tsx';
 import { fmtDate } from '../../lib/format.ts';
+import { khopChiNhanhBaoCao } from '@shared/domain/index.ts';
 
 /**
  * VIỆC QUẢN LÝ GIAO — hai loại khác hẳn nhau (tạo ở MỘT cửa "+ Giao việc" của Vận hành, Câu 1 = A; đây chỉ còn danh sách).
@@ -17,16 +18,17 @@ type TaskRow = {
   id: number; code: string; title: string; kind?: string;
   className?: string | null; topicLabel?: string | null;
   assigneeName: string | null; dueDate: string | null; progress: string;
-  studentCount?: number;
+  studentCount?: number; branchId?: number | null;
 };
 
 /** Danh sách việc của tuần đang xem, tách khỏi nút tạo để đặt được ở chỗ khác trên trang. */
-export function ManagerTaskList({ periodId }: { periodId: number | null }) {
+export function ManagerTaskList({ periodId, chiNhanh = 'tat-ca' }: { periodId: number | null; chiNhanh?: string }) {
   const { data, loading } = useApi<{ rows: TaskRow[] }>(
     periodId ? `/tasks?periodId=${periodId}` : null, [periodId],
   );
   if (loading) return <Card title="Việc được giao"><Skeleton rows={3} /></Card>;
-  const rows = data?.rows ?? [];
+  /* PR-BC D9-b: lọc theo chi nhánh của VIỆC (giữ việc giao GV theo lớp); chỉ thu hẹp cái máy chủ đã trả. */
+  const rows = (data?.rows ?? []).filter((t) => khopChiNhanhBaoCao(t.branchId ?? null, chiNhanh));
   return (
     <Card title={`Việc được giao (${rows.length})`} bodyClass="p-0">
       {rows.length === 0 ? (

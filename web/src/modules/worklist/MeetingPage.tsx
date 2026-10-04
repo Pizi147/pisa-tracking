@@ -3,14 +3,14 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Card, Empty, ErrorState, Info, NutChon, Outcome, Skeleton, Status, Th } from '../../ui/ui.tsx';
+import { BoLocDoan, Card, Empty, ErrorState, Info, NutChon, Outcome, Skeleton, Status, Th } from '../../ui/ui.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { WeekPicker, usePeriodWindow, resolveWeek } from '../../ui/Filters.tsx';
 import { SignalList } from './SignalList.tsx';
 import { ManagerTaskList } from './ManagerTasks.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { fmtDate, fmtDateTime, fmtThu, unitStatusLabel, unitTone } from '../../lib/format.ts';
-import { UNIT_STATUSES } from '@shared/domain/index.ts';
+import { UNIT_STATUSES, demTrangThaiDonVi, hienONgay, khopChiNhanhBaoCao, locDonViBaoCao, luaChonChiNhanhBaoCao } from '@shared/domain/index.ts';
 
 type LinkedTask = { id: number; code: string; title: string; progress: string; progressLabel: string; due: string | null; overdue: boolean };
 type TrangThaiO = { ma: 'da-nop' | 'nhap' | 'chua'; nhan: string; phu: string | null };
@@ -57,7 +57,16 @@ export function MeetingBoard() {
     if (id) next.set('periodId', String(id)); else next.delete('periodId');
     setParams(next, { replace: true });
   };
-  const [byMonth, setByMonth] = useState(false);
+  /* PR-BC: kỳ và chi nhánh nhớ trong URL (`ky=thang`, `cn=<id>|tutor`) — tải lại hay gửi link vẫn đúng bộ lọc. */
+  const byMonth = params.get('ky') === 'thang';
+  const cn = params.get('cn') ?? 'tat-ca';
+  const cnBranchId = /^\d+$/.test(cn) ? Number(cn) : null;
+  const datParam = (k: string, v: string | null) => {
+    const next = new URLSearchParams(params);
+    if (v) next.set(k, v); else next.delete(k);
+    setParams(next, { replace: true });
+  };
+  const branches = useApi<{ id: number; name: string }[]>('/ref/branches');
   const [locTrangThai, setLocTrangThai] = useState<TrangThaiO['ma'] | null>(null);
   const [ganhoi, setGanHoi] = useState<{ unit: Unit; cell: Cell } | null>(null);
 
@@ -101,34 +110,51 @@ export function MeetingBoard() {
    * `{board.data && (...)}` — gọi trong đó thì tải xong dữ liệu là đổi SỐ hook giữa hai lần
    * render, React ném "Rendered more hooks than during the previous render".
    */
-  const soVanDaGiao = useManagerTaskCount(periodId);
-  const soTinHieuDangTon = useSignalCount(periodId);
+  const soVanDaGiao = useManagerTaskCount(periodId, cn);
+  const soTinHieuDangTon = useSignalCount(periodId, cnBranchId);
 
   if (board.error) return <ErrorState message={board.error.message} hint={board.error.hint} onRetry={board.reload} />;
 
   const units = board.data?.units ?? [];
-  const unitsLoc = locTrangThai ? units.filter((u) => u.trangThai.ma === locTrangThai) : units;
+  /* D9: lọc chi nhánh chỉ THU HẸP tập máy chủ đã cho; ba số đếm theo tập đã lọc chi nhánh, chưa lọc trạng thái. */
+  const unitsCn = locDonViBaoCao(units, { chiNhanh: cn, trangThai: null });
+  const unitsLoc = locDonViBaoCao(units, { chiNhanh: cn, trangThai: locTrangThai });
+  const dem = demTrangThaiDonVi(unitsCn);
+  const luaChonCn = luaChonChiNhanhBaoCao(units, branches.data ?? []);
   const ew = board.data?.editWindow ?? null;
+  const xoaLoc = () => { setLocTrangThai(null); datParam('cn', null); };
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-end gap-2">
-        <WeekPicker periodId={periodId} onPeriod={setPeriodId} label={byMonth ? 'Tuần bất kỳ trong tháng' : 'Tuần báo cáo'} />
-        <label className="block">
-          <span className="label">Kỳ</span>
-          <select className="field w-28" value={byMonth ? 'month' : 'week'} onChange={(e) => setByMonth(e.target.value === 'month')}>
-            <option value="week">Tuần</option>
-            <option value="month">Tháng</option>
-          </select>
-        </label>
-        {/* Câu 1 = A (K1-36): MỘT cửa giao việc ở Vận hành — ở đây chỉ còn đường dẫn. */}
-        <Link to="/cong-viec/van-hanh?tao=1" className="link self-center pb-2 text-xs">Giao việc ở Vận hành ›</Link>
+      {/* L2.1: Tuần · Kỳ · link trên một hàng (≥ 640 px), link căn phải; < 640 px các cụm tự xuống dòng.
+          Lọc chi nhánh (chỉ ai thấy ≥ 3 lựa chọn — thực tế là Quản trị hệ thống) nằm hàng riêng ngay dưới: 7 nút không vừa chung một hàng. */}
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <div className="w-full sm:w-[25rem]"><WeekPicker periodId={periodId} onPeriod={setPeriodId} label={null} /></div>
+          <span className="flex items-center gap-1.5">
+            <span className="text-xs text-slate-400">Kỳ</span>
+            <BoLocDoan ariaLabel="Kỳ báo cáo" value={byMonth ? 'thang' : 'tuan'}
+              onChange={(k) => datParam('ky', k === 'thang' ? 'thang' : null)}
+              muc={[{ key: 'tuan', nhan: 'Tuần' }, { key: 'thang', nhan: 'Tháng', title: 'Đọc lại cả tháng chứa tuần đang chọn — chỉ để đọc' }]} />
+          </span>
+          {/* Câu 1 = A (K1-36): MỘT cửa giao việc ở Vận hành — ở đây chỉ còn đường dẫn. */}
+          <Link to="/cong-viec/van-hanh?tao=1" className="link text-xs sm:ml-auto">Giao việc ở Vận hành ›</Link>
+        </div>
+        {luaChonCn.length > 0 && (
+          <div className="flex min-w-0 max-w-full items-center gap-1.5">
+            <span className="shrink-0 text-xs text-slate-400">Chi nhánh</span>
+            {/* Mỗi chi nhánh đúng một đơn vị → bỏ số đếm từng nút (toàn "2" là nhiễu); D9-a: chọn chi nhánh hiện kèm Tutor part-time. */}
+            <BoLocDoan ariaLabel="Lọc chi nhánh" value={cn} onChange={(k) => datParam('cn', k === 'tat-ca' ? null : k)}
+              muc={luaChonCn.map((m) => ({ key: m.key, nhan: m.nhan,
+                title: /^\d+$/.test(m.key) && luaChonCn.some((x) => x.key === 'tutor') ? `${m.nhan} kèm Tutor part-time` : undefined }))} />
+          </div>
+        )}
       </div>
 
       {/* Cửa sổ nộp — hoặc dòng phụ cho biết đang đọc cả tháng. */}
       {board.data?.scope.kind === 'month' ? (
         <p className="text-xs text-slate-500 m-0">
-          Đang đọc cả tháng <strong>{board.data.scope.month}</strong> ({board.data.scope.weeks.join(' · ')}) — chỉ để đọc, ô hiện lần báo cáo gần nhất kèm tình trạng nặng nhất đã xuất hiện.
+          Đang đọc cả tháng <strong>{board.data.scope.month ? hienONgay(board.data.scope.month, 'thang') : ''}</strong> ({board.data.scope.weeks.join(' · ')}) — chỉ để đọc, ô hiện lần báo cáo gần nhất kèm tình trạng nặng nhất đã xuất hiện.
         </p>
       ) : ew && (
         /*
@@ -153,26 +179,41 @@ export function MeetingBoard() {
       {board.data && (
         <>
           {/* Hàng số — bấm lọc hàng đơn vị (G-10). */}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-            {/* PR-UXF-a F4: ba số đếm ĐƠN VỊ (cùng tập chip lọc ra), không đếm ô. */}
-            {([['da-nop', 'đơn vị đã nộp', board.data.totals.daNop], ['nhap', 'đơn vị đang nhập', board.data.totals.nhap], ['chua', 'đơn vị chưa báo cáo', board.data.totals.chua]] as const).map(([ma, nhan, n]) => {
+          <div className="flex flex-wrap items-center gap-2 text-xs" role="group" aria-label="Lọc theo trạng thái báo cáo">
+            {/* PR-UXF-a F4: ba số đếm ĐƠN VỊ (cùng tập chip lọc ra), không đếm ô. L2.2: số 0 vẫn đọc rõ, bấm được (ra bảng rỗng có Xoá lọc). */}
+            {([['da-nop', 'đơn vị đã nộp', dem.daNop], ['nhap', 'đơn vị đang nhập', dem.nhap], ['chua', 'đơn vị chưa báo cáo', dem.chua]] as const).map(([ma, nhan, n]) => {
               const active = locTrangThai === ma;
               return (
-                <button key={ma} type="button" disabled={n === 0 && !active}
-                  className={`flex items-baseline gap-1 appearance-none bg-transparent border-0 p-0 ${n === 0 && !active ? 'opacity-40 cursor-default' : 'cursor-pointer hover:opacity-80'}`}
-                  onClick={() => setLocTrangThai(active ? null : ma)}>
-                  <strong className={`tabular-nums text-sm ${active ? 'text-sky-300' : 'text-slate-100'}`}>{n}</strong>
-                  <span className={active ? 'text-sky-300' : 'text-slate-400'}>{nhan}</span>
-                  {active && <span className="text-sky-300" aria-hidden>✕</span>}
-                </button>
+                <NutChon key={ma} nho chon={active} onClick={() => setLocTrangThai(active ? null : ma)}>
+                  <strong className="tabular-nums text-sm text-slate-100">{n}</strong>
+                  <span className={active ? 'text-slate-100' : 'text-slate-400'}>{nhan}</span>
+                </NutChon>
               );
             })}
           </div>
 
           {/* ── ma trận: đơn vị × hạng mục, lên đầu trang (§7.3) ── */}
           <Card title="Tình hình đơn vị" bodyClass="p-0">
-            {unitsLoc.length === 0 ? (
-              <div className="p-4"><Empty title="Bạn không có đơn vị nào khớp bộ lọc" /></div>
+            {board.data.scope.kind === 'week' && !locTrangThai && unitsCn.length > 0 && unitsCn.every((u) => u.reported === 0) ? (
+              /* L2.3: tuần chưa ai báo cáo → một dòng thay hàng chục ô "—"; vẫn giữ đường mở ô báo cáo theo từng đơn vị. */
+              <div className="px-4 py-3 space-y-2">
+                <p className="m-0 text-sm text-slate-400">
+                  Chưa đơn vị nào báo cáo{ew?.opensOn && ew?.closesOn ? ` — nộp từ ${fmtThu(ew.opensOn)} ${fmtDate(ew.opensOn)} đến hết ${fmtThu(ew.closesOn)} ${fmtDate(ew.closesOn)}` : ''}.
+                  {' '}Bấm tên đơn vị để mở ô báo cáo.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {unitsCn.filter((u) => u.cells.length > 0).map((u) => (
+                    <button key={u.unitId} type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setGanHoi({ unit: u, cell: u.cells[0] })}>
+                      {u.unitName}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : unitsLoc.length === 0 ? (
+              <div className="p-4">
+                <Empty title="Không có đơn vị nào khớp bộ lọc"
+                  action={<button type="button" className="btn btn-sm" onClick={xoaLoc}>Xoá lọc</button>} />
+              </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: '46rem' }}>
@@ -213,11 +254,11 @@ export function MeetingBoard() {
           {/* ── hai khối thu gọn (Q16) — luôn có số ── */}
           <details>
             <summary className="cursor-pointer text-sm text-slate-300 py-1">Việc được giao ({soVanDaGiao})</summary>
-            <div className="pt-2"><ManagerTaskList periodId={periodId} /></div>
+            <div className="pt-2"><ManagerTaskList periodId={periodId} chiNhanh={cn} /></div>
           </details>
           <details>
             <summary className="cursor-pointer text-sm text-slate-300 py-1">Việc đang tồn · {soTinHieuDangTon} loại việc</summary>
-            <div className="pt-2"><SignalList periodId={periodId} /></div>
+            <div className="pt-2"><SignalList periodId={periodId} branchId={cnBranchId} /></div>
           </details>
 
           <NganBaoCao unit={ganhoi?.unit ?? null} cell={ganhoi?.cell ?? null} periodId={periodId}
@@ -230,13 +271,14 @@ export function MeetingBoard() {
 }
 
 /** Số việc đã giao trong tuần — chỉ để hiện cạnh "Việc đã giao" khi khối đang gập. */
-function useManagerTaskCount(periodId: number | null): number {
-  const { data } = useApi<{ rows: unknown[] }>(periodId ? `/tasks?periodId=${periodId}` : null, [periodId]);
-  return data?.rows.length ?? 0;
+function useManagerTaskCount(periodId: number | null, chiNhanh: string): number {
+  const { data } = useApi<{ rows: { branchId: number | null }[] }>(periodId ? `/tasks?periodId=${periodId}` : null, [periodId]);
+  return (data?.rows ?? []).filter((t) => khopChiNhanhBaoCao(t.branchId ?? null, chiNhanh)).length;
 }
 /** Số nhóm tín hiệu — chỉ để hiện cạnh "Việc đang tồn" khi khối đang gập. */
-function useSignalCount(periodId: number | null): number {
-  const { data } = useApi<unknown[]>(periodId ? `/signals?periodId=${periodId}` : null, [periodId]);
+function useSignalCount(periodId: number | null, branchId: number | null): number {
+  const qs = `periodId=${periodId}${branchId ? `&branchId=${branchId}` : ''}`;
+  const { data } = useApi<unknown[]>(periodId ? `/signals?${qs}` : null, [periodId, branchId]);
   return data?.length ?? 0;
 }
 
