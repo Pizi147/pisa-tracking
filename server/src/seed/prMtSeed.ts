@@ -16,7 +16,7 @@ import { DEMO_DATE } from './journeys.ts';
  *   D1   lớp MB FT RF 12: Phan Gia Hân (mới, MT1 tuần 4, MT2 tuần 8) · Đặng Quốc Bảo (MT1 SOS 2 → PA quy chế hàng MT3, Phối hợp hàng MT4)
  *   D2/3 Lê Minh Khang — thêm hôm nay, bắt đầu 17 tuần trước: MT1–MT3 là MT lịch sử; MT2 đã nhập SOS 2 (ngoài 4 tuần → không Case);
  *        MT3 (2 tuần trước, trong cửa sổ) chưa nhập — GVCN Hà nhập thử sẽ ra Case
- *   D4   Trần Hữu Phúc — em FT KHÔNG có lượt nào (dữ liệu trước PR-MT) để `chay-thu:mt` có dòng
+ *   D4   Trần Hữu Phúc — em FT KHÔNG có lượt nào (dữ liệu trước PR-MT)
  *   D5   bốn em dấu "-": máy tự dời lần 1 (Hồ Ngọc Diệp) · chờ Quản lý duyệt dời lần 2 (Ngô Bảo Châu) · đã duyệt (Lý Thanh Tâm) ·
  *        đề nghị hết hạn tự huỷ phần thi (Võ Minh Triết)
  *   D6   Phạm Khánh Linh — MT2 "Huỷ cả lượt" rồi tạo lại (cùng số, cùng dòng)

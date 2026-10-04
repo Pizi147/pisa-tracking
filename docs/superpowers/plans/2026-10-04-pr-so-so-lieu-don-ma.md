@@ -36,10 +36,10 @@
 **Interfaces:**
 - Produces: `daiDienNhomBoTro<T extends { id: number; kind: string; nhom_bo_tro: string | null; action_due: string | null }>(rows: readonly T[]): T[]` — giữ nguyên mọi dòng không thuộc nhóm; mỗi nhóm giữ **một** dòng: `action_due` sớm nhất (null xếp cuối), hoà thì `id` nhỏ nhất. Thứ tự đầu ra = thứ tự đầu vào.
 
-- [ ] **Step 1: Phép kiểm đỏ (thuần)** `SO-1a`: 3 dòng cùng nhóm `g1` (id 5 due 2026-09-20, id 6 due 2026-09-10, id 7 due null) + 1 dòng không nhóm → ra `[6, dòng lẻ]`; hai dòng cùng due → id nhỏ.
-- [ ] **Step 2: Phép kiểm đỏ (hành vi, DB test)** `SO-1b`: dựng một nhóm Bổ trợ 2 PA cùng em (đúng cách `boTro.ts` tạo nhóm), PA id nhỏ hạn ngày mai, PA id lớn quá hạn 3 ngày → `metricSet(QL, 'pa-qua-han'…)` (đọc tên chỉ số trong `metrics.ts` quanh :390) chứa id lớn, và `/my-work` của QL có dòng "Ghi kết quả PA" của id lớn, nhãn quá hạn; tổng đếm = số dòng.
-- [ ] **Step 3: Đỏ** → **Step 4: Viết hàm** + dùng ở cả hai nơi: SQL chỉ lọc điều kiện riêng của từng nơi, rồi gọi `daiDienNhomBoTro` **sau** khi lọc phạm vi/quyền (mywork: sau `f.branchId` và kiểm quyền; metrics: sau phạm vi chỉ số).
-- [ ] **Step 5:** `npm run check` xanh (phép cũ không sửa) → commit `"PR-SO (1): một hàm chọn PA đại diện nhóm Bổ trợ cho Tổng quan và Công việc (D2)"`.
+- [x] **Step 1: Phép kiểm đỏ (thuần)** `SO-1a`: 3 dòng cùng nhóm `g1` (id 5 due 2026-09-20, id 6 due 2026-09-10, id 7 due null) + 1 dòng không nhóm → ra `[6, dòng lẻ]`; hai dòng cùng due → id nhỏ.
+- [x] **Step 2: Phép kiểm đỏ (hành vi, DB test)** `SO-1b`: dựng một nhóm Bổ trợ 2 PA cùng em (đúng cách `boTro.ts` tạo nhóm), PA id nhỏ hạn ngày mai, PA id lớn quá hạn 3 ngày → `metricSet(QL, 'pa-qua-han'…)` (đọc tên chỉ số trong `metrics.ts` quanh :390) chứa id lớn, và `/my-work` của QL có dòng "Ghi kết quả PA" của id lớn, nhãn quá hạn; tổng đếm = số dòng.
+- [x] **Step 3: Đỏ** → **Step 4: Viết hàm** + dùng ở cả hai nơi: SQL chỉ lọc điều kiện riêng của từng nơi, rồi gọi `daiDienNhomBoTro` **sau** khi lọc phạm vi/quyền (mywork: sau `f.branchId` và kiểm quyền; metrics: sau phạm vi chỉ số).
+- [x] **Step 5:** `npm run check` xanh (phép cũ không sửa) → commit `"PR-SO (1): một hàm chọn PA đại diện nhóm Bổ trợ cho Tổng quan và Công việc (D2)"`.
 
 ### Task SO-2: Quyền — cấm cấp riêng `plan.week` cho người chỉ có vai GV; D5 cờ hồ sơ khớp route
 
@@ -51,11 +51,11 @@
 **Interfaces:**
 - Produces: `lyDoCamCapRieng(roleKeys: readonly string[], quyen: string): string | null` — trả `CAM_CAP_VAI[vai].lyDo` khi `roleKeys` không rỗng và **mọi** vai đều cấm quyền đó; ngược lại null. `duocCapRieng` giữ nguyên.
 
-- [ ] **Step 1: Phép kiểm đỏ** `SO-2a` thuần: `lyDoCamCapRieng(['teacher'], 'plan.week')` có chữ `SCH-01`; `(['teacher','branch_manager'], 'plan.week')` → null; `([], 'plan.week')` → null.
-- [ ] **Step 2: Phép kiểm đỏ** `SO-2b`: admin lưu quyền riêng `plan.week` cho tài khoản demo chỉ có vai GV → 400, `user_permissions` không đổi; cho tài khoản QL → lưu được.
-- [ ] **Step 3: Phép kiểm đỏ** `SO-2c` (D5): với P.admin, P.mbManager, GVCN, GVBM trên một em đang học và một em `finished`: mỗi cờ `lopHocCua(...).quyen.{chuyenLop, tamDung, ketThuc, luuTru, ghiLoTrinhTiep}` = true **khi và chỉ khi** gọi hàm ghi tương ứng không ném lỗi quyền (gọi trong `tx` rồi rollback, hoặc `dryRun` nếu hàm có). Lệch thì sửa cờ gọi đúng hàm kiểm quyền của route.
-- [ ] **Step 4: Đỏ** → **Step 5: Sửa:** máy chủ đọc vai đang `active` của người được cấp (cùng bảng `user_roles` như `accounts.ts:161`), gọi `lyDoCamCapRieng` trong vòng kiểm trước khi xoá-ghi; câu lỗi = lý do. Web: ô tích `plan.week` của người chỉ có vai GV bị khoá, `title` = lý do (cùng hàm).
-- [ ] **Step 6:** `npm run check` → commit `"PR-SO (2): không cấp riêng quyền Kế hoạch tuần cho người chỉ có vai GV; cờ hồ sơ khớp quyền route (D5)"`.
+- [x] **Step 1: Phép kiểm đỏ** `SO-2a` thuần: `lyDoCamCapRieng(['teacher'], 'plan.week')` có chữ `SCH-01`; `(['teacher','branch_manager'], 'plan.week')` → null; `([], 'plan.week')` → null.
+- [x] **Step 2: Phép kiểm đỏ** `SO-2b`: admin lưu quyền riêng `plan.week` cho tài khoản demo chỉ có vai GV → 400, `user_permissions` không đổi; cho tài khoản QL → lưu được.
+- [x] **Step 3: Phép kiểm đỏ** `SO-2c` (D5): với P.admin, P.mbManager, GVCN, GVBM trên một em đang học và một em `finished`: mỗi cờ `lopHocCua(...).quyen.{chuyenLop, tamDung, ketThuc, luuTru, ghiLoTrinhTiep}` = true **khi và chỉ khi** gọi hàm ghi tương ứng không ném lỗi quyền (gọi trong `tx` rồi rollback, hoặc `dryRun` nếu hàm có). Lệch thì sửa cờ gọi đúng hàm kiểm quyền của route.
+- [x] **Step 4: Đỏ** → **Step 5: Sửa:** máy chủ đọc vai đang `active` của người được cấp (cùng bảng `user_roles` như `accounts.ts:161`), gọi `lyDoCamCapRieng` trong vòng kiểm trước khi xoá-ghi; câu lỗi = lý do. Web: ô tích `plan.week` của người chỉ có vai GV bị khoá, `title` = lý do (cùng hàm).
+- [x] **Step 6:** `npm run check` → commit `"PR-SO (2): không cấp riêng quyền Kế hoạch tuần cho người chỉ có vai GV; cờ hồ sơ khớp quyền route (D5)"`.
 
 ### Task SO-3: D4 xoá `completeIntervention` + D3 + việc nhỏ máy chủ
 
@@ -67,11 +67,11 @@
 **Interfaces:**
 - Produces: `donKhoaGuiCu(conn: any, now: string): void` trong `server/src/classes/intake.ts` — `DELETE FROM demo_config WHERE (key LIKE 'bulkclass:%' OR key LIKE 'intake:%') AND updated_at < ?` với mốc `now − 7 ngày`.
 
-- [ ] **Step 1: Phép kiểm đỏ** `SO-3a`: `cases.ts` không còn `export function completeIntervention`; `prS3f (8)` viết lại gọi `cases.updateResult(P.admin, iv.id, { outcome: 'improved', note: … })` với PA quy chế chưa tới mốc → phải ném lỗi như cũ (`/chưa tới mốc kết thúc/`). Nếu `updateResult` **không** chặn → đó là lỗ hổng thật: thêm chặn vào `updateResult`, ghi "tái hiện" trong mô tả PR.
-- [ ] **Step 2: Phép kiểm đỏ** `SO-3b`: em `finished`, tín hiệu `withdrawn`, gọi `raiseSignal` cùng khoá → vẫn `withdrawn`, `case_id` không đổi.
-- [ ] **Step 3: Phép kiểm đỏ** `SO-3c`: chèn `bulkclass:1:x` và `intake:1:2:y` với `updated_at` cũ 8 ngày + một khoá mới 1 ngày; tạo lớp hàng loạt một lần → hai khoá cũ mất, khoá mới còn; khoá `normal_pass_threshold`, `khoi_tao_moi_at` còn.
-- [ ] **Step 4: Đỏ** → **Step 5: Sửa:** xoá hàm; `dieuChinhPa` phép S2 xoá (hàm không còn, ghi lý do một dòng); `run.ts:3705` thay bằng cùng `UPDATE … status='completed'` như nhánh trên; `sosV3:699` bỏ dòng `completeIntervention` (dòng `updateResult` ngay dưới giữ). `raiseSignal`: em `finished` + `withdrawn` → trả `existing`. `donKhoaGuiCu` gọi ngay trước hai câu `INSERT OR REPLACE` khoá gửi. D3: `profile.ts:781` thay `allCycles.find(active)` bằng `loTrinhTinhTuan(allCycles, { dangHoc: true, ngayVao: today })` nếu cho cùng kết quả trên mọi phép cũ; câu SQL `cy.status = 'active'` ở `transition.ts`, `luatLoTrinh.ts` **giữ** (đúng nhánh `dangHoc`, đã chú thích ở `cycles.ts:36-41`). Gộp import `transferReasonText` vào khối import shared đầu `routes/index.ts`.
-- [ ] **Step 6:** `npm run check` → commit `"PR-SO (3): xoá completeIntervention, tín hiệu em đã kết thúc không mở lại, dọn khoá gửi cũ, D3"`.
+- [x] **Step 1: Phép kiểm đỏ** `SO-3a`: `cases.ts` không còn `export function completeIntervention`; `prS3f (8)` viết lại gọi `cases.updateResult(P.admin, iv.id, { outcome: 'improved', note: … })` với PA quy chế chưa tới mốc → phải ném lỗi như cũ (`/chưa tới mốc kết thúc/`). Nếu `updateResult` **không** chặn → đó là lỗ hổng thật: thêm chặn vào `updateResult`, ghi "tái hiện" trong mô tả PR.
+- [x] **Step 2: Phép kiểm đỏ** `SO-3b`: em `finished`, tín hiệu `withdrawn`, gọi `raiseSignal` cùng khoá → vẫn `withdrawn`, `case_id` không đổi.
+- [x] **Step 3: Phép kiểm đỏ** `SO-3c`: chèn `bulkclass:1:x` và `intake:1:2:y` với `updated_at` cũ 8 ngày + một khoá mới 1 ngày; tạo lớp hàng loạt một lần → hai khoá cũ mất, khoá mới còn; khoá `normal_pass_threshold`, `khoi_tao_moi_at` còn.
+- [x] **Step 4: Đỏ** → **Step 5: Sửa:** xoá hàm; `dieuChinhPa` phép S2 xoá (hàm không còn, ghi lý do một dòng); `run.ts:3705` thay bằng cùng `UPDATE … status='completed'` như nhánh trên; `sosV3:699` bỏ dòng `completeIntervention` (dòng `updateResult` ngay dưới giữ). `raiseSignal`: em `finished` + `withdrawn` → trả `existing`. `donKhoaGuiCu` gọi ngay trước hai câu `INSERT OR REPLACE` khoá gửi. D3: `profile.ts:781` thay `allCycles.find(active)` bằng `loTrinhTinhTuan(allCycles, { dangHoc: true, ngayVao: today })` nếu cho cùng kết quả trên mọi phép cũ; câu SQL `cy.status = 'active'` ở `transition.ts`, `luatLoTrinh.ts` **giữ** (đúng nhánh `dangHoc`, đã chú thích ở `cycles.ts:36-41`). Gộp import `transferReasonText` vào khối import shared đầu `routes/index.ts`.
+- [x] **Step 6:** `npm run check` → commit `"PR-SO (3): xoá completeIntervention, tín hiệu em đã kết thúc không mở lại, dọn khoá gửi cũ, D3"`.
 
 ### Task SO-4: DEP-gỡ — gỡ mã chuyển dữ liệu cũ
 
@@ -81,16 +81,16 @@
 - Modify: `TRIEN_KHAI.md` §11.1 (bỏ khối "Lịch sử"), `CODE_MAP.md`
 - Test: `server/src/tests/prSo.tests.ts`, phép kiểm cũ nhắc tới các file đã xoá
 
-- [ ] **Step 1: Kê danh sách trước khi xoá 🛑** — liệt kê mọi hàm/nhánh định gỡ vào mô tả PR (bảng: tên · dòng · vì sao là chuyển dữ liệu cũ · chạy trên DB mới không). Chỉ gỡ thứ **không chạy trên DB có `khoi_tao_moi_at`** hoặc chỉ dùng cho DB trước PR-J (`legacyEra`). Không chắc → giữ, ghi "giữ" + lý do.
-- [ ] **Step 2: Phép kiểm đỏ** `SO-4a`: `package.json` không còn `chay-thu:` và `kiem-lop-mo-coi`; `server/src/migrate/` không còn `chayThu*.ts`. `SO-4b`: DB tạm dựng bằng đúng đường `init-ban-chinh` dùng trong `prDeploy.tests.ts` → `migrate()` hai lần, lần hai `applied` rỗng, đếm dòng mọi bảng không đổi.
-- [ ] **Step 3: Đỏ** → **Step 4: Gỡ** theo danh sách Step 1; bỏ biến `dbMoi` khi không còn nơi đọc (seed vẫn ghi dấu). Sửa/xoá phép kiểm chỉ kiểm mã đã gỡ (ghi từng phép vào mô tả PR).
-- [ ] **Step 5:** `npm run check` xanh; `npm run seed` rồi `npm run migrate` hai lần trên máy dev → lần hai không in bước nào. Phép `DEPLOY-5b` (mọi `npm run` trong tài liệu có trong `package.json`) xanh.
-- [ ] **Step 6:** commit `"PR-SO (4): gỡ mã chuyển dữ liệu cũ, chay-thu, kiem-lop-mo-coi (DB cũ đã xoá)"`.
+- [x] **Step 1: Kê danh sách trước khi xoá 🛑** — liệt kê mọi hàm/nhánh định gỡ vào mô tả PR (bảng: tên · dòng · vì sao là chuyển dữ liệu cũ · chạy trên DB mới không). Chỉ gỡ thứ **không chạy trên DB có `khoi_tao_moi_at`** hoặc chỉ dùng cho DB trước PR-J (`legacyEra`). Không chắc → giữ, ghi "giữ" + lý do.
+- [x] **Step 2: Phép kiểm đỏ** `SO-4a`: `package.json` không còn `chay-thu:` và `kiem-lop-mo-coi`; `server/src/migrate/` không còn `chayThu*.ts`. `SO-4b`: DB tạm dựng bằng đúng đường `init-ban-chinh` dùng trong `prDeploy.tests.ts` → `migrate()` hai lần, lần hai `applied` rỗng, đếm dòng mọi bảng không đổi.
+- [x] **Step 3: Đỏ** → **Step 4: Gỡ** theo danh sách Step 1; bỏ biến `dbMoi` khi không còn nơi đọc (seed vẫn ghi dấu). Sửa/xoá phép kiểm chỉ kiểm mã đã gỡ (ghi từng phép vào mô tả PR).
+- [x] **Step 5:** `npm run check` xanh; `npm run seed` rồi `npm run migrate` hai lần trên máy dev → lần hai không in bước nào. Phép `DEPLOY-5b` (mọi `npm run` trong tài liệu có trong `package.json`) xanh.
+- [x] **Step 6:** commit `"PR-SO (4): gỡ mã chuyển dữ liệu cũ, chay-thu, kiem-lop-mo-coi (DB cũ đã xoá)"`.
 
 ### Task SO-5: Hoàn tất
-- [ ] `/ponytail-review` · `/security-review` trên diff (chạm quyền) · `CODE_MAP.md` · một dòng `plan.md` mục 11.
+- [x] `/ponytail-review` · `/security-review` trên diff (chạm quyền) · `CODE_MAP.md` · một dòng `plan.md` mục 11.
 - [ ] `superpowers:requesting-code-review` → `superpowers:finishing-a-development-branch` (mở PR, không merge). Mô tả PR: từng ID (D2, D3, D4, D5, plan.week, bulkclass, tín hiệu, DEP-gỡ) tái hiện/bác bỏ, file, phép kiểm.
-- [ ] Thứ tự merge đợt 2: sau PHH (merge `origin/main` vào nhánh, giữ `migratePrPhh`, chạy lại check), trước DH.
+- [x] Thứ tự merge đợt 2: sau PHH (merge `origin/main` vào nhánh, giữ `migratePrPhh`, chạy lại check), trước DH.
 
 ## Đã kiểm 04/10 — KHÔNG làm (bác bỏ, ghi vào mô tả PR)
 - An toàn 12.15/12.16: giới hạn thử `/auth/login` và `/auth/register` (`platform/gioiHanThu.ts`, `routes/index.ts:2046`), lỗi 409/500 không lộ SQL (`app.ts:140-157`), `/api/health` rẻ + không lộ (`platform/suKhoe.ts`) — đã làm ở PR-AN.

@@ -3700,9 +3700,8 @@ check('Case đã đóng mà MT sau trượt lại → MỞ CASE MỚI nối vào
       }
       sosAutoSvc.xacNhanPaQuyChe(mgr, iv.id, { description: 'Tutor kèm Reading hai buổi mỗi tuần, cô Hà chữa bài.' });
     }
-    /* PR-S3F #8 (T22): PA quy chế không khép sớm qua `completeIntervention` — phép kiểm này chỉ cần "PA đã xong" để chốt Case. */
-    if (row.preset === 1) conn.prepare(`UPDATE case_interventions SET status = 'completed', completed_date = ?, updated_at = ? WHERE id = ?`).run(demoToday(), new Date().toISOString(), iv.id);
-    else cases.completeIntervention(mgr, iv.id, { doneOn: demoToday() });
+    /* PR-S3F #8 (T22): PA quy chế không khép sớm — phép kiểm này chỉ cần "PA đã xong" để chốt Case (PR-SO: `completeIntervention` đã xoá). */
+    conn.prepare(`UPDATE case_interventions SET status = 'completed', completed_date = ?, updated_at = ? WHERE id = ?`).run(demoToday(), new Date().toISOString(), iv.id);
   }
   cases.closeCaseOutcome(mgr, c.id, {
     outcome: 'much_better', note: 'Em đọc nhanh hơn hẳn', decision: 'end',
@@ -9082,6 +9081,12 @@ await runPrGvbTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 // ==================================================================== PR-BC (Báo cáo đơn vị + Quản trị › Tài khoản)
 const { runPrBcTests } = await import('./prBc.tests.ts');
 await runPrBcTests({ check, assert });
+// ==================================================================== PR-PHH (Báo phụ huynh lưu bản chụp 4 nội dung lúc xác nhận)
+const { runPrPhhTests } = await import('./prPhh.tests.ts');
+await runPrPhhTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P });
+// ==================================================================== PR-SO (số liệu một nguồn & dọn mã máy chủ)
+const { runPrSoTests } = await import('./prSo.tests.ts');
+await runPrSoTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-DH (bảng Học viên & Lớp, điều hướng hồ sơ)
 const { runPrDhTests } = await import('./prDh.tests.ts');

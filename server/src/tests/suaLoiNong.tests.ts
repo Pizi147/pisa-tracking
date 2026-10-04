@@ -122,21 +122,9 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     assert(!/followUntil/.test(src.slice(src.indexOf('const cands'), src.indexOf('cands.sort'))), 'còn dùng followUntil làm hạn');
   });
 
-  // ==================================================================== 3. Migrate R-PA5: hạn Chủ nhật của PA đang chạy → Thứ Hai
+  // ==================================================================== 3. Migrate PR-N1 (R-PA5 đã gỡ ở PR-SO)
   const mig: any = await import('../migrate/prN1.ts');
-  check('N1 (3) · R-PA5: PA đang chạy có hạn Chủ nhật → Thứ Hai; PA xong/huỷ giữ nguyên; chạy lại không đổi thêm', () => {
-    const a = taoPa('mig-a').ivId; const b = taoPa('mig-b').ivId;
-    t.conn.prepare("UPDATE case_interventions SET action_due = '2026-09-27' WHERE id IN (?, ?)").run(a, b);
-    t.conn.prepare("UPDATE case_interventions SET status = 'completed' WHERE id = ?").run(b);
-    const truoc = mig.demPaDoiHanThuHai(t.conn);
-    assert(truoc.soPa >= 1 && truoc.mau.some((x: any) => x.id === a && x.hanMoi === '2026-09-28'), JSON.stringify(truoc.mau.slice(0, 3)));
-    const applied: string[] = [];
-    mig.migratePrN1(t.conn, applied);
-    const ha = (id: number) => (t.conn.prepare('SELECT action_due FROM case_interventions WHERE id = ?').get(id) as any).action_due;
-    assert(ha(a) === '2026-09-28' && ha(b) === '2026-09-27', `${ha(a)} · ${ha(b)}`);
-    const lan2: string[] = []; mig.migratePrN1(t.conn, lan2);
-    assert(lan2.length === 0 && mig.demPaDoiHanThuHai(t.conn).soPa === 0, 'chạy lại vẫn đổi');
-  });
+  /* PR-SO (DEP-gỡ): phép "N1 (3) R-PA5 dời hạn Chủ nhật → Thứ Hai" xoá cùng bước migrate cũ (DB cũ đã xoá). */
   check('N1 (3) · S4-1 → PR-SOS (Q28-3): migratePrN1 KHÔNG còn đổi PA quy chế "chờ xác nhận" — PA giữ nguyên planned, confirmed_at NULL', () => {
     const { caseId } = taoPa('mig-qc');
     const cu = Number(t.conn.prepare(`INSERT INTO case_interventions (case_id, kind, description, status, preset, cycle_no, needs_approval, created_at)
@@ -147,7 +135,6 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     const iv = t.conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(cu) as any;
     assert(iv.status === 'planned' && iv.confirmed_at === null && JSON.stringify(iv) === truoc, JSON.stringify(iv));
     assert(!applied.some((x) => /PA quy chế SOS/.test(x)) && typeof mig.migratePaQuyChe === 'undefined', applied.join(' | '));
-    assert(!/demPaQuyCheChoXacNhan/.test(docSach('server/src/migrate/chayThuN1.ts')), 'chạy thử còn mục PA quy chế chờ xác nhận');
   });
   // ==================================================================== 4. Web: chữ hạn "hết Thứ Hai" + A5 + A6
   check('N1 (4) · A6: việc Nhập điểm trễ có số ngày; không còn "⚠ n ngày" gọn; chữ hạn PA không còn Chủ nhật', () => {

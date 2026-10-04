@@ -355,11 +355,7 @@ export async function runDieuChinhPaTests(t: YThucTestKit) {
     assert(ivRow(c).followup_due === domain.sosPlanEndDate('one_month', { createdOn: TODAY }), `Mốc phải theo quy chế, không theo ngày gửi kèm: ${ivRow(c).followup_due}`);
   });
 
-  check('PR-S2 · S2: "Ghi đã làm" kèm ghi chú không còn ghi đè mô tả phương án (cases.ts completeIntervention)', () => {
-    const { ivId } = taoCase();
-    cases.completeIntervention(P.lrTeacher, ivId, { doneOn: TODAY, note: 'Đã làm đủ bảy buổi', performerSelf: true });
-    assert(ivRow(ivId).description === 'Tự học Listening — nghe chép 15 phút mỗi ngày', `Mô tả bị ghi đè: ${ivRow(ivId).description}`);
-  });
+  /* PR-SO (D4): phép S2 "Ghi đã làm" đã xoá cùng `completeIntervention` (không route nào gọi; ghi kết quả đi `updateResult`). */
 
   // ================================================================== 6. Thống kê hiệu quả
 

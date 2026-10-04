@@ -1,27 +1,7 @@
 /**
- * PR-N1 · R-PA5 (§5.6, K5-19): hạn ghi kết quả PA hằng tuần đổi từ HẾT CHỦ NHẬT sang HẾT THỨ HAI tuần sau. Hạn được LƯU ở
- * `case_interventions.action_due` → dời mọi hạn Chủ nhật của PA ĐANG CHẠY thêm 1 ngày, để sáng Thứ Hai đầu tiên sau deploy không
- * ai bị tính quá hạn ngược. Một câu, chạy lại không đổi gì thêm (hạn đã là Thứ Hai). PA xong/huỷ giữ nguyên lịch sử.
- *
- * Hai câu (đếm thử + dời) PHẢI cùng điều kiện — cùng lấy từ `dieuKien()`; sửa một chỗ là sửa cả hai. Câu đếm chỉ LEFT JOIN
- * (Case / lượt thi / học viên chỉ để lấy tên) nên số đếm luôn bằng đúng số dòng câu dời sẽ đổi.
- * `strftime('%w', …)` và `date(…, '+1 day')` là hàm sẵn của SQLite, chạy như nhau trên file cục bộ và Turso (libsql).
+ * PR-N1 (Q28-5): tính lại "Chưa xử lý" / "Đang xử lý" của Case SOS. Phần dời hạn Chủ nhật → Thứ Hai (R-PA5) đã gỡ ở PR-SO (DB cũ đã xoá).
  */
 import { CASE_SOS_DANG_XU_LY, LA_CASE_SOS } from '../cases/sosState.ts';
-
-const dieuKien = (a = '') =>
-  `${a}status IN ('planned', 'started') AND ${a}action_due IS NOT NULL AND strftime('%w', ${a}action_due) = '0'`;
-
-export function demPaDoiHanThuHai(conn: any) {
-  const mau = conn.prepare(
-    `SELECT iv.id, s.full_name AS hocVien, iv.action_due AS hanCu, date(iv.action_due, '+1 day') AS hanMoi
-       FROM case_interventions iv LEFT JOIN sos_cases sc ON sc.id = iv.case_id
-       LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
-       LEFT JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
-      WHERE ${dieuKien('iv.')}
-      ORDER BY iv.action_due, iv.id`).all() as any[];
-  return { soPa: mau.length, mau };
-}
 
 /**
  * Q28-5: tính lại "Chưa xử lý" / "Đang xử lý" của Case từ SOS còn mở theo luật mới (cùng điều kiện với `dongBoTrangThaiCase`).
@@ -40,11 +20,7 @@ export function migrateTrangThaiCaseSos(conn: any, applied: string[]) {
   if (r.changes) applied.push(`Tính lại trạng thái ${r.changes} Case từ SOS theo luật Q28-5 (Chưa xử lý tới khi xác nhận nguyên nhân + PA)`);
 }
 
-export function migratePrN1(conn: any, applied: string[], dbMoi = false) {
-  /* DB mới (khoi_tao_moi_at) không có dữ liệu kiểu cũ — bỏ qua (DEP-2): hạn Chủ nhật đặt tay của PA đang chạy là dữ liệu thật, không dời. */
-  if (dbMoi) { migrateTrangThaiCaseSos(conn, applied); return; }
-  const r = conn.prepare(`UPDATE case_interventions SET action_due = date(action_due, '+1 day'), updated_at = ? WHERE ${dieuKien()}`)
-    .run(new Date().toISOString());
-  if (r.changes) applied.push(`Dời hạn ghi kết quả của ${r.changes} PA đang chạy từ Chủ nhật sang Thứ Hai (R-PA5)`);
+export function migratePrN1(conn: any, applied: string[]) {
+  /* PR-SO (DEP-gỡ): bước dời hạn Chủ nhật → Thứ Hai cho PA cũ (R-PA5) đã gỡ — DB cũ đã xoá. Còn bước tính lại trạng thái Case SOS (chạy mọi DB). */
   migrateTrangThaiCaseSos(conn, applied);
 }

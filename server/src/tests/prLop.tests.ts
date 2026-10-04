@@ -70,30 +70,24 @@ export async function runPrLopTests(t: YThucTestKit) {
     assert(loi('FT', d.ENTRY_SKILLS, []) === '' && loi('FT', d.ENTRY_SKILLS, [s(2, 'reading')]) === '', 'thiếu phân công vẫn tạo được (L4)');
   });
   const mig: any = await import('../migrate/prLop.ts');
-  check('LOP (3) · migrate: cột số tuần, RF, PREFOU, đổi tên bỏ qua va chạm, chạy lại không đổi (T2, T78, K5-68)', () => {
-    /* DB test dựng từ schema.sql đã có chỉ mục chuẩn hoá — gỡ đi để giả một DB cũ còn hai lớp va chạm; lần migrate thứ 3 tạo lại. */
+  check('LOP (3) · migrate: cột số tuần, RF, PREFOU, chạy lại không đổi; va chạm tên → chưa tạo chỉ mục, hết va chạm → tạo (T78, K5-68). PR-SO: không còn đổi tên lớp cũ', () => {
+    /* DB test dựng từ schema.sql đã có chỉ mục chuẩn hoá — gỡ đi để giả hai lớp va chạm; lần migrate thứ 2 (sau khi xoá) tạo lại. */
     conn.exec('DROP INDEX IF EXISTS ux_classes_ma_chuan');
     const mb = (conn.prepare("SELECT id FROM branches WHERE code = 'MB'").get() as any).id;
-    const them = (code: string, pc: string, r: string | null) => Number(conn.prepare(
+    const them = (code: string) => Number(conn.prepare(
       `INSERT INTO classes (code, branch_id, kind, programme_code, route, is_fast_track, status, created_at)
-       VALUES (?,?,?,?,?,?, 'active', ?)`).run(code, mb, pc, pc, r, pc === 'FT' ? 1 : 0, '2026-09-28').lastInsertRowid);
-    const a = them('MB-FT 7771', 'FT', 'LT1'); const b = them('MB-BE 7772', 'BE', null);
-    const c1 = them('MB-FT 7773', 'FT', 'LT1'); const c2 = them('mb ft 7773x', 'FT', 'LT1');   // khác mẫu nhưng không va
-    const v1 = them('MB-FT 7774', 'FT', 'LT1'); const v2 = them('MB FT 7774', 'FT', 'LT1');    // va chạm khi so chuẩn hoá
-    const kh = mig.keHoachDoiTenLop(conn);
-    assert(kh.doi.some((x: any) => x.id === a && x.moi === 'MB FT 7771') && kh.doi.some((x: any) => x.id === b), JSON.stringify(kh.doi.slice(0, 3)));
-    assert([v1, v2].every((id) => kh.vaCham.some((x: any) => x.id === id)) && !kh.doi.some((x: any) => x.id === v1), 'va chạm phải bỏ qua');
+       VALUES (?,?, 'FT', 'FT', 'LT1', 1, 'active', ?)`).run(code, mb, '2026-09-28').lastInsertRowid);
+    const v1 = them('MB-FT 7774'); const v2 = them('MB FT 7774');    // va chạm khi so chuẩn hoá
     const applied: string[] = []; mig.migratePrLop(conn, applied);
-    const ma = (id: number) => (conn.prepare('SELECT code, so_tuan FROM classes WHERE id = ?').get(id) as any);
-    assert(ma(a).code === 'MB FT 7771' && ma(b).code === 'MB BE 7772' && ma(b).so_tuan === 10 && ma(v1).code === 'MB-FT 7774', JSON.stringify([ma(a), ma(b), ma(v1)]));
+    assert((conn.prepare('SELECT code FROM classes WHERE id = ?').get(v1) as any).code === 'MB-FT 7774', 'migrate không còn đổi tên lớp');
     assert(!!conn.prepare("SELECT 1 FROM routes WHERE code = 'RF'").get() && (conn.prepare(
       "SELECT weeks FROM programmes WHERE code = 'PREFOU'").get() as any)?.weeks === 5, 'RF / PREFOU');
     assert((conn.prepare("SELECT skill FROM programme_skills WHERE programme_code = 'PREFOU'").get() as any)?.skill === 'tong_hop', 'ô tong_hop');
+    assert(!conn.prepare("SELECT name FROM sqlite_master WHERE name = 'ux_classes_ma_chuan'").get(), 'va chạm mà vẫn tạo chỉ mục');
+    conn.prepare('DELETE FROM classes WHERE id IN (?, ?)').run(v1, v2);
     const lan2: string[] = []; mig.migratePrLop(conn, lan2);
-    assert(!lan2.some((x) => /Đổi tên|Thêm/.test(x)), `chạy lại vẫn đổi: ${lan2.join(' · ')}`);
-    conn.prepare(`DELETE FROM classes WHERE id IN (${[a, b, c1, c2, v1, v2].map(() => '?').join(',')})`).run(a, b, c1, c2, v1, v2);
-    const lan3: string[] = []; mig.migratePrLop(conn, lan3);
-    assert(!!conn.prepare("SELECT name FROM sqlite_master WHERE name = 'ux_classes_ma_chuan'").get(), `hết va chạm phải tạo chỉ mục: ${lan3.join(' · ')}`);
+    assert(!!conn.prepare("SELECT name FROM sqlite_master WHERE name = 'ux_classes_ma_chuan'").get(), `hết va chạm phải tạo chỉ mục: ${lan2.join(' · ')}`);
+    assert(!lan2.some((x) => /Thêm/.test(x)), `chạy lại vẫn thêm: ${lan2.join(' · ')}`);
   });
 
   const sch: any = await import('../classes/schedule.ts');

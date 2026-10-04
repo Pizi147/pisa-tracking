@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { NutChon } from '../../ui/ui.tsx';
 import { IconGap } from '../../ui/BieuTuong.tsx';
-import { MO_TA_QUYEN, NHOM_QUYEN, PERMISSION_LABEL, duocCapRieng, type PermissionKey } from '@shared/domain/index.ts';
+import { MO_TA_QUYEN, NHOM_QUYEN, PERMISSION_LABEL, duocCapRieng, lyDoCamCapRieng, type PermissionKey } from '@shared/domain/index.ts';
 
 /** Một dòng cấp riêng: một quyền ở một phạm vi (`null` = toàn hệ thống) — đúng mô hình `user_permissions`. */
 export type QuyenRieng = { permission: string; branchCode: string | null };
@@ -19,8 +19,10 @@ export const quyenThieuPhamVi = (chon: ReadonlySet<string>, ds: readonly QuyenRi
  * riêng được (`duocCapRieng`) thì ẩn. Quyền đã tick chọn phạm vi: "Toàn hệ thống" HOẶC một/nhiều chi nhánh (mỗi chi nhánh một dòng).
  * `chon` giữ cả quyền đã tick nhưng chưa chọn phạm vi, để người dùng thấy và sửa — không âm thầm bỏ.
  */
-export function CapQuyenRieng({ value, chon, onChange, branches, macDinh }: {
+export function CapQuyenRieng({ value, chon, onChange, branches, macDinh, vai }: {
   value: QuyenRieng[]; chon: ReadonlySet<string>;
+  /** Vai đang chọn trên form — khoá ô quyền mà MỌI vai đều cấm cấp riêng (`lyDoCamCapRieng`, cùng hàm máy chủ chặn). */
+  vai: readonly string[];
   onChange: (value: QuyenRieng[], chon: ReadonlySet<string>) => void;
   branches: { code: string; name: string }[];
   /** Phạm vi gợi sẵn khi vừa tick: chi nhánh theo vai của người này; không có thì để trống cho người cấp tự chọn. */
@@ -72,10 +74,12 @@ export function CapQuyenRieng({ value, chon, onChange, branches, macDinh }: {
                   const mt = MO_TA_QUYEN[k];
                   const daChon = chon.has(k);
                   const pv = phamVi(k);
+                  /* PR-SO: ô đã tick (dữ liệu cũ) vẫn bỏ tick được — chỉ khoá việc tick MỚI. */
+                  const cam = daChon ? null : lyDoCamCapRieng(vai, k);
                   return (
                     <li key={k} className="border-t pt-2" style={{ borderColor: 'var(--line)' }}>
-                      <label className="flex items-start gap-2 cursor-pointer">
-                        <input type="checkbox" className="mt-1" checked={daChon} onChange={() => tick(k)} />
+                      <label className={`flex items-start gap-2 ${cam ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`} title={cam ?? undefined}>
+                        <input type="checkbox" className="mt-1" checked={daChon} disabled={!!cam} onChange={() => tick(k)} />
                         <span className="min-w-0">
                           <span className="block text-sm text-slate-100">{PERMISSION_LABEL[k] ?? k}</span>
                           <span className="block text-xs text-slate-400">{mt.moTa}</span>

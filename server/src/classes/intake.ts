@@ -530,6 +530,7 @@ export function commitIntake(
     writeAudit({ actorUserId: p.userId, action: 'student.bulk_add', entityType: 'student',
       entityLabel: `${out.added} học viên`, after: { added: out.added, skipped: out.skipped } });
     if (key) {
+      donKhoaGuiCu(conn, nowIso());
       conn.prepare('INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES (?,?,?)')
         .run(key, JSON.stringify(out), nowIso());
     }
@@ -720,9 +721,21 @@ export function taoLopHangLoat(p: Principal, input: { rows: unknown; idempotency
       writeAudit({ actorUserId: p.userId, action: 'class.bulk_create', entityType: 'class', entityLabel: `${lop.length} lớp`,
         after: { codes: lop.map((l) => l.code) } });
     }
-    if (key) conn.prepare('INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run(key, JSON.stringify(out), nowIso());
+    if (key) {
+      donKhoaGuiCu(conn, nowIso());
+      conn.prepare('INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run(key, JSON.stringify(out), nowIso());
+    }
     return out;
   });
+}
+
+/**
+ * PR-SO (04/10): khoá chống gửi trùng của Thêm HV (`intake:*`) và Tạo lớp hàng loạt (`bulkclass:*`) chỉ cần sống qua lần bấm lại — dọn
+ * khoá cũ hơn 7 ngày ngay trước khi ghi khoá mới, để `demo_config` không phình mãi. Khoá cấu hình khác không đụng.
+ */
+export function donKhoaGuiCu(conn: any, now: string): void {
+  const moc = new Date(Date.parse(now) - 7 * 864e5).toISOString();
+  conn.prepare(`DELETE FROM demo_config WHERE (key LIKE 'bulkclass:%' OR key LIKE 'intake:%') AND updated_at < ?`).run(moc);
 }
 
 /**
