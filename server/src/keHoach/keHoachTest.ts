@@ -75,14 +75,15 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
 
   /* Lớp FT: HV đang học + lượt Mock của họ — hai câu cho MỌI lớp, gom trong JS (Q12). */
   const hvCuaLop = new Map<number, number[]>();
-  const luotCuaLop = new Map<number, Array<{ hv: number; no: number; status: string }>>();
+  const luotCuaLop = new Map<number, Array<{ hv: number; no: number; status: string; coTuan: boolean }>>();
   const chuaCoLichTiep = new Map<number, number>();
   if (ftClassIds.length) {
     for (const r of conn
       .prepare(
         `SELECT e.class_id AS class_id, s.id AS student_id,
                 CASE WHEN cy.id IS NOT NULL AND NOT EXISTS (
-                  SELECT 1 FROM assessment_attempts a WHERE a.cycle_id = cy.id AND a.status = 'planned') THEN 1 ELSE 0 END AS chua_co_lich
+                  SELECT 1 FROM assessment_attempts a WHERE a.cycle_id = cy.id AND a.status = 'planned'
+                    AND a.planned_period_id IS NOT NULL) THEN 1 ELSE 0 END AS chua_co_lich   -- PR-LM: lượt đã huỷ lịch (tuần NULL) không phải "có lịch"
            FROM students s
            JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
            LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
@@ -95,7 +96,7 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
     }
     for (const r of conn
       .prepare(
-        `SELECT a.class_id, a.student_id, a.attempt_no, a.status
+        `SELECT a.class_id, a.student_id, a.attempt_no, a.status, a.planned_period_id
            FROM assessment_attempts a
            JOIN learning_cycles cy ON cy.id = a.cycle_id AND cy.status = 'active'
            JOIN enrollments e ON e.student_id = a.student_id AND e.class_id = a.class_id AND e.status = 'active'
@@ -104,7 +105,7 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
       )
       .all(...ftClassIds) as any[]) {
       if (!luotCuaLop.has(r.class_id)) luotCuaLop.set(r.class_id, []);
-      luotCuaLop.get(r.class_id)!.push({ hv: r.student_id, no: r.attempt_no, status: r.status });
+      luotCuaLop.get(r.class_id)!.push({ hv: r.student_id, no: r.attempt_no, status: r.status, coTuan: r.planned_period_id != null });
     }
   }
   /* K4-11, Q7 (PR-XLMT): em cần Quản lý xếp lại — kỹ năng vắng CHƯA có đề nghị chờ + phần thi đã huỷ, lượt còn chạy, không lịch sử. */
@@ -124,10 +125,11 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
   const tomTatFT = (classId: number): string => {
     const luot = luotCuaLop.get(classId) ?? [];
     const hv = hvCuaLop.get(classId) ?? [];
-    const dangThi = luot.filter((l) => l.status === 'planned').map((l) => l.no);
+    /* PR-LM: lượt `planned` đã huỷ lịch (chưa có tuần) không "đang thi" — em đó tính vào "chưa xếp". */
+    const dangThi = luot.filter((l) => l.status === 'planned' && l.coTuan).map((l) => l.no);
     const a = dangThi.length ? Math.min(...dangThi) : null;
     const b = a !== null ? a + 1 : (luot.length ? Math.max(...luot.map((l) => l.no)) : 0) + 1;
-    const coB = new Set(luot.filter((l) => l.no === b).map((l) => l.hv));
+    const coB = new Set(luot.filter((l) => l.no === b && (l.status !== 'planned' || l.coTuan)).map((l) => l.hv));
     const soEm = hv.filter((id) => !coB.has(id)).length;
     return tomTatLopFT({ dangThi: a, chuaXep: { dot: b, soEm }, canXepLai: canXepLai.get(classId) ?? 0 });
   };

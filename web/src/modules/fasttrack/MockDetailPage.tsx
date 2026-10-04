@@ -12,6 +12,7 @@ import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
 import { Menu, type MenuItem } from '../../ui/Menu.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { useLoiForm } from '../../ui/loiForm.tsx';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
 import { HopThaoTacMt } from './HopThaoTacMt.tsx';
 import { DongThoiGianLuot } from './DongThoiGianLuot.tsx';
@@ -26,7 +27,7 @@ import {
 } from '../../lib/format.ts';
 import {
   ATTEMPT_KIND_SHORT, CHU_THAO_TAC, LY_DO_TOI_THIEU, cauSeHuyLich, kiemTruong, mondayOfDate, nhanLuot, thaoTacKyNang, trangThaiTT, tuanLich,
-  type AttemptKind, type TheYeuCauDto, type ThaoTac,
+  type AttemptKind, type LoiTruong, type TheYeuCauDto, type ThaoTac,
   docKnMock,
 } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -613,13 +614,14 @@ function WeekModal({ onClose, attemptId, currentPeriodId, batBuocLyDo, lichSu, k
   const [periodId, setPeriodId] = useState<number | null>(currentPeriodId);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
-  const [daBam, setDaBam] = useState(false);
+  const lf = useLoiForm();
   const [kiem, setKiem] = useState<{ chan: string[]; canhBao: string[]; seHuyLich: LuotSeHuyLich[] } | null>(null);
   const [xacNhan, setXacNhan] = useState<LuotSeHuyLich[] | null>(null);
   const [loiMay, setLoiMay] = useState<string | null>(null);
   const ten = `${CHU_THAO_TAC['doi-lich']} cả đợt`;
   const canLyDo = batBuocLyDo || lichSu;
   const loiLyDo = canLyDo ? kiemTruong({ khoa: 'ly-do', nhan: 'Lý do', toiThieu: LY_DO_TOI_THIEU }, reason) : null;
+  const loi: LoiTruong[] = loiLyDo ? [{ khoa: 'ly-do', nhan: 'Lý do', lyDo: loiLyDo }] : [];
   const doiTuan = !!periodId && periodId !== currentPeriodId;
 
   /* Đổi tuần → kiểm trước như hộp xếp lịch: cảnh báo một tuần (vàng), chặn (đỏ), lượt sau sẽ bị huỷ lịch (đỏ). */
@@ -638,8 +640,8 @@ function WeekModal({ onClose, attemptId, currentPeriodId, batBuocLyDo, lichSu, k
   }, [periodId]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   const luu = async (daXacNhan = false) => {
-    setDaBam(true);
-    if (loiLyDo || busy) return;
+    lf.bam();
+    if (loi.length || busy) return;
     if (kiem?.seHuyLich.length && !daXacNhan) { setXacNhan(kiem.seHuyLich); return; }
     setBusy(true); setLoiMay(null);
     try {
@@ -665,6 +667,7 @@ function WeekModal({ onClose, attemptId, currentPeriodId, batBuocLyDo, lichSu, k
     <KhungPanel tieuDe={ten} hocVien={hocVien} lop={lop} onDong={onClose}
       chan={{
         huy: { nhan: daSua ? 'Huỷ thay đổi' : 'Đóng', onClick: onClose, disabled: busy },
+        conThieu: lf.conThieu(loi),
         dongTren: loiMay ? <p className="m-0 px-4 pt-2 text-xs font-semibold text-bad" role="alert">{loiMay}</p> : undefined,
         chinh: <button className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !doiTuan || !!kiem?.chan.length} onClick={() => void luu()}>{nut}</button>,
       }}>
@@ -676,9 +679,9 @@ function WeekModal({ onClose, attemptId, currentPeriodId, batBuocLyDo, lichSu, k
         {!kiem?.chan.length && !!kiem?.seHuyLich.length && (
           <p className="m-0 text-xs font-semibold leading-relaxed text-bad" role="alert">{cauSeHuyLich(kiem.seHuyLich, homNay)}</p>
         )}
-        <Truong nhan="Lý do" batBuoc={canLyDo} tuyChon={!canLyDo} loi={daBam ? loiLyDo : null}
+        <Truong nhan="Lý do" batBuoc={canLyDo} tuyChon={!canLyDo} loi={lf.loiCua(loi, 'ly-do')}
           dem={canLyDo ? { co: reason.trim().length, can: LY_DO_TOI_THIEU } : undefined}>
-          <input className="field" value={reason} onChange={(e) => setReason(e.target.value)}
+          <input className="field" {...lf.o(loi, 'ly-do')} value={reason} onChange={(e) => setReason(e.target.value)}
             placeholder={lichSu ? 'Ví dụ: nhập nhầm tuần thi' : 'Ví dụ: trùng lịch phòng thi'} />
         </Truong>
         <SectionNote>
@@ -700,14 +703,15 @@ function DeadlineModal({ onClose, detail, onDone }: {
   const [date, setDate] = useState(detail.deadlineOverride?.date ?? '');
   const [reason, setReason] = useState(detail.deadlineOverride?.reason ?? '');
   const [busy, setBusy] = useState(false);
-  const [daBam, setDaBam] = useState(false);
+  const lf = useLoiForm();
   const [loiMay, setLoiMay] = useState<string | null>(null);
   const ten = `${CHU_THAO_TAC['doi-han']} cả đợt`;
   const loiLyDo = kiemTruong({ khoa: 'ly-do', nhan: 'Lý do', toiThieu: LY_DO_TOI_THIEU }, reason);
+  const loi: LoiTruong[] = loiLyDo ? [{ khoa: 'ly-do', nhan: 'Lý do', lyDo: loiLyDo }] : [];
   const daSua = date !== (detail.deadlineOverride?.date ?? '') || reason !== (detail.deadlineOverride?.reason ?? '');
 
   const submit = async (value: string | null) => {
-    if (value) { setDaBam(true); if (loiLyDo) return; }
+    if (value) { lf.bam(); if (loi.length) return; }
     setBusy(true); setLoiMay(null);
     try {
       await api.post(`/attempts/${detail.id}/deadline`, { deadline: value, reason });
@@ -721,6 +725,7 @@ function DeadlineModal({ onClose, detail, onDone }: {
     <KhungPanel tieuDe={ten} hocVien={detail.student.name} lop={detail.classCode} onDong={onClose}
       chan={{
         huy: { nhan: daSua ? 'Huỷ thay đổi' : 'Đóng', onClick: onClose, disabled: busy },
+        conThieu: lf.conThieu(loi),
         dongTren: loiMay ? <p className="m-0 px-4 pt-2 text-xs font-semibold text-bad" role="alert">{loiMay}</p> : undefined,
         phu: detail.deadlineOverride && (
           <button className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => submit(null)}>Dùng lại hạn mặc định</button>
@@ -736,8 +741,8 @@ function DeadlineModal({ onClose, detail, onDone }: {
           <span className="label">Hạn chấm mới</span>
           <ONgay kieu="ngay" value={date} onChange={setDate} />
         </label>
-        <Truong nhan="Lý do" batBuoc loi={daBam ? loiLyDo : null} dem={{ co: reason.trim().length, can: LY_DO_TOI_THIEU }}>
-          <input className="field" value={reason ?? ''} onChange={(e) => setReason(e.target.value)}
+        <Truong nhan="Lý do" batBuoc loi={lf.loiCua(loi, 'ly-do')} dem={{ co: reason.trim().length, can: LY_DO_TOI_THIEU }}>
+          <input className="field" {...lf.o(loi, 'ly-do')} value={reason ?? ''} onChange={(e) => setReason(e.target.value)}
             placeholder="Ví dụ: giáo viên Writing nghỉ phép" />
         </Truong>
         <SectionNote>

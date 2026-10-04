@@ -114,7 +114,8 @@ export function danhSachHocVienLop(
             /* K2-05: FT đếm theo luật mốc kế tiếp (lichMt.ts) — MT lịch sử / tuần đã qua không phải "mốc tiếp theo". */
             (SELECT COUNT(*) FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id
               WHERE a.cycle_id = cy.id AND ${MOC_KE_TIEP_SQL('a', 'rp')}) AS so_moc_ke_tiep,
-            (SELECT COALESCE(MAX(a.attempt_no), 0) FROM assessment_attempts a WHERE a.cycle_id = cy.id AND a.status != 'cancelled') AS mt_cuoi
+            (SELECT COALESCE(MAX(a.attempt_no), 0) FROM assessment_attempts a WHERE a.cycle_id = cy.id AND a.status != 'cancelled'
+              AND (a.status != 'planned' OR a.planned_period_id IS NOT NULL)) AS mt_cuoi   /* PR-LM: lượt đã huỷ lịch không phải "đã tới MT" */
        FROM enrollments e
        JOIN students s ON s.id = e.student_id
        LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'

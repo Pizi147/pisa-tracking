@@ -155,7 +155,7 @@ function HopHuyLich({ attemptId, nhan, tuan, onDong, onDoi }: {
     <ConfirmDialog open danger busy={busy} title={`Huỷ lịch ${nhan}?`} confirmLabel="Huỷ lịch" onClose={onDong} onConfirm={() => void lam()}
       body={(
         <div className="space-y-3">
-          <p className="m-0">{nhan}{tuan ? ` (đang ở ${tuan})` : ''} bỏ tuần thi, giữ lượt và số MT — các kỹ năng chưa thi về <b>Chưa xếp lịch</b>. Không đóng Case, không xoá điểm.</p>
+          <p className="m-0">{nhan}{tuan ? ` (đang ở ${tuan})` : ''} bỏ tuần thi, giữ lượt và số MT — các kỹ năng chưa thi về <b>Chưa xếp lịch</b>. Không đóng Case; điểm đã có giữ nguyên.</p>
           <Truong nhan="Lý do" batBuoc loi={daBam ? loi : null} dem={{ co: lyDo.trim().length, can: LY_DO_TOI_THIEU }}>
             <input className="field" value={lyDo} onChange={(e) => setLyDo(e.target.value)} placeholder="Ví dụ: em xin lùi lịch thi sang tháng sau" />
           </Truong>

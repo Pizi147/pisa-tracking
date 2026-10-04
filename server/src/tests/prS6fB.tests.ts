@@ -356,7 +356,7 @@ async function runTask8(t: YThucTestKit, d: any) {
   });
 
   check('S6F-b (8) · hồ sơ HV không tự ghép `/mock-test/${…}` (StudentPlanPanel, IntakePanel → duongDotTest + Link); dải chờ duyệt có "+ Thêm PA"; hàng PA không lặp "chưa có lịch"', () => {
-    for (const f of ['web/src/modules/students/StudentPlanPanel.tsx', 'web/src/modules/students/IntakePanel.tsx']) {
+    for (const f of ['web/src/modules/students/HangLichMt.tsx', 'web/src/modules/students/IntakePanel.tsx']) {   // PR-LM: link hồ sơ MT chuyển từ StudentPlanPanel sang HangLichMt
       const s = doc(f);
       assert(!s.includes('`/mock-test/${') && /duongDotTest\(/.test(s), `${f}: còn tự ghép /mock-test/`);
     }
