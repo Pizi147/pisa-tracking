@@ -89,8 +89,8 @@
 
 ### Task SO-5: Hoàn tất
 - [x] `/ponytail-review` · `/security-review` trên diff (chạm quyền) · `CODE_MAP.md` · một dòng `plan.md` mục 11.
-- [x] `superpowers:requesting-code-review` → `superpowers:finishing-a-development-branch` (mở PR, không merge). Mô tả PR: từng ID (D2, D3, D4, D5, plan.week, bulkclass, tín hiệu, DEP-gỡ) tái hiện/bác bỏ, file, phép kiểm.
-- [x] Thứ tự merge đợt 2: sau PHH (merge `origin/main` vào nhánh, giữ `migratePrPhh`, chạy lại check), trước DH.
+- [ ] `superpowers:requesting-code-review` → `superpowers:finishing-a-development-branch` (mở PR, không merge). Mô tả PR: từng ID (D2, D3, D4, D5, plan.week, bulkclass, tín hiệu, DEP-gỡ) tái hiện/bác bỏ, file, phép kiểm.
+- [ ] Thứ tự merge đợt 2: sau PHH (merge `origin/main` vào nhánh, giữ `migratePrPhh`, chạy lại check), trước DH.
 
 ## Đã kiểm 04/10 — KHÔNG làm (bác bỏ, ghi vào mô tả PR)
 - An toàn 12.15/12.16: giới hạn thử `/auth/login` và `/auth/register` (`platform/gioiHanThu.ts`, `routes/index.ts:2046`), lỗi 409/500 không lộ SQL (`app.ts:140-157`), `/api/health` rẻ + không lộ (`platform/suKhoe.ts`) — đã làm ở PR-AN.

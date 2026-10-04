@@ -116,7 +116,6 @@ export async function runPrSoTests(t: YThucTestKit) {
   // ------------------------------------------------------------------ SO-3 · D4 xoá completeIntervention, tín hiệu, dọn khoá gửi
   console.log('\nPR-SO · (3) D4 xoá completeIntervention · tín hiệu em đã kết thúc · dọn khoá gửi cũ');
   const signals: any = await import('../cases/signals.ts');
-  const sosAuto: any = await import('../cases/sosAuto.ts');
   check('SO-3a (D4) · cases.ts không còn completeIntervention; khép PA quy chế trước mốc qua updateResult vẫn bị chặn, PA còn chạy', () => {
     assert(!('completeIntervention' in cases), 'completeIntervention còn export');
     const sid = emMoi('MB FT 101');
@@ -130,7 +129,6 @@ export async function runPrSoTests(t: YThucTestKit) {
     try { cases.updateResult(P.admin, iv, { decision: 'end', outcome: 'improved', note: 'Em nghe tốt hơn hẳn sau hai tuần' }); } catch (e) { loi = e; }
     assert(loi?.status === 400 && /không kết thúc sớm/.test(loi.message), `updateResult end: ${loi?.status} ${loi?.message}`);
     assert(get('SELECT status FROM case_interventions WHERE id = ?', iv).status === 'started', 'PA bị khép');
-    void sosAuto;
   });
 
   check('SO-3b · em đã kết thúc học, tín hiệu đã thu hồi; raiseSignal lại cùng khoá (sửa điểm xuống dưới kỳ vọng) → vẫn withdrawn, case_id giữ', () => {
