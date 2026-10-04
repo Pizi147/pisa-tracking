@@ -1,10 +1,10 @@
 import { db } from '../db.ts';
 import { dongHocVien } from '../students/tamDung.ts';
 import {
-  HUONG_TIEP, NORMAL_LADDER, PERMISSIONS, nhanHuong, nhanTiepTheo, soSanhLop, trongHaiTuanCuoi,
+  NORMAL_LADDER, PERMISSIONS, chuanHoaHuong, nhanHuong, nhanTiepTheo, soSanhLop, trongHaiTuanCuoi,
   type Huong, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
-import { badRequest, notFound, nowIso } from '../util.ts';
+import { badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
@@ -21,6 +21,8 @@ import { cuoiKhoaTheoHocVien } from '../normal/cuoiKhoa.ts';
 type LopDuKien = { id: number; code: string; ma: ProgrammeCode | null; ft: boolean };
 type BanGhiLoTrinh = {
   huong: Huong; lopDuKienId: number | null; mucTieu: number | null; thangThi: string | null; ghiChu: string | null;
+  /** PR-K26: hẹn xem lại của "Chưa quyết" — tuỳ chọn ở bước này, bắt buộc ở Chuyển tiếp lớp. */
+  ngayXemLai: string | null;
 };
 
 function enrollmentDangHoc(studentId: number): any {
@@ -37,7 +39,7 @@ function banGhiRowToView(row: any): BanGhiLoTrinh | null {
   if (!row) return null;
   return {
     huong: row.huong as Huong, lopDuKienId: row.lop_du_kien_id ?? null,
-    mucTieu: row.muc_tieu ?? null, thangThi: row.thang_thi ?? null, ghiChu: row.ghi_chu ?? null,
+    mucTieu: row.muc_tieu ?? null, thangThi: row.thang_thi ?? null, ghiChu: row.ghi_chu ?? null, ngayXemLai: row.ngay_xem_lai ?? null,
   };
 }
 
@@ -84,7 +86,7 @@ export function layLoTrinhTiep(p: Principal, studentId: number) {
 
 /** PUT /students/:id/lo-trinh-tiep (STUDENT_EDIT ở lớp đang học). */
 export function ghiLoTrinhTiep(p: Principal, studentId: number, input: {
-  huong: string; lopDuKienId?: number | null; mucTieu?: number | null; thangThi?: string | null; ghiChu?: string | null;
+  huong: string; lopDuKienId?: number | null; mucTieu?: number | null; thangThi?: string | null; ghiChu?: string | null; ngayXemLai?: string | null;
 }) {
   const conn = db();
   const s = conn.prepare('SELECT id FROM students WHERE id = ?').get(studentId) as any;
@@ -93,7 +95,11 @@ export function ghiLoTrinhTiep(p: Principal, studentId: number, input: {
   if (!enr) throw badRequest('Học viên không đang học lớp nào.');
   require_(p, PERMISSIONS.STUDENT_EDIT, { classId: enr.class_id }, 'Bạn không có quyền ghi lộ trình tiếp theo cho học viên này.');
   if (enr.is_fast_track) throw badRequest('Lộ trình tiếp theo chỉ áp dụng cho lớp thường.');
-  if (!(HUONG_TIEP as readonly string[]).includes(input.huong)) throw badRequest('Hướng không hợp lệ.');
+  /* PR-K26: form cũ đang mở còn gửi `chua_ro`/`xep_sau` → `chua_quyet`, không báo lỗi. */
+  const huong = chuanHoaHuong(String(input.huong ?? ''));
+  if (!huong) throw badRequest('Hướng không hợp lệ.');
+  const ngayXemLai = huong === 'chua_quyet' ? (input.ngayXemLai || null) : null;
+  if (ngayXemLai && !isIsoDate(ngayXemLai)) throw badRequest('Ngày xem lại không hợp lệ.');
   const mucTieu = input.mucTieu ?? null;
   if (mucTieu !== null && (mucTieu < 0 || mucTieu > 9)) throw badRequest('Target phải từ 0 đến 9.');
 
@@ -102,13 +108,13 @@ export function ghiLoTrinhTiep(p: Principal, studentId: number, input: {
     const lop = conn.prepare('SELECT id, programme_code, is_fast_track, branch_id FROM classes WHERE id = ?').get(lopDuKienId) as any;
     if (!lop || lop.branch_id !== enr.branch_id) throw badRequest('Không tìm thấy lớp dự kiến.');
     const maKe = NORMAL_LADDER[(enr.programme_code ?? null) as ProgrammeCode] ?? null;
-    if (input.huong === 'len_lop' && (lop.is_fast_track || lop.programme_code !== maKe)) {
+    if (huong === 'len_lop' && (lop.is_fast_track || lop.programme_code !== maKe)) {
       throw badRequest('Lớp dự kiến phải là chương trình kế tiếp.');
     }
-    if (input.huong === 'hoc_lai' && (lop.is_fast_track || lop.programme_code !== enr.programme_code)) {
+    if (huong === 'hoc_lai' && (lop.is_fast_track || lop.programme_code !== enr.programme_code)) {
       throw badRequest('Lớp dự kiến phải cùng chương trình để học lại.');
     }
-    if (input.huong === 'fast_track' && !lop.is_fast_track) throw badRequest('Lớp dự kiến phải là Fast Track.');
+    if (huong === 'fast_track' && !lop.is_fast_track) throw badRequest('Lớp dự kiến phải là Fast Track.');
   } else {
     lopDuKienId = null;
   }
@@ -117,26 +123,26 @@ export function ghiLoTrinhTiep(p: Principal, studentId: number, input: {
   conn
     .prepare(
       `INSERT INTO lo_trinh_tiep_theo
-         (student_id, class_id, huong, lop_du_kien_id, muc_tieu, thang_thi, ghi_chu, updated_by, created_at, updated_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?)
+         (student_id, class_id, huong, lop_du_kien_id, muc_tieu, thang_thi, ghi_chu, ngay_xem_lai, updated_by, created_at, updated_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?)
        ON CONFLICT(student_id, class_id) DO UPDATE SET
          huong = excluded.huong, lop_du_kien_id = excluded.lop_du_kien_id, muc_tieu = excluded.muc_tieu,
-         thang_thi = excluded.thang_thi, ghi_chu = excluded.ghi_chu, da_ap_dung_luc = NULL,
+         thang_thi = excluded.thang_thi, ghi_chu = excluded.ghi_chu, ngay_xem_lai = excluded.ngay_xem_lai, da_ap_dung_luc = NULL,
          updated_by = excluded.updated_by, updated_at = excluded.updated_at`,
     )
-    .run(studentId, enr.class_id, input.huong, lopDuKienId, mucTieu, input.thangThi ?? null, input.ghiChu ?? null,
+    .run(studentId, enr.class_id, huong, lopDuKienId, mucTieu, input.thangThi ?? null, input.ghiChu ?? null, ngayXemLai,
       p.userId, now, now);
 
   const ma = (enr.programme_code ?? null) as ProgrammeCode | null;
   const maKe = NORMAL_LADDER[ma as ProgrammeCode] ?? null;
   addJourney({
     studentId, eventType: 'next_step', eventDate: demoToday(),
-    title: `Ghi lộ trình tiếp theo: ${nhanHuong(input.huong as Huong, { ma, maKe })}`,
+    title: `Ghi lộ trình tiếp theo: ${nhanHuong(huong, { ma, maKe })}`,
     createdBy: p.userId,
   });
   writeAudit({
     actorUserId: p.userId, action: 'student.next_step', entityType: 'student', entityId: studentId,
-    after: { huong: input.huong, lopDuKienId, mucTieu, thangThi: input.thangThi ?? null },
+    after: { huong, lopDuKienId, mucTieu, thangThi: input.thangThi ?? null, ngayXemLai },
   });
 
   return layLoTrinhTiep(p, studentId);
@@ -188,11 +194,12 @@ export function lopHocCua(p: Principal, studentId: number, current: any): {
     laLopThuong = !cls?.is_fast_track;
     if (laLopThuong) {
       const banGhi = conn
-        .prepare('SELECT huong FROM lo_trinh_tiep_theo WHERE student_id = ? AND class_id = ?')
+        .prepare('SELECT huong, ngay_xem_lai FROM lo_trinh_tiep_theo WHERE student_id = ? AND class_id = ?')
         .get(studentId, current.class_id) as any;
       tiepTheo = nhanTiepTheo(banGhi ? { huong: banGhi.huong as Huong } : null, (cls?.programme_code ?? null) as ProgrammeCode | null);
       const pr = classProgress(current.class_id);
-      nhacLoTrinh = trongHaiTuanCuoi(pr.currentWeek, pr.totalWeeks, pr.phase) && (!banGhi || banGhi.huong === 'chua_ro');
+      /* PR-K26: "Chưa quyết" KHÔNG hẹn ngày vẫn được nhắc (như `chua_ro` cũ); có hẹn ngày thì không (như `xep_sau` cũ). */
+      nhacLoTrinh = trongHaiTuanCuoi(pr.currentWeek, pr.totalWeeks, pr.phase) && (!banGhi || (banGhi.huong === 'chua_quyet' && !banGhi.ngay_xem_lai));
     }
   }
 

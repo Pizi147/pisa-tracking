@@ -7,19 +7,40 @@ import type { ProgrammeCode } from './normal.ts';
 
 // ---------------------------------------------------------------- hướng (Q1, Q4, Q9)
 
-export type Huong = 'len_lop' | 'fast_track' | 'hoc_lai' | 'bao_luu' | 'dung_hoc' | 'chua_ro' | 'xep_sau';
+/** PR-K26: `chua_quyet` thay hai hướng trùng nghĩa cũ `chua_ro` (bước 1) và `xep_sau` (bước 2) — migrate `prK26` đổi dữ liệu. */
+export type Huong = 'len_lop' | 'fast_track' | 'hoc_lai' | 'bao_luu' | 'dung_hoc' | 'chua_quyet';
 
-/** Bước 1 — Lộ trình tiếp theo (ghi cho từng em, chưa đổi lớp). */
-export const HUONG_TIEP: readonly Huong[] = ['len_lop', 'fast_track', 'hoc_lai', 'bao_luu', 'dung_hoc', 'chua_ro'];
-/** Bước 2 — Chuyển tiếp lớp (chốt thật): không có "Chưa rõ", thêm "Xếp sau". */
-export const HUONG_CHUYEN_TIEP: readonly Huong[] = ['len_lop', 'fast_track', 'hoc_lai', 'bao_luu', 'dung_hoc', 'xep_sau'];
+/** Bước 1 — Lộ trình tiếp theo (ghi cho từng em, chưa đổi lớp). Ngày xem lại của "Chưa quyết" tuỳ chọn. */
+export const HUONG_TIEP: readonly Huong[] = ['len_lop', 'fast_track', 'hoc_lai', 'bao_luu', 'dung_hoc', 'chua_quyet'];
+/** Bước 2 — Chuyển tiếp lớp (chốt thật): "Chưa quyết" bắt buộc lý do + ngày xem lại. */
+export const HUONG_CHUYEN_TIEP: readonly Huong[] = HUONG_TIEP;
+
+/** Form cũ đang mở còn gửi `chua_ro`/`xep_sau` → `chua_quyet`; giá trị hợp lệ giữ; còn lại null. */
+export function chuanHoaHuong(x: string): Huong | null {
+  if (x === 'chua_ro' || x === 'xep_sau') return 'chua_quyet';
+  return (HUONG_TIEP as readonly string[]).includes(x) ? x as Huong : null;
+}
+
+/**
+ * PR-K26: thứ tự hiện hướng theo gợi ý Cuối khoá (gợi ý KHÔNG lưu — Rulebook §20.6). `len` → Lên lớp đứng đầu; `hoc_lai` → Học lại;
+ * 50–59% (`canQuanLy`) → cả hai. Không có gợi ý (chưa đủ điểm) → `dau` rỗng, danh sách như cũ. Hướng không có trong `cacHuong` (ELE không
+ * có `len_lop`) bị bỏ khỏi `dau`.
+ */
+export function xepHuongTheoGoiY(
+  cacHuong: readonly Huong[], goiY: { huong: 'hoc_lai' | 'len' | null; canQuanLy: boolean } | null | undefined,
+): { dau: Huong[]; khac: Huong[] } {
+  const muon: Huong[] = !goiY ? [] : goiY.canQuanLy ? ['len_lop', 'hoc_lai'] : goiY.huong === 'len' ? ['len_lop'] : goiY.huong === 'hoc_lai' ? ['hoc_lai'] : [];
+  const dau = muon.filter((h) => cacHuong.includes(h));
+  return { dau, khac: cacHuong.filter((h) => !dau.includes(h)) };
+}
 
 /** Lớp ELE không còn bậc Normal kế — bỏ "Lên lớp thường tiếp" khỏi lựa chọn. */
 export function huongTiepKhaDung(ma: ProgrammeCode | null, tap: readonly Huong[] = HUONG_TIEP): Huong[] {
   return tap.filter((h) => h !== 'len_lop' || !!NORMAL_LADDER[ma as ProgrammeCode]);
 }
 
-function nhan(h: Huong, ctx: { ma: ProgrammeCode | null; maKe: ProgrammeCode | null }, ngan: boolean): string {
+type NguCanhNhan = { ma: ProgrammeCode | null; maKe: ProgrammeCode | null; ngayXemLai?: string | null };
+function nhan(h: Huong, ctx: NguCanhNhan, ngan: boolean): string {
   const ma = ctx.ma ?? '—';
   const maKe = ctx.maKe ?? NORMAL_LADDER[ctx.ma as ProgrammeCode] ?? '—';
   switch (h) {
@@ -28,8 +49,7 @@ function nhan(h: Huong, ctx: { ma: ProgrammeCode | null; maKe: ProgrammeCode | n
     case 'hoc_lai': return `Học lại ${ma}`;
     case 'bao_luu': return 'Tạm dừng học (bảo lưu)';
     case 'dung_hoc': return 'Dừng học hẳn';
-    case 'chua_ro': return 'Chưa rõ';
-    case 'xep_sau': return 'Xếp sau';
+    case 'chua_quyet': return ngan && ctx.ngayXemLai ? `Chưa quyết · xem lại ${ctx.ngayXemLai.slice(8, 10)}/${ctx.ngayXemLai.slice(5, 7)}` : 'Chưa quyết';
   }
 }
 
@@ -37,14 +57,14 @@ function nhan(h: Huong, ctx: { ma: ProgrammeCode | null; maKe: ProgrammeCode | n
 export function nhanHuong(h: Huong, ctx: { ma: ProgrammeCode | null; maKe: ProgrammeCode | null }): string {
   return nhan(h, ctx, false);
 }
-/** Nhãn ngắn cho bảng (cột Khoá, cột Lộ trình tiếp theo): "Lên BE", "Lên FT", … */
-export function nhanHuongNgan(h: Huong, ctx: { ma: ProgrammeCode | null; maKe: ProgrammeCode | null }): string {
+/** Nhãn ngắn cho bảng: "Lên BE", "Lên FT", "Chưa quyết · xem lại 28/09" (có ngày xem lại), … */
+export function nhanHuongNgan(h: Huong, ctx: NguCanhNhan): string {
   return nhan(h, ctx, true);
 }
 
 /**
  * Chữ ngắn "tiếp theo: …" cho cột Khoá và dòng dưới tên Hồ sơ HV.
- * `chua_ro`/không có bản ghi → `null` (Q4 — không tắt nhắc, vẫn tính là chưa có lộ trình).
+ * `chua_quyet`/không có bản ghi → `null` (Q4 — không tắt nhắc, vẫn tính là chưa có lộ trình).
  */
 export function nhanTiepTheo(banGhi: { huong: Huong } | null | undefined, ma: ProgrammeCode | null): string | null {
   if (!banGhi) return null;
@@ -54,7 +74,7 @@ export function nhanTiepTheo(banGhi: { huong: Huong } | null | undefined, ma: Pr
     case 'hoc_lai': return ma ? `học lại ${ma}` : null;
     case 'bao_luu': return 'tạm dừng học (bảo lưu)';
     case 'dung_hoc': return 'dừng học hẳn';
-    default: return null; // chua_ro, xep_sau (xep_sau chỉ dùng ở bước 2, không hiện ở cột Khoá)
+    default: return null; // chua_quyet
   }
 }
 
@@ -140,7 +160,7 @@ export function kiemDongChuyenTiep(dong: DongChuyenTiep, ctx: { maTu: ProgrammeC
       return 'Target phải từ 0 đến 9, cách nhau 0.5';
     }
   }
-  if (dong.huong === 'bao_luu' || dong.huong === 'xep_sau') {
+  if (dong.huong === 'bao_luu' || dong.huong === 'chua_quyet') {
     if (!dong.lyDo) return 'Thiếu lý do';
     if (!dong.ngayXemLai) return 'Thiếu ngày xem lại';
   }
@@ -162,7 +182,7 @@ export type DongTomTat = {
 export function tomTatChuyenTiep(dongs: readonly DongTomTat[]): {
   theoLop: { ma: string; n: number }[];
   sangFt: number;
-  khongChuyen: { bao_luu: number; dung_hoc: number; xep_sau: number };
+  khongChuyen: { bao_luu: number; dung_hoc: number; chua_quyet: number };
   caseDiTheo: number;
   caseDong: number;
   baiChuaLam: number;
@@ -170,7 +190,7 @@ export function tomTatChuyenTiep(dongs: readonly DongTomTat[]): {
 } {
   const theoLopMap = new Map<string, number>();
   let sangFt = 0;
-  const khongChuyen = { bao_luu: 0, dung_hoc: 0, xep_sau: 0 };
+  const khongChuyen = { bao_luu: 0, dung_hoc: 0, chua_quyet: 0 };
   let caseDiTheo = 0;
   let caseDong = 0;
   let baiChuaLam = 0;
@@ -193,7 +213,7 @@ export function tomTatChuyenTiep(dongs: readonly DongTomTat[]): {
       const hien = cauFt.find((x) => x.ma === ma);
       if (hien) { hien.n += 1; hien.mucTieu = hien.mucTieu === d.mucTieu ? hien.mucTieu : null; }
       else cauFt.push({ ma, n: 1, mucTieu: d.mucTieu ?? null });
-    } else if (d.huong === 'bao_luu' || d.huong === 'dung_hoc' || d.huong === 'xep_sau') {
+    } else if (d.huong === 'bao_luu' || d.huong === 'dung_hoc' || d.huong === 'chua_quyet') {
       khongChuyen[d.huong] += 1;
     }
   }
@@ -207,7 +227,7 @@ export function tomTatChuyenTiep(dongs: readonly DongTomTat[]): {
   }
   if (khongChuyen.bao_luu) cau.push(`${khongChuyen.bao_luu} em tạm dừng học (bảo lưu)`);
   if (khongChuyen.dung_hoc) cau.push(`${khongChuyen.dung_hoc} em dừng học hẳn`);
-  if (khongChuyen.xep_sau) cau.push(`${khongChuyen.xep_sau} em xếp sau`);
+  if (khongChuyen.chua_quyet) cau.push(`${khongChuyen.chua_quyet} em chưa quyết`);
 
   return {
     theoLop: [...theoLopMap.entries()].map(([ma, n]) => ({ ma, n })),

@@ -9092,6 +9092,10 @@ await runPrSoTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, ad
 const { runPrDhTests } = await import('./prDh.tests.ts');
 await runPrDhTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
+// ==================================================================== PR-K26 (Lộ trình tiếp theo theo dải % Cuối khoá)
+const { runPrK26Tests } = await import('./prK26.tests.ts');
+await runPrK26Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

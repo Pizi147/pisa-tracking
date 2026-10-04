@@ -43,8 +43,7 @@ const NGHIA_HUONG: Record<Huong, string> = {
   hoc_lai: 'Học lại chương trình đang học',
   bao_luu: 'Tạm nghỉ, giữ chỗ để quay lại sau',
   dung_hoc: 'Em thôi học sau lớp này',
-  chua_ro: 'Chưa biết, hệ thống sẽ nhắc lại sau',
-  xep_sau: 'Sắp xếp sau, chưa có dự định',
+  chua_quyet: 'Chưa quyết định, hẹn ngày xem lại',
 };
 
 /**
