@@ -1424,12 +1424,12 @@ check('Roster chỉ nạp khi mở lớp, và giáo viên ngoài lớp bị từ
 // ==================================================================== 12
 
 console.log('\n12. Thêm học viên hàng loạt');
-check('Đọc được TSV dán từ bảng tính theo dòng tiêu đề; không có tiêu đề thì từ chối (YC-5.2, chốt 29/09)', () => {
+check('Đọc được TSV dán từ bảng tính theo dòng tiêu đề; không tiêu đề mà chưa chọn lớp thì từ chối (YC-5.2; PR-NT 04/10)', () => {
   const withHeader = intake.parsePaste('Họ tên\tLớp\tNgày sinh\nNguyễn Văn A\tMB FT 101\t12/05/2008');
   assert(withHeader.rows.length === 1, 'Không nhận ra dòng tiêu đề');
   assert(withHeader.rows[0].fullName === 'Nguyễn Văn A' && withHeader.rows[0].classCode === 'MB FT 101', 'Đọc sai cột');
-  assertThrows(() => intake.parsePaste('Trần Thị B\tMB FT 101\t01/02/2009'), /dòng tiêu đề/,
-    'Bảng dán không tiêu đề phải bị từ chối, không đọc theo thứ tự cột');
+  assertThrows(() => intake.parsePaste('Trần Thị B\tMB FT 101\t01/02/2009'), /Chọn lớp trước/,
+    'Bảng dán không tiêu đề mà chưa chọn lớp phải bị từ chối (không biết thứ tự cột)');
 });
 check('Ngày gõ dd/mm/yyyy (hoặc ISO), không đoán mm/dd, ngày không có thật thì báo lỗi (C10)', () => {
   const { docNgayNhap } = DOMAIN_NHAP;
@@ -1484,7 +1484,7 @@ check('[12.1] Lớp là quyết định của cả lô, cột "Lớp" trong file
     'Bỏ qua cột lớp mà không nói — người nhập tưởng em vào lớp ghi trong file');
 });
 
-check('[12.1] Lớp Normal không nhận target IELTS và band từng kỹ năng', () => {
+check('[12.1] Lớp Normal không nhận band từng kỹ năng; Target nhận (chủ sản phẩm 04/10, PR-NT)', () => {
   const normal = conn
     .prepare(`SELECT c.id FROM classes c JOIN programmes pg ON pg.code = c.programme_code
                WHERE pg.scoring_mode = 'ratio' LIMIT 1`)
@@ -1496,11 +1496,10 @@ check('[12.1] Lớp Normal không nhận target IELTS và band từng kỹ năng
   });
   assert(pv.ratio === true, 'Không nhận ra đây là lớp Normal');
   /* Q4: file trộn — cột FT dán vào lớp thường bị BỎ QUA có báo (lưu ý), không chặn dòng. */
-  assert(pv.rows[0].issues.some((i) => i.field === 'target' && /không có Target/.test(i.message) && i.muc === 'luu_y'),
-    'Lớp Normal vẫn nhận target IELTS');
+  assert(!pv.rows[0].issues.some((i) => i.field === 'target'), 'Lớp Normal nay nhận Target (04/10)');
   assert(pv.rows[0].issues.some((i) => i.field === 'entryListening' && i.muc === 'luu_y'),
     'Lớp Normal vẫn nhận band đầu vào từng kỹ năng');
-  assert(pv.rows[0].target === null && pv.rows[0].entryListening === null, 'Lớp thường vẫn giữ target/band bị bỏ qua');
+  assert(pv.rows[0].target === 6.5 && pv.rows[0].entryListening === null, 'Lớp thường: target nhận, band bị bỏ qua');
 });
 check('Nhập ngoài phạm vi quyền bị chặn ở server', () => {
   const pv = intake.previewIntake(P.mbManager, {
@@ -9073,6 +9072,10 @@ await runPrQuTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, ad
 // ==================================================================== PR-GVa (giao việc: khoá gửi, chi nhánh form, kỳ)
 const { runPrGvaTests } = await import('./prGva.tests.ts');
 await runPrGvaTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P });
+
+// ==================================================================== PR-NT (Target + Dự kiến thi lớp thường, dán không cần tiêu đề)
+const { runPrNtTests } = await import('./prNt.tests.ts');
+await runPrNtTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
