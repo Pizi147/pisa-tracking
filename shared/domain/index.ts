@@ -70,3 +70,4 @@ export * from './cuoiKhoa.ts';
 export * from './hoSoGiaoVien.ts';
 export * from './phanTichGv.ts';
 export * from './nhomQuyen.ts';
+export * from './baoCaoDonVi.ts';

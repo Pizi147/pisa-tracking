@@ -9074,6 +9074,10 @@ await runPrQuTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, ad
 const { runPrGvaTests } = await import('./prGva.tests.ts');
 await runPrGvaTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P });
 
+// ==================================================================== PR-BC (Báo cáo đơn vị + Quản trị › Tài khoản)
+const { runPrBcTests } = await import('./prBc.tests.ts');
+await runPrBcTests({ check, assert });
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
