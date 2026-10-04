@@ -107,7 +107,7 @@ Cỡ chữ có 4 mức (11 / 11,5 / 12 / 12,5 px) và 3 chiều cao dòng cho c�
   (9/22 trong demo) chuyển sang một nhóm hoặc tab riêng "Để QL biết". Chờ duyệt chỉ còn mục có nút Duyệt, và badge đếm
   Chờ duyệt chỉ đếm những mục đó. Tìm file nguồn: `web/src/modules/duyet/*`, `server/src/` (nguồn danh sách duyệt).
   Phép kiểm: số trên badge Chờ duyệt bằng số dòng có nút Duyệt.
-- [~] **J6. Cột "TARGET"** (chữ hoa, tiếng Anh) ở Học viên & Lớp đổi thành "Mục tiêu".
+- [x] **J6.** ĐÃ CHỐT (chủ sản phẩm, `THUAT_NGU_2026-10-01.md`): giữ **"Target"**, không đổi thành "Mục tiêu". Không làm.
 - [ ] **J7.** Bỏ chữ "Bạn" lặp ở mỗi dòng (31 việc) của Tổng quan GV.
 - [x] **J8.** Chữ bị cắt mất nghĩa: "Ghi kết q…" (Theo dõi ở trang lớp), "Cao Khánh Linh, Lê …", "L, R, W1, W…". Cho xuống dòng
   hoặc rút gọn có chủ đích kèm title.
