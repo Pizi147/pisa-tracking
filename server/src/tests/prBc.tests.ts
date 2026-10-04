@@ -83,6 +83,13 @@ export async function runPrBcTests(t: Pick<YThucTestKit, 'check' | 'assert'>) {
     assert(so['Toàn hệ thống'] === '4' && so['Chưa có vai trò'] === '5', JSON.stringify(so));
     const v = Object.fromEntries(d.nhomTaiKhoan(ds, 'vai', new Map(), (r: string) => `[${r}]`).map((x: any) => [x.nhan, x.rows.map((u: any) => u.id).join()]));
     assert(v['[teacher]'] === '1,2,3' && v['[manager]'] === '2' && v['[system_admin]'] === '4', JSON.stringify(v));
+    assert(g.map((x: any) => x.key).join() === 'MB,BC,CP,toan-he-thong,chua-vai', 'thứ tự nhóm theo danh sách chi nhánh: ' + g.map((x: any) => x.key).join());
+  });
+  check('PR-BC L3 · nhóm khi đang lọc vai: chỉ xét lần cấp vai khớp — người 2 (GV ở BC, QL ở MB) lọc "Giáo viên" chỉ ở nhóm BC', () => {
+    const loc = L({ vai: 'teacher' });
+    const g = d.nhomTaiKhoan(d.locTaiKhoan(ds, loc), 'chi-nhanh', new Map([['MB', 'Monbay'], ['BC', 'Bãi Cháy'], ['CP', 'Cẩm Phả']]), undefined, loc);
+    const so = Object.fromEntries(g.map((x: any) => [x.key, x.rows.map((u: any) => u.id).join()]));
+    assert(so.MB === '1,3' && so.BC === '2' && so.CP === '3' && Object.keys(so).length === 3, JSON.stringify(so));
   });
   check('PR-BC L3 · bộ lọc đọc/ghi URL khứ hồi; giá trị lạ → mặc định (không ném)', () => {
     const loc = L({ chiNhanh: 'MB', vai: 'teacher', kyNang: 'L', q: 'hà', phanLoai: 'chua-email' });

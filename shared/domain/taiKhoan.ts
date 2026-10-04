@@ -31,9 +31,13 @@ export function locTaiKhoan<T extends TaiKhoanLoc>(rows: T[], loc: BoLocTaiKhoan
   });
 }
 
-/** Nhóm theo chi nhánh/vai — người có vai ở 2 chi nhánh nằm ở CẢ 2 nhóm; không vai → "Chưa có vai trò". */
+/**
+ * Nhóm theo chi nhánh/vai — người có vai ở 2 chi nhánh nằm ở CẢ 2 nhóm; không vai → "Chưa có vai trò".
+ * `loc` (nếu có): chỉ xét lần cấp vai khớp bộ lọc vai/chi nhánh đang chọn — đang lọc "Giáo viên" thì vai QL ở BC không kéo người vào nhóm BC.
+ * Thứ tự nhóm: chi nhánh theo thứ tự `tenChiNhanh`, rồi "Toàn hệ thống", cuối cùng "Chưa có vai trò".
+ */
 export function nhomTaiKhoan<T extends TaiKhoanLoc>(rows: T[], theo: 'chi-nhanh' | 'vai', tenChiNhanh: Map<string, string>,
-  tenVai: (r: string) => string = (r) => r): { key: string; nhan: string; rows: T[] }[] {
+  tenVai: (r: string) => string = (r) => r, loc: BoLocTaiKhoan = BO_LOC_TAI_KHOAN_TRONG): { key: string; nhan: string; rows: T[] }[] {
   const nhom = new Map<string, { key: string; nhan: string; rows: T[] }>();
   const them = (key: string, nhan: string, u: T) => {
     const g = nhom.get(key) ?? nhom.set(key, { key, nhan, rows: [] }).get(key)!;
@@ -42,12 +46,15 @@ export function nhomTaiKhoan<T extends TaiKhoanLoc>(rows: T[], theo: 'chi-nhanh'
   for (const u of rows) {
     if (!u.roles.length) { them('chua-vai', 'Chưa có vai trò', u); continue; }
     for (const g of u.roles) {
+      if (!((loc.vai === 'tat-ca' || g.role === loc.vai) && cnKhop(loc.chiNhanh, g))) continue;
       if (theo === 'vai') them(g.role, tenVai(g.role), u);
       else if (g.branchCode === null) them('toan-he-thong', 'Toàn hệ thống', u);
       else them(g.branchCode, tenChiNhanh.get(g.branchCode) ?? g.branchCode, u);
     }
   }
-  return [...nhom.values()];
+  const thuTu = theo === 'vai' ? [...ROLES] as string[] : [...tenChiNhanh.keys(), 'toan-he-thong'];
+  const hang = (k: string) => (k === 'chua-vai' ? Infinity : thuTu.indexOf(k) === -1 ? thuTu.length : thuTu.indexOf(k));
+  return [...nhom.values()].sort((x, y) => hang(x.key) - hang(y.key));
 }
 
 export function phanLoaiTaiKhoan(rows: TaiKhoanLoc[]): Record<(typeof PHAN_LOAI_TAI_KHOAN)[number], number> {
