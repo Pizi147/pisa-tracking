@@ -21,7 +21,7 @@ import {
 import { quaHanNhapDiem, weekInfo } from '../platform/week.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import {
-  completionWeekOf, ensureSkillRows, loadSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf,
+  canXacNhanHuyLich, completionWeekOf, ensureSkillRows, kiemVuot, tuanCuoiSauKhiDoi, loadSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf,
   setSkillScope, setSkillWeek, skillScheduleOf, skippedSkillsOf, viewSkill,
   type SkillRow, type SkillScheduleView,
 } from './skillSchedule.ts';
@@ -1117,7 +1117,8 @@ function loadAttempt(attemptId: number) {
  * Nhờ đi qua đúng một hàm nghiệp vụ cho từng kỹ năng, mọi ràng buộc thứ tự đợt, cảnh báo
  * hai đợt quá gần và nhật ký đều giữ nguyên — đường hàng loạt không lỏng hơn đường lẻ.
  */
-export function setPlanningWeek(p: Principal, attemptId: number, periodId: number, reason?: string, opts: { force?: boolean } = {}) {
+export function setPlanningWeek(p: Principal, attemptId: number, periodId: number, reason?: string,
+  opts: { force?: boolean; huyLichVuot?: boolean } = {}) {
   const a = loadAttempt(attemptId);
   require_(p, PERMISSIONS.PLAN_WEEK, { classId: a.class_id, studentId: a.student_id },
     'Chỉ Quản lý mới chốt được tuần kế hoạch.');
@@ -1126,9 +1127,10 @@ export function setPlanningWeek(p: Principal, attemptId: number, periodId: numbe
   if (!period) throw notFound('Không tìm thấy tuần');
 
   const rows = ensureSkillRows(attemptId);
+  /* D3 (PR-LM): MT lịch sử dời cả đợt — kể cả kỹ năng đã có điểm / đã thi (sửa hồ sơ, `setSkillWeek` đòi lý do). */
   const movable = rows.filter(
-    (r) => r.required && r.sit_status !== 'sat' && r.sit_status !== 'cancelled'
-      && r.planned_period_id !== periodId && !hasAnyBand(attemptId, r.skill),
+    (r) => r.required && r.sit_status !== 'cancelled' && r.planned_period_id !== periodId
+      && (a.lich_su || (r.sit_status !== 'sat' && !hasAnyBand(attemptId, r.skill))),
   );
   if (!movable.length) {
     throw badRequest(
@@ -1136,12 +1138,16 @@ export function setPlanningWeek(p: Principal, attemptId: number, periodId: numbe
       + 'đã huỷ phần thi hoặc vốn đã ở tuần này.',
     );
   }
+  /* Q-0310-1 (PR-LM): kiểm vượt trên CẢ lần dời (không từng kỹ năng) — 409 trước khi ghi bất cứ gì. */
+  const vuot = kiemVuot(attemptId, tuanCuoiSauKhiDoi(rows, new Map(movable.map((r) => [r.skill, period.week_start])))!);
+  if (vuot.chan) throw badRequest(vuot.chan);
+  if (vuot.biVuot.length && !opts.huyLichVuot) throw canXacNhanHuyLich(vuot.biVuot);
 
   return tx(() => {
     const warnings: string[] = [];
     const kept: string[] = [];
     for (const r of movable) {
-      const res = setSkillWeek(p, attemptId, r.skill, periodId, { reason, force: opts.force });
+      const res = setSkillWeek(p, attemptId, r.skill, periodId, { reason, force: opts.force, huyLichVuot: opts.huyLichVuot });
       warnings.push(...res.warnings);
       kept.push(r.skill);
     }

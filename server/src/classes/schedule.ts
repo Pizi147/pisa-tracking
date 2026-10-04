@@ -10,7 +10,7 @@ import { demoToday } from '../demoConfig.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { ensurePeriods, mondayOf, periodById, weekInfo } from '../platform/week.ts';
-import { recomputeCompletionWeek } from '../fasttrack/skillSchedule.ts';
+import { recomputeCompletionWeek, tinhLaiLichSu } from '../fasttrack/skillSchedule.ts';
 import { allProgrammes, programmeByCode, type ProgrammeInfo } from '../normal/regular.ts';
 
 /**
@@ -117,14 +117,8 @@ function goiYLo(yc: readonly YeuCauLichMt[]): Map<number, { cy: any; goiY: Sugge
 export type LuotMacDinh = { attemptId: number; attemptNo: number; weekStart: string; lichSu: boolean };
 export type KetQuaLichMacDinh = { created: LuotMacDinh[]; moved: { attemptNo: number; weekStart: string }[]; kept: number };
 
-/**
- * NGÀY TẠO của lượt theo lịch nghiệp vụ. `created_at` là giờ máy thật; ở demo đồng hồ nghiệp vụ có thể lùi hơn giờ thật, nên lấy
- * ngày sớm hơn trong hai — bản chính `created_at` luôn ≤ hôm nay nên kết quả đúng bằng `created_at`.
- */
-export function ngayTaoLuot(createdAt: string, homNay: string = demoToday()): string {
-  const d = createdAt.slice(0, 10); const h = homNay.slice(0, 10);
-  return d < h ? d : h;
-}
+/** Ngày tạo lượt theo lịch nghiệp vụ — chuyển sang `skillSchedule.ts` (PR-LM, dùng chung với `tinhLaiLichSu`). */
+export { ngayTaoLuot } from '../fasttrack/skillSchedule.ts';
 
 /**
  * LÕI LỊCH MT MẶC ĐỊNH (M1, M5, T33–T35, K2-33) — một chỗ cho "Áp lịch" của Quản lý, đổi tuần bắt đầu học và `taoMtMacDinh`.
@@ -207,12 +201,8 @@ export function apLichMacDinhLo(yc: readonly YeuCauLichMt[], actorUserId: number
                      WHERE attempt_id = ? AND plan_source = 'auto' AND sit_status = 'scheduled'`)
           .run(s.periodId, nowIso(), had.id);
         recomputeCompletionWeek(had.id, actorUserId);
-        /* Dời theo tuần bắt đầu → tính lại `lich_su` so với ngày tạo CỦA CHÍNH LƯỢT (chỗ duy nhất được tính lại, M-13). */
-        const tuanKt = (conn.prepare(
-          `SELECT MAX(p.week_end) AS kt FROM attempt_skills ask JOIN report_periods p ON p.id = ask.planned_period_id
-            WHERE ask.attempt_id = ? AND ask.required = 1 AND ask.sit_status != 'cancelled'`).get(had.id) as any)?.kt ?? null;
-        conn.prepare('UPDATE assessment_attempts SET lich_su = ? WHERE id = ?')
-          .run(tuanKt && laLichSu(tuanKt, ngayTaoLuot(had.created_at)) ? 1 : 0, had.id);
+        /* Dời theo tuần bắt đầu → tính lại `lich_su` so với ngày tạo CỦA CHÍNH LƯỢT (M-13; PR-LM D3 dùng cùng hàm). */
+        tinhLaiLichSu(had.id);
         kq.moved.push({ attemptNo: s.attemptNo, weekStart: s.weekStart });
       }
     }

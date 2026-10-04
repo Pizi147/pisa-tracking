@@ -481,6 +481,7 @@ api.post('/ke-hoach-test/dot', requireAuth, wrap((req) => {
   }));
   return keHoachSvc.luuDot(principalOf(req), {
     attemptId, kyNang, lyDoBo: req.body.lyDoBo ?? null, force: !!req.body.force, reason: req.body.reason ?? null,
+    xacNhanHuyLich: req.body.xacNhanHuyLich === true,
   });
 }));
 
@@ -630,7 +631,13 @@ api.post('/attempts/:id/week', requireAuth, wrap((req) => {
   const periodId = toInt(req.body?.periodId);
   if (!periodId) throw badRequest('Cần chọn tuần.');
   return attemptSvc.setPlanningWeek(principalOf(req), pInt(req, 'id'), periodId, req.body?.reason,
-    { force: req.body?.force === true });
+    { force: req.body?.force === true, huyLichVuot: req.body?.xacNhanHuyLich === true });
+}));
+
+/** PR-LM (Q-0310-1): "Huỷ lịch" một lượt = bỏ tuần, giữ lượt — các kỹ năng chưa thi về "Chưa xếp lịch". Lý do bắt buộc. */
+api.post('/attempts/:id/bo-tuan', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return skillScheduleSvc.boTuanLuot(principalOf(req), pInt(req, 'id'), { lyDo: req.body?.lyDo ?? null });
 }));
 
 /** Đánh dấu một kỹ năng đánh giá là ngoài phạm vi yêu cầu của lượt này, hoặc bỏ đánh dấu. */
@@ -659,6 +666,7 @@ api.post('/attempts/:id/skills/:skill/week', requireAuth, wrap((req) => {
     reason: req.body?.reason ?? null,
     /* Chỉ vượt được CẢNH BÁO (hai đợt cách nhau một tuần), không vượt được ràng buộc thứ tự. */
     force: req.body?.force === true,
+    huyLichVuot: req.body?.xacNhanHuyLich === true,
   });
 }));
 
@@ -1349,7 +1357,9 @@ api.get('/cycles/:id/suggested-mocks', requireAuth, wrap((req) => {
   const c = cycleSvc.cycleById(pInt(req, 'id'));
   if (!c) throw notFound('Không tìm thấy lộ trình');
   require_(principalOf(req), PERMISSIONS.STUDENT_VIEW, { studentId: c.student_id }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
-  return scheduleSvc.suggestedMockWeeks(c.id);
+  /* PR-LM: lịch đề xuất ghép lượt thật (trạng thái, tuần từng kỹ năng, kỳ vọng) — panel Lộ trình xếp / dời / huỷ lịch / nhập điểm tại chỗ. */
+  const bang = keHoachSvc.lichMtLoTrinh(c.id);
+  return { ...bang, coTheXep: can(principalOf(req), PERMISSIONS.PLAN_WEEK, { classId: bang.classId, studentId: c.student_id }) };
 }));
 
 /**

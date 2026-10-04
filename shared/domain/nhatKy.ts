@@ -7,6 +7,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'attachment.add': 'Thêm bằng chứng', 'attachment.delete': 'Xoá bằng chứng',
   'attempt.absence_move': 'Dời lịch Test vì vắng', 'attempt.absence_auto_move': 'Hệ thống tự dời do vắng lần 1', 'attempt.cancel': 'Huỷ cả lượt MT',
   'attempt.cancel_appointment': 'Huỷ lịch hẹn thi môn', 'attempt.cancel_part': 'Huỷ phần còn lại của lượt',
+  'attempt.unschedule': 'Huỷ lịch lượt (bỏ tuần, giữ lượt)',
   'attempt.create': 'Tạo lượt Test', 'attempt.no_show_settled': 'Chốt vắng thi', 'attempt.recreate': 'Tạo lại lượt Test (số dùng lại)',
   'attempt.restore_part': 'Khôi phục phần đã huỷ', 'attempt.restore_skill': 'Khôi phục kỹ năng thi',
   'attempt.skip_skill': 'Bỏ kỹ năng không thi', 'attempt.sit_status': 'Ghi đã thi / vắng', 'attempt.skill_week': 'Dời lịch thi',

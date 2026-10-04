@@ -9057,6 +9057,11 @@ runPrHk1Tests({ check, assert });
 const { runPrPhTests } = await import('./prPh.tests.ts');
 runPrPhTests({ check, assert });
 
+// ==================================================================== PR-LM (lịch MT linh hoạt: dời vượt → huỷ lịch lượt bị vượt)
+const { runPrLmTests, runPrLmMayChu } = await import('./prLm.tests.ts');
+await runPrLmTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+await runPrLmMayChu({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

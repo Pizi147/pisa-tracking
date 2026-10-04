@@ -10,7 +10,7 @@
  * LR GRA), mỗi hàng lưu riêng — hai task có thể hai GV (K4-31).
  */
 import { useEffect, useRef, useState } from 'react';
-import { ngay, skillShort, tuanLich } from '@shared/domain/index.ts';
+import { chuDoiVang, ngay, skillShort, tuanLich } from '@shared/domain/index.ts';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
 import { Han } from '../../ui/Han.tsx';
@@ -54,10 +54,7 @@ function trangThaiO(l: LichKn | undefined, c: Cell | undefined, lichSu: boolean,
   }
   if (l.sitStatus === 'absent') return { chu: 'vắng · chờ xếp lại', title: 'Đã xác nhận vắng — Quản lý xếp lại bài trước khi nhập.' };
   if (lichSu) return { chu: 'Nhập bù, không tính hạn' };
-  if (l.doiTu && l.absenceMoveCount > 0) {
-    const cau = `vắng · dời sang ${tuanLich(l.weekStart, homNay)} · lần ${l.absenceMoveCount}`;
-    return { chu: cau, title: `Dời từ ${l.doiTu} sang ${tuanLich(l.weekStart, homNay)} (vắng lần ${l.absenceMoveCount}).` };
-  }
+  if (l.doiTu && l.absenceMoveCount > 0) return chuDoiVang(l, homNay);
   if (c?.noShow) return { chu: c.noShow.text };
   if (!l.weekStart) return { chu: 'Chưa xếp tuần' };
   if (l.progress === 'upcoming') return { chu: `Thi ${tuanLich(l.weekStart, homNay)}` };

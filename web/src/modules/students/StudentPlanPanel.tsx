@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
@@ -7,20 +6,14 @@ import { WeekPicker } from '../../ui/Filters.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
-import { Empty, Field, NutChon, SectionNote, Skeleton, Status, TargetText, Th} from '../../ui/ui.tsx';
-import { addDaysStr } from '../../lib/format.ts';
+import { Empty, Field, NutChon, SectionNote, Skeleton, TargetText, Th } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { BASELINE_SOURCES, BASELINE_SOURCE_LABEL, GIAI_THICH_KCK, KCK, dsLoi, duongDotTest, ngay, tuanLich, type LoiTruong } from '@shared/domain/index.ts';
+import { HopKyNang } from '../test/keHoach/HopKyNang.tsx';
+import { HangLichMt, type BangLichMt } from './HangLichMt.tsx';
+import { BASELINE_SOURCES, BASELINE_SOURCE_LABEL, GIAI_THICH_KCK, KCK, dsLoi, type LoiTruong } from '@shared/domain/index.ts';
 
 /** Band 0–9, bước 0.5 — cùng luật máy chủ (máy chủ vẫn kiểm lại). */
 const laBand = (s: string) => s.trim() !== '' && Number.isFinite(Number(s)) && Number(s) >= 0 && Number(s) <= 9 && Number(s) * 2 === Math.round(Number(s) * 2);
-
-type Suggested = {
-  attemptNo: number; studyWeek: number; periodId: number; weekStart: string; code: string;
-  existingAttemptId: number | null; existingPeriodId: number | null;
-  existingSource: 'auto' | 'manual' | null;
-  locked: boolean;
-};
 
 /**
  * LỘ TRÌNH — mục 2 của menu hồ sơ học viên (mục 5.1), thay cho "Kế hoạch học".
@@ -30,10 +23,10 @@ type Suggested = {
  * của nhau.
  *
  *   tuần bắt đầu học   →  lịch MT mặc định của cả khoá tính ra từ đây
- *   kế hoạch thi thật  →  tháng, hoặc tuần khi đã chốt được
+ *   kế hoạch thi thật  →  ngày (đếm ngược) hoặc tháng
  *   MỤC TIÊU           →  đổi thì BẮT BUỘC có lý do và ngày hiệu lực
  *   ĐIỂM ĐẦU VÀO       →  em vào học ở mức nào
- *   bảng các đợt MT    →  mỗi đợt mở được lịch từng kỹ năng
+ *   bảng các đợt MT    →  xếp / dời / huỷ lịch / nhập điểm ngay tại hàng (PR-LM) — không phải vào hồ sơ MT
  *
  * Target và điểm đầu vào trước đây là HAI mục menu riêng, nên muốn sửa Target người dùng
  * phải đoán nó nằm ở "Kế hoạch học" hay ở "Đổi Target". Nay chúng về đúng chỗ.
@@ -49,11 +42,15 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, canEditCycle = t
 }) {
   const toast = useToast();
   const cycle = useApi<any>(`/cycles/${cycleId}`);
-  const sugg = useApi<Suggested[]>(ratio ? null : `/cycles/${cycleId}/suggested-mocks`, [cycleId]);
+  const sugg = useApi<BangLichMt>(ratio ? null : `/cycles/${cycleId}/suggested-mocks`, [cycleId]);
+  /** Hàng đang mở dải nhập điểm (một hàng một lúc) · hộp "+ Thêm MT" · có hộp xếp lịch đang mở (Esc chỉ đóng hộp, không đóng panel). */
+  const [moDiem, setMoDiem] = useState<number | null>(null);
+  const [themMt, setThemMt] = useState<HTMLElement | null>(null);
+  const [hopMo, setHopMo] = useState(false);
+  const doiLich = () => { sugg.reload(); cycle.reload(); onDone(); };
   const [startPeriodId, setStartPeriodId] = useState<number | null>(null);
-  /** T9 · Dự kiến thi: ngày ISO (đã biết ngày) hoặc tháng `yyyy-mm` (mới biết tháng). */
+  /** T9 · ô thi dự kiến: ngày ISO (đã biết ngày) hoặc tháng `yyyy-mm` (mới biết tháng). */
   const [thiDuKien, setThiDuKien] = useState<string>('');
-  const [examPeriodId, setExamPeriodId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [touched, setTouched] = useState(false);
   const lf = useLoiForm();
@@ -63,11 +60,7 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, canEditCycle = t
   if (cy && !touched) {
     if (startPeriodId === null && cy.start_period_id) setStartPeriodId(cy.start_period_id);
     if (thiDuKien === '' && (cy.exam_date || cy.exam_month)) setThiDuKien(cy.exam_date ?? cy.exam_month);
-    if (examPeriodId === null && cy.exam_period_id) setExamPeriodId(cy.exam_period_id);
   }
-
-  /* Q9: đã có NGÀY thi thì tuần suy từ ngày — ô tuần chỉ hiện khi mới biết tháng (hoặc chưa biết gì). */
-  const hienTuanThi = !/^\d{4}-\d{2}-\d{2}$/.test(thiDuKien);
 
   const loi = cy ? dsLoi([{ khoa: 'tuan-bat-dau', nhan: 'Tuần bắt đầu học', chon: true }], { 'tuan-bat-dau': startPeriodId }) : [];
 
@@ -78,7 +71,7 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, canEditCycle = t
     try {
       await api.patch(`/cycles/${cycleId}`, {
         startPeriodId: startPeriodId ?? null,
-        ...(ratio ? {} : { examDate: thiDuKien || null, ...(hienTuanThi ? { examPeriodId: examPeriodId ?? null } : {}) }),
+        ...(ratio ? {} : { examDate: thiDuKien || null }),
       });
       invalidate('/cycles'); invalidate('/students'); invalidate('/classes'); invalidate('/attempts');
       toast.push('ok', 'Đã lưu kế hoạch học');
@@ -101,15 +94,16 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, canEditCycle = t
   };
 
   const { homNay } = useNgayNghiepVu();
-  const rows = sugg.data ?? [];
-  /* Có gì để áp không — nếu mọi lượt đều đã đúng hoặc đã khoá thì nút không nên sáng. */
+  const bang = sugg.data;
+  const rows = bang?.hang ?? [];
+  /* Có gì để áp không — nếu mọi lượt đều đã đúng hoặc đã khoá thì nút không nên sáng. Hàng ngoài lịch mặc định (MT4+) không áp. */
   const actionable = rows.filter(
-    (r) => !r.locked && r.existingSource !== 'manual'
+    (r) => r.studyWeek !== null && !r.locked && r.existingSource !== 'manual'
       && (!r.existingAttemptId || r.existingPeriodId !== r.periodId),
   ).length;
 
   return (
-    <KhungPanel tieuDe="Lộ trình" hocVien={studentName} rong="rong" onDong={onClose}
+    <KhungPanel tieuDe="Lộ trình" hocVien={studentName} rong="rong" onDong={hopMo ? () => { /* Esc đóng hộp xếp lịch trước */ } : onClose}
       chan={{
         huy: { nhan: 'Đóng', onClick: onClose, disabled: busy },
         conThieu: lf.conThieu(loi),
@@ -125,30 +119,13 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, canEditCycle = t
             </div>
           </Field>
 
-          {/*
-            DỰ KIẾN THI: HAI Ô, THEO ĐÚNG HAI LÚC BIẾT KHÁC NHAU.
-
-            Lúc tư vấn thì chỉ biết THÁNG, và đó đã là một thông tin có ích để xếp cả khoá.
-            Gần ngày đăng ký mới chốt được TUẦN. Ép khai tuần ngay từ đầu thì người ta chọn
-            bừa một tuần rồi không ai sửa lại — nên để trống tuần là chuyện bình thường.
-
-            Lớp thường KHÔNG có hai ô này — các em đó chưa thi IELTS, hỏi là hỏi thừa.
-          */}
+          {/* Q-0310-5: một ô — ngày hoặc tháng; ngày thì máy chủ tự suy tuần để đếm ngược. Lớp thường không thi IELTS nên không có ô này. */}
           {!ratio && (
-            <>
-              <Field label="Dự kiến thi"
-                hint="Gõ dd/mm/yyyy nếu đã biết ngày, mm/yyyy nếu mới biết tháng.">
-                <ONgay kieu="ngay-hoac-thang" value={thiDuKien} goiY="dd/mm/yyyy hoặc mm/yyyy"
-                  onChange={(v) => { setTouched(true); setThiDuKien(v); }} />
-              </Field>
-              {hienTuanThi && (
-                <Field as="div" label="Dự kiến thi"
-                  hint="Chốt được thì hệ thống mới đếm ngược. Chưa chốt cứ để trống.">
-                  <WeekPicker periodId={examPeriodId} label={null} scope="planning" clearable
-                    onPeriod={(id) => { setTouched(true); setExamPeriodId(id); }} />
-                </Field>
-              )}
-            </>
+            <Field label="Dự kiến thi"
+              hint="Biết ngày thì gõ dd/mm/yyyy (hệ thống đếm ngược); mới biết tháng thì gõ mm/yyyy.">
+              <ONgay kieu="ngay-hoac-thang" value={thiDuKien} goiY="dd/mm/yyyy hoặc mm/yyyy"
+                onChange={(v) => { setTouched(true); setThiDuKien(v); }} />
+            </Field>
           )}
 
           {/* ------------------------------------------ MỤC TIÊU và ĐIỂM ĐẦU VÀO (mục 5.1) */}
@@ -178,59 +155,41 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, canEditCycle = t
                   <table className="w-full text-sm">
                     <thead>
                       <tr>
-                        <Th hint="Số thứ tự lượt Mock Test trong lộ trình này. Sang lộ trình mới thì đánh lại từ 1.">Lượt</Th>
+                        <Th hint="Số thứ tự lượt Mock Test trong lộ trình này, kèm kỳ vọng của lượt. Sang lộ trình mới thì đánh lại từ 1.">Lượt</Th>
                         <Th hint="Tuần thứ mấy kể từ tuần em bắt đầu học. Mốc mặc định của Fast Track là tuần 6 · 12 · 16 · 20 · 24.">Tuần học</Th>
                         <Th hint="Tuần hệ thống tính ra từ tuần bắt đầu học. Chỉ là đề xuất — bấm Áp lịch mới thật sự đổi.">Tuần đề xuất</Th>
-                        <Th hint="Bấm Áp lịch thì lượt này sẽ ra sao. Lượt Quản lý đã chốt tay và lượt đã làm xong thì đứng yên.">Hiện tại</Th>
-                        <Th hint="Mở đợt đó ra để xem và sửa lịch của từng kỹ năng — R/L/W và Speaking có thể ở hai tuần khác nhau.">Lịch kỹ năng</Th>
+                        <Th hint="Lượt đang ở tuần nào, và bấm Áp lịch thì lượt này ra sao. Lượt Quản lý đã chốt tay và lượt đã làm xong thì đứng yên.">Hiện tại</Th>
+                        <Th align="right">Thao tác</Th>
                       </tr>
                     </thead>
                     <tbody>
                       {rows.map((r) => (
-                        <tr key={r.attemptNo} className="row-hover">
-                          <td className="td text-slate-100 whitespace-nowrap">MT{r.attemptNo}</td>
-                          <td className="td text-slate-400 whitespace-nowrap tabular-nums">tuần {r.studyWeek}</td>
-                          <td className="td whitespace-nowrap">
-                            <span className="text-slate-200">{tuanLich(r.weekStart, homNay)}</span>
-                            <span className="block text-[11px] text-slate-500">{ngay(r.weekStart, homNay)} – {ngay(addDaysStr(r.weekStart, 6), homNay)}</span>
-                          </td>
-                          <td className="td">
-                            {/*
-                              Nói rõ lượt nào sẽ ĐỨNG YÊN và vì sao. Đây là chỗ giữ lời hứa
-                              "hệ thống không ghi đè cái Quản lý đã xếp" — và người dùng phải
-                              thấy lời hứa đó trước khi bấm, không phải sau.
-                            */}
-                            {r.locked ? <Status kind="done">Đã làm xong, giữ nguyên</Status>
-                              : r.existingSource === 'manual' ? <Status kind="done">Quản lý đã chốt, giữ nguyên</Status>
-                              : !r.existingAttemptId ? <Status kind="waiting">Chưa có, sẽ tạo</Status>
-                              : r.existingPeriodId !== r.periodId ? <Status kind="waiting">Sẽ dời sang tuần đề xuất</Status>
-                              : <Status kind="done">Đã đúng</Status>}
-                          </td>
-                          <td className="td whitespace-nowrap">
-                            {/*
-                              MỖI ĐỢT MỞ ĐƯỢC LỊCH TỪNG KỸ NĂNG (mục 5.1). Từ vòng 7 một đợt
-                              không còn là một tuần duy nhất: R/L/W có thể thi tuần này còn
-                              Speaking tuần sau, và mỗi kỹ năng mang hạn chấm của riêng nó.
-                            */}
-                            {r.existingAttemptId ? (
-                              <Link className="btn btn-sm btn-ghost no-underline" to={duongDotTest({ id: r.existingAttemptId, kind: 'mock' })}>
-                                Mở lịch kỹ năng
-                              </Link>
-                            ) : (
-                              <span className="text-xs text-slate-500">chưa có đợt</span>
-                            )}
-                          </td>
-                        </tr>
+                        <HangLichMt key={r.attemptNo} h={r} bang={bang!} hocVien={studentName} homNay={homNay}
+                          moDiem={moDiem === r.attemptNo} onMoDiem={(mo) => setMoDiem(mo ? r.attemptNo : null)}
+                          onHienDien={setHopMo} onDoi={doiLich} />
                       ))}
                     </tbody>
                   </table>
                 </div>
               )}
 
+              {bang?.coTheXep && bang.classId !== null && startPeriodId && (
+                <div className="mt-2">
+                  <button type="button" className="btn btn-sm min-h-[40px] sm:min-h-0" onClick={(e) => setThemMt(e.currentTarget)}>
+                    + Thêm MT{bang.soKeTiep}
+                  </button>
+                </div>
+              )}
+              {themMt && bang && bang.classId !== null && (
+                <HopKyNang anchor={themMt} tieuDe={`${studentName} · MT${bang.soKeTiep}`} loai="ft" classId={bang.classId} studentId={bang.studentId}
+                  dot={{ loai: 'ft', attemptNo: bang.soKeTiep }} attemptId={null} kn={{}} kyNangDau={null}
+                  onClose={() => setThemMt(null)} onSaved={doiLich} onHienDien={setHopMo} />
+              )}
+
               <SectionNote>
                 Hệ thống chỉ đề xuất ba lượt đầu — đa số em chỉ thi ba lượt, MT4 và MT5 là dự
-                phòng và xếp tay khi cần. Lượt nào Quản lý đã chốt tay hoặc em đã làm xong thì
-                đứng yên, kể cả khi đổi lại tuần bắt đầu học.
+                phòng, thêm bằng "+ Thêm MT" (tuần đã qua = nhập MT lịch sử). Lượt nào Quản lý đã chốt
+                tay hoặc em đã làm xong thì đứng yên, kể cả khi đổi lại tuần bắt đầu học.
               </SectionNote>
             </div>
           )}
