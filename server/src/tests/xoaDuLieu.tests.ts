@@ -664,10 +664,12 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     assert(!timNguoiSvc.timNguoi(P.admin, { q }).some((r) => r.id === gv.id), 'timNguoi còn người đã xoá');
     assert(!(meetingSvc.searchPeople(P.admin, q) as any[]).some((r) => r.id === gv.id), 'searchPeople còn người đã xoá');
     assert(!classesSvc.classTeachers(P.admin, FT).candidates.some((r: any) => r.id === gv.id), 'ứng viên phân công còn người đã xoá');
-    /* /ref/users, /ref/teachers viết thẳng trong routes — khẳng định câu lọc người còn hoạt động. */
+    /* /ref/users viết thẳng trong routes — khẳng định câu lọc người còn hoạt động. /ref/teachers (PR-QU: `giaoVienPhanCong`) kiểm hành vi. */
     const routes = docNguon('server/src/routes/index.ts');
     const khoi = (duong: string) => routes.slice(routes.indexOf(`api.get('${duong}'`), routes.indexOf(`api.get('${duong}'`) + 1200);
-    assert(/status\s*=\s*'active'/.test(khoi('/ref/users')) && /u\.status = 'active'/.test(khoi('/ref/teachers')), '/ref/users hoặc /ref/teachers không lọc active');
+    assert(/status\s*=\s*'active'/.test(khoi('/ref/users')), '/ref/users không lọc active');
+    const refGv = classesSvc.giaoVienPhanCong(P.admin, {}) as any[];
+    assert(refGv.some((r) => r.id === conDung.id) && !refGv.some((r) => r.id === gv.id), '/ref/teachers còn người đã xoá');
     assert(auth.resolveSession(tokenGv) === null, 'phiên cũ vẫn dùng được');
   });
 
