@@ -9,7 +9,7 @@ import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, diffDays, forbidden, isIsoDate, notFound, nowIso, padCode } from '../util.ts';
 import { can, require_, scopeFor, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
-import { owningMonth, periodById, reportEditWindow } from '../platform/week.ts';
+import { ensurePeriod, owningMonth, periodById, reportEditWindow } from '../platform/week.ts';
 import { countAttachments } from '../platform/attachments.ts';
 
 export const DUE_SOON_DAYS = 3;
@@ -632,6 +632,19 @@ export function createTask(p: Principal, input: any) {
   if (gui !== null && branchId !== null && gui !== branchId) throw badRequest('Chi nhánh của việc không khớp với lớp / đơn vị đã chọn.');
   if (!chuTuDo(input.title, 'Nội dung công việc', 200)) throw badRequest('Cần nội dung công việc.');   // PR-Dọn (Q4): kiểu + trần
   if (input.dueDate && !isIsoDate(input.dueDate)) throw badRequest('Hạn không hợp lệ.');
+  /*
+   * PR-GVa (F04): việc giao GV KHÔNG BAO GIỜ thiếu kỳ — thiếu thì nó không hiện ở danh sách tuần nào. Gửi kỳ thì kỳ phải có thật;
+   * không gửi thì lấy tuần neo của `/ref/period-window` (tuần chứa hôm nay) — cùng luật web dùng qua `resolveWeek(neo.weekStart)`.
+   * Kiểm TRƯỚC `tx`: kỳ rác thì không có task, Case hay PA nào được tạo. Việc Vận hành (`branch_ops`) không theo kỳ — giữ như cũ.
+   */
+  let periodId: number | null = null;
+  if (input.periodId != null && input.periodId !== '') {
+    const n = Number(input.periodId);
+    if (!Number.isSafeInteger(n) || n <= 0 || !periodById(n)) throw badRequest('Kỳ không hợp lệ — tải lại trang rồi giao lại.');
+    periodId = n;
+  } else if (kind === 'teacher_task') {
+    periodId = ensurePeriod(demoToday()).id;
+  }
   // `Loại` đã bỏ khỏi form; cột cũ giữ nguyên giá trị lịch sử, việc mới ghi mặc định.
   const taskType = 'in_period';
   const emGiao = lop ? docEmGiaoViec(conn, lop.id, input.studentIds) : null;
@@ -654,7 +667,7 @@ export function createTask(p: Principal, input: any) {
                             created_by, created_at, idempotency_key)
          VALUES (?,?,?,?,?,?,?,?,?,?,?, 'not_started', ?,?,?,?,?,?,?)`,
       )
-      .run(code, input.periodId ?? null, taskType, kind, lop?.id ?? null,
+      .run(code, periodId, taskType, kind, lop?.id ?? null,
            kind === 'teacher_task' ? (input.topic ?? null) : null,
            input.title.trim(), input.unitId ?? null, branchId,
            input.assigneeUserId ?? null, input.dueDate ?? null, input.note ?? null,

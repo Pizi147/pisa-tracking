@@ -22,6 +22,8 @@ export async function runPrGvaTests(t: AnToanTestKit) {
   const mt: any = await import('../worklist/meeting.ts');
   const caseSvc: any = await import('../cases/cases.ts');
   const intake: any = await import('../classes/intake.ts');
+  const week: any = await import('../platform/week.ts');
+  const util: any = await import('../util.ts');
   const d: any = await import('../../../shared/domain/index.ts');
   const kg: any = await load('../../../shared/domain/khoaGui.ts');
   const dem = (sql: string, ...a: unknown[]) => (conn.prepare(sql).get(...a) as any).n as number;
@@ -154,6 +156,37 @@ export async function runPrGvaTests(t: AnToanTestKit) {
     assert(dbMod.laTrungKhoa(new Error('UNIQUE constraint failed: tasks.created_by, tasks.idempotency_key')), 'lỗi khoá');
     assert(!dbMod.laTrungKhoa(new Error('UNIQUE constraint failed: tasks.code')), 'lỗi mã việc không phải lỗi khoá');
     assert(!('vuaGhi' in dbMod), 'vuaGhi phải xoá khi không còn ai gọi');
+  });
+
+  // ================================================================== GVa-3 · máy chủ không lưu việc giao GV thiếu kỳ (F04)
+
+  const kyNay = () => week.ensurePeriod(TODAY).id as number;
+  const demTao = () => [dem('SELECT COUNT(*) n FROM tasks'), dem('SELECT COUNT(*) n FROM sos_cases'), dem('SELECT COUNT(*) n FROM case_interventions'),
+    dem('SELECT COUNT(*) n FROM task_students')];
+
+  check('GVa-3 · F04 tái hiện: teacher_task không gửi periodId → vẫn có kỳ = tuần hiện tại, hiện trong danh sách tuần đó', () => {
+    const r = mt.createTask(P.admin, { kind: 'teacher_task', title: 'GVa thiếu kỳ', classId: lopMb, topic: 'reading', idempotencyKey: 'gva-ky-00001' });
+    assert(r.period_id === kyNay(), `period_id phải là ${kyNay()}, đang ${r.period_id}`);
+    assert(mt.listTasks(P.admin, { periodId: kyNay() }).rows.some((x: any) => x.id === r.id), 'phải hiện ở danh sách tuần');
+  });
+
+  check('GVa-3 · periodId không tồn tại / không phải số nguyên dương → 400, KHÔNG có task / Case / PA nào mới', () => {
+    for (const periodId of [999999, -1, 1.5, 'abc', 0]) {
+      const truoc = demTao();
+      assertThrows(() => mt.createTask(P.admin, { kind: 'teacher_task', title: 'GVa kỳ rác', classId: lopMb, topic: 'reading', periodId,
+        idempotencyKey: `gva-ky-rac-${String(periodId).replace(/\W/g, '')}` }), /Kỳ không hợp lệ — tải lại trang rồi giao lại\./, `kỳ ${periodId}`);
+      assert(JSON.stringify(truoc) === JSON.stringify(demTao()), `kỳ ${periodId}: không được tạo dở`);
+    }
+  });
+
+  check('GVa-3 · periodId hợp lệ giữ nguyên; gửi lại cùng khoá không nhân đôi; việc Vận hành (branch_ops) không tự gắn kỳ', () => {
+    const ky = week.ensurePeriod(util.addDays(TODAY, -7)).id;
+    const v = { kind: 'teacher_task', title: 'GVa kỳ đúng', classId: lopMb, topic: 'writing1', periodId: ky, idempotencyKey: 'gva-ky-00003' };
+    const a = mt.createTask(P.admin, v); const b = mt.createTask(P.admin, v);
+    assert(a.period_id === ky && a.id === b.id, `giữ kỳ ${ky}: ${a.period_id}; cùng khoá một việc`);
+    assert(dem("SELECT COUNT(*) n FROM tasks WHERE idempotency_key = 'gva-ky-00003'") === 1, 'một dòng');
+    const ops = mt.createTask(P.admin, { kind: 'branch_ops', title: 'GVa vận hành', branchId: MB, idempotencyKey: 'gva-ky-00004' });
+    assert(ops.period_id === null, `branch_ops giữ period_id như cũ (NULL): ${ops.period_id}`);
   });
 
   // ================================================================== GVa-2 · web gửi khoá, mỗi lần mở form một mã
