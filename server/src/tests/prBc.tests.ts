@@ -43,4 +43,58 @@ export async function runPrBcTests(t: Pick<YThucTestKit, 'check' | 'assert'>) {
   check('PR-BC D8 · kỳ tháng hiện "09/2026", không "2026-09"', () => {
     assert(d.hienONgay('2026-09', 'thang') === '09/2026', d.hienONgay('2026-09', 'thang'));
   });
+
+  // ---------------------------------------------------------------- L3 + J10 (Quản trị › Tài khoản)
+  const A = (id: number, roles: [string, string | null][], o: { email?: string | null; skills?: string[]; extra?: unknown[]; ten?: string } = {}) => ({
+    id, code: `U${id}`, fullName: o.ten ?? `Người ${id}`, email: o.email === undefined ? `u${id}@pisa.vn` : o.email,
+    skills: o.skills ?? ['L'], extra: o.extra ?? [], roles: roles.map(([role, branchCode]) => ({ role, branchCode })),
+  });
+  const ds = [
+    A(1, [['teacher', 'MB']], { ten: 'Nguyễn Thu Hà', skills: ['L', 'R'] }),
+    A(2, [['teacher', 'BC'], ['manager', 'MB']]),          // GV ở BC, QL ở MB — KHÔNG phải "GV Monbay"
+    A(3, [['teacher', 'MB'], ['teacher', 'CP']], { skills: ['W'] }),
+    A(4, [['system_admin', null]], { skills: [] }),
+    A(5, [], { email: null, skills: [], extra: [{ permission: 'x' }] }),
+  ];
+  const L = (o: Partial<{ chiNhanh: string; vai: string; kyNang: string; q: string; phanLoai: string | null }>) => ({ ...d.BO_LOC_TAI_KHOAN_TRONG, ...o });
+
+  check('PR-BC L3 · Giáo viên + Monbay khớp trên CÙNG một lần cấp vai: ra 1 và 3, không ra 2 (GV ở BC + QL ở MB)', () => {
+    const r = d.locTaiKhoan(ds, L({ chiNhanh: 'MB', vai: 'teacher' })).map((u: any) => u.id).join();
+    assert(r === '1,3', r);
+  });
+  check('PR-BC L3 · "Toàn hệ thống" chỉ khớp lần cấp branchCode null; chi nhánh cụ thể không khớp vai toàn hệ thống', () => {
+    assert(d.locTaiKhoan(ds, L({ chiNhanh: 'toan-he-thong' })).map((u: any) => u.id).join() === '4', 'toàn hệ thống → 4');
+    assert(!d.locTaiKhoan(ds, L({ chiNhanh: 'MB' })).some((u: any) => u.id === 4), 'MB không ra admin toàn hệ thống');
+  });
+  check('PR-BC L3 · kỹ năng, tìm không dấu theo tên/mã/email, phân loại', () => {
+    assert(d.locTaiKhoan(ds, L({ kyNang: 'W' })).map((u: any) => u.id).join() === '3', 'kỹ năng W → 3');
+    assert(d.locTaiKhoan(ds, L({ q: 'thu ha' })).map((u: any) => u.id).join() === '1', 'tìm "thu ha" khớp "Nguyễn Thu Hà"');
+    assert(d.locTaiKhoan(ds, L({ q: 'THU HÀ' })).map((u: any) => u.id).join() === '1', 'tìm có dấu, chữ hoa');
+    assert(d.locTaiKhoan(ds, L({ q: 'u5' })).map((u: any) => u.id).join() === '5', 'tìm theo mã');
+    assert(d.locTaiKhoan(ds, L({ q: 'u2@pisa' })).map((u: any) => u.id).join() === '2', 'tìm theo email');
+    assert(d.locTaiKhoan(ds, L({ phanLoai: 'chua-email' })).map((u: any) => u.id).join() === '5', 'chưa có email → 5');
+    const pl = d.phanLoaiTaiKhoan(ds);
+    assert(pl['chua-vai'] === 1 && pl['chua-email'] === 1 && pl['chua-ky-nang'] === 2, JSON.stringify(pl));
+  });
+  check('PR-BC L3 · nhóm theo chi nhánh: người 2 chi nhánh ở cả 2 nhóm, đếm đúng; không vai → nhóm "Chưa có vai trò"; nhóm theo vai không lặp người', () => {
+    const g = d.nhomTaiKhoan(ds, 'chi-nhanh', new Map([['MB', 'Monbay'], ['BC', 'Bãi Cháy'], ['CP', 'Cẩm Phả']]));
+    const so = Object.fromEntries(g.map((x: any) => [x.nhan, x.rows.map((u: any) => u.id).join()]));
+    assert(so['Monbay'] === '1,2,3' && so['Bãi Cháy'] === '2' && so['Cẩm Phả'] === '3', JSON.stringify(so));
+    assert(so['Toàn hệ thống'] === '4' && so['Chưa có vai trò'] === '5', JSON.stringify(so));
+    const v = Object.fromEntries(d.nhomTaiKhoan(ds, 'vai', new Map(), (r: string) => `[${r}]`).map((x: any) => [x.nhan, x.rows.map((u: any) => u.id).join()]));
+    assert(v['[teacher]'] === '1,2,3' && v['[manager]'] === '2' && v['[system_admin]'] === '4', JSON.stringify(v));
+  });
+  check('PR-BC L3 · bộ lọc đọc/ghi URL khứ hồi; giá trị lạ → mặc định (không ném)', () => {
+    const loc = L({ chiNhanh: 'MB', vai: 'teacher', kyNang: 'L', q: 'hà', phanLoai: 'chua-email' });
+    const qs = new URLSearchParams();
+    for (const [k, v] of Object.entries(d.ghiBoLocTaiKhoan(loc))) if (v) qs.set(k, v as string);
+    assert(JSON.stringify(d.docBoLocTaiKhoan(qs)) === JSON.stringify(loc), qs.toString());
+    const la = d.docBoLocTaiKhoan(new URLSearchParams('vai=hacker&kn=Z&loai=abc'));
+    assert(la.vai === 'tat-ca' && la.kyNang === 'tat-ca' && la.phanLoai === null, JSON.stringify(la));
+    assert(d.docBoLocTaiKhoan(new URLSearchParams('q=' + 'x'.repeat(500))).q.length === 100, 'tìm cắt 100 ký tự');
+  });
+  check('PR-BC J10 · cột "Quyền cấp riêng" chỉ hiện khi ít nhất một tài khoản có quyền cấp riêng', () => {
+    assert(d.coQuyenCapRieng(ds) === true, 'có người 5');
+    assert(d.coQuyenCapRieng(ds.slice(0, 4)) === false, 'không ai có → ẩn');
+  });
 }
