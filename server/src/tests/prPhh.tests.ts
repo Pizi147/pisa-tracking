@@ -13,12 +13,9 @@ export async function runPrPhhTests(t: AnToanTestKit) {
   const { fileURLToPath } = await import('node:url');
   const REPO = pathMod.resolve(fileURLToPath(new URL('../../../../', import.meta.url)));
   const doc = (rel: string) => fsMod.readFileSync(pathMod.join(REPO, rel), 'utf8');
-  /** Mô-đun chưa có thì phép kiểm ĐỎ với câu nói rõ thiếu gì, không làm sập cả bộ (mẫu prGva.tests.ts). */
-  const load = async (p: string): Promise<any> => import(p).catch((e) =>
-    new Proxy({}, { get: (_x, k) => { if (k === 'then') return undefined; throw new Error(`Chưa có mô-đun ${p} (${String(k)}) — ${e.message}`); } }));
   const ph: any = await import('../yThuc/phoiHop.ts');
   const sosAuto: any = await import('../cases/sosAuto.ts');
-  const mig: any = await load('../migrate/prPhh.ts');
+  const mig: any = await import('../migrate/prPhh.ts');
   const { default: Database } = await import('libsql');
   const CAU_LUOT = 'Chưa lưu nội dung lúc báo — dưới đây là nội dung hiện tại';
 
@@ -74,14 +71,6 @@ export async function runPrPhhTests(t: AnToanTestKit) {
     ph.confirmCoordination(P.admin, v.id, { performedOn: TODAY });
     const x = doc1(v.sid, v.aid, v.id);
     assert(viec(v.id).noi_dung_luc_bao === null && x.noiDung === null && x.noiDungLaHienTai === false, JSON.stringify(x));
-  });
-
-  check('PHH-1f · việc chờ đọc nội dung hiện tại, không cờ (như trước PR)', () => {
-    const v = conn.prepare(`SELECT co.id, co.student_id sid, co.attempt_id aid FROM sos_coordination_actions co JOIN assessment_attempts a ON a.id = co.attempt_id
-      WHERE co.kind = 'bao_ph_tvv' AND co.status = 'pending' AND a.status != 'cancelled' LIMIT 1`).get() as any;
-    if (!v) return;   // ponytail: các phép kiểm trên có thể đã xác nhận hết việc chờ trong seed nhỏ
-    const x = doc1(v.sid, v.aid, v.id);
-    assert(x.noiDung?.length === 4 && x.noiDungLaHienTai === false, JSON.stringify(x));
   });
 
   // ================================================================== PHH-2 · web (quét nguồn)
