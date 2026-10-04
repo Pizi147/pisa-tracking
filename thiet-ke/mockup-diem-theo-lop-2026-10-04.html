@@ -1,0 +1,233 @@
+<title>Điểm MT theo lớp</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Inter:wght@500;600&display=swap">
+<style>
+/* Bố cục: khung giống PISA (thanh trên, nội dung 1 cột); bảng điểm dùng chung cho 2 lối vào */
+:root{
+  --bg:#f5f7fa;--surface:#ffffff;--surface-2:#eef2f7;--line:#d9e0ea;--fg:#1b2433;--muted:#5d6b80;
+  --accent:#1d5fbf;--accent-soft:#e3edfb;--wait:#6b4fc4;--wait-bg:#efe9fb;--ok:#1c7a4c;--ok-bg:#e2f4ea;
+  --soon:#9a6400;--soon-bg:#fdf1d8;--bad:#b3261e;--bad-bg:#fbe5e3;--off:#a3adbb;
+  --sans:"Be Vietnam Pro",system-ui,sans-serif;--num:"Inter","Be Vietnam Pro",sans-serif;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0c1220;--surface:#131b2c;--surface-2:#1a2438;--line:#26324a;--fg:#e4e9f2;--muted:#93a0b6;
+  --accent:#7db3f0;--accent-soft:#1c2c48;--wait:#b9a3f5;--wait-bg:#2a2245;--ok:#6fd29c;--ok-bg:#16301f;
+  --soon:#f0c062;--soon-bg:#3a2c10;--bad:#f08a80;--bad-bg:#3b1a18;--off:#56627a;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c1220;--surface:#131b2c;--surface-2:#1a2438;--line:#26324a;--fg:#e4e9f2;--muted:#93a0b6;
+  --accent:#7db3f0;--accent-soft:#1c2c48;--wait:#b9a3f5;--wait-bg:#2a2245;--ok:#6fd29c;--ok-bg:#16301f;
+  --soon:#f0c062;--soon-bg:#3a2c10;--bad:#f08a80;--bad-bg:#3b1a18;--off:#56627a;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:14px/1.5 var(--sans);padding-inline:16px;padding-block:16px 48px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1{font-size:20px;margin:0;text-wrap:balance}
+h2{font-size:15px;margin:0}
+.note{color:var(--muted);font-size:13px;margin:0}
+.switch{display:flex;gap:6px;flex-wrap:wrap}
+.switch button,.seg button,.btn{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--surface-2);color:var(--fg);border-radius:8px;padding:6px 12px;min-height:36px}
+.switch button[aria-pressed=true]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:var(--surface);font-weight:600}
+.btn-ghost{background:transparent}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.topbar{display:flex;align-items:center;gap:16px;padding:10px 14px;flex-wrap:wrap}
+.topbar b{font-size:15px}.topbar span{color:var(--muted)}.topbar .on{color:var(--accent);font-weight:600}
+.sec{padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sp{flex:1}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px}
+.c-wait{background:var(--wait-bg);color:var(--wait)}.c-ok{background:var(--ok-bg);color:var(--ok)}.c-soon{background:var(--soon-bg);color:var(--soon)}
+.callout{border-left:3px solid var(--accent);background:var(--surface-2);padding:10px 12px;border-radius:0 8px 8px 0;font-size:13px}
+/* thanh lượt MT */
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{display:flex;flex-direction:column;align-items:flex-start;gap:0;padding:6px 12px;min-width:104px;line-height:1.3}
+.seg button small{color:var(--muted);font-size:11.5px;font-family:var(--num)}
+.seg button[aria-selected=true]{background:var(--accent-soft);border-color:var(--accent)}
+.seg button[aria-selected=true] b{color:var(--accent)}
+/* bảng */
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;min-width:760px;font-variant-numeric:tabular-nums}
+th{background:var(--surface-2);font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);text-align:left;padding:8px 10px;font-weight:600;white-space:nowrap}
+td{border-top:1px solid var(--line);padding:6px 10px;vertical-align:middle}
+td.name{white-space:nowrap}td.name small{color:var(--muted);display:block;font-size:12px}
+input.cell{width:56px;font:600 14px var(--num);text-align:center;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:6px;padding:5px 2px}
+input.cell.has{border-color:transparent;background:transparent}
+input.cell.has:hover{border-color:var(--line)}
+input.cell.new{border-color:var(--accent);background:var(--accent-soft)}
+.wcol{color:var(--muted);font-family:var(--num);font-weight:600}
+tr.none td{color:var(--off)}
+tr.none .why{font-size:12.5px;color:var(--muted)}
+.ovr{font-family:var(--num);font-weight:700}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.legend i{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:4px;border:1px solid var(--line)}
+/* Test › Điểm theo lớp */
+.split{display:grid;grid-template-columns:240px minmax(0,1fr);gap:16px;align-items:start}
+.list{padding:8px;display:flex;flex-direction:column;gap:4px}
+.list button{all:unset;cursor:pointer;display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:8px}
+.list button:hover{background:var(--surface-2)}
+.list button[aria-current=true]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.list small{color:var(--muted);font-family:var(--num)}
+.collapsed{padding:12px 16px;display:flex;align-items:center;gap:10px;cursor:pointer}
+.menu{position:relative}
+.dd{position:absolute;right:0;top:40px;width:250px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:6px;display:flex;flex-direction:column;z-index:5;box-shadow:0 8px 24px rgb(0 0 0/.18)}
+.dd div{padding:8px 10px;border-radius:6px;font-size:13.5px}
+.dd .hl{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.dd hr{border:0;border-top:1px solid var(--line);margin:4px 0}
+.phone{max-width:390px;margin:0 auto;width:100%}
+.kn{display:flex;flex-direction:column}
+.kn .it{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-top:1px solid var(--line);gap:8px}
+.kn input.cell{width:72px;min-height:44px}
+@media (max-width:760px){.split{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:no-preference){.seg button,.switch button{transition:background .15s}}
+</style>
+
+<div class="wrap">
+  <div>
+    <h1>Điểm MT theo lớp · mockup</h1>
+    <p class="note">Bản phác dữ liệu mẫu (lớp CP FT 131). Một bảng điểm dùng chung, có hai lối vào. Bấm để xem từng màn.</p>
+  </div>
+  <div class="switch" role="group" aria-label="Chọn màn">
+    <button aria-pressed="true" data-v="lop">1 · Hồ sơ lớp (lối vào kín)</button>
+    <button aria-pressed="false" data-v="test">2 · Test › tab Điểm theo lớp</button>
+    <button aria-pressed="false" data-v="dt">3 · Trên điện thoại</button>
+    <button aria-pressed="false" data-v="lt">4 · Lớp thường</button>
+  </div>
+
+  <!-- ============ MÀN 1: HỒ SƠ LỚP ============ -->
+  <section id="v-lop" class="wrap" style="gap:12px">
+    <div class="card topbar"><b>Pisa Tracking</b><span>Tổng quan</span><span class="on">Học viên &amp; Lớp</span><span>Test</span><span>Công việc</span></div>
+    <div class="card sec">
+      <div class="row"><div><div class="note">Hồ sơ lớp</div><h2 style="font-size:18px">CP FT 131 · Fast Track</h2></div><span class="sp"></span>
+        <button class="btn">Nhập điểm</button><button class="btn">+ Học viên</button>
+        <div class="menu"><button class="btn" id="dots" aria-expanded="true">⋮</button>
+          <div class="dd" id="dd"><div>Tuần khai giảng</div><div>Chuyển tiếp lớp…</div><div>Sửa phân công</div><div>Sửa thông tin lớp</div><div class="hl">Điểm MT cả lớp (MT1, MT2…)</div><div>Xuất Excel</div><hr><div>Kết thúc lớp</div></div></div>
+      </div>
+      <p class="note">11 học viên · tuần học 23 · … (danh sách học viên như hiện tại) …</p>
+    </div>
+    <div class="callout"><b>Lối vào kín đáo:</b> một mục trong menu ⋮ và một khối thu gọn ở cuối hồ sơ lớp. Không thêm nút to lên đầu trang.</div>
+    <div class="card">
+      <div class="collapsed" id="tg" role="button" aria-expanded="true" tabindex="0"><b id="car">▾</b><h2>Điểm Mock Test của lớp</h2><span class="chip c-wait">MT2 còn 3 ô trống</span><span class="sp"></span><span class="note">bấm để thu gọn</span></div>
+      <div id="bang-lop"></div>
+    </div>
+  </section>
+
+  <!-- ============ MÀN 2: TEST › ĐIỂM THEO LỚP ============ -->
+  <section id="v-test" class="wrap" style="gap:12px" hidden>
+    <div class="card topbar"><b>Pisa Tracking</b><span>Tổng quan</span><span>Học viên &amp; Lớp</span><span class="on">Test</span><span>Công việc</span></div>
+    <div class="row"><div class="switch"><button aria-pressed="false">Lịch Test</button><button aria-pressed="false">Kế hoạch Test</button><button aria-pressed="true">Điểm theo lớp</button></div></div>
+    <div class="split">
+      <div class="card list" aria-label="Lớp của tôi">
+        <div class="note" style="padding:4px 10px">Lớp tôi dạy · còn ô trống</div>
+        <button aria-current="true"><span>CP FT 131</span><small>3 trống</small></button>
+        <button><span>MB FT 102</span><small>8 trống</small></button>
+        <button><span>BC FT 07</span><small>đủ</small></button>
+        <button><span>UB FT 12</span><small>1 trống</small></button>
+      </div>
+      <div class="card" id="bang-test"></div>
+    </div>
+  </section>
+
+  <!-- ============ MÀN 3: ĐIỆN THOẠI ============ -->
+  <section id="v-dt" hidden>
+    <div class="card phone">
+      <div class="sec" style="gap:10px">
+        <div class="row"><b>CP FT 131</b><span class="sp"></span><span class="chip c-wait">MT2 · 3 trống</span></div>
+        <div class="row"><button class="btn">‹ MT1</button><b style="flex:1;text-align:center">MT2 · W3 JUL</b><button class="btn">MT3 ›</button></div>
+        <div class="row"><button class="btn" style="flex:1">Listening</button><button class="btn" style="flex:1;border-color:var(--accent);color:var(--accent)">Reading</button><button class="btn" style="flex:1">W</button><button class="btn" style="flex:1">S</button></div>
+      </div>
+      <div class="kn">
+        <div class="it"><span>Lê Hà Vy<br><small class="note">000001</small></span><input class="cell has" value="6.0" aria-label="Reading Lê Hà Vy"></div>
+        <div class="it"><span>Ngô Gia Huy<br><small class="note">000007</small></span><input class="cell" placeholder="—" aria-label="Reading Ngô Gia Huy"></div>
+        <div class="it"><span>Nguyễn Đức Trung<br><small class="note">000010</small></span><input class="cell new" value="5.5" aria-label="Reading Nguyễn Đức Trung"></div>
+        <div class="it" style="color:var(--off)"><span>Nguyễn Hà Uyên<br><small>chưa có lịch MT2</small></span><span>—</span></div>
+      </div>
+      <div class="sec"><p class="note">Điện thoại: một kỹ năng một lần (giống nhập điểm hiện nay), Enter sang em dưới.</p></div>
+    </div>
+  </section>
+
+
+  <!-- ============ MÀN 4: LỚP THƯỜNG ============ -->
+  <section id="v-lt" class="wrap" style="gap:12px" hidden>
+    <div class="card topbar"><b>Pisa Tracking</b><span>Tổng quan</span><span>Học viên &amp; Lớp</span><span class="on">Test</span><span>Công việc</span></div>
+    <div class="row"><div class="switch"><button aria-pressed="false">Lịch Test</button><button aria-pressed="false">Kế hoạch Test</button><button aria-pressed="true">Điểm theo lớp</button></div></div>
+    <div class="split">
+      <div class="card list"><div class="note" style="padding:4px 10px">Lớp tôi dạy</div>
+        <button><span>CP FT 131</span><small>3 trống</small></button>
+        <button aria-current="true"><span>MB PRE 204</span><small>5 trống</small></button>
+        <button><span>BC FOU 11</span><small>đủ</small></button></div>
+      <div class="card"><div class="sec">
+        <div class="callout">Danh sách bài lấy theo <b>lịch Test của chính lớp này</b>. Lớp này đã đổi so với mặc định: thêm một bài kiểm tra bổ sung ở W1 OCT.</div>
+        <div class="row"><div class="seg" role="tablist">
+          <button role="tab" aria-selected="false"><b>Giữa khoá · đã qua</b><small>W2 SEP · 9/9 đủ</small></button>
+          <button role="tab" aria-selected="true"><b>Kiểm tra bổ sung · đã qua</b><small>W1 OCT · 4/9 đủ</small></button>
+          <button role="tab" aria-selected="false"><b>Cuối khoá</b><small>W4 NOV · chưa tới</small></button></div></div>
+        <div class="tbl"><table style="min-width:640px"><thead><tr><th>Học viên</th><th>Nghe</th><th>Đọc</th><th>G+V</th><th>Viết</th><th>Kết quả</th></tr></thead><tbody>
+          <tr><td class="name">Trần Minh Anh<small>000031</small></td><td><input class="cell has" value="16/20"></td><td><input class="cell has" value="15/20"></td><td><input class="cell has" value="30/40"></td><td><input class="cell has" value="7/10"></td><td><span class="chip c-ok">4/4 đạt</span></td></tr>
+          <tr><td class="name">Đỗ Khánh Linh<small>000032</small></td><td><input class="cell has" value="12/20"></td><td><input class="cell new" value="14/20"></td><td><input class="cell" placeholder="—"></td><td><input class="cell" placeholder="—"></td><td><span class="chip c-wait">Chờ điểm</span></td></tr>
+          <tr><td class="name">Vũ Gia Bảo<small>000033</small></td><td><input class="cell" placeholder="—"></td><td><input class="cell" placeholder="—"></td><td><input class="cell" placeholder="—"></td><td><input class="cell" placeholder="—"></td><td><span class="chip c-wait">Chờ điểm</span></td></tr>
+          <tr class="none"><td class="name">Lý Thu Hà<small>000034</small></td><td colspan="5" class="why">Vào lớp sau bài này (W3 OCT) — không có bài để nhập</td></tr>
+        </tbody></table></div>
+        <p class="note">Ô gõ số câu đúng / tổng như lưới lớp thường hiện nay; đạt khi ≥ 70%. Bài đã qua vẫn nhập và sửa được (sửa điểm cũ hỏi lý do).</p>
+      </div></div>
+    </div>
+  </section>
+  <div class="card sec">
+    <h2>Đề xuất cách làm</h2>
+    <ol style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px">
+      <li><b>Một bảng dùng chung, hai lối vào.</b> Hồ sơ lớp: mục "Điểm MT cả lớp" trong ⋮ + khối thu gọn ở cuối trang. Test: tab mới "Điểm theo lớp", bên trái chọn lớp (chỉ lớp mình dạy/quản lý, kèm số ô trống), bên phải là bảng.</li>
+      <li><b>Mỗi lượt một bảng, có thanh chuyển MT1 · MT2 · MT3…</b> Mỗi nút ghi tuần thi và số em đã có điểm. Mặc định mở lượt gần nhất còn ô trống.</li>
+      <li><b>Hiện cả ô đã có điểm.</b> Ô có điểm hiện chữ thường (sửa được theo quyền hiện có; sửa điểm cũ vẫn đòi lý do như bây giờ). Ô vừa gõ tô xanh. Có công tắc "Chỉ ô còn trống".</li>
+      <li><b>Chỉ em đã có lịch lượt đó mới nhập được.</b> Em chưa có lịch hiện mờ, ghi "Chưa có lịch MT2" — không tự tạo lịch. Muốn xếp thì làm ở panel Lộ trình (PR-LM).</li>
+      <li><b>Lớp thường cũng vậy:</b> mỗi bài một bảng (Giữa khoá, Cuối khoá, bài bổ sung…), lấy đúng theo lịch Test của từng lớp kể cả khi đã đổi khác mặc định; bài đã qua vẫn nhập được; em vào lớp sau bài đó thì không có ô.</li>
+      <li><b>Gõ như lưới nhập điểm hiện nay:</b> L/R gõ số câu đúng hoặc band, W1/W2/S chấm 4 tiêu chí, W tự tính, Enter xuống em dưới, lưu từng ô. Lượt lịch sử không nhận dấu "-".</li>
+    </ol>
+  </div>
+</div>
+
+<script>
+const HV=[
+ ["Lê Hà Vy","000001",{1:[6,6,"6.0","6.0",6],2:[6.5,6,null,null,6.5],3:null}],
+ ["Ngô Gia Huy","000007",{1:[7,7.5,"7.0","6.5",7],2:[null,null,null,null,null],3:null}],
+ ["Nguyễn Đức Trung","000010",{1:[5.5,6,"5.5","6.0",6],2:[6,"new",null,null,null],3:null}],
+ ["Nguyễn Hà Uyên","000009",{1:[6,6.5,"6.0","6.0",6],2:"none",3:null}],
+ ["Nguyễn Minh Ngọc","000004",{1:[6,6,"6.0","5.5",6],2:[6,6,"6.0","6.0",6],3:null}],
+ ["Phạm Tiến Đạt","000003",{1:[5,5.5,"5.0","5.5",5.5],2:[5.5,5.5,"5.5","5.0",5.5],3:null}]
+];
+const MT={1:{tuan:"W1 JUN",ls:true},2:{tuan:"W3 JUL",ls:false},3:{tuan:"W4 AUG",ls:false}};
+let cur=2,onlyEmpty=false;
+const f=v=>v==null?"":(typeof v==="number"?v.toFixed(1):v);
+function bang(){
+  const rows=HV.map(([n,ma,d])=>{
+    const r=d[cur];
+    if(r==="none"||r==null) return `<tr class="none"><td class="name">${n}<small>${ma}</small></td><td colspan="7" class="why">Chưa có lịch MT${cur} — xếp ở panel Lộ trình</td></tr>`;
+    const empty=r.some(x=>x==null);
+    if(onlyEmpty&&!empty) return "";
+    const c=(v,k)=>v==="new"?`<input class="cell new" value="6.0" aria-label="${k} ${n}">`:`<input class="cell ${v==null?"":"has"}" value="${f(v)}" placeholder="—" aria-label="${k} ${n}">`;
+    const w=r[2]&&r[3]?((+r[2]+2*+r[3])/3).toFixed(1):"—";
+    const full=!empty;
+    return `<tr><td class="name">${n}<small>${ma}</small></td><td>${c(r[0],"L")}</td><td>${c(r[1],"R")}</td><td>${c(r[2],"W1")}</td><td>${c(r[3],"W2")}</td><td class="wcol">${w}</td><td>${c(r[4],"S")}</td><td>${full?'<span class="ovr">6.0</span> <span class="chip c-ok">Đủ</span>':'<span class="chip c-wait">Chờ điểm</span>'}</td></tr>`;
+  }).join("");
+  const seg=[1,2,3].map(i=>{
+    const tong=HV.filter(h=>h[2][i]&&h[2][i]!=="none").length;
+    const du=HV.filter(h=>Array.isArray(h[2][i])&&h[2][i].every(x=>x!=null&&x!=="new")).length;
+    return `<button role="tab" aria-selected="${i===cur}" data-mt="${i}"><b>MT${i}${MT[i].ls?" · lịch sử":""}</b><small>${MT[i].tuan} · ${tong?du+"/"+tong+" đủ điểm":"chưa ai có lịch"}</small></button>`;
+  }).join("");
+  return `<div class="sec">
+    <div class="row"><div class="seg" role="tablist" aria-label="Lượt MT">${seg}</div><span class="sp"></span>
+      <button class="btn btn-ghost" data-nav="-1" aria-label="Lượt trước">‹</button><button class="btn btn-ghost" data-nav="1" aria-label="Lượt sau">›</button></div>
+    <div class="row"><label class="row" style="gap:6px;font-size:13px"><input type="checkbox" id="oe" ${onlyEmpty?"checked":""}> Chỉ ô còn trống</label><span class="sp"></span>
+      <span class="legend"><span><i style="background:transparent"></i>đã có điểm</span><span><i style="background:var(--accent-soft);border-color:var(--accent)"></i>vừa nhập</span><span><i style="background:var(--bg)"></i>còn trống</span></span></div>
+    ${MT[cur].ls?'<div class="callout">MT1 là lượt lịch sử (trước khi lớp dùng web): nhập bù điểm, không nhận dấu "-".</div>':""}
+    <div class="tbl"><table><thead><tr><th>Học viên</th><th>L</th><th>R</th><th>W1</th><th>W2</th><th>W</th><th>S</th><th>Kết quả</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="row"><span class="note">Lưu từng ô khi rời ô hoặc nhấn Enter. Sửa ô đã có điểm thì hỏi lý do.</span><span class="sp"></span><button class="btn btn-primary">Xong</button></div>
+  </div>`;
+}
+function ve(){for(const id of["bang-lop","bang-test"]){const el=document.getElementById(id);if(el&&!el.hidden)el.innerHTML=bang();}}
+document.addEventListener("click",e=>{
+  const v=e.target.closest("[data-v]");if(v){document.querySelectorAll("[data-v]").forEach(b=>b.setAttribute("aria-pressed",b===v));for(const k of["lop","test","dt","lt"])document.getElementById("v-"+k).hidden=k!==v.dataset.v;ve();return}
+  const m=e.target.closest("[data-mt]");if(m){cur=+m.dataset.mt;ve();return}
+  const n=e.target.closest("[data-nav]");if(n){cur=Math.min(3,Math.max(1,cur+ +n.dataset.nav));ve();return}
+  if(e.target.closest("#tg")){const b=document.getElementById("bang-lop");b.hidden=!b.hidden;document.getElementById("car").textContent=b.hidden?"▸":"▾";document.getElementById("tg").setAttribute("aria-expanded",!b.hidden);if(!b.hidden)ve();return}
+  if(e.target.closest("#dots")){const d=document.getElementById("dd");d.hidden=!d.hidden;return}
+});
+document.addEventListener("change",e=>{if(e.target.id==="oe"){onlyEmpty=e.target.checked;ve()}});
+ve();
+</script>
