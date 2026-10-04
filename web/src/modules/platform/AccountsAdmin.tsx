@@ -9,7 +9,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { fmtDate, skillLabel } from '../../lib/format.ts';
 import { ChonKyNang } from './ProfilePage.tsx';
 import {
-  BO_LOC_TAI_KHOAN_TRONG, PERMISSION_LABEL, PHAN_LOAI_TAI_KHOAN, ROLES, ROLE_LABEL, coQuyenCapRieng, docBoLocTaiKhoan, dsLoi, duocCapRieng,
+  BO_LOC_TAI_KHOAN_TRONG, KY_NANG_TAI_KHOAN, PERMISSION_LABEL, PHAN_LOAI_TAI_KHOAN, ROLES, ROLE_LABEL, coQuyenCapRieng, docBoLocTaiKhoan, dsLoi, duocCapRieng,
   ghiBoLocTaiKhoan, locTaiKhoan, ngay, nhomTaiKhoan, phanLoaiTaiKhoan, roleLabel, type BoLocTaiKhoan, type LoiTruong, type Role,
 } from '@shared/domain/index.ts';
 import { HangNhom } from '../../ui/HangNhom.tsx';
@@ -72,11 +72,14 @@ export function AccountsAdmin() {
   const dangDung = tatCa.filter((u) => u.status !== 'deleted');
   const daXoa = tatCa.filter((u) => u.status === 'deleted');
   const goc = loc === 'da-xoa' ? daXoa : dangDung;
-  const loc3 = docBoLocTaiKhoan(params);
+  const locUrl = docBoLocTaiKhoan(params);
+  /* Mã chi nhánh lạ trong URL → Tất cả (select không có lựa chọn đó thì bảng rỗng mà không thấy đang lọc gì). */
+  const loc3 = locUrl.chiNhanh === 'tat-ca' || locUrl.chiNhanh === 'toan-he-thong' || !branches.data
+    || branches.data.some((b) => b.code === locUrl.chiNhanh) ? locUrl : { ...locUrl, chiNhanh: 'tat-ca' };
   const nhomParam = params.get('nhom');
   const nhomTheo = nhomParam === 'chi-nhanh' || nhomParam === 'vai' ? nhomParam : null;
   const rows = locTaiKhoan(goc, loc3);
-  const dangLoc = JSON.stringify(loc3) !== JSON.stringify(BO_LOC_TAI_KHOAN_TRONG);
+  const dangLoc = (Object.keys(BO_LOC_TAI_KHOAN_TRONG) as (keyof BoLocTaiKhoan)[]).some((k) => loc3[k] !== BO_LOC_TAI_KHOAN_TRONG[k]);
   const phanLoai = phanLoaiTaiKhoan(goc);
   /* J10: theo tập gốc, không theo tập đã lọc — cột không nhảy khi gõ tìm. */
   const hienQuyenRieng = coQuyenCapRieng(goc);
@@ -138,7 +141,7 @@ export function AccountsAdmin() {
           <span className="flex min-w-0 max-w-full items-center gap-1.5">
             <span className="shrink-0 whitespace-nowrap text-xs text-slate-400">Kỹ năng</span>
             <BoLocDoan ariaLabel="Lọc kỹ năng" value={loc3.kyNang} onChange={(k) => datLoc({ kyNang: k })}
-              muc={[{ key: 'tat-ca', nhan: 'Tất cả' }, ...['L', 'R', 'W', 'S'].map((k) => ({ key: k, nhan: k, title: skillLabel(k) }))]} />
+              muc={[{ key: 'tat-ca', nhan: 'Tất cả' }, ...KY_NANG_TAI_KHOAN.map((k) => ({ key: k, nhan: k, title: skillLabel(k) }))]} />
           </span>
           <select className="field w-auto" aria-label="Nhóm theo" value={nhomTheo ?? ''} onChange={(e) => datParams({ nhom: e.target.value || null })}>
             <option value="">Không nhóm</option>

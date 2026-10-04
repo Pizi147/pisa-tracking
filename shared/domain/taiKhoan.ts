@@ -8,7 +8,7 @@ export type TaiKhoanLoc = { id: number; code: string; fullName: string; email: s
  *  phanLoai: null | 'chua-vai' | 'chua-email' | 'chua-ky-nang' */
 export type BoLocTaiKhoan = { chiNhanh: string; vai: string; kyNang: string; q: string; phanLoai: string | null };
 export const BO_LOC_TAI_KHOAN_TRONG: BoLocTaiKhoan = { chiNhanh: 'tat-ca', vai: 'tat-ca', kyNang: 'tat-ca', q: '', phanLoai: null };
-const KY_NANG = ['L', 'R', 'W', 'S'];
+export const KY_NANG_TAI_KHOAN = ['L', 'R', 'W', 'S'] as const;
 export const PHAN_LOAI_TAI_KHOAN = ['chua-vai', 'chua-email', 'chua-ky-nang'] as const;
 
 const cnKhop = (cn: string, g: { branchCode: string | null }) =>
@@ -72,7 +72,7 @@ export function docBoLocTaiKhoan(qs: URLSearchParams): BoLocTaiKhoan {
   return {
     chiNhanh: (qs.get('cn') ?? '').slice(0, 20) || 'tat-ca',
     vai: (ROLES as readonly string[]).includes(vai) ? vai : 'tat-ca',
-    kyNang: KY_NANG.includes(kn) ? kn : 'tat-ca',
+    kyNang: (KY_NANG_TAI_KHOAN as readonly string[]).includes(kn) ? kn : 'tat-ca',
     q: (qs.get('q') ?? '').slice(0, 100),
     phanLoai: (PHAN_LOAI_TAI_KHOAN as readonly string[]).includes(loai) ? loai : null,
   };

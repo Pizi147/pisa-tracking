@@ -59,12 +59,12 @@ export function MeetingBoard() {
   };
   /* PR-BC: kỳ và chi nhánh nhớ trong URL (`ky=thang`, `cn=<id>|tutor`) — tải lại hay gửi link vẫn đúng bộ lọc. */
   const byMonth = params.get('ky') === 'thang';
-  const cn = params.get('cn') ?? 'tat-ca';
-  const cnBranchId = /^\d+$/.test(cn) ? Number(cn) : null;
+  const cnUrl = params.get('cn') ?? 'tat-ca';
   const datParam = (k: string, v: string | null) => {
     const next = new URLSearchParams(params);
     if (v) next.set(k, v); else next.delete(k);
     setParams(next, { replace: true });
+    if (k === 'cn') setLocTrangThai(null);   // đổi chi nhánh thì bỏ chip trạng thái — tránh bảng rỗng khó hiểu
   };
   const branches = useApi<{ id: number; name: string }[]>('/ref/branches');
   const [locTrangThai, setLocTrangThai] = useState<TrangThaiO['ma'] | null>(null);
@@ -110,19 +110,24 @@ export function MeetingBoard() {
    * `{board.data && (...)}` — gọi trong đó thì tải xong dữ liệu là đổi SỐ hook giữa hai lần
    * render, React ném "Rendered more hooks than during the previous render".
    */
+  const units = board.data?.units ?? [];
+  const luaChonCn = luaChonChiNhanhBaoCao(units, branches.data ?? []);
+  /* `cn` chỉ có hiệu lực khi là một lựa chọn ĐANG HIỆN: link của Quản trị mở ở tài khoản QL (không có bộ lọc) thì về Tất cả,
+     không lọc ngầm. */
+  const cn = luaChonCn.some((m) => m.key === cnUrl) ? cnUrl : 'tat-ca';
+  const cnBranchId = /^\d+$/.test(cn) ? Number(cn) : null;
   const soVanDaGiao = useManagerTaskCount(periodId, cn);
   const soTinHieuDangTon = useSignalCount(periodId, cnBranchId);
 
   if (board.error) return <ErrorState message={board.error.message} hint={board.error.hint} onRetry={board.reload} />;
 
-  const units = board.data?.units ?? [];
   /* D9: lọc chi nhánh chỉ THU HẸP tập máy chủ đã cho; ba số đếm theo tập đã lọc chi nhánh, chưa lọc trạng thái. */
   const unitsCn = locDonViBaoCao(units, { chiNhanh: cn, trangThai: null });
   const unitsLoc = locDonViBaoCao(units, { chiNhanh: cn, trangThai: locTrangThai });
   const dem = demTrangThaiDonVi(unitsCn);
-  const luaChonCn = luaChonChiNhanhBaoCao(units, branches.data ?? []);
   const ew = board.data?.editWindow ?? null;
-  const xoaLoc = () => { setLocTrangThai(null); datParam('cn', null); };
+  /* Đang bật chip trạng thái thì Xoá lọc chỉ bỏ chip đó; không thì bỏ lọc chi nhánh. */
+  const xoaLoc = () => { if (locTrangThai) setLocTrangThai(null); else datParam('cn', null); };
 
   return (
     <div className="space-y-4">
@@ -144,9 +149,9 @@ export function MeetingBoard() {
           <div className="flex min-w-0 max-w-full items-center gap-1.5">
             <span className="shrink-0 text-xs text-slate-400">Chi nhánh</span>
             {/* Mỗi chi nhánh đúng một đơn vị → bỏ số đếm từng nút (toàn "2" là nhiễu); D9-a: chọn chi nhánh hiện kèm Tutor part-time. */}
-            <BoLocDoan ariaLabel="Lọc chi nhánh" value={cn} onChange={(k) => datParam('cn', k === 'tat-ca' ? null : k)}
+            <div className="min-w-0 flex-1"><BoLocDoan ariaLabel="Lọc chi nhánh" value={cn} onChange={(k) => datParam('cn', k === 'tat-ca' ? null : k)}
               muc={luaChonCn.map((m) => ({ key: m.key, nhan: m.nhan,
-                title: /^\d+$/.test(m.key) && luaChonCn.some((x) => x.key === 'tutor') ? `${m.nhan} kèm Tutor part-time` : undefined }))} />
+                title: /^\d+$/.test(m.key) && luaChonCn.some((x) => x.key === 'tutor') ? `${m.nhan} kèm Tutor part-time` : undefined }))} /></div>
           </div>
         )}
       </div>
