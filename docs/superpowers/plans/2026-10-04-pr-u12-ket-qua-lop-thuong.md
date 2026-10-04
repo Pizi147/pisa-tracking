@@ -38,9 +38,9 @@
 
 Skill: `/impeccable layout` cho bảng và thẻ.
 
-- [ ] **Step 1: Phép kiểm đỏ (quét nguồn)** `U12-1`: trong thân `RatioAttempts` không còn chữ `Bảng điểm đợt ›`; có `<Link to={attemptHref(a)}` ở ô Bài; `IeltsAttempts` và `RatioAttempts` cùng gọi `NhanDot`.
-- [ ] **Step 2: Đỏ** → **Step 3: Sửa:** ô Bài = `Link` (`onClick` chặn lan ra hàng) chữ `tenBaiThuong(...)` + `<NhanDot a={a} />`; bỏ link "Bảng điểm đợt ›" ở bảng và dòng "Bảng điểm" ở thẻ điện thoại; đầu thẻ điện thoại dùng cùng `Link` + `NhanDot`. Cột "Lớp" dùng `Th` có `hint` như bảng Mock ("Lớp em học VÀO LÚC làm bài này…").
-- [ ] **Step 4:** `npm run check` → commit `"PR-U12 (1): bảng kết quả lớp thường có nhãn lịch sử/huỷ/dời, bấm tên bài để mở"`.
+- [x] **Step 1: Phép kiểm đỏ (quét nguồn)** `U12-1`: trong thân `RatioAttempts` không còn chữ `Bảng điểm đợt ›`; có `<Link to={attemptHref(a)}` ở ô Bài; `IeltsAttempts` và `RatioAttempts` cùng gọi `NhanDot`.
+- [x] **Step 2: Đỏ** → **Step 3: Sửa:** ô Bài = `Link` (`onClick` chặn lan ra hàng) chữ `tenBaiThuong(...)` + `<NhanDot a={a} />`; bỏ link "Bảng điểm đợt ›" ở bảng và dòng "Bảng điểm" ở thẻ điện thoại; đầu thẻ điện thoại dùng cùng `Link` + `NhanDot`. Cột "Lớp" dùng `Th` có `hint` như bảng Mock ("Lớp em học VÀO LÚC làm bài này…").
+- [x] **Step 4:** `npm run check` → commit `"PR-U12 (1): bảng kết quả lớp thường có nhãn lịch sử/huỷ/dời, bấm tên bài để mở"`.
 
 ### Task U12-2: Kết quả nói một lần
 
@@ -50,14 +50,14 @@ Skill: `/impeccable layout` cho bảng và thẻ.
 
 Skill: `/impeccable clarify` cho chữ ô kết quả.
 
-- [ ] **Step 1: Phép kiểm đỏ (quét nguồn)** `U12-2`: `RatioAttempts` không còn `mới {a.scored}/{a.required} môn`; `KetQuaThuongO` có nhánh `a.scored < a.required` trả `Chờ {a.required - a.scored} môn`.
-- [ ] **Step 2: Đỏ** → **Step 3: Sửa** `KetQuaThuongO`: chưa đủ môn (`a.scored < a.required`, không phải Pre FOU) → dòng chính `Chờ {n} môn` tone `muted` (giống `KetQuaDot` "Chờ n kỹ năng"), dòng phụ `Không đạt: …` chỉ khi đã có môn trượt; đủ môn → giữ `nhanKetQuaThuong` như nay. Không sửa `nhanKetQuaThuong` (dùng chung với Báo PH).
-- [ ] **Step 4:** `npm run check`; `npm run seed && npm run dev`; ảnh 1440/375 sáng/tối hồ sơ một em lớp thường có: bài đủ điểm, bài chấm dở, bài lịch sử, bài đã huỷ (dùng em demo có sẵn; thiếu loại nào thì ghi trong mô tả PR). Vai QL, GVCN, GVBM.
-- [ ] **Step 5:** commit `"PR-U12 (2): ô kết quả lớp thường nói tiến độ một lần"`.
+- [x] **Step 1: Phép kiểm đỏ (quét nguồn)** `U12-2`: `RatioAttempts` không còn `mới {a.scored}/{a.required} môn`; `KetQuaThuongO` có nhánh `a.scored < a.required` trả `Chờ {a.required - a.scored} môn`.
+- [x] **Step 2: Đỏ** → **Step 3: Sửa** `KetQuaThuongO`: chưa đủ môn (`a.scored < a.required`, không phải Pre FOU) → dòng chính `Chờ {n} môn` tone `muted` (giống `KetQuaDot` "Chờ n kỹ năng"), dòng phụ `Không đạt: …` chỉ khi đã có môn trượt; đủ môn → giữ `nhanKetQuaThuong` như nay. Không sửa `nhanKetQuaThuong` (dùng chung với Báo PH).
+- [x] **Step 4:** `npm run check`; `npm run seed && npm run dev`; ảnh 1440/375 sáng/tối hồ sơ một em lớp thường có: bài đủ điểm, bài chấm dở, bài lịch sử, bài đã huỷ (dùng em demo có sẵn; thiếu loại nào thì ghi trong mô tả PR). Vai QL, GVCN, GVBM.
+- [x] **Step 5:** commit `"PR-U12 (2): ô kết quả lớp thường nói tiến độ một lần"`.
 
 ### Task U12-3: Hoàn tất
-- [ ] `/impeccable audit` (hồ sơ HV lớp thường) · `/ponytail-review` · một dòng `plan.md` mục 11 · ảnh sổ tay bị lệch (nếu có).
-- [ ] `superpowers:requesting-code-review` → `superpowers:finishing-a-development-branch` (mở PR, không merge). Merge **đầu tiên** trong đợt 3.
+- [x] `/impeccable audit` (hồ sơ HV lớp thường) · `/ponytail-review` · một dòng `plan.md` mục 11 · ảnh sổ tay bị lệch (nếu có).
+- [x] `superpowers:requesting-code-review` → `superpowers:finishing-a-development-branch` (mở PR, không merge). Merge **đầu tiên** trong đợt 3.
 
 ## Nghiệm thu
 1. Mở hồ sơ em lớp thường: mỗi bài một ô kết quả nói một lần; bấm tên bài hoặc cả hàng → bảng điểm đợt.

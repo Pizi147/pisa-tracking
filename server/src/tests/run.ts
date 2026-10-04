@@ -9092,6 +9092,10 @@ await runPrSoTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, ad
 const { runPrDhTests } = await import('./prDh.tests.ts');
 await runPrDhTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
+// ==================================================================== PR-U12 (bảng kết quả lớp thường ở hồ sơ HV)
+const { runPrU12Tests } = await import('./prU12.tests.ts');
+await runPrU12Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
