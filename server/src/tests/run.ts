@@ -9081,6 +9081,9 @@ await runPrGvbTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 // ==================================================================== PR-BC (Báo cáo đơn vị + Quản trị › Tài khoản)
 const { runPrBcTests } = await import('./prBc.tests.ts');
 await runPrBcTests({ check, assert });
+// ==================================================================== PR-PHH (Báo phụ huynh lưu bản chụp 4 nội dung lúc xác nhận)
+const { runPrPhhTests } = await import('./prPhh.tests.ts');
+await runPrPhhTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P });
 // ==================================================================== PR-SO (số liệu một nguồn & dọn mã máy chủ)
 const { runPrSoTests } = await import('./prSo.tests.ts');
 await runPrSoTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });

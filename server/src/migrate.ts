@@ -24,6 +24,7 @@ import { migratePrPb2b } from './migrate/prPb2b.ts';
 import { migratePrDeploy } from './migrate/prDeploy.ts';
 import { migratePrQu } from './migrate/prQu.ts';
 import { migratePrGva } from './migrate/prGva.ts';
+import { migratePrPhh } from './migrate/prPhh.ts';
 
 /**
  * Nâng cấp database ĐANG CÓ lên schema mới, không xoá dữ liệu. PR-SO (DEP-gỡ): nhánh nâng cấp từ mô hình `mock_attempts` (trước overhaul)
@@ -263,6 +264,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     /* PR-DEPLOY (0b-3): lớp + chương trình gốc của Case (chỉ cấu trúc; chép cho Case có sẵn chỉ khi vừa thêm cột). */ migratePrDeploy(conn, applied);
     /* PR-QU: `case.close` cho vai Giáo viên, một lần (`class.create` mới đã đi qua `migratePermissions`). */ migratePrQu(conn, applied);
     /* PR-GVa: khoá gửi mỗi lần mở form cho việc, PA, lần xem lại (chỉ thêm). */ migratePrGva(conn, applied);
+    /* PR-PHH: bản chụp 4 nội dung Báo phụ huynh lúc xác nhận (chỉ thêm cột, không điền ngược). */ migratePrPhh(conn, applied);
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());
