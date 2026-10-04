@@ -1564,7 +1564,7 @@ api.get('/yeu-cau', requireAuth, wrap((req) => {
   if (qStr(req, 'hop') === 'cua-toi') return yeuCauSvc.yeuCauCuaToi(p);
   const xem = qStr(req, 'xem');
   return yeuCauSvc.hopChoDuyet(p, {
-    phanLoai: (qStr(req, 'phanLoai') as any) ?? null, xem: xem === 'da-xu-ly' ? 'da-xu-ly' : 'cho',
+    phanLoai: (qStr(req, 'phanLoai') as any) ?? null, xem: xem === 'da-xu-ly' || xem === 'de-biet' ? xem : 'cho',
     studentId: qInt(req, 'studentId') ?? null, branchId: qInt(req, 'branchId') ?? null, classId: qInt(req, 'lop') ?? null,
     quaHan: qStr(req, 'quaHan') === '1',
   });
@@ -1573,6 +1573,11 @@ api.get('/yeu-cau/dem', requireAuth, wrap((req) => yeuCauSvc.demYeuCau(principal
 api.post('/yeu-cau/duyet-nhieu', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return yeuCauSvc.duyetNhieu(principalOf(req), (req.body ?? {}).ids);
+}));
+/* PR-GVb (Q-B): Nhắc tất cả — kiểm quyền từng thẻ ở `nhacNhieu`; đặt trước `/yeu-cau/:id/...`. */
+api.post('/yeu-cau/nhac-nhieu', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return yeuCauSvc.nhacNhieu(principalOf(req), (req.body ?? {}).ids);
 }));
 api.post('/yeu-cau/:id/duyet', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();

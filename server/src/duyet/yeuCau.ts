@@ -12,9 +12,11 @@ import { can, napTruocPhamVi, require_, type Principal } from '../permissions.ts
 import { notify, writeAudit } from '../platform/audit.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import {
-  PERMISSIONS, LOAI_YC_META, PHAN_LOAI_LABEL, demHop, duongHoSoHocVien, hanDuyetMacDinh, laPhanLoai, laTuDuyet, sapThe,
+  PERMISSIONS, LOAI_YC_META, PHAN_LOAI_LABEL, TRAN_HANG_LOAT, demHop, duongHoSoHocVien, hanDuyetMacDinh, laPhanLoai, laTuDuyet,
+  nhanKhongNguoiNhac, nhomCuaLoai, sapThe,
   type DemYeuCau, type LoaiYcMeta, type LoaiYeuCau, type PhanLoai, type TheYeuCauDto,
 } from '../../../shared/domain/index.ts';
+import { nhacViec } from '../worklist/nhacViec.ts';
 import { DINH_NGHIA_LOAI, dinhNghiaCua, type NguCanhThe, type YeuCauRow } from './loaiYeuCau.ts';
 
 const P_DUYET = PERMISSIONS.REQUEST_APPROVE;
@@ -317,7 +319,7 @@ const tuNgay = (n: number) => `${addDays(demoToday(), -n)}T00:00:00.000Z`;
 const xepDaXuLy = (a: TheYeuCauDto, b: TheYeuCauDto) => ((b.xuLyLuc ?? '') < (a.xuLyLuc ?? '') ? -1 : 1);
 
 export function hopChoDuyet(p: Principal, f: {
-  phanLoai?: PhanLoai | null; xem?: 'cho' | 'da-xu-ly'; studentId?: number | null; branchId?: number | null; classId?: number | null;
+  phanLoai?: PhanLoai | null; xem?: 'cho' | 'de-biet' | 'da-xu-ly'; studentId?: number | null; branchId?: number | null; classId?: number | null;
   /** PR-VAI-a (Q17): chỉ thẻ quá hạn — cùng điều kiện `quaHan` của `demHop`; chip vẫn đếm cả hộp (như lọc phân loại). */
   quaHan?: boolean;
 } = {}) {
@@ -325,8 +327,9 @@ export function hopChoDuyet(p: Principal, f: {
   const homNay = demoToday();
   quetYeuCau(homNay);
   const conn = db();
-  const xem = f.xem === 'da-xu-ly' ? 'da-xu-ly' : 'cho';
-  let rows = trongPhamVi(p, xem === 'cho'
+  /* PR-GVb (J5b): `de-biet` = thẻ Báo QL đang chờ, đọc cùng câu với `cho`, tách nhóm sau khi lọc phạm vi. */
+  const xem = f.xem === 'da-xu-ly' || f.xem === 'de-biet' ? f.xem : 'cho';
+  let rows = trongPhamVi(p, xem !== 'da-xu-ly'
     ? conn.prepare(`SELECT * FROM yeu_cau_duyet WHERE trang_thai = 'cho'`).all() as any[]
     : conn.prepare(`SELECT * FROM yeu_cau_duyet WHERE trang_thai != 'cho' AND xu_ly_luc >= ?`).all(tuNgay(NGAY_DA_XU_LY)) as any[]);
   if (f.studentId) rows = rows.filter((r) => r.hoc_vien_id === f.studentId);
@@ -338,12 +341,14 @@ export function hopChoDuyet(p: Principal, f: {
     const emLop = new Set((conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active'`).all(f.classId) as any[]).map((r) => r.student_id));
     rows = rows.filter((r) => (r.lop_id ?? null) === f.classId || (r.lop_id == null && emLop.has(r.hoc_vien_id)));
   }
-  const dem = demHop(rows.map((r) => ({ phanLoai: metaCua(r.loai).phanLoai, hanDuyet: r.han_duyet })), homNay).chip;
+  const d = demHop(rows.map((r) => ({ loai: r.loai, phanLoai: metaCua(r.loai).phanLoai, hanDuyet: r.han_duyet })), homNay);
+  /* Đã xử lý không tách nhóm — lịch sử đủ. */
+  if (xem !== 'da-xu-ly') rows = rows.filter((r) => nhomCuaLoai(r.loai) === (xem === 'de-biet' ? 'de-biet' : 'can-quyet'));
   if (f.phanLoai && laPhanLoai(f.phanLoai)) rows = rows.filter((r) => metaCua(r.loai).phanLoai === f.phanLoai);
-  if (f.quaHan && xem === 'cho') rows = rows.filter((r) => !!r.han_duyet && r.han_duyet < homNay);
+  if (f.quaHan && xem !== 'da-xu-ly') rows = rows.filter((r) => !!r.han_duyet && r.han_duyet < homNay);
   const ngu = napNguCanh(conn, rows, homNay);
   const the = rows.map((r) => theRa(r, ngu));
-  return { the: xem === 'cho' ? sapThe(the) : the.sort(xepDaXuLy), dem, homNay, lopDangLoc };
+  return { the: xem !== 'da-xu-ly' ? sapThe(the) : the.sort(xepDaXuLy), dem: d.chip, demBiet: d.deBiet, homNay, lopDangLoc };
 }
 
 /** Yêu cầu của tôi: mọi thẻ đang chờ + thẻ đã xử lý trong 60 ngày gần nhất. */
@@ -362,7 +367,7 @@ export function demYeuCau(p: Principal, f: { branchId?: number | null } = {}): D
   const homNay = demoToday();
   quetYeuCau(homNay);
   const conn = db();
-  const kq: DemYeuCau = { cho: 0, quaHan: 0, baoLen: 0, cuaToiCho: 0, cuaToiTuChoi: 0 };
+  const kq: DemYeuCau = { cho: 0, quaHan: 0, baoLen: 0, deBiet: 0, deBietQuaHan: 0, cuaToiCho: 0, cuaToiTuChoi: 0 };
   if (can(p, P_DUYET, { anyScope: true })) {
     /* PR-VAI-a (Q17, VN05): dải Chờ duyệt theo chi nhánh đang chọn — hỏi chi nhánh ngoài phạm vi thì 403, không trả số rỗng. */
     if (f.branchId && !can(p, P_DUYET, { branchId: f.branchId })) throw forbidden('Chi nhánh này nằm ngoài phạm vi bạn được duyệt.');
@@ -370,11 +375,9 @@ export function demYeuCau(p: Principal, f: { branchId?: number | null } = {}): D
       `SELECT loai, han_duyet, hoc_vien_id, lop_id, chi_nhanh_id FROM yeu_cau_duyet WHERE trang_thai = 'cho'`).all() as any[]);
     if (f.branchId) rows = rows.filter((r) => r.chi_nhanh_id === f.branchId);
     /* CÙNG hàm đếm với chip của hộp — badge, dải Tổng quan và chip "Tất cả" luôn một số. */
-    const d = demHop(rows.map((r) => ({ phanLoai: metaCua(r.loai).phanLoai, hanDuyet: r.han_duyet })), homNay);
-    kq.cho = d.tong; kq.quaHan = d.quaHan; kq.baoLen = d.baoLen;
+    const d = demHop(rows.map((r) => ({ loai: r.loai, phanLoai: metaCua(r.loai).phanLoai, hanDuyet: r.han_duyet })), homNay);
+    kq.cho = d.tong; kq.quaHan = d.quaHan; kq.baoLen = d.baoLen; kq.deBiet = d.deBiet; kq.deBietQuaHan = d.deBietQuaHan;
     kq.chip = d.chip;
-    kq.baoLenTheoLoai = {};
-    for (const r of rows) if (metaCua(r.loai).phanLoai === 'bao-len') kq.baoLenTheoLoai[r.loai] = (kq.baoLenTheoLoai[r.loai] ?? 0) + 1;
   }
   for (const r of conn.prepare(
     `SELECT trang_thai, COUNT(*) AS n FROM yeu_cau_duyet WHERE nguoi_xin = ? AND (trang_thai = 'cho' OR (trang_thai = 'tu_choi' AND xu_ly_luc >= ?))
@@ -441,27 +444,56 @@ export function traLoiYeuCau(p: Principal, id: number, traLoi: unknown) {
   });
 }
 
-/** Duyệt hàng loạt — cùng MỘT loại có `hangLoat`. Mỗi thẻ một giao dịch: thẻ lỗi báo riêng, thẻ khác vẫn xong. */
-export function duyetNhieu(p: Principal, ids: unknown): { ok: number[]; loi: { id: number; loi: string }[] } {
+/** Duyệt hàng loạt — cùng MỘT loại có `hangLoat`. Mỗi thẻ một giao dịch: thẻ lỗi báo riêng (kèm mã HTTP — PR-GVb G7), thẻ khác vẫn xong. */
+export function duyetNhieu(p: Principal, ids: unknown): { ok: number[]; loi: { id: number; loi: string; ma: number }[] } {
   /* PR-Dọn (Q1): kiểm quyền TRƯỚC mọi bước đọc thân yêu cầu (GV → 403, không phải 400). Từng thẻ vẫn kiểm theo phạm vi ở `duyetYeuCau`. */
   require_(p, P_DUYET, { anyScope: true }, 'Chỉ Quản lý và Quản trị hệ thống duyệt được yêu cầu.');
-  if (!Array.isArray(ids) || !ids.length || ids.length > 50) throw badRequest('Chọn từ 1 đến 50 yêu cầu để duyệt.');
+  if (!Array.isArray(ids) || !ids.length || ids.length > TRAN_HANG_LOAT) throw badRequest(`Chọn từ 1 đến ${TRAN_HANG_LOAT} yêu cầu để duyệt.`);
   const ok: number[] = [];
-  const loi: { id: number; loi: string }[] = [];
+  const loi: { id: number; loi: string; ma: number }[] = [];
   /* Mã sai dạng chỉ lỗi riêng dòng đó (trả lại nguyên giá trị đã gửi), các mã đúng vẫn duyệt. */
-  for (const x of ids) if (!(Number.isInteger(x) && x > 0)) loi.push({ id: x as number, loi: 'Mã yêu cầu không hợp lệ.' });
+  for (const x of ids) if (!(Number.isInteger(x) && x > 0)) loi.push({ id: x as number, loi: 'Mã yêu cầu không hợp lệ.', ma: 400 });
   const ds = [...new Set(ids.filter((x): x is number => Number.isInteger(x) && x > 0))];
   if (!ds.length) return { ok, loi };
   const conn = db();
   const theo = new Map((conn.prepare(`SELECT id, loai FROM yeu_cau_duyet WHERE id IN (${ds.map(() => '?').join(',')})`).all(...ds) as any[])
     .map((r) => [r.id as number, r.loai as string]));
   /* Thẻ không tồn tại chỉ lỗi riêng thẻ đó — không làm hỏng cả lô. */
-  for (const id of ds) if (!theo.has(id)) loi.push({ id, loi: 'Không tìm thấy yêu cầu này.' });
+  for (const id of ds) if (!theo.has(id)) loi.push({ id, loi: 'Không tìm thấy yêu cầu này.', ma: 404 });
   const loai = new Set(theo.values());
   if (loai.size > 1 || (loai.size === 1 && !metaCua([...loai][0]).hangLoat)) throw badRequest('Chỉ duyệt hàng loạt các yêu cầu cùng một loại.');
   for (const id of ds) {
     if (!theo.has(id)) continue;
-    try { duyetYeuCau(p, id); ok.push(id); } catch (e: any) { loi.push({ id, loi: e?.message ?? 'Không duyệt được.' }); }
+    try { duyetYeuCau(p, id); ok.push(id); } catch (e: any) { loi.push({ id, loi: e?.message ?? 'Không duyệt được.', ma: e?.status ?? 500 }); }
+  }
+  return { ok, loi };
+}
+
+/**
+ * PR-GVb (Q-B): "Nhắc tất cả (n)" — từng thẻ Báo QL gọi `nhacViec` (kiểm phạm vi TỪNG dòng + một thông báo / việc / ngày, không viết
+ * luật chống lặp thứ hai). Thẻ lỗi báo riêng kèm mã. `moi = false` khi hôm nay đã nhắc việc đó (không gửi thêm).
+ */
+export function nhacNhieu(p: Principal, ids: unknown) {
+  require_(p, P_DUYET, { anyScope: true }, 'Chỉ Quản lý và Quản trị hệ thống nhắc được giáo viên.');
+  if (!Array.isArray(ids) || !ids.length || ids.length > TRAN_HANG_LOAT) throw badRequest(`Chọn từ 1 đến ${TRAN_HANG_LOAT} thẻ để nhắc.`);
+  const ok: { id: number; daNhacLuc: string; moi: boolean }[] = [];
+  const loi: { id: number; loi: string; ma: number }[] = [];
+  const homNay = demoToday();
+  for (const x of new Set(ids)) {
+    if (!(Number.isInteger(x) && (x as number) > 0)) { loi.push({ id: x as number, loi: 'Mã yêu cầu không hợp lệ.', ma: 400 }); continue; }
+    const id = x as number;
+    try {
+      const yc = docThe(id);
+      require_(p, P_DUYET, ctxThe(yc), 'Thẻ này nằm ngoài phạm vi bạn quản lý.');
+      if (yc.trang_thai !== 'cho') throw badRequest('Yêu cầu này đã được xử lý.');
+      if (metaCua(yc.loai).kieuNut !== 'nhac') throw badRequest('Thẻ này cần Duyệt hoặc Trả lời, không phải Nhắc.');
+      let du: any = {};
+      try { du = yc.du_lieu ? JSON.parse(yc.du_lieu) : {}; } catch { du = {}; }
+      if (typeof du.ownerId !== 'number' || typeof du.viecKey !== 'string') throw badRequest(nhanKhongNguoiNhac(yc.loai));
+      const daCo = db().prepare(`SELECT 1 FROM notifications WHERE user_id = ? AND dedup_key = ?`).get(du.ownerId, `nhac:${du.viecKey}:${homNay}`);
+      const r = nhacViec(p, { key: du.viecKey, ownerId: du.ownerId });
+      ok.push({ id, daNhacLuc: r.daNhacLuc, moi: !daCo });
+    } catch (e: any) { loi.push({ id, loi: e?.message ?? 'Không nhắc được.', ma: e?.status ?? 500 }); }
   }
   return { ok, loi };
 }

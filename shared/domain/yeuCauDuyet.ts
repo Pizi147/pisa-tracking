@@ -79,13 +79,59 @@ export function demChip(ds: readonly { phanLoai: PhanLoai }[]): Record<KhoaChip,
   return kq;
 }
 
+/** PR-GVb (D01/Q-B): trần một lần duyệt / nhắc hàng loạt — máy chủ (`duyetNhieu`, `nhacNhieu`) và web cùng đọc. */
+export const TRAN_HANG_LOAT = 50;
+
+/** PR-GVb (J5b, Q-D 02/10): thẻ QL phải quyết (Duyệt/Từ chối, Trả lời) · thẻ chỉ để QL biết và nhắc (Báo QL). */
+export type NhomHop = 'can-quyet' | 'de-biet';
+export function nhomCuaLoai(loai: string): NhomHop {
+  return (LOAI_YC_META as Record<string, LoaiYcMeta>)[loai]?.kieuNut === 'nhac' ? 'de-biet' : 'can-quyet';
+}
+/** Phân loại có ít nhất một loại thẻ phải quyết — chip của tab Chờ duyệt. */
+export const PHAN_LOAI_CAN_QUYET: readonly PhanLoai[] = PHAN_LOAI.filter((k) =>
+  LOAI_YEU_CAU.some((l) => LOAI_YC_META[l].phanLoai === k && LOAI_YC_META[l].kieuNut !== 'nhac'));
+
 /**
- * MỘT HÀM ĐẾM cho mọi con số của hộp (chip, badge Công việc, dải Tổng quan): `tong` = mọi thẻ đang chờ trong hộp (bằng chip
- * "Tất cả", GỒM Báo QL) · `quaHan` = thẻ đỏ (hạn đã qua, gồm Báo QL) · `baoLen` = trong đó số thẻ Báo QL (không cần duyệt).
+ * MỘT HÀM ĐẾM cho mọi con số của hộp (chip, badge Công việc, dải Tổng quan). PR-GVb (J5b): `tong` = thẻ PHẢI QUYẾT (= chip "Tất cả" của tab
+ * Chờ duyệt = số dòng có nút Duyệt/Trả lời) · `deBiet` = thẻ Để QL biết, KHÔNG cộng vào badge · `baoLen` giữ cho tương thích (= deBiet).
  */
-export function demHop(ds: readonly { phanLoai: PhanLoai; hanDuyet: string | null }[], homNay: string) {
-  const chip = demChip(ds);
-  return { chip, tong: chip['tat-ca'], quaHan: ds.filter((x) => !!x.hanDuyet && x.hanDuyet < homNay).length, baoLen: chip['bao-len'] };
+export function demHop(ds: readonly { loai: string; phanLoai: PhanLoai; hanDuyet: string | null }[], homNay: string) {
+  const quyet = ds.filter((x) => nhomCuaLoai(x.loai) === 'can-quyet');
+  const biet = ds.filter((x) => nhomCuaLoai(x.loai) === 'de-biet');
+  const qua = (x: { hanDuyet: string | null }) => !!x.hanDuyet && x.hanDuyet < homNay;
+  const chip = demChip(quyet);
+  return { chip, tong: quyet.length, quaHan: quyet.filter(qua).length, deBiet: biet.length, deBietQuaHan: biet.filter(qua).length, baoLen: biet.length };
+}
+
+type ChonDuoc = { id: number; loai: string; hangLoat: boolean };
+/** Bấm ô chọn một thẻ: chỉ loại `hangLoat`; khác loại với thẻ đang chọn → bắt đầu lại; không quá `TRAN_HANG_LOAT`. */
+export function chonMot<T extends ChonDuoc>(ds: readonly T[], chon: ReadonlySet<number>, id: number, v: boolean): Set<number> {
+  const the = ds.find((x) => x.id === id);
+  if (!the || !the.hangLoat) return new Set(chon);
+  const loaiDang = ds.find((x) => chon.has(x.id))?.loai ?? null;
+  const next = new Set(loaiDang && loaiDang !== the.loai ? [] : chon);
+  if (!v) { next.delete(id); return next; }
+  if (next.size >= TRAN_HANG_LOAT) return next;
+  next.add(id);
+  return next;
+}
+/** "Chọn hết n": mọi thẻ đang chờ CÙNG loại (theo thứ tự danh sách), tối đa `TRAN_HANG_LOAT`. */
+export function chonHet<T extends ChonDuoc & { trangThai: string }>(ds: readonly T[], loai: string): Set<number> {
+  return new Set(ds.filter((x) => x.loai === loai && x.hangLoat && x.trangThai === 'cho').slice(0, TRAN_HANG_LOAT).map((x) => x.id));
+}
+
+/** Kết quả hàng loạt một câu: "Đã duyệt 7/9 — 2 không có quyền". Lý do gom theo mã (PR-GVb G7). */
+export function tomTatKetQuaHangLoat(viec: 'duyet' | 'nhac', ok: number, loi: readonly { ma: number; loi: string }[]): string {
+  const dau = `Đã ${viec === 'duyet' ? 'duyệt' : 'nhắc'} ${ok}/${ok + loi.length}`;
+  if (!loi.length) return dau;
+  const nhom: [string, number][] = [
+    ['không có quyền', loi.filter((l) => l.ma === 403).length],
+    ['đã có người xử lý', loi.filter((l) => l.ma === 400 && /đã được xử lý/.test(l.loi)).length],
+    ['không còn', loi.filter((l) => l.ma === 404).length],
+  ];
+  const khac = loi.length - nhom.reduce((s, [, n]) => s + n, 0);
+  if (khac) nhom.push(['lỗi khác', khac]);
+  return `${dau} — ${nhom.filter(([, n]) => n > 0).map(([c, n]) => `${n} ${c}`).join(', ')}`;
 }
 
 /**
@@ -119,7 +165,8 @@ export function nhanTrangThaiYc(t: TrangThaiYc, tuDuyet = false): { t: TrangThai
     case 'cho': return { t: 'cho-duyet', chu: 'Chờ duyệt' };
     case 'duyet': return { t: 'xong', chu: tuDuyet ? 'Đã duyệt · tự duyệt' : 'Đã duyệt' };
     case 'da_tra_loi': return { t: 'xong', chu: 'Đã trả lời' };
-    case 'tu_choi': return { t: 'da-huy', chu: 'Bị từ chối' };
+    /* PR-GVb (chủ sản phẩm 03/10): Bị từ chối = người xin phải làm lại → kiểu Cần làm ở mọi nơi. */
+    case 'tu_choi': return { t: 'can-lam', chu: 'Bị từ chối' };
     case 'tu_dong': return { t: 'da-huy', chu: 'Tự đóng' };
   }
 }
@@ -162,23 +209,24 @@ export type TheYeuCauDto = {
   duLieu: Record<string, unknown> | null;
 };
 
-/** `cho` = mọi thẻ đang chờ trong hộp (= chip "Tất cả", gồm Báo QL); `quaHan` = thẻ đỏ; `baoLen` = trong đó Báo QL — xem `demHop`. */
+/** PR-GVb (J5b): `cho` = thẻ PHẢI QUYẾT (= chip "Tất cả" = badge); `quaHan` = trong đó thẻ đỏ; `deBiet`/`deBietQuaHan` = thẻ Để QL biết, KHÔNG cộng vào `cho` — xem `demHop`. */
 export type DemYeuCau = {
-  cho: number; quaHan: number; baoLen: number; cuaToiCho: number; cuaToiTuChoi: number;
-  /** PR-VAI-a (Q17): chip từng phân loại + số thẻ Báo QL theo loại (dòng phụ dải Chờ duyệt) — chỉ người duyệt. */
+  cho: number; quaHan: number; baoLen: number; deBiet: number; deBietQuaHan: number; cuaToiCho: number; cuaToiTuChoi: number;
+  /** PR-VAI-a (Q17): chip từng phân loại (thẻ phải quyết) — chỉ người duyệt. */
   chip?: Record<KhoaChip, number>;
-  baoLenTheoLoai?: Partial<Record<string, number>>;
 };
 
-/** Dòng phụ dải Chờ duyệt: "Học thuật 3 · Ý thức 1 · Báo QL 3 (2 Case chờ nguyên nhân quá hạn, 1 Ý thức quá hạn)". Phân loại 0 bỏ. */
-export function dongPhuChoDuyet(d: DemYeuCau): string {
-  if (!d.chip) return '';
-  return PHAN_LOAI.filter((k) => d.chip![k] > 0).map((k) => {
-    if (k !== 'bao-len') return `${PHAN_LOAI_LABEL[k]} ${d.chip![k]}`;
-    const loai = Object.entries(d.baoLenTheoLoai ?? {}).filter(([, n]) => (n ?? 0) > 0)
-      .map(([l, n]) => `${n} ${(LOAI_YC_META as Record<string, LoaiYcMeta>)[l]?.nhan ?? l}`);
-    return `${PHAN_LOAI_LABEL[k]} ${d.chip![k]}${loai.length ? ` (${loai.join(', ')})` : ''}`;
-  }).join(' · ');
+export type ChipDem = { key: string; nhan: string; so: number; den: string; quaHan?: boolean };
+/**
+ * PR-GVb (J5): hàng chip dải Chờ duyệt ở Tổng quan QL — từng phân loại phải quyết (> 0, thứ tự `PHAN_LOAI_CAN_QUYET`) · "Quá hạn" · "Để QL biết".
+ * `den` = query mở hộp đã lọc (nối thêm `&cn=` ở web).
+ */
+export function chipChoDuyet(d: DemYeuCau): ChipDem[] {
+  const kq: ChipDem[] = PHAN_LOAI_CAN_QUYET.filter((k) => (d.chip?.[k] ?? 0) > 0)
+    .map((k) => ({ key: k, nhan: PHAN_LOAI_LABEL[k], so: d.chip![k], den: `?phan=${k}` }));
+  if (d.quaHan > 0) kq.push({ key: 'qua-han', nhan: 'Quá hạn', so: d.quaHan, den: '?qua-han=1', quaHan: true });
+  if (d.deBiet > 0) kq.push({ key: 'de-biet', nhan: 'Để QL biết', so: d.deBiet, den: '?xem=de-biet' });
+  return kq;
 }
 
 /** PR-S4F #14: thẻ Báo QL không có người để Nhắc (`duLieu.ownerId` rỗng) — ghi rõ vì sao thay cho nút Nhắc. */

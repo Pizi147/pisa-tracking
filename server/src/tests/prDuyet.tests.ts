@@ -31,7 +31,7 @@ export async function runPrDuyetTests(t: YThucTestKit) {
     assert(c['tat-ca'] === 3 && c['hoc-thuat'] === 2 && c['bao-len'] === 1 && c['y-thuc'] === 0 && Object.keys(c).length === 6, JSON.stringify(c));
     assert(d.laTuDuyet(2, 2) && !d.laTuDuyet(null, 2) && !d.laTuDuyet(3, 2), 'tự duyệt');
     assert(d.duongThe(5, 'nguoi-xin') === '/cong-viec/yeu-cau?the=5' && d.duongThe(12, 'duyet') === '/cong-viec/cho-duyet?the=12', 'đường');
-    assert(d.nhanTrangThaiYc('duyet', true).chu.includes('tự duyệt') && d.nhanTrangThaiYc('tu_choi').t === 'da-huy'
+    assert(d.nhanTrangThaiYc('duyet', true).chu.includes('tự duyệt') && d.nhanTrangThaiYc('tu_choi').t === 'can-lam'   // PR-GVb: chủ sản phẩm 03/10
       && d.nhanTrangThaiYc('cho').t === 'cho-duyet', 'nhãn');
   });
   check('DUYET (1) · request.approve: QL MB duyệt lớp MB, QL CP không, GVCN không bao giờ; cycle.edit không cho GV', () => {
@@ -335,7 +335,7 @@ export async function runPrDuyetTests(t: YThucTestKit) {
     const dem = () => (conn.prepare(`SELECT COUNT(*) n FROM yeu_cau_duyet WHERE loai = 'bao_len_nguyen_nhan' AND doi_tuong_id = ? AND trang_thai = 'cho'`)
       .get(kase.id) as any).n;
     assert(dem() === 1, `số thẻ Báo QL: ${dem()}`);
-    const the = yc.hopChoDuyet(P.admin).the.find((x: any) => x.loai === 'bao_len_nguyen_nhan' && x.duLieu?.viecKey === `cause:${kase.id}`);
+    const the = yc.hopChoDuyet(P.admin, { xem: 'de-biet' }).the.find((x: any) => x.loai === 'bao_len_nguyen_nhan' && x.duLieu?.viecKey === `cause:${kase.id}`);   // PR-GVb (J5b): Báo QL tách khỏi tab Chờ duyệt → tab Để QL biết
     assert(the && the.kieuNut === 'nhac' && the.nguoiXin === null && the.phanLoai === 'bao-len' && the.hanDuyet === t.addDays(TODAY, -2)
       && the.dong[0].startsWith('Không cần duyệt'), JSON.stringify(the));
     assert(maLoi(() => yc.duyetYeuCau(P.admin, the.id)) === 400, 'Báo QL duyệt được');
@@ -348,7 +348,7 @@ export async function runPrDuyetTests(t: YThucTestKit) {
     const tb = conn.prepare(`SELECT * FROM notifications WHERE user_id = ? AND kind = 'nhac_viec' AND dedup_key LIKE ?`).get(kase.owner_user_id, `nhac:cause:${kase.id}:%`) as any;
     assert(tb && tb.duong === tatCa.href && tatCa.href.includes(`case=${kase.id}`) && d.duongThongBao(tb) === tatCa.href, JSON.stringify(tb));
     assert(nhacViec(P.admin, { key: `cause:${kase.id}`, ownerId: kase.owner_user_id }).daNhacLuc === r1.daNhacLuc, 'nhắc lần hai gửi thêm');
-    assert(yc.hopChoDuyet(P.admin).the.find((x: any) => x.id === the.id)?.duLieu?.daNhacLuc === r1.daNhacLuc, 'thẻ không hiện Đã nhắc');
+    assert(yc.hopChoDuyet(P.admin, { xem: 'de-biet' }).the.find((x: any) => x.id === the.id)?.duLieu?.daNhacLuc === r1.daNhacLuc, 'thẻ không hiện Đã nhắc');
     conn.prepare(`INSERT INTO case_issues (case_id, role, taxonomy_code, created_at) VALUES (?, 'primary', 'student.listening.technique', ?)`)
       .run(kase.id, new Date().toISOString());
     yc.quetYeuCau(TODAY);
@@ -406,12 +406,12 @@ export async function runPrDuyetTests(t: YThucTestKit) {
     assert(!!conn.prepare(`SELECT 1 FROM notifications WHERE user_id = ? AND kind = 'duyet_moi' AND entity_id = ? AND dedup_key LIKE 'bo_sung:%'`)
       .get(P.mbManager.userId, lan1.id), 'QL không được báo lại');
   });
-  check('DUYET (R2) · một hàm đếm: số badge/dải = chip "Tất cả" của hộp; quá hạn = số thẻ đỏ (gồm Báo QL)', () => {
+  check('DUYET (R2) · một hàm đếm: số badge/dải = chip "Tất cả" của hộp; quá hạn = số thẻ đỏ (PR-GVb: không gồm Báo QL)', () => {
     const hop = yc.hopChoDuyet(P.mbManager);
     const dem = yc.demYeuCau(P.mbManager);
     const tq = tongQuanSvc.tongQuanQuanLy(P.mbManager, { branchId: null, ct: 'ft' }).choDuyet;
     const do_ = hop.the.filter((x: any) => x.hanDuyet && x.hanDuyet < TODAY).length;
-    assert(dem.cho === hop.dem['tat-ca'] && dem.quaHan === do_ && dem.baoLen === hop.dem['bao-len'] && tq.cho === dem.cho && tq.quaHan === dem.quaHan,
+    assert(dem.cho === hop.dem['tat-ca'] && dem.quaHan === do_ && dem.deBiet === yc.hopChoDuyet(P.mbManager, { xem: 'de-biet' }).the.length && tq.cho === dem.cho && tq.quaHan === dem.quaHan,
       JSON.stringify({ dem, chip: hop.dem, do_, tq }));
   });
   check('DUYET (R4) · duyệt hàng loạt: GV → 403 trước khi đọc thẻ; id không tồn tại chỉ lỗi thẻ đó', () => {
@@ -452,9 +452,9 @@ export async function runPrDuyetDemoTests(t: YThucTestKit) {
   const yc: any = await import('../duyet/yeuCau.ts');
   check('DUYET (11) · Demo: hộp QL MB có thẻ Học thuật · Thông tin HV · Báo QL, ≥ 1 quá hạn, ≥ 1 tự đóng, ≥ 1 tự duyệt được; Hà có thẻ đã duyệt + bị từ chối', () => {
     const hop = yc.hopChoDuyet(P.mbManager);
-    for (const k of ['hoc-thuat', 'thong-tin-hv', 'bao-len']) assert(hop.dem[k] >= 1, `thiếu phân loại ${k}: ${JSON.stringify(hop.dem)}`);
-    /* PR-YT4 (K1-55): chip Ý thức có đề xuất WL 3 của Lương Gia Bảo; Báo QL có Ý thức quá hạn. */
-    assert(hop.dem['y-thuc'] >= 1 && hop.the.some((x: any) => x.loai === 'bao_len_y_thuc'), `Ý thức / Báo QL Ý thức: ${JSON.stringify(hop.dem)}`);
+    for (const k of ['hoc-thuat', 'thong-tin-hv']) assert(hop.dem[k] >= 1, `thiếu phân loại ${k}: ${JSON.stringify(hop.dem)}`);
+    /* PR-YT4 (K1-55): chip Ý thức có đề xuất WL 3 của Lương Gia Bảo; Báo QL có Ý thức quá hạn. // PR-GVb (J5b): Báo QL tách khỏi tab Chờ duyệt → tab Để QL biết */
+    assert(hop.dem['y-thuc'] >= 1 && yc.hopChoDuyet(P.mbManager, { xem: 'de-biet' }).the.some((x: any) => x.loai === 'bao_len_y_thuc'), `Ý thức / Báo QL Ý thức: ${JSON.stringify(hop.dem)}`);
     assert(hop.the.some((x: any) => x.hanDuyet && x.hanDuyet < t.TODAY && x.kieuNut !== 'nhac'), 'không có thẻ quá hạn');
     assert(hop.the.some((x: any) => x.loai === 'xin_y_kien'), 'không có Xin ý kiến');
     assert(hop.the.some((x: any) => x.nguoiXinId === P.mbManager.userId), 'không có thẻ QL tự gửi');

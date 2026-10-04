@@ -9074,6 +9074,10 @@ await runPrQuTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, ad
 const { runPrGvaTests } = await import('./prGva.tests.ts');
 await runPrGvaTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P });
 
+// ==================================================================== PR-GVb (Chờ duyệt: duyệt nhiều ở Tất cả, Để QL biết, U01)
+const { runPrGvbTests } = await import('./prGvb.tests.ts');
+await runPrGvbTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
