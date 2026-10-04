@@ -253,7 +253,7 @@ Hệ thống **không bao giờ** tự sinh lỗi ngẫu nhiên khi bạn dùng 
 
 Tài liệu liên quan:
 
-- **`plan.md`** — **kế hoạch đang chạy. Đọc mục 22 trước** (lộ trình 8 PR, chốt 21/09/2026)
+- **`plan.md`** — **kế hoạch duy nhất**: đã làm, còn lại, thứ tự đợt, model, prompt
 - **`thiet-ke/`** — **nguồn luật và đặc tả hiện hành.** Bắt đầu ở `thiet-ke/README.md`.
   Chỗ nào mâu thuẫn với tài liệu khác thì `thiet-ke/` thắng:
   - `NGUON-Rule-Y-thuc-2026-09-21.md` — nguồn mới nhất của chủ sản phẩm
@@ -278,7 +278,7 @@ Tài liệu liên quan:
 Bản chính (giáo viên dùng thật) chạy trên **Netlify**, dữ liệu ở **Turso**, tệp tải lên ở **Netlify Blobs**. Mọi bước —
 tạo database, đặt biến môi trường, khởi tạo, deploy, sao lưu — nằm trong **`TRIEN_KHAI.md`**, viết cho người không cần
 biết code. **Reset bản chính (10/2026): `TRIEN_KHAI.md` mục 1a "Reset bản chính"** — mười bước, làm một lần sau PR-DEPLOY.
-Kế hoạch kỹ thuật: `docs/superpowers/plans/2026-09-21-ban-chinh-netlify-turso.md`, `docs/superpowers/plans/2026-10-02-pr-deploy-reset-ban-chinh.md`.
+Kế hoạch kỹ thuật cũ (PR-Z2, PR-DEPLOY) đã gộp vào lịch sử git: `git show 575e898d:docs/superpowers/plans/`.
 
 **Máy dev không đổi gì:** `npm run dev`, `npm run seed`, `npm test`, `npm run check`, `npm run migrate` vẫn chạy như trên
 với file `data/pisa-demo.sqlite`. Các lệnh chỉ dùng cho bản chính:

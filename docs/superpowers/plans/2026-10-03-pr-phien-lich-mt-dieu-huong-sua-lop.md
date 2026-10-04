@@ -19,10 +19,10 @@
 - PR có giao diện: gõ `/ponytail lite` đầu phiên. Lệnh impeccable chỉ trong phạm vi PR.
 - Hàm mới ở `shared/domain/*` phải re-export qua `shared/domain/index.ts`. File phép kiểm mới phải import + gọi ở cuối `server/src/tests/run.ts`.
 - Đổi tên/xoá file thì sửa `CODE_MAP.md` trong cùng commit.
-- Xong mỗi PR: đánh dấu `[x]` ở file này, thêm một dòng mục 14 `plan.md`, mở PR (không tự merge), liệt kê chú thích `ponytail:`.
+- Xong mỗi PR: đánh dấu `[x]` ở file này, thêm một dòng mục 11 `plan.md`, mở PR (không tự merge), liệt kê chú thích `ponytail:`.
 
 ## Skill bắt buộc (mọi PR trong file này)
-- **superpowers:** `anthropic-skills:subagent-driven-development` chạy kế hoạch từng Task; `test-driven-development` cho mỗi Task (phép kiểm đỏ trước); `systematic-debugging` khi gặp lỗi/phép kiểm hỏng bất ngờ; `brainstorming` nếu phát sinh việc cần chủ sản phẩm quyết (dừng, hỏi, không tự chọn); `verification-before-completion` trước khi báo xong; `requesting-code-review` trước khi mở PR; `finishing-a-development-branch` để chốt nhánh (mở PR, không merge).
+- **superpowers:** `superpowers:subagent-driven-development` chạy kế hoạch từng Task; `test-driven-development` cho mỗi Task (phép kiểm đỏ trước); `systematic-debugging` khi gặp lỗi/phép kiểm hỏng bất ngờ; `brainstorming` nếu phát sinh việc cần chủ sản phẩm quyết (dừng, hỏi, không tự chọn); `verification-before-completion` trước khi báo xong; `requesting-code-review` trước khi mở PR; `finishing-a-development-branch` để chốt nhánh (mở PR, không merge).
 - **ponytail:** PR có giao diện gõ `/ponytail lite` đầu phiên; PR chỉ máy chủ giữ `full`. `/ponytail-review` trước khi mở PR; liệt kê mọi chú thích `ponytail:` trong mô tả PR.
 - **impeccable:** lệnh theo từng Task (ghi ở dòng "Skill:" đầu mỗi Task) — giữ nguyên, chỉ trong phạm vi PR; `/impeccable audit` trước **mọi** PR có giao diện.
 
@@ -703,7 +703,7 @@ Sổ tay `docs/so-tay/`: PR-LM và PR-DH làm lệch ảnh panel Lộ trình, K�
 Làm PR-PH trong docs/superpowers/plans/2026-10-03-pr-phien-lich-mt-dieu-huong-sua-lop.md (Task PH-1 → PH-3). Nhánh mới từ main: pr-ph-phien-dang-nhap.
 Đọc trước: CLAUDE.md, mục "Global Constraints" và "PR-PH" của kế hoạch. Không sửa giao diện ngoài dải "Mất kết nối".
 Phép kiểm trước (đỏ) → sửa → npm run check. Bấm thử: tắt API khi đang đăng nhập → không về màn đăng nhập.
-Xong: đánh dấu [x], thêm dòng mục 14 plan.md, /ponytail-review, mở PR (không merge).
+Xong: đánh dấu [x], thêm dòng mục 11 plan.md, /ponytail-review, mở PR (không merge).
 ```
 
 ### PR-LM
@@ -711,7 +711,7 @@ Xong: đánh dấu [x], thêm dòng mục 14 plan.md, /ponytail-review, mở PR 
 /ponytail lite
 
 Làm PR-LM trong docs/superpowers/plans/2026-10-03-pr-phien-lich-mt-dieu-huong-sua-lop.md (Task LM-1 → LM-7). Nhánh mới từ main: pr-lm-lich-mt-linh-hoat.
-Skill: anthropic-skills:subagent-driven-development (từng Task) · test-driven-development mỗi Task · systematic-debugging khi lỗi · brainstorming nếu cần chủ sản phẩm quyết · verification-before-completion trước khi báo xong · requesting-code-review + finishing-a-development-branch trước khi mở PR.
+Skill: superpowers:subagent-driven-development (từng Task) · test-driven-development mỗi Task · systematic-debugging khi lỗi · brainstorming nếu cần chủ sản phẩm quyết · verification-before-completion trước khi báo xong · requesting-code-review + finishing-a-development-branch trước khi mở PR.
 Đọc trước: CLAUDE.md, mục A, B (Q-0310-1..5, D1–D6), "Global Constraints", "PR-LM" và mục C (rủi ro tuần NULL); thiet-ke/HE_GIAO_DIEN.md.
 - LM-1 máy chủ trước, có phép kiểm đỏ; phép cũ về "vượt qua lượt kế tiếp" chỉ sửa đúng chỗ hành vi đổi theo Q-0310-1.
 - LM-2..LM-7 giao diện: /impeccable layout (LM-2, LM-3, LM-5, LM-7), /impeccable clarify (chữ cảnh báo đỏ, hộp xác nhận, LM-4, LM-6), /impeccable harden (popover lịch LM-3, LM-7).
@@ -719,7 +719,7 @@ Skill: anthropic-skills:subagent-driven-development (từng Task) · test-driven
 - LM-7: làm SAU LM-4; MockDetailPage + HopThaoTacMt đổi Modal → KhungPanel, chỉ đổi khung, chân theo luật S3.
 - grep mọi chỗ đọc planned_period_id, kiểm với lượt bỏ tuần, ghi danh sách vào mô tả PR.
 Kiểm: npm run check; npm run seed && npm run dev; ảnh 1440/375 sáng/tối: panel Lộ trình (4 trạng thái hàng MT, dải nhập điểm mở), hồ sơ MT (hộp Dời cả đợt có cảnh báo), Kế hoạch Test (HopKyNang + popover lịch + hộp xác nhận huỷ lịch), hồ sơ MT (ô thi bù, các panel thao tác KhungPanel).
-/impeccable audit các màn đã sửa → /ponytail-review. Xong: [x], dòng mục 14 plan.md, mở PR, liệt kê ponytail:, báo ảnh sổ tay lệch.
+/impeccable audit các màn đã sửa → /ponytail-review. Xong: [x], dòng mục 11 plan.md, mở PR, liệt kê ponytail:, báo ảnh sổ tay lệch.
 ```
 
 ### PR-DH
@@ -727,12 +727,12 @@ Kiểm: npm run check; npm run seed && npm run dev; ảnh 1440/375 sáng/tối: 
 /ponytail lite
 
 Làm PR-DH trong docs/superpowers/plans/2026-10-03-pr-phien-lich-mt-dieu-huong-sua-lop.md (Task DH-1 → DH-5). Nhánh mới từ main SAU khi PR-LM đã merge: pr-dh-bang-dieu-huong.
-Skill: anthropic-skills:subagent-driven-development (từng Task) · test-driven-development mỗi Task · systematic-debugging khi lỗi · brainstorming nếu cần chủ sản phẩm quyết · verification-before-completion trước khi báo xong · requesting-code-review + finishing-a-development-branch trước khi mở PR.
+Skill: superpowers:subagent-driven-development (từng Task) · test-driven-development mỗi Task · systematic-debugging khi lỗi · brainstorming nếu cần chủ sản phẩm quyết · verification-before-completion trước khi báo xong · requesting-code-review + finishing-a-development-branch trước khi mở PR.
 Đọc trước: CLAUDE.md, mục A, B (Q-0310-4, D5), "Global Constraints", "PR-DH".
 - DH-1/DH-3 hàm thuần chuSapToi, keBen có phép kiểm đỏ trước.
 - DH-2, DH-4: /impeccable layout. DH-5: /impeccable critique chỉ vùng đầu trang Học viên & Lớp, rồi /impeccable layout.
 Kiểm: npm run check; ảnh 1440/375 sáng/tối Học viên & Lớp (cột mới, Sắp tới 3 dạng), hồ sơ HV và hồ sơ lớp (thanh Trước/Sau); bấm thử Trước/Sau với bộ lọc "Cần làm" và với link mở thẳng.
-/impeccable audit → /ponytail-review. Xong: [x], dòng mục 14 plan.md, mở PR, liệt kê ponytail:, báo ảnh sổ tay lệch.
+/impeccable audit → /ponytail-review. Xong: [x], dòng mục 11 plan.md, mở PR, liệt kê ponytail:, báo ảnh sổ tay lệch.
 ```
 
 ### PR-SL
@@ -740,10 +740,10 @@ Kiểm: npm run check; ảnh 1440/375 sáng/tối Học viên & Lớp (cột m�
 /ponytail lite
 
 Làm PR-SL trong docs/superpowers/plans/2026-10-03-pr-phien-lich-mt-dieu-huong-sua-lop.md (Task SL-1 → SL-2). Nhánh mới từ main: pr-sl-sua-ca-lop.
-Skill: anthropic-skills:subagent-driven-development (từng Task) · test-driven-development mỗi Task · systematic-debugging khi lỗi · brainstorming nếu cần chủ sản phẩm quyết · verification-before-completion trước khi báo xong · requesting-code-review + finishing-a-development-branch trước khi mở PR.
+Skill: superpowers:subagent-driven-development (từng Task) · test-driven-development mỗi Task · systematic-debugging khi lỗi · brainstorming nếu cần chủ sản phẩm quyết · verification-before-completion trước khi báo xong · requesting-code-review + finishing-a-development-branch trước khi mở PR.
 Đọc trước: CLAUDE.md, mục B (Q-0310-3), "Global Constraints", "PR-SL"; IntakePanel.tsx làm mẫu.
 - SL-1 máy chủ: phép kiểm đỏ trước; gọi lại updateStudent / updateCycle / setBaseline / reviseTarget, không viết lại luật; một giao dịch.
 - SL-2: /impeccable layout + /impeccable harden; không có ô dán Excel; luật S3 cho nút chân panel.
 Kiểm: npm run check; ảnh 1440/375 sáng/tối panel (chưa sửa / có lỗi / có Target đổi); bấm thử bằng tài khoản Quản lý và GVCN.
-/impeccable audit → /ponytail-review. Xong: [x], dòng mục 14 plan.md, cập nhật CODE_MAP.md, mở PR, liệt kê ponytail:.
+/impeccable audit → /ponytail-review. Xong: [x], dòng mục 11 plan.md, cập nhật CODE_MAP.md, mở PR, liệt kê ponytail:.
 ```

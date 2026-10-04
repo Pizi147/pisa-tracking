@@ -1,7 +1,7 @@
 # PISA Progress — luật mặc định cho mọi session Claude
 
 Tệp này tự nạp vào mọi session của repo (planning, code, worktree), nên giữ ngắn. Chi tiết nằm ở
-`PROMPT_SESSION_CODE.md`, `CODE_MAP.md` và đặc tả trong `docs/superpowers/specs/`.
+`plan.md` (kế hoạch duy nhất: việc còn lại, thứ tự, model, prompt), `CODE_MAP.md` và đặc tả trong `docs/superpowers/specs/`.
 
 ## Khi các nguồn mâu thuẫn
 1. Quyết định của chủ sản phẩm, đặc tả và kế hoạch PR đã duyệt.
