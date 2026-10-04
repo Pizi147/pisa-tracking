@@ -144,10 +144,7 @@ Cỡ chữ có 4 mức (11 / 11,5 / 12 / 12,5 px) và 3 chiều cao dòng cho c�
 - **Q-H:** ĐÃ CHỐT 02/10: ba kiểu chip như H1.
 - **Q-K:** ĐÃ CHỐT 02/10: 12 px cho chữ nội dung.
 - **Q-D:** ĐÃ CHỐT 02/10: tách "Để QL biết" (J5b).
-- **Q-B:** ĐÃ GIẢI QUYẾT 02/10. "Duyệt nhiều" vốn đã có nhưng bị ẩn: chỉ hiện khi lọc đúng một phân loại. Đã mở ở tab
-  "Tất cả" và thêm nút "Chọn hết n" (cùng loại, tối đa 50 như máy chủ). "Nhắc tất cả (n)" là nút mới, đặt ở hộp Chờ duyệt
-  (thẻ Báo lên) và ở Công việc › "Của GV". Máy chủ nhắc lại trong cùng ngày thì không gửi thêm thông báo.
-  Lưu ý: mỗi việc vẫn là một thông báo, nên GV nợ 10 việc sẽ nhận 10 thông báo.
+- **Q-B:** ĐÃ CHỐT 02/10 — **CHƯA LÀM → làm ở PR-GVb** (docs/superpowers/plans/2026-10-03-pr-gvb-cho-duyet.md). Đoạn ghi "Đã mở ở tab Tất cả…" trước đây sai: main vẫn chỉ duyệt nhiều khi lọc một phân loại (HopChoDuyet.tsx:70). Đặc tả giữ: Tất cả + "Chọn hết n" (cùng loại, ≤50), "Nhắc tất cả (n)", không nhắc lặp trong ngày, báo thành công một phần.
 
 ## File → mục
 | File | Mục |
