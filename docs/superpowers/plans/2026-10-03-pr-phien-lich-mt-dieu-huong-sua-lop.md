@@ -747,3 +747,156 @@ Skill: superpowers:subagent-driven-development (từng Task) · test-driven-deve
 Kiểm: npm run check; ảnh 1440/375 sáng/tối panel (chưa sửa / có lỗi / có Target đổi); bấm thử bằng tài khoản Quản lý và GVCN.
 /impeccable audit → /ponytail-review. Xong: [x], dòng mục 11 plan.md, cập nhật CODE_MAP.md, mở PR, liệt kê ponytail:.
 ```
+
+---
+
+# PR-DH — Bổ sung 04/10 (DH-6 → DH-13)
+
+Viết 04/10 trên main `67cb5db` (PR-LM #182–#188 và PR-NT đã merge; PHH, SO chưa — **merge PR-DH sau PHH và SO**, merge `origin/main` vào nhánh trước khi mở PR). Cùng nhánh `pr-dh-bang-dieu-huong`, cùng `prDh.tests.ts` (tạo ở DH-1, gọi ở cuối `run.ts`), cùng skill và luật "Global Constraints" ở đầu file. Mọi `Interfaces` ở đây là hợp đồng giữa các Task.
+
+**Thứ tự làm cả PR:** DH-1 → DH-2 (bản sửa dưới đây) → DH-6 → DH-9 (cùng chạm `BangHocVienLop`/`khoaLopThuong`) → DH-3 → DH-4 → DH-5 → DH-7 → DH-8 → DH-11 → DH-12 → DH-10 (chờ chủ sản phẩm) → DH-13.
+
+## Sửa bản đồ code của DH-1 → DH-5 (đã kiểm 04/10; số dòng cũ lệch sau PR-LM/PR-NT)
+
+| Chỗ | Số dòng cũ | Số dòng đúng |
+|---|---|---|
+| `StudentsPage.tsx` đầu trang (tiêu đề, ô tìm, Phạm vi/Chi nhánh/Xếp, `CongTacKhung`, chip) | `:138-208` | `:145-212` (chip `:194-211`) |
+| `StudentsPage.tsx` tiêu đề cột / `CotBangLop` / `HopLop` | `:299-306` / `:312-392` | `tieuDeCot :130`, khối tiêu đề `:247-252`, `CotBangLop :279-287`, `HopLop :293-386` |
+| `BangHocVienLop.tsx` "Sắp tới" | `:147-148,169-171` | bảng `:147-148,169-171` (đúng), thẻ điện thoại `:103-104,123` |
+| `BangHocVienLop.tsx` ô Target/Khoá | — | bảng `:161-168`, thẻ `:120-122` |
+| `StudentDetailPage.tsx` Quay lại | `:183` | `:183` (đúng, `navigate(-1)`) |
+| `ClassRoster.tsx` link tên (cho DH-3) | `:121,207` | `:121` (thẻ), `:207` (bảng) — đúng |
+| `DauTrangLop.tsx` | chưa có Quay lại | `<header className="card …">` `:136`; `ClassOverviewPage.tsx:86` gọi nó |
+| Link "Hồ sơ lớp" ở `HopLop` (cho DH-4) | — | tên lớp `<Link>` `:368`, menu "Hồ sơ lớp" `:320` |
+
+`standing.ts` (DH-1 Step 4): chưa kiểm — grep `nextAttemptLabel` trước khi sửa, đừng tin số dòng.
+
+## DH-2 sửa (quyết định 04/10: cột Dự kiến thi áp cả lớp thường)
+
+Thay các dòng "nhóm lớp thường không có cột này" và độ rộng của DH-2 Step 3 bằng:
+- Cả hai nhóm có **8 cột**: Học viên · Kết quả gần nhất · Target (FT) / Khoá (thường) · **Dự kiến thi** · Sắp tới · Case · Việc tiếp theo · ⋯. `tieuDeCot(k)` (`:130`) trả cùng bộ cho hai nhóm, chỉ đổi cột 3.
+- `CotBangLop` (`:279-287`): Học viên 19 · Kết quả 20 · Target/Khoá 10 · Dự kiến thi 11 · Sắp tới 15 · Case 5 · Việc tiếp theo 18 (= 98%) · ⋯ `w-12`; `min-w-[860px]` → `min-w-[960px]` ở **hai** chỗ (`:248`, `:254`). Cột Case đổi từ chỉ số 4 sang **5** (`text-right`, `:250`).
+- `HopLop` hàng lớp phải khớp 8 cột: `HangNhom soCotDau={3}` giữ, `<td colSpan={3}>` badge (`:378`) → `colSpan={4}`; `BangHocVienLop soCot={7}` (`:383`) → `8`; thẻ điện thoại `soCot={1}` giữ.
+- Ô: `ExamPlanText plan={s.examPlan}` (`DongRoster` thêm `examPlan: ExamPlan`; roster FT và thường **đều đã trả** `examPlan`, `classes.ts:~609`). Thẻ điện thoại: thêm `{ nhan: 'Dự kiến thi', noiDung: <ExamPlanText …/> }` sau dòng Target/Khoá.
+- Phép đỏ (quét nguồn, thay phép cũ): `StudentsPage.tsx` có `'Dự kiến thi'` trong `tieuDeCot` và **không** phân nhánh theo `k` cho cột đó; `BangHocVienLop.tsx` có `ExamPlanText` ở cả nhánh bảng lẫn nhánh `the`.
+
+### Task DH-6: Cột Target + Dự kiến thi ở bảng điểm lớp thường (hồ sơ lớp)
+Skill: test-driven-development · impeccable layout
+
+**Files:** Modify `web/src/modules/classes/BangDiemLopThuong.tsx` (type `DongThuong :20-29`, bảng `:110-173`, thẻ `:67-108`). Test: `prDh.tests.ts`.
+
+**Interfaces:**
+- Consumes: roster lớp thường đã trả `cycle: { target, khongCamKet, … } | null` và `examPlan` (PR-NT, `classes.ts:~600-612`) — **không đổi máy chủ**. `TargetText`, `ExamPlanText` (`web/src/ui/ui.tsx:443,462`).
+- Produces: `DongThuong` thêm `cycle: { target: number | null; khongCamKet?: boolean } | null; examPlan: ExamPlan`.
+
+- [ ] **Step 1: Phép đỏ.**
+  - Quét nguồn: `BangDiemLopThuong.tsx` chứa `TargetText`, `ExamPlanText`, và hai tiêu đề `Target`, `Dự kiến thi` ở cả bảng lẫn thẻ điện thoại (`nhan: 'Target'`, `nhan: 'Dự kiến thi'`).
+  - Máy chủ (bảo vệ, có thể đã xanh): roster của một lớp thường (dựng em có Target 5.5 và dự kiến thi tháng, theo mẫu `prNt.tests.ts` — đọc đầu file lấy cách dựng và gọi) trả `cycle.target === 5.5` và `examPlan.confidence === 'month'`; em không có chu kỳ → `cycle === null`, `examPlan.confidence === 'none'`, không lỗi.
+- [ ] **Step 2: Đỏ** → **Step 3: Sửa:**
+  - Bảng: hai `<th rowSpan={2}>` mới sau "Học viên": `Target` (căn phải, `title` như `ClassRoster.tsx:177`) và `Dự kiến thi` (`title` như `ClassRoster.tsx:178`); ô `<TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} />` và `<ExamPlanText plan={s.examPlan} />`, cùng class ô với `ClassRoster.tsx:219-220`.
+  - `colgroup` (`:113-117`): Học viên `24%` → `19%`, thêm `w-[6%]` (Target) và `w-[9%]` (Dự kiến thi); `min-w` `840/960` → `920/1040`. Lớp thường **chỉ theo dõi** Target (04/10): không so với điểm, không tô đạt/chưa đạt.
+  - Thẻ điện thoại: hai dòng `Target`, `Dự kiến thi` đứng **đầu** `dong` (trước các mốc), cùng thứ tự với `ClassRoster.tsx:131-132`.
+  - Tên cột giữ "Target" (xem DH-10).
+- [ ] **Step 4:** `npm run check` + ảnh bảng điểm lớp FOU/BE ở 1440/375: không cột nào xuống dòng xấu, cột Học viên không cắt tên quá sớm → **Step 5:** commit `"PR-DH (6): bảng điểm lớp thường có cột Target + Dự kiến thi"`.
+
+### Task DH-7: Popover "Thiếu n" không bị hàng dưới che (mục L1 của `2026-10-03-pr-l1-popover-bao-cao-loc-gv.md`)
+Skill: test-driven-development · impeccable harden
+
+**Files:** Modify `web/src/modules/students/MissingBadge.tsx:37-54` (một chỗ đủ cho 4 nơi dùng: `BangHocVienLop`, `ClassRoster`, `BangDiemLopThuong`, `StudentDetailPage`). Test: `prDh.tests.ts`.
+
+**Interfaces:** props của `MissingBadge` **không đổi** (`items`, `className`, `gon`).
+
+- [ ] **Step 1: Xác nhận nguyên nhân (không sửa trước khi thấy):** `npm run seed && npm run dev`, Playwright 1440: Học viên & Lớp → mở lớp có ≥ 3 em thiếu thông tin → bấm badge "Thiếu n" ở hàng 2. Ghi `document.elementFromPoint(giữa popover)`: nếu trả về ô của hàng 3 thì đúng như L1 (popover `absolute z-20` kẹt trong ngữ cảnh xếp chồng của hàng). Nếu không tái hiện được → dừng, ghi vào mô tả PR, không sửa.
+- [ ] **Step 2: Phép đỏ (quét nguồn):** `MissingBadge.tsx` có `createPortal`, `fixed`, `Escape`, `getBoundingClientRect`, `aria-expanded`; **không** còn `absolute z-20`; `title` của nút là `open ? undefined : …` (hết tooltip hệ thống đè popover).
+- [ ] **Step 3: Sửa** theo mẫu `MenuDong.tsx:35-73,88-108` (portal → `document.body`, `fixed`, `z-[60]`): vị trí `useLayoutEffect` từ `getBoundingClientRect()` của nút; `left = clamp(r.left, 8, innerWidth - 240 - 8)` (rộng `15rem`); đủ chỗ thì mở xuống, không thì lật lên; đóng khi `mousedown` ngoài, `Escape` (pha bắt, trả focus về nút), `scroll` (bắt), `resize`. Sự kiện React **vẫn nổi lên cha qua portal** → giữ `stopPropagation`/`preventDefault` ở popover và nút (hàng bảng/thẻ có `onClick` riêng). Viết trong `MissingBadge`, không tách hook (`ponytail:` tách khi có chỗ thứ ba cần).
+- [ ] **Step 4: Bấm thử (Playwright, 1440 + 375):** badge ở hàng đầu, giữa, cuối bảng; ở bảng cuộn ngang (640–1023 px); ở thẻ điện thoại; ở hồ sơ HV. Mỗi ca: `elementFromPoint` ở 4 góc popover trả về phần tử trong popover; popover không tràn mép phải ở 375; không che nút ⋯ của hàng chứa nó; Esc đóng và focus về nút. Ảnh 1440/375.
+- [ ] **Step 5:** `npm run check` → commit `"PR-DH (7): popover Thiếu n vẽ bằng portal, không bị hàng dưới che"`.
+
+### Task DH-8: Chip "+n" ở dòng lớp bấm mở được (H6)
+Skill: test-driven-development
+
+**Files:** `web/src/modules/students/StudentsPage.tsx:327-331` (`menuBadgeAn`), `DauTrangLop.tsx:175-178`. Test: `prDh.tests.ts`.
+
+Đã kiểm 04/10: `+n` **đã** là `MenuDong bieuTuong="+n"` (PR-HVL B4) — nút thật, không phụ thuộc rê chuột; mỗi mục đi `denBadge(x) ?? /hoc-vien/lop/:id`. Nên H6 có thể đã xong; việc là **kiểm rồi đóng**, không viết lại.
+
+- [ ] **Step 1: Bấm thử (Playwright 1440 + 375, tài khoản Quản lý):** lớp có ≥ 3 badge (`+1` hoặc `+2` hiện) — (a) nút `+n` thấy ngay, không cần rê chuột; (b) bấm ở hàng lớp **đang đóng** và **đang mở** → menu mở, hàng lớp không gập/mở theo; (c) chọn từng mục đi đúng đích (`cho-duyet` → `/cong-viec/cho-duyet?lop=`, `qua-han` → `/hoc-vien?view=qua-han&classId=`, `cham` → Lịch Test, mục không có đích → Hồ sơ lớp); (d) ở 375 vùng bấm ≥ 40 px (`after:-inset-2` của `MenuDong`).
+- [ ] **Step 2:** cả bốn ca đạt → **không đổi mã**: thêm một phép quét nguồn giữ nguyên hành vi (`StudentsPage.tsx` chứa `bieuTuong={\`+${b.an.length}\`}` và `onChon` điều hướng), tick `[x]` H6 ở `2026-10-02-ux-sau-critique.md:74` kèm "đã có từ PR-HVL B4, kiểm 04/10". Ca nào hỏng → sửa đúng chỗ hỏng, phép kiểm đỏ trước.
+- [ ] **Step 3 (chỉ ghi, không sửa):** ở `DauTrangLop.tsx:177` mục `+n` **không có đích** (`thieu-gv`, `chang`, `thieu-tt`) gọi `() => undefined` — chọn mục không làm gì. Ghi vào mô tả PR để chủ sản phẩm quyết đích; ngoài phạm vi H6.
+- [ ] **Step 4:** commit `"PR-DH (8): H6 — kiểm +n bấm được, thêm phép giữ hành vi"`.
+
+### Task DH-9: Badge "n HV chưa có quyết định chuyển lớp" khớp số dòng có cờ (D1)
+Skill: test-driven-development (hàm thuần `khoaLopThuong`)
+
+**Files:** Modify `shared/domain/hocVienLop.ts:179-193` (`khoaLopThuong`), `web/src/modules/students/BangHocVienLop.tsx:161-168` (ô Khoá có `title`). Test: `prDh.tests.ts`.
+
+**Nguyên nhân (đã đọc code 04/10):** badge đếm `emChuaCoLenh` (`classes.ts:99,126`; `hocVienLop.ts:224-231`) và cờ dòng `chuaLoTrinh` cũng từ đúng hàm đó (`classes.ts:421,670`) — hai số bằng nhau từ máy chủ. Lệch nằm ở **hiển thị**: `khoaLopThuong` chọn **một** dòng phụ theo thứ tự `tiếp theo đã ghi › chờ duyệt đề xuất › nhắc chưa ghi › kết thúc khoá` (`:186-191`), nên em chưa có quyết định **nhưng đã ghi "tiếp theo: …"** hiện "tiếp theo: …" và **không** hiện cờ → badge `3` nhưng chỉ 2 dòng có chữ "chưa có quyết định chuyển lớp". (Chữ hiện hành là `CHU_CHUYEN_LOP.chua`; không đổi chữ.)
+
+**Interfaces:** `khoaLopThuong(i)` giữ chữ ký; `phu` của em có `nhacLoTrinh: true` **luôn chứa** `CHU_CHUYEN_LOP.chua.toLowerCase()`.
+
+- [ ] **Step 1: Phép đỏ (thuần)** — `prDh.tests.ts`:
+
+```ts
+  check('PR-DH (9) · khoaLopThuong: em chưa có quyết định chuyển lớp luôn có chữ cờ, kể cả khi đã ghi lộ trình tiếp theo', () => {
+    const g = { maChuongTrinh: 'FOU', tuanHienTai: 10, tongTuan: 10, tuanKetThuc: '2026-10-12', homNay: '2026-10-04' };
+    const co = d.CHU_CHUYEN_LOP.chua.toLowerCase();   // chưa re-export qua index thì import từ shared/domain/chuyenLop.ts
+    const phu = (o: object) => d.khoaLopThuong({ ...g, tiepTheo: null, ...o }).phu ?? '';
+    assert(phu({ nhacLoTrinh: true }).includes(co), 'chưa ghi lộ trình');
+    assert(phu({ tiepTheo: 'BE', nhacLoTrinh: true }).includes(co), 'đã ghi lộ trình, chưa có quyết định');
+    assert(/tiếp theo: BE/.test(phu({ tiepTheo: 'BE', nhacLoTrinh: true })), 'vẫn giữ lộ trình đã ghi');
+    assert(!phu({ tiepTheo: 'BE', nhacLoTrinh: false }).includes(co), 'em đã có quyết định: không cờ');
+    assert(phu({ choDuyetChuyen: true, nhacLoTrinh: false }).includes('chờ QL duyệt'), 'đề xuất đang chờ duyệt');
+  });
+```
+- [ ] **Step 2: Đỏ** (phép 2 FAIL) → **Step 3: Sửa** `khoaLopThuong`: `phu` = nếu `tiepTheo` thì `"tiếp theo: {x}"` nối ` · ` với chữ cờ khi `nhacLoTrinh`; còn lại giữ thứ tự cũ. Ô Khoá của `BangHocVienLop` (bảng `:165`, thẻ `:121`) thêm `title={khoa.phu}` (dòng phụ dài bị `truncate`).
+- [ ] **Step 4:** `npm run check` — các phép cũ về chữ cột Khoá (`hocVienLop.tests.ts`, `lenLop.tests.ts`) chỉ sửa đúng chỗ chữ đổi theo bước này, ghi `// PR-DH 04/10: D1`.
+- [ ] **Step 5: Bấm thử:** lớp thường ở Cuối khoá (seed `lenLop`): số trên badge = số dòng em có chữ cờ ở cột Khoá. Commit `"PR-DH (9): D1 — dòng em hiện cờ chưa có quyết định chuyển lớp khớp số badge"`.
+
+### Task DH-10: J6 — cột "Target" → "Mục tiêu"? **KHÔNG ĐỔI, chờ chủ sản phẩm**
+Skill: brainstorming (chỉ để ghi quyết định, không tự chọn)
+
+Đã kiểm `thiet-ke/` 04/10 — các nguồn **mâu thuẫn**:
+- `THUAT_NGU_2026-10-01.md:24` (chủ sản phẩm 01/10, **bản mới nhất**): "Mục tiêu band → Đổi hết thành **Target**"; B-026 `Target`, B-027/E-038 `Mục tiêu` là "trùng nghĩa" cần thống nhất.
+- `THUAT_NGU_DA_CHOT.md` (22/09, đã bị 01/10 thay): g13-002 `Target` "Sửa thành" **trống = giữ**; g5-003 `Mục tiêu` (mockup mới) cũng trống.
+- `TU_DIEN_VA_CHU.md:474`: "FT `Mục tiêu` · lớp thường `Khoá`".
+- J6 (critique 02/10): đổi thành "Mục tiêu".
+
+Theo `CLAUDE.md` (quyết định chủ sản phẩm mới nhất đứng trước; mâu thuẫn thì ghi, không tự làm): **giữ "Target"** ở mọi cột DH-2/DH-6; không viết phép kiểm đổi chữ.
+- [ ] **Step 1:** ghi vào mô tả PR một câu hỏi: "Cột Target ở Học viên & Lớp: giữ 'Target' (chốt 01/10) hay đổi 'Mục tiêu' (J6, TU_DIEN)? Nếu đổi, đổi cả Hồ sơ lớp, Thêm HV, Kế hoạch Test (`· Target {điểm}`)." Đánh `[~]` J6 ở `2026-10-02-ux-sau-critique.md:110`.
+- [ ] **Step 2:** chủ sản phẩm trả lời "đổi" → `grep -rn "Target" web/src` các **tiêu đề cột và nhãn hiển thị** (không đụng tên biến, không đụng "Mục tiêu tại thời điểm đánh giá"), một commit riêng `"PR-DH (10): J6 Target → Mục tiêu"`, impeccable `clarify` chốt chữ.
+
+### Task DH-11: J8 — chữ bị cắt mất nghĩa
+Skill: test-driven-development · impeccable clarify
+
+**Files:** `web/src/ui/ViecTiep.tsx:19-26` + các chỗ tìm được ở Step 1. Test: `prDh.tests.ts`.
+
+- [ ] **Step 1: Dò (Playwright, 1440 + 375, seed, Quản lý):** ở Học viên & Lớp (mở 2 lớp FT + 1 lớp thường), Hồ sơ lớp (3 tab, FT và thường), Hồ sơ HV: liệt kê phần tử có `scrollWidth > clientWidth + 1` và (`text-overflow: ellipsis` hoặc `overflow: hidden` + `white-space: nowrap`) kèm chữ và selector. Dán danh sách vào mô tả PR. Ba chỗ chủ sản phẩm thấy: "Ghi kết q…" (cột Theo dõi hồ sơ lớp) = `ViecTiep.tsx:19-26`; "L, R, W1, W…" và "Cao Khánh Linh, Lê …" chưa rõ chỗ — ứng viên: `DauTrangLop.tsx:203` (dòng GV bộ môn `overflow-hidden whitespace-nowrap`), `ClassCreatePanel.tsx:284` (`dạy được L, R, W1, W2` trong `<option>`), danh sách tên nối dấu phẩy. Chỗ nào dò ra mới sửa.
+- [ ] **Step 2: Phép đỏ (quét nguồn):** `ViecTiep.tsx` chữ việc dùng `line-clamp-2` (không còn `min-w-0 truncate` ở span chữ việc) và vẫn có `title={v.title}`; mỗi chỗ khác dò ra: phép quét tương tự trên file đó.
+- [ ] **Step 3: Sửa (impeccable `clarify`):** chữ **mang nghĩa** (câu việc, tên người, mã kỹ năng) → xuống dòng tối đa 2 dòng (`line-clamp-2 break-words`) hoặc rút gọn có chủ đích "+k" như `DongGiaoVienBoMon`, **luôn kèm `title` đủ chữ**; chữ phụ (mã tuần, ngày, hạn) không bao giờ cắt (`shrink-0 whitespace-nowrap`, như `ViecTiep` đang làm với "quá hạn n ngày"). Không đụng chỗ cắt có chủ đích của PR-S4F #11 nếu nghĩa không mất. `ViecTiep` dùng chung (Học viên & Lớp, hồ sơ lớp, Cần hỗ trợ): chụp cả ba nơi sau khi sửa.
+- [ ] **Step 4:** `npm run check` + ảnh trước/sau 1440/375 → commit `"PR-DH (11): J8 chữ có nghĩa không bị cắt, kèm title"`.
+
+### Task DH-12: J10 — hồ sơ HV bỏ ý "chưa có dữ liệu" nói hai lần
+Skill: test-driven-development · impeccable clarify
+
+**Files:** `web/src/modules/cases/SkillBoard.tsx:595-607` (`ScoreCell`) và `:699-707` (`Trend`), `web/src/modules/cases/TheKyNang.tsx:42` (`TheGon`), rà `web/src/modules/students/DauHoSo.tsx:220`. Test: `prDh.tests.ts`.
+
+Phần "Quyền cấp riêng ở Quản trị" của J10 đã xong ở PR-BC. Còn lại: bảng kỹ năng hồ sơ HV — hàng chưa có điểm: ô điểm hiện chip "—" kèm "chưa có dữ liệu" ngay cạnh cột xu hướng ghi "chưa có điểm" (`SkillBoard.tsx:705`) → một ý hai lần; thẻ điện thoại `TheGon` hiện "chưa có điểm" rồi "—".
+
+- [ ] **Step 1: Phép đỏ (quét nguồn):** `SkillBoard.tsx` không còn chuỗi JSX `mt-0.5">chưa có dữ liệu` trong `ScoreCell` (comment ở `:583` không tính — dùng regex trên JSX); `TheKyNang.tsx` `TheGon` không dựng đồng thời `'—'` và `'chưa có điểm'` (`diem` rỗng khi `band === null`).
+- [ ] **Step 2: Sửa (impeccable `clarify`):** `ScoreCell`: `band === null` → chỉ chip "—" với `title="Chưa có điểm"` (cột Trend giữ chữ "chưa có điểm" **một lần**); `TheGon`: `band === null` → chỉ chữ "chưa có điểm", không "—". `DauHoSo.tsx:220`: chỉ sửa nếu ô "Kết quả gần nhất" hiện đồng thời "—" và "chưa có điểm nào"; không thì giữ.
+- [ ] **Step 3:** `npm run check`; ảnh hồ sơ HV chưa có điểm (bảng 1440, thẻ 375) → commit `"PR-DH (12): J10 hồ sơ HV không nói chưa có điểm hai lần"`.
+
+### Task DH-13: Kiểm thật panel Chuyển lớp vs demo bar · 375 px · Trước/Sau · audit cuối
+Skill: verification-before-completion · impeccable adapt, audit
+
+- [ ] **Step 1: Panel Chuyển lớp có đè demo bar không?** Đã đọc: `DemoBar` nằm **trong luồng** (`App.tsx:129`, không fixed/sticky); `KhungPanel` là `fixed inset-0 z-50` (`KhungPanel.tsx:19,67`) nên phủ **lên** cả demo bar và header — chủ ý như mọi panel. Kiểm hai ca thật bằng Playwright, 1440 và 375×667, kịch bản demo bật (không `banChinh`): (a) `ChuyenLopPanel` (hồ sơ HV ⋮ Chuyển lớp, `KhungPanel` hẹp); (b) `TransitionPanel` (hồ sơ lớp ⋮ Chuyển tiếp lớp…, `rong="toan"`, `longTrong`). Mỗi ca ghi: `panel.getBoundingClientRect().top === 0`; `elementFromPoint` ở giữa mép trên panel và giữa nút ✕ trả về phần tử trong panel; nút chính ở chân panel nằm trong viewport và không bị thanh dưới điện thoại (`z-30`) che; Esc đóng. **Có lỗi thật → sửa đúng chỗ lệch (phép đỏ trước); không có → ghi "đã kiểm, không có" vào mô tả PR, không sửa gì.**
+- [ ] **Step 2: Trước/Sau (DH-3/DH-4) bấm thử đủ ba ca:** (a) bộ lọc "Cần làm" → mở em thứ 2 → Sau đi đúng em thứ 3 **của danh sách đã lọc**; (b) tải lại trang giữa chừng → thanh vẫn còn (`sessionStorage`); (c) dán link `/hoc-vien/:id` vào tab mới → thanh theo lớp của em, A→Z, "Quay lại" về `/hoc-vien` khi không có lịch sử; (d) em đầu danh sách: nút Trước khoá; em cuối: Sau khoá.
+- [ ] **Step 3: 375 px — `/impeccable adapt`** chỉ cho phần DH thêm: cột/thẻ Dự kiến thi, `ThanhTruocSau`, thẻ bảng điểm lớp thường (Target, Dự kiến thi), popover Thiếu n. Tiêu chí: `document.documentElement.scrollWidth <= innerWidth`; không phần tử bấm được nào cao dưới 40 px (bỏ qua demo bar).
+- [ ] **Step 4: `/impeccable audit`** Học viên & Lớp, hồ sơ HV, hồ sơ lớp (FT + thường), popover Thiếu n — ảnh 1440/375 sáng/tối. Vấn đề ngoài phạm vi PR → ghi mô tả PR, không sửa.
+- [ ] **Step 5:** `npm run check` xanh → `/ponytail-review` → liệt kê mọi chú thích `ponytail:` trong mô tả PR → đánh `[x]` DH-1→13 ở file này → thêm một dòng mục 11 `plan.md` → ảnh sổ tay lệch (Học viên & Lớp, hồ sơ lớp, hồ sơ HV) → mở PR (không tự merge).
+
+## Review Focus (bổ sung)
+- Danh sách Trước/Sau rỗng, một phần tử, hoặc `id` không có trong danh sách đã lưu → `keBen` trả `null`, thanh rơi về `dsDuPhong`, không lỗi (DH-3, phép `keBen` đã có).
+- Popover "Thiếu n" ở hàng cuối bảng / sát mép phải 375 px → lật lên, không tràn (DH-7 Step 4).
+- Em lớp thường không có chu kỳ hoặc Target KCK ở cột mới → "—"/"KCK", không "NaN"/"0.0" (DH-6 Step 1, phép máy chủ `cycle === null`).
+- Em ở Cuối khoá đã ghi lộ trình tiếp theo nhưng chưa có quyết định chuyển lớp → vẫn có cờ, số badge = số dòng (DH-9).
+- Bảng 8 cột ở 960 px: lớp thường có dòng phụ Khoá dài ("tiếp theo: … · chưa có quyết định chuyển lớp") → cắt có `title`, không đẩy cột khác (DH-2 sửa + DH-9 Step 3).
