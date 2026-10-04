@@ -25,7 +25,7 @@ function KhungModal({ onClose, title, children, footer, width, z }: {
   useGiuFocus(khung);
   const idTen = useId();
   return (
-    <div className={`fixed inset-0 ${z} flex items-center justify-center p-4`} role="dialog" aria-modal="true" aria-labelledby={idTen}>
+    <div className={`fixed inset-0 !mt-0 ${z} flex items-center justify-center p-4`} role="dialog" aria-modal="true" aria-labelledby={idTen}>
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       <div ref={khung} tabIndex={-1} className={`relative w-full ${width} card shadow-2xl max-h-[88vh] flex flex-col -outline-offset-2`}>
         <header className="flex items-center justify-between px-5 py-3 border-b" style={{ borderColor: 'var(--line)' }}>

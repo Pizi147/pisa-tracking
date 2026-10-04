@@ -1,8 +1,8 @@
-import type { GoiYCuoiKhoa, NhanYThucEm } from '@shared/domain/index.ts';
+import type { ExamPlan, GoiYCuoiKhoa, NguCanhDs, NhanYThucEm } from '@shared/domain/index.ts';
 import { Link } from 'react-router-dom';
 import { DauDuoi, Nhan } from '../../ui/Nhan.tsx';
 import { useApi } from '../../lib/useApi.ts';
-import { Empty, Skeleton } from '../../ui/ui.tsx';
+import { Empty, ExamPlanText, Skeleton, TargetText } from '../../ui/ui.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -21,6 +21,9 @@ type DongThuong = {
   id: number; studentCode: string; fullName: string; status: string; archived: boolean; moiVao?: boolean; skills: string[] | null;
   missing: { key: string; label: string; who: string }[];
   canhBaoYThuc: NhanYThucEm | null;
+  /** PR-DH (04/10): Target + Dự kiến thi của lớp thường (PR-NT) — chỉ để theo dõi, không so với điểm. */
+  cycle: { target: number | null; khongCamKet?: boolean } | null;
+  examPlan: ExamPlan;
   timeline: LuotThuong[];
   /** "Kết thúc vì" (Q18/Q22) — chỉ có ở bảng lớp ĐÃ KẾT THÚC. */
   ketThucVi?: string | null;
@@ -52,6 +55,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
   if (loading || !data) return <Skeleton rows={4} />;
   const rows = data.filter((s) => !s.archived);
   if (!rows.length) return <Empty title="Lớp chưa có học viên" />;
+  const ds: NguCanhDs = { loai: 'hoc-vien', ids: rows.map((s) => s.id), nhan: maLop ? `Lớp ${maLop}` : 'Lớp' };   // PR-DH: Trước/Sau theo thứ tự bảng
   const mon = rows[0].skills ?? [];
   const BAI = (moc?.length ? moc : MOC_MAC_DINH).map((kind) => ({ kind, nhan: ATTEMPT_KIND_SHORT[kind as AttemptKind] ?? kind }));
   /* MH7: Pre FOU không chia môn — thêm cột % tổng sau cột Tổng hợp của mỗi mốc. K2-12: nhóm Cuối khoá mọi lớp thường có "% tổng" + "Hướng gợi ý". */
@@ -72,7 +76,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
             dau={(
               <>
                 <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                  <Link className="link font-semibold" to={`/hoc-vien/${s.id}`}>{s.fullName}</Link>{s.moiVao && <MoiVao />}
+                  <Link className="link font-semibold" to={`/hoc-vien/${s.id}`} state={{ ds }}>{s.fullName}</Link>{s.moiVao && <MoiVao />}
                   <span className="text-[11px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
                   <MissingBadge items={s.missing} gon />
                   <CanhBaoYThuc cb={s.canhBaoYThuc} />
@@ -81,7 +85,10 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
               </>
             )}
             hanhDong={<MenuDong muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, true, s.timeline) })} />}
-            dong={BAI.map((b) => {
+            dong={[
+              { nhan: 'Target', noiDung: <TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /> },
+              { nhan: 'Dự kiến thi', noiDung: <ExamPlanText plan={s.examPlan} /> },
+            ].concat(BAI.map((b) => {
               const t = s.timeline.find((x) => x.kind === b.kind) ?? null;
               const o = t?.ratios?.[mon[0]] ?? null;
               return {
@@ -100,7 +107,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
                   </span>
                 ),
               };
-            }).concat(coCuoiKhoa ? [{ nhan: 'Hướng gợi ý', noiDung: <OHuongGoiY goiY={s.cuoiKhoa?.goiY ?? null} /> }] : [])} />
+            })).concat(coCuoiKhoa ? [{ nhan: 'Hướng gợi ý', noiDung: <OHuongGoiY goiY={s.cuoiKhoa?.goiY ?? null} /> }] : [])} />
         ))}
         {tt.panels}
       </div>
@@ -109,15 +116,17 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
 
   return (
     <div className="card overflow-x-auto">
-      <table className={`w-full ${coCuoiKhoa ? 'min-w-[960px]' : 'min-w-[840px]'} table-fixed text-sm`}>
+      <table className={`w-full ${coCuoiKhoa ? 'min-w-[1040px]' : 'min-w-[920px]'} table-fixed text-sm`}>
         <colgroup>
-          <col className="w-[24%]" />
+          <col className="w-[19%]" /><col className="w-[6%]" /><col className="w-[9%]" />
           {BAI.flatMap((b) => [...mon, ...cotPhu(b.kind)].map((k) => <col key={`${b.kind}-${k}`} className={k === 'huong' ? 'w-[10rem]' : undefined} />))}
           <col className="w-12" />
         </colgroup>
         <thead>
           <tr>
             <th className="th sticky-col align-bottom" rowSpan={2}>Học viên</th>
+            <th className="th text-right align-bottom" rowSpan={2} title="Điểm Target của lộ trình em đang học. KCK = không cam kết đầu ra. Lớp thường chỉ để theo dõi.">Target</th>
+            <th className="th align-bottom" rowSpan={2} title="Kỳ thi IELTS thật, ở đúng mức chắc chắn đang biết: tuần, hoặc mới có tháng, hoặc chưa xác định.">Dự kiến thi</th>
             {BAI.map((b) => (
               <th key={b.kind} className="th border-b text-center" colSpan={mon.length + cotPhu(b.kind).length} style={{ borderColor: 'var(--line)' }}>{b.nhan}</th>
             ))}
@@ -139,13 +148,15 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
               {/* 640–1023 px: bảng cuộn ngang TRONG vùng bảng, cột tên dính (mỗi lớp một bảng nên không bám cả trang). */}
               <td className="td sticky-col h-11">
                 <span className="flex min-w-0 items-center gap-1.5">
-                  <Link className="link truncate font-semibold" to={`/hoc-vien/${s.id}`}>{s.fullName}</Link>{s.moiVao && <MoiVao />}
+                  <Link className="link truncate font-semibold" to={`/hoc-vien/${s.id}`} state={{ ds }}>{s.fullName}</Link>{s.moiVao && <MoiVao />}
                   <span className="shrink-0 text-[11px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
                   <MissingBadge items={s.missing} gon />
                   <CanhBaoYThuc cb={s.canhBaoYThuc} />
                 </span>
                 {s.ketThucVi && <span className="block mt-0.5 text-xs text-slate-400">{s.ketThucVi}</span>}
               </td>
+              <td className="td text-right tabular-nums whitespace-nowrap"><TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /></td>
+              <td className="td whitespace-nowrap text-xs"><ExamPlanText plan={s.examPlan} /></td>
               {BAI.flatMap((b) => {
                 const t = s.timeline.find((x) => x.kind === b.kind) ?? null;
                 const o = t?.ratios?.[mon[0]] ?? null;

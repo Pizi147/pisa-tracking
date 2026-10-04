@@ -25,17 +25,30 @@ function nhoKhung(trang: Trang, k: KhungLoc) {
   try { localStorage.setItem(khoa(trang), k); } catch { /* không lưu được thì thôi — lần sau về mặc định */ }
 }
 
-export function CongTacKhung({ trang, value, onChange, dem, donVi = '', coTatCa = false }: {
+export function CongTacKhung({ trang, value, onChange, dem, donVi = '', coTatCa = false, kieu = 'doan' }: {
   trang: Trang; value: KhungLoc; onChange: (k: KhungLoc) => void;
   /** Số hiện cạnh tên khung (lớp, việc…); khung có số 0 coi như không có dữ liệu. */
   dem?: Partial<Record<KhungLoc, number>>;
   /** Chữ sau số: `Fast Track · 3 lớp`. Trống = chỉ số. */
   donVi?: string;
   coTatCa?: boolean;
+  /** `chon` = ô chọn "Loại lớp: …" (Học viên & Lớp, K1 — không có hai chữ "Tất cả" cạnh nhau); mặc định phân đoạn như các trang Test. */
+  kieu?: 'doan' | 'chon';
 }) {
   const coDuLieu = (['ft', 'thuong'] as const).filter((k) => (dem?.[k] ?? 1) > 0);
   if (coDuLieu.length < 2) return null;
   const nhan = (ten: string, k: KhungLoc) => (dem?.[k] != null && donVi ? `${ten} · ${dem[k]} ${donVi}` : ten);
+  if (kieu === 'chon') {
+    const chu = (ten: string, k: KhungLoc) => (dem?.[k] != null ? `${ten} · ${dem[k]}${donVi ? ` ${donVi}` : ''}` : ten);
+    return (
+      <select className="field h-8 w-auto !py-0 text-xs max-sm:min-h-[44px] max-sm:w-full" aria-label="Loại lớp" value={value}
+        onChange={(e) => { const k = e.target.value as KhungLoc; nhoKhung(trang, k); onChange(k); }}>
+        {coTatCa && <option value="tat-ca">Loại lớp: {chu('Tất cả', 'tat-ca')}</option>}
+        <option value="ft">Loại lớp: {chu('Fast Track', 'ft')}</option>
+        <option value="thuong">Loại lớp: {chu('Lớp thường', 'thuong')}</option>
+      </select>
+    );
+  }
   return (
     <BoLocDoan<KhungLoc> ariaLabel="Khung lớp" value={value}
       onChange={(k) => { nhoKhung(trang, k); onChange(k); }}

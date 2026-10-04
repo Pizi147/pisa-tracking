@@ -311,7 +311,7 @@ export async function runPrS4fTests(t: YThucTestKit) {
     const mt = hn.slice(hn.indexOf('export function MuiTenMo'), hn.indexOf('function boQuaNutCon'));
     assert(mt.includes('<svg') && !/[▸▾]/.test(mt.replace(/\/\*[\s\S]*?\*\//g, '')), 'MuiTenMo phải vẽ SVG');
     const vt = docWeb('ui/ViecTiep.tsx');
-    assert(vt.includes('flex max-w-full items-baseline') && vt.includes('<span className="min-w-0 truncate">') && vt.includes('shrink-0 whitespace-nowrap">&nbsp;<QuaHan'), 'ViecTiep: chỉ chữ việc bị cắt, quá hạn luôn đủ');
+    assert(vt.includes('flex max-w-full items-baseline') && vt.includes('<span className="min-w-0 line-clamp-2 break-words">') && vt.includes('shrink-0 whitespace-nowrap">&nbsp;<QuaHan'), 'ViecTiep: chỉ chữ việc co lại (tối đa 2 dòng), quá hạn luôn đủ');   // PR-DH 04/10: J8 — từ truncate một dòng sang line-clamp-2
   });
 
   check('S4F (14) · thẻ Báo QL không có người nhận: ẩn Nhắc, ghi "Lớp chưa có GVCN" / "Case chưa có người phụ trách"', () => {

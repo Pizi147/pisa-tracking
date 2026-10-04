@@ -9088,6 +9088,10 @@ await runPrPhhTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P })
 const { runPrSoTests } = await import('./prSo.tests.ts');
 await runPrSoTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
+// ==================================================================== PR-DH (bảng Học viên & Lớp, điều hướng hồ sơ)
+const { runPrDhTests } = await import('./prDh.tests.ts');
+await runPrDhTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

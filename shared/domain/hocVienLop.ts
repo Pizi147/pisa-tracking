@@ -185,10 +185,11 @@ export function khoaLopThuong(i: {
   if (i.tuanHienTai !== null && i.tuanHienTai < 1) tuan = 'chưa khai giảng';
   else if (i.tuanHienTai !== null && i.tongTuan) tuan = tuanKhoa(Math.min(i.tuanHienTai, i.tongTuan), i.tongTuan);
   // Thứ tự ưu tiên dòng phụ (PR-LT): tiếp theo đã ghi › nhắc chưa ghi › kết thúc khoá.
-  const phu = i.tiepTheo ? `tiếp theo: ${i.tiepTheo}`
+  /* PR-DH (D1): cờ "chưa có quyết định chuyển lớp" luôn hiện khi em thuộc số trên badge lớp — kể cả khi đã ghi lộ trình tiếp theo. */
+  const co = i.nhacLoTrinh ? CHU_CHUYEN_LOP.chua.toLowerCase() : null;
+  const phu = i.tiepTheo ? [`tiếp theo: ${i.tiepTheo}`, co].filter(Boolean).join(' · ')
     : i.choDuyetChuyen ? CHU_CHUYEN_LOP.choDuyetDeXuat.replace(/^Chờ/, 'chờ')
-    : i.nhacLoTrinh ? CHU_CHUYEN_LOP.chua.toLowerCase()
-    : i.tuanKetThuc ? `kết thúc ${tuanLich(i.tuanKetThuc, i.homNay)}` : null;
+    : co ?? (i.tuanKetThuc ? `kết thúc ${tuanLich(i.tuanKetThuc, i.homNay)}` : null);
   return { chinh: tuan ? `${ma} · ${tuan}` : ma, phu };
 }
 

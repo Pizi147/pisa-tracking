@@ -1,4 +1,4 @@
-import type { NhanYThucEm } from '@shared/domain/index.ts';
+import type { NguCanhDs, NhanYThucEm } from '@shared/domain/index.ts';
 import { ChipLichSu, DauDuoi } from '../../ui/Nhan.tsx';
 import { ViecTiep } from '../../ui/ViecTiep.tsx';
 import { Link } from 'react-router-dom';
@@ -92,6 +92,8 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents }: {
     );
   }
   if (!data) return null;
+  /* PR-DH (Q-0310-4): hồ sơ em mở từ đây đi Trước/Sau theo đúng thứ tự bảng. */
+  const ds: NguCanhDs = { loai: 'hoc-vien', ids: data.map((s) => s.id), nhan: maLop ? `Lớp ${maLop}` : 'Lớp' };
   if (!data.length) {
     return (
       <div className="surface-2 rounded-lg">
@@ -118,7 +120,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents }: {
               dau={(
                 <>
                   <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                    <Link className="link font-semibold" to={`/hoc-vien/${s.id}`}>{s.fullName}</Link>{s.moiVao && <MoiVao />}
+                    <Link className="link font-semibold" to={`/hoc-vien/${s.id}`} state={{ ds }}>{s.fullName}</Link>{s.moiVao && <MoiVao />}
                     <span className="text-[11px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
                     <MissingBadge items={s.missing} gon />
                     <CanhBaoYThuc cb={s.canhBaoYThuc} />
@@ -204,7 +206,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents }: {
                   {/* 640–1023 px: bảng cuộn ngang TRONG vùng bảng, cột tên dính (mỗi lớp một bảng nên không bám cả trang). */}
                   <td className="td sticky-col [background:var(--surface-2)]">
                     <span className="flex min-w-0 flex-wrap items-center gap-1.5">
-                      <Link className="link" to={`/hoc-vien/${s.id}`}>{s.fullName}</Link>{s.moiVao && <MoiVao />}
+                      <Link className="link" to={`/hoc-vien/${s.id}`} state={{ ds }}>{s.fullName}</Link>{s.moiVao && <MoiVao />}
                       <span className="text-[11px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
                       <MissingBadge items={s.missing} gon />
                       <CanhBaoYThuc cb={s.canhBaoYThuc} />

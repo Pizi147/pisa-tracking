@@ -38,14 +38,14 @@ function KhungThe({ children }: { children: ReactNode }) {
 function TheGon({ row, onMoCase }: { row: SkillBoardRow; onMoCase: (caseId: number, o?: MoCase) => void }) {
   const [mo, setMo] = useState(false);
   if (mo) return <TheKyNang row={row} onMoCase={onMoCase} onGap={() => setMo(false)} />;
-  const diem = row.band === null ? '—' : row.ratio && row.total ? `${row.score}/${row.total}` : fmtBand(row.band);
+  const diem = row.band === null ? null : row.ratio && row.total ? `${row.score}/${row.total}` : fmtBand(row.band);
   const phu = row.band === null ? 'chưa có điểm' : row.ratio ? (row.missed === false ? 'đạt' : '') : row.gap !== null ? gapText(row.gap) : row.kck ? 'KCK' : '';
   return (
     <button type="button" aria-expanded={false} onClick={() => setMo(true)}
       className="flex min-h-[44px] w-full items-center gap-2 rounded-[10px] border bg-[color:var(--surface)] px-3 text-left" style={{ borderColor: 'var(--line)' }}>
       <span className="min-w-0 flex-1 truncate text-[14px] font-bold text-slate-100">{row.label}</span>
       {phu && <span className="text-[12px] text-slate-400">{phu}</span>}
-      <span className="font-bold tabular-nums text-slate-100">{diem}</span>
+      {diem !== null && <span className="font-bold tabular-nums text-slate-100">{diem}</span>}
       {row.missed === false && <span className="text-ok"><IconDat /></span>}
       <span className="text-slate-400"><IconGap mo={false} /></span>
     </button>

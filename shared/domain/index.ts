@@ -32,6 +32,8 @@ export * from './sos.ts';
 export * from './sosV4.ts';
 export * from './hoSoHocVien.ts';
 export * from './hienThiNgay.ts';
+export * from './sapToi.ts';
+export * from './dieuHuongHoSo.ts';
 export * from './dieuHuong.ts';
 export * from './hocVienLop.ts';
 export * from './tongQuan.ts';

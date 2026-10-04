@@ -145,7 +145,9 @@ export async function runLenLopTests(t: YThucTestKit) {
 
   check('PR-LT (1) · khoaLopThuong: ưu tiên tiếp theo › nhắc › kết thúc khoá', () => {
     const base = { maChuongTrinh: 'FOU', tuanHienTai: 8, tongTuan: 8, tuanKetThuc: '2026-09-21', homNay: '2026-09-14' };
-    assert(d.khoaLopThuong({ ...base, tiepTheo: 'BE', nhacLoTrinh: true }).phu === 'tiếp theo: BE', 'Có tiếp theo thì ưu tiên trên hết');
+    /* PR-DH 04/10: D1 — em chưa có quyết định chuyển lớp luôn có cờ (khớp số badge), kể cả khi đã ghi lộ trình tiếp theo. */
+    assert(d.khoaLopThuong({ ...base, tiepTheo: 'BE', nhacLoTrinh: true }).phu === 'tiếp theo: BE · chưa có quyết định chuyển lớp', 'Có tiếp theo thì đứng đầu, cờ đi kèm');
+    assert(d.khoaLopThuong({ ...base, tiepTheo: 'BE', nhacLoTrinh: false }).phu === 'tiếp theo: BE', 'Có tiếp theo, đã có quyết định → chỉ lộ trình');
     assert(d.khoaLopThuong({ ...base, tiepTheo: null, nhacLoTrinh: true }).phu === 'chưa có quyết định chuyển lớp', 'Không tiếp theo, có nhắc (PR-Dọn Câu 2 = B)');
     assert(d.khoaLopThuong({ ...base, tiepTheo: null, nhacLoTrinh: false }).phu === 'kết thúc W4 SEP', 'Không tiếp theo, không nhắc → kết thúc khoá');
   });

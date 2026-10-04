@@ -10,12 +10,12 @@ import { QuaHan } from './Nhan.tsx';
  */
 export function ViecTiep({ v, den, onBam }: { v: ViecTiepTheo; den?: string | null; onBam?: () => void }) {
   /*
-   * PR-S4F #13: max-w-full — trong cột flex `items-start` (Theo dõi, Việc tiếp theo) phần tử rộng theo chữ nên chữ lấn lề ô. Chật thì chỉ CHỮ VIỆC
-   * bị cắt (…, câu đủ ở title); "⚠ quá hạn n ngày" / "· hạn" luôn hiện đủ.
+   * PR-S4F #13: max-w-full — trong cột flex `items-start` (Theo dõi, Việc tiếp theo) phần tử rộng theo chữ nên chữ lấn lề ô. Chật thì CHỮ VIỆC
+   * xuống tối đa 2 dòng (PR-DH J8: cắt một dòng làm mất nghĩa — "Ghi kết q…"; câu đủ vẫn ở title); "⚠ quá hạn n ngày" / "· hạn" luôn hiện đủ.
    */
   return (
     <span className="flex max-w-full items-baseline text-xs text-slate-200" title={v.title}>
-      <span className="min-w-0 truncate">
+      <span className="min-w-0 line-clamp-2 break-words">
         {onBam ? <button type="button" className="link cursor-pointer border-0 bg-transparent p-0 text-left text-xs" onClick={onBam}>{v.viec}</button>
           : den ? <Link to={den} className="link">{v.viec}</Link> : v.viec}
       </span>
