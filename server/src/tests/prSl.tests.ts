@@ -24,6 +24,23 @@ export async function runPrSlTests(t: YThucTestKit) {
       assert(!doc(f).includes("? 'Huỷ thay đổi' : 'Đóng', onClick"), `${f}: còn tự viết nhãn, dùng chan.daSua`);
     }
   });
+  await checkAsync('SL-3 · một mẫu Excel chung: cùng một dòng FT dán (không tiêu đề) vào lớp FT và lớp thường ra cùng Họ tên / Ngày sinh / Email / Target / Dự kiến thi / Tuần', async () => {
+    const intake: any = await import('../classes/intake.ts');
+    const dong = 'Lê An\t12/05/2008\tan@x.vn\t5\t5\t5.5\t5\t5\t6.5\t05/2027\t0\t05/10/2026';
+    const a = intake.parsePaste(dong, { classId: t.classId('MB FT 101') });
+    const b = intake.parsePaste(dong, { classId: t.classId('MB FOU 12') });
+    for (const [ten, r] of [['FT', a], ['thường', b]] as const) {
+      const x = r.rows[0];
+      assert(r.rows.length === 1 && !r.cach.coTieuDe && r.cach.thua === 0 && x.fullName === 'Lê An' && x.dob === '12/05/2008' && x.email === 'an@x.vn'
+        && x.target === '6.5' && x.examDate === '05/2027' && x.startWeek === '2026-10-05', `${ten}: ${JSON.stringify(r)}`);
+    }
+    assert(b.cach.boQua.join(', ') === 'Overall, L, R, W, S, Đã thi tới MT' && b.rows[0].baselineScore === undefined && b.rows[0].daThiToiMt === undefined,
+      `lớp thường bỏ qua cột band: ${JSON.stringify(b.cach)}`);
+    assert(a.cach.boQua.length === 0 && a.rows[0].baselineScore === '5', 'lớp FT giữ cột band');
+    const ngan = intake.parsePaste('An\t\ta@x.vn', { classId: t.classId('MB FOU 12') });
+    assert(ngan.rows[0].fullName === 'An' && ngan.rows[0].email === 'a@x.vn', JSON.stringify(ngan.rows));
+  });
+
   check('SL-2 · panel Sửa thông tin học viên: không dán Excel; vào từ ⋮ và nút ở tab Học viên; đóng khi đang sửa thì hỏi', () => {
     const pn = doc('web/src/modules/students/SuaCaLopPanel.tsx');
     assert(!/<textarea/.test(pn) && !pn.includes('/intake/parse'), 'không được có ô dán Excel');

@@ -137,7 +137,7 @@ export function laLopThuong(programmeCode: string | null): boolean {
 
 /**
  * Đọc TSV/CSV dán từ bảng tính. Có dòng tiêu đề → cột nhận THEO TÊN (YC-5.2), thứ tự tuỳ ý. PR-NT (04/10): KHÔNG bắt buộc tiêu đề — không
- * có thì đọc theo thứ tự cột lưới của đúng loại lớp (`docDongDan`), nên cần `classId`. `coTieuDe` = người dùng chọn cách đọc (bỏ đoán).
+ * có thì đọc theo MẪU EXCEL CHUNG (`docDongDan`: thứ tự cột FT, lớp thường bỏ cột band — PR-SL 04/10), nên cần `classId`. `coTieuDe` = người dùng chọn cách đọc (bỏ đoán).
  */
 export function parsePaste(text: string, o: { classId?: number | null; coTieuDe?: boolean } = {}): { rows: IntakeRow[]; cotBoQua: string[]; cach: CachDoc | null } {
   const lines = text.replace(/\r/g, '').split('\n').filter((l) => l.trim() !== '');
@@ -146,10 +146,10 @@ export function parsePaste(text: string, o: { classId?: number | null; coTieuDe?
   const dong = lines.map(split);
   const lop = o.classId ? db().prepare('SELECT programme_code FROM classes WHERE id = ?').get(o.classId) as any : null;
   const laTieuDe = o.coTieuDe ?? laDongTieuDe(dong[0]);
-  if (!laTieuDe && !lop) throw badRequest('Chọn lớp trước khi dán dữ liệu không có dòng tiêu đề — web đọc theo thứ tự cột của lớp.');
+  if (!laTieuDe && !lop) throw badRequest('Chọn lớp trước khi dán dữ liệu không có dòng tiêu đề — web đọc theo mẫu Excel chung (thứ tự cột Fast Track), lớp thường bỏ cột band.');
   const { cot, batDau, cach } = docDongDan(dong, laLopThuong(lop?.programme_code ?? null), o.coTieuDe);
   if (!cot.includes('fullName')) {
-    throw badRequest('Dòng tiêu đề chưa có cột "Họ và tên". Thêm cột đó, hoặc bấm "Dòng đầu là học viên?" để đọc theo thứ tự cột của lưới.');
+    throw badRequest('Dòng tiêu đề chưa có cột "Họ và tên". Thêm cột đó, hoặc bấm "Dòng đầu là học viên?" để đọc theo mẫu Excel chung.');
   }
   const homNay = demoToday();
   const rows: IntakeRow[] = [];

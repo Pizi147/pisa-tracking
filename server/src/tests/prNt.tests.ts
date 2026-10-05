@@ -132,8 +132,8 @@ export async function runPrNtTests(t: YThucTestKit) {
     assert(x.fullName === 'Lê An' && x.email === 'an@x.vn' && x.baselineScore === '5' && x.entryReading === '5.5' && x.target === '6.5'
       && x.examDate === '05/2027' && x.daThiToiMt === '0', JSON.stringify(x));
   });
-  check('NT-3 · không tiêu đề, lớp thường: Họ tên · Ngày sinh · Email · Target · Dự kiến thi · Tuần', () => {
-    const r = intake.parsePaste('Trần Bình\t01/02/2012\tb@x.vn\t5.5\t06/2027\nĐỗ Chi\t\tc@x.vn\tKCK\t', { classId: thuong });
+  check('NT-3 · không tiêu đề, lớp thường: mẫu Excel chung (thứ tự FT, PR-SL 04/10) — bỏ cột band, đọc Họ tên · Ngày sinh · Email · Target · Dự kiến thi · Tuần', () => {
+    const r = intake.parsePaste('Trần Bình\t01/02/2012\tb@x.vn\t\t\t\t\t\t5.5\t06/2027\nĐỗ Chi\t\tc@x.vn\t\t\t\t\t\tKCK\t', { classId: thuong });
     assert(r.rows.length === 2 && r.rows[0].target === '5.5' && r.rows[0].examDate === '06/2027' && r.rows[1].target === 'KCK', JSON.stringify(r.rows));
     assert(r.cach.thuTu.join(',') === 'fullName,dob,email,target,examDate,startWeek', r.cach.thuTu.join(','));
   });
@@ -158,7 +158,7 @@ export async function runPrNtTests(t: YThucTestKit) {
     assertThrows(() => intake.parsePaste('An\t\ta@x.vn\nBình\t\tb@x.vn', { classId: thuong, coTieuDe: true }), /Họ và tên/, 'ép tiêu đề mà không có cột Họ tên');
   });
   check('NT-3 · số cột lệch lưới: thừa thì báo số ô bị bỏ, thiếu thì báo cột trống — không lặng lẽ', () => {
-    const thua = intake.parsePaste('An\t\ta@x.vn\t6\t05/2027\t2026-10-05\tô lạ\tô lạ 2', { classId: thuong });
+    const thua = intake.parsePaste('An\t\ta@x.vn\t\t\t\t\t\t6\t05/2027\t\t2026-10-05\tô lạ\tô lạ 2', { classId: thuong });
     assert(thua.cach.thua === 2 && thua.rows[0].fullName === 'An', JSON.stringify(thua.cach));
     const thieu = intake.parsePaste('An\t\ta@x.vn\t\t', { classId: thuong });
     assert(thieu.cach.thieu === 3 && thieu.rows[0].email === 'a@x.vn', JSON.stringify(thieu.cach));
