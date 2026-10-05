@@ -9,16 +9,16 @@
 :root{
   --bg:#f5f7fa;--surface:#ffffff;--surface-2:#eef2f7;--line:#d9e0ea;--fg:#1b2433;--muted:#5d6b80;--soft:#8592a6;
   --accent:#1d5fbf;--accent-soft:#e3edfb;--wait:#6b4fc4;--wait-bg:#efe9fb;--ok:#1c7a4c;--ok-bg:#e2f4ea;
-  --bad:#b3261e;--bad-bg:#fbe5e3;--chip:#e9edf3;
+  --bad:#b3261e;--bad-bg:#fbe5e3;--late:#b4400f;--late-bg:#fde6d8;--chip:#e9edf3;
   --sans:"Be Vietnam Pro",system-ui,sans-serif;--num:"Inter","Be Vietnam Pro",sans-serif;color-scheme:light}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#0c1220;--surface:#131b2c;--surface-2:#1a2438;--line:#26324a;--fg:#e4e9f2;--muted:#93a0b6;--soft:#6c7a92;
   --accent:#7db3f0;--accent-soft:#1c2c48;--wait:#b9a3f5;--wait-bg:#2a2245;--ok:#6fd29c;--ok-bg:#16301f;
-  --bad:#f08a80;--bad-bg:#3b1a18;--chip:#222d42;color-scheme:dark}}
+  --bad:#f08a80;--bad-bg:#3b1a18;--late:#ff9166;--late-bg:#3e1f13;--chip:#222d42;color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0c1220;--surface:#131b2c;--surface-2:#1a2438;--line:#26324a;--fg:#e4e9f2;--muted:#93a0b6;--soft:#6c7a92;
   --accent:#7db3f0;--accent-soft:#1c2c48;--wait:#b9a3f5;--wait-bg:#2a2245;--ok:#6fd29c;--ok-bg:#16301f;
-  --bad:#f08a80;--bad-bg:#3b1a18;--chip:#222d42;color-scheme:dark}
+  --bad:#f08a80;--bad-bg:#3b1a18;--late:#ff9166;--late-bg:#3e1f13;--chip:#222d42;color-scheme:dark}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 var(--sans);padding:16px 16px 48px}
 .wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
@@ -41,7 +41,7 @@ button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outlin
 .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .sp{flex:1}
 .nhan{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:2px 8px;border-radius:6px;white-space:nowrap}
-.n-wait{background:var(--wait-bg);color:var(--wait)}.n-bad{background:var(--bad-bg);color:var(--bad)}.n-muted{background:var(--chip);color:var(--muted)}
+.n-wait{background:var(--wait-bg);color:var(--wait)}.n-bad{background:var(--bad-bg);color:var(--bad)}.n-muted{background:var(--chip);color:var(--muted)}.n-late{background:var(--late-bg);color:var(--late)}
 .num{font-family:var(--num);font-variant-numeric:tabular-nums}
 .pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .w375 .pair,.frame.w375 .pair{grid-template-columns:1fr}
@@ -118,18 +118,18 @@ section[hidden]{display:none}
         <div class="card dai">
           <span class="nhan n-wait">Chờ duyệt</span>
           <span><b class="so num">3</b> chờ duyệt</span>
-          <span class="row" style="gap:6px"><span class="nhan n-wait">Lịch thi <span class="num">2</span></span><span class="nhan n-bad">Quá hạn <span class="num">1</span></span><span class="nhan n-muted"><del>Để QL biết 7</del></span></span>
+          <span class="row" style="gap:6px"><span class="nhan n-wait">Lịch thi <span class="num">2</span></span><span class="nhan n-wait">Ý thức <span class="num">1</span></span><span class="nhan n-bad">Quá hạn <span class="num">1</span></span><span class="nhan n-muted"><del>Để QL biết 7</del></span></span>
           <span class="sp"></span><button class="btn btn-sm btn-primary">Mở hộp duyệt</button>
         </div>
       </div>
       <div>
         <div class="tag moi" style="margin-bottom:6px">Sau PR-NV</div>
         <div class="card dai">
-          <span class="nhan n-wait">Chờ duyệt</span>
-          <span><b class="so num">3</b> chờ duyệt</span>
-          <span class="row" style="gap:6px"><span class="nhan n-wait">Lịch thi <span class="num">2</span></span><span class="nhan n-bad">Quá hạn <span class="num">1</span></span></span>
+          <span class="nhan n-wait" style="font-size:13px;padding:3px 10px">Chờ duyệt <b class="num">3</b></span>
+          <span class="row" style="gap:6px"><button class="nhan n-muted" style="border:0;cursor:pointer">Lịch thi <span class="num">2</span></button><button class="nhan n-muted" style="border:0;cursor:pointer">Ý thức <span class="num">1</span></button><button class="nhan n-late" style="border:0;cursor:pointer">⚠ Quá hạn <span class="num">1</span></button></span>
           <span class="sp"></span><button class="btn btn-sm btn-primary">Mở hộp duyệt</button>
         </div>
+        <p class="note" style="margin-top:6px">Tím = trạng thái chờ duyệt · xám = loại thẻ (bấm để lọc) · đỏ cam ⚠ = quá hạn.</p>
       </div>
     </div>
 
@@ -213,8 +213,8 @@ section[hidden]{display:none}
         <div><button class="btn btn-sm" disabled>Đang nhắc…</button></div>
         <div class="note">Xong hết</div>
         <div><span class="toast ok">Đã nhắc <span class="num">4/4</span></span></div>
-        <div class="note">Hết giờ giữa chừng (thẻ chưa kịp vẫn còn nút)</div>
-        <div><span class="toast err">Đã nhắc <span class="num">30/50</span> — <span class="num">20</span> chưa kịp, bấm lại</span></div>
+        <div class="note">Hết giờ giữa chừng (thẻ chưa nhắc vẫn còn nút)</div>
+        <div><span class="toast err">Đã nhắc <span class="num">30/50</span> — <span class="num">20</span> chưa nhắc, bấm lại</span></div>
         <div class="note">Một thẻ, việc đã xong</div>
         <div><span class="toast err">Trần Minh Anh: Việc này không còn trong danh sách của Hà.</span></div>
       </div>
