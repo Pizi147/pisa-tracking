@@ -18,6 +18,7 @@ import {
 import { duongDotTest } from '@shared/domain/index.ts';
 import { fmtBand } from '../../lib/format.ts';
 import { Info } from '../../ui/ui.tsx';
+import { ChipLichSu } from '../../ui/Nhan.tsx';
 import {
   ChoNutDau, CriteriaButton, KHOA_HOAN_TAT_HINT, ODiemThuong, RawScoreInput, datPhanTram, lockedByNoShow, useSaveScore, type Cell,
 } from '../fasttrack/ScoreEntry.tsx';
@@ -32,10 +33,10 @@ const KHONG_PHAN_CONG = 'Bạn không được phân công kỹ năng này';
 
 type Chung = { onReload: () => void; kn?: string | null; hv?: number | null };
 
-export function MotKyNang(p: Chung & ({ mode: 'ielts_band'; data: FtSheet; hangMo?: HangMo[] } | { mode: 'ratio'; data: ThuongSheet })) {
+export function MotKyNang(p: Chung & ({ mode: 'ielts_band'; data: FtSheet; hangMo?: HangMo[] } | { mode: 'ratio'; data: ThuongSheet; anNutTao?: boolean })) {
   return p.mode === 'ielts_band'
     ? <MotKyNangFt data={p.data} onReload={p.onReload} kn={p.kn ?? null} hv={p.hv ?? null} hangMo={p.hangMo ?? []} />
-    : <MotKyNangThuong data={p.data} onReload={p.onReload} kn={p.kn ?? null} hv={p.hv ?? null} />;
+    : <MotKyNangThuong data={p.data} onReload={p.onReload} kn={p.kn ?? null} hv={p.hv ?? null} anNutTao={p.anNutTao} />;
 }
 
 /**
@@ -199,7 +200,7 @@ function DongFt({ row, k, nhieuMt, active, onReload, gvMacDinh, inputRef, onKeyD
     <DongHv studentId={row.studentId} active={active} ten={row.studentName} href={duongDotTest({ id: row.attemptId }, k)}
       phu={phu} phuTitle={kv !== null ? `Kỳ vọng (KV) của lượt này: ${fmtBand(kv)} · ${row.studentCode}` : undefined}
       luu={<DauLuu lon status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />}
-      nhan={<NhanHoanTat hoanTat={row.hoanTat} chuNhatCuoi={row.chuNhatCuoi} />}>
+      nhan={<>{row.lichSu && <ChipLichSu />}<NhanHoanTat hoanTat={row.hoanTat} chuNhatCuoi={row.chuNhatCuoi} /></>}>
       <div className={`shrink-0 flex items-center justify-end gap-1 rounded-md ${o[k] === 'loi' ? VIEN_LOI : ''}`} data-kn={k}
         data-trong={c && oTrongFt(c) ? '1' : undefined} data-luu={o[k]}>
         <DauO lon tt={o[k]} loi={loi[k]} onLuuLai={() => luuLai(k)} />
@@ -228,8 +229,8 @@ const tinhThuong = (r: DongThuongRow, k: string) => {
   return !!s && s.progress !== 'cancelled' && s.progress !== 'absent';
 };
 
-function MotKyNangThuong({ data, onReload, kn, hv }: {
-  data: ThuongSheet; onReload: () => void; kn: string | null; hv: number | null;
+function MotKyNangThuong({ data, onReload, kn, hv, anNutTao }: {
+  data: ThuongSheet; onReload: () => void; kn: string | null; hv: number | null; anNutTao?: boolean;
 }) {
   const skills = data.programme.skills;
   const minh = (k: string) => data.editableSkills.includes(k) || data.rows.some((r) => lichCua(r, k)?.canEdit);
@@ -240,7 +241,7 @@ function MotKyNangThuong({ data, onReload, kn, hv }: {
   const [tongGo, setTongGo] = useState<Record<string, string>>({});
   const { phim, dangKy } = useDiChuyen();
 
-  if (data.rows.length === 0 || !chon) return <LuoiThuong data={data} onReload={onReload} kn={kn} hv={hv} />;
+  if (data.rows.length === 0 || !chon) return <LuoiThuong data={data} onReload={onReload} kn={kn} hv={hv} anNutTao={anNutTao} />;
 
   const chips = dsKn.map((k) => {
     const rs = data.rows.filter((r) => tinhThuong(r, k));

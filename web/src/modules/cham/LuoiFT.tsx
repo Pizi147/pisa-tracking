@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Empty, Info, Level, Status, Th } from '../../ui/ui.tsx';
+import { ChipLichSu } from '../../ui/Nhan.tsx';
 import {
   CriteriaButton, DeadlinePill, KHOA_HOAN_TAT_HINT, RawScoreInput, useSaveScore, type Cell,
 } from '../fasttrack/ScoreEntry.tsx';
@@ -20,6 +21,8 @@ export type FtSheet = {
     attemptNo: number; status: string;
     /** R11: đợt đã đủ điểm và qua Chủ nhật của tuần bắt buộc muộn nhất — chỉ Quản lý sửa được điểm nữa. */
     hoanTat?: boolean; chuNhatCuoi?: string | null;
+    /** PR-DL: chỉ `bangTheoLuot` gửi — MT lịch sử của em này (chip "lịch sử" cạnh tên). */
+    lichSu?: boolean;
     cells: Cell[]; result: any;
   }[];
 };
@@ -249,6 +252,7 @@ function SheetRow({ row, rowIndex, active, cot, tuanDangXem, onReload, gvMacDinh
       <td className="td py-1.5 sticky-col">
         <div className="flex items-center gap-1 min-w-0">
           <Link className="link block truncate max-sm:py-3 max-sm:-my-3" to={duongDotTest({ id: row.attemptId })} title={row.studentName}>{row.studentName}</Link>
+          {row.lichSu && <ChipLichSu />}
           {row.hoanTat && (
             <Info title={`Hết Chủ nhật ${ngay(row.chuNhatCuoi)}. ${KHOA_HOAN_TAT_HINT}`}>Đã hoàn tất</Info>
           )}

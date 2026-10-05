@@ -174,7 +174,7 @@ export function DiemTheoLop({ classId, luotBanDau, gon = false }: { classId: num
                   <div className="rounded-lg border overflow-hidden" style={{ borderColor: 'var(--line)' }}>
                     <BaoDangLuuContext.Provider value={baoLuu}>
                       <LuoiChamLop data={b} kind={null} onReload={bang.reload} gon datConTro={false}
-                        chiAttempt={chiAttempt} hangMo={hangMo} />
+                        chiAttempt={chiAttempt} hangMo={hangMo} anNutTao />
                     </BaoDangLuuContext.Provider>
                   </div>
                 )}

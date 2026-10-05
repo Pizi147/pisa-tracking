@@ -250,7 +250,9 @@ export async function runPrDlTests(t: YThucTestKit) {
         assert(l.coLich === r.c && l.tuanStart === r.t && l.nhan === `MT${r.n}`, `mt:${r.n} ${JSON.stringify(l)} vs ${JSON.stringify(r)}`);
         assert(l.duDiem <= l.coLich && l.oTrong >= 0, 'đếm âm');
       }
-      assert(luotCua(ds, 'mt:1').lichSu === true, 'MT1 có lượt lịch sử');
+      /* Fix 1 (chủ sản phẩm 05/10): lượt là "lịch sử" chỉ khi MỌI attempt (không huỷ) của lượt là lịch sử. */
+      const moiLs = get(`SELECT MIN(lich_su) AS m FROM assessment_attempts WHERE class_id = ? AND kind = 'mock' AND attempt_no = 1 AND status != 'cancelled'`, LOP).m;
+      assert(luotCua(ds, 'mt:1').lichSu === (moiLs === 1), `MT1 lichSu ${luotCua(ds, 'mt:1').lichSu} vs MIN(lich_su) ${moiLs}`);
     });
 
     check('DL-4 macDinh trên lớp dựng riêng: MT1 đủ, MT2 (tuần này) còn trống, MT3 (tuần sau) đủ → mt:2', () => {
@@ -275,6 +277,28 @@ export async function runPrDlTests(t: YThucTestKit) {
       assert(luotCua(ds, 'mt:1').oTrong === 0 && luotCua(ds, 'mt:3').oTrong === 0 && luotCua(ds, 'mt:2').oTrong > 0, `tiền đề: ${JSON.stringify(tt)}`);
       assert(luotCua(ds, 'mt:3').duDiem === 1 && luotCua(ds, 'mt:2').duDiem === 0, `duDiem: ${JSON.stringify(tt)}`);
       assert(ds.macDinh === 'mt:2', `macDinh ${ds.macDinh}`);
+    });
+
+    check('DL-5 fix lịch sử theo từng em: lượt toàn lịch sử → lichSu; lượt lẫn → không; hàng bảng mang lichSu của em', () => {
+      const lop5 = intake.createClass(P.admin, { code: 'MB FT DL5', branchId: MB, kind: 'FT', route: 'LT1', startDate: tuanNay }).id as number;
+      const em = (ten: string) => {
+        intake.commitIntake(P.admin, { classId: lop5, rows: [{ fullName: ten, target: 6.5, email: 'hv@demo.test' }], idempotencyKey: `dl5-${ten}` });
+        const st = get('SELECT id FROM students WHERE full_name = ?', ten).id as number;
+        const cy = get("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'", st).id;
+        boLichTuTao(conn, cy);
+        luotThu(conn, svc.createAttempt, P.admin, { studentId: st, cycleId: cy, classId: lop5, no: 2, periodId: pid });
+        return get('SELECT id FROM assessment_attempts WHERE student_id = ? AND attempt_no = 1', st).id as number;
+      };
+      const mt1A = em('DL5 Gia');
+      const mt1B = em('DL5 Hoa');
+      const ls = () => Object.fromEntries(dl.danhSachLuot(P.admin, lop5, TODAY).luot.map((l: any) => [l.ma, l.lichSu]));
+      assert(ls()['mt:1'] === true && ls()['mt:2'] === false, `toàn lịch sử: ${JSON.stringify(ls())}`);
+      conn.prepare('UPDATE assessment_attempts SET lich_su = 0 WHERE id = ?').run(mt1B);
+      assert(ls()['mt:1'] === false, `lượt lẫn: ${JSON.stringify(ls())}`);
+      const hang = dl.bangTheoLuot(P.admin, lop5, 'mt:1', TODAY).ft.rows.map((r: any) => [r.attemptId, r.lichSu]);
+      assert(JSON.stringify(hang.sort((x: number[], y: number[]) => x[0] - y[0])) === JSON.stringify([[mt1A, true], [mt1B, false]].sort((x: any, y: any) => x[0] - y[0])),
+        `lichSu từng hàng: ${JSON.stringify(hang)}`);
+      assert(dl.bangTheoLuot(P.admin, lop5, 'mt:2', TODAY).ft.rows.every((r: any) => r.lichSu === false), 'MT2 không hàng nào lịch sử');
     });
 
     check('DL-4 bangTheoLuot FT mt:2: hàng = attempt MT2; HV đang học không có MT2 vào chuaCoLich; không tạo lịch nào', () => {
@@ -412,5 +436,16 @@ export async function runPrDlTests(t: YThucTestKit) {
       assert(f.includes(chu) || doc('web/src/modules/cham/LuoiFT.tsx').includes(chu), `thiếu: ${chu}`);
     assert(/try\s*\{[^}]*localStorage\.getItem/.test(f) && /try\s*\{[^}]*localStorage\.setItem/.test(f), 'localStorage phải bọc try/catch');
     assert(!/'MT\d|Giữa khoá|Cuối khoá|lần 2/.test(f), 'nhãn lượt lấy từ máy chủ, không viết cứng');
+  });
+
+  check('DL-5 fix: Điểm theo lớp ẩn nút "Tạo bài kiểm tra theo chương trình"; chip "lịch sử" cạnh tên em ở bảng và 375', () => {
+    const f = (ten: string) => doc(`web/src/modules/cham/${ten}.tsx`);
+    assert(/<LuoiChamLop[^>]*anNutTao/.test(f('DiemTheoLop')), 'DiemTheoLop phải truyền anNutTao');
+    const lcl = f('LuoiChamLop');
+    assert(/<LuoiThuong[^>]*anNutTao=\{anNutTao\}/.test(lcl) && /<MotKyNang mode="ratio"[^>]*anNutTao=\{anNutTao\}/.test(lcl), 'LuoiChamLop chuyền anNutTao');
+    assert(/<LuoiThuong[^>]*anNutTao=\{anNutTao\}/.test(f('MotKyNang')), 'MotKyNang chuyền anNutTao khi quay về LuoiThuong');
+    assert(/const nutTao = data\.canPlan && !anNutTao/.test(f('LuoiThuong')), 'LuoiThuong ẩn nút theo anNutTao');
+    assert(!/anNutTao/.test(f('ChamDiemPage')) && !/anNutTao/.test(doc('web/src/modules/test/lichTest/LuoiNhung.tsx')), 'trang cũ giữ nút');
+    for (const ten of ['LuoiFT', 'MotKyNang']) assert(/row\.lichSu && <ChipLichSu \/>/.test(f(ten)), `${ten}: chip lịch sử cạnh tên`);
   });
 }

@@ -61,11 +61,12 @@ function tomTatLop(classIds: number[]): Map<number, TomTatLuot[]> {
       const ma = m.loai === 'mt' ? `mt:${m.so}` : `thuong:${m.kind}`;
       const khoa = `${a.class_id}|${ma}`;
       const g = gom.get(khoa) ?? gom.set(khoa, {
-        classId: a.class_id, ma, nhan: nhanMaLuot(m), tuanStart: null, lichSu: false, duDiem: 0, coLich: 0, oTrong: 0,
+        classId: a.class_id, ma, nhan: nhanMaLuot(m), tuanStart: null, lichSu: m.loai === 'mt', duDiem: 0, coLich: 0, oTrong: 0,
         thuTu: m.loai === 'mt' ? m.so : m.kind === 'progress' ? 1 : 2,
       }).get(khoa)!;
       g.coLich += 1;
-      if (m.loai === 'mt' && a.lich_su) g.lichSu = true;
+      /* Lượt "lịch sử" chỉ khi MỌI attempt không huỷ của lượt là lịch sử (chủ sản phẩm 05/10); lượt lẫn đánh dấu theo từng em. */
+      if (!a.lich_su) g.lichSu = false;
       if (a.week_start && (g.tuanStart === null || a.week_start < g.tuanStart)) g.tuanStart = a.week_start;
       luotCua.set(a.id, { g, ft });
       trong.set(a.id, 0);
@@ -127,7 +128,13 @@ export function bangTheoLuot(p: Principal, classId: number, ma: string, today: s
         ORDER BY s.full_name`,
     ).all(classId, m.so) as { studentId: number; fullName: string; studentCode: string }[])
     : [];
-  return { ...sheet, luot, chuaCoLich };
+  /* Chip "lịch sử" cạnh tên em (chỉ bảng này — không thêm vào `classScoreSheet` để lưới Nhập điểm cũ không đổi). */
+  const lichSu = new Set(m.loai === 'mt' && sheet.ft
+    ? (db().prepare(`SELECT id FROM assessment_attempts WHERE class_id = ? AND kind = 'mock' AND attempt_no = ? AND lich_su = 1`)
+      .all(classId, m.so) as { id: number }[]).map((r) => r.id)
+    : []);
+  const ft = sheet.ft ? { ...sheet.ft, rows: sheet.ft.rows.map((r) => ({ ...r, lichSu: lichSu.has(r.attemptId) })) } : sheet.ft;
+  return { ...sheet, ft, luot, chuaCoLich };
 }
 
 /**
