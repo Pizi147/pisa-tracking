@@ -27,7 +27,8 @@ const dongTrong = (r: Row) => Object.values(r).every((v) => !String(v ?? '').tri
 
 /* Bề rộng cột theo M2 (px). Cột Tình trạng do panel vẽ, không nằm trong `cotLuoiNhap`. */
 const RONG: Partial<Record<CotNhap, number>> = {
-  fullName: 170, dob: 104, email: 190, baselineScore: 56, entryListening: 48, entryReading: 48, entryWriting: 48,
+  /* I3 (PR-SL): "Overall" và chữ mẫu "dd/mm/yyyy" không bị cắt. */
+  fullName: 170, dob: 116, email: 190, baselineScore: 72, entryListening: 48, entryReading: 48, entryWriting: 48,
   entrySpeaking: 48, target: 60, examDate: 104, daThiToiMt: 104, startWeek: 172,
 };
 const GOI_Y_COT: Partial<Record<CotNhap, string>> = {
@@ -201,11 +202,12 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
           )}
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-3">
-          <label className="block sm:col-span-2">
+        {/* I3: ô dán phông thường, nút "Đọc nội dung đã dán" nằm DƯỚI ô dán. */}
+        <div className="space-y-2">
+          <label className="block">
             <span className="label">Dán vùng bảng từ Excel / Google Sheets</span>
             <textarea
-              className="field font-mono text-xs"
+              className="field text-xs"
               rows={3}
               disabled={!classId}
               placeholder={classId
@@ -219,8 +221,8 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
               }}
             />
           </label>
-          <div className="flex items-end">
-            <button type="button" className="btn btn-sm min-h-[44px] w-full justify-center sm:min-h-0" onClick={() => void handlePaste(pasteText)} disabled={!classId || !pasteText.trim()}>
+          <div className="flex justify-end">
+            <button type="button" className="btn btn-sm min-h-[44px] w-full justify-center sm:w-auto sm:min-h-0" onClick={() => void handlePaste(pasteText)} disabled={!classId || !pasteText.trim()}>
               Đọc nội dung đã dán
             </button>
           </div>
@@ -360,9 +362,11 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
           <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => doiLuoi((rs) => [...rs, {}])}>
             + Thêm dòng
           </button>
-          <p className="m-0 text-xs text-slate-400">
-            Ô trống hoặc dấu “-” = chưa có, không phải 0 — riêng cột Target, “-” hay KCK = không cam kết (không tính SOS). · Em đã có hồ sơ thì dùng Chuyển lớp, không tạo mới.
-          </p>
+          {/* I3: lời nhắc tách hai dòng ngắn. */}
+          <div className="text-xs text-slate-400">
+            <p className="m-0">Ô trống hoặc “-” = chưa có, không phải 0. Riêng Target: “-” hoặc KCK = không cam kết.</p>
+            <p className="m-0">Em đã có hồ sơ thì dùng Chuyển lớp, không tạo mới.</p>
+          </div>
         </div>
       </div>
     </KhungPanel>
