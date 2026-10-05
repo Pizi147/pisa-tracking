@@ -446,7 +446,7 @@ export function ghiMiniTestTrongTx(conn: any, p: Principal, mt: any, x: { tyLe: 
     const lyDo = `Mini Test ${phanTram}% chưa đạt (cần từ 70%) — Quản lý xử lý từng trường hợp`;
     taoYeuCau(conn, {
       loai: 'bao_len_mini_test', doiTuongLoai: 'mini_test', doiTuongId: mt.id, hocVienId: mt.student_id, lopId, nguoiXin: null, hanDuyet: null, lyDo,
-      duLieu: { viecKey: `mini_test:${mt.id}`, ownerId: chu?.p ?? null, lyDo, tyLe: x.tyLe },
+      duLieu: { viecKey: `minitest:${mt.id}`, ownerId: chu?.p ?? null, lyDo, tyLe: x.tyLe },
     });
   }
   writeAudit({ actorUserId: p.userId, action: 'cuoi_khoa.mini_test', entityType: 'student', entityId: mt.student_id, after: { miniTestId: mt.id, tyLe: x.tyLe, ngay: x.ngay, dat } });

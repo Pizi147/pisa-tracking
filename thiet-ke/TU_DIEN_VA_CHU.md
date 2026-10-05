@@ -380,7 +380,7 @@ Chữ mới của PR này — chờ chủ sản phẩm duyệt cùng PR. Không 
 | Tab Công việc | `Chờ duyệt` (QL, Quản trị — tab đầu) · `Việc học viên` (đổi từ "Hỗ trợ học viên", K1-29) · `Yêu cầu của tôi` (GV) · `Vận hành` · `Báo cáo đơn vị` |
 | Chip phân loại (đủ 6, số 0 vẫn hiện) | `Tất cả` · `Học thuật` · `Ý thức` · `Lịch thi` · `Thông tin HV` · `Báo lên`; trạng thái `Đang chờ` · `Đã xử lý (30 ngày)`; `Xếp: quá hạn trước → hạn gần nhất` |
 | Tiêu đề thẻ | `Đề xuất PA · {kỹ năng}` · `Xin ý kiến · PA {tên PA}` · `Dời {kỹ năng} {MTn} lần {n}` · `Đề xuất sửa {target/lộ trình/lớp/lịch MT} {cũ} → {mới}` · `Đề xuất sửa: {nội dung}` · `Case chờ nguyên nhân quá hạn · {kỹ năng}` |
-| Dòng thẻ | `{người} đề xuất {dd/mm}: "{mô tả}"` · `{người} ({dd/mm}): "{câu hỏi}"` · `Kết quả tuần: {kết quả}` · `Hết {dd/mm} chưa duyệt thì yêu cầu tự huỷ và phần thi bị huỷ.` · `Không cần duyệt — để QL biết và nhắc.` · `Nếu duyệt: …` |
+| Dòng thẻ | `{người} đề xuất {dd/mm}: "{mô tả}"` · `{người} ({dd/mm}): "{câu hỏi}"` · `Kết quả tuần: {kết quả}` · `Hết {dd/mm} chưa duyệt thì yêu cầu tự huỷ và phần thi bị huỷ.` · `Nếu duyệt: …` (PR-NV bỏ "Không cần duyệt — để QL biết và nhắc.") |
 | Hạn (tầng 1) | `Quá hạn {n} ngày` · `Hạn hôm nay` · `Còn {n} ngày`; dòng phụ `hạn {dd/mm}` |
 | Nút | `Duyệt` · `Duyệt…` (còn một bước: chọn tuần / ghi chú) · `Từ chối…` · `Trả lời…` · `+ Thêm PA` · `Nhắc {GV}` · `✓ Đã nhắc {giờ}` · `Mở` · `Duyệt {n} yêu cầu` · `Mở hộp duyệt` |
 | Ô trong thẻ | `Lý do từ chối (người gửi sẽ đọc)` · `Câu trả lời cho giáo viên` · `Ghi chú việc đã xử lý ở màn gốc` · `Tuần thi mới`; lỗi `Cần ít nhất 3 ký tự` |
@@ -392,6 +392,7 @@ Chữ mới của PR này — chờ chủ sản phẩm duyệt cùng PR. Không 
 | Đề xuất sửa | ⋮ `Đề xuất sửa thông tin…`; panel `Đề xuất sửa thông tin` · `Thông tin cần sửa` (`Target` · `Lộ trình` · `Lớp` · `Lịch MT` · `Khác`) · `Lý do` (≥ 15) · `Gửi Quản lý`; toast `Đã gửi — xem ở Công việc › Yêu cầu của tôi`; lỗi `Target và lộ trình do Quản lý sửa. Bấm "Đề xuất sửa" để gửi Quản lý duyệt.` |
 | Quản trị | `Đăng ký chờ duyệt`; rỗng `Không có đăng ký nào đang chờ. …` |
 | Vận hành | người phụ trách ngoài hệ thống: tên kèm nhãn nhỏ `ngoài hệ thống` |
+| PR-NV (05/10) | Tab "Để QL biết" → **`Nhắc việc`** (số xám nhỏ trên tab; chip thẻ giữ `Báo QL`) · rỗng `Không có việc cần nhắc` · hết giờ `Đã nhắc {k}/{n} — {m} chưa nhắc, bấm lại` · dải Tổng quan `Chờ duyệt {n}` (tím) + chip loại (xám) + `⚠ Quá hạn {n}` (đỏ cam), ẩn khi không có thẻ phải quyết |
 
 ## 13. PR-MT — 29/09/2026 · lịch MT, MT lịch sử, huỷ lượt, dời do vắng
 

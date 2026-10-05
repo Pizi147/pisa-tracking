@@ -5,7 +5,7 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { BoLocDoan, Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
-import { BranchFilter } from '../../ui/Filters.tsx';
+import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { fmtTime } from '../../lib/format.ts';
 import { NhomViec } from '../worklist/NhomViec.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -40,7 +40,8 @@ export function HoTroHocVienTab() {
   const toast = useToast();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
-  const branchId = params.get('cn') ? Number(params.get('cn')) : null;
+  const macDinh = useChiNhanhMacDinh();
+  const branchId = params.get('cn') ? Number(params.get('cn')) : macDinh;
   const laQuanLy = !!session?.nav?.workOps;
   const nguoi = laQuanLy ? thamSoNguoi(params.get('nguoi')) : 'toi';
   const loc: LocNhanh = (LOC_NHANH as readonly string[]).includes(params.get('loc') ?? '') ? (params.get('loc') as LocNhanh) : 'tat-ca';

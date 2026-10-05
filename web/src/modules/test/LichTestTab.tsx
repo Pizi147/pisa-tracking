@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useApi, useGopTaiLai } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
-import { BranchFilter, WeekPicker } from '../../ui/Filters.tsx';
+import { BranchFilter, WeekPicker, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { IconGap } from '../../ui/BieuTuong.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
@@ -55,7 +55,8 @@ export function LichTestTab() {
   const [params, setParams] = useSearchParams();
   const so = (k: string) => (params.get(k) ? Number(params.get(k)) : null);
   const periodParam = so('periodId');
-  const branchId = so('cn') ?? so('branchId');
+  const macDinh = useChiNhanhMacDinh();
+  const branchId = so('cn') ?? so('branchId') ?? macDinh;
   const urlClassId = so('classId');
   const urlKn = params.get('kn');
   const phamViParam = params.get('phamVi');

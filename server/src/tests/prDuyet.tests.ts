@@ -328,7 +328,7 @@ export async function runPrDuyetTests(t: YThucTestKit) {
     assert(dem() === 1, `số thẻ Báo QL: ${dem()}`);
     const the = yc.hopChoDuyet(P.admin, { xem: 'de-biet' }).the.find((x: any) => x.loai === 'bao_len_nguyen_nhan' && x.duLieu?.viecKey === `cause:${kase.id}`);   // PR-GVb (J5b): Báo QL tách khỏi tab Chờ duyệt → tab Để QL biết
     assert(the && the.kieuNut === 'nhac' && the.nguoiXin === null && the.phanLoai === 'bao-len' && the.hanDuyet === t.addDays(TODAY, -2)
-      && the.dong[0].startsWith('Không cần duyệt'), JSON.stringify(the));
+      && !the.dong.some((d: string) => /không cần duyệt/i.test(d)), JSON.stringify(the));   // PR-NV (T8): bỏ câu giải thích trên thẻ Nhắc việc
     assert(maLoi(() => yc.duyetYeuCau(P.admin, the.id)) === 400, 'Báo QL duyệt được');
     assert(!conn.prepare(`SELECT 1 FROM notifications WHERE kind = 'duyet_qua_han' AND entity_id = ?`).get(the.id), 'Báo QL sinh duyet_qua_han (Q13)');
     const khoa = (w: any) => w.items.map((it: any) => it.key);

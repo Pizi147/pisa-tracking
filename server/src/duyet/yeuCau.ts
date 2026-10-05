@@ -5,18 +5,18 @@
  * `chotYeuCau` (idempotent — `WHERE trang_thai = 'cho'`, lần hai trả 0, không ném, không báo lần hai). Luật riêng của từng loại
  * nằm ở `loaiYeuCau.ts` (giao kèo). Thẻ "chết" đóng bằng QUÉT KHI ĐỌC (Q2), không có tiến trình nền.
  */
-import { db, tx } from '../db.ts';
+import { db, theoLo, tx } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, chuTuDo, forbidden, notFound, nowIso, addDays, todayInBusinessTz } from '../util.ts';
+import { HttpError, badRequest, chuTuDo, forbidden, notFound, nowIso, addDays, todayInBusinessTz } from '../util.ts';
 import { can, napTruocPhamVi, require_, type Principal } from '../permissions.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
-import { nho } from '../platform/nguCanhRequest.ts';
+import { nho, trongBoNho } from '../platform/nguCanhRequest.ts';
 import {
   PERMISSIONS, LOAI_YC_META, PHAN_LOAI_LABEL, TRAN_HANG_LOAT, demHop, duongHoSoHocVien, hanDuyetMacDinh, laPhanLoai, laTuDuyet,
   nhanKhongNguoiNhac, nhomCuaLoai, sapThe,
   type DemYeuCau, type LoaiYcMeta, type LoaiYeuCau, type PhanLoai, type TheYeuCauDto,
 } from '../../../shared/domain/index.ts';
-import { nhacViec } from '../worklist/nhacViec.ts';
+import { nhacViecNhieu, type DongNhac, type ViecCanNhac } from '../worklist/nhacViec.ts';
 import { DINH_NGHIA_LOAI, dinhNghiaCua, type NguCanhThe, type YeuCauRow } from './loaiYeuCau.ts';
 
 const P_DUYET = PERMISSIONS.REQUEST_APPROVE;
@@ -470,30 +470,91 @@ export function duyetNhieu(p: Principal, ids: unknown): { ok: number[]; loi: { i
 }
 
 /**
- * PR-GVb (Q-B): "Nhắc tất cả (n)" — từng thẻ Báo QL gọi `nhacViec` (kiểm phạm vi TỪNG dòng + một thông báo / việc / ngày, không viết
- * luật chống lặp thứ hai). Thẻ lỗi báo riêng kèm mã. `moi = false` khi hôm nay đã nhắc việc đó (không gửi thêm).
+ * PR-GVb (Q-B): "Nhắc tất cả (n)" — kiểm từng thẻ (phạm vi CỦA THẺ, trạng thái, loại "nhac", người nhận) rồi đưa cả lô vào
+ * `nhacViecNhieu` (PR-NV: gom theo người, `myWork` một lần mỗi người, một lần ghi, dừng trước hạn 10 s). Thẻ lỗi báo riêng kèm mã.
+ * `moi = false` khi hôm nay đã nhắc việc đó (không gửi thêm).
  */
 export function nhacNhieu(p: Principal, ids: unknown) {
   require_(p, P_DUYET, { anyScope: true }, 'Chỉ Quản lý và Quản trị hệ thống nhắc được giáo viên.');
   if (!Array.isArray(ids) || !ids.length || ids.length > TRAN_HANG_LOAT) throw badRequest(`Chọn từ 1 đến ${TRAN_HANG_LOAT} thẻ để nhắc.`);
-  const ok: { id: number; daNhacLuc: string; moi: boolean }[] = [];
   const loi: { id: number; loi: string; ma: number }[] = [];
-  const homNay = demoToday();
-  for (const x of new Set(ids)) {
-    if (!(Number.isInteger(x) && (x as number) > 0)) { loi.push({ id: x as number, loi: 'Mã yêu cầu không hợp lệ.', ma: 400 }); continue; }
-    const id = x as number;
-    try {
-      const yc = docThe(id);
-      require_(p, P_DUYET, ctxThe(yc), 'Thẻ này nằm ngoài phạm vi bạn quản lý.');
-      if (yc.trang_thai !== 'cho') throw badRequest('Yêu cầu này đã được xử lý.');
-      if (metaCua(yc.loai).kieuNut !== 'nhac') throw badRequest('Thẻ này cần Duyệt hoặc Trả lời, không phải Nhắc.');
-      let du: any = {};
-      try { du = yc.du_lieu ? JSON.parse(yc.du_lieu) : {}; } catch { du = {}; }
-      if (typeof du.ownerId !== 'number' || typeof du.viecKey !== 'string') throw badRequest(nhanKhongNguoiNhac(yc.loai));
-      const daCo = db().prepare(`SELECT 1 FROM notifications WHERE user_id = ? AND dedup_key = ?`).get(du.ownerId, `nhac:${du.viecKey}:${homNay}`);
-      const r = nhacViec(p, { key: du.viecKey, ownerId: du.ownerId });
-      ok.push({ id, daNhacLuc: r.daNhacLuc, moi: !daCo });
-    } catch (e: any) { loi.push({ id, loi: e?.message ?? 'Không nhắc được.', ma: e?.status ?? 500 }); }
+  return trongBoNho(() => {
+    const homNay = demoToday();
+    quetYeuCau(homNay);   // thẻ chết tự đóng trước khi đọc
+    const ds: number[] = [];
+    for (const x of new Set(ids)) {
+      if (Number.isInteger(x) && (x as number) > 0) ds.push(x as number);
+      else loi.push({ id: x as number, loi: 'Mã yêu cầu không hợp lệ.', ma: 400 });
+    }
+    const conn = db();
+    const theo = new Map<number, YeuCauRow>();
+    if (ds.length) {
+      for (const r of conn.prepare(`SELECT * FROM yeu_cau_duyet WHERE id IN (${ds.map(() => '?').join(',')})`).all(...ds) as YeuCauRow[]) theo.set(r.id, r);
+    }
+    napTruocPhamVi([...theo.values()].map((r) => r.hoc_vien_id));
+    const viec: ViecCanNhac[] = [];
+    const ngoai: YeuCauRow[] = [];
+    for (const id of ds) {
+      try {
+        const yc = theo.get(id);
+        if (!yc) throw notFound('Không tìm thấy yêu cầu này.');
+        require_(p, P_DUYET, ctxThe(yc), 'Thẻ này nằm ngoài phạm vi bạn quản lý.');
+        if (yc.trang_thai !== 'cho') throw badRequest('Yêu cầu này đã được xử lý.');
+        if (metaCua(yc.loai).kieuNut !== 'nhac') throw badRequest('Thẻ này cần Duyệt hoặc Trả lời, không phải Nhắc.');
+        let du: any = {};
+        try { du = yc.du_lieu ? JSON.parse(yc.du_lieu) : {}; } catch { du = {}; }
+        if (typeof du.ownerId !== 'number' || typeof du.viecKey !== 'string') throw badRequest(nhanKhongNguoiNhac(yc.loai));
+        const v: ViecCanNhac = { the: id, key: du.viecKey, ownerId: du.ownerId };
+        if (yc.loai in KIEM_NGUOI_NGOAI) { ngoai.push(yc); v.ngoaiMyWork = () => dongNgoai(id); }
+        viec.push(v);
+      } catch (e: any) { loi.push({ id, loi: e?.message ?? 'Không nhắc được.', ma: e?.status ?? 500 }); }
+    }
+    /* Nạp lười, MỘT lần cho mọi thẻ không có dòng `myWork` — lõi chỉ gọi khi còn phải gửi (nhắc lại trong ngày: 0 câu). */
+    let bang: Map<number, DongNhac | HttpError> | null = null;
+    const dongNgoai = (id: number): DongNhac => {
+      bang ??= napDongNgoai(conn, p, ngoai, homNay);
+      const d = bang.get(id)!;
+      if (d instanceof HttpError) throw d;
+      return d;
+    };
+    const kq = nhacViecNhieu(p, viec, { boQuaDaNhacTruoc: true });
+    return {
+      ok: kq.ok.map((x) => ({ id: x.the as number, daNhacLuc: x.daNhacLuc, moi: x.moi })),
+      loi: [...loi, ...kq.loi.map((x) => ({ id: x.the as number, loi: x.loi, ma: x.ma }))],
+    };
+  });
+}
+
+/**
+ * PR-NV: thẻ Báo QL KHÔNG có dòng ở `myWork` của người nhận — Cuối khoá dời quá hạn (`cuoi_khoa:{bài}`), Mini Test chưa đạt
+ * (đã ghi điểm nên dòng "Ghi Mini Test" đã hết). Người nhận phải CÒN phụ trách: GVCN đang hiệu lực của lớp thẻ / người dạy bổ
+ * trợ của nhóm Mini Test. Một câu mỗi loại, theo lô.
+ */
+const KIEM_NGUOI_NGOAI: Record<string, string> = {
+  bao_len_cuoi_khoa: `SELECT y.id FROM yeu_cau_duyet y WHERE y.id IN (?) AND EXISTS (SELECT 1 FROM teacher_assignments ta
+      WHERE ta.class_id = y.lop_id AND ta.user_id = CAST(json_extract(y.du_lieu, '$.ownerId') AS INTEGER) AND ta.is_core = 1 AND ta.status = 'active')`,
+  bao_len_mini_test: `SELECT y.id FROM yeu_cau_duyet y WHERE y.id IN (?) AND EXISTS (SELECT 1 FROM mini_test m JOIN case_interventions iv ON iv.nhom_bo_tro = m.nhom_bo_tro
+      WHERE m.id = y.doi_tuong_id AND iv.performer_user_id = CAST(json_extract(y.du_lieu, '$.ownerId') AS INTEGER))`,
+};
+function napDongNgoai(conn: any, p: Principal, rows: YeuCauRow[], homNay: string): Map<number, DongNhac | HttpError> {
+  const con = new Set<number>();
+  for (const [loai, sql] of Object.entries(KIEM_NGUOI_NGOAI)) {
+    const cua = rows.filter((r) => r.loai === loai).map((r) => r.id);
+    theoLo(cua, (lo, ph) => { for (const r of conn.prepare(sql.replace('(?)', `(${ph})`)).all(...lo) as any[]) con.add(r.id); });
   }
-  return { ok, loi };
+  const ngu = napNguCanh(conn, rows, homNay);
+  const owner = new Map<number, number>(rows.map((r) => [r.id, JSON.parse(r.du_lieu!).ownerId]));
+  const ten = new Map<number, string>();
+  theoLo([...new Set(owner.values())], (lo, ph) => {
+    for (const u of conn.prepare(`SELECT id, full_name FROM users WHERE id IN (${ph})`).all(...lo) as any[]) ten.set(u.id, u.full_name);
+  });
+  return new Map(rows.map((r): [number, DongNhac | HttpError] => {
+    if (!con.has(r.id)) return [r.id, notFound(`Việc này không còn trong danh sách của ${ten.get(owner.get(r.id)!) ?? 'giáo viên này'}.`)];
+    const t = theRa(r, ngu);
+    return [r.id, {
+      tieuDe: `${t.nhanLoai}${t.hocVien ? ` · ${t.hocVien}` : ''} · ${p.fullName} nhắc`,
+      than: [t.hocVien, t.lop, r.ly_do].filter(Boolean).join(' · '),
+      duong: t.mo,
+    }];
+  }));
 }

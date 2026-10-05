@@ -133,7 +133,7 @@ export function viecHocVienTheoLop(p: Principal, o: {
     const hv = nhomHv[i] ?? []; const lp = nhomLop[i] ?? [];
     const dk = [hv.length ? `hoc_vien_id IN (${hv.map(() => '?').join(',')})` : '', lp.length ? `lop_id IN (${lp.map(() => '?').join(',')})` : ''].filter(Boolean).join(' OR ');
     for (const r of db().prepare(`SELECT id, loai, hoc_vien_id, lop_id FROM yeu_cau_duyet WHERE trang_thai = 'cho' AND (${dk})`).all(...hv, ...lp) as any[]) {
-      /* PR-GVb (J5b): "chờ duyệt" chỉ thẻ QL phải quyết — Báo QL nằm ở tab Để QL biết, không vào badge (cùng `nhomCuaLoai` của hộp). */
+      /* PR-GVb (J5b): "chờ duyệt" chỉ thẻ QL phải quyết — Báo QL nằm ở tab Nhắc việc, không vào badge (cùng `nhomCuaLoai` của hộp). */
       if (nhomCuaLoai(r.loai) === 'de-biet') continue;
       the.set(r.id, { hv: r.hoc_vien_id ?? null, lop: r.lop_id ?? null });
     }

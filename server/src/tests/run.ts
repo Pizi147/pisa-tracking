@@ -9101,6 +9101,10 @@ await runPrK26Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 // ==================================================================== PR-SL (Sửa thông tin cả lớp: xem trước + lưu một giao dịch)
 const { runPrSlTests } = await import('./prSl.tests.ts');
 await runPrSlTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
+// ==================================================================== PR-NV (Nhắc việc gom theo người, khoá Mini Test / Cuối khoá)
+const { runPrNvTests } = await import('./prNv.tests.ts');
+await runPrNvTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-DL (Điểm theo lớp)
 const { runPrDlTests } = await import('./prDl.tests.ts');
 await runPrDlTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });

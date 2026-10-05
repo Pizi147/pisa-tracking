@@ -46,14 +46,15 @@ function DauMt({ kieu }: { kieu: 'xong' | 'xep' | 'do' }) {
  * Thi lại (đợt đã đủ) → Lý do (khi cần) → chân dính: dòng xem trước + "Xếp lịch n em · m bài".
  * Xem trước / lưu gọi `/ke-hoach-test/hang-loat` MỖI LỚP một lần (xem trước song song, lưu tuần tự); R9b: sau lưu chỉ còn em lỗi.
  */
-export function NganXepLichMt({ lopDs, lopMoSan, coThuong, onDoiKhung, onClose, onDone }: {
-  lopDs: LopKH[]; lopMoSan: number | null; coThuong: boolean; onDoiKhung: (k: 'ft' | 'thuong') => void;
+export function NganXepLichMt({ chiNhanhDau, lopDs, lopMoSan, coThuong, onDoiKhung, onClose, onDone }: {
+  /** PR-NV (T9): chi nhánh trang đang lọc — giá trị đầu của ô chi nhánh trong panel. */
+  chiNhanhDau: number | null; lopDs: LopKH[]; lopMoSan: number | null; coThuong: boolean; onDoiKhung: (k: 'ft' | 'thuong') => void;
   onClose: () => void; onDone: () => void;
 }) {
   const toast = useToast();
   const homNay = useNgayNghiepVu().homNay || null;
   /* Chi nhánh (QL một chi nhánh thì `BranchFilter` tự ẩn): danh sách lớp để "+ lớp" tải lại theo chi nhánh; lớp đã chọn giữ nguyên. */
-  const [branchId, setBranchId] = useState<number | null>(null);
+  const [branchId, setBranchId] = useState<number | null>(chiNhanhDau);
   const dsLop = useApi<DanhSachLop>(branchId ? `/ke-hoach-test/lop?branchId=${branchId}` : null);
   const lopFT = useMemo(() => lopDs.filter((l) => l.loai === 'ft'), [lopDs]);
   const lopTheoChiNhanh = useMemo(() => (branchId ? (dsLop.data?.lop ?? []).filter((l) => l.loai === 'ft') : lopFT), [lopFT, branchId, dsLop.data]);
