@@ -41,9 +41,9 @@ export function huongTiepKhaDung(ma: ProgrammeCode | null, tap: readonly Huong[]
 }
 
 type NguCanhNhan = { ma: ProgrammeCode | null; maKe: ProgrammeCode | null; ngayXemLai?: string | null };
+/** PR-K26: tên bậc hiện trên màn ("Pre FOU"), không mã thô ("PREFOU"). */
+const ten = (x: ProgrammeCode | null | undefined) => (x ? kyHieuLop(x, null) ?? x : '—');
 function nhan(h: Huong, ctx: NguCanhNhan, ngan: boolean): string {
-  /* PR-K26: tên bậc ("Pre FOU"), không mã thô ("PREFOU"). */
-  const ten = (x: ProgrammeCode | null | undefined) => (x ? kyHieuLop(x, null) ?? x : '—');
   const ma = ten(ctx.ma);
   const maKe = ten(ctx.maKe ?? NORMAL_LADDER[ctx.ma as ProgrammeCode]);
   switch (h) {
@@ -72,9 +72,9 @@ export function nhanHuongNgan(h: Huong, ctx: NguCanhNhan): string {
 export function nhanTiepTheo(banGhi: { huong: Huong } | null | undefined, ma: ProgrammeCode | null): string | null {
   if (!banGhi) return null;
   switch (banGhi.huong) {
-    case 'len_lop': return NORMAL_LADDER[ma as ProgrammeCode] ?? null;
+    case 'len_lop': return NORMAL_LADDER[ma as ProgrammeCode] ? ten(NORMAL_LADDER[ma as ProgrammeCode]) : null;
     case 'fast_track': return 'Fast Track';
-    case 'hoc_lai': return ma ? `học lại ${ma}` : null;
+    case 'hoc_lai': return ma ? `học lại ${ten(ma)}` : null;
     case 'bao_luu': return 'tạm dừng học (bảo lưu)';
     case 'dung_hoc': return 'dừng học hẳn';
     default: return null; // chua_quyet

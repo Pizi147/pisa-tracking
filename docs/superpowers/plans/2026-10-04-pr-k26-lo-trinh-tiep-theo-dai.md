@@ -44,9 +44,9 @@
 - Produces: `chuanHoaHuong(x: string): Huong | null` — `chua_ro`/`xep_sau` → `chua_quyet`; giá trị hợp lệ giữ; còn lại null.
 - Produces: `xepHuongTheoGoiY(cacHuong: readonly Huong[], goiY: { huong: 'hoc_lai' | 'len' | null; canQuanLy: boolean } | null): { dau: Huong[]; khac: Huong[] }` — `len` → `dau = ['len_lop']`; `hoc_lai` → `['hoc_lai']`; `canQuanLy` → `['len_lop', 'hoc_lai']`; null → `dau = []`, `khac = cacHuong`. Hướng không có trong `cacHuong` (ELE không có `len_lop`) bị bỏ khỏi `dau`.
 
-- [ ] **Step 1: Phép kiểm đỏ** `K26-1`: `chuanHoaHuong('xep_sau') === 'chua_quyet'`, `('chua_ro')` → `'chua_quyet'`, `('abc')` → null; `nhanHuong('chua_quyet', …) === 'Chưa quyết'`; `xepHuongTheoGoiY(HUONG_TIEP, { huong: null, canQuanLy: true }).dau` = `['len_lop','hoc_lai']`, `khac` không chứa hai hướng đó; với `huongTiepKhaDung('ELE')` không có `len_lop` trong `dau`.
-- [ ] **Step 2: Đỏ** → **Step 3: Sửa** `lenLop.ts` (cập nhật mọi `switch`/đếm `khongChuyen.xep_sau` → `chua_quyet`, chữ tóm tắt `"{n} em chưa quyết"`). Chạy `npm run typecheck` để thấy mọi chỗ còn dùng hai giá trị cũ; sửa từng chỗ (`transition.ts:218-330`, `schedule.ts:329-417`, `cuoiKhoa.ts:551`, `loTrinhTiep.ts:195`, `LoTrinhTiepPanel.tsx:47`, bảng Chuyển tiếp).
-- [ ] **Step 4:** `npm run check` → commit `"PR-K26 (1): một hướng Chưa quyết thay Chưa rõ/Xếp sau, thứ tự hướng theo gợi ý Cuối khoá"`.
+- [x] **Step 1: Phép kiểm đỏ** `K26-1`: `chuanHoaHuong('xep_sau') === 'chua_quyet'`, `('chua_ro')` → `'chua_quyet'`, `('abc')` → null; `nhanHuong('chua_quyet', …) === 'Chưa quyết'`; `xepHuongTheoGoiY(HUONG_TIEP, { huong: null, canQuanLy: true }).dau` = `['len_lop','hoc_lai']`, `khac` không chứa hai hướng đó; với `huongTiepKhaDung('ELE')` không có `len_lop` trong `dau`.
+- [x] **Step 2: Đỏ** → **Step 3: Sửa** `lenLop.ts` (cập nhật mọi `switch`/đếm `khongChuyen.xep_sau` → `chua_quyet`, chữ tóm tắt `"{n} em chưa quyết"`). Chạy `npm run typecheck` để thấy mọi chỗ còn dùng hai giá trị cũ; sửa từng chỗ (`transition.ts:218-330`, `schedule.ts:329-417`, `cuoiKhoa.ts:551`, `loTrinhTiep.ts:195`, `LoTrinhTiepPanel.tsx:47`, bảng Chuyển tiếp).
+- [x] **Step 4:** `npm run check` → commit `"PR-K26 (1): một hướng Chưa quyết thay Chưa rõ/Xếp sau, thứ tự hướng theo gợi ý Cuối khoá"`.
 
 ### Task K26-2: Migrate + máy chủ nhận giá trị cũ
 
@@ -57,9 +57,9 @@
 **Interfaces:**
 - Produces: `migratePrK26(conn: any, applied: string[]): void` — `UPDATE lo_trinh_tiep_theo SET huong = 'chua_quyet' WHERE huong IN ('chua_ro','xep_sau')`; ghi `applied` chỉ khi `changes > 0`.
 
-- [ ] **Step 1: Phép kiểm đỏ** `K26-2a`: chèn hai bản ghi `chua_ro` (không ngày) và `xep_sau` (ngày xem lại tương lai) → `migratePrK26` → cả hai `chua_quyet`, ngày giữ; chạy lần hai `applied` rỗng. `K26-2b`: em `chua_quyet` + ngày tương lai không vào đếm đỏ Hết khoá (cùng hàm ở `schedule.ts:356`); em `chua_quyet` không ngày ở hai tuần cuối → `lopHocCua(...).nhacLoTrinh === true`. `K26-2c`: `ghiLoTrinhTiep(..., { huong: 'xep_sau' })` → lưu `chua_quyet`, không lỗi.
-- [ ] **Step 2: Đỏ** → **Step 3: Sửa** (`chuanHoaHuong` ở mọi đầu vào hướng; bước 2 vẫn bắt buộc ngày xem lại khi `chua_quyet`).
-- [ ] **Step 4:** `npm run check` → commit `"PR-K26 (2): migrate gộp hướng, máy chủ nhận giá trị cũ từ form đang mở"`.
+- [x] **Step 1: Phép kiểm đỏ** `K26-2a`: chèn hai bản ghi `chua_ro` (không ngày) và `xep_sau` (ngày xem lại tương lai) → `migratePrK26` → cả hai `chua_quyet`, ngày giữ; chạy lần hai `applied` rỗng. `K26-2b`: em `chua_quyet` + ngày tương lai không vào đếm đỏ Hết khoá (cùng hàm ở `schedule.ts:356`); em `chua_quyet` không ngày ở hai tuần cuối → `lopHocCua(...).nhacLoTrinh === true`. `K26-2c`: `ghiLoTrinhTiep(..., { huong: 'xep_sau' })` → lưu `chua_quyet`, không lỗi.
+- [x] **Step 2: Đỏ** → **Step 3: Sửa** (`chuanHoaHuong` ở mọi đầu vào hướng; bước 2 vẫn bắt buộc ngày xem lại khi `chua_quyet`).
+- [x] **Step 4:** `npm run check` → commit `"PR-K26 (2): migrate gộp hướng, máy chủ nhận giá trị cũ từ form đang mở"`.
 
 ### Task K26-3: Panel một em — gợi ý đứng đầu, em 50–59% là đề xuất
 
@@ -73,10 +73,10 @@
 
 Skill: `/impeccable layout` (khối Hướng đi), `/impeccable clarify` (chữ "Quản lý quyết", nhãn nút).
 
-- [ ] **Step 1: Phép kiểm đỏ** `K26-3`: máy chủ — em demo Cuối khoá 50–59% → `layLoTrinhTiep(...).cuoiKhoa.goiY.canQuanLy === true`; quét nguồn panel — gọi `xepHuongTheoGoiY`, có chữ `Hướng bạn đề xuất (Quản lý quyết)`, `Lưu đề xuất`, `Hướng khác`.
-- [ ] **Step 2: Đỏ** → **Step 3: Sửa:** các hướng `dau` hiện trên, đánh dấu "Web gợi ý theo Cuối khoá"; `khac` thu trong `<details>` "Hướng khác ▾" — **mở sẵn** khi hướng đã lưu nằm trong `khac`. `canQuanLy` → tiêu đề khối `Hướng bạn đề xuất (Quản lý quyết)`, nút chính `Lưu đề xuất`; còn lại giữ `Lưu`. Chân panel theo luật S3 ("Đóng" / "Huỷ thay đổi").
-- [ ] **Step 4:** `npm run check`; ảnh 1440/375 sáng/tối ba em demo: ≥ 70%, 50–59%, < 50% (và một em chưa đủ điểm). Vai GVCN, QL.
-- [ ] **Step 5:** commit `"PR-K26 (3): panel Lộ trình tiếp theo xếp hướng theo gợi ý, em 50–59% là đề xuất cho Quản lý"`.
+- [x] **Step 1: Phép kiểm đỏ** `K26-3`: máy chủ — em demo Cuối khoá 50–59% → `layLoTrinhTiep(...).cuoiKhoa.goiY.canQuanLy === true`; quét nguồn panel — gọi `xepHuongTheoGoiY`, có chữ `Hướng bạn đề xuất (Quản lý quyết)`, `Lưu đề xuất`, `Hướng khác`.
+- [x] **Step 2: Đỏ** → **Step 3: Sửa:** các hướng `dau` hiện trên, đánh dấu "Web gợi ý theo Cuối khoá"; `khac` thu trong `<details>` "Hướng khác ▾" — **mở sẵn** khi hướng đã lưu nằm trong `khac`. `canQuanLy` → tiêu đề khối `Hướng bạn đề xuất (Quản lý quyết)`, nút chính `Lưu đề xuất`; còn lại giữ `Lưu`. Chân panel theo luật S3 ("Đóng" / "Huỷ thay đổi").
+- [x] **Step 4:** `npm run check`; ảnh 1440/375 sáng/tối ba em demo: ≥ 70%, 50–59%, < 50% (và một em chưa đủ điểm). Vai GVCN, QL.
+- [x] **Step 5:** commit `"PR-K26 (3): panel Lộ trình tiếp theo xếp hướng theo gợi ý, em 50–59% là đề xuất cho Quản lý"`.
 
 ### Task K26-4: Ghi lộ trình tiếp theo cả lớp
 
@@ -92,14 +92,14 @@ Skill: `/impeccable layout` (khối Hướng đi), `/impeccable clarify` (chữ 
 
 Skill: `/impeccable layout` (bảng), `/impeccable harden` (lỗi theo dòng, đang lưu, lớp rỗng), `/impeccable adapt` (375: mỗi em một thẻ).
 
-- [ ] **Step 1: Phép kiểm đỏ** `K26-4a` máy chủ: GVCN lớp thường ghi 3 em một lần → 3 bản ghi, 3 dòng hành trình; một em ngoài lớp → 400 và 0 bản ghi mới; GVBM không có quyền → 403; 61 dòng → 400. `K26-4b` đếm câu SQL `GET` cả lớp không tăng theo số em (mẫu các phép tốc độ có sẵn). `K26-4c` quét nguồn: `DauTrangLop.tsx` có mục "Ghi lộ trình tiếp theo cả lớp", chỉ hiện khi `viewer` có quyền ghi.
-- [ ] **Step 2: Đỏ** → **Step 3: Sửa** máy chủ (tách lõi, đường mới, trần ở `tocDoDuong.ts`) → **Step 4: Web:** `KhungPanel rong="toan"`; mỗi em một dòng: Học viên · Cuối khoá (`chuHopKetLuan` ở `shared/domain/cuoiKhoa.ts:122`) · ô chọn hướng (điền sẵn bản ghi, chưa có thì hướng gợi ý; `canQuanLy` → chip "QL quyết" cạnh ô) · ghi chú ngắn; nút `Lưu {n} em` (n = số dòng đổi so với bản ghi). Lỗi máy chủ chỉ đúng dòng (`aria-describedby`).
-- [ ] **Step 5:** `npm run check`; ảnh 1440/375 sáng/tối (bảng mới, có lỗi, đang lưu); bấm thử GVCN, QL, GVBM.
-- [ ] **Step 6:** commit `"PR-K26 (4): ghi lộ trình tiếp theo cả lớp trên một bảng"`.
+- [x] **Step 1: Phép kiểm đỏ** `K26-4a` máy chủ: GVCN lớp thường ghi 3 em một lần → 3 bản ghi, 3 dòng hành trình; một em ngoài lớp → 400 và 0 bản ghi mới; GVBM không có quyền → 403; 61 dòng → 400. `K26-4b` đếm câu SQL `GET` cả lớp không tăng theo số em (mẫu các phép tốc độ có sẵn). `K26-4c` quét nguồn: `DauTrangLop.tsx` có mục "Ghi lộ trình tiếp theo cả lớp", chỉ hiện khi `viewer` có quyền ghi.
+- [x] **Step 2: Đỏ** → **Step 3: Sửa** máy chủ (tách lõi, đường mới, trần ở `tocDoDuong.ts`) → **Step 4: Web:** `KhungPanel rong="toan"`; mỗi em một dòng: Học viên · Cuối khoá (`chuHopKetLuan` ở `shared/domain/cuoiKhoa.ts:122`) · ô chọn hướng (điền sẵn bản ghi, chưa có thì hướng gợi ý; `canQuanLy` → chip "QL quyết" cạnh ô) · ghi chú ngắn; nút `Lưu {n} em` (n = số dòng đổi so với bản ghi). Lỗi máy chủ chỉ đúng dòng (`aria-describedby`).
+- [x] **Step 5:** `npm run check`; ảnh 1440/375 sáng/tối (bảng mới, có lỗi, đang lưu); bấm thử GVCN, QL, GVBM.
+- [x] **Step 6:** commit `"PR-K26 (4): ghi lộ trình tiếp theo cả lớp trên một bảng"`.
 
 ### Task K26-5: Hoàn tất
-- [ ] `/impeccable audit` (panel + bảng mới) · `/ponytail-review` · `CODE_MAP.md` (file mới) · Rulebook §20.6/§20.7: thay "Chưa rõ"/"Xếp sau" bằng "Chưa quyết" · `thiet-ke/TU_DIEN_VA_CHU.md` cùng chữ · một dòng `plan.md` mục 11.
-- [ ] `superpowers:requesting-code-review` → `superpowers:finishing-a-development-branch` (mở PR, không merge). Merge sau DL, trước SL.
+- [x] `/impeccable audit` (panel + bảng mới) · `/ponytail-review` · `CODE_MAP.md` (file mới) · Rulebook §20.6/§20.7: thay "Chưa rõ"/"Xếp sau" bằng "Chưa quyết" · `thiet-ke/TU_DIEN_VA_CHU.md` cùng chữ · một dòng `plan.md` mục 11.
+- [x] `superpowers:requesting-code-review` → `superpowers:finishing-a-development-branch` (mở PR, không merge). Merge sau DL, trước SL.
 
 ## Nghiệm thu
 1. Em ≥ 70% / 60–69% / < 50%: hướng gợi ý đứng đầu, các hướng khác thu gọn; em chưa đủ điểm: danh sách như cũ.

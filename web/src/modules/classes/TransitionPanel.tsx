@@ -8,7 +8,7 @@ import { ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import {
-  CHU_CHUYEN_LOP, NORMAL_LADDER, chuHopKetLuan, chuTuanHoc, hanBanGiao, khacGoiY, kiemDongLenh, ketQuaGanNhat, ngay, tomTatLenh, tuanLich,
+  CHU_CHUYEN_LOP, NORMAL_LADDER, chuHopKetLuan, nhanHuongNgan, chuTuanHoc, hanBanGiao, khacGoiY, kiemDongLenh, ketQuaGanNhat, ngay, tomTatLenh, tuanLich,
   type DongTomTatLenh, type GoiYCuoiKhoa, type HopKetLuanVao, type HuongLenh, type KetQuaVao, type MucTieuLenh, type ProgrammeCode,
 } from '@shared/domain/index.ts';
 import { ClassCreatePanel } from './ClassCreatePanel.tsx';
@@ -399,7 +399,10 @@ function HangEm({ s, d, ft, tuDeXuat, luoi, maKe, routeTu, tuanCh, homNay, loi, 
             <option value="dung">Dừng học hẳn</option>
           </select>
         </span>
-        {!d.kieu && <span className="mt-1 block text-[11px] text-slate-500">Chưa chọn</span>}
+        {/* PR-K26: dòng chưa điền sẵn được (thiếu lớp dự kiến…) vẫn cho Quản lý thấy GVCN đề xuất gì — chỉ chữ, không chọn hộ. */}
+        {!d.kieu && (s.loTrinhTiep
+          ? <span className="mt-1 block text-[11px] text-slate-400">Chưa chọn · GVCN đề xuất: {nhanHuongNgan(s.loTrinhTiep.huong, { ma: data?.from?.programmeCode ?? null, maKe, ngayXemLai: s.loTrinhTiep.ngayXemLai })}</span>
+          : <span className="mt-1 block text-[11px] text-slate-500">Chưa chọn</span>)}
         {tuDeXuat && <span className="mt-1 block text-[11px] text-slate-400">Điền sẵn theo Lộ trình tiếp theo GVCN ghi</span>}
       </span>
       <span role="cell" className="min-w-0">

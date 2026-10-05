@@ -231,5 +231,30 @@ export async function runPrK26Tests(t: YThucTestKit) {
     assert(dau.includes('Ghi lộ trình tiếp theo cả lớp') && /LoTrinhTiepCaLopPanel/.test(dau), 'mục menu + panel');
     const pn = nguon('modules/classes/LoTrinhTiepCaLopPanel.tsx');
     assert(pn.includes('aria-describedby') && pn.includes("rong=\"toan\"") && /Lưu \$\{/.test(pn), 'lỗi theo dòng, panel toàn màn, nút Lưu n em');
+    assert(nguon('modules/classes/TransitionPanel.tsx').includes('GVCN đề xuất:'), 'Chuyển tiếp: dòng không điền sẵn được vẫn hiện đề xuất GVCN');
+  });
+  /* Sau rà mã: Turso tính mỗi câu một lượt mạng — ghi cả lớp phải đọc + ghi theo lô, không N câu cho N em trong một giao dịch. */
+  check('K26-4d · PUT cả lớp: số câu SQL như nhau với 3 em và 32 em; ngày xem lại đã qua, ghi chú quá dài → 400 có studentId', () => {
+    const dem = (fn: () => void): number => {
+      let n = 0; const goc = conn.prepare.bind(conn);
+      (conn as any).prepare = (sql: string) => { n += 1; return goc(sql); };
+      try { fn(); } finally { (conn as any).prepare = goc; }
+      return n;
+    };
+    const it = taoLop('FOU', 8, 3);
+    const nhieu = taoLop('FOU', 8, 32);
+    const ghi = (l: { classId: number; sids: number[] }) => () => loTrinh.ghiLoTrinhTiepCaLop(P.admin, l.classId, { items: l.sids.map((sid) => ({ studentId: sid, huong: 'hoc_lai', ghiChu: 'x' })) });
+    const a = dem(ghi(it));
+    const b = dem(ghi(nhieu));
+    assert(a === b && b <= 15, `3 em ${a} câu · 32 em ${b} câu`);
+    assert(soBanGhi(nhieu.classId) === 32, `đủ 32 bản ghi: ${soBanGhi(nhieu.classId)}`);
+    let e = loi(() => loTrinh.ghiLoTrinhTiepCaLop(P.admin, it.classId, { items: [{ studentId: it.sids[0], huong: 'chua_quyet', ghiChu: 'y'.repeat(501) }] }));
+    assert(e?.status === 400 && e.details?.studentId === it.sids[0] && /tối đa 500/.test(e.message), `ghi chú dài: ${e?.message}`);
+    e = loi(() => loTrinh.ghiLoTrinhTiep(P.admin, it.sids[1], { huong: 'chua_quyet', ngayXemLai: addDays(TODAY, -1) }));
+    assert(e?.status === 400 && /từ hôm nay/.test(e.message), `ngày đã qua: ${e?.message}`);
+    /* Bản ghi cũ (migrate) có ngày đã qua: lưu lại cùng ngày vẫn được — không chặn người sửa ghi chú. */
+    conn.prepare(`UPDATE lo_trinh_tiep_theo SET huong = 'chua_quyet', ngay_xem_lai = ? WHERE student_id = ?`).run(addDays(TODAY, -3), it.sids[2]);
+    loTrinh.ghiLoTrinhTiepCaLop(P.admin, it.classId, { items: [{ studentId: it.sids[2], huong: 'chua_quyet', ghiChu: 'sửa ghi chú' }] });
+    assert(banGhi(it.sids[2]).ngay_xem_lai === addDays(TODAY, -3), 'giữ ngày cũ khi cùng hướng');
   });
 }
