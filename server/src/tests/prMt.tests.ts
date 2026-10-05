@@ -333,10 +333,22 @@ export async function runPrMtTests(t: YThucTestKit) {
     assert(d.ketQuaTestGanNhat(hs.attempts, TODAY) === null, 'đầu hồ sơ: "Kết quả Test gần nhất" lấy MT lịch sử ngoài cửa sổ');
     assert(hs.nextCheckpoint === null, `mốc tiếp theo = ${JSON.stringify(hs.nextCheckpoint)}`);
   });
-  check('PR-MT (6) · R11 MT lịch sử: nhập ô cuối hôm nay → chưa khoá; hôm nay + 8 → khoá (K5-21, K4-20)', () => {
-    conn.prepare('UPDATE assessment_scores SET entered_at = ? WHERE attempt_id = ?').run(`${TODAY}T03:00:00.000Z`, mt2H1.id);
+  check('PR-MT (6) · R11 MT lịch sử: nhập ô cuối hôm nay → chưa khoá; qua Chủ nhật của tuần chứa hôm nay + 7 → khoá (K5-21, K4-20)', () => {
+    conn.prepare('UPDATE assessment_scores SET nhap_dau_ngay = ? WHERE attempt_id = ?').run(TODAY, mt2H1.id);
+    const cn = addDays(d.mondayOfDate(addDays(TODAY, 7)), 6);
     assert(hoanTatSvc.dotHoanTat(mt2H1.id, TODAY).hoanTat === false, 'hôm nay đã khoá');
-    assert(hoanTatSvc.dotHoanTat(mt2H1.id, addDays(TODAY, 8)).hoanTat === true, 'sau 8 ngày chưa khoá');
+    assert(hoanTatSvc.dotHoanTat(mt2H1.id, cn).hoanTat === false, `Chủ nhật ${cn} đã khoá`);
+    assert(hoanTatSvc.dotHoanTat(mt2H1.id, addDays(cn, 1)).hoanTat === true, `sau Chủ nhật ${cn} chưa khoá`);
+  });
+  check('PR-MT (6) · R11 MT lịch sử: mốc khoá là Chủ nhật, tính từ ngày nghiệp vụ, không trôi theo giờ thật `entered_at`', () => {
+    const cnCua = (nhap: string) => {
+      conn.prepare('UPDATE assessment_scores SET nhap_dau_ngay = ? WHERE attempt_id = ?').run(nhap, mt2H1.id);
+      return hoanTatSvc.dotHoanTat(mt2H1.id, nhap).chuNhatCuoi;
+    };
+    assert(cnCua('2026-10-05') === '2026-10-18' && cnCua('2026-10-11') === '2026-10-18' && cnCua('2026-10-04') === '2026-10-11',
+      `T2 05/10 → CN 18/10, CN 11/10 → 18/10, CN 04/10 → 11/10: ${cnCua('2026-10-05')}, ${cnCua('2026-10-11')}, ${cnCua('2026-10-04')}`);
+    conn.prepare('UPDATE assessment_scores SET entered_at = ? WHERE attempt_id = ?').run('2027-03-03T23:00:00.000Z', mt2H1.id);
+    assert(cnCua('2026-10-05') === '2026-10-18', 'entered_at làm trôi mốc');
   });
   const sH3 = them('MB FT 101', 'PRMT Em H3', addDays(tuanNay, -7 * (16 - 1) - 14));
   check('PR-MT (6) · H3: MT3 lịch sử cách 2 tuần có SOS → Case + PA quy chế + Phối hợp, ngày phát hiện = hôm nay (M4, Q7)', () => {

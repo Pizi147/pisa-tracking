@@ -6,7 +6,7 @@
  * ĐỌC DATABASE cho luật đó — một câu hỏi (N đợt một lúc) để `classScoreSheet`/`regularSheet` không rơi vào N+1.
  */
 import { db } from '../db.ts';
-import { dotDaHoanTat, PERMISSIONS } from '../../../shared/domain/index.ts';
+import { dotDaHoanTat, mondayOfDate, PERMISSIONS } from '../../../shared/domain/index.ts';
 import { can, type Principal } from '../permissions.ts';
 import { addDays } from '../util.ts';
 
@@ -26,12 +26,18 @@ export function dotHoanTatMany(attemptIds: number[], today: string): Map<number,
   const ph = attemptIds.map(() => '?').join(',');
 
   const modeOf = new Map<number, 'ielts_band' | 'ratio'>();
-  /* PR-MT (K5-21, K4-20): MT lịch sử khoá 7 ngày sau LẦN NHẬP CUỐI, không theo Chủ nhật tuần thi (tuần đã qua từ lâu). */
+  /*
+   * PR-MT (K5-21, K4-20): MT lịch sử khoá sau 7 ngày kể từ LẦN NHẬP CUỐI, không theo Chủ nhật tuần thi (tuần đã qua từ lâu).
+   * Mốc = hết Chủ nhật của tuần chứa (ngày nhập cuối + 7) — đủ 7 ngày và đúng câu "hết Chủ nhật …" ở thông báo khoá.
+   * Ngày nhập cuối lấy `nhap_dau_ngay` (ghi theo `demoToday()`), không lấy `entered_at` (giờ thực UTC: trôi theo ngày
+   * thật, lệch múi giờ). Dòng cũ chưa có `nhap_dau_ngay` mới rơi về `entered_at`.
+   */
   const nhapCuoiLichSu = new Map<number, string | null>();
   for (const r of conn
     .prepare(
       `SELECT a.id, p.scoring_mode AS mode, a.lich_su,
-              (SELECT MAX(sx.entered_at) FROM assessment_scores sx WHERE sx.attempt_id = a.id) AS nhap_cuoi
+              (SELECT COALESCE(MAX(sx.nhap_dau_ngay), substr(MAX(sx.entered_at), 1, 10))
+                 FROM assessment_scores sx WHERE sx.attempt_id = a.id) AS nhap_cuoi
          FROM assessment_attempts a
          LEFT JOIN classes c ON c.id = a.class_id
          LEFT JOIN programmes p ON p.code = c.programme_code
@@ -39,7 +45,7 @@ export function dotHoanTatMany(attemptIds: number[], today: string): Map<number,
     )
     .all(...attemptIds) as any[]) {
     modeOf.set(r.id, r.mode === 'ratio' ? 'ratio' : 'ielts_band');
-    if (r.lich_su) nhapCuoiLichSu.set(r.id, r.nhap_cuoi ? addDays(String(r.nhap_cuoi).slice(0, 10), 7) : null);
+    if (r.lich_su) nhapCuoiLichSu.set(r.id, r.nhap_cuoi ? addDays(mondayOfDate(addDays(String(r.nhap_cuoi), 7)), 6) : null);
   }
 
   const skillsOf = new Map<number, Array<{ skill: string; batBuoc: boolean; huy: boolean; sitAbsent: boolean; weekEnd: string | null }>>();
