@@ -15,7 +15,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { BaoDangLuuContext } from '../../ui/SaveState.tsx';
 import { Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import {
-  HOI_DOI_LUOT_RONG, buocHoiDoiLuot, chuOChuaLuu, dongPhuLuot, duongHoSoHocVien, hangThuongConTrong, oTrongLuotFt, tuanLich,
+  HOI_DOI_LUOT_RONG, buocHoiDoiLuot, cauChanDoiLuot, dongPhuLuot, duongHoSoHocVien, hangThuongConTrong, oTrongLuotFt, tuanLich,
   yeuCauDoiLuot, type HoiDoiLuot, type TomTatLuot,
 } from '@shared/domain/index.ts';
 import {
@@ -67,10 +67,13 @@ export function DiemTheoLop({ classId, luotBanDau, gon = false, congRoi, onDaLuu
   }), []);
   const dangLuu = Object.values(luu).some((v) => v.dang);
   const soLoi = Object.values(luu).reduce((n, v) => n + v.loi, 0);
+  /* Phần của `soLoi` là hộp lý do sửa điểm đang mở (khoá `hop-ly-do:` của `useBaoHopLyDoMo`) — câu chặn gọi đúng nút. */
+  const soHopLyDo = Object.entries(luu).reduce((n, [k, v]) => (k.startsWith('hop-ly-do:') ? n + v.loi : n), 0);
 
   /* Hộp hỏi đổi lượt — luật ở `yeuCauDoiLuot` / `buocHoiDoiLuot` (shared). Hộp lý do sửa điểm đang mở cũng tính là ô chưa lưu. */
   const [h, setH] = useState<HoiDoiLuot>(HOI_DOI_LUOT_RONG);
   const [xet, setXet] = useState<{ ma: string; focus: boolean } | null>(null);
+  const [doiLop, setDoiLop] = useState(false);   // lần đổi gần nhất là đổi lớp (đích ngoài) — chỉ để chọn chữ "lớp" / "lượt"
   /* `focus` (←/→ trên thanh tab): chỉ dời focus sang tab đích khi đã thật sự chuyển. */
   const dichNgoai = useRef<(() => void) | null>(null);
   const sang = (ma: string, focus = false) => {
@@ -88,6 +91,7 @@ export function DiemTheoLop({ classId, luotBanDau, gon = false, congRoi, onDaLuu
   useEffect(() => {
     if (!xet) return;
     setXet(null);
+    setDoiLop(xet.ma === DICH_NGOAI);
     const r = yeuCauDoiLuot(xet.ma, dangLuu, soLoi);
     setH(r.h);
     if (r.sang) sang(r.sang, xet.focus);
@@ -189,7 +193,7 @@ export function DiemTheoLop({ classId, luotBanDau, gon = false, congRoi, onDaLuu
                 </button>
               </>
             ) : (
-              <span className="flex-1 min-w-0 text-bad">{chuOChuaLuu(soLoi || 1)}. Bấm "Lưu lại" ở ô đó rồi mới chuyển lượt.</span>
+              <span className="flex-1 min-w-0 text-bad">{cauChanDoiLuot(soLoi, soHopLyDo, doiLop ? 'lop' : 'luot')}</span>
             )}
             <button type="button" className="btn btn-sm" onClick={() => setH(HOI_DOI_LUOT_RONG)}>Ở lại</button>
           </div>

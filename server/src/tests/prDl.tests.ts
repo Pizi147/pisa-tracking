@@ -514,6 +514,18 @@ export async function runPrDlTests(t: YThucTestKit) {
     assert(/role="alert"[^>]*onMouseDown=\{giuHopLyDo\}/.test(f), 'nút "Ở lại" / "Đợi rồi chuyển" không huỷ hộp lý do');
   });
 
+  check('DL-5 fix 2 câu chặn gọi đúng tên nút: ô lỗi → "Lưu lại"; hộp lý do → "Lưu"; cả hai nói cả hai; lượt / lớp', () => {
+    const c = d.cauChanDoiLuot;
+    assert(c(2, 0, 'luot') === '2 ô chưa lưu. Bấm "Lưu lại" ở ô đó rồi mới chuyển lượt.', c(2, 0, 'luot'));
+    assert(c(0, 0, 'luot') === '1 ô chưa lưu. Bấm "Lưu lại" ở ô đó rồi mới chuyển lượt.', 'soLoi 0 → 1 như cũ');
+    assert(c(1, 1, 'lop') === '1 ô chưa lưu. Bấm "Lưu" trong hộp lý do rồi mới chuyển lớp.', c(1, 1, 'lop'));
+    assert(c(3, 1, 'lop') === '3 ô chưa lưu. Bấm "Lưu lại" ở ô lỗi, "Lưu" ở hộp lý do rồi mới chuyển lớp.', c(3, 1, 'lop'));
+    assert(c(3, 1, 'luot').endsWith('rồi mới chuyển lượt.'), 'đổi lượt giữ "lượt"');
+    const f = doc('web/src/modules/cham/DiemTheoLop.tsx');
+    assert(f.includes("k.startsWith('hop-ly-do:')") && f.includes("doiLop ? 'lop' : 'luot'"), 'DiemTheoLop tách hộp lý do bằng khoá và biết đích lớp');
+    assert(/<KhoiDiemLop key=\{data\.id\}/.test(doc('web/src/modules/classes/ClassOverviewPage.tsx')), 'KhoiDiemLop có key theo lớp');
+  });
+
   // ------------------------------------------------------------------ DL-6: hai lối vào
   check('DL-6 tab Test "Điểm theo lớp": /test/diem-lop, giữa Lịch Test và Kế hoạch Test, hiện theo testGrade', () => {
     const nav = (o: object) => ({ ...d.NAV_RONG, test: true, ...o });

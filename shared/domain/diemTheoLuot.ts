@@ -4,6 +4,7 @@
  * (DL-0, chủ sản phẩm 04/10: attempt_no lớp thường đánh theo lộ trình từng em, không dùng chung cả lớp).
  */
 import { ATTEMPT_KIND_SHORT } from './normal.ts';
+import { chuOChuaLuu } from './chamDiem.ts';
 import { tuanLich } from './hienThiNgay.ts';
 import { mondayOfDate } from './week.ts';
 
@@ -84,4 +85,14 @@ export function buocHoiDoiLuot(h: HoiDoiLuot, dangLuu: boolean, soLoi: number): 
   }
   if (h.chan && !soLoi) return { h: HOI_DOI_LUOT_RONG, sang: null };
   return { h, sang: null };
+}
+
+/**
+ * CÂU CHẶN KHI CÒN Ô CHƯA LƯU — gọi đúng tên nút cần bấm. `soLoi` = mọi ô chưa lưu; `soHopLyDo` = phần trong đó là hộp lý do
+ * sửa điểm đang mở (nút "Lưu" trong hộp); phần còn lại là ô lưu hỏng / gõ sai (nút "Lưu lại" ở ô). `dich`: đổi lượt hay đổi lớp.
+ */
+export function cauChanDoiLuot(soLoi: number, soHopLyDo: number, dich: 'luot' | 'lop'): string {
+  const n = Math.max(soLoi, 1), hop = Math.min(soHopLyDo, n), o = n - hop;
+  const nut = hop === 0 ? 'Bấm "Lưu lại" ở ô đó' : o === 0 ? 'Bấm "Lưu" trong hộp lý do' : 'Bấm "Lưu lại" ở ô lỗi, "Lưu" ở hộp lý do';
+  return `${chuOChuaLuu(n)}. ${nut} rồi mới chuyển ${dich === 'lop' ? 'lớp' : 'lượt'}.`;
 }
