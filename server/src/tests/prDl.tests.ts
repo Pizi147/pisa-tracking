@@ -1,5 +1,11 @@
 /** PHÉP KIỂM PR-DL — Điểm theo lớp: mã lượt, lượt mặc định, nhãn lượt (chủ sản phẩm 04/10, DL-0). */
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { YThucTestKit } from './yThuc.tests.ts';
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..');
+const doc = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 
 export async function runPrDlTests(t: YThucTestKit) {
   const { check, assert } = t;
@@ -367,4 +373,44 @@ export async function runPrDlTests(t: YThucTestKit) {
       assert((await goi(gvS.userId, `/classes/${LOP}/diem-theo-luot/mt:2`)).status === 200, 'đọc bảng MT2');
     });
   } finally { may.close(); }
+
+  check('DL-5 dòng phụ nút lượt: "W3 JUL · 5/8 đủ điểm"; không ai có lịch → "chưa ai có lịch"; chưa xếp tuần → chỉ số đủ', () => {
+    const l = (tuanStart: string | null, duDiem: number, coLich: number) =>
+      ({ ma: 'mt:2', nhan: 'MT2', tuanStart, lichSu: false, duDiem, coLich, oTrong: 0 });
+    assert(d.dongPhuLuot(l('2026-07-13', 5, 8)) === 'W3 JUL · 5/8 đủ điểm', d.dongPhuLuot(l('2026-07-13', 5, 8)));
+    assert(d.dongPhuLuot(l('2026-07-13', 0, 0)) === 'chưa ai có lịch', 'không ai có lịch');
+    assert(d.dongPhuLuot(l(null, 2, 3)) === '2/3 đủ điểm', 'tuần NULL');
+  });
+
+  check('DL-5 "Chỉ ô còn trống" (G6): ô bắt buộc chưa huỷ, chưa điểm, không "-" — FT và lớp thường', () => {
+    const c = (o: object) => ({ required: true, progress: 'pending', band: null, noShow: null, ...o });
+    assert(d.oTrongLuotFt(c({})) && d.oTrongLuotFt(c({ progress: 'lich_su' })), 'trống / lịch sử chưa điểm');
+    assert(!d.oTrongLuotFt(c({ band: 6 })) && !d.oTrongLuotFt(c({ noShow: { state: 'x' } })), 'có điểm / có dấu');
+    assert(!d.oTrongLuotFt(c({ required: false })) && !d.oTrongLuotFt(c({ progress: 'cancelled' })), 'không bắt buộc / huỷ');
+    const r = (lich: object[], diem: Record<string, number | null>) => ({
+      skillSchedule: lich, result: { skills: Object.entries(diem).map(([skill, score]) => ({ skill, score })) },
+    });
+    const s = (skill: string, o: object = {}) => ({ skill, progress: 'pending', noShow: false, movedFrom: null, periodCode: 'P1', ...o });
+    assert(d.hangThuongConTrong(r([s('listening'), s('reading')], { listening: 8, reading: null })), 'còn R');
+    assert(!d.hangThuongConTrong(r([s('listening'), s('reading', { noShow: true, movedFrom: 'P1' })], { listening: 8, reading: null })), 'R mang "-" đúng tuần');
+    assert(d.hangThuongConTrong(r([s('reading', { noShow: true, movedFrom: 'P0' })], { reading: null })), 'R đã dời sang tuần sau vẫn trống');
+    assert(!d.hangThuongConTrong(r([s('reading', { progress: 'cancelled' }), s('writing', { progress: 'skipped' })], {})), 'huỷ / không bắt buộc');
+  });
+
+  check('DL-5 link "xếp ở panel Lộ trình": hồ sơ HV ?mo=lo-trinh mở sẵn panel Lộ trình (đọc/dựng hai chiều)', () => {
+    assert(d.duongHoSoHocVien(5, { mo: 'lo-trinh' }) === '/hoc-vien/5?mo=lo-trinh', d.duongHoSoHocVien(5, { mo: 'lo-trinh' }));
+    assert(d.docThamSoHoSo((k: string) => (k === 'mo' ? 'lo-trinh' : null)).mo === 'lo-trinh', 'đọc mo');
+    assert(d.docThamSoHoSo((k: string) => (k === 'mo' ? 'x' : null)).mo === undefined, 'mo lạ bỏ qua');
+    assert(/p\.mo === 'lo-trinh'/.test(doc('web/src/modules/students/StudentDetailPage.tsx')), 'hồ sơ HV mở panel theo ?mo=');
+  });
+
+  check('DL-5 DiemTheoLop: chữ đúng đặc tả, tablist, hỏi khi còn ô đang lưu, nhớ "Chỉ ô còn trống" bọc try/catch', () => {
+    const f = doc('web/src/modules/cham/DiemTheoLop.tsx');
+    for (const chu of ['Còn ô đang lưu. Đợi lưu xong rồi chuyển?', 'Chưa có lịch {b!.luot.nhan} — ', 'xếp ở panel Lộ trình', "{ mo: 'lo-trinh' }", 'Chỉ ô còn trống',
+      'là lượt lịch sử (trước khi lớp dùng web): nhập bù điểm, không nhận dấu "-".',
+      'Lớp chưa có lượt Test nào. Xếp lịch ở Kế hoạch Test.', 'role="tablist"', 'colSpan', 'onRetry={'])
+      assert(f.includes(chu) || doc('web/src/modules/cham/LuoiFT.tsx').includes(chu), `thiếu: ${chu}`);
+    assert(/try\s*\{[^}]*localStorage\.getItem/.test(f) && /try\s*\{[^}]*localStorage\.setItem/.test(f), 'localStorage phải bọc try/catch');
+    assert(!/'MT\d|Giữa khoá|Cuối khoá|lần 2/.test(f), 'nhãn lượt lấy từ máy chủ, không viết cứng');
+  });
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Empty, Info, Level, Status, Th } from '../../ui/ui.tsx';
 import {
@@ -30,6 +30,9 @@ const W_SKILLS = ['writing1', 'writing2'] as const;
 /** `?kn=writing` (kỹ năng đánh giá) khớp cả hai cột W1, W2 — Lịch Test / Việc cần làm gom Writing thành một môn. */
 export const khopKn = (skill: string, kn: string | null | undefined) =>
   !!kn && (skill === kn || (kn === 'writing' && skill.startsWith('writing')));
+
+/** HÀNG MỜ cuối bảng (PR-DL): em chưa có lịch lượt đang xem — không có ô nhập, chỉ một câu `chu` trải hết các cột điểm. */
+export type HangMo = { studentId: number; ten: string; ma: string; chu: ReactNode };
 
 /** Ô CÒN PHẢI NHẬP của người đang xem — dùng để cuộn tới em đầu tiên chưa có điểm (Q12). */
 export const oTrongFt = (c: Cell) => c.required && c.canEdit && c.band === null && !c.noShow
@@ -76,9 +79,11 @@ const W_HINT = 'Band Writing = (Task 1 + Task 2 × 2) / 3, khi đủ hai task.';
  * Lịch Test (PR-UX1 Q10): `gon` bỏ cột Trạng thái và Hạn (hàng lớp đã nói), bỏ cột MT khi cả lưới cùng một lượt;
  * `tuanDangXem` làm mờ ô thi tuần khác (`khacTuanFt`).
  */
-export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuanDangXem = null }: {
+export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuanDangXem = null, hangMo = [] }: {
   data: FtSheet; onReload: () => void; kn?: string | null; hv?: number | null;
   gon?: boolean; tuanDangXem?: string | null;
+  /** PR-DL: em chưa có lịch lượt này — hàng mờ cuối bảng. */
+  hangMo?: HangMo[];
 }) {
   const grid = useRef<(HTMLInputElement | null)[][]>([]);
   const cot = {
@@ -96,7 +101,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
   const suaS = data.editableSkills.includes('speaking');
   const [gvCot, setGvCot] = useGvChamCot(data.classId, data.period?.id, suaS);
 
-  if (data.rows.length === 0) {
+  if (data.rows.length === 0 && hangMo.length === 0) {
     return (
       <Empty title="Không có lượt Mock nào của lớp này trong tuần đã chọn"
         hint="Đổi tuần ở trên, hoặc quay lại Test để chọn lớp khác." />
@@ -161,6 +166,15 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
               }}
               onMove={move}
             />
+          ))}
+          {hangMo.map((h) => (
+            <tr key={`mo-${h.studentId}`} className="h-12" data-hv={h.studentId}>
+              <td className="td py-1.5 sticky-col text-slate-500">
+                <span className="block truncate" title={h.ten}>{h.ten}</span>
+                <span className="text-[11px]">{h.ma}</span>
+              </td>
+              <td className="td py-1.5 text-xs text-slate-400" colSpan={COT.length - 1}>{h.chu}</td>
+            </tr>
           ))}
         </tbody>
       </table>

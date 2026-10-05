@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { BaoLuuContext } from '../../ui/SaveState.tsx';
 import { Card } from '../../ui/ui.tsx';
-import { LuoiFT, type FtSheet } from './LuoiFT.tsx';
+import { LuoiFT, type FtSheet, type HangMo } from './LuoiFT.tsx';
 import { LuoiThuong, type ThuongSheet } from './LuoiThuong.tsx';
 import { MotKyNang } from './MotKyNang.tsx';
+import type { TomTatLuot } from '@shared/domain/index.ts';
 
 /** Trả lời của `GET /classes/:classId/cham` (`chamSheet` ở server/src/cham/canCham.ts). */
 export type Cham = {
@@ -21,6 +22,16 @@ export function duongCham(classId: number, o: { periodId?: number | null; kind?:
   const s = q.toString();
   return `/classes/${classId}/cham${s ? `?${s}` : ''}`;
 }
+
+/** PR-DL — điểm theo lượt cả lớp: danh sách lượt (`luot` vắng) hoặc bảng một lượt (`mt:2`, `thuong:final`). */
+export const duongDiemTheoLuot = (classId: number, luot?: string | null) =>
+  `/classes/${classId}/diem-theo-luot${luot ? `/${encodeURIComponent(luot)}` : ''}`;
+/** Trả lời của `GET /classes/:classId/diem-theo-luot` (`danhSachLuot` ở server/src/cham/diemTheoLuot.ts). */
+export type DanhSachLuot = { classId: number; mode: 'ielts_band' | 'ratio'; luot: TomTatLuot[]; macDinh: string | null };
+/** Trả lời của `GET /classes/:classId/diem-theo-luot/:luot` (`bangTheoLuot`): chính `Cham` + lượt + em chưa có lịch lượt đó. */
+export type BangTheoLuot = Cham & {
+  luot: TomTatLuot; chuaCoLich: { studentId: number; fullName: string; studentCode: string }[];
+};
 
 /**
  * MÀN HẸP (Q16): < 768px — cùng ngưỡng `md` của Tailwind, cho cả lớp FT và lớp thường. Theo dõi `change` của
@@ -57,7 +68,7 @@ export function thuongTheoBai(t: ThuongSheet | null | undefined, kind: string | 
  */
 export function LuoiChamLop({
   data, kind, kn = null, hv = null, onReload, gon = false, tuanDangXem = null, chiAttempt = null, datConTro = true, thanhTren,
-  onSoOChuaLuu,
+  onSoOChuaLuu, hangMo,
 }: {
   data: Cham; kind: string | null; kn?: string | null; hv?: number | null; onReload: () => void;
   gon?: boolean; tuanDangXem?: string | null; chiAttempt?: ReadonlySet<number> | null; datConTro?: boolean;
@@ -65,6 +76,8 @@ export function LuoiChamLop({
   thanhTren?: ReactNode;
   /** Tổng số ô lưu hỏng của cả lưới (mọi dòng) — đầu trang / hàng lớp nói "n ô chưa lưu" cho tới khi hết. */
   onSoOChuaLuu?: (n: number) => void;
+  /** PR-DL: hàng mờ cuối bảng FT — em chưa có lịch lượt đang xem. */
+  hangMo?: HangMo[];
 }) {
   const hep = useManHinhHep();
   /* Mỗi dòng báo số ô lỗi của nó (`useBaoLuu`); cộng lại rồi báo lên trên. */
@@ -119,9 +132,9 @@ export function LuoiChamLop({
   const tungKyNang = hep && !xemBang;
   const luoi = (
     <>
-      {tungKyNang && laFt && ft && <MotKyNang mode="ielts_band" data={ft} onReload={onReload} kn={kn} hv={hv} />}
+      {tungKyNang && laFt && ft && <MotKyNang mode="ielts_band" data={ft} onReload={onReload} kn={kn} hv={hv} hangMo={hangMo} />}
       {tungKyNang && !laFt && thuong && <MotKyNang mode="ratio" data={thuong} onReload={onReload} kn={kn} hv={hv} />}
-      {!tungKyNang && laFt && ft && <LuoiFT data={ft} onReload={onReload} kn={kn} hv={hv} gon={gon} tuanDangXem={tuanDangXem} />}
+      {!tungKyNang && laFt && ft && <LuoiFT data={ft} onReload={onReload} kn={kn} hv={hv} gon={gon} tuanDangXem={tuanDangXem} hangMo={hangMo} />}
       {!tungKyNang && !laFt && thuong && <LuoiThuong data={thuong} onReload={onReload} kn={kn} hv={hv} tuanDangXem={tuanDangXem} />}
     </>
   );

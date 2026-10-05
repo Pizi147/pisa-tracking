@@ -30,6 +30,13 @@ export function useBaoLuu(khoa: string, soLoi: number) {
 }
 
 /**
+ * BÁO "CÒN Ô ĐANG LƯU / LƯU HỎNG" LÊN TRÊN (PR-DL): bảng điểm theo lượt chặn đổi lượt khi còn ô đang gửi (hộp hỏi) hoặc ô
+ * lưu hỏng, để không bỏ mất điểm đã gõ. Hai số báo CÙNG lúc nên nơi nghe không thấy khoảnh khắc "hết đang lưu mà chưa
+ * báo lỗi". Ngoài bảng đó (không có Provider) thì không làm gì.
+ */
+export const BaoDangLuuContext = createContext<((khoa: string, dangLuu: boolean, soLoi: number) => void) | null>(null);
+
+/**
  * TRẠNG THÁI LƯU THEO TỪNG Ô của MỘT dòng (luật ở `capNhatLuuO` / `tomTatLuuDong`). Dùng chung cho `useSaveScore` (FT) và
  * `useLuuThuong` (lớp thường). Ô lỗi giữ lại đúng lệnh đã gửi (`hong`) để "Lưu lại" gửi lại y nguyên; giá trị đã gõ vẫn
  * nằm trong ô vì ô chỉ bỏ bản nháp khi lưu THÀNH CÔNG.
@@ -45,6 +52,10 @@ export function useTrangThaiLuuO<B>(khoaBao: string) {
   const soLoiNhap = Object.keys(loiNhapO).filter((k) => o[k] !== 'loi').length;
   const soLoi = tong.soLoi + soLoiNhap;
   useBaoLuu(khoaBao, soLoi);
+  const baoDang = useContext(BaoDangLuuContext);
+  const dangLuu = Object.values(o).includes('dang-luu');
+  useEffect(() => { baoDang?.(khoaBao, dangLuu, soLoi); }, [baoDang, khoaBao, dangLuu, soLoi]);
+  useEffect(() => () => { baoDang?.(khoaBao, false, 0); }, [baoDang, khoaBao]);
   return {
     o, loi, hong, soLoi,
     /** Có ô lỗi GỬI (mạng/5xx) — chỉ lúc đó dòng mới có "Lưu lại"; lỗi nhập thì sửa ngay tại ô. */
