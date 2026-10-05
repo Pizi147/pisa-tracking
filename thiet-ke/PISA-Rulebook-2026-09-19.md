@@ -624,6 +624,17 @@ Nguồn: `thiet-ke/NGUON-Rule-v3-YThuc-PhoiHop-2026-09-21.md`. Đặc tả: `thi
   Lớp thường có dòng "Cả bài" (% tổng ≥ ngưỡng đạt chung); Pre FOU không có.
 - **Đầu hồ sơ lớp:** một nút chính theo chặng (`nutChinhDauTrang`); ô Giữa khoá ở Lịch kiểm tra chỉ với chương trình có mốc Giữa khoá; khung hết khoá không tô đỏ.
 
+## PR-LT3 — Lịch Test ba khối, Speaking Mock chấm chéo (chủ sản phẩm chốt 05/10/2026, tối) — **CHƯA CÓ trong code**
+
+Nguồn: ảnh MT4 "W1 OCT" hiện cùng lúc ở "Nợ tuần trước" và Lịch Test tuần W2 OCT. Kiểm code: hạn đúng luật (hạn thứ Tư tuần kế = 07/10); phần gây rối là hai lịch khác bản chất trộn một màn.
+
+- **Hai lịch khác nhau:** *lịch thi của học viên* (em thi môn nào tuần nào, theo `planned_period_id` từng môn) và *lịch chấm của GV* (bài đã thi, còn nợ điểm, hạn chấm). Một MT có môn dời tuần thì hai lịch lệch nhau — bình thường, không phải lỗi.
+- **Ba khối ở Lịch Test, một bài đúng một khối** (T15): (1) **Test quá hạn chấm** — chưa chấm, qua hạn (`quaHanNhapDiem`) **và** đã sang tuần thứ hai sau tuần thi, thu gọn mặc định; (2) **Test chấm tuần này** — thi tuần trước, chưa chấm, **ở lại hết tuần (Chủ nhật) kể cả đã quá hạn** (quá hạn chỉ thêm badge "Quá hạn", không đỏ cả dòng; Thứ Hai tuần sau mới sang khối 1), mở sẵn, trình bày như Lịch Test hàng tuần; (3) **Lịch Test tuần này** — ai thi gì tuần đang xem, thu gọn mặc định. Bài thi tuần trước chưa vào khối 1 trong cùng tuần, dù đã quá hạn. Đổi tên "Nợ tuần trước" → "Test quá hạn chấm".
+- **Lùi / tiến tuần** (T16): khối 1 **không đổi** theo tuần xem (luôn tính theo hôm nay, theo bộ lọc phạm vi), luôn đi cùng màn; khối 2 chỉ hiện ở tuần hiện tại; khối 3 theo tuần xem. Lùi tuần chỉ để xem lại, không có đường nào làm khối 1 biến mất ngoài việc nhập điểm. Tổng ba khối = badge "n bài chờ chấm".
+- **Khối 1** (T17): cột GV chấm kéo rộng, **chỉ tên GV chưa chấm**; lưới học viên là mục con nhẹ của dòng lớp (thụt vào, vạch dọc mảnh, không khung thứ hai).
+- **Speaking Mock chấm chéo** (T18): không GV mặc định. Quá hạn → **báo** GVBM Speaking của lớp và GVCN lớp đó, **không tính** quá hạn / trễ / "Chờ bạn chấm" vào hai người này. GV chấm chéo nhập điểm (người ghi ở "GV chấm Speaking") nhập sau mốc trễ thì **tính trễ cho người đó**; tên người ngoài không tài khoản → không tính cho ai. **Thay** các dòng "ô S là việc / nợ điểm của GV được phân công S lớp đó" (PR-HSM, §20.9) **chỉ với Mock**; lớp thường không đổi.
+- **Chờ chủ sản phẩm xác nhận:** (a) dải số bốn ô đầu Lịch Test sau khi có ba khối; (b) tiêu đề khối 3 khi xem tuần khác ("Lịch Test W1 OCT"); (c) hiểu câu "không tính quá hạn cho các GV này" như trên.
+
 ---
 
 ## 20. Tổng hợp luật hiện hành — đối chiếu với code `main` ngày 02/10/2026
@@ -728,6 +739,7 @@ Code đã có (`ss/normal/regular.ts:591-738`): GV đúng ô gõ "-" (hoặc GVC
 - **Cuối khoá:** % tổng = Σ điểm / Σ tổng câu (chỉ khi đủ môn), xét trên số chưa làm tròn. Dải **< 50 · 50–59 · 60–69 · ≥ 70 (Pass)**. Gợi ý (không lưu): < 50 học lại + Báo PH qua TVV (việc của QL) · 50–59 "Quản lý cân nhắc" (học lại hoặc lên + bổ trợ) · 60–69 lên + **bổ trợ miễn phí** · ≥ 70 lên. Không sinh Case trước khi chuyển. Sau khi chuyển lên: Case "Cuối khoá {CT} · {môn} không đạt" + PA Bổ trợ miễn phí (FOU/BE/ELE 1 buổi/môn trượt; Pre FOU 4 buổi nếu 50–59, 2 buổi nếu 60–69) + **Mini Test một lần** (≥ 70 % → Case tự hoàn thành; < 70 % → Case mở + Báo lên QL; sửa Mini Test chỉ QL, có lý do). Bổ trợ miễn phí không tính lương GV. `sd/cuoiKhoa.ts:17-99`
 - **BE/ELE lên FT:** chỉ QL đánh dấu Đạt / Không đạt **kỳ vọng đầu ra**; nguyên nhân "Trung tâm" → Case FT + PA Tutor 10 buổi/kỹ năng (tính buổi Free, có lương); "Học sinh" → ghi chú, không Case. Writing lớp thường → W2.
 - Giữa khoá và Cuối khoá tự có cho em vào lớp (bỏ mốc đã qua, không sinh nợ giả). Lớp thường không có "Bỏ kỹ năng khỏi đợt".
+- **Lộ trình tiếp theo (PR-K26, chủ sản phẩm 04/10):** hướng Hệ thống gợi ý theo dải Cuối khoá đứng đầu, các hướng khác thu vào "Hướng khác"; em chưa đủ điểm thì danh sách như cũ. Em **50–59 %**: GVCN ghi **đề xuất**, Quản lý quyết khi ra lệnh chuyển lớp (không thẻ Chờ duyệt); bảng Chuyển tiếp lớp điền sẵn đề xuất đủ thông tin. "Chưa rõ" và "Xếp sau" **gộp thành một hướng "Chưa quyết"** (dữ liệu cũ đã đổi): ngày xem lại tuỳ chọn khi ghi Lộ trình tiếp theo (không ngày → vẫn nhắc hai tuần cuối), bắt buộc ở Chuyển tiếp lớp. GVCN ghi được cho **cả lớp trên một bảng** (⋮ hồ sơ lớp, lưu một lần, tất cả hoặc không). `sd/lenLop.ts` · `ss/classes/loTrinhTiep.ts`
 
 ### 20.7 Chuyển lớp và bàn giao — thay §10 "Chuyển lớp", "Chuyển tiếp Normal"
 
@@ -736,7 +748,7 @@ Code đã có (`ss/normal/regular.ts:591-738`): GV đúng ô gõ "-" (hoặc GVC
 - **Em thiếu điểm Cuối khoá vẫn chuyển được**; điểm nhập sau áp luật Cuối khoá ở lộ trình mới. Lớp thường tới tuần kết thúc thì **mọi em phải có lệnh**; còn em chưa có lệnh → thẻ Báo lên QL.
 - **Bàn giao:** GVBM ghi một câu (≤ 300 ký tự) cho mỗi em, môn mình, hạn **2 ngày**; GVCN lớp cũ viết nhận xét chung ≥ 15 ký tự và **Xác nhận bàn giao** trong **3 ngày**. QL điền/xác nhận thay khi lớp không có GVCN hoặc quá hạn. Quá hạn → thẻ Báo lên; **lệnh vẫn chạy đúng tuần**.
 - Em Tạm dừng không mở được chuyển lớp (QL bấm "Quay lại học" trước). "Tạm dừng" và "Kết thúc học" từ hồ sơ HV giữ như cũ (GVCN làm được, hiệu lực ngay).
-- Đã bỏ: thẻ "Quyết định Cuối khoá", "Ghi hướng cả lớp", việc GVCN "Ghi lộ trình tiếp theo".
+- Đã bỏ: thẻ "Quyết định Cuối khoá", "Ghi hướng cả lớp", việc GVCN "Ghi lộ trình tiếp theo". **[04/10 — làm lại "Ghi lộ trình tiếp theo cả lớp" ở ⋮ hồ sơ lớp, chỉ là dự định; xem §20.6]**
 
 ### 20.8 Lịch MT — các điểm bổ sung cho PR-MT / PR-XLMT
 
@@ -749,7 +761,7 @@ Vai trong hệ thống chỉ có **3**: Quản trị hệ thống · Quản lý 
 | Hành động | Ai làm |
 |---|---|
 | Nhập điểm FT / lớp thường | GVBM đúng ô (W1 và W2 là hai ô riêng); GVCN chỉ ô môn mình dạy; QL/Quản trị mọi ô |
-| Nhập ô S của Mock ở lớp FT khác | GV được phân công Speaking ở một lớp FT nhập được ô S mọi lớp FT cùng chi nhánh (chỉ là quyền, không phải việc/nợ) |
+| Nhập ô S của Mock ở lớp FT khác | GV được phân công Speaking ở một lớp FT nhập được ô S mọi lớp FT cùng chi nhánh (chỉ là quyền, không phải việc/nợ). **Từ PR-LT3 (T18):** Speaking Mock không GV mặc định; quá hạn chỉ báo GVBM Speaking + GVCN lớp đó, không tính nợ cho họ; GV chấm chéo nhập muộn mới bị tính trễ |
 | Nhập MT lịch sử | GVCN ô trống cả 4 kỹ năng; QL mọi ô |
 | Sửa điểm đã nhập (lý do ≥ 5 ký tự) | GVBM đúng ô, chỉ trước khi đợt hoàn tất; QL mọi lúc |
 | Báo vắng FT | GVCN, QL (GVBM chỉ gõ "-" trong ô) |

@@ -57,6 +57,7 @@ import * as phanTichLopSvc from '../classes/phanTichLop.ts';
 import { canHoTroLop } from '../classes/canHoTro.ts';
 import * as thongTinLopSvc from '../classes/thongTinLop.ts';
 import * as xoaKetThucLopSvc from '../classes/xoaKetThucLop.ts';
+import * as suaCaLopSvc from '../classes/suaCaLop.ts';
 import * as xoaHocVienSvc from '../students/xoaHocVien.ts';
 import * as xoaTaiKhoanSvc from '../platform/xoaTaiKhoan.ts';
 import * as studentSvc from '../students/students.ts';
@@ -1147,6 +1148,20 @@ api.post('/classes/:id/ket-thuc', requireAuth, wrap((req) => {
   return xoaKetThucLopSvc.ketThucLop(principalOf(req), pInt(req, 'id'));
 }));
 
+/** ⋮ Sửa thông tin cả lớp (PR-SL): giá trị hiện tại của mọi em đang học (panel). */
+api.get('/classes/:id/sua-ca-lop', requireAuth, wrap((req) => suaCaLopSvc.duLieuSuaCaLop(principalOf(req), pInt(req, 'id'))));
+/** ⋮ Sửa thông tin cả lớp (PR-SL): xem trước — soát từng ô, cảnh báo MT sẽ dời. Không ghi gì. */
+api.post('/classes/:id/sua-ca-lop/xem-truoc', requireAuth, wrap((req) => {
+  const b = req.body ?? {};
+  return suaCaLopSvc.xemTruocSuaCaLop(principalOf(req), pInt(req, 'id'), { rows: b.rows, lyDoTarget: b.lyDoTarget });
+}));
+/** Lưu: tất cả hoặc không gì, một giao dịch; khoá chống gửi trùng như Thêm học viên. */
+api.post('/classes/:id/sua-ca-lop', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = req.body ?? {};
+  return suaCaLopSvc.luuSuaCaLop(principalOf(req), pInt(req, 'id'), { rows: b.rows, lyDoTarget: b.lyDoTarget, idempotencyKey: b.idempotencyKey });
+}));
+
 // ============================================================ Thêm học viên hàng loạt
 
 /** Tách dòng từ nội dung dán ở Excel/Google Sheets. Không ghi gì vào database. */
@@ -1780,6 +1795,16 @@ api.get('/students/:id/lo-trinh-tiep', requireAuth, wrap((req) => {
 api.put('/students/:id/lo-trinh-tiep', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return loTrinhTiepSvc.ghiLoTrinhTiep(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
+/** PR-K26: Ghi lộ trình tiếp theo cả lớp (hồ sơ lớp ⋮) — một bảng, lưu một giao dịch. */
+api.get('/classes/:id/lo-trinh-tiep', requireAuth, wrap((req) => {
+  return loTrinhTiepSvc.layLoTrinhTiepCaLop(principalOf(req), pInt(req, 'id'));
+}));
+
+api.put('/classes/:id/lo-trinh-tiep', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return loTrinhTiepSvc.ghiLoTrinhTiepCaLop(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 
 /** PR-LT2b (T49): Quản lý đánh dấu Đạt / Không đạt kỳ vọng đầu ra của em BE/ELE lên FT. Chỉ `request.approve` (máy chủ kiểm lại). */

@@ -74,24 +74,24 @@ Cỡ chữ có 4 mức (11 / 11,5 / 12 / 12,5 px) và 3 chiều cao dòng cho c�
 - [x] **H6.** (PR-DH: kiểm 04/10 — `+n` đã bấm được từ PR-HVL B4) Chip "+1" ở dòng lớp đang giấu việc (desktop chỉ hiện khi rê chuột): bấm vào thì mở được danh sách.
 
 ## Gói UX-I — Panel và form · ƯU TIÊN 3 (P2)
-- [ ] **I1.** Nút ở chân panel: "Đóng" khi form chưa sửa, "Huỷ thay đổi" khi đã sửa (luật S3).
+- [x] **I1.** (PR-SL) Nút ở chân panel: "Đóng" khi form chưa sửa, "Huỷ thay đổi" khi đã sửa (luật S3).
   File: `ui/KhungPanel.tsx:88` (mặc định), `ui/Drawer.tsx:49`. Áp cho Tạo Case, Thêm học viên, Từ chối inline.
-- [ ] **I2. Tạo Case:**
+- [x] **I2. (PR-SL) Tạo Case:**
   - Không chọn sẵn "Mức độ: Bình thường".
   - "Nhóm nguyên nhân" có placeholder "Chọn nhóm".
   - Kỹ năng ghi W1/W2, không ghi W.
   - "Bắt đầu theo dõi" dùng bộ chọn tuần, không dùng ngày `14/09/2026`.
-- [ ] **I3. Thêm học viên:**
+- [x] **I3. (PR-SL) Thêm học viên:**
   - Cột "OVERAL…" bị cắt chữ; placeholder "dd/mm/yyy" bị cắt.
   - Ô dán đang dùng phông monospace.
   - Nút "Đọc nội dung đã dán" chuyển xuống dưới ô dán.
   - Lời nhắc khoảng 100 chữ cạnh "+ Thêm dòng" tách thành 2 dòng ngắn.
-- [ ] **I4.** Chuyển nốt các panel còn dùng `Drawer` sang `KhungPanel`: GvCham, ScoreEntry, MockDetail, HopThaoTacMt, NhanXet,
+- [x] **I4.** (PR-SL; MockDetail, HopThaoTacMt đã ở PR-LM) Chuyển nốt các panel còn dùng `Drawer` sang `KhungPanel`: GvCham, ScoreEntry, MockDetail, HopThaoTacMt, NhanXet,
   DeleteViolationConfirm, StudentDetailPage. Chỉ đổi khung, giữ nguyên hành vi.
 - [ ] **I5. Hồ sơ Mock Test:**
   - Ô "vắng · dời sang W3 SEP · lần 1" khi đang xem W3 SEP đổi thành "Thi bù tuần này (lần 1)".
   - Placeholder nhận xét "Không bắt buộc" (`fasttrack/NhanXet.tsx:109`) đổi thành câu ví dụ.
-- [ ] **I6. Panel Ghi vi phạm:**
+- [x] **I6. (PR-SL) Panel Ghi vi phạm:**
   - Xem `<li class=inline-flex>` bị dính mép trên.
   - Chữ "(bắt buộc)" lặp 3 lần: dùng dấu `*` kèm một dòng chú thích.
 

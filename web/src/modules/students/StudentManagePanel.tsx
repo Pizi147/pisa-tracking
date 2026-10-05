@@ -8,7 +8,7 @@ import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { fmtBand } from '../../lib/format.ts';
 import {
   CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, NHAN_VIEC_QUAN_LY, mucQuanLyHocVien, type LopHocQuyen, type ViecQuanLy, dsLoi, docEmail,
-  addDaysIso, tuanHocCuaMt, tuanLich, GIAI_THICH_KCK, KCK,
+  cauMtSeDoi, tuanLich, GIAI_THICH_KCK, KCK,
 } from '@shared/domain/index.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -272,14 +272,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
    * trước lượt nào dời sang tuần nào (cùng luật tuần học `tuanHocCuaMt` của PR-MT). Lượt QL chốt tay / đã có điểm đứng yên.
    */
   const route: string | null = cycle?.route ?? null;
-  const seDoi = route && tuan && tuan !== tuanCu
-    ? attempts.filter((a) => a.status === 'planned' && a.planSource === 'auto' && !a.scored)
-      .sort((a, b) => a.attemptNo - b.attemptNo)
-    : [];
-  const cauDoi = seDoi.length
-    ? `${seDoi.map((a) => `MT${a.attemptNo}`).join(', ')} sẽ dời sang `
-      + seDoi.map((a) => tuanLich(addDaysIso(tuan, (tuanHocCuaMt(route, a.attemptNo) - 1) * 7), homNay)).join(', ')
-    : undefined;
+  const cauDoi = tuan !== tuanCu ? cauMtSeDoi(route, attempts, tuan, homNay) : undefined;
 
   const luu = async () => {
     lf.bam();

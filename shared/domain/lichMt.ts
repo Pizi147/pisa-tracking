@@ -109,6 +109,21 @@ export const LUOT_TINH_NO_SQL = (a: string) => `${a}.lich_su = 0`;
 export const CO_DIEM_SQL = (a: string) =>
   `EXISTS (SELECT 1 FROM assessment_scores sx WHERE sx.attempt_id = ${a}.id AND (sx.band IS NOT NULL OR sx.raw_score IS NOT NULL))`;
 
+/**
+ * M6, K2-33(2): câu "MT2, MT3 sẽ dời sang W2 OCT, W2 NOV" khi đổi tuần bắt đầu lộ trình FT — lượt hệ thống tự xếp (`auto`), chưa làm, chưa
+ * có điểm dời theo tuần học `tuanHocCuaMt`; lượt QL chốt tay / đã có điểm đứng yên. Một nguồn cho Thông tin HV và Sửa cả lớp (PR-SL).
+ * `undefined` = không lượt nào dời (lớp thường, chưa chọn tuần).
+ */
+export function cauMtSeDoi(route: string | null, luot: readonly { attemptNo: number; status: string; planSource: string | null; scored: boolean }[],
+  tuanMoi: string, homNay: string): string | undefined {
+  if (!route || !tuanMoi) return undefined;
+  const seDoi = luot.filter((a) => a.status === 'planned' && a.planSource === 'auto' && !a.scored).sort((a, b) => a.attemptNo - b.attemptNo);
+  return seDoi.length
+    ? `${seDoi.map((a) => `MT${a.attemptNo}`).join(', ')} sẽ dời sang `
+      + seDoi.map((a) => tuanLich(addDaysIso(tuanMoi, (tuanHocCuaMt(route, a.attemptNo) - 1) * 7), homNay)).join(', ')
+    : undefined;
+}
+
 /** Mốc đánh giá kế tiếp (K2-05, K2-31): lượt `planned`, không lịch sử, tuần từ thứ Hai tuần này trở đi — sớm nhất. */
 export function mocKeTiep<T extends { status: string; lich_su: number; weekStart: string | null; attempt_no: number }>(
   ds: T[], homNay: string,

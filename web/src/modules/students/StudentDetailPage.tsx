@@ -4,7 +4,6 @@ import { useApi } from '../../lib/useApi.ts';
 import { api } from '../../lib/api.ts';
 import { ThanhTruocSau } from '../../ui/ThanhTruocSau.tsx';
 import { BoLocDoan, Card, DaiChiXem, Empty, ErrorState, Info, Level, Outcome, Skeleton, TargetText, Th} from '../../ui/ui.tsx';
-import { Modal } from '../../ui/Drawer.tsx';
 import { cuonOnDinh } from '../../lib/cuonOnDinh.ts';
 import { MuiTen, SkillBoard, type SkillBoardRow } from '../cases/SkillBoard.tsx';
 import { KetLuanKhoa, MiniTestO } from './KetLuanKhoa.tsx';
@@ -19,11 +18,11 @@ import { QuickReport } from '../cases/QuickReport.tsx';
 import { StudentYThucSection } from '../yThuc/StudentYThucSection.tsx';
 import {
   attemptHref,
-  attemptStatusLabel, fmtBand, skillLabel, skillShort, sosTone, studentStatusLabel,
+  attemptStatusLabel, fmtBand, skillLabel, sosTone, studentStatusLabel,
 } from '../../lib/format.ts';
 import {
-  HO_SO_TAB_LABEL, NHAN_NHOM_VIEC_QUAN_LY, duongDotTest, caseCategoriesFor, tenMonNgan, docThamSoHoSo, duongHoSoHocVien,
-  nhanKetQuaThuong, CHUONG_TRINH_KHONG_CHIA_MON, ngay, tuanLich, type HoSoTab,
+  HO_SO_TAB_LABEL, NHAN_NHOM_VIEC_QUAN_LY, duongDotTest, caseCategoriesFor, tenMon, tenMonNgan, docThamSoHoSo, duongHoSoHocVien,
+  nhanKetQuaThuong, tenBaiThuong, CHUONG_TRINH_KHONG_CHIA_MON, ngay, tuanLich, type HoSoTab,
 } from '@shared/domain/index.ts';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
@@ -414,6 +413,42 @@ export default function StudentDetailPage() {
 
 // ==================================================================== khối nhỏ
 
+/**
+ * Chip lịch sử + nhãn nhỏ cạnh tên lượt (đã huỷ · huỷ phần · dời …) — tối đa hai, còn lại "+n" có tooltip. Dùng chung bảng Mock
+ * Test và bảng lớp thường (PR-U12), cả bảng máy tính lẫn thẻ điện thoại.
+ */
+function NhanDot({ a, ct = null }: {
+  a: { lichSu?: boolean; status?: string; huyPhan?: boolean; doiKyNang?: string[] };
+  /** Mã chương trình lớp thường — tên môn trong nhãn "dời" (FOU G+V …); bỏ trống = kỹ năng IELTS. */
+  ct?: string | null;
+}) {
+  const nhan = [
+    ...(a.status === 'cancelled' ? [{ chu: 'đã huỷ', title: 'Lượt này đã huỷ.' }] : []),
+    ...(a.huyPhan ? [{ chu: 'huỷ phần', title: 'Có phần thi bị huỷ.' }] : []),
+    ...(a.doiKyNang?.length ? [{
+      chu: `dời ${a.doiKyNang.map((k) => tenMonNgan(ct, k)).join(' ')}`,
+      title: `Dời do vắng: ${a.doiKyNang.map((k) => tenMon(ct, k)).join(', ')}.`,
+    }] : []),
+  ];
+  const toiDa = a.lichSu ? 1 : 2;
+  return (
+    <>
+      {a.lichSu && <> <ChipLichSu /></>}
+      {nhan.slice(0, toiDa).map((x) => (
+        <span key={x.chu} title={x.title}
+          className="ml-1 inline-flex items-center whitespace-nowrap rounded border border-muted-line px-[5px] align-middle text-[11.5px] leading-4 text-muted">
+          {x.chu}
+        </span>
+      ))}
+      {nhan.length > toiDa && (
+        <span className="ml-1 text-[11.5px] text-muted" title={nhan.slice(toiDa).map((x) => x.title).join(' ')}>
+          +{nhan.length - toiDa}
+        </span>
+      )}
+    </>
+  );
+}
+
 /** Chữ cái kỹ năng ở dòng Điểm của thẻ điện thoại (cùng chữ với đầu cột bảng). */
 const CHU_KY_NANG = { listening: 'L', reading: 'R', writing: 'W', speaking: 'S' } as const;
 
@@ -428,34 +463,6 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen }: {
   attempts: any[]; dotId?: number; homNay: string | null; onOpen: (a: any) => void;
 }) {
   const dienThoai = useDienThoai();
-  const nhanCua = (a: any): { chu: string; title: string }[] => [
-    ...(a.status === 'cancelled' ? [{ chu: 'đã huỷ', title: 'Lượt này đã huỷ.' }] : []),
-    ...(a.huyPhan ? [{ chu: 'huỷ phần', title: 'Có kỹ năng bị huỷ phần thi.' }] : []),
-    ...(a.doiKyNang?.length ? [{
-      chu: `dời ${a.doiKyNang.map((k: string) => skillShort(k)).join(' ')}`,
-      title: `Dời do vắng: ${a.doiKyNang.map((k: string) => skillLabel(k)).join(', ')}.`,
-    }] : []),
-  ];
-  /** Chip lịch sử + nhãn nhỏ cạnh MT{n} — dùng chung bảng (máy tính) và thẻ (điện thoại). */
-  const nhanMt = (a: any) => {
-    const nhan = nhanCua(a);
-    return (
-      <>
-        {a.lichSu && <> <ChipLichSu /></>}
-        {nhan.slice(0, a.lichSu ? 1 : 2).map((x) => (
-          <span key={x.chu} title={x.title}
-            className="ml-1 inline-flex items-center whitespace-nowrap rounded border border-muted-line px-[5px] align-middle text-[11.5px] leading-4 text-muted">
-            {x.chu}
-          </span>
-        ))}
-        {nhan.length > (a.lichSu ? 1 : 2) && (
-          <span className="ml-1 text-[11.5px] text-muted" title={nhan.slice(a.lichSu ? 1 : 2).map((x) => x.title).join(' ')}>
-            +{nhan.length - (a.lichSu ? 1 : 2)}
-          </span>
-        )}
-      </>
-    );
-  };
   /* G5: điểm một kỹ năng mở hồ sơ Mock cuộn tới đúng kỹ năng (Tab vào được; hàng bảng vẫn bấm mở đợt). */
   const diemKyNang = (a: any, k: 'listening' | 'reading' | 'writing' | 'speaking') => (
     a.bands?.[k] != null
@@ -474,7 +481,7 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen }: {
             dau={(
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <Link to={attemptHref(a)} className="link font-semibold tabular-nums">MT{a.attemptNo}</Link>{nhanMt(a)}
+                  <Link to={attemptHref(a)} className="link font-semibold tabular-nums">MT{a.attemptNo}</Link><NhanDot a={a} />
                   <div className="text-xs text-slate-500">{a.weekStart ? tuanLich(a.weekStart, homNay) : <Info pending>Chưa có tuần</Info>}</div>
                 </div>
                 <div className="shrink-0 text-right">
@@ -521,7 +528,7 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen }: {
                 style={a.id === dotId ? { background: 'var(--accent-soft)' } : undefined}>
                 <td className="td whitespace-nowrap">
                   <Link to={attemptHref(a)} className="link tabular-nums" onClick={(e) => e.stopPropagation()}>MT{a.attemptNo}</Link>
-                  {nhanMt(a)}
+                  <NhanDot a={a} />
                 </td>
                 <td className="td text-slate-300">{a.classCode ?? '—'}</td>
                 <td className="td whitespace-nowrap">
@@ -548,6 +555,9 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen }: {
 /**
  * Lớp thường chấm theo ĐIỂM ĐẠT / TỔNG ĐIỂM — không có band, không có Overall, không có
  * kỳ vọng IELTS. Bấm một dòng ở đây mở đúng bảng điểm lớp thường, không phải màn Mock Test.
+ *
+ * PR-U12: đọc như bảng Mock Test (K4-33) — ô Bài là liên kết (Tab vào được) kèm `NhanDot`; cả hàng vẫn bấm được; MỘT ô Kết quả
+ * nói một lần (`KetQuaThuongO`). Không có chữ SOS (Rulebook §20.6).
  */
 function RatioAttempts({ attempts, dotId, homNay, onOpen, ct = null }: {
   attempts: any[]; dotId?: number; homNay: string | null; onOpen: (a: any) => void;
@@ -566,7 +576,14 @@ function RatioAttempts({ attempts, dotId, homNay, onOpen, ct = null }: {
       ))}
     </span>
   );
-  /* ĐIỆN THOẠI (PR-UXD Q9): mỗi lượt MỘT thẻ — `Giữa khoá · W3 SEP` + Kết quả bên phải, rồi Điểm từng phần · Lớp · Hồ sơ đợt ›. */
+  /* Ô Bài — liên kết tới bảng điểm đợt + nhãn; dùng chung bảng và thẻ điện thoại. */
+  const oBai = (a: any, className: string) => (
+    <>
+      <Link to={attemptHref(a)} className={className} onClick={(e) => e.stopPropagation()}>{tenBaiThuong(attempts, a)}</Link>
+      <NhanDot a={a} ct={ct} />
+    </>
+  );
+  /* ĐIỆN THOẠI (PR-UXD Q9): mỗi lượt MỘT thẻ — `Giữa khoá · W3 SEP` + Kết quả bên phải, rồi Điểm từng phần · Lớp. */
   if (dienThoai) {
     return (
       <div>
@@ -575,19 +592,17 @@ function RatioAttempts({ attempts, dotId, homNay, onOpen, ct = null }: {
             dau={(
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 text-sm">
-                  <span className="font-semibold">{a.kind === 'final' ? 'Cuối khoá' : 'Giữa khoá'}</span>
+                  {oBai(a, 'link font-semibold')}
                   <div className="text-xs text-slate-500">{a.weekStart ? tuanLich(a.weekStart, homNay) : <Info pending>Chưa có tuần</Info>}</div>
                 </div>
                 <div className="shrink-0 text-right">
                   <KetQuaThuongO a={a} ct={ct} />
-                  {a.provisional && <div className="text-xs text-slate-400">mới {a.scored}/{a.required} môn</div>}
                 </div>
               </div>
             )}
             dong={[
               { nhan: 'Điểm từng phần', noiDung: chipMon(a) },
               { nhan: 'Lớp', noiDung: a.classCode ?? '—' },
-              { nhan: 'Bảng điểm', noiDung: <Link to={attemptHref(a)} className="link text-[11px]">Bảng điểm đợt ›</Link> },
             ]} />
         ))}
       </div>
@@ -598,8 +613,8 @@ function RatioAttempts({ attempts, dotId, homNay, onOpen, ct = null }: {
       <table className="w-full text-sm min-w-[640px]">
         <thead>
           <tr>
-            <Th hint="Giữa khoá hay Cuối khoá của khoá học.">Bài</Th>
-            <th className="th">Lớp</th>
+            <Th hint="Giữa khoá hay Cuối khoá của khoá học. Bấm để mở bảng điểm đợt.">Bài</Th>
+            <Th hint="Lớp em học VÀO LÚC làm bài này — chuyển lớp không viết lại lịch sử.">Lớp</Th>
             <Th hint="Tuần kế hoạch của lượt này. Một lượt chỉ thuộc đúng một tuần — không có ngày thi cụ thể.">Tuần</Th>
             <Th hint="Số câu đúng / tổng số câu từng môn. Đạt khi từ 70% trở lên.">Điểm từng phần</Th>
             <Th hint="Giữa khoá: số môn đạt trên tổng, kèm môn không đạt. Cuối khoá: % tổng. Môn chưa có điểm không tính là chưa đạt.">Kết quả</Th>
@@ -609,7 +624,7 @@ function RatioAttempts({ attempts, dotId, homNay, onOpen, ct = null }: {
           {attempts.map((a) => (
             <tr key={a.id} id={`dot-${a.id}`} className="row-hover cursor-pointer" onClick={() => onOpen(a)}
               style={a.id === dotId ? { background: 'var(--accent-soft)' } : undefined}>
-              <td className="td whitespace-nowrap">{a.kind === 'final' ? 'Cuối khoá' : 'Giữa khoá'}</td>
+              <td className="td whitespace-nowrap">{oBai(a, 'link')}</td>
               <td className="td text-slate-300">{a.classCode ?? '—'}</td>
               <td className="td whitespace-nowrap">
                 {a.weekStart ? tuanLich(a.weekStart, homNay) : <Info pending>Chưa có tuần</Info>}
@@ -617,8 +632,6 @@ function RatioAttempts({ attempts, dotId, homNay, onOpen, ct = null }: {
               <td className="td">{chipMon(a)}</td>
               <td className="td">
                 <KetQuaThuongO a={a} ct={ct} />
-                {a.provisional && <div className="text-xs text-slate-400">mới {a.scored}/{a.required} môn</div>}
-                <Link to={attemptHref(a)} className="link text-[11px]" onClick={(e) => e.stopPropagation()}>Bảng điểm đợt ›</Link>
               </td>
             </tr>
           ))}
@@ -628,14 +641,28 @@ function RatioAttempts({ attempts, dotId, homNay, onOpen, ct = null }: {
   );
 }
 
-/** PR-LT2a (T58): kết quả một lượt lớp thường — `2/4 môn đạt` + `Không đạt: L R` (Giữa khoá), `64%` (Cuối khoá); không có chữ SOS. */
+/**
+ * PR-LT2a (T58): kết quả một lượt lớp thường — `2/4 môn đạt` + `Không đạt: L R` (Giữa khoá), `64%` (Cuối khoá); không có chữ SOS.
+ * PR-U12: nói MỘT lần — chưa đủ môn thì `Chờ n môn` (như `KetQuaDot` "Chờ n kỹ năng"), không kèm "mới x/y môn" hay "(đã chấm)";
+ * lượt đã huỷ mà chưa đủ môn không còn chờ gì → `—` (nhãn `đã huỷ` cạnh tên bài đã nói lý do). Pre FOU (không chia môn) giữ `%`.
+ */
 function KetQuaThuongO({ a, ct }: { a: any; ct: string | null }) {
-  if (a.sosLevel === null && a.scored === 0) return <Level tone="muted">Chờ {a.required - a.scored} môn</Level>;
+  const khongChiaMon = !!ct && CHUONG_TRINH_KHONG_CHIA_MON.includes(ct);
   const kq = nhanKetQuaThuong({
     kind: a.kind === 'final' ? 'final' : 'progress', ct, scored: a.scored, required: a.required,
     failedSkills: (a.skills ?? []).filter((s: any) => s.outcome === 'fail').map((s: any) => s.skill as string),
-    tyLeTong: a.tyLeTong ?? null, khongChiaMon: !!ct && CHUONG_TRINH_KHONG_CHIA_MON.includes(ct),
+    tyLeTong: a.tyLeTong ?? null, khongChiaMon,
   });
+  /* Lượt đã xong (`done`) mà thiếu môn = môn bị huỷ phần, không còn chờ → nói kết quả các môn đã chấm. */
+  if (!khongChiaMon ? a.scored < a.required && a.status !== 'done' : a.sosLevel === null && a.scored === 0) {
+    if (a.status === 'cancelled') return <span className="text-muted">—</span>;
+    return (
+      <>
+        <Level tone="muted">Chờ {a.required - a.scored} môn</Level>
+        {kq.phu && <div className="text-xs text-slate-400">{kq.phu}</div>}
+      </>
+    );
+  }
   return (
     <>
       <Level tone={a.sosLevel === null ? (kq.dat ? 'ok' : 'muted') : sosTone(a.sosLevel)}>{kq.chinh}</Level>

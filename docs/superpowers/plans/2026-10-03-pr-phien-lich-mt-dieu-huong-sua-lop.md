@@ -645,7 +645,7 @@ Skill: test-driven-development (máy chủ, một giao dịch)
 - `luuSuaCaLop(p, classId, { rows: DongSua[]; lyDoTarget?: string; idempotencyKey: string }): { daSua: number }`
 - Route: `POST /classes/:id/sua-ca-lop/xem-truoc`, `POST /classes/:id/sua-ca-lop`.
 
-- [ ] **Step 1: Phép đỏ** — `prSl.tests.ts` (`checkAsync`, gọi HTTP bằng cookie Quản lý và cookie GVCN, theo mẫu `prNhap.tests.ts`):
+- [x] **Step 1: Phép đỏ** — `prSl.tests.ts` (`checkAsync`, gọi HTTP bằng cookie Quản lý và cookie GVCN, theo mẫu `prNhap.tests.ts`):
   1. Sửa họ tên 2 em + email 1 em → 200 `daSua: 2`; DB đổi đúng; 2 dòng audit `student.update`.
   2. Một dòng email sai → xem trước trả issue `loi` đúng dòng; lưu → 400 và **không dòng nào** được ghi (transaction).
   3. Đổi Target 1 em không có `lyDoTarget` → 400 "Ghi lý do đổi Target."; có lý do → `target_revisions` có dòng mới, `effectiveFrom` = hôm nay.
@@ -655,13 +655,13 @@ Skill: test-driven-development (máy chủ, một giao dịch)
   7. Gửi lại cùng `idempotencyKey` → không ghi lần hai (theo cách `intake.ts` làm).
   8. Điểm đầu vào 9.5 → issue `loi` "0–9".
   9. Lớp thường: `target`/`baseline`/`startWeek` bị bỏ qua hoặc báo lỗi theo đúng `cotLuoiNhap(lopThuong)` — chọn theo `cotLuoiNhap`, ghi rõ trong phép.
-- [ ] **Step 2: Đỏ** → **Step 3: Viết `suaCaLop.ts`:**
+- [x] **Step 2: Đỏ** → **Step 3: Viết `suaCaLop.ts`:**
   - Kiểm từng dòng **trước** khi ghi: em thuộc lớp; quyền theo trường (`STUDENT_EDIT` cho họ tên/ngày sinh/email/tuần bắt đầu/dự kiến thi/điểm đầu vào; `CYCLE_EDIT` cho Target); kiểu dữ liệu bằng chính các hàm đọc mà `updateStudent`/`updateCycle`/`setBaseline` đang dùng (`docNgayNhap`, `docEmail`, `docTarget`, khoảng 0–9) — **không** viết lại luật.
   - Lưu: một transaction, gọi lần lượt `updateStudent`, `updateCycle(p, cycleId, { startWeek?, examDate? })`, `setBaseline(p, cycleId, { source: <nguồn "nhập tay" có trong BASELINE_SOURCES>, score })`, `reviseTarget(p, cycleId, { newTarget, reason: lyDoTarget })`. Lỗi ở bất kỳ dòng nào → rollback toàn bộ, trả lỗi kèm `studentId`.
   - Trần: ≤ 60 dòng một lần (lớp lớn nhất hiện có < 30); vượt → 400.
-- [ ] **Step 4:** `npm run check` xanh → **Step 5:** commit `"PR-SL (1): máy chủ sửa thông tin cả lớp, xem trước + lưu một giao dịch"`.
+- [x] **Step 4:** `npm run check` xanh → **Step 5:** commit `"PR-SL (1): máy chủ sửa thông tin cả lớp, xem trước + lưu một giao dịch"`.
 
-### Task SL-2: Panel "Sửa thông tin cả lớp"
+### Task SL-2 ✅: Panel "Sửa thông tin cả lớp"
 Skill: test-driven-development · impeccable layout, harden
 
 **Files:**
@@ -669,8 +669,8 @@ Skill: test-driven-development · impeccable layout, harden
 - Modify: `web/src/modules/classes/DauTrangLop.tsx:97-123` (mục ⋮ "Sửa thông tin học viên" + nút nhỏ cạnh "+ Học viên"), `ClassOverviewPage.tsx:118-120` (mở panel).
 - Test: quét nguồn trong `prSl.tests.ts`.
 
-- [ ] **Step 1: Phép đỏ (quét nguồn)**: `SuaCaLopPanel.tsx` tồn tại, không có `textarea`/`/intake/parse` (không dán Excel); `DauTrangLop.tsx` có "Sửa thông tin học viên".
-- [ ] **Step 2: Đỏ** → **Step 3: Sửa (impeccable `layout` + `harden`):**
+- [x] **Step 1: Phép đỏ (quét nguồn)**: `SuaCaLopPanel.tsx` tồn tại, không có `textarea`/`/intake/parse` (không dán Excel); `DauTrangLop.tsx` có "Sửa thông tin học viên".
+- [x] **Step 2: Đỏ** → **Step 3: Sửa (impeccable `layout` + `harden`):**
   - `KhungPanel tieuDe="Sửa thông tin học viên" hocVien={"Lớp " + code} rong="toan"`, lưới giống `IntakePanel`: một hàng một em đang học (theo thứ tự roster), cột Họ tên · Ngày sinh (`ONgay`) · Email · Tuần bắt đầu học (`ONgay kieu="tuan"`) · Dự kiến thi (`ONgay kieu="ngay-hoac-thang"`) · Target · Điểm đầu vào. Lớp thường: chỉ các cột `cotLuoiNhap(lopThuong)` cho phép.
   - Ô đã đổi tô nền nhấn nhẹ + chấm "đã sửa"; đầu panel: "Đã sửa 3 em" ; nút "Hoàn tác" từng ô (về giá trị gốc).
   - Có Target đổi → hiện ô **"Lý do đổi Target \*"** dùng chung (≥ 5 ký tự), ghi chú "Áp cho mọi em đổi Target trong lần lưu này". Người không có `CYCLE_EDIT` → cột Target chỉ đọc, `title` "Chỉ Quản lý đổi Target".
@@ -679,9 +679,75 @@ Skill: test-driven-development · impeccable layout, harden
   - Lưu xong: toast "Đã cập nhật 3 học viên", đóng panel, tải lại roster.
   - 375 px: lưới cuộn ngang trong khung, cột Họ tên dính trái.
   - Chỗ vào: mục "Sửa thông tin học viên" trong ⋮ (hiện khi có ít nhất một em và người xem có `STUDENT_EDIT` cho lớp — thêm cờ `viewer.coTheSuaHocVien` vào `HoSoLop.viewer` nếu chưa có) **và** nút nhỏ `btn-ghost btn-sm` "Sửa thông tin" cạnh "+ Học viên".
-- [ ] **Step 4:** `npm run check` + ảnh 1440/375 (chưa sửa, đang sửa có lỗi, có Target đổi) → `/impeccable audit` → **Step 5:** commit `"PR-SL (2): panel sửa thông tin cả lớp"`.
+- [x] **Step 4:** `npm run check` + ảnh 1440/375 (chưa sửa, đang sửa có lỗi, có Target đổi) → `/impeccable audit` → **Step 5:** commit `"PR-SL (2): panel sửa thông tin cả lớp"`.
 
 **Nghiệm thu PR-SL:** từ hồ sơ lớp sửa họ tên/ngày sinh/email/tuần bắt đầu/dự kiến thi/Target/điểm đầu vào của nhiều em trong một panel, lưu một lần; một ô sai → không em nào bị ghi; GVCN không đổi được Target; không có ô dán Excel.
+
+## PR-SL — Task bổ sung 04/10 (SL-3 → SL-9, plan.md mục 3 + mục 4 "PR-SL")
+
+Bản đồ code đã kiểm 04/10 trên `origin/main` 67f48acf. Mọi Task: phép đỏ trước trong `prSl.tests.ts`, rồi sửa, rồi `npm run check`.
+
+### Task SL-3 ✅: Một mẫu Excel chung (quyết định 04/10)
+Skill: test-driven-development · impeccable clarify (câu "Đã đọc…")
+
+**Files:** `shared/domain/nhapHocVien.ts` (`docDongDan`), `server/src/classes/intake.ts` (`parsePaste` câu lỗi), `web/src/modules/students/IntakePanel.tsx:209-243` (placeholder ô dán, dòng "Đã đọc…"), `server/src/tests/prNt.tests.ts:135-139` (phép cũ "lớp thường 6 cột" đổi theo quyết định), `prSl.tests.ts`.
+
+- **Luật:** dán **không tiêu đề** → luôn đọc theo thứ tự cột Fast Track `cotLuoiNhap(false)` cho **mọi** lớp. Lớp thường: cột không có trong `cotLuoiNhap(true)` (Overall, L, R, W, S, Đã thi tới MT) thành `null` trong `cot` và tên cột vào `cach.boQua` — **một** lưu ý cho cả lô, không thêm lưu ý từng dòng. Có tiêu đề → giữ nguyên (khớp theo tên). `thua`/`thieu` tính theo 12 cột.
+- **Phép kiểm (đỏ trước):** một dòng FT 12 ô `Lê An · 12/05/2008 · an@x.vn · 5 · 5 · 5.5 · 5 · 5 · 6.5 · 05/2027 · 0 · 05/10/2026` dán vào `MB FT 101` và `MB FOU 12` (không tiêu đề) → cả hai ra cùng Họ tên / Ngày sinh / Email / Target `6.5` / Dự kiến thi `05/2027` / Tuần bắt đầu (Thứ Hai `2026-10-05`); lớp thường `cach.boQua` = `Overall, L, R, W, S, Đã thi tới MT`, `thua = 0`; dòng không có band/thi tới MT (`An\t\ta@x.vn`) vẫn đọc đúng.
+- **Chữ (clarify):** không tiêu đề → "Đã đọc theo mẫu Excel chung: Họ và tên · … · Tuần bắt đầu." + lớp thường "Lớp thường bỏ qua cột Overall, L, R, W, S, Đã thi tới MT." Placeholder ô dán: "…Không có tiêu đề thì web đọc theo mẫu Excel chung (thứ tự cột Fast Track)." Câu lỗi `parsePaste` "đọc theo thứ tự cột của lớp" → "đọc theo mẫu Excel chung".
+- Commit `"PR-SL (3): một mẫu Excel chung cho lớp FT và lớp thường"`.
+
+### Task SL-4 ✅: Khung panel chung — I1 (Đóng / Huỷ thay đổi) + D11 (`aria-describedby`)
+Skill: test-driven-development · impeccable harden
+
+**Files:** `web/src/ui/KhungPanel.tsx` (`chan.daSua`, `Truong`), `web/src/ui/ui.tsx:318` (`Field`), nơi gọi: `IntakePanel.tsx:165`, `cases/QuickReport.tsx:295-305` (Tạo Case), Từ chối inline (grep `tu-choi`/`Từ chối` trong `worklist/`), `SuaCaLopPanel.tsx`.
+
+- **I1:** `KhungPanel` nhận `chan.daSua?: boolean`; nhãn mặc định nút trái = `daSua ? 'Huỷ thay đổi' : 'Đóng'` (người gọi truyền `huy.nhan` thì giữ nhãn đó — "Xong", "‹ Sửa"… không đổi). Áp cho Tạo Case (đã gõ/chọn bất kỳ ô nào), Thêm học viên (lưới có dòng có dữ liệu hoặc ô dán có chữ), Từ chối inline (đã gõ lý do), Sửa thông tin học viên. Nơi gọi đang tự viết `daSua ? 'Huỷ thay đổi' : 'Đóng'` thì đổi sang `daSua` (gọn, một luật).
+- **D11:** `Truong` và `Field`: dòng lỗi dưới ô có `id` (`useId`); ô đầu tiên trong trường (`input, select, textarea, [aria-invalid]`) được nối `aria-describedby` tới dòng lỗi khi có `loi`, gỡ khi hết lỗi, giữ `aria-describedby` sẵn có của ô. Làm một chỗ trong hai thành phần (không sửa từng nơi gọi).
+- **Phép kiểm:** quét nguồn: `KhungPanel.tsx` có `daSua` và chữ "Huỷ thay đổi"; `Truong`/`Field` có `aria-describedby`; bốn nơi gọi trên truyền `daSua`. Bấm thử bằng trình duyệt: ô lỗi có `aria-describedby` trỏ đúng id dòng lỗi.
+- Commit `"PR-SL (4): I1 Đóng/Huỷ thay đổi ở khung panel, D11 lỗi dưới ô nối aria-describedby"`.
+
+### Task SL-5 ✅: I2 — form Tạo Case
+Skill: test-driven-development · impeccable clarify
+
+**Files:** `web/src/modules/cases/QuickReport.tsx` (`urgency` mặc định, select "Nhóm nguyên nhân", ô "Bắt đầu theo dõi", ô kỹ năng khi chưa chọn HV), luật máy chủ không đổi (`urgency` vẫn bắt buộc khi tạo — kiểm `server/src/cases/*`).
+- Không chọn sẵn "Mức độ": `urgency` khởi đầu rỗng, là ô **bắt buộc** trong `loi` (lý do "Chọn mức độ"), `reset()` về rỗng.
+- "Nhóm nguyên nhân": option trống ghi "Chọn nhóm" (cả khi chưa chọn kỹ năng: "Chọn kỹ năng trước").
+- Kỹ năng: hàng giả khi chưa chọn HV không ghi `W` trần — lấy theo chương trình đã biết hoặc ghi L · R · W1 · W2 · S (FT) / ẩn; HV đã chọn: giữ `tenMonNgan` (W1/W2 FT).
+- "Bắt đầu theo dõi" dùng `ChonTuan` (`moc="dau"`, `lui={26} toi={0}`), gửi Thứ Hai của tuần (máy chủ đang nhận ngày — không đổi API).
+- Phép: quét nguồn `QuickReport.tsx` không còn `useState<string>(DEFAULT_URGENCY)`, có "Chọn nhóm", ô theo dõi dùng `ChonTuan`.
+- Commit `"PR-SL (5): I2 form Tạo Case"`.
+
+### Task SL-6 ✅: I3 — panel Thêm học viên
+Skill: impeccable clarify + layout
+
+**Files:** `web/src/modules/students/IntakePanel.tsx` (`RONG`, textarea, nút "Đọc nội dung đã dán", lời nhắc cạnh "+ Thêm dòng").
+- Cột "Overall" không cắt chữ (tăng `RONG.baselineScore` hoặc nhãn `OVR` có `title`), placeholder ngày "dd/mm/yyyy" không cắt (ô ngày ≥ chữ mẫu).
+- Ô dán bỏ `font-mono`, dùng phông thường.
+- Nút "Đọc nội dung đã dán" xuống **dưới** ô dán (ô dán chiếm hết bề rộng).
+- Lời nhắc ~100 chữ cạnh "+ Thêm dòng" tách thành 2 dòng ngắn.
+- Phép: quét nguồn không còn `font-mono` ở ô dán. Ảnh 1440/375.
+- Commit `"PR-SL (6): I3 panel Thêm học viên"`.
+
+### Task SL-7 ✅: I4 — Drawer/Modal → KhungPanel phần còn lại
+Skill: impeccable layout · chỉ đổi khung, giữ hành vi
+
+**Files:** `cham/GvCham.tsx:84`, `fasttrack/ScoreEntry.tsx:577` (`CriteriaModal`), `fasttrack/NhanXet.tsx:49`, `yThuc/DeleteViolationConfirm.tsx:31`, `students/StudentDetailPage.tsx:7` (chỉ còn `import { Modal }` thừa → xoá). `MockDetailPage`: đã chuyển ở PR-LM (LM-7); `ConfirmDialog` dòng 769 là hộp xác nhận, giữ.
+- Mỗi panel: `KhungPanel` (`rong="hep"`), tiêu đề + tên HV/lớp như đang có, chân theo luật S3 (`daSua`), nút chính giữ nhãn cũ; xoá vi phạm nút chính `btn-danger`. Panel mở chồng trên panel khác (CriteriaModal trong ScoreEntry, NhanXet trong hồ sơ MT) dùng `longTrong` + `z` để Esc chỉ đóng lớp trên.
+- Phép: quét nguồn: năm file không còn import `Modal`/`ConfirmDialog` từ `ui/Drawer.tsx` (trừ chỗ đã ghi giữ).
+- Commit `"PR-SL (7): I4 các panel còn lại sang KhungPanel"`.
+
+### Task SL-8 ✅: I6 — panel Ghi vi phạm
+Skill: impeccable clarify
+
+**Files:** `web/src/modules/yThuc/RecordViolationPanel.tsx`.
+- Kiểm lại thật (ảnh): `<li class=inline-flex>` dính mép trên → sửa khoảng cách; "(bắt buộc)" lặp → dùng `*` của `Truong batBuoc` + một dòng chú thích "* bắt buộc" ở đầu thân. Đã hết trên `main` thì ghi "bác bỏ: đã sửa ở PR …" trong mô tả PR.
+- Commit `"PR-SL (8): I6 panel Ghi vi phạm"`.
+
+### Task SL-9 ✅: Merge cuối đợt 3 + audit
+- `git merge origin/main` (sau U12, DL, K26). Xung đột `run.ts`, `routes/index.ts`, `CODE_MAP.md`, mục 11 `plan.md`: giữ cả hai.
+- Rà chân panel của PR-DL và PR-K26 (grep `KhungPanel` trong file mới của hai PR) theo luật I1: có form sửa được → `chan.daSua`.
+- `npm run check` → ảnh 375/1440 sáng/tối, vai QL · GVCN · GV · toàn hệ thống → `/impeccable audit` → `/ponytail-review`.
 
 ---
 

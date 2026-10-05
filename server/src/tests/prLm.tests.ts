@@ -89,7 +89,7 @@ export async function runPrLmTests(t: YThucTestKit) {
     assert((md.match(/<KhungPanel\b/g) ?? []).length >= 4 && /<KhungPanel\b/.test(tt), 'thiếu KhungPanel');
     for (const [ten, src] of [['MockDetailPage', md], ['HopThaoTacMt', tt]]) {
       assert(!/>Huỷ</.test(src), `${ten}: nút "Huỷ" trần`);
-      assert(/'Huỷ thay đổi' : 'Đóng'/.test(src), `${ten}: chân S3 Đóng / Huỷ thay đổi`);
+      assert(/\bdaSua: daSua\b/.test(src), `${ten}: chân S3 Đóng / Huỷ thay đổi (chan.daSua, PR-SL I1)`);
     }
   });
 }

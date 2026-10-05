@@ -29,7 +29,7 @@ const {
   chayTrongRequest, nho, coNho, trongBoNho, soCauSql, demHienTai,
 } = await import('../platform/nguCanhRequest.ts');
 const { loadPrincipal, can, napTruocPhamVi, scopeFor } = await import('../permissions.ts');
-const { PERMISSIONS } = await import('../../../shared/domain/index.ts');
+const { PERMISSIONS, LO_LUU_SUA_CA_LOP } = await import('../../../shared/domain/index.ts');
 const { listCases } = await import('../cases/cases.ts');
 const { DUONG_DO, TRAN, TRAN_GHI_LO } = await import('./tocDoDuong.ts');
 
@@ -871,6 +871,18 @@ await checkAsync(`PR-S3F · Công việc QL (nguoi=tat-ca) với 30 PA "đến l
   assert(r.status === 200 && moc >= 30, `Việc "Nhập ngày thi" phải còn (PA chưa mốc ${moc}): ${r.status}`);
   console.log(`      (đo: ${n0} câu không PA → ${r.n} câu với 30 PA chưa ngày thi)`);
   assert(r.n <= TRAN_GHI_LO.congViec30PaChuaNgayThi, `${r.n} câu > trần ${TRAN_GHI_LO.congViec30PaChuaNgayThi}`);
+});
+
+/* PR-SL: Sửa cả lớp — xem trước kiểm cả lớp một lần; LƯU theo lô `LO_LUU_SUA_CA_LOP` em (web chia lô), mỗi lô gọi lần lượt hàm ghi một em trong MỘT giao dịch. Trần chốt mốc một lô. */
+await checkAsync(`PR-SL · Sửa cả lớp MB FT 101: xem trước 30 em + lưu một lô ${LO_LUU_SUA_CA_LOP} em đổi họ tên (POST /classes/:id/sua-ca-lop) ≤ ${TRAN_GHI_LO.xemTruocSuaCaLop30} / ${TRAN_GHI_LO.luuSuaCaLopMotLo} câu SQL`, async () => {
+  const sids = (conn.prepare(`SELECT student_id AS id FROM enrollments WHERE class_id = ? AND status = 'active' ORDER BY student_id LIMIT 30`).all(LOP_FT) as any[]).map((x) => x.id);
+  const rows = sids.map((studentId, i) => ({ studentId, fullName: `Tốc Độ Sửa ${i + 1}` }));
+  const xem = await doGhi('QL', `/classes/${LOP_FT}/sua-ca-lop/xem-truoc`, { rows });
+  const co = LO_LUU_SUA_CA_LOP;
+  const luu = await doGhi('QL', `/classes/${LOP_FT}/sua-ca-lop`, { rows: rows.slice(0, co), idempotencyKey: 'pr-sl-lo' });
+  assert(xem.status === 200 && luu.status === 200 && luu.json.daSua === co, `${xem.status} ${luu.status} ${JSON.stringify(luu.json)}`);
+  console.log(`      (đo: xem trước ${sids.length} em ${xem.n} câu, lưu một lô ${co} em ${luu.n} câu)`);
+  assert(xem.n <= TRAN_GHI_LO.xemTruocSuaCaLop30 && luu.n <= TRAN_GHI_LO.luuSuaCaLopMotLo, `${xem.n} / ${luu.n} câu > trần`);
 });
 
 await checkAsync(`PR-S5F-b · Công việc GVCN + QL (nguoi=tat-ca) với 60 nhóm PA bổ trợ khắp hệ thống: số câu không tăng theo số nhóm (≤ +${TRAN_GHI_LO.congViec60NhomBoTro})`, async () => {

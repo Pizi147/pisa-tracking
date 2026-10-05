@@ -93,7 +93,8 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
   check('S3 (1) · Hồ sơ Mock Test là tên trang FT; lớp thường dùng "Bảng điểm đợt" (không có chữ Mock/MT); tab Hỗ trợ học viên', () => {
     assert(/Hồ sơ Mock Test ·/.test(docNguon('web/src/modules/fasttrack/MockDetailPage.tsx')), 'tiêu đề MockDetailPage');
     const sd = docNguon('web/src/modules/students/StudentDetailPage.tsx');
-    assert((sd.match(/Bảng điểm đợt ›/g) ?? []).length === 2, 'link lớp thường');
+    // PR-U12: bỏ link riêng "Bảng điểm đợt ›" — ô Bài là liên kết; tên trang vẫn là "bảng điểm đợt" (gợi ý cột Bài)
+    assert(!sd.includes('Bảng điểm đợt ›') && /mở bảng điểm đợt/.test(sd), 'link lớp thường');
     assert(/'ho-tro': 'Hỗ trợ học viên'/.test(docNguon('shared/domain/dieuHuong.ts')), 'TAB_CONG_VIEC_LABEL');
     assert(/'Tổng hợp'/.test(docNguon('web/src/modules/phanTich/TongHopTestSos.tsx')), 'Excel A-054');
   });
@@ -179,7 +180,7 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
   ], KY_THUAT);
   check('S3 (4) · "Thêm PA" so khớp theo hằng CHU_THEM_PA (không so chuỗi hiển thị); KhungPanel / ConfirmDialog mặc định "Đóng"', () => {
     assert(/CHU_THEM_PA/.test(docNguon('server/src/students/viecHocVien.ts')) && /CHU_THEM_PA/.test(docNguon('web/src/modules/cases/QuickReport.tsx')) && /CHU_THEM_PA/.test(docNguon('shared/domain/sosV4.ts')), 'hằng CHU_THEM_PA');
-    assert(/huy\.nhan \?\? 'Đóng'/.test(docNguon('web/src/ui/KhungPanel.tsx')), 'KhungPanel');
+    assert(/huy\.nhan \?\? \(chan\.daSua \? 'Huỷ thay đổi' : 'Đóng'\)/.test(docNguon('web/src/ui/KhungPanel.tsx')), 'KhungPanel');   // PR-SL I1: chưa sửa → "Đóng"
     assert(/closeLabel = 'Đóng'/.test(docNguon('web/src/ui/Drawer.tsx')), 'ConfirmDialog');   // PR-LM: nút trái đặt được ("Quay lại"), mặc định vẫn "Đóng"
     assert(/nhan = 'Thao tác khác'/.test(docNguon('web/src/ui/MenuDong.tsx')), 'MenuDong');
   });

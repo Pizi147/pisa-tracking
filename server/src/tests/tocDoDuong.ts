@@ -129,6 +129,8 @@ export const DUONG_DO: MucDo[] = [
     maChuDich: { QL: 403, GVCN: 403, GVBM: 403, GVCN_THUONG: 403 },
   },
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/cases?classId={lopFT}' },
+  /* PR-SL: ⋮ Sửa thông tin học viên — giá trị hiện tại cả lớp; người không có student.edit của lớp nhận 403. */
+  { trang: 'Hồ sơ lớp FT', vai: ['QL', 'GVCN'], url: '/classes/{lopFT}/sua-ca-lop' },
 
   // ---------------------------------------------------------------- Hồ sơ lớp (thường)
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/overview' },
@@ -139,6 +141,8 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/cham' },
   /* PR-LT, Task 5: GVCN_THUONG đọc được kế hoạch Chuyển tiếp lớp (canEdit=false ở đó), không sửa được (chỉ QL/QT gọi POST). */
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/transition' },
+  /* PR-K26: bảng Ghi lộ trình tiếp theo cả lớp (⋮ hồ sơ lớp) — đọc theo lô, không tăng theo số em. */
+  { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/lo-trinh-tiep' },
   /* PR-CT (Q30-2): phiếu bàn giao cả lớp nguồn — số câu KHÔNG đổi theo số em (phép kiểm CT 5h). */
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/lenh-chuyen/ban-giao?lop={lopThuong}' },
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/cases?classId={lopThuong}' },
@@ -380,6 +384,9 @@ export const TRAN: Record<string, number> = {
   'GVBM /classes/3/progress': 20,
   'GVCN_THUONG /classes/3/progress': 20,
   'QT /classes/3/progress': 19,
+  /* PR-SL: ⋮ Sửa thông tin học viên đo 16 (GVCN 17), đọc theo lô — trần = đo + 3. */
+  'QL /classes/3/sua-ca-lop': 19,
+  'GVCN /classes/3/sua-ca-lop': 20,
   'QL /classes/3/can-ho-tro': 25,
   'GVCN /classes/3/can-ho-tro': 25,
   'GVBM /classes/3/can-ho-tro': 25,
@@ -557,6 +564,9 @@ export const TRAN: Record<string, number> = {
   'QL /classes/6/transition': 42,   // PR-CT gộp LT2b: 39 → 42
   'QT /classes/6/transition': 41,   // PR-CT gộp LT2b: 38 → 41
   'GVCN_THUONG /classes/6/transition': 42,   // PR-CT gộp LT2b: 39 → 42
+  'QL /classes/6/lo-trinh-tiep': 29,   // PR-K26 mới: đo 19
+  'QT /classes/6/lo-trinh-tiep': 28,   // PR-K26 mới: đo 18
+  'GVCN_THUONG /classes/6/lo-trinh-tiep': 30,   // PR-K26 mới: đo 20
   /* PR-CT (Task 6): phiếu bàn giao cả lớp nguồn — đo 14 / 13 / 13 câu (chưa có lệnh) → trần max(sau+10, ⌈sau×1.3⌉). Task 12 đo lại với bộ demo có lệnh. */
   'QL /lenh-chuyen/ban-giao?lop=6': 24,
   'QT /lenh-chuyen/ban-giao?lop=6': 23,
@@ -669,6 +679,9 @@ export const TRAN_GHI_LO = {
   congViec60NhomBoTro: 10,
   /** POST /intake/commit — 30 em lớp THƯỜNG (MB FOU 12), mỗi em tự có bài Giữa/Cuối khoá còn hiệu lực (PR-LT2a M1b). Ghi theo lô: số câu không tăng theo số em. */
   themHocVien30Thuong: 72,   // đo 55 câu → trần max(sau+10, ⌈sau×1,3⌉) = 72
+  /** PR-SL: Sửa cả lớp — 30 em MB FT 101 đổi họ tên. Xem trước đọc theo lô (không tăng theo số em); lưu gọi `updateStudent` từng em trong một giao dịch. */
+  xemTruocSuaCaLop30: 97,   // đo 74 câu (quyền theo em đọc DB) → max(74+10, ⌈74×1,3⌉) = 97
+  luuSuaCaLopMotLo: 119,   // một lô 8 em đổi họ tên: đo 91 câu → ⌈91×1,3⌉ = 119 (30 em một lần cũ: 289 câu, 7–14 s trên Turso). ponytail: lô cố định 8 em theo số em, không theo số câu — em đổi nhiều ô (tuần bắt đầu dời MT, Target) nặng hơn ~3 lần; lưới chặn cuối: dừng trước 10 s mỗi dòng (503, lô đó cuộn lại); chia lô theo ước lượng câu nếu hay gặp 503
 };
 
 /**
