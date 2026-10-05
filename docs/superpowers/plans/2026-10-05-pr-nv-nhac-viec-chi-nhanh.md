@@ -1,6 +1,6 @@
 # PR-NV · Nhắc việc nhanh, chi nhánh mặc định, "Nợ tuần trước" thu gọn — Kế hoạch (05/10)
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** (T8) "Để QL biết" thành **Nhắc việc**, không còn số nổi ở đầu Tổng quan, "Nhắc tất cả" 50 thẻ xong dưới 10 giây (hết 502), nhắc một người nhanh hơn. (T9) Chi nhánh mặc định theo người xem, không ép vào MB, ở **mọi** màn có ô chi nhánh. "Nợ tuần trước" ở Lịch Test thu gọn mặc định.
 
@@ -87,7 +87,7 @@ export function nhacViec(p: Principal, i: { key: string; ownerId: number }): { d
 
 **`nhacNhieu` (thân mới, `yeuCau.ts:476`):** `require_` + kiểm mảng như cũ → `trongBoNho`: `quetYeuCau(homNay)` (thẻ chết tự đóng trước khi đọc), **một** câu `SELECT * FROM yeu_cau_duyet WHERE id IN (…)`, `napTruocPhamVi(hoc_vien_id…)`, từng thẻ giữ đủ kiểm cũ (404 không tìm thấy · `require_(P_DUYET, ctxThe)` 403 · không `cho` 400 · không `kieuNut 'nhac'` 400 · thiếu ownerId/viecKey 400 `nhanKhongNguoiNhac`) → `nhacViecNhieu(p, …, { boQuaDaNhacTruoc: true })` → đổi `the` về `id`.
 
-- [ ] **Step 1: Viết kiểm đỏ** trong `prNv.tests.ts` (`export async function runPrNvTests(k: YThucTestKit & { soCauSql: () => number })`), dùng `conn`, `P` của `run.ts`:
+- [x] **Step 1: Viết kiểm đỏ** trong `prNv.tests.ts` (`export async function runPrNvTests(k: YThucTestKit & { soCauSql: () => number })`), dùng `conn`, `P` của `run.ts`:
   - `NV-1 (a) nhắc thẻ Mini Test chưa đạt không 404`: tạo/tìm thẻ `bao_len_mini_test` có ownerId → `nhacNhieu(P.mbManager,[id]).ok.length === 1`, chuông có `dedup_key = 'nhac:minitest:{id}:{ngày}'`.
   - `NV-1 (b) nhắc thẻ Cuối khoá dời quá hạn tới đúng GVCN`; đổi GVCN lớp (UPDATE trên DB test) → lỗi 404.
   - `NV-1 (c) gom = gọi lẻ`: thẻ của ≥ 2 người (seed thiếu thì lùi `sos_cases.han_xac_nhan` của Case đang chờ nguyên nhân về trước hôm nay rồi `quetYeuCau`) — xoá chuông `nhac:%` hôm nay, nhắc cả lô; xoá lại, nhắc từng thẻ; cùng tập `(user_id, dedup_key, title, duong)`.
@@ -95,11 +95,11 @@ export function nhacViec(p: Principal, i: { key: string; ownerId: number }): { d
   - `NV-1 (e) nhắc lần hai trong ngày`: 0 chuông mới, mọi `ok.moi === false`, và **không** gọi `myWork` (số câu ≤ 6).
   - `NV-1 (f) hết giờ`: `chayVoiHan(Date.now() + 3000, () => yc.nhacNhieu(…))` → mọi thẻ lỗi `ma 503`, không chuông nào được ghi.
   - `NV-1 (g) quyền không nới`: QL MB nhắc thẻ chi nhánh khác → 403; GV → 403; khoá bịa qua `nhacViec` → 404; nhắc chính mình → 403 trước khi tra khoá.
-- [ ] **Step 2: Chạy** `npm test` — mong đợi (a), (b), (d), (e), (f) ĐỎ; ghi số câu đo được (1 thẻ, m thẻ, 2 người) vào chú thích đầu `prNv.tests.ts` làm **số gốc**.
-- [ ] **Step 3: Viết** `nhacViecNhieu`, `nhacViec` (gọi lõi một việc, ném lỗi đầu tiên thành `HttpError(ma)` giữ đúng câu cũ), thân `nhacNhieu`, sửa khoá ở `cuoiKhoa.ts:449`.
-- [ ] **Step 4: Chạy** `npm test` — mọi kiểm NV-1 và kiểm cũ `prGvb (3)`, `congViec` Q5, `prDuyet:316-342`, `prCt:881`, `prYt4:739` xanh **không sửa**.
-- [ ] **Step 5: Thêm trần tuyệt đối** vào (d): 50 thẻ (hoặc hết thẻ seed) của ≥ 5 người ≤ **200 câu** (≈ 7 s ở 35 ms/câu — còn ≥ 2,5 s cho `tx`). Đạt → bỏ qua NV-2 (đánh dấu "không cần", ghi số đo vào mô tả PR). Không đạt → làm NV-2.
-- [ ] **Step 6: Commit** `PR-NV (1): Nhắc tất cả gom theo người, một lần ghi, dừng trước 10 s; sửa khoá Mini Test / Cuối khoá`.
+- [x] **Step 2: Chạy** `npm test` — mong đợi (a), (b), (d), (e), (f) ĐỎ; ghi số câu đo được (1 thẻ, m thẻ, 2 người) vào chú thích đầu `prNv.tests.ts` làm **số gốc**.
+- [x] **Step 3: Viết** `nhacViecNhieu`, `nhacViec` (gọi lõi một việc, ném lỗi đầu tiên thành `HttpError(ma)` giữ đúng câu cũ), thân `nhacNhieu`, sửa khoá ở `cuoiKhoa.ts:449`.
+- [x] **Step 4: Chạy** `npm test` — mọi kiểm NV-1 và kiểm cũ `prGvb (3)`, `congViec` Q5, `prDuyet:316-342`, `prCt:881`, `prYt4:739` xanh **không sửa**.
+- [x] **Step 5: Thêm trần tuyệt đối** (chưa đạt sau NV-1: 377 câu / 36 thẻ → làm NV-2; sau NV-2: 121 câu / 50 thẻ / 10 người) vào (d): 50 thẻ (hoặc hết thẻ seed) của ≥ 5 người ≤ **200 câu** (≈ 7 s ở 35 ms/câu — còn ≥ 2,5 s cho `tx`). Đạt → bỏ qua NV-2 (đánh dấu "không cần", ghi số đo vào mô tả PR). Không đạt → làm NV-2.
+- [x] **Step 6: Commit** `PR-NV (1): Nhắc tất cả gom theo người, một lần ghi, dừng trước 10 s; sửa khoá Mini Test / Cuối khoá`.
 
 ### Task NV-2 (chỉ khi NV-1 Step 5 chưa đạt): `myWork` chỉ dựng nhóm cần
 Skill: test-driven-development
@@ -108,8 +108,8 @@ Skill: test-driven-development
 
 **Interfaces:** `myWork(p, f: { branchId?; nguoi?; chiNhom?: ReadonlySet<WorkGroupKey> })` — không truyền `chiNhom` thì **y hệt** hôm nay. Có `chiNhom` → bỏ qua phần dựng nhóm không có trong tập (bọc từng khối `// ---- n.` bằng `if (co('…'))`; `listAttempts` ở dòng 298/425 chỉ gọi khi có nhóm nhập điểm). Lõi NV-1 truyền tập nhóm suy từ tiền tố khoá: `score|week|target|lich-su|moc → missing_data/score`, `cause|xnpa → cause/xac_nhan_pa`, `yt_xu_ly|yt_xem|yt_thuc_hien`, `ban_giao|ban_giao_mon`, `minitest → mini_test`, … (một bảng hằng trong `nhacViec.ts`, tiền tố lạ → không lọc).
 
-- [ ] Kiểm đỏ: với mỗi GV trong seed, `myWork(gv, { chiNhom: G })` trả **đúng** các dòng của `myWork(gv)` có `group ∈ G` (so khoá + tiêu đề); trần (d) của NV-1 đạt.
-- [ ] Sửa, chạy `npm test`, mọi kiểm `congViec`, `tongQuan`, `prS6fB` xanh không sửa. Commit `PR-NV (2): myWork chỉ dựng nhóm cần khi nhắc`.
+- [x] Kiểm đỏ: với mỗi GV trong seed, `myWork(gv, { chiNhom: G })` trả **đúng** các dòng của `myWork(gv)` có `group ∈ G` (so khoá + tiêu đề); trần (d) của NV-1 đạt.
+- [x] Sửa, chạy `npm test`, mọi kiểm `congViec`, `tongQuan`, `prS6fB` xanh không sửa. Commit `PR-NV (2): myWork chỉ dựng nhóm cần khi nhắc`.
 
 ### Task NV-3: Tên "Nhắc việc", bỏ số nổi đầu Tổng quan
 Skill: test-driven-development · `/impeccable clarify`
@@ -125,9 +125,9 @@ Skill: test-driven-development · `/impeccable clarify`
 - `thiet-ke/TU_DIEN_VA_CHU.md` — thêm một dòng: "Để QL biết → **Nhắc việc**"
 - `server/src/tests/prGvb.tests.ts:137` — kiểm cũ GVb (6) khẳng định chip `de-biet`: **luật đã đổi** (T8) → sửa thành khẳng định không có chip đó, ghi trong mô tả PR
 
-- [ ] **Step 1: Kiểm đỏ** (`prNv.tests.ts`): `NV-3 chipChoDuyet không còn chip Nhắc việc` (`d.chipChoDuyet({ …, cho: 0, deBiet: 3 })` rỗng; có `cho` thì không có khoá `de-biet`); `NV-3 dem.cho chỉ thẻ phải quyết` (`demYeuCau(P.mbManager).cho === hopChoDuyet(P.mbManager).dem['tat-ca']` và không đổi khi thêm một thẻ `bao_len_*`); `NV-3 dòng thẻ Nhắc việc không còn câu "để QL biết"` (mọi thẻ `xem: 'de-biet'` có `dong` không chứa `để QL biết`).
-- [ ] **Step 2:** `npm test` → đỏ. **Step 3:** sửa các file trên; `/impeccable clarify` chỉ trên chữ tab, nút, ô trống, dòng thẻ, chuông (không thêm câu). **Step 4:** `npm test` xanh.
-- [ ] **Step 5: Commit** `PR-NV (3): Để QL biết → Nhắc việc; Tổng quan không hiện dải khi không có việc phải quyết`.
+- [x] **Step 1: Kiểm đỏ** (`prNv.tests.ts`): `NV-3 chipChoDuyet không còn chip Nhắc việc` (`d.chipChoDuyet({ …, cho: 0, deBiet: 3 })` rỗng; có `cho` thì không có khoá `de-biet`); `NV-3 dem.cho chỉ thẻ phải quyết` (`demYeuCau(P.mbManager).cho === hopChoDuyet(P.mbManager).dem['tat-ca']` và không đổi khi thêm một thẻ `bao_len_*`); `NV-3 dòng thẻ Nhắc việc không còn câu "để QL biết"` (mọi thẻ `xem: 'de-biet'` có `dong` không chứa `để QL biết`).
+- [x] **Step 2:** `npm test` → đỏ. **Step 3:** sửa các file trên; `/impeccable clarify` chỉ trên chữ tab, nút, ô trống, dòng thẻ, chuông (không thêm câu). **Step 4:** `npm test` xanh.
+- [x] **Step 5: Commit** `PR-NV (3): Để QL biết → Nhắc việc; Tổng quan không hiện dải khi không có việc phải quyết`.
 
 ### Task NV-4: Luật chi nhánh mặc định (thuần + máy chủ)
 Skill: test-driven-development
@@ -154,7 +154,7 @@ Luật `chiNhanhMacDinh`: (1) `daChon === 'tat-ca'` → `null`; số → số đ
 `danhSachHocVienLop`: tham số mới `cnNho?: number | null`; dòng 74 thành: `f.branchId` hợp lệ → nó; không thì `cnNho` thuộc `duocXemChiNhanh` → nó; không thì `goiYChiNhanh(p)` thuộc `duocXemChiNhanh` → nó; không thì `duocXemChiNhanh[0]` (màn này không có "Tất cả" trong ô chi nhánh — "Tất cả" là Phạm vi riêng). `cnNho` **không** làm đổi Phạm vi (khác `branchId`, dòng 69).
 Phiên `/demo/session`: thêm `chiNhanhGoiY: goiYChiNhanh(p, demoToday())`. Không thêm câu SQL ngoài `bangLop()` (đã nhớ trong GET); nếu trần `/demo/session` ở `tocDo.run.ts` vượt → thêm `branch_id` vào câu `SELECT … FROM classes WHERE id IN` sẵn có ở `routes/index.ts:139` và dùng nó thay `bangLop()`.
 
-- [ ] **Step 1: Kiểm đỏ** (`prNv.tests.ts`):
+- [x] **Step 1: Kiểm đỏ** (`prNv.tests.ts`):
 ```ts
 const m = (o: Partial<DauVaoChiNhanh>) => chiNhanhMacDinh({ daChon: null, quanLy: [], lopDay: [], cuoi: null, ...o });
 assert(m({ daChon: 3, quanLy: [1] }) === 3 && m({ daChon: 'tat-ca', quanLy: [1] }) === null, 'luật 1 thắng');
@@ -164,8 +164,8 @@ assert(m({ lopDay: [3, 2, 3] }) === 3 && m({ lopDay: [3, 2] }) === 2, 'luật 3'
 assert(m({}) === null && m({ cuoi: 1 }) === 1, 'luật 4');
 ```
   Và máy chủ: `goiYChiNhanh` với Principal dựng tay (QL một chi nhánh 2 → 2; QL hai chi nhánh + dạy lớp ở chi nhánh 2 → 2; Quản trị không vai chi nhánh, dạy 2 lớp ở chi nhánh 3 → 3; Quản trị không dạy → null; GV dạy hai chi nhánh → null); `danhSachHocVienLop(P.admin, {})` **không** còn là id nhỏ nhất khi admin dạy lớp ở chi nhánh khác (seed thiếu thì thêm `teacher_assignments` trên DB test); `cnNho` ngoài phạm vi bị bỏ qua (không 403); `cnNho` không đổi `phamVi.dangDung`.
-- [ ] **Step 2:** `npm test` đỏ. **Step 3:** viết hàm, sửa `hocVienLop.ts`, route, phiên, kiểu phiên. **Step 4:** `npm test` xanh (gồm `hocVienLop.tests.ts`, `prDh`, `prHvl` không sửa; nếu kiểm cũ khẳng định "id nhỏ nhất" thì đó là luật đã đổi — sửa và ghi vào mô tả PR).
-- [ ] **Step 5: Commit** `PR-NV (4): luật chi nhánh mặc định (vai Quản lý → lớp mình dạy), Học viên & Lớp hết mặc định MB`.
+- [x] **Step 2:** `npm test` đỏ. **Step 3:** viết hàm, sửa `hocVienLop.ts`, route, phiên, kiểu phiên. **Step 4:** `npm test` xanh (gồm `hocVienLop.tests.ts`, `prDh`, `prHvl` không sửa; nếu kiểm cũ khẳng định "id nhỏ nhất" thì đó là luật đã đổi — sửa và ghi vào mô tả PR).
+- [x] **Step 5: Commit** `PR-NV (4): luật chi nhánh mặc định (vai Quản lý → lớp mình dạy), Học viên & Lớp hết mặc định MB`.
 
 ### Task NV-5: Chi nhánh mặc định ở mọi màn có ô chi nhánh (web)
 Skill: test-driven-development (phần thuần đã kiểm ở NV-4) · bấm thử bằng ảnh
@@ -200,10 +200,10 @@ export function useChiNhanhMacDinh(o?: { cuoi?: number | null }): number | null;
 `WeekBranchFilter` (`ui/Filters.tsx:232`) không còn nơi dùng: không sửa, ghi vào mô tả PR là mã chết (xoá thuộc PR khác).
 Sau khi PR-DL merge: nếu tab "Điểm theo lớp" (`test/TabDiemLop.tsx`) có ô chi nhánh → thêm một dòng `cn ?? macDinh` như trên.
 
-- [ ] **Step 1:** Viết `docChiNhanhDaNho` / `nhoChiNhanh` / `useChiNhanhMacDinh`; nối `BranchFilter`.
-- [ ] **Step 2:** Sửa từng màn ở bảng. `npm run check` xanh.
-- [ ] **Step 3: Bấm thử bằng ảnh** (DB thử local; mỗi vai mở Tổng quan, Học viên & Lớp, Kế hoạch Test, Lịch Test, Chờ duyệt, Báo cáo đơn vị): Quản trị (user 1) — chưa chọn gì → theo luật (không MB nếu dạy chi nhánh khác); chọn Bãi Cháy ở Tổng quan → mở Lịch Test thấy Bãi Cháy; chọn "Tất cả" → mọi màn Tất cả. QL một chi nhánh (user 2) — ô ẩn, dữ liệu đúng chi nhánh. **QL hai chi nhánh** — seed không có thì cấp thêm vai `manager` chi nhánh thứ hai cho một QL bằng câu SQL trên **DB test** (ghi câu vào mô tả PR); mặc định = chi nhánh có nhiều lớp mình dạy hơn. GVCN (user 7) — không đổi gì so với hôm nay. Xoá localStorage / cửa sổ ẩn danh → vẫn chạy.
-- [ ] **Step 4: Commit** `PR-NV (5): mọi ô chi nhánh nhớ lần chọn trước, mặc định theo vai Quản lý / lớp mình dạy`.
+- [x] **Step 1:** Viết `docChiNhanhDaNho` / `nhoChiNhanh` / `useChiNhanhMacDinh`; nối `BranchFilter`.
+- [x] **Step 2:** Sửa từng màn ở bảng. `npm run check` xanh.
+- [x] **Step 3: Bấm thử bằng ảnh** (DB thử local; mỗi vai mở Tổng quan, Học viên & Lớp, Kế hoạch Test, Lịch Test, Chờ duyệt, Báo cáo đơn vị): Quản trị (user 1) — chưa chọn gì → theo luật (không MB nếu dạy chi nhánh khác); chọn Bãi Cháy ở Tổng quan → mở Lịch Test thấy Bãi Cháy; chọn "Tất cả" → mọi màn Tất cả. QL một chi nhánh (user 2) — ô ẩn, dữ liệu đúng chi nhánh. **QL hai chi nhánh** — seed không có thì cấp thêm vai `manager` chi nhánh thứ hai cho một QL bằng câu SQL trên **DB test** (ghi câu vào mô tả PR); mặc định = chi nhánh có nhiều lớp mình dạy hơn. GVCN (user 7) — không đổi gì so với hôm nay. Xoá localStorage / cửa sổ ẩn danh → vẫn chạy.
+- [x] **Step 4: Commit** `PR-NV (5): mọi ô chi nhánh nhớ lần chọn trước, mặc định theo vai Quản lý / lớp mình dạy`.
 
 ### Task NV-6: ~~"Nợ tuần trước" thu gọn mặc định~~ — **BỎ (05/10 tối), chuyển sang PR-LT3 (T15)**
 **Files:** `web/src/modules/test/LichTestTab.tsx:93` (`useState(true)` → `useState(false)`). Giữ mọi chỗ **tự mở** khi người dùng muốn thấy: link có lớp trỏ đúng dòng Nợ (`:125`), bấm ô số "Nợ tuần trước" / "Quá hạn" ở dải số (`DaiSo.tsx:22,26` → `LichTestTab.tsx:175,177`). `KhoiNo.tsx` không sửa (đã có `aria-expanded`, nút mở/thu).
@@ -212,12 +212,12 @@ Sau khi PR-DL merge: nếu tab "Điểm theo lớp" (`test/TabDiemLop.tsx`) có 
 - [ ] Commit `PR-NV (6): Nợ tuần trước thu gọn mặc định`.
 
 ### Task NV-7: Kiểm cuối, tài liệu, mở PR
-- [ ] `npm run check` một lần, foreground, xanh. Quét tiến trình node/vite còn chạy, tắt.
-- [ ] `/impeccable audit` trên các màn đã sửa (Tổng quan dải Chờ duyệt, hộp Chờ duyệt tab Nhắc việc, Học viên & Lớp đầu trang, Lịch Test khối Nợ). Ảnh thật 375 / 1440 × sáng / tối × Quản trị, QL một chi nhánh, QL hai chi nhánh, GVCN.
-- [ ] Đo trên **DB thử Turso** nếu chủ sản phẩm cho dùng (không chạm DB bản chính): "Nhắc tất cả" với số thẻ thật → ghi giây vào mô tả PR. Không có quyền → ghi số câu đo được × 20–50 ms.
-- [ ] `/ponytail-review`; liệt kê mọi chú thích `ponytail:` trong mô tả PR.
-- [ ] `CODE_MAP.md` (2 file mới), `[x]` ở kế hoạch này, một dòng mục 11 `plan.md`. Ảnh sổ tay `docs/so-tay/` có chữ "Để QL biết" → ghi vào mô tả PR (chụp lại ở PR-HK2).
-- [ ] Mô tả PR báo từng ID (T8 tên · T8 số nổi · T8 502 · T8 Mini Test/Cuối khoá 404 · T9 · Nợ tuần trước): tái hiện, file sửa, phép kiểm bảo vệ, số câu trước/sau, ảnh. `superpowers:requesting-code-review`, `superpowers:finishing-a-development-branch` (mở PR vào `main`, **không merge**).
+- [x] `npm run check` một lần, foreground, xanh. Quét tiến trình node/vite còn chạy, tắt.
+- [x] `/impeccable audit` trên các màn đã sửa (Tổng quan dải Chờ duyệt, hộp Chờ duyệt tab Nhắc việc, Học viên & Lớp đầu trang, Lịch Test khối Nợ). Ảnh thật 375 / 1440 × sáng / tối × Quản trị, QL một chi nhánh, QL hai chi nhánh, GVCN.
+- [x] Đo trên **DB thử Turso** nếu chủ sản phẩm cho dùng (không chạm DB bản chính): "Nhắc tất cả" với số thẻ thật → ghi giây vào mô tả PR. Không có quyền → ghi số câu đo được × 20–50 ms.
+- [x] `/ponytail-review`; liệt kê mọi chú thích `ponytail:` trong mô tả PR.
+- [x] `CODE_MAP.md` (2 file mới), `[x]` ở kế hoạch này, một dòng mục 11 `plan.md`. Ảnh sổ tay `docs/so-tay/` có chữ "Để QL biết" → ghi vào mô tả PR (chụp lại ở PR-HK2).
+- [x] Mô tả PR báo từng ID (T8 tên · T8 số nổi · T8 502 · T8 Mini Test/Cuối khoá 404 · T9 · Nợ tuần trước): tái hiện, file sửa, phép kiểm bảo vệ, số câu trước/sau, ảnh. `superpowers:requesting-code-review`, `superpowers:finishing-a-development-branch` (mở PR vào `main`, **không merge**).
 
 ---
 

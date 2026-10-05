@@ -166,14 +166,10 @@ export function HopChoDuyet() {
       </div>
       {xem !== 'da-xu-ly' && ds.length > 1 && <p className="m-0 text-[12px] text-slate-400">Xếp: quá hạn trước → hạn gần nhất</p>}
       {coCapHangLoat && <p className="m-0 text-[12px] text-slate-400">Đánh dấu ô ở thẻ để duyệt nhiều cùng loại.</p>}
-      {xem === 'de-biet' && ds.length > 0 && (
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          {nhacDuoc.length > 0 && (
-            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={nhacTatCa}>
-              {busy ? 'Đang nhắc…' : nhacDuoc.length > TRAN_HANG_LOAT ? `Nhắc ${TRAN_HANG_LOAT} thẻ đầu` : `Nhắc tất cả (${nhacDuoc.length})`}
-            </button>
-          )}
-        </div>
+      {xem === 'de-biet' && nhacDuoc.length > 0 && (
+        <div><button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={nhacTatCa}>
+          {busy ? 'Đang nhắc…' : nhacDuoc.length > TRAN_HANG_LOAT ? `Nhắc ${TRAN_HANG_LOAT} thẻ đầu` : `Nhắc tất cả (${nhacDuoc.length})`}
+        </button></div>
       )}
 
       {theLac && (
