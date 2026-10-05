@@ -73,6 +73,7 @@ Nếu bạn nghĩ theo "cái tôi thấy trên màn hình" chứ không theo tê
 | `thiet-ke/HE_GIAO_DIEN.md` | Trước khi dựng bất kỳ màn nào — token, component dùng chung, bốn trạng thái dữ liệu, mobile, bàn phím |
 | `thiet-ke/HOP_DONG_SO_LIEU.md` | Khi code một con số trên dashboard/báo cáo — chỉ số đó nghĩa là gì, bấm vào ra tập nào |
 | `thiet-ke/TU_DIEN_VA_CHU.md` | Khi viết hoặc sửa chữ tiếng Việt trên giao diện |
+| `thiet-ke/CHU_CAN_SUA_2026-10.md` (+ `-a-…`, `-b-…`, `-c-…`, `-d-…`) · `scripts/quet-chu.mjs` | **Danh sách chữ tiếng Việt chối tai (10/2026)**: 602 mục theo màn, mỗi mục có `file:dòng`, ai thấy, vì sao chối, cột "Đề xuất" để trống cho người/AI điền; session sửa chữ đọc file chính (mục 0–4) rồi file con. Script chạy lại quét chữ trong mã (`node scripts/quet-chu.mjs > chu-tho.jsonl`, không nằm trong `npm run check`) |
 | `thiet-ke/LUAT_CHO_CHOT.md` | Khi chạm một luật mà chủ sản phẩm chưa trả lời (C01–C09) |
 
 Hệ thống chia theo **nghiệp vụ**, không chia theo kỹ thuật. Cùng một module thì cả phần dữ
