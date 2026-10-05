@@ -18,9 +18,9 @@ type DuLieu = { lop: { id: number; code: string }; lopThuong: boolean; coTheSuaT
 type XemTruoc = { rows: { studentId: number; issues: VanDeNhap[] }[]; canhBaoMt: { studentId: number; cau: string }[] };
 
 const COT: { key: Cot; nhan: string; rong: number; so?: boolean }[] = [
-  { key: 'fullName', nhan: 'Họ và tên', rong: 190 }, { key: 'dob', nhan: 'Ngày sinh', rong: 132 },
+  { key: 'fullName', nhan: 'Họ và tên', rong: 190 }, { key: 'dob', nhan: 'Ngày sinh', rong: 168 },
   { key: 'email', nhan: 'Email', rong: 210 }, { key: 'startWeek', nhan: 'Tuần bắt đầu học', rong: 172 },
-  { key: 'examDate', nhan: 'Dự kiến thi', rong: 140 }, { key: 'target', nhan: 'Target', rong: 76, so: true },
+  { key: 'examDate', nhan: 'Dự kiến thi', rong: 168 }, { key: 'target', nhan: 'Target', rong: 76, so: true },
   { key: 'baseline', nhan: 'Điểm đầu vào', rong: 96, so: true },
 ];
 /* Ô lộ trình (tuần, dự kiến thi, Target, điểm đầu vào): em chưa có lộ trình thì không sửa được ở đây. */
@@ -149,7 +149,7 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                   <tr>
                     {cot.map((c) => (
                       <Th key={c.key} align={c.so ? 'right' : 'left'}
-                        className={c.key === 'fullName' ? 'sticky left-0 z-10 bg-[var(--surface)]' : ''}
+                        className={c.key === 'fullName' ? 'sticky-col' : ''}
                         hint={c.key === 'target' && !d.coTheSuaTarget ? 'Chỉ Quản lý đổi Target' : c.key === 'target' ? `Band 0–9, bước 0,5. Gõ ${KCK} nếu em không cam kết đầu ra.` : undefined}>
                         {c.nhan}
                       </Th>
@@ -171,7 +171,7 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                           const nhan = `${c.nhan} · ${r.fullName}`;
                           const idLoi = `loi-${r.studentId}-${c.key}`;
                           return (
-                            <td key={c.key} className={`td px-1.5 py-1.5 align-top${c.key === 'fullName' ? ' sticky left-0 z-10 bg-[var(--surface)]' : ''}`}
+                            <td key={c.key} className={`td px-1.5 py-1.5 align-top${c.key === 'fullName' ? ' sticky-col' : ''}`}
                               style={daSuaO ? { background: 'rgb(var(--chon-bg-rgb))' } : undefined}>
                               <div className="flex items-center gap-1">
                                 <span className="min-w-0 flex-1">

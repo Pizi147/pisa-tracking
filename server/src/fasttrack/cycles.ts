@@ -203,9 +203,9 @@ export function docDuKienThi(c: any, v: unknown): string | null {
 
 /** Điểm xuất phát gõ tay → số 0–9; trống / sai → 400. Chung cho `setBaseline` và PR-SL. */
 export function docDiemXuatPhat(v: unknown): number {
-  if (v === null || v === undefined || v === '') throw badRequest('Nhập điểm xuất phát hoặc chọn một bài đánh giá làm căn cứ.');
+  if (v === null || v === undefined || v === '') throw badRequest('Nhập điểm đầu vào hoặc chọn một bài đánh giá làm căn cứ.');
   const n = Number(v);
-  if (!Number.isFinite(n) || n < 0 || n > 9) throw badRequest('Điểm xuất phát phải nằm trong khoảng 0–9.');
+  if (!Number.isFinite(n) || n < 0 || n > 9) throw badRequest('Điểm đầu vào phải nằm trong khoảng 0–9.');
   return n;
 }
 
@@ -384,7 +384,7 @@ export function setBaseline(p: Principal, cycleId: number, input: {
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
   require_(p, PERMISSIONS.STUDENT_EDIT, { studentId: c.student_id },
-    'Bạn không có quyền sửa điểm xuất phát của lộ trình này.');
+    'Bạn không có quyền sửa điểm đầu vào của lộ trình này.');
   const conn = db();
 
   if (input.source === null) {
@@ -397,7 +397,7 @@ export function setBaseline(p: Principal, cycleId: number, input: {
   }
 
   if (!(BASELINE_SOURCES as readonly string[]).includes(input.source ?? '')) {
-    throw badRequest('Chọn nguồn của điểm xuất phát.');
+    throw badRequest('Chọn nguồn của điểm đầu vào.');
   }
   let score = input.score ?? null;
   let attemptId = input.attemptId ?? null;

@@ -161,7 +161,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
 
   return (
     <KhungPanel tieuDe="Thêm học viên" lop={cls?.code} rong="toan" onDong={onClose}
-      ngCanh="Chọn lớp, rồi dán từ Excel/Google Sheets hoặc gõ thẳng vào lưới"
+      ngCanh="Chọn lớp, dán từ Excel hoặc gõ vào lưới"
       chan={{
         /* Luật S3 (I1): có dòng đã gõ hoặc chữ trong ô dán → "Huỷ thay đổi". */
         daSua: !!pasteText.trim() || rows.some((r) => !dongTrong(r)), huy: { onClick: onClose, disabled: busy },
@@ -236,7 +236,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
                 ? <>Đã đọc theo dòng tiêu đề{cach.boQua.length ? ` · bỏ qua cột ${cach.boQua.join(', ')}` : ''}.</>
                 : <>Đã đọc theo mẫu Excel chung: {cach.thuTu.map((k) => nhanCotNhap(k)).join(' · ')}.{cach.boQua.length ? ` Lớp thường bỏ qua cột ${cach.boQua.join(', ')}.` : ''}</>}
               {' '}
-              <button type="button" className="link inline-flex min-h-[44px] items-center appearance-none border-0 bg-transparent p-0 text-xs align-baseline sm:min-h-0"
+              <button type="button" className="link flex min-h-[44px] items-center appearance-none border-0 bg-transparent p-0 text-xs align-baseline sm:inline-flex sm:min-h-0"
                 onClick={() => void handlePaste(daDan.text, !cach.coTieuDe)}>
                 {cach.coTieuDe ? 'Dòng đầu là học viên?' : 'Dòng đầu là tiêu đề?'}
               </button>

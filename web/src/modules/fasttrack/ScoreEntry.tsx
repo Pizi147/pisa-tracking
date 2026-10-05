@@ -547,7 +547,8 @@ export function CriteriaModal({ cell, onSave, onClose, gvMacDinh = null }: {
   const [nx, setNx] = useState(cell.nhanXet ?? '');
   const laS = cell.skill === 'speaking';
   const gvCu = gvChamThanhChon(cell.gvCham);
-  const [gv, setGv] = useState<NguoiChon | null>(gvCu ?? gvMacDinh);
+  const gv0 = gvCu ?? gvMacDinh;
+  const [gv, setGv] = useState<NguoiChon | null>(gv0);
   /* Bài đã báo "-" thì mở ra thấy '-' ở ô đầu — không phải bốn ô trống dễ nhầm với chưa nhập. */
   const [vals0] = useState<string[]>(() => (
     cell.noShow && cell.criteria.every((v) => v === null)
@@ -578,7 +579,7 @@ export function CriteriaModal({ cell, onSave, onClose, gvMacDinh = null }: {
     /* I4 (PR-SL): khung panel chung, chân luật S3 (đã gõ ô nào / đổi nhận xét / GV chấm → "Huỷ thay đổi"). */
     <KhungPanel tieuDe={`${skillLabel(cell.skill)} — bốn tiêu chí`} longTrong z="z-[60]" onDong={onClose}
       chan={{
-        daSua: vals.some((v, i) => v !== vals0[i]) || nx !== (cell.nhanXet ?? '') || (laS && !cungGvCham(gv, gvCu, session?.user?.id)),
+        daSua: vals.some((v, i) => v !== vals0[i]) || nx !== (cell.nhanXet ?? '') || (laS && !cungGvCham(gv, gv0, session?.user?.id)),
         huy: { onClick: onClose, disabled: busy },
         chinh: (
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={submit} disabled={busy || !patch} title={patch ? undefined : LOI_TIEU_CHI}>
