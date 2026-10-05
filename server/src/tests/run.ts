@@ -9098,6 +9098,9 @@ await runPrU12Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 // ==================================================================== PR-K26 (Lộ trình tiếp theo theo dải % Cuối khoá)
 const { runPrK26Tests } = await import('./prK26.tests.ts');
 await runPrK26Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+// ==================================================================== PR-NV (Nhắc việc gom theo người, khoá Mini Test / Cuối khoá)
+const { runPrNvTests } = await import('./prNv.tests.ts');
+await runPrNvTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
