@@ -476,15 +476,17 @@ export async function runPrDlTests(t: YThucTestKit) {
   check('DL-5 fix 2 nguồn: hộp lý do mở = ô chưa lưu (chỉ BaoDangLuuContext); blur trước khi xét; lỗi tải lại nền không gỡ lưới', () => {
     const se = doc('web/src/modules/fasttrack/ScoreEntry.tsx');
     const hop = se.slice(se.indexOf('export function SuaDiemCoLyDo'));
-    assert(/useBaoHopLyDoMo\(\)/.test(hop.slice(0, hop.indexOf('return ('))), 'SuaDiemCoLyDo phải gọi useBaoHopLyDoMo');
+    assert(/useBaoHopLyDoMo\(busy\)/.test(hop.slice(0, hop.indexOf('return ('))), 'SuaDiemCoLyDo phải gọi useBaoHopLyDoMo(busy)');
     for (const ten of ['setHoiLyDo(true)', '<SuaTieuChi', 'setSua(']) assert(se.includes(ten), `mọi hộp lý do đi qua SuaDiemCoLyDo: ${ten}`);
     const ss = doc('web/src/ui/SaveState.tsx');
     const hook = ss.slice(ss.indexOf('export function useBaoHopLyDoMo'), ss.indexOf('export function useTrangThaiLuuO'));
     assert(/useContext\(BaoDangLuuContext\)/.test(hook) && !/BaoLuuContext\b|useBaoLuu/.test(hook), 'chỉ báo qua BaoDangLuuContext');
+    assert(hook.includes('bao?.(khoa, dangGui, dangGui ? 0 : 1)'), 'hộp đang gửi = đang lưu; mở mà chưa gửi = chưa lưu');
     const f = doc('web/src/modules/cham/DiemTheoLop.tsx');
     assert(/activeElement[\s\S]{0,160}\.blur\(\)[\s\S]{0,40}requestAnimationFrame\(\(\) => setXet/.test(f), 'blur rồi khung sau mới xét');
     assert(f.includes('role="alert"') && !f.includes('alertdialog'), 'hộp hỏi role="alert"');
     assert(f.includes('ds.error && !ds.data') && f.includes('bang.error && !b ?'), 'ErrorState chỉ khi chưa có dữ liệu');
-    assert((f.match(/onMouseDown=\{giuHopLyDo\}/g) ?? []).length === 2, 'thanh lượt (rộng + 375) giữ hộp lý do');
+    assert((f.match(/onMouseDown=\{giuHopLyDo\}/g) ?? []).length === 3, 'thanh lượt (rộng + 375) và hộp hỏi đổi lượt giữ hộp lý do');
+    assert(/role="alert"[^>]*onMouseDown=\{giuHopLyDo\}/.test(f), 'nút "Ở lại" / "Đợi rồi chuyển" không huỷ hộp lý do');
   });
 }

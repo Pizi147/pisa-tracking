@@ -38,15 +38,14 @@ export const BaoDangLuuContext = createContext<((khoa: string, dangLuu: boolean,
 
 /**
  * HỘP LÝ DO SỬA ĐIỂM ĐANG MỞ = MỘT Ô CHƯA LƯU (PR-DL fix 2): báo CHỈ qua `BaoDangLuuContext` (bảng điểm theo lượt chặn đổi lượt),
- * không qua `BaoLuuContext` — lưới cũ không hiện thêm "n ô chưa lưu". Gọi trong hộp (chỉ gắn khi hộp mở).
+ * không qua `BaoLuuContext` — lưới cũ không hiện thêm "n ô chưa lưu". Gọi trong hộp (chỉ gắn khi hộp mở). `dangGui`: hộp đang gửi
+ * lệnh sửa → báo "đang lưu" (bấm đổi lượt ra câu "Còn ô đang lưu…"), không phải "chưa lưu".
  */
-export function useBaoHopLyDoMo() {
+export function useBaoHopLyDoMo(dangGui: boolean) {
   const bao = useContext(BaoDangLuuContext);
   const khoa = `hop-ly-do:${useId()}`;
-  useEffect(() => {
-    bao?.(khoa, false, 1);
-    return () => { bao?.(khoa, false, 0); };
-  }, [bao, khoa]);
+  useEffect(() => { bao?.(khoa, dangGui, dangGui ? 0 : 1); }, [bao, khoa, dangGui]);
+  useEffect(() => () => { bao?.(khoa, false, 0); }, [bao, khoa]);
 }
 
 /**

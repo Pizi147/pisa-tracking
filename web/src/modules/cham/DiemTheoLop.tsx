@@ -156,7 +156,7 @@ export function DiemTheoLop({ classId, luotBanDau, gon = false }: { classId: num
         )}
 
         {(h.hoi || h.chan) && (
-          <div role="alert" aria-label="Đổi lượt" className="surface-2 rounded-md px-3 py-2 text-sm flex flex-wrap items-center gap-2">
+          <div role="alert" aria-label="Đổi lượt" onMouseDown={giuHopLyDo} className="surface-2 rounded-md px-3 py-2 text-sm flex flex-wrap items-center gap-2">
             {h.hoi && dangLuu ? (
               <>
                 <span className="flex-1 min-w-0">Còn ô đang lưu. Đợi lưu xong rồi chuyển?</span>

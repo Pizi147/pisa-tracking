@@ -784,7 +784,7 @@ export function SuaDiemCoLyDo({ tieuDe, moTaCu, children, onLuu, onDong, loiGiaT
   dong.current = onDong;
   const dangLuu = useRef(false);
   /* Giá trị mới đang nằm trong hộp, chưa gửi: bảng điểm theo lượt coi là "ô chưa lưu" và chặn đổi lượt (không mất điểm đang gõ). */
-  useBaoHopLyDoMo();
+  useBaoHopLyDoMo(busy);
 
   const loiLyDo = kiemLyDo(lyDo);
   /* Câu của `kiemLyDo` đứng trước: tooltip của nút Lưu mờ luôn nói đúng câu lý do còn thiếu (RB-5). */
