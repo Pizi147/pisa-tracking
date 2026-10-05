@@ -111,13 +111,14 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
     if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); dongO(); }
     if (e.key === 'Enter' && !e.shiftKey && o?.loai !== 'tuan') { e.preventDefault(); guiO(); }
   };
+  /* PR-NV: nhắc theo THẺ (cùng đường "Nhắc tất cả") — thẻ Mini Test / Cuối khoá không có dòng Công việc nên đường theo khoá việc ra 404. */
   const nhac = async () => {
-    const khoa = yc.duLieu?.viecKey; const ownerId = yc.duLieu?.ownerId;
-    if (busy || typeof khoa !== 'string' || typeof ownerId !== 'number') return;
+    if (busy || typeof yc.duLieu?.ownerId !== 'number') return;
     setBusy(true);
     try {
-      const r = await api.post<{ daNhacLuc: string }>('/my-work/nhac', { key: khoa, ownerId });
-      setDaNhac(r.daNhacLuc);
+      const r = await api.post<{ ok: { id: number; daNhacLuc: string }[]; loi: { id: number; loi: string }[] }>('/yeu-cau/nhac-nhieu', { ids: [yc.id] });
+      if (r.loi.length || !r.ok.length) { toast.push('error', r.loi[0]?.loi ?? 'Chưa nhắc được. Thử lại sau.'); return; }
+      setDaNhac(r.ok[0].daNhacLuc);
       toast.push('ok', `Đã nhắc ${yc.duLieu?.tenGv ?? 'giáo viên'}`);
     } catch (e: any) { toast.push('error', e instanceof ApiError ? e.message : 'Mất kết nối, chưa nhắc được. Thử lại sau.'); } finally { setBusy(false); }
   };

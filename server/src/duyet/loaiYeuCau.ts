@@ -297,7 +297,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       return {
         tieuDe: `Case quá hạn xác nhận nguyên nhân${x?.topic ? ` · ${caseTopicLabel(x.topic)}` : ''}`,
         phu: x?.ten_gv ? `GVBM ${x.ten_gv}` : null,
-        dong: ['Không cần duyệt — để QL biết và nhắc.'],
+        dong: [],
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, { caseId: yc.doi_tuong_id }) : undefined,
         duLieu: { tenGv: x?.ten_gv ?? null, daNhacLuc: x?.da_nhac ?? null, ownerId: x?.owner_user_id ?? null },
       };
@@ -407,7 +407,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       return {
         tieuDe: `Ý thức quá hạn · ${l?.ngan ?? (yc.ly_do || 'đã hết quá hạn')}`,
         phu: x?.ten_gv ? `GVCN ${x.ten_gv}` : null,
-        dong: ['Không cần duyệt — để QL biết và nhắc.'],
+        dong: [],
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, { tab: 'y-thuc' }) : undefined,
         duLieu: { tenGv: x?.ten_gv ?? null, daNhacLuc: x?.da_nhac ?? null, ownerId: x?.owner ?? null },
       };
@@ -479,7 +479,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       return {
         tieuDe: `Bàn giao quá hạn${x?.lop ? ` · ${x.lop}` : ''}`,
         phu: x?.ten_gv ? `GVCN ${x.ten_gv}` : 'Lớp chưa có GVCN',
-        dong: [`${x?.n ?? 0} em chưa được xác nhận bàn giao (hạn hết ${ngay(yc.han_duyet, ngu)}). Em vẫn chuyển đúng tuần — không cần duyệt, để QL biết và nhắc.`],
+        dong: [`${x?.n ?? 0} em chưa được xác nhận bàn giao (hạn hết ${ngay(yc.han_duyet, ngu)}).`],
         mo: `/hoc-vien/lop/${yc.doi_tuong_id}?viec=ban-giao`,
         duLieu: { tenGv: x?.ten_gv ?? null, daNhacLuc: x?.da_nhac ?? null, ownerId: x?.owner ?? null },
       };
@@ -528,7 +528,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       const x = ngu.them.get(yc.id);
       return {
         tieuDe: `Lớp hết khoá · chưa có quyết định chuyển lớp${x?.lop ? ` · ${x.lop}` : ''}`,
-        dong: [`${x?.n ?? 0} em chưa có quyết định chuyển lớp. Không cần duyệt — Quản lý quyết định chuyển lớp ở hồ sơ lớp.`],
+        dong: [`${x?.n ?? 0} em chưa có quyết định chuyển lớp.`],
         mo: `/hoc-vien/lop/${yc.doi_tuong_id}?viec=chuyen-tiep`,
       };
     },
@@ -590,7 +590,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       return {
         tieuDe: `Mini Test chưa đạt${pt ? ` · ${pt}` : ''}`,
         phu: x?.full_name ?? null,
-        dong: [`Mini Test ${pt} ngày ${ngay(x?.ngay_lam, ngu)} (cần từ 70%) — Case để mở, Quản lý xử lý từng trường hợp.`, 'Không cần duyệt — để QL biết và nhắc.'],
+        dong: [`Mini Test ${pt} ngày ${ngay(x?.ngay_lam, ngu)} (cần từ 70%) — Case để mở, Quản lý xử lý từng trường hợp.`],
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, x?.case_id ? { caseId: x.case_id } : undefined) : undefined,
       };
     },
@@ -609,7 +609,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       return {
         tieuDe: 'Cuối khoá dời quá tuần cuối khoá',
         phu: x?.full_name ?? null,
-        dong: [`Bài Cuối khoá bị dời tới ${x?.week_start ? tuanLich(x.week_start, ngu.homNay) : 'tuần sau'} — sau tuần cuối khoá của lớp.`, 'Không cần duyệt — để QL biết và nhắc.'],
+        dong: [`Bài Cuối khoá bị dời tới ${x?.week_start ? tuanLich(x.week_start, ngu.homNay) : 'tuần sau'} — sau tuần cuối khoá của lớp.`],
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id) : undefined,
       };
     },

@@ -9,10 +9,10 @@ export function QuaHan({ ngay, gon }: { ngay: number | null; gon?: boolean }) {
   return <span className="whitespace-nowrap font-bold text-late">⚠ {nhanQuaHan(ngay, gon)}</span>;
 }
 
-export type ToneNhan = 'ok' | 'done' | 'bad' | 'soon' | 'doing' | 'wait' | 'muted';
+export type ToneNhan = 'ok' | 'done' | 'bad' | 'late' | 'soon' | 'doing' | 'wait' | 'muted';
 
 const NHAN: Record<ToneNhan, string> = {
-  ok: 'bg-ok-bg text-ok', done: 'bg-done-bg text-done', bad: 'bg-bad-bg text-bad', soon: 'bg-soon-bg text-soon',
+  ok: 'bg-ok-bg text-ok', done: 'bg-done-bg text-done', bad: 'bg-bad-bg text-bad', late: 'bg-late-bg text-late', soon: 'bg-soon-bg text-soon',
   doing: 'bg-doing-bg text-doing', wait: 'bg-wait-bg text-wait', muted: 'bg-muted-bg text-muted',
 };
 
@@ -21,7 +21,7 @@ export { TONE_TRANG_THAI };
 
 /**
  * MỘT BADGE = MỘT TRẠNG THÁI NGẮN (≤ 3 từ + số; B-1). Xanh dương = đang chạy · tím = chờ (`TONE_TRANG_THAI`) · vàng = cần chú ý ·
- * xám = chưa bắt đầu, thông tin · xanh lá = ổn · đỏ = chỉ SOS 3 và "Chưa đạt" · viền đứt (`dut`) = số tạm.
+ * xám = chưa bắt đầu, thông tin · xanh lá = ổn · đỏ = chỉ SOS 3 và "Chưa đạt" · đỏ cam = quá hạn (luôn kèm ⚠) · viền đứt (`dut`) = số tạm.
  * Có `onClick` thì là nút (≥ 28px cao; điện thoại nới vùng bấm ẩn lên 44px — PR-HK1 K3); không thì chỉ là chữ.
  */
 export function Nhan({ tone, dut, title, onClick, children }: {

@@ -134,12 +134,12 @@ export async function runPrGvbTests(t: YThucTestKit) {
   });
 
   // ---------------------------------------------------------------- GVb-6, 7, 8: chip dải Tổng quan, tone chờ chấm, Bị từ chối
-  check('GVb (6) · J5: chipChoDuyet — phân loại 0 bỏ; Để QL biết là chip riêng mở ?xem=de-biet; không còn câu "gồm … (…)"', () => {
+  check('GVb (6) · J5: chipChoDuyet — phân loại 0 bỏ; PR-NV (T8): không còn chip Nhắc việc (Để QL biết); không còn câu "gồm … (…)"', () => {
     const dem = { cho: 4, quaHan: 1, baoLen: 3, deBiet: 3, deBietQuaHan: 1, cuaToiCho: 0, cuaToiTuChoi: 0,
       chip: { 'tat-ca': 4, 'hoc-thuat': 3, 'y-thuc': 0, 'lich-thi': 1, 'thong-tin-hv': 0, 'bao-len': 0 } } as any;
     const c = d.chipChoDuyet(dem);
-    assert(c.map((x) => `${x.nhan} ${x.so}`).join(' | ') === 'Học thuật 3 | Lịch thi 1 | Quá hạn 1 | Để QL biết 3', c.map((x) => `${x.nhan} ${x.so}`).join(' | '));
-    assert(c.find((x) => x.key === 'de-biet')!.den === '?xem=de-biet' && c.find((x) => x.key === 'qua-han')!.den === '?qua-han=1', JSON.stringify(c));
+    assert(c.map((x) => `${x.nhan} ${x.so}`).join(' | ') === 'Học thuật 3 | Lịch thi 1 | Quá hạn 1', c.map((x) => `${x.nhan} ${x.so}`).join(' | '));
+    assert(!c.some((x) => x.key === 'de-biet') && c.find((x) => x.key === 'qua-han')!.den === '?qua-han=1', JSON.stringify(c));
     assert(!('dongPhuChoDuyet' in d), 'hàm câu tóm tắt cũ còn sót');
   });
 

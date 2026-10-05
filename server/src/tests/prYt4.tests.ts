@@ -642,7 +642,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(ds.length === 1 && ds[0].trang_thai === 'cho' && ds[0].han_duyet === null && JSON.parse(ds[0].du_lieu).viecKey === `yt_xu_ly:${sid}`
       && JSON.parse(ds[0].du_lieu).ownerId === gvcn.userId, JSON.stringify(ds));
     const the = yc.hopChoDuyet(P.mbManager, { studentId: sid, xem: 'de-biet' }).the.find((x: any) => x.loai === 'bao_len_y_thuc');   // PR-GVb (J5b): Báo QL tách khỏi tab Chờ duyệt → tab Để QL biết
-    assert(the.tieuDe === 'Ý thức quá hạn · 3 vi phạm chưa xử lý' && the.kieuNut === 'nhac' && the.dong[0] === 'Không cần duyệt — để QL biết và nhắc.', JSON.stringify(the));
+    assert(the.tieuDe === 'Ý thức quá hạn · 3 vi phạm chưa xử lý' && the.kieuNut === 'nhac' && !the.dong.length, JSON.stringify(the));   // PR-NV (T8): bỏ câu "Không cần duyệt — để QL biết và nhắc."
   });
   check('YT4 (5) · Báo QL tự đóng khi hết lý do (xử lý xong) — "Việc gốc đã xong"; em Tạm dừng không Báo QL (T65)', () => {
     const sid = hv(); const ids = ba3(sid, addDays(TODAY, -12));

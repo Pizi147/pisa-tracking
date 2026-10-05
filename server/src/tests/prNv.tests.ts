@@ -151,10 +151,15 @@ export async function runPrNvTests(t: YThucTestKit) {
     const coNhom = new Set<string>();
     for (const { id } of nguoi) {
       const p = loadPrincipal(id);
-      const du = mw.myWork(p).items as any[];
-      for (const i of du) coNhom.add(i.group);
+      const du = (mw.myWork(p).items ?? []) as any[];
+      for (const i of du) {
+        coNhom.add(i.group);
+        /* Bảng tiền tố → nhóm (`nhacViec.ts`) phải khớp nhóm thật — sai thì lọc mất dòng, Nhắc ra 404 nhầm. */
+        const g = nv.nhomCuaKhoa([i.key]);
+        assert(!g || g.has(i.group), `khoá ${i.key} thuộc nhóm ${i.group}, bảng tiền tố nói ${g && [...g]}`);
+      }
       for (const G of tap) {
-        const loc = mw.myWork(p, { chiNhom: new Set(G) }).items as any[];
+        const loc = (mw.myWork(p, { chiNhom: new Set(G) }).items ?? []) as any[];
         const can_ = dong(du.filter((i) => G.includes(i.group)));
         assert(dong(loc) === can_, `người ${id}, nhóm ${G.join('+')}:\nlọc:\n${dong(loc)}\ncần:\n${can_}`);
       }
@@ -171,6 +176,22 @@ export async function runPrNvTests(t: YThucTestKit) {
     const n = trongBoNho(() => { yc.quetYeuCau(TODAY); return dem(() => { r = yc.nhacNhieu(P.admin, ids); }); });
     assert(nhacHomNay().length === truoc && r.ok.length > 0 && r.ok.every((x: any) => !x.moi), JSON.stringify(r));
     assert(n <= 6, `nhắc lại ${n} câu`);
+  });
+
+  check('NV-1 (h) · người được nhắc đã gỡ vai (myWork không có dòng): việc của người đó 404, phần còn lại của lô vẫn nhắc', () => {
+    const ds = theCho().filter((r) => !['bao_len_mini_test', 'bao_len_cuoi_khoa'].includes(r.loai));
+    const a = ds[0];
+    const b = ds.find((r) => r.du.ownerId !== a?.du.ownerId);
+    assert(a && b, 'seed cần thẻ của hai người');
+    const vai = conn.prepare(`SELECT id FROM user_roles WHERE user_id = ? AND status = 'active'`).all(a.du.ownerId) as any[];
+    conn.prepare(`UPDATE user_roles SET status = 'inactive' WHERE user_id = ? AND status = 'active'`).run(a.du.ownerId);
+    try {
+      xoaNhac();
+      const r = yc.nhacNhieu(P.admin, [a.id, b.id]);
+      assert(r.loi.some((l: any) => l.id === a.id && l.ma === 404) && r.ok.some((x: any) => x.id === b.id), JSON.stringify(r));
+    } finally {
+      for (const v of vai) conn.prepare(`UPDATE user_roles SET status = 'active' WHERE id = ?`).run(v.id);
+    }
   });
 
   check('NV-1 (f) · sắp hết giờ: mọi thẻ lỗi 503 "Chưa kịp nhắc", không chuông nào được ghi', () => {
@@ -197,4 +218,87 @@ export async function runPrNvTests(t: YThucTestKit) {
   });
 
   for (const [id, h] of hanCu) conn.prepare('UPDATE sos_cases SET han_xac_nhan = ? WHERE id = ?').run(h, id);
+
+  // ---------------------------------------------------------------- NV-3: Nhắc việc không nổi ở Tổng quan, bỏ câu giải thích
+  check('NV-3 · chipChoDuyet không còn chip Nhắc việc; chỉ có việc nhắc → không chip nào (dải ẩn)', () => {
+    const goc = { quaHan: 0, baoLen: 3, deBiet: 3, deBietQuaHan: 1, cuaToiCho: 0, cuaToiTuChoi: 0 };
+    assert(d.chipChoDuyet({ ...goc, cho: 0, chip: { 'tat-ca': 0 } }).length === 0, 'cho = 0 vẫn có chip');
+    const c = d.chipChoDuyet({ ...goc, cho: 2, quaHan: 1, chip: { 'tat-ca': 2, 'lich-thi': 2 } });
+    assert(!c.some((x: any) => x.key === 'de-biet') && c.some((x: any) => x.key === 'qua-han'), JSON.stringify(c));
+  });
+
+  check('NV-3 · dem.cho chỉ thẻ phải quyết = chip Tất cả; thẻ Nhắc việc không còn câu "để QL biết / không cần duyệt"', () => {
+    const dem = yc.demYeuCau(P.mbManager);
+    assert(dem.cho === yc.hopChoDuyet(P.mbManager, {}).dem['tat-ca'], `cho ${dem.cho}`);
+    const biet = yc.hopChoDuyet(P.admin, { xem: 'de-biet' }).the;
+    assert(biet.length > 0, 'seed cần thẻ Nhắc việc');
+    const sai = biet.filter((x: any) => x.dong.some((s: string) => /để QL biết|không cần duyệt/i.test(s)));
+    assert(!sai.length, JSON.stringify(sai.map((x: any) => [x.loai, x.dong])));
+  });
+
+  check('NV-3 · hết giờ giữa chừng: "Đã nhắc 30/50 — 20 chưa nhắc, bấm lại" (chủ sản phẩm 05/10)', () => {
+    const l = (n: number, ma: number) => Array.from({ length: n }, () => ({ ma, loi: 'x' }));
+    const a = d.tomTatKetQuaHangLoat('nhac', 30, l(20, 503));
+    assert(a === 'Đã nhắc 30/50 — 20 chưa nhắc, bấm lại', a);
+    const b = d.tomTatKetQuaHangLoat('nhac', 28, [...l(20, 503), ...l(2, 404)]);
+    assert(b === 'Đã nhắc 28/50 — 2 không còn, 20 chưa nhắc, bấm lại', b);
+  });
+
+  // ---------------------------------------------------------------- NV-4: chi nhánh mặc định
+  check('NV-4 · chiNhanhMacDinh: lần chọn trước → vai Quản lý → lớp mình dạy → cuối; hoà → id nhỏ', () => {
+    const m = (o: any) => d.chiNhanhMacDinh({ daChon: null, quanLy: [], lopDay: [], cuoi: null, ...o });
+    assert(m({ daChon: 3, quanLy: [1] }) === 3 && m({ daChon: 'tat-ca', quanLy: [1] }) === null, 'luật 1 thắng');
+    assert(m({ quanLy: [2], lopDay: [1, 1] }) === 2, 'luật 2 trước luật 3');
+    assert(m({ quanLy: [1, 2], lopDay: [2, 2, 1] }) === 2 && m({ quanLy: [2, 1] }) === 1, 'QL hai chi nhánh: nhiều lớp hơn, hoà → id nhỏ');
+    assert(m({ lopDay: [3, 2, 3] }) === 3 && m({ lopDay: [3, 2] }) === 2, 'luật 3');
+    assert(m({}) === null && m({ cuoi: 1 }) === 1, 'luật 4');
+  });
+
+  const hvl = await import('../classes/hocVienLop.ts');
+  const lopTheoCn = new Map<number, number[]>();
+  for (const r of conn.prepare(`SELECT id, branch_id FROM classes WHERE status = 'active' AND branch_id IS NOT NULL ORDER BY id`).all() as any[]) {
+    lopTheoCn.set(r.branch_id, [...(lopTheoCn.get(r.branch_id) ?? []), r.id]);
+  }
+  const cnCoLop = [...lopTheoCn.keys()].sort((a, b) => a - b);
+
+  check('NV-4 · goiYChiNhanh: QL theo vai, QL hai chi nhánh theo lớp dạy, Quản trị theo lớp dạy, không dạy → null, GV → null', () => {
+    assert(cnCoLop.length >= 2, 'seed cần ≥ 2 chi nhánh có lớp');
+    const [c1, c2] = [cnCoLop[0], cnCoLop[cnCoLop.length - 1]];
+    const gan = (cls: number[]) => cls.map((classId, i) => ({ id: -1 - i, classId, skill: null, isCore: true, effectiveFrom: '2000-01-01', effectiveTo: null }));
+    const nguoi = (roleKeys: string[], grants: { roleKey: string; branchId: number | null }[], assignments: any[] = []) =>
+      ({ userId: -1, code: 'X', fullName: 'X', title: null, roleKeys, assignments,
+        grants: grants.map((g) => ({ ...g, branchName: null, permissions: new Set<string>() })) }) as any;
+    const g = (p: any) => trongBoNho(() => hvl.goiYChiNhanh(p, TODAY));
+    assert(g(nguoi(['manager'], [{ roleKey: 'manager', branchId: c2 }])) === c2, 'QL một chi nhánh');
+    const day2 = gan((lopTheoCn.get(c2) ?? []).slice(0, 2));
+    assert(g(nguoi(['manager'], [{ roleKey: 'manager', branchId: c1 }, { roleKey: 'manager', branchId: c2 }], day2)) === c2, 'QL hai chi nhánh dạy ở c2');
+    assert(g(nguoi(['system_admin'], [{ roleKey: 'system_admin', branchId: null }], day2)) === c2, 'Quản trị dạy lớp c2');
+    assert(g(nguoi(['system_admin'], [{ roleKey: 'system_admin', branchId: null }])) === null, 'Quản trị không dạy → Tất cả');
+    const hai = gan([lopTheoCn.get(c1)![0], lopTheoCn.get(c2)![0]]);
+    assert(g(nguoi(['teacher'], [{ roleKey: 'teacher', branchId: c1 }, { roleKey: 'teacher', branchId: c2 }], hai)) === null, 'GV dạy hai chi nhánh');
+    const het = [{ ...day2[0], effectiveTo: t.addDays(TODAY, -1) }];
+    assert(g(nguoi(['system_admin'], [{ roleKey: 'system_admin', branchId: null }], het)) === null, 'phân công đã hết hiệu lực không tính');
+  });
+
+  check('NV-4 · Học viên & Lớp: Quản trị dạy lớp chi nhánh khác không còn mặc định chi nhánh id nhỏ nhất; cnNho ngoài phạm vi bỏ qua; cnNho không đổi Phạm vi', () => {
+    const c2 = cnCoLop[cnCoLop.length - 1];
+    const lop = lopTheoCn.get(c2)![0];
+    const r = conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at)
+      VALUES (?, ?, NULL, 0, '2000-01-01', 'active', ?)`).run(P.admin.userId, lop, TODAY);
+    try {
+      const admin = loadPrincipal(P.admin.userId);
+      const tr = trongBoNho(() => hvl.danhSachHocVienLop(admin, { phamVi: 'chi-nhanh' }));
+      assert(tr.phamVi.chiNhanh === c2, `Quản trị dạy ở ${c2}: ${tr.phamVi.chiNhanh}`);
+      const nho = trongBoNho(() => hvl.danhSachHocVienLop(admin, { phamVi: 'chi-nhanh', cnNho: cnCoLop[0] }));
+      assert(nho.phamVi.chiNhanh === cnCoLop[0], 'cnNho thắng gợi ý');
+      const pv0 = trongBoNho(() => hvl.danhSachHocVienLop(admin, {})).phamVi.dangDung;
+      assert(trongBoNho(() => hvl.danhSachHocVienLop(admin, { cnNho: c2 })).phamVi.dangDung === pv0, 'cnNho đổi Phạm vi');
+    } finally {
+      conn.prepare('DELETE FROM teacher_assignments WHERE id = ?').run(r.lastInsertRowid);
+    }
+    const mb = P.mbManager.grants.find((x: any) => x.roleKey === 'manager')!.branchId;
+    const ngoai = cnCoLop.find((b) => b !== mb)!;
+    const q = trongBoNho(() => hvl.danhSachHocVienLop(P.mbManager, { phamVi: 'chi-nhanh', cnNho: ngoai }));
+    assert(q.phamVi.chiNhanh !== ngoai, `QL MB nhận chi nhánh ngoài phạm vi ${ngoai}`);
+  });
 }

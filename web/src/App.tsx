@@ -38,7 +38,7 @@ const ThanhPhanDemo = import.meta.env.DEV ? lazy(() => import('./modules/dev/Tha
  * Mục đang sáng tính theo khu vực của đường dẫn (`khuVucCuaDuong`), nên màn nhập điểm vẫn sáng mục Test.
  */
 /**
- * SỐ CẠNH MỤC "CÔNG VIỆC" — Quản lý (PR-DUYET K1-44, Q10): số thẻ PHẢI QUYẾT (= chip "Tất cả" tab Chờ duyệt, `demHop`; PR-GVb J5b: không gồm Để QL biết), đỏ khi có thẻ quá hạn.
+ * SỐ CẠNH MỤC "CÔNG VIỆC" — Quản lý (PR-DUYET K1-44, Q10): số thẻ PHẢI QUYẾT (= chip "Tất cả" tab Chờ duyệt, `demHop`; PR-GVb J5b: không gồm tab Nhắc việc), đỏ khi có thẻ quá hạn.
  * Giáo viên (PR-VAI-a V2, Q16): số việc QUÁ HẠN của chính mình (`/my-work` → `summary.overdue`, PR-S6F-b D14), luôn đỏ. Thanh trên và thanh dưới cùng một số.
  */
 type SoBadge = { n: number; quaHan: boolean; sr: string } | null;

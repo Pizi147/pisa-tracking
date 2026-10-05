@@ -36,7 +36,7 @@ const NHOM_CUA_TIEN_TO: Record<string, WorkGroupKey> = {
   mgmt: 'mgmt',
 };
 /** Tập nhóm cho các khoá; có tiền tố lạ → undefined (dựng đủ). */
-function nhomCuaKhoa(keys: readonly string[]): Set<WorkGroupKey> | undefined {
+export function nhomCuaKhoa(keys: readonly string[]): Set<WorkGroupKey> | undefined {
   const out = new Set<WorkGroupKey>();
   for (const k of keys) {
     const g = Object.hasOwn(NHOM_CUA_TIEN_TO, k.split(':')[0]) ? NHOM_CUA_TIEN_TO[k.split(':')[0]] : undefined;
@@ -126,7 +126,8 @@ export function nhacViecNhieu(p: Principal, ds: readonly ViecCanNhac[], o: { boQ
           const target = loadPrincipal(ownerId);
           ten = target.fullName;
           const chiNhom = nhomCuaKhoa(cua.filter((v) => !v.ngoaiMyWork).map((v) => v.key));
-          dong = new Map((myWork(target, { chiNhom }) as any).items.map((it: any) => [it.key, it]));
+          /* Người không còn phạm vi (gỡ vai): `myWork` không có `items` → mọi việc 404, không làm hỏng cả lô. */
+          dong = new Map(((myWork(target, { chiNhom }) as any).items ?? []).map((it: any) => [it.key, it]));
         } catch (e) { loiNguoi = e; }
       }
       for (const v of cua) {
