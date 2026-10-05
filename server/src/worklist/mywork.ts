@@ -272,7 +272,11 @@ function nhanDot(kind: string | null | undefined, no: number | null | undefined,
   return nhanDotNgan(kind, no) ?? macDinh;
 }
 
-export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi' | 'tat-ca' } = {}) {
+/**
+ * `chiNhom` (PR-NV, NV-2): chỉ dựng các nhóm trong tập — dùng khi Nhắc (`nhacViec.ts`) tra lại MỘT vài dòng của người được nhắc.
+ * Kết quả = đúng các dòng của `myWork(p)` thuộc nhóm đó (phép kiểm NV-2). Không truyền thì y hệt trước.
+ */
+export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi' | 'tat-ca'; chiNhom?: ReadonlySet<WorkGroupKey> } = {}) {
   const today = demoToday();
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   if (scope.none) return { summary: { total: 0, overdue: 0, today: 0 }, groups: [], scopeEmpty: true, xemNguoiKhac: false };
@@ -280,6 +284,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   const conn = db();
   quetYeuCau(today);   // PR-DUYET (K5-17): thẻ chết tự đóng, Báo QL tự tạo — một lần mỗi request
   const items: WorkItem[] = [];
+  const co = (...g: WorkGroupKey[]) => !f.chiNhom || g.some((x) => f.chiNhom!.has(x));
   /*
    * Chương trình + cách chấm của MỌI lớp, nạp lười (MH2 tên môn, MH4 khung) — dùng lại bảng lớp và bảng chương trình
    * đã nhớ trong request (`bangLop`, `allProgrammes`), không thêm câu SQL. ponytail: cả bảng lớp (vài trăm dòng).
@@ -295,7 +300,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   };
   const ctCua = (classId: number | null | undefined) => lopCua(classId)?.ct ?? null;
   /* PR-UXF-a T65: em Tạm dừng không sinh việc nhập điểm. */
-  const attempts = listAttempts(p, { branchId: f.branchId ?? undefined, chiDangHoc: true }).rows
+  const attempts = !co('score', 'missing_data') ? [] : listAttempts(p, { branchId: f.branchId ?? undefined, chiDangHoc: true }).rows
     .filter((a: any) => a.status !== 'cancelled');
   /*
    * PR-Ra: "Tất cả trong phạm vi" (Q1) — chỉ người xem được người khác (Quản lý/Quản trị) mới
@@ -421,7 +426,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   items.push(...gomBaiChuaCham(minhDongs));
 
   /* PR-Ra Q1: "Tất cả trong phạm vi" cộng thêm bài chưa chấm của GIÁO VIÊN KHÁC trong phạm vi. */
-  if (tatCa) {
+  if (tatCa && co('score')) {
     const managedAttempts = listAttempts(p, { branchId: f.branchId ?? undefined, scope: 'managed', chiDangHoc: true }).rows
       .filter((a: any) => a.status !== 'cancelled');
     const classIds = [...new Set(managedAttempts.map((a: any) => a.classId).filter((x: any): x is number => x !== null))];
@@ -446,8 +451,11 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * PR-DUYET: đề xuất PA và đề nghị dời lịch lần 2 KHÔNG còn là dòng việc — chúng là thẻ ở hộp Chờ duyệt (một nơi, K1-01/K1-32).
    * Hai lời quét ở đường đọc giữ nguyên: hết hạn duyệt → huỷ phần thi (mục 10.6); chốt "không dự thi" cuối Chủ nhật (PR-G).
    */
-  sweepExpiredMoves();
-  settleNoShows();
+  /* ponytail: Nhắc (`chiNhom`) bỏ hai lời quét ghi này — GET kế tiếp quét; dòng Nhắc tra chỉ cần tồn tại, chưa từng phụ thuộc quét. */
+  if (!f.chiNhom) {
+    sweepExpiredMoves();
+    settleNoShows();
+  }
 
   // ------------------------------------------- 2b. GHI KẾT QUẢ PA HẰNG TUẦN (K5-02, T75, §5.6) — một PA một dòng
   /*
@@ -456,7 +464,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * `action:{id}` để "đã nhắc hôm nay" của nút Nhắc khớp qua các PR (K5-12). QL chỉ thấy dòng của người khác khi đã quá hạn.
    */
   const reviewedCases = new Set<number>();
-  const ghiKetQua = conn
+  const ghiKetQua = !co('ghi_ket_qua_pa', 'no_plan') ? [] : conn   // `reviewedCases` của 2b loại Case khỏi `no_plan`
     .prepare(
       `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.action_due, iv.followup_due, iv.preset, iv.nhom_bo_tro,
               iv.performer_user_id, iv.performer_name, COALESCE(iv.performer_user_id, sc.owner_user_id) AS owner_id,   -- PR-Dọn: cùng người giữ việc với chỉ số pa-can-cap-nhat
@@ -540,7 +548,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   /* PR-CT (Q30-4, Q13): từ tuần Cuối khoá, mỗi lớp thường còn em CHƯA CÓ LỆNH chuyển → một việc của Quản lý (chưa quyết = chưa có lệnh). */
   /* PR-S5F-a: từ tuần Cuối khoá theo HÔM NAY (Quản lý dời Cuối khoá sớm thì các tuần sau đó vẫn cần lệnh), không theo chặng lớp.
      PR-VAI-a: cùng hàm `lopChoLenhChuyen` với chỉ số `hv-chua-co-lenh-chuyen` ở Cần xử lý. */
-  for (const { classId, code, pr, emIds } of lopChoLenhChuyen(p, f.branchId ?? null, today)) {
+  for (const { classId, code, pr, emIds } of co('placement') ? lopChoLenhChuyen(p, f.branchId ?? null, today) : []) {
     const nChua = emIds.length;
     items.push({
       key: `class:${classId}`, group: 'placement', urgency: 'normal',
@@ -559,7 +567,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   }
 
   // ------------------------------------------------- 2e. bàn giao (PR-CT, Q30-2): GVCN một việc mỗi lớp nguồn, GVBM một việc mỗi (lớp, môn)
-  for (const v of viecBanGiao(p.userId, f.branchId)) {
+  for (const v of co('ban_giao') ? viecBanGiao(p.userId, f.branchId) : []) {
     const han = v.han || null;
     const chung = {
       group: 'ban_giao' as const, urgency: urgencyOf(han, today), studentId: null, studentName: `Lớp ${v.code}`, classId: v.lopId, classCode: v.code,
@@ -584,7 +592,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   }
 
   // ------------------------------------------------- 4. vấn đề mở mà chưa có phương án nào
-  const caseRows = conn
+  const caseRows = !co('no_plan') ? [] : conn
     .prepare(
       `SELECT sc.*,
               COALESCE(sc.student_id, a.student_id) AS eff_student_id,
@@ -679,7 +687,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
          LEFT JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active'
          LEFT JOIN classes ac ON ac.id = a.class_id
          LEFT JOIN classes cc ON cc.id = cur.class_id`;
-  const causeCandidates = conn
+  const causeCandidates = !co('cause') ? [] : conn
     .prepare(
       `SELECT ${cotCase} FROM sos_cases sc ${noiCase}
         WHERE sc.status != 'done' AND ${HV_DANG_HOC_SQL('s')}
@@ -687,7 +695,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     )
     .all() as any[];
   const waiting = new Set(awaitingCauseCaseIds(causeCandidates.map((c) => c.id as number)));
-  const xacNhanPa = conn
+  const xacNhanPa = !co('xac_nhan_pa') ? [] : conn
     .prepare(
       `SELECT ${cotCase}, iv.id AS iv_id FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id ${noiCase}
         WHERE ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND iv.kind != 'bo_tro' AND sc.status != 'done' AND ${HV_DANG_HOC_SQL('s')}   /* PA bổ trợ chờ kế hoạch, không chờ "Xác nhận PA" (M8) */
@@ -739,7 +747,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * Kế hoạch: nhóm có ≥ 1 Case ĐÃ có nguyên nhân, PA còn chờ, chưa có thẻ chờ/đã duyệt (`YC_KE_HOACH`). Người thấy: người dạy bổ trợ (đủ `quyenBoTro`),
    * hoặc Quản lý ở "Tất cả trong phạm vi". Hạn = MIN(han_ke_hoach) của nhóm (M-05: 3 ngày, tính cả ngày đầu).
    */
-  const keHoach = conn
+  const keHoach = !co('ke_hoach_bo_tro') ? [] : conn
     .prepare(
       `SELECT iv.id, iv.case_id, iv.nhom_bo_tro, iv.han_ke_hoach, iv.performer_user_id, iv.performer_name, sc.topic, sc.attempt_id,
               COALESCE(sc.student_id, a.student_id) AS eff_student_id, COALESCE(a.class_id, cur.class_id) AS eff_class_id,
@@ -781,7 +789,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     });
   }
   /* Báo phụ huynh qua TVV: GVCN lớp em ĐANG học (và Quản lý ở "Tất cả trong phạm vi"); KHÔNG hạn (M-05), không tính quá hạn. */
-  const baoPh = conn
+  const baoPh = !co('phoi_hop') ? [] : conn
     .prepare(
       `SELECT x.id, x.attempt_id, x.student_id, s.full_name, a.attempt_no, a.kind AS attempt_kind, cur.class_id AS cur_class_id, c.code AS class_code, c.branch_id,
               (SELECT ta.user_id FROM teacher_assignments ta WHERE ta.class_id = cur.class_id AND ta.is_core = 1 AND ta.status = 'active' ORDER BY ta.id LIMIT 1) AS gvcn_id
@@ -819,7 +827,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * PR-VAI-a (K5-10, Q14): PHỐI HỢP SOS là việc thật — một dòng mỗi lớp GVCN chủ nhiệm còn lượt chưa xong, đếm bằng CHÍNH
    * `myCoordinationLines` (cùng số với tab Phối hợp của lớp). Không hạn, không tô quá hạn (P10). Thay dòng "nhắc mềm" cũ ở web.
    */
-  for (const l of myCoordinationLines(p)) {
+  for (const l of co('phoi_hop_sos') ? myCoordinationLines(p) : []) {
     if (f.branchId && bangLop().get(l.classId)?.branchId !== f.branchId) continue;
     items.push({
       key: `phoi_hop_sos:${l.classId}`, group: 'phoi_hop_sos', urgency: 'normal',
@@ -832,7 +840,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     });
   }
   /* PR-LT2b (K5 §3 #10): Ghi Mini Test — người làm = người dạy bổ trợ (có tài khoản), không có thì GVCN lớp em ĐANG học. Hết khi đã ghi; em Tạm dừng ẩn (T65). */
-  const miniTest = conn
+  const miniTest = !co('mini_test') ? [] : conn
     .prepare(
       `SELECT m.id, m.student_id, m.han, s.full_name, cur.class_id AS cur_class_id, c.code AS class_code, c.branch_id,
               (SELECT iv.performer_user_id FROM case_interventions iv WHERE iv.nhom_bo_tro = m.nhom_bo_tro AND iv.performer_user_id IS NOT NULL ORDER BY iv.id LIMIT 1) AS gv,
@@ -885,7 +893,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * K5-09: HỌC VIÊN FT CHƯA CÓ TARGET — không có target thì không có kỳ vọng, SOS và Case không bao giờ sinh ra. Việc của GVCN lớp
    * (người điền hồ sơ), không hạn. Một câu cho mọi lớp người xem chủ nhiệm.
    */
-  {
+  if (co('missing_data')) {
     const lopCn = [...new Set(p.assignments.filter((x) => x.isCore && activeAt(x, today)).map((x) => x.classId))];
     if (lopCn.length) {
       for (const h of (conn.prepare(
@@ -911,7 +919,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   }
 
   /* K2-32: MT LỊCH SỬ chưa nhập — một việc XÁM mỗi lớp (GVCN / Quản lý), không hạn, không quá hạn. Cùng hàm với dòng nhắc Lịch Test. */
-  for (const l of mtLichSuChuaNhap(p, { branchId: f.branchId ?? null })) {
+  for (const l of co('missing_data') ? mtLichSuChuaNhap(p, { branchId: f.branchId ?? null }) : []) {
     items.push({
       key: `lich-su:${l.classId}`, group: 'missing_data', urgency: 'normal',
       studentId: null, studentName: `Lớp ${l.classCode}`, classId: l.classId, classCode: l.classCode,
@@ -926,7 +934,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * PR-SOS (K3-14, Q8): PA theo quy chế đang chạy mà CHƯA CÓ MỐC (chưa có lịch MT kế / ngày thi) → việc của Quản lý: Nhập ngày thi dự
    * kiến / Xếp lịch MT. Điền mốc trước (có lịch rồi thì hết việc), rồi đọc lại. Một câu cho cả phạm vi.
    */
-  if (xemNguoiKhac) {
+  if (xemNguoiKhac && co('missing_data')) {
     const sql = `SELECT iv.id, iv.case_id, iv.moc_quy_che, COALESCE(sc.student_id, a.student_id) AS sid, s.full_name,
               COALESCE(a.class_id, cur.class_id) AS class_id, COALESCE(ac.code, cc.code) AS class_code,
               COALESCE(ac.branch_id, cc.branch_id) AS branch_id, a.attempt_no
@@ -968,7 +976,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * đều không có ai để nhắc. Nên nó phải nổi lên thành một dòng việc riêng, và người làm
    * được là người có quyền phân công.
    */
-  const ownerless = conn
+  const ownerless = !co('no_owner') ? [] : conn
     .prepare(
       `SELECT sc.id, sc.summary, sc.origin_kind, sc.sos_level, sc.urgency,
               sc.detected_at, sc.created_at, sc.attempt_id,
@@ -1023,7 +1031,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * Một cửa trạng thái (`trangThaiYThuc`): quét Báo QL ở đầu request đã nạp các em này, nên ở đây không tốn thêm câu nào ngoài câu
    * ứng viên. Em Tạm dừng không sinh việc (T65). Dòng hết khi làm xong ở bất cứ đâu (Ghi nhận / Xác nhận xử lý / Đề xuất / Đã thực hiện).
    */
-  {
+  if (co('khai_bac', 'yt_xu_ly', 'yt_xem', 'yt_thuc_hien')) {
     const uv = ungVienVaThe({ branchId: f.branchId ?? null });
     /*
      * PR-VAI-a (K1-15, Q15): KHAI BẬC Ý THỨC HS CŨ — em lớp mình chủ nhiệm có hồ sơ tạo trong 14 ngày gần nhất mà còn khai được
@@ -1096,7 +1104,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
 
   // ------------------------------------------------- 5c. kỳ vọng đầu ra (PR-VAI-a, K5-11) — việc của Quản lý, một dòng mỗi em
   /* CÙNG hàm `hvLenFtChuaKyVong` với chỉ số `hv-len-ft-chua-ky-vong` ở Cần xử lý — số việc = số của chỉ số (hai đường). */
-  {
+  if (co('ky_vong_dau_ra')) {
     const sc = scopeFor(p, PERMISSIONS.REQUEST_APPROVE);
     const ds = sc.none ? [] : hvLenFtChuaKyVong(sc, f.branchId ?? null).sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
     /* PR-Dọn: lớp ghi trên dòng = LỚP NGUỒN của lệnh (nơi có bài Cuối khoá), một dòng mỗi em. */
@@ -1124,7 +1132,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * Giáo viên không nhìn thấy cả bảng đó, nhưng việc con giao cho họ thì vẫn phải hiện ở
    * đây — nếu không, giao việc xong là việc biến mất khỏi tầm mắt người nhận.
    */
-  for (const t of myMgmtTasks(p)) {
+  for (const t of co('mgmt') ? myMgmtTasks(p) : []) {
     const u = urgencyOf(t.due, today);
     items.push({
       key: `mgmt:${t.id}`, group: 'mgmt', urgency: u,
@@ -1154,6 +1162,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * Ba nhóm học thuật đứng trước, rồi tới việc chỉ Quản lý làm được, rồi những nghĩa vụ
    * còn lại. "Cần xếp lớp tiếp" đứng ngay sau ba nhóm chính vì nó treo cả một lớp.
    */
+  /* Nhóm dựng kèm vì phụ thuộc (2b cho `no_plan`, bài cho `score`/`missing_data`) → bỏ dòng ngoài tập. */
+  if (f.chiNhom) for (let i = items.length - 1; i >= 0; i--) if (!f.chiNhom.has(items[i].group)) items.splice(i, 1);
   const order: WorkGroupKey[] = [
     'cause', 'xac_nhan_pa', 'ke_hoach_bo_tro', 'phoi_hop', 'phoi_hop_sos', 'mini_test', 'score', 'no_plan', 'ghi_ket_qua_pa', 'yt_xu_ly', 'yt_xem', 'yt_thuc_hien', 'khai_bac',
     'placement', 'ky_vong_dau_ra', 'ban_giao', 'no_owner', 'mgmt', 'missing_data',

@@ -16,7 +16,7 @@ import { can, loadPrincipal, scopeFor, type Principal } from '../permissions.ts'
 import { trongBoNho } from '../platform/nguCanhRequest.ts';
 import { conLaiMs } from '../platform/hanGio.ts';
 import { PERMISSIONS } from '../../../shared/domain/index.ts';
-import { myWork } from './mywork.ts';
+import { myWork, type WorkGroupKey } from './mywork.ts';
 
 const THAN_BAO_TOI_DA = 200;
 const catThanBao = (s: string): string => (s.length <= THAN_BAO_TOI_DA ? s : `${s.slice(0, THAN_BAO_TOI_DA - 1)}…`);
@@ -24,6 +24,27 @@ const catThanBao = (s: string): string => (s.length <= THAN_BAO_TOI_DA ? s : `${
 const DUNG_KHI_CON_MS = 4_000;
 /** Thẻ Mini Test tạo trước PR-NV mang khoá `mini_test:{id}`; `myWork` và thẻ mới dùng `minitest:{id}`. */
 const khoaChuan = (k: string) => (k.startsWith('mini_test:') ? `minitest:${k.slice('mini_test:'.length)}` : k);
+/**
+ * NV-2: tiền tố khoá dòng `myWork` → nhóm của dòng, để chỉ dựng nhóm cần (`myWork(…, { chiNhom })`). Khoá mới ở `mywork.ts` mà quên thêm
+ * vào đây thì chỉ chậm (tiền tố lạ → dựng đủ), không sai.
+ */
+const NHOM_CUA_TIEN_TO: Record<string, WorkGroupKey> = {
+  score: 'score', week: 'missing_data', target: 'missing_data', 'lich-su': 'missing_data', moc: 'missing_data',
+  action: 'ghi_ket_qua_pa', class: 'placement', ban_giao: 'ban_giao', ban_giao_mon: 'ban_giao', support: 'no_plan',
+  cause: 'cause', xnpa: 'xac_nhan_pa', kehoach: 'ke_hoach_bo_tro', baoph: 'phoi_hop', phoi_hop_sos: 'phoi_hop_sos', minitest: 'mini_test',
+  owner: 'no_owner', khai_bac: 'khai_bac', yt_xu_ly: 'yt_xu_ly', yt_xem: 'yt_xem', yt_thuc_hien: 'yt_thuc_hien', ky_vong: 'ky_vong_dau_ra',
+  mgmt: 'mgmt',
+};
+/** Tập nhóm cho các khoá; có tiền tố lạ → undefined (dựng đủ). */
+function nhomCuaKhoa(keys: readonly string[]): Set<WorkGroupKey> | undefined {
+  const out = new Set<WorkGroupKey>();
+  for (const k of keys) {
+    const g = Object.hasOwn(NHOM_CUA_TIEN_TO, k.split(':')[0]) ? NHOM_CUA_TIEN_TO[k.split(':')[0]] : undefined;
+    if (!g) return undefined;
+    out.add(g);
+  }
+  return out;
+}
 
 export type DongNhac = { tieuDe: string; than: string; duong: string | null };
 export type ViecCanNhac = {
@@ -104,7 +125,8 @@ export function nhacViecNhieu(p: Principal, ds: readonly ViecCanNhac[], o: { boQ
           }
           const target = loadPrincipal(ownerId);
           ten = target.fullName;
-          dong = new Map((myWork(target) as any).items.map((it: any) => [it.key, it]));
+          const chiNhom = nhomCuaKhoa(cua.filter((v) => !v.ngoaiMyWork).map((v) => v.key));
+          dong = new Map((myWork(target, { chiNhom }) as any).items.map((it: any) => [it.key, it]));
         } catch (e) { loiNguoi = e; }
       }
       for (const v of cua) {

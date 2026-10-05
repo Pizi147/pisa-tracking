@@ -6,6 +6,7 @@
  *   1 thẻ 632 câu · 9 thẻ cùng một người 5 680 · thẻ của 2 người 5 589 · 36 thẻ / 9 người 92 882.
  * SAU NV-1: 65 · 65 · 105 · 377 (5 người / 15 thẻ: 228 — trần 200 câu chưa đạt, việc của NV-2). Số mới in ở `NV-1 số câu`.
  * Trong `npm test` (DB cuối `run.ts`): 1 thẻ 81 · 17 thẻ cùng người 81 · 2 người 119 · 50 thẻ / 10 người 434.
+ * SAU NV-2 (`myWork` chỉ dựng nhóm của khoá): 30 · 30 · 38 · 106 (36 thẻ / 9 người); 5 người / 15 thẻ: 72 — trần 200 đạt.
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
 
@@ -19,6 +20,8 @@ export async function runPrNvTests(t: YThucTestKit) {
   const { soCauSql, trongBoNho } = await import('../platform/nguCanhRequest.ts');
   const { chayVoiHan } = await import('../platform/hanGio.ts');
   const { awaitingCauseCaseIds } = await import('../cases/sosState.ts');
+  const mw: any = await import('../worklist/mywork.ts');
+  const { loadPrincipal } = await import('../permissions.ts');
   console.log('\nPR-NV · Nhắc việc gom theo người');
 
   const maLoi = (fn: () => unknown): number | null => { try { fn(); return null; } catch (e: any) { return e?.status ?? 500; } };
@@ -106,20 +109,57 @@ export async function runPrNvTests(t: YThucTestKit) {
     const duoc = new Set(thu.ok.map((x) => x.id));
     /* Thẻ có dòng `myWork` (Cuối khoá / Mini Test nạp riêng một lô cố định — không theo số thẻ, nhưng làm lệch phép so). */
     const tot = ds.filter((r) => duoc.has(r.id) && r.loai !== 'bao_len_cuoi_khoa' && r.loai !== 'bao_len_mini_test');
-    const theoNguoi = new Map<number, number[]>();
-    for (const r of tot) theoNguoi.set(r.du.ownerId, [...(theoNguoi.get(r.du.ownerId) ?? []), r.id]);
-    const nhieu = [...theoNguoi.values()].sort((x, y) => y.length - x.length);
-    assert(nhieu.length >= 2 && nhieu[0].length >= 2, `cần một người ≥ 2 thẻ và người thứ hai: ${JSON.stringify(nhieu)}`);
+    /* NV-2: `myWork` chỉ dựng nhóm của khoá được nhắc → so thẻ CÙNG người CÙNG nhóm (tiền tố khoá); số nhóm mới làm tăng câu. */
+    const theoNguoi = new Map<string, number[]>();
+    for (const r of tot) {
+      const k = `${r.du.ownerId}|${r.du.viecKey.split(':')[0]}`;
+      theoNguoi.set(k, [...(theoNguoi.get(k) ?? []), r.id]);
+    }
+    const nhieu = [...theoNguoi.entries()].sort((x, y) => y[1].length - x[1].length);
+    const khac = nhieu.find(([k]) => k.split('|')[0] !== nhieu[0][0].split('|')[0]);
+    assert(nhieu[0][1].length >= 2 && khac, `cần một người ≥ 2 thẻ cùng nhóm và người thứ hai: ${JSON.stringify(nhieu)}`);
     const do_ = (ids: number[]) => { xoaNhac(); return dem(() => yc.nhacNhieu(P.admin, ids)); };
-    const mot = do_([nhieu[0][0]]);
-    const m = do_(nhieu[0]);
-    const hai = do_([nhieu[0][0], nhieu[1][0]]);
-    const tatCa = ds.slice(0, d.TRAN_HANG_LOAT).map((r) => r.id);
-    const lon = do_(tatCa);
-    console.log('NV-1 số câu', JSON.stringify({ mot, m, soTheM: nhieu[0].length, hai, lon, soTheLon: tatCa.length, soNguoiLon: new Set(ds.slice(0, d.TRAN_HANG_LOAT).map((r) => r.du.ownerId)).size }));
-    assert(m === mot, `1 thẻ ${mot} câu ≠ ${nhieu[0].length} thẻ cùng người ${m} câu`);
+    const mot = do_([nhieu[0][1][0]]);
+    const m = do_(nhieu[0][1]);
+    const hai = do_([nhieu[0][1][0], khac![1][0]]);
+    const lo50 = ds.slice(0, d.TRAN_HANG_LOAT);
+    const lon = do_(lo50.map((r) => r.id));
+    /* Lô 5 người / 15 thẻ: một thẻ mỗi người đầu, rồi thêm thẻ của chính 5 người đó tới 15. */
+    const nam = [...new Set(lo50.map((r) => r.du.ownerId))].slice(0, 5);
+    const dau = nam.map((u) => lo50.find((r) => r.du.ownerId === u)!.id);
+    const lo15 = [...dau, ...lo50.filter((r) => nam.includes(r.du.ownerId) && !dau.includes(r.id)).map((r) => r.id)].slice(0, 15);
+    const muoiLam = do_(lo15);
+    const soNguoiLon = new Set(lo50.map((r) => r.du.ownerId)).size;
+    console.log('NV-1 số câu', JSON.stringify({ mot, m, soTheM: nhieu[0][1].length, hai, lon, soTheLon: lo50.length, soNguoiLon, muoiLam, soThe15: lo15.length }));
+    assert(m === mot, `1 thẻ ${mot} câu ≠ ${nhieu[0][1].length} thẻ cùng người cùng nhóm ${m} câu`);
     assert(hai <= 2 * mot, `thẻ 2 người ${hai} câu > 2 × ${mot}`);
-    /* Trần tuyệt đối 50 thẻ / ≥ 5 người ≤ 200 câu (NV-1 Step 5): CHƯA đạt — một người ~38 câu (`myWork` + `loadPrincipal`); để NV-2. */
+    /* Trần tuyệt đối (NV-1 Step 5, đạt nhờ NV-2): ≈ 7 s ở 35 ms/câu, còn ≥ 2,5 s cho `tx`. */
+    assert(soNguoiLon >= 5 && nam.length === 5, `cần thẻ của ≥ 5 người: ${soNguoiLon}`);
+    assert(lon <= 200, `${lo50.length} thẻ / ${soNguoiLon} người: ${lon} câu > 200`);
+    assert(muoiLam <= 200, `${lo15.length} thẻ / 5 người: ${muoiLam} câu > 200`);
+  });
+
+  check('NV-2 · myWork(người, { chiNhom: G }) = đúng các dòng của myWork(người) có nhóm ∈ G (mọi GV/QL seed, từng nhóm + tập gộp)', () => {
+    const NHOM = ['cause', 'xac_nhan_pa', 'ke_hoach_bo_tro', 'phoi_hop', 'phoi_hop_sos', 'mini_test', 'score', 'no_plan', 'ghi_ket_qua_pa',
+      'yt_xu_ly', 'yt_xem', 'yt_thuc_hien', 'khai_bac', 'placement', 'ky_vong_dau_ra', 'ban_giao', 'no_owner', 'mgmt', 'missing_data'];
+    const tap = [...NHOM.map((g) => [g]), ['cause', 'score', 'yt_xem', 'ban_giao', 'missing_data', 'no_plan', 'mgmt']];
+    const nguoi = conn.prepare(
+      `SELECT DISTINCT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id JOIN users u ON u.id = ur.user_id
+        WHERE ur.status = 'active' AND u.status = 'active' AND u.deleted_at IS NULL AND r.key IN ('teacher', 'manager') ORDER BY ur.user_id`,
+    ).all() as any[];
+    const dong = (items: any[]) => items.map((i) => `${i.group}|${i.key}|${i.tieuDe}`).sort().join('\n');
+    const coNhom = new Set<string>();
+    for (const { id } of nguoi) {
+      const p = loadPrincipal(id);
+      const du = mw.myWork(p).items as any[];
+      for (const i of du) coNhom.add(i.group);
+      for (const G of tap) {
+        const loc = mw.myWork(p, { chiNhom: new Set(G) }).items as any[];
+        const can_ = dong(du.filter((i) => G.includes(i.group)));
+        assert(dong(loc) === can_, `người ${id}, nhóm ${G.join('+')}:\nlọc:\n${dong(loc)}\ncần:\n${can_}`);
+      }
+    }
+    assert(nguoi.length >= 5 && coNhom.size >= 6, `mẫu quá nhỏ: ${nguoi.length} người, nhóm ${[...coNhom].join(',')}`);
   });
 
   check('NV-1 (e) · nhắc lần hai trong ngày: 0 chuông mới, mọi ok.moi = false, không dựng myWork (≤ 6 câu sau quét)', () => {
