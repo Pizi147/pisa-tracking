@@ -27,7 +27,8 @@ const dongTrong = (r: Row) => Object.values(r).every((v) => !String(v ?? '').tri
 
 /* Bề rộng cột theo M2 (px). Cột Tình trạng do panel vẽ, không nằm trong `cotLuoiNhap`. */
 const RONG: Partial<Record<CotNhap, number>> = {
-  fullName: 170, dob: 104, email: 190, baselineScore: 56, entryListening: 48, entryReading: 48, entryWriting: 48,
+  /* I3 (PR-SL): "Overall" và chữ mẫu "dd/mm/yyyy" không bị cắt. */
+  fullName: 170, dob: 116, email: 190, baselineScore: 72, entryListening: 48, entryReading: 48, entryWriting: 48,
   entrySpeaking: 48, target: 60, examDate: 104, daThiToiMt: 104, startWeek: 172,
 };
 const GOI_Y_COT: Partial<Record<CotNhap, string>> = {
@@ -53,7 +54,7 @@ function MuiTen({ mo }: { mo: boolean }) {
 /**
  * Thêm nhiều học viên trong một lần (M2, YC-5.1…5.4).
  *
- * Dán vùng bảng từ Excel/Google Sheets — có dòng tiêu đề thì cột nhận theo tên; không có thì theo thứ tự cột của lưới (PR-NT 04/10) —
+ * Dán vùng bảng từ Excel/Google Sheets — có dòng tiêu đề thì cột nhận theo tên; không có thì theo MẪU EXCEL CHUNG — thứ tự cột Fast Track cho mọi lớp, lớp thường bỏ cột band (PR-SL 04/10) —
  * hoặc gõ thẳng vào lưới. Hàng cao đều: lỗi/lưu ý dồn về
  * cột Tình trạng, bấm mở một dòng chi tiết. Dòng lỗi không khoá cả lô — dòng sẵn sàng được thêm, dòng lỗi ở lại để sửa (K2-21).
  * Máy chủ soát lại từng dòng theo phạm vi quyền trước khi ghi.
@@ -160,9 +161,10 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
 
   return (
     <KhungPanel tieuDe="Thêm học viên" lop={cls?.code} rong="toan" onDong={onClose}
-      ngCanh="Chọn lớp, rồi dán từ Excel/Google Sheets hoặc gõ thẳng vào lưới"
+      ngCanh="Chọn lớp, dán từ Excel hoặc gõ vào lưới"
       chan={{
-        huy: { nhan: 'Đóng', onClick: onClose, disabled: busy },
+        /* Luật S3 (I1): có dòng đã gõ hoặc chữ trong ô dán → "Huỷ thay đổi". */
+        daSua: !!pasteText.trim() || rows.some((r) => !dongTrong(r)), huy: { onClick: onClose, disabled: busy },
         conThieu: lf.conThieu(loiLo),
         phu: pv && hangCoDuLieu.length > 0 && (
           <span className="text-xs text-slate-400 tabular-nums">
@@ -200,15 +202,16 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
           )}
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-3">
-          <label className="block sm:col-span-2">
+        {/* I3: ô dán phông thường, nút "Đọc nội dung đã dán" nằm DƯỚI ô dán. */}
+        <div className="space-y-2">
+          <label className="block">
             <span className="label">Dán vùng bảng từ Excel / Google Sheets</span>
             <textarea
-              className="field font-mono text-xs"
+              className="field text-xs"
               rows={3}
               disabled={!classId}
               placeholder={classId
-                ? 'Dán từ Excel, có hoặc không có dòng tiêu đề. Không có tiêu đề thì web đọc theo thứ tự cột của lưới bên dưới.'
+                ? 'Dán từ Excel, có hoặc không có dòng tiêu đề. Không có tiêu đề thì web đọc theo mẫu Excel chung (thứ tự cột Fast Track).'
                 : 'Chọn lớp trước'}
               value={pasteText}
               onChange={(e) => setPasteText(e.target.value)}
@@ -218,8 +221,8 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
               }}
             />
           </label>
-          <div className="flex items-end">
-            <button type="button" className="btn btn-sm min-h-[44px] w-full justify-center sm:min-h-0" onClick={() => void handlePaste(pasteText)} disabled={!classId || !pasteText.trim()}>
+          <div className="flex justify-end">
+            <button type="button" className="btn btn-sm min-h-[44px] w-full justify-center sm:w-auto sm:min-h-0" onClick={() => void handlePaste(pasteText)} disabled={!classId || !pasteText.trim()}>
               Đọc nội dung đã dán
             </button>
           </div>
@@ -231,9 +234,9 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
             <p className="m-0">
               {cach.coTieuDe
                 ? <>Đã đọc theo dòng tiêu đề{cach.boQua.length ? ` · bỏ qua cột ${cach.boQua.join(', ')}` : ''}.</>
-                : <>Đã đọc theo thứ tự cột: {cach.thuTu.map((k) => nhanCotNhap(k)).join(' · ')}.</>}
+                : <>Đã đọc theo mẫu Excel chung: {cach.thuTu.map((k) => nhanCotNhap(k)).join(' · ')}.{cach.boQua.length ? ` Lớp thường bỏ qua cột ${cach.boQua.join(', ')}.` : ''}</>}
               {' '}
-              <button type="button" className="link inline-flex min-h-[44px] items-center appearance-none border-0 bg-transparent p-0 text-xs align-baseline sm:min-h-0"
+              <button type="button" className="link flex min-h-[44px] items-center appearance-none border-0 bg-transparent p-0 text-xs align-baseline sm:inline-flex sm:min-h-0"
                 onClick={() => void handlePaste(daDan.text, !cach.coTieuDe)}>
                 {cach.coTieuDe ? 'Dòng đầu là học viên?' : 'Dòng đầu là tiêu đề?'}
               </button>
@@ -359,9 +362,11 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
           <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => doiLuoi((rs) => [...rs, {}])}>
             + Thêm dòng
           </button>
-          <p className="m-0 text-xs text-slate-400">
-            Ô trống hoặc dấu “-” = chưa có, không phải 0 — riêng cột Target, “-” hay KCK = không cam kết (không tính SOS). · Em đã có hồ sơ thì dùng Chuyển lớp, không tạo mới.
-          </p>
+          {/* I3: lời nhắc tách hai dòng ngắn. */}
+          <div className="text-xs text-slate-400">
+            <p className="m-0">Ô trống hoặc “-” = chưa có, không phải 0. Riêng Target: “-” hoặc KCK = không cam kết.</p>
+            <p className="m-0">Em đã có hồ sơ thì dùng Chuyển lớp, không tạo mới.</p>
+          </div>
         </div>
       </div>
     </KhungPanel>

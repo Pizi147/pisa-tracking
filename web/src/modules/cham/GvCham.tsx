@@ -9,7 +9,7 @@
  */
 import { useState } from 'react';
 import { nguoiThanhPayload, type NguoiChon } from '@shared/domain/index.ts';
-import { Modal } from '../../ui/Drawer.tsx';
+import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { MuiTenGap } from '../yThuc/NhanViPham.tsx';
 import { useSession } from '../../lib/session.tsx';
@@ -81,13 +81,16 @@ export function NutGvCham({ value, onChange, lon = false, goiY = GOI_Y_COT }: {
         <span className="truncate">GV chấm: {ten ?? <span className="text-slate-500">chưa chọn</span>}</span>
         <span className="text-slate-500"><MuiTenGap mo /></span>
       </button>
-      <Modal open={mo} onClose={() => setMo(false)} title="GV chấm Speaking" width="max-w-sm"
-        footer={<button className="btn" onClick={() => setMo(false)}>Xong</button>}>
-        <div className="space-y-2">
-          <ChonNguoi value={value} onChange={(v) => { onChange(v); }} nhom="nhan_vien" choNgoai ariaLabel="GV chấm Speaking" />
-          <p className="m-0 text-xs text-slate-400">{goiY}</p>
-        </div>
-      </Modal>
+      {/* I4 (PR-SL): khung panel chung. Chọn là lưu ngay (nhớ trên máy) → chân chỉ có "Xong". Mở được từ trong panel khác → `longTrong`. */}
+      {mo && (
+        <KhungPanel tieuDe="GV chấm Speaking" longTrong z="z-[60]" onDong={() => setMo(false)}
+          chan={{ huy: { nhan: 'Xong', onClick: () => setMo(false) } }}>
+          <div className="space-y-2 pt-3">
+            <ChonNguoi value={value} onChange={(v) => { onChange(v); }} nhom="nhan_vien" choNgoai ariaLabel="GV chấm Speaking" />
+            <p className="m-0 text-xs text-slate-400">{goiY}</p>
+          </div>
+        </KhungPanel>
+      )}
     </>
   );
 }

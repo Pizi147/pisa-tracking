@@ -88,7 +88,7 @@ export function LoTrinhTiepCaLopPanel({ classId, onClose, onDone }: { classId: n
   return (
     <KhungPanel tieuDe="Ghi lộ trình tiếp theo cả lớp" lop={data.lop.code} rong="toan" onDong={onClose}
       chan={data.coTheGhi && data.hocVien.length ? {
-        huy: { nhan: daSua ? 'Huỷ thay đổi' : 'Đóng', onClick: onClose, disabled: busy },
+        daSua, huy: { onClick: onClose, disabled: busy },
         dongTren: quaNhieu ? <p className="m-0 text-[12px] text-late">Mỗi lần lưu tối đa {data.toiDa} em — lưu bớt rồi lưu tiếp.</p> : undefined,
         chinh: (
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy || !doi.length || quaNhieu}>

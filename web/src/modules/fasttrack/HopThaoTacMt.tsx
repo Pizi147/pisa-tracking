@@ -151,7 +151,7 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, tuanDaBa
   return (
     <KhungPanel tieuDe={`${ten} · ${mon}`} hocVien={hocVien} lop={lop} onDong={dong} longTrong={trongHop} z={trongHop ? 'z-[70]' : undefined}
       chan={{
-        huy: { nhan: daSua ? 'Huỷ thay đổi' : 'Đóng', onClick: dong, disabled: busy },
+        daSua: daSua, huy: { onClick: dong, disabled: busy },
         dongTren: loiMay ? <p className="m-0 px-4 pt-2 text-xs font-semibold text-bad" role="alert">{loiMay}</p> : undefined,
         chinh: (
           <button type="button" className={`btn min-h-[44px] sm:min-h-0 ${nguyHiem ? 'btn-danger' : 'btn-primary'}`} disabled={busy} onClick={() => void luu()}>

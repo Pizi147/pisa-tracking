@@ -9,6 +9,7 @@ import { usePeriods } from '../../ui/Filters.tsx';
 import { ClassYThucCard } from '../yThuc/ClassYThucCard.tsx';
 import { QuickReport } from '../cases/QuickReport.tsx';
 import { IntakePanel } from '../students/IntakePanel.tsx';
+import { SuaCaLopPanel } from '../students/SuaCaLopPanel.tsx';
 import { TeacherAssignPanel } from './TeacherAssignPanel.tsx';
 import { KetThucLopPanel, XoaLopPanel } from './XoaKetThucLopPanel.tsx';
 import { ClassProgressPanel } from './ClassProgressPanel.tsx';
@@ -93,7 +94,8 @@ export default function ClassOverviewPage() {
 
       {tab === 'hoc-vien' && (
         <TabHocVienLop lop={data} cheDo={cheDo} onCheDo={(m) => doiThamSo({ 'che-do': m === 'diem' ? null : m })}
-          onDoi={xong} onThemHocVien={() => setViec('hoc-vien')} />
+          onDoi={xong} onThemHocVien={() => setViec('hoc-vien')}
+          onSuaThongTin={data.viewer.canAddStudents && (data.summary?.studentCount ?? 0) > 0 ? () => setViec('sua-hoc-vien') : undefined} />
       )}
       {tab === 'y-thuc' && <ClassYThucCard classId={data.id} thuong={thuong} />}
       {tab === 'phan-tich' && <PhanTichLopTab classId={data.id} />}
@@ -117,6 +119,7 @@ export default function ClassOverviewPage() {
       )}
       {viec === 'xoa-lop' && <XoaLopPanel classId={data.id} classCode={data.code} onClose={dong} />}
       {viec === 'ket-thuc-lop' && <KetThucLopPanel classId={data.id} classCode={data.code} onClose={dong} onDone={xong} />}
+      {viec === 'sua-hoc-vien' && <SuaCaLopPanel classId={data.id} onClose={dong} onDone={xong} />}
       {viec === 'hoc-vien' && (
         <IntakePanel defaultClass={{ id: data.id, code: data.code }} onClose={dong} onDone={xong} />
       )}

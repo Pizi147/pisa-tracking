@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { GIAI_THICH_KCK, KCK, chuTrangThai, type TrangThai } from '@shared/domain/index.ts';
 import { fmtBand } from '../lib/format.ts';
 import { BaoOTrongNhan, coOTuNhan } from './ONgay.tsx';
+import { useNoiLoi } from './loiForm.tsx';
 
 export function Card({ title, action, children, className = '', bodyClass = 'p-4' }: {
   title?: ReactNode; action?: ReactNode; children: ReactNode; className?: string; bodyClass?: string;
@@ -327,14 +328,15 @@ export function Field({ label, children, hint, required, loi, as = 'label' }: {
   const troO = Wrap === 'div' ? idO : null;
   const nhom = Wrap === 'div' && !idO ? { role: 'group', 'aria-labelledby': idNhan } : {};
   const chu = <>{label}{required && <><span aria-hidden className="text-bad"> *</span><span className="sr-only"> (bắt buộc)</span></>}</>;
+  const noi = useNoiLoi(loi);
   return (
     <BaoOTrongNhan.Provider value={setIdO}>
       <Wrap className="block" {...nhom}>
         {troO ? <label htmlFor={troO} className="label">{chu}</label> : <span id={idNhan} className="label">{chu}</span>}
         {/* Luôn cùng một lớp bọc (như `Truong`): bọc/bỏ bọc theo `loi` làm ô dựng lại → mất focus khi đang gõ. */}
-        <div className={loi ? 'contents [&_.field]:border-late [&_.field]:ring-1 [&_.field]:ring-late/40' : 'contents'}>{children}</div>
+        <div ref={noi.ref} className={loi ? 'contents [&_.field]:border-late [&_.field]:ring-1 [&_.field]:ring-late/40' : 'contents'}>{children}</div>
         {hint && <span className="block text-[11px] text-slate-500 mt-1">{hint}</span>}
-        {loi && <span className="mt-1 block text-[11px] text-late">{loi}</span>}
+        {loi && <span id={noi.id} className="mt-1 block text-[11px] text-late">{loi}</span>}
       </Wrap>
     </BaoOTrongNhan.Provider>
   );

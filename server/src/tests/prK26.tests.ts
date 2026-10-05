@@ -162,9 +162,9 @@ export async function runPrK26Tests(t: YThucTestKit) {
     const { dau } = d.xepHuongTheoGoiY(d.huongTiepKhaDung('BE'), r.cuoiKhoa.goiY);
     assert(dau.includes(r.banGhi.huong), `hướng đã lưu ${r.banGhi.huong} trong ${dau.join()}`);
   });
-  check('K26-3b · panel: xếp hướng bằng xepHuongTheoGoiY, chữ đề xuất cho Quản lý, "Hướng khác", chân S3; bảng Chuyển tiếp điền sẵn đề xuất GVCN', () => {
+  check('K26-3b · panel: xếp hướng bằng xepHuongTheoGoiY, chữ đề xuất cho Quản lý, "Hướng khác", chân S3 qua chan.daSua (PR-SL I1); bảng Chuyển tiếp điền sẵn đề xuất GVCN', () => {
     const src = nguon('modules/students/LoTrinhTiepPanel.tsx');
-    for (const chu of ['xepHuongTheoGoiY(', 'Hướng bạn đề xuất (Quản lý quyết)', 'Lưu đề xuất', 'Hướng khác', "'Huỷ thay đổi' : 'Đóng'", 'Hệ thống gợi ý']) {
+    for (const chu of ['xepHuongTheoGoiY(', 'Hướng bạn đề xuất (Quản lý quyết)', 'Lưu đề xuất', 'Hướng khác', 'daSua, huy: {', 'Hệ thống gợi ý']) {
       assert(src.includes(chu), `thiếu ${chu}`);
     }
     assert(!/Chưa rõ|Xếp sau/.test(src), 'còn chữ cũ');

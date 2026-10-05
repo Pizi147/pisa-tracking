@@ -10,9 +10,11 @@ import type { QuyenDong } from './thaoTacDongHocVien.tsx';
  *   Điểm       FT: bảng đợt MT như hiện có · lớp thường: Giữa khoá | Cuối khoá × L R W S, ô đúng/tổng (10b phương án A)
  *   Cần hỗ trợ học viên có Case mở: vấn đề chính · PA đang chạy · bước tiếp theo + hạn (mockup 06, cho GVCN họp nhanh)
  */
-export function TabHocVienLop({ lop, cheDo, onCheDo, onDoi, onThemHocVien }: {
+export function TabHocVienLop({ lop, cheDo, onCheDo, onDoi, onThemHocVien, onSuaThongTin }: {
   lop: HoSoLop; cheDo: 'diem' | 'can-ho-tro'; onCheDo: (m: 'diem' | 'can-ho-tro') => void;
   onDoi: () => void; onThemHocVien: () => void;
+  /** PR-SL: mở panel Sửa thông tin học viên (cả lớp) — chỉ truyền khi người xem sửa được học viên của lớp. */
+  onSuaThongTin?: () => void;
 }) {
   const thuong = lop.programme?.scoringMode === 'ratio';
   const quyen: QuyenDong = {
@@ -21,8 +23,11 @@ export function TabHocVienLop({ lop, cheDo, onCheDo, onDoi, onThemHocVien }: {
   };
   return (
     <div className="space-y-2">
-      <BoLocDoan ariaLabel="Cách xem" value={cheDo} onChange={onCheDo}
-        muc={[{ key: 'diem', nhan: 'Điểm' }, { key: 'can-ho-tro', nhan: 'Cần hỗ trợ' }]} />
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <BoLocDoan ariaLabel="Cách xem" value={cheDo} onChange={onCheDo}
+          muc={[{ key: 'diem', nhan: 'Điểm' }, { key: 'can-ho-tro', nhan: 'Cần hỗ trợ' }]} />
+        {onSuaThongTin && <button type="button" className="btn btn-ghost btn-sm min-h-[44px] sm:min-h-0" onClick={onSuaThongTin}>Sửa thông tin</button>}
+      </div>
       {cheDo === 'can-ho-tro'
         ? <BangCanHoTro classId={lop.id} maLop={lop.code} laLopThuong={thuong} quyen={quyen} onDoi={onDoi} chuongTrinh={lop.programme?.code ?? null} />
         : thuong

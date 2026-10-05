@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { ConfirmDialog } from '../../ui/Drawer.tsx';
+import { KhungPanel } from '../../ui/KhungPanel.tsx';
 
 /**
  * XOÁ VI PHẠM — hộp xác nhận MỘT DÒNG (rulebook v3, V11′–V14′): không lý do, không gõ chữ.
@@ -27,9 +27,21 @@ export function DeleteViolationConfirm({ violationId, onClose, onDone }: {
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
 
+  /* I4 (PR-SL): khung panel chung. Mở từ danh sách vi phạm có thể nằm trong panel khác → `longTrong`, lớp z trên. */
+  if (violationId === null) return null;
   return (
-    <ConfirmDialog open={violationId !== null} onClose={onClose} onConfirm={confirm} busy={busy} danger
-      title="Xoá vi phạm này?"
-      body={n > 0 ? `Vi phạm nằm trong ${n} lần xử lý — lần xử lý vẫn giữ, bậc không lùi.` : 'Vi phạm chưa nằm trong lần xử lý nào.'} />
+    <KhungPanel tieuDe="Xoá vi phạm này?" longTrong z="z-[60]" onDong={() => !busy && onClose()}
+      chan={{
+        huy: { onClick: onClose, disabled: busy },
+        chinh: (
+          <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" onClick={() => void confirm()} disabled={busy}>
+            {busy ? 'Đang xoá…' : 'Xoá vi phạm'}
+          </button>
+        ),
+      }}>
+      <p className="m-0 pt-3 text-sm leading-relaxed text-slate-300">
+        {n > 0 ? `Vi phạm nằm trong ${n} lần xử lý — lần xử lý vẫn giữ, bậc không lùi.` : 'Vi phạm chưa nằm trong lần xử lý nào.'}
+      </p>
+    </KhungPanel>
   );
 }

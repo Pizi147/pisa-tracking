@@ -115,7 +115,7 @@ export function examPlanOf(cycle: {
 }
 
 /** Q29-1 (PR-KCK): ô Target → { target, kck }. KCK / '-' / "không cam kết" = không cam kết; trống = chưa có; sai → 400. */
-function docTarget(v: unknown): { target: number | null; kck: boolean } {
+export function docTarget(v: unknown): { target: number | null; kck: boolean } {
   if (laKck(v)) return { target: null, kck: true };
   if (v === null || v === undefined || v === '') return { target: null, kck: false };
   const n = Number(v);
@@ -183,6 +183,32 @@ export function createCycle(p: Principal, input: {
   });
 }
 
+/** Ô Tuần bắt đầu của lộ trình `c` → Thứ Hai ISO; sai → 400. Cận năm chỉ khi ĐỔI (PR-TOC). Chung cho `updateCycle` và Sửa cả lớp (PR-SL). */
+export function docTuanBatDau(c: any, v: unknown): string {
+  const w = docNgayNhap(v, demoToday());
+  if (!w.iso) throw badRequest(`Tuần bắt đầu: ${w.loi ?? 'bắt buộc'}`);
+  const cu = c.start_period_id ? periodById(c.start_period_id)?.weekStart ?? null : null;
+  const ngoai = mondayOf(w.iso) !== cu ? docNgayNhap(w.iso, demoToday(), canNamGan(demoToday())).loi : null;
+  if (ngoai) throw badRequest(`Tuần bắt đầu: ${ngoai}`);
+  return mondayOf(w.iso);
+}
+
+/** Ô Dự kiến thi (T9) → ngày ISO / tháng `yyyy-mm` / `null` (trống = xoá); sai → 400. Cận năm chỉ khi ĐỔI. Chung cho `updateCycle` và PR-SL. */
+export function docDuKienThi(c: any, v: unknown): string | null {
+  const t = docNgayNhap(v, demoToday(), { choThang: true });
+  const ngoai = t.iso && t.iso !== (c.exam_date ?? c.exam_month) ? docNgayNhap(t.iso, demoToday(), { choThang: true, ...canNamGan(demoToday()) }).loi : null;
+  if (t.loi || ngoai) throw badRequest(`Dự kiến thi: ${t.loi ?? ngoai}`);
+  return t.iso;
+}
+
+/** Điểm xuất phát gõ tay → số 0–9; trống / sai → 400. Chung cho `setBaseline` và PR-SL. */
+export function docDiemXuatPhat(v: unknown): number {
+  if (v === null || v === undefined || v === '') throw badRequest('Nhập điểm đầu vào hoặc chọn một bài đánh giá làm căn cứ.');
+  const n = Number(v);
+  if (!Number.isFinite(n) || n < 0 || n > 9) throw badRequest('Điểm đầu vào phải nằm trong khoảng 0–9.');
+  return n;
+}
+
 export function updateCycle(p: Principal, cycleId: number, patch: any) {
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
@@ -191,17 +217,10 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
   /* PR-TOC: cận năm (năm nay −3 … +3) chỉ áp khi giá trị ĐỔI — lộ trình cũ gửi lại đúng giá trị đang lưu không bị chặn. */
   const can = canNamGan(demoToday());
   if (patch.startWeek !== undefined) {           // Thông tin HV gửi Thứ Hai ISO từ ô ngày thống nhất kiểu tuần
-    const w = docNgayNhap(patch.startWeek, demoToday());
-    if (!w.iso) throw badRequest(`Tuần bắt đầu: ${w.loi ?? 'bắt buộc'}`);
-    const cu = c.start_period_id ? periodById(c.start_period_id)?.weekStart ?? null : null;
-    const ngoai = mondayOf(w.iso) !== cu ? docNgayNhap(w.iso, demoToday(), can).loi : null;
-    if (ngoai) throw badRequest(`Tuần bắt đầu: ${ngoai}`);
-    patch = { ...patch, startPeriodId: ensurePeriod(mondayOf(w.iso)).id };
+    patch = { ...patch, startPeriodId: ensurePeriod(docTuanBatDau(c, patch.startWeek)).id };
   }
   if (patch.examDate !== undefined) {            // T9: ngày → lưu ngày + suy tháng, tuần; tháng → chỉ tháng; trống → xoá cả hai
-    const t = docNgayNhap(patch.examDate, demoToday(), { choThang: true });
-    const ngoai = t.iso && t.iso !== (c.exam_date ?? c.exam_month) ? docNgayNhap(t.iso, demoToday(), { choThang: true, ...can }).loi : null;
-    if (t.loi || ngoai) throw badRequest(`Dự kiến thi: ${t.loi ?? ngoai}`);
+    const t = { iso: docDuKienThi(c, patch.examDate) };
     const la = t.iso?.length === 10;
     /*
      * PR-Dọn (Q16, VN15): đổi từ NGÀY sang THÁNG thì bỏ tuần của ngày cũ — panel Kế hoạch gửi lại `examPeriodId` cũ trong state, nên
@@ -365,7 +384,7 @@ export function setBaseline(p: Principal, cycleId: number, input: {
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
   require_(p, PERMISSIONS.STUDENT_EDIT, { studentId: c.student_id },
-    'Bạn không có quyền sửa điểm xuất phát của lộ trình này.');
+    'Bạn không có quyền sửa điểm đầu vào của lộ trình này.');
   const conn = db();
 
   if (input.source === null) {
@@ -378,7 +397,7 @@ export function setBaseline(p: Principal, cycleId: number, input: {
   }
 
   if (!(BASELINE_SOURCES as readonly string[]).includes(input.source ?? '')) {
-    throw badRequest('Chọn nguồn của điểm xuất phát.');
+    throw badRequest('Chọn nguồn của điểm đầu vào.');
   }
   let score = input.score ?? null;
   let attemptId = input.attemptId ?? null;
@@ -389,11 +408,7 @@ export function setBaseline(p: Principal, cycleId: number, input: {
     const a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
     if (!a || a.student_id !== c.student_id) throw badRequest('Bài kiểm tra không thuộc học viên này.');
   } else {
-    if (score === null || score === undefined || score === ('' as any)) {
-      throw badRequest('Nhập điểm xuất phát hoặc chọn một bài đánh giá làm căn cứ.');
-    }
-    score = Number(score);
-    if (!Number.isFinite(score) || score < 0 || score > 9) throw badRequest('Điểm xuất phát phải nằm trong khoảng 0–9.');
+    score = docDiemXuatPhat(score);
   }
 
   conn.prepare(

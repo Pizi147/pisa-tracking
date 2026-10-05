@@ -726,7 +726,7 @@ function CreateTaskForm({ onClose, onDone, branchId, parent, defaultGroup, unitR
   return (
     <KhungPanel tieuDe={parent ? 'Việc con' : 'Giao việc'} hocVien={parent?.title ?? null} longTrong={!!parent} onDong={onClose}
       chan={{
-        huy: { nhan: daSua ? 'Huỷ thay đổi' : 'Đóng', onClick: onClose, disabled: busy },
+        daSua: daSua, huy: { onClick: onClose, disabled: busy },
         conThieu: lf.conThieu(loi),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || (giaoGv && !duocGiao(ky, busy))} onClick={tao}>{busy ? 'Đang lưu…' : giaoGv ? 'Giao' : 'Tạo'}</button>,
       }}>

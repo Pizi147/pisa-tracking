@@ -2,7 +2,7 @@ import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type 
 import { createPortal } from 'react-dom';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Modal } from '../../ui/Drawer.tsx';
+import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { Info, SectionNote, Status } from '../../ui/ui.tsx';
 import { useTrangThaiLuuO } from '../../ui/SaveState.tsx';
 import { Han } from '../../ui/Han.tsx';
@@ -547,13 +547,15 @@ export function CriteriaModal({ cell, onSave, onClose, gvMacDinh = null }: {
   const [nx, setNx] = useState(cell.nhanXet ?? '');
   const laS = cell.skill === 'speaking';
   const gvCu = gvChamThanhChon(cell.gvCham);
-  const [gv, setGv] = useState<NguoiChon | null>(gvCu ?? gvMacDinh);
+  const gv0 = gvCu ?? gvMacDinh;
+  const [gv, setGv] = useState<NguoiChon | null>(gv0);
   /* Bài đã báo "-" thì mở ra thấy '-' ở ô đầu — không phải bốn ô trống dễ nhầm với chưa nhập. */
-  const [vals, setVals] = useState<string[]>(
+  const [vals0] = useState<string[]>(() => (
     cell.noShow && cell.criteria.every((v) => v === null)
       ? ['-', '', '', '']
-      : cell.criteria.map((v) => (v === null ? '' : String(v))),
-  );
+      : cell.criteria.map((v) => (v === null ? '' : String(v)))
+  ));
+  const [vals, setVals] = useState<string[]>(vals0);
   const [busy, setBusy] = useState(false);
 
   /* Có '-' thì bỏ qua các ô số còn lại (xem `criteriaPatchFrom`). */
@@ -574,14 +576,18 @@ export function CriteriaModal({ cell, onSave, onClose, gvMacDinh = null }: {
   };
 
   return (
-    <Modal open onClose={onClose} title={`${skillLabel(cell.skill)} — bốn tiêu chí`} width="max-w-md"
-      footer={<>
-        <button className="btn" onClick={onClose} disabled={busy}>Đóng</button>
-        <button className="btn btn-primary" onClick={submit} disabled={busy || !patch} title={patch ? undefined : LOI_TIEU_CHI}>
-          {busy ? 'Đang lưu…' : 'Lưu'}
-        </button>
-      </>}>
-      <div className="space-y-3">
+    /* I4 (PR-SL): khung panel chung, chân luật S3 (đã gõ ô nào / đổi nhận xét / GV chấm → "Huỷ thay đổi"). */
+    <KhungPanel tieuDe={`${skillLabel(cell.skill)} — bốn tiêu chí`} longTrong z="z-[60]" onDong={() => { if (!busy) onClose(); }}
+      chan={{
+        daSua: vals.some((v, i) => v !== vals0[i]) || nx !== (cell.nhanXet ?? '') || (laS && !cungGvCham(gv, gv0, session?.user?.id)),
+        huy: { onClick: onClose, disabled: busy },
+        chinh: (
+          <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={submit} disabled={busy || !patch} title={patch ? undefined : LOI_TIEU_CHI}>
+            {busy ? 'Đang lưu…' : 'Lưu'}
+          </button>
+        ),
+      }}>
+      <div className="space-y-3 pt-3">
         {tc.map((label, i) => (
           <label key={i} className="flex items-center gap-3">
             <span className="w-8 text-xs text-slate-500 shrink-0">{tcNgan[i]}</span>
@@ -629,7 +635,7 @@ export function CriteriaModal({ cell, onSave, onClose, gvMacDinh = null }: {
             ' Band Writing của học viên = (Task 1 + Task 2 × 2) / 3, tính khi có cả hai task.'}
         </SectionNote>
       </div>
-    </Modal>
+    </KhungPanel>
   );
 }
 
