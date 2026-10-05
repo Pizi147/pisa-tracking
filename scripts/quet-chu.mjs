@@ -2,7 +2,7 @@
  * Quét chữ tiếng Việt hiển thị trên web (web/src, shared/domain, server/src) bằng AST → JSONL ra stdout.
  * Dùng cho PR-CHU (thiet-ke/CHU_CAN_SUA_2026-10.md) và để session sửa chữ chạy lại xem còn sót chữ nào không.
  * Không nằm trong `npm run check`. Chạy: node scripts/quet-chu.mjs > chu-tho.jsonl   (tóm tắt ra stderr)
- * Mỗi dòng: { id, file, line, loai, vo, text, nhom, lop?, truoc? }
+ * Mỗi dòng: { id, file, line, loai, vo, text, nhom, lop?, truoc?, trong? }   (lop: className · truoc: thẻ anh em liền trước · trong: thẻ cha)
  *   loai: jsx-text | attr:<tên> | string | template      vo: nơi chuỗi nằm (toast.push, notify.title, notFound, th, label:…)
  *   text: NFC, gộp khoảng trắng, ${x} → {x}              nhom: web | shared | server
  */
@@ -76,24 +76,24 @@ function quetFile(abs, rel, nhom, ra) {
     ra.push({ file: rel, line: dong(pos), loai, vo, text, nhom, ...them });
   };
   const van = (cha) => {
-    let buf = '', dau = -1, dauChi = 0;
-    const chi = () => { if (/\p{L}/u.test(buf.replace(/\{[^}]*\}/g, ''))) ghi(dau, buf, 'jsx-text', voThe(cha), { lop: lopThe(cha) || undefined, truoc: truocThe(cha, dauChi) }); buf = ''; dau = -1; };
-    cha.children.forEach((c, i) => {
+    let buf = '', dau = -1;
+    const chi = () => { if (/\p{L}/u.test(buf.replace(/\{[^}]*\}/g, ''))) ghi(dau, buf, 'jsx-text', voThe(cha), { lop: lopThe(cha) || undefined, truoc: truocThe(cha), trong: ts.isJsxElement(cha.parent) ? tenThe(cha.parent) : undefined }); buf = ''; dau = -1; };
+    cha.children.forEach((c) => {
       if (ts.isJsxText(c)) {
         const t = c.getText().replace(/&#?\w+;/g, (m) => THUC_THE[m] ?? m);
-        if (dau < 0 && t.trim()) { dau = c.getStart() + c.getText().search(/\S/); dauChi = i; }
+        if (dau < 0 && t.trim()) { dau = c.getStart() + c.getText().search(/\S/); }
         buf += t;
       } else if (ts.isJsxExpression(c)) {
         const e = c.expression;
         if (!e) return;
         if (coJsx(e)) return chi();
-        if (dau < 0) { dau = e.getStart(); dauChi = i; }
+        if (dau < 0) { dau = e.getStart(); }
         buf += ts.isStringLiteral(e) || ts.isNoSubstitutionTemplateLiteral(e) ? e.text : `{${ngan(e)}}`;
       } else chi();
     });
     chi();
   };
-  const truocThe = (cha, i) => { for (let j = i - 1; j >= 0; j--) { const c = cha.children[j]; if (ts.isJsxText(c) && !c.getText().trim()) continue; return ts.isJsxText(c) ? undefined : tenThe(c); } };
+  const truocThe = (cha) => { const ds = ts.isJsxElement(cha.parent) || ts.isJsxFragment(cha.parent) ? cha.parent.children : null; if (!ds) return; for (let j = ds.indexOf(cha) - 1; j >= 0; j--) { const c = ds[j]; if (ts.isJsxText(c) && !c.getText().trim()) continue; return ts.isJsxText(c) ? undefined : ts.isJsxExpression(c) ? "{}" : tenThe(c); } };
   (function duyet(n) {
     if (ts.isJsxElement(n) || ts.isJsxFragment(n)) van(n);
     else if (ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n)) {

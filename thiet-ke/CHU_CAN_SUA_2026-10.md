@@ -1,6 +1,19 @@
 # Chữ cần sửa trên web PISA Tracking — 10/2026
 
-Dành cho: người/AI đề xuất chữ mới. Đọc mục 0–2 trước. Chỉ điền cột "Đề xuất" (cột cuối). Giữ nguyên {n}, {tên}, {tuần}.
+Dành cho: người/AI đề xuất chữ mới. Đọc mục 0–4 trước. Chỉ điền cột "Đề xuất" (cột cuối). Giữ nguyên {n}, {tên}, {tuần}.
+
+## Mục lục các file con
+
+Mục 5 và 6 nằm ở bốn file con (mỗi file chép lại mục 1 dạng rút gọn):
+
+| File | Màn | Số mục |
+|---|---|---|
+| [CHU_CAN_SUA_2026-10-a-tong-quan-cong-viec.md](CHU_CAN_SUA_2026-10-a-tong-quan-cong-viec.md) | Tổng quan · Phân tích · Công việc · Chờ duyệt | 133 |
+| [CHU_CAN_SUA_2026-10-b-hoc-vien-lop.md](CHU_CAN_SUA_2026-10-b-hoc-vien-lop.md) | Học viên & Lớp · Hồ sơ lớp · Hồ sơ HV · Ngăn Case · Ý thức · Chuyển lớp · Hồ sơ giáo viên | 175 |
+| [CHU_CAN_SUA_2026-10-c-test.md](CHU_CAN_SUA_2026-10-c-test.md) | Lịch Test · Nhập điểm · Kế hoạch Test · Hồ sơ Mock Test | 70 |
+| [CHU_CAN_SUA_2026-10-d-chung-may-chu.md](CHU_CAN_SUA_2026-10-d-chung-may-chu.md) | Quản trị · thanh trên, chuông, đăng nhập · câu báo lỗi · thông báo chuông · nhật ký | 224 |
+
+**Tổng 602 mục.**
 
 ## 0. Chuẩn chung
 
@@ -59,7 +72,7 @@ Ba đơn vị đếm **không bao giờ cộng vào nhau**: số SOS hiện tạ
 | Trang chi tiết một lượt MT | `Hồ sơ Mock Test` | Thông tin đợt Mock Test · Hồ sơ đợt | 01/10 A-037, A-038 |
 | Khối số đầu trang Lịch Test | `Tiến độ chấm điểm` | Tổng quan chấm điểm | 01/10 A-040 |
 | Các lần sửa lịch, sửa điểm | `Lịch sử` | Lịch sử thay đổi · Lịch sử cập nhật · Lịch sử chỉnh sửa | 01/10 A-043 |
-| Việc của mình đến hạn hôm nay | `Việc hôm nay` | Việc của tôi · hôm nay | 01/10 A-045 |
+| Việc của mình đến hạn hôm nay | `Việc hôm nay` | (khối “Việc của tôi · hôm nay” đổi thành “Việc hôm nay”) | 01/10 A-045 |
 | Xuất Excel | `Xuất kết quả Test` | Xuất kết quả Mock Test | 01/10 A-053 |
 | Tên trang tính trong Excel Phân tích | `Tổng hợp` · `HV cần chú ý` · `Lớp nhiều vi phạm` · `Xử lý theo loại` (có dấu tiếng Việt) | Tong hop · HV can chu y · Lop nhieu vi pham · Xu ly theo loai | 01/10 A-054 |
 | Nhập điểm một lớp | `Nhập điểm` | Nhập điểm Test · Chấm · → Nhập · Nhập điểm cả lớp | 01/10 D-022, D-024 |
@@ -221,16 +234,93 @@ Máy gắn cờ, người đọc quyết: mỗi mục trong file này đã đư�
 
 ## 4. Cụm khái niệm nhiều tên
 
-(điền ở CHU-4)
+(Chỉ cụm có ≥ 2 biến thể đang hiện trên màn; số "trên màn" = số dòng chữ khác nhau thấy khi bấm thử, số "trong mã" = số chuỗi quét được.)
 
-## 5. Theo màn
-
-(điền ở CHU-4)
-
-## 6. Câu báo lỗi, thông báo chuông, nhật ký (không gắn một màn)
-
-(điền ở CHU-4)
+| Cụm | Đã chốt chưa | Biến thể · số chỗ | Ví dụ `file:dòng` | Đề xuất |
+|---|---|---|---|---|
+| Lượt / đợt (một lần thi gồm nhiều kỹ năng) | Chốt chung: chưa chốt | lượt: 162 chỗ trong mã, có trên màn<br>đợt: 121 chỗ trong mã, có trên màn | lượt: `server/src/classes/xoaKetThucLop.ts:22` · `server/src/duyet/loaiYeuCau.ts:252` · `server/src/fasttrack/absence.ts:66`<br>đợt: `server/src/classes/intake.ts:629` · `server/src/classes/thongTinLop.ts:42` · `server/src/fasttrack/absence.ts:203` | |
+| Test / bài kiểm tra / lịch kiểm tra | Chốt: `Test`, `Lịch Test`, `Bài kiểm tra` (bỏ "Lịch kiểm tra", "Bài đánh giá") | Test: 153 chỗ trong mã, có trên màn<br>Bài kiểm tra: 17 chỗ trong mã, có trên màn<br>Bài đánh giá: 2 chỗ trong mã, chưa thấy trên màn<br>Lịch kiểm tra: 0 chỗ trong mã, chưa thấy trên màn | Test: `server/src/cases/cases.ts:2901` · `server/src/cases/sos.ts:511` · `server/src/cases/sos.ts:523`<br>Bài kiểm tra: `server/src/fasttrack/cycles.ts:390` · `server/src/normal/regular.ts:707` · `server/src/worklist/mywork.ts:342`<br>Bài đánh giá: `server/src/fasttrack/cycles.ts:393` · `web/src/modules/cases/QuickReport.tsx:338` | |
+| Case / case | Chốt: `Case` viết hoa | Case: 341 chỗ trong mã, có trên màn<br>case (thường): 2 chỗ trong mã, có trên màn | Case: `server/src/cases/boTro.ts:143` · `server/src/cases/cases.ts:157` · `server/src/cases/cases.ts:164`<br>case (thường): `server/src/cases/cases.ts:551` · `web/src/modules/phanTich/TongHopVanDeHv.tsx:110` | |
+| Hạn chấm / hạn nhập | Chốt: `Hạn chấm` | Hạn chấm: 22 chỗ trong mã, có trên màn<br>Hạn nhập: 5 chỗ trong mã, có trên màn | Hạn chấm: `server/src/fasttrack/attempts.ts:1201` · `server/src/fasttrack/skillSchedule.ts:963` · `server/src/fasttrack/skillSchedule.ts:965`<br>Hạn nhập: `server/src/giaoVien/hoSo.ts:289` · `server/src/worklist/mywork.ts:876` · `shared/domain/metrics.ts:77` | |
+| Nhập điểm / chấm / ghi điểm | Chốt: `Nhập điểm` | Nhập điểm: 63 chỗ trong mã, có trên màn<br>Chấm: 114 chỗ trong mã, có trên màn<br>Ghi điểm: 4 chỗ trong mã, có trên màn | Nhập điểm: `server/src/fasttrack/attempts.ts:1429` · `server/src/fasttrack/attempts.ts:1481` · `server/src/fasttrack/attempts.ts:1486`<br>Chấm: `server/src/fasttrack/attempts.ts:1201` · `server/src/fasttrack/attempts.ts:1328` · `server/src/fasttrack/attempts.ts:1332`<br>Ghi điểm: `shared/domain/nhatKy.ts:25` · `web/src/modules/students/StudentDetailPage.tsx:346` · `web/src/modules/students/StudentPlanPanel.tsx:256` | |
+| Kỹ năng / môn | Chưa chốt (lớp thường gọi "Môn") | Kỹ năng: 222 chỗ trong mã, có trên màn<br>Môn: 173 chỗ trong mã, có trên màn | Kỹ năng: `server/src/cases/boTro.ts:124` · `server/src/cases/cases.ts:187` · `server/src/cases/cases.ts:483`<br>Môn: `server/src/cases/boTro.ts:148` · `server/src/cases/cases.ts:157` · `server/src/cases/cases.ts:1272` | |
+| Học viên / HV / em / Học sinh | Chốt: `HV` ngắn, `Học viên` đầy đủ; bỏ "Học sinh", "HS" | Học viên: 365 chỗ trong mã, có trên màn<br>HV: 46 chỗ trong mã, có trên màn<br>em: 217 chỗ trong mã, có trên màn<br>Học sinh / HS: 0 chỗ trong mã, chưa thấy trên màn | Học viên: `server/src/cases/cases.ts:302` · `server/src/cases/cases.ts:424` · `server/src/cases/cases.ts:437`<br>HV: `server/src/cases/sos.ts:45` · `server/src/cases/sos.ts:75` · `server/src/cases/sos.ts:76`<br>em: `server/src/cases/boTro.ts:124` · `server/src/cases/cases.ts:454` · `server/src/cases/cases.ts:776` | |
+| Mock Test / MT / Mock | Giữ tiếng Anh: `Mock Test`, `MT` | Mock Test: 36 chỗ trong mã, có trên màn<br>MT: 174 chỗ trong mã, có trên màn<br>mock (thường): 3 chỗ trong mã, có trên màn | Mock Test: `server/src/cases/sos.ts:511` · `server/src/cases/sos.ts:523` · `server/src/fasttrack/attempts.ts:868`<br>MT: `server/src/cases/sos.ts:546` · `server/src/cases/sosAuto.ts:153` · `server/src/classes/intake.ts:292`<br>mock (thường): `server/src/cases/sos.ts:57` · `server/src/cases/sos.ts:60` · `shared/domain/people.ts:150` | |
+| Quá hạn | Chốt: `Quá hạn` · `Quá hạn · {n} ngày` | Quá hạn: 29 chỗ trong mã, có trên màn<br>quá hạn (thường): 105 chỗ trong mã, có trên màn<br>Trễ / trễ: 10 chỗ trong mã, có trên màn | Quá hạn: `server/src/duyet/yeuCau.ts:247` · `server/src/worklist/mywork.ts:212` · `server/src/worklist/mywork.ts:224`<br>quá hạn (thường): `server/src/classes/banGiao.ts:266` · `server/src/duyet/loaiYeuCau.ts:44` · `server/src/duyet/loaiYeuCau.ts:298`<br>Trễ / trễ: `web/src/modules/cases/CasePanel.tsx:392` · `web/src/modules/phanTich/PhanTichGiaoVien.tsx:25` · `web/src/modules/phanTich/PhanTichGiaoVien.tsx:26` | |
+| Xong / hoàn thành / hoàn tất | Chốt: `Xong` | Xong: 9 chỗ trong mã, có trên màn<br>Đã xong: 1 chỗ trong mã, có trên màn<br>Hoàn thành: 44 chỗ trong mã, có trên màn<br>Hoàn tất: 15 chỗ trong mã, có trên màn | Xong: `shared/domain/phanTich.ts:234` · `web/src/modules/cases/QuickReport.tsx:486` · `web/src/modules/cham/GvCham.tsx:85`<br>Đã xong: `web/src/modules/cases/QuickReport.tsx:326`<br>Hoàn thành: `server/src/cases/cases.ts:157` · `server/src/cases/cases.ts:173` · `server/src/cases/cases.ts:176`<br>Hoàn tất: `server/src/fasttrack/attempts.ts:1454` · `server/src/fasttrack/skillSchedule.ts:864` · `server/src/normal/regular.ts:496` | |
+| Chờ duyệt | Chốt: `Chờ duyệt` | Chờ duyệt: 24 chỗ trong mã, có trên màn<br>Chờ QL duyệt: 7 chỗ trong mã, có trên màn<br>Chờ Quản lý duyệt: 13 chỗ trong mã, có trên màn<br>Đang chờ: 2 chỗ trong mã, chưa thấy trên màn | Chờ duyệt: `server/src/cases/cases.ts:758` · `server/src/duyet/yeuCau.ts:110` · `server/src/duyet/yeuCau.ts:326`<br>Chờ QL duyệt: `shared/domain/chuyenLop.ts:26` · `shared/domain/metrics.ts:161` · `shared/domain/yThuc.ts:137`<br>Chờ Quản lý duyệt: `server/src/students/viecHocVien.ts:75` · `server/src/worklist/metrics.ts:203` · `shared/domain/hocVienLop.ts:395`<br>Đang chờ: `shared/domain/metrics.ts:168` · `web/src/modules/cases/CasePanel.tsx:295` | |
+| Đã lên lịch / đã xếp | Chốt: `Đã lên lịch` | Đã lên lịch: 3 chỗ trong mã, có trên màn<br>Đã xếp: 2 chỗ trong mã, chưa thấy trên màn<br>Xếp lịch: 12 chỗ trong mã, có trên màn | Đã lên lịch: `shared/domain/fasttrack.ts:132` · `web/src/modules/fasttrack/HopThaoTacMt.tsx:94` · `web/src/modules/students/StudentPlanPanel.tsx:90`<br>Đã xếp: `web/src/modules/test/keHoach/NganXepHangLoat.tsx:172` · `web/src/modules/test/keHoach/NganXepLichMt.tsx:196`<br>Xếp lịch: `server/src/worklist/mywork.ts:955` · `server/src/worklist/mywork.ts:956` · `shared/domain/nhatKy.ts:30` | |
+| Từ chối / không duyệt | Chốt: `Bị từ chối` | Bị từ chối: 16 chỗ trong mã, có trên màn<br>Từ chối: 48 chỗ trong mã, có trên màn<br>Không duyệt: 2 chỗ trong mã, chưa thấy trên màn | Bị từ chối: `server/src/cases/boTro.ts:265` · `server/src/cases/cases.ts:758` · `server/src/cases/cases.ts:986`<br>Từ chối: `server/src/cases/boTro.ts:265` · `server/src/cases/cases.ts:758` · `server/src/cases/cases.ts:948`<br>Không duyệt: `server/src/duyet/yeuCau.ts:467` · `web/src/modules/platform/AccountsAdmin.tsx:310` | |
+| Tạm dừng / tạm ngưng | Chốt: `Tạm dừng học` (em) | Tạm dừng: 25 chỗ trong mã, có trên màn<br>Tạm ngưng: 5 chỗ trong mã, có trên màn | Tạm dừng: `server/src/classes/luatLoTrinh.ts:593` · `server/src/students/students.ts:306` · `shared/domain/hanhTrinh.ts:607`<br>Tạm ngưng: `server/src/worklist/mgmttasks.ts:553` · `server/src/worklist/mgmttasks.ts:559` · `shared/domain/worklist.ts:64` | |
+| Phạm vi (xem được) | Chưa chốt | phạm vi: 111 chỗ trong mã, có trên màn<br>Tất cả / toàn hệ thống: 19 chỗ trong mã, có trên màn | phạm vi: `server/src/cases/cases.ts:437` · `server/src/cases/cases.ts:1084` · `server/src/cases/cases.ts:1377`<br>Tất cả / toàn hệ thống: `server/src/platform/accounts.ts:320` · `server/src/platform/accounts.ts:343` · `server/src/platform/accounts.ts:492` | |
+| Bạn / Tôi | Chốt 01/10 (F-017): `Tôi` ở nhãn. Câu báo lỗi dạng "Bạn không có quyền …": chưa chốt — khoảng 90 câu như vậy ở máy chủ, đã KHÔNG liệt kê riêng ở mục 6, xử lý một lần theo cụm này | Bạn / bạn: 192 chỗ trong mã, có trên màn<br>Tôi / tôi: 30 chỗ trong mã, có trên màn | Bạn / bạn: `server/src/cases/cases.ts:261` · `server/src/cases/cases.ts:437` · `server/src/cases/cases.ts:672`<br>Tôi / tôi: `shared/domain/dieuHuong.ts:108` · `shared/domain/duongHoSo.ts:142` · `shared/domain/hocVienLop.ts:84` | |
+| Hệ thống / Web / Máy | Chốt: `Hệ thống` | Hệ thống: 133 chỗ trong mã, có trên màn<br>Web / web: 15 chỗ trong mã, có trên màn<br>Máy: 9 chỗ trong mã, có trên màn | Hệ thống: `server/src/app.ts:149` · `server/src/cases/sos.ts:52` · `server/src/cases/systemClose.ts:96`<br>Web / web: `server/src/classes/intake.ts:149` · `server/src/worklist/mywork.ts:168` · `server/src/worklist/mywork.ts:1053`<br>Máy: `server/src/classes/thongTinLop.ts:77` · `server/src/db.ts:183` · `server/src/fasttrack/absence.ts:741` | |
+| Dữ liệu / số liệu / điểm | Chưa chốt | dữ liệu: 59 chỗ trong mã, có trên màn<br>số liệu: 7 chỗ trong mã, có trên màn | dữ liệu: `server/src/app.ts:133` · `server/src/app.ts:137` · `server/src/app.ts:143`<br>số liệu: `shared/domain/display.ts:98` · `shared/domain/display.ts:172` · `web/src/modules/phanTich/HieuQuaPa.tsx:193` | |
+| Thành công / tiến bộ (kết quả PA) | Chốt: `Tiến bộ`, `Không tiến bộ`, `Kém hơn` | Thành công: 10 chỗ trong mã, chưa thấy trên màn<br>Tiến bộ: 19 chỗ trong mã, có trên màn<br>Không đổi / Giữ nguyên: 17 chỗ trong mã, có trên màn | Thành công: `server/src/cases/cases.ts:161` · `server/src/cases/cases.ts:1119` · `server/src/classes/phanTichLop.ts:162`<br>Tiến bộ: `server/src/normal/cuoiKhoa.ts:423` · `shared/domain/cases.ts:291` · `shared/domain/cases.ts:292`<br>Không đổi / Giữ nguyên: `server/src/cases/cases.ts:2865` · `server/src/cases/planRevisions.ts:54` · `shared/domain/cases.ts:907` | |
+| Mong đợi / kỳ vọng | Chốt: `kỳ vọng` | kỳ vọng: 107 chỗ trong mã, có trên màn<br>mong đợi: 2 chỗ trong mã, có trên màn | kỳ vọng: `server/src/cases/signals.ts:287` · `server/src/cases/sos.ts:464` · `server/src/classes/intake.ts:280`<br>mong đợi: `web/src/modules/cham/LuoiFT.tsx:143` · `web/src/modules/students/StudentDetailPage.tsx:516` | |
 
 ## 7. Cách làm
 
-(điền ở CHU-4)
+Làm ngày 05/10/2026 trên `origin/main` (commit `587bd66b`, sau PR #201). Chữ ở mục 5–6 là chữ **hiện có trên `main`**, chưa gồm gì PR-NV / PR-MTa / PR-DL / PR-SL sẽ đổi.
+
+### 7.1. Đã chạy gì
+
+1. **Quét máy** — `node scripts/quet-chu.mjs` (có trong repo, không nằm trong `npm run check`; đọc AST bằng `typescript`, bỏ `server/src/{tests,seed,migrate,ops}`, trang `/dev/thanh-phan`, thanh DemoBar). Kết quả: **8 009 bản ghi** · web 4 361 · shared 1 594 · server 2 054 · theo loại: chuỗi 4 103 · mẫu `${…}` 1 134 · chữ trong JSX 1 467 · thuộc tính (`placeholder`, `title`, `aria-label`, `hint`…) 1 305 · **5 512 chuỗi khác nhau**. Script có 6 phép tự kiểm (có `notify.title`, `toast`, `placeholder`; không lọt `tests/` `seed/`; `Chưa có PA` đúng `file:dòng`; tổng 4 000–9 000).
+2. **Bộ lọc L1–L10** (script tạm, không commit): **1 057 ứng viên** (L1 565 · L2 19 · L3 7 · L4 286 · L5 26 · L7 8 · L8 191 · L9 94 · L10 13). Đã siết: tooltip (`hint`, `title`, `goiY`) chỉ gắn L1 khi > 25 từ (tooltip dài vừa phải là chỗ đúng để giải thích); L4 bỏ qua "Hệ thống" làm chủ ngữ, "Thao tác khác", "Người thực hiện", "Ghi nhận", "Quản trị hệ thống"; L8 bỏ các cụm quá chung (`đạt`, `quá hạn`, `SOS`, `phương án`, `hôm nay`, `Chấm`…) và xoá chữ đã chốt khỏi câu trước khi so (để "Gửi Quản lý duyệt" không dính "Gửi Quản lý"). `badRequest(` được tính là hàm báo lỗi như `notFound(`, `forbidden(` (kế hoạch không ghi nhưng mã dùng nhiều).
+3. **Bấm thử thật** bằng Browser pane trên bản dev `PORT=4340 WEB_PORT=5340` (cổng do session planning giao), DB demo riêng trong worktree. Thu **436 trạng thái màn** (5 340 dòng chữ khác nhau) bằng đoạn JS thu mọi chữ đang hiện + `placeholder`/`title`/`aria-label`, kèm tiêu đề khu vực; có bộ dò tự bấm menu ⋮ ⋯ +, tab, chip và từng mục trong menu (mở hộp, thu, đóng). Không bấm nút xác nhận phá dữ liệu. Đã tắt máy dev, dọn tiến trình cổng 4340/5340/4341.
+4. **Ghép** ứng viên với chữ trên màn: **304/1 057** thấy lúc chạy (màn, khu vực, vai lấy từ đó); **753** chỉ có trong mã → "Ai thấy" có dấu `*`, "Đang làm gì" ghi "chưa thấy tận mắt".
+5. **Đọc tay từng ứng viên** → giữ **602 mục** (bỏ các báo nhầm: tên đã chốt, nhãn ngắn tự nhiên, tên riêng, chữ chỉ có ở bản demo, chữ đã giao PR khác ở mục 2). Mã lý do ghi theo lý do chính khi đọc, nên số L3 (câu giải thích dưới ô) cao hơn số máy gắn.
+
+### 7.2. Điều đáng biết khi đề xuất chữ mới
+
+- **Câu "Bạn …" ở máy chủ** (khoảng 90 câu như "Bạn không có quyền …", "Bạn chỉ xem được …") **không liệt kê riêng**: "Bạn" trong câu báo lỗi vốn tự nhiên; chốt 01/10 chỉ nói `Tôi` ở nhãn. Cần chủ sản phẩm quyết một lần (xem mục 4, cụm "Bạn / Tôi").
+- **"không hợp lệ"** có 81 câu khác nhau, 80 câu đã liệt kê (mục 6 và các màn, mã `L4`): cùng một mẫu, nên đề xuất **một mẫu câu** (ví dụ "{Ô}: nhập sai") rồi áp cho cả nhóm.
+- **Hộp "Cách tính" của số liệu** (`shared/domain/metrics.ts` `cauHoi`, `tapDuDieuKien`, `khuTrung`, hiện qua `web/src/ui/SoLieu.tsx`) giọng đặc tả, có mã nội bộ (`T53 Q2`, `F11`, `K1-26`, `sos_level`) — nhóm đáng sửa nhất, nằm ở file `a`.
+- **Chữ lọt lúc chạy (L7)**: nhật ký Quản trị hiện `Case {n} · extra_homework` (`QT`); câu báo lỗi lộ tên biến (`baiId`, `hanTheoNgay`, `studentId`, `ownerId`, `SCH-01`) ở mục 6 và mục `QT`.
+- Chữ mà **chính phép kiểm khớp** có ghi `(test khớp)`: sửa chữ phải sửa cả `server/src/tests`.
+- Một số mục có chữ trong mã nhưng **chưa thấy tận mắt** (câu lỗi 403, trạng thái rỗng hiếm, hộp xác nhận chỉ hiện khi dữ liệu đặc biệt): ghi rõ ở cột "Đang làm gì".
+
+### 7.3. Màn đã đi qua (CHU-3 bước 4)
+
+| Vai | Màn | Kết quả |
+|---|---|---|
+| GVCN 7 | G1 Tổng quan | ✔ thu nền + bấm 24 nút; chuông thông báo mở (một danh sách, hai nhóm trong đó); menu tài khoản |
+| | G2 Học viên & Lớp | ✔ nền; dò 30/42 nút (chip lọc bấm được một phần: trang vẽ lại sau mỗi lần lọc); chưa dựng trạng thái rỗng "lọc không ra" |
+| | G3 Lưu trữ | ✔ |
+| | G4 Hồ sơ lớp | ✔ lớp 3, 5, 6, 7, 17, 18, 19, 22 (3 tab); menu ⋮, ⋯ dòng, "+ Case", "+ Học viên" ở lớp 3 và 22; menu "+n": ✗ (không có ở dữ liệu demo) |
+| | G5 Hồ sơ HV | ✔ HV 48, 50, 10, 42, 76, 84, 85, 104 (3 tab, ⋮, "+ Case"; bảng Mock Test) |
+| | G6 Ngăn Case | ◐ view `ke-hoach` (Nộp kế hoạch bổ trợ) và panel "+ Case"; view `ghi-ket-qua` mở nhưng chỉ thu được phần khung; **chưa thu**: `hoan-thanh`, `tra-loi`, `them-pa` đủ trường |
+| | G7 + Case | ✔ (tab "Đang gặp vấn đề" / "Đã xong từ trước", "Tạo Case") |
+| | G8 Lịch Test | ✔ dải số, "Nợ tuần trước", mở lớp (22/29 nút); đang là bản **trước** PR-LT3 |
+| | G9 Nhập điểm | ✔ lưới FT, RF, bảng điểm lớp thường (FOU, Pre FOU, BE); gõ `99`, `abc`, `-`, `25`: **không thấy câu lỗi hay toast trên màn** nên chưa có chữ lỗi nhập điểm từ màn thật (chỉ có từ mã) |
+| | G10 Hồ sơ Mock | ✔ lượt 133, 134: menu ⋯ (GVCN: `Báo vắng`, `Huỷ điểm`; QL thêm `Dời hạn chấm`, `Dời lịch thi`), `Sửa điểm`; **chưa thu** `Bỏ kỹ năng`, `Huỷ cả lượt` (không có trong dữ liệu) |
+| | G11 Ý thức | ✔ tab Ý thức & Phối hợp (lớp và HV), panel "+ Ghi vi phạm"; toast Hoàn tác **chưa thu** (cần ghi vi phạm thật) |
+| | G12 Công việc | ✔ hai tab (Hỗ trợ học viên, Yêu cầu của tôi) |
+| | G13 Chuyển lớp / Đề xuất | ✔ "Đề xuất chuyển lớp" (HV 104, lớp 22) |
+| | G14 Lộ trình tiếp theo | ✔ một em (HV 104/50) và cả lớp (lớp 22 ⋮ "Ghi lộ trình tiếp theo cả lớp") |
+| | G15 Bàn giao | ◐ `?viec=ban-giao` mở nền; phiếu đầy đủ chưa dò từng nút |
+| | G16 Kết luận khoá | ✔ menu ⋮ "Kết luận lộ trình" |
+| | G17 Thêm học viên | ✔ panel "+ Học viên" (lưới, "Đọc nội dung đã dán", "Thêm học viên" lúc trống) |
+| | G18/G19 Hồ sơ GV / cá nhân | ✔ |
+| | Điểm theo lớp (PR-DL) | ✗ chưa có trên `main` |
+| GVBM 9 | G1, G8, G9 (Speaking), G12 | ✔; `/giao-vien/7` → câu chặn ✔; Kế hoạch Test qua URL → chuyển về Lịch Test ✔ |
+| QL 2 (+3) | Q1 Việc hôm nay | ✔ (QL 3 cho Tổng quan nhiều trạng thái quá hạn) |
+| | Q2 Phân tích | ✔ 5 góc nhìn × khung Fast Track và Lớp thường |
+| | Q4 Tạo lớp | ✔ panel "+ Lớp mới" (Một lớp / Nhiều lớp, Fast Track / Lớp thường, LT1/LT2/RF) |
+| | Q5–Q7 | ✔ Học viên & Lớp, hồ sơ lớp ⋮ (Chuyển tiếp lớp…, Sửa thông tin lớp, Xuất Excel, Lịch Test của lớp), HV ⋮ |
+| | Q8 Kế hoạch Test | ◐ nền; panel "Xếp lịch MT…" 7/7 nút; hộp kỹ năng neo cạnh chip và popup cảnh báo **chưa mở được** (phải bấm tay đúng ô) |
+| | Q9 Chờ duyệt | ✔ nền; mở `Từ chối` và `Duyệt`, đóng không xác nhận |
+| | Q10–Q12 Công việc | ✔ Vận hành + "+ Giao việc", Báo cáo đơn vị (nền), Hỗ trợ học viên |
+| | Q13 Hồ sơ GV người khác | ✔ |
+| | Xuất Excel MT | ◐ mở được panel từ ⋮ lớp; nội dung tệp Excel chỉ lấy chữ từ mã (`shared/domain/xuatMt.ts`) |
+| Quản trị 1 | A1 Quản trị | ✔ 3 tab, dò 9 nút mỗi tab |
+| | A2 hộp Kết thúc lớp / Xoá HV | ✔ mở hộp, không xác nhận. **Xoá lớp**: không có ở lớp có dữ liệu (chỉ lớp trống) → ✗ |
+| | A3 Đăng nhập / đăng xuất | ✔ ba tab (Đăng nhập, Giáo viên đăng ký, Vào nhanh); gửi trống và sai mật khẩu: **không thấy câu lỗi mới** trên màn |
+| Điện thoại 375 | G1, G2, G5, G8, G9, Q1 (+ Q8, Q9) | ✔ nền; menu ⋯ và "+n" ở G2; thẻ `TheDong` có trong nền G2/G5 |
+
+### 7.4. Khác với kế hoạch
+
+- Script quét **nằm trong repo** `scripts/quet-chu.mjs` (chủ sản phẩm 05/10, Q1). Bộ lọc, bộ ghép, bộ thu chữ trên màn **không commit** (scratchpad).
+- Cổng `4340/5340` thay `4631/5631` (session planning giao vì ba session khác đang chạy).
+- File **chia thành 5** (file chính + 4 file con) vì 602 mục > 450.
+- Chủ sản phẩm chọn Q2: file chỉ liệt kê chữ chối + mục 4; không có phụ lục mọi nhãn.
