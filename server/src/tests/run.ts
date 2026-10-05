@@ -103,7 +103,16 @@ const GONE = 'behav' + 'iour';
 let passed = 0;
 const failures: string[] = [];
 
+/*
+ * PR-BN: libsql giữ một đối tượng Rust cho MỖI `prepare()` và chỉ trả bộ nhớ khi GC dọn; mã gọi `db().prepare(...)` ở mọi lần
+ * dùng (6,8 triệu lần cho cả bộ phép kiểm) mà heap JS chỉ ~100 MB nên V8 gần như không chạy GC → RSS lên tới 6,7 GB. Gọi GC
+ * mỗi 25 phép kiểm đưa đỉnh xuống ~2,2 GB, không đổi kết quả. `gc` chỉ có khi chạy với `--expose-gc` (npm test); thiếu thì bỏ qua.
+ */
+let soPhep = 0;
+function donBoNho() { if (++soPhep % 25 === 0) (globalThis as { gc?: () => void }).gc?.(); }
+
 function check(name: string, fn: () => void) {
+  donBoNho();
   try { fn(); passed++; console.log(`  ✓ ${name}`); }
   catch (e: any) {
     failures.push(`${name}: ${e.message}`);
@@ -111,6 +120,7 @@ function check(name: string, fn: () => void) {
   }
 }
 async function checkAsync(name: string, fn: () => Promise<void>) {
+  donBoNho();
   try { await fn(); passed++; console.log(`  ✓ ${name}`); }
   catch (e: any) {
     failures.push(`${name}: ${e.message}`);
