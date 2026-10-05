@@ -49,7 +49,7 @@ export type HoSoLop = {
     coTheXoaKetThuc?: boolean;
   };
 };
-export type ViecDauTrang = 'tien-do' | 'chuyen-tiep' | 'ban-giao' | 'phan-cong' | 'thong-tin' | 'case' | 'hoc-vien' | 'xoa-lop' | 'ket-thuc-lop' | 'xuat-mt';
+export type ViecDauTrang = 'tien-do' | 'chuyen-tiep' | 'lo-trinh-ca-lop' | 'ban-giao' | 'phan-cong' | 'thong-tin' | 'case' | 'hoc-vien' | 'xoa-lop' | 'ket-thuc-lop' | 'xuat-mt';
 
 /**
  * ĐẦU TRANG HỒ SƠ LỚP (đặc tả §3.7, mockup 06c §1; PR-HVL K2-14, B4, E7, K2-13). Nằm ở: Học viên & Lớp → Hồ sơ lớp → đầu trang.
@@ -113,6 +113,8 @@ export function DauTrangLop({ data, periodId, onViec, onBanGiao }: {
     ...(data.viewer.canEditProgress ? [{ key: 'tien-do', nhan: thuong ? 'Lịch Test của lớp' : 'Tuần khai giảng', onChon: () => onViec('tien-do') }] : []),
     /* PR-CT (Q30-1): Quản lý RA LỆNH — lớp thường "Chuyển tiếp lớp…", lớp FT (gộp / tách lớp, đổi lộ trình) "Chuyển tiếp lớp…". GVCN không thấy. */
     ...(thuong && data.viewer.coTheChuyenTiep ? [{ key: 'chuyen-tiep', nhan: 'Chuyển tiếp lớp…', onChon: () => onViec('chuyen-tiep') }] : []),
+    /* PR-K26: GVCN (và ai ghi được Lộ trình tiếp theo — STUDENT_EDIT ở lớp, cùng cờ `canAddStudents`) ghi cho cả lớp trên một bảng. */
+    ...(thuong && data.viewer.canAddStudents ? [{ key: 'lo-trinh-ca-lop', nhan: 'Ghi lộ trình tiếp theo cả lớp', onChon: () => onViec('lo-trinh-ca-lop') }] : []),
     ...(!thuong && data.dai?.viewer.coTheChuyenNhieuEm ? [{ key: 'chuyen-tiep', nhan: 'Chuyển tiếp lớp…', onChon: () => onViec('chuyen-tiep') }] : []),
     ...phu.slice(2).map((x) => ({ key: x.key, nhan: x.nhan, onChon: x.lam })),
     /* PR-QU (A): GVCN lớp này cũng thấy — đổi được GV bộ môn, ô GVCN chỉ đọc. */

@@ -1763,6 +1763,16 @@ api.put('/students/:id/lo-trinh-tiep', requireAuth, wrap((req) => {
   return loTrinhTiepSvc.ghiLoTrinhTiep(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 
+/** PR-K26: Ghi lộ trình tiếp theo cả lớp (hồ sơ lớp ⋮) — một bảng, lưu một giao dịch. */
+api.get('/classes/:id/lo-trinh-tiep', requireAuth, wrap((req) => {
+  return loTrinhTiepSvc.layLoTrinhTiepCaLop(principalOf(req), pInt(req, 'id'));
+}));
+
+api.put('/classes/:id/lo-trinh-tiep', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return loTrinhTiepSvc.ghiLoTrinhTiepCaLop(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
 /** PR-LT2b (T49): Quản lý đánh dấu Đạt / Không đạt kỳ vọng đầu ra của em BE/ELE lên FT. Chỉ `request.approve` (máy chủ kiểm lại). */
 api.put('/students/:id/ket-luan-ft', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();

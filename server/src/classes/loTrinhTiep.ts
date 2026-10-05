@@ -1,5 +1,5 @@
-import { db } from '../db.ts';
-import { dongHocVien } from '../students/tamDung.ts';
+import { db, tx } from '../db.ts';
+import { HV_DANG_HOC_SQL, dongHocVien } from '../students/tamDung.ts';
 import {
   NORMAL_LADDER, PERMISSIONS, chuanHoaHuong, nhanHuong, nhanTiepTheo, soSanhLop, trongHaiTuanCuoi,
   type Huong, type ProgrammeCode,
@@ -84,10 +84,18 @@ export function layLoTrinhTiep(p: Principal, studentId: number) {
   };
 }
 
-/** PUT /students/:id/lo-trinh-tiep (STUDENT_EDIT ở lớp đang học). */
-export function ghiLoTrinhTiep(p: Principal, studentId: number, input: {
+type GhiVao = {
   huong: string; lopDuKienId?: number | null; mucTieu?: number | null; thangThi?: string | null; ghiChu?: string | null; ngayXemLai?: string | null;
-}) {
+};
+
+/** PUT /students/:id/lo-trinh-tiep (STUDENT_EDIT ở lớp đang học). */
+export function ghiLoTrinhTiep(p: Principal, studentId: number, input: GhiVao) {
+  ghiMotEm(p, studentId, input);
+  return layLoTrinhTiep(p, studentId);
+}
+
+/** LÕI ghi một em (PR-K26): kiểm + ghi + hành trình + nhật ký, KHÔNG đọc lại — `ghiLoTrinhTiep` và `ghiLoTrinhTiepCaLop` dùng chung. */
+export function ghiMotEm(p: Principal, studentId: number, input: GhiVao): void {
   const conn = db();
   const s = conn.prepare('SELECT id FROM students WHERE id = ?').get(studentId) as any;
   if (!s) throw notFound('Không tìm thấy học viên');
@@ -144,8 +152,95 @@ export function ghiLoTrinhTiep(p: Principal, studentId: number, input: {
     actorUserId: p.userId, action: 'student.next_step', entityType: 'student', entityId: studentId,
     after: { huong, lopDuKienId, mucTieu, thangThi: input.thangThi ?? null, ngayXemLai },
   });
+}
 
-  return layLoTrinhTiep(p, studentId);
+/** Ghi cả lớp tối đa 60 em một lần (T3 — lớp đông nhất demo 32). */
+export const GHI_CA_LOP_TOI_DA = 60;
+
+function lopThuongCua(classId: number): any {
+  const cls = db().prepare('SELECT id, code, programme_code, is_fast_track, branch_id FROM classes WHERE id = ?').get(classId) as any;
+  if (!cls) throw notFound('Không tìm thấy lớp');
+  if (cls.is_fast_track) throw badRequest('Lộ trình tiếp theo chỉ áp dụng cho lớp thường.');
+  return cls;
+}
+
+/**
+ * GET /classes/:id/lo-trinh-tiep (PR-K26) — bảng "Ghi lộ trình tiếp theo cả lớp": mỗi em đang học một dòng (tên, % Cuối khoá + gợi ý,
+ * bản ghi hiện tại) + lớp dự kiến chọn được. Số câu SQL không tăng theo số em (đọc theo lô).
+ */
+export function layLoTrinhTiepCaLop(p: Principal, classId: number) {
+  const conn = db();
+  const cls = lopThuongCua(classId);
+  require_(p, PERMISSIONS.STUDENT_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
+  const ma = (cls.programme_code ?? null) as ProgrammeCode | null;
+  const maKe = NORMAL_LADDER[ma as ProgrammeCode] ?? null;
+  const em = conn.prepare(
+    `SELECT s.id, s.full_name, s.student_code FROM enrollments e JOIN students s ON s.id = e.student_id
+      WHERE e.class_id = ? AND e.status = 'active' AND ${HV_DANG_HOC_SQL('s')}`,
+  ).all(classId) as any[];
+  em.sort((a, b) => String(a.full_name).localeCompare(String(b.full_name), 'vi'));
+  const sids = em.map((r) => r.id as number);
+  const ck = sids.length ? cuoiKhoaTheoHocVien(classId, sids) : new Map();
+  const banGhi = tiepTheoTheoHocVien([classId]);
+  const lopDuKien: LopDuKien[] = (conn.prepare(
+    `SELECT id, code, programme_code, is_fast_track FROM classes
+      WHERE branch_id = ? AND status = 'active' AND id != ? AND (programme_code = ? OR programme_code = ? OR is_fast_track = 1)`,
+  ).all(cls.branch_id, classId, maKe, ma) as any[])
+    .sort((a, b) => soSanhLop({ code: a.code }, { code: b.code }))
+    .map((r) => ({ id: r.id, code: r.code, ma: r.programme_code ?? null, ft: !!r.is_fast_track }));
+  return {
+    lop: { id: classId, code: cls.code as string, ma, maKe },
+    coTheGhi: can(p, PERMISSIONS.STUDENT_EDIT, { classId }),
+    toiDa: GHI_CA_LOP_TOI_DA,
+    lopDuKien,
+    hocVien: em.map((r) => ({
+      id: r.id as number, ten: r.full_name as string, ma: r.student_code as string,
+      cuoiKhoa: ck.get(r.id) ?? null, banGhi: banGhi.get(r.id) ?? null,
+    })),
+  };
+}
+
+/**
+ * PUT /classes/:id/lo-trinh-tiep (PR-K26) — ghi nhiều em trong MỘT giao dịch: một dòng sai thì không lưu dòng nào, lỗi nêu tên em và
+ * `details.studentId` để web chỉ đúng dòng. Cùng quyền với ghi một em (STUDENT_EDIT theo lớp). Dòng giữ nguyên HƯỚNG đã lưu thì giữ cả
+ * chi tiết đã lưu (lớp dự kiến, Target, tháng thi, ngày xem lại) — bảng chỉ sửa hướng + ghi chú, không được xoá mất chi tiết.
+ */
+export function ghiLoTrinhTiepCaLop(p: Principal, classId: number, body: { items?: unknown }): { daLuu: number } {
+  const conn = db();
+  lopThuongCua(classId);
+  require_(p, PERMISSIONS.STUDENT_EDIT, { classId }, 'Bạn không có quyền ghi lộ trình tiếp theo cho lớp này.');
+  const items = body?.items;
+  if (!Array.isArray(items) || !items.length) throw badRequest('Chưa có em nào để lưu.');
+  if (items.length > GHI_CA_LOP_TOI_DA) throw badRequest(`Mỗi lần lưu tối đa ${GHI_CA_LOP_TOI_DA} em.`);
+  const ten = new Map((conn.prepare(
+    `SELECT s.id, s.full_name FROM enrollments e JOIN students s ON s.id = e.student_id
+      WHERE e.class_id = ? AND e.status = 'active' AND ${HV_DANG_HOC_SQL('s')}`,
+  ).all(classId) as any[]).map((r) => [r.id as number, r.full_name as string]));
+  const daCo = tiepTheoTheoHocVien([classId]);
+  const thay = new Set<number>();
+  for (const it of items as any[]) {
+    const sid = Number(it?.studentId);
+    if (!Number.isInteger(sid) || !ten.has(sid)) throw badRequest('Có học viên không đang học lớp này.', { studentId: Number.isInteger(sid) ? sid : null });
+    if (thay.has(sid)) throw badRequest(`${ten.get(sid)}: trùng dòng.`, { studentId: sid });
+    thay.add(sid);
+  }
+  tx(() => {
+    for (const it of items as any[]) {
+      const sid = Number(it.studentId);
+      const cu = daCo.get(sid);
+      const huong = chuanHoaHuong(String(it.huong ?? ''));
+      const giu = cu && cu.huong === huong ? cu : null;
+      try {
+        ghiMotEm(p, sid, {
+          huong: String(it.huong ?? ''), ghiChu: typeof it.ghiChu === 'string' ? it.ghiChu.trim() || null : null,
+          lopDuKienId: giu?.lopDuKienId ?? null, mucTieu: giu?.mucTieu ?? null, thangThi: giu?.thangThi ?? null, ngayXemLai: giu?.ngayXemLai ?? null,
+        });
+      } catch (e: any) {
+        throw badRequest(`${ten.get(sid)}: ${e?.message ?? 'không lưu được'}`, { studentId: sid });
+      }
+    }
+  });
+  return { daLuu: items.length };
 }
 
 /** Đọc theo lô: bản ghi Lộ trình tiếp theo của mọi em CÒN ĐANG HỌC các lớp `classIds` — một câu. */
