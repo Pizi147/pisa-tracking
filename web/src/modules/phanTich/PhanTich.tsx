@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
+import { useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { ChonChuongTrinh } from '../worklist/ChonChuongTrinh.tsx';
 import { HieuQuaPa } from './HieuQuaPa.tsx';
 import { PhanTichGiaoVien } from './PhanTichGiaoVien.tsx';
@@ -23,7 +24,9 @@ import {
 export function PhanTich() {
   const { branchCount } = useSession();
   const [params, setParams] = useSearchParams();
-  const branchId = params.get('cn') ? Number(params.get('cn')) : null;
+  /* PR-NV (T9): cùng mặc định với Tổng quan (tab Phân tích nằm trong Tổng quan). */
+  const macDinh = useChiNhanhMacDinh();
+  const branchId = params.get('cn') ? Number(params.get('cn')) : macDinh;
   const { goc, ct: ctTuLoaiLop, boThamSo, gocMoi } = gocNhinTuThamSo(params);
   const ct = chuongTrinhTuThamSo(params.get('ct'));
   const tg = khoangTuThamSo(params.get('tg'));

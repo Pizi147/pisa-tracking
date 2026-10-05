@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSession } from '../../lib/session.tsx';
-import { BranchFilter } from '../../ui/Filters.tsx';
+import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { PhanTich } from '../phanTich/PhanTich.tsx';
 import { BranchPulse } from './BranchPulse.tsx';
 import { LichSapToi } from './Highlights.tsx';
@@ -34,7 +34,8 @@ export default function OverviewPage({ tab: tabProp = 'tong-quan' }: { tab?: Tab
     navigate(`${k === 'phan-tich' ? '/phan-tich' : '/'}${giu.size ? `?${giu}` : ''}`);
   };
   /* CHI NHÁNH ĐANG CHỌN NẰM TRÊN ĐỊA CHỈ TRANG (`cn`) — một nguồn cho cả trang, gửi đường dẫn vẫn ra đúng chi nhánh. */
-  const branchId = params.get('cn') ? Number(params.get('cn')) : null;
+  const macDinh = useChiNhanhMacDinh();
+  const branchId = params.get('cn') ? Number(params.get('cn')) : macDinh;
   const setBranchId = (id: number | null) => {
     const next = new URLSearchParams(params);
     if (id) next.set('cn', String(id)); else next.delete('cn');

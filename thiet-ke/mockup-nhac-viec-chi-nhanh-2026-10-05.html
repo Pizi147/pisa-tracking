@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="vi">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nhắc việc · Chi nhánh</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Inter:wght@500;600;700&display=swap">
+<style>
+/* PR-NV mockup: chỉ đổi chữ + mặc định; khung, màu, phông giữ như web hiện tại. */
+:root{
+  --bg:#f5f7fa;--surface:#ffffff;--surface-2:#eef2f7;--line:#d9e0ea;--fg:#1b2433;--muted:#5d6b80;--soft:#8592a6;
+  --accent:#1d5fbf;--accent-soft:#e3edfb;--wait:#6b4fc4;--wait-bg:#efe9fb;--ok:#1c7a4c;--ok-bg:#e2f4ea;
+  --bad:#b3261e;--bad-bg:#fbe5e3;--late:#b4400f;--late-bg:#fde6d8;--chip:#e9edf3;
+  --sans:"Be Vietnam Pro",system-ui,sans-serif;--num:"Inter","Be Vietnam Pro",sans-serif;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0c1220;--surface:#131b2c;--surface-2:#1a2438;--line:#26324a;--fg:#e4e9f2;--muted:#93a0b6;--soft:#6c7a92;
+  --accent:#7db3f0;--accent-soft:#1c2c48;--wait:#b9a3f5;--wait-bg:#2a2245;--ok:#6fd29c;--ok-bg:#16301f;
+  --bad:#f08a80;--bad-bg:#3b1a18;--late:#ff9166;--late-bg:#3e1f13;--chip:#222d42;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c1220;--surface:#131b2c;--surface-2:#1a2438;--line:#26324a;--fg:#e4e9f2;--muted:#93a0b6;--soft:#6c7a92;
+  --accent:#7db3f0;--accent-soft:#1c2c48;--wait:#b9a3f5;--wait-bg:#2a2245;--ok:#6fd29c;--ok-bg:#16301f;
+  --bad:#f08a80;--bad-bg:#3b1a18;--late:#ff9166;--late-bg:#3e1f13;--chip:#222d42;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 var(--sans);padding:16px 16px 48px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.frame{margin:0 auto;width:100%;display:flex;flex-direction:column;gap:12px;transition:max-width .2s}
+.frame.w375{max-width:375px}
+h1{font-size:20px;margin:0}
+h2{font-size:15px;margin:0}
+.note{color:var(--muted);font-size:13px;margin:0}
+.switch{display:flex;gap:6px;flex-wrap:wrap}
+button,select{font:inherit;color:inherit}
+.switch button,.btn{cursor:pointer;border:1px solid var(--line);background:var(--surface-2);border-radius:8px;padding:6px 12px;min-height:36px}
+.switch button[aria-pressed=true]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:var(--surface);font-weight:600}
+.btn-sm{min-height:32px;padding:4px 10px;font-size:13px}
+.w375 .btn-sm{min-height:44px}
+button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.topbar{display:flex;align-items:center;gap:16px;padding:10px 14px;flex-wrap:wrap}
+.topbar b{font-size:15px}.topbar span{color:var(--muted)}.topbar .on{color:var(--accent);font-weight:600}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sp{flex:1}
+.nhan{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:2px 8px;border-radius:6px;white-space:nowrap}
+.n-wait{background:var(--wait-bg);color:var(--wait)}.n-bad{background:var(--bad-bg);color:var(--bad)}.n-muted{background:var(--chip);color:var(--muted)}.n-late{background:var(--late-bg);color:var(--late)}
+.num{font-family:var(--num);font-variant-numeric:tabular-nums}
+.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.w375 .pair,.frame.w375 .pair{grid-template-columns:1fr}
+.tag{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--soft)}
+.tag.moi{color:var(--accent)}
+del{color:var(--bad);text-decoration-thickness:1px}
+.strike{opacity:.55}
+.callout{border-left:3px solid var(--accent);background:var(--surface-2);padding:8px 12px;border-radius:0 8px 8px 0;font-size:13px}
+/* dải Chờ duyệt */
+.dai{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:12px 16px}
+.dai .so{font-size:18px;font-weight:700}
+/* hộp Chờ duyệt */
+.seg{display:inline-flex;max-width:100%;overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+.seg button{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;padding:0 12px;min-height:32px;font-size:12.5px;font-weight:600;color:var(--muted)}
+.w375 .seg button{min-height:44px}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed=true]{background:var(--surface-2);color:var(--fg);box-shadow:inset 0 0 0 1px var(--accent)}
+.seg button[aria-pressed=true]::before{content:"✓";font-size:11px;color:var(--accent)}
+.seg .c{color:var(--soft);font-family:var(--num);font-weight:500}
+label.f{display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--muted)}
+select.field{min-height:36px;border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:4px 8px;width:176px;font-size:13.5px}
+.the{padding:12px 14px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 14px;align-items:start}
+.w375 .the{grid-template-columns:1fr}
+.the .dau{display:flex;gap:8px;align-items:flex-start}
+.the .loai{width:96px;flex:none;text-align:center;font-size:11px;font-weight:600;border-radius:4px;padding:2px 6px;background:var(--chip);color:var(--muted)}
+.w375 .the .loai{width:auto}
+.the .dong{font-size:13px;color:var(--muted);padding-left:104px}
+.w375 .the .dong{padding-left:0}
+.the .act{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;align-items:center}
+.w375 .the .act{justify-content:flex-start}
+.danhac{font-size:12px;color:var(--soft);font-family:var(--num)}
+.ds>.the+.the{border-top:1px solid var(--line)}
+.empty{padding:28px 16px;text-align:center;color:var(--muted)}
+.toast{display:inline-flex;gap:8px;align-items:center;padding:8px 12px;border-radius:8px;font-size:13px;border:1px solid var(--line);background:var(--surface)}
+.toast.ok{border-color:var(--ok);color:var(--ok)}.toast.err{border-color:var(--bad);color:var(--bad)}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{text-align:left;font-size:11.5px;color:var(--muted);font-weight:600;padding:8px 10px;background:var(--surface-2)}
+td{border-top:1px solid var(--line);padding:8px 10px;vertical-align:top}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+.tbl table{min-width:640px}
+section[hidden]{display:none}
+@media (prefers-reduced-motion:reduce){.frame{transition:none}}
+</style>
+
+<div class="wrap">
+  <div>
+    <h1>PR-NV · Nhắc việc + chi nhánh mặc định</h1>
+    <p class="note">Mockup chờ duyệt. Chỉ đổi chữ và giá trị mặc định; bố cục giữ như hiện tại.</p>
+  </div>
+  <div class="row">
+    <div class="switch" role="group" aria-label="Màn">
+      <button aria-pressed="true" data-v="tq">1 · Tổng quan</button>
+      <button aria-pressed="false" data-v="hop">2 · Tab Nhắc việc</button>
+      <button aria-pressed="false" data-v="cn">3 · Chi nhánh mặc định</button>
+    </div>
+    <span class="sp"></span>
+    <div class="switch" role="group" aria-label="Khổ">
+      <button aria-pressed="true" data-w="1440">1440</button><button aria-pressed="false" data-w="375">375</button>
+    </div>
+    <div class="switch" role="group" aria-label="Nền">
+      <button aria-pressed="false" data-t="light">Sáng</button><button aria-pressed="false" data-t="dark">Tối</button>
+    </div>
+  </div>
+
+  <div class="frame" id="frame">
+  <!-- ============ 1. TỔNG QUAN QL: DẢI CHỜ DUYỆT ============ -->
+  <section id="v-tq" class="frame" style="max-width:none">
+    <div class="card topbar"><b>PISA</b><span class="on">Tổng quan</span><span>Học viên &amp; Lớp</span><span>Test</span><span>Công việc <span class="nhan n-wait num">3</span></span></div>
+
+    <div class="tag">A · Có thẻ phải quyết</div>
+    <div class="pair">
+      <div>
+        <div class="tag" style="margin-bottom:6px">Hiện tại</div>
+        <div class="card dai">
+          <span class="nhan n-wait">Chờ duyệt</span>
+          <span><b class="so num">3</b> chờ duyệt</span>
+          <span class="row" style="gap:6px"><span class="nhan n-wait">Lịch thi <span class="num">2</span></span><span class="nhan n-wait">Ý thức <span class="num">1</span></span><span class="nhan n-bad">Quá hạn <span class="num">1</span></span><span class="nhan n-muted"><del>Để QL biết 7</del></span></span>
+          <span class="sp"></span><button class="btn btn-sm btn-primary">Mở hộp duyệt</button>
+        </div>
+      </div>
+      <div>
+        <div class="tag moi" style="margin-bottom:6px">Sau PR-NV</div>
+        <div class="card dai">
+          <span class="nhan n-wait" style="font-size:13px;padding:3px 10px">Chờ duyệt <b class="num">3</b></span>
+          <span class="row" style="gap:6px"><button class="nhan n-muted" style="border:0;cursor:pointer">Lịch thi <span class="num">2</span></button><button class="nhan n-muted" style="border:0;cursor:pointer">Ý thức <span class="num">1</span></button><button class="nhan n-late" style="border:0;cursor:pointer">⚠ Quá hạn <span class="num">1</span></button></span>
+          <span class="sp"></span><button class="btn btn-sm btn-primary">Mở hộp duyệt</button>
+        </div>
+        <p class="note" style="margin-top:6px">Tím = trạng thái chờ duyệt · xám = loại thẻ (bấm để lọc) · đỏ cam ⚠ = quá hạn.</p>
+      </div>
+    </div>
+
+    <div class="tag">B · Chỉ có việc cần nhắc, không có thẻ phải quyết</div>
+    <div class="pair">
+      <div>
+        <div class="tag" style="margin-bottom:6px">Hiện tại</div>
+        <div class="card dai">
+          <span class="nhan n-wait">Chờ duyệt</span>
+          <span><b class="so num">0</b> chờ duyệt</span>
+          <span class="nhan n-muted">Để QL biết <span class="num">7</span></span>
+          <span class="sp"></span><button class="btn btn-sm btn-primary">Mở hộp duyệt</button>
+        </div>
+      </div>
+      <div>
+        <div class="tag moi" style="margin-bottom:6px">Sau PR-NV</div>
+        <div class="callout">Không có dải. Khối "Cần xử lý" đứng đầu trang.</div>
+      </div>
+    </div>
+    <p class="note">Số cạnh mục Công việc, số chờ duyệt ở lớp, dải ở hồ sơ HV: đã chỉ đếm thẻ phải quyết — không đổi.</p>
+  </section>
+
+  <!-- ============ 2. CÔNG VIỆC › CHỜ DUYỆT › NHẮC VIỆC ============ -->
+  <section id="v-hop" class="frame" style="max-width:none" hidden>
+    <div class="card topbar"><b>PISA</b><span>Tổng quan</span><span>Học viên &amp; Lớp</span><span>Test</span><span class="on">Công việc</span></div>
+    <div class="row" style="align-items:flex-end">
+      <div class="seg" role="group" aria-label="Trạng thái">
+        <button aria-pressed="false">Chờ duyệt <span class="c">3</span></button>
+        <button aria-pressed="true">Nhắc việc <span class="c">5</span></button>
+        <button aria-pressed="false">Đã xử lý (30 ngày)</button>
+      </div>
+      <label class="f">Chi nhánh<select class="field"><option selected>Tất cả chi nhánh</option><option>Bãi Cháy</option><option>Móng Cái</option></select></label>
+    </div>
+    <div class="row">
+      <span class="note strike" style="font-size:12px"><del>Không cần duyệt — để bạn biết và nhắc giáo viên.</del></span>
+      <button class="btn btn-sm" id="nhacAll">Nhắc tất cả (<span class="num">4</span>)</button>
+    </div>
+
+    <div class="card ds">
+      <div class="the">
+        <div>
+          <div class="dau"><span class="loai">Báo QL</span><span><b>Mini Test chưa đạt</b> · Trần Minh Anh · CP FT 131</span></div>
+          <div class="dong">Mini Test 55% ngày 01/10 (cần từ 70%) — Case để mở, Quản lý xử lý từng trường hợp.<br><del>Không cần duyệt — để QL biết và nhắc.</del></div>
+        </div>
+        <div class="act"><button class="btn btn-sm nhac1">Nhắc Hà</button><button class="btn btn-sm" style="background:transparent">Mở</button></div>
+      </div>
+      <div class="the">
+        <div>
+          <div class="dau"><span class="loai">Báo QL</span><span><b>Cuối khoá dời quá hạn</b> · Lê Gia Bảo · BC FT 108</span></div>
+          <div class="dong">Bài Cuối khoá bị dời tới W2 OCT — sau tuần cuối khoá của lớp.<br><del>Không cần duyệt — để QL biết và nhắc.</del></div>
+        </div>
+        <div class="act"><button class="btn btn-sm nhac1">Nhắc Tuấn</button><button class="btn btn-sm" style="background:transparent">Mở</button></div>
+      </div>
+      <div class="the">
+        <div>
+          <div class="dau"><span class="loai">Báo QL</span><span><b>Bàn giao quá hạn</b> · BC FT 102</span></div>
+          <div class="dong">3 em chưa được xác nhận bàn giao (hạn hết 03/10).<del> Em vẫn chuyển đúng tuần — không cần duyệt, để QL biết và nhắc.</del></div>
+        </div>
+        <div class="act"><button class="btn btn-sm nhac1">Nhắc Lan</button><button class="btn btn-sm" style="background:transparent">Mở</button></div>
+      </div>
+      <div class="the">
+        <div>
+          <div class="dau"><span class="loai">Báo QL</span><span><b>Case quá hạn xác nhận nguyên nhân</b> · Phạm Thu · MC FT 115</span></div>
+          <div class="dong">Speaking dưới Target 1.0 từ MT2.</div>
+        </div>
+        <div class="act"><span class="danhac">Đã nhắc 09:14</span><button class="btn btn-sm" style="background:transparent">Mở</button></div>
+      </div>
+      <div class="the">
+        <div>
+          <div class="dau"><span class="loai">Báo QL</span><span><b>Ý thức quá hạn</b> · Đỗ Khánh · MC FT 115</span></div>
+          <div class="dong">Vi phạm lần 2 chưa có biện pháp.</div>
+        </div>
+        <div class="act"><button class="btn btn-sm nhac1">Nhắc Hưng</button><button class="btn btn-sm" style="background:transparent">Mở</button></div>
+      </div>
+    </div>
+
+    <div class="tag">Trạng thái</div>
+    <div class="pair">
+      <div class="card" style="padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+        <div class="note">Đang gửi</div>
+        <div><button class="btn btn-sm" disabled>Đang nhắc…</button></div>
+        <div class="note">Xong hết</div>
+        <div><span class="toast ok">Đã nhắc <span class="num">4/4</span></span></div>
+        <div class="note">Hết giờ giữa chừng (thẻ chưa nhắc vẫn còn nút)</div>
+        <div><span class="toast err">Đã nhắc <span class="num">30/50</span> — <span class="num">20</span> chưa nhắc, bấm lại</span></div>
+        <div class="note">Một thẻ, việc đã xong</div>
+        <div><span class="toast err">Trần Minh Anh: Việc này không còn trong danh sách của Hà.</span></div>
+      </div>
+      <div class="card">
+        <div class="empty"><b style="color:var(--fg)">Không có việc cần nhắc</b></div>
+        <div class="note" style="padding:0 14px 12px;text-align:center"><del>Không có việc nào cần QL biết</del></div>
+      </div>
+    </div>
+    <p class="note">Giữ: chữ "Báo QL" trên thẻ và chuông "Báo QL · …" (chủ sản phẩm 05/10). Link cũ <code>?xem=de-biet</code> vẫn mở tab này.</p>
+  </section>
+
+  <!-- ============ 3. CHI NHÁNH MẶC ĐỊNH ============ -->
+  <section id="v-cn" class="frame" style="max-width:none" hidden>
+    <div class="card topbar"><b>PISA</b><span class="on">Tổng quan</span><span>Học viên &amp; Lớp</span><span>Test</span><span>Công việc</span></div>
+    <div class="row" style="align-items:flex-end">
+      <h2 style="font-size:18px">Tổng quan</h2><span class="sp"></span>
+      <label class="f">Chi nhánh<select class="field" id="cnSel"><option value="">Tất cả chi nhánh</option><option value="1">Mạo Khê</option><option value="2" selected>Bãi Cháy</option><option value="3">Móng Cái</option></select></label>
+    </div>
+    <p class="note">Ô chi nhánh không đổi hình. Chỉ đổi giá trị lúc mở trang. Không thêm chữ.</p>
+
+    <div class="tbl"><table>
+      <thead><tr><th>Người xem</th><th>Lần đầu mở (chưa chọn gì)</th><th>Đã chọn một lần</th></tr></thead>
+      <tbody>
+        <tr><td>QL một chi nhánh</td><td>Ô ẩn, dữ liệu chi nhánh mình — như hôm nay</td><td>—</td></tr>
+        <tr><td>QL hai chi nhánh</td><td><b>Chi nhánh có nhiều lớp mình dạy hơn</b></td><td rowspan="4">Lần chọn trước, ở <b>mọi</b> màn (chọn Bãi Cháy ở Tổng quan → Lịch Test cũng Bãi Cháy). Chọn "Tất cả" cũng nhớ.</td></tr>
+        <tr><td>Quản trị có dạy lớp</td><td><b>Chi nhánh có nhiều lớp mình dạy nhất</b></td></tr>
+        <tr><td>Quản trị không dạy lớp</td><td>Tất cả chi nhánh · Học viên &amp; Lớp: chi nhánh đầu</td></tr>
+        <tr><td>GV dạy hai chi nhánh</td><td>Tất cả chi nhánh — như hôm nay</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">Link có <code>cn=</code> luôn thắng. Chi nhánh đã nhớ mà không còn quyền → bỏ, dùng luật trên (không lỗi, không trang rỗng).</p>
+    <p class="note">Áp ở: Tổng quan + Phân tích · Học viên &amp; Lớp · Lưu trữ · Kế hoạch Test (+ panel Xếp lịch MT theo trang) · Lịch Test · Hỗ trợ học viên · Vận hành · Báo cáo đơn vị. <b>Hộp Chờ duyệt / Nhắc việc luôn mở Tất cả</b> (chủ sản phẩm 06/10, số khớp badge). Link trỏ một thẻ / lớp (<code>the</code>, <code>lop</code>, <code>classId</code>, <code>mo-viec</code>, <code>open</code>) không áp mặc định.</p>
+  </section>
+  </div>
+</div>
+
+<script>
+const q = (s) => document.querySelectorAll(s);
+q('[data-v]').forEach((b) => b.onclick = () => {
+  q('[data-v]').forEach((x) => x.setAttribute('aria-pressed', x === b));
+  ['tq', 'hop', 'cn'].forEach((v) => { document.getElementById('v-' + v).hidden = v !== b.dataset.v; });
+});
+q('[data-w]').forEach((b) => b.onclick = () => {
+  q('[data-w]').forEach((x) => x.setAttribute('aria-pressed', x === b));
+  document.getElementById('frame').classList.toggle('w375', b.dataset.w === '375');
+});
+q('[data-t]').forEach((b) => b.onclick = () => {
+  q('[data-t]').forEach((x) => x.setAttribute('aria-pressed', x === b));
+  document.documentElement.dataset.theme = b.dataset.t;
+});
+const all = document.getElementById('nhacAll');
+all.onclick = () => {
+  all.disabled = true; all.textContent = 'Đang nhắc…';
+  setTimeout(() => {
+    q('.nhac1').forEach((n) => { const s = document.createElement('span'); s.className = 'danhac'; s.textContent = 'Đã nhắc 10:02'; n.replaceWith(s); });
+    all.remove();
+  }, 700);
+};
+q('.nhac1').forEach((n) => n.onclick = () => {
+  const s = document.createElement('span'); s.className = 'danhac'; s.textContent = 'Đã nhắc 10:01'; n.replaceWith(s);
+  const left = q('.nhac1').length; if (all.isConnected) all.innerHTML = left ? `Nhắc tất cả (<span class="num">${left}</span>)` : '';
+  if (!left) all.remove();
+});
+</script>
+</html>

@@ -82,7 +82,7 @@ export function demChip(ds: readonly { phanLoai: PhanLoai }[]): Record<KhoaChip,
 /** PR-GVb (D01/Q-B): trần một lần duyệt / nhắc hàng loạt — máy chủ (`duyetNhieu`, `nhacNhieu`) và web cùng đọc. */
 export const TRAN_HANG_LOAT = 50;
 
-/** PR-GVb (J5b, Q-D 02/10): thẻ QL phải quyết (Duyệt/Từ chối, Trả lời) · thẻ chỉ để QL biết và nhắc (Báo QL). */
+/** PR-GVb (J5b, Q-D 02/10): thẻ QL phải quyết (Duyệt/Từ chối, Trả lời) · thẻ chỉ để QL nhắc (Báo QL, tab Nhắc việc — PR-NV). */
 export type NhomHop = 'can-quyet' | 'de-biet';
 export function nhomCuaLoai(loai: string): NhomHop {
   return (LOAI_YC_META as Record<string, LoaiYcMeta>)[loai]?.kieuNut === 'nhac' ? 'de-biet' : 'can-quyet';
@@ -93,7 +93,7 @@ export const PHAN_LOAI_CAN_QUYET: readonly PhanLoai[] = PHAN_LOAI.filter((k) =>
 
 /**
  * MỘT HÀM ĐẾM cho mọi con số của hộp (chip, badge Công việc, dải Tổng quan). PR-GVb (J5b): `tong` = thẻ PHẢI QUYẾT (= chip "Tất cả" của tab
- * Chờ duyệt = số dòng có nút Duyệt/Trả lời) · `deBiet` = thẻ Để QL biết, KHÔNG cộng vào badge · `baoLen` giữ cho tương thích (= deBiet).
+ * Chờ duyệt = số dòng có nút Duyệt/Trả lời) · `deBiet` = thẻ tab Nhắc việc, KHÔNG cộng vào badge · `baoLen` giữ cho tương thích (= deBiet).
  */
 export function demHop(ds: readonly { loai: string; phanLoai: PhanLoai; hanDuyet: string | null }[], homNay: string) {
   const quyet = ds.filter((x) => nhomCuaLoai(x.loai) === 'can-quyet');
@@ -129,8 +129,11 @@ export function tomTatKetQuaHangLoat(viec: 'duyet' | 'nhac', ok: number, loi: re
     ['đã có người xử lý', loi.filter((l) => l.ma === 400 && /đã được xử lý/.test(l.loi)).length],
     ['không còn', loi.filter((l) => l.ma === 404).length],
   ];
-  const khac = loi.length - nhom.reduce((s, [, n]) => s + n, 0);
+  /* PR-NV: hết giờ giữa chừng (503) — nói cuối, kèm việc cần làm (chủ sản phẩm 05/10: "20 chưa nhắc, bấm lại"). */
+  const chuaKip = loi.filter((l) => l.ma === 503).length;
+  const khac = loi.length - chuaKip - nhom.reduce((s, [, n]) => s + n, 0);
   if (khac) nhom.push(['lỗi khác', khac]);
+  if (chuaKip) nhom.push([`chưa ${viec === 'duyet' ? 'duyệt' : 'nhắc'}, bấm lại`, chuaKip]);
   return `${dau} — ${nhom.filter(([, n]) => n > 0).map(([c, n]) => `${n} ${c}`).join(', ')}`;
 }
 
@@ -154,9 +157,9 @@ export function laTuDuyet(nguoiXin: number | null, nguoiDuyet: number): boolean 
   return nguoiXin !== null && nguoiXin === nguoiDuyet;
 }
 
-/** Đường tới đúng thẻ: người duyệt → hộp Chờ duyệt (Báo QL → tab Để QL biết), người xin → Yêu cầu của tôi. */
+/** Đường tới đúng thẻ: người duyệt → hộp Chờ duyệt (Báo QL → tab Nhắc việc), người xin → Yêu cầu của tôi. */
 export function duongThe(id: number, vai: 'duyet' | 'nguoi-xin' | 'de-biet'): string {
-  /* PR-GVb (J5b): thẻ Báo QL nằm ở tab Để QL biết. */
+  /* PR-GVb (J5b): thẻ Báo QL nằm ở tab Nhắc việc (mã `de-biet` giữ cho link cũ). */
   if (vai === 'de-biet') return `/cong-viec/cho-duyet?xem=de-biet&the=${id}`;
   return `/cong-viec/${vai === 'duyet' ? 'cho-duyet' : 'yeu-cau'}?the=${id}`;
 }
@@ -211,7 +214,7 @@ export type TheYeuCauDto = {
   duLieu: Record<string, unknown> | null;
 };
 
-/** PR-GVb (J5b): `cho` = thẻ PHẢI QUYẾT (= chip "Tất cả" = badge); `quaHan` = trong đó thẻ đỏ; `deBiet`/`deBietQuaHan` = thẻ Để QL biết, KHÔNG cộng vào `cho` — xem `demHop`. */
+/** PR-GVb (J5b): `cho` = thẻ PHẢI QUYẾT (= chip "Tất cả" = badge); `quaHan` = trong đó thẻ đỏ; `deBiet`/`deBietQuaHan` = thẻ Nhắc việc, KHÔNG cộng vào `cho` — xem `demHop`. */
 export type DemYeuCau = {
   cho: number; quaHan: number; baoLen: number; deBiet: number; deBietQuaHan: number; cuaToiCho: number; cuaToiTuChoi: number;
   /** PR-VAI-a (Q17): chip từng phân loại (thẻ phải quyết) — chỉ người duyệt. */
@@ -220,14 +223,13 @@ export type DemYeuCau = {
 
 export type ChipDem = { key: string; nhan: string; so: number; den: string; quaHan?: boolean };
 /**
- * PR-GVb (J5): hàng chip dải Chờ duyệt ở Tổng quan QL — từng phân loại phải quyết (> 0, thứ tự `PHAN_LOAI_CAN_QUYET`) · "Quá hạn" · "Để QL biết".
+ * PR-GVb (J5): hàng chip dải Chờ duyệt ở Tổng quan QL — từng phân loại phải quyết (> 0, thứ tự `PHAN_LOAI_CAN_QUYET`) · "Quá hạn". PR-NV (T8): không còn chip Nhắc việc — dải chỉ nói việc phải quyết.
  * `den` = query mở hộp đã lọc (nối thêm `&cn=` ở web).
  */
 export function chipChoDuyet(d: DemYeuCau): ChipDem[] {
   const kq: ChipDem[] = PHAN_LOAI_CAN_QUYET.filter((k) => (d.chip?.[k] ?? 0) > 0)
     .map((k) => ({ key: k, nhan: PHAN_LOAI_LABEL[k], so: d.chip![k], den: `?phan=${k}` }));
   if (d.quaHan > 0) kq.push({ key: 'qua-han', nhan: 'Quá hạn', so: d.quaHan, den: '?qua-han=1', quaHan: true });
-  if (d.deBiet > 0) kq.push({ key: 'de-biet', nhan: 'Để QL biết', so: d.deBiet, den: '?xem=de-biet' });
   return kq;
 }
 

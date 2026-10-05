@@ -5,7 +5,7 @@ import { useSession } from '../../lib/session.tsx';
 import { Empty, ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
-import { BranchFilter } from '../../ui/Filters.tsx';
+import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { NganXepHangLoat } from './keHoach/NganXepHangLoat.tsx';
 import { NganXepLichMt } from './keHoach/NganXepLichMt.tsx';
 import { LopKeHoach } from './keHoach/LopKeHoach.tsx';
@@ -23,7 +23,8 @@ export function KeHoachTestTab() {
   const [params, setParams] = useSearchParams();
   const { branchCount } = useSession();
   const cnUrl = params.get('cn') ?? params.get('branchId');
-  const branchId = cnUrl ? Number(cnUrl) : null;
+  const macDinh = useChiNhanhMacDinh();
+  const branchId = cnUrl ? Number(cnUrl) : macDinh;
   const loaiParam = params.get('loai') as 'ft' | 'thuong' | null;
   const classIdParam = params.get('classId') ? Number(params.get('classId')) : null;
 
@@ -181,7 +182,7 @@ export function KeHoachTestTab() {
       )}
 
       {xep === 'ft' && (
-        <NganXepLichMt lopDs={data.lop} lopMoSan={lopChon?.loai === 'ft' ? lopChon.id : null} coThuong={lopThuong.length > 0}
+        <NganXepLichMt chiNhanhDau={branchId} lopDs={data.lop} lopMoSan={lopChon?.loai === 'ft' ? lopChon.id : null} coThuong={lopThuong.length > 0}
           onDoiKhung={setXep} onClose={() => setXep(null)} onDone={reload} />
       )}
       {xep === 'thuong' && (

@@ -7,12 +7,12 @@
  */
 import { db } from '../db.ts';
 import {
-  ENTRY_SKILLS, MOC_KE_TIEP_SQL, PERMISSIONS, chuanHoaMaLop, coMocTiepTheo, coMocTiepTheoThuong, demLoc, mondayOfDate, phamViCoThe, phamViMacDinh,
-  type LocHocVien, type PhamVi,
+  ENTRY_SKILLS, MOC_KE_TIEP_SQL, PERMISSIONS, chiNhanhMacDinh, chuanHoaMaLop, coMocTiepTheo, coMocTiepTheoThuong, demLoc, mondayOfDate, phamViCoThe, phamViMacDinh,
+  laVaiQuanLy, type LocHocVien, type PhamVi,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays } from '../util.ts';
-import { can, editableSkills, scopeFor, type Principal } from '../permissions.ts';
+import { bangLop, can, editableSkills, scopeFor, type Principal } from '../permissions.ts';
 import { listClassSummaries, type ClassSummary } from './classes.ts';
 import { classProgressMany, missingForStudent } from './schedule.ts';
 import { standingFor } from '../students/standing.ts';
@@ -47,7 +47,7 @@ export type TrangHocVienLop = {
 const demRong = (): Record<LocHocVien, number> => demLoc([], 'tat-ca');
 
 export function danhSachHocVienLop(
-  p: Principal, f: { branchId?: number | null; q?: string | null; phamVi?: string | null } = {},
+  p: Principal, f: { branchId?: number | null; q?: string | null; phamVi?: string | null; cnNho?: number | null } = {},
 ): TrangHocVienLop {
   const today = demoToday();
   const conn = db();
@@ -71,7 +71,11 @@ export function danhSachHocVienLop(
   const dangDung: PhamVi = (coThe as string[]).includes(muon ?? '') ? (muon as PhamVi) : phamViMacDinh(coThe, p.roleKeys.some((k) => k === 'manager' || k === 'system_admin'));
   let chiNhanh: number | null = null;
   if (dangDung === 'chi-nhanh') {
-    chiNhanh = f.branchId && duocXemChiNhanh.includes(f.branchId) ? f.branchId : duocXemChiNhanh[0] ?? null;
+    /* PR-NV (T9): link `branchId` → lần chọn trước (`cnNho`, web nhớ; ngoài phạm vi thì bỏ, không 403) → gợi ý theo vai → chi nhánh đầu.
+       Màn này không có "Tất cả" trong ô chi nhánh. `cnNho` không đổi Phạm vi (khác `branchId`, dòng `muon`). */
+    const hopLe = (b: number | null | undefined): b is number => !!b && duocXemChiNhanh.includes(b);
+    const goiY = goiYChiNhanh(p, today);
+    chiNhanh = hopLe(f.branchId) ? f.branchId : hopLe(f.cnNho) ? f.cnNho : hopLe(goiY) ? goiY : duocXemChiNhanh[0] ?? null;
   }
   const phamVi = { coThe, dangDung, chiNhanh };
   const dl = danhSachLuuTru(p, {});
@@ -233,4 +237,18 @@ export function danhSachHocVienLop(
 export function chiNhanhTaoLop(p: Principal): number[] {
   return (db().prepare(`SELECT id FROM branches WHERE status = 'active' ORDER BY id`).all() as any[])
     .map((r) => r.id as number).filter((b) => can(p, PERMISSIONS.CLASS_CREATE, { branchId: b }));
+}
+
+/**
+ * PR-NV (T9): chi nhánh mặc định gợi ý cho Quản lý / Quản trị — vai Quản lý ở chi nhánh nào (nhiều → nơi dạy nhiều lớp hơn), không thì
+ * chi nhánh có nhiều lớp mình dạy / chủ nhiệm nhất. Vai khác (GV dạy hai chi nhánh giữ "Tất cả") hoặc không chọn được → null.
+ */
+export function goiYChiNhanh(p: Principal, homNay: string): number | null {
+  if (!laVaiQuanLy(p.roleKeys)) return null;
+  const quanLy = [...new Set(p.grants.filter((g) => g.roleKey === 'manager' && g.branchId !== null).map((g) => g.branchId as number))];
+  const lop = bangLop();
+  const lopDay = [...new Set(p.assignments
+    .filter((a) => a.effectiveFrom <= homNay && (!a.effectiveTo || a.effectiveTo >= homNay)).map((a) => a.classId))]
+    .map((id) => lop.get(id)?.branchId).filter((b): b is number => typeof b === 'number');
+  return chiNhanhMacDinh({ daChon: null, quanLy, lopDay, cuoi: null });
 }

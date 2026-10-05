@@ -31,6 +31,8 @@ export type Session = {
   nav?: NavQuyen;
   /** Máy chủ đang chạy bản chính (`laBanChinh()`): ẩn nhãn "Bản demo nội bộ". */
   banChinh?: boolean;
+  /** PR-NV (T9): chi nhánh mặc định khi chưa tự chọn — Quản lý/Quản trị theo vai, lớp mình dạy; null = Tất cả. */
+  chiNhanhGoiY?: number | null;
   /** PR-PH: chỉ có ở web — lần tải lại phiên vừa lỗi mạng/máy chủ (phiên vẫn coi là còn). */
   loiKetNoi?: string;
 };

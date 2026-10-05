@@ -95,6 +95,23 @@ export function napTheoDoiTuong(conn: any, ds: YeuCauRow[], sql: string): Map<nu
     .map((r) => [r.id as number, r]));
   return new Map(ds.map((y) => [y.id, theoId.get(y.doi_tuong_id)]));
 }
+/**
+ * PR-NV (rà #205): tên người nhận + giờ "đã nhắc hôm nay" cho thẻ Báo QL nạp theo đối tượng (Mini Test, Cuối khoá) — cùng câu với
+ * `bao_len_y_thuc`; khoá Mini Test cũ `mini_test:` chuẩn về `minitest:` như lõi nhắc (`nhacViec.ts`).
+ */
+function napNguoiNhac(conn: any, ds: YeuCauRow[], them: Map<number, any>): Map<number, any> {
+  const ids = ds.map((y) => y.id);
+  const nhac = new Map<number, any>();
+  if (ids.length) {
+    for (const r of conn.prepare(
+      `SELECT y.id, u.full_name AS ten_gv, n.created_at AS da_nhac
+         FROM yeu_cau_duyet y LEFT JOIN users u ON u.id = json_extract(y.du_lieu, '$.ownerId')
+         LEFT JOIN notifications n ON n.user_id = json_extract(y.du_lieu, '$.ownerId')
+               AND n.dedup_key = 'nhac:' || REPLACE(json_extract(y.du_lieu, '$.viecKey'), 'mini_test:', 'minitest:') || ':' || ?
+        WHERE y.id IN (${ids.map(() => '?').join(',')})`).all(demoToday(), ...ids) as any[]) nhac.set(r.id, r);
+  }
+  return new Map(ds.map((y) => [y.id, { ...them.get(y.id), ...nhac.get(y.id) }]));
+}
 const ngay = (iso: string | null | undefined, ngu: NguCanhThe) => shortDate(iso ?? null, ngu.homNay);
 const nguoiXin = (yc: YeuCauRow, ngu: NguCanhThe) => (yc.nguoi_xin == null ? 'Hệ thống' : ngu.nguoi.get(yc.nguoi_xin) ?? 'Giáo viên');
 
@@ -297,7 +314,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       return {
         tieuDe: `Case quá hạn xác nhận nguyên nhân${x?.topic ? ` · ${caseTopicLabel(x.topic)}` : ''}`,
         phu: x?.ten_gv ? `GVBM ${x.ten_gv}` : null,
-        dong: ['Không cần duyệt — để QL biết và nhắc.'],
+        dong: [],
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, { caseId: yc.doi_tuong_id }) : undefined,
         duLieu: { tenGv: x?.ten_gv ?? null, daNhacLuc: x?.da_nhac ?? null, ownerId: x?.owner_user_id ?? null },
       };
@@ -407,7 +424,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       return {
         tieuDe: `Ý thức quá hạn · ${l?.ngan ?? (yc.ly_do || 'đã hết quá hạn')}`,
         phu: x?.ten_gv ? `GVCN ${x.ten_gv}` : null,
-        dong: ['Không cần duyệt — để QL biết và nhắc.'],
+        dong: [],
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, { tab: 'y-thuc' }) : undefined,
         duLieu: { tenGv: x?.ten_gv ?? null, daNhacLuc: x?.da_nhac ?? null, ownerId: x?.owner ?? null },
       };
@@ -479,7 +496,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       return {
         tieuDe: `Bàn giao quá hạn${x?.lop ? ` · ${x.lop}` : ''}`,
         phu: x?.ten_gv ? `GVCN ${x.ten_gv}` : 'Lớp chưa có GVCN',
-        dong: [`${x?.n ?? 0} em chưa được xác nhận bàn giao (hạn hết ${ngay(yc.han_duyet, ngu)}). Em vẫn chuyển đúng tuần — không cần duyệt, để QL biết và nhắc.`],
+        dong: [`${x?.n ?? 0} em chưa được xác nhận bàn giao (hạn hết ${ngay(yc.han_duyet, ngu)}).`],
         mo: `/hoc-vien/lop/${yc.doi_tuong_id}?viec=ban-giao`,
         duLieu: { tenGv: x?.ten_gv ?? null, daNhacLuc: x?.da_nhac ?? null, ownerId: x?.owner ?? null },
       };
@@ -528,7 +545,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       const x = ngu.them.get(yc.id);
       return {
         tieuDe: `Lớp hết khoá · chưa có quyết định chuyển lớp${x?.lop ? ` · ${x.lop}` : ''}`,
-        dong: [`${x?.n ?? 0} em chưa có quyết định chuyển lớp. Không cần duyệt — Quản lý quyết định chuyển lớp ở hồ sơ lớp.`],
+        dong: [`${x?.n ?? 0} em chưa có quyết định chuyển lớp.`],
         mo: `/hoc-vien/lop/${yc.doi_tuong_id}?viec=chuyen-tiep`,
       };
     },
@@ -581,17 +598,18 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
              AND EXISTS (SELECT 1 FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE iv.nhom_bo_tro = m.nhom_bo_tro AND sc.status != 'done'))`,
       lyDo: 'Case đã hoàn thành hoặc Mini Test đã đạt',
     },
-    nap: (conn, ds) => napTheoDoiTuong(conn, ds,
+    nap: (conn, ds) => napNguoiNhac(conn, ds, napTheoDoiTuong(conn, ds,
       `SELECT m.id, m.ty_le, m.ngay_lam, m.han, s.full_name, (SELECT MIN(iv.case_id) FROM case_interventions iv WHERE iv.nhom_bo_tro = m.nhom_bo_tro) AS case_id
-         FROM mini_test m JOIN students s ON s.id = m.student_id WHERE m.id IN (?)`),
+         FROM mini_test m JOIN students s ON s.id = m.student_id WHERE m.id IN (?)`)),
     moTa: (yc, ngu) => {
       const x = ngu.them.get(yc.id);
       const pt = x?.ty_le != null ? `${Math.round(x.ty_le * 100)}%` : '';
       return {
         tieuDe: `Mini Test chưa đạt${pt ? ` · ${pt}` : ''}`,
         phu: x?.full_name ?? null,
-        dong: [`Mini Test ${pt} ngày ${ngay(x?.ngay_lam, ngu)} (cần từ 70%) — Case để mở, Quản lý xử lý từng trường hợp.`, 'Không cần duyệt — để QL biết và nhắc.'],
+        dong: [`Mini Test ${pt} ngày ${ngay(x?.ngay_lam, ngu)} (cần từ 70%) — Case để mở, Quản lý xử lý từng trường hợp.`],
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, x?.case_id ? { caseId: x.case_id } : undefined) : undefined,
+        duLieu: { tenGv: x?.ten_gv ?? null, daNhacLuc: x?.da_nhac ?? null },
       };
     },
   },
@@ -602,15 +620,16 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       sql: `NOT EXISTS (SELECT 1 FROM assessment_attempts a WHERE a.id = y.doi_tuong_id AND a.status = 'planned')`,
       lyDo: 'Bài đã có điểm đủ hoặc đã huỷ',
     },
-    nap: (conn, ds) => napTheoDoiTuong(conn, ds,
-      `SELECT a.id, s.full_name, rp.week_start FROM assessment_attempts a JOIN students s ON s.id = a.student_id LEFT JOIN report_periods rp ON rp.id = a.planned_period_id WHERE a.id IN (?)`),
+    nap: (conn, ds) => napNguoiNhac(conn, ds, napTheoDoiTuong(conn, ds,
+      `SELECT a.id, s.full_name, rp.week_start FROM assessment_attempts a JOIN students s ON s.id = a.student_id LEFT JOIN report_periods rp ON rp.id = a.planned_period_id WHERE a.id IN (?)`)),
     moTa: (yc, ngu) => {
       const x = ngu.them.get(yc.id);
       return {
         tieuDe: 'Cuối khoá dời quá tuần cuối khoá',
         phu: x?.full_name ?? null,
-        dong: [`Bài Cuối khoá bị dời tới ${x?.week_start ? tuanLich(x.week_start, ngu.homNay) : 'tuần sau'} — sau tuần cuối khoá của lớp.`, 'Không cần duyệt — để QL biết và nhắc.'],
+        dong: [`Bài Cuối khoá bị dời tới ${x?.week_start ? tuanLich(x.week_start, ngu.homNay) : 'tuần sau'} — sau tuần cuối khoá của lớp.`],
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id) : undefined,
+        duLieu: { tenGv: x?.ten_gv ?? null, daNhacLuc: x?.da_nhac ?? null },
       };
     },
   },

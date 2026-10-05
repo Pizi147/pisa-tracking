@@ -6,7 +6,7 @@ import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { Alert, Card, Empty, ErrorState, Field, Forbidden, Info, NhanTrangThai, NutChon, SectionNote, Skeleton, Th } from '../../ui/ui.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
-import { BranchFilter, resolveWeek } from '../../ui/Filters.tsx';
+import { BranchFilter, resolveWeek, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
@@ -68,7 +68,8 @@ export function TasksBoard() {
   const { session } = useSession();
   const [params, setParams] = useSearchParams();
   const { homNay } = useNgayNghiepVu();
-  const branchId = params.get('cn') ? Number(params.get('cn')) : null;
+  const macDinh = useChiNhanhMacDinh();
+  const branchId = params.get('cn') ? Number(params.get('cn')) : macDinh;
   const group = params.get('nhom') ?? '';
   const progress: TrangThaiLoc = (TRANG_THAI_LOC as readonly string[]).includes(params.get('trangThai') ?? '')
     ? (params.get('trangThai') as TrangThaiLoc) : 'mo';

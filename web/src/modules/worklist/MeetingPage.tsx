@@ -5,7 +5,8 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { BoLocDoan, Card, Empty, ErrorState, Info, NutChon, Outcome, Skeleton, Status, Th } from '../../ui/ui.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
-import { WeekPicker, usePeriodWindow, resolveWeek } from '../../ui/Filters.tsx';
+import { WeekPicker, nhoChiNhanh, resolveWeek, useChiNhanhMacDinh, usePeriodWindow } from '../../ui/Filters.tsx';
+import { useSession } from '../../lib/session.tsx';
 import { SignalList } from './SignalList.tsx';
 import { ManagerTaskList } from './ManagerTasks.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
@@ -50,6 +51,7 @@ const TUTOR_LABEL_NGAN: Record<string, string> = { tutor_count: 'Số lượng',
  */
 export function MeetingBoard() {
   const [params, setParams] = useSearchParams();
+  const uid = useSession().session?.user?.id;
   const [periodId, setPeriodIdState] = useState<number | null>(params.get('periodId') ? Number(params.get('periodId')) : null);
   const setPeriodId = (id: number | null) => {
     setPeriodIdState(id);
@@ -59,7 +61,8 @@ export function MeetingBoard() {
   };
   /* PR-BC: kỳ và chi nhánh nhớ trong URL (`ky=thang`, `cn=<id>|tutor`) — tải lại hay gửi link vẫn đúng bộ lọc. */
   const byMonth = params.get('ky') === 'thang';
-  const cnUrl = params.get('cn') ?? 'tat-ca';
+  const macDinh = useChiNhanhMacDinh();
+  const cnUrl = params.get('cn') ?? String(macDinh ?? 'tat-ca');
   const datParam = (k: string, v: string | null) => {
     const next = new URLSearchParams(params);
     if (v) next.set(k, v); else next.delete(k);
@@ -149,7 +152,10 @@ export function MeetingBoard() {
           <div className="flex min-w-0 max-w-full items-center gap-1.5">
             <span className="shrink-0 text-xs text-slate-400">Chi nhánh</span>
             {/* Mỗi chi nhánh đúng một đơn vị → bỏ số đếm từng nút (toàn "2" là nhiễu); D9-a: chọn chi nhánh hiện kèm Tutor part-time. */}
-            <div className="min-w-0 flex-1"><BoLocDoan ariaLabel="Lọc chi nhánh" value={cn} onChange={(k) => datParam('cn', k === 'tat-ca' ? null : k)}
+            <div className="min-w-0 flex-1"><BoLocDoan ariaLabel="Lọc chi nhánh" value={cn} onChange={(k) => {
+              if (k !== 'tutor') nhoChiNhanh(uid, k === 'tat-ca' ? null : Number(k));   // Tutor không phải chi nhánh — không nhớ
+              datParam('cn', k === 'tat-ca' ? null : k);
+            }}
               muc={luaChonCn.map((m) => ({ key: m.key, nhan: m.nhan,
                 title: /^\d+$/.test(m.key) && luaChonCn.some((x) => x.key === 'tutor') ? `${m.nhan} kèm Tutor part-time` : undefined }))} /></div>
           </div>
