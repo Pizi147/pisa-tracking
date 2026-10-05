@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="vi" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mockup Test / Mock Test</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Inter:wght@500;600;700&display=swap">
+<style>
+:root{
+  --bg:#f5f7fa;--surface:#ffffff;--surface-2:#eef2f7;--line:#d9e0ea;--fg:#1b2433;--muted:#5d6b80;
+  --accent:#1d5fbf;--accent-soft:#e3edfb;--wait:#6b4fc4;--wait-bg:#efe9fb;--ok:#1c7a4c;--ok-bg:#e2f4ea;
+  --soon:#9a6400;--soon-bg:#fdf1d8;--bad:#b3261e;--bad-bg:#fbe5e3;--off:#a3adbb;
+  --sans:"Be Vietnam Pro",system-ui,sans-serif;--num:"Inter","Be Vietnam Pro",sans-serif;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0c1220;--surface:#131b2c;--surface-2:#1a2438;--line:#26324a;--fg:#e4e9f2;--muted:#93a0b6;
+  --accent:#7db3f0;--accent-soft:#1c2c48;--wait:#b9a3f5;--wait-bg:#2a2245;--ok:#6fd29c;--ok-bg:#16301f;
+  --soon:#f0c062;--soon-bg:#3a2c10;--bad:#f08a80;--bad-bg:#3b1a18;--off:#56627a;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c1220;--surface:#131b2c;--surface-2:#1a2438;--line:#26324a;--fg:#e4e9f2;--muted:#93a0b6;
+  --accent:#7db3f0;--accent-soft:#1c2c48;--wait:#b9a3f5;--wait-bg:#2a2245;--ok:#6fd29c;--ok-bg:#16301f;
+  --soon:#f0c062;--soon-bg:#3a2c10;--bad:#f08a80;--bad-bg:#3b1a18;--off:#56627a;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 var(--sans);padding:16px 16px 64px}
+.wrap{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+h1{font-size:22px;margin:0}
+h2{font-size:17px;margin:0}
+h3{font-size:14px;margin:0}
+p{margin:0}
+.note{color:var(--muted);font-size:13px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.sec{display:flex;flex-direction:column;gap:12px}
+.where{display:inline-flex;gap:6px;align-items:center;font-size:12.5px;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:3px 10px;width:fit-content}
+.why{border-left:3px solid var(--ok);background:var(--surface-2);padding:10px 12px;border-radius:0 8px 8px 0;font-size:13px}
+.why b{color:var(--ok)}
+.rule{border-left:3px solid var(--accent);background:var(--surface-2);padding:10px 12px;border-radius:0 8px 8px 0;font-size:13px}
+.cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (max-width:860px){.cols{grid-template-columns:1fr}}
+.tag{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.btn{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--surface-2);color:var(--fg);border-radius:8px;padding:6px 12px;min-height:36px}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:var(--surface);font-weight:600}
+.btn-danger{background:var(--bad);border-color:var(--bad);color:var(--surface);font-weight:600}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sp{flex:1}
+/* panel */
+.panel{max-width:860px}
+.ph{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.pb{padding:14px 16px;display:flex;flex-direction:column;gap:14px}
+.pf{display:flex;align-items:center;gap:10px;padding:12px 16px;border-top:1px solid var(--line)}
+.step{display:flex;flex-direction:column;gap:6px}
+.step>.tag{display:flex;gap:8px;align-items:center}
+.num{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font:700 11px var(--num)}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--surface-2);color:var(--fg);border-radius:8px;padding:5px 12px;min-height:34px}
+.seg button[aria-pressed=true]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+.seg small{color:var(--muted);font-size:11.5px;margin-left:4px}
+.week{display:flex;align-items:center;gap:6px}
+.week .box{display:flex;justify-content:space-between;gap:12px;min-width:220px;border:1px solid var(--line);border-radius:8px;padding:6px 10px;background:var(--bg)}
+.week .box b{font-family:var(--num)}.week .box span{color:var(--muted);font-size:12.5px;font-family:var(--num)}
+.ticks{display:flex;gap:6px;flex-wrap:wrap}
+.tick{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:8px;padding:4px 10px;font-weight:600}
+.tick.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.tick.off{color:var(--off);text-decoration:line-through}
+.sum{display:flex;gap:6px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;white-space:nowrap}
+.c-ok{background:var(--ok-bg);color:var(--ok)}.c-soon{background:var(--soon-bg);color:var(--soon)}.c-bad{background:var(--bad-bg);color:var(--bad)}
+.c-wait{background:var(--wait-bg);color:var(--wait)}.c-muted{background:var(--surface-2);color:var(--muted)}.c-acc{background:var(--accent-soft);color:var(--accent)}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th{background:var(--surface-2);font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);text-align:left;padding:8px 10px;font-weight:600;white-space:nowrap}
+td{border-top:1px solid var(--line);padding:7px 10px;vertical-align:middle}
+td small{display:block;color:var(--muted);font-size:12px}
+.cb{width:16px;height:16px;accent-color:var(--accent)}
+/* ô MT */
+.mt{display:inline-flex;align-items:center;gap:4px;font:600 12px var(--num);border-radius:7px;padding:3px 8px;border:1px solid var(--line);white-space:nowrap;min-height:26px}
+.mt .n{font-weight:700}
+.mt.none{border-style:dashed;color:var(--muted);background:transparent}
+.mt.unsched{color:var(--muted);background:var(--surface-2)}
+.mt.sched{border-color:var(--accent);color:var(--accent)}
+.mt.now{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.mt.now::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.mt.wait{background:var(--wait-bg);border-color:transparent;color:var(--wait)}
+.mt.todo{background:var(--soon-bg);border-color:transparent;color:var(--soon)}
+.mt.late{background:var(--bad-bg);border-color:transparent;color:var(--bad)}
+.mt.done{background:var(--ok-bg);border-color:transparent;color:var(--ok)}
+.mt.sel{outline:2px solid var(--accent);outline-offset:1px}
+.mt .old{font-size:10px;font-weight:700;border:1px solid currentColor;border-radius:4px;padding:0 3px;opacity:.85}
+.mts{display:flex;gap:4px;flex-wrap:wrap}
+.will{font-size:13px}
+.will .i{display:inline-block;width:16px;text-align:center;font-weight:700}
+.will.ok .i{color:var(--ok)}.will.soon .i{color:var(--soon)}.will.bad .i{color:var(--bad)}
+.will small{display:inline;color:var(--muted)}
+.grp{font-size:12px;color:var(--muted);padding:6px 10px;background:var(--surface-2)}
+/* hộp kỹ năng */
+.sk{display:grid;grid-template-columns:24px 120px minmax(0,1fr) 36px;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--line)}
+.sk:first-child{border-top:0}
+.sk .lbl b{font-family:var(--num)}
+.sk .st{font-size:13px;color:var(--muted)}
+.dots{font:inherit;width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:var(--surface-2);color:var(--fg);cursor:pointer}
+.menu{border:1px solid var(--line);border-radius:10px;background:var(--surface);box-shadow:0 8px 24px rgb(0 0 0 / .25);padding:6px;width:280px;font-size:13px}
+.menu div{padding:6px 10px;border-radius:6px}
+.menu div.dis{color:var(--off)}
+.menu div.dis small{display:block;color:var(--muted);font-size:11.5px}
+.menu div:not(.dis):hover{background:var(--surface-2)}
+/* legend grid */
+.lg{display:grid;grid-template-columns:150px minmax(0,1fr);gap:8px 14px;align-items:center}
+@media (max-width:600px){.lg{grid-template-columns:1fr}}
+/* modal */
+.modal{max-width:560px}
+.list{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+textarea{width:100%;font:inherit;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);padding:8px;min-height:56px}
+/* timeline */
+.tl{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:860px){.tl{grid-template-columns:1fr}}
+.tl .card{padding:12px;display:flex;flex-direction:column;gap:8px}
+.tl .when{font:700 12px var(--num);color:var(--accent)}
+.diff{font-size:12.5px}
+.mt.pick{background:#f5f7fa;border:2px solid #f5f7fa;color:#0c1220;font-weight:700}
+.mt.pick::after{content:"\2713";font-size:11px}
+.sticky{position:sticky;left:0;background:var(--surface);z-index:1}
+th.sticky{background:var(--surface-2)}
+.scrollhint{font-size:12px;color:var(--muted)}
+.seg button.compact{padding:5px 10px}
+.mini{padding:12px;display:flex;flex-direction:column;gap:8px}
+.mini .bar{font-size:12px;color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:6px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:900px){.grid3{grid-template-columns:1fr}}
+.opt{display:flex;gap:8px;align-items:flex-start;border:1px solid var(--line);border-radius:8px;padding:8px}
+.opt.on{border-color:var(--accent);background:var(--accent-soft)}
+.opt small{display:block;color:var(--muted);font-size:12px}
+.diff s{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="sec">
+  <h1>Test / Mock Test — mockup để duyệt (05/10)</h1>
+  <p class="note">Bản 2 (sửa theo 7 ý 05/10, chế độ tối). Phần 0 liệt kê mọi cổng sửa lịch; phần 1–5 là màn hình. Dữ liệu là ví dụ. Theo quyết định T1–T13 trong <code>plan.md</code> mục 2c. Chưa code gì.</p>
+</header>
+
+<section class="sec">
+  <h2>0 · Các cổng sửa lịch (cùng luật máy chủ)</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>#</th><th>Cổng (ai thấy)</th><th>Sửa gì</th><th>Đổi theo mockup</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Test › Kế hoạch Test › lưới FT, bấm ô MT (QL)</td><td>Xếp / dời từng kỹ năng, bỏ kỹ năng, huỷ điểm</td><td>Phần 2 (hộp kỹ năng)</td></tr>
+      <tr><td>2</td><td>Kế hoạch Test › “Xếp lịch MT…”, Xếp hàng loạt, Thi lại (QL)</td><td>Xếp nhiều em một lần</td><td>Phần 1</td></tr>
+      <tr><td>3</td><td>Kế hoạch Test › Lớp thường (QL, GVCN, GVBM đúng môn)</td><td>Lịch Giữa / Cuối khoá theo lớp</td><td>Chuông báo GVCN (T11)</td></tr>
+      <tr><td>4</td><td><b>Hồ sơ HV › Lộ trình</b> (bảng MT, Áp lịch gợi ý, Huỷ lịch, nhập điểm tại chỗ)</td><td>Dùng <b>chung</b> hộp kỹ năng với cổng 1</td><td>Phần 2 + ô MT phần 3</td></tr>
+      <tr><td>5</td><td>Hồ sơ Mock Test (một đợt): Dời cả đợt, dời hạn, huỷ / mở lại lượt, xếp lại bài vắng, thao tác từng kỹ năng</td><td>Mọi thao tác một đợt</td><td>Popup phần 4 khi dời vượt; ⋯ luôn hiện</td></tr>
+      <tr><td>6</td><td>Lịch Test, Nhập điểm, bảng điểm lớp thường: gõ “-”</td><td>Báo vắng → tự dời (lần 1) / huỷ kỹ năng (lần 2)</td><td>T3: lần 2 huỷ kỹ năng, báo GVCN</td></tr>
+      <tr><td>7</td><td>Công việc › Chờ duyệt (QL)</td><td>Trả lời đề nghị dời</td><td>Chỉ còn thẻ khi GVCN bấm “Xin dời”</td></tr>
+      <tr><td>8</td><td>Tự động: Thêm HV, tạo lớp, lên lớp, lộ trình mới, cron chốt vắng thứ Hai</td><td>Tự tạo lịch MT mặc định</td><td>Luật MT cũ theo tuần; MT0 (phần 5)</td></tr>
+      <tr><td>9</td><td>Điểm theo lớp (PR-DL, đang làm)</td><td>Chỉ điểm, không sửa lịch</td><td>Chữ “MT cũ” thay “MT lịch sử”</td></tr>
+      <tr><td>10</td><td>Chỉ hiển thị: Học viên & Lớp (Sắp tới), Hành trình, Tổng quan, Công việc (chờ chấm, quá hạn), Phân tích, Xuất Excel MT</td><td>Không sửa</td><td>Cùng ô trạng thái phần 3; đếm theo luật mới</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ============================================================ 1 -->
+<section class="sec">
+  <h2>1 · Panel “Xếp lịch Mock Test” (thay Ảnh 1)</h2>
+  <span class="where">Test › Kế hoạch Test › nút “Xếp lịch MT…” · Quản lý / Quản trị</span>
+  <div class="card panel">
+    <div class="ph"><h3>Xếp lịch Mock Test</h3><div class="sp"></div>
+      <div class="seg"><button aria-pressed="true">Fast Track</button><button>Lớp thường</button></div></div>
+    <div class="pb">
+      <div class="step"><div class="tag"><span class="num">1</span>Đợt</div>
+        <div class="seg">
+          <button aria-pressed="true">MT mới</button>
+          <button class="compact">MT1</button><button class="compact">MT2</button><button class="compact">MT3</button><button class="compact">MT4</button>
+        </div>
+              </div>
+      <div class="step"><div class="tag"><span class="num">2</span>Tuần và kỹ năng</div>
+        <div class="row">
+          <div class="week"><button class="btn">‹</button><div class="box"><b>W1 OCT</b><span>28/09 – 04/10</span></div><button class="btn">›</button></div>
+          <div class="ticks"><span class="tick on">✓ L</span><span class="tick on">✓ R</span><span class="tick on">✓ W</span><span class="tick on">✓ S</span></div>
+          <button class="btn btn-ghost">Lịch riêng ▸</button>
+        </div>
+              </div>
+      <div class="step"><div class="tag"><span class="num">3</span>Học viên</div>
+        <div class="row">
+          <div class="sum"><span class="chip c-ok">✓ Sẽ xếp 3</span><span class="chip c-soon">! Cần xem 3</span><span class="chip c-muted">✕ Không xếp được 0</span></div>
+          <div class="sp"></div>
+        </div>
+        <div class="tbl"><table style="min-width:960px">
+          <thead><tr><th class="sticky" style="width:70px"><input type="checkbox" class="cb" checked aria-label="Chọn tất cả"> Tất cả</th><th class="sticky" style="left:70px">Học viên</th><th>Lớp</th><th>Mock Test</th><th>Sẽ xếp</th></tr></thead>
+          <tbody>
+            <tr><td class="sticky"><input type="checkbox" class="cb" checked></td><td class="sticky" style="left:70px">Chu Minh Hiếu<small>PISA-000006</small></td><td>MB FT 102</td>
+              <td><div class="mts"><span class="mt done"><span class="n">1</span>✓ <span class="old">cũ</span></span><span class="mt done"><span class="n">2</span>✓</span><span class="mt pick"><span class="n">3</span>W1 OCT</span></div></td>
+              <td class="will ok"><span class="i">✓</span>MT3 · W1 OCT</td></tr>
+            <tr><td class="sticky"><input type="checkbox" class="cb" checked></td><td class="sticky" style="left:70px">Phan Minh Tú<small>PISA-000012</small></td><td>BC FT 205</td>
+              <td><div class="mts"><span class="mt done"><span class="n">1</span>✓</span><span class="mt pick"><span class="n">2</span>W1 OCT</span><span class="mt none">3</span></div></td>
+              <td class="will ok"><span class="i">✓</span>MT2 · W1 OCT </td></tr>
+            <tr><td class="sticky"><input type="checkbox" class="cb" checked></td><td class="sticky" style="left:70px">Tạ Thu Quỳnh<small>PISA-000007</small></td><td>MB FT 102</td>
+              <td><div class="mts"><span class="mt done"><span class="n">1</span>✓</span><span class="mt pick"><span class="n">2</span>vắng S</span><span class="mt none">3</span></div></td>
+              <td class="will soon" title="MT2 còn S vắng — xếp S vào W1 OCT, L R W giữ điểm"><span class="i">!</span>MT2 · S · W1 OCT</td></tr>
+            <tr><td class="sticky"><input type="checkbox" class="cb" checked></td><td class="sticky" style="left:70px">Hoàng Bảo Ngọc<small>PISA-000051</small></td><td>MB FT 101</td>
+              <td><div class="mts" style="flex-wrap:nowrap"><span class="mt done"><span class="n">1</span>✓ <span class="old">cũ</span></span><span class="mt done"><span class="n">2</span>✓ <span class="old">cũ</span></span><span class="mt done"><span class="n">3</span>✓ 3/4</span><span class="mt done"><span class="n">4</span>✓</span><span class="mt done"><span class="n">5</span>✓</span><span class="mt pick"><span class="n">6</span>W1 OCT</span></div></td>
+              <td class="will ok"><span class="i">✓</span>MT6 · W1 OCT</td></tr>
+            <tr><td class="sticky"><input type="checkbox" class="cb" checked></td><td class="sticky" style="left:70px">Đặng Thu Vân<small>PISA-000013</small></td><td>BC FT 205</td>
+              <td><div class="mts"><span class="mt done"><span class="n">1</span>✓</span><span class="mt wait"><span class="n">2</span>chờ chấm 1</span><span class="mt pick"><span class="n">3</span>W1 OCT</span></div></td>
+              <td class="will soon"><span class="i">!</span>MT3 · W1 OCT</td></tr>
+            <tr><td class="sticky"><input type="checkbox" class="cb"></td><td class="sticky" style="left:70px">Mai Ngọc Diệp<small>PISA-000015</small></td><td>BC FT 205</td>
+              <td><div class="mts"><span class="mt done"><span class="n">1</span>✓</span><span class="mt sched"><span class="n">2</span>W1 OCT</span><span class="mt pick"><span class="n">3</span>W1 OCT</span></div></td>
+              <td class="will soon" title="MT2 và MT3 cùng tuần W1 OCT. Lưu được (Quản lý)."><span class="i">!</span>MT3 · W1 OCT <small>· trùng MT2</small></td></tr>
+          </tbody>
+        </table></div>
+        <p class="scrollhint">⇆ cuộn ngang</p>
+              </div>
+    </div>
+    <div class="pf"><button class="btn">Đóng</button><div class="sp"></div><button class="btn btn-primary">Xếp lịch 5 em · 19 bài</button></div>
+  </div>
+</section>
+
+<!-- ============================================================ 2 -->
+<section class="sec">
+  <h2>2 · Popup “+ Xếp” / hộp một đợt của một em (thay Ảnh 2)</h2>
+  <span class="where">Test › Kế hoạch Test › bấm ô MT của một em · Quản lý / Quản trị</span>
+  <div class="cols">
+    <div class="card panel" style="max-width:none">
+      <div class="ph"><h3>Nguyễn Minh An · MT3</h3><div class="sp"></div><button class="dots" aria-label="Đóng">✕</button></div>
+      <div class="pb">
+        <div class="row">
+          <span class="tag">Tuần chung</span>
+          <div class="week"><button class="btn">‹</button><div class="box"><b>W1 OCT</b><span>28/09 – 04/10</span></div><button class="btn">›</button></div>
+        </div>
+        <div>
+          <div class="sk"><input type="checkbox" class="cb" checked><span class="lbl"><b>L</b> Listening</span><span class="st">W3 SEP · <b style="color:var(--fg)">6.5</b></span><button class="dots">⋯</button></div>
+          <div class="sk"><input type="checkbox" class="cb" checked><span class="lbl"><b>R</b> Reading</span><span class="st">W3 SEP · <b style="color:var(--fg)">6.0</b></span><button class="dots">⋯</button></div>
+          <div class="sk"><input type="checkbox" class="cb" checked><span class="lbl"><b>W</b> Writing</span><span class="st"><span class="chip c-acc">W1 OCT</span> <span class="chip c-bad">trễ chấm</span></span><button class="dots">⋯</button></div>
+          <div class="sk"><input type="checkbox" class="cb" checked><span class="lbl"><b>S</b> Speaking</span><span class="st"><span class="chip c-acc">W1 OCT</span></span><button class="dots">⋯</button></div>
+        </div>
+      </div>
+      <div class="pf"><div class="sp"></div><button class="btn">Huỷ thay đổi</button><button class="btn btn-primary">Lưu</button></div>
+    </div>
+    <div class="sec">
+      <span class="tag">Menu ⋯ của Speaking (chưa tới tuần thi)</span>
+      <div class="menu">
+        <div>Đổi tuần</div>
+        <div>Dời hạn chấm</div>
+        <div class="dis">Báo vắng</div>
+        <div class="dis">Huỷ điểm</div>
+        <div>Nhật ký</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 3 -->
+<section class="sec">
+  <h2>3 · Ô MT</h2>
+  <span class="where">Kế hoạch Test · Xếp lịch MT · hồ sơ HV</span>
+  <div class="card" style="padding:14px 16px">
+    <div class="lg">
+      <span class="mt none">3</span><span>Chưa có đợt</span>
+      <span class="mt unsched"><span class="n">2</span>chưa xếp</span><span>Chưa có lịch</span>
+      <span class="mt sched"><span class="n">2</span>W2 OCT</span><span>Có lịch</span>
+      <span class="mt pick"><span class="n">2</span>W2 OCT</span><span>Đang chọn</span>
+      <span class="mt now"><span class="n">2</span>tuần này</span><span>Đang thi</span>
+      <span class="mt wait"><span class="n">2</span>chờ chấm 2</span><span>Chờ chấm</span>
+      <span class="mt late"><span class="n">2</span>trễ chấm W</span><span>Quá hạn chấm</span>
+      <span class="mt todo"><span class="n">2</span>vắng S</span><span>Còn việc</span>
+      <span class="mt done"><span class="n">2</span>✓</span><span>Xong</span>
+      <span class="mt done"><span class="n">2</span>✓ 3/4</span><span>Xong, không mock 1 kỹ năng</span>
+      <span class="mt todo"><span class="n">2</span>S huỷ</span><span>Vắng 2 lần (GVCN: Xin dời)</span>
+      <span class="mt done"><span class="n">1</span>✓ <span class="old">cũ</span></span><span>MT cũ</span>
+      <span class="mt done"><span class="n">0</span>✓</span><span>MT0</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 4 -->
+<section class="sec">
+  <h2>4 · Cảnh báo khi dời MT1 muộn hơn MT2 / MT3 (T2)</h2>
+  <span class="where">Khi Lưu làm MT1 muộn hơn MT2/MT3 · chỉ khi MT sau đã có điểm</span>
+  <div class="cols">
+    <div class="card modal">
+      <div class="ph"><h3>Dời MT1 sang W2 NOV?</h3></div>
+      <div class="pb">
+        <p>MT1 muộn hơn MT2, MT3.</p>
+        <ul class="list">
+          <li>MT2: huỷ 4 điểm, đóng 1 Case</li>
+          <li>MT3: bỏ lịch</li>
+        </ul>
+        <label class="step"><span class="tag">Lý do</span><textarea></textarea></label>
+      </div>
+      <div class="pf"><button class="btn">Đóng</button><div class="sp"></div><button class="btn btn-danger">Dời và huỷ</button></div>
+    </div>
+    <div class="sec">
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 5 -->
+<section class="sec">
+  <h2>5 · MT0 hiện ở đâu</h2>
+  <div class="grid3">
+    <div class="card mini"><span class="where">① Hồ sơ HV lớp thường › ⋯ › Lộ trình tiếp theo · GVCN, QL</span>
+      <div class="bar">Lộ trình tiếp theo · Lê Hà Vy · BE 04 · tuần 8/10</div>
+      <div class="opt on"><input type="radio" checked><div><b>Lên FT</b><small>MT0 · W4 OCT</small></div></div>
+      <div class="opt"><input type="radio"><div><b>Lên ELE</b></div></div></div>
+    <div class="card mini"><span class="where">② Hồ sơ lớp › ⋮ › Ghi lộ trình tiếp theo cả lớp (PR-K26)</span>
+      <div class="bar">BE 04 · 12 em · Final W4 OCT</div>
+      <div class="tbl"><table style="min-width:0"><tbody>
+        <tr><td>Lê Hà Vy</td><td><span class="chip c-acc">Lên FT ▾</span></td><td><small>MT0 · W4 OCT</small></td></tr>
+        <tr><td>Trần Minh An</td><td><span class="chip c-muted">Lên ELE ▾</span></td><td></td></tr>
+      </tbody></table></div></div>
+    <div class="card mini"><span class="where">③ Tổng quan / Công việc của QL</span>
+      <div class="bar">Cần xử lý</div>
+      <p><span class="chip c-soon">hạn hết CN 04/10</span> Chốt lên FT · <b>BE 04</b></p></div>
+    <div class="card mini"><span class="where">④ Test › Kế hoạch Test › Lớp thường › BE 04</span>
+      <div class="bar">Final · W4 OCT</div>
+      <p>Lê Hà Vy: <span class="chip c-muted">Final W4 OCT</span> <span class="mt sched"><span class="n">0</span>W4 OCT</span></p></div>
+    <div class="card mini"><span class="where">⑤ Test › Lịch Test / Nhập điểm tuần Final</span>
+      <div class="bar">W4 OCT · BE 04</div>
+      <p>Final · <b>MT0</b> <span class="chip c-wait">hạn 11/10</span></p></div>
+    <div class="card mini"><span class="where">⑥ Hồ sơ lớp › Chuyển tiếp lớp · QL</span>
+      <div class="bar">BE 04 → lớp kế</div>
+      <p>Lê Hà Vy · 64% · MT0 <span class="chip c-bad">W 4.0 SOS</span> → <span class="chip c-acc">Lên FT ✓</span></p>
+      <p>Phạm Thu Trang · 45% · MT0 <span class="chip c-bad">L 3.5 SOS</span> → <span class="chip c-soon">Học lại BE</span></p></div>
+  </div>
+  <div class="card mini"><span class="where">⑦ Sau khi lên FT: Hồ sơ HV › bảng Mock Test và Hành trình</span>
+    <div class="row"><div class="mts"><span class="mt done"><span class="n">0</span>✓ <span class="old">cũ</span></span><span class="mt sched"><span class="n">1</span>W3 NOV</span></div></div>
+  </div>
+</section>
+
+</div>
+</body>
+</html>
