@@ -8,12 +8,16 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 - **Một nguồn duy nhất** cho: đã làm gì, còn gì, thứ tự, model, skill, prompt. Session planning sửa file này; session code
   chỉ thêm **một dòng** vào mục 11 (Nhật ký) khi xong PR.
 - Kế hoạch chi tiết (từng Task, từng bước) chỉ giữ cho **PR chưa làm**. PR merge xong → session planning xoá file chi tiết
-  của nó (git còn giữ). Hiện còn 4 file:
+  của nó (git còn giữ). Hiện còn 8 file:
 
 | File chi tiết | Dùng cho |
 |---|---|
 | `docs/superpowers/plans/2026-10-04-pr-dl-diem-theo-lop.md` | PR-DL (DL-0→7) |
-| `docs/superpowers/plans/2026-10-04-pr-k26-lo-trinh-tiep-theo-dai.md` | PR-K26 (K26-1→5) |
+| `docs/superpowers/plans/2026-10-05-pr-nv-nhac-viec-chi-nhanh.md` | PR-NV (đợt 4) |
+| `docs/superpowers/plans/2026-10-05-pr-chu-ra-soat-chu.md` | PR-CHU (đợt 4) |
+| `docs/superpowers/plans/2026-10-05-pr-mta-luat-mock-test.md` | PR-MTa (đợt 4) |
+| `docs/superpowers/plans/2026-10-05-pr-mtb-giao-dien-mock-test.md` | PR-MTb (đợt 5) |
+| `docs/superpowers/plans/2026-10-05-pr-mt0.md` | PR-MT0 (đợt 5) |
 | `docs/superpowers/plans/2026-10-03-pr-phien-lich-mt-dieu-huong-sua-lop.md` | PR-SL (mục B Q-0310-3, "PR-SL", SL-1→2). Phần PH, LM, DH đã xong |
 | `docs/superpowers/plans/2026-10-02-ux-sau-critique.md` | PR-HK2 (H1, H2, K2, K4–K7, J1–J4, J7, J9), PR-SL (I1–I4, I6) |
 
@@ -209,8 +213,10 @@ Chủ sản phẩm 04/10: **3 đợt**; deploy một lần (bản `main` lúc đ
 | Đợt | Chạy cùng lúc (mỗi PR một session) | Thứ tự merge | Vì sao không đụng nhau |
 |---|---|---|---|
 | ~~2~~ | ~~PHH · DH · SO~~ | ✅ xong 04/10 (#191, #190, #192) | — |
-| **3** (đang chạy) | ~~U12~~ ✅ #194 · **DL** · **K26** · **SL** | DL → K26 → SL | U12: một bảng hồ sơ HV · DL: module điểm mới + một mục ⋮ · K26: `LoTrinhTiepPanel`, `lenLop.ts` · SL: panel/form chung. Chồng nhẹ: `DauTrangLop` (SL, DL, K26 thêm mục ⋮), `StudentDetailPage` (SL I4 ↔ U12). SL merge cuối: kiểm lại chân panel của DL, K26 theo luật I1 |
-| **4** | **HK2** (một mình) | — | Đụng ~15+ file khắp web, chụp lại sổ tay một lần |
+| **3** (đang chạy) | ~~U12~~ ✅ #194 · ~~K26~~ ✅ #196 · **DL** · **SL** | DL → SL | U12: một bảng hồ sơ HV · DL: module điểm mới + một mục ⋮ · K26: `LoTrinhTiepPanel`, `lenLop.ts` · SL: panel/form chung. Chồng nhẹ: `DauTrangLop` (SL, DL, K26 thêm mục ⋮), `StudentDetailPage` (SL I4 ↔ U12). SL merge cuối: kiểm lại chân panel của DL, K26 theo luật I1 |
+| **4** | **NV** · **CHU** · **MTa** (sau khi DL, SL merge) | CHU → NV → MTa | NV: Chờ duyệt (`nhacNhieu`), ô chi nhánh, Lịch Test · CHU: chỉ thêm file `.md` + script · MTa: luật máy chủ Mock/Test. Chồng nhẹ: `duyet/yeuCau.ts` (NV thân `nhacNhieu`, MTa phần lý do), `mywork.ts` |
+| **5** | **MTb** · **MT0** | MTb → MT0 | MTb: giao diện Mock Test · MT0: lượt MT0 + Chuyển tiếp lớp; MT0 dùng component ô MT của MTb |
+| **6** | **HK2** (một mình) | — | Đụng ~15+ file khắp web, chụp lại sổ tay một lần |
 
 **Deploy lần sau (sau HK2)** — làm một lần cho cả 8 PR, theo `TRIEN_KHAI.md` mục 8 và 11.1:
 1. Sao lưu bản chính (`npm run sao-luu`).
@@ -308,7 +314,55 @@ Impeccable: /impeccable layout + /impeccable harden (SL-2, D11, I1), /impeccable
 Merge cuối đợt 3: merge main vào nhánh, kiểm lại chân panel của PR-DL và PR-K26 theo luật I1.
 ```
 
-### 9.3. Đợt 4 — sau khi mọi PR trên merge
+### 9.3. Đợt 4 — sau khi DL, SL merge (ba session song song)
+
+**PR-CHU** — Sonnet 5.5 · High (B: Opus 5.5 · Medium)
+```
+Làm PR-CHU theo docs/superpowers/plans/2026-10-05-pr-chu-ra-soat-chu.md (CHU-0 → CHU-5, prompt chung plan.md mục 9.0).
+Nhánh pr-chu-ra-soat-chu. Chỉ tạo thiet-ke/CHU_CAN_SUA_2026-10.md + scripts/quet-chu.mjs; không sửa chữ trong mã.
+Làm theo superpowers:executing-plans (các Task nối tiếp). Merge đầu tiên trong đợt 4.
+```
+
+**PR-NV** — Opus 5.5 · High (B: Sonnet 5.5 · High)
+```
+/ponytail lite
+Làm PR-NV theo docs/superpowers/plans/2026-10-05-pr-nv-nhac-viec-chi-nhanh.md (NV-1 → NV-7, prompt chung plan.md mục 9.0; đọc mục
+"Chủ sản phẩm chốt 05/10" ở đầu file trước). Nhánh pr-nv-nhac-viec-chi-nhanh.
+NV-1 đo số câu SQL ở bước đỏ trước khi sửa; không nới quyền. Impeccable: /impeccable clarify (tên Nhắc việc), cuối /impeccable audit.
+Chữ trên màn ngắn, không câu giải thích dưới nút/ô. Merge sau CHU, trước MTa.
+```
+
+**PR-MTa** — Opus 5.5 · XHigh (B: Fable 5.1 · High)
+```
+Làm PR-MTa theo docs/superpowers/plans/2026-10-05-pr-mta-luat-mock-test.md (Task 0 → 11, prompt chung plan.md mục 9.0; đọc mục
+"Chủ sản phẩm chốt 05/10" ở đầu file trước — đè lên phần dưới). Đặc tả: docs/superpowers/specs/2026-10-05-test-mock-test-design.md.
+Nhánh pr-mta-luat-mock-test. Chủ yếu máy chủ: ponytail full (Task 10 web tối thiểu: /ponytail lite cho task đó).
+Task 0 bắt buộc trước: khảo sát lại sau khi DL, SL merge, ghi danh sách chỗ lệch vào kế hoạch. Có migrate prMta.ts (chạy lặp được).
+Không đường TỰ ĐỘNG nào xoá điểm. Mỗi cổng ghi ở Task 11 có phép kiểm. Cuối PR /security-review trên diff. Merge cuối đợt 4.
+```
+
+### 9.4. Đợt 5 — sau khi MTa merge
+
+**PR-MTb** — Opus 5.5 · High (B: Fable 5.1 · High)
+```
+/ponytail lite
+Làm PR-MTb theo docs/superpowers/plans/2026-10-05-pr-mtb-giao-dien-mock-test.md (Task 0 → 10, prompt chung plan.md mục 9.0; đọc mục
+"Chủ sản phẩm chốt 05/10" ở đầu file trước). Mockup đã duyệt: thiet-ke/mockup-test-mt-2026-10-05.html (bản 4) — chữ trên màn ĐÚNG mockup,
+ngắn, không thêm câu giải thích. Nhánh pr-mtb-giao-dien-mock-test. Task 0: đối chiếu tên hàm với PR-MTa đã merge.
+Impeccable theo từng task (layout, clarify, harden, adapt), cuối /impeccable audit. Bấm thử 375/1440 sáng/tối, Quản trị, QL, GVCN, GVBM.
+Merge trước MT0.
+```
+
+**PR-MT0** — Opus 5.5 · High (B: Fable 5.1 · High)
+```
+/ponytail lite
+Làm PR-MT0 theo docs/superpowers/plans/2026-10-05-pr-mt0.md (MT0-0 → MT0-9, prompt chung plan.md mục 9.0; đọc mục
+"Chủ sản phẩm chốt 05/10" ở đầu file trước). Mockup phần 5: thiet-ke/mockup-test-mt-2026-10-05.html. Nhánh pr-mt0.
+MT0-0 (phép kiểm "MT0 không làm sai đếm") viết đỏ trước mọi thứ. Có thể chạy song song với MTb, nhưng merge SAU MTb
+(merge origin/main vào nhánh, dùng component ô MT của MTb, chạy lại check). Impeccable layout/clarify, cuối /impeccable audit.
+```
+
+### 9.5. Đợt 6 — sau khi mọi PR trên merge
 
 **PR-HK2** — Opus 5.5 · High (B: Sonnet 5.5 · High)
 ```
