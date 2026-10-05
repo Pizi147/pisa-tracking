@@ -1,8 +1,26 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useId, useLayoutEffect, useRef, useState } from 'react';
 import { nhanCanSua, type LoiTruong } from '@shared/domain/index.ts';
 
 /** Một ô cần sửa ở chân form: `oId` để nút "n ô cần sửa ↑" nhảy tới ô đó. Chuỗi trơn (form cũ) vẫn nhận. */
 export type MucThieu = { nhan: string; lyDo?: string; oId?: string };
+
+/**
+ * D11: lỗi dưới ô (`Truong`, `Field`) nối vào ô bằng `aria-describedby` — trình đọc màn hình đọc lý do khi vào ô. Một chỗ cho mọi nơi
+ * gọi: ô đầu tiên trong khung bọc (`ref`) được thêm/gỡ id dòng lỗi, giữ các id `aria-describedby` sẵn có của ô.
+ */
+export function useNoiLoi(loi: string | null | undefined) {
+  const id = useId();
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const o = ref.current?.querySelector<HTMLElement>('input, select, textarea, [aria-invalid]');
+    if (!o) return undefined;
+    const khac = (o.getAttribute('aria-describedby') ?? '').split(/\s+/).filter((x) => x && x !== id);
+    const ds = loi ? [...khac, id] : khac;
+    if (ds.length) o.setAttribute('aria-describedby', ds.join(' ')); else o.removeAttribute('aria-describedby');
+    return undefined;
+  }, [loi, id]);
+  return { id, ref };
+}
 
 /**
  * TRẠNG THÁI BÁO LỖI MỘT FORM (PR-N1, YC-12.5.2). Lỗi của một ô hiện khi người dùng đã RỜI ô đó (`roi` → `onBlur`) hoặc đã

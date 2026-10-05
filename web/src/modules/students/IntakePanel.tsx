@@ -162,7 +162,8 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
     <KhungPanel tieuDe="Thêm học viên" lop={cls?.code} rong="toan" onDong={onClose}
       ngCanh="Chọn lớp, rồi dán từ Excel/Google Sheets hoặc gõ thẳng vào lưới"
       chan={{
-        huy: { nhan: 'Đóng', onClick: onClose, disabled: busy },
+        /* Luật S3 (I1): có dòng đã gõ hoặc chữ trong ô dán → "Huỷ thay đổi". */
+        daSua: !!pasteText.trim() || rows.some((r) => !dongTrong(r)), huy: { onClick: onClose, disabled: busy },
         conThieu: lf.conThieu(loiLo),
         phu: pv && hangCoDuLieu.length > 0 && (
           <span className="text-xs text-slate-400 tabular-nums">

@@ -8,7 +8,7 @@ import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { fmtBand } from '../../lib/format.ts';
 import {
   CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, NHAN_VIEC_QUAN_LY, mucQuanLyHocVien, type LopHocQuyen, type ViecQuanLy, dsLoi, docEmail,
-  cauMtSeDoi, GIAI_THICH_KCK, KCK,
+  cauMtSeDoi, tuanLich, GIAI_THICH_KCK, KCK,
 } from '@shared/domain/index.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';

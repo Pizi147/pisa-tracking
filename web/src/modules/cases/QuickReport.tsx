@@ -288,6 +288,9 @@ export function QuickReport({
   const tieuDe = 'Tạo Case';
   const tenChon = (students ?? []).find((st) => st.id === studentId)?.name ?? studentName;
   const nhanTuan = (iso: string) => (iso ? tuanLich(iso, homNay) : '');
+  /* Luật S3 (I1): đã gõ / chọn ô nào → nút trái "Huỷ thay đổi". Chọn học viên (trang lớp) không tính là sửa. */
+  const daSua = !!(title.trim() || summary.trim() || topic || primaryCode || ghiRo.trim() || detectedAt || urgency !== DEFAULT_URGENCY
+    || bfFrom || bfTo || bfOutcome || bfNote.trim() || bfActions.some((a) => a.description.trim()));
 
   /* ─────────────── bước "Đã lưu": không đóng — Bằng chứng của CHÍNH Case vừa tạo (F-1, §3.13), chân chỉ còn "Xong". */
   if (daLuu) {
@@ -326,6 +329,7 @@ export function QuickReport({
           tabs={[{ key: 'now', label: 'Đang gặp vấn đề' }, { key: 'backfill', label: 'Đã xong từ trước' }]} />
       )}
       chan={{
+        daSua,
         conThieu: lf.daBam && !cnn ? oLoi : undefined,
         chinh: cnn ? undefined : (
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={mode === 'now' ? submit : submitBackfill}>

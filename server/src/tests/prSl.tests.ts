@@ -1,12 +1,36 @@
 /** PHÉP KIỂM PR-SL — Sửa thông tin cả lớp (Q-0310-3): xem trước + lưu MỘT giao dịch, quyền theo trường, chống gửi trùng. */
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { YThucTestKit } from './yThuc.tests.ts';
 
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..');
+const doc = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
+
 export async function runPrSlTests(t: YThucTestKit) {
-  const { checkAsync, assert, conn, P } = t;
+  const { check, checkAsync, assert, conn, P } = t;
   const d = await import('../../../shared/domain/index.ts');
   const { createApp } = await import('../app.ts');
   const { CHI_QL_SUA } = await import('../fasttrack/cycles.ts');
   console.log('\nPR-SL · Sửa thông tin cả lớp');
+
+  check('SL-4 · I1: KhungPanel mặc định "Đóng" / "Huỷ thay đổi" theo chan.daSua; Tạo Case, Thêm HV, Từ chối inline theo luật S3', () => {
+    const k = doc('web/src/ui/KhungPanel.tsx');
+    assert(/daSua\?: boolean/.test(k) && k.includes("chan.daSua ? 'Huỷ thay đổi' : 'Đóng'"), 'KhungPanel chưa có chan.daSua');
+    assert(/chan=\{\{\s*daSua,/.test(doc('web/src/modules/cases/QuickReport.tsx')), 'Tạo Case chưa truyền daSua');
+    assert(/daSua: !!pasteText\.trim\(\)/.test(doc('web/src/modules/students/IntakePanel.tsx')), 'Thêm HV chưa truyền daSua');
+    assert(doc('web/src/modules/duyet/TheYeuCau.tsx').includes("chu.trim() ? 'Huỷ thay đổi' : 'Đóng'"), 'Từ chối inline');
+    for (const f of ['web/src/modules/fasttrack/MockDetailPage.tsx', 'web/src/modules/platform/AccountsAdmin.tsx', 'web/src/modules/classes/LuoiTaoLop.tsx']) {
+      assert(!doc(f).includes("? 'Huỷ thay đổi' : 'Đóng', onClick"), `${f}: còn tự viết nhãn, dùng chan.daSua`);
+    }
+  });
+  check('SL-4 · D11: Truong và Field nối dòng lỗi vào ô bằng aria-describedby (một hook useNoiLoi)', () => {
+    assert(/aria-describedby/.test(doc('web/src/ui/loiForm.tsx')), 'useNoiLoi');
+    for (const f of ['web/src/ui/KhungPanel.tsx', 'web/src/ui/ui.tsx']) {
+      const s = doc(f);
+      assert(s.includes('useNoiLoi(loi)') && s.includes('ref={noi.ref}') && s.includes('id={noi.id}'), f);
+    }
+  });
 
   const ft = t.classId('MB FT 101');
   const thuong = t.classId('MB FOU 12');

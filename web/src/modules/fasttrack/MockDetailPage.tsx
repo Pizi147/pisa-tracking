@@ -666,7 +666,7 @@ function WeekModal({ onClose, attemptId, currentPeriodId, batBuocLyDo, lichSu, k
   return (
     <KhungPanel tieuDe={ten} hocVien={hocVien} lop={lop} onDong={onClose}
       chan={{
-        huy: { nhan: daSua ? 'Huỷ thay đổi' : 'Đóng', onClick: onClose, disabled: busy },
+        daSua: daSua, huy: { onClick: onClose, disabled: busy },
         conThieu: lf.conThieu(loi),
         dongTren: loiMay ? <p className="m-0 px-4 pt-2 text-xs font-semibold text-bad" role="alert">{loiMay}</p> : undefined,
         chinh: <button className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !doiTuan || !!kiem?.chan.length} onClick={() => void luu()}>{nut}</button>,
@@ -724,7 +724,7 @@ function DeadlineModal({ onClose, detail, onDone }: {
   return (
     <KhungPanel tieuDe={ten} hocVien={detail.student.name} lop={detail.classCode} onDong={onClose}
       chan={{
-        huy: { nhan: daSua ? 'Huỷ thay đổi' : 'Đóng', onClick: onClose, disabled: busy },
+        daSua: daSua, huy: { onClick: onClose, disabled: busy },
         conThieu: lf.conThieu(loi),
         dongTren: loiMay ? <p className="m-0 px-4 pt-2 text-xs font-semibold text-bad" role="alert">{loiMay}</p> : undefined,
         phu: detail.deadlineOverride && (
@@ -843,7 +843,7 @@ function AbsenceMoveModal({ row, detail, onClose, onDone }: {
   return (
     <KhungPanel tieuDe={`Xử lý vắng · ${row.label}`} hocVien={detail.student.name} lop={detail.classCode} onDong={close}
       chan={{
-        huy: { nhan: daSua ? 'Huỷ thay đổi' : 'Đóng', onClick: close, disabled: busy },
+        daSua: daSua, huy: { onClick: close, disabled: busy },
         dongTren: loiMay ? <p className="m-0 px-4 pt-2 text-xs font-semibold text-bad" role="alert">{loiMay}</p> : undefined,
         chinh: result ? undefined : (
           <button className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={submit}>

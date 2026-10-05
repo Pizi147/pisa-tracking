@@ -432,7 +432,7 @@ function AccountDialog({ account, branches, onClose, onDone }: {
   return (
     <KhungPanel tieuDe={editing ? 'Sửa tài khoản' : 'Tạo tài khoản'} hocVien={editing ? account!.fullName : null} rong="rong" onDong={onClose}
       chan={{
-        huy: { nhan: daDoi ? 'Huỷ thay đổi' : 'Đóng', onClick: onClose, disabled: busy },
+        daSua: daDoi, huy: { onClick: onClose, disabled: busy },
         conThieu: lf.conThieu(loi),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={save} disabled={busy}>{busy ? 'Đang lưu…' : 'Lưu'}</button>,
       }}>

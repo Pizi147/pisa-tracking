@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { taoKhoPanel } from '@shared/domain/index.ts';
 import { NutLuat } from './NutLuat.tsx';
-import { DongCanSua, type MucThieu } from './loiForm.tsx';
+import { DongCanSua, useNoiLoi, type MucThieu } from './loiForm.tsx';
 import { useGiuFocus } from './giuFocus.ts';
 import { BaoOTrongNhan, coOTuNhan } from './ONgay.tsx';
 
@@ -29,6 +29,8 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
   chan?: {
     huy?: { nhan?: string; onClick: () => void; disabled?: boolean }; xoa?: { onClick: () => void; nhan?: string };
     phu?: ReactNode; chinh?: ReactNode; conThieu?: (string | MucThieu)[];
+    /** Luật S3 (I1): form đã sửa → nút trái mặc định "Huỷ thay đổi", chưa sửa → "Đóng". `huy.nhan` riêng (Xong, ‹ Sửa…) thắng. */
+    daSua?: boolean;
     /** Một dòng riêng NGAY TRÊN hàng nút (ví dụ dòng xem trước trên điện thoại — PR-XLMT). Nơi gọi tự ẩn/hiện theo cỡ màn. */
     dongTren?: ReactNode;
   };
@@ -88,7 +90,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
             {chan.conThieu?.length ? <DongCanSua muc={chan.conThieu} /> : null}
             {chan.dongTren}
             <div className="flex items-center gap-2 px-4 py-2.5">
-              <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={huy.onClick} disabled={huy.disabled}>{huy.nhan ?? 'Đóng'}</button>
+              <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={huy.onClick} disabled={huy.disabled}>{huy.nhan ?? (chan.daSua ? 'Huỷ thay đổi' : 'Đóng')}</button>
               {chan.xoa && <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" onClick={chan.xoa.onClick}>{chan.xoa.nhan ?? 'Xoá'}</button>}
               <span className="flex-1" />
               {chan.phu}
@@ -136,14 +138,15 @@ export function Truong({ nhan, batBuoc, tuyChon, phu, loi, dem, as = 'label', ch
     {dem && <span className={`text-[11px] font-normal tabular-nums ${dem.co < dem.can ? 'text-slate-500' : 'text-slate-400'}`}>{dem.co}/{dem.can}</span>}
   </>;
   const lopNhan = 'mb-1 flex items-baseline gap-2 text-[11.5px] font-bold text-slate-200';
+  const noi = useNoiLoi(loi);
   return (
     <BaoOTrongNhan.Provider value={setIdO}>
       <Vo className="block min-w-0" {...nhom}>
         {troO ? <label htmlFor={troO} className={lopNhan}>{chu}</label> : <span id={idNhan} className={lopNhan}>{chu}</span>}
         {/* Luôn cùng một lớp bọc (`contents`, không đổi bố cục): bọc/bỏ bọc theo `loi` làm ô dựng lại → mất focus khi đang gõ. */}
-        <div className={loi ? 'contents [&_.field]:border-late [&_.field]:ring-1 [&_.field]:ring-late/40' : 'contents'}>{children}</div>
+        <div ref={noi.ref} className={loi ? 'contents [&_.field]:border-late [&_.field]:ring-1 [&_.field]:ring-late/40' : 'contents'}>{children}</div>
         {phu && <span className="mt-1 block truncate text-[11px] text-slate-500">{phu}</span>}
-        {loi && <span className="mt-1 block text-[11px] text-late">{loi}</span>}
+        {loi && <span id={noi.id} className="mt-1 block text-[11px] text-late">{loi}</span>}
       </Vo>
     </BaoOTrongNhan.Provider>
   );
