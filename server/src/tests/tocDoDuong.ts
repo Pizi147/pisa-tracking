@@ -135,6 +135,8 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/cham' },
   /* PR-LT, Task 5: GVCN_THUONG đọc được kế hoạch Chuyển tiếp lớp (canEdit=false ở đó), không sửa được (chỉ QL/QT gọi POST). */
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/transition' },
+  /* PR-K26: bảng Ghi lộ trình tiếp theo cả lớp (⋮ hồ sơ lớp) — đọc theo lô, không tăng theo số em. */
+  { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/lo-trinh-tiep' },
   /* PR-CT (Q30-2): phiếu bàn giao cả lớp nguồn — số câu KHÔNG đổi theo số em (phép kiểm CT 5h). */
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/lenh-chuyen/ban-giao?lop={lopThuong}' },
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/cases?classId={lopThuong}' },
@@ -539,6 +541,9 @@ export const TRAN: Record<string, number> = {
   'QL /classes/6/transition': 42,   // PR-CT gộp LT2b: 39 → 42
   'QT /classes/6/transition': 41,   // PR-CT gộp LT2b: 38 → 41
   'GVCN_THUONG /classes/6/transition': 42,   // PR-CT gộp LT2b: 39 → 42
+  'QL /classes/6/lo-trinh-tiep': 29,   // PR-K26 mới: đo 19
+  'QT /classes/6/lo-trinh-tiep': 28,   // PR-K26 mới: đo 18
+  'GVCN_THUONG /classes/6/lo-trinh-tiep': 30,   // PR-K26 mới: đo 20
   /* PR-CT (Task 6): phiếu bàn giao cả lớp nguồn — đo 14 / 13 / 13 câu (chưa có lệnh) → trần max(sau+10, ⌈sau×1.3⌉). Task 12 đo lại với bộ demo có lệnh. */
   'QL /lenh-chuyen/ban-giao?lop=6': 24,
   'QT /lenh-chuyen/ban-giao?lop=6': 23,

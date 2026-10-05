@@ -326,7 +326,7 @@ export type ClassProgress = {
   activeStudents: number;
   /**
    * Số em THẬT SỰ cần xếp lớp tiếp ngay (PR-LT, Q9) — `activeStudents` trừ em đã ghi
-   * `huong='xep_sau'` với `ngay_xem_lai` còn ở tương lai. Badge/việc đỏ Hết khoá dùng số này.
+   * `huong='chua_quyet'` (PR-K26, trước là `xep_sau`) với `ngay_xem_lai` còn ở tương lai. Badge/việc đỏ Hết khoá dùng số này.
    */
   canXepLop: number;
   /** Một dòng đọc được ngay, ví dụ "BE · tuần 5/10 · Progress Test tuần này". */
@@ -353,14 +353,14 @@ export function classProgress(classId: number): ClassProgress {
 
 /**
  * Đếm em `active` của một lớp, và trong đó bao nhiêu em CÒN CẦN xếp lớp tiếp ngay (Q9): trừ
- * em đã ghi `huong='xep_sau'` mà `ngay_xem_lai` còn ở tương lai — một câu, không N+1.
+ * em đã ghi `huong='chua_quyet'` mà `ngay_xem_lai` còn ở tương lai — một câu, không N+1.
  */
 const CLASS_ACTIVE_COUNT_SQL = `
   SELECT COUNT(*) n,
          SUM(CASE WHEN EXISTS (
            SELECT 1 FROM lo_trinh_tiep_theo lt
             WHERE lt.student_id = e.student_id AND lt.class_id = e.class_id
-              AND lt.huong = 'xep_sau' AND lt.ngay_xem_lai > ?
+              AND lt.huong = 'chua_quyet' AND lt.ngay_xem_lai > ?
          ) OR EXISTS (
            SELECT 1 FROM lenh_chuyen_lop lc WHERE lc.student_id = e.student_id AND lc.trang_thai = 'cho'   -- PR-CT: em đã có quyết định chuyển lớp không còn "cần xếp lớp"
          ) THEN 0 ELSE 1 END) can_xep_lop
@@ -414,7 +414,7 @@ export function classProgressMany(classIds: number[]): Map<number, ClassProgress
               SUM(CASE WHEN EXISTS (
                 SELECT 1 FROM lo_trinh_tiep_theo lt
                  WHERE lt.student_id = e.student_id AND lt.class_id = e.class_id
-                   AND lt.huong = 'xep_sau' AND lt.ngay_xem_lai > ?
+                   AND lt.huong = 'chua_quyet' AND lt.ngay_xem_lai > ?
               ) OR EXISTS (
                 SELECT 1 FROM lenh_chuyen_lop lc WHERE lc.student_id = e.student_id AND lc.trang_thai = 'cho'
               ) THEN 0 ELSE 1 END) can_xep_lop

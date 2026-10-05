@@ -55,13 +55,13 @@ export async function runLenLopTests(t: YThucTestKit) {
 
   // ==================================================================== nhanTiepTheo — 6 hướng (bao gồm không có bản ghi)
 
-  check('PR-LT (1) · nhanTiepTheo: 6 hướng + không có bản ghi + chua_ro đều ra chữ đúng luật Q4', () => {
+  check('PR-LT (1) · nhanTiepTheo: 6 hướng + không có bản ghi + chua_quyet đều ra chữ đúng luật Q4', () => {
     assert(d.nhanTiepTheo({ huong: 'len_lop' }, 'FOU') === 'BE', 'len_lop → mã bậc kế');
     assert(d.nhanTiepTheo({ huong: 'fast_track' }, 'FOU') === 'Fast Track', 'fast_track');
     assert(d.nhanTiepTheo({ huong: 'hoc_lai' }, 'FOU') === 'học lại FOU', 'hoc_lai');
     assert(d.nhanTiepTheo({ huong: 'bao_luu' }, 'FOU') === 'tạm dừng học (bảo lưu)', 'bao_luu');
     assert(d.nhanTiepTheo({ huong: 'dung_hoc' }, 'FOU') === 'dừng học hẳn', 'dung_hoc');
-    assert(d.nhanTiepTheo({ huong: 'chua_ro' }, 'FOU') === null, 'chua_ro → null (Q4: không tắt nhắc)');
+    assert(d.nhanTiepTheo({ huong: 'chua_quyet' }, 'FOU') === null, 'chua_quyet → null (Q4: không tắt nhắc)');
     assert(d.nhanTiepTheo(null, 'FOU') === null, 'Không có bản ghi → null');
   });
 
@@ -99,8 +99,8 @@ export async function runLenLopTests(t: YThucTestKit) {
       'Target hợp lệ thì qua');
   });
 
-  check('PR-LT (1) · kiemDongChuyenTiep: bao_luu/xep_sau thiếu lý do hoặc ngày xem lại', () => {
-    for (const huong of ['bao_luu', 'xep_sau'] as const) {
+  check('PR-LT (1) · kiemDongChuyenTiep: bao_luu/chua_quyet thiếu lý do hoặc ngày xem lại', () => {
+    for (const huong of ['bao_luu', 'chua_quyet'] as const) {
       assert(typeof d.kiemDongChuyenTiep({ huong }, { maTu: 'FOU' }) === 'string', `${huong} thiếu cả hai phải báo lỗi`);
       assert(typeof d.kiemDongChuyenTiep({ huong, lyDo: 'Ốm dài ngày' }, { maTu: 'FOU' }) === 'string', `${huong} thiếu ngày xem lại phải báo lỗi`);
       assert(d.kiemDongChuyenTiep({ huong, lyDo: 'Ốm dài ngày', ngayXemLai: '2026-11-01' }, { maTu: 'FOU' }) === null, `${huong} đủ thì qua`);
@@ -123,7 +123,7 @@ export async function runLenLopTests(t: YThucTestKit) {
     ]);
     assert(r.theoLop.length === 1 && r.theoLop[0].ma === 'MB BE 14' && r.theoLop[0].n === 2, `theoLop: ${JSON.stringify(r.theoLop)}`);
     assert(r.sangFt === 1, `sangFt: ${r.sangFt}`);
-    assert(r.khongChuyen.bao_luu === 1 && r.khongChuyen.dung_hoc === 0 && r.khongChuyen.xep_sau === 0, `khongChuyen: ${JSON.stringify(r.khongChuyen)}`);
+    assert(r.khongChuyen.bao_luu === 1 && r.khongChuyen.dung_hoc === 0 && r.khongChuyen.chua_quyet === 0, `khongChuyen: ${JSON.stringify(r.khongChuyen)}`);
     assert(r.caseDong === 1 && r.caseDiTheo === 0, `Case: đi theo=${r.caseDiTheo} đóng=${r.caseDong}`);
     assert(
       r.cau.join(' · ') === '2 em lên MB BE 14 · 1 em sang MB FT 105 (mở lộ trình FT, Target 6.5) · 1 em tạm dừng học (bảo lưu)',
@@ -131,14 +131,14 @@ export async function runLenLopTests(t: YThucTestKit) {
     );
   });
 
-  check('PR-LT (1) · tomTatChuyenTiep: baiChuaLam cộng dồn, không rơi mất dòng dung_hoc/xep_sau', () => {
+  check('PR-LT (1) · tomTatChuyenTiep: baiChuaLam cộng dồn, không rơi mất dòng dung_hoc/chua_quyet', () => {
     const r = d.tomTatChuyenTiep([
       { huong: 'dung_hoc', baiChuaLam: 2 },
-      { huong: 'xep_sau', baiChuaLam: 1 },
+      { huong: 'chua_quyet', baiChuaLam: 1 },
     ]);
     assert(r.baiChuaLam === 3, `baiChuaLam: ${r.baiChuaLam}`);
-    assert(r.khongChuyen.dung_hoc === 1 && r.khongChuyen.xep_sau === 1, JSON.stringify(r.khongChuyen));
-    assert(r.cau.join(' · ') === '1 em dừng học hẳn · 1 em xếp sau', r.cau.join(' · '));
+    assert(r.khongChuyen.dung_hoc === 1 && r.khongChuyen.chua_quyet === 1, JSON.stringify(r.khongChuyen));
+    assert(r.cau.join(' · ') === '1 em dừng học hẳn · 1 em chưa quyết', r.cau.join(' · '));
   });
 
   // ==================================================================== khoaLopThuong — ba nhánh phụ
@@ -386,18 +386,18 @@ export async function runLenLopTests(t: YThucTestKit) {
     assert(row?.chuaLoTrinh === true, 'Chưa có quyết định chuyển lớp thì vẫn có cờ');
   });
 
-  /* PR-Dọn (Câu 2 = B): đếm em CHƯA CÓ LỆNH chuyển lớp (lệnh `cho` thì hết cờ); "chua_ro" chỉ còn ảnh hưởng chữ "tiếp theo". */
-  check('PR-LT (3) · chua_ro: không hiện "tiếp theo"; em có lệnh chờ → hết cờ, em chưa có lệnh → có cờ và vào soChuaLoTrinhTiep', () => {
+  /* PR-Dọn (Câu 2 = B): đếm em CHƯA CÓ LỆNH chuyển lớp (lệnh `cho` thì hết cờ); "chua_quyet" chỉ còn ảnh hưởng chữ "tiếp theo". */
+  check('PR-LT (3) · chua_quyet: không hiện "tiếp theo"; em có lệnh chờ → hết cờ, em chưa có lệnh → có cờ và vào soChuaLoTrinhTiep', () => {
     const cls = taoLopThuong3(8);
     const gvcn = ganGVCN3(cls, P.normalCoreTeacher.userId);
     const { sid } = taoHocVien3(cls, 'FOU');
     const { sid: coLenh } = taoHocVien3(cls, 'FOU');
     conn.prepare(`INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, huong, boi_canh, tuan_bat_dau, nguoi_ra_lenh, ngay_ra_lenh, trang_thai, tao_luc)
       VALUES (?, ?, 'hoc_lai', 'cuoi-khoa', ?, ?, ?, 'cho', ?)`).run(coLenh, cls, mondayForWeek3(9), P.admin.userId, TODAY3, new Date().toISOString());
-    loTrinhTiepSvc.ghiLoTrinhTiep(gvcn, sid, { huong: 'chua_ro', ghiChu: 'Chưa quyết' });
+    loTrinhTiepSvc.ghiLoTrinhTiep(gvcn, sid, { huong: 'chua_quyet', ghiChu: 'Chưa quyết' });
     const roster = classesSvc.classRoster(P.admin, cls) as any[];
     const row = roster.find((r) => r.id === sid);
-    assert(row?.tiepTheo === null, `chua_ro không hiện "tiếp theo": ${row?.tiepTheo}`);
+    assert(row?.tiepTheo === null, `chua_quyet không hiện "tiếp theo": ${row?.tiepTheo}`);
     assert(row?.chuaLoTrinh === true && roster.find((r) => r.id === coLenh)?.chuaLoTrinh === false, 'cờ theo quyết định chuyển lớp');
     const r = classesSvc.listClassSummaries(P.admin, { branchId: MB3 }).rows.find((x) => x.id === cls)!;
     assert(r.soChuaLoTrinhTiep === 1, `Đếm em chưa có lệnh: ${r.soChuaLoTrinhTiep}`);
@@ -434,12 +434,12 @@ export async function runLenLopTests(t: YThucTestKit) {
     assert(pr.phase === 'finished' && pr.canXepLop === 2, `Tiền đề hết khoá, 2 em cần xếp: ${JSON.stringify(pr)}`);
     const now = new Date().toISOString();
     conn.prepare(
-      `INSERT INTO lo_trinh_tiep_theo (student_id, class_id, huong, ly_do, ngay_xem_lai, created_at, updated_at) VALUES (?,?,'xep_sau',?,?,?,?)`,
+      `INSERT INTO lo_trinh_tiep_theo (student_id, class_id, huong, ly_do, ngay_xem_lai, created_at, updated_at) VALUES (?,?,'chua_quyet',?,?,?,?)`,
     ).run(s1, cls, 'Ốm dài ngày', addDays3(TODAY3, 14), now, now);
     pr = scheduleSvc.classProgress(cls);
     assert(pr.canXepLop === 1, `Còn 1 em cần xếp: ${pr.canXepLop}`);
     conn.prepare(
-      `INSERT INTO lo_trinh_tiep_theo (student_id, class_id, huong, ly_do, ngay_xem_lai, created_at, updated_at) VALUES (?,?,'xep_sau',?,?,?,?)`,
+      `INSERT INTO lo_trinh_tiep_theo (student_id, class_id, huong, ly_do, ngay_xem_lai, created_at, updated_at) VALUES (?,?,'chua_quyet',?,?,?,?)`,
     ).run(s2, cls, 'Chờ phụ huynh', addDays3(TODAY3, 7), now, now);
     pr = scheduleSvc.classProgress(cls);
     assert(pr.canXepLop === 0 && pr.needsPlacement === false, `Hết đỏ khi mọi em có hướng: ${JSON.stringify(pr)}`);
@@ -805,15 +805,15 @@ export async function runLenLopTests(t: YThucTestKit) {
     const { sid } = taoHV4({ clsId: cls, ma: 'FOU', ft: false });
     const r = transitionSvc.applyTransition(P.mbManager, {
       fromClassId: cls, effectiveDate: TODAY3,
-      dongs: [{ studentId: sid, huong: 'xep_sau', lyDo: 'Chờ phụ huynh', ngayXemLai: addDays3(TODAY3, 14) }],
+      dongs: [{ studentId: sid, huong: 'chua_quyet', lyDo: 'Chờ phụ huynh', ngayXemLai: addDays3(TODAY3, 14) }],
     }) as any;
-    assert(r.done.length === 0 && r.failed.length === 0, `xep_sau không nằm trong done lẫn failed: ${JSON.stringify(r)}`);
+    assert(r.done.length === 0 && r.failed.length === 0, `chua_quyet không nằm trong done lẫn failed: ${JSON.stringify(r)}`);
     const enr = conn.prepare(`SELECT status FROM enrollments WHERE student_id=?`).get(sid) as any;
-    assert(enr.status === 'active', 'xep_sau không được đổi enrollment');
+    assert(enr.status === 'active', 'chua_quyet không được đổi enrollment');
     const clsRow = conn.prepare('SELECT status FROM classes WHERE id = ?').get(cls) as any;
-    assert(clsRow.status === 'active', 'Lớp còn em active (xep_sau) thì chưa finished');
+    assert(clsRow.status === 'active', 'Lớp còn em active (chua_quyet) thì chưa finished');
     const banGhi = conn.prepare(`SELECT huong, da_ap_dung_luc FROM lo_trinh_tiep_theo WHERE student_id=? AND class_id=?`).get(sid, cls) as any;
-    assert(banGhi.huong === 'xep_sau' && banGhi.da_ap_dung_luc === null, `Dự định phải ghi, chưa áp dụng: ${JSON.stringify(banGhi)}`);
+    assert(banGhi.huong === 'chua_quyet' && banGhi.da_ap_dung_luc === null, `Dự định phải ghi, chưa áp dụng: ${JSON.stringify(banGhi)}`);
   });
 
   check('PR-LT (5) · Dòng thiếu lý do (tạm dừng học (bảo lưu) không ghi lý do) vào failed, dòng khác vẫn xong', () => {

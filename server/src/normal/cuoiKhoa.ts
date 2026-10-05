@@ -548,7 +548,7 @@ export function ghiKetLuanFt(p: Principal, sid: number, input: { dat?: unknown; 
     const now = nowIso();
     conn.prepare(
       `INSERT INTO lo_trinh_tiep_theo (student_id, class_id, huong, ky_vong_dat, ky_vong_nguyen_nhan, ky_vong_mon, ky_vong_ghi_chu, updated_by, created_at, updated_at)
-       VALUES (?,?, 'chua_ro', ?,?,?,?,?,?,?)
+       VALUES (?,?, 'chua_quyet', ?,?,?,?,?,?,?)
        ON CONFLICT(student_id, class_id) DO UPDATE SET ky_vong_dat = excluded.ky_vong_dat, ky_vong_nguyen_nhan = excluded.ky_vong_nguyen_nhan,
          ky_vong_mon = excluded.ky_vong_mon, ky_vong_ghi_chu = excluded.ky_vong_ghi_chu, updated_by = excluded.updated_by, updated_at = excluded.updated_at`,
     ).run(sid, lopBeEle, dat ? 1 : 0, nguyenNhan, mon.length ? JSON.stringify(mon) : null, ghiChu, p.userId, now, now);

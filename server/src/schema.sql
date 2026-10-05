@@ -403,7 +403,7 @@ CREATE TABLE lo_trinh_tiep_theo (
   id INTEGER PRIMARY KEY,
   student_id INTEGER NOT NULL REFERENCES students(id),
   class_id INTEGER NOT NULL REFERENCES classes(id),   -- lớp (khoá) mà dự định nói "sau lớp này"
-  huong TEXT NOT NULL,                                -- len_lop|fast_track|hoc_lai|bao_luu|dung_hoc|chua_ro|xep_sau
+  huong TEXT NOT NULL,                                -- len_lop|fast_track|hoc_lai|bao_luu|dung_hoc|chua_quyet (PR-K26 gộp chua_ro, xep_sau)
   lop_du_kien_id INTEGER REFERENCES classes(id),
   muc_tieu REAL,
   thang_thi TEXT,                                     -- 'YYYY-MM'
