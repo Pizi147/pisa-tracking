@@ -593,7 +593,8 @@ export async function runPrDlTests(t: YThucTestKit) {
     assert(lt.includes('const baoDaLuu = useGopTaiLai(reload);') && !lt.includes('GOP_TAI_LAI_MS'), 'Lịch Test dùng chung useGopTaiLai');
     const tab = doc('web/src/modules/test/TabDiemLop.tsx');
     assert(tab.includes('useGopTaiLai(reload)') && /<DiemTheoLop[^>]*onDaLuu=\{/.test(tab), 'TabDiemLop gộp tải lại danh sách lớp');
-    assert(/onReload=\{\(\) => \{ bang\.reload\(\); onDaLuu\?\.\(\); \}\}/.test(doc('web/src/modules/cham/DiemTheoLop.tsx')), 'lưu ô báo onDaLuu');
+    const dt = doc('web/src/modules/cham/DiemTheoLop.tsx');
+    assert(dt.includes('const daLuuO = () => { bang.reload(); onDaLuu?.(); };') && /<LuoiChamLop[^>]*onReload=\{daLuuO\}/.test(dt), 'lưu ô báo onDaLuu');
   });
 
   check('DL fix cuối (4) chip lịch sử: truy vấn lich_su bỏ attempt đã huỷ', () => {

@@ -45,7 +45,7 @@ export function useBaoHopLyDoMo(dangGui: boolean) {
   useBaoDangLuu(`hop-ly-do:${useId()}`, dangGui, dangGui ? 0 : 1);
 }
 
-/** Báo một khoá lên `BaoDangLuuContext` (như `useBaoLuu`); gỡ thì báo hết. */
+/** Báo một khoá lên `BaoDangLuuContext`; gỡ thì báo hết. */
 function useBaoDangLuu(khoa: string, dang: boolean, loi: number) {
   const bao = useContext(BaoDangLuuContext);
   useEffect(() => { bao?.(khoa, dang, loi); }, [bao, khoa, dang, loi]);

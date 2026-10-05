@@ -113,6 +113,8 @@ export function DiemTheoLop({ classId, luotBanDau, gon = false, congRoi, onDaLuu
   const dangXem: TomTatLuot | null = vi >= 0 ? dsLuot[vi] : null;
 
   const b = bang.data;
+  /* Lưu xong một ô: tải lại bảng này + báo trang cha (Test › Điểm theo lớp gộp tải lại danh sách lớp). */
+  const daLuuO = () => { bang.reload(); onDaLuu?.(); };
   const chiAttempt = useMemo(() => {
     if (!chiOTrong || !b) return null;
     const ids = b.ft
@@ -214,7 +216,7 @@ export function DiemTheoLop({ classId, luotBanDau, gon = false, congRoi, onDaLuu
                 : (
                   <div className="rounded-lg border overflow-hidden" style={{ borderColor: 'var(--line)' }}>
                     <BaoDangLuuContext.Provider value={baoLuu}>
-                      <LuoiChamLop data={b} kind={null} onReload={() => { bang.reload(); onDaLuu?.(); }} gon datConTro={false}
+                      <LuoiChamLop data={b} kind={null} onReload={daLuuO} gon datConTro={false}
                         chiAttempt={chiAttempt} hangMo={hangMo} anNutTao />
                     </BaoDangLuuContext.Provider>
                   </div>
