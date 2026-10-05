@@ -160,7 +160,7 @@ Chủ sản phẩm 05/10 đã chốt (mockup `thiet-ke/mockup-test-mt-2026-10-05
 | 04/10 | Điểm theo lớp: mockup `thiet-ke/mockup-diem-theo-lop-2026-10-04.html` đã duyệt | DL |
 | 04/10 | Deploy **sau mỗi đợt** | mục 5 |
 
-## 4. Việc chưa làm — 4 PR
+## 4. Việc chưa làm (đợt 3 còn DL, SL; đợt 4–6 ở mục 2c + kế hoạch 2026-10-05-*)
 
 Đợt 2 (PHH, SO, DH) và U12 đã xong, xem mục 2.
 
@@ -176,10 +176,7 @@ Chủ sản phẩm 05/10 đã chốt (mockup `thiet-ke/mockup-test-mt-2026-10-05
 - Nhập điểm cả lớp theo từng lượt (FT: MT1, MT2, … kể cả lịch sử; lớp thường: bài theo lịch riêng của lớp). DL-0 sai giả
   định G2 thì dừng hỏi. `DauTrangLop.tsx`: chỉ thêm một mục menu ⋮.
 
-### PR-K26 · Lộ trình tiếp theo theo dải % Cuối khoá (M, có migrate) — kế hoạch `2026-10-04-pr-k26-lo-trinh-tiep-theo-dai.md`
-- Chủ sản phẩm 04/10 tối: em 50–59% → GVCN ghi **đề xuất**, Quản lý quyết lúc chuyển lớp (không thẻ Chờ duyệt) · "Chưa rõ" + "Xếp sau"
-  **gộp hẳn** thành "Chưa quyết" (migrate `prK26`) · **làm** "Ghi lộ trình tiếp theo cả lớp" (menu ⋮ hồ sơ lớp).
-- Hướng gợi ý theo Cuối khoá đứng đầu, các hướng khác thu vào "Hướng khác ▾".
+### PR-K26 — ✅ xong 05/10 (#196, #197).
 
 ### PR-HK2 · Badge & chữ, chụp lại sổ tay (L, cuối cùng) — kế hoạch có sẵn một phần
 - `2026-10-02-ux-sau-critique.md`: **H1/H2** ba họ chip · **K1** còn lại (nếu DH chưa làm hết) · **K2** Phân tích › Tổng hợp ·
