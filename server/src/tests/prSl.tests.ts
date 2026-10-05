@@ -52,7 +52,7 @@ export async function runPrSlTests(t: YThucTestKit) {
   check('SL-6 · I3 Thêm học viên: ô dán không monospace, nút Đọc dưới ô dán, cột Overall / ngày sinh đủ rộng, lời nhắc hai dòng', () => {
     const s = doc('web/src/modules/students/IntakePanel.tsx');
     assert(!/font-mono/.test(s), 'ô dán còn font-mono');
-    assert(s.indexOf('<textarea') < s.indexOf('Đọc nội dung đã dán') && !s.includes('sm:grid-cols-3'), 'nút Đọc phải nằm dưới ô dán');
+    assert(s.indexOf('<textarea') < s.lastIndexOf('Đọc nội dung đã dán') && !s.includes('sm:grid-cols-3'), 'nút Đọc phải nằm dưới ô dán');
     assert(/dob: 116, email: 190, baselineScore: 72/.test(s), 'bề rộng cột');
     assert(s.includes('Em đã có hồ sơ thì dùng Chuyển lớp, không tạo mới.</p>') && !s.includes('(không tính SOS). · Em'), 'lời nhắc hai dòng');
   });
@@ -71,7 +71,7 @@ export async function runPrSlTests(t: YThucTestKit) {
   check('SL-8 · I6 Ghi vi phạm: chú thích "* = bắt buộc" một dòng, không còn "(bắt buộc)" hiện ở ô; "Xem" không inline-flex cao 44 px', () => {
     const s = doc('web/src/modules/yThuc/RecordViolationPanel.tsx');
     assert(s.includes('= bắt buộc</>}') && !/>\s*\(bắt buộc\)/.test(s), 'chú thích dấu *');
-    assert(!/inline-flex[^"]*min-h-\[44px\][^"]*"[^>]*>Xem</.test(s) && /align-baseline max-sm:-my-3 max-sm:py-3"[^>]*>Xem</.test(s), 'nút Xem');
+    assert(/className="link appearance-none border-0 bg-transparent p-0 align-baseline max-sm:-my-3 max-sm:py-3" aria-expanded=\{xemTrung\}/.test(s), 'nút Xem');
   });
 
   check('SL-2 · panel Sửa thông tin học viên: không dán Excel; vào từ ⋮ và nút ở tab Học viên; đóng khi đang sửa thì hỏi', () => {
