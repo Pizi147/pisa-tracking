@@ -177,7 +177,7 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                                 <span className="min-w-0 flex-1">
                                   {c.key === 'dob' || c.key === 'startWeek' || c.key === 'examDate' ? (
                                     <ONgay gon kieu={c.key === 'dob' ? 'ngay' : c.key === 'startWeek' ? 'tuan' : 'ngay-hoac-thang'}
-                                      value={v} ariaLabel={nhan} invalid={!!loi} disabled={khoaO}
+                                      value={v} ariaLabel={nhan} invalid={!!loi} moTa={loi ? idLoi : undefined} disabled={khoaO}
                                       onChange={(x) => datO(r.studentId, c.key, x)} />
                                   ) : (
                                     <input className={`field w-full${c.so ? ' text-right tabular-nums' : ''}${loi ? ' border-late' : ''}`}

@@ -38,9 +38,11 @@ type Props = {
   invalid?: boolean;
   /** Trong lưới (Thêm học viên): không vẽ dòng phụ tuần và dòng lỗi dưới ô — hàng cao đều; hai dòng đó vào `title` của ô gõ. */
   gon?: boolean;
+  /** `gon`: id dòng lỗi người gọi vẽ dưới ô (lưới) — nối vào `aria-describedby` (D11). */
+  moTa?: string;
 };
 
-export function ONgay({ kieu, value, onChange, toiThieu, toiDa, moc, catHomNay, goiY, disabled, ariaLabel, id, onBlur, invalid, gon }: Props) {
+export function ONgay({ kieu, value, onChange, toiThieu, toiDa, moc, catHomNay, goiY, disabled, ariaLabel, id, onBlur, invalid, gon, moTa }: Props) {
   const { homNay } = useNgayNghiepVu();
   const luat: LuatONgay = { toiThieu, toiDa, moc, catHomNay };
   const [text, setText] = useState(hienONgay(value, kieu, homNay));
@@ -67,7 +69,7 @@ export function ONgay({ kieu, value, onChange, toiThieu, toiDa, moc, catHomNay, 
         <input id={idO} className={`field min-w-0 flex-1 tabular-nums${gon && (invalid || loi) ? ' border-late' : ''}`}
           title={gon ? [phu, loi].filter(Boolean).join(' · ') || undefined : undefined} inputMode={kieu === 'tuan' ? 'text' : 'numeric'} autoComplete="off" value={text} disabled={disabled}
           placeholder={goiY ?? (kieu === 'thang' ? 'mm/yyyy' : kieu === 'tuan' ? 'W4 SEP hoặc dd/mm' : 'dd/mm/yyyy')} aria-label={ariaLabel} aria-invalid={invalid || !!loi || undefined}
-          aria-describedby={gon ? undefined : [phu && `${idO}-phu`, loi && `${idO}-loi`].filter(Boolean).join(' ') || undefined}
+          aria-describedby={gon ? moTa : [phu && `${idO}-phu`, loi && `${idO}-loi`].filter(Boolean).join(' ') || undefined}
           onChange={(e) => setText(e.target.value)} onBlur={() => { chot(); onBlur?.(); }}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); chot(); } else if (e.key === 'ArrowDown' && e.altKey) { e.preventDefault(); setMo(true); } }} />
         <button ref={nut} type="button" className="btn flex-none min-h-[44px] min-w-[44px] justify-center px-0 sm:min-h-0 sm:min-w-[36px]"
