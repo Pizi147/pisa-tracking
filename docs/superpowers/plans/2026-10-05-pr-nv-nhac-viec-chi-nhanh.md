@@ -18,6 +18,7 @@
 - Q3: **không đổi** chữ "Báo QL" (là loại thẻ GV báo lên); chỉ đổi tên tab "Để QL biết" → "Nhắc việc".
 - Lỗi khoá `mini_test:` / `cuoi_khoa:` (Nhắc ra 404): sửa trong NV-1 như kế hoạch.
 - Chữ trên màn ngắn.
+- **(05/10 tối) BỎ Task NV-6 "Nợ tuần trước thu gọn":** khối này được thiết kế lại (đổi tên "Test quá hạn chấm", ba khối) trong **PR-LT3** (plan.md mục 2c T15–T18). PR-NV **không sửa** `LichTestTab.tsx` / `KhoiNo.tsx`.
 
 ## Global Constraints
 - CLAUDE.md: tinh chỉnh, không làm lại. Giữ Be Vietnam Pro (chữ số Inter), bảng màu, bố cục. Thời gian trên màn: mã tuần.
@@ -204,7 +205,7 @@ Sau khi PR-DL merge: nếu tab "Điểm theo lớp" (`test/TabDiemLop.tsx`) có 
 - [ ] **Step 3: Bấm thử bằng ảnh** (DB thử local; mỗi vai mở Tổng quan, Học viên & Lớp, Kế hoạch Test, Lịch Test, Chờ duyệt, Báo cáo đơn vị): Quản trị (user 1) — chưa chọn gì → theo luật (không MB nếu dạy chi nhánh khác); chọn Bãi Cháy ở Tổng quan → mở Lịch Test thấy Bãi Cháy; chọn "Tất cả" → mọi màn Tất cả. QL một chi nhánh (user 2) — ô ẩn, dữ liệu đúng chi nhánh. **QL hai chi nhánh** — seed không có thì cấp thêm vai `manager` chi nhánh thứ hai cho một QL bằng câu SQL trên **DB test** (ghi câu vào mô tả PR); mặc định = chi nhánh có nhiều lớp mình dạy hơn. GVCN (user 7) — không đổi gì so với hôm nay. Xoá localStorage / cửa sổ ẩn danh → vẫn chạy.
 - [ ] **Step 4: Commit** `PR-NV (5): mọi ô chi nhánh nhớ lần chọn trước, mặc định theo vai Quản lý / lớp mình dạy`.
 
-### Task NV-6: "Nợ tuần trước" thu gọn mặc định
+### Task NV-6: ~~"Nợ tuần trước" thu gọn mặc định~~ — **BỎ (05/10 tối), chuyển sang PR-LT3 (T15)**
 **Files:** `web/src/modules/test/LichTestTab.tsx:93` (`useState(true)` → `useState(false)`). Giữ mọi chỗ **tự mở** khi người dùng muốn thấy: link có lớp trỏ đúng dòng Nợ (`:125`), bấm ô số "Nợ tuần trước" / "Quá hạn" ở dải số (`DaiSo.tsx:22,26` → `LichTestTab.tsx:175,177`). `KhoiNo.tsx` không sửa (đã có `aria-expanded`, nút mở/thu).
 
 - [ ] Sửa; bấm thử Lịch Test của GVBM (user 9) có Nợ: mở trang → khối thu gọn, chỉ hàng tiêu đề + số; bấm ô "Nợ tuần trước" → mở và cuộn tới; mở từ Công việc › Chấm (có `classId`+`kn`) → mở đúng dòng. 375 + 1440, sáng + tối.

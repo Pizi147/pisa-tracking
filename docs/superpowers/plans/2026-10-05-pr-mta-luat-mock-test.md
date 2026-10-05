@@ -22,6 +22,8 @@
 - Q3: từ chối "Xin dời" = **không mock lại**; Quản lý có thêm nút "Không mock lại".
 - Chữ trên màn ngắn, không câu giải thích dưới nút/ô.
 
+> **Chú ý (05/10 tối):** PR-LT3 (Lịch Test ba khối, plan.md T15–T18) sửa lại `server/src/cham/canCham.ts` (`noTuanTruoc`, `lichTest`) và `web/src/modules/test/lichTest/*`; Task nào chạm các file này phải đối chiếu mã đã merge của LT3 (MT0 merge sau LT3). Khối "Nợ tuần trước" đổi tên thành "Test quá hạn chấm" và chỉ gồm bài quá hạn thật.
+
 ## Global Constraints
 - Mọi luật ở máy chủ + `shared/domain`; web chỉ sửa tối thiểu để không gãy (Task 10, Task 1 bước web). Không đổi bố cục, phông, màu. Giao diện thật thuộc PR-MTb.
 - Ponytail **full** (PR máy chủ). Hai task có chạm web (1, 10): gõ `/ponytail lite` trước khi sửa `web/`, rồi `/ponytail full` lại.

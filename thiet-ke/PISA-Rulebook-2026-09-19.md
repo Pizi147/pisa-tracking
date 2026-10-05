@@ -624,6 +624,17 @@ Nguồn: `thiet-ke/NGUON-Rule-v3-YThuc-PhoiHop-2026-09-21.md`. Đặc tả: `thi
   Lớp thường có dòng "Cả bài" (% tổng ≥ ngưỡng đạt chung); Pre FOU không có.
 - **Đầu hồ sơ lớp:** một nút chính theo chặng (`nutChinhDauTrang`); ô Giữa khoá ở Lịch kiểm tra chỉ với chương trình có mốc Giữa khoá; khung hết khoá không tô đỏ.
 
+## PR-LT3 — Lịch Test ba khối, Speaking Mock chấm chéo (chủ sản phẩm chốt 05/10/2026, tối) — **CHƯA CÓ trong code**
+
+Nguồn: ảnh MT4 "W1 OCT" hiện cùng lúc ở "Nợ tuần trước" và Lịch Test tuần W2 OCT. Kiểm code: hạn đúng luật (hạn thứ Tư tuần kế = 07/10); phần gây rối là hai lịch khác bản chất trộn một màn.
+
+- **Hai lịch khác nhau:** *lịch thi của học viên* (em thi môn nào tuần nào, theo `planned_period_id` từng môn) và *lịch chấm của GV* (bài đã thi, còn nợ điểm, hạn chấm). Một MT có môn dời tuần thì hai lịch lệch nhau — bình thường, không phải lỗi.
+- **Ba khối ở Lịch Test, một bài đúng một khối** (T15): (1) **Test quá hạn chấm** — chỉ quá hạn thật (tuần thi đã hết **và** qua hạn, `quaHanNhapDiem`), thu gọn mặc định; (2) **Test chấm tuần này** — đã thi từ tuần trước, chưa chấm, **chưa quá hạn**, mở sẵn, trình bày như Lịch Test hàng tuần; (3) **Lịch Test tuần này** — ai thi gì tuần đang xem, thu gọn mặc định. Bài tuần trước còn hạn **không** gọi là nợ. Đổi tên "Nợ tuần trước" → "Test quá hạn chấm".
+- **Lùi / tiến tuần** (T16): khối 1 **không đổi** theo tuần xem (luôn tính theo hôm nay, theo bộ lọc phạm vi), luôn đi cùng màn; khối 2 chỉ hiện ở tuần hiện tại; khối 3 theo tuần xem. Lùi tuần chỉ để xem lại, không có đường nào làm khối 1 biến mất ngoài việc nhập điểm. Tổng ba khối = badge "n bài chờ chấm".
+- **Khối 1** (T17): cột GV chấm kéo rộng, **chỉ tên GV chưa chấm**; lưới học viên là mục con nhẹ của dòng lớp (thụt vào, vạch dọc mảnh, không khung thứ hai).
+- **Speaking Mock chấm chéo** (T18): không GV mặc định. Quá hạn → **báo** GVBM Speaking của lớp và GVCN lớp đó, **không tính** quá hạn / trễ / "Chờ bạn chấm" vào hai người này. GV chấm chéo nhập điểm (người ghi ở "GV chấm Speaking") nhập sau mốc trễ thì **tính trễ cho người đó**; tên người ngoài không tài khoản → không tính cho ai. **Thay** các dòng "ô S là việc / nợ điểm của GV được phân công S lớp đó" (PR-HSM, §20.9) **chỉ với Mock**; lớp thường không đổi.
+- **Chờ chủ sản phẩm xác nhận:** (a) dải số bốn ô đầu Lịch Test sau khi có ba khối; (b) tiêu đề khối 3 khi xem tuần khác ("Lịch Test W1 OCT"); (c) hiểu câu "không tính quá hạn cho các GV này" như trên.
+
 ---
 
 ## 20. Tổng hợp luật hiện hành — đối chiếu với code `main` ngày 02/10/2026
@@ -750,7 +761,7 @@ Vai trong hệ thống chỉ có **3**: Quản trị hệ thống · Quản lý 
 | Hành động | Ai làm |
 |---|---|
 | Nhập điểm FT / lớp thường | GVBM đúng ô (W1 và W2 là hai ô riêng); GVCN chỉ ô môn mình dạy; QL/Quản trị mọi ô |
-| Nhập ô S của Mock ở lớp FT khác | GV được phân công Speaking ở một lớp FT nhập được ô S mọi lớp FT cùng chi nhánh (chỉ là quyền, không phải việc/nợ) |
+| Nhập ô S của Mock ở lớp FT khác | GV được phân công Speaking ở một lớp FT nhập được ô S mọi lớp FT cùng chi nhánh (chỉ là quyền, không phải việc/nợ). **Từ PR-LT3 (T18):** Speaking Mock không GV mặc định; quá hạn chỉ báo GVBM Speaking + GVCN lớp đó, không tính nợ cho họ; GV chấm chéo nhập muộn mới bị tính trễ |
 | Nhập MT lịch sử | GVCN ô trống cả 4 kỹ năng; QL mọi ô |
 | Sửa điểm đã nhập (lý do ≥ 5 ký tự) | GVBM đúng ô, chỉ trước khi đợt hoàn tất; QL mọi lúc |
 | Báo vắng FT | GVCN, QL (GVBM chỉ gõ "-" trong ô) |
