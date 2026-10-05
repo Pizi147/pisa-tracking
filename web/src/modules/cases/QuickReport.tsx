@@ -6,7 +6,6 @@ import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { ChonTuan } from '../../ui/ChonNgay.tsx';
-import { ONgay } from '../../ui/ONgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
@@ -14,7 +13,7 @@ import { OKhac } from '../../ui/OKhac.tsx';
 import { NutChon } from '../../ui/ui.tsx';
 import { ComponentsField, componentsPayload } from './ChiTietKyNang.tsx';
 import {
-  URGENCY_LEVELS, URGENCY_LABEL, issuesForTopic, DEFAULT_URGENCY, FOLLOWUP_OUTCOMES, GOI_Y_MO_TA_PA, outcomeLabelFor,
+  URGENCY_LEVELS, URGENCY_LABEL, issuesForTopic, FOLLOWUP_OUTCOMES, GOI_Y_MO_TA_PA, outcomeLabelFor,
   CASE_OUTCOMES, CASE_OUTCOME_LABEL, CHU_THEM_PA, tenMon, tenMonNgan,
   categoryOf, componentsFor, componentsAreCounts,
   nguoiThanhPayload, nguoiThieu, tuanLich, type NguoiChon, dsLoi, type LuatTruong, laKhac, kiemGhiRoKhac, KHAC_TOI_THIEU,
@@ -68,7 +67,8 @@ export function QuickReport({
   const [mode, setMode] = useState<'now' | 'backfill'>('now');
   const [title, setTitle] = useState('');
   const [summary, setSummary] = useState('');
-  const [urgency, setUrgency] = useState<string>(DEFAULT_URGENCY);
+  /* I2 (PR-SL): không chọn sẵn mức độ — người báo tự chọn (ô bắt buộc). */
+  const [urgency, setUrgency] = useState('');
   const [topic, setTopic] = useState('');
   const [primaryCode, setPrimaryCode] = useState('');
   /* Phân loại "Khác" (T13): ô Ghi rõ ngay dưới, lưu ở `case_issues.observation` (Q9). Đổi phân loại vẫn giữ chữ đã gõ. */
@@ -136,7 +136,7 @@ export function QuickReport({
   const nguoiNhan = (n: NguoiChon | null) => (!n || n.kieu === 'toi' ? 'tôi' : n.ten);
 
   const reset = () => {
-    setSummary(''); setUrgency(DEFAULT_URGENCY); setTopic('');
+    setSummary(''); setUrgency(''); setTopic('');
     setTitle(''); setPrimaryCode(''); setDetectedAt(''); setDup(null); lf.datLai(); setMoSua([0]);
     setMode('now'); setBfFrom(''); setBfTo('');
     setBfActions([{ description: '', nguoi: { kieu: 'toi' }, fromDate: '', toDate: '', ketQua: '' }]);
@@ -266,6 +266,7 @@ export function QuickReport({
   const LUAT: LuatTruong[] = [
     ...(students ? [{ khoa: 'hoc-vien', nhan: 'Học viên', chon: true }] : []),
     { khoa: 'ky-nang', nhan: 'Kỹ năng', chon: true }, { khoa: 'phan-loai', nhan: 'Nhóm nguyên nhân', chon: true },
+    ...(mode === 'now' ? [{ khoa: 'muc-do', nhan: 'Mức độ', chon: true }] : []),
     /* PR-NEN (T13): phân loại "Khác" → ô Ghi rõ ≥ 3 ký tự ngay dưới (OKhac); Mô tả chỉ còn luật 15 ký tự. */
     ...(laKhac(primaryCode) ? [{ khoa: 'ghi-ro', nhan: 'Ghi rõ', toiThieu: KHAC_TOI_THIEU }] : []),
     { khoa: 'ten', nhan: 'Tên Case', toiThieu: 6 },
@@ -273,7 +274,7 @@ export function QuickReport({
     ...(mode === 'backfill' ? [{ khoa: 'tu-tuan', nhan: 'Từ tuần', chon: true }, { khoa: 'den-tuan', nhan: 'Đến tuần', chon: true },
       { khoa: 'ket-qua', nhan: 'Kết quả cuối', chon: true }, { khoa: 'vi-sao', nhan: 'Vì sao kết luận vậy', toiThieu: 10 }] : []),
   ];
-  const loi = dsLoi(LUAT, { 'hoc-vien': studentId, 'ky-nang': topic, 'phan-loai': primaryCode, 'ghi-ro': ghiRo, ten: title, 'mo-ta': summary,
+  const loi = dsLoi(LUAT, { 'hoc-vien': studentId, 'ky-nang': topic, 'phan-loai': primaryCode, 'ghi-ro': ghiRo, 'muc-do': urgency, ten: title, 'mo-ta': summary,
     'tu-tuan': bfFrom, 'den-tuan': bfTo, 'ket-qua': bfOutcome, 'vi-sao': bfNote });
   if (mode === 'backfill' && bfFrom && bfTo && bfFrom > bfTo) loi.push({ khoa: 'den-tuan', nhan: 'Đến tuần', lyDo: 'Không được trước Từ tuần' });
   if (mode === 'backfill' && !bfActions.some((a) => a.description.trim())) loi.push({ khoa: 'pa-0', nhan: 'PA đã áp dụng', lyDo: 'Chưa có PA nào' });
@@ -289,7 +290,7 @@ export function QuickReport({
   const tenChon = (students ?? []).find((st) => st.id === studentId)?.name ?? studentName;
   const nhanTuan = (iso: string) => (iso ? tuanLich(iso, homNay) : '');
   /* Luật S3 (I1): đã gõ / chọn ô nào → nút trái "Huỷ thay đổi". Chọn học viên (trang lớp) không tính là sửa. */
-  const daSua = !!(title.trim() || summary.trim() || topic || primaryCode || ghiRo.trim() || detectedAt || urgency !== DEFAULT_URGENCY
+  const daSua = !!(title.trim() || summary.trim() || topic || primaryCode || ghiRo.trim() || detectedAt || urgency
     || bfFrom || bfTo || bfOutcome || bfNote.trim() || bfActions.some((a) => a.description.trim()));
 
   /* ─────────────── bước "Đã lưu": không đóng — Bằng chứng của CHÍNH Case vừa tạo (F-1, §3.13), chân chỉ còn "Xong". */
@@ -355,9 +356,8 @@ export function QuickReport({
         <Truong nhan="Kỹ năng" batBuoc as="div" loi={loiCua('ky-nang')}>
           <div {...o('ky-nang')} tabIndex={-1} className="outline-none">
           {!studentId ? (
-            <div className="grid grid-cols-4 gap-2 opacity-40" aria-hidden>
-              {['L', 'R', 'W', 'S'].map((k) => <span key={k} className="btn justify-center">{k}</span>)}
-            </div>
+            /* I2: chưa chọn học viên thì chưa biết chương trình (FT W1/W2, lớp thường W) — không vẽ hàng nút giả. */
+            <p className="m-0 text-xs text-slate-400">Chọn học viên trước</p>
           ) : chuDe.loading && !chuDe.data ? (
             <div className="h-[34px] animate-pulse rounded-md" style={{ background: 'var(--surface-2)' }} />
           ) : (
@@ -399,7 +399,7 @@ export function QuickReport({
             <select className="field w-full" {...o('phan-loai')} value={primaryCode} disabled={!topic}
               title={causes.find((i) => i.code === primaryCode)?.hint}
               onChange={(e) => setPrimaryCode(e.target.value)}>
-              <option value="">{topic ? 'Chọn phân loại' : ''}</option>
+              <option value="">{topic ? 'Chọn nhóm' : 'Chọn kỹ năng trước'}</option>
               {causes.map((i) => <option key={i.code} value={i.code} title={i.hint}>{i.label}</option>)}
             </select>
           </Truong>
@@ -409,8 +409,8 @@ export function QuickReport({
 
         {/* Nhập bù là chuyện ĐÃ XONG — không còn "mức độ" để xin. */}
         {mode === 'now' && (
-          <Truong nhan="Mức độ" batBuoc phu="Nhận định của người báo, không phải mức SOS" as="div">
-            <div className="grid grid-cols-2 gap-2">
+          <Truong nhan="Mức độ" batBuoc phu="Nhận định của người báo, không phải mức SOS" as="div" loi={loiCua('muc-do')}>
+            <div className="grid grid-cols-2 gap-2 outline-none" {...o('muc-do')} tabIndex={-1}>
               {URGENCY_LEVELS.map((u) => (
                 <NutChon key={u} chon={urgency === u} className="justify-center" onClick={() => setUrgency(u)}>
                   {URGENCY_LABEL[u]}
@@ -435,7 +435,10 @@ export function QuickReport({
 
       {mode === 'now' && !cnn && (
         <Khoi tieuDe="Theo dõi">
-          <Truong nhan="Bắt đầu theo dõi"><ONgay kieu="ngay" value={detectedAt || homNay} onChange={setDetectedAt} toiDa={homNay} /></Truong>
+          <Truong nhan="Bắt đầu theo dõi">
+            {/* I2: theo tuần (mã tuần), không theo ngày; trống = tuần này. Máy chủ nhận Thứ Hai của tuần chọn. */}
+            <ChonTuan moc="dau" lui={26} toi={0} value={detectedAt} onChange={setDetectedAt} chuaChon="Tuần này" ariaLabel="Bắt đầu theo dõi" />
+          </Truong>
         </Khoi>
       )}
 
