@@ -40,13 +40,18 @@ export type CongRoi = { roi: (lam: () => void) => void; giu: (e: MouseEvent) => 
 /** Mã đích "ra ngoài bảng" trong luồng hỏi đổi lượt — không bao giờ trùng mã lượt (`docMaLuot`). */
 const DICH_NGOAI = 'ngoai';
 
-export function DiemTheoLop({ classId, luotBanDau, gon = false, congRoi }: {
+export function DiemTheoLop({ classId, luotBanDau, gon = false, congRoi, onDaLuu }: {
   classId: number; luotBanDau?: string; gon?: boolean; congRoi?: MutableRefObject<CongRoi | null>;
+  /** Vừa lưu một ô (Test › Điểm theo lớp: gộp tải lại số ô trống của danh sách lớp). */
+  onDaLuu?: () => void;
 }) {
   const ds = useApi<DanhSachLuot>(duongDiemTheoLuot(classId), [classId]);
   const [chon, setChon] = useState<string | null>(luotBanDau ?? null);
   const dsLuot = ds.data?.luot ?? [];
   const luot = chon && dsLuot.some((l) => l.ma === chon) ? chon : ds.data?.macDinh ?? null;
+  /* Chốt lượt mở ban đầu MỘT lần, theo bản tải mới (không theo bản vừa xem): lưu ô cuối của lượt mặc định làm `macDinh` đổi —
+     bảng không được tự nhảy (bỏ qua đường chặn → mất điểm đang gõ, hộp lý do). Sau đó chỉ người dùng đổi lượt, qua `sang`. */
+  useEffect(() => { if (luot && luot !== chon && !ds.refreshing) setChon(luot); }, [luot, chon, ds.refreshing]);
   const bang = useApi<BangTheoLuot>(luot ? duongDiemTheoLuot(classId, luot) : null, [classId, luot]);
 
   const [chiOTrong, setChiOTrong] = useState(docChiOTrong);
@@ -161,7 +166,8 @@ export function DiemTheoLop({ classId, luotBanDau, gon = false, congRoi }: {
                     <span className={`font-semibold text-sm ${on ? 'text-[color:var(--accent-strong)]' : 'text-slate-200'}`}>
                       {l.nhan}{l.lichSu ? ' · lịch sử' : ''}
                     </span>
-                    <span className="text-[11.5px] text-slate-500 tabular-nums">{dongPhuLuot(l)}</span>
+                    {/* Tab chọn: --text-dim trên --accent-soft (tối 5,07:1 · sáng 6,75:1); --text-faint chỉ 4,10:1 ở tối. */}
+                    <span className={`text-[11.5px] tabular-nums ${on ? 'text-slate-400' : 'text-slate-500'}`}>{dongPhuLuot(l)}</span>
                   </button>
                 );
               })}
@@ -172,7 +178,7 @@ export function DiemTheoLop({ classId, luotBanDau, gon = false, congRoi }: {
         )}
 
         {(h.hoi || h.chan) && (
-          <div role="alert" aria-label="Đổi lượt" onMouseDown={giuHopLyDo} className="surface-2 rounded-md px-3 py-2 text-sm flex flex-wrap items-center gap-2">
+          <div role="alert" onMouseDown={giuHopLyDo} className="surface-2 rounded-md px-3 py-2 text-sm flex flex-wrap items-center gap-2">
             {h.hoi && dangLuu ? (
               <>
                 <span className="flex-1 min-w-0">Còn ô đang lưu. Đợi lưu xong rồi chuyển?</span>
@@ -208,7 +214,7 @@ export function DiemTheoLop({ classId, luotBanDau, gon = false, congRoi }: {
                 : (
                   <div className="rounded-lg border overflow-hidden" style={{ borderColor: 'var(--line)' }}>
                     <BaoDangLuuContext.Provider value={baoLuu}>
-                      <LuoiChamLop data={b} kind={null} onReload={bang.reload} gon datConTro={false}
+                      <LuoiChamLop data={b} kind={null} onReload={() => { bang.reload(); onDaLuu?.(); }} gon datConTro={false}
                         chiAttempt={chiAttempt} hangMo={hangMo} anNutTao />
                     </BaoDangLuuContext.Provider>
                   </div>
@@ -217,7 +223,8 @@ export function DiemTheoLop({ classId, luotBanDau, gon = false, congRoi }: {
       </div>
     );
   }
-  return gon ? noiDung : <Card>{noiDung}</Card>;
+  /* Màn hẹp: bỏ khung + đệm của card ngoài (bảng đã có khung riêng) — tên HV đỡ bị cắt ở 375. */
+  return gon ? noiDung : <Card className="max-md:border-0 max-md:bg-transparent" bodyClass="md:p-4">{noiDung}</Card>;
 }
 
 /** Tải lại nền lỗi khi ĐÃ có dữ liệu: dòng nhỏ + "Thử lại" — không thay lưới bằng ErrorState (gỡ ô đang giữ giá trị gõ). */

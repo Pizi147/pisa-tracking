@@ -42,9 +42,13 @@ export const BaoDangLuuContext = createContext<((khoa: string, dangLuu: boolean,
  * lệnh sửa → báo "đang lưu" (bấm đổi lượt ra câu "Còn ô đang lưu…"), không phải "chưa lưu".
  */
 export function useBaoHopLyDoMo(dangGui: boolean) {
+  useBaoDangLuu(`hop-ly-do:${useId()}`, dangGui, dangGui ? 0 : 1);
+}
+
+/** Báo một khoá lên `BaoDangLuuContext` (như `useBaoLuu`); gỡ thì báo hết. */
+function useBaoDangLuu(khoa: string, dang: boolean, loi: number) {
   const bao = useContext(BaoDangLuuContext);
-  const khoa = `hop-ly-do:${useId()}`;
-  useEffect(() => { bao?.(khoa, dangGui, dangGui ? 0 : 1); }, [bao, khoa, dangGui]);
+  useEffect(() => { bao?.(khoa, dang, loi); }, [bao, khoa, dang, loi]);
   useEffect(() => () => { bao?.(khoa, false, 0); }, [bao, khoa]);
 }
 
@@ -64,10 +68,7 @@ export function useTrangThaiLuuO<B>(khoaBao: string) {
   const soLoiNhap = Object.keys(loiNhapO).filter((k) => o[k] !== 'loi').length;
   const soLoi = tong.soLoi + soLoiNhap;
   useBaoLuu(khoaBao, soLoi);
-  const baoDang = useContext(BaoDangLuuContext);
-  const dangLuu = Object.values(o).includes('dang-luu');
-  useEffect(() => { baoDang?.(khoaBao, dangLuu, soLoi); }, [baoDang, khoaBao, dangLuu, soLoi]);
-  useEffect(() => () => { baoDang?.(khoaBao, false, 0); }, [baoDang, khoaBao]);
+  useBaoDangLuu(khoaBao, Object.values(o).includes('dang-luu'), soLoi);
   return {
     o, loi, hong, soLoi,
     /** Có ô lỗi GỬI (mạng/5xx) — chỉ lúc đó dòng mới có "Lưu lại"; lỗi nhập thì sửa ngay tại ô. */

@@ -299,6 +299,12 @@ export function coTheXemLuotCham(p: Principal, ctx: Ctx): boolean {
 export function requireXemLuotCham(p: Principal, ctx: Ctx, message: string) {
   if (!coTheXemLuotCham(p, ctx)) require_(p, PERMISSIONS.ATTEMPT_VIEW, ctx, message);
 }
+/** Phạm vi DANH SÁCH của đường chấm (Lịch Test, Test › Điểm theo lớp): `scopeFor(ATTEMPT_VIEW)` + lớp FT GV Speaking chấm S chéo. */
+export function scopeXemLuotCham(p: Principal, date = demoToday()): Scope {
+  const s = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
+  const lopS = s.all ? [] : lopFtChoGvSpeaking(p, date);
+  return lopS.length ? { ...s, classIds: [...new Set([...s.classIds, ...lopS])] } : s;
+}
 
 /** Chi nhánh mà ngữ cảnh đang nói tới. */
 function ctxBranches(ctx: Ctx): number[] {

@@ -1,4 +1,5 @@
 /** PHÉP KIỂM PR-DL — Điểm theo lớp: mã lượt, lượt mặc định, nhãn lượt (chủ sản phẩm 04/10, DL-0). */
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -90,7 +91,7 @@ export async function runPrDlTests(t: YThucTestKit) {
    * bỏ các trường theo đồng hồ thật (`…At`; `chuNhatCuoi` của MT lịch sử seed = ngày nhập thật). Seed + TODAY cố định nên băm cố định; đổi seed/phép kiểm phía trên
    * làm lệch băm thì chụp lại bằng mã trước refactor (`git show 666dcfbf:server/src/fasttrack/attempts.ts`), không sửa cho khớp.
    */
-  const bam = (x: unknown) => (globalThis as any).process.getBuiltinModule('node:crypto').createHash('sha256')
+  const bam = (x: unknown) => createHash('sha256')
     .update(JSON.stringify(x, (k, v) => (k.endsWith('At') || k === 'chuNhatCuoi' ? undefined : v))).digest('hex').slice(0, 16);
   const ANH_CHUP = { tuan: 'ff67960c2e85730b', moi: '8222c5f2ca493255' };
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
@@ -504,7 +505,7 @@ export async function runPrDlTests(t: YThucTestKit) {
     const ss = doc('web/src/ui/SaveState.tsx');
     const hook = ss.slice(ss.indexOf('export function useBaoHopLyDoMo'), ss.indexOf('export function useTrangThaiLuuO'));
     assert(/useContext\(BaoDangLuuContext\)/.test(hook) && !/BaoLuuContext\b|useBaoLuu/.test(hook), 'chỉ báo qua BaoDangLuuContext');
-    assert(hook.includes('bao?.(khoa, dangGui, dangGui ? 0 : 1)'), 'hộp đang gửi = đang lưu; mở mà chưa gửi = chưa lưu');
+    assert(hook.includes('dangGui, dangGui ? 0 : 1)'), 'hộp đang gửi = đang lưu; mở mà chưa gửi = chưa lưu');   // sửa cuối (12): qua useBaoDangLuu
     const f = doc('web/src/modules/cham/DiemTheoLop.tsx');
     assert(/activeElement[\s\S]{0,160}\.blur\(\)[\s\S]{0,40}requestAnimationFrame\(\(\) => setXet/.test(f), 'blur rồi khung sau mới xét');
     assert(f.includes('role="alert"') && !f.includes('alertdialog'), 'hộp hỏi role="alert"');
@@ -572,7 +573,54 @@ export async function runPrDlTests(t: YThucTestKit) {
     assert(/roi: \(lam\) => \{ dichNgoai\.current = lam; doiLuot\(DICH_NGOAI\); \}, giu: giuHopLyDo/.test(dt), 'roi đi qua doiLuot (blur + yeuCauDoiLuot)');
     assert(/if \(ma === DICH_NGOAI\) \{ dichNgoai\.current\?\.\(\); return; \}/.test(dt), 'sang đích ngoài chạy hành động đổi lớp');
     assert(d.docMaLuot('ngoai') === null, 'mã đích ngoài không trùng mã lượt');
-    for (const ten of ['fasttrack/ScoreEntry', 'cham/LuoiThuong', 'fasttrack/HopThaoTacMt'])
-      assert(doc(`web/src/modules/${ten}.tsx`).includes("invalidate('/diem-theo-lop')"), `${ten}: invalidate('/diem-theo-lop')`);
+    /* Đợt sửa cuối (final review #2): không tải lại mỗi ô nữa — xem phép kiểm "DL fix cuối (2)". */
   });
+
+  // ------------------------------------------------------------------ đợt sửa cuối (final review + audit + ponytail-review)
+  check('DL fix cuối (1) lượt mở ban đầu chốt MỘT lần (bản tải mới) — lưu ô làm macDinh đổi không tự nhảy bảng, đổi lượt chỉ qua đường chặn', () => {
+    const f = doc('web/src/modules/cham/DiemTheoLop.tsx');
+    assert(/useEffect\(\(\) => \{ if \(luot && luot !== chon && !ds\.refreshing\) setChon\(luot\); \}, \[luot, chon, ds\.refreshing\]\)/.test(f), 'chốt lượt đang hiện vào chon');
+    assert(/useState<string \| null>\(luotBanDau \?\? null\)/.test(f), 'tôn trọng luotBanDau');
+    assert((f.match(/setChon\(/g) ?? []).length === 2, 'chỉ hai chỗ đặt chon: chốt ban đầu + `sang` (sau đường chặn)');
+  });
+
+  check('DL fix cuối (2) danh sách lớp /diem-theo-lop/lop tải lại GỘP 1,5 s sau lần lưu cuối (dùng chung cơ chế Lịch Test Q14), không mỗi ô', () => {
+    for (const ten of ['fasttrack/ScoreEntry', 'cham/LuoiThuong', 'fasttrack/HopThaoTacMt'])
+      assert(!doc(`web/src/modules/${ten}.tsx`).includes("invalidate('/diem-theo-lop')"), `${ten}: còn invalidate('/diem-theo-lop')`);
+    const ua = doc('web/src/lib/useApi.ts');
+    assert(/export function useGopTaiLai\(reload: \(\) => void\)/.test(ua) && ua.includes('GOP_TAI_LAI_MS = 1500'), 'useGopTaiLai ở useApi.ts');
+    const lt = doc('web/src/modules/test/LichTestTab.tsx');
+    assert(lt.includes('const baoDaLuu = useGopTaiLai(reload);') && !lt.includes('GOP_TAI_LAI_MS'), 'Lịch Test dùng chung useGopTaiLai');
+    const tab = doc('web/src/modules/test/TabDiemLop.tsx');
+    assert(tab.includes('useGopTaiLai(reload)') && /<DiemTheoLop[^>]*onDaLuu=\{/.test(tab), 'TabDiemLop gộp tải lại danh sách lớp');
+    assert(/onReload=\{\(\) => \{ bang\.reload\(\); onDaLuu\?\.\(\); \}\}/.test(doc('web/src/modules/cham/DiemTheoLop.tsx')), 'lưu ô báo onDaLuu');
+  });
+
+  check('DL fix cuối (4) chip lịch sử: truy vấn lich_su bỏ attempt đã huỷ', () => {
+    assert(/lich_su = 1 AND status != 'cancelled'/.test(doc('server/src/cham/diemTheoLuot.ts')), 'thiếu status != cancelled');
+  });
+
+  check('DL fix cuối (5–7) audit: bỏ card lồng < md; chip lịch sử xuống dòng phụ; tab chọn chữ phụ ≥ 4,5:1; hộp chặn không aria-label', () => {
+    const f = doc('web/src/modules/cham/DiemTheoLop.tsx');
+    assert(f.includes('<Card className="max-md:border-0 max-md:bg-transparent" bodyClass="md:p-4">'), 'màn hẹp: bỏ đệm card ngoài');
+    assert(/on \? 'text-slate-400' : 'text-slate-500'/.test(f), 'dòng phụ tab chọn: text-slate-400 (--text-dim, tối 5,07:1, sáng 6,75:1)');
+    assert(f.includes('role="alert"') && !/role="alert"[^>]*aria-label/.test(f), 'role="alert" không aria-label');
+    const ft = doc('web/src/modules/cham/LuoiFT.tsx');
+    const dongTen = ft.slice(ft.indexOf('to={duongDotTest({ id: row.attemptId })}'), ft.indexOf('{row.studentCode}'));
+    assert(!dongTen.includes('ChipLichSu') && /\{row\.studentCode\}<\/span>\s*\{row\.lichSu && <ChipLichSu \/>\}/.test(ft), 'LuoiFT: chip lịch sử ở dòng mã HV');
+    const mk = doc('web/src/modules/cham/MotKyNang.tsx');
+    assert(/luu=\{<>\{row\.lichSu && <ChipLichSu \/>\}<DauLuu/.test(mk) && !/nhan=\{<>\{row\.lichSu/.test(mk), 'MotKyNang: chip lịch sử ở dòng phụ');
+  });
+
+  {
+    const perm: any = await import('../permissions.ts');
+    check('DL fix cuối (10) scopeXemLuotCham = scopeFor(ATTEMPT_VIEW) + lớp FT GV Speaking chấm S chéo', () => {
+      for (const p of [P.mbManager, P.lrTeacher, P.coreTeacher, P.cpManager]) {
+        const s = perm.scopeFor(p, d.PERMISSIONS.ATTEMPT_VIEW);
+        const x = perm.scopeXemLuotCham(p, TODAY);
+        assert(x.all === s.all && x.none === s.none && s.classIds.every((id: number) => x.classIds.includes(id)), 'phải chứa scopeFor');
+        if (!s.all) for (const id of perm.lopFtChoGvSpeaking(p, TODAY)) assert(x.classIds.includes(id), `thiếu lớp chấm S chéo ${id}`);
+      }
+    });
+  }
 }

@@ -11,18 +11,14 @@
 import { badRequest, notFound } from '../util.ts';
 import { db, theoLo } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
-import { classScopeSql, lopFtChoGvSpeaking, requireXemLuotCham, scopeFor, type Principal } from '../permissions.ts';
+import { classScopeSql, requireXemLuotCham, scopeXemLuotCham, type Principal } from '../permissions.ts';
 import {
-  PERMISSIONS, docMaLuot, luotMacDinh, nhanMaLuot, soSanhLop, type AssessedSkill, type MaLuot, type TomTatLuot,
+  docMaLuot, luotMacDinh, nhanMaLuot, soSanhLop, vietMaLuot, type AssessedSkill, type MaLuot, type TomTatLuot,
 } from '../../../shared/domain/index.ts';
 import { entrySkillsOf } from '../fasttrack/scoring.ts';
-import { allProgrammes } from '../normal/regular.ts';
+import { cheDoCua, type CheDo } from '../normal/regular.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { chamSheet } from './canCham.ts';
-
-type CheDo = 'ielts_band' | 'ratio';
-const cheDoCua = (programmeCode: string | null): CheDo =>
-  allProgrammes().get(programmeCode ?? '')?.scoringMode === 'ratio' ? 'ratio' : 'ielts_band';
 
 /** Tra lớp rồi kiểm quyền — TRƯỚC mọi truy vấn dữ liệu HV. */
 function lopDuocXem(p: Principal, classId: number): CheDo {
@@ -41,9 +37,9 @@ type Gom = TomTatLuot & { classId: number; thuTu: number };
  */
 function tomTatLop(classIds: number[]): Map<number, TomTatLuot[]> {
   const conn = db();
-  const luotCua = new Map<number, { g: Gom; ft: boolean }>();
+  /* Mỗi attempt: lượt của nó + số ô trống `n`. */
+  const luotCua = new Map<number, { g: Gom; ft: boolean; n: number }>();
   const gom = new Map<string, Gom>();
-  const trong = new Map<number, number>();
   theoLo(classIds, (lo, ph) => {
     for (const a of conn.prepare(
       `SELECT a.id, a.class_id, a.kind, a.attempt_no, a.lich_su, s.archived_at, rp.week_start, c.programme_code
@@ -58,7 +54,7 @@ function tomTatLop(classIds: number[]): Map<number, TomTatLuot[]> {
       if (ft && a.kind === 'mock' && a.attempt_no) m = { loai: 'mt', so: a.attempt_no };
       else if (!ft && (a.kind === 'progress' || a.kind === 'final') && a.archived_at === null) m = { loai: 'thuong', kind: a.kind };
       else continue;
-      const ma = m.loai === 'mt' ? `mt:${m.so}` : `thuong:${m.kind}`;
+      const ma = vietMaLuot(m);
       const khoa = `${a.class_id}|${ma}`;
       const g = gom.get(khoa) ?? gom.set(khoa, {
         classId: a.class_id, ma, nhan: nhanMaLuot(m), tuanStart: null, lichSu: m.loai === 'mt', duDiem: 0, coLich: 0, oTrong: 0,
@@ -68,8 +64,7 @@ function tomTatLop(classIds: number[]): Map<number, TomTatLuot[]> {
       /* Lượt "lịch sử" chỉ khi MỌI attempt không huỷ của lượt là lịch sử (chủ sản phẩm 05/10); lượt lẫn đánh dấu theo từng em. */
       if (!a.lich_su) g.lichSu = false;
       if (a.week_start && (g.tuanStart === null || a.week_start < g.tuanStart)) g.tuanStart = a.week_start;
-      luotCua.set(a.id, { g, ft });
-      trong.set(a.id, 0);
+      luotCua.set(a.id, { g, ft, n: 0 });
     }
     const diem = new Map<string, any>();
     for (const sc of conn.prepare(
@@ -87,12 +82,11 @@ function tomTatLop(classIds: number[]): Map<number, TomTatLuot[]> {
         const sc = diem.get(`${k.attempt_id}|${nhap}`);
         const xong = sc && (sc.band !== null || sc.raw_score !== null
           || (sc.no_show_period_id !== null && sc.no_show_period_id === k.planned_period_id));
-        if (!xong) trong.set(k.attempt_id, trong.get(k.attempt_id)! + 1);
+        if (!xong) l.n += 1;
       }
     }
   });
-  for (const [id, n] of trong) {
-    const { g } = luotCua.get(id)!;
+  for (const { g, n } of luotCua.values()) {
     g.oTrong += n;
     if (n === 0) g.duDiem += 1;
   }
@@ -133,7 +127,7 @@ export function bangTheoLuot(p: Principal, classId: number, ma: string, today: s
    * cả lượt lịch sử thì callout của bảng đã nói, không chip từng em (chủ sản phẩm 05/10).
    */
   const lichSu = new Set(m.loai === 'mt' && sheet.ft && !luot.lichSu
-    ? (db().prepare(`SELECT id FROM assessment_attempts WHERE class_id = ? AND kind = 'mock' AND attempt_no = ? AND lich_su = 1`)
+    ? (db().prepare(`SELECT id FROM assessment_attempts WHERE class_id = ? AND kind = 'mock' AND attempt_no = ? AND lich_su = 1 AND status != 'cancelled'`)
       .all(classId, m.so) as { id: number }[]).map((r) => r.id)
     : []);
   const ft = sheet.ft ? { ...sheet.ft, rows: sheet.ft.rows.map((r) => ({ ...r, lichSu: lichSu.has(r.attemptId) })) } : sheet.ft;
@@ -146,10 +140,7 @@ export function bangTheoLuot(p: Principal, classId: number, ma: string, today: s
  * — như Lịch Test.
  */
 export function lopCuaToi(p: Principal): { classId: number; classCode: string; mode: CheDo; oTrong: number }[] {
-  const scope0 = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
-  /* GV Speaking chấm S chéo lớp FT cùng chi nhánh: đọc + chấm được ở đó thì phải tìm được lớp — nối như `lichTest`. */
-  const lopS = scope0.all ? [] : lopFtChoGvSpeaking(p);
-  const scope = lopS.length ? { ...scope0, classIds: [...new Set([...scope0.classIds, ...lopS])] } : scope0;
+  const scope = scopeXemLuotCham(p);
   if (scope.none) return [];
   const cs = classScopeSql(scope);
   const lop = (db().prepare(`SELECT c.id, c.code, c.programme_code FROM classes c WHERE ${cs.sql} AND c.status = 'active'`)

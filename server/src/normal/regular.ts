@@ -51,6 +51,11 @@ export type ProgrammeInfo = {
  * Danh sách lớp hỏi chương trình của từng dòng, nên đọc lẻ là đúng cái bẫy N+1 mà cả
  * màn hình này được dựng để tránh.
  */
+/** Cách chấm của lớp theo mã chương trình: 'ratio' (lớp thường) hoặc 'ielts_band' (Fast Track, cả khi không rõ chương trình). */
+export type CheDo = 'ielts_band' | 'ratio';
+export const cheDoCua = (programmeCode: string | null | undefined): CheDo =>
+  allProgrammes().get(programmeCode ?? '')?.scoringMode === 'ratio' ? 'ratio' : 'ielts_band';
+
 /** PR-TD: ba câu SQL cho CẢ hệ thống chương trình, nhớ trong request GET — gọi lặp mỗi lớp/mỗi lượt trong một request. */
 export function allProgrammes(): Map<string, ProgrammeInfo> {
   return nho('chuong-trinh', () => {

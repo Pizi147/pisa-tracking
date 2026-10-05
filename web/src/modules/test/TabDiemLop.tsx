@@ -1,6 +1,6 @@
 import { useRef, type MouseEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useApi } from '../../lib/useApi.ts';
+import { useApi, useGopTaiLai } from '../../lib/useApi.ts';
 import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { DiemTheoLop, type CongRoi } from '../cham/DiemTheoLop.tsx';
 
@@ -19,6 +19,8 @@ export function TabDiemLop() {
   const [sp, setSp] = useSearchParams();
   const { data, loading, error, reload } = useApi<LopCuaToi[]>('/diem-theo-lop/lop');
   const cong = useRef<CongRoi | null>(null);
+  /* Số ô trống của danh sách lớp: tải lại GỘP 1,5 s sau lần lưu cuối (như Lịch Test, Q14) — không tải mọi lớp sau mỗi ô. */
+  const daLuu = useGopTaiLai(reload);
 
   if (error && !data) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (loading || !data) return <Skeleton rows={6} />;
@@ -57,7 +59,7 @@ export function TabDiemLop() {
         })}
       </nav>
       {/* `key`: đổi lớp thì lượt và trạng thái lưu bắt đầu lại từ lượt mở sẵn của lớp mới. */}
-      <DiemTheoLop key={chon.classId} classId={chon.classId} congRoi={cong} />
+      <DiemTheoLop key={chon.classId} classId={chon.classId} congRoi={cong} onDaLuu={daLuu} />
     </div>
   );
 }
