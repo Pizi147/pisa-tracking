@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useId, useRef, useState } from 'react';
 import { capNhatLuuO, tomTatLuuDong, type TrangThaiLuuO } from '@shared/domain/index.ts';
 import { Alert, Status } from './ui.tsx';
 
@@ -35,6 +35,19 @@ export function useBaoLuu(khoa: string, soLoi: number) {
  * báo lỗi". Ngoài bảng đó (không có Provider) thì không làm gì.
  */
 export const BaoDangLuuContext = createContext<((khoa: string, dangLuu: boolean, soLoi: number) => void) | null>(null);
+
+/**
+ * HỘP LÝ DO SỬA ĐIỂM ĐANG MỞ = MỘT Ô CHƯA LƯU (PR-DL fix 2): báo CHỈ qua `BaoDangLuuContext` (bảng điểm theo lượt chặn đổi lượt),
+ * không qua `BaoLuuContext` — lưới cũ không hiện thêm "n ô chưa lưu". Gọi trong hộp (chỉ gắn khi hộp mở).
+ */
+export function useBaoHopLyDoMo() {
+  const bao = useContext(BaoDangLuuContext);
+  const khoa = `hop-ly-do:${useId()}`;
+  useEffect(() => {
+    bao?.(khoa, false, 1);
+    return () => { bao?.(khoa, false, 0); };
+  }, [bao, khoa]);
+}
 
 /**
  * TRẠNG THÁI LƯU THEO TỪNG Ô của MỘT dòng (luật ở `capNhatLuuO` / `tomTatLuuDong`). Dùng chung cho `useSaveScore` (FT) và

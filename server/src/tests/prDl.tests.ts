@@ -293,6 +293,8 @@ export async function runPrDlTests(t: YThucTestKit) {
       const mt1B = em('DL5 Hoa');
       const ls = () => Object.fromEntries(dl.danhSachLuot(P.admin, lop5, TODAY).luot.map((l: any) => [l.ma, l.lichSu]));
       assert(ls()['mt:1'] === true && ls()['mt:2'] === false, `toàn lịch sử: ${JSON.stringify(ls())}`);
+      /* Fix 2: cả lượt lịch sử → callout của bảng, KHÔNG chip từng em. */
+      assert(dl.bangTheoLuot(P.admin, lop5, 'mt:1', TODAY).ft.rows.every((r: any) => r.lichSu === false), 'lượt toàn lịch sử: không chip từng em');
       conn.prepare('UPDATE assessment_attempts SET lich_su = 0 WHERE id = ?').run(mt1B);
       assert(ls()['mt:1'] === false, `lượt lẫn: ${JSON.stringify(ls())}`);
       const hang = dl.bangTheoLuot(P.admin, lop5, 'mt:1', TODAY).ft.rows.map((r: any) => [r.attemptId, r.lichSu]);
@@ -447,5 +449,42 @@ export async function runPrDlTests(t: YThucTestKit) {
     assert(/const nutTao = data\.canPlan && !anNutTao/.test(f('LuoiThuong')), 'LuoiThuong ẩn nút theo anNutTao');
     assert(!/anNutTao/.test(f('ChamDiemPage')) && !/anNutTao/.test(doc('web/src/modules/test/lichTest/LuoiNhung.tsx')), 'trang cũ giữ nút');
     for (const ten of ['LuoiFT', 'MotKyNang']) assert(/row\.lichSu && <ChipLichSu \/>/.test(f(ten)), `${ten}: chip lịch sử cạnh tên`);
+  });
+
+  check('DL-5 fix 2 hộp hỏi đổi lượt: chỉ tự chuyển sau "Đợi rồi chuyển"; lưu hỏng bỏ đích chờ; hết lỗi thì hộp đóng', () => {
+    const R = d.HOI_DOI_LUOT_RONG;
+    assert(JSON.stringify(d.yeuCauDoiLuot('mt:2', false, 0)) === JSON.stringify({ h: R, sang: 'mt:2' }), 'không vướng → sang ngay');
+    const dang = d.yeuCauDoiLuot('mt:2', true, 0);
+    assert(dang.sang === null && dang.h.hoi === 'mt:2' && !dang.h.cho && !dang.h.chan, `đang lưu → hỏi: ${JSON.stringify(dang)}`);
+    const loi = d.yeuCauDoiLuot('mt:2', false, 1);
+    assert(loi.sang === null && loi.h.hoi === null && loi.h.chan, `ô chưa lưu → chặn: ${JSON.stringify(loi)}`);
+    // (a) chưa bấm "Đợi rồi chuyển": lưu xong cũng không tự nhảy
+    const chuaBam = d.buocHoiDoiLuot(dang.h, false, 0);
+    assert(chuaBam.sang === null && !chuaBam.h.hoi && !chuaBam.h.chan, `chưa bấm đợi: ${JSON.stringify(chuaBam)}`);
+    // đã bấm: còn đang lưu thì chờ; lưu xong thì sang
+    const daBam = { ...dang.h, cho: true };
+    assert(d.buocHoiDoiLuot(daBam, true, 0).sang === null && d.buocHoiDoiLuot(daBam, true, 0).h === daBam, 'còn đang lưu → chờ');
+    assert(d.buocHoiDoiLuot(daBam, false, 0).sang === 'mt:2', 'đã bấm + lưu xong → sang');
+    // (b) lưu hỏng: bỏ đích chờ, hộp nói "n ô chưa lưu"; sửa xong ("Lưu lại") thì hộp đóng, KHÔNG tự nhảy
+    const hong = d.buocHoiDoiLuot(daBam, false, 1);
+    assert(hong.sang === null && hong.h.hoi === null && hong.h.chan, `lưu hỏng: ${JSON.stringify(hong)}`);
+    const sauLuuLai = d.buocHoiDoiLuot(hong.h, false, 0);
+    assert(sauLuuLai.sang === null && JSON.stringify(sauLuuLai.h) === JSON.stringify(R), `sau Lưu lại: ${JSON.stringify(sauLuuLai)}`);
+    assert(d.buocHoiDoiLuot(R, false, 0).h === R, 'rỗng giữ nguyên tham chiếu (không vòng lặp effect)');
+  });
+
+  check('DL-5 fix 2 nguồn: hộp lý do mở = ô chưa lưu (chỉ BaoDangLuuContext); blur trước khi xét; lỗi tải lại nền không gỡ lưới', () => {
+    const se = doc('web/src/modules/fasttrack/ScoreEntry.tsx');
+    const hop = se.slice(se.indexOf('export function SuaDiemCoLyDo'));
+    assert(/useBaoHopLyDoMo\(\)/.test(hop.slice(0, hop.indexOf('return ('))), 'SuaDiemCoLyDo phải gọi useBaoHopLyDoMo');
+    for (const ten of ['setHoiLyDo(true)', '<SuaTieuChi', 'setSua(']) assert(se.includes(ten), `mọi hộp lý do đi qua SuaDiemCoLyDo: ${ten}`);
+    const ss = doc('web/src/ui/SaveState.tsx');
+    const hook = ss.slice(ss.indexOf('export function useBaoHopLyDoMo'), ss.indexOf('export function useTrangThaiLuuO'));
+    assert(/useContext\(BaoDangLuuContext\)/.test(hook) && !/BaoLuuContext\b|useBaoLuu/.test(hook), 'chỉ báo qua BaoDangLuuContext');
+    const f = doc('web/src/modules/cham/DiemTheoLop.tsx');
+    assert(/activeElement[\s\S]{0,160}\.blur\(\)[\s\S]{0,40}requestAnimationFrame\(\(\) => setXet/.test(f), 'blur rồi khung sau mới xét');
+    assert(f.includes('role="alert"') && !f.includes('alertdialog'), 'hộp hỏi role="alert"');
+    assert(f.includes('ds.error && !ds.data') && f.includes('bang.error && !b ?'), 'ErrorState chỉ khi chưa có dữ liệu');
+    assert((f.match(/onMouseDown=\{giuHopLyDo\}/g) ?? []).length === 2, 'thanh lượt (rộng + 375) giữ hộp lý do');
   });
 }

@@ -61,3 +61,24 @@ export const hangThuongConTrong = (r: {
   result: { skills: { skill: string; score: number | null }[] };
 }) => r.skillSchedule.some((s) => s.progress !== 'cancelled' && s.progress !== 'skipped' && !(s.noShow && s.movedFrom === s.periodCode)
   && (r.result.skills.find((k) => k.skill === s.skill)?.score ?? null) === null);
+
+/**
+ * HỘP HỎI ĐỔI LƯỢT (PR-DL) — luật thuần cho `DiemTheoLop`. `hoi` = lượt muốn sang khi còn ô đang lưu; `cho` = đã bấm "Đợi rồi
+ * chuyển"; `chan` = hộp đang nói "n ô chưa lưu…" (không còn đích chờ). Chỉ tự chuyển khi đã bấm "Đợi rồi chuyển"; lưu hỏng thì
+ * bỏ đích, để "Lưu lại" về sau không tự nhảy sang lượt cũ. `sang` = lượt cần chuyển ngay (hoặc null).
+ */
+export type HoiDoiLuot = { hoi: string | null; cho: boolean; chan: boolean };
+export const HOI_DOI_LUOT_RONG: HoiDoiLuot = { hoi: null, cho: false, chan: false };
+export function yeuCauDoiLuot(ma: string, dangLuu: boolean, soLoi: number): { h: HoiDoiLuot; sang: string | null } {
+  if (dangLuu) return { h: { hoi: ma, cho: false, chan: false }, sang: null };
+  if (soLoi) return { h: { hoi: null, cho: false, chan: true }, sang: null };
+  return { h: HOI_DOI_LUOT_RONG, sang: ma };
+}
+export function buocHoiDoiLuot(h: HoiDoiLuot, dangLuu: boolean, soLoi: number): { h: HoiDoiLuot; sang: string | null } {
+  if (h.hoi && !dangLuu) {
+    if (soLoi) return { h: { hoi: null, cho: false, chan: true }, sang: null };
+    return { h: HOI_DOI_LUOT_RONG, sang: h.cho ? h.hoi : null };
+  }
+  if (h.chan && !soLoi) return { h: HOI_DOI_LUOT_RONG, sang: null };
+  return { h, sang: null };
+}

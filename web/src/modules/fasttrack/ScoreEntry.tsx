@@ -4,7 +4,7 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Modal } from '../../ui/Drawer.tsx';
 import { Info, SectionNote, Status } from '../../ui/ui.tsx';
-import { useTrangThaiLuuO } from '../../ui/SaveState.tsx';
+import { useBaoHopLyDoMo, useTrangThaiLuuO } from '../../ui/SaveState.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
@@ -783,6 +783,8 @@ export function SuaDiemCoLyDo({ tieuDe, moTaCu, children, onLuu, onDong, loiGiaT
   const dong = useRef(onDong);
   dong.current = onDong;
   const dangLuu = useRef(false);
+  /* Giá trị mới đang nằm trong hộp, chưa gửi: bảng điểm theo lượt coi là "ô chưa lưu" và chặn đổi lượt (không mất điểm đang gõ). */
+  useBaoHopLyDoMo();
 
   const loiLyDo = kiemLyDo(lyDo);
   /* Câu của `kiemLyDo` đứng trước: tooltip của nút Lưu mờ luôn nói đúng câu lý do còn thiếu (RB-5). */

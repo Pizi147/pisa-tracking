@@ -128,8 +128,11 @@ export function bangTheoLuot(p: Principal, classId: number, ma: string, today: s
         ORDER BY s.full_name`,
     ).all(classId, m.so) as { studentId: number; fullName: string; studentCode: string }[])
     : [];
-  /* Chip "lịch sử" cạnh tên em (chỉ bảng này — không thêm vào `classScoreSheet` để lưới Nhập điểm cũ không đổi). */
-  const lichSu = new Set(m.loai === 'mt' && sheet.ft
+  /*
+   * Chip "lịch sử" cạnh tên em (chỉ bảng này — không thêm vào `classScoreSheet` để lưới Nhập điểm cũ không đổi). Chỉ ở lượt LẪN:
+   * cả lượt lịch sử thì callout của bảng đã nói, không chip từng em (chủ sản phẩm 05/10).
+   */
+  const lichSu = new Set(m.loai === 'mt' && sheet.ft && !luot.lichSu
     ? (db().prepare(`SELECT id FROM assessment_attempts WHERE class_id = ? AND kind = 'mock' AND attempt_no = ? AND lich_su = 1`)
       .all(classId, m.so) as { id: number }[]).map((r) => r.id)
     : []);
