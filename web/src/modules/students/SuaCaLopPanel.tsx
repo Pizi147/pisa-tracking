@@ -229,7 +229,7 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                                   )}
                                 </span>
                                 {daSuaO && (
-                                  <button type="button" className="btn btn-sm btn-ghost min-h-[44px] min-w-[44px] justify-center px-1 sm:min-h-[28px] sm:min-w-[28px]"
+                                  <button type="button" className="btn btn-sm btn-ghost min-h-[44px] min-w-[32px] justify-center px-0 sm:min-h-[28px] sm:min-w-[28px] sm:px-1"
                                     title={`Hoàn tác — về "${nen(r, c.key) || 'trống'}"`} aria-label={`Hoàn tác ${nhan}`}
                                     onClick={() => hoanTac(r.studentId, c.key)}>↺</button>
                                 )}
