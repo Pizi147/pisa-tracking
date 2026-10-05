@@ -744,7 +744,7 @@ Skill: impeccable clarify
 - Kiểm lại thật (ảnh): `<li class=inline-flex>` dính mép trên → sửa khoảng cách; "(bắt buộc)" lặp → dùng `*` của `Truong batBuoc` + một dòng chú thích "* bắt buộc" ở đầu thân. Đã hết trên `main` thì ghi "bác bỏ: đã sửa ở PR …" trong mô tả PR.
 - Commit `"PR-SL (8): I6 panel Ghi vi phạm"`.
 
-### Task SL-9: Merge cuối đợt 3 + audit
+### Task SL-9 ✅: Merge cuối đợt 3 + audit
 - `git merge origin/main` (sau U12, DL, K26). Xung đột `run.ts`, `routes/index.ts`, `CODE_MAP.md`, mục 11 `plan.md`: giữ cả hai.
 - Rà chân panel của PR-DL và PR-K26 (grep `KhungPanel` trong file mới của hai PR) theo luật I1: có form sửa được → `chan.daSua`.
 - `npm run check` → ảnh 375/1440 sáng/tối, vai QL · GVCN · GV · toàn hệ thống → `/impeccable audit` → `/ponytail-review`.

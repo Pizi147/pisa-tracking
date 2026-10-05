@@ -65,7 +65,7 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
     const r: Record<string, unknown> = { studentId: sid };
     for (const [k, v0] of Object.entries(doi)) {
       const v = v0!.trim();
-      r[k] = k === 'fullName' ? v : k === 'baseline' ? (v ? v.replace(',', '.') : null) : k === 'target' ? (v || null) : (v || null);
+      r[k] = k === 'fullName' ? v : k === 'baseline' ? (v ? v.replace(',', '.') : null) : v || null;
     }
     return r;
   });
