@@ -7,7 +7,7 @@
 import { laLoaiBoQuen } from './phanTich.ts';
 
 export type KhuVuc = 'tong-quan' | 'hoc-vien' | 'test' | 'cong-viec';
-export type TabTest = 'lich' | 'ke-hoach';
+export type TabTest = 'lich' | 'diem-lop' | 'ke-hoach';
 export type TabCongViec = 'cho-duyet' | 'ho-tro' | 'yeu-cau' | 'van-hanh' | 'bao-cao';
 export type TabTongQuan = 'tong-quan' | 'phan-tich';
 
@@ -66,12 +66,13 @@ export function khuVucCuaDuong(pathname: string): KhuVuc | null {
 
 // ---------------------------------------------------------------- Test
 
-const TAB_TEST: readonly TabTest[] = ['lich', 'ke-hoach'];
-export const TAB_TEST_LABEL: Record<TabTest, string> = { lich: 'Lịch Test', 'ke-hoach': 'Kế hoạch Test' };
-export const DUONG_TAB_TEST: Record<TabTest, string> = { lich: '/test/lich', 'ke-hoach': '/test/ke-hoach' };
+/** PR-DL (G4): "Điểm theo lớp" giữa Lịch Test và Kế hoạch Test, hiện theo `testGrade`. */
+const TAB_TEST: readonly TabTest[] = ['lich', 'diem-lop', 'ke-hoach'];
+export const TAB_TEST_LABEL: Record<TabTest, string> = { lich: 'Lịch Test', 'diem-lop': 'Điểm theo lớp', 'ke-hoach': 'Kế hoạch Test' };
+export const DUONG_TAB_TEST: Record<TabTest, string> = { lich: '/test/lich', 'diem-lop': '/test/diem-lop', 'ke-hoach': '/test/ke-hoach' };
 /** PR-UX1 Q16: Cần chấm gộp vào Lịch Test — ai chấm được (`testGrade`) hay xếp được lịch (`testSchedule`) đều thấy. */
 const HIEN_TEST: Record<TabTest, (n: NavQuyen) => boolean> = {
-  lich: (n) => n.testSchedule || n.testGrade, 'ke-hoach': (n) => n.testPlan,
+  lich: (n) => n.testSchedule || n.testGrade, 'diem-lop': (n) => n.testGrade, 'ke-hoach': (n) => n.testPlan,
 };
 
 export function tabTestHienThi(nav: NavQuyen): TabTest[] {

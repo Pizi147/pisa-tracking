@@ -489,4 +489,52 @@ export async function runPrDlTests(t: YThucTestKit) {
     assert((f.match(/onMouseDown=\{giuHopLyDo\}/g) ?? []).length === 3, 'thanh lượt (rộng + 375) và hộp hỏi đổi lượt giữ hộp lý do');
     assert(/role="alert"[^>]*onMouseDown=\{giuHopLyDo\}/.test(f), 'nút "Ở lại" / "Đợi rồi chuyển" không huỷ hộp lý do');
   });
+
+  // ------------------------------------------------------------------ DL-6: hai lối vào
+  check('DL-6 tab Test "Điểm theo lớp": /test/diem-lop, giữa Lịch Test và Kế hoạch Test, hiện theo testGrade', () => {
+    const nav = (o: object) => ({ ...d.NAV_RONG, test: true, ...o });
+    assert(d.tabTestTuDuong('diem-lop') === 'diem-lop', 'đọc tab từ đường dẫn');
+    assert(d.tabTestHienThi(nav({ testGrade: true, testPlan: true })).join(',') === 'lich,diem-lop,ke-hoach', 'thứ tự (G4)');
+    assert(d.tabTestHienThi(nav({ testGrade: true })).includes('diem-lop'), 'có khi testGrade');
+    assert(!d.tabTestHienThi(nav({ testPlan: true })).includes('diem-lop'), 'không có khi chỉ testPlan');
+    assert(d.TAB_TEST_LABEL['diem-lop'] === 'Điểm theo lớp' && d.DUONG_TAB_TEST['diem-lop'] === '/test/diem-lop', 'nhãn, đường');
+    assert(d.tabTestMacDinh(nav({ testGrade: true })) === 'lich', 'mở Test vẫn vào Lịch Test');
+  });
+
+  {
+    const perm: any = await import('../permissions.ts');
+    const classesSvc: any = await import('../classes/classes.ts');
+    const LOP_T = classId('MB FOU 12');
+    check('DL-6 coTheXemLuotCham = requireXemLuotCham không ném; hồ sơ lớp có viewer.coTheXemDiem (QL / GV / GVCN / GVCN lớp thường)', () => {
+      const nem = (p: any, id: number) => { try { perm.requireXemLuotCham(p, { classId: id }, 'x'); return false; } catch { return true; } };
+      const ca: [string, any, number, boolean][] = [
+        ['QL MB', P.mbManager, LOP, true], ['GV L/R', P.lrTeacher, LOP, true], ['GVCN', P.coreTeacher, LOP, true],
+        ['GVCN lớp thường', P.normalCoreTeacher, LOP_T, true], ['QL CP (ngoài phạm vi)', P.cpManager, LOP, false],
+        ['GV L/R lớp không dạy', P.lrTeacher, classId('CP FT 110'), false],
+      ];
+      for (const [ten, p, id, mong] of ca) {
+        assert(perm.coTheXemLuotCham(p, { classId: id }) === mong, `${ten}: coTheXemLuotCham ≠ ${mong}`);
+        assert(nem(p, id) === !mong, `${ten}: requireXemLuotCham phải khớp vị từ`);
+      }
+      for (const [ten, p, id] of ca.filter((c) => c[3])) {
+        assert(classesSvc.classOverview(p, id).viewer.coTheXemDiem === true, `${ten}: viewer.coTheXemDiem`);
+      }
+    });
+  }
+
+  check('DL-6 lối vào ở hồ sơ lớp: mục ⋮ trước "Xuất Excel" theo cờ coTheXemDiem; khối cuối trang thu gọn, aria-expanded, chip từ danhSachLuot', () => {
+    const dt = doc('web/src/modules/classes/DauTrangLop.tsx');
+    const muc = dt.indexOf("key: 'diem-lop'");
+    assert(muc > 0 && muc < dt.indexOf("key: 'xuat-mt'"), 'mục ⋮ đứng ngay trước Xuất Excel');
+    assert(dt.includes("'Điểm Test cả lớp' : 'Điểm MT cả lớp'") && /data\.viewer\.coTheXemDiem \? \[\{ key: 'diem-lop'/.test(dt), 'chữ theo loại lớp, chỉ khi có cờ');
+    const ov = doc('web/src/modules/classes/ClassOverviewPage.tsx');
+    for (const chu of ['aria-expanded', 'Điểm Mock Test của lớp', 'còn ${', 'gon', 'scrollIntoView', 'duongDiemTheoLuot(']) assert(ov.includes(chu), `ClassOverviewPage thiếu: ${chu}`);
+    assert(/mo && <DiemTheoLop/.test(ov), 'chỉ khi mở mới dựng bảng');
+  });
+
+  check('DL-6 TabDiemLop: danh sách lopCuaToi, lớp chọn ở ?lop=, 375 thành ô chọn; TestPage gắn tab', () => {
+    const f = doc('web/src/modules/test/TabDiemLop.tsx');
+    for (const chu of ["'/diem-theo-lop/lop'", "get('lop')", '<select', '<DiemTheoLop', 'aria-current', 'Lớp tôi dạy · còn ô trống', ' trống', "'đủ'"]) assert(f.includes(chu), `TabDiemLop thiếu: ${chu}`);
+    assert(/tab === 'diem-lop' && <TabDiemLop/.test(doc('web/src/modules/test/TestPage.tsx')), 'TestPage gắn tab');
+  });
 }

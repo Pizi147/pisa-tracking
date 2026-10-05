@@ -293,8 +293,11 @@ export function lopFtChoGvSpeaking(p: Principal, date = demoToday()): number[] {
 const laGvSpeakingLop = (p: Principal, classId: number, date?: string) => lopFtChoGvSpeaking(p, date).includes(classId);
 
 /** PR-S4F: xem lượt MT để CHẤM — `ATTEMPT_VIEW` hoặc GV Speaking chấm S chéo lớp FT cùng chi nhánh. Chỉ dùng ở đường chấm. */
+export function coTheXemLuotCham(p: Principal, ctx: Ctx): boolean {
+  return can(p, PERMISSIONS.ATTEMPT_VIEW, ctx) || !!(ctx.classId && laGvSpeakingLop(p, ctx.classId, ctx.date));
+}
 export function requireXemLuotCham(p: Principal, ctx: Ctx, message: string) {
-  if (!can(p, PERMISSIONS.ATTEMPT_VIEW, ctx) && !(ctx.classId && laGvSpeakingLop(p, ctx.classId, ctx.date))) require_(p, PERMISSIONS.ATTEMPT_VIEW, ctx, message);
+  if (!coTheXemLuotCham(p, ctx)) require_(p, PERMISSIONS.ATTEMPT_VIEW, ctx, message);
 }
 
 /** Chi nhánh mà ngữ cảnh đang nói tới. */

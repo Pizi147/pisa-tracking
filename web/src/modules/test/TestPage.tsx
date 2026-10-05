@@ -3,13 +3,14 @@ import { useSession } from '../../lib/session.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { LichTestTab } from './LichTestTab.tsx';
 import { KeHoachTestTab } from './KeHoachTestTab.tsx';
+import { TabDiemLop } from './TabDiemLop.tsx';
 import {
   DUONG_TAB_TEST, NAV_RONG, TAB_TEST_LABEL, tabTestHienThi, tabTestMacDinh, tabTestTuDuong, type TabTest,
 } from '@shared/domain/index.ts';
 
 /**
- * TEST — khu vực (O2; PR-UX1 bỏ Cần chấm): Lịch Test · Kế hoạch Test, mỗi tab một đường dẫn. Mở `/test` thì vào Lịch
- * Test. Chỉ một tab (giáo viên) thì ẩn cả hàng tab, chỉ còn tiêu đề "Test" (Q15, mockup 13).
+ * TEST — khu vực (O2; PR-UX1 bỏ Cần chấm): Lịch Test · Điểm theo lớp (PR-DL) · Kế hoạch Test, mỗi tab một đường dẫn. Mở `/test`
+ * thì vào Lịch Test. Chỉ một tab thì ẩn cả hàng tab, chỉ còn tiêu đề "Test" (Q15, mockup 13).
  */
 export default function TestPage() {
   const { session } = useSession();
@@ -38,6 +39,7 @@ export default function TestPage() {
           tabs={tabs.map((k) => ({ key: k, label: TAB_TEST_LABEL[k] }))} />
       )}
       {tab === 'lich' && <LichTestTab />}
+      {tab === 'diem-lop' && <TabDiemLop />}
       {tab === 'ke-hoach' && <KeHoachTestTab />}
     </div>
   );
