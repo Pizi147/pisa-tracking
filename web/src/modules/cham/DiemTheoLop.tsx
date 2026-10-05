@@ -9,7 +9,7 @@
  * Đổi lượt khi còn ô đang lưu → hộp hỏi, đợi lưu xong mới chuyển; còn ô lưu hỏng / gõ sai → không chuyển (điểm đã gõ còn
  * nằm trong ô để "Lưu lại").
  */
-import { useCallback, useEffect, useMemo, useState, type KeyboardEvent, type MouseEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type MutableRefObject } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { BaoDangLuuContext } from '../../ui/SaveState.tsx';
@@ -31,7 +31,18 @@ function ghiChiOTrong(v: boolean) {
   try { localStorage.setItem(KHOA_CHI_O_TRONG, v ? '1' : '0'); } catch { /* chế độ riêng tư: chỉ nhớ trong phiên */ }
 }
 
-export function DiemTheoLop({ classId, luotBanDau, gon = false }: { classId: number; luotBanDau?: string; gon?: boolean }) {
+/**
+ * Cổng chặn rời bảng cho nút NGOÀI bảng (Test › Điểm theo lớp: đổi lớp) — đi CÙNG đường chặn với đổi lượt: `roi(lam)` rời ô đang gõ,
+ * khung sau mới xét `yeuCauDoiLuot`; còn ô đang lưu → hộp hỏi, còn ô chưa lưu → chặn. `giu` gắn vào `onMouseDown` của nút ngoài để
+ * mousedown không tới `document` (hộp lý do sửa điểm đóng khi bấm ra ngoài = huỷ).
+ */
+export type CongRoi = { roi: (lam: () => void) => void; giu: (e: MouseEvent) => void };
+/** Mã đích "ra ngoài bảng" trong luồng hỏi đổi lượt — không bao giờ trùng mã lượt (`docMaLuot`). */
+const DICH_NGOAI = 'ngoai';
+
+export function DiemTheoLop({ classId, luotBanDau, gon = false, congRoi }: {
+  classId: number; luotBanDau?: string; gon?: boolean; congRoi?: MutableRefObject<CongRoi | null>;
+}) {
   const ds = useApi<DanhSachLuot>(duongDiemTheoLuot(classId), [classId]);
   const [chon, setChon] = useState<string | null>(luotBanDau ?? null);
   const dsLuot = ds.data?.luot ?? [];
@@ -56,7 +67,9 @@ export function DiemTheoLop({ classId, luotBanDau, gon = false }: { classId: num
   const [h, setH] = useState<HoiDoiLuot>(HOI_DOI_LUOT_RONG);
   const [xet, setXet] = useState<{ ma: string; focus: boolean } | null>(null);
   /* `focus` (←/→ trên thanh tab): chỉ dời focus sang tab đích khi đã thật sự chuyển. */
+  const dichNgoai = useRef<(() => void) | null>(null);
   const sang = (ma: string, focus = false) => {
+    if (ma === DICH_NGOAI) { dichNgoai.current?.(); return; }
     setChon(ma);
     if (focus) requestAnimationFrame(() => document.getElementById(`luot-${classId}-${ma}`)?.focus());
   };
@@ -84,6 +97,9 @@ export function DiemTheoLop({ classId, luotBanDau, gon = false }: { classId: num
   /* Bấm thanh lượt khi còn ô chưa lưu: không để mousedown tới `document` — hộp lý do sửa điểm (đóng khi bấm ra ngoài = huỷ)
      giữ nguyên giá trị đang gõ, và đổi lượt bị chặn. */
   const giuHopLyDo = (e: MouseEvent) => { if (soLoi) e.stopPropagation(); };
+  useEffect(() => {
+    if (congRoi) congRoi.current = { roi: (lam) => { dichNgoai.current = lam; doiLuot(DICH_NGOAI); }, giu: giuHopLyDo };
+  });
 
   const hep = useManHinhHep();
   const vi = dsLuot.findIndex((l) => l.ma === luot);

@@ -152,6 +152,7 @@ export function useSaveScore(attemptId: number, onSaved?: () => void) {
       invalidate('/attempts');
       invalidate('/tong-quan');
       invalidate('/classes');
+      invalidate('/diem-theo-lop');   // PR-DL: số ô trống ở Test › Điểm theo lớp
       invalidate('/students');
       invalidate('/my-work');   // PR-S6F-a: badge quá hạn của GV tải lại sau khi nhập điểm
       tt.thanhCong(skill);

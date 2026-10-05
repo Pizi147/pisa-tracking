@@ -143,11 +143,14 @@ export default function ClassOverviewPage() {
 
 /**
  * KHỐI "ĐIỂM MOCK TEST CỦA LỚP" (PR-DL, mockup `mockup-diem-theo-lop-2026-10-04.html` #v-lop) — lối vào kín đáo ở cuối hồ sơ lớp:
- * một hàng thu gọn + MỘT chip "MT2 còn 3 ô trống" (lượt mở sẵn của `danhSachLuot`). Chỉ khi mở mới tải bảng (`DiemTheoLop gon`).
+ * một hàng thu gọn + MỘT chip "MT2 còn 3 ô trống" (lượt mở sẵn của `danhSachLuot`). Chỉ khi mở lần đầu mới tải bảng (`DiemTheoLop gon`).
  */
 function KhoiDiemLop({ classId, thuong, mo, onDoi }: { classId: number; thuong: boolean; mo: boolean; onDoi: () => void }) {
   const ds = useApi<DanhSachLuot>(duongDiemTheoLuot(classId), [classId]);
   const l = ds.data?.luot.find((x) => x.ma === ds.data?.macDinh);
+  /* Đã mở một lần thì giữ bảng gắn, thu gọn chỉ ẩn — gỡ bảng sẽ mất ô đang gõ / hộp lý do đang mở. */
+  const [daMo, setDaMo] = useState(mo);
+  if (mo && !daMo) setDaMo(true);
   return (
     <section className="card">
       <h2 className="m-0 text-[15px] font-semibold text-slate-100">
@@ -161,7 +164,7 @@ function KhoiDiemLop({ classId, thuong, mo, onDoi }: { classId: number; thuong: 
         </button>
       </h2>
       <div id="khoi-diem-lop-bang" hidden={!mo} className="px-3 pb-3 sm:px-4 sm:pb-4">
-        {mo && <DiemTheoLop classId={classId} gon />}
+        {daMo && <DiemTheoLop classId={classId} gon />}
       </div>
     </section>
   );

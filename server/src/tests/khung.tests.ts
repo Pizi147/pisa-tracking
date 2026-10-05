@@ -65,7 +65,7 @@ export async function runKhungTests(t: YThucTestKit) {
     for (const [p, want] of cases) assert(d.khuVucCuaDuong(p) === want, `${p} → ${d.khuVucCuaDuong(p)}, cần ${want}`);
   });
 
-  check('PR-O · O2/O2b Tab Test theo quyền: GV chỉ Lịch Test; ai cũng mở vào Lịch Test (PR-UX1 bỏ Cần chấm)', () => {
+  check('PR-O · O2/O2b Tab Test theo quyền: GV Lịch Test + Điểm theo lớp; ai cũng mở vào Lịch Test (PR-UX1 bỏ Cần chấm)', () => {
     assert(d.tabTestHienThi(QL).join(',') === 'lich,diem-lop,ke-hoach', `QL: ${d.tabTestHienThi(QL)}`);   // PR-DL G4: thêm Điểm theo lớp
     assert(d.tabTestHienThi(GV).join(',') === 'lich,diem-lop', `GV: ${d.tabTestHienThi(GV)}`);
     assert(d.tabTestMacDinh(GV) === 'lich', `GV mặc định: ${d.tabTestMacDinh(GV)}`);
@@ -138,7 +138,7 @@ export async function runKhungTests(t: YThucTestKit) {
     assert(navOf(t.P.admin).admin && !navOf(t.P.mbManager).admin, 'Chỉ Quản trị thấy màn Quản trị');
   });
 
-  check('PR-O · O6/R1 GV (GVCN, GVBM): 4 khu; Test chỉ Lịch Test; Công việc: Việc học viên + Yêu cầu của tôi (PR-DUYET); không Phân tích', () => {
+  check('PR-O · O6/R1 GV (GVCN, GVBM): 4 khu; Test: Lịch Test + Điểm theo lớp; Công việc: Việc học viên + Yêu cầu của tôi (PR-DUYET); không Phân tích', () => {
     for (const [ten, p] of [['GVCN', t.P.coreTeacher], ['GVBM', t.P.subjectTeacher], ['GVCN lớp thường', t.P.normalCoreTeacher]] as const) {
       const n = navOf(p);
       assert(tabs(n) === 'tong-quan,hoc-vien,test,cong-viec|lich,diem-lop|ho-tro,yeu-cau|false|false', `${ten}: ${tabs(n)}`);   // PR-DL G4

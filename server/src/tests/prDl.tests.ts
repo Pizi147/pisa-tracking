@@ -529,12 +529,26 @@ export async function runPrDlTests(t: YThucTestKit) {
     assert(dt.includes("'Điểm Test cả lớp' : 'Điểm MT cả lớp'") && /data\.viewer\.coTheXemDiem \? \[\{ key: 'diem-lop'/.test(dt), 'chữ theo loại lớp, chỉ khi có cờ');
     const ov = doc('web/src/modules/classes/ClassOverviewPage.tsx');
     for (const chu of ['aria-expanded', 'Điểm Mock Test của lớp', 'còn ${', 'gon', 'scrollIntoView', 'duongDiemTheoLuot(']) assert(ov.includes(chu), `ClassOverviewPage thiếu: ${chu}`);
-    assert(/mo && <DiemTheoLop/.test(ov), 'chỉ khi mở mới dựng bảng');
+    assert(/daMo && <DiemTheoLop/.test(ov) && /if \(mo && !daMo\) setDaMo\(true\)/.test(ov) && ov.includes('hidden={!mo}'),
+      'mở lần đầu mới dựng bảng; thu gọn chỉ ẩn, không gỡ (giữ ô đang gõ)');
   });
 
   check('DL-6 TabDiemLop: danh sách lopCuaToi, lớp chọn ở ?lop=, 375 thành ô chọn; TestPage gắn tab', () => {
     const f = doc('web/src/modules/test/TabDiemLop.tsx');
-    for (const chu of ["'/diem-theo-lop/lop'", "get('lop')", '<select', '<DiemTheoLop', 'aria-current', 'Lớp tôi dạy · còn ô trống', ' trống', "'đủ'"]) assert(f.includes(chu), `TabDiemLop thiếu: ${chu}`);
+    for (const chu of ["'/diem-theo-lop/lop'", "get('lop')", '<select', '<DiemTheoLop', 'aria-current', 'Lớp · còn ô trống', 'aria-label="Danh sách lớp"', ' trống', "'đủ'"]) assert(f.includes(chu), `TabDiemLop thiếu: ${chu}`);
     assert(/tab === 'diem-lop' && <TabDiemLop/.test(doc('web/src/modules/test/TestPage.tsx')), 'TestPage gắn tab');
+    assert(!f.includes('Lớp tôi dạy') && !f.includes('Lớp của tôi'), 'tiêu đề trung tính (QL/GVCN không "dạy")');
+  });
+
+  check('DL-6 fix: đổi lớp đi CÙNG đường chặn với đổi lượt (CongRoi); danh sách + ô chọn lớp giữ hộp lý do; số ô trống tải lại sau khi lưu', () => {
+    const f = doc('web/src/modules/test/TabDiemLop.tsx');
+    assert(/congRoi=\{cong\}/.test(f) && /cong\.current\.roi\(sang\)/.test(f), 'đổi lớp gọi CongRoi.roi');
+    assert((f.match(/onMouseDown=\{giu\}/g) ?? []).length === 2 && f.includes('cong.current?.giu(e)'), 'danh sách lớp và ô chọn 375 chặn mousedown');
+    const dt = doc('web/src/modules/cham/DiemTheoLop.tsx');
+    assert(/roi: \(lam\) => \{ dichNgoai\.current = lam; doiLuot\(DICH_NGOAI\); \}, giu: giuHopLyDo/.test(dt), 'roi đi qua doiLuot (blur + yeuCauDoiLuot)');
+    assert(/if \(ma === DICH_NGOAI\) \{ dichNgoai\.current\?\.\(\); return; \}/.test(dt), 'sang đích ngoài chạy hành động đổi lớp');
+    assert(d.docMaLuot('ngoai') === null, 'mã đích ngoài không trùng mã lượt');
+    for (const ten of ['fasttrack/ScoreEntry', 'cham/LuoiThuong', 'fasttrack/HopThaoTacMt'])
+      assert(doc(`web/src/modules/${ten}.tsx`).includes("invalidate('/diem-theo-lop')"), `${ten}: invalidate('/diem-theo-lop')`);
   });
 }

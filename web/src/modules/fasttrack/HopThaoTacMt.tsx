@@ -133,7 +133,7 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, tuanDaBa
     setBusy(true); setLoiMay(null);
     try {
       const cau = await goi(!!canhBao, xacNhanHuyLich);
-      invalidate('/attempts'); invalidate('/tong-quan'); invalidate('/classes'); invalidate('/ke-hoach-test'); invalidate('/my-work'); invalidate('/cycles');
+      invalidate('/attempts'); invalidate('/tong-quan'); invalidate('/classes'); invalidate('/diem-theo-lop'); invalidate('/ke-hoach-test'); invalidate('/my-work'); invalidate('/cycles');
       toast.push('ok', xacNhanHuyLich && xacNhan?.length ? `${cau} · huỷ lịch ${xacNhan.map((x) => x.nhan).join(', ')}` : cau);
       onDone(); dong();
     } catch (e: any) {
