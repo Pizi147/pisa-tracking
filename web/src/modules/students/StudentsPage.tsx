@@ -8,7 +8,7 @@ import { Nhan, toneNhanTuBadge } from '../../ui/Nhan.tsx';
 import { HangNhom } from '../../ui/HangNhom.tsx';
 import { CongTacKhung, khungDaNho, type KhungLoc } from '../../ui/CongTacKhung.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
-import type { Branch } from '../../ui/Filters.tsx';
+import { docChiNhanhDaNho, nhoChiNhanh, type Branch } from '../../ui/Filters.tsx';
 import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
 import { IntakePanel } from './IntakePanel.tsx';
 import { ClassCreatePanel } from '../classes/ClassCreatePanel.tsx';
@@ -67,6 +67,7 @@ export default function StudentsPage() {
   const q = params.get('q') ?? '';
   const cnUrl = params.get('cn') ?? params.get('branchId');
   const branchId = cnUrl ? Number(cnUrl) : null;
+  const daNho = docChiNhanhDaNho();
   const phamViUrl = params.get('phamVi');
   const sapXep: SapXep = params.get('sx') === 'chu-y' ? 'chu-y' : 'ten';
   const chiLop = params.get('classId') ? Number(params.get('classId')) : null;
@@ -101,8 +102,10 @@ export default function StudentsPage() {
     if (q.trim()) s.set('q', q.trim());
     if (phamViUrl) s.set('phamVi', phamViUrl);
     if (branchId) s.set('branchId', String(branchId));
+    /* PR-NV (T9): lần chọn trước — máy chủ bỏ nếu ngoài phạm vi; không đổi Phạm vi như `branchId`. */
+    else if (typeof daNho === 'number') s.set('cnNho', String(daNho));
     return `/hoc-vien-lop?${s.toString()}`;
-  }, [q, phamViUrl, branchId]);
+  }, [q, phamViUrl, branchId, daNho]);
   const trang = useApi<TrangHocVienLop>('chuyenDen' in doc ? null : qs);
   const branches = useApi<Branch[]>('/ref/branches');
   const data = trang.data;
@@ -193,7 +196,7 @@ export default function StudentsPage() {
           )}
           {pv?.dangDung === 'chi-nhanh' && (branches.data?.length ?? 0) > 1 && (
             <select className={SELECT_GON} aria-label="Chi nhánh" value={pv.chiNhanh ?? ''}
-              onChange={(e) => setParam({ phamVi: 'chi-nhanh', cn: e.target.value, branchId: null, open: null })}>
+              onChange={(e) => { nhoChiNhanh(Number(e.target.value)); setParam({ phamVi: 'chi-nhanh', cn: e.target.value, branchId: null, open: null }); }}>
               {(branches.data ?? []).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
           )}

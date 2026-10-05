@@ -172,6 +172,8 @@ api.get('/demo/session', wrap((req) => {
     nav: navOf(p),
     /* Giao diện ẩn nhãn "Bản demo nội bộ" trên bản chính — cùng cờ máy chủ dùng để khoá các đường của bản demo. */
     banChinh: laBanChinh(),
+    /* PR-NV (T9): chi nhánh mặc định của ô chi nhánh khi người xem chưa tự chọn (null = Tất cả). */
+    chiNhanhGoiY: hocVienLopSvc.goiYChiNhanh(p, demoToday()),
   };
 }));
 
@@ -1090,6 +1092,7 @@ api.get('/hoc-vien-lop', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return hocVienLopSvc.danhSachHocVienLop(principalOf(req), {
     branchId: qInt(req, 'branchId') ?? null, q: qStr(req, 'q') ?? null, phamVi: qStr(req, 'phamVi') ?? null,
+    cnNho: qInt(req, 'cnNho') ?? null,
   });
 }));
 

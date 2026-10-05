@@ -75,3 +75,4 @@ export * from './nhomQuyen.ts';
 export * from './baoCaoDonVi.ts';
 export * from './taiKhoan.ts';
 export * from './daiDienBoTro.ts';
+export * from './chiNhanhMacDinh.ts';

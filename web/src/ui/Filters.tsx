@@ -5,7 +5,7 @@ import { useNgayNghiepVu } from './ngayNghiepVu.ts';
 import { api } from '../lib/api.ts';
 import { useToast } from './Toast.tsx';
 import { addDaysStr } from '../lib/format.ts';
-import { mondayOfDate, ngay, tuanLich } from '@shared/domain/index.ts';
+import { chiNhanhMacDinh, mondayOfDate, ngay, tuanLich } from '@shared/domain/index.ts';
 import { LichNho } from './LichNho.tsx';
 
 export type Period = { id: number; code: string; weekStart: string; weekEnd: string; range: string };
@@ -203,6 +203,33 @@ export function WeekPicker({ periodId, onPeriod, label = 'Tuần', scope, cleara
   );
 }
 
+/* PR-NV (T9): MỘT giá trị nhớ cho mọi ô chi nhánh — id hoặc 'tat-ca'. localStorage hỏng / bị chặn thì chạy như chưa nhớ gì. */
+const KHOA_CHI_NHANH = 'pisa.chiNhanh';
+export function docChiNhanhDaNho(): number | 'tat-ca' | null {
+  try {
+    const v = localStorage.getItem(KHOA_CHI_NHANH);
+    if (v === 'tat-ca') return v;
+    const n = Number(v);
+    return v && Number.isInteger(n) && n > 0 ? n : null;
+  } catch { return null; }
+}
+export function nhoChiNhanh(id: number | null): void {
+  try { localStorage.setItem(KHOA_CHI_NHANH, id ? String(id) : 'tat-ca'); } catch { /* không nhớ được thì thôi */ }
+}
+/**
+ * Chi nhánh mặc định khi URL không có `cn`: lần tự chọn trước (còn trong quyền) → gợi ý của máy chủ (Quản lý/Quản trị) → `cuoi` → Tất cả.
+ * Ô chi nhánh ẩn (≤ 1 chi nhánh) → null như hôm nay. Không ghi URL, không ghi localStorage — chỉ lần người dùng tự chọn mới nhớ.
+ */
+export function useChiNhanhMacDinh(o?: { cuoi?: number | null }): number | null {
+  const { session, branchCount } = useSession();
+  if (branchCount <= 1) return null;
+  const nho = docChiNhanhDaNho();
+  const g = session?.grants ?? [];
+  /* ponytail: chi nhánh ngừng hoạt động vẫn qua kiểm này — người dùng chọn lại một lần; kiểm theo /ref/branches nếu gặp */
+  const hopLe = nho === 'tat-ca' || (nho !== null && g.some((x) => x.branchId === null || x.branchId === nho));
+  return chiNhanhMacDinh({ daChon: hopLe ? nho : null, quanLy: [], lopDay: [], cuoi: session?.chiNhanhGoiY ?? o?.cuoi ?? null });
+}
+
 /**
  * Chỉ chọn chi nhánh, không có tuần — dùng ở những màn nói về TÌNH TRẠNG HIỆN TẠI
  * chứ không phải kết quả của một tuần. Vẫn tự ẩn khi tài khoản chỉ có một chi nhánh.
@@ -217,7 +244,7 @@ export function BranchFilter({ branchId, onBranch }: {
     <label className="block">
       <span className="label">Chi nhánh</span>
       <select className="field w-44" value={branchId ?? ''}
-        onChange={(e) => onBranch(e.target.value ? Number(e.target.value) : null)}>
+        onChange={(e) => { const id = e.target.value ? Number(e.target.value) : null; nhoChiNhanh(id); onBranch(id); }}>
         <option value="">Tất cả chi nhánh</option>
         {(branches.data ?? []).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
       </select>
