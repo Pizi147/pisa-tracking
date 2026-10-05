@@ -33,4 +33,95 @@ export async function runPrDlTests(t: YThucTestKit) {
     assert(d.nhanMaLuot({ loai: 'thuong', kind: 'final' }) === d.ATTEMPT_KIND_SHORT.final, 'final');
     assert(d.nhanMaLuot({ loai: 'thuong', kind: 'progress' }) === d.ATTEMPT_KIND_SHORT.progress, 'progress');
   });
+
+  // ------------------------------------------------------------------ DL-2: classScoreSheet chọn theo tuần hoặc theo số lượt (FT)
+  const { conn, P, TODAY, classId, assertThrows } = t;
+  const svc: any = await import('../fasttrack/attempts.ts');
+  const intake: any = await import('../classes/intake.ts');
+  const week: any = await import('../platform/week.ts');
+  const { boLichTuTao, luotThu } = await import('./luotThu.ts');
+  const { loadPrincipal } = await import('../permissions.ts');
+  const LOP = classId('MB FT 101');
+  const QL = P.mbManager;
+  const tuanNay = week.mondayOf(TODAY);
+  const pid = week.ensurePeriod(tuanNay).id;
+  const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
+  const maLoi = (fn: () => unknown): number | string => {
+    try { fn(); return 'không ném'; } catch (e: any) { return e?.status ?? String(e?.message ?? e); }
+  };
+  /** Em mới ở MB FT 101: MT1 lịch sử + MT2 tuần này (cùng khuôn `emMoiLop` của prHsm). */
+  const emMt2 = (ten: string) => {
+    intake.commitIntake(P.admin, { classId: LOP, rows: [{ fullName: `DL ${ten}`, target: 6.5, email: 'hv@demo.test' }], idempotencyKey: `dl-${ten}` });
+    const st = get('SELECT id FROM students WHERE full_name = ?', `DL ${ten}`);
+    const cy = get("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'", st.id);
+    boLichTuTao(conn, cy.id);
+    const a = luotThu(conn, svc.createAttempt, P.admin, { studentId: st.id, cycleId: cy.id, classId: LOP, no: 2, periodId: pid });
+    return { sid: st.id as number, aid: a.id as number };
+  };
+  const anh = emMt2('Ánh');       // MT2 có một phần điểm
+  const binh = emMt2('Bình');     // MT2 chưa xếp tuần (PR-LM: tuần NULL ở đợt và mọi kỹ năng)
+  svc.saveScore(QL, anh.aid, 'listening', { rawScore: 30 }, TODAY);
+  conn.prepare('UPDATE assessment_attempts SET planned_period_id = NULL WHERE id = ?').run(binh.aid);
+  conn.prepare('UPDATE attempt_skills SET planned_period_id = NULL WHERE attempt_id = ?').run(binh.aid);
+  /*
+   * ẢNH CHỤP TRƯỚC REFACTOR: băm JSON của hai bảng theo tuần (QL tuần này; GVBM L, null = mọi tuần) lấy từ attempts.ts CHƯA sửa,
+   * bỏ các trường theo đồng hồ thật (`…At`; `chuNhatCuoi` của MT lịch sử seed = ngày nhập thật). Seed + TODAY cố định nên băm cố định; đổi seed/phép kiểm phía trên
+   * làm lệch băm thì chụp lại bằng mã trước refactor (`git show 666dcfbf:server/src/fasttrack/attempts.ts`), không sửa cho khớp.
+   */
+  const bam = (x: unknown) => (globalThis as any).process.getBuiltinModule('node:crypto').createHash('sha256')
+    .update(JSON.stringify(x, (k, v) => (k.endsWith('At') || k === 'chuNhatCuoi' ? undefined : v))).digest('hex').slice(0, 16);
+  const ANH_CHUP = { tuan: 'ff67960c2e85730b', moi: '8222c5f2ca493255' };
+  /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
+  const idsTuan = (periodId: number) => (conn.prepare(
+    `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id
+      WHERE a.class_id = ? AND a.status != 'cancelled'
+        AND (a.planned_period_id = ? OR EXISTS (SELECT 1 FROM attempt_skills k WHERE k.attempt_id = a.id AND k.required = 1 AND k.planned_period_id = ?))
+      ORDER BY a.id`).all(LOP, periodId, periodId) as any[]).map((r) => r.id).join(',');
+  const idsCua = (sheet: any) => sheet.rows.map((r: any) => r.attemptId).sort((x: number, y: number) => x - y).join(',');
+
+  check('DL-2 classScoreSheet theo lượt: đúng mọi attempt MT2 của lớp, kể cả tuần NULL; ô đã có điểm mang điểm cũ; không lọc tuần', () => {
+    const sheet = svc.classScoreSheet(QL, LOP, { theo: 'luot', attemptNo: 2 }, TODAY);
+    const mong = (conn.prepare(
+      `SELECT a.id FROM assessment_attempts a WHERE a.class_id = ? AND a.kind = 'mock' AND a.attempt_no = 2 AND a.status != 'cancelled' ORDER BY a.id`,
+    ).all(LOP) as any[]).map((r) => r.id).join(',');
+    assert(idsCua(sheet) === mong, `${idsCua(sheet)} ≠ ${mong}`);
+    assert(sheet.rows.every((r: any) => r.attemptNo === 2), 'có hàng không phải MT2');
+    assert(sheet.rows.some((r: any) => r.attemptId === binh.aid), 'thiếu lượt tuần NULL');
+    const l = sheet.rows.find((r: any) => r.attemptId === anh.aid)?.cells.find((c: any) => c.skill === 'listening');
+    assert(l && l.rawScore === 30, `ô L của Ánh: ${JSON.stringify(l)}`);
+    assert(sheet.period === null, 'theo lượt không có tuần');
+    const mt1 = svc.classScoreSheet(QL, LOP, { theo: 'luot', attemptNo: 1 }, TODAY);
+    assert(mt1.rows.some((r: any) => r.studentId === anh.sid) && mt1.rows.every((r: any) => r.attemptNo === 1), 'MT1 lịch sử phải có');
+  });
+
+  check('DL-2 classScoreSheet theo tuần: cùng kết quả như trước refactor (ảnh chụp); số/null và {theo:"tuan"} như nhau', () => {
+    const cu = svc.classScoreSheet(QL, LOP, pid, TODAY);
+    const moi = svc.classScoreSheet(P.lrTeacher, LOP, null, TODAY);
+    assert(bam(cu) === ANH_CHUP.tuan && bam(moi) === ANH_CHUP.moi, `ảnh chụp lệch: tuan=${bam(cu)} moi=${bam(moi)}`);
+    assert(idsCua(cu) === idsTuan(pid), `${idsCua(cu)} ≠ ${idsTuan(pid)}`);
+    assert(!cu.rows.some((r: any) => r.attemptId === binh.aid), 'lượt tuần NULL không thuộc tuần nào');
+    assert(JSON.stringify(svc.classScoreSheet(QL, LOP, { theo: 'tuan', periodId: pid }, TODAY)) === JSON.stringify(cu), 'theo tuần khác số');
+    assert(JSON.stringify(svc.classScoreSheet(QL, LOP, { theo: 'tuan', periodId: null }, TODAY)) === JSON.stringify(svc.classScoreSheet(QL, LOP, null, TODAY)), 'null khác');
+  });
+
+  check('DL-2 GV ngoài lớp → 403 trước mọi truy vấn dữ liệu HV (cả hai cách chọn)', () => {
+    /* GV chỉ dạy lớp chi nhánh khác (CP): không phân công ở lớp, không phải GV Speaking cùng chi nhánh. */
+    const gv = get(`SELECT ta.user_id AS id FROM teacher_assignments ta WHERE ta.status = 'active' GROUP BY ta.user_id
+      HAVING SUM(ta.class_id IN (SELECT c.id FROM classes c JOIN branches b ON b.id = c.branch_id WHERE b.code <> 'CP')) = 0 LIMIT 1`);
+    assert(gv, 'seed thiếu GV chỉ dạy ở CP');
+    const ngoai = loadPrincipal(gv.id);
+    const goc = conn.prepare;
+    for (const chon of [pid, { theo: 'luot', attemptNo: 2 }]) {
+      const sql: string[] = [];
+      conn.prepare = (s: string) => { sql.push(s); return goc.call(conn, s); };
+      try { assert(maLoi(() => svc.classScoreSheet(ngoai, LOP, chon, TODAY)) === 403, `không 403: ${JSON.stringify(chon)}`); }
+      finally { conn.prepare = goc; }
+      const lo = sql.filter((s) => /assessment_attempts|assessment_scores|\bstudents\b/.test(s));
+      assert(lo.length === 0, `truy vấn HV trước khi kiểm quyền: ${lo.map((s) => s.slice(0, 80)).join(' | ')}`);
+    }
+  });
+
+  check('DL-2 lượt sai (attemptNo không phải số nguyên dương) → 400', () => {
+    for (const n of [0, -1, 1.5, NaN]) assertThrows(() => svc.classScoreSheet(QL, LOP, { theo: 'luot', attemptNo: n }, TODAY), /lượt/i, `attemptNo ${n}`);
+  });
 }
