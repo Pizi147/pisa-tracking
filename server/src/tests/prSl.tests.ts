@@ -78,6 +78,7 @@ export async function runPrSlTests(t: YThucTestKit) {
     const pn = doc('web/src/modules/students/SuaCaLopPanel.tsx');
     assert(!/<textarea/.test(pn) && !pn.includes('/intake/parse'), 'không được có ô dán Excel');
     assert(pn.includes('/sua-ca-lop/xem-truoc') && pn.includes('daSua: soEm > 0') && pn.includes('Bỏ những gì vừa sửa?'), 'xem trước + luật S3 + hỏi khi đóng');
+    assert(pn.includes('if (busy) return;'), 'đang lưu thì Esc / nền / ✕ không đóng panel (chống mất lưới khi lưu lỗi)');
     assert(doc('web/src/modules/classes/DauTrangLop.tsx').includes("nhan: 'Sửa thông tin học viên'"), 'mục ⋮');
     assert(doc('web/src/modules/classes/TabHocVienLop.tsx').includes('>Sửa thông tin</button>'), 'nút ở tab Học viên');
   });
@@ -151,6 +152,27 @@ export async function runPrSlTests(t: YThucTestKit) {
       const r = await luu(QL, ft, { idempotencyKey: khoa(), rows });
       assert(r.status === 400, `${r.status} ${JSON.stringify(r.json)}`);
       assert(ten(a.sid) === tenA, 'dòng đúng KHÔNG được ghi khi lô có lỗi');
+    });
+
+    await checkAsync('SL-1 (2b) · lỗi GIỮA giao dịch (dòng 1 đã ghi, dòng 2 hỏng khi ghi) → cả lô cuộn lại: tên + audit dòng 1 như cũ', async () => {
+      const [a, b] = [em[0], em[1]];
+      const [tenA, auditA] = [ten(a.sid), soAudit(a.sid)];
+      /* Qua được bước kiểm, chỉ hỏng lúc ghi: trigger chặn đúng tên dòng 2. */
+      conn.exec(`CREATE TRIGGER sl_hong BEFORE UPDATE OF full_name ON students WHEN NEW.full_name = 'SL Hỏng Khi Ghi'
+        BEGIN SELECT RAISE(ABORT, 'sl_hong'); END`);
+      try {
+        const r = await luu(QL, ft, { idempotencyKey: khoa(), rows: [
+          { studentId: a.sid, fullName: 'SL Phải Cuộn Lại' }, { studentId: b.sid, fullName: 'SL Hỏng Khi Ghi' },
+        ] });
+        assert(r.status >= 400, `${r.status} ${JSON.stringify(r.json)}`);
+      } finally { conn.exec('DROP TRIGGER sl_hong'); }
+      assert(ten(a.sid) === tenA, `dòng 1 phải cuộn lại, đang là "${ten(a.sid)}"`);
+      assert(soAudit(a.sid) === auditA, 'audit dòng 1 phải cuộn lại');
+    });
+
+    await checkAsync('SL-1 (2c) · mã học viên không phải số → 400 "không hợp lệ" (không báo nhầm "hai dòng")', async () => {
+      const r = await luu(QL, ft, { idempotencyKey: khoa(), rows: [{ studentId: 'abc', fullName: 'X' }] });
+      assert(r.status === 400 && /không hợp lệ/.test(r.json?.error ?? ''), `${r.status} ${JSON.stringify(r.json)}`);
     });
 
     await checkAsync('SL-1 (3) · đổi Target thiếu lý do → 400 "Ghi lý do đổi Target."; có lý do → thêm dòng cycle_target_revisions hôm nay', async () => {

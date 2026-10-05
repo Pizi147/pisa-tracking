@@ -3,6 +3,7 @@ import {
   CO_DIEM_SQL, KCK, LY_DO_TOI_THIEU, PERMISSIONS, cauMtSeDoi, cotLuoiNhap, type VanDeNhap,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
+import { chanGiaoDichNeuSapHetGio } from '../platform/hanGio.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { HttpError, badRequest, forbidden, kiemKieuO, notFound, nowIso } from '../util.ts';
 import { chuanHoaSuaHoSo, updateStudent } from '../students/students.ts';
@@ -94,6 +95,8 @@ function kiemLo(p: Principal, classId: number, input: DauVao) {
   const cot = new Set<string>(cotLuoiNhap(laLopThuong(cls.programme_code ?? null)).map((c) => c.key));
 
   const ids = input.rows.map((r) => Number(r.studentId));
+  const sai = input.rows.find((_, i) => !Number.isInteger(ids[i]));
+  if (sai) throw badRequest(`Mã học viên "${String(sai.studentId)}" không hợp lệ.`);
   const lap = ids.find((id, i) => ids.indexOf(id) !== i);
   if (lap !== undefined) throw badRequest(`Học viên #${lap} có hai dòng trong lô.`);
   const { em, loTrinh } = emVaLoTrinh(cls.id, ids.filter(Number.isInteger));
@@ -188,6 +191,8 @@ export function luuSuaCaLop(p: Principal, classId: number, input: DauVao & { ide
     if (vuaGhi) return JSON.parse(vuaGhi.value);
     let daSua = 0;
     for (const { r, s, c, hoSo, doiTarget } of dong) {
+      /* Netlify cắt hàm sau 10 s, bị cắt giữa giao dịch là giữ khoá ghi Turso: sắp hết giờ thì dừng — cả lô cuộn lại, 503 "chưa lưu gì". */
+      chanGiaoDichNeuSapHetGio();
       try {
         if (Object.keys(hoSo).length) updateStudent(p, s.id, hoSo);
         const ct = { ...(r.startWeek !== undefined ? { startWeek: r.startWeek } : {}), ...(r.examDate !== undefined ? { examDate: r.examDate } : {}) };

@@ -577,7 +577,7 @@ export function CriteriaModal({ cell, onSave, onClose, gvMacDinh = null }: {
 
   return (
     /* I4 (PR-SL): khung panel chung, chân luật S3 (đã gõ ô nào / đổi nhận xét / GV chấm → "Huỷ thay đổi"). */
-    <KhungPanel tieuDe={`${skillLabel(cell.skill)} — bốn tiêu chí`} longTrong z="z-[60]" onDong={onClose}
+    <KhungPanel tieuDe={`${skillLabel(cell.skill)} — bốn tiêu chí`} longTrong z="z-[60]" onDong={() => { if (!busy) onClose(); }}
       chan={{
         daSua: vals.some((v, i) => v !== vals0[i]) || nx !== (cell.nhanXet ?? '') || (laS && !cungGvCham(gv, gv0, session?.user?.id)),
         huy: { onClick: onClose, disabled: busy },

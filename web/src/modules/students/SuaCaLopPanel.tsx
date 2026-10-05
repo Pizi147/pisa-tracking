@@ -27,6 +27,13 @@ const COT: { key: Cot; nhan: string; rong: number; so?: boolean }[] = [
 const O_LO_TRINH = new Set<Cot>(['startWeek', 'examDate', 'target', 'baseline']);
 const moiKhoa = () => `suacalop-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 const chuGoc = (d: DongGoc, k: Cot) => (d[k] === null || d[k] === undefined ? '' : String(d[k]));
+/** Ô số (Target, điểm đầu vào) nhận dấu phẩy; "6,50" = "6.5" (không tính là đã sửa). */
+const chuan = (k: Cot, v: string) => {
+  const t = v.trim();
+  if ((k !== 'target' && k !== 'baseline') || !t) return t;
+  const n = Number(t.replace(',', '.'));
+  return Number.isFinite(n) ? String(n) : t;
+};
 
 /**
  * PR-SL (Q-0310-3): SỬA THÔNG TIN CẢ LỚP trên một panel — lưới giống Thêm học viên, KHÔNG dán Excel. Một hàng một em đang học (A→Z),
@@ -54,7 +61,7 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
   const daDoi = (sid: number): Partial<Record<Cot, string>> => {
     const g = goc.get(sid);
     if (!g) return {};
-    return Object.fromEntries(Object.entries(sua[sid] ?? {}).filter(([k, v]) => v.trim() !== chuGoc(g, k as Cot))) as Partial<Record<Cot, string>>;
+    return Object.fromEntries(Object.entries(sua[sid] ?? {}).filter(([k, v]) => chuan(k as Cot, v) !== chuan(k as Cot, chuGoc(g, k as Cot)))) as Partial<Record<Cot, string>>;
   };
   const dongDoi = (d?.rows ?? []).map((r) => ({ sid: r.studentId, doi: daDoi(r.studentId) })).filter((x) => Object.keys(x.doi).length);
   const soEm = dongDoi.length;
@@ -64,8 +71,8 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
   const payload = dongDoi.map(({ sid, doi }) => {
     const r: Record<string, unknown> = { studentId: sid };
     for (const [k, v0] of Object.entries(doi)) {
-      const v = v0!.trim();
-      r[k] = k === 'fullName' ? v : k === 'baseline' ? (v ? v.replace(',', '.') : null) : v || null;
+      const v = chuan(k as Cot, v0!);
+      r[k] = k === 'fullName' ? v : v || null;
     }
     return r;
   });
@@ -93,7 +100,8 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
     return { ...s, [sid]: con };
   });
 
-  const dong = () => (soEm && !busy ? setHoiDong(true) : onClose());
+  /* Đang lưu thì không đóng (Esc, nền, ✕): lưu lỗi còn giữ nguyên lưới để thử lại. */
+  const dong = () => { if (busy) return; if (soEm) setHoiDong(true); else onClose(); };
   const luu = async () => {
     lf.bam();
     if (busy || !soEm || soLoi || !xem || loiLyDo) return;
