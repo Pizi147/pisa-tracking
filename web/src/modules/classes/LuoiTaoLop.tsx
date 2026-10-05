@@ -242,7 +242,7 @@ export function LuoiTaoLop({ cheDo, luoi, setLuoi, branches, onClose }: {
   return (
     <KhungPanel tieuDe="Tạo nhiều lớp" rong="toan" onDong={onClose}
       chan={{
-        huy: { nhan: luoi.daSua ? 'Huỷ thay đổi' : 'Đóng', onClick: onClose, disabled: busy },
+        daSua: luoi.daSua, huy: { onClick: onClose, disabled: busy },
         phu: nutKiem, chinh: nutChinh, conThieu,
         dongTren: kiemXong === anh && !coLoi
           ? <div className="px-4 pt-2 text-right text-[11px] text-slate-400" role="status">Đã kiểm tra: tạo được cả {ds.length} lớp.</div>

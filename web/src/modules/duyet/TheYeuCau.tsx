@@ -241,7 +241,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
           )}
           {loiMay && <p role="alert" className="m-0 text-[12px] text-late">{loiMay}</p>}
           <div className="flex flex-wrap justify-end gap-1.5">
-            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={dongO} disabled={busy}>Đóng</button>
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={dongO} disabled={busy}>{o.loai !== 'tuan' && chu.trim() ? 'Huỷ thay đổi' : 'Đóng'}</button>
             <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={guiO} disabled={busy}>
               {busy ? 'Đang gửi…' : o.loai === 'tu-choi' ? 'Gửi từ chối' : o.loai === 'tra-loi' ? 'Gửi trả lời' : o.loai === 'tuan' ? 'Trả lời đề nghị dời' : 'Duyệt'}
             </button>

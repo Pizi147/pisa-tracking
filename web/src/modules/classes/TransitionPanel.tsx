@@ -209,7 +209,7 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
       <KhungPanel longTrong rong="toan" onDong={taoLop ? () => {} : dong} tieuDe={tieuDe}
         ngCanh={data ? <span>{buoc === 1 ? '1 Soạn › 2 Xác nhận' : '1 Soạn › 2 Xác nhận · đọc lại rồi gửi'}</span> : undefined}
         chan={buoc === 1 ? {
-          huy: { nhan: 'Đóng', onClick: dong, disabled: busy },
+          daSua: daSua.size > 0 || !!tuanChung, huy: { onClick: dong, disabled: busy },
           dongTren: data ? (
             <div className="space-y-1 px-4 pt-2 text-xs text-slate-400">
               <div className="flex flex-wrap gap-x-4 gap-y-1 tabular-nums">

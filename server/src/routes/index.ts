@@ -57,6 +57,7 @@ import * as phanTichLopSvc from '../classes/phanTichLop.ts';
 import { canHoTroLop } from '../classes/canHoTro.ts';
 import * as thongTinLopSvc from '../classes/thongTinLop.ts';
 import * as xoaKetThucLopSvc from '../classes/xoaKetThucLop.ts';
+import * as suaCaLopSvc from '../classes/suaCaLop.ts';
 import * as xoaHocVienSvc from '../students/xoaHocVien.ts';
 import * as xoaTaiKhoanSvc from '../platform/xoaTaiKhoan.ts';
 import * as studentSvc from '../students/students.ts';
@@ -1129,6 +1130,20 @@ api.post('/classes/:id/xoa', requireAuth, wrap((req) => {
 api.post('/classes/:id/ket-thuc', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return xoaKetThucLopSvc.ketThucLop(principalOf(req), pInt(req, 'id'));
+}));
+
+/** ⋮ Sửa thông tin cả lớp (PR-SL): giá trị hiện tại của mọi em đang học (panel). */
+api.get('/classes/:id/sua-ca-lop', requireAuth, wrap((req) => suaCaLopSvc.duLieuSuaCaLop(principalOf(req), pInt(req, 'id'))));
+/** ⋮ Sửa thông tin cả lớp (PR-SL): xem trước — soát từng ô, cảnh báo MT sẽ dời. Không ghi gì. */
+api.post('/classes/:id/sua-ca-lop/xem-truoc', requireAuth, wrap((req) => {
+  const b = req.body ?? {};
+  return suaCaLopSvc.xemTruocSuaCaLop(principalOf(req), pInt(req, 'id'), { rows: b.rows, lyDoTarget: b.lyDoTarget });
+}));
+/** Lưu: tất cả hoặc không gì, một giao dịch; khoá chống gửi trùng như Thêm học viên. */
+api.post('/classes/:id/sua-ca-lop', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = req.body ?? {};
+  return suaCaLopSvc.luuSuaCaLop(principalOf(req), pInt(req, 'id'), { rows: b.rows, lyDoTarget: b.lyDoTarget, idempotencyKey: b.idempotencyKey });
 }));
 
 // ============================================================ Thêm học viên hàng loạt

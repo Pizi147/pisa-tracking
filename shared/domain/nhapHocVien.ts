@@ -81,6 +81,19 @@ export const chuanTieuDe = (h: string) => h.normalize('NFD').replace(/[̀-ͯ]/g,
   .toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 
 /**
+ * PR-SL: Sửa thông tin cả lớp lưu THEO LÔ — mỗi em ~10 câu ghi, cả lớp một lần vượt 10 s của Netlify trên Turso. Web gửi lần lượt
+ * từng lô `LO_LUU_SUA_CA_LOP` em (mỗi lô một request, một giao dịch, một khoá chống gửi trùng); máy chủ nhận tối đa
+ * `TOI_DA_LUU_SUA_CA_LOP` em một lần. Xem trước vẫn kiểm cả lớp một lần.
+ */
+export const LO_LUU_SUA_CA_LOP = 8;
+export const TOI_DA_LUU_SUA_CA_LOP = 10;
+export function chiaLo<T>(ds: readonly T[], co: number): T[][] {
+  const ra: T[][] = [];
+  for (let i = 0; i < ds.length; i += co) ra.push(ds.slice(i, i + co));
+  return ra;
+}
+
+/**
  * Q29-1 (PR-KCK): ô Target ghi `KCK` / `-` / "không cam kết" = học viên KHÔNG CAM KẾT đầu ra → không kỳ vọng MT, không SOS.
  * KHÁC ô trống (= chưa có target, vẫn có việc "Điền target"). Dùng chung cho nhập học viên, sửa target, Đề xuất sửa.
  */
@@ -157,15 +170,23 @@ export function laDongTieuDe(o: string[]): boolean {
  *  không có ô ở dòng ngắn nhất (chỉ khi không tiêu đề). */
 export type CachDoc = { coTieuDe: boolean; daDoan: boolean; thuTu: CotNhap[]; boQua: string[]; thua: number; thieu: number };
 
-/** `coTieuDe`: undefined = tự đoán (`laDongTieuDe`); true/false = người dùng chọn. Không tiêu đề → cột theo `cotLuoiNhap(lopThuong)`. */
+/**
+ * `coTieuDe`: undefined = tự đoán (`laDongTieuDe`); true/false = người dùng chọn. Có tiêu đề → khớp theo tên.
+ * MỘT MẪU EXCEL CHUNG (chủ sản phẩm 04/10, PR-SL): không tiêu đề → MỌI lớp đọc theo thứ tự cột Fast Track `cotLuoiNhap(false)`. Lớp thường
+ * bỏ cột không dùng (Overall, L, R, W, S, Đã thi tới MT) — tên cột vào `boQua`, một lưu ý cho cả lô.
+ */
 export function docDongDan(dong: string[][], lopThuong: boolean, coTieuDe?: boolean): { cot: (CotNhap | null)[]; batDau: 0 | 1; cach: CachDoc } {
   const laTieuDe = coTieuDe ?? laDongTieuDe(dong[0] ?? []);
-  const { cot, boQua } = laTieuDe ? nhanDangCot(dong[0] ?? []) : { cot: cotLuoiNhap(lopThuong).map((c) => c.key), boQua: [] };
+  const dung = new Set(cotLuoiNhap(lopThuong).map((c) => c.key));
+  const mau = cotLuoiNhap(false);
+  const { cot, boQua } = laTieuDe ? nhanDangCot(dong[0] ?? [])
+    : { cot: mau.map((c) => (dung.has(c.key) ? c.key : null)), boQua: mau.filter((c) => !dung.has(c.key)).map((c) => c.nhan) };
   const batDau = laTieuDe ? 1 : 0;
   /* Độ dài "thật" của dòng: tới ô cuối có chữ (Excel hay kèm tab trống ở cuối). */
   const dai = dong.slice(batDau).map((d) => { let n = d.length; while (n > 0 && !d[n - 1].trim()) n -= 1; return n; });
   const thua = Math.max(0, ...dai.map((n) => n - cot.length));
-  const thieu = laTieuDe || !dai.length ? 0 : Math.max(0, cot.length - Math.min(...dai));
+  /* Chỉ đếm cột lớp này DÙNG (lớp thường không báo thiếu cột band). */
+  const thieu = laTieuDe || !dai.length ? 0 : cot.slice(Math.min(...dai)).filter(Boolean).length;
   return {
     cot, batDau,
     cach: { coTieuDe: laTieuDe, daDoan: coTieuDe === undefined, thuTu: cot.filter((k): k is CotNhap => !!k), boQua, thua, thieu },

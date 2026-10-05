@@ -159,7 +159,7 @@ function NoiDungLoTrinhTiep({ onClose, studentId, studentName, lop, onDone }: {
   return (
     <KhungPanel tieuDe="Lộ trình tiếp theo" hocVien={studentName} lop={lop} onDong={onClose}
       chan={{
-        huy: { nhan: daSua ? 'Huỷ thay đổi' : 'Đóng', onClick: onClose, disabled: busy },
+        daSua, huy: { onClick: onClose, disabled: busy },
         conThieu: lf.conThieu(loi),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy}>{busy ? 'Đang lưu…' : deXuat ? 'Lưu đề xuất' : 'Lưu'}</button>,
       }}>

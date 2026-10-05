@@ -180,7 +180,7 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
   ], KY_THUAT);
   check('S3 (4) · "Thêm PA" so khớp theo hằng CHU_THEM_PA (không so chuỗi hiển thị); KhungPanel / ConfirmDialog mặc định "Đóng"', () => {
     assert(/CHU_THEM_PA/.test(docNguon('server/src/students/viecHocVien.ts')) && /CHU_THEM_PA/.test(docNguon('web/src/modules/cases/QuickReport.tsx')) && /CHU_THEM_PA/.test(docNguon('shared/domain/sosV4.ts')), 'hằng CHU_THEM_PA');
-    assert(/huy\.nhan \?\? 'Đóng'/.test(docNguon('web/src/ui/KhungPanel.tsx')), 'KhungPanel');
+    assert(/huy\.nhan \?\? \(chan\.daSua \? 'Huỷ thay đổi' : 'Đóng'\)/.test(docNguon('web/src/ui/KhungPanel.tsx')), 'KhungPanel');   // PR-SL I1: chưa sửa → "Đóng"
     assert(/closeLabel = 'Đóng'/.test(docNguon('web/src/ui/Drawer.tsx')), 'ConfirmDialog');   // PR-LM: nút trái đặt được ("Quay lại"), mặc định vẫn "Đóng"
     assert(/nhan = 'Thao tác khác'/.test(docNguon('web/src/ui/MenuDong.tsx')), 'MenuDong');
   });

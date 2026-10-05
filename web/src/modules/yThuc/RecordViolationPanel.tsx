@@ -206,7 +206,9 @@ export function RecordViolationPanel({
   }
 
   return (
+    /* I6 (PR-SL): một dòng chú thích dấu `*` thay cho "(bắt buộc)" lặp ở từng ô. */
     <KhungPanel tieuDe={tieuDe} hocVien={tenChon} lop={lop} onDong={dong}
+      ngCanh={<><span aria-hidden className="text-bad">*</span> = bắt buộc</>}
       chan={{
         /* Sửa: chân trái là `Xoá vi phạm` (viền đỏ). Nơi gọi tự đóng form này và quyết định lúc nào mở lại panel trước đó. */
         xoa: editing && violation && onDelete ? { nhan: 'Xoá vi phạm', onClick: () => onDelete(violation.id) } : undefined,
@@ -260,9 +262,10 @@ export function RecordViolationPanel({
         {cauTrung && (
           <div className="text-xs text-soon">
             <span>{cauTrung}</span>{' · '}
-            <button type="button" className="link inline-flex items-center appearance-none border-0 bg-transparent p-0 min-h-[44px] sm:min-h-0" aria-expanded={xemTrung} onClick={() => setXemTrung((v) => !v)}>Xem</button>
+            {/* I6: "Xem" nằm cùng dòng chữ (không inline-flex cao 44 px đẩy lệch dòng); vùng bấm điện thoại giữ ≥ 44 px bằng đệm âm. */}
+            <button type="button" className="link appearance-none border-0 bg-transparent p-0 align-baseline max-sm:-my-3 max-sm:py-3" aria-expanded={xemTrung} onClick={() => setXemTrung((v) => !v)}>Xem</button>
             {xemTrung && (
-              <ul className="m-0 mt-1 list-none space-y-0.5 p-0 text-[11px] text-slate-400">
+              <ul className="m-0 mt-1.5 list-none space-y-0.5 p-0 text-[11px] text-slate-400">
                 {trungRows.map((r) => <li key={r.id}>{r.description} · {r.reportedByName ?? 'một giáo viên'} · {r.nhanTrangThai}</li>)}
               </ul>
             )}

@@ -1,12 +1,15 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { taoKhoPanel } from '@shared/domain/index.ts';
 import { NutLuat } from './NutLuat.tsx';
-import { DongCanSua, type MucThieu } from './loiForm.tsx';
+import { DongCanSua, useNoiLoi, type MucThieu } from './loiForm.tsx';
 import { useGiuFocus } from './giuFocus.ts';
 import { BaoOTrongNhan, coOTuNhan } from './ONgay.tsx';
 
 /** Kho dùng chung toàn web: mở panel này thì panel đang mở phải đóng (G-8, N-4). */
 export const khoPanelChung = taoKhoPanel();
+/** Panel đang mở, mở sau ở cuối — Esc chỉ đóng panel cuối (panel vẽ qua portal nên không còn lồng nhau trong DOM). */
+const nganPanel: string[] = [];
 
 /**
  * KHUÔN PANEL CHUNG (PR-UX0, N-4 — mockup 15 (1)). Ngăn phải 560px (form dạng bảng `rong` = 720px), 375px toàn màn.
@@ -21,7 +24,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
   /** Lớp z — panel mở từ một popover `z-[60]` (hộp xếp lịch `HopKyNang`) cần nằm trên popover đó (PR-LM). */
   z?: string;
   /** Không vào `khoPanelChung`: panel con mở đè (Chuyển tiếp → Tạo lớp) không đóng panel này, state giữ nguyên.
-   *  Người gọi tự cho `onDong` rỗng khi panel con đang mở để Esc chỉ đóng panel trên. */
+   *  Esc chỉ đóng panel mở sau cùng (`nganPanel`) — panel dưới không cần tự chặn Esc. */
   longTrong?: boolean;
   /** `toan`: lưới nhập hàng loạt nhiều cột (Thêm học viên) — rộng theo màn tới 1440px, không ép 10 cột vào ngăn hẹp. */
   rong?: 'hep' | 'rong' | 'toan';
@@ -29,6 +32,8 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
   chan?: {
     huy?: { nhan?: string; onClick: () => void; disabled?: boolean }; xoa?: { onClick: () => void; nhan?: string };
     phu?: ReactNode; chinh?: ReactNode; conThieu?: (string | MucThieu)[];
+    /** Luật S3 (I1): form đã sửa → nút trái mặc định "Huỷ thay đổi", chưa sửa → "Đóng". `huy.nhan` riêng (Xong, ‹ Sửa…) thắng. */
+    daSua?: boolean;
     /** Một dòng riêng NGAY TRÊN hàng nút (ví dụ dòng xem trước trên điện thoại — PR-XLMT). Nơi gọi tự ẩn/hiện theo cỡ màn. */
     dongTren?: ReactNode;
   };
@@ -52,19 +57,23 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
   }, []);
 
   useEffect(() => {
-    /* Esc chỉ đóng lớp TRÊN CÙNG: `Modal` mở chồng trong panel (không portal) tự đóng bằng Esc — panel đứng yên. */
+    /* Esc chỉ đóng lớp TRÊN CÙNG: panel mở sau cùng (`nganPanel`); `Modal` mở chồng trong panel (không portal) tự đóng bằng Esc — panel đứng yên. */
+    nganPanel.push(id);
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !e.defaultPrevented && !khung.current?.querySelector('[aria-modal="true"]')) dongRef.current();
+      if (e.key === 'Escape' && !e.defaultPrevented && nganPanel[nganPanel.length - 1] === id
+        && !khung.current?.querySelector('[aria-modal="true"]')) dongRef.current();
     };
     document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, []);
+    return () => { document.removeEventListener('keydown', onKey); nganPanel.splice(nganPanel.indexOf(id), 1); };
+  }, [id]);
 
   const ngu = [hocVien, lop].filter(Boolean).join(' · ');
   const huy = chan?.huy ?? { onClick: onDong };
   useGiuFocus(khung);
-  /* `!mt-0`: panel đứng trong trang có `space-y-*` thì bị cộng margin-top 12–16 px → lệch xuống, lộ dải demo bar/đầu trang (PR-DH, DH-13). */
-  return (
+  /* `!mt-0`: panel đứng trong trang có `space-y-*` thì bị cộng margin-top 12–16 px → lệch xuống, lộ dải demo bar/đầu trang (PR-DH, DH-13).
+     Vẽ qua portal ra <body>: panel mở từ ô bảng (GV chấm ở tiêu đề cột dính, hộp bốn tiêu chí trong ô điểm) không bị kẹt dưới
+     lớp xếp chồng của ô, không kế thừa chữ in hoa / căn phải của ô. Sự kiện React vẫn nổi theo cây React như cũ. */
+  return createPortal(
     <div className={`fixed inset-0 !mt-0 ${z} flex justify-end`} role="dialog" aria-modal="true" aria-label={tieuDe}>
       <div className="absolute inset-0 bg-black/60" onClick={onDong} />
       <div ref={khung} tabIndex={-1} className={`relative flex h-full w-full flex-col rounded-none border-l shadow-2xl -outline-offset-2 ${rong === 'toan' ? 'max-w-[1440px]' : rong === 'rong' ? 'sm:w-[720px]' : 'sm:w-[560px]'}`}
@@ -88,7 +97,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
             {chan.conThieu?.length ? <DongCanSua muc={chan.conThieu} /> : null}
             {chan.dongTren}
             <div className="flex items-center gap-2 px-4 py-2.5">
-              <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={huy.onClick} disabled={huy.disabled}>{huy.nhan ?? 'Đóng'}</button>
+              <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={huy.onClick} disabled={huy.disabled}>{huy.nhan ?? (chan.daSua ? 'Huỷ thay đổi' : 'Đóng')}</button>
               {chan.xoa && <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" onClick={chan.xoa.onClick}>{chan.xoa.nhan ?? 'Xoá'}</button>}
               <span className="flex-1" />
               {chan.phu}
@@ -97,7 +106,8 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
           </footer>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -136,14 +146,15 @@ export function Truong({ nhan, batBuoc, tuyChon, phu, loi, dem, as = 'label', ch
     {dem && <span className={`text-[11px] font-normal tabular-nums ${dem.co < dem.can ? 'text-slate-500' : 'text-slate-400'}`}>{dem.co}/{dem.can}</span>}
   </>;
   const lopNhan = 'mb-1 flex items-baseline gap-2 text-[11.5px] font-bold text-slate-200';
+  const noi = useNoiLoi(loi);
   return (
     <BaoOTrongNhan.Provider value={setIdO}>
       <Vo className="block min-w-0" {...nhom}>
         {troO ? <label htmlFor={troO} className={lopNhan}>{chu}</label> : <span id={idNhan} className={lopNhan}>{chu}</span>}
         {/* Luôn cùng một lớp bọc (`contents`, không đổi bố cục): bọc/bỏ bọc theo `loi` làm ô dựng lại → mất focus khi đang gõ. */}
-        <div className={loi ? 'contents [&_.field]:border-late [&_.field]:ring-1 [&_.field]:ring-late/40' : 'contents'}>{children}</div>
+        <div ref={noi.ref} className={loi ? 'contents [&_.field]:border-late [&_.field]:ring-1 [&_.field]:ring-late/40' : 'contents'}>{children}</div>
         {phu && <span className="mt-1 block truncate text-[11px] text-slate-500">{phu}</span>}
-        {loi && <span className="mt-1 block text-[11px] text-late">{loi}</span>}
+        {loi && <span id={noi.id} className="mt-1 block text-[11px] text-late">{loi}</span>}
       </Vo>
     </BaoOTrongNhan.Provider>
   );

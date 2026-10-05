@@ -1,0 +1,259 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { api } from '../../lib/api.ts';
+import { useApi } from '../../lib/useApi.ts';
+import { useToast } from '../../ui/Toast.tsx';
+import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { ConfirmDialog } from '../../ui/Drawer.tsx';
+import { ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
+import { ONgay } from '../../ui/ONgay.tsx';
+import { useLoiForm } from '../../ui/loiForm.tsx';
+import { KCK, LO_LUU_SUA_CA_LOP, LY_DO_TOI_THIEU, chiaLo, laKck, type VanDeNhap } from '@shared/domain/index.ts';
+
+type Cot = 'fullName' | 'dob' | 'email' | 'startWeek' | 'examDate' | 'target' | 'baseline';
+type DongGoc = {
+  studentId: number; fullName: string; dob: string | null; email: string | null; coLoTrinh: boolean;
+  startWeek: string | null; examDate: string | null; target: number | string | null; baseline: number | null;
+};
+type DuLieu = { lop: { id: number; code: string }; lopThuong: boolean; coTheSuaTarget: boolean; rows: DongGoc[] };
+type XemTruoc = { rows: { studentId: number; issues: VanDeNhap[] }[]; canhBaoMt: { studentId: number; cau: string }[] };
+
+const COT: { key: Cot; nhan: string; rong: number; so?: boolean }[] = [
+  { key: 'fullName', nhan: 'Họ và tên', rong: 210 }, { key: 'dob', nhan: 'Ngày sinh', rong: 190 },
+  { key: 'email', nhan: 'Email', rong: 250 }, { key: 'startWeek', nhan: 'Tuần bắt đầu học', rong: 172 },
+  { key: 'examDate', nhan: 'Dự kiến thi', rong: 190 }, { key: 'target', nhan: 'Target', rong: 100, so: true },
+  { key: 'baseline', nhan: 'Điểm đầu vào', rong: 112, so: true },
+];
+/* Mockup 05/10: cột đủ cho ô đã sửa có ↺ (không cắt chữ); tổng 1374 px vừa panel 1440 không cuộn ngang. */
+const RONG_LUU_Y = 150;
+/* Ô lộ trình (tuần, dự kiến thi, Target, điểm đầu vào): em chưa có lộ trình thì không sửa được ở đây. */
+const O_LO_TRINH = new Set<Cot>(['startWeek', 'examDate', 'target', 'baseline']);
+const moiKhoa = () => `suacalop-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+const chuGoc = (d: DongGoc, k: Cot) => (d[k] === null || d[k] === undefined ? '' : String(d[k]));
+/** Ô số (Target, điểm đầu vào) nhận dấu phẩy; "6,50" = "6.5" (không tính là đã sửa). */
+const chuan = (k: Cot, v: string) => {
+  const t = v.trim();
+  if ((k !== 'target' && k !== 'baseline') || !t) return t;
+  const n = Number(t.replace(',', '.'));
+  return Number.isFinite(n) ? String(n) : t;
+};
+
+/**
+ * PR-SL (Q-0310-3): SỬA THÔNG TIN CẢ LỚP trên một panel — lưới giống Thêm học viên, KHÔNG dán Excel. Một hàng một em đang học (A→Z),
+ * bảy ô: Họ tên · Ngày sinh · Email · Tuần bắt đầu · Dự kiến thi · Target · Điểm đầu vào (lớp thường không có điểm đầu vào — `lopThuong`).
+ * Ô đã đổi tô nhấn + chấm, mỗi ô có Hoàn tác về giá trị gốc. Xem trước tự động (400 ms) → lỗi đỏ dưới ô, cảnh báo MT dời vàng cuối hàng.
+ * Một nút Lưu, gửi THEO LÔ `LO_LUU_SUA_CA_LOP` em (mỗi lô một request, một giao dịch, một khoá chống gửi trùng — 10 s của Netlify).
+ * Lô lỗi thì dừng: chân panel "Đã lưu n em · m em chưa lưu"; em đã lưu thôi tô nhấn, em chưa lưu giữ nguyên để bấm Lưu lại.
+ * Đổi Target → một ô lý do chung. Đóng khi đang sửa → hỏi trước (chống mất dữ liệu). Mockup `thiet-ke/mockup-sua-thong-tin-hoc-vien-2026-10-05.html`.
+ */
+export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; onClose: () => void; onDone: () => void }) {
+  const toast = useToast();
+  const du = useApi<DuLieu>(`/classes/${classId}/sua-ca-lop`, [classId]);
+  /** Chữ đã sửa theo em → ô. Ô không có trong đây = giữ giá trị gốc. */
+  const [sua, setSua] = useState<Record<number, Partial<Record<Cot, string>>>>({});
+  const [lyDo, setLyDo] = useState('');
+  const [xem, setXem] = useState<XemTruoc | null>(null);
+  const [busy, setBusy] = useState(false);
+  /** Tiến độ khi đang lưu theo lô: đã lưu / tổng số em. */
+  const [tienDo, setTienDo] = useState<{ xong: number; tong: number } | null>(null);
+  /** Lưu dở: em đã lưu (giá trị đã ghi → làm gốc mới) và câu báo ở chân panel. */
+  const [luuRoi, setLuuRoi] = useState<Record<number, Partial<Record<Cot, string>>>>({});
+  const [luuDo, setLuuDo] = useState<{ cau: string; lyDo: string } | null>(null);
+  const [hoiDong, setHoiDong] = useState(false);
+  const lf = useLoiForm();
+  const khoa = useRef(moiKhoa());
+
+  const d = du.data;
+  const cot = COT.filter((c) => !(d?.lopThuong && c.key === 'baseline'));
+  const goc = useMemo(() => new Map((d?.rows ?? []).map((r) => [r.studentId, r])), [d]);
+
+  /** Giá trị gốc của ô: đã lưu ở lô trước (lưu dở) thì lấy giá trị đó. */
+  const nen = (g: DongGoc, k: Cot) => luuRoi[g.studentId]?.[k] ?? chuGoc(g, k);
+  /** Chỉ những ô KHÁC giá trị gốc (gõ lại đúng giá trị cũ = không đổi). */
+  const daDoi = (sid: number): Partial<Record<Cot, string>> => {
+    const g = goc.get(sid);
+    if (!g) return {};
+    return Object.fromEntries(Object.entries(sua[sid] ?? {}).filter(([k, v]) => chuan(k as Cot, v) !== chuan(k as Cot, nen(g, k as Cot)))) as Partial<Record<Cot, string>>;
+  };
+  const dongDoi = (d?.rows ?? []).map((r) => ({ sid: r.studentId, doi: daDoi(r.studentId) })).filter((x) => Object.keys(x.doi).length);
+  const soEm = dongDoi.length;
+  const soDoiTarget = dongDoi.filter((x) => x.doi.target !== undefined).length;
+  const doiTarget = soDoiTarget > 0;
+
+  /* Gửi lên máy chủ: chuỗi đã cắt; ô trống → null (xoá); Target theo chữ (KCK / số); điểm đầu vào nhận dấu phẩy. */
+  const payload = dongDoi.map(({ sid, doi }) => {
+    const r: Record<string, unknown> & { studentId: number } = { studentId: sid };
+    for (const [k, v0] of Object.entries(doi)) {
+      const v = chuan(k as Cot, v0!);
+      r[k] = k === 'fullName' ? v : v || null;
+    }
+    return r;
+  });
+  const payloadKey = JSON.stringify(payload);
+
+  useEffect(() => {
+    if (!payload.length) { setXem(null); return undefined; }
+    const t = setTimeout(() => {
+      api.post<XemTruoc>(`/classes/${classId}/sua-ca-lop/xem-truoc`, { rows: payload })
+        .then(setXem).catch((e: any) => toast.push('error', e.message));
+    }, 400);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [payloadKey, classId]);
+
+  const vanDe = (sid: number, k: Cot) => xem?.rows.find((x) => x.studentId === sid)?.issues.filter((i) => i.field === k) ?? [];
+  const soLoi = xem ? xem.rows.reduce((n, x) => n + x.issues.filter((i) => i.muc === 'loi').length, 0) : 0;
+  const loiLyDo = doiTarget && lyDo.trim().length < LY_DO_TOI_THIEU
+    ? (lyDo.trim() ? `Cần ít nhất ${LY_DO_TOI_THIEU} ký tự.` : 'Ghi lý do đổi Target.') : null;
+  const loiForm = loiLyDo ? [{ khoa: 'ly-do-target', nhan: 'Lý do đổi Target', lyDo: loiLyDo }] : [];
+
+  const datO = (sid: number, k: Cot, v: string) => setSua((s) => ({ ...s, [sid]: { ...s[sid], [k]: v } }));
+  const hoanTac = (sid: number, k: Cot) => setSua((s) => {
+    const { [k]: _bo, ...con } = s[sid] ?? {};
+    return { ...s, [sid]: con };
+  });
+
+  /* Đang lưu thì không đóng (Esc, nền, ✕): lưu lỗi còn giữ nguyên lưới để thử lại. */
+  const dong = () => { if (busy) return; if (soEm) setHoiDong(true); else onClose(); };
+  const luu = async () => {
+    lf.bam();
+    if (busy || !soEm || soLoi || !xem || loiLyDo) return;
+    setBusy(true);
+    setLuuDo(null);
+    const lo = chiaLo(payload, LO_LUU_SUA_CA_LOP);
+    let xong = 0, daSua = 0;
+    setTienDo({ xong, tong: payload.length });
+    try {
+      for (const [i, rows] of lo.entries()) {
+        const r = await api.post<{ daSua: number }>(`/classes/${classId}/sua-ca-lop`, {
+          rows, lyDoTarget: doiTarget ? lyDo.trim() : undefined, idempotencyKey: `${khoa.current}-${i}`,
+        });
+        daSua += r.daSua;
+        xong += rows.length;
+        setTienDo({ xong, tong: payload.length });
+        /* Lô này đã ghi: giá trị vừa gửi thành gốc mới → ô thôi tô nhấn (ô gõ thêm trong lúc lưu vẫn còn là "đã sửa"). */
+        const ghi = new Map(rows.map(({ studentId, ...o }) => [studentId, Object.fromEntries(Object.entries(o).map(([k, v]) => [k, v == null ? '' : String(v)]))]));
+        setLuuRoi((m) => ({ ...m, ...Object.fromEntries([...ghi].map(([sid, o]) => [sid, { ...m[sid], ...o }])) }));
+        setSua((m) => Object.fromEntries(Object.entries(m).map(([sid, o]) => [sid, ghi.has(Number(sid))
+          ? Object.fromEntries(Object.entries(o).filter(([k, v]) => ghi.get(Number(sid))![k] === undefined || chuan(k as Cot, v!) !== ghi.get(Number(sid))![k]))
+          : o])));
+      }
+      toast.push('ok', `Đã cập nhật ${daSua} học viên`);
+      onDone();
+      onClose();
+    } catch (e: any) {
+      /* Dừng ở lô lỗi; em chưa lưu giữ nguyên để bấm Lưu lại (khoá mới = lần lưu mới). Chưa lưu em nào → báo như cũ. */
+      khoa.current = moiKhoa();
+      if (xong) {
+        setLuuDo({ cau: `Đã lưu ${xong} em · ${payload.length - xong} em chưa lưu`, lyDo: e.message });
+        onDone();
+      } else toast.push('error', e.message);
+    } finally { setBusy(false); setTienDo(null); }
+  };
+
+  return (
+    <KhungPanel tieuDe="Sửa thông tin học viên" lop={d ? `Lớp ${d.lop.code}` : null} rong="toan" onDong={dong}
+      ngCanh={soEm ? `Đã sửa ${soEm} em` : undefined}
+      chan={{
+        daSua: soEm > 0, huy: { onClick: dong, disabled: busy },
+        conThieu: lf.conThieu(loiForm),
+        phu: soLoi > 0 ? <span className="text-xs text-late tabular-nums">{soLoi} ô cần sửa</span>
+          : luuDo && soEm ? <span className="text-xs text-late tabular-nums" title={luuDo.lyDo}>{luuDo.cau}</span> : null,
+        chinh: (
+          <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => void luu()}
+            disabled={busy || !soEm || soLoi > 0 || !xem}>
+            {busy ? (tienDo ? `Đang lưu ${tienDo.xong}/${tienDo.tong}…` : 'Đang lưu…') : soEm ? `Lưu ${soEm} em` : 'Lưu'}
+          </button>
+        ),
+      }}>
+      {du.error ? <ErrorState message={du.error.message} hint={du.error.hint} onRetry={du.reload} />
+        : !d ? <Skeleton rows={6} />
+        : !d.rows.length ? <p className="pt-3 text-sm text-slate-400">Lớp chưa có học viên đang học.</p>
+        : (
+          <div className="space-y-3 pt-3">
+            {doiTarget && (
+              <div className="max-w-xl">
+                <Truong nhan={`Lý do đổi Target · ${soDoiTarget} em`} batBuoc loi={lf.loiCua(loiForm, 'ly-do-target')}>
+                  <input className="field w-full" {...lf.o(loiForm, 'ly-do-target')} value={lyDo} onChange={(e) => setLyDo(e.target.value)}
+                    placeholder="Ví dụ: Phụ huynh đổi Target sau buổi tư vấn" />
+                </Truong>
+              </div>
+            )}
+            <div className="overflow-x-auto">
+              <table className="w-full table-fixed text-sm" style={{ minWidth: cot.reduce((n, c) => n + c.rong, 0) + RONG_LUU_Y }}>
+                <colgroup>
+                  {cot.map((c) => <col key={c.key} style={{ width: c.rong }} />)}
+                  <col style={{ width: RONG_LUU_Y }} />
+                </colgroup>
+                <thead>
+                  <tr>
+                    {cot.map((c) => (
+                      <Th key={c.key} align={c.so ? 'right' : 'left'}
+                        className={c.key === 'fullName' ? 'sticky-col' : ''}
+                        hint={c.key === 'target' && !d.coTheSuaTarget ? 'Chỉ Quản lý đổi Target' : c.key === 'target' ? `Band 0–9, bước 0,5. Gõ ${KCK} nếu em không cam kết đầu ra.` : undefined}>
+                        {c.nhan}
+                      </Th>
+                    ))}
+                    <Th>Lưu ý</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {d.rows.map((r) => {
+                    const doi = daDoi(r.studentId);
+                    const mt = xem?.canhBaoMt.find((x) => x.studentId === r.studentId);
+                    return (
+                      <tr key={r.studentId}>
+                        {cot.map((c) => {
+                          const v = sua[r.studentId]?.[c.key] ?? nen(r, c.key);
+                          const daSuaO = doi[c.key] !== undefined;
+                          const loi = daSuaO ? vanDe(r.studentId, c.key).find((i) => i.muc === 'loi')?.message ?? null : null;
+                          const khoaO = (O_LO_TRINH.has(c.key) && !r.coLoTrinh) || (c.key === 'target' && !d.coTheSuaTarget);
+                          const nhan = `${c.nhan} · ${r.fullName}`;
+                          const idLoi = `loi-${r.studentId}-${c.key}`;
+                          return (
+                            <td key={c.key} className={`td px-1.5 py-1.5 align-top${c.key === 'fullName' ? ' sticky-col' : ''}`}
+                              style={daSuaO ? { background: 'rgb(var(--chon-bg-rgb))' } : undefined}>
+                              <div className="flex items-center gap-1">
+                                <span className="min-w-0 flex-1">
+                                  {c.key === 'dob' || c.key === 'startWeek' || c.key === 'examDate' ? (
+                                    <ONgay gon kieu={c.key === 'dob' ? 'ngay' : c.key === 'startWeek' ? 'tuan' : 'ngay-hoac-thang'}
+                                      value={v} ariaLabel={nhan} invalid={!!loi} moTa={loi ? idLoi : undefined} disabled={khoaO}
+                                      onChange={(x) => datO(r.studentId, c.key, x)} />
+                                  ) : (
+                                    <input className={`field w-full${c.so ? ' text-right tabular-nums' : ''}${loi ? ' border-late' : ''}`}
+                                      value={v} aria-label={nhan} aria-invalid={!!loi || undefined} aria-describedby={loi ? idLoi : undefined}
+                                      disabled={khoaO} title={khoaO ? (c.key === 'target' && !d.coTheSuaTarget ? 'Chỉ Quản lý đổi Target' : 'Em chưa có lộ trình') : undefined}
+                                      type={c.key === 'email' ? 'email' : 'text'} autoComplete="off"
+                                      inputMode={c.key === 'baseline' ? 'decimal' : c.key === 'email' ? 'email' : undefined}
+                                      onChange={(e) => datO(r.studentId, c.key, e.target.value)}
+                                      onBlur={c.key === 'target' ? (e) => { if (laKck(e.target.value) && e.target.value !== KCK) datO(r.studentId, 'target', KCK); } : undefined} />
+                                  )}
+                                </span>
+                                {daSuaO && (
+                                  <button type="button" className="btn btn-sm btn-ghost min-h-[44px] min-w-[32px] justify-center px-0 sm:min-h-[28px] sm:min-w-[28px] sm:px-1"
+                                    title={`Hoàn tác — về "${nen(r, c.key) || 'trống'}"`} aria-label={`Hoàn tác ${nhan}`}
+                                    onClick={() => hoanTac(r.studentId, c.key)}>↺</button>
+                                )}
+                              </div>
+                              {loi && <span id={idLoi} className="mt-1 block text-[11px] text-late">{loi}</span>}
+                            </td>
+                          );
+                        })}
+                        <td className="td px-2 py-1.5 align-top text-xs">
+                          {mt ? <span className="text-soon">{mt.cau}</span>
+                            : Object.keys(doi).length ? <span className="inline-flex items-center gap-1.5 text-slate-300"><span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: 'rgb(var(--soon-rgb))' }} />đã sửa</span>
+                            : <span className="text-slate-500">—</span>}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      <ConfirmDialog open={hoiDong} onClose={() => setHoiDong(false)} onConfirm={() => { setHoiDong(false); onClose(); }} danger
+        title="Bỏ những gì vừa sửa?" closeLabel="Tiếp tục sửa" confirmLabel="Bỏ thay đổi"
+        body={`Đã sửa ${soEm} em nhưng chưa lưu. Đóng panel thì các thay đổi này mất.`} />
+    </KhungPanel>
+  );
+}
