@@ -7,7 +7,7 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { NHAN_XET_TOI_DA } from '@shared/domain/index.ts';
-import { Modal } from '../../ui/Drawer.tsx';
+import { KhungPanel } from '../../ui/KhungPanel.tsx';
 
 /** Đếm ký tự chỉ hiện khi đã gần trần (> 800) — không làm rối lúc gõ vài câu. */
 function Dem({ n }: { n: number }) {
@@ -46,21 +46,26 @@ export function HopNhanXet({ tieuDe, giaTri, onLuu }: {
         className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md ${giaTri ? 'text-[color:var(--accent-strong)]' : 'text-slate-500'}`}>
         <ButChi />
       </button>
-      <Modal open={mo} onClose={() => !busy && setMo(false)} title={`Nhận xét · ${tieuDe}`} width="max-w-md"
-        footer={<>
-          <button className="btn" onClick={() => setMo(false)} disabled={busy}>Đóng</button>
-          <button className="btn btn-primary" onClick={() => void luu()} disabled={busy || nhap.trim() === (giaTri ?? '')}>
-            {busy ? 'Đang lưu…' : 'Lưu'}
-          </button>
-        </>}>
-        <label className="block">
+      {/* I4 (PR-SL): khung panel chung, chân luật S3. Mở từ lưới / hồ sơ Mock, có thể trong panel khác → `longTrong`. */}
+      {mo && (
+        <KhungPanel tieuDe="Nhận xét" hocVien={tieuDe} longTrong z="z-[60]" onDong={() => !busy && setMo(false)}
+          chan={{
+            daSua: nhap.trim() !== (giaTri ?? ''), huy: { onClick: () => setMo(false), disabled: busy },
+            chinh: (
+              <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => void luu()} disabled={busy || nhap.trim() === (giaTri ?? '')}>
+                {busy ? 'Đang lưu…' : 'Lưu'}
+              </button>
+            ),
+          }}>
+        <label className="block pt-3">
           <span className="flex items-baseline justify-between text-xs text-slate-400">
             <span>Nhận xét (không bắt buộc)</span><Dem n={nhap.length} />
           </span>
           <textarea className="field mt-1 w-full text-sm" rows={5} maxLength={NHAN_XET_TOI_DA} value={nhap}
             onChange={(e) => setNhap(e.target.value)} />
         </label>
-      </Modal>
+        </KhungPanel>
+      )}
     </>
   );
 }

@@ -4,7 +4,6 @@ import { useApi } from '../../lib/useApi.ts';
 import { api } from '../../lib/api.ts';
 import { ThanhTruocSau } from '../../ui/ThanhTruocSau.tsx';
 import { BoLocDoan, Card, DaiChiXem, Empty, ErrorState, Info, Level, Outcome, Skeleton, TargetText, Th} from '../../ui/ui.tsx';
-import { Modal } from '../../ui/Drawer.tsx';
 import { cuonOnDinh } from '../../lib/cuonOnDinh.ts';
 import { MuiTen, SkillBoard, type SkillBoardRow } from '../cases/SkillBoard.tsx';
 import { KetLuanKhoa, MiniTestO } from './KetLuanKhoa.tsx';
