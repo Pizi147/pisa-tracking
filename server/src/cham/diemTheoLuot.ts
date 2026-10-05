@@ -11,7 +11,7 @@
 import { badRequest, notFound } from '../util.ts';
 import { db, theoLo } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
-import { classScopeSql, requireXemLuotCham, scopeFor, type Principal } from '../permissions.ts';
+import { classScopeSql, lopFtChoGvSpeaking, requireXemLuotCham, scopeFor, type Principal } from '../permissions.ts';
 import {
   PERMISSIONS, docMaLuot, luotMacDinh, nhanMaLuot, soSanhLop, type AssessedSkill, type MaLuot, type TomTatLuot,
 } from '../../../shared/domain/index.ts';
@@ -132,11 +132,14 @@ export function bangTheoLuot(p: Principal, classId: number, ma: string, today: s
 
 /**
  * Lớp của trang Test › "Điểm theo lớp": cùng phạm vi đọc với `requireXemLuotCham` qua `scopeFor(ATTEMPT_VIEW)` +
- * `classScopeSql` (GV/GVCN: lớp được phân công; QL: lớp chi nhánh) — như Lịch Test. Không thêm lớp chấm S chéo
- * (`lopFtChoGvSpeaking`): trang này là "lớp tôi dạy".
+ * `classScopeSql` (GV/GVCN: lớp được phân công; QL: lớp chi nhánh) + lớp FT GV Speaking chấm S chéo (`lopFtChoGvSpeaking`)
+ * — như Lịch Test.
  */
 export function lopCuaToi(p: Principal): { classId: number; classCode: string; mode: CheDo; oTrong: number }[] {
-  const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
+  const scope0 = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
+  /* GV Speaking chấm S chéo lớp FT cùng chi nhánh: đọc + chấm được ở đó thì phải tìm được lớp — nối như `lichTest`. */
+  const lopS = scope0.all ? [] : lopFtChoGvSpeaking(p);
+  const scope = lopS.length ? { ...scope0, classIds: [...new Set([...scope0.classIds, ...lopS])] } : scope0;
   if (scope.none) return [];
   const cs = classScopeSql(scope);
   const lop = (db().prepare(`SELECT c.id, c.code, c.programme_code FROM classes c WHERE ${cs.sql} AND c.status = 'active'`)

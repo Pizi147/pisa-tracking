@@ -236,7 +236,6 @@ export async function runPrDlTests(t: YThucTestKit) {
     check('DL-4 danhSachLuot FT: một lượt mỗi số MT, đếm đúng; macDinh theo luật DL-1; tuần = tuần sớm nhất', () => {
       const ds = dl.danhSachLuot(QL, LOP, TODAY);
       assert(ds.classId === LOP && ds.mode === 'ielts_band', 'đầu');
-      assert(ds.macDinh === d.luotMacDinh(ds.luot), `macDinh ${ds.macDinh}`);
       const so = (conn.prepare(`SELECT attempt_no AS n, COUNT(*) AS c, MIN(rp.week_start) AS t FROM assessment_attempts a LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
         WHERE a.class_id = ? AND a.kind = 'mock' AND a.status != 'cancelled' GROUP BY attempt_no ORDER BY attempt_no`).all(LOP) as any[]);
       assert(JSON.stringify(ds.luot.map((l: any) => l.ma).sort()) === JSON.stringify(so.map((r) => `mt:${r.n}`).sort()), 'tập lượt');
@@ -248,6 +247,30 @@ export async function runPrDlTests(t: YThucTestKit) {
       assert(luotCua(ds, 'mt:1').lichSu === true, 'MT1 có lượt lịch sử');
     });
 
+    check('DL-4 macDinh trên lớp dựng riêng: MT1 đủ, MT2 (tuần này) còn trống, MT3 (tuần sau) đủ → mt:2', () => {
+      /* Lớp riêng: MB FT 101 bị các phép kiểm trước thay đổi tuỳ thứ tự chạy, nên không dùng làm mốc cho lượt mặc định. */
+      const lop4 = intake.createClass(P.admin, { code: 'MB FT DL4', branchId: MB, kind: 'FT', route: 'LT1', startDate: tuanNay }).id as number;
+      intake.commitIntake(P.admin, { classId: lop4, rows: [{ fullName: 'DL4 Dung', target: 6.5, email: 'hv@demo.test' }], idempotencyKey: 'dl4-dung' });
+      const st = get(`SELECT id FROM students WHERE full_name = 'DL4 Dung'`).id as number;
+      const cy = get("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'", st).id;
+      boLichTuTao(conn, cy);
+      luotThu(conn, svc.createAttempt, P.admin, { studentId: st, cycleId: cy, classId: lop4, no: 2, periodId: pid });
+      svc.createAttempt(P.admin, { studentId: st, cycleId: cy, attemptNo: 3, periodId: week.ensurePeriod(t.addDays(tuanNay, 7)).id });
+      const du = (no: number) => {
+        const k = conn.prepare(`SELECT k.attempt_id, k.skill FROM attempt_skills k JOIN assessment_attempts a ON a.id = k.attempt_id
+          WHERE a.class_id = ? AND a.attempt_no = ? AND k.required = 1`).all(lop4, no) as any[];
+        for (const r of k) for (const nhap of r.skill === 'writing' ? ['writing1', 'writing2'] : [r.skill]) {
+          conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, band) VALUES (?,?,6)').run(r.attempt_id, nhap);
+        }
+      };
+      du(1); du(3);
+      const ds = dl.danhSachLuot(P.admin, lop4, TODAY);
+      const tt = ds.luot.map((l: any) => [l.ma, l.oTrong, l.duDiem]);
+      assert(luotCua(ds, 'mt:1').oTrong === 0 && luotCua(ds, 'mt:3').oTrong === 0 && luotCua(ds, 'mt:2').oTrong > 0, `tiền đề: ${JSON.stringify(tt)}`);
+      assert(luotCua(ds, 'mt:3').duDiem === 1 && luotCua(ds, 'mt:2').duDiem === 0, `duDiem: ${JSON.stringify(tt)}`);
+      assert(ds.macDinh === 'mt:2', `macDinh ${ds.macDinh}`);
+    });
+
     check('DL-4 bangTheoLuot FT mt:2: hàng = attempt MT2; HV đang học không có MT2 vào chuaCoLich; không tạo lịch nào', () => {
       const truoc = soAttempt();
       const b = dl.bangTheoLuot(QL, LOP, 'mt:2', TODAY);
@@ -256,6 +279,14 @@ export async function runPrDlTests(t: YThucTestKit) {
       assert(b.chuaCoLich.some((h: any) => h.studentId === chi && h.fullName === 'DL Chi' && typeof h.studentCode === 'string'), 'Chi phải trong chuaCoLich');
       assert(!b.chuaCoLich.some((h: any) => h.studentId === anh.sid || h.studentId === binh.sid), 'em có MT2 không ở chuaCoLich');
       assert(soAttempt() === truoc, 'đường đọc tạo attempt');
+      /* Đếm của lượt khớp đúng số hàng bảng hiện — kể cả khi có em đã lưu trữ (bảng FT không lọc em lưu trữ). */
+      assert(b.luot.coLich === b.ft.rows.length, `coLich ${b.luot.coLich} ≠ ${b.ft.rows.length} hàng`);
+      try {
+        conn.prepare('UPDATE students SET archived_at = ? WHERE id = ?').run(TODAY, binh.sid);
+        const b2 = dl.bangTheoLuot(QL, LOP, 'mt:2', TODAY);
+        assert(b2.ft.rows.some((r: any) => r.attemptId === binh.aid) && b2.luot.coLich === b2.ft.rows.length,
+          `em lưu trữ: coLich ${b2.luot.coLich} ≠ ${b2.ft.rows.length} hàng`);
+      } finally { conn.prepare('UPDATE students SET archived_at = NULL WHERE id = ?').run(binh.sid); }
     });
 
     check('DL-4 oTrong/duDiem: ô "-" hợp lệ không tính trống; đủ mọi kỹ năng bắt buộc mới là đủ điểm', () => {
@@ -321,6 +352,19 @@ export async function runPrDlTests(t: YThucTestKit) {
         const dong = ql.body.find((l: any) => l.classId === id);
         assert(dong && dong.oTrong === tong && typeof dong.classCode === 'string' && dong.mode === (id === LOP ? 'ielts_band' : 'ratio'), `lớp ${id}: ${JSON.stringify(dong)} vs ${tong}`);
       }
+    });
+
+    await t.checkAsync('DL-4 GV Speaking lớp FT khác cùng chi nhánh (chấm S chéo) thấy lớp ở /diem-theo-lop/lop và đọc được diem-theo-luot', async () => {
+      const r = get(`SELECT ta.user_id AS id FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
+        WHERE ta.status = 'active' AND ta.skill = 'speaking' AND c.is_fast_track = 1 AND c.branch_id = (SELECT branch_id FROM classes WHERE id = ?)
+          AND ta.user_id NOT IN (SELECT user_id FROM teacher_assignments WHERE class_id = ?) LIMIT 1`, LOP, LOP);
+      assert(r, 'seed thiếu GV Speaking ở lớp FT khác cùng chi nhánh');
+      const gvS = loadPrincipal(r.id);
+      assert(!can(gvS, d.PERMISSIONS.ATTEMPT_VIEW, { classId: LOP }), 'tiền đề: không có ATTEMPT_VIEW ở lớp');
+      const ds = await goi(gvS.userId, '/diem-theo-lop/lop');
+      assert(ds.status === 200 && ds.body.some((l: any) => l.classId === LOP), `không thấy lớp chấm S chéo: ${JSON.stringify(ds.body?.map?.((l: any) => l.classCode))}`);
+      assert((await goi(gvS.userId, `/classes/${LOP}/diem-theo-luot`)).status === 200, 'đọc danh sách lượt');
+      assert((await goi(gvS.userId, `/classes/${LOP}/diem-theo-luot/mt:2`)).status === 200, 'đọc bảng MT2');
     });
   } finally { may.close(); }
 }
