@@ -5,6 +5,7 @@
  */
 import { ATTEMPT_KIND_SHORT } from './normal.ts';
 import { tuanLich } from './hienThiNgay.ts';
+import { mondayOfDate } from './week.ts';
 
 export type MaLuot = { loai: 'mt'; so: number } | { loai: 'thuong'; kind: 'progress' | 'final' };
 
@@ -30,15 +31,17 @@ export type TomTatLuot = {
 };
 
 /**
- * Lượt mở sẵn: xếp theo tuần tăng dần, tuần NULL (lượt chưa xếp) xếp cuối; chọn lượt có tuần lớn nhất còn ô trống,
- * không có thì lượt NULL còn ô trống; mọi lượt đã đủ → lượt cuối theo thứ tự đó.
+ * Lượt mở sẵn (DL-6b): trong các lượt còn ô trống, ưu tiên (1) tuần lớn nhất ≤ tuần chứa `homNay` (bài đã qua / đang thi);
+ * (2) không có → tuần tương lai gần nhất; (3) không có → lượt chưa xếp tuần (NULL); mọi lượt đủ → lượt cuối theo tuần (NULL cuối).
  */
-export function luotMacDinh(ds: TomTatLuot[]): string | null {
+export function luotMacDinh(ds: TomTatLuot[], homNay: string): string | null {
   const xep = [...ds].sort((a, b) =>
     a.tuanStart === b.tuanStart ? 0 : a.tuanStart === null ? 1 : b.tuanStart === null ? -1 : a.tuanStart < b.tuanStart ? -1 : 1);
+  const thuHai = mondayOfDate(homNay);
   const conTrong = xep.filter((l) => l.oTrong > 0);
-  const coTuan = conTrong.filter((l) => l.tuanStart !== null);
-  return (coTuan.at(-1) ?? conTrong.at(-1) ?? xep.at(-1))?.ma ?? null;
+  const daToi = conTrong.filter((l) => l.tuanStart !== null && l.tuanStart <= thuHai).at(-1);
+  const tuongLai = conTrong.find((l) => l.tuanStart !== null && l.tuanStart > thuHai);
+  return (daToi ?? tuongLai ?? conTrong.at(-1) ?? xep.at(-1))?.ma ?? null;
 }
 
 /** Dòng nhỏ dưới nút lượt (DL-5): "W3 JUL · 5/8 đủ điểm"; lượt chưa xếp tuần → chỉ số đủ; không ai có lịch → "chưa ai có lịch". */

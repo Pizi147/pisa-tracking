@@ -24,7 +24,7 @@ export async function runPrDlTests(t: YThucTestKit) {
   check('DL-1 lượt mặc định = gần nhất còn ô trống; hết ô trống → lượt cuối; rỗng → null', () => {
     const l = (ma: string, tuanStart: string | null, oTrong: number) =>
       ({ ma, nhan: ma, tuanStart, lichSu: false, duDiem: 0, coLich: 3, oTrong });
-    const m = (ds: object[]) => d.luotMacDinh(ds);
+    const m = (ds: object[], homNay = '2026-09-16') => d.luotMacDinh(ds, homNay);
     assert(m([l('mt:1', '2026-06-01', 2), l('mt:2', '2026-07-13', 3), l('mt:3', '2026-08-24', 0)]) === 'mt:2', 'gần nhất còn trống');
     assert(m([l('mt:1', '2026-06-01', 0), l('mt:2', '2026-07-13', 0)]) === 'mt:2', 'hết trống → cuối');
     assert(m([]) === null, 'rỗng');
@@ -32,6 +32,22 @@ export async function runPrDlTests(t: YThucTestKit) {
     assert(m([l('mt:3', null, 2), l('mt:1', '2026-06-01', 1)]) === 'mt:1', 'có tuần ưu tiên hơn NULL');
     assert(m([l('mt:3', null, 2), l('mt:1', '2026-06-01', 0)]) === 'mt:3', 'chỉ NULL còn trống');
     assert(m([l('mt:3', null, 0), l('mt:1', '2026-06-01', 0)]) === 'mt:3', 'hết trống → cuối (NULL xếp cuối)');
+  });
+
+  check('DL-6b lượt mặc định không chọn bài tương lai khi bài đã qua / tuần này còn ô trống (hôm nay T4 16/09, tuần 14/09)', () => {
+    const l = (ma: string, tuanStart: string | null, oTrong: number) =>
+      ({ ma, nhan: ma, tuanStart, lichSu: false, duDiem: 0, coLich: 3, oTrong });
+    const m = (ds: object[], homNay = '2026-09-16') => d.luotMacDinh(ds, homNay);
+    assert(m([l('thuong:progress', '2026-08-24', 1), l('thuong:final', '2026-10-12', 20)]) === 'thuong:progress', '(a) đã qua còn trống thắng tương lai');
+    assert(m([l('mt:1', '2026-08-24', 0), l('mt:4', '2026-10-12', 5), l('mt:3', '2026-09-28', 5)]) === 'mt:3', '(b) chỉ tương lai → gần nhất');
+    assert(m([l('mt:2', '2026-09-14', 2), l('mt:3', '2026-09-21', 3)]) === 'mt:2', '(c) tuần này thắng tuần sau');
+    assert(m([l('mt:2', '2026-09-14', 2), l('mt:3', '2026-09-21', 3)], '2026-09-20') === 'mt:2', '(c) Chủ nhật vẫn thuộc tuần 14/09');
+    assert(m([l('mt:2', '2026-09-14', 2), l('mt:3', '2026-09-21', 3)], '2026-09-21') === 'mt:3', '(c) sang Thứ Hai 21/09 → tuần mới');
+    assert(m([l('mt:3', null, 2), l('mt:2', '2026-10-12', 3)]) === 'mt:2', '(d) tương lai thắng NULL');
+    assert(m([l('mt:3', null, 2), l('mt:1', '2026-09-07', 1), l('mt:2', '2026-10-12', 3)]) === 'mt:1', 'đã qua thắng tương lai và NULL');
+    assert(m([l('mt:1', '2026-08-24', 0), l('mt:2', '2026-10-12', 0), l('mt:3', null, 0)]) === 'mt:3', '(e) tất cả đủ → cuối (NULL)');
+    assert(m([l('mt:2', '2026-10-12', 0), l('mt:1', '2026-08-24', 0)]) === 'mt:2', '(e) tất cả đủ → cuối theo tuần');
+    assert(m([]) === null, 'rỗng');
   });
 
   check('DL-1 nhãn lượt (nhanMaLuot; tên nhanLuot đã thuộc fasttrack.ts): MT{n}; lớp thường lấy ATTEMPT_KIND_SHORT', () => {
@@ -354,6 +370,13 @@ export async function runPrDlTests(t: YThucTestKit) {
       assert(luotCua(ds, 'thuong:progress').nhan === d.ATTEMPT_KIND_SHORT.progress, 'nhãn');
       const b = dl.bangTheoLuot(gvcn, lopT, 'thuong:progress', TODAY);
       assert(b.mode === 'ratio' && b.thuong.rows.length === 1 && b.thuong.rows[0].studentId === sidA && b.chuaCoLich.length === 0, 'bảng progress');
+    });
+
+    check('DL-6b danhSachLuot lớp thường: Giữa khoá đã qua còn ô + Cuối khoá chưa tới → macDinh thuong:progress', () => {
+      const ds = dl.danhSachLuot(gvcn, lopT, TODAY);
+      const g = luotCua(ds, 'thuong:progress'), c = luotCua(ds, 'thuong:final');
+      assert(g.oTrong > 0 && g.tuanStart <= week.mondayOf(TODAY) && c.oTrong > 0 && c.tuanStart > week.mondayOf(TODAY), `tiền đề: ${JSON.stringify(ds.luot)}`);
+      assert(ds.macDinh === 'thuong:progress', `macDinh ${ds.macDinh}`);
     });
 
     await t.checkAsync('DL-4 PUT một ô (đường ghi cũ) → oTrong giảm 1; sửa ô đã có điểm không lý do bị từ chối (override)', async () => {

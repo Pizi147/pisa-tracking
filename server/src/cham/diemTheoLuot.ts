@@ -101,11 +101,11 @@ function tomTatLop(classIds: number[]): Map<number, TomTatLuot[]> {
   return out;
 }
 
-/** Các lượt của một lớp + lượt mở sẵn (luật DL-1). */
-export function danhSachLuot(p: Principal, classId: number): { classId: number; mode: CheDo; luot: TomTatLuot[]; macDinh: string | null } {
+/** Các lượt của một lớp + lượt mở sẵn (luật DL-1, sửa DL-6b theo `today`). */
+export function danhSachLuot(p: Principal, classId: number, today: string = demoToday()): { classId: number; mode: CheDo; luot: TomTatLuot[]; macDinh: string | null } {
   const mode = lopDuocXem(p, classId);
   const luot = tomTatLop([classId]).get(classId)!;
-  return { classId, mode, luot, macDinh: luotMacDinh(luot) };
+  return { classId, mode, luot, macDinh: luotMacDinh(luot, today) };
 }
 
 /** Bảng điểm cả lớp của một lượt: chính `chamSheet` (chọn theo số lượt / theo kind) + tóm tắt lượt + HV chưa có lịch lượt đó (FT). */
