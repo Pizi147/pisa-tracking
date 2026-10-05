@@ -176,7 +176,7 @@ const THUONG = [
   ['Phan Minh Đức','','hv@demo.test','W2 SEP','',''],
   ['Trịnh Khánh Ly','','hv@demo.test','W1 SEP','',''],
 ];
-const COT = [['Họ và tên',220],['Ngày sinh',190,'d'],['Email',230],['Tuần bắt đầu học',172,'w'],['Dự kiến thi',190,'d'],['Target',100,'n'],['Điểm đầu vào',112,'n']];
+const COT = [['Họ và tên',210],['Ngày sinh',190,'d'],['Email',250],['Tuần bắt đầu học',172,'w'],['Dự kiến thi',190,'d'],['Target',100,'n'],['Điểm đầu vào',112,'n']];
 const PH = {1:'dd/mm/yyyy',3:'W4 SEP hoặc dd/mm',4:'dd/mm/yyyy'};
 
 /* Mỗi trạng thái: sửa = {hàng:{cột:giá trị}}, loi = {hàng:{cột:câu}}, luuY = {hàng: html} */
@@ -204,8 +204,8 @@ function o(v, k, err, dis, ph){
 function grid(s){
   const rows = s.thuong ? THUONG : FT;
   const cot = s.thuong ? COT.slice(0,6) : COT;
-  const sum = cot.reduce((n,c)=>n+c[1],0)+180;
-  let h = `<div class="grid"><table style="width:${sum}px">`+cot.map(c=>`<col style="width:${c[1]}px">`).join('')+'<col style="width:180px"><tr>';
+  const sum = cot.reduce((n,c)=>n+c[1],0)+150;
+  let h = `<div class="grid"><table style="width:${sum}px">`+cot.map(c=>`<col style="width:${c[1]}px">`).join('')+'<col style="width:150px"><tr>';
   h += cot.map((c,i)=>`<th class="${i===0?'st':''}${c[2]==='n'?' r':''}">${c[0]}</th>`).join('')+'<th>Lưu ý</th></tr>';
   rows.forEach((r,ri)=>{
     h += '<tr>';
