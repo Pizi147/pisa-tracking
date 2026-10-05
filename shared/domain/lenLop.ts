@@ -4,6 +4,7 @@
  */
 import { NORMAL_LADDER } from './fasttrack.ts';
 import type { ProgrammeCode } from './normal.ts';
+import { kyHieuLop } from './tenLop.ts';
 
 // ---------------------------------------------------------------- hướng (Q1, Q4, Q9)
 
@@ -41,8 +42,10 @@ export function huongTiepKhaDung(ma: ProgrammeCode | null, tap: readonly Huong[]
 
 type NguCanhNhan = { ma: ProgrammeCode | null; maKe: ProgrammeCode | null; ngayXemLai?: string | null };
 function nhan(h: Huong, ctx: NguCanhNhan, ngan: boolean): string {
-  const ma = ctx.ma ?? '—';
-  const maKe = ctx.maKe ?? NORMAL_LADDER[ctx.ma as ProgrammeCode] ?? '—';
+  /* PR-K26: tên bậc ("Pre FOU"), không mã thô ("PREFOU"). */
+  const ten = (x: ProgrammeCode | null | undefined) => (x ? kyHieuLop(x, null) ?? x : '—');
+  const ma = ten(ctx.ma);
+  const maKe = ten(ctx.maKe ?? NORMAL_LADDER[ctx.ma as ProgrammeCode]);
   switch (h) {
     case 'len_lop': return ngan ? `Lên ${maKe}` : `Lên lớp thường tiếp (${maKe})`;
     case 'fast_track': return 'Lên FT';

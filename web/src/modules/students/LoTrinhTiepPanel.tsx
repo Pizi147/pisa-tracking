@@ -216,7 +216,7 @@ function NoiDungLoTrinhTiep({ onClose, studentId, studentName, lop, onDone }: {
             </Hang2>
           )}
           {huong === 'chua_quyet' && (
-            <Truong nhan="Ngày xem lại" tuyChon phu="Để trống thì web nhắc lại em này ở hai tuần cuối khoá">
+            <Truong nhan="Ngày xem lại" tuyChon phu="Để trống thì hệ thống nhắc lại em này ở hai tuần cuối khoá">
               <ONgay kieu="ngay" value={ngayXemLai} onChange={doi(setNgayXemLai)} toiThieu={homNay || undefined} ariaLabel="Ngày xem lại" />
             </Truong>
           )}

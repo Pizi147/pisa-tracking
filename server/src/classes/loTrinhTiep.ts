@@ -166,7 +166,7 @@ function lopThuongCua(classId: number): any {
 
 /**
  * GET /classes/:id/lo-trinh-tiep (PR-K26) — bảng "Ghi lộ trình tiếp theo cả lớp": mỗi em đang học một dòng (tên, % Cuối khoá + gợi ý,
- * bản ghi hiện tại) + lớp dự kiến chọn được. Số câu SQL không tăng theo số em (đọc theo lô).
+ * bản ghi hiện tại). Số câu SQL không tăng theo số em (đọc theo lô).
  */
 export function layLoTrinhTiepCaLop(p: Principal, classId: number) {
   const conn = db();
@@ -182,17 +182,10 @@ export function layLoTrinhTiepCaLop(p: Principal, classId: number) {
   const sids = em.map((r) => r.id as number);
   const ck = sids.length ? cuoiKhoaTheoHocVien(classId, sids) : new Map();
   const banGhi = tiepTheoTheoHocVien([classId]);
-  const lopDuKien: LopDuKien[] = (conn.prepare(
-    `SELECT id, code, programme_code, is_fast_track FROM classes
-      WHERE branch_id = ? AND status = 'active' AND id != ? AND (programme_code = ? OR programme_code = ? OR is_fast_track = 1)`,
-  ).all(cls.branch_id, classId, maKe, ma) as any[])
-    .sort((a, b) => soSanhLop({ code: a.code }, { code: b.code }))
-    .map((r) => ({ id: r.id, code: r.code, ma: r.programme_code ?? null, ft: !!r.is_fast_track }));
   return {
     lop: { id: classId, code: cls.code as string, ma, maKe },
     coTheGhi: can(p, PERMISSIONS.STUDENT_EDIT, { classId }),
     toiDa: GHI_CA_LOP_TOI_DA,
-    lopDuKien,
     hocVien: em.map((r) => ({
       id: r.id as number, ten: r.full_name as string, ma: r.student_code as string,
       cuoiKhoa: ck.get(r.id) ?? null, banGhi: banGhi.get(r.id) ?? null,

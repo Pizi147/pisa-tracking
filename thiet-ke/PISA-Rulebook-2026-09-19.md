@@ -728,6 +728,7 @@ Code đã có (`ss/normal/regular.ts:591-738`): GV đúng ô gõ "-" (hoặc GVC
 - **Cuối khoá:** % tổng = Σ điểm / Σ tổng câu (chỉ khi đủ môn), xét trên số chưa làm tròn. Dải **< 50 · 50–59 · 60–69 · ≥ 70 (Pass)**. Gợi ý (không lưu): < 50 học lại + Báo PH qua TVV (việc của QL) · 50–59 "Quản lý cân nhắc" (học lại hoặc lên + bổ trợ) · 60–69 lên + **bổ trợ miễn phí** · ≥ 70 lên. Không sinh Case trước khi chuyển. Sau khi chuyển lên: Case "Cuối khoá {CT} · {môn} không đạt" + PA Bổ trợ miễn phí (FOU/BE/ELE 1 buổi/môn trượt; Pre FOU 4 buổi nếu 50–59, 2 buổi nếu 60–69) + **Mini Test một lần** (≥ 70 % → Case tự hoàn thành; < 70 % → Case mở + Báo lên QL; sửa Mini Test chỉ QL, có lý do). Bổ trợ miễn phí không tính lương GV. `sd/cuoiKhoa.ts:17-99`
 - **BE/ELE lên FT:** chỉ QL đánh dấu Đạt / Không đạt **kỳ vọng đầu ra**; nguyên nhân "Trung tâm" → Case FT + PA Tutor 10 buổi/kỹ năng (tính buổi Free, có lương); "Học sinh" → ghi chú, không Case. Writing lớp thường → W2.
 - Giữa khoá và Cuối khoá tự có cho em vào lớp (bỏ mốc đã qua, không sinh nợ giả). Lớp thường không có "Bỏ kỹ năng khỏi đợt".
+- **Lộ trình tiếp theo (PR-K26, chủ sản phẩm 04/10):** hướng Hệ thống gợi ý theo dải Cuối khoá đứng đầu, các hướng khác thu vào "Hướng khác"; em chưa đủ điểm thì danh sách như cũ. Em **50–59 %**: GVCN ghi **đề xuất**, Quản lý quyết khi ra lệnh chuyển lớp (không thẻ Chờ duyệt); bảng Chuyển tiếp lớp điền sẵn đề xuất đủ thông tin. "Chưa rõ" và "Xếp sau" **gộp thành một hướng "Chưa quyết"** (dữ liệu cũ đã đổi): ngày xem lại tuỳ chọn khi ghi Lộ trình tiếp theo (không ngày → vẫn nhắc hai tuần cuối), bắt buộc ở Chuyển tiếp lớp. GVCN ghi được cho **cả lớp trên một bảng** (⋮ hồ sơ lớp, lưu một lần, tất cả hoặc không). `sd/lenLop.ts` · `ss/classes/loTrinhTiep.ts`
 
 ### 20.7 Chuyển lớp và bàn giao — thay §10 "Chuyển lớp", "Chuyển tiếp Normal"
 
@@ -736,7 +737,7 @@ Code đã có (`ss/normal/regular.ts:591-738`): GV đúng ô gõ "-" (hoặc GVC
 - **Em thiếu điểm Cuối khoá vẫn chuyển được**; điểm nhập sau áp luật Cuối khoá ở lộ trình mới. Lớp thường tới tuần kết thúc thì **mọi em phải có lệnh**; còn em chưa có lệnh → thẻ Báo lên QL.
 - **Bàn giao:** GVBM ghi một câu (≤ 300 ký tự) cho mỗi em, môn mình, hạn **2 ngày**; GVCN lớp cũ viết nhận xét chung ≥ 15 ký tự và **Xác nhận bàn giao** trong **3 ngày**. QL điền/xác nhận thay khi lớp không có GVCN hoặc quá hạn. Quá hạn → thẻ Báo lên; **lệnh vẫn chạy đúng tuần**.
 - Em Tạm dừng không mở được chuyển lớp (QL bấm "Quay lại học" trước). "Tạm dừng" và "Kết thúc học" từ hồ sơ HV giữ như cũ (GVCN làm được, hiệu lực ngay).
-- Đã bỏ: thẻ "Quyết định Cuối khoá", "Ghi hướng cả lớp", việc GVCN "Ghi lộ trình tiếp theo".
+- Đã bỏ: thẻ "Quyết định Cuối khoá", "Ghi hướng cả lớp", việc GVCN "Ghi lộ trình tiếp theo". **[04/10 — làm lại "Ghi lộ trình tiếp theo cả lớp" ở ⋮ hồ sơ lớp, chỉ là dự định; xem §20.6]**
 
 ### 20.8 Lịch MT — các điểm bổ sung cho PR-MT / PR-XLMT
 
