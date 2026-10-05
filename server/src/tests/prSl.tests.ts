@@ -41,6 +41,39 @@ export async function runPrSlTests(t: YThucTestKit) {
     assert(ngan.rows[0].fullName === 'An' && ngan.rows[0].email === 'a@x.vn', JSON.stringify(ngan.rows));
   });
 
+  check('SL-5 · I2 Tạo Case: không chọn sẵn mức độ (ô bắt buộc), "Chọn nhóm", không hàng nút L R W S giả, Bắt đầu theo dõi chọn theo tuần', () => {
+    const q = doc('web/src/modules/cases/QuickReport.tsx');
+    assert(!q.includes('DEFAULT_URGENCY') && q.includes("useState('')") && q.includes("khoa: 'muc-do'"), 'mức độ chọn sẵn / không bắt buộc');
+    assert(q.includes("'Chọn nhóm'") && !q.includes("'Chọn phân loại'"), 'placeholder Nhóm nguyên nhân');
+    assert(!q.includes("['L', 'R', 'W', 'S']"), 'hàng nút giả có W trần');
+    assert(/<ChonTuan[^>]*ariaLabel="Bắt đầu theo dõi"/.test(q) && !/<ONgay kieu="ngay"[^>]*setDetectedAt/.test(q), 'Bắt đầu theo dõi phải là bộ chọn tuần');
+  });
+
+  check('SL-6 · I3 Thêm học viên: ô dán không monospace, nút Đọc dưới ô dán, cột Overall / ngày sinh đủ rộng, lời nhắc hai dòng', () => {
+    const s = doc('web/src/modules/students/IntakePanel.tsx');
+    assert(!/font-mono/.test(s), 'ô dán còn font-mono');
+    assert(s.indexOf('<textarea') < s.indexOf('Đọc nội dung đã dán') && !s.includes('sm:grid-cols-3'), 'nút Đọc phải nằm dưới ô dán');
+    assert(/dob: 116, email: 190, baselineScore: 72/.test(s), 'bề rộng cột');
+    assert(s.includes('Em đã có hồ sơ thì dùng Chuyển lớp, không tạo mới.</p>') && !s.includes('(không tính SOS). · Em'), 'lời nhắc hai dòng');
+  });
+
+  check('SL-7 · I4: GvCham, hộp 4 tiêu chí, Nhận xét, Xoá vi phạm dùng KhungPanel; StudentDetailPage hết import Modal', () => {
+    for (const f of ['web/src/modules/cham/GvCham.tsx', 'web/src/modules/fasttrack/ScoreEntry.tsx', 'web/src/modules/fasttrack/NhanXet.tsx',
+      'web/src/modules/yThuc/DeleteViolationConfirm.tsx', 'web/src/modules/students/StudentDetailPage.tsx']) {
+      const s = doc(f);
+      assert(!/from '..\/..\/ui\/Drawer.tsx'/.test(s) && !/<Modal\b|<ConfirmDialog\b/.test(s), `${f}: còn Modal/ConfirmDialog`);
+    }
+    for (const f of ['web/src/modules/cham/GvCham.tsx', 'web/src/modules/fasttrack/ScoreEntry.tsx', 'web/src/modules/fasttrack/NhanXet.tsx', 'web/src/modules/yThuc/DeleteViolationConfirm.tsx']) {
+      assert(/<KhungPanel\b[^>]*longTrong/.test(doc(f)), `${f}: chưa sang KhungPanel (longTrong — mở được từ trong panel khác)`);
+    }
+  });
+
+  check('SL-8 · I6 Ghi vi phạm: chú thích "* = bắt buộc" một dòng, không còn "(bắt buộc)" hiện ở ô; "Xem" không inline-flex cao 44 px', () => {
+    const s = doc('web/src/modules/yThuc/RecordViolationPanel.tsx');
+    assert(s.includes('= bắt buộc</>}') && !/>\s*\(bắt buộc\)/.test(s), 'chú thích dấu *');
+    assert(!/inline-flex[^"]*min-h-\[44px\][^"]*"[^>]*>Xem</.test(s) && /align-baseline max-sm:-my-3 max-sm:py-3"[^>]*>Xem</.test(s), 'nút Xem');
+  });
+
   check('SL-2 · panel Sửa thông tin học viên: không dán Excel; vào từ ⋮ và nút ở tab Học viên; đóng khi đang sửa thì hỏi', () => {
     const pn = doc('web/src/modules/students/SuaCaLopPanel.tsx');
     assert(!/<textarea/.test(pn) && !pn.includes('/intake/parse'), 'không được có ô dán Excel');
