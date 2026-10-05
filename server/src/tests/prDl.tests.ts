@@ -169,4 +169,158 @@ export async function runPrDlTests(t: YThucTestKit) {
     const so = new Map(sh.rows.map((r: any) => [r.studentId, get('SELECT attempt_no FROM assessment_attempts WHERE id = ?', r.attemptId).attempt_no]));
     assert(so.get(sidA) === 2 && so.get(sidB) === 1, `attempt_no: ${JSON.stringify([...so])}`);
   });
+
+  // ------------------------------------------------------------------ DL-4: dịch vụ + ba đường đọc điểm theo lượt
+  const dl: any = await import('../cham/diemTheoLuot.ts');
+  const { createApp } = await import('../app.ts');
+  const { can } = await import('../permissions.ts');
+  /* Em ở MB FT 101 KHÔNG có MT2: bỏ lịch tự tạo, chỉ MT1 lịch sử. */
+  intake.commitIntake(P.admin, { classId: LOP, rows: [{ fullName: 'DL Chi', target: 6.5, email: 'hv@demo.test' }], idempotencyKey: 'dl-chi' });
+  const chi = get(`SELECT id FROM students WHERE full_name = 'DL Chi'`).id as number;
+  const cyChi = get("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'", chi).id;
+  boLichTuTao(conn, cyChi);
+  conn.prepare('UPDATE assessment_attempts SET lich_su = 1 WHERE id = ?').run(svc.createAttempt(P.admin, { studentId: chi, cycleId: cyChi, attemptNo: 1, periodId: pid }).id);
+  const gvNgoai = loadPrincipal(get(`SELECT ta.user_id AS id FROM teacher_assignments ta WHERE ta.status = 'active' GROUP BY ta.user_id
+    HAVING SUM(ta.class_id IN (SELECT c.id FROM classes c JOIN branches b ON b.id = c.branch_id WHERE b.code <> 'CP')) = 0 LIMIT 1`).id);
+  const soAttempt = () => get('SELECT COUNT(*) AS n FROM assessment_attempts').n as number;
+  const may = createApp().listen(0);
+  const cong = (may.address() as any).port as number;
+  const cookie = new Map<number, string>();
+  const goi = async (uid: number, url: string, method = 'GET', body?: unknown) => {
+    if (!cookie.has(uid)) {
+      const ss = await fetch(`http://127.0.0.1:${cong}/api/demo/session`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ userId: uid }) });
+      cookie.set(uid, (ss.headers.get('set-cookie') ?? '').split(';')[0]);
+    }
+    const r = await fetch(`http://127.0.0.1:${cong}/api${url}`, {
+      method, headers: { 'content-type': 'application/json', cookie: cookie.get(uid)! }, body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    return { status: r.status, body: await r.json().catch(() => null) as any };
+  };
+  const luotCua = (ds: any, ma: string) => ds.luot.find((l: any) => l.ma === ma);
+  try {
+    await t.checkAsync('DL-4 quyền: GV dạy lớp (không có PLAN_WEEK) đọc được; GV lớp khác 403; QL chi nhánh khác 403', async () => {
+      const gv = P.lrTeacher;
+      assert(!can(gv, d.PERMISSIONS.PLAN_WEEK, { classId: LOP }), 'tiền đề: GV không có PLAN_WEEK');
+      const a = await goi(gv.userId, `/classes/${LOP}/diem-theo-luot`);
+      assert(a.status === 200 && a.body.mode === 'ielts_band' && a.body.luot.length > 0, `GV dạy lớp: ${a.status} ${JSON.stringify(a.body)?.slice(0, 200)}`);
+      const b = await goi(gv.userId, `/classes/${LOP}/diem-theo-luot/mt:2`);
+      assert(b.status === 200 && b.body.ft.rows.length > 0, `GV đọc bảng MT2: ${b.status}`);
+      for (const [ai, ng] of [['GV lớp khác', gvNgoai], ['QL CP', P.cpManager]] as const) {
+        assert((await goi(ng.userId, `/classes/${LOP}/diem-theo-luot`)).status === 403, `${ai} đọc danh sách lượt không 403`);
+        assert((await goi(ng.userId, `/classes/${LOP}/diem-theo-luot/mt:2`)).status === 403, `${ai} đọc bảng không 403`);
+      }
+    });
+
+    await t.checkAsync('DL-4 tham số luot: sai dạng 400; lượt không có 404; sai họ lớp 400', async () => {
+      const r = async (lop: number, ma: string) => goi(QL.userId, `/classes/${lop}/diem-theo-luot/${encodeURIComponent(ma)}`);
+      const x = await r(LOP, 'mt:abc');
+      assert(x.status === 400 && /Mã lượt không hợp lệ/.test(JSON.stringify(x.body)), `mt:abc: ${x.status} ${JSON.stringify(x.body)}`);
+      const y = await r(LOP, 'mt:9');
+      assert(y.status === 404 && /Lớp chưa có lượt này/.test(JSON.stringify(y.body)), `mt:9: ${y.status} ${JSON.stringify(y.body)}`);
+      assert((await r(LOP, 'thuong:final')).status === 400, 'lớp FT + thuong:final phải 400');
+      assert((await r(lopT, 'mt:2')).status === 400, 'lớp thường + mt:2 phải 400');
+      assert((await r(lopT, 'thuong:progress')).status === 200, 'lớp thường + thuong:progress 200');
+    });
+
+    check('DL-4 kiểm quyền trước mọi truy vấn dữ liệu HV (danhSachLuot, bangTheoLuot)', () => {
+      const goc = conn.prepare;
+      for (const fn of [() => dl.danhSachLuot(gvNgoai, LOP, TODAY), () => dl.bangTheoLuot(gvNgoai, LOP, 'mt:2', TODAY)]) {
+        const sql: string[] = [];
+        conn.prepare = (s: string) => { sql.push(s); return goc.call(conn, s); };
+        try { assert(maLoi(fn) === 403, 'không 403'); } finally { conn.prepare = goc; }
+        const lo = sql.filter((s) => /assessment_attempts|assessment_scores|attempt_skills|enrollments|\bstudents\b/.test(s));
+        assert(lo.length === 0, `truy vấn HV trước khi kiểm quyền: ${lo.map((s) => s.slice(0, 80)).join(' | ')}`);
+      }
+    });
+
+    check('DL-4 danhSachLuot FT: một lượt mỗi số MT, đếm đúng; macDinh theo luật DL-1; tuần = tuần sớm nhất', () => {
+      const ds = dl.danhSachLuot(QL, LOP, TODAY);
+      assert(ds.classId === LOP && ds.mode === 'ielts_band', 'đầu');
+      assert(ds.macDinh === d.luotMacDinh(ds.luot), `macDinh ${ds.macDinh}`);
+      const so = (conn.prepare(`SELECT attempt_no AS n, COUNT(*) AS c, MIN(rp.week_start) AS t FROM assessment_attempts a LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
+        WHERE a.class_id = ? AND a.kind = 'mock' AND a.status != 'cancelled' GROUP BY attempt_no ORDER BY attempt_no`).all(LOP) as any[]);
+      assert(JSON.stringify(ds.luot.map((l: any) => l.ma).sort()) === JSON.stringify(so.map((r) => `mt:${r.n}`).sort()), 'tập lượt');
+      for (const r of so) {
+        const l = luotCua(ds, `mt:${r.n}`);
+        assert(l.coLich === r.c && l.tuanStart === r.t && l.nhan === `MT${r.n}`, `mt:${r.n} ${JSON.stringify(l)} vs ${JSON.stringify(r)}`);
+        assert(l.duDiem <= l.coLich && l.oTrong >= 0, 'đếm âm');
+      }
+      assert(luotCua(ds, 'mt:1').lichSu === true, 'MT1 có lượt lịch sử');
+    });
+
+    check('DL-4 bangTheoLuot FT mt:2: hàng = attempt MT2; HV đang học không có MT2 vào chuaCoLich; không tạo lịch nào', () => {
+      const truoc = soAttempt();
+      const b = dl.bangTheoLuot(QL, LOP, 'mt:2', TODAY);
+      assert(b.mode === 'ielts_band' && b.luot.ma === 'mt:2', 'đầu bảng');
+      assert(b.ft.rows.every((r: any) => r.attemptNo === 2) && b.ft.rows.some((r: any) => r.attemptId === binh.aid), 'hàng MT2');
+      assert(b.chuaCoLich.some((h: any) => h.studentId === chi && h.fullName === 'DL Chi' && typeof h.studentCode === 'string'), 'Chi phải trong chuaCoLich');
+      assert(!b.chuaCoLich.some((h: any) => h.studentId === anh.sid || h.studentId === binh.sid), 'em có MT2 không ở chuaCoLich');
+      assert(soAttempt() === truoc, 'đường đọc tạo attempt');
+    });
+
+    check('DL-4 oTrong/duDiem: ô "-" hợp lệ không tính trống; đủ mọi kỹ năng bắt buộc mới là đủ điểm', () => {
+      const ds = dl.danhSachLuot(QL, LOP, TODAY);
+      const mt2 = luotCua(ds, 'mt:2');
+      /* Tính độc lập: ô nhập của kỹ năng bắt buộc chưa huỷ (Writing FT = W1 + W2) không có điểm, không có "-" đúng tuần của kỹ năng. */
+      const o = conn.prepare(`SELECT k.attempt_id, k.skill, k.planned_period_id FROM attempt_skills k JOIN assessment_attempts a ON a.id = k.attempt_id
+        WHERE a.class_id = ? AND a.kind = 'mock' AND a.attempt_no = 2 AND a.status != 'cancelled' AND k.required = 1 AND k.sit_status != 'cancelled'`).all(LOP) as any[];
+      const trong = new Map<number, number>();
+      for (const k of o) for (const nhap of k.skill === 'writing' ? ['writing1', 'writing2'] : [k.skill]) {
+        const sc = get('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?', k.attempt_id, nhap);
+        const xong = sc && (sc.band !== null || sc.raw_score !== null || (sc.no_show_period_id !== null && sc.no_show_period_id === k.planned_period_id));
+        trong.set(k.attempt_id, (trong.get(k.attempt_id) ?? 0) + (xong ? 0 : 1));
+      }
+      const tong = [...trong.values()].reduce((n, x) => n + x, 0);
+      assert(mt2.oTrong === tong, `oTrong ${mt2.oTrong} ≠ ${tong}`);
+      assert(mt2.duDiem === [...trong.values()].filter((x) => x === 0).length, `duDiem ${mt2.duDiem}`);
+      /* Ô "-" đúng tuần của kỹ năng là đã xử lý; "-" của tuần cũ (lịch đã dời) vẫn là ô trống. */
+      const tuanS = get(`SELECT planned_period_id AS p FROM attempt_skills WHERE attempt_id = ? AND skill = 'speaking'`, anh.aid).p;
+      const oTrongNay = () => luotCua(dl.danhSachLuot(QL, LOP, TODAY), 'mt:2').oTrong;
+      try {
+        conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, no_show_period_id) VALUES (?, 'speaking', ?)`).run(anh.aid, tuanS);
+        assert(oTrongNay() === mt2.oTrong - 1, '"-" đúng tuần phải bớt một ô trống');
+        conn.prepare(`UPDATE assessment_scores SET no_show_period_id = ? WHERE attempt_id = ? AND skill = 'speaking'`).run(week.ensurePeriod(t.addDays(TODAY, -70)).id, anh.aid);
+        assert(oTrongNay() === mt2.oTrong, '"-" tuần cũ vẫn là ô trống');
+      } finally { conn.prepare(`DELETE FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`).run(anh.aid); }
+    });
+
+    check('DL-4 lớp thường: lượt thuong:progress / thuong:final theo kind; bảng progress chỉ em có bài; chuaCoLich rỗng', () => {
+      const ds = dl.danhSachLuot(gvcn, lopT, TODAY);
+      assert(ds.mode === 'ratio' && JSON.stringify(ds.luot.map((l: any) => l.ma).sort()) === '["thuong:final","thuong:progress"]', JSON.stringify(ds.luot));
+      assert(luotCua(ds, 'thuong:progress').coLich === 1 && luotCua(ds, 'thuong:final').coLich === 2, 'đếm theo kind');
+      assert(luotCua(ds, 'thuong:progress').nhan === d.ATTEMPT_KIND_SHORT.progress, 'nhãn');
+      const b = dl.bangTheoLuot(gvcn, lopT, 'thuong:progress', TODAY);
+      assert(b.mode === 'ratio' && b.thuong.rows.length === 1 && b.thuong.rows[0].studentId === sidA && b.chuaCoLich.length === 0, 'bảng progress');
+    });
+
+    await t.checkAsync('DL-4 PUT một ô (đường ghi cũ) → oTrong giảm 1; sửa ô đã có điểm không lý do bị từ chối (override)', async () => {
+      const truoc = luotCua((await goi(QL.userId, `/classes/${LOP}/diem-theo-luot`)).body, 'mt:2').oTrong;
+      const w = await goi(QL.userId, `/attempts/${anh.aid}/scores/reading`, 'PUT', { rawScore: 28 });
+      assert(w.status === 200, `PUT reading: ${w.status} ${JSON.stringify(w.body)}`);
+      const sau = luotCua((await goi(QL.userId, `/classes/${LOP}/diem-theo-luot`)).body, 'mt:2').oTrong;
+      assert(sau === truoc - 1, `oTrong ${truoc} → ${sau}`);
+      const s = await goi(QL.userId, `/attempts/${anh.aid}/scores/listening`, 'PUT', { rawScore: 35 });
+      assert(s.status >= 400 && s.status < 500, `sửa không lý do phải bị từ chối: ${s.status}`);
+      assert(get(`SELECT raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, anh.aid).raw_score === 30, 'điểm cũ bị đổi');
+    });
+
+    await t.checkAsync('DL-4 /diem-theo-lop/lop: GV thấy lớp mình dạy; GVCN thấy lớp chủ nhiệm; QL thấy lớp chi nhánh; oTrong = tổng các lượt', async () => {
+      const ma = (b: any[]) => b.map((l) => l.classId).sort((x: number, y: number) => x - y);
+      const gv = await goi(P.lrTeacher.userId, '/diem-theo-lop/lop');
+      const day = (conn.prepare(`SELECT DISTINCT ta.class_id AS id FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
+        WHERE ta.user_id = ? AND ta.status = 'active' AND c.status = 'active' ORDER BY ta.class_id`).all(P.lrTeacher.userId) as any[]).map((r) => r.id);
+      assert(gv.status === 200 && JSON.stringify(ma(gv.body)) === JSON.stringify(day), `GV: ${JSON.stringify(ma(gv.body))} ≠ ${JSON.stringify(day)}`);
+      const cn = await goi(gvcn.userId, '/diem-theo-lop/lop');
+      assert(ma(cn.body).includes(lopT), 'GVCN thấy lớp chủ nhiệm');
+      const ql = await goi(QL.userId, '/diem-theo-lop/lop');
+      const mb = (conn.prepare(`SELECT c.id FROM classes c JOIN branches b ON b.id = c.branch_id WHERE b.code = 'MB' AND c.status = 'active' ORDER BY c.id`).all() as any[]).map((r) => r.id);
+      assert(JSON.stringify(ma(ql.body)) === JSON.stringify(mb), 'QL = lớp chi nhánh MB');
+      assert(!ma((await goi(gvNgoai.userId, '/diem-theo-lop/lop')).body).includes(LOP), 'GV ngoài không thấy LOP');
+      for (const id of [LOP, lopT]) {
+        const tong = dl.danhSachLuot(QL, id, TODAY).luot.reduce((n: number, l: any) => n + l.oTrong, 0);
+        const dong = ql.body.find((l: any) => l.classId === id);
+        assert(dong && dong.oTrong === tong && typeof dong.classCode === 'string' && dong.mode === (id === LOP ? 'ielts_band' : 'ratio'), `lớp ${id}: ${JSON.stringify(dong)} vs ${tong}`);
+      }
+    });
+  } finally { may.close(); }
 }

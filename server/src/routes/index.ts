@@ -88,6 +88,7 @@ import { nhacViec } from '../worklist/nhacViec.ts';
 import * as caseSvc from '../cases/cases.ts';
 import * as regularSvc from '../normal/regular.ts';
 import * as chamSvc from '../cham/canCham.ts';
+import * as diemTheoLuotSvc from '../cham/diemTheoLuot.ts';
 
 export const api = Router();
 
@@ -770,6 +771,24 @@ api.get('/classes/:classId/cham', requireAuth, wrap((req) => {
   return chamSvc.chamSheet(principalOf(req), pInt(req, 'classId'), {
     periodId: qInt(req, 'periodId') ?? null, kind: qStr(req, 'kind') ?? null,
   });
+}));
+
+/** PR-DL — Điểm theo lớp: các lượt của lớp (mã `mt:<n>` / `thuong:<kind>`) + lượt mở sẵn. Chỉ đọc. */
+api.get('/classes/:classId/diem-theo-luot', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return diemTheoLuotSvc.danhSachLuot(principalOf(req), pInt(req, 'classId'));
+}));
+
+/** PR-DL — bảng cả lớp của một lượt. Mã sai dạng/sai loại lớp → 400; lớp chưa có lượt đó → 404. Ghi điểm vẫn qua PUT /attempts/:id/scores/:skill. */
+api.get('/classes/:classId/diem-theo-luot/:luot', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return diemTheoLuotSvc.bangTheoLuot(principalOf(req), pInt(req, 'classId'), String(req.params.luot));
+}));
+
+/** PR-DL — trang Test › Điểm theo lớp: lớp người xem được xem, kèm số ô trống. */
+api.get('/diem-theo-lop/lop', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return diemTheoLuotSvc.lopCuaToi(principalOf(req));
 }));
 
 /**

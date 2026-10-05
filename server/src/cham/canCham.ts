@@ -27,7 +27,9 @@ import { allProgrammes, isRatioClass, programmeOfClass, regularSheet } from '../
 import { quaHanNhapDiem, skillScoreDeadline, weekInfo } from '../platform/week.ts';
 
 export function chamSheet(
-  p: Principal, classId: number, opts: { periodId?: number | null; kind?: string | null } = {},
+  p: Principal, classId: number,
+  /** `attemptNo` (PR-DL): bảng FT theo một số lượt MT, không lọc tuần — thắng `periodId`. */
+  opts: { periodId?: number | null; kind?: string | null; attemptNo?: number } = {},
   today: string = demoToday(),
 ) {
   const cls = db()
@@ -40,9 +42,9 @@ export function chamSheet(
     today,
   };
   if (isRatioClass(classId)) {
-    return { ...chung, mode: 'ratio' as const, thuong: regularSheet(p, classId, opts.kind ?? undefined), ft: null };
+    return { ...chung, mode: 'ratio' as const, thuong: regularSheet(p, classId, opts.kind ?? undefined, today), ft: null };
   }
-  return { ...chung, mode: 'ielts_band' as const, ft: classScoreSheet(p, classId, opts.periodId ?? null, today), thuong: null };
+  return { ...chung, mode: 'ielts_band' as const, ft: classScoreSheet(p, classId, opts.attemptNo ? { theo: 'luot', attemptNo: opts.attemptNo } : opts.periodId ?? null, today), thuong: null };
 }
 
 // ---------------------------------------------------------------- Nợ tuần trước
