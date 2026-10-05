@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="vi">
+<html lang="vi" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -113,6 +113,19 @@ textarea{width:100%;font:inherit;border:1px solid var(--line);border-radius:8px;
 .tl .card{padding:12px;display:flex;flex-direction:column;gap:8px}
 .tl .when{font:700 12px var(--num);color:var(--accent)}
 .diff{font-size:12.5px}
+.mt.pick{background:var(--accent);border-color:var(--accent);color:var(--surface);box-shadow:0 0 0 3px var(--accent-soft)}
+.mt.pick::before{content:"\25B8";font-size:10px}
+.sticky{position:sticky;left:0;background:var(--surface);z-index:1}
+th.sticky{background:var(--surface-2)}
+.scrollhint{font-size:12px;color:var(--muted)}
+.seg button.compact{padding:5px 10px}
+.mini{padding:12px;display:flex;flex-direction:column;gap:8px}
+.mini .bar{font-size:12px;color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:6px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:900px){.grid3{grid-template-columns:1fr}}
+.opt{display:flex;gap:8px;align-items:flex-start;border:1px solid var(--line);border-radius:8px;padding:8px}
+.opt.on{border-color:var(--accent);background:var(--accent-soft)}
+.opt small{display:block;color:var(--muted);font-size:12px}
 .diff s{color:var(--muted)}
 </style>
 </head>
@@ -121,8 +134,28 @@ textarea{width:100%;font:inherit;border:1px solid var(--line);border-radius:8px;
 
 <header class="sec">
   <h1>Test / Mock Test — mockup để duyệt (05/10)</h1>
-  <p class="note">5 phần. Mỗi phần ghi: nằm ở đâu, thao tác, trạng thái, vì sao tốt hơn hiện tại. Dữ liệu là ví dụ. Theo quyết định T1–T13 trong <code>plan.md</code> mục 2c. Chưa code gì.</p>
+  <p class="note">Bản 2 (sửa theo 7 ý 05/10, chế độ tối). Phần 0 liệt kê mọi cổng sửa lịch; phần 1–5 là màn hình. Dữ liệu là ví dụ. Theo quyết định T1–T13 trong <code>plan.md</code> mục 2c. Chưa code gì.</p>
 </header>
+
+<section class="sec">
+  <h2>0 · Mọi cổng sửa lịch Mock Test / Test — cùng một bộ luật máy chủ</h2>
+  <p class="note">Luật mới (MT cũ theo tuần, dời về quá khứ cho Quản lý, dời vượt huỷ kết quả MT sau, “-” lần 2, lý do tuỳ chọn) nằm ở <b>máy chủ</b>, nên mọi cổng dưới đây cùng đổi theo. Cổng nào đang dùng chung hộp kỹ năng thì tự có giao diện mới (phần 2).</p>
+  <div class="tbl"><table>
+    <thead><tr><th>#</th><th>Cổng (ai thấy)</th><th>Sửa gì</th><th>Đổi theo mockup</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Test › Kế hoạch Test › lưới FT, bấm ô MT (QL)</td><td>Xếp / dời từng kỹ năng, bỏ kỹ năng, huỷ điểm</td><td>Phần 2 (hộp kỹ năng)</td></tr>
+      <tr><td>2</td><td>Kế hoạch Test › “Xếp lịch MT…”, Xếp hàng loạt, Thi lại (QL)</td><td>Xếp nhiều em một lần</td><td>Phần 1</td></tr>
+      <tr><td>3</td><td>Kế hoạch Test › Lớp thường (QL, GVCN, GVBM đúng môn)</td><td>Lịch Giữa / Cuối khoá theo lớp</td><td>Chuông báo GVCN (T11)</td></tr>
+      <tr><td>4</td><td><b>Hồ sơ HV › Lộ trình</b> (bảng MT, Áp lịch gợi ý, Huỷ lịch, nhập điểm tại chỗ)</td><td>Dùng <b>chung</b> hộp kỹ năng với cổng 1</td><td>Phần 2 + ô MT phần 3</td></tr>
+      <tr><td>5</td><td>Hồ sơ Mock Test (một đợt): Dời cả đợt, dời hạn, huỷ / mở lại lượt, xếp lại bài vắng, thao tác từng kỹ năng</td><td>Mọi thao tác một đợt</td><td>Popup phần 4 khi dời vượt; ⋯ luôn hiện</td></tr>
+      <tr><td>6</td><td>Lịch Test, Nhập điểm, bảng điểm lớp thường: gõ “-”</td><td>Báo vắng → tự dời (lần 1) / huỷ kỹ năng (lần 2)</td><td>T3: lần 2 huỷ kỹ năng, báo GVCN</td></tr>
+      <tr><td>7</td><td>Công việc › Chờ duyệt (QL)</td><td>Trả lời đề nghị dời</td><td>Chỉ còn thẻ khi GVCN bấm “Xin dời”</td></tr>
+      <tr><td>8</td><td>Tự động: Thêm HV, tạo lớp, lên lớp, lộ trình mới, cron chốt vắng thứ Hai</td><td>Tự tạo lịch MT mặc định</td><td>Luật MT cũ theo tuần; MT0 (phần 5)</td></tr>
+      <tr><td>9</td><td>Điểm theo lớp (PR-DL, đang làm)</td><td>Chỉ điểm, không sửa lịch</td><td>Chữ “MT cũ” thay “MT lịch sử”</td></tr>
+      <tr><td>10</td><td>Chỉ hiển thị: Học viên & Lớp (Sắp tới), Hành trình, Tổng quan, Công việc (chờ chấm, quá hạn), Phân tích, Xuất Excel MT</td><td>Không sửa</td><td>Cùng ô trạng thái phần 3; đếm theo luật mới</td></tr>
+    </tbody>
+  </table></div>
+</section>
 
 <!-- ============================================================ 1 -->
 <section class="sec">
@@ -134,50 +167,55 @@ textarea{width:100%;font:inherit;border:1px solid var(--line);border-radius:8px;
     <div class="pb">
       <div class="step"><div class="tag"><span class="num">1</span>Đợt</div>
         <div class="seg">
-          <button aria-pressed="true">MT mới <small>đợt kế tiếp của từng em</small></button>
-          <button>MT0</button><button>MT1</button><button>MT2</button><button>MT3</button><button>MT4</button>
+          <button aria-pressed="true">Đợt kế tiếp <small>· mỗi em sang đợt chưa có lịch nhỏ nhất của mình</small></button>
+          <button class="compact">MT0</button><button class="compact">MT1</button><button class="compact">MT2</button><button class="compact">MT3</button><button class="compact">MT4</button>
         </div>
-        <p class="note">“MT mới” = mỗi em sang đúng đợt kế tiếp của mình. Chọn số cụ thể (MT2) = chỉ xếp / dời đúng MT2, không tự sang đợt khác.</p>
+        <p class="note">Chỉ nút đang chọn hiện chữ giải thích; nút khác chỉ ghi số. “Đợt kế tiếp” = đợt nhỏ nhất của em chưa có lịch (chưa có thì tạo đợt mới). Chọn số cụ thể (MT2) = chỉ xếp / dời đúng MT2.</p>
       </div>
       <div class="step"><div class="tag"><span class="num">2</span>Tuần và kỹ năng</div>
         <div class="row">
           <div class="week"><button class="btn">‹</button><div class="box"><b>W1 OCT</b><span>28/09 – 04/10</span></div><button class="btn">›</button></div>
-          <div class="ticks"><span class="tick on">✓ L</span><span class="tick on">✓ R</span><span class="tick on">✓ W</span><span class="tick off">S</span></div>
+          <div class="ticks"><span class="tick on">✓ L</span><span class="tick on">✓ R</span><span class="tick on">✓ W</span><span class="tick on">✓ S</span></div>
           <button class="btn btn-ghost">Lịch riêng từng kỹ năng ▸</button>
         </div>
-        <p class="note">Bỏ tick = <b>không mock kỹ năng đó</b> ở đợt này (đợt vẫn hoàn thành được). Một tuần chung cho mọi kỹ năng đã tick; mở “Lịch riêng” để chỉnh từng kỹ năng.</p>
+        <p class="note">Mặc định <b>tick đủ 4</b>. Bỏ tick = <b>không mock kỹ năng đó</b> ở đợt này (đợt vẫn hoàn thành được). Một tuần chung cho mọi kỹ năng đã tick; mở “Lịch riêng” để chỉnh từng kỹ năng.</p>
       </div>
       <div class="step"><div class="tag"><span class="num">3</span>Học viên</div>
         <div class="row">
-          <div class="sum"><span class="chip c-ok">✓ Sẽ xếp 5</span><span class="chip c-soon">! Cần xem 2</span><span class="chip c-bad">✕ Không xếp được 1</span></div>
+          <div class="sum"><span class="chip c-ok">✓ Sẽ xếp 3</span><span class="chip c-soon">! Cần xem 3</span><span class="chip c-muted">✕ Không xếp được 0</span></div>
           <div class="sp"></div><span class="note">Bấm một chip để chỉ hiện nhóm đó</span>
         </div>
-        <div class="tbl"><table>
-          <thead><tr><th><input type="checkbox" class="cb" checked aria-label="Chọn tất cả"> Tất cả</th><th>Học viên</th><th>Lớp</th><th>Mock Test</th><th>Sẽ xếp</th></tr></thead>
+        <div class="tbl"><table style="min-width:960px">
+          <thead><tr><th class="sticky" style="width:70px"><input type="checkbox" class="cb" checked aria-label="Chọn tất cả"> Tất cả</th><th class="sticky" style="left:70px">Học viên</th><th>Lớp</th><th>Mock Test</th><th>Sẽ xếp</th></tr></thead>
           <tbody>
-            <tr><td><input type="checkbox" class="cb" checked></td><td>Chu Minh Hiếu<small>PISA-000006</small></td><td>MB FT 102</td>
-              <td><div class="mts"><span class="mt done"><span class="n">1</span>✓</span><span class="mt done"><span class="n">2</span>✓</span><span class="mt none sel">3</span></div></td>
+            <tr><td class="sticky"><input type="checkbox" class="cb" checked></td><td class="sticky" style="left:70px">Chu Minh Hiếu<small>PISA-000006</small></td><td>MB FT 102</td>
+              <td><div class="mts"><span class="mt done"><span class="n">1</span>✓ <span class="old">cũ</span></span><span class="mt done"><span class="n">2</span>✓</span><span class="mt pick"><span class="n">3</span>W1 OCT</span></div></td>
               <td class="will ok"><span class="i">✓</span>MT3 · W1 OCT</td></tr>
-            <tr><td><input type="checkbox" class="cb" checked></td><td>Cao Hải Sơn<small>PISA-000016</small></td><td>BC FT 205</td>
-              <td><div class="mts"><span class="mt done"><span class="n">1</span>✓</span><span class="mt done"><span class="n">2</span>✓</span><span class="mt none sel">3</span></div></td>
-              <td class="will ok"><span class="i">✓</span>MT3 · W1 OCT</td></tr>
-            <tr><td><input type="checkbox" class="cb" checked></td><td>Tạ Thu Quỳnh<small>PISA-000007</small></td><td>MB FT 102</td>
-              <td><div class="mts"><span class="mt done"><span class="n">1</span>✓</span><span class="mt todo sel"><span class="n">2</span>vắng S</span><span class="mt none">3</span></div></td>
-              <td class="will soon" title="MT2 còn kỹ năng S vắng — xếp S vào W1 OCT, L R W giữ điểm"><span class="i">!</span>Xếp nốt S của MT2 · W1 OCT <small>(L R W đã có điểm)</small></td></tr>
-            <tr><td><input type="checkbox" class="cb" checked></td><td>Mai Ngọc Diệp<small>PISA-000015</small></td><td>BC FT 205</td>
-              <td><div class="mts"><span class="mt done"><span class="n">1</span>✓</span><span class="mt sched"><span class="n">2</span>W1 OCT</span><span class="mt none sel">3</span></div></td>
-              <td class="will soon" title="MT2 và MT3 cùng tuần W1 OCT. Lưu vẫn được (chỉ Quản lý)."><span class="i">!</span>MT3 · W1 OCT <small>· trùng tuần MT2</small></td></tr>
-            <tr><td><input type="checkbox" class="cb"></td><td>Phan Minh Tú<small>PISA-000012</small></td><td>BC FT 205</td>
-              <td><div class="mts"><span class="mt done"><span class="n">1</span>✓</span><span class="mt unsched"><span class="n">2</span>chưa xếp</span><span class="mt none">3</span></div></td>
-              <td class="will bad" title="MT2 chưa có lịch nên chưa tạo MT3 được (T12). Chọn đợt MT2 để xếp."><span class="i">✕</span>Xếp MT2 trước</td></tr>
+            <tr><td class="sticky"><input type="checkbox" class="cb" checked></td><td class="sticky" style="left:70px">Phan Minh Tú<small>PISA-000012</small></td><td>BC FT 205</td>
+              <td><div class="mts"><span class="mt done"><span class="n">1</span>✓</span><span class="mt pick"><span class="n">2</span>W1 OCT</span><span class="mt none">3</span></div></td>
+              <td class="will ok"><span class="i">✓</span>MT2 · W1 OCT <small>(MT2 chưa có lịch nên “đợt kế tiếp” là MT2)</small></td></tr>
+            <tr><td class="sticky"><input type="checkbox" class="cb" checked></td><td class="sticky" style="left:70px">Tạ Thu Quỳnh<small>PISA-000007</small></td><td>MB FT 102</td>
+              <td><div class="mts"><span class="mt done"><span class="n">1</span>✓</span><span class="mt pick"><span class="n">2</span>vắng S</span><span class="mt none">3</span></div></td>
+              <td class="will soon" title="MT2 còn S vắng — xếp S vào W1 OCT, L R W giữ điểm"><span class="i">!</span>Xếp nốt S của MT2 · W1 OCT <small>(L R W đã có điểm)</small></td></tr>
+            <tr><td class="sticky"><input type="checkbox" class="cb" checked></td><td class="sticky" style="left:70px">Hoàng Bảo Ngọc<small>PISA-000051</small></td><td>MB FT 101</td>
+              <td><div class="mts" style="flex-wrap:nowrap"><span class="mt done"><span class="n">0</span>✓</span><span class="mt done"><span class="n">1</span>✓ <span class="old">cũ</span></span><span class="mt done"><span class="n">2</span>✓ <span class="old">cũ</span></span><span class="mt done"><span class="n">3</span>✓ 3/4</span><span class="mt done"><span class="n">4</span>✓</span><span class="mt done"><span class="n">5</span>✓</span><span class="mt pick"><span class="n">6</span>W1 OCT</span></div></td>
+              <td class="will ok"><span class="i">✓</span>MT6 · W1 OCT</td></tr>
+            <tr><td class="sticky"><input type="checkbox" class="cb" checked></td><td class="sticky" style="left:70px">Đặng Thu Vân<small>PISA-000013</small></td><td>BC FT 205</td>
+              <td><div class="mts"><span class="mt done"><span class="n">1</span>✓</span><span class="mt wait"><span class="n">2</span>chờ chấm 1</span><span class="mt pick"><span class="n">3</span>W1 OCT</span></div></td>
+              <td class="will soon"><span class="i">!</span>MT3 · W1 OCT <small>· MT2 còn 1 bài chờ chấm</small></td></tr>
+            <tr><td class="sticky"><input type="checkbox" class="cb"></td><td class="sticky" style="left:70px">Mai Ngọc Diệp<small>PISA-000015</small></td><td>BC FT 205</td>
+              <td><div class="mts"><span class="mt done"><span class="n">1</span>✓</span><span class="mt sched"><span class="n">2</span>W1 OCT</span><span class="mt pick"><span class="n">3</span>W1 OCT</span></div></td>
+              <td class="will soon" title="MT2 và MT3 cùng tuần W1 OCT. Lưu được (Quản lý)."><span class="i">!</span>MT3 · W1 OCT <small>· trùng tuần MT2</small></td></tr>
           </tbody>
         </table></div>
-        <p class="note">Mỗi dòng <b>một nhãn ngắn</b>; câu giải thích đầy đủ nằm trong tooltip / bấm vào nhãn. Màu chỉ 3 mức: xanh = xếp được · vàng = xếp được nhưng nên xem · đỏ = không xếp được.</p>
+        <p class="scrollhint">⇆ Bảng cuộn ngang khi em có nhiều đợt; cột chọn và tên học viên đứng yên. Ô nền đặc có ▸ = đợt sẽ xếp lần này.</p>
+        <p class="note">Mỗi dòng <b>một nhãn ngắn</b>; câu đầy đủ ở tooltip / bấm vào nhãn. Màu chỉ 3 mức: xanh = xếp được · vàng = xếp được nhưng nên xem · đỏ = không xếp được — ví dụ chọn đúng <b>MT3</b> cho em còn MT2 chưa có lịch → “Xếp MT2 trước”. Với “Đợt kế tiếp” trường hợp đó không xảy ra.</p>
       </div>
     </div>
-    <div class="pf"><button class="btn">Đóng</button><div class="sp"></div><span class="note">5 em đã chọn · 1 em không xếp được sẽ được bỏ qua</span><button class="btn btn-primary">Xếp lịch 5 em · 18 bài</button></div>
+    <div class="pf"><button class="btn">Đóng</button><div class="sp"></div><span class="note">5 em đã chọn</span><button class="btn btn-primary">Xếp lịch 5 em · 19 bài</button></div>
   </div>
   <div class="cols">
+    <div class="rule"><b>MT0 ở panel này:</b> MT0 chỉ ở <b>tuần Final Test của lớp cũ</b> và luôn trước MT1. Xếp từ đây (em đã sang FT) thì tuần đó đã qua — thường là <b>MT cũ</b>; nếu Final là tuần trước thì vẫn là MT thường để chấm (hạn hết Chủ nhật tuần sau). Không cho xếp MT0 vào tuần từ khi em bắt đầu lộ trình FT trở đi.</div>
     <div class="rule"><b>Tuần đã qua (T4):</b> Quản lý chọn được tuần đã qua. Panel chỉ hiện một dòng vàng trên bảng: “W3 SEP đã qua — bài xếp vào tuần này là <b>MT cũ</b> (không tính hạn chấm)”. Không còn chữ đỏ “Không dời vào tuần đã qua” ở từng dòng. GVCN / GV không thấy tuần đã qua.</div>
     <div class="why"><b>Vì sao tốt hơn:</b> Ảnh 1 có 7 dòng thì 5 dòng có câu đỏ dài 2 dòng. Ở đây chỉ còn 3 mức màu, gom thành 3 chip đếm ở trên; dòng không xếp được thì tự bỏ qua, không chặn cả lần xếp. Có “Chọn tất cả” và “MT mới”.</div>
   </div>
@@ -229,7 +267,8 @@ textarea{width:100%;font:inherit;border:1px solid var(--line);border-radius:8px;
     <div class="lg">
       <span class="mt none">3</span><span><b>Chưa có đợt</b> — chưa tạo MT3. Bấm để xếp.</span>
       <span class="mt unsched"><span class="n">2</span>chưa xếp</span><span><b>Có đợt, chưa có lịch</b> (ví dụ sau khi bị dời vượt hoặc huỷ lịch).</span>
-      <span class="mt sched"><span class="n">2</span>W2 OCT</span><span><b>Đã có lịch</b>, chưa tới tuần thi.</span>
+      <span class="mt sched"><span class="n">2</span>W2 OCT</span><span><b>Đã có lịch</b>, chưa tới tuần thi (chỉ viền, nền trống).</span>
+      <span class="mt pick"><span class="n">2</span>W2 OCT</span><span><b>Đợt đang chọn</b> để xếp / dời lần này — nền đặc, mũi tên ▸, quầng sáng. Chỉ có trong panel xếp lịch và hộp kỹ năng.</span>
       <span class="mt now"><span class="n">2</span>tuần này</span><span><b>Đang thi</b> (tuần thi là tuần hiện tại).</span>
       <span class="mt wait"><span class="n">2</span>chờ chấm 2</span><span><b>Đã thi, còn kỹ năng chưa chấm</b> — trong hạn (hết thứ Tư tuần sau).</span>
       <span class="mt late"><span class="n">2</span>trễ chấm W</span><span><b>Quá hạn chấm.</b></span>
@@ -271,41 +310,43 @@ textarea{width:100%;font:inherit;border:1px solid var(--line);border-radius:8px;
 
 <!-- ============================================================ 5 -->
 <section class="sec">
-  <h2>5 · MT0 — em lớp thường lên thẳng FT (T5, đề xuất đã duyệt)</h2>
-  <span class="where">Lộ trình tiếp theo (một em / cả lớp) · Kế hoạch Test · Chuyển tiếp lớp · Hành trình</span>
-  <div class="tl">
-    <div class="card"><span class="when">Trước khi hết tuần 7 (FOU) / tuần 9 (BE, ELE)</span>
-      <b>Quản lý ghi “Dự kiến lên FT”</b>
-      <p class="note">Ở Lộ trình tiếp theo (một em) hoặc bảng ghi cả lớp. Có việc ở Công việc của Quản lý, hạn hết tuần 7 / 9, quá hạn thì đỏ, không chặn.</p>
-      <span class="chip c-acc">Lên FT · dự kiến</span></div>
-    <div class="card"><span class="when">Tuần Final Test</span>
-      <b>Web tự xếp MT0 cùng tuần Final</b>
-      <p class="note">MT0 hiện ở Kế hoạch Test như một ô MT. Mock được 1–4 kỹ năng.</p>
-      <div class="mts"><span class="mt now"><span class="n">0</span>tuần này</span></div></div>
-    <div class="card"><span class="when">Tuần sau Final</span>
-      <b>Chấm MT0 — hạn hết Chủ nhật tuần sau</b>
-      <p class="note">Kỹ năng thấp hơn Target ≥ 2.0 hiện chữ SOS <b>chỉ để nhìn</b> — không Case, không PA.</p>
-      <div class="row"><span class="chip c-muted">L 5.0</span><span class="chip c-bad">W 4.0 · SOS</span><span class="note">Target 6.0</span></div></div>
-    <div class="card"><span class="when">Chuyển tiếp lớp (Quản lý)</span>
-      <b>Chốt thật một lần</b>
-      <p class="note">Mỗi em hiện cạnh nhau: % Cuối khoá · điểm MT0 · gợi ý.</p>
-      <div class="diff">✓ Giữ <b>Lên FT</b> → MT0 thành mốc đầu vào của lộ trình FT mới<br>↺ Đổi <b>Học lại / Lên BE</b> → MT0 vẫn lưu ở Hành trình (“MT0 · không dùng”), không tạo lộ trình FT</div></div>
+  <h2>5 · MT0 — em lớp thường lên thẳng FT: hiện ở những trang nào</h2>
+  <p class="note">Không có màn mới. “Dự kiến lên FT” <b>chính là</b> hướng “Lên FT” ở Lộ trình tiếp theo (PR-K26) — vốn đã là dự định, chưa đổi lớp. Ghi hướng này trước khi hết tuần 7 (FOU) / tuần 9 (BE, ELE) thì web xếp MT0 cùng tuần Final. Chốt thật vẫn ở Chuyển tiếp lớp.</p>
+  <div class="grid3">
+    <div class="card mini"><span class="where">① Hồ sơ HV lớp thường › ⋯ › Lộ trình tiếp theo · GVCN, QL</span>
+      <div class="bar">Lộ trình tiếp theo · Lê Hà Vy · BE 04 · tuần 8/10</div>
+      <div class="opt on"><input type="radio" checked><div><b>Lên FT</b><small>MT0 sẽ xếp cùng tuần Final (W4 OCT) để lấy điểm đầu vào</small></div></div>
+      <div class="opt"><input type="radio"><div><b>Lên ELE</b><small>Học tiếp chương trình kế</small></div></div>
+      <p class="note">Chưa có % Cuối khoá (Final chưa thi) → chưa có gợi ý theo dải. Hạn ghi “Lên FT”: hết tuần 9.</p></div>
+    <div class="card mini"><span class="where">② Hồ sơ lớp › ⋮ › Ghi lộ trình tiếp theo cả lớp (PR-K26)</span>
+      <div class="bar">BE 04 · 12 em · Final W4 OCT</div>
+      <div class="tbl"><table style="min-width:0"><tbody>
+        <tr><td>Lê Hà Vy</td><td><span class="chip c-acc">Lên FT ▾</span></td><td><small>MT0 · W4 OCT</small></td></tr>
+        <tr><td>Trần Minh An</td><td><span class="chip c-muted">Lên ELE ▾</span></td><td></td></tr>
+      </tbody></table></div>
+      <p class="note">Một cột “MT0” chỉ hiện ở em chọn Lên FT.</p></div>
+    <div class="card mini"><span class="where">③ Tổng quan / Công việc của QL</span>
+      <div class="bar">Cần xử lý</div>
+      <p><span class="chip c-soon">hạn hết CN 04/10</span> Chốt em lên FT · <b>BE 04</b> (tuần 9/10)</p>
+      <p class="note">Một việc mỗi lớp FOU (tuần 7) / BE, ELE (tuần 9) chưa ghi xong Lộ trình tiếp theo cho em định lên FT. Quá hạn thì đỏ, không chặn.</p></div>
+    <div class="card mini"><span class="where">④ Test › Kế hoạch Test › Lớp thường › BE 04</span>
+      <div class="bar">Final · W4 OCT</div>
+      <p>Lê Hà Vy: <span class="chip c-muted">Final W4 OCT</span> <span class="mt sched"><span class="n">0</span>W4 OCT</span></p>
+      <p class="note">MT0 nằm cạnh Final của em đó, dời được như một đợt Mock (cùng hộp kỹ năng phần 2).</p></div>
+    <div class="card mini"><span class="where">⑤ Test › Lịch Test / Nhập điểm tuần Final</span>
+      <div class="bar">W4 OCT · BE 04</div>
+      <p>Final (L R G+V W) · <b>MT0 L R W S</b> <span class="chip c-wait">hạn CN tuần sau</span></p>
+      <p class="note">GV chấm MT0 như MT thường; SOS ở MT0 chỉ để nhìn.</p></div>
+    <div class="card mini"><span class="where">⑥ Hồ sơ lớp › Chuyển tiếp lớp · QL</span>
+      <div class="bar">BE 04 → lớp kế</div>
+      <p>Lê Hà Vy · 64% · MT0 <span class="chip c-bad">W 4.0 SOS</span> → <span class="chip c-acc">Lên FT ✓</span></p>
+      <p>Phạm Thu Trang · 45% · MT0 <span class="chip c-bad">L 3.5 SOS</span> → <span class="chip c-soon">Học lại BE</span> <small>(đổi từ Lên FT)</small></p>
+      <p class="note">Đổi ý ở đây là bình thường: MT0 vẫn lưu, ghi “MT0 · không dùng”.</p></div>
   </div>
-  <div class="card" style="padding:12px 16px">
-    <span class="tag">Chuyển tiếp lớp — một dòng em dự kiến lên FT</span>
-    <div class="tbl" style="margin-top:8px"><table>
-      <thead><tr><th>Học viên</th><th>Cuối khoá</th><th>MT0</th><th>Gợi ý</th><th>Hướng (Quản lý chốt)</th></tr></thead>
-      <tbody>
-        <tr><td>Lê Hà Vy<small>BE 04 · Target 6.0</small></td><td><b>64%</b><small>không đạt L</small></td>
-          <td><div class="mts"><span class="chip c-muted">L 5.0</span><span class="chip c-muted">R 5.5</span><span class="chip c-bad">W 4.0 SOS</span><span class="chip c-muted">S 5.0</span></div></td>
-          <td>Lên FT · đã dự kiến</td><td><span class="chip c-acc">Lên FT ▾</span></td></tr>
-        <tr><td>Phạm Thu Trang<small>BE 04 · Target 6.0</small></td><td><b>45%</b><small>không đạt L R W</small></td>
-          <td><div class="mts"><span class="chip c-bad">L 3.5 SOS</span><span class="chip c-bad">R 4.0 SOS</span><span class="chip c-muted">—</span><span class="chip c-muted">—</span></div></td>
-          <td>Học lại BE (dưới 50%)</td><td><span class="chip c-soon">Học lại BE ▾</span> <small>đổi từ “Lên FT · dự kiến”</small></td></tr>
-      </tbody>
-    </table></div>
+  <div class="card mini"><span class="where">⑦ Sau khi lên FT: Hồ sơ HV › bảng Mock Test và Hành trình</span>
+    <div class="row"><div class="mts"><span class="mt done"><span class="n">0</span>✓ <span class="old">cũ</span></span><span class="mt sched"><span class="n">1</span>W3 NOV</span></div><span class="note">MT0 là dòng đầu bảng Mock Test; Hành trình ghi “Điểm đầu vào (MT0): L 5.0 R 5.5 W 4.0 S 5.0” — mốc so tiến bộ.</span></div>
   </div>
-  <div class="why"><b>Vì sao tốt hơn:</b> chỉ hai lần chạm, cả hai là việc Quản lý vốn làm. “Dự kiến” chỉ để kịp xếp MT0; đổi ý ở bước chuyển lớp là bình thường, không phải sửa hay xoá gì.</div>
+  <div class="why"><b>Vì sao tốt hơn:</b> không thêm màn, không thêm bước. Quản lý đã ghi Lộ trình tiếp theo và đã làm Chuyển tiếp lớp — MT0 chỉ “đi theo” hai việc đó.</div>
 </section>
 
 </div>
