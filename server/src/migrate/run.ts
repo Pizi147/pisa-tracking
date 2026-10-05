@@ -32,7 +32,24 @@ if (fs.existsSync(DB_PATH) && hasLegacyDisciplineModel(db())) {
   }
 }
 
-const { applied, skipped } = migrate();
+/* Turso qua mạng có lúc đóng kết nối giữa chừng (`Hrana(Http("connection closed…"))`). migrate() chạy lặp được (lần hai là no-op;
+ * phần đang dở nằm trong giao dịch nên bị cuộn lại) → mở kết nối mới và chạy lại, tối đa LAN_THU lần. Lỗi khác ném ngay. */
+const LAN_THU = 6;
+function migrateCoThuLai(): ReturnType<typeof migrate> {
+  for (let lan = 1; ; lan++) {
+    try {
+      return migrate();
+    } catch (e) {
+      const loiMang = laDbTuXa() && /connection closed|Hrana\(Http|stream not found|fetch failed/i.test(String((e as Error)?.message));
+      if (!loiMang || lan >= LAN_THU) throw e;
+      console.warn(`[migrate] Mất kết nối Turso (lần ${lan}/${LAN_THU}) — thử lại với kết nối mới…`);
+      closeDb();
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1000 * lan);
+    }
+  }
+}
+
+const { applied, skipped } = migrateCoThuLai();
 for (const a of applied) console.log(`  ✓ ${a}`);
 for (const s of skipped) console.log(`  · ${s}`);
 console.log(applied.length
