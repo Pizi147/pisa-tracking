@@ -125,6 +125,8 @@ export const DUONG_DO: MucDo[] = [
     maChuDich: { QL: 403, GVCN: 403, GVBM: 403, GVCN_THUONG: 403 },
   },
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/cases?classId={lopFT}' },
+  /* PR-SL: ⋮ Sửa thông tin học viên — giá trị hiện tại cả lớp; người không có student.edit của lớp nhận 403. */
+  { trang: 'Hồ sơ lớp FT', vai: ['QL', 'GVCN'], url: '/classes/{lopFT}/sua-ca-lop' },
 
   // ---------------------------------------------------------------- Hồ sơ lớp (thường)
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/overview' },
@@ -376,6 +378,9 @@ export const TRAN: Record<string, number> = {
   'GVBM /classes/3/progress': 20,
   'GVCN_THUONG /classes/3/progress': 20,
   'QT /classes/3/progress': 19,
+  /* PR-SL: ⋮ Sửa thông tin học viên đo 16 (GVCN 17), đọc theo lô — trần = đo + 3. */
+  'QL /classes/3/sua-ca-lop': 19,
+  'GVCN /classes/3/sua-ca-lop': 20,
   'QL /classes/3/can-ho-tro': 25,
   'GVCN /classes/3/can-ho-tro': 25,
   'GVBM /classes/3/can-ho-tro': 25,

@@ -24,6 +24,13 @@ export async function runPrSlTests(t: YThucTestKit) {
       assert(!doc(f).includes("? 'Huỷ thay đổi' : 'Đóng', onClick"), `${f}: còn tự viết nhãn, dùng chan.daSua`);
     }
   });
+  check('SL-2 · panel Sửa thông tin học viên: không dán Excel; vào từ ⋮ và nút ở tab Học viên; đóng khi đang sửa thì hỏi', () => {
+    const pn = doc('web/src/modules/students/SuaCaLopPanel.tsx');
+    assert(!/<textarea/.test(pn) && !pn.includes('/intake/parse'), 'không được có ô dán Excel');
+    assert(pn.includes('/sua-ca-lop/xem-truoc') && pn.includes('daSua: soEm > 0') && pn.includes('Bỏ những gì vừa sửa?'), 'xem trước + luật S3 + hỏi khi đóng');
+    assert(doc('web/src/modules/classes/DauTrangLop.tsx').includes("nhan: 'Sửa thông tin học viên'"), 'mục ⋮');
+    assert(doc('web/src/modules/classes/TabHocVienLop.tsx').includes('>Sửa thông tin</button>'), 'nút ở tab Học viên');
+  });
   check('SL-4 · D11: Truong và Field nối dòng lỗi vào ô bằng aria-describedby (một hook useNoiLoi)', () => {
     assert(/aria-describedby/.test(doc('web/src/ui/loiForm.tsx')), 'useNoiLoi');
     for (const f of ['web/src/ui/KhungPanel.tsx', 'web/src/ui/ui.tsx']) {
@@ -176,6 +183,30 @@ export async function runPrSlTests(t: YThucTestKit) {
       const r = await luu(QL, thuong, { idempotencyKey: khoa(), lyDoTarget: 'Phụ huynh đặt mục tiêu', rows });
       const cy = get('SELECT target_score, exam_month, rp.week_start AS tuan FROM learning_cycles cy LEFT JOIN report_periods rp ON rp.id = cy.start_period_id WHERE cy.id = ?', a.cid);
       assert(r.status === 200 && cy.target_score === 6.5 && cy.exam_month === '2027-05' && cy.tuan === tuan, `${r.status} ${JSON.stringify(r.json)} ${JSON.stringify(cy)}`);
+    });
+
+    await checkAsync('SL-2 · GET /classes/:id/sua-ca-lop: mọi em đang học A→Z, giá trị hiện tại; Target khoá với GVCN; GVBM → 403', async () => {
+      const doc2 = async (userId: number) => {
+        await goi(userId, '/classes/0/sua-ca-lop/xem-truoc', { rows: [] }).catch(() => null);   // tạo phiên
+        const r = await fetch(`http://127.0.0.1:${cong}/api/classes/${ft}/sua-ca-lop`, { headers: { cookie: phien.get(userId)! } });
+        return { status: r.status, json: await r.json().catch(() => null) as any };
+      };
+      const ql = await doc2(QL);
+      assert(ql.status === 200 && ql.json.coTheSuaTarget === true && ql.json.lopThuong === false, `${ql.status} ${JSON.stringify(ql.json)?.slice(0, 200)}`);
+      /* Mọi em ĐANG HỌC, kể cả em chưa có lộ trình (ô lộ trình khoá, `coLoTrinh: false`). */
+      const dangHoc = get(`SELECT COUNT(*) n FROM enrollments WHERE class_id = ? AND status = 'active'`, ft).n as number;
+      assert(ql.json.rows.length === dangHoc, `số em ${ql.json.rows.length} ≠ ${dangHoc}`);
+      assert(ql.json.rows.filter((r: any) => !r.coLoTrinh).length === dangHoc - em.length, 'em chưa có lộ trình phải có coLoTrinh false');
+      const ten2 = ql.json.rows.map((r: any) => r.fullName);
+      assert(ten2.join('|') === [...ten2].sort((a: string, b: string) => a.localeCompare(b, 'vi')).join('|'), 'A→Z');
+      const a = em[4];
+      const dong = ql.json.rows.find((r: any) => r.studentId === a.sid);
+      const cy = get('SELECT target_score, khong_cam_ket FROM learning_cycles WHERE id = ?', a.cid);
+      assert(dong && dong.target === (cy.khong_cam_ket ? 'KCK' : cy.target_score) && dong.fullName === ten(a.sid), JSON.stringify(dong));
+      const gv = await doc2(GVCN);
+      assert(gv.status === 200 && gv.json.coTheSuaTarget === false, `${gv.status} ${JSON.stringify(gv.json)?.slice(0, 200)}`);
+      const bm = await doc2(P.w1Teacher.userId);
+      assert(bm.status === 403, `GVBM phải 403, nhận ${bm.status}`);
     });
 
     await checkAsync('SL-1 · quá 60 dòng → 400', async () => {

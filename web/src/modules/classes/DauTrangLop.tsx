@@ -49,7 +49,7 @@ export type HoSoLop = {
     coTheXoaKetThuc?: boolean;
   };
 };
-export type ViecDauTrang = 'tien-do' | 'chuyen-tiep' | 'ban-giao' | 'phan-cong' | 'thong-tin' | 'case' | 'hoc-vien' | 'xoa-lop' | 'ket-thuc-lop' | 'xuat-mt';
+export type ViecDauTrang = 'tien-do' | 'chuyen-tiep' | 'ban-giao' | 'phan-cong' | 'thong-tin' | 'case' | 'hoc-vien' | 'xoa-lop' | 'ket-thuc-lop' | 'xuat-mt' | 'sua-hoc-vien';
 
 /**
  * ĐẦU TRANG HỒ SƠ LỚP (đặc tả §3.7, mockup 06c §1; PR-HVL K2-14, B4, E7, K2-13). Nằm ở: Học viên & Lớp → Hồ sơ lớp → đầu trang.
@@ -118,6 +118,8 @@ export function DauTrangLop({ data, periodId, onViec, onBanGiao }: {
     /* PR-QU (A): GVCN lớp này cũng thấy — đổi được GV bộ môn, ô GVCN chỉ đọc. */
     ...(data.viewer.canAssign || data.viewer.canAssignSubject ? [{ key: 'phan-cong', nhan: 'Sửa phân công', onChon: () => onViec('phan-cong') }] : []),
     ...(data.viewer.canEditProgress ? [{ key: 'thong-tin', nhan: 'Sửa thông tin lớp', onChon: () => onViec('thong-tin') }] : []),
+    /* PR-SL (Q-0310-3): sửa họ tên, ngày sinh, email, tuần, dự kiến thi, Target, điểm đầu vào của cả lớp trên một panel. */
+    ...(data.viewer.canAddStudents && (s?.studentCount ?? 0) > 0 ? [{ key: 'sua-hoc-vien', nhan: 'Sửa thông tin học viên', onChon: () => onViec('sua-hoc-vien') }] : []),
     /* PR-XUAT (Q8): GVCN của lớp hoặc người xếp lịch (Quản lý) — máy chủ xuất vẫn kiểm lại phạm vi. */
     ...(session?.nav?.xuatMt && (data.viewer.isCoreTeacher || data.viewer.canPlanWeek) ? [{ key: 'xuat-mt', nhan: 'Xuất Excel', onChon: () => onViec('xuat-mt') }] : []),
     /* Cuối menu, sau đường kẻ: Xoá lớp (lớp còn trống) · Kết thúc lớp (lớp đã có dữ liệu, còn hoạt động). */

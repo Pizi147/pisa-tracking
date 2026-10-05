@@ -1129,6 +1129,8 @@ api.post('/classes/:id/ket-thuc', requireAuth, wrap((req) => {
   return xoaKetThucLopSvc.ketThucLop(principalOf(req), pInt(req, 'id'));
 }));
 
+/** ⋮ Sửa thông tin cả lớp (PR-SL): giá trị hiện tại của mọi em đang học (panel). */
+api.get('/classes/:id/sua-ca-lop', requireAuth, wrap((req) => suaCaLopSvc.duLieuSuaCaLop(principalOf(req), pInt(req, 'id'))));
 /** ⋮ Sửa thông tin cả lớp (PR-SL): xem trước — soát từng ô, cảnh báo MT sẽ dời. Không ghi gì. */
 api.post('/classes/:id/sua-ca-lop/xem-truoc', requireAuth, wrap((req) => {
   const b = req.body ?? {};

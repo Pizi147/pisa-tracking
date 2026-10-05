@@ -1,6 +1,6 @@
 import { db, theoLo, tx } from '../db.ts';
 import {
-  CO_DIEM_SQL, LY_DO_TOI_THIEU, PERMISSIONS, cauMtSeDoi, cotLuoiNhap, type VanDeNhap,
+  CO_DIEM_SQL, KCK, LY_DO_TOI_THIEU, PERMISSIONS, cauMtSeDoi, cotLuoiNhap, type VanDeNhap,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { can, require_, type Principal } from '../permissions.ts';
@@ -29,6 +29,58 @@ const HO_SO = ['fullName', 'dob', 'email'] as const;
 const LO_TRINH = ['startWeek', 'examDate', 'target', 'baseline'] as const;
 const NHAN: Record<string, string> = { fullName: 'Họ tên', dob: 'Ngày sinh', email: 'Email', startWeek: 'Tuần bắt đầu', examDate: 'Dự kiến thi', target: 'Target', baseline: 'Điểm đầu vào' };
 
+/**
+ * Em ĐANG HỌC lớp `classId` (`ids` = chỉ những em này; `null` = cả lớp) + lộ trình hiện tại (đang chạy, seq lớn nhất — như
+ * `currentCycle`), đọc theo lô. Chung cho panel (đọc) và kiểm lô — panel hiện đúng lộ trình mà lưu sẽ sửa.
+ */
+function emVaLoTrinh(classId: number, ids: number[] | null) {
+  const conn = db();
+  const em = new Map<number, any>();
+  const loTrinh = new Map<number, any>();
+  const dsEm = ids === null
+    ? (conn.prepare(`SELECT s.id FROM students s JOIN enrollments e ON e.student_id = s.id
+        WHERE e.class_id = ? AND e.status = 'active'`).all(classId) as any[]).map((r) => r.id as number)
+    : [...new Set(ids)];
+  theoLo(dsEm, (lo, ph) => {
+    for (const s of conn.prepare(`SELECT s.id, s.full_name, s.dob, s.email FROM students s JOIN enrollments e ON e.student_id = s.id
+        WHERE e.class_id = ? AND e.status = 'active' AND s.id IN (${ph})`).all(classId, ...lo) as any[]) em.set(s.id, s);
+    for (const c of conn.prepare(`SELECT * FROM learning_cycles WHERE student_id IN (${ph}) ORDER BY (status = 'active') ASC, seq ASC`)
+      .all(...lo) as any[]) loTrinh.set(c.student_id, c);
+  });
+  return { em, loTrinh };
+}
+
+/**
+ * Dữ liệu panel "Sửa thông tin học viên": mọi em đang học, A→Z, giá trị HIỆN TẠI của bảy ô (Q-0310-3). `coTheSuaTarget` chỉ để panel
+ * khoá cột Target (máy chủ vẫn kiểm `cycle.edit` từng em khi lưu).
+ */
+export function duLieuSuaCaLop(p: Principal, classId: number) {
+  const conn = db();
+  const cls = conn.prepare('SELECT id, code, programme_code FROM classes WHERE id = ?').get(classId) as any;
+  if (!cls) throw notFound('Không tìm thấy lớp');
+  require_(p, PERMISSIONS.STUDENT_EDIT, { classId: cls.id }, `Lớp ${cls.code} nằm ngoài phạm vi bạn được cấp quyền.`);
+  const { em, loTrinh } = emVaLoTrinh(cls.id, null);
+  const tuan = new Map<number, string>();
+  theoLo([...new Set([...loTrinh.values()].map((c) => c.start_period_id).filter((v): v is number => v != null))], (lo, ph) => {
+    for (const w of conn.prepare(`SELECT id, week_start FROM report_periods WHERE id IN (${ph})`).all(...lo) as any[]) tuan.set(w.id, w.week_start);
+  });
+  const rows = [...em.values()].map((s) => {
+    const c = loTrinh.get(s.id) ?? null;
+    return {
+      studentId: s.id as number, fullName: s.full_name as string, dob: (s.dob ?? null) as string | null, email: (s.email ?? null) as string | null,
+      coLoTrinh: !!c,
+      startWeek: (c?.start_period_id != null ? tuan.get(c.start_period_id) ?? null : null) as string | null,
+      examDate: (c ? c.exam_date ?? c.exam_month ?? null : null) as string | null,
+      target: (c ? (c.khong_cam_ket ? KCK : c.target_score ?? null) : null) as number | string | null,
+      baseline: (c?.baseline_score ?? null) as number | null,
+    };
+  }).sort((a, b) => a.fullName.localeCompare(b.fullName, 'vi'));
+  return {
+    lop: { id: cls.id as number, code: cls.code as string }, lopThuong: laLopThuong(cls.programme_code ?? null),
+    coTheSuaTarget: can(p, PERMISSIONS.CYCLE_EDIT, { classId: cls.id }), rows,
+  };
+}
+
 /** Kiểm cả lô, KHÔNG ghi gì. Ném 400 (dạng lô, em ngoài lớp) / 403 (quyền theo trường); lỗi dữ liệu từng ô → `issues`. */
 function kiemLo(p: Principal, classId: number, input: DauVao) {
   if (!Array.isArray(input?.rows) || input.rows.some((r) => !r || typeof r !== 'object' || Array.isArray(r))) {
@@ -44,15 +96,7 @@ function kiemLo(p: Principal, classId: number, input: DauVao) {
   const ids = input.rows.map((r) => Number(r.studentId));
   const lap = ids.find((id, i) => ids.indexOf(id) !== i);
   if (lap !== undefined) throw badRequest(`Học viên #${lap} có hai dòng trong lô.`);
-  /* Em ĐANG HỌC lớp này + lộ trình hiện tại (đang chạy, seq lớn nhất — như `currentCycle`), đọc theo lô. */
-  const em = new Map<number, any>();
-  const loTrinh = new Map<number, any>();
-  theoLo([...new Set(ids.filter(Number.isInteger))], (lo, ph) => {
-    for (const s of conn.prepare(`SELECT s.id, s.full_name FROM students s JOIN enrollments e ON e.student_id = s.id
-        WHERE e.class_id = ? AND e.status = 'active' AND s.id IN (${ph})`).all(cls.id, ...lo) as any[]) em.set(s.id, s);
-    for (const c of conn.prepare(`SELECT * FROM learning_cycles WHERE student_id IN (${ph}) ORDER BY (status = 'active') ASC, seq ASC`)
-      .all(...lo) as any[]) loTrinh.set(c.student_id, c);
-  });
+  const { em, loTrinh } = emVaLoTrinh(cls.id, ids.filter(Number.isInteger));
 
   const dong = input.rows.map((r, i) => {
     const s = em.get(ids[i]);
