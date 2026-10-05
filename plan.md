@@ -122,7 +122,7 @@ PR-PHH: chưa chạy migrate trên bản sao DB bản chính → bước tập d
 Chủ sản phẩm 05/10 đã chốt (mockup `thiet-ke/mockup-test-mt-2026-10-05.html` chờ duyệt → đặc tả → kế hoạch PR):
 
 **Thứ tự (chủ sản phẩm 05/10: chỉ chạy sau khi DL, K26, SL merge xong):** Đợt 4 = **PR-NV** (T8 Nhắc việc + 502, T9 chi nhánh mặc định;
-~~"Nợ tuần trước" thu gọn~~ → bỏ khỏi PR-NV, thay bằng T15–T18 / PR-LT3) · **PR-CHU** (file `.md` chữ tiếng Việt chối tai) · **PR-MTa** luật máy chủ (T1–T4, T7, T10, T11) — song song.
+~~"Nợ tuần trước" thu gọn~~ → bỏ khỏi PR-NV, thay bằng T15–T18 / PR-LT3) · **PR-CHU** (file `.md` chữ tiếng Việt chối tai — ✅ 05/10: `thiet-ke/CHU_CAN_SUA_2026-10.md` + 4 file con, 602 mục; session sau dùng để sửa chữ, chạy lại `node scripts/quet-chu.mjs` kiểm còn sót) · **PR-MTa** luật máy chủ (T1–T4, T7, T10, T11) — song song.
 Đợt 5 = **PR-MTb** giao diện (T13, mockup phần 1–4) · **PR-MT0** (T5, mockup phần 5; merge sau MTb, dùng ô MT mới). Đợt 6 = **PR-HK2**.
 
 | # | Chủ đề | Chốt |
@@ -436,6 +436,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 05/10/2026 | PR-CHU (Sonnet 5.5) · `pr-chu-ra-soat-chu` | **602 chữ chối** theo màn trong `thiet-ke/CHU_CAN_SUA_2026-10*.md` (file chính + 4 file con, đọc từng ứng viên trong 1 057; bấm thử 4 vai + 375, 436 trạng thái); script `scripts/quet-chu.mjs`. Không đổi mã, không chạy `npm run check`. |
 | 05/10/2026 | PR-K26 (Opus 5.5) · `pr-k26-lo-trinh-tiep-theo` | "Chưa rõ" + "Xếp sau" → "Chưa quyết" (migrate `prK26`); hướng Hệ thống gợi ý đứng đầu, em 50–59% "Lưu đề xuất"; Ghi lộ trình tiếp theo cả lớp (ghi theo lô, một giao dịch); Chuyển tiếp lớp điền sẵn/hiện đề xuất GVCN. "Web gợi ý" → "Hệ thống gợi ý" (luật từ điển). |
 | 04/10/2026 | PR-U12 (Opus 5.5) · `pr-u12-ket-qua-lop-thuong` | Bảng kết quả lớp thường ở hồ sơ HV theo mẫu Mock: `NhanDot` dùng chung, tên bài là link (bỏ "Bảng điểm đợt ›"), `Chờ n môn` nói một lần; đánh số Giữa khoá theo `attemptNo` (bảng xếp mới trước). Màu khi trượt tạm thời → chủ sản phẩm quyết. |
 | 04/10/2026 | PR-DH · `claude/keen-mccarthy-ahp0us` (nhánh gốc `pr-dh-bang-dieu-huong`) · Sonnet 5.5 | DH-1→13: Sắp tới có kỳ vọng / Thi thật, cột Dự kiến thi (cả lớp thường), Target + Dự kiến thi ở bảng điểm lớp thường, Trước/Sau hồ sơ HV + lớp, hàng chip gọn, popover Thiếu n, D1, J8, J10; sửa lệch 16 px của mọi panel. H6 đã có từ B4; J6 giữ "Target" chờ chủ sản phẩm. |
