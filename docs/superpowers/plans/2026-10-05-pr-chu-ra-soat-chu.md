@@ -1,6 +1,6 @@
 # PR-CHU · Rà soát chữ tiếng Việt chối tai — Kế hoạch (05/10)
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Làm ra **một file Markdown** `thiet-ke/CHU_CAN_SUA_2026-10.md` liệt kê mọi chữ tiếng Việt trên web đang gượng, dài, dịch máy hoặc lẫn chữ hệ thống — đủ ngữ cảnh để một AI khác (giỏi tiếng Việt, không đọc mã) đề xuất chữ mới, rồi session sau dùng file đó sửa web. **PR này không sửa một chữ nào trong mã.**
 
@@ -54,10 +54,10 @@
 ### Task CHU-0: Mục "Thuật ngữ đã chốt" + "Đã giao PR khác"
 **Files:** tạo `thiet-ke/CHU_CAN_SUA_2026-10.md` (khung + hai mục đầu). Đọc: `thiet-ke/THUAT_NGU_2026-10-01.md` (bảng "Đã chốt 01/10" và mọi dòng có cột **Sửa thành** khác rỗng), `thiet-ke/TU_DIEN_VA_CHU.md` §1, §4, §6.0, §13, §15, `plan.md` mục 1.1 và 2c (T1, T7, T8, T13b), `thiet-ke/THUAT_NGU_DA_CHOT.md` (bản cũ — chỉ lấy dòng không mâu thuẫn bản 01/10).
 
-- [ ] Viết khung file đúng mục "Định dạng file đầu ra" bên dưới.
-- [ ] Mục 1 **Thuật ngữ đã chốt — không đề xuất ngược**: bảng `Khái niệm | Chữ dùng | Không dùng | Nguồn`. Bắt buộc có: `Target` (không "Mục tiêu", "Mục tiêu band") · `MT cũ` (thay `MT lịch sử`, T1 05/10 — **thắng** TU_DIEN §13 đang ghi ngược) · `Nhắc việc` (thay `Để QL biết`, T8) · `Case` viết hoa · `PA` (chỗ rộng "Phương án") · `QL` (chỗ rộng "Quản lý") · `Đóng` (không "Thôi") · `Báo QL` · `Lịch Test` (không "Lịch kiểm tra") · `Xác nhận chuyển lớp` · `lần xử lý` (Ý thức) · `Dời lịch thi` ≠ `Dời hạn chấm` · `Không có bài` → `Không dự thi` · 12 khái niệm không nhập làm một (TU_DIEN §1) · `SOS 1/2/3` · `Mock Test`/`MT`, `Fast Track`/`FT`, `OVR`/`Overall`, `Band`, `KCK`, `RF` giữ tiếng Anh · "Huỷ" (dấu trên y, không "Hủy") · mã tuần `W2 OCT` · không mở câu bằng "Hãy".
-- [ ] Mục 2 **Đã giao PR khác (đừng đề xuất lại)**: `Để QL biết` → PR-NV · `MT lịch sử` và chữ "lý do bắt buộc" (T7) → PR-MTa/MTb · tên web `PISA Tracking` và chữ J1–J9 → PR-HK2. Một dòng mỗi việc, ghi nguồn.
-- [ ] Commit: `docs(chu): khung file chữ cần sửa, thuật ngữ đã chốt`.
+- [x] Viết khung file đúng mục "Định dạng file đầu ra" bên dưới.
+- [x] Mục 1 **Thuật ngữ đã chốt — không đề xuất ngược**: bảng `Khái niệm | Chữ dùng | Không dùng | Nguồn`. Bắt buộc có: `Target` (không "Mục tiêu", "Mục tiêu band") · `MT cũ` (thay `MT lịch sử`, T1 05/10 — **thắng** TU_DIEN §13 đang ghi ngược) · `Nhắc việc` (thay `Để QL biết`, T8) · `Case` viết hoa · `PA` (chỗ rộng "Phương án") · `QL` (chỗ rộng "Quản lý") · `Đóng` (không "Thôi") · `Báo QL` · `Lịch Test` (không "Lịch kiểm tra") · `Xác nhận chuyển lớp` · `lần xử lý` (Ý thức) · `Dời lịch thi` ≠ `Dời hạn chấm` · `Không có bài` → `Không dự thi` · 12 khái niệm không nhập làm một (TU_DIEN §1) · `SOS 1/2/3` · `Mock Test`/`MT`, `Fast Track`/`FT`, `OVR`/`Overall`, `Band`, `KCK`, `RF` giữ tiếng Anh · "Huỷ" (dấu trên y, không "Hủy") · mã tuần `W2 OCT` · không mở câu bằng "Hãy".
+- [x] Mục 2 **Đã giao PR khác (đừng đề xuất lại)**: `Để QL biết` → PR-NV · `MT lịch sử` và chữ "lý do bắt buộc" (T7) → PR-MTa/MTb · tên web `PISA Tracking` và chữ J1–J9 → PR-HK2. Một dòng mỗi việc, ghi nguồn.
+- [x] Commit: `docs(chu): khung file chữ cần sửa, thuật ngữ đã chốt`.
 
 ### Task CHU-1: Script quét chữ (AST)
 **Files:** tạo `<scratchpad>/quet-chu.mjs` (không commit — Q1); ra `<scratchpad>/chu-tho.jsonl`.
@@ -65,9 +65,9 @@
 **Interfaces:**
 - Produces: mỗi dòng JSONL `{ id, file, line, loai, vo, text, nhom }` — `loai` ∈ `jsx-text | attr:<tên> | string | template`; `vo` = tên hàm/thẻ bao gần nhất (`toast.error`, `notify.title`, `notFound`, `forbidden`, `HttpError`, `confirm`, `button`, `th`, `label`, `option`, `p.text-xs`, `Nhan`, khoá thuộc tính `label:`/`title:`…); `text` đã `normalize('NFC')`, gộp khoảng trắng, `${x}` → `{x}`; `nhom` = `web | shared | server`.
 
-- [ ] Bước 1: viết script — `ts.createSourceFile(file, src, Latest, true, file.endsWith('x') ? TSX : TS)`; duyệt `StringLiteral`, `NoSubstitutionTemplateLiteral`, `TemplateExpression`, `JsxText`, `JsxAttribute` có giá trị chuỗi. Giữ chuỗi có ít nhất một chữ cái tiếng Việt có dấu **hoặc** (ở JSX text/thuộc tính hiển thị) ≥ 2 chữ cái Latin. Bỏ: đường import, chuỗi SQL (`/\b(SELECT|INSERT|UPDATE|DELETE|CREATE|JOIN)\b/`), đối số `console.*`, `className`, `key`, `to=`/`href=`, khoá `kind`/`dedupKey`, chuỗi khớp `^[a-z0-9_.:/-]+$` (mã nội bộ — nhưng **giữ lại riêng** nếu nằm trong JSX text hoặc `title/body` của `notify`: đó là chữ hệ thống lọt, L7). Thư mục bỏ theo Global Constraints. Dòng = `getLineAndCharacterOfPosition(node.getStart()).line + 1`.
-- [ ] Bước 2: phép tự kiểm cuối script (`node:assert`), chạy mỗi lần: (a) có ≥ 1 bản ghi `nhom:'server'` với `vo` = `notify.title`; (b) có ≥ 1 bản ghi `vo` bắt đầu bằng `toast`; (c) có ≥ 1 bản ghi `loai:'attr:placeholder'`; (d) **không** có bản ghi nào từ `/tests/` hay `/seed/`; (e) chuỗi `CHUA_CO_PHUONG_AN` ở `web/src/ui/chu.ts` (`'Chưa có PA'`) có mặt với đúng `file:dòng`; (f) tổng bản ghi nằm trong 4 000–9 000 (lệch thì in số và dừng — xem lại bộ bỏ).
-- [ ] Bước 3: chạy `node <scratchpad>/quet-chu.mjs > <scratchpad>/chu-tho.jsonl`; ghi số bản ghi theo `nhom` và `loai` vào ghi chú làm việc (đưa vào mục "Cách làm" của file đầu ra ở CHU-4).
+- [x] Bước 1: viết script — `ts.createSourceFile(file, src, Latest, true, file.endsWith('x') ? TSX : TS)`; duyệt `StringLiteral`, `NoSubstitutionTemplateLiteral`, `TemplateExpression`, `JsxText`, `JsxAttribute` có giá trị chuỗi. Giữ chuỗi có ít nhất một chữ cái tiếng Việt có dấu **hoặc** (ở JSX text/thuộc tính hiển thị) ≥ 2 chữ cái Latin. Bỏ: đường import, chuỗi SQL (`/\b(SELECT|INSERT|UPDATE|DELETE|CREATE|JOIN)\b/`), đối số `console.*`, `className`, `key`, `to=`/`href=`, khoá `kind`/`dedupKey`, chuỗi khớp `^[a-z0-9_.:/-]+$` (mã nội bộ — nhưng **giữ lại riêng** nếu nằm trong JSX text hoặc `title/body` của `notify`: đó là chữ hệ thống lọt, L7). Thư mục bỏ theo Global Constraints. Dòng = `getLineAndCharacterOfPosition(node.getStart()).line + 1`.
+- [x] Bước 2: phép tự kiểm cuối script (`node:assert`), chạy mỗi lần: (a) có ≥ 1 bản ghi `nhom:'server'` với `vo` = `notify.title`; (b) có ≥ 1 bản ghi `vo` bắt đầu bằng `toast`; (c) có ≥ 1 bản ghi `loai:'attr:placeholder'`; (d) **không** có bản ghi nào từ `/tests/` hay `/seed/`; (e) chuỗi `CHUA_CO_PHUONG_AN` ở `web/src/ui/chu.ts` (`'Chưa có PA'`) có mặt với đúng `file:dòng`; (f) tổng bản ghi nằm trong 4 000–9 000 (lệch thì in số và dừng — xem lại bộ bỏ).
+- [x] Bước 3: chạy `node <scratchpad>/quet-chu.mjs > <scratchpad>/chu-tho.jsonl`; ghi số bản ghi theo `nhom` và `loai` vào ghi chú làm việc (đưa vào mục "Cách làm" của file đầu ra ở CHU-4).
 
 ### Task CHU-2: Bộ lọc ứng viên (L1–L10)
 **Files:** tạo `<scratchpad>/loc-chu.mjs`; ra `<scratchpad>/chu-ung-vien.jsonl` (bản ghi CHU-1 + `lyDo: string[]`) và `<scratchpad>/cum-khai-niem.md`.
@@ -86,41 +86,41 @@ Mã lý do (dùng nguyên văn trong file đầu ra):
 | L9 | Trùng nghĩa trong một câu / thừa | từ lặp ≥ 2 lần trong ≤ 8 từ; "đang … hiện tại"; hai câu cùng ý nối bằng " — " |
 | L10 | Mơ hồ / đại từ trôi | "em này", "lượt đó", "máy", "đường này", "chốt chung", "Khác" đứng một mình (TU_DIEN §4) |
 
-- [ ] Bước 1: viết bộ lọc theo bảng; mỗi bản ghi có ≥ 1 mã → ứng viên. Chuỗi giống hệt nhau (sau NFC) gộp thành một ứng viên với danh sách `file:dòng`.
-- [ ] Bước 2: tự kiểm (`assert`): `'Hãy chọn học viên.'` → có L2; `'Chưa có PA'` → không cờ; `'sos_ft'` trong JSX text → L7; `'Mục tiêu band'` → L8; `'W2 OCT'` → không cờ.
-- [ ] Bước 3: chạy, in bảng đếm theo mã lý do × `nhom`. Kỳ vọng ứng viên 1 200–1 500; > 2 000 thì siết L4/L5 (chỉ gắn khi chuỗi > 6 từ) và ghi lại đã siết gì.
+- [x] Bước 1: viết bộ lọc theo bảng; mỗi bản ghi có ≥ 1 mã → ứng viên. Chuỗi giống hệt nhau (sau NFC) gộp thành một ứng viên với danh sách `file:dòng`.
+- [x] Bước 2: tự kiểm (`assert`): `'Hãy chọn học viên.'` → có L2; `'Chưa có PA'` → không cờ; `'sos_ft'` trong JSX text → L7; `'Mục tiêu band'` → L8; `'W2 OCT'` → không cờ.
+- [x] Bước 3: chạy, in bảng đếm theo mã lý do × `nhom`. Kỳ vọng ứng viên 1 200–1 500; > 2 000 thì siết L4/L5 (chỉ gắn khi chuỗi > 6 từ) và ghi lại đã siết gì.
 
 ### Task CHU-3: Bấm thử — lấy chữ theo màn
 **Files:** ra `<scratchpad>/man/<vai>-<ma-man>.json` (không commit).
 
-- [ ] Bước 1: `npm ci` (nếu chưa) → `npm run seed` → chạy nền `PORT=4631 WEB_PORT=5631 npm run dev` → `preview_start` với `url: http://localhost:5631`.
-- [ ] Bước 2: đổi vai bằng `javascript_tool`: `await fetch('/api/demo/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:N}),credentials:'include'}); location.reload()` — Quản trị **1**, QL **2** (chi nhánh MB), GVCN **7**, GVBM **9**. Thêm QL **3** chỉ cho Tổng quan (đủ trạng thái quá hạn nhất).
-- [ ] Bước 3: mỗi màn chạy một đoạn JS thu: mọi text node đang hiện (bỏ `[data-demo]`/DemoBar), cộng `placeholder`, `title`, `aria-label` của phần tử; mỗi chữ kèm `khu` = tiêu đề `h1/h2/h3` hoặc `[role=dialog] h2` gần nhất phía trên. Lưu `{vai, man, url, khu, text}`. Màn có trạng thái ẩn (menu ⋮, hộp xác nhận, panel, toast sau khi lưu, chuông) → mở ra rồi thu lần nữa, `man` thêm hậu tố (`G5-menu`, `G9-loi-diem`).
-- [ ] Bước 4: danh sách màn phải đi qua — mã theo `docs/so-tay/BAN_DO_MAN_HINH_2026-10-02.md` (kiểm lại tên màn trên bản mới; màn mới sau 02/10 ghi thêm):
+- [x] Bước 1: `npm ci` (nếu chưa) → `npm run seed` → chạy nền `PORT=4631 WEB_PORT=5631 npm run dev` → `preview_start` với `url: http://localhost:5631`.
+- [x] Bước 2: đổi vai bằng `javascript_tool`: `await fetch('/api/demo/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:N}),credentials:'include'}); location.reload()` — Quản trị **1**, QL **2** (chi nhánh MB), GVCN **7**, GVBM **9**. Thêm QL **3** chỉ cho Tổng quan (đủ trạng thái quá hạn nhất).
+- [x] Bước 3: mỗi màn chạy một đoạn JS thu: mọi text node đang hiện (bỏ `[data-demo]`/DemoBar), cộng `placeholder`, `title`, `aria-label` của phần tử; mỗi chữ kèm `khu` = tiêu đề `h1/h2/h3` hoặc `[role=dialog] h2` gần nhất phía trên. Lưu `{vai, man, url, khu, text}`. Màn có trạng thái ẩn (menu ⋮, hộp xác nhận, panel, toast sau khi lưu, chuông) → mở ra rồi thu lần nữa, `man` thêm hậu tố (`G5-menu`, `G9-loi-diem`).
+- [x] Bước 4: danh sách màn phải đi qua — mã theo `docs/so-tay/BAN_DO_MAN_HINH_2026-10-02.md` (kiểm lại tên màn trên bản mới; màn mới sau 02/10 ghi thêm):
   - **GVCN 7:** G1 Tổng quan · G2 Học viên & Lớp (chip lọc, trạng thái rỗng khi lọc không ra) · G3 Lưu trữ · G4 Hồ sơ lớp (3 tab, menu ⋮, menu "+n") · G5 Hồ sơ HV (Học thuật, Ý thức & Phối hợp, Hành trình, bảng Mock Test) · G6 Ngăn Case đủ 5 view (case, ghi kết quả, thêm PA, hoàn thành, trả lời) · G7 + Case · G8 Lịch Test (dải số, Nợ tuần trước, mở một lớp) · G9 lưới nhập điểm (gõ điểm sai → câu lỗi; gõ `-`; sửa ô đã có điểm → hỏi lý do) · G10 Hồ sơ Mock (menu thao tác: dời lịch, dời hạn, bỏ kỹ năng, huỷ) · G11 Ý thức (+ Ghi nhận vi phạm, toast Hoàn tác) · G12 Công việc · G13 Chuyển lớp/Đề xuất · G14 Lộ trình tiếp theo (một em + cả lớp, PR-K26) · G15 Bàn giao · G16 Kết luận khoá · G17 Thêm học viên · G18 Hồ sơ GV · G19 Hồ sơ cá nhân · Điểm theo lớp (PR-DL) · chuông thông báo (mở từng nhóm Cần làm / Để biết).
   - **GVBM 9:** G1, G8, G9 (Speaking), G12; mở `/giao-vien/7` → câu 403; một màn không có quyền (Kế hoạch Test qua URL).
   - **QL 2 (+3):** Q1 Việc hôm nay · Q2 Phân tích (5 góc) · Q4 Tạo lớp · Q5–Q7 · Q8 Kế hoạch Test (xếp lịch MT, hàng loạt, popup cảnh báo) · Q9 Chờ duyệt (duyệt, từ chối → hỏi lý do) · Q10–Q12 Công việc · Q13 Hồ sơ GV người khác · Xuất Excel MT.
   - **Quản trị 1:** A1 Quản trị (mọi tab) · A2 hộp Xoá lớp / Kết thúc lớp / Xoá HV (chỉ mở hộp, **bấm Đóng**, không xác nhận) · A3 · màn đăng nhập sau khi đăng xuất (`DELETE /api/demo/session`).
   - **Điện thoại 375:** chỉ G1, G2, G5, G8, G9, Q1 — thu chữ chỉ có trên điện thoại (thanh dưới, thẻ `TheDong`, menu ⋯).
-- [ ] Bước 5: trên mỗi màn chạy thêm regex L7 trên toàn văn bản trang (`/[a-z]+_[a-z_]+|undefined|null|NaN|\[object/`) — chữ hệ thống lọt **chỉ lộ lúc chạy** (ghép từ dữ liệu). Ghi vào ứng viên với `file:dòng` = "(lúc chạy)" + `url`.
-- [ ] Bước 6: tắt `npm run dev`, kiểm không còn tiến trình node của cổng 4631/5631, `preview_stop`.
+- [x] Bước 5: trên mỗi màn chạy thêm regex L7 trên toàn văn bản trang (`/[a-z]+_[a-z_]+|undefined|null|NaN|\[object/`) — chữ hệ thống lọt **chỉ lộ lúc chạy** (ghép từ dữ liệu). Ghi vào ứng viên với `file:dòng` = "(lúc chạy)" + `url`.
+- [x] Bước 6: tắt `npm run dev`, kiểm không còn tiến trình node của cổng 4631/5631, `preview_stop`.
 
 ### Task CHU-4: Ghép, đọc tay, viết file đầu ra
 **Files:** sửa `thiet-ke/CHU_CAN_SUA_2026-10.md`.
 
-- [ ] Bước 1: ghép — mỗi ứng viên (CHU-2) tìm trong dữ liệu màn (CHU-3) bằng so khớp chuỗi đã NFC (template: so phần chữ cố định giữa các `{x}`). Có → lấy `vai`, `man`, `khu`. Không thấy lúc chạy → suy màn từ `file` theo bảng "Tra theo MÀN HÌNH" ở `CODE_MAP.md`; câu lỗi máy chủ → suy từ đường API (tìm hàm chứa trong `server/src/routes/index.ts`) và ghi "Ai thấy: (suy từ mã) …".
-- [ ] Bước 2: đọc tay **từng** ứng viên theo thứ tự màn. Giữ khi người dùng thật thấy chối; bỏ khi chữ đã tự nhiên dù máy gắn cờ (ví dụ "Quản trị hệ thống", tên riêng). Mỗi mục giữ lại: viết "Vì sao chối" = mã L + nửa câu cụ thể (ví dụ `L4 · "thực hiện" thừa, nói "làm" là đủ`). Gợi ý **chỉ khi chắc** và không trái mục 1; không chắc thì để trống — đừng đoán.
-- [ ] Bước 3: chuỗi lặp ở nhiều màn → **một mục** ở màn gặp đầu tiên, cột "Ở đâu" ghi 3 chỗ đầu + "và n chỗ khác"; các màn sau chỉ ghi "xem `TQ-07`".
-- [ ] Bước 4: viết mục "Cụm khái niệm nhiều tên" từ `cum-khai-niem.md` (chỉ cụm có ≥ 2 biến thể **đang hiện trên màn**, bỏ cụm đã chốt ở mục 1 nếu web đã dùng đúng).
-- [ ] Bước 5: mục "Cách làm": lệnh đã chạy, số bản ghi/ứng viên/mục, những gì đã bỏ và vì sao, màn không vào được (nếu có).
-- [ ] Bước 6: nếu file > **1 800 dòng** hoặc > **450 mục** → chia (xem "Chia file"). Commit: `docs(chu): danh sách chữ cần sửa theo màn`.
+- [x] Bước 1: ghép — mỗi ứng viên (CHU-2) tìm trong dữ liệu màn (CHU-3) bằng so khớp chuỗi đã NFC (template: so phần chữ cố định giữa các `{x}`). Có → lấy `vai`, `man`, `khu`. Không thấy lúc chạy → suy màn từ `file` theo bảng "Tra theo MÀN HÌNH" ở `CODE_MAP.md`; câu lỗi máy chủ → suy từ đường API (tìm hàm chứa trong `server/src/routes/index.ts`) và ghi "Ai thấy: (suy từ mã) …".
+- [x] Bước 2: đọc tay **từng** ứng viên theo thứ tự màn. Giữ khi người dùng thật thấy chối; bỏ khi chữ đã tự nhiên dù máy gắn cờ (ví dụ "Quản trị hệ thống", tên riêng). Mỗi mục giữ lại: viết "Vì sao chối" = mã L + nửa câu cụ thể (ví dụ `L4 · "thực hiện" thừa, nói "làm" là đủ`). Gợi ý **chỉ khi chắc** và không trái mục 1; không chắc thì để trống — đừng đoán.
+- [x] Bước 3: chuỗi lặp ở nhiều màn → **một mục** ở màn gặp đầu tiên, cột "Ở đâu" ghi 3 chỗ đầu + "và n chỗ khác"; các màn sau chỉ ghi "xem `TQ-07`".
+- [x] Bước 4: viết mục "Cụm khái niệm nhiều tên" từ `cum-khai-niem.md` (chỉ cụm có ≥ 2 biến thể **đang hiện trên màn**, bỏ cụm đã chốt ở mục 1 nếu web đã dùng đúng).
+- [x] Bước 5: mục "Cách làm": lệnh đã chạy, số bản ghi/ứng viên/mục, những gì đã bỏ và vì sao, màn không vào được (nếu có).
+- [x] Bước 6: nếu file > **1 800 dòng** hoặc > **450 mục** → chia (xem "Chia file"). Commit: `docs(chu): danh sách chữ cần sửa theo màn`.
 
 ### Task CHU-5: Kiểm định dạng, mở PR
 **Files:** sửa `plan.md` (mục 11 một dòng; mục 2c ghi PR-CHU đã có file), `CODE_MAP.md` (bảng "Tài liệu nào để làm gì": một dòng cho `thiet-ke/CHU_CAN_SUA_2026-10.md`), file kế hoạch này (`[x]`).
 
-- [ ] Bước 1: kiểm bằng một lệnh node một lần (không lưu): mọi hàng bảng mục có đủ 8 cột, mã mục không trùng, mọi `file:dòng` trỏ tới file có thật và dòng ≤ số dòng file, không mục nào có chữ ở cột "Không dùng" của mục 1 trong cột **Gợi ý**. In `OK n mục`.
-- [ ] Bước 2: đọc lại 20 mục ngẫu nhiên đối chiếu màn thật/mã: chữ nguyên văn đúng, vị trí đúng.
-- [ ] Bước 3: `git diff --stat origin/main` chỉ có các file ở Global Constraints. Commit, đẩy, mở PR vào `main` (không merge). Mô tả PR: số mục theo màn và theo mã lý do, những gì bỏ ngoài phạm vi, Q1/Q2 nếu chưa trả lời, câu "PR không đổi mã — không chạy `npm run check`".
+- [x] Bước 1: kiểm bằng một lệnh node một lần (không lưu): mọi hàng bảng mục có đủ 8 cột, mã mục không trùng, mọi `file:dòng` trỏ tới file có thật và dòng ≤ số dòng file, không mục nào có chữ ở cột "Không dùng" của mục 1 trong cột **Gợi ý**. In `OK n mục`.
+- [x] Bước 2: đọc lại 20 mục ngẫu nhiên đối chiếu màn thật/mã: chữ nguyên văn đúng, vị trí đúng.
+- [x] Bước 3: `git diff --stat origin/main` chỉ có các file ở Global Constraints. Commit, đẩy, mở PR vào `main` (không merge). Mô tả PR: số mục theo màn và theo mã lý do, những gì bỏ ngoài phạm vi, Q1/Q2 nếu chưa trả lời, câu "PR không đổi mã — không chạy `npm run check`".
 
 ---
 
