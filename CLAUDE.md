@@ -30,3 +30,6 @@ Tệp này tự nạp vào mọi session của repo (planning, code, worktree), 
 - Có việc giao diện: ghi rõ lệnh impeccable cần chạy và `/ponytail lite`.
 - Không cài thêm plugin/skill cho toàn máy khi chưa hỏi chủ sản phẩm: mục tiêu là giảm token, và mỗi plugin
   luôn bật đều tốn token ở mọi phiên.
+
+## Worktree
+- Worktree chỉ tạo trong `.claude/worktrees/<tên-nhánh>`, không tạo thư mục ngang hàng `Pisa-tracking-*`.
