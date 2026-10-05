@@ -11,7 +11,7 @@ export async function runPrSlTests(t: YThucTestKit) {
   const { check, checkAsync, assert, conn, P } = t;
   const d = await import('../../../shared/domain/index.ts');
   const { createApp } = await import('../app.ts');
-  const { CHI_QL_SUA } = await import('../fasttrack/cycles.ts');
+  const { CHI_QL_DOI_TARGET } = await import('../classes/suaCaLop.ts');
   console.log('\nPR-SL · Sửa thông tin cả lớp');
 
   check('SL-4 · I1: KhungPanel mặc định "Đóng" / "Huỷ thay đổi" theo chan.daSua; Tạo Case, Thêm HV, Từ chối inline theo luật S3', () => {
@@ -187,12 +187,12 @@ export async function runPrSlTests(t: YThucTestKit) {
       assert(get('SELECT target_score FROM learning_cycles WHERE id = ?', a.cid).target_score === moi, 'target lộ trình');
     });
 
-    await checkAsync('SL-1 (4) · GVCN đổi Target → 403 (câu CHI_QL_SUA), không ghi gì; GVCN đổi họ tên → 200', async () => {
+    await checkAsync('SL-1 (4) · GVCN đổi Target → 403 (câu riêng CHI_QL_DOI_TARGET, không nhắc nút "Đề xuất sửa" mà panel không có), không ghi gì; GVCN đổi họ tên → 200', async () => {
       const a = em[5];
       const tenA = ten(a.sid);
       const tg = get('SELECT target_score FROM learning_cycles WHERE id = ?', a.cid).target_score;
       const r = await luu(GVCN, ft, { idempotencyKey: khoa(), lyDoTarget: 'GVCN tự đổi', rows: [{ studentId: a.sid, fullName: 'SL GVCN Không Ghi', target: tg === 6 ? 6.5 : 6 }] });
-      assert(r.status === 403 && r.json.error === CHI_QL_SUA, `${r.status} ${JSON.stringify(r.json)}`);
+      assert(r.status === 403 && r.json.error === CHI_QL_DOI_TARGET && !/Đề xuất sửa/.test(CHI_QL_DOI_TARGET), `${r.status} ${JSON.stringify(r.json)}`);
       assert(ten(a.sid) === tenA, 'lô bị từ chối quyền không ghi họ tên');
       const r2 = await luu(GVCN, ft, { idempotencyKey: khoa(), rows: [{ studentId: a.sid, fullName: 'SL GVCN Sửa Tên' }] });
       assert(r2.status === 200 && ten(a.sid) === 'SL GVCN Sửa Tên', `${r2.status} ${JSON.stringify(r2.json)}`);
@@ -281,9 +281,55 @@ export async function runPrSlTests(t: YThucTestKit) {
       assert(bm.status === 403, `GVBM phải 403, nhận ${bm.status}`);
     });
 
-    await checkAsync('SL-1 · quá 60 dòng → 400', async () => {
+    await checkAsync('SL-1 · xem trước quá 60 dòng → 400; LƯU quá 10 em một lần → 400 (web chia lô 8 em)', async () => {
       const r = await xemTruoc(QL, ft, { rows: Array.from({ length: 61 }, () => ({ studentId: em[0].sid })) });
       assert(r.status === 400, `${r.status} ${JSON.stringify(r.json)}`);
+      const muoiMot = em.slice(0, 11).map((x, i) => ({ studentId: x.sid, fullName: `SL Trần ${i}` }));
+      const truoc = ten(em[0].sid);
+      const pv = await xemTruoc(QL, ft, { rows: muoiMot });
+      assert(pv.status === 200, `xem trước 11 em vẫn được (kiểm cả lớp): ${pv.status}`);
+      const l = await luu(QL, ft, { idempotencyKey: khoa(), rows: muoiMot });
+      assert(l.status === 400 && /10/.test(l.json?.error ?? ''), `${l.status} ${JSON.stringify(l.json)}`);
+      assert(ten(em[0].sid) === truoc, 'quá trần thì không ghi gì');
+    });
+
+    check('SL-2b · chia lô: 20 em → 3 lô (8, 8, 4); trần lưu một lần ≥ cỡ lô', () => {
+      const lo = d.chiaLo(Array.from({ length: 20 }, (_, i) => i), d.LO_LUU_SUA_CA_LOP);
+      assert(JSON.stringify(lo.map((x: number[]) => x.length)) === '[8,8,4]' && lo.flat().join() === Array.from({ length: 20 }, (_, i) => i).join(), JSON.stringify(lo));
+      assert(d.LO_LUU_SUA_CA_LOP <= d.TOI_DA_LUU_SUA_CA_LOP, 'cỡ lô web phải ≤ trần máy chủ');
+      const pn = doc('web/src/modules/students/SuaCaLopPanel.tsx');
+      assert(pn.includes('chiaLo(payload, LO_LUU_SUA_CA_LOP)') && pn.includes('em chưa lưu') && pn.includes('Đang lưu ${tienDo.xong}/${tienDo.tong}…'),
+        'panel gửi theo lô, báo lưu dở ở chân panel, hiện tiến độ');
+    });
+
+    await checkAsync('SL-2b · lưu theo lô: lô 2 lỗi → lô 1 đã ghi, lô 2–3 không ghi; gửi lại lô 1 cùng khoá → không ghi lần hai', async () => {
+      assert(em.length >= 28, `seed: cần ≥ 28 em, có ${em.length}`);
+      const nhom = em.slice(8, 28);
+      const rows = nhom.map((x, i) => ({ studentId: x.sid, fullName: `SL Lô ${i + 1}` }));
+      rows[10] = { ...rows[10], email: 'sai-dang' } as any;          // em thứ 11 → lô 2 hỏng
+      const cu = nhom.map((x) => ten(x.sid));
+      const lo = d.chiaLo(rows, d.LO_LUU_SUA_CA_LOP);
+      assert(lo.length === 3, `20 em phải ra 3 lô, ra ${lo.length}`);
+      const k1 = khoa();
+      const r1 = await luu(QL, ft, { idempotencyKey: k1, rows: lo[0] });
+      assert(r1.status === 200 && r1.json.daSua === 8, `lô 1: ${r1.status} ${JSON.stringify(r1.json)}`);
+      const r2 = await luu(QL, ft, { idempotencyKey: khoa(), rows: lo[1] });
+      assert(r2.status === 400, `lô 2 phải 400: ${r2.status} ${JSON.stringify(r2.json)}`);
+      /* web dừng ở lô hỏng: lô 3 không gửi. */
+      nhom.forEach((x, i) => {
+        if (i < 8) assert(ten(x.sid) === `SL Lô ${i + 1}`, `lô 1 em ${i + 1} phải đã ghi`);
+        else assert(ten(x.sid) === cu[i], `em ${i + 1} (lô ${i < 16 ? 2 : 3}) không được ghi`);
+      });
+      const audit = soAudit(nhom[0].sid);
+      const r1b = await luu(QL, ft, { idempotencyKey: k1, rows: lo[0] });
+      assert(r1b.status === 200 && r1b.json.daSua === 8 && soAudit(nhom[0].sid) === audit, 'gửi lại cùng khoá không ghi lần hai');
+    });
+
+    await checkAsync('SL-1 (3b) · gửi Target bằng giá trị cũ → không đòi lý do, daSua chỉ đếm em đổi thật', async () => {
+      const a = em[5];
+      const cy = get('SELECT target_score, khong_cam_ket FROM learning_cycles WHERE id = ?', a.cid);
+      const r = await luu(QL, ft, { idempotencyKey: khoa(), rows: [{ studentId: a.sid, target: cy.khong_cam_ket ? 'KCK' : cy.target_score }] });
+      assert(r.status === 200 && r.json.daSua === 0, `${r.status} ${JSON.stringify(r.json)}`);
     });
   } finally {
     may.close();

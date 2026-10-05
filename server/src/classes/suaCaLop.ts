@@ -1,6 +1,6 @@
 import { db, theoLo, tx } from '../db.ts';
 import {
-  CO_DIEM_SQL, KCK, LY_DO_TOI_THIEU, PERMISSIONS, cauMtSeDoi, cotLuoiNhap, type VanDeNhap,
+  CO_DIEM_SQL, KCK, LY_DO_TOI_THIEU, PERMISSIONS, TOI_DA_LUU_SUA_CA_LOP, cauMtSeDoi, cotLuoiNhap, type VanDeNhap,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { chanGiaoDichNeuSapHetGio } from '../platform/hanGio.ts';
@@ -8,7 +8,7 @@ import { can, require_, type Principal } from '../permissions.ts';
 import { HttpError, badRequest, forbidden, kiemKieuO, notFound, nowIso } from '../util.ts';
 import { chuanHoaSuaHoSo, updateStudent } from '../students/students.ts';
 import {
-  CHI_QL_SUA, docDiemXuatPhat, docDuKienThi, docTarget, docTuanBatDau, reviseTarget, setBaseline, updateCycle,
+  docDiemXuatPhat, docDuKienThi, docTarget, docTuanBatDau, reviseTarget, setBaseline, updateCycle,
 } from '../fasttrack/cycles.ts';
 import { donKhoaGuiCu, laLopThuong } from './intake.ts';
 
@@ -26,6 +26,8 @@ export type DongSua = {
 type DauVao = { rows: DongSua[]; lyDoTarget?: string };
 
 export const TOI_DA_DONG_SUA_CA_LOP = 60;
+/** Panel này không có nút "Đề xuất sửa" (khác `CHI_QL_SUA` của đường một em) — chỉ nói ai được đổi. */
+export const CHI_QL_DOI_TARGET = 'Chỉ Quản lý đổi được Target.';
 const HO_SO = ['fullName', 'dob', 'email'] as const;
 const LO_TRINH = ['startWeek', 'examDate', 'target', 'baseline'] as const;
 const NHAN: Record<string, string> = { fullName: 'Họ tên', dob: 'Ngày sinh', email: 'Email', startWeek: 'Tuần bắt đầu', examDate: 'Dự kiến thi', target: 'Target', baseline: 'Điểm đầu vào' };
@@ -122,7 +124,7 @@ function kiemLo(p: Principal, classId: number, input: DauVao) {
     if (r.target !== undefined) {
       const t = thu('target', () => docTarget(r.target));
       doiTarget = !t || !c || t.target !== (c.target_score ?? null) || t.kck !== !!c.khong_cam_ket;
-      if (doiTarget && !can(p, PERMISSIONS.CYCLE_EDIT, { studentId: s.id })) throw new HttpError(403, CHI_QL_SUA);
+      if (doiTarget && !can(p, PERMISSIONS.CYCLE_EDIT, { studentId: s.id })) throw new HttpError(403, CHI_QL_DOI_TARGET);
     }
 
     const hoSo = Object.fromEntries(HO_SO.filter((k) => r[k] !== undefined).map((k) => [k, r[k]]));
@@ -169,6 +171,10 @@ export function xemTruocSuaCaLop(p: Principal, classId: number, input: DauVao) {
 
 export function luuSuaCaLop(p: Principal, classId: number, input: DauVao & { idempotencyKey?: string }): { daSua: number } {
   const conn = db();
+  /* Lưu theo lô (web gửi từng `LO_LUU_SUA_CA_LOP` em): một request không ghi cả lớp — 10 s của Netlify. */
+  if (Array.isArray(input?.rows) && input.rows.length > TOI_DA_LUU_SUA_CA_LOP) {
+    throw badRequest(`Lưu tối đa ${TOI_DA_LUU_SUA_CA_LOP} học viên một lần.`);
+  }
   const { cls, dong } = kiemLo(p, classId, input);
   /* Chống gửi trùng như `commitIntake`: khoá gắn NGƯỜI GỬI + LỚP, kiểm sau quyền; đọc lại trong giao dịch. */
   const k = typeof input.idempotencyKey === 'string' ? input.idempotencyKey.trim().slice(0, 100) : '';
@@ -199,12 +205,13 @@ export function luuSuaCaLop(p: Principal, classId: number, input: DauVao & { ide
         if (Object.keys(ct).length) updateCycle(p, c.id, ct);
         if (r.baseline !== undefined) setBaseline(p, c.id, r.baseline === null ? { source: null } : { source: 'manual', score: r.baseline });
         if (doiTarget) reviseTarget(p, c.id, { newTarget: r.target ?? null, reason: lyDo });
+        /* Chỉ đếm em có ghi thật (Target gửi lại đúng giá trị cũ không tính). */
+        if (Object.keys(hoSo).length || Object.keys(ct).length || r.baseline !== undefined || doiTarget) daSua += 1;
       } catch (e) {
         /* Cả lô cuộn lại (giao dịch ngoài); câu lỗi nói rõ em nào. */
         if (e instanceof HttpError) throw new HttpError(e.status, `${s.full_name}: ${e.message}`, { studentId: s.id });
         throw e;
       }
-      if (Object.keys(r).some((f) => f !== 'studentId')) daSua += 1;
     }
     const out = { daSua };
     if (key) {
