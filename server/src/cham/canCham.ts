@@ -13,7 +13,7 @@ import { notFound } from '../util.ts';
 import { db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import {
-  activeAt, can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, lopFtChoGvSpeaking, mySkills, scopeFor, type Principal,
+  activeAt, can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, lopFtChoGvSpeaking, mySkills, scopeXemLuotCham, type Principal,
 } from '../permissions.ts';
 import {
   ATTEMPT_KIND_SHORT, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, LUOT_TINH_NO_SQL, PERMISSIONS, boMonLich, khungCua, lopTuMo, tenMonNgan, type Khung, nhanLopLichTest, noShowStateOf,
@@ -23,11 +23,13 @@ import { classScoreSheet, conBaiCanCham, listAttempts, type MonDoiLich } from '.
 import { pendingMovesFor } from '../fasttrack/absence.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { assessedSkillOf, entrySkillsOf } from '../fasttrack/scoring.ts';
-import { allProgrammes, isRatioClass, programmeOfClass, regularSheet } from '../normal/regular.ts';
+import { allProgrammes, cheDoCua, isRatioClass, programmeOfClass, regularSheet, type CheDo } from '../normal/regular.ts';
 import { quaHanNhapDiem, skillScoreDeadline, weekInfo } from '../platform/week.ts';
 
 export function chamSheet(
-  p: Principal, classId: number, opts: { periodId?: number | null; kind?: string | null } = {},
+  p: Principal, classId: number,
+  /** `attemptNo` (PR-DL): bảng FT theo một số lượt MT, không lọc tuần — thắng `periodId`. */
+  opts: { periodId?: number | null; kind?: string | null; attemptNo?: number } = {},
   today: string = demoToday(),
 ) {
   const cls = db()
@@ -40,14 +42,12 @@ export function chamSheet(
     today,
   };
   if (isRatioClass(classId)) {
-    return { ...chung, mode: 'ratio' as const, thuong: regularSheet(p, classId, opts.kind ?? undefined), ft: null };
+    return { ...chung, mode: 'ratio' as const, thuong: regularSheet(p, classId, opts.kind ?? undefined, today), ft: null };
   }
-  return { ...chung, mode: 'ielts_band' as const, ft: classScoreSheet(p, classId, opts.periodId ?? null, today), thuong: null };
+  return { ...chung, mode: 'ielts_band' as const, ft: classScoreSheet(p, classId, opts.attemptNo ? { theo: 'luot', attemptNo: opts.attemptNo } : opts.periodId ?? null, today), thuong: null };
 }
 
 // ---------------------------------------------------------------- Nợ tuần trước
-
-type CheDo = 'ielts_band' | 'ratio';
 
 /**
  * MÔN CÒN NỢ ĐÃ BỊ DỜI LỊCH THẬT — dấu "-" của lớp thường hoặc dời do vắng (`MonDoiLich` ở attempts.ts); lịch tách
@@ -227,7 +227,7 @@ export function noTuanTruoc(
   const lopOf = (classId: number) => {
     if (!lopInfo.has(classId)) {
       const pg = programmeOfClass(classId);
-      lopInfo.set(classId, { mode: pg?.scoringMode === 'ratio' ? 'ratio' : 'ielts_band', ct: pg?.code ?? null });
+      lopInfo.set(classId, { mode: cheDoCua(pg?.code), ct: pg?.code ?? null });
     }
     return lopInfo.get(classId)!;
   };
@@ -406,10 +406,8 @@ export function lichTest(
   p: Principal, periodId: number, branchId?: number | null, today: string = demoToday(),
   o: { phamVi?: PhamViLichTest | null; classId?: number | null } = {},
 ): LichTest {
-  const scope0 = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   /* PR-HSM: GV Speaking thấy thêm lớp FT cùng chi nhánh ở "Tất cả" (chấm S chéo) — chỉ màn này, không mở rộng phạm vi chung. */
-  const lopS = scope0.all ? [] : lopFtChoGvSpeaking(p, today);
-  const scope = lopS.length ? { ...scope0, classIds: [...new Set([...scope0.classIds, ...lopS])] } : scope0;
+  const scope = scopeXemLuotCham(p, today);
   const coPhanCong = defaultWorkScope(p) === 'mine';
   /* Không có phân công thì "Lớp tôi dạy" là tập rỗng — luôn xem Tất cả. */
   const phamVi: PhamViLichTest = coPhanCong ? o.phamVi ?? 'cua-toi' : 'tat-ca';
@@ -431,7 +429,7 @@ export function lichTest(
   const lopCuaToi = new Set(p.assignments.filter((a) => activeAt(a, today)).map((a) => a.classId));
   const coPhamViRong = coPhanCong && (scope.all || scope.branchIds.length > 0 || scope.classIds.some((id) => !lopCuaToi.has(id)));
   /* Chip "Đang lọc: lớp …" chỉ nói tên lớp NGƯỜI XEM ĐƯỢC THẤY — lớp ngoài phạm vi thì null, không lộ mã lớp. */
-  const lopDangLoc = o.classId && (can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: o.classId }) || lopS.includes(o.classId))
+  const lopDangLoc = o.classId && (can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: o.classId }) || lopFtChoGvSpeaking(p, today).includes(o.classId))
     ? (conn.prepare('SELECT id, code FROM classes WHERE id = ?').get(o.classId) as any) ?? null
     : null;
   const giuLop = (classId: number) =>
@@ -495,7 +493,7 @@ export function lichTest(
     /* Chỉ đếm lượt còn ngồi thi (chưa vắng, chưa huỷ phần thi): em vắng không làm dòng thành "Đã chấm xong". */
     if (r.sit_status !== 'scheduled' && r.sit_status !== 'sat') continue;
     if (!giuLop(r.class_id)) continue;
-    const mode: CheDo = modes.get(r.programme_code)?.scoringMode === 'ratio' ? 'ratio' : 'ielts_band';
+    const mode = cheDoCua(r.programme_code);
     const khoa = mode === 'ratio' ? `${r.class_id}:${r.kind}` : String(r.class_id);
     let lop = byLop.get(khoa);
     if (!lop) {

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { useApi } from '../../lib/useApi.ts';
+import { useApi, useGopTaiLai } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { BranchFilter, WeekPicker, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
@@ -20,9 +20,6 @@ import { NganXuatMt } from './NganXuatMt.tsx';
 
 type Loai = 'ft' | 'thuong';
 const loaiCua = (l: { mode: LopLichTest['mode'] }): Loai => (l.mode === 'ielts_band' ? 'ft' : 'thuong');
-
-/** Gộp tải lại dải số sau lần lưu cuối (Q14) — tải lại mỗi ô làm nặng Turso. */
-const GOP_TAI_LAI_MS = 1500;
 
 /**
  * TEST › LỊCH TEST (PR-UX1, mockup 13 phương án B) — gộp tab Cần chấm cũ: chấm ngay tại chỗ.
@@ -79,12 +76,7 @@ export function LichTestTab() {
   };
 
   /* Q14 — lưu một ô: gộp 1,5 s sau lần lưu cuối rồi mới tải lại dải số + nhãn. */
-  const hen = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const baoDaLuu = () => {
-    if (hen.current) clearTimeout(hen.current);
-    hen.current = setTimeout(() => { hen.current = null; reload(); }, GOP_TAI_LAI_MS);
-  };
-  useEffect(() => () => { if (hen.current) clearTimeout(hen.current); }, []);
+  const baoDaLuu = useGopTaiLai(reload);
 
   /* Lớp đang mở: nhớ theo tuần (localStorage) + lớp bị "ép mở" bởi đường dẫn / dải số. */
   const tuanId = data?.tuan?.id ?? null;

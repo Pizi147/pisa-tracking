@@ -188,10 +188,14 @@ Việc đầu tiên: giao agent soạn kế hoạch theo mẫu A mục 10 (Opus 
   `aria-describedby` (`ui/ui.tsx` Field, `ui/KhungPanel.tsx` Truong).
 
 ### PR-DL · Điểm theo lớp (L) — kế hoạch có sẵn (DL-0→7), mockup đã duyệt
-- Nhập điểm cả lớp theo từng lượt (FT: MT1, MT2, … kể cả lịch sử; lớp thường: bài theo lịch riêng của lớp). DL-0 sai giả
-  định G2 thì dừng hỏi. `DauTrangLop.tsx`: chỉ thêm một mục menu ⋮.
+- Nhập điểm cả lớp theo từng lượt (FT: MT1, MT2, … kể cả lịch sử; lớp thường: hai bảng Giữa khoá / Cuối khoá, nhận diện theo `kind` —
+  DL-0 04/10 chủ sản phẩm chốt, không có "bài thêm"). `DauTrangLop.tsx`: chỉ thêm một mục menu ⋮.
 
 ### PR-K26 — ✅ xong 05/10 (#196, #197).
+
+### PR-TEN · Đổi tên bài lớp thường (S, sau đợt 3, trước HK2)
+- Chủ sản phẩm 04/10 (lúc làm PR-DL): "Giữa khoá" → **Progress Test**, "Cuối khoá" → **Final Test**, **cả nhãn dài** ("Bài kiểm tra
+  giữa/cuối khoá") — thay ở mọi nơi (web, thông báo, báo cáo, sổ tay; ~940 chỗ / ~130 file). Làm sau khi U12, DL, K26, SL merge để tránh xung đột.
 
 ### PR-HK2 · Badge & chữ, chụp lại sổ tay (L, cuối cùng) — kế hoạch có sẵn một phần
 - `2026-10-02-ux-sau-critique.md`: **H1/H2** ba họ chip · **K1** còn lại (nếu DH chưa làm hết) · **K2** Phân tích › Tổng hợp ·
@@ -440,6 +444,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 05/10/2026 | PR-DL · `pr-dl-diem-theo-lop` · Opus 5.5 | DL-0→7: bảng Điểm theo lớp (hồ sơ lớp ⋮ "Điểm MT cả lớp" + tab Test "Điểm theo lớp"), đọc theo lượt MT / Giữa–Cuối khoá, không đường ghi mới, không tự tạo lịch; lượt mặc định = lượt đang nhập. Thêm 3 đường đo tốc độ. |
 | 05/10/2026 | PR-NV (Opus 5.5) · `pr-nv-nhac-viec-chi-nhanh` | "Để QL biết" → Nhắc việc; Nhắc tất cả 50 thẻ ~93 000 → 121 câu SQL (gom theo người, `myWork` chỉ nhóm cần, dừng trước 10 s), hết 404 Mini Test/Cuối khoá; dải Chờ duyệt tím/xám/đỏ cam; chi nhánh mặc định theo vai QL / lớp dạy, nhớ lần chọn. NV-6 bỏ (→ LT3). |
 | 05/10/2026 | PR-SL (Opus 5.5) · `pr-sl-sua-ca-lop` | Panel Sửa thông tin học viên cả lớp (một giao dịch, Target cần lý do, GVCN không đổi Target); một mẫu Excel chung; I1 Đóng/Huỷ thay đổi, I2 Tạo Case, I3 Thêm HV, I4 KhungPanel (vẽ qua portal, Esc theo ngăn xếp), I6, D11. Check 2553 + 34 xanh. |
 | 05/10/2026 | PR-CHU (Sonnet 5.5) · `pr-chu-ra-soat-chu` | **602 chữ chối** theo màn trong `thiet-ke/CHU_CAN_SUA_2026-10*.md` (file chính + 4 file con, đọc từng ứng viên trong 1 057; bấm thử 4 vai + 375, 436 trạng thái); script `scripts/quet-chu.mjs`. Không đổi mã, không chạy `npm run check`. |

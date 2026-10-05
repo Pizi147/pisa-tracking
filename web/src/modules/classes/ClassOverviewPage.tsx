@@ -20,6 +20,10 @@ import { DauTrangLop, type HoSoLop, type ViecDauTrang } from './DauTrangLop.tsx'
 import { SuaThongTinLopPanel } from './SuaThongTinLopPanel.tsx';
 import { NganXuatMt } from '../test/NganXuatMt.tsx';
 import { TabHocVienLop } from './TabHocVienLop.tsx';
+import { DiemTheoLop } from '../cham/DiemTheoLop.tsx';
+import { duongDiemTheoLuot, type DanhSachLuot } from '../cham/LuoiChamLop.tsx';
+import { MuiTen } from '../cases/SkillBoard.tsx';
+import { Nhan } from '../../ui/Nhan.tsx';
 import { PhanTichLopTab } from './PhanTichLopTab.tsx';
 import { DOT_XUAT_FT, DOT_XUAT_THUONG, TAB_HO_SO_LOP, TAB_HO_SO_LOP_NHAN, tabHoSoLop, type TabHoSoLop } from '@shared/domain/index.ts';
 
@@ -37,6 +41,8 @@ export default function ClassOverviewPage() {
   const periods = usePeriods();
   const [periodId, setPeriodId] = useState<number | null>(null);
   const [viec, setViec] = useState<ViecDauTrang | null>(null);
+  /** PR-DL: khối "Điểm Mock Test của lớp" cuối trang — mặc định thu gọn, ⋮ "Điểm MT cả lớp" mở và cuộn tới. */
+  const [moDiem, setMoDiem] = useState(false);
   /** PR-CT: panel Bàn giao mở kèm môn (GVBM) và/hoặc đúng một lệnh (từ hồ sơ HV). */
   const [bg, setBg] = useState<{ mon: string | null; lenhId: number | null; lop: number | null }>({ mon: null, lenhId: null, lop: null });
   const [caseFor, setCaseFor] = useState(0);
@@ -82,10 +88,18 @@ export default function ClassOverviewPage() {
   const thuong = data.programme?.scoringMode === 'ratio';
   const dong = () => setViec(null);
   const xong = () => { invalidate('/classes'); invalidate('/hoc-vien-lop'); reload(); };
+  const moVaCuonDiem = () => {
+    setMoDiem(true);
+    requestAnimationFrame(() => {
+      const nut = document.getElementById('khoi-diem-lop-nut');
+      nut?.focus({ preventScroll: true });
+      nut?.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    });
+  };
 
   return (
     <div className="page space-y-4">
-      <DauTrangLop data={data} periodId={periodId} onViec={setViec}
+      <DauTrangLop data={data} periodId={periodId} onViec={(v) => (v === 'diem-lop' ? moVaCuonDiem() : setViec(v))}
         onBanGiao={(o) => { setBg({ mon: o.mon ?? null, lenhId: null, lop: o.lop ?? null }); setViec('ban-giao'); }} />
 
       <HangTab ariaLabel="Hồ sơ lớp" value={tab}
@@ -99,6 +113,8 @@ export default function ClassOverviewPage() {
       )}
       {tab === 'y-thuc' && <ClassYThucCard classId={data.id} thuong={thuong} />}
       {tab === 'phan-tich' && <PhanTichLopTab classId={data.id} />}
+
+      {data.viewer.coTheXemDiem && <KhoiDiemLop key={data.id} classId={data.id} thuong={thuong} mo={moDiem} onDoi={() => setMoDiem((m) => !m)} />}
 
       {viec === 'tien-do' && (
         <ClassProgressPanel classId={data.id} classCode={data.code} tieuDe={thuong ? 'Lịch Test của lớp' : 'Tuần khai giảng'}
@@ -127,5 +143,34 @@ export default function ClassOverviewPage() {
         students={(roster.data ?? []).filter((r: any) => !r.archived).map((r: any) => ({ id: r.id, name: r.fullName, code: r.studentCode ?? null }))}
         onPickStudent={setCaseFor} onDone={() => { dong(); setCaseFor(0); xong(); }} />
     </div>
+  );
+}
+
+/**
+ * KHỐI "ĐIỂM MOCK TEST CỦA LỚP" (PR-DL, mockup `mockup-diem-theo-lop-2026-10-04.html` #v-lop) — lối vào kín đáo ở cuối hồ sơ lớp:
+ * một hàng thu gọn + MỘT chip "MT2 còn 3 ô trống" (lượt mở sẵn của `danhSachLuot`). Chỉ khi mở lần đầu mới tải bảng (`DiemTheoLop gon`).
+ */
+function KhoiDiemLop({ classId, thuong, mo, onDoi }: { classId: number; thuong: boolean; mo: boolean; onDoi: () => void }) {
+  const ds = useApi<DanhSachLuot>(duongDiemTheoLuot(classId), [classId]);
+  const l = ds.data?.luot.find((x) => x.ma === ds.data?.macDinh);
+  /* Đã mở một lần thì giữ bảng gắn, thu gọn chỉ ẩn — gỡ bảng sẽ mất ô đang gõ / hộp lý do đang mở. */
+  const [daMo, setDaMo] = useState(mo);
+  if (mo && !daMo) setDaMo(true);
+  return (
+    <section className="card">
+      <h2 className="m-0 text-[15px] font-semibold text-slate-100">
+        <button id="khoi-diem-lop-nut" type="button" aria-expanded={mo} aria-controls="khoi-diem-lop-bang" onClick={onDoi}
+          className="flex w-full min-h-[44px] scroll-mt-4 flex-wrap items-center gap-x-2.5 gap-y-1 rounded-xl px-3 py-3 text-left sm:px-4">
+          <span className="text-slate-400"><MuiTen mo={mo} /></span>
+          <span>{thuong ? 'Điểm Test của lớp' : 'Điểm Mock Test của lớp'}</span>
+          {l && l.oTrong > 0 && <Nhan tone="wait">{`${l.nhan} còn ${l.oTrong} ô trống`}</Nhan>}
+          <span className="flex-1" />
+          <span className="text-xs font-normal text-slate-500 max-sm:hidden">{mo ? 'bấm để thu gọn' : 'bấm để mở'}</span>
+        </button>
+      </h2>
+      <div id="khoi-diem-lop-bang" hidden={!mo} className="px-3 pb-3 sm:px-4 sm:pb-4">
+        {daMo && <DiemTheoLop classId={classId} gon />}
+      </div>
+    </section>
   );
 }

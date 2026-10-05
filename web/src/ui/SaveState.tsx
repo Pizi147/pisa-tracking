@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useId, useRef, useState } from 'react';
 import { capNhatLuuO, tomTatLuuDong, type TrangThaiLuuO } from '@shared/domain/index.ts';
 import { Alert, Status } from './ui.tsx';
 
@@ -30,6 +30,29 @@ export function useBaoLuu(khoa: string, soLoi: number) {
 }
 
 /**
+ * BÁO "CÒN Ô ĐANG LƯU / LƯU HỎNG" LÊN TRÊN (PR-DL): bảng điểm theo lượt chặn đổi lượt khi còn ô đang gửi (hộp hỏi) hoặc ô
+ * lưu hỏng, để không bỏ mất điểm đã gõ. Hai số báo CÙNG lúc nên nơi nghe không thấy khoảnh khắc "hết đang lưu mà chưa
+ * báo lỗi". Ngoài bảng đó (không có Provider) thì không làm gì.
+ */
+export const BaoDangLuuContext = createContext<((khoa: string, dangLuu: boolean, soLoi: number) => void) | null>(null);
+
+/**
+ * HỘP LÝ DO SỬA ĐIỂM ĐANG MỞ = MỘT Ô CHƯA LƯU (PR-DL fix 2): báo CHỈ qua `BaoDangLuuContext` (bảng điểm theo lượt chặn đổi lượt),
+ * không qua `BaoLuuContext` — lưới cũ không hiện thêm "n ô chưa lưu". Gọi trong hộp (chỉ gắn khi hộp mở). `dangGui`: hộp đang gửi
+ * lệnh sửa → báo "đang lưu" (bấm đổi lượt ra câu "Còn ô đang lưu…"), không phải "chưa lưu".
+ */
+export function useBaoHopLyDoMo(dangGui: boolean) {
+  useBaoDangLuu(`hop-ly-do:${useId()}`, dangGui, dangGui ? 0 : 1);
+}
+
+/** Báo một khoá lên `BaoDangLuuContext`; gỡ thì báo hết. */
+function useBaoDangLuu(khoa: string, dang: boolean, loi: number) {
+  const bao = useContext(BaoDangLuuContext);
+  useEffect(() => { bao?.(khoa, dang, loi); }, [bao, khoa, dang, loi]);
+  useEffect(() => () => { bao?.(khoa, false, 0); }, [bao, khoa]);
+}
+
+/**
  * TRẠNG THÁI LƯU THEO TỪNG Ô của MỘT dòng (luật ở `capNhatLuuO` / `tomTatLuuDong`). Dùng chung cho `useSaveScore` (FT) và
  * `useLuuThuong` (lớp thường). Ô lỗi giữ lại đúng lệnh đã gửi (`hong`) để "Lưu lại" gửi lại y nguyên; giá trị đã gõ vẫn
  * nằm trong ô vì ô chỉ bỏ bản nháp khi lưu THÀNH CÔNG.
@@ -45,6 +68,7 @@ export function useTrangThaiLuuO<B>(khoaBao: string) {
   const soLoiNhap = Object.keys(loiNhapO).filter((k) => o[k] !== 'loi').length;
   const soLoi = tong.soLoi + soLoiNhap;
   useBaoLuu(khoaBao, soLoi);
+  useBaoDangLuu(khoaBao, Object.values(o).includes('dang-luu'), soLoi);
   return {
     o, loi, hong, soLoi,
     /** Có ô lỗi GỬI (mạng/5xx) — chỉ lúc đó dòng mới có "Lưu lại"; lỗi nhập thì sửa ngay tại ô. */

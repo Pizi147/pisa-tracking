@@ -4,7 +4,7 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { Info, SectionNote, Status } from '../../ui/ui.tsx';
-import { useTrangThaiLuuO } from '../../ui/SaveState.tsx';
+import { useBaoHopLyDoMo, useTrangThaiLuuO } from '../../ui/SaveState.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
@@ -351,7 +351,8 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false, 
   /* FT không có "dời tiếp": gõ "-" lên ô đang là "-" chỉ không được thành "--". */
   const goLai = useGoLaiDau(draft, () => undefined, inputRef);
   /* Nút − (điện thoại): đúng lệnh của gõ "-". Ô đã có điểm (sửa phải qua lý do) hoặc đã mang dấu thì không nhận. */
-  const nhanDau = !coDiemChinhThuc(cell) && !cell.noShow;
+  /* PR-DL: MT lịch sử không nhận "-" (máy chủ chặn) — không đưa nút Vắng. */
+  const nhanDau = !coDiemChinhThuc(cell) && !cell.noShow && cell.progress !== 'lich_su';
   const bamDau = async () => {
     if (!nhanDau || busy || hoiLyDo) return;
     setBusy(true);
@@ -453,7 +454,7 @@ export function CriteriaButton({ cell, onSave, buttonRef, lon = false, gvMacDinh
   const hieuChinh = coDiemChinhThuc(cell);
   /* Nút − (điện thoại): bốn ô tiêu chí dùng bàn phím số thập phân — iPhone không gõ được "-". */
   const [dangBao, setDangBao] = useState(false);
-  const nhanDau = editable && !hieuChinh && !cell.noShow;
+  const nhanDau = editable && !hieuChinh && !cell.noShow && cell.progress !== 'lich_su';   // PR-DL: MT lịch sử không nhận "-"
   const toastVang = useToastVang();
   const bamDau = async () => {
     if (!nhanDau || dangBao) return;
@@ -788,6 +789,8 @@ export function SuaDiemCoLyDo({ tieuDe, moTaCu, children, onLuu, onDong, loiGiaT
   const dong = useRef(onDong);
   dong.current = onDong;
   const dangLuu = useRef(false);
+  /* Giá trị mới đang nằm trong hộp, chưa gửi: bảng điểm theo lượt coi là "ô chưa lưu" và chặn đổi lượt (không mất điểm đang gõ). */
+  useBaoHopLyDoMo(busy);
 
   const loiLyDo = kiemLyDo(lyDo);
   /* Câu của `kiemLyDo` đứng trước: tooltip của nút Lưu mờ luôn nói đúng câu lý do còn thiếu (RB-5). */

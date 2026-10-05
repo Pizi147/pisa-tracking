@@ -251,8 +251,10 @@ export function useLuuThuong(attemptId: number, onReload: () => void, ct: string
  * `tuanDangXem` (Lịch Test, PR-UX1 Q10): ô chưa có điểm của môn thi tuần khác → chữ mờ `W4 SEP`, không ô nhập — chưa
  * phải việc của tuần đang xem. Môn mang "-" giữ nguyên ô (có `→ tuần mới`).
  */
-export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem = null }: {
+export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem = null, anNutTao = false }: {
   data: ThuongSheet; onReload: () => void; kn?: string | null; hv?: number | null; tuanDangXem?: string | null;
+  /** PR-DL: Điểm theo lớp không tạo bài ("không tự tạo lịch") — ẩn nút "Tạo bài kiểm tra theo chương trình" và câu nhắc nút. */
+  anNutTao?: boolean;
 }) {
   const toast = useToast();
   const skills = data.programme.skills;
@@ -281,7 +283,7 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
       invalidate('/regular'); invalidate('/classes');
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
-  const nutTao = data.canPlan && (
+  const nutTao = data.canPlan && !anNutTao && (
     <button className="btn btn-sm" onClick={plan} disabled={busy}>
       {busy ? 'Đang tạo…' : 'Tạo bài kiểm tra theo chương trình'}
     </button>
@@ -291,7 +293,7 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
     return (
       <Empty
         title="Lớp này chưa có bài kiểm tra nào"
-        hint={data.canPlan
+        hint={anNutTao ? undefined : data.canPlan
           ? 'Bấm "Tạo bài kiểm tra theo chương trình" để sinh bài giữa khoá và cuối khoá theo đúng mốc tuần học.'
           : 'Quản lý cần tạo kế hoạch kiểm tra cho lớp này.'}
         action={nutTao || undefined}

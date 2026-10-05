@@ -72,6 +72,10 @@ export default function StudentDetailPage() {
   const [viecQuanLy, setViecQuanLy] = useState<ViecQuanLy | null>(null);
   const dienThoai = useDienThoai();
   const [planOpen, setPlanOpen] = useState(false);
+  const dongPlan = () => {
+    setPlanOpen(false);
+    if (p.mo) { const next = new URLSearchParams(params); next.delete('mo'); setParams(next, { replace: true }); }
+  };
   const [reportOpen, setReportOpen] = useState(false);
   /** Ngăn Case (Q9) mở do BẤM trong trang (khối PA, ⋮ …) — mở do URL (`?case=`) đọc thẳng từ `p`. */
   const [openCase, setOpenCase] = useState<OpenCase>(null);
@@ -369,14 +373,15 @@ export default function StudentDetailPage() {
       )}
 
       {/* ============================================== hộp thoại */}
-      {planOpen && cy && (
+      {/* PR-DL: `?mo=lo-trinh` (bảng điểm theo lượt, em chưa có lịch MT) mở sẵn panel; đóng thì bỏ tham số. */}
+      {(planOpen || p.mo === 'lo-trinh') && cy && (
         <StudentPlanPanel
           cycleId={cy.id}
           studentName={data.fullName}
           ratio={!!cy.ratio}
           canEditCycle={!!data.viewer.canEditCycle}
-          onDeXuatSua={() => { setPlanOpen(false); setViecQuanLy('de-xuat-sua'); }}
-          onClose={() => setPlanOpen(false)}
+          onDeXuatSua={() => { dongPlan(); setViecQuanLy('de-xuat-sua'); }}
+          onClose={dongPlan}
           onDone={reload}
         />
       )}

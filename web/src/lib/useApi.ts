@@ -33,6 +33,18 @@ function getChung<T>(path: string): Promise<T> {
   return p;
 }
 
+/** Gộp tải lại sau lần lưu cuối (PR-UX1 Q14) — tải lại sau mỗi ô làm nặng Turso. */
+const GOP_TAI_LAI_MS = 1500;
+/** Trả hàm gọi sau mỗi lần lưu: `reload` chạy MỘT lần, 1,5 s sau lần gọi cuối; gỡ trang thì huỷ hẹn. */
+export function useGopTaiLai(reload: () => void): () => void {
+  const hen = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (hen.current) clearTimeout(hen.current); }, []);
+  return () => {
+    if (hen.current) clearTimeout(hen.current);
+    hen.current = setTimeout(() => { hen.current = null; reload(); }, GOP_TAI_LAI_MS);
+  };
+}
+
 export type ApiState<T> = {
   data: T | null;
   /** true chỉ khi CHƯA có dữ liệu để hiển thị — dùng để bật skeleton. */

@@ -1724,17 +1724,28 @@ export function saveScore(
   });
 }
 
-/** Bảng nhập điểm theo lớp × tuần kế hoạch. */
+/**
+ * Chọn hàng cho bảng điểm FT (PR-DL): theo TUẦN kế hoạch (như cũ; số/null ở nơi gọi cũ) hoặc theo SỐ LƯỢT MT — mọi attempt `mock`
+ * số lượt đó của lớp, KHÔNG lọc tuần, nên có cả lượt đã qua (MT lịch sử) và lượt chưa xếp tuần (PR-LM, tuần NULL).
+ */
+export type ChonLuotFT = { theo: 'tuan'; periodId: number | null } | { theo: 'luot'; attemptNo: number };
+
+/** Bảng nhập điểm theo lớp × tuần kế hoạch, hoặc lớp × số lượt MT (`ChonLuotFT`). */
 export function classScoreSheet(
-  p: Principal, classId: number, periodId: number | null, today: string = demoToday(),
+  p: Principal, classId: number, chonVao: number | null | ChonLuotFT, today: string = demoToday(),
 ) {
-  /* Chốt "không dự thi" ở đường đọc — idempotent, thay cho tác vụ nền (PR-G). */
-  settleNoShows(today);
+  const chon: ChonLuotFT = chonVao !== null && typeof chonVao === 'object' ? chonVao : { theo: 'tuan', periodId: chonVao };
+  if (chon.theo === 'luot' && !(Number.isInteger(chon.attemptNo) && chon.attemptNo > 0)) {
+    throw badRequest('Số lượt MT không hợp lệ.');
+  }
   const conn = db();
   const cls = conn.prepare('SELECT c.*, b.name AS branch_name FROM classes c JOIN branches b ON b.id=c.branch_id WHERE c.id=?')
     .get(classId) as any;
   if (!cls) throw notFound('Không tìm thấy lớp');
+  /* Kiểm quyền TRƯỚC mọi truy vấn dữ liệu HV — kể cả việc chốt "không dự thi" ngay dưới (PR-DL). */
   requireXemLuotCham(p, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
+  /* Chốt "không dự thi" ở đường đọc — idempotent, thay cho tác vụ nền (PR-G). */
+  settleNoShows(today);
   /*
    * BẢNG NÀY LÀ BẢNG MOCK TEST. Lớp thường có bảng riêng (`regularSheet`): chấm theo số câu đúng/tổng số câu, bài tên
    * "Giữa khoá"/"Cuối khoá". Mở nhầm bảng là đọc sai cả kết quả — bảng này gọi mọi lượt là "MT{n}" và chấm theo band.
@@ -1743,7 +1754,8 @@ export function classScoreSheet(
   if (isRatioClass(classId)) {
     throw badRequest('Lớp thường dùng bảng điểm riêng (số câu đúng / tổng số câu), không dùng bảng điểm Mock Test.');
   }
-  const period = periodId ? (conn.prepare('SELECT * FROM report_periods WHERE id = ?').get(periodId) as any) : null;
+  const period = chon.theo === 'tuan' && chon.periodId
+    ? (conn.prepare('SELECT * FROM report_periods WHERE id = ?').get(chon.periodId) as any) : null;
 
   const params: unknown[] = [classId];
   let sql = `${ATTEMPT_SELECT} WHERE a.class_id = ? AND a.status != 'cancelled'`;
@@ -1765,6 +1777,9 @@ export function classScoreSheet(
                     AND ask.planned_period_id = ?)
     )`;
     params.push(period.id, period.id);
+  } else if (chon.theo === 'luot') {
+    sql += ` AND a.kind = 'mock' AND a.attempt_no = ?`;
+    params.push(chon.attemptNo);
   }
   sql += ' ORDER BY s.full_name';
   const attempts = conn.prepare(sql).all(...params) as any[];

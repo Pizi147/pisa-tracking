@@ -24,6 +24,8 @@ export type ThamSoHoSo = {
   sub?: 'phoi-hop';
   /** PR-UXF-b (Q10): hồ sơ cuộn tới một khối — `ket-luan-khoa` (hộp Kết luận khoá, `id="ket-luan-khoa"`). */
   muc?: 'ket-luan-khoa';
+  /** PR-DL: mở sẵn panel Lộ trình (bảng điểm theo lượt → em chưa có lịch MT). */
+  mo?: 'lo-trinh';
 };
 
 const KY_NANG_HOP_LE = ['listening', 'reading', 'writing', 'writing1', 'writing2', 'speaking'];
@@ -47,6 +49,7 @@ export function duongHoSoHocVien(studentId: number, o: ThamSoHoSo = {}): string 
   if (o.viec) q.set('viec', o.viec);
   if (o.sub) q.set('sub', o.sub);
   if (o.muc) q.set('muc', o.muc);
+  if (o.mo) q.set('mo', o.mo);
   const s = q.toString();
   return `/hoc-vien/${studentId}${s ? `?${s}` : ''}`;
 }
@@ -97,6 +100,7 @@ export function docThamSoHoSo(get: (k: string) => string | null): ThamSoHoSo {
   if (viec === 'ghi-ket-qua' || viec === 'ke-hoach') o.viec = viec;
   if (get('sub') === 'phoi-hop') o.sub = 'phoi-hop';
   if (get('muc') === 'ket-luan-khoa') o.muc = 'ket-luan-khoa';
+  if (get('mo') === 'lo-trinh') o.mo = 'lo-trinh';
   return o;
 }
 

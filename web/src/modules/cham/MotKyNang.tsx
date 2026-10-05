@@ -18,12 +18,13 @@ import {
 import { duongDotTest } from '@shared/domain/index.ts';
 import { fmtBand } from '../../lib/format.ts';
 import { Info } from '../../ui/ui.tsx';
+import { ChipLichSu } from '../../ui/Nhan.tsx';
 import {
   ChoNutDau, CriteriaButton, KHOA_HOAN_TAT_HINT, ODiemThuong, RawScoreInput, datPhanTram, lockedByNoShow, useSaveScore, type Cell,
 } from '../fasttrack/ScoreEntry.tsx';
 import { HopNhanXet } from '../fasttrack/NhanXet.tsx';
 import { NutGvCham, useGvChamCot } from './GvCham.tsx';
-import { DauLuu, DauO, LuoiFT, VIEN_LOI, khopKn, oTrongFt, type FtSheet } from './LuoiFT.tsx';
+import { DauLuu, DauO, LuoiFT, VIEN_LOI, khopKn, oTrongFt, type FtSheet, type HangMo } from './LuoiFT.tsx';
 import {
   LuoiThuong, ketQuaCua, lichCua, oThuong, tongPhoBien, useLuuThuong, type ThuongSheet,
 } from './LuoiThuong.tsx';
@@ -32,10 +33,10 @@ const KHONG_PHAN_CONG = 'Bạn không được phân công kỹ năng này';
 
 type Chung = { onReload: () => void; kn?: string | null; hv?: number | null };
 
-export function MotKyNang(p: Chung & ({ mode: 'ielts_band'; data: FtSheet } | { mode: 'ratio'; data: ThuongSheet })) {
+export function MotKyNang(p: Chung & ({ mode: 'ielts_band'; data: FtSheet; hangMo?: HangMo[] } | { mode: 'ratio'; data: ThuongSheet; anNutTao?: boolean })) {
   return p.mode === 'ielts_band'
-    ? <MotKyNangFt data={p.data} onReload={p.onReload} kn={p.kn ?? null} hv={p.hv ?? null} />
-    : <MotKyNangThuong data={p.data} onReload={p.onReload} kn={p.kn ?? null} hv={p.hv ?? null} />;
+    ? <MotKyNangFt data={p.data} onReload={p.onReload} kn={p.kn ?? null} hv={p.hv ?? null} hangMo={p.hangMo ?? []} />
+    : <MotKyNangThuong data={p.data} onReload={p.onReload} kn={p.kn ?? null} hv={p.hv ?? null} anNutTao={p.anNutTao} />;
 }
 
 /**
@@ -137,7 +138,9 @@ const oCua = (r: FtSheet['rows'][number], k: string): Cell | undefined => r.cell
 /** Ô tính vào "{đã nhập}/{tổng}" của chip: kỹ năng bắt buộc, không huỷ, không vắng chờ xếp lại. "-" tính là đã nhập. */
 const tinhFt = (c: Cell | undefined): c is Cell => !!c && c.required && c.progress !== 'cancelled' && c.progress !== 'absent';
 
-function MotKyNangFt({ data, onReload, kn, hv }: { data: FtSheet; onReload: () => void; kn: string | null; hv: number | null }) {
+function MotKyNangFt({ data, onReload, kn, hv, hangMo }: {
+  data: FtSheet; onReload: () => void; kn: string | null; hv: number | null; hangMo: HangMo[];
+}) {
   const minh = useMemo(() => new Set(data.editableSkills), [data.editableSkills]);
   const dsKn = useMemo(
     () => [...ENTRY_SKILLS.filter((k) => minh.has(k)), ...ENTRY_SKILLS.filter((k) => !minh.has(k))] as string[],
@@ -149,7 +152,7 @@ function MotKyNangFt({ data, onReload, kn, hv }: { data: FtSheet; onReload: () =
   /* K4-24: GV chấm chọn một lần cho cả lớp × tuần — cùng ô nhớ với tiêu đề cột S của lưới máy tính. */
   const [gvCot, setGvCot] = useGvChamCot(data.classId, data.period?.id, minh.has('speaking'));
 
-  if (data.rows.length === 0 || !chon) return <LuoiFT data={data} onReload={onReload} kn={kn} hv={hv} />;
+  if (data.rows.length === 0 || !chon) return <LuoiFT data={data} onReload={onReload} kn={kn} hv={hv} hangMo={hangMo} />;
 
   const chips = dsKn.map((k) => {
     const cs = data.rows.map((r) => oCua(r, k)).filter(tinhFt);
@@ -168,6 +171,14 @@ function MotKyNangFt({ data, onReload, kn, hv }: { data: FtSheet; onReload: () =
           <DongFt key={r.attemptId} row={r} k={chon} nhieuMt={nhieuMt}
             active={hv !== null && r.studentId === hv} onReload={onReload} gvMacDinh={gvCot}
             inputRef={dangKy(i)} onKeyDown={phim(i)} />
+        ))}
+        {/* PR-DL: em chưa có lịch lượt này — hàng mờ cuối danh sách, không có ô. */}
+        {hangMo.map((h) => (
+          <li key={`mo-${h.studentId}`} data-hv={h.studentId} className="px-3 py-2 min-h-[60px] border-t text-slate-500"
+            style={{ borderColor: 'var(--line)' }}>
+            <div className="truncate" title={h.ten}>{h.ten} <span className="text-[11px]">· {h.ma}</span></div>
+            <div className="text-xs text-slate-400">{h.chu}</div>
+          </li>
         ))}
       </ul>
     </div>
@@ -188,7 +199,7 @@ function DongFt({ row, k, nhieuMt, active, onReload, gvMacDinh, inputRef, onKeyD
   return (
     <DongHv studentId={row.studentId} active={active} ten={row.studentName} href={duongDotTest({ id: row.attemptId }, k)}
       phu={phu} phuTitle={kv !== null ? `Kỳ vọng (KV) của lượt này: ${fmtBand(kv)} · ${row.studentCode}` : undefined}
-      luu={<DauLuu lon status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />}
+      luu={<>{row.lichSu && <ChipLichSu />}<DauLuu lon status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} /></>}
       nhan={<NhanHoanTat hoanTat={row.hoanTat} chuNhatCuoi={row.chuNhatCuoi} />}>
       <div className={`shrink-0 flex items-center justify-end gap-1 rounded-md ${o[k] === 'loi' ? VIEN_LOI : ''}`} data-kn={k}
         data-trong={c && oTrongFt(c) ? '1' : undefined} data-luu={o[k]}>
@@ -218,8 +229,8 @@ const tinhThuong = (r: DongThuongRow, k: string) => {
   return !!s && s.progress !== 'cancelled' && s.progress !== 'absent';
 };
 
-function MotKyNangThuong({ data, onReload, kn, hv }: {
-  data: ThuongSheet; onReload: () => void; kn: string | null; hv: number | null;
+function MotKyNangThuong({ data, onReload, kn, hv, anNutTao }: {
+  data: ThuongSheet; onReload: () => void; kn: string | null; hv: number | null; anNutTao?: boolean;
 }) {
   const skills = data.programme.skills;
   const minh = (k: string) => data.editableSkills.includes(k) || data.rows.some((r) => lichCua(r, k)?.canEdit);
@@ -230,7 +241,7 @@ function MotKyNangThuong({ data, onReload, kn, hv }: {
   const [tongGo, setTongGo] = useState<Record<string, string>>({});
   const { phim, dangKy } = useDiChuyen();
 
-  if (data.rows.length === 0 || !chon) return <LuoiThuong data={data} onReload={onReload} kn={kn} hv={hv} />;
+  if (data.rows.length === 0 || !chon) return <LuoiThuong data={data} onReload={onReload} kn={kn} hv={hv} anNutTao={anNutTao} />;
 
   const chips = dsKn.map((k) => {
     const rs = data.rows.filter((r) => tinhThuong(r, k));

@@ -9,7 +9,7 @@ import { demoToday } from '../demoConfig.ts';
 import { mondayOf } from '../platform/week.ts';
 import { badRequest, forbidden, notFound, nowIso } from '../util.ts';
 import {
-  can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, mySkills, require_, scopeFor,
+  can, classScopeSql, coTheXemLuotCham, defaultWorkScope, editableSkills, isCoreTeacherOf, mySkills, require_, scopeFor,
   type Principal,
 } from '../permissions.ts';
 import { notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
@@ -804,6 +804,8 @@ function classOverviewThat(p: Principal, classId: number) {
     }),
       /** ⋮ Xoá lớp / Kết thúc lớp — CHỈ Quản trị hệ thống (PR-UX3); máy chủ kiểm lại ở từng đường. */
       coTheXoaKetThuc: can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }),
+      /** PR-DL: ⋮ "Điểm MT cả lớp" + khối cuối trang — cùng luật `requireXemLuotCham` của `/classes/:id/diem-theo-luot`. */
+      coTheXemDiem: coTheXemLuotCham(p, { classId }),
     },
   };
 }
