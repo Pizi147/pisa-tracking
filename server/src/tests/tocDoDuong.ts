@@ -119,6 +119,10 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/y-thuc' },
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/violations' },
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/cham' },
+  /* PR-DL: bảng Điểm theo lớp — danh sách lượt (hồ sơ lớp gọi mỗi lần mở), một lượt MT, danh sách lớp của tab Test (trang web /test/diem-lop). */
+  { trang: 'Điểm theo lớp', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/classes/{lopFT}/diem-theo-luot' },
+  { trang: 'Điểm theo lớp', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/classes/{lopFT}/diem-theo-luot/mt:2' },
+  { trang: 'Điểm theo lớp', vai: ['QL', 'QT', 'GVCN', 'GVBM', 'GVCN_THUONG'], url: '/diem-theo-lop/lop' },
   /* PR-UX3: ⋮ Xoá lớp / Kết thúc lớp — chỉ Quản trị hệ thống; QL và GV nhận 403 (máy chủ kiểm quyền, không chỉ ẩn nút). */
   {
     trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/xoa-ket-thuc',
@@ -421,6 +425,20 @@ export const TRAN: Record<string, number> = {
   'GVBM /classes/3/cham': 35,
   'GVCN_THUONG /classes/3/cham': 35,
   'QT /classes/3/cham': 34,
+  // PR-DL (7), 05/10/2026 — mốc chốt sau khi thêm đường (đo 17/16, 32/31, 16 câu): max(sau+10, ⌈sau×1.3⌉).
+  'QL /classes/3/diem-theo-luot': 27,
+  'GVCN /classes/3/diem-theo-luot': 27,
+  'GVBM /classes/3/diem-theo-luot': 27,
+  'QT /classes/3/diem-theo-luot': 26,
+  'QL /classes/3/diem-theo-luot/mt:2': 42,
+  'GVCN /classes/3/diem-theo-luot/mt:2': 42,
+  'GVBM /classes/3/diem-theo-luot/mt:2': 42,
+  'QT /classes/3/diem-theo-luot/mt:2': 41,
+  'QL /diem-theo-lop/lop': 26,
+  'GVCN /diem-theo-lop/lop': 26,
+  'GVBM /diem-theo-lop/lop': 26,
+  'GVCN_THUONG /diem-theo-lop/lop': 26,
+  'QT /diem-theo-lop/lop': 26,
   'QL /cases?classId=3': 28,
   'GVCN /cases?classId=3': 28,
   'GVBM /cases?classId=3': 28,
