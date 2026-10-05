@@ -6,6 +6,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { nhoChiNhanh, useChiNhanhMacDinh, type Branch } from '../../ui/Filters.tsx';
+import { useSession } from '../../lib/session.tsx';
 import { ngay } from '@shared/domain/index.ts';
 
 type LopLuuTru = {
@@ -29,6 +30,7 @@ export default function LuuTruPage() {
   const navigate = useNavigate();
   const toast = useToast();
   const [params, setParams] = useSearchParams();
+  const uid = useSession().session?.user?.id;
   const tab: TabLuuTru = params.get('tab') === 'hv' ? 'hv' : 'lop';
   const cnUrl = params.get('cn') ?? params.get('branchId');
   const macDinh = useChiNhanhMacDinh();
@@ -86,7 +88,7 @@ export default function LuuTruPage() {
           value={draftQ} onChange={(e) => setDraftQ(e.target.value)} />
         {(branches.data?.length ?? 0) > 1 && (
           <select className="field w-auto" aria-label="Chi nhánh" value={branchId ?? ''}
-            onChange={(e) => { nhoChiNhanh(e.target.value ? Number(e.target.value) : null); setParam({ cn: e.target.value || null, branchId: null }); }}>
+            onChange={(e) => { nhoChiNhanh(uid, e.target.value ? Number(e.target.value) : null); setParam({ cn: e.target.value || null, branchId: null }); }}>
             <option value="">Mọi chi nhánh</option>
             {(branches.data ?? []).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
           </select>

@@ -9,6 +9,7 @@ import { HangNhom } from '../../ui/HangNhom.tsx';
 import { CongTacKhung, khungDaNho, type KhungLoc } from '../../ui/CongTacKhung.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { docChiNhanhDaNho, nhoChiNhanh, type Branch } from '../../ui/Filters.tsx';
+import { coDichLienKet } from '@shared/domain/index.ts';
 import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
 import { IntakePanel } from './IntakePanel.tsx';
 import { ClassCreatePanel } from '../classes/ClassCreatePanel.tsx';
@@ -61,13 +62,14 @@ function nhanLuuTru(dem: { lop: number; hv: number }): string {
  */
 export default function StudentsPage() {
   const navigate = useNavigate();
-  const { can } = useSession();
+  const { can, session } = useSession();
   const [params, setParams] = useSearchParams();
   const doc = docThamSoLoc(params.get('view'));
   const q = params.get('q') ?? '';
   const cnUrl = params.get('cn') ?? params.get('branchId');
   const branchId = cnUrl ? Number(cnUrl) : null;
-  const daNho = docChiNhanhDaNho();
+  /* Link trỏ một lớp / học viên (`classId`, `open`) không gửi lần chọn trước — lớp có thể ở chi nhánh khác (rà PR #205). */
+  const daNho = coDichLienKet(params) ? null : docChiNhanhDaNho(session?.user?.id);
   const phamViUrl = params.get('phamVi');
   const sapXep: SapXep = params.get('sx') === 'chu-y' ? 'chu-y' : 'ten';
   const chiLop = params.get('classId') ? Number(params.get('classId')) : null;
@@ -196,7 +198,7 @@ export default function StudentsPage() {
           )}
           {pv?.dangDung === 'chi-nhanh' && (branches.data?.length ?? 0) > 1 && (
             <select className={SELECT_GON} aria-label="Chi nhánh" value={pv.chiNhanh ?? ''}
-              onChange={(e) => { nhoChiNhanh(Number(e.target.value)); setParam({ phamVi: 'chi-nhanh', cn: e.target.value, branchId: null, open: null }); }}>
+              onChange={(e) => { nhoChiNhanh(session?.user?.id, Number(e.target.value)); setParam({ phamVi: 'chi-nhanh', cn: e.target.value, branchId: null, open: null }); }}>
               {(branches.data ?? []).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
           )}

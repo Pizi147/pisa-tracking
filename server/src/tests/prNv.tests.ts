@@ -301,4 +301,38 @@ export async function runPrNvTests(t: YThucTestKit) {
     const q = trongBoNho(() => hvl.danhSachHocVienLop(P.mbManager, { phamVi: 'chi-nhanh', cnNho: ngoai }));
     assert(q.phamVi.chiNhanh !== ngoai, `QL MB nhận chi nhánh ngoài phạm vi ${ngoai}`);
   });
+
+  // ---------------------------------------------------------------- Sau rà PR #205 (06/10)
+  const fsNv = await import('node:fs');
+  const pathNv = await import('node:path');
+  const { fileURLToPath: fuNv } = await import('node:url');
+  const REPO_NV = pathNv.resolve(pathNv.dirname(fuNv(import.meta.url)), '../../../..');
+  const docNguon = (f: string) => fsNv.readFileSync(pathNv.join(REPO_NV, f), 'utf8');
+
+  check('NV-5 (rà) · link trỏ một thẻ / lớp / việc (the, lop, classId, mo-viec, open) KHÔNG áp chi nhánh mặc định', () => {
+    for (const q of ['the=21', 'lop=3', 'classId=3', 'mo-viec=9', 'open=4', 'xem=de-biet&the=5']) {
+      assert(d.coDichLienKet(new URLSearchParams(q)) === true, q);
+    }
+    for (const q of ['', 'cn=2', 'xem=de-biet', 'periodId=4']) assert(d.coDichLienKet(new URLSearchParams(q)) === false, q);
+    assert(/coDichLienKet\(/.test(docNguon('web/src/ui/Filters.tsx')), 'useChiNhanhMacDinh chưa dùng coDichLienKet');
+    assert(/coDichLienKet\(/.test(docNguon('web/src/modules/students/StudentsPage.tsx')), 'Học viên & Lớp gửi cnNho cả khi link trỏ lớp');
+  });
+
+  check('NV-5 (rà) · hộp Chờ duyệt LUÔN mở Tất cả chi nhánh (chủ sản phẩm 06/10): không dùng chi nhánh mặc định; chip Tất cả = badge', () => {
+    assert(!/useChiNhanhMacDinh/.test(docNguon('web/src/modules/duyet/HopChoDuyet.tsx')), 'HopChoDuyet còn áp chi nhánh mặc định');
+    for (const p of [P.admin, P.mbManager]) assert(yc.hopChoDuyet(p, {}).dem['tat-ca'] === yc.demYeuCau(p).cho, `badge ≠ chip Tất cả (${p.userId})`);
+  });
+
+  check('NV-3 (rà) · thẻ Mini Test / Cuối khoá có tên người nhận; nhắc xong GET trả daNhacLuc (nút Nhắc tất cả không đếm lại)', () => {
+    const ds = theCho().filter((r) => r.loai === 'bao_len_mini_test' || r.loai === 'bao_len_cuoi_khoa');
+    assert(ds.length > 0, 'seed cần thẻ Mini Test / Cuối khoá có người nhận');
+    xoaNhac();
+    const truoc = yc.hopChoDuyet(P.admin, { xem: 'de-biet' }).the.filter((x: any) => ds.some((r) => r.id === x.id));
+    assert(truoc.length && truoc.every((x: any) => typeof x.duLieu?.tenGv === 'string' && !x.duLieu?.daNhacLuc), JSON.stringify(truoc.map((x: any) => x.duLieu)));
+    const r = yc.nhacNhieu(P.admin, ds.map((x) => x.id));
+    const ok = new Set(r.ok.map((x: any) => x.id));
+    assert(ok.size > 0, JSON.stringify(r));
+    const sau = yc.hopChoDuyet(P.admin, { xem: 'de-biet' }).the.filter((x: any) => ok.has(x.id));
+    assert(sau.length === ok.size && sau.every((x: any) => typeof x.duLieu?.daNhacLuc === 'string'), JSON.stringify(sau.map((x: any) => x.duLieu)));
+  });
 }

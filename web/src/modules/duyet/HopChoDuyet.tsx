@@ -4,7 +4,7 @@ import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { BoLocDoan, Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
-import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
+import { BranchFilter } from '../../ui/Filters.tsx';
 import { NganCase } from '../students/NganCase.tsx';
 import { TheYeuCau } from './TheYeuCau.tsx';
 import {
@@ -42,8 +42,8 @@ export function HopChoDuyet() {
   const xem = thamXem === 'da-xu-ly' || thamXem === 'de-biet' ? thamXem : 'cho';
   /* Phân loại chỉ lọc ở tab Chờ duyệt; Nhắc việc chỉ có một phân loại. */
   const phan = xem !== 'de-biet' && laPhanLoai(params.get('phan')) && params.get('phan') !== 'bao-len' ? (params.get('phan') as KhoaChip) : 'tat-ca';
-  const macDinh = useChiNhanhMacDinh();
-  const branchId = params.get('cn') ? Number(params.get('cn')) : macDinh;
+  /* Chủ sản phẩm 06/10: hộp LUÔN mở Tất cả chi nhánh (không áp chi nhánh mặc định) — số dòng khớp badge Công việc; tự lọc nếu muốn. */
+  const branchId = params.get('cn') ? Number(params.get('cn')) : null;
   /* PR-S4F #5: `?lop=` — từ badge "n chờ duyệt" của một lớp. */
   const lopId = Number(params.get('lop')) || null;
   /* PR-VAI-a (Q17): `?qua-han=1` — từ số "k quá hạn" của dải Chờ duyệt ở Tổng quan. */

@@ -14,6 +14,13 @@ export type DauVaoChiNhanh = {
   cuoi: number | null;
 };
 
+/**
+ * Link trỏ MỘT thẻ / lớp / việc (chuông `?the=`, badge lớp `?lop=`, `?classId=`, `?mo-viec=`, `?open=`) — không áp chi nhánh mặc định
+ * (rà PR #205): đích có thể ở chi nhánh khác chi nhánh đã nhớ, lọc theo nhớ sẽ giấu mất đúng thứ người dùng bấm tới.
+ */
+export const THAM_SO_DICH = ['the', 'lop', 'classId', 'mo-viec', 'open'] as const;
+export const coDichLienKet = (q: { has(k: string): boolean }): boolean => THAM_SO_DICH.some((k) => q.has(k));
+
 export function chiNhanhMacDinh(i: DauVaoChiNhanh): number | null {
   if (i.daChon === 'tat-ca') return null;
   if (i.daChon !== null) return i.daChon;

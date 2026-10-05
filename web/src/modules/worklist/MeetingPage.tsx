@@ -6,6 +6,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { BoLocDoan, Card, Empty, ErrorState, Info, NutChon, Outcome, Skeleton, Status, Th } from '../../ui/ui.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { WeekPicker, nhoChiNhanh, resolveWeek, useChiNhanhMacDinh, usePeriodWindow } from '../../ui/Filters.tsx';
+import { useSession } from '../../lib/session.tsx';
 import { SignalList } from './SignalList.tsx';
 import { ManagerTaskList } from './ManagerTasks.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
@@ -50,6 +51,7 @@ const TUTOR_LABEL_NGAN: Record<string, string> = { tutor_count: 'Số lượng',
  */
 export function MeetingBoard() {
   const [params, setParams] = useSearchParams();
+  const uid = useSession().session?.user?.id;
   const [periodId, setPeriodIdState] = useState<number | null>(params.get('periodId') ? Number(params.get('periodId')) : null);
   const setPeriodId = (id: number | null) => {
     setPeriodIdState(id);
@@ -151,7 +153,7 @@ export function MeetingBoard() {
             <span className="shrink-0 text-xs text-slate-400">Chi nhánh</span>
             {/* Mỗi chi nhánh đúng một đơn vị → bỏ số đếm từng nút (toàn "2" là nhiễu); D9-a: chọn chi nhánh hiện kèm Tutor part-time. */}
             <div className="min-w-0 flex-1"><BoLocDoan ariaLabel="Lọc chi nhánh" value={cn} onChange={(k) => {
-              if (k !== 'tutor') nhoChiNhanh(k === 'tat-ca' ? null : Number(k));   // Tutor không phải chi nhánh — không nhớ
+              if (k !== 'tutor') nhoChiNhanh(uid, k === 'tat-ca' ? null : Number(k));   // Tutor không phải chi nhánh — không nhớ
               datParam('cn', k === 'tat-ca' ? null : k);
             }}
               muc={luaChonCn.map((m) => ({ key: m.key, nhan: m.nhan,
