@@ -76,12 +76,23 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
   };
   const macDinh = (s: any): Dong => {
     const l = s.lenh;
-    if (!l) return DONG_TRONG;
+    if (!l) return deXuatGvcn(s) ?? DONG_TRONG;
     return {
       /* Tuần đã qua (lệnh chưa chuyển được, PR-S5F-a) → về tuần chung để Quản lý chọn tuần mới. */
       kieu: kieuTuLenh(l), toClassId: l.lopDichId ?? '', tuan: l.tuan === tuanCh || (!!homNay && l.tuan <= homNay) ? '' : l.tuan, mucTieu: l.mucTieu == null ? '' : String(l.mucTieu),
       ngayThi: l.ngayThi ?? '', lyDo: l.lyDo ?? '', ngayXemLai: l.ngayXemLai ?? '',
     };
+  };
+  /**
+   * PR-K26: em chưa có lệnh mà GVCN đã ghi Lộ trình tiếp theo Lên/Học lại/Lên FT (gồm đề xuất của em 50–59%) → điền sẵn hướng + lớp dự kiến.
+   * CHỈ điền khi dòng hợp lệ ngay (đủ lớp chuyển đến, Target…) — dòng thiếu để trống như cũ, không chặn nút gửi.
+   */
+  const deXuatGvcn = (s: any): Dong | null => {
+    const lt = s.loTrinhTiep;
+    const kieu: Kieu | '' = ft || !lt ? '' : lt.huong === 'len_lop' ? 'len' : lt.huong === 'hoc_lai' ? 'lai' : lt.huong === 'fast_track' ? 'ft' : '';
+    if (!kieu || !lt.lopDuKienId) return null;
+    const d: Dong = { ...DONG_TRONG, kieu, toClassId: lt.lopDuKienId, mucTieu: lt.mucTieu == null ? '' : String(lt.mucTieu), ngayThi: lt.thangThi ?? '' };
+    return lopHopLe(kieu).some((c: any) => c.id === lt.lopDuKienId) && !kiemTra(s, d) ? d : null;
   };
   const dongCua = (s: any): Dong => ({ ...macDinh(s), ...(dongs[s.id] ?? {}) });
   const sua = (sid: number, p: Partial<Dong>) => {
@@ -284,7 +295,7 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
               </div>
               <div className="divide-y" style={{ borderColor: 'var(--line)' }}>
                 {rows.map(({ s, d, loi }) => (
-                  <HangEm key={s.id} s={s} d={d} ft={ft} luoi={luoi} maKe={maKe} routeTu={routeTu} tuanCh={tuanCh} homNay={homNay}
+                  <HangEm key={s.id} s={s} d={d} ft={ft} tuDeXuat={!s.lenh && !dongs[s.id] && !!d.kieu} luoi={luoi} maKe={maKe} routeTu={routeTu} tuanCh={tuanCh} homNay={homNay}
                     loi={hienLoi(s.id) ? loi : null} loiMayChu={loiMayChu[s.id] ?? null} oId={lf.oId(`dong-${s.id}`)} khoa={!data.canEdit}
                     chon={chon.has(s.id)} onChon={(v) => setChon((x) => { const n = new Set(x); if (v) n.add(s.id); else n.delete(s.id); return n; })}
                     sua={(p) => sua(s.id, p)} lopHopLe={lopHopLe} nhanLop={nhanLop} data={data}
@@ -321,8 +332,8 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
   );
 }
 
-function HangEm({ s, d, ft, luoi, maKe, routeTu, tuanCh, homNay, loi, loiMayChu, oId, khoa, chon, onChon, sua, lopHopLe, nhanLop, data, huy, moHuy, doiLyDoHuy, dongHuy, xacNhanHuy }: {
-  s: any; d: Dong; ft: boolean; luoi: string; maKe: ProgrammeCode | null; routeTu: string | null; tuanCh: string; homNay: string;
+function HangEm({ s, d, ft, tuDeXuat, luoi, maKe, routeTu, tuanCh, homNay, loi, loiMayChu, oId, khoa, chon, onChon, sua, lopHopLe, nhanLop, data, huy, moHuy, doiLyDoHuy, dongHuy, xacNhanHuy }: {
+  s: any; d: Dong; ft: boolean; tuDeXuat: boolean; luoi: string; maKe: ProgrammeCode | null; routeTu: string | null; tuanCh: string; homNay: string;
   loi: string | null; loiMayChu: string | null; oId: string; khoa: boolean; chon: boolean; onChon: (v: boolean) => void;
   sua: (p: Partial<Dong>) => void; lopHopLe: (k: Kieu | '') => any[]; nhanLop: (c: any) => string; data: any;
   huy: { sid: number; lyDo: string } | null; moHuy: () => void; doiLyDoHuy: (v: string) => void; dongHuy: () => void; xacNhanHuy: () => void;
@@ -389,6 +400,7 @@ function HangEm({ s, d, ft, luoi, maKe, routeTu, tuanCh, homNay, loi, loiMayChu,
           </select>
         </span>
         {!d.kieu && <span className="mt-1 block text-[11px] text-slate-500">Chưa chọn</span>}
+        {tuDeXuat && <span className="mt-1 block text-[11px] text-slate-400">Điền sẵn theo Lộ trình tiếp theo GVCN ghi</span>}
       </span>
       <span role="cell" className="min-w-0">
         <span className={nhan}>Lớp chuyển đến</span>
