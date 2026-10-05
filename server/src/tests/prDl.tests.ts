@@ -538,6 +538,7 @@ export async function runPrDlTests(t: YThucTestKit) {
     for (const chu of ["'/diem-theo-lop/lop'", "get('lop')", '<select', '<DiemTheoLop', 'aria-current', 'Lớp · còn ô trống', 'aria-label="Danh sách lớp"', ' trống', "'đủ'"]) assert(f.includes(chu), `TabDiemLop thiếu: ${chu}`);
     assert(/tab === 'diem-lop' && <TabDiemLop/.test(doc('web/src/modules/test/TestPage.tsx')), 'TestPage gắn tab');
     assert(!f.includes('Lớp tôi dạy') && !f.includes('Lớp của tôi'), 'tiêu đề trung tính (QL/GVCN không "dạy")');
+    assert(f.includes('grid grid-cols-1 items-start gap-4 md:grid-cols-[240px_minmax(0,1fr)]'), '375: lưới một cột minmax(0,1fr), không tràn ngang');
   });
 
   check('DL-6 fix: đổi lớp đi CÙNG đường chặn với đổi lượt (CongRoi); danh sách + ô chọn lớp giữ hộp lý do; số ô trống tải lại sau khi lưu', () => {

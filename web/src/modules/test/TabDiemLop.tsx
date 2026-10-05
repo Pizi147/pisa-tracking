@@ -36,8 +36,9 @@ export function TabDiemLop() {
   };
   const giu = (e: MouseEvent) => cong.current?.giu(e);
 
+  /* `grid-cols-1` = minmax(0,1fr): lưới một cột không giãn theo bề rộng nội dung (thanh lượt, bảng một kỹ năng) → không tràn ngang ở 375. */
   return (
-    <div className="grid items-start gap-4 md:grid-cols-[240px_minmax(0,1fr)]">
+    <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-[240px_minmax(0,1fr)]">
       <select className="field md:hidden" aria-label="Chọn lớp" value={chon.classId} onMouseDown={giu} onChange={(e) => chonLop(Number(e.target.value))}>
         {data.map((l) => <option key={l.classId} value={l.classId}>{l.classCode} · {conTrong(l)}</option>)}
       </select>
