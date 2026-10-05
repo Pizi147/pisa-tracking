@@ -233,7 +233,9 @@ export async function runPrHsmTests(t: YThucTestKit) {
     const hs = docSach('web/src/modules/students/StudentDetailPage.tsx');
     const bang = hs.slice(hs.indexOf('function IeltsAttempts'), hs.indexOf('function RatioAttempts'));
     assert(bang.length > 100 && !/attemptStatusLabel\(/.test(bang) && !bang.includes('Hồ sơ đợt ›') && /<KetQuaDot/.test(bang), 'IeltsAttempts');
-    assert(/doiKyNang/.test(bang) && /huyPhan/.test(bang) && /<Link/.test(bang), 'nhãn dời/huỷ phần, MT là liên kết');
+    // PR-U12: nhãn tách ra NhanDot, dùng chung với bảng lớp thường
+    const nhan = hs.slice(hs.indexOf('function NhanDot'), hs.indexOf('function IeltsAttempts'));
+    assert(/doiKyNang/.test(nhan) && /huyPhan/.test(nhan) && /<NhanDot a=\{a\}/.test(bang) && /<Link/.test(bang), 'nhãn dời/huỷ phần, MT là liên kết');
   });
 
   // ------------------------------------------------------------------ khối 7: GV Speaking chấm S chéo lớp FT cùng chi nhánh (chủ sản phẩm 30/09)

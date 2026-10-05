@@ -14,6 +14,7 @@ import { TeacherAssignPanel } from './TeacherAssignPanel.tsx';
 import { KetThucLopPanel, XoaLopPanel } from './XoaKetThucLopPanel.tsx';
 import { ClassProgressPanel } from './ClassProgressPanel.tsx';
 import { TransitionPanel } from './TransitionPanel.tsx';
+import { LoTrinhTiepCaLopPanel } from './LoTrinhTiepCaLopPanel.tsx';
 import { BanGiaoPanel } from './BanGiaoPanel.tsx';
 import { DauTrangLop, type HoSoLop, type ViecDauTrang } from './DauTrangLop.tsx';
 import { SuaThongTinLopPanel } from './SuaThongTinLopPanel.tsx';
@@ -104,6 +105,7 @@ export default function ClassOverviewPage() {
           onClose={dong} onDone={xong} onChuyenTiep={data.viewer.coTheChuyenTiep ? () => setViec('chuyen-tiep') : undefined} />
       )}
       <TransitionPanel classId={data.id} open={viec === 'chuyen-tiep'} onClose={dong} onDone={xong} />
+      {viec === 'lo-trinh-ca-lop' && <LoTrinhTiepCaLopPanel classId={data.id} onClose={dong} onDone={xong} />}
       {viec === 'ban-giao' && <BanGiaoPanel classId={bg.lop ?? data.id} mon={bg.mon} lenhId={bg.lenhId} onClose={dong} onDone={xong} />}
       <TeacherAssignPanel open={viec === 'phan-cong'} onClose={dong} classId={data.id} classCode={data.code} onDone={xong} />
       {viec === 'thong-tin' && (

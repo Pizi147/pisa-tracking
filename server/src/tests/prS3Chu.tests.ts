@@ -93,7 +93,8 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
   check('S3 (1) · Hồ sơ Mock Test là tên trang FT; lớp thường dùng "Bảng điểm đợt" (không có chữ Mock/MT); tab Hỗ trợ học viên', () => {
     assert(/Hồ sơ Mock Test ·/.test(docNguon('web/src/modules/fasttrack/MockDetailPage.tsx')), 'tiêu đề MockDetailPage');
     const sd = docNguon('web/src/modules/students/StudentDetailPage.tsx');
-    assert((sd.match(/Bảng điểm đợt ›/g) ?? []).length === 2, 'link lớp thường');
+    // PR-U12: bỏ link riêng "Bảng điểm đợt ›" — ô Bài là liên kết; tên trang vẫn là "bảng điểm đợt" (gợi ý cột Bài)
+    assert(!sd.includes('Bảng điểm đợt ›') && /mở bảng điểm đợt/.test(sd), 'link lớp thường');
     assert(/'ho-tro': 'Hỗ trợ học viên'/.test(docNguon('shared/domain/dieuHuong.ts')), 'TAB_CONG_VIEC_LABEL');
     assert(/'Tổng hợp'/.test(docNguon('web/src/modules/phanTich/TongHopTestSos.tsx')), 'Excel A-054');
   });

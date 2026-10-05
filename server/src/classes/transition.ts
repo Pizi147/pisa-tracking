@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  PERMISSIONS, PROGRAMME_TEMPLATES, kiemDongChuyenTiep, tuanChonDuoc, kyHieuLop, soSanhLop, tachSoLop, luatDoiLop, nextStepsAfter, programmeOf, tuanHocTai, tuanKhoa,
+  PERMISSIONS, PROGRAMME_TEMPLATES, chuanHoaHuong, kiemDongChuyenTiep, tuanChonDuoc, kyHieuLop, soSanhLop, tachSoLop, luatDoiLop, nextStepsAfter, programmeOf, tuanHocTai, tuanKhoa,
   type DongChuyenTiep, type Huong, type LoaiLop, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, isIsoDate, notFound } from '../util.ts';
@@ -20,7 +20,7 @@ import { HV_DANG_HOC_SQL, khoangTamDung } from '../students/tamDung.ts';
  * CHUYỂN TIẾP KHI MỘT LỚP HỌC HẾT CHƯƠNG TRÌNH — mục 6.1, đặc tả §3.9.2 (PR-LT thay khung cũ).
  *
  * Luồng mặc định: FOU → BE, và BE/ELE → Fast Track. Mỗi em CHỌN RIÊNG một hướng (lên lớp, học
- * lại, sang Fast Track, tạm dừng học (bảo lưu), dừng học hẳn, xếp sau) — hệ thống không tự chuyển ai.
+ * lại, sang Fast Track, tạm dừng học (bảo lưu), dừng học hẳn, chưa quyết) — hệ thống không tự chuyển ai.
  */
 
 // ==================================================================== Kế hoạch (chỉ đọc)
@@ -215,7 +215,7 @@ export type TransitionInput = {
  *
  * Kiểm mỗi dòng bằng `kiemDongChuyenTiep` TRƯỚC — dòng lỗi vào `failed`, dòng đúng nhóm lại
  * theo hướng rồi ghi THEO LÔ (Q20): `len_lop/hoc_lai/fast_track` → `apDungCaLop`; `bao_luu` →
- * `apDungBaoLuuCaLop`; `dung_hoc` → Kết thúc học (ngoại lệ đi từng em, hiếm gặp); `xep_sau` →
+ * `apDungBaoLuuCaLop`; `dung_hoc` → Kết thúc học (ngoại lệ đi từng em, hiếm gặp); `chua_quyet` →
  * chỉ ghi dự định.
  */
 export function applyTransition(p: Principal, input: TransitionInput, o?: { daDuyet?: true }) {
@@ -279,14 +279,16 @@ export function applyTransition(p: Principal, input: TransitionInput, o?: { daDu
         luuY: (m.handoverNote ?? '').trim() || (input.handoverNote ?? '').trim() || null,
       };
     });
-    const dongs: TransitionDong[] = input.dongs?.length ? input.dongs : legacyDongs;
+    /* PR-K26: form cũ còn gửi `xep_sau` → `chua_quyet`; hướng lạ → null ("Thiếu hướng"). */
+    const dongs: TransitionDong[] = (input.dongs?.length ? input.dongs : legacyDongs)
+      .map((d) => ({ ...d, huong: d.huong ? chuanHoaHuong(d.huong) : null }));
     if (!dongs.length) throw badRequest('Chưa chọn học viên nào để chuyển.');
 
     const failed: { studentId: number; message: string }[] = [];
     const okChuyenLop: DongCaLop[] = [];
     const okBaoLuu: { sid: number; lyDo: string }[] = [];
     const okDungHoc: { sid: number; lyDo: string }[] = [];
-    const okXepSau: { sid: number; lyDo: string; ngayXemLai: string }[] = [];
+    const okChuaQuyet: { sid: number; lyDo: string; ngayXemLai: string }[] = [];
     const doneList: { studentId: number; toClassId: number }[] = [];
 
     for (const dg of dongs) {
@@ -310,8 +312,8 @@ export function applyTransition(p: Principal, input: TransitionInput, o?: { daDu
       } else if (huong === 'dung_hoc') {
         okDungHoc.push({ sid: dg.studentId, lyDo: dg.lyDo! });
         doneList.push({ studentId: dg.studentId, toClassId: input.fromClassId });
-      } else if (huong === 'xep_sau') {
-        okXepSau.push({ sid: dg.studentId, lyDo: dg.lyDo!, ngayXemLai: dg.ngayXemLai! });
+      } else if (huong === 'chua_quyet') {
+        okChuaQuyet.push({ sid: dg.studentId, lyDo: dg.lyDo!, ngayXemLai: dg.ngayXemLai! });
       }
     }
 
@@ -327,7 +329,7 @@ export function applyTransition(p: Principal, input: TransitionInput, o?: { daDu
     const okAll = [...okChuyenLop.map((d) => ({ sid: d.sid, huong: d.huong as Huong, applied: true })),
       ...okBaoLuu.map((d) => ({ sid: d.sid, huong: 'bao_luu' as Huong, applied: false })),
       ...okDungHoc.map((d) => ({ sid: d.sid, huong: 'dung_hoc' as Huong, applied: true })),
-      ...okXepSau.map((d) => ({ sid: d.sid, huong: 'xep_sau' as Huong, applied: false }))];
+      ...okChuaQuyet.map((d) => ({ sid: d.sid, huong: 'chua_quyet' as Huong, applied: false }))];
     if (okAll.length) {
       const now = new Date().toISOString();
       const byId = new Map(dongs.map((d) => [d.studentId, d]));

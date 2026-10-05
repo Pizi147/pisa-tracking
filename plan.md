@@ -8,13 +8,16 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 - **Một nguồn duy nhất** cho: đã làm gì, còn gì, thứ tự, model, skill, prompt. Session planning sửa file này; session code
   chỉ thêm **một dòng** vào mục 11 (Nhật ký) khi xong PR.
 - Kế hoạch chi tiết (từng Task, từng bước) chỉ giữ cho **PR chưa làm**. PR merge xong → session planning xoá file chi tiết
-  của nó (git còn giữ). Hiện còn 5 file:
+  của nó (git còn giữ). Hiện còn 8 file:
 
 | File chi tiết | Dùng cho |
 |---|---|
-| `docs/superpowers/plans/2026-10-04-pr-u12-ket-qua-lop-thuong.md` | PR-U12 (U12-1→3) |
 | `docs/superpowers/plans/2026-10-04-pr-dl-diem-theo-lop.md` | PR-DL (DL-0→7) |
-| `docs/superpowers/plans/2026-10-04-pr-k26-lo-trinh-tiep-theo-dai.md` | PR-K26 (K26-1→5) |
+| `docs/superpowers/plans/2026-10-05-pr-nv-nhac-viec-chi-nhanh.md` | PR-NV (đợt 4) |
+| `docs/superpowers/plans/2026-10-05-pr-chu-ra-soat-chu.md` | PR-CHU (đợt 4) |
+| `docs/superpowers/plans/2026-10-05-pr-mta-luat-mock-test.md` | PR-MTa (đợt 4) |
+| `docs/superpowers/plans/2026-10-05-pr-mtb-giao-dien-mock-test.md` | PR-MTb (đợt 5) |
+| `docs/superpowers/plans/2026-10-05-pr-mt0.md` | PR-MT0 (đợt 5) |
 | `docs/superpowers/plans/2026-10-03-pr-phien-lich-mt-dieu-huong-sua-lop.md` | PR-SL (mục B Q-0310-3, "PR-SL", SL-1→2). Phần PH, LM, DH đã xong |
 | `docs/superpowers/plans/2026-10-02-ux-sau-critique.md` | PR-HK2 (H1, H2, K2, K4–K7, J1–J4, J7, J9), PR-SL (I1–I4, I6) |
 
@@ -28,6 +31,8 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 - **Không biết code.** Báo bằng tiếng Việt cơ bản, nói theo "cái thấy trên màn" trước, tên file sau.
 - Muốn: dễ hiểu · dễ dùng · gọn; giao diện tinh tế (cột hàng thẳng, không dồn chữ, màu rõ). Hỏi **gộp một lần** (≤ 4 câu,
   mỗi câu có phương án + khuyến nghị); đủ tự tin thì tự quyết và liệt kê "tôi đã tự quyết". Mockup ghi rõ **nằm ở đâu**.
+- **Chữ trên web ngắn** (05/10): nhãn 1–3 từ, không thêm câu giải thích dưới nút/ô; dùng English hoặc nửa Anh nửa Việt khi tự nhiên hơn. **Mockup = đúng chữ sẽ hiện trên web**, không thêm ghi chú vào trong màn. Prompt có giao diện phải ghi rõ luật này.
+- **PR có giao diện/UX: phải có mockup cho chủ sản phẩm xem và duyệt TRƯỚC khi code** (06/10): file HTML trong `thiet-ke/`, đủ rõ — mọi trạng thái (mở/thu, rỗng, quá hạn/badge, nhiều lớp), 375 và 1440, sáng và tối, đúng chữ thật. PR nào chưa có mockup đã duyệt thì session code **dừng, soạn mockup, báo chủ sản phẩm**, không tự chế giao diện.
 - **Không tự merge, không deploy, không gửi gì ra ngoài** khi chưa được bảo. Chủ sản phẩm chỉ merge khi planning nói "merge được".
 
 ### 1.2. Quy trình một PR
@@ -90,6 +95,7 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 | Trước deploy lần 1 (22–24/09) | #67–#103 | PR-Pa, Qa, Qb, Rc1, Rc2, Form, Pb, TD tốc độ, YT2/YT2b, Ra, LT, UX0–UX5 overhaul, Z2c (deploy bản chính), XOA |
 | Nâng cấp 6 đợt (26/09–01/10) | #104–#162 | Đợt 1 N1·LOP·NEN · đợt 2 DUYET·MT·NHAP·MON·KCK · đợt 3 XLMT·SOS·YT4 · đợt 4 HSM·XUAT·HVL·SANG · đợt 5 GV·LT2a·LT2b·CT · đợt 6 Pb2·VAI-a/b·UXF-a/b·UXD·S6F·Dọn-a·S3 + sửa sau rà S3f…S6f |
 | Deploy + UX 02/10 (01–03/10) | #160–#180 | Reset tại chỗ, PR-DEPLOY, sổ tay GV/QL, S3 nốt, tốc độ tách trang, Dọn-b, UX-G (G1–G5), HK1 (K3, K1 điện thoại, H3–H5), Ý thức thang mới, **PR-PH** (hết báo đăng xuất giả). **Bản chính đã deploy 03/10** |
+| Đợt 3 (05/10) | #194 | **U12** bảng kết quả lớp thường ở hồ sơ HV theo mẫu Mock Test (NhanDot dùng chung, "Chờ n môn", Giữa khoá 1/2) |
 | Đợt 2 (04/10) | #190–#192 | **PHH** Báo PH lưu bản chụp nội dung (migrate `prPhh`) · **SO** D2 một nguồn PA đại diện, cấm cấp riêng `plan.week` cho GV, xoá `completeIntervention`, tín hiệu em đã kết thúc, dọn khoá gửi, gỡ mã chuyển dữ liệu cũ (−1 700 dòng) · **DH** Sắp tới có kỳ vọng / Thi thật, cột Dự kiến thi, Trước/Sau hồ sơ HV và lớp, đầu trang Học viên & Lớp gọn, popover Thiếu n, D1, J8, J10, panel không lệch xuống (`!mt-0`) |
 | Đợt 0–1 sau deploy (04/10) | #182–#188 | **QU** quyền + tạo lớp hàng loạt + GVCN phân công + GV đóng Case · **GVa** F01/D13 khoá gửi, F03, F04 · **LM** lịch MT linh hoạt (LM-1→7, gồm I5 và I4 phần MT) · **GVb** Chờ duyệt (D01/Q-B, J5, J5b, U01, Bị từ chối) · **BC** Báo cáo đơn vị + Tài khoản (L2, L3, D8, D9, J10 phần Quản trị) · **NT** Target + Dự kiến thi lớp thường, dán không tiêu đề |
 
@@ -97,6 +103,50 @@ Còn treo của các PR đã xong (đã đưa vào mục 4 hoặc 8): PR-PH bư�
 "Của GV" chưa có "Nhắc tất cả" → hoãn. PR-DH: ba việc chủ sản phẩm chốt 04/10 tối + link "MT3" 15 px trên điện thoại → HK2.
 PR-PHH: chưa chạy migrate trên bản sao DB bản chính → bước tập dượt trước lần deploy sau (mục 5). PR-SO: `migrateLegacyDisciplineCases`,
 `tenMoiChoLopCu` chỉ còn phép kiểm dùng → hoãn (mục 8).
+
+## 2b. Đối chiếu báo cáo rà #172–#176 (`pisa-review-pr172-176-claude.md`, kiểm lại trên mã main 05/10)
+| ID | Nội dung | Trạng thái |
+|---|---|---|
+| F01 | Chống gửi trùng 10 giây làm mất việc hợp lệ | ✅ PR-GVa #183: khoá gửi mỗi lần mở form (`idempotency_key`) cho `/mgmt-tasks`, `/tasks`, PA, lần xem lại; có phép gửi đồng thời |
+| F02 | Báo PH đã làm đổi theo điểm hiện tại | ✅ PR-PHH #191: bản chụp lúc xác nhận; dòng cũ ghi rõ "nội dung hiện tại". Không cần quy tắc phiên bản (việc xong không mở lại được) |
+| F03 | Form Giao việc giữ chi nhánh cũ | ✅ PR-GVa-4 #183 |
+| F04 | Tải kỳ lỗi vẫn giao việc GV thiếu kỳ | ✅ PR-GVa-3/4 #183 (máy chủ tự xác định kỳ hoặc 400; web khoá gửi) |
+| U01 | "Chờ chấm" vàng ở danh sách lớp | ✅ PR-GVb #187 (`TONE_BADGE_TRANG_THAI['cho-cham']`) |
+| D01 | Q-B ghi xong mà chưa có | ✅ PR-GVb #187 (duyệt nhiều ở Tất cả, Chọn hết, Nhắc tất cả) |
+| §6.1 | H1/H2, K2, K5, K6, K7 · UX-I · UX-J · H6 · K4 · "Bị từ chối" | HK1 ✅ · H6 ✅ (PR-DH kiểm) · "Bị từ chối" ✅ GVb · UX-I → **SL** · UX-J còn lại, H1/H2, K2, K4–K7 → **HK2** |
+| §6.2 | Badge chuyển lớp · `pa-can-cap-nhat` · tuần học · lỗi dưới ô a11y · tháng `2026-09` | ✅ D1 (DH) · ✅ D2 (SO) · tuần học → **HK2** (chốt 05/10, mục 4) · D11 → **SL** · ✅ D8 (BC) |
+| §6.2 cuối | Panel Chuyển lớp đè demo bar · "Khác" · lưu trữ rỗng · hồ sơ cá nhân | ✅ demo bar (DH-13 `!mt-0`) · ba mục còn lại → **HK2** (bấm thử, có thật mới sửa) |
+| §8 | Cách làm: phép kiểm đỏ trước, bấm thử 375/1440 sáng/tối 3 vai, báo từng ID | Đã thành luật ở mục 1.2 |
+
+## 2c. Rà soát Test / Mock Test 05/10 (`PISA-tracking-test-mocktest-review-final.md` + 2 ảnh) — ĐANG BRAINSTORM, chưa code
+Chủ sản phẩm 05/10 đã chốt (mockup `thiet-ke/mockup-test-mt-2026-10-05.html` chờ duyệt → đặc tả → kế hoạch PR):
+
+**Thứ tự (chủ sản phẩm 05/10: chỉ chạy sau khi DL, K26, SL merge xong):** Đợt 4 = **PR-NV** (T8 Nhắc việc + 502, T9 chi nhánh mặc định;
+~~"Nợ tuần trước" thu gọn~~ → bỏ khỏi PR-NV, thay bằng T15–T18 / PR-LT3) · **PR-CHU** (file `.md` chữ tiếng Việt chối tai) · **PR-MTa** luật máy chủ (T1–T4, T7, T10, T11) — song song.
+Đợt 5 = **PR-MTb** giao diện (T13, mockup phần 1–4) · **PR-MT0** (T5, mockup phần 5; merge sau MTb, dùng ô MT mới). Đợt 6 = **PR-HK2**.
+
+| # | Chủ đề | Chốt |
+|---|---|---|
+| T1 | "MT lịch sử" → **"MT cũ"** | Theo **tuần**: tuần thi cách tuần hiện tại ≥ 2 tuần là MT cũ; tuần trước là MT thường (có hạn, có Case). MT cũ giữ cách xử lý cũ (không hạn chấm, Case chỉ trong 4 tuần). **Bỏ** điều kiện "trước ngày em vào web" |
+| T2 | Dời MT1 muộn hơn MT2/MT3 (override) | **Cho lưu** sau popup cảnh báo; MT bị vượt về "chưa xếp", **điểm của MT bị vượt đánh dấu huỷ, không xoá** (không tính SOS/báo cáo, xem lại được, QL khôi phục được); Case sinh từ điểm đó tự đóng. Thay Q-0310-2 (03/10) |
+| T3 | Dấu "-" lần 2 (Mock Test) | Kỹ năng thành **"đã huỷ (vắng 2 lần)"**, không còn lịch, báo GVCN; GVCN có nút **"Xin dời"** (thẻ chờ QL như hiện nay). Không tự tạo thẻ |
+| T4 | Xếp/dời MT chưa thi về tuần đã qua | **Cho phép, chỉ QL / Quản trị** (dòng nhắc vàng, không chặn); tuần đủ cũ thì thành MT cũ. GVCN/GV vẫn từ tuần này. Thay K2-33 cho QL |
+| T5 | MT0 | Lượt Mock thật số 0 (em FOU/BE/ELE lên thẳng FT), lịch = tuần Final Test, **hạn chấm hết Chủ nhật tuần sau**; điểm MT0 = mốc đầu vào trên Hành trình; kỹ năng thấp hơn Target chung ≥ 2.0 → chữ SOS chỉ để nhìn (không Case/PA). **Chỉ "Lên FT" phải quyết trước khi hết tuần 7 (FOU) / tuần 9 (BE/ELE)**; hướng khác quyết sau % Cuối khoá (K26). **Hai mốc (chủ sản phẩm duyệt 05/10):** (1) trước khi hết tuần 7/9 Quản lý ghi "Dự kiến lên FT" → web tự xếp MT0 cùng tuần Final, việc của QL có hạn tuần 7/9, quá hạn đỏ không chặn; (2) chốt thật ở Chuyển tiếp lớp: giữ Lên FT → MT0 thành mốc đầu vào lộ trình FT mới; đổi Học lại / Lên BE → MT0 lưu ở Hành trình "MT0 · không dùng", không tạo lộ trình FT |
+| T5b | MT0 — luật thêm (05/10, mockup bản 2) | "Dự kiến lên FT" = hướng **Lên FT** ở Lộ trình tiếp theo (PR-K26), ghi trước hết tuần 7/9 → web xếp MT0 cùng tuần Final. MT0 ở tuần Final của lớp cũ, muộn nhất **tuần 2 của FT**, **luôn đứng đầu, trước MT1**. **Không có trong panel Xếp lịch MT** (05/10); chỉ dời ở hồ sơ HV / hồ sơ Mock. Hiện ở: Lộ trình tiếp theo (một em / cả lớp), việc QL ở Tổng quan / Công việc, Kế hoạch Test lớp thường (cạnh Final), Lịch Test / Nhập điểm tuần Final, Chuyển tiếp lớp, bảng Mock Test + Hành trình sau khi lên FT. Đụng K26 thì sửa đè K26 |
+| T13b | Panel Xếp lịch MT (mockup bản 2) | Nút **"MT mới"** (không thêm chữ) = đợt nhỏ nhất của em chưa có lịch, chưa có thì tạo đợt mới; chọn số cụ thể = đúng đợt đó. Không có MT0. Kỹ năng **mặc định tick đủ 4**. Bảng học viên cuộn ngang, cột chọn + tên đứng yên. Ô "đang chọn" nền sáng chữ tối + ✓, khác hẳn "đang thi" (nền xanh nhạt + chấm) và "đã có lịch" (chỉ viền) |
+| T14 | Mọi cổng sửa lịch (10 cổng, mockup phần 0) | Luật mới ở **máy chủ** nên áp cho mọi cổng: Kế hoạch Test (lưới FT, Xếp lịch MT, hàng loạt, thi lại, lớp thường), **Hồ sơ HV › Lộ trình** (dùng chung `HopKyNang`), Hồ sơ Mock (dời cả đợt, hạn, huỷ / mở lại, xếp lại vắng, từng kỹ năng), gõ "-" ở Lịch Test / Nhập điểm / bảng lớp thường, Chờ duyệt (đề nghị dời), tự động (Thêm HV, tạo / lên lớp, lộ trình mới, cron chốt vắng), Điểm theo lớp (chữ), màn chỉ hiển thị (Học viên & Lớp, Hành trình, Tổng quan, Công việc, Phân tích, Xuất Excel MT). Kế hoạch PR-MTa/MTb phải có phép kiểm cho từng cổng ghi |
+| T6 | Hạn chấm Mock Test | **Giữ** thứ Tư tuần kế (đã đúng ý) |
+| T7 | Lý do bắt buộc | **Chỉ** khi huỷ/mất kết quả (huỷ điểm, huỷ lượt, huỷ kết quả MT do dời vượt) + **từ chối** một đề nghị. Còn lại (sửa điểm, dời lịch, dời hạn, bỏ kỹ năng, báo vắng, thi lại): ô lý do **tuỳ chọn**, lưu ngay; nhật ký vẫn ghi ai/lúc nào/cũ → mới |
+| T8 | "Để QL biết" | Đổi tên **"Nhắc việc"**, bỏ số nổi đầu trang; số Chờ duyệt chỉ đếm việc cần duyệt. **Sửa 502 "Nhắc tất cả"** (gốc: `nhacViec` dựng lại cả `myWork` của người được nhắc cho MỖI thẻ — gom theo người, bỏ qua thẻ đã nhắc hôm nay trước khi dựng) |
+| T9 | Chi nhánh mặc định (Học viên & Lớp, gốc `hocVienLop.ts:74` lấy chi nhánh id nhỏ nhất = MB) | Lần chọn trước (nhớ trên máy) → chi nhánh có vai Quản lý → chi nhánh có nhiều lớp mình dạy/chủ nhiệm nhất → chi nhánh đầu. Áp cho mọi màn có ô chi nhánh |
+| T10 | Nhập band | L/R: số có dấu chấm (6.5) hoặc "b6" = band, số nguyên = raw như cũ. W/S: thêm ô "Band" cạnh 4 tiêu chí (điền band thì bỏ trống tiêu chí được). Mặc định như cũ |
+| T11 | Dời Test lớp thường | Tự do như hiện nay; người khác GVCN dời → **một thông báo chuông cho GVCN**. Không thẻ, không Case |
+| T12 | Đã có, không làm lại | Đợt không đủ 4 kỹ năng ("Bỏ kỹ năng", PR-XLMT) · dời MT có điểm điểm đi theo (PR-LM, nay mở cho MT cũ) · chặn xếp MT mới khi MT trước chưa lịch · tuần chung + lịch riêng ở panel Xếp lịch MT · tick = mock. Speaking không có "⋯": **cố ý** (thao tác đã nằm trên dòng) → làm nhất quán trong mockup |
+| T13 | Chưa có, làm theo đề xuất | Chọn tất cả / Bỏ chọn tất cả · lựa chọn **MT MỚI** đứng đầu ô Đợt · ô MT0…MTn nói rõ trạng thái · popup "+ Xếp" có tuần chung cho các kỹ năng đã tick · ~~"Nợ tuần trước" thu gọn mặc định~~ (thay bởi T15, PR-LT3) · file `.md` liệt kê chữ tiếng Việt chối tai (chuẩn chung: được dùng English / nửa Anh nửa Việt khi tự nhiên hơn) |
+| T15 | **Lịch Test chia 3 khối** (05/10, thay "Nợ tuần trước" + khối hạn trong dòng lớp) | Trên xuống: **(1) "Test quá hạn chấm"** — bài chưa chấm, đã **qua hạn** (`quaHanNhapDiem`) **và đã sang tuần thứ hai sau tuần thi** (tuần thi ≤ tuần hiện tại − 2); **thu gọn mặc định**. **(2) "Test chấm tuần này"** — bài học viên **thi tuần trước** (tuần thi = tuần hiện tại − 1), còn chưa chấm; **ở lại khối này hết tuần (Chủ nhật), kể cả khi đã quá hạn** (FT quá hạn từ thứ Năm) — quá hạn chỉ thêm **badge "Quá hạn"** (đỏ nhạt, cạnh hạn chấm), không đỏ cả dòng; sang Thứ Hai tuần sau mới chuyển khối 1; **mở sẵn**, hiện như Lịch Test hàng tuần (cột Lớp · Đợt · Kỹ năng · Tiến độ · Hạn chấm), **không** có vùng đỏ của khối nợ. **(3) "Lịch Test tuần này"** — như hiện nay (ai thi môn gì tuần đang xem), **thu gọn mặc định**; xem tuần khác thì tiêu đề theo mã tuần (vd "Lịch Test W1 OCT"). Một bài chỉ nằm đúng **một** khối. Hai lịch tách hẳn: **lịch thi của học viên** (khối 3) khác **lịch chấm của GV** (khối 1, 2). Thay "Nợ tuần trước thu gọn" (T13/PR-NV NV-6): nợ = quá hạn thật, bài thi tuần trước **không** vào khối 1 trong cùng tuần, dù đã quá hạn. Ngoại lệ: hạn riêng được dời xa hơn thì bài ở lại khối 2 với badge hạn tới khi hết hạn |
+| T16 | Lùi / tiến tuần | Khối 1 **không đổi theo tuần đang xem** (luôn tính theo hôm nay, vẫn theo bộ lọc phạm vi / chi nhánh / lớp) và **luôn đi cùng** màn. Khối 2 **chỉ hiện khi đang xem tuần hiện tại**; xem tuần khác thì ẩn. Khối 3 theo tuần đang xem. Lùi tuần chỉ để xem lại: **không sửa được điều gì làm đổi khối 1** ngoài thao tác nhập điểm thường (không có đường nào xoá nợ bằng cách đổi tuần xem). Tổng bài chưa chấm của 3 khối = badge "n bài chờ chấm" (giữ G-10) |
+| T17 | Khối 1 — cột và mục con | Phần dòng lớp (Lớp · Đợt · Kỹ năng · Còn · Hạn · GV chấm · nhãn · Thu) **chỉ dùng cho khối 1** để mở ra lớp / học viên đang quá hạn. **GV chấm: kéo rộng, chỉ ghi tên GV còn chưa chấm** (GV đã nhập xong không hiện), không cắt chữ. Lưới học viên là **mục con** của dòng lớp, thể hiện nhẹ: thụt vào + một vạch dọc mảnh bên trái nối với dòng lớp, nền nhạt hơn, **không** khung bo + viền thứ hai, header cột chữ nhỏ; "Mở lưới đầy đủ" đưa lên dòng lớp. Chi tiết do `impeccable layout` quyết trong PR, giữ bảng màu / phông đã khoá |
+| T18 | **Speaking Mock chấm chéo** (chủ sản phẩm 05/10) | Speaking Mock **không có GV mặc định**; cột GV chấm ghi "Chấm chéo" tới khi có người nhập. **Quá hạn**: chỉ **báo** cho **GVBM Speaking của lớp** và **GVCN lớp đó** (dòng ở khối 1 + chuông), nhưng **không tính nợ / quá hạn** vào chỉ số của hai người này (không số đỏ, không "đúng hạn" của Phân tích GV, không "Chờ bạn chấm"). Khi **GV chấm chéo nhập điểm** (người ghi ở "GV chấm Speaking", T39) thì mới tính: nhập sau mốc trễ (`mocTreNhapDiem`) = **trễ của chính người đó**. GV chấm là tên người ngoài (không tài khoản) → không tính trễ cho ai. Thay dòng "ô S vẫn là việc / nợ điểm của GV được phân công S lớp đó" (PR-HSM) |
 
 ## 3. Quyết định còn hiệu lực cho việc chưa làm
 | Ngày | Quyết định | Vào PR |
@@ -115,9 +165,18 @@ PR-PHH: chưa chạy migrate trên bản sao DB bản chính → bước tập d
 | 04/10 | Điểm theo lớp: mockup `thiet-ke/mockup-diem-theo-lop-2026-10-04.html` đã duyệt | DL |
 | 04/10 | Deploy **sau mỗi đợt** | mục 5 |
 
-## 4. Việc chưa làm — 5 PR
+## 4. Việc chưa làm (đợt 3 còn DL, SL; đợt 4–6 ở mục 2c + kế hoạch 2026-10-05-*)
 
-Đợt 2 (PHH, SO, DH) đã xong, xem mục 2.
+Đợt 2 (PHH, SO, DH) và U12 đã xong, xem mục 2.
+
+### PR-LT3 · Lịch Test ba khối + Speaking chấm chéo (L) — luật T15–T18 (mục 2c), **kế hoạch chi tiết chưa soạn**
+Chủ sản phẩm 05/10 (sau khi thấy MT4 "W1 OCT" hiện ở cả Nợ lẫn Lịch tuần này — luật hạn **đúng**, cách hiện gây rối).
+Phạm vi: `server/src/cham/canCham.ts` (`noTuanTruoc`, `lichTest`, đường tính "chờ bạn chấm"), `web/src/modules/test/lichTest/*` (`KhoiNo.tsx`, `DaiSo.tsx`, `LichTestTab.tsx`),
+cách tính nợ / trễ của Speaking (`pendingOwners`, Phân tích GV, Việc cần làm). Không đổi luật hạn (thứ Tư tuần kế / CN tuần thi).
+Việc: (1) tách 3 khối theo T15 (khối 2 giữ bài hết tuần, quá hạn chỉ thêm badge), một bài đúng một khối; (2) khối 1 độc lập tuần xem (T16); (3) giao diện khối 1 (T17); (4) Speaking Mock theo T18;
+(5) dải số 4 ô: mặc định Đã chấm tuần này · Còn phải chấm (khối 2+3) · Quá hạn chấm (khối 1) · bỏ ô trùng — **chủ sản phẩm xác nhận**;
+(6) cập nhật phép kiểm G-10 (tổng 3 khối = badge), `prUxG` G4. Chạy đợt 5, **sau NV, MTa**, song song MTb/MT0 nhưng **chồng `canCham.ts` với MT0** (xem kế hoạch MT0) — merge LT3 trước MT0 hoặc MT0 merge `origin/main` vào.
+Việc đầu tiên: giao agent soạn kế hoạch theo mẫu A mục 10 (Opus 5.5) **và mockup HTML** `thiet-ke/mockup-lich-test-ba-khoi-<ngày>.html`; chủ sản phẩm duyệt cả hai trước khi code (luật mockup mục 1.1).
 
 ### PR-SL · Sửa cả lớp + panel/form (L) — kế hoạch có sẵn (SL-1, SL-2), cần thêm task
 - SL-1 máy chủ xem trước + lưu một giao dịch · SL-2 panel "Sửa thông tin cả lớp" (không dán Excel).
@@ -131,14 +190,7 @@ PR-PHH: chưa chạy migrate trên bản sao DB bản chính → bước tập d
 - Nhập điểm cả lớp theo từng lượt (FT: MT1, MT2, … kể cả lịch sử; lớp thường: bài theo lịch riêng của lớp). DL-0 sai giả
   định G2 thì dừng hỏi. `DauTrangLop.tsx`: chỉ thêm một mục menu ⋮.
 
-### PR-U12 · Kết quả kiểm tra lớp thường ở hồ sơ HV (S) — kế hoạch `2026-10-04-pr-u12-ket-qua-lop-thuong.md`
-- Chủ sản phẩm 04/10: **làm, giống bảng Mock Test** (K4-33): ô kết quả nói một lần ("Chờ n môn" khi chấm dở), bấm tên bài là mở,
-  bỏ link "Bảng điểm đợt ›", nhãn lịch sử / đã huỷ / huỷ phần / dời; nhiều bài cùng loại thì đánh số.
-
-### PR-K26 · Lộ trình tiếp theo theo dải % Cuối khoá (M, có migrate) — kế hoạch `2026-10-04-pr-k26-lo-trinh-tiep-theo-dai.md`
-- Chủ sản phẩm 04/10 tối: em 50–59% → GVCN ghi **đề xuất**, Quản lý quyết lúc chuyển lớp (không thẻ Chờ duyệt) · "Chưa rõ" + "Xếp sau"
-  **gộp hẳn** thành "Chưa quyết" (migrate `prK26`) · **làm** "Ghi lộ trình tiếp theo cả lớp" (menu ⋮ hồ sơ lớp).
-- Hướng gợi ý theo Cuối khoá đứng đầu, các hướng khác thu vào "Hướng khác ▾".
+### PR-K26 — ✅ xong 05/10 (#196, #197).
 
 ### PR-HK2 · Badge & chữ, chụp lại sổ tay (L, cuối cùng) — kế hoạch có sẵn một phần
 - `2026-10-02-ux-sau-critique.md`: **H1/H2** ba họ chip · **K1** còn lại (nếu DH chưa làm hết) · **K2** Phân tích › Tổng hợp ·
@@ -154,6 +206,16 @@ PR-PHH: chưa chạy migrate trên bản sao DB bản chính → bước tập d
   - Học viên & Lớp: ô tìm của trang ghi gợi ý "Lọc trong danh sách này…"; ô tìm trên thanh đầu giữ nguyên (thanh đã khoá).
   - Điện thoại: nút "+ Lớp mới" ở Học viên & Lớp vào menu ⋯; máy tính giữ nguyên.
   - Link "MT3" ở bảng Mock Test hồ sơ HV trên điện thoại: vùng bấm ≥ 40 px.
+- **Thêm từ PR-U12 (chủ sản phẩm chốt 05/10):** bài lớp thường chấm dở mà đã có môn trượt → dòng "Không đạt: …" **tô màu cảnh báo**
+  (khớp bảng Mock Test giữ màu SOS cho số tạm) · bài đã xong có môn huỷ phần không còn chữ "(đã chấm)" · kiểm nhãn "dời W1/W2" ở bảng Mock
+  Test sau khi đổi `skillShort` → `tenMonNgan` (`StudentDetailPage.tsx` `NhanDot`).
+- **Tên web "PISA Tracking"** (chủ sản phẩm 05/10, PISA viết hoa hết): thay "Pisa Tracking" ở `index.html` `<title>`, `App.tsx:144`,
+  `WelcomePage.tsx:137`, `server/src/index.ts:21`, phép kiểm `hocVienLop.tests.ts:71-73` + `suaLoiNong.tests.ts:281`, README/DEMO/TRIEN_KHAI,
+  sổ tay `docs/so-tay/` (cùng lúc chụp lại ảnh). Không đổi tên gói npm, tên site Netlify, tên DB.
+- **Tuần học khi không có lộ trình đang chạy** (báo cáo rà #172–#176 §6.2, chủ sản phẩm chốt 05/10: **cả ba không ghi tuần học**): em đang học
+  FT mà không có lộ trình `active` → Hành trình (`students/hanhTrinh.ts:310`, `loTrinhTinhTuan` rơi về lộ trình gần nhất) **không** ghi "tuần
+  học n" cho chương đang học, khớp đầu hồ sơ (`profile.ts` `dangChay` null) và panel Chuyển lớp (`transition.ts` SQL `cy.status = 'active'`).
+  Phép kiểm đỏ trước: dựng em ghi danh active + lộ trình `completed` → ba chỗ cùng không có tuần học. Chương đã rời giữ cách tính cũ.
 
 ## 5. Đợt chạy, thứ tự merge, deploy
 
@@ -162,8 +224,10 @@ Chủ sản phẩm 04/10: **3 đợt**; deploy một lần (bản `main` lúc đ
 | Đợt | Chạy cùng lúc (mỗi PR một session) | Thứ tự merge | Vì sao không đụng nhau |
 |---|---|---|---|
 | ~~2~~ | ~~PHH · DH · SO~~ | ✅ xong 04/10 (#191, #190, #192) | — |
-| **3** (ngay) | **U12** · **DL** · **K26** · **SL** | U12 → DL → K26 → SL | U12: một bảng hồ sơ HV · DL: module điểm mới + một mục ⋮ · K26: `LoTrinhTiepPanel`, `lenLop.ts` · SL: panel/form chung. Chồng nhẹ: `DauTrangLop` (SL, DL, K26 thêm mục ⋮), `StudentDetailPage` (SL I4 ↔ U12). SL merge cuối: kiểm lại chân panel của DL, K26 theo luật I1 |
-| **4** | **HK2** (một mình) | — | Đụng ~15+ file khắp web, chụp lại sổ tay một lần |
+| **3** (đang chạy) | ~~U12~~ ✅ #194 · ~~K26~~ ✅ #196 · **DL** · **SL** | DL → SL | U12: một bảng hồ sơ HV · DL: module điểm mới + một mục ⋮ · K26: `LoTrinhTiepPanel`, `lenLop.ts` · SL: panel/form chung. Chồng nhẹ: `DauTrangLop` (SL, DL, K26 thêm mục ⋮), `StudentDetailPage` (SL I4 ↔ U12). SL merge cuối: kiểm lại chân panel của DL, K26 theo luật I1 |
+| **4** | **NV** · **CHU** · **MTa** (sau khi DL, SL merge) | CHU → NV → MTa | NV: Chờ duyệt (`nhacNhieu`), ô chi nhánh, Lịch Test · CHU: chỉ thêm file `.md` + script · MTa: luật máy chủ Mock/Test. Chồng nhẹ: `duyet/yeuCau.ts` (NV thân `nhacNhieu`, MTa phần lý do), `mywork.ts` |
+| **5** | **MTb** · **MT0** · **LT3** | MTb → LT3 → MT0 | MTb: giao diện Mock Test · LT3: Lịch Test ba khối (`canCham.ts`, `lichTest/*`) · MT0: lượt MT0 + Chuyển tiếp lớp; MT0 dùng component ô MT của MTb và chồng `canCham.ts` với LT3 |
+| **6** | **HK2** (một mình) | — | Đụng ~15+ file khắp web, chụp lại sổ tay một lần |
 
 **Deploy lần sau (sau HK2)** — làm một lần cho cả 8 PR, theo `TRIEN_KHAI.md` mục 8 và 11.1:
 1. Sao lưu bản chính (`npm run sao-luu`).
@@ -194,6 +258,8 @@ Chọn model ở ô chọn model **trước khi dán prompt**. Subagent cùng mo
 1. Gộp đợt: **đồng ý** (3 đợt). 2. U12: **làm, giống bảng Mock Test**. 3. Deploy: **một lần ngay, lần sau khi xong hết** (mục 5).
 4. A12: **giữ tên** "Điều chỉnh cách dạy" (đóng). K2-26: **làm** → PR-K26 (ba câu đã trả lời 04/10 tối, mục 4).
 5. (04/10 tối) J6: **giữ "Target"** (đã chốt từ `THUAT_NGU_2026-10-01.md`). PR-DH: "+n" hồ sơ lớp dẫn đúng chỗ · ô tìm trang ghi "Lọc trong danh sách này…" · "+ Lớp mới" vào ⋯ trên điện thoại → PR-HK2.
+6. (05/10) U12: dòng "Không đạt" chấm dở **tô màu cảnh báo** → HK2 · tên web **"PISA Tracking"** → HK2 · tuần học khi không có lộ trình
+   đang chạy: **cả ba chỗ không ghi** → HK2.
 
 ## 8. Hoãn có chủ ý · Đã chốt không làm
 - **Hoãn (dọn mã, không gấp):** gỡ `migrateLegacyDisciplineCases` / `hasLegacyDisciplineModel` và `tenMoiChoLopCu` (PR-SO ghi: chỉ còn
@@ -225,13 +291,7 @@ npm run check xanh (một lần một lúc) → bấm thử 375/1440 sáng/tối
 
 ### 9.2. Đợt 3 — chạy ngay (DH đã merge)
 
-**PR-U12** — Sonnet 5.5 · High (B: Opus 5.5 · Medium)
-```
-/ponytail lite
-Làm PR-U12 theo docs/superpowers/plans/2026-10-04-pr-u12-ket-qua-lop-thuong.md (U12-1 → U12-3, prompt chung plan.md mục 9.0).
-Nhánh pr-u12-ket-qua-lop-thuong. Impeccable: U12-1 /impeccable layout, U12-2 /impeccable clarify, cuối /impeccable audit.
-Merge đầu tiên trong đợt 3.
-```
+**PR-U12** — ✅ xong 05/10 (#194).
 
 **PR-DL** — Opus 5.5 · High (B: Fable 5.1 · High)
 ```
@@ -240,7 +300,7 @@ Làm PR-DL theo docs/superpowers/plans/2026-10-04-pr-dl-diem-theo-lop.md (DL-0 �
 Mockup đã duyệt: thiet-ke/mockup-diem-theo-lop-2026-10-04.html. DL-0 sai Giả định G2 thì dừng, hỏi chủ sản phẩm (brainstorming).
 Không thêm đường ghi điểm mới; không tự tạo lịch; sửa ô có điểm đi đường override có lý do; kiểm quyền trước khi đọc dữ liệu.
 Impeccable: DL-5, DL-6 /impeccable layout, /impeccable clarify, /impeccable adapt (375); cuối /impeccable audit.
-DauTrangLop: chỉ thêm một mục menu ⋮. Merge sau U12, trước K26 và SL.
+DauTrangLop: chỉ thêm một mục menu ⋮. Merge đầu tiên còn lại của đợt 3 (U12 đã xong), trước K26 và SL.
 ```
 
 **PR-K26** — Opus 5.5 · High (B: Fable 5.1 · High)
@@ -265,7 +325,64 @@ Impeccable: /impeccable layout + /impeccable harden (SL-2, D11, I1), /impeccable
 Merge cuối đợt 3: merge main vào nhánh, kiểm lại chân panel của PR-DL và PR-K26 theo luật I1.
 ```
 
-### 9.3. Đợt 4 — sau khi mọi PR trên merge
+### 9.3. Đợt 4 — sau khi DL, SL merge (ba session song song)
+
+**PR-CHU** — Sonnet 5.5 · High (B: Opus 5.5 · Medium)
+```
+Làm PR-CHU theo docs/superpowers/plans/2026-10-05-pr-chu-ra-soat-chu.md (CHU-0 → CHU-5, prompt chung plan.md mục 9.0).
+Nhánh pr-chu-ra-soat-chu. Chỉ tạo thiet-ke/CHU_CAN_SUA_2026-10.md + scripts/quet-chu.mjs; không sửa chữ trong mã.
+Làm theo superpowers:executing-plans (các Task nối tiếp). Merge đầu tiên trong đợt 4.
+```
+
+**PR-NV** — Opus 5.5 · High (B: Sonnet 5.5 · High)
+```
+/ponytail lite
+Làm PR-NV theo docs/superpowers/plans/2026-10-05-pr-nv-nhac-viec-chi-nhanh.md (NV-1 → NV-7, prompt chung plan.md mục 9.0; đọc mục
+"Chủ sản phẩm chốt 05/10" ở đầu file trước). Nhánh pr-nv-nhac-viec-chi-nhanh.
+NV-1 đo số câu SQL ở bước đỏ trước khi sửa; không nới quyền. Impeccable: /impeccable clarify (tên Nhắc việc), cuối /impeccable audit.
+Chữ trên màn ngắn, không câu giải thích dưới nút/ô. Merge sau CHU, trước MTa.
+```
+
+**PR-MTa** — Opus 5.5 · XHigh (B: Fable 5.1 · High)
+```
+Làm PR-MTa theo docs/superpowers/plans/2026-10-05-pr-mta-luat-mock-test.md (Task 0 → 11, prompt chung plan.md mục 9.0; đọc mục
+"Chủ sản phẩm chốt 05/10" ở đầu file trước — đè lên phần dưới). Đặc tả: docs/superpowers/specs/2026-10-05-test-mock-test-design.md.
+Nhánh pr-mta-luat-mock-test. Chủ yếu máy chủ: ponytail full (Task 10 web tối thiểu: /ponytail lite cho task đó).
+Task 0 bắt buộc trước: khảo sát lại sau khi DL, SL merge, ghi danh sách chỗ lệch vào kế hoạch. Có migrate prMta.ts (chạy lặp được).
+Không đường TỰ ĐỘNG nào xoá điểm. Mỗi cổng ghi ở Task 11 có phép kiểm. Cuối PR /security-review trên diff. Merge cuối đợt 4.
+```
+
+### 9.4. Đợt 5 — sau khi MTa merge
+
+**PR-MTb** — Opus 5.5 · High (B: Fable 5.1 · High)
+```
+/ponytail lite
+Làm PR-MTb theo docs/superpowers/plans/2026-10-05-pr-mtb-giao-dien-mock-test.md (Task 0 → 10, prompt chung plan.md mục 9.0; đọc mục
+"Chủ sản phẩm chốt 05/10" ở đầu file trước). Mockup đã duyệt: thiet-ke/mockup-test-mt-2026-10-05.html (bản 4) — chữ trên màn ĐÚNG mockup,
+ngắn, không thêm câu giải thích. Nhánh pr-mtb-giao-dien-mock-test. Task 0: đối chiếu tên hàm với PR-MTa đã merge.
+Impeccable theo từng task (layout, clarify, harden, adapt), cuối /impeccable audit. Bấm thử 375/1440 sáng/tối, Quản trị, QL, GVCN, GVBM.
+Merge trước MT0.
+```
+
+**PR-MT0** — Opus 5.5 · High (B: Fable 5.1 · High)
+```
+/ponytail lite
+Làm PR-MT0 theo docs/superpowers/plans/2026-10-05-pr-mt0.md (MT0-0 → MT0-9, prompt chung plan.md mục 9.0; đọc mục
+"Chủ sản phẩm chốt 05/10" ở đầu file trước). Mockup phần 5: thiet-ke/mockup-test-mt-2026-10-05.html. Nhánh pr-mt0.
+MT0-0 (phép kiểm "MT0 không làm sai đếm") viết đỏ trước mọi thứ. Có thể chạy song song với MTb, nhưng merge SAU MTb
+(merge origin/main vào nhánh, dùng component ô MT của MTb, chạy lại check). Impeccable layout/clarify, cuối /impeccable audit.
+```
+
+**PR-LT3** — Opus 5.5 · XHigh (B: Fable 5.1 · High) — **chỉ chạy sau khi kế hoạch chi tiết được soạn và duyệt**
+```
+Bước 1 (session planning): giao agent (mẫu A, mục 10) soạn thiet-ke/mockup-lich-test-ba-khoi-<ngày>.html (chủ sản phẩm duyệt) và docs/superpowers/plans/2026-10-0x-pr-lt3-lich-test-ba-khoi.md từ plan.md mục 2c (T15–T18)
+và mục 4 (PR-LT3), spec docs/superpowers/specs/2026-10-05-test-mock-test-design.md, Rulebook khối "PR-LT3". Đối chiếu canCham.ts, lichTest/*.
+Bước 2 (session code): /ponytail lite · làm theo kế hoạch đó (prompt chung mục 9.0; đọc "Chủ sản phẩm chốt" ở đầu file). Impeccable: layout (khối 1, mục con),
+clarify (nhãn ba khối), harden (khối rỗng, nhiều lớp), adapt 375, cuối audit. Phép kiểm đỏ trước: một bài đúng một khối; lùi tuần không đổi khối 1;
+Speaking quá hạn không tính nợ GVBM/GVCN, tính trễ khi GV chấm chéo nhập muộn. Merge sau NV, MTa; trước MT0.
+```
+
+### 9.5. Đợt 6 — sau khi mọi PR trên merge
 
 **PR-HK2** — Opus 5.5 · High (B: Sonnet 5.5 · High)
 ```
@@ -319,8 +436,11 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 05/10/2026 | PR-K26 (Opus 5.5) · `pr-k26-lo-trinh-tiep-theo` | "Chưa rõ" + "Xếp sau" → "Chưa quyết" (migrate `prK26`); hướng Hệ thống gợi ý đứng đầu, em 50–59% "Lưu đề xuất"; Ghi lộ trình tiếp theo cả lớp (ghi theo lô, một giao dịch); Chuyển tiếp lớp điền sẵn/hiện đề xuất GVCN. "Web gợi ý" → "Hệ thống gợi ý" (luật từ điển). |
+| 04/10/2026 | PR-U12 (Opus 5.5) · `pr-u12-ket-qua-lop-thuong` | Bảng kết quả lớp thường ở hồ sơ HV theo mẫu Mock: `NhanDot` dùng chung, tên bài là link (bỏ "Bảng điểm đợt ›"), `Chờ n môn` nói một lần; đánh số Giữa khoá theo `attemptNo` (bảng xếp mới trước). Màu khi trượt tạm thời → chủ sản phẩm quyết. |
 | 04/10/2026 | PR-DH · `claude/keen-mccarthy-ahp0us` (nhánh gốc `pr-dh-bang-dieu-huong`) · Sonnet 5.5 | DH-1→13: Sắp tới có kỳ vọng / Thi thật, cột Dự kiến thi (cả lớp thường), Target + Dự kiến thi ở bảng điểm lớp thường, Trước/Sau hồ sơ HV + lớp, hàng chip gọn, popover Thiếu n, D1, J8, J10; sửa lệch 16 px của mọi panel. H6 đã có từ B4; J6 giữ "Target" chờ chủ sản phẩm. |
 | 04/10/2026 | PR-SO (Opus 5.5) · `claude/pr-so-so-lieu-don-ma-1ffklg` | D2 PA đại diện nhóm Bổ trợ một hàm; cấm cấp riêng plan.week cho GV; xoá completeIntervention; tín hiệu em kết thúc; dọn khoá gửi; DEP-gỡ ~1700 dòng migrate cũ + chay-thu. D3, D5 bác bỏ |
 | 04/10/2026 | PR-PHH · `pr-phh-bao-ph-ban-chup` | F02: Báo PH đã xong luôn hiện 4 nội dung lúc xác nhận (cột `noi_dung_luc_bao`, migrate chỉ thêm); dòng cũ ghi rõ "chưa lưu". `npm run check` xanh (2496 + 33). |
+| 05/10/2026 | Planning (Opus 5.5) · `ke-hoach-ra-172-176` | Rà PR #194 (U12) merge được; đối chiếu báo cáo rà #172–#176 (mục 2b); chốt tên "PISA Tracking", màu "Không đạt", tuần học → HK2 |
 | 04/10/2026 | Planning (Opus 5.5) · `ke-hoach-sau-dot-2` | Rà sau merge PHH/SO/DH: check xanh sau khi sửa dọn thư mục tạm SO-4b (EPERM trên Windows); bấm thử DH 1440/375 đạt. Kế hoạch K26; chốt J6 Target, ba việc DH → HK2 |
 | 04/10/2026 | Planning (Opus 5.5) · `ke-hoach-thong-nhat-04-10` | Gộp mọi kế hoạch vào plan.md này; xoá kế hoạch/kiểm kê/rà soát của PR đã merge. Chủ sản phẩm trả lời mục 7; kế hoạch PHH, SO, U12; thêm PR-K26; còn 8 PR, 3 đợt |
