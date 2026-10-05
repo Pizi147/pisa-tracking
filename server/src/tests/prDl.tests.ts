@@ -124,4 +124,49 @@ export async function runPrDlTests(t: YThucTestKit) {
   check('DL-2 lượt sai (attemptNo không phải số nguyên dương) → 400', () => {
     for (const n of [0, -1, 1.5, NaN]) assertThrows(() => svc.classScoreSheet(QL, LOP, { theo: 'luot', attemptNo: n }, TODAY), /lượt/i, `attemptNo ${n}`);
   });
+
+  // ------------------------------------------------------------------ DL-3: regularSheet chọn bài theo `kind` (lớp thường; DL-0: không có attemptNo)
+  const regular: any = await import('../normal/regular.ts');
+  const MB = get("SELECT id FROM branches WHERE code = 'MB'").id as number;
+  const tuanKg = week.ensurePeriod(t.addDays(TODAY, -35));   // FOU: Giữa khoá tuần học 4 (đã qua), Cuối khoá tuần 8 (chưa tới)
+  const lopT = intake.createClass(P.admin, { code: 'MB FOU DL3', branchId: MB, kind: 'FOU', startPeriodId: tuanKg.id, startDate: tuanKg.weekStart }).id as number;
+  const nowIso = new Date().toISOString();
+  conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at) VALUES (?,?, NULL, 1, '2026-01-01', 'active', ?)`)
+    .run(P.normalCoreTeacher.userId, lopT, nowIso);
+  const gvcn = loadPrincipal(P.normalCoreTeacher.userId);
+  /* Em A học từ khai giảng: Giữa khoá (đã qua) + Cuối khoá, như `taoLop` của prLt2b. */
+  const sidA = Number(conn.prepare(`INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES ('PISA-DL3-A', 'DL3 An', 'dl3 an', ?, 'active', ?)`)
+    .run(MB, nowIso).lastInsertRowid);
+  conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`).run(sidA, lopT, tuanKg.weekStart, nowIso);
+  regular.planRegularTests(P.admin, lopT, { studentIds: [sidA] });
+  const giuaA = get(`SELECT a.id, rp.week_start FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id
+                      WHERE a.class_id = ? AND a.student_id = ? AND a.kind = 'progress'`, lopT, sidA);
+  conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total) VALUES (?,?,?,?)').run(giuaA.id, 'listening', 31, 40);
+  /* Lịch riêng của lớp: môn Reading của bài Giữa khoá dời sang tuần sau (attempt_skills khác tuần mặc định của đợt). */
+  const tuanDoi = week.ensurePeriod(t.addDays(giuaA.week_start, 7));
+  conn.prepare(`UPDATE attempt_skills SET planned_period_id = ? WHERE attempt_id = ? AND skill = 'reading'`).run(tuanDoi.id, giuaA.id);
+  /* Em B vào lớp HÔM NAY (sau Giữa khoá): đường vào lớp thật tự xếp bài, bỏ mốc đã qua. */
+  intake.commitIntake(P.admin, { classId: lopT, rows: [{ fullName: 'DL3 Bảo', email: 'hv@demo.test' }], idempotencyKey: 'dl3-bao' });
+  const sidB = get(`SELECT id FROM students WHERE full_name = 'DL3 Bảo'`).id as number;
+
+  check('DL-3 regularSheet(gvcn, lớp, "progress"): bài Giữa khoá đã qua có điểm cũ; lịch riêng của lớp vẫn ra đúng bài; em vào sau không có hàng', () => {
+    assert(t.addDays(giuaA.week_start, 6) < TODAY, `tiền đề: Giữa khoá phải đã qua (${giuaA.week_start})`);
+    const sh = regular.regularSheet(gvcn, lopT, 'progress', TODAY);
+    assert(sh.rows.length === 1 && sh.rows[0].attemptId === giuaA.id && sh.rows[0].kind === 'progress', JSON.stringify(sh.rows.map((r: any) => [r.studentId, r.kind])));
+    const sched = new Map(sh.rows[0].skillSchedule.map((k: any) => [k.skill, k]));
+    assert((sched.get('reading') as any).weekStart === tuanDoi.weekStart, `Reading theo lịch riêng: ${(sched.get('reading') as any).weekStart}`);
+    assert((sched.get('listening') as any).weekStart === giuaA.week_start, 'Listening giữ tuần mặc định');
+    const l = sh.rows[0].result.skills.find((k: any) => k.skill === 'listening');
+    assert(l && l.score === 31, `điểm cũ Listening: ${JSON.stringify(l)}`);
+    assert(!sh.rows.some((r: any) => r.studentId === sidB), 'em vào sau Giữa khoá không có hàng');
+  });
+
+  check('DL-3 regularSheet(gvcn, lớp, "final"): cả hai em, đúng một bài Cuối khoá mỗi em (attempt_no theo từng em, không dùng làm khoá)', () => {
+    const sh = regular.regularSheet(gvcn, lopT, 'final', TODAY);
+    assert(sh.rows.every((r: any) => r.skillSchedule[0].weekStart > TODAY), 'tiền đề: Cuối khoá chưa thi');
+    const ids = sh.rows.map((r: any) => r.studentId).sort((x: number, y: number) => x - y);
+    assert(JSON.stringify(ids) === JSON.stringify([sidA, sidB].sort((x, y) => x - y)) && sh.rows.every((r: any) => r.kind === 'final'), JSON.stringify(sh.rows.map((r: any) => [r.studentId, r.kind])));
+    const so = new Map(sh.rows.map((r: any) => [r.studentId, get('SELECT attempt_no FROM assessment_attempts WHERE id = ?', r.attemptId).attempt_no]));
+    assert(so.get(sidA) === 2 && so.get(sidB) === 1, `attempt_no: ${JSON.stringify([...so])}`);
+  });
 }
