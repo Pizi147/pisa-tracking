@@ -164,6 +164,7 @@ Chủ sản phẩm 05/10 đã chốt (mockup `thiet-ke/mockup-test-mt-2026-10-05
 | 04/10 | C02: **giữ chặn** — GVCN không dạy môn đó không ghi bù Case môn đó | (không làm) |
 | 04/10 | Điểm theo lớp: mockup `thiet-ke/mockup-diem-theo-lop-2026-10-04.html` đã duyệt | DL |
 | 04/10 | Deploy **sau mỗi đợt** | mục 5 |
+| 05/10 | Sửa thông tin cả lớp: **web tự chia lô 8 em** mỗi lần lưu (một nút Lưu; lô lỗi thì "Đã lưu n em · m em chưa lưu"), máy chủ có trần mỗi request · nút "Sửa thông tin" giữ ở hàng Cách xem + mục ⋮ · PR-SL **phải có mockup** duyệt dù bắt đầu trước luật mockup | SL |
 
 ## 4. Việc chưa làm (đợt 3 còn DL, SL; đợt 4–6 ở mục 2c + kế hoạch 2026-10-05-*)
 
@@ -212,6 +213,9 @@ Việc đầu tiên: giao agent soạn kế hoạch theo mẫu A mục 10 (Opus 
 - **Tên web "PISA Tracking"** (chủ sản phẩm 05/10, PISA viết hoa hết): thay "Pisa Tracking" ở `index.html` `<title>`, `App.tsx:144`,
   `WelcomePage.tsx:137`, `server/src/index.ts:21`, phép kiểm `hocVienLop.tests.ts:71-73` + `suaLoiNong.tests.ts:281`, README/DEMO/TRIEN_KHAI,
   sổ tay `docs/so-tay/` (cùng lúc chụp lại ảnh). Không đổi tên gói npm, tên site Netlify, tên DB.
+- **Thêm từ rà PR-SL #203 (05/10, Minor):** panel có form còn ghi cứng "Đóng" (chưa theo luật I1 `chan.daSua`): `ChuyenLopPanel.tsx:150`,
+  `ClassProgressPanel.tsx:97`, `CatalogAdmin.tsx:177,248` · `KhungPanel.tsx` `nganPanel`: panel cha + con mở cùng một lần vẽ thì thứ tự Esc ngược
+  (chưa gặp; có thật mới sửa) · hộp bốn tiêu chí: Esc khi đã gõ đóng luôn, không hỏi (có từ `Modal` cũ).
 - **Tuần học khi không có lộ trình đang chạy** (báo cáo rà #172–#176 §6.2, chủ sản phẩm chốt 05/10: **cả ba không ghi tuần học**): em đang học
   FT mà không có lộ trình `active` → Hành trình (`students/hanhTrinh.ts:310`, `loTrinhTinhTuan` rơi về lộ trình gần nhất) **không** ghi "tuần
   học n" cho chương đang học, khớp đầu hồ sơ (`profile.ts` `dangChay` null) và panel Chuyển lớp (`transition.ts` SQL `cy.status = 'active'`).
