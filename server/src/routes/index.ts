@@ -491,8 +491,12 @@ api.post('/ke-hoach-test/hang-loat', requireAuth, wrap((req) => {
   if (!req.body?.xemTruoc) maybeSimulateSaveFailure();
   const classId = toInt(req.body?.classId);
   if (!classId) throw badRequest('Thiếu lớp.');
+  /* T13b (PR-MTb): `attemptNo` = 'moi' (MT mới của từng em) hoặc số; giá trị rác → 400, không bỏ qua âm thầm. `kyNang` = kỹ năng được tick. */
+  const dot = req.body?.attemptNo;
+  const attemptNo = dot === 'moi' ? 'moi' as const : dot === undefined || dot === null || dot === '' ? undefined : (toInt(dot) ?? NaN);
   return keHoachSvc.xepHangLoat(principalOf(req), {
-    classId, attemptNo: toInt(req.body?.attemptNo) ?? undefined, kind: req.body?.kind || undefined,
+    classId, attemptNo, kind: req.body?.kind || undefined,
+    kyNang: req.body?.kyNang === undefined || req.body?.kyNang === null ? undefined : req.body.kyNang,
     studentIds: Array.isArray(req.body?.studentIds) ? req.body.studentIds.map((x: any) => toInt(x)).filter(Boolean) : [],
     tuan: tuanTheoKyNang(req.body?.tuan), force: !!req.body?.force, xemTruoc: !!req.body?.xemTruoc,
     /* PR-XLMT (K4-17, T37): đợt riêng từng em (Quản lý bấm chip), kỹ năng cho thi lại, lý do. */

@@ -16,22 +16,26 @@ export async function runPrXlmtTests(t: YThucTestKit) {
     assert(d.thuTuDot('giua') < d.thuTuDot('cuoi') && d.thuTuDot('la') > d.thuTuDot('cuoi'), 'Giữa < Cuối < khoá lạ');
   });
 
-  check('PR-XLMT (1) · viecXepMt: đủ → tạo MT kế · dở → xếp nốt · chưa thi → dời · lịch sử → bỏ qua · chờ duyệt / ép / thiếu MT (K4-17)', () => {
+  check('PR-XLMT (1) · viecXepMt: đủ → "đã xong" (PR-MTb thay "tạo MT kế") · dở → xếp nốt · chưa thi → dời · MT cũ → chặn · chờ duyệt / ép / thiếu MT (K4-17)', () => {
     const kn = (o: Partial<Record<'listening' | 'reading' | 'writing' | 'speaking', Partial<{ coDiem: boolean; daThi: boolean; choDuyet: boolean; huyPhan: boolean }>>>) =>
       (['listening', 'reading', 'writing', 'speaking'] as const).map((skill) => ({
-        skill, batBuoc: true, coDiem: false, daThi: false, huyPhan: false, choDuyet: false, ...(o[skill] ?? {}),
+        skill, batBuoc: true, coDiem: false, daThi: false, huyPhan: false, choDuyet: false, coTuan: true, ...(o[skill] ?? {}),   // PR-MTb T13b: KnXep có thêm coTuan
       }));
     const du = kn({ listening: { coDiem: true }, reading: { coDiem: true }, writing: { coDiem: true }, speaking: { coDiem: true } });
     const so3 = [L(1, 'completed', true), L(2, 'completed', true), L(3)];
     const truoc = [1, 2].map((no) => ({ no, huy: false, lichSu: false, kn: du }));
+    // PR-MTb T13b thay K4-17 "đủ → tự sang MT kế": chọn đúng đợt nào là đợt đó — đủ thì chặn "MT3 đã xong.", chọn MT4 mới tạo MT4.
     const v1 = d.viecXepMt([...truoc, { no: 3, huy: false, lichSu: false, kn: du }], 3, so3);
-    assert(v1.loai === 'tao' && v1.no === 4, JSON.stringify(v1));
+    assert(v1.loai === 'chan' && v1.no === 3 && v1.cau === 'MT3 đã xong.', JSON.stringify(v1));
+    const v1b = d.viecXepMt([...truoc, { no: 3, huy: false, lichSu: false, kn: du }], 4, so3);
+    assert(v1b.loai === 'tao' && v1b.no === 4, JSON.stringify(v1b));
     const v2 = d.viecXepMt([...truoc, { no: 3, huy: false, lichSu: false, kn: kn({ listening: { coDiem: true }, reading: { coDiem: true } }) }], 3, so3);
     assert(v2.loai === 'xep-not' && JSON.stringify(v2.kyNang) === '["writing","speaking"]', JSON.stringify(v2));
     const v3 = d.viecXepMt([...truoc, { no: 3, huy: false, lichSu: false, kn: kn({}) }], 3, so3);
     assert(v3.loai === 'doi' && v3.no === 3, JSON.stringify(v3));
     const v4 = d.viecXepMt([...truoc, { no: 3, huy: false, lichSu: true, kn: kn({}) }], 3, so3);
-    assert(v4.loai === 'tao' && v4.no === 4, `lịch sử → sang MT4: ${JSON.stringify(v4)}`);
+    // PR-MTb T13b thay K4-17 "lịch sử → bỏ qua": MT cũ chặn "nhập điểm bù", không tự sang MT4.
+    assert(v4.loai === 'chan' && v4.no === 3 && v4.cau === 'MT3 là MT cũ — nhập điểm bù.', `MT cũ → chặn: ${JSON.stringify(v4)}`);
     const choS = kn({ listening: { coDiem: true }, reading: { coDiem: true }, writing: { coDiem: true }, speaking: { choDuyet: true } });
     const v5 = d.viecXepMt([...truoc, { no: 3, huy: false, lichSu: false, kn: choS }], 3, so3);
     assert(v5.loai === 'chan' && /chờ Quản lý duyệt/.test(v5.cau), JSON.stringify(v5));
@@ -40,7 +44,7 @@ export async function runPrXlmtTests(t: YThucTestKit) {
     const v7 = d.viecXepMt([{ no: 1, huy: false, lichSu: false, kn: du }], 3, [L(1, 'completed', true)]);
     assert(v7.loai === 'chan' && v7.cau === d.kiemSoMtMoi([L(1, 'completed', true)], 3), JSON.stringify(v7));
     const v8 = d.viecXepMt([...truoc, { no: 3, huy: false, lichSu: true, kn: kn({}) }], 3, so3, true);
-    assert(v8.loai === 'chan' && /nhập bù/.test(v8.cau), `ép MT lịch sử → chặn: ${JSON.stringify(v8)}`);
+    assert(v8.loai === 'chan' && /nhập điểm bù/.test(v8.cau), `ép MT lịch sử → chặn: ${JSON.stringify(v8)}`);   // PR-MTb: câu mới "nhập điểm bù"
   });
 
   // PR-MTa T1/T4 thay K2-33, Q8: kiemTuanDaQua → kiemTuanXep — Quản lý xếp được tuần đã qua (kể cả trộn), không xét ngày vào web.
@@ -300,11 +304,14 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
   for (const x of luotCua(emThieu).slice(1)) conn.prepare(`UPDATE assessment_attempts SET status = 'cancelled' WHERE id = ?`).run(x.id);
 
   // PR-MTa T7 (G17): `canLyDo` luôn false — xếp nốt không còn đòi lý do.
-  check('PR-XLMT (3) · Hàng loạt 2 lớp, MT3: đủ → Tạo MT4 · dở → Xếp nốt W S · thiếu MT2 → chặn đúng câu (K4-17)', () => {
+  check('PR-XLMT (3) · Hàng loạt 2 lớp, MT3: đủ → "MT3 đã xong." (PR-MTb thay Tạo MT4) · dở → Xếp nốt W S · thiếu MT2 → chặn đúng câu (K4-17)', () => {
     const r1 = keHoach.xepHangLoat(QL, { classId: LOP1, attemptNo: 3, studentIds: [emDu, emThieu], tuan: bonTuan(1), xemTruoc: true }, TODAY);
     const r2 = keHoach.xepHangLoat(QL, { classId: LOP2, attemptNo: 3, studentIds: [emDo], tuan: bonTuan(1), xemTruoc: true }, TODAY);
     const [du, thieu] = r1.dong, [dd] = r2.dong;
-    assert(du.hanhDong === 'tao' && du.viec === 'tao' && du.attemptNo === 4, JSON.stringify(du));
+    // PR-MTb T13b thay K4-17 "đủ → Tạo MT4": chọn MT3 là MT3 — đủ rồi thì dòng lỗi; muốn MT4 thì chọn MT4 (hoặc "MT mới").
+    assert(du.hanhDong === 'loi' && du.viec === 'chan' && du.attemptNo === 3 && du.loi === 'MT3 đã xong.', JSON.stringify(du));
+    const r4 = keHoach.xepHangLoat(QL, { classId: LOP1, attemptNo: 4, studentIds: [emDu], tuan: bonTuan(1), xemTruoc: true }, TODAY);
+    assert(r4.dong[0].hanhDong === 'tao' && r4.dong[0].viec === 'tao' && r4.dong[0].attemptNo === 4, JSON.stringify(r4.dong[0]));
     assert(dd.viec === 'xep-not' && dd.bai.filter((b: any) => b.ghiChu !== 'giu').map((b: any) => b.skill).join() === 'writing,speaking' && !dd.canLyDo, JSON.stringify(dd));
     assert(thieu.hanhDong === 'loi' && thieu.loi === 'Chưa có MT2 — xếp MT2 trước rồi mới xếp MT3.', JSON.stringify(thieu));
     assert(dom.chuSeXep(dd, null) === 'Xếp nốt W S · MT3', dom.chuSeXep(dd, null));

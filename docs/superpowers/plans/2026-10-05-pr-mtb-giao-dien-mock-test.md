@@ -158,7 +158,7 @@ export function demSeXep(dong: DongHangLoat[]): Record<ToneSeXep, number>;
 - Consumes: A1 (`luotBiVuot`, `kiemVuot`), A4 (`kiemTuanXep` thay `kiemTuanDaQua` trong `xetMotEmFT`).
 - Produces (A3, nếu MTa chưa làm): `DongHangLoat.seHuyLich?: LuotSeHuyLich[]` (xem trước) · body `xacNhanHuyLich: boolean` + `lyDo` · lưu: em có lượt bị vượt có điểm mà chưa xác nhận → dòng `loi` "Cần xác nhận huỷ kết quả." (em khác vẫn lưu, R9b).
 
-- [ ] **Step 1: Phép đỏ (luật thuần)** trong `prMtb.tests.ts` (`runPrMtbTests(t)`, mẫu `prLm.tests.ts:1-15`):
+- [x] **Step 1: Phép đỏ (luật thuần)** trong `prMtb.tests.ts` (`runPrMtbTests(t)`, mẫu `prLm.tests.ts:1-15`):
 ```ts
 check('MTb (1) · viecXepMt không tự sang đợt khác', () => {
   const kn = (o = {}) => ['listening','reading','writing','speaking'].map((skill) => ({ skill, batBuoc: true, coDiem: true, daThi: true, huyPhan: false, choDuyet: false, coTuan: true, ...o }));
@@ -177,16 +177,16 @@ check('MTb (1) · nhanSeXep một dòng 3 màu + demSeXep', () => {
 });
 ```
   Ghi đủ assert theo chú thích (giá trị lấy đúng mockup phần 1).
-- [ ] **Step 2: Phép đỏ (DB)**: lớp FT seed (helper như `keHoachTest.tests.ts:429-470`), `P.mbManager`:
+- [x] **Step 2: Phép đỏ (DB)**: lớp FT seed (helper như `keHoachTest.tests.ts:429-470`), `P.mbManager`:
   - `xepHangLoat(..., { attemptNo: 'moi', tuan, xemTruoc: true })`: em có MT1 xong + MT2 chưa có tuần → `attemptNo 2`; em MT1 xong, không MT2 → `attemptNo 2, hanhDong 'tao'`.
   - `attemptNo: 1` cho em MT1 đã xong → `hanhDong 'loi'`, câu "MT1 đã xong.", em khác không bị ảnh hưởng.
   - `kyNang: ['listening','reading','writing']` + tạo mới → lưu xong `attempt_skills.required = 0` cho speaking; đợt có sẵn → speaking không đổi.
   - `kyNang: []` → 400 "Chưa chọn kỹ năng nào." · `attemptNo: 'x'` → 400.
   - `luoiFT` trả `hanCham` = thứ Tư tuần kế của tuần thi (T6), `null` khi `lichSu`.
-- [ ] **Step 3: Sửa** — `viecXepMt`: bỏ `continue` ở `:244,:251` theo Interfaces; `xetMotEmFT` truyền `coTuan`; route: `attemptNo` = `'moi'` hoặc `toInt` (khác → 400), `kyNang` lọc qua `KY_NANG_KE_HOACH`; `oKyNangCua` thêm tham số `attemptOverride` và gọi `effectiveSkillDeadline` (`server/src/fasttrack/skillSchedule.ts:288-293`) — `lichSu`/không bắt buộc/huỷ → `null`. Nhãn audit `entityLabel`: `'MT mới'` khi `'moi'`.
-- [ ] **Step 3b (A3, chỉ khi MTa chưa làm):** `xetMotEmFT` nhánh `doi`/`xep-not` gọi `kiemDotNoi` với `choHuyLich: true` (bỏ "Xếp hàng loạt giữ luật chặn cũ" `server/src/keHoach/keHoachTest.ts:423`), đưa `seHuyLich` lên dòng; `xepHangLoat` lưu truyền `xacNhanHuyLich` + `reason: lyDo` xuống `luuDot`. Phép đỏ: hai em, em A vượt MT2 có điểm → xem trước có `seHuyLich[0].soDiem > 0`; lưu không xác nhận → A `loi`, B lưu; lưu có xác nhận + lý do → cả hai lưu, điểm MT2 của A vào `ket_qua_huy` (luật MTa).
-- [ ] **Step 4:** `npm run check` → xanh; mọi phép cũ `keHoachTest.tests.ts` (PR-Rc2, PR-XLMT) xanh. Phép cũ nào dựa vào "tự sang đợt kế" → sửa phép đó theo T13b, ghi tên vào mô tả PR.
-- [ ] **Step 5: Commit** `feat(mtb): panel MT mới, đúng đợt, tick kỹ năng; hạn chấm trên ô kỹ năng`.
+- [x] **Step 3: Sửa** — `viecXepMt`: bỏ `continue` ở `:244,:251` theo Interfaces; `xetMotEmFT` truyền `coTuan`; route: `attemptNo` = `'moi'` hoặc `toInt` (khác → 400), `kyNang` lọc qua `KY_NANG_KE_HOACH`; `oKyNangCua` thêm tham số `attemptOverride` và gọi `effectiveSkillDeadline` (`server/src/fasttrack/skillSchedule.ts:288-293`) — `lichSu`/không bắt buộc/huỷ → `null`. Nhãn audit `entityLabel`: `'MT mới'` khi `'moi'`.
+- [x] **Step 3b (A3 — BỎ: MTa đã làm, Task 0):** `xetMotEmFT` nhánh `doi`/`xep-not` gọi `kiemDotNoi` với `choHuyLich: true` (bỏ "Xếp hàng loạt giữ luật chặn cũ" `server/src/keHoach/keHoachTest.ts:423`), đưa `seHuyLich` lên dòng; `xepHangLoat` lưu truyền `xacNhanHuyLich` + `reason: lyDo` xuống `luuDot`. Phép đỏ: hai em, em A vượt MT2 có điểm → xem trước có `seHuyLich[0].soDiem > 0`; lưu không xác nhận → A `loi`, B lưu; lưu có xác nhận + lý do → cả hai lưu, điểm MT2 của A vào `ket_qua_huy` (luật MTa).
+- [x] **Step 4:** `npm run check` → xanh; mọi phép cũ `keHoachTest.tests.ts` (PR-Rc2, PR-XLMT) xanh. Phép cũ nào dựa vào "tự sang đợt kế" → sửa phép đó theo T13b, ghi tên vào mô tả PR.
+- [x] **Step 5: Commit** `feat(mtb): panel MT mới, đúng đợt, tick kỹ năng; hạn chấm trên ô kỹ năng`.
 
 ### Task 2: Luật + component Ô MT, nhãn "cũ"
 Skill: test-driven-development

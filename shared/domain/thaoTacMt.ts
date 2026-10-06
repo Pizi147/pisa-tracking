@@ -47,7 +47,9 @@ export function thaoTacKyNang(tt: TrangThaiTT, q: QuyenTT): { chinh: ThaoTac | n
     case 'chua-toi-tuan': return { chinh: q.nhapDiem ? 'nhap-diem' : null, menu: [...(ql ? ['doi-lich'] : []), ...(ftQl ? ['bo-ky-nang'] : [])] as ThaoTac[] };
     case 'dang-thi': return { chinh: q.nhapDiem ? 'nhap-diem' : null,
       menu: [...(q.gvcn || ql ? ['bao-vang'] : []), ...(ql ? ['doi-han', 'doi-lich'] : [])] as ThaoTac[] };
-    case 'co-diem': return { chinh: q.nhapDiem ? 'sua-diem' : null, menu: (q.dotHoanTat ? ql : q.nhapDiem || ql) ? ['huy-diem'] : [] };
+    /* PR-MTb T20: Quản lý / Quản trị dời được kỹ năng đã có điểm (điểm đi theo; máy chủ `setSkillWeek` `quanLy`). */
+    case 'co-diem': return { chinh: q.nhapDiem ? 'sua-diem' : null,
+      menu: [...(ql ? ['doi-lich'] : []), ...((q.dotHoanTat ? ql : q.nhapDiem || ql) ? ['huy-diem'] : [])] as ThaoTac[] };
     case 'vang': return { chinh: q.gvcn || ql ? 'xep-lai' : null, menu: [] };
     case 'cho-duyet': return { chinh: ql ? 'tra-loi-de-nghi' : null, menu: [] };
     case 'da-huy': return { chinh: ql ? 'khoi-phuc' : null, menu: [] };
