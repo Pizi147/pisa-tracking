@@ -166,7 +166,6 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
   const cauChan = chan.length ? `Chặn: ${[...new Set(chan.map((b) => b.cau))].join(' ')}` : '';
   const cauCanhBao = canhBao.length ? [...new Set(canhBao.map((b) => b.cau))].join(' ') : '';
 
-  const tuanDaBatDau = (k: KyNangKH) => !!homNay && !!kn[k]?.tuan && kn[k]!.tuan!.slice(0, 10) <= homNay;
   const luuDuoc = !busy && !chan.length && (moi ? !thieuTuan && dungKy.length > 0 && !!bai : coDoi);
   /* Popup / chip dời vượt: tuần mới = tuần muộn nhất trong các kỹ năng vừa đổi (như máy chủ tính `tuanCuoi`) (`chuDoiVuot`, mockup phần 4). */
   const nhanMt = nhanDot(dot);
@@ -319,7 +318,7 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
       )}
       {thaoTac && attemptId !== null && (
         <HopThaoTacMt key={`${thaoTac.t}:${thaoTac.k}`} thaoTac={thaoTac.t} attemptId={attemptId} skill={thaoTac.k} ct={ct} laThuong={loai === 'thuong'} nhanMt={nhanMt}
-          tuanDaBatDau={tuanDaBatDau(thaoTac.k)} row={{ periodId: kn[thaoTac.k]?.periodId ?? null, weekStart: kn[thaoTac.k]?.tuan ?? null }}
+          quanLy row={{ periodId: kn[thaoTac.k]?.periodId ?? null, weekStart: kn[thaoTac.k]?.tuan ?? null }}
           oCoDiem={thaoTac.k === 'writing' && loai === 'ft' ? ['writing1', 'writing2'] : [thaoTac.k]}
           trongHop hocVien={tieuDe}
           onClose={() => setThaoTac(null)} onDone={() => { onSaved(); onClose(); }} />

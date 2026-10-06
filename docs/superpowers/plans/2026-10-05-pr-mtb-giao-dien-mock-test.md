@@ -339,11 +339,11 @@ Skill: test-driven-development · `/impeccable harden`
 
 **Interfaces:** Consumes A7, A4 (`kiemTuanXep(...).quaTuan` cho chip vàng — web gọi với `quanLy: true`). Ô tuỳ chọn: `Truong tuyChon` (đã có), bỏ `dem`.
 
-- [ ] **Step 1: Phép đỏ quét nguồn**: `web/src` không còn `LY_DO_TOI_THIEU`, `kiemLyDo(` (trừ `DeXuatSuaPanel.tsx` — hằng riêng 15 ký tự, ngoài phạm vi), không còn `dem={{ co: lyDo` / `dem={{ co: reason` ở ô tuỳ chọn; `HopThaoTacMt.tsx` chỉ chặn tuần đã qua trong nhánh `!quanLy`.
-- [ ] **Step 2: Phép đỏ (DB, khoá A7/A4)**: GVCN báo vắng không lý do → 200; QL dời hạn không lý do → 200; QL huỷ điểm không lý do → 400; GVCN `/attempts/:id/skills/:skill/week` tuần đã qua → 400; QL cùng tuần (MT chưa thi) → 200.
-- [ ] **Step 3:** Sửa các file trên.
-- [ ] **Step 4:** `npm run check`. Bấm thử: GVCN (7) hồ sơ Mock "Báo vắng" không lý do lưu được; QL "Dời lịch thi cả đợt" chọn tuần đã qua → chip "Tuần đã qua", lưu được; GVCN không lùi được qua tuần này. Ảnh.
-- [ ] **Step 5: Commit** `feat(mtb): lý do tuỳ chọn trừ 4 chỗ bắt buộc; QL xếp tuần đã qua`.
+- [x] **Step 1: Phép đỏ quét nguồn**: `web/src` không còn `LY_DO_TOI_THIEU`, `kiemLyDo(` (trừ `DeXuatSuaPanel.tsx` — hằng riêng 15 ký tự, ngoài phạm vi), không còn `dem={{ co: lyDo` / `dem={{ co: reason` ở ô tuỳ chọn; `HopThaoTacMt.tsx` chỉ chặn tuần đã qua trong nhánh `!quanLy`.
+- [x] **Step 2: Phép đỏ (DB, khoá A7/A4)**: GVCN báo vắng không lý do → 200; QL dời hạn không lý do → 200; QL huỷ điểm không lý do → 400; GVCN `/attempts/:id/skills/:skill/week` tuần đã qua → 400; QL cùng tuần (MT chưa thi) → 200.
+- [x] **Step 3:** Sửa các file trên.
+- [x] **Step 4:** `npm run check`. Bấm thử: GVCN (7) hồ sơ Mock "Báo vắng" không lý do lưu được; QL "Dời lịch thi cả đợt" chọn tuần đã qua → chip "Tuần đã qua", lưu được; GVCN không lùi được qua tuần này. Ảnh.
+- [x] **Step 5: Commit** `feat(mtb): lý do tuỳ chọn trừ 3 chỗ bắt buộc; QL xếp tuần đã qua`.
 
 ### Task 8: Nhập band (T10) · Xin dời / Không mock lại (T3) · Khôi phục kết quả (T2)
 Skill: test-driven-development · `/impeccable clarify`

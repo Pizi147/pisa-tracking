@@ -6,7 +6,7 @@
  *
  * KHÔNG CÓ LUẬT THỨ HAI: ô điểm là chính các ô của lưới (`RawScoreInput`, `CriteriaButton`, `ODiemThuong`) ở cỡ `lon`,
  * lưu bằng chính `useSaveScore` / `useLuuThuong`. Nên gõ "-" (FT: đếm ngược DS02; lớp thường: môn dời sang tuần sau),
- * ô đã có điểm phải ghi lý do (RB-5), Enter/↓ xuống em kế tiếp, Esc huỷ — y hệt trên máy tính.
+ * ô đã có điểm sửa qua hộp tại ô, lý do tuỳ chọn (RB-5, T7), Enter/↓ xuống em kế tiếp, Esc huỷ — y hệt trên máy tính.
  *
  * Kỹ năng mình được phân công đứng trước; kỹ năng khác vẫn chọn được để đối chiếu, nhưng ô chỉ đọc.
  */

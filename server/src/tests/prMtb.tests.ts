@@ -618,4 +618,61 @@ export async function runPrMtbTests(t: YThucTestKit) {
     const n = nguon('web/src/modules/cham/NganLichSuBai.tsx');
     assert(/startsWith\('writing'\)/.test(n), 'NganLichSuBai: điểm W lọc theo writing1|writing2');
   });
+
+  // ------------------------------------------------------------------ Task 7 — lý do tuỳ chọn + tuần đã qua cho Quản lý (web)
+  console.log('\nPR-MTb · T7 lý do tuỳ chọn trừ 3 chỗ bắt buộc; Quản lý xếp tuần đã qua');
+
+  check('MTb (T7) · khoá phép máy chủ: GVCN dời tuần đã qua → chặn; QL dời MT chưa thi về tuần cũ → lưu; huỷ lượt / từ chối bắt lý do, huỷ điểm không', () => {
+    const a = emMoi([0, 4, 8]);
+    const e = loiCua(() => skillSch.setSkillWeek(P.coreTeacher, a.m1, 'listening', tuan(-1).id, {}));
+    assert(e.status === 400 || e.status === 403, `GVCN: ${e.status} ${e.message}`);
+    skillSch.setSkillWeek(QL, a.m1, 'listening', tuan(-1).id, {});
+    assert((conn.prepare(`SELECT planned_period_id p FROM attempt_skills WHERE attempt_id = ? AND skill = 'listening'`).get(a.m1) as any).p === tuan(-1).id, 'QL chưa dời');
+    assert(loiCua(() => attemptsSvc.huyLuot(QL, a.m3, { lyDo: '  ' })).status === 400, 'huỷ lượt không lý do');
+    assert(d.kiemLyDoThaoTac('tu-choi', '') && d.kiemLyDoThaoTac('huy-luot', '') && !d.kiemLyDoThaoTac('huy-diem', ''), 'luật chung');
+  });
+
+  check('MTb (T7) · quét nguồn: web/src không còn LY_DO_TOI_THIEU / kiemLyDo( (trừ DeXuatSuaPanel) / bộ đếm ở ô lý do tuỳ chọn', () => {
+    const duyet = (dir: string): string[] => fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true })
+      .flatMap((f) => (f.isDirectory() ? duyet(`${dir}/${f.name}`) : /\.tsx?$/.test(f.name) ? [`${dir}/${f.name}`] : []));
+    for (const f of duyet('web/src')) {
+      if (f.endsWith('DeXuatSuaPanel.tsx')) continue;
+      const s = nguon(f);
+      assert(!/LY_DO_TOI_THIEU/.test(s) && !/\bkiemLyDo\(/.test(s), `${f} còn hằng / hàm lý do cũ`);
+      assert(!/dem=\{\{ co: (lyDo|reason)\b/.test(s), `${f} còn bộ đếm ở ô lý do`);
+    }
+  });
+
+  check('MTb (T7) · quét nguồn: HopThaoTacMt có prop quanLy, kiểm tuần đã qua chỉ khi không phải QL, chip "Tuần đã qua"; ba nơi gọi truyền quanLy', () => {
+    const h = nguon('web/src/modules/fasttrack/HopThaoTacMt.tsx');
+    assert(/quanLy: boolean/.test(h) && !/tuanDaBatDau/.test(h), 'prop quanLy / bỏ tuanDaBatDau');
+    assert(/const batBuoc = canLyDo\(t\)/.test(h), 'batBuoc = canLyDo(t)');
+    assert(/tuanNay = homNay && !quanLy && t !== 'khoi-phuc'/.test(h), 'tuanNay chỉ khi không phải Quản lý');
+    for (const c of ['kiemTuanXep', 'CAU_TUAN_DA_QUA', 'Tuần đã qua</Nhan>', 'tone="soon"']) assert(h.includes(c), `HopThaoTacMt thiếu ${c}`);
+    assert(!/dem=/.test(h), 'ô lý do tuỳ chọn không có bộ đếm');
+    assert(/quanLy=\{d\.viewer\.canPlanWeek\}/.test(nguon('web/src/modules/fasttrack/MockDetailPage.tsx')), 'hồ sơ Mock');
+    assert(/quanLy/.test(nguon('web/src/modules/test/keHoach/HopKyNang.tsx').split('<HopThaoTacMt')[1] ?? ''), 'HopKyNang');
+    assert(/quanLy=\{sheet\.canPlan\}/.test(nguon('web/src/modules/cham/LuoiThuong.tsx')), 'lưới lớp thường');
+  });
+
+  check('MTb (T7) · quét nguồn: hồ sơ Mock — huỷ lượt bắt lý do bằng hàm chung; dời / hạn / vắng tuỳ chọn, câu giải thích chuyển vào title; từ chối bắt lý do', () => {
+    const m = nguon('web/src/modules/fasttrack/MockDetailPage.tsx');
+    assert(/kiemLyDoThaoTac\('huy-luot'/.test(m) && !/Lý do huỷ \(bắt buộc\)/.test(m), 'CancelDialog');
+    const tuan = m.slice(m.indexOf('function WeekModal'), m.indexOf('function DeadlineModal'));
+    assert(!/<SectionNote>/.test(tuan) && /toiThieu=\{quanLy \? undefined/.test(tuan) && /Tuần đã qua<\/Nhan>/.test(tuan), 'WeekModal');
+    const han = m.slice(m.indexOf('function DeadlineModal'), m.indexOf('function CancelDialog'));
+    assert(!/<SectionNote>/.test(han), 'DeadlineModal: câu giải thích chuyển vào title');
+    const vang = m.slice(m.indexOf('function AbsenceMoveModal'), m.indexOf('function TraLoiDeNghiModal'));
+    assert(/<Truong nhan="Lý do" tuyChon>/.test(vang), 'AbsenceMoveModal: lý do tuỳ chọn');
+    const the = nguon('web/src/modules/duyet/TheYeuCau.tsx');
+    assert(/o\.loai === 'tu-choi'/.test(the) && /Chưa điền/.test(the), 'từ chối thẻ Xin dời bắt lý do');
+  });
+
+  check('MTb (T7) · quét nguồn: ScoreEntry bỏ cụm "phải ghi lý do" ở tooltip; "Dời lịch" cho kỹ năng đã có điểm chỉ Quản lý (thaoTacKyNang)', () => {
+    const se = nguon('web/src/modules/fasttrack/ScoreEntry.tsx');
+    assert(!/phải ghi lý do/.test(se) && !/đã có điểm nên phải/.test(se), 'ScoreEntry còn câu bắt lý do');
+    const ql = { nhapDiem: true, quanLy: true, gvcn: false, laFt: true, dotHoanTat: false };
+    assert(d.thaoTacKyNang('co-diem', ql).menu.includes('doi-lich'), 'QL');
+    assert(!d.thaoTacKyNang('co-diem', { ...ql, quanLy: false }).menu.includes('doi-lich'), 'GVBM');
+  });
 }

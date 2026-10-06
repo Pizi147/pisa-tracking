@@ -7,9 +7,10 @@ import { ONgay } from '../../ui/ONgay.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { TuanNho, type Tuan } from '../test/keHoach/TuanNho.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { addDaysStr } from '../../lib/format.ts';
 import { Nhan } from '../../ui/Nhan.tsx';
 import {
-  CHU_THAO_TAC, canLyDo, cauSeHuyLich, chuDoiVuot, chuLuuVuot, kiemLyDoThaoTac, mondayOfDate, ngay, tenMon, tuanLich, type LoiTruong, type ThaoTac,
+  CAU_TUAN_DA_QUA, CHU_THAO_TAC, canLyDo, cauSeHuyLich, chuDoiVuot, chuLuuVuot, kiemLyDoThaoTac, kiemTuanXep, mondayOfDate, ngay, tenMon, tuanLich, type LoiTruong, type ThaoTac,
 } from '@shared/domain/index.ts';
 
 /** Thao tác một kỹ năng mở bằng hộp này — Nhập/Sửa điểm làm tại chỗ, Xếp lại bài vắng / Trả lời đề nghị có hộp riêng. */
@@ -35,8 +36,8 @@ function cauHeQua(t: ThaoTac, mon: string, laThuong: boolean): string {
 
 export type HopThaoTacProps = {
   thaoTac: ThaoTac | null; attemptId: number; skill: string; ct: string | null; laThuong: boolean;
-  /** Tuần thi hiện tại của kỹ năng đã bắt đầu — Dời lịch thi lúc đó mới bắt lý do (K4-15). */
-  tuanDaBatDau: boolean;
+  /** Quản lý / Quản trị xếp được tuần đã qua (T4, chip "Tuần đã qua"); người khác bị khoá từ tuần này (K2-33). */
+  quanLy: boolean;
   row: { periodId: number | null; weekStart: string | null; deadline?: string | null };
   /** Huỷ điểm Writing (FT): ô W1/W2 đang có điểm; `oMacDinh` = ô tích sẵn (dòng W2 chỉ tích W2). */
   oCoDiem?: string[]; oMacDinh?: string[];
@@ -55,7 +56,7 @@ export type HopThaoTacProps = {
  * Máy chủ kiểm lại mọi luật; câu lỗi của máy chủ hiện nguyên văn TRONG panel (không đóng panel, không mất chữ đã gõ).
  * Khung: `KhungPanel` (I4, PR-LM) — chân theo luật S3: chưa sửa "Đóng", đã sửa "Huỷ thay đổi"; thao tác nguy hiểm nút chính đỏ.
  */
-export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, tuanDaBatDau, row, oCoDiem = [], oMacDinh, trongHop, nhanMt = 'MT này', hocVien, lop, onClose, onDone }: HopThaoTacProps) {
+export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, row, oCoDiem = [], oMacDinh, trongHop, nhanMt = 'MT này', hocVien, lop, onClose, onDone }: HopThaoTacProps) {
   const toast = useToast();
   const lf = useLoiForm();
   const { homNay } = useNgayNghiepVu();
@@ -86,9 +87,11 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, tuanDaBa
   const mon = tenMon(ct, skill);
   const batBuoc = canLyDo(t);
   const coTuan = t === 'dat-lich' || t === 'xep-lai' || t === 'doi-lich' || t === 'khoi-phuc';
-  /* K2-33: dời / xếp lại lượt có sẵn không vào tuần đã qua — tuần sớm nhất là tuần này. */
-  /* PR-MTa T21: Khôi phục (chỉ Quản lý) chọn được tuần đã qua — em đã thi thật. */
-  const tuanNay = homNay && t !== 'khoi-phuc' ? mondayOfDate(homNay) : null;
+  /* K2-33: GVCN dời / xếp lại lượt có sẵn không vào tuần đã qua — tuần sớm nhất là tuần này. Quản lý được (T4): chỉ hiện chip vàng.
+     PR-MTa T21: Khôi phục (chỉ Quản lý) cũng chọn được tuần đã qua — em đã thi thật. */
+  const tuanNay = homNay && !quanLy && t !== 'khoi-phuc' ? mondayOfDate(homNay) : null;
+  const quaTuan = quanLy && coTuan && t !== 'khoi-phuc' && !!tuan && !!homNay
+    && kiemTuanXep({ ketThuc: [addDaysStr(tuan.weekStart.slice(0, 10), 6)], homNay, quanLy: true }).quaTuan;
   const chonW = t === 'huy-diem' && !laThuong && oCoDiem.length > 1;
 
   const loi: LoiTruong[] = [
@@ -216,7 +219,12 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, tuanDaBa
           </Truong>
         )}
         {canhBao && <p className="m-0 text-xs text-amber-200" role="status">{canhBao}</p>}
-        {vuot.chip && <div><Nhan tone="soon" title={cauSeHuyLich(seHuyLich, homNay)}>{vuot.chip}</Nhan></div>}
+        {(vuot.chip || quaTuan) && (
+          <div className="flex flex-wrap gap-1.5">
+            {vuot.chip && <Nhan tone="soon" title={cauSeHuyLich(seHuyLich, homNay)}>{vuot.chip}</Nhan>}
+            {quaTuan && <Nhan tone="soon" title={CAU_TUAN_DA_QUA}>Tuần đã qua</Nhan>}
+          </div>
+        )}
       </div>
       {vuotXacNhan && (
         <HopXacNhanHuyLich tieuDe={vuotXacNhan.tieuDe} cau={vuotXacNhan.cau} dong={vuotXacNhan.dong} busy={busy} loiMay={loiMay} lyDoDau={lyDo}

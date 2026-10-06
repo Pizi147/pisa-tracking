@@ -79,7 +79,7 @@ export const lockedByNoShow = (cell: Cell) => (cell.noShow?.state === 'khong-du-
   || cell.noShow?.state === 'cho-ql-hieu-chinh';
 
 /** R11 — ô của một đợt đã hoàn tất mà người xem không sửa được: thay cho câu "không được phân công". */
-export const KHOA_HOAN_TAT_HINT = 'Đợt này đã hoàn tất. Chỉ Quản lý sửa được điểm — nhờ Quản lý hiệu chỉnh, kèm lý do.';
+export const KHOA_HOAN_TAT_HINT = 'Đợt này đã hoàn tất. Chỉ Quản lý sửa được điểm — nhờ Quản lý hiệu chỉnh.';
 /** E8 (T53 Q6): bài đã xác nhận vắng không nhập điểm ở lưới — nhập bù thì Quản lý xếp lại bài trước. */
 export const VANG_HINT = 'Đã xác nhận vắng — Quản lý xếp lại bài trước khi nhập.';
 
@@ -351,7 +351,7 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false, 
   const huy = () => { setDraft(shown()); setDirty(false); setHoiLyDo(false); setLoi(null); };
   /* FT không có "dời tiếp": gõ "-" lên ô đang là "-" chỉ không được thành "--". */
   const goLai = useGoLaiDau(draft, () => undefined, inputRef);
-  /* Nút − (điện thoại): đúng lệnh của gõ "-". Ô đã có điểm (sửa phải qua lý do) hoặc đã mang dấu thì không nhận. */
+  /* Nút − (điện thoại): đúng lệnh của gõ "-". Ô đã có điểm (sửa qua hộp tại ô) hoặc đã mang dấu thì không nhận. */
   const nhanDau = !coDiemChinhThuc(cell) && !cell.noShow;   // T23: MT cũ nhận "-" = không dự thi
   const bamDau = async () => {
     if (!nhanDau || busy || hoiLyDo) return;
@@ -392,7 +392,7 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false, 
           inputMode="numeric"
           value={draft}
           disabled={busy}
-          title={loi ?? (coDiemChinhThuc(cell) ? `Đã có điểm — sửa thì phải ghi lý do. ${NO_SHOW_HINT}` : NO_SHOW_HINT)}
+          title={loi ?? (coDiemChinhThuc(cell) ? `Đã có điểm — bấm để sửa. ${NO_SHOW_HINT}` : NO_SHOW_HINT)}
           aria-label={`${skillLabel(cell.skill)} — số câu đúng. ${NO_SHOW_HINT}`}
           onChange={(e) => { if (goLai.doi(e.target.value)) return; setDraft(e.target.value); setDirty(true); setLoi(null); }}
           onBlur={commit}
@@ -485,7 +485,7 @@ export function CriteriaButton({ cell, onSave, buttonRef, lon = false, gvMacDinh
         ref={buttonRef}
         className={`btn ${lon ? 'min-h-[44px] min-w-[60px] justify-center text-base font-semibold' : 'btn-sm'} tabular-nums`}
         onClick={() => setOpen(true)}
-        title={hieuChinh ? 'Sửa bốn tiêu chí — đã có điểm nên phải ghi lý do.' : `Mở bốn tiêu chí. ${NO_SHOW_HINT}`}
+        title={hieuChinh ? 'Sửa bốn tiêu chí đã chấm.' : `Mở bốn tiêu chí. ${NO_SHOW_HINT}`}
       >
         {cell.noShow ? '-' : lon && cell.band === null && nhanDau ? '' : fmtBand(cell.band)}
         <span className="text-slate-500 text-[11px]">sửa</span>
@@ -771,8 +771,8 @@ export function DeadlinePill({ cell }: { cell: Cell }) {
  * ngang trong thẻ (`overflow-x-auto`) không cắt được nó; hết chỗ bên dưới thì lật lên trên. Đây là một hộp nổi nhỏ,
  * không phải một khung chồng lên khung (G-8). Esc hoặc bấm ra ngoài = huỷ; Enter = Lưu khi đã hợp lệ.
  *
- * `loiGiaTri` (không bắt buộc): giá trị mới chưa hợp lệ thì Lưu cũng mờ, tooltip nói vì sao. Lỗi máy chủ trả về (ví dụ
- * 400 "Sửa điểm đã nhập thì phải ghi lý do.") hiện ngay dưới ô lý do — `onLuu` ném lỗi thì hộp bắt lấy câu đó.
+ * `loiGiaTri` (không bắt buộc): giá trị mới chưa hợp lệ thì Lưu cũng mờ, tooltip nói vì sao. Lỗi máy chủ trả về
+ * hiện ngay dưới ô lý do — `onLuu` ném lỗi thì hộp bắt lấy câu đó.
  */
 export function SuaDiemCoLyDo({ tieuDe, moTaCu, children, onLuu, onDong, loiGiaTri = null }: {
   tieuDe: string; moTaCu: string; children: ReactNode;
@@ -918,7 +918,7 @@ const SO_NGUYEN = /^\d+$/;
  * MỘT Ô CỦA LƯỚI LỚP THƯỜNG: số câu đúng / tổng số câu.
  *
  * Gõ "-" ở ô trái là một LỆNH, không phải một số: em không làm bài → môn này dời sang tuần sau (C08). Xoá dấu "-"
- * đang có là gỡ dấu và trả lịch về tuần cũ. Ô đã có điểm thì không nhận dấu "-" — muốn sửa phải qua hộp lý do.
+ * đang có là gỡ dấu và trả lịch về tuần cũ. Ô đã có điểm thì không nhận dấu "-" — muốn sửa thì bấm vào ô.
  * Ô đang mang dấu mà tuần thi mới ĐÃ TỚI: gõ lại "-" là em lại không làm bài — môn dời tiếp (Q4). Tuần mới chưa tới
  * thì gõ lại không làm gì. Ô CHƯA TỚI TUẦN THI không nhận "-" lần đầu (phán quyết controller, máy chủ cũng chặn).
  * Máy chủ từ chối lệnh "-" (ví dụ Q5: vượt qua đợt kế tiếp) → câu của máy chủ hiện ở toast, ô về giá trị đã lưu.
@@ -1162,13 +1162,13 @@ export function ODiemThuong({
       if ((d === '' ? null : Number(d)) === cell.diem && (t === '' ? null : Number(t)) === cell.tong) return 'Chưa đổi gì.';
       return null;
     })();
-    const title = [pt && ketQuaChu ? `${ketQuaChu} · ${pt}.` : '', 'Đã có điểm — bấm để sửa, phải ghi lý do.', lamBu]
+    const title = [pt && ketQuaChu ? `${ketQuaChu} · ${pt}.` : '', 'Đã có điểm — bấm để sửa.', lamBu]
       .filter(Boolean).join(' ');
     return (
       <span className="inline-flex flex-col items-end justify-center" title={title}>
         <span className="inline-flex items-center justify-end gap-1">
           <input ref={inputRef} readOnly className={`${oSo} cursor-pointer ${cell.ketQua === 'fail' ? 'text-rose-300' : ''}`}
-            value={String(cell.diem)} aria-label={`${tenMon} — số câu đúng (đã có điểm, sửa phải ghi lý do)`}
+            value={String(cell.diem)} aria-label={`${tenMon} — số câu đúng (đã có điểm, bấm để sửa)`}
             onClick={() => mo(String(cell.diem))}
             onKeyDown={(e) => {
               if (/^[0-9]$/.test(e.key)) { e.preventDefault(); mo(e.key); return; }

@@ -24,10 +24,10 @@ import { DaiODiemLon, type KyNangLon, type LichKn } from './ODiemLon.tsx';
 import { ONhanXet } from './NhanXet.tsx';
 import { NutGvCham, gvChamPayload, gvChamThanhChon } from '../cham/GvCham.tsx';
 import {
-  attemptHref, attemptStatusLabel, fmtBand, fmtDate, progressLabel, skillLabel,
+  addDaysStr, attemptHref, attemptStatusLabel, fmtBand, fmtDate, progressLabel, skillLabel,
 } from '../../lib/format.ts';
 import {
-  ATTEMPT_KIND_SHORT, CHU_THAO_TAC, cauSeHuyLich, chuDoiVuot, chuLuuVuot, mondayOfDate, nhanLuot, thaoTacKyNang, trangThaiTT, tuanLich,
+  ATTEMPT_KIND_SHORT, CAU_TUAN_DA_QUA, CHU_THAO_TAC, cauSeHuyLich, chuDoiVuot, chuLuuVuot, kiemLyDoThaoTac, kiemTuanXep, mondayOfDate, nhanLuot, thaoTacKyNang, trangThaiTT, tuanLich,
   type AttemptKind, type LoiTruong, type TheYeuCauDto, type ThaoTac,
   docKnMock, KY_NANG_KE_HOACH, oKyNangTuLich, type OMtVao,
 } from '@shared/domain/index.ts';
@@ -306,7 +306,7 @@ export default function MockDetailPage() {
       <HistoryCard d={d} />
 
       {weekOpen && (
-        <WeekModal onClose={() => setWeekOpen(false)} attemptId={d.id} nhan={`MT${d.attemptNo}`} lichSu={d.lichSu} hocVien={d.student.name} lop={d.classCode}
+        <WeekModal onClose={() => setWeekOpen(false)} attemptId={d.id} nhan={`MT${d.attemptNo}`} lichSu={d.lichSu} quanLy={d.viewer.canPlanWeek} hocVien={d.student.name} lop={d.classCode}
           kyNang={d.skillSchedule.filter((r) => r.required && r.sitStatus !== 'cancelled'
             && (d.lichSu || (!r.scored && r.sitStatus !== 'sat'))).map((r) => r.skill)}
           currentPeriodId={d.period?.id ?? null} onDone={reload} />
@@ -431,7 +431,6 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory }: {
   const order = ['listening', 'reading', 'writing1', 'writing2', 'speaking'];
   const cells = [...d.cells].sort((a, b) => order.indexOf(a.skill) - order.indexOf(b.skill));
   const coDiemO = (c: Cell) => c.band !== null || c.rawScore !== null;
-  const tuanDaBatDau = (r: SkillRow) => !!r.weekStart && r.weekStart.slice(0, 10) <= mondayOfDate(homNay);
 
   const renderRow = (c: Cell) => {
     const r = d.skillSchedule.find((x) => x.skill === c.assessedSkill)!;
@@ -575,7 +574,7 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory }: {
 
       {hop && (
         <HopThaoTacMt key={`${hop.t}:${hop.c.skill}`} thaoTac={hop.t} attemptId={d.id} skill={hop.r.skill} ct={null} laThuong={false} nhanMt={`MT${d.attemptNo}`}
-          tuanDaBatDau={tuanDaBatDau(hop.r)} row={{ periodId: hop.r.periodId, weekStart: hop.r.weekStart, deadline: hop.r.deadline }}
+          quanLy={d.viewer.canPlanWeek} row={{ periodId: hop.r.periodId, weekStart: hop.r.weekStart, deadline: hop.r.deadline }}
           oCoDiem={oCoDiemCua(hop.c)} hocVien={d.student.name} lop={d.classCode} onClose={() => setHop(null)} onDone={onDone} />
       )}
       {moveFor && <AbsenceMoveModal row={moveFor} detail={d} onClose={() => setMoveFor(null)} onDone={onDone} />}
@@ -604,12 +603,14 @@ function HistoryCard({ d }: { d: Detail }) {
 
 // ---------------------------------------------------------------- thao tác cả đợt (menu đầu trang, K4-29)
 
-/** Dời lịch thi CẢ ĐỢT — lối tắt của Quản lý: mọi kỹ năng còn dời được vào một tuần. Tuần thi đã bắt đầu thì bắt lý do (K4-15). */
-function WeekModal({ onClose, attemptId, nhan, currentPeriodId, lichSu, kyNang, hocVien, lop, onDone }: {
+/** Dời lịch thi CẢ ĐỢT — lối tắt của Quản lý: mọi kỹ năng còn dời được vào một tuần (kể cả tuần đã qua, T4). Lý do tuỳ chọn (T7). */
+function WeekModal({ onClose, attemptId, nhan, currentPeriodId, lichSu, quanLy, kyNang, hocVien, lop, onDone }: {
   onClose: () => void; attemptId: number; nhan: string; currentPeriodId: number | null; onDone: () => void;
   hocVien: string; lop: string | null;
-  /** D3 (PR-LM): MT lịch sử dời được cả đợt, sang tuần đã qua hợp lệ hoặc tương lai — đổi tuần là sửa hồ sơ, luôn cần lý do. */
+  /** D3 (PR-LM): MT cũ dời được cả đợt, sang tuần đã qua hợp lệ hoặc tương lai — đổi tuần là sửa hồ sơ. */
   lichSu: boolean;
+  /** Quản lý xếp được tuần đã qua (T4); người khác bị khoá từ tuần này — hiện menu chỉ Quản lý thấy, giữ khoá làm lớp phòng thủ. */
+  quanLy: boolean;
   /** Kỹ năng sẽ dời — đúng tập máy chủ dời (`setPlanningWeek`): để kiểm trước cảnh báo / chặn / lượt bị huỷ lịch. */
   kyNang: string[];
 }) {
@@ -628,6 +629,7 @@ function WeekModal({ onClose, attemptId, nhan, currentPeriodId, lichSu, kyNang, 
   /* Popup / chip dời vượt (PR-MTb T6): tuần mới = tuần muộn nhất của các kỹ năng sẽ dời (như máy chủ tính `tuanCuoi`). */
   const vuot = chuDoiVuot({ nhan, tuanMoi: kiem?.tuanMoi ?? '', ds: kiem?.seHuyLich ?? [] }, homNay);
   const vuotXacNhan = xacNhan ? chuDoiVuot({ nhan, tuanMoi: kiem?.tuanMoi ?? '', ds: xacNhan }, homNay) : null;
+  const quaTuan = !!kiem?.tuanMoi && !!homNay && kiemTuanXep({ ketThuc: [addDaysStr(kiem.tuanMoi.slice(0, 10), 6)], homNay, quanLy: true }).quaTuan;
 
   /* Đổi tuần → kiểm trước như hộp xếp lịch: cảnh báo một tuần (vàng), chặn (đỏ), lượt sau sẽ bị huỷ lịch (đỏ). */
   useEffect(() => {
@@ -681,22 +683,25 @@ function WeekModal({ onClose, attemptId, nhan, currentPeriodId, lichSu, kyNang, 
         chinh: <button className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !doiTuan || !!kiem?.chan.length} onClick={() => void luu()}>{nut}</button>,
       }}>
       <div className="space-y-3 pt-3">
-        <WeekPicker periodId={periodId} label="Tuần mới" scope="planning" toiThieu={lichSu ? undefined : mondayOfDate(homNay)}
-          onPeriod={setPeriodId} />
+        {/* Câu giải thích ở title, không dưới ô. */}
+        <div title={lichSu ? 'MT cũ: đổi tuần là sửa hồ sơ, điểm giữ nguyên.'
+          : 'Kỹ năng chưa thi chuyển sang cùng một tuần; kỹ năng đã thi hoặc có điểm giữ nguyên. Muốn tách Speaking thì dời ở dòng kỹ năng.'}>
+          <WeekPicker periodId={periodId} label="Tuần mới" scope="planning" toiThieu={quanLy ? undefined : mondayOfDate(homNay)} onPeriod={setPeriodId} />
+        </div>
         {kiem?.chan.length ? <p className="m-0 text-xs font-semibold leading-relaxed text-bad" role="alert">Chặn: {kiem.chan.join(' ')}</p>
           : kiem?.canhBao.length ? <p className="m-0 text-xs leading-relaxed text-soon" role="status">{kiem.canhBao.join(' ')}</p> : null}
-        {!kiem?.chan.length && vuot.chip && <div><Nhan tone="soon" title={cauSeHuyLich(kiem!.seHuyLich, homNay)}>{vuot.chip}</Nhan></div>}
+        {!kiem?.chan.length && (vuot.chip || quaTuan) && (
+          <div className="flex flex-wrap gap-1.5">
+            {vuot.chip && <Nhan tone="soon" title={cauSeHuyLich(kiem!.seHuyLich, homNay)}>{vuot.chip}</Nhan>}
+            {quaTuan && <Nhan tone="soon" title={CAU_TUAN_DA_QUA}>Tuần đã qua</Nhan>}
+          </div>
+        )}
         {!vuot.canPopup && (   // có popup thì ô Lý do duy nhất nằm trong hộp xác nhận
           <Truong nhan="Lý do" tuyChon loi={lf.loiCua(loi, 'ly-do')}>
             <input className="field" {...lf.o(loi, 'ly-do')} value={reason} onChange={(e) => setReason(e.target.value)}
               placeholder={lichSu ? 'Ví dụ: nhập nhầm tuần thi' : 'Ví dụ: trùng lịch phòng thi'} />
           </Truong>
         )}
-        <SectionNote>
-          {lichSu
-            ? 'MT cũ: đổi tuần là sửa hồ sơ — điểm giữ nguyên.'
-            : 'Các kỹ năng chưa thi chuyển sang cùng một tuần; kỹ năng đã thi hoặc có điểm giữ nguyên. Muốn tách Speaking thì dời ở dòng kỹ năng.'}
-        </SectionNote>
       </div>
       {vuotXacNhan && (
         <HopXacNhanHuyLich tieuDe={vuotXacNhan.tieuDe} cau={vuotXacNhan.cau} dong={vuotXacNhan.dong} busy={busy} loiMay={loiMay} lyDoDau={reason}
@@ -706,7 +711,7 @@ function WeekModal({ onClose, attemptId, nhan, currentPeriodId, lichSu, kyNang, 
   );
 }
 
-/** Dời hạn chấm CẢ ĐỢT: một hạn riêng thay hạn mặc định của mọi kỹ năng. Đặt hạn thì bắt lý do (K4-15); bỏ hạn thì không. */
+/** Dời hạn chấm CẢ ĐỢT: một hạn riêng thay hạn mặc định của mọi kỹ năng. Lý do tuỳ chọn (T7). */
 function DeadlineModal({ onClose, detail, onDone }: {
   onClose: () => void; detail: Detail; onDone: () => void;
 }) {
@@ -747,7 +752,7 @@ function DeadlineModal({ onClose, detail, onDone }: {
         ),
       }}>
       <div className="space-y-3 pt-3">
-        <label className="block">
+        <label className="block" title={`Hạn mặc định tính riêng cho từng môn: hết thứ Tư của tuần kế tiếp sau tuần thi môn đó. Hạn đặt ở đây áp cho CẢ ĐỢT; chỉ một môn thì dùng "${CHU_THAO_TAC['doi-han']}" ở dòng môn đó. Hết ngày hạn mới tính quá hạn.`}>
           <span className="label">Hạn chấm mới</span>
           <ONgay kieu="ngay" value={date} onChange={setDate} />
         </label>
@@ -755,10 +760,6 @@ function DeadlineModal({ onClose, detail, onDone }: {
           <input className="field" {...lf.o(loi, 'ly-do')} value={reason ?? ''} onChange={(e) => setReason(e.target.value)}
             placeholder="Ví dụ: giáo viên Writing nghỉ phép" />
         </Truong>
-        <SectionNote>
-          Hạn mặc định tính riêng cho từng môn: hết thứ Tư của tuần kế tiếp sau tuần thi môn đó. Hạn đặt ở đây áp cho CẢ ĐỢT;
-          chỉ một môn thì dùng "{CHU_THAO_TAC['doi-han']}" ở dòng môn đó. Hết ngày hạn mới tính quá hạn.
-        </SectionNote>
       </div>
     </KhungPanel>
   );
@@ -773,11 +774,12 @@ function CancelDialog({ open, onClose, attemptId, attemptNo, heQua, onDone }: {
   const toast = useToast();
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
+  const loiLyDo = kiemLyDoThaoTac('huy-luot', reason);   // T7: một trong 3 chỗ bắt buộc lý do — máy chủ gọi lại đúng hàm này
   const caLuot = heQua.cachDuoc === 'ca-luot';
   const dong = [heQua.case ? `${heQua.case} Case` : null, heQua.phoiHop ? `${heQua.phoiHop} việc Phối hợp` : null].filter(Boolean);
   return (
     <ConfirmDialog
-      open={open} onClose={onClose} danger busy={busy}
+      open={open} onClose={onClose} danger busy={busy} confirmDisabled={!!loiLyDo} confirmTitle={loiLyDo ?? undefined}
       title={caLuot ? `Huỷ cả lượt MT${attemptNo}` : `Huỷ phần còn lại của MT${attemptNo}`}
       confirmLabel={caLuot ? `Huỷ cả lượt MT${attemptNo}` : 'Huỷ phần còn lại'}
       body={
@@ -788,14 +790,16 @@ function CancelDialog({ open, onClose, attemptId, attemptNo, heQua, onDone }: {
               : <>Huỷ các kỹ năng <strong>chưa có điểm và chưa thi</strong>. MT{attemptNo} giữ số; kỹ năng đã có điểm giữ nguyên.</>}
           </p>
           {dong.length > 0 && <p>Đóng {dong.join(', ')} sinh từ lượt này.</p>}
-          <input className="field" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Lý do huỷ (bắt buộc)"
-            aria-label="Lý do huỷ (bắt buộc)" />
+          <Truong nhan="Lý do" batBuoc>
+            <input className="field" value={reason} maxLength={300} onChange={(e) => setReason(e.target.value)} placeholder="Ví dụ: em nghỉ học" />
+          </Truong>
         </div>
       }
       onConfirm={async () => {
+        if (loiLyDo) return;
         setBusy(true);
         try {
-          await api.post(`/attempts/${attemptId}/cancel`, { reason, cach: heQua.cachDuoc });
+          await api.post(`/attempts/${attemptId}/cancel`, { reason: reason.trim(), cach: heQua.cachDuoc });
           invalidate('/attempts'); invalidate('/tong-quan');
           onDone(); onClose(); toast.push('ok', caLuot ? `Đã huỷ cả lượt MT${attemptNo}` : 'Đã huỷ phần còn lại');
         } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
@@ -897,11 +901,10 @@ function AbsenceMoveModal({ row, detail, onClose, onDone }: {
             </div>
           )}
 
-          <label className="block">
-            <span className="label">Lý do</span>
-            <input className="field" value={reason} onChange={(e) => setReason(e.target.value)}
+          <Truong nhan="Lý do" tuyChon>
+            <input className="field" value={reason} maxLength={300} onChange={(e) => setReason(e.target.value)}
               placeholder="Ví dụ: em ốm, gia đình đã báo trước" />
-          </label>
+          </Truong>
 
           <SectionNote>
             {(row?.absenceMoveCount ?? 0) === 0 ? (
