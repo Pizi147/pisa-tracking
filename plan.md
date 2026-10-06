@@ -19,6 +19,7 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 | `docs/superpowers/plans/2026-10-05-pr-mtb-giao-dien-mock-test.md` | PR-MTb (đợt 5) |
 | `docs/superpowers/plans/2026-10-05-pr-mt0.md` | PR-MT0 (đợt 5) |
 | `docs/superpowers/plans/2026-10-03-pr-phien-lich-mt-dieu-huong-sua-lop.md` | PR-SL (mục B Q-0310-3, "PR-SL", SL-1→2). Phần PH, LM, DH đã xong |
+| `docs/superpowers/plans/2026-10-06-pr-bv-bo-vang-xoa-diem.md` | PR-BV (chạy sau MTa; mockup chờ duyệt) |
 | `docs/superpowers/plans/2026-10-02-ux-sau-critique.md` | PR-HK2 (H1, H2, K2, K4–K7, J1–J4, J7, J9), PR-SL (I1–I4, I6) |
 
 - **Khi các nguồn mâu thuẫn:** theo `CLAUDE.md` (quyết định chủ sản phẩm + kế hoạch đã duyệt → Rulebook + mockup → skill).
@@ -178,7 +179,7 @@ Chủ sản phẩm 05/10 đã chốt (mockup `thiet-ke/mockup-test-mt-2026-10-05
 
 Đợt 2 (PHH, SO, DH) và U12 đã xong, xem mục 2.
 
-### PR-BV · Bỏ vắng + xoá điểm hàng loạt có khôi phục (M–L) — chủ sản phẩm 06/10, **kế hoạch + mockup chưa soạn**
+### PR-BV · Bỏ vắng + xoá điểm hàng loạt có khôi phục (M–L) — chủ sản phẩm 06/10, kế hoạch `docs/superpowers/plans/2026-10-06-pr-bv-bo-vang-xoa-diem.md` + mockup `thiet-ke/mockup-bo-vang-xoa-diem-2026-10-06.html` **chờ duyệt** (Q1–Q4 cuối kế hoạch)
 Nguồn: `docs/superpowers/specs/2026-10-06-ra-soat-duong-lui.md` (rà 06/10, 11 phép thử API). Chạy **sau MTa** (cùng `attempts.ts`, `regular.ts`, `absence.ts`), có mockup duyệt trước.
 - **Bỏ vắng / Em có thi:** bài đã chốt vắng hoặc gõ "-" nhầm → trả **lịch cũ + số lần vắng**, rồi nhập điểm được. Ai: **QL / Quản trị mọi lúc; GV chấm bài đó trong khung nhập T19** (tuần thi → thứ Tư tuần sau). Lý do tuỳ chọn, nhật ký đủ. Máy chủ đã có hàm sửa trạng thái thi nhưng chưa có đường gọi.
 - **Xoá điểm hàng loạt** (nhiều em, cả đợt một em, cả cột kỹ năng cả lớp): **xoá mềm, khôi phục được**; màn xem trước số điểm + Case bị ảnh hưởng. Chỉ QL / Quản trị. Điểm xoá tay từng ô cũng khôi phục được.
