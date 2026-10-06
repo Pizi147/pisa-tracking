@@ -16,6 +16,7 @@ import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { chotHanXuLy, trangThaiYThuc } from '../yThuc/trangThai.ts';
 import { khoangTamDung } from '../students/tamDung.ts';
 import { noiMt0VaoFt } from '../fasttrack/mt0.ts';
+import { ghiBanChup } from '../loTrinh/banChup.ts';
 
 /**
  * LUẬT LỘ TRÌNH — MỘT CHỖ (PR-LT, §3.9) dùng chung cho Chuyển lớp một em (`students.ts`) và
@@ -298,9 +299,12 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
   if (luat.khoa === 'dong-mo') {
     if (curCycle) conn.prepare(`UPDATE learning_cycles SET status = 'completed', ended_at = ? WHERE id = ?`).run(d.ngay, curCycle.id);
     const { moiId, route } = moLoTrinhMoi(p, { sid: d.sid, ngay: d.ngay, toClass, tuLop, denLop, cuCycle: curCycle, target: mucTieu ?? null, thangThi: d.thangThi });
-    if (denLop.ft && tuLop.ft && curCycle) chuyenCaseSangLoTrinh(p.userId, d.sid, curCycle.id, moiId, route, d.ngay);   // K5-60
     /* PR-MT0 (T5b): từ lớp thường — sang FT thì MT0 thành mốc đầu vào lộ trình mới; hướng khác thì MT0 chưa điểm huỷ. */
     if (!tuLop.ft && curCycle) noiMt0VaoFt(p.userId, [{ sid: d.sid, cuCycleId: curCycle.id, ftCycleId: denLop.ft ? moiId : null, ngay: d.ngay }]);
+    /* PR-TK: bản chụp CÙNG giao dịch, lớp lúc đóng = lớp cũ (ghi danh đã đổi ở trên). Lý do = đúng loại kết thúc ghi danh.
+       PR-MT0: ghi SAU khi MT0 đã sang lộ trình FT (bản chụp khoá cũ không giữ MT0 đã thành đầu vào FT), TRƯỚC khi Case FT→FT đi theo. */
+    if (curCycle) ghiBanChup(conn, [curCycle.id], { lyDo: luat.endKind as 'len_lop' | 'hoc_lai' | 'sang_ft' | 'chuyen_lop', ngay: d.ngay, lopId: enr.class_id });
+    if (denLop.ft && tuLop.ft && curCycle) chuyenCaseSangLoTrinh(p.userId, d.sid, curCycle.id, moiId, route, d.ngay);   // K5-60
   }
 
   /* Q12: bài chưa làm CHỈ đi theo em khi GIỮ khoá — đóng khoá thì lượt planned ở lại lớp cũ. MT0 không đi theo (PR-MT0): chưa điểm thì huỷ. */
@@ -492,9 +496,19 @@ export function apDungCaLop(p: Principal, o: {
   });
 
   // 4) Đóng khoá đang chạy — MỘT UPDATE (mọi dòng ở đây đều dong-mo).
+  const dongTheoLyDo = new Map<'len_lop' | 'hoc_lai' | 'sang_ft', number[]>();
   {
     const sids = o.dongs.map((d) => d.sid);
     const ph = sids.map(() => '?').join(',');
+    /* PR-TK: id các lộ trình đang chạy lấy TRƯỚC câu UPDATE, rồi ghi bản chụp MỘT lần cho cả lô (nhóm theo lý do: một lô có thể trộn lên lớp / học lại / sang FT). */
+    const huongCua = new Map(o.dongs.map((d) => [d.sid, d.huong]));
+    theoLo(sids, (lo, ph2) => {
+      for (const r of conn.prepare(`SELECT id, student_id FROM learning_cycles WHERE status = 'active' AND student_id IN (${ph2})`).all(...lo) as any[]) {
+        const h = huongCua.get(r.student_id);
+        const lyDo = h === 'fast_track' ? 'sang_ft' : h!;
+        dongTheoLyDo.set(lyDo, [...(dongTheoLyDo.get(lyDo) ?? []), r.id as number]);
+      }
+    });
     conn.prepare(`UPDATE learning_cycles SET status = 'completed', ended_at = ? WHERE student_id IN (${ph}) AND status = 'active'`)
       .run(o.ngay, ...sids);
   }
@@ -555,6 +569,8 @@ export function apDungCaLop(p: Principal, o: {
 
   // 5b) PR-MT0 (T5b): sang FT → MT0 thành mốc đầu vào lộ trình FT mới; hướng khác → MT0 chưa điểm huỷ. Theo lô.
   noiMt0VaoFt(p.userId, o.dongs.map((d) => ({ sid: d.sid, cuCycleId: khoaCu.get(d.sid)?.id ?? null, ftCycleId: ftMoiCua.get(d.sid) ?? null, ngay: o.ngay })));
+  /* PR-TK: bản chụp MỘT lần cho cả lô (nhóm theo lý do). PR-MT0: SAU bước 5b — MT0 đã thành đầu vào FT không nằm trong bản chụp khoá cũ. */
+  for (const [lyDo, ids] of dongTheoLyDo) ghiBanChup(conn, ids, { lyDo, ngay: o.ngay, lopId: o.fromClass.id });
 
   // 6) Case: chỉ em sang FT đóng Case lớp thường — ngoại lệ per-em DUY NHẤT được phép (S17).
   /* PR-TOC: lọc trước MỘT câu — chỉ em còn Case mở / tín hiệu chờ mới đi từng em (em không có gì thì hàm đóng vốn không làm gì). */

@@ -11,7 +11,7 @@ import { MoLaiLopPanel } from '../classes/XoaKetThucLopPanel.tsx';
 import { OChon, ThanhChonNhieu, useChonNhieu } from './chonNhieuHocVien.tsx';
 import { XemTruocHangLoatPanel } from './XemTruocHangLoatPanel.tsx';
 import { StudentManagePanel } from './StudentManagePanel.tsx';
-import { ngay, type ViecHangLoat } from '@shared/domain/index.ts';
+import { duongHoSoHocVien, ngay, type ViecHangLoat } from '@shared/domain/index.ts';
 
 type LopLuuTru = {
   id: number; code: string; ma: string | null; tenChuongTrinh: string | null;
@@ -21,7 +21,7 @@ type LopLuuTru = {
 };
 type HocVienLuuTru = {
   id: number; studentCode: string; fullName: string; lopCuoi: string | null; chiNhanh: string | null;
-  archivedAt: string; coTheBoLuuTru: boolean; coTheHocLai: boolean;
+  archivedAt: string; coTheBoLuuTru: boolean; coTheHocLai: boolean; cycleIdCuoi: number | null;
 };
 type DuLieuLuuTru = { lop: LopLuuTru[]; hocVien: HocVienLuuTru[]; phamVi: { chiNhanh: number | null } };
 
@@ -131,6 +131,7 @@ export default function LuuTruPage() {
                       Đã kết thúc {l.finishedAt ? ngay(l.finishedAt) : '—'}
                     </span>
                   </Link>
+                  <Link to={`/hoc-vien/lop/${l.id}?tab=tong-ket`} className="btn btn-sm min-h-[44px] no-underline sm:min-h-0">Tổng kết</Link>
                   {l.coTheMoLai && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setMoLai(l)}>Mở lại</button>}
                 </div>
               ))}
@@ -156,6 +157,9 @@ export default function LuuTruPage() {
                   </span>
                   <span className="flex-1" />
                   <span className="text-[11px] text-slate-500 whitespace-nowrap">Lưu trữ {ngay(s.archivedAt)}</span>
+                  {!chon.bat && s.cycleIdCuoi != null && (
+                    <Link to={duongHoSoHocVien(s.id, { tab: 'hanh-trinh', tongKet: s.cycleIdCuoi })} className="btn btn-sm min-h-[44px] no-underline sm:min-h-0">Tổng kết</Link>
+                  )}
                   {!chon.bat && s.coTheHocLai && (
                     <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setHocLai(s)}>Học lại</button>
                   )}

@@ -34,6 +34,7 @@ import { ketQuaHuyCua } from './ketQuaHuy.ts';
 import { chuanHoaNguoiThucHien } from '../cases/nguoiThucHien.ts';
 import { allProgrammes, evaluateRegular, isRatioClass, regularDeadline } from '../normal/regular.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
+import { lamMoiDiemBanChup } from '../loTrinh/banChup.ts';
 
 export type ScoreRow = {
   id: number; skill: EntrySkill;
@@ -1407,6 +1408,7 @@ function luuNhanXet(
  */
 export function refreshOutcome(p: Principal, attemptId: number) {
   const conn = db();
+  lamMoiDiemBanChup(conn, [attemptId]);   // PR-TK (TK-5): lộ trình đã đóng → bản chụp theo điểm mới
   const fresh = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
   if (!fresh || fresh.status === 'cancelled') return;
   const rows = scoresOf(attemptId);

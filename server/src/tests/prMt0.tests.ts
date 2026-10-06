@@ -350,6 +350,11 @@ export async function runPrMt0Tests(t: YThucTestKit) {
     const c0 = get('SELECT status, cancel_reason FROM assessment_attempts WHERE id = ?', mC);
     assert(c0.status === 'cancelled' && c0.cancel_reason === 'Không lên FT', JSON.stringify(c0));
     assert(mt0Svc.mt0TheoHocVien([A]).get(A)?.trangThai === 'dung', 'A: dùng');
+    /* PR-TK: bản chụp khoá cũ ghi SAU khi nối — MT0 của A (đã là đầu vào FT) không có; MT0 của B (có điểm, ở lại) là `khong_dung`. */
+    const chup = (sid: number) => conn.prepare(`SELECT DISTINCT l.attempt_id, l.trang_thai FROM ban_chup_luot l JOIN ban_chup_lo_trinh b ON b.id = l.ban_chup_id
+      WHERE b.student_id = ? AND l.kind = 'mt0'`).all(sid) as any[];
+    assert(chup(A).length === 0, `bản chụp A: ${JSON.stringify(chup(A))}`);
+    assert(JSON.stringify(chup(B)) === JSON.stringify([{ attempt_id: mB, trang_thai: 'khong_dung' }]), `bản chụp B: ${JSON.stringify(chup(B))}`);
   });
   check('MT0-5c · MT0 chưa chấm lúc sang FT → vẫn nhập điểm được ở lớp BE cũ (GV Writing lớp BE), điểm thuộc lộ trình FT; hạn giữ', () => {
     const l = taoLop('BE', 10, 1, 6);

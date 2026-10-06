@@ -13,6 +13,7 @@ import { ensurePeriod, mondayOf, periodById } from '../platform/week.ts';
 import { apLichMacDinh } from '../classes/schedule.ts';
 import { taoMtMacDinh } from './mtMacDinh.ts';
 import { activeRouteCodes } from '../platform/sysconfig.ts';
+import { ghiBanChup } from '../loTrinh/banChup.ts';
 
 /**
  * Lộ trình học của một học viên.
@@ -159,8 +160,10 @@ export function createCycle(p: Principal, input: {
     const seq = ((conn.prepare('SELECT MAX(seq) AS n FROM learning_cycles WHERE student_id = ?')
       .get(input.studentId) as any)?.n ?? 0) + 1;
     // Lộ trình cũ khép lại, nhưng KHÔNG xoá dữ liệu nào của nó.
+    const dong = (conn.prepare(`SELECT id FROM learning_cycles WHERE student_id=? AND status='active'`).all(input.studentId) as any[]).map((r) => r.id as number);
     conn.prepare(`UPDATE learning_cycles SET status='completed', ended_at=? WHERE student_id=? AND status='active'`)
       .run(startedAt, input.studentId);
+    ghiBanChup(conn, dong, { lyDo: 'lo_trinh_moi', ngay: startedAt, routeMoi: input.route ?? null });   // PR-TK: cùng giao dịch với câu đóng
     const info = conn
       .prepare(
         `INSERT INTO learning_cycles (student_id, seq, route, target_score, khong_cam_ket, exam_period_id, start_period_id, started_at, status, note, created_at)
@@ -311,6 +314,7 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
     if (doiTarget) reviseTarget(p, cycleId, { newTarget: targetGui, reason: patch.lyDo });
     if (patch.status !== undefined && patch.status !== 'active' && c.status === 'active') {
       db().prepare('UPDATE learning_cycles SET ended_at = COALESCE(ended_at, ?) WHERE id = ?').run(demoToday(), cycleId);
+      ghiBanChup(db(), [cycleId], { lyDo: 'sua_tay', ngay: demoToday() });   // PR-TK: sửa tay trạng thái = đường đóng thứ 5
     }
     if (closeOnEnd) {
       closeCasesBySystem({ actorUserId: p.userId, studentId: c.student_id, reason: 'course_ended', on: demoToday(), cycleIds: [cycleId] });

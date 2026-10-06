@@ -18,6 +18,7 @@ import { ChuyenLopPanel } from './ChuyenLopPanel.tsx';
 import { XoaHocVienPanel } from './XoaHocVienPanel.tsx';
 import { DeXuatSuaPanel } from '../duyet/DeXuatSuaPanel.tsx';
 import { laBand } from './StudentPlanPanel.tsx';
+import { KetQuaThiThatPanel } from './KetQuaThiThatPanel.tsx';
 import { ErrorState, NutChon, Skeleton, TargetText } from '../../ui/ui.tsx';
 
 /**
@@ -61,7 +62,7 @@ export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempt
     case 'hoc-lai': return <HocLaiPanel {...chung} />;
     case 'luu-tru': return <LuuTruPanel {...chung} boLuuTru={false} />;
     case 'bo-luu-tru': return <LuuTruPanel {...chung} boLuuTru />;
-    case 'outcome': return <KetLuanLoTrinhPanel {...chung} cycle={cycle} attempts={attempts} />;
+    case 'outcome': return <KetQuaThiThatPanel cycleId={cycle.id} studentName={chung.studentName} lop={chung.lop} onClose={chung.onClose} onDone={chung.onDone} />;
     case 'info': return <ThongTinPanel {...chung} student={student} cycle={cycle} attempts={attempts} canEditCycle={canEditCycle} onDeXuatSua={onDeXuatSua} />;
     case 'xoa-hoc-vien': return <XoaHocVienPanel studentId={student.id} studentName={student.name} lop={lop} onClose={onClose} />;
     case 'de-xuat-sua': return (
@@ -289,58 +290,6 @@ function HocLaiPanel({ studentId, studentName, lop, onClose, onDone }: ChungViec
             <Truong nhan="Lý do" tuyChon><input className="field w-full" maxLength={2000} value={lyDo} onChange={(e) => setLyDo(e.target.value)} /></Truong>
           </Khoi>
         )}
-    </KhungPanel>
-  );
-}
-
-/** KẾT LUẬN LỘ TRÌNH — CHỈ Fast Track (Q15). Khép lộ trình KHÔNG đóng hộ Case còn mở: chúng đi theo em sang giai đoạn sau. */
-function KetLuanLoTrinhPanel({ studentName, lop, onClose, onDone, cycle, attempts }: ChungViec & { cycle: any; attempts: any[] }) {
-  const toast = useToast();
-  const [outcome, setOutcome] = useState(cycle?.outcome?.outcome ?? 'unknown');
-  const [score, setScore] = useState('');
-  const [note, setNote] = useState('');
-  const [busy, setBusy] = useState(false);
-  void attempts;
-
-  /* Case còn mở của chính em này — thứ phải bàn giao chứ không biến mất khi lộ trình khép. */
-  const open = useApi<{ rows: any[] }>(`/cases?studentId=${cycle?.studentId ?? ''}&status=open`, [cycle?.studentId]);
-  const pending = (open.data?.rows ?? []).filter((c: any) => c.status !== 'done');
-
-  const luu = async () => {
-    setBusy(true);
-    try {
-      await api.put(`/cycles/${cycle.id}/outcome`, { outcome, note, score: score || undefined });
-      invalidate('/students'); toast.push('ok', 'Đã lưu'); onDone();
-    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
-  };
-
-  return (
-    <KhungPanel tieuDe={NHAN_VIEC.outcome} hocVien={studentName} lop={lop} onDong={onClose}
-      chan={{ chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy}>Lưu</button> }}>
-      <Khoi tieuDe="Kết luận"
-        luat="Đóng lộ trình chỉ nói “không học theo lộ trình này nữa”. Có đạt Target hay không là kết luận riêng. Em học lại thì mở một lộ trình MỚI. KHÔNG lấy một lượt Mock Test làm kết quả thi thật: MT chấm nội bộ, không có phòng thi và không có chứng chỉ.">
-        <Truong nhan="Kết luận" batBuoc>
-          <select className="field w-full" value={outcome} onChange={(e) => setOutcome(e.target.value)}>
-            {CYCLE_OUTCOMES.map((o) => <option key={o} value={o}>{CYCLE_OUTCOME_LABEL[o]}</option>)}
-          </select>
-        </Truong>
-        <Truong nhan="Điểm IELTS thật (Overall)" tuyChon phu="Chưa thi thì để trống — “chưa có căn cứ” là một câu trả lời hợp lệ">
-          <input className="field w-full max-w-[8rem]" type="number" step="0.5" min={0} max={9} value={score} onChange={(e) => setScore(e.target.value)} />
-        </Truong>
-        <Truong nhan="Ghi chú" tuyChon>
-          <input className="field w-full" value={note} onChange={(e) => setNote(e.target.value)} />
-        </Truong>
-      </Khoi>
-
-      {/* CÒN GÌ PHẢI BÀN GIAO — nhìn thấy trước khi bấm, không phải sau. */}
-      {pending.length > 0 && (
-        <Khoi tieuDe={`Case chưa kết luận · ${pending.length}`}>
-          <p className="m-0 text-xs text-soon">Khép lộ trình không đóng hộ các Case này; chúng đi theo em sang giai đoạn sau.</p>
-          <ul className="m-0 list-none space-y-1 p-0">
-            {pending.slice(0, 6).map((c: any) => <li key={c.id} className="truncate text-xs text-slate-300">{c.title ?? c.headline}</li>)}
-          </ul>
-        </Khoi>
-      )}
     </KhungPanel>
   );
 }
