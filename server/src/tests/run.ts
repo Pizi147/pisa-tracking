@@ -9167,7 +9167,7 @@ await runPrKhungTests({ check, assert });
 
 // ==================================================================== PR-HK2 (Badge & chữ)
 const { runPrHk2Tests } = await import('./prHk2.tests.ts');
-await runPrHk2Tests({ check, assert });
+await runPrHk2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0

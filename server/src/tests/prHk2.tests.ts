@@ -20,8 +20,10 @@ const than = (src: string, ten: string) => {
 const tsx = (dir: string): string[] => fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true }).flatMap((e) =>
   e.isDirectory() ? tsx(`${dir}/${e.name}`) : e.name.endsWith('.tsx') ? [`${dir}/${e.name}`] : []);
 
-export async function runPrHk2Tests(t: Pick<YThucTestKit, 'check' | 'assert'>) {
-  const { check, assert } = t;
+export async function runPrHk2Tests(t: YThucTestKit) {
+  const { check, assert, P } = t;
+  const d: any = await import('../../../shared/domain/index.ts');
+  const th: any = await import('../phanTich/tongHop.ts');
   console.log('\nPR-HK2 · Task 1 · hai họ chip, "+n", ⋯, nút lọc');
 
   check('C1 · Nhan.tsx export CHIP_TRON và CHIP_VUONG: cùng text-[11.5px], leading-[18px], border', () => {
@@ -139,5 +141,89 @@ export async function runPrHk2Tests(t: Pick<YThucTestKit, 'check' | 'assert'>) {
       assert(!/\bcard overflow-hidden\b|rounded-lg border overflow-hidden/.test(khung), `${f}: khung bao còn overflow-hidden`);
       assert(/overflow-clip/.test(khung), `${f}: khung bao chưa overflow-clip`);
     }
+  });
+
+  console.log('\nPR-HK2 · Task 4 · Phân tích › Tổng hợp (K2)');
+
+  check('C11 · bỏ "Tạm thời": lượt chưa đủ điểm mà đã kết luận được rơi vào chuaDu; không còn cột tamThoi; năm cột Kết quả cộng đúng Lượt trên DB demo', () => {
+    assert(th.phanLoaiLuot({ sosLevel: 1, complete: false }) === 'chuaDu', 'chưa đủ điểm + đã có mức SOS phải là chuaDu');
+    assert(th.phanLoaiLuot({ sosLevel: 0, complete: false }) === 'chuaDu' && th.phanLoaiLuot({ sosLevel: null, complete: false }) === 'chuaDu', 'chưa đủ điểm → chuaDu');
+    assert([0, 1, 2, 3].map((n) => th.phanLoaiLuot({ sosLevel: n, complete: true })).join() === 'dat,sos1,sos2,sos3', 'đủ điểm vẫn đạt/sos1-3');
+    for (const ct of ['ft', 'thuong'] as const) {
+      assert(!d.cotTongHopFor(ct).some((c: any) => c.khoa === 'tamThoi'), `${ct}: còn cột tamThoi`);
+    }
+    assert(d.cotKetQuaCong('ft').join() === 'dat,sos1,sos2,sos3,chuaDu', d.cotKetQuaCong('ft').join());
+    for (const ct of ['ft', 'thuong'] as const) {
+      const kq = th.tongHop(P.admin, { branchId: null, ct, soTuan: 52, classId: null, theo: 'tuan' });
+      const cong = (o: Record<string, number>) => (d.cotKetQuaCong(ct) as string[]).reduce((s2, k) => s2 + (o[k] ?? 0), 0);
+      assert(cong(kq.tong) === kq.tong.luot && kq.tong.luot > 0, `${ct}: Σ Kết quả ${cong(kq.tong)} ≠ Lượt ${kq.tong.luot}`);
+      assert(!('tamThoi' in kq.tong), `${ct}: máy chủ còn trả tamThoi`);
+    }
+    assert(!/tamThoi/.test(doc('server/src/phanTich/tongHop.ts')), 'tongHop.ts còn tamThoi');
+  });
+
+  check('C12 · nhãn chuaDu = "Thiếu điểm" (FT và lớp thường); gợi ý FT ghi "kể cả lượt đã tạm có mức SOS"; choDuyet = "Chờ duyệt"', () => {
+    for (const ct of ['ft', 'thuong'] as const) {
+      const c = d.cotTongHopFor(ct).find((x: any) => x.khoa === 'chuaDu');
+      assert(c && c.nhan(ct) === 'Thiếu điểm', `${ct}: nhãn ${c?.nhan(ct)}`);
+      assert(!/Chưa đủ điểm|Tạm thời/.test(c.goiY + d.cotTongHopFor(ct)[0].goiY), `${ct}: gợi ý còn chữ cũ`);
+    }
+    assert(d.cotTongHopFor('ft').find((x: any) => x.khoa === 'chuaDu').goiY.includes('kể cả lượt đã tạm có mức SOS'), 'gợi ý FT');
+    assert(d.cotTongHopFor('ft').find((x: any) => x.khoa === 'choDuyet').nhan('ft') === 'Chờ duyệt', 'choDuyet');
+  });
+
+  check('C13 · một cột hvCase "HV - Case" thay hvCoCase + case; máy chủ giữ hai nguồn; Excel giữ hai cột riêng; ô web có hai SoLieuO riêng', () => {
+    for (const ct of ['ft', 'thuong'] as const) {
+      const khoa = d.cotTongHopFor(ct).map((c: any) => c.khoa);
+      assert(khoa.includes('hvCase') && !khoa.includes('hvCoCase') && !khoa.includes('case'), `${ct}: ${khoa.join()}`);
+      assert(d.cotTongHopFor(ct).find((c: any) => c.khoa === 'hvCase').nhan(ct) === 'HV - Case', 'nhãn');
+      assert(d.cotTongHopFor(ct).find((c: any) => c.khoa === 'hvCase').nhom === 'xu-ly', 'nhóm Xử lý');
+      const so = d.cotSoLieu(ct).map((c: any) => c.khoa);
+      assert(so.includes('hvCoCase') && so.includes('case') && !so.includes('hvCase'), `${ct}: cotSoLieu ${so.join()}`);
+    }
+    const kq = th.tongHop(P.admin, { branchId: null, ct: 'ft', soTuan: 52, classId: null, theo: 'tuan' });
+    assert(typeof kq.tong.hvCoCase === 'number' && typeof kq.tong.case === 'number', 'o vẫn có hvCoCase và case');
+    const aoa = d.bangXuatTongHop({ theo: 'tuan', ct: 'ft', cot: [], hang: [{ khoa: 'a', nhan: 'W1 OCT', o: { luot: 3, hvCoCase: 2, case: 5 } }],
+      tong: { luot: 3, hvCoCase: 2, case: 5 }, scopeEmpty: false }, new Set(['ket-qua', 'xu-ly']), 'x') as any[][];
+    assert(aoa[3].includes('HV có Case') && aoa[3].includes('Case') && !aoa[3].includes('HV - Case') && !aoa[3].includes('Tạm thời') && aoa[3].includes('Thiếu điểm'), JSON.stringify(aoa[3]));
+    const dong = aoa.find((r) => r[0] === 'W1 OCT')!;
+    assert(dong[aoa[3].indexOf('HV có Case')] === 2 && dong[aoa[3].indexOf('Case')] === 5, JSON.stringify(dong));
+    const tsx = doc('web/src/modules/phanTich/TongHopTestSos.tsx');
+    assert(/hvCoCase/.test(tsx) && /'case'/.test(tsx), 'ô hvCase cần hai nguồn riêng hvCoCase và case');
+  });
+
+  check('C14a · số mỗi ô = số dòng khi bấm (oTongHop cùng khoá): mọi cột, gồm chuaDu và hai số của HV - Case, ở dòng Tổng, một dòng và một dòng con', () => {
+    for (const ct of ['ft', 'thuong'] as const) {
+      const bo = { branchId: null, ct, soTuan: 52, classId: null, theo: 'lop' as const };
+      const kq = th.tongHop(P.admin, bo);
+      const cotMo = (d.cotSoLieu(ct) as any[]).map((c) => c.khoa as string);
+      const dongCoCon = kq.hang.find((h: any) => h.con?.length && h.o.luot > 0);
+      const ds: Array<[string, Record<string, number>]> = [['tong', kq.tong], [kq.hang[0].khoa, kq.hang[0].o]];
+      if (dongCoCon) ds.push([dongCoCon.con[0].khoa, dongCoCon.con[0].o]);
+      for (const [khoa, o] of ds) for (const cot of cotMo) {
+        const r = th.oTongHop(P.admin, { ...bo, khoa, cot });
+        assert(r.n === (o[cot] ?? 0) && r.rows.length === r.n, `[${ct}] ${khoa} · ${cot}: bảng ${o[cot] ?? 0} ≠ n ${r.n} / dòng ${r.rows.length}`);
+      }
+      assert((kq.tong.choNguyenNhanQuaHan ?? 0) <= (kq.tong.choNguyenNhan ?? 0), `[${ct}] quá hạn > chờ nguyên nhân`);
+    }
+  });
+
+  check('C15a · ô Đạt / SOS 1–3 dùng CHIP_VUONG + tông dat/sos1-3; chú giải bỏ "Tạm thời / Chưa đủ điểm"; "16 ⚠1"; ⋯ gom Cột hiện + hai nút xuất; đầu cột whitespace-normal; bang-dinh', () => {
+    const s = doc('web/src/modules/phanTich/TongHopTestSos.tsx');
+    assert(/CHIP_VUONG/.test(s) && /ui\/Nhan\.tsx/.test(s), 'chưa dùng CHIP_VUONG');
+    const mau = /const MAU_O[^]*?\n\};/.exec(s)?.[0] ?? '';
+    assert(/dat:/.test(mau) && /sos1:/.test(mau) && /sos2:/.test(mau) && /sos3:/.test(mau) && !/\btam:/.test(mau), `MAU_O thiếu tông hoặc còn tam: ${mau}`);
+    assert(!/Tạm thời|Chưa đủ điểm|quá hạn\)/.test(s), 'còn "Tạm thời" / "Chưa đủ điểm" / "quá hạn)"');
+    assert(/⚠/.test(s) && /text-late/.test(s) && /quá hạn/.test(s), 'chưa có ⚠ text-late + title "n quá hạn"');
+    assert(/<MenuDong/.test(s) && /Cột hiện/.test(s) && /⤓ Xuất bảng này/.test(s) && /Xuất kết quả từng lượt/.test(s), 'chưa gom nút vào MenuDong');
+    assert(!/Cột hiện ▾/.test(s) && !/className="btn btn-sm"/.test(s), 'còn nút ngoài');
+    assert(/nav\?\.xuatMt/.test(s), 'mất điều kiện xuatMt');
+    assert(/className=\{`th [^`]*whitespace-normal/.test(s) && /<Th key=\{c\.khoa\}[^>]*whitespace-normal/.test(s), 'đầu cột chưa whitespace-normal');
+    assert(/table-scroll bang-dinh/.test(s) && !/overflow-x-auto[^"]*bang-dinh/.test(s), 'bảng chưa gắn bang-dinh');
+    assert(/sticky-col/.test(s), 'mất cột đầu đứng yên (375)');
+    const sh = doc('shared/domain/phanTich.ts');
+    const i = sh.indexOf('export type MauOKetQua');
+    assert(i >= 0 && !/'tam'/.test(sh.slice(i, i + 90)), 'MauOKetQua còn tam');
+    assert(d.mauOKetQua('chuaDu', 3) === null && d.mauOKetQua('hvCase', 3) === null, 'chuaDu / hvCase không tô nền');
   });
 }

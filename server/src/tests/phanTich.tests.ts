@@ -29,11 +29,8 @@ export async function runPhanTichTests(t: YThucTestKit) {
       eq(d.mauOKetQua(k, 3), k, `${k} có số → chính nó`);
       eq(d.mauOKetQua(k, 0), 'xam', `${k} bằng 0 → xám`);
     }
-    for (const k of ['tamThoi', 'chuaDu']) {
-      eq(d.mauOKetQua(k, 2), 'tam', `${k} có số → tam`);
-      eq(d.mauOKetQua(k, 0), 'xam', `${k} bằng 0 → xám`);
-    }
-    for (const k of ['luot', 'kn:listening', 'hvCoCase', 'case', 'choNguyenNhan', 'dangLam']) eq(d.mauOKetQua(k, 5), null, `${k} không tô`);
+    /* PR-HK2 (Q1): bỏ "Tạm thời"; "Thiếu điểm" không tô nền (chữ xám do ô quyết) — như mọi cột ngoài Đạt/SOS. */
+    for (const k of ['luot', 'kn:listening', 'hvCase', 'hvCoCase', 'case', 'choNguyenNhan', 'dangLam', 'chuaDu']) eq(d.mauOKetQua(k, 5), null, `${k} không tô`);
   });
 
   check('PR-Pb · gocNhinTuThamSo: Q16 — tham số cũ; PR-Pb2-a: không còn suy về Danh sách Case', () => {
