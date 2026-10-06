@@ -585,4 +585,10 @@ export async function runPrMt0Tests(t: YThucTestKit) {
     const tq = tongQuan.tongQuanQuanLy(QL, { branchId: MB }).canXuLy.find((x: any) => x.metricId === 'lop-chua-chot-len-ft');
     assert(tq?.han?.loai === 'chot-len-ft', JSON.stringify(tq?.han));
   });
+
+  check('Rà #226 (5) · ghim Hành trình MT0 "không dùng" ghi đúng chữ (không "đang chấm")', () => {
+    const g = dm.nhanGhim({ cheDo: 'ielts', attemptNo: 0, kind: 'mt0', nhanNgan: 'MT0 · không dùng', overall: null, sosLevel: null, soDat: null, soYeuCau: 4, soCoDiem: 1 });
+    assert(g.chu === 'MT0 · không dùng', g.chu);
+    assert(dm.nhanGhim({ cheDo: 'ielts', attemptNo: 0, kind: 'mt0', nhanNgan: 'MT0', overall: null, sosLevel: null, soDat: null, soYeuCau: 4, soCoDiem: 1 }).chu === 'MT0 · đang chấm', 'MT0 thường giữ luật cũ');
+  });
 }
