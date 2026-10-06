@@ -83,7 +83,7 @@ export function XemTruocHangLoatPanel({ viec, ids, maLop, onClose, onDone }: {
         dongTren: dangThu ? <p role="alert" className="m-0 px-4 pt-2 text-xs text-late tabular-nums">Đã lưu {daLuu.length} học viên · {chuaLuu.length} học viên chưa lưu</p> : undefined,
         chinh: (
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !xem || (!dangThu && !idsLam.length)} onClick={chay}>
-            {busy ? (tienDo ? `Đang lưu ${tienDo.xong}/${tienDo.tong}…` : 'Đang lưu…') : dangThu ? `Thử lại ${chuaLuu.length} học viên` : `${NHAN_VIEC_HANG_LOAT[viec]} ${idsLam.length} học viên`}
+            {busy ? (tienDo ? `Đang lưu ${tienDo.xong}/${tienDo.tong}…` : 'Đang lưu…') : dangThu ? `Thử lại ${chuaLuu.length} học viên` : xem ? `${NHAN_VIEC_HANG_LOAT[viec]} ${idsLam.length} học viên` : NHAN_VIEC_HANG_LOAT[viec]}
           </button>
         ),
       }}>

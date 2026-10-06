@@ -4,6 +4,7 @@ import { LO_HANG_LOAT_EM, VIEC_NGUOC, chiaLo, type KetQuaHangLoat, type ViecHang
 /**
  * GỬI LÀM NHIỀU HỌC VIÊN THEO LÔ (PR-LUI-b) — mỗi lô `LO_HANG_LOAT_EM` một request (10 s của Netlify), gom `ok` / `failed`. Một lô ném lỗi (mất mạng, 503
  * "sắp hết giờ") thì DỪNG: phần còn lại ghi là "chưa lưu" với đúng câu lỗi — phần đã lưu giữ nguyên, người dùng Thử lại đúng các học viên chưa lưu.
+ * ponytail: lô đang bay mà mất mạng có thể đã ghi xong dù web nhận lỗi — Thử lại gặp học viên "Đã …" thì máy chủ báo lý do ngắn (an toàn, không ghi lại); thêm khoá chống gửi trùng nếu cần nói gọn hơn.
  */
 export async function chayHangLoat(
   viec: ViecHangLoat, ids: number[], o: { lyDo?: string; date?: string; moLaiLop?: boolean; lopMoiId?: number }, onTienDo?: (xong: number, tong: number) => void,

@@ -109,7 +109,7 @@
 - [x] Soạn mockup đủ trạng thái, 375 và 1440, sáng và tối, đúng chữ thật (bảng "Chữ trên màn").
 - [x] Bản 1 (06/10): chủ sản phẩm duyệt trừ mục 1 (Học lại chọn đích) và mục 3 (Chọn nhiều học viên) — xem "Chủ sản phẩm đã quyết".
 - [x] Bản 2: mockup sửa hai phần đó (mục 2–6 và 10–14).
-- [ ] Chủ sản phẩm duyệt lại hai phần. **Chưa duyệt thì không code Task 2 phần `hocLai`, Task 6, 8, 9, 10 (CLAUDE.md).**
+- [x] Chủ sản phẩm duyệt lại hai phần (06/10, qua session planning).
 
 ---
 
@@ -124,7 +124,7 @@
 **Interfaces:**
 - Produces: `VIEC_HANG_LOAT`, `ViecHangLoat`, `NHAN_VIEC_HANG_LOAT`, `VIEC_NGUOC`, `LO_HANG_LOAT_EM`, `TOI_DA_HANG_LOAT_EM`, `KHOI_PHUC_LENH_GIO`, `DongXemTruoc`, `XemTruocHangLoat`, `KetQuaHangLoat`; `ViecQuanLy` thêm `'hoc-lai'`; `LopHocQuyen.hocLai?: boolean`.
 
-- [ ] **Step 1: Tạo `prLuiB.tests.ts` với phép kiểm miền (đỏ)**
+- [x] **Step 1: Tạo `prLuiB.tests.ts` với phép kiểm miền (đỏ)**
 
 ```ts
 /** PHÉP KIỂM PR-LUI-b — đường lui Học viên & Lớp: Học lại · Mở lại lớp · làm nhiều em · huỷ nhiều quyết định chuyển lớp. */
@@ -156,7 +156,7 @@ export async function runPrLuiBTests(t: YThucTestKit) {
 }
 ```
 
-- [ ] **Step 2: Gọi ở cuối `run.ts` rồi chạy, thấy đỏ**
+- [x] **Step 2: Gọi ở cuối `run.ts` rồi chạy, thấy đỏ**
 
 Thêm vào `server/src/tests/run.ts` ngay TRƯỚC khối `console.log(\`\n${'='.repeat(60)}\`)` (sau khối PR-DL, `run.ts` cuối file):
 
@@ -169,7 +169,7 @@ await runPrLuiBTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 Run: `npm run build:server` rồi chạy phép kiểm như các PR trước (xem `package.json` script `test` / `check`).
 Expected: FAIL — `d.VIEC_HANG_LOAT` undefined / `hoc-lai` không có.
 
-- [ ] **Step 3: `shared/domain/hangLoatEm.ts`**
+- [x] **Step 3: `shared/domain/hangLoatEm.ts`**
 
 ```ts
 /**
@@ -209,7 +209,7 @@ export type XemTruocHangLoat = {
 export type KetQuaHangLoat = { ok: number[]; failed: { studentId: number; message: string }[] };
 ```
 
-- [ ] **Step 4: `index.ts` + `quanLyHocVien.ts`**
+- [x] **Step 4: `index.ts` + `quanLyHocVien.ts`**
 
 `shared/domain/index.ts` — thêm `export * from './hangLoatEm.ts';` cạnh `export * from './quanLyHocVien.ts';` (tìm dòng này bằng `grep -n quanLyHocVien shared/domain/index.ts`).
 
@@ -226,11 +226,11 @@ export type KetQuaHangLoat = { ok: number[]; failed: { studentId: number; messag
 - `NHOM_VIEC`: thêm `'hoc-lai': 'lop',`.
 - `PHU_VIEC`: thêm `'hoc-lai': 'về lớp cũ · lộ trình chạy tiếp',`.
 
-- [ ] **Step 5: Chạy lại — xanh**
+- [x] **Step 5: Chạy lại — xanh**
 
 Run: `npm run build:server` + phép kiểm. Expected: LUIb-1, LUIb-2 PASS; `npm run typecheck` không lỗi (kiểm `web` còn `Record<ViecQuanLy, …>` ở chỗ khác: `grep -rn "Record<ViecQuanLy" web shared server` — chỗ nào bắt buộc đủ khoá thì thêm `'hoc-lai'`).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add shared/domain/hangLoatEm.ts shared/domain/index.ts shared/domain/quanLyHocVien.ts server/src/tests/prLuiB.tests.ts server/src/tests/run.ts
@@ -253,7 +253,7 @@ git commit -m "PR-LUI-b: hằng làm nhiều em + mục Học lại ở menu h�
 - Consumes: `setStudentStatus(p, studentId, status, date, reason?, endKind?)`, `require_`, `PERMISSIONS.PLAN_WEEK/CLASS_EDIT`, `datLaiHanCase`, `chotHanXuLy`, `addJourney`, `writeAudit`.
 - Produces: `hocLai(p, studentId, o?: { date?: string; lyDo?: unknown; moLaiLop?: boolean; lopMoiId?: number | null; mucTieu?: number | string | null; thangThi?: string | null }): student row`; `lopChoHocLai(p, studentId): { lopCu; chiNhanh; lop }`; `moLoTrinhMoi(p, o): { moiId; route }` (`luatLoTrinh.ts`); `moLaiLop(p, classId, o?: { lyDo?: unknown }): { ok: true; ma: string }`; `lopHocCua(...).quyen.hocLai: boolean`; `classOverview().viewer.coTheMoLaiLop: boolean`.
 
-- [ ] **Step 1: Viết phép kiểm đỏ**
+- [x] **Step 1: Viết phép kiểm đỏ**
 
 Thêm vào `runPrLuiBTests` (sau LUIb-2):
 
@@ -340,9 +340,9 @@ Thêm vào `runPrLuiBTests` (sau LUIb-2):
 ```
 
 
-- [ ] **Step 2: Chạy — đỏ** (`svc.hocLai is not a function`, `xk.moLaiLop is not a function`).
+- [x] **Step 2: Chạy — đỏ** (`svc.hocLai is not a function`, `xk.moLaiLop is not a function`).
 
-- [ ] **Step 3: `moLaiLop` trong `xoaKetThucLop.ts`**
+- [x] **Step 3: `moLaiLop` trong `xoaKetThucLop.ts`**
 
 Thêm import `chuTuDo` vào dòng `import { badRequest, notFound } from '../util.ts';` → `import { badRequest, chuTuDo, notFound } from '../util.ts';`. Sau hàm `ketThucLop` (hết dòng 124) thêm:
 
@@ -374,7 +374,7 @@ export function moLaiLop(p: Principal, classId: number, o: { lyDo?: unknown } = 
 
 Cập nhật chú thích đầu file: thêm dòng `Mở lại lớp (PR-LUI-b): Quản lý của lớp hoặc Quản trị — xem moLaiLop.`
 
-- [ ] **Step 4a: Tách `moLoTrinhMoi` khỏi `apDungMotDong`** (`luatLoTrinh.ts:255-278`, không đổi hành vi — phép kiểm chuyển lớp cũ giữ nguyên xanh). Khối `if (luat.khoa === 'dong-mo') { … }` hiện đóng lộ trình cũ rồi mở lộ trình mới + lịch mặc định; phần "mở lộ trình mới + lịch mặc định" thành hàm export dùng chung với Học lại sang lớp mới:
+- [x] **Step 4a: Tách `moLoTrinhMoi` khỏi `apDungMotDong`** (`luatLoTrinh.ts:255-278`, không đổi hành vi — phép kiểm chuyển lớp cũ giữ nguyên xanh). Khối `if (luat.khoa === 'dong-mo') { … }` hiện đóng lộ trình cũ rồi mở lộ trình mới + lịch mặc định; phần "mở lộ trình mới + lịch mặc định" thành hàm export dùng chung với Học lại sang lớp mới:
 
 ```ts
 /**
@@ -418,7 +418,7 @@ và trong `apDungMotDong` khối `dong-mo` còn:
 ```
 (giữ nguyên thứ tự: `taoMtMacDinh` chạy TRƯỚC `chuyenCaseSangLoTrinh` như hiện nay — trong helper `taoMtMacDinh` đã chạy xong khi trả về). Chạy lại các phép kiểm chuyển lớp (`lenLop.tests.ts`, `prCt.tests.ts`, `prLt2a/b.tests.ts`) — phải xanh nguyên.
 
-- [ ] **Step 4b: `hocLai` + `lopChoHocLai` trong `students.ts`**
+- [x] **Step 4b: `hocLai` + `lopChoHocLai` trong `students.ts`**
 
 Thêm import: `import { moLaiLop } from '../classes/xoaKetThucLop.ts';`, `moLoTrinhMoi`, `thongBaoChuyenVao` từ `'../classes/luatLoTrinh.ts'` (dòng import hiện có `apDungMotDong, dongLopNeuHet, lopDichHopLe, lopHienTaiCua` — thêm vào), `docTarget` từ `'../fasttrack/cycles.ts'` (cạnh `currentCycle, cyclesOf, examPlanOf`), `type LoaiLop` từ `shared/domain`; đổi dòng util thành `import { badRequest, chuTuDo, isIsoDate, kiemKieuO, normalizeName, notFound, nowIso, padCode } from '../util.ts';`. Sau `setStudentStatus` (sau dòng 316) thêm:
 
@@ -534,7 +534,7 @@ Phép kiểm thêm (sau LUIb-7):
   });
 ```
 
-- [ ] **Step 5: Cờ quyền**
+- [x] **Step 5: Cờ quyền**
 
 `loTrinhTiep.ts:286-336` — thêm `hocLai: boolean` vào kiểu `quyen` (dòng 286 `ketThuc: boolean; luuTru: boolean; boLuuTru: boolean;` → thêm `hocLai: boolean;`); nhánh `chiXem` (đã lưu trữ): `hocLai: can(p, PERMISSIONS.PLAN_WEEK, { studentId }),`; nhánh thường: `hocLai: can(p, PERMISSIONS.PLAN_WEEK, { studentId }) && s?.status === 'finished',`; trong nhánh `chiXem` thêm cả `hocLai` bên cạnh `boLuuTru` (đã lưu trữ ⇒ chắc chắn `finished`).
 
@@ -545,7 +545,7 @@ Phép kiểm thêm (sau LUIb-7):
 ```
 Cập nhật kiểu `HoSoLop['viewer']` ở `web/src/modules/classes/DauTrangLop.tsx:49` (thêm `coTheMoLaiLop?: boolean;`).
 
-- [ ] **Step 6: Route**
+- [x] **Step 6: Route**
 
 `server/src/routes/index.ts` — ngay sau route `/students/:id/unarchive` (`:1853-1856`):
 
@@ -571,11 +571,11 @@ api.post('/classes/:id/mo-lai', requireAuth, wrap((req) => {
 }));
 ```
 
-- [ ] **Step 7: Chạy — xanh**
+- [x] **Step 7: Chạy — xanh**
 
 Run: `npm run build:server` + phép kiểm. Expected: LUIb-3…7 PASS. Nếu LUIb-3 lệch (ví dụ `learning_cycles` của em seed không phải `active` trước đó) → đọc `anh()` hai bên, đừng sửa phép kiểm cho khớp: tìm em seed khác (`emDangHoc` lấy em đầu tiên có ghi danh `active`; nếu em đó chưa có lộ trình thì so sánh vẫn đúng).
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add server/src/students/students.ts server/src/classes/xoaKetThucLop.ts server/src/classes/loTrinhTiep.ts server/src/classes/classes.ts server/src/routes/index.ts server/src/tests/prLuiB.tests.ts web/src/modules/classes/DauTrangLop.tsx
@@ -595,7 +595,7 @@ git commit -m "PR-LUI-b: máy chủ Học lại + Mở lại lớp (đảo Kết
 - Consumes: `setStudentStatus`, `archiveStudent`, `unarchiveStudent`, `hocLai` (`students.ts`), `huyNhieuLenh`, `khoiPhucLenh` (Task 4); `VIEC_HANG_LOAT`, `LO_HANG_LOAT_EM`, `TOI_DA_HANG_LOAT_EM`, kiểu `XemTruocHangLoat`, `KetQuaHangLoat`, `DongXemTruoc`.
 - Produces: `xemTruoc(p, { viec, studentIds }): XemTruocHangLoat`; `chay(p, { viec, studentIds, lyDo?, date?, moLaiLop? }): KetQuaHangLoat`. Route `POST /hang-loat-hoc-vien/xem-truoc`, `POST /hang-loat-hoc-vien`.
 
-- [ ] **Step 1: Phép kiểm đỏ**
+- [x] **Step 1: Phép kiểm đỏ**
 
 ```ts
   await checkAsync('LUIb-8 · làm nhiều em: xem trước đếm đúng Case / PA / lệnh và bỏ qua em không làm được; chạy Kết thúc học rồi Hoàn tác (Học lại) về nguyên trạng', async () => {
@@ -656,9 +656,9 @@ git commit -m "PR-LUI-b: máy chủ Học lại + Mở lại lớp (đảo Kết
   });
 ```
 
-- [ ] **Step 2: Chạy — đỏ** (không tìm thấy `../students/hangLoat.ts`).
+- [x] **Step 2: Chạy — đỏ** (không tìm thấy `../students/hangLoat.ts`).
 
-- [ ] **Step 3: `server/src/students/hangLoat.ts`** (làm **sau Task 4** — gọi `huyNhieuLenh` / `khoiPhucLenh`)
+- [x] **Step 3: `server/src/students/hangLoat.ts`** (làm **sau Task 4** — gọi `huyNhieuLenh` / `khoiPhucLenh`)
 
 ```ts
 import { db, theoLo, tx } from '../db.ts';
@@ -860,7 +860,7 @@ Phép kiểm (thêm vào Step 1): sau LUIb-10 —
   });
 ```
 
-- [ ] **Step 4: Route** (cạnh các route học viên, trước `// === Họp tuần` ~dòng 1858)
+- [x] **Step 4: Route** (cạnh các route học viên, trước `// === Họp tuần` ~dòng 1858)
 
 ```ts
 /** PR-LUI-b: làm nhiều em một lần — Kết thúc học · Lưu trữ · Bỏ lưu trữ · Học lại. Chỉ Quản lý / Quản trị (kiểm từng em ở máy chủ). */
@@ -872,9 +872,9 @@ api.post('/hang-loat-hoc-vien', requireAuth, wrap((req) => {
 ```
 và import đầu file cạnh `studentSvc`: `import * as hangLoatSvc from '../students/hangLoat.ts';` (xem cách `studentSvc` được import: `grep -n "studentSvc" server/src/routes/index.ts | head -2`).
 
-- [ ] **Step 5: Chạy — xanh.** Expected: LUIb-8, 9, 10 PASS. Nếu LUIb-9 báo `ngoai` không tìm được (seed không có em ở chi nhánh khác `MB`): đọc `branches.code` thật bằng `SELECT code FROM branches` rồi sửa điều kiện — **không** bỏ phép kiểm ngoài phạm vi.
+- [x] **Step 5: Chạy — xanh.** Expected: LUIb-8, 9, 10 PASS. Nếu LUIb-9 báo `ngoai` không tìm được (seed không có em ở chi nhánh khác `MB`): đọc `branches.code` thật bằng `SELECT code FROM branches` rồi sửa điều kiện — **không** bỏ phép kiểm ngoài phạm vi.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add server/src/students/hangLoat.ts server/src/routes/index.ts server/src/tests/prLuiB.tests.ts
@@ -894,7 +894,7 @@ git commit -m "PR-LUI-b: máy chủ làm nhiều em (xem trước + chạy theo 
 - Consumes: `docLenh`, `kiemConSuaDuoc`, `nguoiNhanCuaLop`, `thongBaoSapNhan`, `KHOI_PHUC_LENH_GIO`.
 - Produces: `huyNhieuLenh(p, ids: number[], lyDo: unknown): { ok: number[]; failed: { id: number; studentId: number; message: string }[] }`; `khoiPhucLenh(p, ids: number[]): same` (hàm, không route).
 
-- [ ] **Step 1: Phép kiểm đỏ**
+- [x] **Step 1: Phép kiểm đỏ**
 
 ```ts
   await checkAsync('LUIb-11 · huỷ nhiều quyết định chuyển lớp: một chuông mỗi người nhận; em lỗi không cuộn lại em khác; Khôi phục chỉ lệnh do NGƯỜI huỷ, còn tương lai, em chưa có lệnh khác', async () => {
@@ -939,9 +939,9 @@ git commit -m "PR-LUI-b: máy chủ làm nhiều em (xem trước + chạy theo 
   });
 ```
 
-- [ ] **Step 2: Chạy — đỏ.**
+- [x] **Step 2: Chạy — đỏ.**
 
-- [ ] **Step 3: `lenhChuyen.ts`** — thay thân `huyLenh` (dòng 230-256) bằng ba hàm; `huyLenh` giữ chữ ký & hành vi (phép kiểm cũ vẫn xanh):
+- [x] **Step 3: `lenhChuyen.ts`** — thay thân `huyLenh` (dòng 230-256) bằng ba hàm; `huyLenh` giữ chữ ký & hành vi (phép kiểm cũ vẫn xanh):
 
 ```ts
 /** Huỷ MỘT lệnh còn `cho` trong giao dịch đang mở — không kiểm quyền, không gửi chuông (nơi gọi lo). */
@@ -1093,11 +1093,11 @@ Import bổ sung ở đầu `lenhChuyen.ts`: `HttpError`, `forbidden` từ `'../
 
 Lưu ý phép kiểm: nhóm `failed` 999999 cho `docLenh` ném `notFound` (HttpError 404) → vào `failed` với `studentId: 0` — khớp `kq.failed[0].id === 999999`.
 
-- [ ] **Step 4: Không thêm route.** `huyNhieuLenh` / `khoiPhucLenh` là hàm — `students/hangLoat.ts` (Task 3) gọi, web đi qua `POST /hang-loat-hoc-vien` (việc `huy-lenh`, `khoi-phuc-lenh`). Một đường cho cả hồ sơ lớp và panel Chuyển tiếp lớp.
+- [x] **Step 4: Không thêm route.** `huyNhieuLenh` / `khoiPhucLenh` là hàm — `students/hangLoat.ts` (Task 3) gọi, web đi qua `POST /hang-loat-hoc-vien` (việc `huy-lenh`, `khoi-phuc-lenh`). Một đường cho cả hồ sơ lớp và panel Chuyển tiếp lớp.
 
-- [ ] **Step 5: Chạy — xanh** (LUIb-11 + mọi phép kiểm `lenh_chuyen` cũ trong `prCt.tests.ts`, `prS5fA…`).
+- [x] **Step 5: Chạy — xanh** (LUIb-11 + mọi phép kiểm `lenh_chuyen` cũ trong `prCt.tests.ts`, `prS5fA…`).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add server/src/classes/lenhChuyen.ts server/src/routes/index.ts server/src/tests/prLuiB.tests.ts
@@ -1117,7 +1117,7 @@ git commit -m "PR-LUI-b: huỷ nhiều quyết định chuyển lớp + Khôi ph
 **Interfaces:**
 - Produces: `LopLuuTru.coTheMoLai: boolean` (CLASS_EDIT ở lớp); `HocVienLuuTru.coTheHocLai: boolean` (cùng `coTheBoLuuTru`); (Q2-B) `viewer.coTheKetThucLop: boolean`; `xemXoaKetThuc` mở cho `CLASS_EDIT`, `coTheXoa` vẫn chỉ Quản trị.
 
-- [ ] **Step 1: Phép kiểm đỏ**
+- [x] **Step 1: Phép kiểm đỏ**
 
 ```ts
   await checkAsync('LUIb-12 · Lưu trữ: cờ coTheMoLai (lớp, QL đúng chi nhánh / QT) và coTheHocLai (em); GVCN false', async () => {
@@ -1143,11 +1143,11 @@ Q2-B thêm:
   });
 ```
 
-- [ ] **Step 2: Chạy — đỏ.**
+- [x] **Step 2: Chạy — đỏ.**
 
-- [ ] **Step 3: `luuTru.ts`** — kiểu `LopLuuTru` thêm `coTheMoLai: boolean;`; `HocVienLuuTru` thêm `coTheHocLai: boolean;`. Trong truy vấn lớp: sau `.map((r) => ({…}))` thêm `coTheMoLai: can(p, PERMISSIONS.CLASS_EDIT, { classId: r.id })` (đọc `classId` từ `r.id`, **ngoài** `.sort` — thêm vào object trả về ở `.map`). Trong `hocVien` map thêm `coTheHocLai: can(p, PERMISSIONS.PLAN_WEEK, { studentId: s.id }),` (cùng điều kiện `coTheBoLuuTru`). Sửa các chỗ dựng giá trị `LopLuuTru`/`HocVienLuuTru` ở web (`LuuTruPage.tsx:12-19`).
+- [x] **Step 3: `luuTru.ts`** — kiểu `LopLuuTru` thêm `coTheMoLai: boolean;`; `HocVienLuuTru` thêm `coTheHocLai: boolean;`. Trong truy vấn lớp: sau `.map((r) => ({…}))` thêm `coTheMoLai: can(p, PERMISSIONS.CLASS_EDIT, { classId: r.id })` (đọc `classId` từ `r.id`, **ngoài** `.sort` — thêm vào object trả về ở `.map`). Trong `hocVien` map thêm `coTheHocLai: can(p, PERMISSIONS.PLAN_WEEK, { studentId: s.id }),` (cùng điều kiện `coTheBoLuuTru`). Sửa các chỗ dựng giá trị `LopLuuTru`/`HocVienLuuTru` ở web (`LuuTruPage.tsx:12-19`).
 
-- [ ] **Step 4: cổng Kết thúc lớp (Quản lý được; Xoá lớp vẫn chỉ Quản trị)**
+- [x] **Step 4: cổng Kết thúc lớp (Quản lý được; Xoá lớp vẫn chỉ Quản trị)**
 
 `xoaKetThucLop.ts`:
 - dòng 18 giữ `CHI_ADMIN` cho `xoaLop`; thêm `const CHI_QL_KET_THUC = 'Chỉ Quản lý của lớp này hoặc Quản trị hệ thống mới kết thúc được lớp.';`
@@ -1160,7 +1160,7 @@ Q2-B thêm:
 
 Sửa `panelUx3.tests.ts:445-449` nếu phép kiểm (11) khẳng định QL gọi `xemXoaKetThuc` → 403: đọc phép kiểm, chuyển câu cho đúng luật mới (Xoá lớp vẫn 403 với QL, Kết thúc lớp QL OK) — ghi rõ trong mô tả PR.
 
-- [ ] **Step 5: Chạy — xanh. Step 6: Commit**
+- [x] **Step 5: Chạy — xanh. Step 6: Commit**
 
 ```bash
 git add server/src/classes/luuTru.ts server/src/classes/xoaKetThucLop.ts server/src/classes/classes.ts server/src/tests/prLuiB.tests.ts server/src/tests/panelUx3.tests.ts web/src/modules/students/LuuTruPage.tsx
@@ -1180,7 +1180,7 @@ git commit -m "PR-LUI-b: cờ Mở lại / Học lại ở Lưu trữ; Quản l�
 - Consumes: `GET /students/:id/hoc-lai/lop-dich`, `POST /students/:id/hoc-lai`, `POST /students/:id/status` (Hoàn tác = Kết thúc học).
 - Produces: `HocLaiPanel` (không export ngoài file).
 
-- [ ] **Step 1: Phép kiểm nguồn đỏ**
+- [x] **Step 1: Phép kiểm nguồn đỏ**
 
 Dùng helper `doc()` như `prSl.tests.ts:1-10` (đọc file bằng `fs` + `ROOT`) — thêm đầu `prLuiB.tests.ts` (cạnh dòng `import type { YThucTestKit }`):
 ```ts
@@ -1201,9 +1201,9 @@ rồi thêm phép kiểm:
   });
 ```
 
-- [ ] **Step 2: Chạy — đỏ.**
+- [x] **Step 2: Chạy — đỏ.**
 
-- [ ] **Step 3: `StudentManagePanel.tsx`**
+- [x] **Step 3: `StudentManagePanel.tsx`**
 
 Thêm `case`:
 ```tsx
@@ -1314,9 +1314,9 @@ function HocLaiPanel({ studentId, studentName, lop, onClose, onDone }: ChungViec
 ```
 Import thêm đầu file: `ErrorState, Skeleton` (từ `'../../ui/ui.tsx'`, nơi đã import `NutChon, TargetText`). `KCK`, `dsLoi`, `ONgay`, `ChonNgayGan`, `Khoi`, `KhungPanel`, `Truong`, `useApi` đã import sẵn. Route `GET /students/:id/hoc-lai/lop-dich` (Task 2) trả `{ lopCu, chiNhanh, lop }`; `lop[].studentCount` nếu `danhSachLopDich` chưa có thì bỏ khỏi nhãn (không thêm truy vấn).
 
-- [ ] **Step 4: `StudentDetailPage`** — kiểm `data.lopHoc` (từ `lopHocCua`) đã chứa `quyen.hocLai` (Task 2) và `mucQuanLyHocVien` nhận nó. Không sửa gì thêm nếu `typecheck` xanh. Hồ sơ em đã lưu trữ (chế độ chỉ xem, `chiXem`): menu vẫn vẽ `⋮` vì có mục `hoc-lai`/`bo-luu-tru` — kiểm bằng bấm thử (Task 11).
+- [x] **Step 4: `StudentDetailPage`** — kiểm `data.lopHoc` (từ `lopHocCua`) đã chứa `quyen.hocLai` (Task 2) và `mucQuanLyHocVien` nhận nó. Không sửa gì thêm nếu `typecheck` xanh. Hồ sơ em đã lưu trữ (chế độ chỉ xem, `chiXem`): menu vẫn vẽ `⋮` vì có mục `hoc-lai`/`bo-luu-tru` — kiểm bằng bấm thử (Task 11).
 
-- [ ] **Step 5: Chạy `npm run check` — xanh. Step 6: Commit**
+- [x] **Step 5: Chạy `npm run check` — xanh. Step 6: Commit**
 
 ```bash
 git add web/src/modules/students/StudentManagePanel.tsx server/src/tests/prLuiB.tests.ts
@@ -1338,7 +1338,7 @@ git commit -m "PR-LUI-b: web panel Học lại (hồ sơ em đã kết thúc), H
 - Consumes: `POST /classes/:id/mo-lai`, `viewer.coTheMoLaiLop`, `LopLuuTru.coTheMoLai`.
 - Produces: `MoLaiLopPanel({ classId, classCode, chiNhanh?, ketThuc?, coTheKetThucLai?, onClose, onDone })`; `ViecDauTrang` thêm `'mo-lai-lop'`.
 
-- [ ] **Step 1: Phép kiểm nguồn đỏ**
+- [x] **Step 1: Phép kiểm nguồn đỏ**
 
 ```ts
   check('LUIb-15 · web Mở lại lớp: menu ⋮ hồ sơ lớp đã kết thúc + nút Mở lại ở Lưu trữ; Hoàn tác = Kết thúc lớp', () => {
@@ -1352,7 +1352,7 @@ git commit -m "PR-LUI-b: web panel Học lại (hồ sơ em đã kết thúc), H
   });
 ```
 
-- [ ] **Step 2: Chạy — đỏ. Step 3: `MoLaiLopPanel`** (thêm cuối `XoaKetThucLopPanel.tsx`)
+- [x] **Step 2: Chạy — đỏ. Step 3: `MoLaiLopPanel`** (thêm cuối `XoaKetThucLopPanel.tsx`)
 
 ```tsx
 /**
@@ -1402,7 +1402,7 @@ export function MoLaiLopPanel({ classId, classCode, chiNhanh, ketThuc, coTheKetT
 }
 ```
 
-- [ ] **Step 4: `DauTrangLop.tsx`** — `ViecDauTrang` (dòng 54) thêm `| 'mo-lai-lop'`; kiểu `viewer` (dòng ~49) thêm `coTheMoLaiLop?: boolean; coTheKetThucLop?: boolean;`; trong `menu` (sau `diem-lop`, trước `Xoá lớp`) thêm:
+- [x] **Step 4: `DauTrangLop.tsx`** — `ViecDauTrang` (dòng 54) thêm `| 'mo-lai-lop'`; kiểu `viewer` (dòng ~49) thêm `coTheMoLaiLop?: boolean; coTheKetThucLop?: boolean;`; trong `menu` (sau `diem-lop`, trước `Xoá lớp`) thêm:
 ```tsx
     ...(data.viewer.coTheMoLaiLop ? [{ key: 'mo-lai-lop', nhan: 'Mở lại lớp', onChon: () => onViec('mo-lai-lop') }] : []),
 ```
@@ -1417,7 +1417,7 @@ export function MoLaiLopPanel({ classId, classCode, chiNhanh, ketThuc, coTheKetT
 ```
 (kiểm `data.finishedAt` có trong `HoSoLop`; không có thì thêm vào `classOverview` — một trường `finished_at` đã đọc ở `luuTru.ts`; `ngay` từ `@shared/domain/index.ts`.)
 
-- [ ] **Step 5: `LuuTruPage.tsx`** — kiểu `LopLuuTru` thêm `coTheMoLai: boolean`; trạng thái `moLai: LopLuuTru | null`; trong dòng lớp đã kết thúc (hiện là `<Link className="card …">` cả dòng) đổi thành `div` có `Link` ở phần chữ + nút ở cuối để không lồng nút trong link:
+- [x] **Step 5: `LuuTruPage.tsx`** — kiểu `LopLuuTru` thêm `coTheMoLai: boolean`; trạng thái `moLai: LopLuuTru | null`; trong dòng lớp đã kết thúc (hiện là `<Link className="card …">` cả dòng) đổi thành `div` có `Link` ở phần chữ + nút ở cuối để không lồng nút trong link:
 
 ```tsx
 {data.lop.map((l) => (
@@ -1432,7 +1432,7 @@ export function MoLaiLopPanel({ classId, classCode, chiNhanh, ketThuc, coTheKetT
 ```
 và cuối trang: `{moLai && <MoLaiLopPanel classId={moLai.id} classCode={moLai.code} chiNhanh={moLai.chiNhanh} ketThuc={moLai.finishedAt ? ngay(moLai.finishedAt) : null} coTheKetThucLai onClose={() => setMoLai(null)} onDone={reload} />}`. (`coTheKetThucLai` luôn `true` ở đây: Quản lý và Quản trị đều kết thúc được lớp không còn học viên đang học.)
 
-- [ ] **Step 6: Chạy `npm run check` — xanh. Step 7: Commit**
+- [x] **Step 6: Chạy `npm run check` — xanh. Step 7: Commit**
 
 ```bash
 git add web/src/modules/classes/XoaKetThucLopPanel.tsx web/src/modules/classes/DauTrangLop.tsx web/src/modules/classes/ClassOverviewPage.tsx web/src/modules/students/LuuTruPage.tsx server/src/tests/prLuiB.tests.ts
@@ -1461,7 +1461,7 @@ git commit -m "PR-LUI-b: web Mở lại lớp (⋮ hồ sơ lớp + Lưu trữ),
   - `XemTruocHangLoatPanel({ viec, ids, maLop?, onClose, onDone })` — một panel cho cả sáu việc; `HocLaiPanel` dùng riêng cho một em (Task 6).
   - `BangDiemLopThuong` / `ClassRoster` nhận thêm `chon?: ChonNhieu` — có thì vẽ cột ô chọn (bảng) hoặc ô chọn đầu thẻ (điện thoại).
 
-- [ ] **Step 1: Phép kiểm nguồn đỏ**
+- [x] **Step 1: Phép kiểm nguồn đỏ**
 
 ```ts
   check('LUIb-16 · web: chia lô bằng LO_HANG_LOAT_EM, gom ok/failed, dừng khi một lô ném lỗi và ghi "chưa lưu" cho phần còn lại; Hoàn tác gọi việc ngược', () => {
@@ -1482,9 +1482,9 @@ git commit -m "PR-LUI-b: web Mở lại lớp (⋮ hồ sơ lớp + Lưu trữ),
   });
 ```
 
-- [ ] **Step 2: Chạy — đỏ.**
+- [x] **Step 2: Chạy — đỏ.**
 
-- [ ] **Step 3: `web/src/modules/students/hangLoatEm.ts`**
+- [x] **Step 3: `web/src/modules/students/hangLoatEm.ts`**
 
 ```ts
 import { api } from '../../lib/api.ts';
@@ -1520,7 +1520,7 @@ export async function hoanTacHangLoat(viec: ViecHangLoat, ids: number[]): Promis
 }
 ```
 
-- [ ] **Step 4: `web/src/modules/students/chonNhieuHocVien.tsx`**
+- [x] **Step 4: `web/src/modules/students/chonNhieuHocVien.tsx`**
 
 ```tsx
 import { useState } from 'react';
@@ -1575,12 +1575,12 @@ export function ThanhChonNhieu({ chon, viec, onViec }: {
 }
 ```
 
-- [ ] **Step 5: Ô chọn trong hai bảng + thẻ** (cùng một mẫu cho `ClassRoster` và `BangDiemLopThuong`)
+- [x] **Step 5: Ô chọn trong hai bảng + thẻ** (cùng một mẫu cho `ClassRoster` và `BangDiemLopThuong`)
   - Thêm prop `chon?: ChonNhieu`; trong `<thead>` thêm `<Th className="w-10 sticky-col">{chon?.bat && <OChonTatCa chon={chon} ids={rows.map((s) => s.id)} />}</Th>` **chỉ khi** `chon?.bat` (bảng không thêm cột khi tắt, nên `min-w-[…]` và `table-fixed` giữ nguyên khi tắt); mỗi `<tr>` thêm `<td className="td w-10">{chon?.bat && <OChon chon={chon} id={s.id} ten={s.fullName} />}</td>` ở **đầu**; hàng đã chọn thêm `className` nền `bg-accent-soft` (token sẵn có) — đọc `ClassRoster.tsx:146`, `BangDiemLopThuong.tsx:147`.
   - Thẻ điện thoại (`TheDong`, `ClassRoster.tsx:60-72`, `BangDiemLopThuong.tsx:75-87`): `dau={<span className="flex items-start gap-2">{chon?.bat && <OChon …/>}{…đầu thẻ cũ…}</span>}`.
   - Bảng dùng `useDienThoai()` ở `ClassRoster` — thẻ hay bảng giữ nguyên, chỉ thêm ô chọn.
 
-- [ ] **Step 6: `TabHocVienLop.tsx`** — chỉ khi `lop.viewer.canPlanWeek` (Quản lý / Quản trị) **và** cách xem `Điểm`:
+- [x] **Step 6: `TabHocVienLop.tsx`** — chỉ khi `lop.viewer.canPlanWeek` (Quản lý / Quản trị) **và** cách xem `Điểm`:
 
 ```tsx
 const chon = useChonNhieu();
@@ -1598,7 +1598,7 @@ const [viecChon, setViecChon] = useState<{ viec: ViecHangLoat; ids: number[] } |
 ```
 (`btn-pressed`: dùng đúng lớp CSS đang dùng cho nút bật ở `BoLocDoan` — đọc `web/src/ui/ui.tsx`; nếu không có, `aria-pressed` + lớp `bg-accent-soft`.) Chuyển `chon` xuống `ClassRoster` / `BangDiemLopThuong` qua prop; đổi chế độ xem sang "Cần hỗ trợ" thì `chon.bo()`.
 
-- [ ] **Step 7: `XemTruocHangLoatPanel.tsx`** — một panel: nạp xem trước một lần, vẽ số hệ quả theo việc, mục `Bỏ qua n học viên`, ô `Lý do` (bắt buộc: `ket-thuc`, `huy-lenh`), `Có hiệu lực từ` (`ket-thuc`, `hoc-lai`), nút chính; chạy lô; lỗi giữa chừng; Hoàn tác.
+- [x] **Step 7: `XemTruocHangLoatPanel.tsx`** — một panel: nạp xem trước một lần, vẽ số hệ quả theo việc, mục `Bỏ qua n học viên`, ô `Lý do` (bắt buộc: `ket-thuc`, `huy-lenh`), `Có hiệu lực từ` (`ket-thuc`, `hoc-lai`), nút chính; chạy lô; lỗi giữa chừng; Hoàn tác.
 
 ```tsx
 import { useEffect, useState } from 'react';
@@ -1722,9 +1722,9 @@ export function XemTruocHangLoatPanel({ viec, ids, maLop, lopMoiId, onClose, onD
 ```
 `lopMoiId` truyền khi Học lại hàng loạt chọn "Sang lớp mới" (Task 9). Chọn đích Học lại hàng loạt vẽ ở đầu khối `Học lại` (hai nút `Về lớp cũ` / `Sang lớp mới` + ô `Lớp` — dùng chung `ChonDichHocLai` với `HocLaiPanel`, Task 6).
 
-- [ ] **Step 8: Chạy `npm run check` — xanh. Bấm thử ở Task 11.**
+- [x] **Step 8: Chạy `npm run check` — xanh. Bấm thử ở Task 11.**
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add web/src/modules/students/hangLoatEm.ts web/src/modules/students/chonNhieuHocVien.tsx web/src/modules/students/XemTruocHangLoatPanel.tsx web/src/modules/students/ClassRoster.tsx web/src/modules/classes/BangDiemLopThuong.tsx web/src/modules/classes/TabHocVienLop.tsx server/src/tests/prLuiB.tests.ts
@@ -1742,7 +1742,7 @@ git commit -m "PR-LUI-b: web Chọn nhiều học viên (hồ sơ lớp) — ô 
 **Interfaces:**
 - Consumes: `useChonNhieu`, `OChon`, `ThanhChonNhieu`, `XemTruocHangLoatPanel`, `HocLaiPanel` (Task 6), `HocVienLuuTru.coTheBoLuuTru / coTheHocLai`.
 
-- [ ] **Step 1: Phép kiểm nguồn đỏ**
+- [x] **Step 1: Phép kiểm nguồn đỏ**
 
 ```ts
   check('LUIb-18 · web Lưu trữ › Học viên: nút Chọn nhiều học viên, thanh dính đáy (Bỏ lưu trữ · Học lại), nút Học lại mỗi dòng', () => {
@@ -1751,7 +1751,7 @@ git commit -m "PR-LUI-b: web Chọn nhiều học viên (hồ sơ lớp) — ô 
   });
 ```
 
-- [ ] **Step 2: Chạy — đỏ. Step 3: Sửa `LuuTruPage.tsx`**
+- [x] **Step 2: Chạy — đỏ. Step 3: Sửa `LuuTruPage.tsx`**
 
 Kiểu `HocVienLuuTru` thêm `coTheHocLai: boolean`. Thêm `const chon = useChonNhieu(); const [lam, setLam] = useState<{ viec: ViecHangLoat; ids: number[] } | null>(null);`. Trong tab `hv`, trên danh sách (chỉ khi có dòng làm được): 
 
@@ -1771,7 +1771,7 @@ Mỗi dòng: khi `chon.bat` thêm `<OChon chon={chon} id={s.id} ten={s.fullName}
 ```
 Chọn đích "Sang lớp mới" của Học lại hàng loạt: `XemTruocHangLoatPanel` nhận thêm bước chọn `Về lớp cũ` / `Sang lớp mới` + ô `Lớp` (chỉ lớp thường — lấy từ `GET /students/:id/hoc-lai/lop-dich` của em đầu tiên, lọc `!ft`) khi `viec === 'hoc-lai'`, truyền `lopMoiId` xuống `chayHangLoat`.
 
-- [ ] **Step 4: `npm run check` xanh. Step 5: Commit**
+- [x] **Step 4: `npm run check` xanh. Step 5: Commit**
 
 ```bash
 git add web/src/modules/students/LuuTruPage.tsx server/src/tests/prLuiB.tests.ts
@@ -1789,7 +1789,7 @@ git commit -m "PR-LUI-b: web Lưu trữ — Chọn nhiều học viên (Bỏ lư
 **Interfaces:**
 - Consumes: `chayHangLoat('huy-lenh', studentIds, { lyDo })`, `hoanTacHangLoat('huy-lenh', ids)`, `s.lenh` của từng em (đã có ở `/classes/:id/transition`), `chon: Set<number>`.
 
-- [ ] **Step 1: Phép kiểm nguồn đỏ**
+- [x] **Step 1: Phép kiểm nguồn đỏ**
 
 ```ts
   check('LUIb-19 · web Chuyển tiếp lớp: nút "Huỷ quyết định" trong ô chọn nhiều, xem trước theo hướng, lý do ≥ 3, đi qua chayHangLoat("huy-lenh"), Hoàn tác', () => {
@@ -1799,7 +1799,7 @@ git commit -m "PR-LUI-b: web Lưu trữ — Chọn nhiều học viên (Bỏ lư
   });
 ```
 
-- [ ] **Step 2: Chạy — đỏ. Step 3: Code** — thêm cạnh state `huy`:
+- [x] **Step 2: Chạy — đỏ. Step 3: Code** — thêm cạnh state `huy`:
 
 ```tsx
   const [huyNhieu, setHuyNhieu] = useState<{ lyDo: string } | null>(null);
@@ -1856,7 +1856,7 @@ và ngay dưới nhóm:
 ```
 Import: `chayHangLoat, hoanTacHangLoat` từ `'../students/hangLoatEm.ts'`.
 
-- [ ] **Step 4: `npm run check` xanh. Step 5: Commit**
+- [x] **Step 4: `npm run check` xanh. Step 5: Commit**
 
 ```bash
 git add web/src/modules/classes/TransitionPanel.tsx server/src/tests/prLuiB.tests.ts
