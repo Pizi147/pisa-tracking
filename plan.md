@@ -18,6 +18,7 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 | `docs/superpowers/plans/2026-10-05-pr-mta-luat-mock-test.md` | PR-MTa (đợt 4) |
 | `docs/superpowers/plans/2026-10-05-pr-mtb-giao-dien-mock-test.md` | PR-MTb (đợt 5) |
 | `docs/superpowers/plans/2026-10-05-pr-mt0.md` | PR-MT0 (đợt 5) |
+| `docs/superpowers/plans/2026-10-06-pr-tk-tong-ket-lo-trinh.md` | PR-TK (mockup `thiet-ke/mockup-tong-ket-lo-trinh-2026-10-06.html`, chờ duyệt + 4 câu) |
 | `docs/superpowers/plans/2026-10-03-pr-phien-lich-mt-dieu-huong-sua-lop.md` | PR-SL (mục B Q-0310-3, "PR-SL", SL-1→2). Phần PH, LM, DH đã xong |
 | `docs/superpowers/plans/2026-10-02-ux-sau-critique.md` | PR-HK2 (H1, H2, K2, K4–K7, J1–J4, J7, J9), PR-SL (I1–I4, I6) |
 
@@ -189,7 +190,7 @@ Nguồn như PR-BV. Chỉ mở cho QL / Quản trị, không nới quyền GV. C
 - **a · Case + Chờ duyệt + Ý thức:** mở lại Case đã hoàn thành (sửa luôn chữ sai ở `ThaoTacCase.tsx:218` đang nói "Case này mở lại" mà máy chủ tạo Case mới) · huỷ quyết định duyệt / từ chối bấm nhầm trong ngày + từ chối hàng loạt · vi phạm Ý thức xoá mềm + khôi phục (nay xoá hẳn cả tệp) · ghi vi phạm cho nhiều em một lần.
 - **b · Học viên & lớp:** "Học lại" cho em đã kết thúc học · mở lại lớp đã kết thúc · lưu trữ / kết thúc học / huỷ quyết định chuyển lớp cho nhiều em một lần.
 
-### PR-TK · Tổng kết lộ trình — điểm 4 kỹ năng khi kết thúc (M) — chủ sản phẩm 06/10, **làm trong đợt này**, kế hoạch + mockup chưa soạn
+### PR-TK · Tổng kết lộ trình — điểm 4 kỹ năng khi kết thúc (M) — chủ sản phẩm 06/10, **làm trong đợt này**, kế hoạch + mockup **đã soạn 06/10, chờ duyệt** (`2026-10-06-pr-tk-tong-ket-lo-trinh.md`, 4 câu cần quyết ở cuối file; khảo sát thêm đường đóng thứ 5: `PATCH /cycles/:id` `cycles.ts:312-314`)
 Khảo sát 06/10 (mã main): điểm **không mất** khi lộ trình kết thúc (không có xoá dây chuyền; chỉ "Xoá học viên" của Quản trị xoá thật). Nhưng **khó xem lại**:
 hồ sơ HV mặc định lộ trình đang chạy (dải chọn lộ trình ẩn, `StudentDetailPage.tsx:87, 239`); Lưu trữ chỉ là danh sách; Kết luận khoá chỉ xét lớp đang học + một lớp vừa rời
 (`profile.ts:782-797`); Phân tích lớp và Điểm theo lớp chỉ lấy lớp / lộ trình đang chạy (`phanTichLop.ts:57-58`, `diemTheoLuot.ts:146`).
