@@ -552,7 +552,7 @@ export async function runPrUxfATests(t: YThucTestKit) {
     assert(/Đặt hạn/.test(readFileSync(join(process.cwd(), 'web/src/modules/worklist/MgmtTasksPage.tsx'), 'utf8')), 'lịch sử ghi "Đặt hạn"');
   });
 
-  check('UXF-a (10) · Tổng hợp: tooltip cột kỹ năng FT có chữ "Tạm thời" (đếm cả lượt Tạm thời)', () => {
-    assert(d.cotKyNangFor('ft').every((c: any) => /Tạm thời/.test(c.goiY)), 'tooltip thiếu "Tạm thời"');
+  check('UXF-a (10) · Tổng hợp: tooltip cột kỹ năng FT nói đếm cả lượt chưa đủ điểm (PR-HK2: bỏ cột "Tạm thời", chữ đổi)', () => {
+    assert(d.cotKyNangFor('ft').every((c: any) => /Kể cả lượt chưa đủ điểm/.test(c.goiY) && !/Tạm thời/.test(c.goiY)), 'tooltip thiếu "Kể cả lượt chưa đủ điểm"');
   });
 }

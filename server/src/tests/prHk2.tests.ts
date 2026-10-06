@@ -189,7 +189,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     const dong = aoa.find((r) => r[0] === 'W1 OCT')!;
     assert(dong[aoa[3].indexOf('HV có Case')] === 2 && dong[aoa[3].indexOf('Case')] === 5, JSON.stringify(dong));
     const tsx = doc('web/src/modules/phanTich/TongHopTestSos.tsx');
-    assert(/hvCoCase/.test(tsx) && /'case'/.test(tsx), 'ô hvCase cần hai nguồn riêng hvCoCase và case');
+    assert(/col\.gop/.test(tsx) && /cotSoLieu\(ct\)/.test(tsx) && (tsx.match(/soBam\(row, /g)?.length ?? 0) >= 3, 'ô hvCase cần hai nguồn riêng (hvCoCase, case) qua cotSoLieu, mỗi số một soBam');
   });
 
   check('C14a · số mỗi ô = số dòng khi bấm (oTongHop cùng khoá): mọi cột, gồm chuaDu và hai số của HV - Case, ở dòng Tổng, một dòng và một dòng con', () => {

@@ -4,12 +4,14 @@ import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { Card, Empty, ErrorState, SCORE_CHIP, Skeleton, Th } from '../../ui/ui.tsx';
+import { CHIP_VUONG } from '../../ui/Nhan.tsx';
+import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { DINH_TRAI, SoO as SoLieuO } from './dungChung.tsx';
 import { NganXuatMt } from '../test/NganXuatMt.tsx';
 import {
   CHUONG_TRINH_LABEL, KHOANG_LABEL, KHOANG_MAC_DINH, THEO_DONG, THEO_DONG_COT_DAU, THEO_DONG_DANH_TU, THEO_DONG_LABEL,
-  NHAN_NHOM_CON, addDaysIso, bangXuatTongHop, cotTongHopFor, mauOKetQua, mondayOfDate, ngay, nhomCotNhanNgan, oKhongApDung,
+  NHAN_NHOM_CON, addDaysIso, bangXuatTongHop, cotSoLieu, cotTongHopFor, mauOKetQua, mondayOfDate, ngay, nhomCotNhanNgan, oKhongApDung,
   type ChuongTrinh, type CotTongHop, type DongTongHop, type Khoang, type MauOKetQua, type NhomCot, type TheoDong, type TongHopKetQua,
 } from '@shared/domain/index.ts';
 
@@ -28,23 +30,22 @@ function luuCotHien(s: Set<NhomCot>) {
   try { localStorage.setItem(KHOA_LUU_COT_HIEN, JSON.stringify([...s])); } catch { /* lỗi thì hiện đủ ba nhóm, không chặn */ }
 }
 
-/** Cột cần chú ý của nhóm Xử lý — chỉ đổi màu chữ (G-4: không badge, không ⚠). */
-const MAU_COT: Partial<Record<string, string>> = { choNguyenNhan: 'text-soon' };
+/** Cột cần chú ý — chỉ đổi màu chữ (G-4: không badge). Thiếu điểm xám đậm (PR-HK2: thay cột Tạm thời cũ). */
+const MAU_COT: Partial<Record<string, string>> = { choNguyenNhan: 'text-soon', chuaDu: 'text-muted' };
 
 /**
- * MÀU Ô KẾT QUẢ TEST (N-1b, Q23): Đạt xanh lá · SOS 1 vàng · SOS 2 cam · SOS 3 đỏ — chữ + nền nhạt; ô 0 xám `text-faint`;
- * Tạm thời / Chưa đủ điểm chỉ chữ xám đậm, không nền. Màu đặt trên MỘT `<span>` trong ô (CSS hàng lớn/hàng con đã tô nền cho `<td>`).
+ * MÀU Ô KẾT QUẢ TEST (N-1b, Q23; PR-HK2 Q1): số Đạt / SOS 1–3 là BADGE VUÔNG (`CHIP_VUONG`, dáng chip SOS: chữ + nền nhạt + viền) khi có số —
+ * Đạt xanh lá · SOS 1 vàng · SOS 2 cam · SOS 3 đỏ (cùng `SCORE_CHIP`, không màu mới); ô 0 xám `text-faint`, không badge.
+ * Màu đặt trên MỘT `<span>` trong ô (CSS hàng lớn/hàng con đã tô nền cho `<td>`).
  */
 const MAU_O: Record<MauOKetQua, string> = {
-  dat: 'bg-dat-bg text-dat font-semibold', sos1: 'bg-sos1-bg text-sos1 font-semibold', sos2: 'bg-sos2-bg text-sos2 font-semibold',
-  sos3: 'bg-sos3-bg text-sos3 font-semibold', tam: 'text-muted', xam: 'text-faint',
+  dat: SCORE_CHIP.emerald, sos1: SCORE_CHIP.sos1, sos2: SCORE_CHIP.sos2, sos3: SCORE_CHIP.sos3, xam: 'text-faint',
 };
 
 /** Chú giải màu ở đầu bảng: ô màu nhỏ + chữ (PR-HK1 H5: chú giải, không bấm được — nên không mang kiểu chip/nút); tooltip là chú giải cột. */
 const CHU_GIAI: { khoa: string; nhan: string; chip: keyof typeof SCORE_CHIP }[] = [
   { khoa: 'dat', nhan: 'Đạt', chip: 'emerald' }, { khoa: 'sos1', nhan: 'SOS 1', chip: 'sos1' },
   { khoa: 'sos2', nhan: 'SOS 2', chip: 'sos2' }, { khoa: 'sos3', nhan: 'SOS 3', chip: 'sos3' },   // chữ thật lấy từ cột theo ct (khung thường: n môn trượt)
-  { khoa: 'tamThoi', nhan: 'Tạm thời / Chưa đủ điểm', chip: 'tam' },
 ];
 
 /** Tuần con của "Theo tuần" mở theo lớp; "Theo lớp" mở theo đợt; "Theo đợt"/"Theo chi nhánh" mở theo lớp. */
@@ -64,7 +65,6 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
   };
   const [open, setOpen] = useState<Set<string>>(new Set());
   const [cotHien, setCotHien] = useState<Set<NhomCot>>(() => docCotHien());
-  const [menuMo, setMenuMo] = useState(false);
   const [moXuat, setMoXuat] = useState(false);
   /* Mặc định thu gọn; hàng lớn ĐẦU TIÊN (tuần mới nhất) mở sẵn, một lần cho mỗi cách xếp dòng. */
   const daMoSan = useRef<string | null>(null);
@@ -106,6 +106,8 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
     else nhomChay.push({ khoa: k, nhan: c.nhomCon && laThuong ? NHAN_NHOM_CON[c.nhomCon] : nhomCotNhanNgan(c.nhom, ct), cols: [c] });
   }
   const donCot = (k: string) => k.startsWith('don:');
+  /** Bề rộng cột (px, bảng cố định bề ngang): cột ghép "HV - Case" 96 · cột Xử lý khác 80 · Kết quả 68 · kỹ năng 60. */
+  const rongCot = (c: CotTongHop) => (c.gop ? 96 : c.nhom === 'xu-ly' ? 80 : c.nhom === 'ket-qua' ? 68 : 60);
 
   const toggleCotHien = (nhom: NhomCot) => {
     const next = new Set(cotHien);
@@ -138,25 +140,46 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
     XLSX.writeFile(wb, `${ct === 'thuong' ? 'tong-hop-test' : 'tong-hop-test-sos'}-${ten}.xlsx`);   // D8: lớp thường không chữ SOS
   }
 
-  const oCell = (row: DongTongHop, col: CotTongHop) => {
-    if (oKhongApDung(col, row.coDot)) return <span className="text-faint" title="Dòng này không có bài loại này">—</span>;
+  /** Một SỐ bấm được: `nguon` = `/phan-tich/tong-hop/o` cùng khoá dòng + khoá cột số liệu → số = số dòng khi bấm (G-10). Ô 0: "0" xám, không bấm. */
+  const soBam = (row: DongTongHop, col: CotTongHop) => {
     const v = row.o[col.khoa] ?? 0;
-    const mau = mauOKetQua(col.khoa, v);
-    /* Ô 0: "0" xám, không gạch chân (không có danh sách để mở — thay cho "—" cũ). */
     if (v <= 0) return <span className="tabular-nums text-faint">0</span>;
     const nguon = `/phan-tich/tong-hop/o?${query}&khoa=${encodeURIComponent(row.khoa)}&cot=${encodeURIComponent(col.khoa)}`;
-    const so = <SoLieuO giaTri={v} nguon={nguon} tieuDe={`${col.nhomCon ? `${NHAN_NHOM_CON[col.nhomCon]} · ` : ''}${col.nhan(ct)} · ${row.nhan}`} />;
-    /* PR-SOS (K1-20): Chờ nguyên nhân kèm số quá hạn trong ngoặc. */
+    return <SoLieuO giaTri={v} nguon={nguon} tieuDe={`${col.nhomCon ? `${NHAN_NHOM_CON[col.nhomCon]} · ` : ''}${col.nhan(ct)} · ${row.nhan}`} />;
+  };
+  const oCell = (row: DongTongHop, col: CotTongHop) => {
+    if (oKhongApDung(col, row.coDot)) return <span className="text-faint" title="Dòng này không có bài loại này">—</span>;
+    /* Cột ghép "HV - Case" (PR-HK2 Q1): hai số, mỗi số một nguồn danh sách riêng; màu nhẹ theo token — HV xanh dương, Case xám, "-" mờ. */
+    if (col.gop) {
+      const [hv, cs] = cotSoLieu(ct).filter((c) => col.gop!.includes(c.khoa));
+      return (
+        <span title={`${row.o[hv.khoa] ?? 0} học viên · ${row.o[cs.khoa] ?? 0} Case`}>
+          <span className="font-semibold text-doing">{soBam(row, hv)}</span> <span className="text-faint">-</span> <span className="text-muted">{soBam(row, cs)}</span>
+        </span>
+      );
+    }
+    const v = row.o[col.khoa] ?? 0;
+    const mau = mauOKetQua(col.khoa, v);
+    if (v <= 0) return soBam(row, col);
+    /* PR-SOS (K1-20): Chờ nguyên nhân kèm "⚠ n" quá hạn (PR-HK2: ⚠ đỏ cam, chữ đầy đủ ở title). */
     const quaHan = col.khoa === 'choNguyenNhan' ? row.o.choNguyenNhanQuaHan ?? 0 : 0;
-    if (!mau) return <span className={MAU_COT[col.khoa] ?? ''}>{so}{quaHan > 0 && <span className="text-faint"> ({quaHan} quá hạn)</span>}</span>;
-    return <span className={`inline-block min-w-[26px] rounded px-1.5 text-center ${MAU_O[mau]}`}>{so}</span>;
+    if (!mau) return <span className={MAU_COT[col.khoa] ?? ''}>{soBam(row, col)}{quaHan > 0 && <span className="ml-1 font-bold text-late" title={`${quaHan} quá hạn`}>⚠{quaHan}</span>}</span>;
+    return <span className={`${CHIP_VUONG} min-w-[28px] justify-center ${MAU_O[mau]}`}>{soBam(row, col)}</span>;
   };
 
-  const oSo = (row: DongTongHop) => cols.map((c) => <td key={c.khoa} className="text-right tabular-nums">{oCell(row, c)}</td>);
+  /* PR-HK2 (Q1): ba nút ngoài (Cột hiện ▾, Xuất bảng này, Xuất kết quả từng lượt) gom vào MỘT menu ⋯. */
+  const mucMenu: MucMenu[] = [
+    { key: 'cot-hien', nhan: 'Cột hiện', tieuDe: true, onChon: () => {} },
+    ...NHOM_MAC_DINH.map((n) => ({ key: n, nhan: nhomCotNhanNgan(n, ct), chon: cotHien.has(n), onChon: () => toggleCotHien(n) })),
+    ...(() => { const khongXuat = !data || data.hang.length === 0 || !demoDate; return [{ key: 'xuat', nhan: '⤓ Xuất bảng này', keTruoc: true, onChon: xuatExcel, tat: khongXuat, title: khongXuat ? 'Chưa có dữ liệu để xuất' : undefined }]; })(),
+    ...(session?.nav?.xuatMt ? [{ key: 'xuat-mt', nhan: 'Xuất kết quả từng lượt', onChon: () => setMoXuat(true) }] : []),
+  ];
+
+  const oSo = (row: DongTongHop) => cols.map((c) => <td key={c.khoa} className="whitespace-nowrap px-3 text-right tabular-nums">{oCell(row, c)}</td>);
   const tenDong = (row: DongTongHop) => (
     <span className="block min-w-0">
-      <span className="block truncate">{row.nhan}</span>
-      {row.phu && <span className="block truncate text-[11px] font-normal text-slate-500">{row.phu}</span>}
+      <span className="block truncate max-sm:whitespace-normal">{row.nhan}</span>
+      {row.phu && <span className="block truncate text-xs font-normal text-slate-500 max-sm:whitespace-normal" title={row.phu}>{row.phu}</span>}
     </span>
   );
 
@@ -179,7 +202,7 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
   };
   const dongCon = (row: DongTongHop) => (
     <HangCon key={row.khoa} className={DINH_TRAI}>
-      <td><span className="block truncate">{row.nhan}</span></td>
+      <td><span className="block truncate max-sm:whitespace-normal">{row.nhan}</span></td>
       {oSo(row)}
     </HangCon>
   );
@@ -208,25 +231,7 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
             ))}
           </span>}
           <span className="flex-1" />
-          <div className="relative">
-            <button type="button" className="btn btn-sm" onClick={() => setMenuMo((v) => !v)} aria-expanded={menuMo}>
-              Cột hiện ▾
-            </button>
-            {menuMo && (
-              <div className="absolute right-0 mt-1 z-20 rounded-lg border p-2 space-y-1 surface-2" style={{ borderColor: 'var(--line)', minWidth: 160 }}>
-                {NHOM_MAC_DINH.map((n) => (
-                  <label key={n} className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
-                    <input type="checkbox" checked={cotHien.has(n)} onChange={() => toggleCotHien(n)} />
-                    {nhomCotNhanNgan(n, ct)}
-                  </label>
-                ))}
-              </div>
-            )}
-          </div>
-          <button type="button" className="btn btn-sm" disabled={!data || data.hang.length === 0 || !demoDate} onClick={xuatExcel}>
-            ⤓ Xuất bảng này
-          </button>
-          {session?.nav?.xuatMt && <button type="button" className="btn btn-sm" onClick={() => setMoXuat(true)}>Xuất kết quả từng lượt</button>}
+          <MenuDong nhan="Cột hiện và xuất bảng" muc={mucMenu} />
         </div>
       }>
       {error ? <div className="p-4"><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></div>
@@ -234,16 +239,16 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
         : data.scopeEmpty ? <div className="p-4"><Empty title="Bạn chưa được cấp phạm vi nào" /></div>
         : data.hang.length === 0 ? <div className="p-4"><Empty title={`Chưa có lượt nào có điểm trong ${KHOANG_LABEL[tg]}`} /></div>
         : (
-          <div className="table-scroll">
+          <div className="table-scroll bang-dinh">
             <table className="w-full text-sm" style={{ tableLayout: 'fixed' }}>
               <colgroup>
-                <col style={{ width: 180 }} />
-                {/* Nhóm Xử lý cần rộng hơn — tiêu đề "HV có Case"/"Đang xử lý"/"Thiếu PA học thuật" bị cắt ở 64px. */}
-                {cols.map((c) => <col key={c.khoa} style={{ width: c.nhom === 'xu-ly' || (laThuong && !c.nhomCon) ? 88 : laThuong ? 72 : 64 }} />)}
+                {/* PR-HK2: bảng đủ cột (FT 17 · lớp thường 18) vừa 1440 (≤ 1398 px) — đầu cột hai dòng; ô "HV - Case" rộng hơn. Điện thoại: cột Tuần đứng yên nhỏ lại, nhường chỗ cho số. */}
+                <col className="w-[208px] max-sm:w-[132px]" />
+                {cols.map((c) => <col key={c.khoa} style={{ width: rongCot(c) }} />)}
               </colgroup>
               <thead>
                 <tr>
-                  <th rowSpan={2} className="th sticky-col text-left">{THEO_DONG_COT_DAU[theo]}</th>
+                  <th rowSpan={2} className="th sticky-col text-left align-bottom">{THEO_DONG_COT_DAU[theo]}</th>
                   {nhomChay.map((g, i) => (donCot(g.khoa)
                     ? <th key={g.khoa} rowSpan={2} title={g.cols[0].goiY} className={`th text-right align-bottom whitespace-normal leading-tight ${i > 0 ? 'border-l' : ''}`} style={{ borderColor: 'var(--line-strong)' }}>{g.cols[0].nhan(ct)}</th>
                     : (
@@ -254,7 +259,7 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
                 </tr>
                 <tr>
                   {cols.filter((c) => !donCot(khoaNhom(c))).map((c) => (
-                    <Th key={c.khoa} align="right" hint={c.goiY} className={c.nhom === 'xu-ly' || laThuong ? 'whitespace-normal leading-tight' : ''}>
+                    <Th key={c.khoa} align="right" hint={c.goiY} className="whitespace-normal align-bottom leading-tight">
                       {c.nhan(ct)}
                     </Th>
                   ))}
@@ -268,11 +273,11 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
                   </Fragment>
                 ))}
                 <tr className="border-t" style={{ borderColor: 'var(--line-strong)' }}>
-                  <td className="td sticky-col font-semibold text-slate-200 whitespace-nowrap">
+                  <td className="td sticky-col font-semibold text-slate-200 sm:whitespace-nowrap">
                     Tổng {data.hang.length} {THEO_DONG_DANH_TU[theo]}
                   </td>
                   {cols.map((c) => (
-                    <td key={c.khoa} className="td text-right tabular-nums font-semibold">{oCell({ khoa: 'tong', nhan: 'Tổng', o: data.tong, coDot: data.tongCoDot }, c)}</td>
+                    <td key={c.khoa} className="td whitespace-nowrap text-right tabular-nums font-semibold">{oCell({ khoa: 'tong', nhan: 'Tổng', o: data.tong, coDot: data.tongCoDot }, c)}</td>
                   ))}
                 </tr>
               </tbody>
