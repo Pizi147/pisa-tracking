@@ -237,10 +237,10 @@ Bố cục (từ trên xuống, chữ đúng mockup):
 7. Bỏ: `:258` câu dưới Đợt, `:205` + `phu`/`dongTren` xem trước, `:319-327` khối Lý do, `:329-334` ô force, `hep :119` (tự quyết 2, 8). `HopThiLai :397-432` giữ, chỉ khi em có `dotTheoEm` và `viec === 'da-du'`.
 8. T4 (A4): `TuanNho` không `toiThieu` (trang của QL); tuần chung < tuần này → chip `Nhan tone="soon"` "Tuần đã qua" cạnh ô tuần, `title` "MT chưa thi xếp về tuần đã qua — tuần cách ≥ 2 tuần thì là MT cũ.".
 
-- [ ] **Step 1: Phép đỏ quét nguồn** `NganXepLichMt.tsx`: có `'MT mới'`, `'Lịch riêng ▸'`, `'Tuần và kỹ năng'`, `'Sẽ xếp '`, `'Cần xem '`, `'Không xếp được '`, `'⇆ cuộn ngang'`, `'Chọn tất cả'`, `kyNang`, `attemptNo: dot`, `<OMt`; **không** có `'Xem trước: '`, `'luôn ở trên'`, `'Vẫn xếp bài có cảnh báo'`, `LY_DO_TOI_THIEU`, `DauMt`, `innerWidth < 640`.
-- [ ] **Step 2:** Viết lại theo bố cục. Chú thích khối đầu file cập nhật (mockup phần 1, T13b).
-- [ ] **Step 3:** `npm run check` xanh. Bấm thử QL (2): 1440 + 375, sáng + tối — chọn 2 lớp, đổi "MT mới" → "MT2", bỏ tick S, lọc chip "Cần xem", cuộn ngang thấy cột tên đứng yên, lưu → R9b còn em lỗi. Chụp ảnh.
-- [ ] **Step 4: Commit** `feat(mtb): panel Xếp lịch Mock Test theo mockup bản 4`.
+- [x] **Step 1: Phép đỏ quét nguồn** `NganXepLichMt.tsx`: có `'MT mới'`, `'Lịch riêng ▸'`, `'Tuần và kỹ năng'`, `'Sẽ xếp '`, `'Cần xem '`, `'Không xếp được '`, `'⇆ cuộn ngang'`, `'Chọn tất cả'`, `kyNang`, `attemptNo: dot`, `<OMt`; **không** có `'Xem trước: '`, `'luôn ở trên'`, `'Vẫn xếp bài có cảnh báo'`, `LY_DO_TOI_THIEU`, `DauMt`, `innerWidth < 640`.
+- [x] **Step 2:** Viết lại theo bố cục. Chú thích khối đầu file cập nhật (mockup phần 1, T13b).
+- [x] **Step 3:** `npm run check` xanh. Bấm thử QL (2): 1440 + 375, sáng + tối — chọn 2 lớp, đổi "MT mới" → "MT2", bỏ tick S, lọc chip "Cần xem", cuộn ngang thấy cột tên đứng yên, lưu → R9b còn em lỗi. Chụp ảnh.
+- [x] **Step 4: Commit** `feat(mtb): panel Xếp lịch Mock Test theo mockup bản 4`.
 
 ### Task 4: `MenuDong` có mục mờ
 Skill: test-driven-development

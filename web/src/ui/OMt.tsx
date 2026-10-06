@@ -44,8 +44,8 @@ function nhanDoc(so: number, kieu: KieuOMt, chu: string, cu: boolean, chon: bool
  * `shared/domain/oMt.ts` (`oMt`); ở đây chỉ vẽ. `href` → liên kết · `onClick` → nút (điện thoại: vùng bấm 44px bằng `after:`) ·
  * còn lại là chữ. `chon` = đang được chọn (màu đảo, ✓ sau chữ); `chuChon` thay chữ trạng thái bằng chữ mới (vd tuần sắp xếp).
  */
-export function OMt({ v, homNay, ct = null, chon, chuChon, onClick, href, id }: {
-  v: OMtVao; homNay: string; ct?: string | null; chon?: boolean; chuChon?: string;
+export function OMt({ v, homNay, ct = null, chon, chuChon, ghiChu, onClick, href, id }: {
+  v: OMtVao; homNay: string; ct?: string | null; chon?: boolean; chuChon?: string; /** Câu thêm cuối tooltip (vd "bấm để chọn đợt này cho riêng em"). */ ghiChu?: string;
   onClick?: (el: HTMLElement) => void; href?: string; id?: string;
 }) {
   const r = oMt(v, homNay, ct);
@@ -63,7 +63,8 @@ export function OMt({ v, homNay, ct = null, chon, chuChon, onClick, href, id }: 
     </>
   );
   const doc = nhanDoc(v.so, r.kieu, chu, v.cu, !!chon);
-  if (href) return <Link id={id} to={href} className={cls} title={r.title} aria-label={doc}>{ruot}</Link>;
-  if (onClick) return <button id={id} type="button" className={cls} title={r.title} aria-label={doc} onClick={(e) => onClick(e.currentTarget)}>{ruot}</button>;
-  return <span id={id} role="img" className={cls} title={r.title} aria-label={doc}>{ruot}</span>;
+  const tip = ghiChu ? `${r.title}\n${ghiChu}` : r.title;
+  if (href) return <Link id={id} to={href} className={cls} title={tip} aria-label={doc}>{ruot}</Link>;
+  if (onClick) return <button id={id} type="button" className={cls} title={tip} aria-label={doc} onClick={(e) => onClick(e.currentTarget)}>{ruot}</button>;
+  return <span id={id} role="img" className={cls} title={tip} aria-label={doc}>{ruot}</span>;
 }

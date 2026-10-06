@@ -508,4 +508,19 @@ export async function runPrMtbTests(t: YThucTestKit) {
     const r = nguon('server/src/routes/index.ts');
     assert((r.match(/xacNhanHuyLich === true/g) ?? []).length >= 4, 'route thiếu xacNhanHuyLich');
   });
+
+  check('MTb (T3) · quét nguồn: panel Xếp lịch Mock Test vẽ theo mockup phần 1, không còn giao diện cũ', () => {
+    const p = nguon('web/src/modules/test/keHoach/NganXepLichMt.tsx');
+    for (const c of ['MT mới', 'Lịch riêng ▸', 'Tuần và kỹ năng', 'Sẽ xếp ', 'Cần xem ', 'Không xếp được ', '⇆ cuộn ngang', 'Chọn tất cả',
+      'kyNang', 'attemptNo: dot', '<OMt', 'nhanSeXep(', 'demSeXep(', 'aria-pressed', 'min-w-[960px]', 'indeterminate', 'Tuần đã qua',
+      'xacNhanHuyLich: daXacNhan', 'force: true']) {
+      assert(p.includes(c), `NganXepLichMt thiếu ${c}`);
+    }
+    for (const c of ['Xem trước: ', 'luôn ở trên', 'Vẫn xếp bài có cảnh báo', 'LY_DO_TOI_THIEU', 'DauMt', 'innerWidth < 640', 'chuSeXep(', 'Học viên ·']) {
+      assert(!p.includes(c), `NganXepLichMt còn ${c}`);
+    }
+    assert(/disabled=\{[^}]*kyChon\.length/.test(p), 'nút chính phải mờ khi bỏ hết kỹ năng (disabled theo kyChon.length)');
+    assert(/sticky/.test(p) && /left-\[80px\]/.test(p), 'cột chọn + Học viên phải dính');
+    assert(!/#[0-9a-fA-F]{3,8}\b/.test(p), 'panel không có hex');
+  });
 }

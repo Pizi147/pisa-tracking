@@ -452,7 +452,8 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
 
   check('PR-XLMT (7) · Ngăn Xếp lịch MT vẽ theo máy chủ (`chuSeXep`, `viec`), không tự suy việc; khung Lớp thường không còn lưới FT; mặc định tuần tới', () => {
     const ngan = docSach('web/src/modules/test/keHoach/NganXepLichMt.tsx');
-    assert(/chuSeXep\(d, null\)/.test(ngan) && /d\.viec/.test(ngan) && /tomTatXepMt\(/.test(ngan), 'ngăn phải dùng chuSeXep / viec / tomTatXepMt');
+    // PR-MTb T3 thay `chuSeXep(d, null)` bằng `nhanSeXep(d, null)` (cột "Sẽ xếp" một dòng, mockup phần 1; `nhanSeXep` gọi lại `chuSeXep` cho tooltip).
+    assert(/nhanSeXep\(d, null\)/.test(ngan) && /d\.viec/.test(ngan) && /tomTatXepMt\(/.test(ngan), 'ngăn phải dùng nhanSeXep / viec / tomTatXepMt');
     assert(!/viecXepMt\(/.test(ngan), 'web không tự gọi viecXepMt — việc do máy chủ chọn');
     assert(/tuanMacDinhDotMoi\(/.test(ngan) && /tuanMacDinhDotMoi\(/.test(docSach('web/src/modules/test/keHoach/HopKyNang.tsx')), 'mặc định tuần tới (K4-14)');
     const thuong = docSach('web/src/modules/test/keHoach/NganXepHangLoat.tsx');
