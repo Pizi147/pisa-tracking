@@ -6133,6 +6133,8 @@ check('[10.6] Quản lý từ chối (đề nghị chuyển QL): Fast Track hu�
 });
 
 check('[10.6] Lớp Normal: huỷ LỊCH HẸN, giữ nghĩa vụ thi đủ môn', () => {
+  /* PR-BV thay "bài planned đầu tiên": bài demo done mà thiếu môn nay về planned khi tính lại (R1) — bỏ bài còn lượt sau trong lộ trình,
+     để dời Speaking +21 ngày không vướng T15 (thứ tự đợt), đúng điều phép kiểm này muốn thử. */
   const row = conn
     .prepare(
       `SELECT a.id, a.class_id FROM assessment_attempts a
@@ -6140,6 +6142,7 @@ check('[10.6] Lớp Normal: huỷ LỊCH HẸN, giữ nghĩa vụ thi đủ môn
          JOIN programmes pg ON pg.code = c.programme_code
         WHERE pg.scoring_mode = 'ratio' AND a.status = 'planned'
           AND NOT EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND s.band IS NOT NULL)
+          AND NOT EXISTS (SELECT 1 FROM assessment_attempts b WHERE b.cycle_id = a.cycle_id AND b.attempt_no > a.attempt_no AND b.status != 'cancelled')
         ORDER BY a.id LIMIT 1`,
     )
     .get() as any;
@@ -8175,8 +8178,9 @@ check('PR-G · Sau chốt, GV không mở lại được: nhập điểm hay g�
   const id = prgAttempts[1];        // Reading đã chốt vắng ở phép kiểm trước
   assertThrows(() => attempts.saveScore(P.lrTeacher, id, 'reading', { rawScore: 30 }), /vắng|trạng thái thi/,
     'Nhập điểm vào bài đã chốt không dự thi');
-  assertThrows(() => attempts.saveScore(P.lrTeacher, id, 'reading', { noShow: false } as any), /vắng|trạng thái thi|chốt/,
-    'Gỡ dấu "-" của bài đã chốt không dự thi');
+  /* PR-BV thay "gỡ '-' sau chốt luôn bị chặn": GV chấm / GVCN gỡ được đến hết thứ Tư sau tuần thi (prBv V7); quá khung thì nhờ Quản lý. */
+  assertThrows(() => attempts.saveScore(P.lrTeacher, id, 'reading', { noShow: false } as any, '2027-01-31'), /Quá hạn chấm/,
+    'Gỡ dấu "-" của bài đã chốt sau khung chấm');
 });
 
 /* PR-Rc1 C08: lớp thường nay CÓ dấu "-" (môn đó dời sang tuần sau) nhưng đi cửa `reportRegularNoShow` — cửa chốt vắng của FT vẫn đóng. */
@@ -9142,6 +9146,9 @@ await runPrLt3Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 // ==================================================================== PR-MT0 (lượt Mock số 0 cho em lớp thường lên FT)
 const { runPrMt0Tests } = await import('./prMt0.tests.ts');
 await runPrMt0Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+// ==================================================================== PR-BV (xoá "-" trả lại như cũ + đường lui điểm) — trước PR-TK (PR-TK luôn cuối)
+const { runPrBvTests } = await import('./prBv.tests.ts');
+await runPrBvTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-TK (Tổng kết lộ trình) — LUÔN Ở CUỐI: phép kiểm bất biến soi mọi dữ liệu các phép kiểm trước để lại
 const { runPrTkTests } = await import('./prTk.tests.ts');

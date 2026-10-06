@@ -122,7 +122,7 @@ export default function MockDetailPage() {
   const navigate = useNavigate();
   const toast = useToast();
   const { data, loading, error, reload } = useApi<Detail>(id ? `/attempts/${id}` : null);
-  const { save } = useSaveScore(Number(id), reload);
+  const { save } = useSaveScore(Number(id), reload, data?.student.name);
   const { homNay } = useNgayNghiepVu();
   /* R15 — các đợt của CHÍNH học viên này, để chuyển đợt ngay trên trang (không phải quay lại hồ sơ). */
   const dsDot = useApi<{ rows: DotCuaHv[] }>(data ? `/attempts?studentId=${data.student.id}` : null);

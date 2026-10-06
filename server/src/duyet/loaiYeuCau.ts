@@ -162,7 +162,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       lyDo: 'Đề nghị dời không còn chờ',
     },
     nap: (conn, ds) => napTheoDoiTuong(conn, ds,
-      `SELECT r.id, r.skill, r.move_no, r.attempt_id, a.attempt_no, a.kind, a.class_id, pr.week_start,
+      `SELECT r.id, r.skill, r.move_no % 100 AS move_no, r.attempt_id, a.attempt_no, a.kind, a.class_id, pr.week_start,
               c.programme_code AS ct
          FROM skill_move_requests r JOIN assessment_attempts a ON a.id = r.attempt_id
          LEFT JOIN classes c ON c.id = a.class_id
