@@ -81,4 +81,22 @@ export async function runPrHk2Tests(t: Pick<YThucTestKit, 'check' | 'assert'>) {
       assert(/\bnut-loc\b/.test(doc(f)), `${f}: chưa dùng nut-loc`);
     }
   });
+
+  console.log('\nPR-HK2 · Task 2 · K6 chữ nội dung 12 px');
+
+  check('C7 · Field (gợi ý/lỗi), SectionNote, KpiTile (ví dụ, dòng phụ) không còn text-[11px]; .hang-con > td / .khoi-nhom-con không còn 11.5px', () => {
+    const ui = doc('web/src/ui/ui.tsx');
+    for (const ten of ['Field', 'SectionNote']) assert(!/text-\[11px\]/.test(than(ui, ten)), `${ten} còn text-[11px]`);
+    const kpi = than(ui, 'KpiTile').split('\n').filter((d) => !/uppercase/.test(d)).join('\n');   // nhãn in hoa của ô = đầu cột nhỏ, giữ 11 px
+    assert(!/text-\[11px\]/.test(kpi), 'KpiTile còn text-[11px] ở dòng phụ / "Xem danh sách"');
+    const css = doc('web/src/index.css');
+    assert(!/\.hang-con > td \{[^}]*11\.5px/.test(css), '.hang-con > td còn 11.5px');
+    assert(!/\.khoi-nhom-con \{[^}]*11\.5px/.test(css), '.khoi-nhom-con còn 11.5px');
+  });
+
+  check('C8 · chặn tăng lại: tổng text-[11px] trong web/src không vượt trần (chỉ được giảm)', () => {
+    const TRAN = 200;
+    const tong = tsx('web/src').reduce((n, f) => n + (doc(f).match(/text-\[11px\]/g)?.length ?? 0), 0);
+    assert(tong <= TRAN, `text-[11px] = ${tong} > trần ${TRAN}`);
+  });
 }
