@@ -119,7 +119,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
   }
 
   return (
-    <div className="card table-scroll">
+    <div className="card table-scroll bang-dinh xl:overflow-clip">
       <table className={`w-full ${coCuoiKhoa ? 'min-w-[1040px]' : 'min-w-[920px]'} table-fixed text-sm`}>
         <colgroup>
           <col className="w-[19%]" /><col className="w-[6%]" /><col className="w-[9%]" />

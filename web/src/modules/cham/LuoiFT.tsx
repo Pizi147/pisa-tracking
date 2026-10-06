@@ -125,8 +125,9 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
 
   const toCot = (s: string) => (khopKn(s, kn) ? 'text-[color:var(--accent-strong)]' : '');
 
+  // ponytail: gon (Điểm theo lớp / Lịch Test, 1108 px) vừa khung → đầu cột dính; đủ cột (Nhập điểm) rộng 1400 > khung 1398 ở 1440 → giữ cuộn ngang.
   return (
-    <div className="overflow-x-auto">
+    <div className={gon ? 'table-scroll bang-dinh' : 'overflow-x-auto'}>
       <table className="w-full text-sm tabular-nums" style={{ tableLayout: 'fixed', minWidth: RONG }}>
         <colgroup>{COT.map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
         <thead>

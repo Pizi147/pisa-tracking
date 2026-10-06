@@ -222,7 +222,7 @@ export function LichTestTab() {
   );
   /* Khối 2 / khối 3 (hàng lớp): khối rỗng vẫn hiện tiêu đề + 0, không mở được (D1). */
   const khoiLop = (id: string, k: 'k2' | 'k3', tieuDe: string, ds: LopLichTest[]) => (
-    <div id={id} className="card overflow-hidden p-0">
+    <div id={id} className="card overflow-clip p-0">
       <KhoiNhom id={`${id}-than`} phang rong={!ds.length} mo={moKhoi[k] && ds.length > 0} onMo={() => thuKhoi(k)} nhan={tieuDe} tieuDe={tieuDe}
         dem={conBai(ds)} phu={ds.length ? soLop(ds) : undefined}>
         {hangLop(ds, k === 'k2')}

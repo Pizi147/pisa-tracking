@@ -156,7 +156,7 @@ export function LuoiChamLop({
           )}
         </div>
       )}
-      {gon ? luoi : <Card bodyClass="p-0">{luoi}</Card>}
+      {gon ? luoi : <Card bodyClass="p-0" className="xl:overflow-clip">{luoi}</Card>}
     </div>
     </BaoLuuContext.Provider>
   );

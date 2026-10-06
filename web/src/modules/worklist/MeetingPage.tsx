@@ -227,7 +227,7 @@ export function MeetingBoard() {
                   action={<button type="button" className="btn btn-sm" onClick={xoaLoc}>Xoá lọc</button>} />
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="table-scroll bang-dinh">
                 <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: '46rem' }}>
                   <colgroup>
                     <col style={{ width: '20%' }} />

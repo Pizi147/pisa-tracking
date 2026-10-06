@@ -316,7 +316,7 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
 
   return (
     <div>
-      <div className="overflow-x-auto">
+      <div className="table-scroll bang-dinh">
         <table className="w-full text-sm tabular-nums" style={{ tableLayout: 'fixed', minWidth: rong }}>
           <colgroup>
             <col style={{ width: COT_HV }} />

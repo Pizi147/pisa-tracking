@@ -100,19 +100,19 @@ export async function runPrHk2Tests(t: Pick<YThucTestKit, 'check' | 'assert'>) {
     assert(tong <= TRAN, `text-[11px] = ${tong} > trần ${TRAN}`);
   });
 
-  console.log('\nPR-HK2 · Task 3 · đầu cột dính ở bảng dài (≥ 768 px)');
+  console.log('\nPR-HK2 · Task 3 · đầu cột dính ở bảng dài (≥ 1280 px)');
 
-  check('C9 · index.css: .bang-dinh chỉ đè ở md (≥ 768): khối bọc overflow visible, đầu cột sticky top -1.25rem (= md:p-5 của <main>); .th lấy top từ --th-top', () => {
+  check('C9 · index.css: .bang-dinh chỉ đè ở xl (≥ 1280; dưới đó bảng rộng hơn khung vẫn cuộn ngang): khối bọc overflow visible, đầu cột sticky top -1.25rem (= md:p-5 của <main>); .th lấy top từ --th-top', () => {
     const css = doc('web/src/index.css');
-    const m = /@media \(min-width: 768px\) \{([\s\S]*?)\n  \}\n/.exec(css.slice(css.indexOf('.table-scroll')));
-    assert(m, 'thiếu khối @media (min-width: 768px) sau .table-scroll');
+    const m = /@media \(min-width: 1280px\) \{([\s\S]*?)\r?\n  \}\r?\n/.exec(css.slice(css.indexOf('.table-scroll')));
+    assert(m, 'thiếu khối @media (min-width: 1280px) sau .table-scroll');
     const kh = m![1];
-    assert(/\.bang-dinh \{[^}]*overflow: visible/.test(kh), '.bang-dinh thiếu overflow: visible ở md');
+    assert(/\.bang-dinh \{[^}]*overflow: visible/.test(kh), '.bang-dinh thiếu overflow: visible ở xl');
     assert(/\.bang-dinh \{[^}]*--th-top: calc\(-1 \* 1\.25rem\)/.test(kh), '.bang-dinh thiếu --th-top: calc(-1 * 1.25rem)');
     assert(/position: sticky; top: var\(--th-top\)/.test(kh), 'đầu cột chưa sticky theo --th-top');
     assert(/td \.bang-dinh \{[^}]*overflow-x: auto/.test(kh), 'bảng lồng trong ô (td .bang-dinh) phải giữ cuộn riêng');
     assert(/\.th \{[^}]*top: var\(--th-top, 0px\)/.test(css), '.th chưa lấy top từ --th-top');
-    assert(!/\.bang-dinh[^{]*\{[^}]*overflow: visible[^}]*\}/.test(css.replace(kh, '')), '.bang-dinh đè overflow ngoài md');
+    assert(!/\.bang-dinh[^{]*\{[^}]*overflow: visible[^}]*\}/.test(css.replace(kh, '')), '.bang-dinh đè overflow ngoài xl');
   });
 
   check('C10 · mỗi bảng vừa khung ở 1440 có bang-dinh (không cùng overflow-x-auto); khung bao (card / ô) không còn overflow-hidden', () => {
@@ -127,7 +127,7 @@ export async function runPrHk2Tests(t: Pick<YThucTestKit, 'check' | 'assert'>) {
     for (const [f, n] of DS) {
       const src = doc(f);
       assert((src.match(/\bbang-dinh\b/g)?.length ?? 0) >= n, `${f}: thiếu bang-dinh (cần ≥ ${n})`);
-      assert(!/"[^"]*\boverflow-x-auto\b[^"]*\bbang-dinh\b|"[^"]*\bbang-dinh\b[^"]*\boverflow-x-auto\b/.test(src), `${f}: bang-dinh đi cùng overflow-x-auto (tiện ích thắng .bang-dinh)`);
+      assert(!/"[^"\n]*\boverflow-x-auto\b[^"\n]*\bbang-dinh\b|"[^"\n]*\bbang-dinh\b[^"\n]*\boverflow-x-auto\b/.test(src), `${f}: bang-dinh đi cùng overflow-x-auto (tiện ích thắng .bang-dinh)`);
     }
     // Khung bao của bảng dính không được là khung cuộn: overflow-hidden → overflow-clip (giữ bo góc, không thành khung cuộn).
     for (const [f, dau] of [['web/src/modules/test/LichTestTab.tsx', 'const khoiLop'], ['web/src/modules/test/lichTest/KhoiNo.tsx', 'id="lich-test-no" className'],

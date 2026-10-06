@@ -157,7 +157,7 @@ export function AccountsAdmin() {
           ))}
           {dangLoc && <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0 sm:ml-auto" onClick={xoaLoc}>Xoá lọc</button>}
         </div>
-        <div className="table-scroll">
+        <div className="table-scroll bang-dinh">
           <table className="w-full text-sm">
             <thead>
               <tr>

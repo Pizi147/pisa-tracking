@@ -172,6 +172,20 @@
    */
   .table-scroll { overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; }
 
+  /*
+   * ĐẦU CỘT DÍNH (PR-HK2, T15) — chỉ từ 1280 px (xl), chỉ bảng VỪA khung ở 1440 (không cần cuộn ngang). Đo: ở 768–1100 px nhiều bảng rộng hơn khung → bỏ khung cuộn thì <main> trượt ngang; từ 1200 px không trang nào tràn. Đặt `bang-dinh` cạnh `table-scroll`
+   * trên khối bọc (hoặc thẳng trên <table> khi bảng không có khối bọc): từ xl khối bọc bỏ khung cuộn nên đầu cột bám <main>, top = -1.25rem
+   * (= `md:p-5` của <main>, như `md:-top-5` ở Học viên & Lớp — PR-KHUNG G1). Dưới 1280 px giữ đúng `.table-scroll` (K8: cuộn ngang trong khung).
+   * Khung bao (card, ô) dùng `overflow-clip` thay `overflow-hidden`: vẫn bo góc mà không thành khung cuộn. Bảng nằm trong ô của bảng khác
+   * (lưới mở dưới hàng Lịch Test) giữ cuộn riêng + top 0, không tranh chỗ với đầu bảng cha. Bảng phải cuộn ngang thì KHÔNG gắn lớp này.
+   */
+  @media (min-width: 1280px) {
+    .bang-dinh { overflow: visible; --th-top: calc(-1 * 1.25rem); }
+    :where(.bang-dinh > table > thead, table.bang-dinh > thead) { position: sticky; top: var(--th-top); z-index: 10; }   /* cả khối đầu, để đầu hai hàng không chồng nhau */
+    :where(.bang-dinh > table > thead > tr > th, table.bang-dinh > thead > tr > th) { background: var(--surface-2); }
+    td .bang-dinh { overflow-x: auto; overflow-y: hidden; --th-top: 0px; }
+  }
+
   /* VN17: có panel / hộp thoại mở thì toast lên trên (dưới đầu panel), không che nút ở chân panel. */
   body:has([aria-modal="true"]) .vung-toast { top: 3.75rem; bottom: auto; }
 
@@ -226,7 +240,7 @@
   .label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 0.25rem; font-weight: 500; }
 
   .th {
-    position: sticky; top: 0; z-index: 10;
+    position: sticky; top: var(--th-top, 0px); z-index: 10;
     background: var(--surface-2); color: var(--text-dim);
     font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
     padding: 0.6rem 0.75rem; text-align: left;

@@ -89,14 +89,14 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, homNay, onDaLuu, k
   );
 
   const tieuDe = 'Test quá hạn chấm';
-  if (!ds.length) return <div id="lich-test-no" className="card overflow-hidden p-0"><KhoiNhom id="lich-test-no-than" rong phang mo={false} onMo={onMo} nhan={tieuDe} tieuDe={tieuDe} dem={0} /></div>;
+  if (!ds.length) return <div id="lich-test-no" className="card overflow-clip p-0"><KhoiNhom id="lich-test-no-than" rong phang mo={false} onMo={onMo} nhan={tieuDe} tieuDe={tieuDe} dem={0} /></div>;
   const soCot = hep ? 2 : 9;
 
   return (
-    <div id="lich-test-no" className="card overflow-hidden p-0">
+    <div id="lich-test-no" className="card overflow-clip p-0">
       <KhoiNhom id="lich-test-no-than" phang mo={mo} onMo={onMo} nhan={tieuDe} tieuDe={tieuDe} dem={soBai} demMau={soBai > 0 ? 'late' : undefined}
         phu={`${soLop} lớp`}>
-        <table className="w-full text-sm" style={{ tableLayout: 'fixed' }}>
+        <table className="w-full text-sm bang-dinh" style={{ tableLayout: 'fixed' }}>
           <colgroup>
             {hep ? (<><col /><col style={{ width: COT_THAO_TAC - 4 }} /></>) : (
               <>

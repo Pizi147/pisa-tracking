@@ -80,7 +80,7 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
       bodyClass="p-0">
       {coGv && view === 'gv' ? <BangGiaoVienChiNhanh branchId={data.branchId ?? branchId} ct={ct} /> : (
         <>
-        <div className="table-scroll">
+        <div className="table-scroll bang-dinh">
           <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: '44rem' }}>
             <colgroup><col style={{ width: '26%' }} />{COT.map((c) => <col key={c.key} style={{ width: `${(74 / COT.length).toFixed(1)}%` }} />)}</colgroup>
             <thead><tr>

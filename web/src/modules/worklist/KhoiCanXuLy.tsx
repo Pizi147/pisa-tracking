@@ -71,7 +71,7 @@ export function KhoiCanXuLy({ branchId }: { branchId: number | null }) {
           ))}
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="table-scroll bang-dinh">
           <table className="w-full min-w-[760px] border-collapse text-sm">
             <colgroup><col className="w-[96px]" /><col /><col className="w-[240px]" /><col className="w-[150px]" /><col className="w-[160px]" /></colgroup>
             <thead>

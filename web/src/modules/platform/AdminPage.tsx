@@ -234,7 +234,7 @@ function QuyenTheoVai({ onDaLuu }: { onDaLuu: () => void }) {
     <Card title="Quyền theo vai trò" bodyClass="p-0"
       action={!dangSua && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setDangSua(true)}>Sửa quyền</button>}>
       {/* ≥ 640px: bảng. Cột "Quyền" rộng nhất vì mang mô tả; cột vai hẹp, căn giữa. */}
-      <div className="hidden sm:block overflow-x-auto">
+      <div className="hidden sm:block table-scroll bang-dinh">
         <table className="w-full text-sm">
           <thead>
             <tr>

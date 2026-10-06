@@ -218,7 +218,7 @@ export function DiemTheoLop({ classId, luotBanDau, gon = false, congRoi, onDaLuu
               : chiAttempt && chiAttempt.size === 0 && !hangMo.length
                 ? <Empty title="Lượt này không còn ô trống." hint='Bỏ chọn "Chỉ ô còn trống" để xem cả bảng.' />
                 : (
-                  <div className="rounded-lg border overflow-hidden" style={{ borderColor: 'var(--line)' }}>
+                  <div className="rounded-lg border overflow-clip" style={{ borderColor: 'var(--line)' }}>
                     <BaoDangLuuContext.Provider value={baoLuu}>
                       <LuoiChamLop data={b} kind={null} onReload={daLuuO} gon datConTro={false}
                         chiAttempt={chiAttempt} hangMo={hangMo} anNutTao />

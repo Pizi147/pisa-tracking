@@ -102,7 +102,7 @@ export function HangLop({ lop, moCua, onMo, coChiNhanh, hep, homNay, tuanChinh, 
   const dotCua = (l: LopLichTest) => (l.weekStart !== tuanChinh ? `${l.dotLabel} · ${tuanLich(l.weekStart, homNay)}` : l.dotLabel);
 
   return (
-    <table className="w-full text-sm" style={{ tableLayout: 'fixed' }}>
+    <table className="w-full text-sm bang-dinh" style={{ tableLayout: 'fixed' }}>
       <colgroup>{cot.map((w, i) => <col key={i} style={w ? { width: w } : undefined} />)}</colgroup>
       {!hep && (
         <thead>

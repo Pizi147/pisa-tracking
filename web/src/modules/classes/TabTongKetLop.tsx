@@ -80,12 +80,12 @@ export function TabTongKetLop({ classId }: { classId: number }) {
           </>
         )}
       </div>
-      <section className="card overflow-hidden">
+      <section className="card overflow-clip">
         {moRong && <Empty title="Lớp chưa có học viên nào" />}
         {!moRong && (
           <>
             {/* ≥ sm: bảng (cuộn ngang TRONG khung) */}
-            <div className="hidden overflow-x-auto sm:block">
+            <div className="hidden table-scroll bang-dinh sm:block">
               {ft ? (
                 <table className="w-full min-w-[1000px] text-[13px]">
                   <thead>

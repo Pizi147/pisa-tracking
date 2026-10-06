@@ -201,7 +201,7 @@ export function TasksBoard() {
           <div className="p-4"><Empty title="Không có công việc nào khớp bộ lọc" /></div>
         )}
         {rows.length > 0 && (
-          <div className="overflow-x-auto">
+          <div className="table-scroll bang-dinh">
             <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: '52rem' }}>
               <colgroup>
                 <col style={{ width: '32%' }} /><col style={{ width: '16%' }} /><col style={{ width: '16%' }} />

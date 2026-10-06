@@ -171,7 +171,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
         </span>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="table-scroll bang-dinh">
         <table className="w-full min-w-[940px] table-fixed text-sm">
           <colgroup>
             <col className="w-[22%]" /><col className="w-[6%]" /><col className="w-[9%]" /><col className="w-[7%]" /><col className="w-[6%]" />

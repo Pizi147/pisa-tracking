@@ -58,7 +58,7 @@ export function CatalogAdmin() {
     <div className="grid gap-4 lg:grid-cols-2 items-start">
       <Card title="Lộ trình" className="min-w-0" bodyClass="p-0">
         {routes.loading ? <div className="p-4"><Skeleton rows={3} /></div> : (
-          <div className="overflow-x-auto"><table className="w-full text-sm">
+          <div className="table-scroll bang-dinh"><table className="w-full text-sm">
             <thead>
               <tr>
                 <th className="th">Lộ trình</th><th className="th">Kỳ vọng MT</th><th className="th">Lịch MT mặc định</th>
@@ -94,7 +94,7 @@ export function CatalogAdmin() {
 
       <Card title="Chương trình" className="min-w-0" bodyClass="p-0">
         {programmes.loading ? <div className="p-4"><Skeleton rows={3} /></div> : (
-          <div className="overflow-x-auto"><table className="w-full text-sm">
+          <div className="table-scroll bang-dinh"><table className="w-full text-sm">
             <thead>
               <tr>
                 <th className="th">Chương trình</th>
