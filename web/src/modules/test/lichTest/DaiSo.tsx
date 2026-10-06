@@ -35,7 +35,7 @@ function O({ nhan, children, onClick, mo, mau }: {
   return (
     <button type="button" onClick={onClick}
       className="card min-h-[44px] min-w-0 px-2 py-2 text-left appearance-none cursor-pointer hover:brightness-125 sm:px-3">
-      <span className="block whitespace-nowrap text-[10.5px] tracking-[-0.01em] text-slate-400 leading-tight sm:text-[11px] sm:tracking-normal">{nhan}</span>
+      <span className="block whitespace-nowrap text-[11px] tracking-[-0.015em] text-slate-400 leading-tight sm:tracking-normal">{nhan}</span>
       <span className={`block text-base font-bold tabular-nums leading-tight sm:text-lg ${mau ?? (mo ? 'text-slate-500' : 'text-slate-100')}`}>
         {children}
       </span>
