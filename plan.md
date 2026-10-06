@@ -189,6 +189,21 @@ Nguồn như PR-BV. Chỉ mở cho QL / Quản trị, không nới quyền GV. C
 - **a · Case + Chờ duyệt + Ý thức:** mở lại Case đã hoàn thành (sửa luôn chữ sai ở `ThaoTacCase.tsx:218` đang nói "Case này mở lại" mà máy chủ tạo Case mới) · huỷ quyết định duyệt / từ chối bấm nhầm trong ngày + từ chối hàng loạt · vi phạm Ý thức xoá mềm + khôi phục (nay xoá hẳn cả tệp) · ghi vi phạm cho nhiều em một lần.
 - **b · Học viên & lớp:** "Học lại" cho em đã kết thúc học · mở lại lớp đã kết thúc · lưu trữ / kết thúc học / huỷ quyết định chuyển lớp cho nhiều em một lần.
 
+### PR-TK · Tổng kết lộ trình — điểm 4 kỹ năng khi kết thúc (M) — chủ sản phẩm 06/10, **làm trong đợt này**, kế hoạch + mockup chưa soạn
+Khảo sát 06/10 (mã main): điểm **không mất** khi lộ trình kết thúc (không có xoá dây chuyền; chỉ "Xoá học viên" của Quản trị xoá thật). Nhưng **khó xem lại**:
+hồ sơ HV mặc định lộ trình đang chạy (dải chọn lộ trình ẩn, `StudentDetailPage.tsx:87, 239`); Lưu trữ chỉ là danh sách; Kết luận khoá chỉ xét lớp đang học + một lớp vừa rời
+(`profile.ts:782-797`); Phân tích lớp và Điểm theo lớp chỉ lấy lớp / lộ trình đang chạy (`phanTichLop.ts:57-58`, `diemTheoLuot.ts:146`).
+Kỳ vọng, chương trình, band đầu vào, đạt/trượt, mức SOS **không lưu bản chụp** — sửa route / band đầu vào về sau làm lệch số cũ.
+- **Bản chụp lúc đóng lộ trình** (mọi đường đóng: lộ trình mới, chuyển / lên lớp, kết thúc học; `cycles.ts:162`, `luatLoTrinh.ts:256, 471`, `students.ts:300`): mỗi lượt × 4 kỹ năng (L, R, W, S + OVR / % lớp thường), Target lúc thi, kỳ vọng, đạt / không, mức SOS, chương trình, lớp, GV, band đầu vào, kết luận khoá. Chỉ thêm, chạy lặp được; điền ngược cho lộ trình đã đóng (migrate). "Học lại" (PR-LUI-b) mở lại lộ trình thì bản chụp cũ giữ, đóng lần sau ghi bản mới.
+- **Xem lại:** hồ sơ HV có mục "Các lộ trình" hiện rõ (không ẩn), mở một lộ trình cũ = bảng tổng kết 4 kỹ năng theo lượt; mở từ **Lưu trữ** (HV và lớp đã kết thúc) xem được; lớp đã kết thúc: bảng tổng kết cả lớp.
+- Chồng: PR-LUI-b (`students.ts`, `luuTru.ts`, Học lại), PR-MT0 (Chuyển tiếp lớp). Chạy sau LUI-b, song song MTb được. Bảng bản chụp là nguồn cho PR-NC.
+
+### PR-NC · Thống kê để nghiên cứu (L) — chủ sản phẩm 06/10, **SAU đợt deploy lớn**, chưa làm gì
+Dựa trên bản chụp PR-TK. Ý tưởng (brainstorm planning, chờ chủ sản phẩm chọn khi tới lượt): tỉ lệ HV không đạt theo kỹ năng / lượt / chương trình / lớp / GV / chi nhánh / khoá;
+HV không đạt mấy lần liên tiếp, kỹ năng hay trượt nhất; từ band đầu vào → kết quả cuối khoá (nhóm band); hiệu quả Case / PA (trượt → đạt sau PA); Target đặt vs thực đạt;
+tỉ lệ vắng, trễ chấm; xuất Excel bộ số liệu thô (một dòng một lượt × kỹ năng) để nghiên cứu ngoài web. Tái dùng `evaluateAttempt`, `evaluateRegular`, `daiCuoiKhoa`, `xuatExcel` MT.
+Màn dự kiến: Phân tích › "Tổng kết khoá" (lọc khoảng thời gian, chương trình, chi nhánh) + nút Xuất. Cần 2–3 tháng dữ liệu bản chụp mới có ý nghĩa.
+
 ### PR-LT3 · Lịch Test ba khối + Speaking chấm chéo (L) — luật T15–T18 (mục 2c), **kế hoạch chi tiết chưa soạn**
 Chủ sản phẩm 05/10 (sau khi thấy MT4 "W1 OCT" hiện ở cả Nợ lẫn Lịch tuần này — luật hạn **đúng**, cách hiện gây rối).
 Phạm vi: `server/src/cham/canCham.ts` (`noTuanTruoc`, `lichTest`, đường tính "chờ bạn chấm"), `web/src/modules/test/lichTest/*` (`KhoiNo.tsx`, `DaiSo.tsx`, `LichTestTab.tsx`),
