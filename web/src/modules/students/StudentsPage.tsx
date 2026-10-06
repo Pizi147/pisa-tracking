@@ -270,7 +270,7 @@ export default function StudentsPage() {
           ))}
           {!dienThoai && nhomLop.map((g) => (
             <section key={g.k} className="card overflow-x-auto md:overflow-visible" aria-label={g.k === 'ft' ? 'Lớp Fast Track' : 'Lớp thường'}>
-              <div className="md:sticky md:top-0 md:z-10" aria-hidden>
+              <div className="md:sticky md:-top-5 md:z-10" aria-hidden>
                 <table className="w-full min-w-[960px] table-fixed text-sm">
                   <CotBangLop />
                   <thead><tr>{tieuDeCot(g.k).map((t, i) => <th key={i} className={`th ${i === 5 ? 'text-right' : ''}`}>{t}</th>)}</tr></thead>

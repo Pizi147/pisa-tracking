@@ -242,7 +242,7 @@
   /* PR-N1 (YC-11.1): hàng lớp ĐANG MỞ dính ngay dưới tiêu đề cột khi cuộn trong <main> — luôn biết đang xem lớp nào. */
   @media (min-width: 768px) {
     .hang-lon.hang-lon-dinh > td {
-      position: sticky; top: 40px; z-index: 9; /* = chiều cao thead (.th) đo ở Task 13 */
+      position: sticky; top: calc(40px - 1.25rem); z-index: 9; /* = chiều cao thead (.th) đo ở Task 13, trừ đệm md:p-5 của <main> (PR-KHUNG G1) */
       background: linear-gradient(var(--hang-lon-bg), var(--hang-lon-bg)), var(--surface);
     }
   }
