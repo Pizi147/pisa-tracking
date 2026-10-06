@@ -350,7 +350,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
   check('PR-HVL (4) · Học viên & Lớp: công tắc khung, mỗi nhóm một <section> tiêu đề dính riêng, cột Sắp tới, không còn cột "Target / Khoá"', () => {
     const s = web('modules/students/StudentsPage.tsx');
     assert(/<CongTacKhung trang="hoc-vien-lop" coTatCa/.test(s) && /demLoc\(/.test(s), 'thiếu công tắc khung / demLoc');
-    assert(/<section key=\{g\.k\}/.test(s) && /md:sticky md:top-0/.test(s), 'mỗi nhóm khung phải là một <section> chứa khối tiêu đề dính');
+    assert(/<section key=\{g\.k\}/.test(s) && /md:sticky md:-top-5/.test(s), 'mỗi nhóm khung phải là một <section> chứa khối tiêu đề dính');
     assert(!/Target \/ Khoá/.test(s) && /'Sắp tới'/.test(s), 'cột');
     assert(/<MenuDong bieuTuong=\{`\+\$\{b\.an\.length\}`\}/.test(s) && !/x\.key === 'case'/.test(s), '"+n" phải là MenuDong, không còn badge Case');
   });
