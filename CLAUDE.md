@@ -39,7 +39,7 @@ Tệp này tự nạp vào mọi session của repo (planning, code, worktree), 
 ## Bộ nhớ khi chạy kiểm
 - `prepare()` của libsql 0.5.29 rò ~4,9 KB mỗi lần gọi (`gc()` không trả). `server/src/db.ts` (PR-BN) nhớ câu lệnh theo
   (kết nối, câu SQL) để tránh việc đó: KHÔNG gỡ, KHÔNG gọi `prepare` của libsql bằng đường vòng; `get()` của câu dùng lại đi qua `all()[0]`.
-- `npm run check` đỉnh ~1,3 GB RAM: chỉ chạy MỘT lần tại một thời điểm trên máy, không chạy song song nhiều phiên.
+- `npm run check` đỉnh ~1,3 GB RAM (sau PR-BN): chạy song song TỐI ĐA 3 lần trên máy là được (chủ sản phẩm 07/10 — ưu tiên nhanh); OOM / exit 127 thì chạy lại từng bước.
 
 ## Worktree
 - Worktree chỉ tạo trong `.claude/worktrees/<tên-nhánh>`, không tạo thư mục ngang hàng `Pisa-tracking-*`.
