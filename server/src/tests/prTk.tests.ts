@@ -479,6 +479,42 @@ export async function runPrTkTests(t: YThucTestKit) {
     assert(d.TAB_HO_SO_LOP_NHAN['tong-ket'] === 'Tổng kết' && d.NHAN_VIEC_QUAN_LY.outcome === 'Kết quả thi thật', 'nhãn');
   });
 
+  // ------------------------------------------------------------------ TK-7 · số câu SQL các đường đọc / đường đóng không tăng theo số em
+  const demTruyVan = (fn: () => void): number => {
+    let n = 0;
+    const orig = conn.prepare.bind(conn);
+    (conn as any).prepare = (sql: string) => { n += 1; return orig(sql); };
+    try { fn(); } finally { (conn as any).prepare = orig; }
+    return n;
+  };
+  await checkAsync('TK-7 · số câu SQL: tongKetLop, cacLoTrinh và ghiBanChup KHÔNG tăng theo số học viên / lộ trình', () => thu(() => {
+    const dung = (soEm: number) => {
+      const ft = taoLop('FT', true);
+      const hv = Array.from({ length: soEm }, () => { const x = taoHV(ft, 'FT', true, 6.5); themLuot(x, ft, 1, { band: 6 }); themLuot(x, ft, 2, { band: 6.5 }); return x; });
+      return { ft, hv };
+    };
+    const a = dung(2); const b = dung(7);
+    const dong = demTruyVan(() => { ghiBanChup(conn, a.hv.map((x) => x.cy), { lyDo: 'ket_thuc', ngay: NGAY }); });
+    const dongNhieu = demTruyVan(() => { ghiBanChup(conn, b.hv.map((x) => x.cy), { lyDo: 'ket_thuc', ngay: NGAY }); });
+    assert(dongNhieu <= dong + 4, `ghiBanChup: ${dong} câu (2 em) → ${dongNhieu} câu (7 em)`);   // chỉ tăng theo số lô INSERT (trần ~800 tham số / câu), không theo em
+    for (const { ft, hv } of [a, b]) {
+      for (const x of hv) conn.prepare(`UPDATE learning_cycles SET status = 'abandoned', ended_at = ? WHERE id = ?`).run(NGAY, x.cy);
+      conn.prepare(`UPDATE enrollments SET status = 'completed' WHERE class_id = ?`).run(ft);
+      conn.prepare(`UPDATE classes SET status = 'finished', finished_at = ? WHERE id = ?`).run(NGAY, ft);
+    }
+    const lop = demTruyVan(() => { tongKetSvc.tongKetLop(P.admin, a.ft); });
+    const lopNhieu = demTruyVan(() => { tongKetSvc.tongKetLop(P.admin, b.ft); });
+    assert(lopNhieu === lop, `tongKetLop: ${lop} câu (2 em) → ${lopNhieu} câu (7 em)`);
+    const hs = demTruyVan(() => { tongKetSvc.cacLoTrinh(P.admin, a.hv[0].sid); });
+    cyclesSvc.createCycle(P.admin, { studentId: b.hv[0].sid, route: 'LT2', targetScore: 7 }); cyclesSvc.createCycle(P.admin, { studentId: b.hv[0].sid, route: 'LT2', targetScore: 7 });
+    const hsNhieu = demTruyVan(() => { tongKetSvc.cacLoTrinh(P.admin, b.hv[0].sid); });
+    cyclesSvc.createCycle(P.admin, { studentId: b.hv[0].sid, route: 'LT2', targetScore: 7 }); cyclesSvc.createCycle(P.admin, { studentId: b.hv[0].sid, route: 'LT2', targetScore: 7 });
+    const hsNam = demTruyVan(() => { tongKetSvc.cacLoTrinh(P.admin, b.hv[0].sid); });
+    assert(hsNam === hsNhieu, `cacLoTrinh: 3 lộ trình ${hsNhieu} câu → 5 lộ trình ${hsNam} câu (phải không đổi)`);
+    assert(hsNhieu <= hs + 3, `cacLoTrinh: ${hs} câu (1 lộ trình) → ${hsNhieu} câu (3 lộ trình)`);
+    console.log(`      (đo: ghiBanChup ${dong} câu · tongKetLop ${lop} câu · cacLoTrinh ${hs}→${hsNhieu} câu)`);
+  }));
+
   // @@BAT-BIEN@@ — luôn ở CUỐI file: soi mọi lộ trình các phép kiểm trước để lại. Thêm phép kiểm mới Ở TRÊN dòng này.
   /* TK-5 bất biến phụ "điểm bản chụp = điểm sống" chỉ kiểm trong phép kiểm TK-5 ở trên: nhiều phép kiểm khác (PR khác) sửa / xoá điểm của lộ trình đã đóng bằng SQL thẳng nên soi toàn DB ở cuối sẽ báo oan. */
   await checkAsync('TK-3 · BẤT BIẾN: mọi lộ trình status <> active đều có ≥ 1 bản chụp (đường đóng mới quên gọi → đỏ)', async () => {

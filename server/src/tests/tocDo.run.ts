@@ -137,6 +137,9 @@ const HV = (
     .prepare(`SELECT student_id AS id FROM enrollments WHERE class_id = ? AND status = 'active' ORDER BY student_id LIMIT 1`)
     .get(LOP_FT) as any
 ).id as number;
+/** PR-TK: một lộ trình ĐÃ ĐÓNG (có bản chụp) của chi nhánh mẫu — đường `/lo-trinh/{loTrinhDong}/tong-ket`. */
+const LO_TRINH_DONG = (conn.prepare(`SELECT b.cycle_id AS id FROM ban_chup_lo_trinh b JOIN students s ON s.id = b.student_id WHERE s.branch_id = ? ORDER BY b.cycle_id LIMIT 1`).get(CN) as any)?.id as number;
+assert(LO_TRINH_DONG, 'Seed thiếu lộ trình đã đóng (bản chụp) ở chi nhánh MB');
 const KASE = (
   conn
     .prepare(
@@ -165,6 +168,7 @@ function urlFor(mau: string): string {
     .replace('{lopFT}', String(LOP_FT))
     .replace('{lopThuong}', String(LOP_THUONG))
     .replace('{hv}', String(HV))
+    .replace('{loTrinhDong}', String(LO_TRINH_DONG))
     .replace('{case}', String(KASE))
     .replace('{cn}', String(CN))
     .replace('{gv}', String(USER.GVCN));
