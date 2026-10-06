@@ -321,7 +321,7 @@ Chọn model ở ô chọn model **trước khi dán prompt**. Subagent cùng mo
 ### 9.0. Phần chung — mọi prompt session code đều ngầm gồm
 ```
 Đọc trước: CLAUDE.md, plan.md (mục 1 Luật làm việc, mục 3 Quyết định, mục 4 dòng của PR này).
-Đầu phiên: nói rõ mình đang chạy model nào; khác model ghi trên prompt này thì DỪNG và báo chủ sản phẩm trước khi làm.
+Đầu phiên: nói rõ mình đang chạy model nào. Model ghi trên prompt (khuyến nghị) HOẶC phương án B đều được chạy tiếp — ghi model thật vào mô tả PR. Chỉ DỪNG báo chủ sản phẩm khi là model khác cả hai (vd Haiku) hoặc Fable (cấm, 06/10).
 Nhánh mới từ origin/main mới nhất. Skill: superpowers:subagent-driven-development (mỗi Task một subagent cùng model),
 superpowers:test-driven-development (đỏ trên DB test trước), superpowers:systematic-debugging khi lỗi lạ,
 superpowers:brainstorming nếu cần chủ sản phẩm quyết (dừng, hỏi), superpowers:verification-before-completion,
