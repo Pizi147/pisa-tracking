@@ -3,6 +3,10 @@
  * rồi ĐIỀN NGƯỢC bản chụp cho lộ trình đã đóng mà chưa có (`nguon = 'dien_nguoc'`). Tự kiểm bảng / cột / bản chụp nên chạy lặp được;
  * lần hai không báo gì. Cùng định nghĩa nằm CUỐI `schema.sql`.
  */
+import { ghiBanChup } from '../loTrinh/banChup.ts';
+import { theoLo } from '../db.ts';
+import type { LyDoDong } from '../../../shared/domain/index.ts';
+
 const DDL = `
 CREATE TABLE IF NOT EXISTS ban_chup_lo_trinh (
   id INTEGER PRIMARY KEY, cycle_id INTEGER NOT NULL REFERENCES learning_cycles(id), student_id INTEGER NOT NULL REFERENCES students(id),
@@ -47,4 +51,43 @@ export function migratePrTk(conn: any, applied: string[]) {
     conn.exec(DDL);
     applied.push('PR-TK: bảng ban_chup_lo_trinh, ban_chup_luot');
   }
+  const n = dienNguocBanChup(conn);
+  if (n > 0) applied.push(`PR-TK: điền ngược ${n} bản chụp lộ trình đã đóng`);
+}
+
+/**
+ * ĐIỀN NGƯỢC: mọi lộ trình `status <> 'active'` chưa có bản chụp → ghi một bản (`nguon = 'dien_nguoc'`). Không có lịch sử nên dùng Target / route /
+ * chương trình HIỆN TẠI — số có thể khác lúc đóng thật (cột `nguon` giữ dấu cho PR-NC). Lý do suy từ dữ liệu: `abandoned` → Kết thúc học; `completed` +
+ * ghi danh kết thúc cùng ngày có `end_kind` → theo `end_kind`; có lộ trình sau bắt đầu cùng ngày → Lộ trình mới; còn lại không rõ. Chạy lặp: lần hai 0 dòng.
+ */
+export function dienNguocBanChup(conn: any): number {
+  const chua = conn.prepare(`SELECT c.id, c.student_id, c.status, c.started_at, c.ended_at, c.seq FROM learning_cycles c
+      WHERE c.status <> 'active' AND NOT EXISTS (SELECT 1 FROM ban_chup_lo_trinh b WHERE b.cycle_id = c.id) ORDER BY c.id`).all() as any[];
+  if (!chua.length) return 0;
+  const sids = [...new Set(chua.map((c) => c.student_id as number))];
+  const ketThuc = new Map<string, string>();
+  const tiep = new Map<number, any[]>();
+  theoLo(sids, (lo, ph) => {
+    for (const e of conn.prepare(`SELECT student_id, ended_at, end_kind FROM enrollments WHERE student_id IN (${ph}) AND end_kind IS NOT NULL AND ended_at IS NOT NULL`).all(...lo) as any[]) {
+      ketThuc.set(`${e.student_id}:${e.ended_at}`, e.end_kind);
+    }
+    for (const c of conn.prepare(`SELECT student_id, seq, started_at FROM learning_cycles WHERE student_id IN (${ph})`).all(...lo) as any[]) {
+      tiep.set(c.student_id, [...(tiep.get(c.student_id) ?? []), c]);
+    }
+  });
+  const THEO_END_KIND: Record<string, LyDoDong> = { len_lop: 'len_lop', hoc_lai: 'hoc_lai', sang_ft: 'sang_ft', chuyen_lop: 'chuyen_lop', ket_thuc: 'ket_thuc', dung_hoc: 'ket_thuc' };
+  const nhom = new Map<string, { lyDo: LyDoDong; ngay: string; ids: number[] }>();
+  for (const c of chua) {
+    const ngay = c.ended_at ?? c.started_at;
+    const ek = ketThuc.get(`${c.student_id}:${c.ended_at}`);
+    const lyDo: LyDoDong = c.status === 'abandoned' ? 'ket_thuc'
+      : ek && THEO_END_KIND[ek] ? THEO_END_KIND[ek]
+      : (tiep.get(c.student_id) ?? []).some((x) => x.seq > c.seq && x.started_at === c.ended_at) ? 'lo_trinh_moi' : 'khong_ro';
+    const k = `${lyDo}|${ngay}`;
+    nhom.set(k, { lyDo, ngay, ids: [...(nhom.get(k)?.ids ?? []), c.id as number] });
+  }
+  for (const g of nhom.values()) {
+    for (let i = 0; i < g.ids.length; i += 200) ghiBanChup(conn, g.ids.slice(i, i + 200), { lyDo: g.lyDo, ngay: g.ngay, nguon: 'dien_nguoc' });
+  }
+  return chua.length;
 }

@@ -19,6 +19,7 @@ import {
   apDungMotDong, danhSachLopDich, dongLopNeuHet, lopDichHopLe, lopHienTaiCua, moLoTrinhMoi, thongBaoChuyenVao,
 } from '../classes/luatLoTrinh.ts';
 import { moLaiLop } from '../classes/xoaKetThucLop.ts';
+import { ghiBanChup } from '../loTrinh/banChup.ts';
 
 import { weekInfo } from '../platform/week.ts';
 
@@ -309,6 +310,8 @@ export function setStudentStatus(
       dongCase = cs.chup; rutTinHieu = cs.withdrawnSignalIds;
       conn.prepare(`UPDATE learning_cycles SET status = 'abandoned', ended_at = ? WHERE student_id = ? AND status = 'active'`)
         .run(date, studentId);
+      /* PR-TK: cùng giao dịch; mọi đường Kết thúc học (một em, nhiều em, dừng học ở Chuyển tiếp) đều đi qua đây. */
+      ghiBanChup(conn, dongBoiLanNay!.loTrinhDong, { lyDo: 'ket_thuc', ngay: date });
     }
     addJourney({
       studentId, eventType: status === 'inactive' ? 'pause' : status === 'active' ? 'resume' : 'finish',
@@ -502,10 +505,16 @@ export function hoanTacHocLai(p: Principal, studentId: number) {
     for (const e of (a.ghiDanhKhoiPhuc ?? []) as { id: number; truoc: string | null }[]) {
       conn.prepare(`UPDATE enrollments SET status = 'completed', end_kind = ? WHERE id = ?`).run(e.truoc, e.id);
     }
+    /* PR-TK: đóng lại lộ trình đã mở lại → bản chụp MỚI (`lan` kế tiếp); bản cũ giữ nguyên. */
+    const dongLai: number[] = [];
     for (const id of (a.loTrinhKhoiPhuc ?? []) as number[]) {
-      conn.prepare(`UPDATE learning_cycles SET status = 'abandoned', ended_at = ? WHERE id = ? AND status = 'active'`).run(b.finishedAt, id);
+      if (conn.prepare(`UPDATE learning_cycles SET status = 'abandoned', ended_at = ? WHERE id = ? AND status = 'active'`).run(b.finishedAt, id).changes) dongLai.push(id);
     }
-    if (moi.loTrinhId && !moi.ghiDanhId) conn.prepare(`UPDATE learning_cycles SET status = 'abandoned', ended_at = ? WHERE student_id = ? AND status = 'active'`).run(b.finishedAt, studentId);
+    if (moi.loTrinhId && !moi.ghiDanhId) {
+      for (const r of conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`).all(studentId) as any[]) dongLai.push(r.id as number);
+      conn.prepare(`UPDATE learning_cycles SET status = 'abandoned', ended_at = ? WHERE student_id = ? AND status = 'active'`).run(b.finishedAt, studentId);
+    }
+    ghiBanChup(conn, dongLai, { lyDo: 'ket_thuc', ngay: b.finishedAt ?? demoToday() });
     conn.prepare('UPDATE students SET status = ?, finished_at = ?, archived_at = ?, branch_id = ? WHERE id = ?').run('finished', b.finishedAt, b.archivedAt, b.branchId ?? s.branch_id, studentId);
     for (const l of (a.lopMoLai ?? []) as { id: number; finishedAt: string | null }[]) {
       const conHoc = conn.prepare(`SELECT 1 FROM enrollments WHERE class_id = ? AND status = 'active'`).get(l.id);

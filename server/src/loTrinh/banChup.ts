@@ -14,7 +14,8 @@ import { evaluateRegular, programmeByCode } from '../normal/regular.ts';
 import { examPlanOf } from '../fasttrack/cycles.ts';
 import { nowIso } from '../util.ts';
 
-export type BanChupVao = { lyDo: LyDoDong; ngay: string; nguon?: 'luc_dong' | 'dien_nguoc'; routeMoi?: string | null };
+/** `lopId`: lớp lúc đóng, khi nơi gọi đã đổi ghi danh (Chuyển lớp, Lên lớp cả lớp) — không suy từ ghi danh nữa. `routeMoi`: route của lộ trình mở ngay sau (Lên LT2). */
+export type BanChupVao = { lyDo: LyDoDong; ngay: string; nguon?: 'luc_dong' | 'dien_nguoc'; routeMoi?: string | null; lopId?: number | null };
 
 const LO = 400;
 const KY_NANG_THO = ['writing1', 'writing2'];
@@ -144,7 +145,7 @@ function ghiMotLo(conn: any, ids: number[], o: BanChupVao): number[] {
   for (const e of hoi<any>((ph) => `SELECT student_id, class_id, started_at FROM enrollments WHERE student_id IN (${ph}) ORDER BY id`, sids)) {
     if (e.started_at <= o.ngay || !lopCuoiCua.has(e.student_id)) lopCuoiCua.set(e.student_id, e.class_id);
   }
-  const lopCuoi = (c: any): number | null => (luotCua.get(c.id) ?? []).filter((a) => a.class_id).at(-1)?.class_id ?? lopCuoiCua.get(c.student_id) ?? null;
+  const lopCuoi = (c: any): number | null => o.lopId ?? (luotCua.get(c.id) ?? []).filter((a) => a.class_id).at(-1)?.class_id ?? lopCuoiCua.get(c.student_id) ?? null;
   const idLop = [...new Set([...attempts.map((a) => a.class_id), ...cycles.map(lopCuoi)].filter((x): x is number => !!x))];
   const lopTheoId = new Map<number, any>();
   for (const l of hoi<any>((ph) => `SELECT id, code, branch_id, programme_code FROM classes WHERE id IN (${ph})`, idLop)) lopTheoId.set(l.id, l);

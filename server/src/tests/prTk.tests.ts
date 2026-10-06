@@ -74,10 +74,10 @@ export async function runPrTkTests(t: YThucTestKit) {
   const NGAY = t.TODAY;
   const banChup = (cycleId: number) => all('SELECT * FROM ban_chup_lo_trinh WHERE cycle_id = ? ORDER BY lan', cycleId);
   const luotCua = (bcId: number) => all('SELECT * FROM ban_chup_luot WHERE ban_chup_id = ? ORDER BY attempt_no, id', bcId);
-  /** Lộ trình FT có ≥ `n` lượt, trong đó ≥ 1 lượt có điểm. */
+  /** Lộ trình FT ĐANG CHẠY có ≥ `n` lượt, trong đó ≥ 1 lượt có điểm. */
   const ftNhieuLuot = (n: number) => get(
     `SELECT a.cycle_id AS id, c.student_id FROM assessment_attempts a JOIN learning_cycles c ON c.id = a.cycle_id
-      WHERE c.route IS NOT NULL AND a.status != 'cancelled' AND EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND s.band IS NOT NULL)
+      WHERE c.route IS NOT NULL AND c.status = 'active' AND a.status != 'cancelled' AND EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND s.band IS NOT NULL)
       GROUP BY a.cycle_id HAVING COUNT(*) >= ? ORDER BY COUNT(*) DESC LIMIT 1`, n);
 
   // ------------------------------------------------------------------ TK-2 · bản chụp
@@ -136,4 +136,119 @@ export async function runPrTkTests(t: YThucTestKit) {
     assert(get('SELECT so_luot, lan FROM ban_chup_lo_trinh WHERE id = ?', a).so_luot === 0 && luotCua(a).length === 0, 'rỗng');
     assert(banChup(cy).map((r) => r.lan).join() === '1,2' && b !== a, 'lan 1, 2');
   }));
+
+  // ------------------------------------------------------------------ TK-3 · mọi đường đóng ghi bản chụp (đi qua dịch vụ thật)
+  const cyclesSvc: any = await import('../fasttrack/cycles.ts');
+  const studentsSvc: any = await import('../students/students.ts');
+  const transitionSvc: any = await import('../classes/transition.ts');
+  const intake: any = await import('../classes/intake.ts');
+  const MB = get(`SELECT id FROM branches WHERE code = 'MB'`).id as number;
+  let seq = 0;
+  const taoLop = (kind: string, ft: boolean): number => {
+    seq += 1;
+    return intake.createClass(P.admin, { code: `MB-TK-${seq}`, branchId: MB, kind, isFastTrack: ft, startDate: NGAY }).id as number;
+  };
+  /** Em có ghi danh `active` ở `clsId` + một lộ trình đang chạy (FT: route LT1 + Target). */
+  const taoHV = (clsId: number, ma: string | null, ft: boolean, target: number | null = null): { sid: number; cy: number } => {
+    seq += 1;
+    const now = new Date().toISOString();
+    const sid = Number(conn.prepare(`INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`)
+      .run(`PISA-TK-${seq}`, `Hoc vien TK ${seq}`, `hoc vien tk ${seq}`, MB, now).lastInsertRowid);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`).run(sid, clsId, NGAY, now);
+    const cy = Number(conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, started_at, status, created_at) VALUES (?, 1, ?, ?, ?, ?, 'active', ?)`)
+      .run(sid, ft ? 'LT1' : null, ma, target, NGAY, now).lastInsertRowid);
+    return { sid, cy };
+  };
+  const dongCuaCycle = (cy: number) => banChup(cy).at(-1);
+  const trangThai = (cy: number) => get('SELECT status FROM learning_cycles WHERE id = ?', cy).status as string;
+
+  await checkAsync('TK-3 · Mở lộ trình mới (POST /students/:id/cycles): bản chụp lộ trình cũ, lý do lo_trinh_moi, hướng Lên LT2', () => thu(() => {
+    const fx = ftNhieuLuot(1);
+    cyclesSvc.createCycle(P.admin, { studentId: fx.student_id, route: 'LT2', targetScore: 7 });
+    const b = dongCuaCycle(fx.id);
+    assert(trangThai(fx.id) === 'completed' && b && b.ly_do === 'lo_trinh_moi' && b.huong_tiep === 'len_lt2' && b.nguon === 'luc_dong', JSON.stringify(b));
+  }));
+  await checkAsync('TK-3 · Chuyển lớp luật đóng-mở → chuyen_lop (lớp cũ); luật giữ lộ trình (FT → FT) KHÔNG có bản chụp', () => thu(() => {
+    const ft = taoLop('FT', true); const thuong = taoLop('FOU', false); const ft2 = taoLop('FT', true);
+    const a = taoHV(ft, 'FT', true, 6.5);
+    studentsSvc.transferStudent(P.admin, a.sid, thuong, NGAY, 'Xếp lại trình độ', { noNote: true });
+    const b = dongCuaCycle(a.cy);
+    assert(trangThai(a.cy) === 'completed' && b.ly_do === 'chuyen_lop' && b.class_id === ft, JSON.stringify(b));
+    const c = taoHV(ft, 'FT', true, 6.5);
+    studentsSvc.transferStudent(P.admin, c.sid, ft2, NGAY, 'Đổi lịch học', { noNote: true });
+    assert(trangThai(c.cy) === 'active' && banChup(c.cy).length === 0, 'FT → FT giữ lộ trình: không đóng, không bản chụp');
+  }));
+  await checkAsync('TK-3 · Chuyển tiếp cả lớp (lên lớp / học lại / sang FT, ≥ 3 em một lô): mỗi em đúng một bản chụp, đúng lý do, lớp cũ', () => thu(() => {
+    const cls = taoLop('FOU', false); const be = taoLop('BE', false); const fou = taoLop('FOU', false); const ft = taoLop('FT', true);
+    const em = [taoHV(cls, 'FOU', false), taoHV(cls, 'FOU', false), taoHV(cls, 'FOU', false), taoHV(cls, 'FOU', false)];
+    const r = transitionSvc.applyTransition(P.admin, { fromClassId: cls, effectiveDate: NGAY, dongs: [
+      { studentId: em[0].sid, huong: 'len_lop', toClassId: be }, { studentId: em[1].sid, huong: 'len_lop', toClassId: be },
+      { studentId: em[2].sid, huong: 'hoc_lai', toClassId: fou }, { studentId: em[3].sid, huong: 'fast_track', toClassId: ft, mucTieu: 6.5 }] }) as any;
+    assert(r.done.length === 4 && r.failed.length === 0, JSON.stringify(r));
+    const lyDo = em.map((e) => { const l = banChup(e.cy); assert(l.length === 1 && l[0].class_id === cls, `em ${e.sid}: ${l.length} bản chụp`); return l[0].ly_do; });
+    assert(lyDo.join() === 'len_lop,len_lop,hoc_lai,sang_ft', lyDo.join());
+  }));
+  await checkAsync('TK-3 · Kết thúc học (POST /students/:id/status) và dừng học ở Chuyển tiếp → ket_thuc', () => thu(() => {
+    const cls = taoLop('FOU', false);
+    const a = taoHV(cls, 'FOU', false);
+    studentsSvc.setStudentStatus(P.admin, a.sid, 'finished', NGAY, 'Nghỉ học');
+    assert(trangThai(a.cy) === 'abandoned' && dongCuaCycle(a.cy).ly_do === 'ket_thuc' && dongCuaCycle(a.cy).huong_tiep === 'ket_thuc', 'một em');
+    const cls2 = taoLop('FOU', false); const x = taoHV(cls2, 'FOU', false);
+    transitionSvc.applyTransition(P.admin, { fromClassId: cls2, effectiveDate: NGAY, dongs: [{ studentId: x.sid, huong: 'dung_hoc', lyDo: 'Gia đình chuyển nhà' }] });
+    assert(banChup(x.cy).length === 1 && banChup(x.cy)[0].ly_do === 'ket_thuc', 'dừng học');
+  }));
+  await checkAsync('TK-3 · PATCH /cycles/:id {status:"completed"} → sua_tay; Học lại mở lại rồi Hoàn tác → bản chụp MỚI (lan 2), bản cũ giữ nguyên', () => thu(() => {
+    const cls = taoLop('FOU', false);
+    const a = taoHV(cls, 'FOU', false);
+    cyclesSvc.updateCycle(P.admin, a.cy, { status: 'completed' });
+    assert(banChup(a.cy).map((r) => r.ly_do).join() === 'sua_tay', 'sua_tay');
+    const b = taoHV(cls, 'FOU', false);
+    studentsSvc.setStudentStatus(P.admin, b.sid, 'finished', NGAY, 'Nghỉ');
+    const cu = JSON.stringify(banChup(b.cy)[0]);
+    studentsSvc.hocLai(P.admin, b.sid, { date: NGAY, moLaiLop: true });
+    assert(trangThai(b.cy) === 'active' && JSON.stringify(banChup(b.cy)[0]) === cu, 'Học lại mở lại, bản cũ giữ nguyên');
+    studentsSvc.hoanTacHocLai(P.admin, b.sid);
+    assert(trangThai(b.cy) === 'abandoned' && banChup(b.cy).map((r) => r.lan).join() === '1,2', `lan ${banChup(b.cy).map((r) => r.lan)}`);
+    assert(JSON.stringify(banChup(b.cy)[0]) === cu, 'bản lan 1 vẫn nguyên');
+  }));
+  await checkAsync('TK-3 · cùng giao dịch: ghi bản chụp lỗi → lộ trình cũ vẫn active (không có lộ trình đóng mà thiếu bản chụp)', () => thu(() => {
+    const fx = ftNhieuLuot(1);
+    conn.exec('DROP TABLE ban_chup_luot');   // trong giao dịch thử → ghiBanChup ném lỗi ở dòng lượt; ROLLBACK cuối phép kiểm trả bảng về
+    let loi = false;
+    try { cyclesSvc.createCycle(P.admin, { studentId: fx.student_id, route: 'LT2', targetScore: 7 }); } catch { loi = true; }
+    assert(loi, 'createCycle phải lỗi');
+    assert(trangThai(fx.id) === 'active', 'lộ trình cũ phải còn active');
+  }));
+  // ------------------------------------------------------------------ TK-4 · điền ngược (migrate)
+  const { migratePrTk } = await import('../migrate/prTk.ts');
+  await checkAsync('TK-4 · migratePrTk: lộ trình đóng chưa có bản chụp → nguon dien_nguoc đúng lý do; lần hai không đổi gì; bản đã có không bị ghi thêm', () => thu(() => {
+    const sid = get('SELECT student_id FROM learning_cycles LIMIT 1').student_id as number;
+    const now = new Date().toISOString();
+    const them = (seq: number, status: string, batDau: string, ketThuc: string | null) => Number(conn.prepare(
+      `INSERT INTO learning_cycles (student_id, seq, started_at, ended_at, status, created_at) VALUES (?,?,?,?,?,?)`).run(sid, seq, batDau, ketThuc, status, now).lastInsertRowid);
+    const a = them(91, 'abandoned', '2026-01-05', '2026-02-02');
+    const b = them(92, 'completed', '2026-02-02', '2026-03-02');
+    const c = them(93, 'completed', '2026-03-02', '2026-04-08');
+    them(94, 'active', '2026-03-02', null);                       // lộ trình sau bắt đầu cùng ngày b đóng?  KHÔNG — c đóng 04/06; ngày 03/02 là ngày b đóng → b = lo_trinh_moi
+    const daCo = them(95, 'completed', '2026-04-06', '2026-05-04');
+    ghiBanChup(conn, [daCo], { lyDo: 'sua_tay', ngay: '2026-05-04' });
+    const dem = () => (get('SELECT COUNT(*) n FROM ban_chup_lo_trinh').n as number) + (get('SELECT COUNT(*) n FROM ban_chup_luot').n as number) * 1000;
+    const lan1: string[] = [];
+    migratePrTk(conn, lan1);
+    assert(lan1.length === 1 && /điền ngược 3 bản chụp/.test(lan1[0]), lan1.join());
+    const lyDo = (id: number) => banChup(id).map((r) => `${r.ly_do}/${r.nguon}`).join();
+    assert(lyDo(a) === 'ket_thuc/dien_nguoc' && lyDo(b) === 'lo_trinh_moi/dien_nguoc' && lyDo(c) === 'khong_ro/dien_nguoc', `${lyDo(a)} | ${lyDo(b)} | ${lyDo(c)}`);
+    assert(lyDo(daCo) === 'sua_tay/luc_dong', 'bản đã có giữ nguyên');
+    const truoc = dem();
+    const lan2: string[] = [];
+    migratePrTk(conn, lan2);
+    assert(lan2.length === 0 && dem() === truoc, `lần hai: ${lan2.join()} ${dem()} ≠ ${truoc}`);
+  }));
+
+  // @@BAT-BIEN@@ — luôn ở CUỐI file: soi mọi lộ trình các phép kiểm trước để lại. Thêm phép kiểm mới Ở TRÊN dòng này.
+  await checkAsync('TK-3 · BẤT BIẾN: mọi lộ trình status <> active đều có ≥ 1 bản chụp (đường đóng mới quên gọi → đỏ)', async () => {
+    const thieu = all(`SELECT c.id, c.student_id, c.status FROM learning_cycles c WHERE c.status <> 'active'
+                        AND NOT EXISTS (SELECT 1 FROM ban_chup_lo_trinh b WHERE b.cycle_id = c.id) LIMIT 10`);
+    assert(thieu.length === 0, `lộ trình đóng thiếu bản chụp: ${JSON.stringify(thieu)}`);
+  });
 }
