@@ -278,6 +278,9 @@ h1{font-size:22px;margin:0}h2{font-size:17px;margin:0}p{margin:0}
 <section class="sec"><h2>19. Xoá Case tạo nhầm</h2><span class="where">Case báo tay, chưa PA nào ghi kết quả · chỉ Quản lý / Quản trị · hỏi một dòng · PA chưa làm huỷ theo</span>
   <div class="pair"><div class="frame desk" data-s="xoa-case"></div><div class="frame phone" data-s="xoa-case" data-w="375"></div><div class="frame desk" data-s="xoa-case-xong"></div><div class="frame phone" data-s="xoa-case-xong" data-w="375"></div></div></section>
 
+<section class="sec"><h2>20. Xoá PA · Xoá Case bị chặn</h2><span class="where">Ngăn Case › thẻ PA › ⋯ › Xoá PA (Quản lý / Quản trị) · Sửa Case khi còn PA có kết quả: Xoá Case khoá, có câu hướng dẫn</span>
+  <div class="pair"><div class="frame desk" data-s="xoa-pa"></div><div class="frame phone" data-s="xoa-pa" data-w="375"></div><div class="frame desk" data-s="xoa-pa-hoi"></div><div class="frame phone" data-s="xoa-pa-hoi" data-w="375"></div><div class="frame desk" data-s="xoa-case-chan"></div><div class="frame phone" data-s="xoa-case-chan" data-w="375"></div></div></section>
+
 <section class="sec"><h2>15. GVCN — không thấy Mở lại</h2><span class="where">Ngăn Case đã hoàn thành của GVCN / GVBM: không có nút Mở lại · Chờ duyệt chỉ Quản lý</span>
   <div class="pair"><div class="frame desk" data-s="gv"></div><div class="frame phone" data-s="gv" data-w="375"></div></div></section>
 </div>
@@ -483,6 +486,9 @@ const S = {
   'xl-xong': (w) => trangDsXl(w, { daXoa: 1 }) + '<div class="toast top">Đã xoá Report 2</div>',
   'sua-case': (w) => trangHv(w) + panel(suaCasePanel(w)),
   'xoa-case': (w) => trangHv(w) + panel(suaCasePanel(w, { baoTay: 1 })) + hoi('Xoá Case này?', 'Listening — nghe sót số liệu · 1 PA chưa làm sẽ huỷ', 'Xoá Case'),
+  'xoa-pa': (w) => trangHv(w) + panel(paPanel(w, true)),
+  'xoa-pa-hoi': (w) => trangHv(w) + panel(paPanel(w, false)) + hoi('Xoá PA này?', 'Học kèm 1-1 với Tutor · 2 kết quả tuần sẽ xoá', 'Xoá PA'),
+  'xoa-case-chan': (w) => trangHv(w) + panel(Object.assign(suaCasePanel(w), { xoa: '', msg: 'Case còn PA có kết quả — xoá các PA trước.', chinh: '<button class="btn btn-danger" disabled>Xoá Case</button><span class="btn btn-primary">Lưu</span>' })),
   'xoa-case-xong': (w) => trangHv(w) + '<div class="toast top">Đã xoá Case</div>',
 };
 
@@ -522,6 +528,15 @@ function xlPanel(w) {
       khoi('Tệp hoặc liên kết', '<div class="tep">' + tepDong('bien-ban-goi-ph.pdf', '210 KB · Lê Hà · 13/09', '', '<span class="btn btn-sm btn-ghost">Gỡ</span>') + '</div>'),
     xoa: 'Xoá lần xử lý', trai: 'Huỷ thay đổi', chinh: nutChinh('Lưu'),
   };
+}
+
+/* Ngăn Case đang theo dõi · thẻ PA có menu ⋯ (QL). */
+function paPanel(w, moMenu) {
+  const menu = moMenu ? '<div class="pop" style="position:absolute;right:28px;top:150px;width:200px;z-index:4"><div class="it">Ghi kết quả</div><div class="it">Điều chỉnh</div><hr><div class="it" style="color:var(--bad)">Xoá PA</div></div>' : '';
+  return { t: 'Case Listening', ctx: 'Nguyễn Minh Anh · MB FT 101',
+    body: '<div class="row" style="padding-top:12px"><span class="chip moi">Đang theo dõi</span><span class="m">Listening — nghe sót số liệu</span><span class="sp"></span><span class="btn btn-sm">Sửa</span></div>' +
+      khoi('Phương án', '<div class="pa" style="display:flex;gap:8px;align-items:flex-start"><span style="flex:1"><b style="font-weight:600">Học kèm 1-1 với Tutor</b><span class="m" style="display:block">Lê Hà · Đang chạy · 2 kết quả tuần · Tiến bộ một phần</span></span><span class="btn btn-sm btn-ghost">⋯</span></div>' + menu),
+    trai: 'Đóng', chinh: nutChinh('Ghi kết quả') };
 }
 
 /* Panel Sửa Case. */

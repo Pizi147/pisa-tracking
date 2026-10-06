@@ -20,6 +20,9 @@
 - **Thêm a1 · Sửa / Xoá lần xử lý Ý thức đã xác nhận** (Report, WL…): `Sửa vi phạm` (thêm / bỏ vi phạm của lần xử lý) và `Xoá lần xử lý` (hỏi một dòng, nhật ký giữ nội dung, bậc tính lại). → Task **a1-6**, mockup mục 16–17.
 - **Thêm a2 · Sửa / Xoá Case:** `Sửa` (tên, mô tả, mức, kỹ năng, nhóm nguyên nhân) — người tạo / GVCN / QL; `Xoá Case` tạo nhầm — chỉ QL / Quản trị, hỏi một dòng, huỷ PA chưa làm, nhật ký giữ nội dung; **đổi hạn theo dõi Case ghi nhật ký** (`cases.ts:258`). → Task **a2-6**, mockup mục 18–19.
 
+- **Q5 = A:** Sửa / Xoá lần xử lý — QL / Quản trị mọi lúc; GVCN lớp đó khi lần xử lý chưa "Đã thực hiện".
+- **Q6 (chủ sản phẩm 06/10):** thêm **Xoá PA** (QL / Quản trị, kể cả PA đã ghi kết quả — hỏi một dòng, nhật ký chụp PA + mọi kết quả tuần; Case có thể về "chưa có PA"). Xoá Case: còn PA có kết quả → chặn `Case còn PA có kết quả — xoá các PA trước.`; hết → xoá được. → Task a2-6, mockup mục 20.
+
 **Tôi đã tự quyết cho phần thêm (duyệt cùng mockup bản 2; hai điểm còn hỏi ở Q5, Q6 cuối file):**
 - Lần xử lý: **bậc không lưu sẵn** — `bacHienTai` (`trangThai.ts:167`) đọc từ các lần xử lý `done`, nên xoá xong bậc / lần kế tiếp **tự tính lại**. Chỉ xoá được **lần xử lý mới nhất của chuỗi** (lần sau đã dựa trên lần này → `Đã có WL 1 sau lần này — xoá WL 1 trước.`). Sửa: vi phạm thêm vào phải của **cùng em**, chưa nằm trong lần xử lý khác; còn **≥ 1** vi phạm (bỏ hết = Xoá). Thẻ Chờ duyệt `y_thuc` của lần xử lý đó tự đóng (`Lần xử lý đã xoá`). Tệp xoá theo luật tệp dùng chung (a1-3). Ai: QL / Quản trị mọi lần xử lý; GVCN lớp em đang học khi lần xử lý **chưa "Đã thực hiện"** (Q5). Không có cột Báo phụ huynh nào trỏ lần xử lý (`phoiHop.ts` không đọc `discipline_measures`) — Báo PH đã gửi **giữ nguyên**, nhật ký ghi "đã báo PH" nếu có.
 - Case: `Sửa` nằm ở đầu Ngăn Case (mọi Case chưa đóng; Case đã đóng thì `Mở lại` trước). Đổi **kỹ năng** chỉ khi Case **chưa có PA** và không có Case khác cùng kỹ năng đang mở (khoá chống trùng đổi theo); có PA → ô kỹ năng khoá. Mỗi ô đổi → `sos_case_history` + nhật ký `case.edit`. **Xoá Case:** chỉ Case **báo tay** (`origin_kind` khác `mock` — Case tự tạo từ Test bị máy tạo lại, dùng `Không cần theo dõi`) và **chưa có PA nào ghi kết quả** (Q6); xoá hẳn dòng ở mọi bảng trỏ Case (12 bảng, `schema.sql` `REFERENCES sos_cases`), PA chưa làm đi theo, thẻ Chờ duyệt tự đóng, nhật ký `case.delete` giữ ảnh chụp Case + PA.
@@ -498,9 +501,11 @@ export function moLaiCase(p: Principal, caseId: number) {
 - [ ] **Đỏ:**
   - `LUIa2-12` `suaCase(GVBM đúng môn, …)` đổi tên / mô tả / mức / nhóm nguyên nhân trên Case **đã xác nhận** → lưu (luật như `xacNhanCase`: tên 3–80, mô tả 15–2000, nhóm thuộc bộ của kỹ năng, Khác cần ghi rõ); mỗi ô đổi một dòng `sos_case_history` + nhật ký `case.edit`; không đổi gì → không ghi. Người tạo (`reported_by`), GVCN lớp em, QL được; GV khác → 403. Case `done` → 400 `Case đã hoàn thành — Mở lại trước khi sửa.`
   - `LUIa2-13` đổi kỹ năng: Case chưa có PA → đổi `topic`/`category`, khoá chống trùng đổi theo; có PA → 400 `Case đã có PA — không đổi kỹ năng.`; đã có Case khác cùng kỹ năng mới đang mở → 400 `Đã có Case Reading đang mở.`
-  - `LUIa2-14` `xoaCase(QL)` Case báo tay có 1 PA `planned` → mọi bảng ở bước đối chiếu không còn dòng trỏ Case / PA đó (phép kiểm quét đủ 12 bảng + `attachments` + `yeu_cau_duyet` chờ); thẻ Chờ duyệt của PA đóng `tu_dong`; nhật ký `case.delete` chụp Case + PA. Chặn: GVCN / GVBM → 403; Case `mock` → 400 `Case từ kết quả Test — dùng "Không cần theo dõi".`; có PA đã ghi kết quả → 400 `Case đã có PA ghi kết quả — Hoàn thành Case thay vì xoá.` (Q6-A)
+  - `LUIa2-14` `xoaCase(QL)` Case báo tay có 1 PA `planned` → mọi bảng ở bước đối chiếu không còn dòng trỏ Case / PA đó (phép kiểm quét đủ 12 bảng + `attachments` + `yeu_cau_duyet` chờ); thẻ Chờ duyệt của PA đóng `tu_dong`; nhật ký `case.delete` chụp Case + PA. Chặn: GVCN / GVBM → 403; Case `mock` → 400 `Case từ kết quả Test — dùng "Không cần theo dõi".`; còn PA có kết quả → 400 `Case còn PA có kết quả — xoá các PA trước.` (Q6); xoá hết PA đó (`xoaPa`) rồi xoá Case → được
+  - `LUIa2-16` **Xoá PA** `xoaPa(QL, ivId)` PA có 2 kết quả tuần → xoá PA, `case_followups`, `case_intervention_revisions`, tệp, thẻ Chờ duyệt của PA (`tu_dong`); nhật ký `intervention.delete` chụp PA + mọi kết quả; Case còn PA khác → giữ trạng thái; hết PA → Case về `open` ("chưa có PA"). Số "PA cần cập nhật" (`mywork`, Việc cần làm) giảm đúng 1; Phân tích GV "PA hiệu quả" / "Ghi kết quả PA đúng hạn" tính lại không còn PA đó (đọc thẳng bảng, không số lưu sẵn — kiểm bằng hàm Phân tích trước / sau). GV → 403; PA đang chờ QL duyệt → xoá được (thẻ đóng).
   - `LUIa2-15` `setFollowUntil` đổi ngày → nhật ký `case.follow_until` (trước / sau); cùng ngày → không ghi.
 - [ ] **Xanh:** `suaCase` dùng lại phần kiểm của `xacNhanCase` (tách hàm thuần `kiemNoiDungCase` khỏi `sosAuto.ts:197-215`, **không đổi hành vi**; phép kiểm Xác nhận Case cũ phải xanh nguyên). Quyền: `caseAccess(id).requireEdit` **hoặc** `c.reported_by === p.userId` **hoặc** GVCN lớp em. `xoaCase`: `require_(p, PERMISSIONS.CASE_APPROVE, ctx)`; kiểm `origin_kind`, `case_followups`; một `tx` xoá con → cha theo danh sách đối chiếu, `purgeAttachmentsOf` cho Case + từng PA, `chotYeuCau … 'tu_dong' { lyDo: 'Case đã xoá' }`; `xoaTepSauGiaoDich` sau `tx`. `setFollowUntil`: thêm `writeAudit({ action: 'case.follow_until', before, after })` khi đổi.
+- [ ] **Xanh — Xoá PA:** `xoaPa(p, ivId)` trong `cases.ts` (`require_(p, PERMISSIONS.CASE_APPROVE, ctx)`), một `tx` xoá con → cha, `dongBoTrangThaiCase(caseId)`; route `DELETE /interventions/:id`; menu ⋯ của thẻ PA (QL / QT) có `Xoá PA` → hỏi một dòng `Xoá PA này?` · `Học kèm 1-1 với Tutor · 2 kết quả tuần sẽ xoá` · nút `Xoá PA` · toast `Đã xoá PA`.
 - [ ] **Web:** đầu Ngăn Case (Case chưa đóng, `viewer.coTheSua`): nút `Sửa` → `SuaCasePanel` (ô như mockup mục 18; kỹ năng khoá khi `khoaKyNang`); chân trái `Xoá Case` khi `viewer.coTheXoa` → hộp hỏi một dòng (mẫu `DeleteViolationConfirm`) → toast `Đã xoá Case`, đóng Ngăn Case, làm mới danh sách.
 - [ ] Xanh; commit `feat(lui-a2): Sửa Case, Xoá Case báo tay tạo nhầm (QL/QT), nhật ký hạn theo dõi`.
 
@@ -531,6 +536,7 @@ export function moLaiCase(p: Principal, caseId: number) {
 | Sửa lần xử lý | Bỏ nhầm vi phạm → vi phạm về "chưa xử lý", có thể đẩy em vào luật ≥ 3 | Lịch sử từng vi phạm + nhật ký; thêm lại được ngay |
 | Xoá lần xử lý | Lần sau đã dựa trên lần này; đã báo PH / QL | Chỉ xoá lần mới nhất; bậc tự tính lại; nhật ký giữ nội dung + cờ đã báo; Báo PH đã gửi giữ nguyên; GVCN không xoá lần đã thực hiện |
 | Sửa Case | Đổi kỹ năng làm lệch PA / khoá trùng | Có PA thì khoá ô kỹ năng; trùng Case đang mở thì chặn |
+| Xoá PA | Mất kết quả tuần thật; số Phân tích GV đổi | Chỉ QL / QT, hỏi một dòng nêu số kết quả sẽ xoá; nhật ký chụp đủ; số tính lại từ bảng (LUIa2-16) |
 | Xoá Case | Mất lịch sử hỗ trợ thật; Case máy tạo lại | Chỉ Case báo tay, chưa PA nào có kết quả, chỉ QL/QT; nhật ký chụp Case + PA; Case từ Test dùng "Không cần theo dõi" |
 | 9 Huỷ quyết định | GV đã bắt đầu làm PA sau khi duyệt | Chặn khi PA có kết quả; chuông báo người gửi |
 
@@ -544,7 +550,7 @@ export function moLaiCase(p: Principal, caseId: number) {
 | 4 Bằng chứng trong form, một Lưu | a1-3, a1-5 | LUIa1-9, 10 |
 | 5 Xoá vi phạm giữ nguyên | a1-6 | LUIa1-10 |
 | Sửa / Xoá lần xử lý (bậc tính lại) | a1-6 | LUIa1-13, 14, 15 |
-| Sửa / Xoá Case, nhật ký hạn theo dõi | a2-6 | LUIa2-12 … 15 |
+| Sửa / Xoá Case, Xoá PA, nhật ký hạn theo dõi | a2-6 | LUIa2-12 … 16 |
 | 6 Tạo Case có bằng chứng | a2-2 | LUIa2-4 |
 | 7 Người phụ trách, gộp ô, nút | a2-1 | LUIa2-1, 2, 3 + ảnh |
 | 8 Mở lại Case | a2-3 | LUIa2-5, 6, 7 |
@@ -566,10 +572,7 @@ export function moLaiCase(p: Principal, caseId: number) {
 
 ## Câu cần chủ sản phẩm quyết
 
-Q1–Q4 đã trả lời 06/10 (khối "Chủ sản phẩm chốt 06/10" đầu file). Còn hai câu của phần thêm:
-
-5. **Hồ sơ học viên › Ý thức & Phối hợp › lần xử lý (Report, WL…) › Sửa vi phạm / Xoá lần xử lý:** ai được làm? — A: QL / Quản trị mọi lần; **GVCN lớp đó chỉ khi lần xử lý chưa "Đã thực hiện"** (đang chờ / QL đã duyệt) (**khuyến nghị**) · B: GVCN mọi lần xử lý của lớp mình · C: chỉ QL / Quản trị.
-6. **Ngăn Case › Xoá Case:** Case đã có PA ghi kết quả thì sao? — A: **chặn xoá, chỉ Hoàn thành Case** (**khuyến nghị**; lịch sử hỗ trợ thật không mất) · B: cho xoá nhưng giữ lịch sử (ẩn Case khỏi mọi danh sách — thêm cờ, rộng hơn nhiều). Case tự tạo từ Test **không xoá** (dùng "Không cần theo dõi").
+Không còn — Q1–Q6 đã trả lời 06/10 (khối "Chủ sản phẩm chốt 06/10" đầu file).
 
 ## Prompt cho session code (dán nguyên khối, sau khi chủ sản phẩm duyệt)
 
@@ -579,7 +582,7 @@ Q1–Q4 đã trả lời 06/10 (khối "Chủ sản phẩm chốt 06/10" đầu 
 Làm PR-LUI-a1 theo docs/superpowers/plans/2026-10-06-pr-lui-a-case-duyet-y-thuc.md PHẦN a1 (Task a1-0 → a1-7, gồm a1-6 Sửa / Xoá lần xử lý; prompt chung plan.md mục 9.0).
 Model Opus 5.5 · High (B: Sonnet 5.5 · High) — cả hai chạy tiếp; Fable hoặc model khác thì DỪNG báo chủ sản phẩm. Không Fable kể cả subagent. Đầu phiên nói model đang chạy.
 Nhánh pr-lui-a1-y-thuc từ origin/main mới nhất, worktree .claude/worktrees/pr-lui-a1-y-thuc. Cổng PORT=4410 WEB_PORT=5410.
-Đọc khối "Chủ sản phẩm chốt 06/10" ĐẦU FILE (thắng mọi chỗ khác), rồi "Chủ sản phẩm đã quyết", "Tôi đã tự quyết", câu trả lời Q5. Mockup đã duyệt: thiet-ke/mockup-duong-lui-case-duyet-y-thuc-2026-10-06.html mục 1–9, 16–17 — chữ ĐÚNG mockup, ngắn, không câu giải thích; ô ngày = ONgay (ô gõ + lịch); ô Mô tả mở sẵn. KHÔNG Hoàn tác sau khi ghi vi phạm.
+Đọc khối "Chủ sản phẩm chốt 06/10" ĐẦU FILE (thắng mọi chỗ khác), rồi "Chủ sản phẩm đã quyết", "Tôi đã tự quyết", câu trả lời Q5 (= A). Mockup đã duyệt: thiet-ke/mockup-duong-lui-case-duyet-y-thuc-2026-10-06.html mục 1–9, 16–17 — chữ ĐÚNG mockup, ngắn, không câu giải thích; ô ngày = ONgay (ô gõ + lịch); ô Mô tả mở sẵn. KHÔNG Hoàn tác sau khi ghi vi phạm.
 Phép kiểm đỏ trước (prLuiA1.tests.ts): ghi nhiều em mỗi em một giao dịch + lỗi riêng từng em; khoá gửi không tạo trùng; nội dung sai thì không ghi gì; dữ liệu cũ tự tách khi đọc; tệp dùng chung không mất khi xoá một vi phạm; xoá lần xử lý chỉ lần mới nhất, bậc tính lại; migrate chạy hai lần không đổi gì.
 Impeccable: layout, clarify, harden (lưu dở, tệp lỗi, em ngoài phạm vi), adapt 375, cuối /impeccable audit; /ponytail-review. npm run check MỘT lần, foreground (máy yếu RAM).
 Bấm thử 375/1440 sáng/tối: Quản trị, QL, GVCN, GVBM. Mở PR vào main, KHÔNG merge. Mô tả PR: mục 1–5, phép kiểm, ảnh, chú thích ponytail:.
@@ -588,7 +591,7 @@ Bấm thử 375/1440 sáng/tối: Quản trị, QL, GVCN, GVBM. Mở PR vào mai
 **PR-LUI-a2** — Opus 5.5 · High (B: Sonnet 5.5 · High) — cả hai chạy tiếp; Fable hoặc model khác thì dừng
 ```
 /ponytail lite
-Làm PR-LUI-a2 theo docs/superpowers/plans/2026-10-06-pr-lui-a-case-duyet-y-thuc.md PHẦN a2 (Task a2-0 → a2-7, gồm a2-6 Sửa / Xoá Case; prompt chung plan.md mục 9.0). Đọc khối "Chủ sản phẩm chốt 06/10" đầu file + câu trả lời Q6.
+Làm PR-LUI-a2 theo docs/superpowers/plans/2026-10-06-pr-lui-a-case-duyet-y-thuc.md PHẦN a2 (Task a2-0 → a2-7, gồm a2-6 Sửa / Xoá Case; prompt chung plan.md mục 9.0). Đọc khối "Chủ sản phẩm chốt 06/10" đầu file + câu trả lời Q6 (Xoá PA + Xoá Case khi hết PA có kết quả).
 Model Opus 5.5 · High (B: Sonnet 5.5 · High) — cả hai chạy tiếp; Fable hoặc model khác thì DỪNG báo chủ sản phẩm. Không Fable kể cả subagent. Đầu phiên nói model đang chạy.
 Nhánh pr-lui-a2-case-duyet từ origin/main mới nhất, worktree .claude/worktrees/pr-lui-a2-case-duyet. Cổng PORT=4420 WEB_PORT=5420.
 Song song a1 được; Task a2-2 (Tạo Case có bằng chứng) CHỈ làm sau khi PR-LUI-a1 merge (git merge origin/main). Task a2-0 đối chiếu 5 điểm trước, lệch thì dừng báo planning.
