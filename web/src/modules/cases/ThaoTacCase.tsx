@@ -348,7 +348,7 @@ export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, o
               id={lf.oId('ghi-ro')} onBlur={lf.roi('ghi-ro')} loi={lf.hien('ghi-ro') ? kiemGhiRoKhac(ghiRo) : null} />
           </div>
           <Truong nhan="Mức độ" batBuoc as="div" loi={lf.loiCua(loi, 'muc-do')}>
-            <div className="grid max-w-xs grid-cols-2 gap-2 outline-none" {...lf.o(loi, 'muc-do')} tabIndex={-1}>
+            <div className="grid grid-cols-2 gap-2 outline-none sm:w-80" {...lf.o(loi, 'muc-do')} tabIndex={-1}>
               {URGENCY_LEVELS.map((u) => (
                 <NutChon key={u} chon={urgency === u} className="justify-center" onClick={() => setUrgency(u)}>{URGENCY_LABEL[u]}</NutChon>
               ))}
