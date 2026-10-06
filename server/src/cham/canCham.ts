@@ -1,8 +1,8 @@
 /**
  * KHU VỰC TEST — ba câu hỏi ĐỌC của việc chấm điểm (spec §3.5):
  *
- *   lichTest     "tuần này có những lượt Test nào, còn phải chấm gì" — MỘT lời gọi đủ cho màn Lịch Test (PR-UX1):
- *                dải số, khối Nợ tuần trước (`noTuanTruoc`), mỗi lớp một hàng lớn kèm nhãn + cờ tự mở.
+ *   lichTest     "tuần này có những lượt Test nào, còn phải chấm gì" — MỘT lời gọi đủ cho màn Lịch Test (PR-UX1, PR-LT3 ba khối):
+ *                dải số, khối 1 "Test quá hạn chấm" (`noQuaHan`), khối 2 "Test chấm tuần này" + khối 3 "Lịch Test" (`hangLopTuan`).
  *   chamSheet    "mở bảng chấm của một lớp" — MỘT CỬA, tự chọn đúng bảng theo loại lớp.
  *
  * Module này KHÔNG có luật nghiệp vụ mới: nó gọi `listAttempts`, `classScoreSheet`, `regularSheet` và các hàm thuần ở
@@ -16,7 +16,8 @@ import {
   activeAt, can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, lopFtChoGvSpeaking, mySkills, scopeXemLuotCham, type Principal,
 } from '../permissions.ts';
 import {
-  ATTEMPT_KIND_SHORT, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, LUOT_TINH_NO_SQL, PERMISSIONS, boMonLich, khungCua, lopTuMo, tenMonNgan, type Khung, nhanLopLichTest, noShowStateOf,
+  ATTEMPT_KIND_SHORT, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, CHAM_CHEO, LUOT_TINH_NO_SQL, PERMISSIONS, boMonLich, khoiCham, khungCua, laChamCheo, lopTuMo,
+  tenMonNgan, type Khung, nhanLopLichTest, noShowStateOf,
   soSanhLop, trangThaiChamLabel, type AssessedSkill, type AttemptKind, type LoaiNhanLop, type PhamViLichTest,
 } from '../../../shared/domain/index.ts';
 import { classScoreSheet, conBaiCanCham, listAttempts, type MonDoiLich } from '../fasttrack/attempts.ts';
@@ -25,6 +26,7 @@ import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { assessedSkillOf, entrySkillsOf } from '../fasttrack/scoring.ts';
 import { allProgrammes, cheDoCua, isRatioClass, programmeOfClass, regularSheet, type CheDo } from '../normal/regular.ts';
 import { quaHanNhapDiem, skillScoreDeadline, weekInfo } from '../platform/week.ts';
+import { addDays } from '../util.ts';
 
 export function chamSheet(
   p: Principal, classId: number,
@@ -47,7 +49,7 @@ export function chamSheet(
   return { ...chung, mode: 'ielts_band' as const, ft: classScoreSheet(p, classId, opts.attemptNo ? { theo: 'luot', attemptNo: opts.attemptNo } : opts.periodId ?? null, today), thuong: null };
 }
 
-// ---------------------------------------------------------------- Nợ tuần trước
+// ---------------------------------------------------------------- Khối 1 · Test quá hạn chấm
 
 /**
  * MÔN CÒN NỢ ĐÃ BỊ DỜI LỊCH THẬT — dấu "-" của lớp thường hoặc dời do vắng (`MonDoiLich` ở attempts.ts); lịch tách
@@ -68,8 +70,8 @@ export type LuiLich = {
 };
 
 /**
- * MỘT DÒNG "NỢ TUẦN TRƯỚC" = lớp + đợt + TUẦN THI của các ô còn nợ (PR-UX1 Q2). Tách theo tuần để bấm Chấm mở đúng
- * lưới tuần đó; `attemptIds` để lưới chỉ hiện các em còn nợ.
+ * MỘT DÒNG KHỐI 1 "TEST QUÁ HẠN CHẤM" (PR-LT3 T17; tên kiểu giữ `DongNo` — D8) = lớp + đợt + TUẦN THI của các ô quá hạn (PR-UX1 Q2).
+ * Tách theo tuần để bấm Chấm mở đúng lưới tuần đó; `attemptIds` để lưới chỉ hiện các em còn nợ.
  */
 export type DongNo = {
   key: string; classId: number; classCode: string; mode: CheDo;
@@ -82,14 +84,14 @@ export type DongNo = {
   /** Hạn sớm nhất trong các ô còn nợ của dòng (ISO — giao diện tự định dạng). */
   han: string | null; quaHan: boolean;
   luiLich: LuiLich | null;
-  /** Còn ít nhất một ô là môn người xem được PHÂN CÔNG (`mySkills`) → "Chờ bạn chấm". */
+  /** Còn ít nhất một ô là môn người xem được PHÂN CÔNG (`mySkills`) → "Chờ bạn chấm". Speaking Mock (T18) không là của ai. */
   cuaToi: boolean;
   /** Người xem sửa được ít nhất một ô (kể cả đường sửa hộ) → nút "Chấm"; không thì "Xem". */
   duocCham: boolean;
   /** Người xem có dạy lớp này → "Chờ GV khác"; không dạy → "Chờ chấm". */
   coDayLop: boolean;
   hrefDayDu: string;
-  /** PR-VAI-a (UX-B5, Q23): tên GV đang nợ các ô của dòng (từ `pendingOwners`, sắp theo tên, không trùng); môn chưa phân công → "chưa phân công". */
+  /** PR-VAI-a (UX-B5, Q23): tên GV đang nợ các ô của dòng (từ `pendingOwners`, sắp theo tên, không trùng); rồi `GV chấm chéo` (T18); môn chưa phân công → "chưa phân công". */
   gvNo: string[];
 };
 
@@ -211,23 +213,30 @@ function dungLuiLich(
   return out;
 }
 
+/** Ô chưa chấm thi trước tuần trước mà CHƯA quá hạn (hạn riêng dời xa — T15): khối 2 dựng lại hàng lớp tuần đó cho đúng các ô này. `oNhap` = ô nhập (W1/W2 riêng). */
+export type OHanRieng = { periodId: number; attemptId: number; oNhap: string };
+
 /**
- * "NỢ TUẦN TRƯỚC" (PR-UX1 Q2, Q3) — ô còn nợ có tuần thi TRƯỚC tuần đang xem (mọi tuần trước, không chỉ tuần liền
- * trước), trong các lớp đang lọc.
+ * KHỐI 1 "TEST QUÁ HẠN CHẤM" (PR-LT3 T15–T17) — ô còn nợ mà `khoiCham` xếp `'qua-han'`, tính theo HÔM NAY (không theo tuần đang xem:
+ * lùi / tiến tuần khối 1 y nguyên), trong các lớp đang lọc. Ô thi tuần trước bỏ qua (khối 2 dựng bằng `hangLopTuan`); ô cũ hơn chưa
+ * quá hạn trả ra `hanRieng`.
  *
  * Dùng nguyên `listAttempts` (phạm vi `managed`: cả môn của người khác — GV thấy dòng môn khác với nút "Xem") với ĐÚNG
  * luật lọc của `need: 'my_scores'` (`conBaiCanCham`): cùng một tập bài với badge "n bài chờ chấm" ở danh sách lớp và với
  * Việc cần làm, nên ba nơi không lệch số. Hàm này chỉ GOM DÒNG theo lớp + đợt + tuần.
  */
-export function noTuanTruoc(
+export function noQuaHan(
   p: Principal,
-  f: { branchId?: number | null; classIds: ReadonlySet<number> | null; truocTuan: string; lopCuaToi: ReadonlySet<number> },
+  f: { branchId?: number | null; classIds: ReadonlySet<number> | null; lopCuaToi: ReadonlySet<number> },
   today: string = demoToday(),
-): { dong: DongNo[]; quaHanBai: number; quaHanBaiKhung: Record<Khung, number> } {
-  if (f.classIds && !f.classIds.size) return { dong: [], quaHanBai: 0, quaHanBaiKhung: { ft: 0, thuong: 0 } };
+): { dong: DongNo[]; hanRieng: OHanRieng[] } {
+  if (f.classIds && !f.classIds.size) return { dong: [], hanRieng: [] };
+  const tuanHomNay = weekInfo(today).weekStart;
+  const tuanTruoc = addDays(tuanHomNay, -7);
   const motLop = f.classIds && f.classIds.size === 1 ? [...f.classIds][0] : undefined;
   /* PR-UXF-a T65: em Tạm dừng không sinh nợ điểm (Lịch Test + khối Nợ). */
-  const { rows } = listAttempts(p, { branchId: f.branchId ?? undefined, classId: motLop, scope: 'managed', chiDangHoc: true });
+  /* Rà #218 I2: cùng phạm vi khối 2/3 (`scopeXemLuotCham`) — GV Speaking chấm chéo thấy S Mock quá hạn của lớp FT cùng chi nhánh. */
+  const { rows } = listAttempts(p, { branchId: f.branchId ?? undefined, classId: motLop, scope: 'managed', chiDangHoc: true, phamViCham: true });
   /* Một câu mỗi LỚP (như `isRatioClass` trước đây), không mỗi dòng: cách chấm + mã chương trình. */
   const lopInfo = new Map<number, { mode: CheDo; ct: string | null }>();
   const lopOf = (classId: number) => {
@@ -244,20 +253,25 @@ export function noTuanTruoc(
     overdue: boolean;
     moved: MonDoiLich | null;
   };
-  type Gom = DongNo & { _hs: Set<number>; _aid: Set<number>; _gv: Set<string>; _chuaPc: boolean };
+  type Gom = DongNo & { _hs: Set<number>; _aid: Set<number>; _gv: Set<string>; _cc: boolean; _chuaPc: boolean };
   type Doi = {
     key: string; skill: string; hv: string; attemptId: number; moved: MonDoiLich;
     sangTuan: string | null; sangTuanStart: string | null;
   };
   const gom = new Map<string, Gom>();
   const doi: Doi[] = [];
-  let quaHanBai = 0;
-  const quaHanBaiKhung: Record<Khung, number> = { ft: 0, thuong: 0 };
+  const hanRieng: OHanRieng[] = [];
   for (const a of rows as any[]) {
     if (!a.classId || a.status === 'cancelled' || !conBaiCanCham(a)) continue;
     if (f.classIds && !f.classIds.has(a.classId)) continue;
     for (const x of (a.pendingDetail ?? []) as ChiTiet[]) {
-      if (!x.weekStart || x.weekStart >= f.truocTuan) continue;
+      if (!x.weekStart) continue;
+      if (khoiCham({ tuanThi: x.weekStart, tuanHomNay, quaHan: x.overdue }) !== 'qua-han') {
+        if (x.weekStart < tuanTruoc && x.periodId) {
+          hanRieng.push({ periodId: x.periodId, attemptId: a.id, oNhap: x.skill });
+        }
+        continue;
+      }
       const key = `${a.classId}:${a.kind}:${a.attemptNo ?? 0}:${x.periodId ?? 0}`;
       let cu = gom.get(key);
       if (!cu) {
@@ -267,7 +281,7 @@ export function noTuanTruoc(
           periodId: x.periodId, weekStart: x.weekStart,
           kyNang: [], kyNangLabel: '', conBai: 0, soHv: 0, attemptIds: [], han: null, quaHan: false, luiLich: null,
           cuaToi: false, duocCham: false, coDayLop: f.lopCuaToi.has(a.classId), hrefDayDu: '', gvNo: [],
-          _hs: new Set(), _aid: new Set(), _gv: new Set(), _chuaPc: false,
+          _hs: new Set(), _aid: new Set(), _gv: new Set(), _cc: false, _chuaPc: false,
         };
         gom.set(key, cu);
       }
@@ -276,9 +290,9 @@ export function noTuanTruoc(
       cu._hs.add(a.studentId);
       cu._aid.add(a.id);
       const gv = (a.pendingOwners ?? {})[x.skill] ?? null;   // cùng nguồn tên với lượt (listAttempts) — không câu SQL mới
-      if (gv) cu._gv.add(gv); else cu._chuaPc = true;
+      if (gv === CHAM_CHEO) cu._cc = true; else if (gv) cu._gv.add(gv); else cu._chuaPc = true;
       if (x.deadline && (!cu.han || x.deadline < cu.han)) cu.han = x.deadline;
-      if (x.overdue) { cu.quaHan = true; quaHanBai += 1; quaHanBaiKhung[khungCua(lopOf(a.classId).mode)] += 1; }
+      if (x.overdue) cu.quaHan = true;
       /* Lùi lịch CHỈ khi có bằng chứng dời thật (`moved` — dấu "-" hoặc dời do vắng), không suy từ thứ tự tuần. */
       if (x.moved) {
         doi.push({
@@ -291,17 +305,19 @@ export function noTuanTruoc(
   const luiLichOf = dungLuiLich(doi);
 
   const dong: DongNo[] = [...gom.values()].map((d) => {
-    const { _hs, _aid, _gv, _chuaPc, ...rest } = d;
+    const { _hs, _aid, _gv, _cc, _chuaPc, ...rest } = d;
     const kyNang = [...d.kyNang].sort(theoThuTu);
     return {
       ...rest,
       kyNang,
       kyNangLabel: kyNangLabelOf(d.mode, kyNang, d.chuongTrinh),
       soHv: _hs.size,
-      gvNo: [...[..._gv].sort((x, y) => x.localeCompare(y, 'vi')), ...(_chuaPc ? ['chưa phân công'] : [])],
+      gvNo: [...[..._gv].sort((x, y) => x.localeCompare(y, 'vi')), ...(_cc ? [CHAM_CHEO] : []), ...(_chuaPc ? ['chưa phân công'] : [])],
       attemptIds: [..._aid],
       luiLich: luiLichOf.get(d.key) ?? null,
-      cuaToi: mySkills(p, d.classId, kyNang).length > 0,
+      cuaToi: mySkills(p, d.classId, kyNang.filter((k) => !laChamCheo(d.kind, k))).length > 0,
+      /* Chỉ còn ô Speaking Mock (không của ai) → "Chờ chấm", không "Chờ GV khác" (mockup LT3, T18). */
+      coDayLop: rest.coDayLop && kyNang.some((k) => !laChamCheo(d.kind, k)),
       duocCham: editableSkills(p, d.classId, kyNang).length > 0,
       hrefDayDu: d.mode === 'ielts_band'
         ? `/nhap-diem/${d.classId}${d.periodId ? `?periodId=${d.periodId}` : ''}`
@@ -312,7 +328,7 @@ export function noTuanTruoc(
   dong.sort((x, y) => soSanhLop({ code: x.classCode }, { code: y.classCode })
     || (Number(y.quaHan) - Number(x.quaHan)) || (x.han ?? '9999').localeCompare(y.han ?? '9999')
     || (x.weekStart ?? '').localeCompare(y.weekStart ?? ''));
-  return { dong, quaHanBai, quaHanBaiKhung };
+  return { dong, hanRieng };
 }
 
 // ---------------------------------------------------------------- Lịch Test
@@ -344,19 +360,29 @@ export type LopLichTest = {
   dong: DongLichTest[];
   /** PR-MT (YC-13.1, K4 §4e): số bài vắng tuần này đang chờ Quản lý duyệt dời (lần 2+) — dòng tím nhạt trong hàng lớp. */
   choDuyetDoi: number;
+  /** PR-LT3: tuần thi của hàng — khối 2 có hàng của tuần trước và của tuần cũ có hạn riêng (lưới mở đúng tuần đó). */
+  periodId: number; weekStart: string;
 };
+/** Dải số (PR-LT3 Q1): đã chấm x/y + còn phải chấm (khối 2 + 3 ở tuần hiện tại; tuần khác: khối 3) · quá hạn chấm (khối 1). */
+export type TongQuanLich = { daCham: number; tong: number; conPhaiCham: number; no: { bai: number; lop: number } };
 export type LichTest = {
   scopeEmpty: boolean;
   tuan: { id: number; weekStart: string; weekEnd: string } | null;
+  /** Tuần đang xem = tuần của hôm nay — chỉ khi đó có khối 2. */
+  laTuanNay: boolean;
   phamVi: PhamViLichTest;
   /** Hai lựa chọn "Lớp tôi dạy / Tất cả" cho ra hai tập khác nhau → mới hiện nút (Q4). */
   coPhamViRong: boolean;
   coPhanCong: boolean;
   lopDangLoc: { id: number; code: string } | null;
-  tongQuan: { daCham: number; tong: number; conPhaiCham: number; no: { bai: number; lop: number }; quaHan: number };
+  tongQuan: TongQuanLich;
   /** MH4, K4-05: cùng dải số tách theo khung (công tắc Fast Track · Lớp thường); cộng hai khung = `tongQuan`. */
-  tongQuanKhung: Record<Khung, LichTest['tongQuan']>;
+  tongQuanKhung: Record<Khung, TongQuanLich>;
+  /** KHỐI 1 "Test quá hạn chấm" — theo hôm nay, không theo tuần đang xem (tên trường giữ `no` — D8). */
   no: DongNo[];
+  /** KHỐI 2 "Test chấm tuần này" — tuần trước + ô hạn riêng; `null` khi không xem tuần hiện tại. */
+  chamTuanNay: LopLichTest[] | null;
+  /** KHỐI 3 "Lịch Test" — tuần đang xem. */
   lop: LopLichTest[];
   /** PR-MT (K2-32): dòng nhắc MỜ cuối trang — MT lịch sử chưa nhập theo lớp. */
   nhacLichSu: NhacLichSu[];
@@ -393,13 +419,16 @@ function oFtXong(diem: OiemLuu[], nhap: string, v: { periodId: number; weekEnd: 
   return ns !== 'none';
 }
 
+/** Ô nhập của một dòng lịch: Writing FT là hai ô W1, W2; còn lại một ô cùng tên môn. */
+const oNhapCua = (r: { skill: string; programme_code: string | null }): string[] =>
+  (cheDoCua(r.programme_code) === 'ielts_band' && r.skill === 'writing' ? ['writing1', 'writing2'] : [r.skill]);
+
 const THU_TU_MON =
   `CASE ask.skill WHEN 'listening' THEN 1 WHEN 'reading' THEN 2 WHEN 'writing' THEN 3 WHEN 'speaking' THEN 4 WHEN 'tong_hop' THEN 5 ELSE 6 END`;
 
 /**
- * "TUẦN NÀY CÓ NHỮNG LƯỢT TEST NÀO, CÒN PHẢI CHẤM GÌ" — MỘT lời gọi đủ cho màn Lịch Test (PR-UX1): hàng lớp, dải số,
- * khối Nợ tuần trước. Mọi số tính TRONG BỘ NHỚ từ hai nguồn: câu SQL dưới đây và `listAttempts` (qua `noTuanTruoc`) —
- * không hỏi theo từng lớp.
+ * HÀNG LỚP CỦA MỘT TUẦN THI (PR-UX1; PR-LT3 tách ra để dựng cả khối 2 và khối 3) — mỗi lớp FT một hàng (lưới tuần FT gồm mọi MT
+ * trong tuần), lớp thường một hàng mỗi bài. Mọi số tính TRONG BỘ NHỚ từ một câu SQL + một câu điểm gom lô — không hỏi theo từng lớp.
  *
  * Lọc theo TUẦN CỦA CHÍNH MÔN (`attempt_skills.planned_period_id`), không theo tuần của cả đợt: đợt tách tuần thì lọc
  * theo tuần của đợt làm biến mất đúng những bài đang phải chấm trong tuần đang xem — cùng lý do đã ghi ở
@@ -408,40 +437,21 @@ const THU_TU_MON =
  * Chỉ tính lượt còn ngồi thi (`scheduled`/`sat`) — cả vào số em lẫn số bài. Một ô còn phải chấm = chưa có điểm và
  * chưa báo "-" ở CHÍNH tuần này (ô "-" tính là đã xử lý). Writing của FT có hai ô (W1, W2): xong khi cả hai có band.
  */
-export function lichTest(
-  p: Principal, periodId: number, branchId?: number | null, today: string = demoToday(),
-  o: { phamVi?: PhamViLichTest | null; classId?: number | null } = {},
-): LichTest {
-  /* PR-HSM: GV Speaking thấy thêm lớp FT cùng chi nhánh ở "Tất cả" (chấm S chéo) — chỉ màn này, không mở rộng phạm vi chung. */
-  const scope = scopeXemLuotCham(p, today);
-  const coPhanCong = defaultWorkScope(p) === 'mine';
-  /* Không có phân công thì "Lớp tôi dạy" là tập rỗng — luôn xem Tất cả. */
-  const phamVi: PhamViLichTest = coPhanCong ? o.phamVi ?? 'cua-toi' : 'tat-ca';
-  const rong: LichTest = {
-    scopeEmpty: scope.none, tuan: null, phamVi, coPhamViRong: false, coPhanCong, lopDangLoc: null,
-    tongQuan: { daCham: 0, tong: 0, conPhaiCham: 0, no: { bai: 0, lop: 0 }, quaHan: 0 }, no: [], lop: [], nhacLichSu: [],
-    tongQuanKhung: {
-      ft: { daCham: 0, tong: 0, conPhaiCham: 0, no: { bai: 0, lop: 0 }, quaHan: 0 },
-      thuong: { daCham: 0, tong: 0, conPhaiCham: 0, no: { bai: 0, lop: 0 }, quaHan: 0 },
-    },
-  };
-  if (scope.none) return rong;
+function hangLopTuan(
+  p: Principal,
+  ctx: {
+    cs: { sql: string; params: unknown[] }; branchId?: number | null; today: string; coPhanCong: boolean;
+    lopCuaToi: ReadonlySet<number>; giuLop: (classId: number) => boolean;
+  },
+  tuan: { id: number; week_start: string; week_end: string },
+  /** Khối 2 hạn riêng: chỉ các ô `${attemptId}:${ô nhập}` này. */
+  loc?: ReadonlySet<string>,
+): LopLichTest[] {
+  const { cs, branchId, today, coPhanCong, lopCuaToi, giuLop } = ctx;
   const conn = db();
-  const tuan = conn.prepare('SELECT id, week_start, week_end FROM report_periods WHERE id = ?').get(periodId) as any;
-  if (!tuan) return rong;
+  const periodId = tuan.id;
   /* Tuần đang xem còn ở phía trước thì chưa ai nợ bài nào. */
   const chuaToiHan = String(tuan.week_start) > weekInfo(today).weekStart;
-
-  const lopCuaToi = new Set(p.assignments.filter((a) => activeAt(a, today)).map((a) => a.classId));
-  const coPhamViRong = coPhanCong && (scope.all || scope.branchIds.length > 0 || scope.classIds.some((id) => !lopCuaToi.has(id)));
-  /* Chip "Đang lọc: lớp …" chỉ nói tên lớp NGƯỜI XEM ĐƯỢC THẤY — lớp ngoài phạm vi thì null, không lộ mã lớp. */
-  const lopDangLoc = o.classId && (can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: o.classId }) || lopFtChoGvSpeaking(p, today).includes(o.classId))
-    ? (conn.prepare('SELECT id, code FROM classes WHERE id = ?').get(o.classId) as any) ?? null
-    : null;
-  const giuLop = (classId: number) =>
-    (phamVi !== 'cua-toi' || lopCuaToi.has(classId)) && (!o.classId || classId === o.classId);
-
-  const cs = classScopeSql(scope);
   const params: unknown[] = [...cs.params, periodId];
   /* PR-MT (M3, K4-01): MT lịch sử không vào tổng / còn bài / quá hạn / tự mở / dải số — nhắc riêng một dòng mờ (`mtLichSuChuaNhap`). */
   let where = `${cs.sql} AND a.status != 'cancelled' AND ${LUOT_TINH_NO_SQL('a')} AND ask.required = 1 AND ask.planned_period_id = ?`;
@@ -459,7 +469,9 @@ export function lichTest(
         WHERE ${where}
         ORDER BY c.code, a.kind DESC, a.attempt_no, ${THU_TU_MON}`,
     )
-    .all(...params) as any[];
+    .all(...params)
+    /* `loc` (khối 2 hạn riêng): chỉ các ô (lượt, kỹ năng đánh giá) được đưa vào — lọc ngay sau câu SQL, mọi đếm phía dưới đi theo. */
+    .filter((r: any) => !loc || oNhapCua(r).some((k) => loc.has(`${r.id}:${k}`))) as any[];
 
   /* Điểm + dấu "-" của mọi lượt trong tuần: MỘT câu gom lô (thay các câu con lồng theo từng dòng). */
   const diemCua = new Map<number, OiemLuu[]>();
@@ -481,12 +493,10 @@ export function lichTest(
     return cuaToiNho.get(k)!;
   };
   type DongTam = Omit<DongLichTest, 'trangThai'> & { quaHan: boolean };
-  type LopTam = Omit<LopLichTest, 'dong' | 'nhan' | 'moSan' | 'daCham' | 'dotLabel' | 'kyNangTuan' | 'han' | 'choDuyetDoi'> & {
-    dong: Map<string, DongTam>; _dot: string[]; _kn: Set<string>; _hanNo: string | null;
+  type LopTam = Omit<LopLichTest, 'dong' | 'nhan' | 'moSan' | 'daCham' | 'dotLabel' | 'kyNangTuan' | 'han' | 'choDuyetDoi' | 'periodId' | 'weekStart'> & {
+    dong: Map<string, DongTam>; _dot: string[]; _kn: Set<string>; _hanNo: string | null; _conKhongCheo: number;
   };
   const byLop = new Map<string, LopTam>();
-  let quaHanTuan = 0;
-  const quaHanTuanKhung: Record<Khung, number> = { ft: 0, thuong: 0 };
   /* PR-MT: bài vắng tuần này có đề nghị dời chờ Quản lý — MỘT lần tra sổ đề nghị cho cả trang (không hỏi từng dòng). */
   const deNghi = pendingMovesFor([...new Set(rows.map((r) => r.id as number))]);
   const choDuyetCua = new Map<number, number>();
@@ -512,7 +522,7 @@ export function lichTest(
         hrefDayDu: mode === 'ratio'
           ? `/nhap-diem/${r.class_id}?kind=${encodeURIComponent(r.kind)}`
           : `/nhap-diem/${r.class_id}?periodId=${periodId}`,
-        dong: new Map(), _dot: [], _kn: new Set(), _hanNo: null,
+        dong: new Map(), _dot: [], _kn: new Set(), _hanNo: null, _conKhongCheo: 0,
       };
       byLop.set(khoa, lop);
     }
@@ -542,7 +552,7 @@ export function lichTest(
      * Mỗi ô xong khi có điểm hoặc đã báo "-" ở chính tuần này.
      */
     const diem = diemCua.get(r.id) ?? [];
-    const cacO = (mode === 'ielts_band' && r.skill === 'writing' ? ['writing1', 'writing2'] : [r.skill as string])
+    const cacO = oNhapCua(r).filter((k) => !loc || loc.has(`${r.id}:${k}`))
       .map((nhap) => ({
         nhap,
         xong: mode === 'ielts_band'
@@ -555,62 +565,117 @@ export function lichTest(
     if (con.length) {
       d.conBai += con.length;
       lop.conBai += con.length;
-      lop.conBaiCuaToi += con.filter((o) => monCuaToi(r.class_id, o.nhap)).length;
+      /* T18: Speaking Mock không là "bài của tôi" của ai (không "Chờ bạn chấm", không tự mở vì nó). */
+      lop.conBaiCuaToi += con.filter((o) => !laChamCheo(r.kind, o.nhap) && monCuaToi(r.class_id, o.nhap)).length;
+      lop._conKhongCheo += con.filter((o) => !laChamCheo(r.kind, o.nhap)).length;
       /* Hạn theo đúng thứ tự của `viewSkill`: hạn riêng của môn → hạn riêng của đợt → hạn mặc định theo tuần môn. */
       const han = r.han_mon ?? r.han_dot ?? skillScoreDeadline(mode === 'ratio' ? 'ratio' : 'band', tuan.week_start);
       if (!lop._hanNo || han < lop._hanNo) lop._hanNo = han;
       if (!chuaToiHan && quaHanNhapDiem(han, tuan.week_start, today)) {   // PR-UXF-a Q10
-        d.quaHan = true; lop.quaHan = true; quaHanTuan += con.length; quaHanTuanKhung[khungCua(lop.mode)] += con.length;
+        d.quaHan = true; lop.quaHan = true;
       }
     }
   }
 
   /* PR-UXF-a U1: lớp sắp theo `soSanhLop` (không theo chữ — "MB FT 10" không đứng trước "MB FT 9"). */
-  const lop: LopLichTest[] = [...byLop.values()].sort((a, b) => soSanhLop({ code: a.classCode }, { code: b.classCode })).map(({ dong, _dot, _kn, _hanNo, ...l }) => ({
+  return [...byLop.values()].sort((a, b) => soSanhLop({ code: a.classCode }, { code: b.classCode })).map(({ dong, _dot, _kn, _hanNo, _conKhongCheo, ...l }) => ({
     ...l,
     dotLabel: _dot.join(', '),
     kyNangTuan: [...new Set([..._kn].map((k) => assessedSkillOf(k)))].sort(theoThuTu),
     daCham: l.tong - l.conBai,
     han: _hanNo ?? skillScoreDeadline(l.mode === 'ratio' ? 'ratio' : 'band', tuan.week_start),
-    nhan: nhanLopLichTest({ conBai: l.conBai, conBaiCuaToi: l.conBaiCuaToi, chuaToiHan, coDayLop: lopCuaToi.has(l.classId) }),
+    /* Chỉ còn ô Speaking Mock (không của ai) → "Chờ chấm" cả với người dạy lớp (T18). */
+    nhan: nhanLopLichTest({ conBai: l.conBai, conBaiCuaToi: l.conBaiCuaToi, chuaToiHan, coDayLop: lopCuaToi.has(l.classId) && _conKhongCheo > 0 }),
     /* Tuần chưa tới thì chưa có gì để chấm — không tự mở. */
     moSan: !chuaToiHan && lopTuMo({ conBai: l.conBai, conBaiCuaToi: l.conBaiCuaToi, coPhanCong }),
     choDuyetDoi: l.mode === 'ielts_band' ? choDuyetCua.get(l.classId) ?? 0 : 0,
+    periodId, weekStart: String(tuan.week_start),
     dong: [...dong.values()].map(({ quaHan, ...d }) => ({
       ...d,
       trangThai: trangThaiChamLabel({ conBai: d.conBai, tong: d.soHv, quaHan, chuaToiHan }),
     })),
   }));
+}
 
-  /* Nợ tuần trước: cùng bộ lọc lớp với danh sách (phạm vi + lớp đang lọc). */
+/**
+ * "TUẦN NÀY CÓ NHỮNG LƯỢT TEST NÀO, CÒN PHẢI CHẤM GÌ" — MỘT lời gọi đủ cho màn Lịch Test (PR-UX1, PR-LT3 T15–T17). Ba khối, một bài
+ * đúng một khối (khi xem tuần hiện tại):
+ *   khối 1 `no`           Test quá hạn chấm — `noQuaHan`, theo hôm nay (lùi / tiến tuần không đổi)
+ *   khối 2 `chamTuanNay`  Test chấm tuần này — hàng lớp tuần trước + hàng của ô hạn riêng tuần cũ; chỉ khi xem tuần hiện tại
+ *   khối 3 `lop`          Lịch Test — hàng lớp tuần đang xem
+ * Lớp thường, FT, MT0 cùng luật (chia khối đọc cờ `overdue` của chính ô).
+ */
+export function lichTest(
+  p: Principal, periodId: number, branchId?: number | null, today: string = demoToday(),
+  o: { phamVi?: PhamViLichTest | null; classId?: number | null } = {},
+): LichTest {
+  /* PR-HSM: GV Speaking thấy thêm lớp FT cùng chi nhánh ở "Tất cả" (chấm S chéo) — chỉ màn này, không mở rộng phạm vi chung. */
+  const scope = scopeXemLuotCham(p, today);
+  const coPhanCong = defaultWorkScope(p) === 'mine';
+  /* Không có phân công thì "Lớp tôi dạy" là tập rỗng — luôn xem Tất cả. */
+  const phamVi: PhamViLichTest = coPhanCong ? o.phamVi ?? 'cua-toi' : 'tat-ca';
+  const khong: TongQuanLich = { daCham: 0, tong: 0, conPhaiCham: 0, no: { bai: 0, lop: 0 } };
+  const rong: LichTest = {
+    scopeEmpty: scope.none, tuan: null, laTuanNay: false, phamVi, coPhamViRong: false, coPhanCong, lopDangLoc: null,
+    tongQuan: khong, tongQuanKhung: { ft: khong, thuong: khong }, no: [], chamTuanNay: null, lop: [], nhacLichSu: [],
+  };
+  if (scope.none) return rong;
+  const conn = db();
+  const tuan = conn.prepare('SELECT id, week_start, week_end FROM report_periods WHERE id = ?').get(periodId) as any;
+  if (!tuan) return rong;
+  const tuanNay = weekInfo(today).weekStart;
+  const laTuanNay = String(tuan.week_start) === tuanNay;
+
+  const lopCuaToi = new Set(p.assignments.filter((a) => activeAt(a, today)).map((a) => a.classId));
+  const coPhamViRong = coPhanCong && (scope.all || scope.branchIds.length > 0 || scope.classIds.some((id) => !lopCuaToi.has(id)));
+  /* Chip "Đang lọc: lớp …" chỉ nói tên lớp NGƯỜI XEM ĐƯỢC THẤY — lớp ngoài phạm vi thì null, không lộ mã lớp. */
+  const lopDangLoc = o.classId && (can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: o.classId }) || lopFtChoGvSpeaking(p, today).includes(o.classId))
+    ? (conn.prepare('SELECT id, code FROM classes WHERE id = ?').get(o.classId) as any) ?? null
+    : null;
+  const giuLop = (classId: number) =>
+    (phamVi !== 'cua-toi' || lopCuaToi.has(classId)) && (!o.classId || classId === o.classId);
+  const ctx = { cs: classScopeSql(scope), branchId, today, coPhanCong, lopCuaToi, giuLop };
+
+  const lop = hangLopTuan(p, ctx, tuan);
+
+  /* Khối 1 (và ô hạn riêng của khối 2): cùng bộ lọc lớp với danh sách (phạm vi + lớp đang lọc). */
   const lopNo: Set<number> | null = phamVi === 'cua-toi'
     ? new Set([...lopCuaToi].filter((id) => !o.classId || id === o.classId))
     : o.classId ? new Set([o.classId]) : null;
-  const no = noTuanTruoc(p, { branchId, classIds: lopNo, truocTuan: String(tuan.week_start), lopCuaToi }, today);
+  const no = noQuaHan(p, { branchId, classIds: lopNo, lopCuaToi }, today);
 
-  const tong = lop.reduce((n, l) => n + l.tong, 0);
-  const conPhaiCham = lop.reduce((n, l) => n + l.conBai, 0);
+  let chamTuanNay: LopLichTest[] | null = null;
+  if (laTuanNay) {
+    const tuanCua = (sql: string, v: unknown) => conn.prepare(`SELECT id, week_start, week_end FROM report_periods WHERE ${sql}`).get(v) as any;
+    const truoc = tuanCua('week_start = ?', addDays(tuanNay, -7));
+    chamTuanNay = truoc ? hangLopTuan(p, ctx, truoc) : [];
+    /* ponytail: mỗi tuần có ô hạn riêng thêm ~3 câu SQL — hiếm (chỉ khi Quản lý dời hạn); gộp `IN` nếu đo thấy nhiều. */
+    const theoTuan = new Map<number, Set<string>>();
+    for (const h of no.hanRieng) (theoTuan.get(h.periodId) ?? theoTuan.set(h.periodId, new Set()).get(h.periodId)!).add(`${h.attemptId}:${h.oNhap}`);
+    for (const [id, cacO] of theoTuan) {
+      const t = tuanCua('id = ?', id);
+      if (t) chamTuanNay.push(...hangLopTuan(p, ctx, t, cacO));
+    }
+    /* Q4 (chủ sản phẩm 06/10): lớp còn bài trước (theo lớp, tuần mới trước); lớp đã chấm xong xếp cuối — web luôn thu gọn. */
+    chamTuanNay.sort((x, y) => Number(x.conBai === 0) - Number(y.conBai === 0)
+      || soSanhLop({ code: x.classCode }, { code: y.classCode }) || y.weekStart.localeCompare(x.weekStart));
+  }
+
+  const k23 = [...(chamTuanNay ?? []), ...lop];
+  const tq = (ds: LopLichTest[], n: DongNo[]): TongQuanLich => {
+    const tong = ds.reduce((s, x) => s + x.tong, 0), con = ds.reduce((s, x) => s + x.conBai, 0);
+    return { tong, conPhaiCham: con, daCham: tong - con, no: { bai: n.reduce((s, d) => s + d.conBai, 0), lop: new Set(n.map((d) => d.classId)).size } };
+  };
   return {
     scopeEmpty: false,
     tuan: { id: tuan.id, weekStart: tuan.week_start, weekEnd: tuan.week_end },
-    phamVi, coPhamViRong, coPhanCong,
+    laTuanNay, phamVi, coPhamViRong, coPhanCong,
     lopDangLoc: lopDangLoc ? { id: lopDangLoc.id as number, code: lopDangLoc.code as string } : null,
-    tongQuan: {
-      tong, conPhaiCham, daCham: tong - conPhaiCham,
-      no: { bai: no.dong.reduce((n, d) => n + d.conBai, 0), lop: new Set(no.dong.map((d) => d.classId)).size },
-      quaHan: quaHanTuan + no.quaHanBai,
-    },
-    tongQuanKhung: Object.fromEntries((['ft', 'thuong'] as const).map((k) => {
-      const l = lop.filter((x) => khungCua(x.mode) === k);
-      const n = no.dong.filter((x) => khungCua(x.mode) === k);
-      const t = l.reduce((s, x) => s + x.tong, 0), c = l.reduce((s, x) => s + x.conBai, 0);
-      return [k, {
-        tong: t, conPhaiCham: c, daCham: t - c,
-        no: { bai: n.reduce((s, d) => s + d.conBai, 0), lop: new Set(n.map((d) => d.classId)).size },
-        quaHan: quaHanTuanKhung[k] + no.quaHanBaiKhung[k],
-      }];
-    })) as Record<Khung, LichTest['tongQuan']>,
+    tongQuan: tq(k23, no.dong),
+    tongQuanKhung: Object.fromEntries((['ft', 'thuong'] as const).map((k) => [k,
+      tq(k23.filter((x) => khungCua(x.mode) === k), no.dong.filter((x) => khungCua(x.mode) === k))])) as Record<Khung, TongQuanLich>,
     no: no.dong,
+    chamTuanNay,
     lop,
     nhacLichSu: mtLichSuChuaNhap(p, { classIds: lopNo ? [...lopNo] : null, branchId }),
   };

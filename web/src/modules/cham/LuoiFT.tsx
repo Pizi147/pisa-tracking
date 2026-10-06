@@ -102,7 +102,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
   const RONG = COT.reduce((a, b) => a + b, 0);
   /* K4-24: GV chấm chọn MỘT lần ở đầu cột S (nhớ theo lớp × tuần); chỉ người sửa được S, chỉ khi có tuần. */
   const suaS = data.editableSkills.includes('speaking');
-  const [gvCot, setGvCot] = useGvChamCot(data.classId, data.period?.id, suaS);
+  const [gvCot, setGvCot] = useGvChamCot(data.classId, data.period?.id);
 
   if (data.rows.length === 0 && hangMo.length === 0) {
     return (
@@ -145,7 +145,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
             <Th align="right" className={toCot('speaking')} hint={`${skillLabel('speaking')} — bấm ô để chấm bốn tiêu chí, ra band.`}>
               {skillShort('speaking')} <span className="normal-case text-slate-500">(band)</span>
               {suaS && data.period && (
-                <div className="flex justify-end"><NutGvCham value={gvCot} onChange={setGvCot} /></div>
+                <div className="flex justify-end"><NutGvCham chiTen value={gvCot} onChange={setGvCot} /></div>
               )}
             </Th>
             <Th align="right" hint="Mức mong đợi của chính lượt này, tính theo Target tại thời điểm đó.">Kỳ vọng</Th>

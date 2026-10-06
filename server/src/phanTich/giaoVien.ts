@@ -7,7 +7,7 @@
  * Ghi kết quả PA, PA hiệu quả → người phụ trách Case. Phân công hiệu lực ở ngày d: `effective_from ≤ d ≤ effective_to` (ngày đổi: dòng mới thắng).
  */
 import {
-  COT_KET_QUA_GV, PERMISSIONS, baiId, khoangPtGv, kyNangPhuTrach, nhanDotNgan, oTuTap, tenMonNgan, boMonLich,
+  COT_KET_QUA_GV, PERMISSIONS, baiId, khoangPtGv, kyNangPhuTrach, laChamCheo, nhanDotNgan, oTuTap, tenMonNgan, boMonLich,
   type HangPtGv, type KhungPtGv, type OPtGv, type PhanTichGvKq,
 } from '../../../shared/domain/index.ts';
 import { db } from '../db.ts';
@@ -93,6 +93,8 @@ type OBai = {
   nhapDau: string | null; band: number | null; coDiem: boolean; tienDo: string; noShow: boolean;
   /** Q2: em đang học — chỉ tập Chấm điểm lọc theo cờ này; Kết quả / Tiến bộ giữ bài đã có điểm của em đã thôi học. */
   dangHoc: boolean; kck: boolean; bai: string;
+  /** T18 (PR-LT3): loại lượt + GV chấm Speaking đã ghi (`examiner_user_id`) — ô Speaking Mock tính cho người chấm, không cho GVBM S. */
+  kind: string; examinerUserId: number | null;
 };
 type NapBai = { o: OBai[]; attempts: Map<number, any>; bundle: ReturnType<typeof loadBundle> };
 
@@ -149,6 +151,7 @@ export function napBai(p: Principal, c: NguCanhPtGv): NapBai {
         nhapDau: row?.nhap_dau_ngay ?? null, band: row?.band ?? null,
         coDiem: (row?.band ?? null) !== null || (row?.raw_score ?? null) !== null, tienDo: v.progress, noShow: v.noShow,
         dangHoc: !!a.dang_hoc, kck: !!a.khong_cam_ket, bai: nhanDotNgan(a.kind, a.attempt_no) ?? '',
+        kind: a.kind, examinerUserId: row?.examiner_user_id ?? null,
       });
     };
     if (a.scoring_mode === 'ratio') {
@@ -185,7 +188,9 @@ export function tapChamDiem(c: NguCanhPtGv, nap: NapBai): { tap: Tap; dong: Map<
   for (const x of nap.o) {
     if (!x.han) continue;
     const l = c.lop.get(x.classId)!;
-    const gv = kyNangPhuTrach(l.ct, x.skill).map((k) => c.nguoiLuc(x.classId, k, x.han!)).find((g) => g != null) ?? null;
+    /* T18: Speaking Mock chưa nhập → không trễ cho ai; đã nhập → của GV chấm đã ghi (người ngoài / trống → bỏ qua). */
+    const gv = laChamCheo(x.kind, x.skill) ? (x.nhapDau ? x.examinerUserId : null)
+      : kyNangPhuTrach(l.ct, x.skill).map((k) => c.nguoiLuc(x.classId, k, x.han!)).find((g) => g != null) ?? null;
     if (gv == null) continue;
     const boQua = KHONG_TINH.has(x.tienDo) || x.noShow || !x.dangHoc;
     if (boQua || (!x.nhapDau && !quaHanNhapDiem(x.han, x.tuan, c.homNay))) {

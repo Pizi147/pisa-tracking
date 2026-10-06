@@ -505,6 +505,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 06/10/2026 | PR-LT3 (Opus 5.5) · `pr-lt3-lich-test-ba-khoi` | Lịch Test ba khối (quá hạn theo hôm nay · chấm tuần này · lịch tuần xem), một bài một khối; Speaking Mock chấm chéo: không nợ/trễ GVBM S, GVCN, trễ theo GV chấm, chuông thứ Hai |
 | 06/10/2026 | PR-LUI-b (Sonnet 5.5, phương án B) · `pr-lui-b-hoc-vien-lop` | Đường lui Học viên & Lớp: Học lại (về lớp cũ / sang lớp mới), Mở lại lớp, Quản lý kết thúc lớp, **Chọn nhiều học viên** (kết thúc học, lưu trữ, huỷ chuyển lớp; Lưu trữ: bỏ lưu trữ, học lại) có xem trước, lô 8, Hoàn tác. Phép kiểm `prLuiB` LUIb-1…27 (đã gồm sửa sau rà #213). |
 | 06/10/2026 | PR-MTb (Sonnet 5.5, phương án B) · `pr-mtb-giao-dien-mock-test` | Giao diện Mock Test theo mockup bản 4: Ô MT dùng chung (`OMt`, nhãn "cũ") · panel Xếp lịch Mock Test ("MT mới", tick kỹ năng, "Sẽ xếp" 3 màu) · hộp một đợt (Tuần chung, ⋯ luôn hiện, Nhật ký) · popup dời vượt 4 cổng · lý do tuỳ chọn · nhập band · Xin dời / Không mock lại / Khôi phục kết quả · lưới FT dùng Ô MT. |
 | 06/10/2026 | PR-MTa (Opus 5.5) · `pr-mta-luat-mock-test` | T1 MT cũ (≥ 2 tuần, lúc xếp/dời) · T4 QL xếp tuần đã qua (cả lớp thường) · T2 dời vượt huỷ kết quả → `ket_qua_huy`, khôi phục · T3 vắng lần 2 huỷ, Xin dời, Không mock lại · T7 lý do chỉ 4 trường hợp, bỏ tối thiểu ký tự mọi nơi · T10 band máy chủ · T11 chuông GVCN. Migrate `prMta`. |

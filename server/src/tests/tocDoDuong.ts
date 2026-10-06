@@ -462,6 +462,7 @@ export const TRAN: Record<string, number> = {
   'GVCN_THUONG /classes/6/roster': 76,
   // PR-UX1 (3), 23/09/2026 — Lịch Test gộp Cần chấm (thêm `listAttempts` cho khối Nợ tuần trước): 16 → 26 câu (QT 28),
   // vẫn ít hơn hai trang cũ cộng lại (16 + 24). Trần max(sau+10, ⌈sau×1.3⌉).
+  // PR-LT3 06/10 — ba khối (khối 2 = hàng lớp tuần trước, thêm ~3 câu; mỗi tuần có ô hạn riêng thêm ~3): đo 30–34 câu (QT 34) — trong trần cũ, giữ.
   'QL /cham/lich-test': 36,
   'GVCN /cham/lich-test': 36,
   'GVBM /cham/lich-test': 36,

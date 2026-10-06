@@ -54,20 +54,35 @@ export function HangCon({ children, className = '', title }: { children: ReactNo
 
 /**
  * Khối nhóm cho DANH SÁCH (không phải bảng): đầu nhóm là hàng lớn, thân chỉ có khi mở.
- * `dem` là số việc (pill `tabular-nums`), `phu` là dòng chữ mờ sau đó.
+ * `dem` là số việc (pill `tabular-nums`; `demMau="late"` tô đỏ cam), `phu` là dòng chữ mờ sau đó.
+ * `rong` (PR-LT3 D1): khối không có gì — đầu tĩnh, không mũi tên, không mở; vị trí khối không nhảy.
+ * `phang`: thân không thụt (bảng trải hết bề ngang khối — Lịch Test).
  */
-export function KhoiNhom({ mo, onMo, nhan, tieuDe, dem, phu, children, id }: {
-  mo: boolean; onMo: () => void; nhan: string; tieuDe: ReactNode; dem?: number; phu?: ReactNode; children: ReactNode; id: string;
+export function KhoiNhom({ mo, onMo, nhan, tieuDe, dem, demMau, phu, children, id, rong, phang }: {
+  mo: boolean; onMo: () => void; nhan: string; tieuDe: ReactNode; dem?: number; demMau?: 'late'; phu?: ReactNode; children?: ReactNode; id: string;
+  rong?: boolean; phang?: boolean;
 }) {
+  const demCls = demMau ? 'bg-late-bg text-late' : 'text-slate-300';
+  if (rong) {
+    return (
+      <section>
+        <div className={`khoi-nhom-dau dong rong ${phang ? 'max-sm:min-h-[44px]' : ''}`}>
+          <span className="h-4 w-4 shrink-0" aria-hidden />
+          <span className="text-slate-400">{tieuDe}</span>
+          {dem !== undefined && <span className="rounded-full px-1.5 text-xs font-bold tabular-nums text-slate-400" style={{ background: 'var(--surface-2)' }}>{dem}</span>}
+        </div>
+      </section>
+    );
+  }
   return (
     <section>
-      <div className={`khoi-nhom-dau ${mo ? '' : 'dong'}`} onClick={(e) => boQuaNutCon(e, onMo)}>
+      <div className={`khoi-nhom-dau ${mo ? '' : 'dong'} ${phang ? 'max-sm:min-h-[44px]' : ''}`} onClick={(e) => boQuaNutCon(e, onMo)}>
         <MuiTenMo mo={mo} onMo={onMo} nhan={nhan} />
         <span className="text-slate-100">{tieuDe}</span>
-        {dem !== undefined && <span className="rounded-full px-1.5 text-xs font-bold tabular-nums text-slate-300" style={{ background: 'var(--surface-2)' }}>{dem}</span>}
+        {dem !== undefined && <span className={`rounded-full px-1.5 text-xs font-bold tabular-nums ${demCls}`} style={demMau ? undefined : { background: 'var(--surface-2)' }}>{dem}</span>}
         {phu && <span className="text-[11px] font-normal text-slate-500">{phu}</span>}
       </div>
-      {mo && <div id={id} className="khoi-nhom-con">{children}</div>}
+      {mo && <div id={id} className={phang ? '' : 'khoi-nhom-con'}>{children}</div>}
     </section>
   );
 }
