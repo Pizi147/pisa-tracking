@@ -23,37 +23,41 @@
 
 ---
 
-## Câu cần chủ sản phẩm quyết (gộp 4 câu — mockup vẽ theo **khuyến nghị**)
+## Chủ sản phẩm đã quyết (06/10, qua session planning) — bản kế hoạch 2
 
-1. **"Học lại" đưa em về đâu?** — *Khuyến nghị A:* hoàn tác đúng "Kết thúc học": em về **lớp cũ**, lộ trình bị đóng lúc kết thúc **chạy tiếp**, ra khỏi Lưu trữ; lớp cũ đã kết thúc thì **mở lại lớp cùng lúc**; Case đã đóng "Học viên kết thúc khoá" **giữ đóng** (Case mới chỉ sinh theo luật SOS thường). *B:* cho chọn lớp khác + mở lộ trình mới (phải làm thêm nhánh "xếp lớp lại" — to hơn nhiều; em muốn sang lớp khác thì dùng Chuyển lớp sau khi Học lại).
-2. **Quản lý có được "Kết thúc lớp" không?** Hiện chỉ Quản trị (24/09). Nếu Quản lý được **Mở lại** mà không **Kết thúc lại** được thì mở nhầm là kẹt. *Khuyến nghị B:* Quản lý cũng Kết thúc lớp (chỉ lớp **không còn em đang học** — máy chủ đã chặn sẵn); **Xoá lớp vẫn chỉ Quản trị**. *A:* Quản lý chỉ Mở lại, Kết thúc lớp vẫn chỉ Quản trị (QL mở nhầm phải nhờ Quản trị). *C:* cả Mở lại cũng chỉ Quản trị.
-3. **Chỗ vào làm nhiều em.** *Khuyến nghị A:* một panel **"Nhiều em…"** ở ⋮ hồ sơ lớp (Kết thúc học · Lưu trữ) + ô chọn ở **Lưu trữ › Học viên đã lưu trữ** (Bỏ lưu trữ · Học lại) + nút **Huỷ quyết định** trong ô "Chọn nhiều em" sẵn có của panel Chuyển tiếp lớp. *B:* ô chọn thẳng trên bảng Học viên & Lớp (đụng bảng, thẻ điện thoại, hàng "Cả lớp" — lớn hơn, dễ vỡ bố cục đã duyệt).
-4. **Tên nút cho em đã kết thúc.** *Khuyến nghị A:* **"Học lại"** (đúng lời chủ sản phẩm; menu ⋮ hồ sơ em đã kết thúc). Chú ý: "Học lại" còn là một **hướng** ở Chuyển tiếp lớp (lên lớp mới học lại khoá) — khác ngữ cảnh, không đụng nhau trên màn. *B:* "Mở lại học".
+1. **"Học lại" CHỌN đích:** (a) **về lớp cũ** — lộ trình cũ chạy tiếp, lớp đã kết thúc thì **mở lại cùng lúc**, Case đã đóng giữ đóng; (b) **sang lớp mới** — chọn lớp đang học, **mở lộ trình mới**, lộ trình cũ giữ ở Hành trình. → mockup bản 2 mục 2–6. **Chờ duyệt lại.**
+2. **Quản lý được "Kết thúc lớp"** khi lớp không còn học viên đang học. **Xoá lớp vẫn chỉ Quản trị.** → làm luôn (Task 5, 7).
+3. **"Chọn nhiều học viên"** (thay "Nhiều em…"; chủ sản phẩm viết "học sinh", planning dùng "học viên" cho khớp thuật ngữ cả web — **ghi rõ trong mô tả PR**): ở tab Học viên của hồ sơ lớp bấm nút **Chọn nhiều học viên** → ô chọn hiện ngay trên danh sách đang thấy → chọn xong hiện **thanh thao tác dính đáy** (n đã chọn · Lưu trữ · Kết thúc học · Huỷ chuyển lớp · Bỏ chọn) → bấm thao tác thì ra **hộp xem trước** rồi xác nhận. Trang Lưu trữ dùng cùng mẫu. **Không** thêm ô chọn thường trực vào bảng Học viên & Lớp. → mockup bản 2 mục 10–14. **Chờ duyệt lại.**
+4. Nút tên **"Học lại"** — duyệt. Mockup các mục còn lại (Mở lại lớp 7–9, Chuyển tiếp lớp huỷ nhiều 15, GVCN 16) — duyệt.
 
-**Tôi đã tự quyết (nói rõ để duyệt cùng mockup):**
-- Lý do **tuỳ chọn** cho Học lại, Mở lại lớp, Lưu trữ / Bỏ lưu trữ (đảo ngược việc đã làm, nhật ký vẫn ghi ai/lúc nào). **Bắt buộc** như cũ: Kết thúc học (1 ký tự trở lên, `TrangThaiPanel`), Huỷ quyết định (≥ 3 ký tự, `huyLenh`).
-- Kết thúc học nhiều em: **một lý do chung** + một ngày hiệu lực chung.
-- Hoàn tác: toast 5 giây (cả nhiều em). Máy chủ chỉ cho **Khôi phục quyết định** trong 24 giờ, lệnh do **người** huỷ (không phải máy), em còn ở lớp nguồn, tuần bắt đầu còn ở tương lai, em chưa có quyết định khác.
-- Không gửi chuông cho việc Học lại (GVCN thấy em trở lại bảng lớp). Huỷ nhiều quyết định → **một chuông** mỗi người nhận, không một chuông mỗi em.
-- GVCN / GVBM: không có mục nào mới (nếu có quyền sửa hồ sơ thì vẫn ⋮ như cũ).
+**Việc code ngay (không dính mục 1, 3):** Task 2 phần `moLaiLop`, Task 4, Task 5, Task 7 (máy chủ + web Mở lại lớp / Kết thúc lớp cho Quản lý). **Chờ duyệt lại mới code:** `hocLai` có chọn đích (Task 2 phần `hocLai`, Task 6), toàn bộ web "Chọn nhiều học viên" (Task 8, 9, 10). Phần máy chủ làm nhiều học viên (Task 3) làm được ngay vì không đổi theo mockup — riêng nhánh "sang lớp mới" của Học lại hàng loạt đợi Task 2.
+
+**Tôi đã tự quyết (nói rõ để duyệt cùng mockup bản 2):**
+- Lý do **tuỳ chọn** cho Học lại, Mở lại lớp, Lưu trữ / Bỏ lưu trữ (đảo ngược việc đã làm, nhật ký vẫn ghi ai/lúc nào). **Bắt buộc** như cũ: Kết thúc học (1 ký tự trở lên), Huỷ chuyển lớp (≥ 3 ký tự, `huyLenh`).
+- Làm nhiều học viên: **một lý do chung** + một ngày hiệu lực chung; gửi từng lô 8; lỗi giữa chừng giữ phần đã lưu, nút đổi thành `Thử lại n học viên`.
+- **Học lại sang lớp mới:** lộ trình cũ ở lại `abandoned` (Hành trình), lộ trình mới theo đúng luật lộ trình đã có (Target + Dự kiến thi lớp thường giữ như PR-NT; sang Fast Track từ lớp thường **bắt buộc Target**, như `transferStudent`); không đòi quyền ở lớp chuyển đến (Q3, 23/09). **Học lại hàng loạt:** "sang lớp mới" chỉ nhận lớp **thường**; lớp Fast Track cần Target từng em → học lại từng em.
+- **Chọn nhiều học viên** chỉ có ở cách xem **Điểm** (bảng FT `ClassRoster`, bảng lớp thường `BangDiemLopThuong`; điện thoại là thẻ) — không ở "Cần hỗ trợ" (danh sách con theo Case). Hộp xem trước = panel bên phải (`KhungPanel`) như mọi việc khác của web, không hộp thoại riêng.
+- **Huỷ chuyển lớp** là một việc của cùng đường làm nhiều học viên (`huy-lenh`; máy chủ tìm quyết định chờ của từng em) — panel Chuyển tiếp lớp (mockup mục 15) dùng đúng đường này. Hoàn tác = **Khôi phục** (`khoi-phuc-lenh`): máy chủ chỉ cho trong 24 giờ, lệnh do **người** huỷ, em còn ở lớp nguồn, tuần bắt đầu còn ở tương lai, em chưa có quyết định khác. Chuông: **một** cho mỗi người nhận.
+- Hoàn tác = toast 5 giây (`HOAN_TAC_MS`). Không chuông cho Học lại / Mở lại lớp. GVCN / GVBM không có mục nào mới (API 403).
 
 ---
 
-## Chữ trên màn (một nguồn — mockup dùng đúng các chữ này)
+## Chữ trên màn (một nguồn — mockup bản 2 dùng đúng các chữ này)
 
 | Chỗ | Chữ |
 |---|---|
 | Menu ⋮ hồ sơ em đã kết thúc | `Học lại` (dòng phụ: `về lớp cũ · lộ trình chạy tiếp`) |
-| Panel Học lại | tiêu đề `Học lại` · khối `Học lại` · ô `Có hiệu lực từ` (mặc định hôm nay) · ô `Lý do` (tuỳ chọn) · nút `Học lại` · dòng việc sẽ làm: `Về lớp MB FT 101` · `Lộ trình LT1 chạy tiếp` · `Ra khỏi Lưu trữ` · `Mở lại lớp MB FT 101` (chỉ khi lớp đã kết thúc) |
-| Toast | `Đã cho Nguyễn Minh Anh học lại` + `Hoàn tác (5)` |
+| Panel Học lại | tiêu đề `Học lại` · hai nút chọn `Về lớp cũ` / `Sang lớp mới` · dòng việc: `Về lớp MB FT 101` · `Lộ trình LT1 chạy tiếp` · `Ra khỏi Lưu trữ` · `Mở lại lớp MB FOU 12` (chỉ khi lớp đã kết thúc) · sang lớp mới: ô `Lớp` (bắt buộc) · `Target` (bắt buộc khi sang Fast Track, lỗi `Lên FT cần Target`) · `Dự kiến thi` (tuỳ chọn) · dòng `Vào lớp MB FOU 14` · `Lộ trình FOU mới` · `Lộ trình cũ giữ ở Hành trình` · `Ra khỏi Lưu trữ` · ô `Có hiệu lực từ` · ô `Lý do` (tuỳ chọn) · nút `Học lại` · không làm được: `Chưa có lớp để học lại` |
+| Toast | `Đã cho Nguyễn Minh Anh học lại` / `… học lại · MB FOU 14` + `Hoàn tác (5)` |
 | ⋮ hồ sơ lớp đã kết thúc | `Mở lại lớp` |
+| ⋮ hồ sơ lớp (Quản lý) | `Kết thúc lớp` (khi không còn học viên đang học) |
 | Panel Mở lại lớp | tiêu đề `Mở lại lớp` · `Lớp` · `Chi nhánh` · `Kết thúc` (ngày) · ô `Lý do` (tuỳ chọn) · nút `Mở lại lớp` · toast `Đã mở lại lớp MB FOU 12` |
 | Lưu trữ › Lớp đã kết thúc | nút `Mở lại` ở cuối dòng (chỉ QL/QT) |
-| ⋮ hồ sơ lớp | `Nhiều em…` |
-| Panel Nhiều em, bước 1 | tiêu đề `Nhiều em` · chọn việc `Kết thúc học` / `Lưu trữ` · `Chọn cả lớp` · nút `Tiếp tục · 12 em` |
-| Panel Nhiều em, bước 2 | tiêu đề `Kết thúc học · 12 em` · số `Case đóng 4` · `PA huỷ 2` · `Quyết định chuyển lớp huỷ 1` · mục `Bỏ qua 2 em` (mỗi em một lý do ngắn) · ô `Lý do` (bắt buộc với Kết thúc học) · `Có hiệu lực từ` · nút `Kết thúc học 12 em` · nút trái `‹ Sửa` |
-| Đang lưu / dở | nút `Đang lưu 8/12…` · dòng chân `Đã lưu 8 em · 4 em chưa lưu` · nút `Thử lại 4 em` · lỗi từng em dưới tên |
-| Lưu trữ › Học viên | cột chọn · thanh `3 em đã chọn` + `Bỏ lưu trữ` + `Học lại` + `Bỏ chọn` · nút `Học lại` cuối mỗi dòng |
+| Tab Học viên của hồ sơ lớp | nút `Chọn nhiều học viên` cạnh `Sửa thông tin` (bật = nền nhạt); ô chọn đầu mỗi dòng + ô chọn cả cột |
+| Thanh dính đáy | `3 đã chọn` · `Lưu trữ` · `Kết thúc học` · `Huỷ chuyển lớp` · `Bỏ chọn` |
+| Panel xem trước | tiêu đề `Kết thúc học · 14 học viên` · số `12 học viên` · `Case đóng 4` · `PA huỷ 2` · `Quyết định chuyển lớp huỷ 1` · mục `Bỏ qua 2 học viên` (mỗi học viên một lý do ngắn) · ô `Lý do` (bắt buộc với Kết thúc học, Huỷ chuyển lớp) · `Có hiệu lực từ` · nút `Kết thúc học 12 học viên` · nút trái `Huỷ thay đổi` · Lưu trữ: `Lưu trữ 5 học viên` · Huỷ chuyển lớp: `Lên FT 2` · `Học lại 3` · nút `Huỷ chuyển lớp 5 học viên` · không còn ai làm được: nút `Kết thúc học 0 học viên` khoá |
+| Đang lưu / dở | nút `Đang lưu 8/12…` · dòng chân `Đã lưu 8 học viên · 4 học viên chưa lưu` · mục `Chưa lưu · 4` (lỗi dưới từng tên) · nút `Thử lại 4 học viên` |
+| Lưu trữ › Học viên | nút `Chọn nhiều học viên`; thanh dính đáy `3 đã chọn` · `Bỏ lưu trữ` · `Học lại` · `Bỏ chọn`; nút `Học lại` và `Bỏ lưu trữ` cuối mỗi dòng khi không ở chế độ chọn |
 | Panel Chuyển tiếp (đã có) | thêm nút `Huỷ quyết định` trong ô "n em đang chọn"; khối `Huỷ quyết định 5 em` · `Lên FT 2 · Học lại 3` · `Bỏ qua 2 em chưa có quyết định` · ô `Lý do` · nút `Huỷ quyết định 5 em` |
 
 ---
@@ -62,25 +66,29 @@
 
 | File | Việc |
 |---|---|
-| `shared/domain/hangLoatEm.ts` (**mới**) | hằng + kiểu: `VIEC_HANG_LOAT`, `NHAN_VIEC_HANG_LOAT`, `VIEC_NGUOC`, `LO_HANG_LOAT_EM`, `TOI_DA_HANG_LOAT_EM`, `DongXemTruoc`, `XemTruocHangLoat`, `KetQuaHangLoat` |
+| `shared/domain/hangLoatEm.ts` (**mới**) | hằng + kiểu: `VIEC_HANG_LOAT` (`ket-thuc`, `luu-tru`, `bo-luu-tru`, `hoc-lai`, `huy-lenh`, `khoi-phuc-lenh`), `NHAN_VIEC_HANG_LOAT`, `VIEC_NGUOC`, `LO_HANG_LOAT_EM`, `TOI_DA_HANG_LOAT_EM`, `KHOI_PHUC_LENH_GIO`, `DongXemTruoc`, `XemTruocHangLoat`, `KetQuaHangLoat` |
 | `shared/domain/index.ts` | `export * from './hangLoatEm.ts'` |
 | `shared/domain/quanLyHocVien.ts:5-91` | thêm việc `hoc-lai` vào menu ⋮ hồ sơ em |
-| `server/src/students/students.ts:316` (sau `setStudentStatus`) | `hocLai()` |
-| `server/src/classes/xoaKetThucLop.ts:105-124` | `moLaiLop()`; (Q2-B) `ketThucLop` + `xemXoaKetThuc` đổi cổng sang `CLASS_EDIT` |
+| `server/src/students/students.ts:316` (sau `setStudentStatus`) | `hocLai()` (về lớp cũ / sang lớp mới), `lopChoHocLai()` |
+| `server/src/classes/luatLoTrinh.ts:255-278` | tách `moLoTrinhMoi()` khỏi `apDungMotDong` (không đổi hành vi) — Học lại sang lớp mới dùng lại |
+| `server/src/classes/xoaKetThucLop.ts:18-124` | `moLaiLop()`; `ketThucLop` + `xemXoaKetThuc` đổi cổng sang `CLASS_EDIT`, `xoaLop` giữ Quản trị |
 | `server/src/classes/loTrinhTiep.ts:286-336` | `lopHocCua().quyen.hocLai` |
-| `server/src/classes/classes.ts:790-808` | `viewer.coTheMoLaiLop`, (Q2-B) `viewer.coTheKetThucLop` |
+| `server/src/classes/classes.ts:790-808` | `viewer.coTheMoLaiLop`, `viewer.coTheKetThucLop`, `viewer.coTheChonNhieu` |
 | `server/src/classes/luuTru.ts:11-20,78-88` | cờ `coTheMoLai` mỗi lớp, `coTheHocLai` mỗi em |
-| `server/src/students/hangLoat.ts` (**mới**) | `xemTruoc()`, `chay()` — Kết thúc học · Lưu trữ · Bỏ lưu trữ · Học lại nhiều em |
-| `server/src/classes/lenhChuyen.ts:230-256` | tách `huyMotLenh`; thêm `huyNhieuLenh()`, `khoiPhucLenh()` |
-| `server/src/routes/index.ts` (gần `:1344`, `:1149`, `:1840`) | 5 route mới |
+| `server/src/students/hangLoat.ts` (**mới**) | `xemTruoc()`, `chay()` — sáu việc ở trên |
+| `server/src/classes/lenhChuyen.ts:230-256` | tách `huyMotLenh`; thêm `huyNhieuLenh()`, `khoiPhucLenh()` (hàm, không route — `hangLoat.ts` gọi) |
+| `server/src/routes/index.ts` (gần `:1149`, `:1853`) | 4 route mới: `/students/:id/hoc-lai`, `/students/:id/hoc-lai/lop-dich`, `/classes/:id/mo-lai`, `/hang-loat-hoc-vien(/xem-truoc)` |
 | `web/src/modules/students/hangLoatEm.ts` (**mới**) | `chayHangLoat()` (chia lô, gom kết quả) + `hoanTacHangLoat()` |
-| `web/src/modules/students/HangLoatEmPanel.tsx` (**mới**) | panel `Nhiều em` (bước 1 chọn, bước 2 xem trước + xác nhận, lỗi giữa chừng) |
-| `web/src/modules/students/StudentManagePanel.tsx:53-70` | `HocLaiPanel` |
+| `web/src/modules/students/chonNhieuHocVien.tsx` (**mới**) | `useChonNhieu()` (trạng thái chọn), `OChon`, `ThanhChonNhieu` (thanh dính đáy) |
+| `web/src/modules/students/XemTruocHangLoatPanel.tsx` (**mới**) | panel xem trước + xác nhận (chạy lô, lỗi giữa chừng, Hoàn tác) |
+| `web/src/modules/students/ClassRoster.tsx:18-217`, `web/src/modules/classes/BangDiemLopThuong.tsx:44-215` | cột / thẻ có ô chọn khi `chon` bật |
+| `web/src/modules/classes/TabHocVienLop.tsx` | nút `Chọn nhiều học viên`, giữ `useChonNhieu`, vẽ thanh dính đáy |
+| `web/src/modules/students/StudentManagePanel.tsx:53-70` | `HocLaiPanel` (chọn đích) |
 | `web/src/modules/classes/XoaKetThucLopPanel.tsx` | `MoLaiLopPanel` |
-| `web/src/modules/classes/DauTrangLop.tsx:54,100,131-133` | mục `Nhiều em…`, `Mở lại lớp`, (Q2-B) cổng `Kết thúc lớp` |
+| `web/src/modules/classes/DauTrangLop.tsx:54,100,131-133` | mục `Mở lại lớp`, cổng `Kết thúc lớp` cho Quản lý |
 | `web/src/modules/classes/ClassOverviewPage.tsx:136-137` | vẽ panel mới |
-| `web/src/modules/students/LuuTruPage.tsx:29-148` | `Mở lại` ở tab Lớp; ô chọn + thanh việc + `Học lại` ở tab Học viên |
-| `web/src/modules/classes/TransitionPanel.tsx:~210-260` | `Huỷ quyết định` nhiều em + Hoàn tác |
+| `web/src/modules/students/LuuTruPage.tsx:29-148` | `Mở lại` ở tab Lớp; nút `Chọn nhiều học viên` + thanh dính đáy + `Học lại` ở tab Học viên |
+| `web/src/modules/classes/TransitionPanel.tsx:~210-260` | `Huỷ quyết định` nhiều em (qua `chayHangLoat('huy-lenh')`) + Hoàn tác |
 | `server/src/tests/prLuiB.tests.ts` (**mới**) + `server/src/tests/run.ts` (cuối) | phép kiểm |
 | `CODE_MAP.md`, `plan.md` mục 11 | cập nhật |
 
@@ -94,12 +102,14 @@
 
 ---
 
-### Task 0: Mockup + duyệt (BƯỚC 1 — đã làm trong lượt này)
+### Task 0: Mockup + duyệt (BƯỚC 1 — đã làm; bản 2 chờ duyệt lại hai phần)
 
 **Files:** Create `thiet-ke/mockup-duong-lui-hoc-vien-lop-2026-10-06.html`
 
 - [x] Soạn mockup đủ trạng thái, 375 và 1440, sáng và tối, đúng chữ thật (bảng "Chữ trên màn").
-- [ ] Chủ sản phẩm duyệt mockup + trả lời 4 câu. **Chưa duyệt thì không code (CLAUDE.md).**
+- [x] Bản 1 (06/10): chủ sản phẩm duyệt trừ mục 1 (Học lại chọn đích) và mục 3 (Chọn nhiều học viên) — xem "Chủ sản phẩm đã quyết".
+- [x] Bản 2: mockup sửa hai phần đó (mục 2–6 và 10–14).
+- [ ] Chủ sản phẩm duyệt lại hai phần. **Chưa duyệt thì không code Task 2 phần `hocLai`, Task 6, 8, 9, 10 (CLAUDE.md).**
 
 ---
 
@@ -140,7 +150,7 @@ export async function runPrLuiBTests(t: YThucTestKit) {
       assert(d.VIEC_NGUOC[d.VIEC_NGUOC[v]] === v, `${v} ngược hai lần phải về ${v}`);
       assert(typeof d.NHAN_VIEC_HANG_LOAT[v] === 'string' && d.NHAN_VIEC_HANG_LOAT[v].length > 0, `thiếu nhãn ${v}`);
     }
-    assert(d.NHAN_VIEC_HANG_LOAT['ket-thuc'] === 'Kết thúc học' && d.NHAN_VIEC_HANG_LOAT['hoc-lai'] === 'Học lại', 'nhãn');
+    assert(d.NHAN_VIEC_HANG_LOAT['ket-thuc'] === 'Kết thúc học' && d.NHAN_VIEC_HANG_LOAT['hoc-lai'] === 'Học lại' && d.NHAN_VIEC_HANG_LOAT['huy-lenh'] === 'Huỷ chuyển lớp', 'nhãn');
     assert(d.LO_HANG_LOAT_EM === 8 && d.TOI_DA_HANG_LOAT_EM === 200 && d.KHOI_PHUC_LENH_GIO === 24, 'hằng');
   });
 }
@@ -164,21 +174,22 @@ Expected: FAIL — `d.VIEC_HANG_LOAT` undefined / `hoc-lai` không có.
 ```ts
 /**
  * LÀM NHIỀU EM MỘT LẦN (PR-LUI-b, chủ sản phẩm 06/10) — Kết thúc học · Lưu trữ · Bỏ lưu trữ · Học lại. Chỉ Quản lý / Quản trị.
- * MỘT nguồn cho máy chủ (`students/hangLoat.ts`) và web (`HangLoatEmPanel.tsx`): tên việc, nhãn, việc ngược của nút Hoàn tác, trần.
+ * MỘT nguồn cho máy chủ (`students/hangLoat.ts`) và web (`XemTruocHangLoatPanel.tsx`): tên việc, nhãn, việc ngược của nút Hoàn tác, trần.
  */
-export const VIEC_HANG_LOAT = ['ket-thuc', 'luu-tru', 'bo-luu-tru', 'hoc-lai'] as const;
+export const VIEC_HANG_LOAT = ['ket-thuc', 'luu-tru', 'bo-luu-tru', 'hoc-lai', 'huy-lenh', 'khoi-phuc-lenh'] as const;
 export type ViecHangLoat = (typeof VIEC_HANG_LOAT)[number];
 
 export const NHAN_VIEC_HANG_LOAT: Record<ViecHangLoat, string> = {
   'ket-thuc': 'Kết thúc học', 'luu-tru': 'Lưu trữ', 'bo-luu-tru': 'Bỏ lưu trữ', 'hoc-lai': 'Học lại',
+  'huy-lenh': 'Huỷ chuyển lớp', 'khoi-phuc-lenh': 'Khôi phục chuyển lớp',
 };
 
 /** Nút Hoàn tác gọi đúng việc ngược này với những em đã làm được. */
 export const VIEC_NGUOC: Record<ViecHangLoat, ViecHangLoat> = {
-  'ket-thuc': 'hoc-lai', 'hoc-lai': 'ket-thuc', 'luu-tru': 'bo-luu-tru', 'bo-luu-tru': 'luu-tru',
+  'ket-thuc': 'hoc-lai', 'hoc-lai': 'ket-thuc', 'luu-tru': 'bo-luu-tru', 'bo-luu-tru': 'luu-tru', 'huy-lenh': 'khoi-phuc-lenh', 'khoi-phuc-lenh': 'huy-lenh',
 };
 
-/** Một request GHI tối đa số em này (10 s của Netlify; cùng mẫu `LO_LUU_SUA_CA_LOP`). Web chia lô bằng `chiaLo`. */
+/** Một request GHI tối đa số học viên này (10 s của Netlify; cùng mẫu `LO_LUU_SUA_CA_LOP`). Web chia lô bằng `chiaLo`. */
 export const LO_HANG_LOAT_EM = 8;
 /** Xem trước một lần tối đa số em này. */
 export const TOI_DA_HANG_LOAT_EM = 200;
@@ -193,7 +204,7 @@ export type DongXemTruoc = {
 };
 export type XemTruocHangLoat = {
   viec: ViecHangLoat; rows: DongXemTruoc[];
-  tong: { duoc: number; boQua: number; caseDong: number; paHuy: number; lenhHuy: number; lopMoLai: string[] };
+  tong: { duoc: number; boQua: number; caseDong: number; paHuy: number; lenhHuy: number; lopMoLai: string[]; theoHuong: Record<string, number> };
 };
 export type KetQuaHangLoat = { ok: number[]; failed: { studentId: number; message: string }[] };
 ```
@@ -240,7 +251,7 @@ git commit -m "PR-LUI-b: hằng làm nhiều em + mục Học lại ở menu h�
 
 **Interfaces:**
 - Consumes: `setStudentStatus(p, studentId, status, date, reason?, endKind?)`, `require_`, `PERMISSIONS.PLAN_WEEK/CLASS_EDIT`, `datLaiHanCase`, `chotHanXuLy`, `addJourney`, `writeAudit`.
-- Produces: `hocLai(p, studentId, o?: { date?: string; lyDo?: string; moLaiLop?: boolean }): student row`; `moLaiLop(p, classId, o?: { lyDo?: unknown }): { ok: true; ma: string }`; `lopHocCua(...).quyen.hocLai: boolean`; `classOverview().viewer.coTheMoLaiLop: boolean`.
+- Produces: `hocLai(p, studentId, o?: { date?: string; lyDo?: unknown; moLaiLop?: boolean; lopMoiId?: number | null; mucTieu?: number | string | null; thangThi?: string | null }): student row`; `lopChoHocLai(p, studentId): { lopCu; chiNhanh; lop }`; `moLoTrinhMoi(p, o): { moiId; route }` (`luatLoTrinh.ts`); `moLaiLop(p, classId, o?: { lyDo?: unknown }): { ok: true; ma: string }`; `lopHocCua(...).quyen.hocLai: boolean`; `classOverview().viewer.coTheMoLaiLop: boolean`.
 
 - [ ] **Step 1: Viết phép kiểm đỏ**
 
@@ -363,19 +374,67 @@ export function moLaiLop(p: Principal, classId: number, o: { lyDo?: unknown } = 
 
 Cập nhật chú thích đầu file: thêm dòng `Mở lại lớp (PR-LUI-b): Quản lý của lớp hoặc Quản trị — xem moLaiLop.`
 
-- [ ] **Step 4: `hocLai` trong `students.ts`**
-
-Thêm import: `import { moLaiLop } from '../classes/xoaKetThucLop.ts';` và đổi dòng util thành `import { badRequest, chuTuDo, isIsoDate, kiemKieuO, normalizeName, notFound, nowIso, padCode } from '../util.ts';`. Sau `setStudentStatus` (sau dòng 316) thêm:
+- [ ] **Step 4a: Tách `moLoTrinhMoi` khỏi `apDungMotDong`** (`luatLoTrinh.ts:255-278`, không đổi hành vi — phép kiểm chuyển lớp cũ giữ nguyên xanh). Khối `if (luat.khoa === 'dong-mo') { … }` hiện đóng lộ trình cũ rồi mở lộ trình mới + lịch mặc định; phần "mở lộ trình mới + lịch mặc định" thành hàm export dùng chung với Học lại sang lớp mới:
 
 ```ts
 /**
- * HỌC LẠI (PR-LUI-b, chủ sản phẩm 06/10) — đường lui của "Kết thúc học", CHỈ Quản lý / Quản trị (`plan.week` của em). Làm ngược đúng những
- * gì `setStudentStatus(…, 'finished')` đã làm: em về ghi danh `completed` mới nhất, lộ trình bị đóng LÚC ĐÓ (`abandoned`, `ended_at` = ngày
- * kết thúc — chỗ duy nhất đặt `abandoned`) chạy tiếp, ra khỏi Lưu trữ. Case đã đóng "Học viên kết thúc khoá" GIỮ đóng (không sống lại).
- * Lớp cũ đã kết thúc: `moLaiLop` = true thì mở lại lớp CÙNG giao dịch, không thì 400. Ghi `resume` ("Học lại") để hạn Ý thức / Case tính lại từ
- * ngày học lại như Quay lại học. Lùi lại bằng chính Kết thúc học.
+ * MỞ LỘ TRÌNH MỚI cho em ở lớp `toClass` (PR-LUI-b tách từ `apDungMotDong`): số thứ tự kế tiếp, Target / Dự kiến thi giữ theo luật PR-NT (FT → FT hoặc
+ * thường → thường giữ Target; thường → thường giữ cả Dự kiến thi), lịch MT mặc định (FT) hoặc bài Giữa khoá / Cuối khoá (thường). KHÔNG đóng lộ trình cũ — nơi gọi lo.
+ * `target` / `kck`: Target do người dùng nhập (sang FT từ lớp thường là bắt buộc — nơi gọi kiểm); trống thì giữ của `cuCycle` khi luật cho giữ.
  */
-export function hocLai(p: Principal, studentId: number, o: { date?: string; lyDo?: unknown; moLaiLop?: boolean } = {}) {
+export function moLoTrinhMoi(p: Principal, o: {
+  sid: number; ngay: string; toClass: any; tuLop: LoaiLop; denLop: LoaiLop; cuCycle: any | null;
+  target?: number | null; kck?: boolean; thangThi?: string | null;
+}): { moiId: number; route: string | null } {
+  const conn = db();
+  const seq = ((conn.prepare('SELECT MAX(seq) n FROM learning_cycles WHERE student_id = ?').get(o.sid) as any)?.n ?? 0) + 1;
+  const route = o.denLop.ft ? (o.toClass.route ?? o.cuCycle?.route ?? 'LT1') : null;   // lộ trình mới = lộ trình lớp chuyển đến (M-20)
+  const startPeriodId = o.denLop.ft ? ensurePeriod(mondayOf(o.ngay)).id : (o.toClass.start_period_id ?? null);
+  /* Q7: FT → FT giữ target cũ. Chủ sản phẩm 04/10 (PR-NT): lớp thường → lớp thường giữ cả Target lẫn Dự kiến thi. */
+  const giuTarget = (o.tuLop.ft && o.denLop.ft) || (!o.tuLop.ft && !o.denLop.ft);
+  const giuThi = !o.tuLop.ft && !o.denLop.ft && !o.thangThi;
+  const cu = o.cuCycle;
+  const moiId = Number(conn.prepare(
+    `INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, khong_cam_ket, exam_month, exam_date, exam_period_id,
+                                  start_period_id, started_at, status, created_at)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?, 'active', ?)`,
+  ).run(o.sid, seq, route, o.denLop.ma, o.target ?? (giuTarget ? cu?.target_score ?? null : null),
+    o.kck || (o.target == null && giuTarget && cu?.khong_cam_ket) ? 1 : 0,   // … kể cả KCK (Q29-1)
+    giuThi ? cu?.exam_month ?? null : o.thangThi ?? null,
+    giuThi ? cu?.exam_date ?? null : null, giuThi ? cu?.exam_period_id ?? null : null,
+    startPeriodId, o.ngay, nowIso()).lastInsertRowid);
+  if (o.denLop.ft) taoMtMacDinh(moiId, { actorUserId: p.userId });   // M1: vào lớp FT / đổi LT ↔ RF = lộ trình mới có lịch MT mặc định
+  else taoBaiThuongMacDinh([moiId], p.userId, o.ngay);               // PR-LT2a M1b: sang lớp thường = tự có bài Giữa khoá / Cuối khoá
+  return { moiId, route };
+}
+```
+và trong `apDungMotDong` khối `dong-mo` còn:
+```ts
+  if (luat.khoa === 'dong-mo') {
+    if (curCycle) conn.prepare(`UPDATE learning_cycles SET status = 'completed', ended_at = ? WHERE id = ?`).run(d.ngay, curCycle.id);
+    const { moiId, route } = moLoTrinhMoi(p, { sid: d.sid, ngay: d.ngay, toClass, tuLop, denLop, cuCycle: curCycle, target: mucTieu ?? null, thangThi: d.thangThi });
+    if (denLop.ft && tuLop.ft && curCycle) chuyenCaseSangLoTrinh(p.userId, d.sid, curCycle.id, moiId, route, d.ngay);   // K5-60
+  }
+```
+(giữ nguyên thứ tự: `taoMtMacDinh` chạy TRƯỚC `chuyenCaseSangLoTrinh` như hiện nay — trong helper `taoMtMacDinh` đã chạy xong khi trả về). Chạy lại các phép kiểm chuyển lớp (`lenLop.tests.ts`, `prCt.tests.ts`, `prLt2a/b.tests.ts`) — phải xanh nguyên.
+
+- [ ] **Step 4b: `hocLai` + `lopChoHocLai` trong `students.ts`**
+
+Thêm import: `import { moLaiLop } from '../classes/xoaKetThucLop.ts';`, `moLoTrinhMoi`, `thongBaoChuyenVao` từ `'../classes/luatLoTrinh.ts'` (dòng import hiện có `apDungMotDong, dongLopNeuHet, lopDichHopLe, lopHienTaiCua` — thêm vào), `docTarget` từ `'../fasttrack/cycles.ts'` (cạnh `currentCycle, cyclesOf, examPlanOf`), `type LoaiLop` từ `shared/domain`; đổi dòng util thành `import { badRequest, chuTuDo, isIsoDate, kiemKieuO, normalizeName, notFound, nowIso, padCode } from '../util.ts';`. Sau `setStudentStatus` (sau dòng 316) thêm:
+
+```ts
+/**
+ * HỌC LẠI (PR-LUI-b, chủ sản phẩm 06/10) — đường lui của "Kết thúc học", CHỈ Quản lý / Quản trị (`plan.week` của em). CHỌN ĐÍCH:
+ *  (a) VỀ LỚP CŨ (`lopMoiId` trống): làm ngược đúng những gì `setStudentStatus(…, 'finished')` đã làm — em về ghi danh `completed` mới nhất, lộ trình bị đóng LÚC
+ *      ĐÓ (`abandoned`, `ended_at` = ngày kết thúc — chỗ duy nhất đặt `abandoned`) chạy tiếp, ra khỏi Lưu trữ. Lớp cũ đã kết thúc: `moLaiLop` = true thì mở lại
+ *      lớp CÙNG giao dịch, không thì 400.
+ *  (b) SANG LỚP MỚI (`lopMoiId`): lớp đang hoạt động ≠ lớp cũ; ghi danh mới, lộ trình MỚI theo luật lộ trình (`moLoTrinhMoi`), lộ trình cũ ở nguyên `abandoned`
+ *      (giữ ở Hành trình), ghi danh cũ ở nguyên `completed`. Sang Fast Track từ lớp thường bắt buộc Target (như `transferStudent`). Không đòi quyền ở lớp mới (Q3).
+ * Case đã đóng "Học viên kết thúc khoá" GIỮ đóng. Ghi `resume` ("Học lại") để hạn Ý thức / Case tính lại từ ngày học lại như Quay lại học. Lùi lại bằng chính Kết thúc học.
+ */
+export function hocLai(p: Principal, studentId: number, o: {
+  date?: string; lyDo?: unknown; moLaiLop?: boolean; lopMoiId?: number | null; mucTieu?: number | string | null; thangThi?: string | null;
+} = {}) {
   require_(p, PERMISSIONS.PLAN_WEEK, { studentId }, 'Chỉ Quản lý mới cho học viên học lại được.');
   const conn = db();
   const s = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
@@ -387,33 +446,92 @@ export function hocLai(p: Principal, studentId: number, o: { date?: string; lyDo
   if (s.finished_at && date < s.finished_at) throw badRequest(`Ngày học lại không được trước ngày kết thúc học (${String(s.finished_at).split('-').reverse().join('/')}).`);
   const lyDo = chuTuDo(o.lyDo, 'Lý do', 2000);
   const enr = conn.prepare(
-    `SELECT e.id, e.class_id, c.code, c.status AS class_status FROM enrollments e JOIN classes c ON c.id = e.class_id
-      WHERE e.student_id = ? AND e.status = 'completed' ORDER BY e.id DESC LIMIT 1`,
+    `SELECT e.id, e.class_id, c.code, c.status AS class_status, c.programme_code, c.is_fast_track, c.route
+       FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = ? AND e.status = 'completed' ORDER BY e.id DESC LIMIT 1`,
   ).get(studentId) as any;
   if (!enr) throw badRequest('Em chưa có lớp nào để học lại — dùng Chuyển lớp để xếp lớp.');
   const lopDaDong = enr.class_status === 'finished';
-  if (lopDaDong && !o.moLaiLop) throw badRequest(`Lớp ${enr.code} đã kết thúc — mở lại lớp để em học lại.`);
+
+  /* (b) sang lớp mới */
+  const lopMoi = o.lopMoiId ? lopDichHopLe(Number(o.lopMoiId), enr.class_id) : null;
+  if (o.lopMoiId && !lopMoi) throw badRequest('Lớp chuyển đến không hợp lệ.');
+  const tuLop: LoaiLop = { ma: (enr.programme_code ?? null) as ProgrammeCode | null, ft: !!enr.is_fast_track, lt: enr.route };
+  const denLop: LoaiLop | null = lopMoi ? { ma: (lopMoi.programme_code ?? null) as ProgrammeCode | null, ft: !!lopMoi.is_fast_track, lt: lopMoi.route } : null;
+  const tg = o.mucTieu === undefined || o.mucTieu === null || o.mucTieu === '' ? null : docTarget(o.mucTieu);
+  if (denLop?.ft && !tuLop.ft && !tg) throw badRequest('Lên FT cần Target.');
+  if (!lopMoi && lopDaDong && !o.moLaiLop) throw badRequest(`Lớp ${enr.code} đã kết thúc — mở lại lớp để em học lại.`);
 
   return tx(() => {
-    if (lopDaDong) moLaiLop(p, enr.class_id, { lyDo: `Học lại: ${s.full_name}` });
     conn.prepare(`UPDATE students SET status = 'active', finished_at = NULL, archived_at = NULL WHERE id = ?`).run(studentId);
-    conn.prepare(`UPDATE enrollments SET status = 'active', end_kind = NULL WHERE id = ?`).run(enr.id);
     const dangChay = conn.prepare(`SELECT 1 FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(studentId);
     const cu = dangChay ? null : conn.prepare(
-      `SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'abandoned' AND ended_at IS ? ORDER BY seq DESC LIMIT 1`,
+      `SELECT * FROM learning_cycles WHERE student_id = ? AND status = 'abandoned' AND ended_at IS ? ORDER BY seq DESC LIMIT 1`,
     ).get(studentId, s.finished_at ?? null) as any;
-    if (cu) conn.prepare(`UPDATE learning_cycles SET status = 'active', ended_at = NULL WHERE id = ?`).run(cu.id);
+    let cycleId: number | null = cu?.id ?? null;
+    if (lopMoi && denLop) {
+      /* ghi danh cũ + lộ trình cũ ở nguyên; ghi danh mới + lộ trình mới */
+      const ins = conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`)
+        .run(studentId, lopMoi.id, date, nowIso());
+      conn.prepare('UPDATE students SET branch_id = ? WHERE id = ?').run(lopMoi.branch_id, studentId);
+      cycleId = moLoTrinhMoi(p, { sid: studentId, ngay: date, toClass: lopMoi, tuLop, denLop, cuCycle: cu, target: tg?.target ?? null, kck: !!tg?.kck, thangThi: o.thangThi ?? null }).moiId;
+      thongBaoChuyenVao({
+        sid: studentId, tenHocVien: s.full_name, enrollmentMoiId: Number(ins.lastInsertRowid), actorUserId: p.userId,
+        tuMa: enr.code, tuChiNhanh: '—', doiChiNhanh: true, lyDo, denLop: { id: lopMoi.id, code: lopMoi.code, branchId: lopMoi.branch_id },
+      });
+    } else {
+      if (lopDaDong) moLaiLop(p, enr.class_id, { lyDo: `Học lại: ${s.full_name}` });
+      conn.prepare(`UPDATE enrollments SET status = 'active', end_kind = NULL WHERE id = ?`).run(enr.id);
+      if (cu) conn.prepare(`UPDATE learning_cycles SET status = 'active', ended_at = NULL WHERE id = ?`).run(cu.id);
+    }
     datLaiHanCase(studentId, date);
-    addJourney({ studentId, cycleId: cu?.id ?? null, eventType: 'resume', eventDate: date, title: 'Học lại', detail: lyDo, createdBy: p.userId });
+    addJourney({ studentId, cycleId, eventType: 'resume', eventDate: date, title: 'Học lại', detail: [lyDo, lopMoi ? `sang lớp ${lopMoi.code}` : null].filter(Boolean).join(' — ') || null, createdBy: p.userId });
     chotHanXuLy([studentId], { ghiDe: true });   // sau `addJourney`: mốc đọc sự kiện `resume`
     writeAudit({
       actorUserId: p.userId, action: 'student.rejoin', entityType: 'student', entityId: studentId, entityLabel: s.student_code,
       before: { status: 'finished', finishedAt: s.finished_at, archivedAt: s.archived_at },
-      after: { status: 'active', date, lyDo, classId: enr.class_id, moLaiLop: lopDaDong },
+      after: { status: 'active', date, lyDo, classId: lopMoi?.id ?? enr.class_id, lopMoi: !!lopMoi, moLaiLop: !lopMoi && lopDaDong },
     });
     return conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId);
   });
 }
+
+/** GET /students/:id/hoc-lai/lop-dich — lớp ĐANG hoạt động để chọn ở "Sang lớp mới" (cùng dạng `lopDichChoChuyen`, em không còn ghi danh `active`). Chỉ Quản lý / Quản trị của em. */
+export function lopChoHocLai(p: Principal, studentId: number) {
+  require_(p, PERMISSIONS.PLAN_WEEK, { studentId }, 'Chỉ Quản lý mới cho học viên học lại được.');
+  const enr = db().prepare(
+    `SELECT e.class_id, c.code, c.status AS class_status FROM enrollments e JOIN classes c ON c.id = e.class_id
+      WHERE e.student_id = ? AND e.status = 'completed' ORDER BY e.id DESC LIMIT 1`,
+  ).get(studentId) as any;
+  return { lopCu: enr ? { id: enr.class_id as number, code: enr.code as string, daKetThuc: enr.class_status === 'finished' } : null, ...danhSachLopDich(enr?.class_id ?? -1) };
+}
+```
+`danhSachLopDich(boQuaLopId)`: tách phần dựng danh sách khỏi `lopDichChoChuyen` (`luatLoTrinh.ts:57-86`) — `lopDichChoChuyen` giữ kiểm quyền + gọi hàm mới; trả `{ chiNhanh, lop }` như cũ.
+
+Phép kiểm thêm (sau LUIb-7):
+
+```ts
+  check('LUIb-7b · hocLai SANG LỚP MỚI: ghi danh cũ ở nguyên completed, lộ trình cũ ở nguyên abandoned, lộ trình mới active ở lớp mới, em ra khỏi Lưu trữ; sang FT từ lớp thường cần Target; lớp mới không hợp lệ 400', () => {
+    const sid = emDangHoc('MB FOU 12');
+    const lopMoiThuong = (conn.prepare(`SELECT id FROM classes WHERE status = 'active' AND is_fast_track = 0 AND id != ? ORDER BY id LIMIT 1`).get(classId('MB FOU 12')) as any).id as number;
+    const lopFt = classId('MB FT 101');
+    conn.exec('BEGIN IMMEDIATE');   // cả phép kiểm nằm trong một giao dịch rồi ROLLBACK — không để em nằm lại ở lớp mới (`tx` lồng = savepoint)
+    svc.setStudentStatus(P.mbManager, sid, 'finished', TODAY, 'Nghỉ học');
+    const cuCycles = JSON.stringify(conn.prepare('SELECT id, status, ended_at FROM learning_cycles WHERE student_id = ? ORDER BY id').all(sid));
+    try {
+      assert(maLoi(() => svc.hocLai(P.mbManager, sid, { lopMoiId: classId('MB FOU 12') })) === 400, 'lớp mới = lớp cũ → 400');
+      assert(maLoi(() => svc.hocLai(P.mbManager, sid, { lopMoiId: lopFt })) === 400, 'sang FT không Target → 400');
+      svc.hocLai(P.mbManager, sid, { lopMoiId: lopMoiThuong, lyDo: 'Học lại ở lớp khác' });
+      const s = conn.prepare('SELECT status, archived_at, finished_at, branch_id FROM students WHERE id = ?').get(sid) as any;
+      assert(s.status === 'active' && s.archived_at === null && s.finished_at === null, JSON.stringify(s));
+      const e = conn.prepare('SELECT class_id, status FROM enrollments WHERE student_id = ? ORDER BY id').all(sid) as any[];
+      assert(e.at(-1).class_id === lopMoiThuong && e.at(-1).status === 'active' && e.at(-2).status === 'completed', JSON.stringify(e));
+      const c = conn.prepare('SELECT id, status FROM learning_cycles WHERE student_id = ? ORDER BY id').all(sid) as any[];
+      assert(c.at(-1).status === 'active' && JSON.stringify(c.slice(0, -1).map((x: any) => x.id)) === JSON.stringify(JSON.parse(cuCycles).map((x: any) => x.id)), 'lộ trình mới active, lộ trình cũ còn đó');
+      assert(c.slice(0, -1).every((x: any) => x.status !== 'active'), 'lộ trình cũ không được active');
+      const hanhTrinh = conn.prepare(`SELECT title, detail FROM journey_events WHERE student_id = ? AND event_type = 'resume' ORDER BY id DESC LIMIT 1`).get(sid) as any;
+      assert(hanhTrinh.title === 'Học lại' && hanhTrinh.detail.includes('sang lớp'), JSON.stringify(hanhTrinh));
+    } finally { conn.exec('ROLLBACK'); }
+  });
 ```
 
 - [ ] **Step 5: Cờ quyền**
@@ -432,13 +550,17 @@ Cập nhật kiểu `HoSoLop['viewer']` ở `web/src/modules/classes/DauTrangLop
 `server/src/routes/index.ts` — ngay sau route `/students/:id/unarchive` (`:1853-1856`):
 
 ```ts
-/** PR-LUI-b: Học lại — đường lui của Kết thúc học. Chỉ Quản lý / Quản trị (máy chủ kiểm `plan.week` của em). */
+/** PR-LUI-b: Học lại — đường lui của Kết thúc học (về lớp cũ, hoặc sang lớp mới + lộ trình mới). Chỉ Quản lý / Quản trị (máy chủ kiểm `plan.week` của em). */
 api.post('/students/:id/hoc-lai', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
+  const b = req.body ?? {};
   return studentSvc.hocLai(principalOf(req), pInt(req, 'id'), {
-    date: req.body?.date ?? undefined, lyDo: req.body?.lyDo, moLaiLop: req.body?.moLaiLop === true,
+    date: b.date ?? undefined, lyDo: b.lyDo, moLaiLop: b.moLaiLop === true,
+    lopMoiId: b.lopMoiId ? Number(b.lopMoiId) : null, mucTieu: b.mucTieu ?? null, thangThi: b.thangThi ?? null,
   });
 }));
+/** PR-LUI-b: lớp đang hoạt động để chọn "Sang lớp mới" + lớp cũ của em (panel Học lại). */
+api.get('/students/:id/hoc-lai/lop-dich', requireAuth, wrap((req) => studentSvc.lopChoHocLai(principalOf(req), pInt(req, 'id'))));
 ```
 và sau route `/classes/:id/ket-thuc` (`:1149-1152`):
 ```ts
@@ -462,7 +584,7 @@ git commit -m "PR-LUI-b: máy chủ Học lại + Mở lại lớp (đảo Kết
 
 ---
 
-### Task 3: Máy chủ — làm nhiều em (xem trước + chạy theo lô)
+### Task 3: Máy chủ — làm nhiều học viên (xem trước + chạy theo lô) — **làm sau Task 4**
 
 **Files:**
 - Create: `server/src/students/hangLoat.ts`
@@ -470,7 +592,7 @@ git commit -m "PR-LUI-b: máy chủ Học lại + Mở lại lớp (đảo Kết
 - Test: `server/src/tests/prLuiB.tests.ts`
 
 **Interfaces:**
-- Consumes: `setStudentStatus`, `archiveStudent`, `unarchiveStudent`, `hocLai` (`students.ts`); `VIEC_HANG_LOAT`, `LO_HANG_LOAT_EM`, `TOI_DA_HANG_LOAT_EM`, kiểu `XemTruocHangLoat`, `KetQuaHangLoat`, `DongXemTruoc`.
+- Consumes: `setStudentStatus`, `archiveStudent`, `unarchiveStudent`, `hocLai` (`students.ts`), `huyNhieuLenh`, `khoiPhucLenh` (Task 4); `VIEC_HANG_LOAT`, `LO_HANG_LOAT_EM`, `TOI_DA_HANG_LOAT_EM`, kiểu `XemTruocHangLoat`, `KetQuaHangLoat`, `DongXemTruoc`.
 - Produces: `xemTruoc(p, { viec, studentIds }): XemTruocHangLoat`; `chay(p, { viec, studentIds, lyDo?, date?, moLaiLop? }): KetQuaHangLoat`. Route `POST /hang-loat-hoc-vien/xem-truoc`, `POST /hang-loat-hoc-vien`.
 
 - [ ] **Step 1: Phép kiểm đỏ**
@@ -536,7 +658,7 @@ git commit -m "PR-LUI-b: máy chủ Học lại + Mở lại lớp (đảo Kết
 
 - [ ] **Step 2: Chạy — đỏ** (không tìm thấy `../students/hangLoat.ts`).
 
-- [ ] **Step 3: `server/src/students/hangLoat.ts`**
+- [ ] **Step 3: `server/src/students/hangLoat.ts`** (làm **sau Task 4** — gọi `huyNhieuLenh` / `khoiPhucLenh`)
 
 ```ts
 import { db, theoLo, tx } from '../db.ts';
@@ -549,12 +671,14 @@ import { HttpError, badRequest, chuTuDo, forbidden } from '../util.ts';
 import { can, napTruocPhamVi, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { chanGiaoDichNeuSapHetGio } from '../platform/hanGio.ts';
+import { huyNhieuLenh, khoiPhucLenh } from '../classes/lenhChuyen.ts';
 import { archiveStudent, hocLai, setStudentStatus, unarchiveStudent } from './students.ts';
 
 /**
- * LÀM NHIỀU EM MỘT LẦN (PR-LUI-b, chủ sản phẩm 06/10) — Kết thúc học · Lưu trữ · Bỏ lưu trữ · Học lại. CHỈ Quản lý / Quản trị (`plan.week` của TỪNG em).
- * Không có luật riêng: mỗi em đi qua đúng hàm một em (`setStudentStatus`, `archiveStudent`, `unarchiveStudent`, `hocLai`). MỖI EM MỘT GIAO DỊCH —
- * lỗi một em (ngoài quyền, sai trạng thái, máy chủ sắp hết giờ) không cuộn lại các em đã xong; kết quả trả `ok` + `failed` để web nói "Đã lưu n em · m em chưa lưu".
+ * LÀM NHIỀU HỌC VIÊN MỘT LẦN (PR-LUI-b, chủ sản phẩm 06/10) — Kết thúc học · Lưu trữ · Bỏ lưu trữ · Học lại · Huỷ chuyển lớp · Khôi phục chuyển lớp. CHỈ Quản lý /
+ * Quản trị (`plan.week` của TỪNG học viên). Không có luật riêng: mỗi học viên đi qua đúng hàm một em (`setStudentStatus`, `archiveStudent`, `unarchiveStudent`,
+ * `hocLai`, `huyNhieuLenh`, `khoiPhucLenh`). MỖI HỌC VIÊN MỘT GIAO DỊCH — lỗi một em (ngoài quyền, sai trạng thái, máy chủ sắp hết giờ) không cuộn lại các em đã xong; kết quả
+ * trả `ok` + `failed` để web nói "Đã lưu n học viên · m học viên chưa lưu".
  * ponytail: không có "một giao dịch cho cả lô" — cố ý (lỗi giữa chừng phải giữ phần đã lưu); thêm khoá chống gửi trùng nếu cần: các việc đều lặp lại an toàn.
  */
 const CHI_QL = 'Chỉ Quản lý mới làm được việc này cho nhiều học viên.';
@@ -571,50 +695,63 @@ function docIds(v: unknown, toiDa: number): number[] {
   return ids;
 }
 
+type Em = { s: any; lopCuoi: any | null; lenhCho: any | null; lenhHuy: any | null };
+
 /** Em này có làm được `viec` không? Chữ = KHÔNG (lý do ngắn hiện ở màn xem trước và ở "chưa lưu"); `null` = làm được. */
-function lyDoBo(p: Principal, viec: ViecHangLoat, s: any, lopCuoi: any): string | null {
+function lyDoBo(p: Principal, viec: ViecHangLoat, e: Em): string | null {
+  const { s, lopCuoi } = e;
   if (!can(p, PERMISSIONS.PLAN_WEEK, { studentId: s.id })) return 'Ngoài phạm vi của bạn.';
   switch (viec) {
     case 'ket-thuc': return s.status === 'finished' ? 'Đã kết thúc học' : null;
     case 'luu-tru': return s.status !== 'finished' ? 'Chưa kết thúc học' : s.archived_at ? 'Đã lưu trữ' : null;
     case 'bo-luu-tru': return s.archived_at ? null : 'Chưa lưu trữ';
     case 'hoc-lai': return s.status !== 'finished' ? 'Đang học' : lopCuoi?.status !== 'completed' ? 'Chưa có lớp để học lại' : null;
+    case 'huy-lenh': return e.lenhCho ? null : 'Chưa có quyết định chuyển lớp';
+    case 'khoi-phuc-lenh': return e.lenhHuy ? null : 'Không có quyết định vừa huỷ để khôi phục';
   }
 }
 
-function docEm(ids: number[]) {
+function docEm(ids: number[]): Map<number, Em> {
   const conn = db();
-  const em = new Map<number, any>();
-  const lopCuoi = new Map<number, any>();
+  const kq = new Map<number, Em>();
   theoLo(ids, (lo, ph) => {
-    for (const s of conn.prepare(`SELECT id, student_code, full_name, status, archived_at FROM students WHERE id IN (${ph})`).all(...lo) as any[]) em.set(s.id, s);
+    for (const s of conn.prepare(`SELECT id, student_code, full_name, status, archived_at FROM students WHERE id IN (${ph})`).all(...lo) as any[]) {
+      kq.set(s.id, { s, lopCuoi: null, lenhCho: null, lenhHuy: null });
+    }
     /* Ghi danh MỚI NHẤT mỗi em (id lớn nhất đè) — cùng cách `hocLai` chọn dòng `completed` cuối. */
-    for (const e of conn.prepare(
+    for (const r of conn.prepare(
       `SELECT e.student_id, e.status, e.class_id, c.code, c.status AS class_status FROM enrollments e JOIN classes c ON c.id = e.class_id
         WHERE e.student_id IN (${ph}) ORDER BY e.id`,
-    ).all(...lo) as any[]) lopCuoi.set(e.student_id, e);
+    ).all(...lo) as any[]) { const e = kq.get(r.student_id); if (e) e.lopCuoi = r; }
+    for (const l of conn.prepare(`SELECT id, student_id, huong, lop_nguon_id FROM lenh_chuyen_lop WHERE trang_thai = 'cho' AND student_id IN (${ph})`).all(...lo) as any[]) {
+      const e = kq.get(l.student_id); if (e) e.lenhCho = l;
+    }
+    /* Quyết định huỷ GẦN NHẤT của em (lệnh nào cũng được — `khoiPhucLenh` kiểm người huỷ, giờ, tuần, em còn ở lớp nguồn). */
+    for (const l of conn.prepare(`SELECT id, student_id, huong, lop_nguon_id FROM lenh_chuyen_lop WHERE trang_thai = 'huy' AND student_id IN (${ph}) ORDER BY id`).all(...lo) as any[]) {
+      const e = kq.get(l.student_id); if (e) e.lenhHuy = l;
+    }
   });
-  return { em, lopCuoi };
+  return kq;
 }
 
-/** POST /hang-loat-hoc-vien/xem-truoc — KHÔNG ghi gì. Mỗi em một dòng (`lyDoBo`) + số hệ quả của cả lô. */
+/** POST /hang-loat-hoc-vien/xem-truoc — KHÔNG ghi gì. Mỗi học viên một dòng (`lyDoBo`) + số hệ quả của cả lô. */
 export function xemTruoc(p: Principal, input: { viec?: unknown; studentIds?: unknown }): XemTruocHangLoat {
   const viec = docViec(input?.viec);
   const ids = docIds(input?.studentIds, TOI_DA_HANG_LOAT_EM);
   napTruocPhamVi(ids);
-  const { em, lopCuoi } = docEm(ids);
+  const em = docEm(ids);
   const rows: DongXemTruoc[] = ids.map((id) => {
-    const s = em.get(id);
-    if (!s) return { studentId: id, ten: `#${id}`, ma: '', lop: null, trangThai: 'dang-hoc', lyDoBo: 'Không tìm thấy học viên.' };
-    const l = lopCuoi.get(id) ?? null;
+    const e = em.get(id);
+    if (!e) return { studentId: id, ten: `#${id}`, ma: '', lop: null, trangThai: 'dang-hoc', lyDoBo: 'Không tìm thấy học viên.' };
+    const s = e.s;
     return {
-      studentId: id, ten: s.full_name, ma: s.student_code, lop: l?.code ?? null,
+      studentId: id, ten: s.full_name, ma: s.student_code, lop: e.lopCuoi?.code ?? null,
       trangThai: s.archived_at ? 'luu-tru' : s.status === 'finished' ? 'da-ket-thuc' : s.status === 'inactive' ? 'tam-dung' : 'dang-hoc',
-      lyDoBo: lyDoBo(p, viec, s, l),
+      lyDoBo: lyDoBo(p, viec, e),
     };
   });
   const duoc = rows.filter((r) => !r.lyDoBo);
-  const tong = { duoc: duoc.length, boQua: rows.length - duoc.length, caseDong: 0, paHuy: 0, lenhHuy: 0, lopMoLai: [] as string[] };
+  const tong = { duoc: duoc.length, boQua: rows.length - duoc.length, caseDong: 0, paHuy: 0, lenhHuy: 0, lopMoLai: [] as string[], theoHuong: {} as Record<string, number> };
   if (viec === 'ket-thuc' && duoc.length) {
     const conn = db();
     theoLo(duoc.map((r) => r.studentId), (lo, ph) => {
@@ -632,48 +769,95 @@ export function xemTruoc(p: Principal, input: { viec?: unknown; studentIds?: unk
     });
   }
   if (viec === 'hoc-lai') {
-    tong.lopMoLai = [...new Set(duoc.map((r) => lopCuoi.get(r.studentId)).filter((l) => l?.class_status === 'finished').map((l) => l.code as string))];
+    tong.lopMoLai = [...new Set(duoc.map((r) => em.get(r.studentId)!.lopCuoi).filter((l) => l?.class_status === 'finished').map((l) => l.code as string))];
+  }
+  if (viec === 'huy-lenh') {
+    for (const r of duoc) { const h = em.get(r.studentId)!.lenhCho.huong as string; tong.theoHuong[h] = (tong.theoHuong[h] ?? 0) + 1; }
   }
   return { viec, rows, tong };
 }
 
-/** POST /hang-loat-hoc-vien — làm ≤ `LO_HANG_LOAT_EM` em. Trả `ok` (đã làm, kể cả em ở sẵn trạng thái đó) và `failed` (em nào, vì sao chưa). */
-export function chay(p: Principal, input: { viec?: unknown; studentIds?: unknown; lyDo?: unknown; date?: unknown; moLaiLop?: unknown }): KetQuaHangLoat {
+/** POST /hang-loat-hoc-vien — làm ≤ `LO_HANG_LOAT_EM` học viên. Trả `ok` (đã làm) và `failed` (em nào, vì sao chưa). */
+export function chay(p: Principal, input: {
+  viec?: unknown; studentIds?: unknown; lyDo?: unknown; date?: unknown; moLaiLop?: unknown; lopMoiId?: unknown;
+}): KetQuaHangLoat {
   const viec = docViec(input?.viec);
   const ids = docIds(input?.studentIds, LO_HANG_LOAT_EM);
   const lyDo = chuTuDo(input.lyDo, 'Lý do', 2000);
-  const date = typeof input.date === 'string' && input.date ? input.date : demoToday();
+  const date = typeof input.date === 'string' && input.date ? input.date : undefined;
   if (viec === 'ket-thuc' && !lyDo) throw badRequest('Ghi lý do kết thúc học.');
+  if (viec === 'huy-lenh' && (lyDo?.length ?? 0) < 3) throw badRequest('Ghi lý do huỷ quyết định.');
+  const lopMoiId = input.lopMoiId === undefined || input.lopMoiId === null ? null : Number(input.lopMoiId);
+  if (lopMoiId !== null && (!Number.isInteger(lopMoiId) || lopMoiId <= 0)) throw badRequest('Lớp chuyển đến không hợp lệ.');
   napTruocPhamVi(ids);
-  const { em, lopCuoi } = docEm(ids);
-  /* Không em nào trong phạm vi người gọi → 403 cả lô (GVCN gọi thẳng API). */
+  const em = docEm(ids);
+  /* Không học viên nào trong phạm vi người gọi → 403 cả lô (GVCN gọi thẳng API). */
   if (!ids.some((id) => em.has(id) && can(p, PERMISSIONS.PLAN_WEEK, { studentId: id }))) throw forbidden(CHI_QL);
 
   const kq: KetQuaHangLoat = { ok: [], failed: [] };
-  for (const id of ids) {
-    const s = em.get(id);
-    const bo = s ? lyDoBo(p, viec, s, lopCuoi.get(id) ?? null) : 'Không tìm thấy học viên.';
-    if (bo) { kq.failed.push({ studentId: id, message: bo }); continue; }
-    try {
-      tx(() => {
-        chanGiaoDichNeuSapHetGio();   // sắp hết giờ → 503 "chưa lưu" cho em này (và các em sau)
-        if (viec === 'ket-thuc') setStudentStatus(p, id, 'finished', date, lyDo ?? undefined);
-        else if (viec === 'luu-tru') archiveStudent(p, id);
-        else if (viec === 'bo-luu-tru') unarchiveStudent(p, id);
-        else hocLai(p, id, { date: typeof input.date === 'string' && input.date ? input.date : undefined, lyDo, moLaiLop: input.moLaiLop === true });
-      });
-      kq.ok.push(id);
-    } catch (e) {
-      if (!(e instanceof HttpError)) throw e;
-      kq.failed.push({ studentId: id, message: e.message });
+  const lyDoCua = (id: number): string | null => { const e = em.get(id); return e ? lyDoBo(p, viec, e) : 'Không tìm thấy học viên.'; };
+  const lamDuoc: number[] = [];
+  for (const id of ids) { const bo = lyDoCua(id); if (bo) kq.failed.push({ studentId: id, message: bo }); else lamDuoc.push(id); }
+
+  if (viec === 'huy-lenh') {
+    /* MỘT lần gọi cho cả lô: mỗi lệnh một giao dịch bên trong, nhưng chuông gom MỘT cái cho mỗi người nhận. */
+    const theoLenh = new Map(lamDuoc.map((id) => [em.get(id)!.lenhCho.id as number, id]));
+    const r = huyNhieuLenh(p, [...theoLenh.keys()], lyDo);
+    kq.ok.push(...r.ok.map((lid) => theoLenh.get(lid)!));
+    kq.failed.push(...r.failed.map((f) => ({ studentId: theoLenh.get(f.id) ?? f.studentId, message: f.message })));
+  } else {
+    for (const id of lamDuoc) {
+      const e = em.get(id)!;
+      try {
+        tx(() => {
+          chanGiaoDichNeuSapHetGio();   // sắp hết giờ → 503 "chưa lưu" cho em này (và các em sau)
+          if (viec === 'ket-thuc') setStudentStatus(p, id, 'finished', date ?? demoToday(), lyDo ?? undefined);
+          else if (viec === 'luu-tru') archiveStudent(p, id);
+          else if (viec === 'bo-luu-tru') unarchiveStudent(p, id);
+          else if (viec === 'hoc-lai') hocLai(p, id, { date, lyDo, moLaiLop: input.moLaiLop === true, lopMoiId });
+          else { const r = khoiPhucLenh(p, [e.lenhHuy.id]); if (r.failed.length) throw new HttpError(409, r.failed[0].message); }
+        });
+        kq.ok.push(id);
+      } catch (err) {
+        if (!(err instanceof HttpError)) throw err;
+        kq.failed.push({ studentId: id, message: err.message });
+      }
     }
   }
   if (kq.ok.length) {
     writeAudit({ actorUserId: p.userId, action: 'student.hang_loat', entityType: 'student', entityId: null,
-      after: { viec, soEm: kq.ok.length, soLoi: kq.failed.length, studentIds: kq.ok, lyDo, date } });
+      after: { viec, soEm: kq.ok.length, soLoi: kq.failed.length, studentIds: kq.ok, lyDo, date: date ?? null, lopMoiId } });
   }
   return kq;
 }
+```
+
+Phép kiểm (thêm vào Step 1): sau LUIb-10 —
+
+```ts
+  await checkAsync('LUIb-10b · Huỷ chuyển lớp qua làm nhiều học viên: huỷ rồi Khôi phục về đúng quyết định; một chuông mỗi người nhận; em không có quyết định → bỏ qua có lý do', async () => {
+    const hl: any = await import('../students/hangLoat.ts');
+    const lenh: any = await import('../classes/lenhChuyen.ts');
+    const nguon = classId('MB FT 101');
+    const em = (conn.prepare(`SELECT s.id FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
+        WHERE e.class_id = ? AND s.status = 'active' AND s.archived_at IS NULL AND NOT EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.student_id = s.id AND l.trang_thai = 'cho')
+        ORDER BY s.id LIMIT 3`).all(nguon) as any[]).map((r) => r.id as number);
+    assert(em.length === 3, 'cần 3 em chưa có quyết định');
+    const tuan = d.tuanChonDuoc(TODAY)[0];
+    lenh.raLenh(P.mbManager, { lopNguonId: nguon, boiCanh: 'giua-khoa', tuanChung: null, dongs: em.slice(0, 2).map((studentId: number) => ({ studentId, huong: 'bao_luu', tuan, lyDo: 'Đi xa', ngayXemLai: addDays(TODAY, 60) })) });
+    try {
+      const xt = hl.xemTruoc(P.mbManager, { viec: 'huy-lenh', studentIds: em });
+      assert(xt.tong.duoc === 2 && xt.tong.boQua === 1 && xt.tong.theoHuong.bao_luu === 2, JSON.stringify(xt.tong));
+      assert(xt.rows.find((r: any) => r.studentId === em[2]).lyDoBo === 'Chưa có quyết định chuyển lớp', 'em không có quyết định phải bị bỏ qua');
+      assert(maLoi(() => hl.chay(P.mbManager, { viec: 'huy-lenh', studentIds: em, lyDo: 'ab' })) === 400, 'lý do < 3 ký tự');
+      const kq = hl.chay(P.mbManager, { viec: 'huy-lenh', studentIds: em, lyDo: 'Đã đổi ý' });
+      assert(kq.ok.length === 2 && kq.failed.length === 1 && kq.failed[0].studentId === em[2], JSON.stringify(kq));
+      assert((conn.prepare(`SELECT COUNT(*) n FROM lenh_chuyen_lop WHERE student_id IN (${em[0]}, ${em[1]}) AND trang_thai = 'cho'`).get() as any).n === 0, 'cả hai phải huỷ');
+      const kp = hl.chay(P.mbManager, { viec: 'khoi-phuc-lenh', studentIds: kq.ok });
+      assert(kp.ok.length === 2 && kp.failed.length === 0, JSON.stringify(kp));
+      assert((conn.prepare(`SELECT COUNT(*) n FROM lenh_chuyen_lop WHERE student_id IN (${em[0]}, ${em[1]}) AND trang_thai = 'cho'`).get() as any).n === 2, 'cả hai phải về chờ');
+    } finally { conn.prepare(`UPDATE lenh_chuyen_lop SET trang_thai = 'huy' WHERE student_id IN (${em.join(',')}) AND trang_thai = 'cho'`).run(); }
+  });
 ```
 
 - [ ] **Step 4: Route** (cạnh các route học viên, trước `// === Họp tuần` ~dòng 1858)
@@ -708,7 +892,7 @@ git commit -m "PR-LUI-b: máy chủ làm nhiều em (xem trước + chạy theo 
 
 **Interfaces:**
 - Consumes: `docLenh`, `kiemConSuaDuoc`, `nguoiNhanCuaLop`, `thongBaoSapNhan`, `KHOI_PHUC_LENH_GIO`.
-- Produces: `huyNhieuLenh(p, ids: number[], lyDo: unknown): { ok: number[]; failed: { id: number; studentId: number; message: string }[] }`; `khoiPhucLenh(p, ids: number[]): same`. Route `POST /lenh-chuyen/huy-nhieu {ids, lyDo}`, `POST /lenh-chuyen/khoi-phuc {ids}`.
+- Produces: `huyNhieuLenh(p, ids: number[], lyDo: unknown): { ok: number[]; failed: { id: number; studentId: number; message: string }[] }`; `khoiPhucLenh(p, ids: number[]): same` (hàm, không route).
 
 - [ ] **Step 1: Phép kiểm đỏ**
 
@@ -909,20 +1093,7 @@ Import bổ sung ở đầu `lenhChuyen.ts`: `HttpError`, `forbidden` từ `'../
 
 Lưu ý phép kiểm: nhóm `failed` 999999 cho `docLenh` ném `notFound` (HttpError 404) → vào `failed` với `studentId: 0` — khớp `kq.failed[0].id === 999999`.
 
-- [ ] **Step 4: Route** (ngay sau route `/lenh-chuyen/:id/huy`, `:1345-1349`). Hai đường nằm **trước** mọi `/lenh-chuyen/:id…` có cùng số đoạn không xảy ra va chạm (khác số đoạn), nhưng đặt sau route `huy` cho gọn:
-
-```ts
-/** PR-LUI-b: huỷ nhiều quyết định chuyển lớp một lần + Khôi phục (Hoàn tác). Chỉ Quản lý của lớp nguồn. */
-api.post('/lenh-chuyen/huy-nhieu', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return lenhSvc.huyNhieuLenh(principalOf(req), req.body?.ids, req.body?.lyDo);
-}));
-api.post('/lenh-chuyen/khoi-phuc', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return lenhSvc.khoiPhucLenh(principalOf(req), req.body?.ids);
-}));
-```
-Kiểm: không có `api.post('/lenh-chuyen/:id', …)` một đoạn cùng method bắt trước (`grep -n "api.post('/lenh-chuyen" server/src/routes/index.ts`).
+- [ ] **Step 4: Không thêm route.** `huyNhieuLenh` / `khoiPhucLenh` là hàm — `students/hangLoat.ts` (Task 3) gọi, web đi qua `POST /hang-loat-hoc-vien` (việc `huy-lenh`, `khoi-phuc-lenh`). Một đường cho cả hồ sơ lớp và panel Chuyển tiếp lớp.
 
 - [ ] **Step 5: Chạy — xanh** (LUIb-11 + mọi phép kiểm `lenh_chuyen` cũ trong `prCt.tests.ts`, `prS5fA…`).
 
@@ -935,12 +1106,12 @@ git commit -m "PR-LUI-b: huỷ nhiều quyết định chuyển lớp + Khôi ph
 
 ---
 
-### Task 5: Máy chủ — cờ ở Lưu trữ + (Q2-B) Quản lý kết thúc lớp
+### Task 5: Máy chủ — cờ ở Lưu trữ + Quản lý kết thúc lớp (chủ sản phẩm 06/10: có)
 
 **Files:**
 - Modify: `server/src/classes/luuTru.ts:11-20, 53-59, 78-88`
-- Modify: `server/src/classes/xoaKetThucLop.ts:18, 69-83, 106-109` **(chỉ khi chủ sản phẩm chọn Q2-B)**
-- Modify: `server/src/classes/classes.ts:~806` **(Q2-B)**
+- Modify: `server/src/classes/xoaKetThucLop.ts:18, 69-83, 106-109`
+- Modify: `server/src/classes/classes.ts:~806`
 - Test: `server/src/tests/prLuiB.tests.ts` + sửa `server/src/tests/panelUx3.tests.ts:445-449` nếu đụng
 
 **Interfaces:**
@@ -962,7 +1133,7 @@ git commit -m "PR-LUI-b: huỷ nhiều quyết định chuyển lớp + Khôi ph
 ```
 Q2-B thêm:
 ```ts
-  await checkAsync('LUIb-13 · (Q2-B) Quản lý kết thúc lớp rỗng được, lớp còn em 400, GVCN 403; Xoá lớp vẫn chỉ Quản trị', async () => {
+  await checkAsync('LUIb-13 · Quản lý kết thúc lớp rỗng được, lớp còn em 400, GVCN 403; Xoá lớp vẫn chỉ Quản trị', async () => {
     const xk: any = await import('../classes/xoaKetThucLop.ts');
     const lop = classId('MB FOU 12');
     assert(maLoi(() => xk.ketThucLop(P.normalCoreTeacher, lop)) === 403, 'GVCN 403');
@@ -976,7 +1147,7 @@ Q2-B thêm:
 
 - [ ] **Step 3: `luuTru.ts`** — kiểu `LopLuuTru` thêm `coTheMoLai: boolean;`; `HocVienLuuTru` thêm `coTheHocLai: boolean;`. Trong truy vấn lớp: sau `.map((r) => ({…}))` thêm `coTheMoLai: can(p, PERMISSIONS.CLASS_EDIT, { classId: r.id })` (đọc `classId` từ `r.id`, **ngoài** `.sort` — thêm vào object trả về ở `.map`). Trong `hocVien` map thêm `coTheHocLai: can(p, PERMISSIONS.PLAN_WEEK, { studentId: s.id }),` (cùng điều kiện `coTheBoLuuTru`). Sửa các chỗ dựng giá trị `LopLuuTru`/`HocVienLuuTru` ở web (`LuuTruPage.tsx:12-19`).
 
-- [ ] **Step 4 (chỉ Q2-B): cổng Kết thúc lớp**
+- [ ] **Step 4: cổng Kết thúc lớp (Quản lý được; Xoá lớp vẫn chỉ Quản trị)**
 
 `xoaKetThucLop.ts`:
 - dòng 18 giữ `CHI_ADMIN` cho `xoaLop`; thêm `const CHI_QL_KET_THUC = 'Chỉ Quản lý của lớp này hoặc Quản trị hệ thống mới kết thúc được lớp.';`
@@ -998,7 +1169,7 @@ git commit -m "PR-LUI-b: cờ Mở lại / Học lại ở Lưu trữ; Quản l�
 
 ---
 
-### Task 6: Web — Học lại ở hồ sơ em
+### Task 6: Web — Học lại ở hồ sơ em, có chọn đích (**chờ duyệt lại mockup mục 2–6**)
 
 **Files:**
 - Modify: `web/src/modules/students/StudentManagePanel.tsx:53-70` (thêm `case 'hoc-lai'`) + panel mới ở cuối nhóm panel
@@ -1006,7 +1177,7 @@ git commit -m "PR-LUI-b: cờ Mở lại / Học lại ở Lưu trữ; Quản l�
 - Test: `server/src/tests/prLuiB.tests.ts` (phép kiểm nguồn web như các PR trước dùng `doc(...)`)
 
 **Interfaces:**
-- Consumes: `POST /hang-loat-hoc-vien/xem-truoc` (một em → `lop`, `tong.lopMoLai`), `POST /students/:id/hoc-lai`, `POST /students/:id/status` (Hoàn tác = Kết thúc học).
+- Consumes: `GET /students/:id/hoc-lai/lop-dich`, `POST /students/:id/hoc-lai`, `POST /students/:id/status` (Hoàn tác = Kết thúc học).
 - Produces: `HocLaiPanel` (không export ngoài file).
 
 - [ ] **Step 1: Phép kiểm nguồn đỏ**
@@ -1041,36 +1212,47 @@ Thêm `case`:
 Thêm sau `LuuTruPanel` (hết dòng 180):
 
 ```tsx
+type LopDich = { id: number; code: string; ft: boolean; tenChuongTrinh: string | null; tuan: string | null; gvcn: string | null; studentCount?: number };
+type DuLieuHocLai = { lopCu: { id: number; code: string; daKetThuc: boolean } | null; chiNhanh: { id: number; name: string }[]; lop: LopDich[] };
+
 /**
- * HỌC LẠI (PR-LUI-b, chủ sản phẩm 06/10) — đường lui của Kết thúc học, chỉ Quản lý / Quản trị. Em về lớp cũ, lộ trình chạy tiếp, ra khỏi Lưu trữ;
- * lớp cũ đã kết thúc thì mở lại cùng lúc. Lý do tuỳ chọn. Hoàn tác = Kết thúc học lại (đúng hàm cũ, lý do "Hoàn tác học lại").
+ * HỌC LẠI (PR-LUI-b, chủ sản phẩm 06/10) — đường lui của Kết thúc học, chỉ Quản lý / Quản trị. CHỌN ĐÍCH: `Về lớp cũ` (lộ trình cũ chạy tiếp; lớp cũ đã kết thúc thì
+ * mở lại cùng lúc) hoặc `Sang lớp mới` (chọn lớp đang học, mở lộ trình mới, lộ trình cũ giữ ở Hành trình; sang Fast Track từ lớp thường phải có Target).
+ * Lý do tuỳ chọn. Hoàn tác = Kết thúc học lại (đúng hàm cũ, lý do "Hoàn tác học lại").
  */
 function HocLaiPanel({ studentId, studentName, lop, onClose, onDone }: ChungViec) {
   const toast = useToast();
+  const lf = useLoiForm();
+  const { data, error, reload } = useApi<DuLieuHocLai>(`/students/${studentId}/hoc-lai/lop-dich`, [studentId]);
+  const [dich, setDich] = useState<'cu' | 'moi'>('cu');
+  const [lopMoiId, setLopMoiId] = useState<number | ''>('');
+  const [target, setTarget] = useState('');
+  const [thi, setThi] = useState('');
   const [lyDo, setLyDo] = useState('');
   const [ngayHl, setNgayHl] = useState('');
   const [busy, setBusy] = useState(false);
-  const [xem, setXem] = useState<XemTruocHangLoat | null>(null);
-  const [loi, setLoi] = useState<string | null>(null);
-  const nap = () => {
-    setLoi(null);
-    api.post<XemTruocHangLoat>('/hang-loat-hoc-vien/xem-truoc', { viec: 'hoc-lai', studentIds: [studentId] })
-      .then(setXem).catch((e: any) => setLoi(e.message));
-  };
-  useEffect(nap, [studentId]);   // eslint-disable-line react-hooks/exhaustive-deps
-  const dong = xem?.rows[0] ?? null;
-  const chan = dong?.lyDoBo ?? null;
-  const moLop = xem?.tong.lopMoLai[0] ?? null;
+  const lopMoi = data?.lop.find((l) => l.id === lopMoiId) ?? null;
+  const canTarget = dich === 'moi' && !!lopMoi?.ft;
+  const loi = dsLoi([
+    ...(dich === 'moi' ? [{ khoa: 'lop', nhan: 'Lớp', toiThieu: 1 }] : []),
+    ...(canTarget ? [{ khoa: 'target', nhan: 'Target', toiThieu: 1 }] : []),
+  ], { lop: lopMoiId === '' ? '' : String(lopMoiId), target });
+  const chan = !data?.lopCu ? 'Chưa có lớp để học lại' : null;
 
   const luu = async () => {
+    lf.bam();
+    if (loi.length) return;
     setBusy(true);
     try {
-      await api.post(`/students/${studentId}/hoc-lai`, { date: ngayHl || undefined, lyDo: lyDo.trim() || undefined, moLaiLop: true });
-      invalidate('/students'); invalidate('/classes'); invalidate('/hoc-vien-lop'); invalidate('/cases');
-      toast.hoanTac(`Đã cho ${studentName} học lại`, async () => {
+      await api.post(`/students/${studentId}/hoc-lai`, {
+        date: ngayHl || undefined, lyDo: lyDo.trim() || undefined, moLaiLop: true,
+        ...(dich === 'moi' ? { lopMoiId, mucTieu: canTarget ? (target.trim().toUpperCase() === KCK ? KCK : Number(target)) : undefined, thangThi: thi || undefined } : {}),
+      });
+      for (const k of ['/students', '/classes', '/hoc-vien-lop', '/cases']) invalidate(k);
+      toast.hoanTac(`Đã cho ${studentName} học lại${lopMoi ? ` · ${lopMoi.code}` : ''}`, async () => {
         try {
           await api.post(`/students/${studentId}/status`, { status: 'finished', reason: 'Hoàn tác học lại' });
-          invalidate('/students'); invalidate('/classes'); invalidate('/hoc-vien-lop'); invalidate('/cases');
+          for (const k of ['/students', '/classes', '/hoc-vien-lop', '/cases']) invalidate(k);
           toast.push('ok', 'Đã hoàn tác');
           onDone();
         } catch (e: any) { toast.push('error', e.message); }
@@ -1082,33 +1264,55 @@ function HocLaiPanel({ studentId, studentName, lop, onClose, onDone }: ChungViec
   return (
     <KhungPanel tieuDe={NHAN_VIEC['hoc-lai']} hocVien={studentName} lop={lop} onDong={onClose}
       chan={{
-        daSua: !!lyDo.trim() || !!ngayHl,
-        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy || !dong || !!chan}>Học lại</button>,
+        daSua: !!lyDo.trim() || !!ngayHl || dich === 'moi',
+        conThieu: lf.conThieu(loi),
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy || !data || !!chan}>Học lại</button>,
       }}>
-      {loi ? <ErrorState message={loi} onRetry={nap} />
-        : !xem ? <Skeleton rows={3} /> : (
+      {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
+        : !data ? <Skeleton rows={4} /> : (
           <Khoi tieuDe="Học lại">
-            {chan ? <p className="m-0 text-sm text-late">{chan}</p> : (
+            {chan ? <p className="m-0 text-sm text-late">{chan}</p> : null}
+            <span role="group" aria-label="Học lại" className="flex flex-wrap gap-1.5">
+              <NutChon chon={dich === 'cu'} onClick={() => setDich('cu')}>Về lớp cũ</NutChon>
+              <NutChon chon={dich === 'moi'} onClick={() => setDich('moi')}>Sang lớp mới</NutChon>
+            </span>
+            {dich === 'cu' ? (
               <ul className="m-0 list-none space-y-1 p-0 text-sm text-slate-200">
-                <li>Về lớp {dong?.lop}</li>
-                <li>Lộ trình chạy tiếp</li>
-                <li>Ra khỏi Lưu trữ</li>
-                {moLop && <li className="text-soon">Mở lại lớp {moLop}</li>}
+                <li>Về lớp {data.lopCu?.code}</li><li>Lộ trình chạy tiếp</li><li>Ra khỏi Lưu trữ</li>
+                {data.lopCu?.daKetThuc && <li className="text-soon">Mở lại lớp {data.lopCu.code}</li>}
               </ul>
+            ) : (
+              <>
+                <Truong nhan="Lớp" batBuoc loi={lf.loiCua(loi, 'lop')}>
+                  <select className="field w-full" {...lf.o(loi, 'lop')} value={lopMoiId} onChange={(e) => setLopMoiId(e.target.value ? Number(e.target.value) : '')}>
+                    <option value="">Chọn lớp</option>
+                    {data.lop.filter((l) => l.id !== data.lopCu?.id).map((l) => <option key={l.id} value={l.id}>{[l.code, l.ft ? 'Fast Track' : l.tenChuongTrinh, l.gvcn ? `GVCN ${l.gvcn}` : null].filter(Boolean).join(' · ')}</option>)}
+                  </select>
+                </Truong>
+                {canTarget && (
+                  <>
+                    <Truong nhan="Target" batBuoc loi={lf.loiCua(loi, 'target')}>
+                      <input className="field w-full max-w-[8rem]" inputMode="decimal" placeholder="6.5" {...lf.o(loi, 'target')} value={target} onChange={(e) => setTarget(e.target.value)} />
+                    </Truong>
+                    <Truong nhan="Dự kiến thi" tuyChon><ONgay kieu="ngay-hoac-thang" value={thi} goiY="dd/mm/yyyy hoặc mm/yyyy" onChange={setThi} /></Truong>
+                  </>
+                )}
+                {lopMoi && (
+                  <ul className="m-0 list-none space-y-1 p-0 text-sm text-slate-200">
+                    <li>Vào lớp {lopMoi.code}</li><li>Lộ trình mới</li><li>Lộ trình cũ giữ ở Hành trình</li><li>Ra khỏi Lưu trữ</li>
+                  </ul>
+                )}
+              </>
             )}
-            <Truong nhan="Có hiệu lực từ">
-              <ChonNgayGan value={ngayHl} onChange={setNgayHl} soNgay={30} chuaChon="Mặc định: hôm nay" />
-            </Truong>
-            <Truong nhan="Lý do" tuyChon>
-              <input className="field w-full" maxLength={2000} value={lyDo} onChange={(e) => setLyDo(e.target.value)} />
-            </Truong>
+            <Truong nhan="Có hiệu lực từ"><ChonNgayGan value={ngayHl} onChange={setNgayHl} soNgay={30} chuaChon="Mặc định: hôm nay" /></Truong>
+            <Truong nhan="Lý do" tuyChon><input className="field w-full" maxLength={2000} value={lyDo} onChange={(e) => setLyDo(e.target.value)} /></Truong>
           </Khoi>
         )}
     </KhungPanel>
   );
 }
 ```
-Import thêm đầu file: `useEffect` (từ react), `ErrorState, Skeleton` (từ `'../../ui/ui.tsx'`, hiện đã import `NutChon, TargetText`), `type XemTruocHangLoat` (từ `@shared/domain/index.ts`). Dòng "Lộ trình chạy tiếp" nếu em không có lộ trình bị đóng → vẫn hiện (máy chủ không có thông tin; chấp nhận — nếu cần sát hơn, thêm `loTrinhSeChay` vào `xemTruoc` ở Task 3 và ẩn dòng khi `null`: đã ghi trong "Cái bỏ qua" cuối kế hoạch).
+Import thêm đầu file: `ErrorState, Skeleton` (từ `'../../ui/ui.tsx'`, nơi đã import `NutChon, TargetText`). `KCK`, `dsLoi`, `ONgay`, `ChonNgayGan`, `Khoi`, `KhungPanel`, `Truong`, `useApi` đã import sẵn. Route `GET /students/:id/hoc-lai/lop-dich` (Task 2) trả `{ lopCu, chiNhanh, lop }`; `lop[].studentCount` nếu `danhSachLopDich` chưa có thì bỏ khỏi nhãn (không thêm truy vấn).
 
 - [ ] **Step 4: `StudentDetailPage`** — kiểm `data.lopHoc` (từ `lopHocCua`) đã chứa `quyen.hocLai` (Task 2) và `mucQuanLyHocVien` nhận nó. Không sửa gì thêm nếu `typecheck` xanh. Hồ sơ em đã lưu trữ (chế độ chỉ xem, `chiXem`): menu vẫn vẽ `⋮` vì có mục `hoc-lai`/`bo-luu-tru` — kiểm bằng bấm thử (Task 11).
 
@@ -1132,7 +1336,7 @@ git commit -m "PR-LUI-b: web panel Học lại (hồ sơ em đã kết thúc), H
 
 **Interfaces:**
 - Consumes: `POST /classes/:id/mo-lai`, `viewer.coTheMoLaiLop`, `LopLuuTru.coTheMoLai`.
-- Produces: `MoLaiLopPanel({ classId, classCode, chiNhanh?, ketThuc?, onClose, onDone })`; `ViecDauTrang` thêm `'mo-lai-lop' | 'nhieu-em'`.
+- Produces: `MoLaiLopPanel({ classId, classCode, chiNhanh?, ketThuc?, coTheKetThucLai?, onClose, onDone })`; `ViecDauTrang` thêm `'mo-lai-lop'`.
 
 - [ ] **Step 1: Phép kiểm nguồn đỏ**
 
@@ -1198,11 +1402,11 @@ export function MoLaiLopPanel({ classId, classCode, chiNhanh, ketThuc, coTheKetT
 }
 ```
 
-- [ ] **Step 4: `DauTrangLop.tsx`** — `ViecDauTrang` (dòng 54) thêm `| 'mo-lai-lop' | 'nhieu-em'`; kiểu `viewer` (dòng ~49) thêm `coTheMoLaiLop?: boolean; coTheKetThucLop?: boolean;`; trong `menu` (sau `diem-lop`, trước `Xoá lớp`) thêm:
+- [ ] **Step 4: `DauTrangLop.tsx`** — `ViecDauTrang` (dòng 54) thêm `| 'mo-lai-lop'`; kiểu `viewer` (dòng ~49) thêm `coTheMoLaiLop?: boolean; coTheKetThucLop?: boolean;`; trong `menu` (sau `diem-lop`, trước `Xoá lớp`) thêm:
 ```tsx
     ...(data.viewer.coTheMoLaiLop ? [{ key: 'mo-lai-lop', nhan: 'Mở lại lớp', onChon: () => onViec('mo-lai-lop') }] : []),
 ```
-(**Q2-B**: dòng 100 `xk` đổi điều kiện nạp thành `data.viewer.coTheXoaKetThuc || data.viewer.coTheKetThucLop`; mục `Xoá lớp` đã chỉ hiện khi `xk.data.coTheXoa` — máy chủ trả `false` với QL ở Task 5; mục `Kết thúc lớp` giữ điều kiện `xk.data.coDuLieu && !xk.data.daKetThuc`.)
+(Quản lý kết thúc lớp: dòng 100 `xk` đổi điều kiện nạp thành `data.viewer.coTheXoaKetThuc || data.viewer.coTheKetThucLop`; mục `Xoá lớp` đã chỉ hiện khi `xk.data.coTheXoa` — máy chủ trả `false` với QL ở Task 5; mục `Kết thúc lớp` giữ điều kiện `xk.data.coDuLieu && !xk.data.daKetThuc`.)
 
 `ClassOverviewPage.tsx` — import `MoLaiLopPanel` cùng dòng 14; thêm cạnh dòng 137:
 ```tsx
@@ -1226,7 +1430,7 @@ export function MoLaiLopPanel({ classId, classCode, chiNhanh, ketThuc, coTheKetT
   </div>
 ))}
 ```
-và cuối trang: `{moLai && <MoLaiLopPanel classId={moLai.id} classCode={moLai.code} chiNhanh={moLai.chiNhanh} ketThuc={moLai.finishedAt ? ngay(moLai.finishedAt) : null} coTheKetThucLai onClose={() => setMoLai(null)} onDone={reload} />}`. (`coTheKetThucLai` luôn `true` ở đây nếu Q2-B; nếu chủ sản phẩm chọn A/C thì truyền `false` — một chỗ duy nhất, kiểm bằng cờ session `coTheXoaKetThuc` của người dùng: dùng `useSession().session?.…` nếu có, không thì bỏ Hoàn tác ở Lưu trữ.)
+và cuối trang: `{moLai && <MoLaiLopPanel classId={moLai.id} classCode={moLai.code} chiNhanh={moLai.chiNhanh} ketThuc={moLai.finishedAt ? ngay(moLai.finishedAt) : null} coTheKetThucLai onClose={() => setMoLai(null)} onDone={reload} />}`. (`coTheKetThucLai` luôn `true` ở đây: Quản lý và Quản trị đều kết thúc được lớp không còn học viên đang học.)
 
 - [ ] **Step 6: Chạy `npm run check` — xanh. Step 7: Commit**
 
@@ -1237,29 +1441,44 @@ git commit -m "PR-LUI-b: web Mở lại lớp (⋮ hồ sơ lớp + Lưu trữ),
 
 ---
 
-### Task 8: Web — panel "Nhiều em" (Kết thúc học · Lưu trữ) từ ⋮ hồ sơ lớp
+### Task 8: Web — "Chọn nhiều học viên" ở hồ sơ lớp (**chờ duyệt lại mockup mục 10–13**)
 
 **Files:**
 - Create: `web/src/modules/students/hangLoatEm.ts`
-- Create: `web/src/modules/students/HangLoatEmPanel.tsx`
-- Modify: `web/src/modules/classes/DauTrangLop.tsx` (mục `Nhiều em…`)
-- Modify: `web/src/modules/classes/ClassOverviewPage.tsx` (vẽ panel)
+- Create: `web/src/modules/students/chonNhieuHocVien.tsx`
+- Create: `web/src/modules/students/XemTruocHangLoatPanel.tsx`
+- Modify: `web/src/modules/students/ClassRoster.tsx:18-217` (FT: bảng + thẻ điện thoại `:60-72,111-209`)
+- Modify: `web/src/modules/classes/BangDiemLopThuong.tsx:44-215` (lớp thường: bảng `:119-176`, thẻ `:75-87`)
+- Modify: `web/src/modules/classes/TabHocVienLop.tsx:1-39`
 - Test: `server/src/tests/prLuiB.tests.ts`
 
 **Interfaces:**
-- Consumes: `POST /hang-loat-hoc-vien/xem-truoc`, `POST /hang-loat-hoc-vien`, `chiaLo`, `LO_HANG_LOAT_EM`, `VIEC_NGUOC`, `NHAN_VIEC_HANG_LOAT`, `GET /classes/:id/roster` (`DongRoster`: `id`, `fullName`, `studentCode`, `status`, `archived`).
-- Produces: `chayHangLoat(viec, ids, o, onTienDo): Promise<KetQuaHangLoat>`; `hoanTacHangLoat(viec, ids): Promise<void>`; `HangLoatEmPanel({ classId?, maLop?, truoc?, onClose, onDone })`.
+- Consumes: `POST /hang-loat-hoc-vien/xem-truoc`, `POST /hang-loat-hoc-vien`, `chiaLo`, `LO_HANG_LOAT_EM`, `VIEC_NGUOC`, `NHAN_VIEC_HANG_LOAT`, `viewer.canPlanWeek` (đã có ở `DauTrangLop`/`HoSoLop`).
+- Produces:
+  - `chayHangLoat(viec: ViecHangLoat, ids: number[], o: { lyDo?: string; date?: string; moLaiLop?: boolean; lopMoiId?: number }, onTienDo?: (xong: number, tong: number) => void): Promise<KetQuaHangLoat>`; `hoanTacHangLoat(viec, ids): Promise<KetQuaHangLoat>`.
+  - `useChonNhieu(): { bat: boolean; chon: Set<number>; batTat(): void; doi(id: number): void; tatCa(ids: number[], v: boolean): void; bo(): void }`; `type ChonNhieu = ReturnType<typeof useChonNhieu>`.
+  - `OChon({ chon, id, ten })` (ô tick có `aria-label`); `ThanhChonNhieu({ chon, viec: { viec: ViecHangLoat; nhan: string }[], onViec(v), onBo })`.
+  - `XemTruocHangLoatPanel({ viec, ids, maLop?, onClose, onDone })` — một panel cho cả sáu việc; `HocLaiPanel` dùng riêng cho một em (Task 6).
+  - `BangDiemLopThuong` / `ClassRoster` nhận thêm `chon?: ChonNhieu` — có thì vẽ cột ô chọn (bảng) hoặc ô chọn đầu thẻ (điện thoại).
 
 - [ ] **Step 1: Phép kiểm nguồn đỏ**
 
 ```ts
-  check('LUIb-16 · web Nhiều em: chia lô bằng LO_HANG_LOAT_EM, gom ok/failed, dừng khi một lô ném lỗi và ghi "chưa lưu" cho phần còn lại; Hoàn tác gọi việc ngược', () => {
+  check('LUIb-16 · web: chia lô bằng LO_HANG_LOAT_EM, gom ok/failed, dừng khi một lô ném lỗi và ghi "chưa lưu" cho phần còn lại; Hoàn tác gọi việc ngược', () => {
     const h = doc('web/src/modules/students/hangLoatEm.ts');
     assert(h.includes('chiaLo(ids, LO_HANG_LOAT_EM)') && h.includes("'/hang-loat-hoc-vien'") && h.includes('VIEC_NGUOC[viec]'), 'runner');
     assert(/catch \(e: any\) \{[\s\S]*break;/.test(h), 'lỗi giữa chừng phải dừng và ghi phần còn lại là chưa lưu');
-    const p = doc('web/src/modules/students/HangLoatEmPanel.tsx');
-    for (const chu of ['Nhiều em', 'Chọn cả lớp', 'Bỏ qua', 'Thử lại', 'Đã lưu ', 'chưa lưu', '‹ Sửa', 'Quyết định chuyển lớp huỷ', 'PA huỷ', 'Case đóng']) assert(p.includes(chu), `thiếu chữ "${chu}"`);
-    assert(doc('web/src/modules/classes/DauTrangLop.tsx').includes("nhan: 'Nhiều em…'"), 'mục ⋮ Nhiều em…');
+  });
+  check('LUIb-17 · web: thanh dính đáy, panel xem trước, ô chọn ở cả bảng FT và bảng lớp thường; đủ chữ đã duyệt', () => {
+    const t = doc('web/src/modules/classes/TabHocVienLop.tsx');
+    assert(t.includes('Chọn nhiều học viên') && t.includes('useChonNhieu') && t.includes('ThanhChonNhieu'), 'nút + thanh ở tab Học viên');
+    const b = doc('web/src/modules/students/chonNhieuHocVien.tsx');
+    for (const chu of ['đã chọn', 'Bỏ chọn']) assert(b.includes(chu), `thiếu chữ "${chu}"`);
+    assert(/sticky|fixed/.test(b) && /bottom-0/.test(b), 'thanh phải dính đáy');
+    const p = doc('web/src/modules/students/XemTruocHangLoatPanel.tsx');
+    for (const chu of ['Bỏ qua', 'Thử lại', 'Đã lưu ', 'chưa lưu', 'Huỷ thay đổi', 'Quyết định chuyển lớp huỷ', 'PA huỷ', 'Case đóng', 'học viên']) assert(p.includes(chu), `thiếu chữ "${chu}"`);
+    assert(doc('web/src/modules/students/ClassRoster.tsx').includes('OChon') && doc('web/src/modules/classes/BangDiemLopThuong.tsx').includes('OChon'), 'ô chọn ở cả hai bảng');
+    assert(!doc('web/src/modules/students/BangHocVienLop.tsx').includes('OChon'), 'KHÔNG thêm ô chọn vào bảng Học viên & Lớp');
   });
 ```
 
@@ -1272,18 +1491,20 @@ import { api } from '../../lib/api.ts';
 import { LO_HANG_LOAT_EM, VIEC_NGUOC, chiaLo, type KetQuaHangLoat, type ViecHangLoat } from '@shared/domain/index.ts';
 
 /**
- * GỬI LÀM NHIỀU EM THEO LÔ (PR-LUI-b) — mỗi lô `LO_HANG_LOAT_EM` em một request (10 s của Netlify), gom `ok` / `failed`. Một lô ném lỗi (mất mạng, 503
- * "sắp hết giờ") thì DỪNG: phần còn lại ghi là "chưa lưu" với đúng câu lỗi — phần đã lưu giữ nguyên, người dùng Thử lại đúng các em chưa lưu.
+ * GỬI LÀM NHIỀU HỌC VIÊN THEO LÔ (PR-LUI-b) — mỗi lô `LO_HANG_LOAT_EM` một request (10 s của Netlify), gom `ok` / `failed`. Một lô ném lỗi (mất mạng, 503
+ * "sắp hết giờ") thì DỪNG: phần còn lại ghi là "chưa lưu" với đúng câu lỗi — phần đã lưu giữ nguyên, người dùng Thử lại đúng các học viên chưa lưu.
  */
 export async function chayHangLoat(
-  viec: ViecHangLoat, ids: number[], o: { lyDo?: string; date?: string; moLaiLop?: boolean }, onTienDo?: (xong: number, tong: number) => void,
+  viec: ViecHangLoat, ids: number[], o: { lyDo?: string; date?: string; moLaiLop?: boolean; lopMoiId?: number }, onTienDo?: (xong: number, tong: number) => void,
 ): Promise<KetQuaHangLoat> {
   const kq: KetQuaHangLoat = { ok: [], failed: [] };
   const lo = chiaLo(ids, LO_HANG_LOAT_EM);
   for (let i = 0; i < lo.length; i++) {
     onTienDo?.(kq.ok.length + kq.failed.length, ids.length);
     try {
-      const r = await api.post<KetQuaHangLoat>('/hang-loat-hoc-vien', { viec, studentIds: lo[i], lyDo: o.lyDo || undefined, date: o.date || undefined, moLaiLop: o.moLaiLop === true });
+      const r = await api.post<KetQuaHangLoat>('/hang-loat-hoc-vien', {
+        viec, studentIds: lo[i], lyDo: o.lyDo || undefined, date: o.date || undefined, moLaiLop: o.moLaiLop === true, lopMoiId: o.lopMoiId,
+      });
       kq.ok.push(...r.ok); kq.failed.push(...r.failed);
     } catch (e: any) {
       for (const sid of lo.slice(i).flat()) kq.failed.push({ studentId: sid, message: e.message });
@@ -1293,43 +1514,116 @@ export async function chayHangLoat(
   return kq;
 }
 
-/** Hoàn tác = làm việc NGƯỢC cho đúng các em đã làm được (kết thúc ↔ học lại, lưu trữ ↔ bỏ lưu trữ). */
+/** Hoàn tác = làm việc NGƯỢC cho đúng các học viên đã làm được (kết thúc ↔ học lại, lưu trữ ↔ bỏ lưu trữ, huỷ ↔ khôi phục chuyển lớp). */
 export async function hoanTacHangLoat(viec: ViecHangLoat, ids: number[]): Promise<KetQuaHangLoat> {
   return chayHangLoat(VIEC_NGUOC[viec], ids, { lyDo: VIEC_NGUOC[viec] === 'ket-thuc' ? 'Hoàn tác học lại' : undefined, moLaiLop: true });
 }
 ```
 
-- [ ] **Step 4: `HangLoatEmPanel.tsx`**
+- [ ] **Step 4: `web/src/modules/students/chonNhieuHocVien.tsx`**
 
 ```tsx
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
+
+/** Trạng thái "Chọn nhiều học viên" của MỘT danh sách (hồ sơ lớp, Lưu trữ). `bat` = đang ở chế độ chọn; `chon` = id đã tick. */
+export function useChonNhieu() {
+  const [bat, setBat] = useState(false);
+  const [chon, setChon] = useState<Set<number>>(new Set());
+  return {
+    bat, chon,
+    batTat: () => { setBat((b) => !b); setChon(new Set()); },
+    doi: (id: number) => setChon((x) => { const n = new Set(x); if (n.has(id)) n.delete(id); else n.add(id); return n; }),
+    tatCa: (ids: number[], v: boolean) => setChon(v ? new Set(ids) : new Set()),
+    bo: () => { setChon(new Set()); setBat(false); },
+  };
+}
+export type ChonNhieu = ReturnType<typeof useChonNhieu>;
+
+/** Ô tick một học viên — vùng bấm 44 px trên điện thoại. */
+export function OChon({ chon, id, ten }: { chon: ChonNhieu; id: number; ten: string }) {
+  return (
+    <input type="checkbox" className="h-[18px] w-[18px] shrink-0 cursor-pointer max-sm:m-[13px]" aria-label={`Chọn ${ten}`}
+      checked={chon.chon.has(id)} onChange={() => chon.doi(id)} />
+  );
+}
+
+/** Ô tick cả cột — chọn / bỏ chọn mọi học viên đang hiện. */
+export function OChonTatCa({ chon, ids }: { chon: ChonNhieu; ids: number[] }) {
+  return (
+    <input type="checkbox" className="h-[18px] w-[18px] cursor-pointer" aria-label="Chọn cả danh sách"
+      checked={ids.length > 0 && ids.every((i) => chon.chon.has(i))} onChange={(e) => chon.tatCa(ids, e.target.checked)} />
+  );
+}
+
+/** Thanh thao tác DÍNH ĐÁY: `3 đã chọn` · các việc · `Bỏ chọn`. Chỉ hiện khi đã chọn ít nhất một học viên. */
+export function ThanhChonNhieu({ chon, viec, onViec }: {
+  chon: ChonNhieu; viec: { key: string; nhan: string }[]; onViec: (key: string) => void;
+}) {
+  if (!chon.bat || chon.chon.size === 0) return null;
+  return (
+    <div role="toolbar" aria-label="Việc cho học viên đã chọn"
+      className="sticky bottom-0 z-20 -mx-3 flex flex-wrap items-center gap-2 border-t px-3 py-2.5 shadow-[0_-6px_18px_rgb(0_0_0/.25)] sm:mx-0 sm:rounded-lg sm:border"
+      style={{ background: 'var(--surface)', borderColor: 'var(--line)' }}>
+      <b className="mr-1 text-sm tabular-nums text-slate-100">{chon.chon.size} đã chọn</b>
+      {viec.map((v) => (
+        <button key={v.key} type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => onViec(v.key)}>{v.nhan}</button>
+      ))}
+      <span className="flex-1" />
+      <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={chon.bo}>Bỏ chọn</button>
+    </div>
+  );
+}
+```
+
+- [ ] **Step 5: Ô chọn trong hai bảng + thẻ** (cùng một mẫu cho `ClassRoster` và `BangDiemLopThuong`)
+  - Thêm prop `chon?: ChonNhieu`; trong `<thead>` thêm `<Th className="w-10 sticky-col">{chon?.bat && <OChonTatCa chon={chon} ids={rows.map((s) => s.id)} />}</Th>` **chỉ khi** `chon?.bat` (bảng không thêm cột khi tắt, nên `min-w-[…]` và `table-fixed` giữ nguyên khi tắt); mỗi `<tr>` thêm `<td className="td w-10">{chon?.bat && <OChon chon={chon} id={s.id} ten={s.fullName} />}</td>` ở **đầu**; hàng đã chọn thêm `className` nền `bg-accent-soft` (token sẵn có) — đọc `ClassRoster.tsx:146`, `BangDiemLopThuong.tsx:147`.
+  - Thẻ điện thoại (`TheDong`, `ClassRoster.tsx:60-72`, `BangDiemLopThuong.tsx:75-87`): `dau={<span className="flex items-start gap-2">{chon?.bat && <OChon …/>}{…đầu thẻ cũ…}</span>}`.
+  - Bảng dùng `useDienThoai()` ở `ClassRoster` — thẻ hay bảng giữ nguyên, chỉ thêm ô chọn.
+
+- [ ] **Step 6: `TabHocVienLop.tsx`** — chỉ khi `lop.viewer.canPlanWeek` (Quản lý / Quản trị) **và** cách xem `Điểm`:
+
+```tsx
+const chon = useChonNhieu();
+const [viecChon, setViecChon] = useState<{ viec: ViecHangLoat; ids: number[] } | null>(null);
+…
+{lop.viewer.canPlanWeek && cheDo === 'diem' && (
+  <button type="button" aria-pressed={chon.bat} className={`btn btn-ghost btn-sm min-h-[44px] sm:min-h-0 ${chon.bat ? 'btn-pressed' : ''}`} onClick={chon.batTat}>Chọn nhiều học viên</button>
+)}
+…
+<ThanhChonNhieu chon={chon}
+  viec={[{ key: 'luu-tru', nhan: 'Lưu trữ' }, { key: 'ket-thuc', nhan: 'Kết thúc học' }, { key: 'huy-lenh', nhan: 'Huỷ chuyển lớp' }]}
+  onViec={(k) => setViecChon({ viec: k as ViecHangLoat, ids: [...chon.chon] })} />
+{viecChon && <XemTruocHangLoatPanel viec={viecChon.viec} ids={viecChon.ids} maLop={lop.code}
+  onClose={() => setViecChon(null)} onDone={() => { chon.bo(); setViecChon(null); onDoi(); }} />}
+```
+(`btn-pressed`: dùng đúng lớp CSS đang dùng cho nút bật ở `BoLocDoan` — đọc `web/src/ui/ui.tsx`; nếu không có, `aria-pressed` + lớp `bg-accent-soft`.) Chuyển `chon` xuống `ClassRoster` / `BangDiemLopThuong` qua prop; đổi chế độ xem sang "Cần hỗ trợ" thì `chon.bo()`.
+
+- [ ] **Step 7: `XemTruocHangLoatPanel.tsx`** — một panel: nạp xem trước một lần, vẽ số hệ quả theo việc, mục `Bỏ qua n học viên`, ô `Lý do` (bắt buộc: `ket-thuc`, `huy-lenh`), `Có hiệu lực từ` (`ket-thuc`, `hoc-lai`), nút chính; chạy lô; lỗi giữa chừng; Hoàn tác.
+
+```tsx
+import { useEffect, useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
-import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
-import { Empty, ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
+import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { NHAN_VIEC_HANG_LOAT, dsLoi, type ViecHangLoat, type XemTruocHangLoat } from '@shared/domain/index.ts';
 import { chayHangLoat, hoanTacHangLoat } from './hangLoatEm.ts';
 
-type EmLop = { id: number; fullName: string; studentCode: string; status: string; archived: boolean };
-const VIEC_TRONG_LOP: ViecHangLoat[] = ['ket-thuc', 'luu-tru'];
+const TEN_HUONG: Record<string, string> = { len_lop: 'Lên', fast_track: 'Lên FT', hoc_lai: 'Học lại', bao_luu: 'Tạm dừng học (bảo lưu)', dung_hoc: 'Dừng học hẳn', chuyen_lop: 'Chuyển lớp FT' };
+const BAT_BUOC_LY_DO: ViecHangLoat[] = ['ket-thuc', 'huy-lenh'];
+const CO_NGAY: ViecHangLoat[] = ['ket-thuc', 'hoc-lai'];
 
 /**
- * PANEL "NHIỀU EM" (PR-LUI-b, 06/10) — Kết thúc học · Lưu trữ cho nhiều em của MỘT lớp (⋮ hồ sơ lớp), hoặc xác nhận việc đã chọn sẵn
- * (`truoc`: Lưu trữ › chọn nhiều → Bỏ lưu trữ / Học lại). Hai bước như Chuyển tiếp lớp: 1 Chọn → 2 Xem trước + xác nhận. Gửi từng lô 8 em;
- * lỗi giữa chừng giữ phần đã lưu, nút đổi thành "Thử lại n em". Xong thì toast Hoàn tác (việc ngược cho đúng các em đã làm).
+ * PANEL XEM TRƯỚC LÀM NHIỀU HỌC VIÊN (PR-LUI-b, 06/10) — bấm một việc ở thanh dính đáy (hồ sơ lớp, Lưu trữ) thì ra đây: số hệ quả, học viên bị bỏ qua
+ * (kèm lý do), lý do chung, rồi xác nhận. Gửi từng lô 8; lỗi giữa chừng giữ phần đã lưu, nút đổi thành "Thử lại n học viên". Xong thì toast Hoàn tác.
  */
-export function HangLoatEmPanel({ classId, maLop, truoc, onClose, onDone }: {
-  classId?: number; maLop?: string | null; truoc?: { viec: ViecHangLoat; ids: number[] }; onClose: () => void; onDone: () => void;
+export function XemTruocHangLoatPanel({ viec, ids, maLop, lopMoiId, onClose, onDone }: {
+  viec: ViecHangLoat; ids: number[]; maLop?: string | null; lopMoiId?: number; onClose: () => void; onDone: () => void;
 }) {
   const toast = useToast();
   const lf = useLoiForm();
-  const roster = useApi<EmLop[]>(classId && !truoc ? `/classes/${classId}/roster` : null, [classId]);
-  const [viec, setViec] = useState<ViecHangLoat>(truoc?.viec ?? 'ket-thuc');
-  const [chon, setChon] = useState<Set<number>>(new Set(truoc?.ids ?? []));
-  const [buoc, setBuoc] = useState<1 | 2>(truoc ? 2 : 1);
   const [xem, setXem] = useState<XemTruocHangLoat | null>(null);
   const [loiXem, setLoiXem] = useState<string | null>(null);
   const [lyDo, setLyDo] = useState('');
@@ -1338,122 +1632,73 @@ export function HangLoatEmPanel({ classId, maLop, truoc, onClose, onDone }: {
   const [tienDo, setTienDo] = useState<{ xong: number; tong: number } | null>(null);
   const [chuaLuu, setChuaLuu] = useState<{ studentId: number; message: string }[]>([]);
   const [daLuu, setDaLuu] = useState<number[]>([]);
-
-  const duoc = (s: EmLop) => (viec === 'ket-thuc' ? s.status !== 'finished' : s.status === 'finished' && !s.archived);
-  const ds = useMemo(() => (roster.data ?? []).filter(duoc), [roster.data, viec]);   // eslint-disable-line react-hooks/exhaustive-deps
-  const batBuocLyDo = viec === 'ket-thuc';
-  const loi = dsLoi(batBuocLyDo ? [{ khoa: 'ly-do', nhan: 'Lý do', toiThieu: 1 }] : [], { 'ly-do': lyDo });
-  const ten = (sid: number) => xem?.rows.find((r) => r.studentId === sid)?.ten ?? `#${sid}`;
-  const idsLam = (xem?.rows ?? []).filter((r) => !r.lyDoBo).map((r) => r.studentId);
-  const dangThu = chuaLuu.length > 0;
-
-  const doiViec = (v: ViecHangLoat) => { setViec(v); setChon(new Set()); };
-  const tiepTuc = async () => {
-    setBusy(true); setLoiXem(null);
-    try { setXem(await api.post<XemTruocHangLoat>('/hang-loat-hoc-vien/xem-truoc', { viec, studentIds: [...chon] })); setBuoc(2); }
-    catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
-  };
-  /* Vào thẳng bước 2 (Lưu trữ › chọn nhiều): nạp xem trước một lần. */
-  const napTruoc = () => {
-    if (!truoc) return;
+  const nap = () => {
     setLoiXem(null);
-    api.post<XemTruocHangLoat>('/hang-loat-hoc-vien/xem-truoc', { viec: truoc.viec, studentIds: truoc.ids })
-      .then(setXem).catch((e: any) => setLoiXem(e.message));
+    api.post<XemTruocHangLoat>('/hang-loat-hoc-vien/xem-truoc', { viec, studentIds: ids }).then(setXem).catch((e: any) => setLoiXem(e.message));
   };
-  useEffect(napTruoc, []);   // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(nap, []);   // eslint-disable-line react-hooks/exhaustive-deps
+
+  const batBuoc = BAT_BUOC_LY_DO.includes(viec);
+  const loi = dsLoi(batBuoc ? [{ khoa: 'ly-do', nhan: 'Lý do', toiThieu: viec === 'huy-lenh' ? 3 : 1 }] : [], { 'ly-do': lyDo });
+  const idsLam = (xem?.rows ?? []).filter((r) => !r.lyDoBo).map((r) => r.studentId);
+  const ten = (sid: number) => xem?.rows.find((r) => r.studentId === sid)?.ten ?? `#${sid}`;
+  const dangThu = chuaLuu.length > 0;
 
   const chay = async () => {
     lf.bam();
     if (loi.length) return;
     const lam = dangThu ? chuaLuu.map((c) => c.studentId) : idsLam;
     setBusy(true); setChuaLuu([]);
-    const kq = await chayHangLoat(viec, lam, { lyDo: lyDo.trim(), date: ngayHl, moLaiLop: viec === 'hoc-lai' }, (xong, tong) => setTienDo({ xong, tong }));
+    const kq = await chayHangLoat(viec, lam, { lyDo: lyDo.trim(), date: ngayHl, moLaiLop: viec === 'hoc-lai', lopMoiId }, (xong, tong) => setTienDo({ xong, tong }));
     setBusy(false); setTienDo(null);
-    invalidate('/students'); invalidate('/classes'); invalidate('/hoc-vien-lop'); invalidate('/cases'); invalidate('/lenh-chuyen');
-    const tatCaOk = [...daLuu, ...kq.ok];
-    setDaLuu(tatCaOk);
+    for (const k of ['/students', '/classes', '/hoc-vien-lop', '/cases', '/lenh-chuyen', '/my-work']) invalidate(k);
+    const tatCa = [...daLuu, ...kq.ok];
+    setDaLuu(tatCa);
     if (kq.failed.length) {
       setChuaLuu(kq.failed);
-      toast.push('error', `Đã lưu ${tatCaOk.length} em · ${kq.failed.length} em chưa lưu`);
+      toast.push('error', `Đã lưu ${tatCa.length} học viên · ${kq.failed.length} học viên chưa lưu`);
       return;
     }
-    toast.hoanTac(`${NHAN_VIEC_HANG_LOAT[viec]} ${tatCaOk.length} em`, async () => {
-      const r = await hoanTacHangLoat(viec, tatCaOk);
-      invalidate('/students'); invalidate('/classes'); invalidate('/hoc-vien-lop'); invalidate('/cases');
-      toast.push(r.failed.length ? 'error' : 'ok', r.failed.length ? `Hoàn tác ${r.ok.length} em · ${r.failed.length} em chưa được` : 'Đã hoàn tác');
+    toast.hoanTac(`${NHAN_VIEC_HANG_LOAT[viec]} ${tatCa.length} học viên`, async () => {
+      const r = await hoanTacHangLoat(viec, tatCa);
+      for (const k of ['/students', '/classes', '/hoc-vien-lop', '/cases', '/lenh-chuyen', '/my-work']) invalidate(k);
+      toast.push(r.failed.length ? 'error' : 'ok', r.failed.length ? `Hoàn tác ${r.ok.length} học viên · ${r.failed.length} học viên chưa được` : 'Đã hoàn tác');
       onDone();
     }, { key: `hang-loat:${viec}` });
     onDone(); onClose();
   };
 
-  const tieuDe = buoc === 1 ? 'Nhiều em' : `${NHAN_VIEC_HANG_LOAT[viec]} · ${xem?.rows.length ?? chon.size} em`;
+  const theoHuong = Object.entries(xem?.tong.theoHuong ?? {}).map(([h, n]) => `${TEN_HUONG[h] ?? h} ${n}`);
   return (
-    <KhungPanel tieuDe={tieuDe} lop={maLop} onDong={busy ? () => {} : onClose}
-      chan={buoc === 1 ? {
-        daSua: chon.size > 0,
-        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={!chon.size || busy} onClick={tiepTuc}>Tiếp tục · {chon.size} em</button>,
-      } : {
+    <KhungPanel tieuDe={`${NHAN_VIEC_HANG_LOAT[viec]} · ${ids.length} học viên`} lop={maLop} onDong={busy ? () => {} : onClose}
+      chan={{
         daSua: !!lyDo.trim() || !!ngayHl,
-        huy: truoc ? undefined : { nhan: '‹ Sửa', onClick: () => { setBuoc(1); setXem(null); }, disabled: busy },
         conThieu: lf.conThieu(loi),
-        dongTren: dangThu ? <p role="alert" className="m-0 px-4 pt-2 text-xs text-late tabular-nums">Đã lưu {daLuu.length} em · {chuaLuu.length} em chưa lưu</p> : undefined,
+        dongTren: dangThu ? <p role="alert" className="m-0 px-4 pt-2 text-xs text-late tabular-nums">Đã lưu {daLuu.length} học viên · {chuaLuu.length} học viên chưa lưu</p> : undefined,
         chinh: (
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !xem || (!dangThu && !idsLam.length)} onClick={chay}>
-            {busy ? (tienDo ? `Đang lưu ${tienDo.xong}/${tienDo.tong}…` : 'Đang lưu…')
-              : dangThu ? `Thử lại ${chuaLuu.length} em` : `${NHAN_VIEC_HANG_LOAT[viec]} ${idsLam.length} em`}
+            {busy ? (tienDo ? `Đang lưu ${tienDo.xong}/${tienDo.tong}…` : 'Đang lưu…') : dangThu ? `Thử lại ${chuaLuu.length} học viên` : `${NHAN_VIEC_HANG_LOAT[viec]} ${idsLam.length} học viên`}
           </button>
         ),
       }}>
-      {buoc === 1 && (
-        <>
-          <Khoi tieuDe="Việc">
-            <span role="group" aria-label="Việc" className="flex flex-wrap gap-1.5">
-              {VIEC_TRONG_LOP.map((v) => <NutChon key={v} chon={viec === v} onClick={() => doiViec(v)}>{NHAN_VIEC_HANG_LOAT[v]}</NutChon>)}
-            </span>
-          </Khoi>
-          <Khoi tieuDe={`Học viên · ${chon.size} đang chọn`}>
-            {roster.error ? <ErrorState message={roster.error.message} hint={roster.error.hint} onRetry={roster.reload} />
-              : !roster.data ? <Skeleton rows={5} />
-                : !ds.length ? <Empty title="Không có em nào" />
-                  : (
-                    <ul className="m-0 list-none divide-y p-0" style={{ borderColor: 'var(--line)' }}>
-                      <li className="py-1.5">
-                        <label className="flex min-h-[44px] items-center gap-2 text-sm font-semibold text-slate-200 sm:min-h-0">
-                          <input type="checkbox" checked={chon.size === ds.length} onChange={(e) => setChon(e.target.checked ? new Set(ds.map((s) => s.id)) : new Set())} />
-                          Chọn cả lớp
-                        </label>
-                      </li>
-                      {ds.map((s) => (
-                        <li key={s.id} className="py-1.5">
-                          <label className="flex min-h-[44px] items-center gap-2 text-sm sm:min-h-0">
-                            <input type="checkbox" checked={chon.has(s.id)}
-                              onChange={(e) => setChon((x) => { const n = new Set(x); if (e.target.checked) n.add(s.id); else n.delete(s.id); return n; })} />
-                            <span className="min-w-0 flex-1 truncate text-slate-100">{s.fullName}</span>
-                            <span className="shrink-0 text-xs text-slate-500">{s.status === 'inactive' ? 'Tạm dừng' : s.status === 'finished' ? 'Đã kết thúc' : 'Đang học'}</span>
-                          </label>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-          </Khoi>
-        </>
-      )}
-      {buoc === 2 && (loiXem ? <ErrorState message={loiXem} onRetry={napTruoc} /> : !xem ? <Skeleton rows={4} /> : (
+      {loiXem ? <ErrorState message={loiXem} onRetry={nap} /> : !xem ? <Skeleton rows={4} /> : (
         <>
           <Khoi tieuDe={NHAN_VIEC_HANG_LOAT[viec]}>
             <p className="m-0 flex flex-wrap gap-x-4 gap-y-1 text-sm tabular-nums text-slate-300">
-              <span>{idsLam.length} em</span>
+              <span><b className="text-slate-100">{idsLam.length}</b> học viên</span>
               {viec === 'ket-thuc' && <><span>Case đóng <b className="text-slate-100">{xem.tong.caseDong}</b></span><span>PA huỷ <b className="text-slate-100">{xem.tong.paHuy}</b></span><span>Quyết định chuyển lớp huỷ <b className="text-slate-100">{xem.tong.lenhHuy}</b></span></>}
+              {viec === 'huy-lenh' && theoHuong.map((t) => <span key={t}>{t}</span>)}
               {viec === 'hoc-lai' && xem.tong.lopMoLai.length > 0 && <span className="text-soon">Mở lại lớp {xem.tong.lopMoLai.join(', ')}</span>}
             </p>
-            {batBuocLyDo && (
+            {batBuoc && (
               <Truong nhan="Lý do" batBuoc loi={lf.loiCua(loi, 'ly-do')}>
                 <input className="field w-full" maxLength={2000} {...lf.o(loi, 'ly-do')} value={lyDo} onChange={(e) => setLyDo(e.target.value)} />
               </Truong>
             )}
-            {viec === 'ket-thuc' && (
-              <Truong nhan="Có hiệu lực từ"><ChonNgayGan value={ngayHl} onChange={setNgayHl} soNgay={30} chuaChon="Mặc định: hôm nay" /></Truong>
+            {!batBuoc && viec !== 'luu-tru' && viec !== 'bo-luu-tru' && (
+              <Truong nhan="Lý do" tuyChon><input className="field w-full" maxLength={2000} value={lyDo} onChange={(e) => setLyDo(e.target.value)} /></Truong>
             )}
+            {CO_NGAY.includes(viec) && <Truong nhan="Có hiệu lực từ"><ChonNgayGan value={ngayHl} onChange={setNgayHl} soNgay={30} chuaChon="Mặc định: hôm nay" /></Truong>}
           </Khoi>
           {dangThu && (
             <Khoi tieuDe={`Chưa lưu · ${chuaLuu.length}`}>
@@ -1463,109 +1708,104 @@ export function HangLoatEmPanel({ classId, maLop, truoc, onClose, onDone }: {
             </Khoi>
           )}
           {xem.tong.boQua > 0 && (
-            <Khoi tieuDe={`Bỏ qua ${xem.tong.boQua} em`}>
+            <Khoi tieuDe={`Bỏ qua ${xem.tong.boQua} học viên`}>
               <ul className="m-0 list-none space-y-1 p-0">
                 {xem.rows.filter((r) => r.lyDoBo).map((r) => <li key={r.studentId} className="text-sm text-slate-200">{r.ten}<span className="block text-xs text-slate-500">{r.lyDoBo}</span></li>)}
               </ul>
             </Khoi>
           )}
         </>
-      ))}
+      )}
     </KhungPanel>
   );
 }
 ```
-Ghi chú: `lf.o`, `lf.loiCua`, `lf.conThieu`, `lf.bam` đúng chữ ký đã dùng ở `TrangThaiPanel` (`StudentManagePanel.tsx:81-137`).
+`lopMoiId` truyền khi Học lại hàng loạt chọn "Sang lớp mới" (Task 9). Chọn đích Học lại hàng loạt vẽ ở đầu khối `Học lại` (hai nút `Về lớp cũ` / `Sang lớp mới` + ô `Lớp` — dùng chung `ChonDichHocLai` với `HocLaiPanel`, Task 6).
 
-- [ ] **Step 5: Vào từ ⋮ hồ sơ lớp** — `DauTrangLop.tsx`: kiểu `ViecDauTrang` đã có `'nhieu-em'` (Task 7); thêm mục menu ngay sau `sua-hoc-vien`:
-```tsx
-    ...(data.viewer.canPlanWeek && (s?.studentCount ?? 0) > 0 ? [{ key: 'nhieu-em', nhan: 'Nhiều em…', onChon: () => onViec('nhieu-em') }] : []),
-```
-(`canPlanWeek` = `PLAN_WEEK` ở lớp: QL/QT; GVCN false.) `ClassOverviewPage.tsx`: `{viec === 'nhieu-em' && <HangLoatEmPanel classId={data.id} maLop={data.code} onClose={dong} onDone={xong} />}` (+ import).
+- [ ] **Step 8: Chạy `npm run check` — xanh. Bấm thử ở Task 11.**
 
-- [ ] **Step 6: Chạy `npm run check` — xanh. Step 7: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
-git add web/src/modules/students/hangLoatEm.ts web/src/modules/students/HangLoatEmPanel.tsx web/src/modules/classes/DauTrangLop.tsx web/src/modules/classes/ClassOverviewPage.tsx server/src/tests/prLuiB.tests.ts
-git commit -m "PR-LUI-b: web panel Nhiều em (Kết thúc học, Lưu trữ) — xem trước, lô 8 em, lỗi giữa chừng, Hoàn tác"
+git add web/src/modules/students/hangLoatEm.ts web/src/modules/students/chonNhieuHocVien.tsx web/src/modules/students/XemTruocHangLoatPanel.tsx web/src/modules/students/ClassRoster.tsx web/src/modules/classes/BangDiemLopThuong.tsx web/src/modules/classes/TabHocVienLop.tsx server/src/tests/prLuiB.tests.ts
+git commit -m "PR-LUI-b: web Chọn nhiều học viên (hồ sơ lớp) — ô chọn, thanh dính đáy, panel xem trước, lô 8, Hoàn tác"
 ```
 
 ---
 
-### Task 9: Web — Lưu trữ: chọn nhiều em (Bỏ lưu trữ · Học lại) + `Học lại` từng em
+### Task 9: Web — Lưu trữ: cùng mẫu "Chọn nhiều học viên" + `Học lại` từng em (**chờ duyệt lại mockup mục 14**)
 
 **Files:**
 - Modify: `web/src/modules/students/LuuTruPage.tsx:16-19, 126-145`
 - Test: `server/src/tests/prLuiB.tests.ts`
 
 **Interfaces:**
-- Consumes: `HocVienLuuTru.coTheBoLuuTru / coTheHocLai`, `HangLoatEmPanel` (`truoc`), `POST /students/:id/hoc-lai`.
+- Consumes: `useChonNhieu`, `OChon`, `ThanhChonNhieu`, `XemTruocHangLoatPanel`, `HocLaiPanel` (Task 6), `HocVienLuuTru.coTheBoLuuTru / coTheHocLai`.
 
 - [ ] **Step 1: Phép kiểm nguồn đỏ**
 
 ```ts
-  check('LUIb-17 · web Lưu trữ › Học viên: cột chọn, thanh "n em đã chọn" với Bỏ lưu trữ + Học lại + Bỏ chọn, nút Học lại mỗi dòng', () => {
+  check('LUIb-18 · web Lưu trữ › Học viên: nút Chọn nhiều học viên, thanh dính đáy (Bỏ lưu trữ · Học lại), nút Học lại mỗi dòng', () => {
     const l = doc('web/src/modules/students/LuuTruPage.tsx');
-    for (const chu of ['em đã chọn', 'Bỏ lưu trữ', 'Học lại', 'Bỏ chọn', 'HangLoatEmPanel', 'coTheHocLai']) assert(l.includes(chu), `thiếu "${chu}"`);
-    assert(l.includes("truoc={{ viec: 'bo-luu-tru'") || l.includes('truoc={{ viec: viecChon'), 'phải đi qua panel xem trước');
+    for (const chu of ['Chọn nhiều học viên', "nhan: 'Bỏ lưu trữ'", "nhan: 'Học lại'", 'ThanhChonNhieu', 'XemTruocHangLoatPanel', 'coTheHocLai']) assert(l.includes(chu), `thiếu "${chu}"`);
   });
 ```
 
 - [ ] **Step 2: Chạy — đỏ. Step 3: Sửa `LuuTruPage.tsx`**
 
-Kiểu: `HocVienLuuTru` thêm `coTheHocLai: boolean`. State: `const [chon, setChon] = useState<Set<number>>(new Set()); const [lam, setLam] = useState<{ viec: ViecHangLoat; ids: number[] } | null>(null);`. Trong tab `hv`, trên danh sách (khi có ít nhất một dòng làm được):
+Kiểu `HocVienLuuTru` thêm `coTheHocLai: boolean`. Thêm `const chon = useChonNhieu(); const [lam, setLam] = useState<{ viec: ViecHangLoat; ids: number[] } | null>(null);`. Trong tab `hv`, trên danh sách (chỉ khi có dòng làm được): 
 
 ```tsx
-{chon.size > 0 && (
-  <div role="group" aria-label="Chọn nhiều em" className="surface-2 sticky top-0 z-10 flex flex-wrap items-center gap-2 rounded-lg px-3 py-2">
-    <span className="text-xs font-semibold tabular-nums text-slate-200">{chon.size} em đã chọn</span>
-    <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setLam({ viec: 'bo-luu-tru', ids: [...chon] })}>Bỏ lưu trữ</button>
-    <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setLam({ viec: 'hoc-lai', ids: [...chon] })}>Học lại</button>
-    <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={() => setChon(new Set())}>Bỏ chọn</button>
+{data.hocVien.some((s) => s.coTheBoLuuTru) && (
+  <div className="flex justify-end">
+    <button type="button" aria-pressed={chon.bat} className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={chon.batTat}>Chọn nhiều học viên</button>
   </div>
 )}
 ```
-Mỗi dòng em: thêm `<input type="checkbox" aria-label={`Chọn ${s.fullName}`} disabled={!s.coTheBoLuuTru} …>` đầu dòng (ô chọn chỉ cho người có quyền), và cạnh nút `Bỏ lưu trữ` cũ thêm `{s.coTheHocLai && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setLam({ viec: 'hoc-lai', ids: [s.id] })}>Học lại</button>}` (đi qua cùng panel xem trước → một đường duy nhất cho một và nhiều em; hồ sơ em dùng `HocLaiPanel` riêng ở Task 6).
-Cuối trang: `{lam && <HangLoatEmPanel truoc={lam} onClose={() => setLam(null)} onDone={() => { setChon(new Set()); reload(); }} />}`.
-Giữ nút `Bỏ lưu trữ` từng em + toast Hoàn tác như cũ (`boLuuTru`, `:62-77`).
+Mỗi dòng: khi `chon.bat` thêm `<OChon chon={chon} id={s.id} ten={s.fullName} />` đầu dòng (chỉ tick được khi `s.coTheBoLuuTru`) và ẩn nút lẻ; khi tắt thì giữ `Bỏ lưu trữ` (như cũ, `:139-141`) và thêm `{s.coTheHocLai && <button …onClick={() => setHocLai(s)}>Học lại</button>}` mở `HocLaiPanel` (một học viên, có chọn đích). Cuối danh sách:
+
+```tsx
+<ThanhChonNhieu chon={chon} viec={[{ key: 'bo-luu-tru', nhan: 'Bỏ lưu trữ' }, { key: 'hoc-lai', nhan: 'Học lại' }]}
+  onViec={(k) => setLam({ viec: k as ViecHangLoat, ids: [...chon.chon] })} />
+{lam && <XemTruocHangLoatPanel viec={lam.viec} ids={lam.ids} onClose={() => setLam(null)} onDone={() => { chon.bo(); setLam(null); reload(); }} />}
+```
+Chọn đích "Sang lớp mới" của Học lại hàng loạt: `XemTruocHangLoatPanel` nhận thêm bước chọn `Về lớp cũ` / `Sang lớp mới` + ô `Lớp` (chỉ lớp thường — lấy từ `GET /students/:id/hoc-lai/lop-dich` của em đầu tiên, lọc `!ft`) khi `viec === 'hoc-lai'`, truyền `lopMoiId` xuống `chayHangLoat`.
 
 - [ ] **Step 4: `npm run check` xanh. Step 5: Commit**
 
 ```bash
 git add web/src/modules/students/LuuTruPage.tsx server/src/tests/prLuiB.tests.ts
-git commit -m "PR-LUI-b: web Lưu trữ — chọn nhiều em (Bỏ lưu trữ, Học lại) + Học lại từng em"
+git commit -m "PR-LUI-b: web Lưu trữ — Chọn nhiều học viên (Bỏ lưu trữ, Học lại) + Học lại từng em"
 ```
 
 ---
 
-### Task 10: Web — Huỷ nhiều quyết định chuyển lớp (panel Chuyển tiếp lớp)
+### Task 10: Web — Huỷ nhiều quyết định chuyển lớp ở panel Chuyển tiếp lớp (mockup mục 15 — đã duyệt)
 
 **Files:**
 - Modify: `web/src/modules/classes/TransitionPanel.tsx` (state ~`:40-100`, `huyLenh` `:150-160`, ô "Chọn nhiều em" `:211-236`)
 - Test: `server/src/tests/prLuiB.tests.ts`
 
 **Interfaces:**
-- Consumes: `POST /lenh-chuyen/huy-nhieu`, `POST /lenh-chuyen/khoi-phuc`, `s.lenh.{id,huong,loi}` của từng em (đã có ở `/classes/:id/transition`), `chon: Set<number>`, `HUONG_CUA`/tên hướng (`nhomChan` ở `:162-172`).
+- Consumes: `chayHangLoat('huy-lenh', studentIds, { lyDo })`, `hoanTacHangLoat('huy-lenh', ids)`, `s.lenh` của từng em (đã có ở `/classes/:id/transition`), `chon: Set<number>`.
 
 - [ ] **Step 1: Phép kiểm nguồn đỏ**
 
 ```ts
-  check('LUIb-18 · web Chuyển tiếp lớp: nút "Huỷ quyết định" trong ô chọn nhiều, xem trước theo hướng, lý do ≥ 3, Hoàn tác = Khôi phục', () => {
+  check('LUIb-19 · web Chuyển tiếp lớp: nút "Huỷ quyết định" trong ô chọn nhiều, xem trước theo hướng, lý do ≥ 3, đi qua chayHangLoat("huy-lenh"), Hoàn tác', () => {
     const t = doc('web/src/modules/classes/TransitionPanel.tsx');
-    for (const chu of ['/lenh-chuyen/huy-nhieu', '/lenh-chuyen/khoi-phuc', 'Huỷ quyết định', 'Bỏ qua', 'chưa có quyết định']) assert(t.includes(chu), `thiếu "${chu}"`);
+    for (const chu of ["chayHangLoat('huy-lenh'", 'hoanTacHangLoat', 'Huỷ quyết định', 'Bỏ qua', 'chưa có quyết định']) assert(t.includes(chu), `thiếu "${chu}"`);
     assert(/length < 3|\.length >= 3/.test(t.slice(t.indexOf('huyNhieu'))), 'lý do ≥ 3 ký tự');
-    assert(/chiaLo\(.*LO_HANG_LOAT_EM\)/.test(t), 'gửi theo lô LO_HANG_LOAT_EM');
   });
 ```
 
-- [ ] **Step 2: Chạy — đỏ. Step 3: Code**
+- [ ] **Step 2: Chạy — đỏ. Step 3: Code** — thêm cạnh state `huy`:
 
-Thêm state cạnh `huy` (đang là `const [huy, setHuy] = useState<{ sid: number; lyDo: string } | null>(null)`):
 ```tsx
   const [huyNhieu, setHuyNhieu] = useState<{ lyDo: string } | null>(null);
   const [dangHuy, setDangHuy] = useState(false);
 ```
-Tính từ `students` + `chon` (đặt sau `rows`):
+Sau `rows`:
 ```tsx
   /** Em đang chọn CÓ quyết định chờ — đối tượng của "Huỷ quyết định"; em chưa có quyết định thì bỏ qua. */
   const chonCoLenh = students.filter((s) => chon.has(s.id) && s.lenh);
@@ -1576,39 +1816,29 @@ Tính từ `students` + `chon` (đặt sau `rows`):
     return [...m.entries()].map(([k, n]) => `${k} ${n}`).join(' · ');
   })();
   const huyNhieuLenh = async () => {
-    const ids = chonCoLenh.map((s) => s.lenh.id as number);
+    const ids = chonCoLenh.map((s) => s.id as number);
     setDangHuy(true);
-    const ok: number[] = [];
-    const hong: { id: number; message: string }[] = [];
-    for (const lo of chiaLo(ids, LO_HANG_LOAT_EM)) {
-      try {
-        const r = await api.post<{ ok: number[]; failed: { id: number; message: string }[] }>('/lenh-chuyen/huy-nhieu', { ids: lo, lyDo: huyNhieu!.lyDo.trim() });
-        ok.push(...r.ok); hong.push(...r.failed);
-      } catch (e: any) { for (const id of lo) hong.push({ id, message: e.message }); break; }
-    }
+    const kq = await chayHangLoat('huy-lenh', ids, { lyDo: huyNhieu!.lyDo.trim() });
     setDangHuy(false);
-    invalidate('/classes'); invalidate('/my-work'); invalidate('/lenh-chuyen'); invalidate('/yeu-cau'); invalidate('/hoc-vien-lop');
+    for (const k of ['/classes', '/my-work', '/lenh-chuyen', '/yeu-cau', '/hoc-vien-lop']) invalidate(k);
     reload();
-    if (hong.length) toast.push('error', `Đã huỷ ${ok.length} quyết định · ${hong.length} chưa huỷ — ${hong[0].message}`);
-    if (!ok.length) return;
+    if (kq.failed.length) toast.push('error', `Đã huỷ ${kq.ok.length} quyết định · ${kq.failed.length} chưa huỷ — ${kq.failed[0].message}`);
+    if (!kq.ok.length) return;
     setChon(new Set()); setHuyNhieu(null);
-    toast.hoanTac(`Đã huỷ quyết định ${ok.length} em`, async () => {
-      for (const lo of chiaLo(ok, LO_HANG_LOAT_EM)) {
-        try { await api.post('/lenh-chuyen/khoi-phuc', { ids: lo }); } catch (e: any) { toast.push('error', e.message); break; }
-      }
-      invalidate('/classes'); invalidate('/my-work'); invalidate('/lenh-chuyen'); invalidate('/yeu-cau'); invalidate('/hoc-vien-lop');
-      reload(); toast.push('ok', 'Đã khôi phục quyết định');
+    toast.hoanTac(`Đã huỷ quyết định ${kq.ok.length} em`, async () => {
+      const r = await hoanTacHangLoat('huy-lenh', kq.ok);
+      for (const k of ['/classes', '/my-work', '/lenh-chuyen', '/yeu-cau', '/hoc-vien-lop']) invalidate(k);
+      reload(); toast.push(r.failed.length ? 'error' : 'ok', r.failed.length ? r.failed[0].message : 'Đã khôi phục quyết định');
     }, { key: 'huy-lenh-nhieu' });
   };
 ```
-(`TEN_HUONG`: bản đồ `huong → chữ` đã có ở `nhomChan` (`:162`: Lên · Lên FT · Học lại · Tạm dừng học (bảo lưu) · Dừng học hẳn · Chuyển lớp FT · Đổi lộ trình) — tách bản đồ khỏi `nhomChan` thành hằng `TEN_HUONG: Record<string, string> = { len_lop: 'Lên', fast_track: 'Lên FT', hoc_lai: 'Học lại', bao_luu: 'Tạm dừng học (bảo lưu)', dung_hoc: 'Dừng học hẳn', chuyen_lop: 'Chuyển lớp FT' }` dùng lại ở cả hai chỗ.)
-Import: `chiaLo, LO_HANG_LOAT_EM` từ `@shared/domain/index.ts`.
+(`TEN_HUONG`: tách bản đồ `huong → chữ` khỏi `nhomChan` (`:162-172`) thành hằng dùng lại ở cả hai chỗ: `{ len_lop: 'Lên', fast_track: 'Lên FT', hoc_lai: 'Học lại', bao_luu: 'Tạm dừng học (bảo lưu)', dung_hoc: 'Dừng học hẳn', chuyen_lop: 'Chuyển lớp FT' }`.)
 
 Trong nhóm "Chọn nhiều em" (`:211-236`), sau nút `Áp cho n em`:
 ```tsx
 <button type="button" className="btn btn-sm btn-danger min-h-[44px] sm:min-h-0" disabled={!chonCoLenh.length || dangHuy} onClick={() => setHuyNhieu({ lyDo: '' })}>Huỷ quyết định</button>
 ```
-và ngay dưới nhóm, khi `huyNhieu`:
+và ngay dưới nhóm:
 ```tsx
 {huyNhieu && (
   <div role="group" aria-label="Huỷ quyết định" className="surface-2 space-y-2 rounded-lg px-3 py-2">
@@ -1624,12 +1854,13 @@ và ngay dưới nhóm, khi `huyNhieu`:
   </div>
 )}
 ```
+Import: `chayHangLoat, hoanTacHangLoat` từ `'../students/hangLoatEm.ts'`.
 
 - [ ] **Step 4: `npm run check` xanh. Step 5: Commit**
 
 ```bash
 git add web/src/modules/classes/TransitionPanel.tsx server/src/tests/prLuiB.tests.ts
-git commit -m "PR-LUI-b: web huỷ nhiều quyết định chuyển lớp (xem trước theo hướng, lô 8, Hoàn tác = Khôi phục)"
+git commit -m "PR-LUI-b: web huỷ nhiều quyết định chuyển lớp ở panel Chuyển tiếp lớp (qua chayHangLoat huy-lenh, Hoàn tác = Khôi phục)"
 ```
 
 ---
@@ -1638,17 +1869,17 @@ git commit -m "PR-LUI-b: web huỷ nhiều quyết định chuyển lớp (xem t
 
 - [ ] **Step 1:** `git fetch origin && git merge origin/main` (PR-MTa có thể đã merge — xung đột `routes/index.ts`, `run.ts`, `CODE_MAP.md`, `plan.md` mục 11: **giữ cả hai**). Chạy `npm run check` MỘT LẦN, foreground. OOM → `npm run build:server`, rồi từng bước.
 - [ ] **Step 2: Bấm thử bằng ẢNH THẬT** (`PORT=4390 WEB_PORT=5390`, `POST /api/demo/session {userId}`: admin=1, QL=2, GVCN=7, GVBM=9) — **375 và 1440, sáng và tối, ≥ 3 vai** (QL, Quản trị, GVCN; thêm GVBM): 
-  - Hồ sơ em đã kết thúc: ⋮ có `Học lại` (QL, QT), **không** có ở GVCN/GVBM; panel; lớp cũ đã kết thúc → dòng `Mở lại lớp …`; toast Hoàn tác; em về danh sách lớp.
+  - Hồ sơ em đã kết thúc: ⋮ có `Học lại` (QL, QT), **không** có ở GVCN/GVBM; panel với `Về lớp cũ` (lớp cũ đã kết thúc → dòng `Mở lại lớp …`) và `Sang lớp mới` (chọn lớp thường; chọn lớp Fast Track → ô Target bắt buộc, báo `Lên FT cần Target`); toast Hoàn tác; Hành trình có dòng `Học lại`, lộ trình cũ còn ở Hành trình.
   - Hồ sơ lớp đã kết thúc: ⋮ `Mở lại lớp`; Lưu trữ › Lớp: nút `Mở lại`.
-  - ⋮ hồ sơ lớp › `Nhiều em…`: bước 1 (chọn cả lớp, chọn lẻ), bước 2 (số hệ quả, mục Bỏ qua), đang lưu `n/m`, lỗi giữa chừng (tạm chặn một em bằng cách đổi chi nhánh em đó ở DB test, KHÔNG ở DB thật) → `Đã lưu n em · m em chưa lưu` + `Thử lại`; Hoàn tác.
-  - Lưu trữ › Học viên: chọn nhiều → thanh; `Bỏ lưu trữ`, `Học lại`.
+  - Tab Học viên của hồ sơ lớp (QL / QT): nút `Chọn nhiều học viên` → ô chọn trên bảng FT, bảng lớp thường và thẻ điện thoại; thanh dính đáy (`n đã chọn · Lưu trữ · Kết thúc học · Huỷ chuyển lớp · Bỏ chọn`) không che dòng cuối; bấm một việc → panel xem trước (số hệ quả, `Bỏ qua n học viên`); đang lưu `n/m`; lỗi giữa chừng (tạm chặn một học viên bằng cách đổi chi nhánh em đó ở DB test, KHÔNG ở DB thật) → `Đã lưu n học viên · m học viên chưa lưu` + `Thử lại`; Hoàn tác. GVCN/GVBM: không có nút. **Bảng Học viên & Lớp không có ô chọn.**
+  - Lưu trữ › Học viên: `Chọn nhiều học viên` → thanh `Bỏ lưu trữ` / `Học lại`; `Học lại` từng em → panel có chọn đích.
   - Chuyển tiếp lớp: chọn nhiều → `Huỷ quyết định`; Hoàn tác (Khôi phục).
   - Điện thoại 375: nút ≥ 44 px, không cuộn ngang, chân panel không đè.
   Ảnh lưu `docs/so-tay/…` chỉ nếu sổ tay lệch (ghi vào mô tả PR, không sửa sổ tay).
 - [ ] **Step 3: Impeccable** — theo CLAUDE.md: `layout`, `clarify`, `harden` (hàng loạt, lỗi giữa chừng, em ngoài quyền, mất mạng), `adapt` 375, cuối `audit`. Giữ Be Vietnam Pro, bảng màu, bố cục đã khoá. Skill gợi ý trái mockup đã duyệt → ghi vào báo cáo cho chủ sản phẩm, không tự làm.
 - [ ] **Step 4:** `/ponytail-review`; liệt kê chú thích `ponytail:` (hiện có: `moLaiLop` — lớp thường hết khoá rỗng có thể bị tự kết thúc lại; `hangLoat.ts` — mỗi em một giao dịch, không khoá chống gửi trùng). 
-- [ ] **Step 5:** `superpowers:verification-before-completion`, `superpowers:requesting-code-review` (người rà **Opus 5.5 khác session**), `superpowers:finishing-a-development-branch`: mở PR **vào `main`**, KHÔNG merge. Mô tả PR báo từng việc: tái hiện (số liệu báo cáo rà 06/10 B1 / C9–C10) · file sửa · phép kiểm bảo vệ (LUIb-1…18) · ảnh · giới hạn còn lại · chú thích `ponytail:` · ảnh sổ tay lệch.
-- [ ] **Step 6:** `[x]` các Task ở file này; một dòng mục 11 `plan.md`; `CODE_MAP.md` thêm `students/hangLoat.ts`, `students/HangLoatEmPanel.tsx`, `students/hangLoatEm.ts`, `shared/domain/hangLoatEm.ts`; tắt mọi tiến trình, xoá file Vite tạm, **không** gỡ worktree trước khi PR xong.
+- [ ] **Step 5:** `superpowers:verification-before-completion`, `superpowers:requesting-code-review` (người rà **Opus 5.5 khác session**), `superpowers:finishing-a-development-branch`: mở PR **vào `main`**, KHÔNG merge. Mô tả PR báo từng việc: tái hiện (số liệu báo cáo rà 06/10 B1 / C9–C10) · file sửa · phép kiểm bảo vệ (LUIb-1…19) · ảnh · giới hạn còn lại · chú thích `ponytail:` · ảnh sổ tay lệch.
+- [ ] **Step 6:** `[x]` các Task ở file này; một dòng mục 11 `plan.md`; `CODE_MAP.md` thêm `students/hangLoat.ts`, `students/XemTruocHangLoatPanel.tsx`, `students/chonNhieuHocVien.tsx`, `students/hangLoatEm.ts`, `shared/domain/hangLoatEm.ts`; tắt mọi tiến trình, xoá file Vite tạm, **không** gỡ worktree trước khi PR xong.
 
 ---
 
@@ -1656,11 +1887,11 @@ git commit -m "PR-LUI-b: web huỷ nhiều quyết định chuyển lớp (xem t
 
 | Yêu cầu (plan.md mục 4, PR-LUI b) | Task | Phép kiểm |
 |---|---|---|
-| "Học lại" cho em đã kết thúc học | 2, 6, 9 | LUIb-3, 4, 5, 7, 14, 17 |
+| "Học lại" cho em đã kết thúc học (về lớp cũ / sang lớp mới) | 2, 6, 9 | LUIb-3, 4, 5, 7, 7b, 14, 18 |
 | Mở lại lớp đã kết thúc | 2, 7 | LUIb-6, 7, 12, 15 |
-| Kết thúc học nhiều em một lần | 3, 8 | LUIb-8, 9, 16 |
-| Lưu trữ (và Bỏ lưu trữ) nhiều em | 3, 8, 9 | LUIb-10, 16, 17 |
-| Huỷ quyết định chuyển lớp nhiều em | 4, 10 | LUIb-11, 18 |
+| Kết thúc học nhiều học viên một lần | 3, 8 | LUIb-8, 9, 16, 17 |
+| Lưu trữ (và Bỏ lưu trữ) nhiều học viên | 3, 8, 9 | LUIb-10, 17, 18 |
+| Huỷ quyết định chuyển lớp nhiều học viên | 3, 4, 8, 10 | LUIb-10b, 11, 17, 19 |
 | Chỉ QL / Quản trị, không nới quyền GV | 2, 3, 4, 5 | LUIb-4 (GVCN 403), 6, 9, 11, 12, 13 |
 | Có nhật ký | 2, 3, 4 | LUIb-3 (`student.rejoin`), 6 (`class.reopened`), 8–9 (`student.hang_loat`), 11 (`lenh_chuyen.huy/khoi_phuc`) |
 | Lùi lại được | 6, 7, 8, 10 | Hoàn tác trong LUIb-8 (về nguyên trạng), 11 (Khôi phục), 14–18 |
@@ -1674,4 +1905,6 @@ git commit -m "PR-LUI-b: web huỷ nhiều quyết định chuyển lớp (xem t
 - **Dòng "Lộ trình chạy tiếp"** luôn hiện ở panel Học lại dù em không có lộ trình bị đóng: thêm `loTrinhSeChay` vào `xemTruoc` và ẩn dòng khi `null` nếu cần sát.
 - **Hoàn tác huỷ quyết định > 5 giây ở web:** máy chủ cho 24 giờ (`khoiPhucLenh`), web chỉ nút 5 giây; thêm màn "Quyết định vừa huỷ" nếu cần.
 - **Học lại sang lớp khác / lộ trình mới** (Q1-B), **hoàn tác Chuyển lớp đã thi hành**, **khoá / mở khoá tài khoản**, **khôi phục tài khoản / học viên đã xoá**: ngoài phạm vi 06/10 (phần a và mục 8 `plan.md`).
-- **Ô chọn thẳng trên bảng Học viên & Lớp** (Q3-B): chưa làm; panel `Nhiều em` đủ cho phạm vi.
+- **Ô chọn thường trực trên bảng Học viên & Lớp:** không làm (chủ sản phẩm 06/10) — chọn nhiều chỉ ở tab Học viên của hồ sơ lớp và Lưu trữ.
+- **Học lại hàng loạt sang lớp Fast Track:** chưa làm (cần Target từng em) — học lại từng em ở hồ sơ.
+- **Chọn nhiều học viên ở cách xem "Cần hỗ trợ":** chưa làm (danh sách con theo Case).
