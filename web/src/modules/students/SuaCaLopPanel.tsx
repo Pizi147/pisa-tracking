@@ -7,7 +7,7 @@ import { ConfirmDialog } from '../../ui/Drawer.tsx';
 import { ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
-import { KCK, LO_LUU_SUA_CA_LOP, LY_DO_TOI_THIEU, chiaLo, laKck, type VanDeNhap } from '@shared/domain/index.ts';
+import { KCK, LO_LUU_SUA_CA_LOP, chiaLo, laKck, type VanDeNhap } from '@shared/domain/index.ts';
 
 type Cot = 'fullName' | 'dob' | 'email' | 'startWeek' | 'examDate' | 'target' | 'baseline';
 type DongGoc = {
@@ -102,8 +102,7 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
 
   const vanDe = (sid: number, k: Cot) => xem?.rows.find((x) => x.studentId === sid)?.issues.filter((i) => i.field === k) ?? [];
   const soLoi = xem ? xem.rows.reduce((n, x) => n + x.issues.filter((i) => i.muc === 'loi').length, 0) : 0;
-  const loiLyDo = doiTarget && lyDo.trim().length < LY_DO_TOI_THIEU
-    ? (lyDo.trim() ? `Cần ít nhất ${LY_DO_TOI_THIEU} ký tự.` : 'Ghi lý do đổi Target.') : null;
+  const loiLyDo = doiTarget && !lyDo.trim() ? 'Ghi lý do đổi Target.' : null;   // T7 (PR-MTa): không tối thiểu ký tự
   const loiForm = loiLyDo ? [{ khoa: 'ly-do-target', nhan: 'Lý do đổi Target', lyDo: loiLyDo }] : [];
 
   const datO = (sid: number, k: Cot, v: string) => setSua((s) => ({ ...s, [sid]: { ...s[sid], [k]: v } }));

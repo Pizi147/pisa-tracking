@@ -26,7 +26,7 @@ import {
   attemptHref, attemptStatusLabel, fmtBand, fmtDate, progressLabel, skillLabel,
 } from '../../lib/format.ts';
 import {
-  ATTEMPT_KIND_SHORT, CHU_THAO_TAC, LY_DO_TOI_THIEU, cauSeHuyLich, kiemTruong, mondayOfDate, nhanLuot, thaoTacKyNang, trangThaiTT, tuanLich,
+  ATTEMPT_KIND_SHORT, CHU_THAO_TAC, canLyDoVuot, cauSeHuyLich, dongHeQuaVuot, mondayOfDate, nhanLuot, thaoTacKyNang, trangThaiTT, tuanLich,
   type AttemptKind, type LoiTruong, type TheYeuCauDto, type ThaoTac,
   docKnMock,
 } from '@shared/domain/index.ts';
@@ -159,10 +159,6 @@ export default function MockDetailPage() {
   const passed: boolean | null = d.result.evaluable ? d.result.sosLevel === 0 : null;
 
   const openHistory = () => document.getElementById('lich-su')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  /* K4-15: "Dời lịch thi cả đợt" bắt lý do khi có kỹ năng còn dời được mà tuần thi đã bắt đầu (bài vắng không tính — K4-12). */
-  const tuanNay = mondayOfDate(homNay);
-  const caDotCanLyDo = d.skillSchedule.some((r) => r.required && !r.scored && r.sitStatus !== 'absent' && r.sitStatus !== 'cancelled'
-    && !!r.weekStart && r.weekStart.slice(0, 10) <= tuanNay);
 
   /*
    * NGOẠI LỆ CỦA QUẢN LÝ nằm trong MỘT menu, không phải ba nút ngang hàng với việc nhập điểm. "Huỷ lượt" không còn
@@ -305,7 +301,7 @@ export default function MockDetailPage() {
         <WeekModal onClose={() => setWeekOpen(false)} attemptId={d.id} lichSu={d.lichSu} hocVien={d.student.name} lop={d.classCode}
           kyNang={d.skillSchedule.filter((r) => r.required && r.sitStatus !== 'cancelled'
             && (d.lichSu || (!r.scored && r.sitStatus !== 'sat'))).map((r) => r.skill)}
-          currentPeriodId={d.period?.id ?? null} batBuocLyDo={caDotCanLyDo} onDone={reload} />
+          currentPeriodId={d.period?.id ?? null} onDone={reload} />
       )}
       {deadlineOpen && <DeadlineModal onClose={() => setDeadlineOpen(false)} detail={d} onDone={reload} />}
       {d.viewer.huyLuot?.cachDuoc && (
@@ -601,8 +597,8 @@ function HistoryCard({ d }: { d: Detail }) {
 // ---------------------------------------------------------------- thao tác cả đợt (menu đầu trang, K4-29)
 
 /** Dời lịch thi CẢ ĐỢT — lối tắt của Quản lý: mọi kỹ năng còn dời được vào một tuần. Tuần thi đã bắt đầu thì bắt lý do (K4-15). */
-function WeekModal({ onClose, attemptId, currentPeriodId, batBuocLyDo, lichSu, kyNang, hocVien, lop, onDone }: {
-  onClose: () => void; attemptId: number; currentPeriodId: number | null; batBuocLyDo: boolean; onDone: () => void;
+function WeekModal({ onClose, attemptId, currentPeriodId, lichSu, kyNang, hocVien, lop, onDone }: {
+  onClose: () => void; attemptId: number; currentPeriodId: number | null; onDone: () => void;
   hocVien: string; lop: string | null;
   /** D3 (PR-LM): MT lịch sử dời được cả đợt, sang tuần đã qua hợp lệ hoặc tương lai — đổi tuần là sửa hồ sơ, luôn cần lý do. */
   lichSu: boolean;
@@ -619,9 +615,7 @@ function WeekModal({ onClose, attemptId, currentPeriodId, batBuocLyDo, lichSu, k
   const [xacNhan, setXacNhan] = useState<LuotSeHuyLich[] | null>(null);
   const [loiMay, setLoiMay] = useState<string | null>(null);
   const ten = `${CHU_THAO_TAC['doi-lich']} cả đợt`;
-  const canLyDo = batBuocLyDo || lichSu;
-  const loiLyDo = canLyDo ? kiemTruong({ khoa: 'ly-do', nhan: 'Lý do', toiThieu: LY_DO_TOI_THIEU }, reason) : null;
-  const loi: LoiTruong[] = loiLyDo ? [{ khoa: 'ly-do', nhan: 'Lý do', lyDo: loiLyDo }] : [];
+  const loi: LoiTruong[] = [];   // T7 (PR-MTa): dời lịch — lý do tuỳ chọn
   const doiTuan = !!periodId && periodId !== currentPeriodId;
 
   /* Đổi tuần → kiểm trước như hộp xếp lịch: cảnh báo một tuần (vàng), chặn (đỏ), lượt sau sẽ bị huỷ lịch (đỏ). */
@@ -639,18 +633,19 @@ function WeekModal({ onClose, attemptId, currentPeriodId, batBuocLyDo, lichSu, k
     return () => { huy = true; };
   }, [periodId]);   // eslint-disable-line react-hooks/exhaustive-deps
 
-  const luu = async (daXacNhan = false) => {
+  /** `lyDoVuot` = lý do ở hộp dời vượt (T2) — chỉ có khi đã xác nhận huỷ kết quả. */
+  const luu = async (daXacNhan = false, lyDoVuot?: string) => {
     lf.bam();
     if (loi.length || busy) return;
-    if (kiem?.seHuyLich.length && !daXacNhan) { setXacNhan(kiem.seHuyLich); return; }
+    if (kiem && canLyDoVuot(kiem.seHuyLich) && !daXacNhan) { setXacNhan(kiem.seHuyLich); return; }
     setBusy(true); setLoiMay(null);
     try {
       const r = await api.post<any>(`/attempts/${attemptId}/week`, {
-        periodId, reason, force: !!kiem?.canhBao.length, xacNhanHuyLich: daXacNhan,
+        periodId, reason: lyDoVuot || reason, force: !!kiem?.canhBao.length, xacNhanHuyLich: daXacNhan,
       });
       invalidate('/attempts'); invalidate('/tong-quan'); invalidate('/classes'); invalidate('/cycles');
       onDone(); onClose();
-      const huyLich = daXacNhan && xacNhan?.length ? ` · huỷ lịch ${xacNhan.map((x) => x.nhan).join(', ')}` : '';
+      const huyLich = daXacNhan && xacNhan?.length ? ` · ${xacNhan.map(dongHeQuaVuot).join(' · ')}` : '';
       toast.push('ok', r?.keptInPlace?.length
         ? `Đã dời ${r.moved.length} kỹ năng${huyLich}. Giữ nguyên lịch của ${r.keptInPlace.length} kỹ năng đã thi hoặc đã có điểm.`
         : `Đã dời ${r?.moved?.length ?? ''} kỹ năng${huyLich}`);
@@ -679,18 +674,17 @@ function WeekModal({ onClose, attemptId, currentPeriodId, batBuocLyDo, lichSu, k
         {!kiem?.chan.length && !!kiem?.seHuyLich.length && (
           <p className="m-0 text-xs font-semibold leading-relaxed text-bad" role="alert">{cauSeHuyLich(kiem.seHuyLich, homNay)}</p>
         )}
-        <Truong nhan="Lý do" batBuoc={canLyDo} tuyChon={!canLyDo} loi={lf.loiCua(loi, 'ly-do')}
-          dem={canLyDo ? { co: reason.trim().length, can: LY_DO_TOI_THIEU } : undefined}>
+        <Truong nhan="Lý do" tuyChon loi={lf.loiCua(loi, 'ly-do')}>
           <input className="field" {...lf.o(loi, 'ly-do')} value={reason} onChange={(e) => setReason(e.target.value)}
             placeholder={lichSu ? 'Ví dụ: nhập nhầm tuần thi' : 'Ví dụ: trùng lịch phòng thi'} />
         </Truong>
         <SectionNote>
           {lichSu
-            ? 'MT lịch sử: đổi tuần là sửa hồ sơ — điểm giữ nguyên. Tuần đã qua phải trước ngày em vào web.'
+            ? 'MT cũ: đổi tuần là sửa hồ sơ — điểm giữ nguyên.'
             : 'Các kỹ năng chưa thi chuyển sang cùng một tuần; kỹ năng đã thi hoặc có điểm giữ nguyên. Muốn tách Speaking thì dời ở dòng kỹ năng.'}
         </SectionNote>
       </div>
-      {xacNhan && <HopXacNhanHuyLich ds={xacNhan} busy={busy} onQuayLai={() => setXacNhan(null)} onXacNhan={() => void luu(true)} />}
+      {xacNhan && <HopXacNhanHuyLich ds={xacNhan} busy={busy} onQuayLai={() => setXacNhan(null)} onXacNhan={(ly) => void luu(true, ly)} />}
     </KhungPanel>
   );
 }
@@ -706,8 +700,7 @@ function DeadlineModal({ onClose, detail, onDone }: {
   const lf = useLoiForm();
   const [loiMay, setLoiMay] = useState<string | null>(null);
   const ten = `${CHU_THAO_TAC['doi-han']} cả đợt`;
-  const loiLyDo = kiemTruong({ khoa: 'ly-do', nhan: 'Lý do', toiThieu: LY_DO_TOI_THIEU }, reason);
-  const loi: LoiTruong[] = loiLyDo ? [{ khoa: 'ly-do', nhan: 'Lý do', lyDo: loiLyDo }] : [];
+  const loi: LoiTruong[] = [];   // T7 (PR-MTa): dời hạn chấm — lý do tuỳ chọn
   const daSua = date !== (detail.deadlineOverride?.date ?? '') || reason !== (detail.deadlineOverride?.reason ?? '');
 
   const submit = async (value: string | null) => {
@@ -741,7 +734,7 @@ function DeadlineModal({ onClose, detail, onDone }: {
           <span className="label">Hạn chấm mới</span>
           <ONgay kieu="ngay" value={date} onChange={setDate} />
         </label>
-        <Truong nhan="Lý do" batBuoc loi={lf.loiCua(loi, 'ly-do')} dem={{ co: reason.trim().length, can: LY_DO_TOI_THIEU }}>
+        <Truong nhan="Lý do" tuyChon loi={lf.loiCua(loi, 'ly-do')}>
           <input className="field" {...lf.o(loi, 'ly-do')} value={reason ?? ''} onChange={(e) => setReason(e.target.value)}
             placeholder="Ví dụ: giáo viên Writing nghỉ phép" />
         </Truong>

@@ -50,7 +50,7 @@ luật `lich_su` T1 — đều chạm file của PR này). Merge **MTb → LT3 �
 ## Skill bắt buộc
 | Lúc | Skill / lệnh |
 |---|---|
-| Đầu phiên | Nói model đang chạy (phải **Opus 5.5**; khác thì dừng báo). `/ponytail lite`. `superpowers:subagent-driven-development` (subagent cùng model, **không Fable**) |
+| Đầu phiên | Nói model đang chạy (Opus 5.5, hoặc phương án B Opus 5.5 · High; model khác hoặc Fable thì dừng báo). `/ponytail lite`. `superpowers:subagent-driven-development` (subagent cùng model, **không Fable**) |
 | Mỗi task | `superpowers:test-driven-development` (đỏ trên DB test trước) · lỗi lạ: `superpowers:systematic-debugging` |
 | LT3-5 (khối 1, mục con) | `/impeccable layout` |
 | LT3-5, LT3-6 (nhãn, khối rỗng, nhiều lớp, 375) | `/impeccable clarify` · `/impeccable harden` · `/impeccable adapt` |

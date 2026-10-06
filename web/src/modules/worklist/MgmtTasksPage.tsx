@@ -541,7 +541,7 @@ function SuaViec({ open, onClose, task, onDone }: {
   const canDoi = !!task.due && due !== task.due;
   const loi = dsLoi([
     { khoa: 'ten', nhan: 'Tên công việc', toiThieu: 1 },
-    ...(canDoi ? [{ khoa: 'ly-do-han', nhan: 'Lý do dời hạn', toiThieu: 2 }] : []),
+    ...(canDoi ? [{ khoa: 'ly-do-han', nhan: 'Lý do dời hạn', toiThieu: 1 }] : []),
   ], { ten: title, 'ly-do-han': lyDoDoiHan });
 
   const luu = async () => {

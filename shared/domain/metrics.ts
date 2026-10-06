@@ -76,7 +76,7 @@ export const METRICS: readonly ChiSo[] = [
     id: 'bai-qua-han-nhap-diem', ten: 'Bài quá hạn chưa nhập điểm',
     cauHoi: 'Bao nhiêu bài (một kỹ năng của một em trong một lượt) đã quá hạn nhập điểm mà chưa nhập?',
     donVi: 'bai',
-    tapDuDieuKien: 'Bài = một ô điểm (T53 Q2: FT W1 và W2 là hai bài) của lượt không huỷ, lớp đang hoạt động, em đang học (Tạm dừng không sinh nợ — T65), đã quá hạn — cùng luật với ô ở bảng chấm: lớp thường theo số câu đúng, hạn Chủ nhật tuần thi môn đó; Fast Track theo band, dấu "-" theo cặp W1/W2. Vắng đã xác nhận, huỷ phần thi, chờ duyệt dời không phải nợ. Môn chưa phân công giáo viên vẫn tính (bảng Theo giáo viên có hàng "Chưa phân công").',
+    tapDuDieuKien: 'Bài = một ô điểm (T53 Q2: FT W1 và W2 là hai bài) của lượt không huỷ, lớp đang hoạt động, em đang học (Tạm dừng không sinh nợ — T65), đã quá hạn — cùng luật với ô ở bảng chấm: lớp thường theo số câu đúng, hạn thứ Tư tuần sau tuần thi môn đó (như Fast Track); Fast Track theo band, dấu "-" theo cặp W1/W2. Vắng đã xác nhận, huỷ phần thi, chờ duyệt dời không phải nợ. Môn chưa phân công giáo viên vẫn tính (bảng Theo giáo viên có hàng "Chưa phân công").',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi ô điểm chỉ đếm 1 lần', drilldown: '/metrics/bai-qua-han-nhap-diem',
   },
   {

@@ -16,7 +16,6 @@ export const NHAN_TRUONG_DE_XUAT: Record<TruongDeXuat, string> = {
 };
 /** Hai trường Duyệt là áp luôn; ba trường còn lại Quản lý tự làm ở màn gốc (Q6). */
 export const TRUONG_TU_AP: readonly TruongDeXuat[] = ['target', 'lo-trinh'];
-const LY_DO_TOI_THIEU = 15;
 
 /** Lộ trình đang chạy + lớp đang học của em — giá trị "cũ" ghi vào thẻ. */
 export function hienTaiCua(conn: any, studentId: number) {
@@ -38,7 +37,7 @@ export function guiDeXuatSua(p: Principal, studentId: number, body: { truong?: u
   const truong = body.truong as TruongDeXuat;
   if (!(TRUONG_DE_XUAT as readonly string[]).includes(String(truong))) throw badRequest('Chọn thông tin cần sửa.');
   const lyDo = typeof body.lyDo === 'string' ? body.lyDo.trim() : '';
-  if (lyDo.length < LY_DO_TOI_THIEU) throw badRequest(`Ghi lý do (ít nhất ${LY_DO_TOI_THIEU} ký tự) để Quản lý có căn cứ duyệt.`);
+  if (!lyDo) throw badRequest('Ghi lý do để Quản lý có căn cứ duyệt.');   // T7 (PR-MTa): không tối thiểu ký tự
   const ht = hienTaiCua(conn, studentId);
   let moi: string | number;
   let cu: string | number | null = null;

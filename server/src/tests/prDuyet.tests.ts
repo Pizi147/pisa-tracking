@@ -115,7 +115,7 @@ export async function runPrDuyetTests(t: YThucTestKit) {
     });
     check('DUYET (3) · từ chối thiếu lý do → 400; có lý do → tu_choi; trả lời thẻ Duyệt → 400; duyệt hàng loạt báo riêng thẻ lỗi; câu lỗi không lộ mã', () => {
       const id = tao();
-      assert(maLoi(() => yc.tuChoiYeuCau(P.mbManager, id, '  ')) === 400 && maLoi(() => yc.tuChoiYeuCau(P.mbManager, id, 'ab')) === 400, 'thiếu lý do');
+      assert(maLoi(() => yc.tuChoiYeuCau(P.mbManager, id, '  ')) === 400, 'thiếu lý do');   // PR-MTa T7: bỏ tối thiểu 3 ký tự — chỉ cần không trống
       yc.tuChoiYeuCau(P.mbManager, id, 'Chưa đủ căn cứ');
       assert(docThe(id).trang_thai === 'tu_choi' && docThe(id).ly_do_tu_choi === 'Chưa đủ căn cứ', JSON.stringify(docThe(id)));
       assert(maLoi(() => yc.traLoiYeuCau(P.mbManager, tao(), 'Trả lời')) === 400, 'trả lời thẻ Duyệt');
@@ -287,7 +287,7 @@ export async function runPrDuyetTests(t: YThucTestKit) {
   });
   check('DUYET (6) · GVBM gửi Đề xuất sửa target 6.5 → 7.0 → thẻ; QL Duyệt → đổi target, lịch sử ghi lý do đề xuất và người duyệt', () => {
     const { sid, cyc } = hvCoTarget();
-    assert(maLoi(() => deXuat6.guiDeXuatSua(P.lrTeacher, sid, { truong: 'target', moi: 7, lyDo: 'ngắn' })) === 400, 'lý do ngắn');
+    assert(maLoi(() => deXuat6.guiDeXuatSua(P.lrTeacher, sid, { truong: 'target', moi: 7, lyDo: '  ' })) === 400, 'lý do trống');   // PR-MTa T7: bỏ tối thiểu 15 ký tự
     assert(maLoi(() => deXuat6.guiDeXuatSua(P.lrTeacher, sid, { truong: 'target', moi: 7.3, lyDo: 'PH đăng ký thi 12/2026, cần 7.0' })) === 400, 'band lẻ');
     assert(maLoi(() => deXuat6.guiDeXuatSua(P.cpManager, sid, { truong: 'target', moi: 7, lyDo: 'PH đăng ký thi 12/2026, cần 7.0' })) === 403, 'ngoài phạm vi');
     const { id } = deXuat6.guiDeXuatSua(P.lrTeacher, sid, { truong: 'target', moi: 7, lyDo: 'PH đăng ký thi 12/2026, cần 7.0' });

@@ -134,8 +134,9 @@ export async function runPrUxfATests(t: YThucTestKit) {
   const LOP = taoLop('MB FOU UXF1', 'FOU');
   const ganGv = (uid: number, skill: string) => conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at) VALUES (?,?,?,0,'2026-01-01','active',?)`).run(uid, LOP, skill, NOW);
   ganGv(gvMb[0], 'listening'); ganGv(gvMb[1], 'reading');
-  const X = taoHv(LOP, false);                         // Giữa khoá tuần 07/09 (đã hết), còn thiếu ô L → L quá hạn
-  const luotX = themLuot({ ...X, cid: LOP, no: 1, kind: 'progress', tuan: '2026-09-07' });
+  /* PR-MTa T19 thay tuần 07/09: hạn lớp thường nay hết thứ Tư tuần sau — tuần 31/08 (hạn 09/09) mới quá hạn ở 14/09. */
+  const X = taoHv(LOP, false);                         // Giữa khoá tuần 31/08 (đã hết), còn thiếu ô L → L quá hạn
+  const luotX = themLuot({ ...X, cid: LOP, no: 1, kind: 'progress', tuan: '2026-08-31' });
   diem(luotX, { reading: [30, 40], writing: [30, 40], speaking: [8, 10] });
   const Y = taoHv(LOP, false);                         // chưa có bài nào
   const Z = taoHv(LOP, false);                         // chỉ có bài Cuối khoá đã xong, không lượt planned
@@ -293,7 +294,7 @@ export async function runPrUxfATests(t: YThucTestKit) {
     }
     assert(tongHaiKhung === o.n, `ô FT + ô thường ${tongHaiKhung} ≠ ô gộp ${o.n}`);
     const cells = (debt.scoreDebtCells(P.admin, TODAY, [MB]) as any[]).filter((c) => c.overdue);
-    /* Dòng ghi tuần thi CỦA MÔN (Thứ Hai tuần thi của kỹ năng ở `attempt_skills`, không tuần của lượt) — X: ô L tuần 07/09. */
+    /* Dòng ghi tuần thi CỦA MÔN (Thứ Hai tuần thi của kỹ năng ở `attempt_skills`, không tuần của lượt) — X: ô L tuần 31/08. */
     const dong = metricsSvc.rowsFor('bai', [d.baiId(luotX, 'listening')])[0];
     const tuanL = get(`SELECT rp.week_start w FROM attempt_skills k JOIN report_periods rp ON rp.id = k.planned_period_id WHERE k.attempt_id = ? AND k.skill = 'listening'`, luotX).w as string;
     assert(cells.length > 0 && dong.sub.includes(d.tuanLich(tuanL, TODAY)), `dòng phải ghi tuần thi của môn ${d.tuanLich(tuanL, TODAY)}: ${dong.sub}`);
@@ -368,7 +369,7 @@ export async function runPrUxfATests(t: YThucTestKit) {
       assert(ohRoster(sid) === 0, `${ten}: roster.overdueSkills`);
     }
     assert(!lopLich || !lopLich.quaHan, `Lịch Test tuần này không quá hạn: ${JSON.stringify(lopLich?.quaHan)}`);
-    /* Đối chứng: X (W2 SEP, tuần đã hết, qua hạn) quá hạn ở mọi đường. */
+    /* Đối chứng: X (W1 SEP, tuần đã hết, qua hạn) quá hạn ở mọi đường. */
     assert(quaHanO(luotX) === 1 && coBai(luotX) && ohRoster(X.sid) === 1, `X phải quá hạn: ô ${quaHanO(luotX)} · roster ${ohRoster(X.sid)}`);
     const no = (cham.lichTest(pL, tuanNayId, null, TODAY, { classId: LOP }).no as any[]).find((x) => x.attemptIds.includes(luotX));
     assert(no && no.quaHan, `dòng Nợ của X quá hạn: ${JSON.stringify(no)}`);

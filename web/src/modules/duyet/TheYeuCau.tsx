@@ -19,7 +19,6 @@ import { ChuyenLopPanel } from '../students/ChuyenLopPanel.tsx';
  * Enter gửi. Quyết định không hoàn tác (Q15). Thẻ đã bị người khác xử lý → máy chủ trả 400 → báo và làm mới danh sách.
  */
 type O = { loai: 'tu-choi' | 'tra-loi' | 'ghi-chu' | 'tuan' } | null;
-const TOI_THIEU = 3;
 
 export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemPa, daNhacNgoai }: {
   yc: TheYeuCauDto;
@@ -102,7 +101,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
     setDaBam(true);
     if (!o) return;
     if (o.loai === 'tuan') return void gui(`/yeu-cau/${yc.id}/duyet`, { duLieu: tuan ? { tuan } : undefined }, `Đã duyệt: ${yc.tieuDe}`);
-    if (chu.trim().length < TOI_THIEU) return;
+    if (!chu.trim()) return;
     if (o.loai === 'tu-choi') return void gui(`/yeu-cau/${yc.id}/tu-choi`, { lyDo: chu.trim() }, 'Đã từ chối — người gửi nhận lý do');
     if (o.loai === 'tra-loi') return void gui(`/yeu-cau/${yc.id}/tra-loi`, { traLoi: chu.trim() }, 'Đã trả lời — giáo viên nhận câu trả lời');
     void gui(`/yeu-cau/${yc.id}/duyet`, { ghiChu: chu.trim() }, `Đã duyệt: ${yc.tieuDe}`);
@@ -129,7 +128,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   const nhanO = o?.loai === 'tu-choi' ? 'Lý do từ chối (người gửi sẽ đọc)' : o?.loai === 'tra-loi' ? 'Câu trả lời cho giáo viên' : 'Ghi chú việc đã xử lý ở màn gốc';
   /* Nút mở thêm một bước (chọn tuần / ghi chú) có dấu "…", như Từ chối… — Duyệt trơn là quyết ngay. */
   const duyetCoBuoc = yc.loai === 'lich_thi' || canGhiChu || !!yc.duLieu?.moPanelChuyenLop;
-  const loiChu = daBam && o && o.loai !== 'tuan' && chu.trim().length < TOI_THIEU ? `Cần ít nhất ${TOI_THIEU} ký tự` : null;
+  const loiChu = daBam && o && o.loai !== 'tuan' && !chu.trim() ? 'Chưa điền' : null;   // T7 (PR-MTa): không tối thiểu ký tự
   const moTaPhu = [!gon && yc.hocVien, !gon && yc.lop, yc.phu].filter(Boolean).join(' · ');
 
   return (

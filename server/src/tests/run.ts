@@ -167,6 +167,8 @@ const periodOf = (weekStart: string) => week.ensurePeriod(weekStart).id;
  * cũ (quyền theo vai trò, xoá điểm về trống…) cố ý lấy một đợt `status='done'` bất kỳ — với `demoToday()` thật
  * (đã qua rất nhiều tuần), đợt đó tình cờ đã hoàn tất. Dùng ĐÚNG Chủ nhật của đợt đó làm `today` cho các lệnh
  * `saveScore` không liên quan tới R11, thay vì nới luật.
+ * PR-MTa T19 thay "nhập điểm bất kỳ lúc nào": đợt xếp ở tuần tương lai chỉ nhập được từ tuần thi — các phép kiểm dựng đợt
+ * ở tuần tới cũng truyền Chủ nhật này làm `today`.
  */
 function chuNhatCuoiOf(attemptId: number): string {
   const row = conn.prepare(
@@ -547,15 +549,15 @@ check('Chưa xếp tuần thì KHÔNG có hạn, không dựng hạn giả', () 
 check('Mỗi kỹ năng có hạn chấm riêng, đếm từ TUẦN THI CỦA CHÍNH NÓ', () => {
   /*
    * FT: hết thứ Tư của tuần KẾ TIẾP sau tuần thi kỹ năng đó.
-   * Normal: hết CHỦ NHẬT của chính tuần thi kỹ năng đó.
+   * Normal: như FT (PR-MTa T19 thay "hết Chủ nhật của chính tuần thi").
    * Đây là luật mới của mục 10.5, thay cho "cả lượt một hạn" của các vòng trước.
    */
   assert(week.skillScoreDeadline('band', '2026-09-14') === '2026-09-23',
     'FT thi tuần 14–20/9 phải có hạn chấm 23/9');
   assert(week.skillScoreDeadline('band', '2026-09-21') === '2026-09-30',
     'FT thi tuần 21–27/9 phải có hạn chấm 30/9');
-  assert(week.skillScoreDeadline('ratio', '2026-09-14') === '2026-09-20',
-    'Normal thi tuần 14–20/9 phải có hạn chấm hết Chủ nhật 20/9');
+  assert(week.skillScoreDeadline('ratio', '2026-09-14') === '2026-09-23',
+    'Normal thi tuần 14–20/9 phải có hạn chấm hết thứ Tư 23/9 (PR-MTa T19)');
 
   const a = conn
     .prepare(`SELECT a.id FROM assessment_attempts a
@@ -989,7 +991,7 @@ check('[6.2→v3] Mock Test FT điểm dưới kỳ vọng: tín hiệu nối NG
     .get(s.id, planIdBefore) as any).n;
 
   /* Một kỹ năng dưới kỳ vọng: kết luận SOS ra ngay, và (v3) SOS tự tạo ĐÚNG MỘT case cho kỹ năng đó kèm phương án điền sẵn. */
-  attempts.saveScore(t('listening'), attempt.id, 'listening', { rawScore: scoring.LISTENING_BY_RAW.indexOf(low) });
+  attempts.saveScore(t('listening'), attempt.id, 'listening', { rawScore: scoring.LISTENING_BY_RAW.indexOf(low) }, chuNhatCuoiOf(attempt.id));
   const early = attempts.attemptDetail(P.cpManager, attempt.id);
   assert(early.result.sosLevel === 1, `Một kỹ năng dưới kỳ vọng phải ra SOS 1 ngay, đang là ${early.result.sosLevel}`);
   assert(early.result.provisional, 'Chưa đủ điểm thì phải đánh dấu là kết luận tạm thời');
@@ -1022,9 +1024,9 @@ check('[6.2→v3] Mock Test FT điểm dưới kỳ vọng: tín hiệu nối NG
 
   /* Nhập thêm môn khác: thêm tín hiệu, vẫn không case nào, và hạn cũ KHÔNG bị đặt lại. */
   const dueBefore = sig.verify_due;
-  attempts.saveScore(t('reading'), attempt.id, 'reading', { rawScore: scoring.READING_BY_RAW.indexOf(low) });
-  attempts.saveScore(t('writing1'), attempt.id, 'writing1', { criteria: [low, low, low, low] });
-  attempts.saveScore(t('writing2'), attempt.id, 'writing2', { criteria: [low, low, low, low] });
+  attempts.saveScore(t('reading'), attempt.id, 'reading', { rawScore: scoring.READING_BY_RAW.indexOf(low) }, chuNhatCuoiOf(attempt.id));
+  attempts.saveScore(t('writing1'), attempt.id, 'writing1', { criteria: [low, low, low, low] }, chuNhatCuoiOf(attempt.id));
+  attempts.saveScore(t('writing2'), attempt.id, 'writing2', { criteria: [low, low, low, low] }, chuNhatCuoiOf(attempt.id));
   const three = attempts.attemptDetail(P.cpManager, attempt.id);
   assert(three.result.sosLevel === 3, `Ba kỹ năng dưới kỳ vọng phải lên SOS 3, đang là ${three.result.sosLevel}`);
   const want = newCasesExpected(['listening', 'reading', 'writing1', 'writing2']);
@@ -1043,7 +1045,7 @@ check('[6.2→v3] Mock Test FT điểm dưới kỳ vọng: tín hiệu nối NG
   assert(dupe === 1, `Nhập bổ sung đã nhân tín hiệu Listening thành ${dupe} dòng`);
 
   /* Nhập LẠI cùng ô điểm (retry) cũng không nhân tín hiệu và không đổi hạn. */
-  attempts.saveScore(t('listening'), attempt.id, 'listening', { rawScore: scoring.LISTENING_BY_RAW.indexOf(low) });
+  attempts.saveScore(t('listening'), attempt.id, 'listening', { rawScore: scoring.LISTENING_BY_RAW.indexOf(low) }, chuNhatCuoiOf(attempt.id));
   const afterRetry = conn
     .prepare(`SELECT COUNT(*) n, MIN(verify_due) d FROM case_signals WHERE attempt_id = ? AND skill = 'listening'`)
     .get(attempt.id) as any;
@@ -1060,8 +1062,8 @@ check('[6.2→v3] Mock Test FT điểm dưới kỳ vọng: tín hiệu nối NG
     kind: 'teaching_adjust', description: 'GVCN điều chỉnh cách chữa bài cho em',
     performerSelf: true, status: 'completed', completedDate: TODAY,
   });
-  attempts.saveScore(t('writing1'), attempt.id, 'writing1', { criteria: [exp, exp, exp, exp], lyDo: 'Phép kiểm: sửa điểm đã có' });
-  attempts.saveScore(t('writing2'), attempt.id, 'writing2', { criteria: [exp, exp, exp, exp], lyDo: 'Phép kiểm: sửa điểm đã có' });
+  attempts.saveScore(t('writing1'), attempt.id, 'writing1', { criteria: [exp, exp, exp, exp], lyDo: 'Phép kiểm: sửa điểm đã có' }, chuNhatCuoiOf(attempt.id));
+  attempts.saveScore(t('writing2'), attempt.id, 'writing2', { criteria: [exp, exp, exp, exp], lyDo: 'Phép kiểm: sửa điểm đã có' }, chuNhatCuoiOf(attempt.id));
   const reread = attempts.attemptDetail(P.cpManager, attempt.id);
   assert(reread.result.sosLevel === 2, `Sau khi sửa Writing phải còn SOS 2, đang là ${reread.result.sosLevel}`);
 
@@ -1123,7 +1125,7 @@ check('[9.4] Case chỉ sống nhờ con số vừa sửa thì rút khỏi danh 
   const exp = s.target_score;
   const t = (skill: string) => loadPrincipal(teacherOfSkill('UB FT 401', skill));
 
-  attempts.saveScore(t('speaking'), attempt.id, 'speaking', { criteria: [exp - 0.5, exp - 0.5, exp - 0.5, exp - 0.5] });
+  attempts.saveScore(t('speaking'), attempt.id, 'speaking', { criteria: [exp - 0.5, exp - 0.5, exp - 0.5, exp - 0.5] }, chuNhatCuoiOf(attempt.id));
   const sig = conn
     .prepare(`SELECT * FROM case_signals WHERE attempt_id = ? AND skill = 'speaking'`)
     .get(attempt.id) as any;
@@ -1133,7 +1135,7 @@ check('[9.4] Case chỉ sống nhờ con số vừa sửa thì rút khỏi danh 
   const made = { id: sig.case_id } as any;
 
   /* Hoá ra điểm nhập sai: sửa lại thành đạt. */
-  attempts.saveScore(t('speaking'), attempt.id, 'speaking', { criteria: [exp, exp, exp, exp], lyDo: 'Phép kiểm: sửa điểm đã có' });
+  attempts.saveScore(t('speaking'), attempt.id, 'speaking', { criteria: [exp, exp, exp, exp], lyDo: 'Phép kiểm: sửa điểm đã có' }, chuNhatCuoiOf(attempt.id));
   const after = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(made.id) as any;
   assert(after.status === 'done', 'Case chỉ dựa trên điểm sai vẫn nằm trong danh sách đang xử lý');
   assert(/sửa điểm/i.test(after.outcome_note ?? ''),
@@ -1878,7 +1880,8 @@ check('Kết luận ngay trên phần đã chấm; ô trống KHÔNG bị đếm
   assert(full.complete && !full.provisional && full.failedCount === 4 && full.sosLevel === 3,
     'Đủ điểm rồi phải là kết luận cuối');
 });
-check('Hạn nhập điểm lớp thường là hết Chủ nhật của chính tuần đó', () => {
+/* PR-MTa T19 thay "hết Chủ nhật của chính tuần đó": hạn lớp thường là thứ Tư tuần kế tiếp, như Fast Track. */
+check('Hạn nhập điểm lớp thường là hết thứ Tư tuần kế tiếp (PR-MTa T19)', () => {
   const a = conn
     .prepare(
       `SELECT a.id, a.planned_period_id, a.deadline_override, rp.week_start, rp.week_end
@@ -1888,8 +1891,8 @@ check('Hạn nhập điểm lớp thường là hết Chủ nhật của chính 
     .get() as any;
   assert(a, 'Dữ liệu mẫu thiếu bài kiểm tra lớp thường');
   const dl = regular.regularDeadline(a);
-  assert(dl.date === a.week_end && dl.source === 'week_end',
-    `Hạn phải là Chủ nhật ${a.week_end} của tuần đó, đang là ${dl.date}`);
+  assert(dl.date === addDays(a.week_start, 9) && dl.source === 'default',
+    `Hạn phải là thứ Tư ${addDays(a.week_start, 9)} tuần kế tiếp, đang là ${dl.date}`);
   // Chủ nhật là ngày cuối tuần theo lịch tuần thứ Hai–Chủ nhật của hệ thống.
   assert(week.mondayOf(a.week_end) === a.week_start, 'week_end phải là Chủ nhật của chính tuần đó');
   // Chưa có tuần kế hoạch thì KHÔNG dựng hạn giả.
@@ -2090,11 +2093,11 @@ check('Đủ điểm mọi kỹ năng thì bài mới chuyển sang đã xong', 
   const prog = regular.programmeOfClass(planned.class_id)!;
   prog.skills.forEach((skill, i) => {
     if (i === prog.skills.length - 1) return;      // cố tình bỏ trống kỹ năng cuối
-    regular.saveRegularScore(P.admin, planned.id, skill, { score: 30, total: 40 });
+    regular.saveRegularScore(P.admin, planned.id, skill, { score: 30, total: 40 }, chuNhatCuoiOf(planned.id));
   });
   let st = conn.prepare('SELECT status FROM assessment_attempts WHERE id = ?').get(planned.id) as any;
   assert(st.status === 'planned', 'Thiếu một kỹ năng mà đã coi là xong');
-  regular.saveRegularScore(P.admin, planned.id, prog.skills[prog.skills.length - 1], { score: 30, total: 40 });
+  regular.saveRegularScore(P.admin, planned.id, prog.skills[prog.skills.length - 1], { score: 30, total: 40 }, chuNhatCuoiOf(planned.id));
   st = conn.prepare('SELECT status FROM assessment_attempts WHERE id = ?').get(planned.id) as any;
   assert(st.status === 'done', 'Đủ điểm rồi mà bài vẫn chưa chuyển sang đã xong');
 });
@@ -3590,7 +3593,7 @@ check('Trượt Listening ở MT1 rồi MT2 → ĐÚNG MỘT case, tên đổi t
   };
 
   const a1 = mk(1, '2026-10-12');
-  attempts.saveScore(lr, a1.id, 'listening', { rawScore: bandBelow(a1.attempt_no) });
+  attempts.saveScore(lr, a1.id, 'listening', { rawScore: bandBelow(a1.attempt_no) }, chuNhatCuoiOf(a1.id));
 
   /*
    * v3 (21/09/2026 tối): LẦN TRƯỢT ĐẦU CỦA MOCK FT TỰ TẠO CASE — tín hiệu nối ngay vào nó (thay luật 6.2 "chỉ sinh tín hiệu").
@@ -3614,7 +3617,7 @@ check('Trượt Listening ở MT1 rồi MT2 → ĐÚNG MỘT case, tên đổi t
   cases.recordFollowUp(mgr, caseId, { observedOn: '2026-10-25', outcome: 'partial', note: 'Có làm nhưng chưa đều' });
 
   const a2 = mk(2, '2026-11-16');
-  attempts.saveScore(lr, a2.id, 'listening', { rawScore: bandBelow(a2.attempt_no) });
+  attempts.saveScore(lr, a2.id, 'listening', { rawScore: bandBelow(a2.attempt_no) }, chuNhatCuoiOf(a2.id));
 
   const after2 = conn
     .prepare(`SELECT * FROM sos_cases WHERE student_id = ? AND category = 'listening'`)
@@ -3665,7 +3668,7 @@ check('Case đã đóng mà MT sau trượt lại → MỞ CASE MỚI nối vào
   };
 
   const a1 = mk('2026-10-19');
-  attempts.saveScore(rt, a1.id, 'reading', { rawScore: low(a1.attempt_no) });
+  attempts.saveScore(rt, a1.id, 'reading', { rawScore: low(a1.attempt_no) }, chuNhatCuoiOf(a1.id));
   const sigA = conn
     .prepare(`SELECT * FROM case_signals WHERE attempt_id = ? AND skill = 'reading'`)
     .get(a1.id) as any;
@@ -3721,7 +3724,7 @@ check('Case đã đóng mà MT sau trượt lại → MỞ CASE MỚI nối vào
 
   /* Rồi MT sau trượt lại. */
   const a2 = mk('2026-11-23');
-  attempts.saveScore(rt, a2.id, 'reading', { rawScore: low(a2.attempt_no) });
+  attempts.saveScore(rt, a2.id, 'reading', { rawScore: low(a2.attempt_no) }, chuNhatCuoiOf(a2.id));
 
   /*
    * Case cũ ĐÃ ĐÓNG nên tín hiệu lần này KHÔNG nối vào nó — nó nằm chờ xác minh. Mở case
@@ -5475,7 +5478,8 @@ check('[10.4] R/L/W và Speaking của CÙNG một đợt không bị gọi là 
     'Hai kỹ năng cùng đợt bị cảnh báo "hai MT quá gần"');
 });
 
-check('[10.4] Phần đã có điểm không dời như một lịch tương lai', () => {
+/* PR-MTa T20 thay [10.4] cho Quản lý / Quản trị: dời được phần đã có điểm (điểm đi theo) — GV vẫn bị chặn (prMta T20). */
+check('[10.4→T20] Quản trị dời phần đã có điểm: không còn chặn "đã có điểm" (ở đây dừng ở hộp xác nhận dời vượt)', () => {
   const scored = conn
     .prepare(
       `SELECT a.id, a.class_id FROM assessment_attempts a
@@ -5484,10 +5488,9 @@ check('[10.4] Phần đã có điểm không dời như một lịch tương lai
     )
     .get() as any;
   assert(scored, 'Seed thiếu lượt đã có điểm Listening');
-  assertThrows(
-    () => skillSchedule.setSkillWeek(P.admin, scored.id, 'listening', periodOf(addDays(demoToday(), 28)), { force: true }),
-    /đã có điểm/, 'Dời được một phần thi đã có điểm',
-  );
+  let loi: any = null;
+  try { skillSchedule.setSkillWeek(P.admin, scored.id, 'listening', periodOf(addDays(demoToday(), 28)), { force: true }); } catch (e) { loi = e; }
+  assert(loi && !/đã có điểm/.test(loi.message) && /Xác nhận để tiếp tục/.test(loi.message), `Quản trị: ${loi?.message}`);
 });
 
 check('[10.1] Lớp Normal luôn phải đủ bốn môn — không có thao tác miễn môn', () => {
@@ -6015,7 +6018,8 @@ check('[10.6] Lần đầu: GVCN dời ĐÚNG tuần kế tiếp của lịch đ
   assert(after.sit_status === 'scheduled', 'Dời xong mà vẫn còn mang dấu vắng của buổi cũ');
 });
 
-check('[10.6] Lần thứ hai: GVCN gửi đề nghị, lịch KHÔNG đổi trước khi Quản lý duyệt', () => {
+/* PR-MTa T3 thay K4-28 lần 2: vắng lần 2 → kỹ năng HUỶ (vắng 2 lần), không tự tạo đề nghị; GVCN "Xin dời" mới gửi đề nghị chờ duyệt. */
+check('[10.6] Lần thứ hai: kỹ năng huỷ (vắng 2 lần); GVCN Xin dời → đề nghị, lịch KHÔNG đổi trước khi Quản lý duyệt', () => {
   const { a, mgr } = absentSkill('speaking', 3);
   absence.requestAbsenceMove(mgr, a.id, ['speaking'], { reason: 'Lần một' });
   skillSchedule.setSitStatus(mgr, a.id, 'speaking', 'absent', 'Em lại vắng buổi dời');
@@ -6023,9 +6027,10 @@ check('[10.6] Lần thứ hai: GVCN gửi đề nghị, lịch KHÔNG đổi tr�
   const weekBefore = conn
     .prepare(`SELECT planned_period_id AS p FROM attempt_skills WHERE attempt_id = ? AND skill = 'speaking'`)
     .get(a.id) as any;
-  const out = absence.requestAbsenceMove(mgr, a.id, ['speaking'], { reason: 'Lần hai' });
-  const o = out.outcomes[0];
-  assert(o.result === 'pending', `Lần thứ hai phải chờ duyệt, đang là ${o.result}`);
+  const huy = absence.requestAbsenceMove(mgr, a.id, ['speaking'], { reason: 'Lần hai' }).outcomes[0];
+  assert(huy.result === 'huy-vang' && huy.moveNo === 2, `Lần thứ hai phải huỷ vắng, đang là ${huy.result}`);
+  const o = absence.xinDoi(mgr, a.id, 'speaking', { lyDo: 'Lần hai' });
+  assert(o.result === 'pending', `Xin dời phải chờ duyệt, đang là ${o.result}`);
   assert(o.moveNo === 2, `Phải là lần dời thứ hai, đang là ${o.moveNo}`);
 
   const weekAfter = conn
@@ -6044,7 +6049,7 @@ check('[10.6] Lần thứ hai: GVCN gửi đề nghị, lịch KHÔNG đổi tr�
   /* Gửi lại cùng một đề nghị không thành hai đề nghị. */
   const n1 = (conn.prepare(`SELECT COUNT(*) n FROM skill_move_requests WHERE attempt_id = ?`).get(a.id) as any).n;
   assertThrows(
-    () => absence.requestAbsenceMove(mgr, a.id, ['speaking'], { reason: 'Lần hai gửi lại' }),
+    () => absence.xinDoi(mgr, a.id, 'speaking', { lyDo: 'Lần hai gửi lại' }),
     /đang chờ/, 'Gửi được đề nghị thứ hai khi đề nghị cũ còn chờ',
   );
   const n2 = (conn.prepare(`SELECT COUNT(*) n FROM skill_move_requests WHERE attempt_id = ?`).get(a.id) as any).n;
@@ -6067,29 +6072,36 @@ check('[10.6] Lần thứ hai: GVCN gửi đề nghị, lịch KHÔNG đổi tr�
   assert(done.n === 2, `Bộ đếm phải là 2, đang là ${done.n}`);
 });
 
-check('PR-DUYET (4) · Dời lần 2 → thẻ Lịch thi hạn = decide_by; từ chối không lý do → 400; hết hạn → thẻ tự đóng cùng lúc huỷ phần thi; myWork(QL) không còn decide_move', () => {
+/* PR-MTa T3: lần 2 huỷ vắng; thẻ Lịch thi ra từ "Xin dời". T7: từ chối chỉ cần không trống (bỏ "2 ký tự"). Hết hạn: giữ huỷ vắng. */
+check('PR-DUYET (4) · Xin dời (sau vắng lần 2) → thẻ Lịch thi hạn = decide_by; từ chối không lý do → 400; hết hạn → thẻ tự đóng, kỹ năng giữ huỷ; myWork(QL) không còn decide_move', () => {
   const { a, mgr } = absentSkill('speaking', 3);
   absence.requestAbsenceMove(mgr, a.id, ['speaking'], { reason: 'Lần một' });
   skillSchedule.setSitStatus(mgr, a.id, 'speaking', 'absent', 'Em lại vắng');
-  const out = absence.requestAbsenceMove(P.admin, a.id, ['speaking'], { reason: 'Vắng hai tuần liền' });
-  const reqId = out.outcomes[0].requestId!;
+  absence.requestAbsenceMove(P.admin, a.id, ['speaking'], { reason: 'Vắng hai tuần liền' });
+  const reqId = absence.xinDoi(P.admin, a.id, 'speaking', { lyDo: 'Vắng hai tuần liền' }).requestId!;
   const req = conn.prepare('SELECT decide_by FROM skill_move_requests WHERE id = ?').get(reqId) as any;
   const the = () => conn.prepare(`SELECT * FROM yeu_cau_duyet WHERE loai = 'lich_thi' AND doi_tuong_id = ?`).get(reqId) as any;
   assert(the()?.trang_thai === 'cho' && the().han_duyet === req.decide_by && the().ly_do === 'Vắng hai tuần liền', JSON.stringify(the()));
   assert(!mywork.myWork(mgr).groups.some((g: any) => g.key === 'decide_move'), 'còn nhóm decide_move');
   assertThrows(() => absence.decideAbsenceMove(mgr, reqId, { approve: false }), /lý do/, 'Từ chối không lý do');
-  assertThrows(() => absence.decideAbsenceMove(mgr, reqId, { approve: false, note: 'ab' }), /lý do/, 'Lý do 2 ký tự');
   conn.prepare('UPDATE skill_move_requests SET decide_by = ? WHERE id = ?').run(addDays(demoToday(), -1), reqId);
   absence.sweepExpiredMoves();
-  const sp = conn.prepare(`SELECT sit_status FROM attempt_skills WHERE attempt_id = ? AND skill = 'speaking'`).get(a.id) as any;
-  assert(sp.sit_status === 'cancelled' && the().trang_thai === 'tu_dong' && the().ly_do_dong === 'Hết hạn duyệt — phần thi bị huỷ', JSON.stringify(the()));
+  const sp = conn.prepare(`SELECT sit_status, huy_vang FROM attempt_skills WHERE attempt_id = ? AND skill = 'speaking'`).get(a.id) as any;
+  assert(sp.sit_status === 'cancelled' && sp.huy_vang === 1 && the().trang_thai === 'tu_dong' && the().ly_do_dong === 'Hết hạn duyệt — giữ huỷ (vắng 2 lần)', JSON.stringify(the()));
 });
 
-check('[10.6] Quản lý từ chối: Fast Track huỷ PHẦN THI, giữ nguyên điểm các phần đã xong', () => {
-  const { a, mgr } = absentSkill('speaking', 3);
-  absence.requestAbsenceMove(mgr, a.id, ['speaking'], { reason: 'Lần một' });
-  skillSchedule.setSitStatus(mgr, a.id, 'speaking', 'absent', 'Em vắng tiếp');
-  const out = absence.requestAbsenceMove(mgr, a.id, ['speaking'], { reason: 'Lần hai' });
+/*
+ * PR-MTa T3 (Q3): từ chối "Xin dời" sau vắng lần 2 = không mock lại (MTa H5). Đề nghị CHUYỂN QUẢN LÝ ở lần 1 (xử lý muộn) vẫn đi luật cũ —
+ * từ chối = huỷ phần thi — nên phép kiểm dựng đề nghị đó thay cho "lần 2".
+ */
+check('[10.6] Quản lý từ chối (đề nghị chuyển QL): Fast Track huỷ PHẦN THI, giữ nguyên điểm các phần đã xong', () => {
+  const a = takePlannedAttempt();
+  const mgr = loadPrincipal(userByRole('manager', a.branch_code));
+  skillSchedule.setSkillWeek(mgr, a.id, 'speaking', periodOf(addDays(demoToday(), -21)),
+    { reason: 'Buổi thi đã qua', force: true, today: addDays(demoToday(), -28) });
+  skillSchedule.setSitStatus(mgr, a.id, 'speaking', 'absent', 'Em vắng');
+  const out = absence.requestAbsenceMove(mgr, a.id, ['speaking'], { reason: 'Xử lý muộn' });
+  assert(out.outcomes[0].result === 'escalated', out.outcomes[0].result);
 
   absence.decideAbsenceMove(mgr, out.outcomes[0].requestId!, {
     approve: false, note: 'Đã dời hai lần, không dời nữa',
@@ -6125,10 +6137,9 @@ check('[10.6] Quản lý từ chối: Fast Track huỷ PHẦN THI, giữ nguyên
     .get(a.id) as any;
   assert(after.sit_status === 'scheduled', 'Khôi phục rồi mà trạng thái vẫn là huỷ');
   /*
-   * BỘ ĐẾM GIỮ NGUYÊN Ở 1: lần dời đầu đã dùng, còn lần thứ hai bị từ chối nên không tiêu
-   * lượt nào. Khôi phục cũng KHÔNG đặt lại về 0 — những lần em vắng vẫn đã xảy ra.
+   * BỘ ĐẾM GIỮ NGUYÊN: đề nghị bị từ chối không tiêu lượt nào (đề nghị chuyển QL ở lần 1 → vẫn 0). Khôi phục cũng KHÔNG đặt lại.
    */
-  assert(after.n === 1, `Bộ đếm phải giữ nguyên ở 1, đang là ${after.n}`);
+  assert(after.n === 0, `Bộ đếm phải giữ nguyên ở 0, đang là ${after.n}`);
 });
 
 check('[10.6] Lớp Normal: huỷ LỊCH HẸN, giữ nghĩa vụ thi đủ môn', () => {
@@ -6172,10 +6183,14 @@ check('[10.6] Lớp Normal: huỷ LỊCH HẸN, giữ nghĩa vụ thi đủ môn
 });
 
 check('[10.6] Hết hạn duyệt mà chưa ai trả lời thì huỷ — không huỷ ngay lúc vừa gửi', () => {
-  /* Đã dời một lần từ trước, nên lần này là đề nghị phải chờ Quản lý. */
-  const { a, mgr } = absentSkill('speaking', 3, 1);
-  const out = absence.requestAbsenceMove(mgr, a.id, ['speaking'], { reason: 'Lần hai' });
-  assert(out.outcomes[0].result === 'pending',
+  /* PR-MTa T3: lần 2 không còn tự thành đề nghị — dựng đề nghị CHUYỂN QUẢN LÝ (xử lý muộn, lần 1), luật hết hạn giữ nguyên. */
+  const a = takePlannedAttempt();
+  const mgr = loadPrincipal(userByRole('manager', a.branch_code));
+  skillSchedule.setSkillWeek(mgr, a.id, 'speaking', periodOf(addDays(demoToday(), -21)),
+    { reason: 'Buổi thi đã qua', force: true, today: addDays(demoToday(), -28) });
+  skillSchedule.setSitStatus(mgr, a.id, 'speaking', 'absent', 'Em vắng');
+  const out = absence.requestAbsenceMove(mgr, a.id, ['speaking'], { reason: 'Xử lý muộn' });
+  assert(out.outcomes[0].result === 'escalated',
     `Cần một đề nghị đang chờ để kiểm, đang là ${out.outcomes[0].result}`);
   const reqId = out.outcomes[0].requestId!;
 
@@ -6240,7 +6255,7 @@ check('[10.6] Một thao tác nhóm cho buổi R/L/W, nhưng mỗi kỹ năng v�
     reason: 'Em vắng buổi R/L/W',
   });
   const by = new Map(out.outcomes.map((o: any) => [o.skill, o]));
-  assert(by.get('listening')!.result === 'pending',
+  assert(by.get('listening')!.result === 'huy-vang',   // PR-MTa T3: vắng lần 2 → huỷ (vắng 2 lần), không tự dời
     'Môn đã dời một lần vẫn tự dời được khi đi theo nhóm — dùng thao tác nhóm để vượt quyền');
   assert(by.get('reading')!.result === 'moved', 'Môn chưa dời lần nào mà không dời được');
   assert(by.get('writing')!.result === 'moved', 'Môn chưa dời lần nào mà không dời được');
@@ -9118,6 +9133,9 @@ await runPrNvTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, ad
 // ==================================================================== PR-DL (Điểm theo lớp)
 const { runPrDlTests } = await import('./prDl.tests.ts');
 await runPrDlTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+// ==================================================================== PR-MTa (luật Test / Mock Test máy chủ: T1 T2 T3 T4 T7 T10 T11)
+const { runPrMtaTests } = await import('./prMta.tests.ts');
+await runPrMtaTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-LUI-b (đường lui Học viên & Lớp)
 const { runPrLuiBTests } = await import('./prLuiB.tests.ts');

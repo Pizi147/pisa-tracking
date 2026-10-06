@@ -2856,8 +2856,8 @@ export function updateResult(p: Principal, interventionId: number, input: {
   if (lanCuoi) {
     /* K3-13: "Chưa đủ dữ liệu" ở lần cuối được, kèm lý do — PA khép, không vào hiệu quả. */
     completedOn = observedOn;
-    if (!canEndWithOutcome(input.outcome) && String(input.decisionNote ?? '').trim().length < 8) {
-      throw badRequest('"Chưa đủ dữ liệu" ở lần ghi cuối thì ghi Lý do, ít nhất 8 ký tự.');
+    if (!canEndWithOutcome(input.outcome) && !String(input.decisionNote ?? '').trim()) {
+      throw badRequest('"Chưa đủ dữ liệu" ở lần ghi cuối thì ghi Lý do.');   // T7 (PR-MTa): không tối thiểu ký tự
     }
   } else if (mode === 'end') {
     /* PR-S2 (Q2): Chưa đủ dữ liệu vẫn không Kết thúc suông, nhưng THAY được (`endStepsFor('insufficient')` = ['propose']). */
@@ -2883,8 +2883,8 @@ export function updateResult(p: Principal, interventionId: number, input: {
    * Kiểm SAU các lỗi của `mode === 'end'` để câu "phương án mới là gì" vẫn báo trước (phép kiểm [9.1]).
    */
   const decisionNote = String(input.decisionNote ?? '').trim() || null;
-  if ((nextStep === 'adjust' || nextStep === 'propose') && (decisionNote ?? '').length < 8) {
-    throw badRequest('Điều chỉnh hoặc thay phương án thì phải ghi Lý do, ít nhất 8 ký tự.');
+  if ((nextStep === 'adjust' || nextStep === 'propose') && !decisionNote) {
+    throw badRequest('Điều chỉnh hoặc thay phương án thì phải ghi Lý do.');   // T7 (PR-MTa): không tối thiểu ký tự
   }
   /* PR-DUYET (T64): câu hỏi gửi Quản lý là nội dung của thẻ Xin ý kiến — bắt buộc. */
   if (nextStep === 'ask_manager' && (decisionNote ?? '').length < 8) {

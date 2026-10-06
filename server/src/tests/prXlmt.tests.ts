@@ -43,18 +43,19 @@ export async function runPrXlmtTests(t: YThucTestKit) {
     assert(v8.loai === 'chan' && /nhập bù/.test(v8.cau), `ép MT lịch sử → chặn: ${JSON.stringify(v8)}`);
   });
 
-  check('PR-XLMT (1) · kiemTuanDaQua: không qua · dời vào tuần qua · trộn qua/tới · em đã có trên web · MT lịch sử (K2-33, Q8)', () => {
-    const b = { ngayVaoWeb: '2026-09-29', homNay: '2026-09-29' };
-    assert(d.kiemTuanDaQua({ ...b, ketThuc: ['2026-10-04'], taoMoi: true }).cau === null, 'tuần này chưa qua');
-    assert(/Không dời vào tuần đã qua/.test(d.kiemTuanDaQua({ ...b, ketThuc: ['2026-09-20'], taoMoi: false }).cau ?? ''), 'dời');
-    assert(/cho mọi kỹ năng/.test(d.kiemTuanDaQua({ ...b, ketThuc: ['2026-09-20', '2026-10-04'], taoMoi: true }).cau ?? ''), 'trộn');
-    assert(/đã có trên web/.test(d.kiemTuanDaQua({ ...b, ngayVaoWeb: '2026-07-01', ketThuc: ['2026-09-20'], taoMoi: true }).cau ?? ''), 'vào web trước');
-    const ok = d.kiemTuanDaQua({ ...b, ketThuc: ['2026-09-06', '2026-09-13'], taoMoi: true });
-    assert(ok.cau === null && ok.lichSu, JSON.stringify(ok));
+  // PR-MTa T1/T4 thay K2-33, Q8: kiemTuanDaQua → kiemTuanXep — Quản lý xếp được tuần đã qua (kể cả trộn), không xét ngày vào web.
+  check('PR-XLMT (1) · kiemTuanXep: không qua · GV dời vào tuần qua · QL trộn qua/tới · MT cũ (PR-MTa thay K2-33)', () => {
+    const b = { homNay: '2026-09-29' };
+    assert(d.kiemTuanXep({ ...b, ketThuc: ['2026-10-04'], quanLy: false }).cau === null, 'tuần này chưa qua');
+    assert(d.kiemTuanXep({ ...b, ketThuc: ['2026-09-20'], quanLy: false }).cau === 'Chọn tuần từ tuần này trở đi.', 'GV dời');
+    const tron = d.kiemTuanXep({ ...b, ketThuc: ['2026-09-20', '2026-10-04'], quanLy: true });
+    assert(tron.cau === null && tron.quaTuan && !tron.mtCu, JSON.stringify(tron));
+    const ok = d.kiemTuanXep({ ...b, ketThuc: ['2026-09-06', '2026-09-13'], quanLy: true });
+    assert(ok.cau === null && ok.mtCu, JSON.stringify(ok));
   });
 
   check('PR-XLMT (1) · thaoTacKyNang: mọi trạng thái × 2⁵ quyền → ≤ 1 nút chính, ≤ 3 mục menu, không trùng, Bỏ kỹ năng chỉ FT (K4-27)', () => {
-    const tts = ['khong-yeu-cau', 'chua-xep', 'chua-toi-tuan', 'dang-thi', 'co-diem', 'vang', 'cho-duyet', 'da-huy', 'lich-su'] as const;
+    const tts = ['khong-yeu-cau', 'chua-xep', 'chua-toi-tuan', 'dang-thi', 'co-diem', 'vang', 'cho-duyet', 'da-huy', 'lich-su', 'huy-vang'] as const;
     for (const tt of tts) {
       for (let m = 0; m < 32; m++) {
         const q = { nhapDiem: !!(m & 1), quanLy: !!(m & 2), gvcn: !!(m & 4), laFt: !!(m & 8), dotHoanTat: !!(m & 16) };
@@ -66,8 +67,9 @@ export async function runPrXlmtTests(t: YThucTestKit) {
         assert(tat.every((x) => !!d.CHU_THAO_TAC[x]), `${tt} ${m}: thiếu chữ`);
       }
     }
-    assert(d.canLyDo('doi-lich', false) === false && d.canLyDo('doi-lich', true) && d.canLyDo('bao-vang', false), 'canLyDo');
-    assert(d.kiemLyDoThaoTac('Báo vắng', ' ab ') === 'Báo vắng: lý do cần ít nhất 5 ký tự.' && d.kiemLyDoThaoTac('Báo vắng', 'ốm sốt') === null, 'kiemLyDoThaoTac');
+    // PR-MTa T7 thay K4-15: dời lịch / báo vắng — lý do tuỳ chọn; huỷ điểm cũng tuỳ chọn (rà #212), không tối thiểu ký tự.
+    assert(d.canLyDo('doi-lich') === false && d.canLyDo('bao-vang') === false && !d.canLyDo('huy-diem'), 'canLyDo');   // rà #212: Huỷ điểm lý do tuỳ chọn
+    assert(d.kiemLyDoThaoTac('bao-vang', '') === null && d.kiemLyDoThaoTac('huy-diem', ' ') === null && d.kiemLyDoThaoTac('huy-luot', ' ') === 'Huỷ lượt: cần ghi lý do.', 'kiemLyDoThaoTac');
     assert(d.tuanMacDinhDotMoi('2026-09-16') === '2026-09-21', d.tuanMacDinhDotMoi('2026-09-16'));
   });
 
@@ -94,7 +96,7 @@ export async function runPrXlmtTests(t: YThucTestKit) {
     assert(chu[0] === `Dời MT3 · ${d.tuanLich('2026-10-19')} → ${d.tuanLich('2026-10-12')}`, chu[0]);
     assert(chu[1] === 'Xếp nốt W S · MT3', chu[1]);
     assert(chu[2] === `Tạo MT4 · ${d.tuanLich('2026-10-12')}`, chu[2]);
-    assert(chu[3].endsWith(' · MT lịch sử'), chu[3]);
+    assert(chu[3].endsWith(' · MT cũ'), chu[3]);   // PR-MTa: chữ "MT lịch sử" → "MT cũ"
     assert(chu[4] === 'Thi lại L · MT3', chu[4]);
     assert(chu[5] === dong[5].loi, chu[5]);
     const t2 = d.tomTatXepMt(dong);
@@ -138,20 +140,19 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
   const [m1, m2, m3] = luotCua(sX);
   datTuan(m1.id, tuan(0).id);
 
-  check('PR-XLMT (2) · Dời lịch thi: tuần thi đã bắt đầu → bắt lý do; tuần tương lai → không cần (K4-15)', () => {
-    assertThrows(() => skillSch.setSkillWeek(P.mbManager, m1.id, 'listening', tuan(1).id, { force: true }),
-      /Dời lịch thi: cần ghi lý do/, 'tuần này không lý do');
-    assertThrows(() => skillSch.setSkillWeek(P.mbManager, m1.id, 'listening', tuan(1).id, { force: true, reason: 'ab' }),
-      /ít nhất 5 ký tự/, 'lý do ngắn');
-    skillSch.setSkillWeek(P.mbManager, m1.id, 'listening', tuan(1).id, { force: true, reason: 'Lịch học đổi' });
+  // PR-MTa T7 thay K4-15: dời lịch thi — lý do tuỳ chọn, kể cả khi tuần thi đã bắt đầu.
+  check('PR-XLMT (2) · Dời lịch thi: tuần thi đã bắt đầu hay tương lai đều không cần lý do (PR-MTa T7)', () => {
+    skillSch.setSkillWeek(P.mbManager, m1.id, 'listening', tuan(1).id, { force: true });
     skillSch.setSkillWeek(P.mbManager, m1.id, 'listening', tuan(2).id, { force: true });
     assert(lich(m1.id, 'listening').tuan === t.addDays(tuanNay, 14), JSON.stringify(lich(m1.id, 'listening')));
   });
 
-  check('PR-XLMT (2) · Dời hạn chấm (kỹ năng / cả đợt) không lý do → lỗi; có lý do → được (K4-15)', () => {
+  // PR-MTa T7 thay K4-15: dời hạn chấm — lý do tuỳ chọn.
+  check('PR-XLMT (2) · Dời hạn chấm (kỹ năng / cả đợt) không lý do → được (PR-MTa T7)', () => {
     const han = t.addDays(tuanNay, 20);
-    assertThrows(() => skillSch.setSkillDeadline(P.mbManager, m1.id, 'reading', han, null), /Dời hạn chấm: cần ghi lý do/, 'kỹ năng');
-    assertThrows(() => attemptsSvc.setDeadlineOverride(P.mbManager, m1.id, han), /Dời hạn chấm: cần ghi lý do/, 'cả đợt');
+    skillSch.setSkillDeadline(P.mbManager, m1.id, 'reading', han, null);
+    attemptsSvc.setDeadlineOverride(P.mbManager, m1.id, han);
+    attemptsSvc.setDeadlineOverride(P.mbManager, m1.id, null);
     skillSch.setSkillDeadline(P.mbManager, m1.id, 'reading', han, 'GV ốm tuần này');
     skillSch.setSkillDeadline(P.mbManager, m1.id, 'reading', null, null);   // gỡ hạn không cần lý do
   });
@@ -160,13 +161,13 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
     assertThrows(() => attemptsSvc.setSkillSkip(P.mbManager, m1.id, 'reading', true, 'Không thi R đợt này'), /đã tới tuần thi.*Báo vắng/, 'tới tuần');
     diem(m2.id, 'listening');
     assertThrows(() => attemptsSvc.setSkillSkip(P.mbManager, m2.id, 'listening', true, 'Không thi L đợt này'), /đã có điểm.*Huỷ điểm/, 'có điểm');
-    assertThrows(() => attemptsSvc.setSkillSkip(P.mbManager, m2.id, 'reading', true, 'ab'), /Bỏ kỹ năng khỏi đợt: lý do cần ít nhất/, 'lý do ngắn');
-    attemptsSvc.setSkillSkip(P.mbManager, m2.id, 'reading', true, 'Em miễn R đợt này');
+    attemptsSvc.setSkillSkip(P.mbManager, m2.id, 'reading', true);   // PR-MTa T7: bỏ kỹ năng — lý do tuỳ chọn
     assert(lich(m2.id, 'reading').required === 0, 'đã bỏ');
     attemptsSvc.setSkillSkip(P.mbManager, m2.id, 'reading', false);
   });
 
-  check('PR-XLMT (2) · Báo vắng (GVCN): lần 1 máy tự dời tuần kế tiếp; lần 2 thành đề nghị + thẻ Lịch thi (K4-28, Q-A)', () => {
+  // PR-MTa T3 thay K4-28 lần 2: vắng lần 2 → kỹ năng huỷ (vắng 2 lần), không tự tạo đề nghị; GVCN "Xin dời" mới ra thẻ Lịch thi.
+  check('PR-XLMT (2) · Báo vắng (GVCN): lần 1 máy tự dời tuần kế tiếp; lần 2 huỷ, Xin dời → đề nghị + thẻ Lịch thi (PR-MTa T3)', () => {
     const r1 = absence.baoVang(P.coreTeacher, m1.id, 'speaking', 'Em ốm cả tuần', TODAY);
     assert(r1.daDoi && !r1.choDuyet && r1.tuanMoi === t.addDays(tuanNay, 7), JSON.stringify(r1));
     const l = lich(m1.id, 'speaking');
@@ -174,21 +175,22 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
     const h = conn.prepare(`SELECT reason FROM attempt_schedule_history WHERE attempt_id = ? AND action = 'skill_no_show_settled' AND field = 'speaking'`).get(m1.id) as any;
     assert(/Báo vắng: Em ốm cả tuần/.test(h?.reason ?? ''), JSON.stringify(h));
     const r2 = absence.baoVang(P.coreTeacher, m1.id, 'speaking', 'Em vẫn còn ốm', t.addDays(tuanNay, 8));
-    assert(!r2.daDoi && r2.choDuyet, JSON.stringify(r2));
+    assert(!r2.daDoi && !r2.choDuyet && r2.huyVang, JSON.stringify(r2));
+    absence.xinDoi(P.coreTeacher, m1.id, 'speaking', { lyDo: 'Em vẫn còn ốm', today: t.addDays(tuanNay, 8) });
     const yc = conn.prepare(`SELECT 1 FROM yeu_cau_duyet y JOIN skill_move_requests r ON r.id = y.doi_tuong_id
       WHERE r.attempt_id = ? AND r.skill = 'speaking' AND r.status = 'pending'`).get(m1.id);
     assert(yc, 'thiếu thẻ Lịch thi cho đề nghị lần 2');
   });
 
-  check('PR-XLMT (2) · Báo vắng bị chặn: GVBM · tuần tương lai · MT lịch sử · đã có điểm · lý do ngắn', () => {
+  // PR-MTa T7: Báo vắng — lý do tuỳ chọn (bỏ nhánh "lý do ngắn"); chữ "MT lịch sử" → "MT cũ".
+  check('PR-XLMT (2) · Báo vắng bị chặn: GVBM · tuần tương lai · MT cũ · đã có điểm', () => {
     assertThrows(() => absence.baoVang(P.subjectTeacher, m1.id, 'writing', 'Em ốm cả tuần', TODAY), /chủ nhiệm/, 'GVBM');
     assertThrows(() => absence.baoVang(P.coreTeacher, m2.id, 'writing', 'Em ốm cả tuần', TODAY), /chưa tới tuần thi/, 'tương lai');
-    assertThrows(() => absence.baoVang(P.coreTeacher, m1.id, 'writing', 'ốm', TODAY), /Báo vắng: lý do cần ít nhất/, 'ngắn');
     diem(m1.id, 'reading');
     assertThrows(() => absence.baoVang(P.coreTeacher, m1.id, 'reading', 'Em ốm cả tuần', TODAY), /đã có điểm/, 'có điểm');
     conn.prepare('UPDATE assessment_attempts SET lich_su = 1 WHERE id = ?').run(m3.id);
     try {
-      assertThrows(() => absence.baoVang(P.coreTeacher, m3.id, 'writing', 'Em ốm cả tuần', TODAY), /MT lịch sử/, 'lịch sử');
+      assertThrows(() => absence.baoVang(P.coreTeacher, m3.id, 'writing', 'Em ốm cả tuần', TODAY), /MT cũ/, 'MT cũ');
     } finally { conn.prepare('UPDATE assessment_attempts SET lich_su = 0 WHERE id = ?').run(m3.id); }
   });
 
@@ -204,7 +206,7 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
     const aid = Number(conn.prepare(`INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id, status, created_at) VALUES (?,?,1,'progress',?,?,'planned',?)`)
       .run(cy, sid, LOP, tuan(0).id, NOW).lastInsertRowid);
     skillSch.ensureSkillRows(aid);
-    assertThrows(() => regular.reportRegularNoShow(P.normalCoreTeacher, aid, 'listening', true, TODAY, 'ab'), /Báo vắng: lý do cần ít nhất/, 'ngắn');
+
     const r = regular.reportRegularNoShow(P.normalCoreTeacher, aid, 'listening', true, TODAY, 'Em nghỉ có phép');
     assert(r.moved && lich(aid, 'listening').tuan === t.addDays(tuanNay, 7), JSON.stringify(r));
     const h = conn.prepare(`SELECT reason FROM attempt_schedule_history WHERE attempt_id = ? AND field = 'listening' ORDER BY id DESC`).get(aid) as any;
@@ -218,7 +220,7 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
     attemptsSvc.saveScore(P.lrTeacher, a.id, 'listening', { rawScore: 30 }, TODAY);
     assert(attemptsSvc.scoresOf(a.id).find((s: any) => s.skill === 'listening')?.band != null, 'chưa có điểm L');
     assertThrows(() => keHoach.thiLai(P.coreTeacher, { attemptId: a.id, skills: ['listening'], periodId: tuan(2).id, lyDo: 'Em làm lại bài' }), /Quản lý/, 'GVCN');
-    assertThrows(() => keHoach.thiLai(P.mbManager, { attemptId: a.id, skills: ['listening'], periodId: tuan(2).id, lyDo: 'ab' }), /Thi lại: lý do/, 'ngắn');
+
     keHoach.thiLai(P.mbManager, { attemptId: a.id, skills: ['listening'], periodId: tuan(2).id, lyDo: 'Đề lỗi, thi lại', force: true });
     const s = attemptsSvc.scoresOf(a.id).find((x: any) => x.skill === 'listening');
     assert(s?.band == null && s?.raw_score == null, JSON.stringify(s));
@@ -266,7 +268,9 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
     const a = luotCua(sA)[0].id;
     datTuan(a, tuan(0).id);
     absence.baoVang(P.mbManager, a, 'speaking', 'Em ốm cả tuần', TODAY);
+    /* PR-MTa T3: vắng lần 2 huỷ kỹ năng; đề nghị chờ duyệt dựng qua "Xin dời". */
     absence.baoVang(P.mbManager, a, 'speaking', 'Em vẫn còn ốm', t.addDays(tuanNay, 8));
+    absence.xinDoi(P.mbManager, a, 'speaking', { today: t.addDays(tuanNay, 8) });
     assert(dem() === n0, `chờ duyệt không phải "cần xếp lại": ${dem()} ≠ ${n0}`);
     const sB = them('MB FT 102', 'XLMT Em Vắng Huỷ');
     const b = luotCua(sB)[0].id;
@@ -295,20 +299,20 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
   diemDu(luotCua(emDo)[2].id, ['listening', 'reading']);
   for (const x of luotCua(emThieu).slice(1)) conn.prepare(`UPDATE assessment_attempts SET status = 'cancelled' WHERE id = ?`).run(x.id);
 
-  check('PR-XLMT (3) · Hàng loạt 2 lớp, MT3: đủ → Tạo MT4 · dở → Xếp nốt W S (cần lý do) · thiếu MT2 → chặn đúng câu (K4-17)', () => {
+  // PR-MTa T7 (G17): `canLyDo` luôn false — xếp nốt không còn đòi lý do.
+  check('PR-XLMT (3) · Hàng loạt 2 lớp, MT3: đủ → Tạo MT4 · dở → Xếp nốt W S · thiếu MT2 → chặn đúng câu (K4-17)', () => {
     const r1 = keHoach.xepHangLoat(QL, { classId: LOP1, attemptNo: 3, studentIds: [emDu, emThieu], tuan: bonTuan(1), xemTruoc: true }, TODAY);
     const r2 = keHoach.xepHangLoat(QL, { classId: LOP2, attemptNo: 3, studentIds: [emDo], tuan: bonTuan(1), xemTruoc: true }, TODAY);
     const [du, thieu] = r1.dong, [dd] = r2.dong;
     assert(du.hanhDong === 'tao' && du.viec === 'tao' && du.attemptNo === 4, JSON.stringify(du));
-    assert(dd.viec === 'xep-not' && dd.bai.filter((b: any) => b.ghiChu !== 'giu').map((b: any) => b.skill).join() === 'writing,speaking' && dd.canLyDo, JSON.stringify(dd));
+    assert(dd.viec === 'xep-not' && dd.bai.filter((b: any) => b.ghiChu !== 'giu').map((b: any) => b.skill).join() === 'writing,speaking' && !dd.canLyDo, JSON.stringify(dd));
     assert(thieu.hanhDong === 'loi' && thieu.loi === 'Chưa có MT2 — xếp MT2 trước rồi mới xếp MT3.', JSON.stringify(thieu));
     assert(dom.chuSeXep(dd, null) === 'Xếp nốt W S · MT3', dom.chuSeXep(dd, null));
   });
 
-  check('PR-XLMT (3) · Lưu: dời bài tuần này không lý do → em đó lỗi; có lý do → lưu; em khác vẫn lưu (R9b, K4-15)', () => {
-    const r = keHoach.xepHangLoat(QL, { classId: LOP2, attemptNo: 3, studentIds: [emDo], tuan: bonTuan(1), force: true }, TODAY);
-    assert(r.daLuu === 0 && /Dời lịch thi: cần ghi lý do/.test(r.dong[0].loi ?? ''), JSON.stringify(r.dong[0]));
-    const r2 = keHoach.xepHangLoat(QL, { classId: LOP2, attemptNo: 3, studentIds: [emDo], tuan: bonTuan(1), force: true, lyDo: 'Lịch học đổi' }, TODAY);
+  // PR-MTa T7 thay K4-15: dời bài tuần này không lý do → lưu.
+  check('PR-XLMT (3) · Lưu: dời bài tuần này không lý do → lưu (PR-MTa T7)', () => {
+    const r2 = keHoach.xepHangLoat(QL, { classId: LOP2, attemptNo: 3, studentIds: [emDo], tuan: bonTuan(1), force: true }, TODAY);
     assert(r2.daLuu === 1 && lich(luotCua(emDo)[2].id, 'writing').tuan === t.addDays(tuanNay, 7), JSON.stringify(r2.dong[0]));
   });
 
@@ -325,21 +329,20 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
     assert(s?.band == null && lich(m3, 'listening').tuan === t.addDays(tuanNay, 7), JSON.stringify({ s, l: lich(m3, 'listening') }));
   });
 
-  check('PR-XLMT (3) · Tuần đã qua: 4 kỹ năng đã qua + em vào web sau đó → MT lịch sử; trộn qua/tới → chặn; em vào web từ trước → chặn (K2-33, Q8)', () => {
-    const s = them('MB FT 101', 'XLMT Em MT Lịch Sử');
+  // PR-MTa T1/T4 thay K2-33, Q8: QL xếp tuần đã qua — trộn qua/tới được, không xét ngày vào web; MT cũ = tuần muộn nhất cách ≥ 2 tuần.
+  check('PR-XLMT (3) · Tuần đã qua: 4 kỹ năng cách 2 tuần → MT cũ; trộn qua/tới → được (MT thường); em vào web từ trước → được (PR-MTa)', () => {
+    const s = them('MB FT 101', 'XLMT Em MT Cũ');
     const [x1, x2, x3] = luotCua(s);
     datTuan(x1.id, tuan(-8).id); datTuan(x2.id, tuan(-6).id); datTuan(x3.id, tuan(-4).id);
     const tron = keHoach.xepHangLoat(QL, { classId: LOP1, attemptNo: 4, studentIds: [s], tuan: { ...bonTuan(1), listening: tuan(-2).id }, xemTruoc: true }, TODAY);
-    assert(/cho mọi kỹ năng/.test(tron.dong[0].loi ?? ''), JSON.stringify(tron.dong[0]));
+    assert(tron.dong[0].hanhDong === 'tao' && !tron.dong[0].lichSu, JSON.stringify(tron.dong[0]));
     const xt = keHoach.xepHangLoat(QL, { classId: LOP1, attemptNo: 4, studentIds: [s], tuan: bonTuan(-2), xemTruoc: true }, TODAY);
-    assert(xt.dong[0].hanhDong === 'tao' && xt.dong[0].lichSu && /MT lịch sử$/.test(dom.chuSeXep(xt.dong[0], null)), JSON.stringify(xt.dong[0]));
+    assert(xt.dong[0].hanhDong === 'tao' && xt.dong[0].lichSu && /MT cũ$/.test(dom.chuSeXep(xt.dong[0], null)), JSON.stringify(xt.dong[0]));
+    conn.prepare(`UPDATE students SET created_at = '2026-07-01' WHERE id = ?`).run(s);
     const luu = keHoach.xepHangLoat(QL, { classId: LOP1, attemptNo: 4, studentIds: [s], tuan: bonTuan(-2), force: true }, TODAY);
     assert(luu.daLuu === 1, JSON.stringify(luu.dong[0]));
     const mt4 = conn.prepare(`SELECT lich_su FROM assessment_attempts WHERE student_id = ? AND attempt_no = 4 AND status != 'cancelled'`).get(s) as any;
     assert(mt4?.lich_su === 1, JSON.stringify(mt4));
-    conn.prepare(`UPDATE students SET created_at = '2026-07-01' WHERE id = ?`).run(s);
-    const cu = keHoach.xepHangLoat(QL, { classId: LOP1, attemptNo: 5, studentIds: [s], tuan: bonTuan(-1), xemTruoc: true }, TODAY);
-    assert(/đã có trên web/.test(cu.dong[0].loi ?? ''), JSON.stringify(cu.dong[0]));
   });
 
   check('PR-XLMT (3) · Xem trước 20 em / 2 lớp ≤ 16 câu SQL mỗi em (không N+1)', () => {
@@ -360,18 +363,19 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
 
   // ------------------------------------------------------------------ sửa theo rà #126
   const classSvc: any = await import('../classes/classes.ts');
-  check('PR-XLMT (rà #126) · Không dời lượt có sẵn vào TUẦN ĐÃ QUA — ba đường: dời thẳng, lưu đợt, thi lại (K2-33)', () => {
+  // PR-MTa T4 thay K2-33: Quản lý dời lượt chưa thi vào tuần đã qua được (dời thẳng, lưu đợt); THI LẠI vẫn chặn (thi thật, cần tuần tới).
+  check('PR-XLMT (rà #126) · Tuần đã qua: QL dời thẳng / lưu đợt được (PR-MTa T4); thi lại vẫn chặn, điểm cũ còn nguyên', () => {
     const s = them('MB FT 101', 'XLMT Rà Tuần Qua');
     const a = luotCua(s)[0];
     datTuan(a.id, tuan(0).id);
-    assertThrows(() => skillSch.setSkillWeek(QL, a.id, 'reading', tuan(-2).id, { force: true, reason: 'Lịch học đổi' }), /tuần đã qua/, 'dời thẳng');
-    assertThrows(() => keHoach.luuDot(QL, { attemptId: a.id, force: true, reason: 'Lịch học đổi', kyNang: [{ skill: 'reading', periodId: tuan(-2).id }] }),
-      /tuần đã qua/, 'lưu đợt');
+    skillSch.setSkillWeek(QL, a.id, 'reading', tuan(-2).id, { force: true });
+    assert(lich(a.id, 'reading').tuan === t.addDays(tuanNay, -14), 'dời thẳng');
+    keHoach.luuDot(QL, { attemptId: a.id, force: true, kyNang: [{ skill: 'writing', periodId: tuan(-2).id }] });
+    assert(lich(a.id, 'writing').tuan === t.addDays(tuanNay, -14), 'lưu đợt');
     attemptsSvc.saveScore(P.lrTeacher, a.id, 'listening', { rawScore: 30 }, TODAY);
     assertThrows(() => keHoach.thiLai(QL, { attemptId: a.id, skills: ['listening'], periodId: tuan(-2).id, lyDo: 'Đề lỗi, thi lại', force: true }),
-      /tuần đã qua/, 'thi lại');
+      /Thi lại: chọn tuần từ tuần này trở đi/, 'thi lại');
     assert(attemptsSvc.scoresOf(a.id).find((x: any) => x.skill === 'listening')?.band != null, 'thi lại bị chặn thì điểm cũ còn nguyên (một tx)');
-    assert(lich(a.id, 'reading').tuan === tuanNay, 'lịch không đổi');
   });
 
   check('PR-XLMT (rà #126) · Thi lại chỉ cho kỹ năng ĐÃ CÓ ĐIỂM — vắng/chưa điểm bị chặn', () => {
@@ -401,8 +405,7 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
     const band = (e: string) => attemptsSvc.scoresOf(a.id).find((x: any) => x.skill === e)?.band ?? null;
     assertThrows(() => keHoach.huyDiem(P.w1Teacher, { attemptId: a.id, skill: 'writing', lyDo: 'Nhập nhầm bài' }), /./, 'GV W1 không huỷ được W2');
     assert(band('writing1') !== null && band('writing2') !== null, 'lỗi ở W2 → W1 cuộn lại');
-    assertThrows(() => keHoach.huyDiem(QL, { attemptId: a.id, skill: 'writing', lyDo: 'ab' }), /Huỷ điểm: lý do/, 'lý do ngắn');
-    keHoach.huyDiem(QL, { attemptId: a.id, skill: 'writing', lyDo: 'Nhập nhầm bài của em khác' });
+    keHoach.huyDiem(QL, { attemptId: a.id, skill: 'writing', lyDo: ' ' });   // rà #212 thay PR-MTa T7: lý do tuỳ chọn
     assert(band('writing1') === null && band('writing2') === null, 'QL huỷ cả hai ô');
   });
 

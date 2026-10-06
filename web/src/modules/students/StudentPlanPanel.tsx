@@ -188,7 +188,7 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, canEditCycle = t
 
               <SectionNote>
                 Hệ thống chỉ đề xuất ba lượt đầu — đa số em chỉ thi ba lượt, MT4 và MT5 là dự
-                phòng, thêm bằng "+ Thêm MT" (tuần đã qua = nhập MT lịch sử). Lượt nào Quản lý đã chốt
+                phòng, thêm bằng "+ Thêm MT" (tuần cách ≥ 2 tuần = MT cũ). Lượt nào Quản lý đã chốt
                 tay hoặc em đã làm xong thì đứng yên, kể cả khi đổi lại tuần bắt đầu học.
               </SectionNote>
             </div>

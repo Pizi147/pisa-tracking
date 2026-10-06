@@ -446,7 +446,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     assert(viec().length === 0, 'ghi xong thì hết việc');
     assert(profileMod.studentProfile(P.mbManager, x.s).miniTest.tyLe === 0.8, 'hồ sơ hiện Mini Test đã ghi');
   });
-  check('LT2b (6) · Mini Test — PHỦ ĐỊNH: GVBM khác môn 403 · tyLe 120 → 400 · ngày tương lai → 400 · thiếu Mini Test → 400 · GVCN sửa Mini Test đã ghi → 403 · QL sửa cần lý do', () => {
+  check('LT2b (6) · Mini Test — PHỦ ĐỊNH: GVBM khác môn 403 · tyLe 120 → 400 · ngày tương lai → 400 · thiếu Mini Test → 400 · GVCN sửa Mini Test đã ghi → 403 · QL sửa (lý do tuỳ chọn — PR-MTa T7)', () => {
     const x = dungMiniTest();
     assertThrows(() => ghiCuoi(permMod.loadPrincipal(gvbmKhac), x.pa[0].id, { tyLe: 70, ngay: TODAY }), /quyền|phạm vi/, 'GV không thuộc lớp / khác môn không được ghi');
     assertThrows(() => ghiCuoi(P.mbManager, x.pa[0].id, { tyLe: 120, ngay: TODAY }), /0 đến 100/, 'tyLe 120');
@@ -455,9 +455,10 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     assert((conn.prepare('SELECT ty_le FROM mini_test WHERE id = ?').get(x.mt.id) as any).ty_le === null, 'lỗi thì không ghi gì');
     ghiCuoi(P.mbManager, x.pa[0].id, { tyLe: 65, ngay: TODAY });
     assertThrows(() => cuoiSvc.ghiMiniTest(gvcnDich(), x.mt.id, { tyLe: 80, ngay: TODAY, lyDo: 'Chấm lại bài Mini Test' }), /Quản lý/, 'GVCN sửa Mini Test đã ghi');
-    assertThrows(() => cuoiSvc.ghiMiniTest(P.mbManager, x.mt.id, { tyLe: 80, ngay: TODAY }), /lý do/, 'sửa không lý do');
+    /* PR-MTa T7 thay "QL sửa cần lý do": sửa điểm Mini Test — lý do tuỳ chọn. */
+    cuoiSvc.ghiMiniTest(P.mbManager, x.mt.id, { tyLe: 75, ngay: TODAY });
     cuoiSvc.ghiMiniTest(P.mbManager, x.mt.id, { tyLe: 80, ngay: TODAY, lyDo: 'Chấm lại bài Mini Test' });
-    assert((conn.prepare('SELECT ty_le FROM mini_test WHERE id = ?').get(x.mt.id) as any).ty_le === 0.8, 'QL sửa được, có lý do');
+    assert((conn.prepare('SELECT ty_le FROM mini_test WHERE id = ?').get(x.mt.id) as any).ty_le === 0.8, 'QL sửa được');
   });
   check('LT2b (6) · Kết thúc lớp: "Còn treo" đếm Mini Test chưa ghi của em từ lớp này, không chặn', () => {
     const x = dungMiniTest();

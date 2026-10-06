@@ -11,7 +11,7 @@ import { Skeleton, Status } from '../../ui/ui.tsx';
 import { HopKyNang } from '../test/keHoach/HopKyNang.tsx';
 import { DaiODiemLon, type KyNangLon, type LichKn } from '../fasttrack/ODiemLon.tsx';
 import { useSaveScore } from '../fasttrack/ScoreEntry.tsx';
-import { LY_DO_TOI_THIEU, duongDotTest, kiemTruong, ngay, tuanLich, type KyNangKH, type OKyNang } from '@shared/domain/index.ts';
+import { duongDotTest, ngay, tuanLich, type KyNangKH, type OKyNang } from '@shared/domain/index.ts';
 
 /** Một hàng của bảng lịch MT — khớp `HangLichMt` của `server/src/keHoach/keHoachTest.ts` (`GET /cycles/:id/suggested-mocks`). */
 export type HangMt = {
@@ -130,19 +130,16 @@ export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienD
   );
 }
 
-/** "Huỷ lịch" (Q-0310-1): bỏ tuần, giữ lượt — lý do ≥ 5 ký tự, máy chủ chặn lượt đã có điểm / đã thi. */
+/** "Huỷ lịch" (Q-0310-1): bỏ tuần, giữ lượt — lý do tuỳ chọn (T7), máy chủ chặn lượt đã có điểm / đã thi. */
 function HopHuyLich({ attemptId, nhan, tuan, onDong, onDoi }: {
   attemptId: number; nhan: string; tuan: string | null; onDong: () => void; onDoi: () => void;
 }) {
   const toast = useToast();
   const [lyDo, setLyDo] = useState('');
-  const [daBam, setDaBam] = useState(false);
   const [busy, setBusy] = useState(false);
   const [loiMay, setLoiMay] = useState<string | null>(null);
-  const loi = kiemTruong({ khoa: 'ly-do', nhan: 'Lý do', toiThieu: LY_DO_TOI_THIEU }, lyDo);
   const lam = async () => {
-    setDaBam(true);
-    if (loi || busy) return;
+    if (busy) return;
     setBusy(true); setLoiMay(null);
     try {
       await api.post(`/attempts/${attemptId}/bo-tuan`, { lyDo: lyDo.trim() });
@@ -156,7 +153,7 @@ function HopHuyLich({ attemptId, nhan, tuan, onDong, onDoi }: {
       body={(
         <div className="space-y-3">
           <p className="m-0">{nhan}{tuan ? ` (đang ở ${tuan})` : ''} bỏ tuần thi, giữ lượt và số MT — các kỹ năng chưa thi về <b>Chưa xếp lịch</b>. Không đóng Case; điểm đã có giữ nguyên.</p>
-          <Truong nhan="Lý do" batBuoc loi={daBam ? loi : null} dem={{ co: lyDo.trim().length, can: LY_DO_TOI_THIEU }}>
+          <Truong nhan="Lý do" tuyChon>
             <input className="field" value={lyDo} onChange={(e) => setLyDo(e.target.value)} placeholder="Ví dụ: em xin lùi lịch thi sang tháng sau" />
           </Truong>
           {loiMay && <p className="m-0 text-xs font-semibold text-bad" role="alert">{loiMay}</p>}

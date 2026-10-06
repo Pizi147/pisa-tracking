@@ -212,7 +212,7 @@ export function trangThaiLuotXuat(o: {
   coDiem: number; yeuCau: number; du: boolean; lichSu: boolean; huyPhan: boolean; tamThoi: boolean; kck: boolean;
 }): string {
   const chinh = o.du ? 'Đủ điểm' : o.coDiem === 0 ? 'Chưa có điểm' : `Thiếu điểm ${o.coDiem}/${o.yeuCau}`;
-  return [chinh, o.lichSu && 'lịch sử', o.huyPhan && 'đã huỷ phần còn lại', o.tamThoi && !o.kck && 'SOS tạm thời', o.kck && 'không cam kết']
+  return [chinh, o.lichSu && 'MT cũ', o.huyPhan && 'đã huỷ phần còn lại', o.tamThoi && !o.kck && 'SOS tạm thời', o.kck && 'không cam kết']
     .filter(Boolean).join(' · ');
 }
 

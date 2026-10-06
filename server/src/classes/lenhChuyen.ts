@@ -242,7 +242,7 @@ export function huyLenh(p: Principal, id: number, lyDo: string): void {
   const l = docLenh(id);
   require_(p, PERMISSIONS.CLASS_EDIT, { classId: l.lop_nguon_id }, CUNG_LOP_CHI_NHANH);
   const why = String(lyDo ?? '').trim();
-  if (why.length < 3) throw badRequest('Ghi lý do huỷ quyết định.');
+  if (!why) throw badRequest('Ghi lý do huỷ quyết định.');
   kiemConSuaDuoc(l);
   tx(() => {
     const conn = db();
@@ -661,7 +661,7 @@ export function guiDeXuatChuyenLop(p: Principal, sid: number, v: { toClassId?: n
   /* GVCN của lớp em đang học (`student.edit` ở lớp với vai Giáo viên đã siết về GVCN); Quản lý cũng gửi được → tự duyệt (Q-D). */
   require_(p, PERMISSIONS.STUDENT_EDIT, { classId: enr.class_id }, 'Chỉ GVCN lớp em đang học mới gửi được đề xuất chuyển lớp.');
   const lyDo = chuTuDo(v.lyDo, 'Lý do', 2000) ?? '';   // rà Dọn-a P2 (Q4): kiểu + trần, không cắt ngầm
-  if (lyDo.length < NHAN_XET_TOI_THIEU) throw badRequest(`Ghi lý do (ít nhất ${NHAN_XET_TOI_THIEU} ký tự) để Quản lý có căn cứ duyệt.`);
+  if (!lyDo) throw badRequest('Ghi lý do để Quản lý có căn cứ duyệt.');   // T7 (PR-MTa): không tối thiểu ký tự
   const toClassId = v.toClassId ? Number(v.toClassId) : null;
   if (toClassId && !lopDichHopLe(toClassId, enr.class_id)) throw badRequest('Lớp chuyển đến không hợp lệ.');
   const tuan = v.tuan || null;

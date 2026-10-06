@@ -51,9 +51,9 @@ export async function runPrCtTests(t: YThucTestKit) {
     }
   });
   check('CT (1g) · kiemDongLenh: chọn khác gợi ý hoặc Chuyển lớp / Tạm dừng học (bảo lưu) / Dừng học hẳn mà lý do < 3 ký tự → "Ghi lý do ngắn"', () => {
-    assert(d.kiemDongLenh(dong({ khacGoiY: true, lyDo: 'ab' })) === 'Ghi lý do ngắn', 'khác gợi ý');
+    assert(d.kiemDongLenh(dong({ khacGoiY: true, lyDo: '' })) === 'Ghi lý do ngắn', 'khác gợi ý');   // PR-MTa T7: bỏ tối thiểu 3 ký tự
     assert(d.kiemDongLenh(dong({ khacGoiY: true, lyDo: '   ' })) === 'Ghi lý do ngắn', 'lý do toàn dấu cách');
-    assert(d.kiemDongLenh(dong({ khacGoiY: true, lyDo: 'abc' })) === null, 'đủ 3 ký tự');
+    assert(d.kiemDongLenh(dong({ khacGoiY: true, lyDo: 'a' })) === null, 'một ký tự là đủ (PR-MTa T7)');
     assert(d.kiemDongLenh(dong({ huong: 'chuyen_lop' })) === 'Ghi lý do ngắn', 'chuyển lớp');
     assert(d.kiemDongLenh(dong({ huong: 'dung_hoc', lopDichId: null })) === 'Ghi lý do ngắn', 'dừng học hẳn');
     assert(d.kiemDongLenh(dong()) === null, 'lên lớp theo gợi ý không cần lý do');
@@ -305,7 +305,7 @@ export async function runPrCtTests(t: YThucTestKit) {
   });
   check('CT (3f) · sửa / huỷ đúng luật: huỷ cần lý do ≥ 3 ký tự; huỷ xong → em có thể có lệnh mới; huỷ hai lần → 409; sau tuần bắt đầu giữ tuần cũ → 400', () => {
     const l = lenhCua(em[2]);
-    assert(maLoi(() => lenh.huyLenh(P.mbManager, l.id, 'ab')) === 400, 'lý do ngắn');
+    assert(maLoi(() => lenh.huyLenh(P.mbManager, l.id, '  ')) === 400, 'lý do trống');   // PR-MTa T7: bỏ tối thiểu 3 ký tự
     lenh.huyLenh(P.mbManager, l.id, 'Phụ huynh xin ở lại');
     const sau = lenhCua(em[2]);
     assert(sau.trang_thai === 'huy' && sau.huy_boi === P.mbManager.userId && sau.ly_do_huy === 'Phụ huynh xin ở lại', JSON.stringify(sau));
@@ -833,7 +833,7 @@ export async function runPrCtTests(t: YThucTestKit) {
     const dichKhac = lopMoi({ kind: 'FOU', tuanHienTai: 4 });
     const v = { toClassId: dichKhac, tuan: TUAN[0], lyDo: 'Phụ huynh xin chuyển sang lớp khác giờ học.' };
     assert(maLoi(() => lenh.guiDeXuatChuyenLop(gBm, e, v)) === 403 && maLoi(() => lenh.guiDeXuatChuyenLop(gKhac, e, v)) === 403, 'GVBM / GVCN lớp khác → 403');
-    assert(maLoi(() => lenh.guiDeXuatChuyenLop(gCn, e, { ...v, lyDo: 'ngắn' })) === 400, 'lý do ngắn');
+    assert(maLoi(() => lenh.guiDeXuatChuyenLop(gCn, e, { ...v, lyDo: ' ' })) === 400, 'lý do trống');   // PR-MTa T7: bỏ tối thiểu 15 ký tự
     assert(maLoi(() => lenh.guiDeXuatChuyenLop(gCn, e, { ...v, tuan: mondayNow })) === 400, 'tuần hiện tại');
     const r = lenh.guiDeXuatChuyenLop(gCn, e, v);
     const the = get('SELECT * FROM yeu_cau_duyet WHERE id = ?', r.id);

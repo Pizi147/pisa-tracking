@@ -78,7 +78,7 @@ export const C06_NHAP_BU_CASE_DANG_XU_LY = 'chi-da-hoan-thanh' as const;
 export const C07_DOT_FT_CHI_W1_HOAC_W2 = 'phai-du-hai-task' as const;
 
 /**
- * C08 — ĐÃ CHỐT 21/09/2026 đêm. Hạn chấm lớp thường: hết Chủ nhật của chính tuần thi (khớp mã). Lớp thường CÓ dùng dấu "-": GIÁO VIÊN
+ * C08 — ĐÃ CHỐT 21/09/2026 đêm. Hạn chấm lớp thường: hết thứ Tư tuần kế tiếp (T19, PR-MTa 06/10 — trước là Chủ nhật tuần thi). Lớp thường CÓ dùng dấu "-": GIÁO VIÊN
  * ghi khi em chưa làm bài của tuần (máy không tự thêm); ghi "-" thì môn đó tự dời sang tuần sau.
  * ĐÃ NỐI DÂY (PR-Rc1): lớp thường ghi '-' thì môn đó tự dời sang tuần sau — `normal/regular.ts`
  * (`reportRegularNoShow`), dùng lại `setSkillWeek`. `attempts.ts` chỉ chỉ đường sang đó.

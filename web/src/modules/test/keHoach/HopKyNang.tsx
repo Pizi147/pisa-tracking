@@ -5,7 +5,7 @@ import { useNgayNghiepVu } from '../../../ui/ngayNghiepVu.ts';
 import { addDaysStr } from '../../../lib/format.ts';
 import { useToast } from '../../../ui/Toast.tsx';
 import {
-  CHU_THAO_TAC, LY_DO_TOI_THIEU, cauSeHuyLich, gomBaiXemTruoc, mondayOfDate, nhanTuanKhoa, tenMon, tenMonNgan, thaoTacKyNang, trangThaiTT, tuanLich,
+  CHU_THAO_TAC, canLyDoVuot, cauSeHuyLich, dongHeQuaVuot, gomBaiXemTruoc, mondayOfDate, nhanTuanKhoa, tenMon, tenMonNgan, thaoTacKyNang, trangThaiTT, tuanLich,
   tuanMacDinhDotMoi, type BaiXemTruoc, type DongHangLoat, type KyNangKH, type OKyNang, type ThaoTac,
 } from '@shared/domain/index.ts';
 import { KY, thanDot, type DotChon, type KnO } from './kieu.ts';
@@ -19,12 +19,12 @@ type Dong = { tick: boolean; periodId: number | null; weekStart: string | null }
 /**
  * HỘP KỸ NĂNG (mockup 14 (1), Q19) — hộp nhỏ NEO CẠNH chip vừa bấm (portal, `position: fixed`, kẹp trong màn); 375px thì
  * là tấm dưới đáy rộng hết màn. Bốn dòng `ô tích · L Listening · tuần`, mỗi dòng đổi tuần riêng:
- *   · dòng chỉ đọc (`khoa`: đã có điểm / đã thi / đã huỷ phần thi) — ghi lý do mờ, không đổi được;
+ *   · dòng chỉ đọc chỉ còn `khoa` = đã huỷ phần thi; đã có điểm / đã thi vẫn dời được, điểm đi theo (PR-MTa T20);
  *   · FT: bỏ tích = bỏ kỹ năng khỏi đợt (`Bỏ khỏi đợt`, bắt buộc lý do); lớp thường không có ô tích (luôn đủ 4 môn);
  *   · mỗi lần đổi tuần gọi `/ke-hoach-test/dot/kiem` (đợt đã có) hoặc xem trước hàng loạt một em (đợt chưa có) → MỘT dòng
  *     trạng thái: `Chặn: …` (Lưu tắt) · cảnh báo (nút đổi thành `Vẫn xếp vào tuần này`) · `S: W4 SEP → W1 OCT · không trùng đợt khác.`
  *   · PR-LM (Q-0310-1): dời vượt lượt sau → dòng ĐỎ "Lưu sẽ huỷ lịch MT2 (W3 JUL) …"; Lưu mở hộp xác nhận nêu từng lượt bị huỷ lịch.
- *     MT lịch sử (D3) đổi tuần được kể cả kỹ năng đã có điểm (sửa hồ sơ, bắt buộc lý do); MT đang chạy không lùi qua tuần này.
+ *     Hộp chỉ dành cho Quản lý / Quản trị: chọn được tuần đã qua ở mọi lượt (T4, T20 — rà #212).
  * Bộ chọn tuần KHỞI TẠO bằng TUẦN HIỆN CÓ của từng kỹ năng (Bổ sung sau rà #87): không để bộ chọn tự phát "tuần này" làm
  * nút Lưu mở ngay — Lưu mờ cho tới khi đổi tuần.
  */
@@ -76,7 +76,8 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
     return () => { huy = true; };
   }, []);   // eslint-disable-line react-hooks/exhaustive-deps
 
-  const laKhoa = (k: KyNangKH) => !moi && !!kn[k]?.khoa && !(lichSu && kn[k]?.khoa !== 'đã huỷ phần thi');
+  /* PR-MTa T20: Quản lý dời được kỹ năng đã có điểm / đã thi (điểm đi theo) — chỉ phần đã huỷ là chỉ đọc. */
+  const laKhoa = (k: KyNangKH) => !moi && kn[k]?.khoa === 'đã huỷ phần thi';
   const cauHinh = (k: KyNangKH) => rows[k];
   const daDoi = (k: KyNangKH) => {
     if (laKhoa(k)) return false;
@@ -138,13 +139,10 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
     return { tone: 'muted' as const, chu: seHuyLich.length ? `${nhom.join(' · ')}.` : `${nhom.join(' · ')} · không trùng đợt khác.` };
   }, [bai, moi, coDoi, seHuyLich]);   // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* K4-15: dời kỹ năng mà tuần thi cũ đã bắt đầu (không phải bài vắng) → bắt lý do, như bỏ kỹ năng. */
   const tuanDaBatDau = (k: KyNangKH) => !!homNay && !!kn[k]?.tuan && kn[k]!.tuan!.slice(0, 10) <= homNay;
-  const doiTuanDaBatDau = !moi && ky.some((k) => daDoi(k) && rows[k].tick && (kn[k]?.batBuoc ?? false)
-    && tuanDaBatDau(k) && kn[k]?.sit !== 'absent');
   const suaLichSu = lichSu && !moi && coDoi;
-  const canLyDo = bo.length > 0 || doiTuanDaBatDau || suaLichSu;
-  const thieuLyDo = canLyDo && lyDo.trim().length < LY_DO_TOI_THIEU;
+  /* T7 (PR-MTa): bỏ kỹ năng / dời lịch — ô lý do tuỳ chọn, không tối thiểu ký tự. */
+  const canLyDo = bo.length > 0 || (!moi && coDoi);
   /* Menu ⋯ từng dòng theo `thaoTacKyNang` (T38). Dòng đã có ô tuần và ô tích nên bỏ "Dời lịch thi" / "Bỏ kỹ năng khỏi đợt" /
    * "Đưa lại vào đợt" khỏi ⋯; dòng đã huỷ phần thi có "Khôi phục và đặt tuần". Kế hoạch Test là màn của Quản lý. */
   const tatCua = (k: KyNangKH) => {
@@ -160,11 +158,12 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
     return [...(tat.chinh === 'khoi-phuc' ? ['khoi-phuc' as ThaoTac] : []),
       ...tat.menu.filter((x) => x !== 'doi-lich' && x !== 'bo-ky-nang' && x !== 'dua-lai')];
   };
-  const luuDuoc = !busy && !chan.length && !thieuLyDo && (moi ? !thieuTuan && !!bai : coDoi);
+  const luuDuoc = !busy && !chan.length && (moi ? !thieuTuan && !!bai : coDoi);
 
-  const luu = async (daXacNhan = false) => {
+  /** `lyDoVuot` = lý do ở hộp dời vượt (T2) — chỉ có khi đã xác nhận huỷ kết quả. */
+  const luu = async (daXacNhan = false, lyDoVuot?: string) => {
     if (!luuDuoc) return;
-    if (!moi && seHuyLich.length && !daXacNhan) { setXacNhan(seHuyLich); return; }
+    if (!moi && canLyDoVuot(seHuyLich) && !daXacNhan) { setXacNhan(seHuyLich); return; }
     setBusy(true);
     const dungForce = force || canhBao.length > 0;
     try {
@@ -180,11 +179,11 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
               : { skill: k, periodId: rows[k].periodId }
         ));
         await api.post('/ke-hoach-test/dot', {
-          attemptId, kyNang, lyDoBo: bo.length ? lyDo.trim() : null, reason: doiTuanDaBatDau || suaLichSu ? lyDo.trim() : null, force: dungForce,
+          attemptId, kyNang, lyDoBo: bo.length ? lyDo.trim() : null, reason: lyDoVuot || lyDo.trim() || null, force: dungForce,
           xacNhanHuyLich: daXacNhan,
         });
       }
-      toast.push('ok', daXacNhan && xacNhan?.length ? `Đã lưu lịch · huỷ lịch ${xacNhan.map((x) => x.nhan).join(', ')}.` : 'Đã lưu lịch.');
+      toast.push('ok', daXacNhan && xacNhan?.length ? `Đã lưu lịch · ${xacNhan.map(dongHeQuaVuot).join(' · ')}.` : 'Đã lưu lịch.');
       invalidate('/ke-hoach-test'); invalidate('/attempts'); invalidate('/cham');
       onSaved(); onClose();
     } catch (e: any) {
@@ -240,19 +239,16 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
             coTickBo={loai === 'ft' && (!(kn[k]?.batBuoc ?? false) || menuTick(k))}
             noiBat={k === kyNangDau} khaiGiang={khaiGiang} tongTuan={tongTuan}
             onTick={(v) => setRows((s) => ({ ...s, [k]: { ...s[k], tick: v } }))}
-            onTuan={(t) => setRows((s) => ({ ...s, [k]: { ...s[k], periodId: t.periodId, weekStart: t.weekStart } }))} goc={homNay}
-            toiThieu={!moi && !lichSu ? homNay : null} />
+            onTuan={(t) => setRows((s) => ({ ...s, [k]: { ...s[k], periodId: t.periodId, weekStart: t.weekStart } }))} goc={homNay} />
         ))}
         {canLyDo && (
           <label className="block">
             <span className="mb-1 flex items-baseline gap-2 text-[11.5px] font-bold text-slate-200">
-              <span className="flex-1">{bo.length ? 'Lý do bỏ' : suaLichSu ? 'Lý do sửa tuần' : 'Lý do dời'} <span className="text-bad">*</span></span>
-              <span className="text-[11px] font-normal tabular-nums text-slate-500">{lyDo.trim().length}/{LY_DO_TOI_THIEU}</span>
+              <span className="flex-1">{bo.length ? 'Lý do bỏ' : suaLichSu ? 'Lý do sửa tuần' : 'Lý do dời'} <span className="font-normal text-slate-500">(tuỳ chọn)</span></span>
             </span>
             <input className="field w-full" value={lyDo} onChange={(e) => setLyDo(e.target.value)}
               placeholder={bo.length ? 'Ví dụ: đợt này không thi Speaking' : 'Ví dụ: trùng lịch phòng thi'} />
-            {suaLichSu && !bo.length ? <span className="mt-1 block text-xs text-slate-400">MT lịch sử — đổi tuần là sửa hồ sơ, điểm giữ nguyên.</span>
-              : doiTuanDaBatDau && !bo.length && <span className="mt-1 block text-xs text-slate-400">Tuần thi cũ đã bắt đầu — dời lúc này phải ghi lý do.</span>}
+            {suaLichSu && !bo.length && <span className="mt-1 block text-xs text-slate-400">MT cũ — đổi tuần là sửa hồ sơ, điểm giữ nguyên.</span>}
           </label>
         )}
         <div className={`min-h-[16px] text-xs leading-relaxed ${dongTrangThai.tone === 'bad' ? 'text-bad' : dongTrangThai.tone === 'soon' ? 'text-soon' : 'text-slate-400'}`} role="status">
@@ -270,7 +266,7 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
       </div>
       {xacNhan && (
         <HopXacNhanHuyLich ds={xacNhan} busy={busy} onQuayLai={() => setXacNhan(null)}
-          onXacNhan={() => { void luu(true); }} />
+          onXacNhan={(ly) => { void luu(true, ly); }} />
       )}
       {thaoTac && attemptId !== null && (
         <HopThaoTacMt key={`${thaoTac.t}:${thaoTac.k}`} thaoTac={thaoTac.t} attemptId={attemptId} skill={thaoTac.k} ct={ct} laThuong={loai === 'thuong'}
@@ -284,8 +280,8 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
   );
 }
 
-function DongKyNangHop({ k, o, khoa, moi, loai, d, noiBat, khaiGiang, tongTuan, onTick, onTuan, goc, ct = null, menu, onThaoTac, coTickBo, toiThieu }: {
-  ct?: string | null; menu: ThaoTac[]; onThaoTac: (t: ThaoTac) => void; toiThieu: string | null;
+function DongKyNangHop({ k, o, khoa, moi, loai, d, noiBat, khaiGiang, tongTuan, onTick, onTuan, goc, ct = null, menu, onThaoTac, coTickBo }: {
+  ct?: string | null; menu: ThaoTac[]; onThaoTac: (t: ThaoTac) => void;
   /** PR-XLMT (K4-13): ô tích bỏ kỹ năng chỉ khi bảng thao tác cho "Bỏ kỹ năng khỏi đợt" (chưa tới tuần thi, chưa điểm) hoặc để đưa lại. */
   coTickBo: boolean;
   k: KyNangKH; o?: OKyNang; khoa: boolean; moi: boolean; loai: 'ft' | 'thuong'; d: Dong; noiBat: boolean;
@@ -312,7 +308,8 @@ function DongKyNangHop({ k, o, khoa, moi, loai, d, noiBat, khaiGiang, tongTuan, 
           <div className="mt-2.5 text-xs text-slate-500">Bỏ kỹ năng khỏi đợt</div>
         ) : (
           <>
-            <TuanNho d={d} goc={goc} onTuan={onTuan} nhanKhoa={nhanTuan} toiThieu={toiThieu} />
+            {/* Rà #212 (T4/T20): hộp chỉ mở cho Quản lý / Quản trị (PLAN_WEEK) — chọn được cả tuần đã qua, máy chủ đã cho. */}
+            <TuanNho d={d} goc={goc} onTuan={onTuan} nhanKhoa={nhanTuan} />
           </>
         )}
       </div>

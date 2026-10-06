@@ -120,12 +120,21 @@ export function tomTatLuuDong(cacO: readonly (TrangThaiLuuO | null | undefined)[
 }
 export const chuOChuaLuu = (n: number) => `${n} ô chưa lưu`;
 
-/** RB-5 — sửa một ô đã có điểm chính thức thì phải nói vì sao. Ngắn quá thì không phải một lý do. */
-export const LY_DO_TOI_THIEU = 5;
+/** T10 (PR-MTa): band nhập tay — số hữu hạn 0..9, bậc 0.5. `null` = hợp lệ. */
+export function kiemBand(v: unknown): string | null {
+  return typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 9 && Number.isInteger(v * 2)
+    ? null : 'Band từ 0 đến 9, bậc 0.5 (ví dụ 6.5 hoặc b6).';
+}
 
-export function kiemLyDo(s: string | null | undefined): string | null {
-  const t = (s ?? '').trim();
-  if (!t) return 'Sửa điểm đã nhập thì phải ghi lý do.';
-  if (t.length < LY_DO_TOI_THIEU) return `Lý do cần ít nhất ${LY_DO_TOI_THIEU} ký tự để người sau đọc còn hiểu.`;
-  return null;
+export type ONhapLR = { raw: number } | { band: number };
+
+/** T10: ô L/R — số nguyên = số câu đúng (như cũ); có dấu chấm hoặc tiền tố "b" = band. '' → null. */
+export function docONhapLR(s: string): ONhapLR | { loi: string } | null {
+  const t = s.trim();
+  if (!t) return null;
+  if (/^\d+$/.test(t)) return { raw: Number(t) };
+  const m = /^[bB](\d+(?:\.\d+)?)$|^(\d+\.\d+)$/.exec(t);
+  const band = m ? Number(m[1] ?? m[2]) : NaN;
+  const loi = kiemBand(band);
+  return loi ? { loi } : { band };
 }

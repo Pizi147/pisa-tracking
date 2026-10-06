@@ -18,7 +18,9 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 | `docs/superpowers/plans/2026-10-05-pr-mta-luat-mock-test.md` | PR-MTa (đợt 4) |
 | `docs/superpowers/plans/2026-10-05-pr-mtb-giao-dien-mock-test.md` | PR-MTb (đợt 5) |
 | `docs/superpowers/plans/2026-10-05-pr-mt0.md` | PR-MT0 (đợt 5) |
+| `docs/superpowers/plans/2026-10-06-pr-tk-tong-ket-lo-trinh.md` | PR-TK (mockup `thiet-ke/mockup-tong-ket-lo-trinh-2026-10-06.html`, bản 2 đã duyệt 06/10; chạy sau LUI-b #213) |
 | `docs/superpowers/plans/2026-10-03-pr-phien-lich-mt-dieu-huong-sua-lop.md` | PR-SL (mục B Q-0310-3, "PR-SL", SL-1→2). Phần PH, LM, DH đã xong |
+| `docs/superpowers/plans/2026-10-06-pr-bv-bo-vang-xoa-diem.md` | PR-BV bản 2 (chạy sau MTa + MTb; mockup đã duyệt 06/10) |
 | `docs/superpowers/plans/2026-10-02-ux-sau-critique.md` | PR-HK2 (H1, H2, K2, K4–K7, J1–J4, J7, J9), PR-SL (I1–I4, I6) |
 
 - **Khi các nguồn mâu thuẫn:** theo `CLAUDE.md` (quyết định chủ sản phẩm + kế hoạch đã duyệt → Rulebook + mockup → skill).
@@ -178,18 +180,18 @@ Chủ sản phẩm 05/10 đã chốt (mockup `thiet-ke/mockup-test-mt-2026-10-05
 
 Đợt 2 (PHH, SO, DH) và U12 đã xong, xem mục 2.
 
-### PR-BV · Bỏ vắng + xoá điểm hàng loạt có khôi phục (M–L) — chủ sản phẩm 06/10, **kế hoạch + mockup chưa soạn**
-Nguồn: `docs/superpowers/specs/2026-10-06-ra-soat-duong-lui.md` (rà 06/10, 11 phép thử API). Chạy **sau MTa** (cùng `attempts.ts`, `regular.ts`, `absence.ts`), có mockup duyệt trước.
-- **Bỏ vắng / Em có thi:** bài đã chốt vắng hoặc gõ "-" nhầm → trả **lịch cũ + số lần vắng**, rồi nhập điểm được. Ai: **QL / Quản trị mọi lúc; GV chấm bài đó trong khung nhập T19** (tuần thi → thứ Tư tuần sau). Lý do tuỳ chọn, nhật ký đủ. Máy chủ đã có hàm sửa trạng thái thi nhưng chưa có đường gọi.
-- **Xoá điểm hàng loạt** (nhiều em, cả đợt một em, cả cột kỹ năng cả lớp): **xoá mềm, khôi phục được**; màn xem trước số điểm + Case bị ảnh hưởng. Chỉ QL / Quản trị. Điểm xoá tay từng ô cũng khôi phục được.
-- Sửa lỗi: bài lớp thường xoá điểm xong vẫn "đã xong" (`regular.ts:759`).
+### PR-BV · Xoá "-" trả lại như cũ + đường lui điểm (M) — chủ sản phẩm chốt 06/10 **bản 2** (bản 1 không duyệt: quá phức tạp). Kế hoạch `docs/superpowers/plans/2026-10-06-pr-bv-bo-vang-xoa-diem.md` + mockup `thiet-ke/mockup-bo-vang-xoa-diem-2026-10-06.html` **mockup đã duyệt 06/10** (Q1 đã trả lời: A — Lịch sử FT giữ ở hồ sơ Mock)
+Nguồn: `docs/superpowers/specs/2026-10-06-ra-soat-duong-lui.md`. Chạy **sau MTa (#212) và MTb** (chung `attempts.ts`, `regular.ts`, `absence.ts`, `ScoreEntry.tsx`…), mockup duyệt trước.
+- **Vắng:** gõ "-" = vắng, **xoá "-" = hết vắng** (không nút mới). Xoá "-" đã chốt → máy chủ trả như trước khi gõ: lịch cũ, trừ lần vắng, rút đề nghị / thẻ chưa xử lý, kỹ năng huỷ do vắng lần 2 trở lại; quyết định của người giữ nguyên. Ai: GV chấm, GVCN trong khung chấm (tuần thi → hết thứ Tư tuần sau); QL / Quản trị mọi lúc.
+- **Điểm:** tẩy ô + Lưu = xoá (MTa T22); không kho khôi phục, không xoá hàng loạt. Nhập lại điểm sau khi xoá → **mở lại đúng Case** lần xoá đã đóng. Lịch sử ô lớp thường phải hiện điểm cũ (nay thiếu).
+- Sửa lỗi: bài lớp thường xoá điểm xong vẫn "đã xong" (`regular.ts:752-756`).
 
 ### PR-LUI · Đường lui (L, có thể tách a/b) — chủ sản phẩm 06/10, **kế hoạch + mockup chưa soạn**
 Nguồn như PR-BV. Chỉ mở cho QL / Quản trị, không nới quyền GV. Chạy sau đợt 5, trước HK2.
 - **a · Case + Chờ duyệt + Ý thức:** mở lại Case đã hoàn thành (sửa luôn chữ sai ở `ThaoTacCase.tsx:218` đang nói "Case này mở lại" mà máy chủ tạo Case mới) · huỷ quyết định duyệt / từ chối bấm nhầm trong ngày + từ chối hàng loạt · vi phạm Ý thức xoá mềm + khôi phục (nay xoá hẳn cả tệp) · ghi vi phạm cho nhiều em một lần.
 - **b · Học viên & lớp:** "Học lại" cho em đã kết thúc học · mở lại lớp đã kết thúc · lưu trữ / kết thúc học / huỷ quyết định chuyển lớp cho nhiều em một lần.
 
-### PR-TK · Tổng kết lộ trình — điểm 4 kỹ năng khi kết thúc (M) — chủ sản phẩm 06/10, **làm trong đợt này**, kế hoạch + mockup chưa soạn
+### PR-TK · Tổng kết lộ trình — điểm 4 kỹ năng khi kết thúc (M) — chủ sản phẩm 06/10, **làm trong đợt này**, kế hoạch + mockup **đã soạn 06/10, chờ duyệt** (`2026-10-06-pr-tk-tong-ket-lo-trinh.md`; Q1–Q4 chốt 06/10 — Q4: kết quả **thi thật** L R W S do GVCN nhập, Đích → Kết quả → Hướng tiếp, việc nhắc "Cập nhật kết quả thi thật"; Kết thúc học FT chờ kết quả thi thật chưa lưu trữ (TK-L) — **đã duyệt 06/10, chạy sau LUI-b #213**; khảo sát thêm đường đóng thứ 5: `PATCH /cycles/:id` `cycles.ts:312-314`)
 Khảo sát 06/10 (mã main): điểm **không mất** khi lộ trình kết thúc (không có xoá dây chuyền; chỉ "Xoá học viên" của Quản trị xoá thật). Nhưng **khó xem lại**:
 hồ sơ HV mặc định lộ trình đang chạy (dải chọn lộ trình ẩn, `StudentDetailPage.tsx:87, 239`); Lưu trữ chỉ là danh sách; Kết luận khoá chỉ xét lớp đang học + một lớp vừa rời
 (`profile.ts:782-797`); Phân tích lớp và Điểm theo lớp chỉ lấy lớp / lộ trình đang chạy (`phanTichLop.ts:57-58`, `diemTheoLuot.ts:146`).
@@ -320,7 +322,7 @@ Chọn model ở ô chọn model **trước khi dán prompt**. Subagent cùng mo
 ### 9.0. Phần chung — mọi prompt session code đều ngầm gồm
 ```
 Đọc trước: CLAUDE.md, plan.md (mục 1 Luật làm việc, mục 3 Quyết định, mục 4 dòng của PR này).
-Đầu phiên: nói rõ mình đang chạy model nào; khác model ghi trên prompt này thì DỪNG và báo chủ sản phẩm trước khi làm.
+Đầu phiên: nói rõ mình đang chạy model nào. Model ghi trên prompt (khuyến nghị) HOẶC phương án B đều được chạy tiếp — ghi model thật vào mô tả PR. Chỉ DỪNG báo chủ sản phẩm khi là model khác cả hai (vd Haiku) hoặc Fable (cấm, 06/10).
 Nhánh mới từ origin/main mới nhất. Skill: superpowers:subagent-driven-development (mỗi Task một subagent cùng model),
 superpowers:test-driven-development (đỏ trên DB test trước), superpowers:systematic-debugging khi lỗi lạ,
 superpowers:brainstorming nếu cần chủ sản phẩm quyết (dừng, hỏi), superpowers:verification-before-completion,
@@ -480,6 +482,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
 | 06/10/2026 | PR-LUI-b (Sonnet 5.5, phương án B) · `pr-lui-b-hoc-vien-lop` | Đường lui Học viên & Lớp: Học lại (về lớp cũ / sang lớp mới), Mở lại lớp, Quản lý kết thúc lớp, **Chọn nhiều học viên** (kết thúc học, lưu trữ, huỷ chuyển lớp; Lưu trữ: bỏ lưu trữ, học lại) có xem trước, lô 8, Hoàn tác. Phép kiểm `prLuiB` LUIb-1…19. |
+| 06/10/2026 | PR-MTa (Opus 5.5) · `pr-mta-luat-mock-test` | T1 MT cũ (≥ 2 tuần, lúc xếp/dời) · T4 QL xếp tuần đã qua (cả lớp thường) · T2 dời vượt huỷ kết quả → `ket_qua_huy`, khôi phục · T3 vắng lần 2 huỷ, Xin dời, Không mock lại · T7 lý do chỉ 4 trường hợp, bỏ tối thiểu ký tự mọi nơi · T10 band máy chủ · T11 chuông GVCN. Migrate `prMta`. |
 | 05/10/2026 | PR-DL · `pr-dl-diem-theo-lop` · Opus 5.5 | DL-0→7: bảng Điểm theo lớp (hồ sơ lớp ⋮ "Điểm MT cả lớp" + tab Test "Điểm theo lớp"), đọc theo lượt MT / Giữa–Cuối khoá, không đường ghi mới, không tự tạo lịch; lượt mặc định = lượt đang nhập. Thêm 3 đường đo tốc độ. |
 | 05/10/2026 | PR-NV (Opus 5.5) · `pr-nv-nhac-viec-chi-nhanh` | "Để QL biết" → Nhắc việc; Nhắc tất cả 50 thẻ ~93 000 → 121 câu SQL (gom theo người, `myWork` chỉ nhóm cần, dừng trước 10 s), hết 404 Mini Test/Cuối khoá; dải Chờ duyệt tím/xám/đỏ cam; chi nhánh mặc định theo vai QL / lớp dạy, nhớ lần chọn. NV-6 bỏ (→ LT3). |
 | 05/10/2026 | PR-SL (Opus 5.5) · `pr-sl-sua-ca-lop` | Panel Sửa thông tin học viên cả lớp (một giao dịch, Target cần lý do, GVCN không đổi Target); một mẫu Excel chung; I1 Đóng/Huỷ thay đổi, I2 Tạo Case, I3 Thêm HV, I4 KhungPanel (vẽ qua portal, Esc theo ngăn xếp), I6, D11. Check 2553 + 34 xanh. |

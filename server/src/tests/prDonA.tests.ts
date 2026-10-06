@@ -389,7 +389,7 @@ export async function runPrDonATests(t: YThucTestKit) {
     const id = Number(conn.prepare(`INSERT INTO skill_move_requests (attempt_id, skill, move_no, from_period_id, to_period_id, reason, requested_by, requested_on, decide_by, status, created_at)
       VALUES (?, 'listening', 1, ?, ?, 'Ốm', ?, ?, ?, 'pending', ?)`).run(a.id, a.planned_period_id, week.ensurePeriod(t.addDays(tuanNay, 7)).id, P.coreTeacher.userId, TODAY, t.addDays(TODAY, 6), new Date().toISOString()).lastInsertRowid);
     const e = loiCua(() => absence.decideAbsenceMove(P.mbManager, id, { approve: true }));
-    assert(e?.status === 400 && /MT lịch sử không vào luồng vắng/.test(e.message), `MT lịch sử: ${e?.status} ${e?.message}`);
+    assert(e?.status === 400 && /MT cũ không vào luồng vắng/.test(e.message), `MT cũ (PR-MTa): ${e?.status} ${e?.message}`);
   });
 
   check('Dọn-a (4b) · VN15 dự kiến thi ngày 07/12/2026 → tháng 01/2027: exam_period_id NULL, examPlanOf là tháng; chọn tuần khác cho tháng thì giữ (Q16)', () => {

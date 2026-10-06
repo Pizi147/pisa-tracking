@@ -256,9 +256,10 @@ export async function runTongQuanTests(t: YThucTestKit) {
     ).run(gvRow.user_id, roleId, cp, NOW).lastInsertRowid);
     try {
       const lai = loadPrincipal(gvRow.user_id);
-      const ngoaiLop = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
+      /* PR-MTa T19 thay tuần 07/09: hạn lớp thường nay hết thứ Tư tuần sau — tuần 31/08 (hạn 09/09) mới quá hạn ở 14/09. */
+      const ngoaiLop = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-08-31' });
       const cells = (debt.scoreDebtCells(P.admin, TODAY, null) as any[]).filter((x) => x.overdue);
-      assert(cells.some((x) => x.attemptId === ngoaiLop.attemptId), 'Lượt MB FOU 12 tuần 07/09 phải có ô quá hạn ở ngày 14/09 — nếu không, phép kiểm không có gì để lọt');
+      assert(cells.some((x) => x.attemptId === ngoaiLop.attemptId), 'Lượt MB FOU 12 tuần 31/08 phải có ô quá hạn ở ngày 14/09 — nếu không, phép kiểm không có gì để lọt');
       const lopGv = new Set((conn.prepare(`SELECT class_id FROM teacher_assignments WHERE user_id = ? AND status = 'active'`)
         .all(lai.userId) as any[]).map((r) => r.class_id as number));
       const branchOf = (cid: number) => (conn.prepare('SELECT branch_id FROM classes WHERE id = ?').get(cid) as any).branch_id as number;
