@@ -15,6 +15,7 @@ import { classProgressMany } from '../classes/schedule.ts';
 import { assessedBands } from './scoring.ts';
 import { can, type Principal } from '../permissions.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
+import { nho } from '../platform/nguCanhRequest.ts';
 
 
 export type DongMt0 = { studentId: number; classId: number; ma: ProgrammeCode | null; huong: Huong; mucTieu: number | null };
@@ -221,6 +222,11 @@ export function mt0TheoHocVien(sids: readonly number[]): Map<number, Mt0View> {
  * hiện từ 13 ngày trước hạn tới hết tuần Cuối khoá. Không chặn gì: ghi Lên FT sau hạn vẫn được. Một câu lớp + một câu em cho cả phạm vi.
  */
 export function lopChoChotLenFt(p: Principal, branchId: number | null, today: string): { classId: number; code: string; han: string; soEm: number }[] {
+  /* Tổng quan gọi hai lần (chỉ số + dòng Cần xử lý) — nhớ trong request. */
+  return nho(`chot-len-ft:${p.userId}:${branchId ?? ''}:${today}`, () => tinhLopChoChotLenFt(p, branchId, today));
+}
+
+function tinhLopChoChotLenFt(p: Principal, branchId: number | null, today: string): { classId: number; code: string; han: string; soEm: number }[] {
   const conn = db();
   const lop = conn.prepare(
     `SELECT c.id, c.code FROM classes c
