@@ -54,13 +54,13 @@ export const RATIO_PASS_THRESHOLD_PREVIOUS = 0.6;
  * Loại lượt đánh giá. `mock` là MT của FT; lớp thường có bài giữa và bài cuối khoá.
  * Vẫn KHÔNG dùng từ "thi" — đây là bài kiểm tra, "thi" dành cho kỳ IELTS chính thức.
  */
-export const ATTEMPT_KINDS = ['mock', 'progress', 'final'] as const;
+export const ATTEMPT_KINDS = ['mock', 'progress', 'final', 'mt0'] as const;
 export type AttemptKind = (typeof ATTEMPT_KINDS)[number];
 export const ATTEMPT_KIND_LABEL: Record<AttemptKind, string> = {
-  mock: 'Mock Test', progress: 'Bài kiểm tra giữa khoá', final: 'Bài kiểm tra cuối khoá',
+  mock: 'Mock Test', progress: 'Bài kiểm tra giữa khoá', final: 'Bài kiểm tra cuối khoá', mt0: 'MT0',
 };
 export const ATTEMPT_KIND_SHORT: Record<AttemptKind, string> = {
-  mock: 'MT', progress: 'Giữa khoá', final: 'Cuối khoá',
+  mock: 'MT', progress: 'Giữa khoá', final: 'Cuối khoá', mt0: 'MT0',
 };
 
 /**

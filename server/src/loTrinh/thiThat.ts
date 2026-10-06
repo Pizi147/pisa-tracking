@@ -20,7 +20,7 @@ export type NhapThiThat = { ngayThi?: string | null; l?: unknown; r?: unknown; w
 export function lopCuoiCuaLoTrinh(cycleId: number): number | null {
   const conn = db();
   return (conn.prepare('SELECT class_id AS id FROM ban_chup_lo_trinh WHERE cycle_id = ? AND class_id IS NOT NULL ORDER BY lan DESC LIMIT 1').get(cycleId) as any)?.id
-    ?? (conn.prepare('SELECT class_id AS id FROM assessment_attempts WHERE cycle_id = ? AND class_id IS NOT NULL ORDER BY id DESC LIMIT 1').get(cycleId) as any)?.id
+    ?? (conn.prepare(`SELECT class_id AS id FROM assessment_attempts WHERE cycle_id = ? AND class_id IS NOT NULL AND kind != 'mt0' ORDER BY id DESC LIMIT 1`).get(cycleId) as any)?.id   // PR-MT0: MT0 mang lớp thường cũ
     ?? (conn.prepare('SELECT e.class_id AS id FROM enrollments e JOIN learning_cycles c ON c.student_id = e.student_id WHERE c.id = ? ORDER BY e.id DESC LIMIT 1').get(cycleId) as any)?.id
     ?? null;
 }
@@ -119,7 +119,7 @@ export function viecThiThat(p: Principal, f: { today: string; tatCa: boolean; br
   const conn = db();
   const ds = conn.prepare(`SELECT c.id, c.student_id, s.full_name AS ten, c.ended_at, c.exam_month, c.exam_date, ep.week_start AS exam_week,
       COALESCE((SELECT class_id FROM ban_chup_lo_trinh b WHERE b.cycle_id = c.id AND b.class_id IS NOT NULL ORDER BY lan DESC LIMIT 1),
-               (SELECT a.class_id FROM assessment_attempts a WHERE a.cycle_id = c.id AND a.class_id IS NOT NULL ORDER BY a.id DESC LIMIT 1),
+               (SELECT a.class_id FROM assessment_attempts a WHERE a.cycle_id = c.id AND a.class_id IS NOT NULL AND a.kind != 'mt0' ORDER BY a.id DESC LIMIT 1),
                (SELECT e.class_id FROM enrollments e WHERE e.student_id = c.student_id ORDER BY e.id DESC LIMIT 1)) AS class_id
     FROM learning_cycles c JOIN students s ON s.id = c.student_id LEFT JOIN report_periods ep ON ep.id = c.exam_period_id
    WHERE c.route IS NOT NULL AND c.thi_that_khong_thi = 0 AND (c.thi_that_l IS NULL OR c.thi_that_r IS NULL OR c.thi_that_w IS NULL OR c.thi_that_s IS NULL)

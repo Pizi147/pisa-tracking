@@ -1,7 +1,7 @@
 import { db, theoLo } from '../db.ts';
 import { datNho } from '../platform/nguCanhRequest.ts';
 import {
-  ASSESSED_SKILLS, BASELINE_SOURCE_LABEL, CYCLE_OUTCOME_LABEL, ENTRY_SKILLS,
+  ASSESSED_SKILLS, BASELINE_SOURCE_LABEL, CYCLE_OUTCOME_LABEL, ENTRY_SKILLS, kyNangSosMt0,
   ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, JOURNEY_GROUP, PERMISSIONS,
   caseHeadline, duongCase, issueLabel, caseCategoryLabel, categoryOf, fmtExamMonth, cauTomTat, ketQuaTestGanNhat, oHocThuat, oSapToi, oYThuc,
   bacHoacNgoaiThang, nhanLoaiXuLy, programmeOf, tenBacKe, tenMonNgan, mocKeTiep, quaHan, studyWeekOf, tenMon, tuanHocTai, tuanLich,
@@ -71,13 +71,13 @@ function cycleLabel(c: any): string {
 /** `pre`: danh sách gọi cho NHIỀU lượt nạp sẵn điểm / phạm vi / chương trình bằng vài câu (không hỏi lại theo từng lượt). */
 export function typedResult(attempt: any, pre?: { scores: any[]; skips: AssessedSkill[]; prog: ReturnType<typeof programmeOfClass> }) {
   const prog = pre ? pre.prog : attempt.class_id ? programmeOfClass(attempt.class_id) : null;
-  if (prog?.scoringMode === 'ratio') {
+  if (attempt.kind !== 'mt0' && prog?.scoringMode === 'ratio') {   // PR-MT0: MT0 ở lớp thường vẫn band
     const rows = pre?.scores ?? db().prepare('SELECT skill, raw_score, raw_total FROM assessment_scores WHERE attempt_id = ?')
       .all(attempt.id) as any[];
     const r = evaluateRegular(prog.skills, rows, prog.code);
     return { mode: 'ratio' as const, ratio: r, ft: null };
   }
-  const r = evaluateAttempt(attempt.target_at_attempt, attempt.attempt_no,
+  const r = evaluateAttempt(attempt.kind === 'mt0' ? null : attempt.target_at_attempt, attempt.attempt_no,   // PR-MT0: không kỳ vọng
     entryBandsOf(pre?.scores ?? scoresOf(attempt.id)), pre?.skips ?? skipsOf(attempt.id), routeCuaLuot(attempt));
   return { mode: 'ielts' as const, ratio: null, ft: r };
 }
@@ -550,7 +550,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
            FROM assessment_attempts a
            LEFT JOIN classes c ON c.id = a.class_id
            LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
-          WHERE a.cycle_id = ? ORDER BY a.attempt_no DESC`,
+          WHERE a.cycle_id = ? ${selected.route ? '' : `AND a.kind != 'mt0'`} ORDER BY a.attempt_no DESC`,   /* PR-MT0: bảng lớp thường không có MT0 */
       )
       .all(selected.id) as any[]
     : [];
@@ -614,11 +614,14 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       };
     }
     const r = t.ft!;
+    /* PR-MT0 (T5): MT0 không có kỳ vọng / mức SOS — chỉ chip `W 4.0 SOS` (band ≤ Target − 2.0) để nhìn. */
+    const mt0 = a.kind === 'mt0';
     return {
       ...base, expectation: r.expectation, bands: r.bands, overall: r.overall, evaluable: r.evaluable, skills: null,
       scored: r.scoredRequired, required: r.required.length,
       complete: r.complete, provisional: r.provisional,
       sosLevel: r.sosLevel, scopeNote: r.scopeNote,
+      ...(mt0 ? { sosMt0: kyNangSosMt0(r.bands, a.target_at_attempt ?? null) } : {}),
     };
   });
 
@@ -673,6 +676,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     }
     for (const a of [...attemptRows].sort((x, y) => x.attempt_no - y.attempt_no)) {
       if (a.status === 'cancelled') continue;
+      if (a.id === baseline?.attemptId) continue;   // PR-MT0: MT0 đã là điểm đầu vào — không lặp thành điểm MT0
       const b = assessedBands(entryBandsOf(scoresOf(a.id)))[skill];
       if (b === null || b === undefined) continue;
       points.push({

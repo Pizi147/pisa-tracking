@@ -2437,7 +2437,8 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
       total: ratio ? r.raw_total : null,
       passed: rr ? rr.outcome === 'pass' : null,
       week: r.period_code ?? null,
-      expectation: !ratio && r.target_at_attempt !== null && r.target_at_attempt !== undefined
+      /* PR-MT0: MT0 không có kỳ vọng (T5) — chỉ chip SOS hiển thị. */
+      expectation: !ratio && r.kind !== 'mt0' && r.target_at_attempt !== null && r.target_at_attempt !== undefined
         ? expectationFor(r.target_at_attempt, r.attempt_no, r.route) : null,
       attemptKind: r.kind ?? null,
     });
