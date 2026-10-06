@@ -13,8 +13,9 @@ const ANH = process.env.KHUNG_ANH ?? 'thiet-ke/anh/khung';
 const LOC = process.argv[2] ?? '';
 fs.mkdirSync(ANH, { recursive: true });
 
-/** Chỗ cắt chữ của PR khác (kế hoạch: #12 LT3, #13 MTb, #14 HK2) và cắt có chủ đích (tiêu đề panel có title). */
-const BO_QUA_CAT = ['lichTest', 'diem-lop', 'mock'];
+/** Chỗ cắt chữ của PR khác: Lịch Test (#12 LT3), hồ sơ Mock (#13), Điểm theo lớp (#14 HK2), lưới chấm (`cham/*` — PR-BV #228),
+ *  nội dung panel Ghi kết quả PA (`CapNhatTuan.tsx` — PR-LUI-a2; nút chọn trong panel vẫn đo ở (d)). */
+const BO_QUA_CAT = ['lichTest', 'diem-lop', 'mock', 'nhap-diem', 'bang-diem-thuong', 'panel-pa'];
 
 const nut = (ten) => async (p) => { await p.getByRole('button', { name: ten }).first().click(); await p.waitForTimeout(500); };
 const KICH_BAN = [
@@ -34,7 +35,10 @@ const KICH_BAN = [
   ['quan-tri', 1, '/quan-tri'], ['quan-tri-quyen', 1, '/quan-tri', async (p) => { await p.getByRole('tab', { name: /Quyền/ }).click(); await p.waitForTimeout(800); }], ['ho-so-ca-nhan', 7, '/ho-so-ca-nhan'],
   ['gvbm', 9, '/'], ['gvbm-test', 9, '/test/lich'],
   // Panel: chỉ đo nút tràn / chữ cắt — panel tự cuộn trong thân là đúng thiết kế.
-  ['panel-pa', 7, '/hoc-thuat/case/5', async (p) => { await nut(/Ghi kết quả/)(p); await p.getByRole('button', { name: /Tiến bộ một phần/ }).first().click().catch(() => {}); }],
+  ['panel-pa', 7, '/hoc-thuat/case/5', async (p) => {
+    // 375: Ngăn Case tự mở đè trang — bấm "Ghi kết quả" trong ngăn.
+    const ngan = p.locator('[role=dialog]');
+    await ((await ngan.count()) ? ngan : p).getByRole('button', { name: /Ghi kết quả/ }).first().click(); await p.waitForTimeout(500); await p.getByRole('button', { name: /Tiến bộ một phần/ }).first().click().catch(() => {}); }],
   ['panel-tao-case', 7, '/hoc-vien/3', nut(/^\+ Case$/)],
   ['panel-vi-pham', 7, '/hoc-vien/3?tab=y-thuc', async (p) => { await nut(/Ghi vi phạm/)(p); await p.evaluate(() => { const t = document.querySelector('[role=dialog] .overflow-y-auto'); if (t) t.scrollTop = 120; }); await p.waitForTimeout(200); }],
   ['panel-sua-tt', 2, '/hoc-vien/lop/3?tab=hoc-vien', nut(/^Sửa thông tin$/)],
@@ -42,6 +46,8 @@ const KICH_BAN = [
 
 function doTrang() {
   const loi = [];
+  let dau = null;
+  const ghi = (el, l) => { loi.push(l); dau ??= el; };
   const ten = (el) => (el.innerText || el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 60);
   const an = (el) => el.closest('.sr-only') || getComputedStyle(el).position === 'absolute' && el.clientWidth <= 1;
   const thay = (el) => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden'; };
@@ -56,12 +62,13 @@ function doTrang() {
     // (b) cuộn lồng: khối tự cuộn dọc nằm trong trang (không phải <main>, không trong panel / menu nổi).
     if (!panel && el.id !== 'noi-dung' && /auto|scroll/.test(cs.overflowY) && el.scrollHeight > el.clientHeight + 1
       && !el.closest('[role=menu],[role=listbox],[role=dialog]') && cs.position !== 'fixed')
-      loi.push(`b cuộn lồng ${el.clientHeight}/${el.scrollHeight} «${ten(el).slice(0, 40)}»`);
+      ghi(el, `b cuộn lồng ${el.clientHeight}/${el.scrollHeight} «${ten(el).slice(0, 40)}»`);
     // (c) chữ bị cắt. Máy tính: truncate + `title` là mẫu đã duyệt (kế hoạch G4) — không tính.
     const cat = cs.textOverflow === 'ellipsis' || cs.webkitLineClamp !== 'none' && cs.webkitLineClamp !== '';
     if (cat && (el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1) && ten(el)
-      && !(trongPanel && el.closest('header')) && !(innerWidth >= 640 && el.closest('[title]')))
-      loi.push(`c chữ cắt ${el.clientWidth}x${el.clientHeight}<${el.scrollWidth}x${el.scrollHeight} «${ten(el)}»`);
+      && !(trongPanel && el.closest('header')) && !(innerWidth >= 640 && el.closest('[title]'))
+      && !el.parentElement.querySelector(':scope > button[aria-expanded]')) // cắt có nút "Xem thêm"
+      ghi(el, `c chữ cắt ${el.clientWidth}x${el.clientHeight}<${el.scrollWidth}x${el.scrollHeight} «${ten(el)}»`);
     // (d) chữ tràn khỏi viền nút chọn / nút lọc / tab.
     if (el.matches('button, [role=tab], [role=radio], a.btn') && ten(el)) {
       const r = el.getBoundingClientRect();
@@ -79,7 +86,7 @@ function doTrang() {
         const rg = document.createRange(); rg.selectNodeContents(n);
         for (const q of rg.getClientRects()) if (q.width) { trai = Math.min(trai, q.left); phai = Math.max(phai, q.right); }
       }
-      if (phai > trai && (trai < r.left - 0.5 || phai > r.right + 0.5)) loi.push(`d nút tràn ${Math.round(phai - trai)}>${Math.round(r.width)} «${ten(el)}»`);
+      if (phai > trai && (trai < r.left - 0.5 || phai > r.right + 0.5)) ghi(el, `d nút tràn ${Math.round(phai - trai)}>${Math.round(r.width)} «${ten(el)}»`);
       // Nút bị khung cha cắt (hàng tab / hàng lọc trượt ngang không mép mờ).
       let p = el.parentElement;
       while (p && p !== document.body) {
@@ -88,13 +95,14 @@ function doTrang() {
           if (p.querySelector('table')) break; // bảng cuộn ngang trong khung riêng: cố ý (K2 / HK2).
           const pr = p.getBoundingClientRect();
           const mo = pc.maskImage && pc.maskImage !== 'none' || pc.webkitMaskImage && pc.webkitMaskImage !== 'none';
-          if (!mo && r.left < pr.right - 1 && r.right > pr.right + 1) loi.push(`d nút bị cắt ở mép (không mép mờ) «${ten(el)}»`);
+          if (!mo && r.left < pr.right - 1 && r.right > pr.right + 1) ghi(el, `d nút bị cắt ở mép (không mép mờ) «${ten(el)}»`);
           break;
         }
         p = p.parentElement;
       }
     }
   }
+  if (dau) { dau.scrollIntoView({ block: 'center', inline: 'nearest' }); dau.style.outline = '2px solid #f43f5e'; }
   return [...new Set(loi)];
 }
 

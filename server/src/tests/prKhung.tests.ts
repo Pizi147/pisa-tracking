@@ -72,6 +72,11 @@ export async function runPrKhungTests(t: Pick<YThucTestKit, 'check' | 'assert'>)
     assert(!/\.hang-lon-dinh > td\s*\{[^}]*top:\s*40px;/.test(css), '.hang-lon-dinh còn top: 40px');
   });
 
+  check('K9 · KhungPanel: dòng ngữ cảnh (ví dụ "* = bắt buộc") có đệm dưới — ô cuộn lên không bị cắt sát chữ (rà LUI-a1)', () => {
+    const m = /\{ngCanh && <div className="([^"]*)"/.exec(doc('web/src/ui/KhungPanel.tsx'));
+    assert(m && /(^|\s)pb-2(\s|$)/.test(m[1]), m?.[1] ?? 'không thấy dòng ngCanh');
+  });
+
   check('K8 · bảng Phân tích lớp / Bảng điểm lớp thường: cuộn ngang không sinh cuộn dọc lồng (overflow-y-hidden)', () => {
     for (const f of ['web/src/modules/classes/PhanTichLopTab.tsx', 'web/src/modules/classes/BangDiemLopThuong.tsx']) {
       const s = doc(f);
