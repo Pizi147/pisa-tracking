@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-> **Chưa code.** Chờ chủ sản phẩm duyệt mockup `thiet-ke/mockup-tong-ket-lo-trinh-2026-10-06.html` (bản 2) và trả lời **1 câu** còn lại (mục **Cần chủ sản phẩm quyết**).
+> **Đã duyệt 06/10** (mockup + kế hoạch bản 2, `c16daa90`). **Chỉ chạy sau khi PR-LUI-b (#213) merge.**
 
 **Chủ sản phẩm chốt (06/10):**
 - **Q1 = A** — điểm nhập / sửa sau khi lộ trình đã đóng **cập nhật bản chụp**; Target, kỳ vọng, chương trình lúc đóng giữ nguyên (TK-5).
@@ -13,6 +13,7 @@
   Chưa có kết quả: **"Chờ kết quả thi thật"** + việc nhắc GVCN **"Cập nhật kết quả thi thật"** (TK-K).
   Lớp thường: **% Cuối khoá (dải) → hướng đã chốt** như hiện nay (K26).
 - "Học lại" (PR-LUI-b) mở lại lộ trình thì **bản chụp cũ giữ nguyên**.
+- **Lưu trữ khi Kết thúc học = A**: lộ trình FT còn "Chờ kết quả thi thật" thì "Kết thúc học" **chưa** lưu trữ; có kết quả (đủ 4 kỹ năng) hoặc "Không thi" thì em **tự vào Lưu trữ**. Làm ở PR-TK, Task TK-L (gồm "kết thúc học nhiều em" của LUI-b và Hoàn tác).
 
 **Goal:** Khi một lộ trình đóng (bằng **bất kỳ** đường nào), web ghi **bản chụp** kết quả: mỗi lượt × mỗi kỹ năng/môn, kèm Target, kỳ vọng, đạt/không, mức SOS, chương trình, lớp, GV, band đầu vào; và ba ô tổng kết **Đích → Kết quả → Hướng tiếp** (FT: kết quả **thi thật** do GVCN nhập; lớp thường: % Cuối khoá). Sửa Target, lộ trình (LT1/LT2/RF), band đầu vào, môn của chương trình về sau **không làm lệch số cũ**. Xem lại dễ: hồ sơ HV › Hành trình có khối **"Các lộ trình"** (luôn hiện); lộ trình đã đóng mở **ngăn "Tổng kết lộ trình"**; Lưu trữ có nút **"Tổng kết"**; lớp đã kết thúc có tab **"Tổng kết"** cả lớp. Bảng bản chụp là nguồn dữ liệu cho PR-NC.
 
@@ -221,6 +222,18 @@ Skill: test-driven-development · `/impeccable clarify` · `/impeccable harden`
 - [ ] `tocDoDuong.ts`: `myWork` GVCN không vượt trần cũ (một truy vấn cho cả việc mới).
 - [ ] Commit: `feat(tk): kết quả thi thật L R W S, việc nhắc GVCN`.
 
+### Task TK-L: Kết thúc học chưa lưu trữ khi FT còn chờ kết quả thi thật
+Skill: test-driven-development · **làm sau TK-K**, trên mã đã có PR-LUI-b (#213)
+**Files:** `students/students.ts` (`setStudentStatus` ~282: `archivedAt`), đường "kết thúc học nhiều em" + Hoàn tác của LUI-b (TK-0 ghi tên hàm thật), `fasttrack/cycles.ts` (`setOutcome` — tự lưu trữ), `classes/transition.ts:326` (dừng học ở Chuyển tiếp).
+- Luật thuần `canChoThiThat(cycle)` ở `shared/domain/tongKetLoTrinh.ts`: lộ trình FT, chưa đủ 4 kỹ năng thi thật, không "Không thi" → true.
+- `setStudentStatus('finished')`: vẫn đóng lộ trình, enrollment, Case như cũ; `archived_at` = `date` **chỉ khi** lộ trình FT vừa đóng **không** `canChoThiThat`; ngược lại để NULL (em ở Học viên & Lớp, trạng thái "Kết thúc học", nhãn "Chờ kết quả thi thật").
+- `setOutcome` (TK-K): lưu xong mà em `status='finished'`, `archived_at IS NULL`, và lộ trình hết `canChoThiThat` → `archived_at = hôm nay`, cùng tx; nhật ký `student.archive` (lý do "Có kết quả thi thật" / "Không thi").
+- Kết thúc học **nhiều em** (LUI-b): áp cùng luật **từng em** trong một tx (dùng chung hàm, không chép).
+- **Hoàn tác** Kết thúc học (LUI-b): trả đúng trạng thái trước — em chưa bị lưu trữ thì không "bỏ lưu trữ"; em đã tự vào Lưu trữ sau khi có kết quả thì Hoàn tác vẫn bỏ lưu trữ như LUI-b quy định.
+- Lớp thường, FT đã có kết quả, FT "Không thi": giữ như cũ (lưu trữ ngay).
+- [ ] Kiểm đỏ: (1) FT chưa có kết quả → Kết thúc học → `archived_at` NULL, lộ trình đóng, có bản chụp; (2) GVCN nhập đủ 4 kỹ năng → `archived_at` = hôm nay, em có ở Lưu trữ; (3) chọn "Không thi" → tự lưu trữ; (4) nhập thiếu S → chưa lưu trữ; (5) FT đã có kết quả trước → Kết thúc học lưu trữ ngay; (6) lớp thường → lưu trữ ngay; (7) kết thúc học nhiều em trộn (1)+(5)+(6) → mỗi em đúng luật, một tx; (8) Hoàn tác ở trường hợp (1) và sau (2) → về đúng trạng thái trước; (9) danh sách Học viên & Lớp mặc định (ẩn em lưu trữ) có em ở (1), không có em ở (2).
+- [ ] Commit: `feat(tk): kết thúc học FT chờ kết quả thi thật chưa lưu trữ`.
+
 ### Task TK-6: Xoá học viên xoá bản chụp
 **Files:** `students/xoaHocVien.ts` (`CAU_XOA_HOC_VIEN`, trước câu xoá `learning_cycles`).
 - [ ] Phép kiểm X2 (`xoaDuLieu.tests.ts:326`) đỏ sau TK-2 → thêm `DELETE FROM ban_chup_luot WHERE ban_chup_id IN (SELECT id FROM ban_chup_lo_trinh WHERE student_id = ?)` và `DELETE FROM ban_chup_lo_trinh WHERE student_id = ?` → xanh. Kiểm: xoá em có bản chụp → không còn dòng.
@@ -280,11 +293,8 @@ Skill: `/impeccable layout` · `/impeccable clarify` · `/impeccable adapt`
 7. Migrate chạy hai lần không đổi gì; xoá học viên không để sót bản chụp.
 8. Số truy vấn: `GET /students/{hv}` không đổi; 3 đường mới có trần; trần ghi hàng loạt đo lại có lý do.
 
-## Cần chủ sản phẩm quyết (1 câu)
-1. **"Kết thúc học" hiện tự lưu trữ em ngay** (`students.ts:~282`). Anh/chị nói "không phải lúc nào cũng lưu trữ ngay":
-   **A — lộ trình FT còn "Chờ kết quả thi thật" thì Kết thúc học chưa lưu trữ; em ở lại Học viên & Lớp tới khi GVCN nhập kết quả (hoặc "Không thi") thì tự vào Lưu trữ** (khuyến nghị, đúng ý anh/chị; đụng `setStudentStatus` — phần của PR-LUI-b) ·
-   B — giữ như nay (lưu trữ ngay); GVCN vẫn nhập kết quả thi thật được trên hồ sơ lưu trữ (ngoại lệ TK-K đã có).
-   Chọn A thì thêm vào TK-K: bước "tự lưu trữ khi có kết quả" + phép kiểm; lớp thường giữ như nay.
+## Cần chủ sản phẩm quyết
+Không còn câu nào (đã chốt hết 06/10).
 
 ## Tôi đã tự quyết
 | Điểm | Quyết | Lý do |
@@ -305,7 +315,7 @@ Skill: `/impeccable layout` · `/impeccable clarify` · `/impeccable adapt`
 ## Chồng với PR khác
 | PR | File chung | Cách xử lý |
 |---|---|---|
-| **PR-LUI-b** (Học lại, mở lại lớp, thao tác nhiều em) — chạy trước | `students/students.ts` (`setStudentStatus`), `classes/luatLoTrinh.ts`, `classes/luuTru.ts`, `LuuTruPage.tsx`, `xoaKetThucLop.ts` | TK-0 đối chiếu. **Mở lại không xoá bản chụp** (chủ sản phẩm 06/10); đóng lại → bản mới. Câu cần quyết (A) đổi luật lưu trữ khi Kết thúc học — nếu LUI-b chưa merge thì làm ở TK, ghi vào prompt LUI-b. Đường "kết thúc học nhiều em" của LUI-b phải gọi `ghiBanChup` (bất biến TK-3 bắt). Nếu TK merge trước LUI-b: ghi vào prompt LUI-b |
+| **PR-LUI-b** (Học lại, mở lại lớp, thao tác nhiều em) — chạy trước | `students/students.ts` (`setStudentStatus`), `classes/luatLoTrinh.ts`, `classes/luuTru.ts`, `LuuTruPage.tsx`, `xoaKetThucLop.ts` | TK-0 đối chiếu. **Mở lại không xoá bản chụp** (chủ sản phẩm 06/10); đóng lại → bản mới. Câu cần quyết (A) đổi luật lưu trữ khi Kết thúc học — làm ở TK-L sau khi LUI-b merge (chủ sản phẩm chốt A). Đường "kết thúc học nhiều em" của LUI-b phải gọi `ghiBanChup` (bất biến TK-3 bắt). Nếu TK merge trước LUI-b: ghi vào prompt LUI-b |
 | **PR-MT0** (MT0, Chuyển tiếp lớp) | `classes/transition.ts`, `lenhChuyen.ts`, `luatLoTrinh.ts` `apDungCaLop` | `ghiBanChup` gọi **sau** khi MT0 đổi `cycle_id`. MT0 "không dùng" vào bản chụp lớp thường với `trang_thai='khong_dung'` (nhãn `MT0 · không dùng` của MT0). PR merge sau thì `git merge origin/main` + chạy lại phép kiểm TK-3 |
 | **PR-MTa** (T20–T23 dời / khôi phục / xoá điểm = xoá trắng ô) | `fasttrack/attempts.ts`, `normal/regular.ts`, `absence.ts` | MTa đợt 4 merge trước. TK-5 gắn `lamMoiDiemBanChup` vào cả đường xoá điểm / khôi phục của MTa |
 | PR-BV (xoá điểm hàng loạt, Bỏ vắng) | `attempts.ts`, `regular.ts`, `absence.ts` | Merge sau TK thì phải gọi `lamMoiDiemBanChup` (phép kiểm bất biến phụ TK-5 bắt) |
@@ -315,7 +325,7 @@ Skill: `/impeccable layout` · `/impeccable clarify` · `/impeccable adapt`
 ## Prompt cho session code (dán nguyên khối, sau khi chủ sản phẩm duyệt)
 ```
 /ponytail lite
-Làm PR-TK theo docs/superpowers/plans/2026-10-06-pr-tk-tong-ket-lo-trinh.md (TK-0 → TK-10 và TK-K, prompt chung plan.md mục 9.0).
+Làm PR-TK theo docs/superpowers/plans/2026-10-06-pr-tk-tong-ket-lo-trinh.md (TK-0 → TK-10, TK-K, TK-L, prompt chung plan.md mục 9.0).
 Model Opus 5.5 · High (B: Sonnet 5.5 · High); không dùng Fable, kể cả subagent. Đầu phiên nói model đang chạy.
 Nhánh pr-tk-tong-ket-lo-trinh từ origin/main mới nhất (SAU khi PR-LUI-b merge), worktree .claude/worktrees/pr-tk-tong-ket-lo-trinh.
 Đọc "Chủ sản phẩm chốt" ở đầu file trước. Mockup đã duyệt: thiet-ke/mockup-tong-ket-lo-trinh-2026-10-06.html — chữ ĐÚNG mockup, ngắn.
