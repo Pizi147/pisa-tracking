@@ -432,21 +432,25 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
   const demLop = (id: number) => (conn.prepare('SELECT COUNT(*) n FROM classes WHERE id = ?').get(id) as { n: number }).n;
   const ftId = (conn.prepare(`SELECT id FROM classes WHERE code = 'MB FT 101'`).get() as { id: number }).id;
 
-  check('UX3 (11) · QL và GV gọi Xem / Xoá / Kết thúc lớp đều 403 (máy chủ kiểm, không chỉ ẩn nút)', () => {
+  check('UX3 (11) · GV gọi Xem / Xoá / Kết thúc / Mở lại lớp đều 403; Quản lý chi nhánh khác cũng 403; Quản lý gọi Xoá lớp 403 (máy chủ kiểm, không chỉ ẩn nút)', () => {
     const l = taoLopTrong();
-    for (const who of [t.P.mbManager, t.P.coreTeacher, t.P.subjectTeacher]) {
+    for (const who of [t.P.coreTeacher, t.P.subjectTeacher, t.P.cpManager]) {
       t.assertThrows(() => xoaKetThuc.xemXoaKetThuc(who, l.id), /Quản trị hệ thống/, 'xem');
       t.assertThrows(() => xoaKetThuc.xoaLop(who, l.id, { maLop: l.ma }), /Quản trị hệ thống/, 'xoá');
       t.assertThrows(() => xoaKetThuc.ketThucLop(who, l.id), /Quản trị hệ thống/, 'kết thúc');
     }
+    /* PR-LUI-b (06/10): Quản lý của lớp xem + kết thúc được; Xoá lớp vẫn chỉ Quản trị. */
+    t.assertThrows(() => xoaKetThuc.xoaLop(t.P.mbManager, l.id, { maLop: l.ma }), /Quản trị hệ thống/, 'QL xoá');
+    assert(xoaKetThuc.xemXoaKetThuc(t.P.mbManager, l.id).coTheXoa === false, 'QL không thấy Xoá lớp');
     assert(demLop(l.id) === 1, 'lớp phải còn nguyên sau các lần bị từ chối');
   });
 
-  check('UX3 (11) · viewer.coTheXoaKetThuc: Quản trị hệ thống true; Quản lý và GV false', () => {
+  check('UX3 (11) · viewer.coTheXoaKetThuc: Quản trị hệ thống true; Quản lý và GV false (Quản lý có coTheKetThucLop)', () => {
     const l = taoLopTrong();
     assert(classesSvc.classOverview(t.P.admin, l.id).viewer.coTheXoaKetThuc === true, 'QT');
     assert(classesSvc.classOverview(t.P.mbManager, l.id).viewer.coTheXoaKetThuc === false, 'QL');
     assert(classesSvc.classOverview(t.P.coreTeacher, ftId).viewer.coTheXoaKetThuc === false, 'GV');
+    assert(classesSvc.classOverview(t.P.mbManager, l.id).viewer.coTheKetThucLop === true && classesSvc.classOverview(t.P.coreTeacher, ftId).viewer.coTheKetThucLop === false, 'coTheKetThucLop');
   });
 
   check('UX3 (11) · xemXoaKetThuc: lớp trống → coTheXoa; lớp có dữ liệu → không xoá được, có lý do', () => {

@@ -123,10 +123,10 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Điểm theo lớp', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/classes/{lopFT}/diem-theo-luot' },
   { trang: 'Điểm theo lớp', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/classes/{lopFT}/diem-theo-luot/mt:2' },
   { trang: 'Điểm theo lớp', vai: ['QL', 'QT', 'GVCN', 'GVBM', 'GVCN_THUONG'], url: '/diem-theo-lop/lop' },
-  /* PR-UX3: ⋮ Xoá lớp / Kết thúc lớp — chỉ Quản trị hệ thống; QL và GV nhận 403 (máy chủ kiểm quyền, không chỉ ẩn nút). */
+  /* PR-UX3: ⋮ Xoá lớp / Kết thúc lớp. PR-LUI-b (06/10): Quản lý của lớp cũng xem + Kết thúc được; GV nhận 403 (máy chủ kiểm quyền, không chỉ ẩn nút). */
   {
     trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/xoa-ket-thuc',
-    maChuDich: { QL: 403, GVCN: 403, GVBM: 403, GVCN_THUONG: 403 },
+    maChuDich: { GVCN: 403, GVBM: 403, GVCN_THUONG: 403 },
   },
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/cases?classId={lopFT}' },
   /* PR-SL: ⋮ Sửa thông tin học viên — giá trị hiện tại cả lớp; người không có student.edit của lớp nhận 403. */

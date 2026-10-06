@@ -61,6 +61,7 @@ import * as suaCaLopSvc from '../classes/suaCaLop.ts';
 import * as xoaHocVienSvc from '../students/xoaHocVien.ts';
 import * as xoaTaiKhoanSvc from '../platform/xoaTaiKhoan.ts';
 import * as studentSvc from '../students/students.ts';
+import * as hangLoatSvc from '../students/hangLoat.ts';
 import * as meetingSvc from '../worklist/meeting.ts';
 import {
   PERIOD_WINDOW_PLANNING_FORWARD_WEEKS,
@@ -1150,6 +1151,11 @@ api.post('/classes/:id/ket-thuc', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return xoaKetThucLopSvc.ketThucLop(principalOf(req), pInt(req, 'id'));
 }));
+/** PR-LUI-b: ⋮ Hồ sơ lớp đã kết thúc › Mở lại lớp — Quản lý của lớp hoặc Quản trị. */
+api.post('/classes/:id/mo-lai', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return xoaKetThucLopSvc.moLaiLop(principalOf(req), pInt(req, 'id'), { lyDo: req.body?.lyDo });
+}));
 
 /** ⋮ Sửa thông tin cả lớp (PR-SL): giá trị hiện tại của mọi em đang học (panel). */
 api.get('/classes/:id/sua-ca-lop', requireAuth, wrap((req) => suaCaLopSvc.duLieuSuaCaLop(principalOf(req), pInt(req, 'id'))));
@@ -1854,6 +1860,24 @@ api.post('/students/:id/unarchive', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return studentSvc.unarchiveStudent(principalOf(req), pInt(req, 'id'));
 }));
+
+/** PR-LUI-b: Học lại — đường lui của Kết thúc học (về lớp cũ, hoặc sang lớp mới + lộ trình mới). Chỉ Quản lý / Quản trị (máy chủ kiểm `plan.week` của học viên). */
+api.post('/students/:id/hoc-lai', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = req.body ?? {};
+  return studentSvc.hocLai(principalOf(req), pInt(req, 'id'), {
+    date: b.date ?? undefined, lyDo: b.lyDo, moLaiLop: b.moLaiLop === true,
+    lopMoiId: b.lopMoiId ? Number(b.lopMoiId) : null, mucTieu: b.mucTieu ?? null, thangThi: b.thangThi ?? null,
+  });
+}));
+/** PR-LUI-b: làm nhiều học viên một lần — Kết thúc học · Lưu trữ · Bỏ lưu trữ · Học lại · Huỷ / Khôi phục chuyển lớp. Chỉ Quản lý / Quản trị (kiểm từng học viên ở máy chủ). */
+api.post('/hang-loat-hoc-vien/xem-truoc', requireAuth, wrap((req) => hangLoatSvc.xemTruoc(principalOf(req), req.body ?? {})));
+api.post('/hang-loat-hoc-vien', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return hangLoatSvc.chay(principalOf(req), req.body ?? {});
+}));
+/** PR-LUI-b: lớp cũ + lớp đang hoạt động để chọn "Sang lớp mới" (panel Học lại). */
+api.get('/students/:id/hoc-lai/lop-dich', requireAuth, wrap((req) => studentSvc.lopChoHocLai(principalOf(req), pInt(req, 'id'))));
 
 // ============================================================ Họp tuần
 

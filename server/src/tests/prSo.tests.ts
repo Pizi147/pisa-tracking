@@ -87,7 +87,7 @@ export async function runPrSoTests(t: YThucTestKit) {
     const daXong = emMoi('MB FOU 12');
     studentsSvc.setStudentStatus(P.admin, daXong, 'finished', TODAY, 'Kết thúc thử SO-2c');
     /* Kết thúc học tự vào Lưu trữ → hồ sơ chỉ xem, mọi cờ tắt theo thiết kế (PR-XOA §2). Bỏ lưu trữ để soi cờ theo QUYỀN. */
-    assert(Object.entries(loTrinh.lopHocCua(P.admin, daXong, null).quyen).every(([k, v]) => k === 'boLuuTru' || v === false), 'em trong Lưu trữ còn cờ ghi');
+    assert(Object.entries(loTrinh.lopHocCua(P.admin, daXong, null).quyen).every(([k, v]) => k === 'boLuuTru' || k === 'hocLai' || v === false), 'em trong Lưu trữ còn cờ ghi');
     studentsSvc.unarchiveStudent(P.admin, daXong);
     /* Gọi trong giao dịch rồi cuộn lại: chỉ cần biết hàm ghi có ném lỗi QUYỀN (403) không. */
     const CUON = new Error('cuộn lại');
@@ -102,6 +102,7 @@ export async function runPrSoTests(t: YThucTestKit) {
           ['tamDung', q.tamDung, !khongQuyen(() => studentsSvc.setStudentStatus(p, sid, 'inactive', TODAY, 'thử'))],
           ['ketThuc', q.ketThuc, !khongQuyen(() => studentsSvc.setStudentStatus(p, sid, 'finished', TODAY, 'thử'))],
           ['luuTru', q.luuTru, thu(() => studentsSvc.archiveStudent(p, sid)) === null],
+          ['hocLai', !!q.hocLai, thu(() => studentsSvc.hocLai(p, sid, { moLaiLop: true })) === null],   // PR-LUI-b
         ];
         if (cur) hanh.push(
           ['chuyenLop', q.chuyenLop, !khongQuyen(() => lenh.raLenh(p, { lopNguonId: lop, boiCanh: 'giua-khoa', tuanChung: null, dongs: [] }))],
