@@ -226,4 +226,51 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     assert(i >= 0 && !/'tam'/.test(sh.slice(i, i + 90)), 'MauOKetQua còn tam');
     assert(d.mauOKetQua('chuaDu', 3) === null && d.mauOKetQua('hvCase', 3) === null, 'chuaDu / hvCase không tô nền');
   });
+
+  console.log('\nPR-HK2 · Task 5 · điện thoại: thanh trên 23C, demo bar một dòng, Học viên & Lớp');
+
+  check('C16a · thanh trên: chữ PISA ở < 640 px (khối "Pisa Tracking" ẩn ở sm-); Tìm / Thông báo / Tài khoản không viền, biểu tượng 20, số chuông đè góc', () => {
+    const app = doc('web/src/App.tsx');
+    assert(/sm:hidden[^>]*>PISA</.test(app), 'App.tsx: thiếu chữ PISA (sm:hidden)');
+    assert(/hidden sm:block/.test(app) && /Pisa Tracking/.test(app), 'App.tsx: khối tên đầy đủ phải ẩn ở < 640 px (tên web đổi ở Task 10)');
+    assert(/max-sm:h-\[52px\]/.test(app), 'App.tsx: thanh trên điện thoại cao 52 px');
+    const hd = doc('web/src/modules/platform/Header.tsx');
+    const nut = (moc: string) => { const i = hd.indexOf(moc); assert(i >= 0, `Header.tsx: không thấy ${moc}`); return hd.slice(i, i + 420); };
+    for (const moc of ['ref={nutTim}', 'ref={nutThongBao}', 'ref={nutTaiKhoan}']) {
+      const n = nut(moc);
+      assert(/border-0/.test(n) && /bg-transparent/.test(n), `${moc}: nút điện thoại phải không viền, nền trong`);
+      assert(/min-h-\[44px\]/.test(n) && /min-w-\[44px\]/.test(n), `${moc}: nút < 44 px`);
+    }
+    assert(/width="20" height="20"/.test(nut('ref={nutTim}')) && /sm:hidden" aria-hidden width="20" height="20"/.test(nut('ref={nutThongBao}')), 'biểu tượng Tìm / chuông phải 20 px');
+    assert(/max-sm:absolute/.test(nut('{unread > 0 &&')), 'số chưa đọc phải max-sm:absolute đè góc chuông');
+  });
+
+  check('C17a · Q2 = A: Sáng/Tối < 640 px nằm trong menu Tài khoản, không trên thanh', () => {
+    const hd = doc('web/src/modules/platform/Header.tsx');
+    const thanh = hd.indexOf('<CongTacGiaoDien />'), menu = hd.indexOf('<CongTacGiaoDien kieu="menu"'), tk = hd.indexOf('ref={nutTaiKhoan}');
+    assert(thanh >= 0 && /!dienThoai && <CongTacGiaoDien \/>/.test(hd), 'nút Sáng/Tối trên thanh chỉ vẽ khi !dienThoai');
+    assert(menu > tk && /dienThoai && <CongTacGiaoDien kieu="menu"/.test(hd), 'Sáng/Tối kiểu menu phải nằm trong menu Tài khoản, chỉ khi dienThoai');
+    const cd = doc('web/src/ui/CongTacGiaoDien.tsx');
+    assert(/kieu === 'menu'/.test(cd) && /Giao diện/.test(cd) && />Sáng</.test(cd) && />Tối</.test(cd) && /min-h-\[44px\]/.test(cd), 'CongTacGiaoDien kieu="menu": hàng "Giao diện" + Sáng / Tối cao ≥ 44 px');
+  });
+
+  check('C18a · DemoBar một dòng ở < 640 px: "Demo" · ngày · "Công cụ" · "Tài khoản" (chữ đầy đủ chỉ ở sm+), nút ≥ 44 px', () => {
+    const s = doc('web/src/modules/platform/DemoBar.tsx');
+    assert(/sm:hidden">Công cụ</.test(s) && /sm:hidden">Tài khoản</.test(s), 'thiếu chữ ngắn Công cụ / Tài khoản (sm:hidden)');
+    assert(/max-sm:hidden">Công cụ demo</.test(s) && /max-sm:hidden">Đổi tài khoản demo</.test(s), 'chữ đầy đủ phải ẩn ở < 640 px');
+    assert(/sm:hidden">Demo</.test(s) && /max-sm:hidden">Dữ liệu demo</.test(s), 'chip "Demo" ngắn ở điện thoại');
+    assert(/max-sm:hidden">Ngày demo: </.test(s), 'nhãn "Ngày demo:" ẩn ở điện thoại');
+    assert((s.match(/max-sm:min-h-\[44px\]/g)?.length ?? 0) >= 2, 'hai nút demo phải cao ≥ 44 px ở điện thoại');
+    assert(/max-sm:py-1\b/.test(s), 'demo bar điện thoại py-1 (≤ 53 px)');
+  });
+
+  check('C19a · Học viên & Lớp: ô tìm "Lọc trong danh sách này…"; "+ Lớp mới" / "+ Học viên" max-sm:hidden và có trong MenuDong "Thao tác trang" (chỉ < 640 px)', () => {
+    const s = doc('web/src/modules/students/StudentsPage.tsx');
+    assert(/placeholder="🔍 Lọc trong danh sách này…"/.test(s) && !/Tìm tên, mã học viên hoặc mã lớp/.test(s), 'placeholder ô tìm');
+    assert(/className="btn btn-sm max-sm:hidden"[^>]*>\+ Lớp mới</.test(s) && /className="btn btn-sm btn-primary max-sm:hidden"[^>]*>\+ Học viên</.test(s), 'hai nút ngoài phải max-sm:hidden');
+    const mn = s.slice(s.indexOf('<MenuDong nhan="Thao tác trang"'), s.indexOf('<MenuDong nhan="Thao tác trang"') + 900);
+    assert(/dienThoai && data\?\.coTheTaoLop/.test(mn) && /nhan: '\+ Lớp mới'/.test(mn), 'mục "+ Lớp mới" trong menu chỉ khi dienThoai');
+    assert(/dienThoai && \(data\?\.rows[^)]*\)\.some\(\(r\) => r\.viewer\.coTheSuaHocVien\)/.test(mn) && /nhan: '\+ Học viên'/.test(mn), 'mục "+ Học viên" trong menu chỉ khi dienThoai');
+    assert(/keTruoc/.test(mn), 'Lưu trữ cách một đường kẻ khi có mục thêm');
+  });
 }
