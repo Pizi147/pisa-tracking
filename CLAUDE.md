@@ -21,6 +21,9 @@ Tệp này tự nạp vào mọi session của repo (planning, code, worktree), 
   chỉ do session planning tạo, khớp Rulebook, sau khi chủ sản phẩm đồng ý.
 - `.impeccable/` đã gitignore; không commit gì trong đó.
 
+## Model
+- **Không dùng Fable** (mọi session, kể cả subagent/agent) — chủ sản phẩm 06/10. Phương án B: Opus 5.5 hoặc Sonnet 5.5.
+
 ## Code: `ponytail` luôn bật
 - Code logic giữ mức mặc định `full`. PR có sửa giao diện: gõ `/ponytail lite` đầu phiên để không đè impeccable.
 - Việc kế hoạch PR đã ghi là yêu cầu rõ ràng: làm đủ, không cắt theo YAGNI. Muốn bớt thì hỏi, không tự bớt.
