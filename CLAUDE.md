@@ -15,6 +15,7 @@ Tệp này tự nạp vào mọi session của repo (planning, code, worktree), 
 - Tinh chỉnh, không làm lại: phông Be Vietnam Pro (PR-SANG; chữ số lấy từ Inter), bảng màu, bố cục đã khoá — giữ, trừ khi kế hoạch PR ghi rõ là đổi.
 - PR có giao diện/UX: phải có mockup HTML trong `thiet-ke/` đã được chủ sản phẩm duyệt trước khi code (đủ trạng thái, 375/1440, sáng/tối); chưa có thì dừng và soạn mockup, không tự chế.
 - Thời gian trên màn: ưu tiên **mã tuần** `W2 OCT`; ngày chỉ cho hạn cụ thể, ngày thi, ngày sinh, nhật ký (chủ sản phẩm 30/09).
+- Ô nhập ngày ở MỌI nơi: ô gõ được + nút lịch (`ONgay`), KHÔNG làm hàng nút "Hôm nay · Hôm qua · 2 ngày trước" (chủ sản phẩm 06/10).
 - Lệnh dùng: `critique` ở session planning để tìm vấn đề · `polish`, `clarify`, `layout`, `harden`, `adapt` ở
   session code, chỉ trong phạm vi PR · `audit` trước khi mở PR có sửa giao diện.
 - Session code không chạy `init`, `document`, `hooks on`, `npx impeccable install|update`. PRODUCT.md / DESIGN.md

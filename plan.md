@@ -174,6 +174,7 @@ Chủ sản phẩm 05/10 đã chốt (mockup `thiet-ke/mockup-test-mt-2026-10-05
 | 05/10 | Sửa thông tin cả lớp: **web tự chia lô 8 em** mỗi lần lưu (một nút Lưu; lô lỗi thì "Đã lưu n em · m em chưa lưu"), máy chủ có trần mỗi request · nút "Sửa thông tin" giữ ở hàng Cách xem + mục ⋮ · PR-SL **phải có mockup** duyệt dù bắt đầu trước luật mockup | SL |
 | 06/10 | Chờ duyệt **luôn mở "Tất cả" chi nhánh** (số dòng = badge); link trỏ một thẻ/lớp không áp chi nhánh mặc định | NV ✅ |
 | 06/10 | Điểm theo lớp: bỏ chú giải màu, câu "Lưu từng ô…", nút "Xong" của mockup (luật chữ ngắn); tab giữa Lịch Test và Kế hoạch Test | DL ✅ |
+| 06/10 | **Ô nhập ngày ở mọi nơi = ô gõ + nút lịch** (`ONgay`), không làm hàng nút Hôm nay / Hôm qua / 2 ngày trước; nhãn tuỳ chọn giữ chữ chuẩn "(không bắt buộc)" | mọi PR (LUI-b giữ ô ngày) |
 | 06/10 | **Không dùng Fable** ở mọi session, kể cả subagent | mọi PR |
 
 ## 4. Việc chưa làm (đợt 3 còn DL, SL; đợt 4–6 ở mục 2c + kế hoạch 2026-10-05-*)
