@@ -128,7 +128,10 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
   check('PR-XOA L6 · DB mới (schema.sql + seed): có users.deleted_at; không em nào của bộ demo thôi học mà chưa lưu trữ', () => {
     const cols = (conn.prepare('PRAGMA table_info(users)').all() as any[]).map((c) => c.name);
     assert(cols.includes('deleted_at'), 'schema.sql thiếu users.deleted_at');
-    const sot = conn.prepare(`SELECT student_code FROM students WHERE status = 'finished' AND archived_at IS NULL AND id <= ?`)
+    /* PR-TK (TK-L): em FT đã Kết thúc học mà lộ trình còn "Chờ kết quả thi thật" thì CHƯA lưu trữ — tự vào Lưu trữ khi GVCN nhập kết quả / "Không thi". */
+    const sot = conn.prepare(`SELECT student_code FROM students s WHERE status = 'finished' AND archived_at IS NULL AND id <= ?
+        AND NOT EXISTS (SELECT 1 FROM learning_cycles c WHERE c.student_id = s.id AND c.route IS NOT NULL AND c.thi_that_khong_thi = 0
+                          AND (c.thi_that_l IS NULL OR c.thi_that_r IS NULL OR c.thi_that_w IS NULL OR c.thi_that_s IS NULL))`)
       .all(seedMax.students ?? 0) as any[];
     assert(sot.length === 0, `Em demo thôi học chưa lưu trữ: ${sot.map((r) => r.student_code).join(', ')}`);
     assert((conn.prepare(`SELECT COUNT(*) n FROM students WHERE status = 'finished' AND id <= ?`).get(seedMax.students ?? 0) as any).n > 0,
@@ -289,6 +292,9 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     const x1 = ins(`INSERT INTO sos_coordination_actions (attempt_id, student_id, kind, created_at) VALUES (?,?, 'parent_call', ?)`, a1, sid, now);
     ins(`INSERT INTO y_thuc_khai_bac (student_id, chuoi_cycle_id, bac, ghi_chu, khai_luc) VALUES (?,?, 2, 'Khai thử', ?)`, sid, y1, TODAY);
     ins(`INSERT INTO mini_test (student_id, cycle_id, tu_attempt_id, nhom_bo_tro, so_buoi, ngay_du_kien, han) VALUES (?,?,?, 'mt:x', 2, ?, ?)`, sid, y1, a1, TODAY, TODAY);
+    /* PR-TK: bản chụp lộ trình của em (+ một dòng lượt) */
+    const bc1 = ins(`INSERT INTO ban_chup_lo_trinh (cycle_id, student_id, lan, ly_do, dong_ngay, nguon, so_luot, created_at) VALUES (?,?, 1, 'ket_thuc', ?, 'luc_dong', 1, ?)`, y1, sid, TODAY, now);
+    ins(`INSERT INTO ban_chup_luot (ban_chup_id, attempt_id, ky_nang) VALUES (?,?, 'listening')`, bc1, a1);
     /* PR-MTa: kết quả MT đã huỷ do dời vượt — người huỷ U (dấu vết) */
     ins(`INSERT INTO ket_qua_huy (attempt_id, vuot_boi_attempt_id, diem_json, lich_json, so_diem, ly_do, huy_boi, huy_luc) VALUES (?,?, '[]', '[]', 0, 'x', ?, ?)`, a1, a1, U, now);
     const q1 = ins(`INSERT INTO yeu_cau_duyet (loai, phan_loai, doi_tuong_loai, doi_tuong_id, hoc_vien_id, lop_id, nguoi_xin, tao_luc)
@@ -315,20 +321,20 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     return { sid, ma, ten, y1, y2, a1, a2, c1, i1, f1, g1, v1, m1, x1, r1, task, tep };
   }
 
-  check('PR-XOA X1 · Bao đóng theo PRAGMA foreign_key_list BẰNG ĐÚNG BANG_CUA_HOC_VIEN (35 bảng — PR-YT4 thêm y_thuc_khai_bac, PR-LT2b thêm mini_test, PR-CT thêm lenh_chuyen_lop, ban_giao_mon, PR-MTa thêm ket_qua_huy)', () => {
+  check('PR-XOA X1 · Bao đóng theo PRAGMA foreign_key_list BẰNG ĐÚNG BANG_CUA_HOC_VIEN (37 bảng — PR-YT4 thêm y_thuc_khai_bac, PR-LT2b thêm mini_test, PR-CT thêm lenh_chuyen_lop, ban_giao_mon, PR-MTa thêm ket_qua_huy, PR-TK thêm ban_chup_lo_trinh, ban_chup_luot)', () => {
     const tap = baoDongLuocDo();
     const coDinh = new Set(xoaHV.BANG_CUA_HOC_VIEN);
     const thieu = [...tap].filter((b) => !coDinh.has(b));
     const thua = [...coDinh].filter((b) => !tap.has(b));
     assert(!thieu.length, thieu.map((b) => `Bảng ${b} trỏ tới học viên mà xoaHocVien chưa xoá`).join('; '));
     assert(!thua.length, `BANG_CUA_HOC_VIEN có bảng không trỏ tới học viên: ${thua.join(', ')}`);
-    assert(tap.size === 35, `Bao đóng đổi cỡ (${tap.size}) — cập nhật bảng tham chiếu của kế hoạch`);
+    assert(tap.size === 37, `Bao đóng đổi cỡ (${tap.size}) — cập nhật bảng tham chiếu của kế hoạch`);
   });
 
   check('PR-XOA X2 · Mỗi cạnh FK vào bao đóng có câu trong CAU_XOA_HOC_VIEN (DELETE theo cột, hoặc UPDATE … = NULL cho CANH_NULL); đủ owner_type tệp', () => {
     const tap = baoDongLuocDo();
     const vao = CANH.filter((c) => tap.has(c.toi));
-    assert(vao.length === 63, `Số cạnh vào bao đóng đổi (${vao.length})`);   // PR-MTa: +2 (ket_qua_huy.attempt_id, vuot_boi_attempt_id)
+    assert(vao.length === 66, `Số cạnh vào bao đóng đổi (${vao.length})`);   // PR-MTa: +2 (ket_qua_huy.attempt_id, vuot_boi_attempt_id); PR-TK: +3 (ban_chup_lo_trinh.cycle_id, .student_id, ban_chup_luot.ban_chup_id)
     const sot: string[] = [];
     for (const c of vao) {
       const ok = laCanhNull(c)
@@ -394,7 +400,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     assert(maLoi(() => xoaHV.xoaHocVien(P.admin, 99_999_999, { maXacNhan: 'x' })) === 404, 'id lạ xoá phải 404');
   });
 
-  check('PR-XOA X10 · Số câu SQL: xoá ≤ 45 (PR-CT thêm 2 câu) và KHÔNG đổi theo số lượt Test (2 lượt vs 7 lượt); xem trước ≤ 3', () => {
+  check('PR-XOA X10 · Số câu SQL: xoá ≤ 47 (PR-CT thêm 2 câu; PR-TK thêm 2 câu xoá bản chụp) và KHÔNG đổi theo số lượt Test (2 lượt vs 7 lượt); xem trước ≤ 3', () => {
     const it = taoHocVienDuDuLieu();
     const nhieu = taoHocVienDuDuLieu({ soLuotThem: 5 });
     const xemIt = demTruyVan(() => { xoaHV.xemXoaHocVien(P.admin, it.sid); });
@@ -404,7 +410,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     try {
       const nIt = demTruyVan(() => { xoaHV.xoaHocVien(P.admin, it.sid, { maXacNhan: it.ma }); });
       const nNhieu = demTruyVan(() => { xoaHV.xoaHocVien(P.admin, nhieu.sid, { maXacNhan: nhieu.ma }); });
-      assert(nIt <= 45, `xoá tốn ${nIt} câu (> 45)`);
+      assert(nIt <= 47, `xoá tốn ${nIt} câu (> 47)`);
       assert(nNhieu === nIt, `số câu đổi theo số lượt: ${nIt} → ${nNhieu}`);
     } finally { khoTepMod.datKhoTepChoKiemThu(null); tepDaXoa.length = 0; }
   });

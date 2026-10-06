@@ -222,6 +222,7 @@ export async function runPrTkTests(t: YThucTestKit) {
   // ------------------------------------------------------------------ TK-4 · điền ngược (migrate)
   const { migratePrTk } = await import('../migrate/prTk.ts');
   await checkAsync('TK-4 · migratePrTk: lộ trình đóng chưa có bản chụp → nguon dien_nguoc đúng lý do; lần hai không đổi gì; bản đã có không bị ghi thêm', () => thu(() => {
+    migratePrTk(conn, []);   // dọn trước (trong giao dịch thử) lộ trình đóng thẳng bằng SQL do phép kiểm khác để lại — chỉ đếm cái của phép kiểm này
     const sid = get('SELECT student_id FROM learning_cycles LIMIT 1').student_id as number;
     const now = new Date().toISOString();
     const them = (seq: number, status: string, batDau: string, ketThuc: string | null) => Number(conn.prepare(
