@@ -99,4 +99,45 @@ export async function runPrHk2Tests(t: Pick<YThucTestKit, 'check' | 'assert'>) {
     const tong = tsx('web/src').reduce((n, f) => n + (doc(f).match(/text-\[11px\]/g)?.length ?? 0), 0);
     assert(tong <= TRAN, `text-[11px] = ${tong} > trần ${TRAN}`);
   });
+
+  console.log('\nPR-HK2 · Task 3 · đầu cột dính ở bảng dài (≥ 768 px)');
+
+  check('C9 · index.css: .bang-dinh chỉ đè ở md (≥ 768): khối bọc overflow visible, đầu cột sticky top -1.25rem (= md:p-5 của <main>); .th lấy top từ --th-top', () => {
+    const css = doc('web/src/index.css');
+    const m = /@media \(min-width: 768px\) \{([\s\S]*?)\n  \}\n/.exec(css.slice(css.indexOf('.table-scroll')));
+    assert(m, 'thiếu khối @media (min-width: 768px) sau .table-scroll');
+    const kh = m![1];
+    assert(/\.bang-dinh \{[^}]*overflow: visible/.test(kh), '.bang-dinh thiếu overflow: visible ở md');
+    assert(/\.bang-dinh \{[^}]*--th-top: calc\(-1 \* 1\.25rem\)/.test(kh), '.bang-dinh thiếu --th-top: calc(-1 * 1.25rem)');
+    assert(/position: sticky; top: var\(--th-top\)/.test(kh), 'đầu cột chưa sticky theo --th-top');
+    assert(/td \.bang-dinh \{[^}]*overflow-x: auto/.test(kh), 'bảng lồng trong ô (td .bang-dinh) phải giữ cuộn riêng');
+    assert(/\.th \{[^}]*top: var\(--th-top, 0px\)/.test(css), '.th chưa lấy top từ --th-top');
+    assert(!/\.bang-dinh[^{]*\{[^}]*overflow: visible[^}]*\}/.test(css.replace(kh, '')), '.bang-dinh đè overflow ngoài md');
+  });
+
+  check('C10 · mỗi bảng vừa khung ở 1440 có bang-dinh (không cùng overflow-x-auto); khung bao (card / ô) không còn overflow-hidden', () => {
+    const DS: Array<[string, number]> = [   // [tệp, số chỗ bang-dinh tối thiểu]
+      ['web/src/modules/worklist/KhoiCanXuLy.tsx', 1], ['web/src/modules/worklist/LopToiDay.tsx', 1], ['web/src/modules/worklist/BranchPulse.tsx', 1],
+      ['web/src/modules/students/ClassRoster.tsx', 1], ['web/src/modules/classes/BangDiemLopThuong.tsx', 1], ['web/src/modules/classes/TabTongKetLop.tsx', 1],
+      ['web/src/modules/test/lichTest/HangLop.tsx', 1], ['web/src/modules/test/lichTest/KhoiNo.tsx', 1],
+      ['web/src/modules/cham/LuoiFT.tsx', 1], ['web/src/modules/cham/LuoiThuong.tsx', 1],
+      ['web/src/modules/platform/AdminPage.tsx', 1], ['web/src/modules/platform/AccountsAdmin.tsx', 1], ['web/src/modules/platform/CatalogAdmin.tsx', 2],
+      ['web/src/modules/worklist/MgmtTasksPage.tsx', 1], ['web/src/modules/worklist/MeetingPage.tsx', 1],
+    ];
+    for (const [f, n] of DS) {
+      const src = doc(f);
+      assert((src.match(/\bbang-dinh\b/g)?.length ?? 0) >= n, `${f}: thiếu bang-dinh (cần ≥ ${n})`);
+      assert(!/"[^"]*\boverflow-x-auto\b[^"]*\bbang-dinh\b|"[^"]*\bbang-dinh\b[^"]*\boverflow-x-auto\b/.test(src), `${f}: bang-dinh đi cùng overflow-x-auto (tiện ích thắng .bang-dinh)`);
+    }
+    // Khung bao của bảng dính không được là khung cuộn: overflow-hidden → overflow-clip (giữ bo góc, không thành khung cuộn).
+    for (const [f, dau] of [['web/src/modules/test/LichTestTab.tsx', 'const khoiLop'], ['web/src/modules/test/lichTest/KhoiNo.tsx', 'id="lich-test-no" className'],
+      ['web/src/modules/cham/DiemTheoLop.tsx', 'id={`bang-${classId}`}'], ['web/src/modules/classes/TabTongKetLop.tsx', '<section className="card']] as const) {
+      const src = doc(f);
+      const i = src.indexOf(dau);
+      assert(i >= 0, `${f}: không thấy ${dau}`);
+      const khung = src.slice(i, i + 700);
+      assert(!/\bcard overflow-hidden\b|rounded-lg border overflow-hidden/.test(khung), `${f}: khung bao còn overflow-hidden`);
+      assert(/overflow-clip/.test(khung), `${f}: khung bao chưa overflow-clip`);
+    }
+  });
 }
