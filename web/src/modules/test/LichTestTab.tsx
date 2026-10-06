@@ -9,9 +9,10 @@ import { useDienThoai } from '../../ui/TheDong.tsx';
 import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { KhoiNhom } from '../../ui/HangNhom.tsx';
 import { useManHinhHep } from '../cham/LuoiChamLop.tsx';
-import { chuOChuaLuu, mondayOfDate, tenMon, tuanDauThangCua, tuanLich } from '@shared/domain/index.ts';
-import type { DongNo, LichTest, LopLichTest } from './lichTest/kieu.ts';
+import { addDaysIso, chuOChuaLuu, tenMon, tuanDauThangCua, tuanLich } from '@shared/domain/index.ts';
+import { khoaHang, type DongNo, type LichTest, type LopLichTest } from './lichTest/kieu.ts';
 import { DaiSo, type OSo } from './lichTest/DaiSo.tsx';
 import { KhoiNo } from './lichTest/KhoiNo.tsx';
 import { HangLop } from './lichTest/HangLop.tsx';
@@ -22,13 +23,15 @@ type Loai = 'ft' | 'thuong';
 const loaiCua = (l: { mode: LopLichTest['mode'] }): Loai => (l.mode === 'ielts_band' ? 'ft' : 'thuong');
 
 /**
- * TEST › LỊCH TEST (PR-UX1, mockup 13 phương án B) — gộp tab Cần chấm cũ: chấm ngay tại chỗ.
+ * TEST › LỊCH TEST (PR-UX1, mockup 13 phương án B; PR-LT3 ba khối, mockup lich-test-ba-khoi 06/10) — chấm ngay tại chỗ.
  *
  *   hàng lọc   tuần · "Lớp tôi dạy | Tất cả" (chỉ khi hai tập khác nhau) · chi nhánh · chip "Đang lọc: lớp …"
- *   dải số     đã chấm x/y · còn phải chấm · nợ tuần trước · quá hạn — bấm được (G-10)
- *   khối Nợ    bài còn nợ các tuần trước, bấm Chấm mở lưới ngay dưới dòng
- *   công tắc   Fast Track · n lớp | Lớp thường · n lớp ở HÀNG LỌC (MH4, K4-05) — áp cho dải số, khối Nợ và danh sách lớp;
- *              nhớ theo máy, `loai` trên đường dẫn thắng; chỉ một khung có lớp/nợ thì ẩn. Mỗi lớp một hàng lớn thu gọn.
+ *   dải số     Tuần này đã chấm x/y · Còn phải chấm · Quá hạn chấm n · m lớp — bấm được (G-10, Q1)
+ *   khối 1     Test quá hạn chấm — theo hôm nay, không đổi khi đổi tuần; bấm Nhập điểm mở lưới ngay dưới dòng (mục con)
+ *   khối 2     Test chấm tuần này — chỉ khi xem tuần hiện tại; lớp đã chấm xong thu gọn, chữ nhạt, cuối (Q4)
+ *   khối 3     Lịch Test tuần này / Lịch Test W1 OCT (tuần khác: mở sẵn — Q2)
+ *   công tắc   Fast Track · n lớp | Lớp thường · n lớp ở HÀNG LỌC (MH4, K4-05) — áp cho dải số và ba khối;
+ *              nhớ theo máy, `loai` trên đường dẫn thắng; chỉ một khung có lớp thì ẩn.
  *
  * Mọi trạng thái nằm trên đường dẫn (replace): `periodId`, `branchId`, `phamVi`, `loai`, `classId`, `kn` — F5 và Back
  * giữ đúng chỗ. Máy chủ trả đủ trong MỘT lời gọi; không có `periodId` thì máy chủ tự lấy tuần hiện tại.
@@ -78,16 +81,18 @@ export function LichTestTab() {
   /* Q14 — lưu một ô: gộp 1,5 s sau lần lưu cuối rồi mới tải lại dải số + nhãn. */
   const baoDaLuu = useGopTaiLai(reload);
 
-  /* Lớp đang mở: nhớ theo tuần (localStorage) + lớp bị "ép mở" bởi đường dẫn / dải số. */
+  /* Hàng đang mở: nhớ theo tuần xem (localStorage, khoá `khoaHang`) + hàng bị "ép mở" bởi đường dẫn / dải số. Khối 2: hàng đã chấm
+     xong KHÔNG nhớ qua lần tải lại (Q4 — luôn thu gọn). `moXong` = hàng khối 2 đang mở TRONG PHIÊN — hàng vừa chấm xong ô cuối vẫn mở
+     (Q14: lưới không biến mất giữa lúc gõ), tới khi người dùng thu. */
   const tuanId = data?.tuan?.id ?? null;
   const [nho, setNho] = useState<Record<string, boolean>>({});
+  const [moXong, setMoXong] = useState<Set<string>>(new Set());
   const [epMo, setEpMo] = useState<Set<string>>(new Set());
   const [conTro, setConTro] = useState<Set<string>>(new Set());
-  const [moNo, setMoNo] = useState(true);
-  const [chiQuaHan, setChiQuaHan] = useState(false);
+  const [moKhoi, setMoKhoi] = useState({ k1: false, k2: true, k3: false });
   const [moXuat, setMoXuat] = useState(false);
   const [dongMo, setDongMo] = useState<{ d: DongNo; viTri: number; conTro: boolean } | null>(null);
-  /* Số ô lưu hỏng theo hàng lớp / dòng Nợ (PR-UX1) — badge của hàng nói "n ô chưa lưu" tới khi hết. */
+  /* Số ô lưu hỏng theo hàng lớp / dòng khối 1 (PR-UX1) — badge của hàng nói "n ô chưa lưu" tới khi hết. */
   const [chuaLuu, setChuaLuu] = useState<Record<string, number>>({});
   const baoChuaLuu = useCallback((khoa: string, n: number) => setChuaLuu((x) => {
     if ((x[khoa] ?? 0) === n) return x;
@@ -96,89 +101,133 @@ export function LichTestTab() {
     return moi;
   }), []);
 
-  /* Khởi tạo MỘT LẦN cho mỗi (tuần, lớp đang lọc): đọc lớp đã nhớ; lớp trên đường dẫn thì mở dòng Nợ đầu của lớp
-     đó nếu có, không thì mở hàng lớp của nó. */
+  /* Khởi tạo MỘT LẦN cho mỗi (tuần, lớp đang lọc): khối mặc định (khối 1 thu, khối 2 mở, khối 3 thu; tuần khác khối 3 mở — Q2), hàng đã
+     nhớ, rồi lối vào từ đường dẫn (`classId`, `kn` — Việc cần làm, badge, chuông): dòng khối 1 khớp → mở khối 1 + lưới dòng đó; không thì
+     hàng lớp khối 2 → mở khối 2 + ép mở hàng; không thì khối 3. */
   const daKhoiTao = useRef<string | null>(null);
   useEffect(() => {
     if (!data?.tuan) return;
     const khoa = `${nguoiId ?? 0}|${data.tuan.id}|${urlClassId ?? ''}`;
     if (daKhoiTao.current === khoa) return;
     daKhoiTao.current = khoa;
-    setNho(docMo(nguoiId, data.tuan.id));
-    setChiQuaHan(false);
-    /* Có `kn` (Việc cần làm › Chấm): dòng Nợ có môn đó; không có thì hàng lớp tuần này; không có hàng lớp thì dòng Nợ
-       đầu của lớp. Không có `kn` (badge "n bài chờ chấm"): dòng Nợ đầu (ưu tiên dòng của mình), rồi hàng lớp. */
+    const nhoMoi = docMo(nguoiId, data.tuan.id);
+    setNho(nhoMoi);
+    const khoi = { k1: false, k2: true, k3: !data.laTuanNay };
     const khopKn = (k: string) => !!urlKn && (k === urlKn || (urlKn === 'writing' && k.startsWith('writing')));
     const noCuaLop = urlClassId ? data.no.filter((d) => d.classId === urlClassId) : [];
-    const coHangLop = data.lop.some((l) => l.classId === urlClassId);
+    const hang2 = urlClassId ? (data.chamTuanNay ?? []).filter((l) => l.classId === urlClassId && l.conBai > 0) : [];
+    const hang3 = urlClassId ? data.lop.filter((l) => l.classId === urlClassId) : [];
     const noDau = noCuaLop.find((d) => d.kyNang.some(khopKn))
-      ?? (urlKn && coHangLop ? undefined : noCuaLop.find((d) => d.cuaToi) ?? noCuaLop[0]);
+      ?? (urlKn && (hang2.length || hang3.length) ? undefined : noCuaLop.find((d) => d.cuaToi) ?? noCuaLop[0]);
+    let ep: string[] = [];
     if (noDau) {
       setDongMo({ d: noDau, viTri: data.no.indexOf(noDau), conTro: true });
-      setMoNo(true);
-      setEpMo(new Set()); setConTro(new Set());
+      khoi.k1 = true;
     } else {
       setDongMo(null);
-      const ep = new Set(urlClassId ? data.lop.filter((l) => l.classId === urlClassId).map((l) => l.key) : []);
-      setEpMo(ep); setConTro(new Set(ep));
+      if (hang2.length) { khoi.k2 = true; ep = hang2.map(khoaHang); }
+      else if (hang3.length) { khoi.k3 = true; ep = hang3.map(khoaHang); }
     }
-  }, [data, urlClassId, nguoiId]);
+    setMoKhoi(khoi);
+    setEpMo(new Set(ep)); setConTro(new Set(ep));
+    /* Hàng khối 2 còn bài đang mở lúc vào trang — giữ mở trong phiên dù chấm xong (hàng đã xong từ trước thì thu: Q4). */
+    setMoXong(new Set((data.chamTuanNay ?? []).filter((l) => l.conBai > 0 && dangMo({ key: khoaHang(l), moSan: l.moSan }, nhoMoi, new Set(ep)))
+      .map(khoaHang)));
+  }, [data, urlClassId, urlKn, nguoiId]);
 
-  const moCua = (l: LopLichTest) => dangMo(l, nho, epMo);
-  const doiMo = (l: LopLichTest) => {
-    const moi = { ...nho, [l.key]: !moCua(l) };
+  const laXong2 = (l: LopLichTest, khoi2: boolean) => khoi2 && l.conBai === 0;
+  const moCua = (khoi2: boolean) => (l: LopLichTest) => {
+    const k = khoaHang(l);
+    return laXong2(l, khoi2) ? moXong.has(k) : dangMo({ key: k, moSan: l.moSan }, nho, epMo);
+  };
+  const doiMo = (khoi2: boolean) => (l: LopLichTest) => {
+    const k = khoaHang(l);
+    const dangMoHang = moCua(khoi2)(l);
+    if (!dangMoHang) setConTro((s) => new Set(s).add(k));
+    if (khoi2) setMoXong((s) => { const n = new Set(s); if (dangMoHang) n.delete(k); else n.add(k); return n; });
+    if (laXong2(l, khoi2)) return;
+    const moi = { ...nho, [k]: !dangMoHang };
     setNho(moi);
     if (tuanId) ghiMo(nguoiId, tuanId, moi);
-    if (epMo.has(l.key)) setEpMo((s) => { const n = new Set(s); n.delete(l.key); return n; });
-    if (moi[l.key]) setConTro((s) => new Set(s).add(l.key));
+    if (epMo.has(k)) setEpMo((s) => { const n = new Set(s); n.delete(k); return n; });
   };
 
-  /* Số lớp theo khung = lớp có lượt tuần này HOẶC còn nợ tuần trước (khung không có gì thì công tắc không mời chọn nó). */
+  /* Số lớp theo khung = lớp có ở BẤT KỲ khối nào (khung không có gì thì công tắc không mời chọn nó). */
+  const tatCaHang = useMemo(() => [...(data?.no ?? []), ...(data?.chamTuanNay ?? []), ...(data?.lop ?? [])], [data]);
   const dem = useMemo(() => {
-    const lop = (k: Loai) => new Set([...(data?.lop ?? []), ...(data?.no ?? [])].filter((x) => loaiCua(x) === k).map((x) => x.classId)).size;
+    const lop = (k: Loai) => new Set(tatCaHang.filter((x) => loaiCua(x) === k).map((x) => x.classId)).size;
     return { ft: lop('ft'), thuong: lop('thuong') };
-  }, [data?.lop, data?.no]);
+  }, [tatCaHang]);
   const loai: Loai | null = useMemo(() => {
     if (!data) return null;
     const co = (k: string | null | undefined): k is Loai => (k === 'ft' || k === 'thuong') && dem[k] > 0;
     if (co(loaiParam)) return loaiParam;
-    const theoLop = [...data.lop, ...data.no].find((l) => l.classId === urlClassId);
+    const theoLop = tatCaHang.find((l) => l.classId === urlClassId);
     if (theoLop && co(loaiCua(theoLop))) return loaiCua(theoLop);
     const daNho = khungDaNho('lich-test');
     if (co(daNho)) return daNho;
-    /* Khung đầu (FT → thường) có lớp tự mở, rồi khung đầu có lớp/nợ. */
-    return (['ft', 'thuong'] as const).find((k) => data.lop.some((l) => l.moSan && loaiCua(l) === k))
+    /* Khung đầu (FT → thường) có lớp tự mở, rồi khung đầu có lớp. */
+    return (['ft', 'thuong'] as const).find((k) => [...(data.chamTuanNay ?? []), ...data.lop].some((l) => l.moSan && loaiCua(l) === k))
       ?? (['ft', 'thuong'] as const).find((k) => dem[k] > 0) ?? null;
-  }, [data, dem, loaiParam, urlClassId]);
-  const lopTab = (data?.lop ?? []).filter((l) => loaiCua(l) === loai);
-  const noTab = (data?.no ?? []).filter((d) => !loai || loaiCua(d) === loai);
+  }, [data, dem, tatCaHang, loaiParam, urlClassId]);
+  const theoKhung = <T extends { mode: LopLichTest['mode'] }>(ds: T[]) => ds.filter((x) => !loai || loaiCua(x) === loai);
+  const noTab = theoKhung(data?.no ?? []);
+  const k2Tab = theoKhung(data?.chamTuanNay ?? []);
+  const lopTab = theoKhung(data?.lop ?? []);
   /* Luật lưới lớp thường nói đúng tên môn chấm theo thang điểm của các lớp đang xem (BE: Writing, Speaking · FOU: Grammar +
      Vocabulary, Pronunciation) — không viết cứng. */
-  const monThangDiem = [...new Set(lopTab.flatMap((l) => l.boMon
+  const monThangDiem = [...new Set([...k2Tab, ...lopTab].flatMap((l) => l.boMon
     .filter((k) => k === 'writing' || k === 'speaking').map((k) => tenMon(l.chuongTrinh, k))))];
+
+  /* Thu một khối là bỏ lưới đang mở trong đó — còn ô chưa lưu thì hỏi trước (Q14). */
+  const thuKhoi = (k: 'k1' | 'k2' | 'k3') => {
+    if (!moKhoi[k]) { setMoKhoi((m) => ({ ...m, [k]: true })); return; }
+    const khoa = k === 'k1' ? (dongMo ? [`no:${dongMo.d.key}`] : []) : (k === 'k2' ? k2Tab : lopTab).map(khoaHang);
+    const n = khoa.reduce((s, x) => s + (chuaLuu[x] ?? 0), 0);
+    if (n > 0 && !window.confirm(`Còn ${chuOChuaLuu(n)}. Thu khối này thì mất các giá trị đó — vẫn thu?`)) return;
+    setMoKhoi((m) => ({ ...m, [k]: false }));
+  };
 
   const cuon = (id: string) => requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: 'start', behavior: 'smooth' }));
   const bamSo = (o: OSo) => {
     if (!data) return;
-    if (o === 'da-cham') { cuon('lich-test-lop'); return; }
+    if (o === 'no') { setMoKhoi((m) => ({ ...m, k1: true })); cuon('lich-test-no'); return; }
+    /* Hai ô đầu: khối 2 ở tuần hiện tại, khối 3 ở tuần khác. "Còn phải chấm" ép mở hàng còn bài (không đụng hàng đã xong — Q4). */
+    const k = data.laTuanNay ? 'k2' : 'k3';
+    setMoKhoi((m) => ({ ...m, [k]: true }));
     if (o === 'con-phai-cham') {
-      setEpMo((s) => new Set([...s, ...lopTab.filter((l) => l.conBai > 0).map((l) => l.key)]));
-      cuon('lich-test-lop'); return;
+      const ep = (data.laTuanNay ? k2Tab : lopTab).filter((l) => l.conBai > 0).map(khoaHang);
+      setEpMo((s) => new Set([...s, ...ep]));
+      if (data.laTuanNay) setMoXong((s) => new Set([...s, ...ep]));
     }
-    if (o === 'no') { setMoNo(true); cuon(noTab.length ? 'lich-test-no' : 'lich-test-lop'); return; }
-    /* Quá hạn: khối Nợ chỉ bài quá hạn + mở các lớp tuần này có bài quá hạn. */
-    setMoNo(true); setChiQuaHan(noTab.some((d) => d.quaHan));
-    setEpMo((s) => new Set([...s, ...lopTab.filter((l) => l.quaHan).map((l) => l.key)]));
-    cuon(noTab.some((d) => d.quaHan) ? 'lich-test-no' : 'lich-test-lop');
+    cuon(data.laTuanNay ? 'lich-test-k2' : 'lich-test-k3');
   };
 
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (!data) return <Skeleton rows={6} />;
   if (data.scopeEmpty) return <div className="card"><Empty title="Bạn chưa được cấp phạm vi nào" /></div>;
 
-  const laTuanNay = !!data.tuan && data.tuan.weekStart === mondayOfDate(homNay || data.tuan.weekStart);
-  const tenTuan = !data.tuan ? 'Tuần này' : laTuanNay ? 'Tuần này' : `Tuần ${tuanLich(data.tuan.weekStart, homNay)}`;
-  const trong = data.lop.length === 0 && data.no.length === 0 && !dongMo;
+  const maTuan = data.tuan ? tuanLich(data.tuan.weekStart, homNay) : 'Tuần này';
+  const tenTuan = data.laTuanNay ? 'Tuần này' : maTuan;
+  const trong = data.lop.length === 0 && data.no.length === 0 && !(data.chamTuanNay ?? []).length && !dongMo;
+  const soLop = (ds: LopLichTest[]) => `${new Set(ds.map((l) => l.classId)).size} lớp`;
+  const conBai = (ds: LopLichTest[]) => ds.reduce((n, l) => n + l.conBai, 0);
+  /* Tuần chính của khối (hàng của tuần khác ghi Đợt kèm mã tuần): khối 2 = tuần trước, khối 3 = tuần đang xem. */
+  const tuanXem = data.tuan?.weekStart ?? '';
+  const hangLop = (ds: LopLichTest[], khoi2: boolean) => (
+    <HangLop lop={ds} moCua={moCua(khoi2)} onMo={doiMo(khoi2)} coChiNhanh={branchCount > 1 && !branchId} hep={hep} homNay={homNay}
+      tuanChinh={khoi2 && tuanXem ? addDaysIso(tuanXem, -7) : tuanXem} kieuQuaHan={khoi2 ? 'badge' : undefined} urlClassId={urlClassId} urlKn={urlKn}
+      conTro={conTro} onDaLuu={baoDaLuu} chuaLuu={chuaLuu} baoChuaLuu={baoChuaLuu} />
+  );
+  /* Khối 2 / khối 3 (hàng lớp): khối rỗng vẫn hiện tiêu đề + 0, không mở được (D1). */
+  const khoiLop = (id: string, k: 'k2' | 'k3', tieuDe: string, ds: LopLichTest[]) => (
+    <div id={id} className="card overflow-hidden p-0">
+      <KhoiNhom id={`${id}-than`} phang rong={!ds.length} mo={moKhoi[k] && ds.length > 0} onMo={() => thuKhoi(k)} nhan={tieuDe} tieuDe={tieuDe}
+        dem={conBai(ds)} phu={ds.length ? soLop(ds) : undefined}>
+        {hangLop(ds, k === 'k2')}
+      </KhoiNhom>
+    </div>
+  );
 
   /* Các phần của hàng lọc — máy tính xếp một hàng, điện thoại gom vào khối "Lọc". */
   const tuanPicker = (
@@ -271,14 +320,13 @@ export function LichTestTab() {
 
       {trong ? (
         <div className="card">
-          <Empty title={`${tenTuan} không có lượt Test nào`}
+          <Empty title={`${maTuan} không có Test nào`}
             hint={session?.nav?.testPlan ? 'Đổi tuần ở trên, hoặc mở Kế hoạch Test để xếp lịch.' : 'Đổi tuần ở trên để xem tuần khác.'} />
         </div>
       ) : (
         <>
           <DaiSo tq={loai ? data.tongQuanKhung[loai] : data.tongQuan} tenTuan={tenTuan} onBam={bamSo} />
-          <KhoiNo no={noTab} mo={moNo} onMo={() => setMoNo((v) => !v)}
-            chiQuaHan={chiQuaHan} onBoQuaHan={() => setChiQuaHan(false)}
+          <KhoiNo no={noTab} mo={moKhoi.k1} onMo={() => thuKhoi('k1')}
             dongMo={dongMo && (!loai || loaiCua(dongMo.d) === loai) ? dongMo : null} chuaLuu={chuaLuu} baoChuaLuu={baoChuaLuu}
             onMoDong={(d, viTri) => {
               /* Dòng đang mở còn ô chưa lưu: đóng nó là mất giá trị đã gõ — hỏi trước. */
@@ -287,29 +335,8 @@ export function LichTestTab() {
               setDongMo(d ? { d, viTri, conTro: true } : null);
             }}
             hep={hep} homNay={homNay} onDaLuu={baoDaLuu} knUrl={dongMo?.d.classId === urlClassId ? urlKn : null} />
-
-          <div id="lich-test-lop" className="space-y-2">
-            {lopTab.length > 1 && (
-              <div className="flex justify-end">
-                <button type="button" className="min-h-[44px] px-1 text-xs text-slate-400 hover:text-slate-100 sm:min-h-[36px]"
-                    onClick={() => {
-                      const moHet = !lopTab.every(moCua);
-                      const moi = { ...nho, ...Object.fromEntries(lopTab.map((l) => [l.key, moHet])) };
-                      setNho(moi); if (tuanId) ghiMo(nguoiId, tuanId, moi);
-                      if (!moHet) setEpMo(new Set());
-                    }}>
-                    {lopTab.every(moCua) ? 'Thu tất cả' : 'Mở tất cả'}
-                  </button>
-              </div>
-            )}
-            {lopTab.length > 0 && data.tuan ? (
-              <HangLop lop={lopTab} moCua={moCua} onMo={doiMo} coChiNhanh={branchCount > 1 && !branchId} hep={hep}
-                periodId={data.tuan.id} tuanDangXem={data.tuan.weekStart} urlClassId={urlClassId} urlKn={urlKn}
-                conTro={conTro} onDaLuu={baoDaLuu} chuaLuu={chuaLuu} baoChuaLuu={baoChuaLuu} />
-            ) : (
-              <div className="card"><Empty title={`${tenTuan} không có lượt Test nào`} hint="Bài còn nợ các tuần trước nằm ở khối trên." /></div>
-            )}
-          </div>
+          {data.laTuanNay && khoiLop('lich-test-k2', 'k2', 'Test chấm tuần này', k2Tab)}
+          {khoiLop('lich-test-k3', 'k3', data.laTuanNay ? 'Lịch Test tuần này' : `Lịch Test ${maTuan}`, lopTab)}
         </>
       )}
       {moXuat && data.tuan && (

@@ -168,7 +168,7 @@ function listClassSummariesThat(p: Principal, f: { branchId?: number; q?: string
   const ph = ids.map(() => '?').join(',');
   const attempts = conn
     .prepare(
-      `SELECT a.id, a.class_id, a.status, a.planned_period_id,
+      `SELECT a.id, a.class_id, a.status, a.planned_period_id, a.kind,   -- PR-LT3 T18: \`skillCells\` đọc loại lượt (Speaking Mock chấm chéo)
               a.deadline_override, a.target_at_attempt, a.attempt_no, a.lich_su,
               (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route,
               rp.week_start AS period_start, rp.week_end AS period_end

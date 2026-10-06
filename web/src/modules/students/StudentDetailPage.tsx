@@ -3,11 +3,13 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useApi } from '../../lib/useApi.ts';
 import { api } from '../../lib/api.ts';
 import { ThanhTruocSau } from '../../ui/ThanhTruocSau.tsx';
-import { BoLocDoan, Card, DaiChiXem, Empty, ErrorState, Info, Level, Outcome, Skeleton, TargetText, Th} from '../../ui/ui.tsx';
+import { Card, DaiChiXem, Empty, ErrorState, Info, Level, Outcome, Skeleton, TargetText, Th} from '../../ui/ui.tsx';
 import { cuonOnDinh } from '../../lib/cuonOnDinh.ts';
-import { MuiTen, SkillBoard, type SkillBoardRow } from '../cases/SkillBoard.tsx';
+import { SkillBoard, type SkillBoardRow } from '../cases/SkillBoard.tsx';
 import { KetLuanKhoa, MiniTestO } from './KetLuanKhoa.tsx';
 import { HanhTrinh } from './HanhTrinh.tsx';
+import { CacLoTrinh } from './CacLoTrinh.tsx';
+import { NganTongKet } from './NganTongKet.tsx';
 import { BonO, CauTomTat, DaiChoDuyet, DaiTamDung, DongThongTin, ThanhViec, type Viec } from './DauHoSo.tsx';
 import { NganCase } from './NganCase.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
@@ -43,7 +45,7 @@ type Profile = any;
  *
  * BỐ CỤC (chủ sản phẩm chốt 22/09/2026, spec PR-HV/PR-Qb — thay ba tầng của bản 13/09):
  *
- *   Đầu trang    EM NÀY LÀ AI          tên, {khoá đang học lớp thường | Target FT}, GVCN; nút Lộ trình · + Case · ⋮
+ *   Đầu trang    EM NÀY LÀ AI          tên, {khoá đang học lớp thường | Target FT}, GVCN; nút + Case · ⋮
  *   Bốn ô số     LIẾC MỘT CÁI, BẤM ĐƯỢC  Kết quả Test gần nhất · Kỹ năng cần hỗ trợ · Case đang mở · Việc cần làm tiếp
  *   Ba tab       Học thuật (mặc định: bảng kỹ năng + Case, rồi Mock Test) · Ý thức & Phối hợp · Hành trình theo giai đoạn
  *
@@ -84,8 +86,6 @@ export default function StudentDetailPage() {
    * Bấm "Reading" ở bảng trên là khối dưới chỉ còn Case Reading; bấm lại thì bỏ lọc.
    */
   const [skillPick, setSkillPick] = useState<string | null>(null);
-  /** Dải chọn lộ trình — chỉ bày khi người dùng hỏi tới, không chiếm chỗ mặc định. */
-  const [cycleOpen, setCycleOpen] = useState(false);
   /*
    * BẢNG KỸ NĂNG NẠP Ở ĐÂY, KHÔNG NẠP TRONG KHỐI CON.
    *
@@ -140,7 +140,10 @@ export default function StudentDetailPage() {
 
   const cy = data.cycle;
   /* Mở đúng đợt (`?dot=`) hoặc do bấm trong trang — ngăn Case dùng chung một chỗ (Q9). */
-  const ngan: OpenCase = p.caseId != null ? { caseId: p.caseId, paId: p.paId, viec: p.viec } : openCase;
+  const ngan: OpenCase = p.caseId != null ? { caseId: p.caseId, paId: p.paId, viec: p.viec === 'thi-that' ? undefined : p.viec } : openCase;
+  /* PR-TK: `?tong-ket=<cycleId>` mở ngăn Tổng kết lộ trình (Lưu trữ, hồ sơ lớp, link chia sẻ); `?viec=thi-that` (việc nhắc GVCN) mở ngăn Kết quả thi thật. */
+  const xoaThamSo = (...ks: string[]) => { const next = new URLSearchParams(params); ks.forEach((k) => next.delete(k)); setParams(next, { replace: true }); };
+  const moTongKet = (cid: number) => { const next = new URLSearchParams(params); next.set('tong-ket', String(cid)); setParams(next, { replace: true }); };
   const dongNgan = () => {
     setOpenCase(null);
     if (p.caseId != null) {
@@ -163,13 +166,6 @@ export default function StudentDetailPage() {
     if (m.loai === 'case') setOpenCase({ caseId: m.caseId, paId: m.paId, viec: m.viec });
     else if (m.loai === 'tab') navigate(duongHoSoHocVien(data.id, { tab: m.tab, sub: m.sub }));
     else navigate(m.href);
-  };
-
-  const setCycle = (cid: number) => {
-    const next = new URLSearchParams(params);
-    if (cid === data.cycles.find((c: any) => c.status === 'active')?.id) next.delete('lo-trinh');
-    else next.set('lo-trinh', String(cid));
-    setParams(next, { replace: true });
   };
 
   return (
@@ -211,10 +207,6 @@ export default function StudentDetailPage() {
             </div>
 
             <div className="flex flex-wrap gap-2 items-start">
-              {data.journeyStrip?.length > 1 && (
-                <button type="button" className="btn min-h-[44px] sm:min-h-0" aria-expanded={cycleOpen}
-                  onClick={() => setCycleOpen(!cycleOpen)}>Lộ trình <span className="text-slate-400"><MuiTen mo={cycleOpen} /></span></button>
-              )}
               {data.viewer.canReport && !data.lopHoc?.chiXem && (
                 <button className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => setReportOpen(true)}>+ Case</button>
               )}
@@ -232,18 +224,6 @@ export default function StudentDetailPage() {
           {/* PR-VAI-b (Q6): câu tóm tắt máy viết — "em đang thế nào", dưới vạch mảnh của khung thông tin. */}
           <CauTomTat manh={data.dauHoSo.tomTat} />
 
-          {/*
-            DẢI LỘ TRÌNH chỉ bày khi được hỏi tới. Nó là thứ dùng vài lần một khoá, không đáng
-            chiếm một tầng cố định ở đầu mọi hồ sơ.
-          */}
-          {cycleOpen && data.journeyStrip?.length > 1 && (
-            <div className="flex flex-wrap items-center gap-1.5 mt-3 pt-3 border-t"
-                 style={{ borderColor: 'var(--line)' }}>
-              <span className="text-[11px] text-slate-500 mr-1">Chọn lộ trình để xem</span>
-              <BoLocDoan ariaLabel="Chọn lộ trình để xem" value={String(cy?.id ?? '')} onChange={(k) => setCycle(Number(k))}
-                muc={data.journeyStrip.map((j: any) => ({ key: String(j.id), nhan: j.current ? `${j.label} · đang học` : j.label }))} />
-            </div>
-          )}
         </div>
       </div>
 
@@ -359,6 +339,8 @@ export default function StudentDetailPage() {
         </Card>
       )}
 
+      {tab === 'hanh-trinh' && <CacLoTrinh studentId={data.id} onTongKet={moTongKet} onHocThuat={() => setTab('hoc-thuat')} />}
+
       {tab === 'hanh-trinh' && (
         <Card title="Hành trình học tập" bodyClass="p-4 space-y-4">
           {/*
@@ -397,8 +379,10 @@ export default function StudentDetailPage() {
           onClose={dongNgan} onChanged={reload} />
       )}
 
+      {p.tongKet != null && <NganTongKet cycleId={p.tongKet} onClose={() => xoaThamSo('tong-ket')} onDoi={reload} />}
+
       <StudentManagePanel
-        viec={viecQuanLy} onClose={() => setViecQuanLy(null)} lop={data.currentClass?.code}
+        viec={viecQuanLy ?? (p.viec === 'thi-that' && cy?.route ? 'outcome' : null)} onClose={() => { setViecQuanLy(null); if (p.viec === 'thi-that') xoaThamSo('viec'); }} lop={data.currentClass?.code}
         student={{
           id: data.id, name: data.fullName, classId: data.currentClass?.id ?? null,
           dob: data.dob ?? null, email: data.email ?? null, consultantName: data.consultantName ?? null, note: data.note ?? null,

@@ -30,7 +30,8 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
   rong?: 'hep' | 'rong' | 'toan';
   tabs?: ReactNode; ngCanh?: ReactNode; quayLai?: { nhan: string; onClick: () => void };
   chan?: {
-    huy?: { nhan?: string; onClick: () => void; disabled?: boolean }; xoa?: { onClick: () => void; nhan?: string };
+    /** `null` = không vẽ nút trái (panel tự có nút Đóng ở `chinh`, ví dụ ngăn Tổng kết lộ trình). */
+    huy?: { nhan?: string; onClick: () => void; disabled?: boolean } | null; xoa?: { onClick: () => void; nhan?: string };
     phu?: ReactNode; chinh?: ReactNode; conThieu?: (string | MucThieu)[];
     /** Luật S3 (I1): form đã sửa → nút trái mặc định "Huỷ thay đổi", chưa sửa → "Đóng". `huy.nhan` riêng (Xong, ‹ Sửa…) thắng. */
     daSua?: boolean;
@@ -68,7 +69,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
   }, [id]);
 
   const ngu = [hocVien, lop].filter(Boolean).join(' · ');
-  const huy = chan?.huy ?? { onClick: onDong };
+  const huy = chan?.huy === null ? null : chan?.huy ?? { onClick: onDong };
   useGiuFocus(khung);
   /* `!mt-0`: panel đứng trong trang có `space-y-*` thì bị cộng margin-top 12–16 px → lệch xuống, lộ dải demo bar/đầu trang (PR-DH, DH-13).
      Vẽ qua portal ra <body>: panel mở từ ô bảng (GV chấm ở tiêu đề cột dính, hộp bốn tiêu chí trong ô điểm) không bị kẹt dưới
@@ -97,7 +98,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
             {chan.conThieu?.length ? <DongCanSua muc={chan.conThieu} /> : null}
             {chan.dongTren}
             <div className="flex items-center gap-2 px-4 py-2.5">
-              <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={huy.onClick} disabled={huy.disabled}>{huy.nhan ?? (chan.daSua ? 'Huỷ thay đổi' : 'Đóng')}</button>
+              {huy && <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={huy.onClick} disabled={huy.disabled}>{huy.nhan ?? (chan.daSua ? 'Huỷ thay đổi' : 'Đóng')}</button>}
               {chan.xoa && <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" onClick={chan.xoa.onClick}>{chan.xoa.nhan ?? 'Xoá'}</button>}
               <span className="flex-1" />
               {chan.phu}

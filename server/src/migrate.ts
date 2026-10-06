@@ -26,6 +26,7 @@ import { migratePrQu } from './migrate/prQu.ts';
 import { migratePrGva } from './migrate/prGva.ts';
 import { migratePrPhh } from './migrate/prPhh.ts';
 import { migratePrK26 } from './migrate/prK26.ts';
+import { migratePrTk } from './migrate/prTk.ts';
 import { migratePrMta } from './migrate/prMta.ts';
 import { migratePrLuiA1 } from './migrate/prLuiA1.ts';
 
@@ -271,6 +272,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     /* PR-K26: gộp hướng `chua_ro` + `xep_sau` → `chua_quyet` (đổi dữ liệu, chạy lặp được). */ migratePrK26(conn, applied);
     /* PR-MTa: cờ `attempt_skills.huy_vang` + bảng `ket_qua_huy` (chỉ cấu trúc, không điền ngược). */ migratePrMta(conn, applied);
     /* PR-LUI-a1: cột violations.ten (chỉ thêm cột, dòng cũ tự tách khi đọc). */ migratePrLuiA1(conn, applied);
+    /* PR-TK: bản chụp lộ trình lúc đóng + cột thi thật + điền ngược (chỉ thêm, chạy lặp được). */ migratePrTk(conn, applied);
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());

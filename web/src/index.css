@@ -258,6 +258,10 @@
     font-weight: 800; font-size: 12.5px; cursor: pointer;
   }
   .khoi-nhom-dau.dong { background: var(--hang-lon-dong-bg); box-shadow: inset 3px 0 0 var(--hang-lon-dong-vach); }
+  .khoi-nhom-dau.rong { cursor: default; }
+  /* PR-LT3 (T17): lưới mở dưới dòng khối 1 là MỤC CON nhẹ — tiêu đề cột nhỏ hơn bảng cha. */
+  .muc-con th { font-size: 11px; background: transparent; }   /* luật S8: không chữ < 11 px */
+  .muc-con .sticky-col { background: var(--hang-con-bg); }
   .khoi-nhom-con { background: var(--hang-con-bg); font-size: 11.5px; color: var(--hang-con-chu); padding-left: 28px; }
 
   /* Ô điểm/ô nhập: sửa được có viền + nền riêng, chỉ đọc thì không viền, nền trong suốt. */

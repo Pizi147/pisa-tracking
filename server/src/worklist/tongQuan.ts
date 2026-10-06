@@ -1,7 +1,7 @@
 import { db } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
-  ASSESSED_SKILLS, ATTEMPT_KIND_SHORT, CAN_XU_LY, CHUA_CO_HAN, baiId, MOC_KE_TIEP_SQL, PERMISSIONS, type AttemptKind, tenMon, tenMonNgan, chonDiemDangChuY, sapCanXuLy,
+  ASSESSED_SKILLS, ATTEMPT_KIND_SHORT, CAN_XU_LY, CHAM_CHEO, CHUA_CO_HAN, baiId, MOC_KE_TIEP_SQL, PERMISSIONS, type AttemptKind, tenMon, tenMonNgan, chonDiemDangChuY, sapCanXuLy,
   duongHoSoHocVien, nguoiGiuViecChu, soSanhLop, tuanCuaHanGhiKetQua, tuanLich,
   type ChuongTrinh, type DiemChuY, type DongCanXuLyGoc, type MaCanXuLy, type UngVienChuY,
 } from '../../../shared/domain/index.ts';
@@ -100,6 +100,8 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null }) {
       const ct = [...(r.chiTiet?.values() ?? [])];
       const ids = [...new Set(ct.flatMap((c) => c.nguoi))];
       const g = nguoiGiuViecChu(ids.map((id) => ten.get(id) ?? `#${id}`));
+      /* T18 (PR-LT3, D4): ô Speaking Mock quá hạn — người giữ việc "GV chấm chéo", không phải "chưa phân công". */
+      if (ct.some((c) => c.chamCheo)) Object.assign(g, ids.length ? { phu: [g.phu, CHAM_CHEO].filter(Boolean).join(' · ') } : { dau: CHAM_CHEO, phu: '' });
       const nguoi = { ...g, ids };
       if (x.metricId === 'bai-qua-han-nhap-diem') {
         const ngay = ct.flatMap((c) => c.han).map((h) => soNgay(h, today)).filter((n) => n > 0);
@@ -140,7 +142,7 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null }) {
         const k = metricSet(p, 'case-chua-co-nguoi-phu-trach', base).n;
         /* Q6 vế m: bài quá hạn KHÔNG có người chấm — cùng tập `bai-qua-han-nhap-diem` (ô chưa phân công không có người trong `chiTiet`) = hàng "Chưa phân công" bảng GV. */
         const bai = sets.get('bai-qua-han-nhap-diem')!;
-        const m = bai.ids.filter((id) => !bai.chiTiet?.get(id)?.nguoi.length).length;
+        const m = bai.ids.filter((id) => !bai.chiTiet?.get(id)?.nguoi.length && !bai.chiTiet?.get(id)?.chamCheo).length;
         const kem = [k ? `${k} Case chưa có người nhận` : '', m ? `${m} bài chưa có người chấm` : ''].filter(Boolean).join(' · ');
         return { ...x, ...chung, phu: dongPhuGon(lop.map((l) => `${l.title} ${l.sub}`.trim())),
           ...(kem ? { kem } : {}), den: lop.length === 1 ? lop[0].href : null };

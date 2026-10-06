@@ -2,6 +2,7 @@ import { isInitialised } from '../db.ts';
 import { thiHanhLenhDenHan } from '../classes/lenhChuyen.ts';
 import { settleNoShows } from '../fasttrack/absence.ts';
 import { todayInBusinessTz } from '../util.ts';
+import { baoChamCheoQuaHan } from '../cham/chamCheo.ts';
 
 /**
  * CHỐT DẤU "-" ĐỊNH KỲ (RB-1, quyết định 4.6, PR-AN). Trước đây chỉ chốt khi có người mở trang (attempts, Việc cần làm) — tuần không
@@ -29,5 +30,7 @@ export function chotVangDinhKy(o: {
   /* Lỗi chuyển lớp KHÔNG làm hỏng chốt vắng (đã chốt xong ở trên) — lượt sáng sau / quét khi đọc thử lại. */
   let daChuyen = 0;
   try { daChuyen = (o.chuyen ?? ((n) => thiHanhLenhDenHan(n).daChuyen))(ngay); } catch (e) { console.error('[chot-vang] chuyển lớp', e); }
+  /* PR-LT3 (T18, D3): chuông "Speaking quá hạn chấm" cho GVBM Speaking + GVCN — cùng lượt quét thứ Hai; lỗi không làm hỏng chốt vắng. */
+  try { baoChamCheoQuaHan(ngay); } catch (e) { console.error('[chot-vang] chuông chấm chéo', e); }
   return { ngay, daChot, daChuyen, boQua: null, ms: Date.now() - batDau };
 }

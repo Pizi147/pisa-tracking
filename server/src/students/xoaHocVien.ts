@@ -21,7 +21,7 @@ import { conLaiMs } from '../platform/hanGio.ts';
 
 const CHI_ADMIN = 'Chỉ Quản trị hệ thống mới xoá được học viên.';
 
-/** Bao đóng theo FK của `students` (35 bảng) — phép kiểm X1 so bằng đúng với đồ thị dựng từ PRAGMA. */
+/** Bao đóng theo FK của `students` (37 bảng, PR-TK +2) — phép kiểm X1 so bằng đúng với đồ thị dựng từ PRAGMA. */
 export const BANG_CUA_HOC_VIEN: readonly string[] = [
   'students', 'enrollments', 'learning_cycles', 'lo_trinh_tiep_theo', 'journey_events', 'teacher_estimates', 'cycle_target_revisions',
   'assessment_attempts', 'assessment_scores', 'attempt_skills', 'attempt_skill_skips', 'attempt_schedule_history', 'skill_move_requests',
@@ -29,6 +29,7 @@ export const BANG_CUA_HOC_VIEN: readonly string[] = [
   'sos_case_history', 'case_signals', 'task_students', 'task_case_links',
   'violations', 'violation_history', 'discipline_measures', 'measure_violations', 'sos_coordination_actions',
   'yeu_cau_duyet', 'y_thuc_khai_bac', 'mini_test', 'lenh_chuyen_lop', 'ban_giao_mon', 'ket_qua_huy',
+  'ban_chup_lo_trinh', 'ban_chup_luot',
 ];
 
 /** Dòng của NGƯỜI KHÁC trỏ vào dữ liệu của em (Q5) — đặt NULL, không xoá. Cả ba cột cho phép NULL. */
@@ -124,6 +125,9 @@ export const CAU_XOA_HOC_VIEN: readonly { bang: string; sql: string }[] = [
   { bang: 'y_thuc_khai_bac', sql: `DELETE FROM y_thuc_khai_bac WHERE student_id = ?1 OR chuoi_cycle_id IN (${Y})` },
   { bang: 'cycle_target_revisions', sql: `DELETE FROM cycle_target_revisions WHERE cycle_id IN (${Y})` },
   { bang: 'lo_trinh_tiep_theo', sql: 'DELETE FROM lo_trinh_tiep_theo WHERE student_id = ?1' },
+  /* PR-TK: bản chụp lộ trình (bảng dòng lượt trước, bảng chính sau) — đứng trước learning_cycles / students */
+  { bang: 'ban_chup_luot', sql: `DELETE FROM ban_chup_luot WHERE ban_chup_id IN (SELECT id FROM ban_chup_lo_trinh WHERE student_id = ?1 OR cycle_id IN (${Y}))` },
+  { bang: 'ban_chup_lo_trinh', sql: `DELETE FROM ban_chup_lo_trinh WHERE student_id = ?1 OR cycle_id IN (${Y})` },
   { bang: 'enrollments', sql: 'DELETE FROM enrollments WHERE student_id = ?1' },
   { bang: 'learning_cycles', sql: 'DELETE FROM learning_cycles WHERE student_id = ?1' },
   { bang: 'students', sql: 'DELETE FROM students WHERE id = ?1' },

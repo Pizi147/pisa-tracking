@@ -165,6 +165,10 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN'], url: '/yeu-cau?studentId={hv}', maChuDich: { GVCN: 403 } },
   /* PR-Qb (sửa sau rà #75, vấn đề 5) — tab Hành trình, cả giai đoạn mặc định lẫn ?giai-doan=thuong. */
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/hanh-trinh' },
+  /* PR-TK (TK-7): khối Các lộ trình + ngăn Tổng kết lộ trình đọc từ bản chụp; KHÔNG nạp trong `GET /students/{hv}` (trần 90 câu giữ nguyên). */
+  { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/lo-trinh' },
+  { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/lo-trinh/{loTrinhDong}/tong-ket' },
+  { trang: 'Hồ sơ lớp', vai: ['QL', 'QT', 'GVCN', 'GVBM', 'GVCN_THUONG'], url: '/classes/{lopKetThuc}/tong-ket' },
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/hanh-trinh?giai-doan=thuong' },
   /* PR-YT4: tab Ý thức của HV (thang, thanh việc, dòng thời gian trộn) — cũng là khung phải của tab lớp khi chọn em. */
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/y-thuc' },
@@ -258,6 +262,10 @@ export const TRAN: Record<string, number> = {
   /* PR-LUI-b (5f): trần = max(đo+10, ⌈đo×1,3⌉) — đo 06/10. */
   'QL /students/1/hoc-lai/lop-dich': 32,
   'QT /students/1/hoc-lai/lop-dich': 30,
+  /* PR-TK (TK-7): ba đường đọc bản chụp — trần = max(đo+10, ⌈đo×1,3⌉), đo 07/10. */
+  'QL /students/1/lo-trinh': 26, 'QT /students/1/lo-trinh': 24, 'GVCN /students/1/lo-trinh': 27, 'GVBM /students/1/lo-trinh': 27,
+  'QL /lo-trinh/1/tong-ket': 25, 'QT /lo-trinh/1/tong-ket': 23, 'GVCN /lo-trinh/1/tong-ket': 26, 'GVBM /lo-trinh/1/tong-ket': 26,
+  'QL /classes/1/tong-ket': 24, 'QT /classes/1/tong-ket': 23, 'GVCN /classes/1/tong-ket': 24, 'GVBM /classes/1/tong-ket': 24, 'GVCN_THUONG /classes/1/tong-ket': 24,
   'GVCN /ref/branches': 21,
   'GVBM /ref/branches': 21,
   'GVCN_THUONG /ref/branches': 21,
@@ -375,7 +383,7 @@ export const TRAN: Record<string, number> = {
   'GVCN_THUONG /hoc-vien-lop': 93,   // PR-UXF-a VN29: +4 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 76, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋)
   'QT /hoc-vien-lop': 85,
   'QL /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 72,
-  'QT /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 70,
+  'QT /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 72,   // PR-TK: đo 71 (bộ demo có thêm em Kết thúc học FT chờ kết quả thi thật chưa lưu trữ)
   'QL /classes/3/overview': 62,   // PR-CT gộp LT2b: 61 → 62
   'GVCN /classes/3/overview': 80,   // PR-UXF-a VN29: +6 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 68, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋)   // PR-CT gộp LT2b: 61 → 62
   'GVBM /classes/3/overview': 80,   // PR-UXF-a VN29: +6 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 68, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋)   // PR-CT gộp LT2b: 61 → 62
@@ -462,6 +470,7 @@ export const TRAN: Record<string, number> = {
   'GVCN_THUONG /classes/6/roster': 76,
   // PR-UX1 (3), 23/09/2026 — Lịch Test gộp Cần chấm (thêm `listAttempts` cho khối Nợ tuần trước): 16 → 26 câu (QT 28),
   // vẫn ít hơn hai trang cũ cộng lại (16 + 24). Trần max(sau+10, ⌈sau×1.3⌉).
+  // PR-LT3 06/10 — ba khối (khối 2 = hàng lớp tuần trước, thêm ~3 câu; mỗi tuần có ô hạn riêng thêm ~3): đo 30–34 câu (QT 34) — trong trần cũ, giữ.
   'QL /cham/lich-test': 36,
   'GVCN /cham/lich-test': 36,
   'GVBM /cham/lich-test': 36,
@@ -669,7 +678,7 @@ export const TRAN_GHI_LO = {
   /** POST /classes/:id/transition — cả lớp thường (≥ 20 em) sang FT, mỗi em có lịch MT mặc định. Trước PR-TOC 1505, sau 124 → 128 sau rà #121 (32 em, gồm đóng Case mở của em có sẵn — S17). */
   /** POST /classes/:id/transition RA LỆNH cho cả lớp thường (≥ 20 em) — PR-CT (Q30-1) chỉ ghi lệnh theo lô, không chuyển. Trần đặt sau khi đo (Task 3). */
   raLenhCaLop: 30,   // đo 20 câu (41 em) → max(20+10, ⌈20×1.3⌉) = 30
-  chuyenCaLopSangFT: 232,   // PR-LUI-b: +1 câu mỗi em có Case đóng (chụp PA để Hoàn tác Kết thúc học mở lại đúng) → đo 225 → 232; PR-LT2b (4, 5): đọc Cuối khoá cả lớp + Case/PA bổ trợ theo lô sau chuyển (đo 214; gốc 200, +7 %) → 224; PR-HVL (10): bộ demo H2 thêm 2 em vào MB FOU 12 (một em có 2 Case đóng theo S17, một em có bài Cuối khoá 4 điểm) → đo 191; trần theo dữ liệu, không phải chậm đi của đường
+  chuyenCaLopSangFT: 263,   // PR-TK: +21 câu CỐ ĐỊNH (không theo số em) cho `ghiBanChup` — bản chụp lộ trình đóng, ghi theo lô một lần mỗi lý do → đo 253 → 263; PR-LUI-b: +1 câu mỗi em có Case đóng (chụp PA để Hoàn tác Kết thúc học mở lại đúng) → đo 225 → 232; PR-LT2b (4, 5): đọc Cuối khoá cả lớp + Case/PA bổ trợ theo lô sau chuyển (đo 214; gốc 200, +7 %) → 224; PR-HVL (10): bộ demo H2 thêm 2 em vào MB FOU 12 (một em có 2 Case đóng theo S17, một em có bài Cuối khoá 4 điểm) → đo 191; trần theo dữ liệu, không phải chậm đi của đường
   /** POST /ke-hoach-test/hang-loat `xemTruoc` — cả lớp MB FT 101 (63 em trong bộ đo), MT3, 4 kỹ năng tuần tới (PR-XLMT, rà #126). Đo 78 câu. */
   xemTruocXepLichMt: 114,   // PR-LT2b (10): bộ demo D13 thêm 2 em vào MB FT 101 (+3 câu/em) → đo 111; PR-HVL (10): bộ demo H1 thêm 1 em vào MB FT 101 (+3 câu/em) → đo 105
   /** GET /my-work?nguoi=tat-ca (QL) khi 30 PA "đến lúc thi" chưa có ngày thi (PR-S3F, rà cuối đợt 3). Trước 63 → 147 câu; ngày thi + tuần MT kế tiếp nay lấy trong câu chính. Đo 70 câu (68 khi không có PA) → trần max(sau+10, ⌈sau×1.3⌉) = 91. */

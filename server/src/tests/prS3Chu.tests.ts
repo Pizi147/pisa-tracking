@@ -263,7 +263,8 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
   check('S3 (9) · Q10 ô bấm ≥ 44 px trên điện thoại: Thu gọn, Thu tất cả, ← Quay lại, Lộ trình / + Case / ⋮, chip lọc, số "Lớp tôi dạy"', () => {
     const cao = (f: string, mau: RegExp) => assert(mau.test(docNguon(f)), `${f}: ${mau}`);
     cao('web/src/ui/HangNhom.tsx', /max-sm:before:-inset-3\.5/);
-    cao('web/src/modules/test/LichTestTab.tsx', /min-h-\[44px\] px-1 text-xs/);
+    /* PR-LT3: nút "Mở tất cả / Thu tất cả" bỏ theo mockup ba khối — đầu khối Lịch Test cao 44 px trên điện thoại. */
+    cao('web/src/ui/HangNhom.tsx', /phang \? 'max-sm:min-h-\[44px\]'/);
     cao('web/src/modules/fasttrack/MockDetailPage.tsx', /mb-1 min-h-\[44px\] sm:min-h-0" onClick=\{\(\) => navigate\(-1\)\}>← Quay lại/);
     cao('web/src/ui/ThanhTruocSau.tsx', /btn btn-sm btn-ghost min-h-\[44px\] sm:min-h-0[^']*';[\s\S]*← Quay lại/);   // PR-DH 04/10: nút Quay lại hồ sơ HV nay nằm trong ThanhTruocSau
     cao('web/src/modules/students/StudentDetailPage.tsx', /className="btn btn-primary min-h-\[44px\] sm:min-h-0" onClick=\{\(\) => setReportOpen\(true\)\}>\+ Case/);

@@ -104,7 +104,8 @@ export async function runPrUxGTests(t: YThucTestKit) {
     const m = /const COT_THAO_TAC = (\d+)/.exec(s);
     assert(m && Number(m[1]) >= 110, `COT_THAO_TAC = ${m?.[1]}`);
     assert((s.match(/width: COT_THAO_TAC/g) ?? []).length === 2, 'cả hai colgroup phải dùng COT_THAO_TAC');
-    const gv = s.split('\n').find((l) => /gvNo\.join\(', '\) \|\| '—'/.test(l)) ?? '';
+    /* PR-LT3: ô GV chấm vẽ bằng <GvCham> (tô "GV chấm chéo") — vẫn xuống dòng, không cắt. */
+    const gv = s.split('\n').find((l) => /<td[^>]*><GvCham gv=\{d\.gvNo\} \/><\/td>/.test(l)) ?? '';
     assert(gv && !/truncate/.test(gv), `ô GV chấm còn truncate: ${gv.trim()}`);
   });
 

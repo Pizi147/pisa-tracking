@@ -25,7 +25,8 @@ import { duongDiemTheoLuot, type DanhSachLuot } from '../cham/LuoiChamLop.tsx';
 import { MuiTen } from '../cases/SkillBoard.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { PhanTichLopTab } from './PhanTichLopTab.tsx';
-import { DOT_XUAT_FT, DOT_XUAT_THUONG, TAB_HO_SO_LOP, TAB_HO_SO_LOP_NHAN, ngay, tabHoSoLop, type TabHoSoLop } from '@shared/domain/index.ts';
+import { DOT_XUAT_FT, DOT_XUAT_THUONG, TAB_HO_SO_LOP_NHAN, ngay, tabHienCuaLop, tabMacDinhLop, type TabHoSoLop } from '@shared/domain/index.ts';
+import { TabTongKetLop } from './TabTongKetLop.tsx';
 
 /**
  * HỒ SƠ LỚP (đặc tả §3.7; mockup 06 menu dòng A, 06c §1, 10b) — đầu trang có sẵn các nút hành động, ba tab
@@ -36,7 +37,6 @@ export default function ClassOverviewPage() {
   const { classId } = useParams();
   const { homNay } = useNgayNghiepVu();
   const [params, setParams] = useSearchParams();
-  const tab = tabHoSoLop(params.get('tab'));
   const cheDo: 'diem' | 'can-ho-tro' = params.get('che-do') === 'can-ho-tro' ? 'can-ho-tro' : 'diem';
   const periods = usePeriods();
   const [periodId, setPeriodId] = useState<number | null>(null);
@@ -85,6 +85,11 @@ export default function ClassOverviewPage() {
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (loading || !data) return <Skeleton rows={8} />;
 
+  /* PR-TK: lớp đã kết thúc có thêm tab "Tổng kết" — đứng đầu và là tab mở mặc định (tab khác phải ghi rõ trên URL). */
+  const daKetThuc = data.status === 'finished';
+  const tab = tabMacDinhLop(params.get('tab'), daKetThuc);
+  const tabMacDinh = tabMacDinhLop(null, daKetThuc);
+
   const thuong = data.programme?.scoringMode === 'ratio';
   const dong = () => setViec(null);
   const xong = () => { invalidate('/classes'); invalidate('/hoc-vien-lop'); reload(); };
@@ -103,9 +108,10 @@ export default function ClassOverviewPage() {
         onBanGiao={(o) => { setBg({ mon: o.mon ?? null, lenhId: null, lop: o.lop ?? null }); setViec('ban-giao'); }} />
 
       <HangTab ariaLabel="Hồ sơ lớp" value={tab}
-        onChange={(k: TabHoSoLop) => doiThamSo({ tab: k === 'hoc-vien' ? null : k })}
-        tabs={TAB_HO_SO_LOP.map((k) => ({ key: k, label: TAB_HO_SO_LOP_NHAN[k], canhBao: k === 'y-thuc' && data.canhBaoYThuc > 0 }))} />
+        onChange={(k: TabHoSoLop) => doiThamSo({ tab: k === tabMacDinh ? null : k })}
+        tabs={tabHienCuaLop(daKetThuc).map((k) => ({ key: k, label: TAB_HO_SO_LOP_NHAN[k], canhBao: k === 'y-thuc' && data.canhBaoYThuc > 0 }))} />
 
+      {tab === 'tong-ket' && <TabTongKetLop classId={data.id} />}
       {tab === 'hoc-vien' && (
         <TabHocVienLop lop={data} cheDo={cheDo} onCheDo={(m) => doiThamSo({ 'che-do': m === 'diem' ? null : m })}
           onDoi={xong} onThemHocVien={() => setViec('hoc-vien')}

@@ -52,7 +52,7 @@ export type MetricResult = {
    * PR-VAI-a (Q24–Q25): người giữ việc + hạn của TỪNG phần tử, đọc trong CÙNG câu sinh tập (bài: ô nợ điểm; PA: `action_due` + người thực
    * hiện). Cột "Người giữ việc", "Hạn" của Cần xử lý và `hanCu` của ô số đọc từ đây — không câu thứ hai, không luật thứ hai.
    */
-  chiTiet?: Map<number, { nguoi: number[]; han: string[] }>;
+  chiTiet?: Map<number, { nguoi: number[]; han: string[]; /** T18: ô Speaking Mock — người giữ việc "GV chấm chéo". */ chamCheo?: boolean }>;
   /** Hạn cũ nhất của tập (sau bộ lọc khung) — ô "PA quá hạn ghi kết quả" ghi "tuần W4 SEP" từ đây. */
   hanCu?: string | null;
   /** Phạm vi rỗng — không có gì để đếm. KHÔNG được hiểu thành toàn hệ thống. */
@@ -521,6 +521,7 @@ function overdueScoreBai(p: Principal, branchId: number | null, today: string): 
     ids.add(id);
     const c = chiTiet.get(id) ?? chiTiet.set(id, { nguoi: [], han: [] }).get(id)!;
     if (x.userId !== null && !c.nguoi.includes(x.userId)) c.nguoi.push(x.userId);
+    if (x.chamCheo) c.chamCheo = true;
     if (x.han) c.han.push(x.han);
   };
   if (sc.all) {

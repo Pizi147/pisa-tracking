@@ -1,7 +1,7 @@
 import { db, theoLo } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
-  ATTEMPT_KIND_SHORT, CHU_CHUYEN_LOP, daiDienNhomBoTro,
+  ATTEMPT_KIND_SHORT, CHAM_CHEO, CHU_CHUYEN_LOP, daiDienNhomBoTro, laChamCheo,
   INTERVENTION_KIND_LABEL, PERMISSIONS,
   SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, cycleDeadline,
   duongHoSoHocVien, duongLichTest, nhanDotNgan, planDueDate, urgencyFromSos,
@@ -28,6 +28,7 @@ import { settleNoShows, sweepExpiredMoves } from '../fasttrack/absence.ts';
 import { quetYeuCau } from '../duyet/yeuCau.ts';
 import { mtLichSuChuaNhap } from '../cham/canCham.ts';
 import { trangThaiYThuc, ungVienVaThe } from '../yThuc/trangThai.ts';
+import { viecThiThat } from '../loTrinh/thiThat.ts';
 import { khaiDuoc } from '../yThuc/xuLy.ts';
 
 /**
@@ -117,6 +118,8 @@ export type WorkGroupKey =
   | 'no_owner' | 'placement' | 'missing_data' | 'mgmt'
   /* PR-VAI-a: Phối hợp SOS là việc thật (K5-10); khai bậc Ý thức HS cũ (K1-15); kỳ vọng đầu ra (K5-11). */
   | 'phoi_hop_sos' | 'khai_bac' | 'ky_vong_dau_ra'
+  /* PR-TK (TK-K): GVCN cập nhật kết quả thi thật (L R W S) của em FT đã qua mốc thi. */
+  | 'thi_that'
   /* PR-YT4 (K5 §3 dòng 6–8): việc Ý thức THẬT có hạn — thay nhắc mềm W01–W06. */
   | 'yt_xu_ly' | 'yt_xem' | 'yt_thuc_hien'
   /* PR-CT (Q30-2): bàn giao khi có quyết định chuyển lớp — một việc mỗi lớp (GVCN), mỗi (lớp, môn) (GVBM). */
@@ -173,6 +176,11 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
     hint: 'Em có quyết định lên FT từ BE/ELE và đã có bài Cuối khoá — đánh dấu Đạt hoặc Không đạt kỳ vọng đầu ra ở Kết luận khoá.',
   },
 
+  /* PR-TK (TK-K): kết quả thi thật do GVCN lớp cuối nhập — hạn = thứ Hai sau kỳ thi + 4 tuần, đỏ không chặn. */
+  thi_that: {
+    label: 'Cập nhật kết quả thi thật',
+    hint: 'Em Fast Track đã qua kỳ thi — nhập điểm L, R, W, S em báo về hoặc chọn Không thi. Hạn 4 tuần kể từ thứ Hai sau kỳ thi.',
+  },
   /* PR-LT2b (M-05, T47): Mini Test sau bổ trợ miễn phí — hạn = ngày buổi cuối + 2. */
   mini_test: {
     label: 'Ghi Mini Test',
@@ -355,7 +363,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
           kind: d.kind, testLabel, skill: d.skill, skillLabel,
           /* PR-UX1 Q13: bấm Chấm mở Lịch Test đúng lớp, con trỏ vào môn này; bài không có lớp giữ hồ sơ lượt. */
           students: new Map(), due: null,
-          href: d.classId ? duongLichTest({ classId: d.classId, kn: d.skill, periodId: d.periodId }) : attemptHref({ id: d.attemptId, kind: d.kind, classId: d.classId }),
+          /* PR-LT3: không kèm tuần — Lịch Test ở tuần hiện tại có đủ ba khối (bài tuần trước ở khối 2, quá hạn ở khối 1); kèm tuần thi
+             thì màn mở chế độ "tuần khác" (không có khối 2). */
+          href: d.classId ? duongLichTest({ classId: d.classId, kn: d.skill }) : attemptHref({ id: d.attemptId, kind: d.kind, classId: d.classId }),
           attemptId: d.attemptId, ownerId: d.ownerId, quaHan: false,
         };
         buckets.set(k, b);
@@ -371,7 +381,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
      */
     const byTest = new Map<string, ScoreBucket[]>();
     for (const b of buckets.values()) {
-      const k = `${b.classId ?? 0}|${b.kind ?? 'mock'}|${b.attemptNo ?? 0}|${b.due ?? ''}|u${b.ownerId ?? 0}`;
+      const k = `${b.classId ?? 0}|${b.kind ?? 'mock'}|${b.attemptNo ?? 0}|${b.due ?? ''}|u${b.ownerId ?? 0}${laChamCheo(b.kind, b.skill) ? '|cc' : ''}`;
       (byTest.get(k) ?? byTest.set(k, []).get(k)!).push(b);
     }
     const out: WorkItem[] = [];
@@ -407,7 +417,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         href: first.href,
         ownerId: first.ownerId, owner: null, mine: first.ownerId === p.userId,
         due: first.due,
-        statusLabel: first.ownerId === null ? 'Chưa phân công giáo viên' : 'Chưa nhập điểm',
+        statusLabel: laChamCheo(first.kind, first.skill) ? CHAM_CHEO : first.ownerId === null ? 'Chưa phân công giáo viên' : 'Chưa nhập điểm',
       });
     }
     return out;
@@ -435,7 +445,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     const khacDongs: BaiChuaCham[] = [];
     for (const a of managedAttempts as any[]) {
       for (const c of (a.pendingDetail ?? []) as any[]) {
-        const ownerId = a.classId ? (ownerOf.get(`${a.classId}|${c.skill}`) ?? null) : null;
+        /* T18: Speaking Mock không có người phụ trách — không bị bỏ vì "đã có ở phần của mình" (GVBM S không có nó ở đó). */
+        const ownerId = a.classId && !laChamCheo(a.kind, c.skill) ? (ownerOf.get(`${a.classId}|${c.skill}`) ?? null) : null;
         if (ownerId === p.userId) continue;   // đã có ở phần "của mình"
         khacDongs.push({
           classId: a.classId ?? null, classCode: a.classCode ?? null, attemptNo: a.attemptNo ?? null,
@@ -1125,6 +1136,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     }
   }
 
+  // ------------------------------------------------- 5d. cập nhật kết quả thi thật (PR-TK, TK-K)
+  if (co('thi_that')) items.push(...viecThiThat(p, { today, tatCa, branchId: f.branchId ?? null }));
+
   // ------------------------------------------------- 6. công việc quản lý được giao
   /*
    * VIỆC Ở BẢNG "TIẾN ĐỘ CÔNG VIỆC" CŨNG LÀ VIỆC CỦA NGƯỜI NÀY (mục 3.2).
@@ -1166,7 +1180,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   if (f.chiNhom) for (let i = items.length - 1; i >= 0; i--) if (!f.chiNhom.has(items[i].group)) items.splice(i, 1);
   const order: WorkGroupKey[] = [
     'cause', 'xac_nhan_pa', 'ke_hoach_bo_tro', 'phoi_hop', 'phoi_hop_sos', 'mini_test', 'score', 'no_plan', 'ghi_ket_qua_pa', 'yt_xu_ly', 'yt_xem', 'yt_thuc_hien', 'khai_bac',
-    'placement', 'ky_vong_dau_ra', 'ban_giao', 'no_owner', 'mgmt', 'missing_data',
+    'placement', 'ky_vong_dau_ra', 'thi_that', 'ban_giao', 'no_owner', 'mgmt', 'missing_data',
   ];
   const weight = (u: WorkUrgency) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
 

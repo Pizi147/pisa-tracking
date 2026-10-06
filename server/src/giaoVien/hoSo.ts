@@ -304,7 +304,11 @@ export function oHoSoGv(p: Principal, gvId: number, q: ThamSoO): { n: number; ti
 // ------------------------------------------------------------------ bảng giáo viên của một chi nhánh (Q11, K1-28) — không xếp hạng, không hàng tổng
 
 export type HangGv = { id: number; ten: string; lop: number; hocVien: number; chuaNhap: number; quaHan: number; caseMo: number; caseQuaHan: number };
-/** `chuaPhanCong` (PR-UXF-a Q8): bài của môn CHƯA phân công giáo viên — không phải một người, nên không nằm trong `hang`; Σ hàng + phần này = ô Tổng quan. */
+/**
+ * `chuaPhanCong` (PR-UXF-a Q8): bài của môn CHƯA phân công giáo viên — không phải một người, nên không nằm trong `hang`.
+ * PR-LT3 (chủ sản phẩm 06/10): bảng chỉ đếm bài CÓ người phụ trách + Chưa phân công; Speaking Mock chưa ai chấm (T18) không vào bảng —
+ * thấy ở Lịch Test khối 1 (cột "GV chấm chéo"). Σ bảng = ô Tổng quan trừ các ô chấm chéo.
+ */
 export type BangGv = { cn: number; tenChiNhanh: string; ct: ChuongTrinh; hang: HangGv[]; chuaPhanCong: { chuaNhap: number; quaHan: number } | null };
 
 /**
@@ -371,7 +375,7 @@ export function bangGvChiNhanh(p: Principal, q: { cn?: number | null; ct?: strin
   }
   hang.sort((a, b) => a.ten.localeCompare(b.ten, 'vi') || a.id - b.id);
   /* PR-UXF-a Q8: bài của môn CHƯA PHÂN CÔNG giáo viên vẫn là nợ — dòng riêng cuối bảng (không phải người, không hồ sơ) để Σ = ô Tổng quan. */
-  const chuaPc = no.filter((d) => d.userId === null && locKhung(ct, bang.get(d.classId)?.isFastTrack ? 'ft' : 'thuong'));
+  const chuaPc = no.filter((d) => d.userId === null && !d.chamCheo && locKhung(ct, bang.get(d.classId)?.isFastTrack ? 'ft' : 'thuong'));
   return { cn, tenChiNhanh: cb.name, ct, hang,
     chuaPhanCong: chuaPc.length ? { chuaNhap: chuaPc.length, quaHan: chuaPc.filter((d) => d.overdue).length } : null };
 }
