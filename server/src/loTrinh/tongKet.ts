@@ -148,7 +148,7 @@ export function tongKetLoTrinh(p: Principal, cycleId: number) {
     ketQua: laFt
       ? { loai: 'ft' as const, ovr: b.thi_that_ovr as number | null, l: b.thi_that_l, r: b.thi_that_r, w: b.thi_that_w, s: b.thi_that_s, ngay: b.thi_that_ngay as string | null,
           khongThi: !!b.thi_that_khong_thi, khongCoThi,
-          nhan: daCoKq && b.thi_that_ovr === null ? (b.ket_luan === 'reached' ? 'Đạt Target' : 'Chưa đạt Target') : kq!.nhan, ketLuan: b.ket_luan as string | null,
+          nhan: daCoKq ? (b.ket_luan === 'reached' ? 'Đạt Target' : b.ket_luan === 'not_reached' ? 'Chưa đạt Target' : '') : kq!.nhan, ketLuan: b.ket_luan as string | null,
           choNhap: !khongCoThi && !daCoKq && (kq!.nhan === 'Chờ kết quả thi thật' || kq!.nhan === 'Chờ đủ 4 kỹ năng'),
           coTheNhap: !khongCoThi && coTheNhapThiThat(p, { id: cycleId, student_id: c.student_id }) }
       : { loai: 'thuong' as const, tyLe: b.ty_le_cuoi_khoa as number | null, dai: b.dai_cuoi_khoa as string | null, kyVongDat: b.ky_vong_dat === null ? null : !!b.ky_vong_dat },
@@ -205,7 +205,7 @@ export function tongKetLop(p: Principal, classId: number) {
   return {
     lop: { id: lop.id as number, code: lop.code as string, loai: laFt ? 'ft' as const : 'thuong' as const, programmeCode: lop.programme_code as string | null },
     dai: laFt
-      ? { hocVien: dem(() => true), datTarget: dem((d) => d.ketLuan === 'reached'), chuaDat: dem((d) => d.ketLuan === 'not_reached'), choKetQua: dem((d) => d.ketLuan !== 'reached' && d.ketLuan !== 'not_reached') }
+      ? { hocVien: dem(() => true), datTarget: dem((d) => d.ketLuan === 'reached'), chuaDat: dem((d) => d.ketLuan === 'not_reached'), choKetQua: dem((d) => !!d.thiThat && !d.thiThat.khongThi && d.ketLuan !== 'reached' && d.ketLuan !== 'not_reached') }
       : { hocVien: dem(() => true), lenFt: dem((d) => d.huongKhoa === 'len_ft'), lenLop: dem((d) => d.huongKhoa === 'len_lop'), hocLai: dem((d) => d.huongKhoa === 'hoc_lai') },
     dong,
   };

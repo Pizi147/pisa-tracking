@@ -569,6 +569,31 @@ export async function runPrTkTests(t: YThucTestKit) {
     assert(maLoi(() => thiThatSvc.datKetQuaThiThat(gvcn, a.cy, NHAP4)) === 403, 'GVCN đã hết hiệu lực → 403');
   }));
 
+  // ------------------------------------------------------------------ Sửa sau rà lại #220 (B2, B3, 4a)
+  await checkAsync('TK-rà B2 · kết quả cũ có Overall nhưng không có L R W S: không nhãn "Chờ kết quả thi thật"; ket_luan chưa rõ → ẩn nhãn', () => thu(() => {
+    const ft = taoLop('FT', true);
+    const a = taoHV(ft, 'FT', true, 6.5); const b = taoHV(ft, 'FT', true, 6.5);
+    cyclesSvc.setOutcome(P.admin, a.cy, { outcome: 'reached', score: 6.5 });
+    cyclesSvc.setOutcome(P.admin, b.cy, { outcome: 'unknown', score: 6.5 });
+    for (const x of [a, b]) studentsSvc.setStudentStatus(P.admin, x.sid, 'finished', NGAY, 'Nghỉ');
+    const ra = tongKetSvc.tongKetLoTrinh(P.admin, a.cy).ketQua; const rb = tongKetSvc.tongKetLoTrinh(P.admin, b.cy).ketQua;
+    assert(ra.ovr === 6.5 && ra.nhan === 'Đạt Target' && ra.choNhap === false, JSON.stringify(ra));
+    assert(rb.ovr === 6.5 && rb.nhan === '' && rb.choNhap === false, JSON.stringify(rb));
+  }));
+  await checkAsync('TK-rà B3 · bảng lớp FT: "Chờ kết quả" không đếm em chuyển lớp và em "Không thi"; 4a · nhập thi thật cho lộ trình đóng vì chuyển lớp → 400', () => thu(() => {
+    const ft = taoLop('FT', true); const thuong = taoLop('FOU', false);
+    const gvcn = ganGvcn(ft, P.normalCoreTeacher.userId);
+    const cho = taoHV(ft, 'FT', true, 6.5); const khong = taoHV(ft, 'FT', true, 6.5); const chuyen = taoHV(ft, 'FT', true, 6.5);
+    for (const x of [cho, khong, chuyen]) themLuot(x, ft, 1, { band: 6 });
+    studentsSvc.transferStudent(P.admin, chuyen.sid, thuong, NGAY, 'Xếp lại trình độ', { noNote: true });
+    studentsSvc.setStudentStatus(P.admin, cho.sid, 'finished', NGAY, 'Nghỉ'); studentsSvc.setStudentStatus(P.admin, khong.sid, 'finished', NGAY, 'Nghỉ');
+    thiThatSvc.datKetQuaThiThat(gvcn, khong.cy, { khongThi: true });
+    conn.prepare(`UPDATE classes SET status = 'finished', finished_at = ? WHERE id = ?`).run(NGAY, ft);
+    const r = tongKetSvc.tongKetLop(P.admin, ft);
+    assert(r.dai.hocVien === 3 && r.dai.choKetQua === 1 && r.dai.datTarget === 0, JSON.stringify(r.dai));
+    assert(maLoi(() => thiThatSvc.datKetQuaThiThat(P.admin, chuyen.cy, NHAP4)) === 400, 'chuyển lớp: 400');
+  }));
+
   // @@BAT-BIEN@@ — luôn ở CUỐI file: soi mọi lộ trình các phép kiểm trước để lại. Thêm phép kiểm mới Ở TRÊN dòng này.
   /* TK-5 bất biến phụ "điểm bản chụp = điểm sống" chỉ kiểm trong phép kiểm TK-5 ở trên: nhiều phép kiểm khác (PR khác) sửa / xoá điểm của lộ trình đã đóng bằng SQL thẳng nên soi toàn DB ở cuối sẽ báo oan. */
   await checkAsync('TK-3 · BẤT BIẾN: mọi lộ trình status <> active đều có ≥ 1 bản chụp (đường đóng mới quên gọi → đỏ)', async () => {

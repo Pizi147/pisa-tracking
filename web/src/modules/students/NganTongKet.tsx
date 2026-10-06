@@ -150,7 +150,7 @@ export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onCl
   return (
     <>
       <KhungPanel tieuDe="Tổng kết lộ trình" hocVien={data ? `${data.hocVien.ten} · ${chuongTrinh}` : null} rong="rong" onDong={nhap ? () => { /* Esc đóng ngăn nhập trước */ } : onClose}
-        chan={{ phu: data ? <Link className="btn btn-ghost min-h-[44px] sm:min-h-0" to={duongHoSoHocVien(data.hocVien.id, { loTrinh: cycleId })}>Mở hồ sơ</Link> : undefined,
+        chan={{ huy: null, phu: data ? <Link className="btn btn-ghost min-h-[44px] sm:min-h-0" to={duongHoSoHocVien(data.hocVien.id, { loTrinh: cycleId })}>Mở hồ sơ</Link> : undefined,
           chinh: <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onClose}>Đóng</button> }}>
         {error && <ErrorState message={error.message} hint={error.hint} onRetry={reload} />}
         {loading && !data && <Skeleton rows={6} />}
@@ -168,7 +168,7 @@ export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onCl
                     <O nho={`Thi thật${kq.ngay ? ` · ${ngay(kq.ngay, homNay)}` : ''}`}>
                       <Lon em="OVR">{b1(kq.ovr)}</Lon>
                       <div className="mt-0.5 text-xs tabular-nums text-slate-400">L {b1(kq.l)} · R {b1(kq.r)} · W {b1(kq.w)} · S {b1(kq.s)}</div>
-                      <div className="mt-1.5"><Nhan tone={kq.ketLuan === 'reached' ? 'ok' : kq.ketLuan === 'not_reached' ? 'late' : 'muted'}>{kq.nhan}</Nhan></div>
+                      {kq.nhan && <div className="mt-1.5"><Nhan tone={kq.ketLuan === 'reached' ? 'ok' : kq.ketLuan === 'not_reached' ? 'late' : 'muted'}>{kq.nhan}</Nhan></div>}
                     </O>
                   ) : kq.khongCoThi ? (
                     <O nho="Thi thật" cho><div className="text-sm font-semibold text-slate-500">—</div></O>

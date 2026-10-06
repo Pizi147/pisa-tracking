@@ -36,11 +36,13 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, chong, onClose, 
   const { data: c, error, reload } = useApi<any>(`/cycles/${cycleId}`, [cycleId]);
   const [form, setForm] = useState<{ ngay: string; l: string; r: string; w: string; s: string; khongThi: boolean; ghiChu: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [goc, setGoc] = useState<string | null>(null);
   const lf = useLoiForm();
 
   /* Nạp giá trị đang lưu MỘT LẦN — tải lại nền không được xoá điều người dùng đang gõ. */
   if (c && !form) {
-    setForm({ ngay: c.thi_that_ngay ?? '', l: fmt(c.thi_that_l), r: fmt(c.thi_that_r), w: fmt(c.thi_that_w), s: fmt(c.thi_that_s), khongThi: !!c.thi_that_khong_thi, ghiChu: c.outcome_note ?? '' });
+    const f = { ngay: c.thi_that_ngay ?? '', l: fmt(c.thi_that_l), r: fmt(c.thi_that_r), w: fmt(c.thi_that_w), s: fmt(c.thi_that_s), khongThi: !!c.thi_that_khong_thi, ghiChu: c.outcome_note ?? '' };
+    setForm(f); setGoc(JSON.stringify(f));
   }
   if (error) return <KhungPanel tieuDe="Kết quả thi thật" hocVien={studentName} lop={lop} longTrong={chong} z={chong ? 'z-[60]' : undefined} onDong={onClose}><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></KhungPanel>;
   if (!c || !form) return <KhungPanel tieuDe="Kết quả thi thật" hocVien={studentName} lop={lop} longTrong={chong} z={chong ? 'z-[60]' : undefined} onDong={onClose}><Skeleton rows={5} /></KhungPanel>;
@@ -74,7 +76,7 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, chong, onClose, 
 
   return (
     <KhungPanel tieuDe="Kết quả thi thật" hocVien={studentName} lop={lop} longTrong={chong} z={chong ? 'z-[60]' : undefined} onDong={onClose}
-      chan={{ huy: { onClick: onClose }, daSua: true, conThieu: lf.conThieu(loi), chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy}>Lưu</button> }}>
+      chan={{ huy: { onClick: onClose }, daSua: JSON.stringify(form) !== goc, conThieu: lf.conThieu(loi), chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy}>Lưu</button> }}>
       <div className="max-w-[560px] space-y-3">
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12.5px] text-slate-400">
           <span>Target <b className="tabular-nums text-slate-200">{c.khong_cam_ket ? 'KCK' : target !== null ? target.toFixed(1) : '—'}</b></span>
