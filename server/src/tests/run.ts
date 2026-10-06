@@ -9143,6 +9143,9 @@ await runPrMtbTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 // ==================================================================== PR-LUI-b (đường lui Học viên & Lớp)
 const { runPrLuiBTests } = await import('./prLuiB.tests.ts');
 await runPrLuiBTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+// ==================================================================== PR-LT3 (Lịch Test ba khối + Speaking chấm chéo) — cuối cùng: thêm HV thử vào MB FT 101
+const { runPrLt3Tests } = await import('./prLt3.tests.ts');
+await runPrLt3Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 // ==================================================================== PR-TK (Tổng kết lộ trình) — LUÔN Ở CUỐI: phép kiểm bất biến soi mọi dữ liệu các phép kiểm trước để lại
 const { runPrTkTests } = await import('./prTk.tests.ts');

@@ -21,7 +21,7 @@ import { useNgayNghiepVu } from './ngayNghiepVu.ts';
  * Toàn bộ luật (câu chữ, đếm quá hạn từ hạn GỐC, hiện cả hẹn xử lý) nằm ở `deadlineView` trong
  * `shared/domain/display.ts` — kiểm được bằng bộ kiểm thử máy chủ. Component này chỉ vẽ.
  */
-export function Han({ loai, han, hanGoc, hen, tienTo, ghiChu, coViec, haiDong }: {
+export function Han({ loai, han, hanGoc, hen, tienTo, ghiChu, coViec, haiDong, boTinHieu }: {
   loai: DeadlineKind;
   /** Hạn đang hiệu lực, dạng `2026-09-23`. `null` = chưa đặt. */
   han: string | null;
@@ -37,6 +37,8 @@ export function Han({ loai, han, hanGoc, hen, tienTo, ghiChu, coViec, haiDong }:
   coViec?: boolean;
   /** Phần "quá hạn"/"hôm nay" xuống dòng riêng (cột hạn hẹp, cột thẳng hàng). */
   haiDong?: boolean;
+  /** Chỉ chữ hạn, không "⚠ quá hạn n ngày"/"hôm nay" — chỗ gọi tự vẽ badge riêng (Lịch Test khối 2, PR-LT3 D6). */
+  boTinHieu?: boolean;
 }) {
   const { homNay } = useNgayNghiepVu();
   const v = deadlineView({ kind: loai, due: han, originalDue: hanGoc, reschedule: hen, today: homNay });
@@ -47,7 +49,7 @@ export function Han({ loai, han, hanGoc, hen, tienTo, ghiChu, coViec, haiDong }:
       {v.homNay && <span className="font-semibold text-soon">hôm nay</span>}
     </>
   );
-  const coTinHieu = v.tone === 'overdue' || v.homNay;
+  const coTinHieu = !boTinHieu && (v.tone === 'overdue' || v.homNay);
   return (
     <span title={title} className="text-xs tabular-nums text-slate-500">
       {[tienTo, coViec && loai !== 'du-kien-ket-thuc' ? v.viec : null].filter(Boolean).map((x) => `${x} · `).join('')}

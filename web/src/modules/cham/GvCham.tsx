@@ -31,12 +31,15 @@ export function cungGvCham(a: NguoiChon | null, b: NguoiChon | null, toiId: numb
 export const khoaGvChamCot = (userId: number | null | undefined, classId: number | null | undefined, periodId: number | null | undefined) =>
   userId && classId && periodId ? `pisa:gv-cham:${userId}:${classId}:${periodId}` : null;
 
-/** GV chấm mặc định của cột S — lớp × tuần, nhớ trên máy. Không có/hỏng → "Tôi" nếu người xem được phân công S. */
-export function useGvChamCot(classId: number | null | undefined, periodId: number | null | undefined, laCuaToi: boolean) {
+/**
+ * GV chấm mặc định của cột S — lớp × tuần, nhớ trên máy. Không có/hỏng → CHÍNH người đang xem (Q3, PR-LT3, chủ sản phẩm 06/10: Speaking
+ * Mock không có GV mặc định — người lưu không đổi thì ghi chính người đó, trễ tính cho người đó).
+ */
+export function useGvChamCot(classId: number | null | undefined, periodId: number | null | undefined) {
   const { session } = useSession();
   const khoa = khoaGvChamCot(session?.user?.id, classId, periodId);
   const doc = (): NguoiChon | null => {
-    const macDinh: NguoiChon | null = laCuaToi ? { kieu: 'toi' } : null;
+    const macDinh: NguoiChon = { kieu: 'toi' };
     if (!khoa) return macDinh;
     try {
       const v = JSON.parse(localStorage.getItem(khoa) ?? 'null');
@@ -64,21 +67,24 @@ export function tenNgan(v: NguoiChon | null): string | null {
 
 /**
  * NÚT "GV chấm: {tên} ▾" — gọn, dưới chữ "S (band)" của tiêu đề cột (máy tính) hoặc đầu danh sách (điện thoại, `lon`).
+ * `chiTen` (đầu cột S, Q3 PR-LT3): chỉ tên — "Hoàng Thị Lan ▾"; "Tôi" hiện bằng tên tài khoản. Tooltip / aria vẫn "GV chấm Speaking".
  * Bấm mở hộp nhỏ chọn người (`ChonNguoi nhom="nhan_vien" choNgoai`).
  */
-export function NutGvCham({ value, onChange, lon = false, goiY = GOI_Y_COT }: {
+export function NutGvCham({ value, onChange, lon = false, goiY = GOI_Y_COT, chiTen = false }: {
   value: NguoiChon | null; onChange: (v: NguoiChon | null) => void; lon?: boolean;
   /** Câu giải thích dưới ô chọn — cột S (mặc định) hay một bài (hồ sơ Mock). */
   goiY?: string;
+  chiTen?: boolean;
 }) {
   const [mo, setMo] = useState(false);
-  const ten = tenNgan(value);
+  const { session } = useSession();
+  const ten = chiTen && value?.kieu === 'toi' ? session?.user?.fullName ?? 'Tôi' : tenNgan(value);
   return (
     <>
       <button type="button" onClick={() => setMo(true)} aria-haspopup="dialog"
-        title={`GV chấm Speaking — ${goiY}`}
+        title={`GV chấm Speaking — ${goiY}`} aria-label={`GV chấm Speaking: ${ten ?? 'chưa chọn'}`}
         className={`inline-flex max-w-full items-center gap-1 normal-case tracking-normal text-xs text-slate-400 hover:text-slate-200 ${lon ? 'min-h-[44px] px-1' : 'max-sm:py-3 max-sm:-my-3'}`}>
-        <span className="truncate">GV chấm: {ten ?? <span className="text-slate-500">chưa chọn</span>}</span>
+        <span className="truncate">{chiTen ? null : 'GV chấm: '}{ten ?? <span className="text-slate-500">chưa chọn</span>}</span>
         <span className="text-slate-500"><MuiTenGap mo /></span>
       </button>
       {/* I4 (PR-SL): khung panel chung. Chọn là lưu ngay (nhớ trên máy) → chân chỉ có "Xong". Mở được từ trong panel khác → `longTrong`. */}

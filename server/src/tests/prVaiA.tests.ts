@@ -93,7 +93,8 @@ export async function runPrVaiATests(t: YThucTestKit) {
       const k = metricsSvc.metricSet(P.mbManager, 'case-chua-co-nguoi-phu-trach', { branchId: MB }).n;
       /* PR-S6F-b (Q6 vế m): kèm "m bài chưa có người chấm" — bài quá hạn của tập `bai-qua-han-nhap-diem` không có người trong `chiTiet`. */
       const bai = metricsSvc.metricSet(P.mbManager, 'bai-qua-han-nhap-diem', { branchId: MB });
-      const m = (bai.ids as number[]).filter((id) => !bai.chiTiet?.get(id)?.nguoi.length).length;
+      /* PR-LT3 (T18, D4): ô Speaking Mock có người giữ việc "GV chấm chéo" — không phải "chưa có người chấm". */
+      const m = (bai.ids as number[]).filter((id) => !bai.chiTiet?.get(id)?.nguoi.length && !bai.chiTiet?.get(id)?.chamCheo).length;
       eq(lop.kem ?? null, [k ? `${k} Case chưa có người nhận` : '', m ? `${m} bài chưa có người chấm` : ''].filter(Boolean).join(' · ') || null, 'số Case chưa có người nhận = chỉ số giữ lại; m bài chưa có người chấm');
     } finally { khoiPhuc(); }
   });
@@ -612,19 +613,21 @@ export async function runPrVaiATests(t: YThucTestKit) {
   check('VAI-a (11a) · dòng Nợ: gvNo = tên GV phụ trách các ô còn nợ (pendingOwners), sắp theo tên, không trùng; chưa phân công ghi rõ', () => {
     const tuanNay = week.mondayOf(TODAY);
     const lop = new Set<number>((conn.prepare(`SELECT id FROM classes WHERE status = 'active' AND branch_id = ?`).all(MB) as any[]).map((r) => r.id));
-    const no = canCham.noTuanTruoc(P.mbManager, { branchId: MB, classIds: lop, truocTuan: tuanNay, lopCuaToi: new Set() }, TODAY);
+    /* PR-LT3: khối 1 "Test quá hạn chấm" (`noQuaHan`, theo hôm nay) — chỉ ô `khoiCham` = 'qua-han'. */
+    const no = canCham.noQuaHan(P.mbManager, { branchId: MB, classIds: lop, lopCuaToi: new Set() }, TODAY);
     assert(no.dong.length > 0, 'bộ demo MB phải có dòng Nợ tuần trước');
     const rows = (attemptsSvc.listAttempts(P.mbManager, { branchId: MB, scope: 'managed' }).rows as any[]);
     for (const d0 of no.dong) {
-      const ten = new Set<string>(); let chua = false;
+      const ten = new Set<string>(); let chua = false; let cc = false;
       for (const a of rows.filter((x) => d0.attemptIds.includes(x.id))) {
         for (const x of (a.pendingDetail ?? []) as any[]) {
-          if (!x.weekStart || x.weekStart >= tuanNay || (x.periodId ?? 0) !== (d0.periodId ?? 0)) continue;
+          if (!x.weekStart || d.khoiCham({ tuanThi: x.weekStart, tuanHomNay: tuanNay, quaHan: x.overdue }) !== 'qua-han'
+            || (x.periodId ?? 0) !== (d0.periodId ?? 0)) continue;
           const g = (a.pendingOwners ?? {})[x.skill] ?? null;
-          if (g) ten.add(g); else chua = true;
+          if (g === d.CHAM_CHEO) cc = true; else if (g) ten.add(g); else chua = true;
         }
       }
-      eq(d0.gvNo, [...[...ten].sort((x, y) => x.localeCompare(y, 'vi')), ...(chua ? ['chưa phân công'] : [])], `${d0.classCode} ${d0.dotLabel}`);
+      eq(d0.gvNo, [...[...ten].sort((x, y) => x.localeCompare(y, 'vi')), ...(cc ? [d.CHAM_CHEO] : []), ...(chua ? ['chưa phân công'] : [])], `${d0.classCode} ${d0.dotLabel}`);
     }
   });
 

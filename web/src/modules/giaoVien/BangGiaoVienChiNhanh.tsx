@@ -50,7 +50,7 @@ export function BangGiaoVienChiNhanh({ branchId, ct }: { branchId: number | null
               </tr>
             ))}
             {data.chuaPhanCong && (
-              /* PR-UXF-a Q8: bài của môn chưa phân công giáo viên — chữ mờ, không hồ sơ để mở; Σ cột = ô ở Cần xử lý. */
+              /* PR-UXF-a Q8: bài của môn chưa phân công giáo viên — chữ mờ, không hồ sơ để mở; Σ cột = ô ở Cần xử lý (trừ Speaking Mock chấm chéo — PR-LT3). */
               <tr>
                 <td className="td sticky-col whitespace-nowrap text-slate-400" title="Môn chưa có giáo viên được phân công — phân công ở hồ sơ lớp">Chưa phân công</td>
                 {COT.map((c) => (
