@@ -363,12 +363,12 @@ Skill: test-driven-development · `/impeccable clarify`
 - Ô "Band" (`w-14`, `inputMode="decimal"`, nhãn `Band`) ở `InlineScoreEditor`, `CriteriaModal`, sửa tiêu chí. `LOI_SO_CAU` / `LOI_TIEU_CHI` (tooltip) thêm "hoặc band 6.5 / b6".
 - Chữ ngoài mockup (≤ 3 từ, ghi vào PR): "Không mock lại" (= chữ của MTa), "Khôi phục kết quả". "Xin dời" đúng mockup phần 3.
 
-- [ ] **Step 1: Phép đỏ (luật thuần)**: `rawPatchFrom('6.5', cell)` → `{ band: 6.5 }`; `'b6'` → `{ band: 6 }`; `'32'` → `{ rawScore: 32 }`; `'b6.3'`, `'10.5'`, `'6,5'` → `null`; `criteriaPatchFrom(['','','',''], cell, '6.5')` → `patch.band === 6.5 && preview === 6.5`; `criteriaPatchFrom(['6','6','',''], cell, '6.5')` → `patch === null`.
-- [ ] **Step 2: Phép đỏ (DB, khoá tên A6/A6b/A8)**: GVBM L `PUT … { band: 6.5 }` → `band 6.5`, `raw_score` null; GVCN `xin-doi` kỹ năng `huyVang` → một `skill_move_requests` `pending`; GVBM gọi `xin-doi` → 403; `GET /attempts/:id` của lượt bị vượt có `ketQuaHuy`.
-- [ ] **Step 3: Phép đỏ quét nguồn**: `ScoreEntry.tsx` có `'Band'` ở 3 hộp tiêu chí; `HopThaoTacMt.tsx` có `'xin-doi'`, `'khong-mock-lai'`; `MockDetailPage.tsx` có `'Khôi phục kết quả'`; không còn `'từ lần 2 Quản lý duyệt'`.
-- [ ] **Step 4:** Sửa. Lưới `LuoiFT.tsx:275,305`, `MotKyNang.tsx:198-200`, `ODiemLon.tsx:186` thừa hưởng (không sửa).
-- [ ] **Step 5:** `npm run check`. Bấm thử GVBM (9): L gõ `6.5` → ô hiện `6.5`; W1 chỉ điền Band → lưu. GVCN (7): kỹ năng `S huỷ` → "Xin dời" → thẻ ở Chờ duyệt của QL. QL (2): "Không mock lại" → đợt thành `✓ 3/4`; MT bị vượt → "Khôi phục kết quả". Ảnh.
-- [ ] **Step 6: Commit** `feat(mtb): nhập band, Xin dời / Không mock lại, Khôi phục kết quả`.
+- [x] **Step 1: Phép đỏ (luật thuần)**: `rawPatchFrom('6.5', cell)` → `{ band: 6.5 }`; `'b6'` → `{ band: 6 }`; `'32'` → `{ rawScore: 32 }`; `'b6.3'`, `'10.5'`, `'6,5'` → `null`; `criteriaPatchFrom(['','','',''], cell, '6.5')` → `patch.band === 6.5 && preview === 6.5`; `criteriaPatchFrom(['6','6','',''], cell, '6.5')` → `patch === null`.
+- [x] **Step 2: Phép đỏ (DB, khoá tên A6/A6b/A8)**: GVBM L `PUT … { band: 6.5 }` → `band 6.5`, `raw_score` null; GVCN `xin-doi` kỹ năng `huyVang` → một `skill_move_requests` `pending`; GVBM gọi `xin-doi` → 403; `GET /attempts/:id` của lượt bị vượt có `ketQuaHuy`.
+- [x] **Step 3: Phép đỏ quét nguồn**: `ScoreEntry.tsx` có `'Band'` ở 3 hộp tiêu chí; `HopThaoTacMt.tsx` có `'xin-doi'`, `'khong-mock-lai'`; `MockDetailPage.tsx` có `'Khôi phục kết quả'`; không còn `'từ lần 2 Quản lý duyệt'`.
+- [x] **Step 4:** Sửa. Lưới `LuoiFT.tsx:275,305`, `MotKyNang.tsx:198-200`, `ODiemLon.tsx:186` thừa hưởng (không sửa).
+- [x] **Step 5:** `npm run check`. Bấm thử GVBM (9): L gõ `6.5` → ô hiện `6.5`; W1 chỉ điền Band → lưu. GVCN (7): kỹ năng `S huỷ` → "Xin dời" → thẻ ở Chờ duyệt của QL. QL (2): "Không mock lại" → đợt thành `✓ 3/4`; MT bị vượt → "Khôi phục kết quả". Ảnh.
+- [x] **Step 6: Commit** `feat(mtb): nhập band, Xin dời / Không mock lại, Khôi phục kết quả`.
 
 ### Task 9: Lưới Kế hoạch Test FT dùng Ô MT (theo Q1 — mặc định A)
 Skill: test-driven-development · `/impeccable layout` · `adapt`

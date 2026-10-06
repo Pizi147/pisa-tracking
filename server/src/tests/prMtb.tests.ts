@@ -675,4 +675,101 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert(d.thaoTacKyNang('co-diem', ql).menu.includes('doi-lich'), 'QL');
     assert(!d.thaoTacKyNang('co-diem', { ...ql, quanLy: false }).menu.includes('doi-lich'), 'GVBM');
   });
+
+  // ------------------------------------------------------------------ Task 8 — nhập band (T10), Xin dời / Không mock lại (T3), Khôi phục kết quả (T2)
+  console.log('\nPR-MTb · T8 nhập band · Xin dời / Không mock lại · Khôi phục kết quả');
+  const absence: any = await import('../fasttrack/absence.ts');
+  const ketQuaHuy: any = await import('../fasttrack/ketQuaHuy.ts');
+
+  check('MTb (T10) · rawPatchFrom: "6.5"/"b6"/"6.0" = band; "32" = số câu; "6" = số câu; "b6.3"/"10.5"/"6,5"/"abc" không gửi; "-" và "" như cũ', () => {
+    const o = { noShow: null };
+    const j = (s: string, c: any = o) => JSON.stringify(d.rawPatchFrom(s, c));
+    assert(j('6.5') === '{"band":6.5}', j('6.5'));
+    assert(j('b6') === '{"band":6}' && j('B6') === '{"band":6}' && j('6.0') === '{"band":6}', 'b6 / 6.0');
+    assert(j('32') === '{"rawScore":32}' && j('6') === '{"rawScore":6}', 'raw');
+    for (const x of ['b6.3', '10.5', '6,5', 'abc', '--', '7.25']) assert(d.rawPatchFrom(x, o) === null, `${x} phải null`);
+    assert(j('-') === '{"noShow":true}' && j('') === '{"rawScore":null}', '- / trống');
+    assert(j('', { noShow: { state: 'khong-co-bai' } }) === '{"noShow":false}', 'trống gỡ dấu');
+    assert(typeof d.LOI_SO_CAU === 'string' && /band/.test(d.LOI_SO_CAU) && /band/.test(d.LOI_TIEU_CHI), 'câu lỗi nhắc band');
+  });
+
+  check('MTb (T10) · criteriaPatchFrom: band một mình → {band}, preview = band; band + tiêu chí → null + lỗi; band sai → null; không band → như cũ', () => {
+    const o = { noShow: null };
+    const a = d.criteriaPatchFrom(['', '', '', ''], o, '6.5');
+    assert(a.patch?.band === 6.5 && a.preview === 6.5 && !('criteria' in a.patch), JSON.stringify(a));
+    assert(d.criteriaPatchFrom(['', '', '', ''], o, 'b7').patch?.band === 7, 'b7');
+    const b = d.criteriaPatchFrom(['6', '6', '', ''], o, '6.5');
+    assert(b.patch === null && b.loi === 'Điền band hoặc tiêu chí', JSON.stringify(b));
+    assert(d.criteriaPatchFrom(['-', '', '', ''], o, '6.5').patch === null, '"-" cùng band');
+    for (const x of ['6.3', '10', 'abc', '-1']) assert(d.criteriaPatchFrom(['', '', '', ''], o, x).patch === null, `band ${x}`);
+    const c = d.criteriaPatchFrom(['6', '6', '6.5', '7'], o);
+    assert(c.patch?.criteria?.length === 4 && c.preview === 6.5 && c.loi === null, JSON.stringify(c));
+    assert(d.criteriaPatchFrom(['', '', '', ''], { noShow: { state: 'khong-co-bai' } }).patch?.noShow === false, 'gỡ dấu');
+    assert(d.criteriaPatchFrom(['6', 'x', '', ''], o).patch === null, 'tiêu chí hỏng');
+  });
+
+  check('MTb (T10, A8) · máy chủ: GV L/R {band: 6.5} → band 6.5, raw_score null; gửi band cùng tiêu chí → 400', () => {
+    const a = emMoi([0, 4, 8]);
+    attemptsSvc.saveScore(P.lrTeacher, a.m1, 'listening', { band: 6.5 });
+    const r = conn.prepare(`SELECT band, raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`).get(a.m1) as any;
+    assert(r.band === 6.5 && r.raw_score === null, JSON.stringify(r));
+    const e = loiCua(() => attemptsSvc.saveScore(QL, a.m1, 'writing1', { band: 6, criteria: [6, 6, null, null] }));
+    assert(e.status === 400, `${e.status} ${e.message}`);
+  });
+
+  /** Em có S vắng một lần rồi vắng lần 2 → `huyVang`. */
+  const emHuyVang = () => {
+    const a = emMoi([0, 4, 8]);
+    conn.prepare(`UPDATE attempt_skills SET absence_move_count = 1 WHERE attempt_id = ? AND skill = 'speaking'`).run(a.m1);
+    absence.baoVang(P.coreTeacher, a.m1, 'speaking', '');
+    return a;
+  };
+  const soDeNghi = (aid: number) => (conn.prepare(`SELECT COUNT(*) n FROM skill_move_requests WHERE attempt_id = ? AND status = 'pending'`).get(aid) as any).n as number;
+
+  check('MTb (T3, A6) · máy chủ: kỹ năng huyVang — GVBM xin-doi → 403; GVCN xin-doi → một đề nghị pending; nút theo vai', () => {
+    const a = emHuyVang();
+    assert((conn.prepare(`SELECT huy_vang FROM attempt_skills WHERE attempt_id = ? AND skill = 'speaking'`).get(a.m1) as any)?.huy_vang === 1, 'chưa huyVang');
+    assert(loiCua(() => absence.xinDoi(P.subjectTeacher, a.m1, 'speaking')).status === 403, 'GVBM');
+    absence.xinDoi(P.coreTeacher, a.m1, 'speaking', { lyDo: '' });
+    assert(soDeNghi(a.m1) === 1, 'đề nghị');
+    const gvcn = { nhapDiem: false, quanLy: false, gvcn: true, laFt: true, dotHoanTat: false };
+    assert(d.thaoTacKyNang('huy-vang', gvcn).chinh === 'xin-doi', 'GVCN thấy Xin dời');
+    assert(d.thaoTacKyNang('huy-vang', { ...gvcn, quanLy: true, gvcn: false }).menu.includes('khong-mock-lai'), 'QL có Không mock lại');
+    assert(!d.thaoTacKyNang('huy-vang', { ...gvcn, gvcn: false }).chinh, 'GVBM không có nút chính');
+  });
+
+  check('MTb (T2, A6b) · máy chủ: lượt bị vượt có ketQuaHuy (soDiem), GVCN khôi phục → 403', () => {
+    const a = emMoi();
+    diemDu(a.m2);
+    keHoach.luuDot(QL, { attemptId: a.m1, kyNang: KN.map((skill) => ({ skill, periodId: tuan(7).id })), xacNhanHuyLich: true, reason: 'x' });
+    const kq = attemptsSvc.attemptDetail(QL, a.m2).ketQuaHuy;
+    assert(kq && kq.soDiem > 0, JSON.stringify(kq));
+    assert(loiCua(() => ketQuaHuy.khoiPhucKetQua(P.coreTeacher, a.m2)).status === 403, 'GVCN');
+  });
+
+  check('MTb (T10) · quét nguồn: ScoreEntry có ô "Band" ở 3 hộp tiêu chí (sửa tiêu chí, CriteriaModal, InlineScoreEditor); rawPatchFrom / criteriaPatchFrom ở shared', () => {
+    const se = nguon('web/src/modules/fasttrack/ScoreEntry.tsx');
+    const ba = [
+      se.slice(se.indexOf('function SuaTieuChi'), se.indexOf('export function CriteriaModal')),
+      se.slice(se.indexOf('export function CriteriaModal'), se.indexOf('export function InlineScoreEditor')),
+      se.slice(se.indexOf('export function InlineScoreEditor'), se.indexOf('export function DeadlinePill')),
+    ];
+    ba.forEach((x, i) => assert(/>Band<\/span>/.test(x) && /inputMode="decimal"/.test(x) && /bandText/.test(x), `hộp tiêu chí ${i + 1} thiếu ô Band`));
+    assert(/band\?: number \| null/.test(se) && !/export function rawPatchFrom/.test(se), 'SavePatch.band / chuyển rawPatchFrom');
+    const cd = nguon('shared/domain/chamDiem.ts');
+    assert(/export function rawPatchFrom/.test(cd) && /export function criteriaPatchFrom/.test(cd) && /docONhapLR\(/.test(cd), 'chamDiem.ts');
+  });
+
+  check('MTb (T3, T2) · quét nguồn: HopThaoTacMt có xin-doi / khong-mock-lai, bỏ vế "từ lần 2 Quản lý duyệt"; hồ sơ Mock + hàng Lộ trình có "Khôi phục kết quả"', () => {
+    const h = nguon('web/src/modules/fasttrack/HopThaoTacMt.tsx');
+    for (const c of ["'xin-doi'", "'khong-mock-lai'", '/xin-doi', '/khong-mock-lai', 'huyVang']) assert(h.includes(c), `HopThaoTacMt thiếu ${c}`);
+    const m = nguon('web/src/modules/fasttrack/MockDetailPage.tsx');
+    assert(m.includes('Khôi phục kết quả') && m.includes('HopKhoiPhucKetQua') && m.includes('ketQuaHuy'), 'MockDetailPage');
+    assert(/khoi-phuc-ket-qua/.test(nguon('web/src/modules/test/keHoach/HopXacNhanHuyLich.tsx')), 'hộp khôi phục gọi đường A6b');
+    const hl = nguon('web/src/modules/students/HangLichMt.tsx');
+    assert(/HopKhoiPhucKetQua/.test(hl) && /Khôi phục kết quả/.test(hl), 'HangLichMt');
+    const duyet = (dir: string): string[] => fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true })
+      .flatMap((f) => (f.isDirectory() ? duyet(`${dir}/${f.name}`) : /\.tsx?$/.test(f.name) ? [`${dir}/${f.name}`] : []));
+    for (const f of [...duyet('web/src'), ...duyet('shared')]) assert(!/từ lần 2 Quản lý duyệt/.test(nguon(f)), `${f} còn câu luật cũ`);
+  });
 }

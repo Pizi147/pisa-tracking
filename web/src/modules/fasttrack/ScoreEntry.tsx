@@ -11,8 +11,8 @@ import { fmtBand, skillLabel } from '../../lib/format.ts';
 import { useSession } from '../../lib/session.tsx';
 import { DongGvCham, cungGvCham, gvChamPayload, gvChamThanhChon } from '../cham/GvCham.tsx';
 import {
-  BAI_CO_NHAN_XET, NHAN_XET_TOI_DA, NO_SHOW_HINT, demNguocSuaDau, oLuoiThuong, tieuChiCua, tieuChiNganCua, tuanLich,
-  type EntrySkill, type NguoiChon,
+  BAI_CO_NHAN_XET, LOI_SO_CAU, NHAN_XET_TOI_DA, NO_SHOW_HINT, criteriaPatchFrom, demNguocSuaDau, oLuoiThuong,
+  rawPatchFrom, tieuChiCua, tieuChiNganCua, tuanLich, type EntrySkill, type NguoiChon,
 } from '@shared/domain/index.ts';
 
 export type Cell = {
@@ -56,6 +56,8 @@ export type Cell = {
 
 export type SavePatch = {
   rawScore?: number | null;
+  /** T10 (PR-MTa): band nhập thẳng (không cùng số câu / tiêu chí có giá trị). */
+  band?: number | null;
   criteria?: (number | null)[]; resultDate?: string | null;
   /** `true` = báo "-" (không có bài), `false` = gỡ dấu. Không phải điểm 0. */
   noShow?: boolean;
@@ -83,50 +85,17 @@ export const KHOA_HOAN_TAT_HINT = 'Đợt này đã hoàn tất. Chỉ Quản l�
 /** E8 (T53 Q6): bài đã xác nhận vắng không nhập điểm ở lưới — nhập bù thì Quản lý xếp lại bài trước. */
 export const VANG_HINT = 'Đã xác nhận vắng — Quản lý xếp lại bài trước khi nhập.';
 
+/** T10: gợi ý band ở tooltip ô L/R. */
+const GOI_Y_BAND = 'Band: 6.5 hoặc b6.';
+const BAND_HINT = 'Hoặc nhập thẳng band (6.5 hoặc b6) khi bốn tiêu chí để trống.';
+
+/** T10: ô Band của hộp tiêu chí — đầu vào là band đã lưu khi ô chỉ có band (bốn tiêu chí trống). */
+const bandBanDau = (cell: Cell) => (cell.band !== null && cell.criteria.every((v) => v === null) ? fmtBand(cell.band) : '');
+
 /** Vì sao ô này chỉ đọc — MỘT câu cho ô số câu và ô tiêu chí. */
 const lyDoChiDoc = (cell: Cell) => (cell.sitStatus === 'absent' ? VANG_HINT
   : lockedByNoShow(cell) ? 'Đã chốt — cần Quản lý hiệu chỉnh'
   : cell.khoa ? KHOA_HOAN_TAT_HINT : 'Bạn không được phân công kỹ năng này');
-
-/**
- * Chữ người dùng gõ ở ô SỐ CÂU ĐÚNG → lệnh gửi máy chủ. '-' LÀ MỘT LỆNH, KHÔNG PHẢI MỘT SỐ (rule book §17.1): "học
- * viên có lịch mà không làm bài". Ô trống vẫn chỉ là chưa nhập; xoá ô đang có dấu '-' là gỡ dấu, không phải chấm điểm.
- * MỘT hàm cho mọi nơi nhập (bảng cả lớp, hồ sơ Test) — không có luật thứ hai.
- *
- * `null` = chữ không hợp lệ ("--", "abc", "7.5"…): KHÔNG gửi gì. Trước đây `Number("--")` ra NaN, lên máy chủ thành
- * `null` — tức là xoá ô mà không ai định xoá.
- */
-export const LOI_SO_CAU = 'Số câu đúng là số nguyên, hoặc "-" nếu học viên không làm bài.';
-export function rawPatchFrom(text: string, cell: Cell): SavePatch | null {
-  const t = text.trim();
-  if (t !== '' && t !== '-' && !/^\d+$/.test(t)) return null;
-  return t === '-' ? { noShow: true }
-    : t === '' && cell.noShow ? { noShow: false }
-    : { rawScore: t === '' ? null : Number(t) };
-}
-
-/**
- * Bốn ô tiêu chí → lệnh gửi máy chủ + band xem trước. MỘT DẤU '-' TRONG BỐN Ô LÀ ĐỦ báo chưa có bài cho ĐÚNG BÀI NÀY:
- * không ghi các tiêu chí thành 0, không xoá bài khác. Xoá sạch bốn ô của bài đang có dấu '-' là GỠ dấu; xoá bốn ô
- * của bài có điểm là xoá điểm như cũ.
- *
- * `patch: null` = có ô không hợp lệ (không phải số, không phải đúng một "-", ví dụ "--"): KHÔNG gửi gì — trước đây ô
- * đó thành NaN rồi thành `null` trên máy chủ, tức là xoá tiêu chí mà không ai định xoá.
- */
-export const LOI_TIEU_CHI = 'Mỗi tiêu chí là một số, hoặc "-" nếu học viên không làm bài.';
-export function criteriaPatchFrom(vals: string[], cell: Cell): { dash: boolean; preview: number | null; patch: SavePatch | null } {
-  const hong = vals.some((v) => { const t = v.trim(); return t !== '' && t !== '-' && !Number.isFinite(Number(t)); });
-  if (hong) return { dash: false, preview: null, patch: null };
-  const dash = vals.some((v) => v.trim() === '-');
-  const nums = vals.map((v) => (v.trim() === '' || v.trim() === '-' ? null : Number(v)));
-  const filled = nums.filter((v) => v !== null) as number[];
-  const preview = !dash && filled.length === 4 ? Math.round((filled.reduce((a, b) => a + b, 0) / 4) * 2 + 1e-9) / 2 : null;
-  const allEmpty = vals.every((v) => v.trim() === '');
-  const patch: SavePatch = dash ? { noShow: true }
-    : allEmpty && cell.noShow ? { noShow: false }
-    : { criteria: nums };
-  return { dash, preview, patch };
-}
 
 /**
  * Lưu điểm một kỹ năng. Khi lỗi, giữ nguyên giá trị người dùng vừa gõ để họ bấm lại,
@@ -315,8 +284,8 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false, 
   /** Tên em cho toast "Đã ghi vắng … · {em}" (điện thoại). */
   tenHv?: string;
 }) {
-  /* Bài đã báo "-" thì ô hiện đúng dấu '-' (không phải ô trống, không phải 0). */
-  const shown = () => (cell.rawScore !== null ? String(cell.rawScore) : cell.noShow ? '-' : '');
+  /* Bài đã báo "-" thì ô hiện đúng dấu '-' (không phải ô trống, không phải 0). T10: ô chỉ có band hiện `6.5` / `6.0` (có dấu chấm → đọc lại là band). */
+  const shown = () => (cell.rawScore !== null ? String(cell.rawScore) : cell.band !== null ? fmtBand(cell.band) : cell.noShow ? '-' : '');
   const [draft, setDraft] = useState(shown());
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -330,14 +299,16 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false, 
   useEffect(() => {
     if (!dirty) setDraft(shown());
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `shown` chỉ đọc hai trường đã có trong danh sách
-  }, [cell.rawScore, cell.noShow?.state, dirty]);
+  }, [cell.rawScore, cell.band, cell.noShow?.state, dirty]);
 
   const commit = async () => {
     if (!dirty || busy || hoiLyDo) return;
     const patch = rawPatchFrom(draft, cell);
     if (!patch) { setLoi(LOI_SO_CAU); return; }     // "--", "abc"…: không gửi gì
     setLoi(null);
-    if (coDiemChinhThuc(cell) && 'rawScore' in patch && patch.rawScore !== cell.rawScore) {
+    /* Ô đã có điểm mà số đổi (kể cả đổi sang band, hay band đè lên số câu) → hộp lý do. */
+    if (coDiemChinhThuc(cell) && (('rawScore' in patch && patch.rawScore !== cell.rawScore)
+      || ('band' in patch && (cell.rawScore !== null || patch.band !== cell.band)))) {
       setHoiLyDo(true);
       return;
     }
@@ -370,7 +341,7 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false, 
       <span className="inline-flex flex-col items-end gap-0.5">
         <span className="inline-flex items-center gap-1.5">
           <span className={`tabular-nums ${vang ? 'text-slate-500' : 'text-slate-300'}`} title={lyDoChiDoc(cell)}>
-            {vang ? 'vắng' : cell.rawScore === null ? (cell.noShow ? '-' : '—') : cell.rawScore}
+            {vang ? 'vắng' : cell.rawScore === null ? (cell.band !== null ? fmtBand(cell.band) : cell.noShow ? '-' : '—') : cell.rawScore}
             {cell.rawScore !== null && <span className="text-slate-500 text-[11px] ml-1">({fmtBand(cell.band)})</span>}
           </span>
           {lon && <ChoNutDau />}
@@ -389,11 +360,11 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false, 
           aria-invalid={loi ? true : undefined}
           aria-describedby={loi ? idLoi : undefined}
           className={`field ${lon ? 'w-[60px] h-11 text-base font-semibold' : 'w-16'} text-center tabular-nums ${loi ? 'border-rose-400/70' : dirty ? 'border-amber-500/60' : ''}`}
-          inputMode="numeric"
+          inputMode="decimal"
           value={draft}
           disabled={busy}
-          title={loi ?? (coDiemChinhThuc(cell) ? `Đã có điểm — bấm để sửa. ${NO_SHOW_HINT}` : NO_SHOW_HINT)}
-          aria-label={`${skillLabel(cell.skill)} — số câu đúng. ${NO_SHOW_HINT}`}
+          title={loi ?? (coDiemChinhThuc(cell) ? `Đã có điểm — bấm để sửa. ${NO_SHOW_HINT}. ${GOI_Y_BAND}` : `${NO_SHOW_HINT}. ${GOI_Y_BAND}`)}
+          aria-label={`${skillLabel(cell.skill)} — số câu đúng. ${NO_SHOW_HINT}. ${GOI_Y_BAND}`}
           onChange={(e) => { if (goLai.doi(e.target.value)) return; setDraft(e.target.value); setDirty(true); setLoi(null); }}
           onBlur={commit}
           onKeyDown={(e) => {
@@ -405,7 +376,7 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false, 
           }}
         />
         {/* Điện thoại: ô trống không ghi "—" cạnh nút "−" (trông như hai gạch). */}
-        <span className="tabular-nums text-slate-400 text-xs w-8">{cell.noShow || (lon && cell.band === null) ? '' : fmtBand(cell.band)}</span>
+        <span className="tabular-nums text-slate-400 text-xs w-8">{cell.noShow || (cell.rawScore === null && cell.band !== null) || (lon && cell.band === null) ? '' : fmtBand(cell.band)}</span>
         {lon && <NutDau title={NUT_DAU_FT} an={!nhanDau} tat={busy} onBam={() => void bamDau()} />}
       </span>
       <DongLoiNhap id={idLoi} cau={loi} />
@@ -413,8 +384,8 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false, 
       {hoiLyDo && (
         <SuaDiemCoLyDo
           tieuDe={`Sửa ${skillLabel(cell.skill)}`}
-          moTaCu={`Đang lưu: ${cell.rawScore} câu đúng (band ${fmtBand(cell.band)})`}
-          loiGiaTri={moi === '' || /^\d+$/.test(moi) ? null : 'Số câu đúng là số nguyên từ 0 đến 40.'}
+          moTaCu={cell.rawScore === null ? `Đang lưu: band ${fmtBand(cell.band)}` : `Đang lưu: ${cell.rawScore} câu đúng (band ${fmtBand(cell.band)})`}
+          loiGiaTri={moi === '' || (moi !== '-' && rawPatchFrom(moi, cell)) ? null : LOI_SO_CAU}
           onDong={huy}
           onLuu={async (lyDo) => {
             const p = rawPatchFrom(draft, cell);
@@ -426,7 +397,7 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false, 
         >
           <label className="flex items-center gap-2">
             <span className="text-[11px] text-slate-500 w-20">Giá trị mới</span>
-            <input className="field w-20 text-center tabular-nums py-1" inputMode="numeric" value={draft}
+            <input className="field w-20 text-center tabular-nums py-1" inputMode="decimal" value={draft}
               aria-label={`${skillLabel(cell.skill)} — số câu đúng mới`}
               onChange={(e) => setDraft(e.target.value)} />
             <span className="text-[11px] text-slate-500">{moi === '' ? 'huỷ điểm' : ''}</span>
@@ -505,13 +476,14 @@ function SuaTieuChi({ cell, onSave, onClose }: {
 }) {
   const tc = tieuChiCua(cell.skill) ?? [], tcNgan = tieuChiNganCua(cell.skill) ?? [];
   const [vals, setVals] = useState<string[]>(cell.criteria.map((v) => (v === null ? '' : String(v))));
-  const { dash, preview, patch } = criteriaPatchFrom(vals, cell);
-  const doi = vals.some((v, i) => (v.trim() === '' ? null : Number(v)) !== cell.criteria[i]);
+  const [bandText, setBandText] = useState(bandBanDau(cell));
+  const { dash, preview, patch, loi } = criteriaPatchFrom(vals, cell, bandText);
+  const doi = vals.some((v, i) => (v.trim() === '' ? null : Number(v)) !== cell.criteria[i]) || bandText.trim() !== bandBanDau(cell);
   return (
     <SuaDiemCoLyDo
       tieuDe={`Sửa ${skillLabel(cell.skill)}`}
-      moTaCu={`Đang lưu: band ${fmtBand(cell.band)} (${cell.criteria.map((v) => v ?? '—').join(' · ')})`}
-      loiGiaTri={!patch ? LOI_TIEU_CHI : dash ? 'Ô đã có điểm không nhận dấu "-".' : !doi ? 'Chưa đổi tiêu chí nào.' : null}
+      moTaCu={bandBanDau(cell) ? `Đang lưu: band ${fmtBand(cell.band)}` : `Đang lưu: band ${fmtBand(cell.band)} (${cell.criteria.map((v) => v ?? '—').join(' · ')})`}
+      loiGiaTri={!patch ? loi : dash ? 'Ô đã có điểm không nhận dấu "-".' : !doi ? 'Chưa đổi tiêu chí nào.' : null}
       onDong={onClose}
       onLuu={async (lyDo) => {
         if (!patch) return false;
@@ -529,6 +501,12 @@ function SuaTieuChi({ cell, onSave, onClose }: {
               onChange={(e) => setVals((v) => v.map((x, j) => (j === i ? e.target.value : x)))} />
           </label>
         ))}
+        <label className="block" title={BAND_HINT}>
+          <span className="block text-[11px] text-slate-500">Band</span>
+          <input className="field w-14 text-center tabular-nums px-1 py-1" inputMode="decimal" value={bandText}
+            aria-label={`${skillLabel(cell.skill)} — band`}
+            onChange={(e) => setBandText(e.target.value)} />
+        </label>
         <span className="pb-1.5 text-xs tabular-nums text-slate-300" title="Band xem trước">→ {fmtBand(preview)}</span>
       </div>
     </SuaDiemCoLyDo>
@@ -557,16 +535,17 @@ export function CriteriaModal({ cell, onSave, onClose, gvMacDinh = null }: {
       : cell.criteria.map((v) => (v === null ? '' : String(v)))
   ));
   const [vals, setVals] = useState<string[]>(vals0);
+  const [bandText, setBandText] = useState(bandBanDau(cell));
   const [busy, setBusy] = useState(false);
 
   /* Có '-' thì bỏ qua các ô số còn lại (xem `criteriaPatchFrom`). */
-  const { dash, preview, patch } = criteriaPatchFrom(vals, cell);
+  const { dash, preview, patch, loi } = criteriaPatchFrom(vals, cell, bandText);
 
   const submit = async () => {
     if (!patch || busy) return;
     /* Nhận xét / GV chấm đi kèm lệnh điểm; lệnh "-" (không có bài) thì không — máy chủ bỏ qua ở nhánh đó. */
     const them: SavePatch = {};
-    if ('criteria' in patch) {
+    if ('criteria' in patch || 'band' in patch) {
       if (coNhanXet && nx.trim() !== (cell.nhanXet ?? '')) them.nhanXet = nx.trim() || null;
       if (laS && !cungGvCham(gv, gvCu, session?.user?.id)) them.gvCham = gvChamPayload(gv);
     }
@@ -580,10 +559,10 @@ export function CriteriaModal({ cell, onSave, onClose, gvMacDinh = null }: {
     /* I4 (PR-SL): khung panel chung, chân luật S3 (đã gõ ô nào / đổi nhận xét / GV chấm → "Huỷ thay đổi"). */
     <KhungPanel tieuDe={`${skillLabel(cell.skill)} — bốn tiêu chí`} longTrong z="z-[60]" onDong={() => { if (!busy) onClose(); }}
       chan={{
-        daSua: vals.some((v, i) => v !== vals0[i]) || nx !== (cell.nhanXet ?? '') || (laS && !cungGvCham(gv, gv0, session?.user?.id)),
+        daSua: vals.some((v, i) => v !== vals0[i]) || bandText !== bandBanDau(cell) || nx !== (cell.nhanXet ?? '') || (laS && !cungGvCham(gv, gv0, session?.user?.id)),
         huy: { onClick: onClose, disabled: busy },
         chinh: (
-          <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={submit} disabled={busy || !patch} title={patch ? undefined : LOI_TIEU_CHI}>
+          <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={submit} disabled={busy || !patch} title={patch ? undefined : loi ?? undefined}>
             {busy ? 'Đang lưu…' : 'Lưu'}
           </button>
         ),
@@ -604,11 +583,23 @@ export function CriteriaModal({ cell, onSave, onClose, gvMacDinh = null }: {
             />
           </label>
         ))}
+        <label className="flex items-center gap-3" title={BAND_HINT}>
+          <span className="w-8 text-xs text-slate-500 shrink-0">Band</span>
+          <span className="flex-1" />
+          <input
+            className="field w-20 text-center tabular-nums"
+            inputMode="decimal"
+            value={bandText}
+            aria-label={`${skillLabel(cell.skill)} — band`}
+            onChange={(e) => setBandText(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void submit(); } }}
+          />
+        </label>
         <div className="flex items-center justify-between border-t pt-3" style={{ borderColor: 'var(--line)' }}>
           <span className="text-sm text-slate-400">Band kỹ năng</span>
           <strong className="tabular-nums text-lg">{dash ? '-' : fmtBand(preview)}</strong>
         </div>
-        {!patch && <p className="text-xs text-rose-300 m-0">{LOI_TIEU_CHI}</p>}
+        {!patch && <p className="text-xs text-rose-300 m-0">{loi}</p>}
         {laS && !dash && <DongGvCham value={gv} onChange={setGv} />}
         {coNhanXet && !dash && (moNx ? (
           <label className="block">
@@ -656,18 +647,21 @@ export function InlineScoreEditor({ cell, onSave, onClose }: {
       ? ['-', '', '', '']
       : cell.criteria.map((v) => (v === null ? '' : String(v)))));
   const [busy, setBusy] = useState(false);
+  const [bandText, setBandText] = useState(isRaw ? '' : bandBanDau(cell));
   const [lyDo, setLyDo] = useState('');
+  const vals0 = useRef(vals).current;     // chữ lúc mở — so để biết có phải hiệu chỉnh
+  const patchRaw = isRaw ? rawPatchFrom(vals[0], cell) : null;
   const built = isRaw
-    ? { dash: vals[0].trim() === '-', preview: null as number | null, patch: rawPatchFrom(vals[0], cell) }
-    : criteriaPatchFrom(vals, cell);
+    ? { dash: vals[0].trim() === '-', preview: null as number | null, patch: patchRaw, loi: patchRaw ? null : LOI_SO_CAU }
+    : criteriaPatchFrom(vals, cell, bandText);
   /*
    * RB-5 → T7 + T22 (PR-MTa): ô ĐÃ CÓ điểm mà giá trị đổi (hoặc bị xoá trắng) thì hiện ô lý do ngay trong dòng — TUỲ CHỌN, không khoá Lưu.
    * Lưu lại đúng số cũ không phải hiệu chỉnh nên không hiện.
    */
   const canLyDo = coDiemChinhThuc(cell) && !built.dash && (isRaw
-    ? (vals[0].trim() === '' ? null : Number(vals[0])) !== cell.rawScore
-    : vals.some((v, i) => (v.trim() === '' ? null : Number(v)) !== cell.criteria[i]));
-  const loiLyDo = !built.patch ? (isRaw ? LOI_SO_CAU : LOI_TIEU_CHI) : null;
+    ? vals[0].trim() !== vals0[0].trim()
+    : vals.some((v, i) => (v.trim() === '' ? null : Number(v)) !== cell.criteria[i]) || bandText.trim() !== bandBanDau(cell));
+  const loiLyDo = built.patch ? null : built.loi;
 
   const submit = async () => {
     if (busy || loiLyDo || !built.patch) return;
@@ -688,8 +682,8 @@ export function InlineScoreEditor({ cell, onSave, onClose }: {
         {isRaw ? (
           <label className="block">
             <span className="block text-[11px] text-slate-500">Số câu đúng</span>
-            <input autoFocus className="field w-20 text-center tabular-nums" inputMode="numeric" value={vals[0]}
-              title={NO_SHOW_HINT} aria-label={`${skillLabel(cell.skill)} — số câu đúng. ${NO_SHOW_HINT}`}
+            <input autoFocus className="field w-20 text-center tabular-nums" inputMode="decimal" value={vals[0]}
+              title={`${NO_SHOW_HINT}. ${GOI_Y_BAND}`} aria-label={`${skillLabel(cell.skill)} — số câu đúng. ${NO_SHOW_HINT}. ${GOI_Y_BAND}`}
               onChange={(e) => setAt(0, e.target.value)} />
           </label>
         ) : tc.map((label, i) => (
@@ -700,6 +694,14 @@ export function InlineScoreEditor({ cell, onSave, onClose }: {
               onChange={(e) => setAt(i, e.target.value)} />
           </label>
         ))}
+        {!isRaw && (
+          <label className="block" title={BAND_HINT}>
+            <span className="block text-[11px] text-slate-500">Band</span>
+            <input className="field w-14 text-center tabular-nums" inputMode="decimal" value={bandText}
+              aria-label={`${skillLabel(cell.skill)} — band`}
+              onChange={(e) => setBandText(e.target.value)} />
+          </label>
+        )}
         {!isRaw && (
           <span className="pb-1.5 text-sm tabular-nums text-slate-300">Band {built.dash ? '-' : fmtBand(built.preview)}</span>
         )}

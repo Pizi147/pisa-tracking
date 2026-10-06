@@ -183,7 +183,8 @@ function HangSua({ c, laW, save, onXong }: {
       {nhan && <span className="w-16 shrink-0 pt-1 text-xs font-medium text-slate-400">{nhan}</span>}
       {suaDuoc(c) ? (
         <div className="min-w-0 flex-1">
-          <InlineScoreEditor key={lan} cell={c} onSave={(p) => save(c.skill, p)}
+          {/* T10 (PR-MTb): dựng lại khi band đã lưu đổi — ô Band lấy giá trị đầu từ ô, không hiện bản cũ sau khi lưu. */}
+          <InlineScoreEditor key={`${lan}:${c.band}`} cell={c} onSave={(p) => save(c.skill, p)}
             onClose={() => (onXong ? onXong() : setLan((n) => n + 1))} />
         </div>
       ) : (

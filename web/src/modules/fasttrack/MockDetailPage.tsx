@@ -29,13 +29,13 @@ import {
 import {
   ATTEMPT_KIND_SHORT, CAU_TUAN_DA_QUA, CHU_THAO_TAC, cauSeHuyLich, chuDoiVuot, chuLuuVuot, kiemLyDoThaoTac, kiemTuanXep, mondayOfDate, nhanLuot, thaoTacKyNang, trangThaiTT, tuanLich,
   type AttemptKind, type LoiTruong, type TheYeuCauDto, type ThaoTac,
-  docKnMock, KY_NANG_KE_HOACH, oKyNangTuLich, type OMtVao,
+  docKnMock, KY_NANG_KE_HOACH, oKyNangTuLich, type KetQuaHuy, type OMtVao,
 } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { TOOLTIP_TUAN_HOAN_TAT } from '../../ui/chu.ts';
 import { WeekPicker } from '../../ui/Filters.tsx';
-import { HopXacNhanHuyLich, type LuotSeHuyLich } from '../test/keHoach/HopXacNhanHuyLich.tsx';
+import { HopKhoiPhucKetQua, HopXacNhanHuyLich, type LuotSeHuyLich } from '../test/keHoach/HopXacNhanHuyLich.tsx';
 
 type Detail = {
   id: number;
@@ -63,6 +63,8 @@ type Detail = {
   scoreHistory: ScoreHistoryRow[];
   /** PR-MT (T34): MT lịch sử — nhập bù, không tính hạn, không luồng vắng. */
   lichSu: boolean;
+  /** T2 (PR-MTa): kết quả đã huỷ do dời vượt, còn khôi phục được. */
+  ketQuaHuy?: KetQuaHuy | null;
   viewer: {
     canPlanWeek: boolean; canCancel: boolean; canHandleAbsence: boolean;
     /** PR-XLMT: GVCN của lớp — Báo vắng / Xếp lại bài vắng (`thaoTacKyNang`). */
@@ -125,6 +127,7 @@ export default function MockDetailPage() {
   const [weekOpen, setWeekOpen] = useState(false);
   const [deadlineOpen, setDeadlineOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [khoiPhucOpen, setKhoiPhucOpen] = useState(false);
   /* PR-HSM: ô lớn đang mở khung sửa — nút chính "Nhập điểm / Sửa điểm" của bảng dưới cũng mở đúng ô này. */
   const [moO, setMoO] = useState<KyNangLon | null>(null);
   /*
@@ -180,6 +183,10 @@ export default function MockDetailPage() {
     ...(d.viewer.canOverrideDeadline && !cancelled && !d.lichSu ? [{
       label: `${CHU_THAO_TAC['doi-han']} cả đợt`, onClick: () => setDeadlineOpen(true),
       hint: 'Một hạn chấm riêng cho mọi kỹ năng',
+    }] : []),
+    /* PR-MTb T8 (T2): lượt bị vượt có kết quả đã huỷ → Quản lý khôi phục. */
+    ...(d.viewer.canPlanWeek && !cancelled && d.ketQuaHuy ? [{
+      label: 'Khôi phục kết quả', onClick: () => setKhoiPhucOpen(true),
     }] : []),
     /* PR-MT (M-12, Q-B): MỘT mục theo cách huỷ được phép — "Huỷ cả lượt" chỉ với lượt lớn nhất chưa có điểm. */
     ...(d.viewer.huyLuot?.cachDuoc && d.status === 'planned' ? [{
@@ -312,6 +319,9 @@ export default function MockDetailPage() {
           currentPeriodId={d.period?.id ?? null} onDone={reload} />
       )}
       {deadlineOpen && <DeadlineModal onClose={() => setDeadlineOpen(false)} detail={d} onDone={reload} />}
+      {khoiPhucOpen && d.ketQuaHuy && (
+        <HopKhoiPhucKetQua attemptId={d.id} nhan={`MT${d.attemptNo}`} ketQua={d.ketQuaHuy} onDong={() => setKhoiPhucOpen(false)} onXong={reload} />
+      )}
       {d.viewer.huyLuot?.cachDuoc && (
         <CancelDialog open={cancelOpen} onClose={() => setCancelOpen(false)} attemptId={d.id}
           attemptNo={d.attemptNo} heQua={d.viewer.huyLuot} onDone={reload} />
@@ -441,14 +451,16 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory }: {
     const hasValue = c.rawScore !== null || c.band !== null || c.criteria.some((v) => v !== null) || !!c.noShow;
 
     const tt = trangThaiTT({
-      batBuoc: r.required, tuanBatDau: r.weekStart, coDiem: coDiemO(c), sit: r.sitStatus, choDuyet: !!r.pendingMove, lichSu: d.lichSu, homNay,
+      batBuoc: r.required, tuanBatDau: r.weekStart, coDiem: coDiemO(c), sit: r.sitStatus, choDuyet: !!r.pendingMove, lichSu: d.lichSu, homNay, huyVang: !!r.huyVang,
     });
     const tat = cancelled ? { chinh: null, menu: [] as ThaoTac[] }
       : thaoTacKyNang(tt, { nhapDiem: c.canEdit, quanLy: d.viewer.canPlanWeek, gvcn: d.viewer.laGvcn, laFt: true, dotHoanTat: !!c.khoa });
     const laDiem = (x: ThaoTac | null) => x === 'nhap-diem' || x === 'sua-diem';
     const chinh0 = ownsSchedule || laDiem(tat.chinh) ? tat.chinh : null;
     /* Nhập/Sửa điểm chỉ khi ô thật sự mở (không bị dấu "-" khoá, không vắng/huỷ). */
-    const chinh = laDiem(chinh0) && !canScore ? null : chinh0;
+    /* Đã gửi "Xin dời" (đề nghị chờ Quản lý) → GVCN hết nút; dòng trạng thái đã nói đang chờ ai. */
+    const daXinDoi = chinh0 === 'xin-doi' && !!r.pendingMove;
+    const chinh = (laDiem(chinh0) && !canScore) || daXinDoi ? null : chinh0;
     const menu = ownsSchedule ? tat.menu : tat.menu.filter((x) => x === 'huy-diem');
     const chay = (t: ThaoTac) => {
       if (laDiem(t)) onMoDiem(c.assessedSkill as KyNangLon);
@@ -517,13 +529,13 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory }: {
           {!chinh && !ownsSchedule && r.required && !canScore && r.sitStatus === 'absent' && (
             <span className="text-[11px] text-slate-500">Xử lý ở dòng W1</span>
           )}
-          {!chinh && c.required && !c.canEdit && !cancelled && (
+          {!chinh && !daXinDoi && c.required && !c.canEdit && !cancelled && (
             <span className="text-[11px] text-slate-500" title={c.khoa ? KHOA_HOAN_TAT_HINT : 'Bạn không được phân công kỹ năng này'}>Chỉ xem</span>
           )}
           {/* Không có mục thì giữ chỗ cùng rộng nút ⋯ (w-7) — nút chính các dòng thẳng cột (rà #126). */}
           {menu.length ? (
             <MenuDong nhan={`Thao tác khác · ${skillLabel(c.skill)}`} muc={menu.map((x) => ({
-              key: x, nhan: CHU_THAO_TAC[x], onChon: () => chay(x), nguyHiem: x === 'bo-ky-nang' || x === 'huy-diem',
+              key: x, nhan: CHU_THAO_TAC[x], onChon: () => chay(x), nguyHiem: x === 'bo-ky-nang' || x === 'huy-diem' || x === 'khong-mock-lai',
             }))} />
           ) : <span aria-hidden className="inline-block w-7 flex-none" />}
         </div>
