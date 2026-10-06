@@ -213,11 +213,11 @@ export function NhanCu(): JSX.Element;   // "cũ", viền currentColor, 10px đ�
 ```
 Màu theo mockup phần 3, chỉ token: `chua-co-dot` viền đứt `border-muted-line text-muted` · `chua-lich` `bg-muted-bg text-muted` · `co-lich` viền `border-doing-line text-doing` · `dang-thi` `bg-doing-bg text-doing` + chấm 7px trước số · `cho-cham` `bg-wait-bg text-wait` · `tre-cham` `bg-bad-bg text-bad` · `con-viec` `bg-soon-bg text-soon` · `xong` `bg-done-bg text-done` · `chon` = màu đảo (nền `var(--text)`, chữ `var(--bg)`, viền 2px cùng nền, `✓` sau chữ; tự quyết 7). Số đợt đậm, chữ số Inter (`tabular-nums`), cao 26px, `whitespace-nowrap`; điện thoại vùng bấm 44px bằng `after:` như `ChipKyNang`. `href` → `<Link>`; `onClick` → `<button>`; còn lại `<span>`.
 
-- [ ] **Step 1: Phép đỏ** `oMt`: một ca cho **mỗi** dòng mockup phần 3 (13 dòng trừ "Đang chọn" và MT0) với `homNay = '2026-10-05'`: kiểm `kieu` + `chu` (`'chưa xếp'`, `'W2 OCT'`, `'tuần này'`, `'chờ chấm 2'`, `'trễ chấm W'`, `'vắng S'`, `'✓'`, `'✓ 3/4'`, `'S huỷ'`, `cu: true`). Thêm: trễ đứng trước vắng; `hanCham` null + tuần đã hết → `cho-cham` không bao giờ `tre-cham`.
-- [ ] **Step 2: Phép đỏ quét nguồn**: không file `web/src` nào còn `ChipLichSu` hay chữ `>lịch sử<`; `OMt.tsx` không có `#` hex; `HangLichMt.tsx`, `MockDetailPage.tsx` import `OMt`.
-- [ ] **Step 3:** Viết `oMt.ts`, `OMt.tsx`, `NhanCu`; thay các nơi gọi. Cột Lượt `HangLichMt` dựng `OMtVao` từ `h.luot` (`kn` đã là `OKyNang`), `cu = l.lichSu`, `attemptId = l?.attemptId ?? null`; `h.luot` null → `chua-co-dot`.
-- [ ] **Step 4:** `npm run check` xanh (gồm `prSang`). `/impeccable clarify` cho tooltip.
-- [ ] **Step 5: Commit** `feat(mtb): Ô MT dùng chung, nhãn "cũ"`.
+- [x] **Step 1: Phép đỏ** `oMt`: một ca cho **mỗi** dòng mockup phần 3 (13 dòng trừ "Đang chọn" và MT0) với `homNay = '2026-10-05'`: kiểm `kieu` + `chu` (`'chưa xếp'`, `'W2 OCT'`, `'tuần này'`, `'chờ chấm 2'`, `'trễ chấm W'`, `'vắng S'`, `'✓'`, `'✓ 3/4'`, `'S huỷ'`, `cu: true`). Thêm: trễ đứng trước vắng; `hanCham` null + tuần đã hết → `cho-cham` không bao giờ `tre-cham`.
+- [x] **Step 2: Phép đỏ quét nguồn**: không file `web/src` nào còn `ChipLichSu` hay chữ `>lịch sử<`; `OMt.tsx` không có `#` hex; `HangLichMt.tsx`, `MockDetailPage.tsx` import `OMt`.
+- [x] **Step 3:** Viết `oMt.ts`, `OMt.tsx`, `NhanCu`; thay các nơi gọi. Cột Lượt `HangLichMt` dựng `OMtVao` từ `h.luot` (`kn` đã là `OKyNang`), `cu = l.lichSu`, `attemptId = l?.attemptId ?? null`; `h.luot` null → `chua-co-dot`.
+- [x] **Step 4:** `npm run check` xanh (gồm `prSang`). `/impeccable clarify` cho tooltip.
+- [x] **Step 5: Commit** `feat(mtb): Ô MT dùng chung, nhãn "cũ"`.
 
 ### Task 3: Panel "Xếp lịch Mock Test" theo mockup phần 1
 Skill: test-driven-development · `/impeccable layout` · `clarify` · `adapt`

@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { duongDotTest, gomChip, tenMon, tenMonNgan, nhanTuanKhoa, tuanLich, type ChipKH, type KyNangKH } from '@shared/domain/index.ts';
 import type { KnO } from './kieu.ts';
-import { ChipLichSu } from '../../../ui/Nhan.tsx';
+import { NhanCu } from '../../../ui/OMt.tsx';
 
 /**
  * Ô MỘT ĐỢT của một em (mockup 14 phương án B): gộp chip cùng tuần + cùng trạng thái, khác tuần tách dòng, đợt xong gọn
@@ -66,7 +66,7 @@ export function ChipKyNang({ kn, attemptId, loai, khaiGiang, tongTuan, deXuat, n
     const cls = `${CHIP_CLS} bg-done-bg text-done border-done-line`;
     return (
       <div className={bao}>
-        {lichSu && <span className="self-start"><ChipLichSu /></span>}
+        {lichSu && <span className="self-start"><NhanCu /></span>}
         {loai === 'ft' ? (
           <Link to={duongDotTest({ id: attemptId })} className={`${cls} no-underline`} title="Đã thi — mở Hồ sơ Mock Test">{noiDung}</Link>
         ) : (
@@ -87,7 +87,7 @@ export function ChipKyNang({ kn, attemptId, loai, khaiGiang, tongTuan, deXuat, n
   return (
     <div className={bao}>
       {/* self-start: cột flex kéo giãn con theo bề ngang — nhãn phải gọn cạnh chip, không thành một khung trống cả ô. */}
-      {lichSu && <span className="self-start"><ChipLichSu /></span>}
+      {lichSu && <span className="self-start"><NhanCu /></span>}
       {hienThi.map((c, i) => (
         <Chip key={i} c={c} loai={loai} ct={ct} khaiGiang={khaiGiang} tongTuan={tongTuan} dau={i === 0 && !!dangDo}
           them={i === soDong - 1 && them > 0 ? { n: them, ds: conLai.map((x) => `${x.kyNang.map((k) => tenMonNgan(ct, k)).join(' ')} · ${x.tuan ? tuanLich(x.tuan) : 'chưa xếp'}`).join('\n') } : null}

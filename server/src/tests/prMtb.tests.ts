@@ -284,4 +284,103 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert(qlHoanTat.menu.includes('doi-lich'), JSON.stringify(qlHoanTat));
     assert(JSON.stringify(d.thaoTacKyNang('co-diem', { ...q, gvcn: true }).menu) === '["huy-diem"]', 'GVCN giữ menu cũ');
   });
+  // ------------------------------------------------------------------ Task 2: luật + component Ô MT, nhãn "cũ"
+  console.log('\nPR-MTb · Ô MT dùng chung (oMt), nhãn "cũ"');
+  const H = '2026-10-05';                       // thứ Hai = W2 OCT (tuần này)
+  const TUAN = { qua: '2026-09-21', vua: '2026-09-28', nay: '2026-10-05', toi: '2026-10-12', xa: '2026-10-26' };
+  const okKn = (trangThai: string, tuan: string | null, o: Record<string, unknown> = {}) => ({
+    trangThai, tuan, periodId: null, doiTu: null, batBuoc: trangThai !== 'khong-yeu-cau', khoa: null, sit: null,
+    tuanKetThuc: tuan ? t.addDays(tuan, 6) : null, choDuyet: trangThai === 'cho-duyet', hanCham: null, ...o,
+  });
+  /** Bốn kỹ năng cùng trạng thái, `sua` đổi riêng từng kỹ năng. */
+  const bonKn = (tt: string, tuan: string | null, sua: Record<string, any> = {}) => Object.fromEntries(KN.map((k) => [k, { ...okKn(tt, tuan), ...(sua[k] ?? {}) }]));
+  const luot = (kn: any, o: Record<string, unknown> = {}) => ({ so: 2, attemptId: 7, kn, cu: false, ...o });
+  const xongKn = (tuan = '2026-09-14', sua: Record<string, any> = {}) => bonKn('xong', tuan, sua);
+  const vaoRa = (v: any, kieu: string, chu: string, cu = false) => {
+    const r = d.oMt(v, H);
+    assert(r.kieu === kieu && r.chu === chu && r.cu === cu, `mong ${kieu}/${chu}/${cu}, ra ${JSON.stringify(r)}`);
+    return r;
+  };
+
+  // Mỗi dòng mockup phần 3 (trừ "Đang chọn" và MT0)
+  check('MTb (T2) · oMt: mười một dòng mockup phần 3, homNay 2026-10-05', () => {
+    vaoRa(luot({}, { attemptId: null, so: 3 }), 'chua-co-dot', '');
+    vaoRa(luot(bonKn('chua-xep', null)), 'chua-lich', 'chưa xếp');
+    vaoRa(luot(bonKn('da-xep', TUAN.toi)), 'co-lich', 'W3 OCT');
+    vaoRa(luot(bonKn('da-xep', TUAN.nay)), 'dang-thi', 'tuần này');
+    vaoRa(luot(bonKn('xong', '2026-09-14', {
+      listening: { trangThai: 'da-xep', tuan: TUAN.vua, tuanKetThuc: '2026-10-04', hanCham: '2026-10-07' },
+      reading: { trangThai: 'da-xep', tuan: TUAN.vua, tuanKetThuc: '2026-10-04', hanCham: '2026-10-07' },
+    })), 'cho-cham', 'chờ chấm 2');
+    vaoRa(luot(xongKn('2026-09-14', { writing: { trangThai: 'da-xep', tuan: TUAN.qua, tuanKetThuc: '2026-09-27', hanCham: '2026-09-30' } })), 'tre-cham', 'trễ chấm W');
+    vaoRa(luot(xongKn('2026-09-14', { speaking: { trangThai: 'vang', tuan: TUAN.qua, tuanKetThuc: '2026-09-27', sit: 'absent' } })), 'con-viec', 'vắng S');
+    vaoRa(luot(xongKn()), 'xong', '✓');
+    vaoRa(luot(xongKn('2026-09-14', { speaking: { trangThai: 'khong-yeu-cau', batBuoc: false, tuan: null } })), 'xong', '✓ 3/4');
+    vaoRa(luot(xongKn('2026-09-14', { speaking: { trangThai: 'da-huy', tuan: TUAN.qua, sit: 'cancelled', huyVang: true } })), 'con-viec', 'S huỷ');
+    vaoRa(luot(xongKn(), { so: 1, cu: true }), 'xong', '✓', true);
+  });
+
+  check('MTb (T2) · oMt: trễ chấm đứng trước vắng; hanCham null → chờ chấm, không bao giờ trễ chấm', () => {
+    vaoRa(luot(xongKn('2026-09-14', {
+      listening: { trangThai: 'da-xep', tuan: TUAN.qua, tuanKetThuc: '2026-09-27', hanCham: '2026-09-30' },
+      speaking: { trangThai: 'vang', tuan: TUAN.qua, tuanKetThuc: '2026-09-27', sit: 'absent' },
+    })), 'tre-cham', 'trễ chấm L');
+    const trePhu = d.oMt(luot(xongKn('2026-09-14', { writing: { trangThai: 'da-xep', tuan: TUAN.qua, tuanKetThuc: '2026-09-27', hanCham: '2026-09-30' } })), H);
+    assert(trePhu.title.split('\n')[2] === 'Writing: W4 SEP · trễ chấm · hạn 30/09', trePhu.title);
+    const kn = xongKn('2026-09-14', { writing: { trangThai: 'da-xep', tuan: TUAN.qua, tuanKetThuc: '2026-09-27', hanCham: null } });
+    vaoRa(luot(kn), 'cho-cham', 'chờ chấm 1');
+    // hôm nay đúng hạn chấm: chưa trễ
+    vaoRa(luot(xongKn('2026-09-14', { writing: { trangThai: 'da-xep', tuan: TUAN.vua, tuanKetThuc: '2026-10-04', hanCham: H } })), 'cho-cham', 'chờ chấm 1');
+  });
+
+  check('MTb (T2) · oMt: chờ Quản lý duyệt dời = "vắng S" + tooltip; vắng đứng trước đã huỷ; tuần sớm nhất; tên môn theo chương trình', () => {
+    const cd = d.oMt(luot(xongKn('2026-09-14', { speaking: { trangThai: 'cho-duyet', tuan: TUAN.qua, sit: 'absent', choDuyet: true } })), H);
+    assert(cd.kieu === 'con-viec' && cd.chu === 'vắng S' && /Speaking: .*chờ Quản lý duyệt/.test(cd.title), JSON.stringify(cd));
+    vaoRa(luot(xongKn('2026-09-14', {
+      speaking: { trangThai: 'da-huy', tuan: TUAN.qua, sit: 'cancelled', huyVang: true },
+      reading: { trangThai: 'vang', tuan: TUAN.qua, tuanKetThuc: '2026-09-27', sit: 'absent' },
+    })), 'con-viec', 'vắng R');
+    vaoRa(luot(bonKn('da-xep', TUAN.xa, { speaking: { tuan: TUAN.toi, tuanKetThuc: '2026-10-18' } })), 'co-lich', 'W3 OCT');
+    const fou = d.oMt(luot(xongKn('2026-09-14', { writing: { trangThai: 'vang', tuan: TUAN.qua, tuanKetThuc: '2026-09-27', sit: 'absent' } })), H, 'FOU');
+    assert(fou.chu === 'vắng G+V', JSON.stringify(fou));
+  });
+
+  check('MTb (T2) · oMt: tooltip một dòng mỗi kỹ năng, "· cũ" khi MT cũ', () => {
+    const r = d.oMt(luot(xongKn('2026-09-14', { speaking: { trangThai: 'chua-xep', tuan: null, tuanKetThuc: null } })), H);
+    const dong = r.title.split('\n');
+    assert(dong.length === 4 && dong[0] === 'Listening: W3 SEP · xong' && dong[3] === 'Speaking: chưa xếp', JSON.stringify(dong));
+    const cu = d.oMt(luot(xongKn(), { cu: true }), H).title.split('\n');
+    assert(cu.every((x: string) => / · cũ$/.test(x)), JSON.stringify(cu));
+    assert(d.oMt(luot({}, { attemptId: null }), H).title === 'Chưa có đợt', 'chua-co-dot có tooltip');
+  });
+
+  check('MTb (T2) · oKyNangTuLich: hàng lịch hồ sơ Mock → OKyNang cho đầu trang', () => {
+    const lich = (o: Record<string, unknown> = {}) => ({ skill: 'speaking', required: true, periodId: 1, weekStart: TUAN.qua, weekEnd: '2026-09-27', sitStatus: 'scheduled',
+      scored: false, pendingMove: null, absenceMoveCount: 0, deadline: '2026-09-30', doiTu: null, huyVang: false, ...o });
+    assert(d.oKyNangTuLich(lich({ scored: true })).trangThai === 'xong', 'xong');
+    assert(d.oKyNangTuLich(lich({ sitStatus: 'absent' })).trangThai === 'vang', 'vắng');
+    assert(d.oKyNangTuLich(lich({ sitStatus: 'absent', pendingMove: { id: 1 } })).trangThai === 'cho-duyet', 'chờ duyệt');
+    const huy = d.oKyNangTuLich(lich({ sitStatus: 'cancelled', huyVang: true }));
+    assert(huy.trangThai === 'da-huy' && huy.huyVang === true, 'huỷ vì vắng');
+    assert(d.oKyNangTuLich(lich({ required: false })).trangThai === 'khong-yeu-cau', 'không yêu cầu');
+    const x = d.oKyNangTuLich(lich());
+    assert(x.tuan === TUAN.qua && x.tuanKetThuc === '2026-09-27' && x.hanCham === '2026-09-30', JSON.stringify(x));
+  });
+
+  // ------------------------------------------------------------------ quét nguồn Task 2
+  check('MTb (T2) · quét nguồn: không còn ChipLichSu / chữ "lịch sử" trên nhãn; OMt.tsx không hex; hai nơi gọi import OMt', () => {
+    const duyet = (dir: string): string[] => fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true })
+      .flatMap((e) => e.isDirectory() ? duyet(`${dir}/${e.name}`) : /\.tsx?$/.test(e.name) ? [`${dir}/${e.name}`] : []);
+    for (const f of duyet('web/src')) {
+      const s = nguon(f);
+      assert(!/ChipLichSu/.test(s), `${f} còn ChipLichSu`);
+      assert(!/>\s*lịch sử\s*</.test(s), `${f} còn nhãn "lịch sử"`);
+    }
+    const o = nguon('web/src/ui/OMt.tsx');
+    assert(!/#[0-9a-fA-F]{3,8}\b/.test(o), 'OMt.tsx có mã hex');
+    assert(/export function OMt\b/.test(o) && /export function NhanCu\b/.test(o), 'OMt.tsx thiếu OMt / NhanCu');
+    for (const f of ['web/src/modules/students/HangLichMt.tsx', 'web/src/modules/fasttrack/MockDetailPage.tsx']) assert(/import \{[^}]*\bOMt\b[^}]*\} from '[^']*ui\/OMt\.tsx'/.test(nguon(f)), `${f} chưa import OMt`);
+    assert(/<OMt\b/.test(nguon('web/src/modules/students/HangLichMt.tsx')) && /<OMt\b/.test(nguon('web/src/modules/fasttrack/MockDetailPage.tsx')), 'chưa vẽ <OMt');
+    assert(!/>MT\{h\.attemptNo\}</.test(nguon('web/src/modules/students/HangLichMt.tsx')), 'HangLichMt còn chữ MT{n} thuần');
+  });
 }

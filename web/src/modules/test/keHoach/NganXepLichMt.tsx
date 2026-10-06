@@ -7,7 +7,7 @@ import { useLoiForm } from '../../../ui/loiForm.tsx';
 import { useToast } from '../../../ui/Toast.tsx';
 import { BoLocDoan, NutChon } from '../../../ui/ui.tsx';
 import { BranchFilter } from '../../../ui/Filters.tsx';
-import { ChipLichSu } from '../../../ui/Nhan.tsx';
+import { NhanCu } from '../../../ui/OMt.tsx';
 import {
   KY_NANG_KE_HOACH, MT_TOI_DA, chuSeXep, gomChip, tenMon, tenMonNgan, tomTatXepMt, tuanLich, tuanMacDinhDotMoi,
   type DongHangLoat, type KyNangKH, type LoiTruong,
@@ -379,7 +379,7 @@ function HangEm({ h, hep, cot, dot, d, chon, rieng, thiLai, onTick, onDot, onThi
               );
             })}
           </div>
-          {Object.values(h.dot).some((o) => o.lichSu) && <div className="mt-0.5"><ChipLichSu /></div>}
+          {Object.values(h.dot).some((o) => o.lichSu) && <div className="mt-0.5"><NhanCu /></div>}
         </td>
         {!hep && (
           <td className={`py-1.5 ${mau}`}>

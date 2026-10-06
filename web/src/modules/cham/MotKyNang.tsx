@@ -18,7 +18,7 @@ import {
 import { duongDotTest } from '@shared/domain/index.ts';
 import { fmtBand } from '../../lib/format.ts';
 import { Info } from '../../ui/ui.tsx';
-import { ChipLichSu } from '../../ui/Nhan.tsx';
+import { NhanCu } from '../../ui/OMt.tsx';
 import {
   ChoNutDau, CriteriaButton, KHOA_HOAN_TAT_HINT, ODiemThuong, RawScoreInput, datPhanTram, lockedByNoShow, useSaveScore, type Cell,
 } from '../fasttrack/ScoreEntry.tsx';
@@ -199,7 +199,7 @@ function DongFt({ row, k, nhieuMt, active, onReload, gvMacDinh, inputRef, onKeyD
   return (
     <DongHv studentId={row.studentId} active={active} ten={row.studentName} href={duongDotTest({ id: row.attemptId }, k)}
       phu={phu} phuTitle={kv !== null ? `Kỳ vọng (KV) của lượt này: ${fmtBand(kv)} · ${row.studentCode}` : undefined}
-      luu={<>{row.lichSu && <ChipLichSu />}<DauLuu lon status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} /></>}
+      luu={<>{row.lichSu && <NhanCu />}<DauLuu lon status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} /></>}
       nhan={<NhanHoanTat hoanTat={row.hoanTat} chuNhatCuoi={row.chuNhatCuoi} />}>
       <div className={`shrink-0 flex items-center justify-end gap-1 rounded-md ${o[k] === 'loi' ? VIEN_LOI : ''}`} data-kn={k}
         data-trong={c && oTrongFt(c) ? '1' : undefined} data-luu={o[k]}>

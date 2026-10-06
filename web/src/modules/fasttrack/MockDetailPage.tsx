@@ -5,7 +5,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Card, Empty, ErrorState, ExamPlanText, Info as Tag, SectionNote, Skeleton, Status, TargetText } from '../../ui/ui.tsx';
-import { ChipLichSu } from '../../ui/Nhan.tsx';
+import { OMt } from '../../ui/OMt.tsx';
 import type { ExamPlan } from '../../../../shared/domain/index.ts';
 import { ConfirmDialog } from '../../ui/Drawer.tsx';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
@@ -28,7 +28,7 @@ import {
 import {
   ATTEMPT_KIND_SHORT, CHU_THAO_TAC, canLyDoVuot, cauSeHuyLich, dongHeQuaVuot, mondayOfDate, nhanLuot, thaoTacKyNang, trangThaiTT, tuanLich,
   type AttemptKind, type LoiTruong, type TheYeuCauDto, type ThaoTac,
-  docKnMock,
+  docKnMock, KY_NANG_KE_HOACH, oKyNangTuLich, type OMtVao,
 } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
@@ -96,6 +96,8 @@ type SkillRow = {
   pendingMove: { id: number; decideBy: string; toWeek: string | null; moveNo: number } | null;
   /** PR-HSM (K4-30): tuần cũ của lần dời do vắng mới nhất ("W3 SEP"), `null` khi chưa dời. */
   doiTu: string | null;
+  /** Hết tuần thi (Chủ nhật) · huỷ vì vắng 2 lần (T3) — ô MT đầu trang cần. */
+  weekEnd: string | null; huyVang?: boolean;
 };
 
 /** Một đợt của học viên trong `GET /attempts?studentId=` — đủ để dựng nhãn và đường dẫn của bộ chọn đợt (R15). */
@@ -155,6 +157,11 @@ export default function MockDetailPage() {
 
   const d = data;
   const cancelled = d.status === 'cancelled';
+  /* Ô MT đầu trang (không bấm): cùng luật `oMt` với lưới và bảng Lộ trình. */
+  const omtDau: OMtVao = {
+    so: d.attemptNo, attemptId: d.id, cu: d.lichSu,
+    kn: Object.fromEntries(d.skillSchedule.filter((r) => (KY_NANG_KE_HOACH as readonly string[]).includes(r.skill)).map((r) => [r.skill, oKyNangTuLich(r)])),
+  };
   /* Đủ điểm và có kỳ vọng thì mới kết luận đạt; còn lại là "chưa biết" — không phải "đạt". */
   const passed: boolean | null = d.result.evaluable ? d.result.sosLevel === 0 : null;
 
@@ -218,7 +225,7 @@ export default function MockDetailPage() {
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <h1 className="text-lg font-semibold text-slate-100 min-w-0 break-words">
               <span className="mr-2 text-sm font-medium text-slate-400">Hồ sơ Mock Test ·</span>{d.student.name} <span className="text-slate-500 text-sm">· {d.student.code}</span>
-              <span className="text-slate-300 text-base font-medium whitespace-nowrap"> · MT{d.attemptNo}{d.lichSu && <> <ChipLichSu /></>}</span>
+              <span className="ml-2 align-middle"><OMt v={omtDau} homNay={homNay} /></span>
             </h1>
             {cancelled && <Tag>Đã huỷ</Tag>}
             {coKhoa && !cancelled && <Tag title={KHOA_HOAN_TAT_HINT}>Đã hoàn tất</Tag>}

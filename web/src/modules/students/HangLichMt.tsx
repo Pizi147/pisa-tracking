@@ -8,6 +8,7 @@ import { ConfirmDialog } from '../../ui/Drawer.tsx';
 import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
 import { Truong } from '../../ui/KhungPanel.tsx';
 import { Skeleton, Status } from '../../ui/ui.tsx';
+import { OMt } from '../../ui/OMt.tsx';
 import { HopKyNang } from '../test/keHoach/HopKyNang.tsx';
 import { DaiODiemLon, type KyNangLon, type LichKn } from '../fasttrack/ODiemLon.tsx';
 import { useSaveScore } from '../fasttrack/ScoreEntry.tsx';
@@ -74,7 +75,7 @@ export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienD
     <>
       <tr className="row-hover">
         <td className="td whitespace-nowrap">
-          <span className="text-slate-100">MT{h.attemptNo}</span>
+          <OMt v={{ so: h.attemptNo, attemptId: l?.attemptId ?? null, kn: l?.kn ?? {}, cu: !!l?.lichSu }} homNay={homNay} />
           {l?.kyVong != null && <span className="block text-[11px] tabular-nums text-slate-500">kỳ vọng {fmtBand(l.kyVong)}</span>}
         </td>
         <td className="td text-slate-400 whitespace-nowrap tabular-nums">{h.studyWeek !== null ? `tuần ${h.studyWeek}` : '—'}</td>

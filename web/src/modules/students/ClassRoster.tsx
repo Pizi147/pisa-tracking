@@ -1,5 +1,6 @@
 import type { NguCanhDs, NhanYThucEm } from '@shared/domain/index.ts';
-import { ChipLichSu, DauDuoi } from '../../ui/Nhan.tsx';
+import { DauDuoi } from '../../ui/Nhan.tsx';
+import { NhanCu } from '../../ui/OMt.tsx';
 import { ViecTiep } from '../../ui/ViecTiep.tsx';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
@@ -136,7 +137,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents }: {
                   <>
                     <Link className="no-underline" to={duongHoSoHocVien(s.id, { dot: h.id })} title={`Mở hồ sơ ${s.fullName} ở ${h.label}`}>
                       <span className="text-slate-200">{h.label}</span>
-                      {h.lichSu && <> <ChipLichSu /></>}
+                      {h.lichSu && <> <NhanCu /></>}
                     </Link>
                     {' · OVR '}<Band v={h.overall} kyVong={h.expectation ?? null} faded={false} lichSu={h.lichSu} />
                     <span className="mt-0.5 grid grid-cols-4 gap-x-2">
@@ -230,7 +231,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents }: {
                           <Link key={h.id} className="no-underline"
                             to={duongHoSoHocVien(s.id, { dot: h.id })} title={`Mở hồ sơ ${s.fullName} ở ${h.label}`}>
                             <span className={`text-xs whitespace-nowrap ${i === 0 ? 'text-slate-200' : 'text-slate-500'}`}>
-                              {h.label}{h.lichSu && <> <ChipLichSu /></>}
+                              {h.label}{h.lichSu && <> <NhanCu /></>}
                               {h.scoredRequired < h.requiredCount && (
                                 <span className="text-[11px] text-amber-200 ml-1">
                                   {h.scoredRequired}/{h.requiredCount}
