@@ -453,16 +453,16 @@ export async function runChamDiemTests(t: YThucTestKit) {
     assert(h.some((x: any) => x.lyDo === 'Chấm lại phần 3'), 'Lịch sử điểm hiện lý do');
   });
 
-  check('PR-Rc1 · RB-5 Không đòi lý do khi ô đang trống, và xoá điểm cũng phải có lý do', () => {
+  /* PR-MTa T22 thay "xoá điểm cũng phải có lý do": xoá trắng ô đã có điểm = xoá, lý do tuỳ chọn. */
+  check('PR-Rc1 · RB-5 Không đòi lý do khi ô đang trống; xoá điểm đã có cũng không đòi (T22)', () => {
     const ft = luotFtGhiDuoc();
     xoaO(ft, 'reading');
     attempts.saveScore(P.admin, ft, 'reading', { rawScore: 28 });   // lần đầu: không cần lý do
-    assertThrows(() => attempts.saveScore(P.admin, ft, 'reading', { rawScore: null }), /lý do/,
-      'Xoá một điểm đã có cũng là hiệu chỉnh');
+    attempts.saveScore(P.admin, ft, 'reading', { rawScore: null });
     const { attemptId } = taoBaiThuong('2026-09-14');
     regular.saveRegularScore(P.admin, attemptId, 'reading', { score: 20, total: 40 });
-    assertThrows(() => regular.saveRegularScore(P.admin, attemptId, 'reading', { score: null }), /lý do/,
-      'Lớp thường: xoá điểm đã có cũng phải có lý do');
+    regular.saveRegularScore(P.admin, attemptId, 'reading', { score: null });
+    assert(dauCua(attemptId, 'reading')?.raw_score == null, 'Lớp thường: xoá không lý do');
   });
 
   check('PR-Rc1 · RB-5 Ghi lại đúng con số cũ (tự lưu) hay chỉ sửa ghi chú thì không đòi lý do', () => {

@@ -19,12 +19,12 @@ type Dong = { tick: boolean; periodId: number | null; weekStart: string | null }
 /**
  * HỘP KỸ NĂNG (mockup 14 (1), Q19) — hộp nhỏ NEO CẠNH chip vừa bấm (portal, `position: fixed`, kẹp trong màn); 375px thì
  * là tấm dưới đáy rộng hết màn. Bốn dòng `ô tích · L Listening · tuần`, mỗi dòng đổi tuần riêng:
- *   · dòng chỉ đọc (`khoa`: đã có điểm / đã thi / đã huỷ phần thi) — ghi lý do mờ, không đổi được;
+ *   · dòng chỉ đọc chỉ còn `khoa` = đã huỷ phần thi; đã có điểm / đã thi vẫn dời được, điểm đi theo (PR-MTa T20);
  *   · FT: bỏ tích = bỏ kỹ năng khỏi đợt (`Bỏ khỏi đợt`, bắt buộc lý do); lớp thường không có ô tích (luôn đủ 4 môn);
  *   · mỗi lần đổi tuần gọi `/ke-hoach-test/dot/kiem` (đợt đã có) hoặc xem trước hàng loạt một em (đợt chưa có) → MỘT dòng
  *     trạng thái: `Chặn: …` (Lưu tắt) · cảnh báo (nút đổi thành `Vẫn xếp vào tuần này`) · `S: W4 SEP → W1 OCT · không trùng đợt khác.`
  *   · PR-LM (Q-0310-1): dời vượt lượt sau → dòng ĐỎ "Lưu sẽ huỷ lịch MT2 (W3 JUL) …"; Lưu mở hộp xác nhận nêu từng lượt bị huỷ lịch.
- *     MT lịch sử (D3) đổi tuần được kể cả kỹ năng đã có điểm (sửa hồ sơ, bắt buộc lý do); MT đang chạy không lùi qua tuần này.
+ *     MT cũ (D3) chọn được tuần đã qua; MT đang chạy không lùi qua tuần này ở web (Quản lý chọn tuần đã qua: PR-MTb).
  * Bộ chọn tuần KHỞI TẠO bằng TUẦN HIỆN CÓ của từng kỹ năng (Bổ sung sau rà #87): không để bộ chọn tự phát "tuần này" làm
  * nút Lưu mở ngay — Lưu mờ cho tới khi đổi tuần.
  */
@@ -76,7 +76,8 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
     return () => { huy = true; };
   }, []);   // eslint-disable-line react-hooks/exhaustive-deps
 
-  const laKhoa = (k: KyNangKH) => !moi && !!kn[k]?.khoa && !(lichSu && kn[k]?.khoa !== 'đã huỷ phần thi');
+  /* PR-MTa T20: Quản lý dời được kỹ năng đã có điểm / đã thi (điểm đi theo) — chỉ phần đã huỷ là chỉ đọc. */
+  const laKhoa = (k: KyNangKH) => !moi && kn[k]?.khoa === 'đã huỷ phần thi';
   const cauHinh = (k: KyNangKH) => rows[k];
   const daDoi = (k: KyNangKH) => {
     if (laKhoa(k)) return false;

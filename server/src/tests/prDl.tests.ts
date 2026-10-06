@@ -96,9 +96,9 @@ export async function runPrDlTests(t: YThucTestKit) {
   /*
    * Chụp lại 06/10 (PR-MTa): T1 đổi cờ MT cũ của lượt seed (tuần trước nay là MT thường) và các phép kiểm chạy trước (PR-MT, PR-XLMT, PR-LM)
    * đổi dữ liệu MB FT 101. Không chụp được bằng mã 666dcfbf (gọi `kiemLyDo` đã bỏ ở T7) — băm của mã hiện tại; khẳng định `idsTuan` bên dưới
-   * vẫn đối chiếu độc lập tập lượt theo tuần. Chụp lại lần nữa cho T19 (hạn lớp thường thứ Tư tuần sau, ô trước tuần thi khoá).
+   * vẫn đối chiếu độc lập tập lượt theo tuần. Chụp lại cho T19 (hạn lớp thường thứ Tư tuần sau, ô trước tuần thi khoá) và T22 (DL-4 xoá rồi nhập lại ô; GVCN sửa ô MT cũ).
    */
-  const ANH_CHUP = { tuan: '90f4386223866d98', moi: '4a95400ee54c5200' };
+  const ANH_CHUP = { tuan: '90f4386223866d98', moi: 'e59e113aeb7d0909' };
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id
@@ -385,16 +385,16 @@ export async function runPrDlTests(t: YThucTestKit) {
       assert(ds.macDinh === 'thuong:progress', `macDinh ${ds.macDinh}`);
     });
 
-    await t.checkAsync('DL-4 PUT một ô (đường ghi cũ) → oTrong giảm 1; xoá ô đã có điểm không lý do bị từ chối (PR-MTa T7)', async () => {
+    await t.checkAsync('DL-4 PUT một ô (đường ghi cũ) → oTrong giảm 1; xoá ô đã có điểm không lý do → được (PR-MTa T22)', async () => {
       const truoc = luotCua((await goi(QL.userId, `/classes/${LOP}/diem-theo-luot`)).body, 'mt:2').oTrong;
       const w = await goi(QL.userId, `/attempts/${anh.aid}/scores/reading`, 'PUT', { rawScore: 28 });
       assert(w.status === 200, `PUT reading: ${w.status} ${JSON.stringify(w.body)}`);
       const sau = luotCua((await goi(QL.userId, `/classes/${LOP}/diem-theo-luot`)).body, 'mt:2').oTrong;
       assert(sau === truoc - 1, `oTrong ${truoc} → ${sau}`);
-      /* PR-MTa T7 thay RB-5: sửa điểm — lý do tuỳ chọn; XOÁ điểm đã có (huỷ điểm) không lý do mới bị từ chối. */
+      /* PR-MTa T7 thay RB-5 (sửa điểm — lý do tuỳ chọn); T22 thay "xoá cần lý do": xoá trắng ô cũng tuỳ chọn. Nhập lại 30 cho các phép kiểm sau. */
       const s = await goi(QL.userId, `/attempts/${anh.aid}/scores/listening`, 'PUT', { rawScore: null });
-      assert(s.status >= 400 && s.status < 500, `xoá không lý do phải bị từ chối: ${s.status}`);
-      assert(get(`SELECT raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, anh.aid).raw_score === 30, 'điểm cũ bị đổi');
+      assert(s.status === 200 && get(`SELECT raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, anh.aid).raw_score === null, `xoá: ${s.status}`);
+      assert((await goi(QL.userId, `/attempts/${anh.aid}/scores/listening`, 'PUT', { rawScore: 30 })).status === 200, 'nhập lại');
     });
 
     await t.checkAsync('DL-4 /diem-theo-lop/lop: GV thấy lớp mình dạy; GVCN thấy lớp chủ nhiệm; QL thấy lớp chi nhánh; oTrong = tổng các lượt', async () => {
@@ -463,7 +463,7 @@ export async function runPrDlTests(t: YThucTestKit) {
   check('DL-5 DiemTheoLop: chữ đúng đặc tả, tablist, hỏi khi còn ô đang lưu, nhớ "Chỉ ô còn trống" bọc try/catch', () => {
     const f = doc('web/src/modules/cham/DiemTheoLop.tsx');
     for (const chu of ['Còn ô đang lưu. Đợi lưu xong rồi chuyển?', 'Chưa có lịch {b!.luot.nhan} — ', 'xếp ở panel Lộ trình', "{ mo: 'lo-trinh' }", 'Chỉ ô còn trống',
-      'là MT cũ: nhập bù điểm, không nhận dấu "-".',   // PR-MTa: "MT cũ"
+      'là MT cũ: nhập bù điểm; "-" là em không dự thi.',   // PR-MTa: "MT cũ"; T23 thay "không nhận dấu".
       'Lớp chưa có lượt Test nào. Xếp lịch ở Kế hoạch Test.', 'role="tablist"', 'colSpan', 'onRetry={'])
       assert(f.includes(chu) || doc('web/src/modules/cham/LuoiFT.tsx').includes(chu), `thiếu: ${chu}`);
     assert(/try\s*\{[^}]*localStorage\.getItem/.test(f) && /try\s*\{[^}]*localStorage\.setItem/.test(f), 'localStorage phải bọc try/catch');

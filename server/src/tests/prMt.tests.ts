@@ -293,24 +293,26 @@ export async function runPrMtTests(t: YThucTestKit) {
   const monKhongDay = d.ENTRY_SKILLS.find((k: string) => !perm.mySkills(GVCN, MB101, [k]).length && k === 'speaking') ?? 'speaking';
   const mt2H1 = luotCua(sH1b)[1];
   const tieuChi = (b: number) => ({ criteria: [b, b, b, b] });
-  check('PR-MT (6) · GVCN nhập ô TRỐNG môn mình không dạy của MT lịch sử → được (nhật ký score.lich_su); sửa lại → từ chối; QL sửa có lý do → được (K5-31, Q8, T34)', () => {
+  /* PR-MTa T22 thay "GVCN chỉ ô trống": GVCN sửa / xoá được cả ô đã có điểm của MT cũ. */
+  check('PR-MT (6) · GVCN nhập ô môn mình không dạy của MT cũ → được (nhật ký score.lich_su); sửa lại → được (T22); QL sửa → được (K5-31, Q8, T34)', () => {
     assert(!perm.mySkills(GVCN, MB101, [monKhongDay]).length, `tiền đề: GVCN không dạy ${monKhongDay}`);
     attemptsSvc.saveScore(GVCN, mt2H1.id, monKhongDay, tieuChi(5));
     const nk = conn.prepare(`SELECT action FROM audit_logs WHERE entity_type = 'assessment_attempt' AND entity_id = ? ORDER BY id DESC`).get(mt2H1.id) as any;
     assert(nk?.action === 'score.lich_su' && d.nhanHanhDongNhatKy('score.lich_su') === 'Nhập điểm MT cũ', JSON.stringify(nk));   // PR-MTa: "MT cũ"
-    assertThrows(() => attemptsSvc.saveScore(GVCN, mt2H1.id, monKhongDay, { ...tieuChi(6), lyDo: 'Gõ nhầm tiêu chí khi nhập bù' }),
-      /phân công/, 'GVCN sửa ô đã có điểm của MT lịch sử');
+    attemptsSvc.saveScore(GVCN, mt2H1.id, monKhongDay, tieuChi(6));
     attemptsSvc.saveScore(P.mbManager, mt2H1.id, monKhongDay, { ...tieuChi(6.5), lyDo: 'Gõ nhầm tiêu chí khi nhập bù' });
     const cells = attemptsSvc.attemptDetail(GVCN, mt2H1.id).cells;
-    assert(cells.filter((c: any) => c.skill !== monKhongDay).every((c: any) => c.canEdit) && cells.every((c: any) => c.progress === 'lich_su' || c.band !== null),
-      'GVCN thấy ô trống cả 4 kỹ năng mở, tiến độ "lịch sử"');
+    assert(cells.every((c: any) => c.canEdit) && cells.every((c: any) => c.progress === 'lich_su' || c.band !== null),
+      'GVCN thấy mọi ô mở (kể cả ô đã có điểm — T22), tiến độ "lịch sử"');
   });
   check('PR-MT (6) · Lượt thường: GVCN không dạy môn đó vẫn bị từ chối như cũ', () => {
     assertThrows(() => attemptsSvc.saveScore(GVCN, luotCua(sA)[1].id, monKhongDay, tieuChi(6)), /phân công/, 'lượt thường');
   });
-  check('PR-MT (6) · MT lịch sử không nhận dấu "-" (K4-20)', () => {
-    assertThrows(() => attemptsSvc.saveScore(P.mbManager, mt2H1.id, 'listening', { noShow: true }),
-      /MT cũ không nhận dấu "-" — để trống ô nếu không có dữ liệu\./, 'dấu "-" trên MT cũ');   // PR-MTa: "MT cũ"
+  /* PR-MTa T23 thay K4-20: MT cũ nhận "-" = không dự thi (không vào luồng vắng) — gỡ lại để các phép kiểm sau dùng ô trống. */
+  check('PR-MT (6) · MT cũ nhận dấu "-" = không dự thi, gỡ được (T23)', () => {
+    attemptsSvc.saveScore(P.mbManager, mt2H1.id, 'listening', { noShow: true });
+    assert(conn.prepare(`SELECT no_show_period_id p FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`).get(mt2H1.id)?.p, 'chưa ghi dấu');
+    attemptsSvc.saveScore(P.mbManager, mt2H1.id, 'listening', { noShow: false });
   });
   check('PR-MT (6) · H2: MT2 lịch sử cách 10+ tuần, đủ 4 kỹ năng SOS 2 → KHÔNG Case, không tín hiệu, không Phối hợp (M4, M-14)', () => {
     attemptsSvc.saveScore(P.mbManager, mt2H1.id, 'listening', { rawScore: scoringSvc.LISTENING_BY_RAW.indexOf(5) });

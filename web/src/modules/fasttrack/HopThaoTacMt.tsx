@@ -72,7 +72,8 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, tuanDaBa
   const batBuoc = canLyDo(t);
   const coTuan = t === 'dat-lich' || t === 'xep-lai' || t === 'doi-lich' || t === 'khoi-phuc';
   /* K2-33: dời / xếp lại lượt có sẵn không vào tuần đã qua — tuần sớm nhất là tuần này. */
-  const tuanNay = homNay ? mondayOfDate(homNay) : null;
+  /* PR-MTa T21: Khôi phục (chỉ Quản lý) chọn được tuần đã qua — em đã thi thật. */
+  const tuanNay = homNay && t !== 'khoi-phuc' ? mondayOfDate(homNay) : null;
   const chonW = t === 'huy-diem' && !laThuong && oCoDiem.length > 1;
 
   const loi: LoiTruong[] = [

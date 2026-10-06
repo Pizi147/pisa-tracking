@@ -74,8 +74,9 @@ export type SaveOpts = { nem?: boolean };
 export const coDiemChinhThuc = (cell: Cell) => cell.band !== null || cell.rawScore !== null;
 
 /** Ô đã chốt "không dự thi" hoặc đang chờ Quản lý: người nhập điểm không sửa được nữa (phải qua Quản lý). */
-export const lockedByNoShow = (cell: Cell) =>
-  cell.noShow?.state === 'khong-du-thi' || cell.noShow?.state === 'cho-ql-hieu-chinh';
+/* T23 (PR-MTa): ô "-" của MT cũ không khoá — gỡ dấu hoặc nhập điểm đè được. */
+export const lockedByNoShow = (cell: Cell) => cell.progress !== 'lich_su'
+  && (cell.noShow?.state === 'khong-du-thi' || cell.noShow?.state === 'cho-ql-hieu-chinh');
 
 /** R11 — ô của một đợt đã hoàn tất mà người xem không sửa được: thay cho câu "không được phân công". */
 export const KHOA_HOAN_TAT_HINT = 'Đợt này đã hoàn tất. Chỉ Quản lý sửa được điểm — nhờ Quản lý hiệu chỉnh, kèm lý do.';
@@ -351,8 +352,7 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false, 
   /* FT không có "dời tiếp": gõ "-" lên ô đang là "-" chỉ không được thành "--". */
   const goLai = useGoLaiDau(draft, () => undefined, inputRef);
   /* Nút − (điện thoại): đúng lệnh của gõ "-". Ô đã có điểm (sửa phải qua lý do) hoặc đã mang dấu thì không nhận. */
-  /* PR-DL: MT lịch sử không nhận "-" (máy chủ chặn) — không đưa nút Vắng. */
-  const nhanDau = !coDiemChinhThuc(cell) && !cell.noShow && cell.progress !== 'lich_su';
+  const nhanDau = !coDiemChinhThuc(cell) && !cell.noShow;   // T23: MT cũ nhận "-" = không dự thi
   const bamDau = async () => {
     if (!nhanDau || busy || hoiLyDo) return;
     setBusy(true);
@@ -454,7 +454,7 @@ export function CriteriaButton({ cell, onSave, buttonRef, lon = false, gvMacDinh
   const hieuChinh = coDiemChinhThuc(cell);
   /* Nút − (điện thoại): bốn ô tiêu chí dùng bàn phím số thập phân — iPhone không gõ được "-". */
   const [dangBao, setDangBao] = useState(false);
-  const nhanDau = editable && !hieuChinh && !cell.noShow && cell.progress !== 'lich_su';   // PR-DL: MT lịch sử không nhận "-"
+  const nhanDau = editable && !hieuChinh && !cell.noShow;   // T23: MT cũ nhận "-" = không dự thi
   const toastVang = useToastVang();
   const bamDau = async () => {
     if (!nhanDau || dangBao) return;

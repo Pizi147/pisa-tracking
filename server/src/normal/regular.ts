@@ -5,7 +5,7 @@ import { dongBoBaoPh, monBaoPh } from '../yThuc/phoiHop.ts';
 import { raiseSignal, reconcileCorrectedSignals } from '../cases/signals.ts';
 import {
   ATTEMPT_KIND_LABEL, ATTEMPT_KIND_SHORT, PERMISSIONS, RATIO_PASS_THRESHOLD, boMonLich, boTroGiuaKhoa,
-  caseCategoriesFor, categoryOf, goiYCuoiKhoa, kiemLyDoThaoTac, ngay, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanKeTiep, tuanLich,
+  caseCategoriesFor, categoryOf, goiYCuoiKhoa, ngay, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanKeTiep, tuanLich,
   type AssessedSkill, type AttemptKind, type CaseCategory, type RatioOutcome, type SosLevel,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -529,11 +529,7 @@ export function saveRegularScore(
    * RB-5 — cùng luật với Fast Track: đổi (hay xoá) một điểm đã có thì phải ghi lý do. Điểm lớp thường là cặp
    * "số câu đúng / tổng số câu" — đổi tổng là đổi tỉ lệ đạt, nên cũng tính là sửa. Lưu lại đúng cặp cũ thì không.
    */
-  /* T7 (PR-MTa): đổi giá trị → lý do tuỳ chọn; xoá điểm đã có = huỷ điểm → bắt buộc. */
-  if ((existing?.raw_score ?? null) !== null && (score ?? null) === null) {
-    const loi = kiemLyDoThaoTac('huy-diem', patch.lyDo);
-    if (loi) throw badRequest(loi);
-  }
+  /* T7 + T22 (PR-MTa): đổi giá trị hay xoá điểm đã có → lý do tuỳ chọn. */
 
   /* PR-Pb2-b (Q13): cùng luật FT — ngày nghiệp vụ lần đầu ô có điểm, sửa sau giữ nguyên, xoá điểm về NULL. */
   const nhapDau = (score ?? null) !== null ? existing?.nhap_dau_ngay ?? today : null;

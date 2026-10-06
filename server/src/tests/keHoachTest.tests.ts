@@ -162,14 +162,10 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     assert(daDoi.raw_score === 32, 'Đúng Chủ nhật (chưa qua) GVBM phải còn sửa được, có lý do');
   });
 
-  // PR-MTa T7 thay RB-5: Quản lý sửa đợt hoàn tất — lý do tuỳ chọn; xoá điểm (huỷ điểm) vẫn bắt buộc.
-  check('PR-Rc2 · R11(b) Quản lý sửa được đợt hoàn tất (lý do tuỳ chọn, xoá cần lý do); nhật ký score.override kèm sauHoanTat', () => {
+  // PR-MTa T7 thay RB-5: Quản lý sửa đợt hoàn tất — lý do tuỳ chọn; T22 thay "xoá cần lý do": xoá trắng ô cũng tuỳ chọn.
+  check('PR-Rc2 · R11(b) Quản lý sửa được đợt hoàn tất (lý do tuỳ chọn, kể cả xoá); nhật ký score.override kèm sauHoanTat', () => {
     const { attemptId, classId: clsId, chuNhatCuoi } = dungDotHoanTatFT();
     const sauChuNhat = addDays(chuNhatCuoi, 1);
-    assertThrows(
-      () => attemptsMod.saveScore(P.mbManager, attemptId, 'listening', { rawScore: null }, sauChuNhat),
-      /Huỷ điểm: cần ghi lý do/, 'Quản lý xoá điểm đợt hoàn tất mà không ghi lý do vẫn được chấp nhận',
-    );
     attemptsMod.saveScore(P.mbManager, attemptId, 'listening', { rawScore: 34, lyDo: 'Quản lý hiệu chỉnh sau hoàn tất' }, sauChuNhat);
     const daDoi = conn.prepare('SELECT raw_score FROM assessment_scores WHERE attempt_id=? AND skill=?')
       .get(attemptId, 'listening') as any;
@@ -181,6 +177,8 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     assert(JSON.parse(log.after_json ?? '{}').sauHoanTat === true, 'Nhật ký thiếu cờ sauHoanTat');
     assert(!can(P.mbManager, d.PERMISSIONS.SCORE_OVERRIDE, { classId: clsId }),
       'Quản lý sửa được là qua PLAN_WEEK (R11), không phải vì được cấp score.override thẳng');
+    attemptsMod.saveScore(P.mbManager, attemptId, 'listening', { rawScore: null }, sauChuNhat);   // T22: xoá không lý do
+    assert((conn.prepare('SELECT raw_score FROM assessment_scores WHERE attempt_id=? AND skill=?').get(attemptId, 'listening') as any).raw_score === null, 'xoá');
   });
 
   check('PR-Rc2 · R11(c) Lớp thường: bốn môn có điểm + hết CN → GVBM bị chặn, Quản lý sửa được; dấu "-" không làm hoàn tất', () => {
@@ -311,7 +309,8 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     assertThrows(() => keHoachMod.luoiFT(P.lrTeacher, mbClass), /Quản lý|quyền/, 'GVBM gọi luoiFT phải bị chặn quyền');
   });
 
-  check('PR-Rc2 · Task4(b) luuDot: đổi L, R, không đổi S; kỹ năng đã có điểm giữ nguyên', () => {
+  /* PR-MTa T20 thay "kỹ năng đã có điểm giữ nguyên": Quản lý dời được, điểm đi theo. */
+  check('PR-Rc2 · Task4(b) luuDot: đổi L, R, không đổi S; kỹ năng đã có điểm cũng đổi, điểm đi theo (T20)', () => {
     const [mt1, mt2, mt3] = threeConsecutiveMocks();
     /* Dựng đúng biên: listening/reading CHƯA có điểm, CHƯA thi (sẽ đổi), writing ĐÃ có điểm (phải giữ nguyên tuần). */
     conn.prepare(`DELETE FROM assessment_scores WHERE attempt_id=? AND skill IN ('listening','reading')`).run(mt2.attemptId);
@@ -329,13 +328,13 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
       .get(mt2.attemptId) as any;
     const sBefore = conn.prepare(`SELECT planned_period_id FROM attempt_skills WHERE attempt_id=? AND skill='speaking'`)
       .get(mt2.attemptId) as any;
-    /* Hộp chip gửi cả L, R, W (cùng tuần mới) — W đã có điểm nên bị bỏ qua; S không gửi nên không đổi. */
+    /* Hộp chip gửi cả L, R, W (cùng tuần mới) — W đã có điểm vẫn đổi (T20); S không gửi nên không đổi. */
     const r = truocNgayDemo(() => keHoachMod.luuDot(P.mbManager, {
       attemptId: mt2.attemptId, force: true, reason: 'PR-XLMT: tuần thi đã bắt đầu cần lý do',
       kyNang: [{ skill: 'listening', periodId: per.id }, { skill: 'reading', periodId: per.id }, { skill: 'writing', periodId: per.id }],
     }));
     assert(r.doi.includes('listening') && r.doi.includes('reading'), `listening, reading phải đổi tuần, đang ra ${JSON.stringify(r)}`);
-    assert(!r.doi.includes('writing'), 'writing đã có điểm mà vẫn đổi tuần');
+    assert(r.doi.includes('writing'), 'writing đã có điểm: Quản lý vẫn đổi tuần (T20)');
     for (const sk of ['listening', 'reading']) {
       const row = conn.prepare(`SELECT planned_period_id FROM attempt_skills WHERE attempt_id=? AND skill=?`)
         .get(mt2.attemptId, sk) as any;
@@ -343,7 +342,8 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     }
     const writingAfter = conn.prepare(`SELECT planned_period_id FROM attempt_skills WHERE attempt_id=? AND skill='writing'`)
       .get(mt2.attemptId) as any;
-    assert(writingAfter.planned_period_id === writingBefore.planned_period_id, 'writing đã có điểm phải giữ nguyên tuần');
+    assert(writingAfter.planned_period_id === per.id && writingBefore.planned_period_id !== per.id, 'writing sang tuần mới');
+    assert((conn.prepare(`SELECT band FROM assessment_scores WHERE attempt_id=? AND skill='writing1'`).get(mt2.attemptId) as any).band === 6, 'điểm W đi theo');
     const sAfter = conn.prepare(`SELECT planned_period_id FROM attempt_skills WHERE attempt_id=? AND skill='speaking'`)
       .get(mt2.attemptId) as any;
     assert(sAfter.planned_period_id === sBefore.planned_period_id, 'luuDot L R W không được đụng Speaking');
@@ -597,7 +597,8 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     }
   });
 
-  check('PR-Rc2 · Task6(c)(d) luuDot lớp thường: đổi W của MỘT em; em đã có điểm → giu; setSkillWeek từ chối dời môn đã có raw_score', () => {
+  /* PR-MTa T20 thay "em đã có điểm → giu; setSkillWeek từ chối": Quản lý dời được môn đã có điểm, điểm đi theo. */
+  check('PR-Rc2 · Task6(c)(d) luuDot lớp thường: đổi W của MỘT em; em đã có điểm → Quản lý vẫn dời, điểm đi theo (T20)', () => {
     const foundationClass = classId('MB FOU 12');
     const attempts = conn.prepare(
       `SELECT a.id AS attemptId, a.student_id FROM assessment_attempts a
@@ -608,7 +609,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     /* CHỈ THAO TÁC TRÊN HAI EM ĐÃ KIỂM SOÁT ĐƯỢC — các em khác trong lớp thật có lộ trình/lịch riêng. */
     const [emCoDiem, emMove] = attempts;
 
-    /* Dựng biên: emCoDiem đã có điểm W → phải 'giu' và setSkillWeek phải từ chối dời. */
+    /* Dựng biên như trước (giữ dữ liệu cho các phép kiểm sau): emCoDiem có điểm W; emMove chưa. */
     conn.prepare(`DELETE FROM assessment_scores WHERE attempt_id=? AND skill='writing'`).run(emCoDiem.attemptId);
     conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total, entered_at) VALUES (?,?,?,?,?)`)
       .run(emCoDiem.attemptId, 'writing', 30, 40, '2026-04-01');
@@ -621,20 +622,6 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
         WHERE ask.attempt_id = ? AND ask.skill = 'writing'`,
     ).get(emMove.attemptId) as any;
     const target = week.ensurePeriod(addDays(wNow.w, -7));
-
-    assertThrows(
-      () => skillSchedule.setSkillWeek(P.mbManager, emCoDiem.attemptId, 'writing', target.id, { force: true }),
-      /đã có điểm/, 'setSkillWeek phải từ chối dời môn lớp thường đã có raw_score',
-    );
-
-    const kiemCoDiem = truocNgayDemo(() => keHoachMod.kiemDot(P.mbManager, { attemptId: emCoDiem.attemptId, kyNang: [{ skill: 'writing', periodId: target.id }] }));
-    assert(kiemCoDiem.bai[0].ghiChu === 'giu' && kiemCoDiem.bai[0].cau === 'đã có điểm', `Em đã có điểm phải 'giu', đang ra ${JSON.stringify(kiemCoDiem)}`);
-    const luuCoDiem = truocNgayDemo(() => keHoachMod.luuDot(P.mbManager, { attemptId: emCoDiem.attemptId, kyNang: [{ skill: 'writing', periodId: target.id }], force: true }));
-    assert(luuCoDiem.doi.length === 0, 'Em đã có điểm mà luuDot vẫn đổi');
-    const rowWCoDiem = conn.prepare(`SELECT planned_period_id FROM attempt_skills WHERE attempt_id=? AND skill='writing'`)
-      .get(emCoDiem.attemptId) as any;
-    assert(rowWCoDiem.planned_period_id !== target.id, 'Em đã có điểm mà W vẫn bị đổi tuần');
-
     const lNow = conn.prepare(`SELECT planned_period_id p FROM attempt_skills WHERE attempt_id=? AND skill='listening'`).get(emMove.attemptId) as any;
     const ket = truocNgayDemo(() => keHoachMod.luuDot(P.mbManager, { attemptId: emMove.attemptId, kyNang: [{ skill: 'writing', periodId: target.id }], force: true, reason: 'PR-XLMT: tuần thi đã bắt đầu cần lý do' }));
     assert(ket.doi.join() === 'writing', `Chỉ W của em này được đổi, đang ra ${JSON.stringify(ket)}`);
@@ -644,6 +631,16 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     const rowL = conn.prepare(`SELECT planned_period_id p1 FROM attempt_skills WHERE attempt_id=? AND skill='listening'`)
       .get(emMove.attemptId) as any;
     assert(rowL.p1 === lNow.p, `L không được đụng vào (đổi W không phải đổi L), em ${emMove.student_id}`);
+
+    /* T20: W của em này nay có điểm → Quản lý vẫn dời về tuần cũ, điểm đi theo. (Em `emCoDiem` của seed vướng luật thứ tự đợt — không dùng.) */
+    conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total, entered_at) VALUES (?,?,?,?,?)`)
+      .run(emMove.attemptId, 'writing', 30, 40, '2026-04-01');
+    const kiemCoDiem = truocNgayDemo(() => keHoachMod.kiemDot(P.mbManager, { attemptId: emMove.attemptId, kyNang: [{ skill: 'writing', periodId: week.ensurePeriod(wNow.w).id }] }));
+    assert(kiemCoDiem.bai[0].ghiChu !== 'giu' && kiemCoDiem.bai[0].ghiChu !== 'chan', `Em đã có điểm: Quản lý dời được, đang ra ${JSON.stringify(kiemCoDiem)}`);
+    const luuCoDiem = truocNgayDemo(() => keHoachMod.luuDot(P.mbManager, { attemptId: emMove.attemptId, kyNang: [{ skill: 'writing', periodId: week.ensurePeriod(wNow.w).id }], force: true }));
+    const veW = conn.prepare(`SELECT pr.week_start w FROM attempt_skills ask JOIN report_periods pr ON pr.id = ask.planned_period_id WHERE ask.attempt_id = ? AND ask.skill = 'writing'`).get(emMove.attemptId) as any;
+    const diemW = conn.prepare(`SELECT raw_score FROM assessment_scores WHERE attempt_id=? AND skill='writing'`).get(emMove.attemptId) as any;
+    assert(luuCoDiem.doi.join() === 'writing' && veW.w === wNow.w && diemW.raw_score === 30, `W phải về tuần cũ, điểm giữ nguyên: ${JSON.stringify(luuCoDiem)}`);
   });
 
   check('PR-Rc2 · Q2 dotDaHoanTat — biên hoàn tất, dấu "-", Chủ nhật, kỹ năng huỷ', () => {

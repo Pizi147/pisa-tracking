@@ -114,7 +114,13 @@ export type NhacLichSu = { classId: number; classCode: string; soEm: number; hre
  */
 export function mtLichSuChuaNhap(p: Principal, o: { classIds?: number[] | null; branchId?: number | null } = {}): NhacLichSu[] {
   if (o.classIds && !o.classIds.length) return [];
-  const where = ['a.lich_su = 1', `a.status = 'planned'`, `c.status = 'active'`];
+  /* T23 (PR-MTa): ô "-" (không dự thi) của MT cũ không còn là ô chưa nhập — chỉ nhắc lượt còn ô trống thật. */
+  const where = ['a.lich_su = 1', `a.status = 'planned'`, `c.status = 'active'`, `EXISTS (SELECT 1 FROM attempt_skills k
+    WHERE k.attempt_id = a.id AND k.required = 1 AND k.sit_status != 'cancelled'
+      AND (SELECT COUNT(*) FROM assessment_scores sc WHERE sc.attempt_id = a.id
+            AND (CASE WHEN sc.skill IN ('writing1', 'writing2') THEN 'writing' ELSE sc.skill END) = k.skill
+            AND (sc.band IS NOT NULL OR sc.raw_score IS NOT NULL OR sc.no_show_period_id IS NOT NULL))
+        < (CASE WHEN k.skill = 'writing' THEN 2 ELSE 1 END))`];
   const params: unknown[] = [];
   if (o.classIds) { where.push(`a.class_id IN (${o.classIds.map(() => '?').join(',')})`); params.push(...o.classIds); }
   if (o.branchId) { where.push('c.branch_id = ?'); params.push(o.branchId); }

@@ -751,8 +751,8 @@ function hasScore(attemptId: number, skill: string): boolean {
  * `force` cho phép người có quyền xác nhận đi tiếp khi chỉ có cảnh báo (hai đợt cách nhau
  * một tuần). Cảnh báo là cảnh báo; chặn là chặn — `force` không bao giờ vượt được blocker.
  *
- * Phần ĐÃ THI hoặc ĐÃ CÓ ĐIỂM không dời như một lịch tương lai (mục 10.4): lịch sử thực tế
- * sai thì đó là một hiệu chỉnh có căn cứ, không phải một lần dời.
+ * Phần ĐÃ THI hoặc ĐÃ CÓ ĐIỂM: GV không dời (mục 10.4). Quản lý / Quản trị dời được sang tuần bất kỳ, kể cả tuần cũ hơn —
+ * điểm đi theo kỹ năng, không đổi (PR-MTa T20); cờ MT cũ tính lại.
  */
 export function setSkillWeek(p: Principal, attemptId: number, skill: string, periodId: number, opts: {
   reason?: string | null;
@@ -786,12 +786,12 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
    */
   const lichSu = !!attempt.lich_su && !opts.khiTao && !opts.ghiBuDau;
   const homNay = opts.today ?? demoToday();
+  const quanLy = can(p, PERMISSIONS.PLAN_WEEK, { classId: attempt.class_id, studentId: attempt.student_id });
   if (!opts.khiTao && !opts.ghiBuDau) {
-    const quanLy = can(p, PERMISSIONS.PLAN_WEEK, { classId: attempt.class_id, studentId: attempt.student_id });
     const cau = kiemTuanXep({ ketThuc: [period.week_end], homNay, quanLy }).cau;
     if (cau) throw badRequest(cau);
   }
-  if (!lichSu) {
+  if (!lichSu && !quanLy) {
     if (hasScore(attemptId, row.skill)) {
       throw badRequest(
         `${skill} đã có điểm ở đợt này. Phần đã thi giữ nguyên lịch thật; `

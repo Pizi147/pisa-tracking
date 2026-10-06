@@ -207,7 +207,7 @@ export function DiemTheoLop({ classId, luotBanDau, gon = false, congRoi, onDaLuu
 
         {dangXem?.lichSu && (
           <div className="surface-2 rounded-md px-3 py-2 text-sm text-slate-300">
-            {dangXem.nhan} là MT cũ: nhập bù điểm, không nhận dấu "-".
+            {dangXem.nhan} là MT cũ: nhập bù điểm; "-" là em không dự thi.
           </div>
         )}
 

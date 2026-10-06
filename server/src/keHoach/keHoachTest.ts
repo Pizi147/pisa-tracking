@@ -426,14 +426,13 @@ type YeuCauKyNang = { skill: KyNangKH; periodId: number };
  * `pre` (PR-XLMT): dữ liệu đã đọc theo lô (hàng loạt nhiều em) — không đọc lại. `canLyDo` luôn false (G17, T7 — giữ trường cho web cũ).
  * Tuần đích đã qua không chặn: mọi nơi gọi đều đã đòi PLAN_WEEK (T4 — Quản lý xếp được tuần đã qua).
  * Lượt sau bị vượt thành `seHuyLich` (kèm `soDiem`, `soCase`) thay vì chặn — mọi cổng, kể cả xếp hàng loạt (T2, chốt 05/10).
- * `pre.choHuyLich` (chỉ hộp một đợt): MT cũ (D3) đổi tuần được kể cả kỹ năng đã có điểm.
+ * `pre.choHuyLich` (chỉ hộp một đợt): đổi tuần được kể cả kỹ năng đã có điểm / đã thi — điểm đi theo (D3 MT cũ, PR-MTa T20 mọi lượt).
  */
 function kiemDotNoi(a: any, kyNang: YeuCauKyNang[], duaLai: Set<KyNangKH> = new Set(),
   pre: { rows?: any[]; scores?: any[]; periods?: Map<number, any>; homNay?: string; choHuyLich?: boolean; luotSau?: LuotSauDoc[] } = {},
 ): { bai: BaiXemTruoc[]; canLyDo: boolean; seHuyLich: LuotSeHuyLich[] } {
   const conn = db();
   const cheDo: CheDo = a.kind === 'mock' ? 'ft' : 'thuong';
-  const lichSu = !!pre.choHuyLich && !!a.lich_su;
   const rows = pre.rows ?? (loadSkillRows([a.id]).get(a.id) ?? []) as any[];
   const scores = pre.scores ?? loadBundle([a.id]).scores.get(a.id) ?? [];
   const periods = new Map<number, any>();
@@ -455,7 +454,7 @@ function kiemDotNoi(a: any, kyNang: YeuCauKyNang[], duaLai: Set<KyNangKH> = new 
       continue;
     }
     const khoa = khoaCua(cheDo, row, scores);
-    if (khoa && !(lichSu && khoa !== 'đã huỷ phần thi')) { bai.push({ skill: k.skill, tu, den: tu, ghiChu: 'giu', cau: khoa }); continue; }
+    if (khoa && !(pre.choHuyLich && khoa !== 'đã huỷ phần thi')) { bai.push({ skill: k.skill, tu, den: tu, ghiChu: 'giu', cau: khoa }); continue; }
     if (row.planned_period_id === k.periodId) { bai.push({ skill: k.skill, tu, den: tu, ghiChu: 'giu', cau: null }); continue; }
     doi.push({ i: bai.length, k, row, pr });
     bai.push({ skill: k.skill, tu, den: pr.week_start, ghiChu: 'doi', cau: null });

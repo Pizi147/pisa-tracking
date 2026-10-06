@@ -5478,7 +5478,8 @@ check('[10.4] R/L/W và Speaking của CÙNG một đợt không bị gọi là 
     'Hai kỹ năng cùng đợt bị cảnh báo "hai MT quá gần"');
 });
 
-check('[10.4] Phần đã có điểm không dời như một lịch tương lai', () => {
+/* PR-MTa T20 thay [10.4] cho Quản lý / Quản trị: dời được phần đã có điểm (điểm đi theo) — GV vẫn bị chặn (prMta T20). */
+check('[10.4→T20] Quản trị dời phần đã có điểm: không còn chặn "đã có điểm" (ở đây dừng ở hộp xác nhận dời vượt)', () => {
   const scored = conn
     .prepare(
       `SELECT a.id, a.class_id FROM assessment_attempts a
@@ -5487,10 +5488,9 @@ check('[10.4] Phần đã có điểm không dời như một lịch tương lai
     )
     .get() as any;
   assert(scored, 'Seed thiếu lượt đã có điểm Listening');
-  assertThrows(
-    () => skillSchedule.setSkillWeek(P.admin, scored.id, 'listening', periodOf(addDays(demoToday(), 28)), { force: true }),
-    /đã có điểm/, 'Dời được một phần thi đã có điểm',
-  );
+  let loi: any = null;
+  try { skillSchedule.setSkillWeek(P.admin, scored.id, 'listening', periodOf(addDays(demoToday(), 28)), { force: true }); } catch (e) { loi = e; }
+  assert(loi && !/đã có điểm/.test(loi.message) && /Xác nhận để tiếp tục/.test(loi.message), `Quản trị: ${loi?.message}`);
 });
 
 check('[10.1] Lớp Normal luôn phải đủ bốn môn — không có thao tác miễn môn', () => {
