@@ -1,6 +1,6 @@
 // PR-KHUNG — đo khung trên trang thật (chạy tay, không vào `npm run check`): 1440/375 × tối/sáng.
 // Lỗi: (a) html cuộn (chỉ <main> được cuộn) hoặc trang trượt ngang; (b) cuộn lồng trong trang (ngoài panel);
-// (c) chữ truncate / line-clamp bị cắt; (d) chữ nút chọn / nút lọc / tab tràn khỏi viền.
+// (c) chữ truncate / line-clamp bị cắt; (d) chữ nút chọn / nút lọc / tab tràn khỏi viền. Kịch bản không mở được cũng là lỗi.
 // Chạy: npm run dev (PORT/WEB_PORT riêng) rồi `KHUNG_BASE=http://localhost:5530 node scripts/do-khung.mjs [lọc]`.
 // Playwright không nằm trong package.json: `npm i --no-save playwright` hoặc trỏ PW=<đường tới playwright>.
 import fs from 'node:fs';
@@ -42,6 +42,18 @@ const KICH_BAN = [
   ['panel-tao-case', 7, '/hoc-vien/3', nut(/^\+ Case$/)],
   ['panel-vi-pham', 7, '/hoc-vien/3?tab=y-thuc', async (p) => { await nut(/Ghi vi phạm/)(p); await p.evaluate(() => { const t = document.querySelector('[role=dialog] .overflow-y-auto'); if (t) t.scrollTop = 120; }); await p.waitForTimeout(200); }],
   ['panel-sua-tt', 2, '/hoc-vien/lop/3?tab=hoc-vien', nut(/^Sửa thông tin$/)],
+  ['panel-them-hv', 2, '/hoc-vien/lop/3?tab=hoc-vien', nut(/^\+ Học viên$/)],
+  // Hộp kỹ năng MT (popover neo cạnh ô, Kế hoạch Test) và thanh dính đáy "Chọn nhiều học viên" (hồ sơ lớp).
+  ['hop-ky-nang-mt', 2, '/test/ke-hoach', async (p) => {
+    await p.locator('#noi-dung [aria-expanded=false]').first().click(); await p.waitForTimeout(600);
+    await p.locator('#noi-dung td button[aria-label^="MT"]').first().click(); await p.waitForTimeout(500);
+    if (!(await p.locator('[role=dialog][aria-label^="Lịch "]').count())) throw new Error('không thấy hộp kỹ năng');
+  }],
+  ['chon-nhieu-hv', 2, '/hoc-vien/lop/3?tab=hoc-vien', async (p) => {
+    await nut(/^Chọn nhiều học viên$/)(p);
+    await p.locator('#noi-dung input[type=checkbox]').first().check(); await p.waitForTimeout(300);
+    if (!(await p.getByRole('toolbar', { name: 'Việc cho học viên đã chọn' }).count())) throw new Error('không thấy thanh chọn nhiều');
+  }],
 ];
 
 function doTrang() {
@@ -126,7 +138,7 @@ for (const [w, h] of [[1440, 900], [375, 812]]) for (const sang of [false, true]
       await p.goto(BASE + duong, { waitUntil: 'networkidle' });
       await p.waitForTimeout(400);
       if (them) await them(p);
-    } catch (e) { console.log(`?? ${nhan}: không mở được (${e.message.split('\n')[0]})`); continue; }
+    } catch (e) { tongLoi++; console.log(`✗ ${nhan}: kịch bản không mở được (${e.message.split('\n')[0]})`); continue; }
     let loi = await p.evaluate(doTrang);
     if (BO_QUA_CAT.some((k) => tenKb.includes(k))) loi = loi.filter((l) => !l.startsWith('c '));
     console.log(`${loi.length ? '✗' : '✓'} ${nhan}${loi.map((l) => `\n    ${l}`).join('')}`);
