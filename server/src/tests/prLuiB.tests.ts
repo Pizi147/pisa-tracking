@@ -223,10 +223,10 @@ export async function runPrLuiBTests(t: YThucTestKit) {
   };
   const idLenh = (sid: number) => (conn.prepare(`SELECT id FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho'`).get(sid) as any).id as number;
 
-  await checkAsync('LUIb-11 · huyNhieuLenh: lý do ≥ 3; QL khác chi nhánh 403; lệnh lỗi không cuộn lại lệnh khác; MỘT chuông mỗi người nhận. khoiPhucLenh: chỉ lệnh do người huỷ, còn tương lai, học viên chưa có lệnh khác, trong 24 giờ', () => thu(() => {
+  await checkAsync('LUIb-11 · huyNhieuLenh: lý do bắt buộc (không tối thiểu ký tự); QL khác chi nhánh 403; lệnh lỗi không cuộn lại lệnh khác; MỘT chuông mỗi người nhận. khoiPhucLenh: chỉ lệnh do người huỷ, còn tương lai, học viên chưa có lệnh khác, trong 24 giờ', () => thu(() => {
     const { em } = taoLenhChoEm(3);
     const ids = em.map(idLenh);
-    assert(maLoi(() => lenhSvc.huyNhieuLenh(P.mbManager, ids, 'ab')) === 400, 'lý do < 3 ký tự');
+    assert(maLoi(() => lenhSvc.huyNhieuLenh(P.mbManager, ids, '  ')) === 400, 'thiếu lý do');
     assert(maLoi(() => lenhSvc.huyNhieuLenh(P.cpManager, ids, 'Đã đổi ý')) === 403, 'QL chi nhánh khác 403 cả lô');
     conn.prepare(`DELETE FROM notifications WHERE kind = 'huy_lenh'`).run();
     const kq = lenhSvc.huyNhieuLenh(P.mbManager, [...ids, 999999], 'Đã đổi ý');
@@ -255,7 +255,7 @@ export async function runPrLuiBTests(t: YThucTestKit) {
     const xt = hl.xemTruoc(P.mbManager, { viec: 'huy-lenh', studentIds: em });
     assert(xt.tong.duoc === 2 && xt.tong.boQua === 1 && xt.tong.theoHuong.bao_luu === 2, JSON.stringify(xt.tong));
     assert(xt.rows.find((r: any) => r.studentId === em[2]).lyDoBo === 'Chưa có quyết định chuyển lớp', 'học viên không có quyết định phải bị bỏ qua');
-    assert(maLoi(() => hl.chay(P.mbManager, { viec: 'huy-lenh', studentIds: em, lyDo: 'ab' })) === 400, 'lý do < 3 ký tự');
+    assert(maLoi(() => hl.chay(P.mbManager, { viec: 'huy-lenh', studentIds: em, lyDo: '  ' })) === 400, 'thiếu lý do');
     const kq = hl.chay(P.mbManager, { viec: 'huy-lenh', studentIds: em, lyDo: 'Đã đổi ý' });
     assert(kq.ok.length === 2 && kq.failed.length === 1 && kq.failed[0].studentId === em[2], JSON.stringify(kq));
     assert((conn.prepare(`SELECT COUNT(*) n FROM lenh_chuyen_lop WHERE student_id IN (${em[0]}, ${em[1]}) AND trang_thai = 'cho'`).get() as any).n === 0, 'cả hai phải huỷ');
@@ -305,13 +305,13 @@ export async function runPrLuiBTests(t: YThucTestKit) {
   });
 
   // ---------------------------------------------------------------- Task 6, 8, 9, 10 · web (đọc nguồn)
-  check('LUIb-14 · web Học lại (hồ sơ em): chọn đích Về lớp cũ / Sang lớp mới, Target khi sang Fast Track, Hoàn tác = Kết thúc học, lý do tuỳ chọn', () => {
+  check('LUIb-14 · web Học lại (hồ sơ em): chọn đích Về lớp cũ / Sang lớp mới, Target khi sang Fast Track, Hoàn tác = hoan-tac-hoc-lai, lý do tuỳ chọn', () => {
     const s = doc('web/src/modules/students/StudentManagePanel.tsx');
     const hl = s.slice(s.indexOf('function HocLaiPanel'));
     assert(s.includes("case 'hoc-lai'") && hl.length > 100, 'thiếu panel Học lại');
     for (const chu of ['Về lớp cũ', 'Sang lớp mới', 'Lộ trình cũ giữ ở Hành trình', 'Chưa có lớp để học lại']) assert(hl.includes(chu), `thiếu chữ "${chu}"`);
     assert(hl.includes('/hoc-lai`') && hl.includes('/hoc-lai/lop-dich') && hl.includes('moLaiLop: true'), 'phải gọi /hoc-lai và /hoc-lai/lop-dich');
-    assert(/toast\.hoanTac\(`Đã cho \$\{studentName\} học lại/.test(hl) && hl.includes("status: 'finished'"), 'Hoàn tác phải là Kết thúc học');
+    assert(/toast\.hoanTac\(`Đã cho \$\{studentName\} học lại/.test(hl) && hl.includes("hoanTacHangLoat('hoc-lai'"), 'Hoàn tác phải đi qua hoan-tac-hoc-lai');
     assert(/<Truong nhan="Lý do" tuyChon/.test(hl) && hl.includes('canTarget'), 'Lý do tuỳ chọn + Target khi sang FT');
   });
   check('LUIb-16 · web: chia lô bằng LO_HANG_LOAT_EM, gom ok/failed, dừng khi một lô ném lỗi và ghi "chưa lưu" cho phần còn lại; Hoàn tác gọi việc ngược', () => {
@@ -336,10 +336,10 @@ export async function runPrLuiBTests(t: YThucTestKit) {
     const l = doc('web/src/modules/students/LuuTruPage.tsx');
     for (const chu of ['Chọn nhiều học viên', "nhan: 'Bỏ lưu trữ'", "nhan: 'Học lại'", 'ThanhChonNhieu', 'XemTruocHangLoatPanel', 'coTheHocLai', 'viec="hoc-lai"']) assert(l.includes(chu), `thiếu "${chu}"`);
   });
-  check('LUIb-19 · web Chuyển tiếp lớp: nút "Huỷ quyết định" trong ô chọn nhiều, xem trước theo hướng, lý do ≥ 3, đi qua chayHangLoat("huy-lenh"), Hoàn tác', () => {
+  check('LUIb-19 · web Chuyển tiếp lớp: nút "Huỷ quyết định" trong ô chọn nhiều, xem trước theo hướng, lý do bắt buộc, đi qua chayHangLoat("huy-lenh"), Hoàn tác', () => {
     const t = doc('web/src/modules/classes/TransitionPanel.tsx');
     for (const chu of ["chayHangLoat('huy-lenh'", "hoanTacHangLoat('huy-lenh'", 'Huỷ quyết định', 'Bỏ qua', 'chưa có quyết định']) assert(t.includes(chu), `thiếu "${chu}"`);
-    assert(/length < 3/.test(t.slice(t.indexOf('huyNhieu.lyDo'))), 'lý do ≥ 3 ký tự');
+    assert(!/length < 3/.test(t.slice(t.indexOf('huyNhieu.lyDo'))), 'không tối thiểu ký tự');
   });
 
   // ---------------------------------------------------------------- Sau rà #213 (I1–I3, mục 4–5)
@@ -471,6 +471,16 @@ export async function runPrLuiBTests(t: YThucTestKit) {
     const tb = conn.prepare(`SELECT body FROM notifications WHERE kind = 'transfer_in' AND entity_id = ? LIMIT 1`).get(sid) as any;
     assert(tb && tb.body.includes('MB FOU 12') && !tb.body.includes('(—)'), `chuông: ${JSON.stringify(tb)}`);
   }));
+
+  check('LUIb-28 · web sau rà #213: Học lại nói tên lộ trình + sĩ số lớp + "Lên FT cần Target"; Kết thúc học một em có Hoàn tác; Hoàn tác đi qua việc hoan-tac-*; lỗi mạng tiếng Việt', () => {
+    const sm = doc('web/src/modules/students/StudentManagePanel.tsx');
+    for (const chu of ['Lên FT cần Target', 'Lộ trình chạy tiếp', 'Lộ trình mới', 'siSo', "hoanTacHangLoat('ket-thuc'"]) assert(sm.includes(chu), `StudentManagePanel thiếu "${chu}"`);
+    const hl = doc('web/src/modules/students/hangLoatEm.ts');
+    assert(hl.includes('VIEC_NGUOC[viec]') && !hl.includes("'Hoàn tác học lại'"), 'Hoàn tác phải đi qua việc ngược, không làm Kết thúc học lại');
+    const xt = doc('web/src/modules/students/XemTruocHangLoatPanel.tsx');
+    assert(xt.indexOf('Có hiệu lực từ') < xt.indexOf('<Truong nhan="Lý do'), 'Ngày phải nằm trên Lý do ở panel hàng loạt');
+    assert(doc('web/src/lib/api.ts').includes('Mất kết nối máy chủ'), 'lỗi mạng phải là tiếng Việt');
+  });
 
   void doc;
 }

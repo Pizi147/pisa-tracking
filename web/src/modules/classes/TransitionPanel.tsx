@@ -319,7 +319,7 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
                 <input className="field w-full" aria-label="Lý do" placeholder="Lý do" maxLength={2000} value={huyNhieu.lyDo} onChange={(e) => setHuyNhieu({ lyDo: e.target.value })} />
                 <div className="flex flex-wrap gap-2">
                   <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={dangHuy} onClick={() => setHuyNhieu(null)}>Đóng</button>
-                  <button type="button" className="btn btn-sm btn-danger min-h-[44px] sm:min-h-0" disabled={dangHuy || huyNhieu.lyDo.trim().length < 3} onClick={huyNhieuLenh}>
+                  <button type="button" className="btn btn-sm btn-danger min-h-[44px] sm:min-h-0" disabled={dangHuy || !huyNhieu.lyDo.trim()} onClick={huyNhieuLenh}>
                     {dangHuy ? 'Đang huỷ…' : `Huỷ quyết định ${chonCoLenh.length} em`}
                   </button>
                 </div>

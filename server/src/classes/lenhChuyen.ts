@@ -273,14 +273,14 @@ function docDanhSachLenh(v: unknown): number[] {
 }
 
 /**
- * HUỶ NHIỀU QUYẾT ĐỊNH CHUYỂN LỚP MỘT LẦN (PR-LUI-b) — một lý do chung (≥ 3 ký tự như `huyLenh`), mỗi lệnh một giao dịch, lệnh lỗi vào `failed`.
+ * HUỶ NHIỀU QUYẾT ĐỊNH CHUYỂN LỚP MỘT LẦN (PR-LUI-b) — một lý do chung (bắt buộc, không tối thiểu ký tự — PR-MTa T7), mỗi lệnh một giao dịch, lệnh lỗi vào `failed`.
  * Chuông: MỘT cho mỗi người nhận và mỗi lớp nguồn ("Đã huỷ n quyết định chuyển lớp · MB FT 101"), không một chuông mỗi học viên. ≤ `LO_HANG_LOAT_EM` lệnh một lần ghi.
  * Không lệnh nào trong phạm vi người gọi → 403 cả lô.
  */
 export function huyNhieuLenh(p: Principal, ids: unknown, lyDo: unknown): KetQuaLenhNhieu {
   const ds = docDanhSachLenh(ids);
   const why = String(lyDo ?? '').trim();
-  if (why.length < 3) throw badRequest('Ghi lý do huỷ quyết định.');
+  if (!why) throw badRequest('Ghi lý do huỷ quyết định.');
   const kq: KetQuaLenhNhieu = { ok: [], failed: [] };
   const daHuy: any[] = [];
   let ngoaiQuyen = 0;

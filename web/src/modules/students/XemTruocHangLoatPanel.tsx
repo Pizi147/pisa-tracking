@@ -43,7 +43,7 @@ export function XemTruocHangLoatPanel({ viec, ids, maLop, onClose, onDone }: {
 
   const batBuoc = BAT_BUOC_LY_DO.includes(viec);
   const loi = dsLoi([
-    ...(batBuoc ? [{ khoa: 'ly-do', nhan: 'Lý do', toiThieu: viec === 'huy-lenh' ? 3 : 1 }] : []),
+    ...(batBuoc ? [{ khoa: 'ly-do', nhan: 'Lý do', toiThieu: 1 }] : []),
     ...(viec === 'hoc-lai' && dich === 'moi' ? [{ khoa: 'lop', nhan: 'Lớp', toiThieu: 1 }] : []),
   ], { 'ly-do': lyDo, lop: lopMoiId === '' ? '' : String(lopMoiId) });
   const idsLam = (xem?.rows ?? []).filter((r) => !r.lyDoBo).map((r) => r.studentId);
