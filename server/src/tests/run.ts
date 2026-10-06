@@ -9151,6 +9151,10 @@ await runPrTkTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, ad
 const { runPrLuiA1Tests } = await import('./prLuiA1.tests.ts');
 await runPrLuiA1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
+// ==================================================================== PR-KHUNG (một thanh cuộn, chữ không cắt, nút không tràn)
+const { runPrKhungTests } = await import('./prKhung.tests.ts');
+await runPrKhungTests({ check, assert });
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
