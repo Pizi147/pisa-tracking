@@ -56,6 +56,7 @@ export * from './khac.ts';
 export * from './trangThai.ts';
 export * from './banPhim.ts';
 export * from './quanLyHocVien.ts';
+export * from './hangLoatEm.ts';
 export * from './loiForm.ts';
 export * from './hoanTac.ts';
 export * from './nhatKy.ts';

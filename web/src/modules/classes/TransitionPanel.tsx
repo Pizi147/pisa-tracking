@@ -7,6 +7,7 @@ import { ONgay } from '../../ui/ONgay.tsx';
 import { ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
+import { chayHangLoat, hoanTacHangLoat } from '../students/hangLoatEm.ts';
 import {
   CHU_CHUYEN_LOP, NORMAL_LADDER, chuHopKetLuan, nhanHuongNgan, chuTuanHoc, hanBanGiao, khacGoiY, kiemDongLenh, ketQuaGanNhat, ngay, tomTatLenh, tuanLich,
   type DongTomTatLenh, type GoiYCuoiKhoa, type HopKetLuanVao, type HuongLenh, type KetQuaVao, type MucTieuLenh, type ProgrammeCode,
@@ -25,6 +26,9 @@ type CuoiKhoaEm = { goiY: GoiYCuoiKhoa | null; ketLuanFt: HopKetLuanVao['ketLuan
 /** Cột lưới: thường 7 cột (có Hệ thống gợi ý), FT 6 cột. Dưới sm mỗi em là một khối xếp dọc (375 px, không cuộn ngang). */
 const LUOI_THUONG = 'lg:grid-cols-[28px_minmax(140px,1.15fr)_minmax(120px,.9fr)_minmax(90px,.7fr)_minmax(330px,2.1fr)_minmax(170px,1.1fr)_minmax(140px,.8fr)]';
 const LUOI_FT = 'lg:grid-cols-[28px_minmax(140px,1.15fr)_minmax(150px,1.1fr)_minmax(330px,2.1fr)_minmax(170px,1.1fr)_minmax(140px,.8fr)]';
+
+/** Chữ hướng của quyết định chuyển lớp (ô "Huỷ quyết định n em": `Lên FT 2 · Học lại 3`). */
+const TEN_HUONG: Record<string, string> = { len_lop: 'Lên', fast_track: 'Lên FT', hoc_lai: 'Học lại', bao_luu: 'Tạm dừng học (bảo lưu)', dung_hoc: 'Dừng học hẳn', chuyen_lop: 'Chuyển lớp FT' };
 
 /**
  * CHUYỂN LỚP CẢ LỚP (PR-CT, §3.1f Q30-1, mockup 20 màn B · C · I) — Quản lý RA LỆNH: em nào · lớp chuyển đến · tuần bắt đầu. Web tự chuyển vào Thứ Hai
@@ -55,6 +59,9 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
   const [loiMayChu, setLoiMayChu] = useState<Record<number, string>>({});
   const [taoLop, setTaoLop] = useState(false);
   const [huy, setHuy] = useState<{ sid: number; lyDo: string } | null>(null);
+  /* PR-LUI-b: huỷ NHIỀU quyết định một lần (đi qua cùng đường làm nhiều học viên: `huy-lenh`; Hoàn tác = `khoi-phuc-lenh`). */
+  const [huyNhieu, setHuyNhieu] = useState<{ lyDo: string } | null>(null);
+  const [dangHuy, setDangHuy] = useState(false);
 
   const ft = data?.cheDo === 'ft';
   const homNay: string = data?.today ?? '';
@@ -132,6 +139,30 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
   const canGui = quyet.filter((r) => !r.coLenh || daSua.has(r.s.id) || !!r.s.lenh?.loi);
   const hienLoi = (sid: number) => lf.daBam || daSua.has(sid);
   const dsLoi = quyet.filter((r) => r.loi).map((r) => ({ khoa: `dong-${r.s.id}`, nhan: r.s.fullName as string, lyDo: r.loi as string }));
+  /** Học viên đang chọn CÓ quyết định chờ — đối tượng của "Huỷ quyết định"; học viên chưa có quyết định thì bỏ qua. */
+  const chonCoLenh = students.filter((s) => chon.has(s.id) && s.lenh);
+  const boQuaHuy = chon.size - chonCoLenh.length;
+  const nhomHuy = (() => {
+    const m = new Map<string, number>();
+    for (const s of chonCoLenh) { const t = TEN_HUONG[s.lenh.huong as string] ?? 'Chuyển lớp'; m.set(t, (m.get(t) ?? 0) + 1); }
+    return [...m.entries()].map(([k, n]) => `${k} ${n}`).join(' · ');
+  })();
+  const lamMoiSauHuy = () => { for (const k of ['/classes', '/my-work', '/lenh-chuyen', '/yeu-cau', '/hoc-vien-lop']) invalidate(k); reload(); };
+  const huyNhieuLenh = async () => {
+    if (!huyNhieu) return;
+    setDangHuy(true);
+    const kq = await chayHangLoat('huy-lenh', chonCoLenh.map((s) => s.id as number), { lyDo: huyNhieu.lyDo.trim() });
+    setDangHuy(false);
+    lamMoiSauHuy();
+    if (kq.failed.length) toast.push('error', `Đã huỷ ${kq.ok.length} quyết định · ${kq.failed.length} chưa huỷ — ${kq.failed[0].message}`);
+    if (!kq.ok.length) return;
+    setChon(new Set()); setHuyNhieu(null);
+    toast.hoanTac(`Đã huỷ quyết định ${kq.ok.length} em`, async () => {
+      const r = await hoanTacHangLoat('huy-lenh', kq.ok);
+      lamMoiSauHuy();
+      toast.push(r.failed.length ? 'error' : 'ok', r.failed.length ? r.failed[0].message : 'Đã khôi phục quyết định');
+    }, { key: 'huy-lenh-nhieu' });
+  };
 
   const dong = () => { onClose(); };
   const apChoNhieu = () => {
@@ -278,6 +309,20 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
                 <button type="button" className="btn btn-sm" disabled={!bulk.kieu || !chon.size || (canLop(bulk.kieu) && !bulk.toClassId)} onClick={apChoNhieu}>
                   Áp cho {chon.size} em
                 </button>
+                <button type="button" className="btn btn-sm btn-danger min-h-[44px] sm:min-h-0" disabled={!chonCoLenh.length || dangHuy} onClick={() => setHuyNhieu({ lyDo: '' })}>Huỷ quyết định</button>
+              </div>
+            )}
+            {huyNhieu && (
+              <div role="group" aria-label="Huỷ quyết định" className="surface-2 space-y-2 rounded-lg px-3 py-2">
+                <p className="m-0 text-sm font-semibold text-slate-100">Huỷ quyết định {chonCoLenh.length} em</p>
+                <p className="m-0 text-xs tabular-nums text-slate-400">{nhomHuy}{boQuaHuy > 0 && ` · Bỏ qua ${boQuaHuy} em chưa có quyết định`}</p>
+                <input className="field w-full" aria-label="Lý do" placeholder="Lý do" maxLength={2000} value={huyNhieu.lyDo} onChange={(e) => setHuyNhieu({ lyDo: e.target.value })} />
+                <div className="flex flex-wrap gap-2">
+                  <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={dangHuy} onClick={() => setHuyNhieu(null)}>Đóng</button>
+                  <button type="button" className="btn btn-sm btn-danger min-h-[44px] sm:min-h-0" disabled={dangHuy || !huyNhieu.lyDo.trim()} onClick={huyNhieuLenh}>
+                    {dangHuy ? 'Đang huỷ…' : `Huỷ quyết định ${chonCoLenh.length} em`}
+                  </button>
+                </div>
               </div>
             )}
 

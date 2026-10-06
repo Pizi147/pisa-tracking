@@ -44,12 +44,19 @@ export function currentEpoch() {
 }
 
 async function request<T>(method: string, path: string, body?: unknown, isForm = false): Promise<T> {
-  const res = await fetch(`/api${path}`, {
-    method,
-    credentials: 'same-origin',
-    headers: isForm ? undefined : body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
-    body: isForm ? (body as FormData) : body !== undefined ? JSON.stringify(body) : undefined,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`/api${path}`, {
+      method,
+      credentials: 'same-origin',
+      headers: isForm ? undefined : body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
+      body: isForm ? (body as FormData) : body !== undefined ? JSON.stringify(body) : undefined,
+    });
+  } catch (e) {
+    /* Mất mạng / máy chủ không trả lời: trình duyệt ném TypeError "Failed to fetch" — người dùng cần câu tiếng Việt, không phải câu của trình duyệt. */
+    if (e instanceof TypeError) throw new ApiError(0, 'Mất kết nối máy chủ — kiểm tra mạng rồi thử lại.');
+    throw e;
+  }
   const text = await res.text();
   let payload: any = null;
   if (text) {

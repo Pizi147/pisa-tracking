@@ -11,6 +11,7 @@ import { MissingBadge } from './MissingBadge.tsx';
 import { CanhBaoYThuc } from '../classes/CanhBaoYThuc.tsx';
 import { duongViecTiep, nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from '../classes/thaoTacDongHocVien.tsx';
 import { MoiVao } from '../classes/DaiChuyenLop.tsx';
+import { OChon, OChonTatCa, type ChonNhieu } from './chonNhieuHocVien.tsx';
 import { fmtBand, sosTone } from '../../lib/format.ts';
 import {
   ENTRY_SKILL_LABEL, GIAI_THICH_KCK, duongHoSoHocVien, maHocVienNgan, skillShort, type EntrySkill, type ExamPlan, type ViecTiepTheo,
@@ -75,8 +76,10 @@ const FT_SKILLS = ['listening', 'reading', 'writing1', 'writing2', 'writing', 's
  * Ô TRỐNG NGHĨA LÀ CHƯA NHẬP, và nó giữ nguyên là ô trống: không lấy điểm mốc cũ lấp vào ô
  * thiếu của mốc mới, không ghép điểm khác lượt thành Overall.
  */
-export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents }: {
+export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon }: {
   classId: number; maLop?: string; quyen: QuyenDong; onDoi: () => void; onAddStudents?: () => void;
+  /** PR-LUI-b: "Chọn nhiều học viên" — bật thì mỗi dòng / thẻ có ô chọn (Quản lý / Quản trị). */
+  chon?: ChonNhieu;
 }) {
   const { data, loading, error, reload } = useApi<RosterRow[]>(`/classes/${classId}/roster`, [classId]);
   /* K2-11, Q11: cố định 2 mốc — đủ trả lời "em đang lên hay xuống"; bỏ công tắc số mốc. */
@@ -117,10 +120,11 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents }: {
         {data.map((s) => {
           const h = s.history[0];
           return (
-            <TheDong key={s.id} className={s.status !== 'active' ? 'row-muted' : ''}
+            <TheDong key={s.id} className={`${s.status !== 'active' ? 'row-muted' : ''} ${chon?.chon.has(s.id) ? 'bg-[color:var(--accent-soft)]' : ''}`}
               dau={(
                 <>
                   <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                    {chon?.bat && <OChon chon={chon} id={s.id} ten={s.fullName} />}
                     <Link className="link font-semibold" to={`/hoc-vien/${s.id}`} state={{ ds }}>{s.fullName}</Link>{s.moiVao && <MoiVao />}
                     <span className="text-[11px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
                     <MissingBadge items={s.missing} gon />
@@ -176,7 +180,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents }: {
           </colgroup>
           <thead>
             <tr>
-              <Th hint="Tên em, và một câu về kết quả mốc gần nhất của em." className="sticky-col">Học viên</Th>
+              <Th hint="Tên em, và một câu về kết quả mốc gần nhất của em." className="sticky-col">{chon?.bat && <span className="mr-2 inline-flex align-middle"><OChonTatCa chon={chon} ids={data.map((s) => s.id)} /></span>}Học viên</Th>
               <Th align="right" hint="Điểm Target của lộ trình em đang học. KCK = không cam kết đầu ra, không tính SOS.">Target</Th>
               <Th hint="Kỳ thi IELTS thật, ở đúng mức chắc chắn đang biết: tuần, hoặc mới có tháng, hoặc chưa xác định.">
                 Dự kiến thi
@@ -203,10 +207,11 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents }: {
               const rows = s.history.slice(0, depth);
               const span = Math.max(rows.length, 1);
               return (
-                <tr key={s.id} className={`row-hover align-top ${s.status !== 'active' ? 'row-muted' : ''}`}>
+                <tr key={s.id} className={`row-hover align-top ${s.status !== 'active' ? 'row-muted' : ''} ${chon?.chon.has(s.id) ? 'bg-[color:var(--accent-soft)]' : ''}`}>
                   {/* 640–1023 px: bảng cuộn ngang TRONG vùng bảng, cột tên dính (mỗi lớp một bảng nên không bám cả trang). */}
                   <td className="td sticky-col [background:var(--surface-2)]">
                     <span className="flex min-w-0 flex-wrap items-center gap-1.5">
+                      {chon?.bat && <OChon chon={chon} id={s.id} ten={s.fullName} />}
                       <Link className="link" to={`/hoc-vien/${s.id}`} state={{ ds }}>{s.fullName}</Link>{s.moiVao && <MoiVao />}
                       <span className="text-[11px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
                       <MissingBadge items={s.missing} gon />
