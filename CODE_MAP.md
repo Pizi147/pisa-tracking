@@ -161,6 +161,7 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | Lưu trữ / Bỏ lưu trữ học viên (thôi học tự vào Lưu trữ — `setStudentStatus`, PR-XOA) | `server/src/students/students.ts` → `archiveStudent`, `unarchiveStudent`, `setStudentStatus` |
 | **Xoá học viên** (chỉ Quản trị hệ thống; một giao dịch, danh sách bảng viết cứng + phép kiểm "không sót" so PRAGMA) | `server/src/students/xoaHocVien.ts` → `CAU_XOA_HOC_VIEN`, `xemXoaHocVien`, `xoaHocVien` · `web/src/modules/students/XoaHocVienPanel.tsx` · menu ⋮ `shared/domain/quanLyHocVien.ts` (`coTheXoa`) · phép kiểm `server/src/tests/xoaDuLieu.tests.ts` |
 | Khu Lưu trữ (lớp đã kết thúc, HV đã lưu trữ, chế độ chỉ xem) | `server/src/classes/luuTru.ts` · `web/src/modules/students/LuuTruPage.tsx` |
+| Đường lui Học viên & Lớp (PR-LUI-b): Học lại về lớp cũ / sang lớp mới (`hocLai`, `moLoTrinhMoi`), Mở lại lớp (`moLaiLop`), Quản lý kết thúc lớp, làm nhiều học viên một lần (xem trước + lô 8: kết thúc học, lưu trữ, bỏ lưu trữ, học lại, huỷ / khôi phục chuyển lớp), nút Chọn nhiều học viên | `server/src/students/students.ts` · `server/src/students/hangLoat.ts` · `server/src/classes/xoaKetThucLop.ts` · `server/src/classes/lenhChuyen.ts` · `server/src/classes/luatLoTrinh.ts` · `shared/domain/hangLoatEm.ts` · `web/src/modules/students/{chonNhieuHocVien,XemTruocHangLoatPanel,hangLoatEm}.ts(x)` · `web/src/modules/classes/{TabHocVienLop,XoaKetThucLopPanel}.tsx` · phép kiểm `server/src/tests/prLuiB.tests.ts` |
 
 ### Lớp học
 

@@ -284,7 +284,7 @@ export function lopHocCua(p: Principal, studentId: number, current: any): {
   tiepTheo: string | null; nhacLoTrinh: boolean; chiXem: boolean;
   quyen: {
     ghiLoTrinhTiep: boolean; chuyenLop: boolean; deXuatChuyenLop: boolean; tamDung: boolean; quayLai: boolean;
-    ketThuc: boolean; luuTru: boolean; boLuuTru: boolean;
+    ketThuc: boolean; luuTru: boolean; boLuuTru: boolean; hocLai: boolean;
   };
 } {
   const conn = db();
@@ -296,6 +296,7 @@ export function lopHocCua(p: Principal, studentId: number, current: any): {
       quyen: {
         ghiLoTrinhTiep: false, chuyenLop: false, deXuatChuyenLop: false, tamDung: false, quayLai: false, ketThuc: false, luuTru: false,
         boLuuTru: can(p, PERMISSIONS.PLAN_WEEK, { studentId }),
+        hocLai: can(p, PERMISSIONS.PLAN_WEEK, { studentId }),   // PR-LUI-b: đã lưu trữ ⇒ chắc chắn đã kết thúc học
       },
     };
   }
@@ -330,6 +331,7 @@ export function lopHocCua(p: Principal, studentId: number, current: any): {
       ketThuc: can(p, PERMISSIONS.STUDENT_EDIT, { studentId }),
       luuTru: can(p, PERMISSIONS.PLAN_WEEK, { studentId }) && s?.status === 'finished',
       boLuuTru: false,
+      hocLai: can(p, PERMISSIONS.PLAN_WEEK, { studentId }) && s?.status === 'finished',   // PR-LUI-b
     },
   };
 }

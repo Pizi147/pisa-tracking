@@ -11,7 +11,7 @@ import { QuickReport } from '../cases/QuickReport.tsx';
 import { IntakePanel } from '../students/IntakePanel.tsx';
 import { SuaCaLopPanel } from '../students/SuaCaLopPanel.tsx';
 import { TeacherAssignPanel } from './TeacherAssignPanel.tsx';
-import { KetThucLopPanel, XoaLopPanel } from './XoaKetThucLopPanel.tsx';
+import { KetThucLopPanel, MoLaiLopPanel, XoaLopPanel } from './XoaKetThucLopPanel.tsx';
 import { ClassProgressPanel } from './ClassProgressPanel.tsx';
 import { TransitionPanel } from './TransitionPanel.tsx';
 import { LoTrinhTiepCaLopPanel } from './LoTrinhTiepCaLopPanel.tsx';
@@ -25,7 +25,7 @@ import { duongDiemTheoLuot, type DanhSachLuot } from '../cham/LuoiChamLop.tsx';
 import { MuiTen } from '../cases/SkillBoard.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { PhanTichLopTab } from './PhanTichLopTab.tsx';
-import { DOT_XUAT_FT, DOT_XUAT_THUONG, TAB_HO_SO_LOP, TAB_HO_SO_LOP_NHAN, tabHoSoLop, type TabHoSoLop } from '@shared/domain/index.ts';
+import { DOT_XUAT_FT, DOT_XUAT_THUONG, TAB_HO_SO_LOP, TAB_HO_SO_LOP_NHAN, ngay, tabHoSoLop, type TabHoSoLop } from '@shared/domain/index.ts';
 
 /**
  * HỒ SƠ LỚP (đặc tả §3.7; mockup 06 menu dòng A, 06c §1, 10b) — đầu trang có sẵn các nút hành động, ba tab
@@ -135,6 +135,9 @@ export default function ClassOverviewPage() {
       )}
       {viec === 'xoa-lop' && <XoaLopPanel classId={data.id} classCode={data.code} onClose={dong} />}
       {viec === 'ket-thuc-lop' && <KetThucLopPanel classId={data.id} classCode={data.code} onClose={dong} onDone={xong} />}
+      {viec === 'mo-lai-lop' && (
+        <MoLaiLopPanel classId={data.id} classCode={data.code} chiNhanh={data.branchName} ketThuc={data.finishedAt ? ngay(data.finishedAt) : null} onClose={dong} onDone={xong} />
+      )}
       {viec === 'sua-hoc-vien' && <SuaCaLopPanel classId={data.id} onClose={dong} onDone={xong} />}
       {viec === 'hoc-vien' && (
         <IntakePanel defaultClass={{ id: data.id, code: data.code }} onClose={dong} onDone={xong} />

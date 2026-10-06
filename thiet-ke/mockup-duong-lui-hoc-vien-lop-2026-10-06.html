@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="vi" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mockup Đường lui Học viên & Lớp</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@500;600;700&display=swap">
+<style>
+:root{
+  --bg:#f5f7fa;--surface:#ffffff;--surface-2:#eef2f7;--line:#d9e0ea;--fg:#1b2433;--muted:#5d6b80;
+  --accent:#1d5fbf;--accent-soft:#e3edfb;--ok:#1c7a4c;--ok-bg:#e2f4ea;--soon:#9a6400;--soon-bg:#fdf1d8;
+  --bad:#b3261e;--bad-bg:#fbe5e3;--off:#a3adbb;--scrim:rgb(15 23 42 / .45);
+  --sans:"Be Vietnam Pro",system-ui,sans-serif;--num:"Inter","Be Vietnam Pro",sans-serif;color-scheme:light}
+:root[data-theme="dark"]{
+  --bg:#0c1220;--surface:#131b2c;--surface-2:#1a2438;--line:#26324a;--fg:#e4e9f2;--muted:#93a0b6;
+  --accent:#7db3f0;--accent-soft:#1c2c48;--ok:#6fd29c;--ok-bg:#16301f;--soon:#f0c062;--soon-bg:#3a2c10;
+  --bad:#f08a80;--bad-bg:#3b1a18;--off:#56627a;--scrim:rgb(0 0 0 / .6);color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 var(--sans);padding:16px 16px 64px}
+.wrap{max-width:1440px;margin:0 auto;display:flex;flex-direction:column;gap:32px}
+h1{font-size:22px;margin:0}h2{font-size:17px;margin:0}p{margin:0}
+.note{color:var(--muted);font-size:13px}
+.sec{display:flex;flex-direction:column;gap:12px}
+.where{display:inline-flex;gap:6px;align-items:center;font-size:12.5px;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:3px 10px;width:fit-content;max-width:100%}
+.bar{position:sticky;top:0;z-index:50;display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--bg);padding:8px 0;border-bottom:1px solid var(--line)}
+.lbl{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.btn{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--surface-2);color:var(--fg);border-radius:8px;padding:6px 12px;min-height:36px;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+.btn-sm{min-height:30px;padding:3px 10px;font-size:13px}
+.btn-ghost{background:transparent}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:var(--surface);font-weight:600}
+.btn-danger{background:transparent;border-color:var(--bad);color:var(--bad);font-weight:600}
+.btn[disabled],.btn.off{opacity:.45}
+.btn[aria-pressed=true]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+.frame{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--bg);position:relative}
+.desk{height:600px}
+.phone{width:375px;height:720px;flex:none}
+.pair{display:flex;flex-direction:column;gap:16px;align-items:flex-start}
+.pair>.desk{width:100%}
+/* trang phía sau */
+.page{padding:16px;display:flex;flex-direction:column;gap:12px}
+.crumb{font-size:13px;color:var(--muted)}
+.page h3{margin:0;font-size:20px}
+.tabs{display:flex;gap:18px;border-bottom:1px solid var(--line);font-size:14px;flex-wrap:wrap}
+.tabs span{padding:6px 2px}.tabs span.on{border-bottom:2px solid var(--accent);font-weight:600}
+.tabs i{font-style:normal;color:var(--muted);font-family:var(--num);margin-left:4px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.sp{flex:1}
+.card{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.card b{font-weight:600}
+.m{color:var(--muted);font-size:12px}
+.nf{font-family:var(--num);font-variant-numeric:tabular-nums}
+.chip{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:1px 9px;font-size:12px;color:var(--muted)}
+.chip.soon{color:var(--soon);border-color:var(--soon);background:var(--soon-bg)}
+.chip.ok{color:var(--ok);border-color:var(--ok);background:var(--ok-bg)}
+.roster{border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:13px}
+.roster div{display:flex;justify-content:space-between;padding:8px 12px;border-top:1px solid var(--line)}
+.roster div:first-child{border-top:0;background:var(--surface-2);font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted)}
+.roster b{font-weight:500;color:var(--accent)}
+.link{color:var(--accent);font-weight:600}
+.field{font:inherit;font-size:14px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);padding:6px 10px;min-height:36px;width:100%;min-width:0;display:flex;align-items:center}
+.field.ph{color:var(--off)}
+.field.err{border-color:var(--bad)}
+.ctl{display:flex;flex-direction:column;gap:4px}
+.ctl>label{font-size:13px;font-weight:600}.ctl>label i{color:var(--bad);font-style:normal}.ctl>label u{text-decoration:none;color:var(--muted);font-weight:400;font-size:12px}
+.e{font-size:11px;color:var(--bad)}
+/* checkbox */
+.cb{flex:none;width:18px;height:18px;border:1.5px solid var(--off);border-radius:4px;display:grid;place-items:center;font-size:12px;line-height:1;color:var(--surface)}
+.cb.on{background:var(--accent);border-color:var(--accent)}
+.cb.dis{opacity:.4}
+/* panel */
+.scrim{position:absolute;inset:0;background:var(--scrim)}
+.panel{position:absolute;top:0;right:0;bottom:0;width:100%;max-width:560px;background:var(--surface);border-left:1px solid var(--line);display:flex;flex-direction:column}
+.panel.toan{max-width:none}
+.phone .panel{max-width:none}
+.ph{height:52px;flex:none;display:flex;align-items:center;gap:8px;padding:0 16px;border-bottom:1px solid var(--line)}
+.ph h4{margin:0;font-size:14px;font-weight:800;white-space:nowrap}
+.ph .ctx{flex:1;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ph .x{width:32px;height:32px;display:grid;place-items:center;border-radius:6px;color:var(--muted)}
+.ngc{padding:8px 16px 0;font-size:12px;color:var(--muted)}
+.pb{flex:1;min-height:0;overflow:auto;padding:12px 16px 16px;display:flex;flex-direction:column;gap:12px}
+.pf{flex:none;border-top:1px solid var(--line);display:flex;align-items:center;gap:8px;padding:10px 16px;flex-wrap:wrap}
+.pf .msg{font-size:12px;font-variant-numeric:tabular-nums;flex-basis:100%}
+.pf .msg.bad{color:var(--bad)}
+.khoi{border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.khoi>h5{margin:0;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.list{list-style:none;margin:0;padding:0}
+.list li{padding:6px 0;border-top:1px solid var(--line);font-size:14px}
+.list li:first-child{border-top:0}
+.list li .e,.list li .m{display:block}
+.pick{display:flex;align-items:center;gap:10px;min-height:36px}
+.pick .n{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pick .s{font-size:12px;color:var(--muted);flex:none}
+.facts{display:flex;gap:6px 16px;flex-wrap:wrap;font-size:14px;color:var(--muted)}
+.facts b{color:var(--fg);font-family:var(--num)}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px;font-size:14px}
+.steps .soon{color:var(--soon)}
+.dl{display:grid;grid-template-columns:auto 1fr;gap:3px 16px;margin:0;font-size:14px}
+.dl dt{color:var(--muted)}.dl dd{margin:0}
+.date{display:flex;gap:6px;flex-wrap:wrap}
+.date span{border:1px solid var(--line);border-radius:8px;padding:4px 10px;font-size:13px;color:var(--muted)}
+.date span.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+/* thanh chọn */
+.sel{position:sticky;top:0;display:flex;gap:8px;align-items:center;flex-wrap:wrap;border:1px solid var(--line);background:var(--surface-2);border-radius:10px;padding:8px 12px}
+.sel b{font-size:12px;font-family:var(--num)}
+/* menu ⋮ */
+.menu{position:absolute;width:260px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 28px rgb(0 0 0 / .3);padding:6px;font-size:13.5px;z-index:3}
+.menu div{padding:7px 10px;border-radius:6px}
+.menu div small{display:block;color:var(--muted);font-size:11.5px}
+.menu div.hl{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.menu div.hl small{color:var(--accent)}
+.menu hr{border:0;border-top:1px solid var(--line);margin:4px 0}
+.menu .g{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:6px 10px 2px}
+.toast{position:absolute;bottom:16px;right:16px;max-width:calc(100% - 32px);background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:8px 8px 8px 14px;font-size:13.5px;display:flex;gap:10px;align-items:center;box-shadow:0 8px 24px rgb(0 0 0 / .3);z-index:4}
+.toast.bad{color:var(--bad);border-color:var(--bad)}
+.phone .toast{left:16px;right:16px;bottom:16px}
+.toast .btn{min-height:30px}
+.sk{height:14px;border-radius:6px;background:var(--surface-2);margin:8px 0}
+.empty{padding:24px 8px;text-align:center;color:var(--muted)}
+.tbl{border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:13px}
+.tbl .r{display:grid;grid-template-columns:28px 1.4fr 1fr 1.2fr;gap:10px;padding:8px 12px;border-top:1px solid var(--line);align-items:center}
+.tbl .r:first-child{border-top:0;background:var(--surface-2);font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted)}
+.phone .tbl .r{grid-template-columns:28px 1fr 1fr}.phone .tbl .r>:nth-child(3){display:none}
+.dock{position:absolute;left:0;right:0;bottom:0;z-index:2;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 16px;background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -6px 18px rgb(0 0 0 / .25)}
+.dock b{font-family:var(--num);font-size:13px;margin-right:4px}
+.dock .sp{flex:1}
+.phone .dock{padding:10px 12px}
+.hv-row{display:grid;grid-template-columns:28px 1.6fr 1fr 1.2fr 1fr;gap:10px;align-items:center;padding:8px 12px;border-top:1px solid var(--line);font-size:13px}
+.hv-row.h{border-top:0;background:var(--surface-2);font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted)}
+.hv-row.on{background:var(--accent-soft)}
+.hv-row.noc{grid-template-columns:1.6fr 1fr 1.2fr 1fr}
+.hv-tbl{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.card2{border-top:1px solid var(--line);padding:10px 12px;display:flex;gap:10px;align-items:flex-start}
+.card2:first-child{border-top:0}
+.card2.on{background:var(--accent-soft)}
+.card2 .t{flex:1;min-width:0;font-size:13px}.card2 .t b{display:block;font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="sec">
+  <h1>Đường lui Học viên & Lớp — mockup bản 2 (PR-LUI-b)</h1>
+  <p class="note">Đúng chữ sẽ hiện trên web. Dữ liệu ví dụ (em Nguyễn Minh Anh, lớp MB FT 101, MB FOU 12). Mỗi mục: khung rộng (1440) ở trên, điện thoại (375) ở dưới. Chỉ Quản lý / Quản trị thấy các mục này — mục 16 là GVCN. <b>Bản 2 sửa hai chỗ:</b> “Học lại” có chọn đích (mục 2–6) và “Chọn nhiều học viên” (mục 10–14).</p>
+  <div class="bar">
+    <span class="lbl">Giao diện</span>
+    <button class="btn btn-sm" data-theme-btn="light">Sáng</button>
+    <button class="btn btn-sm" data-theme-btn="dark" aria-pressed="true">Tối</button>
+  </div>
+</header>
+
+<section class="sec"><h2>1. Học lại — chỗ vào</h2><span class="where">Hồ sơ học viên đã kết thúc › ⋮ · Quản lý / Quản trị</span>
+  <div class="pair"><div class="frame desk" data-s="hv-menu"></div><div class="frame phone" data-s="hv-menu" data-w="375"></div></div></section>
+
+<section class="sec"><h2>2. Học lại — về lớp cũ</h2><span class="where">Panel Học lại · chọn “Về lớp cũ” (mặc định)</span>
+  <div class="pair"><div class="frame desk" data-s="hl"></div><div class="frame phone" data-s="hl" data-w="375"></div></div></section>
+
+<section class="sec"><h2>3. Học lại — về lớp cũ đã kết thúc</h2><span class="where">Có dòng “Mở lại lớp” — mở lại cùng lúc</span>
+  <div class="pair"><div class="frame desk" data-s="hl-dong"></div><div class="frame phone" data-s="hl-dong" data-w="375"></div></div></section>
+
+<section class="sec"><h2>4. Học lại — sang lớp mới</h2><span class="where">Chọn lớp đang học · lộ trình mới · lộ trình cũ giữ ở Hành trình · sang Fast Track phải có Target</span>
+  <div class="pair"><div class="frame desk" data-s="hl-moi"></div><div class="frame phone" data-s="hl-moi" data-w="375"></div><div class="frame desk" data-s="hl-moi-ft"></div><div class="frame phone" data-s="hl-moi-ft" data-w="375"></div></div></section>
+
+<section class="sec"><h2>5. Học lại — không làm được</h2><span class="where">Em chưa từng có lớp · nút khoá</span>
+  <div class="pair"><div class="frame desk" data-s="hl-chan"></div><div class="frame phone" data-s="hl-chan" data-w="375"></div></div></section>
+
+<section class="sec"><h2>6. Học lại — xong, có Hoàn tác</h2><span class="where">Hoàn tác = Kết thúc học</span>
+  <div class="pair"><div class="frame desk" data-s="hl-xong"></div><div class="frame phone" data-s="hl-xong" data-w="375"></div><div class="frame desk" data-s="hl-moi-xong"></div><div class="frame phone" data-s="hl-moi-xong" data-w="375"></div></div></section>
+
+<section class="sec"><h2>7. Mở lại lớp — chỗ vào</h2><span class="where">Hồ sơ lớp đã kết thúc › ⋮ · Lưu trữ › Lớp đã kết thúc › Mở lại</span>
+  <div class="pair"><div class="frame desk" data-s="lop-menu"></div><div class="frame phone" data-s="lop-menu" data-w="375"></div><div class="frame desk" data-s="lt-lop"></div><div class="frame phone" data-s="lt-lop" data-w="375"></div></div></section>
+
+<section class="sec"><h2>8. Mở lại lớp — panel và xong</h2>
+  <div class="pair"><div class="frame desk" data-s="ml"></div><div class="frame phone" data-s="ml" data-w="375"></div><div class="frame desk" data-s="ml-xong"></div><div class="frame phone" data-s="ml-xong" data-w="375"></div></div></section>
+
+<section class="sec"><h2>9. Kết thúc lớp — Quản lý cũng làm được</h2><span class="where">Hồ sơ lớp › ⋮ · chỉ khi lớp không còn học viên đang học · Xoá lớp vẫn chỉ Quản trị</span>
+  <div class="pair"><div class="frame desk" data-s="kt-lop"></div><div class="frame phone" data-s="kt-lop" data-w="375"></div></div></section>
+
+<section class="sec"><h2>10. Chọn nhiều học viên — vào chế độ chọn</h2><span class="where">Hồ sơ lớp › tab Học viên › nút “Chọn nhiều học viên” · ô chọn hiện ngay trên danh sách đang thấy</span>
+  <div class="pair"><div class="frame desk" data-s="cn-vao"></div><div class="frame phone" data-s="cn-vao" data-w="375"></div><div class="frame desk" data-s="cn-chon0"></div><div class="frame phone" data-s="cn-chon0" data-w="375"></div></div></section>
+
+<section class="sec"><h2>11. Chọn nhiều học viên — đã chọn</h2><span class="where">Thanh thao tác dính đáy: n đã chọn · Lưu trữ · Kết thúc học · Huỷ chuyển lớp · Bỏ chọn</span>
+  <div class="pair"><div class="frame desk" data-s="cn-chon"></div><div class="frame phone" data-s="cn-chon" data-w="375"></div></div></section>
+
+<section class="sec"><h2>12. Chọn nhiều học viên — xem trước rồi xác nhận</h2><span class="where">Bấm một thao tác → panel xem trước: số hệ quả, học viên bị bỏ qua, lý do</span>
+  <div class="pair"><div class="frame desk" data-s="cn-kt"></div><div class="frame phone" data-s="cn-kt" data-w="375"></div><div class="frame desk" data-s="cn-lt"></div><div class="frame phone" data-s="cn-lt" data-w="375"></div><div class="frame desk" data-s="cn-huy"></div><div class="frame phone" data-s="cn-huy" data-w="375"></div><div class="frame desk" data-s="cn-het"></div><div class="frame phone" data-s="cn-het" data-w="375"></div></div></section>
+
+<section class="sec"><h2>13. Chọn nhiều học viên — đang lưu · lưu dở · xong</h2><span class="where">Gửi từng lô 8 học viên · lỗi giữa chừng giữ phần đã lưu</span>
+  <div class="pair"><div class="frame desk" data-s="cn-dang"></div><div class="frame phone" data-s="cn-dang" data-w="375"></div><div class="frame desk" data-s="cn-do"></div><div class="frame phone" data-s="cn-do" data-w="375"></div><div class="frame desk" data-s="cn-xong"></div><div class="frame phone" data-s="cn-xong" data-w="375"></div></div></section>
+
+<section class="sec"><h2>14. Lưu trữ › Học viên — cùng mẫu</h2><span class="where">Nút “Chọn nhiều học viên” · thanh dính đáy: n đã chọn · Bỏ lưu trữ · Học lại · Bỏ chọn</span>
+  <div class="pair"><div class="frame desk" data-s="lt-hv"></div><div class="frame phone" data-s="lt-hv" data-w="375"></div><div class="frame desk" data-s="lt-chon"></div><div class="frame phone" data-s="lt-chon" data-w="375"></div><div class="frame desk" data-s="lt-hl"></div><div class="frame phone" data-s="lt-hl" data-w="375"></div></div></section>
+
+<section class="sec"><h2>15. Chuyển tiếp lớp — huỷ nhiều quyết định</h2><span class="where">Ô “Chọn nhiều em” của panel Chuyển tiếp lớp có thêm nút Huỷ quyết định · xong có Hoàn tác (không đổi so với bản 1)</span>
+  <div class="pair"><div class="frame desk" data-s="huy"></div><div class="frame phone" data-s="huy" data-w="375"></div><div class="frame desk" data-s="huy-xong"></div><div class="frame phone" data-s="huy-xong" data-w="375"></div></div></section>
+
+<section class="sec"><h2>16. GVCN — không thấy mục nào mới</h2><span class="where">Hồ sơ em đã kết thúc: không có ⋮ · Hồ sơ lớp: không có “Chọn nhiều học viên”</span>
+  <div class="pair"><div class="frame desk" data-s="gv"></div><div class="frame phone" data-s="gv" data-w="375"></div></div></section>
+
+
+</div>
+<script>
+const X = '<span class="x">✕</span>';
+const cb = (on, dis) => '<span class="cb' + (on ? ' on' : '') + (dis ? ' dis' : '') + '">' + (on ? '✓' : '') + '</span>';
+const TEN = ['Bùi Thảo Vy','Chu Nhật Minh','Đoàn Khánh Chi','Đỗ Minh Khôi','Hà Gia Bình','Hà Phương Linh','Hồ Gia Hân','Lê Minh Khang','Lê Quang Huy','Nguyễn Minh Anh'];
+const THUONG = ['Đinh Bảo An','Lâm Gia Hưng','Ngô Thu Trang','Phan Minh Đức','Trịnh Khánh Ly','Vũ Gia Bảo','Võ Thanh Hà','Đặng Quốc Việt','Mai Thùy Dung'];
+
+function trangHv(w, o) {
+  o = o || {};
+  const nho = w === 375;
+  return '<div class="page"><span class="crumb">‹ Học viên & Lớp</span>' +
+    '<div class="row"><h3>Nguyễn Minh Anh</h3><span class="m nf">000123</span><span class="chip">' + (o.dangHoc ? 'Đang học' : 'Đã kết thúc học') + '</span>' + (o.dangHoc ? '' : '<span class="chip">Lưu trữ</span>') + '<span class="sp"></span>' + (o.khongMenu ? '' : '<span class="btn">⋮</span>') + '</div>' +
+    '<p class="m">' + (o.thuong ? 'MB FOU 12 · Foundation' : 'MB FT 101 · Fast Track · LT1') + (nho || o.thuong ? '' : ' · Target 6.5 · Dự kiến thi 02/2027') + '</p>' +
+    '<div class="tabs"><span class="on">Tổng quan</span><span>Case</span><span>Ý thức</span>' + (nho ? '' : '<span>Hành trình</span>') + '</div>' +
+    '<div class="card"><b>' + (o.thuong ? 'Giữa khoá' : 'MT2') + '</b><span class="nf">' + (o.thuong ? '5.5' : '6.0') + '</span><span class="m">· W2 SEP</span></div>' +
+    '<div class="card"><b>' + (o.thuong ? 'Lộ trình FOU' : 'Lộ trình LT1') + '</b><span class="m">' + (o.dangHoc ? 'Đang chạy' : 'Đã đóng · Kết thúc học') + '</span></div></div>';
+}
+function trangLop(w, o) {
+  o = o || {};
+  const nho = w === 375;
+  const ten = o.thuong ? THUONG : TEN;
+  const n = nho ? 5 : 8;
+  const kh = (i) => 'W' + (i % 4 + 6) + '/10';
+  const sapToi = ['Giữa khoá W7', 'Cuối khoá W10', 'Giữa khoá W7', '—', 'Cuối khoá W10', 'Giữa khoá W7', '—', 'Cuối khoá W10'];
+  const dsNut = o.daKetThuc || o.gv ? '' : '<span class="btn btn-sm">Sửa thông tin</span><span class="btn btn-sm" ' + (o.mode ? 'aria-pressed="true"' : '') + '>Chọn nhiều học viên</span>';
+  const chon = o.chon || 0;
+  const bang = nho
+    ? ten.slice(0, n).map((t, i) => '<div class="card2' + (o.mode && i < chon ? ' on' : '') + '">' + (o.mode ? cb(i < chon) : '') + '<div class="t"><b>' + t + '</b><span class="m">Khoá ' + kh(i) + ' · Sắp tới ' + sapToi[i] + '</span></div><span class="btn btn-sm">⋯</span></div>').join('')
+    : '<div class="hv-row h ' + (o.mode ? '' : 'noc') + '">' + (o.mode ? cb(false) : '') + '<span>Học viên</span><span>Khoá</span><span>Dự kiến thi</span><span>Sắp tới</span></div>' +
+      ten.slice(0, n).map((t, i) => '<div class="hv-row ' + (o.mode ? '' : 'noc') + (o.mode && i < chon ? ' on' : '') + '">' + (o.mode ? cb(i < chon) : '') + '<span class="link">' + t + '</span><span class="nf">' + kh(i) + '</span><span class="m">' + (i % 3 ? '02/2027' : 'Chưa xác định') + '</span><span>' + sapToi[i] + '</span></div>').join('');
+  return '<div class="page"><span class="crumb">‹ Học viên & Lớp</span>' +
+    '<div class="row"><h3>' + (o.ma || 'MB FT 101') + '</h3>' + (o.daKetThuc ? '<span class="chip">Đã kết thúc</span>' : '') + '<span class="sp"></span>' + (o.gv ? '<span class="btn btn-sm">Nhập điểm</span>' : '') + '<span class="btn btn-sm">⋮</span></div>' +
+    '<p class="m">MB · ' + ten.length + ' học viên' + (o.daKetThuc ? ' · kết thúc 29/09/2026' : '') + '</p>' +
+    '<div class="tabs"><span class="on">Học viên</span><span>Ý thức & Phối hợp</span>' + (nho ? '' : '<span>Phân tích lớp</span>') + '</div>' +
+    (o.daKetThuc ? '' : '<div class="row"><span class="btn btn-sm" style="border-color:var(--accent);color:var(--accent)">✓ Điểm</span><span class="btn btn-sm btn-ghost">Cần hỗ trợ</span><span class="sp"></span>' + dsNut + '</div>') +
+    '<div class="hv-tbl" style="' + (nho ? 'border:0' : '') + '">' + bang + '</div></div>';
+}
+const dongLuuTruLop = (m, cn, hv, ngay, nut) => '<div class="card"><span class="link">' + m + '</span><span class="m">' + cn + ' · ' + hv + ' HV từng học</span><span class="sp"></span><span class="m nf">Đã kết thúc ' + ngay + '</span>' + (nut ? '<span class="btn btn-sm">Mở lại</span>' : '') + '</div>';
+function trangLuuTru(w, tab, o) {
+  o = o || {};
+  const nho = w === 375;
+  const hv = [['Nguyễn Minh Anh','000123','MB FT 101','28/09/2026'],['Trần Quốc Bảo','000131','MB FOU 12','28/09/2026'],['Lê Thu Hà','000140','MB FOU 12','27/09/2026'],['Phạm Gia Huy','000152','MB BE 07','24/09/2026']];
+  const chon = o.chon || 0;
+  return '<div class="page"><span class="crumb">‹ Học viên & Lớp</span><h3>Lưu trữ</h3>' +
+    '<div class="row"><div class="field ph" style="max-width:' + (nho ? '100%' : '288px') + '">🔍 Tìm tên, mã học viên hoặc mã lớp…</div></div>' +
+    '<div class="tabs"><span class="' + (tab === 'lop' ? 'on' : '') + '">Lớp đã kết thúc<i>6</i></span><span class="' + (tab === 'hv' ? 'on' : '') + '">Học viên đã lưu trữ<i>18</i></span></div>' +
+    (tab === 'lop'
+      ? dongLuuTruLop('MB FOU 12', 'Foundation · MB · GVCN Lê Hà', 24, '29/09/2026', true) + dongLuuTruLop('MB FT 099', 'Fast Track · MB · GVCN Trần Vy', 17, '22/09/2026', true) + dongLuuTruLop('CP BE 05', 'Bridge · CP · GVCN Võ Nam', 21, '15/09/2026', false)
+      : '<div class="row"><span class="sp"></span><span class="btn btn-sm" ' + (o.mode ? 'aria-pressed="true"' : '') + '>Chọn nhiều học viên</span></div>' +
+        hv.map((r, i) => '<div class="card" ' + (o.mode && i < chon ? 'style="background:var(--accent-soft)"' : '') + '>' + (o.mode ? cb(i < chon) : '') + '<span class="link">' + r[0] + '</span><span class="m nf">' + r[1] + '</span><span class="m">lớp cuối ' + r[2] + ' · MB</span><span class="sp"></span><span class="m nf">Lưu trữ ' + r[3] + '</span>' + (o.mode ? '' : '<span class="btn btn-sm">Học lại</span><span class="btn btn-sm">Bỏ lưu trữ</span>') + '</div>').join('')) +
+    '</div>';
+}
+
+function menu(w, items, pos) {
+  const st = pos || (w === 375 ? 'right:12px;top:96px' : 'right:16px;top:92px');
+  return '<div class="menu" style="' + st + '">' + items.map((x) => x === '-' ? '<hr>' : x.g ? '<div class="g">' + x.g + '</div>' : '<div class="' + (x.hl ? 'hl' : '') + '">' + x.t + (x.p ? '<small>' + x.p + '</small>' : '') + '</div>').join('') + '</div>';
+}
+const toast = (t, nut, bad) => '<div class="toast' + (bad ? ' bad' : '') + '"><span>' + t + '</span>' + (nut ? '<span class="btn btn-sm btn-ghost">' + nut + '</span>' : '') + '</div>';
+function panel(tieuDe, ctx, body, chan, o) {
+  o = o || {};
+  return '<div class="scrim"></div><div class="panel' + (o.toan ? ' toan' : '') + '"><div class="ph"><h4>' + tieuDe + '</h4><span class="ctx">' + ctx + '</span>' + X + '</div><div class="pb">' + body + '</div><div class="pf">' + chan + '</div></div>';
+}
+const khoi = (t, b) => '<div class="khoi"><h5>' + t + '</h5>' + b + '</div>';
+const ctl = (l, v, o) => {
+  o = o || {};
+  return '<div class="ctl"><label>' + l + (o.bb ? ' <i>*</i>' : '') + (o.tc ? ' <u>(tuỳ chọn)</u>' : '') + '</label><div class="field' + (v ? '' : ' ph') + (o.err ? ' err' : '') + '">' + (v || o.ph || '') + '</div>' + (o.err ? '<span class="e">' + o.err + '</span>' : '') + '</div>';
+};
+const ngayHl = () => '<div class="ctl"><label>Có hiệu lực từ</label><div class="date"><span class="on">Hôm nay</span><span>Hôm qua</span><span>2 ngày trước</span><span>Chọn ngày…</span></div></div>';
+const chanDong = (chinh, o) => {
+  o = o || {};
+  return (o.msg ? '<span class="msg ' + (o.bad ? 'bad' : '') + '">' + o.msg + '</span>' : '') + '<span class="btn">' + (o.trai || 'Đóng') + '</span><span class="sp"></span>' + chinh;
+};
+const nutChinh = (t, dis) => '<button class="btn btn-primary" ' + (dis ? 'disabled' : '') + '>' + t + '</button>';
+const chonDich = (v) => '<div class="date"><span class="' + (v === 'cu' ? 'on' : '') + '">Về lớp cũ</span><span class="' + (v === 'moi' ? 'on' : '') + '">Sang lớp mới</span></div>';
+const dock = (b) => '<div class="dock">' + b + '</div>';
+const nutBar = (t) => '<span class="btn btn-sm">' + t + '</span>';
+
+const MENU_HV = [{ g: 'Lớp' }, { t: 'Học lại', p: 'về lớp cũ · lộ trình chạy tiếp', hl: true }, { t: 'Bỏ lưu trữ' }];
+const lopMo = (w, o) => trangLop(w, Object.assign({ ma: 'MB FOU 12', thuong: true }, o));
+const MENU_LOP = [{ t: 'Chuyển tiếp lớp…' }, { t: 'Ghi lộ trình tiếp theo cả lớp' }, { t: 'Sửa phân công' }, { t: 'Sửa thông tin lớp' }, { t: 'Sửa thông tin học viên' }, { t: 'Điểm Test cả lớp' }, { t: 'Xuất Excel' }];
+const FACTS_KT = '<div class="facts"><span><b>12</b> học viên</span><span>Case đóng <b>4</b></span><span>PA huỷ <b>2</b></span><span>Quyết định chuyển lớp huỷ <b>1</b></span></div>';
+const LOI_BAN = '<span class="e">Máy chủ đang bận, chưa lưu học viên này.</span>';
+const BO_QUA_KT = '<ul class="list"><li>Phan Minh Đức<span class="m">Đã kết thúc học</span></li><li>Vũ Gia Bảo<span class="m">Ngoài phạm vi của bạn.</span></li></ul>';
+const BO_QUA_HUY = '<ul class="list"><li>Phan Minh Đức<span class="m">Chưa có quyết định chuyển lớp</span></li><li>Vũ Gia Bảo<span class="m">Chưa có quyết định chuyển lớp</span></li></ul>';
+const BANG_HUY = (rows) => '<div class="tbl"><div class="r"><span></span><span>Học viên</span><span>Cuối khoá</span><span>Quản lý quyết định</span></div>' +
+  rows.map((r) => '<div class="r">' + cb(r[3]) + '<span>' + r[0] + '</span><span class="nf">' + r[1] + '</span><span>' + r[2] + '</span></div>').join('') + '</div>';
+const pTx = (body, foot) => '<div class="scrim"></div><div class="panel toan"><div class="ph"><h4>Chuyển lớp · MB FOU 12 · 24 em</h4><span class="ctx">1 Soạn › 2 Xác nhận</span>' + X + '</div><div class="pb">' + body + '</div><div class="pf">' + foot + '</div></div>';
+
+const S = {
+  'hv-menu': (w) => trangHv(w) + menu(w, MENU_HV),
+
+  hl: (w) => trangHv(w) + panel('Học lại', 'Nguyễn Minh Anh · MB FT 101',
+    khoi('Học lại', chonDich('cu') + '<ul class="steps"><li>Về lớp MB FT 101</li><li>Lộ trình LT1 chạy tiếp</li><li>Ra khỏi Lưu trữ</li></ul>' + ngayHl() + ctl('Lý do', '', { tc: 1 })),
+    chanDong(nutChinh('Học lại'))),
+
+  'hl-dong': (w) => trangHv(w, { thuong: true }) + panel('Học lại', 'Nguyễn Minh Anh · MB FOU 12',
+    khoi('Học lại', chonDich('cu') + '<ul class="steps"><li>Về lớp MB FOU 12</li><li>Lộ trình FOU chạy tiếp</li><li>Ra khỏi Lưu trữ</li><li class="soon">Mở lại lớp MB FOU 12</li></ul>' + ngayHl() + ctl('Lý do', 'Em quay lại học tiếp', { tc: 1 })),
+    chanDong(nutChinh('Học lại'), { trai: 'Huỷ thay đổi' })),
+
+  'hl-moi': (w) => trangHv(w, { thuong: true }) + panel('Học lại', 'Nguyễn Minh Anh · MB FOU 12',
+    khoi('Học lại', chonDich('moi') + ctl('Lớp', 'MB FOU 14 · 14 học viên · GVCN Lê Hà', { bb: 1 }) + '<ul class="steps"><li>Vào lớp MB FOU 14</li><li>Lộ trình FOU mới</li><li>Lộ trình cũ giữ ở Hành trình</li><li>Ra khỏi Lưu trữ</li></ul>' + ngayHl() + ctl('Lý do', '', { tc: 1 })),
+    chanDong(nutChinh('Học lại'), { trai: 'Huỷ thay đổi' })),
+
+  'hl-moi-ft': (w) => trangHv(w, { thuong: true }) + panel('Học lại', 'Nguyễn Minh Anh · MB FOU 12',
+    khoi('Học lại', chonDich('moi') + ctl('Lớp', 'MB FT 105 · Fast Track · LT1 · 11 học viên', { bb: 1 }) + ctl('Target', '', { bb: 1, err: 'Lên FT cần Target', ph: '6.5' }) + ctl('Dự kiến thi', '', { tc: 1, ph: 'dd/mm/yyyy hoặc mm/yyyy' }) + '<ul class="steps"><li>Vào lớp MB FT 105</li><li>Lộ trình LT1 mới</li><li>Lộ trình cũ giữ ở Hành trình</li><li>Ra khỏi Lưu trữ</li></ul>' + ngayHl()),
+    chanDong(nutChinh('Học lại'), { trai: 'Huỷ thay đổi', msg: '1 ô cần sửa ↑', bad: 1 })),
+
+  'hl-chan': (w) => trangHv(w) + panel('Học lại', 'Lê Thu Hà · —',
+    khoi('Học lại', '<p style="color:var(--bad)">Chưa có lớp để học lại</p>' + chonDich('cu') + ngayHl() + ctl('Lý do', '', { tc: 1 })),
+    chanDong(nutChinh('Học lại', true))),
+
+  'hl-xong': (w) => trangHv(w, { dangHoc: true }) + toast('Đã cho Nguyễn Minh Anh học lại', 'Hoàn tác (5)'),
+  'hl-moi-xong': (w) => trangHv(w, { dangHoc: true, thuong: true }) + toast('Đã cho Nguyễn Minh Anh học lại · MB FOU 14', 'Hoàn tác (5)'),
+
+  'lop-menu': (w) => lopMo(w, { daKetThuc: true }) + menu(w, [{ t: 'Điểm Test cả lớp' }, { t: 'Mở lại lớp', hl: true }], w === 375 ? 'right:12px;top:110px' : 'right:16px;top:100px'),
+  'lt-lop': (w) => trangLuuTru(w, 'lop'),
+
+  ml: (w) => lopMo(w, { daKetThuc: true }) + panel('Mở lại lớp', 'MB FOU 12',
+    khoi('Mở lại lớp', '<dl class="dl"><dt>Lớp</dt><dd><b>MB FOU 12</b></dd><dt>Chi nhánh</dt><dd>MB</dd><dt>Kết thúc</dt><dd>29/09/2026</dd></dl>' + ctl('Lý do', '', { tc: 1 })),
+    chanDong(nutChinh('Mở lại lớp'))),
+  'ml-xong': (w) => lopMo(w) + toast('Đã mở lại lớp MB FOU 12', 'Hoàn tác (5)'),
+
+  'kt-lop': (w) => lopMo(w) + menu(w, MENU_LOP.concat(['-', { t: 'Kết thúc lớp', hl: true }]), w === 375 ? 'right:12px;top:110px' : 'right:16px;top:100px'),
+
+  'cn-vao': (w) => lopMo(w),
+  'cn-chon0': (w) => lopMo(w, { mode: true, chon: 0 }),
+  'cn-chon': (w) => lopMo(w, { mode: true, chon: 3 }) + dock('<b>3 đã chọn</b>' + nutBar('Lưu trữ') + nutBar('Kết thúc học') + nutBar('Huỷ chuyển lớp') + '<span class="sp"></span>' + nutBar('Bỏ chọn')),
+
+  'cn-kt': (w) => lopMo(w, { mode: true, chon: 5 }) + panel('Kết thúc học · 14 học viên', 'MB FOU 12',
+    khoi('Kết thúc học', FACTS_KT + ctl('Lý do', 'Hết khoá', { bb: 1 }) + ngayHl()) + khoi('Bỏ qua 2 học viên', BO_QUA_KT),
+    chanDong(nutChinh('Kết thúc học 12 học viên'), { trai: 'Huỷ thay đổi' })),
+
+  'cn-lt': (w) => lopMo(w, { mode: true, chon: 5 }) + panel('Lưu trữ · 5 học viên', 'MB FOU 12',
+    khoi('Lưu trữ', '<div class="facts"><span><b>5</b> học viên</span></div>'),
+    chanDong(nutChinh('Lưu trữ 5 học viên'))),
+
+  'cn-huy': (w) => lopMo(w, { mode: true, chon: 7 }) + panel('Huỷ chuyển lớp · 7 học viên', 'MB FOU 12',
+    khoi('Huỷ chuyển lớp', '<div class="facts"><span><b>5</b> học viên</span><span>Lên FT <b>2</b></span><span>Học lại <b>3</b></span></div>' + ctl('Lý do', 'Gia đình đổi kế hoạch', { bb: 1 })) + khoi('Bỏ qua 2 học viên', BO_QUA_HUY),
+    chanDong(nutChinh('Huỷ chuyển lớp 5 học viên'), { trai: 'Huỷ thay đổi' })),
+
+  'cn-het': (w) => lopMo(w, { mode: true, chon: 2 }) + panel('Kết thúc học · 2 học viên', 'MB FOU 12',
+    khoi('Kết thúc học', '<div class="facts"><span><b>0</b> học viên</span></div>') +
+    khoi('Bỏ qua 2 học viên', '<ul class="list"><li>Phan Minh Đức<span class="m">Đã kết thúc học</span></li><li>Vũ Gia Bảo<span class="m">Đã kết thúc học</span></li></ul>'),
+    chanDong(nutChinh('Kết thúc học 0 học viên', true))),
+
+  'cn-dang': (w) => lopMo(w, { mode: true, chon: 5 }) + panel('Kết thúc học · 14 học viên', 'MB FOU 12',
+    khoi('Kết thúc học', FACTS_KT + ctl('Lý do', 'Hết khoá', { bb: 1 }) + ngayHl()),
+    chanDong(nutChinh('Đang lưu 8/12…', true), { trai: 'Huỷ thay đổi' })),
+
+  'cn-do': (w) => lopMo(w, { mode: true, chon: 5 }) + panel('Kết thúc học · 14 học viên', 'MB FOU 12',
+    khoi('Chưa lưu · 4', '<ul class="list"><li>Mai Thùy Dung' + LOI_BAN + '</li><li>Đặng Quốc Việt' + LOI_BAN + '</li><li>Võ Thanh Hà' + LOI_BAN + '</li><li>Trịnh Khánh Ly' + LOI_BAN + '</li></ul>') +
+    khoi('Kết thúc học', '<div class="facts"><span><b>12</b> học viên</span></div>' + ctl('Lý do', 'Hết khoá', { bb: 1 })),
+    chanDong(nutChinh('Thử lại 4 học viên'), { trai: 'Huỷ thay đổi', msg: 'Đã lưu 8 học viên · 4 học viên chưa lưu', bad: 1 })),
+
+  'cn-xong': (w) => lopMo(w) + toast('Kết thúc học 12 học viên', 'Hoàn tác (5)'),
+
+  'lt-hv': (w) => trangLuuTru(w, 'hv'),
+  'lt-chon': (w) => trangLuuTru(w, 'hv', { mode: true, chon: 3 }) + dock('<b>3 đã chọn</b>' + nutBar('Bỏ lưu trữ') + nutBar('Học lại') + '<span class="sp"></span>' + nutBar('Bỏ chọn')),
+  'lt-hl': (w) => trangLuuTru(w, 'hv', { mode: true, chon: 3 }) + panel('Học lại · 3 học viên', 'Lưu trữ',
+    khoi('Học lại', chonDich('cu') + '<div class="facts"><span><b>3</b> học viên</span><span style="color:var(--soon)">Mở lại lớp MB FOU 12, MB FT 101</span></div>' + ngayHl() + ctl('Lý do', '', { tc: 1 })),
+    chanDong(nutChinh('Học lại 3 học viên'), { trai: 'Huỷ thay đổi' })),
+
+  huy: () => pTx(
+    '<div class="sel"><b>7 em đang chọn</b><span class="chip">Lên FOU</span><span class="chip">Lên FT</span><span class="chip">Học lại</span><span class="btn btn-sm">Áp cho 7 em</span><span class="btn btn-sm btn-danger">Huỷ quyết định</span></div>' +
+    '<div class="khoi"><h5>Huỷ quyết định 5 em</h5><p class="m nf">Lên FT 2 · Học lại 3 · Bỏ qua 2 em chưa có quyết định</p>' + ctl('Lý do', 'Gia đình đổi kế hoạch', {}) +
+    '<div class="row"><span class="btn btn-sm">Đóng</span><span class="btn btn-sm btn-danger">Huỷ quyết định 5 em</span></div></div>' +
+    BANG_HUY([['Đinh Bảo An', '90%', 'Lên FT · MB FT 105', true], ['Lâm Gia Hưng', '72%', 'Học lại · MB FOU 14', true], ['Ngô Thu Trang', '58%', 'Học lại · MB FOU 14', true], ['Phan Minh Đức', '—', 'Chưa quyết', false], ['Trịnh Khánh Ly', '81%', 'Lên FT · MB FT 105', true]]),
+    '<span class="btn">Đóng</span><span class="sp"></span>' + nutChinh('Tiếp tục · 17 em')),
+
+  'huy-xong': () => pTx(
+    '<div class="sel"><b>0 em đang chọn</b><span class="btn btn-sm">Áp cho 0 em</span><span class="btn btn-sm btn-danger off">Huỷ quyết định</span></div>' +
+    BANG_HUY([['Đinh Bảo An', '90%', 'Chưa quyết', false], ['Lâm Gia Hưng', '72%', 'Chưa quyết', false], ['Ngô Thu Trang', '58%', 'Chưa quyết', false], ['Phan Minh Đức', '—', 'Chưa quyết', false]]),
+    '<span class="btn">Đóng</span><span class="sp"></span>' + nutChinh('Tiếp tục · 12 em')) + toast('Đã huỷ quyết định 5 em', 'Hoàn tác (5)'),
+
+  gv: (w) => {
+    const hv = trangHv(w, { khongMenu: true });
+    return w === 375 ? hv : '<div style="display:grid;grid-template-columns:1fr 1fr;height:100%"><div style="overflow:hidden">' + hv + '</div>' +
+      '<div style="position:relative;border-left:1px solid var(--line);overflow:hidden">' + trangLop(1440, { ma: 'MB FOU 12', thuong: true, gv: true }) +
+      menu(1440, [{ t: 'Ghi lộ trình tiếp theo cả lớp' }, { t: 'Sửa phân công' }, { t: 'Sửa thông tin học viên' }, { t: 'Điểm Test cả lớp' }], 'right:16px;top:100px') + '</div></div>';
+  },
+};
+
+function ve() {
+  document.querySelectorAll('[data-s]').forEach((f) => {
+    const w = Number(f.dataset.w || 1440);
+    f.innerHTML = S[f.dataset.s](w);
+  });
+}
+document.querySelectorAll('[data-theme-btn]').forEach((b) => b.addEventListener('click', () => {
+  document.documentElement.dataset.theme = b.dataset.themeBtn;
+  document.querySelectorAll('[data-theme-btn]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+}));
+ve();
+</script>
+</body>
+</html>

@@ -1,6 +1,7 @@
 /**
- * ⋮ HỒ SƠ LỚP › XOÁ LỚP / KẾT THÚC LỚP (PR-UX3, chủ sản phẩm chốt 24/09) — CHỈ Quản trị hệ thống, kiểm ở MÁY CHỦ bằng `admin.config`
- * (Quản lý chi nhánh và giáo viên gọi API đều nhận 403, không chỉ bị ẩn nút).
+ * ⋮ HỒ SƠ LỚP › XOÁ LỚP / KẾT THÚC LỚP / MỞ LẠI LỚP (PR-UX3, chủ sản phẩm chốt 24/09; PR-LUI-b 06/10). XOÁ LỚP chỉ Quản trị hệ thống (`admin.config`);
+ * KẾT THÚC LỚP và MỞ LẠI LỚP: Quản lý của lớp (`class.edit`) hoặc Quản trị — Quản lý mở lại nhầm thì kết thúc lại được. Kiểm ở MÁY CHỦ
+ * (giáo viên gọi API đều nhận 403, không chỉ bị ẩn nút).
  *
  *   Xoá lớp      chỉ lớp CHƯA có dữ liệu nào: chưa học viên nào từng ghi danh, chưa lượt Test / điểm, chưa vi phạm hay phương án xử lý,
  *                chưa công việc, tín hiệu, ước lượng, lộ trình tiếp theo gắn lớp, và không lớp nào học tiếp từ nó. Xoá hẳn trong MỘT
@@ -11,11 +12,12 @@
 import { db, tx } from '../db.ts';
 import { CHU_CHUYEN_LOP, PERMISSIONS, tuanLich } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, notFound } from '../util.ts';
-import { require_, type Principal } from '../permissions.ts';
+import { badRequest, chuTuDo, notFound } from '../util.ts';
+import { can, require_, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 
-const CHI_ADMIN = 'Chỉ Quản trị hệ thống mới xoá hoặc kết thúc được lớp.';
+const CHI_ADMIN = 'Chỉ Quản trị hệ thống mới xoá được lớp.';
+const CHI_QL_LOP = 'Chỉ Quản lý của lớp này hoặc Quản trị hệ thống mới kết thúc hoặc mở lại được lớp.';
 
 /** Bảng có cột `class_id` mà một dòng ở đó nghĩa là "lớp đã có dữ liệu" (`teacher_assignments`, `class_skills` là cấu hình, không tính). */
 const BANG_DU_LIEU: [string, string][] = [
@@ -38,6 +40,8 @@ export function tinhTrangLop(classId: number) {
   const dem = (sql: string, ...a: unknown[]) => (conn.prepare(sql).get(...a) as { n: number }).n;
   const soTungGhiDanh = dem('SELECT COUNT(*) n FROM enrollments WHERE class_id = ?', classId);
   const soDangHoc = dem(`SELECT COUNT(*) n FROM enrollments WHERE class_id = ? AND status = 'active'`, classId);
+  /* PR-LUI-b: quyết định chuyển lớp CHƯA thi hành mà lớp này là lớp ĐẾN ("Sắp nhận n em") — kết thúc lớp sẽ làm chúng hỏng. */
+  const soSapNhan = dem(`SELECT COUNT(*) n FROM lenh_chuyen_lop WHERE lop_dich_id = ? AND trang_thai = 'cho'`, classId);
   const gan: string[] = [];
   for (const [bang, nhan] of BANG_DU_LIEU) {
     const n = dem(`SELECT COUNT(*) n FROM ${bang} WHERE class_id = ?`, classId);
@@ -57,7 +61,7 @@ export function tinhTrangLop(classId: number) {
     nMiniTest > 0 ? `${nMiniTest} Mini Test chưa ghi` : null,
     cho.n > 0 && cho.tu ? `${CHU_CHUYEN_LOP.sapChuyen(tuanLich(cho.tu, demoToday()))} (${cho.n} em)` : null,
   ].filter(Boolean);
-  return { soTungGhiDanh, soDangHoc, gan, coDuLieu: soTungGhiDanh > 0 || gan.length > 0, conTreo: treo.length ? `Còn treo: ${treo.join(' · ')}` : null };
+  return { soTungGhiDanh, soDangHoc, soSapNhan, gan, coDuLieu: soTungGhiDanh > 0 || gan.length > 0, conTreo: treo.length ? `Còn treo: ${treo.join(' · ')}` : null };
 }
 
 /** Câu chặn Kết thúc lớp khi còn em đang học — nói đúng việc phải làm theo loại lớp (K2-35): FT chuyển từng em, lớp thường ra MỘT quyết định cho cả lớp. */
@@ -65,20 +69,22 @@ function lyDoConEm(c: { is_fast_track: number }, soDangHoc: number): string {
   return `Còn ${soDangHoc} học viên đang học — ${c.is_fast_track ? 'chuyển lớp từng em hoặc chuyển nhiều em' : `${CHU_CHUYEN_LOP.quyetDinh} cho cả lớp`} trước.`;
 }
 
-/** GET /classes/:id/xoa-ket-thuc — cho panel biết nên hiện nút nào và vì sao. Chỉ Quản trị hệ thống. */
+const lyDoSapNhan = (n: number) => `Còn ${n} quyết định chuyển lớp ĐẾN lớp này — huỷ hoặc đổi lớp đến trước.`;
+
+/** GET /classes/:id/xoa-ket-thuc — cho panel biết nên hiện nút nào và vì sao. Quản lý của lớp hoặc Quản trị; `coTheXoa` chỉ Quản trị. */
 export function xemXoaKetThuc(p: Principal, classId: number) {
-  require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, CHI_ADMIN);
+  require_(p, PERMISSIONS.CLASS_EDIT, { classId }, CHI_QL_LOP);
   const c = docLop(classId);
   const t = tinhTrangLop(classId);
   const daKetThuc = c.status === 'finished';
   return {
     id: c.id, ma: c.code, chiNhanh: c.branch_name, daKetThuc,
     soDangHoc: t.soDangHoc, soTungGhiDanh: t.soTungGhiDanh, coDuLieu: t.coDuLieu, dangGan: t.gan, conTreo: t.conTreo,
-    /** Xoá: chỉ lớp trống hẳn. Kết thúc: lớp còn hoạt động và không còn học viên đang học. */
-    coTheXoa: !t.coDuLieu,
-    coTheKetThuc: !daKetThuc && t.soDangHoc === 0,
+    /** Xoá: chỉ Quản trị, chỉ lớp trống hẳn. Kết thúc: lớp còn hoạt động và không còn học viên đang học. */
+    coTheXoa: !t.coDuLieu && can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }),
+    coTheKetThuc: !daKetThuc && t.soDangHoc === 0 && t.soSapNhan === 0,
     lyDoChanKetThuc: daKetThuc ? 'Lớp đã kết thúc.'
-      : t.soDangHoc > 0 ? lyDoConEm(c, t.soDangHoc) : null,
+      : t.soDangHoc > 0 ? lyDoConEm(c, t.soDangHoc) : t.soSapNhan > 0 ? lyDoSapNhan(t.soSapNhan) : null,
   };
 }
 
@@ -102,23 +108,46 @@ export function xoaLop(p: Principal, classId: number, input: { maLop?: unknown }
   return { ok: true, ma: c.code };
 }
 
-/** POST /classes/:id/ket-thuc — kết thúc lớp không còn học viên đang học; lớp vào khu Lưu trữ. */
+/** POST /classes/:id/ket-thuc — kết thúc lớp không còn học viên đang học; lớp vào khu Lưu trữ. Quản lý của lớp hoặc Quản trị. */
 export function ketThucLop(p: Principal, classId: number) {
-  require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, CHI_ADMIN);
+  require_(p, PERMISSIONS.CLASS_EDIT, { classId }, CHI_QL_LOP);
   const c = docLop(classId);
   if (c.status === 'finished') throw badRequest('Lớp đã kết thúc.');
   const t = tinhTrangLop(classId);
   if (t.soDangHoc > 0) {
     throw badRequest(lyDoConEm(c, t.soDangHoc));
   }
+  if (t.soSapNhan > 0) throw badRequest(lyDoSapNhan(t.soSapNhan));
   const ngay = demoToday();
   const conn = db();
   tx(() => {
     conn.prepare(`UPDATE classes SET status = 'finished', finished_at = ? WHERE id = ?`).run(ngay, classId);
     writeAudit({
       actorUserId: p.userId, action: 'class.finished', entityType: 'class', entityId: classId, entityLabel: c.code,
-      before: { status: c.status }, after: { status: 'finished', on: ngay, by: 'system_admin' },
+      before: { status: c.status }, after: { status: 'finished', on: ngay },
     });
   });
   return { ok: true, ma: c.code, finishedAt: ngay };
+}
+
+/**
+ * MỞ LẠI LỚP ĐÃ KẾT THÚC (PR-LUI-b, chủ sản phẩm 06/10) — ngược của `ketThucLop`. Quản lý của lớp (`class.edit`) hoặc Quản trị. Học viên đã kết thúc học KHÔNG tự
+ * quay lại (mỗi học viên Học lại riêng). Gọi được từ giao dịch khác (`hocLai` mở lớp cùng lúc — `tx` lồng = savepoint).
+ * ponytail: lớp thường đã hết khoá mà mở lại khi chưa có học viên đang học thì `dongLopNeuHet` (luatLoTrinh.ts) có thể kết thúc lại ở lần đổi trạng thái / chuyển
+ * lớp kế tiếp của một học viên trong lớp; Học lại một học viên vào lớp (ghi danh `active`) thì lớp ở lại.
+ */
+export function moLaiLop(p: Principal, classId: number, o: { lyDo?: unknown } = {}) {
+  require_(p, PERMISSIONS.CLASS_EDIT, { classId }, CHI_QL_LOP);
+  const c = docLop(classId);
+  if (c.status !== 'finished') throw badRequest('Lớp chưa kết thúc.');
+  const lyDo = chuTuDo(o.lyDo, 'Lý do', 2000);
+  const conn = db();
+  tx(() => {
+    conn.prepare(`UPDATE classes SET status = 'active', finished_at = NULL WHERE id = ? AND status = 'finished'`).run(classId);
+    writeAudit({
+      actorUserId: p.userId, action: 'class.reopened', entityType: 'class', entityId: classId, entityLabel: c.code,
+      before: { status: 'finished', finishedAt: c.finished_at }, after: { status: 'active', lyDo },
+    });
+  });
+  return { ok: true, ma: c.code, finishedAt: c.finished_at as string | null };
 }

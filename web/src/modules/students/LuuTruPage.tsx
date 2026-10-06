@@ -7,15 +7,21 @@ import { Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { nhoChiNhanh, useChiNhanhMacDinh, type Branch } from '../../ui/Filters.tsx';
 import { useSession } from '../../lib/session.tsx';
-import { ngay } from '@shared/domain/index.ts';
+import { MoLaiLopPanel } from '../classes/XoaKetThucLopPanel.tsx';
+import { OChon, ThanhChonNhieu, useChonNhieu } from './chonNhieuHocVien.tsx';
+import { XemTruocHangLoatPanel } from './XemTruocHangLoatPanel.tsx';
+import { StudentManagePanel } from './StudentManagePanel.tsx';
+import { ngay, type ViecHangLoat } from '@shared/domain/index.ts';
 
 type LopLuuTru = {
   id: number; code: string; ma: string | null; tenChuongTrinh: string | null;
   chiNhanh: string; gvcn: string | null; soHvTungHoc: number; finishedAt: string | null;
+  /** PR-LUI-b: nút "Mở lại" (Quản lý của lớp / Quản trị). */
+  coTheMoLai: boolean;
 };
 type HocVienLuuTru = {
   id: number; studentCode: string; fullName: string; lopCuoi: string | null; chiNhanh: string | null;
-  archivedAt: string; coTheBoLuuTru: boolean;
+  archivedAt: string; coTheBoLuuTru: boolean; coTheHocLai: boolean;
 };
 type DuLieuLuuTru = { lop: LopLuuTru[]; hocVien: HocVienLuuTru[]; phamVi: { chiNhanh: number | null } };
 
@@ -37,6 +43,11 @@ export default function LuuTruPage() {
   const branchId = cnUrl ? Number(cnUrl) : macDinh;
   const q = params.get('q') ?? '';
   const [draftQ, setDraftQ] = useState(q);
+  const [moLai, setMoLai] = useState<LopLuuTru | null>(null);
+  /* PR-LUI-b: "Chọn nhiều học viên" (cùng mẫu hồ sơ lớp) — thanh dính đáy Bỏ lưu trữ · Học lại; Học lại từng em mở panel Học lại có chọn đích. */
+  const chon = useChonNhieu();
+  const [lam, setLam] = useState<{ viec: ViecHangLoat; ids: number[] } | null>(null);
+  const [hocLai, setHocLai] = useState<HocVienLuuTru | null>(null);
 
   const setParam = (patch: Record<string, string | null>) => {
     const next = new URLSearchParams(params);
@@ -108,18 +119,20 @@ export default function LuuTruPage() {
           ? <Card><Empty title="Chưa có lớp nào kết thúc" /></Card>
           : <div className="space-y-1.5">
               {data.lop.map((l) => (
-                <Link key={l.id} to={`/hoc-vien/lop/${l.id}`}
-                  className="card flex flex-wrap items-center gap-x-2 gap-y-1 p-3 no-underline">
-                  <span className="font-semibold text-slate-200">{l.code}</span>
-                  <span className="text-xs text-slate-500">
-                    {l.tenChuongTrinh ?? l.ma ?? '—'} · {l.chiNhanh}
-                    {l.gvcn && <> · GVCN {l.gvcn}</>} · {l.soHvTungHoc} HV từng học
-                  </span>
-                  <span className="flex-1" />
-                  <span className="text-[11px] text-slate-500 whitespace-nowrap">
-                    Đã kết thúc {l.finishedAt ? ngay(l.finishedAt) : '—'}
-                  </span>
-                </Link>
+                <div key={l.id} className="card flex flex-wrap items-center gap-x-2 gap-y-1 p-3">
+                  <Link to={`/hoc-vien/lop/${l.id}`} className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1 no-underline">
+                    <span className="font-semibold text-slate-200">{l.code}</span>
+                    <span className="text-xs text-slate-500">
+                      {l.tenChuongTrinh ?? l.ma ?? '—'} · {l.chiNhanh}
+                      {l.gvcn && <> · GVCN {l.gvcn}</>} · {l.soHvTungHoc} HV từng học
+                    </span>
+                    <span className="flex-1" />
+                    <span className="text-[11px] text-slate-500 whitespace-nowrap">
+                      Đã kết thúc {l.finishedAt ? ngay(l.finishedAt) : '—'}
+                    </span>
+                  </Link>
+                  {l.coTheMoLai && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setMoLai(l)}>Mở lại</button>}
+                </div>
               ))}
             </div>
       )}
@@ -127,8 +140,15 @@ export default function LuuTruPage() {
         data.hocVien.length === 0
           ? <Card><Empty title="Chưa có học viên nào được lưu trữ" /></Card>
           : <div className="space-y-1.5">
+              {data.hocVien.some((s) => s.coTheBoLuuTru) && (
+                <div className="flex justify-end">
+                  <button type="button" aria-pressed={chon.bat} onClick={chon.batTat}
+                    className={`btn btn-sm min-h-[44px] sm:min-h-0 ${chon.bat ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent)]' : 'btn-ghost'}`}>Chọn nhiều học viên</button>
+                </div>
+              )}
               {data.hocVien.map((s) => (
-                <div key={s.id} className="card flex flex-wrap items-center gap-x-2 gap-y-1 p-3">
+                <div key={s.id} className={`card flex flex-wrap items-center gap-x-2 gap-y-1 p-3 ${chon.chon.has(s.id) ? 'bg-[color:var(--accent-soft)]' : ''}`}>
+                  {chon.bat && s.coTheBoLuuTru && <OChon chon={chon} id={s.id} ten={s.fullName} />}
                   <Link to={`/hoc-vien/${s.id}`} className="link font-semibold">{s.fullName}</Link>
                   <span className="text-[11px] tabular-nums text-slate-500">{s.studentCode}</span>
                   <span className="text-xs text-slate-500">
@@ -136,12 +156,28 @@ export default function LuuTruPage() {
                   </span>
                   <span className="flex-1" />
                   <span className="text-[11px] text-slate-500 whitespace-nowrap">Lưu trữ {ngay(s.archivedAt)}</span>
-                  {s.coTheBoLuuTru && (
-                    <button type="button" className="btn btn-sm" onClick={() => boLuuTru(s.id)}>Bỏ lưu trữ</button>
+                  {!chon.bat && s.coTheHocLai && (
+                    <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setHocLai(s)}>Học lại</button>
+                  )}
+                  {!chon.bat && s.coTheBoLuuTru && (
+                    <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => boLuuTru(s.id)}>Bỏ lưu trữ</button>
                   )}
                 </div>
               ))}
             </div>
+      )}
+      {data && tab === 'hv' && (
+        <ThanhChonNhieu chon={chon} viec={[{ key: 'bo-luu-tru', nhan: 'Bỏ lưu trữ' }, { key: 'hoc-lai', nhan: 'Học lại' }]}
+          onViec={(k) => setLam({ viec: k as ViecHangLoat, ids: [...chon.chon] })} />
+      )}
+      {lam && <XemTruocHangLoatPanel viec={lam.viec} ids={lam.ids} onClose={() => setLam(null)} onDone={() => { chon.bo(); setLam(null); reload(); }} />}
+      {hocLai && (
+        <StudentManagePanel viec="hoc-lai" onClose={() => setHocLai(null)} student={{ id: hocLai.id, name: hocLai.fullName, classId: null }}
+          lop={hocLai.lopCuoi} cycle={null} attempts={[]} onDone={reload} />
+      )}
+      {moLai && (
+        <MoLaiLopPanel classId={moLai.id} classCode={moLai.code} chiNhanh={moLai.chiNhanh} ketThuc={moLai.finishedAt ? ngay(moLai.finishedAt) : null}
+          onClose={() => setMoLai(null)} onDone={reload} />
       )}
     </div>
   );
