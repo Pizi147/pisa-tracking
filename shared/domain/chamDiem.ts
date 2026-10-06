@@ -6,6 +6,7 @@
  * bên không thể nói hai con số khác nhau — và harness kiểm được mà không cần mở trình duyệt.
  */
 import { mondayOfDate } from './week.ts';
+import { addDaysIso } from './sos.ts';
 
 /** Lịch Test lọc lớp nào (PR-UX1 Q4): lớp người xem có phân công, hay cả phạm vi được xem. */
 export type PhamViLichTest = 'cua-toi' | 'tat-ca';
@@ -24,6 +25,25 @@ export function nhanLopLichTest(i: { conBai: number; conBaiCuaToi: number; chuaT
   if (i.conBaiCuaToi > 0) return { loai: 'cho-ban', chu: 'Chờ bạn chấm' };
   return i.coDayLop ? { loai: 'cho-gv-khac', chu: 'Chờ GV khác' } : { loai: 'cho-cham', chu: 'Chờ chấm' };
 }
+
+/** Ba khối của Lịch Test (PR-LT3, T15): Test quá hạn chấm · Test chấm tuần này · Lịch Test tuần này. */
+export type KhoiCham = 'qua-han' | 'tuan-nay' | 'lich';
+
+/**
+ * T15: khối của MỘT ô chưa chấm — một bài đúng một khối. `tuanThi`, `tuanHomNay` = thứ Hai (ISO); `quaHan` = cờ `overdue` của chính ô
+ * (đã qua `quaHanNhapDiem`). Thi tuần trước luôn ở khối 2 (kể cả đã quá hạn từ thứ Năm); cũ hơn mà chưa quá hạn = hạn riêng dời xa → khối 2.
+ */
+export function khoiCham(i: { tuanThi: string; tuanHomNay: string; quaHan: boolean }): KhoiCham {
+  const thi = i.tuanThi.slice(0, 10), nay = i.tuanHomNay.slice(0, 10);
+  if (thi >= nay) return 'lich';
+  if (thi === addDaysIso(nay, -7)) return 'tuan-nay';
+  return i.quaHan ? 'qua-han' : 'tuan-nay';
+}
+
+/** T18: Speaking của Mock Test không có GV mặc định — ai dạy Speaking cùng chi nhánh cũng chấm được. MT0 / lớp thường không áp. */
+export const laChamCheo = (kind: string | null | undefined, skill: string): boolean => kind === 'mock' && skill === 'speaking';
+/** Q3 (chủ sản phẩm 06/10): chữ ở chỗ "người giữ việc" của ô Speaking Mock chưa ai nhập. */
+export const CHAM_CHEO = 'GV chấm chéo';
 
 /** Lớp nào tự mở khi vào Lịch Test (Q8): người có phân công — lớp còn bài của mình; Quản lý — lớp còn bài. */
 export const lopTuMo = (i: { conBai: number; conBaiCuaToi: number; coPhanCong: boolean }) =>

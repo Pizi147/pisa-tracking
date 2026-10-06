@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, duongDotTest, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, ENTRY_SKILLS, ENTRY_SKILL_LABEL, MOCK_FT_STUDY_WEEK, NO_SHOW_OVERRIDDEN_NOTE,
-  BAI_CO_NHAN_XET, PERMISSIONS, awaitingScore, cachHuyLuot, kiemBand, kiemLyDoThaoTac, kiemNhanXet, kiemSoMtMoi, laMtCu, ngay, noShowStateOf, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanLich,
+  BAI_CO_NHAN_XET, CHAM_CHEO, PERMISSIONS, awaitingScore, laChamCheo, cachHuyLuot, kiemBand, kiemLyDoThaoTac, kiemNhanXet, kiemSoMtMoi, laMtCu, ngay, noShowStateOf, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanLich,
   type CachHuy,
   type AssessedSkill, type EntrySkill, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
 } from '../../../shared/domain/index.ts';
@@ -318,6 +318,8 @@ export function skillCells(
       lichSu: !!attempt.lich_su,
     });
     const row = rows.find((r) => r.skill === skill);
+    /* T18 (PR-LT3): Speaking của Mock không có GV mặc định — không là việc / "của tôi" của ai; quyền sửa (`canEdit`) giữ nguyên. */
+    const chamCheo = laChamCheo(attempt.kind, skill);
 
     /*
      * Ô nhập điểm có tiến độ RIÊNG trong một trường hợp: Writing đã có W1 mà chưa có W2.
@@ -403,7 +405,7 @@ export function skillCells(
         && (!!view.weekStart && view.weekStart.slice(0, 10) <= mondayOf(today))
         && (hoanTat.hoanTat ? suaSauHoanTat : editable.includes(skill)),
       /* Việc nhập điểm của người xem (bảng lớp "Nhập điểm …") — như `canEdit` nhưng trước hoàn tất bỏ quyền sửa mọi lúc của Quản lý. */
-      viec: required && !cancelled && view.sitStatus !== 'cancelled' && view.sitStatus !== 'absent'
+      viec: required && !cancelled && !chamCheo && view.sitStatus !== 'cancelled' && view.sitStatus !== 'absent'
         && (hoanTat.hoanTat ? suaSauHoanTat : viecList.includes(skill)),
       /* R11: đánh dấu "đợt đã hoàn tất" cho MỌI người xem — Quản lý vẫn `khoa && canEdit` (sửa qua hộp lý do). */
       khoa: hoanTat.hoanTat,
@@ -411,7 +413,7 @@ export function skillCells(
        * "TÔI SỬA ĐƯỢC" KHÁC "ĐÂY LÀ VIỆC CỦA TÔI" (mục 3.3).
        * Người có quyền sửa hộ vẫn bấm vào ô được, nhưng không vì thế mà nợ việc đó.
        */
-      mine: required && !cancelled && view.sitStatus !== 'cancelled' && mine.includes(skill),
+      mine: required && !cancelled && !chamCheo && view.sitStatus !== 'cancelled' && mine.includes(skill),
       periodId: view.periodId,
       periodCode: view.periodCode,
       weekStart: view.weekStart,
@@ -579,10 +581,11 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
   const ownersMap = ownersByClass(
     rows.map((r) => r.class_id).filter((id): id is number => id !== null),
   );
-  const ownersOf = (classId: number | null, skills: string[]): Record<string, string | null> => {
+  /* T18 (PR-LT3): Speaking Mock → "GV chấm chéo" (không phải GVBM S, không phải "chưa phân công"). */
+  const ownersOf = (classId: number | null, skills: string[], kind: string): Record<string, string | null> => {
     const rec = (classId !== null && ownersMap.get(classId)) || {};
     const out: Record<string, string | null> = {};
-    for (const s of skills) out[s] = rec[s] ?? null;
+    for (const s of skills) out[s] = laChamCheo(kind, s) ? CHAM_CHEO : rec[s] ?? null;
     return out;
   };
 
@@ -689,7 +692,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
         /* Số ô ĐÃ CÓ ĐIỂM trong cùng phạm vi — Cần chấm phân biệt "Chấm" với "Chấm tiếp". */
         scoredInScope: scoredInScopeOf(pendingCells, workScope),
         /* Ai phụ trách từng bài — danh sách của Quản lý là để ĐÔN ĐỐC, nên phải có tên. */
-        pendingOwners: ownersOf(a.class_id, pending),
+        pendingOwners: ownersOf(a.class_id, pending, a.kind),
         /** Tuần thi của CHÍNH các môn còn nợ — để hàng đợi nói "nợ từ tuần nào". */
         pendingWeeks: [...new Set(pending.map((k) => views.get(k)?.periodCode).filter(Boolean))],
         /** Lịch từng môn của bài này — bốn môn có thể ở ba tuần khác nhau. */
@@ -773,7 +776,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
       }),
       scoredInScope: scoredInScopeOf(pendingInputOf(cells), workScope),
       /* Ai phụ trách từng bài — danh sách của Quản lý là để ĐÔN ĐỐC, nên phải có tên. */
-      pendingOwners: ownersOf(a.class_id, pending),
+      pendingOwners: ownersOf(a.class_id, pending, a.kind),
       /** Tuần thi của CHÍNH các môn còn nợ — để hàng đợi nói "nợ từ tuần nào". */
       pendingWeeks: [...new Set(
         pending.map((k) => cells.find((c) => c.skill === k)?.periodCode).filter(Boolean),
@@ -1683,7 +1686,10 @@ export function saveScore(
      */
     const matHet = !hasValue && daCoDiem;
     const comment = matHet ? null : nxGt !== undefined ? nxGt : existing?.comment ?? null;
-    const exUser = matHet ? null : gv !== undefined ? gv?.userId ?? null : existing?.examiner_user_id ?? null;
+    /* Q3 (PR-LT3, chủ sản phẩm 06/10): lưu ô S Mock có điểm mà không gửi GV chấm, dòng chưa có ai → GV chấm = người lưu (trễ tính cho
+       người đó). Lưới an toàn — web luôn gửi tên đang hiện. Gửi `gvCham: null` có chủ ý (xoá) giữ như cũ. */
+    const gvMacDinh = gv === undefined && hasValue && laChamCheo(a.kind, skill) && !existing?.examiner_user_id && !existing?.examiner_name;
+    const exUser = matHet ? null : gvMacDinh ? p.userId : gv !== undefined ? gv?.userId ?? null : existing?.examiner_user_id ?? null;
     const exName = matHet ? null : gv !== undefined ? gv?.name ?? null : existing?.examiner_name ?? null;
     /*
      * PR-Pb2-b (Q13): ngày NGHIỆP VỤ lần đầu ô có điểm — sửa sau giữ nguyên, ô mất hết điểm về NULL (nhập lại tính lần đầu mới).

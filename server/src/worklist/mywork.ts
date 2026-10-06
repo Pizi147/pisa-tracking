@@ -1,7 +1,7 @@
 import { db, theoLo } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
-  ATTEMPT_KIND_SHORT, CHU_CHUYEN_LOP, daiDienNhomBoTro,
+  ATTEMPT_KIND_SHORT, CHAM_CHEO, CHU_CHUYEN_LOP, daiDienNhomBoTro, laChamCheo,
   INTERVENTION_KIND_LABEL, PERMISSIONS,
   SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, cycleDeadline,
   duongHoSoHocVien, duongLichTest, nhanDotNgan, planDueDate, urgencyFromSos,
@@ -371,7 +371,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
      */
     const byTest = new Map<string, ScoreBucket[]>();
     for (const b of buckets.values()) {
-      const k = `${b.classId ?? 0}|${b.kind ?? 'mock'}|${b.attemptNo ?? 0}|${b.due ?? ''}|u${b.ownerId ?? 0}`;
+      const k = `${b.classId ?? 0}|${b.kind ?? 'mock'}|${b.attemptNo ?? 0}|${b.due ?? ''}|u${b.ownerId ?? 0}${laChamCheo(b.kind, b.skill) ? '|cc' : ''}`;
       (byTest.get(k) ?? byTest.set(k, []).get(k)!).push(b);
     }
     const out: WorkItem[] = [];
@@ -407,7 +407,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         href: first.href,
         ownerId: first.ownerId, owner: null, mine: first.ownerId === p.userId,
         due: first.due,
-        statusLabel: first.ownerId === null ? 'Chưa phân công giáo viên' : 'Chưa nhập điểm',
+        statusLabel: laChamCheo(first.kind, first.skill) ? CHAM_CHEO : first.ownerId === null ? 'Chưa phân công giáo viên' : 'Chưa nhập điểm',
       });
     }
     return out;
@@ -435,7 +435,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     const khacDongs: BaiChuaCham[] = [];
     for (const a of managedAttempts as any[]) {
       for (const c of (a.pendingDetail ?? []) as any[]) {
-        const ownerId = a.classId ? (ownerOf.get(`${a.classId}|${c.skill}`) ?? null) : null;
+        /* T18: Speaking Mock không có người phụ trách — không bị bỏ vì "đã có ở phần của mình" (GVBM S không có nó ở đó). */
+        const ownerId = a.classId && !laChamCheo(a.kind, c.skill) ? (ownerOf.get(`${a.classId}|${c.skill}`) ?? null) : null;
         if (ownerId === p.userId) continue;   // đã có ở phần "của mình"
         khacDongs.push({
           classId: a.classId ?? null, classCode: a.classCode ?? null, attemptNo: a.attemptNo ?? null,

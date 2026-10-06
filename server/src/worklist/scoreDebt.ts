@@ -1,5 +1,5 @@
 import { db, theoLo } from '../db.ts';
-import { LUOT_TINH_NO_SQL, boMonLich } from '../../../shared/domain/index.ts';
+import { LUOT_TINH_NO_SQL, boMonLich, laChamCheo } from '../../../shared/domain/index.ts';
 import type { Principal } from '../permissions.ts';
 import { loadBundle, regularSkillViews, skillCells } from '../fasttrack/attempts.ts';
 import { settleNoShows } from '../fasttrack/absence.ts';
@@ -19,7 +19,9 @@ import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 /** `userId` null = môn CHƯA PHÂN CÔNG giáo viên — vẫn là nợ (PR-UXF-a Q8: không giấu nợ; bảng Theo giáo viên có hàng "Chưa phân công"). */
 export type DebtCell = { attemptId: number; classId: number; skill: string; userId: number | null; overdue: boolean;
   /** PR-VAI-a (Q24): hạn nhập của ô — cột Hạn "quá hạn a–b ngày" ở Cần xử lý đọc từ chính tập này. */
-  han: string | null };
+  han: string | null;
+  /** T18 (PR-LT3): Speaking Mock — `userId` null nhưng KHÔNG phải "chưa phân công": không nợ của GVBM S / GVCN, QL vẫn thấy ở chỉ số quá hạn. */
+  chamCheo?: boolean };
 
 /** Tiến độ KHÔNG phải nợ điểm: vắng đã xác nhận, huỷ phần thi, ngoài phạm vi, đang chờ Quản lý duyệt dời, MT lịch sử (T34). */
 const NOT_DEBT = new Set(['absent', 'cancelled', 'skipped', 'reschedule_pending', 'lich_su']);
@@ -105,7 +107,9 @@ export function scoreDebtCells(p: Principal, today: string, branchIds: number[] 
       /* Không truyền `hoanTat` (R11) có chủ ý: nợ điểm đọc band/noShow/lịch, không đọc canEdit/khoa — đỡ 3 câu SQL. */
       for (const c of skillCells(p, a, scores, bundle.skips.get(a.id) ?? [], today, skillRows)) {
         if (!c.required || c.band !== null || c.noShow !== null || !c.weekStart || c.weekStart > today || NOT_DEBT.has(c.progress)) continue;
-        out.push({ attemptId: a.id, classId: a.class_id, skill: c.skill, userId: teacherOf.get(`${a.class_id}|${c.skill}`) ?? null, overdue: c.overdue, han: c.deadline ?? null });
+        const chamCheo = laChamCheo(a.kind, c.skill);
+        out.push({ attemptId: a.id, classId: a.class_id, skill: c.skill, userId: chamCheo ? null : teacherOf.get(`${a.class_id}|${c.skill}`) ?? null,
+          overdue: c.overdue, han: c.deadline ?? null, ...(chamCheo ? { chamCheo } : {}) });
       }
     }
   }

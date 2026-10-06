@@ -9136,6 +9136,9 @@ await runPrDlTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, ad
 // ==================================================================== PR-MTa (luật Test / Mock Test máy chủ: T1 T2 T3 T4 T7 T10 T11)
 const { runPrMtaTests } = await import('./prMta.tests.ts');
 await runPrMtaTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+// ==================================================================== PR-LT3 (Lịch Test ba khối + Speaking chấm chéo)
+const { runPrLt3Tests } = await import('./prLt3.tests.ts');
+await runPrLt3Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0

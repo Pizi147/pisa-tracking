@@ -244,7 +244,8 @@ async function runTask9(t: YThucTestKit, d: any) {
   });
 
   check('S6F-b (9) · bảng GV chi nhánh: không hàng GV nhưng có "Chưa phân công" → không Empty (Σ = ô)', () => {
-    assert(/if \(!data\.hang\.length && !data\.chuaPhanCong\) return <Empty/.test(doc('web/src/modules/giaoVien/BangGiaoVienChiNhanh.tsx')), 'BangGiaoVienChiNhanh Empty');
+    /* PR-LT3 (T18): thêm dòng "GV chấm chéo" — cũng không Empty khi chỉ có nó. */
+    assert(/if \(!data\.hang\.length && !data\.chuaPhanCong && !data\.chamCheo\) return <Empty/.test(doc('web/src/modules/giaoVien/BangGiaoVienChiNhanh.tsx')), 'BangGiaoVienChiNhanh Empty');
   });
 
   check('S6F-b (9) · Q21 ghi bù đúng Thứ Hai: PA hạn 24/08, ghi 07/09 → 3 nghĩa vụ (2 trễ, 1 đúng) = "ghi bù 3 tuần"', () => {

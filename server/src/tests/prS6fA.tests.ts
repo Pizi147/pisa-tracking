@@ -104,7 +104,8 @@ export async function runPrS6fATests(t: YThucTestKit) {
   };
   const lt = () => {
     const r = canCham.lichTest(P.mbManager, week.ensurePeriod(tuanW1).id, MB, TODAY, { phamVi: 'tat-ca' });
-    return { conBai: r.lop.find((l: any) => l.classId === MB_FT)?.conBai ?? 0, quaHan: r.tongQuan.quaHan };
+    /* PR-LT3: ô "Quá hạn" cũ bỏ — bài quá hạn của tuần cũ nằm ở khối 1 (`tongQuan.no.bai`). */
+    return { conBai: r.lop.find((l: any) => l.classId === MB_FT)?.conBai ?? 0, quaHan: r.tongQuan.no.bai };
   };
 
   check('S6F-a (2a) · em Tạm dừng → badge "n bài chờ chấm" và Lịch Test tuần cũ (conBai, tongQuan.quaHan) cùng giảm đúng số ô của em; Quay lại học → tăng lại', () => {

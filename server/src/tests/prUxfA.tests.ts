@@ -283,8 +283,9 @@ export async function runPrUxfATests(t: YThucTestKit) {
     for (const ct of ['ft', 'thuong']) {
       const oK = baiQuaHan(P.mbManager, { branchId: MB, program: ct });
       const bang = hoSoGv.bangGvChiNhanh(P.mbManager, { cn: MB, ct });
-      const tong = bang.hang.reduce((n: number, h: any) => n + h.quaHan, 0) + (bang.chuaPhanCong?.quaHan ?? 0);
-      assert(tong === oK.n, `${ct}: Σ bảng GV (gồm Chưa phân công) ${tong} ≠ ô ${oK.n}`);
+      /* PR-LT3 (T18): Speaking Mock chưa ai chấm có dòng riêng "GV chấm chéo" (không vào Chưa phân công). */
+      const tong = bang.hang.reduce((n: number, h: any) => n + h.quaHan, 0) + (bang.chuaPhanCong?.quaHan ?? 0) + (bang.chamCheo?.quaHan ?? 0);
+      assert(tong === oK.n, `${ct}: Σ bảng GV (gồm Chưa phân công, GV chấm chéo) ${tong} ≠ ô ${oK.n}`);
       for (const h of bang.hang.filter((x: any) => x.quaHan > 0)) {
         const r = hoSoGv.oHoSoGv(P.mbManager, h.id, { cot: 'qua-han', cn: MB, ct });
         assert(r.rows.length === h.quaHan, `${ct} · ${h.ten}: hồ sơ ${r.rows.length} ≠ bảng ${h.quaHan}`);
@@ -376,7 +377,7 @@ export async function runPrUxfATests(t: YThucTestKit) {
   });
 
   check('UXF-a (6) · Nợ: lớp FT có MT3 ở hai tuần thi → hai dòng, chữ Đợt khác nhau (tuần thi); dòng nhóm theo lớp (soSanhLop); conBai = số bài', () => {
-    const tuanA = tuanTruoc(2), tuanB = tuanTruoc(1);
+    const tuanA = tuanTruoc(3), tuanB = tuanTruoc(2);   // PR-LT3: khối 1 nhận ô thi từ hai tuần trước (tuần trước ở khối 2)
     const em = [taoHv(LOP_FT, true), taoHv(LOP_FT, true)];
     const luot = [themLuot({ ...em[0], cid: LOP_FT, no: 3, kind: 'mock', tuan: tuanA }), themLuot({ ...em[1], cid: LOP_FT, no: 3, kind: 'mock', tuan: tuanB })];
     const no = (cham.lichTest(P.admin, tuanNayId, null, TODAY).no as any[]);

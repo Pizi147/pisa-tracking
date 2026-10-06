@@ -341,7 +341,7 @@ export async function runPrMonTests(t: YThucTestKit) {
     const k = r.tongQuanKhung;
     assert(k.ft.tong + k.thuong.tong === r.tongQuan.tong && k.ft.conPhaiCham + k.thuong.conPhaiCham === r.tongQuan.conPhaiCham,
       JSON.stringify({ k, t: r.tongQuan }));
-    assert(k.ft.no.bai + k.thuong.no.bai === r.tongQuan.no.bai && k.ft.quaHan + k.thuong.quaHan === r.tongQuan.quaHan, 'nợ / quá hạn');
+    assert(k.ft.no.bai + k.thuong.no.bai === r.tongQuan.no.bai, 'nợ (PR-LT3: ô "Quá hạn" cũ bỏ — khối 1 là quá hạn)');
     assert(r.lop.some((l: any) => l.mode === 'ielts_band') && r.lop.some((l: any) => l.mode === 'ratio'), 'tuần demo phải có cả hai khung');
     assert(r.no.every((x: any) => 'chuongTrinh' in x), 'dòng nợ thiếu chuongTrinh');
     const fou = r.lop.find((l: any) => l.classCode === 'MB FOU 12');
