@@ -20,7 +20,7 @@ import { nho } from './nguCanhRequest.ts';
  * vẽ trục thời gian của hành trình, và hai bản cài đặt cho một quy ước thì sớm muộn hai chỗ
  * gọi cùng một tuần bằng hai cái tên. Ở đây chỉ còn phần đụng tới database.
  */
-import { MONTH_CODE, owningMonthOf, tuanLich, weekNumberInMonthOf } from '../../../shared/domain/index.ts';
+import { MONTH_CODE, hanChamMt0, owningMonthOf, tuanLich, weekNumberInMonthOf } from '../../../shared/domain/index.ts';
 
 export function mondayOf(date: string): string {
   const d = parseDate(date);
@@ -86,7 +86,8 @@ export type ScoringMode = 'band' | 'ratio';
  * Hệ quả thứ hai: kỹ năng có tuần thi CHƯA TỚI thì chưa có gì để nợ. Hàm này vẫn trả về
  * một ngày, nhưng nơi gọi phải kiểm "đã đến tuần chưa" trước khi gọi một môn là quá hạn.
  */
-export function skillScoreDeadline(_mode: ScoringMode, weekStart: string): string {
+export function skillScoreDeadline(_mode: ScoringMode, weekStart: string, mt0 = false): string {
+  if (mt0) return hanChamMt0(weekStart);   // PR-MT0: Chủ nhật tuần sau tuần thi
   /* T19 (PR-MTa, chủ sản phẩm 06/10): lớp thường cũng hết THỨ TƯ tuần kế tiếp như Fast Track (trước đây Chủ nhật tuần thi). */
   return addDays(mondayOf(weekStart), 7 + 2);
 }
@@ -323,9 +324,10 @@ export function effectiveSkillDeadline(input: {
   weekStart: string | null;
   skillOverride?: string | null;
   attemptOverride?: string | null;
+  mt0?: boolean;
 }): { date: string | null; source: 'skill_override' | 'attempt_override' | 'default' | 'none' } {
   if (input.skillOverride) return { date: input.skillOverride, source: 'skill_override' };
   if (input.attemptOverride) return { date: input.attemptOverride, source: 'attempt_override' };
-  if (input.weekStart) return { date: skillScoreDeadline(input.mode, input.weekStart), source: 'default' };
+  if (input.weekStart) return { date: skillScoreDeadline(input.mode, input.weekStart, input.mt0), source: 'default' };
   return { date: null, source: 'none' };
 }

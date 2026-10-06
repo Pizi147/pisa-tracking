@@ -104,7 +104,7 @@ export function transitionPlan(p: Principal, classId: number) {
   const cycleIds = students.map((s) => s.cycle_id).filter(Boolean);
   const baiChuaLamRows = cycleIds.length
     ? (conn
-      .prepare(`SELECT cycle_id, COUNT(*) n FROM assessment_attempts WHERE cycle_id IN (${cycleIds.map(() => '?').join(',')}) AND status = 'planned' GROUP BY cycle_id`)
+      .prepare(`SELECT cycle_id, COUNT(*) n FROM assessment_attempts WHERE cycle_id IN (${cycleIds.map(() => '?').join(',')}) AND status = 'planned' AND kind != 'mt0' GROUP BY cycle_id`)   /* PR-MT0: MT0 đi theo em, không là bài chưa làm */
       .all(...cycleIds) as any[])
     : [];
   const baiChuaLamByCycle = new Map(baiChuaLamRows.map((r) => [r.cycle_id, r.n as number]));

@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, duongDotTest, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, ENTRY_SKILLS, ENTRY_SKILL_LABEL, MOCK_FT_STUDY_WEEK, NO_SHOW_OVERRIDDEN_NOTE,
-  BAI_CO_NHAN_XET, CHAM_CHEO, PERMISSIONS, awaitingScore, laChamCheo, cachHuyLuot, kiemBand, kiemLyDoThaoTac, kiemNhanXet, kiemSoMtMoi, laMtCu, ngay, noShowStateOf, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanLich,
+  BAI_CO_NHAN_XET, CHAM_CHEO, PERMISSIONS, awaitingScore, laChamCheo, cachHuyLuot, kiemBand, kiemLyDoThaoTac, kiemNhanXet, kiemSoMtMoi, laMt0, laMtCu, ngay, noShowStateOf, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanLich,
   type CachHuy,
   type AssessedSkill, type EntrySkill, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
 } from '../../../shared/domain/index.ts';
@@ -316,6 +316,7 @@ export function skillCells(
       today,
       pendingMove: pendingView(attempt.id, assessed),
       lichSu: !!attempt.lich_su,
+      mt0: laMt0(attempt),
     });
     const row = rows.find((r) => r.skill === skill);
     /* T18 (PR-LT3): Speaking của Mock không có GV mặc định — không là việc / "của tôi" của ai; quyền sửa (`canEdit`) giữ nguyên. */
@@ -909,6 +910,7 @@ export function attemptDetail(p: Principal, attemptId: number) {
       scored: entrySkillsOf(skill).every((k) => (scores.find((x) => x.skill === k)?.band ?? null) !== null),
       pendingMove: pendingView(a.id, skill),
       lichSu: !!a.lich_su,
+      mt0: laMt0(a),
     });
     return { ...view, label: ASSESSED_SKILL_LABEL[skill] };
   });
@@ -1774,7 +1776,9 @@ export function saveScore(
  * Chọn hàng cho bảng điểm FT (PR-DL): theo TUẦN kế hoạch (như cũ; số/null ở nơi gọi cũ) hoặc theo SỐ LƯỢT MT — mọi attempt `mock`
  * số lượt đó của lớp, KHÔNG lọc tuần, nên có cả lượt đã qua (MT lịch sử) và lượt chưa xếp tuần (PR-LM, tuần NULL).
  */
-export type ChonLuotFT = { theo: 'tuan'; periodId: number | null } | { theo: 'luot'; attemptNo: number };
+export type ChonLuotFT = { theo: 'tuan'; periodId: number | null } | { theo: 'luot'; attemptNo: number }
+  /** PR-MT0: các MT0 của lớp thường (lưới band ở lớp chấm tỷ lệ), tuỳ chọn một tuần. */
+  | { theo: 'mt0'; periodId: number | null };
 
 /** Bảng nhập điểm theo lớp × tuần kế hoạch, hoặc lớp × số lượt MT (`ChonLuotFT`). */
 export function classScoreSheet(
@@ -1797,10 +1801,10 @@ export function classScoreSheet(
    * "Giữa khoá"/"Cuối khoá". Mở nhầm bảng là đọc sai cả kết quả — bảng này gọi mọi lượt là "MT{n}" và chấm theo band.
    * Chặn ở MÁY CHỦ chứ không chỉ ở giao diện: gõ thẳng đường dẫn vẫn phải ra đúng bảng.
    */
-  if (isRatioClass(classId)) {
+  if (chon.theo !== 'mt0' && isRatioClass(classId)) {
     throw badRequest('Lớp thường dùng bảng điểm riêng (số câu đúng / tổng số câu), không dùng bảng điểm Mock Test.');
   }
-  const period = chon.theo === 'tuan' && chon.periodId
+  const period = chon.theo !== 'luot' && chon.periodId
     ? (conn.prepare('SELECT * FROM report_periods WHERE id = ?').get(chon.periodId) as any) : null;
 
   const params: unknown[] = [classId];
@@ -1827,6 +1831,8 @@ export function classScoreSheet(
     sql += ` AND a.kind = 'mock' AND a.attempt_no = ?`;
     params.push(chon.attemptNo);
   }
+  /* PR-MT0: lưới MT0 chỉ MT0; lưới FT theo tuần không có MT0 (MT0 chỉ ở lớp thường — lớp FT không bao giờ có). */
+  if (chon.theo === 'mt0') sql += ` AND a.kind = 'mt0'`;
   sql += ' ORDER BY s.full_name';
   const attempts = conn.prepare(sql).all(...params) as any[];
 

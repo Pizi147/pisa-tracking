@@ -112,12 +112,12 @@ export function danhSachHocVienLop(
     `SELECT e.class_id, s.id, s.full_name, s.normalized_name, s.student_code, s.dob, s.status,
             cy.id AS cycle_id, cy.start_period_id, cy.exam_month, cy.target_score, cy.khong_cam_ket, cy.baseline_attempt_id, cy.baseline_score,
             cy.route, cy.exam_period_id,
-            (SELECT COUNT(*) FROM assessment_attempts a WHERE a.cycle_id = cy.id AND a.status = 'planned') AS so_luot_ke_hoach,
+            (SELECT COUNT(*) FROM assessment_attempts a WHERE a.cycle_id = cy.id AND a.status = 'planned' AND a.kind != 'mt0') AS so_luot_ke_hoach,   /* PR-MT0: MT0 không đếm */
             EXISTS (SELECT 1 FROM assessment_attempts a WHERE a.cycle_id = cy.id AND a.kind = 'final' AND a.status != 'cancelled') AS co_cuoi_khoa,
             /* K2-05: FT đếm theo luật mốc kế tiếp (lichMt.ts) — MT lịch sử / tuần đã qua không phải "mốc tiếp theo". */
             (SELECT COUNT(*) FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id
-              WHERE a.cycle_id = cy.id AND ${MOC_KE_TIEP_SQL('a', 'rp')}) AS so_moc_ke_tiep,
-            (SELECT COALESCE(MAX(a.attempt_no), 0) FROM assessment_attempts a WHERE a.cycle_id = cy.id AND a.status != 'cancelled'
+              WHERE a.cycle_id = cy.id AND a.kind != 'mt0' AND ${MOC_KE_TIEP_SQL('a', 'rp')}) AS so_moc_ke_tiep,
+            (SELECT COALESCE(MAX(a.attempt_no), 0) FROM assessment_attempts a WHERE a.cycle_id = cy.id AND a.status != 'cancelled' AND a.kind != 'mt0'
               AND (a.status != 'planned' OR a.planned_period_id IS NOT NULL)) AS mt_cuoi   /* PR-LM: lượt đã huỷ lịch không phải "đã tới MT" */
        FROM enrollments e
        JOIN students s ON s.id = e.student_id

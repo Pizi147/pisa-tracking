@@ -43,6 +43,10 @@ export function chamSheet(
     canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { classId }),
     today,
   };
+  /* PR-MT0: MT0 ở lớp thường chấm band — lưới FT chỉ các MT0 của lớp (tuỳ chọn tuần). */
+  if (opts.kind === 'mt0') {
+    return { ...chung, mode: 'ielts_band' as const, ft: classScoreSheet(p, classId, { theo: 'mt0', periodId: opts.periodId ?? null }, today), thuong: null };
+  }
   if (isRatioClass(classId)) {
     return { ...chung, mode: 'ratio' as const, thuong: regularSheet(p, classId, opts.kind ?? undefined, today), ft: null };
   }

@@ -108,6 +108,7 @@ export function clearScoringModeCache() {
 export function scoringModeOf(
   attempt: { class_id?: number | null; kind?: string | null; scoring_mode?: string | null },
 ): ScoringMode {
+  if (attempt.kind === 'mt0') return 'band';   // PR-MT0: MT0 chấm band dù nằm ở lớp thường
   if (attempt.scoring_mode) return attempt.scoring_mode === 'ratio' ? 'ratio' : 'band';
   if (!attempt.class_id) return attempt.kind && attempt.kind !== 'mock' ? 'ratio' : 'band';
   const cached = modeByClass.get(attempt.class_id);
@@ -134,7 +135,8 @@ export function scoringModeOf(
  */
 /** K5-38, PF6: bộ môn xếp lịch của MỘT lượt — FT 4 kỹ năng đánh giá; lớp thường theo `programme_skills` (Pre FOU một ô). */
 export function boMonCuaLuot(conn: any, attemptId: number): readonly string[] {
-  const r = conn.prepare(`SELECT c.programme_code AS ct FROM assessment_attempts a JOIN classes c ON c.id = a.class_id WHERE a.id = ?`).get(attemptId) as any;
+  const r = conn.prepare(`SELECT c.programme_code AS ct, a.kind FROM assessment_attempts a JOIN classes c ON c.id = a.class_id WHERE a.id = ?`).get(attemptId) as any;
+  if (r?.kind === 'mt0') return ASSESSED_SKILLS;   // PR-MT0: MT0 luôn bốn kỹ năng IELTS
   return boMonLich(r?.ct ?? null, programmeByCode(r?.ct)?.skills);
 }
 
@@ -284,6 +286,8 @@ export function viewSkill(input: {
   pendingMove?: { id: number; decideBy: string; toWeek: string | null; moveNo: number } | null;
   /** PR-MT (T34, M3): lượt MT lịch sử — không nợ, không hạn, không quá hạn. Chốt MỘT chỗ; mọi nơi đếm nợ đọc `progress` này. */
   lichSu?: boolean;
+  /** PR-MT0: hạn chấm MT0 = Chủ nhật tuần sau. */
+  mt0?: boolean;
 }): SkillScheduleView {
   const { row, mode, scored } = input;
   const today = input.today ?? demoToday();
@@ -296,6 +300,7 @@ export function viewSkill(input: {
         mode, weekStart,
         skillOverride: row.deadline_override,
         attemptOverride: input.attemptOverride,
+        mt0: input.mt0,
       })
     : { date: null, source: 'none' as const };
 

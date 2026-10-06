@@ -71,7 +71,7 @@ function cycleLabel(c: any): string {
 /** `pre`: danh sách gọi cho NHIỀU lượt nạp sẵn điểm / phạm vi / chương trình bằng vài câu (không hỏi lại theo từng lượt). */
 export function typedResult(attempt: any, pre?: { scores: any[]; skips: AssessedSkill[]; prog: ReturnType<typeof programmeOfClass> }) {
   const prog = pre ? pre.prog : attempt.class_id ? programmeOfClass(attempt.class_id) : null;
-  if (prog?.scoringMode === 'ratio') {
+  if (attempt.kind !== 'mt0' && prog?.scoringMode === 'ratio') {   // PR-MT0: MT0 ở lớp thường vẫn band
     const rows = pre?.scores ?? db().prepare('SELECT skill, raw_score, raw_total FROM assessment_scores WHERE attempt_id = ?')
       .all(attempt.id) as any[];
     const r = evaluateRegular(prog.skills, rows, prog.code);
@@ -550,7 +550,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
            FROM assessment_attempts a
            LEFT JOIN classes c ON c.id = a.class_id
            LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
-          WHERE a.cycle_id = ? ORDER BY a.attempt_no DESC`,
+          WHERE a.cycle_id = ? ${selected.route ? '' : `AND a.kind != 'mt0'`} ORDER BY a.attempt_no DESC`,   /* PR-MT0: bảng lớp thường không có MT0 */
       )
       .all(selected.id) as any[]
     : [];
