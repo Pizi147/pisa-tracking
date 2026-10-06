@@ -6,6 +6,7 @@ import { ONgay } from '../../ui/ONgay.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { MONTH_CODE, ketQuaThiThat, ngay } from '@shared/domain/index.ts';
 import { laBand } from './StudentPlanPanel.tsx';
@@ -35,7 +36,7 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, chong, onClose, 
   const { data: c, error, reload } = useApi<any>(`/cycles/${cycleId}`, [cycleId]);
   const [form, setForm] = useState<{ ngay: string; l: string; r: string; w: string; s: string; khongThi: boolean; ghiChu: string } | null>(null);
   const [busy, setBusy] = useState(false);
-  const [thu, setThu] = useState(false);
+  const lf = useLoiForm();
 
   /* Nạp giá trị đang lưu MỘT LẦN — tải lại nền không được xoá điều người dùng đang gõ. */
   if (c && !form) {
@@ -50,12 +51,16 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, chong, onClose, 
   const diem = { l: so(form.l), r: so(form.r), w: so(form.w), s: so(form.s) };
   const loiDiem = KY_NANG.some((k) => sai(form[k]));
   const loiNgay = !form.khongThi && form.ngay !== '' && !!homNay && form.ngay > homNay;
+  const loi = [
+    ...KY_NANG.filter((k) => sai(form[k])).map((k) => ({ khoa: `diem-${k}`, nhan: k.toUpperCase(), lyDo: '0–9, bước 0.5' })),
+    ...(loiNgay ? [{ khoa: 'ngay', nhan: 'Ngày thi', lyDo: 'Không sau hôm nay' }] : []),
+  ];
   const kq = loiDiem ? null : ketQuaThiThat({ ...diem, khongThi: form.khongThi }, target);
   const dat = (k: keyof typeof form, v: string | boolean) => setForm({ ...form, [k]: v });
 
   const luu = async () => {
-    setThu(true);
-    if (loiDiem || loiNgay) return;
+    lf.bam();
+    if (loi.length > 0) return;
     setBusy(true);
     try {
       await api.put(`/cycles/${cycleId}/outcome`, form.khongThi
@@ -69,7 +74,7 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, chong, onClose, 
 
   return (
     <KhungPanel tieuDe="Kết quả thi thật" hocVien={studentName} lop={lop} longTrong={chong} z={chong ? 'z-[60]' : undefined} onDong={onClose}
-      chan={{ huy: { onClick: onClose }, daSua: true, chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy}>Lưu</button> }}>
+      chan={{ huy: { onClick: onClose }, daSua: true, conThieu: lf.conThieu(loi), chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy}>Lưu</button> }}>
       <div className="max-w-[560px] space-y-3">
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12.5px] text-slate-400">
           <span>Target <b className="tabular-nums text-slate-200">{c.khong_cam_ket ? 'KCK' : target !== null ? target.toFixed(1) : '—'}</b></span>
@@ -85,14 +90,14 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, chong, onClose, 
         ) : (
           <>
             <div className="max-w-[200px]">
-              <Truong nhan="Ngày thi" loi={thu && loiNgay ? 'Không sau hôm nay' : null}>
-                <ONgay kieu="ngay" toiDa={homNay} toiThieu={c.started_at?.slice(0, 10)} value={form.ngay} onChange={(v) => dat('ngay', v)} invalid={thu && loiNgay} />
+              <Truong nhan="Ngày thi" loi={lf.loiCua(loi, 'ngay')}>
+                <ONgay kieu="ngay" toiDa={homNay} toiThieu={c.started_at?.slice(0, 10)} id={lf.oId('ngay')} value={form.ngay} onChange={(v) => dat('ngay', v)} invalid={!!lf.loiCua(loi, 'ngay')} />
               </Truong>
             </div>
             <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
               {KY_NANG.map((k) => (
-                <Truong key={k} nhan={k.toUpperCase()} loi={thu && sai(form[k]) ? '0–9, bước 0.5' : null}>
-                  <input className="field w-full tabular-nums" inputMode="decimal" value={form[k]} aria-invalid={thu && sai(form[k])}
+                <Truong key={k} nhan={k.toUpperCase()} loi={lf.loiCua(loi, `diem-${k}`)}>
+                  <input className="field w-full tabular-nums" inputMode="decimal" {...lf.o(loi, `diem-${k}`)} value={form[k]}
                     onChange={(e) => dat(k, e.target.value)} />
                 </Truong>
               ))}

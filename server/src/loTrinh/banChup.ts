@@ -164,14 +164,18 @@ function ghiMotLo(conn: any, ids: number[], o: BanChupVao): number[] {
   for (const r of hoi<any>((ph) => `SELECT cycle_id, MAX(lan) AS m FROM ban_chup_lo_trinh WHERE cycle_id IN (${ph}) GROUP BY cycle_id`, ids)) lanCuoi.set(r.cycle_id, r.m);
 
   const ngayGhi = nowIso();
-  const idMoi: number[] = [];
+  /* Chương trình: hỏi một lần cho mỗi mã (không mỗi lộ trình — số câu SQL không tăng theo số em). */
+  const ctCache = new Map<string, ReturnType<typeof programmeByCode>>();
+  const ctCua = (ma: string | null) => (ma ? (ctCache.has(ma) ? ctCache.get(ma)! : (ctCache.set(ma, programmeByCode(ma)), ctCache.get(ma)!)) : null);
+  /* Gom dòng rồi ghi MỘT lô cho cả hai bảng. */
+  const cho: { cid: number; lan: number; dong: unknown[]; luot: unknown[][] }[] = [];
   for (const c of cycles) {
     const laFt = !!c.route;
     const lopId = lopCuoi(c);
     const lop = lopId ? lopTheoId.get(lopId) : null;
     const luot = luotCua.get(c.id) ?? [];
     const maCt = c.programme_code ?? (laFt ? null : luot.map((a) => lopTheoId.get(a.class_id)?.programme_code).find(Boolean) ?? null);
-    const ct = programmeByCode(maCt);
+    const ct = ctCua(maCt);
     const mon: string[] = laFt ? [...ASSESSED_SKILLS] : [...(ct?.skills ?? [])];
     const nc: NguCanhLuot = { laFt, route: c.route ?? null, mon, maCt: ct?.code ?? maCt };
     const gvcn = gvcnCua(lopId, o.ngay);
@@ -206,9 +210,6 @@ function ghiMotLo(conn: any, ids: number[], o: BanChupVao): number[] {
       laFt ? thi.ketLuan : null, huongTiep(o.lyDo, routeMoi),
       !laFt && lopId ? kyVongDat.get(`${c.student_id}:${lopId}`)?.ky_vong_dat ?? null : null, tyLe, tyLe === null ? null : daiCuoiKhoa(tyLe),
       luot.length, null, ngayGhi];
-    const bcId = Number(conn.prepare(`INSERT INTO ban_chup_lo_trinh (${COT_BC.join(', ')}) VALUES (${cot(COT_BC.length)})`).run(...dong).lastInsertRowid);
-    idMoi.push(bcId);
-
     const dongLuot: unknown[][] = [];
     for (const a of luot) {
       const huy = a.status === 'cancelled';
@@ -220,15 +221,20 @@ function ghiMotLo(conn: any, ids: number[], o: BanChupVao): number[] {
         const rieng = huy ? [] : rows.filter((r) => (KY_NANG_THO.includes(d.kyNang) ? r.skill === d.kyNang : gocKyNang(r.skill) === d.kyNang));
         const nhap = rieng.filter((r) => r.entered_at).sort((x, y) => String(y.entered_at).localeCompare(String(x.entered_at)))[0];
         const gv = gvCua(a.class_id ?? lopId, d.kyNang, tuan);
-        dongLuot.push([bcId, a.id, a.attempt_no, a.kind, a.status, huy ? a.cancel_reason ?? null : null, a.lich_su ?? 0, a.class_id ?? null,
+        dongLuot.push([0, a.id, a.attempt_no, a.kind, a.status, huy ? a.cancel_reason ?? null : null, a.lich_su ?? 0, a.class_id ?? null,
           a.class_id ? lopTheoId.get(a.class_id)?.code ?? null : null, a.period_start ?? null, a.target_at_attempt ?? null,
           t.kyVong, t.overall, t.tyLeTong, t.sos, t.ketQua, d.kyNang, d.batBuoc, d.boQua, d.diem, d.diemTho, d.diemTong, d.dat,
           rieng.some((r) => r.no_show_at) ? 1 : 0, a.deadline_override ?? null, nhap?.entered_at ?? null, nhap?.entered_by ?? null,
           gv?.user_id ?? null, gv?.ten ?? null, caseCua.get(`${a.id}:${gocKyNang(d.kyNang)}`) ?? null]);
       }
     }
-    chenLo(conn, 'ban_chup_luot', COT_LUOT, dongLuot);
+    cho.push({ cid: c.id, lan, dong, luot: dongLuot });
   }
+  chenLo(conn, 'ban_chup_lo_trinh', COT_BC, cho.map((x) => x.dong));
+  const idTheoKhoa = new Map<string, number>();
+  for (const r of hoi<any>((ph) => `SELECT id, cycle_id, lan FROM ban_chup_lo_trinh WHERE cycle_id IN (${ph})`, cho.map((x) => x.cid))) idTheoKhoa.set(`${r.cycle_id}:${r.lan}`, r.id);
+  const idMoi = cho.map((x) => idTheoKhoa.get(`${x.cid}:${x.lan}`)!);
+  chenLo(conn, 'ban_chup_luot', COT_LUOT, cho.flatMap((x, i) => x.luot.map((r) => [idMoi[i], ...r.slice(1)])));
   return idMoi;
 }
 

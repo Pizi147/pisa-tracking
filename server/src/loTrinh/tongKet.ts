@@ -5,7 +5,7 @@
  */
 import { db, theoLo } from '../db.ts';
 import {
-  HUONG_TIEP_TK_NHAN, LY_DO_DONG_NHAN, PERMISSIONS, ketQuaThiThat, khoangTuan, luotDaiDien, tenMonNgan, tuanLich,
+  ASSESSED_SKILLS, HUONG_TIEP_TK_NHAN, LY_DO_DONG_NHAN, PERMISSIONS, ketQuaThiThat, khoangTuan, luotDaiDien, tenMonNgan, tuanLich,
   type HuongTiepTk, type LyDoDong,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -40,7 +40,7 @@ function ketQuaBanChup(b: any): KetQuaGon | null {
 function ketQuaSong(c: any, attempts: any[], scores: Map<number, any[]>): KetQuaGon | null {
   const laFt = !!c.route;
   const ct = laFt ? null : programmeByCode(c.programme_code);
-  const nc: NguCanhLuot = { laFt, route: c.route ?? null, mon: laFt ? ['listening', 'reading', 'writing', 'speaking'] : [...(ct?.skills ?? [])], maCt: ct?.code ?? c.programme_code ?? null };
+  const nc: NguCanhLuot = { laFt, route: c.route ?? null, mon: laFt ? [...ASSESSED_SKILLS] : [...(ct?.skills ?? [])], maCt: ct?.code ?? c.programme_code ?? null };
   for (const a of [...attempts].reverse()) {
     const rows = scores.get(a.id) ?? [];
     if (a.status === 'cancelled' || !rows.some((r) => r.band !== null || r.raw_score !== null)) continue;
@@ -110,7 +110,7 @@ function gomLuot(rows: any[], maCt: string | null, laFt: boolean, homNay: string
   for (const r of rows) { const k = r.attempt_id ?? -r.id; theo.set(k, [...(theo.get(k) ?? []), r]); }
   return [...theo.values()].map((ds) => {
     const a = ds[0];
-    const kn = ds.filter((r) => laFt ? ['listening', 'reading', 'writing', 'speaking'].includes(r.ky_nang) : true);
+    const kn = ds.filter((r) => (laFt ? (ASSESSED_SKILLS as readonly string[]).includes(r.ky_nang) : true));
     return {
       attemptNo: a.attempt_no, kind: a.kind, nhan: laFt ? `MT${a.attempt_no}` : NHAN_LUOT[a.kind] ?? a.kind, lop: a.class_code, tuan: a.tuan_bat_dau ? tuanLich(a.tuan_bat_dau, homNay) : null,
       trangThai: a.trang_thai, huyLyDo: a.huy_ly_do, huyPhan: a.trang_thai !== 'cancelled' && kn.some((r) => r.bo_qua === 1),

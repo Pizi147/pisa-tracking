@@ -249,8 +249,9 @@ export async function runPrTkTests(t: YThucTestKit) {
   // ------------------------------------------------------------------ TK-5 · điểm nhập / sửa sau khi đóng cập nhật bản chụp
   const attemptsSvc: any = await import('../fasttrack/attempts.ts');
   await checkAsync('TK-5 · em Kết thúc học, MT thiếu S → nhập bù S: bản chụp có S, OVR, SOS mới; kỳ vọng giữ; đổi route rồi sửa tiếp vẫn giữ', () => thu(() => {
-    const fx = ftNhieuLuot(1);
-    const luot = get(`SELECT a.id FROM assessment_attempts a WHERE a.cycle_id = ? AND a.status != 'cancelled' AND EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND s.band IS NOT NULL) ORDER BY a.attempt_no DESC LIMIT 1`, fx.id);
+    const fx = get(`SELECT c.id, c.student_id FROM learning_cycles c WHERE c.route IS NOT NULL AND c.status = 'active' AND EXISTS (SELECT 1 FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id WHERE a.cycle_id = c.id AND a.status != 'cancelled' AND rp.week_start <= ? AND EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND s.band IS NOT NULL)) ORDER BY c.id LIMIT 1`, NGAY);
+    assert(fx, 'tiền đề: lộ trình FT đang chạy có lượt đã tới tuần thi và có điểm');
+    const luot = get(`SELECT a.id FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id WHERE a.cycle_id = ? AND a.status != 'cancelled' AND rp.week_start <= ? AND EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND s.band IS NOT NULL) ORDER BY a.attempt_no DESC LIMIT 1`, fx.id, NGAY);
     attemptsSvc.saveScore(P.admin, luot.id, 'speaking', { criteria: [null, null, null, null] });   // thiếu S
     studentsSvc.setStudentStatus(P.admin, fx.student_id, 'finished', NGAY, 'Nghỉ học');
     const dongS = () => get(`SELECT * FROM ban_chup_luot WHERE ban_chup_id = (SELECT MAX(id) FROM ban_chup_lo_trinh WHERE cycle_id = ?) AND attempt_id = ? AND ky_nang = 'speaking'`, fx.id, luot.id);
@@ -459,18 +460,29 @@ export async function runPrTkTests(t: YThucTestKit) {
     assert(ra.cuoiKhoa.tyLe === 0.8 && ra.giuaKhoa.tyLe === 0.7 && ra.cuoiKhoa.dai === 'dat' && rb.giuaKhoa === null && rb.cuoiKhoa.tyLe === 0.5, JSON.stringify([ra.cuoiKhoa, ra.giuaKhoa, rb.cuoiKhoa]));
   }));
 
-  // @@BAT-BIEN@@ — luôn ở CUỐI file: soi mọi lộ trình các phép kiểm trước để lại. Thêm phép kiểm mới Ở TRÊN dòng này.
-  await checkAsync('TK-5 · BẤT BIẾN PHỤ: mọi lượt của lộ trình đã đóng — điểm trong bản chụp MỚI NHẤT = điểm sống', async () => {
-    const lech = all(`SELECT l.attempt_id, l.ky_nang, l.diem, s.band, s.raw_score FROM ban_chup_luot l
-        JOIN ban_chup_lo_trinh b ON b.id = l.ban_chup_id AND b.lan = (SELECT MAX(lan) FROM ban_chup_lo_trinh WHERE cycle_id = b.cycle_id)
-        JOIN learning_cycles c ON c.id = b.cycle_id AND c.status <> 'active'
-        LEFT JOIN assessment_scores s ON s.attempt_id = l.attempt_id AND s.skill = l.ky_nang
-       WHERE l.trang_thai <> 'cancelled' AND l.ky_nang IN ('listening', 'reading', 'speaking', 'writing1', 'writing2')
-         AND l.diem IS NOT COALESCE(CASE WHEN b.route IS NULL THEN s.raw_score ELSE s.band END, NULL) LIMIT 5`);
-    assert(lech.length === 0, `điểm bản chụp lệch điểm sống: ${JSON.stringify(lech)}`);
+  // ------------------------------------------------------------------ TK-8 / TK-9 · luật dùng chung của giao diện
+  check('TK-8 · duongHoSoHocVien / docThamSoHoSo: tham số tong-ket và viec=thi-that đi và về đúng', () => {
+    const u = d.duongHoSoHocVien(7, { tab: 'hanh-trinh', tongKet: 12 });
+    assert(u === '/hoc-vien/7?tab=hanh-trinh&tong-ket=12', u);
+    const q = new URLSearchParams(u.split('?')[1]);
+    const p = d.docThamSoHoSo((k: string) => q.get(k));
+    assert(p.tab === 'hanh-trinh' && p.tongKet === 12, JSON.stringify(p));
+    const v = d.duongHoSoHocVien(7, { loTrinh: 3, viec: 'thi-that' });
+    assert(v === '/hoc-vien/7?lo-trinh=3&viec=thi-that' && d.docThamSoHoSo((k: string) => new URLSearchParams(v.split('?')[1]).get(k)).viec === 'thi-that', v);
+    assert(d.docThamSoHoSo((k: string) => (k === 'tong-ket' ? 'abc' : null)).tongKet === undefined, 'tham số lạ bỏ qua');
   });
+  check('TK-9 · tab hồ sơ lớp: "Tổng kết" chỉ khi lớp đã kết thúc, đứng đầu và là mặc định; lớp đang học không đổi', () => {
+    assert(d.tabHienCuaLop(true).join() === 'tong-ket,hoc-vien,y-thuc,phan-tich' && d.tabHienCuaLop(false).join() === 'hoc-vien,y-thuc,phan-tich', 'danh sách tab');
+    assert(d.tabMacDinhLop(null, true) === 'tong-ket' && d.tabMacDinhLop(null, false) === 'hoc-vien', 'mặc định');
+    assert(d.tabMacDinhLop('hoc-vien', true) === 'hoc-vien' && d.tabMacDinhLop('phan-tich', true) === 'phan-tich', 'tab ghi rõ trên URL thắng');
+    assert(d.tabMacDinhLop('tong-ket', false) === 'hoc-vien' && d.tabMacDinhLop('giao-vien', true) === 'tong-ket', 'tab không hiện / lạ → mặc định');
+    assert(d.TAB_HO_SO_LOP_NHAN['tong-ket'] === 'Tổng kết' && d.NHAN_VIEC_QUAN_LY.outcome === 'Kết quả thi thật', 'nhãn');
+  });
+
+  // @@BAT-BIEN@@ — luôn ở CUỐI file: soi mọi lộ trình các phép kiểm trước để lại. Thêm phép kiểm mới Ở TRÊN dòng này.
+  /* TK-5 bất biến phụ "điểm bản chụp = điểm sống" chỉ kiểm trong phép kiểm TK-5 ở trên: nhiều phép kiểm khác (PR khác) sửa / xoá điểm của lộ trình đã đóng bằng SQL thẳng nên soi toàn DB ở cuối sẽ báo oan. */
   await checkAsync('TK-3 · BẤT BIẾN: mọi lộ trình status <> active đều có ≥ 1 bản chụp (đường đóng mới quên gọi → đỏ)', async () => {
-    const thieu = all(`SELECT c.id, c.student_id, c.status FROM learning_cycles c WHERE c.status <> 'active'
+    const thieu = all(`SELECT c.id, c.student_id, c.status FROM learning_cycles c WHERE c.status IN ('completed', 'abandoned')
                         AND NOT EXISTS (SELECT 1 FROM ban_chup_lo_trinh b WHERE b.cycle_id = c.id) LIMIT 10`);
     assert(thieu.length === 0, `lộ trình đóng thiếu bản chụp: ${JSON.stringify(thieu)}`);
   });

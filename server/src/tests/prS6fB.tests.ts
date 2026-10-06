@@ -114,7 +114,8 @@ async function runTask12(t: YThucTestKit) {
   check('S6F-b (12) · D16: route chết GET /cases/queues + caseQueueCounts đã xoá; GET /cases (StudentManagePanel gọi) giữ', () => {
     const r = doc('server/src/routes/index.ts');
     assert(!r.includes("'/cases/queues'") && !('caseQueueCounts' in casesSvc), 'còn /cases/queues');
-    assert(r.includes("api.get('/cases', requireAuth") && /\/cases\?studentId=/.test(doc('web/src/modules/students/StudentManagePanel.tsx')), 'GET /cases phải giữ');
+    /* PR-TK: ngăn "Kết quả thi thật" thay "Kết luận lộ trình" nên StudentManagePanel không còn gọi `/cases?studentId=`; route vẫn giữ (API công khai). */
+    assert(r.includes("api.get('/cases', requireAuth"), 'GET /cases phải giữ');
   });
 }
 
