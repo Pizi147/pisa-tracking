@@ -19,6 +19,8 @@ export type HocVienLuuTru = {
   coTheBoLuuTru: boolean;
   /** PR-LUI-b: nút "Học lại" (cùng luật `hocLai`: `plan.week` của học viên). */
   coTheHocLai: boolean;
+  /** PR-TK: lộ trình đã đóng GẦN NHẤT của em (có bản chụp) — nút "Tổng kết" mở ngăn của lộ trình này; không có → không nút. */
+  cycleIdCuoi: number | null;
 };
 
 /** GET /hoc-vien-lop/luu-tru — cùng phạm vi lớp với `/hoc-vien-lop` chính (ATTEMPT_VIEW); HV theo đúng luật STUDENT_VIEW. */
@@ -92,6 +94,8 @@ export function danhSachLuuTru(p: Principal, f: { branchId?: number | null; q?: 
      * chi nhánh/lớp của cả lô bằng `napTruocPhamVi` rồi gọi thẳng `can()`, để trong một request GET
      * (`chayTrongRequest`, PR-TD) đây vẫn là công đã nạp một lần, không N+1 dù gọi theo từng em).
      */
+    const cycleCuoi = new Map<number, number>();
+    for (const r of conn.prepare(`SELECT student_id, cycle_id FROM ban_chup_lo_trinh WHERE student_id IN (${ph}) ORDER BY id`).all(...ids) as any[]) cycleCuoi.set(r.student_id, r.cycle_id);
     napTruocPhamVi(ids);
     hocVien = archived
       .filter((s) => can(p, PERMISSIONS.STUDENT_VIEW, { studentId: s.id }))
@@ -101,6 +105,7 @@ export function danhSachLuuTru(p: Principal, f: { branchId?: number | null; q?: 
         archivedAt: s.archived_at,
         coTheBoLuuTru: can(p, PERMISSIONS.PLAN_WEEK, { studentId: s.id }),
         coTheHocLai: can(p, PERMISSIONS.PLAN_WEEK, { studentId: s.id }),
+        cycleIdCuoi: cycleCuoi.get(s.id) ?? null,
       }));
   }
 

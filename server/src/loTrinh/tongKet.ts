@@ -176,9 +176,9 @@ export function tongKetLop(p: Principal, classId: number) {
   const laFt = !!lop.is_fast_track;
   const dong = hv.map((h) => {
     const b = bcCua.get(h.id);
-    if (!b) return { studentId: h.id as number, ten: h.ten as string, roiSom: true, dauVao: null, target: null, soLuot: 0, luotCuoi: null, thiThat: null, ketLuan: null, huongTiep: null, giuaKhoa: null, cuoiKhoa: null };
+    if (!b) return { studentId: h.id as number, ten: h.ten as string, loTrinhId: null as number | null, roiSom: true, dauVao: null, target: null, soLuot: 0, luotCuoi: null, thiThat: null, ketLuan: null, huongTiep: null, giuaKhoa: null, cuoiKhoa: null };
     const luot = gomLuot(luotCua.get(b.id) ?? [], b.programme_code, !!b.route, homNay);
-    const goc = { studentId: h.id as number, ten: h.ten as string, roiSom: false, dauVao: b.dau_vao as number | null, target: (b.khong_cam_ket ? null : b.target) as number | null };
+    const goc = { studentId: h.id as number, ten: h.ten as string, loTrinhId: b.cycle_id as number | null, roiSom: false, dauVao: b.dau_vao as number | null, target: (b.khong_cam_ket ? null : b.target) as number | null };
     if (b.route) {
       const dd = luotDaiDien(luot.map((x) => ({ ...x, huy: x.trangThai === 'cancelled' })));
       const k = (n: string) => dd?.kyNang.find((x) => x.k === n)?.diem ?? null;
