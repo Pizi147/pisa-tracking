@@ -256,9 +256,9 @@ export function MenuDong(p: { muc: MucMenu[]; nhan?: string; bieuTuong?: string;
 ```
 `luonHien` → vẽ nút kể cả khi mọi mục `tat`. Mục `tat`: `aria-disabled="true"`, chữ `text-slate-500`, `onClick` không gọi `onChon`, vẫn nhận focus phím ↑/↓ (đọc được tooltip), Enter không làm gì.
 
-- [ ] **Step 1: Phép đỏ quét nguồn**: `MenuDong.tsx` có `aria-disabled`, `luonHien`; dòng `if (!muc.length) return null` đổi thành điều kiện có `luonHien`.
-- [ ] **Step 2:** Sửa. Nơi gọi cũ không truyền `tat`/`luonHien` → hành vi cũ.
-- [ ] **Step 3:** `npm run check`. **Commit** `feat(mtb): MenuDong mục mờ, nút luôn hiện`.
+- [x] **Step 1: Phép đỏ quét nguồn**: `MenuDong.tsx` có `aria-disabled`, `luonHien`; dòng `if (!muc.length) return null` đổi thành điều kiện có `luonHien`.
+- [x] **Step 2:** Sửa. Nơi gọi cũ không truyền `tat`/`luonHien` → hành vi cũ.
+- [x] **Step 3:** `npm run check`. **Commit** `feat(mtb): MenuDong mục mờ, nút luôn hiện`.
 
 ### Task 5: Hộp một đợt `HopKyNang` theo mockup phần 2 (Kế hoạch Test + hồ sơ HV › Lộ trình)
 Skill: test-driven-development · `/impeccable layout` · `clarify` · `harden`

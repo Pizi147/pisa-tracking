@@ -383,4 +383,17 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert(/<OMt\b/.test(nguon('web/src/modules/students/HangLichMt.tsx')) && /<OMt\b/.test(nguon('web/src/modules/fasttrack/MockDetailPage.tsx')), 'chưa vẽ <OMt');
     assert(!/>MT\{h\.attemptNo\}</.test(nguon('web/src/modules/students/HangLichMt.tsx')), 'HangLichMt còn chữ MT{n} thuần');
   });
+
+  // ------------------------------------------------------------------ quét nguồn Task 4
+  check('MTb (T4) · MenuDong: mục mờ (tat/title, aria-disabled, không gọi onChon), luonHien vẽ nút khi mọi mục tat', () => {
+    const m = nguon('web/src/ui/MenuDong.tsx');
+    assert(/tat\?: boolean/.test(m) && /title\?: string/.test(m), 'MucMenu thiếu tat / title');
+    assert(/aria-disabled/.test(m), 'thiếu aria-disabled');
+    assert(/luonHien/.test(m), 'thiếu luonHien');
+    assert(!/if \(!muc\.length\) return null/.test(m), 'còn if (!muc.length) return null không điều kiện luonHien');
+    assert(/!muc\.length && !luonHien/.test(m), 'không có điều kiện luonHien khi rỗng');
+    assert(/if \(m\.tat\)/.test(m), 'onClick không chặn mục tat');
+    assert(/text-slate-500/.test(m), 'mục mờ chưa dùng text-slate-500');
+    assert(/title=\{m\.title\}/.test(m), 'mục không đặt title');
+  });
 }
