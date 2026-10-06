@@ -147,9 +147,9 @@ export function NganXepLichMt({ chiNhanhDau, lopDs, lopMoSan, coThuong, onDoiKhu
   const dangTick = (id: number) => ticked.has(id) && duocTick(id);
 
   const khopTim = (h: Hang) => !tim.trim() || `${h.ten} ${h.ma}`.toLowerCase().includes(tim.trim().toLowerCase());
-  const trongPhamVi = hangs.filter((h) => khopTim(h) && (!giuLoi || giuLoi.includes(h.studentId)));
-  const dem = demSeXep(trongPhamVi.map((h) => dong.get(h.studentId)).filter((d): d is DongHangLoat => !!d));
-  const hienThi = trongPhamVi.filter((h) => { const d = dong.get(h.studentId); return !loc || (!!d && nhanSeXep(d, null).tone === loc); });
+  const trongLoc = hangs.filter((h) => khopTim(h) && (!giuLoi || giuLoi.includes(h.studentId)));
+  const dem = demSeXep(trongLoc.map((h) => dong.get(h.studentId)).filter((d): d is DongHangLoat => !!d));
+  const hienThi = trongLoc.filter((h) => { const d = dong.get(h.studentId); return !loc || (!!d && nhanSeXep(d, null).tone === loc); });
   const tickDuoc = hienThi.filter((h) => duocTick(h.studentId));
   const soTick = tickDuoc.filter((h) => ticked.has(h.studentId)).length;
   const tatCa = tickDuoc.length > 0 && soTick === tickDuoc.length;

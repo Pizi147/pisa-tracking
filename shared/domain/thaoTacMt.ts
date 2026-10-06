@@ -76,7 +76,7 @@ function viSaoMo(muc: MucHop, tt: TrangThaiTT, moi: boolean): string {
     case 'chua-xep': case 'chua-toi-tuan': return 'Chưa tới tuần thi';
     case 'vang': return 'Bài đang vắng';
     case 'da-huy': case 'huy-vang': return 'Phần thi đã huỷ';
-    case 'cho-duyet': return 'Đang chờ duyệt';
+    case 'cho-duyet': return 'Chờ duyệt';
     case 'lich-su': return 'MT cũ';
     default: return muc === 'doi-tuan' ? 'Chỉ Quản lý' : 'Không thi đợt này';
   }

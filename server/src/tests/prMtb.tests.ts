@@ -574,7 +574,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
 
   check('MTb (T5) · menuHopKyNang: MT cũ chưa điểm — Quản lý vẫn đổi tuần được (giữ PR-LM D3 / T20); chờ duyệt dời thì mờ', () => {
     assert(duoc('lich-su')[0].duoc, JSON.stringify(duoc('lich-su')[0]));
-    assert(!duoc('cho-duyet')[0].duoc && duoc('cho-duyet')[0].viSao === 'Đang chờ duyệt', JSON.stringify(duoc('cho-duyet')[0]));
+    assert(!duoc('cho-duyet')[0].duoc && duoc('cho-duyet')[0].viSao === 'Chờ duyệt', JSON.stringify(duoc('cho-duyet')[0]));
   });
 
   check('MTb (T5) · chipDongKyNang: trễ chấm / chờ chấm / vắng / huỷ / chưa xếp; tuần này, có lịch, xong → không chip', () => {
