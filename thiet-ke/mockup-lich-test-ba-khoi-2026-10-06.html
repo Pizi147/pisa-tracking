@@ -124,6 +124,8 @@ td.r{text-align:right}
 .hl{cursor:pointer}.hl:hover>td{background:var(--nut-hover)}
 .hl .mt{display:inline-flex;width:16px;justify-content:center;color:var(--dim);margin-right:6px}
 .hl.mo .mt svg{transform:rotate(90deg)}
+/* Q4: lớp đã chấm xong — luôn thu gọn, chữ nhạt, xếp cuối */
+.hl.xong td,.hl.xong td.ma,.hl.xong .d1{color:var(--faint)}.hl.xong td.ma{font-weight:600}
 /* mục con: thụt + vạch dọc mảnh + nền nhạt, không khung thứ hai */
 .con>td{padding:0;height:auto;background:var(--hang-con-bg)}
 .con .vao{margin-left:20px;border-left:1px solid var(--line-strong);padding:6px 0 10px 14px}
@@ -196,11 +198,12 @@ const K1_GV = [
   { lop: 'MB FT 107', dot: 'MT1 · W4 SEP', kn: 'R', con: 1, han: '30/09', qh: 8, gv: ['Lê Hồng Nhung'], nhan: 'ban' },
 ];
 const K2_QL = [
-  { lop: 'MB FT 101', dot: 'MT4', kn: ['L', 'R', 'W', 'S'], da: 6, tong: 12, han: '07/10', qh: true, nhan: 'cho', mo: false },
+  { lop: 'MB FT 101', dot: 'MT4', kn: ['L', 'R', 'W', 'S'], da: 6, tong: 12, han: '07/10', qh: true, nhan: 'cho', mo: true },
   { lop: 'MB FT 104', dot: 'MT3', kn: ['L', 'R'], da: 0, tong: 8, han: '07/10', qh: true, nhan: 'cho' },
   { lop: 'MB FT 106', dot: 'MT2 · W3 SEP', kn: ['W'], da: 0, tong: 4, han: '09/10', qh: false, nhan: 'cho' },
   { lop: 'MB FT 107', dot: 'MT2', kn: ['S'], da: 2, tong: 6, han: '07/10', qh: true, nhan: 'cho' },
   { lop: 'MB FT 102', dot: 'MT4', kn: ['L', 'R', 'W', 'S'], da: 10, tong: 10, han: null, nhan: 'xong' },
+  { lop: 'MB FT 109', dot: 'MT3', kn: ['L', 'R', 'W', 'S'], da: 8, tong: 8, han: null, nhan: 'xong' },
 ];
 const K2_GV = [
   { lop: 'MB FT 101', dot: 'MT4', kn: ['L', 'R', 'W', 'S'], da: 6, tong: 12, han: '07/10', qh: true, nhan: 'ban' },
@@ -211,24 +214,24 @@ const K3_NAY = [
   { lop: 'MB FT 105', dot: 'MT5', kn: ['L', 'R'], da: 4, tong: 6, han: '14/10', nhan: 'cho' },
   { lop: 'MB FT 108', dot: 'MT1', kn: ['W', 'S'], da: 0, tong: 6, han: '14/10', nhan: 'cho' },
 ];
-const K3_W1 = K2_QL.filter((x) => x.dot.indexOf('·') < 0).map((x) => ({ ...x }));
+const K3_W1 = K2_QL.filter((x) => x.dot.indexOf('·') < 0).map((x) => ({ ...x, mo: false }));
 
 const STATES = {
-  ql: { cap: 'Quản lý chi nhánh MB · Tất cả · Thứ Năm 08/10 (W2 OCT). Khối 1 thu gọn, khối 2 mở, khối 3 thu gọn.',
-    tuan: ['05/10 – 11/10', 'W2 OCT 2026'], pham: 'tat', dai: [['Tuần này đã chấm', '26/62'], ['Còn phải chấm', '36'], ['Quá hạn chấm', '7', '3 lớp']],
+  ql: { cap: 'Quản lý chi nhánh MB (Hoàng Thị Lan) · Tất cả · Thứ Năm 08/10 (W2 OCT). Khối 1 thu gọn, khối 2 mở (lớp còn việc mở lưới, lớp đã chấm xong thu gọn ở cuối), khối 3 thu gọn.',
+    tuan: ['05/10 – 11/10', 'W2 OCT 2026'], pham: 'tat', dai: [['Tuần này đã chấm', '34/70'], ['Còn phải chấm', '36'], ['Quá hạn chấm', '7', '3 lớp']],
     k1: K1_QL, k1mo: false, k2: K2_QL, k3: K3_NAY, k3mo: false, k3ten: 'Lịch Test tuần này', k3con: 14, badge: 43 },
   mo: { cap: 'Bấm khối 1 → mở. Bấm "Nhập điểm" ở dòng MB FT 101 → lưới học viên mở ngay dưới dòng, chỉ em còn nợ.',
-    tuan: ['05/10 – 11/10', 'W2 OCT 2026'], pham: 'tat', dai: [['Tuần này đã chấm', '26/62'], ['Còn phải chấm', '36'], ['Quá hạn chấm', '7', '3 lớp']],
+    tuan: ['05/10 – 11/10', 'W2 OCT 2026'], pham: 'tat', dai: [['Tuần này đã chấm', '34/70'], ['Còn phải chấm', '36'], ['Quá hạn chấm', '7', '3 lớp']],
     k1: K1_QL, k1mo: true, luoi: true, k2: K2_QL, k2mo: false, k3: K3_NAY, k3mo: false, k3ten: 'Lịch Test tuần này', k3con: 14, badge: 43 },
   gv: { cap: 'GVBM Lê Hồng Nhung (Reading + Speaking MB FT 101, 107) · Lớp tôi dạy. Ô S của Mock không phải "Chờ bạn chấm"; chuông báo S quá hạn.',
     tuan: ['05/10 – 11/10', 'W2 OCT 2026'], pham: 'toi', dai: [['Tuần này đã chấm', '8/18'], ['Còn phải chấm', '10'], ['Quá hạn chấm', '6', '2 lớp']],
     k1: K1_GV, k1mo: true, k2: K2_GV, k3: [], k3mo: false, k3ten: 'Lịch Test tuần này', k3con: 0, badge: 16, chuong: true },
   khac: { cap: 'Bấm ‹ sang W1 OCT: khối 1 giữ nguyên, khối 2 ẩn, khối 3 đổi tên theo tuần và mở sẵn.',
-    tuan: ['28/09 – 04/10', 'W1 OCT 2026'], pham: 'tat', khac: true, dai: [['W1 OCT đã chấm', '18/36'], ['Còn phải chấm', '18'], ['Quá hạn chấm', '7', '3 lớp']],
+    tuan: ['28/09 – 04/10', 'W1 OCT 2026'], pham: 'tat', khac: true, dai: [['W1 OCT đã chấm', '26/44'], ['Còn phải chấm', '18'], ['Quá hạn chấm', '7', '3 lớp']],
     k1: K1_QL, k1mo: false, k2: null, k3: K3_W1, k3mo: true, k3ten: 'Lịch Test W1 OCT', k3con: 18, badge: 43 },
   it: { cap: 'Không có bài quá hạn, tuần trước đã chấm xong một lớp, tuần này chưa có Test.',
-    tuan: ['05/10 – 11/10', 'W2 OCT 2026'], pham: 'tat', dai: [['Tuần này đã chấm', '10/14'], ['Còn phải chấm', '4'], ['Quá hạn chấm', '0']],
-    k1: [], k2: [K2_QL[2], K2_QL[4]], k3: [], k3ten: 'Lịch Test tuần này', k3con: 0, badge: 4 },
+    tuan: ['05/10 – 11/10', 'W2 OCT 2026'], pham: 'tat', dai: [['Tuần này đã chấm', '18/22'], ['Còn phải chấm', '4'], ['Quá hạn chấm', '0']],
+    k1: [], k2: [K2_QL[2], K2_QL[4], K2_QL[5]], k3: [], k3ten: 'Lịch Test tuần này', k3con: 0, badge: 4 },
   rong: { cap: 'Không có bài nào ở cả ba khối.', tuan: ['05/10 – 11/10', 'W2 OCT 2026'], pham: 'tat', rong: true, badge: 0 },
 };
 
@@ -242,16 +245,20 @@ function hanO(r, kieu) {
 }
 const gvO = (r) => r.gv.join(', ') + (r.cc ? `${r.gv.length ? ', ' : ''}<span class="cc">Chấm chéo</span>` : '');
 
-function luoiHv() {
+function luoiHv(colspan) {
   const hv = [['Đỗ Minh Anh', ['7.0', '6.5', '', '', '']], ['Ngô Gia Bảo', ['6.0', '6.5', '6.0', '', '']], ['Vũ Khánh Linh', ['7.5', '7.0', '6.5', '6.0', '']]];
   const cot = hep() ? ['W1', 'W2', 'S'] : ['L', 'R', 'W1', 'W2', 'S'];
   const idx = hep() ? [2, 3, 4] : [0, 1, 2, 3, 4];
-  return `<tr class="con"><td colspan="${hep() ? 2 : 9}"><div class="vao">
-    <table><colgroup><col style="width:${hep() ? 116 : 180}px">${cot.map(() => `<col style="width:${hep() ? 62 : 72}px">`).join('')}${hep() ? '' : '<col>'}</colgroup>
-    <thead><tr><th>Học viên</th>${cot.map((c) => `<th>${c}</th>`).join('')}${hep() ? '' : '<th>GV chấm S</th>'}</tr></thead>
-    <tbody>${hv.map(([t, d], i) => `<tr><td class="ten">${t}</td>${idx.map((j) => d[j] ? `<td><span class="o-xong">${d[j]}</span></td>` : `<td><span class="o-nhap${i === 0 && j === (hep() ? 2 : 2) ? ' cham' : ''}">–</span></td>`).join('')}${hep() ? '' : `<td><span class="chongv">Chọn GV ▾</span></td>`}</tr>`).join('')}</tbody></table>
+  /* Q3 (chủ sản phẩm 06/10): nút ở đầu cột S, điền sẵn tên người đang nhập. */
+  const gv = `<button class="chongv" title="GV chấm chéo">GV chấm chéo: ${NGUOI_XEM[S] ?? 'Hoàng Thị Lan'} ▾</button>`;
+  return `<tr class="con"><td colspan="${colspan}"><div class="vao">
+    ${hep() ? `<div style="padding:4px 0 6px">${gv}</div>` : ''}
+    <table><colgroup><col style="width:${hep() ? 116 : 180}px">${cot.map((c) => `<col style="width:${hep() ? 62 : c === 'S' ? 210 : 72}px">`).join('')}${hep() ? '' : '<col>'}</colgroup>
+    <thead><tr><th>Học viên</th>${cot.map((c) => `<th>${c}${c === 'S' && !hep() ? `<div style="margin-top:4px;font-weight:400">${gv}</div>` : ''}</th>`).join('')}${hep() ? '' : '<th></th>'}</tr></thead>
+    <tbody>${hv.map(([t, d], i) => `<tr><td class="ten">${t}</td>${idx.map((j) => d[j] ? `<td><span class="o-xong">${d[j]}</span></td>` : `<td><span class="o-nhap${i === 0 && j === 2 ? ' cham' : ''}">–</span></td>`).join('')}${hep() ? '' : '<td></td>'}</tr>`).join('')}</tbody></table>
   </div></td></tr>`;
 }
+const NGUOI_XEM = { gv: 'Lê Hồng Nhung' };
 
 function khoi1(st) {
   const ds = st.k1, so = ds.reduce((n, r) => n + r.con, 0), lop = new Set(ds.map((r) => r.lop)).size;
@@ -263,12 +270,12 @@ function khoi1(st) {
   if (hep()) {
     rows = ds.map((r) => `<tr class="dt"><td><div class="d1">${r.lop} · ${r.dot} · ${r.kn}</div>
       <div class="d2"><span class="num">còn ${r.con} bài</span>${hanO(r, 1)}${nhan(r.nhan)}</div>
-      <div class="d3">GV chấm: ${gvO(r)}</div></td><td class="r" style="padding-left:0">${nut(r)}</td></tr>${r.mo && st.luoi ? luoiHv() : ''}`).join('');
+      <div class="d3">GV chấm: ${gvO(r)}</div></td><td class="r" style="padding-left:0">${nut(r)}</td></tr>${r.mo && st.luoi ? luoiHv(2) : ''}`).join('');
     return `<section class="khoi">${dau}<table><colgroup><col><col style="width:108px"></colgroup><tbody>${rows}</tbody></table></section>`;
   }
   rows = ds.map((r) => `<tr><td class="ma">${r.lop}</td><td>${r.dot}</td><td>${r.kn}</td><td class="r n">${r.con} <span class="don">bài</span></td>
     <td>${hanO(r, 1)}</td><td class="gv">${gvO(r)}</td><td>${nhan(r.nhan)}</td>
-    <td><a class="lien" href="#" title="Mở lưới đầy đủ" aria-label="Mở lưới đầy đủ lớp ${r.lop}">↗</a></td><td class="r">${nut(r)}</td></tr>${r.mo && st.luoi ? luoiHv() : ''}`).join('');
+    <td><a class="lien" href="#" title="Mở lưới đầy đủ" aria-label="Mở lưới đầy đủ lớp ${r.lop}">↗</a></td><td class="r">${nut(r)}</td></tr>${r.mo && st.luoi ? luoiHv(9) : ''}`).join('');
   return `<section class="khoi">${dau}<table>
     <colgroup><col style="width:150px"><col style="width:130px"><col style="width:100px"><col style="width:72px"><col style="width:200px"><col><col style="width:128px"><col style="width:44px"><col style="width:112px"></colgroup>
     <thead><tr><th>Lớp</th><th>Đợt</th><th>Kỹ năng</th><th style="text-align:right">Còn</th><th>Hạn</th><th>GV chấm</th><th><span class="sr">&nbsp;</span></th><th></th><th></th></tr></thead>
@@ -277,15 +284,15 @@ function khoi1(st) {
 
 function bangLop(ds) {
   if (hep()) {
-    return `<table><tbody>${ds.map((r) => `<tr class="hl dt ${r.mo ? 'mo' : ''}"><td>
+    return `<table><tbody>${ds.map((r) => `<tr class="hl dt ${r.mo ? 'mo' : ''} ${r.nhan === 'xong' ? 'xong' : ''}"><td>
       <div class="d1"><span class="mt">${SVG}</span>${r.lop} · ${r.dot} · <span class="num">${r.da}/${r.tong}</span> <span class="don">bài</span></div>
-      <div class="d2" style="padding-left:22px">${hanO(r, 2)}${nhan(r.nhan)}</div></td></tr>`).join('')}</tbody></table>`;
+      <div class="d2" style="padding-left:22px">${hanO(r, 2)}${nhan(r.nhan)}</div></td></tr>${r.mo ? luoiHv(1) : ''}`).join('')}</tbody></table>`;
   }
   return `<table><colgroup><col style="width:190px"><col style="width:130px"><col style="width:120px"><col style="width:110px"><col style="width:220px"><col><col style="width:52px"></colgroup>
     <thead><tr><th>Lớp</th><th>Đợt</th><th>Kỹ năng</th><th>Tiến độ</th><th>Hạn chấm</th><th></th><th></th></tr></thead>
-    <tbody>${ds.map((r) => `<tr class="hl ${r.mo ? 'mo' : ''}"><td class="ma"><span class="mt">${SVG}</span>${r.lop}</td><td style="font-weight:700;color:var(--chu-2)">${r.dot}</td>
+    <tbody>${ds.map((r) => `<tr class="hl ${r.mo ? 'mo' : ''} ${r.nhan === 'xong' ? 'xong' : ''}"><td class="ma"><span class="mt">${SVG}</span>${r.lop}</td><td style="font-weight:700;color:var(--chu-2)">${r.dot}</td>
       <td>${kn(r.kn)}</td><td class="n" style="color:var(--chu-2)">${r.da}/${r.tong} <span class="don">bài</span></td><td>${hanO(r, 2)}</td><td>${nhan(r.nhan)}</td>
-      <td><a class="lien" href="#" title="Mở lưới đầy đủ" aria-label="Mở lưới đầy đủ lớp ${r.lop}">↗</a></td></tr>`).join('')}</tbody></table>`;
+      <td><a class="lien" href="#" title="Mở lưới đầy đủ" aria-label="Mở lưới đầy đủ lớp ${r.lop}">↗</a></td></tr>${r.mo ? luoiHv(7) : ''}`).join('')}</tbody></table>`;
 }
 
 function khoi2(st) {

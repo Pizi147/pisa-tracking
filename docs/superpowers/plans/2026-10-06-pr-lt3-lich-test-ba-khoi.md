@@ -2,8 +2,12 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-> **Chủ sản phẩm chốt (điền sau khi duyệt):** Q1 dải số … · Q2 xem tuần khác … · Q3 GV chấm trống … · Q4 khối 2 lớp đã xong …
-> Mục này **đè** mọi chỗ bên dưới nếu khác. Câu hỏi + khuyến nghị ở cuối file (mục "Câu cần chủ sản phẩm quyết").
+> **Chủ sản phẩm chốt 06/10 (đè mọi chỗ bên dưới nếu khác):**
+> - **Q1 Dải số:** 3 ô `Tuần này đã chấm x/y` (khối 2 + 3) · `Còn phải chấm n` (khối 2 + 3) · `Quá hạn chấm n · m lớp` (khối 1); bỏ ô "Quá hạn" cũ.
+> - **Q2 Xem tuần khác:** khối 3 tên `Lịch Test W1 OCT` và **mở sẵn**.
+> - **Q3 GV chấm Speaking Mock:** nhãn đổi thành **`GV chấm chéo`**; ô **điền sẵn tên người đang lưu**; người lưu không sửa tên thì ghi chính người đó → trễ tính cho người đó (T18).
+> - **Q4 Khối 2, lớp đã chấm xong:** vẫn hiện `Đã chấm ✓` tới hết tuần, nhưng **luôn thu gọn**, chữ nhạt, xếp cuối — không chiếm chỗ lớp còn việc.
+> - Bảng "Quyết định" (D1–D8) cuối file: planning tự quyết, đi cùng mockup đã duyệt.
 
 **Goal:** Lịch Test tách hẳn **lịch chấm của GV** (khối 1 "Test quá hạn chấm", khối 2 "Test chấm tuần này") khỏi **lịch thi của học viên**
 (khối 3 "Lịch Test tuần này"); một bài nằm đúng một khối; khối 1 không đổi theo tuần đang xem. Speaking của Mock Test không có GV mặc
@@ -30,7 +34,7 @@ luật `lich_su` T1 — đều chạm file của PR này). Merge **MTb → LT3 �
 - CLAUDE.md: tinh chỉnh, không làm lại. Giữ Be Vietnam Pro (chữ số Inter), bảng màu, `KhoiNhom`/`HangNhom`/`.hang-lon` (vạch trái 3 px giữ
   như cũ — là kiểu đã khoá, không phải viền thẻ mới). Thời gian trên màn: **mã tuần** `W4 SEP`; ngày chỉ cho hạn chấm (`hạn 07/10`).
 - **Chữ trên màn = đúng mockup**, ngắn, không thêm câu giải thích dưới nút/ô. Tên khối: `Test quá hạn chấm` · `Test chấm tuần này` ·
-  `Lịch Test tuần này` (tuần khác: `Lịch Test W1 OCT`). Badge khối 2: `Quá hạn`. Cột GV chấm Speaking Mock: `Chấm chéo`.
+  `Lịch Test tuần này` (tuần khác: `Lịch Test W1 OCT`). Badge khối 2: `Quá hạn`. Cột GV chấm (khối 1) của Speaking Mock: `Chấm chéo`. Ô chọn người chấm Speaking Mock: `GV chấm chéo` (điền sẵn người lưu).
 - **Một bài đúng một khối** khi xem tuần hiện tại. Luật chia khối nằm ở máy chủ + `shared/domain`; web không tự tính khối.
 - Khối 1 tính theo **hôm nay** (`demoToday()` / tham số `today`), chỉ theo bộ lọc phạm vi / chi nhánh / lớp — không theo `periodId`.
 - **Không đổi luật hạn** (`skillScoreDeadline`, `mocTreNhapDiem`, `quaHanNhapDiem`) — đọc đúng hàm đó; phép kiểm không viết cứng hạn lớp thường
@@ -67,6 +71,7 @@ luật `lich_su` T1 — đều chạm file của PR này). Merge **MTb → LT3 �
 | `server/src/phanTich/giaoVien.ts` | `napBai` đọc `kind` + `examiner_user_id`; `tapChamDiem` (:188) gán ô chấm chéo cho `examiner_user_id` |
 | `web/src/modules/test/lichTest/kieu.ts`, `DaiSo.tsx`, `KhoiNo.tsx`, `HangLop.tsx`, `moLop.ts` | kiểu mới, 3 ô, khối 1, badge "Quá hạn" |
 | `web/src/modules/test/LichTestTab.tsx` | ba khối, mở/thu, lối vào từ đường dẫn / dải số |
+| `web/src/modules/cham/GvCham.tsx`, `web/src/modules/fasttrack/ScoreEntry.tsx`, `MockDetailPage.tsx`, `ODiemLon.tsx` | Q3: nhãn `GV chấm chéo`, mặc định = người đang xem |
 | `server/src/tests/prLt3.tests.ts` (**mới**), `run.ts`, phép kiểm cũ ở LT3-2/LT3-3 | kiểm |
 | `server/src/tests/tocDoDuong.ts`, `CODE_MAP.md`, `plan.md` mục 11 | đo, tài liệu |
 
@@ -155,7 +160,7 @@ export type LichTest = {
   nhacLichSu: NhacLichSu[];
 };
 ```
-Dải số: `laTuanNay` → `tong/daCham/conPhaiCham` = khối 2 + khối 3; tuần khác → khối 3. `no` = khối 1. (Theo Q1; đổi nếu chủ sản phẩm chọn khác.)
+Dải số: `laTuanNay` → `tong/daCham/conPhaiCham` = khối 2 + khối 3; tuần khác → khối 3. `no` = khối 1. (Q1 — chủ sản phẩm chốt 06/10.)
 
 Cách làm (ponytail — dùng lại, không viết luật đếm mới):
 1. Tách thân `lichTest` từ câu SQL (:441) tới `.map(...)` (:577) thành
@@ -169,7 +174,7 @@ Cách làm (ponytail — dùng lại, không viết luật đếm mới):
    vào danh sách `hanRieng` trả ra; ô tuần trước bỏ qua (khối 2 dựng bằng `hangLopTuan`). Trả `{ dong, hanRieng }`.
 3. `lichTest`: `laTuanNay = tuan.week_start === weekInfo(today).weekStart`. Khối 3 = `hangLopTuan(periodId đang xem)`. Khối 2 (chỉ khi `laTuanNay`) =
    `hangLopTuan(tuần trước)` + với mỗi tuần khác nhau trong `hanRieng` một lần `hangLopTuan(tuần đó, loc = (aid, k) => hanRieng có (aid, k))`.
-   Hàng khối 2 của tuần cũ: `dotLabel` thêm mã tuần trên web (có `weekStart`). Sắp khối 2: còn bài trước (`soSanhLop`), `conBai === 0` cuối (Q4).
+   Hàng khối 2 của tuần cũ: `dotLabel` thêm mã tuần trên web (có `weekStart`). Sắp khối 2: còn bài trước (`soSanhLop`), `conBai === 0` cuối, `moSan = false` luôn (Q4 — lớp đã xong luôn thu gọn; `lopTuMo` đã trả false khi `conBai = 0`, phép kiểm giữ điều này).
    `ponytail:` mỗi tuần hạn riêng thêm 3 câu SQL — hiếm (chỉ khi QL dời hạn); gộp `IN` nếu đo thấy nhiều.
 4. `nhacLichSu` giữ. Khoá `lopNo` (phạm vi + lớp) dùng chung cho khối 1, 2.
 
@@ -254,8 +259,10 @@ Luật (Rulebook PR-LT3 + §20): ô `laChamCheo(a.kind, skill)`:
 - `mywork` tab "Tất cả trong phạm vi": dòng ô chấm chéo `statusLabel` = `Chấm chéo`, không bị loại vì `ownerId === p.userId`.
 - Phân tích GV `tapChamDiem`: ô chấm chéo **chưa nhập** → bỏ qua (không trễ cho ai); **đã nhập** → `gv = examiner_user_id` (null — người ngoài
   hoặc trống — bỏ qua); `dung = nhapDau <= mocTreNhapDiem(han, tuan)` như cũ. `napBai` thêm `kind` (của lượt) và `examinerUserId` (của dòng điểm).
-- (Q3) Lưu ô S Mock khi chưa chọn GV chấm: **khuyến nghị** máy chủ ghi `examiner_user_id = p.userId` nếu người lưu là tài khoản nhân viên
-  (`saveScore` :1647–1650, chỉ khi `gv === undefined` **và** dòng chưa có examiner). Chờ chủ sản phẩm; chọn B thì bỏ gạch này.
+- (Q3, chủ sản phẩm chốt 06/10) Lưu ô S **Mock** mà payload không có `gvCham` và dòng chưa có examiner → máy chủ ghi `examiner_user_id = p.userId`
+  (`saveScore` :1647–1650; chỉ `laChamCheo`, chỉ khi `gv === undefined` **và** `existing?.examiner_user_id` / `examiner_name` đều trống). Đây là lưới an toàn;
+  web gửi sẵn tên người lưu (LT3-6). Gửi `gvCham: null` có chủ ý (xoá) giữ như cũ. Kiểm: (f) GV Speaking lớp khác lưu S Mock không kèm `gvCham` → dòng có
+  `examiner_user_id` = chính người đó; lưu sau mốc trễ → trễ của người đó ở Phân tích GV; dòng đã có examiner người ngoài → không bị ghi đè.
 
 - [ ] Kiểm đỏ (thêm vào `prLt3.tests.ts`; `P.sTeacher` = GVBM Speaking, `P.coreTeacher` = GVCN — xác nhận lớp của họ ở LT3-0; dùng lớp họ dạy):
   - (a) `skillCells(P.sTeacher, lượt mock lớp đó, …)` ô `speaking`: `mine === false && viec === false && canEdit === true`; lượt `progress` lớp thường
@@ -310,6 +317,8 @@ Skill: `/impeccable layout` · `/impeccable clarify`
   44 px, như `HangLop`) · nút `Nhập điểm` / `Thu`. Bỏ link "Mở lưới đầy đủ" trong lưới khối 1 (truyền `coLinkRieng` trên máy tính).
   **Mục con:** hàng lưới `<td colSpan>` nền `var(--hang-con-bg)`, khối trong thụt 20 px + **một vạch dọc 1 px** `var(--line-strong)` bên trái, không khung bo, không viền
   thứ hai; tiêu đề cột của lưới nhỏ (10.5–11 px). 375: thụt 8 px. Giữ `COT_THAO_TAC ≥ 110`, ba cột đầu `COT_DAU_LICH_TEST` (phép kiểm `prUxG` G4, `prHsm` :215).
+- [ ] Q4: hàng `conBai === 0` ở khối 2 luôn thu gọn (không tự mở, không ép mở bởi ô dải số), chữ nhạt (`text-slate-500` cho mã lớp, đợt, tiến độ), xếp cuối;
+  người dùng vẫn bấm mở xem được. Không nhớ trạng thái "mở" của hàng đã xong qua lần tải lại.
 - [ ] `HangLop.tsx`: thêm prop `kieuQuaHan?: 'badge'` — khối 2 vẽ `hạn 07/10` + `<Nhan tone="late">Quá hạn</Nhan>` khi `l.quaHan` (không ⚠ số ngày, không đỏ cả hàng);
   hàng tuần cũ (`l.weekStart` ≠ tuần trước) ghi Đợt `MT2 · W3 SEP`. Khối 3 giữ `<Han>` như cũ. `periodId` của lưới mở tại chỗ = `l.periodId` (không còn một `periodId` chung).
 - [ ] `moLop.ts`: khoá nhớ hàng mở theo `periodId` của hàng (khối 2 và 3 không lẫn nhau).
@@ -318,6 +327,11 @@ Skill: `/impeccable layout` · `/impeccable clarify`
 ### Task LT3-6: Web — nhãn Speaking chấm chéo, khối rỗng, 375, bấm thử
 Skill: `/impeccable harden` · `/impeccable adapt` · `/impeccable clarify`
 
+- [ ] **Q3 — nhãn + ô điền sẵn** (`web/src/modules/cham/GvCham.tsx`, `ScoreEntry.tsx`, `MockDetailPage.tsx:400`, `ODiemLon.tsx:99`): với Speaking **Mock**,
+  chữ "GV chấm" / "GV chấm Speaking" (nút đầu cột S `GV chấm: {tên} ▾`, tiêu đề panel, dòng trong hộp 4 tiêu chí, hồ sơ Mock, ô điểm lớn) → **`GV chấm chéo`**.
+  Giá trị mặc định của cột S (`useGvChamCot`, GvCham.tsx:34) = **chính người đang xem** (tài khoản), không còn điều kiện "được phân công S"; hộp tiêu chí ô chưa
+  có GV chấm điền sẵn giá trị đó; người dùng đổi được (tài khoản khác / người ngoài) như T39. Lưu luôn gửi `gvCham` đang hiện. Mockup: nút
+  `GV chấm chéo: Hoàng Thị Lan ▾` dưới chữ S (máy tính), đầu lưới (375). Kiểm (quét nguồn chỉ khi không kiểm được hành vi): không còn chữ "GV chấm Speaking" ở web.
 - [ ] Nhãn: dòng chỉ còn ô chấm chéo cho GVBM S / GVCN → `Chờ chấm` (`cuaToi` false); không có `Chờ bạn chấm` cho S Mock ở đâu (Lịch Test, Việc cần làm, badge lớp).
 - [ ] 375 (mockup): khối 1 dòng gập 3 hàng (`mã · đợt · kỹ năng` / `còn n bài · hạn … · nhãn` / `GV chấm: …`) + nút 44 px; khối 2/3 hàng gập 2 dòng; dải số 3 ô một hàng; không cuộn ngang.
 - [ ] Bấm thử bằng ảnh thật **375 + 1440, sáng + tối**, vai **QL (2), Quản trị (1), GVCN (7), GVBM (9), GV Speaking** (tìm user có phân công `speaking` lớp FT): đủ 6
@@ -351,10 +365,14 @@ Skill: verification-before-completion
 | **PR-BV** (sau MTa) | `absence.ts` (bỏ vắng → ô quay lại thành bài chờ chấm) | Không chồng file chính; khối tự đúng vì đọc `pendingDetail` |
 | **PR-HK2** (đợt 6) | Chụp lại sổ tay Lịch Test | HK2 chụp sau LT3 |
 
-## Tôi đã tự quyết (planning, 06/10)
-| # | Quyết định | Lý do |
+## Quyết định
+| # | Quyết định | Ai / lý do |
 |---|---|---|
-| D1 | Khối rỗng vẫn hiện tiêu đề + `0`, không mở được; cả ba rỗng → một thẻ `{tuần} không có Test nào` | T16 "khối 1 luôn đi cùng màn"; vị trí khối không nhảy |
+| Q1 | Dải số 3 ô: `Tuần này đã chấm x/y` · `Còn phải chấm` · `Quá hạn chấm · m lớp`; bỏ ô "Quá hạn" cũ | **Chủ sản phẩm chốt 06/10** |
+| Q2 | Xem tuần khác: `Lịch Test W1 OCT` mở sẵn | **Chủ sản phẩm chốt 06/10** |
+| Q3 | Nhãn `GV chấm chéo`; ô điền sẵn tên người lưu; không sửa → ghi chính người đó, trễ tính cho người đó | **Chủ sản phẩm chốt 06/10** |
+| Q4 | Khối 2: lớp đã chấm xong vẫn hiện `Đã chấm ✓` tới hết tuần, luôn thu gọn, xếp cuối | **Chủ sản phẩm chốt 06/10** |
+| D1 | (planning tự quyết, cùng mockup) Khối rỗng vẫn hiện tiêu đề + `0`, không mở được; cả ba rỗng → một thẻ `{tuần} không có Test nào` | T16 "khối 1 luôn đi cùng màn"; vị trí khối không nhảy |
 | D2 | Xem tuần khác: khối 3 có thể lặp bài đang ở khối 1 (xem lại); dải số tuần khác chỉ tính khối 3 + khối 1; badge tổng chỉ đúng ở tuần hiện tại | Khối 3 là lịch thi, không phải lịch chấm (T15) |
 | D3 | Chuông T18 gửi ở lượt quét thứ Hai, lúc S Mock vào khối 1; một chuông / lớp / MT / tuần / người | Trùng mốc khối 1; không thêm hàm định kỳ mới |
 | D4 | QL vẫn thấy S Mock quá hạn trong chỉ số "bài quá hạn nhập điểm" của chi nhánh (người giữ việc `Chấm chéo`), không vào hàng "Chưa phân công" | T18 chỉ miễn cho GVBM S + GVCN; QL cần đôn đốc |
@@ -363,20 +381,12 @@ Skill: verification-before-completion
 | D7 | Bỏ lọc "Chỉ quá hạn" của khối Nợ cũ và ô "Quá hạn" ở dải số | Khối 1 toàn bài quá hạn — trùng |
 | D8 | Giữ tên trường `no` / `DongNo` ở API (khối 1) | Đỡ đổi tên ở ~10 phép kiểm; nghĩa ghi ở chú thích |
 
-## Câu cần chủ sản phẩm quyết (gộp, có khuyến nghị)
-1. **Dải số đầu Lịch Test** (Rulebook chờ (a)). **A — khuyến nghị (theo plan.md mục 4 (5)):** 3 ô `Tuần này đã chấm 26/62` (khối 2 + 3) · `Còn phải chấm 36` (khối 2 + 3) ·
-   `Quá hạn chấm 7 · 3 lớp` (khối 1); bỏ ô "Quá hạn" cũ vì trùng. B: 3 ô theo từng khối (`Quá hạn chấm` · `Chấm tuần này x/y` · `Lịch tuần này x/y`). C: giữ 4 ô, thêm `Quá hạn tuần này` (bài khối 2 có badge).
-2. **Xem tuần khác** (Rulebook chờ (b)). **Khuyến nghị:** tiêu đề `Lịch Test W1 OCT` và khối này **mở sẵn** (khối 2 đã ẩn, đây là thứ người dùng muốn xem). Khác: giữ thu gọn như ở tuần này.
-3. **Speaking chấm chéo** (Rulebook chờ (c)): hiểu đúng như Rulebook — quá hạn chỉ báo, không tính cho GVBM S / GVCN; trễ tính cho người ghi ở "GV chấm Speaking". Khi lưu ô S Mock mà
-   **chưa chọn GV chấm**: **A — khuyến nghị:** hệ thống tự ghi GV chấm = chính người lưu (tài khoản) → trễ tính cho người đó (không ai "lách" bằng cách bỏ trống). B: để trống → không tính trễ cho ai.
-4. **Khối 2, lớp đã chấm xong:** **A — khuyến nghị:** vẫn hiện tới hết tuần, nhãn `Đã chấm ✓`, xếp cuối (thấy tiến độ cả tuần). B: ẩn ngay khi chấm xong.
-
 ## Prompt cho session code (dán nguyên khối) — Opus 5.5 · XHigh (B: Opus 5.5 · High). Không dùng Fable.
 ```
 /ponytail lite
 Làm PR-LT3 theo docs/superpowers/plans/2026-10-06-pr-lt3-lich-test-ba-khoi.md (LT3-0 → LT3-7; prompt chung plan.md mục 9.0; đọc mục
 "Chủ sản phẩm chốt" ở đầu file trước — đè lên phần dưới). Mockup đã duyệt: thiet-ke/mockup-lich-test-ba-khoi-2026-10-06.html — chữ trên màn
-ĐÚNG mockup, ngắn, không thêm câu giải thích. Nhánh pr-lt3-lich-test-ba-khoi từ origin/main SAU khi PR-MTa merge (MTb merge trước nếu kịp).
+ĐÚNG mockup, ngắn, không thêm câu giải thích. Q1–Q4 đã chốt 06/10 (đầu file). Nhánh pr-lt3-lich-test-ba-khoi từ origin/main SAU khi PR-MTa merge (MTb merge trước nếu kịp).
 Đầu phiên nói model đang chạy; không phải Opus 5.5 thì dừng báo. Subagent cùng model, không Fable.
 LT3-0 khảo sát lại sau MTa trước mọi việc. Phép kiểm đỏ trước (server/src/tests/prLt3.tests.ts, gọi cuối run.ts): một bài đúng một khối;
 lùi tuần không đổi khối 1; tổng ba khối = badge; Speaking Mock quá hạn không tính nợ/trễ cho GVBM S, GVCN; GV chấm chéo nhập muộn bị tính trễ.
