@@ -13,6 +13,7 @@
 **Phụ thuộc / thứ tự:** chạy **sau khi PR-DL, PR-K26, PR-SL đã merge** (đặc tả mục 4). Nhánh `pr-mta-luat-mock-test` từ `origin/main` mới nhất. Song song được với PR-NV, PR-CHU. PR-MTb và PR-MT0 dựa vào khối **Interfaces chung** dưới đây.
 
 ## Chủ sản phẩm chốt 05/10 (sau khi soạn) — ĐÈ lên phần dưới nếu khác
+- **T20–T23 (06/10):** xem Task 13 — **T22 đè T7** cho xoá trắng một ô (lý do tuỳ chọn).
 - **T19 (06/10) — khung nhập điểm:** xem Task 12. Không ai nhập điểm trước tuần thi; hạn lớp thường = thứ Tư tuần sau như FT; quá hạn vẫn nhập, tính trễ.
 - **MT cũ** = MT được **xếp vào tuần đã qua** (cờ `lich_su` tính lúc xếp/dời, như kế hoạch). MT thường đã qua ≥ 2 tuần vẫn là MT thường (quá hạn vẫn quá hạn).
 - **T4 áp cả Test lớp thường**: Quản lý / Quản trị xếp / dời về tuần đã qua được, không chặn. GVCN / GV vẫn từ tuần này. (Sửa tự quyết "chỉ áp Mock".)
@@ -411,6 +412,13 @@ Bảng cổng (đặc tả mục 3 / mockup phần 0) → phép kiểm. Ô trố
 - [ ] **Bước 2:** sửa ở **một hàm dùng chung** cả hai đường ghi (không lặp kiểm ở từng nơi gọi); kiểm theo tuần thi của **kỹ năng/môn** (`attempt_skills.planned_period_id`), ngày nghiệp vụ `demoToday()`.
 - [ ] **Bước 3:** web: ô của kỹ năng chưa tới tuần thi hiện khoá (không cho gõ), không thêm câu giải thích; phép kiểm cũ khẳng định hạn lớp thường = Chủ nhật (grep `addDays(monday, 6)`, `Chủ nhật tuần thi` trong tests, `prS6f`, `prLt`) → sửa theo T19; số quá hạn lớp thường ở Lịch Test / Tổng quan / Phân tích GV đổi theo hạn mới (ghi trong mô tả PR).
 - [ ] **Bước 4:** commit `feat(mta): T19 khung nhập điểm — không nhập trước tuần thi, hạn lớp thường thứ Tư tuần sau`.
+
+### Task 13: T20–T23 (chủ sản phẩm 06/10) — xem plan.md mục 2c
+- **T20** `setSkillWeek` / `luuDot` (FT + lớp thường): QL / Quản trị dời kỹ năng **đã có điểm** sang tuần khác, kể cả tuần cũ hơn, điểm đi theo (`attempt_skills.planned_period_id`; điểm không đổi; `lich_su` tính lại). Giữ T2 khi vượt lượt sau. Kiểm đỏ: FT và lớp thường, kỹ năng có điểm dời về tuần trước → 200, điểm còn; GV → 403/400 như cũ.
+- **T21** khôi phục phần thi đã huỷ: QL chọn tuần này / tuần đã qua được (bỏ câu "Tuần … đã bắt đầu. Chọn một tuần chưa tới." cho QL), rồi nhập điểm ngay.
+- **T22** xoá trắng ô đã có điểm rồi Lưu = xoá, **lý do tuỳ chọn** (sửa T7 / Task 1: bỏ `kiemLyDoThaoTac('huy-diem')` cho xoá trắng một ô ở `saveScore` và `saveRegularScore`); áp mọi người được nhập ô đó. MT cũ: `scoreEditPath` cho **GVCN lớp đó** sửa / xoá ô đã có điểm (nay chỉ ô trống). Lý do vẫn bắt buộc: huỷ lượt, huỷ kết quả dời vượt, từ chối.
+- **T23** "-" ở MT cũ = Không dự thi: bỏ chặn `attempts.ts:1431`; ở MT cũ dấu "-" không tính lần vắng, không dời, không Case/thẻ, không chuông; ô không đếm "còn trống".
+- Commit `feat(mta): T20–T23 dời có điểm về tuần cũ, khôi phục phần huỷ, xoá trắng ô, "-" MT cũ`.
 
 ## Nghiệm thu
 1. QL xếp MT2 chưa thi vào tuần trước → MT thường (có hạn chấm, có "Nợ tuần trước"); vào 3 tuần trước → nhãn "cũ", không hạn. GVCN/GV không chọn được tuần đã qua. Em vào web hôm nay vẫn xếp được MT cũ.
