@@ -284,6 +284,11 @@ export function setStudentStatus(
   /* PR-XOA §2: thôi học (finished) tự vào Lưu trữ từ ngày hiệu lực; tạm dừng / quay lại học thì không lưu trữ. */
   const archivedAt = status === 'finished' ? date : null;
   return tx(() => {
+    /* PR-LUI-b: nhớ ĐÚNG những ghi danh / lộ trình lần Kết thúc học này đóng — Học lại (`hocLai`) chỉ mở lại chúng, không đụng cái đã đóng từ trước. */
+    const dongBoiLanNay = status === 'finished' ? {
+      ghiDanhDong: (conn.prepare(`SELECT id FROM enrollments WHERE student_id = ? AND status IN ('active','paused')`).all(studentId) as any[]).map((r) => r.id as number),
+      loTrinhDong: (conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`).all(studentId) as any[]).map((r) => r.id as number),
+    } : {};
     conn.prepare('UPDATE students SET status = ?, finished_at = ?, archived_at = ? WHERE id = ?')
       .run(status, status === 'finished' ? date : null, archivedAt, studentId);
     // Enrollment đi theo nhưng vẫn giữ nguyên lịch sử lớp.
@@ -312,7 +317,7 @@ export function setStudentStatus(
     /* PR-Pb2-b (Q14, T65): Quay lại học → hạn xử lý vi phạm chưa phản hồi chốt lại từ ngày quay lại (sau `addJourney` — mốc đọc sự kiện resume). */
     if (status === 'active' && s.status === 'inactive') chotHanXuLy([studentId], { ghiDe: true });
     writeAudit({ actorUserId: p.userId, action: 'student.status', entityType: 'student', entityId: studentId,
-      entityLabel: s.student_code, before: { status: s.status }, after: { status, date, reason, archivedAt } });
+      entityLabel: s.student_code, before: { status: s.status }, after: { status, date, reason, archivedAt, ...dongBoiLanNay } });
     if (curEnr && status !== 'active') dongLopNeuHet([curEnr.class_id], date);
     return conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId);
   });
@@ -348,7 +353,14 @@ export function hocLai(p: Principal, studentId: number, o: {
     `SELECT e.id, e.class_id, e.ended_at, c.code, c.status AS class_status, c.programme_code, c.is_fast_track, c.route
        FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = ? AND e.status = 'completed' ORDER BY e.id DESC`,
   ).all(studentId) as any[];
-  const khoiPhuc = dongCompleted.some((e) => e.ended_at == null) ? dongCompleted.filter((e) => e.ended_at == null) : dongCompleted.slice(0, 1);
+  /* Nhật ký lần Kết thúc học gần nhất ghi đúng id đã đóng. Em kết thúc học từ trước PR-LUI-b (không có id) thì dùng quy tắc cũ: mọi dòng completed chưa có ended_at. */
+  const nhatKyKetThuc = (() => {
+    const r = conn.prepare(`SELECT after_json FROM audit_logs WHERE entity_type = 'student' AND entity_id = ? AND action = 'student.status' ORDER BY id DESC LIMIT 1`).get(studentId) as any;
+    try { const a = JSON.parse(r?.after_json ?? 'null'); return a?.status === 'finished' && Array.isArray(a.ghiDanhDong) ? a as { ghiDanhDong: number[]; loTrinhDong: number[] } : null; } catch { return null; }
+  })();
+  const khoiPhuc = nhatKyKetThuc
+    ? dongCompleted.filter((e) => nhatKyKetThuc.ghiDanhDong.includes(e.id))
+    : dongCompleted.some((e) => e.ended_at == null) ? dongCompleted.filter((e) => e.ended_at == null) : dongCompleted.slice(0, 1);
   const enr = khoiPhuc[0];
   if (!enr) throw badRequest('Học viên chưa có lớp nào để học lại — dùng Chuyển lớp để xếp lớp.');
   const lopDong = [...new Map(khoiPhuc.filter((e) => e.class_status === 'finished').map((e) => [e.class_id, e])).values()];
@@ -383,7 +395,9 @@ export function hocLai(p: Principal, studentId: number, o: {
       for (const l of lopDong) moLaiLop(p, l.class_id, { lyDo: `Học lại: ${s.full_name}` });
       conn.prepare(`UPDATE enrollments SET status = 'active', end_kind = NULL WHERE id IN (${khoiPhuc.map(() => '?').join(',')})`).run(...khoiPhuc.map((e) => e.id));
       /* Mọi lộ trình bị đóng LÚC Kết thúc học (cùng `ended_at`) chạy tiếp — dữ liệu cũ có thể có hơn một lộ trình đang chạy. */
-      conn.prepare(`UPDATE learning_cycles SET status = 'active', ended_at = NULL WHERE student_id = ? AND status = 'abandoned' AND ended_at IS ?`).run(studentId, s.finished_at ?? null);
+      if (nhatKyKetThuc) {
+        for (const id of nhatKyKetThuc.loTrinhDong) conn.prepare(`UPDATE learning_cycles SET status = 'active', ended_at = NULL WHERE id = ? AND student_id = ? AND status = 'abandoned'`).run(id, studentId);
+      } else conn.prepare(`UPDATE learning_cycles SET status = 'active', ended_at = NULL WHERE student_id = ? AND status = 'abandoned' AND ended_at IS ?`).run(studentId, s.finished_at ?? null);
     }
     datLaiHanCase(studentId, date);
     addJourney({

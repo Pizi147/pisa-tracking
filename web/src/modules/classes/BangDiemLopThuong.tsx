@@ -9,6 +9,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { MissingBadge } from '../students/MissingBadge.tsx';
 import { CanhBaoYThuc } from './CanhBaoYThuc.tsx';
 import { nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from './thaoTacDongHocVien.tsx';
+import { OChon, OChonTatCa, type ChonNhieu } from '../students/chonNhieuHocVien.tsx';
 import { MoiVao } from './DaiChuyenLop.tsx';
 import { ATTEMPT_KIND_SHORT, CHUONG_TRINH_KHONG_CHIA_MON, maHocVienNgan, mondayOfDate, tenMon, tenMonNgan, tuanLich, type AttemptKind } from '@shared/domain/index.ts';
 
@@ -41,8 +42,10 @@ const MOC_MAC_DINH = ['progress', 'final'];
  * lớp, tên theo chương trình (FOU L R G+V P; Pre FOU một cột Tổng hợp + cột % — MH7). Ô `đúng/tổng`, đỏ nếu chưa đạt (dưới 70%). Chưa có điểm mà đã có lịch thì ghi
  * tuần thi (`W3 SEP`, G-6); chưa có lịch thì gạch. Thiếu điểm KHÁC chưa đạt: không tô đỏ.
  */
-export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = null, moc = null }: {
+export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = null, moc = null, chon }: {
   classId: number; maLop?: string; quyen: QuyenDong; onDoi: () => void;
+  /** PR-LUI-b: "Chọn nhiều học viên" — bật thì mỗi dòng / thẻ có ô chọn (Quản lý / Quản trị). */
+  chon?: ChonNhieu;
   /** Mã chương trình lớp (MH2) và mốc kiểm tra của chương trình (`progress`/`final`). */
   chuongTrinh?: string | null; moc?: string[] | null;
 }) {
@@ -72,10 +75,11 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
     return (
       <div className="card overflow-hidden">
         {rows.map((s) => (
-          <TheDong key={s.id} className={s.status !== 'active' ? 'row-muted' : ''}
+          <TheDong key={s.id} className={`${s.status !== 'active' ? 'row-muted' : ''} ${chon?.chon.has(s.id) ? 'bg-[color:var(--accent-soft)]' : ''}`}
             dau={(
               <>
                 <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                  {chon?.bat && <OChon chon={chon} id={s.id} ten={s.fullName} />}
                   <Link className="link font-semibold" to={`/hoc-vien/${s.id}`} state={{ ds }}>{s.fullName}</Link>{s.moiVao && <MoiVao />}
                   <span className="text-[11px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
                   <MissingBadge items={s.missing} gon />
@@ -124,7 +128,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
         </colgroup>
         <thead>
           <tr>
-            <th className="th sticky-col align-bottom" rowSpan={2}>Học viên</th>
+            <th className="th sticky-col align-bottom" rowSpan={2}>{chon?.bat && <span className="mr-2 inline-flex align-middle"><OChonTatCa chon={chon} ids={rows.map((s) => s.id)} /></span>}Học viên</th>
             <th className="th text-right align-bottom" rowSpan={2} title="Điểm Target của lộ trình em đang học. KCK = không cam kết đầu ra. Lớp thường chỉ để theo dõi.">Target</th>
             <th className="th align-bottom" rowSpan={2} title="Kỳ thi IELTS thật, ở đúng mức chắc chắn đang biết: tuần, hoặc mới có tháng, hoặc chưa xác định.">Dự kiến thi</th>
             {BAI.map((b) => (
@@ -144,10 +148,11 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
         </thead>
         <tbody>
           {rows.map((s) => (
-            <tr key={s.id} className={`row-hover ${s.status !== 'active' ? 'row-muted' : ''}`}>
+            <tr key={s.id} className={`row-hover ${s.status !== 'active' ? 'row-muted' : ''} ${chon?.chon.has(s.id) ? 'bg-[color:var(--accent-soft)]' : ''}`}>
               {/* 640–1023 px: bảng cuộn ngang TRONG vùng bảng, cột tên dính (mỗi lớp một bảng nên không bám cả trang). */}
               <td className="td sticky-col h-11">
                 <span className="flex min-w-0 items-center gap-1.5">
+                  {chon?.bat && <OChon chon={chon} id={s.id} ten={s.fullName} />}
                   <Link className="link truncate font-semibold" to={`/hoc-vien/${s.id}`} state={{ ds }}>{s.fullName}</Link>{s.moiVao && <MoiVao />}
                   <span className="shrink-0 text-[11px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
                   <MissingBadge items={s.missing} gon />
