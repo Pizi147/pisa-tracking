@@ -13,6 +13,7 @@ import { KY, nhanDot, thanDot, type DotChon, type KnO } from './kieu.ts';
 import { Nhan } from '../../../ui/Nhan.tsx';
 import { TuanNho, resolveTuan, type Tuan } from './TuanNho.tsx';
 import { MenuDong } from '../../../ui/MenuDong.tsx';
+import { useGiuFocus } from '../../../ui/giuFocus.ts';
 import { HopThaoTacMt } from '../../fasttrack/HopThaoTacMt.tsx';
 import { NganLichSuBai } from '../../cham/NganLichSuBai.tsx';
 import { HopXacNhanHuyLich, type LuotSeHuyLich } from './HopXacNhanHuyLich.tsx';
@@ -97,6 +98,7 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
   const seq = useRef(0);
 
   useEffect(() => { onHienDien(true); return () => onHienDien(false); }, []);   // eslint-disable-line react-hooks/exhaustive-deps
+
 
   /* Đợt CHƯA CÓ: đặt sẵn tuần mặc định — FT: cả 4 kỹ năng CÙNG tuần tới (K4-14, M9 `tuanMacDinhDotMoi`); lớp thường: tuần đề xuất. */
   useEffect(() => {
@@ -240,6 +242,8 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
   /* Vị trí: neo dưới chip, kẹp trong màn; hết chỗ thì lật lên. < 640px → tấm dưới đáy. */
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const box = useRef<HTMLDivElement>(null);
+  /* Bàn phím: hộp nằm cuối `body` (portal) nên Tab từ ô MT không tới được — mở là đưa focus vào hộp, Tab vòng trong hộp, đóng thì trả focus về ô đã mở nó. */
+  useGiuFocus(box);
   const dienThoai = typeof window !== 'undefined' && window.innerWidth < 640;
   const dat = () => {
     if (dienThoai) return;
@@ -268,10 +272,11 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
   const nutLuu = canhBao.length && !force ? 'Vẫn xếp vào tuần này' : 'Lưu';
   const nhanChung = loai === 'thuong' && chung?.weekStart ? nhanTuanKhoa(chung.weekStart, khaiGiang ?? null, tongTuan ?? null) : null;
   const coDongDuoi = !!cauChan || !!cauCanhBao || (!chan.length && !!vuot.chip) || quaTuan;
+  /* Chưa có vị trí: opacity 0 (không dùng visibility:hidden — phần tử ẩn không nhận focus của `useGiuFocus` lúc mở). */
   return createPortal(
-    <div ref={box} role="dialog" aria-label={`Lịch ${tieuDe}`}
-      className={`surface-2 z-[60] border shadow-2xl ${dienThoai ? 'fixed inset-x-0 bottom-0 rounded-t-xl' : 'fixed w-[min(520px,calc(100vw-32px))] rounded-lg'}`}
-      style={{ borderColor: 'var(--line-strong)', ...(dienThoai ? {} : { top: pos?.top ?? 0, left: pos?.left ?? 0, visibility: pos ? 'visible' : 'hidden' }) }}>
+    <div ref={box} role="dialog" aria-label={`Lịch ${tieuDe}`} tabIndex={-1}
+      className={`surface-2 z-[60] border shadow-2xl outline-none ${dienThoai ? 'fixed inset-x-0 bottom-0 rounded-t-xl' : 'fixed w-[min(520px,calc(100vw-32px))] rounded-lg'}`}
+      style={{ borderColor: 'var(--line-strong)', ...(dienThoai ? {} : { top: pos?.top ?? 0, left: pos?.left ?? 0, opacity: pos ? 1 : 0 }) }}>
       <div className="flex items-center justify-between gap-2 border-b px-3 py-2" style={{ borderColor: 'var(--line)' }}>
         <div className="min-w-0 truncate text-sm font-bold text-slate-100" title={tieuDe}>{tieuDe}</div>
         <button type="button" className="btn btn-sm btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-[28px] sm:min-w-[28px]" onClick={onClose} aria-label="Đóng">✕</button>
@@ -352,9 +357,12 @@ function DongKyNangHop({ k, o, khoa, moi, loai, d, noiBat, khaiGiang, tongTuan, 
   return (
     <div className={`grid ${grid} items-center gap-x-2 gap-y-1 border-t py-1.5 first:border-t-0 max-sm:min-h-[48px] ${noiBat ? 'rounded bg-white/5' : ''}`} style={{ borderColor: 'var(--line)' }}>
       {coTick ? (
-        <input type="checkbox" className="accent-sky-400 disabled:opacity-60" checked={d.tick} disabled={!tickDuoc} onChange={(e) => onTick(e.target.checked)}
-          aria-label={`${tenMon(ct, k)} — ${d.tick ? 'bỏ khỏi đợt' : 'đưa lại vào đợt'}`}
-          title={!tickDuoc ? (o?.khoa ?? 'Đã tới tuần thi') : d.tick ? 'Bỏ kỹ năng khỏi đợt' : 'Đưa lại vào đợt'} />
+        /* Điện thoại: nhãn bọc ô tích mở vùng bấm 44px (ô tích gốc chỉ 13px). */
+        <label className="relative grid place-items-center max-sm:min-h-[44px] max-sm:after:absolute max-sm:after:-inset-x-2.5 max-sm:after:inset-y-0 max-sm:after:content-['']">
+          <input type="checkbox" className="accent-sky-400 disabled:opacity-60" checked={d.tick} disabled={!tickDuoc} onChange={(e) => onTick(e.target.checked)}
+            aria-label={`${tenMon(ct, k)} — ${d.tick ? 'bỏ khỏi đợt' : 'đưa lại vào đợt'}`}
+            title={!tickDuoc ? (o?.khoa ?? 'Đã tới tuần thi') : d.tick ? 'Bỏ kỹ năng khỏi đợt' : 'Đưa lại vào đợt'} />
+        </label>
       ) : <span />}
       <div className="text-xs text-slate-200">
         <b title={tenMon(ct, k)}>{tenMonNgan(ct, k)}</b>

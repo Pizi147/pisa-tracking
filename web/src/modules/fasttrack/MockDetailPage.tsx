@@ -507,7 +507,7 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory }: {
           )}
           {/* Đã có điểm thì chip trạng thái đã nói đủ; hạn chỉ còn nghĩa khi bài còn nợ. */}
           {/* MT lịch sử không có hạn (T34) — chip tình trạng "Nhập bù, không tính hạn" đã nói đủ. */}
-          {prog !== 'scored' && !d.lichSu && <div><DeadlinePill cell={c} /></div>}
+          {prog !== 'scored' && !(prog === 'cancelled' && c.progress === 'cancelled') && !d.lichSu && <div><DeadlinePill cell={c} /></div>}
           {ownsSchedule && r.absenceMoveCount > 0 && (
             <div className="text-[11px] text-amber-200">Đã dời do vắng {r.absenceMoveCount} lần</div>
           )}

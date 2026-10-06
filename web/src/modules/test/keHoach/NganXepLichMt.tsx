@@ -231,7 +231,7 @@ export function NganXepLichMt({ chiNhanhDau, lopDs, lopMoSan, coThuong, onDoiKhu
                 return (
                   <span key={id} className="inline-flex h-7 items-center gap-1 rounded border px-2 text-xs text-slate-200" style={{ borderColor: 'var(--line-strong)' }}>
                     {l?.code ?? id}
-                    <button type="button" className="btn btn-sm btn-ghost -mr-1 min-h-[28px] min-w-[28px] justify-center px-0" aria-label={`Bỏ lớp ${l?.code ?? id}`}
+                    <button type="button" className="btn btn-sm btn-ghost relative -mr-1 min-h-[28px] min-w-[28px] justify-center px-0 max-sm:after:absolute max-sm:after:-inset-2 max-sm:after:content-['']" aria-label={`Bỏ lớp ${l?.code ?? id}`}
                       disabled={lopChon.length === 1} onClick={() => { setLopChon((s) => s.filter((x) => x !== id)); setGiuLoi(null); }}>✕</button>
                   </span>
                 );
@@ -288,10 +288,10 @@ export function NganXepLichMt({ chiNhanhDau, lopDs, lopMoSan, coThuong, onDoiKhu
         {moRieng && (
           <div className="space-y-2">
             {KY.filter((k) => kyChon.includes(k)).map((k) => (
-              <div key={k} className="grid grid-cols-[92px_minmax(0,1fr)_auto] items-center gap-2 sm:max-w-[560px]">
+              <div key={k} className="grid grid-cols-[92px_minmax(0,1fr)_auto] items-center gap-2 max-sm:grid-cols-1 sm:max-w-[560px]">
                 <span className="text-xs text-slate-200"><b>{tenMonNgan(null, k)}</b> <span className="text-slate-400">{tenMon(null, k)}</span></span>
-                <div className="flex min-w-0 items-center gap-2">
-                  <div className="min-w-0 flex-1">
+                <div className="flex min-w-0 flex-wrap items-center gap-2 sm:flex-nowrap">
+                  <div className="min-w-[220px] flex-1 sm:min-w-0">
                     <TuanNho d={{ periodId: tuanKn(k)?.periodId ?? null, weekStart: tuanKn(k)?.weekStart ?? null }} goc={homNay}
                       onTuan={(t) => setRieng((s) => ({ ...s, [k]: t }))} />
                   </div>
@@ -299,7 +299,7 @@ export function NganXepLichMt({ chiNhanhDau, lopDs, lopMoSan, coThuong, onDoiKhu
                 </div>
                 {rieng[k]
                   ? <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={() => setRieng((s) => { const n = { ...s }; delete n[k]; return n; })}>Theo tuần chung</button>
-                  : <span className="w-[1px]" />}
+                  : <span className="w-[1px] max-sm:hidden" />}
               </div>
             ))}
           </div>
@@ -363,7 +363,7 @@ function ChipDem({ tone, n, loc, onLoc, children }: { tone: ToneSeXep; n: number
   const ten = tone === 'ok' ? 'Sẽ xếp' : tone === 'soon' ? 'Cần xem' : 'Không xếp được';
   return (
     <button type="button" aria-pressed={loc === tone} onClick={() => onLoc(loc === tone ? null : tone)} title={`Chỉ hiện nhóm "${ten}"`}
-      className={`relative inline-flex min-h-[26px] items-center whitespace-nowrap rounded-full px-[9px] text-xs font-semibold tabular-nums max-sm:after:absolute max-sm:after:-inset-y-2 max-sm:after:inset-x-0 max-sm:after:content-[''] ${mau} ${loc === tone ? 'ring-2 ring-current' : ''}`}>
+      className={`relative inline-flex min-h-[26px] items-center whitespace-nowrap rounded-full px-[9px] text-xs font-semibold tabular-nums max-sm:after:absolute max-sm:after:-inset-y-[9px] max-sm:after:inset-x-0 max-sm:after:content-[''] ${mau} ${loc === tone ? 'ring-2 ring-current' : ''}`}>
       {children}
     </button>
   );

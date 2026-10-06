@@ -30,7 +30,7 @@ function KhungModal({ onClose, title, children, footer, width, z }: {
       <div ref={khung} tabIndex={-1} className={`relative w-full ${width} card shadow-2xl max-h-[88vh] flex flex-col -outline-offset-2`}>
         <header className="flex items-center justify-between px-5 py-3 border-b" style={{ borderColor: 'var(--line)' }}>
           <h2 id={idTen} className="text-sm font-semibold text-slate-100">{title}</h2>
-          <button className="btn btn-sm btn-ghost" onClick={onClose} aria-label="Đóng">✕</button>
+          <button className="btn btn-sm btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-0 sm:min-w-0" onClick={onClose} aria-label="Đóng">✕</button>
         </header>
         <div className="p-5 overflow-y-auto">{children}</div>
         {footer && <footer className="px-5 py-3 border-t flex justify-end gap-2" style={{ borderColor: 'var(--line)' }}>{footer}</footer>}
@@ -53,8 +53,8 @@ export function ConfirmDialog({ open, onClose, onConfirm, title, body, confirmLa
     <Modal open={open} onClose={onClose} title={title} width="max-w-md" z={z}
       footer={
         <>
-          <button className="btn" onClick={onClose} disabled={busy}>{closeLabel}</button>
-          <button className={`btn ${danger ? 'btn-danger' : 'btn-primary'}`} onClick={onConfirm} disabled={busy || confirmDisabled} title={confirmDisabled ? confirmTitle : undefined}>
+          <button className="btn min-h-[44px] sm:min-h-0" onClick={onClose} disabled={busy}>{closeLabel}</button>
+          <button className={`btn min-h-[44px] sm:min-h-0 ${danger ? 'btn-danger' : 'btn-primary'}`} onClick={onConfirm} disabled={busy || confirmDisabled} title={confirmDisabled ? confirmTitle : undefined}>
             {busy ? 'Đang xử lý…' : confirmLabel}
           </button>
         </>

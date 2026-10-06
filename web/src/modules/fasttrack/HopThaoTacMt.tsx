@@ -92,7 +92,7 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
   /* K2-33: GVCN dời / xếp lại lượt có sẵn không vào tuần đã qua — tuần sớm nhất là tuần này. Quản lý được (T4): chỉ hiện chip vàng.
      PR-MTa T21: Khôi phục (chỉ Quản lý) cũng chọn được tuần đã qua — em đã thi thật. */
   const tuanNay = homNay && !quanLy && t !== 'khoi-phuc' ? mondayOfDate(homNay) : null;
-  const quaTuan = quanLy && coTuan && t !== 'khoi-phuc' && !!tuan && !!homNay
+  const quaTuan = quanLy && coTuan && t !== 'khoi-phuc' && !!tuan && tuan.periodId !== row.periodId && !!homNay
     && kiemTuanXep({ ketThuc: [addDaysStr(tuan.weekStart.slice(0, 10), 6)], homNay, quanLy: true }).quaTuan;
   const chonW = t === 'huy-diem' && !laThuong && oCoDiem.length > 1;
 

@@ -110,7 +110,7 @@ export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienD
         <td className="td whitespace-nowrap">
           <span className="flex items-center justify-end gap-1">
             {chinh ? (
-              <button id={l ? `mt-${l.attemptId}` : undefined} type="button" className="btn btn-sm min-h-[40px] sm:min-h-0"
+              <button id={l ? `mt-${l.attemptId}` : undefined} type="button" className="btn btn-sm min-h-[44px] sm:min-h-0"
                 aria-expanded={chinh.nhan === 'Nhập điểm' ? moDiem : undefined}
                 onClick={(e) => chinh!.lam(e.currentTarget)}>{chinh.nhan}</button>
             ) : !l ? <span className="text-xs text-slate-500">Áp lịch để tạo</span> : null}
@@ -183,7 +183,7 @@ function DaiDiemMt({ attemptId, homNay, onDoi, onDong }: { attemptId: number; ho
       <DaiODiemLon cells={ct.data.cells} lich={ct.data.skillSchedule as LichKn[]} result={ct.data.result} lichSu={ct.data.lichSu} homNay={homNay}
         mo={mo} onMo={setMo} save={save} />
       <div className="flex justify-end">
-        <button type="button" className="btn btn-sm btn-ghost min-h-[40px] sm:min-h-0" onClick={onDong}>Đóng dải điểm</button>
+        <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={onDong}>Đóng dải điểm</button>
       </div>
     </div>
   );
