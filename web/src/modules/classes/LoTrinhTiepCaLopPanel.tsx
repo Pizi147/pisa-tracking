@@ -6,7 +6,7 @@ import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import {
-  chuHopKetLuan, huongTiepKhaDung, nhanHuongNgan, xepHuongTheoGoiY,
+  chuHopKetLuan, coMt0, huongTiepKhaDung, nhanHuongNgan, tuanLich, xepHuongTheoGoiY,
   type GoiYCuoiKhoa, type HopKetLuanVao, type Huong, type ProgrammeCode,
 } from '@shared/domain/index.ts';
 
@@ -16,9 +16,9 @@ type EmCuoiKhoa = {
 };
 type BanGhi = { huong: Huong; ghiChu: string | null; ngayXemLai: string | null };
 type DuLieu = {
-  lop: { id: number; code: string; ma: ProgrammeCode | null; maKe: ProgrammeCode | null };
+  lop: { id: number; code: string; ma: ProgrammeCode | null; maKe: ProgrammeCode | null; tuanFinal?: string | null };
   coTheGhi: boolean; toiDa: number;
-  hocVien: { id: number; ten: string; ma: string; cuoiKhoa: EmCuoiKhoa | null; banGhi: BanGhi | null }[];
+  hocVien: { id: number; ten: string; ma: string; cuoiKhoa: EmCuoiKhoa | null; banGhi: BanGhi | null; mt0?: { maTuan: string | null } | null }[];
 };
 type Dong = { huong: Huong | ''; ghiChu: string };
 
@@ -96,7 +96,11 @@ export function LoTrinhTiepCaLopPanel({ classId, onClose, onDone }: { classId: n
           </button>
         ),
       } : undefined}>
-      <p className="m-0 mt-3 text-xs text-slate-400">
+      {/* PR-MT0 (mockup ②): thanh đầu `{lớp} · {n} em · Final W4 OCT`. */}
+      <p className="m-0 mt-3 text-[13px] font-semibold tabular-nums text-slate-200">
+        {[data.lop.code, `${data.hocVien.length} em`, data.lop.tuanFinal ? `Final ${tuanLich(data.lop.tuanFinal)}` : null].filter(Boolean).join(' · ')}
+      </p>
+      <p className="m-0 mt-1 text-xs text-slate-400">
         Chỉ là dự định, chưa đổi lớp. Hướng Hệ thống gợi ý theo Cuối khoá đứng đầu ô chọn. Em Cuối khoá 50–59%: bạn ghi đề xuất, Quản lý quyết khi chuyển lớp.
       </p>
       {!data.coTheGhi && <p className="mt-3 text-sm text-slate-400">Bạn chỉ xem được — không có quyền ghi lộ trình tiếp theo cho lớp này.</p>}
@@ -152,6 +156,10 @@ export function LoTrinhTiepCaLopPanel({ classId, onClose, onDone }: { classId: n
                       </select>
                       {ck?.goiY?.canQuanLy && <Nhan tone="soon" title="Cuối khoá 50–59%: hướng bạn chọn là đề xuất, Quản lý quyết khi chuyển lớp">QL quyết</Nhan>}
                     </span>
+                    {/* PR-MT0 (mockup ②): Lên FT → `MT0 · W4 OCT` (đã có MT0 thì tuần thật, chưa lưu thì tuần Final sẽ tạo). */}
+                    {d.huong === 'fast_track' && coMt0(data.lop.ma, 'fast_track') && (h.mt0?.maTuan || data.lop.tuanFinal) && (
+                      <small className="mt-1 block text-[11px] tabular-nums text-slate-400">MT0 · {h.mt0?.maTuan ?? tuanLich(data.lop.tuanFinal!)}</small>
+                    )}
                     {loi && <span id={idLoi} role="alert" className="mt-1 block text-[12px] text-late">{loi}</span>}
                   </span>
                   <span role="cell" className="min-w-0">

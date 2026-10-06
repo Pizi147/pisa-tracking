@@ -176,7 +176,7 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, homNay, onDaLuu, k
                       <td colSpan={soCot} className="p-0" style={{ background: 'var(--hang-con-bg)' }}>
                         <div className="muc-con ml-2 border-l py-1.5 pl-2.5 sm:ml-5 sm:pl-3.5" style={{ borderColor: 'var(--line-strong)' }}>
                           <LuoiNhung classId={d.classId} periodId={d.mode === 'ielts_band' ? d.periodId : null}
-                            kind={d.mode === 'ratio' ? d.kind : null} tuanDangXem={d.weekStart} chiAttempt={chiAttempt}
+                            kind={d.mode === 'ratio' || d.kind === 'mt0' ? d.kind : null} tuanDangXem={d.weekStart} chiAttempt={chiAttempt}
                             kn={knUrl ?? d.kyNang[0] ?? null} hrefDayDu={d.hrefDayDu} datConTro={dongMo!.conTro} coLinkRieng
                             onDaLuu={onDaLuu} onSoOChuaLuu={(n) => baoChuaLuu(`no:${d.key}`, n)} />
                         </div>

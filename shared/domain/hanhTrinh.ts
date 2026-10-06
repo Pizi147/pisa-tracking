@@ -386,12 +386,15 @@ export function nhanGhim(a: {
   goiY?: { dai: string; nhan: string; nhanNgan: string } | null;
   /** PR-MT (T34): MT lịch sử — nhãn nhỏ "lịch sử" cạnh "MT2". */
   lichSu?: boolean;
+  /** PR-MT0: nhãn máy chủ (`nhanMt0`) — `MT0 · không dùng` thắng mọi chữ tiến độ. */
+  nhanNgan?: string;
 }): NhanGhim {
   const ghep = (...phan: (string | null | undefined)[]) => phan.filter(Boolean).join(' · ');
   if (a.cheDo === 'ielts') {
     const so = `MT${a.attemptNo}`;   // bản gọn (điện thoại) không kèm "cũ"
     const mt = a.lichSu ? `${so} cũ` : so;
     const tuan = a.tuan ? tuanLich(a.tuan, a.homNay) : null;
+    if (a.kind === 'mt0' && a.nhanNgan && a.nhanNgan !== so) return { chu: a.nhanNgan, gon: so, day: ghep(a.nhanNgan, tuan), mau: 'tam', hai: [so, ''] };
     if (a.soCoDiem === 0) return { chu: mt, gon: so, day: ghep(mt, tuan, a.lichSu ? 'nhập bù, không tính hạn' : 'chưa có điểm'), mau: 'tam', hai: [so, ''] };
     if (a.soCoDiem < a.soYeuCau) {
       return { chu: `${mt} · đang chấm`, gon: so, day: ghep(mt, tuan, `đang chấm ${a.soCoDiem}/${a.soYeuCau} kỹ năng`), mau: 'tam', hai: [so, `${a.soCoDiem}/${a.soYeuCau}`] };

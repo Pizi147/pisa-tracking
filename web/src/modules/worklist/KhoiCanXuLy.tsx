@@ -18,7 +18,7 @@ import { chipChoDuyet, type ChuongTrinh, type DemYeuCau, type DiemChuY, type Don
 type DongCanXuLy = DongCanXuLyGoc & {
   truoc?: string; phu: string; kem?: string; goiY?: string;
   nguoi: 'ban' | { dau: string; phu: string; ids: number[] };
-  han: { ngay: string; loai: 'cap-nhat-pa' | 'viec-van-hanh' } | { chu: string; quaHan?: true };
+  han: { ngay: string; loai: 'cap-nhat-pa' | 'viec-van-hanh' | 'chot-len-ft' } | { chu: string; quaHan?: true };
   den: string | null;
 };
 type Data = { canXuLy: DongCanXuLy[]; choDuyet?: DemYeuCau };

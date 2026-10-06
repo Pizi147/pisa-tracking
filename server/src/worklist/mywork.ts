@@ -16,6 +16,7 @@ import { allProgrammes } from '../normal/regular.ts';
 import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
 import { viecBanGiao } from '../classes/banGiao.ts';
 import { lopChoLenhChuyen } from '../classes/lenhChuyen.ts';
+import { lopChoChotLenFt } from '../fasttrack/mt0.ts';
 import { myMgmtTasks } from './mgmttasks.ts';
 import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, UNCONFIRMED_PRESET, YC_KE_HOACH, awaitingCauseCaseIds } from '../cases/sosState.ts';
 import { quyenBoTro } from '../cases/boTro.ts';
@@ -123,7 +124,9 @@ export type WorkGroupKey =
   /* PR-YT4 (K5 §3 dòng 6–8): việc Ý thức THẬT có hạn — thay nhắc mềm W01–W06. */
   | 'yt_xu_ly' | 'yt_xem' | 'yt_thuc_hien'
   /* PR-CT (Q30-2): bàn giao khi có quyết định chuyển lớp — một việc mỗi lớp (GVCN), mỗi (lớp, môn) (GVBM). */
-  | 'ban_giao';
+  | 'ban_giao'
+  /* PR-MT0 (T5b): Quản lý chốt em lên FT của lớp FOU/BE/ELE trước tuần Cuối khoá — tự xong khi mọi em đã có hướng. */
+  | 'chot_len_ft';
 
 /**
  * Mỗi nhóm có MỘT DÒNG nói rõ nhóm đó nghĩa là gì.
@@ -205,6 +208,10 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   no_owner: {
     label: 'Chưa có người phụ trách',
     hint: 'Case đang mở mà chưa ai nhận điều phối. Chọn người phụ trách trước, vì mọi việc sau đó đều treo vào chỗ này.',
+  },
+  chot_len_ft: {
+    label: 'Chốt lên FT',
+    hint: 'Ghi hướng cho mọi em của lớp trước tuần Cuối khoá — em Lên FT có MT0 ở tuần Final.',
   },
   placement: {
     label: 'Chuyển tiếp lớp',
@@ -574,6 +581,19 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       /* Việc của cả lớp, không của riêng ai — nên không gán người phụ trách. */
       ownerId: null, owner: null, mine: false,
       due: null, statusLabel: CHU_CHUYEN_LOP.chua,
+    });
+  }
+
+  // ------------------------------------------------- 2d. PR-MT0: Chốt lên FT (một việc mỗi lớp, Quản lý) — cùng hàm với chỉ số `lop-chua-chot-len-ft`
+  for (const x of co('chot_len_ft') ? lopChoChotLenFt(p, f.branchId ?? null, today) : []) {
+    items.push({
+      key: `chotft:${x.classId}`, group: 'chot_len_ft', urgency: urgencyOf(x.han, today),
+      studentId: null, studentName: `Lớp ${x.code}`, classId: x.classId, classCode: x.code,
+      attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: null, count: x.soEm,
+      reason: `${x.soEm} em chưa có hướng`,
+      tieuDe: `Chốt lên FT · ${x.code}`, actionLabel: 'Ghi lộ trình',
+      href: `/hoc-vien/lop/${x.classId}?viec=lo-trinh-ca-lop`,
+      ownerId: null, owner: null, mine: false, due: x.han, statusLabel: 'Chưa chốt',
     });
   }
 
@@ -1180,7 +1200,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   if (f.chiNhom) for (let i = items.length - 1; i >= 0; i--) if (!f.chiNhom.has(items[i].group)) items.splice(i, 1);
   const order: WorkGroupKey[] = [
     'cause', 'xac_nhan_pa', 'ke_hoach_bo_tro', 'phoi_hop', 'phoi_hop_sos', 'mini_test', 'score', 'no_plan', 'ghi_ket_qua_pa', 'yt_xu_ly', 'yt_xem', 'yt_thuc_hien', 'khai_bac',
-    'placement', 'ky_vong_dau_ra', 'thi_that', 'ban_giao', 'no_owner', 'mgmt', 'missing_data',
+    'chot_len_ft', 'placement', 'ky_vong_dau_ra', 'thi_that', 'ban_giao', 'no_owner', 'mgmt', 'missing_data',
   ];
   const weight = (u: WorkUrgency) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
 

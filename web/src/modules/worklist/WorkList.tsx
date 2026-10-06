@@ -42,7 +42,7 @@ export function DongViec({ it, onOpen, nutPhu }: {
   const loaiHan = LOAI_HAN_CUA_VIEC[it.group];
   /* Lớp chỉ hiện khi dòng đang nói về MỘT EM — dòng gom đã lấy chính tên lớp làm tiêu đề phụ. */
   /* "Chuyển tiếp lớp · lớp · n HV" (PR-S5F-a, mockup 20): tiêu đề đã có lớp và số em — dòng phụ không nhắc lại. */
-  const gomLop = it.group === 'placement';
+  const gomLop = it.group === 'placement' || it.group === 'chot_len_ft';   // PR-MT0: "Chốt lên FT · lớp" cũng là việc cả lớp
   const dongPhu = [
     gomLop ? null : it.studentName,
     it.classCode && it.studentName !== `Lớp ${it.classCode}` ? it.classCode : null,
@@ -50,7 +50,7 @@ export function DongViec({ it, onOpen, nutPhu }: {
     !gomLop && it.count !== null && it.count > 1 ? `${it.count} HV` : null,
   ].filter(Boolean).join(' · ');
   /* Q31-4 (D9): người phụ trách 12 px — tách khỏi phần ngữ cảnh 11 px của dòng phụ. */
-  const nguoi = it.owner ?? (it.ownerId === null && !it.mine && it.group !== 'placement' ? 'chưa ai phụ trách' : null);
+  const nguoi = it.owner ?? (it.ownerId === null && !it.mine && !gomLop ? 'chưa ai phụ trách' : null);
   return (
     /* PR-VAI-a (§7.3, mockup 23 màn A): bốn cột thẳng qua mọi nhóm — nhãn trạng thái · việc · hạn (12 px) · nút. */
     <div className="grid grid-cols-[78px_minmax(0,1fr)] gap-x-3 gap-y-1 py-2 pr-3 hover:bg-white/5 sm:grid-cols-[78px_minmax(0,1fr)_150px_230px] sm:items-center" title={it.reason}>

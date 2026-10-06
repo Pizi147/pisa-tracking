@@ -323,7 +323,8 @@ export function hasAssignment(p: Principal, ctx: Ctx, need: 'any' | 'skill' | 'c
   const mine = p.assignments.filter((a) => activeAt(a, date) && classIds.includes(a.classId));
   if (!mine.length) return false;
   if (need === 'core') return mine.some((a) => a.isCore);
-  if (need === 'skill') return ctx.skill ? mine.some((a) => a.skill === ctx.skill) : false;
+  /* PR-MT0: lớp thường phân công `writing` (một môn) — MT0 nhập W1, W2 như Mock nên GV Writing của lớp nhập cả hai ô. */
+  if (need === 'skill') return ctx.skill ? mine.some((a) => a.skill === ctx.skill || (a.skill === 'writing' && (ctx.skill === 'writing1' || ctx.skill === 'writing2'))) : false;
   return true;
 }
 

@@ -6,6 +6,7 @@ import {
   type ChuongTrinh, type DiemChuY, type DongCanXuLyGoc, type MaCanXuLy, type UngVienChuY,
 } from '../../../shared/domain/index.ts';
 import { lopChoLenhChuyen } from '../classes/lenhChuyen.ts';
+import { lopChoChotLenFt } from '../fasttrack/mt0.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, badRequest, forbidden } from '../util.ts';
 import { activeAt, can, scopeFor, type Principal } from '../permissions.ts';
@@ -40,7 +41,7 @@ export type DongCanXuLy = DongCanXuLyGoc & {
   /** Chú thích khi rê chuột (Q9: "Lộ trình RF: xong MT2"). */
   goiY?: string;
   nguoi: 'ban' | { dau: string; phu: string; ids: number[] };
-  han: { ngay: string; loai: 'cap-nhat-pa' | 'viec-van-hanh' } | { chu: string; quaHan?: true };
+  han: { ngay: string; loai: 'cap-nhat-pa' | 'viec-van-hanh' | 'chot-len-ft' } | { chu: string; quaHan?: true };
   /** Nút mở thẳng chỗ làm; `null` = nhiều đích → mở panel danh sách của chỉ số. */
   den: string | null;
 };
@@ -85,7 +86,11 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null }) {
   const lopLenh = dem['hv-chua-co-lenh-chuyen'] ? lopChoLenhChuyen(p, base.branchId, today) : [];
   const ketThuc = lopLenh.map((l) => l.moc.tuanKetThuc).filter((w): w is string => !!w).sort()[0] ?? null;
   const lenhQuaHan = !!ketThuc && addDays(ketThuc, 7) <= today;
-  const dongs = sapCanXuLy(dem, coQuyenDuyet, { 'van-hanh-can-quyet-dinh': !!hanVh && hanVh < today, 'hv-chua-co-lenh-chuyen': lenhQuaHan });
+  /* PR-MT0: lớp cần Chốt lên FT — quá hạn khi hạn sớm nhất đã qua. */
+  const lopChot = dem['lop-chua-chot-len-ft'] ? lopChoChotLenFt(p, base.branchId, today) : [];
+  const dongs = sapCanXuLy(dem, coQuyenDuyet, {
+    'van-hanh-can-quyet-dinh': !!hanVh && hanVh < today, 'hv-chua-co-lenh-chuyen': lenhQuaHan, 'lop-chua-chot-len-ft': lopChot.some((l) => l.han < today),
+  });
 
   /* Tên người giữ việc của MỌI dòng GV trễ — một câu (Q4); tập người lấy từ `chiTiet` của chính tập ID. */
   const nguoiIds = [...new Set(dongs.filter((x) => !x.cuaNguoiXem).flatMap((x) => [...(sets.get(x.metricId)!.chiTiet?.values() ?? [])].flatMap((c) => c.nguoi)))];
@@ -135,6 +140,14 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null }) {
             phu: ketThuc ? `Lớp kết thúc ${tuanLich(ketThuc, today)}` : '', han, den: `/hoc-vien/lop/${lop[0].classId}?viec=chuyen-tiep` };
         }
         return { ...x, ...chung, truoc: `${lop.length} lớp ·`, phu: tachTheoLop(r.unit, r.ids), han, den: null };
+      }
+      case 'lop-chua-chot-len-ft': {
+        /* PR-MT0 (mockup ③): một lớp → "Chốt lên FT · BE 04" + hạn; nhiều lớp → dòng phụ tên lớp, hạn sớm nhất. */
+        const lop = lopChot;
+        const han = lop.map((l) => l.han).sort()[0];
+        const h = han ? { ngay: han, loai: 'chot-len-ft' as const } : chuaCoHan;
+        if (lop.length === 1) return { ...x, ...chung, truoc: `Chốt lên FT · ${lop[0].code}`, nhan: '', phu: '', han: h, den: `/hoc-vien/lop/${lop[0].classId}?viec=lo-trinh-ca-lop` };
+        return { ...x, ...chung, phu: dongPhuGon(lop.map((l) => l.code)), han: h, den: null };
       }
       case 'lop-thieu-gv-mon': {
         /* Q6: dòng phụ "MB BE 06 thiếu W · HD FT 108 thiếu S" — cùng dòng panel (`rowsFor('lop')`); kèm số Case chưa có người nhận (chỉ số giữ). */

@@ -2,7 +2,7 @@ import { db, theoLo } from '../db.ts';
 import {
   CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS, caseCategoriesFor, caseTitle, chiaChuong, goiYCuoiKhoa, lapLaiQuaLop,
   ASSESSED_SKILLS, tenCaseSos, tenMon, tenMonNgan, tuanHocTai, type CaseCategory, type CaseChuongVao, type LopChuong, type TonePaChuong,
-  mondayOfDate, type AssessedSkill, type DiemMoc, type DotRef,
+  mondayOfDate, nhanMt0, type AssessedSkill, type DiemMoc, type DotRef,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { require_, type Principal } from '../permissions.ts';
@@ -12,6 +12,7 @@ import { khoangTamDung } from './tamDung.ts';
 import { addDays } from '../util.ts';
 import { CO_THE_KHONG_THEO_DOI, awaitingCauseCaseIds } from '../cases/sosState.ts';
 import { loTrinhTinhTuan } from '../fasttrack/cycles.ts';
+import { mt0TheoHocVien } from '../fasttrack/mt0.ts';
 
 /**
  * MÁY CHỦ CỦA TAB HÀNH TRÌNH (PR-Qb, spec §3.8; PR-VAI-b Task 9, mockup 26 bản 2 + bản 1) — trả dữ liệu THÔ; mọi nhãn, màu, tầng tính ở
@@ -67,7 +68,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
   attemptRows.sort((x, y) => x.cycle_id - y.cycle_id || x.attempt_no - y.attempt_no);
   /* PR-S6F-b: chương trình của lộ trình thiếu `programme_code` lấy từ lượt đã nạp (cùng luật `programmeCodeOfCycle`, không hỏi lại mỗi lộ trình). */
   const maCtCuaCycle = new Map<number, string>();
-  for (const a of attemptRows) if (a.class_programme && !maCtCuaCycle.has(a.cycle_id)) maCtCuaCycle.set(a.cycle_id, a.class_programme);
+  for (const a of attemptRows) if (a.kind !== 'mt0' && a.class_programme && !maCtCuaCycle.has(a.cycle_id)) maCtCuaCycle.set(a.cycle_id, a.class_programme);   // PR-MT0: MT0 mang lớp thường cũ
 
   const progs = allProgrammes();
   const progOf = (code: string | null | undefined) => (code ? progs.get(code) ?? null : null);
@@ -176,6 +177,8 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
 
   // -------------------------------------------------------------- ghim (đợt Test) — mọi lộ trình; trục chỉ lấy giai đoạn đang xem
   /* Chương nhận cả lượt chưa xếp tuần (như lịch sử lớp cũ); trục tuần chỉ vẽ lượt có tuần. */
+  /* PR-MT0: nhãn ghim MT0 theo trạng thái suy ra — `MT0` (dùng / chờ) hoặc `MT0 · không dùng`. */
+  const mt0 = attemptRows.some((a) => a.kind === 'mt0') ? mt0TheoHocVien([studentId]).get(studentId) ?? null : null;
   const ghimMoi = attemptRows
     .map((a) => {
       const t = typed.get(a.id)!;
@@ -195,6 +198,13 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
         };
       }
       const r = t.ft!;
+      if (a.kind === 'mt0') {
+        return {
+          ...chung, cheDo: 'ielts' as const, nhanNgan: nhanMt0(mt0 && mt0.attemptId === a.id ? mt0.trangThai : a.route ? 'dung' : 'khong_dung'), lichSu: !!a.lich_su,
+          overall: r.overall, sosLevel: null, soDat: null, soYeuCau: r.required.length, soCoDiem: r.scoredRequired, kyVong: null,
+          kyNangChuaDat: [] as string[],
+        };
+      }
       return {
         ...chung, cheDo: 'ielts' as const, nhanNgan: `MT${a.attempt_no}`, lichSu: !!a.lich_su,
         overall: r.overall, sosLevel: r.sosLevel, soDat: null, soYeuCau: r.required.length, soCoDiem: r.scoredRequired, kyVong: r.expectation,
@@ -239,6 +249,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
       conCho = true;
     };
     for (const a of attemptGiaiDoan) {
+      if (ratio && a.kind === 'mt0') continue;   // PR-MT0: band MT0 không thuộc hàng môn tỷ lệ; MT0 chưa điểm không là mốc "?"
       const t = typed.get(a.id)!;
       if (t.mode === 'ratio') {
         const s = t.ratio!.skills.find((x) => x.skill === kyNang);

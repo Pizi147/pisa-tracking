@@ -77,6 +77,8 @@ export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienD
   if (l?.ketQuaHuy && bang.coTheXep) muc.push({ key: 'khoi-phuc-ket-qua', nhan: 'Khôi phục kết quả', onChon: () => setKhoiPhuc(true) });
   if (moHoSo) muc.push({ key: 'ho-so', nhan: 'Mở hồ sơ MT', onChon: moHoSo, keTruoc: muc.length > 0 });
 
+  /* PR-MT0: hàng MT0 (số 0) không có tuần đề xuất — hiện tuần thật sớm nhất của nó. */
+  const tuanHien = h.weekStart ?? (h.attemptNo === 0 ? Object.values(l?.kn ?? {}).map((o) => o?.tuan ?? null).filter((x): x is string => !!x).sort()[0] ?? null : null);
   return (
     <>
       <tr className="row-hover">
@@ -86,10 +88,10 @@ export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienD
         </td>
         <td className="td text-slate-400 whitespace-nowrap tabular-nums">{h.studyWeek !== null ? `tuần ${h.studyWeek}` : '—'}</td>
         <td className="td whitespace-nowrap">
-          {h.weekStart ? (
+          {tuanHien ? (
             <>
-              <span className="text-slate-200">{tuanLich(h.weekStart, homNay)}</span>
-              <span className="block text-[11px] text-slate-500">{ngay(h.weekStart, homNay)} – {ngay(addDaysStr(h.weekStart, 6), homNay)}</span>
+              <span className="text-slate-200">{tuanLich(tuanHien, homNay)}</span>
+              <span className="block text-[11px] text-slate-500">{ngay(tuanHien, homNay)} – {ngay(addDaysStr(tuanHien, 6), homNay)}</span>
             </>
           ) : <span className="text-xs text-slate-500" title="Ngoài lịch mặc định — Quản lý xếp tay">xếp tay</span>}
         </td>

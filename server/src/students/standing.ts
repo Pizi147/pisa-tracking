@@ -181,7 +181,7 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
     .prepare(
       `SELECT a.*, pr.code AS period_code, pr.week_start AS weekStart, pr.week_end AS period_end FROM assessment_attempts a
          LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
-        WHERE a.cycle_id IN (${cph}) AND a.status != 'cancelled'
+        WHERE a.cycle_id IN (${cph}) AND a.status != 'cancelled' AND a.kind != 'mt0'   /* PR-MT0: MT0 không vào nhãn / kết quả gần nhất */
         ORDER BY a.attempt_no`,
     )
     .all(...cycleIds) as any[];

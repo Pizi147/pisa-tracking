@@ -221,7 +221,8 @@ function ghiMotLo(conn: any, ids: number[], o: BanChupVao): number[] {
         const rieng = huy ? [] : rows.filter((r) => (KY_NANG_THO.includes(d.kyNang) ? r.skill === d.kyNang : gocKyNang(r.skill) === d.kyNang));
         const nhap = rieng.filter((r) => r.entered_at).sort((x, y) => String(y.entered_at).localeCompare(String(x.entered_at)))[0];
         const gv = gvCua(a.class_id ?? lopId, d.kyNang, tuan);
-        dongLuot.push([0, a.id, a.attempt_no, a.kind, a.status, huy ? a.cancel_reason ?? null : null, a.lich_su ?? 0, a.class_id ?? null,
+        /* PR-MT0: MT0 còn ở khoá lớp thường lúc chụp (MT0 dùng đã sang lộ trình FT trước khi chụp) = `khong_dung`. */
+        dongLuot.push([0, a.id, a.attempt_no, a.kind, a.kind === 'mt0' && !huy ? 'khong_dung' : a.status, huy ? a.cancel_reason ?? null : null, a.lich_su ?? 0, a.class_id ?? null,
           a.class_id ? lopTheoId.get(a.class_id)?.code ?? null : null, a.period_start ?? null, a.target_at_attempt ?? null,
           t.kyVong, t.overall, t.tyLeTong, t.sos, t.ketQua, d.kyNang, d.batBuoc, d.boQua, d.diem, d.diemTho, d.diemTong, d.dat,
           rieng.some((r) => r.no_show_at) ? 1 : 0, a.deadline_override ?? null, nhap?.entered_at ?? null, nhap?.entered_by ?? null,

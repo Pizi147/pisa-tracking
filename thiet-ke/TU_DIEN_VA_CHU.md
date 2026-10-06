@@ -544,3 +544,14 @@ Lớp thường **không có chữ SOS ở bất kỳ đâu** (chủ sản phẩ
 | Chuông, giờ thông báo ghi sau ngày nghiệp vụ (demo) | `Ghi nhận 02/10 22:57` (tooltip: `Ngày nghiệp vụ … · Ghi nhận …`) | ngày tương lai trơ trọi |
 | Việc Báo phụ huynh qua TVV | `Nhờ TVV báo phụ huynh (4 nội dung), xong thì đánh dấu đã làm` | `Tạo task cho TVV trên Base` |
 | Yêu cầu của tôi, thẻ bị từ chối | nhãn `Bị từ chối` | `Cần làm` |
+
+## 16. MT0 — 05/10/2026 (PR-MT0)
+
+| Chỗ | Chữ | Không viết |
+|---|---|---|
+| Lượt Mock số 0 (em lớp thường Lên FT) | `MT0` · ô MT số `0` | "Mock đầu vào", "MT tạm" |
+| MT0 có điểm mà em không lên FT | `MT0 · không dùng` | "MT0 huỷ" (MT0 có điểm không bao giờ huỷ) |
+| Dòng phụ Lộ trình tiếp theo / bảng cả lớp | `MT0 · W4 OCT` · thanh đầu `BE 04 · 12 em · Final W4 OCT` | ngày cụ thể của tuần |
+| Chip SOS hiển thị (band ≤ Target − 2.0) | `W 4.0 SOS` · không SOS mà có điểm: `MT0 ✓` | `SOS 1/2/3` cho MT0 |
+| Việc Quản lý | `Chốt lên FT · BE 04` · Tổng quan `lớp cần Chốt lên FT` | nút "Chốt lên FT" (không có — tự xong khi mọi em có hướng) |
+| Điểm đầu vào lộ trình FT | nguồn `MT0` | — |
