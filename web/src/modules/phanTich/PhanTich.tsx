@@ -108,7 +108,9 @@ export function PhanTich() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div ref={hangGoc} role="radiogroup" aria-label="Góc nhìn" className="relative inline-flex rounded-lg border overflow-x-auto max-w-full"
+        {/* PR-KHUNG G5: khung vuốt bọc ngoài viền, mép phải mờ dưới 640px (cùng mẫu BoLocDoan). */}
+        <div ref={hangGoc} className="relative inline-flex max-w-full overflow-x-auto max-sm:[scrollbar-width:none] max-sm:pr-8 max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)]">
+        <div role="radiogroup" aria-label="Góc nhìn" className="inline-flex shrink-0 rounded-lg border"
           style={{ borderColor: 'var(--line)' }}>
           {GOC_NHIN.map((k) => (
             <button key={k} type="button" role="radio" aria-checked={goc === k} onClick={() => setGoc(k)}
@@ -120,6 +122,7 @@ export function PhanTich() {
               {nhanGocNhin(k, ct)}
             </button>
           ))}
+        </div>
         </div>
         {goc !== 'giao-vien' && (<div className="flex flex-wrap items-center gap-2">
           {!laYThuc && <ChonChuongTrinh value={ct} onChange={setCt} />}

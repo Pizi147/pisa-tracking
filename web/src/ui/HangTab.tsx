@@ -3,6 +3,7 @@
  * bên trong một khối (`cap="con"`). Số đếm và chấm vàng ● nằm ngay trên nhãn (A5): nhìn là biết bên nào có việc.
  *
  * Trên 375px hàng tab cuộn ngang BÊN TRONG chính nó (`overflow-x-auto`) — không đẩy cả trang cuộn ngang.
+ * PR-KHUNG G5: dưới 640px mép phải mờ + đệm pr-8 (cùng mẫu bộ lọc Học viên & Lớp) — biết là còn tab để vuốt.
  */
 import { useEffect, useRef } from 'react';
 
@@ -19,7 +20,7 @@ export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, ca
     hang.current?.querySelector<HTMLElement>('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   }, [value]);
   return (
-    <div ref={hang} role="tablist" aria-label={ariaLabel} className="flex gap-1 overflow-x-auto overflow-y-hidden border-b" style={{ borderColor: 'var(--line)' }}>
+    <div ref={hang} role="tablist" aria-label={ariaLabel} className="flex gap-1 overflow-x-auto overflow-y-hidden border-b max-sm:[scrollbar-width:none] max-sm:pr-8 max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)]" style={{ borderColor: 'var(--line)' }}>
       {tabs.map((t) => {
         const active = t.key === value;
         return (
