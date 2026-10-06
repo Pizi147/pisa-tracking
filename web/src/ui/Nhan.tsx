@@ -38,14 +38,14 @@ export function Nhan({ tone, dut, title, onClick, children }: {
 }
 
 /**
- * NHÃN "lịch sử" cạnh "MT2" (PR-MT, T34): viền mảnh, chữ xám 11.5px, KHÔNG màu nghĩa, KHÔNG ⚠ — MT lịch sử không phải việc trễ.
+ * NHÃN "cũ" cạnh "MT2" (PR-MT; PR-MTa T1 "MT cũ"): viền mảnh, chữ xám 11.5px, KHÔNG màu nghĩa, KHÔNG ⚠ — MT cũ không phải việc trễ.
  * `whitespace-nowrap` để không tách dòng khỏi "MT2" trên điện thoại.
  */
 export function ChipLichSu() {
   return (
-    <span title="MT lịch sử — tuần thi đã qua trước khi lượt này được tạo; nhập bù, không tính hạn"
+    <span title="MT cũ — nhập bù, không tính hạn"
       className="inline-flex items-center whitespace-nowrap rounded border border-muted-line px-[5px] align-middle text-[11.5px] font-normal leading-4 text-muted">
-      lịch sử
+      cũ
     </span>
   );
 }

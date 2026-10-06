@@ -15,7 +15,6 @@ const TRUONG: { key: TruongDeXuat; nhan: string }[] = [
   { key: 'target', nhan: 'Target' }, { key: 'lo-trinh', nhan: 'Lộ trình' },
   { key: 'lich-mt', nhan: 'Lịch MT' }, { key: 'khac', nhan: 'Khác' },
 ];
-const LY_DO_TOI_THIEU = 15;
 
 export function DeXuatSuaPanel({ studentId, studentName, lop, truongDau, hienTai, onClose, onDone }: {
   studentId: number; studentName: string; lop?: string | null;
@@ -35,7 +34,7 @@ export function DeXuatSuaPanel({ studentId, studentName, lop, truongDau, hienTai
   const luat: LuatTruong[] = [
     { khoa: 'truong', nhan: 'Thông tin cần sửa', chon: true },
     truong === 'lo-trinh' ? { khoa: 'moi', nhan: 'Lộ trình mới', chon: true } : { khoa: 'moi', nhan: 'Giá trị mới', toiThieu: truong === 'target' ? 1 : 2 },
-    { khoa: 'ly-do', nhan: 'Lý do', toiThieu: LY_DO_TOI_THIEU },
+    { khoa: 'ly-do', nhan: 'Lý do', toiThieu: 1 },   // T7 (PR-MTa): bắt buộc, không tối thiểu ký tự
   ];
   const loi = [
     ...dsLoi(luat, { truong, moi, 'ly-do': lyDo }),

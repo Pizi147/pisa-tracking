@@ -170,7 +170,7 @@ export function DiemTheoLop({ classId, luotBanDau, gon = false, congRoi, onDaLuu
                       on ? 'bg-[color:var(--accent-soft)] border-[color:var(--accent-line)]'
                         : 'border-[color:var(--line-strong)] hover:bg-[color:var(--surface-2)]'}`}>
                     <span className={`font-semibold text-sm ${on ? 'text-[color:var(--accent-strong)]' : 'text-slate-200'}`}>
-                      {l.nhan}{l.lichSu ? ' · lịch sử' : ''}
+                      {l.nhan}{l.lichSu ? ' · cũ' : ''}
                     </span>
                     {/* Tab chọn: --text-dim trên --accent-soft (tối 5,07:1 · sáng 6,75:1); --text-faint chỉ 4,10:1 ở tối. */}
                     <span className={`text-[11.5px] tabular-nums ${on ? 'text-slate-400' : 'text-slate-500'}`}>{dongPhuLuot(l)}</span>
@@ -207,7 +207,7 @@ export function DiemTheoLop({ classId, luotBanDau, gon = false, congRoi, onDaLuu
 
         {dangXem?.lichSu && (
           <div className="surface-2 rounded-md px-3 py-2 text-sm text-slate-300">
-            {dangXem.nhan} là lượt lịch sử (trước khi lớp dùng web): nhập bù điểm, không nhận dấu "-".
+            {dangXem.nhan} là MT cũ: nhập bù điểm, không nhận dấu "-".
           </div>
         )}
 

@@ -8,7 +8,7 @@ import { NutChon } from '../../ui/ui.tsx';
 import { ChonThang } from '../../ui/ChonNgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { OTuan } from '../classes/TransitionPanel.tsx';
-import { CHU_CHUYEN_LOP, NHAN_XET_TOI_THIEU, chuTuanHoc, dsLoi, hanBanGiao, ngay, tuanChonDuoc, tuanLich, type LuatTruong } from '@shared/domain/index.ts';
+import { CHU_CHUYEN_LOP, chuTuanHoc, dsLoi, hanBanGiao, ngay, tuanChonDuoc, tuanLich, type LuatTruong } from '@shared/domain/index.ts';
 
 type LopDich = { id: number; code: string; chiNhanhId: number; ma: string | null; ft: boolean; tenChuongTrinh: string | null; tuan: string | null; gvcn: string | null };
 type LopDichData = { chiNhanh: { id: number; name: string }[]; lop: LopDich[] };
@@ -90,11 +90,11 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
   const han = hanBanGiao(xem.data?.today ?? homNay ?? '2000-01-01');
 
   const LUAT: LuatTruong[] = dx
-    ? [{ khoa: 'ly-do', nhan: 'Lý do', toiThieu: NHAN_XET_TOI_THIEU }]
+    ? [{ khoa: 'ly-do', nhan: 'Lý do', toiThieu: 1 }]   // T7 (PR-MTa): không tối thiểu ký tự
     : [
       { khoa: 'lop', nhan: 'Lớp chuyển đến', chon: true },
       { khoa: 'tuan', nhan: 'Tuần bắt đầu', chon: true },
-      { khoa: 'ly-do', nhan: 'Lý do', toiThieu: 3 },
+      { khoa: 'ly-do', nhan: 'Lý do', toiThieu: 1 },
       ...(luat?.canMucTieu ? [{ khoa: 'muc-tieu', nhan: 'Target (hoặc KCK)', chon: true }] : []),
     ];
   const loi = dsLoi(LUAT, { lop: toClassId, tuan, 'ly-do': lyDo, 'muc-tieu': mucTieu });
@@ -128,7 +128,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
     } catch (e: any) { loiMay(e); } finally { setBusy(false); }
   };
   const huyLenh = async () => {
-    if (!lenh || lyDoHuy.trim().length < 3) return;
+    if (!lenh || !lyDoHuy.trim()) return;
     setBusy(true);
     try { await api.post(`/lenh-chuyen/${lenh.id}/huy`, { lyDo: lyDoHuy.trim() }); xong('Đã huỷ quyết định chuyển lớp'); } catch (e: any) { loiMay(e); } finally { setBusy(false); }
   };
@@ -170,7 +170,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
               <Truong nhan="Lý do huỷ" batBuoc>
                 <input className="field w-full" value={lyDoHuy} onChange={(e) => setLyDoHuy(e.target.value)} />
               </Truong>
-              <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" disabled={busy || lyDoHuy.trim().length < 3} onClick={huyLenh}>Xác nhận huỷ quyết định</button>
+              <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" disabled={busy || !lyDoHuy.trim()} onClick={huyLenh}>Xác nhận huỷ quyết định</button>
             </Khoi>
           )}
 
@@ -204,7 +204,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
                 </div>
               )}
             </Truong>
-            <Truong nhan="Lý do" batBuoc loi={lf.loiCua(loi, 'ly-do')} dem={dx ? { co: lyDo.trim().length, can: NHAN_XET_TOI_THIEU } : undefined}>
+            <Truong nhan="Lý do" batBuoc loi={lf.loiCua(loi, 'ly-do')}>
               <textarea className="field w-full" rows={2} {...lf.o(loi, 'ly-do')} value={lyDo} onChange={(e) => setLyDo(e.target.value)}
                 placeholder={dx ? 'Ví dụ: Phụ huynh xin chuyển sang lớp khác giờ học' : 'Ví dụ: Lớp đông, chuyển sang lớp cùng tiến độ'} />
             </Truong>

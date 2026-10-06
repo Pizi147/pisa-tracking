@@ -483,7 +483,7 @@ function HangEm({ s, d, ft, tuDeXuat, luoi, maKe, routeTu, tuanCh, homNay, loi, 
           {huy && (
             <span className="flex flex-wrap items-center gap-1.5">
               <input className="field w-56" placeholder="Lý do huỷ" aria-label={`Lý do huỷ quyết định của ${s.fullName}`} value={huy.lyDo} onChange={(e) => doiLyDoHuy(e.target.value)} />
-              <button type="button" className="btn btn-sm btn-danger" disabled={huy.lyDo.trim().length < 3} onClick={xacNhanHuy}>{CHU_CHUYEN_LOP.huy}</button>
+              <button type="button" className="btn btn-sm btn-danger" disabled={!huy.lyDo.trim()} onClick={xacNhanHuy}>{CHU_CHUYEN_LOP.huy}</button>
               <button type="button" className="btn btn-sm" onClick={dongHuy}>{CHU_CHUYEN_LOP.giu}</button>
             </span>
           )}

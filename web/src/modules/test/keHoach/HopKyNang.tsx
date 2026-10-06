@@ -5,7 +5,7 @@ import { useNgayNghiepVu } from '../../../ui/ngayNghiepVu.ts';
 import { addDaysStr } from '../../../lib/format.ts';
 import { useToast } from '../../../ui/Toast.tsx';
 import {
-  CHU_THAO_TAC, LY_DO_TOI_THIEU, cauSeHuyLich, gomBaiXemTruoc, mondayOfDate, nhanTuanKhoa, tenMon, tenMonNgan, thaoTacKyNang, trangThaiTT, tuanLich,
+  CHU_THAO_TAC, canLyDoVuot, cauSeHuyLich, dongHeQuaVuot, gomBaiXemTruoc, mondayOfDate, nhanTuanKhoa, tenMon, tenMonNgan, thaoTacKyNang, trangThaiTT, tuanLich,
   tuanMacDinhDotMoi, type BaiXemTruoc, type DongHangLoat, type KyNangKH, type OKyNang, type ThaoTac,
 } from '@shared/domain/index.ts';
 import { KY, thanDot, type DotChon, type KnO } from './kieu.ts';
@@ -138,13 +138,10 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
     return { tone: 'muted' as const, chu: seHuyLich.length ? `${nhom.join(' · ')}.` : `${nhom.join(' · ')} · không trùng đợt khác.` };
   }, [bai, moi, coDoi, seHuyLich]);   // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* K4-15: dời kỹ năng mà tuần thi cũ đã bắt đầu (không phải bài vắng) → bắt lý do, như bỏ kỹ năng. */
   const tuanDaBatDau = (k: KyNangKH) => !!homNay && !!kn[k]?.tuan && kn[k]!.tuan!.slice(0, 10) <= homNay;
-  const doiTuanDaBatDau = !moi && ky.some((k) => daDoi(k) && rows[k].tick && (kn[k]?.batBuoc ?? false)
-    && tuanDaBatDau(k) && kn[k]?.sit !== 'absent');
   const suaLichSu = lichSu && !moi && coDoi;
-  const canLyDo = bo.length > 0 || doiTuanDaBatDau || suaLichSu;
-  const thieuLyDo = canLyDo && lyDo.trim().length < LY_DO_TOI_THIEU;
+  /* T7 (PR-MTa): bỏ kỹ năng / dời lịch — ô lý do tuỳ chọn, không tối thiểu ký tự. */
+  const canLyDo = bo.length > 0 || (!moi && coDoi);
   /* Menu ⋯ từng dòng theo `thaoTacKyNang` (T38). Dòng đã có ô tuần và ô tích nên bỏ "Dời lịch thi" / "Bỏ kỹ năng khỏi đợt" /
    * "Đưa lại vào đợt" khỏi ⋯; dòng đã huỷ phần thi có "Khôi phục và đặt tuần". Kế hoạch Test là màn của Quản lý. */
   const tatCua = (k: KyNangKH) => {
@@ -160,11 +157,12 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
     return [...(tat.chinh === 'khoi-phuc' ? ['khoi-phuc' as ThaoTac] : []),
       ...tat.menu.filter((x) => x !== 'doi-lich' && x !== 'bo-ky-nang' && x !== 'dua-lai')];
   };
-  const luuDuoc = !busy && !chan.length && !thieuLyDo && (moi ? !thieuTuan && !!bai : coDoi);
+  const luuDuoc = !busy && !chan.length && (moi ? !thieuTuan && !!bai : coDoi);
 
-  const luu = async (daXacNhan = false) => {
+  /** `lyDoVuot` = lý do ở hộp dời vượt (T2) — chỉ có khi đã xác nhận huỷ kết quả. */
+  const luu = async (daXacNhan = false, lyDoVuot?: string) => {
     if (!luuDuoc) return;
-    if (!moi && seHuyLich.length && !daXacNhan) { setXacNhan(seHuyLich); return; }
+    if (!moi && canLyDoVuot(seHuyLich) && !daXacNhan) { setXacNhan(seHuyLich); return; }
     setBusy(true);
     const dungForce = force || canhBao.length > 0;
     try {
@@ -180,11 +178,11 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
               : { skill: k, periodId: rows[k].periodId }
         ));
         await api.post('/ke-hoach-test/dot', {
-          attemptId, kyNang, lyDoBo: bo.length ? lyDo.trim() : null, reason: doiTuanDaBatDau || suaLichSu ? lyDo.trim() : null, force: dungForce,
+          attemptId, kyNang, lyDoBo: bo.length ? lyDo.trim() : null, reason: lyDoVuot || lyDo.trim() || null, force: dungForce,
           xacNhanHuyLich: daXacNhan,
         });
       }
-      toast.push('ok', daXacNhan && xacNhan?.length ? `Đã lưu lịch · huỷ lịch ${xacNhan.map((x) => x.nhan).join(', ')}.` : 'Đã lưu lịch.');
+      toast.push('ok', daXacNhan && xacNhan?.length ? `Đã lưu lịch · ${xacNhan.map(dongHeQuaVuot).join(' · ')}.` : 'Đã lưu lịch.');
       invalidate('/ke-hoach-test'); invalidate('/attempts'); invalidate('/cham');
       onSaved(); onClose();
     } catch (e: any) {
@@ -246,13 +244,11 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
         {canLyDo && (
           <label className="block">
             <span className="mb-1 flex items-baseline gap-2 text-[11.5px] font-bold text-slate-200">
-              <span className="flex-1">{bo.length ? 'Lý do bỏ' : suaLichSu ? 'Lý do sửa tuần' : 'Lý do dời'} <span className="text-bad">*</span></span>
-              <span className="text-[11px] font-normal tabular-nums text-slate-500">{lyDo.trim().length}/{LY_DO_TOI_THIEU}</span>
+              <span className="flex-1">{bo.length ? 'Lý do bỏ' : suaLichSu ? 'Lý do sửa tuần' : 'Lý do dời'} <span className="font-normal text-slate-500">(tuỳ chọn)</span></span>
             </span>
             <input className="field w-full" value={lyDo} onChange={(e) => setLyDo(e.target.value)}
               placeholder={bo.length ? 'Ví dụ: đợt này không thi Speaking' : 'Ví dụ: trùng lịch phòng thi'} />
-            {suaLichSu && !bo.length ? <span className="mt-1 block text-xs text-slate-400">MT lịch sử — đổi tuần là sửa hồ sơ, điểm giữ nguyên.</span>
-              : doiTuanDaBatDau && !bo.length && <span className="mt-1 block text-xs text-slate-400">Tuần thi cũ đã bắt đầu — dời lúc này phải ghi lý do.</span>}
+            {suaLichSu && !bo.length && <span className="mt-1 block text-xs text-slate-400">MT cũ — đổi tuần là sửa hồ sơ, điểm giữ nguyên.</span>}
           </label>
         )}
         <div className={`min-h-[16px] text-xs leading-relaxed ${dongTrangThai.tone === 'bad' ? 'text-bad' : dongTrangThai.tone === 'soon' ? 'text-soon' : 'text-slate-400'}`} role="status">
@@ -270,7 +266,7 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
       </div>
       {xacNhan && (
         <HopXacNhanHuyLich ds={xacNhan} busy={busy} onQuayLai={() => setXacNhan(null)}
-          onXacNhan={() => { void luu(true); }} />
+          onXacNhan={(ly) => { void luu(true, ly); }} />
       )}
       {thaoTac && attemptId !== null && (
         <HopThaoTacMt key={`${thaoTac.t}:${thaoTac.k}`} thaoTac={thaoTac.t} attemptId={attemptId} skill={thaoTac.k} ct={ct} laThuong={loai === 'thuong'}

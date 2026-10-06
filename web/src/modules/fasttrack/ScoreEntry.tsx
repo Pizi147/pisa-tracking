@@ -11,7 +11,7 @@ import { fmtBand, skillLabel } from '../../lib/format.ts';
 import { useSession } from '../../lib/session.tsx';
 import { DongGvCham, cungGvCham, gvChamPayload, gvChamThanhChon } from '../cham/GvCham.tsx';
 import {
-  BAI_CO_NHAN_XET, NHAN_XET_TOI_DA, NO_SHOW_HINT, demNguocSuaDau, kiemLyDo, oLuoiThuong, tieuChiCua, tieuChiNganCua, tuanLich,
+  BAI_CO_NHAN_XET, NHAN_XET_TOI_DA, NO_SHOW_HINT, demNguocSuaDau, kiemLyDoThaoTac, oLuoiThuong, tieuChiCua, tieuChiNganCua, tuanLich,
   type EntrySkill, type NguoiChon,
 } from '@shared/domain/index.ts';
 
@@ -667,7 +667,9 @@ export function InlineScoreEditor({ cell, onSave, onClose }: {
   const canLyDo = coDiemChinhThuc(cell) && !built.dash && (isRaw
     ? (vals[0].trim() === '' ? null : Number(vals[0])) !== cell.rawScore
     : vals.some((v, i) => (v.trim() === '' ? null : Number(v)) !== cell.criteria[i]));
-  const loiLyDo = !built.patch ? (isRaw ? LOI_SO_CAU : LOI_TIEU_CHI) : canLyDo ? kiemLyDo(lyDo) : null;
+  /* T7 (PR-MTa): sửa giá trị → lý do tuỳ chọn; xoá trắng ô đã có điểm = huỷ điểm → bắt buộc. */
+  const xoaHet = canLyDo && vals.every((v) => v.trim() === '');
+  const loiLyDo = !built.patch ? (isRaw ? LOI_SO_CAU : LOI_TIEU_CHI) : xoaHet ? kiemLyDoThaoTac('huy-diem', lyDo) : null;
 
   const submit = async () => {
     if (busy || loiLyDo || !built.patch) return;
@@ -705,7 +707,7 @@ export function InlineScoreEditor({ cell, onSave, onClose }: {
         )}
         {canLyDo && (
           <label className="block">
-            <span className="block text-[11px] text-slate-500">Lý do sửa</span>
+            <span className="block text-[11px] text-slate-500">{xoaHet ? 'Lý do huỷ' : 'Lý do sửa (tuỳ chọn)'}</span>
             <input className="field w-56" value={lyDo} placeholder="Ví dụ: chấm lại bài, nhập nhầm"
               aria-label="Lý do sửa điểm đã nhập" onChange={(e) => setLyDo(e.target.value)} />
           </label>
@@ -765,8 +767,7 @@ export function DeadlinePill({ cell }: { cell: Cell }) {
 
 
 /**
- * RB-5 — SỬA MỘT Ô ĐÃ CÓ ĐIỂM. Hộp nhỏ ngay tại ô: giá trị mới + ô lý do bắt buộc. Nút Lưu mờ khi lý do chưa đủ, rê
- * chuột thấy đúng câu của `kiemLyDo` — không để người dùng bấm rồi mới biết mình thiếu gì.
+ * RB-5 — SỬA MỘT Ô ĐÃ CÓ ĐIỂM. Hộp nhỏ ngay tại ô: giá trị mới + ô lý do (T7: tuỳ chọn; xoá trắng ô thì máy chủ đòi).
  *
  * Hộp neo vào phần tử CHA của chỗ nó được đặt (chính là ô điểm) và vẽ qua portal với `position: fixed`, nên bảng cuộn
  * ngang trong thẻ (`overflow-x-auto`) không cắt được nó; hết chỗ bên dưới thì lật lên trên. Đây là một hộp nổi nhỏ,
@@ -792,9 +793,8 @@ export function SuaDiemCoLyDo({ tieuDe, moTaCu, children, onLuu, onDong, loiGiaT
   /* Giá trị mới đang nằm trong hộp, chưa gửi: bảng điểm theo lượt coi là "ô chưa lưu" và chặn đổi lượt (không mất điểm đang gõ). */
   useBaoHopLyDoMo(busy);
 
-  const loiLyDo = kiemLyDo(lyDo);
-  /* Câu của `kiemLyDo` đứng trước: tooltip của nút Lưu mờ luôn nói đúng câu lý do còn thiếu (RB-5). */
-  const chan = loiLyDo ?? loiGiaTri;
+  /* T7 (PR-MTa): sửa điểm — lý do tuỳ chọn; xoá trắng ô thì máy chủ đòi lý do và câu lỗi hiện dưới ô. */
+  const chan = loiGiaTri;
 
   const dat = useCallback(() => {
     const neo = moc.current?.parentElement;
@@ -864,7 +864,7 @@ export function SuaDiemCoLyDo({ tieuDe, moTaCu, children, onLuu, onDong, loiGiaT
           <div className="text-[11px] text-slate-500 mt-0.5 tabular-nums">{moTaCu}</div>
           <div className="mt-2">{children}</div>
           <label className="block mt-2">
-            <span className="block text-[11px] text-slate-500 mb-0.5">Lý do sửa (bắt buộc)</span>
+            <span className="block text-[11px] text-slate-500 mb-0.5">Lý do sửa (tuỳ chọn)</span>
             <input className="field py-1 text-sm" value={lyDo} placeholder="Ví dụ: chấm lại bài, nhập nhầm cột"
               aria-label="Lý do sửa điểm đã nhập" onChange={(e) => setLyDo(e.target.value)} />
           </label>

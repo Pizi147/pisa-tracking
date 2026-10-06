@@ -8,7 +8,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { TuanNho, type Tuan } from '../test/keHoach/TuanNho.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
-  CHU_THAO_TAC, LY_DO_TOI_THIEU, canLyDo, kiemLyDoThaoTac, kiemTruong, mondayOfDate, ngay, tenMon, tuanLich, type LoiTruong, type ThaoTac,
+  CHU_THAO_TAC, canLyDo, dongHeQuaVuot, kiemLyDoThaoTac, mondayOfDate, ngay, tenMon, tuanLich, type LoiTruong, type ThaoTac,
 } from '@shared/domain/index.ts';
 
 /** Thao tác một kỹ năng mở bằng hộp này — Nhập/Sửa điểm làm tại chỗ, Xếp lại bài vắng / Trả lời đề nghị có hộp riêng. */
@@ -69,14 +69,14 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, tuanDaBa
   const t = thaoTac;
   const ten = CHU_THAO_TAC[t];
   const mon = tenMon(ct, skill);
-  const batBuoc = canLyDo(t, tuanDaBatDau);
+  const batBuoc = canLyDo(t);
   const coTuan = t === 'dat-lich' || t === 'xep-lai' || t === 'doi-lich' || t === 'khoi-phuc';
   /* K2-33: dời / xếp lại lượt có sẵn không vào tuần đã qua — tuần sớm nhất là tuần này. */
   const tuanNay = homNay ? mondayOfDate(homNay) : null;
   const chonW = t === 'huy-diem' && !laThuong && oCoDiem.length > 1;
 
   const loi: LoiTruong[] = [
-    ...(batBuoc && kiemLyDoThaoTac(ten, lyDo) ? [{ khoa: 'ly-do', nhan: 'Lý do', lyDo: kiemTruong({ khoa: 'ly-do', nhan: 'Lý do', toiThieu: LY_DO_TOI_THIEU }, lyDo)! }] : []),
+    ...(kiemLyDoThaoTac(t, lyDo) ? [{ khoa: 'ly-do', nhan: 'Lý do', lyDo: 'Chưa điền' }] : []),
     ...(coTuan && (!tuan || (t === 'doi-lich' && tuan.periodId === row.periodId)) ? [{ khoa: 'tuan', nhan: 'Tuần thi mới', lyDo: 'Chọn tuần khác tuần hiện tại' }]
       : coTuan && tuanNay && tuan!.weekStart < tuanNay ? [{ khoa: 'tuan', nhan: 'Tuần thi mới', lyDo: 'Tuần đã qua — chọn từ tuần này trở đi' }] : []),
     ...(t === 'doi-han' && !han ? [{ khoa: 'han', nhan: 'Hạn chấm mới', lyDo: 'Chưa chọn' }] : []),
@@ -84,13 +84,13 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, tuanDaBa
   ];
   const lyDoGui = lyDo.trim() || undefined;
 
-  const goi = async (force: boolean, xacNhanHuyLich: boolean): Promise<string> => {
+  const goi = async (force: boolean, xacNhanHuyLich: boolean, lyDoVuot?: string): Promise<string> => {
     const goc = `/attempts/${attemptId}/skills/${skill}`;
     switch (t) {
       case 'dat-lich':
       case 'xep-lai':
       case 'doi-lich':
-        await api.post(`${goc}/week`, { periodId: tuan!.periodId, reason: lyDoGui ?? null, force, xacNhanHuyLich });
+        await api.post(`${goc}/week`, { periodId: tuan!.periodId, reason: lyDoVuot || lyDoGui || null, force, xacNhanHuyLich });
         return `${t === 'doi-lich' ? 'Đã dời lịch thi' : 'Đã lên lịch thi'} ${mon} ${t === 'doi-lich' ? 'sang' : 'vào'} ${tuanLich(tuan!.weekStart, homNay)}`;
       case 'khoi-phuc':
         await api.post(`${goc}/restore`, { periodId: tuan!.periodId, reason: lyDoGui ?? null });
@@ -109,8 +109,9 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, tuanDaBa
           const r = await api.put<any>(`/regular/attempts/${attemptId}/scores/${skill}`, { noShow: true, lyDo: lyDoGui });
           return r?.moved ? `Đã báo vắng ${mon} — dời sang ${r.tuanMoi ?? 'tuần sau'}` : `Đã báo vắng ${mon}`;
         }
-        const r = await api.post<{ daDoi: boolean; tuanMoi: string | null; choDuyet: boolean }>(`${goc}/bao-vang`, { lyDo: lyDoGui });
+        const r = await api.post<{ daDoi: boolean; tuanMoi: string | null; choDuyet: boolean; huyVang?: boolean }>(`${goc}/bao-vang`, { lyDo: lyDoGui });
         if (r.daDoi) return `Đã tự dời ${mon} sang ${tuanLich(r.tuanMoi, homNay)} (vắng lần 1)`;
+        if (r.huyVang) return `${mon}: vắng 2 lần — đã huỷ`;   // PR-MTa T3
         return r.choDuyet ? `Đã gửi Quản lý duyệt dời ${mon} (vắng lần 2)` : `Đã báo vắng ${mon}`;
       }
       case 'huy-diem': {
@@ -127,14 +128,14 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, tuanDaBa
   };
 
   const dong = () => { lf.datLai(); onClose(); };
-  const luu = async (xacNhanHuyLich = false) => {
+  const luu = async (xacNhanHuyLich = false, lyDoVuot?: string) => {
     lf.bam();
     if (loi.length || busy) return;
     setBusy(true); setLoiMay(null);
     try {
-      const cau = await goi(!!canhBao, xacNhanHuyLich);
+      const cau = await goi(!!canhBao, xacNhanHuyLich, lyDoVuot);
       invalidate('/attempts'); invalidate('/tong-quan'); invalidate('/classes'); invalidate('/ke-hoach-test'); invalidate('/my-work'); invalidate('/cycles');
-      toast.push('ok', xacNhanHuyLich && xacNhan?.length ? `${cau} · huỷ lịch ${xacNhan.map((x) => x.nhan).join(', ')}` : cau);
+      toast.push('ok', xacNhanHuyLich && xacNhan?.length ? `${cau} · ${xacNhan.map(dongHeQuaVuot).join(' · ')}` : cau);
       onDone(); dong();
     } catch (e: any) {
       /* T15: cảnh báo (hai đợt quá gần) cần người xác nhận lại — lần bấm sau gửi `force`. */
@@ -189,15 +190,14 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, tuanDaBa
           </Truong>
         )}
         {t !== 'dua-lai' && (
-          <Truong nhan="Lý do" batBuoc={batBuoc} tuyChon={!batBuoc} loi={lf.loiCua(loi, 'ly-do')}
-            dem={batBuoc ? { co: lyDo.trim().length, can: LY_DO_TOI_THIEU } : undefined}>
+          <Truong nhan="Lý do" batBuoc={batBuoc} tuyChon={!batBuoc} loi={lf.loiCua(loi, 'ly-do')}>
             <textarea className="field w-full" rows={2} maxLength={300} {...lf.o(loi, 'ly-do')} value={lyDo} onChange={(e) => setLyDo(e.target.value)}
               placeholder={t === 'bao-vang' ? 'Ví dụ: em ốm, phụ huynh đã báo' : t === 'huy-diem' ? 'Ví dụ: nhập nhầm bài của em khác' : 'Ví dụ: trùng lịch phòng thi'} />
           </Truong>
         )}
         {canhBao && <p className="m-0 text-xs text-amber-200" role="status">{canhBao}</p>}
       </div>
-      {xacNhan && <HopXacNhanHuyLich ds={xacNhan} busy={busy} onQuayLai={() => setXacNhan(null)} onXacNhan={() => void luu(true)} />}
+      {xacNhan && <HopXacNhanHuyLich ds={xacNhan} busy={busy} onQuayLai={() => setXacNhan(null)} onXacNhan={(ly) => void luu(true, ly)} />}
     </KhungPanel>
   );
 }

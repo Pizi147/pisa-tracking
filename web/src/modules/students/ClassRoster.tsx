@@ -317,7 +317,7 @@ function Dash() { return <span className="text-slate-700">–</span>; }
 function Band({ v, kyVong, faded, soSanh = true, lichSu = false }: { v: number | null; kyVong: number | null; faded: boolean; soSanh?: boolean; lichSu?: boolean }) {
   if (v === null) return <Dash />;
   /* MT lịch sử: xám, không đạt/chưa đạt, không dấu dưới — hết mâu thuẫn "Chưa có kết quả" cạnh "▾5.0" đỏ (rà #119). */
-  if (lichSu) return <span className="tabular-nums text-xs text-slate-400" title="MT lịch sử — không phải hiện trạng">{fmtBand(v)}</span>;
+  if (lichSu) return <span className="tabular-nums text-xs text-slate-400" title="MT cũ — không phải hiện trạng">{fmtBand(v)}</span>;
   const duoi = soSanh && kyVong !== null && v < kyVong;
   /* Mốc cũ (faded) nhạt hơn bằng MÀU XÁM chứ không bằng độ trong: opacity-55 làm chữ đạt/chưa đạt < 4.5:1 ở chế độ sáng (PR-SANG, Task 8). */
   const tone = faded ? 'text-slate-400' : !soSanh || kyVong === null ? 'text-slate-100' : duoi ? 'text-rose-200' : 'text-emerald-200';

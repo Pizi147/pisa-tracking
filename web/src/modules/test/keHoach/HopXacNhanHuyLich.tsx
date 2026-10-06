@@ -1,28 +1,31 @@
+import { useState } from 'react';
 import { ConfirmDialog } from '../../../ui/Drawer.tsx';
-import { useNgayNghiepVu } from '../../../ui/ngayNghiepVu.ts';
-import { tuanLich } from '@shared/domain/index.ts';
+import { dongHeQuaVuot, type LuotSeHuyLich } from '@shared/domain/index.ts';
 
-/** Một lượt sẽ bị huỷ lịch vì bị vượt — `seHuyLich` của `/ke-hoach-test/dot/kiem` hoặc `details` của 409. */
-export type LuotSeHuyLich = { attemptId: number; nhan: string; tuan: string };
+export type { LuotSeHuyLich };
 
 /**
- * HỘP XÁC NHẬN HUỶ LỊCH (PR-LM, Q-0310-1): dời một MT vượt lượt sau thì lượt bị vượt bỏ tuần, giữ lượt. Nêu từng lượt và tuần đang có
- * trước khi lưu — không lưu ngầm. Dùng chung cho hộp xếp lịch (Kế hoạch Test, panel Lộ trình) và "Dời lịch thi cả đợt".
+ * HỘP XÁC NHẬN DỜI VƯỢT (PR-LM Q-0310-1; PR-MTa T2, mockup 05/10 phần 4): chỉ mở khi lượt bị vượt ĐÃ CÓ ĐIỂM (`canLyDoVuot`) — chưa
+ * điểm thì lưu thẳng. Mỗi lượt một dòng hệ quả (`dongHeQuaVuot`), Lý do bắt buộc. Dùng chung cho hộp xếp lịch (Kế hoạch Test, panel
+ * Lộ trình), "Dời lịch thi cả đợt" và dời một kỹ năng. Tiêu đề đúng mockup ("Dời MT1 sang W2 NOV?") thuộc PR-MTb.
  */
 export function HopXacNhanHuyLich({ ds, busy, onQuayLai, onXacNhan }: {
-  ds: LuotSeHuyLich[]; busy: boolean; onQuayLai: () => void; onXacNhan: () => void;
+  ds: LuotSeHuyLich[]; busy: boolean; onQuayLai: () => void; onXacNhan: (lyDo: string) => void;
 }) {
-  const { homNay } = useNgayNghiepVu();
+  const [lyDo, setLyDo] = useState('');
   return (
-    <ConfirmDialog open z="z-[80]" danger busy={busy} closeLabel="Quay lại" confirmLabel="Huỷ lịch và lưu"
-      title={`Huỷ lịch ${ds.map((x) => x.nhan).join(', ')}?`}
-      onClose={onQuayLai} onConfirm={onXacNhan}
+    <ConfirmDialog open z="z-[80]" danger busy={busy} closeLabel="Đóng" confirmLabel="Dời và huỷ" confirmDisabled={!lyDo.trim()}
+      title="Dời và huỷ kết quả?"
+      onClose={onQuayLai} onConfirm={() => onXacNhan(lyDo.trim())}
       body={(
         <>
-          <p className="m-0 mb-2">Lịch mới vượt qua {ds.length === 1 ? 'lượt này' : 'các lượt này'}. Lưu thì {ds.length === 1 ? 'lượt' : 'các lượt'} dưới đây về <b>Chưa xếp lịch</b> — lượt vẫn giữ số MT, chưa có điểm nào bị đụng tới.</p>
-          <ul className="m-0 list-disc space-y-0.5 pl-5">
-            {ds.map((x) => <li key={x.attemptId}><b className="text-slate-100">{x.nhan}</b> · đang ở {tuanLich(x.tuan, homNay)}</li>)}
+          <ul className="m-0 mb-3 list-disc space-y-0.5 pl-5">
+            {ds.map((x) => <li key={x.attemptId}>{dongHeQuaVuot(x)}</li>)}
           </ul>
+          <label className="block">
+            <span className="label">Lý do</span>
+            <textarea className="field w-full" rows={2} maxLength={300} value={lyDo} onChange={(e) => setLyDo(e.target.value)} />
+          </label>
         </>
       )} />
   );
