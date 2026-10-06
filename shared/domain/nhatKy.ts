@@ -18,7 +18,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'case.plan.approved': 'Duyệt đề xuất PA', 'case.plan.declined': 'Từ chối đề xuất PA', 'case.plan.comment': 'Góp ý đề xuất PA',
   'case.preset.confirm': 'Xác nhận PA theo quy chế', 'case.preset.replace': 'Thay PA theo quy chế', 'case.confirm': 'Xác nhận Case', 'case.dismiss.request': 'Gửi Không cần theo dõi',
   'case.report': 'Tạo Case', 'case.report.merge': 'Ghi vào Case đang có', 'case.result.update': 'Ghi kết quả PA',
-  'case.retired_score_fixed': 'Huỷ Case vì sửa điểm', 'case.system_close': 'Hệ thống đóng Case', 'case.system_reopen': 'Mở lại Case hệ thống đã đóng',
+  'case.retired_score_fixed': 'Huỷ Case vì sửa điểm', 'case.system_close': 'Hệ thống đóng Case', 'case.system_reopen': 'Mở lại Case hệ thống đã đóng', 'case.mo_lai_xoa_diem': 'Mở lại Case (nhập lại điểm)',
   'class.assign': 'Phân công giáo viên', 'class.create': 'Tạo lớp', 'class.bulk_create': 'Tạo nhiều lớp', 'class.delete': 'Xoá lớp', 'class.finished': 'Kết thúc lớp', 'class.reopened': 'Mở lại lớp',
   'lenh_chuyen.tao': 'Quyết định chuyển lớp', 'lenh_chuyen.sua': 'Sửa quyết định chuyển lớp', 'lenh_chuyen.huy': 'Huỷ quyết định chuyển lớp', 'lenh_chuyen.khoi_phuc': 'Khôi phục quyết định chuyển lớp',
   'lenh_chuyen.thi_hanh': 'Thi hành quyết định chuyển lớp', 'ban_giao.ghi_mon': 'Ghi bàn giao môn', 'ban_giao.xac_nhan': 'GVCN xác nhận bàn giao',

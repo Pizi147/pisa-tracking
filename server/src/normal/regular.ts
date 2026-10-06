@@ -17,7 +17,7 @@ import { regularSkillViews, weekStartOf } from '../fasttrack/attempts.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { checkSkillWeekMove, ensureSkillRows, kiemDaToiTuanThi, loadSkillRows, setSkillWeek } from '../fasttrack/skillSchedule.ts';
 import { dotHoanTat, dotHoanTatMany, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
-import { canRequest } from '../fasttrack/absence.ts';
+import { canRequest, duocGoDau } from '../fasttrack/absence.ts';
 import { classProgress, classProgressMany } from '../classes/schedule.ts';
 import { baoLenCuoiKhoaDoiQuaHan, capNhatCuoiKhoaSauChuyen } from './cuoiKhoa.ts';
 import { lamMoiDiemBanChup } from '../loTrinh/banChup.ts';
@@ -593,7 +593,7 @@ export function reportRegularNoShow(
   p: Principal, attemptId: number, skill: string, bat: boolean, today: string = demoToday(),
   /** K4-32 (PR-XLMT): "Báo vắng" từ menu ⋯ ô lưới — có lý do (ghi vào nhật ký lịch). Gõ "-" trong ô thì không có. */
   lyDo?: string,
-): { moved: boolean; tuanCu: string | null; tuanMoi: string | null; result: RegularResult } {
+): { moved: boolean; tuanCu: string | null; tuanMoi: string | null; result: RegularResult; giuLich?: boolean } {
   const conn = db();
   const a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
   if (!a) throw notFound('Không tìm thấy lượt đánh giá');
@@ -608,9 +608,16 @@ export function reportRegularNoShow(
    * R11: đợt đã hoàn tất thì chỉ người có `PLAN_WEEK`/`SCORE_OVERRIDE` — trên thực tế môn đang ghi "-" chưa có
    * điểm nên đợt hiếm khi đã hoàn tất, nhưng vẫn kiểm để không có đường vòng qua dấu "-".
    */
+  /* PR-BV: GỠ dấu = hết vắng — quyền / khung chung với Mock (`duocGoDau`: QL mọi lúc; GV chấm môn, GVCN đến hết thứ Tư sau tuần có "-"). */
+  const dauCu = bat ? null : conn.prepare(
+    `SELECT rp.week_start FROM assessment_scores s JOIN report_periods rp ON rp.id = s.no_show_period_id WHERE s.attempt_id = ? AND s.skill = ?`,
+  ).get(attemptId, skill) as any;
   const hoanTat = dotHoanTat(attemptId, today);
   let path = scoreEditPath(p, a.class_id, skill);
-  if (hoanTat.hoanTat) {
+  if (dauCu) {
+    const loi = duocGoDau(p, { classId: a.class_id, skill, mode: 'ratio', tuanGocStart: dauCu.week_start, today });
+    if (loi) throw forbidden(loi);
+  } else if (hoanTat.hoanTat) {
     if (!quyenSuaSauHoanTat(p, a.class_id)) {
       throw forbidden(
         `Đợt này đã hoàn tất (hết Chủ nhật ${ngay(hoanTat.chuNhatCuoi)}). `
@@ -631,13 +638,12 @@ export function reportRegularNoShow(
     const existing = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?')
       .get(attemptId, skill) as any;
     /*
-     * Ô ĐÃ CÓ ĐIỂM thì dấu "-" không ghi mà cũng không gỡ được: ghi là xoá điểm bằng cửa sau, còn gỡ là kéo một bài
-     * ĐÃ LÀM ở tuần mới về tuần cũ. Cả hai đều là sửa lịch sử — việc của hiệu chỉnh có lý do.
+     * Ô ĐÃ CÓ ĐIỂM thì không ghi dấu "-" được (ghi là xoá điểm bằng cửa sau). GỠ thì được (PR-BV, rủi ro 1): chỉ hết vắng — bài đã làm ở
+     * tuần mới giữ nguyên tuần đó (`giuLich`), không kéo về tuần cũ.
      */
-    if (existing && existing.raw_score !== null && existing.raw_score !== undefined) {
-      throw badRequest(bat
-        ? 'Ô này đã có điểm — dấu "-" không xoá được điểm. Muốn sửa, dùng hiệu chỉnh điểm có ghi lý do.'
-        : 'Ô này đã có điểm ở tuần mới — không gỡ dấu "-" được nữa. Muốn sửa, dùng hiệu chỉnh điểm có ghi lý do.');
+    const coDiem = !!existing && existing.raw_score !== null && existing.raw_score !== undefined;
+    if (bat && coDiem) {
+      throw badRequest('Ô này đã có điểm — dấu "-" không xoá được điểm. Muốn sửa, dùng hiệu chỉnh điểm có ghi lý do.');
     }
     const tuanCua = (id: number | null) =>
       (id ? (conn.prepare('SELECT code, week_start FROM report_periods WHERE id = ?').get(id) as any) : null);
@@ -696,9 +702,12 @@ export function reportRegularNoShow(
         actorUserId: p.userId, action: 'regular.no_show', entityType: 'assessment_attempt', entityId: attemptId,
         entityLabel: skill, before: { week: cu.code }, after: { week: moi.code, noShow: true },
       });
-      /* PR-LT2a (K4-23): vắng cùng môn, cùng bài từ LẦN 2 trở đi → thông báo GVCN (lần 1 thì không). Dedup theo lần. */
-      const lan = (conn.prepare(`SELECT COUNT(*) n FROM audit_logs WHERE action = 'regular.no_show' AND entity_type = 'assessment_attempt' AND entity_id = ? AND entity_label = ?`)
-        .get(attemptId, skill) as any).n as number;
+      /* PR-LT2a (K4-23): vắng cùng môn, cùng bài từ LẦN 2 trở đi → thông báo GVCN (lần 1 thì không). Dedup theo lần.
+       * PR-BV: lần vắng = số lần ghi "-" trừ số lần gỡ — gỡ "-" (= hết vắng) không để lần vắng thật sau đó thành "lần 2" oan. */
+      const lan = (conn.prepare(
+        `SELECT COUNT(CASE WHEN action = 'regular.no_show' THEN 1 END) - COUNT(CASE WHEN action = 'regular.no_show_cleared' THEN 1 END) n
+           FROM audit_logs WHERE action IN ('regular.no_show', 'regular.no_show_cleared') AND entity_type = 'assessment_attempt' AND entity_id = ? AND entity_label = ?`,
+      ).get(attemptId, skill) as any).n as number;
       if (lan >= 2 && a.class_id) {
         const hv = conn.prepare('SELECT full_name FROM students WHERE id = ?').get(a.student_id) as any;
         for (const g of conn.prepare(`SELECT DISTINCT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active'`).all(a.class_id) as any[]) {
@@ -723,7 +732,7 @@ export function reportRegularNoShow(
       return { moved: false, tuanCu: null, tuanMoi: row.week_start ? tuanLich(row.week_start, today) : null, result: regularResultOf(attemptId) };
     }
     const ve = tuanCua(existing.no_show_period_id);
-    if (existing.no_show_period_id !== row.planned_period_id) {
+    if (!coDiem && existing.no_show_period_id !== row.planned_period_id) {
       setSkillWeek(p, attemptId, skill, existing.no_show_period_id, {
         reason: 'Gỡ dấu "-": trả lịch về tuần cũ.', force: true, today, ghiBuDau: true,
       });
@@ -733,9 +742,10 @@ export function reportRegularNoShow(
     ).run(existing.id);
     writeAudit({
       actorUserId: p.userId, action: 'regular.no_show_cleared', entityType: 'assessment_attempt', entityId: attemptId,
-      entityLabel: skill, before: { week: row.period_code }, after: { week: ve?.code ?? null, noShow: false },
+      entityLabel: skill, before: { week: row.period_code }, after: { week: coDiem ? row.period_code : ve?.code ?? null, noShow: false, giuLich: coDiem },
     });
-    return { moved: true, tuanCu: row.week_start ? tuanLich(row.week_start, today) : null, tuanMoi: ve ? tuanLich(ve.week_start, today) : null, result: regularResultOf(attemptId) };
+    const tuanCu = row.week_start ? tuanLich(row.week_start, today) : null;
+    return { moved: !coDiem, tuanCu, tuanMoi: coDiem ? tuanCu : ve ? tuanLich(ve.week_start, today) : null, result: regularResultOf(attemptId), giuLich: coDiem };
   });
 }
 
@@ -752,9 +762,10 @@ export function refreshRegularOutcome(p: Principal, attemptId: number) {
   const a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
 
   // "Đã xong" vẫn cần ĐỦ điểm mọi kỹ năng — đó là trạng thái của bài, không phải kết luận.
-  if (r.complete && a.status === 'planned') {
-    conn.prepare(`UPDATE assessment_attempts SET status = 'done', updated_at = ? WHERE id = ?`)
-      .run(nowIso(), attemptId);
+  /* PR-BV: hai chiều như FT (`refreshOutcome`) — xoá một môn của bài đã xong thì bài về "chưa xong". */
+  const next = r.complete ? 'done' : 'planned';
+  if (a.status !== 'cancelled' && a.status !== next) {
+    conn.prepare('UPDATE assessment_attempts SET status = ?, updated_at = ? WHERE id = ?').run(next, nowIso(), attemptId);
   }
   /*
    * RB-8: môn vừa được sửa thành ĐẠT → rút tín hiệu và xử lý Case dựng trên con số sai — CÙNG hàm với Fast Track. Đặt TRƯỚC lối thoát
@@ -1013,6 +1024,9 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
             movedFrom: row?.no_show_period_id ? periodCode.get(row.no_show_period_id) ?? null : null,
             /** Thứ Hai của tuần `movedFrom` — để lưới viết "trả lịch về W3 SEP" bằng `tuanLich`. */
             movedFromStart: row?.no_show_period_id ? periodStart.get(row.no_show_period_id) ?? null : null,
+            /** PR-BV: người xem gỡ được dấu "-" lúc này (QL mọi lúc; GV chấm môn / GVCN đến hết thứ Tư sau tuần có "-"). */
+            goDau: !!row?.no_show_period_id && !!periodStart.get(row.no_show_period_id)
+              && duocGoDau(p, { classId, skill: k, mode: 'ratio', tuanGocStart: periodStart.get(row.no_show_period_id)!, today, duocNhap: canEditSkill.get(k) ?? false }) === null,
             /** Người đang xem có nhập được điểm / ghi được "-" ở ô này không (phân công hoặc nhập bù). */
             canEdit: (hoanTat.hoanTat ? suaSauHoanTat : (canEditSkill.get(k) ?? false))
               /* T19 (PR-MTa): môn chưa tới tuần thi / chưa xếp tuần → ô khoá như máy chủ, kể cả ô đã có điểm (rà #212); ô mang dấu "-"

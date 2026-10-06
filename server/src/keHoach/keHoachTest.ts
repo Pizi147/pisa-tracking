@@ -598,7 +598,7 @@ export function thiLai(p: Principal, i: { attemptId: number; skills: string[]; p
       for (const e of entrySkillsOf(k as any)) {
         const s = scoresOf(i.attemptId).find((x) => x.skill === e);
         if (s && (s.band != null || s.raw_score != null)) {
-          saveScore(p, i.attemptId, e, { rawScore: null, criteria: [null, null, null, null], lyDo });
+          saveScore(p, i.attemptId, e, { rawScore: null, criteria: [null, null, null, null], lyDo }, undefined, { thiLai: true });
         }
       }
       setSitStatus(p, i.attemptId, k, 'scheduled', lyDo);

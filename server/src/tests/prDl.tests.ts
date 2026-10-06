@@ -92,7 +92,8 @@ export async function runPrDlTests(t: YThucTestKit) {
    * làm lệch băm thì chụp lại bằng mã trước refactor (`git show 666dcfbf:server/src/fasttrack/attempts.ts`), không sửa cho khớp.
    */
   const bam = (x: unknown) => createHash('sha256')
-    .update(JSON.stringify(x, (k, v) => (k.endsWith('At') || k === 'chuNhatCuoi' ? undefined : v))).digest('hex').slice(0, 16);
+    /* PR-BV: ô thêm `daChot` ("-" đã chốt, phép kiểm riêng prBv V13) — bỏ khỏi băm để ảnh chụp cũ vẫn chứng minh mọi trường khác không lệch. */
+    .update(JSON.stringify(x, (k, v) => (k.endsWith('At') || k === 'chuNhatCuoi' || k === 'daChot' ? undefined : v))).digest('hex').slice(0, 16);
   /*
    * Chụp lại 06/10 (PR-MTa): T1 đổi cờ MT cũ của lượt seed (tuần trước nay là MT thường) và các phép kiểm chạy trước (PR-MT, PR-XLMT, PR-LM)
    * đổi dữ liệu MB FT 101. Không chụp được bằng mã 666dcfbf (gọi `kiemLyDo` đã bỏ ở T7) — băm của mã hiện tại; khẳng định `idsTuan` bên dưới
