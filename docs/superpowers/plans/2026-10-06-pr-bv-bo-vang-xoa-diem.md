@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **Mockup bản 2 ĐÃ DUYỆT 06/10.**
+>
 > **Chủ sản phẩm chốt 06/10 (bản 2 — thay hẳn bản 1):** bản 1 (nút "Bỏ vắng", kho khôi phục `diem_da_xoa`, xoá hàng loạt, màn xem
 > trước) **không duyệt vì quá phức tạp**. Làm gọn:
 > - **Vắng:** gõ `-` = vắng, **xoá `-` = hết vắng**. Không nút mới. Xoá `-` (kể cả đã chốt) thì máy chủ **tự trả lại như trước khi gõ**.

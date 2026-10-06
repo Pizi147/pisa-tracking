@@ -19,7 +19,7 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 | `docs/superpowers/plans/2026-10-05-pr-mtb-giao-dien-mock-test.md` | PR-MTb (đợt 5) |
 | `docs/superpowers/plans/2026-10-05-pr-mt0.md` | PR-MT0 (đợt 5) |
 | `docs/superpowers/plans/2026-10-03-pr-phien-lich-mt-dieu-huong-sua-lop.md` | PR-SL (mục B Q-0310-3, "PR-SL", SL-1→2). Phần PH, LM, DH đã xong |
-| `docs/superpowers/plans/2026-10-06-pr-bv-bo-vang-xoa-diem.md` | PR-BV bản 2 (chạy sau MTa + MTb; mockup chờ duyệt) |
+| `docs/superpowers/plans/2026-10-06-pr-bv-bo-vang-xoa-diem.md` | PR-BV bản 2 (chạy sau MTa + MTb; mockup đã duyệt 06/10) |
 | `docs/superpowers/plans/2026-10-02-ux-sau-critique.md` | PR-HK2 (H1, H2, K2, K4–K7, J1–J4, J7, J9), PR-SL (I1–I4, I6) |
 
 - **Khi các nguồn mâu thuẫn:** theo `CLAUDE.md` (quyết định chủ sản phẩm + kế hoạch đã duyệt → Rulebook + mockup → skill).
@@ -179,7 +179,7 @@ Chủ sản phẩm 05/10 đã chốt (mockup `thiet-ke/mockup-test-mt-2026-10-05
 
 Đợt 2 (PHH, SO, DH) và U12 đã xong, xem mục 2.
 
-### PR-BV · Xoá "-" trả lại như cũ + đường lui điểm (M) — chủ sản phẩm chốt 06/10 **bản 2** (bản 1 không duyệt: quá phức tạp). Kế hoạch `docs/superpowers/plans/2026-10-06-pr-bv-bo-vang-xoa-diem.md` + mockup `thiet-ke/mockup-bo-vang-xoa-diem-2026-10-06.html` **chờ duyệt mockup** (Q1 đã trả lời: A — Lịch sử FT giữ ở hồ sơ Mock)
+### PR-BV · Xoá "-" trả lại như cũ + đường lui điểm (M) — chủ sản phẩm chốt 06/10 **bản 2** (bản 1 không duyệt: quá phức tạp). Kế hoạch `docs/superpowers/plans/2026-10-06-pr-bv-bo-vang-xoa-diem.md` + mockup `thiet-ke/mockup-bo-vang-xoa-diem-2026-10-06.html` **mockup đã duyệt 06/10** (Q1 đã trả lời: A — Lịch sử FT giữ ở hồ sơ Mock)
 Nguồn: `docs/superpowers/specs/2026-10-06-ra-soat-duong-lui.md`. Chạy **sau MTa (#212) và MTb** (chung `attempts.ts`, `regular.ts`, `absence.ts`, `ScoreEntry.tsx`…), mockup duyệt trước.
 - **Vắng:** gõ "-" = vắng, **xoá "-" = hết vắng** (không nút mới). Xoá "-" đã chốt → máy chủ trả như trước khi gõ: lịch cũ, trừ lần vắng, rút đề nghị / thẻ chưa xử lý, kỹ năng huỷ do vắng lần 2 trở lại; quyết định của người giữ nguyên. Ai: GV chấm, GVCN trong khung chấm (tuần thi → hết thứ Tư tuần sau); QL / Quản trị mọi lúc.
 - **Điểm:** tẩy ô + Lưu = xoá (MTa T22); không kho khôi phục, không xoá hàng loạt. Nhập lại điểm sau khi xoá → **mở lại đúng Case** lần xoá đã đóng. Lịch sử ô lớp thường phải hiện điểm cũ (nay thiếu).
