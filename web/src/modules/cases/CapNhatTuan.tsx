@@ -273,7 +273,7 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved, on
           <div {...o('ket-qua')} tabIndex={-1} className="grid grid-cols-2 gap-2 outline-none sm:grid-cols-4" role="group" aria-label={tuanGhi}>
             {FOLLOWUP_OUTCOMES.filter((o) => o !== 'insufficient').map((o) => (
               <NutChon key={o} chon={outcome === o} onClick={() => pickOutcome(o)}
-                className="justify-center whitespace-nowrap px-1.5 text-xs">
+                className="justify-center">
                 {OUTCOME_MARK[o] ?? ''} {outcomeLabelFor(o)}
               </NutChon>
             ))}
