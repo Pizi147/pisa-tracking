@@ -340,3 +340,10 @@ Quản trị, QL, GVCN, GVBM. Mô tả PR: số truy vấn trước/sau, chú th
 - G2: `sos_cases` / Case không bị xoá khi lộ trình đóng (chỉ `xoaHocVien`), nên `case_id` trong bản chụp còn trỏ được.
 - G3: Hàm đánh giá đang dùng (`resultOf`, `evaluateRegular`) chạy được với `conn` của giao dịch đang mở (SQLite một kết nối). Nếu chúng tự mở kết nối khác → tách phần thuần, ghi ở commit TK-2.
 - G4: Lộ trình FT nhận diện bằng `programme_code = 'FT'` (route LT1/LT2/RF). TK-0 kiểm lại trên dữ liệu seed.
+
+## Đối chiếu TK-0 (06/10, trên `f17436e3` — đã có LUI-b #213)
+- Đường đóng đã đối chiếu: 5 đường ở Khảo sát (`cycles.ts` `createCycle`/`updateCycle`, `luatLoTrinh.ts` `apDungMotDong`/`apDungCaLop`, `students.ts` `setStudentStatus`) **+ LUI-b thêm một đường đóng lại**: `hoanTacHocLai` (`students.ts` đóng lại lộ trình `abandoned` — 2 chỗ) → ghi bản chụp mới (`ket_thuc`, `lan` kế tiếp).
+- Đường **mở lại** (`status='active'`): `hocLai` về lớp cũ, `hoanTacKetThuc` — không đụng bản chụp cũ; đóng lại → `lan` + 1.
+- "Kết thúc học nhiều em" (`hangLoat.ts:159`) và dừng học ở Chuyển tiếp (`transition.ts:326`) đều gọi `setStudentStatus`; Hoàn tác nhiều em gọi `hoanTacKetThuc` → một chỗ sửa cho cả ba.
+- PR-MT0 **chưa merge**: không có `khong_dung` / MT0 trong mã → bỏ qua phần MT0, ghi lại để PR merge sau gọi `ghiBanChup` sau bước đổi `cycle_id`.
+- Seed `build.ts:206` INSERT thẳng lộ trình `completed` → gọi điền ngược cuối seed (TK-3).
