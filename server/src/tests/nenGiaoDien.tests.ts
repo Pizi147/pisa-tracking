@@ -52,7 +52,7 @@ export async function runNenGiaoDienTests(t: YThucTestKit) {
 
   check('UX0 · N-1: một chỗ khai báo — component nền không chứa hex hay màu Tailwind cứng', () => {
     const hong: string[] = [];
-    for (const f of ['web/src/ui/ui.tsx', 'web/src/ui/Han.tsx', 'web/src/ui/Nhan.tsx', 'web/src/ui/HangNhom.tsx', 'web/src/ui/KhungPanel.tsx']) {
+    for (const f of ['web/src/ui/ui.tsx', 'web/src/ui/Han.tsx', 'web/src/ui/Nhan.tsx', 'web/src/ui/HangNhom.tsx', 'web/src/ui/KhungPanel.tsx', 'web/src/modules/students/MissingBadge.tsx']) {
       const p = path.join(REPO, f);
       if (!fs.existsSync(p)) continue;
       const text = fs.readFileSync(p, 'utf8');
