@@ -143,7 +143,7 @@ export default function App() {
               style={{ background: 'var(--accent-soft)', borderColor: 'var(--accent-line)', color: 'var(--accent)' }}>P</div>
             <div className="leading-tight hidden sm:block">
               <div className="text-sm font-semibold text-slate-100">Pisa Tracking</div>
-              {!banChinh && <div className="text-[11px] text-slate-500">Bản demo nội bộ</div>}
+              {!banChinh && <div className="text-xs text-slate-500">Bản demo nội bộ</div>}
             </div>
           </div>
           <nav aria-label="Điều hướng chính" className="hidden md:flex items-center gap-1 min-w-0 overflow-x-auto">

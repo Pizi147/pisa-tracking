@@ -133,13 +133,13 @@ export default function ChamDiemPage() {
           )}
           {han && <div className="pb-2"><Han loai="nhap-diem" han={han} /></div>}
           {chuaLuu > 0 && (
-            <span className="pb-2 text-[11px] font-semibold text-bad whitespace-nowrap" role="alert"
+            <span className="pb-2 text-xs font-semibold text-bad whitespace-nowrap" role="alert"
               title="Ô viền đỏ chưa lưu được — bấm Lưu lại ở ô đó.">
               {chuOChuaLuu(chuaLuu)}
             </span>
           )}
           {luuLuc && chuaLuu === 0 && (
-            <span className="pb-2 text-[11px] text-slate-500 tabular-nums whitespace-nowrap"
+            <span className="pb-2 text-xs text-slate-500 tabular-nums whitespace-nowrap"
               title="Mỗi ô tự lưu khi rời ô hoặc bấm Enter.">
               Đã lưu {String(luuLuc.getHours()).padStart(2, '0')}:{String(luuLuc.getMinutes()).padStart(2, '0')} ✓
             </span>

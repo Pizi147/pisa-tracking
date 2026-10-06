@@ -346,7 +346,7 @@ export function NganXepLichMt({ chiNhanhDau, lopDs, lopMoSan, coThuong, onDoiKhu
                 </tbody>
               </table>
             </div>
-            <p className="m-0 text-[11px] text-slate-500">⇆ cuộn ngang</p>
+            <p className="m-0 text-xs text-slate-500">⇆ cuộn ngang</p>
           </>
         )}
       </Khoi>

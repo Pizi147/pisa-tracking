@@ -63,7 +63,7 @@ export function CapQuyenRieng({ value, chon, onChange, branches, macDinh, vai }:
             <button type="button" aria-expanded={dangMo} onClick={() => doiMo(g.key)}
               className="flex w-full min-h-[44px] sm:min-h-[36px] items-center gap-2 bg-transparent border-0 px-3 text-left text-sm text-slate-200">
               <span className="flex-1 font-semibold">{g.ten}</span>
-              <span className="text-[11px] tabular-nums text-slate-500">
+              <span className="text-xs tabular-nums text-slate-500">
                 {soChon ? `${soChon} đã cấp` : `${g.quyen.length} quyền`}
               </span>
               <span className="text-slate-400"><IconGap mo={dangMo} /></span>
@@ -83,12 +83,12 @@ export function CapQuyenRieng({ value, chon, onChange, branches, macDinh, vai }:
                         <span className="min-w-0">
                           <span className="block text-sm text-slate-100">{PERMISSION_LABEL[k] ?? k}</span>
                           <span className="block text-xs text-slate-400">{mt.moTa}</span>
-                          {mt.phamVi && <span className="block text-[11px] text-slate-500">{mt.phamVi}</span>}
+                          {mt.phamVi && <span className="block text-xs text-slate-500">{mt.phamVi}</span>}
                         </span>
                       </label>
                       {daChon && (
                         <div className="mt-1.5 ml-6 flex flex-wrap items-center gap-1" role="group" aria-label={`Phạm vi: ${PERMISSION_LABEL[k] ?? k}`}>
-                          <span className="text-[11px] text-slate-500 mr-1">Phạm vi:</span>
+                          <span className="text-xs text-slate-500 mr-1">Phạm vi:</span>
                           <NutChon nho chon={pv.includes(null)} onClick={() => doiPhamVi(k, null)}
                             title="Người này làm được việc này ở mọi chi nhánh">Toàn hệ thống</NutChon>
                           {branches.map((b) => (
@@ -96,7 +96,7 @@ export function CapQuyenRieng({ value, chon, onChange, branches, macDinh, vai }:
                               {b.code}
                             </NutChon>
                           ))}
-                          {pv.length === 0 && <span className="text-[11px] text-late">Chọn ít nhất một phạm vi</span>}
+                          {pv.length === 0 && <span className="text-xs text-late">Chọn ít nhất một phạm vi</span>}
                         </div>
                       )}
                     </li>

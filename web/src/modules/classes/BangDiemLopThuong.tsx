@@ -213,8 +213,8 @@ function ODiemThuong({ o, tuan, homNay }: { o: ODiem | null; tuan: string | null
   if (tuan) {
     /* Tuần thi đã QUA mà vẫn chưa có điểm là một dạng quá hạn nhập điểm — khác với tuần chưa tới lịch. */
     const daQua = tuan < mondayOfDate(homNay);
-    if (daQua) return <span className="text-[11px] text-amber-200" title="Tuần thi đã qua nhưng chưa nhập điểm">Chưa có điểm</span>;
-    return <span className="text-[11px] text-slate-500" title="Tuần thi môn này">{tuanLich(tuan, homNay)}</span>;
+    if (daQua) return <span className="text-xs text-amber-200" title="Tuần thi đã qua nhưng chưa nhập điểm">Chưa có điểm</span>;
+    return <span className="text-xs text-slate-500" title="Tuần thi môn này">{tuanLich(tuan, homNay)}</span>;
   }
   return <span className="text-slate-700">–</span>;
 }

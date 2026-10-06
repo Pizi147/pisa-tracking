@@ -398,7 +398,7 @@ function HangEm({ s, d, ft, tuDeXuat, luoi, maKe, routeTu, tuanCh, homNay, loi, 
   const khac = d.kieu === 'bao-luu' || d.kieu === 'dung';
   /* PR-UXF-a (K2-25): chọn khác Hệ thống gợi ý → bắt ghi lý do (máy chủ cũng tự kiểm). */
   const lechGoiY = khacGoiY(d.kieu ? HUONG_CUA[d.kieu] : null, ck?.goiY);
-  const nhan = 'text-[11px] text-slate-500 lg:hidden';
+  const nhan = 'text-xs text-slate-500 lg:hidden';
   const dsLop = lopHopLe(d.kieu);
   const tuanRieng = d.tuan && d.tuan !== tuanCh;
   /* Tuần chung chỉ hiện chữ; ô chọn tuần riêng chỉ mở khi bấm "Đổi" (hoặc em đã có tuần riêng) — bảng gọn, cột thẳng. */
@@ -413,13 +413,13 @@ function HangEm({ s, d, ft, tuDeXuat, luoi, maKe, routeTu, tuanCh, homNay, loi, 
         <span className="block truncate text-slate-100" title={s.fullName}>{s.fullName}</span>
         <span className="block text-[11px] tabular-nums text-slate-500">{s.studentCode}</span>
         {/* PR-UXF-a (mockup 20 màn I): em FT "LT1 · tuần học 9" — không mẫu số (FT không giới hạn tuần). */}
-        {ft && s.tuanHoc && <span className="block text-[11px] text-slate-500">{[s.route, chuTuanHoc(s.tuanHoc.tuan, s.tuanHoc.tong, s.tuanHoc.dangDung)].filter(Boolean).join(' · ')}</span>}
+        {ft && s.tuanHoc && <span className="block text-xs text-slate-500">{[s.route, chuTuanHoc(s.tuanHoc.tuan, s.tuanHoc.tong, s.tuanHoc.dangDung)].filter(Boolean).join(' · ')}</span>}
       </span>
       <span role="cell" className="min-w-0">
         <span className={nhan}>{ft ? 'Kết quả gần nhất' : 'Cuối khoá'}</span>
         <span className="block" title={k.dong1 ?? undefined}>
           {thieuDiem ? <span className="text-slate-500">—</span> : <span className="font-bold tabular-nums text-slate-100">{k.chinh}</span>}
-          {!thieuDiem && k.lech && <span className="ml-1.5 text-[11px] font-semibold tabular-nums text-bad">{k.lech}</span>}
+          {!thieuDiem && k.lech && <span className="ml-1.5 text-xs font-semibold tabular-nums text-bad">{k.lech}</span>}
           {!thieuDiem && k.dong2 && <span className="block text-[12px] leading-4 text-slate-500">{k.dong2}</span>}
           {thieuDiem && <span className="block text-[12px] leading-4 text-slate-500">Chưa đủ điểm · cập nhật sau</span>}
         </span>
@@ -447,9 +447,9 @@ function HangEm({ s, d, ft, tuDeXuat, luoi, maKe, routeTu, tuanCh, homNay, loi, 
         </span>
         {/* PR-K26: dòng chưa điền sẵn được (thiếu lớp dự kiến…) vẫn cho Quản lý thấy GVCN đề xuất gì — chỉ chữ, không chọn hộ. */}
         {!d.kieu && (s.loTrinhTiep
-          ? <span className="mt-1 block text-[11px] text-slate-400">Chưa chọn · GVCN đề xuất: {nhanHuongNgan(s.loTrinhTiep.huong, { ma: data?.from?.programmeCode ?? null, maKe, ngayXemLai: s.loTrinhTiep.ngayXemLai })}</span>
-          : <span className="mt-1 block text-[11px] text-slate-500">Chưa chọn</span>)}
-        {tuDeXuat && <span className="mt-1 block text-[11px] text-slate-400">Điền sẵn theo Lộ trình tiếp theo GVCN ghi</span>}
+          ? <span className="mt-1 block text-xs text-slate-400">Chưa chọn · GVCN đề xuất: {nhanHuongNgan(s.loTrinhTiep.huong, { ma: data?.from?.programmeCode ?? null, maKe, ngayXemLai: s.loTrinhTiep.ngayXemLai })}</span>
+          : <span className="mt-1 block text-xs text-slate-500">Chưa chọn</span>)}
+        {tuDeXuat && <span className="mt-1 block text-xs text-slate-400">Điền sẵn theo Lộ trình tiếp theo GVCN ghi</span>}
       </span>
       <span role="cell" className="min-w-0">
         <span className={nhan}>Lớp chuyển đến</span>
@@ -467,8 +467,8 @@ function HangEm({ s, d, ft, tuDeXuat, luoi, maKe, routeTu, tuanCh, homNay, loi, 
         {d.kieu ? (
           <span className="block">
             <span className="tabular-nums text-slate-200">{tuanLich(d.tuan || tuanCh, homNay)}</span>
-            {!tuanRieng && <span className="text-[11px] text-slate-500"> (chung)</span>}
-            {!khoa && !doiTuan && !tuanRieng && <button type="button" className="link ml-2 border-0 bg-transparent p-0 text-[11px]" onClick={() => setDoiTuan(true)}>Đổi</button>}
+            {!tuanRieng && <span className="text-xs text-slate-500"> (chung)</span>}
+            {!khoa && !doiTuan && !tuanRieng && <button type="button" className="link ml-2 border-0 bg-transparent p-0 text-xs" onClick={() => setDoiTuan(true)}>Đổi</button>}
             {!khoa && (doiTuan || tuanRieng) && (
               <span className="mt-1 block max-w-[9.5rem]">
                 <OTuan tuanChon={data.tuanChon} value={d.tuan || tuanCh} onChange={(v) => sua({ tuan: v === tuanCh ? '' : v })} ariaLabel={`Tuần bắt đầu của ${s.fullName}`} />
@@ -481,7 +481,7 @@ function HangEm({ s, d, ft, tuDeXuat, luoi, maKe, routeTu, tuanCh, homNay, loi, 
       {d.kieu === 'ft' && (
         <div className="flex flex-wrap items-end gap-3 lg:col-start-2 lg:col-end-[-1]">
           <label className="block">
-            <span className="mb-0.5 block text-[11px] text-slate-500">Target</span>
+            <span className="mb-0.5 block text-xs text-slate-500">Target</span>
             <span className="flex items-center gap-1">
               <input className="field w-20 tabular-nums" inputMode="decimal" placeholder="6.0" aria-label={`Target của ${s.fullName}`} value={d.mucTieu === 'KCK' ? '' : d.mucTieu}
                 disabled={khoa || d.mucTieu === 'KCK'} onChange={(e) => sua({ mucTieu: e.target.value })} />
@@ -489,16 +489,16 @@ function HangEm({ s, d, ft, tuDeXuat, luoi, maKe, routeTu, tuanCh, homNay, loi, 
             </span>
           </label>
           <span className="block w-36">
-            <span className="mb-0.5 block text-[11px] text-slate-500">Dự kiến thi</span>
+            <span className="mb-0.5 block text-xs text-slate-500">Dự kiến thi</span>
             <ONgay kieu="thang" value={d.ngayThi} onChange={(v) => sua({ ngayThi: v })} ariaLabel={`Dự kiến thi của ${s.fullName}`} />
           </span>
-          <span className="pb-1 text-[11px] text-slate-500">Lộ trình theo lớp chuyển đến</span>
+          <span className="pb-1 text-xs text-slate-500">Lộ trình theo lớp chuyển đến</span>
         </div>
       )}
       {(d.kieu === 'bao-luu' || d.kieu === 'dung' || d.kieu === 'chuyen' || d.kieu === 'doi' || lechGoiY) && (
         <div className="flex flex-wrap items-end gap-3 lg:col-start-2 lg:col-end-[-1]">
           <label className="block min-w-[14rem] flex-1">
-            <span className="mb-0.5 block text-[11px] text-slate-500">
+            <span className="mb-0.5 block text-xs text-slate-500">
               Lý do <span className="text-bad">*</span>
               {lechGoiY && <span className="ml-1.5 text-[12px] text-slate-400">khác Hệ thống gợi ý</span>}
             </span>
@@ -506,11 +506,11 @@ function HangEm({ s, d, ft, tuDeXuat, luoi, maKe, routeTu, tuanCh, homNay, loi, 
           </label>
           {d.kieu === 'bao-luu' && (
             <span className="block w-40">
-              <span className="mb-0.5 block text-[11px] text-slate-500">Xem lại</span>
+              <span className="mb-0.5 block text-xs text-slate-500">Xem lại</span>
               <OTuan tuanChon={data.tuanChon} rong value={d.ngayXemLai} onChange={(v) => sua({ ngayXemLai: v })} ariaLabel={`Tuần xem lại của ${s.fullName}`} chuaChon="Chọn tuần" />
             </span>
           )}
-          {d.kieu === 'doi' && <span className="pb-1 text-[11px] text-slate-400">LT ↔ RF = mở lộ trình mới, MT đánh lại từ MT1</span>}
+          {d.kieu === 'doi' && <span className="pb-1 text-xs text-slate-400">LT ↔ RF = mở lộ trình mới, MT đánh lại từ MT1</span>}
         </div>
       )}
       {thieuDiem && d.kieu && (

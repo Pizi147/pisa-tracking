@@ -33,7 +33,7 @@ export function qsSoLieu(phamVi?: PhamViSoLieu, extra?: Record<string, string>):
 function CachTinh({ cs }: { cs: ChiSo }) {
   const { homNay, ngan } = useNgayNghiepVu();
   return (
-    <div className="text-[11px] text-slate-400 leading-relaxed space-y-1">
+    <div className="text-xs text-slate-400 leading-relaxed space-y-1">
       <div><strong className="text-slate-300">Chỉ số:</strong> {cs.cauHoi}</div>
       <div><strong className="text-slate-300">Đối tượng tính:</strong> {cs.tapDuDieuKien}</div>
       <div><strong className="text-slate-300">Không đếm trùng:</strong> {cs.khuTrung}</div>
@@ -63,7 +63,7 @@ export function DongDanhSach({ rows, onPick }: { rows: DongSoLieu[]; onPick?: ()
           <Link to={r.href} onClick={onPick} className="block rounded-lg border px-3 py-2 no-underline hover:brightness-125"
             style={{ borderColor: 'var(--line)' }}>
             <span className="block text-sm text-slate-100">{r.title}</span>
-            {r.sub && <span className="block text-[11px] text-slate-500 mt-0.5">{r.sub}</span>}
+            {r.sub && <span className="block text-xs text-slate-500 mt-0.5">{r.sub}</span>}
             {(r.nguoi || r.han) && <DongNguoiHan nguoi={r.nguoi ?? null} han={r.han ?? null} />}
           </Link>
         </li>
@@ -134,7 +134,7 @@ export function SoLieu({ id, giaTri, phamVi, rong, className = '', extra, nhan, 
           <button type="button" onClick={() => setHowTo(true)} aria-expanded={howTo} aria-describedby={howTo ? idCachTinh : undefined}
             onFocus={() => setHowTo(true)} onBlur={() => setHowTo(false)}
             onKeyDown={(e) => { if (e.key === 'Escape' && howTo) { e.stopPropagation(); setHowTo(false); } }}
-            className="appearance-none bg-transparent border-0 p-0 max-sm:py-3 max-sm:-my-3 cursor-pointer text-[11px] text-slate-500 hover:text-slate-300 whitespace-nowrap">Cách tính</button>
+            className="appearance-none bg-transparent border-0 p-0 max-sm:py-3 max-sm:-my-3 cursor-pointer text-xs text-slate-500 hover:text-slate-300 whitespace-nowrap">Cách tính</button>
           {howTo && (
             <div id={idCachTinh} role="tooltip" className="card absolute right-0 top-full z-30 mt-1.5 w-[min(20rem,calc(100vw-2.5rem))] p-3 shadow-2xl">
               <CachTinh cs={cs} />
@@ -152,8 +152,8 @@ export function SoLieu({ id, giaTri, phamVi, rong, className = '', extra, nhan, 
         )}
         <span className="text-xs text-slate-400">{dv}</span>
       </div>
-      {phu ? <div className="text-[11px] text-slate-500 mt-1">{phu}</div>
-        : (rong || giaTri === 0) && <div className="text-[11px] text-slate-500 mt-1">{rong ? 'Không có dữ liệu trong phạm vi' : 'Không có mục nào'}</div>}
+      {phu ? <div className="text-xs text-slate-500 mt-1">{phu}</div>
+        : (rong || giaTri === 0) && <div className="text-xs text-slate-500 mt-1">{rong ? 'Không có dữ liệu trong phạm vi' : 'Không có mục nào'}</div>}
       <DanhSachSoLieu id={id} giaTri={giaTri} phamVi={phamVi} extra={extra} open={open} onClose={() => setOpen(false)} />
     </div>
   );

@@ -20,7 +20,7 @@ function NhanLop({ l, chuaLuu = 0 }: { l: LopLichTest; chuaLuu?: number }) {
       </Nhan>
       {/* PR-MT (YC-13.1): bài vắng tuần này đang chờ Quản lý duyệt dời lần 2 — dòng nhạt, không phải việc chấm. */}
       {l.choDuyetDoi > 0 && (
-        <span className="block whitespace-nowrap text-[11px] text-wait" title="Đề nghị dời do vắng (từ lần 2) đang chờ Quản lý trả lời">
+        <span className="block whitespace-nowrap text-xs text-wait" title="Đề nghị dời do vắng (từ lần 2) đang chờ Quản lý trả lời">
           {l.choDuyetDoi > 1 ? `${l.choDuyetDoi} bài ` : ''}vắng · chờ Quản lý duyệt dời
         </span>
       )}
@@ -51,7 +51,7 @@ const THUONG = { fontWeight: 400 } as const;
 
 const TienDo = ({ l, nhat }: { l: LopLichTest; nhat: boolean }) => (
   <span className={`tabular-nums ${nhat ? 'text-slate-500' : 'text-slate-200'}`} title={`Đã chấm ${l.daCham} trong ${l.tong} bài`}>
-    {l.daCham}/{l.tong} <span className="text-[11px] font-normal text-slate-500">bài</span>
+    {l.daCham}/{l.tong} <span className="text-xs font-normal text-slate-500">bài</span>
   </span>
 );
 

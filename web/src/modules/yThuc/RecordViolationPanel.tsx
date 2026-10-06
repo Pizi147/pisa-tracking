@@ -217,7 +217,7 @@ export function RecordViolationPanel({
         <Khoi tieuDe={`Chưa lưu · ${chuaLuu.length}`}>
           <ul className="m-0 list-none space-y-1.5 p-0 text-sm">
             {chuaLuu.slice(0, 3).map((s) => (
-              <li key={s}><span className="text-slate-200">{tenCua(s)}</span><span className="block text-[11px] text-late">{luu.loi[s]}</span></li>
+              <li key={s}><span className="text-slate-200">{tenCua(s)}</span><span className="block text-xs text-late">{luu.loi[s]}</span></li>
             ))}
             {chuaLuu.length > 3 && <li className="text-xs text-slate-400">và {chuaLuu.length - 3} học viên khác</li>}
           </ul>
@@ -323,7 +323,7 @@ function DongViPham({ d, k, nhieu, today, ct, defaultSkill, editing, sid, loi, l
           <span>{cauTrung}</span>{' · '}
           <button type="button" className="link appearance-none border-0 bg-transparent p-0 align-baseline max-sm:-my-3 max-sm:py-3" aria-expanded={xemTrung} onClick={() => setXemTrung((v) => !v)}>Xem</button>
           {xemTrung && (
-            <ul className="m-0 mt-1.5 list-none space-y-0.5 p-0 text-[11px] text-slate-400">
+            <ul className="m-0 mt-1.5 list-none space-y-0.5 p-0 text-xs text-slate-400">
               {trungRows.map((r) => <li key={r.id}>{r.ten} · {r.reportedByName ?? 'một giáo viên'} · {r.nhanTrangThai}</li>)}
             </ul>
           )}

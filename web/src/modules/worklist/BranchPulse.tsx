@@ -119,7 +119,7 @@ export function BranchPulse({ branchId, ct }: { branchId: number | null; ct: Chu
             </tbody>
           </table>
         </div>
-        <p className="m-0 px-4 py-2 text-[11px] text-slate-500 border-t" style={{ borderColor: 'var(--line)' }}>
+        <p className="m-0 px-4 py-2 text-xs text-slate-500 border-t" style={{ borderColor: 'var(--line)' }}>
           {data.cheDo === 'chi-nhanh' ? 'Bấm ▸ để mở ra từng lớp · bấm số để xem danh sách' : 'Bấm số để xem danh sách'}
         </p>
         </>

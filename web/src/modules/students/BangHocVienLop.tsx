@@ -134,7 +134,7 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
               dong={[
                 { nhan: 'Kết quả', noiDung: <KetQuaOHocVien k={k} standing={s.standing} thuong={thuong} /> },
                 { nhan: thuong ? 'Khoá' : 'Target', noiDung: thuong
-                  ? <>{khoa?.chinh}{khoa?.phu && <span className="block text-[11px] text-slate-500">{khoa.phu}</span>}</>
+                  ? <>{khoa?.chinh}{khoa?.phu && <span className="block text-xs text-slate-500">{khoa.phu}</span>}</>
                   : <TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /> },
                 { nhan: 'Dự kiến thi', noiDung: <ExamPlanText plan={s.examPlan} /> },
                 { nhan: 'Sắp tới', noiDung: sapToi.chu ? <span title={sapToi.title} className={sapToi.thiThat ? 'text-slate-400' : ''}>{sapToi.chu}</span> : <span className="text-slate-600">—</span> },
@@ -178,7 +178,7 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
               {thuong ? (
                 <>
                   <span className="block whitespace-nowrap tabular-nums text-slate-200">{khoa?.chinh}</span>
-                  {khoa?.phu && <span className="block truncate text-[11px] text-slate-500">{khoa.phu}</span>}
+                  {khoa?.phu && <span className="block truncate text-xs text-slate-500">{khoa.phu}</span>}
                 </>
               ) : <span className="tabular-nums text-slate-200"><TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /></span>}
             </td>
@@ -213,7 +213,7 @@ function KetQuaOHocVien({ k, standing, thuong }: { k: ReturnType<typeof ketQuaGa
     <>
       <span className="flex flex-wrap items-center gap-x-1.5">
         <span className="text-sm font-bold tabular-nums text-slate-100">{k.chinh}</span>
-        {k.lech && <span className="text-[11px] font-semibold tabular-nums text-bad" title={`Dưới kỳ vọng ${k.lech.replace('−', '')}`}>{k.lech}</span>}
+        {k.lech && <span className="text-xs font-semibold tabular-nums text-bad" title={`Dưới kỳ vọng ${k.lech.replace('−', '')}`}>{k.lech}</span>}
         {k.dat && <span className="text-[11px] text-slate-400" title={thuong ? 'Đạt mọi môn' : 'Đạt kỳ vọng'}>✓</span>}
         {k.sos && (
           <Level tone={sosTone(standing?.sosLevel ?? null)} dut={k.sosTamThoi}

@@ -84,14 +84,14 @@ export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienD
       <tr className="row-hover">
         <td className="td whitespace-nowrap">
           <OMt v={{ so: h.attemptNo, attemptId: l?.attemptId ?? null, kn: l?.kn ?? {}, cu: !!l?.lichSu }} homNay={homNay} />
-          {l?.kyVong != null && <span className="block text-[11px] tabular-nums text-slate-500">kỳ vọng {fmtBand(l.kyVong)}</span>}
+          {l?.kyVong != null && <span className="block text-xs tabular-nums text-slate-500">kỳ vọng {fmtBand(l.kyVong)}</span>}
         </td>
         <td className="td text-slate-400 whitespace-nowrap tabular-nums">{h.studyWeek !== null ? `tuần ${h.studyWeek}` : '—'}</td>
         <td className="td whitespace-nowrap">
           {tuanHien ? (
             <>
               <span className="text-slate-200">{tuanLich(tuanHien, homNay)}</span>
-              <span className="block text-[11px] text-slate-500">{ngay(tuanHien, homNay)} – {ngay(addDaysStr(tuanHien, 6), homNay)}</span>
+              <span className="block text-xs text-slate-500">{ngay(tuanHien, homNay)} – {ngay(addDaysStr(tuanHien, 6), homNay)}</span>
             </>
           ) : <span className="text-xs text-slate-500" title="Ngoài lịch mặc định — Quản lý xếp tay">xếp tay</span>}
         </td>
@@ -107,7 +107,7 @@ export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienD
             : h.existingSource === 'manual' ? <Status kind="done">Quản lý đã chốt, giữ nguyên</Status>
             : h.existingPeriodId !== h.periodId ? <Status kind="waiting">Sẽ dời sang tuần đề xuất</Status>
             : <Status kind="done">Đã đúng</Status>}
-          {that && <span className="mt-0.5 block text-[11px] text-slate-400">Đang ở {that}</span>}
+          {that && <span className="mt-0.5 block text-xs text-slate-400">Đang ở {that}</span>}
         </td>
         <td className="td whitespace-nowrap">
           <span className="flex items-center justify-end gap-1">

@@ -84,7 +84,7 @@ export function LoTrinhTiepCaLopPanel({ classId, onClose, onDone }: { classId: n
     } finally { setBusy(false); }
   };
 
-  const nhan = 'mb-0.5 block text-[11px] text-slate-500 lg:hidden';
+  const nhan = 'mb-0.5 block text-xs text-slate-500 lg:hidden';
   return (
     <KhungPanel tieuDe="Ghi lộ trình tiếp theo cả lớp" lop={data.lop.code} rong="toan" onDong={onClose}
       chan={data.coTheGhi && data.hocVien.length ? {
@@ -158,7 +158,7 @@ export function LoTrinhTiepCaLopPanel({ classId, onClose, onDone }: { classId: n
                     </span>
                     {/* PR-MT0 (mockup ②): Lên FT → `MT0 · W4 OCT` (đã có MT0 thì tuần thật, chưa lưu thì tuần Final sẽ tạo). */}
                     {d.huong === 'fast_track' && coMt0(data.lop.ma, 'fast_track') && (h.mt0?.maTuan || data.lop.tuanFinal) && (
-                      <small className="mt-1 block text-[11px] tabular-nums text-slate-400">MT0 · {h.mt0?.maTuan ?? tuanLich(data.lop.tuanFinal!)}</small>
+                      <small className="mt-1 block text-xs tabular-nums text-slate-400">MT0 · {h.mt0?.maTuan ?? tuanLich(data.lop.tuanFinal!)}</small>
                     )}
                     {loi && <span id={idLoi} role="alert" className="mt-1 block text-[12px] text-late">{loi}</span>}
                   </span>

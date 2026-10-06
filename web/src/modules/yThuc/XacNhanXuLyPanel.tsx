@@ -171,10 +171,10 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', onClose,
       <label className="flex min-h-[44px] cursor-pointer items-start gap-2 py-1 sm:min-h-0">
         <input type="checkbox" className="mt-1" checked={chon.has(v.id)} onChange={() => doi(v.id)}
           aria-label={`${ngay(v.occurredOn, homNay)} ${v.categoryLabel}: ${v.ten}`} />
-        <span className="w-11 shrink-0 pt-0.5 text-[11px] tabular-nums text-slate-500">{ngay(v.occurredOn, homNay)}</span>
+        <span className="w-11 shrink-0 pt-0.5 text-xs tabular-nums text-slate-500">{ngay(v.occurredOn, homNay)}</span>
         <span className="min-w-0 flex-1 text-sm text-slate-200">
           {v.ten}
-          <span className="block text-[11px] text-slate-500">{v.categoryLabel}{v.reportedByName ? ` · ${v.reportedByName} ghi` : ''}</span>
+          <span className="block text-xs text-slate-500">{v.categoryLabel}{v.reportedByName ? ` · ${v.reportedByName} ghi` : ''}</span>
         </span>
         <NhanViPham t={v.trangThai} nhan={v.nhanTrangThai} />
       </label>
@@ -200,7 +200,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', onClose,
             <b className="font-bold">{bacKe.nhan}</b>
             <span className="text-slate-400"> · lần xử lý thứ {d.chuoi.soXuLy + 1} trong {d.chuoi.nhan === 'lớp thường' ? 'các khoá lớp thường' : `lộ trình ${d.chuoi.nhan}`}</span>
           </p>
-          <p className="m-0 text-[11px] text-slate-500">Bậc tự điền theo thang — không chọn.</p>
+          <p className="m-0 text-xs text-slate-500">Bậc tự điền theo thang — không chọn.</p>
           {d.chuoi.soXuLy === 0 && !d.khai && d.coTheKhai && onKhai && (
             <p className="m-0 text-[11.5px] text-slate-400">
               Đã có mức độ vi phạm từ trước?{' '}
@@ -217,11 +217,11 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', onClose,
               </NutChon>
             ))}
           </div>
-          {lf.loiCua(loi, 'loai') && <p className="m-0 text-[11px] text-late">{lf.loiCua(loi, 'loai')}</p>}
+          {lf.loiCua(loi, 'loai') && <p className="m-0 text-xs text-late">{lf.loiCua(loi, 'loai')}</p>}
           <OKhac hien={loai === 'other'} value={tenKhac} onChange={setTenKhac} goiY="Ví dụ: Gặp phụ huynh tại trung tâm"
             id={lf.oId('ghi-ro')} onBlur={lf.roi('ghi-ro')} loi={lf.hien('ghi-ro') ? kiemGhiRoKhac(tenKhac) : null} />
           {bacKe && (
-            <p className="m-0 text-[11px] text-slate-500">Duyệt đề xuất ngoài thang không đổi bậc — bậc kế vẫn là {bacKe.nhan}.</p>
+            <p className="m-0 text-xs text-slate-500">Duyệt đề xuất ngoài thang không đổi bậc — bậc kế vẫn là {bacKe.nhan}.</p>
           )}
           <button type="button" className="link appearance-none border-0 bg-transparent p-0 min-h-[44px] sm:min-h-0 text-left text-xs" onClick={() => { setCheDo('xu-ly'); lf.datLai(); }}>
             ← Quay lại Xác nhận xử lý
@@ -244,7 +244,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', onClose,
                 {moCu && <ul className="m-0 list-none divide-y p-0" style={{ borderColor: 'var(--line)' }}>{cuHon.map(dongVp)}</ul>}
               </>
             )}
-            {lf.loiCua(loi, 'vi-pham') && <p className="m-0 mt-1 text-[11px] text-late">Chọn ít nhất một vi phạm.</p>}
+            {lf.loiCua(loi, 'vi-pham') && <p className="m-0 mt-1 text-xs text-late">Chọn ít nhất một vi phạm.</p>}
           </div>
         )}
       </Khoi>
@@ -265,7 +265,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', onClose,
             placeholder={cheDo === 'xu-ly' ? 'Ví dụ: Đã gửi Report cho PH qua Zalo'
               : 'Ví dụ: Vi phạm lần 4 sau WL 2, đã báo PH'} />
         </Truong>
-        {cheDo === 'xu-ly' && <p className="m-0 text-[11px] text-slate-500">Tệp hoặc liên kết (không bắt buộc) đính kèm sau khi lưu.</p>}
+        {cheDo === 'xu-ly' && <p className="m-0 text-xs text-slate-500">Tệp hoặc liên kết (không bắt buộc) đính kèm sau khi lưu.</p>}
       </Khoi>
 
     </KhungPanel>

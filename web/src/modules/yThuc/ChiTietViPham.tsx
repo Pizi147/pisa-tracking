@@ -57,17 +57,17 @@ export function ChiTietViPham({ violationId, onSua, onDaXoa, onMoXuLy }: {
     <div className="space-y-2.5 text-sm">
       {d.moTa && (
         <div>
-          <p className="text-[11px] text-slate-500 m-0 mb-1">Mô tả</p>
+          <p className="text-xs text-slate-500 m-0 mb-1">Mô tả</p>
           <p className="m-0 whitespace-pre-wrap break-words">{d.moTa}</p>
         </div>
       )}
       <div>
-        <p className="text-[11px] text-slate-500 m-0 mb-1">Bằng chứng</p>
+        <p className="text-xs text-slate-500 m-0 mb-1">Bằng chứng</p>
         <BangChung ownerType="violation" ownerId={d.id} canEdit={d.canEdit} tieuDe="" onChanged={reload} />
       </div>
 
       <div>
-        <p className="text-[11px] text-slate-500 m-0 mb-1">Lần xử lý</p>
+        <p className="text-xs text-slate-500 m-0 mb-1">Lần xử lý</p>
         {d.measures.length === 0 ? <p className="text-slate-400 m-0">Chưa nằm trong lần xử lý nào</p> : (
           <div className="flex flex-wrap gap-x-3 gap-y-1">
             {d.measures.map((m) => (
@@ -81,12 +81,12 @@ export function ChiTietViPham({ violationId, onSua, onDaXoa, onMoXuLy }: {
 
       {soLanSua > 0 && (
         <div>
-          <button type="button" className="text-[11px] text-slate-500 hover:underline underline-offset-2" aria-expanded={xemLichSu}
+          <button type="button" className="text-xs text-slate-500 hover:underline underline-offset-2" aria-expanded={xemLichSu}
             onClick={() => setXemLichSu((v) => !v)}>
             Đã sửa {soLanSua} lần · Xem
           </button>
           {xemLichSu && (
-            <ul className="list-none p-0 m-0 mt-1 space-y-0.5 text-[11px] text-slate-400">
+            <ul className="list-none p-0 m-0 mt-1 space-y-0.5 text-xs text-slate-400">
               {d.history.map((h) => {
                 const nhan = nhanLichSuViPham(h, homNay);
                 return (

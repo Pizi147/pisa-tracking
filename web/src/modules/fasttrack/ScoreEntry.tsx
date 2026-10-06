@@ -188,7 +188,7 @@ export function useSaveScore(attemptId: number, onSaved?: () => void, tenHv?: st
 function DongDau({ cell }: { cell: Cell }) {
   const { homNay } = useNgayNghiepVu();
   /* PR-BV: "-" đã chốt và bài đã dời → một dòng `→ W3 SEP` (tuần bài đang ở). */
-  if (cell.daChot?.doiSang) return <span className="block text-[11px] tabular-nums text-slate-400 leading-tight">→ {cell.daChot.doiSang}</span>;
+  if (cell.daChot?.doiSang) return <span className="block text-xs tabular-nums text-slate-400 leading-tight">→ {cell.daChot.doiSang}</span>;
   if (!cell.noShow) return null;
   const dem = cell.noShow.state === 'khong-co-bai' ? demNguocSuaDau(cell.noShow.editableUntil ?? null, homNay) : null;
   return (
@@ -396,7 +396,7 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false, 
         <span className="inline-flex items-center gap-1.5">
           <span className={`tabular-nums ${vang ? 'text-slate-500' : 'text-slate-300'}`} title={lyDoChiDoc(cell)}>
             {vang ? 'vắng' : cell.rawScore === null ? (cell.band !== null ? fmtBand(cell.band) : coDau(cell) ? '-' : '—') : cell.rawScore}
-            {cell.rawScore !== null && <span className="text-slate-500 text-[11px] ml-1">({fmtBand(cell.band)})</span>}
+            {cell.rawScore !== null && <span className="text-slate-500 text-xs ml-1">({fmtBand(cell.band)})</span>}
           </span>
           {lon && <ChoNutDau />}
         </span>
@@ -450,11 +450,11 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false, 
           }}
         >
           <label className="flex items-center gap-2">
-            <span className="text-[11px] text-slate-500 w-20">Giá trị mới</span>
+            <span className="text-xs text-slate-500 w-20">Giá trị mới</span>
             <input className="field w-20 text-center tabular-nums py-1" inputMode="decimal" value={draft}
               aria-label={`${skillLabel(cell.skill)} — số câu đúng mới`}
               onChange={(e) => setDraft(e.target.value)} />
-            <span className="text-[11px] text-slate-500">{moi === '' ? 'huỷ điểm' : ''}</span>
+            <span className="text-xs text-slate-500">{moi === '' ? 'huỷ điểm' : ''}</span>
           </label>
         </SuaDiemCoLyDo>
       )}
@@ -514,7 +514,7 @@ export function CriteriaButton({ cell, onSave, buttonRef, lon = false, gvMacDinh
         title={hieuChinh ? 'Sửa bốn tiêu chí đã chấm.' : `Mở bốn tiêu chí. ${NO_SHOW_HINT}`}
       >
         {coDau(cell) ? '-' : lon && cell.band === null && nhanDau ? '' : fmtBand(cell.band)}
-        <span className="text-slate-500 text-[11px]">sửa</span>
+        <span className="text-slate-500 text-xs">sửa</span>
       </button>
       {lon && <NutDau title={NUT_DAU_FT} an={!nhanDau} tat={dangBao} onBam={() => void bamDau()} />}
       </span>
@@ -550,14 +550,14 @@ function SuaTieuChi({ cell, onSave, onClose }: {
       <div className="flex items-end gap-1.5">
         {tc.map((label, i) => (
           <label key={i} className="block" title={label}>
-            <span className="block text-[11px] text-slate-500">{tcNgan[i]}</span>
+            <span className="block text-xs text-slate-500">{tcNgan[i]}</span>
             <input className="field w-12 text-center tabular-nums px-1 py-1" inputMode="decimal" value={vals[i] ?? ''}
               aria-label={`${skillLabel(cell.skill)} — ${label}`}
               onChange={(e) => setVals((v) => v.map((x, j) => (j === i ? e.target.value : x)))} />
           </label>
         ))}
         <label className="block" title={BAND_HINT}>
-          <span className="block text-[11px] text-slate-500">Band</span>
+          <span className="block text-xs text-slate-500">Band</span>
           <input className="field w-14 text-center tabular-nums px-1 py-1" inputMode="decimal" value={bandText}
             aria-label={`${skillLabel(cell.skill)} — band`}
             onChange={(e) => setBandText(e.target.value)} />
@@ -738,14 +738,14 @@ export function InlineScoreEditor({ cell, onSave, onClose }: {
       <div className="flex flex-wrap items-end gap-2">
         {isRaw ? (
           <label className="block">
-            <span className="block text-[11px] text-slate-500">Số câu đúng</span>
+            <span className="block text-xs text-slate-500">Số câu đúng</span>
             <input autoFocus className="field w-20 text-center tabular-nums" inputMode="decimal" value={vals[0]}
               title={`${NO_SHOW_HINT}. ${GOI_Y_BAND}`} aria-label={`${skillLabel(cell.skill)} — số câu đúng. ${NO_SHOW_HINT}. ${GOI_Y_BAND}`}
               onChange={(e) => setAt(0, e.target.value)} />
           </label>
         ) : tc.map((label, i) => (
           <label key={i} className="block" title={label}>
-            <span className="block text-[11px] text-slate-500">{tcNgan[i]}</span>
+            <span className="block text-xs text-slate-500">{tcNgan[i]}</span>
             <input autoFocus={i === 0} className="field w-14 text-center tabular-nums" inputMode="decimal"
               value={vals[i] ?? ''} aria-label={`${skillLabel(cell.skill)} — ${label}. ${NO_SHOW_HINT}`}
               onChange={(e) => setAt(i, e.target.value)} />
@@ -753,7 +753,7 @@ export function InlineScoreEditor({ cell, onSave, onClose }: {
         ))}
         {!isRaw && (
           <label className="block" title={BAND_HINT}>
-            <span className="block text-[11px] text-slate-500">Band</span>
+            <span className="block text-xs text-slate-500">Band</span>
             <input className="field w-14 text-center tabular-nums" inputMode="decimal" value={bandText}
               aria-label={`${skillLabel(cell.skill)} — band`}
               onChange={(e) => setBandText(e.target.value)} />
@@ -764,7 +764,7 @@ export function InlineScoreEditor({ cell, onSave, onClose }: {
         )}
         {canLyDo && (
           <label className="block">
-            <span className="block text-[11px] text-slate-500">Lý do (tuỳ chọn)</span>
+            <span className="block text-xs text-slate-500">Lý do (tuỳ chọn)</span>
             <input className="field w-56" value={lyDo} placeholder="Ví dụ: chấm lại bài, nhập nhầm"
               aria-label="Lý do sửa điểm đã nhập" onChange={(e) => setLyDo(e.target.value)} />
           </label>
@@ -777,7 +777,7 @@ export function InlineScoreEditor({ cell, onSave, onClose }: {
         </span>
         <button type="button" className="btn btn-sm" disabled={busy} onClick={onClose}>Đóng</button>
       </div>
-      <p className="m-0 text-[11px] text-slate-500">
+      <p className="m-0 text-xs text-slate-500">
         {built.dash
           ? 'Sẽ lưu là Không có bài cho đúng bài này; sửa lại được đến hết Chủ nhật của tuần thi.'
           : `${NO_SHOW_HINT}. Để trống là chưa chấm, không phải điểm 0.`} Enter để lưu · Esc để huỷ.
@@ -918,14 +918,14 @@ export function SuaDiemCoLyDo({ tieuDe, moTaCu, children, onLuu, onDong, loiGiaT
           }}
         >
           <div className="text-sm font-medium text-slate-100">{tieuDe}</div>
-          <div className="text-[11px] text-slate-500 mt-0.5 tabular-nums">{moTaCu}</div>
+          <div className="text-xs text-slate-500 mt-0.5 tabular-nums">{moTaCu}</div>
           <div className="mt-2">{children}</div>
           <label className="block mt-2">
-            <span className="block text-[11px] text-slate-500 mb-0.5">Lý do sửa (tuỳ chọn)</span>
+            <span className="block text-xs text-slate-500 mb-0.5">Lý do sửa (tuỳ chọn)</span>
             <input className="field py-1 text-sm" value={lyDo} placeholder="Ví dụ: chấm lại bài, nhập nhầm cột"
               aria-label="Lý do sửa điểm đã nhập" onChange={(e) => setLyDo(e.target.value)} />
           </label>
-          {loi && <p className="m-0 mt-1 text-[11px] text-rose-300">{loi}</p>}
+          {loi && <p className="m-0 mt-1 text-xs text-rose-300">{loi}</p>}
           <div className="flex justify-end gap-2 mt-2">
             <button type="button" className="btn btn-sm" disabled={busy} onClick={() => dong.current()}>Đóng</button>
             <span title={chan ?? undefined}>
@@ -1193,7 +1193,7 @@ export function ODiemThuong({
    * vắng: lần vắng −1, lịch và điểm ở tuần mới giữ nguyên. Gõ khác thì ô về "-" (điểm sửa ở tuần mới).
    */
   if (cell.oTuanCu && dau && coDiem) {
-    const duoi = cell.tuanHienTai ? <span className="text-[11px] tabular-nums text-slate-400 leading-tight">→ {cell.tuanHienTai}</span> : null;
+    const duoi = cell.tuanHienTai ? <span className="text-xs tabular-nums text-slate-400 leading-tight">→ {cell.tuanHienTai}</span> : null;
     const tieuDe = `Đã có điểm ở ${cell.tuanHienTai ?? 'tuần mới'}. Xoá "-" = hết vắng, giữ lịch và điểm.`;
     if (!cell.goDau) {
       return <span className="inline-flex flex-col items-end tabular-nums text-slate-400" title={tieuDe}><span>-</span>{duoi}</span>;
@@ -1237,7 +1237,7 @@ export function ODiemThuong({
     const chu = dau ? '-' : cell.chuaToiTuan && cell.tuanHienTai ? cell.tuanHienTai : '—';
     const title = dau && cell.tuanHienTai ? `${khongDay} Đã dời sang ${cell.tuanHienTai}.`
       : cell.chuaToiTuan && cell.tuanHienTai ? `${khongDay} Thi ${cell.tuanHienTai}.` : khongDay;
-    const chuDoc = <span className="text-[11px] text-slate-500 tabular-nums" title={title}>{chu}</span>;
+    const chuDoc = <span className="text-xs text-slate-500 tabular-nums" title={title}>{chu}</span>;
     /* Điện thoại: giữ chỗ nút "−" để chữ thẳng cột với ô nhập của các dòng khác. */
     return lon ? <span className="inline-flex items-center gap-1">{chuDoc}<ChoNutDau /></span> : chuDoc;
   }
@@ -1291,13 +1291,13 @@ export function ODiemThuong({
               }}
             >
               <div className="flex items-center gap-1.5">
-                <span className="text-[11px] text-slate-500 w-20">Giá trị mới</span>
+                <span className="text-xs text-slate-500 w-20">Giá trị mới</span>
                 <input className={oSo} inputMode="numeric" value={sua.diem} aria-label={`${tenMon} — số câu đúng mới`}
                   onChange={(e) => setSua({ ...sua, diem: e.target.value })} />
                 <span className="text-slate-600">/</span>
                 <input className={oSo} inputMode="numeric" value={sua.tong} aria-label={`${tenMon} — tổng số câu mới`}
                   onChange={(e) => setSua({ ...sua, tong: e.target.value })} />
-                {sua.diem.trim() === '' && <span className="text-[11px] text-slate-500">huỷ điểm</span>}
+                {sua.diem.trim() === '' && <span className="text-xs text-slate-500">huỷ điểm</span>}
               </div>
             </SuaDiemCoLyDo>
           )}

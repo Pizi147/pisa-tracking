@@ -194,7 +194,7 @@ export default function StudentDetailPage() {
              style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <span className="block text-[11px] text-slate-500">
+              <span className="block text-xs text-slate-500">
                 Hồ sơ học viên · {data.studentCode}
               </span>
               <h1 className="text-xl font-semibold text-slate-100 flex flex-wrap items-center gap-2 m-0 mt-0.5">

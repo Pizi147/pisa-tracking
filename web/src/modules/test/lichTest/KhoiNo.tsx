@@ -139,7 +139,7 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, homNay, onDaLuu, k
                           <div className="font-semibold text-slate-100">
                             {d.classCode} · {dotTuan(d, homNay)} · <span title={k.goiY}>{k.chu}</span>
                           </div>
-                          {k.phu && <div className="truncate text-[11px] text-slate-500">{k.phu}</div>}
+                          {k.phu && <div className="truncate text-xs text-slate-500">{k.phu}</div>}
                           <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[11.5px] text-slate-400 tabular-nums">
                             <span className="whitespace-nowrap">còn {xong ? 0 : d.conBai} bài</span>
                             {!xong && <span className="whitespace-nowrap"><Han loai="nhap-diem" han={d.han} /></span>}
@@ -156,9 +156,9 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, homNay, onDaLuu, k
                         {/* Kỹ năng xuống dòng, không cắt "W…" (rà #218). */}
                         <td className="td py-1.5 leading-[1.35] text-slate-300 [overflow-wrap:anywhere]" title={k.goiY}>
                           {k.chu}
-                          {k.phu && <span className="block truncate text-[11px] leading-4 text-slate-500">{k.phu}</span>}
+                          {k.phu && <span className="block truncate text-xs leading-4 text-slate-500">{k.phu}</span>}
                         </td>
-                        <td className="td text-right tabular-nums text-slate-200">{xong ? 0 : d.conBai} <span className="text-[11px] text-slate-500">bài</span></td>
+                        <td className="td text-right tabular-nums text-slate-200">{xong ? 0 : d.conBai} <span className="text-xs text-slate-500">bài</span></td>
                         <td className="td whitespace-nowrap">{xong ? <span className="text-slate-600">—</span> : <Han loai="nhap-diem" han={d.han} />}</td>
                         <td className="td py-1.5 text-xs leading-[1.35] text-slate-300"><GvCham gv={d.gvNo} /></td>
                         <td className="td"><NhanDong d={d} xong={xong} chuaLuu={chuaLuu[`no:${d.key}`]} /></td>

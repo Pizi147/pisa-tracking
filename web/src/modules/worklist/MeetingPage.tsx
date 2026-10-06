@@ -253,7 +253,7 @@ export function MeetingBoard() {
                         {u.cells.length < COT_GIUA.length && Array.from({ length: COT_GIUA.length - u.cells.length }).map((_, i) => <td key={`pad-${i}`} className="td text-slate-600">—</td>)}
                         <td className="td">
                           <Status kind={u.trangThai.ma === 'da-nop' ? 'done' : u.trangThai.ma === 'nhap' ? 'waiting' : 'idle'}>{u.trangThai.nhan}</Status>
-                          {u.trangThai.phu && <div className="text-[11px] text-slate-500 mt-0.5">{u.trangThai.phu}</div>}
+                          {u.trangThai.phu && <div className="text-xs text-slate-500 mt-0.5">{u.trangThai.phu}</div>}
                         </td>
                       </tr>
                     ))}
@@ -302,11 +302,11 @@ function OTaBang({ cell, thTutor }: { cell: Cell; thTutor?: string }) {
     <span className={nhat ? 'opacity-70' : ''}>
       {thTutor && <span className="text-slate-500">{thTutor}: </span>}
       <Outcome tone={unitTone(cell.status)}>{unitStatusLabel(cell.status)}</Outcome>
-      {nhat && <span className="text-[11px] text-slate-500 ml-1">nháp</span>}
+      {nhat && <span className="text-xs text-slate-500 ml-1">nháp</span>}
       {cell.worstStatus && cell.worstStatus !== cell.status && (
-        <span className="text-[11px] text-slate-500"> (từng {unitStatusLabel(cell.worstStatus).toLowerCase()})</span>
+        <span className="text-xs text-slate-500"> (từng {unitStatusLabel(cell.worstStatus).toLowerCase()})</span>
       )}
-      {cell.weeksTotal ? <span className="text-[11px] text-slate-500"> · đã nộp {cell.weeksReported}/{cell.weeksTotal} tuần</span> : ''}
+      {cell.weeksTotal ? <span className="text-xs text-slate-500"> · đã nộp {cell.weeksReported}/{cell.weeksTotal} tuần</span> : ''}
     </span>
   );
 }
@@ -408,10 +408,10 @@ function NganBaoCao({ unit, cell, periodId, editable, editWindow, onClose, onSav
 
           {cell.history.length > 0 && (
             <details>
-              <summary className="text-[11px] text-slate-500 cursor-pointer">Lịch sử ({cell.history.length})</summary>
+              <summary className="text-xs text-slate-500 cursor-pointer">Lịch sử ({cell.history.length})</summary>
               <ul className="list-none p-0 m-0 mt-1 space-y-0.5">
                 {cell.history.map((h, i) => (
-                  <li key={i} className="text-[11px] text-slate-500">
+                  <li key={i} className="text-xs text-slate-500">
                     {fmtDate(h.at.slice(0, 10))} · {unitStatusLabel(h.status)}{h.kind ? ` · ${h.kind === 'nop' ? 'nộp' : 'nháp'}` : ''}
                     {h.actor ? ` · ${h.actor}` : ''}
                   </li>
@@ -430,8 +430,8 @@ function NganBaoCao({ unit, cell, periodId, editable, editWindow, onClose, onSav
               <button className="btn btn-primary btn-sm" disabled={busy !== null || !status || !(editWindow?.open ?? true)} onClick={() => luu(true)}>
                 {busy === 'nop' ? 'Đang nộp…' : daNop ? 'Nộp lại' : 'Nộp'}
               </button>
-              {!(editWindow?.open ?? true) && <span className="text-[11px] text-slate-500">Cửa sổ nộp đã đóng — vẫn lưu nháp được.</span>}
-              {(editWindow?.open ?? true) && !status && <span className="text-[11px] text-slate-500">Chọn mức trước khi nộp.</span>}
+              {!(editWindow?.open ?? true) && <span className="text-xs text-slate-500">Cửa sổ nộp đã đóng — vẫn lưu nháp được.</span>}
+              {(editWindow?.open ?? true) && !status && <span className="text-xs text-slate-500">Chọn mức trước khi nộp.</span>}
             </div>
           )}
         </div>

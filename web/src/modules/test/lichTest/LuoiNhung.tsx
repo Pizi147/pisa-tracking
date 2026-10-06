@@ -19,7 +19,7 @@ export function LuoiNhung({ classId, periodId, kind, tuanDangXem, chiAttempt = n
   const { data, error, reload } = useApi<Cham>(duongCham(classId, { periodId, kind }));
   const hep = useManHinhHep();
   const link = coLinkRieng && !hep ? null : (
-    <Link to={hrefDayDu} className="inline-flex min-h-[32px] max-sm:min-h-10 items-center px-2 text-[11px] text-slate-400 no-underline hover:text-slate-100"
+    <Link to={hrefDayDu} className="inline-flex min-h-[32px] max-sm:min-h-10 items-center px-2 text-xs text-slate-400 no-underline hover:text-slate-100"
       title="Mở lưới đầy đủ của lớp này ở trang riêng">
       Mở lưới đầy đủ ↗
     </Link>

@@ -47,9 +47,9 @@ export function LopKeHoach({ lop, mo, onToggle, onHienDien, chiCanXepLai = false
               <span className="block min-w-0">
                 <span className="flex flex-wrap items-baseline gap-x-2">
                   <span>{lop.code}</span>
-                  <span className="text-[11px] font-normal text-slate-400">{[lop.chiNhanh, kyHieuLop(lop.chuongTrinh, null) ?? lop.chuongTrinh].filter(Boolean).join(' · ')}{(lop.chiNhanh || lop.chuongTrinh) && ' · '}{lop.soHv} HV</span>
+                  <span className="text-xs font-normal text-slate-400">{[lop.chiNhanh, kyHieuLop(lop.chuongTrinh, null) ?? lop.chuongTrinh].filter(Boolean).join(' · ')}{(lop.chiNhanh || lop.chuongTrinh) && ' · '}{lop.soHv} HV</span>
                 </span>
-                <span className="block truncate text-[11px] font-normal text-slate-400 sm:hidden">{lop.tomTat}{nutXep}</span>
+                <span className="block truncate text-xs font-normal text-slate-400 sm:hidden">{lop.tomTat}{nutXep}</span>
               </span>
             )}>
             {/* `.hang-lon > td` đặt chữ đậm 12.5px với độ ưu tiên cao hơn tiện ích Tailwind — chữ phụ phải đặt thẳng vào style. */}

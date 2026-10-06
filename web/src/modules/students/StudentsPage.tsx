@@ -371,7 +371,7 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, dsHoc
             </svg>
             <span className="min-w-0">
               <span className="block font-extrabold text-slate-100">{lop.code}</span>
-              <span className="block text-[11px] text-slate-400">
+              <span className="block text-xs text-slate-400">
                 {chuLop}{lop.gvcn && <> · GVCN {lop.gvcn.name}</>}
               </span>
             </span>
@@ -392,7 +392,7 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, dsHoc
             <Link to={`/hoc-vien/lop/${lop.id}`} state={{ ds: dsLop }} className="shrink-0 font-extrabold text-slate-100 underline decoration-dotted underline-offset-4">
               {lop.code}
             </Link>
-            <span className="min-w-0 truncate text-[11px] font-normal text-slate-400"
+            <span className="min-w-0 truncate text-xs font-normal text-slate-400"
               title={`${chuLop}${lop.gvcn ? ` · GVCN ${lop.gvcn.name}` : ''}`}>
               {chuLop}
               {lop.gvcn && <> · <abbr title="Giáo viên chủ nhiệm" className="no-underline">GVCN</abbr> <TenGiaoVien id={lop.gvcn.id} ten={lop.gvcn.name} /></>}

@@ -60,7 +60,7 @@ export function DongViec({ it, onOpen, nutPhu }: {
           <span className="truncate text-[13px] font-semibold text-slate-100 max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words">{it.tieuDe}</span>
           {it.level && <Level tone={toneTheoNhan(it.level.text, it.level.tone)}>{it.level.text}</Level>}
         </span>
-        <span className="block truncate text-[11px] text-slate-500 max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words">
+        <span className="block truncate text-xs text-slate-500 max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words">
           {dongPhu}{nguoi && <>{dongPhu ? ' · ' : ''}<span className="text-xs text-slate-400">{nguoi}</span></>}
         </span>
       </button>

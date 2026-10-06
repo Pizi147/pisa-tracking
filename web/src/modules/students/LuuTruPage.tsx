@@ -127,7 +127,7 @@ export default function LuuTruPage() {
                       {l.gvcn && <> · GVCN {l.gvcn}</>} · {l.soHvTungHoc} HV từng học
                     </span>
                     <span className="flex-1" />
-                    <span className="text-[11px] text-slate-500 whitespace-nowrap">
+                    <span className="text-xs text-slate-500 whitespace-nowrap">
                       Đã kết thúc {l.finishedAt ? ngay(l.finishedAt) : '—'}
                     </span>
                   </Link>
@@ -156,7 +156,7 @@ export default function LuuTruPage() {
                     {s.lopCuoi ? <>lớp cuối {s.lopCuoi}</> : 'chưa từng học lớp nào'}{s.chiNhanh && <> · {s.chiNhanh}</>}
                   </span>
                   <span className="flex-1" />
-                  <span className="text-[11px] text-slate-500 whitespace-nowrap">Lưu trữ {ngay(s.archivedAt)}</span>
+                  <span className="text-xs text-slate-500 whitespace-nowrap">Lưu trữ {ngay(s.archivedAt)}</span>
                   {!chon.bat && s.cycleIdCuoi != null && (
                     <Link to={duongHoSoHocVien(s.id, { tab: 'hanh-trinh', tongKet: s.cycleIdCuoi })} className="btn btn-sm min-h-[44px] no-underline sm:min-h-0">Tổng kết</Link>
                   )}

@@ -90,7 +90,7 @@ export function MissingBadge({ items, className = '', gon = false }: {
           style={{ width: RONG, borderColor: 'var(--line-strong)', background: 'var(--surface-2)', top: viTri?.top ?? 0, left: viTri?.left ?? 0, visibility: viTri ? 'visible' : 'hidden' }}
           onClick={(e) => { e.stopPropagation(); e.preventDefault(); }}
         >
-          <span className="block text-[11px] text-slate-500 mb-1.5">Cần bổ sung sớm:</span>
+          <span className="block text-xs text-slate-500 mb-1.5">Cần bổ sung sớm:</span>
           <span className="block space-y-1">
             {items.map((i) => (
               <span key={i.key} className="block">

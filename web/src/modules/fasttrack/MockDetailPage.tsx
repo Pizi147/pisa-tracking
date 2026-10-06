@@ -489,7 +489,7 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory }: {
         <div role="cell" className="text-slate-200 whitespace-nowrap">
           <span className="font-medium">{skillLabel(c.skill)}</span>
           {ownsSchedule && r.planSource === 'manual' && (
-            <span className="text-slate-500 text-[11px] block">đã xếp riêng</span>
+            <span className="text-slate-500 text-xs block">đã xếp riêng</span>
           )}
         </div>
 
@@ -519,17 +519,17 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory }: {
           {/* MT lịch sử không có hạn (T34) — chip tình trạng "Nhập bù, không tính hạn" đã nói đủ. */}
           {prog !== 'scored' && !(prog === 'cancelled' && c.progress === 'cancelled') && !d.lichSu && <div><DeadlinePill cell={c} /></div>}
           {ownsSchedule && r.absenceMoveCount > 0 && (
-            <div className="text-[11px] text-amber-200">Đã dời do vắng {r.absenceMoveCount} lần</div>
+            <div className="text-xs text-amber-200">Đã dời do vắng {r.absenceMoveCount} lần</div>
           )}
           {/* ĐANG CHỜ AI, ĐẾN NGÀY NÀO: không nói hạn thì người xem không biết còn bao lâu nữa phần thi bị huỷ. */}
           {ownsSchedule && r.pendingMove && (
-            <div className="text-[11px] text-amber-200">
+            <div className="text-xs text-amber-200">
               Đề nghị dời sang {r.pendingMove.toWeek ?? 'tuần kế tiếp'} (lần {r.pendingMove.moveNo}) — Quản lý cần
               trả lời trước {fmtDate(r.pendingMove.decideBy)}{r.huyVang ? '' : ', quá hạn thì huỷ phần thi'}.
             </div>
           )}
-          {!r.required && r.scopeReason && <div className="text-[11px] text-slate-500">{r.scopeReason}</div>}
-          {r.sitNote && !c.noShow && <div className="text-[11px] text-slate-500">{r.sitNote}</div>}
+          {!r.required && r.scopeReason && <div className="text-xs text-slate-500">{r.scopeReason}</div>}
+          {r.sitNote && !c.noShow && <div className="text-xs text-slate-500">{r.sitNote}</div>}
         </div>
 
         <div role="cell" className="flex flex-wrap items-start gap-1.5 md:justify-end">
@@ -537,10 +537,10 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory }: {
             <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => chay(chinh)}>{nhanChinh}</button>
           )}
           {!chinh && !ownsSchedule && r.required && !canScore && r.sitStatus === 'absent' && (
-            <span className="text-[11px] text-slate-500">Xử lý ở dòng W1</span>
+            <span className="text-xs text-slate-500">Xử lý ở dòng W1</span>
           )}
           {!chinh && !daXinDoi && c.required && !c.canEdit && !cancelled && (
-            <span className="text-[11px] text-slate-500" title={c.khoa ? KHOA_HOAN_TAT_HINT : 'Bạn không được phân công kỹ năng này'}>Chỉ xem</span>
+            <span className="text-xs text-slate-500" title={c.khoa ? KHOA_HOAN_TAT_HINT : 'Bạn không được phân công kỹ năng này'}>Chỉ xem</span>
           )}
           {/* Không có mục thì giữ chỗ cùng rộng nút ⋯ (w-7) — nút chính các dòng thẳng cột (rà #126). */}
           {menu.length ? (
@@ -916,7 +916,7 @@ function AbsenceMoveModal({ row, detail, onClose, onDone }: {
                   </label>
                 ))}
               </div>
-              <p className="text-[11px] text-slate-500 mt-1 mb-0">
+              <p className="text-xs text-slate-500 mt-1 mb-0">
                 Tick các môn thi CÙNG buổi. Mỗi môn vẫn được xét riêng: môn đã dời một lần thì
                 phải xin Quản lý duyệt, môn chưa dời lần nào thì đổi được ngay.
               </p>

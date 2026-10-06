@@ -233,7 +233,7 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                                     onClick={() => hoanTac(r.studentId, c.key)}>↺</button>
                                 )}
                               </div>
-                              {loi && <span id={idLoi} className="mt-1 block text-[11px] text-late">{loi}</span>}
+                              {loi && <span id={idLoi} className="mt-1 block text-xs text-late">{loi}</span>}
                             </td>
                           );
                         })}

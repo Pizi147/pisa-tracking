@@ -116,7 +116,7 @@ function DongHv({ studentId, active, ten, href, phu, phuTitle, phuDo = false, lu
           <Link className="link block truncate max-sm:py-3 max-sm:-my-3" to={href} title={ten}>{ten}</Link>
           {nhan}
         </div>
-        <div className="flex items-center gap-1.5 text-[11px] text-slate-500 min-w-0 tabular-nums">
+        <div className="flex items-center gap-1.5 text-xs text-slate-500 min-w-0 tabular-nums">
           <span className={`truncate ${phuDo ? 'text-rose-300' : ''}`} title={phuTitle}>{phu}</span>
           {luu}
         </div>
@@ -315,7 +315,7 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
         <DauO lon tt={o[k]} loi={loi[k]} onLuuLai={() => luuLai(k)} />
         {dung || !s ? (
           <span className="inline-flex items-center gap-1">
-            <span className="text-[11px] text-slate-500" title={`${tenMonO}: ${chuDung ?? 'không có lịch'}`}>
+            <span className="text-xs text-slate-500" title={`${tenMonO}: ${chuDung ?? 'không có lịch'}`}>
               {chuDung ?? '—'}
             </span>
             {/* Giữ chỗ nút "−" để chữ trạng thái thẳng cột với ô nhập của các dòng khác. */}

@@ -66,8 +66,8 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone }: {
             <NutChon key={k} chon={bac === i + 1} onClick={() => setBac(i + 1)}>{nhanLoaiXuLy(k)}</NutChon>
           ))}
         </div>
-        {lf.loiCua(loi, 'bac') && <p className="m-0 text-[11px] text-late">Chọn bậc cao nhất em đã bị xử lý</p>}
-        {bac > 0 && <p className="m-0 text-[11px] text-slate-500">Lần xử lý kế tiếp của em: {nhanLoaiXuLy(kindCuaBac(bac + 1))}.</p>}
+        {lf.loiCua(loi, 'bac') && <p className="m-0 text-xs text-late">Chọn bậc cao nhất em đã bị xử lý</p>}
+        {bac > 0 && <p className="m-0 text-xs text-slate-500">Lần xử lý kế tiếp của em: {nhanLoaiXuLy(kindCuaBac(bac + 1))}.</p>}
       </Khoi>
       <Khoi tieuDe="Chi tiết">
         <Truong nhan="Tháng xử lý" tuyChon>

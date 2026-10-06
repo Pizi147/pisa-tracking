@@ -95,7 +95,7 @@ export async function runPrHk2Tests(t: Pick<YThucTestKit, 'check' | 'assert'>) {
   });
 
   check('C8 · chặn tăng lại: tổng text-[11px] trong web/src không vượt trần (chỉ được giảm)', () => {
-    const TRAN = 200;
+    const TRAN = 87;   // số thật sau K6 (từ 349); chỉ được giảm
     const tong = tsx('web/src').reduce((n, f) => n + (doc(f).match(/text-\[11px\]/g)?.length ?? 0), 0);
     assert(tong <= TRAN, `text-[11px] = ${tong} > trần ${TRAN}`);
   });

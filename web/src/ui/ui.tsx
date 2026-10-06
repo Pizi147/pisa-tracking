@@ -303,8 +303,8 @@ export function KpiTile({ label, value, tone = 'neutral', to, sub }: {
       <div className={`mt-2 text-2xl font-semibold tabular-nums ${
         tone === 'danger' ? 'text-bad' : tone === 'warn' ? 'text-soon' : tone === 'ok' ? 'text-doing' : 'text-slate-100'
       }`}>{value}</div>
-      {sub && <div className="text-[11px] text-slate-500 mt-1">{sub}</div>}
-      {to && <div className="text-[11px] text-doing mt-2">Xem danh sách →</div>}
+      {sub && <div className="text-xs text-slate-500 mt-1">{sub}</div>}
+      {to && <div className="text-xs text-doing mt-2">Xem danh sách →</div>}
     </div>
   );
   return to ? <Link to={to} className="block h-full no-underline">{inner}</Link> : inner;
@@ -336,8 +336,8 @@ export function Field({ label, children, hint, required, loi, as = 'label' }: {
         {troO ? <label htmlFor={troO} className="label">{chu}</label> : <span id={idNhan} className="label">{chu}</span>}
         {/* Luôn cùng một lớp bọc (như `Truong`): bọc/bỏ bọc theo `loi` làm ô dựng lại → mất focus khi đang gõ. */}
         <div ref={noi.ref} className={loi ? 'contents [&_.field]:border-late [&_.field]:ring-1 [&_.field]:ring-late/40' : 'contents'}>{children}</div>
-        {hint && <span className="block text-[11px] text-slate-500 mt-1">{hint}</span>}
-        {loi && <span id={noi.id} className="mt-1 block text-[11px] text-late">{loi}</span>}
+        {hint && <span className="block text-xs text-slate-500 mt-1">{hint}</span>}
+        {loi && <span id={noi.id} className="mt-1 block text-xs text-late">{loi}</span>}
       </Wrap>
     </BaoOTrongNhan.Provider>
   );
@@ -352,7 +352,7 @@ export function Field({ label, children, hint, required, loi, as = 'label' }: {
  */
 export function SectionNote({ children }: { children: ReactNode }) {
   return (
-    <div className="text-[11px] text-slate-500 leading-relaxed border-l-2 border-slate-700 pl-2">{children}</div>
+    <div className="text-xs text-slate-500 leading-relaxed border-l-2 border-slate-700 pl-2">{children}</div>
   );
 }
 

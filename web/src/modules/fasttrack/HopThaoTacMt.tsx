@@ -199,13 +199,13 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
               <TuanNho d={{ periodId: tuan?.periodId ?? null, weekStart: tuan?.weekStart ?? null }} goc={row.weekStart} toiThieu={tuanNay}
                 onTuan={(x) => { setTuan(x); setCanhBao(null); }} />
             </div>
-            {t === 'doi-lich' && row.weekStart && <span className="mt-1 block text-[11px] text-slate-500">Đang thi {tuanLich(row.weekStart)}</span>}
+            {t === 'doi-lich' && row.weekStart && <span className="mt-1 block text-xs text-slate-500">Đang thi {tuanLich(row.weekStart)}</span>}
           </Truong>
         )}
         {t === 'doi-han' && (
           <Truong nhan="Hạn chấm mới" batBuoc loi={lf.loiCua(loi, 'han')}>
             <ONgay kieu="ngay" value={han} onChange={setHan} id={lf.oId('han')} onBlur={lf.roi('han')} invalid={!!lf.loiCua(loi, 'han')} />
-            {row.deadline && <span className="mt-1 block text-[11px] text-slate-500">Hạn đang áp dụng {ngay(row.deadline)}</span>}
+            {row.deadline && <span className="mt-1 block text-xs text-slate-500">Hạn đang áp dụng {ngay(row.deadline)}</span>}
           </Truong>
         )}
         {chonW && (

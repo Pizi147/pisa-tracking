@@ -185,7 +185,7 @@ function LuuTruPanel({ studentId, studentName, lop, onClose, onDone, boLuuTru }:
           <input type="checkbox" {...lf.o(loi, 'xac-nhan')} checked={xacNhan} onChange={(e) => setXacNhan(e.target.checked)} />
           Tôi hiểu và muốn {boLuuTru ? 'bỏ lưu trữ' : 'lưu trữ'} học viên này.
         </label>
-        {lf.loiCua(loi, 'xac-nhan') && <span className="block text-[11px] text-late">Chưa đánh dấu xác nhận</span>}
+        {lf.loiCua(loi, 'xac-nhan') && <span className="block text-xs text-late">Chưa đánh dấu xác nhận</span>}
       </Khoi>
     </KhungPanel>
   );

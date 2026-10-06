@@ -228,7 +228,7 @@ export function TasksBoard() {
                     <tr key={r.id} className="row-hover cursor-pointer" onClick={() => setOpen(r.id)}>
                       <td className="td">
                         <span className="text-slate-100" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{r.title}</span>
-                        <span className="block text-[11px] text-slate-500 mt-0.5">
+                        <span className="block text-xs text-slate-500 mt-0.5">
                           {r.group ? TASK_GROUP_LABEL[r.group as keyof typeof TASK_GROUP_LABEL] : '—'}
                           {' · '}{r.taskType === 'long_term' ? 'Dài hạn' : 'Trong kỳ'}
                           {branchId === null && r.branchName ? ` · ${r.branchName}` : ''}
@@ -236,17 +236,17 @@ export function TasksBoard() {
                       </td>
                       <td className="td text-slate-300">
                         {r.assigneeName ?? <span className="text-slate-500">chưa giao</span>}
-                        {r.assigneeNgoai && <span className="ml-1 whitespace-nowrap text-[11px] text-slate-500">ngoài hệ thống</span>}
+                        {r.assigneeNgoai && <span className="ml-1 whitespace-nowrap text-xs text-slate-500">ngoài hệ thống</span>}
                       </td>
                       <td className="td whitespace-nowrap">
                         <Han loai="viec-van-hanh" han={r.due} />
                         {r.hanGoc && (
-                          <div className="text-[11px] text-slate-500 mt-0.5">{dongHanDaDoi({ hanGoc: r.hanGoc, lyDo: r.lyDoDoiHan }, homNay)}</div>
+                          <div className="text-xs text-slate-500 mt-0.5">{dongHanDaDoi({ hanGoc: r.hanGoc, lyDo: r.lyDoDoiHan }, homNay)}</div>
                         )}
                       </td>
                       <td className="td">
                         <NhanViec progress={r.progress} label={r.progressLabel} />
-                        {phuTrangThai && <div className="text-[11px] text-slate-500 mt-0.5" title={phuTrangThaiDu}>{phuTrangThai}</div>}
+                        {phuTrangThai && <div className="text-xs text-slate-500 mt-0.5" title={phuTrangThaiDu}>{phuTrangThai}</div>}
                       </td>
                       <td className="td text-xs">
                         {r.subTotal > 0 ? <span className="text-slate-300">{r.subDone}/{r.subTotal} xong</span> : <span className="text-slate-600">—</span>}
@@ -359,7 +359,7 @@ export function NganViecVanHanh({ taskId, onClose, onDone }: {
                       <span className={`text-sm ${x.overdue ? 'text-rose-300' : 'text-slate-100'}`}>{x.title}</span>
                       <NhanViec progress={x.progress} label={x.progressLabel} />
                     </span>
-                    <span className="block text-[11px] tabular-nums text-slate-500 mt-0.5">
+                    <span className="block text-xs tabular-nums text-slate-500 mt-0.5">
                       {x.assigneeName ?? 'chưa giao'}
                       {x.due ? ` · hạn ${fmtDate(x.due)}` : ''}
                       {x.stopReason ? ` · ${x.stopReason}` : ''}

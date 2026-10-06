@@ -118,8 +118,8 @@ function PanelKhongDat({ studentId, studentName, lop, ct, monTruot, ban, onDong,
           <NutChon chon={nn === 'trung_tam'} onClick={() => setNn('trung_tam')} className="justify-center">Trung tâm</NutChon>
           <NutChon chon={nn === 'hoc_sinh'} onClick={() => setNn('hoc_sinh')} className="justify-center">Học viên</NutChon>
         </div>
-        {lf.loiCua(loi, 'nguyen-nhan') && <span className="mt-1 block text-[11px] text-late">{lf.loiCua(loi, 'nguyen-nhan')}</span>}
-        <p className="m-0 mt-1 text-[11px] text-slate-500">
+        {lf.loiCua(loi, 'nguyen-nhan') && <span className="mt-1 block text-xs text-late">{lf.loiCua(loi, 'nguyen-nhan')}</span>}
+        <p className="m-0 mt-1 text-xs text-slate-500">
           {nn === 'trung_tam' ? 'Sau khi em sang Fast Track: mỗi kỹ năng một Case + PA Tutor 10 buổi.'
             : nn === 'hoc_sinh' ? 'Không tạo Case — ghi cách xử lý từng trường hợp.' : 'Trung tâm chưa dạy đủ hay học viên chưa theo kịp?'}
         </p>
@@ -133,7 +133,7 @@ function PanelKhongDat({ studentId, studentName, lop, ct, monTruot, ban, onDong,
               </NutChon>
             ))}
           </div>
-          {lf.loiCua(loi, 'mon') && <span className="mt-1 block text-[11px] text-late">{lf.loiCua(loi, 'mon')}</span>}
+          {lf.loiCua(loi, 'mon') && <span className="mt-1 block text-xs text-late">{lf.loiCua(loi, 'mon')}</span>}
         </Khoi>
       )}
       {nn === 'hoc_sinh' && (

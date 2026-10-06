@@ -33,7 +33,7 @@ function KetQuaGanNhatEm({ ketQua }: { ketQua: KetQuaVao | null }) {
     <Khoi tieuDe="Kết quả gần nhất">
       <div className="flex flex-wrap items-center gap-x-2">
         <span className="text-sm font-bold tabular-nums text-slate-100">{k.chinh}</span>
-        {k.lech && <span className="text-[11px] font-semibold tabular-nums text-bad" title={`Dưới kỳ vọng ${k.lech.replace('−', '')}`}>{k.lech}</span>}
+        {k.lech && <span className="text-xs font-semibold tabular-nums text-bad" title={`Dưới kỳ vọng ${k.lech.replace('−', '')}`}>{k.lech}</span>}
         {k.sos && <Level tone={sosTone(ketQua?.sosLevel ?? null)} dut={k.sosTamThoi}>{k.sos}{k.sosTamThoi ? ' tạm thời' : ''}</Level>}
       </div>
       {k.dong1 && <span className="block text-[12px] leading-4 text-slate-500">{k.dong1}</span>}
@@ -154,10 +154,10 @@ function NoiDungLoTrinhTiep({ onClose, studentId, studentName, lop, onDone }: {
         <span aria-hidden className={`mt-[3px] inline-block h-3 w-3 shrink-0 rounded-full border ${chon ? 'border-[color:var(--accent)] bg-[color:var(--accent)]' : 'border-slate-500'}`} />
         <span className="min-w-0">
           <span className="block text-sm font-semibold text-slate-100">{nhanCua(h)}</span>
-          <span className="block text-[11px] text-slate-500">{NGHIA_HUONG[h]}</span>
-          {h === 'fast_track' && mt0Chu && <span className="block text-[11px] font-semibold tabular-nums text-slate-300">{mt0Chu}</span>}
+          <span className="block text-xs text-slate-500">{NGHIA_HUONG[h]}</span>
+          {h === 'fast_track' && mt0Chu && <span className="block text-xs font-semibold tabular-nums text-slate-300">{mt0Chu}</span>}
         </span>
-        {coGoiY && <span className="ml-auto shrink-0 self-center text-[11px] font-semibold text-teal-300">Hệ thống gợi ý</span>}
+        {coGoiY && <span className="ml-auto shrink-0 self-center text-xs font-semibold text-teal-300">Hệ thống gợi ý</span>}
       </button>
     );
   };
@@ -198,7 +198,7 @@ function NoiDungLoTrinhTiep({ onClose, studentId, studentName, lop, onDone }: {
             </>
           )}
         </div>
-        {lf.loiCua(loi, 'huong') && <span className="block text-[11px] text-late">{lf.loiCua(loi, 'huong')}</span>}
+        {lf.loiCua(loi, 'huong') && <span className="block text-xs text-late">{lf.loiCua(loi, 'huong')}</span>}
       </Khoi>
 
       {huong && (

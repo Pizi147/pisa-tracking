@@ -255,7 +255,7 @@ export function HopChoDuyet() {
                 <textarea className="field w-full" rows={2} maxLength={2000} autoFocus aria-label="Lý do từ chối" value={lyDoTc} aria-invalid={tcDaBam && !lyDoTc.trim()}
                   onChange={(e) => setLyDoTc(e.target.value)} />
               </label>
-              {tcDaBam && !lyDoTc.trim() && <span className="block text-[11px] text-late">Chưa điền</span>}
+              {tcDaBam && !lyDoTc.trim() && <span className="block text-xs text-late">Chưa điền</span>}
               <div className="flex justify-end gap-1.5">
                 <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => { setLyDoTc(null); setTcDaBam(false); }}>Đóng</button>
                 <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void tuChoiNhieu()}>

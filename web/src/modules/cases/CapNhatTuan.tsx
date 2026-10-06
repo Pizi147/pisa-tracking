@@ -245,7 +245,7 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved, on
           <Truong nhan="Cần Quản lý giúp gì" batBuoc loi={loiCua('ly-do')}>
             <textarea className="field w-full" {...o('ly-do')} rows={2} value={reason} onChange={(e) => setReason(e.target.value)} />
           </Truong>
-          <p className="m-0 text-[11px] text-slate-500">Gửi Quản lý · trả lời trong 5 ngày · xem ở Yêu cầu của tôi</p>
+          <p className="m-0 text-xs text-slate-500">Gửi Quản lý · trả lời trong 5 ngày · xem ở Yêu cầu của tôi</p>
         </div>
       );
     }
@@ -287,13 +287,13 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved, on
               </NutChon>
             ))}
           </div>
-          <p className="m-0 mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
+          <p className="m-0 mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
             Chưa có bài để so?
             <NutChon nho chon={outcome === 'insufficient'} onClick={() => pickOutcome('insufficient')}>
               {outcomeLabelFor('insufficient')}
             </NutChon>
           </p>
-          {loiCua('ket-qua') && <span className="mt-1 block text-[11px] text-late">{loiCua('ket-qua')}</span>}
+          {loiCua('ket-qua') && <span className="mt-1 block text-xs text-late">{loiCua('ket-qua')}</span>}
         </div>
         <Truong nhan="Tiến triển" batBuoc loi={loiCua('tien-trien')} dem={{ co: progress.trim().length, can: 8 }}>
           <textarea className="field w-full" {...o('tien-trien')} rows={2} value={progress} onChange={(e) => setProgress(e.target.value)}
@@ -353,7 +353,7 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved, on
                   <span aria-hidden className={`mt-[3px] inline-block h-3 w-3 shrink-0 rounded-full border ${chon ? 'border-[color:var(--accent)] bg-[color:var(--accent)]' : 'border-slate-500'}`} />
                   <span className="min-w-0">
                     <span className="block text-sm font-semibold text-slate-100">{PLAN_DECISION_NGAN[d]}</span>
-                    <span className="block text-[11px] text-slate-500">{chan ? ngiaBiChan(outcome) : PLAN_DECISION_NGHIA[d]}</span>
+                    <span className="block text-xs text-slate-500">{chan ? ngiaBiChan(outcome) : PLAN_DECISION_NGHIA[d]}</span>
                   </span>
                 </button>
                 {chon && khoiCon(d) && (
@@ -363,7 +363,7 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved, on
             );
           })}
         </div>
-        {loiCua('quyet-dinh') && <span className="block text-[11px] text-late">{loiCua('quyet-dinh')}</span>}
+        {loiCua('quyet-dinh') && <span className="block text-xs text-late">{loiCua('quyet-dinh')}</span>}
       </Khoi>
       )}
 
@@ -393,7 +393,7 @@ export function LichSuDieuChinh({ revisions }: { revisions: BanDieuChinh[] }) {
     <ol className="list-none p-0 m-0 space-y-1.5">
       {[...revisions].reverse().map((r) => (
         <li key={r.id} className="text-xs">
-          <span className="block text-[11px] text-slate-500 tabular-nums">
+          <span className="block text-xs text-slate-500 tabular-nums">
             {d(r.on)} · Điều chỉnh{r.source === 'confirm_edit' ? ' khi xác nhận PA' : ''}{r.by ? ` · ${r.by}` : ''}
           </span>
           <span className="block text-slate-300">Lý do: {r.reason}</span>

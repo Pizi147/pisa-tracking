@@ -261,7 +261,7 @@ function SheetRow({ row, rowIndex, active, cot, tuanDangXem, onReload, gvMacDinh
           )}
         </div>
         {/* Tóm tắt lưu của dòng: "n ô chưa lưu" khi còn ô lỗi (không bao giờ "đã lưu" che ô lỗi) — trạng thái từng ô ở ô. */}
-        <div className="flex items-center gap-1.5 text-[11px] text-slate-500 min-w-0">
+        <div className="flex items-center gap-1.5 text-xs text-slate-500 min-w-0">
           <span className="shrink-0">{row.studentCode}</span>
           {row.lichSu && <NhanCu />}
           <DauLuu status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />
@@ -347,7 +347,7 @@ function SheetRow({ row, rowIndex, active, cot, tuanDangXem, onReload, gvMacDinh
             </Level>
           )}
           {row.result.scopeNote && (
-            <span className="text-[11px] text-slate-500 truncate max-w-full" title={row.result.scopeDetail ?? row.result.scopeNote}>
+            <span className="text-xs text-slate-500 truncate max-w-full" title={row.result.scopeDetail ?? row.result.scopeNote}>
               {row.result.scopeNote}
             </span>
           )}

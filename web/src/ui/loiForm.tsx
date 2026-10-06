@@ -58,7 +58,7 @@ export function DongCanSua({ muc }: { muc: (string | MucThieu)[] }) {
   const ref = useRef<HTMLDivElement>(null);
   const chan = muc.every((m) => typeof m !== 'string' && !m.oId && m.lyDo);
   if (chan) {
-    return <div className="px-4 pt-2 text-right text-[11px] text-slate-400" role="status">{muc.map((m) => (m as MucThieu).lyDo).join(' · ')}</div>;
+    return <div className="px-4 pt-2 text-right text-xs text-slate-400" role="status">{muc.map((m) => (m as MucThieu).lyDo).join(' · ')}</div>;
   }
   const toiO = () => {
     const dau = muc.find((m): m is MucThieu => typeof m !== 'string' && !!m.oId);
@@ -70,7 +70,7 @@ export function DongCanSua({ muc }: { muc: (string | MucThieu)[] }) {
   return (
     <div ref={ref} className="px-4 pt-2 text-right" role="status">
       <button type="button" onClick={toiO} title={muc.map((m) => (typeof m === 'string' ? m : m.nhan)).join(' · ')}
-        className="appearance-none border-0 bg-transparent p-0 text-[11px] text-slate-500 hover:text-slate-300">{nhanCanSua(muc.length)}</button>
+        className="appearance-none border-0 bg-transparent p-0 text-xs text-slate-500 hover:text-slate-300">{nhanCanSua(muc.length)}</button>
     </div>
   );
 }

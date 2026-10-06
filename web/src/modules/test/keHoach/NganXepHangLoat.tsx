@@ -156,7 +156,7 @@ export function NganXepHangLoat({ lopThuong, classIdBanDau, coFt, onDoiKhung, on
   if (coKn && ky.some((k) => chonKn[k] && !tuan[k])) loi.push({ khoa: 'tuan', nhan: 'Tuần', lyDo: `${'Môn'} đã chọn còn thiếu tuần` });
   const thieu = loi.map((l) => l.nhan);
   const loiCua = (khoa: string) => (lf.daBam ? loi.find((l) => l.khoa === khoa)?.lyDo ?? null : null);
-  const dongLoi = (khoa: string) => (loiCua(khoa) ? <span className="block text-[11px] text-late">{loiCua(khoa)}</span> : null);
+  const dongLoi = (khoa: string) => (loiCua(khoa) ? <span className="block text-xs text-late">{loiCua(khoa)}</span> : null);
 
   const luu = async () => {
     lf.bam();
@@ -251,9 +251,9 @@ export function NganXepHangLoat({ lopThuong, classIdBanDau, coFt, onDoiKhung, on
                           return n;
                         })} />
                       <span className="min-w-0 flex-1 truncate">{h.ten}</span>
-                      <span className="shrink-0 text-[11px] text-slate-500">{tinhTrang}</span>
+                      <span className="shrink-0 text-xs text-slate-500">{tinhTrang}</span>
                     </label>
-                    {loi && <div className="truncate pb-1 pl-6 text-[11px] text-bad" title={loi}>{loi}</div>}
+                    {loi && <div className="truncate pb-1 pl-6 text-xs text-bad" title={loi}>{loi}</div>}
                   </div>
                 );
               })}
@@ -386,7 +386,7 @@ function DongXemTruoc({ d, ct }: { d: DongHangLoat; ct: string | null }) {
             <td className="min-w-0 py-1.5">
               <span className="flex min-w-0 items-center gap-1.5">
                 <Nhan tone={t.tone}>{t.chu}</Nhan>
-                {g.cau && <span className="truncate text-[11px] text-slate-400" title={g.cau}>{g.cau}</span>}
+                {g.cau && <span className="truncate text-xs text-slate-400" title={g.cau}>{g.cau}</span>}
               </span>
             </td>
           </tr>

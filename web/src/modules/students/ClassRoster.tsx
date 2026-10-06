@@ -116,7 +116,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
   if (dienThoai) {
     return (
       <div className="surface-2 overflow-hidden rounded-lg">
-        <p className="m-0 border-b px-3 py-2 text-[11px] text-slate-500" style={{ borderColor: 'var(--line)' }}>Mốc gần nhất của từng em (điểm 2 mốc gần nhất ở bảng trên máy tính).</p>
+        <p className="m-0 border-b px-3 py-2 text-xs text-slate-500" style={{ borderColor: 'var(--line)' }}>Mốc gần nhất của từng em (điểm 2 mốc gần nhất ở bảng trên máy tính).</p>
         {data.map((s) => {
           const h = s.history[0];
           return (
@@ -166,7 +166,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
     <div className="surface-2 rounded-lg">
       <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 border-b"
         style={{ borderColor: 'var(--line)' }}>
-        <span className="text-[11px] text-slate-500">
+        <span className="text-xs text-slate-500">
           Điểm của {depth} mốc gần nhất, mốc mới nhất ở trên.
         </span>
       </div>
@@ -231,14 +231,14 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
                   <td className="td p-0">
                     <Stack n={span}>
                       {rows.length === 0
-                        ? [<span key="none" className="text-[11px] text-slate-500">chưa có điểm</span>]
+                        ? [<span key="none" className="text-xs text-slate-500">chưa có điểm</span>]
                         : rows.map((h, i) => (
                           <Link key={h.id} className="no-underline"
                             to={duongHoSoHocVien(s.id, { dot: h.id })} title={`Mở hồ sơ ${s.fullName} ở ${h.label}`}>
                             <span className={`text-xs whitespace-nowrap ${i === 0 ? 'text-slate-200' : 'text-slate-500'}`}>
                               {h.label}{h.lichSu && <> <NhanCu /></>}
                               {h.scoredRequired < h.requiredCount && (
-                                <span className="text-[11px] text-amber-200 ml-1">
+                                <span className="text-xs text-amber-200 ml-1">
                                   {h.scoredRequired}/{h.requiredCount}
                                 </span>
                               )}
@@ -364,7 +364,7 @@ function FollowCell({ row, classId }: { row: RosterRow; classId: number }) {
           ? <span className="text-xs text-slate-400">Đang theo dõi</span>
           : null}
       {bits.length > 0 && (
-        <span className="text-[11px] text-slate-500" title={row.handoverCases > 0 ? 'Case còn dở từ lớp hoặc chương trình trước — cần bàn giao' : undefined}>{bits.join(' · ')}</span>
+        <span className="text-xs text-slate-500" title={row.handoverCases > 0 ? 'Case còn dở từ lớp hoặc chương trình trước — cần bàn giao' : undefined}>{bits.join(' · ')}</span>
       )}
     </span>
   );

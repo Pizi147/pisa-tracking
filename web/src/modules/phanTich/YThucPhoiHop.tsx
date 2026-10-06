@@ -116,7 +116,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
               <td className="td text-right tabular-nums"><SoLieuO giaTri={x.chuaXuLy} nguon={nguon(`hv:${x.studentId}`, 'chua-xu-ly')} tieuDe={`${x.ten} · chưa xử lý`} /></td>
               <td className="td truncate text-slate-300" title={x.bienPhapGanNhat ?? undefined}>
                 {x.bienPhapGanNhat ? `${x.bienPhapGanNhat}${x.ngay ? ` · ${ngay(x.ngay, demoDate)}` : ''}` : <span className="text-faint">—</span>}
-                {x.lanXuLyMoi && <div className="text-[11px] text-wait">{x.lanXuLyMoi.ten} · {x.lanXuLyMoi.nhan}</div>}
+                {x.lanXuLyMoi && <div className="text-xs text-wait">{x.lanXuLyMoi.ten} · {x.lanXuLyMoi.nhan}</div>}
               </td>
             </tr>
           ))}

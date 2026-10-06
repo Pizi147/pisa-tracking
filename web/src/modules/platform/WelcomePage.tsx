@@ -66,7 +66,7 @@ function SetupHelp({ serverDown, onRetry }: { serverDown: boolean; onRetry: () =
 
       <button className="btn btn-primary mt-4" onClick={onRetry}>Tải lại danh sách tài khoản</button>
 
-      <p className="text-[11px] text-slate-500 mt-3 leading-relaxed">
+      <p className="text-xs text-slate-500 mt-3 leading-relaxed">
         Lưu ý: phải gõ lệnh trong thư mục có tệp <code className="text-slate-400">package.json</code>.
         Nếu báo lỗi <code className="text-slate-400">ENOENT ... package.json</code> nghĩa là bạn đang đứng sai thư mục.
       </p>
@@ -365,7 +365,7 @@ function DemoAccounts({ accounts, loading }: { accounts: Account[]; loading: boo
                     {a.assignmentCount > 0 && <Info>{a.assignmentCount} phân công</Info>}
                   </div>
                   {XEM_DUOC[a.fullName] && (
-                    <div className="mt-2 space-y-0.5 text-[11px] text-slate-500">{XEM_DUOC[a.fullName].map((x) => <div key={x}>{x}</div>)}</div>
+                    <div className="mt-2 space-y-0.5 text-xs text-slate-500">{XEM_DUOC[a.fullName].map((x) => <div key={x}>{x}</div>)}</div>
                   )}
                 </button>
               ))}

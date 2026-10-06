@@ -225,7 +225,7 @@ export function LichNho({ kieu, value, homNay, luat, neo, onChon, onDong, goNgay
               if (r.iso) onChon(r.iso); else setLoiGo(r.loi);
             }}
           />
-          {loiGo && <span className="mt-1 block text-[11px] text-late" role="alert">{loiGo}</span>}
+          {loiGo && <span className="mt-1 block text-xs text-late" role="alert">{loiGo}</span>}
         </div>
       )}
 
@@ -240,7 +240,7 @@ export function LichNho({ kieu, value, homNay, luat, neo, onChon, onDong, goNgay
       {laThang ? thanThang() : thanNgay()}
 
       <div className="mt-2 flex flex-wrap items-center gap-1 border-t pt-2" style={{ borderColor: 'var(--line)' }}>
-        <span className="mb-0.5 w-full text-[11px] font-semibold text-slate-500">Gần đây</span>
+        <span className="mb-0.5 w-full text-xs font-semibold text-slate-500">Gần đây</span>
         {goiY.map((x) => (
           <button key={x.giaTri} type="button" className="btn btn-sm min-h-[44px] tabular-nums sm:min-h-0"
             aria-label={x.phu ? `${x.nhan} · ${x.phu}` : undefined} aria-pressed={value === x.giaTri}

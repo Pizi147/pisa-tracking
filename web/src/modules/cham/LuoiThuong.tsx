@@ -334,7 +334,7 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
                       <span title={tenMon(data.programme.code, k)}>{tenMonNgan(data.programme.code, k)}</span>
                       {cotSuaDuoc(k) && (
                         <span className="flex flex-wrap items-center justify-end gap-1 normal-case tracking-normal font-normal">
-                          <span className="text-[11px] text-slate-500">tổng</span>
+                          <span className="text-xs text-slate-500">tổng</span>
                           <input className="field w-11 px-1 py-0.5 text-center text-[12px] tabular-nums"
                             inputMode="numeric" value={chuTong(k)} placeholder="—"
                             title="Tổng số câu của đề cả lớp làm — ô còn trống tổng lấy sẵn số này; bấm Điền cả cột để điền luôn."
@@ -430,7 +430,7 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
           )}
         </div>
         {/* Trạng thái lưu RIÊNG TỪNG DÒNG — lỗi nói rõ ở dòng nào, có nút Thử lại. */}
-        <div className="flex items-center gap-1.5 text-[11px] text-slate-500 min-w-0">
+        <div className="flex items-center gap-1.5 text-xs text-slate-500 min-w-0">
           <span className="shrink-0">{row.studentCode}</span>
           <DauLuu status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />
         </div>
@@ -453,7 +453,7 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
         if (dung) {
           return (
             <td key={k} className="td group relative py-1.5 text-right" data-kn={k}>
-              <span className="text-[11px] text-slate-500 leading-tight" title={`${tenMon(sheet.programme.code, k)}: ${chuDung}`}>{chuDung}</span>
+              <span className="text-xs text-slate-500 leading-tight" title={`${tenMon(sheet.programme.code, k)}: ${chuDung}`}>{chuDung}</span>
               {menuO(k)}
             </td>
           );

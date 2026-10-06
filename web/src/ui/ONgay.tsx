@@ -77,7 +77,7 @@ export function ONgay({ kieu, value, onChange, toiThieu, toiDa, moc, catHomNay, 
           onClick={() => setMo((v) => !v)}><BieuTuongLich /></button>
       </span>
       {phu && !gon && <span id={`${idO}-phu`} className="mt-1 block truncate text-[11.5px] tabular-nums text-slate-400">{phu}</span>}
-      {loi && !gon && <span id={`${idO}-loi`} className="mt-1 block text-[11px] text-late" role="alert">{loi}</span>}
+      {loi && !gon && <span id={`${idO}-loi`} className="mt-1 block text-xs text-late" role="alert">{loi}</span>}
       {mo && <LichNho kieu={kieu} value={value || null} homNay={homNay} luat={luat} neo={nut}
         onChon={(iso) => { if (iso !== value) onChange(iso); setText(hienONgay(iso, kieu, homNay)); setLoi(null); setMo(false); nut.current?.focus(); }} onDong={() => setMo(false)} />}
     </span>

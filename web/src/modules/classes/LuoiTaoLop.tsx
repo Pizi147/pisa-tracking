@@ -245,7 +245,7 @@ export function LuoiTaoLop({ cheDo, luoi, setLuoi, branches, onClose }: {
         daSua: luoi.daSua, huy: { onClick: onClose, disabled: busy },
         phu: nutKiem, chinh: nutChinh, conThieu,
         dongTren: kiemXong === anh && !coLoi
-          ? <div className="px-4 pt-2 text-right text-[11px] text-slate-400" role="status">Đã kiểm tra: tạo được cả {ds.length} lớp.</div>
+          ? <div className="px-4 pt-2 text-right text-xs text-slate-400" role="status">Đã kiểm tra: tạo được cả {ds.length} lớp.</div>
           : null,
       }}>
       <div className="space-y-3 pt-3.5">
@@ -353,8 +353,8 @@ function DongThe({ t, i, soDong, busy, routes, branches, gv, hienLoi, idO, sua, 
           })}
         </div>
       )}
-      {hienLoi('slots') && <p className="m-0 mt-1 text-[11px] text-late">{hienLoi('slots')}</p>}
-      {hienLoi('chung') && <p className="m-0 mt-1.5 text-[11px] text-late" id={idO('chung')} tabIndex={-1}>{hienLoi('chung')}</p>}
+      {hienLoi('slots') && <p className="m-0 mt-1 text-xs text-late">{hienLoi('slots')}</p>}
+      {hienLoi('chung') && <p className="m-0 mt-1.5 text-xs text-late" id={idO('chung')} tabIndex={-1}>{hienLoi('chung')}</p>}
     </li>
   );
 }
@@ -366,11 +366,11 @@ function O1({ nhan, batBuoc, htmlFor, loi, children }: {
   const Nhan = htmlFor ? 'label' : 'span';
   return (
     <div className="min-w-0">
-      <Nhan htmlFor={htmlFor} className="mb-1 block text-[11px] font-bold text-slate-300">
+      <Nhan htmlFor={htmlFor} className="mb-1 block text-xs font-bold text-slate-300">
         {nhan}{batBuoc && <><span aria-hidden className="text-bad"> *</span><span className="sr-only"> (bắt buộc)</span></>}
       </Nhan>
       <div className={loi ? 'contents [&_.field]:border-late [&_.field]:ring-1 [&_.field]:ring-late/40' : 'contents'}>{children}</div>
-      {loi && <span className="mt-1 block text-[11px] text-late">{loi}</span>}
+      {loi && <span className="mt-1 block text-xs text-late">{loi}</span>}
     </div>
   );
 }

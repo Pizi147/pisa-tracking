@@ -63,7 +63,7 @@ export function HieuQuaPa(props: PhamViPhanTich) {
   const tenDong = (d: DongHieuQuaPa) => (
     <span className="block min-w-0">
       <span className="block truncate">{d.nhan}</span>
-      {d.dongThoi > 0 && <span className="block text-[11px] text-slate-500 tabular-nums">{d.dongThoi} PA chạy cùng PA khác</span>}
+      {d.dongThoi > 0 && <span className="block text-xs text-slate-500 tabular-nums">{d.dongThoi} PA chạy cùng PA khác</span>}
     </span>
   );
   const hangLon = (d: DongHieuQuaPa, coNenDung: boolean) => (

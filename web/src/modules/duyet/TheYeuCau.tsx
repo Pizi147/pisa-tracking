@@ -246,7 +246,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
             <div>
               <label className="mb-1 block text-[12px] text-slate-400" htmlFor={`${uid}-tuan`}>Tuần thi mới</label>
               <ONgay id={`${uid}-tuan`} kieu="tuan" value={tuan || null} onChange={setTuan} toiThieu={homNay} ariaLabel="Tuần thi mới" />
-              <p className="m-0 mt-1 text-[11px] text-slate-400">Mặc định là tuần GV đề nghị. Tuần đã bắt đầu thì không chọn được.</p>
+              <p className="m-0 mt-1 text-xs text-slate-400">Mặc định là tuần GV đề nghị. Tuần đã bắt đầu thì không chọn được.</p>
             </div>
           ) : (
             <div>

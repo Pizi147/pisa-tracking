@@ -81,7 +81,7 @@ export function KhoiNhom({ mo, onMo, nhan, tieuDe, dem, demMau, phu, children, i
         <MuiTenMo mo={mo} onMo={onMo} nhan={nhan} />
         <span className="text-slate-100">{tieuDe}</span>
         {dem !== undefined && <span className={`${CHIP_TRON} tabular-nums ${demCls}`} style={demMau ? undefined : { background: 'var(--surface-2)' }}>{dem}</span>}
-        {phu && <span className="text-[11px] font-normal text-slate-500">{phu}</span>}
+        {phu && <span className="text-xs font-normal text-slate-500">{phu}</span>}
       </div>
       {mo && <div id={id} className={phang ? '' : 'khoi-nhom-con'}>{children}</div>}
     </section>

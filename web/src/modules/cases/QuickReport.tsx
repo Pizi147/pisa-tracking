@@ -498,7 +498,7 @@ export function QuickReport({
                           onChange={(e) => setBfActions(bfActions.map((x, j) => (j === i ? { ...x, description: e.target.value } : x)))} />
                         {/* YC-12.5.3: kết quả của PA này — hàng PA hiện kết quả thay "Chưa có kết quả". */}
                         <div role="group" aria-label={`Kết quả PA ${i + 1} (bắt buộc)`}>
-                          <span className="mb-1 block text-[11px] text-slate-400">Kết quả PA <span aria-hidden className="text-bad">*</span></span>
+                          <span className="mb-1 block text-xs text-slate-400">Kết quả PA <span aria-hidden className="text-bad">*</span></span>
                           <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
                             {FOLLOWUP_OUTCOMES.filter((k) => k !== 'insufficient').map((k) => (
                               <NutChon key={k} nho chon={a.ketQua === k} className="justify-center"
@@ -536,7 +536,7 @@ export function QuickReport({
                         <button type="button" className="link appearance-none border-0 bg-transparent p-0" onClick={() => setMoSua([...moSua, i])}>Sửa</button>
                       </p>
                     )}
-                    {(bfErrors[i] || (i === 0 && loiCua('pa-0'))) && <p className="m-0 mt-1 text-[11px] text-late">{bfErrors[i] || loiCua('pa-0')}</p>}
+                    {(bfErrors[i] || (i === 0 && loiCua('pa-0'))) && <p className="m-0 mt-1 text-xs text-late">{bfErrors[i] || loiCua('pa-0')}</p>}
                   </div>
                 );
               })}

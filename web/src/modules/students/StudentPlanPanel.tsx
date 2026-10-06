@@ -301,7 +301,7 @@ function TargetAndBaseline({ cycleId, cy, canEditCycle, onDeXuatSua, onDone }: {
             <ONgay kieu="ngay" value={effectiveFrom} onChange={setEffectiveFrom}
               id={lfT.oId('hieu-luc')} onBlur={lfT.roi('hieu-luc')} invalid={!!lfT.loiCua(loiT, 'hieu-luc')} />
           </Field>
-          {lfT.daBam && loiT.length > 0 && <p className="m-0 text-[11px] text-slate-500">{loiT.length} ô cần sửa ↑</p>}
+          {lfT.daBam && loiT.length > 0 && <p className="m-0 text-xs text-slate-500">{loiT.length} ô cần sửa ↑</p>}
           <button className="btn btn-primary btn-sm" disabled={busy}
             onClick={saveTarget}>
             {busy ? 'Đang lưu…' : 'Lưu Target mới'}

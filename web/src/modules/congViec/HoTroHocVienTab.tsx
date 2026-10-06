@@ -106,7 +106,7 @@ export function HoTroHocVienTab() {
 
   const nutPhu = (it: WorkItem) => {
     if (it.nhac) {
-      if (it.nhac.daNhacLuc) return <span className="text-[11px] text-slate-500 whitespace-nowrap">Đã nhắc {fmtTime(it.nhac.daNhacLuc)}</span>;
+      if (it.nhac.daNhacLuc) return <span className="text-xs text-slate-500 whitespace-nowrap">Đã nhắc {fmtTime(it.nhac.daNhacLuc)}</span>;
       return (
         <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={dangNhac[it.key]} onClick={(e) => { e.stopPropagation(); bamNhac(it); }}>
           Nhắc

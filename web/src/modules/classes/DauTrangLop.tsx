@@ -161,7 +161,7 @@ export function DauTrangLop({ data, periodId, onViec, onBanGiao }: {
       )}
       <div className="flex flex-wrap items-end gap-2">
         <div className="min-w-0">
-          <div className="text-[11px] text-slate-500">Hồ sơ lớp</div>
+          <div className="text-xs text-slate-500">Hồ sơ lớp</div>
           <h1 className="m-0 text-lg font-semibold text-slate-100">{data.code} · {data.programme?.name ?? data.kind}</h1>
         </div>
         <div className="flex-1" />

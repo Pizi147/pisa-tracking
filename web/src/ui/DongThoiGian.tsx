@@ -76,7 +76,7 @@ export function DongThoiGian({ muc, bien = 'day-du', coCotChon = false, rong }: 
           {coCotChon && (m.chon
             ? <input type="checkbox" className="mt-0.5" aria-label={m.chon.nhanDoc} checked={m.chon.checked} onChange={m.chon.onChange} />
             : <span />)}
-          <span className="text-[11px] text-slate-500 tabular-nums pt-0.5" title={fmtDate(m.ngay)}>{fmtDate(m.ngay).slice(0, 5)}</span>
+          <span className="text-xs text-slate-500 tabular-nums pt-0.5" title={fmtDate(m.ngay)}>{fmtDate(m.ngay).slice(0, 5)}</span>
           {bien === 'day-du' && <span className="min-w-0">{m.cot2}</span>}
           <span className={`min-w-0 break-words ${NOI_DUNG[bien][k]}`}>
             {m.onMo ? (
@@ -91,7 +91,7 @@ export function DongThoiGian({ muc, bien = 'day-du', coCotChon = false, rong }: 
             ) : (
               <span className="block text-sm font-medium text-slate-100">{m.tieuDe}</span>
             )}
-            {m.dongPhu && <span className="block text-[11px] text-slate-500 mt-0.5">{m.dongPhu}</span>}
+            {m.dongPhu && <span className="block text-xs text-slate-500 mt-0.5">{m.dongPhu}</span>}
           </span>
           <span className={`flex flex-wrap gap-1.5 md:justify-end ${CUOI[bien][k]}`}>{m.cuoi}</span>
           {m.mo && m.chiTiet && (

@@ -117,7 +117,7 @@ export function DemoBar() {
 
           <div className="border-t pt-3" style={{ borderColor: 'var(--line)' }}>
             <div className="label">Nạp lại dữ liệu mẫu</div>
-            <p className="text-[11px] text-slate-500 mb-2">
+            <p className="text-xs text-slate-500 mb-2">
               Xoá toàn bộ thay đổi bạn đã nhập và tạo lại dữ liệu gốc. Chạy trong terminal: <code className="text-sky-200">npm run seed</code>
             </p>
             <button className="btn btn-danger btn-sm" onClick={() => setResetOpen(true)}>Hướng dẫn nạp lại</button>
