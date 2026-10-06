@@ -4,6 +4,7 @@
  *
  * Ô cần báo: cùng tập Nợ điểm (`scoreDebtCells` — em đang học, lớp đang mở, chưa điểm, không "-") có cờ `chamCheo` và rơi vào khối 1
  * "Test quá hạn chấm" (`khoiCham` — cùng luật Lịch Test). Một chuông / lớp / MT / tuần thi / người (`dedupKey`); chạy lại không gửi trùng.
+ * Chỉ bài có tuần thi trong `CHUONG_CHAM_CHEO_SO_TUAN` tuần gần nhất — bài cũ hơn vẫn ở khối 1 + chỉ số của Quản lý, không thành chuông.
  * ponytail: chỉ chạy trong lượt quét thứ Hai (`chotVangDinhKy`) — ô vào khối 1 giữa tuần (hạn riêng) nhận chuông thứ Hai kế.
  */
 import { db, theoLo } from '../db.ts';
@@ -11,7 +12,11 @@ import { CHAM_CHEO, khoiCham, tuanLich } from '../../../shared/domain/index.ts';
 import type { Principal } from '../permissions.ts';
 import { notify } from '../platform/audit.ts';
 import { weekInfo } from '../platform/week.ts';
+import { addDays } from '../util.ts';
 import { phanCongDangHieuLuc, scoreDebtCells } from '../worklist/scoreDebt.ts';
+
+/** Chỉ báo bài có tuần thi trong 4 tuần gần nhất (rà #218): lần đầu chạy trên bản chính không dồn cả nợ cũ thành chuông. */
+export const CHUONG_CHAM_CHEO_SO_TUAN = 4;
 
 /** Người đọc của lượt quét — `scoreDebtCells` không dùng quyền người xem cho ô S Mock (cờ nợ không phụ thuộc người xem). */
 const HE_THONG: Principal = { userId: 0, code: 'he-thong', fullName: 'Hệ thống', title: null, grants: [], roleKeys: [], assignments: [] };
@@ -21,6 +26,7 @@ export function baoChamCheoQuaHan(homNay: string): number {
   if (!cells.length) return 0;
   const conn = db();
   const tuanHomNay = weekInfo(homNay).weekStart;
+  const tuanXaNhat = addDays(tuanHomNay, -7 * CHUONG_CHAM_CHEO_SO_TUAN);
   type Nhom = { classId: number; code: string; attemptNo: number; periodId: number; weekStart: string; soBai: number };
   const nhom = new Map<string, Nhom>();
   theoLo([...new Set(cells.map((c) => c.attemptId))], (lo, ph) => {
@@ -31,7 +37,7 @@ export function baoChamCheoQuaHan(homNay: string): number {
          JOIN report_periods rp ON rp.id = k.planned_period_id
         WHERE a.id IN (${ph})`,
     ).all(...lo) as any[]) {
-      if (khoiCham({ tuanThi: r.week_start, tuanHomNay, quaHan: true }) !== 'qua-han') continue;
+      if (r.week_start < tuanXaNhat || khoiCham({ tuanThi: r.week_start, tuanHomNay, quaHan: true }) !== 'qua-han') continue;
       const key = `${r.class_id}:${r.attempt_no}:${r.planned_period_id}`;
       const n = nhom.get(key) ?? nhom.set(key, {
         classId: r.class_id, code: r.code, attemptNo: r.attempt_no, periodId: r.planned_period_id, weekStart: r.week_start, soBai: 0,

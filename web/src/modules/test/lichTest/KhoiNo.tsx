@@ -153,7 +153,8 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, homNay, onDaLuu, k
                       <>
                         <td className="td truncate font-semibold text-slate-100" title={d.classCode}>{d.classCode}</td>
                         <td className="td truncate text-slate-300" title={dotTuan(d, homNay)}>{dotTuan(d, homNay)}</td>
-                        <td className="td truncate text-slate-300" title={k.goiY}>
+                        {/* Kỹ năng xuống dòng, không cắt "W…" (rà #218). */}
+                        <td className="td py-1.5 leading-[1.35] text-slate-300 [overflow-wrap:anywhere]" title={k.goiY}>
                           {k.chu}
                           {k.phu && <span className="block truncate text-[11px] leading-4 text-slate-500">{k.phu}</span>}
                         </td>

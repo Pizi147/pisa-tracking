@@ -152,9 +152,14 @@ export async function runPrLt3Tests(t: YThucTestKit) {
     assert(s.mine === false && s.viec === false && s.canEdit === true, JSON.stringify([s.mine, s.viec, s.canEdit]));
   });
   check('LT3-3 (b) S Mock quá hạn không là nợ của GVBM S / GVCN: badge, Việc cần làm, Nợ điểm (userId null + chamCheo)', () => {
+    /* Badge "n bài chờ chấm" ở Học viên & Lớp (`listClassSummaries`, rà #218 I1) — đếm trước / sau khi thêm một ô S Mock quá hạn. */
+    const badge = (p: any) => ((cls.listClassSummaries(p).rows ?? []) as any[]).find((c) => c.id === LOP)?.needScores ?? 0;
+    const truoc = { s: badge(P.sTeacher), cn: badge(P.coreTeacher), ql: badge(P.mbManager) };
     const aid = emMoi(5, HAI, true);
+    const sau = { s: badge(P.sTeacher), cn: badge(P.coreTeacher), ql: badge(P.mbManager) };
+    assert(sau.s === truoc.s && sau.cn === truoc.cn && sau.ql === truoc.ql + 1, `badge trước ${JSON.stringify(truoc)} → sau ${JSON.stringify(sau)} (GVBM S, GVCN không đổi; QL +1)`);
     const a = att.listAttempts(P.sTeacher, { classId: LOP }).rows.find((x: any) => x.id === aid);
-    assert(a && !a.pendingSkills.includes('speaking'), `badge GVBM S đếm ô S: ${JSON.stringify(a?.pendingSkills)}`);
+    assert(a && !a.pendingSkills.includes('speaking'), `danh sách cần chấm GVBM S đếm ô S: ${JSON.stringify(a?.pendingSkills)}`);
     const viec = (p: any) => (mw.myWork(p).items as any[])
       .filter((i) => i.group === 'score' && i.classId === LOP && i.attemptNo === 5 && i.mine && /Speaking/.test(i.reason));
     assert(!viec(P.sTeacher).length && !viec(P.coreTeacher).length, 'Việc cần làm còn dòng "của tôi" cho ô S Mock');
@@ -212,6 +217,17 @@ export async function runPrLt3Tests(t: YThucTestKit) {
     assert(x && x[1].chamCheo === true && x[1].nguoi.length === 0, JSON.stringify(x));
   });
 
+  check('LT3-3 (f) GV chấm chéo lớp khác, "Tất cả": thấy S Mock quá hạn ở khối 1 (cùng phạm vi khối 2/3 — rà #218 I2); không thấy lớp chi nhánh khác', () => {
+    assert(cheoId, 'dữ liệu demo: cần một GV Speaking lớp FT khác cùng chi nhánh');
+    const cheo = perm.loadPrincipal(cheoId);
+    const aid = emMoi(7, HAI, true);
+    const r = cham.lichTest(cheo, pid(NAY), null, TODAY, { classId: LOP, phamVi: 'tat-ca' });
+    const dong = r.no.find((x: any) => x.attemptIds.includes(aid));
+    assert(dong && dong.duocCham === true && dong.cuaToi === false, `khối 1 của GV chấm chéo: ${JSON.stringify(r.no.map((x: any) => x.key))}`);
+    const cp = cham.lichTest(cheo, pid(NAY), null, TODAY, { classId: classId('CP FT 110'), phamVi: 'tat-ca' });
+    assert(!cp.no.length && cp.lopDangLoc === null, 'lớp chi nhánh khác không lộ');
+  });
+
   // ------------------------------------------------------------------ LT3-4 chuông
   const chamCheo: any = await import('../cham/chamCheo.ts');
   const ops: any = await import('../ops/chotVangDinhKy.ts');
@@ -242,6 +258,16 @@ export async function runPrLt3Tests(t: YThucTestKit) {
       don();
       chamCheo.baoChamCheoQuaHan(TODAY);
       assert(!(conn.prepare('SELECT 1 FROM notifications WHERE dedup_key = ?').get(`chamcheo:${LOP}:5:${pid(TRUOC)}`)), 'S tuần trước (khối 2) không chuông');
+      /* Tuần thi cũ hơn 4 tuần (rà #218): không chuông — lần đầu chạy trên bản chính không dồn nợ cũ. */
+      const CU = t.addDays(NAY, -7 * 5);
+      emMoi(5, CU, true);
+      don();
+      chamCheo.baoChamCheoQuaHan(TODAY);
+      assert(!(conn.prepare('SELECT 1 FROM notifications WHERE dedup_key = ?').get(`chamcheo:${LOP}:5:${pid(CU)}`)), 'S Mock thi 5 tuần trước không chuông');
+      const BON = t.addDays(NAY, -7 * 4);
+      emMoi(5, BON, true);
+      chamCheo.baoChamCheoQuaHan(TODAY);
+      assert(conn.prepare('SELECT 1 FROM notifications WHERE dedup_key = ?').get(`chamcheo:${LOP}:5:${pid(BON)}`), 'S Mock thi 4 tuần trước vẫn chuông');
       emMoi(5, HAI, true);
       don();
       ops.chotVangDinhKy({ ngay: TODAY, chot: () => 0, chuyen: () => 0, daKhoiTao: () => true });

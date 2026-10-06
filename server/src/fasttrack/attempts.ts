@@ -10,7 +10,7 @@ import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
 import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { dotHoanTat, dotHoanTatMany, quyenSuaSauHoanTat } from './hoanTat.ts';
 import {
-  can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, moveableSkills, mySkills, require_, requireXemLuotCham, scopeFor, scoreEditPath, type LuotQuyen,
+  can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, moveableSkills, mySkills, require_, requireXemLuotCham, scopeFor, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
   type Principal,
 } from '../permissions.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
@@ -513,6 +513,9 @@ export type AttemptFilters = {
   classIds?: readonly number[];
   /** PR-UXF-a T65: chỉ em đang học (không Tạm dừng, không lưu trữ) — em Tạm dừng không sinh nợ điểm. */
   chiDangHoc?: boolean;
+  /** PR-LT3 (rà #218 I2): CHỈ ĐỌC cho Lịch Test — phạm vi `scopeXemLuotCham` (thêm lớp FT cùng chi nhánh của GV Speaking chấm chéo),
+   *  cùng phạm vi khối 2/3. Đường ghi vẫn kiểm quyền riêng (`scoreEditPath`). */
+  phamViCham?: boolean;
 };
 
 /**
@@ -545,7 +548,7 @@ const ATTEMPT_SELECT = `
     LEFT JOIN report_periods pr ON pr.id = a.planned_period_id`;
 
 export function listAttempts(p: Principal, f: AttemptFilters = {}) {
-  const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
+  const scope = f.phamViCham ? scopeXemLuotCham(p) : scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   if (scope.none) return { rows: [], scopeEmpty: true };
   const conn = db();
   const cs = classScopeSql(scope);
