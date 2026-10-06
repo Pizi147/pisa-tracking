@@ -9,7 +9,7 @@ import { demoToday } from '../demoConfig.ts';
 import { addDays, nowIso } from '../util.ts';
 import { type Principal } from '../permissions.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
-import { CASE_DONG_DO_XOA, raiseSignal, labelOf } from './signals.ts';
+import { caseDongDoXoaSql, raiseSignal, labelOf } from './signals.ts';
 import { failingEntrySkills, type AttemptResult, type EntryBands } from '../fasttrack/scoring.ts';
 import { weekStartOf } from '../fasttrack/attempts.ts';
 import { scoringModeOf } from '../fasttrack/skillSchedule.ts';
@@ -173,9 +173,9 @@ export function upsertCategoryCase(
    */
   if (!existing || cuaChuongTrinhKhac || existing.status === 'done') {
     const cu = conn.prepare(
-      `SELECT * FROM sos_cases sc WHERE sc.student_id = ? AND COALESCE(sc.cycle_id, 0) = ? AND sc.category = ? AND sc.topic = ? AND sc.attempt_id = ?
-          AND ${CASE_DONG_DO_XOA('sc')} ORDER BY sc.id DESC LIMIT 1`,
-    ).get(attempt.student_id, attempt.cycle_id ?? 0, category, topic, attempt.id) as any;
+      `SELECT * FROM sos_cases sc WHERE sc.student_id = ? AND COALESCE(sc.cycle_id, 0) = ? AND sc.category = ?
+          AND ${caseDongDoXoaSql('sc')} ORDER BY sc.id DESC LIMIT 1`,
+    ).get(attempt.student_id, attempt.cycle_id ?? 0, category, `${attempt.id}:${topic}`) as any;
     if (cu) {
       if (existing && existing.status === 'done') conn.prepare('UPDATE sos_cases SET dedup_key = NULL, updated_at = ? WHERE id = ?').run(nowIso(), existing.id);
       const truoc = (conn.prepare(`SELECT old_value FROM sos_case_history WHERE case_id = ? AND field = 'status' AND new_value = 'done' ORDER BY id DESC LIMIT 1`)

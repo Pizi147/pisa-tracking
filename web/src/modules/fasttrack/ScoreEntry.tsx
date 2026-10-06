@@ -83,6 +83,8 @@ const coDau = (cell: Cell) => !!cell.noShow || !!cell.daChot;
 const chanDau = (cell: Cell) => !!cell.noShow || (!!cell.daChot && !cell.daChot.doiSang);
 /** Ô sửa được ở lưới: quyền nhập thường, HOẶC gỡ được dấu "-" đã chốt (PR-BV — bài vắng / huỷ vắng vẫn xoá "-" được). */
 const suaDuoc = (cell: Cell) => (cell.canEdit && !lockedByNoShow(cell)) || !!cell.daChot?.goDuoc;
+/** PR-BV: người xem CHỈ gỡ được "-" đã chốt (không nhập điểm ô này) — ô chỉ nhận xoá (`OChiGoDau`). */
+const chiGoDau = (cell: Cell) => !(cell.canEdit && !lockedByNoShow(cell)) && !!cell.daChot?.goDuoc;
 
 /** Ô đã có điểm chính thức — sửa nó là hiệu chỉnh, phải qua `SuaDiemCoLyDo`. */
 export const coDiemChinhThuc = (cell: Cell) => cell.band !== null || cell.rawScore !== null;
@@ -214,6 +216,38 @@ function NutDau({ title, an, tat, onBam }: { title: string; an: boolean; tat: bo
   );
 }
 const NUT_DAU_FT = 'Không có bài — em có lịch mà không làm bài';
+
+/**
+ * PR-BV: Ô CHỈ GỠ "-" — bài đang vắng / huỷ vắng, hoặc GVCN không chấm ô này: ô hiện "-" và chỉ nhận XOÁ (tẩy + Enter / rời ô = gỡ vắng).
+ * Gõ số không vào ô (người xem không nhập điểm được ở đây). Máy chủ từ chối → ô về "-".
+ */
+function OChiGoDau({ cell, onSave, lon }: { cell: Cell; onSave: (patch: SavePatch) => Promise<boolean>; lon: boolean }) {
+  const [con, setCon] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const go = async () => {
+    if (con || busy) return;
+    setBusy(true);
+    const ok = await onSave({ noShow: false });
+    setBusy(false);
+    if (!ok) setCon(true);
+  };
+  return (
+    <span className="inline-flex flex-col items-end gap-0.5">
+      <span className="inline-flex items-center gap-1.5">
+        <input className={`field ${lon ? 'w-[60px] h-11 text-base font-semibold' : 'w-16'} text-center tabular-nums`} value={con ? '-' : ''} disabled={busy}
+          title={'Chỉ gỡ được dấu "-": xoá rồi Enter.'} aria-label={`${skillLabel(cell.skill)} — dấu "-" đã chốt. Xoá để gỡ vắng`}
+          onChange={(e) => setCon(e.target.value.trim() !== '')}
+          onBlur={() => void go()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') void go();
+            if (e.key === 'Escape') { e.preventDefault(); setCon(true); }
+          }} />
+        {lon && <ChoNutDau />}
+      </span>
+      <DongDau cell={cell} />
+    </span>
+  );
+}
 
 /** Chỗ trống đúng bằng nút "Vắng" — dòng chỉ đọc / dòng chữ trạng thái của màn điện thoại vẫn thẳng cột với dòng có nút. */
 export function ChoNutDau() {
@@ -351,6 +385,7 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false, 
     if (ok) { setDirty(false); toastVang(skillLabel(cell.skill), tenHv, () => void onSave({ noShow: false })); }
   };
 
+  if (chiGoDau(cell)) return <OChiGoDau cell={cell} onSave={onSave} lon={lon} />;
   if (!suaDuoc(cell)) {
     /* Điện thoại: dồn phải cả cụm — dòng đếm ngược "Còn 6 ngày để sửa" rộng hơn "-" + chỗ nút, dồn trái thì dòng này
        lệch khỏi cột của các dòng khác. E5: ô chỉ đọc là CHỮ (không viền, không mờ); không có số thì "—", band trong ngoặc
@@ -453,6 +488,7 @@ export function CriteriaButton({ cell, onSave, buttonRef, lon = false, gvMacDinh
     setDangBao(false);
     if (ok) toastVang(skillLabel(cell.skill), tenHv, () => void onSave({ noShow: false }));
   };
+  if (chiGoDau(cell)) return <OChiGoDau cell={cell} onSave={onSave} lon={lon} />;
   /* E5: ô không sửa được là CHỮ SỐ (không viền nút, không mờ) — cùng câu "vì sao" với ô số câu; vắng ghi "vắng". */
   if (!editable) {
     const vang = cell.sitStatus === 'absent' && cell.band === null && !cell.daChot;

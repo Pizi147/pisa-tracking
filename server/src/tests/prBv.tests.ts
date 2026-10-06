@@ -431,16 +431,36 @@ export async function runPrBvTests(t: YThucTestKit) {
     assert(kyNang(a.m1, 'listening').planned_period_id === tuan(-1).id && r.goVang.giuLich === false, JSON.stringify(r.goVang));
   });
 
-  /* Rà độc lập (#2): Case đóng vì thi lại TRƯỚC PR-BV có chữ "đã bị huỷ." — không được mở lại (dữ liệu cũ). */
-  check('BV C7 · Case đóng có chữ cũ "điểm … đã bị huỷ." (thi lại trước PR) → nhập điểm trượt tạo Case mới', () => {
+  /* Rà độc lập (#2): Case đóng vì thi lại TRƯỚC PR-BV (không có mã `dong_do_xoa`) — không được mở lại (dữ liệu cũ). */
+  check('BV C7 · Case đóng không có mã "đóng do xoá" (thi lại / dữ liệu trước PR) → nhập điểm trượt tạo Case mới', () => {
     const a = emMoi();
     for (const k of ['listening', 'reading', 'speaking']) nhapFt(QL, a.m1, k, 5);
     const [c] = caseL(a.sid);
     nhapFt(QL, a.m1, 'listening', null);
-    conn.prepare('UPDATE sos_cases SET outcome_note = ? WHERE id = ?').run(`${d.SIGNAL_WITHDRAW_SCORE_FIXED} — điểm Listening đã bị huỷ.`, c.id);
+    conn.prepare(`DELETE FROM sos_case_history WHERE case_id = ? AND field = 'dong_do_xoa'`).run(c.id);
     nhapFt(QL, a.m1, 'listening', 5);
     const ds = caseL(a.sid);
     assert(ds.length === 2 && get('SELECT status FROM sos_cases WHERE id = ?', c.id).status === 'done', JSON.stringify(ds.map((x) => [x.id, x.status])));
+  });
+
+  /* Rà planning #228 (2): nhận "đóng do xoá" bằng MÃ MÁY — chữ outcome_note đổi (vd PR-EN dịch) vẫn mở lại đúng Case. */
+  check('BV C8 · xoá L → đổi chữ outcome_note → nhập lại trượt vẫn mở lại CÙNG Case; người đóng lại sau khi mở → không mở lại', () => {
+    const a = emMoi();
+    for (const k of ['listening', 'reading', 'speaking']) nhapFt(QL, a.m1, k, 5);
+    const [c] = caseL(a.sid);
+    nhapFt(QL, a.m1, 'listening', null);
+    conn.prepare('UPDATE sos_cases SET outcome_note = ? WHERE id = ?').run('Score was cleared', c.id);
+    nhapFt(QL, a.m1, 'listening', 5);
+    const ds = caseL(a.sid);
+    assert(ds.length === 1 && ds[0].id === c.id && ds[0].status !== 'done', JSON.stringify(ds.map((x) => [x.id, x.status])));
+  });
+
+  check('BV V16 · câu 403: QL chi nhánh khác → "Bạn không có quyền với lớp này."; GV lớp khác kỹ năng → câu nêu ai gỡ được', () => {
+    const a = vangL(-1);
+    const e1 = loiCua(() => go(P.cpManager ?? perm.loadPrincipal(lop(`SELECT ur.user_id u FROM user_roles ur JOIN roles r ON r.id = ur.role_id JOIN branches b ON b.id = ur.branch_id WHERE r.key = 'manager' AND b.code = 'CP' LIMIT 1`)), a.m1, 'listening', han(-1)));
+    assert(e1.status === 403 && e1.message === 'Bạn không có quyền với lớp này.', `${e1.status} ${e1.message}`);
+    const e2 = loiCua(() => go(gvKhac, a.m1, 'listening', han(-1)));
+    assert(e2.status === 403 && /GVCN hoặc Quản lý/.test(e2.message), e2.message);
   });
 
   // ------------------------------------------------------------------ L · xoá "-" lớp thường (Task 5)

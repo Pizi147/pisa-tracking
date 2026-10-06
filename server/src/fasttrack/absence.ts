@@ -5,7 +5,7 @@ import {
 } from '../../../shared/domain/index.ts';
 import { assessedSkillOf, entrySkillsOf } from './scoring.ts';
 import { addDays, badRequest, forbidden, notFound, nowIso } from '../util.ts';
-import { can, isCoreTeacherOf, scoreEditPath, type Principal } from '../permissions.ts';
+import { can, isCoreTeacherOf, scoreEditPath, teachesClass, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { writeAudit, notify } from '../platform/audit.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
@@ -951,7 +951,7 @@ export function duocGoDau(p: Principal, o: {
 }): string | null {
   if (can(p, PERMISSIONS.PLAN_WEEK, { classId: o.classId })) return null;
   if (!(o.duocNhap ?? scoreEditPath(p, o.classId, o.skill) !== null) && !isCoreTeacherOf(p, o.classId, o.today)) {
-    return 'Chỉ GV chấm kỹ năng này, GVCN hoặc Quản lý gỡ được dấu "-".';
+    return teachesClass(p, o.classId, o.today) ? 'Chỉ GV chấm kỹ năng này, GVCN hoặc Quản lý gỡ được dấu "-".' : 'Bạn không có quyền với lớp này.';
   }
   return o.today > skillScoreDeadline(o.mode, o.tuanGocStart) ? CAU_QUA_HAN_GO : null;
 }
