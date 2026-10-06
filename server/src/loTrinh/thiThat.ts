@@ -3,8 +3,8 @@
  * (`ketQuaThiThat`, so với Target; lộ trình đã đóng thì so với Target trong BẢN CHỤP — Target lúc đóng). Không còn ô chọn kết luận tay.
  * Mỗi lần lưu: làm mới bản chụp mới nhất (lộ trình đã đóng), nhật ký, và em Kết thúc học FT chờ kết quả thì tự vào Lưu trữ khi hết chờ (TK-L).
  */
-import { db, theoLo, tx } from '../db.ts';
-import { PERMISSIONS, canChoThiThat, diemThiHopLe, duongHoSoHocVien, mocNhacThiThat, tuanLich } from '../../../shared/domain/index.ts';
+import { THAM_SO_TOI_DA, db, theoLo, tx } from '../db.ts';
+import { PERMISSIONS, canChoThiThat, coKetQuaCu, diemThiHopLe, duongHoSoHocVien, mocNhacThiThat, tuanLich } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, type Principal } from '../permissions.ts';
@@ -32,7 +32,7 @@ export function lopCuoiCuaLoTrinh(cycleId: number): number | null {
 export function coTheNhapThiThat(p: Principal, c: { id: number; student_id: number }): boolean {
   if (can(p, PERMISSIONS.STUDENT_EDIT, { studentId: c.student_id }) || can(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id })) return true;
   const lop = lopCuoiCuaLoTrinh(c.id);
-  return !!lop && !!db().prepare('SELECT 1 FROM teacher_assignments WHERE user_id = ? AND class_id = ? AND is_core = 1').get(p.userId, lop);
+  return !!lop && !!db().prepare(`SELECT 1 FROM teacher_assignments WHERE user_id = ? AND class_id = ? AND is_core = 1 AND status = 'active'`).get(p.userId, lop);
 }
 
 const docDiem = (v: unknown, nhan: string): number | null => {
@@ -100,7 +100,7 @@ export function tuLuuTruKhiHetCho(p: Principal, studentId: number, cycleId: numb
   const s = conn.prepare('SELECT status, archived_at, student_code FROM students WHERE id = ?').get(studentId) as any;
   if (!s || s.status !== 'finished' || s.archived_at) return false;
   const c = cycleById(cycleId);
-  if (!c || canChoThiThat({ laFt: !!c.route, l: c.thi_that_l ?? null, r: c.thi_that_r ?? null, w: c.thi_that_w ?? null, s: c.thi_that_s ?? null, khongThi: !!c.thi_that_khong_thi })) return false;
+  if (!c || canChoThiThat({ laFt: !!c.route, cu: coKetQuaCu(c), l: c.thi_that_l ?? null, r: c.thi_that_r ?? null, w: c.thi_that_w ?? null, s: c.thi_that_s ?? null, khongThi: !!c.thi_that_khong_thi })) return false;
   const on = demoToday();
   conn.prepare('UPDATE students SET archived_at = ? WHERE id = ?').run(on, studentId);
   writeAudit({ actorUserId: p.userId, action: 'student.archive', entityType: 'student', entityId: studentId, entityLabel: s.student_code,
@@ -121,7 +121,11 @@ export function viecThiThat(p: Principal, f: { today: string; tatCa: boolean; br
                (SELECT a.class_id FROM assessment_attempts a WHERE a.cycle_id = c.id AND a.class_id IS NOT NULL ORDER BY a.id DESC LIMIT 1),
                (SELECT e.class_id FROM enrollments e WHERE e.student_id = c.student_id ORDER BY e.id DESC LIMIT 1)) AS class_id
     FROM learning_cycles c JOIN students s ON s.id = c.student_id LEFT JOIN report_periods ep ON ep.id = c.exam_period_id
-   WHERE c.route IS NOT NULL AND c.thi_that_khong_thi = 0 AND (c.thi_that_l IS NULL OR c.thi_that_r IS NULL OR c.thi_that_w IS NULL OR c.thi_that_s IS NULL)`).all() as any[];
+   WHERE c.route IS NOT NULL AND c.thi_that_khong_thi = 0 AND (c.thi_that_l IS NULL OR c.thi_that_r IS NULL OR c.thi_that_w IS NULL OR c.thi_that_s IS NULL)
+     /* Kết quả CŨ (chỉ Overall / kết luận chọn tay) là đã có kết quả. */
+     AND c.outcome_score IS NULL AND COALESCE(c.outcome, 'unknown') = 'unknown'
+     /* Đóng vì CHUYỂN LỚP (đóng-mở): em không đi thi — không nhắc. */
+     AND NOT EXISTS (SELECT 1 FROM ban_chup_lo_trinh b WHERE b.cycle_id = c.id AND b.ly_do = 'chuyen_lop' AND b.lan = (SELECT MAX(lan) FROM ban_chup_lo_trinh WHERE cycle_id = c.id))`).all() as any[];
   const moc = ds.map((c) => ({ c, m: mocNhacThiThat({ thangThi: c.exam_month, tuanThi: c.exam_week, ngayThi: c.exam_date, ngayDong: c.ended_at }) })).filter((x) => x.m && x.m.tu <= f.today);
   if (!moc.length) return [];
   const idLop = [...new Set(moc.map((x) => x.c.class_id as number | null).filter((x): x is number => !!x))];
@@ -131,7 +135,7 @@ export function viecThiThat(p: Principal, f: { today: string; tatCa: boolean; br
     for (const t of conn.prepare(`SELECT class_id, user_id FROM teacher_assignments WHERE is_core = 1 AND status = 'active' AND (effective_to IS NULL OR effective_to >= ?) AND class_id IN (${ph})`).all(f.today, ...lo) as any[]) {
       gvcn.set(t.class_id, [...(gvcn.get(t.class_id) ?? []), t.user_id]);
     }
-  });
+  }, THAM_SO_TOI_DA - 1);   // câu GVCN còn một tham số `today` → ≤ 900
   const out: any[] = [];
   for (const { c, m } of moc) {
     const l = c.class_id ? lop.get(c.class_id) : null;
@@ -142,12 +146,13 @@ export function viecThiThat(p: Principal, f: { today: string; tatCa: boolean; br
     const ql = !laGvcn && (!gv.length || f.tatCa) && !!c.class_id && can(p, PERMISSIONS.CYCLE_EDIT, { classId: c.class_id });
     const mine = laGvcn || (!gv.length && ql);
     if (!mine && !(f.tatCa && ql)) continue;
-    const thi = examPlanOf({ exam_period_id: null, exam_month: c.exam_month, exam_date: c.exam_date, ...(c.exam_week ? { exam_period_id: 1, exam_week_code: tuanLich(c.exam_week), exam_week_start: c.exam_week } : {}) }).label;
+    const ke = examPlanOf({ exam_period_id: null, exam_month: c.exam_month, exam_date: c.exam_date, ...(c.exam_week ? { exam_period_id: 1, exam_week_code: tuanLich(c.exam_week), exam_week_start: c.exam_week } : {}) });
+    const thi = ke.confidence === 'none' ? null : ke.label;
     out.push({
       key: `thi_that:${c.id}`, group: 'thi_that', urgency: f.today > m!.han ? 'overdue' : 'normal',
       studentId: c.student_id, studentName: c.ten, classId: c.class_id ?? null, classCode: l?.code ?? null,
       attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: 'Thi thật', count: null,
-      reason: `${c.ten} · ${l?.code ?? '—'} · thi ${thi}`, tieuDe: 'Cập nhật kết quả thi thật', actionLabel: 'Nhập kết quả',
+      reason: [c.ten, l?.code ?? '—', thi ? `thi ${thi}` : null].filter(Boolean).join(' · '), tieuDe: 'Cập nhật kết quả thi thật', actionLabel: 'Nhập kết quả',
       href: duongHoSoHocVien(c.student_id, { loTrinh: c.id, viec: 'thi-that' }), ownerId: gv[0] ?? null, owner: null, mine,
       due: m!.han, statusLabel: `hạn ${tuanLich(m!.han, f.today)}`,
     });

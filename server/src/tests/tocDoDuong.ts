@@ -168,6 +168,7 @@ export const DUONG_DO: MucDo[] = [
   /* PR-TK (TK-7): khối Các lộ trình + ngăn Tổng kết lộ trình đọc từ bản chụp; KHÔNG nạp trong `GET /students/{hv}` (trần 90 câu giữ nguyên). */
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/lo-trinh' },
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/lo-trinh/{loTrinhDong}/tong-ket' },
+  { trang: 'Hồ sơ lớp', vai: ['QL', 'QT', 'GVCN', 'GVBM', 'GVCN_THUONG'], url: '/classes/{lopKetThuc}/tong-ket' },
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/hanh-trinh?giai-doan=thuong' },
   /* PR-YT4: tab Ý thức của HV (thang, thanh việc, dòng thời gian trộn) — cũng là khung phải của tab lớp khi chọn em. */
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/y-thuc' },
@@ -261,6 +262,10 @@ export const TRAN: Record<string, number> = {
   /* PR-LUI-b (5f): trần = max(đo+10, ⌈đo×1,3⌉) — đo 06/10. */
   'QL /students/1/hoc-lai/lop-dich': 32,
   'QT /students/1/hoc-lai/lop-dich': 30,
+  /* PR-TK (TK-7): ba đường đọc bản chụp — trần = max(đo+10, ⌈đo×1,3⌉), đo 07/10. */
+  'QL /students/1/lo-trinh': 26, 'QT /students/1/lo-trinh': 24, 'GVCN /students/1/lo-trinh': 27, 'GVBM /students/1/lo-trinh': 27,
+  'QL /lo-trinh/1/tong-ket': 25, 'QT /lo-trinh/1/tong-ket': 23, 'GVCN /lo-trinh/1/tong-ket': 26, 'GVBM /lo-trinh/1/tong-ket': 26,
+  'QL /classes/1/tong-ket': 24, 'QT /classes/1/tong-ket': 23, 'GVCN /classes/1/tong-ket': 24, 'GVBM /classes/1/tong-ket': 24, 'GVCN_THUONG /classes/1/tong-ket': 24,
   'GVCN /ref/branches': 21,
   'GVBM /ref/branches': 21,
   'GVCN_THUONG /ref/branches': 21,

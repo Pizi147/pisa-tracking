@@ -1,4 +1,4 @@
-import { db } from '../db.ts';
+import { db, theoLo } from '../db.ts';
 import { PERMISSIONS, chuanHoaMaLop, soSanhLop, type ProgrammeCode } from '../../../shared/domain/index.ts';
 import { can, classScopeSql, napTruocPhamVi, scopeFor, type Principal } from '../permissions.ts';
 
@@ -95,7 +95,9 @@ export function danhSachLuuTru(p: Principal, f: { branchId?: number | null; q?: 
      * (`chayTrongRequest`, PR-TD) đây vẫn là công đã nạp một lần, không N+1 dù gọi theo từng em).
      */
     const cycleCuoi = new Map<number, number>();
-    for (const r of conn.prepare(`SELECT student_id, cycle_id FROM ban_chup_lo_trinh WHERE student_id IN (${ph}) ORDER BY id`).all(...ids) as any[]) cycleCuoi.set(r.student_id, r.cycle_id);
+    theoLo(ids, (lo, ph2) => {
+      for (const r of conn.prepare(`SELECT student_id, cycle_id FROM ban_chup_lo_trinh WHERE student_id IN (${ph2}) ORDER BY id`).all(...lo) as any[]) cycleCuoi.set(r.student_id, r.cycle_id);
+    });
     napTruocPhamVi(ids);
     hocVien = archived
       .filter((s) => can(p, PERMISSIONS.STUDENT_VIEW, { studentId: s.id }))

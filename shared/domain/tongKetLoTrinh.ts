@@ -57,9 +57,12 @@ export function ketQuaThiThat(o: DiemThi, target: number | null): KetQuaThiThat 
 }
 
 /** TK-L: lộ trình FT còn chờ kết quả thi thật (chưa đủ 4 kỹ năng, không "Không thi") → "Kết thúc học" chưa lưu trữ. */
-export function canChoThiThat(c: { laFt: boolean } & DiemThi): boolean {
-  return c.laFt && !c.khongThi && [c.l, c.r, c.w, c.s].some((d) => d === null);
+export function canChoThiThat(c: { laFt: boolean; cu?: boolean } & DiemThi): boolean {
+  return c.laFt && !c.cu && !c.khongThi && [c.l, c.r, c.w, c.s].some((d) => d === null);
 }
+/** Kết quả CŨ (trước PR-TK, ngăn "Kết luận lộ trình"): có Overall hoặc kết luận chọn tay ≠ chưa rõ → đã có kết quả, không còn "chờ". */
+export const coKetQuaCu = (c: { outcome?: string | null; outcome_score?: number | null }): boolean =>
+  (c.outcome_score ?? null) !== null || (!!c.outcome && c.outcome !== 'unknown');
 
 /**
  * Việc nhắc "Cập nhật kết quả thi thật": hiện từ thứ Hai ĐẦU TIÊN SAU ngày thi / tuần thi / tháng thi dự kiến (cụ thể nhất thắng);

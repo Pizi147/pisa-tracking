@@ -18,7 +18,7 @@ type TongKet = {
   hocVien: { id: number; ten: string }; ten: string; loai: 'ft' | 'thuong'; lop: string | null; gvcn: string | null; dauVao: number | null; target: number | null;
   khongCamKet: boolean; thoiGian: string; dich: { target: number | null; thiDuKien: string | null };
   ketQua:
-    | { loai: 'ft'; ovr: number | null; l: number | null; r: number | null; w: number | null; s: number | null; ngay: string | null; khongThi: boolean; nhan: string; ketLuan: string | null; choNhap: boolean; coTheNhap: boolean }
+    | { loai: 'ft'; ovr: number | null; l: number | null; r: number | null; w: number | null; s: number | null; ngay: string | null; khongThi: boolean; khongCoThi: boolean; nhan: string; ketLuan: string | null; choNhap: boolean; coTheNhap: boolean }
     | { loai: 'thuong'; tyLe: number | null; dai: string | null; kyVongDat: boolean | null };
   huongTiep: { khoa: string; nhan: string | null };
   luot: Luot[];
@@ -150,7 +150,8 @@ export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onCl
   return (
     <>
       <KhungPanel tieuDe="Tổng kết lộ trình" hocVien={data ? `${data.hocVien.ten} · ${chuongTrinh}` : null} rong="rong" onDong={nhap ? () => { /* Esc đóng ngăn nhập trước */ } : onClose}
-        chan={{ huy: { nhan: 'Đóng', onClick: onClose }, phu: data ? <Link className="btn btn-ghost min-h-[44px] sm:min-h-0" to={duongHoSoHocVien(data.hocVien.id, { loTrinh: cycleId })}>Mở hồ sơ</Link> : undefined }}>
+        chan={{ phu: data ? <Link className="btn btn-ghost min-h-[44px] sm:min-h-0" to={duongHoSoHocVien(data.hocVien.id, { loTrinh: cycleId })}>Mở hồ sơ</Link> : undefined,
+          chinh: <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onClose}>Đóng</button> }}>
         {error && <ErrorState message={error.message} hint={error.hint} onRetry={reload} />}
         {loading && !data && <Skeleton rows={6} />}
         {data && kq && (
@@ -169,6 +170,8 @@ export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onCl
                       <div className="mt-0.5 text-xs tabular-nums text-slate-400">L {b1(kq.l)} · R {b1(kq.r)} · W {b1(kq.w)} · S {b1(kq.s)}</div>
                       <div className="mt-1.5"><Nhan tone={kq.ketLuan === 'reached' ? 'ok' : kq.ketLuan === 'not_reached' ? 'late' : 'muted'}>{kq.nhan}</Nhan></div>
                     </O>
+                  ) : kq.khongCoThi ? (
+                    <O nho="Thi thật" cho><div className="text-sm font-semibold text-slate-500">—</div></O>
                   ) : (
                     <O nho="Thi thật" cho>
                       <div className="text-sm font-semibold leading-snug text-slate-400">{kq.khongThi ? 'Không thi' : 'Chờ kết quả thi thật'}</div>

@@ -24,7 +24,7 @@ const toneDai = (d: string | null | undefined): ToneNhan => (d === 'dat' ? 'ok' 
 
 /** Kết quả thi thật của một em FT: máy so OVR với Target lúc đóng (đã tính ở bản chụp). */
 function ketQuaThi(d: Dong): { tone: ToneNhan; chu: string } | null {
-  if (d.roiSom) return null;
+  if (d.roiSom || d.huongKhoa === 'chuyen_lop') return null;   // em chuyển lớp (đóng-mở): không đi thi
   if (d.ketLuan === 'reached') return { tone: 'ok', chu: 'Đạt Target' };
   if (d.ketLuan === 'not_reached') return { tone: 'late', chu: 'Chưa đạt Target' };
   return { tone: 'muted', chu: d.thiThat?.khongThi ? 'Không thi' : 'Chờ kết quả thi thật' };

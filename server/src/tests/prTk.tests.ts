@@ -515,6 +515,60 @@ export async function runPrTkTests(t: YThucTestKit) {
     console.log(`      (đo: ghiBanChup ${dong} câu · tongKetLop ${lop} câu · cacLoTrinh ${hs}→${hsNhieu} câu)`);
   }));
 
+  // ------------------------------------------------------------------ Sửa sau rà #220 (I1, I2, 1, 4, 5)
+  const thangQua = new Date(Date.parse(NGAY) - 40 * 86400000).toISOString().slice(0, 7);
+  const viecThi = (pr: any, sid: number) => (myWork.myWork(pr, {}) as any).groups.flatMap((g: any) => g.items ?? []).filter((x: any) => x.group === 'thi_that' && x.studentId === sid);
+  await checkAsync('TK-rà I1 · lộ trình FT đóng vì CHUYỂN LỚP (đóng-mở sang lớp thường): không việc nhắc thi thật, Kết quả "—", không nút Nhập; FT → FT giữ lộ trình chỉ nhắc MỘT lần', () => thu(() => {
+    const ft = taoLop('FT', true); const thuong = taoLop('FOU', false); const ft2 = taoLop('FT', true);
+    const gvcn = ganGvcn(ft, P.normalCoreTeacher.userId);
+    const a = taoHV(ft, 'FT', true, 6.5);
+    conn.prepare('UPDATE learning_cycles SET exam_month = ? WHERE id = ?').run(thangQua, a.cy);
+    assert(viecThi(gvcn, a.sid).length === 1, 'tiền đề: lộ trình đang chạy qua mốc thi → nhắc');
+    studentsSvc.transferStudent(P.admin, a.sid, thuong, NGAY, 'Xếp lại trình độ', { noNote: true });
+    assert(trangThai(a.cy) === 'completed' && dongCuaCycle(a.cy).ly_do === 'chuyen_lop', 'tiền đề: đóng vì chuyển lớp');
+    assert(viecThi(gvcn, a.sid).length === 0, 'chuyển lớp: em không đi thi → hết nhắc');
+    const r = tongKetSvc.tongKetLoTrinh(P.admin, a.cy);
+    assert(r.ketQua.khongCoThi === true && r.ketQua.choNhap === false && r.ketQua.coTheNhap === false, JSON.stringify(r.ketQua));
+    assert(tongKetSvc.cacLoTrinh(P.admin, a.sid).find((x: any) => x.id === a.cy).ketQua === null, 'khối Các lộ trình: kết quả —');
+    const b = taoHV(ft, 'FT', true, 6.5);
+    conn.prepare('UPDATE learning_cycles SET exam_month = ? WHERE id = ?').run(thangQua, b.cy);
+    studentsSvc.transferStudent(P.admin, b.sid, ft2, NGAY, 'Đổi lịch học', { noNote: true });
+    assert(viecThi(gvcn, b.sid).length <= 1, 'FT → FT: không nhắc trùng');
+  }));
+  await checkAsync('TK-rà I2 · kết quả CŨ (chỉ Overall / kết luận chọn tay) là đã có kết quả: không nhắc, Kết thúc học lưu trữ ngay, ngăn Tổng kết không "chờ"', () => thu(() => {
+    const ft = taoLop('FT', true);
+    const gvcn = ganGvcn(ft, P.normalCoreTeacher.userId);
+    const a = taoHV(ft, 'FT', true, 6.5); const b = taoHV(ft, 'FT', true, 6.5);
+    for (const x of [a, b]) conn.prepare('UPDATE learning_cycles SET exam_month = ? WHERE id = ?').run(thangQua, x.cy);
+    cyclesSvc.setOutcome(P.admin, a.cy, { outcome: 'reached', score: 6.5 });          // có Overall
+    cyclesSvc.setOutcome(P.admin, b.cy, { outcome: 'not_reached', score: null });     // chỉ kết luận
+    assert(viecThi(gvcn, a.sid).length === 0 && viecThi(gvcn, b.sid).length === 0, 'kết quả cũ: không nhắc');
+    studentsSvc.setStudentStatus(P.admin, a.sid, 'finished', NGAY, 'Nghỉ'); studentsSvc.setStudentStatus(P.admin, b.sid, 'finished', NGAY, 'Nghỉ');
+    assert(hoSo(a.sid).archived_at === NGAY && hoSo(b.sid).archived_at === NGAY, 'kết thúc học: lưu trữ ngay');
+    const ra = tongKetSvc.tongKetLoTrinh(P.admin, a.cy).ketQua; const rb = tongKetSvc.tongKetLoTrinh(P.admin, b.cy).ketQua;
+    assert(ra.choNhap === false && ra.ovr === 6.5 && rb.choNhap === false && rb.nhan === 'Chưa đạt Target', JSON.stringify([ra, rb]));
+  }));
+  await checkAsync('TK-rà 1 · lộ trình không có lượt: lớp cuối = ghi danh TRƯỚC ngày đóng, không phải ghi danh mở cùng ngày', () => thu(() => {
+    const cu = taoLop('FOU', false); const moi = taoLop('BE', false);
+    const a = taoHV(cu, 'FOU', false);
+    conn.prepare(`UPDATE enrollments SET status = 'transferred', ended_at = ?, started_at = '2026-01-05' WHERE student_id = ?`).run(NGAY, a.sid);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`).run(a.sid, moi, NGAY, new Date().toISOString());
+    conn.prepare(`UPDATE learning_cycles SET status = 'completed', ended_at = ? WHERE id = ?`).run(NGAY, a.cy);
+    const [id] = ghiBanChup(conn, [a.cy], { lyDo: 'len_lop', ngay: NGAY });
+    assert(get('SELECT class_id FROM ban_chup_lo_trinh WHERE id = ?', id).class_id === cu, 'phải là lớp cũ');
+  }));
+  await checkAsync('TK-rà 4, 5 · chữ việc nhắc không có "thi Chưa xác định"; chỉ GVCN còn hiệu lực nhập được', () => thu(() => {
+    const ft = taoLop('FT', true);
+    const gvcn = ganGvcn(ft, P.normalCoreTeacher.userId);
+    const a = taoHV(ft, 'FT', true, 6.5);
+    conn.prepare('UPDATE learning_cycles SET exam_month = NULL, exam_date = NULL, exam_period_id = NULL, started_at = ? WHERE id = ?').run(t.addDays(NGAY, -60), a.cy);
+    studentsSvc.setStudentStatus(P.admin, a.sid, 'finished', t.addDays(NGAY, -30), 'Nghỉ');
+    const v = viecThi(gvcn, a.sid);
+    assert(v.length === 1 && !/Chưa xác định/.test(v[0].reason), v[0]?.reason);
+    conn.prepare(`UPDATE teacher_assignments SET status = 'ended' WHERE class_id = ? AND user_id = ?`).run(ft, gvcn.userId);
+    assert(maLoi(() => thiThatSvc.datKetQuaThiThat(gvcn, a.cy, NHAP4)) === 403, 'GVCN đã hết hiệu lực → 403');
+  }));
+
   // @@BAT-BIEN@@ — luôn ở CUỐI file: soi mọi lộ trình các phép kiểm trước để lại. Thêm phép kiểm mới Ở TRÊN dòng này.
   /* TK-5 bất biến phụ "điểm bản chụp = điểm sống" chỉ kiểm trong phép kiểm TK-5 ở trên: nhiều phép kiểm khác (PR khác) sửa / xoá điểm của lộ trình đã đóng bằng SQL thẳng nên soi toàn DB ở cuối sẽ báo oan. */
   await checkAsync('TK-3 · BẤT BIẾN: mọi lộ trình status <> active đều có ≥ 1 bản chụp (đường đóng mới quên gọi → đỏ)', async () => {

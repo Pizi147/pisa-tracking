@@ -3,7 +3,7 @@
  * Lộ trình ĐÃ ĐÓNG đọc từ BẢN CHỤP mới nhất (số đóng băng); lộ trình đang chạy chỉ lấy kết quả sống gần nhất bằng MỘT câu (không gọi `studentProfile`).
  * Quyền kiểm TRƯỚC mọi truy vấn bản chụp: HV = `STUDENT_VIEW` như hồ sơ; lớp = `ATTEMPT_VIEW` như `/classes/:id/overview`.
  */
-import { db, theoLo } from '../db.ts';
+import { THAM_SO_TOI_DA, db, theoLo } from '../db.ts';
 import {
   ASSESSED_SKILLS, HUONG_TIEP_TK_NHAN, LY_DO_DONG_NHAN, PERMISSIONS, ketQuaThiThat, khoangTuan, luotDaiDien, tenMonNgan, tuanLich,
   type HuongTiepTk, type LyDoDong,
@@ -26,11 +26,14 @@ const toneDai = (dai: string | null): Tone => (dai === 'dat' ? 'ok' : dai ? 'soo
 /** Kết quả gọn của một bản chụp (FT: thi thật; lớp thường: % Cuối khoá). */
 function ketQuaBanChup(b: any): KetQuaGon | null {
   if (b.route) {
+    if (b.ly_do === 'chuyen_lop') return null;   // đóng vì chuyển lớp: em không đi thi
     const k = ketQuaThiThat({ l: b.thi_that_l, r: b.thi_that_r, w: b.thi_that_w, s: b.thi_that_s, khongThi: !!b.thi_that_khong_thi }, b.khong_cam_ket ? null : b.target);
     if (b.thi_that_ovr !== null && b.thi_that_ovr !== undefined) {
       const phu = b.ket_luan === 'reached' ? 'Đạt Target' : b.ket_luan === 'not_reached' ? 'Chưa đạt Target' : undefined;
       return { chinh: `Thi thật ${b.thi_that_ovr.toFixed(1)}`, tone: b.ket_luan === 'reached' ? 'ok' : b.ket_luan === 'not_reached' ? 'late' : 'muted', phu };
     }
+    /* Kết quả CŨ chỉ có kết luận chọn tay (không Overall): vẫn là đã có kết quả. */
+    if (b.ket_luan === 'reached' || b.ket_luan === 'not_reached') return { chinh: b.ket_luan === 'reached' ? 'Đạt Target' : 'Chưa đạt Target', tone: b.ket_luan === 'reached' ? 'ok' : 'late' };
     return { chinh: k.nhan === 'Không thi' ? 'Không thi' : 'Chờ kết quả thi thật', tone: 'muted' };
   }
   return b.ty_le_cuoi_khoa === null || b.ty_le_cuoi_khoa === undefined ? null : { chinh: phanTram(b.ty_le_cuoi_khoa), tone: toneDai(b.dai_cuoi_khoa) };
@@ -132,6 +135,8 @@ export function tongKetLoTrinh(p: Principal, cycleId: number) {
   const homNay = demoToday();
   const laFt = !!b.route;
   const luot = gomLuot(conn.prepare('SELECT * FROM ban_chup_luot WHERE ban_chup_id = ? ORDER BY attempt_no, id').all(b.id) as any[], b.programme_code, laFt, homNay);
+  const khongCoThi = laFt && b.ly_do === 'chuyen_lop';
+  const daCoKq = laFt && (b.thi_that_ovr !== null || b.ket_luan === 'reached' || b.ket_luan === 'not_reached');
   const kq = laFt ? ketQuaThiThat({ l: b.thi_that_l, r: b.thi_that_r, w: b.thi_that_w, s: b.thi_that_s, khongThi: !!b.thi_that_khong_thi }, b.khong_cam_ket ? null : b.target) : null;
   return {
     hocVien: { id: hv.id as number, ten: hv.full_name as string },
@@ -142,8 +147,10 @@ export function tongKetLoTrinh(p: Principal, cycleId: number) {
     dich: { target: b.khong_cam_ket ? null : b.target as number | null, thiDuKien: b.thi_du_kien_nhan as string | null },
     ketQua: laFt
       ? { loai: 'ft' as const, ovr: b.thi_that_ovr as number | null, l: b.thi_that_l, r: b.thi_that_r, w: b.thi_that_w, s: b.thi_that_s, ngay: b.thi_that_ngay as string | null,
-          khongThi: !!b.thi_that_khong_thi, nhan: kq!.nhan, ketLuan: b.ket_luan as string | null, choNhap: kq!.nhan === 'Chờ kết quả thi thật' || kq!.nhan === 'Chờ đủ 4 kỹ năng',
-          coTheNhap: coTheNhapThiThat(p, { id: cycleId, student_id: c.student_id }) }
+          khongThi: !!b.thi_that_khong_thi, khongCoThi,
+          nhan: daCoKq && b.thi_that_ovr === null ? (b.ket_luan === 'reached' ? 'Đạt Target' : 'Chưa đạt Target') : kq!.nhan, ketLuan: b.ket_luan as string | null,
+          choNhap: !khongCoThi && !daCoKq && (kq!.nhan === 'Chờ kết quả thi thật' || kq!.nhan === 'Chờ đủ 4 kỹ năng'),
+          coTheNhap: !khongCoThi && coTheNhapThiThat(p, { id: cycleId, student_id: c.student_id }) }
       : { loai: 'thuong' as const, tyLe: b.ty_le_cuoi_khoa as number | null, dai: b.dai_cuoi_khoa as string | null, kyVongDat: b.ky_vong_dat === null ? null : !!b.ky_vong_dat },
     huongTiep: { khoa: b.huong_tiep as string, nhan: nhanHuong(b.huong_tiep) },
     luot,
@@ -166,13 +173,13 @@ export function tongKetLop(p: Principal, classId: number) {
       `SELECT b.* FROM ban_chup_lo_trinh b WHERE b.student_id IN (${ph}) AND b.lan = (SELECT MAX(lan) FROM ban_chup_lo_trinh WHERE cycle_id = b.cycle_id)
          AND EXISTS (SELECT 1 FROM ban_chup_luot l WHERE l.ban_chup_id = b.id AND l.class_id = ?) ORDER BY b.cycle_id`,
     ).all(...lo, classId) as any[]) bcCua.set(b.student_id, b);
-  });
+  }, THAM_SO_TOI_DA - 1);   // câu còn một tham số classId → ≤ 900
   const idBc = [...bcCua.values()].map((b) => b.id as number);
   theoLo(idBc, (lo, ph) => {
     for (const l of conn.prepare(`SELECT * FROM ban_chup_luot WHERE ban_chup_id IN (${ph}) AND class_id = ? ORDER BY attempt_no, id`).all(...lo, classId) as any[]) {
       luotCua.set(l.ban_chup_id, [...(luotCua.get(l.ban_chup_id) ?? []), l]);
     }
-  });
+  }, THAM_SO_TOI_DA - 1);
   const laFt = !!lop.is_fast_track;
   const dong = hv.map((h) => {
     const b = bcCua.get(h.id);
@@ -185,7 +192,8 @@ export function tongKetLop(p: Principal, classId: number) {
       const cuoi = luot.at(-1);
       return { ...goc, soLuot: luot.filter((x) => x.trangThai !== 'cancelled').length, luotCuoiHuy: cuoi?.trangThai === 'cancelled' ? cuoi.nhan : null,
         luotCuoi: dd ? { nhan: dd.nhan, overall: dd.overall, l: k('listening'), r: k('reading'), w: k('writing'), s: k('speaking') } : null,
-        thiThat: { ovr: b.thi_that_ovr as number | null, ngay: b.thi_that_ngay as string | null, khongThi: !!b.thi_that_khong_thi }, ketLuan: b.ket_luan as string | null,
+        thiThat: b.ly_do === 'chuyen_lop' ? null : { ovr: b.thi_that_ovr as number | null, ngay: b.thi_that_ngay as string | null, khongThi: !!b.thi_that_khong_thi },
+        ketLuan: (b.ly_do === 'chuyen_lop' ? null : b.ket_luan) as string | null,
         huongTiep: nhanHuong(b.huong_tiep), huongKhoa: b.huong_tiep as string, giuaKhoa: null, cuoiKhoa: null };
     }
     const giua = luot.find((x) => x.kind === 'progress'); const cuoi = luot.find((x) => x.kind === 'final');

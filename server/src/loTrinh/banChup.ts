@@ -143,7 +143,7 @@ function ghiMotLo(conn: any, ids: number[], o: BanChupVao): number[] {
 
   const lopCuoiCua = new Map<number, number>();
   for (const e of hoi<any>((ph) => `SELECT student_id, class_id, started_at FROM enrollments WHERE student_id IN (${ph}) ORDER BY id`, sids)) {
-    if (e.started_at <= o.ngay || !lopCuoiCua.has(e.student_id)) lopCuoiCua.set(e.student_id, e.class_id);
+    if (e.started_at < o.ngay || !lopCuoiCua.has(e.student_id)) lopCuoiCua.set(e.student_id, e.class_id);
   }
   const lopCuoi = (c: any): number | null => o.lopId ?? (luotCua.get(c.id) ?? []).filter((a) => a.class_id).at(-1)?.class_id ?? lopCuoiCua.get(c.student_id) ?? null;
   const idLop = [...new Set([...attempts.map((a) => a.class_id), ...cycles.map(lopCuoi)].filter((x): x is number => !!x))];
