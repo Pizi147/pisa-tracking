@@ -243,14 +243,14 @@ function hanO(r, kieu) {
   if (kieu === 1) return `<span class="han">hạn ${r.han} <span class="qh">⚠ quá hạn ${r.qh} ngày</span></span>`;
   return `<span class="han">hạn ${r.han}</span>${r.qh ? ' ' + QH : ''}`;
 }
-const gvO = (r) => r.gv.join(', ') + (r.cc ? `${r.gv.length ? ', ' : ''}<span class="cc">Chấm chéo</span>` : '');
+const gvO = (r) => r.gv.join(', ') + (r.cc ? `${r.gv.length ? ', ' : ''}<span class="cc">GV chấm chéo</span>` : '');
 
 function luoiHv(colspan) {
   const hv = [['Đỗ Minh Anh', ['7.0', '6.5', '', '', '']], ['Ngô Gia Bảo', ['6.0', '6.5', '6.0', '', '']], ['Vũ Khánh Linh', ['7.5', '7.0', '6.5', '6.0', '']]];
   const cot = hep() ? ['W1', 'W2', 'S'] : ['L', 'R', 'W1', 'W2', 'S'];
   const idx = hep() ? [2, 3, 4] : [0, 1, 2, 3, 4];
   /* Q3 (chủ sản phẩm 06/10): nút ở đầu cột S, điền sẵn tên người đang nhập. */
-  const gv = `<button class="chongv" title="GV chấm chéo">GV chấm chéo: ${NGUOI_XEM[S] ?? 'Hoàng Thị Lan'} ▾</button>`;
+  const gv = `<button class="chongv" title="GV chấm Speaking">${NGUOI_XEM[S] ?? 'Hoàng Thị Lan'} ▾</button>`;
   return `<tr class="con"><td colspan="${colspan}"><div class="vao">
     ${hep() ? `<div style="padding:4px 0 6px">${gv}</div>` : ''}
     <table><colgroup><col style="width:${hep() ? 116 : 180}px">${cot.map((c) => `<col style="width:${hep() ? 62 : c === 'S' ? 210 : 72}px">`).join('')}${hep() ? '' : '<col>'}</colgroup>
@@ -327,8 +327,8 @@ function render() {
     ? `<section class="khoi trong"><b>W2 OCT không có Test nào</b><span>Đổi tuần ở trên, hoặc mở Kế hoạch Test để xếp lịch.</span></section>`
     : `${khoi1(st)}${khoi2(st)}${khoi3(st)}`;
   const chuong = st.chuong ? `<div class="hop" role="dialog" aria-label="Thông báo">
-      <div class="tb moi"><b>Speaking MT3 quá hạn chấm</b><span>MB FT 101 · W4 SEP · 3 bài · Chấm chéo</span></div>
-      <div class="tb"><b>Speaking MT1 quá hạn chấm</b><span>MB FT 107 · W4 SEP · 1 bài · Chấm chéo</span></div></div>` : '';
+      <div class="tb moi"><b>Speaking MT3 quá hạn chấm</b><span>MB FT 101 · W4 SEP · 3 bài · GV chấm chéo</span></div>
+      <div class="tb"><b>Speaking MT1 quá hạn chấm</b><span>MB FT 107 · W4 SEP · 1 bài · GV chấm chéo</span></div></div>` : '';
   document.getElementById('app').innerHTML = `
     <div class="thanh"><b>PISA</b><span class="an375">Tổng quan</span><span class="an375">Học viên &amp; Lớp</span><span class="on">Test</span><span class="an375">Công việc</span><span class="sp"></span>
       <span class="chuong" aria-label="Thông báo"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>${st.chuong ? '<span class="cham"></span>' : ''}</span></div>
