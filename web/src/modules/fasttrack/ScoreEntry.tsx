@@ -642,7 +642,7 @@ export function InlineScoreEditor({ cell, onSave, onClose }: {
   const isRaw = cell.skill === 'listening' || cell.skill === 'reading';
   const tc = tieuChiCua(cell.skill) ?? [], tcNgan = tieuChiNganCua(cell.skill) ?? [];
   const [vals, setVals] = useState<string[]>(() => (isRaw
-    ? [cell.rawScore !== null ? String(cell.rawScore) : cell.noShow ? '-' : '']
+    ? [cell.rawScore !== null ? String(cell.rawScore) : cell.band !== null ? fmtBand(cell.band) : cell.noShow ? '-' : '']
     : cell.noShow && cell.criteria.every((v) => v === null)
       ? ['-', '', '', '']
       : cell.criteria.map((v) => (v === null ? '' : String(v)))));

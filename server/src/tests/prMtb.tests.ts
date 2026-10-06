@@ -783,4 +783,14 @@ export async function runPrMtbTests(t: YThucTestKit) {
     const c = nguon('web/src/modules/test/keHoach/ChipKyNang.tsx');
     assert(!c.includes('+ xếp') && !/chuaToiLuot|lichSu|dangDo|duongDotTest|NhanCu/.test(c), 'ChipKyNang còn nhánh FT');
   });
+
+  /* Rà code #MTb: ô L/R chỉ có band — mở "Sửa điểm" rồi Lưu không được đổi thành xoá điểm (giá trị đầu giữ band, như RawScoreInput). */
+  check('MTb (T10) · InlineScoreEditor L/R: giá trị đầu của ô band-only là band (6.5), Lưu giữ nguyên band — không thành rawScore null', () => {
+    const se = nguon('web/src/modules/fasttrack/ScoreEntry.tsx');
+    const ed = se.slice(se.indexOf('export function InlineScoreEditor'), se.indexOf('export function DeadlinePill'));
+    assert(/cell\.rawScore !== null \? String\(cell\.rawScore\) : cell\.band !== null \? fmtBand\(cell\.band\)/.test(ed), 'giá trị đầu thiếu band');
+    const cell: any = { skill: 'listening', rawScore: null, band: 6.5, criteria: [null, null, null, null], noShow: false };
+    assert(JSON.stringify(d.rawPatchFrom('6.5', cell)) === JSON.stringify({ band: 6.5 }), 'đọc lại "6.5" phải là band 6.5');
+    assert(JSON.stringify(d.rawPatchFrom('6.0', cell)) === JSON.stringify({ band: 6 }), 'đọc lại "6.0" phải là band 6');
+  });
 }

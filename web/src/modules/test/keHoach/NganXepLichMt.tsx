@@ -210,7 +210,7 @@ export function NganXepLichMt({ chiNhanhDau, lopDs, lopMoSan, coThuong, onDoiKhu
   };
 
   const nutChinh = (
-    <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => void luu()} disabled={busy || !tt.soEm || !kyChon.length}>
+    <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => void luu()} disabled={busy || dangXem || !tt.soEm || !kyChon.length}>
       {busy ? 'Đang lưu…' : `Xếp lịch ${tt.soEm} em · ${tt.soBai} bài`}
     </button>
   );

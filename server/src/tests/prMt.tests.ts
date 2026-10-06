@@ -503,7 +503,7 @@ export async function runPrMtTests(t: YThucTestKit) {
   });
   check('PR-MT (9) · Quét mã: hồ sơ Mock không vẽ hạn cho MT lịch sử; ô "lich_su" ra "Nhập bù, không tính hạn"; không chữ "lich_su" lọt ra màn', () => {
     const mock = docSach('web/src/modules/fasttrack/MockDetailPage.tsx');
-    assert(/prog !== 'scored' && !d\.lichSu && <div><DeadlinePill/.test(mock), 'MockDetailPage vẽ DeadlinePill cho MT lịch sử');
+    assert(/prog !== 'scored' && [^\n]*!d\.lichSu && <div><DeadlinePill/.test(mock), 'MockDetailPage vẽ DeadlinePill cho MT lịch sử');  // PR-MTb audit thay: thêm điều kiện bỏ chip huỷ trùng, vẫn bắt !d.lichSu
     assert(/cu: d\.lichSu/.test(mock) && /<OMt v=\{omtDau\}/.test(mock), 'đầu trang thiếu ô MT mang nhãn "cũ"');  // PR-MTb T2 thay nhãn rời → ô MT
     assert(/progress === 'lich_su'\) return <Info pending>Nhập bù, không tính hạn<\/Info>/.test(docSach('web/src/modules/fasttrack/ScoreEntry.tsx')), 'DeadlinePill thiếu nhánh lịch sử');
     for (const f of ['web/src/modules/test/lichTest/KhoiNo.tsx', 'web/src/modules/test/LichTestTab.tsx', 'web/src/modules/fasttrack/MockDetailPage.tsx',

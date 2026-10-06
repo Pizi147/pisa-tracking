@@ -228,13 +228,14 @@ function oKyNangCua(cheDo: CheDo, row: any, scores: any[], daDoi: boolean, doiTu
     tre: !xong && !them.lichSu && !!row.week_end && row.sit_status !== 'absent' && row.sit_status !== 'cancelled'
       && String(row.week_end).slice(0, 10) < them.homNay,
   } : {};
+  const diem = diemChu(cheDo, row, scores);
   return {
     trangThai: trangThaiKyNang({ batBuoc, tuan: row.week_start ?? null, xong, daDoi, ...co }),
     tuan: row.week_start ?? null, periodId: row.planned_period_id ?? null, doiTu: daDoi ? doiTu : null, batBuoc,
     khoa: khoaCua(cheDo, row, scores),
     sit: row.sit_status ?? null, tuanKetThuc: row.week_end ?? null, choDuyet,
     ...(row.huy_vang ? { huyVang: true } : {}),
-    ...(diemChu(cheDo, row, scores) ? { diem: diemChu(cheDo, row, scores) } : {}),
+    ...(diem ? { diem } : {}),
     hanCham: them && batBuoc && !them.lichSu && row.sit_status !== 'cancelled'
       ? effectiveSkillDeadline({ mode: 'band', weekStart: row.week_start ?? null, skillOverride: row.deadline_override ?? null, attemptOverride: them.attemptOverride ?? null }).date
       : null,

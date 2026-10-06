@@ -641,7 +641,7 @@ function WeekModal({ onClose, attemptId, nhan, currentPeriodId, lichSu, quanLy, 
   /* Popup / chip dời vượt (PR-MTb T6): tuần mới = tuần muộn nhất của các kỹ năng sẽ dời (như máy chủ tính `tuanCuoi`). */
   const vuot = chuDoiVuot({ nhan, tuanMoi: kiem?.tuanMoi ?? '', ds: kiem?.seHuyLich ?? [] }, homNay);
   const vuotXacNhan = xacNhan ? chuDoiVuot({ nhan, tuanMoi: kiem?.tuanMoi ?? '', ds: xacNhan }, homNay) : null;
-  const quaTuan = !!kiem?.tuanMoi && !!homNay && kiemTuanXep({ ketThuc: [addDaysStr(kiem.tuanMoi.slice(0, 10), 6)], homNay, quanLy: true }).quaTuan;
+  const quaTuan = quanLy && !!kiem?.tuanMoi && !!homNay && kiemTuanXep({ ketThuc: [addDaysStr(kiem.tuanMoi.slice(0, 10), 6)], homNay, quanLy }).quaTuan;
 
   /* Đổi tuần → kiểm trước như hộp xếp lịch: cảnh báo một tuần (vàng), chặn (đỏ), lượt sau sẽ bị huỷ lịch (đỏ). */
   useEffect(() => {
