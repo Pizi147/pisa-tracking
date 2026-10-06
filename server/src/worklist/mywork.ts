@@ -584,7 +584,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: null, count: x.soEm,
       reason: `${x.soEm} em chưa có hướng`,
       tieuDe: `Chốt lên FT · ${x.code}`, actionLabel: 'Ghi lộ trình',
-      href: `/hoc-vien/lop/${x.classId}?viec=lo-trinh-tiep`,
+      href: `/hoc-vien/lop/${x.classId}?viec=lo-trinh-ca-lop`,
       ownerId: null, owner: null, mine: false, due: x.han, statusLabel: 'Chưa chốt',
     });
   }

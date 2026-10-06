@@ -14,7 +14,11 @@ import { addDaysIso } from './sos.ts';
 export type KieuOMt = 'chua-co-dot' | 'chua-lich' | 'co-lich' | 'dang-thi' | 'cho-cham' | 'cho-cham-cu' | 'tre-cham' | 'con-viec' | 'xong';
 
 /** `attemptId` null = chưa có lượt (ô nét đứt, chỉ còn số). `cu` truyền thẳng ra nhãn "cũ". */
-export type OMtVao = { so: number; attemptId: number | null; kn: Partial<Record<KyNangKH, OKyNang>>; cu: boolean };
+export type OMtVao = {
+  so: number; attemptId: number | null; kn: Partial<Record<KyNangKH, OKyNang>>; cu: boolean;
+  /** PR-MT0: MT0 có điểm mà em không lên FT — ô mờ, tooltip thêm `MT0 · không dùng`. */
+  khongDung?: boolean;
+};
 
 type Loai = 'xong' | 'khong-yeu-cau' | 'da-huy' | 'vang' | 'het-tuan' | 'tuan-nay' | 'co-lich' | 'chua-lich';
 
@@ -51,7 +55,8 @@ export function oMt(v: OMtVao, homNay: string, ct?: string | null): { kieu: Kieu
   if (v.attemptId === null) return ra('chua-co-dot', '', 'Chưa có đợt');
 
   const ds = O_KE_HOACH.flatMap((k) => (v.kn[k] ? [{ k, o: v.kn[k]!, loai: loaiKn(v.kn[k]!, homNay) }] : []));
-  const title = ds.map((x) => dongKn(ct, x.k, x.o, x.loai, homNay, v.cu)).join('\n') || 'Chưa có kỹ năng';
+  const title = [v.khongDung ? 'MT0 · không dùng' : null, ds.map((x) => dongKn(ct, x.k, x.o, x.loai, homNay, v.cu)).join('\n') || 'Chưa có kỹ năng']
+    .filter(Boolean).join('\n');
   const cua = (...l: Loai[]) => ds.filter((x) => l.includes(x.loai));
   const ten = (xs: typeof ds) => xs.map((x) => tenMonNgan(ct, x.k)).join(' ');
   const batBuoc = ds.filter((x) => x.loai !== 'khong-yeu-cau');

@@ -451,4 +451,63 @@ export async function runPrMt0Tests(t: YThucTestKit) {
     const soMock = get(`SELECT COUNT(*) n FROM assessment_attempts WHERE cycle_id = ? AND kind = 'mock'`, ft.id).n as number;
     assert(moi.dong[0]?.attemptNo === soMock + 1, `MT mới: ${JSON.stringify(moi.dong[0])}`);
   });
+
+  // ------------------------------------------------------------------ MT0-7 · Kế hoạch Test lớp thường, Lịch Test, ô MT
+  check('MT0-7a/b · Kế hoạch Test lớp thường: em có MT0 → `mt0` (đếm chưa có lịch không đổi); Lịch Test tuần Final: hàng MT0 band, môn IELTS, hạn CN tuần sau, khung Lớp thường', () => {
+    const l = taoLop('BE', 10, 2, 6);
+    const truoc = keHoach.luoiThuong(QL, l.classId);
+    loTrinh.ghiLoTrinhTiep(QL, l.sids[0], { huong: 'fast_track' });
+    const m = mt0Cua(l.sids[0])[0].id as number;
+    const sau = keHoach.luoiThuong(QL, l.classId);
+    const h0 = sau.hang.find((h: any) => h.studentId === l.sids[0]);
+    assert(h0.mt0?.attemptId === m && Object.keys(h0.mt0.kn).length === 4, JSON.stringify(h0.mt0));
+    assert(sau.hang.find((h: any) => h.studentId === l.sids[1]).mt0 === null, 'em không Lên FT: không MT0');
+    assert(truoc.hvChuaCoLich === sau.hvChuaCoLich && JSON.stringify(truoc.hang.map((h: any) => h.dot)) === JSON.stringify(sau.hang.map((h: any) => h.dot)), 'ô Giữa/Cuối khoá không đổi');
+    const tuanFinal = schedule.classProgress(l.classId).finalWeekStart as string;
+    const lt0 = canCham.lichTest(QL, week.ensurePeriod(tuanFinal).id, MB, TODAY, { classId: l.classId });
+    const hang = [...(lt0.chamTuanNay ?? []), ...lt0.lop].filter((x: any) => x.classId === l.classId);
+    const h = hang.find((x: any) => x.kind === 'mt0');
+    assert(h && h.mode === 'ielts_band' && h.dotLabel === 'MT0' && h.boMon.join() === 'listening,reading,writing,speaking' && h.han === dm.hanChamMt0(tuanFinal),
+      JSON.stringify(h));
+    assert(/kind=mt0/.test(h.hrefDayDu), h.hrefDayDu);
+    const fin = hang.find((x: any) => x.kind === 'final');
+    assert(fin && fin.mode === 'ratio' && fin.dong.every((d: any) => d.soHv === 2), `Final vẫn 2 em: ${JSON.stringify(fin?.dong)}`);
+    assert(lt0.tongQuanKhung.thuong.tong === lt0.tongQuan.tong && lt0.tongQuanKhung.ft.tong === 0, 'MT0 đếm vào khung Lớp thường');
+  });
+  check('MT0-7d · oMt: số 0 xong → ✓; khongDung → tooltip "MT0 · không dùng"; ô MT thường không đổi', () => {
+    const xong = { trangThai: 'xong', tuan: '2026-09-14', periodId: 1, doiTu: null, batBuoc: true, khoa: null, sit: 'sat', tuanKetThuc: '2026-09-20', choDuyet: false, hanCham: null };
+    const kn = { listening: xong, reading: xong, writing: xong, speaking: xong };
+    assert(dm.oMt({ so: 0, attemptId: 1, kn, cu: false }, '2026-10-05', null).chu === '✓', 'MT0 xong');
+    assert(dm.oMt({ so: 0, attemptId: 1, kn, cu: false, khongDung: true }, '2026-10-05', null).title.startsWith('MT0 · không dùng'), 'không dùng');
+    assert(!dm.oMt({ so: 2, attemptId: 1, kn, cu: false }, '2026-10-05', null).title.includes('không dùng'), 'ô thường');
+  });
+
+  // ------------------------------------------------------------------ MT0-8 · hồ sơ HV (FT sau nối), lịch MT lộ trình, Hành trình, hồ sơ Mock
+  const hanhTrinh: any = await import('../students/hanhTrinh.ts');
+  check('MT0-8 · sau nối: hồ sơ HV có lượt MT0 (không SOS mức, chip hiển thị), đường đi một điểm đầu vào (không lặp MT0); lịch MT hàng 0 khoá; Hành trình; hồ sơ Mock không Case', () => {
+    const l = taoLop('BE', 10, 2, 6);
+    const hocLai = taoLop('BE', 1, 0);
+    const [A, B] = l.sids;
+    for (const sid of l.sids) loTrinh.ghiLoTrinhTiep(QL, sid, { huong: 'fast_track' });
+    const [mA, mB] = l.sids.map((sid) => mt0Cua(sid)[0].id as number);
+    diemMt0(mA, { listening: 6, reading: 6, writing: 4, speaking: 6 });
+    diemMt0(mB, { listening: 5 });
+    transition.applyTransition(QL, { fromClassId: l.classId, effectiveDate: TODAY, dongs: [
+      { studentId: A, huong: 'fast_track', toClassId: FT101, mucTieu: 6 }, { studentId: B, huong: 'hoc_lai', toClassId: hocLai.classId },
+    ] });
+    const hs = profile.studentProfile(QL, A);
+    const a0 = hs.attempts.find((x: any) => x.kind === 'mt0');
+    assert(a0 && a0.attemptNo === 0 && a0.sosLevel === null && JSON.stringify(a0.sosMt0) === JSON.stringify([{ skill: 'writing', band: 4 }]), JSON.stringify(a0));
+    const w = hs.trajectory.find((t2: any) => t2.skill === 'writing');
+    assert(w.points.filter((x: any) => x.band === 4).length === 1 && w.points[0].kind === 'baseline', JSON.stringify(w.points));
+    const lich = keHoach.lichMtLoTrinh(lt(A).id);
+    assert(lich.hang[0].attemptNo === 0 && lich.hang[0].locked && lich.hang[0].luot?.kyVong === null, JSON.stringify(lich.hang[0]));
+    assert(lich.soKeTiep === get(`SELECT COUNT(*) n FROM assessment_attempts WHERE cycle_id = ? AND kind = 'mock'`, lt(A).id).n + 1, `soKeTiep ${lich.soKeTiep}`);
+    const ghim = (sid: number) => JSON.stringify(hanhTrinh.hanhTrinhHocVien(QL, sid, null));
+    assert(ghim(A).includes('"nhanNgan":"MT0"'), 'Hành trình A: MT0');
+    assert(ghim(B).includes('"nhanNgan":"MT0 · không dùng"'), 'Hành trình B: MT0 · không dùng');
+    const ct = attempts.attemptDetail(QL, mA);
+    assert(ct.result.sosLevel === null && JSON.stringify(ct.mt0.sos) === JSON.stringify([{ skill: 'writing', band: 4 }]) && !('sosCase' in ct), 'hồ sơ Mock');
+    assert(dm.duongDotTest({ id: mA, kind: 'mt0', classId: l.classId }) === `/mock-test/${mA}`, 'đường hồ sơ Mock');
+  });
 }

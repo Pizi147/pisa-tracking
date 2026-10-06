@@ -27,8 +27,8 @@ import {
   addDaysStr, attemptHref, attemptStatusLabel, fmtBand, fmtDate, progressLabel, skillLabel,
 } from '../../lib/format.ts';
 import {
-  ATTEMPT_KIND_SHORT, CAU_TUAN_DA_QUA, CHU_THAO_TAC, cauSeHuyLich, chuDoiVuot, chuLuuVuot, kiemLyDoThaoTac, kiemTuanXep, mondayOfDate, nhanLuot, thaoTacKyNang, trangThaiTT, tuanLich,
-  type AttemptKind, type LoiTruong, type TheYeuCauDto, type ThaoTac,
+  ATTEMPT_KIND_SHORT, CAU_TUAN_DA_QUA, CHU_THAO_TAC, cauSeHuyLich, chipSosMt0, chuDoiVuot, chuLuuVuot, kiemLyDoThaoTac, kiemTuanXep, mondayOfDate, nhanLuot, thaoTacKyNang, trangThaiTT, tuanLich,
+  type AssessedSkill, type AttemptKind, type LoiTruong, type TheYeuCauDto, type ThaoTac,
   docKnMock, KY_NANG_KE_HOACH, khongDuThiTuO, oKyNangTuLich, type KetQuaHuy, type OMtVao,
 } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -57,6 +57,8 @@ type Detail = {
   /** PR-HSM (K4 §4h): lượt đã huỷ — lý do, ai, khi. */
   huy: { lyDo: string | null; ai: string | null; khi: string } | null;
   result: any; cells: Cell[]; skips: any[];
+  /** PR-MT0: MT0 — chip SOS chỉ để nhìn (band ≤ Target − 2.0); không kỳ vọng, không Case. */
+  mt0?: { sos: { skill: AssessedSkill; band: number }[] } | null;
   /** Lịch và phạm vi. */
   history: any[];
   /** Điểm: ai sửa, trước → sau (PR-I). */
@@ -249,7 +251,8 @@ export default function MockDetailPage() {
           {d.classId && (
             /* R16 — mở lưới cả lớp đúng TUẦN của đợt đang xem, không phải tuần hôm nay. */
             <Link className="btn min-h-[44px] no-underline sm:min-h-0"
-              to={`/nhap-diem/${d.classId}${d.period ? `?periodId=${d.period.id}` : ''}`}>
+              to={d.mt0 ? `/nhap-diem/${d.classId}?kind=mt0${d.period ? `&periodId=${d.period.id}` : ''}`
+                : `/nhap-diem/${d.classId}${d.period ? `?periodId=${d.period.id}` : ''}`}>
               Nhập điểm
             </Link>
           )}
@@ -261,9 +264,11 @@ export default function MockDetailPage() {
         {/* Rà #119: `sosLevel` (chặn trần 3) — `failedCount` 4 môn từng ra "SOS 4". */}
         <KetQuaDot coDiem={d.result.scoredRequired} yeuCau={d.result.required.length} dat={passed}
           sos={d.result.sosLevel ?? null} />
-        <span className="text-sm text-slate-400 tabular-nums">
-          Kỳ vọng {fmtBand(d.result.expectation)}{laRf && d.result.expectation !== null ? ' = Target' : ''}
-        </span>
+        {d.mt0 ? d.mt0.sos.map((x) => <Nhan key={x.skill} tone="bad">{chipSosMt0(x)}</Nhan>) : (
+          <span className="text-sm text-slate-400 tabular-nums">
+            Kỳ vọng {fmtBand(d.result.expectation)}{laRf && d.result.expectation !== null ? ' = Target' : ''}
+          </span>
+        )}
         {d.deadlineOverride && (
           <Tag title={d.deadlineOverride.reason ?? undefined}>
             Hạn chấm cả đợt {fmtDate(d.deadlineOverride.date)}{d.deadlineOverride.by ? ` · ${d.deadlineOverride.by}` : ''}

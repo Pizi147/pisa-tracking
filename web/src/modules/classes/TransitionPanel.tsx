@@ -9,8 +9,8 @@ import { Nhan } from '../../ui/Nhan.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { chayHangLoat, hoanTacHangLoat } from '../students/hangLoatEm.ts';
 import {
-  CHU_CHUYEN_LOP, NORMAL_LADDER, chuHopKetLuan, nhanHuongNgan, chuTuanHoc, hanBanGiao, khacGoiY, kiemDongLenh, ketQuaGanNhat, ngay, tomTatLenh, tuanLich,
-  type DongTomTatLenh, type GoiYCuoiKhoa, type HopKetLuanVao, type HuongLenh, type KetQuaVao, type MucTieuLenh, type ProgrammeCode,
+  CHU_CHUYEN_LOP, NORMAL_LADDER, chipSosMt0, chuHopKetLuan, nhanHuongNgan, chuTuanHoc, hanBanGiao, khacGoiY, kiemDongLenh, ketQuaGanNhat, ngay, tomTatLenh, tuanLich,
+  type AssessedSkill, type DongTomTatLenh, type GoiYCuoiKhoa, type HopKetLuanVao, type HuongLenh, type KetQuaVao, type MucTieuLenh, type ProgrammeCode,
 } from '@shared/domain/index.ts';
 import { ClassCreatePanel } from './ClassCreatePanel.tsx';
 
@@ -423,6 +423,7 @@ function HangEm({ s, d, ft, tuDeXuat, luoi, maKe, routeTu, tuanCh, homNay, loi, 
           {!thieuDiem && k.dong2 && <span className="block text-[12px] leading-4 text-slate-500">{k.dong2}</span>}
           {thieuDiem && <span className="block text-[12px] leading-4 text-slate-500">Chưa đủ điểm · cập nhật sau</span>}
         </span>
+        <OMt0 mt0={s.mt0} />
       </span>
       {!ft && (
         <span role="cell" className="min-w-0">
@@ -544,4 +545,19 @@ export function OTuan({ tuanChon, value, onChange, ariaLabel, chuaChon, rong }: 
 }) {
   return <ONgay kieu="tuan" moc="dau" value={value} onChange={onChange} toiThieu={tuanChon[0] ?? null} toiDa={rong ? null : tuanChon[tuanChon.length - 1] ?? null}
     ariaLabel={ariaLabel} goiY={chuaChon} />;
+}
+
+/**
+ * PR-MT0 (mockup ⑥, chủ sản phẩm Q3): MT0 của em ngay dưới Cuối khoá — `MT0` + chip đỏ `W 4.0 SOS` mỗi kỹ năng ≤ Target − 2.0 (chỉ để nhìn);
+ * có điểm, không SOS → `MT0 ✓`; chưa điểm → `MT0 · W4 OCT` mờ. Em không có MT0 → không vẽ. Cùng ô, nên 375 không thêm cột.
+ */
+function OMt0({ mt0 }: { mt0: { maTuan: string | null; coDiem: boolean; sos: { skill: AssessedSkill; band: number }[] } | null | undefined }) {
+  if (!mt0) return null;
+  return (
+    <span className="mt-1 flex flex-wrap items-center gap-1 text-[12px] font-semibold tabular-nums">
+      {mt0.sos.length ? <><span className="text-slate-300">MT0</span>{mt0.sos.map((x) => <Nhan key={x.skill} tone="bad">{chipSosMt0(x)}</Nhan>)}</>
+        : mt0.coDiem ? <span className="text-ok">MT0 ✓</span>
+        : <span className="text-slate-500">{mt0.maTuan ? `MT0 · ${mt0.maTuan}` : 'MT0'}</span>}
+    </span>
+  );
 }

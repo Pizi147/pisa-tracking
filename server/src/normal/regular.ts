@@ -114,7 +114,7 @@ export function programmeCodeOfCycle(cycleId: number | null | undefined): string
     .prepare(
       `SELECT c.programme_code AS code FROM assessment_attempts a
          JOIN classes c ON c.id = a.class_id
-        WHERE a.cycle_id = ? AND c.programme_code IS NOT NULL LIMIT 1`,
+        WHERE a.cycle_id = ? AND a.kind != 'mt0' AND c.programme_code IS NOT NULL LIMIT 1`,   // PR-MT0: MT0 nối vào FT vẫn mang lớp thường cũ
     )
     .get(cycleId) as any)?.code ?? null);
 }

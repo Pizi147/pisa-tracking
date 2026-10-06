@@ -24,7 +24,11 @@ export type LuoiFTData = { classId: number; classCode: string; cot: number[]; ha
 export type DotThuong = { attemptId: number | null; kn: KnO };
 export type KindThuong = 'progress' | 'final';
 export type CotThuong = { kind: KindThuong; nhan: 'Giữa khoá' | 'Cuối khoá'; deXuat: string | null; nhanDeXuat: string | null };
-export type HangThuong = { studentId: number; ten: string; ma: string; dot: Partial<Record<KindThuong, DotThuong>> };
+export type HangThuong = {
+  studentId: number; ten: string; ma: string; dot: Partial<Record<KindThuong, DotThuong>>;
+  /** PR-MT0 (mockup ④): MT0 của em — ô MT số 0 cạnh Final. */
+  mt0?: { attemptId: number; kn: KnO; khongDung: boolean } | null;
+};
 export type LuoiThuongData = {
   classId: number; classCode: string; chuongTrinh: string | null; khaiGiang: string | null; tongTuan: number | null;
   tuanHienTai: string | null; hvChuaCoLich: number; cot: CotThuong[]; hang: HangThuong[];

@@ -1,7 +1,7 @@
 import { db, theoLo } from '../db.ts';
 import { datNho } from '../platform/nguCanhRequest.ts';
 import {
-  ASSESSED_SKILLS, BASELINE_SOURCE_LABEL, CYCLE_OUTCOME_LABEL, ENTRY_SKILLS,
+  ASSESSED_SKILLS, BASELINE_SOURCE_LABEL, CYCLE_OUTCOME_LABEL, ENTRY_SKILLS, kyNangSosMt0,
   ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, JOURNEY_GROUP, PERMISSIONS,
   caseHeadline, duongCase, issueLabel, caseCategoryLabel, categoryOf, fmtExamMonth, cauTomTat, ketQuaTestGanNhat, oHocThuat, oSapToi, oYThuc,
   bacHoacNgoaiThang, nhanLoaiXuLy, programmeOf, tenBacKe, tenMonNgan, mocKeTiep, quaHan, studyWeekOf, tenMon, tuanHocTai, tuanLich,
@@ -614,11 +614,14 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       };
     }
     const r = t.ft!;
+    /* PR-MT0 (T5): MT0 không có kỳ vọng / mức SOS — chỉ chip `W 4.0 SOS` (band ≤ Target − 2.0) để nhìn. */
+    const mt0 = a.kind === 'mt0';
     return {
-      ...base, expectation: r.expectation, bands: r.bands, overall: r.overall, evaluable: r.evaluable, skills: null,
+      ...base, expectation: mt0 ? null : r.expectation, bands: r.bands, overall: r.overall, evaluable: mt0 ? null : r.evaluable, skills: null,
       scored: r.scoredRequired, required: r.required.length,
       complete: r.complete, provisional: r.provisional,
-      sosLevel: r.sosLevel, scopeNote: r.scopeNote,
+      sosLevel: mt0 ? null : r.sosLevel, scopeNote: r.scopeNote,
+      ...(mt0 ? { sosMt0: kyNangSosMt0(r.bands, a.target_at_attempt ?? null) } : {}),
     };
   });
 
@@ -673,6 +676,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     }
     for (const a of [...attemptRows].sort((x, y) => x.attempt_no - y.attempt_no)) {
       if (a.status === 'cancelled') continue;
+      if (a.id === baseline?.attemptId) continue;   // PR-MT0: MT0 đã là điểm đầu vào — không lặp thành điểm MT0
       const b = assessedBands(entryBandsOf(scoresOf(a.id)))[skill];
       if (b === null || b === undefined) continue;
       points.push({

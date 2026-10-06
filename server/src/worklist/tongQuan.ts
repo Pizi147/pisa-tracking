@@ -146,7 +146,7 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null }) {
         const lop = lopChot;
         const han = lop.map((l) => l.han).sort()[0];
         const h = han ? { ngay: han, loai: 'viec-van-hanh' as const } : chuaCoHan;
-        if (lop.length === 1) return { ...x, ...chung, truoc: `Chốt lên FT · ${lop[0].code}`, nhan: '', phu: '', han: h, den: `/hoc-vien/lop/${lop[0].classId}?viec=lo-trinh-tiep` };
+        if (lop.length === 1) return { ...x, ...chung, truoc: `Chốt lên FT · ${lop[0].code}`, nhan: '', phu: '', han: h, den: `/hoc-vien/lop/${lop[0].classId}?viec=lo-trinh-ca-lop` };
         return { ...x, ...chung, phu: dongPhuGon(lop.map((l) => l.code)), han: h, den: null };
       }
       case 'lop-thieu-gv-mon': {

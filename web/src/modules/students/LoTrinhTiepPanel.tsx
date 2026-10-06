@@ -10,7 +10,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { Level } from '../../ui/ui.tsx';
 import { sosTone } from '../../lib/format.ts';
 import {
-  dsLoi, huongTiepKhaDung, ketQuaGanNhat, nhanHuong, tenMonNgan, xepHuongTheoGoiY, type GoiYCuoiKhoa, type Huong, type KetQuaVao,
+  dsLoi, huongTiepKhaDung, ketQuaGanNhat, nhanHuong, nhanMt0, tenMonNgan, xepHuongTheoGoiY, type GoiYCuoiKhoa, type Huong, type KetQuaVao,
 } from '@shared/domain/index.ts';
 
 type LoTrinhTiepData = {
@@ -22,6 +22,8 @@ type LoTrinhTiepData = {
   ketQua: KetQuaVao | null;
   /** PR-LT2b (K2-26): % Cuối khoá + hướng gợi ý (không lưu) của em. */
   cuoiKhoa?: { tyLe: number | null; scored: number; required: number; monTruot: string[]; goiY: GoiYCuoiKhoa | null } | null;
+  /** PR-MT0: MT0 của em (đã lưu Lên FT) — dòng phụ `MT0 · W4 OCT` dưới lựa chọn Lên FT (mockup ①). */
+  mt0?: { maTuan: string | null; trangThai: 'cho' | 'dung' | 'khong_dung' | 'huy' } | null;
 };
 
 /** Khối "Kết quả gần nhất" của em: số chính + tối đa hai dòng chữ (cùng `ketQuaGanNhat` với cột Kết quả ở Học viên & Lớp). */
@@ -138,6 +140,9 @@ function NoiDungLoTrinhTiep({ onClose, studentId, studentName, lop, onDone }: {
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
 
+  /* PR-MT0: chữ đúng mockup ① — `MT0 · W4 OCT`; MT0 có điểm mà đang chọn hướng khác → `MT0 · không dùng`. */
+  const mt0 = data?.mt0 ?? null;
+  const mt0Chu = !mt0 ? null : mt0.trangThai === 'khong_dung' ? nhanMt0('khong_dung') : mt0.maTuan ? `MT0 · ${mt0.maTuan}` : 'MT0';
   const oHuong = (h: Huong, coGoiY: boolean) => {
     const chon = huong === h;
     return (
@@ -150,6 +155,7 @@ function NoiDungLoTrinhTiep({ onClose, studentId, studentName, lop, onDone }: {
         <span className="min-w-0">
           <span className="block text-sm font-semibold text-slate-100">{nhanCua(h)}</span>
           <span className="block text-[11px] text-slate-500">{NGHIA_HUONG[h]}</span>
+          {h === 'fast_track' && mt0Chu && <span className="block text-[11px] font-semibold tabular-nums text-slate-300">{mt0Chu}</span>}
         </span>
         {coGoiY && <span className="ml-auto shrink-0 self-center text-[11px] font-semibold text-teal-300">Hệ thống gợi ý</span>}
       </button>

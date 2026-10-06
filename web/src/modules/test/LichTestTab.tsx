@@ -20,7 +20,8 @@ import { dangMo, docMo, ghiMo } from './lichTest/moLop.ts';
 import { NganXuatMt } from './NganXuatMt.tsx';
 
 type Loai = 'ft' | 'thuong';
-const loaiCua = (l: { mode: LopLichTest['mode'] }): Loai => (l.mode === 'ielts_band' ? 'ft' : 'thuong');
+/* PR-MT0: MT0 chấm band nhưng ở lớp thường → khung Lớp thường (cùng luật `khungDong` máy chủ). */
+const loaiCua = (l: { mode: LopLichTest['mode']; kind?: string | null }): Loai => (l.mode === 'ielts_band' && l.kind !== 'mt0' ? 'ft' : 'thuong');
 
 /**
  * TEST › LỊCH TEST (PR-UX1, mockup 13 phương án B; PR-LT3 ba khối, mockup lich-test-ba-khoi 06/10) — chấm ngay tại chỗ.
@@ -170,7 +171,7 @@ export function LichTestTab() {
     return (['ft', 'thuong'] as const).find((k) => [...(data.chamTuanNay ?? []), ...data.lop].some((l) => l.moSan && loaiCua(l) === k))
       ?? (['ft', 'thuong'] as const).find((k) => dem[k] > 0) ?? null;
   }, [data, dem, tatCaHang, loaiParam, urlClassId]);
-  const theoKhung = <T extends { mode: LopLichTest['mode'] }>(ds: T[]) => ds.filter((x) => !loai || loaiCua(x) === loai);
+  const theoKhung = <T extends { mode: LopLichTest['mode']; kind?: string | null }>(ds: T[]) => ds.filter((x) => !loai || loaiCua(x) === loai);
   const noTab = theoKhung(data?.no ?? []);
   const k2Tab = theoKhung(data?.chamTuanNay ?? []);
   const lopTab = theoKhung(data?.lop ?? []);

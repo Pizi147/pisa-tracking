@@ -141,7 +141,7 @@ export type KetQuaTestGanNhat = {
  */
 export function ketQuaTestGanNhat(attempts: readonly LuotTomTat[], homNay?: string | null): KetQuaTestGanNhat | null {
   const a = [...attempts]
-    .filter((x) => x.status !== 'cancelled' && x.scored > 0 && x.sinhViec !== false)
+    .filter((x) => x.status !== 'cancelled' && x.scored > 0 && x.sinhViec !== false && x.kind !== 'mt0')   // PR-MT0: không là kết quả gần nhất
     .sort((x, y) => y.attemptNo - x.attemptNo)[0];
   if (!a) return null;
   const ratio = a.mode === 'ratio';

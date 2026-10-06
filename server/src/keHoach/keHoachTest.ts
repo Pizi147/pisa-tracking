@@ -25,6 +25,7 @@ import {
   baoGvcnDoiLichThuongLop, boLichLuotBiVuot, checkWeekVsNeighbours, kiemVuot, kiemVuotTu, kiemXacNhanVuot, loadSkillRows, setSitStatus, setSkillWeek, tinhLaiMtCu, tuanCuoiSauKhiDoi,
   type LuotSauDoc, type LuotSeHuyLich,
 } from '../fasttrack/skillSchedule.ts';
+import { mt0TheoHocVien } from '../fasttrack/mt0.ts';
 import { pendingMovesFor } from '../fasttrack/absence.ts';
 import { ketQuaHuyCua } from '../fasttrack/ketQuaHuy.ts';
 import { effectiveSkillDeadline, mondayOf } from '../platform/week.ts';
@@ -224,7 +225,7 @@ function diemChu(cheDo: CheDo, row: any, scores: any[]): string | undefined {
  * đợt `attemptOverride` › thứ Tư tuần kế tuần thi); không bắt buộc / MT cũ / đã huỷ phần thi / chưa có tuần → null.
  */
 function oKyNangCua(cheDo: CheDo, row: any, scores: any[], daDoi: boolean, doiTu: string | null,
-  them?: { choDuyet: boolean; lichSu: boolean; homNay: string; attemptOverride?: string | null }): OKyNang {
+  them?: { choDuyet: boolean; lichSu: boolean; homNay: string; attemptOverride?: string | null; mt0?: boolean }): OKyNang {
   const batBuoc = row.required === 1;
   const xong = xongKyNang(cheDo, row.skill, scores);
   const choDuyet = !!them?.choDuyet;
@@ -245,7 +246,7 @@ function oKyNangCua(cheDo: CheDo, row: any, scores: any[], daDoi: boolean, doiTu
     ...(khongDuThiCua(cheDo, row.skill, scores) ? { khongDuThi: true } : {}),
     ...(diem ? { diem } : {}),
     hanCham: them && batBuoc && !them.lichSu && row.sit_status !== 'cancelled'
-      ? effectiveSkillDeadline({ mode: 'band', weekStart: row.week_start ?? null, skillOverride: row.deadline_override ?? null, attemptOverride: them.attemptOverride ?? null }).date
+      ? effectiveSkillDeadline({ mode: 'band', weekStart: row.week_start ?? null, skillOverride: row.deadline_override ?? null, attemptOverride: them.attemptOverride ?? null, mt0: them.mt0 }).date
       : null,
   };
 }
@@ -393,7 +394,8 @@ export function lichMtLoTrinh(cycleId: number, today: string = demoToday()): {
   const cy = conn.prepare('SELECT * FROM learning_cycles WHERE id = ?').get(cycleId) as any;
   if (!cy) throw notFound('Không tìm thấy lộ trình');
   const goiY = suggestedMockWeeks(cycleId);
-  const tatCa = conn.prepare(`SELECT * FROM assessment_attempts WHERE cycle_id = ? AND kind = 'mock' ORDER BY attempt_no`).all(cycleId) as any[];
+  /* PR-MT0 (mockup ⑦): MT0 đã nối vào lộ trình FT là hàng đầu (số 0) — khoá với Áp lịch gợi ý / Huỷ lịch hàng loạt; số MT kế tiếp chỉ đếm Mock. */
+  const tatCa = conn.prepare(`SELECT * FROM assessment_attempts WHERE cycle_id = ? AND kind IN ('mock', 'mt0') ORDER BY attempt_no`).all(cycleId) as any[];
   const con = tatCa.filter((a) => a.status !== 'cancelled');
   const ids = con.map((a) => a.id as number);
   const rows = loadSkillRows(ids);
@@ -407,7 +409,7 @@ export function lichMtLoTrinh(cycleId: number, today: string = demoToday()): {
     const kn: Partial<Record<KyNangKH, OKyNang>> = {};
     const kyNang = ds.map((r) => {
       const daDoi = (r.absence_move_count ?? 0) > 0;
-      const o = oKyNangCua('ft', r, scores, daDoi, null, { choDuyet: choDuyet.has(`${a.id}:${r.skill}`), lichSu: !!a.lich_su, homNay: today, attemptOverride: a.deadline_override ?? null });
+      const o = oKyNangCua('ft', r, scores, daDoi, null, { choDuyet: choDuyet.has(`${a.id}:${r.skill}`), lichSu: !!a.lich_su, homNay: today, attemptOverride: a.deadline_override ?? null, mt0: a.kind === 'mt0' });
       kn[r.skill as KyNangKH] = o;
       return { skill: r.skill as KyNangKH, periodId: r.planned_period_id ?? null, weekStart: r.week_start ?? null,
         coDiem: o.khoa === 'đã có điểm', daThi: r.sit_status === 'sat', batBuoc: !!r.required };
@@ -418,7 +420,7 @@ export function lichMtLoTrinh(cycleId: number, today: string = demoToday()): {
       : batBuoc.length && batBuoc.every((k) => !k.weekStart) || (!ds.length && !a.planned_period_id) ? 'chua-xep' : 'da-xep';
     return {
       attemptId: a.id, trangThai, lichSu: !!a.lich_su, kyNang, kn,
-      kyVong: expectationFor(a.target_at_attempt ?? null, a.attempt_no, cy.route ?? null),
+      kyVong: a.kind === 'mt0' ? null : expectationFor(a.target_at_attempt ?? null, a.attempt_no, cy.route ?? null),
       ketQuaHuy: daHuy.get(a.id) ?? null,
     };
   };
@@ -430,11 +432,11 @@ export function lichMtLoTrinh(cycleId: number, today: string = demoToday()): {
     return {
       attemptNo: n, studyWeek: g?.studyWeek ?? null, periodId: g?.periodId ?? null, weekStart: g?.weekStart ?? null, code: g?.code ?? null,
       existingAttemptId: a?.id ?? null, existingPeriodId: a?.planned_period_id ?? null, existingSource: (a?.plan_source ?? null) as any,
-      locked: g?.locked ?? (!!a && a.status === 'done'),
+      locked: n === 0 || (g?.locked ?? (!!a && a.status === 'done')),
       luot: a ? luotCua(a) : null,
     };
   });
-  const soKeTiep = soMtKeTiep(tatCa.map((a) => ({
+  const soKeTiep = soMtKeTiep(tatCa.filter((a) => a.kind === 'mock').map((a) => ({
     attempt_no: a.attempt_no, status: a.status,
     coDiem: (conn.prepare(`SELECT ${CO_DIEM_SQL('a')} AS c FROM assessment_attempts a WHERE a.id = ?`).get(a.id) as any).c === 1,
   })));
@@ -746,7 +748,13 @@ export function luoiThuong(p: Principal, classId: number) {
         ORDER BY a.attempt_no DESC`,
     )
     .all(classId) as any[];
-  const attemptIds = attempts.map((a) => a.id);
+  /* PR-MT0 (mockup ④): MT0 của em đang học lớp — ô MT số 0 cạnh Final. Không đổi đếm "chưa có lịch" (chỉ Giữa/Cuối khoá). */
+  const mt0s = conn.prepare(
+    `SELECT a.* FROM assessment_attempts a
+       JOIN enrollments e ON e.student_id = a.student_id AND e.status = 'active' AND e.class_id = a.class_id
+      WHERE a.class_id = ? AND a.kind = 'mt0' AND a.status != 'cancelled'`,
+  ).all(classId) as any[];
+  const attemptIds = [...attempts, ...mt0s].map((a) => a.id);
   const skillRows = loadSkillRows(attemptIds);
   const bundle = loadBundle(attemptIds);
 
@@ -773,13 +781,23 @@ export function luoiThuong(p: Principal, classId: number) {
 
   const theoEm = new Map<string, any>();
   for (const a of attempts) { const key = `${a.student_id}:${a.kind}`; if (!theoEm.has(key)) theoEm.set(key, a); }
+  const homNay = demoToday();
+  const ttMt0 = mt0TheoHocVien(mt0s.map((a) => a.student_id as number));
+  const mt0Cua = new Map(mt0s.map((a) => {
+    const scores = bundle.scores.get(a.id) ?? [];
+    const kn: Partial<Record<KyNangKH, OKyNang>> = {};
+    for (const r of (skillRows.get(a.id) ?? []) as any[]) {
+      kn[r.skill as KyNangKH] = oKyNangCua('ft', r, scores, false, null, { choDuyet: false, lichSu: false, homNay, attemptOverride: a.deadline_override ?? null, mt0: true });
+    }
+    return [a.student_id as number, { attemptId: a.id as number, kn, khongDung: ttMt0.get(a.student_id)?.trangThai === 'khong_dung' }];
+  }));
   const hang = students.map((s) => {
     const dot = {} as Partial<Record<'progress' | 'final', DotThuong>>;
     for (const kind of kinds) {
       const a = theoEm.get(`${s.id}:${kind}`);
       dot[kind] = a ? dotCua(a) : { attemptId: null, kn: {} };
     }
-    return { studentId: s.id as number, ten: s.full_name as string, ma: s.student_code as string, dot };
+    return { studentId: s.id as number, ten: s.full_name as string, ma: s.student_code as string, dot, mt0: mt0Cua.get(s.id) ?? null };
   });
 
   const nhanKhoa = (n: number | null) => (n && progress.totalWeeks ? tuanKhoaCua(n, progress.totalWeeks) : null);
