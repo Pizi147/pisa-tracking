@@ -8,6 +8,9 @@
 > **Q4 = B** (khác khuyến nghị): **bỏ "Hoàn tác"** ở nút Vắng — xoá "-" là đủ (PR-BV); mọi màn **một thông báo ngắn, không nút**.
 > **Thêm từ PR-KHUNG #230:** tên em cắt ở lưới chấm lớp thường 375 (`cham/LuoiThuong.tsx:420`) · tên PA ở dòng ngữ cảnh panel Ghi kết quả PA 375 (`cases/CapNhatTuan.tsx:253`) ·
 > Hồ sơ HV 375 vừa mở thì `<main>` tự cuộn xuống hàng tab (`ui/HangTab.tsx:19` `scrollIntoView`). → Task 6 (C33–C35).
+> **Thêm từ rà PR-KHUNG #230 (07/10):** (a) `HangTab.tsx:20` chỉ đặt `scrollLeft` của hàng tab, theo mẫu `phanTich/PhanTich.tsx:50-55` (= C35);
+> (b) `NutChon` (`ui/ui.tsx:486-493` sau KHUNG): ✓ chỉ vẽ ở nút đang chọn nên nút rộng thêm ~15 px → ở hàng chip `flex-wrap` (kỹ năng `QuickReport` / `ProfilePage`, chi nhánh `AccountsAdmin`) nút bên cạnh nhảy chỗ — **giữ chỗ cố định, bấm không đổi rộng** (C36);
+> (c) `ViecTiep` (`ui/ViecTiep.tsx` sau KHUNG G3): ở 1440 việc rất dài lên 3 dòng → **tối đa 2 dòng ở ≥ 640 px** (có `title`), điện thoại giữ đủ chữ (C37). LUI-a2 #229 đã merge 07/10.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: superpowers:subagent-driven-development (mỗi Task một subagent cùng model). Bước `- [ ]`.
 > **Model: Opus 5.5 · High (B: Sonnet 5.5 · High) — không Fable, kể cả subagent** (CLAUDE.md 06/10).
@@ -128,7 +131,7 @@
 | `App.tsx:139-152`, `platform/Header.tsx`, `platform/DemoBar.tsx`, `StudentsPage.tsx:174-191` | D7, K5, K1/DH | 5 |
 | `SkillBoard.tsx:650`, `server/src/worklist/tongQuan.ts:115,136`, `KhoiCanXuLy.tsx:61`, `OverviewPage.tsx:94`, `server/src/worklist/mywork.ts:1221` + `WorkList.tsx`, `shared/domain/sosV4.ts:108`, `ScoreEntry.tsx:516`, `cham/GvCham.tsx`, `LuoiFT.tsx`, `LuoiThuong.tsx`, `MotKyNang.tsx`, `TabDiemLop.tsx:55`, `ChamDiemPage.tsx:84`, `StudentDetailPage.tsx:198,645-652`, `shared/domain/lopThuong.ts:63`, `chamDiem.ts:82`, `AdminPage.tsx:160`, `DeXuatSuaPanel.tsx:16`, `LuuTruPage.tsx:119,142`, mọi chỗ in `studentCode` (J2) | J, U12, bấm thử | 6 |
 | `ScoreEntry.tsx:272-277`, `cham/LuoiThuong.tsx:239`, `cham/LuoiFT.tsx` | K4 thông báo (bỏ Hoàn tác) | 7 |
-| `cham/LuoiThuong.tsx:420`, `cases/CapNhatTuan.tsx:253`, `ui/HangTab.tsx:19` | từ KHUNG #230 | 6 |
+| `cham/LuoiThuong.tsx:420`, `cases/CapNhatTuan.tsx:253`, `ui/HangTab.tsx:19-20`, `ui/ui.tsx` `NutChon`, `ui/ViecTiep.tsx` | từ KHUNG #230 (+ rà #230) | 6 |
 | `DauTrangLop.tsx:94-100, 198` | "+n" dẫn đúng chỗ | 8 |
 | `ChuyenLopPanel.tsx:150`, `ClassProgressPanel.tsx:97`, `CatalogAdmin.tsx:177,248`, `ScoreEntry.tsx:617-620`, `App.tsx:131-137` | SL, Mất kết nối | 9 |
 | `server/src/students/hanhTrinh.ts:320-327` · `index.html`, `App.tsx:144`, `WelcomePage.tsx:137`, `server/src/index.ts:21`, `hocVienLop.tests.ts:71,73`, `README.md`, `DEMO.md`, `TRIEN_KHAI.md` | tuần học, tên web | 10 |
@@ -217,8 +220,9 @@
   - J9 (T10): `sosV4.ts:108`; `ScoreEntry.tsx:516-517`; `GvCham.tsx` đầu cột S lưới máy tính truyền `chiTen` như `MotKyNang.tsx:167`.
   - U12: `StudentDetailPage.tsx:645-646` chấm dở có môn trượt → dòng "Không đạt: …" màu `text-soon` (cùng màu số tạm SOS 1 ở bảng Mock Test); `lopThuong.ts:63`, `chamDiem.ts:82` bỏ " (đã chấm)".
   - "Khác" (T12), Lưu trữ rỗng (T13).
-  - **Từ KHUNG #230 (07/10):** C33 `cham/LuoiThuong.tsx:420` tên em < 640 px không `truncate` (xuống dòng `break-words`; máy tính giữ `truncate` + `title`). C34 `cases/CapNhatTuan.tsx:253` tên PA ở dòng ngữ cảnh < 640 px xuống dòng (bỏ `truncate` ở `max-sm:`; hạn + ⚠ xuống dòng dưới). C35 `ui/HangTab.tsx:19`: thay `scrollIntoView` bằng đặt `scrollLeft` của chính hàng tab (chỉ cuộn ngang) → mở Hồ sơ HV 375 không còn kéo `<main>` xuống hàng tab; quét nguồn: `HangTab.tsx` không còn `scrollIntoView`.
-- [ ] Xanh C18–C26, C33–C35. Ảnh: Hồ sơ HV 375 (vừa mở, đứng đầu trang), lưới chấm lớp thường 375, panel Ghi kết quả PA 375, Tổng quan QL/GV, hồ sơ HV (Học thuật, Mock, lớp thường), Nhập điểm, Điểm theo lớp, Lưu trữ, Quản trị › Quyền. Commit `fix(hk2): chữ J1–J9, U12, "Khác", Lưu trữ rỗng`.
+  - **Từ KHUNG #230 (07/10):** C33 `cham/LuoiThuong.tsx:420` tên em < 640 px không `truncate` (xuống dòng `break-words`; máy tính giữ `truncate` + `title`). C34 `cases/CapNhatTuan.tsx:253` tên PA ở dòng ngữ cảnh < 640 px xuống dòng (bỏ `truncate` ở `max-sm:`; hạn + ⚠ xuống dòng dưới). C35 `ui/HangTab.tsx:19-20`: thay `scrollIntoView` bằng `hang.scrollLeft = Math.max(0, tab.offsetLeft - (hang.clientWidth - tab.offsetWidth) / 2)` (mẫu `phanTich/PhanTich.tsx:50-55`, chỉ cuộn ngang) → mở Hồ sơ HV 375 không còn kéo `<main>` xuống hàng tab; quét nguồn: `HangTab.tsx` không còn `scrollIntoView`.
+  - **Từ rà KHUNG #230 (07/10):** C36 `NutChon` (`ui/ui.tsx`): nút **luôn** chừa chỗ ✓ cố định (`relative pr-5` cả khi không chọn), ✓ `absolute right-1.5` chỉ vẽ khi `chon` → bấm chọn / bỏ chọn **không đổi rộng**, hàng `flex-wrap` không nhảy chỗ; quét nguồn: thân `NutChon` có `pr-5` không phụ thuộc `chon`, ✓ có `absolute`. Đo bằng JS ở `QuickReport` (kỹ năng), `ProfilePage` (kỹ năng), `AccountsAdmin` (chi nhánh): bề rộng mỗi nút trước / sau khi bấm bằng nhau. Nút trong lưới cố định (KHUNG #3, #4) vẫn không tràn (chữ xuống dòng). C37 `ViecTiep`: khối ngoài thêm `sm:line-clamp-2` (`title` giữ câu đủ); < 640 px không cắt (KHUNG G4); quét nguồn + ảnh Hồ sơ lớp › cột Theo dõi 1440 với việc dài nhất trong demo.
+- [ ] Xanh C18–C26, C33–C37. Ảnh: Hồ sơ HV 375 (vừa mở, đứng đầu trang), lưới chấm lớp thường 375, panel Ghi kết quả PA 375, Tổng quan QL/GV, hồ sơ HV (Học thuật, Mock, lớp thường), Nhập điểm, Điểm theo lớp, Lưu trữ, Quản trị › Quyền. Commit `fix(hk2): chữ J1–J9, U12, "Khác", Lưu trữ rỗng`.
 
 ### Task 7: K4 — "Vắng" một thông báo ngắn, không Hoàn tác (Q4 = B)
 
@@ -251,7 +255,7 @@
 - [ ] `thiet-ke/HE_GIAO_DIEN.md`: §2 bảng chữ (12 px chữ nội dung; badge 11,5 px cao 20 px) · §3 thêm `CHIP_TRON` / `CHIP_VUONG`, `.nut-loc`, `.bang-dinh`.
 - [ ] `/impeccable audit` toàn web, `/ponytail-review`. `npm run check` **một lần**, foreground.
 - [ ] `[x]` các mục H1, H2, K1, K2, K4–K7, J1–J4, J7–J9 trong `2026-10-02-ux-sau-critique.md`; một dòng mục 11 `plan.md`; `CODE_MAP.md` nếu thêm file.
-- [ ] Mở PR vào `main`, **không merge**. Mô tả: model thật; từng ID (bảng Hiện trạng) — làm / đã xong trước / bác bỏ; phép kiểm C1–C35; ảnh; chú thích `ponytail:`; ảnh sổ tay `docs/so-tay/` bị lệch (để PR-SOTAY).
+- [ ] Mở PR vào `main`, **không merge**. Mô tả: model thật; từng ID (bảng Hiện trạng) — làm / đã xong trước / bác bỏ; phép kiểm C1–C37; ảnh; chú thích `ponytail:`; ảnh sổ tay `docs/so-tay/` bị lệch (để PR-SOTAY).
 
 ---
 
@@ -265,14 +269,14 @@
 6. Điện thoại: thanh trên = 23C (PISA · tìm · chuông · tài khoản); demo bar một dòng; Học viên & Lớp "+ Lớp mới" trong ⋯, ô tìm "Lọc trong danh sách này…".
 7. Chữ ở mockup mục 7 hiện đúng trên web; "Vắng" một thông báo ngắn, không nút Hoàn tác, ở mọi màn; gỡ = xoá "-".
 8. Hành trình không ghi tuần học khi em không có lộ trình đang chạy; tên "PISA Tracking" ở tab trình duyệt, thanh trên, màn chào.
-9. `prHk2.tests.ts` C1–C35 xanh trong `npm run check`; `do-khung.mjs` không thêm lỗi.
+9. `prHk2.tests.ts` C1–C37 xanh trong `npm run check`; `do-khung.mjs` không thêm lỗi.
 
 ## File chồng với PR khác
 
 | PR | File chung | Cách tránh |
 |---|---|---|
-| **PR-KHUNG** (đang code) | `ui/ui.tsx` (`NutChon`, `BoLocDoan`), `HangTab.tsx` (mép mờ `max-sm:`), `StudentsPage.tsx:273` (`md:-top-5`), `index.css:245`, `WorkList.tsx:60,63`, `ViecTiep.tsx`, `AdminPage.tsx:95` | HK2 chạy **sau** KHUNG merge; giữ mọi lớp `max-sm:` / `-top-5` của KHUNG; `.bang-dinh` dùng cùng giá trị top với KHUNG G1 |
-| **PR-LUI-a2 #229** (mở) | `DauTrangLop.tsx` (mục ⋮/⋯ Case?), `CapNhatTuan.tsx`, `ThaoTacCase.tsx`, Chờ duyệt | HK2 chạy sau merge; Task 0 grep lại `DauTrangLop.tsx` |
+| **PR-KHUNG #230** (sắp merge) | `ui/ui.tsx` (`NutChon`, `BoLocDoan`), `HangTab.tsx` (mép mờ `max-sm:`), `StudentsPage.tsx:273` (`md:-top-5`), `index.css:245`, `WorkList.tsx:60,63`, `ViecTiep.tsx`, `AdminPage.tsx:95` | HK2 chạy **sau** KHUNG merge; giữ mọi lớp `max-sm:` / `-top-5` của KHUNG; `.bang-dinh` dùng cùng giá trị top với KHUNG G1 |
+| **PR-LUI-a2 #229** (✅ merge 07/10) | `DauTrangLop.tsx` (mục ⋮/⋯ Case?), `CapNhatTuan.tsx`, `ThaoTacCase.tsx`, Chờ duyệt | HK2 chạy sau merge; Task 0 grep lại `DauTrangLop.tsx` |
 | **PR-TEN** (chưa chạy) | ~130 file chữ "Giữa khoá / Cuối khoá" (gồm `phanTich.ts`, `lopThuong.ts`) | Nếu TEN chạy sau HK2: TEN đổi chữ trên mã đã gom; nếu trước: HK2 đọc tên mới. Không chồng logic |
 | **PR-EN** (sau HK2) | mọi chữ GV | HK2 chốt chữ Việt trước; EN dịch trên chữ đã gọn |
 | **PR-SOTAY** (sau EN) | `docs/so-tay/*` | HK2 không chụp ảnh sổ tay, chỉ liệt kê ảnh lệch |
@@ -290,11 +294,11 @@ Mockup đã duyệt: thiet-ke/mockup-hk2-2026-10-07.html mục 1–8; đọc kh�
 Tinh chỉnh, KHÔNG làm lại: phông, màu, bố cục giữ. Chữ trên màn ngắn, đúng chữ mockup, không câu giải thích dưới nút/ô.
 Ô ngày (nếu chạm) = ô gõ + nút lịch (ONgay). Không chụp lại sổ tay (PR-SOTAY). Không toast Hoàn tác vi phạm.
 Task 0: grep lại bảng "Hiện trạng" — mục đã xong thì ghi vào PR, không làm lại.
-Đỏ trước: prHk2.tests.ts C1–C35 (Task 10 đỏ trên DB test). Sửa ở gốc chung (CHIP_TRON / CHIP_VUONG, .nut-loc, .bang-dinh), component chip giữ tên/API.
+Đỏ trước: prHk2.tests.ts C1–C37 (Task 10 đỏ trên DB test). Sửa ở gốc chung (CHIP_TRON / CHIP_VUONG, .nut-loc, .bang-dinh), component chip giữ tên/API.
 Impeccable: /impeccable polish (Task 1, 2), /impeccable layout (Task 4), /impeccable adapt (Task 3, 5, 7), /impeccable clarify (Task 6), cuối /impeccable audit toàn web.
 Đo: node scripts/do-khung.mjs trước (mốc) và sau (không thêm lỗi). Ảnh 1440/375 sáng/tối ≥ 3 vai vào thiet-ke/anh/hk2/.
 /ponytail-review. npm run check MỘT lần, foreground. Mở PR vào main, KHÔNG merge.
-Mô tả PR: model thật, từng ID (làm / đã xong trước / bác bỏ), C1–C35, ảnh, chú thích ponytail:, ảnh sổ tay lệch.
+Mô tả PR: model thật, từng ID (làm / đã xong trước / bác bỏ), C1–C37, ảnh, chú thích ponytail:, ảnh sổ tay lệch.
 ```
 
 ## Cái bỏ qua (và khi nào thêm)
