@@ -346,7 +346,8 @@ export function hopChoDuyet(p: Principal, f: {
   if (f.phanLoai && laPhanLoai(f.phanLoai)) rows = rows.filter((r) => metaCua(r.loai).phanLoai === f.phanLoai);
   if (f.quaHan && xem !== 'da-xu-ly') rows = rows.filter((r) => !!r.han_duyet && r.han_duyet < homNay);
   const ngu = napNguCanh(conn, rows, homNay);
-  const the = rows.map((r) => theRa(r, ngu));
+  const huyDuoc = xem === 'da-xu-ly' ? theHuyDuoc(conn, rows) : new Set<number>();
+  const the = rows.map((r) => (huyDuoc.has(r.id) ? { ...theRa(r, ngu), coTheHuy: true } : theRa(r, ngu)));
   return { the: xem !== 'da-xu-ly' ? sapThe(the) : the.sort(xepDaXuLy), dem: d.chip, demBiet: d.deBiet, homNay, lopDangLoc };
 }
 
@@ -445,9 +446,21 @@ export function traLoiYeuCau(p: Principal, id: number, traLoi: unknown) {
 
 /** Duyệt hàng loạt — cùng MỘT loại có `hangLoat`. Mỗi thẻ một giao dịch: thẻ lỗi báo riêng (kèm mã HTTP — PR-GVb G7), thẻ khác vẫn xong. */
 export function duyetNhieu(p: Principal, ids: unknown): { ok: number[]; loi: { id: number; loi: string; ma: number }[] } {
+  return lamNhieu(p, ids, 'duyệt', (id) => { duyetYeuCau(p, id); });
+}
+
+/** PR-LUI-a2: Từ chối hàng loạt — CÙNG luật Duyệt nhiều, MỘT lý do chung (kiểm trước khi đụng thẻ nào). */
+export function tuChoiNhieu(p: Principal, ids: unknown, lyDo: unknown): { ok: number[]; loi: { id: number; loi: string; ma: number }[] } {
+  require_(p, P_DUYET, { anyScope: true }, 'Chỉ Quản lý và Quản trị hệ thống từ chối được yêu cầu.');
+  const ld = typeof lyDo === 'string' ? chuTuDo(lyDo, 'Lý do', 2000) ?? '' : '';
+  if (!ld) throw badRequest('Ghi lý do từ chối.');
+  return lamNhieu(p, ids, 'từ chối', (id) => { tuChoiYeuCau(p, id, ld); });
+}
+
+function lamNhieu(p: Principal, ids: unknown, viec: 'duyệt' | 'từ chối', lam: (id: number) => void): { ok: number[]; loi: { id: number; loi: string; ma: number }[] } {
   /* PR-Dọn (Q1): kiểm quyền TRƯỚC mọi bước đọc thân yêu cầu (GV → 403, không phải 400). Từng thẻ vẫn kiểm theo phạm vi ở `duyetYeuCau`. */
-  require_(p, P_DUYET, { anyScope: true }, 'Chỉ Quản lý và Quản trị hệ thống duyệt được yêu cầu.');
-  if (!Array.isArray(ids) || !ids.length || ids.length > TRAN_HANG_LOAT) throw badRequest(`Chọn từ 1 đến ${TRAN_HANG_LOAT} yêu cầu để duyệt.`);
+  require_(p, P_DUYET, { anyScope: true }, `Chỉ Quản lý và Quản trị hệ thống ${viec} được yêu cầu.`);
+  if (!Array.isArray(ids) || !ids.length || ids.length > TRAN_HANG_LOAT) throw badRequest(`Chọn từ 1 đến ${TRAN_HANG_LOAT} yêu cầu để ${viec}.`);
   const ok: number[] = [];
   const loi: { id: number; loi: string; ma: number }[] = [];
   /* Mã sai dạng chỉ lỗi riêng dòng đó (trả lại nguyên giá trị đã gửi), các mã đúng vẫn duyệt. */
@@ -460,12 +473,71 @@ export function duyetNhieu(p: Principal, ids: unknown): { ok: number[]; loi: { i
   /* Thẻ không tồn tại chỉ lỗi riêng thẻ đó — không làm hỏng cả lô. */
   for (const id of ds) if (!theo.has(id)) loi.push({ id, loi: 'Không tìm thấy yêu cầu này.', ma: 404 });
   const loai = new Set(theo.values());
-  if (loai.size > 1 || (loai.size === 1 && !metaCua([...loai][0]).hangLoat)) throw badRequest('Chỉ duyệt hàng loạt các yêu cầu cùng một loại.');
+  if (loai.size > 1 || (loai.size === 1 && !metaCua([...loai][0]).hangLoat)) throw badRequest(`Chỉ ${viec} hàng loạt các yêu cầu cùng một loại.`);
   for (const id of ds) {
     if (!theo.has(id)) continue;
-    try { duyetYeuCau(p, id); ok.push(id); } catch (e: any) { loi.push({ id, loi: e?.message ?? 'Không duyệt được.', ma: e?.status ?? 500 }); }
+    try { lam(id); ok.push(id); } catch (e: any) { loi.push({ id, loi: e?.message ?? `Không ${viec} được.`, ma: e?.status ?? 500 }); }
   }
   return { ok, loi };
+}
+
+// ------------------------------------------------------------------------------------------------ huỷ quyết định (PR-LUI-a2)
+
+/** Ngày nghiệp vụ (giờ Việt Nam) của một mốc ISO — `xu_ly_luc` ghi bằng `mocNghiepVu`. */
+const ngayCua = (iso: string) => new Date(Date.parse(iso) + 7 * 3_600_000).toISOString().slice(0, 10);
+
+/** Vì sao thẻ KHÔNG huỷ được quyết định ở mức thẻ (null = được; bảng nguồn còn kiểm riêng ở `khiHuy`). */
+function lyDoKhongHuy(yc: YeuCauRow & { xu_ly_luc?: string | null }): string | null {
+  if (yc.trang_thai === 'cho') return 'Yêu cầu này chưa có quyết định.';
+  if (!dinhNghiaCua(yc.loai)?.khiHuy) return 'Loại yêu cầu này không huỷ quyết định được.';
+  if (yc.trang_thai !== 'duyet' && yc.trang_thai !== 'tu_choi') return 'Yêu cầu này đã tự đóng — không huỷ quyết định được.';
+  if (!yc.xu_ly_luc || ngayCua(yc.xu_ly_luc) !== demoToday()) return 'Chỉ huỷ được quyết định trong ngày.';
+  return null;
+}
+
+/** Thẻ đã xử lý nào hiện nút "Huỷ quyết định": qua luật mức thẻ + bảng nguồn còn cho (`huyDuoc`, một câu mỗi loại). */
+function theHuyDuoc(conn: any, rows: any[]): Set<number> {
+  const ung = rows.filter((r) => lyDoKhongHuy(r) === null);
+  const kq = new Set<number>();
+  for (const d of DINH_NGHIA_LOAI) {
+    const cua = ung.filter((r) => r.loai === d.loai);
+    if (cua.length && d.huyDuoc) for (const id of d.huyDuoc(conn, cua)) kq.add(id);
+  }
+  return kq;
+}
+
+/**
+ * HUỶ QUYẾT ĐỊNH bấm nhầm (PR-LUI-a2, chủ sản phẩm 06/10 Q3): chỉ loại có `khiHuy` (Đề xuất PA), quyết TRONG NGÀY. Bảng nguồn đảo trước, thẻ về
+ * `cho` sau — cùng một giao dịch. Chuông cho người gửi. Quyền theo phạm vi CỦA THẺ.
+ */
+export function huyQuyetDinh(p: Principal, id: number) {
+  const truoc = docThe(id);
+  require_(p, P_DUYET, ctxThe(truoc), 'Yêu cầu này nằm ngoài phạm vi bạn được duyệt.');
+  return tx(() => {
+    const conn = db();
+    const yc = conn.prepare('SELECT * FROM yeu_cau_duyet WHERE id = ?').get(id) as any;
+    const loi = lyDoKhongHuy(yc);
+    if (loi) throw badRequest(loi);
+    const meta = metaCua(yc.loai);
+    dinhNghiaCua(yc.loai)!.khiHuy!(p, yc);
+    const doi = conn.prepare(`UPDATE yeu_cau_duyet SET trang_thai = 'cho', nguoi_duyet = NULL, ly_do_tu_choi = NULL, tra_loi = NULL, ly_do_dong = NULL,
+        tu_duyet = 0, xu_ly_luc = NULL WHERE id = ? AND trang_thai = ?`).run(id, yc.trang_thai).changes as number;
+    if (!doi) throw badRequest('Yêu cầu này vừa đổi. Danh sách đã được làm mới.');
+    /* Chuông kết quả cũ đổi khoá (giữ làm lịch sử) — quyết lại vẫn báo được người gửi. */
+    const duoi = `:huy:${nowIso()}`;
+    conn.prepare('UPDATE notifications SET dedup_key = dedup_key || ? WHERE dedup_key IN (?, ?)').run(duoi, `duyet_ket_qua:${id}`, `tu_duyet:${id}`);
+    writeAudit({ actorUserId: p.userId, action: 'request.undo', entityType: 'yeu_cau_duyet', entityId: id, entityLabel: meta.nhan,
+      before: { trangThai: yc.trang_thai, nguoiDuyet: yc.nguoi_duyet, lyDoTuChoi: yc.ly_do_tu_choi, traLoi: yc.tra_loi, xuLyLuc: yc.xu_ly_luc },
+      after: { trangThai: 'cho' } });
+    if (yc.nguoi_xin != null && yc.nguoi_xin !== p.userId) {
+      const hv = tenHocVien(conn, yc.hoc_vien_id);
+      notify({
+        userId: yc.nguoi_xin, kind: 'duyet_ket_qua', title: `Quản lý huỷ quyết định · ${meta.nhan}${hv ? ` · ${hv}` : ''} · chờ duyệt lại`.slice(0, 200),
+        entityType: 'yeu_cau_duyet', entityId: id, dedupKey: `duyet_huy:${id}${duoi}`,
+      });
+    }
+    return { ok: true, id, trangThai: 'cho' as const };
+  });
 }
 
 /**

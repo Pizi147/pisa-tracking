@@ -8,6 +8,7 @@ import { HangTab } from '../../ui/HangTab.tsx';
 import { ChonTuan } from '../../ui/ChonNgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { BangChung } from '../../ui/BangChung.tsx';
+import { TepCho, taiTepCho, type TepChoMuc } from '../../ui/TepCho.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
 import { NutChon } from '../../ui/ui.tsx';
@@ -81,8 +82,9 @@ export function QuickReport({
   const [moSua, setMoSua] = useState<number[]>([0]);
   const { homNay, ngan } = useNgayNghiepVu();
 
-  /* F-1 (mục 4.8): sau khi lưu, panel KHÔNG đóng — chuyển sang bước "Đã lưu" + khối Bằng chứng. */
+  /* PR-LUI-a2: bằng chứng chọn ngay trong form, tải SAU khi Case có id. Lưu xong đóng panel + toast; bước "Đã lưu" chỉ còn khi có tệp lỗi. */
   const [daLuu, setDaLuu] = useState<DaLuu | null>(null);
+  const [tep, setTep] = useState<TepChoMuc[]>([]);
 
   /* NHẬP BÙ (mục 10.3) — chỉ dùng khi mode === 'backfill'. */
   const [bfFrom, setBfFrom] = useState('');
@@ -141,7 +143,7 @@ export function QuickReport({
     setMode('now'); setBfFrom(''); setBfTo('');
     setBfActions([{ description: '', nguoi: { kieu: 'toi' }, fromDate: '', toDate: '', ketQua: '' }]);
     setBfErrors({}); setBfOutcome(''); setBfNote(''); setBfMetrics({}); setBfDup(null);
-    setDaLuu(null);
+    setDaLuu(null); setTep([]);
   };
 
   /*
@@ -181,16 +183,36 @@ export function QuickReport({
         idempotencyKey,
         ...extra,
       });
-      invalidate('/cases'); invalidate('/students'); invalidate('/tong-quan');
-      toast.push('ok', extra.mergeIntoExisting ? 'Đã ghi vào Case đang có' : 'Đã ghi nhận');
       setDup(null);
-      setDaLuu({ id: res.id, tieuDe: res.title, gop: !!extra.mergeIntoExisting, canEdit: !!res.viewer?.canEdit, viecTiep: res.viecTiep ?? null });
+      await xongLuu({ id: res.id, tieuDe: res.title, gop: !!extra.mergeIntoExisting,
+        /* Người tạo Case đính kèm được vào Case mình vừa tạo (máy chủ `caseOwner`); gộp vào Case đang có thì theo quyền sửa Case đó. */
+        canEdit: !!res.viewer?.canEdit || !extra.mergeIntoExisting, viecTiep: res.viecTiep ?? null });
     } catch (e: any) {
       const d = e?.details?.duplicateCase;
       if (d) { setDup(d); return; }
       // Lỗi giữ nguyên nội dung đang gõ để người dùng thử lại, không bắt gõ lại từ đầu.
       toast.push('error', e.message);
     } finally { setBusy(false); }
+  };
+
+  /**
+   * Case đã lưu: tải tệp chờ vào Case (một request mỗi tệp). Hết lỗi → đóng panel + toast `Đã lưu Case «…»` (nút `Thêm PA` khi đó là việc tiếp);
+   * còn tệp lỗi → ở lại bước "Đã lưu" đúng chỗ tệp lỗi + `Thử lại` (Case đã lưu, không gửi lại).
+   */
+  const xongLuu = async (d: DaLuu) => {
+    invalidate('/cases'); invalidate('/students'); invalidate('/tong-quan');
+    const kq = tep.length ? await taiTepCho(tep, { ownerType: 'sos_case', ownerIds: [d.id] }) : tep;
+    setTep(kq);
+    if (kq.some((m) => !m.xong)) { setDaLuu(d); return; }
+    const themPa = d.canEdit && !d.gop && onMoCase && d.viecTiep?.chu === CHU_THEM_PA;
+    toast.push('ok', d.gop ? `Đã ghi vào Case đang có «${d.tieuDe}»` : `Đã lưu Case «${d.tieuDe}»`,
+      themPa ? { hanhDong: { nhan: 'Thêm PA', onBam: () => onMoCase!(d.id, 'them-pa') }, ms: 7000 } : undefined);
+    reset(); onClose(); onDone?.(d.id);
+  };
+  const thuLaiTep = async () => {
+    if (!daLuu) return;
+    setBusy(true);
+    try { setTep(await taiTepCho(tep, { ownerType: 'sos_case', ownerIds: [daLuu.id] })); } finally { setBusy(false); }
   };
 
   /* Bấm nút chính: còn ô lỗi thì chỉ hiện lỗi dưới ô + "n ô cần sửa ↑" (không toast, không gửi). Đủ rồi mới gửi; máy chủ vẫn kiểm lại. */
@@ -221,10 +243,8 @@ export function QuickReport({
         metrics: componentsPayload(category, bfMetrics, componentsAreCounts(category)),
         ...extra,
       });
-      invalidate('/cases'); invalidate('/students'); invalidate('/tong-quan');
-      toast.push('ok', 'Đã ghi lại Case đã xong');
       setBfDup(null);
-      setDaLuu({ id: res.id, tieuDe: res.title, gop: false, canEdit: !!res.viewer?.canEdit });
+      await xongLuu({ id: res.id, tieuDe: res.title, gop: false, canEdit: true });
     } catch (e: any) {
       const d = e?.details?.duplicateBackfill;
       if (d) { setBfDup(d); return; }
@@ -278,6 +298,9 @@ export function QuickReport({
     'tu-tuan': bfFrom, 'den-tuan': bfTo, 'ket-qua': bfOutcome, 'vi-sao': bfNote });
   if (mode === 'backfill' && bfFrom && bfTo && bfFrom > bfTo) loi.push({ khoa: 'den-tuan', nhan: 'Đến tuần', lyDo: 'Không được trước Từ tuần' });
   if (mode === 'backfill' && !bfActions.some((a) => a.description.trim())) loi.push({ khoa: 'pa-0', nhan: 'PA đã áp dụng', lyDo: 'Chưa có PA nào' });
+  /* Tệp chọn sai (loại / quá 4 MB) chặn Lưu — bỏ dòng đó hoặc chọn tệp khác. */
+  const tepSai = tep.find((m) => m.loi && !m.daGui);
+  if (tepSai) loi.push({ khoa: 'tep', nhan: 'Bằng chứng', lyDo: tepSai.loi! });
   const thieu = loi.map((l) => l.nhan);
   const oLoi = lf.conThieu(loi);
   const loiCua = (khoa: string) => lf.loiCua(loi, khoa);
@@ -290,10 +313,10 @@ export function QuickReport({
   const tenChon = (students ?? []).find((st) => st.id === studentId)?.name ?? studentName;
   const nhanTuan = (iso: string) => (iso ? tuanLich(iso, homNay) : '');
   /* Luật S3 (I1): đã gõ / chọn ô nào → nút trái "Huỷ thay đổi". Chọn học viên (trang lớp) không tính là sửa. */
-  const daSua = !!(title.trim() || summary.trim() || topic || primaryCode || ghiRo.trim() || detectedAt || urgency
+  const daSua = !!(title.trim() || summary.trim() || topic || primaryCode || ghiRo.trim() || detectedAt || urgency || tep.length
     || bfFrom || bfTo || bfOutcome || bfNote.trim() || bfActions.some((a) => a.description.trim()));
 
-  /* ─────────────── bước "Đã lưu": không đóng — Bằng chứng của CHÍNH Case vừa tạo (F-1, §3.13), chân chỉ còn "Xong". */
+  /* ─────────────── bước "Đã lưu" (chỉ khi có tệp lỗi — PR-LUI-a2): tệp lỗi + `Thử lại`, tệp đã tải ở Bằng chứng; chân chỉ còn "Xong". */
   if (daLuu) {
     return (
       <KhungPanel tieuDe={tieuDe} hocVien={tenChon} lop={lop} onDong={dong} chan={{ huy: { nhan: 'Xong', onClick: dong } }}>
@@ -312,6 +335,7 @@ export function QuickReport({
           )}
         </Khoi>
         <Khoi tieuDe="Bằng chứng">
+          {tep.some((m) => !m.xong) && <TepCho value={tep.filter((m) => !m.xong)} onChange={(v) => setTep([...tep.filter((m) => m.xong), ...v])} khoa={busy} onThuLai={() => void thuLaiTep()} />}
           {daLuu.canEdit ? (
             <BangChung ownerType="sos_case" ownerId={daLuu.id} canEdit={daLuu.canEdit} tieuDe="" />
           ) : (
@@ -544,10 +568,10 @@ export function QuickReport({
         </>
       )}
 
-      {/* F-1: người dùng biết trước — ảnh/tệp/liên kết KHÔNG có ở đây, mà thêm ngay sau khi lưu. */}
+      {/* PR-LUI-a2: bằng chứng ngay trong form (không bắt buộc) — tải lên khi bấm Lưu, sau khi Case có id. */}
       {!cnn && (
-        <Khoi tieuDe="Bằng chứng">
-          <p className="m-0 text-xs text-slate-500">Ảnh, tệp, liên kết — thêm được ngay sau khi tạo</p>
+        <Khoi tieuDe="Bằng chứng · không bắt buộc">
+          <div id={lf.oId('tep')} tabIndex={-1}><TepCho value={tep} onChange={setTep} khoa={busy} /></div>
         </Khoi>
       )}
 

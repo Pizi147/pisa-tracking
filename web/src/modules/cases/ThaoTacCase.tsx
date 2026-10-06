@@ -13,6 +13,7 @@ import {
   CASE_OUTCOMES, CASE_OUTCOME_LABEL, HAN_DUYET_NGAY, INTERVENTION_KIND_LABEL, RESCHEDULE_TARGETS, RESCHEDULE_TARGET_LABEL,
   componentsAreCounts, componentsFor, interventionKindsFor, isProposalKind,
   GOI_Y_MO_TA_PA, nguoiThanhPayload, type NguoiChon, dsLoi, kiemGhiRoKhac, KHAC_TOI_THIEU, moiKhoaGui,
+  URGENCY_LEVELS, URGENCY_LABEL, caseTopicsFor, issuesForTopic, laKhac, tenMon, tenMonNgan,
 } from '@shared/domain/index.ts';
 import { ComponentsField, componentsPayload } from './ChiTietKyNang.tsx';
 
@@ -215,7 +216,7 @@ export function HoanThanhCasePanel({ caseId, category, categoryLabel, ratio, paG
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>Hoàn thành Case</button>,
       }}>
       <Khoi tieuDe="Kết quả cuối"
-        luat="Hoàn thành KHÔNG phải là xoá: nếu MT sau em trượt lại hạng mục này thì chính Case này mở lại, kèm một mốc tái phát — không sinh Case mới.">
+        luat="Đóng nhầm thì Quản lý mở lại được. MT sau trượt lại thì có Case mới nối Case này.">
         <Truong nhan="Sau cả đợt hỗ trợ, em tiến bộ đến đâu?" batBuoc as="div" loi={lf.loiCua(loi, 'muc')}
           phu={paGanNhat ? `PA gần nhất: ${paGanNhat}` : undefined}>
           <div className="grid grid-cols-2 gap-2 outline-none sm:grid-cols-4" role="group" id={lf.oId('muc')} tabIndex={-1}>
@@ -239,5 +240,139 @@ export function HoanThanhCasePanel({ caseId, category, categoryLabel, ratio, paG
         </Khoi>
       )}
     </KhungPanel>
+  );
+}
+
+// ==================================================================== Sửa Case · Xoá Case (PR-LUI-a2, mockup mục 18–20)
+
+/** Phần dữ liệu Ngăn Case mà panel Sửa Case cần (một phần của `CaseDetail`). */
+export type CaseDeSua = {
+  id: number; topic?: string | null; chuongTrinh?: string | null; ratio: boolean; urgency: string | null; summary: string | null;
+  issues: { role: string; code: string; observation: string | null }[];
+  viewer: { khoaKyNang?: boolean; coTheXoa?: boolean; chanXoa?: string | null; tenSua?: string | null };
+};
+
+/**
+ * SỬA CASE: Kỹ năng (khoá khi Case đã có PA) · Nhóm nguyên nhân · Mức độ · Tên Case · Mô tả. Chân trái `Xoá Case` (Quản lý / Quản trị, Case báo tay chưa có PA
+ * ghi kết quả) → hỏi một dòng. Còn PA có kết quả: nút Xoá Case khoá + câu hướng dẫn. Luật nội dung kiểm ở máy chủ (`kiemNoiDungCase`).
+ */
+export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, onClose, onSaved, onDeleted }: ChungPanel & {
+  c: CaseDeSua; tenCase: string;
+  /** Số PA chưa làm sẽ huỷ theo khi Xoá Case (dòng hỏi). */
+  soPaChuaLam: number;
+  onDeleted: () => void;
+}) {
+  const toast = useToast();
+  const ct = c.chuongTrinh ?? null;
+  const goc = c.issues.find((i) => i.role === 'primary') ?? null;
+  const [topic, setTopic] = useState(c.topic ?? '');
+  const [primaryCode, setPrimaryCode] = useState(goc?.code ?? '');
+  const [ghiRo, setGhiRo] = useState(goc?.observation ?? '');
+  const [urgency, setUrgency] = useState(c.urgency ?? '');
+  const [title, setTitle] = useState(c.viewer.tenSua ?? '');
+  const [summary, setSummary] = useState(c.summary ?? '');
+  const [busy, setBusy] = useState(false);
+  const [hoiXoa, setHoiXoa] = useState(false);
+  const lf = useLoiForm();
+  const topics = caseTopicsFor(c.ratio, ct);
+  const causes = topic ? issuesForTopic(topic, ct) : [];
+  const loi = dsLoi([
+    { khoa: 'phan-loai', nhan: 'Nhóm nguyên nhân', chon: true },
+    ...(laKhac(primaryCode) ? [{ khoa: 'ghi-ro', nhan: 'Ghi rõ', toiThieu: KHAC_TOI_THIEU }] : []),
+    { khoa: 'muc-do', nhan: 'Mức độ', chon: true },
+    { khoa: 'ten', nhan: 'Tên Case', toiThieu: 3 },
+    { khoa: 'mo-ta', nhan: 'Mô tả', toiThieu: 15 },
+  ], { 'phan-loai': primaryCode, 'ghi-ro': ghiRo, 'muc-do': urgency, ten: title, 'mo-ta': summary });
+  const daSua = topic !== (c.topic ?? '') || primaryCode !== (goc?.code ?? '') || ghiRo !== (goc?.observation ?? '')
+    || urgency !== (c.urgency ?? '') || title !== (c.viewer.tenSua ?? '') || summary !== (c.summary ?? '');
+
+  const luu = async () => {
+    lf.bam();
+    if (loi.length) return;
+    setBusy(true);
+    try {
+      await api.patch(`/cases/${c.id}`, {
+        topic, primaryCode, observation: laKhac(primaryCode) ? ghiRo.trim() : null, urgency, title: title.trim(), summary: summary.trim(),
+      });
+      invalidate('/cases'); invalidate('/students'); invalidate('/my-work');
+      toast.push('ok', 'Đã lưu Case');
+      onSaved();
+    } catch (e: any) { toast.push('error', e?.message ?? 'Không lưu được'); } finally { setBusy(false); }
+  };
+  const xoa = async () => {
+    setBusy(true);
+    try {
+      await api.del(`/cases/${c.id}`);
+      invalidate('/cases'); invalidate('/students'); invalidate('/my-work'); invalidate('/tong-quan'); invalidate('/yeu-cau');
+      toast.push('ok', 'Đã xoá Case');
+      onDeleted();
+    } catch (e: any) { toast.push('error', e?.message ?? 'Không xoá được'); setHoiXoa(false); } finally { setBusy(false); }
+  };
+
+  return (
+    <>
+      <KhungPanel tieuDe="Sửa Case" hocVien={hocVien} lop={lop} quayLai={quayLai} onDong={onClose}
+        ngCanh={<><span aria-hidden className="text-bad">*</span> = bắt buộc</>}
+        chan={{
+          daSua,
+          xoa: c.viewer.coTheXoa ? { nhan: 'Xoá Case', onClick: () => setHoiXoa(true) } : undefined,
+          /* Còn PA có kết quả: Xoá Case khoá + câu hướng dẫn (mockup mục 20). */
+          phu: c.viewer.chanXoa ? <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" disabled>Xoá Case</button> : undefined,
+          conThieu: lf.conThieu(loi)?.length ? lf.conThieu(loi) : c.viewer.chanXoa ? [{ nhan: 'Xoá Case', lyDo: c.viewer.chanXoa }] : undefined,
+          chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>{busy ? 'Đang lưu…' : 'Lưu'}</button>,
+        }}>
+        <Khoi tieuDe="Case">
+          <Truong nhan="Kỹ năng" batBuoc as="div">
+            {c.viewer.khoaKyNang ? (
+              <div className="field w-full cursor-not-allowed opacity-70" aria-disabled>{topic ? tenMon(ct, topic) : '—'}</div>
+            ) : (
+              <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.max(topics.length, 1)}, minmax(0, 1fr))` }}>
+                {topics.map((k) => (
+                  <NutChon key={k} chon={topic === k} title={tenMon(ct, k)} className="justify-center px-1"
+                    onClick={() => { if (k !== topic) { setTopic(k); setPrimaryCode(''); } }}>
+                    {tenMonNgan(ct, k)}
+                  </NutChon>
+                ))}
+              </div>
+            )}
+          </Truong>
+          <div>
+            <Truong nhan="Nhóm nguyên nhân" batBuoc loi={lf.loiCua(loi, 'phan-loai')}>
+              <select className="field w-full" {...lf.o(loi, 'phan-loai')} value={primaryCode} onChange={(e) => setPrimaryCode(e.target.value)}
+                title={causes.find((i) => i.code === primaryCode)?.hint}>
+                <option value="">Chọn nhóm</option>
+                {causes.map((i) => <option key={i.code} value={i.code} title={i.hint}>{i.label}</option>)}
+              </select>
+            </Truong>
+            <OKhac hien={laKhac(primaryCode)} value={ghiRo} onChange={setGhiRo} goiY="Ví dụ: Chưa quen dạng bài mới"
+              id={lf.oId('ghi-ro')} onBlur={lf.roi('ghi-ro')} loi={lf.hien('ghi-ro') ? kiemGhiRoKhac(ghiRo) : null} />
+          </div>
+          <Truong nhan="Mức độ" batBuoc as="div" loi={lf.loiCua(loi, 'muc-do')}>
+            <div className="grid max-w-xs grid-cols-2 gap-2 outline-none" {...lf.o(loi, 'muc-do')} tabIndex={-1}>
+              {URGENCY_LEVELS.map((u) => (
+                <NutChon key={u} chon={urgency === u} className="justify-center" onClick={() => setUrgency(u)}>{URGENCY_LABEL[u]}</NutChon>
+              ))}
+            </div>
+          </Truong>
+          <Truong nhan="Tên Case" batBuoc loi={lf.loiCua(loi, 'ten')}>
+            <input className="field w-full" {...lf.o(loi, 'ten')} maxLength={80} value={title} onChange={(e) => setTitle(e.target.value)} />
+          </Truong>
+          <Truong nhan="Mô tả" batBuoc loi={lf.loiCua(loi, 'mo-ta')} dem={{ co: summary.trim().length, can: 15 }}>
+            <textarea className="field w-full" {...lf.o(loi, 'mo-ta')} rows={3} maxLength={2000} value={summary} onChange={(e) => setSummary(e.target.value)} />
+          </Truong>
+        </Khoi>
+      </KhungPanel>
+      {hoiXoa && (
+        <KhungPanel tieuDe="Xoá Case này?" longTrong z="z-[60]" onDong={() => !busy && setHoiXoa(false)}
+          chan={{
+            huy: { onClick: () => setHoiXoa(false), disabled: busy },
+            chinh: <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void xoa()}>{busy ? 'Đang xoá…' : 'Xoá Case'}</button>,
+          }}>
+          <p className="m-0 pt-3 text-sm leading-relaxed text-slate-300">
+            {tenCase}{soPaChuaLam > 0 ? ` · ${soPaChuaLam} PA chưa làm sẽ huỷ` : ''}
+          </p>
+        </KhungPanel>
+      )}
+    </>
   );
 }

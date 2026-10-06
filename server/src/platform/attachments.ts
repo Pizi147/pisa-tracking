@@ -88,7 +88,11 @@ function caseOwner(caseId: number): OwnerAccess {
   const a = caseAccess(caseId);
   return {
     requireView: (p) => a.requireView(p, 'Bản ghi này nằm ngoài phạm vi bạn được xem.'),
-    requireEdit: (p) => a.requireEdit(p, 'Bạn không có quyền đính kèm hoặc gỡ bằng chứng của bản ghi này.'),
+    requireEdit: (p) => {
+      /* PR-LUI-a2: người tạo Case đính kèm được vào Case mình tạo (Tạo Case có bằng chứng — GVCN tạo Case môn không dạy). */
+      if (a.reportedBy === p.userId) return a.requireView(p, 'Bản ghi này nằm ngoài phạm vi bạn được xem.');
+      a.requireEdit(p, 'Bạn không có quyền đính kèm hoặc gỡ bằng chứng của bản ghi này.');
+    },
   };
 }
 

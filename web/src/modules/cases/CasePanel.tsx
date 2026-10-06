@@ -1,4 +1,7 @@
 import { useState, type ReactNode } from 'react';
+import { api, invalidate } from '../../lib/api.ts';
+import { useToast } from '../../ui/Toast.tsx';
+import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Card, Empty, ErrorState, Level, NhanTrangThai, Outcome, Skeleton } from '../../ui/ui.tsx';
@@ -78,7 +81,9 @@ export type CaseDetail = {
   /** Các mốc trong vòng đời case. Giao diện xếp MỚI NHẤT LÊN ĐẦU (mục 4.3). */
   milestones: any[];
   issues: any[]; interventions: any[]; followups: any[]; history: any[];
-  viewer: { canEdit: boolean; canClose: boolean; canApprove: boolean };
+  viewer: { canEdit: boolean; canClose: boolean; canApprove: boolean;
+    /** PR-LUI-a2: Mở lại (Case đã hoàn thành, QL/QT) · Sửa Case · Xoá Case / câu chặn · Kỹ năng khoá · tên để sửa. */
+    coTheMoLai?: boolean; coTheSua?: boolean; coTheXoa?: boolean; chanXoa?: string | null; khoaKyNang?: boolean; tenSua?: string | null };
 };
 
 /** Nội dung của ngăn Case: một `KhungPanel` đổi nội dung theo view, không chồng panel. */
@@ -86,7 +91,9 @@ export type ViewCase = { loai: 'case' } | { loai: 'ghi-ket-qua'; paId: number } 
   /* PR-SOS (Q28-3): Xác nhận Case → Xác nhận PA theo quy chế. */
   | { loai: 'xac-nhan' } | { loai: 'xac-nhan-pa'; paId: number }
   /* PR-LT2a: nộp kế hoạch bài giảng bổ trợ cho cả nhóm (paId = một PA bổ trợ của nhóm). */
-  | { loai: 'ke-hoach'; paId?: number };
+  | { loai: 'ke-hoach'; paId?: number }
+  /* PR-LUI-a2: Sửa Case (+ Xoá Case ở chân). */
+  | { loai: 'sua' };
 
 /** "Case Listening" — tên ngắn của Case cho tiêu đề ngăn và dòng "← Case Listening". */
 export function tenNganCase(d: { categoryLabel: string | null; category: string | null; chuongTrinh?: string | null }): string {
@@ -236,6 +243,8 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
   const ketThuc = iv.completedDate ?? null;
   const khoang = chuKhoangPa({ startedOn: batDau, completedOn: ketThuc }, homNay) ?? (ketThuc ? `đến ${tuanLich(ketThuc, homNay)}` : null);
   const nguoi = iv.performer ? `${iv.performer}${iv.byProxy && iv.recordedBy ? ` (${iv.recordedBy} nhập hộ)` : ''}` : 'Chưa có người thực hiện';
+  /* PR-LUI-a2 (Q6): Xoá PA — Quản lý / Quản trị, kể cả PA đã ghi kết quả; PA quy chế / Bổ trợ do hệ thống sinh thì không. */
+  const xoaDuoc = data.viewer.canApprove && data.status !== 'done' && !iv.preset && iv.kind !== 'bo_tro' && iv.kind !== 'bo_tro_mien_phi';
   return (
     <li className="rounded-lg border px-3 py-2.5 surface-2" style={{ borderColor: 'var(--line)' }} data-pa-id={iv.id}>
       <div className="flex flex-wrap items-center gap-1.5">
@@ -250,6 +259,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
         {iv.approvalState === 'declined' && <NhanTrangThai t="can-lam" chu="Bị từ chối" />}
         <span className="flex-1" />
         {hanGhi && !choDuyet && (data.tamDungTu ? <NhanTamDung tu={data.tamDungTu} /> : hanGhi.tone === 'overdue' && <QuaHan ngay={hanGhi.daysOverdue} />)}
+        {xoaDuoc && <MenuXoaPa iv={iv} ten={tenPA(iv)} soKetQua={(data.followups ?? []).filter((f: any) => f.interventionId === iv.id).length} />}
       </div>
       {iv.description && <p className="m-0 mt-1 text-sm text-slate-300">{iv.description}</p>}
       {iv.kind === 'bo_tro' && bt?.chung && bt.mon.length > 1 && (
@@ -304,6 +314,44 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
   );
 }
 
+/** Nút ⋯ của thẻ PA (Quản lý / Quản trị) → `Xoá PA` → hỏi một dòng (mẫu `DeleteViolationConfirm`). */
+function MenuXoaPa({ iv, ten, soKetQua }: { iv: any; ten: string; soKetQua: number }) {
+  const toast = useToast();
+  const [mo, setMo] = useState(false);
+  const [hoi, setHoi] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const xoa = async () => {
+    setBusy(true);
+    try {
+      await api.del(`/interventions/${iv.id}`);
+      invalidate('/cases'); invalidate('/students'); invalidate('/my-work'); invalidate('/yeu-cau'); invalidate('/tong-quan');
+      toast.push('ok', 'Đã xoá PA');
+      setHoi(false);
+    } catch (e: any) { toast.push('error', e?.message ?? 'Không xoá được'); } finally { setBusy(false); }
+  };
+  return (
+    <span className="relative" onKeyDown={(e) => { if (e.key === 'Escape' && mo) { e.stopPropagation(); setMo(false); } }}>
+      <button type="button" className="btn btn-sm btn-ghost min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0" aria-label="Thêm thao tác PA" aria-haspopup="menu"
+        aria-expanded={mo} onClick={() => setMo((x) => !x)} onBlur={(e) => { if (!e.currentTarget.parentElement?.contains(e.relatedTarget as Node | null)) setMo(false); }}>⋯</button>
+      {mo && (
+        <span role="menu" className="absolute right-0 top-full z-10 mt-1 block min-w-[160px] rounded-lg border p-1 shadow-lg surface-2" style={{ borderColor: 'var(--line)' }}>
+          <button type="button" role="menuitem" className="block w-full rounded-md px-2.5 py-2 text-left text-sm text-bad hover:bg-[color:var(--accent-soft)]"
+            onClick={() => { setMo(false); setHoi(true); }}>Xoá PA</button>
+        </span>
+      )}
+      {hoi && (
+        <KhungPanel tieuDe="Xoá PA này?" longTrong z="z-[60]" onDong={() => !busy && setHoi(false)}
+          chan={{
+            huy: { onClick: () => setHoi(false), disabled: busy },
+            chinh: <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void xoa()}>{busy ? 'Đang xoá…' : 'Xoá PA'}</button>,
+          }}>
+          <p className="m-0 pt-3 text-sm leading-relaxed text-slate-300">{ten}{soKetQua > 0 ? ` · ${soKetQua} kết quả tuần sẽ xoá` : ''}</p>
+        </KhungPanel>
+      )}
+    </span>
+  );
+}
+
 /** Ổ khoá 12px nét 1.5 — PA theo quy chế (thay emoji: ký tự nhỏ không đồng nét với bộ biểu tượng). */
 function KhoaNho() {
   return (
@@ -334,6 +382,8 @@ const MILESTONE_TITLE: Record<string, string> = {
   nop_ke_hoach: 'Nộp kế hoạch bổ trợ',
   ke_hoach_duyet: 'Quản lý duyệt kế hoạch',
   ke_hoach_tu_choi: 'Quản lý từ chối kế hoạch',
+  /* PR-LUI-a2: Quản lý mở lại Case đã hoàn thành. */
+  reopened: 'Mở lại',
 };
 
 /** Điểm cô tự chấm: LUÔN có chữ "cô chấm" — một con số 6.5 đứng trơ sẽ bị đọc nhầm thành điểm mock. */
@@ -361,7 +411,7 @@ function buildLichSu(data: CaseDetail, ngan: (d: string | null | undefined) => s
     if (m.kind === 'opened') continue;   // ngày mở và người tạo đã ở khối Vấn đề
     out.push({
       key: `m${m.id}`, on: m.occurredOn, dot: m.attemptNo ? (m.dot ?? `MT${m.attemptNo}`) : null, dotHref: m.href ?? null,
-      tieuDe: MILESTONE_TITLE[m.kind] ?? m.kind,
+      tieuDe: m.kind === 'reopened' && m.actorName ? `${MILESTONE_TITLE.reopened} · ${m.actorName}` : MILESTONE_TITLE[m.kind] ?? m.kind,
       badge: (
         <>
           {m.band !== null && m.band !== undefined && (
@@ -402,7 +452,8 @@ function buildLichSu(data: CaseDetail, ngan: (d: string | null | undefined) => s
             </span>
           )}
           {f.note && <span className="block text-slate-300">{f.note}</span>}
-          {f.remainingIssue && <span className="block text-[11px] text-slate-400">Còn tồn: {f.remainingIssue}</span>}
+          {f.phuTrach && <span className="block text-[11px] text-slate-400">Phụ trách: {f.phuTrach}</span>}
+          {f.remainingIssue && <span className="block text-[11px] text-slate-400">Còn tồn / Ghi chú: {f.remainingIssue}</span>}
           {f.decisionNote && (
             <span className="block text-[11px] text-slate-400">{f.nextStep === 'adjust' || f.nextStep === 'propose' ? 'Lý do' : 'Ghi chú'}: {f.decisionNote}</span>
           )}

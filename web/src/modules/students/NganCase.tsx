@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useApi } from '../../lib/useApi.ts';
+import { api, invalidate } from '../../lib/api.ts';
+import { useToast } from '../../ui/Toast.tsx';
 import { ErrorState, NhanTrangThai, Skeleton } from '../../ui/ui.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
@@ -9,7 +11,7 @@ import { caseStatusLabel } from '../../lib/format.ts';
 import { outcomeLabelFor, tuanLich } from '@shared/domain/index.ts';
 import { ThanCase, tenNganCase, type CaseDetail, type ViewCase } from '../cases/CasePanel.tsx';
 import { GhiKetQuaPanel } from '../cases/CapNhatTuan.tsx';
-import { HoanThanhCasePanel, ThemPaPanel } from '../cases/ThaoTacCase.tsx';
+import { HoanThanhCasePanel, SuaCasePanel, ThemPaPanel } from '../cases/ThaoTacCase.tsx';
 import { XacNhanCasePanel, XacNhanPaPanel, type PaQuyChe } from '../yThuc/CaseSosControls.tsx';
 import { NopKeHoachPanel } from '../cases/NopKeHoachPanel.tsx';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
@@ -38,6 +40,8 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
   const [view, setView] = useState<ViewCase>(() => viecBanDau ?? tuViec(viec, paId) ?? { loai: 'case' });
   /* Bấm "Hoàn thành Case" khi còn bị chặn: chân nói câu chặn (không phải ô nhập nên không đếm "n ô cần sửa"). */
   const lf = useLoiForm();
+  const toast = useToast();
+  const [moLaiBusy, setMoLaiBusy] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
 
   const veCase = () => { setView({ loai: 'case' }); lf.datLai(); };
@@ -122,6 +126,13 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
     return <ThemPaPanel {...chung} caseId={caseId} studentId={data.student?.id} onSaved={xong}
       coPaBatBuoc={(data.interventions ?? []).some((x: any) => x.batBuoc && (x.status === 'planned' || x.status === 'started'))} />;
   }
+  if (view.loai === 'sua' && data.viewer.coTheSua) {
+    return (
+      <SuaCasePanel {...chung} c={data} tenCase={data.title ?? ten} onSaved={xong}
+        soPaChuaLam={(data.interventions ?? []).filter((x: any) => x.status === 'planned' || x.status === 'started').length}
+        onDeleted={() => { onChanged?.(); onClose(); }} />
+    );
+  }
   if (view.loai === 'hoan-thanh') {
     return (
       <HoanThanhCasePanel {...chung} caseId={caseId} category={data.category} categoryLabel={data.categoryLabel} ratio={!!data.ratio}
@@ -140,6 +151,21 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
    * Hoàn thành Case. PA theo quy chế chưa khép → ẨN Hoàn thành, hiện dòng mờ nói khi nào hoàn thành được.
    */
   const v = data.viecTiep ?? null;
+  /* PR-LUI-a2: Mở lại Case đã hoàn thành — Quản lý / Quản trị, một bấm, không lý do. */
+  const moLai = async () => {
+    setMoLaiBusy(true);
+    try {
+      await api.post(`/cases/${caseId}/mo-lai`);
+      invalidate('/cases'); invalidate('/my-work'); invalidate('/students');
+      toast.push('ok', 'Đã mở lại Case');
+      onChanged?.();
+    } catch (e: any) { toast.push('error', e?.message ?? 'Không mở lại được'); } finally { setMoLaiBusy(false); }
+  };
+  const nutDau = data.viewer.coTheMoLai
+    ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={moLaiBusy} onClick={() => void moLai()}>{moLaiBusy ? 'Đang mở lại…' : 'Mở lại'}</button>
+    : canDong && data.viewer.coTheSua
+      ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setView({ loai: 'sua' })}>Sửa</button>
+      : null;
   const nutChinh = (() => {
     if (!data.viewer.canEdit || !canDong) return undefined;
     const nut = (chu: string, lam: () => void, title?: string) => <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" title={title} onClick={lam}>{chu}</button>;
@@ -185,6 +211,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
         conThieu: lf.daBam && chanHoanThanh.length > 0 ? [{ nhan: 'Hoàn thành Case', lyDo: chanHoanThanh[0] }] : undefined,
       }}>
       <div ref={boxRef}>
+        {nutDau && <div className="flex justify-end pt-3">{nutDau}</div>}
         {/* S4-5: Quản lý mở Case đang chờ "Không cần theo dõi" thấy thẻ ngay dưới tiêu đề — duyệt / từ chối tại chỗ. */}
         {data.yeuCauCase && data.viewer.canApprove && (
           <div className="pt-3"><TheYeuCau gon yc={data.yeuCauCase} onXong={() => { reload(); onChanged?.(); }} /></div>

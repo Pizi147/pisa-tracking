@@ -17,7 +17,7 @@ const HAN_XAC_NHAN_NGAY = 3;
 export const hanXacNhan = (ngay: string) => hanTheoNgay(ngay, HAN_XAC_NHAN_NGAY);
 
 export const GOI_Y_MO_TA_PA = 'Nêu hướng dẫn và trọng tâm cụ thể; ai sẽ thực hiện / hỗ trợ / Tutor';                       // Q28-1
-export const GOI_Y_KET_QUA_PA = 'Đã cải thiện ở phần nào, như thế nào, kết quả cụ thể; ai đã thực hiện / hỗ trợ / Tutor';  // Q28-2
+export const GOI_Y_KET_QUA_PA = 'Đã cải thiện ở phần nào, như thế nào, kết quả cụ thể';  // Q28-2; PR-LUI-a2: "ai" đã có ô Người phụ trách
 
 /** Mốc quy chế tính từ NGÀY XÁC NHẬN PA (§3.1d, K3-46): dùng lại `sosPlanEndDate` với createdOn = ngày xác nhận. */
 export function mocQuyChe(span: AcademicSupportSpan, ctx: { ngayXacNhan: string; nextMtSunday?: string | null; examDate?: string | null }): string | null {

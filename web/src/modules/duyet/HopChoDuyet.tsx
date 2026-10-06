@@ -8,13 +8,16 @@ import { BranchFilter } from '../../ui/Filters.tsx';
 import { NganCase } from '../students/NganCase.tsx';
 import { TheYeuCau } from './TheYeuCau.tsx';
 import {
-  LOAI_YC_META, PHAN_LOAI_CAN_QUYET, PHAN_LOAI_LABEL, TRAN_HANG_LOAT, chonHet, chonMot, laPhanLoai, tomTatKetQuaHangLoat,
+  LOAI_YC_META, PHAN_LOAI_CAN_QUYET, PHAN_LOAI_LABEL, TRAN_HANG_LOAT, chiaLo, chonHet, chonMot, laPhanLoai, tomTatKetQuaHangLoat,
   type KhoaChip, type LoaiYeuCau, type TheYeuCauDto,
 } from '@shared/domain/index.ts';
 
 type Hop = { the: TheYeuCauDto[]; dem: Record<KhoaChip, number>; demBiet: number; homNay: string; lopDangLoc?: { id: number; code: string } | null };
 
 /** `?the=12` → cuộn tới thẻ, viền nhấn 2 giây. Dùng chung hộp và Yêu cầu của tôi. */
+/** PR-LUI-a2: Từ chối nhiều gửi theo lô (mỗi thẻ ~16 câu SQL) — một request ≤ 200 câu. */
+const LO_TU_CHOI = 8;
+
 export function useTheNhanManh(ds: TheYeuCauDto[] | undefined): number | null {
   const [params] = useSearchParams();
   const the = Number(params.get('the')) || null;
@@ -77,7 +80,11 @@ export function HopChoDuyet() {
   /* Hàng loạt: một loại một lúc (luật ở `chonMot` / `chonHet`). */
   const [chon, setChon] = useState<Set<number>>(new Set());
   const [busy, setBusy] = useState(false);
+  /* PR-LUI-a2: Từ chối nhiều — hàng lý do chung mở ngay trong thanh chọn. `null` = đang đóng. */
+  const [lyDoTc, setLyDoTc] = useState<string | null>(null);
+  const [tcDaBam, setTcDaBam] = useState(false);
   useEffect(() => { setChon(new Set()); }, [url]);
+  useEffect(() => { if (!chon.size) { setLyDoTc(null); setTcDaBam(false); } }, [chon.size]);
   const ds = data?.the ?? [];
   const loaiChon = useMemo(() => (ds.find((x) => chon.has(x.id))?.loai ?? null) as LoaiYeuCau | null, [ds, chon]);
   const nHet = loaiChon ? chonHet(ds, loaiChon).size : 0;
@@ -97,7 +104,7 @@ export function HopChoDuyet() {
 
   const xong = () => { reload(); invalidate('/yeu-cau/dem'); };
   /* Thẻ lỗi: một câu tổng + tối đa 3 dòng chi tiết, còn lại gộp — không dồn hàng chục toast. */
-  const baoKetQua = (viec: 'duyet' | 'nhac', ok: number, loi: { id: number; loi: string; ma: number }[]) => {
+  const baoKetQua = (viec: 'duyet' | 'nhac' | 'tu-choi', ok: number, loi: { id: number; loi: string; ma: number }[]) => {
     toast.push(loi.length ? 'error' : 'ok', tomTatKetQuaHangLoat(viec, ok, loi));
     const chiTiet = loi.filter((l) => l.ma !== 503);   // "chưa nhắc, bấm lại" đã nói trong câu tổng
     for (const l of chiTiet.slice(0, 3)) toast.push('error', `${ds.find((x) => x.id === l.id)?.hocVien ?? `Yêu cầu #${l.id}`}: ${l.loi}`);
@@ -110,6 +117,26 @@ export function HopChoDuyet() {
       const r = await api.post<{ ok: number[]; loi: { id: number; loi: string; ma: number }[] }>('/yeu-cau/duyet-nhieu', { ids: [...chon] });
       invalidate('/yeu-cau'); invalidate('/my-work'); invalidate('/cases');
       baoKetQua('duyet', r.ok.length, r.loi);
+      setChon(new Set());
+      xong();
+    } catch (e: any) {
+      toast.push('error', e instanceof ApiError ? e.message : 'Mất kết nối giữa chừng — danh sách đã làm mới để thấy thẻ nào đã xong.');
+      xong();
+    } finally { setBusy(false); }
+  };
+  const tuChoiNhieu = async () => {
+    setTcDaBam(true);
+    if (busy || !chon.size || !lyDoTc?.trim()) return;
+    setBusy(true);
+    try {
+      /* Lô 8 thẻ mỗi request (~16 câu SQL mỗi thẻ → ≤ 200 câu, kịp trần 10 s). Lô lỗi mạng giữa chừng: báo, làm mới để thấy thẻ nào đã xong. */
+      const r = { ok: [] as number[], loi: [] as { id: number; loi: string; ma: number }[] };
+      for (const lo of chiaLo([...chon], LO_TU_CHOI)) {
+        const k = await api.post<typeof r>('/yeu-cau/tu-choi-nhieu', { ids: lo, lyDo: lyDoTc.trim() });
+        r.ok.push(...k.ok); r.loi.push(...k.loi);
+      }
+      invalidate('/yeu-cau'); invalidate('/my-work'); invalidate('/cases');
+      baoKetQua('tu-choi', r.ok.length, r.loi);
       setChon(new Set());
       xong();
     } catch (e: any) {
@@ -213,10 +240,30 @@ export function HopChoDuyet() {
                 onClick={() => setChon(chonHet(ds, loaiChon))}>Chọn hết {nHet}</button>
             )}
             <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setChon(new Set())} disabled={busy}>Bỏ chọn</button>
-            <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={duyetNhieu} disabled={busy}>
-              {busy ? 'Đang duyệt…' : `Duyệt ${chon.size} yêu cầu`}
+            {loaiChon && LOAI_YC_META[loaiChon]?.kieuNut === 'duyet-tu-choi' && (
+              <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" aria-pressed={lyDoTc !== null} disabled={busy}
+                onClick={() => { setLyDoTc(lyDoTc === null ? '' : null); setTcDaBam(false); }}>Từ chối {chon.size}…</button>
+            )}
+            <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={duyetNhieu} disabled={busy || lyDoTc !== null}>
+              {busy && lyDoTc === null ? 'Đang duyệt…' : `Duyệt ${chon.size} yêu cầu`}
             </button>
           </div>
+          {lyDoTc !== null && (
+            <div className="w-full space-y-1.5 border-t pt-2" style={{ borderColor: 'var(--line)' }}>
+              <label className="block">
+                <span className="mb-1 block text-[11.5px] font-bold text-slate-200">Lý do từ chối (người gửi sẽ đọc)<span aria-hidden className="text-bad"> *</span></span>
+                <textarea className="field w-full" rows={2} maxLength={2000} autoFocus aria-label="Lý do từ chối" value={lyDoTc} aria-invalid={tcDaBam && !lyDoTc.trim()}
+                  onChange={(e) => setLyDoTc(e.target.value)} />
+              </label>
+              {tcDaBam && !lyDoTc.trim() && <span className="block text-[11px] text-late">Chưa điền</span>}
+              <div className="flex justify-end gap-1.5">
+                <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => { setLyDoTc(null); setTcDaBam(false); }}>Đóng</button>
+                <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void tuChoiNhieu()}>
+                  {busy ? 'Đang từ chối…' : `Gửi từ chối ${chon.size}`}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
