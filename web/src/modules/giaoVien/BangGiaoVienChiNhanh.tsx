@@ -1,4 +1,4 @@
-import { CHAM_CHEO, thamSoCt, type ChuongTrinh } from '@shared/domain/index.ts';
+import { thamSoCt, type ChuongTrinh } from '@shared/domain/index.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { Empty, ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
 import { SoLieuO } from '../../ui/SoLieuO.tsx';
@@ -11,8 +11,7 @@ import { TenGiaoVien } from '../classes/TenGiaoVien.tsx';
  * (`/giao-vien/:id/o`, cùng hàm với số). Tên mở hồ sơ giáo viên. Không có cột "Việc quá hạn" tổng: phải tính Công việc từng người (chậm) — xem hồ sơ.
  */
 type Hang = { id: number; ten: string; lop: number; hocVien: number; chuaNhap: number; quaHan: number; caseMo: number; caseQuaHan: number };
-type SoKhongNguoi = { chuaNhap: number; quaHan: number } | null;
-type Bang = { cn: number; tenChiNhanh: string; ct: ChuongTrinh; hang: Hang[]; chuaPhanCong: SoKhongNguoi; chamCheo: SoKhongNguoi };
+type Bang = { cn: number; tenChiNhanh: string; ct: ChuongTrinh; hang: Hang[]; chuaPhanCong: { chuaNhap: number; quaHan: number } | null };
 
 const COT: { key: keyof Omit<Hang, 'id' | 'ten'>; cot: string; nhan: string; goiY?: string; rong: string }[] = [
   { key: 'lop', cot: 'lop', nhan: 'Lớp', goiY: 'Lớp người này đang dạy trong chi nhánh, theo khung đang chọn.', rong: '9%' },
@@ -28,7 +27,7 @@ export function BangGiaoVienChiNhanh({ branchId, ct }: { branchId: number | null
   const { data, loading, error, reload } = useApi<Bang>(`/giao-vien${tham ? `?${tham}` : ''}`, [branchId, ct]);
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
   if (loading || !data) return <div className="p-4"><Skeleton rows={4} /></div>;
-  if (!data.hang.length && !data.chuaPhanCong && !data.chamCheo) return <Empty title="Chưa có giáo viên nào có lớp trong chi nhánh này." />;
+  if (!data.hang.length && !data.chuaPhanCong) return <Empty title="Chưa có giáo viên nào có lớp trong chi nhánh này." />;
   const qua = `cn=${data.cn}${thamSoCt(ct)}`;
   return (
     <>
@@ -50,18 +49,17 @@ export function BangGiaoVienChiNhanh({ branchId, ct }: { branchId: number | null
                 ))}
               </tr>
             ))}
-            {/* PR-UXF-a Q8: bài của môn chưa phân công giáo viên; PR-LT3 (T18): Speaking Mock chưa ai chấm — chữ mờ, không hồ sơ để mở; Σ cột = ô ở Cần xử lý. */}
-            {([['Chưa phân công', data.chuaPhanCong, 'Môn chưa có giáo viên được phân công — phân công ở hồ sơ lớp'],
-              [CHAM_CHEO, data.chamCheo, 'Speaking Mock: GV dạy Speaking cùng chi nhánh chấm được — không tính cho ai']] as const).map(([nhan, so, goiY]) => so && (
-              <tr key={nhan}>
-                <td className="td sticky-col whitespace-nowrap text-slate-400" title={goiY}>{nhan}</td>
+            {data.chuaPhanCong && (
+              /* PR-UXF-a Q8: bài của môn chưa phân công giáo viên — chữ mờ, không hồ sơ để mở; Σ cột = ô ở Cần xử lý (trừ Speaking Mock chấm chéo — PR-LT3). */
+              <tr>
+                <td className="td sticky-col whitespace-nowrap text-slate-400" title="Môn chưa có giáo viên được phân công — phân công ở hồ sơ lớp">Chưa phân công</td>
                 {COT.map((c) => (
                   <td key={c.key} className="td text-right tabular-nums text-slate-400">
-                    {c.key === 'chuaNhap' ? so.chuaNhap : c.key === 'quaHan' ? so.quaHan : '—'}
+                    {c.key === 'chuaNhap' ? data.chuaPhanCong!.chuaNhap : c.key === 'quaHan' ? data.chuaPhanCong!.quaHan : '—'}
                   </td>
                 ))}
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

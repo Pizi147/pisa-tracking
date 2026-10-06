@@ -283,9 +283,11 @@ export async function runPrUxfATests(t: YThucTestKit) {
     for (const ct of ['ft', 'thuong']) {
       const oK = baiQuaHan(P.mbManager, { branchId: MB, program: ct });
       const bang = hoSoGv.bangGvChiNhanh(P.mbManager, { cn: MB, ct });
-      /* PR-LT3 (T18): Speaking Mock chưa ai chấm có dòng riêng "GV chấm chéo" (không vào Chưa phân công). */
-      const tong = bang.hang.reduce((n: number, h: any) => n + h.quaHan, 0) + (bang.chuaPhanCong?.quaHan ?? 0) + (bang.chamCheo?.quaHan ?? 0);
-      assert(tong === oK.n, `${ct}: Σ bảng GV (gồm Chưa phân công, GV chấm chéo) ${tong} ≠ ô ${oK.n}`);
+      /* PR-LT3 (chủ sản phẩm 06/10): bảng GV chỉ đếm bài có người phụ trách + Chưa phân công — Speaking Mock chưa ai chấm (T18) không vào bảng,
+         vẫn ở ô Tổng quan (D4) và Lịch Test khối 1. Σ bảng + số ô chấm chéo = ô. */
+      const cheo = (oK.ids as number[]).filter((id) => oK.chiTiet?.get(id)?.chamCheo).length;
+      const tong = bang.hang.reduce((n: number, h: any) => n + h.quaHan, 0) + (bang.chuaPhanCong?.quaHan ?? 0);
+      assert(tong + cheo === oK.n, `${ct}: Σ bảng GV (gồm Chưa phân công) ${tong} + chấm chéo ${cheo} ≠ ô ${oK.n}`);
       for (const h of bang.hang.filter((x: any) => x.quaHan > 0)) {
         const r = hoSoGv.oHoSoGv(P.mbManager, h.id, { cot: 'qua-han', cn: MB, ct });
         assert(r.rows.length === h.quaHan, `${ct} · ${h.ten}: hồ sơ ${r.rows.length} ≠ bảng ${h.quaHan}`);

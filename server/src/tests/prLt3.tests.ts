@@ -202,6 +202,11 @@ export async function runPrLt3Tests(t: YThucTestKit) {
     assert(dongS(aid).examiner_user_id === cheoId, `Q3: lưu S không chọn GV chấm → ghi người lưu: ${dongS(aid).examiner_user_id}`);
     const o = cuaLuot(aid);
     assert(o.length === 1 && o[0].gv === cheoId && o[0].dung === false, `trễ của GV chấm chéo: ${JSON.stringify(o)}`);
+    /* Chủ sản phẩm 06/10: người lưu chọn GV chấm là tài khoản khác → trễ tính cho người được chọn. */
+    aid = emMoi(5, HAI, true);
+    att.saveScore(cheo, aid, 'speaking', { criteria: S4, gvCham: { performerUserId: P.w1Teacher.userId } }, TODAY);
+    const khac = cuaLuot(aid);
+    assert(khac.length === 1 && khac[0].gv === P.w1Teacher.userId && khac[0].dung === false, `trễ của GV được chọn: ${JSON.stringify(khac)}`);
     aid = emMoi(5, HAI, true);
     att.saveScore(cheo, aid, 'speaking', { criteria: S4, gvCham: { performerName: 'Cô Lan (ngoài)' } }, TODAY);
     assert(dongS(aid).examiner_user_id === null && dongS(aid).examiner_name === 'Cô Lan (ngoài)', 'người ngoài');

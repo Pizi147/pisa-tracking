@@ -305,13 +305,11 @@ export function oHoSoGv(p: Principal, gvId: number, q: ThamSoO): { n: number; ti
 
 export type HangGv = { id: number; ten: string; lop: number; hocVien: number; chuaNhap: number; quaHan: number; caseMo: number; caseQuaHan: number };
 /**
- * `chuaPhanCong` (PR-UXF-a Q8): bài của môn CHƯA phân công giáo viên — không phải một người, nên không nằm trong `hang`. `chamCheo` (PR-LT3 T18, D4):
- * Speaking Mock chưa ai chấm — không nợ của ai, QL vẫn thấy. Σ hàng + hai phần này = ô Tổng quan.
+ * `chuaPhanCong` (PR-UXF-a Q8): bài của môn CHƯA phân công giáo viên — không phải một người, nên không nằm trong `hang`.
+ * PR-LT3 (chủ sản phẩm 06/10): bảng chỉ đếm bài CÓ người phụ trách + Chưa phân công; Speaking Mock chưa ai chấm (T18) không vào bảng —
+ * thấy ở Lịch Test khối 1 (cột "GV chấm chéo"). Σ bảng = ô Tổng quan trừ các ô chấm chéo.
  */
-export type BangGv = {
-  cn: number; tenChiNhanh: string; ct: ChuongTrinh; hang: HangGv[];
-  chuaPhanCong: { chuaNhap: number; quaHan: number } | null; chamCheo: { chuaNhap: number; quaHan: number } | null;
-};
+export type BangGv = { cn: number; tenChiNhanh: string; ct: ChuongTrinh; hang: HangGv[]; chuaPhanCong: { chuaNhap: number; quaHan: number } | null };
 
 /**
  * Mỗi hàng = MỘT người, chỉ số của chính người đó trong chi nhánh `cn` và khung `ct`; sắp theo TÊN. Số câu SQL không tăng theo số GV / lớp / Case:
@@ -377,8 +375,7 @@ export function bangGvChiNhanh(p: Principal, q: { cn?: number | null; ct?: strin
   }
   hang.sort((a, b) => a.ten.localeCompare(b.ten, 'vi') || a.id - b.id);
   /* PR-UXF-a Q8: bài của môn CHƯA PHÂN CÔNG giáo viên vẫn là nợ — dòng riêng cuối bảng (không phải người, không hồ sơ) để Σ = ô Tổng quan. */
-  const khongNguoi = no.filter((d) => d.userId === null && locKhung(ct, bang.get(d.classId)?.isFastTrack ? 'ft' : 'thuong'));
-  const dem = (ds: DebtCell[]) => (ds.length ? { chuaNhap: ds.length, quaHan: ds.filter((d) => d.overdue).length } : null);
+  const chuaPc = no.filter((d) => d.userId === null && !d.chamCheo && locKhung(ct, bang.get(d.classId)?.isFastTrack ? 'ft' : 'thuong'));
   return { cn, tenChiNhanh: cb.name, ct, hang,
-    chuaPhanCong: dem(khongNguoi.filter((d) => !d.chamCheo)), chamCheo: dem(khongNguoi.filter((d) => d.chamCheo)) };
+    chuaPhanCong: chuaPc.length ? { chuaNhap: chuaPc.length, quaHan: chuaPc.filter((d) => d.overdue).length } : null };
 }
