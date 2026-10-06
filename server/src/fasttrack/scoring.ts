@@ -1,5 +1,5 @@
 import {
-  ASSESSED_SKILLS, CRITERIA_SKILLS, ENTRY_SKILLS, RAW_SCORE_SKILLS, expectationDelta,
+  ASSESSED_SKILLS, CRITERIA_SKILLS, ENTRY_SKILLS, RAW_SCORE_SKILLS, expectationDelta, roundToHalf,
   type AssessedSkill, type EntrySkill, type SosLevel,
 } from '../../../shared/domain/index.ts';
 
@@ -18,10 +18,8 @@ export const READING_BY_RAW = [
 
 export class ScoreError extends Error {}
 
-/** Làm tròn về mức 0.5 gần nhất, .25 và .75 làm tròn LÊN như Excel (không làm tròn về số chẵn). */
-export function roundToHalf(value: number): number {
-  return Math.round(value * 2 + 1e-9) / 2;
-}
+/** Làm tròn về mức 0.5 — luật ở `shared/domain/tongKetLoTrinh.ts` (PR-TK dùng chung); giữ tên cũ ở đây. */
+export { roundToHalf };
 
 export function bandFromRaw(skill: 'listening' | 'reading', raw: number): number {
   if (!Number.isInteger(raw)) throw new ScoreError('Số câu đúng phải là số nguyên.');
