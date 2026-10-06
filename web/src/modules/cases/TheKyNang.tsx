@@ -97,7 +97,7 @@ function KhoiCase({ c, onMoCase }: { c: CaseCard; onMoCase: (caseId: number, o?:
   return (
     <div className="mt-2 border-t pt-2" style={{ borderColor: 'var(--line)' }}>
       <div className="flex min-w-0 items-center gap-1.5 text-[12.5px] font-bold text-slate-100">
-        <NhanLoai loai="Case" /><span className="min-w-0 truncate"><TenCase c={c} /></span>
+        <NhanLoai loai="Case" /><span className="min-w-0 truncate max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words"><TenCase c={c} /></span>
       </div>
       <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[12px] text-slate-400">
         {tamDung && tt.t === 'qua-han' ? <NhanTamDung tu={tamDung} /> : <NhanTrangThai t={tt.t} title={tt.chu} />}
@@ -138,7 +138,7 @@ function KhoiPa({ p, c, onMoCase }: { p: Plan; c: CaseCard; onMoCase: (caseId: n
     <div className="relative ml-3 mt-2 rounded-lg bg-[color:var(--surface-2)] px-2.5 py-2 pl-3">
       <span aria-hidden className="absolute -left-3 top-0 h-4 w-3 rounded-bl-md border-b-[1.5px] border-l-[1.5px]" style={{ borderColor: 'var(--line-strong)' }} />
       <button type="button" onClick={() => onMoCase(c.id, { paId: p.id })} className="flex w-full min-w-0 items-center gap-1.5 border-0 bg-transparent p-0 text-left text-[12.5px] font-semibold text-slate-100">
-        <NhanLoai loai="PA" cho={choKh} /><span className="min-w-0 truncate">{p.name}</span>
+        <NhanLoai loai="PA" cho={choKh} /><span className="min-w-0 truncate max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words">{p.name}</span>
       </button>
       <div className="mt-0.5 truncate text-[12px] text-slate-400">{[p.performer ?? 'chưa có người thực hiện', khoang].filter(Boolean).join(' · ')}</div>
       <DongXinYKien x={p.xinYKien} ngan={ngan} />

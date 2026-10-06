@@ -57,10 +57,10 @@ export function DongViec({ it, onOpen, nutPhu }: {
       <span className="pt-0.5 sm:pt-0"><NhanTrangThai t={it.urgency === 'overdue' ? 'qua-han' : 'can-lam'} /></span>
       <button type="button" className="min-w-0 appearance-none border-0 bg-transparent p-0 text-left cursor-pointer" onClick={() => onOpen(it.href)}>
         <span className="flex min-w-0 items-center gap-2">
-          <span className="truncate text-[13px] font-semibold text-slate-100">{it.tieuDe}</span>
+          <span className="truncate text-[13px] font-semibold text-slate-100 max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words">{it.tieuDe}</span>
           {it.level && <Level tone={toneTheoNhan(it.level.text, it.level.tone)}>{it.level.text}</Level>}
         </span>
-        <span className="block truncate text-[11px] text-slate-500">
+        <span className="block truncate text-[11px] text-slate-500 max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words">
           {dongPhu}{nguoi && <>{dongPhu ? ' · ' : ''}<span className="text-xs text-slate-400">{nguoi}</span></>}
         </span>
       </button>

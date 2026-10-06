@@ -476,7 +476,8 @@ export function ExamPlanText({ plan }: { plan?: { confidence: string; label: str
   return <span className="text-slate-100 font-medium">{plan.label}</span>;
 }
 
-/** ĐANG CHỌN (UX-B B3, HE §2 "Đang chọn"): viền teal-600 + nền ink-800 + ✓ nhỏ + aria-pressed — KHÁC nút chính (xanh đặc = Lưu). */
+/** ĐANG CHỌN (UX-B B3, HE §2 "Đang chọn"): viền teal-600 + nền ink-800 + ✓ nhỏ + aria-pressed — KHÁC nút chính (xanh đặc = Lưu).
+ * PR-KHUNG G2: nút CHỌN được xuống dòng (`.btn` nowrap chỉ cho nút thao tác); ✓ chỉ vẽ ở nút đang chọn — không chừa chỗ trống làm chữ tràn viền. */
 /* `!`: `.btn:hover:not(:disabled)` (index.css) mạnh hơn lớp Tailwind thường — không có `!` thì rê chuột là mất kiểu đang chọn. */
 const CHON = '!border-teal-600 !bg-ink-800 text-slate-100';
 type NutChonProps = {
@@ -485,8 +486,8 @@ type NutChonProps = {
 export function NutChon({ chon, onClick, children, nho, className = '', disabled, title }: NutChonProps) {
   return (
     <button type="button" aria-pressed={chon} onClick={onClick} disabled={disabled} title={title}
-      className={`btn ${nho ? 'btn-sm' : ''} min-h-[44px] gap-1 sm:min-h-0 ${chon ? CHON : ''} ${className}`}>
-      <span aria-hidden className={`text-[11px] leading-none text-teal-300 ${chon ? '' : 'invisible'}`}>✓</span>{children}
+      className={`btn ${nho ? 'btn-sm' : ''} min-h-[44px] min-w-0 gap-1 whitespace-normal text-center leading-tight sm:min-h-0 ${chon ? CHON : ''} ${className}`}>
+      {chon && <span aria-hidden className="shrink-0 text-[11px] leading-none text-teal-300">✓</span>}{children}
     </button>
   );
 }
@@ -496,8 +497,11 @@ type BoLocDoanProps<K extends string> = {
   muc: { key: K; nhan: string; so?: number | null; title?: string }[]; value: K; onChange: (k: K) => void; ariaLabel: string;
 };
 export function BoLocDoan<K extends string>({ muc, value, onChange, ariaLabel }: BoLocDoanProps<K>) {
+  /* PR-KHUNG G5 (chủ sản phẩm 06/10): điện thoại giữ MỘT hàng, vuốt ngang, mép phải mờ báo còn nút. Khung vuốt bọc ngoài viền
+     nút đoạn: mép mờ rơi vào khoảng đệm pr-8 khi hàng vừa màn, không làm mờ viền / nút cuối. */
   return (
-    <div role="group" aria-label={ariaLabel} className="inline-flex max-w-full overflow-x-auto rounded-lg border" style={{ borderColor: 'var(--line-strong)' }}>
+    <div className="inline-flex max-w-full overflow-x-auto max-sm:[scrollbar-width:none] max-sm:pr-8 max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)]">
+    <div role="group" aria-label={ariaLabel} className="inline-flex shrink-0 rounded-lg border" style={{ borderColor: 'var(--line-strong)' }}>
       {muc.map((m, i) => {
         const chon = m.key === value;
         return (
@@ -509,6 +513,7 @@ export function BoLocDoan<K extends string>({ muc, value, onChange, ariaLabel }:
           </button>
         );
       })}
+    </div>
     </div>
   );
 }

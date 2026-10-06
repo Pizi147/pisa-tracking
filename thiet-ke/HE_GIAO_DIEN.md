@@ -341,6 +341,14 @@ hàng dưới. Đây là lỗi của component + khung chứa, không phải l�
   báo một lỗi chung.
 - Trên điện thoại, ô bấm phải cao ít nhất 44px.
 
+### Khung cuộn, chữ, nút (PR-KHUNG, chủ sản phẩm 06/10)
+
+- **Một thanh cuộn: chỉ `<main>` cuộn.** html không bao giờ cuộn (`<main>` là `relative`); khối trong trang không tự cuộn dọc
+  (`max-h-*` + `overflow-y-auto`) — trừ menu, danh sách gợi ý, popover và thân panel. Khối cuộn ngang (bảng) đặt `overflow-y: hidden`.
+- **Nút CHỌN được xuống dòng, nút THAO TÁC không.** `NutChon` xuống dòng trong viền, ✓ chỉ ở nút đang chọn; `.btn` (Lưu, Nhập điểm…)
+  giữ một dòng. Dưới 640px chữ việc / tên Case / tên PA xuống dòng, không cắt "…" (máy tính giữ cắt + `title`).
+- **Hàng lọc / hàng tab trên điện thoại: một hàng, vuốt ngang, mép phải mờ** (`BoLocDoan`, `HangTab`, Góc nhìn Phân tích) — không xuống dòng.
+
 ### Bàn phím và focus (PR-NEN, UX-E E2 · E3)
 
 - **`Esc` chỉ đóng lớp trên cùng**, từng lớp một: lịch → menu (menu ⋯, danh sách chọn người) → Modal → panel. Đóng lịch
