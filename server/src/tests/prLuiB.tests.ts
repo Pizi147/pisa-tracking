@@ -375,6 +375,7 @@ export async function runPrLuiBTests(t: YThucTestKit) {
     const lop = classId('MB FOU 12');
     const ngayKt = addDays(TODAY, -20);
     svc.setStudentStatus(P.mbManager, sid, 'finished', ngayKt, 'Nghỉ học');
+    conn.prepare(`UPDATE enrollments SET status = 'completed' WHERE class_id = ? AND status = 'active'`).run(lop);   // lớp đã kết thúc thật thì không còn ai đang học
     conn.prepare(`UPDATE classes SET status = 'finished', finished_at = ? WHERE id = ?`).run(ngayKt, lop);
     const sauKt = anh(sid);
     svc.hocLai(P.mbManager, sid, { moLaiLop: true });
@@ -383,6 +384,8 @@ export async function runPrLuiBTests(t: YThucTestKit) {
     assert(anh(sid) === sauKt, `không về trạng thái sau Kết thúc học:\n${sauKt}\n${anh(sid)}`);
     const c = conn.prepare('SELECT status, finished_at FROM classes WHERE id = ?').get(lop) as any;
     assert(c.status === 'finished' && c.finished_at === ngayKt, `lớp phải đóng lại với ngày cũ: ${JSON.stringify(c)}`);
+    const nk = conn.prepare(`SELECT actor_user_id FROM audit_logs WHERE action = 'class.finished' AND entity_id = ? ORDER BY id DESC LIMIT 1`).get(lop) as any;
+    assert(nk?.actor_user_id === P.mbManager.userId, 'đóng lại lớp phải có nhật ký class.finished của người bấm');
     assert(maLoi(() => svc.hoanTacHocLai(P.mbManager, sid)) === 409, 'hoàn tác hai lần → 409');
     assert(maLoi(() => svc.hoanTacHocLai(P.coreTeacher, sid)) === 403, 'GVCN 403');
   }));
@@ -481,6 +484,55 @@ export async function runPrLuiBTests(t: YThucTestKit) {
     assert(xt.indexOf('Có hiệu lực từ') < xt.indexOf('<Truong nhan="Lý do'), 'Ngày phải nằm trên Lý do ở panel hàng loạt');
     assert(doc('web/src/lib/api.ts').includes('Mất kết nối máy chủ'), 'lỗi mạng phải là tiếng Việt');
   });
+
+  await checkAsync('LUIb-29 · Vòng 2 (1): Hoàn tác Học lại sang lớp FT gỡ được — lịch MT mặc định ("created") không phải dữ liệu của người dùng', () => thu(() => {
+    const sid = dangHocTrong('MB FOU 12', 1)[0];
+    svc.setStudentStatus(P.mbManager, sid, 'finished', addDays(TODAY, -3), 'Nghỉ học');
+    const sauKt = anh(sid);
+    svc.hocLai(P.mbManager, sid, { lopMoiId: classId('MB FT 101'), mucTieu: 6.5 });
+    const cyMoi = (conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(sid) as any).id as number;
+    assert((conn.prepare('SELECT COUNT(*) n FROM assessment_attempts WHERE cycle_id = ?').get(cyMoi) as any).n > 0, 'lộ trình FT có lịch MT mặc định');
+    svc.hoanTacHocLai(P.mbManager, sid);
+    assert(anh(sid) === sauKt, `không về trạng thái sau Kết thúc học:\n${sauKt}\n${anh(sid)}`);
+    assert((conn.prepare('SELECT COUNT(*) n FROM assessment_attempts WHERE cycle_id = ?').get(cyMoi) as any).n === 0, 'lượt MT mặc định phải gỡ');
+    assert((conn.prepare('SELECT COUNT(*) n FROM learning_cycles WHERE id = ?').get(cyMoi) as any).n === 0, 'lộ trình mới phải gỡ');
+  }));
+
+  await checkAsync('LUIb-30 · Vòng 2 (2): Hoàn tác Học lại chỉ đóng lại lớp khi KHÔNG còn ghi danh đang học nào (kể cả em khác cũng vừa Học lại)', () => thu(() => {
+    const [a, b] = dangHocTrong('MB FOU 12', 2);
+    const lop = classId('MB FOU 12');
+    const ngayKt = addDays(TODAY, -20);
+    svc.setStudentStatus(P.mbManager, a, 'finished', ngayKt, 'Nghỉ học');
+    svc.setStudentStatus(P.mbManager, b, 'finished', ngayKt, 'Nghỉ học');
+    conn.prepare(`UPDATE enrollments SET status = 'completed' WHERE class_id = ? AND status = 'active'`).run(lop);
+    conn.prepare(`UPDATE classes SET status = 'finished', finished_at = ? WHERE id = ?`).run(ngayKt, lop);
+    svc.hocLai(P.mbManager, a, { moLaiLop: true });
+    svc.hocLai(P.mbManager, b);
+    svc.hoanTacHocLai(P.mbManager, a);
+    assert((conn.prepare('SELECT status FROM classes WHERE id = ?').get(lop) as any).status === 'active', 'em b vẫn đang học → lớp phải còn hoạt động');
+    assert((conn.prepare(`SELECT status FROM enrollments WHERE student_id = ? AND class_id = ? ORDER BY id DESC`).get(b, lop) as any).status === 'active', 'em b vẫn đang học');
+  }));
+
+  await checkAsync('LUIb-31 · Vòng 2 (3b): Hoàn tác chỉ khi là thao tác MỚI NHẤT của em — sau đó có Chuyển lớp thì 409 câu rõ', () => thu(() => {
+    const sid = dangHocTrong('MB FOU 12', 1)[0];
+    const lopMoi = (conn.prepare(`SELECT id FROM classes WHERE status = 'active' AND is_fast_track = 0 AND branch_id = ? AND id != ? ORDER BY id LIMIT 1`).get(mbId, classId('MB FOU 12')) as any).id as number;
+    const lopKhac = (conn.prepare(`SELECT id FROM classes WHERE status = 'active' AND is_fast_track = 0 AND branch_id = ? AND id NOT IN (?, ?) ORDER BY id LIMIT 1`).get(mbId, classId('MB FOU 12'), lopMoi) as any).id as number;
+    svc.setStudentStatus(P.mbManager, sid, 'finished', addDays(TODAY, -3), 'Nghỉ học');
+    svc.hocLai(P.mbManager, sid, { lopMoiId: lopMoi });
+    svc.transferStudent(P.mbManager, sid, lopKhac, TODAY, 'Đổi lớp', { note: 'Bàn giao thử' });
+    const truoc = anh(sid);
+    assert(maLoi(() => svc.hoanTacHocLai(P.mbManager, sid)) === 409, 'đã chuyển lớp sau Học lại → 409');
+    assert(anh(sid) === truoc, '409 không được đổi gì');
+  }));
+
+  await checkAsync('LUIb-32 · Vòng 2 (3a): Học lại FT → FT: máy chủ báo lớp cũ là FT + Target cũ, web không bắt nhập Target lại mà điền sẵn', () => thu(() => {
+    const sid = dangHocTrong('MB FT 101', 1)[0];
+    svc.setStudentStatus(P.mbManager, sid, 'finished', addDays(TODAY, -3), 'Nghỉ học');
+    const hoi = svc.lopChoHocLai(P.mbManager, sid);
+    assert(hoi.lopCu.ft === true && 'target' in hoi.loTrinh, JSON.stringify([hoi.lopCu, hoi.loTrinh]));
+    const sm = doc('web/src/modules/students/StudentManagePanel.tsx');
+    assert(sm.includes('lopCu?.ft') && sm.includes('loTrinh.target'), 'web phải dùng lopCu.ft + loTrinh.target');
+  }));
 
   void doc;
 }

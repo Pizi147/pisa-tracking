@@ -191,7 +191,7 @@ function LuuTruPanel({ studentId, studentName, lop, onClose, onDone, boLuuTru }:
 }
 
 type LopDich = { id: number; code: string; ft: boolean; ma: string | null; route: string | null; tenChuongTrinh: string | null; tuan: string | null; gvcn: string | null; siSo?: number };
-type DuLieuHocLai = { lopCu: { id: number; code: string; daKetThuc: boolean } | null; loTrinh: { chayTiep: boolean; ten: string | null }; chiNhanh: { id: number; name: string }[]; lop: LopDich[] };
+type DuLieuHocLai = { lopCu: { id: number; code: string; daKetThuc: boolean; ft: boolean } | null; loTrinh: { chayTiep: boolean; ten: string | null; target: string }; chiNhanh: { id: number; name: string }[]; lop: LopDich[] };
 
 /**
  * HỌC LẠI (PR-LUI-b, chủ sản phẩm 06/10) — đường lui của Kết thúc học, chỉ Quản lý / Quản trị. CHỌN ĐÍCH: `Về lớp cũ` (lộ trình cũ chạy tiếp; lớp cũ đã kết thúc thì
@@ -204,15 +204,19 @@ function HocLaiPanel({ studentId, studentName, lop, onClose, onDone }: ChungViec
   const { data, error, reload } = useApi<DuLieuHocLai>(`/students/${studentId}/hoc-lai/lop-dich`, [studentId]);
   const [dich, setDich] = useState<'cu' | 'moi'>('cu');
   const [lopMoiId, setLopMoiId] = useState<number | ''>('');
-  const [target, setTarget] = useState('');
+  const [targetGo, setTargetGo] = useState<string | null>(null);   // null = chưa gõ → dùng Target cũ khi FT → FT
   const [thi, setThi] = useState('');
   const [lyDo, setLyDo] = useState('');
   const [ngayHl, setNgayHl] = useState('');
   const [busy, setBusy] = useState(false);
   const lopMoi = data?.lop.find((l) => l.id === lopMoiId) ?? null;
   const canTarget = dich === 'moi' && !!lopMoi?.ft;
+  /* FT → FT: máy chủ giữ Target cũ → điền sẵn, không bắt nhập lại; từ lớp thường lên FT mới bắt buộc. */
+  const giuTargetCu = !!data?.lopCu?.ft;
+  const target = targetGo ?? (giuTargetCu ? data?.loTrinh.target ?? '' : '');
+  const setTarget = (v: string) => setTargetGo(v);
   const loi = dsLoi([...(dich === 'moi' ? [{ khoa: 'lop', nhan: 'Lớp', toiThieu: 1 }] : [])], { lop: lopMoiId === '' ? '' : String(lopMoiId) });
-  if (canTarget && !target.trim()) loi.push({ khoa: 'target', nhan: 'Target', lyDo: 'Lên FT cần Target' });
+  if (canTarget && !giuTargetCu && !target.trim()) loi.push({ khoa: 'target', nhan: 'Target', lyDo: 'Lên FT cần Target' });
   /* Tên lộ trình đúng như hồ sơ gọi: lớp FT = LT1 / RF…, lớp thường = chương trình (FOU…). */
   const tenLoTrinhMoi = lopMoi ? (lopMoi.ft ? lopMoi.route : lopMoi.ma) : null;
   const chan = !data?.lopCu ? 'Chưa có lớp để học lại' : null;
@@ -224,7 +228,7 @@ function HocLaiPanel({ studentId, studentName, lop, onClose, onDone }: ChungViec
     try {
       await api.post(`/students/${studentId}/hoc-lai`, {
         date: ngayHl || undefined, lyDo: lyDo.trim() || undefined, moLaiLop: true,
-        ...(dich === 'moi' ? { lopMoiId, mucTieu: canTarget ? (target.trim().toUpperCase() === KCK ? KCK : Number(target)) : undefined, thangThi: thi || undefined } : {}),
+        ...(dich === 'moi' ? { lopMoiId, mucTieu: canTarget && target.trim() ? (target.trim().toUpperCase() === KCK ? KCK : Number(target)) : undefined, thangThi: thi || undefined } : {}),
       });
       for (const k of ['/students', '/classes', '/hoc-vien-lop', '/cases']) invalidate(k);
       toast.hoanTac(`Đã cho ${studentName} học lại${lopMoi ? ` · ${lopMoi.code}` : ''}`, async () => {
@@ -268,7 +272,7 @@ function HocLaiPanel({ studentId, studentName, lop, onClose, onDone }: ChungViec
                 </Truong>
                 {canTarget && (
                   <>
-                    <Truong nhan="Target" batBuoc loi={lf.loiCua(loi, 'target')}>
+                    <Truong nhan="Target" batBuoc={!giuTargetCu} loi={lf.loiCua(loi, 'target')}>
                       <input className="field w-full max-w-[8rem]" inputMode="decimal" placeholder="Ví dụ: 6.5" {...lf.o(loi, 'target')} value={target} onChange={(e) => setTarget(e.target.value)} />
                     </Truong>
                     <Truong nhan="Dự kiến thi" tuyChon><ONgay kieu="ngay-hoac-thang" value={thi} goiY="dd/mm/yyyy hoặc mm/yyyy" onChange={setThi} /></Truong>
