@@ -77,10 +77,11 @@ export async function runPrKhungTests(t: Pick<YThucTestKit, 'check' | 'assert'>)
     assert(m && /(^|\s)pb-2(\s|$)/.test(m[1]), m?.[1] ?? 'không thấy dòng ngCanh');
   });
 
-  check('K8 · bảng Phân tích lớp / Bảng điểm lớp thường: cuộn ngang không sinh cuộn dọc lồng (overflow-y-hidden)', () => {
+  check('K8 · bảng Phân tích lớp / Bảng điểm lớp thường: cuộn ngang không sinh cuộn dọc lồng (.table-scroll overflow-y hidden)', () => {
     for (const f of ['web/src/modules/classes/PhanTichLopTab.tsx', 'web/src/modules/classes/BangDiemLopThuong.tsx']) {
       const s = doc(f);
-      assert(/card overflow-x-auto overflow-y-hidden/.test(s) || !/card overflow-x-auto/.test(s), `${f}: thẻ cuộn ngang thiếu overflow-y-hidden`);
+      assert(!/card overflow-x-auto/.test(s), `${f}: thẻ cuộn ngang tự đặt overflow-x-auto — dùng .table-scroll (overflow-y hidden)`);
     }
+    assert(/\.table-scroll\s*\{[^}]*overflow-y:\s*hidden/.test(doc('web/src/index.css')), '.table-scroll thiếu overflow-y: hidden');
   });
 }

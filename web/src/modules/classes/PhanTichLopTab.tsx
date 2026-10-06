@@ -38,7 +38,7 @@ export function PhanTichLopTab({ classId }: { classId: number }) {
     : 'Mỗi ô: số học viên đạt (từ 70%) / số học viên đã có điểm môn đó. Bấm một dòng để xem vấn đề hay gặp.';
 
   return (
-    <div className="card overflow-x-auto overflow-y-hidden">
+    <div className="card table-scroll">
       <table className="w-full min-w-[560px] table-fixed text-sm">
         <colgroup><col className="w-40" />{data.cot.map((c) => <col key={c.key} />)}</colgroup>
         <thead>
