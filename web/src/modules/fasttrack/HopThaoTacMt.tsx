@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
@@ -7,8 +7,9 @@ import { ONgay } from '../../ui/ONgay.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { TuanNho, type Tuan } from '../test/keHoach/TuanNho.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { Nhan } from '../../ui/Nhan.tsx';
 import {
-  CHU_THAO_TAC, canLyDo, dongHeQuaVuot, kiemLyDoThaoTac, mondayOfDate, ngay, tenMon, tuanLich, type LoiTruong, type ThaoTac,
+  CHU_THAO_TAC, canLyDo, cauSeHuyLich, chuDoiVuot, chuLuuVuot, kiemLyDoThaoTac, mondayOfDate, ngay, tenMon, tuanLich, type LoiTruong, type ThaoTac,
 } from '@shared/domain/index.ts';
 
 /** Thao tác một kỹ năng mở bằng hộp này — Nhập/Sửa điểm làm tại chỗ, Xếp lại bài vắng / Trả lời đề nghị có hộp riêng. */
@@ -41,6 +42,8 @@ export type HopThaoTacProps = {
   oCoDiem?: string[]; oMacDinh?: string[];
   /** Mở từ hộp xếp lịch nổi (`HopKyNang`, z-60): panel nằm trên hộp đó và không thay panel đang mở bên dưới (PR-LM). */
   trongHop?: boolean;
+  /** Nhãn đợt đang dời ('MT1') cho tiêu đề hộp dời vượt; thiếu thì 'MT này'. */
+  nhanMt?: string;
   /** Ngữ cảnh ở đầu panel (luật KhungPanel). */
   hocVien?: string | null; lop?: string | null;
   onClose: () => void; onDone: () => void;
@@ -52,7 +55,7 @@ export type HopThaoTacProps = {
  * Máy chủ kiểm lại mọi luật; câu lỗi của máy chủ hiện nguyên văn TRONG panel (không đóng panel, không mất chữ đã gõ).
  * Khung: `KhungPanel` (I4, PR-LM) — chân theo luật S3: chưa sửa "Đóng", đã sửa "Huỷ thay đổi"; thao tác nguy hiểm nút chính đỏ.
  */
-export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, tuanDaBatDau, row, oCoDiem = [], oMacDinh, trongHop, hocVien, lop, onClose, onDone }: HopThaoTacProps) {
+export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, tuanDaBatDau, row, oCoDiem = [], oMacDinh, trongHop, nhanMt = 'MT này', hocVien, lop, onClose, onDone }: HopThaoTacProps) {
   const toast = useToast();
   const lf = useLoiForm();
   const { homNay } = useNgayNghiepVu();
@@ -65,6 +68,18 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, tuanDaBa
   const [loiMay, setLoiMay] = useState<string | null>(null);
   /** Q-0310-1: dời kỹ năng này vượt lượt sau → máy chủ trả 409 kèm lượt sẽ bị huỷ lịch; xác nhận rồi gửi lại. */
   const [xacNhan, setXacNhan] = useState<LuotSeHuyLich[] | null>(null);
+  /** Kiểm trước (PR-MTb T6): tuần mới vượt lượt sau → chip vàng / hộp xác nhận. Chỉ Quản lý có quyền kiểm (403 → bỏ qua, 409 lúc lưu vẫn bắt). */
+  const [seHuyLich, setSeHuyLich] = useState<LuotSeHuyLich[]>([]);
+  const dangDoiTuan = !!thaoTac && !laThuong && (thaoTac === 'dat-lich' || thaoTac === 'xep-lai' || thaoTac === 'doi-lich');
+  const periodMoi = tuan?.periodId ?? null;
+  useEffect(() => {
+    if (!dangDoiTuan || !periodMoi || periodMoi === row.periodId) { setSeHuyLich([]); return undefined; }
+    let huy = false;
+    api.post<{ seHuyLich?: LuotSeHuyLich[] }>('/ke-hoach-test/dot/kiem', { attemptId, kyNang: [{ skill, periodId: periodMoi }] })
+      .then((r) => { if (!huy) setSeHuyLich(r.seHuyLich ?? []); })
+      .catch(() => { if (!huy) setSeHuyLich([]); });
+    return () => { huy = true; };
+  }, [dangDoiTuan, periodMoi, attemptId, skill]);   // eslint-disable-line react-hooks/exhaustive-deps
   if (!thaoTac) return null;
   const t = thaoTac;
   const ten = CHU_THAO_TAC[t];
@@ -84,6 +99,8 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, tuanDaBa
     ...(chonW && !o.length ? [{ khoa: 'o', nhan: 'Ô cần huỷ', lyDo: 'Chưa chọn' }] : []),
   ];
   const lyDoGui = lyDo.trim() || undefined;
+  const vuot = chuDoiVuot({ nhan: nhanMt, tuanMoi: tuan?.weekStart ?? '', ds: dangDoiTuan ? seHuyLich : [] }, homNay);
+  const vuotXacNhan = xacNhan ? chuDoiVuot({ nhan: nhanMt, tuanMoi: tuan?.weekStart ?? '', ds: xacNhan }, homNay) : null;
 
   const goi = async (force: boolean, xacNhanHuyLich: boolean, lyDoVuot?: string): Promise<string> => {
     const goc = `/attempts/${attemptId}/skills/${skill}`;
@@ -132,16 +149,18 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, tuanDaBa
   const luu = async (xacNhanHuyLich = false, lyDoVuot?: string) => {
     lf.bam();
     if (loi.length || busy) return;
+    if (vuot.canPopup && !xacNhanHuyLich) { setXacNhan(seHuyLich); return; }   // lượt bị vượt có điểm → hộp xác nhận trước khi gửi
     setBusy(true); setLoiMay(null);
     try {
+      /* Chưa điểm (chip vàng) → lưu thẳng; nếu dữ liệu vừa đổi có điểm thì máy chủ trả 409 → mở hộp xác nhận. */
       const cau = await goi(!!canhBao, xacNhanHuyLich, lyDoVuot);
       invalidate('/attempts'); invalidate('/tong-quan'); invalidate('/classes'); invalidate('/ke-hoach-test'); invalidate('/my-work'); invalidate('/cycles');
-      toast.push('ok', xacNhanHuyLich && xacNhan?.length ? `${cau} · ${xacNhan.map(dongHeQuaVuot).join(' · ')}` : cau);
+      toast.push('ok', dangDoiTuan ? chuLuuVuot(xacNhan ?? seHuyLich, cau) : cau);
       onDone(); dong();
     } catch (e: any) {
       /* T15: cảnh báo (hai đợt quá gần) cần người xác nhận lại — lần bấm sau gửi `force`. */
       if ((t === 'doi-lich' || t === 'dat-lich' || t === 'xep-lai') && /Xác nhận lại/.test(e.message)) setCanhBao(e.message);
-      else if (e instanceof ApiError && e.status === 409 && e.details?.seHuyLich?.length) setXacNhan(e.details.seHuyLich);
+      else if (e instanceof ApiError && e.status === 409 && e.details?.seHuyLich?.length) { setSeHuyLich(e.details.seHuyLich); setXacNhan(e.details.seHuyLich); }   // dữ liệu đổi giữa chừng: mở lại với danh sách mới, giữ chữ Lý do
       else setLoiMay(e.message);
     } finally { setBusy(false); }
   };
@@ -154,7 +173,7 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, tuanDaBa
     <KhungPanel tieuDe={`${ten} · ${mon}`} hocVien={hocVien} lop={lop} onDong={dong} longTrong={trongHop} z={trongHop ? 'z-[70]' : undefined}
       chan={{
         daSua: daSua, huy: { onClick: dong, disabled: busy },
-        dongTren: loiMay ? <p className="m-0 px-4 pt-2 text-xs font-semibold text-bad" role="alert">{loiMay}</p> : undefined,
+        dongTren: loiMay && !xacNhan ? <p className="m-0 px-4 pt-2 text-xs font-semibold text-bad" role="alert">{loiMay}</p> : undefined,
         chinh: (
           <button type="button" className={`btn min-h-[44px] sm:min-h-0 ${nguyHiem ? 'btn-danger' : 'btn-primary'}`} disabled={busy} onClick={() => void luu()}>
             {busy ? 'Đang lưu…' : canhBao ? 'Vẫn dời vào tuần này' : ten}
@@ -190,15 +209,19 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, tuanDaBa
             </div>
           </Truong>
         )}
-        {t !== 'dua-lai' && (
+        {t !== 'dua-lai' && !vuot.canPopup && (
           <Truong nhan="Lý do" batBuoc={batBuoc} tuyChon={!batBuoc} loi={lf.loiCua(loi, 'ly-do')}>
             <textarea className="field w-full" rows={2} maxLength={300} {...lf.o(loi, 'ly-do')} value={lyDo} onChange={(e) => setLyDo(e.target.value)}
               placeholder={t === 'bao-vang' ? 'Ví dụ: em ốm, phụ huynh đã báo' : t === 'huy-diem' ? 'Ví dụ: nhập nhầm bài của em khác' : 'Ví dụ: trùng lịch phòng thi'} />
           </Truong>
         )}
         {canhBao && <p className="m-0 text-xs text-amber-200" role="status">{canhBao}</p>}
+        {vuot.chip && <div><Nhan tone="soon" title={cauSeHuyLich(seHuyLich, homNay)}>{vuot.chip}</Nhan></div>}
       </div>
-      {xacNhan && <HopXacNhanHuyLich ds={xacNhan} busy={busy} onQuayLai={() => setXacNhan(null)} onXacNhan={(ly) => void luu(true, ly)} />}
+      {vuotXacNhan && (
+        <HopXacNhanHuyLich tieuDe={vuotXacNhan.tieuDe} cau={vuotXacNhan.cau} dong={vuotXacNhan.dong} busy={busy} loiMay={loiMay} lyDoDau={lyDo}
+          onDong={() => { setXacNhan(null); setLoiMay(null); }} onXacNhan={(ly) => void luu(true, ly)} />
+      )}
     </KhungPanel>
   );
 }

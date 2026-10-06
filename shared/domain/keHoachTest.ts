@@ -8,7 +8,7 @@
 
 import { studyWeekOf } from './fasttrack.ts';
 import { tuanKhoa, tuanLich } from './hienThiNgay.ts';
-import { MT_TOI_DA, dongHeQuaVuot, kiemSoMtMoi, soMtKeTiep, type LuotSeHuyLich, type LuotSo } from './lichMt.ts';
+import { MT_TOI_DA, canLyDoVuot, chipVuot, dongHeQuaVuot, kiemSoMtMoi, soMtKeTiep, type LuotSeHuyLich, type LuotSo } from './lichMt.ts';
 import { tenMonNgan } from './normal.ts';
 import { addDaysIso } from './sos.ts';
 import { mondayOfDate } from './week.ts';
@@ -340,7 +340,9 @@ export function nhanSeXep(d: DongHangLoat, ct: string | null): { tone: ToneSeXep
   const phanMon = d.viec === 'xep-not' || d.viec === 'thi-lai';   // chỉ một vài kỹ năng: ghi rõ kỹ năng nào
   const chu = phanMon && nhom.length === 1 ? `${mt} · ${dsMon(ct, bai.map((b) => b.skill))} · ${tuanChung}` : `${mt} · ${tuanChung}`;
   const trung = canhBao.map((c) => /^Trùng tuần .* với (MT\d+)/.exec(c)?.[1]).find(Boolean);
-  const phu = trung ? `· trùng ${trung}` : d.hanhDong === 'tao' && d.lichSu ? '· cũ' : null;
+  /* Vượt lượt sau CHƯA có điểm: chữ phụ "· bỏ lịch MT2" (có điểm thì popup nói — không ghi thêm). */
+  const boLich = d.seHuyLich?.length && !canLyDoVuot(d.seHuyLich) ? `· ${chipVuot(d.seHuyLich).replace(/^B/, 'b')}` : null;
+  const phu = trung ? `· trùng ${trung}` : boLich ?? (d.hanhDong === 'tao' && d.lichSu ? '· cũ' : null);
   const soon = phanMon || !!canhBao.length || !!d.seHuyLich?.length || (d.hanhDong === 'tao' && !!d.lichSu);
   return { tone: soon ? 'soon' : 'ok', chu, phu, title };
 }

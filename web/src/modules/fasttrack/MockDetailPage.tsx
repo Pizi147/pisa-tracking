@@ -6,6 +6,7 @@ import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Card, Empty, ErrorState, ExamPlanText, Info as Tag, SectionNote, Skeleton, Status, TargetText } from '../../ui/ui.tsx';
 import { OMt } from '../../ui/OMt.tsx';
+import { Nhan } from '../../ui/Nhan.tsx';
 import type { ExamPlan } from '../../../../shared/domain/index.ts';
 import { ConfirmDialog } from '../../ui/Drawer.tsx';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
@@ -26,7 +27,7 @@ import {
   attemptHref, attemptStatusLabel, fmtBand, fmtDate, progressLabel, skillLabel,
 } from '../../lib/format.ts';
 import {
-  ATTEMPT_KIND_SHORT, CHU_THAO_TAC, canLyDoVuot, cauSeHuyLich, dongHeQuaVuot, mondayOfDate, nhanLuot, thaoTacKyNang, trangThaiTT, tuanLich,
+  ATTEMPT_KIND_SHORT, CHU_THAO_TAC, cauSeHuyLich, chuDoiVuot, chuLuuVuot, mondayOfDate, nhanLuot, thaoTacKyNang, trangThaiTT, tuanLich,
   type AttemptKind, type LoiTruong, type TheYeuCauDto, type ThaoTac,
   docKnMock, KY_NANG_KE_HOACH, oKyNangTuLich, type OMtVao,
 } from '@shared/domain/index.ts';
@@ -305,7 +306,7 @@ export default function MockDetailPage() {
       <HistoryCard d={d} />
 
       {weekOpen && (
-        <WeekModal onClose={() => setWeekOpen(false)} attemptId={d.id} lichSu={d.lichSu} hocVien={d.student.name} lop={d.classCode}
+        <WeekModal onClose={() => setWeekOpen(false)} attemptId={d.id} nhan={`MT${d.attemptNo}`} lichSu={d.lichSu} hocVien={d.student.name} lop={d.classCode}
           kyNang={d.skillSchedule.filter((r) => r.required && r.sitStatus !== 'cancelled'
             && (d.lichSu || (!r.scored && r.sitStatus !== 'sat'))).map((r) => r.skill)}
           currentPeriodId={d.period?.id ?? null} onDone={reload} />
@@ -573,7 +574,7 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory }: {
       )}
 
       {hop && (
-        <HopThaoTacMt key={`${hop.t}:${hop.c.skill}`} thaoTac={hop.t} attemptId={d.id} skill={hop.r.skill} ct={null} laThuong={false}
+        <HopThaoTacMt key={`${hop.t}:${hop.c.skill}`} thaoTac={hop.t} attemptId={d.id} skill={hop.r.skill} ct={null} laThuong={false} nhanMt={`MT${d.attemptNo}`}
           tuanDaBatDau={tuanDaBatDau(hop.r)} row={{ periodId: hop.r.periodId, weekStart: hop.r.weekStart, deadline: hop.r.deadline }}
           oCoDiem={oCoDiemCua(hop.c)} hocVien={d.student.name} lop={d.classCode} onClose={() => setHop(null)} onDone={onDone} />
       )}
@@ -604,8 +605,8 @@ function HistoryCard({ d }: { d: Detail }) {
 // ---------------------------------------------------------------- thao tác cả đợt (menu đầu trang, K4-29)
 
 /** Dời lịch thi CẢ ĐỢT — lối tắt của Quản lý: mọi kỹ năng còn dời được vào một tuần. Tuần thi đã bắt đầu thì bắt lý do (K4-15). */
-function WeekModal({ onClose, attemptId, currentPeriodId, lichSu, kyNang, hocVien, lop, onDone }: {
-  onClose: () => void; attemptId: number; currentPeriodId: number | null; onDone: () => void;
+function WeekModal({ onClose, attemptId, nhan, currentPeriodId, lichSu, kyNang, hocVien, lop, onDone }: {
+  onClose: () => void; attemptId: number; nhan: string; currentPeriodId: number | null; onDone: () => void;
   hocVien: string; lop: string | null;
   /** D3 (PR-LM): MT lịch sử dời được cả đợt, sang tuần đã qua hợp lệ hoặc tương lai — đổi tuần là sửa hồ sơ, luôn cần lý do. */
   lichSu: boolean;
@@ -618,24 +619,28 @@ function WeekModal({ onClose, attemptId, currentPeriodId, lichSu, kyNang, hocVie
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const lf = useLoiForm();
-  const [kiem, setKiem] = useState<{ chan: string[]; canhBao: string[]; seHuyLich: LuotSeHuyLich[] } | null>(null);
+  const [kiem, setKiem] = useState<{ chan: string[]; canhBao: string[]; seHuyLich: LuotSeHuyLich[]; tuanMoi: string } | null>(null);
   const [xacNhan, setXacNhan] = useState<LuotSeHuyLich[] | null>(null);
   const [loiMay, setLoiMay] = useState<string | null>(null);
   const ten = `${CHU_THAO_TAC['doi-lich']} cả đợt`;
   const loi: LoiTruong[] = [];   // T7 (PR-MTa): dời lịch — lý do tuỳ chọn
   const doiTuan = !!periodId && periodId !== currentPeriodId;
+  /* Popup / chip dời vượt (PR-MTb T6): tuần mới = tuần muộn nhất của các kỹ năng sẽ dời (như máy chủ tính `tuanCuoi`). */
+  const vuot = chuDoiVuot({ nhan, tuanMoi: kiem?.tuanMoi ?? '', ds: kiem?.seHuyLich ?? [] }, homNay);
+  const vuotXacNhan = xacNhan ? chuDoiVuot({ nhan, tuanMoi: kiem?.tuanMoi ?? '', ds: xacNhan }, homNay) : null;
 
   /* Đổi tuần → kiểm trước như hộp xếp lịch: cảnh báo một tuần (vàng), chặn (đỏ), lượt sau sẽ bị huỷ lịch (đỏ). */
   useEffect(() => {
     setKiem(null);
     if (!doiTuan || !kyNang.length) return;
     let huy = false;
-    api.post<{ bai: Array<{ ghiChu: string; cau: string | null }>; seHuyLich?: LuotSeHuyLich[] }>('/ke-hoach-test/dot/kiem', {
+    api.post<{ bai: Array<{ ghiChu: string; cau: string | null; den?: string | null }>; seHuyLich?: LuotSeHuyLich[] }>('/ke-hoach-test/dot/kiem', {
       attemptId, kyNang: kyNang.map((skill) => ({ skill, periodId })),
     }).then((r) => {
       if (huy) return;
       const cau = (g: string) => [...new Set(r.bai.filter((b) => b.ghiChu === g && b.cau).map((b) => b.cau as string))];
-      setKiem({ chan: cau('chan'), canhBao: cau('canh-bao'), seHuyLich: r.seHuyLich ?? [] });
+      const tuanMoi = r.bai.filter((b) => b.ghiChu === 'doi' || b.ghiChu === 'canh-bao').map((b) => b.den ?? '').sort().pop() ?? '';
+      setKiem({ chan: cau('chan'), canhBao: cau('canh-bao'), seHuyLich: r.seHuyLich ?? [], tuanMoi });
     }).catch(() => { /* máy chủ vẫn kiểm lại khi lưu */ });
     return () => { huy = true; };
   }, [periodId]);   // eslint-disable-line react-hooks/exhaustive-deps
@@ -644,22 +649,24 @@ function WeekModal({ onClose, attemptId, currentPeriodId, lichSu, kyNang, hocVie
   const luu = async (daXacNhan = false, lyDoVuot?: string) => {
     lf.bam();
     if (loi.length || busy) return;
-    if (kiem && canLyDoVuot(kiem.seHuyLich) && !daXacNhan) { setXacNhan(kiem.seHuyLich); return; }
+    if (vuot.canPopup && !daXacNhan) { setXacNhan(kiem!.seHuyLich); return; }
     setBusy(true); setLoiMay(null);
     try {
       const r = await api.post<any>(`/attempts/${attemptId}/week`, {
-        periodId, reason: lyDoVuot || reason, force: !!kiem?.canhBao.length, xacNhanHuyLich: daXacNhan,
+        periodId, reason: lyDoVuot || reason, force: !!kiem?.canhBao.length,
+        xacNhanHuyLich: daXacNhan,   // chỉ khi đã qua hộp xác nhận; chưa điểm (chip vàng) → lưu thẳng, dữ liệu vừa đổi có điểm → 409 mở hộp
       });
       invalidate('/attempts'); invalidate('/tong-quan'); invalidate('/classes'); invalidate('/cycles');
       onDone(); onClose();
-      const huyLich = daXacNhan && xacNhan?.length ? ` · ${xacNhan.map(dongHeQuaVuot).join(' · ')}` : '';
+      const dau = chuLuuVuot(xacNhan ?? kiem?.seHuyLich ?? [], `Đã dời ${r?.moved?.length ?? ''} kỹ năng`);
       toast.push('ok', r?.keptInPlace?.length
-        ? `Đã dời ${r.moved.length} kỹ năng${huyLich}. Giữ nguyên lịch của ${r.keptInPlace.length} kỹ năng đã thi hoặc đã có điểm.`
-        : `Đã dời ${r?.moved?.length ?? ''} kỹ năng${huyLich}`);
+        ? `${dau}. Giữ nguyên lịch của ${r.keptInPlace.length} kỹ năng đã thi hoặc đã có điểm.`
+        : dau);
       setXacNhan(null);
     } catch (e: any) {
-      if (e instanceof ApiError && e.status === 409 && e.details?.seHuyLich?.length) setXacNhan(e.details.seHuyLich);
-      else { setXacNhan(null); setLoiMay(e.message); }
+      if (e instanceof ApiError && e.status === 409 && e.details?.seHuyLich?.length) {   // dữ liệu đổi giữa chừng: mở lại với danh sách mới, giữ chữ Lý do
+        setKiem((k) => (k ? { ...k, seHuyLich: e.details.seHuyLich } : k)); setXacNhan(e.details.seHuyLich);
+      } else setLoiMay(e.message);   // lỗi máy: hộp xác nhận (nếu đang mở) vẫn mở và hiện lỗi — không mất chữ Lý do
     } finally { setBusy(false); }
   };
   const nut = busy ? 'Đang lưu…' : kiem?.canhBao.length ? 'Vẫn dời vào tuần này' : ten;
@@ -670,7 +677,7 @@ function WeekModal({ onClose, attemptId, currentPeriodId, lichSu, kyNang, hocVie
       chan={{
         daSua: daSua, huy: { onClick: onClose, disabled: busy },
         conThieu: lf.conThieu(loi),
-        dongTren: loiMay ? <p className="m-0 px-4 pt-2 text-xs font-semibold text-bad" role="alert">{loiMay}</p> : undefined,
+        dongTren: loiMay && !xacNhan ? <p className="m-0 px-4 pt-2 text-xs font-semibold text-bad" role="alert">{loiMay}</p> : undefined,
         chinh: <button className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !doiTuan || !!kiem?.chan.length} onClick={() => void luu()}>{nut}</button>,
       }}>
       <div className="space-y-3 pt-3">
@@ -678,20 +685,23 @@ function WeekModal({ onClose, attemptId, currentPeriodId, lichSu, kyNang, hocVie
           onPeriod={setPeriodId} />
         {kiem?.chan.length ? <p className="m-0 text-xs font-semibold leading-relaxed text-bad" role="alert">Chặn: {kiem.chan.join(' ')}</p>
           : kiem?.canhBao.length ? <p className="m-0 text-xs leading-relaxed text-soon" role="status">{kiem.canhBao.join(' ')}</p> : null}
-        {!kiem?.chan.length && !!kiem?.seHuyLich.length && (
-          <p className="m-0 text-xs font-semibold leading-relaxed text-bad" role="alert">{cauSeHuyLich(kiem.seHuyLich, homNay)}</p>
+        {!kiem?.chan.length && vuot.chip && <div><Nhan tone="soon" title={cauSeHuyLich(kiem!.seHuyLich, homNay)}>{vuot.chip}</Nhan></div>}
+        {!vuot.canPopup && (   // có popup thì ô Lý do duy nhất nằm trong hộp xác nhận
+          <Truong nhan="Lý do" tuyChon loi={lf.loiCua(loi, 'ly-do')}>
+            <input className="field" {...lf.o(loi, 'ly-do')} value={reason} onChange={(e) => setReason(e.target.value)}
+              placeholder={lichSu ? 'Ví dụ: nhập nhầm tuần thi' : 'Ví dụ: trùng lịch phòng thi'} />
+          </Truong>
         )}
-        <Truong nhan="Lý do" tuyChon loi={lf.loiCua(loi, 'ly-do')}>
-          <input className="field" {...lf.o(loi, 'ly-do')} value={reason} onChange={(e) => setReason(e.target.value)}
-            placeholder={lichSu ? 'Ví dụ: nhập nhầm tuần thi' : 'Ví dụ: trùng lịch phòng thi'} />
-        </Truong>
         <SectionNote>
           {lichSu
             ? 'MT cũ: đổi tuần là sửa hồ sơ — điểm giữ nguyên.'
             : 'Các kỹ năng chưa thi chuyển sang cùng một tuần; kỹ năng đã thi hoặc có điểm giữ nguyên. Muốn tách Speaking thì dời ở dòng kỹ năng.'}
         </SectionNote>
       </div>
-      {xacNhan && <HopXacNhanHuyLich ds={xacNhan} busy={busy} onQuayLai={() => setXacNhan(null)} onXacNhan={(ly) => void luu(true, ly)} />}
+      {vuotXacNhan && (
+        <HopXacNhanHuyLich tieuDe={vuotXacNhan.tieuDe} cau={vuotXacNhan.cau} dong={vuotXacNhan.dong} busy={busy} loiMay={loiMay} lyDoDau={reason}
+          onDong={() => { setXacNhan(null); setLoiMay(null); }} onXacNhan={(ly) => void luu(true, ly)} />
+      )}
     </KhungPanel>
   );
 }

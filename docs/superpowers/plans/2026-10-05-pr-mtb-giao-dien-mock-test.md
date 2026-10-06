@@ -320,12 +320,12 @@ export function HopXacNhanHuyLich(p: { tieuDe: string; cau: string; dong: string
 ```
 Mỗi cổng: `chuDoiVuot(...).canPopup` → mở hộp; xác nhận → gửi lại `xacNhanHuyLich: true` + lý do (trường theo A2, đề xuất `reason`). Không `canPopup` mà có `seHuyLich` → chip vàng `chip` (title `cauSeHuyLich`), lưu thẳng `xacNhanHuyLich: true`. 409 có `details.seHuyLich` → mở lại với danh sách mới (giữ `HopKyNang.tsx:191-193`, `MockDetailPage.tsx:656-658`).
 
-- [ ] **Step 1: Phép đỏ (luật thuần)** `chuDoiVuot`: ví dụ mockup phần 4 (MT1 → W2 NOV; MT2 `soDiem 4, soCase 1`; MT3 `soDiem 0`) → `tieuDe 'Dời MT1 sang W2 NOV?'`, `cau 'MT1 muộn hơn MT2, MT3.'`, `dong ['MT2: huỷ 4 điểm, đóng 1 Case','MT3: bỏ lịch']`, `canPopup true`; chỉ MT3 → `canPopup false`, `chip 'Bỏ lịch MT3'`.
-- [ ] **Step 2: Phép đỏ (DB, khoá tên trường web dùng)**: QL dời MT1 qua MT2 có điểm ở **mỗi** cổng — `POST /ke-hoach-test/dot`, `/attempts/:id/week`, `/attempts/:id/skills/:skill/week`, `/ke-hoach-test/hang-loat` (A3) — không xác nhận → 409, `details.seHuyLich[0].soDiem === 4`; xác nhận thiếu lý do → 400; đủ → 200. Phép hành vi đầy đủ là của MTa; ở đây chỉ assert tên trường và mã lỗi.
-- [ ] **Step 3: Phép đỏ quét nguồn**: `HopXacNhanHuyLich.tsx` có `'Dời và huỷ'`, `'Lý do'`, `'Đóng'`, `kiemLyDoThaoTac`, không còn `'Huỷ lịch và lưu'`, `'Quay lại'`; 4 cổng có `chuDoiVuot`.
-- [ ] **Step 4:** Vẽ lại + nối 4 cổng. Toast sau lưu: `Đã lưu lịch · huỷ kết quả MT2` / `· bỏ lịch MT3`.
-- [ ] **Step 5:** `npm run check`. Bấm thử QL ở 4 cổng; giả 409 giữa chừng (tab 2 nhập thêm điểm MT2, tab 1 bấm "Dời và huỷ") → hộp mở lại số mới, Lý do còn nguyên. Ảnh.
-- [ ] **Step 6: Commit** `feat(mtb): popup dời vượt ở mọi cổng dời`.
+- [x] **Step 1: Phép đỏ (luật thuần)** `chuDoiVuot`: ví dụ mockup phần 4 (MT1 → W2 NOV; MT2 `soDiem 4, soCase 1`; MT3 `soDiem 0`) → `tieuDe 'Dời MT1 sang W2 NOV?'`, `cau 'MT1 muộn hơn MT2, MT3.'`, `dong ['MT2: huỷ 4 điểm, đóng 1 Case','MT3: bỏ lịch']`, `canPopup true`; chỉ MT3 → `canPopup false`, `chip 'Bỏ lịch MT3'`.
+- [x] **Step 2: Phép đỏ (DB, khoá tên trường web dùng)**: QL dời MT1 qua MT2 có điểm ở **mỗi** cổng — `POST /ke-hoach-test/dot`, `/attempts/:id/week`, `/attempts/:id/skills/:skill/week`, `/ke-hoach-test/hang-loat` (A3) — không xác nhận → 409, `details.seHuyLich[0].soDiem === 4`; xác nhận thiếu lý do → 400; đủ → 200. Phép hành vi đầy đủ là của MTa; ở đây chỉ assert tên trường và mã lỗi.
+- [x] **Step 3: Phép đỏ quét nguồn**: `HopXacNhanHuyLich.tsx` có `'Dời và huỷ'`, `'Lý do'`, `'Đóng'`, `kiemLyDoThaoTac`, không còn `'Huỷ lịch và lưu'`, `'Quay lại'`; 4 cổng có `chuDoiVuot`.
+- [x] **Step 4:** Vẽ lại + nối 4 cổng. Toast sau lưu: `Đã lưu lịch · huỷ kết quả MT2` / `· bỏ lịch MT3`.
+- [x] **Step 5:** `npm run check`. Bấm thử QL ở 4 cổng; giả 409 giữa chừng (tab 2 nhập thêm điểm MT2, tab 1 bấm "Dời và huỷ") → hộp mở lại số mới, Lý do còn nguyên. Ảnh.
+- [x] **Step 6: Commit** `feat(mtb): popup dời vượt ở mọi cổng dời`.
 
 ### Task 7: Lý do tuỳ chọn (T7) + tuần đã qua cho QL (T4) ở web
 Skill: test-driven-development · `/impeccable harden`

@@ -40,19 +40,21 @@ function KhungModal({ onClose, title, children, footer, width, z }: {
 }
 
 /** Xác nhận rõ ràng cho thao tác không dùng autosave (chuyển lớp, cảnh báo, import, đổi quyền). */
-export function ConfirmDialog({ open, onClose, onConfirm, title, body, confirmLabel = 'Xác nhận', danger, busy, closeLabel = 'Đóng', z, confirmDisabled }: {
+export function ConfirmDialog({ open, onClose, onConfirm, title, body, confirmLabel = 'Xác nhận', danger, busy, closeLabel = 'Đóng', z, confirmDisabled, confirmTitle }: {
   open: boolean; onClose: () => void; onConfirm: () => void; title: string;
   body: ReactNode; confirmLabel?: string; danger?: boolean; busy?: boolean;
   closeLabel?: string; z?: string;
   /** Nút xác nhận mờ (ví dụ ô lý do bắt buộc còn trống). */
   confirmDisabled?: boolean;
+  /** Tooltip nút xác nhận — nói vì sao đang mờ (ví dụ câu lỗi của ô lý do). */
+  confirmTitle?: string;
 }) {
   return (
     <Modal open={open} onClose={onClose} title={title} width="max-w-md" z={z}
       footer={
         <>
           <button className="btn" onClick={onClose} disabled={busy}>{closeLabel}</button>
-          <button className={`btn ${danger ? 'btn-danger' : 'btn-primary'}`} onClick={onConfirm} disabled={busy || confirmDisabled}>
+          <button className={`btn ${danger ? 'btn-danger' : 'btn-primary'}`} onClick={onConfirm} disabled={busy || confirmDisabled} title={confirmDisabled ? confirmTitle : undefined}>
             {busy ? 'Đang xử lý…' : confirmLabel}
           </button>
         </>
