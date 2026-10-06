@@ -9141,6 +9141,10 @@ await runPrMtaTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 const { runPrLuiBTests } = await import('./prLuiB.tests.ts');
 await runPrLuiBTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
+// ==================================================================== PR-TK (Tổng kết lộ trình) — LUÔN Ở CUỐI: phép kiểm bất biến soi mọi dữ liệu các phép kiểm trước để lại
+const { runPrTkTests } = await import('./prTk.tests.ts');
+await runPrTkTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
