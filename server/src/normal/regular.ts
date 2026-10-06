@@ -20,6 +20,7 @@ import { dotHoanTat, dotHoanTatMany, quyenSuaSauHoanTat } from '../fasttrack/hoa
 import { canRequest } from '../fasttrack/absence.ts';
 import { classProgress, classProgressMany } from '../classes/schedule.ts';
 import { baoLenCuoiKhoaDoiQuaHan, capNhatCuoiKhoaSauChuyen } from './cuoiKhoa.ts';
+import { lamMoiDiemBanChup } from '../loTrinh/banChup.ts';
 
 /**
  * LỚP THƯỜNG (Foundation / Beginner / Elementary).
@@ -746,6 +747,7 @@ export function reportRegularNoShow(
  */
 export function refreshRegularOutcome(p: Principal, attemptId: number) {
   const conn = db();
+  lamMoiDiemBanChup(conn, [attemptId]);   // PR-TK (TK-5): lộ trình đã đóng → bản chụp theo điểm mới
   const r = regularResultOf(attemptId);
   const a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
 

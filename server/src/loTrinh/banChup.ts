@@ -231,3 +231,40 @@ function ghiMotLo(conn: any, ids: number[], o: BanChupVao): number[] {
   }
   return idMoi;
 }
+
+/**
+ * TK-5 (chủ sản phẩm Q1 = A): điểm nhập / sửa SAU khi lộ trình đã đóng → cập nhật bản chụp MỚI NHẤT của lộ trình đó. CHỈ điểm đổi
+ * (`diem`, `dat`, `overall`, `sos`, `ket_qua`, `ty_le_tong`, người / lúc nhập); Target, kỳ vọng, route, chương trình + môn, lớp, GV giữ theo bản chụp.
+ * Gọi ở `refreshOutcome` / `refreshRegularOutcome` — nơi MỌI đường ghi / xoá / khôi phục điểm đều đi qua. Lộ trình đang chạy: một câu rồi thoát.
+ */
+export function lamMoiDiemBanChup(conn: any, attemptIds: number[]): void {
+  if (!attemptIds.length) return;
+  const dong: any[] = [];
+  theoLo(attemptIds, (lo, ph) => {
+    dong.push(...conn.prepare(`SELECT a.id, a.attempt_no, a.status, a.cycle_id, a.kind FROM assessment_attempts a JOIN learning_cycles c ON c.id = a.cycle_id
+      WHERE a.id IN (${ph}) AND c.status <> 'active'`).all(...lo));
+  }, LO);
+  const ngay = nowIso();
+  for (const a of dong) {
+    const bc = conn.prepare('SELECT * FROM ban_chup_lo_trinh WHERE cycle_id = ? ORDER BY lan DESC LIMIT 1').get(a.cycle_id) as any;
+    if (!bc) continue;
+    const cu = conn.prepare('SELECT * FROM ban_chup_luot WHERE ban_chup_id = ? AND attempt_id = ?').all(bc.id, a.id) as any[];
+    if (!cu.length || cu[0].trang_thai === 'cancelled' || a.status === 'cancelled') continue;
+    const nc: NguCanhLuot = { laFt: !!bc.route, route: bc.route ?? null, mon: JSON.parse(bc.mon_json ?? '[]'), maCt: bc.programme_code ?? null };
+    const rows = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ?').all(a.id) as any[];
+    const boQua = cu.filter((r) => r.bo_qua === 1 && (ASSESSED_SKILLS as readonly string[]).includes(r.ky_nang)).map((r) => r.ky_nang as string);
+    const t = tinhLuot(nc, a, cu[0].target_luc_thi ?? null, rows, boQua, false);
+    for (const d of t.dong) {
+      const rieng = rows.filter((r) => (KY_NANG_THO.includes(d.kyNang) ? r.skill === d.kyNang : gocKyNang(r.skill) === d.kyNang));
+      const nhap = rieng.filter((r) => r.entered_at).sort((x, y) => String(y.entered_at).localeCompare(String(x.entered_at)))[0];
+      conn.prepare(`UPDATE ban_chup_luot SET diem = ?, diem_tho = ?, diem_tong = ?, dat = ?, overall = ?, ty_le_tong = ?, sos = ?, ket_qua = ?, trang_thai = ?,
+          vang = ?, nhap_luc = ?, nguoi_nhap_id = ? WHERE ban_chup_id = ? AND attempt_id = ? AND ky_nang = ?`)
+        .run(d.diem, d.diemTho, d.diemTong, d.dat, t.overall, t.tyLeTong, t.sos, t.ketQua, a.status,
+          rieng.some((r) => r.no_show_at) ? 1 : 0, nhap?.entered_at ?? null, nhap?.entered_by ?? null, bc.id, a.id, d.kyNang);
+    }
+    let tyLe: number | null = bc.ty_le_cuoi_khoa;
+    if (!nc.laFt && a.kind === 'final') tyLe = t.tyLeTong;
+    conn.prepare('UPDATE ban_chup_lo_trinh SET lam_moi_luc = ?, ty_le_cuoi_khoa = ?, dai_cuoi_khoa = ? WHERE id = ?')
+      .run(ngay, tyLe, tyLe === null ? null : daiCuoiKhoa(tyLe), bc.id);
+  }
+}
