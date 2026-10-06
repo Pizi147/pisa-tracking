@@ -7,15 +7,18 @@ import { Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { nhoChiNhanh, useChiNhanhMacDinh, type Branch } from '../../ui/Filters.tsx';
 import { useSession } from '../../lib/session.tsx';
+import { MoLaiLopPanel } from '../classes/XoaKetThucLopPanel.tsx';
 import { ngay } from '@shared/domain/index.ts';
 
 type LopLuuTru = {
   id: number; code: string; ma: string | null; tenChuongTrinh: string | null;
   chiNhanh: string; gvcn: string | null; soHvTungHoc: number; finishedAt: string | null;
+  /** PR-LUI-b: nút "Mở lại" (Quản lý của lớp / Quản trị). */
+  coTheMoLai: boolean;
 };
 type HocVienLuuTru = {
   id: number; studentCode: string; fullName: string; lopCuoi: string | null; chiNhanh: string | null;
-  archivedAt: string; coTheBoLuuTru: boolean;
+  archivedAt: string; coTheBoLuuTru: boolean; coTheHocLai: boolean;
 };
 type DuLieuLuuTru = { lop: LopLuuTru[]; hocVien: HocVienLuuTru[]; phamVi: { chiNhanh: number | null } };
 
@@ -37,6 +40,7 @@ export default function LuuTruPage() {
   const branchId = cnUrl ? Number(cnUrl) : macDinh;
   const q = params.get('q') ?? '';
   const [draftQ, setDraftQ] = useState(q);
+  const [moLai, setMoLai] = useState<LopLuuTru | null>(null);
 
   const setParam = (patch: Record<string, string | null>) => {
     const next = new URLSearchParams(params);
@@ -108,18 +112,20 @@ export default function LuuTruPage() {
           ? <Card><Empty title="Chưa có lớp nào kết thúc" /></Card>
           : <div className="space-y-1.5">
               {data.lop.map((l) => (
-                <Link key={l.id} to={`/hoc-vien/lop/${l.id}`}
-                  className="card flex flex-wrap items-center gap-x-2 gap-y-1 p-3 no-underline">
-                  <span className="font-semibold text-slate-200">{l.code}</span>
-                  <span className="text-xs text-slate-500">
-                    {l.tenChuongTrinh ?? l.ma ?? '—'} · {l.chiNhanh}
-                    {l.gvcn && <> · GVCN {l.gvcn}</>} · {l.soHvTungHoc} HV từng học
-                  </span>
-                  <span className="flex-1" />
-                  <span className="text-[11px] text-slate-500 whitespace-nowrap">
-                    Đã kết thúc {l.finishedAt ? ngay(l.finishedAt) : '—'}
-                  </span>
-                </Link>
+                <div key={l.id} className="card flex flex-wrap items-center gap-x-2 gap-y-1 p-3">
+                  <Link to={`/hoc-vien/lop/${l.id}`} className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1 no-underline">
+                    <span className="font-semibold text-slate-200">{l.code}</span>
+                    <span className="text-xs text-slate-500">
+                      {l.tenChuongTrinh ?? l.ma ?? '—'} · {l.chiNhanh}
+                      {l.gvcn && <> · GVCN {l.gvcn}</>} · {l.soHvTungHoc} HV từng học
+                    </span>
+                    <span className="flex-1" />
+                    <span className="text-[11px] text-slate-500 whitespace-nowrap">
+                      Đã kết thúc {l.finishedAt ? ngay(l.finishedAt) : '—'}
+                    </span>
+                  </Link>
+                  {l.coTheMoLai && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setMoLai(l)}>Mở lại</button>}
+                </div>
               ))}
             </div>
       )}
@@ -142,6 +148,10 @@ export default function LuuTruPage() {
                 </div>
               ))}
             </div>
+      )}
+      {moLai && (
+        <MoLaiLopPanel classId={moLai.id} classCode={moLai.code} chiNhanh={moLai.chiNhanh} ketThuc={moLai.finishedAt ? ngay(moLai.finishedAt) : null}
+          onClose={() => setMoLai(null)} onDone={reload} />
       )}
     </div>
   );
