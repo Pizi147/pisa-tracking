@@ -111,10 +111,20 @@ export function khongMockLai(p: Principal, attemptId: number, skill: string, lyD
 ---
 
 ### Task 0: Khảo sát sau khi DL/K26/SL merge
+**Kết quả khảo sát 06/10 (main `5b6410a9`, sau DL #206, SL #203, CHU #202, NV #205, BN #207) — chỗ lệch so với kế hoạch:**
+1. Số dòng khớp kế hoạch: `thaoTacMt.ts:55,61`, `chamDiem.ts:124-131`, `skillSchedule.ts:609,621,745,768,880,965` (`kiemVuot` 564, `boTuanLuot` 616, `tinhLaiLichSu` 660, `setSkillWeek` 714), `attempts.ts:1057,1087,1201,1630` (`setPlanningWeek` 1120, `heQuaHuyLuot` 1220, `refreshOutcome` 1374), `absence.ts:178,396,849`, `keHoachTest.ts:440,456,544,575,656-657,924,1021-1022`, `classes/schedule.ts:184,205,267`, `intake.ts:315,317`.
+2. Lệch: `regular.ts` kiểm lý do sửa điểm ở **:535** (không phải 527-532), báo vắng **:609** (không phải 604). `attempts.ts:1244` `huyLuot` tự kiểm `!lyDo` (không qua `kiemLyDoThaoTac`).
+3. **Mới (PR-SL):** `classes/suaCaLop.ts:192` + `web/.../SuaCaLopPanel.tsx:105` dùng `LY_DO_TOI_THIEU` (lý do đổi Target ≥ 5) → theo chốt T7 "mọi chỗ": bắt buộc, chỉ cần không trống.
+4. Chỗ lý do ngoài Test (chốt T7 05/10 — bỏ tối thiểu, bắt buộc = không trống): `duyet/deXuatSua.ts:19,41` (15), `duyet/yeuCau.ts:26,425,437` (3), `classes/lenhChuyen.ts:234` (3), `:545` (15 = `NHAN_XET_TOI_THIEU`), `routes/index.ts:1746` (3), `shared/domain/chuyenLop.ts:34,80` (`LY_DO_LENH_TOI_THIEU` 3), `cases/cases.ts:2859,2886` (lý do 8), `normal/cuoiKhoa.ts:473` (sửa Mini Test 8), `worklist/mgmttasks.ts:680` (dời hạn 2); web: `DeXuatSuaPanel.tsx:18,38`, `TheYeuCau.tsx:22,105,132`, `TransitionPanel.tsx:486`, `ChuyenLopPanel.tsx:93,97,131,173`, `CapNhatTuan.tsx:116,119`, `MgmtTasksPage.tsx:544`. Không đổi (không phải "lý do"): mô tả / kết luận / nhận xét bàn giao / kế hoạch Case, "Cần Quản lý giúp gì".
+5. Chữ "MT lịch sử" còn ở chỗ kế hoạch chưa liệt kê: `shared/domain/hanhTrinh.ts:393` (`MT2 lịch sử`), `shared/domain/xuatMt.ts:215` (Excel "lịch sử"), `worklist/mywork.ts:207` (hint), `:927-928`, `web/.../cham/DiemTheoLop.tsx:173,210`, `test/LichTestTab.tsx:324-325` (không còn ở :332), `ui/Nhan.tsx:46`.
+6. NV: bảng `NHOM_CUA_TIEN_TO` ở `worklist/nhacViec.ts:31` — MTa không thêm khoá dòng `myWork` mới (chuông `huy_vang`, `doi_lich_thuong` không phải việc) → không cần thêm. `duyet/yeuCau.ts` (NV sửa `nhacNhieu` :477) chỉ đổi `DO_DAI_LY_DO`. `LichTestTab.tsx` (NV thêm `useChiNhanhMacDinh` :58) chỉ đổi chữ :324-325.
+7. Chốt 05/10 đè kế hoạch: T4 áp cả Test lớp thường (bỏ G4, C5 đổi: QL dời về tuần đã qua được, GVCN/GV vẫn chặn); xếp hàng loạt dời vượt KHÔNG chặn (bỏ G10, V10 đổi: dòng kèm `seHuyLich`, lưu khi có `xacNhanHuyLich` + lý do).
+8. Lớp thường không có cờ "MT cũ": Test lớp thường QL dời về tuần đã qua vẫn là bài thường (có hạn) — "MT cũ" chỉ cho Mock (T1 nói "MT").
+
 **Files:** chỉ đọc.
-- [ ] `git fetch && git merge origin/main` (nhánh mới từ main đã có DL, K26, SL). Chạy `npm run check` một lần → ghi số phép kiểm đạt làm mốc.
-- [ ] Chạy lại các grep dưới (Task 1, 2, 3) trên main mới — số dòng có thể lệch so với kế hoạch (ghi số dòng thật vào commit đầu). PR-SL đã thêm `cauMtSeDoi` vào `lichMt.ts` sau `CO_DIEM_SQL`; PR-DL đã thêm `ChonLuotFT` vào `attempts.ts:~1728` và chữ "MT lịch sử" trong `web/src/modules/cham/DiemTheoLop.tsx` — Task 3 đổi luôn.
-- [ ] Không commit gì ở task này.
+- [x] `git fetch && git merge origin/main` (nhánh mới từ main đã có DL, K26, SL). Chạy `npm run check` một lần → ghi số phép kiểm đạt làm mốc.
+- [x] Chạy lại các grep dưới (Task 1, 2, 3) trên main mới — số dòng có thể lệch so với kế hoạch (ghi số dòng thật vào commit đầu). PR-SL đã thêm `cauMtSeDoi` vào `lichMt.ts` sau `CO_DIEM_SQL`; PR-DL đã thêm `ChonLuotFT` vào `attempts.ts:~1728` và chữ "MT lịch sử" trong `web/src/modules/cham/DiemTheoLop.tsx` — Task 3 đổi luôn.
+- [x] Không commit gì ở task này.
 
 ### Task 1: T7 — lý do theo thao tác (bỏ tối thiểu ký tự)
 Skill: test-driven-development
@@ -145,7 +155,7 @@ Skill: test-driven-development
 
 **Interfaces:** Produces `ThaoTacLyDo`, `LY_DO_BAT_BUOC`, `canLyDo(t)`, `kiemLyDoThaoTac(t, s)`, `CHU_LY_DO` (khối Interfaces chung).
 
-- [ ] **Bước 1 — kiểm đỏ (thuần):**
+- [x] **Bước 1 — kiểm đỏ (thuần):**
 ```ts
 check('MTa T7 (L1) · chỉ 4 thao tác bắt buộc lý do, không tối thiểu ký tự', () => {
   for (const t of ['huy-diem', 'huy-luot', 'huy-ket-qua', 'tu-choi'] as const) {
@@ -157,7 +167,7 @@ check('MTa T7 (L1) · chỉ 4 thao tác bắt buộc lý do, không tối thiể
   assert(!('LY_DO_TOI_THIEU' in d) && !('kiemLyDo' in d), 'còn hằng/hàm cũ');
 });
 ```
-- [ ] **Bước 2 — kiểm đỏ (DB, mỗi cổng một phép):** em mới MB FT 101 (mẫu `emMoi` của `prLm.tests.ts:115`), Quản lý `P.mbManager`:
+- [x] **Bước 2 — kiểm đỏ (DB, mỗi cổng một phép):** em mới MB FT 101 (mẫu `emMoi` của `prLm.tests.ts:115`), Quản lý `P.mbManager`:
   - L2 dời một kỹ năng mà tuần thi đã bắt đầu, `reason` trống → lưu được, `attempt_schedule_history.reason IS NULL`.
   - L3 `setSkillDeadline` / `setDeadlineOverride` có ngày, không lý do → lưu; `setSkillSkip` không lý do → lưu; `baoVang(..., '')` → lưu, nhật ký `Báo vắng`.
   - L4 `saveScore` đổi band 6 → 7 không `lyDo` → lưu; xoá trắng ô đó không `lyDo` → 400 `/Huỷ điểm: cần ghi lý do/`; có `lyDo:'x'` → lưu.
@@ -165,9 +175,9 @@ check('MTa T7 (L1) · chỉ 4 thao tác bắt buộc lý do, không tối thiể
   - L6 `huyDiem` lý do `'  '` → 400; `'x'` → huỷ. `huyLuot` lý do trống → 400.
   - L7 `decideAbsenceMove(..., { approve:false, note:'x' })` → được (trước đây cần ≥ 3).
   - L8 `thiLai` không lý do → lưu, nhật ký điểm có `lyDo` bắt đầu `Thi lại`. `xepHangLoat` dời bài tuần đã bắt đầu không `lyDo` → `daLuu` tăng.
-- [ ] **Bước 3:** `npm run check` → đỏ đúng các phép trên. Sửa shared → máy chủ → web theo bảng. Phép kiểm cũ khẳng định "≥ 5 ký tự" / "cần ghi lý do" cho thao tác nay tuỳ chọn (`grep -rn "ít nhất 5\|ít nhất 3\|cần ghi lý do" server/src/tests`, gồm `prXlmt`, `prLm (2.8), (2.10)`, `prHsm`) → sửa theo Global Constraints.
-- [ ] **Bước 4:** `npm run check` xanh.
-- [ ] **Bước 5:** commit `feat(mta): T7 lý do chỉ bắt buộc khi mất kết quả hoặc từ chối, bỏ tối thiểu ký tự`.
+- [x] **Bước 3:** `npm run check` → đỏ đúng các phép trên. Sửa shared → máy chủ → web theo bảng. Phép kiểm cũ khẳng định "≥ 5 ký tự" / "cần ghi lý do" cho thao tác nay tuỳ chọn (`grep -rn "ít nhất 5\|ít nhất 3\|cần ghi lý do" server/src/tests`, gồm `prXlmt`, `prLm (2.8), (2.10)`, `prHsm`) → sửa theo Global Constraints.
+- [x] **Bước 4:** `npm run check` xanh.
+- [x] **Bước 5:** commit `feat(mta): T7 lý do chỉ bắt buộc khi mất kết quả hoặc từ chối, bỏ tối thiểu ký tự`.
 
 ### Task 2: T1 MT cũ theo tuần + T4 Quản lý xếp MT chưa thi vào tuần đã qua
 Skill: test-driven-development
@@ -190,7 +200,7 @@ Skill: test-driven-development
 
 **Interfaces:** Produces `laMtCu`, `kiemTuanXep`, `tinhLaiMtCu` (khối chung). Consumes Task 1 (không còn lý do khi dời).
 
-- [ ] **Bước 1 — kiểm đỏ (thuần):** `homNay = '2026-09-16'` (thứ Tư, tuần 14/09):
+- [x] **Bước 1 — kiểm đỏ (thuần):** `homNay = '2026-09-16'` (thứ Tư, tuần 14/09):
 ```ts
 check('MTa T1 (C1) · laMtCu: tuần trước là MT thường, cách ≥ 2 tuần là MT cũ', () => {
   assert(!d.laMtCu('2026-09-13', '2026-09-16'), 'tuần trước (kết thúc 13/09) phải là MT thường');
@@ -206,15 +216,15 @@ check('MTa T4 (C2) · kiemTuanXep: QL được tuần đã qua, GV không; khôn
   assert(!('kiemTuanDaQua' in d), 'còn hàm cũ');
 });
 ```
-- [ ] **Bước 2 — kiểm đỏ (DB, theo cổng):**
+- [x] **Bước 2 — kiểm đỏ (DB, theo cổng):**
   - C3 Xếp lịch MT (`keHoach.xepMoi`, QL): em vào web hôm nay, MT mới ở `tuan(-1)` → `lich_su = 0` (có hạn chấm: `viewSkill` có `deadline`); ở `tuan(-3)` → `lich_su = 1`, không cần `created_at` của em lùi.
   - C4 hộp kỹ năng (`luuDot`) và Dời cả đợt (`setPlanningWeek`): MT2 chưa thi ở `tuan(4)` → QL dời sang `tuan(-3)` → lưu, `lich_su = 1`; dời lại sang `tuan(2)` → `lich_su = 0`.
   - C5 `setSkillWeek` lớp thường về tuần đã qua (QL lẫn GVCN) → vẫn 400 câu cũ.
   - C6 `xepHangLoat` FT, `tuan(-1)` cho em chưa có MT → dòng `hanhDong:'tao'`, `lichSu:false`; `tuan(-3)` → `lichSu:true`.
   - C7 Thêm HV / Áp lịch gợi ý (`intake.commitIntake`, `startWeek` = 7 tuần trước): MT1 tuần học 6 = tuần trước → `lich_su = 0`; lùi 13 tuần → MT1, MT2 `lich_su = 1` (`apLichMacDinhLo`).
   - C8 MT cũ đã có điểm dời sang tuần đã qua khác (D3 cũ) **không lý do**, em vào web từ trước tuần đó → lưu (bỏ câu "Em đã có trên web từ trước tuần này").
-- [ ] **Bước 3:** đỏ → sửa → xanh. Phép kiểm cũ khẳng định K2-33/T34/"ngày vào web" (`grep -rn "Không dời vào tuần đã qua\|Em đã có trên web\|Tuần đã qua chỉ dùng\|kiemTuanDaQua\|laLichSu" server/src/tests` — `prLm (2.8) (2.9)`, `prXlmt`, `prMt`) → sửa theo Global Constraints (MT đang chạy QL dời về tuần qua nay **được**).
-- [ ] **Bước 4:** commit `feat(mta): T1 MT cũ theo tuần (≥ 2 tuần), T4 Quản lý xếp MT chưa thi vào tuần đã qua`.
+- [x] **Bước 3:** đỏ → sửa → xanh. Phép kiểm cũ khẳng định K2-33/T34/"ngày vào web" (`grep -rn "Không dời vào tuần đã qua\|Em đã có trên web\|Tuần đã qua chỉ dùng\|kiemTuanDaQua\|laLichSu" server/src/tests` — `prLm (2.8) (2.9)`, `prXlmt`, `prMt`) → sửa theo Global Constraints (MT đang chạy QL dời về tuần qua nay **được**).
+- [x] **Bước 4:** commit `feat(mta): T1 MT cũ theo tuần (≥ 2 tuần), T4 Quản lý xếp MT chưa thi vào tuần đã qua`.
 
 ### Task 3: Chữ "MT lịch sử" → "MT cũ" mọi nơi
 Skill: test-driven-development
@@ -222,9 +232,9 @@ Skill: test-driven-development
 **Files:** chuỗi hiện trên màn / thông báo / câu lỗi / Excel (KHÔNG đổi chú thích, tên biến, cột DB, chữ "Lịch sử" nghĩa nhật ký thay đổi). Danh sách đã thấy trên main 05/10:
 `server/src/classes/intake.ts:317` · `classes/schedule.ts:267` · `fasttrack/absence.ts:220,389,848` · `fasttrack/attempts.ts:1431` · `fasttrack/skillSchedule.ts:745` (đã bỏ ở Task 1) · `worklist/mywork.ts:919-920` · `migrate/prMt.ts:11` (giữ — chữ lịch sử của bước migrate cũ) · `shared/domain/keHoachTest.ts:244,275` · `shared/domain/lichMt.ts:77,80` (bỏ cùng `kiemTuanDaQua`) · `shared/domain/nhatKy.ts:41` ('Nhập điểm MT cũ') · `web/src/modules/fasttrack/MockDetailPage.tsx:689` (bỏ vế "phải trước ngày em vào web") · `web/src/ui/Nhan.tsx:41-48` (chip "cũ", `title` "MT cũ — nhập bù, không tính hạn") · `web/src/modules/students/ClassRoster.tsx:320` · `IntakePanel.tsx:39,157,258` · `StudentPlanPanel.tsx:191` · `test/keHoach/HopKyNang.tsx:254` · `NganXepLichMt.tsx:377` (" · cũ") · `test/LichTestTab.tsx:332` · `platform/WelcomePage.tsx:328-329` · `web/src/modules/cham/DiemTheoLop.tsx` (PR-DL). Rà lại bằng
 `grep -rnE "lịch sử" server/src shared web/src --include=*.ts --include=*.tsx | grep -v "/tests/" | grep -vE "^\S+:\s*(\*|//|/\*)"` và đọc từng dòng.
-- [ ] **Bước 1 — kiểm đỏ:** `MTa (C9)` — đọc nguồn bằng `fs` (mẫu `prLm.tests.ts:6-8`) cho 6 file web trên + gọi hàm thật: `d.chuSeXep({ hanhDong:'tao', lichSu:true, … }, null)` (`shared/domain/keHoachTest.ts:~268`) chứa `· MT cũ`; `d.nhanHanhDongNhatKy('score.lich_su') === 'Nhập điểm MT cũ'`; câu lỗi `saveScore` noShow ở MT cũ khớp `/MT cũ không nhận dấu "-"/`. Không chuỗi nào còn `/MT lịch sử/` trong `web/src` (trừ chú thích).
-- [ ] **Bước 2:** sửa; phép kiểm cũ khớp chữ "MT lịch sử" (`grep -rln "MT lịch sử" server/src/tests` — 53 chỗ) → đổi chữ trong assertion, không đổi ý.
-- [ ] **Bước 3:** commit `chore(mta): chữ "MT lịch sử" → "MT cũ" trên màn, thông báo, câu lỗi`.
+- [x] **Bước 1 — kiểm đỏ:** `MTa (C9)` — đọc nguồn bằng `fs` (mẫu `prLm.tests.ts:6-8`) cho 6 file web trên + gọi hàm thật: `d.chuSeXep({ hanhDong:'tao', lichSu:true, … }, null)` (`shared/domain/keHoachTest.ts:~268`) chứa `· MT cũ`; `d.nhanHanhDongNhatKy('score.lich_su') === 'Nhập điểm MT cũ'`; câu lỗi `saveScore` noShow ở MT cũ khớp `/MT cũ không nhận dấu "-"/`. Không chuỗi nào còn `/MT lịch sử/` trong `web/src` (trừ chú thích).
+- [x] **Bước 2:** sửa; phép kiểm cũ khớp chữ "MT lịch sử" (`grep -rln "MT lịch sử" server/src/tests` — 53 chỗ) → đổi chữ trong assertion, không đổi ý.
+- [x] **Bước 3:** commit `chore(mta): chữ "MT lịch sử" → "MT cũ" trên màn, thông báo, câu lỗi`.
 
 ### Task 4: Migrate `prMta` (cấu trúc, chạy lặp được)
 Skill: test-driven-development
@@ -246,8 +256,8 @@ CREATE TABLE ket_qua_huy (                       -- T2: điểm của MT bị d�
 CREATE INDEX idx_ket_qua_huy_attempt ON ket_qua_huy(attempt_id);
 ```
 Mẫu kiểm có cột / có bảng: `migrate/prPhh.ts:6` (`pragma_table_info`), `migrate/prCt.ts:5` (`sqlite_master`). **Không điền ngược**: cờ `lich_su` cũ giữ nguyên (không ai bị tính nợ ngược); đề nghị dời lần 2 đang chờ giữ nguyên (QL vẫn duyệt / từ chối như cũ). Thêm `'ket_qua_huy'` vào `SYSTEM_CLOSE_REASONS` + nhãn `'Kết quả MT đã huỷ'` (`shared/domain/cases.ts:564-572`; cột TEXT, không CHECK).
-- [ ] Kiểm đỏ `MTa (M1)`: gọi `migratePrMta` hai lần trên DB test → lần hai không thêm dòng `applied`; `pragma_table_info('attempt_skills')` có `huy_vang`; `sqlite_master` có `ket_qua_huy`.
-- [ ] Xanh → commit `feat(mta): migrate prMta — cờ huy_vang, bảng ket_qua_huy`.
+- [x] Kiểm đỏ `MTa (M1)`: gọi `migratePrMta` hai lần trên DB test → lần hai không thêm dòng `applied`; `pragma_table_info('attempt_skills')` có `huy_vang`; `sqlite_master` có `ket_qua_huy`.
+- [x] Xanh → commit `feat(mta): migrate prMta — cờ huy_vang, bảng ket_qua_huy`.
 
 ### Task 5: T2 — dời vượt: lượt bị vượt có điểm → huỷ kết quả (lưu, không xoá), Case tự đóng
 Skill: test-driven-development
@@ -261,7 +271,7 @@ Skill: test-driven-development
 
 **Interfaces:** `huyKetQuaLuot(p, attemptId, { lyDo, vuotBoi }): { soDiem; soCase }` — gọi TRONG `tx` của nơi gọi: (1) đọc mọi dòng `assessment_scores` của lượt có `band` hoặc `raw_score` khác NULL; không có → chỉ làm bước (4), trả `{0,0}`; (2) `INSERT ket_qua_huy` (nguyên dòng + lịch kỹ năng bắt buộc); (3) `DELETE FROM assessment_scores WHERE id IN (các dòng vừa lưu)` — dòng chỉ có dấu "-" / nhận xét không điểm giữ nguyên; (4) kỹ năng `sit_status='sat'` → `'scheduled'`; (5) `writeAudit` `score.huy_vuot` mỗi ô (`before` = dòng, `after` = `{ lyDo, vuotBoi }`); (6) `closeCasesBySystem({ reason: 'ket_qua_huy', caseIds: caseSinhRieng(attemptId), … })` + Phối hợp `pending` của lượt → `removed`, `remove_reason_code = 'system_ket_qua_huy'` (mẫu `attempts.ts:1265-1267`); (7) `refreshOutcome(p, attemptId)` (lượt về `planned`, tín hiệu rút qua nhánh `cleared` của `reconcileCorrectedScores`). Lý do ghi: `lyDoHuyVuot(...)`.
 
-- [ ] **Bước 1 — kiểm đỏ (thuần):**
+- [x] **Bước 1 — kiểm đỏ (thuần):**
 ```ts
 check('MTa T2 (V1) · luotBiVuot không chặn lượt có điểm; dòng hệ quả theo mockup phần 4', () => {
   const r = d.luotBiVuot([L(2, '2026-07-13', { coDiem: true }), L(3, '2026-08-10')], { attemptNo: 1, tuanCuoiMoi: '2026-08-17' });
@@ -275,7 +285,7 @@ check('MTa T2 (V1) · luotBiVuot không chặn lượt có điểm; dòng hệ q
 });
 ```
 (`L` = helper của `prLm.tests.ts:14`.)
-- [ ] **Bước 2 — kiểm đỏ (DB, theo cổng):** `emMoi()` (MT1 T+1, MT2 T+4, MT3 T+8) và `diem()` như `prLm.tests.ts:115-132`.
+- [x] **Bước 2 — kiểm đỏ (DB, theo cổng):** `emMoi()` (MT1 T+1, MT2 T+4, MT3 T+8) và `diem()` như `prLm.tests.ts:115-132`.
   - V2 `kiemDot` (hộp kỹ năng Kế hoạch Test + panel Lộ trình): MT2 có L, R → `seHuyLich[0]` = `{ nhan: 'MT2', soDiem: 2, soCase: 0 }`, không `bai` nào `chan`.
   - V3 `luuDot` dời MT1 sang T+9: thiếu xác nhận → 409 (`details.seHuyLich`: MT2 `soDiem 2`, MT3 `soDiem 0`); xác nhận, `reason` trống → 400 `/Huỷ kết quả: cần ghi lý do/`, DB không đổi; xác nhận + `reason: 'x'` → MT1 ở T+9; MT2: không còn dòng điểm trong `assessment_scores`, `ket_qua_huy` đúng 1 dòng (`so_diem` 2, `diem_json` giữ `band`, `comment`, `examiner_name`, `nhap_dau_ngay`), kỹ năng bắt buộc `planned_period_id NULL`, `status = 'planned'`; MT3 bỏ lịch, không dòng `ket_qua_huy`; nhật ký `score.huy_vuot` 2 dòng. Biến thể: W1 có điểm, W2 trống, S chỉ nhận xét → `soDiem = 1`; dòng S (không điểm) giữ nguyên tại chỗ.
   - V4 không điểm: `luuDot` / `setSkillWeek` / `setPlanningWeek` dời MT1 vượt MT2 chưa điểm, KHÔNG `xacNhanHuyLich` → lưu, MT2 bỏ lịch (thay `prLm (2.2) (2.6) (2.6b)`).
@@ -285,8 +295,8 @@ check('MTa T2 (V1) · luotBiVuot không chặn lượt có điểm; dòng hệ q
   - V8 `setPlanningWeek` và `setSkillWeek` (hồ sơ Mock: Dời cả đợt / một kỹ năng) cùng ba nhánh 409 / 400 / lưu như V3.
   - V9 MT2 đang có đề nghị dời chờ → vẫn 400 `/đang có đề nghị dời chờ duyệt/`.
   - V10 `xepHangLoat` FT dời MT1 vượt MT2 có điểm → dòng `hanhDong: 'loi'`, `ket_qua_huy` không thêm.
-- [ ] **Bước 3:** đỏ → sửa → xanh. Thay `prLm (1)` (chặn có điểm) và `(2.5)` theo V1 / V3.
-- [ ] **Bước 4:** commit `feat(mta): T2 dời vượt huỷ kết quả MT sau (lưu ket_qua_huy, đóng Case), không hỏi khi chưa có điểm`.
+- [x] **Bước 3:** đỏ → sửa → xanh. Thay `prLm (1)` (chặn có điểm) và `(2.5)` theo V1 / V3.
+- [x] **Bước 4:** commit `feat(mta): T2 dời vượt huỷ kết quả MT sau (lưu ket_qua_huy, đóng Case), không hỏi khi chưa có điểm`.
 
 ### Task 6: T2 — Quản lý khôi phục kết quả + trạng thái "đã huỷ" cho màn đọc
 Skill: test-driven-development
@@ -296,14 +306,14 @@ Skill: test-driven-development
 **Interfaces:**
 - `khoiPhucKetQua(p, attemptId, { lyDo? })`: `require_(PLAN_WEEK)`; dòng `ket_qua_huy` mới nhất `khoi_phuc_luc IS NULL` (không có → 400 `'MT2 không có kết quả đã huỷ.'`); lượt `cancelled` → 400; **bất kỳ ô nào trong `diem_json` nay đã có điểm** → 400 `'MT2 đã có điểm mới — không khôi phục được.'`; mỗi kỹ năng có tuần trong `lich_json`: `checkSkillWeekMove` có blocker → 400 `${blocker} Dời lượt trước về trước rồi khôi phục.`; kỹ năng nay `cancelled` → 400. Ghi trong `tx`: tuần + `sit_status` cũ (`plan_source = 'manual'`); điểm (dòng còn tồn tại vì có "-" / nhận xét → `UPDATE` đủ cột; không có → `INSERT` mọi cột trừ `id`); đánh dấu `khoi_phuc_*`; audit `score.khoi_phuc` mỗi ô; `recomputeCompletionWeek`, `tinhLaiMtCu`, `refreshOutcome` (Case SOS mới có thể sinh lại; Case đã đóng không mở lại). Lý do tuỳ chọn.
 - `ketQuaHuyCua(attemptIds)`: một câu theo lô (`theoLo`), JOIN `users` lấy `nguoi`, JOIN lượt vượt lấy `vuotBoi = nhanDot(kind, attempt_no)`.
-- [ ] **Bước 1 — kiểm đỏ (DB):**
+- [x] **Bước 1 — kiểm đỏ (DB):**
   - R1 sau V3, dời MT1 về T+1: `khoiPhucKetQua(QL, m2)` → L, R đúng giá trị cũ, tuần T+4, `sit_status` cũ, `khoi_phuc_luc` có; lần hai → 400. Biến thể (Review Focus 1): MT2 được xếp lại + nhập L mới trước → 400 "đã có điểm mới", điểm mới nguyên.
   - R2 Writing: W1 điểm + nhận xét + `nhap_dau_ngay` → khôi phục trả đủ (Review Focus 3).
   - R3 MT1 vẫn ở T+9 → khôi phục MT2 → 400 có câu chỉ đường, DB không đổi.
   - R4 GVCN (`P.coreTeacher`) → 403.
   - R5 `lichMtLoTrinh(cycleId)` → lượt MT2 có `ketQuaHuy = { soDiem: 2, lyDo: 'x', vuotBoi: 'MT1', … }` khi chưa khôi phục, `null` sau; `attemptDetail` cùng trường; `scoreHistoryOf(m2)` có dòng "Huỷ do dời vượt" kèm lý do.
   - R6 tốc độ: đường đọc lịch MT của hồ sơ HV / hồ sơ Mock đã có trong `tocDoDuong.ts` vẫn dưới trần ở `tocDo.run.ts` (thêm 0 câu theo số lượt).
-- [ ] **Bước 2:** đỏ → sửa → xanh → commit `feat(mta): T2 Quản lý khôi phục kết quả MT bị vượt, trạng thái ketQuaHuy cho màn đọc`.
+- [x] **Bước 2:** đỏ → sửa → xanh → commit `feat(mta): T2 Quản lý khôi phục kết quả MT bị vượt, trạng thái ketQuaHuy cho màn đọc`.
 
 ### Task 7: T3 — "-" lần 2 ở Mock: kỹ năng huỷ (vắng 2 lần), chuông GVCN, Xin dời, Không mock lại
 Skill: test-driven-development
@@ -324,7 +334,7 @@ Skill: test-driven-development
 
 **Interfaces:** Produces `xinDoi`, `khongMockLai`, `SkillScheduleView.huyVang`, `TrangThaiTT 'huy-vang'`, `OKyNang.huyVang` (khối chung). Consumes Task 4 (cột `huy_vang`), Task 1 (lý do).
 
-- [ ] **Bước 1 — kiểm đỏ (thuần):**
+- [x] **Bước 1 — kiểm đỏ (thuần):**
 ```ts
 check('MTa T3 (H1) · trạng thái huy-vang và thao tác theo vai', () => {
   const tt = d.trangThaiTT({ batBuoc: true, tuanBatDau: '2026-09-07', coDiem: false, sit: 'cancelled', choDuyet: false, lichSu: false, homNay: '2026-09-16', huyVang: true });
@@ -336,15 +346,15 @@ check('MTa T3 (H1) · trạng thái huy-vang và thao tác theo vai', () => {
   assert(d.trangThaiTT({ batBuoc: true, tuanBatDau: '2026-09-07', coDiem: false, sit: 'cancelled', choDuyet: false, lichSu: false, homNay: '2026-09-16' }) === 'da-huy', 'không cờ → da-huy');
 });
 ```
-- [ ] **Bước 2 — kiểm đỏ (DB, theo cổng):** em mới, kỹ năng S đã dời do vắng lần 1 (`absence_move_count = 1`, tuần thi đã qua).
+- [x] **Bước 2 — kiểm đỏ (DB, theo cổng):** em mới, kỹ năng S đã dời do vắng lần 1 (`absence_move_count = 1`, tuần thi đã qua).
   - H2 gõ "-" (Lịch Test / Nhập điểm → `saveScore(..., { noShow: true })`) rồi `settleNoShows(today)` (cũng là đường cron `server/src/ops/chotVangDinhKy.ts`): S `sit_status='cancelled'`, `huy_vang=1`; **không** dòng `skill_move_requests` mới, **không** thẻ `yeu_cau_duyet` mới; GVCN có 1 chuông `kind='huy_vang'`; chạy `settleNoShows` lần hai → không đổi gì.
   - H3 `baoVang(GVCN, m, 'speaking', '')` lần 2 → như H2.
   - H4 `xinDoi`: GVBM → 403; GVCN → 1 đề nghị `pending` + 1 thẻ `lich_thi`; gọi lại → 400; trên kỹ năng `scheduled` → 400. QL duyệt thẻ (`duyetYeuCau` của `server/src/duyet/yeuCau.ts`) → S `scheduled`, `huy_vang = 0`, tuần mới, `absence_move_count = 2`. Vắng lần 3 → `huy_vang = 1` lại.
   - H5 QL từ chối thẻ (`tuChoiYeuCau`, lý do `'abc'`) → S `required = 0`, `scope_reason` có lý do; lượt `status='done'` khi L, R, W đủ điểm. Biên (Review Focus 4): lớp thường "-" lần 2 vẫn dời tuần sau như cũ; MT cũ `noShow` → 400; kỹ năng đang có đề nghị chờ (lần 1 chuyển QL) → "-" không huỷ chồng.
   - H6 `khongMockLai(QL, m, 'speaking')` không lý do → bỏ kỹ năng, đề nghị chờ bị rút; GVCN → 403; kỹ năng chưa huỷ → 400.
   - H7 `sweepExpiredMoves()` sau hạn thẻ Xin dời → đề nghị `expired`, S vẫn `huy_vang = 1`, không thêm chuông `schedule_move` cho QL.
-- [ ] **Bước 3:** đỏ → sửa → xanh. Phép kiểm cũ dựng thẻ "dời lần 2" bằng "-" lần 2 (`grep -rn "lần 2\|move_no\|moveNo" server/src/tests` — `prMt`, `prXlmt` K4-28, `prDuyet`, `prGvb`) → dựng lại qua `xinDoi`; phép khẳng định "lần 2 thành đề nghị" → đổi theo T3.
-- [ ] **Bước 4:** commit `feat(mta): T3 vắng lần 2 huỷ kỹ năng, chuông GVCN, Xin dời, Không mock lại`.
+- [x] **Bước 3:** đỏ → sửa → xanh. Phép kiểm cũ dựng thẻ "dời lần 2" bằng "-" lần 2 (`grep -rn "lần 2\|move_no\|moveNo" server/src/tests` — `prMt`, `prXlmt` K4-28, `prDuyet`, `prGvb`) → dựng lại qua `xinDoi`; phép khẳng định "lần 2 thành đề nghị" → đổi theo T3.
+- [x] **Bước 4:** commit `feat(mta): T3 vắng lần 2 huỷ kỹ năng, chuông GVCN, Xin dời, Không mock lại`.
 
 ### Task 8: T10 (máy chủ) — nhận band trực tiếp
 Skill: test-driven-development
@@ -352,7 +362,7 @@ Skill: test-driven-development
 **Files:** `shared/domain/chamDiem.ts` (`docONhapLR`, `kiemBand`); `server/src/fasttrack/attempts.ts:1303-1324` (`ScorePatch.band?: number | null`), `:1593-1614` (tính điểm), `:1640` (`hasValue` gồm `band !== null`), `:801` `scoreSummaryText` (dòng chỉ có band → `band 6.5`); `server/src/routes/index.ts:739-748` (truyền `band: b.band`). Lớp thường không đổi (`saveRegularScore` không nhận `band`).
 
 **Interfaces:** luật `saveScore` khi `patch.band !== undefined`: `kiemBand` (null = xoá); L/R: gửi cả `rawScore` khác `undefined` lẫn `band` → 400 `'Nhập số câu hoặc band, không cả hai.'`; có band → `raw = null`, `band = patch.band`. W1/W2/S: `criteria` có giá trị khác null cùng `band` khác null → 400 `'Nhập band hoặc 4 tiêu chí, không cả hai.'`; có band → `crit = [null,null,null,null]`. Overall, W = `writingBand(w1, w2)`, SOS, kỳ vọng **không đổi** (đều đọc `band`). Mặc định (không gửi `band`) như cũ.
-- [ ] **Bước 1 — kiểm đỏ (thuần):**
+- [x] **Bước 1 — kiểm đỏ (thuần):**
 ```ts
 check('MTa T10 (B1) · docONhapLR + kiemBand', () => {
   const eq = (s: string, v: unknown) => assert(JSON.stringify(d.docONhapLR(s)) === JSON.stringify(v), `${s} → ${JSON.stringify(d.docONhapLR(s))}`);
@@ -362,25 +372,25 @@ check('MTa T10 (B1) · docONhapLR + kiemBand', () => {
   for (const v of [6.25, -0.5, 9.5, '6', NaN, null]) assert(d.kiemBand(v) !== null, String(v));
 });
 ```
-- [ ] **Bước 2 — kiểm đỏ (DB):** B2 `saveScore(GVBM đúng kỹ năng, m, 'listening', { band: 6.5 })` → `band 6.5`, `raw_score NULL`; `writing1 { band: 6 }`, `writing2 { band: 7 }`, `speaking { band: 6 }`, `reading { rawScore: 30 }` → `resultOf` đủ, overall = cách tính cũ trên các band đó; Review Focus 5 (mỗi dạng sai → 400, DB không đổi); sửa band 6.5 → 7 không lý do → lưu; xoá band (`band: null`) không lý do → 400 (T7 huỷ điểm). Qua route `PUT /attempts/:id/scores/listening` (helper HTTP sẵn có) `band` đi đến `saveScore`.
-- [ ] **Bước 3:** commit `feat(mta): T10 máy chủ nhận band trực tiếp cho L/R/W1/W2/S`.
+- [x] **Bước 2 — kiểm đỏ (DB):** B2 `saveScore(GVBM đúng kỹ năng, m, 'listening', { band: 6.5 })` → `band 6.5`, `raw_score NULL`; `writing1 { band: 6 }`, `writing2 { band: 7 }`, `speaking { band: 6 }`, `reading { rawScore: 30 }` → `resultOf` đủ, overall = cách tính cũ trên các band đó; Review Focus 5 (mỗi dạng sai → 400, DB không đổi); sửa band 6.5 → 7 không lý do → lưu; xoá band (`band: null`) không lý do → 400 (T7 huỷ điểm). Qua route `PUT /attempts/:id/scores/listening` (helper HTTP sẵn có) `band` đi đến `saveScore`.
+- [x] **Bước 3:** commit `feat(mta): T10 máy chủ nhận band trực tiếp cho L/R/W1/W2/S`.
 
 ### Task 9: T11 — người khác GVCN dời Test lớp thường → một chuông cho GVCN
 Skill: test-driven-development
 
 **Files:** `server/src/fasttrack/skillSchedule.ts` `setSkillWeek` (opts `khongBaoGvcn?: boolean`; sau khi ghi: lớp `ratio` && `!khiTao` && `!ghiBuDau` && `!khongBaoGvcn` → `baoGvcnDoiLichThuong`); `server/src/keHoach/keHoachTest.ts` `luuDot` (truyền `khongBaoGvcn`), `xepHangLoat` (`:1016-1048`: lớp thường gọi `luuDot(..., khongBaoGvcn: true)`; xong vòng, có ≥ 1 em **dời** (không tính `tao`) → một chuông mỗi GVCN cho cả lớp).
 **Interfaces (nội bộ):** `baoGvcnDoiLichThuong(p, a: { id; class_id; student_id; kind }, tuanMoi: string)`: GVCN = `teacher_assignments` `is_core = 1`, `status = 'active'`; bỏ qua nếu `p.userId` là GVCN; `notify({ kind: 'doi_lich_thuong', title: '{Giữa khoá|Cuối khoá} · {em} · dời sang {W2 OCT}', body: '{người dời} đổi lịch.', entityType: 'assessment_attempt', entityId, dedupKey: 'doi-thuong:{attemptId}:{homNay}' })` — nhiều môn cùng ngày = một chuông (upsert theo `dedup_key`, `audit.ts:54-60`). Bản cả lớp: `dedupKey 'doi-thuong-lop:{classId}:{homNay}'`, tiêu đề `'{Giữa khoá} · {n} em · đổi lịch'`. `shared/domain/duongHoSo.ts:167`: `'doi_lich_thuong'` → `duongDotTest`; Để biết.
-- [ ] **Bước 1 — kiểm đỏ (DB, lớp thường mẫu `prU12.tests.ts`):** N1 QL `setSkillWeek` một môn → GVCN có đúng 1 chuông `doi_lich_thuong`; `luuDot` 2 môn cùng em → vẫn 1; GVBM đúng môn dời → GVCN 1 chuông; GVCN tự dời → 0; "-" lớp thường (`reportRegularNoShow`) → 0 chuông `doi_lich_thuong`; FT dời → 0; `xepHangLoat` lớp thường 3 em → 1 chuông cả lớp, 0 chuông từng em; `nhomThongBao({ kind: 'doi_lich_thuong' }) === 'de-biet'`; không thẻ, không Case mới.
-- [ ] **Bước 2:** commit `feat(mta): T11 chuông GVCN khi người khác dời Test lớp thường`.
+- [x] **Bước 1 — kiểm đỏ (DB, lớp thường mẫu `prU12.tests.ts`):** N1 QL `setSkillWeek` một môn → GVCN có đúng 1 chuông `doi_lich_thuong`; `luuDot` 2 môn cùng em → vẫn 1; GVBM đúng môn dời → GVCN 1 chuông; GVCN tự dời → 0; "-" lớp thường (`reportRegularNoShow`) → 0 chuông `doi_lich_thuong`; FT dời → 0; `xepHangLoat` lớp thường 3 em → 1 chuông cả lớp, 0 chuông từng em; `nhomThongBao({ kind: 'doi_lich_thuong' }) === 'de-biet'`; không thẻ, không Case mới.
+- [x] **Bước 2:** commit `feat(mta): T11 chuông GVCN khi người khác dời Test lớp thường`.
 
 ### Task 10: Web tối thiểu — hộp xác nhận dời vượt có lý do (không gãy luồng đang chạy)
 Skill: `/ponytail lite` · `/impeccable audit` (chỉ file này)
 
 **Files:** `web/src/modules/test/keHoach/HopXacNhanHuyLich.tsx` (bỏ `type LuotSeHuyLich` cục bộ `:6`, dùng bản shared); ba nơi gọi `HopThaoTacMt.tsx:87-142`, `MockDetailPage.tsx:618-659`, `HopKyNang.tsx:58-192`.
 - Hộp chỉ mở khi `canLyDoVuot(ds)` (không điểm → lưu thẳng, máy chủ không còn 409). Thân: mỗi lượt một dòng `dongHeQuaVuot(x)`; ô **Lý do** bắt buộc (nút xác nhận mờ khi trống); nút `Đóng` / `Dời và huỷ` (chữ mockup phần 4). `onXacNhan(lyDo: string)` → nơi gọi gửi `xacNhanHuyLich: true` + `reason: lyDo`. Không đổi bố cục khác — popup đúng mockup (tiêu đề "Dời MT1 sang W2 NOV?") là việc PR-MTb.
-- [ ] Kiểm `MTa (W1)` (đọc nguồn như `prLm.tests.ts:89-93`): `HopXacNhanHuyLich.tsx` dùng `dongHeQuaVuot` và `canLyDoVuot`, không còn `type LuotSeHuyLich =`; ba nơi gọi điều kiện mở hộp bằng `canLyDoVuot`. `npm run check` (typecheck web) xanh.
-- [ ] Bấm thử 1440 sáng + 375 tối, vai QL: dời MT1 vượt MT2 có điểm ở hộp kỹ năng → hộp có dòng "MT2: huỷ … điểm", nhập lý do, lưu được; vượt MT2 chưa điểm → lưu không hỏi. Ảnh vào mô tả PR.
-- [ ] Commit `fix(mta): hộp xác nhận dời vượt có lý do khi huỷ kết quả`.
+- [x] Kiểm `MTa (W1)` (đọc nguồn như `prLm.tests.ts:89-93`): `HopXacNhanHuyLich.tsx` dùng `dongHeQuaVuot` và `canLyDoVuot`, không còn `type LuotSeHuyLich =`; ba nơi gọi điều kiện mở hộp bằng `canLyDoVuot`. `npm run check` (typecheck web) xanh.
+- [x] Bấm thử 1440 sáng + 375 tối, vai QL: dời MT1 vượt MT2 có điểm ở hộp kỹ năng → hộp có dòng "MT2: huỷ … điểm", nhập lý do, lưu được; vượt MT2 chưa điểm → lưu không hỏi. Ảnh vào mô tả PR.
+- [x] Commit `fix(mta): hộp xác nhận dời vượt có lý do khi huỷ kết quả`.
 
 ### Task 11: Đủ phép kiểm cho mọi cổng ghi (T14) + tài liệu
 Skill: verification-before-completion
@@ -398,11 +408,11 @@ Bảng cổng (đặc tả mục 3 / mockup phần 0) → phép kiểm. Ô trố
 | 8 | Tự động: Thêm HV, tạo / lên lớp, lộ trình mới, cron chốt vắng | `commitIntake`, `taoMtMacDinh` / `taoMtMacDinhLo` (`fasttrack/mtMacDinh.ts`, gọi từ mở lộ trình `fasttrack/cycles.ts` và `apLichMacDinhLo`), `ops/chotVangDinhKy.ts` | C7, H2, **G3** mở lộ trình FT mới với tuần bắt đầu cũ → MT ở tuần trước `lich_su = 0`, cách ≥ 2 tuần `= 1` |
 | 9 | Điểm theo lớp (PR-DL) | `classScoreSheet` theo lượt | V6, C9 (chữ) |
 | 10 | Chỉ hiển thị: Học viên & Lớp, Hành trình, Tổng quan, Công việc, Phân tích, Xuất Excel MT | `students.ts`, `standingFor`, `myWork`, `duLieuXuatMt` | V6, **G4** sau V3: việc "nhập điểm" / quá hạn của MT2 không còn trong `myWork(GVBM)`; việc "Nhập điểm MT cũ" mang chữ mới |
-- [ ] Viết G1–G4 (đỏ trước nếu được), chạy cả bộ.
-- [ ] `thiet-ke/PISA-Rulebook-2026-09-19.md` §20: thêm dòng 20.1 cho T1 (thay T34, K2-33(1)), T2 (thay Q-0310-2), T3 (thay K4-28 lần 2), T4 (thay K2-33 cho QL), T7 (thay K4-15, RB-5), T10, T11; sửa 20.2 dòng "Cửa sổ MT lịch sử" → "MT cũ", 20.4 lần 2, 20.9 dòng "Nhập MT lịch sử" và "Sửa điểm đã nhập (lý do ≥ 5 ký tự)" → "(lý do tuỳ chọn)", 20.5 câu từ chối lý do. Ghi `CODE-OK · PR-MTa`.
-- [ ] `CODE_MAP.md` (`fasttrack/ketQuaHuy.ts`, `migrate/prMta.ts`, `tests/prMta.tests.ts`), `plan.md` mục 11 một dòng, `[x]` các task.
-- [ ] `npm run check` xanh (một lần, foreground) → `/ponytail-review` → `requesting-code-review` → `finishing-a-development-branch` (mở PR vào `main`, không merge).
-- [ ] Commit `docs(mta): Rulebook §20, CODE_MAP, plan.md`.
+- [x] Viết G1–G4 (đỏ trước nếu được), chạy cả bộ.
+- [x] `thiet-ke/PISA-Rulebook-2026-09-19.md` §20: thêm dòng 20.1 cho T1 (thay T34, K2-33(1)), T2 (thay Q-0310-2), T3 (thay K4-28 lần 2), T4 (thay K2-33 cho QL), T7 (thay K4-15, RB-5), T10, T11; sửa 20.2 dòng "Cửa sổ MT lịch sử" → "MT cũ", 20.4 lần 2, 20.9 dòng "Nhập MT lịch sử" và "Sửa điểm đã nhập (lý do ≥ 5 ký tự)" → "(lý do tuỳ chọn)", 20.5 câu từ chối lý do. Ghi `CODE-OK · PR-MTa`.
+- [x] `CODE_MAP.md` (`fasttrack/ketQuaHuy.ts`, `migrate/prMta.ts`, `tests/prMta.tests.ts`), `plan.md` mục 11 một dòng, `[x]` các task.
+- [x] `npm run check` xanh (một lần, foreground) → `/ponytail-review` → `requesting-code-review` → `finishing-a-development-branch` (mở PR vào `main`, không merge).
+- [x] Commit `docs(mta): Rulebook §20, CODE_MAP, plan.md`.
 
 ## Nghiệm thu
 1. QL xếp MT2 chưa thi vào tuần trước → MT thường (có hạn chấm, có "Nợ tuần trước"); vào 3 tuần trước → nhãn "cũ", không hạn. GVCN/GV không chọn được tuần đã qua. Em vào web hôm nay vẫn xếp được MT cũ.
