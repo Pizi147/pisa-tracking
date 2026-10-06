@@ -523,4 +523,99 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert(/sticky/.test(p) && /left-\[80px\]/.test(p), 'cột chọn + Học viên phải dính');
     assert(!/#[0-9a-fA-F]{3,8}\b/.test(p), 'panel không có hex');
   });
+
+  // ------------------------------------------------------------------ Task 5 — hộp một đợt (mockup phần 2)
+  console.log('\nPR-MTb · Hộp một đợt (menuHopKyNang, chip trạng thái dòng, điểm dòng)');
+  const QL_TT = { nhapDiem: true, quanLy: true, gvcn: false, laFt: true, dotHoanTat: false };
+  const duoc = (tt: any, moi = false, q: any = QL_TT) => d.menuHopKyNang(tt, q, moi);
+  const dsDuoc = (tt: any, moi = false) => duoc(tt, moi).map((m: any) => m.duoc);
+
+  check('MTb (T5) · menuHopKyNang: luôn 5 mục đúng thứ tự, nhãn mockup, viSao ≤ 6 từ khi mờ', () => {
+    for (const tt of ['khong-yeu-cau', 'chua-xep', 'chua-toi-tuan', 'dang-thi', 'co-diem', 'vang', 'cho-duyet', 'da-huy', 'lich-su', 'huy-vang']) {
+      for (const moi of [false, true]) {
+        const m = duoc(tt, moi);
+        assert(JSON.stringify(m.map((x: any) => x.muc)) === '["doi-tuan","doi-han","bao-vang","huy-diem","nhat-ky"]', `${tt}/${moi}: ${JSON.stringify(m)}`);
+        for (const x of m) {
+          assert(x.duoc ? x.viSao === null : typeof x.viSao === 'string' && x.viSao.split(/\s+/).length <= 6, `${tt}/${moi}/${x.muc}: ${JSON.stringify(x)}`);
+        }
+      }
+    }
+    assert(JSON.stringify(Object.values(d.CHU_MUC_HOP)) === '["Đổi tuần","Dời hạn chấm","Báo vắng","Huỷ điểm","Nhật ký"]', JSON.stringify(d.CHU_MUC_HOP));
+  });
+
+  check('MTb (T5) · menuHopKyNang: (a) chưa tới tuần thi — Đổi tuần + Nhật ký sáng, "Dời hạn chấm" MỜ theo luật máy chủ (lệch mockup)', () => {
+    assert(JSON.stringify(dsDuoc('chua-toi-tuan')) === '[true,false,false,false,true]', JSON.stringify(dsDuoc('chua-toi-tuan')));
+    const m = duoc('chua-toi-tuan');
+    assert(m[1].viSao === 'Chưa tới tuần thi' && m[2].viSao === 'Chưa tới tuần thi' && m[3].viSao === 'Chưa có điểm', JSON.stringify(m));
+  });
+
+  check('MTb (T5) · menuHopKyNang: (b) đã có điểm (T20) — Đổi tuần SÁNG cho Quản lý, Huỷ điểm sáng; Dời hạn / Báo vắng mờ "Đã có điểm"', () => {
+    const m = duoc('co-diem');
+    assert(JSON.stringify(m.map((x: any) => x.duoc)) === '[true,false,false,true,true]', JSON.stringify(m));
+    assert(m[1].viSao === 'Đã có điểm' && m[2].viSao === 'Đã có điểm', JSON.stringify(m));
+    assert(!duoc('co-diem', false, { ...QL_TT, quanLy: false, gvcn: true })[0].duoc, 'không phải Quản lý thì Đổi tuần mờ');
+  });
+
+  check('MTb (T5) · menuHopKyNang: (c) vắng → Đổi tuần = Xếp lại bài vắng; đã huỷ / huỷ vì vắng 2 lần → Khôi phục (chỉ Quản lý)', () => {
+    assert(duoc('vang')[0].duoc && duoc('vang')[0].thay === 'xep-lai', JSON.stringify(duoc('vang')[0]));
+    assert(duoc('da-huy')[0].duoc && duoc('da-huy')[0].thay === 'khoi-phuc', JSON.stringify(duoc('da-huy')[0]));
+    assert(duoc('huy-vang')[0].duoc && duoc('huy-vang')[0].thay === 'khoi-phuc', JSON.stringify(duoc('huy-vang')[0]));
+    assert(!duoc('huy-vang', false, { ...QL_TT, quanLy: false, gvcn: true })[0].duoc, 'GVCN không khôi phục');
+    assert(duoc('dang-thi')[0].thay === undefined && duoc('chua-xep')[0].thay === undefined, 'đổi tuần thường không có thay');
+  });
+
+  check('MTb (T5) · menuHopKyNang: (d) đợt chưa tạo — chỉ Đổi tuần sáng, còn lại "Đợt chưa tạo"; đang thi: Dời hạn + Báo vắng sáng', () => {
+    const m = duoc('chua-xep', true);
+    assert(JSON.stringify(m.map((x: any) => x.duoc)) === '[true,false,false,false,false]', JSON.stringify(m));
+    assert(m.slice(1).every((x: any) => x.viSao === 'Đợt chưa tạo'), JSON.stringify(m));
+    assert(JSON.stringify(dsDuoc('dang-thi')) === '[true,true,true,false,true]', JSON.stringify(dsDuoc('dang-thi')));
+    assert(duoc('dang-thi')[3].viSao === 'Chưa có điểm', 'huỷ điểm mờ khi chưa có điểm');
+  });
+
+  check('MTb (T5) · menuHopKyNang: MT cũ chưa điểm — Quản lý vẫn đổi tuần được (giữ PR-LM D3 / T20); chờ duyệt dời thì mờ', () => {
+    assert(duoc('lich-su')[0].duoc, JSON.stringify(duoc('lich-su')[0]));
+    assert(!duoc('cho-duyet')[0].duoc && duoc('cho-duyet')[0].viSao === 'Đang chờ duyệt', JSON.stringify(duoc('cho-duyet')[0]));
+  });
+
+  check('MTb (T5) · chipDongKyNang: trễ chấm / chờ chấm / vắng / huỷ / chưa xếp; tuần này, có lịch, xong → không chip', () => {
+    const o = (tt: string, tuan: string | null, x: Record<string, unknown> = {}) => okKn(tt, tuan, x) as any;
+    const chip = (kn: any) => d.chipDongKyNang(kn, H);
+    assert(JSON.stringify(chip(o('da-xep', TUAN.qua, { hanCham: '2026-09-30' }))) === '{"chu":"trễ chấm","tone":"bad"}', JSON.stringify(chip(o('da-xep', TUAN.qua, { hanCham: '2026-09-30' }))));
+    assert(JSON.stringify(chip(o('da-xep', TUAN.vua, { hanCham: '2026-10-07' }))) === '{"chu":"chờ chấm","tone":"wait"}', 'chờ chấm');
+    assert(JSON.stringify(chip(o('vang', TUAN.qua, { sit: 'absent' }))) === '{"chu":"vắng","tone":"soon"}', 'vắng');
+    assert(JSON.stringify(chip(o('cho-duyet', TUAN.qua, { sit: 'absent', choDuyet: true }))) === '{"chu":"vắng","tone":"soon"}', 'chờ duyệt dời = vắng');
+    assert(JSON.stringify(chip(o('da-huy', TUAN.qua, { sit: 'cancelled' }))) === '{"chu":"huỷ","tone":"soon"}', 'huỷ');
+    assert(JSON.stringify(chip(o('da-huy', TUAN.qua, { sit: 'cancelled', huyVang: true }))) === '{"chu":"huỷ","tone":"soon"}', 'huỷ vì vắng 2 lần');
+    assert(JSON.stringify(chip(o('chua-xep', null))) === '{"chu":"chưa xếp","tone":"muted"}', 'chưa xếp');
+    assert(chip(o('da-xep', TUAN.nay)) === null && chip(o('da-xep', TUAN.toi)) === null && chip(o('xong', TUAN.vua)) === null, 'không chip');
+    assert(chip(o('khong-yeu-cau', null, { batBuoc: false })) === null, 'không yêu cầu');
+  });
+
+  check('MTb (T5) · luoiFT trả diem của kỹ năng đã có điểm (FT: band 1 số lẻ, Writing W1 / W2; chưa điểm: không có)', () => {
+    const a = emMoi();
+    const lay = () => keHoach.luoiFT(QL, LOP, TODAY).hang.find((h: any) => h.studentId === a.sid).dot[1].kn;
+    assert(KN.every((k) => lay()[k].diem === undefined), 'chưa điểm không có diem');
+    for (const [s, b] of [['listening', 6.5], ['reading', 6], ['writing1', 5.5], ['writing2', 6.5], ['speaking', 7]] as const) {
+      conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, band, nhap_dau_ngay) VALUES (?,?,?,?)`).run(a.m1, s, b, TODAY);
+    }
+    const kn = lay();
+    assert(kn.listening.diem === '6.5' && kn.reading.diem === '6.0' && kn.writing.diem === '5.5 / 6.5' && kn.speaking.diem === '7.0', JSON.stringify(kn));
+    assert(kn.listening.khoa === 'đã có điểm', 'khoa');
+  });
+
+  check('MTb (T5) · quét nguồn: HopKyNang vẽ theo mockup phần 2 (Tuần chung, ⋯ luôn hiện, Nhật ký, popup dời vượt); bỏ ô lý do + câu trung tính', () => {
+    const h = nguon('web/src/modules/test/keHoach/HopKyNang.tsx');
+    for (const c of ['Tuần chung', 'luonHien', 'menuHopKyNang', 'NganLichSuBai', 'chuDoiVuot', 'chipDongKyNang', 'CHU_MUC_HOP', 'Huỷ thay đổi', 'Vẫn xếp vào tuần này',
+      'Tuần đã qua', 'tuanDaSo', '<HopXacNhanHuyLich', 'tat: !m.duoc', 'Chặn: ']) {
+      assert(h.includes(c), `HopKyNang thiếu ${c}`);
+    }
+    for (const c of ['LY_DO_TOI_THIEU', 'Lý do bỏ', 'Lý do dời', 'Lý do sửa tuần', 'không trùng đợt khác', 'Chưa đổi gì', 'lyDoBo: bo.length', 'setLyDo']) {
+      assert(!h.includes(c), `HopKyNang còn ${c}`);
+    }
+    assert(/toiThieu/.test(h) === false, 'hộp chỉ Quản lý dùng: không khoá tuần đã qua');
+    assert(!/["'`]#[0-9a-fA-F]{3,8}\b/.test(h), 'hộp không có hex');   // chỉ chuỗi ("#fff"); "#212" trong chú thích là số PR
+    assert(/lyDoBo: null/.test(h), 'lyDoBo phải gửi null');
+    const n = nguon('web/src/modules/cham/NganLichSuBai.tsx');
+    assert(/startsWith\('writing'\)/.test(n), 'NganLichSuBai: điểm W lọc theo writing1|writing2');
+  });
 }

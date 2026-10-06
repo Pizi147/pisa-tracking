@@ -10,7 +10,7 @@ import { Nhan } from '../../../ui/Nhan.tsx';
 import { OMt } from '../../../ui/OMt.tsx';
 import { HopXacNhanHuyLich } from './HopXacNhanHuyLich.tsx';
 import {
-  KY_NANG_KE_HOACH, MT_TOI_DA, chuXepVuotGop, demSeXep, mondayOfDate, nhanSeXep, tenMon, tenMonNgan, tomTatXepMt, tuanLich, tuanMacDinhDotMoi,
+  CAU_TUAN_DA_QUA, KY_NANG_KE_HOACH, MT_TOI_DA, chuXepVuotGop, demSeXep, mondayOfDate, nhanSeXep, tenMon, tenMonNgan, tomTatXepMt, tuanLich, tuanMacDinhDotMoi,
   type DongHangLoat, type KyNangKH, type ToneSeXep,
 } from '@shared/domain/index.ts';
 import type { DanhSachLop, HangFT, LopKH, LuoiFTData } from './kieu.ts';
@@ -31,8 +31,6 @@ export function KhungXepLich({ value, onChange, coFt, coThuong }: {
 
 type Hang = HangFT & { classId: number; classCode: string };
 const KY = KY_NANG_KE_HOACH;
-/** T4 (PR-MTb): chip vàng cạnh ô tuần khi Quản lý chọn tuần đã qua — câu đủ ở tooltip. */
-const TIP_QUA_TUAN = 'MT chưa thi xếp về tuần đã qua — tuần cách ≥ 2 tuần thì là MT cũ.';
 const DAU: Record<ToneSeXep, string> = { ok: '✓', soon: '!', bad: '✕' };
 const MAU_DAU: Record<ToneSeXep, string> = { ok: 'text-ok', soon: 'text-soon', bad: 'text-bad' };
 
@@ -268,7 +266,7 @@ export function NganXepLichMt({ chiNhanhDau, lopDs, lopMoSan, coThuong, onDoiKhu
             <div className="min-w-0 flex-1">
               <TuanNho d={{ periodId: tuanChung?.periodId ?? null, weekStart: tuanChung?.weekStart ?? null }} goc={homNay} onTuan={setTuanChung} />
             </div>
-            {quaTuan(tuanChung) && <Nhan tone="soon" title={TIP_QUA_TUAN}>Tuần đã qua</Nhan>}
+            {quaTuan(tuanChung) && <Nhan tone="soon" title={CAU_TUAN_DA_QUA}>Tuần đã qua</Nhan>}
           </div>
           <div role="group" aria-label="Kỹ năng" className="flex flex-wrap gap-1.5">
             {KY.map((k) => {
@@ -297,7 +295,7 @@ export function NganXepLichMt({ chiNhanhDau, lopDs, lopMoSan, coThuong, onDoiKhu
                     <TuanNho d={{ periodId: tuanKn(k)?.periodId ?? null, weekStart: tuanKn(k)?.weekStart ?? null }} goc={homNay}
                       onTuan={(t) => setRieng((s) => ({ ...s, [k]: t }))} />
                   </div>
-                  {quaTuan(tuanKn(k)) && <Nhan tone="soon" title={TIP_QUA_TUAN}>Tuần đã qua</Nhan>}
+                  {quaTuan(tuanKn(k)) && <Nhan tone="soon" title={CAU_TUAN_DA_QUA}>Tuần đã qua</Nhan>}
                 </div>
                 {rieng[k]
                   ? <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={() => setRieng((s) => { const n = { ...s }; delete n[k]; return n; })}>Theo tuần chung</button>

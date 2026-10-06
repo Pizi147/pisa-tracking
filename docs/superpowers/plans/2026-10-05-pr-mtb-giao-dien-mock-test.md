@@ -287,11 +287,11 @@ Bố cục (chữ đúng mockup):
 - Lưu: `chuDoiVuot(...).canPopup` → mở `HopXacNhanHuyLich` (Task 6); chỉ lượt chưa có điểm → lưu thẳng `xacNhanHuyLich: true`. 409 có `seHuyLich` → mở lại với danh sách mới (giữ `:191-193`).
 - T4: `toiThieu` của `TuanNho` = `null` (hộp chỉ QL dùng: Kế hoạch Test và Lộ trình `bang.coTheXep`); tuần đã chọn < tuần này và kỹ năng chưa thi → vàng "Tuần đã qua".
 
-- [ ] **Step 1: Phép đỏ (luật thuần)** `menuHopKyNang`: (a) `chua-toi-tuan`, QL → `doi-tuan` + `doi-han`? (đúng theo `thaoTacKyNang :43`: `chua-toi-tuan` không có `doi-han`) → kiểm mảng `duoc` = `[true,false,false,false,true]` khớp mockup "Menu ⋯ của Speaking (chưa tới tuần thi)" (Báo vắng, Huỷ điểm mờ; **Dời hạn chấm sáng** trong mockup → nếu `thaoTacKyNang` không cho, ghi vào PR là lệch mockup, giữ luật máy chủ); (b) `co-diem` → `huy-diem` sáng, `doi-tuan` mờ "Đã có điểm"; (c) `vang` → `doi-tuan` `thay: 'xep-lai'`; (d) `moi` → chỉ `doi-tuan` sáng; luôn 5 phần tử đúng thứ tự.
-- [ ] **Step 2: Phép đỏ quét nguồn** `HopKyNang.tsx`: có `'Tuần chung'`, `luonHien`, `menuHopKyNang`, `NganLichSuBai`, `chuDoiVuot`; không có `LY_DO_TOI_THIEU`, `'Lý do bỏ'`, `'không trùng đợt khác'`.
-- [ ] **Step 3:** Viết. Giữ: neo cạnh chip / tấm đáy < 640px (`:199-225`), Esc, `onHienDien`, kiểm `/ke-hoach-test/dot/kiem` mỗi lần đổi tuần (`:94-123`), đợt mới xem trước qua `hang-loat` một em (gửi `kyNang` tick).
-- [ ] **Step 4:** `npm run check`. Bấm thử QL: Kế hoạch Test bấm ô MT3 (L R có điểm, W trễ chấm, S có lịch) → đúng mockup phần 2; mở ⋯ Speaking chưa tới tuần → 3 mục mờ có tooltip; hồ sơ HV › Lộ trình "Dời lịch" mở cùng hộp. 375: tấm đáy, ⋯ ≥ 44px. Ảnh.
-- [ ] **Step 5: Commit** `feat(mtb): hộp một đợt — tuần chung, ⋯ luôn hiện, mục mờ`.
+- [x] **Step 1: Phép đỏ (luật thuần)** `menuHopKyNang`: (a) `chua-toi-tuan`, QL → `doi-tuan` + `doi-han`? (đúng theo `thaoTacKyNang :43`: `chua-toi-tuan` không có `doi-han`) → kiểm mảng `duoc` = `[true,false,false,false,true]` khớp mockup "Menu ⋯ của Speaking (chưa tới tuần thi)" (Báo vắng, Huỷ điểm mờ; **Dời hạn chấm sáng** trong mockup → nếu `thaoTacKyNang` không cho, ghi vào PR là lệch mockup, giữ luật máy chủ); (b) `co-diem` → `huy-diem` sáng, `doi-tuan` mờ "Đã có điểm"; (c) `vang` → `doi-tuan` `thay: 'xep-lai'`; (d) `moi` → chỉ `doi-tuan` sáng; luôn 5 phần tử đúng thứ tự.
+- [x] **Step 2: Phép đỏ quét nguồn** `HopKyNang.tsx`: có `'Tuần chung'`, `luonHien`, `menuHopKyNang`, `NganLichSuBai`, `chuDoiVuot`; không có `LY_DO_TOI_THIEU`, `'Lý do bỏ'`, `'không trùng đợt khác'`.
+- [x] **Step 3:** Viết. Giữ: neo cạnh chip / tấm đáy < 640px (`:199-225`), Esc, `onHienDien`, kiểm `/ke-hoach-test/dot/kiem` mỗi lần đổi tuần (`:94-123`), đợt mới xem trước qua `hang-loat` một em (gửi `kyNang` tick).
+- [x] **Step 4:** `npm run check`. Bấm thử QL: Kế hoạch Test bấm ô MT3 (L R có điểm, W trễ chấm, S có lịch) → đúng mockup phần 2; mở ⋯ Speaking chưa tới tuần → 3 mục mờ có tooltip; hồ sơ HV › Lộ trình "Dời lịch" mở cùng hộp. 375: tấm đáy, ⋯ ≥ 44px. Ảnh.
+- [x] **Step 5: Commit** `feat(mtb): hộp một đợt — tuần chung, ⋯ luôn hiện, mục mờ`.
 
 ### Task 6: Popup dời vượt ở mọi cổng dời (mockup phần 4)
 Skill: test-driven-development · `/impeccable harden`

@@ -116,6 +116,8 @@ export type OKyNang = {
   huyVang?: boolean;
   /** T6 (PR-MTb): hạn chấm hiệu lực (ngày) — null: không yêu cầu, MT cũ, đã huỷ phần thi, chưa có tuần. */
   hanCham: string | null;
+  /** T5 (PR-MTb): điểm đã có để hộp một đợt ghi `W3 SEP · 6.5` — FT: band (Writing `5.5 / 6.5`); lớp thường: `x/y`. Chưa có điểm → vắng trường. */
+  diem?: string;
 };
 
 export type ChipKH = { kyNang: KyNangKH[]; tuan: string | null; trangThai: TrangThaiO; doiTu: string | null };

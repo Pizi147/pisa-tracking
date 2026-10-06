@@ -81,6 +81,9 @@ export function kiemTuanXep(o: { ketThuc: string[]; homNay: string; quanLy: bool
   return { cau: !o.quanLy && quaTuan ? 'Chọn tuần từ tuần này trở đi.' : null, quaTuan, mtCu };
 }
 
+/** Tooltip chip vàng "Tuần đã qua" (T4) — panel Xếp lịch, hộp một đợt: Quản lý xếp MT chưa thi về tuần đã qua. */
+export const CAU_TUAN_DA_QUA = 'MT chưa thi xếp về tuần đã qua — tuần cách ≥ 2 tuần thì là MT cũ.';
+
 /** Rà #120: "Đã thi tới MT" = d mà MT1…MT(d) có MT rơi vào tuần chưa qua → số các MT đó (để nhắc lùi Tuần bắt đầu). */
 export function mtDaThiChuaQua(route: string | null, tuanBatDau: string, daThiToiMt: number, homNay: string): number[] {
   return Array.from({ length: daThiToiMt }, (_, i) => i + 1)

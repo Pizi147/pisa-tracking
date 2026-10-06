@@ -200,6 +200,16 @@ function khoaCua(cheDo: CheDo, row: any, scores: any[]): OKyNang['khoa'] {
   return null;
 }
 
+/** Điểm đã có của một kỹ năng để vẽ ở hộp một đợt: FT các band (W1 / W2) một số lẻ; lớp thường `raw/tổng` (thiếu tổng → chỉ raw). */
+function diemChu(cheDo: CheDo, row: any, scores: any[]): string | undefined {
+  if (cheDo === 'thuong') {
+    const s = scores.find((x) => x.skill === row.skill && x.raw_score !== null && x.raw_score !== undefined);
+    return s ? `${s.raw_score}${s.raw_total != null ? `/${s.raw_total}` : ''}` : undefined;
+  }
+  const ds = (entrySkillsOf(row.skill) as string[]).map((k) => scores.find((x) => x.skill === k)?.band).filter((b) => b !== null && b !== undefined);
+  return ds.length ? ds.map((b) => Number(b).toFixed(1)).join(' / ') : undefined;
+}
+
 /**
  * `them` (PR-XLMT, K4-11 — chỉ lưới FT truyền): chờ duyệt dời, lượt lịch sử, ngày nghiệp vụ → chip vắng · chờ duyệt · trễ · đã huỷ.
  * Trễ = tuần thi đã hết (Chủ nhật < hôm nay), chưa đủ điểm, không vắng/huỷ, lượt không lịch sử.
@@ -224,6 +234,7 @@ function oKyNangCua(cheDo: CheDo, row: any, scores: any[], daDoi: boolean, doiTu
     khoa: khoaCua(cheDo, row, scores),
     sit: row.sit_status ?? null, tuanKetThuc: row.week_end ?? null, choDuyet,
     ...(row.huy_vang ? { huyVang: true } : {}),
+    ...(diemChu(cheDo, row, scores) ? { diem: diemChu(cheDo, row, scores) } : {}),
     hanCham: them && batBuoc && !them.lichSu && row.sit_status !== 'cancelled'
       ? effectiveSkillDeadline({ mode: 'band', weekStart: row.week_start ?? null, skillOverride: row.deadline_override ?? null, attemptOverride: them.attemptOverride ?? null }).date
       : null,
