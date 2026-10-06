@@ -208,6 +208,10 @@ HV không đạt mấy lần liên tiếp, kỹ năng hay trượt nhất; từ 
 tỉ lệ vắng, trễ chấm; xuất Excel bộ số liệu thô (một dòng một lượt × kỹ năng) để nghiên cứu ngoài web. Tái dùng `evaluateAttempt`, `evaluateRegular`, `daiCuoiKhoa`, `xuatExcel` MT.
 Màn dự kiến: Phân tích › "Tổng kết khoá" (lọc khoảng thời gian, chương trình, chi nhánh) + nút Xuất. Cần 2–3 tháng dữ liệu bản chụp mới có ý nghĩa.
 
+### PR-KHUNG · Một thanh cuộn, không cắt chữ, nút không tràn (M) — chủ sản phẩm 06/10, mockup DUYỆT, kế hoạch `docs/superpowers/plans/2026-10-06-pr-khung-cuon-chu-cat.md`
+Gốc chung G1–G7 (App.tsx `<main>` thiếu relative → Học viên & Lớp hai thanh cuộn; NutChon chừa chỗ ✓; BoLocDoan / HangTab trên 375; ViecTiep; WorkList, TheKyNang; AdminPage nhật ký; PhanTichLopTab).
+Chốt: đầu cột + hàng lớp dính (Học viên & Lớp) · nút lọc / tab điện thoại một hàng vuốt ngang có mép mờ · đầu cột dính các bảng khác → HK2. Chạy sau MTb, LT3, TK, BV, MT0, LUI-a; trước HK2.
+
 ### PR-LT3 · Lịch Test ba khối + Speaking chấm chéo (L) — luật T15–T18 (mục 2c), **kế hoạch chi tiết chưa soạn**
 Chủ sản phẩm 05/10 (sau khi thấy MT4 "W1 OCT" hiện ở cả Nợ lẫn Lịch tuần này — luật hạn **đúng**, cách hiện gây rối).
 Phạm vi: `server/src/cham/canCham.ts` (`noTuanTruoc`, `lichTest`, đường tính "chờ bạn chấm"), `web/src/modules/test/lichTest/*` (`KhoiNo.tsx`, `DaiSo.tsx`, `LichTestTab.tsx`),
@@ -252,6 +256,7 @@ Việc đầu tiên: giao agent soạn kế hoạch theo mẫu A mục 10 (Opus 
 - **Thêm từ PR-U12 (chủ sản phẩm chốt 05/10):** bài lớp thường chấm dở mà đã có môn trượt → dòng "Không đạt: …" **tô màu cảnh báo**
   (khớp bảng Mock Test giữ màu SOS cho số tạm) · bài đã xong có môn huỷ phần không còn chữ "(đã chấm)" · kiểm nhãn "dời W1/W2" ở bảng Mock
   Test sau khi đổi `skillShort` → `tenMonNgan` (`StudentDetailPage.tsx` `NhanDot`).
+- **Từ PR-KHUNG (06/10):** đầu cột dính khi cuộn cho bảng dài (Tổng quan, Hồ sơ lớp, Test, Nhập điểm, Quản trị) · Phân tích › Tổng hợp rộng hơn 1440 (K2) · tên cắt vài px ở Điểm theo lớp / Nhập điểm (J8 còn lại) · cỡ chip "Thiếu n" / "+1" (H1).
 - **Tên web "PISA Tracking"** (chủ sản phẩm 05/10, PISA viết hoa hết): thay "Pisa Tracking" ở `index.html` `<title>`, `App.tsx:144`,
   `WelcomePage.tsx:137`, `server/src/index.ts:21`, phép kiểm `hocVienLop.tests.ts:71-73` + `suaLoiNong.tests.ts:281`, README/DEMO/TRIEN_KHAI,
   sổ tay `docs/so-tay/` (cùng lúc chụp lại ảnh). Không đổi tên gói npm, tên site Netlify, tên DB.
