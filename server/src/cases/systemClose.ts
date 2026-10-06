@@ -1,4 +1,4 @@
-import { db, tx } from '../db.ts';
+import { db, theoLo, tx } from '../db.ts';
 import { SYSTEM_CLOSE_REASON_LABEL, caseDedupKey, categoryOf, type SystemCloseReason } from '../../../shared/domain/index.ts';
 import { nowIso } from '../util.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
@@ -80,9 +80,15 @@ export function closeCasesBySystem(input: {
   return tx(() => {
     const closed: number[] = [];
     const chup: ChupCaseDong[] = [];
+    /* PR-LUI-b: chụp trạng thái PA TRƯỚC khi đóng (một câu cho cả lô Case) — Hoàn tác Kết thúc học mở lại đúng Case / PA này (`moLaiCaseHeThongDong`). */
+    const paTheoCase = new Map<number, { id: number; status: string }[]>();
+    theoLo(open.map((c) => c.id as number), (lo, ph) => {
+      for (const r of conn.prepare(`SELECT id, case_id, status FROM case_interventions WHERE case_id IN (${ph}) AND status IN ('planned', 'started')`).all(...lo) as any[]) {
+        paTheoCase.set(r.case_id, [...(paTheoCase.get(r.case_id) ?? []), { id: r.id, status: r.status }]);
+      }
+    });
     for (const c of open) {
-      /* PR-LUI-b: chụp trạng thái TRƯỚC khi đóng — Hoàn tác Kết thúc học mở lại đúng Case / PA này (`moLaiCaseHeThongDong`). */
-      const truocPa = conn.prepare(`SELECT id, status FROM case_interventions WHERE case_id = ? AND status IN ('planned', 'started')`).all(c.id) as { id: number; status: string }[];
+      const truocPa = paTheoCase.get(c.id) ?? [];
       const cancelled = conn
         .prepare(
           `UPDATE case_interventions SET status = 'cancelled', closed_reason = 'system_closed', updated_at = ?
