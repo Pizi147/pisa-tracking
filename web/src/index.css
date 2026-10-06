@@ -168,8 +168,9 @@
   /*
    * Bảng rộng hơn màn hình thì CUỘN TRONG CHÍNH NÓ, không đẩy cả trang trượt ngang.
    * Trang trượt ngang là lỗi nặng nhất ở màn hẹp: thanh điều hướng cũng trôi theo.
+   * PR-KHUNG: overflow-y hidden — thanh cuộn ngang làm khối cao thừa 2–3 px, sinh cuộn dọc lồng trong trang.
    */
-  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .table-scroll { overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; }
 
   /* VN17: có panel / hộp thoại mở thì toast lên trên (dưới đầu panel), không che nút ở chân panel. */
   body:has([aria-modal="true"]) .vung-toast { top: 3.75rem; bottom: auto; }
@@ -242,7 +243,7 @@
   /* PR-N1 (YC-11.1): hàng lớp ĐANG MỞ dính ngay dưới tiêu đề cột khi cuộn trong <main> — luôn biết đang xem lớp nào. */
   @media (min-width: 768px) {
     .hang-lon.hang-lon-dinh > td {
-      position: sticky; top: 40px; z-index: 9; /* = chiều cao thead (.th) đo ở Task 13 */
+      position: sticky; top: calc(40px - 1.25rem); z-index: 9; /* = chiều cao thead (.th) đo ở Task 13, trừ đệm md:p-5 của <main> (PR-KHUNG G1) */
       background: linear-gradient(var(--hang-lon-bg), var(--hang-lon-bg)), var(--surface);
     }
   }

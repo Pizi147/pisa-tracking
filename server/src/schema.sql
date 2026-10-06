@@ -1178,7 +1178,10 @@ CREATE TABLE case_followups (
    */
   remaining_issue TEXT,
   decision_note TEXT,
-  idempotency_key TEXT                -- PR-GVa: một mã cho mỗi lần mở form (gửi lại cùng mã → trả dòng đã có)
+  idempotency_key TEXT,               -- PR-GVa: một mã cho mỗi lần mở form (gửi lại cùng mã → trả dòng đã có)
+  /* PR-LUI-a2: Người phụ trách của lần ghi kết quả — tài khoản HOẶC tên ngoài hệ thống (không cả hai). Dòng cũ NULL. */
+  phu_trach_user_id INTEGER REFERENCES users(id),
+  phu_trach_ten TEXT
 );
 CREATE UNIQUE INDEX ux_case_followups_khoa_gui ON case_followups(observer_user_id, idempotency_key) WHERE idempotency_key IS NOT NULL;
 CREATE INDEX idx_followup_case ON case_followups(case_id);

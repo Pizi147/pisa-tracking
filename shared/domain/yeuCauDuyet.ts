@@ -121,8 +121,9 @@ export function chonHet<T extends ChonDuoc & { trangThai: string }>(ds: readonly
 }
 
 /** Kết quả hàng loạt một câu: "Đã duyệt 7/9 — 2 không có quyền". Lý do gom theo mã (PR-GVb G7). */
-export function tomTatKetQuaHangLoat(viec: 'duyet' | 'nhac', ok: number, loi: readonly { ma: number; loi: string }[]): string {
-  const dau = `Đã ${viec === 'duyet' ? 'duyệt' : 'nhắc'} ${ok}/${ok + loi.length}`;
+export function tomTatKetQuaHangLoat(viec: 'duyet' | 'nhac' | 'tu-choi', ok: number, loi: readonly { ma: number; loi: string }[]): string {
+  const dong = viec === 'duyet' ? 'duyệt' : viec === 'tu-choi' ? 'từ chối' : 'nhắc';
+  const dau = `Đã ${dong} ${ok}/${ok + loi.length}`;
   if (!loi.length) return dau;
   const nhom: [string, number][] = [
     ['không có quyền', loi.filter((l) => l.ma === 403).length],
@@ -133,7 +134,7 @@ export function tomTatKetQuaHangLoat(viec: 'duyet' | 'nhac', ok: number, loi: re
   const chuaKip = loi.filter((l) => l.ma === 503).length;
   const khac = loi.length - chuaKip - nhom.reduce((s, [, n]) => s + n, 0);
   if (khac) nhom.push(['lỗi khác', khac]);
-  if (chuaKip) nhom.push([`chưa ${viec === 'duyet' ? 'duyệt' : 'nhắc'}, bấm lại`, chuaKip]);
+  if (chuaKip) nhom.push([`chưa ${dong}, bấm lại`, chuaKip]);
   return `${dau} — ${nhom.filter(([, n]) => n > 0).map(([c, n]) => `${n} ${c}`).join(', ')}`;
 }
 
@@ -212,6 +213,8 @@ export type TheYeuCauDto = {
   taoLuc: string;
   xuLyLuc: string | null;
   duLieu: Record<string, unknown> | null;
+  /** PR-LUI-a2: tab Đã xử lý — Quản lý huỷ được quyết định này (loại có đường đảo, quyết hôm nay, nguồn chưa chạy). */
+  coTheHuy?: boolean;
 };
 
 /** PR-GVb (J5b): `cho` = thẻ PHẢI QUYẾT (= chip "Tất cả" = badge); `quaHan` = trong đó thẻ đỏ; `deBiet`/`deBietQuaHan` = thẻ Nhắc việc, KHÔNG cộng vào `cho` — xem `demHop`. */

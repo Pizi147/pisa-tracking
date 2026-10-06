@@ -13,7 +13,7 @@ import {
   type InterventionKind, type LoaiYeuCau, type TrangThaiYc,
   type TruongDeXuat,
 } from '../../../shared/domain/index.ts';
-import { caseTitleOf, respondToPlan } from '../cases/cases.ts';
+import { caseTitleOf, huyQuyetDinhPa, respondToPlan } from '../cases/cases.ts';
 import { apDungKhongTheoDoi, tuChoiKhongTheoDoi } from '../cases/sosAuto.ts';
 import { chuTheDoiLan2, decideAbsenceMove } from '../fasttrack/absence.ts';
 import { attemptHref } from '../fasttrack/attempts.ts';
@@ -74,6 +74,12 @@ export type DinhNghiaLoai = {
   khiDuyet?: (p: Principal, yc: YeuCauRow, vao: { ghiChu: string | null; duLieu?: unknown }) => void;
   khiTuChoi?: (p: Principal, yc: YeuCauRow, lyDo: string) => void;
   khiTraLoi?: (p: Principal, yc: YeuCauRow, traLoi: string) => void;
+  /**
+   * PR-LUI-a2: HUỶ QUYẾT ĐỊNH bấm nhầm — đảo quyết định ở bảng nguồn (TRONG tx của hộp); ném khi không đảo sạch được. Loại không có = không huỷ.
+   * `huyDuoc`: thẻ nào trong lô (đã quyết, trong ngày) bảng nguồn còn cho huỷ — MỘT câu, cho cờ `coTheHuy` ở tab Đã xử lý.
+   */
+  khiHuy?: (p: Principal, yc: YeuCauRow) => void;
+  huyDuoc?: (conn: any, ds: YeuCauRow[]) => Set<number>;
   /** Điều kiện SQL "đối tượng không còn ý nghĩa" trên bí danh `y` (một biểu thức, không tham số) + lý do hiện trên thẻ. */
   chet?: { sql: string; lyDo: string };
   /** Báo QL: tạo thẻ mới (ON CONFLICT DO NOTHING) + trả số thẻ tạo. Gọi trong `quetYeuCau`; không có gì để tạo thì không mở tx. */
@@ -120,8 +126,17 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
   /* ------------------------------------------------------------ PR-DUYET · Đề xuất PA (T43) */
   {
     loai: 'de_xuat_pa',
-    khiDuyet: (p, yc, v) => { respondToPlan(p, yc.doi_tuong_id, { decision: 'approved', note: v.ghiChu }); },
-    khiTuChoi: (p, yc, lyDo) => { respondToPlan(p, yc.doi_tuong_id, { decision: 'declined', note: lyDo }); },
+    khiDuyet: (p, yc, v) => { respondToPlan(p, yc.doi_tuong_id, { decision: 'approved', note: v.ghiChu }, { khongTraCase: true }); },
+    khiTuChoi: (p, yc, lyDo) => { respondToPlan(p, yc.doi_tuong_id, { decision: 'declined', note: lyDo }, { khongTraCase: true }); },
+    khiHuy: (p, yc) => { huyQuyetDinhPa(p, yc.doi_tuong_id); },
+    huyDuoc: (conn, ds) => {
+      const ids = ds.map((y) => y.doi_tuong_id);
+      if (!ids.length) return new Set();
+      const duoc = new Set((conn.prepare(`SELECT iv.id FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
+          WHERE iv.id IN (${ids.map(() => '?').join(',')}) AND sc.status != 'done' AND iv.approval_state IN ('approved', 'declined')
+            AND NOT EXISTS (SELECT 1 FROM case_followups f WHERE f.intervention_id = iv.id)`).all(...ids) as any[]).map((r) => r.id as number));
+      return new Set(ds.filter((y) => duoc.has(y.doi_tuong_id)).map((y) => y.id));
+    },
     /* K5-58, Q2: MỘT câu cho mọi đường huỷ PA / đóng Case — kể cả đường của PR sau. */
     chet: {
       sql: `NOT EXISTS (SELECT 1 FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
@@ -138,9 +153,10 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       return {
         tieuDe: `Đề xuất PA${x?.topic ? ` · ${caseTopicLabel(x.topic)}` : ''}`,
         phu: x ? nhanDotNgan(x.attempt_kind, x.attempt_no) : null,
-        dong: [`${nguoiXin(yc, ngu)} đề xuất ${ngay(yc.tao_luc, ngu)}: “${moTa}”`],
+        dong: [`${nguoiXin(yc, ngu)} đề xuất ${ngay(yc.tao_luc, ngu)}: “${moTa}”`, ...(x ? [] : ['PA đã xoá'])],
         neuDuyet: 'PA bắt đầu hôm nay, ghi kết quả hằng tuần hạn hết T2.',
-        mo: yc.hoc_vien_id && x ? duongHoSoHocVien(yc.hoc_vien_id, { caseId: x.case_id }) : undefined,
+        /* Rà #229: PA / Case đã xoá (PR-LUI-a2) — không có nút Mở trỏ vào chỗ không còn. */
+        mo: yc.hoc_vien_id && x ? duongHoSoHocVien(yc.hoc_vien_id, { caseId: x.case_id }) : x ? undefined : '',
       };
     },
   },
@@ -225,7 +241,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
           `${nguoiXin(yc, ngu)} (${ngay(yc.tao_luc, ngu)}): “${yc.ly_do ?? ''}”`,
           ...(x?.outcome ? [`Kết quả tuần: ${outcomeLabelFor(x.outcome)}${x.note ? ` — ${x.note}` : ''}`] : []),
         ],
-        mo: yc.hoc_vien_id && x ? duongHoSoHocVien(yc.hoc_vien_id, { caseId: x.case_id }) : undefined,
+        mo: yc.hoc_vien_id && x ? duongHoSoHocVien(yc.hoc_vien_id, { caseId: x.case_id }) : x ? undefined : '',   // rà #229: PA đã xoá
         duLieu: x ? { caseId: x.case_id } : undefined,
       };
     },

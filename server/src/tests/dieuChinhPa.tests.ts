@@ -97,7 +97,7 @@ export async function runDieuChinhPaTests(t: YThucTestKit) {
     const fresh = new SqliteDb(':memory:');
     fresh.exec(SCHEMA);
     /* PR-GVa thêm `case_followups.idempotency_key` ở bước migrate của mình (sau PR-S2) — so PR-S2 trên phần schema của đúng bước này. */
-    const sauPrS2 = (db: any, tb: string) => colsOf(db, tb).filter((c) => !c.startsWith('idempotency_key:'));
+    const sauPrS2 = (db: any, tb: string) => colsOf(db, tb).filter((c) => !c.startsWith('idempotency_key:') && !c.startsWith('phu_trach_'));   // PR-LUI-a2: phu_trach_* thêm ở bước migrate sau
     for (const tb of ['case_intervention_revisions', 'case_followups']) {
       assert(JSON.stringify(sauPrS2(m, tb)) === JSON.stringify(sauPrS2(fresh, tb)),
         `${tb} sau nâng cấp khác schema.sql:\n  ${colsOf(m, tb).join(',')}\n  ${colsOf(fresh, tb).join(',')}`);

@@ -4,7 +4,7 @@
 > (2) Hàng nút lọc / tab trên điện thoại: **một hàng, vuốt ngang**, có mép mờ báo còn nút (KHÔNG xuống dòng). (3) Đầu cột dính cho các bảng dài khác → **PR-HK2**.
 > (4) Mũi tên mở / thu nhóm lớp: giữ **biểu tượng thật** đang dùng (mockup vẽ tạm chữ "v" — không làm theo).
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. **Model: Opus 5.5 hoặc Sonnet 5.5 — không Fable** (CLAUDE.md, 06/10).
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking. **Model: Opus 5.5 hoặc Sonnet 5.5 — không Fable** (CLAUDE.md, 06/10).
 
 **Goal:** Chủ sản phẩm 06/10 (ảnh `1.png` Học viên & Lớp, `2.png` panel Ghi kết quả PA): (3) trang Học viên & Lớp có **hai thanh cuộn**, thông tin bị cắt; (4) **nút bị cắt và lệch** ("✓ ↗ Tiến bộ một phần" tràn viền, ✓ đè mép), "nhiều nút của hệ thống bị như vậy". Sửa **ở component dùng chung** để mọi trang hết cùng lúc; không làm lại giao diện.
 
@@ -97,15 +97,15 @@ Không thấy lỗi (180 lần đo): Lưu trữ, Hồ sơ HV › Ý thức, Hàn
 
 ### Task 0: Mockup + duyệt (BƯỚC 1)
 
-- [ ] Chủ sản phẩm duyệt `thiet-ke/mockup-khung-cuon-chu-cat-2026-10-06.html` mục 1–6 và trả lời Q1–Q3. Chưa duyệt thì **dừng**.
-- [ ] `git merge origin/main` (sau MTb, LT3, TK, BV, MT0, LUI-a). Chạy lại script đo (Task 1) trên main mới → bảng lỗi mới; chỗ nào hết / thêm thì ghi vào mô tả PR trước khi sửa.
+- [x] Chủ sản phẩm duyệt `thiet-ke/mockup-khung-cuon-chu-cat-2026-10-06.html` mục 1–6 và trả lời Q1–Q3. Chưa duyệt thì **dừng**.
+- [x] `git merge origin/main` (sau MTb, LT3, TK, BV, MT0, LUI-a). Chạy lại script đo (Task 1) trên main mới → bảng lỗi mới; chỗ nào hết / thêm thì ghi vào mô tả PR trước khi sửa.
 
 ### Task 1: Script đo + phép kiểm đỏ
 
 **Files:** `scripts/do-khung.mjs` (mới), `server/src/tests/prKhung.tests.ts` (mới), `server/src/tests/run.ts`
 
-- [ ] **`scripts/do-khung.mjs`**: Playwright (`npm i --no-save playwright`, `channel: 'msedge'`, rơi về `'chrome'`), `BASE` từ `process.env.KHUNG_BASE` (mặc định `http://localhost:${WEB_PORT}`), đăng nhập `POST /api/demo/session {userId}`. Kịch bản = các trang ở bảng "Mọi chỗ lỗi" + Lưu trữ, Kế hoạch Test, Nhập điểm; panel Ghi kết quả PA (`/hoc-thuat/case/5`, GVCN 7; bấm "Tiến bộ một phần"), Tạo Case, Ghi vi phạm, Sửa thông tin. Mỗi kịch bản × 1440/375 × tối/sáng; hàm đo (a)–(d) như mục "Đo 06/10 — cách đo" (bỏ `.sr-only`, `max-sm:sr-only`, phần tử trong `[role=dialog]` cho (b)). In một dòng mỗi lần đo; **thoát mã 1** nếu còn: html cuộn, cuộn lồng ngoài panel, nút tràn / lấn đệm, chữ `line-clamp`/`truncate` bị cắt ở các file G3/G4. Chụp ảnh lỗi vào `thiet-ke/anh/khung/` (tên `trang-phan-1440-toi.png`).
-- [ ] **Đỏ — `prKhung.tests.ts`** (quét nguồn, mẫu `prUxG.tests.ts` `doc()` bỏ chú thích), gọi `runPrKhungTests` cuối `run.ts`:
+- [x] **`scripts/do-khung.mjs`**: Playwright (`npm i --no-save playwright`, `channel: 'msedge'`, rơi về `'chrome'`), `BASE` từ `process.env.KHUNG_BASE` (mặc định `http://localhost:${WEB_PORT}`), đăng nhập `POST /api/demo/session {userId}`. Kịch bản = các trang ở bảng "Mọi chỗ lỗi" + Lưu trữ, Kế hoạch Test, Nhập điểm; panel Ghi kết quả PA (`/hoc-thuat/case/5`, GVCN 7; bấm "Tiến bộ một phần"), Tạo Case, Ghi vi phạm, Sửa thông tin. Mỗi kịch bản × 1440/375 × tối/sáng; hàm đo (a)–(d) như mục "Đo 06/10 — cách đo" (bỏ `.sr-only`, `max-sm:sr-only`, phần tử trong `[role=dialog]` cho (b)). In một dòng mỗi lần đo; **thoát mã 1** nếu còn: html cuộn, cuộn lồng ngoài panel, nút tràn / lấn đệm, chữ `line-clamp`/`truncate` bị cắt ở các file G3/G4. Chụp ảnh lỗi vào `thiet-ke/anh/khung/` (tên `trang-phan-1440-toi.png`).
+- [x] **Đỏ — `prKhung.tests.ts`** (quét nguồn, mẫu `prUxG.tests.ts` `doc()` bỏ chú thích), gọi `runPrKhungTests` cuối `run.ts`:
   - K1: `<main id="noi-dung"` trong `App.tsx` có lớp `relative`.
   - K2: thân `NutChon` (`ui.tsx`) có `whitespace-normal` và `min-w-0`; không còn `invisible` trong thân `NutChon`; không chỗ gọi `<NutChon` nào truyền `whitespace-nowrap` (quét `web/src/**/*.tsx`).
   - K3: `ViecTiep.tsx` không còn `line-clamp-2` và không còn `shrink-0` trên cụm hạn.
@@ -113,46 +113,46 @@ Không thấy lỗi (180 lần đo): Lưu trữ, Hồ sơ HV › Ý thức, Hàn
   - K5: `AdminPage.tsx` không còn `max-h-96`; không file nào trong `web/src/modules/**` có `max-h-` cùng `overflow-y-auto` **ngoài** danh sách cho phép (menu / gợi ý / popover: `Header.tsx`, `PeoplePicker.tsx`, `TimLop.tsx`, `HopKyNang.tsx`, `MeetingPage.tsx:474`, `Drawer.tsx`) — khoá luật "không cuộn lồng trong trang".
   - K6: `BoLocDoan` có lớp `max-sm:` theo Q2 (A: `max-sm:flex-wrap`; B: `max-sm:[mask-image`); `HangTab` có `max-sm:[mask-image`.
   - K7: `StudentsPage.tsx` khối đầu cột có `md:-top-5`; `index.css` `.hang-lon-dinh` không còn `top: 40px`.
-- [ ] Chạy `npm run build:server && node dist-server/server/src/tests/run.js` (hoặc chỉ khối mới nếu run.ts có lọc) → **đỏ** K1–K7. Chạy `node scripts/do-khung.mjs` trên bản chưa sửa → thoát 1, liệt kê đủ #1–#11.
-- [ ] Commit `test(khung): đo cuộn lồng / chữ cắt / nút tràn (đỏ)`.
+- [x] Chạy `npm run build:server && node dist-server/server/src/tests/run.js` (hoặc chỉ khối mới nếu run.ts có lọc) → **đỏ** K1–K7. Chạy `node scripts/do-khung.mjs` trên bản chưa sửa → thoát 1, liệt kê đủ #1–#11.
+- [x] Commit `test(khung): đo cuộn lồng / chữ cắt / nút tràn (đỏ)`.
 
 ### Task 2: G1 — một thanh cuộn (Học viên & Lớp và mọi trang)
 
-- [ ] `App.tsx:156` thêm `relative`. `StudentsPage.tsx:273` `md:top-0` → `md:-top-5`. `index.css:245` `top: calc(40px - 1.25rem)`.
-- [ ] `/impeccable layout` phạm vi Học viên & Lớp: đầu cột dính sát, hàng lớp đang mở dính ngay dưới, không hở chữ; cuối trang không còn khoảng trống.
-- [ ] Đo: html không cuộn ở **mọi** trang (kịch bản đủ), HVL 1440 lăn tới cuối: thanh trên còn, đầu cột còn. Kiểm panel (`KhungPanel`, `Drawer` là `fixed`) và lịch `LichNho` (portal) vẫn đúng chỗ — `relative` không ảnh hưởng `fixed`.
-- [ ] K1, K7 xanh. Commit `fix(khung): G1 chỉ <main> cuộn — html không cuộn, đầu cột HVL dính sát`.
+- [x] `App.tsx:156` thêm `relative`. `StudentsPage.tsx:273` `md:top-0` → `md:-top-5`. `index.css:245` `top: calc(40px - 1.25rem)`.
+- [x] `/impeccable layout` phạm vi Học viên & Lớp: đầu cột dính sát, hàng lớp đang mở dính ngay dưới, không hở chữ; cuối trang không còn khoảng trống.
+- [x] Đo: html không cuộn ở **mọi** trang (kịch bản đủ), HVL 1440 lăn tới cuối: thanh trên còn, đầu cột còn. Kiểm panel (`KhungPanel`, `Drawer` là `fixed`) và lịch `LichNho` (portal) vẫn đúng chỗ — `relative` không ảnh hưởng `fixed`.
+- [x] K1, K7 xanh. Commit `fix(khung): G1 chỉ <main> cuộn — html không cuộn, đầu cột HVL dính sát`.
 
 ### Task 3: G2 — nút chọn không tràn
 
-- [ ] `NutChon` (`ui.tsx:485-491`): `className={\`btn ${nho ? 'btn-sm' : ''} min-h-[44px] min-w-0 gap-1 whitespace-normal text-center leading-tight sm:min-h-0 ${chon ? CHON : ''} ${className}\`}`; `{chon && <span aria-hidden className="shrink-0 text-[11px] leading-none text-teal-300">✓</span>}`. Nút trong lưới `justify-center` giữ nguyên.
-- [ ] `CapNhatTuan.tsx:276`: bỏ `whitespace-nowrap px-1.5 text-xs` nếu LUI-a2 chưa bỏ (LUI-a2 đã có: 2 cột, bỏ `OUTCOME_MARK`). Không đổi gì khác trong panel này.
-- [ ] `/impeccable polish` các panel có lưới nút chọn (bảng #3, #4): đo ở 1440 và 375, nhãn dài nhất mỗi lưới không chạm viền; nút cùng hàng cao bằng nhau; chọn / bỏ chọn không làm nút nhảy kích thước quá 1 dòng.
-- [ ] K2 xanh. Commit `fix(khung): G2 NutChon — chữ xuống dòng, ✓ chỉ ở nút đang chọn`.
+- [x] `NutChon` (`ui.tsx:485-491`): `className={\`btn ${nho ? 'btn-sm' : ''} min-h-[44px] min-w-0 gap-1 whitespace-normal text-center leading-tight sm:min-h-0 ${chon ? CHON : ''} ${className}\`}`; `{chon && <span aria-hidden className="shrink-0 text-[11px] leading-none text-teal-300">✓</span>}`. Nút trong lưới `justify-center` giữ nguyên.
+- [x] `CapNhatTuan.tsx:276`: bỏ `whitespace-nowrap px-1.5 text-xs` nếu LUI-a2 chưa bỏ (LUI-a2 đã có: 2 cột, bỏ `OUTCOME_MARK`). Không đổi gì khác trong panel này.
+- [x] `/impeccable polish` các panel có lưới nút chọn (bảng #3, #4): đo ở 1440 và 375, nhãn dài nhất mỗi lưới không chạm viền; nút cùng hàng cao bằng nhau; chọn / bỏ chọn không làm nút nhảy kích thước quá 1 dòng.
+- [x] K2 xanh. Commit `fix(khung): G2 NutChon — chữ xuống dòng, ✓ chỉ ở nút đang chọn`.
 
 ### Task 4: G3, G4 — chữ việc không cắt
 
-- [ ] `ViecTiep.tsx` (G3); `WorkList.tsx:60, 63`, `TheKyNang.tsx:100, 141` (G4). `/impeccable clarify` không áp — chữ giữ nguyên, chỉ đổi cách xuống dòng.
-- [ ] `/impeccable adapt` 375: Công việc, Tổng quan, Hồ sơ HV › Học thuật, Hồ sơ lớp; 1440: cột Theo dõi Hồ sơ lớp không cao thêm quá 1 dòng.
-- [ ] K3, K4 xanh. Commit `fix(khung): G3 G4 việc tiếp theo, danh sách việc, thẻ kỹ năng không cắt chữ`.
+- [x] `ViecTiep.tsx` (G3); `WorkList.tsx:60, 63`, `TheKyNang.tsx:100, 141` (G4). `/impeccable clarify` không áp — chữ giữ nguyên, chỉ đổi cách xuống dòng.
+- [x] `/impeccable adapt` 375: Công việc, Tổng quan, Hồ sơ HV › Học thuật, Hồ sơ lớp; 1440: cột Theo dõi Hồ sơ lớp không cao thêm quá 1 dòng.
+- [x] K3, K4 xanh. Commit `fix(khung): G3 G4 việc tiếp theo, danh sách việc, thẻ kỹ năng không cắt chữ`.
 
 ### Task 5: G5 — bộ lọc và tab trên điện thoại
 
-- [ ] `BoLocDoan` theo Q2 (mặc định **A**): `max-sm:flex-wrap max-sm:gap-1.5 max-sm:border-0 max-sm:overflow-visible`, nút `max-sm:rounded-lg max-sm:border` (bỏ `border-l` nối đoạn ở < 640). Máy tính giữ nút đoạn liền.
-- [ ] `HangTab.tsx:22`: `max-sm:pr-8 max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)]`; tab đang chọn tự cuộn vào giữa đã có (giữ).
-- [ ] K6 xanh. Commit `fix(khung): G5 bộ lọc nút đoạn và hàng tab trên điện thoại`.
+- [x] `BoLocDoan` theo Q2 (mặc định **A**): `max-sm:flex-wrap max-sm:gap-1.5 max-sm:border-0 max-sm:overflow-visible`, nút `max-sm:rounded-lg max-sm:border` (bỏ `border-l` nối đoạn ở < 640). Máy tính giữ nút đoạn liền.
+- [x] `HangTab.tsx:22`: `max-sm:pr-8 max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)]`; tab đang chọn tự cuộn vào giữa đã có (giữ).
+- [x] K6 xanh. Commit `fix(khung): G5 bộ lọc nút đoạn và hàng tab trên điện thoại`.
 
 ### Task 6: G6, G7 — bỏ cuộn lồng còn lại
 
-- [ ] `AdminPage.tsx:95` bỏ `max-h-96 overflow-y-auto`. `PhanTichLopTab.tsx:41`, `BangDiemLopThuong.tsx:122` thêm `overflow-y-hidden`.
-- [ ] K5 xanh. Commit `fix(khung): G6 G7 nhật ký quản trị, bảng phân tích lớp không cuộn lồng`.
+- [x] `AdminPage.tsx:95` bỏ `max-h-96 overflow-y-auto`. `PhanTichLopTab.tsx:41`, `BangDiemLopThuong.tsx:122` thêm `overflow-y-hidden`.
+- [x] K5 xanh. Commit `fix(khung): G6 G7 nhật ký quản trị, bảng phân tích lớp không cuộn lồng`.
 
 ### Task 7: Kiểm cuối, ảnh, audit, PR
 
-- [ ] `node scripts/do-khung.mjs` → **thoát 0** (trừ #12–#16 ghi chú "PR khác"). Ảnh nghiệm thu vào `thiet-ke/anh/khung/`: mỗi trang ở bảng × 1440/375 × sáng/tối (đặt tên `trang-phan-1440-sang.png`).
-- [ ] Cập nhật `thiet-ke/HE_GIAO_DIEN.md` §10 (3 dòng luật, xem Cấu trúc file).
-- [ ] `/impeccable audit` (giao diện đã sửa), `/ponytail-review`. `npm run check` **một lần**, foreground.
-- [ ] Mở PR vào `main`, **không merge**. Mô tả: bảng G1–G7 → # đã hết, ảnh trước / sau, phép kiểm K1–K7, chỗ để HK2 / PR khác, chú thích `ponytail:`.
+- [x] `node scripts/do-khung.mjs` → **thoát 0** (trừ #12–#16 ghi chú "PR khác"). Ảnh nghiệm thu vào `thiet-ke/anh/khung/`: mỗi trang ở bảng × 1440/375 × sáng/tối (đặt tên `trang-phan-1440-sang.png`).
+- [x] Cập nhật `thiet-ke/HE_GIAO_DIEN.md` §10 (3 dòng luật, xem Cấu trúc file).
+- [x] `/impeccable audit` (giao diện đã sửa), `/ponytail-review`. `npm run check` **một lần**, foreground.
+- [x] Mở PR vào `main`, **không merge**. Mô tả: bảng G1–G7 → # đã hết, ảnh trước / sau, phép kiểm K1–K7, chỗ để HK2 / PR khác, chú thích `ponytail:`.
 
 ---
 

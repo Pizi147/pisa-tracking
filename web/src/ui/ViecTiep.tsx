@@ -10,17 +10,18 @@ import { QuaHan } from './Nhan.tsx';
  */
 export function ViecTiep({ v, den, onBam }: { v: ViecTiepTheo; den?: string | null; onBam?: () => void }) {
   /*
-   * PR-S4F #13: max-w-full — trong cột flex `items-start` (Theo dõi, Việc tiếp theo) phần tử rộng theo chữ nên chữ lấn lề ô. Chật thì CHỮ VIỆC
-   * xuống tối đa 2 dòng (PR-DH J8: cắt một dòng làm mất nghĩa — "Ghi kết q…"; câu đủ vẫn ở title); "⚠ quá hạn n ngày" / "· hạn" luôn hiện đủ.
+   * PR-S4F #13: max-w-full — trong cột flex `items-start` (Theo dõi, Việc tiếp theo) phần tử rộng theo chữ nên chữ lấn lề ô.
+   * PR-KHUNG G3: chữ chạy liền (khối thường, không flex, không cắt dòng) — chật thì xuống dòng, không mất chữ; cụm hạn
+   * `nowrap` là chữ trong dòng nên chật thì cả cụm xuống dòng. Câu đủ vẫn ở title.
    */
   return (
-    <span className="flex max-w-full items-baseline text-xs text-slate-200" title={v.title}>
-      <span className="min-w-0 line-clamp-2 break-words">
+    <span className="block max-w-full text-xs text-slate-200" title={v.title}>
+      <span className="break-words">
         {onBam ? <button type="button" className="link cursor-pointer border-0 bg-transparent p-0 text-left text-xs" onClick={onBam}>{v.viec}</button>
           : den ? <Link to={den} className="link">{v.viec}</Link> : v.viec}
       </span>
-      {v.quaHanNgay !== null ? <span className="shrink-0 whitespace-nowrap">&nbsp;<QuaHan ngay={v.quaHanNgay} /></span>
-        : v.han ? <span className="shrink-0 whitespace-nowrap text-slate-500">&nbsp;· {v.han}</span> : null}
+      {v.quaHanNgay !== null ? <span className="whitespace-nowrap">&nbsp;<QuaHan ngay={v.quaHanNgay} /></span>
+        : v.han ? <span className="whitespace-nowrap text-slate-500">&nbsp;· {v.han}</span> : null}
     </span>
   );
 }

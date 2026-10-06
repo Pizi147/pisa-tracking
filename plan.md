@@ -177,7 +177,8 @@ Chủ sản phẩm 05/10 đã chốt (mockup `thiet-ke/mockup-test-mt-2026-10-05
 | 06/10 | Chờ duyệt **luôn mở "Tất cả" chi nhánh** (số dòng = badge); link trỏ một thẻ/lớp không áp chi nhánh mặc định | NV ✅ |
 | 06/10 | Điểm theo lớp: bỏ chú giải màu, câu "Lưu từng ô…", nút "Xong" của mockup (luật chữ ngắn); tab giữa Lịch Test và Kế hoạch Test | DL ✅ |
 | 06/10 | **Ô nhập ngày ở mọi nơi = ô gõ + nút lịch** (`ONgay`), không làm hàng nút Hôm nay / Hôm qua / 2 ngày trước; nhãn tuỳ chọn giữ chữ chuẩn "(không bắt buộc)" | mọi PR (LUI-b giữ ô ngày) |
-| 06/10 | Thứ tự cuối: … → KHUNG → HK2 → **deploy lớn** → **PR-EN** (bản tiếng Anh, chỉ phần GV) → **PR-SOTAY** (6 PDF) → deploy nhỏ | EN, SOTAY |
+| 07/10 | **Deploy MỘT lần sau khi xong HẾT** (… → KHUNG → HK2 → PR-EN → PR-SOTAY → deploy), thay "deploy sau HK2". Sổ tay viết theo `main` cuối cùng (ảnh chụp app chạy cục bộ), không chờ bản chính | EN, SOTAY, deploy |
+| 07/10 | PR-EN: nút **"VI \| EN"** chữ nhỏ cạnh nút Sáng/Tối; màn đăng nhập **hai nút to "Tiếng Việt \| English" ngay trên khung**; **bảng thuật ngữ EN planning tự chọn** (tiếng Anh tự nhiên của trung tâm IELTS), chủ sản phẩm xem trước khi merge; **lần này planning được tự duyệt mockup EN** (chỉ đổi chữ + nút đổi ngôn ngữ, giữ giao diện) **và dàn ý sổ tay**, chủ sản phẩm xem ảnh trước khi merge | EN, SOTAY |
 | 06/10 | **Không dùng Fable** ở mọi session, kể cả subagent | mọi PR |
 
 ## 4. Việc chưa làm (đợt 3 còn DL, SL; đợt 4–6 ở mục 2c + kế hoạch 2026-10-05-*)
@@ -204,7 +205,7 @@ Kỳ vọng, chương trình, band đầu vào, đạt/trượt, mức SOS **kh�
 - **Xem lại:** hồ sơ HV có mục "Các lộ trình" hiện rõ (không ẩn), mở một lộ trình cũ = bảng tổng kết 4 kỹ năng theo lượt; mở từ **Lưu trữ** (HV và lớp đã kết thúc) xem được; lớp đã kết thúc: bảng tổng kết cả lớp.
 - Chồng: PR-LUI-b (`students.ts`, `luuTru.ts`, Học lại), PR-MT0 (Chuyển tiếp lớp). Chạy sau LUI-b, song song MTb được. Bảng bản chụp là nguồn cho PR-NC.
 
-### PR-EN · Bản tiếng Anh cho GV nước ngoài (L) — chủ sản phẩm 06/10, **làm SAU CÙNG** (sau HK2 và deploy lớn), kế hoạch + mockup chưa soạn
+### PR-EN · Bản tiếng Anh cho GV nước ngoài (L) — chủ sản phẩm 06/10, **làm sau HK2, trước SOTAY; deploy một lần sau cùng** (07/10), kế hoạch + mockup chưa soạn
 Chốt: **chỉ phần GV dùng** — Đăng nhập, thanh trên, Tổng quan (GV), Lịch Test, Điểm theo lớp / nhập điểm, hồ sơ lớp + hồ sơ HV (xem), Case – PA (tạo, ghi kết quả), Ghi vi phạm,
 Công việc của tôi, chuông, câu báo lỗi máy chủ trên các đường đó. Màn QL / Quản trị (Kế hoạch Test, Chờ duyệt, Phân tích, Quản trị) giữ tiếng Việt.
 - **Nút đổi ngôn ngữ:** góc trên thanh đầu (cạnh nút sáng/tối) **và** một nút to, dễ thấy ở màn đăng nhập (trước khi đăng nhập). Nhớ theo tài khoản (lưu ở máy chủ) + trên máy trước khi đăng nhập.
@@ -214,7 +215,7 @@ Công việc của tôi, chuông, câu báo lỗi máy chủ trên các đườn
 - **Chống chữ cắt (bắt buộc):** chụp mọi màn GV ở EN, 375 + 1440, sáng + tối; đo tự động phần tử tràn / cắt chữ như PR-KHUNG (dùng lại script đo của KHUNG); câu EN dài thì rút gọn, không thu cỡ chữ.
 
 ### PR-SOTAY · Sổ tay mới theo web mới nhất (M) — chủ sản phẩm 06/10, **làm cuối cùng, sau PR-EN**
-Sáu file PDF, viết lại theo web đã deploy (ảnh thật), tận dụng bộ dựng sẵn `docs/so-tay/` (thay bản 02/10):
+Sáu file PDF, viết lại theo `main` cuối cùng (ảnh thật chụp app chạy cục bộ, 07/10), tận dụng bộ dựng sẵn `docs/so-tay/` (thay bản 02/10):
 `PTA - TEACHER MANUAL - MINI` / `- FULL` (GV Việt Nam, tiếng Việt) · `PTA - FOREIGN TEACHER MANUAL - MINI` / `- FULL` (GVNN, tiếng Anh, ảnh màn EN) ·
 `PTA - HEADS MANUAL - MINI` / `- FULL` (QL, tiếng Việt).
 MINI 2–4 trang: chỉ việc hằng tuần (nhập điểm, gõ "-", ghi kết quả PA, ghi vi phạm, xem việc cần làm; QL thêm xếp lịch, duyệt, theo dõi), mỗi việc 1 ảnh + 3–5 bước. FULL: đủ mọi màn, mọi luật.
@@ -502,6 +503,8 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 07/10/2026 | PR-KHUNG (Opus 5.5) · `pr-khung-cuon-chu-cat` | G1–G7 ở gốc chung: chỉ `<main>` cuộn (Học viên & Lớp đầu cột + hàng lớp dính), `NutChon` xuống dòng (✓ chỉ nút đang chọn), việc / Case / PA không cắt chữ ở 375, lọc + tab điện thoại một hàng vuốt mép mờ, bỏ cuộn lồng (nhật ký quản trị, `.table-scroll`), `KhungPanel` "* = bắt buộc" không đè nhãn. Phép kiểm `prKhung` K1–K9 + `scripts/do-khung.mjs`. |
+| 07/10/2026 | PR-LUI-a2 (Opus 5.5) · `pr-lui-a2-case-duyet` | Case + Chờ duyệt: Người phụ trách khi ghi kết quả PA (cột mới, migrate `prLuiA2`), gộp `Vấn đề còn tồn / Ghi chú`, nút kết quả 2 cột; Tạo Case có bằng chứng; Mở lại Case (QL/QT); Sửa Case · Xoá Case báo tay · Xoá PA; Từ chối nhiều; Huỷ quyết định Đề xuất PA trong ngày; nhật ký hạn theo dõi. Phép kiểm `LUIa2-1…16`. |
 | 07/10/2026 | PR-BV (Opus 5.5) · `pr-bv-bo-vang-xoa-diem` | Xoá "-" = hết vắng: Mock đã chốt trả như trước khi gõ (giữ quyết định của người), lớp thường trừ lần vắng / giữ lịch khi tuần mới có điểm, khung gỡ GV · GVCN đến thứ Tư; nhập lại điểm sau khi xoá mở lại đúng Case; Lịch sử ô lớp thường; bài lớp thường xoá điểm về chưa xong. Phép kiểm `prBv`. |
 | 07/10/2026 | PR-MT0 (Opus 5.5) · `pr-mt0` | MT0 (T5, T5b): Lên FT (FOU/BE/ELE) tự có MT0 tuần Final, chấm band, hạn CN tuần sau, SOS chỉ hiển thị; dời muộn nhất tuần 2 FT, trước MT1, theo Final; Chuyển tiếp nối MT0 làm đầu vào FT / `MT0 · không dùng`; việc QL `Chốt lên FT · lớp` tự xong. Phép kiểm `prMt0` MT0-0…MT0-8. |
 | 06/10/2026 | PR-TK (Sonnet 5.5, phương án B) · `pr-tk-tong-ket-lo-trinh` | Tổng kết lộ trình: bản chụp lúc đóng mọi đường (migrate `prTk` điền ngược), kết quả thi thật L R W S (GVCN nhập, máy so Target lúc đóng) + việc nhắc, Kết thúc học FT chờ kết quả chưa lưu trữ, khối Các lộ trình · ngăn Tổng kết · tab Tổng kết lớp · nút Tổng kết ở Lưu trữ. Phép kiểm `prTk` TK-1…TK-L. |

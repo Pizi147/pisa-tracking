@@ -10,19 +10,19 @@ import { OKhac } from '../../ui/OKhac.tsx';
 import { NutChon } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
-  FOLLOWUP_OUTCOMES, INTERVENTION_KIND_LABEL, OUTCOME_MARK,
+  FOLLOWUP_OUTCOMES, INTERVENTION_KIND_LABEL,
   GOI_Y_KET_QUA_PA, GOI_Y_MO_TA_PA, NUT_LUU_KET_QUA, PLAN_DECISION_HINT, PLAN_DECISION_NGAN, PLAN_DECISION_NGHIA, quyetDinhChoPa,
   RESCHEDULE_TARGETS, RESCHEDULE_TARGET_LABEL,
   decisionBlockedReason, decisionNeedsReason, deadlineView, interventionKindsFor, ngay, nhanTuanGhiKetQua, outcomeLabelFor,
-  nguoiThanhPayload, type NguoiChon, type PlanDecision, dsLoi, type LuatTruong, kiemGhiRoKhac, KHAC_TOI_THIEU,
+  nguoiThanhPayload, nguoiThieu, type NguoiChon, type PlanDecision, dsLoi, type LuatTruong, kiemGhiRoKhac, KHAC_TOI_THIEU,
 } from '@shared/domain/index.ts';
 
 /**
  * GHI KẾT QUẢ CỦA MỘT PA — MỘT PANEL (PR-UX3, N-4, mockup 15 §4–§5; nguồn §8). Thay `CapNhatTuanForm` (form trải trong trang + hộp
  * thoại đè lên ngăn Case): từ Hồ sơ HV, Việc cần làm, Hành trình đều mở NGĂN CASE ở view này.
  *
- * Ba khối: 1 · Kết quả tuần W4 SEP / ghi bù nhiều tuần (4 nút + "Chưa đủ dữ liệu" là nút chữ) · 2 · Quyết định (danh sách dọc 5 dòng, khối con mở
- * NGAY DƯỚI dòng được chọn) · 3 · Ghi chú. Luật giữ nguyên (máy chủ vẫn kiểm lại); chỉ đổi CÁCH HIỆN: nút Lưu không mờ, bấm mới
+ * Hai khối: 1 · Kết quả tuần W4 SEP / ghi bù nhiều tuần (4 nút + "Chưa đủ dữ liệu" là nút chữ; Người phụ trách; Vấn đề còn tồn / Ghi chú —
+ * PR-LUI-a2) · 2 · Quyết định (danh sách dọc 5 dòng, khối con mở NGAY DƯỚI dòng được chọn). Luật giữ nguyên (máy chủ vẫn kiểm lại); chỉ đổi CÁCH HIỆN: nút Lưu không mờ, bấm mới
  * hiện "Còn thiếu: Tiến triển · Lý do điều chỉnh" (Q4) — trước khi bấm không có lỗi nào.
  */
 
@@ -80,6 +80,8 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved, on
   /* Điều chỉnh: giá trị ban đầu = bản hiện tại; "đổi" = khác giá trị ban đầu. */
   const [desc, setDesc] = useState(pa.description ?? '');
   const [nguoi, setNguoi] = useState<NguoiChon | null>(goc);
+  /* PR-LUI-a2: Người phụ trách của lần ghi — điền sẵn người thực hiện PA; không đổi người thực hiện PA. */
+  const [phuTrach, setPhuTrach] = useState<NguoiChon | null>(goc);
   /* Thay */
   const kinds = interventionKindsFor();
   const [newKind, setNewKind] = useState<string>(kinds.selfServe[0]);
@@ -125,6 +127,10 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved, on
     if (mtTyLe.trim() === '' || !Number.isFinite(so) || so < 0 || so > 100) loi.push({ khoa: 'mt-ty-le', nhan: 'Mini Test (%)', lyDo: 'Nhập số từ 0 đến 100' });
     if (!mtNgay) loi.push({ khoa: 'mt-ngay', nhan: 'Ngày làm', lyDo: 'Chọn ngày làm Mini Test' });
   }
+  {
+    const thieuNguoi = nguoiThieu(phuTrach, true);
+    if (thieuNguoi) loi.push({ khoa: 'phu-trach', nhan: 'Người phụ trách', lyDo: phuTrach ? thieuNguoi : 'Chọn Người phụ trách' });
+  }
   if (decision === 'adjust') {
     if (!adjustChanged) loi.push({ khoa: 'noi-dung', nhan: 'Nội dung PA', lyDo: 'Đổi ít nhất một ô: nội dung hoặc người làm' });
     else if (descChanged && desc.trim().length < 8) loi.push({ khoa: 'noi-dung', nhan: 'Nội dung PA', lyDo: `Cần ít nhất 8 ký tự (đang có ${desc.trim().length})` });
@@ -140,7 +146,10 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved, on
     try {
       const body: Record<string, unknown> = {
         decision: lanCuoi ? undefined : decision, outcome, note: progress, observedOn: on || undefined,
-        remainingIssue: remaining.trim() || undefined, decisionNote: reason.trim() || undefined,
+        remainingIssue: remaining.trim() || undefined,
+        /* Lý do chỉ gửi khi có ô lý do thật — ô "Ghi chú" riêng đã gộp vào "Vấn đề còn tồn / Ghi chú" (PR-LUI-a2). */
+        decisionNote: (needReason || decision === 'ask_manager' || (lanCuoi && outcome === 'insufficient')) ? reason.trim() || undefined : undefined,
+        phuTrach: nguoiThanhPayload(phuTrach),
       };
       if (decision === 'end') body.completedOn = endOn || undefined;
       if (coMiniTest) body.miniTest = { tyLe: Number(mtTyLe.replace(',', '.')), ngay: mtNgay };
@@ -270,11 +279,11 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved, on
           </p>
         )}
         <div>
-          <div {...o('ket-qua')} tabIndex={-1} className="grid grid-cols-2 gap-2 outline-none sm:grid-cols-4" role="group" aria-label={tuanGhi}>
+          {/* PR-LUI-a2: 2 cột ở mọi cỡ (panel ≤ 560 px), chữ cho xuống dòng, bỏ dấu ✓ ↗ – ↓ — không cắt / lệch. Sửa chung NutChon là PR-KHUNG. */}
+          <div {...o('ket-qua')} tabIndex={-1} className="grid grid-cols-2 gap-2 outline-none" role="group" aria-label={tuanGhi}>
             {FOLLOWUP_OUTCOMES.filter((o) => o !== 'insufficient').map((o) => (
-              <NutChon key={o} chon={outcome === o} onClick={() => pickOutcome(o)}
-                className="justify-center whitespace-nowrap px-1.5 text-xs">
-                {OUTCOME_MARK[o] ?? ''} {outcomeLabelFor(o)}
+              <NutChon key={o} chon={outcome === o} onClick={() => pickOutcome(o)} className="justify-center text-sm">
+                {outcomeLabelFor(o)}
               </NutChon>
             ))}
           </div>
@@ -290,7 +299,12 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved, on
           <textarea className="field w-full" {...o('tien-trien')} rows={2} value={progress} onChange={(e) => setProgress(e.target.value)}
             placeholder={GOI_Y_KET_QUA_PA} />
         </Truong>
-        <Truong nhan="Vấn đề còn tồn" tuyChon>
+        <Truong nhan="Người phụ trách" batBuoc as="div" loi={loiCua('phu-trach')}>
+          <div {...o('phu-trach')} tabIndex={-1} className="outline-none">
+            <ChonNguoi nhom="nhan_vien" value={phuTrach} onChange={setPhuTrach} ariaLabel="Người phụ trách" />
+          </div>
+        </Truong>
+        <Truong nhan="Vấn đề còn tồn / Ghi chú" tuyChon>
           <input className="field w-full" maxLength={300} value={remaining} onChange={(e) => setRemaining(e.target.value)}
             placeholder="Ví dụ: còn sai dạng T/F/NG" />
         </Truong>
@@ -353,13 +367,6 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved, on
       </Khoi>
       )}
 
-      {!lanCuoi && (decision === 'keep' || decision === 'end' || !decision) && (
-        <Khoi tieuDe="3 · Ghi chú">
-          <Truong nhan="Ghi chú" tuyChon>
-            <input className="field w-full" value={reason} onChange={(e) => setReason(e.target.value)} />
-          </Truong>
-        </Khoi>
-      )}
       <div className="mt-3.5">
         <Truong nhan="Ngày ghi"><ONgay kieu="ngay" value={on} onChange={setOn} toiDa={homNay} /></Truong>
       </div>

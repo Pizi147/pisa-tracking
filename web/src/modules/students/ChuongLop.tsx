@@ -161,8 +161,8 @@ function TheChuong({ c, homNay, onChon }: { c: ChuongWeb; homNay: string; onChon
                 <span className="flex flex-wrap items-center gap-1">
                   {x.pa.map((p) => (
                     <span key={p.id} title={p.ten}
-                      className={`inline-flex h-5 min-w-0 max-w-full items-center gap-1 overflow-hidden whitespace-nowrap rounded-md px-[7px] text-[11.5px] font-semibold ${KHOI_PA[p.tone]}`}>
-                      {DAU_PA[p.tone]}<span className={`truncate ${p.tone === 'wait' ? '' : 'text-slate-100'}`}>{p.ten}</span>
+                      className={`inline-flex h-5 min-w-0 max-w-full items-center gap-1 overflow-hidden whitespace-nowrap rounded-md px-[7px] text-[11.5px] font-semibold max-sm:h-auto max-sm:min-h-5 max-sm:py-0.5 max-sm:whitespace-normal ${KHOI_PA[p.tone]}`}>
+                      {DAU_PA[p.tone]}<span className={`truncate max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words ${p.tone === 'wait' ? '' : 'text-slate-100'}`}>{p.ten}</span>
                     </span>
                   ))}
                 </span>

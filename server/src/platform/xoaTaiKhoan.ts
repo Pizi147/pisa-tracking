@@ -42,6 +42,7 @@ export const COT_TRO_TAI_KHOAN: readonly { bang: string; cot: string; loai: Loai
   c('attempt_skills', 'scope_by', DV, 'lịch Test'), c('attempt_skills', 'sit_by', DV, 'lịch Test'), c('attempt_skills', 'deadline_override_by', DV, 'lịch Test'),
   c('audit_logs', 'actor_user_id', DV, 'nhật ký thao tác'),
   c('case_followups', 'observer_user_id', DV, 'Case'),
+  c('case_followups', 'phu_trach_user_id', DV, 'Case'),   // PR-LUI-a2: Người phụ trách của lần ghi kết quả PA
   c('case_intervention_revisions', 'actor_user_id', DV, 'Case'), c('case_intervention_revisions', 'old_performer_user_id', DV, 'Case'),
   c('case_intervention_revisions', 'new_performer_user_id', DV, 'Case'),
   c('case_interventions', 'performer_user_id', DV, 'Case'), c('case_interventions', 'recorded_by', DV, 'Case'),

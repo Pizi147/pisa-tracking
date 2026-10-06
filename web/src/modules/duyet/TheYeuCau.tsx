@@ -122,6 +122,20 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
     } catch (e: any) { toast.push('error', e instanceof ApiError ? e.message : 'Mất kết nối, chưa nhắc được. Thử lại sau.'); } finally { setBusy(false); }
   };
 
+  /* PR-LUI-a2: Huỷ quyết định bấm nhầm (Đề xuất PA quyết hôm nay, PA chưa ghi kết quả) — thẻ về Chờ duyệt, PA về như lúc gửi. */
+  const huy = async () => {
+    if (busy) return;
+    setBusy(true); setLoiMay(null);
+    try {
+      await api.post(`/yeu-cau/${yc.id}/huy-quyet-dinh`);
+      invalidate('/yeu-cau'); invalidate('/my-work'); invalidate('/cases'); invalidate('/tong-quan');
+      toast.push('ok', 'Đã huỷ quyết định · thẻ về Chờ duyệt');
+      onXong(yc.id);
+    } catch (e: any) {
+      setLoiMay(e instanceof ApiError ? e.message : 'Mất kết nối, chưa huỷ được. Kiểm tra mạng rồi bấm lại.');
+    } finally { setBusy(false); }
+  };
+
   const hanV = yc.hanDuyet ? deadlineView({ kind: 'duyet', due: yc.hanDuyet, today: homNay }) : null;
   const tang1 = !hanV ? null : hanV.tone === 'overdue' ? `Quá hạn · ${hanV.daysOverdue} ngày` : hanV.homNay ? 'Hạn hôm nay' : hanV.con ? hanV.con[0].toUpperCase() + hanV.con.slice(1) : null;
   const tt = nhanTrangThaiYc(yc.trangThai, yc.tuDuyet);
@@ -179,6 +193,13 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
             </div>
           )}
           {laNguoiXin && cho && <div><NhanTrangThai t="cho-duyet" /></div>}
+          {!cho && !laNguoiXin && yc.coTheHuy && (
+            <div className="flex flex-wrap gap-1.5 sm:justify-end">
+              <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void huy()}>
+                {busy ? 'Đang huỷ…' : 'Huỷ quyết định'}
+              </button>
+            </div>
+          )}
           {tuDuyetDuoc && (
             <span className="text-[12px] text-wait" title="Bạn tự gửi yêu cầu này. Duyệt được — nhật ký ghi 'tự duyệt' và Quản trị được báo.">
               Bạn tự gửi · tự duyệt được
@@ -247,6 +268,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
           </div>
         </div>
       )}
+      {!o && loiMay && <p role="alert" className="m-0 mt-2 text-[12px] text-late">{loiMay}</p>}
       {moChuyenLop && yc.hocVienId != null && (
         <ChuyenLopPanel open cheDo="lenh" studentId={yc.hocVienId} studentName={yc.hocVien ?? undefined} lop={yc.lop}
           duyet={{ id: yc.id, lopDichId: (yc.duLieu?.lopDichId as number | null) ?? null, tuan: (yc.duLieu?.tuan as string | null) ?? null, lyDo: yc.lyDo }}

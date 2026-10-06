@@ -337,7 +337,7 @@ export function TenCase({ c }: { c: Pick<CaseCard, 'title' | 'tenSos'> }) {
   return (
     <span className="inline-flex min-w-0 max-w-full items-center gap-1.5">
       {mt && <span className="shrink-0 rounded border border-[color:var(--line-strong)] px-1 text-[11px] font-semibold leading-4 text-slate-300 tabular-nums">MT{mt}</span>}
-      <span className="min-w-0 truncate">{giua}</span>
+      <span className="min-w-0 truncate max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words">{giua}</span>
       {sos ? <span className={`shrink-0 rounded px-1 text-xs font-bold leading-4 tabular-nums ${CHIP_SOS[sos] ?? ''}`}>SOS {sos}</span> : null}
     </span>
   );

@@ -224,10 +224,10 @@ export function chepKetQuaNhom(conn: any, iv: any, followupId: number, x: {
   for (const s of anhEm) {
     const info = conn.prepare(
       `INSERT INTO case_followups (case_id, intervention_id, observed_on, observer_user_id, outcome, note, evidence_attempt_id, next_step, cycle_no, cycle_due,
-                                   late, metrics, remaining_issue, decision_note, created_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+                                   late, metrics, remaining_issue, decision_note, created_at, phu_trach_user_id, phu_trach_ten)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     ).run(s.case_id, s.id, f.observed_on, f.observer_user_id, f.outcome, f.note, f.evidence_attempt_id, f.next_step, f.cycle_no, f.cycle_due,
-          f.late, f.metrics, f.remaining_issue, f.decision_note, nowIso());
+          f.late, f.metrics, f.remaining_issue, f.decision_note, nowIso(), f.phu_trach_user_id, f.phu_trach_ten);
     if (x.nextStep === 'complete') {
       conn.prepare(`UPDATE case_interventions SET status = 'completed', completed_date = ?, closed_reason = ?, started_date = COALESCE(started_date, cycle_started_on, ?), updated_at = ? WHERE id = ?`)
         .run(x.completedOn, x.lanCuoi ? 'het_moc' : 'done', x.completedOn, nowIso(), s.id);

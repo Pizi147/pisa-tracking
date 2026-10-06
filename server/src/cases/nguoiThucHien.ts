@@ -27,10 +27,12 @@ export function chuanHoaNguoiThucHien(
   p: Principal,
   input: { performerSelf?: boolean; performerUserId?: number | null; performerName?: string | null },
   /** `branchId`: tài khoản được chọn phải có vai ở đúng chi nhánh này (PR-S5F-b — người dạy bổ trợ cùng chi nhánh của lớp). */
-  opts: { nhom: NhomNguoi; batBuoc: boolean; branchId?: number | null },
+  /** `nhan`: tên ô trong câu lỗi (mặc định "Người thực hiện"; Ghi kết quả PA dùng "Người phụ trách" — PR-LUI-a2). */
+  opts: { nhom: NhomNguoi; batBuoc: boolean; branchId?: number | null; nhan?: string },
 ): NguoiThucHienKetQua | null {
+  const nhan = opts.nhan ?? 'Người thực hiện';
   if (input.performerUserId) {
-    if (!laNguoiHopLe(input.performerUserId, opts.nhom)) throw badRequest(NHOM_MESSAGE[opts.nhom]);
+    if (!laNguoiHopLe(input.performerUserId, opts.nhom)) throw badRequest(NHOM_MESSAGE[opts.nhom].replace('Người thực hiện', nhan));
     if (opts.branchId && !laNguoiHopLe(input.performerUserId, opts.nhom, opts.branchId)) {
       throw badRequest('Người dạy phải là giáo viên cùng chi nhánh với lớp. Người ngoài thì chọn "Người ngoài" và gõ tên.');
     }
@@ -38,7 +40,7 @@ export function chuanHoaNguoiThucHien(
   }
   const ten = (input.performerName ?? '').trim();
   if (ten) {
-    if (ten.length < 2 || ten.length > 100) throw badRequest('Tên người thực hiện phải từ 2 đến 100 ký tự.');
+    if (ten.length < 2 || ten.length > 100) throw badRequest(`Tên ${nhan.toLowerCase()} phải từ 2 đến 100 ký tự.`);
     return { userId: null, name: ten };
   }
   if (input.performerSelf) return { userId: p.userId, name: null };
