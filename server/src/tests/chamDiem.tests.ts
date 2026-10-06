@@ -200,7 +200,11 @@ export async function runChamDiemTests(t: YThucTestKit) {
     /* Task 7: lưới viết tuần bằng `tuanLich`, nên ô mang thứ Hai của tuần thi hiện tại và của tuần đã dời khỏi. */
     assert(o.weekStart === '2026-09-21' && o.movedFromStart === '2026-09-14',
       `Ô ${k}: weekStart=${o.weekStart}, movedFromStart=${o.movedFromStart}`);
-    assert(o.canEdit === true, 'GVBM sửa được ô môn mình');
+    /* PR-MTa T19 thay "sửa được ngay": ô đã dời sang tuần 21/09 khoá tới tuần thi. */
+    assert(o.canEdit === false, 'Chưa tới tuần thi 21/09 thì ô khoá (T19)');
+    const oTuanThi = regular.regularSheet(P.normalSubjectTeacher, LOP, undefined, '2026-09-21').rows
+      .find((x: any) => x.attemptId === attemptId).skillSchedule.find((x: any) => x.skill === k);
+    assert(oTuanThi.canEdit === true, 'GVBM sửa được ô môn mình từ tuần thi');
     const oKhac = dong.skillSchedule.find((x: any) => x.skill === khac);
     assert(oKhac.noShow === false && oKhac.movedFrom === null, 'Môn không ghi dấu thì không có noShow/movedFrom');
     const khongDay = BON_MON.find((x) => !monCuaGv.includes(x));

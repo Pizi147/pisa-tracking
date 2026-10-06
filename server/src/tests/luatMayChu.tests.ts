@@ -241,16 +241,17 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   const no = (today: string, attemptId: number) =>
     (scoreDebt.scoreDebtCells(P.admin, today, [mbBranch]) as any[]).filter((d) => d.attemptId === attemptId);
 
-  check('§6 · Lớp thường: môn đã có số câu đúng không còn nợ; môn chưa có nợ và QUÁ HẠN từ thứ Hai sau tuần thi (không phải thứ Tư kiểu FT)', () => {
+  /* PR-MTa T19 thay "lớp thường quá hạn từ thứ Hai sau tuần thi": hạn lớp thường nay như FT — hết thứ Tư tuần sau. */
+  check('§6 · Lớp thường: môn đã có số câu đúng không còn nợ; môn chưa có nợ và QUÁ HẠN từ thứ Năm sau tuần thi (như FT, T19)', () => {
     const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'reading', 30, 40);
-    const cells = no(TODAY, hv.attemptId);
+    const cells = no('2026-09-17', hv.attemptId);
     assert(!cells.some((d) => d.skill === 'reading'), `Reading đã có 30/40 mà vẫn bị tính nợ: ${JSON.stringify(cells)}`);
     const l = cells.find((d) => d.skill === 'listening');
     assert(l && l.userId === teacherOf('MB FOU 12', 'listening') && l.overdue === true,
-      `Listening chưa nhập phải nợ, đúng GV, quá hạn hôm thứ Hai 14/09: ${JSON.stringify(l)}`);
-    const sunday = no('2026-09-13', hv.attemptId).find((d) => d.skill === 'listening');
-    assert(sunday && sunday.overdue === false, `Chủ nhật 13/09 vẫn trong hạn: ${JSON.stringify(sunday)}`);
+      `Listening chưa nhập phải nợ, đúng GV, quá hạn hôm thứ Năm 17/09: ${JSON.stringify(l)}`);
+    const thuTu = no('2026-09-16', hv.attemptId).find((d) => d.skill === 'listening');
+    assert(thuTu && thuTu.overdue === false, `Thứ Tư 16/09 vẫn trong hạn: ${JSON.stringify(thuTu)}`);
     for (const k of ['listening', 'writing', 'speaking']) diem(hv.attemptId, k, 30, 40);
     assert(no(TODAY, hv.attemptId).length === 0, 'Đủ bốn môn mà vẫn còn ô nợ');
   });
@@ -288,8 +289,9 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
 
   check('§6 · Lượt lớp thường đủ bốn môn (số câu đúng) KHÔNG còn "thiếu điểm"; thiếu một môn thì có', () => {
     const base = countOf('missing_scores');
-    const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
-    /* PR-UXF-a K1-37: tín hiệu đọc sổ chỉ số `bai-qua-han-nhap-diem` — đơn vị BÀI (ô): lượt FOU tuần 07/09 chưa có điểm = 4 bài quá hạn. */
+    /* PR-MTa T19 thay tuần 07/09: hạn lớp thường nay hết thứ Tư tuần sau — tuần 31/08 (hạn 09/09) mới quá hạn ở ngày 14/09. */
+    const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-08-31' });
+    /* PR-UXF-a K1-37: tín hiệu đọc sổ chỉ số `bai-qua-han-nhap-diem` — đơn vị BÀI (ô): lượt FOU tuần 31/08 chưa có điểm = 4 bài quá hạn. */
     assert(countOf('missing_scores') === base + 4, `Lượt chưa có điểm nào phải là 4 bài quá hạn: ${base} → ${countOf('missing_scores')}`);
     for (const k of ['listening', 'reading', 'writing', 'speaking']) diem(hv.attemptId, k, 30, 40);
     assert(countOf('missing_scores') === base, `Đủ bốn môn mà vẫn "thiếu điểm": ${base} → ${countOf('missing_scores')}`);

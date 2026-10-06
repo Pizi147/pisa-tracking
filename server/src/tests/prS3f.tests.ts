@@ -61,7 +61,8 @@ export async function runPrS3fTests(t: YThucTestKit) {
     conn.prepare('UPDATE assessment_attempts SET lich_su = 0 WHERE id = ?').run(a.id);   // MT lịch sử không thi lại được (T37)
     for (const k of ['listening', 'reading', 'speaking']) enter(a, k, 5);
     const cu = caseOf(st.id, 'listening');
-    const tuanSau = weekSvc.ensurePeriod(weekSvc.mondayOf(addDays(TODAY, 21))).id;
+    /* PR-MTa T19 thay "thi lại tuần sau rồi nhập ngay": nhập điểm chỉ từ tuần thi — thi lại ngay tuần này. */
+    const tuanSau = weekSvc.ensurePeriod(weekSvc.mondayOf(TODAY)).id;
     keHoach.thiLai(P.admin, { attemptId: a.id, skills: ['listening'], periodId: tuanSau, lyDo: 'Đề lỗi, thi lại', force: true });
     assert(get('SELECT status FROM sos_cases WHERE id = ?', cu.id).status === 'done', 'Case cũ phải đóng khi ô L bị xoá để thi lại');
     enter(a, 'listening', 5);

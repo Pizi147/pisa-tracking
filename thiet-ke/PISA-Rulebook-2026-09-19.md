@@ -677,6 +677,7 @@ Nguồn: ảnh MT4 "W1 OCT" hiện cùng lúc ở "Nợ tuần trước" và L�
 | 24 | K4-15, RB-5: lý do ≥ 5 ký tự cho dời lịch (tuần đã bắt đầu), dời hạn, bỏ kỹ năng, báo vắng, sửa điểm, thi lại… | Lý do **bắt buộc chỉ khi** huỷ điểm (gồm xoá trắng ô có điểm), huỷ lượt, huỷ kết quả do dời vượt, Quản lý từ chối. Còn lại tuỳ chọn. **Không còn tối thiểu ký tự ở mọi nơi** (kể cả Đề xuất sửa 15, thẻ Chờ duyệt 3, chuyển lớp 3, đổi Target 5): bắt buộc = không trống | PR-MTa T7 · `sd/thaoTacMt.ts` `canLyDo`, `kiemLyDoThaoTac` · CODE-OK · PR-MTa |
 | 25 | L/R chỉ nhận số câu; W/S chỉ 4 tiêu chí | Máy chủ nhận **band trực tiếp** (`band`, 0–9 bậc 0.5) cho L/R/W1/W2/S, không cùng số câu / tiêu chí. Overall, SOS, kỳ vọng như cũ. Ô web là việc PR-MTb | PR-MTa T10 · `sd/chamDiem.ts` `kiemBand`, `docONhapLR` · `ss/fasttrack/attempts.ts` `saveScore` · CODE-OK máy chủ · PR-MTa |
 | 26 | — | Người **khác GVCN** dời Test lớp thường → **một chuông** "để biết" cho GVCN (một em một ngày; xếp hàng loạt một chuông cả lớp). GVCN tự dời, "-" không chuông. Không thẻ, không Case | PR-MTa T11 · `ss/fasttrack/skillSchedule.ts` `baoGvcnDoiLichThuong` · CODE-OK · PR-MTa |
+| 27 | C08: hạn chấm lớp thường hết Chủ nhật tuần thi; nhập điểm được trước tuần thi | **Không ai** (kể cả Quản lý, Quản trị) nhập điểm khi kỹ năng / môn **chưa tới tuần thi** hoặc chưa xếp tuần — ô khoá; MT cũ và bài quá hạn vẫn nhập (tính trễ như cũ). Hạn chấm lớp thường = **thứ Tư tuần sau** như Fast Track | PR-MTa T19 (chủ sản phẩm 06/10) · `ss/fasttrack/skillSchedule.ts` `kiemDaToiTuanThi` · `ss/platform/week.ts` `skillScoreDeadline` · CODE-OK · PR-MTa |
 
 ### 20.2 Bảng hạn tổng hợp
 
@@ -689,8 +690,8 @@ Mọi hạn "n ngày" là **n ngày liên tiếp theo lịch, tính cả ngày b
 | Ghi kết quả PA hằng tuần | Hết **Thứ Hai** tuần kế | `sd/cases.ts:847` |
 | PA quy chế: ghi kết quả cuối | Khi chạm mốc quy chế: "1 tháng" · "đến MT kế tiếp" · "đến lúc thi" (MT5 trở đi: Tutor đến lúc thi). Quá mốc → hạn hết Thứ Hai. Chưa có lịch mốc → PA chạy tiếp, hiện "chờ lịch" | `sd/sos.ts:54-94` |
 | QL duyệt một thẻ | 5 ngày. Riêng **kế hoạch bổ trợ 3 ngày**; **dời lịch lần 2** hết Chủ nhật tuần gửi; **Báo lên** không hạn. Quá hạn chỉ báo QL + Quản trị, không tự đóng (trừ lịch thi: hết hạn thì huỷ phần thi) | `sd/yeuCauDuyet.ts:40-61` |
-| Chấm Fast Track | Hết **Thứ Tư** tuần kế tiếp tuần thi của chính kỹ năng đó. "Quá hạn" chỉ khi tuần thi đã hết và qua hạn. Hạn riêng: lý do tuỳ chọn (PR-MTa T7) | `ss/platform/week.ts:68-113` |
-| Chấm lớp thường | Hết **Chủ nhật** của tuần thi | `ss/platform/week.ts:89-92` |
+| Chấm Fast Track (và lớp thường từ PR-MTa T19) | Hết **Thứ Tư** tuần kế tiếp tuần thi của chính kỹ năng đó. "Quá hạn" chỉ khi tuần thi đã hết và qua hạn. Hạn riêng: lý do tuỳ chọn (PR-MTa T7) | `ss/platform/week.ts:68-113` |
+| Chấm lớp thường | Hết **Thứ Tư** tuần kế tiếp (PR-MTa T19, trước là Chủ nhật tuần thi) | `ss/platform/week.ts:89-92` |
 | Dấu "-" Fast Track | Sửa được đến hết Chủ nhật; chốt đầu Thứ Hai (cron 00:05 và 06:05 giờ VN) | `ss/ops/chotVangDinhKy.ts` |
 | Ý thức: xử lý | 5 ngày kể từ ngày ghi lên web (hoặc từ ngày vi phạm thứ 3 nếu "bắt buộc"); sau khi QL duyệt: 5 ngày để bấm Đã thực hiện | `sd/yThuc.ts:126,156-208` |
 | Bàn giao chuyển lớp | GVBM 2 ngày · GVCN 3 ngày, tính từ ngày ra lệnh; quá hạn không chặn việc chuyển | `sd/chuyenLop.ts:36-39` |

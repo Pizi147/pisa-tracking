@@ -392,8 +392,11 @@ export async function runPrMtTests(t: YThucTestKit) {
   check('PR-MT (7) · Huỷ phần còn lại MT2 có L R → W S huỷ, số và trạng thái giữ; Case có điểm thật KHÔNG đóng (Q12, Q13)', () => {
     const sid = them('MB FT 101', 'PRMT Em Huỷ Phần', tuanNay);
     const mt2 = luotCua(sid)[1];
-    attemptsSvc.saveScore(P.admin, mt2.id, 'listening', { rawScore: scoringSvc.LISTENING_BY_RAW.indexOf(5) });
-    attemptsSvc.saveScore(P.admin, mt2.id, 'reading', { rawScore: scoringSvc.READING_BY_RAW.indexOf(6) });
+    /* PR-MTa T19 thay "nhập điểm bất kỳ lúc nào": MT2 ở tuần tới — nhập với `today` là Chủ nhật tuần thi. */
+    const ngayThi = (conn.prepare(`SELECT MAX(rp.week_end) w FROM attempt_skills k JOIN report_periods rp ON rp.id = k.planned_period_id
+      WHERE k.attempt_id = ? AND k.required = 1`).get(mt2.id) as any).w;
+    attemptsSvc.saveScore(P.admin, mt2.id, 'listening', { rawScore: scoringSvc.LISTENING_BY_RAW.indexOf(5) }, ngayThi);
+    attemptsSvc.saveScore(P.admin, mt2.id, 'reading', { rawScore: scoringSvc.READING_BY_RAW.indexOf(6) }, ngayThi);
     const cid = Number(conn.prepare(`INSERT INTO sos_cases (student_id, cycle_id, category, status, created_at) VALUES (?, ?, 'listening', 'open', ?)`)
       .run(sid, mt2.cycle_id, TODAY).lastInsertRowid);
     conn.prepare(`INSERT INTO case_milestones (case_id, kind, attempt_id, attempt_no, occurred_on, created_at) VALUES (?, 'opened', ?, 2, ?, ?)`)

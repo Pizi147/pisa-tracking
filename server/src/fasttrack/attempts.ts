@@ -18,10 +18,10 @@ import {
   ScoreError, assessedSkillOf, bandFromCriteria, bandFromRaw, entrySkillsOf, evaluateAttempt,
   failingEntrySkills, isCriteriaSkill, isRawSkill, type AttemptResult,
 } from './scoring.ts';
-import { quaHanNhapDiem, weekInfo } from '../platform/week.ts';
+import { mondayOf, quaHanNhapDiem, weekInfo } from '../platform/week.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import {
-  completionWeekOf, ensureSkillRows, kiemVuot, kiemXacNhanVuot, tuanCuoiSauKhiDoi, loadSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf,
+  completionWeekOf, ensureSkillRows, kiemDaToiTuanThi, kiemVuot, kiemXacNhanVuot, tuanCuoiSauKhiDoi, loadSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf,
   setSkillScope, setSkillWeek, skillScheduleOf, skippedSkillsOf, viewSkill,
   type SkillRow, type SkillScheduleView,
 } from './skillSchedule.ts';
@@ -395,6 +395,8 @@ export function skillCells(
       progress,
       /* E8 (T53 Q6): bài đã xác nhận vắng không nhập ở đâu cả — nhập bù thì Quản lý "Xếp lại bài vắng" / "Khôi phục" trước. */
       canEdit: required && !cancelled && view.sitStatus !== 'cancelled' && view.sitStatus !== 'absent'
+        /* T19 (PR-MTa): kỹ năng chưa tới tuần thi / chưa xếp tuần → ô khoá (máy chủ chặn ở `kiemDaToiTuanThi`); ô đã có điểm vẫn sửa được. */
+        && (cellScored || (!!view.weekStart && view.weekStart.slice(0, 10) <= mondayOf(today)))
         && (hoanTat.hoanTat ? suaSauHoanTat : editable.includes(skill)),
       /* Việc nhập điểm của người xem (bảng lớp "Nhập điểm …") — như `canEdit` nhưng trước hoàn tất bỏ quyền sửa mọi lúc của Quản lý. */
       viec: required && !cancelled && view.sitStatus !== 'cancelled' && view.sitStatus !== 'absent'
@@ -610,7 +612,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
       /*
        * LỚP NORMAL CŨNG TÁCH LỊCH THEO MÔN (mục 10.1): bốn môn có thể trải hai ba tuần.
        * Nên "đã đến lúc phải nhập điểm" phải hỏi theo TỪNG MÔN, không hỏi theo tuần của
-       * cả bài. Hạn của lớp thường là hết Chủ nhật của chính tuần thi môn đó.
+       * cả bài. Hạn của lớp thường là hết thứ Tư tuần sau tuần thi môn đó (T19, như Fast Track).
        */
       const views = regularSkillViews(a, bundle.skillRows.get(a.id), scores, today, regularSkills);
       const pendingOf = (k: string) => {
@@ -1520,6 +1522,10 @@ export function saveScore(
     throw badRequest('GV chấm không hợp lệ — gửi người chấm, hoặc null để xoá.');
   }
   const gv = coGvCham ? (patch.gvCham ? gvChamHopLe(p, patch.gvCham) : null) : undefined;
+  /* T19: có ghi một giá trị điểm (không phải xoá) → kỹ năng phải tới tuần thi. */
+  const ghiDiem = (patch.rawScore !== undefined && patch.rawScore !== null) || (patch.band !== undefined && patch.band !== null)
+    || (Array.isArray(patch.criteria) && patch.criteria.some((v) => v !== null && v !== undefined && (v as unknown) !== ''));
+  if (ghiDiem) kiemDaToiTuanThi(scheduleRow, today);
   const chiNhanXet = (coNhanXet || coGvCham) && patch.rawScore === undefined && patch.band === undefined && patch.rawTotal === undefined
     && patch.criteria === undefined && patch.noShow === undefined && patch.resultDate === undefined && patch.note === undefined;
   if (chiNhanXet) return tx(() => luuNhanXet(p, attemptId, skill, nxGt, gv));

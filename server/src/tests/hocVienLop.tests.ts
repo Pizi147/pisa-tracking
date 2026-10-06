@@ -373,7 +373,8 @@ export async function runHocVienLopTests(t: YThucTestKit) {
 
   check('PR-Qa · Q13 Việc tiếp theo ở dòng học viên: nhập điểm quá hạn (đỏ) lên đầu; lớp thường mang tuần thi từng môn', () => {
     const b = taoHocVien({ cid: LOP_THUONG, ft: false });
-    const at = themLuot({ ...b, cid: LOP_THUONG, no: 1, kind: 'progress', weekStart: '2026-09-07' });
+    /* PR-MTa T19 thay tuần 07/09 (hạn CN 13/09): hạn lớp thường nay hết thứ Tư tuần sau — tuần 31/08 hạn 09/09, quá hạn ở 14/09. */
+    const at = themLuot({ ...b, cid: LOP_THUONG, no: 1, kind: 'progress', weekStart: '2026-08-31' });
     diemThuong(at, { listening: [30, 40], reading: [32, 40], speaking: [8, 10] });
     /* PR-UXF-a VN29: việc nhập điểm = ô được PHÂN CÔNG (cùng luật hàng đợi Công việc) — Quản trị không phải người nhập; kiểm bằng GVBM môn W. */
     assert(!classes.classRoster(P.admin, LOP_THUONG).find((s: any) => s.id === b.sid).viecTiepTheo.some((v: any) => v.dich.loai === 'nhap-diem'), 'Quản trị không nhận việc nhập điểm');
@@ -384,9 +385,9 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     conn.prepare('DELETE FROM teacher_assignments WHERE id = ?').run(pcW);
     /* PR-N1 A6: máy chủ truyền hạn nhập điểm → việc trễ nói đủ "quá hạn n ngày". */
     // PR-MON (MH2): lớp FOU — ô W hiện G+V.
-    eq(row.viecTiepTheo[0], { viec: 'Nhập điểm G+V · Giữa khoá', han: 'hạn 13/09', quaHanNgay: 1, tone: 'danger', dich: { loai: 'nhap-diem' }, title: 'Nhập điểm G+V · Giữa khoá · hạn 13/09 · quá hạn 1 ngày' }, 'Writing tuần 07/09 chưa có điểm, hạn CN 13/09 đã qua');
+    eq(row.viecTiepTheo[0], { viec: 'Nhập điểm G+V · Giữa khoá', han: 'hạn 09/09', quaHanNgay: 5, tone: 'danger', dich: { loai: 'nhap-diem' }, title: 'Nhập điểm G+V · Giữa khoá · hạn 09/09 · quá hạn 5 ngày' }, 'Writing tuần 31/08 chưa có điểm, hạn thứ Tư 09/09 đã qua');
     const t = row.timeline.find((x: any) => x.kind === 'progress');
-    eq(t.tuanMon.writing, '2026-09-07', 'Tuần thi của môn Writing');
+    eq(t.tuanMon.writing, '2026-08-31', 'Tuần thi của môn Writing');
     assert(row.viecTiepTheo.every((v: any) => !/MT\d|kỳ vọng/.test(v.viec)), 'Chữ FT lọt vào lớp thường');
   });
 

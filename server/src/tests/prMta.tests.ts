@@ -698,4 +698,55 @@ export async function runPrMtaTests(t: YThucTestKit) {
     }
     assert(/onXacNhan=\{\(ly\) =>/.test(nguon('web/src/modules/fasttrack/HopThaoTacMt.tsx')), 'HopThaoTacMt');
   });
+
+  // ------------------------------------------------------------------ T19 khung nhập điểm (chủ sản phẩm 06/10)
+  console.log('\nPR-MTa · T19 không nhập điểm trước tuần thi; hạn lớp thường thứ Tư tuần sau');
+  const CHUA_TOI = /^Chưa tới tuần thi W\d [A-Z]{3} — chưa nhập điểm được\.$/;
+  check('MTa T19 (F1, F2) · MT tuần sau: GVBM, Quản lý, Quản trị nhập điểm → 400, không ghi gì', () => {
+    const a = emMoi();
+    for (const ai of [P.lrTeacher, QL, P.admin]) {
+      const e = loiCua(() => attemptsSvc.saveScore(ai, a.m1, 'listening', { rawScore: 30 }));
+      assert(e.status === 400 && CHUA_TOI.test(e.message), `${ai.userId}: ${e.status} ${e.message}`);
+    }
+    assert(loiCua(() => attemptsSvc.saveScore(P.admin, a.m1, 'writing1', { criteria: [6, 6, 6, 6] })).status === 400, 'tiêu chí');
+    assert(loiCua(() => attemptsSvc.saveScore(P.admin, a.m1, 'speaking', { band: 6 })).status === 400, 'band');
+    assert(soDiem(a.m1) === 0 && !conn.prepare('SELECT 1 FROM assessment_scores WHERE attempt_id = ?').get(a.m1), 'đã ghi');
+  });
+
+  check('MTa T19 (F3, F4, F7) · tuần này → được; quá hạn (2 tuần trước) → được, vẫn tính trễ; MT cũ → được', () => {
+    const a = emMoi([0, 4, 8]);
+    attemptsSvc.saveScore(P.lrTeacher, a.m1, 'listening', { rawScore: 30 });
+    const b = emMoi([-2, 4, 8]);
+    const han = week.skillScoreDeadline('band', t.addDays(tuanNay, -14));
+    assert(week.quaHanNhapDiem(han, t.addDays(tuanNay, -14), TODAY), 'tiền đề: đã quá hạn');
+    attemptsSvc.saveScore(P.lrTeacher, b.m1, 'listening', { rawScore: 30 });
+    const nd = (conn.prepare(`SELECT nhap_dau_ngay FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`).get(b.m1) as any).nhap_dau_ngay;
+    assert(nd === TODAY && nd > week.mocTreNhapDiem(han, t.addDays(tuanNay, -14)), `trễ: ${nd}`);
+    const c = emTrang();
+    const cu = keHoach.xepMoi(QL, { studentId: c.sid, tuan: bon(-4) });
+    attemptsSvc.saveScore(P.admin, cu.id, 'reading', { rawScore: 25 });
+    assert(soDiem(cu.id) === 1 && luot(cu.id).lich_su === 1, 'MT cũ');
+  });
+
+  check('MTa T19 (F5, F6) · lớp thường: tuần sau → 400; tuần này / đã qua → được; hạn = thứ Tư tuần sau', () => {
+    const tuanSau = baiThuong(1);
+    const e = loiCua(() => regular.saveRegularScore(P.admin, tuanSau.aid, 'listening', { score: 7, total: 10 }));
+    assert(e.status === 400 && CHUA_TOI.test(e.message), e.message);
+    regular.saveRegularScore(P.admin, baiThuong(0).aid, 'listening', { score: 7, total: 10 });
+    regular.saveRegularScore(P.admin, baiThuong(-2).aid, 'listening', { score: 7, total: 10 });
+    assert(week.skillScoreDeadline('ratio', '2026-09-14') === '2026-09-23' && week.skillScoreDeadline('band', '2026-09-14') === '2026-09-23', 'hạn');
+    const v = regular.regularDeadline({ planned_period_id: tuan(0).id });
+    assert(v.date === t.addDays(tuanNay, 9) && v.source === 'default', JSON.stringify(v));
+  });
+
+  check('MTa T19 (F8, F9) · kỹ năng chưa xếp tuần → 400; dấu "-" và xoá điểm giữ luật cũ', () => {
+    const a = emMoi([0, 4, 8]);
+    skillSch.boTuanLuot(QL, a.m3, {});
+    assert(/^Chưa xếp tuần thi — chưa nhập điểm được\.$/.test(loiCua(() => attemptsSvc.saveScore(P.admin, a.m3, 'listening', { rawScore: 30 })).message), 'chưa xếp');
+    const b = baiThuong(1);
+    assert(/chưa ghi "-" được/.test(loiCua(() => regular.saveRegularScore(P.admin, b.aid, 'listening', { noShow: true })).message), '"-" lớp thường');
+    attemptsSvc.saveScore(P.lrTeacher, a.m1, 'listening', { rawScore: 30 });
+    attemptsSvc.saveScore(P.lrTeacher, a.m1, 'listening', { rawScore: null, lyDo: 'x' });
+    assert(soDiem(a.m1) === 0, 'xoá điểm');
+  });
 }

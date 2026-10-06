@@ -76,7 +76,7 @@ export type ScoringMode = 'band' | 'ratio';
  * HẠN CHẤM CỦA MỘT KỸ NĂNG — tính từ TUẦN THI CỦA CHÍNH KỸ NĂNG ĐÓ (mục 10.5).
  *
  *     Fast Track   hết thứ Tư của tuần kế tiếp sau tuần thi kỹ năng đó
- *     Normal       hết Chủ nhật của chính tuần thi kỹ năng đó
+ *     Normal       hết thứ Tư tuần kế tiếp (T19, PR-MTa 06/10 — trước là Chủ nhật tuần thi)
  *
  * Đây là ĐIỂM KHÁC BIỆT LỚN NHẤT của vòng 7 so với trước. Trước đây cả đợt dùng chung một
  * hạn, nên dời Speaking sang tuần sau là vô tình gia hạn luôn cho R/L/W đã thi từ tuần
@@ -86,9 +86,9 @@ export type ScoringMode = 'band' | 'ratio';
  * Hệ quả thứ hai: kỹ năng có tuần thi CHƯA TỚI thì chưa có gì để nợ. Hàm này vẫn trả về
  * một ngày, nhưng nơi gọi phải kiểm "đã đến tuần chưa" trước khi gọi một môn là quá hạn.
  */
-export function skillScoreDeadline(mode: ScoringMode, weekStart: string): string {
-  const monday = mondayOf(weekStart);
-  return mode === 'ratio' ? addDays(monday, 6) : addDays(monday, 7 + 2);
+export function skillScoreDeadline(_mode: ScoringMode, weekStart: string): string {
+  /* T19 (PR-MTa, chủ sản phẩm 06/10): lớp thường cũng hết THỨ TƯ tuần kế tiếp như Fast Track (trước đây Chủ nhật tuần thi). */
+  return addDays(mondayOf(weekStart), 7 + 2);
 }
 
 export function isOverdue(deadline: string, today: string): boolean {

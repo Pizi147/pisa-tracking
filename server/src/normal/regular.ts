@@ -12,10 +12,10 @@ import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../
 import { can, editableSkills, isCoreTeacherOf, require_, scoreEditPath, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
-import { ensurePeriod, ensurePeriods } from '../platform/week.ts';
+import { ensurePeriod, ensurePeriods, mondayOf, skillScoreDeadline } from '../platform/week.ts';
 import { regularSkillViews, weekStartOf } from '../fasttrack/attempts.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
-import { checkSkillWeekMove, ensureSkillRows, loadSkillRows, setSkillWeek } from '../fasttrack/skillSchedule.ts';
+import { checkSkillWeekMove, ensureSkillRows, kiemDaToiTuanThi, loadSkillRows, setSkillWeek } from '../fasttrack/skillSchedule.ts';
 import { dotHoanTat, dotHoanTatMany, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
 import { canRequest } from '../fasttrack/absence.ts';
 import { classProgress, classProgressMany } from '../classes/schedule.ts';
@@ -225,19 +225,17 @@ export function evaluateRegular(
 }
 
 /**
- * Hạn nhập điểm của một bài kiểm tra lớp thường: HẾT CHỦ NHẬT của chính tuần đó.
- *
- * Khác lớp FT (hạn là thứ Tư tuần kế tiếp): lớp thường làm bài và chấm ngay trong tuần,
- * không có buổi Speaking lệch ngày phải chờ. Chưa có tuần kế hoạch thì KHÔNG có hạn —
- * trả về null thay vì dựng một hạn giả.
+ * Hạn nhập điểm của một bài kiểm tra lớp thường: HẾT THỨ TƯ tuần kế tiếp — như Fast Track (T19, PR-MTa, chủ sản phẩm 06/10; trước
+ * đây là Chủ nhật của chính tuần đó). Một luật với `skillScoreDeadline`. Chưa có tuần kế hoạch thì KHÔNG có hạn — trả về null thay vì
+ * dựng một hạn giả.
  */
 export function regularDeadline(attempt: { planned_period_id?: number | null; deadline_override?: string | null }): {
-  date: string | null; source: 'override' | 'week_end' | 'none';
+  date: string | null; source: 'override' | 'default' | 'none';
 } {
   if (attempt.deadline_override) return { date: attempt.deadline_override, source: 'override' };
   if (!attempt.planned_period_id) return { date: null, source: 'none' };
-  const rp = db().prepare('SELECT week_end FROM report_periods WHERE id = ?').get(attempt.planned_period_id) as any;
-  return rp ? { date: rp.week_end, source: 'week_end' } : { date: null, source: 'none' };
+  const rp = db().prepare('SELECT week_start FROM report_periods WHERE id = ?').get(attempt.planned_period_id) as any;
+  return rp ? { date: skillScoreDeadline('ratio', rp.week_start), source: 'default' } : { date: null, source: 'none' };
 }
 
 export function regularResultOf(attemptId: number): RegularResult {
@@ -508,6 +506,8 @@ export function saveRegularScore(
       'Bạn chỉ nhập được điểm của kỹ năng mình được phân công.');
   }
 
+  /* T19 (PR-MTa): ghi một điểm (không phải xoá) → môn phải tới tuần thi — cùng chốt với Mock. */
+  if (patch.score !== undefined && patch.score !== null) kiemDaToiTuanThi(ensureSkillRows(attemptId).find((r) => r.skill === skill) ?? { week_start: null }, today);
   const existing = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?')
     .get(attemptId, skill) as any;
   const before = existing ? { ...existing } : null;
@@ -994,7 +994,7 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
       return {
         attemptId: a.id,
         deadline: dl,
-        deadlineSource: dl ? 'week_end' : 'none',
+        deadlineSource: dl ? 'default' : 'none',
         hoanTat: hoanTat.hoanTat,
         chuNhatCuoi: hoanTat.chuNhatCuoi,
         /** Hạn chấm CỦA TỪNG MÔN, kèm tuần thi và trạng thái — mục 10.5. */
@@ -1016,7 +1016,9 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
             /** Thứ Hai của tuần `movedFrom` — để lưới viết "trả lịch về W3 SEP" bằng `tuanLich`. */
             movedFromStart: row?.no_show_period_id ? periodStart.get(row.no_show_period_id) ?? null : null,
             /** Người đang xem có nhập được điểm / ghi được "-" ở ô này không (phân công hoặc nhập bù). */
-            canEdit: hoanTat.hoanTat ? suaSauHoanTat : (canEditSkill.get(k) ?? false),
+            canEdit: (hoanTat.hoanTat ? suaSauHoanTat : (canEditSkill.get(k) ?? false))
+              /* T19 (PR-MTa): môn chưa tới tuần thi / chưa xếp tuần → ô khoá; ô đã có điểm vẫn sửa được. */
+              && (scored || (!!v.weekStart && String(v.weekStart).slice(0, 10) <= mondayOf(today))),
             /* R11: đánh dấu "bài đã hoàn tất" cho MỌI người xem — Quản lý vẫn `khoa && canEdit` (sửa qua hộp lý do). */
             khoa: hoanTat.hoanTat,
           };

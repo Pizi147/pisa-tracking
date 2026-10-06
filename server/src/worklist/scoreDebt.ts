@@ -11,7 +11,7 @@ import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
  * Ô ĐIỂM CÒN NỢ — một ô = một kỹ năng một lượt, tuần thi đã bắt đầu, người được phân công chưa nhập (S12 + đặc tả §6).
  *
  * KHÔNG tự đếm. Đi qua ĐÚNG hàm mà bảng chấm dùng để vẽ ô: `skillCells` (FT — band, dấu "-", cặp W1/W2) và `regularSkillViews`
- * (lớp thường — số câu đúng, hạn Chủ nhật tuần thi của CHÍNH môn đó). Trước đây bảng chi nhánh tự viết một câu SQL "ước lượng thô":
+ * (lớp thường — số câu đúng, hạn thứ Tư tuần sau tuần thi của CHÍNH môn đó — T19). Trước đây bảng chi nhánh tự viết một câu SQL "ước lượng thô":
  * lớp thường không bao giờ có `band` nên mọi môn treo mãi, hạn tính kiểu FT, và ô "-" bị loại mà không xét cặp W1/W2.
  *
  * `branchIds = null` là không lọc; `[]` là phạm vi rỗng → rỗng (hợp đồng số liệu, luật 3).

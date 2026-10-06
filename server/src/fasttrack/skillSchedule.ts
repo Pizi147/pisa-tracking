@@ -872,6 +872,16 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
   });
 }
 
+/**
+ * T19 (PR-MTa, chủ sản phẩm 06/10): KHÔNG AI (kể cả Quản lý, Quản trị) nhập điểm khi kỹ năng / môn chưa tới tuần thi hoặc chưa xếp tuần.
+ * Một chốt cho `saveScore` (Mock) và `saveRegularScore` (lớp thường); xoá điểm, dấu "-", nhận xét không qua đây. MT cũ (tuần đã qua) và
+ * bài quá hạn vẫn nhập được (tính trễ như cũ).
+ */
+export function kiemDaToiTuanThi(row: { week_start: string | null }, today: string): void {
+  if (!row.week_start) throw badRequest('Chưa xếp tuần thi — chưa nhập điểm được.');
+  if (row.week_start.slice(0, 10) > mondayOf(today)) throw badRequest(`Chưa tới tuần thi ${tuanLich(row.week_start, today)} — chưa nhập điểm được.`);
+}
+
 /** GVCN đang hoạt động của một lớp. */
 export const gvcnCua = (classId: number | null): number[] => (db()
   .prepare(`SELECT DISTINCT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active'`)

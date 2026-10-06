@@ -167,6 +167,8 @@ const periodOf = (weekStart: string) => week.ensurePeriod(weekStart).id;
  * cũ (quyền theo vai trò, xoá điểm về trống…) cố ý lấy một đợt `status='done'` bất kỳ — với `demoToday()` thật
  * (đã qua rất nhiều tuần), đợt đó tình cờ đã hoàn tất. Dùng ĐÚNG Chủ nhật của đợt đó làm `today` cho các lệnh
  * `saveScore` không liên quan tới R11, thay vì nới luật.
+ * PR-MTa T19 thay "nhập điểm bất kỳ lúc nào": đợt xếp ở tuần tương lai chỉ nhập được từ tuần thi — các phép kiểm dựng đợt
+ * ở tuần tới cũng truyền Chủ nhật này làm `today`.
  */
 function chuNhatCuoiOf(attemptId: number): string {
   const row = conn.prepare(
@@ -547,15 +549,15 @@ check('Chưa xếp tuần thì KHÔNG có hạn, không dựng hạn giả', () 
 check('Mỗi kỹ năng có hạn chấm riêng, đếm từ TUẦN THI CỦA CHÍNH NÓ', () => {
   /*
    * FT: hết thứ Tư của tuần KẾ TIẾP sau tuần thi kỹ năng đó.
-   * Normal: hết CHỦ NHẬT của chính tuần thi kỹ năng đó.
+   * Normal: như FT (PR-MTa T19 thay "hết Chủ nhật của chính tuần thi").
    * Đây là luật mới của mục 10.5, thay cho "cả lượt một hạn" của các vòng trước.
    */
   assert(week.skillScoreDeadline('band', '2026-09-14') === '2026-09-23',
     'FT thi tuần 14–20/9 phải có hạn chấm 23/9');
   assert(week.skillScoreDeadline('band', '2026-09-21') === '2026-09-30',
     'FT thi tuần 21–27/9 phải có hạn chấm 30/9');
-  assert(week.skillScoreDeadline('ratio', '2026-09-14') === '2026-09-20',
-    'Normal thi tuần 14–20/9 phải có hạn chấm hết Chủ nhật 20/9');
+  assert(week.skillScoreDeadline('ratio', '2026-09-14') === '2026-09-23',
+    'Normal thi tuần 14–20/9 phải có hạn chấm hết thứ Tư 23/9 (PR-MTa T19)');
 
   const a = conn
     .prepare(`SELECT a.id FROM assessment_attempts a
@@ -989,7 +991,7 @@ check('[6.2→v3] Mock Test FT điểm dưới kỳ vọng: tín hiệu nối NG
     .get(s.id, planIdBefore) as any).n;
 
   /* Một kỹ năng dưới kỳ vọng: kết luận SOS ra ngay, và (v3) SOS tự tạo ĐÚNG MỘT case cho kỹ năng đó kèm phương án điền sẵn. */
-  attempts.saveScore(t('listening'), attempt.id, 'listening', { rawScore: scoring.LISTENING_BY_RAW.indexOf(low) });
+  attempts.saveScore(t('listening'), attempt.id, 'listening', { rawScore: scoring.LISTENING_BY_RAW.indexOf(low) }, chuNhatCuoiOf(attempt.id));
   const early = attempts.attemptDetail(P.cpManager, attempt.id);
   assert(early.result.sosLevel === 1, `Một kỹ năng dưới kỳ vọng phải ra SOS 1 ngay, đang là ${early.result.sosLevel}`);
   assert(early.result.provisional, 'Chưa đủ điểm thì phải đánh dấu là kết luận tạm thời');
@@ -1022,9 +1024,9 @@ check('[6.2→v3] Mock Test FT điểm dưới kỳ vọng: tín hiệu nối NG
 
   /* Nhập thêm môn khác: thêm tín hiệu, vẫn không case nào, và hạn cũ KHÔNG bị đặt lại. */
   const dueBefore = sig.verify_due;
-  attempts.saveScore(t('reading'), attempt.id, 'reading', { rawScore: scoring.READING_BY_RAW.indexOf(low) });
-  attempts.saveScore(t('writing1'), attempt.id, 'writing1', { criteria: [low, low, low, low] });
-  attempts.saveScore(t('writing2'), attempt.id, 'writing2', { criteria: [low, low, low, low] });
+  attempts.saveScore(t('reading'), attempt.id, 'reading', { rawScore: scoring.READING_BY_RAW.indexOf(low) }, chuNhatCuoiOf(attempt.id));
+  attempts.saveScore(t('writing1'), attempt.id, 'writing1', { criteria: [low, low, low, low] }, chuNhatCuoiOf(attempt.id));
+  attempts.saveScore(t('writing2'), attempt.id, 'writing2', { criteria: [low, low, low, low] }, chuNhatCuoiOf(attempt.id));
   const three = attempts.attemptDetail(P.cpManager, attempt.id);
   assert(three.result.sosLevel === 3, `Ba kỹ năng dưới kỳ vọng phải lên SOS 3, đang là ${three.result.sosLevel}`);
   const want = newCasesExpected(['listening', 'reading', 'writing1', 'writing2']);
@@ -1043,7 +1045,7 @@ check('[6.2→v3] Mock Test FT điểm dưới kỳ vọng: tín hiệu nối NG
   assert(dupe === 1, `Nhập bổ sung đã nhân tín hiệu Listening thành ${dupe} dòng`);
 
   /* Nhập LẠI cùng ô điểm (retry) cũng không nhân tín hiệu và không đổi hạn. */
-  attempts.saveScore(t('listening'), attempt.id, 'listening', { rawScore: scoring.LISTENING_BY_RAW.indexOf(low) });
+  attempts.saveScore(t('listening'), attempt.id, 'listening', { rawScore: scoring.LISTENING_BY_RAW.indexOf(low) }, chuNhatCuoiOf(attempt.id));
   const afterRetry = conn
     .prepare(`SELECT COUNT(*) n, MIN(verify_due) d FROM case_signals WHERE attempt_id = ? AND skill = 'listening'`)
     .get(attempt.id) as any;
@@ -1060,8 +1062,8 @@ check('[6.2→v3] Mock Test FT điểm dưới kỳ vọng: tín hiệu nối NG
     kind: 'teaching_adjust', description: 'GVCN điều chỉnh cách chữa bài cho em',
     performerSelf: true, status: 'completed', completedDate: TODAY,
   });
-  attempts.saveScore(t('writing1'), attempt.id, 'writing1', { criteria: [exp, exp, exp, exp], lyDo: 'Phép kiểm: sửa điểm đã có' });
-  attempts.saveScore(t('writing2'), attempt.id, 'writing2', { criteria: [exp, exp, exp, exp], lyDo: 'Phép kiểm: sửa điểm đã có' });
+  attempts.saveScore(t('writing1'), attempt.id, 'writing1', { criteria: [exp, exp, exp, exp], lyDo: 'Phép kiểm: sửa điểm đã có' }, chuNhatCuoiOf(attempt.id));
+  attempts.saveScore(t('writing2'), attempt.id, 'writing2', { criteria: [exp, exp, exp, exp], lyDo: 'Phép kiểm: sửa điểm đã có' }, chuNhatCuoiOf(attempt.id));
   const reread = attempts.attemptDetail(P.cpManager, attempt.id);
   assert(reread.result.sosLevel === 2, `Sau khi sửa Writing phải còn SOS 2, đang là ${reread.result.sosLevel}`);
 
@@ -1123,7 +1125,7 @@ check('[9.4] Case chỉ sống nhờ con số vừa sửa thì rút khỏi danh 
   const exp = s.target_score;
   const t = (skill: string) => loadPrincipal(teacherOfSkill('UB FT 401', skill));
 
-  attempts.saveScore(t('speaking'), attempt.id, 'speaking', { criteria: [exp - 0.5, exp - 0.5, exp - 0.5, exp - 0.5] });
+  attempts.saveScore(t('speaking'), attempt.id, 'speaking', { criteria: [exp - 0.5, exp - 0.5, exp - 0.5, exp - 0.5] }, chuNhatCuoiOf(attempt.id));
   const sig = conn
     .prepare(`SELECT * FROM case_signals WHERE attempt_id = ? AND skill = 'speaking'`)
     .get(attempt.id) as any;
@@ -1133,7 +1135,7 @@ check('[9.4] Case chỉ sống nhờ con số vừa sửa thì rút khỏi danh 
   const made = { id: sig.case_id } as any;
 
   /* Hoá ra điểm nhập sai: sửa lại thành đạt. */
-  attempts.saveScore(t('speaking'), attempt.id, 'speaking', { criteria: [exp, exp, exp, exp], lyDo: 'Phép kiểm: sửa điểm đã có' });
+  attempts.saveScore(t('speaking'), attempt.id, 'speaking', { criteria: [exp, exp, exp, exp], lyDo: 'Phép kiểm: sửa điểm đã có' }, chuNhatCuoiOf(attempt.id));
   const after = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(made.id) as any;
   assert(after.status === 'done', 'Case chỉ dựa trên điểm sai vẫn nằm trong danh sách đang xử lý');
   assert(/sửa điểm/i.test(after.outcome_note ?? ''),
@@ -1878,7 +1880,8 @@ check('Kết luận ngay trên phần đã chấm; ô trống KHÔNG bị đếm
   assert(full.complete && !full.provisional && full.failedCount === 4 && full.sosLevel === 3,
     'Đủ điểm rồi phải là kết luận cuối');
 });
-check('Hạn nhập điểm lớp thường là hết Chủ nhật của chính tuần đó', () => {
+/* PR-MTa T19 thay "hết Chủ nhật của chính tuần đó": hạn lớp thường là thứ Tư tuần kế tiếp, như Fast Track. */
+check('Hạn nhập điểm lớp thường là hết thứ Tư tuần kế tiếp (PR-MTa T19)', () => {
   const a = conn
     .prepare(
       `SELECT a.id, a.planned_period_id, a.deadline_override, rp.week_start, rp.week_end
@@ -1888,8 +1891,8 @@ check('Hạn nhập điểm lớp thường là hết Chủ nhật của chính 
     .get() as any;
   assert(a, 'Dữ liệu mẫu thiếu bài kiểm tra lớp thường');
   const dl = regular.regularDeadline(a);
-  assert(dl.date === a.week_end && dl.source === 'week_end',
-    `Hạn phải là Chủ nhật ${a.week_end} của tuần đó, đang là ${dl.date}`);
+  assert(dl.date === addDays(a.week_start, 9) && dl.source === 'default',
+    `Hạn phải là thứ Tư ${addDays(a.week_start, 9)} tuần kế tiếp, đang là ${dl.date}`);
   // Chủ nhật là ngày cuối tuần theo lịch tuần thứ Hai–Chủ nhật của hệ thống.
   assert(week.mondayOf(a.week_end) === a.week_start, 'week_end phải là Chủ nhật của chính tuần đó');
   // Chưa có tuần kế hoạch thì KHÔNG dựng hạn giả.
@@ -2090,11 +2093,11 @@ check('Đủ điểm mọi kỹ năng thì bài mới chuyển sang đã xong', 
   const prog = regular.programmeOfClass(planned.class_id)!;
   prog.skills.forEach((skill, i) => {
     if (i === prog.skills.length - 1) return;      // cố tình bỏ trống kỹ năng cuối
-    regular.saveRegularScore(P.admin, planned.id, skill, { score: 30, total: 40 });
+    regular.saveRegularScore(P.admin, planned.id, skill, { score: 30, total: 40 }, chuNhatCuoiOf(planned.id));
   });
   let st = conn.prepare('SELECT status FROM assessment_attempts WHERE id = ?').get(planned.id) as any;
   assert(st.status === 'planned', 'Thiếu một kỹ năng mà đã coi là xong');
-  regular.saveRegularScore(P.admin, planned.id, prog.skills[prog.skills.length - 1], { score: 30, total: 40 });
+  regular.saveRegularScore(P.admin, planned.id, prog.skills[prog.skills.length - 1], { score: 30, total: 40 }, chuNhatCuoiOf(planned.id));
   st = conn.prepare('SELECT status FROM assessment_attempts WHERE id = ?').get(planned.id) as any;
   assert(st.status === 'done', 'Đủ điểm rồi mà bài vẫn chưa chuyển sang đã xong');
 });
@@ -3590,7 +3593,7 @@ check('Trượt Listening ở MT1 rồi MT2 → ĐÚNG MỘT case, tên đổi t
   };
 
   const a1 = mk(1, '2026-10-12');
-  attempts.saveScore(lr, a1.id, 'listening', { rawScore: bandBelow(a1.attempt_no) });
+  attempts.saveScore(lr, a1.id, 'listening', { rawScore: bandBelow(a1.attempt_no) }, chuNhatCuoiOf(a1.id));
 
   /*
    * v3 (21/09/2026 tối): LẦN TRƯỢT ĐẦU CỦA MOCK FT TỰ TẠO CASE — tín hiệu nối ngay vào nó (thay luật 6.2 "chỉ sinh tín hiệu").
@@ -3614,7 +3617,7 @@ check('Trượt Listening ở MT1 rồi MT2 → ĐÚNG MỘT case, tên đổi t
   cases.recordFollowUp(mgr, caseId, { observedOn: '2026-10-25', outcome: 'partial', note: 'Có làm nhưng chưa đều' });
 
   const a2 = mk(2, '2026-11-16');
-  attempts.saveScore(lr, a2.id, 'listening', { rawScore: bandBelow(a2.attempt_no) });
+  attempts.saveScore(lr, a2.id, 'listening', { rawScore: bandBelow(a2.attempt_no) }, chuNhatCuoiOf(a2.id));
 
   const after2 = conn
     .prepare(`SELECT * FROM sos_cases WHERE student_id = ? AND category = 'listening'`)
@@ -3665,7 +3668,7 @@ check('Case đã đóng mà MT sau trượt lại → MỞ CASE MỚI nối vào
   };
 
   const a1 = mk('2026-10-19');
-  attempts.saveScore(rt, a1.id, 'reading', { rawScore: low(a1.attempt_no) });
+  attempts.saveScore(rt, a1.id, 'reading', { rawScore: low(a1.attempt_no) }, chuNhatCuoiOf(a1.id));
   const sigA = conn
     .prepare(`SELECT * FROM case_signals WHERE attempt_id = ? AND skill = 'reading'`)
     .get(a1.id) as any;
@@ -3721,7 +3724,7 @@ check('Case đã đóng mà MT sau trượt lại → MỞ CASE MỚI nối vào
 
   /* Rồi MT sau trượt lại. */
   const a2 = mk('2026-11-23');
-  attempts.saveScore(rt, a2.id, 'reading', { rawScore: low(a2.attempt_no) });
+  attempts.saveScore(rt, a2.id, 'reading', { rawScore: low(a2.attempt_no) }, chuNhatCuoiOf(a2.id));
 
   /*
    * Case cũ ĐÃ ĐÓNG nên tín hiệu lần này KHÔNG nối vào nó — nó nằm chờ xác minh. Mở case
