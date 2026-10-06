@@ -113,8 +113,22 @@
 ---
 
 ### Task 0: Đối chiếu PR-MTa (không code)
-- [ ] Đọc `docs/superpowers/plans/2026-10-05-pr-mta-luat-mock-test.md` (mục Interfaces) và mã MTa đã merge (`git log origin/main --grep MTa`). Với từng dòng A1–A8: tên thật là gì, đã có chưa.
-- [ ] Lệch tên → sửa tên trong mục Interfaces của các Task dưới (một commit `docs(mtb): khớp tên PR-MTa`). Thiếu hẳn một dòng A → dừng, báo planning (không tự làm luật máy chủ của MTa).
+- [x] Đọc `docs/superpowers/plans/2026-10-05-pr-mta-luat-mock-test.md` (mục Interfaces) và mã MTa đã merge (#212, main `db820c02`). Với từng dòng A1–A8: tên thật là gì, đã có chưa.
+- [x] Lệch tên → sửa tên trong mục Interfaces của các Task dưới (một commit `docs(mtb): khớp tên PR-MTa`). Thiếu hẳn một dòng A → dừng, báo planning (không tự làm luật máy chủ của MTa).
+
+**Kết quả Task 0 (06/10, main `db820c02` — DL #206, SL #203, K26, MTa #212 đã merge). ĐÈ lên mọi chỗ khác trong file nếu mâu thuẫn:**
+
+*A1–A8 đủ cả, tên khớp* (`laMtCu`, `kiemTuanXep`, `luotBiVuot`, `LuotSeHuyLich`, `dongHeQuaVuot`, `canLyDoVuot`, `KetQuaHuy`, `cauSeHuyLich` ở `shared/domain/lichMt.ts`; `docONhapLR`, `kiemBand` ở `chamDiem.ts`; `kiemLyDoThaoTac`, `canLyDo`, `CHU_LY_DO` ở `thaoTacMt.ts`; đường `xin-doi`, `khong-mock-lai`, `khoi-phuc-ket-qua`; `huyVang` trên `OKyNang`; `HangLichMt.luot.ketQuaHuy`). Lệch:
+1. **A7 lệch luật:** `LY_DO_BAT_BUOC = ['huy-luot','huy-ket-qua','tu-choi']` — **3 chỗ, không còn `huy-diem`** (T22 + rà #212: huỷ điểm / xoá trắng ô không bắt lý do). Mọi chỗ file này ghi "đúng 4 chỗ T7" / "huỷ điểm bắt buộc" → **3 chỗ**. Task 7 phép đỏ "QL huỷ điểm không lý do → 400" đổi thành **200**. `HopThaoTacMt` `batBuoc = canLyDo(t)` chỉ còn đúng khi `huy-luot` (ở hồ sơ Mock `CancelDialog`) — `huy-diem` tuỳ chọn.
+2. **A2 xác nhận:** trường lý do = `reason` ở `/ke-hoach-test/dot`, `/attempts/:id/week`, `/attempts/:id/skills/:skill/week`; `lyDo` ở `/ke-hoach-test/hang-loat`. Cờ `xacNhanHuyLich: true` ở cả bốn.
+3. **A3 MTa ĐÃ LÀM** (`DongHangLoat.seHuyLich`, `xacNhanHuyLich` + `lyDo` ở route `hang-loat`, `keHoachTest.ts:963-975`) → **bỏ Task 1 bước 3b**. Web panel `NganXepLichMt.tsx` chưa nối (không có `seHuyLich`) → Task 3 / 6.
+4. **T13b chưa có** (đúng như kế hoạch): `attemptNo: 'moi'`, `kyNang` tick, `viecXepMt` còn `continue` tự sang đợt kế (`shared/domain/keHoachTest.ts:248,255`), `OKyNang.hanCham` → Task 1 giữ nguyên.
+5. **Web MTa đã làm — KHÔNG làm trùng:** `InlineScoreEditor` + `SuaDiemCoLyDo` (lý do tuỳ chọn, xoá trắng = huỷ điểm, T22) · `HopKyNang` (QL chọn tuần đã qua, dòng đã điểm / đã thi dời được — T20, ô lý do **tuỳ chọn** `Lý do dời`) · ô khoá khi chưa tới tuần thi (T19, `cell.chuaToiTuan`) · "-" MT cũ = Không dự thi (T23, `cell.noShow`, cột `no_show_cu`) · `HopXacNhanHuyLich` đã có Lý do bắt buộc + "Dời và huỷ" (props cũ `ds / onQuayLai / onXacNhan`, tiêu đề "Dời và huỷ kết quả?") — Task 6 chỉ **vẽ lại theo mockup** (đổi props như Interfaces) · `HopThaoTacMt` / `WeekModal` / `DeadlineModal` đã gọi `kiemLyDoThaoTac` · chữ "cũ" đã hiện (`ChipLichSu` trả "cũ") — Task 2 chỉ **đổi tên** thành `NhanCu` (MT0 dùng tên đó).
+6. **Phạm vi thêm (plan.md 2c T20, chủ sản phẩm 06/10 khi giao việc):**
+   (a) Nút **"Dời lịch"** cho kỹ năng **đã có điểm** ở hồ sơ Mock: máy chủ đã cho QL / Quản trị (`setSkillWeek` `quanLy`), nhưng `thaoTacKyNang('co-diem')` (`shared/domain/thaoTacMt.ts:50`) chỉ trả `huy-diem` → thêm `'doi-lich'` cho `quanLy` (QL / Quản trị) vào menu `co-diem`; `MockDetailPage.tsx:445` (`ownsSchedule`) giữ. Hệ quả cho `menuHopKyNang` (Task 5): `co-diem` → **`doi-tuan` sáng** cho QL (không còn mờ "Đã có điểm"); phép đỏ Task 5 (b) sửa theo.
+   (b) **Dòng đỏ hộp kỹ năng** `cauSeHuyLich` ("Lưu sẽ huỷ lịch … về Chưa xếp lịch.") **không hiện khi MT bị vượt có điểm** (`canLyDoVuot`) — popup nói hệ quả; chỉ hiện chip vàng `Bỏ lịch MT3` khi vượt không điểm (tự quyết 6). Áp ở `HopKyNang.tsx` và `WeekModal` (`MockDetailPage.tsx:674`).
+   (c) **Gộp hai ô lý do (hộp + popup) thành một:** hộp một đợt bỏ ô lý do (tự quyết 3); ở `WeekModal` / `HopThaoTacMt` (còn ô lý do tuỳ chọn) — khi `canPopup` thì **ẩn** ô lý do của hộp, popup mang ô Lý do duy nhất; chữ đã gõ ở hộp đi theo vào popup qua prop `lyDoDau?: string`.
+7. Rulebook / thiet-ke: ghi "Đang chọn" của ô MT (mockup đã duyệt: nền sáng chữ tối ✓) vào `thiet-ke/HE_GIAO_DIEN.md` §2 (Task 2 / 10).
 
 ### Task 1: Máy chủ + luật panel — "MT mới", đúng đợt, tick kỹ năng, hạn chấm
 Skill: test-driven-development
