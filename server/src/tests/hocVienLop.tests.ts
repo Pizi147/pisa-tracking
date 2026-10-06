@@ -221,7 +221,8 @@ export async function runHocVienLopTests(t: YThucTestKit) {
   });
 
   check('PR-Qa · Q4 hồ sơ lớp 3 tab, không còn tab Giáo viên; mã học viên 6 số; dòng phụ ≤ 60 ký tự', () => {
-    eq(d.TAB_HO_SO_LOP.map((k: string) => d.TAB_HO_SO_LOP_NHAN[k]), ['Học viên', 'Ý thức & Phối hợp', 'Phân tích lớp'], 'Tab');
+    /* PR-TK: lớp ĐANG HỌC vẫn 3 tab; lớp đã kết thúc có thêm "Tổng kết" đứng đầu (`tabHienCuaLop`). */
+    eq(d.tabHienCuaLop(false).map((k: string) => d.TAB_HO_SO_LOP_NHAN[k]), ['Học viên', 'Ý thức & Phối hợp', 'Phân tích lớp'], 'Tab');
     eq(d.tabHoSoLop('giao-vien'), 'hoc-vien', 'Link cũ tab Giáo viên về tab Học viên');
     eq(d.tabHoSoLop('phan-tich'), 'phan-tich', 'Tab Phân tích lớp');
     eq(d.maHocVienNgan('PISA-000011'), '000011', 'Mã có tiền tố');

@@ -137,8 +137,10 @@ export function viecThiThat(p: Principal, f: { today: string; tatCa: boolean; br
     const l = c.class_id ? lop.get(c.class_id) : null;
     if (f.branchId && l && l.branch_id !== f.branchId) continue;
     const gv = c.class_id ? gvcn.get(c.class_id) ?? [] : [];
-    const ql = !!c.class_id && can(p, PERMISSIONS.CYCLE_EDIT, { classId: c.class_id, studentId: c.student_id });
-    const mine = gv.includes(p.userId) || (!gv.length && ql);
+    const laGvcn = gv.includes(p.userId);
+    /* Quyền Quản lý chỉ hỏi khi cần (không phải GVCN của lớp): `can` theo lớp, phạm vi đã nạp một lần ở trên. */
+    const ql = !laGvcn && (!gv.length || f.tatCa) && !!c.class_id && can(p, PERMISSIONS.CYCLE_EDIT, { classId: c.class_id });
+    const mine = laGvcn || (!gv.length && ql);
     if (!mine && !(f.tatCa && ql)) continue;
     const thi = examPlanOf({ exam_period_id: null, exam_month: c.exam_month, exam_date: c.exam_date, ...(c.exam_week ? { exam_period_id: 1, exam_week_code: tuanLich(c.exam_week), exam_week_start: c.exam_week } : {}) }).label;
     out.push({
