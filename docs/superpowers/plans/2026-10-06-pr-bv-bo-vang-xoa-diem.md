@@ -1,396 +1,247 @@
-# PR-BV · Bỏ vắng + xoá điểm hàng loạt có khôi phục — Kế hoạch (06/10)
+# PR-BV · Xoá "-" trả lại như cũ + đường lui điểm (bản 2) — Kế hoạch
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-> **CHẠY SAU PR-MTa** (cùng `attempts.ts`, `regular.ts`, `absence.ts`, `skillSchedule.ts`). MTa đã merge (#212, `ec6d7afe`) — nhưng
-> **Task 0 bắt buộc**: đối chiếu lại mã trên `origin/main` lúc bắt đầu (MTb / MT0 / LT3 có thể đã merge thêm). Mockup
-> `thiet-ke/mockup-bo-vang-xoa-diem-2026-10-06.html` phải **được chủ sản phẩm duyệt trước khi code**.
+> **Chủ sản phẩm chốt 06/10 (bản 2 — thay hẳn bản 1):** bản 1 (nút "Bỏ vắng", kho khôi phục `diem_da_xoa`, xoá hàng loạt, màn xem
+> trước) **không duyệt vì quá phức tạp**. Làm gọn:
+> - **Vắng:** gõ `-` = vắng, **xoá `-` = hết vắng**. Không nút mới. Xoá `-` (kể cả đã chốt) thì máy chủ **tự trả lại như trước khi gõ**.
+> - **Ai xoá `-`:** người được nhập ô đó (GV chấm, **GVCN**) trong **khung chấm** (tuần thi → hết thứ Tư tuần sau); QL / Quản trị mọi lúc.
+> - **Điểm:** tẩy ô + Lưu = xoá (đã có, MTa T22). **Không** kho khôi phục, **không** xoá hàng loạt. Nhầm thì nhập lại; điểm cũ xem ở Lịch sử.
+>   Xoá điểm đóng Case rồi nhập lại → **mở lại đúng Case đó** (không tạo Case mới, không mất PA).
+>
+> **Chạy sau PR-MTa (đã merge #212) VÀ PR-MTb** (chung `HopThaoTacMt.tsx`, `MockDetailPage.tsx`, `HopKyNang.tsx`, `ScoreEntry.tsx`,
+> `thaoTacMt.ts`). **Task 0 = đối chiếu lại mã** trên `origin/main` lúc bắt đầu. Code chỉ sau khi chủ sản phẩm duyệt mockup
+> `thiet-ke/mockup-bo-vang-xoa-diem-2026-10-06.html` (bản 2).
 
-**Goal:** (1) "Bỏ vắng": bài Mock đã chốt vắng (kể cả "-" gõ nhầm cho tuần đã qua, kể cả vắng lần 2) trả **lịch cũ + số lần vắng**, rồi
-nhập điểm được; lớp thường gỡ "-" trả đúng số lần vắng. (2) **Xoá điểm hàng loạt** (nhiều em × nhiều kỹ năng của một lượt / một bài,
-gồm cả cột một lớp và cả đợt một em) là **xoá mềm**, có màn xem trước số điểm + Case bị ảnh hưởng, **khôi phục được**; mọi lần xoá
-trắng từng ô cũng khôi phục được. (3) Sửa lỗi bài lớp thường xoá điểm xong vẫn `done`.
+**Goal:** Xoá dấu `-` đã chốt trả đúng trạng thái trước khi gõ (lịch, số lần vắng, đề nghị dời chưa xử lý, kỹ năng huỷ do vắng lần 2);
+nhập lại điểm sau khi xoá mở lại đúng Case mà lần xoá đã đóng; Lịch sử ô lớp thường hiện điểm cũ; bài lớp thường xoá điểm về "chưa xong".
 
-**Architecture:** Không viết luật mới song song với luật cũ — mọi đường xoá điểm vẫn đi qua `saveScore` / `saveRegularScore`; hai hàm
-này **chụp nguyên dòng** vào bảng mới `diem_da_xoa` trước khi xoá trắng ô (một chỗ, mọi nơi gọi tự hưởng: xoá trắng ô T22, Huỷ điểm,
-Thi lại, xoá hàng loạt). Xoá hàng loạt = gọi `saveScore`/`saveRegularScore` từng ô trong **một `tx`**; xem trước = chạy đúng việc đó
-trong `tx` rồi **cuộn lại** (đếm Case bằng chênh lệch trước/sau — không viết lại luật Case). Khôi phục = chép ngược vào ô **còn trống**.
-Bỏ vắng FT = hàm mới `boVang` ở `absence.ts` đảo đúng một lần chốt (đọc tuần gốc ở `assessment_scores.no_show_period_id`); Hoàn tác
-"-" đã chốt đi qua chính hàm này (sửa gốc lỗi "hoàn tác nửa vời").
+**Architecture:** Không thêm route, không thêm bảng. Sửa **đường ghi `-` sẵn có**: `saveScore` (FT, nhánh `noShow:false`) gọi hàm nội bộ
+mới `goVangDaChot` ở `absence.ts` khi dấu đã chốt; `reportRegularNoShow` (lớp thường) sửa nhánh gỡ dấu. Một hàm kiểm quyền gỡ dấu
+dùng chung (`duocGoDau`). Mở lại Case: `retireCaseForCorrectedScore` đánh dấu Case đóng **do xoá điểm**; `upsertCategoryCase` gặp đúng
+Case đó (cùng lượt, cùng kỹ năng) thì mở lại thay vì tạo Case mới. Web gần như không đổi: ô FT đã chốt **vẫn hiện `-`** để xoá được.
 
-**Tech Stack:** TypeScript (`tsc`, import có đuôi `.ts`), Express + SQLite/Turso, React; phép kiểm `server/src/tests/prBv.tests.ts`
-gọi ở **cuối** `run.ts`; `npm run check`.
+**Tech Stack:** TypeScript (`tsc`, import có đuôi `.ts`), Express + SQLite/Turso, React; phép kiểm `server/src/tests/prBv.tests.ts` gọi ở
+**cuối** `run.ts`; `npm run check`.
 
-**Spec / nguồn:** `plan.md` mục 4 "PR-BV", mục 2c (T7, T19–T23) · `docs/superpowers/specs/2026-10-06-ra-soat-duong-lui.md` phần A
-(A2, A3 #2–#11, C #1, #3, #4, #5) · kế hoạch MTa `docs/superpowers/plans/2026-10-05-pr-mta-luat-mock-test.md` Task 12–13 (**không làm
-lại**: T19 khung nhập, T20 dời có điểm, T21 khôi phục phần huỷ vào tuần đã qua, T22 xoá trắng ô không bắt lý do, T23 "-" MT cũ) ·
-mockup `thiet-ke/mockup-bo-vang-xoa-diem-2026-10-06.html`.
+**Nguồn:** tin planning 06/10 (chủ sản phẩm chốt bản 2) · `plan.md` mục 4 "PR-BV", mục 2c (T7, T19–T23) ·
+`docs/superpowers/specs/2026-10-06-ra-soat-duong-lui.md` A2, A3 #2–#4, #8–#9 · kế hoạch MTa Task 12–13 (**không làm lại** T19–T23).
 
 ## Global Constraints
-- **Chỉ QL / Quản trị** (`PLAN_WEEK` theo lớp) mọi lúc: Bỏ vắng, xoá hàng loạt, xem "Đã xoá", khôi phục. **GV chấm bài đó**
-  (`scoreEditPath(...) === 'assigned'`) Bỏ vắng được **trong khung chấm**: từ tuần thi tới hết `skillScoreDeadline` của **tuần thi gốc**
-  (thứ Tư tuần sau). Không nới quyền nào khác.
-- **Không mất điểm:** dòng điểm vào `diem_da_xoa` **trước** khi ô bị xoá trắng, cùng `tx`. Khôi phục **không bao giờ đè** ô đã có điểm mới.
-- Lý do: Bỏ vắng **tuỳ chọn**; khôi phục **tuỳ chọn**; xoá hàng loạt **bắt buộc** (khác rỗng sau `trim()`, không tối thiểu ký tự — T7)
-  — trừ khi chủ sản phẩm chọn khác ở Q1. Nhật ký đủ: ai / lúc nào / cũ → mới.
-- Chữ trên màn **đúng mockup**, ngắn (1–3 từ), không câu giải thích dưới nút/ô; thời gian là mã tuần `W2 OCT`, ngày giờ chỉ ở nhật ký và
-  danh sách "Đã xoá" (là nhật ký). Không đổi phông, bảng màu, bố cục đã khoá.
-- Turso: không tham số đặt tên; ≤ 900 tham số (`theoLo`); đường ghi mới có trần ở `server/src/tests/tocDoDuong.ts` `TRAN_GHI_LO`.
-- Trần xoá hàng loạt: **≤ 300 ô / lần** (một lớp 30 em × 5 ô = 150); vượt → 400 `Quá 300 ô — chọn ít em hơn.`
-- Migrate riêng `server/src/migrate/prBv.ts`, chạy lặp được, chỉ cấu trúc; định nghĩa cùng cuối `schema.sql`.
-- Hàm mới ở `shared/domain/*` re-export qua `shared/domain/index.ts` (file đã `export *` thì thôi). File mới → `CODE_MAP.md` cùng commit.
-- Phép kiểm cũ chỉ sửa khi khẳng định đúng luật bị thay; ghi `// PR-BV thay <mã cũ>`.
-- Ponytail: `full` cho Task 0–6; `/ponytail lite` trước Task 7–8 (web).
+- **Không** nút mới, **không** route mới, **không** bảng mới, **không** migrate. Chữ mới chỉ ở toast và nhật ký.
+- Quyền xoá `-`: `PLAN_WEEK` theo lớp (QL / Quản trị) **mọi lúc**; người khác phải (a) được nhập ô đó (`scoreEditPath(...) !== null`) **hoặc**
+  là GVCN lớp đó, **và** (b) `today <= skillScoreDeadline(mode, tuần thi GỐC)` (thứ Tư sau tuần thi gốc). Sai → 403 `Quá hạn chấm — nhờ Quản lý.`
+- Mỗi rủi ro (1)–(5) của chủ sản phẩm có **một phép kiểm đỏ trước** (bảng Task 4–5).
+- Không thu hồi chuông đã gửi, không gửi chuông mới khi xoá `-`. Nhật ký ghi đủ ai / lúc nào / cũ → mới.
+- Quyết định của người (duyệt, từ chối, Khôi phục và đặt tuần, Không mock lại, Xếp lại bài vắng) **không bị đảo**.
+- Chữ trên màn đúng mockup bản 2, ngắn; tuần dùng mã `W2 OCT`, ngày giờ chỉ ở nhật ký.
+- Turso: không tham số đặt tên; ≤ 900 tham số. Phép kiểm cũ chỉ sửa khi khẳng định luật bị thay — ghi `// PR-BV thay <mã cũ>`.
+- Ponytail `full` Task 0–5; `/ponytail lite` trước Task 6 (web).
 
 ## Review Focus
-1. **Khôi phục đè điểm mới:** xoá L của em A → GV nhập L mới → khôi phục lô → L giữ điểm mới, kết quả báo "1 ô đã có điểm mới". (K3)
-2. **Xem trước không ghi gì:** gọi `xemTruoc: true` hai lần liền → `assessment_scores`, `diem_da_xoa`, `sos_cases`, `notifications`,
-   `audit_logs` không đổi số dòng. (H2)
-3. **Bỏ vắng lần 1 tự dời:** "-" gõ cho tuần đã qua → chốt + tự dời W+1, bộ đếm 1 → Bỏ vắng → tuần gốc, bộ đếm 0, ô hết "-",
-   nhập điểm được ngay; làm "-" lần nữa vẫn là **vắng lần 1** (không thành lần 2 oan). (V1, V2)
-4. **Hoàn tác "-" đã chốt** (toast Hoàn tác) giờ trả cả lịch và bộ đếm; GV ngoài khung chấm bấm Hoàn tác → 403 câu ngắn, không đổi gì. (V7)
-5. **W1/W2:** xoá hàng loạt kỹ năng W → cả W1 và W2 vào `diem_da_xoa`, đếm "1 điểm" (theo kỹ năng); khôi phục trả cả hai + nhận xét +
-   GV chấm + `nhap_dau_ngay`. (X3, K2)
+1. Xoá `-` của bài **đã tự dời** → tuần gốc, lần vắng −1; gõ `-` lại → vẫn **vắng lần 1** (không thành "huỷ vắng 2 lần" oan). (V1, V2)
+2. Thẻ Chờ duyệt **đã** duyệt / từ chối → quyết định giữ nguyên, thẻ có thêm "vắng đã gỡ". (V5)
+3. Xoá điểm (Case đóng) → nhập lại điểm vẫn trượt → **cùng `sos_cases.id`** mở lại, PA bị huỷ lúc xoá trở lại "đã lên kế hoạch". (C1)
+4. GVBM / GVCN quá thứ Tư sau tuần thi gốc xoá `-` → 403, không đổi gì. (V7)
 
 ---
 
-## Interfaces (giữ đúng tên — PR-LUI dựa vào)
-
+## Interfaces
 ```ts
-// shared/domain/thaoTacMt.ts
-export type ThaoTac = /* cũ */ | 'bo-vang';                 // CHU_THAO_TAC['bo-vang'] = 'Bỏ vắng'
-export type QuyenTT = { /* cũ */; boVang?: boolean };        // máy chủ đã tính quyền + trạng thái (BoVangXem != null)
-//   thaoTacKyNang: q.boVang → thêm 'bo-vang' vào ĐẦU `menu` ở trạng thái 'vang' | 'huy-vang' | 'chua-toi-tuan' | 'dang-thi'
-//   (≤ 3 mục menu vẫn giữ: 'dang-thi' của QL = ['bo-vang','bao-vang','doi-han'] — 'doi-lich' vẫn ở hộp kỹ năng)
-
-// shared/domain/diemDaXoa.ts (MỚI)
-/** Thông tin cho hộp Bỏ vắng — máy chủ gửi kèm mỗi kỹ năng khi người xem bỏ vắng được, còn lại null. */
-export type BoVangXem = { tuanGoc: string; tuanNay: string | null; lanVang: number; lanVangSau: number; rutDeNghi: boolean };
-//   tuanGoc/tuanNay = mã tuần 'W2 SEP'; tuanNay = null khi lịch chưa đổi (đang 'vang' / 'huy-vang' ở tuần gốc)
-export type XoaHangLoat = { ma: string; hocVien: number[]; kyNang: string[]; lyDo: string | null; xemTruoc: boolean };
-export type KetQuaXoa = { soDiem: number; soEm: number; dongCase: number; xemLaiCase: number; lo: string | null };
-//   soDiem đếm theo KỸ NĂNG (W1+W2 = 1); lo = null khi xemTruoc
-export type LanXoa = { lo: string; luc: string; nguoi: string; lyDo: string | null; nguon: NguonXoa; nhanLuot: string;
-  o: { id: number; hocVien: string; skill: string; giaTri: string; khoiPhuc: boolean }[] };
-export type NguonXoa = 'o' | 'huy-diem' | 'thi-lai' | 'hang-loat';
-export const CHU_NGUON_XOA: Record<NguonXoa, string>;     // 'Xoá ô' · 'Huỷ điểm' · 'Thi lại' · 'Xoá hàng loạt'
-export function dongXemTruoc(k: KetQuaXoa): string;        // 'Xoá 9 điểm · 3 em · đóng 1 Case · 1 Case xem lại' (bỏ vế = 0)
-
-// server/src/fasttrack/diemDaXoa.ts (MỚI)
-export function chupDiem(scoreRowId: number, o: { lo: string; nguon: NguonXoa; lyDo: string | null; actorId: number }): void;  // gọi TRONG tx
-export function loMoi(): string;                                                                    // crypto.randomUUID()
-export function xoaDiemHangLoat(p: Principal, classId: number, x: XoaHangLoat): KetQuaXoa;
-export function diemDaXoaCuaLop(p: Principal, classId: number): LanXoa[];                          // 60 lần gần nhất
-export function khoiPhucDiem(p: Principal, o: { lo?: string; ids?: number[]; lyDo?: string | null }):
-  { khoiPhuc: number; boQua: { id: number; vi: 'co-diem-moi' | 'luot-huy' | 'ky-nang-huy' | 'co-dau' }[] };
-
-// server/src/fasttrack/absence.ts
-export function boVangXem(p: Principal, attemptId: number, skill: string, today?: string): BoVangXem | null;   // đọc, không ném
-export function boVang(p: Principal, attemptId: number, skill: string, o?: { lyDo?: string | null; today?: string }): { ok: true; tuan: string; lanVang: number };
+// server/src/fasttrack/absence.ts (MỚI, nội bộ — không route)
+/** Quyền gỡ dấu "-" (FT + lớp thường). null = được; chuỗi = câu lỗi 403. */
+export function duocGoDau(p: Principal, o: { classId: number; skill: string; mode: ScoringMode; tuanGocStart: string; today: string }): string | null;
+/** Gỡ "-" ĐÃ CHỐT của FT: trả như trước khi gõ. Gọi trong tx của saveScore. */
+export function goVangDaChot(p: Principal, attemptId: number, skill: string, today: string):
+  { tuanVe: string | null; lanVang: number; giuLich: boolean };   // giuLich = có quyết định của người → lịch giữ
+// server/src/cases/signals.ts
+//   retireCaseForCorrectedScore(..., huy = true) đặt thêm sos_cases.system_close_reason = 'xoa_diem'
+// server/src/cases/sos.ts
+//   upsertCategoryCase: existing.status='done' && system_close_reason='xoa_diem' && Case nối tín hiệu đã rút của CÙNG (attempt, skill)
+//   → moCaseXoaDiem(existing) thay cho INSERT Case mới
 ```
-Đường mới: `POST /attempts/:id/skills/:skill/bo-vang` · `POST /classes/:classId/diem-theo-luot/:luot/xoa-diem` (body `XoaHangLoat`
-trừ `ma`) · `GET /classes/:classId/diem-da-xoa` · `POST /diem-da-xoa/khoi-phuc` (body `{ lo?, ids?, lyDo? }`).
-Trường mới ở dữ liệu đọc: mỗi kỹ năng của `attemptDetail`, `HopKyNang` (Kế hoạch Test), `bangTheoLuot` (Điểm theo lớp) và
-`regularSheet` thêm `boVang: BoVangXem | null`; `bangTheoLuot` thêm `soLanXoa: number` (chỉ khác 0 với QL/QT).
+Dữ liệu đọc đổi: ô FT đã chốt (`attempts.ts` ~355-375) trả `noShow.state = 'da-chot'` (mới) kèm `doiSang: 'W3 SEP' | null` và
+`editableUntil` = hạn gỡ của người xem (`null` = QL). Toast web dùng `tuanVe` / `giuLich` trả về từ `PUT /attempts/:id/scores/:skill`.
 
 ## Skill bắt buộc
 | Lúc | Skill / lệnh |
 |---|---|
 | Đầu phiên | `superpowers:subagent-driven-development`; ponytail `full` |
-| Mỗi task | `superpowers:test-driven-development` (đỏ trên DB test trước) · `superpowers:verification-before-completion` (`npm run check`, một lần một lúc, foreground) |
+| Mỗi task | `superpowers:test-driven-development` (đỏ trên DB test trước) · `superpowers:verification-before-completion` (`npm run check`, một lần một lúc) |
 | Lỗi lạ | `superpowers:systematic-debugging` |
-| Task 7–8 (web) | `/ponytail lite` · `/impeccable clarify` (chữ hộp, toast) · `/impeccable harden` (lỗi giữa chừng, 0 ô, quá trần) · `/impeccable adapt` (375) |
-| Trước mở PR | `/impeccable audit` (DiemTheoLop, HopThaoTacMt, ngăn Đã xoá) · `/ponytail-review` · `superpowers:requesting-code-review` · `superpowers:finishing-a-development-branch` (mở PR vào `main`, **không merge**) |
+| Task 6 (web) | `/ponytail lite` · `/impeccable clarify` (chữ toast) · `/impeccable adapt` (375) |
+| Trước mở PR | `/impeccable audit` (ô `-`, toast) · `/ponytail-review` · `superpowers:requesting-code-review` · `superpowers:finishing-a-development-branch` (mở PR vào `main`, **không merge**) |
 
 ---
 
-### Task 0: Đối chiếu mã sau MTa (không sửa mã)
-Số dòng dưới đây đo trên `ec6d7afe`; mã đã đổi thì tìm lại theo tên hàm và **ghi số dòng mới vào mô tả PR**.
-- [ ] `git fetch origin && git log --oneline origin/main -15`: MTb, MT0, LT3, PR-LUI đã merge chưa? Có thì đọc diff của chúng ở các file
-  trong "File chồng" (cuối kế hoạch).
-- [ ] Xác nhận (grep), ghi kết quả vào mô tả PR:
-  1. `saveScore` (`server/src/fasttrack/attempts.ts:1447`) nhánh xoá trắng — UPDATE về NULL, `matHet` NULL hoá nhận xét / GV chấm /
-     `nhap_dau_ngay` (`:1677-1702`); audit `score.edit|lich_su|override` (`:1731-1743`).
-  2. `saveRegularScore` (`server/src/normal/regular.ts:464-570`) xoá = `score:null,total:null` (`:540-544`); `refreshRegularOutcome`
-     chỉ `planned → done` (`:752-756`).
-  3. `huyDiem` (`server/src/keHoach/keHoachTest.ts:579-590`) và `thiLai` (`:544-573`) đều gọi `saveScore(..., null)`.
-  4. "-" FT: `saveScore` nhánh noShow (`attempts.ts:1546-1612`) ghi `no_show_period_id` = tuần gốc; `settleNoShows` / `settleGroup`
-     (`server/src/fasttrack/absence.ts:737-845`); `applyMove` (`:427-451`) tăng `absence_move_count`; `insertRequest` (`:393-424`);
-     `huyVangNoi` (`:322-343`); `rutDeNghiDoi` (`:108-119`). **Dấu "-" của Writing nằm ở dòng `writing1` hay cả hai?** (ghi lại — Task 5 dùng).
-  5. `setSitStatus` (`server/src/fasttrack/skillSchedule.ts:1005`) vẫn chưa có route.
-  6. `MockDetailPage.tsx:436-438` và `HopKyNang.tsx:151` **không truyền `huyVang`** vào `trangThaiTT` (trạng thái "huỷ vắng 2 lần" rơi
-     thành "đã huỷ"). MTb đã sửa chưa? Chưa → sửa ở Task 7 (một dòng mỗi file).
-  7. `tx` (`server/src/db.ts:258`) cuộn lại khi `fn` ném — kể cả lồng (savepoint). Có đường nào trong `saveScore` / `refreshOutcome` /
-     `closeCasesBySystem` gửi **ra ngoài** (email, push, fetch) ngoài DB? Có → Task 4 xem trước phải tắt đường đó (cờ), ghi vào báo cáo.
-  8. Ai đặt `sit_status='absent'` cho lớp thường (nhãn "Đã vắng · chờ xếp lại", `LuoiThuong.tsx:89`)? Nếu chỉ seed/phép kiểm → bỏ qua.
-- [ ] Lệch lớn so với kế hoạch (ví dụ MTb đã thêm khôi phục điểm) → **dừng, báo planning**, không tự chế.
+### Task 0: Đối chiếu mã (không sửa mã)
+Số dòng đo trên `ec6d7afe`; mã đổi thì tìm theo tên hàm, ghi số dòng mới vào mô tả PR.
+- [ ] `git log --oneline origin/main -20`: **MTb đã merge?** Chưa → **dừng, báo planning**. Đọc diff MTb ở các file trong "File chồng".
+- [ ] Xác nhận (grep), ghi vào mô tả PR:
+  1. `saveScore` nhánh noShow (`server/src/fasttrack/attempts.ts:1546-1612`): ghi `no_show_period_id` = tuần gốc; gỡ dấu (`:1600-1611`) chỉ xoá cột `no_show_*`; nhập điểm xoá dấu (`:1718-1728`).
+  2. `settleNoShows` / `settleGroup` / `xuLyVangMotKyNang` / `applyMove` / `insertRequest` / `huyVangNoi` / `xinDoi` / `rutDeNghiDoi`
+     (`server/src/fasttrack/absence.ts:108, 251-451, 322-370, 737-845`). Dấu `-` của Writing nằm ở `writing1`, `writing2` hay cả hai?
+  3. Hiển thị ô đã chốt (`attempts.ts:355-375`): sau tự dời trả `state:'none'` + `NO_SHOW_OVERRIDDEN_NOTE` → ô **không** còn `-`.
+  4. `reportRegularNoShow` (`server/src/normal/regular.ts:591-739`): chặn gỡ khi đã có điểm (`:636-640`); "lần vắng" = đếm audit `regular.no_show` (`:699-700`).
+  5. `scoreHistoryOf` (`attempts.ts:825-874`) chỉ đọc `entity_type='assessment_attempt'` + `score.*` → audit `regular.score(.override)`
+     (`entityType 'assessment_score'`, `regular.ts:562-565`) **không** hiện ở Lịch sử lớp thường (`NganLichSuBai.tsx`).
+  6. Case: `gomTinHieu` → `retireCaseForCorrectedScore` (`server/src/cases/signals.ts:287-336, 344-378`) đóng Case + huỷ PA `planned`
+     (`closed_reason='score_fixed'`); `upsertCategoryCase` (`server/src/cases/sos.ts:152-215`) gặp Case `done` → **tạo Case mới** nối
+     `previous_case_id`. Lớp thường (Case Giữa khoá) có đi qua `upsertCategoryCase` không? Không → ghi đường thật, Task 3 sửa ở đó.
+  7. `MockDetailPage.tsx:436-438`, `HopKyNang.tsx:151` có truyền `huyVang` vào `trangThaiTT` chưa (MTb)?
+  8. `sos_cases.system_close_reason` có sẵn (grep `schema.sql`)? Không có → Task 3 dùng `outcome_note` tiền tố cố định thay vì thêm cột (không migrate).
+- [ ] Lệch lớn so với kế hoạch → **dừng, báo planning**.
 
-### Task 1: Lỗi lớp thường "đã xong" sau khi xoá điểm
-**Files:** Modify `server/src/normal/regular.ts:752-756` · Test `server/src/tests/prBv.tests.ts` (tạo), `server/src/tests/run.ts` (gọi cuối)
-
-- [ ] **Bước 1 — kiểm đỏ:**
-```ts
-check('BV R1 · lớp thường: xoá một môn của bài đã đủ → status về planned', () => {
-  const { attemptId, mon } = baiThuongDu();            // helper: bài Giữa khoá đủ 4 môn, status 'done'
-  regular.saveRegularScore(QL, attemptId, mon[0], { score: null, total: null });
-  assert(luot(attemptId).status === 'planned', `status = ${luot(attemptId).status}`);
-});
-check('BV R2 · lớp thường: nhập lại đủ → done; bài đã huỷ không bị đổi', () => { /* … */ });
-```
-- [ ] **Bước 2:** chạy `npm run check` → R1 đỏ (`done`).
-- [ ] **Bước 3:** theo đúng mẫu FT (`attempts.ts:1406-1410`):
+### Task 1: Bài lớp thường xoá điểm vẫn "đã xong"
+**Files:** `server/src/normal/regular.ts:752-756` · Test `server/src/tests/prBv.tests.ts` (tạo) + `server/src/tests/run.ts` (gọi cuối)
+- [ ] **Đỏ:** R1 bài Giữa khoá đủ môn (`done`) → xoá một môn → `status` phải `planned`; R2 nhập lại đủ → `done`; bài `cancelled` không đổi.
+- [ ] **Xanh** (đúng mẫu FT `attempts.ts:1406-1410`):
 ```ts
 const next = r.complete ? 'done' : 'planned';
 if (a.status !== 'cancelled' && a.status !== next) conn.prepare('UPDATE assessment_attempts SET status = ? WHERE id = ?').run(next, attemptId);
 ```
-- [ ] **Bước 4:** `npm run check` xanh. Grep nơi đếm bài lớp thường theo `status` (`grep -rn "status = 'done'" server/src/normal server/src/phanTich server/src/cham`) — ghi vào mô tả PR số nào có thể đổi.
-- [ ] **Bước 5:** commit `fix(bv): bài lớp thường xoá điểm thì về chưa xong (regular.ts)`.
+- [ ] Grep nơi đếm bài lớp thường theo `status` (`server/src/normal`, `phanTich`, `cham`) → ghi vào mô tả PR số nào có thể đổi.
+- [ ] `npm run check` xanh; commit `fix(bv): bài lớp thường xoá điểm thì về chưa xong`.
 
-### Task 2: Bảng `diem_da_xoa` + chụp mọi lần xoá trắng ô
-**Files:** Create `server/src/migrate/prBv.ts`, `server/src/fasttrack/diemDaXoa.ts`, `shared/domain/diemDaXoa.ts` · Modify `server/src/schema.sql` (cuối), `server/src/migrate.ts` (gọi), `attempts.ts` (nhánh xoá trắng), `regular.ts` (nhánh xoá), `keHoachTest.ts` (`huyDiem`, `thiLai` truyền `nguon`), `shared/domain/index.ts`, `CODE_MAP.md`
+### Task 2: Lịch sử ô lớp thường hiện điểm cũ
+**Files:** `server/src/fasttrack/attempts.ts` `scoreHistoryOf` · Test `prBv.tests.ts`
+- [ ] **Đỏ (thử thật qua hàm đọc của màn):** S1 lớp thường nhập Nghe 16/20 → sửa 15/20 → xoá (tẩy ô) → `attemptDetail(...).scoreHistory`
+  (đúng dữ liệu `NganLichSuBai` đọc ở `/attempts/:id`) có 3 dòng skill `listening`: `— → 16/20`, `16/20 → 15/20`, `15/20 → Trống`, kèm người và giờ.
+  S2 dấu `-` lớp thường (`regular.no_show`, `regular.no_show_cleared`) hiện kind `no_show`. S3 FT không đổi (phép kiểm cũ xanh).
+- [ ] **Xanh:** `scoreHistoryOf` đọc thêm `(entity_type='assessment_score' AND entity_id IN (id dòng điểm của lượt) AND action IN ('regular.score','regular.score.override'))`
+  và `regular.no_show*` của lượt; chuẩn hoá `before/after` ra chữ như FT (`16/20`, `Trống`). Giữ điều kiện `created_at >= a.created_at` (PR-XOA).
+- [ ] `npm run check` xanh; commit `fix(bv): Lịch sử ô lớp thường hiện điểm cũ`.
 
-- [ ] **Bước 1 — migrate (chạy lặp được):**
-```sql
-CREATE TABLE IF NOT EXISTS diem_da_xoa (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  lo TEXT NOT NULL,                       -- một lần xoá (một ô hoặc cả lô)
-  nguon TEXT NOT NULL,                    -- 'o' | 'huy-diem' | 'thi-lai' | 'hang-loat'
-  attempt_id INTEGER NOT NULL REFERENCES assessment_attempts(id),
-  skill TEXT NOT NULL,                    -- đúng cột skill của assessment_scores (writing1/writing2 riêng; lớp thường = mã môn)
-  dong_json TEXT NOT NULL,                -- nguyên dòng assessment_scores lúc xoá (mọi cột)
-  ly_do TEXT, xoa_boi INTEGER, xoa_luc TEXT NOT NULL,
-  khoi_phuc_boi INTEGER, khoi_phuc_luc TEXT, ly_do_khoi_phuc TEXT
-);
-CREATE INDEX IF NOT EXISTS idx_diem_da_xoa_attempt ON diem_da_xoa(attempt_id);
-CREATE INDEX IF NOT EXISTS idx_diem_da_xoa_lo ON diem_da_xoa(lo);
-```
-  Xoá học viên / tài khoản: thêm `diem_da_xoa` cạnh `ket_qua_huy` ở `students/xoaHocVien.ts:114`, `platform/xoaTaiKhoan.ts:56`.
-- [ ] **Bước 2 — kiểm đỏ:**
-  - X1 GVBM xoá trắng L (T22, không lý do) → một dòng `diem_da_xoa` `nguon='o'`, `dong_json.band` = điểm cũ, `ly_do` NULL.
-  - X2 `huyDiem` W chọn W1+W2 → hai dòng **cùng `lo`**, `nguon='huy-diem'`.
-  - X3 `thiLai` → `nguon='thi-lai'`; lớp thường xoá một môn → `nguon='o'`, `dong_json.raw_total` giữ.
-  - X4 **sửa** điểm (6.0 → 6.5) → **không** có dòng (chỉ xoá trắng cả ô mới chụp).
-  - X5 lỗi ném sau khi chụp (giả lỗi ở `refreshOutcome` bằng ô không hợp lệ cùng `tx`) → không còn dòng `diem_da_xoa` mồ côi.
-  - X6 ô chỉ có "-" / chỉ nhận xét bị xoá nhận xét → không chụp (không phải điểm).
-- [ ] **Bước 3:** `chupDiem` đọc `SELECT * FROM assessment_scores WHERE id = ?`, chèn `dong_json = JSON.stringify(row)`. Gọi ở **đúng một
-  chỗ mỗi đường**: `saveScore` ngay trước UPDATE khi ô đang có điểm (`band` hoặc `raw_score` khác NULL) và giá trị mới rỗng; tương tự
-  `saveRegularScore`. Tham số mới tuỳ chọn ở cuối `opts` của hai hàm: `{ lo?: string; nguon?: NguonXoa }` (mặc định `loMoi()`, `'o'`);
-  `huyDiem` tạo một `lo` cho cả W1/W2; `thiLai` truyền `'thi-lai'`.
-- [ ] **Bước 4:** `npm run check` xanh. **Bước 5:** commit `feat(bv): chụp điểm trước khi xoá trắng ô (diem_da_xoa)`.
+### Task 3: Nhập lại điểm sau khi xoá → mở lại đúng Case
+**Files:** `server/src/cases/signals.ts` (`retireCaseForCorrectedScore`), `server/src/cases/sos.ts` (`upsertCategoryCase`), đường tạo Case lớp thường nếu khác (Task 0 mục 6) · Test `prBv.tests.ts`
+- [ ] **Đỏ:**
+  - C1 FT: MT2 L trượt → Case `open` + PA `planned` → xoá L (tẩy ô) → Case `done`, PA `cancelled` → nhập lại L vẫn trượt → **cùng id
+    Case**, `status` về giá trị trước khi đóng (đọc `sos_case_history` dòng `status → done` mới nhất), `closed_*`/`outcome_note` về NULL,
+    `dedup_key` lấy lại, PA bị huỷ lúc đó về `planned`; không có Case mới `previous_case_id = id cũ`; `sos_case_history` thêm dòng `done → open`;
+    audit `case.mo_lai_xoa_diem`.
+  - C2 nhập lại **đạt** → Case giữ đóng (không mở lại, không tạo mới).
+  - C3 Case đóng vì **sửa thành đạt** (không phải xoá) rồi sửa lại trượt → hành vi cũ (Case mới nối Case cũ).
+  - C4 Case đóng do xoá L của **MT2**, sau đó **MT3** L trượt → hành vi cũ (Case mới) — chỉ mở lại khi cùng lượt + cùng kỹ năng.
+  - C5 lớp thường: như C1 với bài Giữa khoá.
+  - C6 PA đã bắt đầu / đã xong lúc xoá (không bị huỷ) → giữ nguyên khi mở lại.
+- [ ] **Xanh:** `retireCaseForCorrectedScore(..., huy=true)` đặt `system_close_reason='xoa_diem'` (Task 0 mục 8) và ghi `closed_reason='score_cleared'`
+  cho PA bị huỷ (sửa thành đạt giữ `'score_fixed'`). `upsertCategoryCase`: trước nhánh `existing.status === 'done'`, nếu
+  `existing.system_close_reason === 'xoa_diem'` và có `case_signals` `withdrawn` (`SIGNAL_WITHDRAW_SCORE_FIXED`) của Case đó với **cùng
+  `attempt_id` + `skill`** → mở lại (UPDATE như C1, PA `score_cleared` → `planned`) và trả `{ id: existing.id, kind: 'reopened' }`
+  (thêm `'reopened'` vào `MilestoneKind` nếu nơi gọi cần; mốc ghi "Mở lại — nhập lại điểm"). Tín hiệu mới gắn vào Case cũ như nhánh Case mở.
+- [ ] `npm run check` xanh; commit `feat(bv): nhập lại điểm sau khi xoá thì mở lại đúng Case`.
 
-### Task 3: Khôi phục điểm + danh sách "Đã xoá"
-**Files:** Modify `server/src/fasttrack/diemDaXoa.ts`, `server/src/routes/index.ts`, `server/src/tests/tocDoDuong.ts` · Test `prBv.tests.ts`
+### Task 4: Xoá `-` đã chốt — Mock (máy chủ)
+**Files:** `server/src/fasttrack/absence.ts` (`duocGoDau`, `goVangDaChot`), `attempts.ts` (nhánh `noShow:false`; hiển thị ô `:355-375`), `server/src/duyet/yeuCau.ts` (ghi chú thẻ) · Test `prBv.tests.ts`
 
-- [ ] **Bước 1 — kiểm đỏ:**
-  - K1 QL khôi phục lô của X1 → ô L có lại `band`, `raw_score`, `entered_by/at` cũ, `nhap_dau_ngay` cũ; `khoi_phuc_*` đặt; audit
-    `score.khoi_phuc` (before null, after dòng); `refreshOutcome` chạy (lượt `planned → done` nếu đủ).
-  - K2 W1+W2 + nhận xét + GV chấm Speaking → khôi phục trả đủ (nhận xét/GV chấm chỉ ghi khi ô hiện đang NULL).
-  - K3 ô đã có điểm mới → bỏ qua ô đó, `boQua: [{vi:'co-diem-moi'}]`, ô khác của lô vẫn khôi phục.
-  - K4 lượt đã huỷ / kỹ năng đã huỷ (`sit_status='cancelled'`) / ô đang có "-" → bỏ qua đúng `vi`.
-  - K5 GVBM, GVCN gọi → 403; QL chi nhánh khác → 403. Khôi phục lần hai cùng lô → `khoiPhuc: 0` (idempotent, không lỗi).
-  - K6 lớp thường: khôi phục môn → bài về `done` nếu đủ (dựa Task 1).
-  - K7 `diemDaXoaCuaLop` chỉ trả lần xoá của lớp đó, mới nhất trước, ≤ 60 lần; GV → 403.
-- [ ] **Bước 2:** `khoiPhucDiem`: `require_(PLAN_WEEK, {classId})` cho **từng lớp** có trong các dòng; một `tx`; với mỗi dòng chưa khôi
-  phục: kiểm `vi` → `INSERT … ON CONFLICT(attempt_id, skill) DO UPDATE` chỉ các cột điểm (`raw_score, raw_total, c1..c4, band,
-  result_date, entered_by, entered_at, nhap_dau_ngay`) + `comment/examiner_*` khi hiện NULL; ghi `khoi_phuc_*`; audit; cuối cùng
-  `refreshOutcome` / `refreshRegularOutcome` **mỗi lượt một lần**. Case đã đóng **không mở lại** (như MTa G9 — điểm còn trượt thì SOS
-  mới tự sinh).
-- [ ] **Bước 3:** route `GET /classes/:classId/diem-da-xoa`, `POST /diem-da-xoa/khoi-phuc`; trần `TRAN_GHI_LO.khoiPhucDiem` (đo bộ demo
-  một lô 30 ô, công thức `max(đo+10, ⌈đo×1.3⌉)`, JSDoc như mục khác).
-- [ ] **Bước 4:** `npm run check` xanh. **Bước 5:** commit `feat(bv): khôi phục điểm đã xoá + danh sách Đã xoá (chỉ Quản lý)`.
+Trạng thái sau một lần chốt (dòng dấu: `no_show_settled_at` khác NULL, `no_show_cu = 0`) và việc `goVangDaChot` làm:
 
-### Task 4: Xoá điểm hàng loạt (máy chủ) + xem trước
-**Files:** Modify `server/src/fasttrack/diemDaXoa.ts`, `server/src/cham/diemTheoLuot.ts` (`bangTheoLuot` thêm `soLanXoa`), `routes/index.ts`, `tocDoDuong.ts` · Test `prBv.tests.ts`
+| Sau chốt (máy làm, chưa ai quyết) | Xoá `-` |
+|---|---|
+| **Tự dời** (vắng lần 1): `scheduled` ở tuần gốc+1 | về tuần gốc, lần vắng −1 |
+| **Vắng chờ duyệt** (lần 1 trễ / vướng thứ tự đợt): `absent` + đề nghị `pending` | về `scheduled` tuần gốc, đề nghị `withdrawn`, thẻ chốt `tu_dong` |
+| **Huỷ vắng 2 lần** (T3): `cancelled` + `huy_vang=1`, có / không thẻ Xin dời `pending` | về `scheduled` tuần gốc, `huy_vang=0`, thẻ Xin dời rút |
+| **Đã có quyết định của người** sau lần chốt (duyệt / từ chối thẻ, Khôi phục và đặt tuần, Không mock lại, Xếp lại bài vắng) | **giữ** lịch + trạng thái; chỉ gỡ dấu, lần vắng −1 nếu lần chốt đó đã được cộng; thẻ thêm ghi chú `vắng đã gỡ` |
 
-- [ ] **Bước 1 — kiểm đỏ:**
-  - H1 QL, lớp MB FT 101, `ma` MT2, 3 em × [L, W] có điểm → `soDiem 6` (W1+W2 tính 1), `soEm 3`, 6–9 dòng `diem_da_xoa` cùng `lo`,
-    `nguon='hang-loat'`, ô trống; Case sinh riêng từ các điểm đó đóng (`dongCase` khớp số `sos_cases` đổi trạng thái).
-  - H2 `xemTruoc: true` → cùng con số với H1 nhưng **không đổi dòng nào** ở `assessment_scores`, `diem_da_xoa`, `sos_cases`,
-    `case_signals`, `notifications`, `audit_logs`, `assessment_attempts`.
-  - H3 Case có căn cứ khác (`caseHasIndependentBasis`) → không đóng, đếm vào `xemLaiCase`.
-  - H4 thiếu lý do → 400 `Cần ghi lý do.` (theo Q1); `kyNang` rỗng / `hocVien` rỗng → 400 `Chưa chọn em nào.` / `Chưa chọn kỹ năng.`
-  - H5 em không thuộc lớp / không có lượt `ma` → bỏ qua (không lỗi, không đếm); ô trống → không đếm.
-  - H6 > 300 ô → 400 `Quá 300 ô — chọn ít em hơn.`; GVBM / GVCN → 403; QL chi nhánh khác → 403.
-  - H7 một ô ném lỗi giữa chừng (ví dụ lượt đã huỷ giữa lúc gửi) → **không ô nào bị xoá** (một `tx`), trả lỗi của ô đó kèm tên em.
-  - H8 lớp thường, bài Giữa khoá, 2 em × 2 môn → như H1 (đếm theo môn).
-- [ ] **Bước 2:** `xoaDiemHangLoat`:
-```ts
-export function xoaDiemHangLoat(p: Principal, classId: number, x: XoaHangLoat): KetQuaXoa {
-  require_(p, PERMISSIONS.PLAN_WEEK, { classId });
-  // kiểm nhập: hocVien/kyNang khác rỗng, lyDo (Q1), tìm các ô CÓ ĐIỂM của (lượt `ma` × hocVien × kyNang) bằng một câu theo lô
-  const o = oCoDiem(classId, x);                 // [{attemptId, skill(cột thật), hocVien}] — W → writing1 + writing2
-  if (o.length > 300) throw new HttpError(400, 'Quá 300 ô — chọn ít em hơn.');
-  const lam = (): KetQuaXoa => {
-    const truoc = demCase(o);                     // id Case đang mở nối tín hiệu của các lượt này
-    const lo = loMoi();
-    for (const c of o) ghiXoa(p, c, { lo, nguon: 'hang-loat', lyDo: x.lyDo });   // saveScore / saveRegularScore(null)
-    const sau = demCase(o);
-    return { soDiem: soKyNang(o), soEm: new Set(o.map((c) => c.hocVien)).size,
-      dongCase: truoc.mo.filter((id) => !sau.mo.includes(id)).length, xemLaiCase: sau.xemLai(truoc), lo };
-  };
-  if (!x.xemTruoc) return tx(lam);
-  // ponytail: xem trước = chạy thật rồi cuộn lại — một luật Case duy nhất; khoá ghi ngắn (≤ 300 ô). Đổi khi đo thấy chậm.
-  let kq!: KetQuaXoa;
-  try { tx(() => { kq = { ...lam(), lo: null }; throw CUON_LAI; }); } catch (e) { if (e !== CUON_LAI) throw e; }
-  return kq;
-}
-```
-  `xemLaiCase` = số thông báo
-  "Xem lại Case" mới (`notifications` kind của `gomTinHieu`, `cases/signals.ts:351-364`) — đếm chênh lệch trong cùng `tx`.
-- [ ] **Bước 3:** route `POST /classes/:classId/diem-theo-luot/:luot/xoa-diem` (gọi `maybeSimulateSaveFailure()` như route ghi khác);
-  `bangTheoLuot` thêm `soLanXoa` (đếm `lo` chưa khôi phục hết của lớp, chỉ QL/QT, khác 0 mới hiện nút). Trần `TRAN_GHI_LO.xoaDiemHangLoat`
-  và `xemTruocXoaDiem` (đo bộ demo cả lớp MB FT 101 × 4 kỹ năng).
-- [ ] **Bước 4:** `npm run check` xanh. **Bước 5:** commit `feat(bv): xoá điểm hàng loạt có xem trước (chỉ Quản lý)`.
+"Lần chốt đã được cộng" = có dòng `attempt_schedule_history` `skill_week_moved_absence` của kỹ năng đó **sau** `no_show_settled_at`.
 
-### Task 5: Bỏ vắng — Mock (máy chủ)
-**Files:** Modify `server/src/fasttrack/absence.ts`, `attempts.ts` (`attemptDetail` kỹ năng + nhánh gỡ "-"), `keHoachTest.ts` (dữ liệu `HopKyNang`), `server/src/cham/diemTheoLuot.ts` + `canCham.ts` (ô lưới), `routes/index.ts` · Test `prBv.tests.ts`
+- [ ] **Đỏ** (mỗi rủi ro một phép kiểm):
 
-Ba trạng thái do một lần chốt "-" sinh ra (dấu ở `assessment_scores`: `no_show_settled_at` khác NULL, `no_show_cu = 0`):
-
-| Trạng thái | Nhận biết | Bỏ vắng làm gì |
+| ID | Tình huống | Phải ra |
 |---|---|---|
-| **tự dời** (vắng lần 1) | `sit_status='scheduled'`, `planned_period_id ≠ no_show_period_id` | về tuần gốc, `absence_move_count − 1` |
-| **vắng** (lần 1 trễ / T15 chặn → đề nghị) | `sit_status='absent'` | về `scheduled` tuần gốc, rút đề nghị |
-| **huỷ vắng 2 lần** (T3) | `sit_status='cancelled'`, `huy_vang=1` | về `scheduled` tuần gốc, `huy_vang=0`, rút thẻ Xin dời đang chờ; bộ đếm giữ (lần 2 không cộng) |
+| V1 | QL gõ `-` L MT2 tuần trước → chốt ngay, tự dời W+1, đếm 1 → QL xoá `-` | L ở tuần gốc, đếm 0, `scheduled`, ô hết `-`; nhập L 6.5 ngay → 200 |
+| V2 | sau V1 gõ `-` lại | vẫn **vắng lần 1** (tự dời, đếm 1), không "huỷ vắng 2 lần" |
+| V3 | vắng chờ duyệt → xoá `-` | đề nghị `withdrawn`, thẻ `yeu_cau_duyet` chốt `tu_dong`, mất khỏi Chờ duyệt |
+| V4 | huỷ vắng 2 lần + thẻ Xin dời `pending` → xoá `-` | `scheduled` tuần gốc, `huy_vang=0`, thẻ rút, đếm giữ 1 |
+| V5 **(2)** | thẻ **đã duyệt** (đã dời, đếm +1) / **đã từ chối** (Không mock lại) → xoá `-` | lịch + trạng thái giữ; duyệt: đếm −1; thẻ giữ quyết định, `ghi_chu` thêm `vắng đã gỡ`; không đổi `status` thẻ |
+| V6 **(1)** | tự dời rồi nhập điểm ở tuần mới (dấu tự xoá khi nhập điểm, `attempts.ts:1718`) | lịch tuần mới + đếm 1 **giữ** (em vắng thật rồi thi bù) — phép kiểm canh, không có `-` để xoá |
+| V7 | GVBM L / GVCN: ≤ thứ Tư sau tuần gốc → 200; thứ Năm → 403 `Quá hạn chấm — nhờ Quản lý.`, không đổi gì; GVBM kỹ năng khác → 403; QL 3 tuần sau → 200 | |
+| V8 **(3)** | xoá `-` sau tự dời | `notifications` không thêm dòng; chuông `tu_doi_lich` cũ còn nguyên |
+| V9 **(4)** | nhật ký | `attempt_schedule_history` `skill_absence_undone` (cũ → mới mã tuần, người); audit `score.no_show_cleared` before/after `{week, moveCount, sitStatus, huyVang}` |
+| V10 **(5)** | MT cũ: `-` (`no_show_cu=1`) → xoá | chỉ gỡ dấu (như nay); không đụng lịch / đếm |
+| V11 | `-` chưa chốt (trong tuần thi) → xoá | như nay (không đổi lịch) |
+| V12 | Writing `-` chốt → xoá | gỡ dấu đúng dòng (Task 0 mục 2), trả như V1 |
 
-- [ ] **Bước 1 — kiểm đỏ:**
-  - V1 QL gõ "-" L MT2 tuần trước (chốt ngay, tự dời W+1, đếm 1) → `boVang` → tuần gốc, đếm 0, ô hết "-", `sit_status='scheduled'`;
-    `saveScore` L 6.5 ngay sau → 200.
-  - V2 sau V1, "-" lại L tuần gốc → vẫn **vắng lần 1** (tự dời, đếm 1), không thành huỷ vắng 2 lần.
-  - V3 trạng thái **vắng** có `skill_move_requests` pending + thẻ `yeu_cau_duyet` → `boVang` → đề nghị `withdrawn`, thẻ chốt `tu_dong`.
-  - V4 **huỷ vắng 2 lần** + thẻ Xin dời chờ → `boVang` → `scheduled` tuần gốc, `huy_vang=0`, thẻ rút, đếm giữ 1.
-  - V5 GVBM được phân công L, hôm nay ≤ thứ Tư sau tuần gốc → 200; hôm nay = thứ Năm → 403 `Quá hạn chấm — nhờ Quản lý.`; GVBM kỹ
-    năng khác → 403; QL thứ Năm 3 tuần sau → 200.
-  - V6 không có lần vắng (ô bình thường, MT cũ "Không dự thi" T23, "-" chưa chốt) → 400 `Không có vắng để bỏ.`; kỹ năng đã có điểm →
-    400 `Đã có điểm.`; kỹ năng bị "Không mock lại" (`required=0`) → 400 (theo Q4).
-  - V7 **Hoàn tác** "-" đã chốt (`saveScore … { noShow:false }`) = `boVang` (trả lịch + đếm); GV ngoài khung → 403, không đổi gì. "-" chưa
-    chốt gỡ như cũ.
-  - V8 nhật ký: `attempt_schedule_history` `skill_absence_undone` (cũ → mới mã tuần), audit `attempt.bo_vang` before/after
-    `{week, moveCount, sitStatus, huyVang}` + `lyDo`; `lich_su` **không** tính lại.
-  - V9 `boVangXem` trả đúng `{tuanGoc, tuanNay, lanVang, lanVangSau, rutDeNghi}` cho ba trạng thái; `null` khi người xem không được bỏ.
-  - V10 Writing: "-" chốt ở W → Bỏ vắng gỡ dấu trên đúng dòng (Task 0 mục 4).
-- [ ] **Bước 2:** `boVang` (một `tx`): đọc kỹ năng + dòng dấu → nhận trạng thái (bảng trên) → quyền
-  `can(p, PLAN_WEEK, {classId}) || (scoreEditPath(p, …) === 'assigned' && today <= skillScoreDeadline('mock', tuanGoc.week_start))` →
-  UPDATE `attempt_skills` (`planned_period_id = no_show_period_id, sit_status='scheduled', huy_vang=0, absent_from_no_show=0, sit_note=NULL,
-  plan_source='manual', absence_move_count = absence_move_count - (tuDoi ? 1 : 0)`) → xoá các cột `no_show_*` của dòng dấu → `rutDeNghiDoi`
-  (mở rộng cho đề nghị của `huy-vang`) → `logSchedule` + `writeAudit` → `recomputeCompletionWeek` → `refreshOutcome`. Không chuông mới.
-- [ ] **Bước 3:** `boVangXem` gắn vào mỗi kỹ năng ở `attemptDetail`, dữ liệu `HopKyNang`, `bangTheoLuot`, ô lưới Lịch Test (đọc theo lô:
-  một câu cho mọi lượt của bảng, không N+1). Route `POST /attempts/:id/skills/:skill/bo-vang`. Trần `TRAN_GHI_LO` cho `bangTheoLuot` đo lại.
-- [ ] **Bước 4:** `npm run check` xanh. **Bước 5:** commit `feat(bv): Bỏ vắng Mock — trả lịch cũ + số lần vắng; Hoàn tác "-" đã chốt đi cùng đường`.
+- [ ] **Xanh:** trong `saveScore` nhánh `noShow:false`: dòng dấu đã chốt và `!no_show_cu` → `duocGoDau` (403 nếu sai) → `goVangDaChot` (UPDATE
+  `attempt_skills` theo bảng trên; xoá cột `no_show_*`; `rutDeNghiDoi` mở rộng cho thẻ Xin dời; `logSchedule` + `writeAudit`;
+  `recomputeCompletionWeek`; `refreshOutcome`; **không** `tinhLaiMtCu`, **không** `notify`). Ghi chú thẻ đã quyết: cột ghi chú sẵn có của
+  `yeu_cau_duyet` (Task 0 tìm tên cột; không có thì ghi vào nhật ký của thẻ).
+- [ ] **Hiển thị:** ô đã chốt (`attempts.ts:355-375`) trả `state:'da-chot'` khi dòng dấu còn (thay cho `'none'` sau tự dời), `doiSang` = mã tuần
+  hiện tại nếu khác tuần gốc, `editableUntil` theo `duocGoDau` của người xem. Bỏ `NO_SHOW_OVERRIDDEN_NOTE` khi không còn dùng.
+- [ ] `npm run check` xanh; commit `feat(bv): xoá "-" đã chốt trả lại lịch, số lần vắng, đề nghị dời (Mock)`.
 
-### Task 6: Bỏ vắng — lớp thường
-**Files:** Modify `server/src/normal/regular.ts` (`reportRegularNoShow` nhánh gỡ dấu `:720-737`, đếm lần `:699-700`, `regularSheet`) · Test `prBv.tests.ts`
-- [ ] **Bước 1 — kiểm đỏ:** L1 "-" Giữa khoá môn Nghe → dời tuần sau; gỡ → tuần cũ **và** lần vắng kế tiếp vẫn là lần 1 (không chuông `sos`
-  lần 2 oan); L2 GVBM gỡ trong khung (≤ thứ Tư sau tuần gốc) → 200, ngoài khung → 403 `Quá hạn chấm — nhờ Quản lý.`, QL mọi lúc → 200;
-  L3 GVCN đã Báo vắng: như GVBM (theo Q3); L4 `regularSheet` mỗi ô có `boVang` (tuần gốc → tuần nay, lần vắng).
-- [ ] **Bước 2:** lần vắng = số audit `regular.no_show` − số audit `regular.no_show_cleared` của (lượt, môn); kiểm khung cho người không có
-  `PLAN_WEEK`; `boVangXem` lớp thường dùng chung kiểu `BoVangXem` (`rutDeNghi=false`).
-- [ ] **Bước 3:** `npm run check` xanh. **Bước 4:** commit `feat(bv): lớp thường — gỡ "-" trả đúng số lần vắng, khung chấm cho GV`.
+### Task 5: Xoá `-` — lớp thường
+**Files:** `server/src/normal/regular.ts` (`reportRegularNoShow` gỡ dấu `:720-737`, chặn `:636-640`, đếm `:699-700`) · Test `prBv.tests.ts`
+- [ ] **Đỏ:** L1 `-` Nghe → dời tuần sau; xoá `-` → tuần cũ **và** lần `-` kế tiếp vẫn là lần 1 (không chuông `sos` "lần 2" oan).
+  L2 **(1)** tuần mới đã có điểm → xoá `-` (ở ô tuần cũ) → 200: dấu gỡ, lần vắng −1, **lịch giữ tuần có điểm** (nay: 400 "không gỡ được").
+  L3 khung chấm: GVBM / GVCN ≤ thứ Tư sau tuần gốc → 200, sau → 403; QL mọi lúc → 200. L4 nhật ký `regular.no_show_cleared` có `giuLich`.
+- [ ] **Xanh:** lần vắng = số audit `regular.no_show` − số audit `regular.no_show_cleared` của (lượt, môn); bỏ chặn `:639` cho gỡ dấu (giữ chặn
+  **ghi** `-` lên ô có điểm); có điểm → không `setSkillWeek`; dùng `duocGoDau`.
+- [ ] `npm run check` xanh; commit `feat(bv): lớp thường — xoá "-" trả đúng số lần vắng, giữ lịch khi tuần mới đã có điểm`.
 
-### Task 7: Web — Bỏ vắng (`/ponytail lite`)
-**Files:** Modify `shared/domain/thaoTacMt.ts`, `web/src/modules/fasttrack/HopThaoTacMt.tsx`, `MockDetailPage.tsx`, `web/src/modules/test/keHoach/HopKyNang.tsx`, `web/src/modules/cham/LuoiFT.tsx`, `LuoiThuong.tsx`, `ScoreEntry.tsx` (toast Hoàn tác)
-- [ ] **Bước 1 — kiểm đỏ (shared):** `thaoTacKyNang('vang', {…, boVang:true})` → menu bắt đầu bằng `'bo-vang'`; `'huy-vang'` QL → chính
-  `'khoi-phuc'`, menu `['bo-vang','khong-mock-lai']`; GVBM `boVang:true` ở `'dang-thi'` → menu `['bo-vang']`; `boVang` không truyền →
-  như cũ (mọi phép kiểm thaoTacMt cũ xanh).
-- [ ] **Bước 2:** `HopThaoTacMt` thêm `'bo-vang'` vào `THAO_TAC_CO_HOP`: tiêu đề `Bỏ vắng`, hai dòng `Lịch thi  W3 SEP → W2 SEP` (bỏ dòng
-  khi `tuanNay` null), `Lần vắng  1 → 0`, dòng `Đề nghị dời  Rút` khi `rutDeNghi`; ô `Lý do` (tuỳ chọn, placeholder `Không bắt buộc`);
-  nút `Huỷ` · `Bỏ vắng`. Xong: toast `Đã bỏ vắng`, tải lại, focus ô điểm kỹ năng đó. Lỗi máy chủ hiện trong hộp (không đóng hộp).
-- [ ] **Bước 3:** truyền `huyVang` vào `trangThaiTT` ở `MockDetailPage` và `HopKyNang` (nếu MTb chưa sửa — Task 0 mục 6); truyền
-  `boVang: !!k.boVang` vào `QuyenTT` ở cả bốn nơi vẽ thao tác. `LuoiFT`: ô vắng (chữ `vắng`) thành nút mở hộp khi `boVang` khác null
-  (không thêm ⋯ mới); `LuoiThuong`: ⋯ của ô có mục `Bỏ vắng` (đứng đầu).
-- [ ] **Bước 4:** chữ đúng mockup phần A. Ảnh 375/1440, sáng/tối, QL + GVBM trong khung + GVBM ngoài khung (không có nút).
-- [ ] **Bước 5:** `npm run check` xanh; commit `feat(bv): nút Bỏ vắng ở hồ sơ Mock, Kế hoạch Test, lưới FT, lưới lớp thường`.
+### Task 6: Web (`/ponytail lite`)
+**Files:** `web/src/modules/fasttrack/ScoreEntry.tsx`, `web/src/modules/cham/LuoiFT.tsx`, `LuoiThuong.tsx`, `MockDetailPage.tsx`, `web/src/modules/test/keHoach/HopKyNang.tsx`
+- [ ] Ô FT `state:'da-chot'`: hiện `-` như ô vắng hiện nay, thêm chữ nhỏ `→ W3 SEP` khi `doiSang`; xoá được khi `editableUntil` cho phép
+  (tẩy ô + Lưu / Delete như ô `-` chưa chốt); hết hạn: ô khoá như ô hoàn tất. Gõ số vào ô vẫn như cũ (điểm thắng `-`, T19 chặn khi tuần mới chưa tới).
+- [ ] Toast sau khi xoá `-` (dùng `toast` sẵn có): `Đã gỡ vắng Listening · Lê Hà Vy · về W2 SEP` · khi `giuLich`: `Đã gỡ vắng Nghe · Vũ Gia Bảo · giữ W3 SEP`.
+  403: toast lỗi `Quá hạn chấm — nhờ Quản lý.`
+- [ ] Lớp thường xem tuần cũ: ô `-` vẫn xoá được khi tuần mới đã có điểm (Task 5 L2).
+- [ ] Truyền `huyVang` vào `trangThaiTT` ở `MockDetailPage` / `HopKyNang` nếu MTb chưa sửa (Task 0 mục 7).
+- [ ] Ảnh 375/1440, sáng/tối: QL, GVBM trong khung, GVBM quá hạn, GVCN; lớp thường. `npm run check` xanh; commit `feat(bv): ô "-" đã chốt hiện và xoá được; toast gỡ vắng`.
 
-### Task 8: Web — Xoá điểm hàng loạt + Đã xoá (`/ponytail lite`)
-**Files:** Modify `web/src/modules/cham/DiemTheoLop.tsx`, `LuoiChamLop.tsx`, `LuoiFT.tsx`, `LuoiThuong.tsx` (cột chọn) · Create `web/src/modules/cham/HopXoaDiem.tsx`, `web/src/modules/cham/NganDiemDaXoa.tsx`
-- [ ] **Bước 1:** chỉ khi `sheet.canPlan` (QL/QT): cột chọn đầu bảng (ô chọn cả bảng ở đầu cột, đứng yên khi cuộn ngang như cột tên);
-  chọn ≥ 1 em → thanh `Đã chọn 3` · `Xoá điểm` · `Bỏ chọn` thay hàng "Chỉ ô còn trống". Nút `Đã xoá · n` (khi `soLanXoa > 0`) ở cuối hàng
-  công cụ. GV không thấy gì mới.
-- [ ] **Bước 2:** `HopXoaDiem` (`ConfirmDialog` danger, `web/src/ui/Drawer.tsx:43`): tiêu đề `Xoá điểm · MT2` (lớp thường: tên bài);
-  dòng `3 em`; ô chọn kỹ năng (mặc định tick đủ: `L R W S` / `Nghe Đọc G+V Viết`); dòng xem trước (gọi `xemTruoc` mỗi lần đổi tick, chờ
-  300 ms; đang đếm `Đang đếm…`); `Lý do`; nút `Xoá 6 điểm` (khoá khi 0 điểm / thiếu lý do / đang đếm). 0 điểm → dòng `Không có điểm để xoá`.
-- [ ] **Bước 3:** xoá xong: bỏ chọn, tải lại bảng, toast `Đã xoá 6 điểm` + nút `Hoàn tác` (gọi khôi phục `lo`, 10 giây).
-- [ ] **Bước 4:** `NganDiemDaXoa` (`KhungPanel`): mỗi lần xoá một khối — dòng 1 `MT2 · 6 điểm` + nhãn nguồn (`Xoá hàng loạt` /
-  `Huỷ điểm` / `Thi lại` / `Xoá ô`), dòng 2 `06/10 14:20 · Trần Thu Hà`, dòng 3 `Lý do: …` (khi có), nút `Khôi phục`; mở khối → từng ô
-  `Lê Hà Vy · L 6.0` + `Khôi phục`. Ô đã khôi phục: nhãn `Đã khôi phục` (mờ). Kết quả có bỏ qua → toast `Đã khôi phục 4 · 2 ô có điểm mới`.
-- [ ] **Bước 5:** 375: cột chọn giữ; thanh chọn xuống đáy màn (dính), hộp xoá thành tấm đáy; ngăn Đã xoá toàn màn.
-- [ ] **Bước 6:** `/impeccable harden` (mất mạng giữa xem trước, 403, quá 300 ô), `/impeccable adapt` (375). Ảnh 375/1440, sáng/tối, QL + GV.
-- [ ] **Bước 7:** `npm run check` xanh; commit `feat(bv): Điểm theo lớp — chọn em, xoá điểm có xem trước, Đã xoá + Khôi phục`.
-
-### Task 9: Tài liệu + khép PR
-- [ ] Rulebook §20: thêm 3 dòng luật (Bỏ vắng; xoá mềm + khôi phục; trần 300 ô) — **chỉ khi** chủ sản phẩm đã duyệt mockup và câu hỏi.
-- [ ] `CODE_MAP.md` (`fasttrack/diemDaXoa.ts`, `shared/domain/diemDaXoa.ts`, `migrate/prBv.ts`, `tests/prBv.tests.ts`, hai file web mới);
-  `plan.md` mục 11 một dòng; `[x]` các task; ảnh sổ tay lệch (`docs/so-tay/`) ghi vào mô tả PR.
-- [ ] `npm run check` xanh → `/impeccable audit` → `/ponytail-review` → `requesting-code-review` → `finishing-a-development-branch` (mở PR vào
-  `main`, **không merge**). Commit `docs(bv): Rulebook, CODE_MAP, plan.md`.
+### Task 7: Tài liệu + khép PR
+- [ ] Rulebook §20: 3 dòng (xoá `-` = hết vắng, trả lại như cũ trừ quyết định của người; khung gỡ `-`; nhập lại điểm mở lại Case do xoá).
+- [ ] `CODE_MAP.md` (`tests/prBv.tests.ts`); `plan.md` mục 11 một dòng; `[x]` các task; ảnh sổ tay lệch ghi vào mô tả PR.
+- [ ] `npm run check` xanh → `/impeccable audit` → `/ponytail-review` → `requesting-code-review` → `finishing-a-development-branch` (PR vào `main`, **không merge**).
 
 ## Nghiệm thu
-1. QL gõ "-" nhầm cho bài tuần trước → bài tự dời sang tuần sau, "vắng lần 1". QL (hoặc GV chấm bài đó trước hết thứ Tư) bấm **Bỏ vắng**
-   → bài về tuần cũ, không còn "vắng", nhập điểm ngay được; lần vắng thật sau đó vẫn là lần 1.
-2. Bài "vắng · chờ Quản lý duyệt dời" và "huỷ (vắng 2 lần)" có Bỏ vắng → đề nghị / thẻ Xin dời đang chờ biến khỏi Chờ duyệt.
-3. Bấm Hoàn tác ở toast "-" của bài tuần đã qua trả đủ lịch + số lần vắng (hết "hoàn tác nửa vời").
-4. Lớp thường: gỡ "-" trả tuần cũ và số lần vắng; GV ngoài khung không gỡ được.
-5. Điểm theo lớp (QL): chọn 3 em → Xoá điểm → bỏ tick còn L → thấy `Xoá 3 điểm · 3 em …` → nhập lý do → xoá; điểm biến khỏi bảng,
-   SOS, Phân tích, Xuất Excel; Case chỉ dựng trên các điểm đó đóng. `Đã xoá · 1` → Khôi phục → điểm trở lại (ô có điểm mới thì giữ).
-6. GV xoá trắng một ô (T22) → QL thấy ở `Đã xoá`, khôi phục được.
-7. Bài lớp thường xoá một môn → "Chờ điểm" (không còn "xong").
-8. GV không thấy cột chọn, nút Xoá điểm, Đã xoá; API trả 403. `npm run check` xanh; ảnh 375/1440 sáng/tối, ≥ 3 vai.
+1. GV gõ `-` nhầm cho bài tuần trước → bài tự dời, "vắng lần 1". Trước hết thứ Tư, GV (hoặc QL bất cứ lúc nào) xoá `-` → bài về tuần cũ,
+   không còn vắng, nhập điểm được ngay; lần vắng thật sau đó vẫn là lần 1.
+2. Bài "vắng · chờ Quản lý duyệt dời" / "huỷ (vắng 2 lần)": xoá `-` → thẻ chưa xử lý biến khỏi Chờ duyệt; thẻ đã xử lý giữ, có "vắng đã gỡ".
+3. Lớp thường: xoá `-` trả tuần cũ; nếu tuần mới đã có điểm thì chỉ trừ lần vắng.
+4. Tẩy điểm L (Case đóng) rồi nhập lại vẫn trượt → Case cũ mở lại, PA cũ còn.
+5. Ngăn Lịch sử ô lớp thường thấy `16/20 → Trống`. Bài lớp thường xoá một môn → "Chờ điểm".
+6. Không nút mới. `npm run check` xanh; ảnh 375/1440 sáng/tối ≥ 3 vai.
 
 ## Prompt cho session code (dán nguyên khối)
 ```
-Repo pisa-tracking. Chỉ bắt đầu khi mockup thiet-ke/mockup-bo-vang-xoa-diem-2026-10-06.html đã được chủ sản phẩm duyệt
-và PR-MTa đã merge (đã merge #212).
-Nhánh pr-bv-bo-vang-xoa-diem từ origin/main mới nhất (worktree .claude/worktrees/pr-bv-bo-vang-xoa-diem).
+Repo pisa-tracking. Chỉ bắt đầu khi: chủ sản phẩm đã duyệt mockup thiet-ke/mockup-bo-vang-xoa-diem-2026-10-06.html (bản 2),
+PR-MTa (#212) VÀ PR-MTb đã merge vào main.
+Nhánh pr-bv-xoa-vang từ origin/main mới nhất (worktree .claude/worktrees/pr-bv-xoa-vang).
 Model: Opus 5.5 · High (thay thế: Sonnet 5.5 · High). Không dùng Fable, kể cả subagent.
-Đọc CLAUDE.md, plan.md mục 1 và mục 4 "PR-BV", rồi làm đúng docs/superpowers/plans/2026-10-06-pr-bv-bo-vang-xoa-diem.md,
-Task 0 → 9 theo thứ tự. Task 0 là đối chiếu mã: lệch lớn thì DỪNG, báo planning.
-Ponytail full cho Task 0–6; gõ /ponytail lite trước Task 7–8 (web).
+Đọc CLAUDE.md, plan.md mục 1 và mục 4 "PR-BV", rồi làm đúng docs/superpowers/plans/2026-10-06-pr-bv-bo-vang-xoa-diem.md (bản 2),
+Task 0 → 7 theo thứ tự. Task 0 là đối chiếu mã: lệch lớn hoặc MTb chưa merge thì DỪNG, báo planning.
+Ponytail full cho Task 0–5; /ponytail lite trước Task 6 (web).
 superpowers:subagent-driven-development; mỗi task test-driven-development (đỏ trên DB test trước, file
 server/src/tests/prBv.tests.ts gọi ở cuối run.ts), verification-before-completion (npm run check, một lần một lúc).
-Không mất điểm: chụp vào diem_da_xoa TRƯỚC khi xoá trắng, cùng tx; khôi phục không bao giờ đè ô có điểm mới.
-Chữ trên màn đúng mockup (ngắn, không câu giải thích). Câu hỏi Q1–Q4 cuối kế hoạch: theo trả lời của chủ sản phẩm ghi ở
-plan.md; chưa có thì làm theo khuyến nghị và ghi trong mô tả PR.
-Web: /impeccable clarify, harden, adapt (375); trước mở PR /impeccable audit. Cuối: /ponytail-review, requesting-code-review,
-finishing-a-development-branch (mở PR vào main, KHÔNG merge). Mô tả PR: từng mục (Bỏ vắng FT, lớp thường, xoá mềm, hàng loạt,
-khôi phục, lỗi regular.ts), file sửa, phép kiểm, ảnh 375/1440 sáng/tối QL + GVBM + GVCN, chú thích ponytail:.
+KHÔNG thêm nút, route, bảng, migrate. Không đảo quyết định của người; không chuông mới khi xoá "-".
+Web: /impeccable clarify (toast), adapt (375); trước mở PR /impeccable audit. Cuối: /ponytail-review, requesting-code-review,
+finishing-a-development-branch (mở PR vào main, KHÔNG merge). Mô tả PR: từng mục (xoá "-" FT, lớp thường, mở lại Case, Lịch sử
+lớp thường, lỗi regular.ts), phép kiểm V1–V12 / L1–L4 / C1–C6 / S1–S3 / R1–R2, ảnh 375/1440 sáng/tối, chú thích ponytail:.
 ```
 
-## Tự quyết (planning, 06/10)
+## Tự quyết (planning, 06/10, bản 2)
 | # | Tự quyết | Vì sao |
 |---|---|---|
-| G1 | Bảng **mới** `diem_da_xoa` (theo ô), không dùng lại `ket_qua_huy` | `ket_qua_huy` theo cả lượt, gắn "dời vượt" (cột `vuot_boi`, chặn thứ tự đợt, `ketQuaHuyCua` hiện trạng thái "kết quả đã huỷ" của lượt); xoá ô cần khôi phục từng ô |
-| G2 | Chụp ở **trong** `saveScore` / `saveRegularScore` (một chỗ), không ở từng nơi gọi | Xoá trắng ô, Huỷ điểm, Thi lại, hàng loạt đều tự khôi phục được; không sót đường |
-| G3 | Chỉ chụp khi **xoá trắng** cả ô; sửa số (6.0 → 6.5) không chụp | Giá trị cũ đã ở Lịch sử; "Đã xoá" chỉ là xoá |
-| G4 | Xem trước = chạy thật trong `tx` rồi **cuộn lại** | Một luật Case duy nhất, số xem trước luôn khớp số thật; ≤ 300 ô nên khoá ghi ngắn (`ponytail:` ghi rõ trần) |
-| G5 | Xoá hàng loạt **một `tx`**: một ô lỗi thì không xoá ô nào | Một lần bấm = một lần xoá = một lần khôi phục; không nửa vời |
-| G6 | Một lối vào: **Điểm theo lớp** (cả hai lối vào của PR-DL: hồ sơ lớp + Test › Điểm theo lớp). "Cả đợt một em" = chọn một em, tick đủ kỹ năng | Ít chỗ, cùng một hộp; hồ sơ Mock giữ "Huỷ điểm" từng kỹ năng |
-| G7 | Khôi phục **không mở lại Case đã đóng** | Như MTa G9; còn trượt thì SOS mới tự sinh |
-| G8 | Bỏ vắng **không** tính lại cờ MT cũ (`lich_su`) | Trả về đúng lịch đã có, không phải xếp mới vào tuần đã qua |
-| G9 | Bỏ vắng không gửi chuông mới (chuông "tự dời" cũ không xoá được — `notify` chỉ upsert) | Nhật ký đủ; tránh ồn |
-| G10 | Hoàn tác "-" **đã chốt** = Bỏ vắng (cùng quyền, cùng khung) | Sửa gốc "hoàn tác nửa vời" (rà 06/10 A3 #4) |
-| G11 | Nhãn nút `Bỏ vắng` (không phải "Em có thi") | Ngắn, khớp "Báo vắng" đã có |
-| G12 | "Đã xoá" giữ mãi, ngăn hiện 60 lần gần nhất | Dữ liệu nhỏ; YAGNI dọn tự động |
-| G13 | Lớp thường: lần vắng = audit `no_show` − audit `no_show_cleared` | Không thêm cột; sửa đúng chỗ đếm |
+| G1 | Rủi ro (1) ở FT không xảy ra: nhập điểm ở tuần mới đã tự xoá `-` (`attempts.ts:1718`) → lịch + lần vắng giữ (em vắng thật, thi bù). Chỉ lớp thường còn `-` cạnh điểm → Task 5 L2 | Đúng mã hiện có; một phép kiểm canh V6 |
+| G2 | "Đã có quyết định của người" sau lần chốt → giữ lịch + trạng thái, chỉ gỡ dấu + trừ lần vắng nếu đã cộng | Rủi ro (2) "không đảo quyết định" áp cho mọi quyết định, không chỉ thẻ |
+| G3 | Ô FT đã chốt **vẫn hiện `-`** (kèm `→ W3 SEP` nếu đã dời) tới khi có điểm | Không có `-` thì không "xoá `-`" được — điều kiện của luật chủ sản phẩm |
+| G4 | Khung gỡ dấu tính theo **tuần thi gốc** (tuần có `-`) | Tuần mới là tuần của lần dời, không phải tuần em vắng |
+| G5 | Mở lại Case chỉ khi Case đóng **do xoá điểm** và điểm nhập lại cùng **lượt + kỹ năng**; sửa thành đạt / lượt khác giữ luật cũ (Case mới) | Đúng "mở lại Case mà lần xoá đó đóng"; không đè kết luận thật của người |
+| G6 | Không mở lại Case đóng do MTa T2 (dời vượt, `ket_qua_huy`) | Ngoài phạm vi; MTa G9 đã chốt |
+| G7 | Không `tinhLaiMtCu` khi trả lịch | Trả về đúng lịch đã có, không phải xếp mới |
 
-## Câu hỏi cho chủ sản phẩm (gộp, có khuyến nghị — session code theo khuyến nghị nếu chưa trả lời)
-- **Q1 — Xoá hàng loạt có bắt lý do?** (A) Bắt buộc (nhiều điểm, người khác cần biết vì sao). (B) Tuỳ chọn như xoá trắng một ô (T22).
-  **Khuyến nghị A.**
-- **Q2 — Ai khôi phục điểm đã xoá?** (A) Chỉ Quản lý / Quản trị. (B) Thêm người đã xoá, trong khung chấm. **Khuyến nghị A** (GV xoá nhầm
-  một ô thì gõ lại được; khôi phục là đường lui của QL).
-- **Q3 — GVCN có Bỏ vắng không?** GVCN Báo vắng được. (A) Có, cùng khung chấm như GV chấm bài. (B) Không, chỉ GV chấm bài + QL.
-  **Khuyến nghị A** (ai báo vắng thì gỡ được trong khung).
-- **Q4 — Kỹ năng đã "Không mock lại" (QL từ chối Xin dời): có Bỏ vắng?** (A) Không — QL dùng "Đưa lại vào đợt" rồi xếp tuần. (B) Có,
-  Bỏ vắng đưa lại vào đợt luôn. **Khuyến nghị A** (đó là quyết định của QL, không phải bấm nhầm "-").
+## Câu hỏi cho chủ sản phẩm (session code theo khuyến nghị nếu chưa trả lời)
+- **Q1 — Lịch sử ô ở lưới Mock Test (FT):** lưới FT không có ⋯ từng ô; điểm cũ hiện xem ở **hồ sơ Mock › Lịch sử** (bấm tên em). (A) Giữ
+  như vậy. (B) Thêm mục "Lịch sử" khi bấm vào ô (thêm giao diện). **Khuyến nghị A** (giao diện không đổi, đúng ý "làm gọn").
 
 ## Migrate
-Có: `server/src/migrate/prBv.ts` — bảng `diem_da_xoa` + 2 chỉ mục. Chỉ cấu trúc, không điền ngược, chạy lặp được. Trước deploy: tập dượt
-trên bản sao DB bản chính (`plan.md` mục 5).
+Không. (Task 0 mục 8: nếu thiếu cột `system_close_reason` thì dùng tiền tố `outcome_note`, vẫn không migrate.)
 
 ## File chồng với PR khác
 | PR | File chung | Cách gộp |
 |---|---|---|
-| PR-MTb (đợt 5) | `HopThaoTacMt.tsx`, `MockDetailPage.tsx`, `HopKyNang.tsx`, `ScoreEntry.tsx`, `thaoTacMt.ts` | Ai sau rebase; BV chỉ thêm `'bo-vang'` + truyền `huyVang`/`boVang` |
-| PR-MT0 (sau MTb) | `absence.ts` (MT0 vào luồng vắng?), `attempts.ts` | MT0 vào luồng vắng thì Bỏ vắng tự áp; thêm một phép kiểm |
-| PR-LT3 | `canCham.ts`, `web/src/modules/test/lichTest/*` (ô lưới khối 1) | BV chỉ thêm trường `boVang` ở ô; chữ "vắng" giữ |
-| PR-LUI | `cases/*`, `duyet/yeuCau.ts` | LUI dùng kiểu `NguonXoa` / mẫu xoá mềm nếu cần; không chung dòng |
-| PR-DL (đã merge) | `DiemTheoLop.tsx`, `LuoiChamLop.tsx`, `diemTheoLuot.ts` | BV thêm cột chọn + thanh chọn; không đổi luồng lưu từng ô |
+| PR-MTb (merge trước BV) | `ScoreEntry.tsx`, `MockDetailPage.tsx`, `HopKyNang.tsx`, `thaoTacMt.ts` | BV dựng trên bản MTb |
+| PR-MT0 | `absence.ts`, `attempts.ts` | MT0 vào luồng vắng thì luật xoá `-` tự áp; thêm một phép kiểm |
+| PR-LT3 | `canCham.ts` (ô lưới khối 1) | BV chỉ đổi trạng thái ô `-` đã chốt |
+| PR-LUI-a | `cases/signals.ts`, `cases/sos.ts`, `duyet/yeuCau.ts` | Khác hàm; ai sau rebase, giữ cả hai |

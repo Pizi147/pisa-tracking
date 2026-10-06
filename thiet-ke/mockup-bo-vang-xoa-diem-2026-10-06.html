@@ -2,11 +2,11 @@
 <html lang="vi">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Bỏ vắng · Xoá điểm</title>
+<title>Xoá vắng · Lịch sử điểm</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@500;600;700&display=swap">
 <style>
-/* PR-BV mockup. Token chép từ mockup LT3 (= web/src/index.css). Chữ trong khung màn = chữ thật trên web. */
+/* PR-BV mockup bản 2 (chủ sản phẩm chốt 06/10: không nút mới). Token chép từ mockup LT3 (= web/src/index.css). Chữ trong khung màn = chữ thật trên web. */
 :root{
   color-scheme:dark;
   --bg:#0c1220;--surface:#141d2f;--surface-2:#1a2437;--line:rgba(160,178,214,.14);--line-strong:rgba(160,178,214,.26);
@@ -156,30 +156,28 @@ textarea::placeholder{color:var(--mo)}
 .toast .nut{background:transparent;border-color:transparent;color:var(--bg);text-decoration:underline;min-height:28px}
 .toast.do{background:var(--late);color:var(--bg)}
 .w375 .toast{left:12px;right:12px;transform:none;white-space:normal}
-/* ngăn Đã xoá */
-.ngan{position:absolute;top:0;right:0;bottom:0;width:420px;background:var(--surface);border-left:1px solid var(--line-strong);box-shadow:-12px 0 40px rgba(0,0,0,.3);z-index:7;display:flex;flex-direction:column}
+/* ô "-" đã chốt */
+.o.dau{border:1px solid var(--o-sua-vien);background:var(--o-sua-nen);color:var(--soon);font-size:15px}
+.o.dau.khoa{border-color:transparent;background:transparent;color:var(--soon);opacity:.8}
+.o-kem{display:inline-flex;flex-direction:column;align-items:center;gap:1px;line-height:1.1}
+.o-kem small{font:600 10.5px var(--num);color:var(--faint);white-space:nowrap}
+/* ngăn Lịch sử (= DongThoiGianLuot) */
+.ngan{position:absolute;top:0;right:0;bottom:0;width:400px;background:var(--surface);border-left:1px solid var(--line-strong);box-shadow:-12px 0 40px rgba(0,0,0,.3);z-index:7;display:flex;flex-direction:column}
 .w375 .ngan{width:100%;border-left:0}
-.ngan .dau-ngan{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.ngan .dau-ngan{display:flex;align-items:flex-start;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
 .ngan h3{margin:0;font-size:16px;color:var(--chu-1)}
-.ngan .ds{overflow:auto;padding:8px 0}
-.lan{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:4px}
-.lan .d1{display:flex;align-items:center;gap:8px}
-.lan .d1 b{color:var(--chu-1);font-size:13.5px}
-.lan .d2{font:500 12px var(--num);color:var(--faint)}
-.lan .d3{font-size:12.5px;color:var(--chu-3)}
-.lan .mo-o{font-size:12px;color:var(--accent);cursor:pointer;font-weight:600;width:fit-content}
-.lan.mo-xong{opacity:.6}
-.oxoa{margin:6px 0 0 0;border-left:1px solid var(--line-strong);padding-left:12px;display:flex;flex-direction:column}
-.oxoa div{display:flex;align-items:center;gap:8px;min-height:36px;font-size:12.5px;color:var(--chu-3)}
-.oxoa .gt{font-family:var(--num);font-weight:600;color:var(--chu-1)}
-.oxoa .nut{min-height:28px;padding:0 8px;font-size:12px}
-.w375 .oxoa .nut{min-height:40px}
+.ngan ol{list-style:none;margin:0;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.ngan li{display:flex;gap:8px;font-size:12.5px}
+.ngan li svg{flex:none;margin-top:3px}
+.ngan .v1{color:var(--chu-2)}.ngan .v1 b{font-weight:600}.ngan .v1 span{color:var(--dim)}
+.ngan .v2{font:500 11.5px var(--num);color:var(--faint)}
+.ic-diem{color:var(--dim)}.ic-huy{color:var(--late)}.ic-vang{color:var(--soon)}
 @media (prefers-reduced-motion:no-preference){.man{transition:max-width .2s ease-out}}
 </style>
 
 <div class="dieu">
-  <h1>PR-BV · Bỏ vắng · Xoá điểm</h1>
-  <div class="seg" role="group" aria-label="Phần" id="phan"><button data-p="a" aria-pressed="true">A · Bỏ vắng</button><button data-p="b">B · Xoá điểm</button></div>
+  <h1>PR-BV bản 2 · Xoá "-" · Lịch sử điểm</h1>
+  <div class="seg" role="group" aria-label="Phần" id="phan"><button data-p="a" aria-pressed="true">A · Xoá "-"</button><button data-p="b">B · Lịch sử điểm</button></div>
   <div class="seg" role="group" aria-label="Khổ" id="kho"><button data-w="1440" aria-pressed="true">1440</button><button data-w="375">375</button></div>
   <div class="seg" role="group" aria-label="Nền" id="nen"><button data-t="dark" aria-pressed="true">Tối</button><button data-t="light">Sáng</button></div>
 </div>
@@ -191,213 +189,109 @@ textarea::placeholder{color:var(--mo)}
 const IC_CHUONG = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>';
 const TT = {
   a: [
-    ['tu-doi', 'QL · tự dời (vắng lần 1)', 'Hồ sơ Mock. "-" gõ cho tuần đã qua đã chốt + tự dời. Menu ⋯ của Listening mở: Bỏ vắng đứng đầu.'],
-    ['hop', 'Hộp Bỏ vắng', 'Bấm Bỏ vắng. Lịch trả tuần cũ, lần vắng trừ 1. Lý do không bắt buộc.'],
-    ['xong', 'Sau khi bỏ', 'Toast + Listening về W2 SEP, ô điểm sẵn sàng nhập (T19: tuần thi đã tới).'],
-    ['cho-duyet', 'Vắng · chờ duyệt dời', 'Lần 1 nhưng trễ / vướng thứ tự đợt → đang có đề nghị dời. Bỏ vắng rút đề nghị.'],
-    ['huy-vang', 'Huỷ (vắng 2 lần)', 'QL: nút chính giữ "Khôi phục và đặt tuần"; ⋯ có Bỏ vắng + Không mock lại.'],
-    ['luoi-ft', 'Lưới FT', 'Điểm theo lớp / Lịch Test. Ô "vắng" bấm được (viền đứt) khi người xem bỏ vắng được → mở cùng hộp.'],
-    ['luoi-thuong', 'Lưới lớp thường', 'Ô "-" của bài Giữa khoá: ⋯ có Bỏ vắng đứng đầu. Lần vắng tính lại đúng.'],
-    ['gv-qua-han', 'GVBM · quá hạn chấm', 'Quá thứ Tư sau tuần thi: GVBM không có Bỏ vắng (ô "vắng" viền liền, không bấm). Hoàn tác "-" báo lỗi.'],
-    ['loi', 'Lỗi', 'Máy chủ từ chối (vừa có người nhập điểm). Hộp giữ nguyên, báo trong hộp.'],
+    ['ft-truoc', 'FT · "-" đã tự dời', 'Lưới MT2 (Điểm theo lớp / Lịch Test). "-" gõ cho tuần đã qua đã chốt, L tự dời sang W3 SEP. Ô vẫn hiện "-" kèm tuần mới. QL, hoặc GV chấm / GVCN trước hết thứ Tư sau W2 SEP: tẩy ô + Lưu.'],
+    ['ft-sau', 'FT · sau khi xoá "-"', 'L về W2 SEP, lần vắng 1 → 0, ô trống nhập điểm được ngay. Không chuông mới.'],
+    ['ft-hs', 'FT · hồ sơ Mock', 'Cùng việc, nhìn ở hồ sơ Mock: trước (vắng lần 1, dời từ W2 SEP) và sau (W2 SEP). Thẻ Chờ duyệt / Xin dời chưa xử lý tự rút.'],
+    ['thuong-truoc', 'Lớp thường · tuần mới đã có điểm', 'Xem tuần W2 SEP: ô Nghe của Vũ Gia Bảo "-" (đã dời W3 SEP và đã có điểm 15/20 ở W3 SEP).'],
+    ['thuong-sau', 'Lớp thường · sau khi xoá "-"', 'Đã có điểm ở tuần mới → chỉ trừ lần vắng, lịch giữ W3 SEP.'],
+    ['qua-han', 'GVBM · quá hạn', 'Quá thứ Tư sau tuần thi gốc: ô "-" khoá với GV; thử xoá → báo lỗi. QL vẫn xoá được.'],
   ],
   b: [
-    ['bang', 'QL · bảng', 'Test › Điểm theo lớp, vai Quản lý: thêm cột chọn và nút "Đã xoá · 2". GV không thấy hai thứ này.'],
-    ['chon', 'Đã chọn 3', 'Chọn em → thanh chọn thay hàng "Chỉ ô còn trống".'],
-    ['hop', 'Hộp xoá', 'Tick kỹ năng (mặc định đủ). Dòng đỏ = xem trước, tính lại mỗi lần đổi tick. Lý do bắt buộc (Q1).'],
-    ['cot', 'Cả cột', 'Chọn tất cả + chỉ tick R = xoá cả cột Reading của lớp.'],
-    ['dem', 'Đang đếm / 0 điểm', 'Đang đếm: nút khoá. Không có điểm trong vùng chọn: dòng xám, nút khoá.'],
-    ['da-xoa', 'Đã xoá', 'Bảng tải lại, ô trống. Toast có Hoàn tác (10 giây).'],
-    ['ngan', 'Ngăn Đã xoá', 'Mọi lần xoá của lớp: hàng loạt, Huỷ điểm, Thi lại, xoá trắng ô (GV). Mở một lần xoá để khôi phục từng ô.'],
-    ['mot-phan', 'Khôi phục một phần', 'Ô đã có điểm mới thì giữ điểm mới, báo số ô bỏ qua.'],
-    ['thuong', 'Lớp thường', 'Cùng cách, cột là môn của bài.'],
-    ['gv', 'GVBM', 'Không cột chọn, không Đã xoá — như hiện nay.'],
-    ['loi', 'Lỗi', 'Mất mạng / quá trần: không xoá gì, báo trong hộp.'],
+    ['ft', 'FT · Lịch sử', 'Hồ sơ Mock › Lịch sử (đã có). Tẩy ô = dòng "Huỷ điểm … → Trống". Nhầm thì đọc điểm cũ ở đây rồi nhập lại.'],
+    ['thuong', 'Lớp thường · Lịch sử ô', 'Lưới lớp thường › ⋯ ô › Lịch sử (đã có). Sửa lỗi: nay chưa hiện các lần sửa / xoá điểm lớp thường.'],
   ],
 };
-let P = 'a', S = 'tu-doi', W = 1440;
+let P = 'a', S = 'ft-truoc', W = 1440;
 const w375 = () => W === 375;
-
-/* ---------- khung ---------- */
-function khung(mucOn, tabOn, noi, phu = '') {
-  const tabs = tabOn ? `<div class="tab"><span>Lịch Test</span><span class="${tabOn === 'diem' ? 'on' : ''}">Điểm theo lớp</span><span class="an375">Kế hoạch Test</span></div>` : '';
-  return `<div class="thanh"><b>PISA</b><span class="an375">Tổng quan</span><span class="an375 ${mucOn === 'hv' ? 'on' : ''}">Học viên &amp; Lớp</span><span class="${mucOn === 'test' ? 'on' : 'an375'}">Test</span><span class="an375">Công việc</span><span class="sp"></span><span>${IC_CHUONG}</span></div>
-    ${tabs}<div class="than">${noi}</div>${phu}`;
+function khung(mucOn, noi, phu = '') {
+  const tabs = mucOn === 'test' ? '<div class="tab"><span>Lịch Test</span><span class="on">Điểm theo lớp</span><span class="an375">Kế hoạch Test</span></div>' : '';
+  return `<div class="thanh"><b>PISA</b><span class="an375">Tổng quan</span><span class="an375 ${mucOn === 'hv' ? 'on' : ''}">Học viên &amp; Lớp</span><span class="${mucOn === 'test' ? 'on' : 'an375'}">Test</span><span class="an375">Công việc</span><span class="sp"></span><span>${IC_CHUONG}</span></div>${tabs}<div class="than">${noi}</div>${phu}`;
 }
+const toast = (chu, do_ = false) => `<div class="toast ${do_ ? 'do' : ''}" role="status">${chu}</div>`;
+const dau = (doi, khoa = false, focus = false) => focus ? '<span class="o focus">—</span>'
+  : `<span class="o-kem"><span class="o dau ${khoa ? 'khoa' : ''}" aria-label="Vắng${doi ? `, dời ${doi}` : ''}">-</span>${doi ? `<small>→ ${doi}</small>` : ''}</span>`;
 
-/* ---------- A · hồ sơ Mock ---------- */
-function dongKn({ ten, lich, phu, diem = '—', nhan = '', chinh = '', menu = null, mo = false, sang = false }) {
-  const m = menu ? `<button class="ba-cham" aria-label="Thao tác · ${ten}" aria-expanded="${mo}">⋯</button>${mo ? `<div class="menu" role="menu">${menu}</div>` : ''}` : '';
-  return `<div class="kn ${sang ? 'sang' : ''}"><div><b>${ten}</b></div>
-    <div class="lich"><span class="num">${lich}</span> ${nhan}${phu ? `<span class="mo-ta">${phu}</span>` : ''}</div>
-    <div class="diem">${diem}</div><div class="tt">${chinh}${m}</div></div>`;
-}
-function hoSoMock(listening, them = '') {
-  const noi = `<div class="dong"><div><div class="mo-ta">Hồ sơ Mock · MB FT 101</div><h2 style="margin:0;font-size:18px;color:var(--chu-1)">Lê Hà Vy · MT2</h2></div><span class="sp"></span>
-      <span class="nhan n-soon">Chờ điểm</span></div>
-    <div class="the">
-      <div class="dau-the"><h2>Kỹ năng</h2><span class="sp"></span><span class="mo-ta num">Hạn chấm 23/09</span></div>
-      ${listening}
-      ${dongKn({ ten: 'Reading', lich: 'W2 SEP', diem: '6.5', chinh: '<button class="nut">Sửa điểm</button>', menu: '' })}
-      ${dongKn({ ten: 'Writing', lich: 'W2 SEP', diem: '6.0', chinh: '<button class="nut">Sửa điểm</button>', menu: '' })}
-      ${dongKn({ ten: 'Speaking', lich: 'W2 SEP', diem: '6.0', chinh: '<button class="nut">Sửa điểm</button>', menu: '' })}
-    </div>${them}`;
-  return khung('hv', null, noi);
-}
-const menuTuDoi = (hl) => `<div class="${hl ? 'hl' : ''}">Bỏ vắng</div><div>Báo vắng</div><div>Dời hạn chấm</div>`;
-const lTuDoi = (mo) => dongKn({ ten: 'Listening', lich: 'W3 SEP', nhan: '<span class="nhan n-soon">vắng lần 1</span>', phu: 'dời từ W2 SEP',
-  chinh: '<button class="nut chinh">Nhập điểm</button>', menu: menuTuDoi(mo), mo });
-
-function hopBoVang({ tuan = true, deNghi = false, lanTu = 1, lanSau = 0, loi = '' } = {}) {
-  return `<div class="che"><div class="hop" role="dialog" aria-modal="true" aria-labelledby="t-bv">
-    <div class="dau-hop"><h3 id="t-bv">Bỏ vắng</h3><div class="phu">Listening · MT2 · Lê Hà Vy</div></div>
-    <div class="ruot">
-      <div class="bang-doi">
-        ${tuan ? '<span>Lịch thi</span><b>W3 SEP<span class="mui">→</span>W2 SEP</b>' : '<span>Lịch thi</span><b>W2 SEP</b>'}
-        ${lanTu !== lanSau ? `<span>Lần vắng</span><b>${lanTu}<span class="mui">→</span>${lanSau}</b>` : ''}
-        ${deNghi ? '<span>Đề nghị dời</span><b style="font-family:var(--sans)">Rút</b>' : ''}
-      </div>
-      <label><span class="nhan-o">Lý do</span><textarea placeholder="Không bắt buộc"></textarea></label>
-      ${loi ? `<div class="loi" role="alert">${loi}</div>` : ''}
-    </div>
-    <div class="chan"><button class="nut">Huỷ</button><button class="nut chinh">Bỏ vắng</button></div></div></div>`;
-}
-const toast = (chu, nut = '', do_ = false) => `<div class="toast ${do_ ? 'do' : ''}" role="status">${chu}${nut ? `<button class="nut">${nut}</button>` : ''}</div>`;
-
-/* ---------- lưới điểm ---------- */
+/* ---------- lưới FT ---------- */
 const HV = [
-  ['Lê Hà Vy', '000001', ['6.0', '6.5', '6.0', '5.5', '6.0', '6.0']],
+  ['Lê Hà Vy', '000001', [null, '6.5', '6.0', '5.5', '6.0', '6.0']],
   ['Ngô Gia Huy', '000007', ['7.0', '7.5', '7.0', '6.5', '6.5', '7.0']],
   ['Nguyễn Đức Trung', '000010', ['5.5', '6.0', '5.5', '6.0', '6.0', '5.5']],
   ['Phạm Tiến Đạt', '000003', ['5.0', '5.5', '5.0', '5.5', '5.5', '5.5']],
-  ['Nguyễn Minh Ngọc', '000004', ['6.0', '6.0', '', '', '', '6.0']],
-  ['Trần Bảo Châu', '000012', ['6.5', '6.0', '6.5', '6.0', '6.5', '6.5']],
 ];
-function luoiFT({ chon = false, daChon = [], o = {}, ketQua = true } = {}) {
-  const dau = `<tr>${chon ? '<th class="chon"><input type="checkbox" class="hop-chon" aria-label="Chọn tất cả" ' + (daChon.length === HV.length ? 'checked' : '') + '></th>' : ''}<th class="${chon ? 'ghim' : ''}">Học viên</th><th class="c">L</th><th class="c">R</th><th class="c">W1</th><th class="c">W2</th><th class="c">W</th><th class="c">S</th>${ketQua ? '<th>Kết quả</th>' : ''}</tr>`;
+function luoiFT(oL) {
   const than = HV.map(([ten, ma, d], i) => {
-    const c = daChon.includes(i);
-    const oCua = (k, v) => {
-      const dac = o[`${i}:${k}`];
-      if (dac) return dac;
-      return v ? `<span class="o">${v}</span>` : '<span class="o trong">—</span>';
-    };
-    const du = d.every(Boolean);
-    return `<tr class="${c ? 'da-chon' : ''}">${chon ? `<td class="chon"><input type="checkbox" class="hop-chon" aria-label="Chọn ${ten}" ${c ? 'checked' : ''}></td>` : ''}
-      <td class="ten ${chon ? 'ghim' : ''}">${ten}<small>${ma}</small></td>
-      ${[0, 1, 2, 3].map((k) => `<td class="c">${oCua(k, d[k])}</td>`).join('')}
-      <td class="c wtb">${d[2] && d[3] ? d[4] : '—'}</td><td class="c">${oCua(5, d[5])}</td>
-      ${ketQua ? `<td>${o[`${i}:kq`] ?? (du ? '<span class="nhan n-ok">Đủ</span>' : '<span class="nhan n-wait">Chờ điểm</span>')}</td>` : ''}</tr>`;
+    const o = (v) => v ? `<span class="o">${v}</span>` : '<span class="o trong">—</span>';
+    const l = i === 0 ? oL : o(d[0]);
+    const du = i !== 0;
+    return `<tr><td class="ten">${ten}<small>${ma}</small></td><td class="c">${l}</td>${[1, 2, 3].map((k) => `<td class="c">${o(d[k])}</td>`).join('')}
+      <td class="c wtb">${d[4]}</td><td class="c">${o(d[5])}</td><td>${du ? '<span class="nhan n-ok">Đủ</span>' : '<span class="nhan n-wait">Chờ điểm</span>'}</td></tr>`;
   }).join('');
-  return `<div class="the cuon"><table style="min-width:${chon ? 640 : 600}px"><thead>${dau}</thead><tbody>${than}</tbody></table></div>`;
+  return `<div class="the cuon"><table style="min-width:600px"><thead><tr><th>Học viên</th><th class="c">L</th><th class="c">R</th><th class="c">W1</th><th class="c">W2</th><th class="c">W</th><th class="c">S</th><th>Kết quả</th></tr></thead><tbody>${than}</tbody></table></div>`;
 }
-function dauDiemTheoLop({ ql = true, chon = 0, daXoa = 2 } = {}) {
-  const seg = `<div class="seg-luot" role="tablist"><button role="tab" aria-selected="false"><b>MT1</b><small>W1 JUL · 6/6 đủ</small></button><button role="tab" aria-selected="true"><b>MT2</b><small>W2 SEP · 5/6 đủ</small></button><button role="tab" aria-selected="false" class="an375"><b>MT3</b><small>W4 OCT</small></button></div>`;
-  const dongCong = chon
-    ? `<div class="thanh-chon"><b>Đã chọn ${chon}</b><span class="sp"></span><button class="nut ma">Bỏ chọn</button><button class="nut vien-nguy">Xoá điểm</button></div>`
-    : `<div class="dong"><label class="cong-tac"><input type="checkbox" class="hop-chon"> Chỉ ô còn trống</label><span class="sp"></span>${ql && daXoa ? `<button class="nut">Đã xoá · ${daXoa}</button>` : ''}</div>`;
-  return `<div class="dong"><b style="color:var(--chu-1);font-size:15px">MB FT 101</b><span class="sp"></span></div>${seg}${w375() ? '' : dongCong}`;
-}
-function manDiem(bang, { ql = true, chon = 0, daXoa = 2, phu = '' } = {}) {
-  const thanhDuoi = w375() ? (chon
-    ? `<div class="thanh-chon"><b>Đã chọn ${chon}</b><span class="sp"></span><button class="nut ma">Bỏ chọn</button><button class="nut vien-nguy">Xoá điểm</button></div>`
-    : `<div class="dong"><label class="cong-tac"><input type="checkbox" class="hop-chon"> Chỉ ô còn trống</label><span class="sp"></span>${ql && daXoa ? `<button class="nut">Đã xoá · ${daXoa}</button>` : ''}</div>`) : '';
-  return khung('test', 'diem', `${dauDiemTheoLop({ ql, chon, daXoa })}${w375() && !chon ? thanhDuoi : ''}${bang}${w375() && chon ? thanhDuoi : ''}`, phu);
+function manFT(oL, phu = '') {
+  const seg = `<div class="seg-luot" role="tablist"><button role="tab" aria-selected="false"><b>MT1</b><small>W1 JUL · 4/4 đủ</small></button><button role="tab" aria-selected="true"><b>MT2</b><small>W2 SEP · 3/4 đủ</small></button><button role="tab" aria-selected="false" class="an375"><b>MT3</b><small>W4 OCT</small></button></div>`;
+  return khung('test', `<div class="dong"><b style="color:var(--chu-1);font-size:15px">MB FT 101</b></div>${seg}<div class="dong"><label class="cong-tac"><input type="checkbox" class="hop-chon"> Chỉ ô còn trống</label></div>${luoiFT(oL)}`, phu);
 }
 
-/* ---------- B · hộp xoá ---------- */
-function hopXoa({ em = '3 em', tick = ['L', 'R', 'W', 'S'], xem = 'Xoá 9 điểm · 3 em · đóng 1 Case', kieu = '', nut = 'Xoá 9 điểm', khoa = false, lyDo = 'Dán lệch cột', loi = '', mon = null, tieuDe = 'Xoá điểm · MT2' } = {}) {
-  const ds = mon ?? ['L', 'R', 'W', 'S'];
-  return `<div class="che"><div class="hop" role="dialog" aria-modal="true" aria-labelledby="t-xd">
-    <div class="dau-hop"><h3 id="t-xd">${tieuDe}</h3><div class="phu">MB ${mon ? 'PRE 204' : 'FT 101'} · ${em}</div></div>
-    <div class="ruot">
-      <div><span class="nhan-o">Kỹ năng</span><div class="ticks">${ds.map((k) => `<label class="tick ${tick.includes(k) ? 'on' : ''}"><input type="checkbox" class="hop-chon" ${tick.includes(k) ? 'checked' : ''}> ${k}</label>`).join('')}</div></div>
-      <div class="xem-truoc ${kieu}" role="status">${xem}</div>
-      <label><span class="nhan-o">Lý do</span><textarea>${lyDo}</textarea></label>
-      ${loi ? `<div class="loi" role="alert">${loi}</div>` : ''}
-    </div>
-    <div class="chan"><button class="nut">Huỷ</button><button class="nut nguy" ${khoa ? 'disabled' : ''}>${nut}</button></div></div></div>`;
+/* ---------- hồ sơ Mock ---------- */
+function dongKn({ ten, lich, phu = '', diem = '—', nhan = '', chinh = '' }) {
+  return `<div class="kn"><div><b>${ten}</b></div><div class="lich"><span class="num">${lich}</span> ${nhan}${phu ? `<span class="mo-ta">${phu}</span>` : ''}</div><div class="diem">${diem}</div><div class="tt">${chinh}<button class="ba-cham" aria-label="Thao tác · ${ten}">⋯</button></div></div>`;
 }
-function nganDaXoa({ moMot = true, motPhan = false } = {}) {
-  const o = (ten, kn, gt, xong = false, giu = false) => `<div><span>${ten}</span><span>· ${kn}</span><span class="gt">${gt}</span><span class="sp"></span>${
-    giu ? '<span class="nhan n-muted">Có điểm mới</span>' : xong ? '<span class="nhan n-ok">Đã khôi phục</span>' : '<button class="nut">Khôi phục</button>'}</div>`;
-  const lan1 = `<div class="lan">
-      <div class="d1"><b>MT2 · 9 điểm</b><span class="nhan n-muted">Xoá hàng loạt</span><span class="sp"></span>${motPhan ? '<span class="nhan n-ok">Đã khôi phục 7</span>' : '<button class="nut">Khôi phục</button>'}</div>
-      <div class="d2">06/10 14:20 · Trần Thu Hà</div>
-      <div class="d3">Lý do: Dán lệch cột</div>
-      ${moMot ? `<div class="oxoa">
-        ${o('Lê Hà Vy', 'L', '6.0', motPhan)}${o('Lê Hà Vy', 'R', '6.5', motPhan)}${o('Lê Hà Vy', 'W', '6.0', false, motPhan)}
-        ${o('Ngô Gia Huy', 'L', '7.0', motPhan)}${o('Ngô Gia Huy', 'R', '7.5', motPhan)}${o('Ngô Gia Huy', 'W', '7.0', motPhan)}
-        ${o('Nguyễn Đức Trung', 'L', '5.5', motPhan)}${o('Nguyễn Đức Trung', 'R', '6.0', false, motPhan)}${o('Nguyễn Đức Trung', 'W', '5.5', motPhan)}
-      </div>` : '<span class="mo-o">Xem 9 ô</span>'}
-    </div>`;
-  const lan2 = `<div class="lan"><div class="d1"><b>MT2 · 1 điểm</b><span class="nhan n-muted">Xoá ô</span><span class="sp"></span><button class="nut">Khôi phục</button></div>
-      <div class="d2">05/10 09:12 · Võ Minh Khoa</div><span class="mo-o">Xem 1 ô</span></div>`;
-  const lan3 = `<div class="lan mo-xong"><div class="d1"><b>MT1 · 2 điểm</b><span class="nhan n-muted">Thi lại</span><span class="sp"></span><span class="nhan n-ok">Đã khôi phục</span></div>
-      <div class="d2">28/09 16:40 · Trần Thu Hà</div><div class="d3">Lý do: Em thi lại L, R</div></div>`;
-  return `<aside class="ngan" role="dialog" aria-label="Đã xoá"><div class="dau-ngan"><h3>Đã xoá</h3><span class="mo-ta">MB FT 101</span><span class="sp"></span><button class="nut ma" aria-label="Đóng">✕</button></div>
-    <div class="ds">${lan1}${lan2}${lan3}</div></aside>`;
+function theKn(l) {
+  return `<div class="the"><div class="dau-the"><h2>Kỹ năng</h2><span class="sp"></span><button class="nut">Lịch sử</button></div>${l}
+    ${dongKn({ ten: 'Reading', lich: 'W2 SEP', diem: '6.5', chinh: '<button class="nut">Sửa điểm</button>' })}
+    ${dongKn({ ten: 'Writing', lich: 'W2 SEP', diem: '6.0', chinh: '<button class="nut">Sửa điểm</button>' })}
+    ${dongKn({ ten: 'Speaking', lich: 'W2 SEP', diem: '6.0', chinh: '<button class="nut">Sửa điểm</button>' })}</div>`;
+}
+function hoSo(noi, phu = '') {
+  return khung('hv', `<div class="dong"><div><div class="mo-ta">Hồ sơ Mock · MB FT 101</div><h2 style="margin:0;font-size:18px;color:var(--chu-1)">Lê Hà Vy · MT2</h2></div><span class="sp"></span><span class="nhan n-soon">Chờ điểm</span></div>${noi}`, phu);
 }
 
 /* ---------- lớp thường ---------- */
-function luoiThuong({ chon = false, daChon = [], menu = false } = {}) {
-  const R = [['Trần Minh Anh', '000031', ['16/20', '15/20', '30/40', '7/10']], ['Đỗ Khánh Linh', '000032', ['12/20', '14/20', '28/40', '6/10']],
-    ['Vũ Gia Bảo', '000033', ['-', '', '', '']], ['Lý Thu Hà', '000034', ['18/20', '17/20', '33/40', '8/10']]];
-  const dau = `<tr>${chon ? '<th class="chon"><input type="checkbox" class="hop-chon" aria-label="Chọn tất cả"></th>' : ''}<th class="${chon ? 'ghim' : ''}">Học viên</th><th class="c">Nghe</th><th class="c">Đọc</th><th class="c">G+V</th><th class="c">Viết</th><th>Kết quả</th></tr>`;
-  const than = R.map(([ten, ma, d], i) => `<tr class="${daChon.includes(i) ? 'da-chon' : ''}">${chon ? `<td class="chon"><input type="checkbox" class="hop-chon" ${daChon.includes(i) ? 'checked' : ''}></td>` : ''}
-    <td class="ten ${chon ? 'ghim' : ''}">${ten}<small>${ma}</small></td>
-    ${d.map((v, k) => `<td class="c">${v === '-' ? `<span class="o-thuong"><span class="o vang tat">vắng</span><button class="ba-cham" aria-label="Thao tác · Nghe · ${ten}" aria-expanded="${menu}">⋯</button>${menu ? '<div class="menu" role="menu" style="left:0;right:auto"><div class="hl">Bỏ vắng</div><hr><div>Lịch sử</div></div>' : ''}</span>` : v ? `<span class="o">${v}</span>` : '<span class="o trong">—</span>'}</td>`).join('')}
-    <td>${d.every((v) => v && v !== '-') ? '<span class="nhan n-ok">4/4 đạt</span>' : '<span class="nhan n-wait">Chờ điểm</span>'}</td></tr>`).join('');
-  return `<div class="the cuon"><table style="min-width:600px"><thead>${dau}</thead><tbody>${than}</tbody></table></div>`;
-}
-function manThuong(bang, { chon = 0, phu = '', ql = true } = {}) {
-  const seg = `<div class="seg-luot" role="tablist"><button role="tab" aria-selected="true"><b>Giữa khoá</b><small>W2 SEP · 3/4 đủ</small></button><button role="tab" aria-selected="false"><b>Cuối khoá</b><small>W4 NOV</small></button></div>`;
-  const cong = chon ? `<div class="thanh-chon"><b>Đã chọn ${chon}</b><span class="sp"></span><button class="nut ma">Bỏ chọn</button><button class="nut vien-nguy">Xoá điểm</button></div>`
-    : `<div class="dong"><label class="cong-tac"><input type="checkbox" class="hop-chon"> Chỉ ô còn trống</label><span class="sp"></span>${ql ? '<button class="nut">Đã xoá · 1</button>' : ''}</div>`;
-  return khung('test', 'diem', `<div class="dong"><b style="color:var(--chu-1);font-size:15px">MB PRE 204</b></div>${seg}${cong}${bang}`, phu);
+function manThuong(oNghe, phu = '') {
+  const R = [['Trần Minh Anh', '000031', ['16/20', '15/20', '30/40', '7/10'], true], ['Đỗ Khánh Linh', '000032', ['12/20', '14/20', '28/40', '6/10'], true],
+    ['Vũ Gia Bảo', '000033', [null, '13/20', '26/40', '6/10'], false]];
+  const than = R.map(([ten, ma, d, du], i) => `<tr><td class="ten">${ten}<small>${ma}</small></td>
+    ${d.map((v, k) => `<td class="c">${i === 2 && k === 0 ? oNghe : `<span class="o">${v}</span>`}</td>`).join('')}
+    <td>${du ? '<span class="nhan n-ok">4/4 đạt</span>' : '<span class="nhan n-muted">Nghe ở W3 SEP</span>'}</td></tr>`).join('');
+  const tuan = `<div class="dong"><button class="nut" aria-label="Tuần trước">‹</button><span class="nut" style="min-width:150px;justify-content:space-between"><b class="num">W2 SEP</b><span class="mo-ta num">08/09 – 14/09</span></span><button class="nut" aria-label="Tuần sau">›</button></div>`;
+  return khung('test', `<div class="dong"><b style="color:var(--chu-1);font-size:15px">MB PRE 204 · Giữa khoá</b><span class="sp"></span>${tuan}</div>
+    <div class="the cuon"><table style="min-width:560px"><thead><tr><th>Học viên</th><th class="c">Nghe</th><th class="c">Đọc</th><th class="c">G+V</th><th class="c">Viết</th><th>Kết quả</th></tr></thead><tbody>${than}</tbody></table></div>`, phu);
 }
 
-/* ---------- vẽ ---------- */
+/* ---------- ngăn Lịch sử ---------- */
+const IC = {
+  diem: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" class="ic-diem" aria-hidden="true"><path d="M2 10l1-3 5-5 2 2-5 5-3 1z"/></svg>',
+  huy: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" class="ic-huy" aria-hidden="true"><circle cx="6" cy="6" r="4.5"/><path d="M3 9l6-6"/></svg>',
+  vang: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" class="ic-vang" aria-hidden="true"><circle cx="6" cy="6" r="4.5"/><path d="M6 3.5V6.5M6 8.3v.2"/></svg>',
+};
+const dongLs = (ic, viec, mon, doi, ai, luc, lyDo = '') => `<li>${IC[ic]}<div><div class="v1"><b>${viec}</b><span> · ${mon}</span>${doi ? `<span> · ${doi}</span>` : ''}</div><div class="v2">${ai} · ${luc}${lyDo ? ` · Lý do: ${lyDo}` : ''}</div></div></li>`;
+function nganLs(tieuDe, phu, dong) {
+  return `<aside class="ngan" role="dialog" aria-label="${tieuDe}"><div class="dau-ngan"><div><h3>${tieuDe}</h3><div class="mo-ta">${phu}</div></div><span class="sp"></span><button class="nut ma" aria-label="Đóng">✕</button></div><ol>${dong}</ol></aside>`;
+}
+
 function ve() {
   let html = '';
-  if (P === 'a') {
-    switch (S) {
-      case 'tu-doi': html = hoSoMock(lTuDoi(true)); break;
-      case 'hop': html = hoSoMock(lTuDoi(false)).concat(hopBoVang()); break;
-      case 'xong': html = hoSoMock(dongKn({ ten: 'Listening', lich: 'W2 SEP', sang: true, chinh: '<button class="nut chinh">Nhập điểm</button>', menu: '<div>Báo vắng</div><div>Dời hạn chấm</div>' }))
-        .concat(toast('Đã bỏ vắng')); break;
-      case 'cho-duyet': html = hoSoMock(dongKn({ ten: 'Listening', lich: 'W2 SEP', nhan: '<span class="nhan n-wait">vắng · chờ Quản lý duyệt dời</span>',
-        chinh: '<button class="nut">Trả lời đề nghị dời</button>', menu: '' })).concat(hopBoVang({ tuan: false, deNghi: true, lanTu: 0, lanSau: 0 })); break;
-      case 'huy-vang': html = hoSoMock(dongKn({ ten: 'Listening', lich: 'W3 SEP', nhan: '<span class="nhan n-late">huỷ (vắng 2 lần)</span>',
-        chinh: '<button class="nut">Khôi phục và đặt tuần</button>', menu: '<div class="hl">Bỏ vắng</div><div>Không mock lại</div>', mo: true })); break;
-      case 'luoi-ft': html = manDiem(luoiFT({ o: { '4:2': '<button class="o vang" aria-label="Bỏ vắng · Writing · Nguyễn Minh Ngọc">vắng</button>', '4:3': '<span class="o vang tat">vắng</span>' } }), { daXoa: 0 }); break;
-      case 'luoi-thuong': html = manThuong(luoiThuong({ menu: true }), { ql: false }); break;
-      case 'gv-qua-han': html = manDiem(luoiFT({ o: { '4:2': '<span class="o vang tat">vắng</span>', '4:3': '<span class="o vang tat">vắng</span>' } }), { ql: false })
-        .concat(toast('Quá hạn chấm — nhờ Quản lý.', '', true)); break;
-      case 'loi': html = hoSoMock(lTuDoi(false)).concat(hopBoVang({ loi: 'Đã có điểm.' })); break;
-    }
-  } else {
-    const sel = [0, 1, 2];
-    switch (S) {
-      case 'bang': html = manDiem(luoiFT({ chon: true })); break;
-      case 'chon': html = manDiem(luoiFT({ chon: true, daChon: sel }), { chon: 3 }); break;
-      case 'hop': html = manDiem(luoiFT({ chon: true, daChon: sel }), { chon: 3 }).concat(hopXoa({ tick: ['L', 'R', 'W'] })); break;
-      case 'cot': html = manDiem(luoiFT({ chon: true, daChon: [0, 1, 2, 3, 4, 5] }), { chon: 6 })
-        .concat(hopXoa({ em: '6 em', tick: ['R'], xem: 'Xoá 6 điểm · 6 em', nut: 'Xoá 6 điểm', lyDo: 'Nhập nhầm đề R' })); break;
-      case 'dem': html = manDiem(luoiFT({ chon: true, daChon: [4] }), { chon: 1 })
-        .concat(hopXoa({ em: '1 em', tick: ['W'], xem: 'Không có điểm để xoá', kieu: 'rong', nut: 'Xoá điểm', khoa: true, lyDo: '' })); break;
-      case 'da-xoa': {
-        const o = {};
-        for (const i of sel) { for (const k of [0, 1, 2, 3]) o[`${i}:${k}`] = '<span class="o trong">—</span>'; o[`${i}:kq`] = '<span class="nhan n-wait">Chờ điểm</span>'; }
-        html = manDiem(luoiFT({ chon: true, o }), { daXoa: 3 }).concat(toast('Đã xoá 9 điểm', 'Hoàn tác')); break;
-      }
-      case 'ngan': html = manDiem(luoiFT({ chon: true }), { daXoa: 3 }).concat(nganDaXoa()); break;
-      case 'mot-phan': html = manDiem(luoiFT({ chon: true }), { daXoa: 3 }).concat(nganDaXoa({ motPhan: true })).concat(toast('Đã khôi phục 7 · 2 ô có điểm mới')); break;
-      case 'thuong': html = manThuong(luoiThuong({ chon: true, daChon: [0, 1] }), { chon: 2 })
-        .concat(hopXoa({ em: '2 em', mon: ['Nghe', 'Đọc', 'G+V', 'Viết'], tick: ['Nghe', 'Đọc'], xem: 'Xoá 4 điểm · 2 em', nut: 'Xoá 4 điểm', tieuDe: 'Xoá điểm · Giữa khoá', lyDo: 'Nhầm lớp' })); break;
-      case 'gv': html = manDiem(luoiFT(), { ql: false }); break;
-      case 'loi': html = manDiem(luoiFT({ chon: true, daChon: sel }), { chon: 3 }).concat(hopXoa({ tick: ['L', 'R', 'W'], loi: 'Chưa xoá gì — thử lại.' })); break;
-    }
+  const lTuDoi = dongKn({ ten: 'Listening', lich: 'W3 SEP', nhan: '<span class="nhan n-soon">vắng lần 1</span>', phu: 'dời từ W2 SEP', chinh: '<button class="nut chinh">Nhập điểm</button>' });
+  const lSau = dongKn({ ten: 'Listening', lich: 'W2 SEP', chinh: '<button class="nut chinh">Nhập điểm</button>' });
+  switch (S) {
+    case 'ft-truoc': html = manFT(dau('W3 SEP')); break;
+    case 'ft-sau': html = manFT(dau(null, false, true), toast('Đã gỡ vắng Listening · Lê Hà Vy · về W2 SEP')); break;
+    case 'ft-hs': html = hoSo(`<div class="mo-ta">Trước</div>${theKn(lTuDoi)}<div class="mo-ta">Sau khi xoá "-"</div>${theKn(lSau)}`); break;
+    case 'thuong-truoc': html = manThuong(dau('W3 SEP')); break;
+    case 'thuong-sau': html = manThuong('<span class="o-kem"><span class="o">15/20</span><small>W3 SEP</small></span>', toast('Đã gỡ vắng Nghe · Vũ Gia Bảo · giữ W3 SEP')); break;
+    case 'qua-han': html = manFT(dau('W3 SEP', true), toast('Quá hạn chấm — nhờ Quản lý.', true)); break;
+    case 'ft': html = hoSo(theKn(lSau),
+      nganLs('Lịch sử', 'Lê Hà Vy · MT2',
+        dongLs('huy', 'Huỷ điểm', 'Listening', '6.0 → Trống', 'Võ Minh Khoa', '06/10/2026 14:20')
+        + dongLs('diem', 'Sửa điểm', 'Reading', '6.0 → 6.5', 'Võ Minh Khoa', '06/10/2026 14:18')
+        + dongLs('diem', 'Sửa điểm', 'Listening', 'Trống → 6.0', 'Võ Minh Khoa', '16/09/2026 09:05')
+        + dongLs('vang', 'Dấu "-"', 'Speaking', '- → Trống', 'Trần Thu Hà', '15/09/2026 10:02'))); break;
+    case 'thuong': html = manThuong('<span class="o trong">—</span>',
+      nganLs('Lịch sử · Nghe', 'Vũ Gia Bảo',
+        dongLs('huy', 'Huỷ điểm', 'Nghe', '15/20 → Trống', 'Đặng Thu Trang', '06/10/2026 15:02')
+        + dongLs('diem', 'Sửa điểm', 'Nghe', '16/20 → 15/20', 'Đặng Thu Trang', '06/10/2026 15:01', 'Chấm lại câu 12')
+        + dongLs('diem', 'Sửa điểm', 'Nghe', 'Trống → 16/20', 'Đặng Thu Trang', '17/09/2026 08:40'))); break;
   }
   document.getElementById('app').innerHTML = html;
   document.getElementById('man').className = 'man' + (w375() ? ' w375' : '');
