@@ -150,7 +150,7 @@ function MotKyNangFt({ data, onReload, kn, hv, hangMo }: {
   const [chon, setChon] = useKyNangChon(dsKn, (k) => minh.has(k), conTrong, kn);
   const { phim, dangKy } = useDiChuyen();
   /* K4-24: GV chấm chọn một lần cho cả lớp × tuần — cùng ô nhớ với tiêu đề cột S của lưới máy tính. */
-  const [gvCot, setGvCot] = useGvChamCot(data.classId, data.period?.id, minh.has('speaking'));
+  const [gvCot, setGvCot] = useGvChamCot(data.classId, data.period?.id);
 
   if (data.rows.length === 0 || !chon) return <LuoiFT data={data} onReload={onReload} kn={kn} hv={hv} hangMo={hangMo} />;
 
@@ -164,7 +164,7 @@ function MotKyNangFt({ data, onReload, kn, hv, hangMo }: {
     <div>
       <HangChip ds={chips} chon={chon} onChon={setChon} />
       {chon === 'speaking' && minh.has('speaking') && data.period && (
-        <div className="flex justify-end px-3 pb-1"><NutGvCham lon value={gvCot} onChange={setGvCot} /></div>
+        <div className="flex justify-end px-3 pb-1"><NutGvCham lon chiTen value={gvCot} onChange={setGvCot} /></div>
       )}
       <ul className="m-0 p-0 list-none">
         {data.rows.map((r, i) => (

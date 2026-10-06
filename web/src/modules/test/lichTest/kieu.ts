@@ -17,7 +17,7 @@ export type DongNo = {
   conBai: number; soHv: number; attemptIds: number[];
   han: string | null; quaHan: boolean; luiLich: LuiLich | null;
   cuaToi: boolean; duocCham: boolean; coDayLop: boolean; hrefDayDu: string;
-  /** PR-VAI-a (UX-B5): tên GV đang nợ, sắp theo tên; môn chưa phân công → "chưa phân công". */
+  /** PR-VAI-a (UX-B5): tên GV đang nợ, sắp theo tên; rồi `GV chấm chéo` (Speaking Mock, T18); môn chưa phân công → "chưa phân công". */
   gvNo: string[];
 };
 export type LopLichTest = {
@@ -31,16 +31,26 @@ export type LopLichTest = {
   moSan: boolean; hrefDayDu: string;
   /** Số bài vắng tuần này đang chờ Quản lý duyệt dời (PR-MT). */
   choDuyetDoi: number;
+  /** PR-LT3: tuần thi của hàng — lưới mở tại chỗ đúng tuần này (khối 2 có hàng của nhiều tuần). */
+  periodId: number; weekStart: string;
 };
+/** Dải số (PR-LT3 Q1): đã chấm / còn phải chấm (khối 2 + 3 ở tuần hiện tại; tuần khác: khối 3) · quá hạn chấm = khối 1. */
+export type TongQuanLich = { daCham: number; tong: number; conPhaiCham: number; no: { bai: number; lop: number } };
 export type LichTest = {
   scopeEmpty: boolean;
   tuan: { id: number; weekStart: string; weekEnd: string } | null;
+  /** Tuần đang xem = tuần của hôm nay (chỉ khi đó có khối 2). */
+  laTuanNay: boolean;
   phamVi: PhamViLichTest; coPhamViRong: boolean; coPhanCong: boolean;
   lopDangLoc: { id: number; code: string } | null;
-  tongQuan: { daCham: number; tong: number; conPhaiCham: number; no: { bai: number; lop: number }; quaHan: number };
+  tongQuan: TongQuanLich;
   /** Cùng dải số tách theo khung (MH4) — công tắc Fast Track · Lớp thường. */
-  tongQuanKhung: Record<'ft' | 'thuong', LichTest['tongQuan']>;
+  tongQuanKhung: Record<'ft' | 'thuong', TongQuanLich>;
+  /** Khối 1 "Test quá hạn chấm" — theo hôm nay, không theo tuần đang xem. */
   no: DongNo[];
+  /** Khối 2 "Test chấm tuần này" — `null` khi không xem tuần hiện tại. */
+  chamTuanNay: LopLichTest[] | null;
+  /** Khối 3 "Lịch Test" — tuần đang xem. */
   lop: LopLichTest[];
   /** PR-MT (K2-32): MT lịch sử chưa nhập theo lớp — dòng nhắc mờ cuối trang. */
   nhacLichSu: { classId: number; classCode: string; soEm: number; href: string }[];
@@ -51,3 +61,5 @@ export const TONE_NHAN_LOP: Record<LoaiNhanLop, ToneNhan> = {
   'da-cham': 'done', 'chua-toi-han': 'muted', 'cho-ban': 'soon', 'cho-gv-khac': 'wait', 'cho-cham': 'wait',
 };
 
+/** Khoá một hàng lớp trên màn (nhớ mở/thu, React key): khối 2 có thể có hai hàng cùng lớp ở hai tuần thi khác nhau. */
+export const khoaHang = (l: { key: string; periodId: number }) => `${l.periodId}:${l.key}`;
