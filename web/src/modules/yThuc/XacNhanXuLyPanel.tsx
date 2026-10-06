@@ -170,10 +170,10 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', onClose,
       {/* Cả dòng là nhãn của ô tick — bấm vào chữ cũng chọn (vùng chạm ≥ 44px trên điện thoại). */}
       <label className="flex min-h-[44px] cursor-pointer items-start gap-2 py-1 sm:min-h-0">
         <input type="checkbox" className="mt-1" checked={chon.has(v.id)} onChange={() => doi(v.id)}
-          aria-label={`${ngay(v.occurredOn, homNay)} ${v.categoryLabel}: ${v.description}`} />
+          aria-label={`${ngay(v.occurredOn, homNay)} ${v.categoryLabel}: ${v.ten}`} />
         <span className="w-11 shrink-0 pt-0.5 text-[11px] tabular-nums text-slate-500">{ngay(v.occurredOn, homNay)}</span>
         <span className="min-w-0 flex-1 text-sm text-slate-200">
-          {v.description}
+          {v.ten}
           <span className="block text-[11px] text-slate-500">{v.categoryLabel}{v.reportedByName ? ` · ${v.reportedByName} ghi` : ''}</span>
         </span>
         <NhanViPham t={v.trangThai} nhan={v.nhanTrangThai} />

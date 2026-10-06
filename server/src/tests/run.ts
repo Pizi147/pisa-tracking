@@ -9144,6 +9144,10 @@ await runPrLt3Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 const { runPrTkTests } = await import('./prTk.tests.ts');
 await runPrTkTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
+// ==================================================================== PR-LUI-a1 (Ý thức: ghi nhiều, Vi phạm + Mô tả, tệp dùng chung)
+const { runPrLuiA1Tests } = await import('./prLuiA1.tests.ts');
+await runPrLuiA1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

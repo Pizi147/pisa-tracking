@@ -10,7 +10,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 
 export type ViolationDetail = {
   id: number; studentId: number;
-  category: string; skill: string | null; occurredOn: string; description: string;
+  category: string; skill: string | null; occurredOn: string; ten: string; moTa: string; description: string;
   canEdit: boolean; attachmentCount: number;
   measures: { id: number; kindLabel: string; status: string; statusLabel: string }[];
   history: { id: number; field: string; oldValue: string | null; newValue: string | null; actorUserId: number | null; actorName: string | null; createdAt: string }[];
@@ -55,6 +55,12 @@ export function ChiTietViPham({ violationId, onSua, onDaXoa, onMoXuLy }: {
 
   return (
     <div className="space-y-2.5 text-sm">
+      {d.moTa && (
+        <div>
+          <p className="text-[11px] text-slate-500 m-0 mb-1">Mô tả</p>
+          <p className="m-0 whitespace-pre-wrap break-words">{d.moTa}</p>
+        </div>
+      )}
       <div>
         <p className="text-[11px] text-slate-500 m-0 mb-1">Bằng chứng</p>
         <BangChung ownerType="violation" ownerId={d.id} canEdit={d.canEdit} tieuDe="" onChanged={reload} />

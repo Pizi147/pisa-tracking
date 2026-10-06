@@ -16,6 +16,8 @@ import { CHUONG_TRINH_KHONG_CHIA_MON, boMonLich, programmeOf } from './normal.ts
 import { hanTheoNgay } from './cases.ts';
 import { addDaysIso } from './sos.ts';
 import { mondayOfDate } from './week.ts';
+import { tachKhac } from './khac.ts';
+import type { LoiTruong } from './loiForm.ts';
 
 /**
  * Y03 — ba khu vực Ý thức của GVCN nằm ở tab `Ý thức` của hồ sơ LỚP, cộng tab `Ý thức` ở hồ sơ học viên (không thêm khu vực cấp chính).
@@ -47,8 +49,57 @@ export function legacyTopicToViolationCategory(topic: string | null | undefined)
   }
 }
 
-/** V02: mô tả tối thiểu. V05 (bản T13): nhóm Khác cần ô Ghi rõ ≥ 3 ký tự (`kiemGhiRoKhac`, `./khac.ts`). */
-export const VIOLATION_DESCRIPTION_MIN = 10;
+/** PR-LUI-a (chủ sản phẩm 06/10): ô "Vi phạm" ngắn, bắt buộc — dòng chính ở mọi danh sách. "Mô tả" không bắt buộc (≤ 2000, máy chủ `chuTuDo`). */
+export const VI_PHAM_TEN_TOI_THIEU = 3;
+export const VI_PHAM_TEN_TOI_DA = 60;
+/** Một học viên, một lần Lưu: tối đa số dòng vi phạm này. */
+export const VI_PHAM_TOI_DA_DONG = 10;
+/** Một request ghi tối đa số học viên này (10 s của Netlify; cùng mẫu `LO_HANG_LOAT_EM`). Web chia lô bằng `chiaLo`. */
+export const LO_GHI_VI_PHAM = 8;
+/** Một lần Lưu tối đa số học viên này (một lớp). */
+export const TOI_DA_EM_GHI_VI_PHAM = 60;
+
+export function kiemTenViPham(text: unknown): string | null {
+  const n = String(text ?? '').trim().length;
+  if (n === 0) return 'Ghi vi phạm';
+  if (n < VI_PHAM_TEN_TOI_THIEU) return `Cần ít nhất ${VI_PHAM_TEN_TOI_THIEU} ký tự (đang có ${n})`;
+  if (n > VI_PHAM_TEN_TOI_DA) return `Tối đa ${VI_PHAM_TEN_TOI_DA} ký tự (đang có ${n})`;
+  return null;
+}
+
+/** Lỗi ô của panel Ghi vi phạm (web dùng cho `useLoiForm`): khoá `hoc-vien`, `nhom-1`, `ten-1`, `nhom-2`… (số dòng bắt đầu từ 1). */
+export function dsLoiGhiViPham(i: { hocVien: readonly number[]; dong: readonly { nhom: string; ten: string }[] }): LoiTruong[] {
+  const out: LoiTruong[] = [];
+  if (!i.hocVien.length) out.push({ khoa: 'hoc-vien', nhan: 'Học viên', lyDo: 'Chọn ít nhất một học viên' });
+  /* Nhiều học viên = MỘT vi phạm chung (Q1). Báo ngay tại ô, không gửi để máy chủ từ chối cả lô. */
+  else if (i.hocVien.length > 1 && i.dong.length > 1) out.push({ khoa: 'hoc-vien', nhan: 'Học viên', lyDo: 'Chọn nhiều học viên thì ghi một vi phạm.' });
+  i.dong.forEach((d, k) => {
+    const so = i.dong.length > 1 ? ` ${k + 1}` : '';
+    if (!d.nhom) out.push({ khoa: `nhom-${k + 1}`, nhan: `Nhóm${so}`, lyDo: 'Chọn Nhóm' });
+    const loi = kiemTenViPham(d.ten);
+    if (loi) out.push({ khoa: `ten-${k + 1}`, nhan: `Vi phạm${so}`, lyDo: loi });
+  });
+  return out;
+}
+
+const catNgan = (s: string) => {
+  if (s.length <= VI_PHAM_TEN_TOI_DA) return s;
+  const cach = s.lastIndexOf(' ', VI_PHAM_TEN_TOI_DA - 1);
+  return `${s.slice(0, cach > 30 ? cach : VI_PHAM_TEN_TOI_DA - 1).trimEnd()}…`;
+};
+/**
+ * DỮ LIỆU CŨ chỉ có `description` (cột `ten` NULL): tách KHI ĐỌC, không đổi DB. Ngắn → thành Vi phạm, mô tả rỗng;
+ * dài → Vi phạm = cắt ở chữ gần 60 + "…", mô tả giữ nguyên; "Khác" dạng `A — B` (T13) → A / B.
+ */
+export function tachTenMoTa(ten: string | null | undefined, moTa: string | null | undefined, category: string): { ten: string; moTa: string } {
+  const m = (moTa ?? '').trim();
+  if (ten && ten.trim()) return { ten: ten.trim(), moTa: m };
+  if (category === 'other') {
+    const k = tachKhac(m);
+    if (k.ghiRo) return k.ghiRo.length <= VI_PHAM_TEN_TOI_DA ? { ten: k.ghiRo, moTa: k.moTa } : { ten: catNgan(k.ghiRo), moTa: m };
+  }
+  return m.length <= VI_PHAM_TEN_TOI_DA ? { ten: m, moTa: '' } : { ten: catNgan(m), moTa: m };
+}
 
 /**
  * Môn của một vi phạm — TÙY CHỌN (V02/V04). Lớp Fast Track phân công Writing thành hai task, lớp thường có một môn Writing

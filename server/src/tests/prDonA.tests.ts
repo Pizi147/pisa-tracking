@@ -309,7 +309,7 @@ export async function runPrDonATests(t: YThucTestKit) {
       ['server/src/cases/cases.ts', /chuTuDo\(input\.title, 'Tên Case', 200\)/],
       ['server/src/cases/cases.ts', /chuTuDo\(input\.summary, 'Mô tả', 2000\)/],
       ['server/src/cases/cases.ts', /const closeNote = chuTuDo\(input\.note, 'Kết luận', 2000\)/],
-      ['server/src/yThuc/violations.ts', /chuTuDo\(description, 'Mô tả vi phạm', 2000\)/],
+      ['server/src/yThuc/violations.ts', /chuTuDo\(input\.description, 'Mô tả vi phạm', 2000\)/],
       ['server/src/duyet/yeuCau.ts', /chuTuDo\(v\.ghiChu, 'Ghi chú', 2000\)/],
       ['server/src/duyet/yeuCau.ts', /chuTuDo\(lyDo, 'Lý do', 2000\)/],
       ['server/src/duyet/yeuCau.ts', /chuTuDo\(traLoi, 'Câu trả lời', 2000\)/],

@@ -16,7 +16,7 @@ export type LichSuViPhamRow = {
 };
 
 /** Bốn trường nội dung tính vào "Đã sửa {n} lần" (Q8) — KHÔNG gồm `measure` (gắn/bỏ khỏi lần xử lý không phải sửa vi phạm). */
-const TRUONG_DEM_LAN_SUA = new Set(['description', 'category', 'skill', 'occurred_on']);
+const TRUONG_DEM_LAN_SUA = new Set(['ten', 'description', 'category', 'skill', 'occurred_on']);
 
 /**
  * Q8 — số LẦN sửa, không phải số DÒNG lịch sử: một lần sửa có thể đổi nhiều trường cùng lúc (`editViolation` ghi mỗi
@@ -32,7 +32,7 @@ export function demLanSua(history: readonly LichSuViPhamRow[]): number {
 }
 
 const TRUONG_NHAN: Record<string, string> = {
-  description: 'Mô tả', category: 'Nhóm', skill: 'Môn', occurred_on: 'Ngày xảy ra',
+  ten: 'Vi phạm', description: 'Mô tả', category: 'Nhóm', skill: 'Môn', occurred_on: 'Ngày xảy ra',
 };
 
 /**

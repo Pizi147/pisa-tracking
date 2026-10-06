@@ -2,21 +2,27 @@
  * KIỂU DỮ LIỆU Ý THỨC v4 phía giao diện (PR-YT4) — khớp JSON của `server/src/yThuc/xuLy.ts` (`yThucHocVien`, `xemXuLy`) và
  * `board.ts` (`bangYThucLop`). Một chỗ khai, mọi thành phần trong `modules/yThuc/` đọc từ đây.
  */
+import { invalidate } from '../../lib/api.ts';
 import type { NhomEm, TheYeuCauDto, TrangThaiVp } from '@shared/domain/index.ts';
 
 export type ViPhamV4 = {
   id: number; studentId: number; studentName: string; classCode: string | null; cycleId: number | null;
   category: string; categoryLabel: string; skill: string | null; skillLabel: string | null;
-  occurredOn: string; reportedOn: string; reportedBy: number; reportedByName: string | null; description: string;
+  occurredOn: string; reportedOn: string; reportedBy: number; reportedByName: string | null;
+  /** PR-LUI-a1: `ten` = Vi phạm (dòng chính), `moTa` = Mô tả (có thể rỗng). */
+  ten: string; moTa: string; description: string;
   trangThai: TrangThaiVp; nhanTrangThai: string; han: string | null; quaHanNgay: number | null; lyDoQuaHan: 'xu-ly' | 'xem' | null;
   ghiNhanLuc: string | null; ghiNhanBoiName: string | null;
 };
+
+/** Sau mọi thay đổi vi phạm / lần xử lý: làm mới các danh sách đọc dữ liệu Ý thức. */
+export const lamMoiYThuc = () => { for (const p of ['/violations', '/measures', '/classes', '/students', '/y-thuc']) invalidate(p); };
 
 export type BacThangDong = { kind: string; nhan: string; trangThai: 'qua' | 'khai' | 'lan-nay' | 'sau' };
 
 export type DongThoiGianYt =
   | { loai: 'vi-pham'; id: number; studentId: number; ten: string; ngay: string; nhom: string; category: string; mon: string | null;
-      moTa: string; trangThai: TrangThaiVp; nhanTrangThai: string; han: string | null; nguoiGhi: string | null }
+      viPham: string; trangThai: TrangThaiVp; nhanTrangThai: string; han: string | null; nguoiGhi: string | null }
   | { loai: 'xu-ly'; id: number; studentId: number; ten: string; ngay: string; nhan: string; kind: string; status: string;
       statusLabel: string; soViPham: number; nguoi: string | null; soTep: number };
 
@@ -42,6 +48,8 @@ export type XuLyView = {
   status: string; statusLabel: string; bac: number; note: string | null;
   performedOn: string | null; nguoi: string | null; quyetLuc: string | null; createdAt: string;
   viPham: ViPhamV4[]; soTep: number; canManage: boolean; the: TheYeuCauDto | null;
+  /** PR-LUI-a1: Sửa vi phạm / Xoá lần xử lý (quyền do máy chủ tính). `lanSau` = tên lần sau (còn thì chưa xoá được); `bacVe` = bậc sau khi xoá. */
+  coTheSua: boolean; coTheXoa: boolean; lanSau: string | null; bacVe: number | null; chuaXuLy: ViPhamV4[];
 };
 
 export type DongEm = {

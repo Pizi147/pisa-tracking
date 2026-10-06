@@ -132,7 +132,7 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
             muc={locVp(d.dongThoiGian.filter((x) => x.loai === 'vi-pham') as Extract<(typeof d.dongThoiGian)[number], { loai: 'vi-pham' }>[]).map((x) => ({
               key: `v${x.id}`, ngay: x.ngay,
               cot2: <button type="button" className="link block max-w-full truncate text-left text-sm" onClick={() => chon(x.studentId)}>{x.ten}</button>,
-              tieuDe: x.moTa,
+              tieuDe: x.viPham,
               dongPhu: [x.nhom, x.nguoiGhi ? `${x.nguoiGhi} ghi` : null].filter(Boolean).join(' · '),
               cuoi: <NhanViPham t={x.trangThai} nhan={x.nhanTrangThai} />,
             }))}
@@ -154,7 +154,7 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
                 const coGhiNhan = hv.canManage && (v.trangThai === 'moi' || (v.trangThai === 'qua_han' && v.lyDoQuaHan === 'xem'));
                 return {
                   key: `v${v.id}`, ngay: v.occurredOn,
-                  tieuDe: v.description,
+                  tieuDe: v.ten,
                   dongPhu: [v.categoryLabel, v.reportedByName ? `${v.reportedByName} ghi` : null].filter(Boolean).join(' · '),
                   cuoi: (
                     <span className="flex flex-wrap items-center justify-end gap-1.5">

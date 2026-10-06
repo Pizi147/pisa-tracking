@@ -1,10 +1,11 @@
 import { db, tx } from '../db.ts';
 import {
-  VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, VIOLATION_DESCRIPTION_MIN, ghepKhac, kiemGhiRoKhac,
+  VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, kiemTenViPham, tachTenMoTa, LO_GHI_VI_PHAM, VI_PHAM_TOI_DA_DONG,
   VIOLATION_SKILLS, XU_LY_STATUS_LABEL, nhanLoaiXuLy, tenMon,
   type ViolationCategory, type TrangThaiVp,
 } from '../../../shared/domain/index.ts';
 import { chotHanXuLy, trangThaiYThuc, type EmYThuc } from './trangThai.ts';
+import { xoaNho } from '../platform/nguCanhRequest.ts';
 import { baoKhiGhiViPham, dangBatBuoc, laGvcnDangHoc } from './xuLy.ts';
 import type { Principal } from '../permissions.ts';
 import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -37,6 +38,8 @@ export type ViolationView = {
   skill: string | null; skillLabel: string | null;
   occurredOn: string; reportedOn: string;
   reportedBy: number; reportedByName: string | null;
+  /** PR-LUI-a: `ten` = dòng chính (Vi phạm, ≤ 60); `moTa` = Mô tả (có thể rỗng). `description` giữ chữ thô cho nơi gọi cũ. */
+  ten: string; moTa: string;
   description: string;
   /** Nhãn §5.4 — từ `trangThaiYThuc()`, không tính riêng. */
   trangThai: TrangThaiVp; nhanTrangThai: string;
@@ -59,6 +62,7 @@ const SELECT = `
 
 /** `em`: trạng thái Ý thức của học viên đó (nơi gọi theo lô truyền vào); thiếu thì tự hỏi cửa trạng thái cho riêng em. */
 export function shapeViolation(r: any, em?: EmYThuc): ViolationView {
+  const tm = tachTenMoTa(r.ten, r.description, r.category);
   const tt = (em ?? trangThaiYThuc([r.student_id]).get(r.student_id)!).viPham.get(r.id);
   return {
     id: r.id,
@@ -69,7 +73,7 @@ export function shapeViolation(r: any, em?: EmYThuc): ViolationView {
     skill: r.skill ?? null, skillLabel: r.skill ? tenMon(r.class_ct ?? null, r.skill) : null,
     occurredOn: r.occurred_on, reportedOn: r.reported_on,
     reportedBy: r.reported_by, reportedByName: r.reported_by_name ?? null,
-    description: r.description,
+    ten: tm.ten, moTa: tm.moTa, description: r.description,
     trangThai: tt?.t ?? 'moi', nhanTrangThai: tt?.nhan ?? 'Mới', han: tt?.han ?? null, quaHanNgay: tt?.quaHanNgay ?? null, lyDoQuaHan: tt?.lyDoQuaHan ?? null,
     ghiNhanLuc: r.ghi_nhan_luc ?? null, ghiNhanBoiName: r.ghi_nhan_boi_name ?? null,
     createdAt: r.created_at, updatedAt: r.updated_at ?? null,
@@ -127,19 +131,17 @@ function checkCategory(category: unknown): ViolationCategory {
   return category as ViolationCategory;
 }
 
-function checkDescription(category: ViolationCategory, description: unknown, ghiRoKhac?: string | null): string {
-  const text = chuTuDo(description, 'Mô tả vi phạm', 2000) ?? '';   // PR-Dọn (Q4, quét #24)
-  if (text.length < VIOLATION_DESCRIPTION_MIN) {
-    throw badRequest(`Mô tả vi phạm cần từ ${VIOLATION_DESCRIPTION_MIN} ký tự — nói rõ em đã làm gì, ở buổi nào.`);
-  }
-  if (category !== 'other') return text;
-  /*
-   * V05 (bản T13): nhóm Khác cần ô Ghi rõ ≥ 3 ký tự. Vi phạm không có cột riêng cho chữ đó (Q9) nên ghép vào đầu mô tả
-   * `{ghi rõ} — {mô tả}`. Sửa lại mà không gửi `ghiRoKhac`: phần trước " — " của mô tả đang lưu chính là chữ Ghi rõ cũ.
-   */
-  const loi = kiemGhiRoKhac(ghiRoKhac ?? (text.includes(' — ') ? text.split(' — ')[0] : ''));
-  if (loi) throw badRequest(`Chọn nhóm "Khác": ${loi}.`);
-  return ghepKhac(ghiRoKhac ?? '', text);
+/**
+ * PR-LUI-a: `Vi phạm` (ten, 3–60 ký tự, bắt buộc) + `Mô tả` (≤ 2000, không bắt buộc). Nơi gọi cũ chỉ gửi `description`: chữ ngắn thành Vi phạm,
+ * chữ dài cắt ở chữ gần 60 (`tachTenMoTa`) — mô tả giữ nguyên.
+ */
+function checkTenMoTa(input: { ten?: unknown; description?: unknown }): { ten: string; moTa: string } {
+  const moTa = chuTuDo(input.description, 'Mô tả vi phạm', 2000) ?? '';
+  const guiTen = input.ten !== undefined && input.ten !== null;
+  const ten = guiTen ? String(input.ten).trim() : tachTenMoTa(null, moTa, '').ten;
+  const loi = kiemTenViPham(ten);
+  if (loi) throw badRequest(`Vi phạm: ${loi}.`);
+  return { ten, moTa: !guiTen && moTa === ten ? '' : moTa };
 }
 
 function checkSkill(skill: unknown): string | null {
@@ -151,8 +153,7 @@ function checkSkill(skill: unknown): string | null {
 }
 
 /** V03: mặc định hôm nay, cho chọn ngày quá khứ (GV nhớ ra sau), không cho ngày tương lai. */
-function checkOccurredOn(value: unknown): string {
-  const today = demoToday();
+function checkOccurredOn(value: unknown, today: string = demoToday()): string {
   if (value === undefined || value === null || value === '') return today;
   if (!isIsoDate(value)) throw badRequest('Ngày xảy ra không hợp lệ.');
   if (value > today) throw badRequest('Ngày xảy ra không được ở tương lai.');
@@ -163,9 +164,8 @@ function checkOccurredOn(value: unknown): string {
  * V04: môn TỰ ĐIỀN theo phân công của giáo viên ở lớp đó. Dạy đúng một môn thì điền môn đó; dạy nhiều môn, hoặc không dạy
  * môn nào (GVCN thuần, Quản lý), thì để trống cho người ghi chọn — hệ thống không đoán.
  */
-export function defaultSkillFor(p: Principal, classId: number | null): string | null {
+export function defaultSkillFor(p: Principal, classId: number | null, today: string = demoToday()): string | null {
   if (!classId) return null;
-  const today = demoToday();
   const skills = new Set(
     p.assignments
       .filter((a) => a.classId === classId && a.skill && a.effectiveFrom <= today && (!a.effectiveTo || a.effectiveTo >= today))
@@ -191,12 +191,50 @@ export function similarViolations(
     .all(q.studentId, q.category, on, q.excludeId ?? 0) as any[]).map((r) => shapeViolation(r));
 }
 
+/** Một dòng vi phạm đã kiểm (dùng cho cả ghi một em và ghi nhiều em). */
+type DongDaKiem = { category: ViolationCategory; skill: string | null; occurredOn: string; ten: string; moTa: string };
+
+/**
+ * Phần ghi của MỘT vi phạm — gọi TRONG `tx` của nơi gọi. KHÔNG báo GVCN / chốt hạn: nơi gọi làm MỘT lần cho cả em (sau mọi dòng) vì hai việc đó
+ * tính lại trạng thái Ý thức của em (nhiều câu SQL) — làm mỗi dòng thì 10 dòng vượt trần 10 s của Netlify.
+ */
+function ghiMotViPham(p: Principal, student: any, classId: number, cycleId: number | null, today: string, dong: DongDaKiem, key: string | null, laGvcn: boolean): number {
+  const info = db()
+    .prepare(
+      `INSERT INTO violations (student_id, cycle_id, class_id, category, skill, occurred_on, reported_on, reported_by,
+                               ten, description, idempotency_key, created_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+    )
+    .run(student.id, cycleId, classId, dong.category, dong.skill, dong.occurredOn, today, p.userId, dong.ten, dong.moTa, key, nowIso());
+  const newId = Number(info.lastInsertRowid);
+  /*
+   * Q5 (Câu 1 = A): GVCN lớp đang học tự ghi → tự "Đã ghi nhận" (vẫn đếm vào luật ≥ 3). PR-S3F #6: LUÔN đặt dấu, kể cả khi chính lần ghi này là
+   * vi phạm thứ 3 — `trangThaiViPham` vẫn cho "Cần xử lý" thắng (M-10), nhưng xoá bớt một vi phạm khác thì vi phạm của GVCN không được hiện "Mới".
+   */
+  if (laGvcn) {
+    db().prepare('UPDATE violations SET ghi_nhan_luc = ?, ghi_nhan_boi = ? WHERE id = ?').run(today, p.userId, newId);
+  }
+  writeAudit({
+    actorUserId: p.userId, action: 'violation.record', entityType: 'violation', entityId: newId,
+    entityLabel: `${student.student_code} · ${VIOLATION_CATEGORY_LABEL[dong.category]}`,
+    after: { category: dong.category, skill: dong.skill, occurredOn: dong.occurredOn, ten: dong.ten, description: dong.moTa },
+  });
+  return newId;
+}
+
+/** V07: khoá đã dùng → chỉ phát lại cho đúng người ghi và đúng học viên; khoá của bản ghi khác mà trả về là lộ vi phạm của em ngoài phạm vi. */
+function daGhiTheoKhoa(p: Principal, studentId: number, seen: any): number | null {
+  if (!seen) return null;
+  if (seen.student_id !== studentId || seen.reported_by !== p.userId) throw badRequest(KEY_TAKEN_MESSAGE);
+  return seen.id;
+}
+
 export function recordViolation(p: Principal, input: {
   studentId: number;
   category?: string;
+  /** Mô tả (không bắt buộc). Nơi gọi cũ không gửi `ten` thì chữ này tự thành Vi phạm (ngắn) — xem `checkTenMoTa`. */
   description?: string;
-  /** Nhóm `Khác` (T13): chữ ô Ghi rõ, ≥ 3 ký tự — ghép vào đầu mô tả. */
-  ghiRoKhac?: string | null;
+  ten?: string | null;
   occurredOn?: string | null;
   /** `undefined` = tự điền theo phân công (V04); `null` hoặc rỗng = người ghi chủ động để trống. */
   skill?: string | null;
@@ -212,20 +250,14 @@ export function recordViolation(p: Principal, input: {
   const key = input.idempotencyKey?.trim() || null;
   if (key) {
     /* V07: gửi lại cùng một request (bấm hai lần, thử lại sau lỗi mạng) không tạo dòng thứ hai và không ghi audit thêm. */
-    const seen = db().prepare('SELECT id, student_id, reported_by FROM violations WHERE idempotency_key = ?').get(key) as any;
-    if (seen) {
-      /* Chỉ PHÁT LẠI cho đúng người ghi và đúng học viên. Khoá của bản ghi khác mà trả về là lộ vi phạm của em ngoài phạm vi. */
-      if (seen.student_id !== input.studentId || seen.reported_by !== p.userId) throw badRequest(KEY_TAKEN_MESSAGE);
-      return { violation: loadViolation(seen.id), similar: [] };
-    }
+    const cu = daGhiTheoKhoa(p, input.studentId, db().prepare('SELECT id, student_id, reported_by FROM violations WHERE idempotency_key = ?').get(key));
+    if (cu) return { violation: loadViolation(cu), similar: [] };
   }
 
   const category = checkCategory(input.category);
-  const description = checkDescription(category, input.description, input.ghiRoKhac);
+  const { ten, moTa } = checkTenMoTa(input);
   const occurredOn = checkOccurredOn(input.occurredOn);
   const skill = input.skill === undefined ? defaultSkillFor(p, classId) : checkSkill(input.skill);
-  const cycle = currentCycle(input.studentId);
-  const today = demoToday();
 
   /* Tính bản trùng TRƯỚC khi ghi để không tự thấy chính mình. */
   const similar = similarViolations(p, { studentId: input.studentId, category, occurredOn });
@@ -233,31 +265,93 @@ export function recordViolation(p: Principal, input: {
   const laGvcn = laGvcnDangHoc(p, input.studentId);
 
   const id = tx(() => {
-    const info = db()
-      .prepare(
-        `INSERT INTO violations (student_id, cycle_id, class_id, category, skill, occurred_on, reported_on, reported_by,
-                                 description, idempotency_key, created_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
-      )
-      .run(input.studentId, cycle?.id ?? null, classId, category, skill, occurredOn, today, p.userId, description, key, nowIso());
-    const newId = Number(info.lastInsertRowid);
-    /*
-     * Q5 (Câu 1 = A): GVCN lớp đang học tự ghi → tự "Đã ghi nhận" (vẫn đếm vào luật ≥ 3). PR-S3F #6: LUÔN đặt dấu, kể cả khi chính lần ghi này là
-     * vi phạm thứ 3 — `trangThaiViPham` vẫn cho "Cần xử lý" thắng (M-10), nhưng xoá bớt một vi phạm khác thì vi phạm của GVCN không được hiện "Mới".
-     */
-    if (laGvcn) {
-      db().prepare('UPDATE violations SET ghi_nhan_luc = ?, ghi_nhan_boi = ? WHERE id = ?').run(today, p.userId, newId);
-    }
-    writeAudit({
-      actorUserId: p.userId, action: 'violation.record', entityType: 'violation', entityId: newId,
-      entityLabel: `${student.student_code} · ${VIOLATION_CATEGORY_LABEL[category]}`,
-      after: { category, skill, occurredOn, description },
-    });
+    const newId = ghiMotViPham(p, student, classId, currentCycle(input.studentId)?.id ?? null, demoToday(), { category, skill, occurredOn, ten, moTa }, key, laGvcn);
     baoKhiGhiViPham(p, input.studentId, newId, category, truocBatBuoc);
     chotHanXuLy([input.studentId]);
     return newId;
   });
   return { violation: loadViolation(id), similar };
+}
+
+export type DongViPhamVao = { category?: string; skill?: string | null; occurredOn?: string | null; ten?: string | null; moTa?: string };
+
+/**
+ * GHI NHIỀU (PR-LUI-a1, chủ sản phẩm 06/10): một học viên nhiều dòng, HOẶC nhiều học viên một dòng. ≤ `LO_GHI_VI_PHAM` em mỗi request (web chia lô);
+ * mỗi em MỘT giao dịch, lỗi một em không cuộn lại em khác. Nội dung sai (khuôn, nhóm, Vi phạm, ngày, môn) → 400 TRƯỚC khi ghi gì.
+ * Gửi lại cùng `idempotencyKey`: mỗi dòng có khoá `{key}:{em}:{i}` nên không thêm dòng, trả lại đúng id.
+ * Ít câu SQL (trần 10 s Netlify × ~35 ms/câu): học viên, khoá gửi, trạng thái Ý thức đọc MỘT lần theo lô; báo GVCN + chốt hạn một lần sau khi ghi cả lô.
+ */
+export function recordViolations(p: Principal, input: {
+  studentIds: number[]; lines: DongViPhamVao[]; moTaRieng?: Record<string, string> | null; idempotencyKey: string;
+}): { ok: { studentId: number; ids: number[] }[]; loi: { studentId: number; loi: string; ma: number }[] } {
+  const ids = Array.isArray(input.studentIds) ? input.studentIds : [];
+  if (!ids.length || ids.length > LO_GHI_VI_PHAM || new Set(ids).size !== ids.length || !ids.every((x) => Number.isInteger(x) && x > 0)) {
+    throw badRequest(`Chọn từ 1 đến ${LO_GHI_VI_PHAM} học viên mỗi lần gửi.`);
+  }
+  const lines = Array.isArray(input.lines) ? input.lines : [];
+  if (!lines.length || lines.length > VI_PHAM_TOI_DA_DONG) throw badRequest(`Mỗi học viên ghi từ 1 đến ${VI_PHAM_TOI_DA_DONG} vi phạm.`);
+  if (!lines.every((l) => l && typeof l === 'object')) throw badRequest('Vi phạm: dòng không hợp lệ.');
+  if (ids.length > 1 && lines.length > 1) throw badRequest('Chọn nhiều học viên thì ghi một vi phạm.');
+  const key = String(input.idempotencyKey ?? '').trim();
+  if (key.length < 8 || key.length > 80) throw badRequest('Thiếu khoá gửi (idempotencyKey).');
+  const today = demoToday();
+  const dong = lines.map((l) => ({
+    category: checkCategory(l.category), occurredOn: checkOccurredOn(l.occurredOn, today),
+    ...checkTenMoTa({ ten: l.ten ?? '', description: l.moTa }),
+    /* Môn: kiểm TRƯỚC khi ghi gì; `undefined` = tự điền theo phân công của từng em. */
+    skill: l.skill === undefined ? undefined : checkSkill(l.skill),
+  }));
+  /* Mô tả riêng từng em chỉ có nghĩa khi MỘT dòng chung cho nhiều em — một em nhiều dòng thì bỏ qua (khỏi đè mọi dòng). */
+  const rieng = lines.length === 1 ? input.moTaRieng ?? {} : {};
+  const moTaRieng = new Map<number, string>();
+  for (const sid of ids) {
+    const r = rieng[String(sid)];
+    if (r !== undefined && String(r).trim()) moTaRieng.set(sid, chuTuDo(r, 'Mô tả riêng', 2000) ?? '');
+  }
+
+  /* Đọc theo lô một lần: học viên, khoá đã dùng, trạng thái Ý thức TRƯỚC khi ghi. */
+  const hang = (n: number) => Array.from({ length: n }, () => '?').join(',');
+  const students = new Map((db().prepare(`SELECT * FROM students WHERE id IN (${hang(ids.length)})`).all(...ids) as any[]).map((r) => [r.id as number, r]));
+  const khoa = (sid: number, i: number) => `${key}:${sid}:${i}`;
+  const tatCaKhoa = ids.flatMap((sid) => dong.map((_, i) => khoa(sid, i)));
+  const daCo = new Map((db().prepare(`SELECT id, student_id, reported_by, idempotency_key FROM violations WHERE idempotency_key IN (${hang(tatCaKhoa.length)})`)
+    .all(...tatCaKhoa) as any[]).map((r) => [r.idempotency_key as string, r]));
+  const truoc = trangThaiYThuc(ids);
+
+  const ok: { studentId: number; ids: number[] }[] = [];
+  const loi: { studentId: number; loi: string; ma: number }[] = [];
+  const viec: { sid: number; lastId: number; category: ViolationCategory; truocBatBuoc: boolean }[] = [];
+  for (const sid of ids) {
+    try {
+      const student = students.get(sid);
+      if (!student) throw notFound('Không tìm thấy học viên');
+      requireRecordViolation(p, sid);
+      const classId = activeClassOf(sid);
+      if (!classId) throw badRequest('Học viên này chưa xếp lớp hoặc không còn đang học — chưa ghi được vi phạm.');
+      const cu = dong.map((_, i) => daGhiTheoKhoa(p, sid, daCo.get(khoa(sid, i))));
+      if (cu.every((x) => x !== null)) { ok.push({ studentId: sid, ids: cu as number[] }); continue; }
+      const emT = truoc.get(sid)!;
+      const laGvcn = laGvcnDangHoc(p, sid, emT);
+      const cycleId = currentCycle(sid)?.id ?? null;
+      const moi = tx(() => dong.map((dg, i) => cu[i] ?? ghiMotViPham(p, student, classId, cycleId, today, {
+        category: dg.category, occurredOn: dg.occurredOn, ten: dg.ten, moTa: moTaRieng.get(sid) ?? dg.moTa,
+        skill: dg.skill === undefined ? defaultSkillFor(p, classId, today) : dg.skill,
+      }, khoa(sid, i), laGvcn)));
+      ok.push({ studentId: sid, ids: moi });
+      const dongMoi = cu.map((x, i) => (x === null ? i : -1)).filter((i) => i >= 0);
+      viec.push({ sid, lastId: moi[dongMoi[dongMoi.length - 1]], category: dong[dongMoi[dongMoi.length - 1]].category, truocBatBuoc: dangBatBuoc(sid, emT) });
+    } catch (e: any) {
+      loi.push({ studentId: sid, loi: String(e?.message ?? 'Không lưu được.'), ma: Number(e?.status) || 500 });
+    }
+  }
+  /* Sau cả lô: MỘT lần tính lại trạng thái các em vừa ghi → báo GVCN (dedup mỗi em mỗi ngày) + chốt hạn xử lý. */
+  if (viec.length) {
+    xoaNho();
+    const sau = trangThaiYThuc(viec.map((v) => v.sid));
+    for (const v of viec) baoKhiGhiViPham(p, v.sid, v.lastId, v.category, v.truocBatBuoc, sau.get(v.sid));
+    chotHanXuLy(viec.map((v) => v.sid), { trang: sau });
+  }
+  return { ok, loi };
 }
 
 // ---------------------------------------------------------------- sửa và xoá (V09–V10, V11′–V14′)
@@ -285,30 +379,28 @@ export function noteMeasureChange(violationId: number, oldMeasureId: number | nu
  * V10 — người sửa: người ghi (vi phạm của chính mình), GVCN của lớp, Quản lý trong phạm vi.
  */
 export function editViolation(p: Principal, id: number, patch: {
-  description?: string; category?: string; skill?: string | null; occurredOn?: string | null;
-  /** Nhóm `Khác` (T13): chữ ô Ghi rõ. Không gửi thì lấy phần trước " — " của mô tả đang lưu. */
-  ghiRoKhac?: string | null;
+  ten?: string | null; description?: string; category?: string; skill?: string | null; occurredOn?: string | null;
 }): ViolationView {
   const row = loadRow(id);
   requireViewStudent(p, row.student_id);
   if (!canEditViolation(p, row)) throw forbidden(EDIT_VIOLATION_MESSAGE);
 
   const category = patch.category === undefined ? (row.category as ViolationCategory) : checkCategory(patch.category);
-  /*
-   * Form sửa luôn gửi lại nhóm + mô tả dù không đổi. Chỉ kiểm/ghép lại mô tả khi THẬT SỰ đổi nhóm, đổi mô tả, hoặc gửi chữ Ghi rõ —
-   * để vi phạm "Khác" cũ (trước T13, mô tả không có tiền tố Ghi rõ) vẫn đổi được ngày/môn mà không bị bắt viết lại mô tả.
-   */
-  const moTaGui = patch.description === undefined ? undefined : String(patch.description ?? '').trim();
-  const canKiemMoTa = category !== row.category || (moTaGui !== undefined && moTaGui !== row.description)
-    || patch.ghiRoKhac !== undefined;
-  const description = canKiemMoTa
-    ? checkDescription(category, moTaGui ?? row.description, patch.ghiRoKhac)
-    : row.description;
+  /* Form sửa gửi lại cả `ten` + `description`. Nội dung không đổi so với cái đang HIỆN (đã tách khi đọc) thì giữ nguyên cột, để vi phạm cũ
+     vẫn đổi được ngày / môn mà không bị bắt viết lại. */
+  const cur = tachTenMoTa(row.ten, row.description, row.category);
+  let ten: string | null = row.ten ?? null;
+  let moTa: string = row.description;
+  if ((patch.ten !== undefined && patch.ten !== null) || patch.description !== undefined) {
+    const kq = checkTenMoTa({ ten: patch.ten ?? cur.ten, description: patch.description ?? cur.moTa });
+    if (kq.ten !== cur.ten || kq.moTa !== cur.moTa) { ten = kq.ten; moTa = kq.moTa; }
+  }
   const skill = patch.skill === undefined ? row.skill : checkSkill(patch.skill);
   const occurredOn = patch.occurredOn === undefined ? row.occurred_on : checkOccurredOn(patch.occurredOn);
 
   const changes: Array<[string, string | null, string | null]> = [];
-  if (description !== row.description) changes.push(['description', row.description, description]);
+  if (ten !== (row.ten ?? null)) changes.push(['ten', row.ten ?? cur.ten, ten]);
+  if (moTa !== row.description) changes.push(['description', row.description, moTa]);
   if (category !== row.category) changes.push(['category', row.category, category]);
   if ((skill ?? null) !== (row.skill ?? null)) changes.push(['skill', row.skill ?? null, skill ?? null]);
   if (occurredOn !== row.occurred_on) changes.push(['occurred_on', row.occurred_on, occurredOn]);
@@ -316,8 +408,8 @@ export function editViolation(p: Principal, id: number, patch: {
 
   tx(() => {
     db()
-      .prepare('UPDATE violations SET description = ?, category = ?, skill = ?, occurred_on = ?, updated_at = ? WHERE id = ?')
-      .run(description, category, skill ?? null, occurredOn, nowIso(), id);
+      .prepare('UPDATE violations SET ten = ?, description = ?, category = ?, skill = ?, occurred_on = ?, updated_at = ? WHERE id = ?')
+      .run(ten, moTa, category, skill ?? null, occurredOn, nowIso(), id);
     for (const [field, from, to] of changes) addHistory(id, field, from, to, p.userId);
     chotHanXuLy([row.student_id]);
     writeAudit({
@@ -365,7 +457,7 @@ export function deleteViolation(p: Principal, id: number): { ok: true; removedFr
       entityLabel: `${row.student_code} · ${VIOLATION_CATEGORY_LABEL[row.category as ViolationCategory]}`,
       before: {
         studentId: row.student_id, studentCode: row.student_code, classId: row.class_id ?? null, category: row.category, skill: row.skill ?? null,
-        occurredOn: row.occurred_on, reportedOn: row.reported_on, reportedBy: row.reported_by, description: row.description,
+        occurredOn: row.occurred_on, reportedOn: row.reported_on, reportedBy: row.reported_by, ten: row.ten ?? null, description: row.description,
         measureIds, attachments: files,
       },
     });

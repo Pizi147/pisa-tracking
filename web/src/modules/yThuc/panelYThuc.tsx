@@ -7,7 +7,7 @@ import { XemXuLyPanel } from './XemXuLyPanel.tsx';
 import { DeleteViolationConfirm } from './DeleteViolationConfirm.tsx';
 import type { ViolationDetail } from './ChiTietViPham.tsx';
 
-export type ViolationChoSua = Pick<ViolationDetail, 'id' | 'studentId' | 'category' | 'skill' | 'occurredOn' | 'description'>;
+export type ViolationChoSua = Pick<ViolationDetail, 'id' | 'studentId' | 'category' | 'skill' | 'occurredOn' | 'ten' | 'moTa'>;
 
 /** Một state duy nhất cho MỌI panel Ý thức — mở mới thay cũ, không bao giờ chồng hai panel cùng lúc (G-8, YT-13). */
 export type PanelYThuc =
@@ -44,7 +44,6 @@ export function usePanelYThuc({ onDone, roster, maLop }: {
         studentName={panel?.loai === 'ghi' ? panel.studentName : undefined}
         lop={maLop}
         students={panel?.loai === 'ghi' ? roster : undefined}
-        onPickStudent={(id) => mo({ loai: 'ghi', studentId: id, studentName: roster?.find((r) => r.id === id)?.name })}
         onDone={xong}
       />
       <RecordViolationPanel
@@ -60,7 +59,7 @@ export function usePanelYThuc({ onDone, roster, maLop }: {
       )}
       {panel?.loai === 'khai' && <KhaiBacPanel studentId={panel.studentId} sua={panel.sua} onClose={dong} onDone={onDone} />}
       {panel?.loai === 'da-thuc-hien' && <DaThucHienPanel measureId={panel.id} onClose={dong} onDone={onDone} />}
-      <XemXuLyPanel measureId={panel?.loai === 'xem' ? panel.id : null} onClose={dong} onDaThucHien={(id) => mo({ loai: 'da-thuc-hien', id })} />
+      <XemXuLyPanel measureId={panel?.loai === 'xem' ? panel.id : null} onClose={dong} onDone={onDone} onDaThucHien={(id) => mo({ loai: 'da-thuc-hien', id })} />
       <DeleteViolationConfirm violationId={deleteId} onClose={() => setDeleteId(null)} onDone={onDone} />
     </>
   );
