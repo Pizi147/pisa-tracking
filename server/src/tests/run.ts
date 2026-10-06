@@ -9146,6 +9146,9 @@ await runPrLuiBTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 // ==================================================================== PR-LT3 (Lịch Test ba khối + Speaking chấm chéo) — cuối cùng: thêm HV thử vào MB FT 101
 const { runPrLt3Tests } = await import('./prLt3.tests.ts');
 await runPrLt3Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+// ==================================================================== PR-MT0 (lượt Mock số 0 cho em lớp thường lên FT)
+const { runPrMt0Tests } = await import('./prMt0.tests.ts');
+await runPrMt0Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
