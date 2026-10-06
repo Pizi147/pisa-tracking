@@ -33,6 +33,8 @@ type SkillSchedule = {
   periodCode: string | null; weekRange: string | null; weekStart: string | null;
   deadline: string | null; progress: string; sitStatus: string; overdue: boolean;
   noShow: boolean; movedFrom: string | null; movedFromStart: string | null; canEdit: boolean;
+  /** PR-BV: người xem gỡ được dấu "-" lúc này. */
+  goDau?: boolean;
   /** R11: đợt đã hoàn tất — khoá với người không có `PLAN_WEEK`/`SCORE_OVERRIDE`. */
   khoa?: boolean;
 };
@@ -93,6 +95,7 @@ export function oThuong(r: Row, k: string, homNay: string) {
   const cell = {
     diem, tong: kq?.total ?? null,
     dau: !!s?.noShow,
+    goDau: !!s?.goDau,
     tuanDoiTu: s?.noShow ? (s.movedFromStart ? tuanLich(s.movedFromStart, homNay) : 'tuần cũ') : null,
     tuanHienTai: s?.weekStart ? tuanLich(s.weekStart, homNay) : null,
     chuaToiTuan: s?.progress === 'upcoming',
@@ -185,7 +188,7 @@ const COT_KQ = 290;
  * Lưu một ô của lưới lớp thường cho MỘT dòng — cùng dáng `useSaveScore` của FT: trạng thái lưu riêng TỪNG Ô,
  * chặn gửi lặp cùng một ô, lỗi thì giữ bản nháp. `nem` = ném lỗi cho hộp lý do hiện câu lỗi tại ô.
  */
-export function useLuuThuong(attemptId: number, onReload: () => void, ct: string | null = null) {
+export function useLuuThuong(attemptId: number, onReload: () => void, ct: string | null = null, tenHv?: string) {
   const tenO = (k: string) => tenMon(ct, k);
   const toast = useToast();
   /* Trạng thái lưu THEO TỪNG Ô (PR-UX1): một ô hỏng không bị ô lưu sau che thành "Đã lưu". */
@@ -233,7 +236,9 @@ export function useLuuThuong(attemptId: number, onReload: () => void, ct: string
   const dau = async (skill: string, bat: boolean, im = false) => {
     const r = await gui(skill, { noShow: bat });
     if (r && r.moved && !im) {
-      toast.push('ok', bat ? `Đã dời ${tenO(skill)} sang tuần sau.` : `Đã gỡ dấu "-" — ${tenO(skill)} về lại tuần cũ.`);
+      toast.push('ok', bat ? `Đã dời ${tenO(skill)} sang tuần sau.` : `Đã gỡ vắng ${tenO(skill)}${tenHv ? ` · ${tenHv}` : ''} · về ${r.tuanMoi ?? 'tuần cũ'}`);
+    } else if (r && !bat && r.giuLich && !im) {
+      toast.push('ok', `Đã gỡ vắng ${tenO(skill)}${tenHv ? ` · ${tenHv}` : ''} · giữ ${r.tuanMoi ?? 'tuần mới'}`);   // PR-BV: tuần mới đã có điểm
     }
     return r !== null;
   };
@@ -377,7 +382,7 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
   register: (col: number, el: HTMLInputElement | null) => void;
   onMove: (row: number, col: number, dr: number) => void;
 }) {
-  const { luu, dau, status, lastError, retry, o, loi, luuLai, soLoi, loiNhap, coGuiLai } = useLuuThuong(row.attemptId, onReload, sheet.programme.code);
+  const { luu, dau, status, lastError, retry, o, loi, luuLai, soLoi, loiNhap, coGuiLai } = useLuuThuong(row.attemptId, onReload, sheet.programme.code, row.studentName);
   const homNay = sheet.today;
   const ct = sheet.programme.code;
   const [hop, setHop] = useState<{ t: ThaoTac; k: string } | null>(null);
@@ -458,7 +463,8 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
             data-trong={trong ? '1' : undefined} data-luu={o[k]}>
             <DauO tt={o[k]} loi={loi[k]} onLuuLai={() => luuLai(k)} />
             <ODiemThuong
-              cell={cell}
+              /* PR-BV (L2): đang xem đúng tuần có dấu "-" mà tuần mới đã có điểm — ô hiện "-" để gỡ được. */
+              cell={{ ...cell, oTuanCu: !!tuanDangXem && s?.movedFromStart === tuanDangXem }}
               tongCot={tongCot(k)}
               /* C9: ô tổng trống hiện sẵn tổng chung của cột (chưa là bản nháp) — gõ số câu đúng là lưu kèm tổng đó. */
               tongLaySan={tongCot(k) !== null}
