@@ -95,11 +95,13 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     mt: !gon || new Set(data.rows.map((r) => r.attemptNo)).size > 1,
     trangThai: !gon,
     han: !gon,
+    /* PR-MT0: lưới chỉ MT0 (`kind=mt0`) — không kỳ vọng. */
+    kyVong: !(data.rows.length > 0 && data.rows.every((r) => r.mt0Sos)),
   };
   /* Cột theo đúng những cột đang hiện — `colgroup` khớp số cột (G-2). */
   const COT = [
     COT_HV, ...(cot.mt ? [COT_MT] : []), ...(cot.trangThai ? [COT_TT] : []), ...(cot.han ? [COT_HAN] : []),
-    COT_KN, COT_KN, COT_KN, COT_KN, COT_W, COT_S, COT_SO, COT_SO, COT_KQ,
+    COT_KN, COT_KN, COT_KN, COT_KN, COT_W, COT_S, ...(cot.kyVong ? [COT_SO] : []), COT_SO, COT_KQ,
   ];
   const RONG = COT.reduce((a, b) => a + b, 0);
   /* K4-24: GV chấm chọn MỘT lần ở đầu cột S (nhớ theo lớp × tuần); chỉ người sửa được S, chỉ khi có tuần. */
@@ -135,7 +137,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
             {cot.han && <Th hint="Hạn chấm tính riêng cho từng môn, từ tuần thi của chính môn đó: hết thứ Tư của tuần kế tiếp. Quản lý đặt được hạn riêng.">Hạn chấm</Th>}
             {RAW_SKILLS.map((s) => (
               <Th key={s} align="right" className={toCot(s)} hint={`${skillLabel(s)} — nhập số câu đúng (0–40), máy tự quy ra band.`}>
-                {skillShort(s)} <span className="normal-case text-slate-500">(số câu)</span>
+                {skillShort(s)} <span className="normal-case text-slate-500">{cot.kyVong ? '(số câu)' : '(band)'}</span>
               </Th>
             ))}
             {W_SKILLS.map((s) => (
@@ -150,7 +152,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
                 <div className="flex justify-end"><NutGvCham chiTen value={gvCot} onChange={setGvCot} /></div>
               )}
             </Th>
-            <Th align="right" hint="Mức mong đợi của chính lượt này, tính theo Target tại thời điểm đó.">Kỳ vọng</Th>
+            {cot.kyVong && <Th align="right" hint="Mức mong đợi của chính lượt này, tính theo Target tại thời điểm đó.">Kỳ vọng</Th>}
             <Th align="right" hint="Band tổng, chỉ có khi đã đủ điểm mọi kỹ năng bắt buộc.">OVR</Th>
             <Th hint="Số kỹ năng dưới kỳ vọng của lượt này — đó chính là mức SOS.">Kết quả</Th>
           </tr>
@@ -235,7 +237,7 @@ function DeadlineSummary({ cells }: { cells: Cell[] }) {
 
 function SheetRow({ row, rowIndex, active, cot, tuanDangXem, onReload, gvMacDinh, register, onMove }: {
   row: FtSheet['rows'][number]; rowIndex: number; active: boolean;
-  cot: { mt: boolean; trangThai: boolean; han: boolean }; tuanDangXem: string | null;
+  cot: { mt: boolean; trangThai: boolean; han: boolean; kyVong: boolean }; tuanDangXem: string | null;
   onReload: () => void;
   gvMacDinh: NguoiChon | null;
   register: (col: number, el: HTMLInputElement | null) => void;
@@ -326,7 +328,7 @@ function SheetRow({ row, rowIndex, active, cot, tuanDangXem, onReload, gvMacDinh
           </td>
         );
       })}
-      <td className="td py-1.5 text-right">{fmtBand(row.result.expectation)}</td>
+      {cot.kyVong && <td className="td py-1.5 text-right">{fmtBand(row.result.expectation)}</td>}
       <td className="td py-1.5 text-right text-slate-100">{fmtBand(row.result.overall)}</td>
       {/* Badge ôm sát nội dung: items-start để ô bảng rộng cũng không kéo giãn nó ra. */}
       <td className="td py-1.5">

@@ -200,7 +200,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
       const r = t.ft!;
       if (a.kind === 'mt0') {
         return {
-          ...chung, cheDo: 'ielts' as const, nhanNgan: nhanMt0(mt0 && mt0.attemptId === a.id ? mt0.trangThai : 'cho'), lichSu: !!a.lich_su,
+          ...chung, cheDo: 'ielts' as const, nhanNgan: nhanMt0(mt0 && mt0.attemptId === a.id ? mt0.trangThai : a.route ? 'dung' : 'khong_dung'), lichSu: !!a.lich_su,
           overall: r.overall, sosLevel: null, soDat: null, soYeuCau: r.required.length, soCoDiem: r.scoredRequired, kyVong: null,
           kyNangChuaDat: [] as string[],
         };
@@ -249,6 +249,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
       conCho = true;
     };
     for (const a of attemptGiaiDoan) {
+      if (ratio && a.kind === 'mt0') continue;   // PR-MT0: band MT0 không thuộc hàng môn tỷ lệ; MT0 chưa điểm không là mốc "?"
       const t = typed.get(a.id)!;
       if (t.mode === 'ratio') {
         const s = t.ratio!.skills.find((x) => x.skill === kyNang);

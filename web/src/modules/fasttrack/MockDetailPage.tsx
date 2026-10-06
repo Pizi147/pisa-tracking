@@ -163,6 +163,10 @@ export default function MockDetailPage() {
 
   const d = data;
   const cancelled = d.status === 'cancelled';
+  /** PR-MT0: kết luận MT0 đủ điểm — chip SOS hiển thị, hoặc `MT0 ✓` (cùng chữ Chuyển tiếp lớp, lưới Nhập điểm). */
+  const ketQuaMt0 = d.mt0 && d.result.complete
+    ? (d.mt0.sos.length ? <>{d.mt0.sos.map((x) => <Nhan key={x.skill} tone="bad">{chipSosMt0(x)}</Nhan>)}</> : <Nhan tone="ok">MT0 ✓</Nhan>)
+    : null;
   /* Ô MT đầu trang (không bấm): cùng luật `oMt` với lưới và bảng Lộ trình. */
   const omtDau: OMtVao = {
     so: d.attemptNo, attemptId: d.id, cu: d.lichSu,
@@ -262,9 +266,10 @@ export default function MockDetailPage() {
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         {/* Rà #119: `sosLevel` (chặn trần 3) — `failedCount` 4 môn từng ra "SOS 4". */}
-        <KetQuaDot coDiem={d.result.scoredRequired} yeuCau={d.result.required.length} dat={passed}
-          sos={d.result.sosLevel ?? null} />
-        {d.mt0 ? d.mt0.sos.map((x) => <Nhan key={x.skill} tone="bad">{chipSosMt0(x)}</Nhan>) : (
+        {/* PR-MT0 (planning 07/10): MT0 không có kỳ vọng — đủ điểm thì chỉ `MT0 ✓` / chip SOS, không câu "chưa có kỳ vọng". */}
+        {ketQuaMt0 ?? <KetQuaDot coDiem={d.result.scoredRequired} yeuCau={d.result.required.length} dat={passed}
+          sos={d.result.sosLevel ?? null} />}
+        {d.mt0 ? (!ketQuaMt0 && d.mt0.sos.map((x) => <Nhan key={x.skill} tone="bad">{chipSosMt0(x)}</Nhan>)) : (
           <span className="text-sm text-slate-400 tabular-nums">
             Kỳ vọng {fmtBand(d.result.expectation)}{laRf && d.result.expectation !== null ? ' = Target' : ''}
           </span>
@@ -278,7 +283,7 @@ export default function MockDetailPage() {
 
       {/* B. NĂM Ô ĐIỂM LỚN — tầng 1 của màn; bấm ô là sửa tại chỗ (YC-13.7, YC-13.8). */}
       <div id="dai-diem" className="scroll-mt-4">
-        <DaiODiemLon cells={d.cells} lich={d.skillSchedule as LichKn[]} result={d.result} lichSu={d.lichSu} homNay={homNay}
+        <DaiODiemLon cells={d.cells} lich={d.skillSchedule as LichKn[]} result={d.result} lichSu={d.lichSu} homNay={homNay} ketLuanOverall={ketQuaMt0}
           mo={moO} onMo={setMoO} save={save} />
       </div>
 

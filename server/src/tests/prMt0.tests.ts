@@ -296,16 +296,21 @@ export async function runPrMt0Tests(t: YThucTestKit) {
     attempts.setPlanningWeek(QL, fin, tuanSo(e.tuanFinal, 0));
     assert(tuanKn(e.aid).split(',').sort().join() === [addDays(e.tuanFinal, 7), addDays(e.tuanFinal, 14)].join(), `đã dời tay: ${tuanKn(e.aid)}`);
   });
-  check('MT0-4d · GVCN dời MT0 về tuần đã qua → chặn như mọi Mock (T4); QL được', () => {
-    const e = lenFt('FOU', 8);
+  check('MT0-4d · GVCN dời MT0 về tuần đã qua → chặn như mọi Mock (T4); QL được (Final đã qua, dời trong khoảng hợp lệ)', () => {
+    const e = lenFt('FOU', 10);   // FOU 8 tuần, đang tuần 10 → Final cách 2 tuần
     const gvcn = ganGv(e.classId, gvKhac(5), null, true);
-    const qua = tuanSo(week.mondayOf(TODAY), -2);
+    const qua = tuanSo(e.tuanFinal, 1);   // tuần trước — vẫn đã qua, trong khoảng Final … Final + 2
     const x = loi(() => skillSch.setSkillWeek(gvcn, e.aid, 'listening', qua));
     assert(x?.status === 400 || x?.status === 403, `GVCN: ${x?.status} ${x?.message}`);
     skillSch.setSkillWeek(QL, e.aid, 'listening', qua);
-    assert(tuanKn(e.aid).includes(addDays(week.mondayOf(TODAY), -14)), 'QL dời về tuần đã qua được');
+    assert(tuanKn(e.aid).includes(addDays(e.tuanFinal, 7)), 'QL dời về tuần đã qua được');
   });
-
+  check('Rà #226 (5) · MT0 không sớm hơn tuần Cuối khoá: QL dời về Final − 1 tuần → 400 "sớm nhất"', () => {
+    const e = lenFt('BE', 8);
+    const x = loi(() => attempts.setPlanningWeek(QL, e.aid, tuanSo(e.tuanFinal, -1)));
+    assert(x?.status === 400 && /sớm nhất/.test(x.message), `${x?.status} ${x?.message}`);
+    assert(/sớm nhất/.test(dm.kiemTuanMt0({ tuanMoi: '2026-10-19', tuanDau: '2026-10-12', tuanSomNhat: '2026-10-19', tuanMuonNhat: null, tuanMt1: null }) ?? ''), 'luật thuần');
+  });
   // ------------------------------------------------------------------ MT0-5 · Chuyển tiếp lớp: nối MT0 vào lộ trình FT / không dùng
   const luatLoTrinh: any = await import('../classes/luatLoTrinh.ts');
   const cycles: any = await import('../fasttrack/cycles.ts');
@@ -518,5 +523,66 @@ export async function runPrMt0Tests(t: YThucTestKit) {
     const ct = attempts.attemptDetail(QL, mA);
     assert(ct.result.sosLevel === null && JSON.stringify(ct.mt0.sos) === JSON.stringify([{ skill: 'writing', band: 4 }]) && !('sosCase' in ct), 'hồ sơ Mock');
     assert(dm.duongDotTest({ id: mA, kind: 'mt0', classId: l.classId }) === `/mock-test/${mA}`, 'đường hồ sơ Mock');
+  });
+
+  // ------------------------------------------------------------------ Sau rà #226 (planning 07/10)
+  const casesSvc: any = await import('../cases/cases.ts');
+  check('Rà #226 (1) · Hành trình giai đoạn lớp thường: band MT0 không vào hàng môn tỷ lệ; MT0 chưa điểm không làm mốc "?"', () => {
+    const l = taoLop('FOU', 8, 2, 6);
+    const [A, B] = l.sids;
+    for (const sid of l.sids) loTrinh.ghiLoTrinhTiep(QL, sid, { huong: 'fast_track' });
+    diemMt0(mt0Cua(A)[0].id, { listening: 6, reading: 5.5 });
+    for (const sid of [A, B]) {
+      const ht = hanhTrinh.hanhTrinhHocVien(QL, sid, null);
+      const lo = ht.hop.filter((h: any) => h.diem.some((d: any) => d.kind === 'mt0') || h.dotCho?.kind === 'mt0');
+      assert(lo.length === 0, `em ${sid}: ${JSON.stringify(lo.map((h: any) => [h.kyNang, h.diem, h.dotCho]))}`);
+    }
+  });
+  check('Rà #226 (2) · Học thuật (skillSupportBoard) lộ trình FT sau nối: điểm MT0 không có kỳ vọng', () => {
+    const l = taoLop('BE', 10, 1, 6);
+    const A = l.sids[0];
+    loTrinh.ghiLoTrinhTiep(QL, A, { huong: 'fast_track', mucTieu: 6.5 });
+    const m = mt0Cua(A)[0].id as number;
+    diemMt0(m, { listening: 6, reading: 6, writing: 4, speaking: 6 });
+    transition.applyTransition(QL, { fromClassId: l.classId, effectiveDate: TODAY, dongs: [{ studentId: A, huong: 'fast_track', toClassId: FT101, mucTieu: 6.5 }] });
+    const bd = casesSvc.skillSupportBoard(QL, A, lt(A).id);
+    const diemMt0Bd = bd.rows.flatMap((r: any) => r.points.filter((x: any) => x.attemptKind === 'mt0').map((x: any) => [r.category, x.expectation]));
+    const hangMt0 = bd.rows.filter((r: any) => r.bandAttemptId === m).map((r: any) => [r.category, r.expectation, r.missed]);
+    assert(diemMt0Bd.length >= 4 && diemMt0Bd.every((x: any) => x[1] === null), `điểm MT0: ${JSON.stringify(diemMt0Bd)}`);
+    assert(hangMt0.every((x: any) => x[1] === null && !x[2]), `hàng lấy MT0 làm gần nhất: ${JSON.stringify(hangMt0)}`);
+  });
+  check('Rà #226 (3) · em chuyển lớp (giữ khoá) rồi chọn lại Lên FT → MT0 mở lại theo lớp mới, tuần Final lớp mới', () => {
+    const cu = taoLop('BE', 6, 1, 6);
+    const moi = taoLop('BE', 5, 0);
+    const sid = cu.sids[0];
+    loTrinh.ghiLoTrinhTiep(QL, sid, { huong: 'fast_track' });
+    const m = mt0Cua(sid)[0].id as number;
+    luatLoTrinh.apDungMotDong(QL, { sid, toClassId: moi.classId, ngay: TODAY, boiCanh: 'giua-khoa' });
+    assert(get('SELECT status FROM assessment_attempts WHERE id = ?', m).status === 'cancelled', 'tiền đề: huỷ "Chuyển lớp"');
+    loTrinh.ghiLoTrinhTiep(QL, sid, { huong: 'fast_track' });
+    const a = get('SELECT * FROM assessment_attempts WHERE id = ?', m);
+    const finalMoi = schedule.classProgress(moi.classId).finalWeekStart as string;
+    assert(a.status === 'planned' && a.class_id === moi.classId, `lớp: ${a.class_id} (mới ${moi.classId}), ${a.status}`);
+    assert(tuanKn(m) === finalMoi && get('SELECT week_start w FROM report_periods WHERE id = ?', a.planned_period_id).w === finalMoi, `tuần: ${tuanKn(m)} · Final mới ${finalMoi}`);
+  });
+  check('Rà #226 (5) · Hành trình em có hai MT0: MT0 cũ (khoá đã đóng, có điểm) ghi "MT0 · không dùng"', () => {
+    const l = taoLop('BE', 10, 1, 6);
+    const hocLai = taoLop('BE', 9, 0);
+    const sid = l.sids[0];
+    loTrinh.ghiLoTrinhTiep(QL, sid, { huong: 'fast_track' });
+    diemMt0(mt0Cua(sid)[0].id, { listening: 5 });
+    transition.applyTransition(QL, { fromClassId: l.classId, effectiveDate: TODAY, dongs: [{ studentId: sid, huong: 'hoc_lai', toClassId: hocLai.classId }] });
+    loTrinh.ghiLoTrinhTiep(QL, sid, { huong: 'fast_track' });
+    assert(mt0Cua(sid).filter((x: any) => x.status !== 'cancelled').length === 2, 'tiền đề: hai MT0');
+    const nhan: string[] = JSON.stringify(hanhTrinh.hanhTrinhHocVien(QL, sid, null)).match(/"nhanNgan":"MT0[^"]*"/g) ?? [];
+    assert(nhan.includes('"nhanNgan":"MT0 · không dùng"') && nhan.includes('"nhanNgan":"MT0"'), nhan.join());
+  });
+
+  check('Rà #226 (4b) · hạn việc "Chốt lên FT" (Công việc, Tổng quan) = "hạn hết CN dd/mm"', () => {
+    assert(dm.LOAI_HAN_CUA_VIEC.chot_len_ft === 'chot-len-ft', 'loại hạn của việc');
+    const v = dm.deadlineView({ kind: 'chot-len-ft', due: '2026-10-04', today: '2026-09-28' });
+    assert(v.text.includes('hạn hết CN 04/10'), v.text);
+    const tq = tongQuan.tongQuanQuanLy(QL, { branchId: MB }).canXuLy.find((x: any) => x.metricId === 'lop-chua-chot-len-ft');
+    assert(tq?.han?.loai === 'chot-len-ft', JSON.stringify(tq?.han));
   });
 }

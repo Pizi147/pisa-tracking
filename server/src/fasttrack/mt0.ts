@@ -31,23 +31,25 @@ export function dongBoMt0(actorUserId: number, dongs: readonly DongMt0[]): void 
   const now = nowIso();
   const sids = dongs.map((d) => d.studentId);
   /* Khoá lớp thường đang chạy + MT0 của khoá đó (kể cả đã huỷ) + có điểm chưa — MỘT câu mỗi lô. */
-  const khoa = new Map<number, { cycleId: number; target: number | null; mt0: { id: number; status: string; coDiem: boolean } | null }>();
+  const khoa = new Map<number, { cycleId: number; target: number | null; mt0: { id: number; status: string; coDiem: boolean; classId: number | null } | null }>();
   theoLo(sids, (lo, ph) => {
     for (const r of conn.prepare(
-      `SELECT cy.id AS cycle_id, cy.student_id, cy.target_score, a.id AS mt0_id, a.status,
+      `SELECT cy.id AS cycle_id, cy.student_id, cy.target_score, a.id AS mt0_id, a.status, a.class_id,
               EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND (s.band IS NOT NULL OR s.raw_score IS NOT NULL)) AS co_diem
          FROM learning_cycles cy LEFT JOIN assessment_attempts a ON a.cycle_id = cy.id AND a.kind = 'mt0'
         WHERE cy.status = 'active' AND cy.route IS NULL AND cy.student_id IN (${ph})`,
     ).all(...lo) as any[]) {
       khoa.set(r.student_id, {
         cycleId: r.cycle_id, target: r.target_score ?? null,
-        mt0: r.mt0_id ? { id: r.mt0_id, status: r.status, coDiem: !!r.co_diem } : null,
+        mt0: r.mt0_id ? { id: r.mt0_id, status: r.status, coDiem: !!r.co_diem, classId: r.class_id ?? null } : null,
       });
     }
   });
 
   const tao: (DongMt0 & { cycleId: number; target: number | null })[] = [];
   const moLai: number[] = [];
+  /** MT0 mở lại mà em đã sang lớp khác (chuyển giữ khoá — MT0 bị huỷ "Chuyển lớp") → theo lớp mới, tuần Final lớp mới. */
+  const doiLop: { id: number; classId: number }[] = [];
   const huy: number[] = [];
   const doiTarget = new Map<number | null, number[]>();
   for (const d of dongs) {
@@ -56,7 +58,10 @@ export function dongBoMt0(actorUserId: number, dongs: readonly DongMt0[]): void 
     const target = d.mucTieu ?? k.target;
     if (coMt0(d.ma, d.huong)) {
       if (!k.mt0) { tao.push({ ...d, cycleId: k.cycleId, target }); continue; }
-      if (k.mt0.status === 'cancelled') moLai.push(k.mt0.id);
+      if (k.mt0.status === 'cancelled') {
+        moLai.push(k.mt0.id);
+        if (!k.mt0.coDiem && k.mt0.classId !== d.classId) doiLop.push({ id: k.mt0.id, classId: d.classId });
+      }
       if (!k.mt0.coDiem) doiTarget.set(target, [...(doiTarget.get(target) ?? []), k.mt0.id]);
     } else if (k.mt0 && k.mt0.status !== 'cancelled' && !k.mt0.coDiem) {
       huy.push(k.mt0.id);
@@ -76,13 +81,24 @@ export function dongBoMt0(actorUserId: number, dongs: readonly DongMt0[]): void 
       conn.prepare(`UPDATE assessment_attempts SET target_at_attempt = ? WHERE id IN (${ph})`).run(target, ...lo);
     });
   }
-  if (!tao.length) return;
+  if (!tao.length && !doiLop.length) return;
 
   /* Tuần Cuối khoá của lớp — một lần cho mọi lớp trong lô (thường chỉ một lớp). Lớp chưa có tuần Cuối khoá → MT0 chưa xếp. */
-  const tienDo = classProgressMany([...new Set(tao.map((d) => d.classId))]);
+  const cacLop = [...new Set([...tao.map((d) => d.classId), ...doiLop.map((x) => x.classId)])];
+  const tienDo = classProgressMany(cacLop);
   const tuanCua = (classId: number) => tienDo.get(classId)?.finalWeekStart ?? null;
-  const ky = ensurePeriods([...new Set(tao.map((d) => tuanCua(d.classId)).filter((x): x is string => !!x))]);
+  const ky = ensurePeriods([...new Set(cacLop.map(tuanCua).filter((x): x is string => !!x))]);
   const kyCua = (classId: number) => { const t = tuanCua(classId); return t ? ky.get(t) ?? null : null; };
+  /* Một UPDATE mỗi lớp đích (thường một lớp), không theo số em. */
+  for (const lop of new Set(doiLop.map((x) => x.classId))) {
+    const ids = doiLop.filter((x) => x.classId === lop).map((x) => x.id);
+    const pid = kyCua(lop)?.id ?? null;
+    theoLo(ids, (lo, ph) => {
+      conn.prepare(`UPDATE assessment_attempts SET class_id = ?, planned_period_id = ?, plan_source = 'auto', updated_at = ? WHERE id IN (${ph})`).run(lop, pid, now, ...lo);
+      conn.prepare(`UPDATE attempt_skills SET planned_period_id = ?, plan_source = 'auto', updated_at = ? WHERE attempt_id IN (${ph})`).run(pid, now, ...lo);
+    });
+  }
+  if (!tao.length) return;
   chenNhieuDong(
     `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id, plan_source, status, target_at_attempt, created_by, created_at)`,
     tao.map((d) => [d.cycleId, d.studentId, 0, 'mt0', d.classId, kyCua(d.classId)?.id ?? null, 'auto', 'planned', d.target, actorUserId, now]),

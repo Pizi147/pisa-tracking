@@ -34,9 +34,17 @@ export function tuanMuonNhatMt0(o: { tuanBatDauFt: string | null; tuanCuoiKhoa: 
   return null;
 }
 
-/** Kiểm tuần mới của MT0: muộn nhất tuần 2 FT, luôn trước MT1. Hợp lệ → null. */
-export function kiemTuanMt0(o: { tuanMoi: string; tuanMuonNhat: string | null; tuanMt1: string | null }): string | null {
+/**
+ * Kiểm tuần mới của MT0: không sớm hơn tuần Cuối khoá (`tuanSomNhat`, so với tuần sớm nhất `tuanDau`), muộn nhất tuần 2 FT (so với
+ * tuần muộn nhất `tuanMoi`), luôn trước MT1. Hợp lệ → null.
+ */
+export function kiemTuanMt0(o: {
+  tuanMoi: string; tuanMuonNhat: string | null; tuanMt1: string | null; tuanDau?: string | null; tuanSomNhat?: string | null;
+}): string | null {
   const moi = mondayOfDate(o.tuanMoi.slice(0, 10));
+  if (o.tuanSomNhat && mondayOfDate((o.tuanDau ?? o.tuanMoi).slice(0, 10)) < mondayOfDate(o.tuanSomNhat.slice(0, 10))) {
+    return `MT0 sớm nhất ${tuanLich(o.tuanSomNhat)}.`;
+  }
   if (o.tuanMuonNhat && moi > o.tuanMuonNhat.slice(0, 10)) return `MT0 muộn nhất ${tuanLich(o.tuanMuonNhat)}.`;
   if (o.tuanMt1 && moi >= mondayOfDate(o.tuanMt1.slice(0, 10))) return `MT0 phải trước MT1 (${tuanLich(o.tuanMt1)}).`;
   return null;

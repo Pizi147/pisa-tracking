@@ -645,7 +645,12 @@ export function kiemTuanMt0Cho(attemptId: number, tuanMoi: string, tuanCuoiMoi: 
       tuanBatDauFt: a.route ? a.bat_dau ?? null : null,
       tuanCuoiKhoa: a.route || !a.class_id ? null : classProgress(a.class_id).finalWeekStart,
     });
-    return kiemTuanMt0({ tuanMoi: tuanCuoiMoi, tuanMuonNhat, tuanMt1: a.route ? tuanLuot('mock', 1, 'MIN') : null });
+    /* Sớm nhất = tuần Cuối khoá của em (khoá lớp thường; lượt Final của em, chưa có thì tuần Final của lớp). Đã nối FT: không cần. */
+    const tuanSomNhat = a.route ? null : (conn.prepare(
+      `SELECT MIN(pr.week_start) AS w FROM assessment_attempts x JOIN attempt_skills k ON k.attempt_id = x.id AND k.required = 1 AND k.sit_status != 'cancelled'
+         JOIN report_periods pr ON pr.id = k.planned_period_id WHERE x.cycle_id = ? AND x.kind = 'final' AND x.status != 'cancelled'`,
+    ).get(a.cycle_id) as any)?.w ?? (a.class_id ? classProgress(a.class_id).finalWeekStart : null);
+    return kiemTuanMt0({ tuanMoi: tuanCuoiMoi, tuanDau: tuanMoi, tuanSomNhat, tuanMuonNhat, tuanMt1: a.route ? tuanLuot('mock', 1, 'MIN') : null });
   }
   const tuanMt0 = tuanLuot('mt0', 0, 'MAX');
   return tuanMt0 ? kiemTuanMt0({ tuanMoi: tuanMt0, tuanMuonNhat: null, tuanMt1: tuanMoi }) : null;

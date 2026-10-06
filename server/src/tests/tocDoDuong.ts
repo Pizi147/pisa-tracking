@@ -575,9 +575,9 @@ export const TRAN: Record<string, number> = {
   'QT /hoc-vien-lop/luu-tru?branchId=1': 22,
   /* PR-HVL (8): `/classes/:id/transition` thêm `ketQua` từng em (một lần `standingFor`, 7 câu): 28 → 35 (QT 27 → 34). Kế hoạch dự kiến mốc + 5 = 33; `standingFor` tự nó tốn 7 câu nên lệch 2 — ghi Nhật ký. */
   /* PR-LT2b (3): `cuoiKhoaTheoHocVien` cho cả lớp (+2 câu: lượt Cuối khoá · lộ trình tiếp theo; điểm + chương trình đã đọc chung): QL 37 → 39, QT 36 → 38, GVCN_THUONG 37 → 39 (+5 %). */
-  'QL /classes/6/transition': 43,   // PR-CT gộp LT2b: 39 → 42; PR-MT0: + một câu MT0 cả lớp → 43
-  'QT /classes/6/transition': 42,   // PR-CT gộp LT2b: 38 → 41; PR-MT0 → 42
-  'GVCN_THUONG /classes/6/transition': 43,   // PR-CT gộp LT2b: 39 → 42; PR-MT0 → 43
+  'QL /classes/6/transition': 56,   // PR-CT gộp LT2b: 39 → 42; PR-MT0: + một câu MT0 cả lớp, đo 43; trần max(n+10, ⌈n×1,3⌉) = 56 (planning 07/10)
+  'QT /classes/6/transition': 55,   // PR-CT gộp LT2b: 38 → 41; PR-MT0 → 42
+  'GVCN_THUONG /classes/6/transition': 56,   // PR-CT gộp LT2b: 39 → 42; PR-MT0 → 43
   'QL /classes/6/lo-trinh-tiep': 29,   // PR-K26 mới: đo 19
   'QT /classes/6/lo-trinh-tiep': 28,   // PR-K26 mới: đo 18
   'GVCN_THUONG /classes/6/lo-trinh-tiep': 30,   // PR-K26 mới: đo 20

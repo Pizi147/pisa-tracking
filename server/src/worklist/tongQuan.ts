@@ -41,7 +41,7 @@ export type DongCanXuLy = DongCanXuLyGoc & {
   /** Chú thích khi rê chuột (Q9: "Lộ trình RF: xong MT2"). */
   goiY?: string;
   nguoi: 'ban' | { dau: string; phu: string; ids: number[] };
-  han: { ngay: string; loai: 'cap-nhat-pa' | 'viec-van-hanh' } | { chu: string; quaHan?: true };
+  han: { ngay: string; loai: 'cap-nhat-pa' | 'viec-van-hanh' | 'chot-len-ft' } | { chu: string; quaHan?: true };
   /** Nút mở thẳng chỗ làm; `null` = nhiều đích → mở panel danh sách của chỉ số. */
   den: string | null;
 };
@@ -145,7 +145,7 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null }) {
         /* PR-MT0 (mockup ③): một lớp → "Chốt lên FT · BE 04" + hạn; nhiều lớp → dòng phụ tên lớp, hạn sớm nhất. */
         const lop = lopChot;
         const han = lop.map((l) => l.han).sort()[0];
-        const h = han ? { ngay: han, loai: 'viec-van-hanh' as const } : chuaCoHan;
+        const h = han ? { ngay: han, loai: 'chot-len-ft' as const } : chuaCoHan;
         if (lop.length === 1) return { ...x, ...chung, truoc: `Chốt lên FT · ${lop[0].code}`, nhan: '', phu: '', han: h, den: `/hoc-vien/lop/${lop[0].classId}?viec=lo-trinh-ca-lop` };
         return { ...x, ...chung, phu: dongPhuGon(lop.map((l) => l.code)), han: h, den: null };
       }
