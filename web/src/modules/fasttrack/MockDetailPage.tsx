@@ -157,7 +157,7 @@ export default function MockDetailPage() {
    * nhưng đường dẫn cũ, thông báo cũ và link người dùng lưu lại thì vẫn còn, nên chặn ngay
    * ở đây thay vì tin rằng không ai vào được.
    */
-  if (data.kind && data.kind !== 'mock') {
+  if (data.kind && data.kind !== 'mock' && data.kind !== 'mt0') {   // PR-MT0: MT0 chấm band, dùng màn này
     return <Navigate to={attemptHref({ id: data.id, kind: data.kind, classId: data.classId })} replace />;
   }
 

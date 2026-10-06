@@ -187,7 +187,7 @@ export function routeCuaLuot(attempt: any): string | null {
 export function resultOf(attempt: any, rows?: ScoreRow[], skips?: AssessedSkill[]): AttemptResult {
   const scores = rows ?? scoresOf(attempt.id);
   return evaluateAttempt(
-    attempt.target_at_attempt,
+    laMt0(attempt) ? null : attempt.target_at_attempt,   // PR-MT0: không kỳ vọng / mức SOS — chip SOS riêng (`kyNangSosMt0`)
     attempt.attempt_no,
     entryBandsOf(scores),
     skips ?? skipsOf(attempt.id),
@@ -984,7 +984,7 @@ export function attemptDetail(p: Principal, attemptId: number) {
     cancelReason: a.cancel_reason,
     note: a.note,
     /* PR-MT0 (T5): MT0 không có kỳ vọng / mức SOS — chỉ chip `W 4.0 SOS` để nhìn (`mt0.sos`), không Case / PA. */
-    result: laMt0(a) ? { ...result, expectation: null, sosLevel: null, failedCount: null, evaluable: false } : result,
+    result,
     mt0: laMt0(a) ? { sos: kyNangSosMt0(result.bands, a.target_at_attempt ?? null) } : null,
     cells,
     skips: (conn
@@ -1859,6 +1859,8 @@ export function classScoreSheet(
         status: a.status,
         cells: skillCells(p, a, scores, skips, today, bundle.skillRows.get(a.id), hoanTat),
         result: resultOf(a, scores, skips),
+        /* PR-MT0: chip SOS chỉ để nhìn (band ≤ Target − 2.0) thay cho mức SOS. */
+        ...(laMt0(a) ? { mt0Sos: kyNangSosMt0(resultOf(a, scores, skips).bands, a.target_at_attempt ?? null) } : {}),
         hoanTat: hoanTat.hoanTat,
         chuNhatCuoi: hoanTat.chuNhatCuoi,
       };

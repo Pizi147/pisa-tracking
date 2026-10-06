@@ -8,7 +8,7 @@ import {
 import {
   fmtBand, skillLabel, skillShort, sosLabel, sosTone,
 } from '../../lib/format.ts';
-import { ENTRY_SKILLS, chuOChuaLuu, duongDotTest, ngay, nhanLuot, tuanLich, type NguoiChon, type TrangThaiLuuO } from '@shared/domain/index.ts';
+import { ENTRY_SKILLS, chipSosMt0, chuOChuaLuu, duongDotTest, ngay, nhanLuot, tuanLich, type AssessedSkill, type NguoiChon, type TrangThaiLuuO } from '@shared/domain/index.ts';
 import { NutGvCham, useGvChamCot } from './GvCham.tsx';
 
 /** Dữ liệu lưới FT — chính là `cham.ft` (`classScoreSheet` ở máy chủ). */
@@ -24,6 +24,8 @@ export type FtSheet = {
     /** PR-DL: chỉ `bangTheoLuot` gửi — MT lịch sử của em này (chip "lịch sử" cạnh tên). */
     lichSu?: boolean;
     cells: Cell[]; result: any;
+    /** PR-MT0: hàng MT0 — chip `W 4.0 SOS` thay cho mức SOS (không kỳ vọng). */
+    mt0Sos?: { skill: AssessedSkill; band: number }[];
   }[];
 };
 
@@ -330,11 +332,18 @@ function SheetRow({ row, rowIndex, active, cot, tuanDangXem, onReload, gvMacDinh
       <td className="td py-1.5">
         <div className="flex flex-col items-start gap-0.5 min-w-0">
           {/* N-1b: chưa đủ điểm là TẠM — xám, không mang màu mức SOS. */}
-          <Level tone={row.result.evaluable ? sosTone(row.result.sosLevel) : 'muted'}>
-            {row.result.evaluable
-              ? sosLabel(row.result.sosLevel)
-              : `Chờ ${row.result.required.length - row.result.scoredRequired} kỹ năng`}
-          </Level>
+          {row.mt0Sos && row.result.scoredRequired > 0 ? (
+            /* PR-MT0: chỉ chip SOS hiển thị; đủ điểm mà không SOS → `MT0 ✓` (chủ sản phẩm Q3). */
+            row.mt0Sos.length ? row.mt0Sos.map((x) => <Level key={x.skill} tone="danger">{chipSosMt0(x)}</Level>)
+              : row.result.complete ? <Level tone="ok">MT0 ✓</Level>
+              : <Level tone="muted">{`Chờ ${row.result.required.length - row.result.scoredRequired} kỹ năng`}</Level>
+          ) : (
+            <Level tone={row.result.evaluable ? sosTone(row.result.sosLevel) : 'muted'}>
+              {row.result.evaluable
+                ? sosLabel(row.result.sosLevel)
+                : `Chờ ${row.result.required.length - row.result.scoredRequired} kỹ năng`}
+            </Level>
+          )}
           {row.result.scopeNote && (
             <span className="text-[11px] text-slate-500 truncate max-w-full" title={row.result.scopeDetail ?? row.result.scopeNote}>
               {row.result.scopeNote}

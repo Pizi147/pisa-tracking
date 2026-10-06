@@ -173,12 +173,16 @@ export async function runPrMt0Tests(t: YThucTestKit) {
     assert(get('SELECT COUNT(*) n FROM sos_coordination_actions WHERE attempt_id = ?', aid).n === 0, 'Phối hợp');
     assert(get('SELECT COUNT(*) n FROM notifications').n === thongBao, 'thông báo');
   });
+  const diemMt0Som = (aid: number) => conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, band, nhap_dau_ngay) VALUES (?,?,?,?)').run(aid, 'listening', 3, TODAY);
   check('MT0-2 · Nhập điểm lớp BE `kind=mt0`: lưới band (ielts_band) chỉ các MT0; bảng thường Final không có MT0', () => {
     const l = taoLop('BE', 9, 2, 6);
     const tuanFinal = schedule.classProgress(l.classId).finalWeekStart as string;
     const aid = chenMt0Tho({ sid: l.sids[0], classId: l.classId, tuan: tuanFinal, band: {} });
     const s = canCham.chamSheet(QL, l.classId, { kind: 'mt0' });
     assert(s.mode === 'ielts_band' && s.ft?.rows.length === 1 && s.ft.rows[0].attemptId === aid, JSON.stringify({ mode: s.mode, n: s.ft?.rows.length }));
+    diemMt0Som(aid);
+    const r0 = canCham.chamSheet(QL, l.classId, { kind: 'mt0' }).ft.rows[0].result;
+    assert(r0.expectation === null && r0.sosLevel === null, `lưới MT0 không kỳ vọng / mức SOS: ${r0.expectation} ${r0.sosLevel}`);
     const o = s.ft.rows[0].cells.find((c: any) => c.skill === 'writing1');
     assert(o?.deadline === dm.hanChamMt0(tuanFinal), `hạn ô W1: ${o?.deadline}`);
     const hs = profile.studentProfile(QL, l.sids[0]);

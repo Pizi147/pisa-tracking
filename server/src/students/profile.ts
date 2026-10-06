@@ -77,7 +77,7 @@ export function typedResult(attempt: any, pre?: { scores: any[]; skips: Assessed
     const r = evaluateRegular(prog.skills, rows, prog.code);
     return { mode: 'ratio' as const, ratio: r, ft: null };
   }
-  const r = evaluateAttempt(attempt.target_at_attempt, attempt.attempt_no,
+  const r = evaluateAttempt(attempt.kind === 'mt0' ? null : attempt.target_at_attempt, attempt.attempt_no,   // PR-MT0: không kỳ vọng
     entryBandsOf(pre?.scores ?? scoresOf(attempt.id)), pre?.skips ?? skipsOf(attempt.id), routeCuaLuot(attempt));
   return { mode: 'ielts' as const, ratio: null, ft: r };
 }
@@ -617,10 +617,10 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     /* PR-MT0 (T5): MT0 không có kỳ vọng / mức SOS — chỉ chip `W 4.0 SOS` (band ≤ Target − 2.0) để nhìn. */
     const mt0 = a.kind === 'mt0';
     return {
-      ...base, expectation: mt0 ? null : r.expectation, bands: r.bands, overall: r.overall, evaluable: mt0 ? null : r.evaluable, skills: null,
+      ...base, expectation: r.expectation, bands: r.bands, overall: r.overall, evaluable: r.evaluable, skills: null,
       scored: r.scoredRequired, required: r.required.length,
       complete: r.complete, provisional: r.provisional,
-      sosLevel: mt0 ? null : r.sosLevel, scopeNote: r.scopeNote,
+      sosLevel: r.sosLevel, scopeNote: r.scopeNote,
       ...(mt0 ? { sosMt0: kyNangSosMt0(r.bands, a.target_at_attempt ?? null) } : {}),
     };
   });
