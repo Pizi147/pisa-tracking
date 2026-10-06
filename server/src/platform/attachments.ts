@@ -1,8 +1,8 @@
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { DB_PATH, ROOT, db, laDbTuXa } from '../db.ts';
+import { DB_PATH, ROOT, db, laDbTuXa, tx } from '../db.ts';
 import { badRequest, notFound, nowIso } from '../util.ts';
-import { ATTACHMENT_EXTENSIONS, ATTACHMENT_MAX_BYTES, ATTACHMENT_MIME_BY_EXT, PERMISSIONS } from '../../../shared/domain/index.ts';
+import { ATTACHMENT_EXTENSIONS, ATTACHMENT_MAX_BYTES, ATTACHMENT_MIME_BY_EXT, PERMISSIONS, TOI_DA_EM_GHI_VI_PHAM } from '../../../shared/domain/index.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { caseAccess } from '../cases/cases.ts';
 import { coordinationOwner, measureOwner, violationOwner } from '../yThuc/access.ts';
@@ -198,6 +198,25 @@ export async function addFile(p: Principal, input: {
   }
 }
 
+/**
+ * PR-LUI-a1: MỘT TỆP CHO NHIỀU BẢN GHI (Ghi vi phạm nhiều học viên / nhiều vi phạm dùng chung một bằng chứng) — thêm DÒNG trỏ cùng khoá kho,
+ * không tải lại. Kho chỉ xoá khi dòng cuối đi (`conDongKhac`). Quyền: xem bản ghi nguồn + sửa MỖI bản ghi đích, sai một bản ghi thì không dòng nào thêm.
+ */
+export function chepTep(p: Principal, input: { tuId: number; ownerType: string; ownerIds: number[] }): AttachmentRow[] {
+  const src = db().prepare('SELECT * FROM attachments WHERE id = ?').get(input.tuId) as any;
+  if (!src) throw notFound('Không tìm thấy tệp');
+  ownerAccess(src.owner_type, src.owner_id).requireView(p);
+  const ids = [...new Set(input.ownerIds)].filter((x) => Number.isInteger(x) && x > 0 && !(x === src.owner_id && input.ownerType === src.owner_type));
+  if (!ids.length || ids.length > TOI_DA_EM_GHI_VI_PHAM) throw badRequest(`Chọn từ 1 đến ${TOI_DA_EM_GHI_VI_PHAM} bản ghi.`);
+  for (const id of ids) ownerAccess(input.ownerType, id).requireEdit(p);
+  return tx(() => ids.map((id) => insert(p, input.ownerType, id, {
+    kind: src.kind, url: src.url, displayName: src.display_name, mimeType: src.mime_type, sizeBytes: src.size_bytes,
+  })));
+}
+
+/** Còn dòng tệp nào khác trỏ cùng khoá kho không (tệp dùng chung) — còn thì KHÔNG xoá khỏi kho. */
+const conDongKhac = (url: string) => !!db().prepare("SELECT 1 FROM attachments WHERE kind = 'file' AND url = ? LIMIT 1").get(url);
+
 // ---------------------------------------------------------------- tải và xoá
 
 function load(id: number) {
@@ -247,7 +266,7 @@ export function purgeAttachmentsOf(
   const rows = db().prepare('SELECT * FROM attachments WHERE owner_type = ? AND owner_id = ?').all(ownerType, ownerId) as any[];
   for (const r of rows) {
     db().prepare('DELETE FROM attachments WHERE id = ?').run(r.id);
-    if (r.kind === 'file') { if (deferredFiles) deferredFiles.push(r.url); else xoaTepSauGiaoDich([r.url]); }
+    if (r.kind === 'file' && !conDongKhac(r.url)) { if (deferredFiles) deferredFiles.push(r.url); else xoaTepSauGiaoDich([r.url]); }
     writeAudit({
       actorUserId, action: 'attachment.delete', entityType: 'attachment', entityId: r.id, entityLabel: r.display_name,
       before: { ownerType, ownerId, kind: r.kind, sizeBytes: r.size_bytes, uploadedBy: r.uploaded_by, reason: 'bản ghi chủ bị xoá' },
@@ -265,7 +284,7 @@ export async function removeAttachment(p: Principal, id: number): Promise<void> 
     before: { ownerType: r.owner_type, ownerId: r.owner_id, kind: r.kind, sizeBytes: r.size_bytes, uploadedBy: r.uploaded_by },
   });
   /* Dòng bảng + audit TRƯỚC, tệp trong kho SAU; xoá tệp lỗi thì chỉ còn một tệp mồ côi — không ném. */
-  if (r.kind === 'file') {
+  if (r.kind === 'file' && !conDongKhac(r.url)) {
     try { await khoTepHienTai(uploadsDir()).xoa(r.url); } catch (e) { console.error('[kho tệp] không xoá được', r.url, e); }
   }
 }

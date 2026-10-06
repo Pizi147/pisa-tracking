@@ -27,6 +27,7 @@ import { migratePrGva } from './migrate/prGva.ts';
 import { migratePrPhh } from './migrate/prPhh.ts';
 import { migratePrK26 } from './migrate/prK26.ts';
 import { migratePrMta } from './migrate/prMta.ts';
+import { migratePrLuiA1 } from './migrate/prLuiA1.ts';
 
 /**
  * Nâng cấp database ĐANG CÓ lên schema mới, không xoá dữ liệu. PR-SO (DEP-gỡ): nhánh nâng cấp từ mô hình `mock_attempts` (trước overhaul)
@@ -269,6 +270,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     /* PR-PHH: bản chụp 4 nội dung Báo phụ huynh lúc xác nhận (chỉ thêm cột, không điền ngược). */ migratePrPhh(conn, applied);
     /* PR-K26: gộp hướng `chua_ro` + `xep_sau` → `chua_quyet` (đổi dữ liệu, chạy lặp được). */ migratePrK26(conn, applied);
     /* PR-MTa: cờ `attempt_skills.huy_vang` + bảng `ket_qua_huy` (chỉ cấu trúc, không điền ngược). */ migratePrMta(conn, applied);
+    /* PR-LUI-a1: cột violations.ten (chỉ thêm cột, dòng cũ tự tách khi đọc). */ migratePrLuiA1(conn, applied);
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());

@@ -38,7 +38,8 @@ export type DongEm = {
 
 export type DongThoiGianYt =
   | { loai: 'vi-pham'; id: number; studentId: number; ten: string; ngay: string; nhom: string; category: string; mon: string | null;
-      moTa: string; trangThai: TrangThaiVp; nhanTrangThai: string; han: string | null; nguoiGhi: string | null }
+      /** PR-LUI-a1: dòng chính = ô `Vi phạm` (ngắn); mô tả đầy đủ chỉ hiện khi mở dòng (`ChiTietViPham`). */
+      viPham: string; trangThai: TrangThaiVp; nhanTrangThai: string; han: string | null; nguoiGhi: string | null }
   | { loai: 'xu-ly'; id: number; studentId: number; ten: string; ngay: string; nhan: string; kind: string; status: string;
       statusLabel: string; soViPham: number; nguoi: string | null; soTep: number };
 
@@ -95,7 +96,7 @@ export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThu
     if (!trongChuoi(v.studentId, v.cycleId)) continue;
     out.push({
       loai: 'vi-pham', id: v.id, studentId: v.studentId, ten: v.studentName, ngay: v.occurredOn, nhom: v.categoryLabel, category: v.category,
-      mon: v.skillLabel, moTa: v.description, trangThai: v.trangThai, nhanTrangThai: v.nhanTrangThai, han: v.han, nguoiGhi: v.reportedByName,
+      mon: v.skillLabel, viPham: v.ten, trangThai: v.trangThai, nhanTrangThai: v.nhanTrangThai, han: v.han, nguoiGhi: v.reportedByName,
     });
   }
   const xuLy = emIds.flatMap((sid) => (trang.get(sid)?.xuLy ?? []).filter((m) => trongChuoi(sid, m.cycleId)).map((m) => ({ sid, m })));

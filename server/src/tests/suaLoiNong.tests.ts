@@ -275,7 +275,8 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     const ca: [number, number][] = [[5000, 5], [4001, 5], [4000, 4], [1, 1], [0, 0], [-50, 0]];
     for (const [con, giay] of ca) assert(d.giayHoanTacConLai(1_000_000 + con, 1_000_000) === giay, `${con} → ${d.giayHoanTacConLai(1_000_000 + con, 1_000_000)}`);
     const src = docSach('web/src/modules/yThuc/RecordViolationPanel.tsx');
-    assert(/toast\.hoanTac\(/.test(src) && !/ms: 10000/.test(src), 'Ghi vi phạm chưa dùng Hoàn tác chung');
+    /* PR-LUI-a1: Ghi vi phạm không còn Hoàn tác (đã có Sửa / Xoá) — chỉ cấm tự dựng toast riêng. */
+    assert(!/hoanTac\(/.test(src) && !/ms: 10000/.test(src), 'Ghi vi phạm không được tự dựng Hoàn tác riêng');
   });
 
   // ==================================================================== 11. Tên Pisa Tracking, chữ máy lọt ra màn hình (YC-6, A7)

@@ -926,6 +926,16 @@ api.post('/attachments/file', requireAuth, (req, res, next) => {
   });
 }));
 
+/** PR-LUI-a1: chép một tệp đã tải sang nhiều bản ghi khác (một tệp trong kho, nhiều dòng). */
+api.post('/attachments/chep', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = req.body ?? {};
+  return { rows: attachmentSvc.chepTep(principalOf(req), {
+    tuId: toInt(b.tuId) ?? 0, ownerType: String(b.ownerType ?? ''),
+    ownerIds: Array.isArray(b.ownerIds) ? b.ownerIds.map((x: unknown) => toInt(x) ?? 0) : [],
+  }) };
+}));
+
 /** Tải về — kiểm quyền XEM bản ghi chủ trước, luôn dạng tải về (không bao giờ hiển thị nội dung tệp trong trang). */
 api.get('/attachments/:id/download', requireAuth, wrap(async (req, res) => {
   const o = await attachmentSvc.openAttachment(principalOf(req), pInt(req, 'id'));
@@ -1009,9 +1019,17 @@ api.post('/violations', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   const b = yThucBody(req);
   return violationSvc.recordViolation(principalOf(req), {
-    studentId: toInt(b.studentId) ?? 0, category: b.category, description: b.description, occurredOn: b.occurredOn ?? null,
+    studentId: toInt(b.studentId) ?? 0, category: b.category, ten: b.ten ?? null, description: b.description, occurredOn: b.occurredOn ?? null,
     skill: 'skill' in b ? (b.skill ?? null) : undefined, idempotencyKey: b.idempotencyKey ?? null,
-    ghiRoKhac: b.ghiRoKhac ?? null,
+  });
+}));
+/** PR-LUI-a1: một vi phạm cho nhiều học viên (≤ 8 mỗi lô) HOẶC nhiều vi phạm cho một học viên. Mỗi em một giao dịch; lỗi từng em trả về `loi`. */
+api.post('/violations/nhieu', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = yThucBody(req);
+  return violationSvc.recordViolations(principalOf(req), {
+    studentIds: Array.isArray(b.studentIds) ? b.studentIds.map((x: unknown) => toInt(x) ?? 0) : [],
+    lines: Array.isArray(b.lines) ? b.lines : [], moTaRieng: b.moTaRieng ?? null, idempotencyKey: String(b.idempotencyKey ?? ''),
   });
 }));
 api.get('/violations/:id', requireAuth, wrap((req) => {
@@ -1022,15 +1040,24 @@ api.patch('/violations/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   const b = yThucBody(req);
   return violationSvc.editViolation(principalOf(req), pInt(req, 'id'), {
-    description: b.description, category: b.category, skill: 'skill' in b ? (b.skill ?? null) : undefined,
+    ten: 'ten' in b ? (b.ten ?? null) : undefined, description: b.description, category: b.category, skill: 'skill' in b ? (b.skill ?? null) : undefined,
     occurredOn: 'occurredOn' in b ? (b.occurredOn ?? null) : undefined,
-    ghiRoKhac: 'ghiRoKhac' in b ? (b.ghiRoKhac ?? null) : undefined,
   });
 }));
 /** XOÁ THẲNG (rulebook v3, V11′–V14′): không lý do, không "đánh dấu không chính xác". Trả số biện pháp đã bị gỡ vi phạm này. */
 api.delete('/violations/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return violationSvc.deleteViolation(principalOf(req), pInt(req, 'id'));
+}));
+
+/** PR-LUI-a1: Sửa vi phạm của lần xử lý đã xác nhận / Xoá lần xử lý mới nhất của chuỗi (bậc tính lại). Quyền kiểm ở `xuLy.ts` (Q5). */
+api.patch('/discipline-measures/:id/vi-pham', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return xuLySvc.suaViPhamXuLy(principalOf(req), pInt(req, 'id'), { violationIds: yThucBody(req).violationIds });
+}));
+api.delete('/discipline-measures/:id', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return xuLySvc.xoaXuLy(principalOf(req), pInt(req, 'id'));
 }));
 
 /** V4-1: Ghi nhận — "đã xem, không cần biện pháp". Vi phạm đang bắt buộc thì từ chối (V4-2). */

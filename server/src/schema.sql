@@ -1650,7 +1650,8 @@ CREATE TABLE violations (
   occurred_on TEXT NOT NULL,          -- ngày XẢY RA, do GV khai; mặc định hôm nay
   reported_on TEXT NOT NULL,          -- ngày hệ thống ghi nhận; KHÁC occurred_on
   reported_by INTEGER NOT NULL REFERENCES users(id),
-  description TEXT NOT NULL,          -- bắt buộc, tối thiểu 10 ký tự
+  ten TEXT,                           -- PR-LUI-a: "Vi phạm" ngắn 3–60 ký tự; NULL ở dòng cũ (tachTenMoTa)
+  description TEXT NOT NULL,          -- "Mô tả", không bắt buộc ('' khi không có)
 
   -- NGỪNG DÙNG từ PR-T (rulebook v3, 21/09/2026 tối): ghi sai thì SỬA hoặc XOÁ thẳng, không còn "đánh dấu không chính xác".
   -- Bốn cột `valid` / `invalid_*` giữ lại để `migrate` an toàn (nâng cấp xoá mọi dòng `valid = 0` cũ, kèm audit); mã KHÔNG đọc, KHÔNG ghi.

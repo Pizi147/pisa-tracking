@@ -227,7 +227,7 @@ export async function runYThucTests(t: YThucTestKit) {
 
   check('PR-J · J1 Bảng violations đúng cột của đặc tả §4.1 — và KHÔNG có severity · status · due_date · episode_no · urgency', () => {
     const cols = colsOf('violations');
-    const want = ['id', 'student_id', 'cycle_id', 'class_id', 'category', 'skill', 'occurred_on', 'reported_on', 'reported_by', 'description',
+    const want = ['id', 'student_id', 'cycle_id', 'class_id', 'category', 'skill', 'occurred_on', 'reported_on', 'reported_by', 'ten', 'description',
       'valid', 'invalid_reason', 'invalidated_by', 'invalidated_at', 'idempotency_key', 'created_at', 'updated_at',
       /* PR-YT4: Ghi nhận (V4-1) — trạng thái vẫn suy ra, không có cột status */ 'ghi_nhan_luc', 'ghi_nhan_boi',
       /* PR-Pb2-b (Q14): hạn xử lý chốt + ngày phản hồi — hai NGÀY, vẫn không có cột status */ 'han_xu_ly', 'phan_hoi_ngay'];
@@ -318,15 +318,16 @@ export async function runYThucTests(t: YThucTestKit) {
     assertThrows(() => record(gvbm, gone.id), /chưa xếp lớp|đang học/, 'Ghi vi phạm cho em không còn học ở lớp nào');
   });
 
-  check('PR-J · V02 Bắt buộc học viên · nhóm · mô tả từ 10 ký tự; môn và tệp là tùy chọn', () => {
+  check('PR-J · V02 Bắt buộc học viên · nhóm · ô Vi phạm 3–60 ký tự (PR-LUI-a1); môn, Mô tả và tệp là tùy chọn', () => {
     const st = makeStudent('V02');
     assertThrows(() => record(gvbm, st.id, { category: undefined }), /nhóm/i, 'Thiếu nhóm');
     assertThrows(() => record(gvbm, st.id, { category: 'participation' }), /nhóm/i, 'Nhóm Tham gia trên lớp đã bỏ (Y04)');
     assertThrows(() => record(gvbm, st.id, { category: 'severe' }), /nhóm/i, 'Nhóm lạ');
-    assertThrows(() => record(gvbm, st.id, { description: 'ngắn quá' }), /10 ký tự/, 'Mô tả 8 ký tự');
-    assertThrows(() => record(gvbm, st.id, { description: '         x         ' }), /10 ký tự/, 'Mô tả toàn khoảng trắng');
-    const exact = record(gvbm, st.id, { description: '1234567890' });
-    assert(exact.violation.description === '1234567890', 'Đúng 10 ký tự phải được nhận');
+    assertThrows(() => record(gvbm, st.id, { description: 'ng' }), /3 ký tự/, 'Vi phạm 2 ký tự');
+    assertThrows(() => record(gvbm, st.id, { description: '         x         ' }), /3 ký tự/, 'Vi phạm toàn khoảng trắng');
+    assertThrows(() => record(gvbm, st.id, { ten: 'x'.repeat(61), description: undefined }), /Tối đa 60 ký tự/, 'Vi phạm 61 ký tự');
+    const exact = record(gvbm, st.id, { description: '12345678' });
+    assert(exact.violation.ten === '12345678' && exact.violation.moTa === '', 'Chữ ngắn gửi kiểu cũ thành Vi phạm');
     for (const c of ['attendance', 'homework', 'conduct', 'classroom']) {
       assert(record(gvbm, st.id, { category: c, description: `Vi phạm nhóm ${c} hợp lệ`, occurredOn: addDays(TODAY, -3) }).violation.category === c, `Nhóm ${c} không nhận`);
     }
@@ -359,17 +360,14 @@ export async function runYThucTests(t: YThucTestKit) {
     } finally { conn.prepare('DELETE FROM teacher_assignments WHERE id = ?').run(extra); }
   });
 
-  check('PR-NEN · V05 (bản T13) Nhóm `Khác` cần ô Ghi rõ ≥ 3 ký tự, ghép vào đầu mô tả; nhóm khác thì 10 là đủ', () => {
+  check('PR-LUI-a1 · V05 Nhóm `Khác` không còn ô Ghi rõ: ô Vi phạm là chữ ngắn đó, Mô tả đứng riêng', () => {
     const st = makeStudent('V05');
-    assertThrows(() => record(gvbm, st.id, { category: 'other', description: 'Không mang sách buổi 12' }), /Ghi rõ "Khác" là gì/, 'Khác không ghi rõ');
-    assertThrows(() => record(gvbm, st.id, { category: 'other', description: 'Không mang sách buổi 12', ghiRoKhac: 'ab' }), /ít nhất 3 ký tự/, 'Ghi rõ 2 ký tự');
-    const ok = record(gvbm, st.id, { category: 'other', description: 'Không mang sách buổi 12', ghiRoKhac: 'Quên sách' });
-    assert(ok.violation.category === 'other', 'Khác có ghi rõ ≥ 3 ký tự phải được nhận');
-    assert(ok.violation.description === 'Quên sách — Không mang sách buổi 12', `Ghép ghi rõ vào mô tả: ${ok.violation.description}`);
-    /* Sửa lại mô tả đã có tiền tố mà không gửi ghiRoKhac: tiền tố đủ làm chữ "Khác", không ghép hai lần. */
-    const sua = viol.editViolation(gvbm, ok.violation.id, { description: 'Quên sách — Không mang sách buổi 12 và 13' }) as any;
-    assert(sua.description === 'Quên sách — Không mang sách buổi 12 và 13', `Sửa không ghép hai lần: ${sua.description}`);
-    assert(record(gvbm, st.id, { category: 'attendance', description: 'Đi muộn 20 phút' }).violation.id > 0, 'Nhóm thường: 10 ký tự là đủ');
+    assertThrows(() => record(gvbm, st.id, { category: 'other', ten: 'ab' }), /ít nhất 3 ký tự/, 'Vi phạm 2 ký tự');
+    const ok = record(gvbm, st.id, { category: 'other', ten: 'Quên sách', description: 'Không mang sách buổi 12' });
+    assert(ok.violation.category === 'other' && ok.violation.ten === 'Quên sách' && ok.violation.moTa === 'Không mang sách buổi 12', JSON.stringify(ok.violation));
+    const sua = viol.editViolation(gvbm, ok.violation.id, { description: 'Không mang sách buổi 12 và 13' }) as any;
+    assert(sua.ten === 'Quên sách' && sua.moTa === 'Không mang sách buổi 12 và 13', `Sửa Mô tả không đụng Vi phạm: ${JSON.stringify(sua)}`);
+    assert(record(gvbm, st.id, { category: 'attendance', description: 'Đi muộn 20' }).violation.id > 0, 'Nhóm thường cũng chỉ cần Vi phạm');
   });
 
   check('PR-J · V06 Cảnh báo trùng MỀM: cùng học viên · nhóm · ngày → trả bản đang có, KHÔNG chặn, KHÔNG tự gộp', () => {
@@ -425,7 +423,7 @@ export async function runYThucTests(t: YThucTestKit) {
 
   check('PR-J · V09 Sửa mô tả · nhóm · môn · ngày xảy ra; mỗi trường đổi ghi MỘT dòng lịch sử (cũ → mới); giữ luật V02–V05', () => {
     const st = makeStudent('V09');
-    const v = vid(record(gvbm, st.id, { description: 'Mô tả ban đầu của vi phạm' }));
+    const v = vid(record(gvbm, st.id, { ten: 'Vi phạm ban đầu', description: 'Mô tả ban đầu của vi phạm' }));
     viol.editViolation(gvbm, v, { description: 'Mô tả đã sửa cho rõ hơn', category: 'attendance', skill: 'reading', occurredOn: addDays(TODAY, -2) });
     const row = conn.prepare('SELECT * FROM violations WHERE id = ?').get(v) as any;
     assert(row.description === 'Mô tả đã sửa cho rõ hơn' && row.category === 'attendance' && row.skill === 'reading' && row.occurred_on === addDays(TODAY, -2), 'Giá trị mới chưa lưu');
@@ -437,25 +435,27 @@ export async function runYThucTests(t: YThucTestKit) {
       `Lịch sử sai: ${JSON.stringify(hist)}`);
     viol.editViolation(gvbm, v, { description: 'Mô tả đã sửa cho rõ hơn' });
     assert(one('SELECT COUNT(*) n FROM violation_history WHERE violation_id = ?', v) === 4, 'Không đổi gì thì không ghi lịch sử');
-    assertThrows(() => viol.editViolation(gvbm, v, { description: 'ngắn' }), /10 ký tự/, 'Sửa xuống dưới 10 ký tự');
-    assertThrows(() => viol.editViolation(gvbm, v, { category: 'other' }), /Ghi rõ "Khác"/, 'Đổi sang Khác mà không ghi rõ Khác là gì');
+    assertThrows(() => viol.editViolation(gvbm, v, { ten: 'ab' }), /3 ký tự/, 'Sửa Vi phạm xuống dưới 3 ký tự');
     assertThrows(() => viol.editViolation(gvbm, v, { occurredOn: addDays(TODAY, 3) }), /tương lai/, 'Đổi sang ngày tương lai');
     assertThrows(() => viol.editViolation(gvbm, v, { occurredOn: '2026-99-99' }), /Ngày xảy ra/, 'Đổi sang ngày sai định dạng');
     const again = viol.editViolation(gvbm, v, { description: 'Mô tả sửa lần ba, vẫn hợp lệ' }) as any;
     assert(again.id === v && again.description === 'Mô tả sửa lần ba, vẫn hợp lệ', 'Sửa phải trả về bản ghi mới');
   });
 
-  check('PR-NEN · V09 vi phạm "Khác" CŨ (mô tả không có tiền tố Ghi rõ) vẫn đổi được ngày/môn khi form gửi lại nguyên nhóm + mô tả', () => {
+  check('PR-LUI-a1 · V09 vi phạm "Khác" CŨ (`A — B`, cột ten NULL) hiện tách A / B; form gửi lại nguyên chữ đã tách thì cột giữ nguyên, chỉ ngày/môn đổi', () => {
     const st = makeStudent('V09K');
-    const v = vid(record(gvbm, st.id, { description: 'Mô tả cũ không có tiền tố' }));
-    conn.prepare(`UPDATE violations SET category = 'other' WHERE id = ?`).run(v); // dữ liệu trước T13: Khác không có Ghi rõ
+    const v = vid(record(gvbm, st.id, { description: 'Mô tả cũ chưa tách' }));
+    conn.prepare(`UPDATE violations SET category = 'other', ten = NULL, description = 'Quên sách — Không mang sách buổi 12' WHERE id = ?`).run(v);
+    const doc = viol.loadViolation(v);
+    assert(doc.ten === 'Quên sách' && doc.moTa === 'Không mang sách buổi 12', JSON.stringify(doc));
     const sua = viol.editViolation(gvbm, v, {
-      category: 'other', description: 'Mô tả cũ không có tiền tố', occurredOn: addDays(TODAY, -1), skill: 'reading',
+      category: 'other', ten: doc.ten, description: doc.moTa, occurredOn: addDays(TODAY, -1), skill: 'reading',
     }) as any;
-    assert(sua.description === 'Mô tả cũ không có tiền tố' && sua.category === 'other', `Mô tả/nhóm phải giữ nguyên: ${JSON.stringify(sua)}`);
-    const row = conn.prepare('SELECT occurred_on, skill FROM violations WHERE id = ?').get(v) as any;
-    assert(row.occurred_on === addDays(TODAY, -1) && row.skill === 'reading', `Ngày/môn phải đổi: ${JSON.stringify(row)}`);
-    assertThrows(() => viol.editViolation(gvbm, v, { category: 'other', description: 'Mô tả cũ đã sửa lại khác đi' }), /Ghi rõ "Khác"/, 'Đổi mô tả của Khác cũ thì phải ghi rõ');
+    const row = conn.prepare('SELECT ten, description, occurred_on, skill FROM violations WHERE id = ?').get(v) as any;
+    assert(row.ten === null && row.description === 'Quên sách — Không mang sách buổi 12', `Cột chữ giữ nguyên: ${JSON.stringify(row)}`);
+    assert(row.occurred_on === addDays(TODAY, -1) && row.skill === 'reading' && sua.ten === 'Quên sách', `Ngày/môn phải đổi: ${JSON.stringify(row)}`);
+    const doi = viol.editViolation(gvbm, v, { ten: 'Quên vở' }) as any;
+    assert(doi.ten === 'Quên vở' && doi.moTa === 'Không mang sách buổi 12', 'Sửa Vi phạm lưu ten thật, Mô tả đã tách');
   });
 
   check('PR-J · V10 Ai sửa hoặc xoá được: người ghi (của mình) · GVCN của lớp · Quản lý trong phạm vi — GV khác không sửa được vi phạm đồng nghiệp', () => {

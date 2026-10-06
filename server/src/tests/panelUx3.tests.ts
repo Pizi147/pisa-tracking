@@ -284,7 +284,7 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     const sai: string[] = [];
     for (const f of PANEL_UX3) {
       for (const m of docSach(f).matchAll(/placeholder="([^"]*)"/g)) {
-        if (!/^(Ví dụ: .{1,45}|Gõ .*|Chọn .*|Tìm .*)$/.test(m[1])) sai.push(`${f}: "${m[1]}"`);
+        if (!/^(Ví dụ: .{1,45}|Gõ .*|Chọn .*|Tìm .*|Chi tiết nếu cần)$/.test(m[1])) sai.push(`${f}: "${m[1]}"`);
       }
     }
     assert(sai.length === 0, `Placeholder sai luật:\n    ${sai.join('\n    ')}`);
