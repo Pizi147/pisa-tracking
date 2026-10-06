@@ -130,7 +130,9 @@ for (const [w, h] of [[1440, 900], [375, 812]]) for (const sang of [false, true]
     let loi = await p.evaluate(doTrang);
     if (BO_QUA_CAT.some((k) => tenKb.includes(k))) loi = loi.filter((l) => !l.startsWith('c '));
     console.log(`${loi.length ? '✗' : '✓'} ${nhan}${loi.map((l) => `\n    ${l}`).join('')}`);
-    if (loi.length) { tongLoi += loi.length; await p.screenshot({ path: path.join(ANH, `${nhan}.png`) }); }
+    tongLoi += loi.length;
+    // Ảnh lỗi; KHUNG_CHUP=1 chụp mọi lần đo (ảnh nghiệm thu).
+    if (loi.length || process.env.KHUNG_CHUP) await p.screenshot({ path: path.join(ANH, `${nhan}.png`) });
   }
   await ctx.close();
 }
