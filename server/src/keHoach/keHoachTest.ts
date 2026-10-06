@@ -11,7 +11,7 @@
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { db, theoLo, tx } from '../db.ts';
 import {
-  CO_DIEM_SQL, KY_NANG_KE_HOACH, MT_TOI_DA, O_KE_HOACH, dotMtMoi, PERMISSIONS, boMonLich, kiemSoMtMoi, kiemTuanXep, laLichSu, lichMtMacDinh, viecXepMt, laVaoMuon, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang,
+  CO_DIEM_SQL, KY_NANG_KE_HOACH, MT_TOI_DA, kiemTuanMt0, O_KE_HOACH, dotMtMoi, PERMISSIONS, boMonLich, kiemSoMtMoi, kiemTuanXep, laLichSu, lichMtMacDinh, viecXepMt, laVaoMuon, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang,
   tuanKhoa as tuanKhoaCua,
   type BaiXemTruoc, type DongHangLoat, type KetQuaHuy, type KyNangKH, type LuotSo, type LuotXep, type OKyNang,
 } from '../../../shared/domain/index.ts';
@@ -454,7 +454,11 @@ type YeuCauKyNang = { skill: KyNangKH; periodId: number };
  * `pre.choHuyLich` (chỉ hộp một đợt): đổi tuần được kể cả kỹ năng đã có điểm / đã thi — điểm đi theo (D3 MT cũ, PR-MTa T20 mọi lượt).
  */
 function kiemDotNoi(a: any, kyNang: YeuCauKyNang[], duaLai: Set<KyNangKH> = new Set(),
-  pre: { rows?: any[]; scores?: any[]; periods?: Map<number, any>; homNay?: string; choHuyLich?: boolean; luotSau?: LuotSauDoc[] } = {},
+  pre: {
+    rows?: any[]; scores?: any[]; periods?: Map<number, any>; homNay?: string; choHuyLich?: boolean; luotSau?: LuotSauDoc[];
+    /** PR-MT0: tuần muộn nhất của MT0 cùng lộ trình (đã đọc theo lô cùng `luotSau`) — MT1 phải sau tuần này. */
+    tuanMt0?: string | null;
+  } = {},
 ): { bai: BaiXemTruoc[]; canLyDo: boolean; seHuyLich: LuotSeHuyLich[] } {
   const conn = db();
   const cheDo: CheDo = a.kind === 'mock' ? 'ft' : 'thuong';
@@ -486,8 +490,13 @@ function kiemDotNoi(a: any, kyNang: YeuCauKyNang[], duaLai: Set<KyNangKH> = new 
   }
 
   const tuanCuoi = doi.length ? tuanCuoiSauKhiDoi(rows, new Map(doi.map((d) => [d.k.skill, d.pr.week_start])))! : '';
+  const tuanDau = doi.map((d) => String(d.pr.week_start)).sort()[0] ?? '';
+  /* PR-MT0: đường theo lô kiểm "MT1 sau MT0" trên dữ liệu đã đọc; đường lẻ để `kiemVuot` tự đọc. */
+  const chanMt0 = doi.length && pre.luotSau && a.kind === 'mock' && a.attempt_no === 1 && pre.tuanMt0
+    ? kiemTuanMt0({ tuanMoi: pre.tuanMt0, tuanMuonNhat: null, tuanMt1: tuanDau }) : null;
   const vuot = !doi.length ? { biVuot: [], chan: null }
-    : pre.luotSau ? kiemVuotTu(a, pre.luotSau, tuanCuoi) : kiemVuot(a.id, tuanCuoi);
+    : chanMt0 ? { biVuot: [], chan: chanMt0 }
+    : pre.luotSau ? kiemVuotTu(a, pre.luotSau, tuanCuoi) : kiemVuot(a.id, tuanCuoi, tuanDau);
   const boQua = vuot.biVuot.map((x) => x.attemptId);
   const checks = new Map<string, { blockers: string[]; warnings: string[] }>();
   for (const d of doi) {
@@ -495,7 +504,7 @@ function kiemDotNoi(a: any, kyNang: YeuCauKyNang[], duaLai: Set<KyNangKH> = new 
     if (vuot.chan) { b.ghiChu = 'chan'; b.cau = vuot.chan; continue; }
     let c = checks.get(d.pr.week_start);
     if (!c) {
-      c = checkWeekVsNeighbours({ cycleId: a.cycle_id, attemptNo: a.attempt_no, excludeAttemptId: a.id, newWeekStart: d.pr.week_start, boQua });
+      c = checkWeekVsNeighbours({ cycleId: a.cycle_id, attemptNo: a.attempt_no, excludeAttemptId: a.id, newWeekStart: d.pr.week_start, boQua, kind: a.kind });
       checks.set(d.pr.week_start, c);
     }
     if (c.blockers.length) { b.ghiChu = 'chan'; b.cau = c.blockers.join(' '); }
@@ -990,7 +999,11 @@ function xetMotEmFT(i: {
       cho_duyet: [...i.lo.choDuyet.keys()].some((k) => k.startsWith(`${x.id}:`)) };
   });
   const kiem = kiemDotNoi(a, ks.map((k) => ({ skill: k, periodId: i.tuan[k]! })), new Set(),
-    { rows: rowsCua(a), scores: diemCua(a), periods: i.periods, homNay: i.homNay, luotSau });
+    {
+      rows: rowsCua(a), scores: diemCua(a), periods: i.periods, homNay: i.homNay, luotSau,
+      tuanMt0: cuaEm.filter((x) => x.kind === 'mt0' && x.status !== 'cancelled')
+        .flatMap((x) => rowsCua(x).filter((r) => r.required && r.sit_status !== 'cancelled' && r.week_start).map((r) => String(r.week_start))).sort().pop() ?? null,
+    });
   const chan = kiem.bai.filter((b) => b.ghiChu === 'chan');
   /* T2 (PR-MTa, chốt 05/10): dời vượt KHÔNG chặn ở hàng loạt — dòng mang hệ quả `seHuyLich` để web hiện một popup gộp. */
   const chung = { bai: kiem.bai, viec: viec.loai, attemptNo, canLyDo: kiem.canLyDo, ...(kiem.seHuyLich.length ? { seHuyLich: kiem.seHuyLich } : {}) };

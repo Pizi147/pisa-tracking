@@ -68,7 +68,8 @@ const soNguyenDuong = (v: string | null): number | undefined => {
  * Quyền không đổi: hồ sơ Mock tự kiểm quyền như cũ (`kn` chỉ là chỗ cuộn).
  */
 export function duongDotTest(d: { id: number; kind?: string | null; classId?: number | null }, kn?: string | null): string {
-  if (d.kind && d.kind !== 'mock' && d.classId) return `/bang-diem-thuong/${d.classId}?kind=${d.kind}`;
+  /* PR-MT0: MT0 mở hồ sơ Mock (chấm band), không bảng điểm lớp thường. */
+  if (d.kind && d.kind !== 'mock' && d.kind !== 'mt0' && d.classId) return `/bang-diem-thuong/${d.classId}?kind=${d.kind}`;
   const k = kn && KY_NANG_HOP_LE.includes(kn) ? kn : null;
   return `/mock-test/${d.id}${k ? `?kn=${k}` : ''}`;
 }

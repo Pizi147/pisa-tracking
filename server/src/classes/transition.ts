@@ -15,6 +15,7 @@ import { tiepTheoTheoHocVien } from './loTrinhTiep.ts';
 import { standingFor } from '../students/standing.ts';
 import { cuoiKhoaTheoHocVien } from '../normal/cuoiKhoa.ts';
 import { HV_DANG_HOC_SQL, khoangTamDung } from '../students/tamDung.ts';
+import { mt0TheoHocVien } from '../fasttrack/mt0.ts';
 
 /**
  * CHUYỂN TIẾP KHI MỘT LỚP HỌC HẾT CHƯƠNG TRÌNH — mục 6.1, đặc tả §3.9.2 (PR-LT thay khung cũ).
@@ -152,6 +153,7 @@ export function transitionPlan(p: Principal, classId: number) {
     startPeriodId: ensurePeriod(addDays(mondayOf(demoToday()), 7)).id,
   } : null;
 
+  const mt0Em = ft ? new Map() : mt0TheoHocVien(students.map((s) => s.id as number));
   return {
     from: {
       id: cls.id, code: cls.code, branchId: cls.branch_id, branchCode: cls.branch_code,
@@ -183,6 +185,8 @@ export function transitionPlan(p: Principal, classId: number) {
       caseMo: { tong: caseByStudent.get(s.id) ?? 0, seDongNeuSangFt: caseByStudent.get(s.id) ?? 0 },
       baiChuaLam: s.cycle_id ? (baiChuaLamByCycle.get(s.cycle_id) ?? 0) : 0,
       lenh: lenhCho.get(s.id) ?? null,
+      /** PR-MT0: ô MT0 (mockup ⑥) — trạng thái + chip SOS hiển thị; không có MT0 → null. */
+      mt0: mt0Em.get(s.id) ?? null,
     })),
     /** Lớp này đã từng chuyển tiếp sang đâu chưa — để không mở hai lớp kế tiếp cho một lớp. */
     alreadyLinked: (conn

@@ -186,4 +186,269 @@ export async function runPrMt0Tests(t: YThucTestKit) {
     const fin = canCham.chamSheet(QL, l.classId, { kind: 'final' });
     assert(fin.mode === 'ratio' && !JSON.stringify(fin.thuong).includes(`"attemptId":${aid},`), 'Final không lẫn MT0');
   });
+
+  // ------------------------------------------------------------------ MT0-3 · ghi Lên FT tạo / huỷ / mở lại MT0
+  const loTrinh: any = await import('../classes/loTrinhTiep.ts');
+  const mt0Svc: any = await import('../fasttrack/mt0.ts');
+  const mt0Cua = (sid: number) => conn.prepare(`SELECT * FROM assessment_attempts WHERE student_id = ? AND kind = 'mt0'`).all(sid) as any[];
+  const loi = (fn: () => unknown): any => { try { fn(); } catch (e) { return e; } return null; };
+  const demCau = (fn: () => void): number => {
+    let n = 0; const goc = conn.prepare.bind(conn);
+    (conn as any).prepare = (sql: string) => { n += 1; return goc(sql); };
+    try { fn(); } finally { (conn as any).prepare = goc; }
+    return n;
+  };
+  check('MT0-3a/b · GVCN ghi Lên FT (Target 6.5) → đúng 1 MT0 tuần Final, 4 kỹ năng, 1 dòng hành trình; ghi lại → vẫn 1', () => {
+    const l = taoLop('BE', 8, 1, 6);
+    const gvcn = ganGv(l.classId, gvKhac(4), null, true);
+    const sid = l.sids[0];
+    const tuanFinal = schedule.classProgress(l.classId).finalWeekStart as string;
+    const r = loTrinh.ghiLoTrinhTiep(gvcn, sid, { huong: 'fast_track', mucTieu: 6.5 });
+    const ds = mt0Cua(sid);
+    assert(ds.length === 1 && ds[0].attempt_no === 0 && ds[0].status === 'planned' && ds[0].target_at_attempt === 6.5, JSON.stringify(ds));
+    assert(ds[0].cycle_id === get(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`, sid).id, 'khoá lớp thường');
+    const kn = conn.prepare(`SELECT k.skill, p.week_start FROM attempt_skills k JOIN report_periods p ON p.id = k.planned_period_id WHERE k.attempt_id = ?`).all(ds[0].id) as any[];
+    assert(kn.length === 4 && kn.every((k: any) => k.week_start === tuanFinal), JSON.stringify(kn));
+    assert(get(`SELECT COUNT(*) n FROM journey_events WHERE dedup_key = ?`, `mt0:${ds[0].id}:tao`).n === 1, 'hành trình');
+    assert(r.mt0?.maTuan === dm.tuanLich(tuanFinal) && r.mt0.trangThai === 'cho', JSON.stringify(r.mt0));
+    loTrinh.ghiLoTrinhTiep(gvcn, sid, { huong: 'fast_track', mucTieu: 7 });
+    const lai = mt0Cua(sid);
+    assert(lai.length === 1 && lai[0].id === ds[0].id && lai[0].target_at_attempt === 7, 'ghi lại: một MT0, Target theo bản ghi mới (chưa điểm)');
+  });
+  check('MT0-3c/d · đổi Học lại khi chưa điểm → huỷ; chọn lại Lên FT → mở lại cùng id; có điểm rồi đổi → giữ, "không dùng"', () => {
+    const l = taoLop('FOU', 7, 1, 6);
+    const sid = l.sids[0];
+    loTrinh.ghiLoTrinhTiep(QL, sid, { huong: 'fast_track' });
+    const id = mt0Cua(sid)[0].id;
+    loTrinh.ghiLoTrinhTiep(QL, sid, { huong: 'hoc_lai' });
+    const huy = mt0Cua(sid)[0];
+    assert(huy.status === 'cancelled' && huy.cancel_reason === 'Bỏ hướng Lên FT', JSON.stringify(huy));
+    assert(mt0Svc.mt0TheoHocVien([sid]).get(sid) === undefined, 'huỷ thì không còn MT0 hiện');
+    loTrinh.ghiLoTrinhTiep(QL, sid, { huong: 'fast_track' });
+    const mo = mt0Cua(sid);
+    assert(mo.length === 1 && mo[0].id === id && mo[0].status === 'planned' && mo[0].cancel_reason === null, JSON.stringify(mo));
+    conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, band, nhap_dau_ngay) VALUES (?,?,?,?)').run(id, 'listening', 4, TODAY);
+    loTrinh.ghiLoTrinhTiep(QL, sid, { huong: 'hoc_lai' });
+    const v = mt0Svc.mt0TheoHocVien([sid]).get(sid);
+    assert(mt0Cua(sid)[0].status === 'planned' && v?.trangThai === 'khong_dung' && v.coDiem, JSON.stringify(v));
+    assert(get('SELECT COUNT(*) n FROM assessment_scores WHERE attempt_id = ?', id).n === 1, 'điểm còn nguyên');
+    loTrinh.ghiLoTrinhTiep(QL, sid, { huong: 'fast_track' });
+    assert(mt0Svc.mt0TheoHocVien([sid]).get(sid)?.trangThai === 'cho' && mt0Cua(sid).length === 1, 'quay lại Lên FT: chờ, không MT0 thứ hai');
+  });
+  check('MT0-3e · em Pre FOU Lên FT → không MT0', () => {
+    const l = taoLop('PREFOU', 5, 1);
+    loTrinh.ghiLoTrinhTiep(QL, l.sids[0], { huong: 'fast_track' });
+    assert(mt0Cua(l.sids[0]).length === 0, 'Pre FOU');
+  });
+  check('MT0-3f · cả lớp 30 em Lên FT → 30 MT0; số câu SQL như 3 em', () => {
+    const it = taoLop('ELE', 8, 3);
+    const nhieu = taoLop('ELE', 8, 30);
+    const ghi = (l: { classId: number; sids: number[] }) => () => loTrinh.ghiLoTrinhTiepCaLop(QL, l.classId, { items: l.sids.map((sid) => ({ studentId: sid, huong: 'fast_track' })) });
+    const a = demCau(ghi(it));
+    const b = demCau(ghi(nhieu));
+    assert(a === b, `3 em ${a} câu · 30 em ${b} câu`);
+    assert(get(`SELECT COUNT(*) n FROM assessment_attempts WHERE kind = 'mt0' AND class_id = ?`, nhieu.classId).n === 30, 'đủ 30 MT0');
+    const ca = loTrinh.layLoTrinhTiepCaLop(QL, nhieu.classId);
+    assert(ca.hocVien.every((h: any) => h.mt0?.maTuan) && ca.lop.tuanFinal, 'bảng cả lớp có MT0 + tuần Final');
+  });
+  check('MT0-3g · một dòng sai trong lô cả lớp → 400, không MT0 mới', () => {
+    const l = taoLop('BE', 8, 3);
+    const e = loi(() => loTrinh.ghiLoTrinhTiepCaLop(QL, l.classId, { items: [
+      { studentId: l.sids[0], huong: 'fast_track' }, { studentId: l.sids[1], huong: 'fast_track', ghiChu: 'y'.repeat(501) },
+    ] }));
+    assert(e?.status === 400, `400: ${e?.message}`);
+    assert(get(`SELECT COUNT(*) n FROM assessment_attempts WHERE kind = 'mt0' AND class_id = ?`, l.classId).n === 0, 'không MT0');
+  });
+
+  // ------------------------------------------------------------------ MT0-4 · dời MT0 (muộn nhất tuần 2 FT, trước MT1), theo Final
+  const tuanSo = (w: string, n: number) => week.ensurePeriod(addDays(w, 7 * n)).id as number;
+  const tuanKn = (aid: number) => (conn.prepare(`SELECT DISTINCT p.week_start w FROM attempt_skills k JOIN report_periods p ON p.id = k.planned_period_id WHERE k.attempt_id = ?`).all(aid) as any[]).map((r) => r.w).join();
+  const lenFt = (kind: 'FOU' | 'BE' | 'ELE', tuan: number) => {
+    const l = taoLop(kind, tuan, 1, 6);
+    loTrinh.ghiLoTrinhTiep(QL, l.sids[0], { huong: 'fast_track' });
+    const tuanFinal = schedule.classProgress(l.classId).finalWeekStart as string;
+    return { ...l, sid: l.sids[0], aid: mt0Cua(l.sids[0])[0].id as number, tuanFinal };
+  };
+  check('MT0-4a · QL dời MT0 (chưa nối FT): Final + 3 tuần → 400 "muộn nhất"; + 1 tuần → lưu, hạn = Chủ nhật tuần sau tuần mới', () => {
+    const e = lenFt('BE', 9);
+    const x = loi(() => attempts.setPlanningWeek(QL, e.aid, tuanSo(e.tuanFinal, 3)));
+    assert(x?.status === 400 && /muộn nhất/.test(x.message), `+3: ${x?.status} ${x?.message}`);
+    const y = loi(() => skillSch.setSkillWeek(QL, e.aid, 'writing', tuanSo(e.tuanFinal, 3)));
+    assert(y?.status === 400 && /muộn nhất/.test(y.message), `+3 một kỹ năng: ${y?.message}`);
+    attempts.setPlanningWeek(QL, e.aid, tuanSo(e.tuanFinal, 1));
+    const moi = addDays(e.tuanFinal, 7);
+    assert(tuanKn(e.aid) === moi, tuanKn(e.aid));
+    const han = attempts.attemptDetail(QL, e.aid).skillSchedule.map((r: any) => r.deadline);
+    assert(han.every((h: string) => h === dm.hanChamMt0(moi)), han.join());
+    attempts.setPlanningWeek(QL, e.aid, tuanSo(e.tuanFinal, 2));   // biên: đúng tuần 2 FT (Final + 14 ngày) vẫn được
+    assert(tuanKn(e.aid) === addDays(e.tuanFinal, 14), 'biên tuần 2 FT');
+  });
+  check('MT0-4 · Q2 (A): dời Cuối khoá của em → MT0 chưa điểm, chưa dời tay đi theo; đã dời tay thì đứng yên; lân cận lớp thường không chặn', () => {
+    const e = lenFt('ELE', 8);
+    const fin = get(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'final'`, e.sid).id as number;
+    attempts.setPlanningWeek(QL, fin, tuanSo(e.tuanFinal, 1));   // Final cùng tuần MT0 trước đó: không bị "trùng tuần với MT0"
+    assert(tuanKn(e.aid) === addDays(e.tuanFinal, 7), `MT0 theo Final: ${tuanKn(e.aid)}`);
+    skillSch.setSkillWeek(QL, e.aid, 'speaking', tuanSo(e.tuanFinal, 2));   // dời tay
+    attempts.setPlanningWeek(QL, fin, tuanSo(e.tuanFinal, 0));
+    assert(tuanKn(e.aid).split(',').sort().join() === [addDays(e.tuanFinal, 7), addDays(e.tuanFinal, 14)].join(), `đã dời tay: ${tuanKn(e.aid)}`);
+  });
+  check('MT0-4d · GVCN dời MT0 về tuần đã qua → chặn như mọi Mock (T4); QL được', () => {
+    const e = lenFt('FOU', 8);
+    const gvcn = ganGv(e.classId, gvKhac(5), null, true);
+    const qua = tuanSo(week.mondayOf(TODAY), -2);
+    const x = loi(() => skillSch.setSkillWeek(gvcn, e.aid, 'listening', qua));
+    assert(x?.status === 400 || x?.status === 403, `GVCN: ${x?.status} ${x?.message}`);
+    skillSch.setSkillWeek(QL, e.aid, 'listening', qua);
+    assert(tuanKn(e.aid).includes(addDays(week.mondayOf(TODAY), -14)), 'QL dời về tuần đã qua được');
+  });
+
+  // ------------------------------------------------------------------ MT0-5 · Chuyển tiếp lớp: nối MT0 vào lộ trình FT / không dùng
+  const luatLoTrinh: any = await import('../classes/luatLoTrinh.ts');
+  const cycles: any = await import('../fasttrack/cycles.ts');
+  const FT101 = t.classId('MB FT 101');
+  const lt = (sid: number, dk = `status = 'active'`) => get(`SELECT * FROM learning_cycles WHERE student_id = ? AND ${dk} ORDER BY seq DESC LIMIT 1`, sid);
+  const diemMt0 = (aid: number, b: Band) => {
+    for (const [k, v] of Object.entries(b)) for (const s of k === 'writing' ? ['writing1', 'writing2'] : [k]) {
+      conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, band, nhap_dau_ngay) VALUES (?,?,?,?)').run(aid, s, v, TODAY);
+    }
+  };
+  check('MT0-5a/b/f · applyTransition lớp BE: A Lên FT (MT0 có điểm) → MT0 vào lộ trình FT làm đầu vào; B Học lại (có điểm) → không dùng; C Học lại (chưa điểm) → huỷ', () => {
+    const l = taoLop('BE', 10, 3, 6);
+    const hocLai = taoLop('BE', 1, 0);
+    const [A, B, C] = l.sids;
+    for (const sid of l.sids) loTrinh.ghiLoTrinhTiep(QL, sid, { huong: 'fast_track' });
+    const [mA, mB, mC] = l.sids.map((sid) => mt0Cua(sid)[0].id as number);
+    diemMt0(mA, { listening: 6, reading: 6, writing: 4, speaking: 6 });
+    diemMt0(mB, { listening: 3.5 });
+    const plan = transition.transitionPlan(QL, l.classId);
+    const pA = plan.students.find((x: any) => x.id === A);
+    assert(JSON.stringify(pA.mt0.sos) === JSON.stringify([{ skill: 'writing', band: 4 }]) && pA.baiChuaLam === get(`SELECT COUNT(*) n FROM assessment_attempts WHERE student_id = ? AND status = 'planned' AND kind != 'mt0'`, A).n, `kế hoạch: ${JSON.stringify(pA.mt0)} · bài chưa làm ${pA.baiChuaLam}`);
+    const cuA = lt(A).id;
+    const r = transition.applyTransition(QL, { fromClassId: l.classId, effectiveDate: TODAY, dongs: [
+      { studentId: A, huong: 'fast_track', toClassId: FT101, mucTieu: 6.5 },
+      { studentId: B, huong: 'hoc_lai', toClassId: hocLai.classId },
+      { studentId: C, huong: 'hoc_lai', toClassId: hocLai.classId },
+    ] });
+    assert(!r.failed?.length, JSON.stringify(r.failed));
+    const ft = lt(A);
+    const a0 = get('SELECT * FROM assessment_attempts WHERE id = ?', mA);
+    assert(ft.route && a0.cycle_id === ft.id && a0.class_id === l.classId && a0.status !== 'cancelled', `MT0 A: ${JSON.stringify(a0)}`);
+    assert(ft.baseline_attempt_id === mA && ft.baseline_source === 'mt0', `đầu vào: ${ft.baseline_attempt_id} ${ft.baseline_source}`);
+    const mt1 = get(`SELECT attempt_no FROM assessment_attempts WHERE cycle_id = ? AND kind = 'mock' ORDER BY attempt_no LIMIT 1`, ft.id);
+    assert(mt1?.attempt_no === 1, 'MT1 mặc định vẫn số 1');
+    const soMock = get(`SELECT COUNT(*) n FROM assessment_attempts WHERE cycle_id = ? AND kind = 'mock'`, ft.id).n as number;
+    assert(cycles.nextAttemptNo(ft.id) === soMock + 1, `nextAttemptNo ${cycles.nextAttemptNo(ft.id)} vs ${soMock + 1}`);
+    assert(get('SELECT COUNT(*) n FROM assessment_attempts WHERE cycle_id = ?', cuA).n >= 2, 'Giữa/Cuối khoá ở lại khoá cũ');
+    assert(get(`SELECT COUNT(*) n FROM journey_events WHERE dedup_key = ?`, `mt0:${mA}:noi`).n === 1, 'hành trình nối');
+    const vB = mt0Svc.mt0TheoHocVien([B]).get(B);
+    assert(vB?.trangThai === 'khong_dung' && JSON.stringify(vB.sos) === JSON.stringify([{ skill: 'listening', band: 3.5 }]), `B: ${JSON.stringify(vB)}`);
+    assert(!conn.prepare(`SELECT 1 FROM learning_cycles WHERE student_id = ? AND route IS NOT NULL`).get(B), 'B không có lộ trình FT ma');
+    const c0 = get('SELECT status, cancel_reason FROM assessment_attempts WHERE id = ?', mC);
+    assert(c0.status === 'cancelled' && c0.cancel_reason === 'Không lên FT', JSON.stringify(c0));
+    assert(mt0Svc.mt0TheoHocVien([A]).get(A)?.trangThai === 'dung', 'A: dùng');
+  });
+  check('MT0-5c · MT0 chưa chấm lúc sang FT → vẫn nhập điểm được ở lớp BE cũ (GV Writing lớp BE), điểm thuộc lộ trình FT; hạn giữ', () => {
+    const l = taoLop('BE', 10, 1, 6);
+    const sid = l.sids[0];
+    const gvW = ganGv(l.classId, gvKhac(6), 'writing');
+    loTrinh.ghiLoTrinhTiep(QL, sid, { huong: 'fast_track' });
+    const m = mt0Cua(sid)[0].id as number;
+    transition.applyTransition(QL, { fromClassId: l.classId, effectiveDate: TODAY, dongs: [{ studentId: sid, huong: 'fast_track', toClassId: FT101, mucTieu: 6 }] });
+    attempts.saveScore(gvW, m, 'writing1', { band: 5 });
+    attempts.saveScore(gvW, m, 'writing2', { band: 5 });
+    assert(get('SELECT cycle_id FROM assessment_attempts WHERE id = ?', m).cycle_id === lt(sid).id, 'thuộc lộ trình FT');
+    assert(get(`SELECT COUNT(*) n FROM assessment_scores WHERE attempt_id = ? AND band IS NOT NULL`, m).n === 2, 'điểm lưu');
+    const s = canCham.chamSheet(QL, l.classId, { kind: 'mt0' });
+    assert(s.ft.rows.some((r: any) => r.attemptId === m), 'lưới MT0 lớp BE cũ vẫn có em');
+    assert(get(`SELECT COUNT(*) n FROM case_signals WHERE student_id = ?`, sid).n === 0, 'không tín hiệu');
+  });
+  check('MT0-5d/e/g · chuyển một em sang FT (apDungMotDong) như (a); chuyển giữa hai lớp BE cùng khoá: MT0 không theo, chưa điểm → huỷ "Chuyển lớp"; đầu vào có sẵn không bị ghi đè', () => {
+    const l = taoLop('BE', 6, 2, 6);
+    const [A, B] = l.sids;
+    for (const sid of l.sids) loTrinh.ghiLoTrinhTiep(QL, sid, { huong: 'fast_track' });
+    const mA = mt0Cua(A)[0].id as number;
+    luatLoTrinh.apDungMotDong(QL, { sid: A, toClassId: FT101, ngay: TODAY, mucTieu: 6.5, boiCanh: 'giua-khoa' });
+    const ft = lt(A);
+    assert(get('SELECT cycle_id FROM assessment_attempts WHERE id = ?', mA).cycle_id === ft.id && ft.baseline_source === 'mt0', 'một em: nối');
+    const khac = taoLop('BE', 6, 0);
+    const mB = mt0Cua(B)[0].id as number;
+    luatLoTrinh.apDungMotDong(QL, { sid: B, toClassId: khac.classId, ngay: TODAY, boiCanh: 'giua-khoa' });
+    const b0 = get('SELECT class_id, status, cancel_reason FROM assessment_attempts WHERE id = ?', mB);
+    assert(b0.class_id === l.classId && b0.status === 'cancelled' && b0.cancel_reason === 'Chuyển lớp', JSON.stringify(b0));
+    /* (g) lộ trình FT của chính em đã có điểm đầu vào (nhập tay) → nối MT0 nhưng không ghi đè đầu vào */
+    const l2 = taoLop('FOU', 8, 1, 6);
+    const s2 = l2.sids[0];
+    loTrinh.ghiLoTrinhTiep(QL, s2, { huong: 'fast_track' });
+    const m2 = mt0Cua(s2)[0].id as number;
+    const cu2 = lt(s2).id;
+    const ft2 = Number(conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, programme_code, baseline_score, baseline_source, started_at, status, created_at)
+      VALUES (?, 9, 'LT1', NULL, 5.5, 'external', ?, 'planned', ?)`).run(s2, TODAY, new Date().toISOString()).lastInsertRowid);
+    mt0Svc.noiMt0VaoFt(QL.userId, [{ sid: s2, cuCycleId: cu2, ftCycleId: ft2, ngay: TODAY }]);
+    const c2 = get('SELECT baseline_attempt_id, baseline_score, baseline_source FROM learning_cycles WHERE id = ?', ft2);
+    assert(get('SELECT cycle_id FROM assessment_attempts WHERE id = ?', m2).cycle_id === ft2 && c2.baseline_attempt_id === null && c2.baseline_source === 'external', JSON.stringify(c2));
+  });
+
+  // ------------------------------------------------------------------ MT0-6 · việc Quản lý "Chốt lên FT · {lớp}" (Q1: tự xong khi mọi em có hướng)
+  const mywork: any = await import('../worklist/mywork.ts');
+  const viecChot = (p: any) => mywork.myWork(p, { branchId: MB }).groups.flatMap((g: any) => g.items).filter((i: any) => i.group === 'chot_len_ft');
+  check('MT0-6a/c · QL: lớp BE tuần 8 → "Chốt lên FT · {lớp}", hạn = CN trước tuần Final; Chưa quyết vẫn còn; mọi em có hướng → tự hết', () => {
+    const l = taoLop('BE', 8, 2);
+    const tuanFinal = schedule.classProgress(l.classId).finalWeekStart as string;
+    const code = get('SELECT code FROM classes WHERE id = ?', l.classId).code;
+    let v = viecChot(QL).filter((i: any) => i.classId === l.classId);
+    assert(v.length === 1 && v[0].tieuDe === `Chốt lên FT · ${code}` && v[0].due === addDays(tuanFinal, -1) && v[0].urgency !== 'overdue', JSON.stringify(v));
+    loTrinh.ghiLoTrinhTiep(QL, l.sids[0], { huong: 'fast_track' });
+    loTrinh.ghiLoTrinhTiep(QL, l.sids[1], { huong: 'chua_quyet' });
+    assert(viecChot(QL).some((i: any) => i.classId === l.classId), 'còn em Chưa quyết → chưa xong');
+    loTrinh.ghiLoTrinhTiep(QL, l.sids[1], { huong: 'len_lop' });
+    assert(!viecChot(QL).some((i: any) => i.classId === l.classId), 'mọi em có hướng → tự hết');
+  });
+  check('MT0-6a · quá hạn (lớp ở tuần Final) → urgency overdue; ghi Lên FT sau hạn vẫn được', () => {
+    const l = taoLop('ELE', 10, 1);
+    const v = viecChot(QL).find((i: any) => i.classId === l.classId);
+    assert(v?.urgency === 'overdue', JSON.stringify(v));
+    loTrinh.ghiLoTrinhTiep(QL, l.sids[0], { huong: 'fast_track' });
+    assert(mt0Cua(l.sids[0]).length === 1, 'ghi sau hạn vẫn tạo MT0');
+  });
+  check('MT0-6b/d/f · GVCN, GVBM không có; Pre FOU và lớp còn xa hạn không có; chỉ số Tổng quan = số lớp của việc', () => {
+    const l = taoLop('FOU', 6, 1);   // FOU 8 tuần: Final tuần 8, hạn CN tuần 7 — tuần 6 trong 13 ngày
+    const xa = taoLop('BE', 3, 1);
+    const pf = taoLop('PREFOU', 9, 1);
+    const gvcn = ganGv(l.classId, gvKhac(7), null, true);
+    const gvbm = ganGv(l.classId, gvKhac(8), 'reading');
+    assert(viecChot(gvcn).length === 0 && viecChot(gvbm).length === 0, 'GV không có');
+    const ds = viecChot(QL);
+    assert(ds.some((i: any) => i.classId === l.classId) && !ds.some((i: any) => i.classId === xa.classId || i.classId === pf.classId), JSON.stringify(ds.map((i: any) => i.tieuDe)));
+    const n = metrics.metricSet(QL, 'lop-chua-chot-len-ft', { branchId: MB }).n;
+    assert(n === ds.length, `chỉ số ${n} · việc ${ds.length}`);
+    const tq = tongQuan.tongQuanQuanLy(QL, { branchId: MB }).canXuLy.find((x: any) => x.metricId === 'lop-chua-chot-len-ft');
+    assert(tq?.n === n, JSON.stringify(tq));
+  });
+
+  // ------------------------------------------------------------------ MT0-4b/c · sau khi nối FT: MT0 muộn nhất tuần 2 FT, luôn trước MT1; không ở Xếp lịch MT
+  const keHoach: any = await import('../keHoach/keHoachTest.ts');
+  check('MT0-4b/c · sau nối FT: MT0 tới tuần 3 FT → 400; MT1 về tuần ≤ MT0 → 400 "trước MT1"; lưới / Xếp lịch MT không có MT0; đợt 0 → 400', () => {
+    const l = taoLop('BE', 10, 1, 6);
+    const sid = l.sids[0];
+    loTrinh.ghiLoTrinhTiep(QL, sid, { huong: 'fast_track' });
+    const m = mt0Cua(sid)[0].id as number;
+    transition.applyTransition(QL, { fromClassId: l.classId, effectiveDate: TODAY, dongs: [{ studentId: sid, huong: 'fast_track', toClassId: FT101, mucTieu: 6 }] });
+    const ft = lt(sid);
+    const batDau = get('SELECT week_start w FROM report_periods WHERE id = ?', ft.start_period_id).w as string;
+    let x = loi(() => attempts.setPlanningWeek(QL, m, tuanSo(batDau, 2)));   // tuần 3 FT
+    assert(x?.status === 400 && /muộn nhất/.test(x.message), `MT0 tuần 3 FT: ${x?.status} ${x?.message}`);
+    const mt1 = get(`SELECT id FROM assessment_attempts WHERE cycle_id = ? AND kind = 'mock' AND attempt_no = 1`, ft.id).id as number;
+    x = loi(() => attempts.setPlanningWeek(QL, mt1, week.ensurePeriod(tuanKn(m).split(',')[0]).id));
+    assert(x?.status === 400 && /trước MT1/.test(x.message), `MT1 về tuần MT0: ${x?.status} ${x?.message}`);
+    x = loi(() => skillSch.setSkillWeek(QL, mt1, 'reading', week.ensurePeriod(tuanKn(m).split(',')[0]).id));
+    assert(x?.status === 400 && /trước MT1/.test(x.message), `MT1 một kỹ năng về tuần MT0: ${x?.message}`);
+    attempts.setPlanningWeek(QL, m, tuanSo(batDau, 1));   // tuần 2 FT: được
+    const luoi = JSON.stringify(keHoach.luoiFT(QL, FT101));
+    assert(!luoi.includes(`"attemptId":${m},`) && !luoi.includes(`"id":${m},`), 'lưới FT không có MT0');
+    x = loi(() => keHoach.xepHangLoat(QL, { classId: FT101, attemptNo: 0, studentIds: [sid], tuan: { listening: tuanSo(batDau, 8) }, xemTruoc: true }));
+    assert(x?.status === 400, `đợt 0: ${x?.status} ${x?.message}`);
+    const moi = keHoach.xepHangLoat(QL, { classId: FT101, attemptNo: 'moi', studentIds: [sid], tuan: { listening: tuanSo(batDau, 20) }, xemTruoc: true });
+    const soMock = get(`SELECT COUNT(*) n FROM assessment_attempts WHERE cycle_id = ? AND kind = 'mock'`, ft.id).n as number;
+    assert(moi.dong[0]?.attemptNo === soMock + 1, `MT mới: ${JSON.stringify(moi.dong[0])}`);
+  });
 }

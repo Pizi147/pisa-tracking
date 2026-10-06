@@ -9,7 +9,7 @@ import { tuanLich } from './hienThiNgay.ts';
 import { addDaysIso } from './sos.ts';
 import type { ProgrammeCode } from './normal.ts';
 import type { Huong } from './lenLop.ts';
-import type { AssessedSkill } from './skills.ts';
+import { ASSESSED_SKILLS, type AssessedSkill } from './skills.ts';
 
 /** Chương trình có MT0 (không Pre FOU). */
 export const MT0_CHUONG_TRINH: readonly ProgrammeCode[] = ['FOU', 'BE', 'ELE'];
@@ -45,11 +45,10 @@ export function kiemTuanMt0(o: { tuanMoi: string; tuanMuonNhat: string | null; t
 /** Kỹ năng MT0 có band ≤ Target − 2.0 (chip SOS hiển thị). Target null → không SOS. */
 export function kyNangSosMt0(bands: Partial<Record<AssessedSkill, number | null>>, target: number | null): { skill: AssessedSkill; band: number }[] {
   if (target === null || target === undefined) return [];
-  return (['listening', 'reading', 'writing', 'speaking'] as const)
-    .flatMap((skill) => {
-      const band = bands[skill];
-      return band !== null && band !== undefined && band <= target - MT0_SOS_CACH ? [{ skill, band }] : [];
-    });
+  return ASSESSED_SKILLS.flatMap((skill) => {
+    const band = bands[skill];
+    return band !== null && band !== undefined && band <= target - MT0_SOS_CACH ? [{ skill, band }] : [];
+  });
 }
 
 export type TrangThaiMt0 = 'cho' | 'dung' | 'khong_dung' | 'huy';

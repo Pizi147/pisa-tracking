@@ -15,6 +15,7 @@ import { scoreDebtCells } from './scoreDebt.ts';
 import { assessedSkillOf } from '../fasttrack/scoring.ts';
 import { CO_MOC_KE_TIEP_SQL, XONG_MT_CUOI_SQL, missingForClasses } from '../classes/schedule.ts';
 import { lopChoLenhChuyen } from '../classes/lenhChuyen.ts';
+import { lopChoChotLenFt } from '../fasttrack/mt0.ts';
 import { listMgmtTasks } from './mgmttasks.ts';
 import { mondayOf } from '../platform/week.ts';
 
@@ -260,7 +261,7 @@ export const LISTED_METRICS: readonly string[] = [
   'case-xac-dinh-nguyen-nhan-qua-han', 'bai-qua-han-nhap-diem', 'case-chua-co-nguoi-phu-trach',
   'case-cho-xac-dinh-nguyen-nhan', 'case-thieu-pa', 'pa-can-cap-nhat', 'pa-cho-duyet', 'pa-co-ket-qua', 'ty-le-co-cai-thien',
   'dung-han-cap-nhat', 'do-phu-danh-gia', 'lop-thieu-gv-mon',
-  'van-hanh-can-quyet-dinh', 'hv-chua-co-lenh-chuyen', 'hv-ft-xong-mt-cuoi-chua-mt-ke', 'hv-len-ft-chua-ky-vong',
+  'van-hanh-can-quyet-dinh', 'hv-chua-co-lenh-chuyen', 'hv-ft-xong-mt-cuoi-chua-mt-ke', 'hv-len-ft-chua-ky-vong', 'lop-chua-chot-len-ft',
   ...YTHUC_METRIC_IDS,
   ...PHOI_HOP_METRIC_IDS,
 ];
@@ -706,6 +707,9 @@ function metricSetGoc(
       if (sc.none) return { ...done([]), empty: true, note: EMPTY_NOTE };
       return done(hvLenFtChuaKyVong(sc, scope.branchId).map((r) => r.id));
     }
+    case 'lop-chua-chot-len-ft':
+      /* PR-MT0: cùng `lopChoChotLenFt` của việc "Chốt lên FT" (`myWork`). */
+      return done(lopChoChotLenFt(p, scope.branchId, today).map((x) => x.classId).sort((a, b) => a - b));
     case 'lop-thieu-gv-mon': {
       /* K1-05: phạm vi PHÂN CÔNG (Quản lý, Quản trị) — giáo viên không phân công được nên nhận tập rỗng có nhãn, như chỉ số QL khác. */
       const sc = scopeFor(p, PERMISSIONS.CLASS_ASSIGN);

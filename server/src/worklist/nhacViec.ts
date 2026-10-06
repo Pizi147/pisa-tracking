@@ -33,7 +33,7 @@ const NHOM_CUA_TIEN_TO: Record<string, WorkGroupKey> = {
   action: 'ghi_ket_qua_pa', class: 'placement', ban_giao: 'ban_giao', ban_giao_mon: 'ban_giao', support: 'no_plan',
   cause: 'cause', xnpa: 'xac_nhan_pa', kehoach: 'ke_hoach_bo_tro', baoph: 'phoi_hop', phoi_hop_sos: 'phoi_hop_sos', minitest: 'mini_test',
   owner: 'no_owner', khai_bac: 'khai_bac', yt_xu_ly: 'yt_xu_ly', yt_xem: 'yt_xem', yt_thuc_hien: 'yt_thuc_hien', ky_vong: 'ky_vong_dau_ra',
-  mgmt: 'mgmt',
+  mgmt: 'mgmt', chotft: 'chot_len_ft',
 };
 /** Tập nhóm cho các khoá; có tiền tố lạ → undefined (dựng đủ). */
 export function nhomCuaKhoa(keys: readonly string[]): Set<WorkGroupKey> | undefined {
