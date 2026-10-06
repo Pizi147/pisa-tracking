@@ -134,6 +134,38 @@ tr.roi td{color:var(--faint)}tr.roi td.ma{color:var(--dim);font-weight:600}
 .ketluan{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;background:var(--surface-2);font-size:13px;color:var(--chu-2)}
 .ketluan b{color:var(--chu-1)}
 .khung{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+/* ---- Đích → Kết quả → Hướng tiếp ---- */
+.buoc{display:grid;grid-template-columns:1fr 18px 1.5fr 18px 1fr;align-items:stretch;gap:6px}
+.buoc.hai{grid-template-columns:1.5fr 18px 1fr}
+.buoc .o{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0}
+.buoc .o small{display:block;font-size:11px;color:var(--faint);margin-bottom:2px}
+.buoc .o .lon{font:700 20px/1.2 var(--num);color:var(--chu-1)}
+.buoc .o .lon em{font:500 11.5px var(--sans);font-style:normal;color:var(--faint);margin-left:4px}
+.buoc .o .nho{font-size:12px;color:var(--dim);margin-top:3px;font-family:var(--num)}
+.buoc .o .nhan{margin-top:6px}
+.buoc .o.cho{border-style:dashed}
+.buoc .o.cho .lon{font:600 14px/1.3 var(--sans);color:var(--dim)}
+.buoc .mui{display:flex;align-items:center;justify-content:center;color:var(--mo)}
+.w375 .buoc,.w375 .buoc.hai{grid-template-columns:1fr}
+.w375 .buoc .mui{transform:rotate(90deg);height:14px}
+.phude{font-size:12px;font-weight:700;color:var(--dim);margin:0 0 -6px}
+.tt-hang{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;color:var(--dim)}
+.tt-hang b{color:var(--chu-2);font-weight:600}
+/* ---- form nhập ---- */
+.form{display:flex;flex-direction:column;gap:12px;max-width:560px}
+.form label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--dim);font-weight:600}
+.field{min-height:36px;border:1px solid var(--line-strong);border-radius:8px;background:var(--bg);padding:0 10px;font:600 14px var(--num);color:var(--chu-1);width:100%}
+.w375 .field{min-height:44px}
+.field.tinh{background:var(--surface-2);color:var(--chu-1)}
+.luoi4{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.w375 .luoi4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.w375 .luoi4 .ovr{grid-column:1/-1}
+.chk{flex-direction:row!important;align-items:center;gap:8px!important;font-weight:500!important;color:var(--chu-3)!important;font-size:13px!important}
+.nut.chinh{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.viec{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.viec:last-child{border-bottom:0}
+.viec b{color:var(--chu-1)}
+.viec.chon{background:var(--accent-soft)}
 .khung td{white-space:nowrap}.khung td:nth-child(4){white-space:normal}
 </style>
 
@@ -146,6 +178,7 @@ tr.roi td{color:var(--faint)}tr.roi td.ma{color:var(--dim);font-weight:600}
     <button data-m="lt">Lưu trữ</button>
     <button data-m="lft">Lớp FT đã kết thúc</button>
     <button data-m="lth">Lớp thường đã kết thúc</button>
+    <button data-m="nhap">GVCN nhập thi thật</button>
   </div>
 </div>
 <div class="dieu">
@@ -170,14 +203,14 @@ const b = (v) => v == null ? '—' : v.toFixed(1);
 /* ================= dữ liệu ================= */
 const LO_TRINH = {
   nhieu: [
-    { ten: 'Fast Track', lop: 'MB FT 101', tg: 'W1 JUN – nay', kq: 'MT4 · 6.0', tone: 'soon', kqPhu: 'SOS 1', dang: true },
-    { ten: 'Foundation', lop: 'MB FOU 12', tg: 'W2 MAR – W4 MAY', kq: '78%', tone: 'ok', huong: 'Lên FT' },
-    { ten: 'Pre Foundation', lop: 'MB PFOU 03', tg: 'W1 FEB – W1 MAR', kq: '81%', tone: 'ok', huong: 'Lên lớp' },
+    { ten: 'Fast Track · LT2', lop: 'MB FT 101', tg: 'W1 AUG – nay', kq: 'MT2 · 6.0', tone: 'soon', kqPhu: 'SOS 1', dang: true },
+    { ten: 'Fast Track · LT1', lop: 'MB FT 094', tg: 'W2 JUN – W4 JUL', kq: 'Thi thật 6.0', tone: 'late', kqPhu: 'Chưa đạt Target', huong: 'Lên LT2' },
+    { ten: 'Foundation', lop: 'MB FOU 12', tg: 'W2 APR – W1 JUN', kq: '78%', tone: 'ok', huong: 'Lên FT' },
   ],
-  mot: [{ ten: 'Fast Track', lop: 'MB FT 101', tg: 'W1 JUN – nay', kq: 'MT4 · 6.0', tone: 'soon', kqPhu: 'SOS 1', dang: true }],
+  mot: [{ ten: 'Fast Track · LT1', lop: 'MB FT 101', tg: 'W1 JUN – nay', kq: 'MT4 · 6.0', tone: 'soon', kqPhu: 'SOS 1', dang: true }],
   huy: [
-    { ten: 'Fast Track', lop: 'MB FT 101', tg: 'W1 JUN – nay', kq: 'MT4 · 6.0', tone: 'soon', kqPhu: 'SOS 1', dang: true },
-    { ten: 'Foundation', lop: 'MB FOU 12', tg: 'W2 MAR – W4 MAY', kq: '78%', tone: 'ok', huong: 'Lên FT' },
+    { ten: 'Fast Track · LT1', lop: 'MB FT 101', tg: 'W1 JUN – W3 SEP', kq: 'Chờ kết quả thi thật', tone: 'muted', huong: 'Kết thúc' },
+    { ten: 'Foundation', lop: 'MB FOU 12', tg: 'W2 APR – W1 JUN', kq: '78%', tone: 'ok', huong: 'Lên FT' },
   ],
   rong: [],
 };
@@ -212,23 +245,24 @@ const BAI_TH = {
   ],
   rong: [],
 };
-/* Lớp FT đã kết thúc MB FT 098: [tên, đầu vào, Target, số lượt, MT cuối, L, R, W, S, OVR, kết luận, hướng, rời sớm?] */
+/* Lớp FT đã kết thúc MB FT 098: [tên, đầu vào, Target, số lượt, MT cuối, L, R, W, S, OVR, thi thật OVR (null = chờ), hướng tiếp, rời sớm?, nhãn huỷ] */
 const LOP_FT = {
   nhieu: [
-    ['Đỗ Minh Anh', 5.0, 6.5, 5, 'MT5', 7.0, 6.5, 6.0, 6.5, 6.5, ['ok', 'Đạt Target'], 'Kết thúc học'],
-    ['Ngô Gia Bảo', 5.5, 7.0, 5, 'MT5', 7.0, 7.0, 6.5, 7.0, 7.0, ['ok', 'Đạt Target'], 'Kết thúc học'],
-    ['Phạm Hải Đăng', 4.5, 6.0, 5, 'MT5', 6.0, 5.5, 5.0, 5.5, 5.5, ['late', 'Chưa đạt Target'], 'Học lại'],
-    ['Trần Bảo Ngọc', 5.0, 6.5, 4, 'MT4', 6.5, 6.5, 6.0, 6.5, 6.5, ['ok', 'Đạt Target'], 'Kết thúc học'],
-    ['Lý Thanh Tùng', 5.0, 6.0, 5, 'MT5', 6.5, 6.0, 5.5, 6.0, 6.0, ['ok', 'Đạt Target'], 'Kết thúc học'],
-    ['Hồ Mai Chi', 5.5, 6.5, 2, 'MT2', 6.0, 6.0, 5.5, 5.5, 6.0, ['muted', 'Chưa có căn cứ'], 'Chuyển lớp', true],
+    ['Đỗ Minh Anh', 5.0, 6.5, 5, 'MT5', 7.0, 6.5, 6.0, 6.5, 6.5, 6.5, 'Kết thúc'],
+    ['Ngô Gia Bảo', 5.5, 7.0, 5, 'MT5', 7.0, 7.0, 6.5, 7.0, 7.0, null, 'Kết thúc'],
+    ['Phạm Hải Đăng', 4.5, 6.0, 5, 'MT5', 6.0, 5.5, 5.0, 5.5, 5.5, 5.5, 'Học lại'],
+    ['Trần Bảo Ngọc', 5.0, 6.5, 4, 'MT4', 6.5, 6.5, 6.0, 6.5, 6.5, 7.0, 'Lên LT2'],
+    ['Lý Thanh Tùng', 5.0, 6.0, 5, 'MT5', 6.5, 6.0, 5.5, 6.0, 6.0, 6.0, 'Kết thúc'],
+    ['Hồ Mai Chi', 5.5, 6.5, 2, 'MT2', 6.0, 6.0, 5.5, 5.5, 6.0, null, 'Chuyển lớp', true],
   ],
-  mot: [['Đỗ Minh Anh', 5.0, 6.5, 1, 'MT1', 5.5, 5.5, 5.0, 5.5, 5.5, ['muted', 'Chưa có căn cứ'], 'Kết thúc học']],
+  mot: [['Đỗ Minh Anh', 5.0, 6.5, 1, 'MT1', 5.5, 5.5, 5.0, 5.5, 5.5, null, 'Kết thúc']],
   huy: [
-    ['Đỗ Minh Anh', 5.0, 6.5, 4, 'MT4', 6.5, 6.5, 6.0, 6.0, 6.5, ['ok', 'Đạt Target'], 'Kết thúc học'],
-    ['Phạm Hải Đăng', 4.5, 6.0, 3, 'MT3', null, null, null, null, null, ['muted', 'Chưa có căn cứ'], 'Học lại', false, 'MT3 đã huỷ'],
+    ['Đỗ Minh Anh', 5.0, 6.5, 4, 'MT4', 6.5, 6.5, 6.0, 6.0, 6.5, 6.5, 'Kết thúc'],
+    ['Phạm Hải Đăng', 4.5, 6.0, 3, 'MT3', null, null, null, null, null, 5.5, 'Học lại', false, 'MT3 đã huỷ'],
   ],
   rong: [],
 };
+const kqThi = (r) => r[12] ? null : r[10] == null ? ['muted', 'Chờ kết quả thi thật'] : r[10] >= r[2] ? ['ok', 'Đạt Target'] : ['late', 'Chưa đạt Target'];
 /* Lớp thường đã kết thúc MB FOU 12: [tên, Giữa khoá, Cuối khoá, kết luận khoá (hướng), rời sớm?] */
 const LOP_TH = {
   nhieu: [
@@ -248,9 +282,9 @@ const LOP_TH = {
 };
 
 /* ================= khối dùng chung ================= */
-const thanh = (on) => `<div class="thanh"><b>PISA Tracking</b><span class="an375">Tổng quan</span><span class="${on === 'hv' ? 'on' : ''} an375">Học viên &amp; Lớp</span><span class="an375">Test</span><span class="an375">Công việc</span></div>`;
+const thanh = (on) => `<div class="thanh"><b>PISA Tracking</b><span class="an375">Tổng quan</span><span class="${on === 'hv' ? 'on' : ''} an375">Học viên &amp; Lớp</span><span class="an375">Test</span><span class="${on === 'cv' ? 'on' : ''} an375">Công việc</span></div>`;
 const nhan = (t) => t ? `<span class="nhan n-${t[0]}">${t[1]}</span>${t[2] ? `<div class="phu">${t[2]}</div>` : ''}` : '<span style="color:var(--mo)">—</span>';
-const huongNhan = (h) => `<span class="nhan ${h === 'Học lại' ? 'n-soon' : h === 'Chuyển lớp' ? 'n-muted' : 'n-acc'}">${h}</span>`;
+const huongNhan = (h) => `<span class="nhan ${h === 'Học lại' ? 'n-soon' : h === 'Chuyển lớp' || h === 'Kết thúc' ? 'n-muted' : 'n-acc'}">${h}</span>`;
 
 function dauHoSoHv(chiXem) {
   return `${chiXem ? '<div class="chixem">Học viên đã lưu trữ 30/09 — chỉ xem</div>' : ''}
@@ -264,8 +298,8 @@ function cacLoTrinh() {
   const ds = LO_TRINH[D];
   const ket = (r) => r.dang
     ? `<span class="nhan n-${r.tone}">${r.kq}</span>${r.kqPhu ? ` <span class="phu">${r.kqPhu}</span>` : ''}`
-    : `<span class="nhan n-${r.tone} num">${r.kq}</span> ${huongNhan(r.huong)}`;
-  const nutR = (r) => r.dang ? '<a class="nut ghost" href="#">Học thuật ›</a>' : '<button class="nut" data-mo="th">Tổng kết</button>';
+    : `<span class="nhan n-${r.tone} num">${r.kq}</span>${r.kqPhu ? ` <span class="phu">${r.kqPhu}</span>` : ''} ${huongNhan(r.huong)}`;
+  const nutR = (r) => r.dang ? '<a class="nut ghost" href="#">Học thuật ›</a>' : `<button class="nut" data-mo="${r.ten.startsWith('Fast') ? 'ft' : 'th'}">Tổng kết</button>`;
   let noi;
   if (!ds.length) noi = '<div class="trong"><b>Chưa có lộ trình nào</b></div>';
   else if (hep()) noi = ds.map((r) => `<div class="the"><div class="d1"><div><b>${r.ten}</b>${r.dang ? ' <span class="nhan n-acc">Đang học</span>' : ''}
@@ -281,17 +315,36 @@ function cacLoTrinh() {
 }
 
 /* --- ngăn Tổng kết lộ trình --- */
+/* Kết quả thi thật FT theo trạng thái dữ liệu: [OVR, L, R, W, S, ngày thi] hoặc null = chờ; hướng tiếp. */
+const THI = {
+  nhieu: { kq: [6.5, 7.0, 6.5, 6.0, 6.5, '26/09'], huong: 'Kết thúc' },
+  mot: { kq: null, huong: 'Kết thúc' },
+  huy: { kq: [5.5, 6.0, 5.5, 5.0, 5.5, '26/09'], huong: 'Học lại' },
+  rong: { kq: null, huong: 'Lên LT2' },
+};
+const MUI = '<span class="mui" aria-hidden="true"><svg viewBox="0 0 8 8" width="10" height="10"><path d="M2.5 1 6 4 2.5 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
+function oThiThat(kq, target, coNut) {
+  if (!kq) return `<div class="o cho"><small>Thi thật</small><div class="lon">Chờ kết quả thi thật</div>${coNut ? '<div style="margin-top:8px"><button class="nut" data-mo="nhap">Nhập kết quả</button></div>' : ''}</div>`;
+  const dat = kq[0] >= target;
+  return `<div class="o"><small>Thi thật · ${kq[5]}</small><div class="lon">${b(kq[0])}<em>OVR</em></div>
+    <div class="nho">L ${b(kq[1])} · R ${b(kq[2])} · W ${b(kq[3])} · S ${b(kq[4])}</div>
+    <span class="nhan ${dat ? 'n-ok' : 'n-late'}">${dat ? 'Đạt Target' : 'Chưa đạt Target'}</span></div>`;
+}
 function nganTongKet(loai, nen) {
   const ft = loai === 'ft';
   const rows = ft ? MT_FT[D] : BAI_TH[D];
+  const thi = THI[D];
+  const buoc = ft
+    ? `<div class="buoc"><div class="o"><small>Đích</small><div class="lon">6.5<em>Target</em></div><div class="nho">Thi SEP 2026</div></div>${MUI}
+        ${oThiThat(thi.kq, 6.5, true)}${MUI}
+        <div class="o"><small>Hướng tiếp</small><div style="margin-top:4px">${huongNhan(thi.huong)}</div></div></div>`
+    : `<div class="buoc hai">${D === 'rong'
+        ? '<div class="o cho"><small>Cuối khoá</small><div class="lon">Chưa có điểm</div></div>'
+        : `<div class="o"><small>Cuối khoá</small><div class="lon">${D === 'huy' ? '72' : '78'}%</div><span class="nhan n-ok">≥ 70%</span></div>`}${MUI}
+        <div class="o"><small>Hướng tiếp</small><div style="margin-top:4px">${huongNhan('Lên FT')}</div></div></div>`;
   const info = ft
-    ? [['Chương trình', 'Fast Track'], ['Lớp', 'MB FT 098 → 101'], ['GVCN', 'Nguyễn Thu Hà'], ['Thời gian', 'W2 MAY – W3 SEP', 1],
-       ['Đầu vào', '5.0', 1], ['Target', '6.5', 1], ['Số lượt', String(rows.length), 1], ['Kết thúc', 'Kết thúc học']]
-    : [['Chương trình', 'Foundation'], ['Lớp', 'MB FOU 12'], ['GVCN', 'Lê Hồng Nhung'], ['Thời gian', 'W2 MAR – W4 MAY', 1],
-       ['Đầu vào', '3.5', 1], ['Target', '5.0', 1], ['Số bài', String(rows.length), 1], ['Kết thúc', 'Lên FT']];
-  const kl = ft
-    ? (D === 'rong' || D === 'mot' ? '<b>Chưa có căn cứ kết luận</b>' : `Kết luận <b>Đạt Target</b> <span class="num">· 6.5</span>`)
-    : (D === 'rong' ? '<b>Chưa có kết luận khoá</b>' : `Kết luận khoá ${huongNhan('Lên FT')}`);
+    ? [['Lớp', 'MB FT 098 → 101'], ['GVCN', 'Nguyễn Thu Hà'], ['Đầu vào', '5.0'], ['Thời gian', 'W2 MAY – W3 SEP']]
+    : [['Lớp', 'MB FOU 12'], ['GVCN', 'Lê Hồng Nhung'], ['Đầu vào', '3.5'], ['Target', '5.0'], ['Thời gian', 'W2 APR – W1 JUN']];
   let bang;
   if (!rows.length) bang = `<div class="khung trong"><b>Chưa có lượt Test nào</b></div>`;
   else if (ft && hep()) bang = `<div class="khung">${rows.map((r) => `<div class="the"><div class="d1"><div><b class="num">MT${r[0]}</b>${r[10] ? `<span class="tag huy">${r[10]}</span>` : ''}<div class="d2">${r[2]} · ${r[1]}</div></div><div>${nhan(r[9])}</div></div>
@@ -312,12 +365,47 @@ function nganTongKet(loai, nen) {
     <aside class="ngan" role="dialog" aria-label="Tổng kết lộ trình">
       <div class="dau"><div><h3>Tổng kết lộ trình</h3><small>${ten} · ${ft ? 'Fast Track' : 'Foundation'}</small></div><span class="sp"></span><button class="x" aria-label="Đóng">✕</button></div>
       <div class="noi">
-        <dl class="tt-luoi">${info.map(([k, v, so]) => `<div><dt>${k}</dt><dd class="${so ? 'num' : ''}">${v}</dd></div>`).join('')}</dl>
-        <div class="ketluan">${kl}</div>
+        ${buoc}
+        <div class="tt-hang">${info.map(([k, v]) => `<span>${k} <b class="${/\d/.test(v) ? 'num' : ''}">${v}</b></span>`).join('')}</div>
+        <p class="phude">${ft ? 'Mock Test' : 'Kết quả Test'}${rows.length ? ` <span class="num phu">${rows.length}</span>` : ''}</p>
         ${bang}
       </div>
       <div class="chan"><a class="nut ghost" href="#">Mở hồ sơ</a><button class="nut">Đóng</button></div>
     </aside>`;
+}
+
+/* --- GVCN nhập kết quả thi thật (Công việc + ngăn) --- */
+function nhapThiThat() {
+  const ds = D === 'rong' ? [] : [
+    ['Đỗ Minh Anh', 'MB FT 098', 'SEP 2026', 'W1 NOV', false, true],
+    ...(D === 'mot' ? [] : [['Ngô Gia Bảo', 'MB FT 098', 'SEP 2026', 'W1 NOV', false], ['Lý Thanh Tùng', 'MB FT 095', 'AUG 2026', 'W1 OCT', true]]),
+  ];
+  const viec = ds.length ? ds.map(([t, l, thang, han, qh, chon]) => `<div class="viec ${chon ? 'chon' : ''}"><b>Cập nhật kết quả thi thật</b><span class="phu">${t} · ${l} · thi ${thang}</span>
+      <span style="flex:1"></span><span class="nhan ${qh ? 'n-late' : 'n-muted'} num">hạn ${han}</span></div>`).join('')
+    : '<div class="trong"><b>Không có việc nào</b></div>';
+  const nen = `<h2 style="margin:0;font-size:18px;color:var(--chu-1)">Công việc</h2>
+    <div class="tab"><span class="on">Của tôi</span><span>Chờ duyệt</span></div>
+    <section class="card">${viec}</section>`;
+  if (!ds.length) return { nen, ngan: '' };
+  /* nhieu: đủ 4 kỹ năng → OVR tự tính, Đạt Target · mot: mới gõ L, R · huy: tick Không thi */
+  const v = D === 'mot' ? ['7.0', '6.5', '', '', ''] : ['7.0', '6.5', '6.0', '6.5', '6.5'];
+  const khongThi = D === 'huy';
+  const ket = khongThi ? '' : D === 'mot' ? '<span class="nhan n-muted">Chờ đủ 4 kỹ năng</span>' : '<span class="nhan n-ok">Đạt Target</span>';
+  const ngan = `<div class="mantoi"></div>
+    <aside class="ngan" role="dialog" aria-label="Kết quả thi thật">
+      <div class="dau"><div><h3>Kết quả thi thật</h3><small>Đỗ Minh Anh · MB FT 098</small></div><span class="sp"></span><button class="x" aria-label="Đóng">✕</button></div>
+      <div class="noi"><div class="form">
+        <div class="tt-hang"><span>Target <b class="num">6.5</b></span><span>Dự kiến thi <b class="num">SEP 2026</b></span></div>
+        <label class="chk"><input type="checkbox" ${khongThi ? 'checked' : ''}> Không thi</label>
+        ${khongThi ? '<label>Ghi chú<input class="field" style="font-family:var(--sans);font-weight:500"></label>'
+          : `<label style="max-width:200px">Ngày thi<input class="field" type="text" value="26/09/2026" placeholder="dd/mm/yyyy"></label>
+        <div class="luoi4">${['L', 'R', 'W', 'S'].map((k, i) => `<label>${k}<input class="field" inputmode="decimal" value="${v[i]}"></label>`).join('')}
+          <label class="ovr">OVR<input class="field tinh" value="${v[4]}" readonly tabindex="-1"></label></div>`}
+        ${ket ? `<div>${ket}</div>` : ''}
+      </div></div>
+      <div class="chan"><button class="nut ghost">Huỷ</button><button class="nut chinh">Lưu</button></div>
+    </aside>`;
+  return { nen, ngan };
 }
 
 /* --- Lưu trữ --- */
@@ -354,18 +442,20 @@ function lopKetThuc(ft) {
   if (!ds.length) return `${dau}<section class="card trong"><b>Lớp chưa có học viên nào</b></section>`;
   const dem = (f) => dang.filter(f).length;
   const dai = ft
-    ? [['Học viên', dang.length], ['Đạt Target', dem((r) => r[10][1] === 'Đạt Target'), 'ok'], ['Chưa đạt', dem((r) => r[10][1] === 'Chưa đạt Target'), 'warn']]
+    ? [['Học viên', dang.length], ['Đạt Target', dem((r) => kqThi(r)[0] === 'ok'), 'ok'], ['Chưa đạt', dem((r) => kqThi(r)[0] === 'late'), 'warn'], ['Chờ kết quả', dem((r) => r[10] == null)]]
     : [['Học viên', dang.length], ['Lên FT', dem((r) => r[3] === 'Lên FT')], ['Lên lớp', dem((r) => r[3] === 'Lên lớp')], ['Học lại', dem((r) => r[3] === 'Học lại'), 'warn']];
   const daiHtml = `<div class="dai">${dai.map(([k, v, t]) => `<div class="so ${v ? t ?? '' : ''}"><small>${k}</small><strong>${v}</strong></div>`).join('')}</div>`;
   let bang;
   if (ft && hep()) bang = ds.map((r) => `<div class="the ${r[12] ? 'roi' : ''}" style="${r[12] ? 'opacity:.7' : ''}"><div class="d1"><div><a class="link" href="#" data-mo="ft">${r[0]}</a>
-      <div class="d2">${r[4]} · ${r[3]} lượt · Target <span class="num">${b(r[2])}</span>${r[13] ? ` · <span style="color:var(--late)">${r[13]}</span>` : ''}</div></div><div style="text-align:right">${nhan(r[10])}</div></div>
-      <dl><dt>Điểm</dt><dd class="num">L ${b(r[5])} · R ${b(r[6])} · W ${b(r[7])} · S ${b(r[8])}</dd><dt>Overall</dt><dd class="num">${b(r[9])}</dd><dt>Hướng</dt><dd>${huongNhan(r[11])}</dd></dl></div>`).join('');
-  else if (ft) bang = `<div class="cuon"><table style="min-width:900px"><thead><tr><th>Học viên</th><th class="r">Đầu vào</th><th class="r">Target</th><th>MT cuối</th>
-      <th class="r">L</th><th class="r">R</th><th class="r">W</th><th class="r">S</th><th class="r">OVR</th><th>Kết luận</th><th>Hướng</th></tr></thead>
+      <div class="d2">Target <span class="num">${b(r[2])}</span> · ${r[4]} · ${r[3]} lượt${r[13] ? ` · <span style="color:var(--late)">${r[13]}</span>` : ''}</div></div><div style="text-align:right">${nhan(kqThi(r))}</div></div>
+      <dl><dt>${r[4]}</dt><dd class="num">L ${b(r[5])} · R ${b(r[6])} · W ${b(r[7])} · S ${b(r[8])} · OVR ${b(r[9])}</dd><dt>Thi thật</dt><dd class="num">${r[10] == null ? '—' : 'OVR ' + b(r[10])}</dd><dt>Hướng tiếp</dt><dd>${huongNhan(r[11])}</dd></dl></div>`).join('');
+  else if (ft) bang = `<div class="cuon"><table style="min-width:1000px"><thead>
+      <tr><th colspan="3" style="border-bottom:0"></th><th colspan="6" style="border-bottom:1px solid var(--line);text-align:center">MT cuối</th><th colspan="2" style="border-bottom:1px solid var(--line);text-align:center">Thi thật</th><th style="border-bottom:0"></th></tr>
+      <tr><th>Học viên</th><th class="r">Đầu vào</th><th class="r">Target</th><th>MT</th>
+      <th class="r">L</th><th class="r">R</th><th class="r">W</th><th class="r">S</th><th class="r">OVR</th><th class="r">OVR</th><th>Kết quả</th><th>Hướng tiếp</th></tr></thead>
       <tbody>${ds.map((r) => `<tr class="hl ${r[12] ? 'roi' : ''}" data-mo="ft"><td class="ma">${r[0]}</td><td class="n r">${b(r[1])}</td><td class="n r">${b(r[2])}</td>
       <td class="n">${r[4]} <span class="phu">· ${r[3]} lượt</span>${r[13] ? `<span class="tag huy">${r[13].replace(r[4] + ' ', '')}</span>` : ''}</td>
-      ${[5, 6, 7, 8].map((i) => `<td class="n r">${b(r[i])}</td>`).join('')}<td class="n r ovr">${b(r[9])}</td><td>${nhan(r[10])}</td><td>${huongNhan(r[11])}</td></tr>`).join('')}</tbody></table></div>`;
+      ${[5, 6, 7, 8].map((i) => `<td class="n r">${b(r[i])}</td>`).join('')}<td class="n r">${b(r[9])}</td><td class="n r ovr">${b(r[10])}</td><td>${nhan(kqThi(r))}</td><td>${huongNhan(r[11])}</td></tr>`).join('')}</tbody></table></div>`;
   else if (hep()) bang = ds.map((r) => `<div class="the" style="${r[4] ? 'opacity:.7' : ''}"><div class="d1"><a class="link" href="#" data-mo="th">${r[0]}</a>${huongNhan(r[3])}</div>
       <dl><dt>Giữa khoá</dt><dd>${nhan(r[1])}</dd><dt>Cuối khoá</dt><dd>${nhan(r[2])}</dd></dl></div>`).join('');
   else bang = `<table><colgroup><col style="width:240px"><col><col><col style="width:160px"></colgroup><thead><tr><th>Học viên</th><th>Giữa khoá</th><th>Cuối khoá</th><th>Kết luận khoá</th></tr></thead>
@@ -376,20 +466,22 @@ function lopKetThuc(ft) {
 /* ================= vẽ ================= */
 const CAP = {
   hs: 'Hồ sơ HV (Vũ Khánh Linh) › tab Hành trình: khối "Các lộ trình" luôn hiện, đứng trên "Hành trình học tập". Bỏ nút "Lộ trình ▾" ẩn ở đầu hồ sơ. Lộ trình đang học → sang tab Học thuật; đã kết thúc → ngăn Tổng kết.',
-  ft: 'Ngăn "Tổng kết lộ trình" FT (Đỗ Minh Anh, mở từ Lưu trữ / hồ sơ lớp đã kết thúc / Các lộ trình). Số lấy từ bản chụp lúc đóng: sửa Target, lộ trình, band đầu vào về sau không đổi bảng này.',
-  th: 'Ngăn "Tổng kết lộ trình" lớp thường (Vũ Khánh Linh, Foundation → Lên FT). Bảng như bảng kết quả lớp thường ở hồ sơ HV (U12).',
+  ft: 'Ngăn "Tổng kết lộ trình" FT: Đích (Target + tháng thi dự kiến) → Thi thật (GVCN nhập; máy so với Target) → Hướng tiếp. Nhiều lượt = Đạt · Một lượt / Rỗng = Chờ kết quả thi thật (nút Nhập kết quả) · Lượt huỷ = Chưa đạt → Học lại. Số lấy từ bản chụp.',
+  th: 'Ngăn "Tổng kết lộ trình" lớp thường (Vũ Khánh Linh, Foundation): % Cuối khoá → Hướng tiếp đã chốt (K26). Bảng như bảng kết quả lớp thường ở hồ sơ HV (U12).',
+  nhap: 'GVCN: Công việc › "Cập nhật kết quả thi thật" (hiện từ thứ Hai sau tháng thi dự kiến, hạn 4 tuần, quá hạn đỏ, không chặn) → ngăn nhập. OVR tự tính. Nhiều lượt = đủ 4 kỹ năng · Một lượt = đang gõ · Lượt huỷ = Không thi · Rỗng = không có việc.',
   lt: 'Lưu trữ: thêm nút "Tổng kết" ở mỗi học viên (mở ngăn lộ trình đóng gần nhất) và mỗi lớp (mở hồ sơ lớp, tab Tổng kết). Bấm tab để đổi danh sách.',
-  lft: 'Hồ sơ lớp FT đã kết thúc › tab mới "Tổng kết" (mặc định khi lớp đã kết thúc). Em rời lớp trước khi kết thúc: chữ nhạt, ở cuối. Bấm một hàng → ngăn Tổng kết của em.',
+  lft: 'Hồ sơ lớp FT đã kết thúc › tab mới "Tổng kết" (mặc định khi lớp đã kết thúc): MT cuối đủ 4 kỹ năng (Q2) + Thi thật + Hướng tiếp. Em rời lớp trước khi kết thúc: chữ nhạt. Bấm một hàng → ngăn Tổng kết của em.',
   lth: 'Hồ sơ lớp thường đã kết thúc › tab "Tổng kết": Giữa khoá, Cuối khoá, Kết luận khoá. Ô trống "—" = em không có bài đó.',
 };
 function render() {
   document.getElementById('chuthich').textContent = CAP[M];
   document.getElementById('man').className = 'man' + (hep() ? ' w375' : '');
+  const nh = M === 'nhap' ? nhapThiThat() : null;
   const noi = M === 'hs' ? cacLoTrinh()
     : M === 'ft' ? lopKetThucNen('ft') : M === 'th' ? cacLoTrinhNen()
-    : M === 'lt' ? luuTru() : lopKetThuc(M === 'lft');
-  const ngan = M === 'ft' ? nganTongKet('ft', '') : M === 'th' ? nganTongKet('th', '') : '';
-  document.getElementById('app').innerHTML = `${thanh('hv')}<div class="than">${noi}</div>${ngan}`;
+    : M === 'lt' ? luuTru() : nh ? nh.nen : lopKetThuc(M === 'lft');
+  const ngan = M === 'ft' ? nganTongKet('ft', '') : M === 'th' ? nganTongKet('th', '') : nh ? nh.ngan : '';
+  document.getElementById('app').innerHTML = `${thanh(M === 'nhap' ? 'cv' : 'hv')}<div class="than">${noi}</div>${ngan}`;
 }
 /* nền phía sau ngăn: trang mở ra nó */
 function lopKetThucNen() { return lopKetThuc(true); }

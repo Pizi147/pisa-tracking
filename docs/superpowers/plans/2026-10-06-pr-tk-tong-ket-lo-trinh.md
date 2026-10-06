@@ -2,18 +2,26 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-> **Chưa code.** Chờ chủ sản phẩm duyệt mockup `thiet-ke/mockup-tong-ket-lo-trinh-2026-10-06.html` và trả lời 4 câu ở mục **Cần chủ sản phẩm quyết**.
-> Session code ghi câu trả lời vào khối "Chủ sản phẩm chốt" ngay dưới đây trước khi làm Task TK-0.
+> **Chưa code.** Chờ chủ sản phẩm duyệt mockup `thiet-ke/mockup-tong-ket-lo-trinh-2026-10-06.html` (bản 2) và trả lời **1 câu** còn lại (mục **Cần chủ sản phẩm quyết**).
 
-**Chủ sản phẩm chốt:** _(chưa có)_
+**Chủ sản phẩm chốt (06/10):**
+- **Q1 = A** — điểm nhập / sửa sau khi lộ trình đã đóng **cập nhật bản chụp**; Target, kỳ vọng, chương trình lúc đóng giữ nguyên (TK-5).
+- **Q2 = A** — bảng cả lớp FT đã kết thúc lấy **MT cuối có đủ 4 kỹ năng**.
+- **Q3 = A** — "Các lộ trình" ở **đầu tab Hành trình**; bỏ nút "Lộ trình ▾" ẩn ở đầu hồ sơ.
+- **Q4 (thay khuyến nghị cũ)** — **không** tự kết luận theo MT cuối. Hết FT là kết thúc hẳn vì em đã đi **thi thật**; GVCN cập nhật kết quả thi thật. Bản tổng kết FT có con số cụ thể theo ba ô:
+  **Đích** (Target lúc đó + tháng thi dự kiến) → **Kết quả** (điểm thi thật L, R, W, S, OVR + ngày thi, GVCN nhập; máy so với Target → Đạt / Chưa đạt) → **Hướng tiếp** (Học lại — thường do chưa đạt · Lên LT2 · Kết thúc; không phải lúc nào cũng lưu trữ ngay).
+  Chưa có kết quả: **"Chờ kết quả thi thật"** + việc nhắc GVCN **"Cập nhật kết quả thi thật"** (TK-K).
+  Lớp thường: **% Cuối khoá (dải) → hướng đã chốt** như hiện nay (K26).
+- "Học lại" (PR-LUI-b) mở lại lộ trình thì **bản chụp cũ giữ nguyên**.
 
-**Goal:** Khi một lộ trình đóng (bằng **bất kỳ** đường nào), web ghi **bản chụp** kết quả: mỗi lượt × mỗi kỹ năng/môn, kèm Target, kỳ vọng, đạt/không, mức SOS, chương trình, lớp, GV, band đầu vào, kết luận. Sửa Target, lộ trình (LT1/LT2/RF), band đầu vào, môn của chương trình về sau **không làm lệch số cũ**. Xem lại dễ: hồ sơ HV › Hành trình có khối **"Các lộ trình"** (luôn hiện); lộ trình đã đóng mở **ngăn "Tổng kết lộ trình"**; Lưu trữ có nút **"Tổng kết"**; lớp đã kết thúc có tab **"Tổng kết"** cả lớp. Bảng bản chụp là nguồn dữ liệu cho PR-NC.
+**Goal:** Khi một lộ trình đóng (bằng **bất kỳ** đường nào), web ghi **bản chụp** kết quả: mỗi lượt × mỗi kỹ năng/môn, kèm Target, kỳ vọng, đạt/không, mức SOS, chương trình, lớp, GV, band đầu vào; và ba ô tổng kết **Đích → Kết quả → Hướng tiếp** (FT: kết quả **thi thật** do GVCN nhập; lớp thường: % Cuối khoá). Sửa Target, lộ trình (LT1/LT2/RF), band đầu vào, môn của chương trình về sau **không làm lệch số cũ**. Xem lại dễ: hồ sơ HV › Hành trình có khối **"Các lộ trình"** (luôn hiện); lộ trình đã đóng mở **ngăn "Tổng kết lộ trình"**; Lưu trữ có nút **"Tổng kết"**; lớp đã kết thúc có tab **"Tổng kết"** cả lớp. Bảng bản chụp là nguồn dữ liệu cho PR-NC.
 
 **Architecture:**
 - Hai bảng mới (chỉ thêm): `ban_chup_lo_trinh` (một dòng mỗi lần đóng một lộ trình) và `ban_chup_luot` (một dòng mỗi lượt × kỹ năng — đúng dạng "một dòng một lượt × kỹ năng" PR-NC cần xuất Excel).
 - **Một** hàm ghi `ghiBanChup(conn, cycleIds, { lyDo, ngay, nguon })` ở `server/src/loTrinh/banChup.ts`, gọi **trong cùng giao dịch** ngay sau mọi câu `UPDATE learning_cycles SET status` (5 chỗ, mục Khảo sát). Hàm tính bằng chính các hàm đang dùng ở hồ sơ (`resultOf`/`typedResult`, `evaluateRegular`, `cuoiKhoaTheoHocVien`) — không viết luật thứ hai.
 - Phép kiểm **bất biến** cuối `run.ts`: mọi lộ trình `status <> 'active'` đều có ≥ 1 bản chụp → đường đóng mới sau này quên gọi là đỏ ngay.
 - Migrate `server/src/migrate/prTk.ts`: tạo bảng + **điền ngược** cho lộ trình đã đóng chưa có bản chụp (`nguon = 'dien_nguoc'`), chạy lặp không đổi gì.
+- **Kết quả thi thật** (TK-K): thêm cột vào `learning_cycles`, mở rộng `PUT /cycles/:id/outcome` (nay chỉ nhận Overall + kết luận chọn tay) thành L, R, W, S, ngày thi, "Không thi"; OVR và Đạt / Chưa đạt do máy tính. Ngăn "Kết luận lộ trình" (`StudentManagePanel.tsx:182`) đổi thành ngăn "Kết quả thi thật". Việc nhắc GVCN "Cập nhật kết quả thi thật" trong Công việc. Lưu xong → làm mới bản chụp.
 - Đường đọc mới: `GET /students/:id/lo-trinh` (khối Các lộ trình), `GET /lo-trinh/:cycleId/tong-ket` (ngăn), `GET /classes/:id/tong-ket` (tab lớp). Web: `CacLoTrinh.tsx`, `NganTongKet.tsx`, `TabTongKetLop.tsx`.
 
 **Tech Stack:** React + Tailwind (web/), Express + SQLite/Turso (server/), phép kiểm `server/src/tests/prTk.tests.ts` gọi ở cuối `run.ts`; `npm run check` = build + test + typecheck.
@@ -38,7 +46,13 @@
 | Đánh giá FT | `evaluateAttempt` (`scoring.ts:159`), `resultOf` (`attempts.ts:186`), `typedResult` (`students/profile.ts:72`) | SOS = số kỹ năng dưới kỳ vọng |
 | Đánh giá lớp thường | `evaluateRegular` (`normal/regular.ts:182`), `regularResultOf` (`regular.ts:247`), `daiCuoiKhoa` (`shared/domain/cuoiKhoa.ts:24`) | đọc `programme_skills` **hiện tại** |
 | Kết luận khoá | `cuoiKhoaTheoHocVien(classId, sids, {daRoi})` (`normal/cuoiKhoa.ts:112`), hướng ở `lo_trinh_tiep_theo` | hồ sơ chỉ xét lớp đang học + 1 lớp vừa rời (`profile.ts:784-800`) |
-| Kết luận FT | `learning_cycles.outcome` (`reached`/`not_reached`/`unknown`) ghi tay qua `setOutcome` (`cycles.ts:428`), có thể sau khi đóng | nhãn `CYCLE_OUTCOME_LABEL` (`shared/domain/cases.ts:1060`) |
+| Kết luận FT / thi thật | `learning_cycles.outcome` (`reached`/`not_reached`/`unknown`) + `outcome_score` (một số Overall) + `outcome_note`, ghi tay qua `setOutcome` (`cycles.ts:428`, `PUT /cycles/:id/outcome` `routes/index.ts:1269`, quyền `STUDENT_EDIT` = GVCN lớp mình + QL). Web: ⋮ "Kết luận lộ trình" (`quanLyHocVien.ts:54`, chỉ FT) → `KetLuanLoTrinhPanel` (`StudentManagePanel.tsx:182-215`): chọn kết luận + ô "Điểm IELTS thật (Overall)" | **chưa có** L/R/W/S thi thật, ngày thi; kết luận chọn tay, không so Target; đã chặn lấy MT làm kết quả thi thật (`cycles.ts:446-457`) |
+| Dự kiến thi | `learning_cycles.exam_month` / `exam_period_id` / `exam_date`; nhãn `examPlanOf` (`cycles.ts:87-113`: `SEP 2026` · mã tuần · ngày) | "Thi thật · …" ở ô Sắp tới (`shared/domain/sapToi.ts:15`, PR-DH) chỉ là **lịch dự kiến** |
+| Không phải thi thật | `ghiKetLuanFt` (`normal/cuoiKhoa.ts:505`) = **kỳ vọng đầu ra** BE/ELE → FT (`lo_trinh_tiep_theo.ky_vong_*`) | không dùng cho TK-K |
+| OVR IELTS | `roundToHalf` (`fasttrack/scoring.ts:22`), cách tính ở `scoring.ts:220-223` | dùng lại cho OVR thi thật |
+| Lên LT2 | mở lộ trình mới `route='LT2'` (`createCycle`, `cycles.ts:140`) | hướng tiếp "Lên LT2" = đóng vì lộ trình mới có route LT2 |
+| Kết thúc học tự lưu trữ | `setStudentStatus('finished')` đặt `archived_at = date` (`students.ts:~282`); hồ sơ lưu trữ **chỉ xem** (`StudentDetailPage.tsx:183`) | xem câu cần quyết |
+| Mẫu việc trong Công việc | `metrics.ts:703` (`hv-len-ft-chua-ky-vong`), `mywork.ts` | TK-K theo mẫu này |
 | GV | không lưu theo lượt; `teacher_assignments` (`effective_from/to`), `assessment_scores.entered_by` | |
 | Xem lộ trình cũ | `GET /students/:id?cycleId=` (`profile.ts:523-556`) xem **sống** được; nút "Lộ trình ▾" ẩn (`StudentDetailPage.tsx:88, 214, 239`) | giữ đường này cho "Mở hồ sơ" |
 | Lưu trữ | `GET /hoc-vien-lop/luu-tru` → `danhSachLuuTru` (`classes/luuTru.ts:21`), web `LuuTruPage.tsx` | chỉ danh sách |
@@ -70,7 +84,7 @@
 
 ### Task TK-0: Đối chiếu mã đã merge + chép câu trả lời
 **Files:** đọc `luatLoTrinh.ts`, `students.ts`, `cycles.ts`, `transition.ts`, `lenhChuyen.ts`, `luuTru.ts` trên `origin/main` mới nhất.
-- [ ] Ghi "Chủ sản phẩm chốt" (4 câu) vào đầu file này.
+- [ ] Ghi câu trả lời câu còn lại (lưu trữ khi Kết thúc học) vào khối "Chủ sản phẩm chốt" ở đầu file.
 - [ ] `git grep -n "UPDATE learning_cycles"` + tìm `updateCycle` `status`: đối chiếu với bảng Khảo sát (PR-LUI-b có thể đã thêm đường **mở lại** — `status='active'` — và đường đóng mới). Mỗi đường đóng phát sinh → thêm vào TK-3.
 - [ ] PR-MT0 đã merge? Nếu có: xác định chỗ chuyển `cycle_id` của MT0 ở Chuyển tiếp lớp; `ghiBanChup` phải gọi **sau** bước đó (MT0 "dùng" thuộc lộ trình FT mới, không vào bản chụp lớp thường; MT0 "không dùng" ở lại và vào bản chụp với `trang_thai = 'khong_dung'`).
 - [ ] Commit: `docs(tk): ghi câu chốt, đối chiếu đường đóng lộ trình`.
@@ -84,13 +98,20 @@ Skill: test-driven-development
 export const LY_DO_DONG = ['lo_trinh_moi', 'chuyen_lop', 'len_lop', 'hoc_lai', 'sang_ft', 'ket_thuc', 'sua_tay', 'khong_ro'] as const;
 export type LyDoDong = (typeof LY_DO_DONG)[number];
 export const LY_DO_DONG_NHAN: Record<LyDoDong, string>;   // 'Lộ trình mới' | 'Chuyển lớp' | 'Lên lớp' | 'Học lại' | 'Lên FT' | 'Kết thúc học' | 'Sửa tay' | '—'
-// Q4: kết luận FT khi chưa ai ghi — MT cuối (attempt_no lớn nhất, không huỷ) có đủ 4 kỹ năng: OVR ≥ Target → reached, < → not_reached; thiếu → unknown
-export function ketLuanTuMtCuoi(luot: { attemptNo: number; huy: boolean; overall: number | null }[], target: number | null): 'reached' | 'not_reached' | 'unknown';
+export const HUONG_TIEP = ['hoc_lai', 'len_lt2', 'ket_thuc', 'len_ft', 'len_lop', 'chuyen_lop', 'lo_trinh_moi', 'khong_ro'] as const;
+export const HUONG_TIEP_NHAN: Record<HuongTiep, string>;  // 'Học lại' | 'Lên LT2' | 'Kết thúc' | 'Lên FT' | 'Lên lớp' | 'Chuyển lớp' | 'Lộ trình mới' | '—'
+export function huongTiep(lyDo: LyDoDong, routeMoi: string | null): HuongTiep;   // lo_trinh_moi + routeMoi 'LT2' → len_lt2; ket_thuc → ket_thuc; …
+// Q4 (chủ sản phẩm): kết quả thi thật — OVR = roundToHalf(trung bình 4 kỹ năng) (chuyển roundToHalf sang shared nếu cần, giữ re-export cũ);
+// đủ 4 + OVR ≥ target → reached, < → not_reached; thiếu kỹ năng / không thi / chưa nhập → unknown ("Chờ kết quả thi thật" / "Không thi")
+export function ketQuaThiThat(o: { l: number | null; r: number | null; w: number | null; s: number | null; khongThi: boolean }, target: number | null):
+  { ovr: number | null; ketLuan: 'reached' | 'not_reached' | 'unknown'; nhan: 'Đạt Target' | 'Chưa đạt Target' | 'Chờ kết quả thi thật' | 'Không thi' | 'Chờ đủ 4 kỹ năng' };
+// TK-K: mốc hiện việc nhắc + hạn (xem TK-K)
+export function mocNhacThiThat(o: { thangThi: string | null; tuanThi: string | null; ngayThi: string | null; ngayDong: string | null }): { tu: string; han: string } | null;
 // Q2: lượt đại diện cho bảng cả lớp FT — MT cuối có OVR (không huỷ); không có → MT cuối bất kỳ
 export function luotDaiDien<T extends { attemptNo: number; huy: boolean; overall: number | null }>(luot: T[]): T | null;
 export function khoangTuan(batDau: string | null, ketThuc: string | null, homNay: string): string;  // 'W2 MAY – W3 SEP' | 'W1 JUN – nay'
 ```
-- [ ] Kiểm đỏ: nhãn đủ 8 khoá (`LY_DO_DONG_NHAN` khớp `LY_DO_HUONG` ở `shared/domain/lenLop.ts:111` cho chữ trùng: "Lên lớp", "Học lại", "Lên FT", "Chuyển lớp", "Kết thúc học"); `ketLuanTuMtCuoi` ba nhánh + MT cuối huỷ thì xét MT trước; `luotDaiDien([])===null`; `khoangTuan` dùng hàm mã tuần sẵn có (`tuanLich`/`maTuan`, ghi tên thật vào commit).
+- [ ] Kiểm đỏ: nhãn đủ 8 khoá (`LY_DO_DONG_NHAN` khớp `END_KIND_LABEL` ở `shared/domain/lenLop.ts:110` cho chữ trùng: "Lên lớp", "Học lại", "Lên FT", "Chuyển lớp", "Kết thúc học"); `huongTiep` mọi nhánh (LT1 → LT2 = `len_lt2`, RF → LT1 = `lo_trinh_moi`); `ketQuaThiThat`: (7.0, 6.5, 6.0, 6.5) target 6.5 → OVR 6.5 reached; target 7.0 → not_reached; thiếu S → unknown "Chờ đủ 4 kỹ năng"; khongThi → unknown "Không thi"; điểm ngoài 0–9 hoặc không chia hết 0.5 → ném lỗi; `mocNhacThiThat` các nhánh ở TK-K; `luotDaiDien([])===null`; `khoangTuan` dùng hàm mã tuần sẵn có (`tuanLich`/`maTuan`, ghi tên thật vào commit).
 - [ ] Viết → xanh. Commit: `feat(tk): luật thuần tổng kết lộ trình`.
 
 ### Task TK-2: Bảng bản chụp + hàm ghi
@@ -107,8 +128,12 @@ CREATE TABLE IF NOT EXISTS ban_chup_lo_trinh (
   class_id INTEGER, class_code TEXT, branch_id INTEGER, gvcn_user_id INTEGER, gvcn_ten TEXT,   -- lớp cuối của lộ trình; không FK (lớp có thể bị xoá)
   bat_dau_ngay TEXT, target REAL, khong_cam_ket INTEGER,
   dau_vao REAL, dau_vao_nguon TEXT, dau_vao_l REAL, dau_vao_r REAL, dau_vao_w REAL, dau_vao_s REAL,
-  ket_luan TEXT, ket_luan_diem REAL, ket_luan_ghi_tay INTEGER NOT NULL DEFAULT 0,   -- FT: reached/not_reached/unknown
-  huong TEXT, ky_vong_dat INTEGER, ty_le_cuoi_khoa REAL, dai_cuoi_khoa TEXT,          -- lớp thường
+  thi_du_kien_thang TEXT, thi_du_kien_tuan INTEGER, thi_du_kien_ngay TEXT, thi_du_kien_nhan TEXT,   -- ĐÍCH: Target (cột target) + dự kiến thi lúc đóng
+  thi_that_ngay TEXT, thi_that_l REAL, thi_that_r REAL, thi_that_w REAL, thi_that_s REAL, thi_that_ovr REAL,  -- KẾT QUẢ thi thật (FT)
+  thi_that_khong_thi INTEGER NOT NULL DEFAULT 0, thi_that_nhap_boi INTEGER, thi_that_nhap_luc TEXT,
+  ket_luan TEXT,                              -- reached | not_reached | unknown (máy so thi_that_ovr với target; chưa có / không thi = unknown)
+  huong_tiep TEXT,                            -- hoc_lai | len_lt2 | ket_thuc | len_ft | len_lop | chuyen_lop | lo_trinh_moi | khong_ro
+  ky_vong_dat INTEGER, ty_le_cuoi_khoa REAL, dai_cuoi_khoa TEXT,                       -- lớp thường
   so_luot INTEGER NOT NULL, lam_moi_luc TEXT, created_at TEXT NOT NULL,
   UNIQUE (cycle_id, lan));
 CREATE TABLE IF NOT EXISTS ban_chup_luot (
@@ -132,7 +157,8 @@ export type BanChupVao = { lyDo: LyDoDong; ngay: string; nguon?: 'luc_dong' | 'd
 export function ghiBanChup(conn: any, cycleIds: number[], o: BanChupVao): number[];   // trả id bản chụp mới; chạy trong tx của người gọi
 ```
 - `conn` truyền vào (migrate dùng `conn` riêng). Đọc theo lô `cycleIds` (chia ≤ 400 id/lô): một truy vấn lộ trình, một truy vấn lượt, một truy vấn điểm, một truy vấn phân công, một truy vấn Case — không N+1 theo em. Gọi `resultOf`/`evaluateRegular`/`expectationFor` từng lượt **trong bộ nhớ**; nếu hàm sẵn có tự truy vấn DB thì tách phần thuần ra (không đổi kết quả cũ) hoặc ghi `ponytail:` + đo trần ở TK-3.
-- `lan` = `MAX(lan)+1` theo `cycle_id`. `ket_luan`: `outcome` đã ghi tay → dùng, `ket_luan_ghi_tay=1`; chưa → theo Q4.
+- `lan` = `MAX(lan)+1` theo `cycle_id`. Đích, kết quả thi thật lấy từ `learning_cycles` lúc đóng (TK-K); `ket_luan` = `ketQuaThiThat(...)` (TK-1). `huong_tiep` = `huongTiep(lyDo, routeLoTrinhMoi, endKind)`; lớp thường lấy hướng đã chốt (`lo_trinh_tiep_theo.huong` / `end_kind`).
+- Dữ liệu cũ chỉ có `outcome_score` (Overall) không L/R/W/S: chép vào `thi_that_ovr`, bốn kỹ năng NULL.
 - [ ] Kiểm đỏ (DB test, helper `taoLop`/`ghiCuoiKhoa` kiểu `prK26.tests.ts:49-79`):
   1. Lộ trình FT 3 MT (MT2 huỷ phần S, MT3 huỷ cả lượt) → `ghiBanChup` → `ban_chup_luot` có 3 lượt × 4 kỹ năng (+W1/W2), MT3 `cancelled`, SOS/kỳ vọng/OVR **bằng đúng** `attempts[]` của `studentProfile(…, cycleId)` cùng lúc.
   2. Lộ trình lớp thường FOU (Giữa khoá + Cuối khoá) → môn L, R, G+V (`writing`), P (`speaking`); `ty_le_tong`, `dai_cuoi_khoa`, `huong` khớp `cuoiKhoaTheoHocVien`.
@@ -169,6 +195,32 @@ Skill: test-driven-development
 - **Q1-B:** bỏ task này; bảng tổng kết hiện số lúc đóng (ghi vào Giả định).
 - [ ] Commit: `feat(tk): điểm nhập/sửa sau khi đóng cập nhật bản chụp`.
 
+### Task TK-K: Kết quả thi thật (GVCN nhập) + việc nhắc
+Skill: test-driven-development · `/impeccable clarify` · `/impeccable harden`
+**Files:** `server/src/schema.sql` + `server/src/migrate/prTk.ts` (thêm cột), `fasttrack/cycles.ts` (`setOutcome` ~428), `routes/index.ts:1269`, `loTrinh/banChup.ts` (`lamMoiKetQuaThi`), `server/src/worklist/mywork.ts` + `metrics.ts` (việc mới), `shared/domain/quanLyHocVien.ts` (nhãn mục ⋮), `web/src/modules/students/StudentManagePanel.tsx` (`KetLuanLoTrinhPanel` → `KetQuaThiThatPanel`), `NganTongKet.tsx` (nút "Nhập kết quả").
+
+**Cột mới `learning_cycles`** (chỉ thêm, `ALTER TABLE … ADD COLUMN` có kiểm `pragma_table_info`): `thi_that_ngay TEXT`, `thi_that_l REAL`, `thi_that_r REAL`, `thi_that_w REAL`, `thi_that_s REAL`, `thi_that_khong_thi INTEGER NOT NULL DEFAULT 0`, `thi_that_nhap_boi INTEGER`, `thi_that_nhap_luc TEXT`. OVR giữ ở `outcome_score`; `outcome` do máy ghi theo `ketQuaThiThat`; ghi chú ở `outcome_note`.
+
+**Đường ghi:** `PUT /cycles/:id/outcome` nhận `{ ngayThi, l, r, w, s, khongThi, ghiChu }`.
+- Kiểm nhập (không bao giờ bớt): lộ trình phải là FT (`programme_code='FT'` hoặc route ≠ NULL) → khác 400; điểm 0–9 bước 0.5; `ngayThi` ISO, ≤ hôm nay, ≥ `started_at` của lộ trình; `khongThi=true` thì bỏ qua điểm; cho lưu thiếu kỹ năng (đang gõ dở) → `outcome='unknown'`.
+- Body cũ `{ outcome, score, note }`: phép kiểm cũ (`luatMayChu.tests.ts`, `phanTich.tests.ts`, `tocDo.run.ts`) còn gọi thì giữ nhánh cũ nguyên hành vi; web không gửi nữa.
+- **Quyền:** như `setOutcome` (`STUDENT_EDIT`) **và thêm**: GVCN của **lớp cuối** của lộ trình (`teacher_assignments` `is_core=1` của lớp đó, kể cả lớp đã kết thúc) và QL chi nhánh ghi được **dù em đã kết thúc / lưu trữ** — ngoại lệ duy nhất trên hồ sơ chỉ xem. Người khác 403 trước mọi ghi.
+- Nhật ký: ai / lúc nào / cũ → mới (`addJourney` như hiện nay + `thi_that_nhap_boi/luc`).
+- Lộ trình đã đóng → `lamMoiKetQuaThi(conn, cycleId)` cập nhật `thi_that_*`, `ket_luan` của **bản chụp mới nhất**, cùng tx; so với **Target trong bản chụp** (Target lúc đóng), không phải Target hiện tại.
+
+**Việc nhắc "Cập nhật kết quả thi thật"** (đề xuất, chủ sản phẩm duyệt cùng mockup):
+- **Ai:** GVCN lớp cuối của lộ trình; lớp không có GVCN → QL chi nhánh. QL thấy việc của GV như các việc khác.
+- **Khi nào hiện:** lộ trình FT chưa có kết quả và không "Không thi"; mốc = **thứ Hai đầu tiên sau** tháng thi dự kiến (`exam_month`) / sau tuần thi (`exam_period_id`) / sau ngày thi (`exam_date`); không có dự kiến thi → thứ Hai sau ngày lộ trình đóng. Lộ trình còn chạy mà đã qua mốc cũng hiện.
+- **Hạn:** mốc + **4 tuần**; quá hạn đỏ, **không chặn**, không tự huỷ. Hết việc khi lưu đủ 4 kỹ năng hoặc "Không thi".
+- **Chữ:** "Cập nhật kết quả thi thật" · "{tên} · {lớp} · thi {SEP 2026}" · "hạn {W1 NOV}". Bấm → mở ngăn "Kết quả thi thật" trên hồ sơ HV (`?viec=thi-that`).
+- Không thêm thông báo chuông (ponytail: thêm nếu GVCN bỏ sót nhiều).
+
+**Web:** ⋮ "Kết luận lộ trình" đổi tên **"Kết quả thi thật"**; ngăn: dòng "Target · Dự kiến thi", ô "Không thi", Ngày thi, L R W S, OVR (tự tính, chỉ đọc), nhãn kết quả; khi "Không thi": ô Ghi chú. Lưu / Huỷ. **Chữ đúng mockup màn "GVCN nhập thi thật".** Ngăn Tổng kết: ô Kết quả "Chờ kết quả thi thật" + nút "Nhập kết quả" (chỉ người có quyền ghi).
+- [ ] Kiểm đỏ: GVCN lớp FT nhập 4 kỹ năng → `outcome='reached'`, `outcome_score=6.5`; thiếu S → `unknown`; điểm 9.5 / 6.3 / ngày mai → 400; GVBM → 403; GVCN lớp cuối nhập cho em **đã Kết thúc học + lưu trữ** → được; GVCN lớp khác → 403; lộ trình lớp thường → 400; nhập sau khi đóng → bản chụp mới nhất có điểm thi thật, so Target lúc đóng (đổi `target_score` trước khi nhập vẫn so Target cũ).
+- [ ] Kiểm đỏ việc nhắc: `exam_month='2026-09'` → hiện từ thứ Hai 05/10, hạn thứ Hai 02/11, ngày 01/10 chưa hiện; có kết quả → mất; "Không thi" → mất; không dự kiến thi → theo ngày đóng; `myWork(GVCN lớp cuối)` có việc, `myWork(GVBM)` không.
+- [ ] `tocDoDuong.ts`: `myWork` GVCN không vượt trần cũ (một truy vấn cho cả việc mới).
+- [ ] Commit: `feat(tk): kết quả thi thật L R W S, việc nhắc GVCN`.
+
 ### Task TK-6: Xoá học viên xoá bản chụp
 **Files:** `students/xoaHocVien.ts` (`CAU_XOA_HOC_VIEN`, trước câu xoá `learning_cycles`).
 - [ ] Phép kiểm X2 (`xoaDuLieu.tests.ts:326`) đỏ sau TK-2 → thêm `DELETE FROM ban_chup_luot WHERE ban_chup_id IN (SELECT id FROM ban_chup_lo_trinh WHERE student_id = ?)` và `DELETE FROM ban_chup_lo_trinh WHERE student_id = ?` → xanh. Kiểm: xoá em có bản chụp → không còn dòng.
@@ -184,7 +236,8 @@ export function cacLoTrinh(p: Principal, studentId: number): { id: number; ten: 
   ketThuc: string | null; dangHoc: boolean; lyDo: LyDoDong | null; ketQua: { chinh: string; tone: string; phu?: string } | null }[];
 export function tongKetLoTrinh(p: Principal, cycleId: number): { hocVien: { id: number; ten: string }; banChup: /* dòng ban_chup_lo_trinh mới nhất */;
   luot: /* gom ban_chup_luot theo lượt: { attemptNo, kind, nhan, lop, tuan, trangThai, huyLyDo, kyNang: {k, diem, dat, tong?}[], overall, kyVong, sos, ketQua } */[] };
-export function tongKetLop(p: Principal, classId: number): { lop: …; dong: { studentId; ten; dauVao; target; soLuot; luotCuoi; kyNang; overall; ketLuan; huong; roiSom: boolean; luotCuoiHuy?: boolean }[] };
+export function tongKetLop(p: Principal, classId: number): { lop: …; dong: { studentId; ten; dauVao; target; soLuot; luotCuoi; kyNang; overall;
+  thiThatOvr: number | null; ketLuan; huongTiep; roiSom: boolean; luotCuoiHuy?: boolean }[] };  // lớp thường: giuaKhoa, cuoiKhoa, huongTiep
 ```
 - `cacLoTrinh`: lộ trình đang chạy lấy kết quả gần nhất sống (một truy vấn, không gọi `studentProfile`); đã đóng lấy từ bản chụp mới nhất. Sắp mới nhất trước.
 - `tongKetLop`: chỉ lớp `status='finished'` (khác → 404 "Lớp chưa kết thúc"); dòng = mỗi em từng có enrollment ở lớp; kết quả = bản chụp mới nhất có `ban_chup_luot.class_id = lớp` (lượt thi ở lớp này); em rời sớm mà lộ trình chưa đóng → `roiSom`, kết quả rỗng; FT dùng `luotDaiDien` (Q2).
@@ -197,16 +250,17 @@ export function tongKetLop(p: Principal, classId: number): { lop: …; dong: { s
 Skill: `/impeccable layout` · `/impeccable clarify` · `/impeccable harden` · `/impeccable adapt`
 **Files:** tạo `web/src/modules/students/CacLoTrinh.tsx`, `web/src/modules/students/NganTongKet.tsx`; sửa `StudentDetailPage.tsx` (tab Hành trình ~389; bỏ nút + dải "Lộ trình ▾" 88, 214-216, 239-246 — **chỉ khi Q3 = A**).
 - [ ] Khối **"Các lộ trình"** đầu tab Hành trình, trên "Hành trình học tập", luôn hiện (kể cả một lộ trình). Cột: Lộ trình · Lớp · Thời gian · Kết quả · nút. Đang học: nhãn "Đang học", nút "Học thuật ›" (đổi tab). Đã đóng: kết quả + nhãn hướng, nút "Tổng kết". Rỗng: "Chưa có lộ trình nào". 375: mỗi lộ trình một thẻ. **Chữ đúng mockup.**
-- [ ] **Ngăn "Tổng kết lộ trình"** (khung panel phải dùng chung, như `StudentPlanPanel`): đầu "Tổng kết lộ trình" + "{tên} · {chương trình}"; lưới 8 ô (Chương trình · Lớp · GVCN · Thời gian · Đầu vào · Target · Số lượt/Số bài · Kết thúc); dòng kết luận; bảng — FT: MT · Lớp · Tuần · L R W S · OVR · Kỳ vọng · Kết quả (nhãn `đã huỷ` / `huỷ phần` như `NhanDot`); lớp thường: Bài · Lớp · Tuần · Điểm từng phần · Kết quả (dùng `tenMonNgan`, `nhanKetQuaThuong`). Rỗng: "Chưa có lượt Test nào". Chân: "Mở hồ sơ" (→ `duongHoSoHocVien(id, { loTrinh })`) · "Đóng". 375: toàn màn, mỗi lượt một thẻ (như `TheDong`).
+- [ ] **Ngăn "Tổng kết lộ trình"** (khung panel phải dùng chung, như `StudentPlanPanel`): đầu "Tổng kết lộ trình" + "{tên} · {chương trình}"; **ba ô Đích → Thi thật → Hướng tiếp** (FT: Target + "Thi SEP 2026" → OVR + L R W S + ngày + nhãn Đạt / Chưa đạt Target, hoặc "Chờ kết quả thi thật" + nút "Nhập kết quả" → Hướng tiếp; lớp thường: hai ô "Cuối khoá {%}" + dải → Hướng tiếp); một dòng Lớp · GVCN · Đầu vào · (Target) · Thời gian; tiêu đề nhỏ "Mock Test n" / "Kết quả Test n"; bảng — FT: MT · Lớp · Tuần · L R W S · OVR · Kỳ vọng · Kết quả (nhãn `đã huỷ` / `huỷ phần` như `NhanDot`); lớp thường: Bài · Lớp · Tuần · Điểm từng phần · Kết quả (dùng `tenMonNgan`, `nhanKetQuaThuong`). Rỗng: "Chưa có lượt Test nào". Chân: "Mở hồ sơ" (→ `duongHoSoHocVien(id, { loTrinh })`) · "Đóng". 375: toàn màn, mỗi lượt một thẻ (như `TheDong`).
 - [ ] Mở ngăn bằng địa chỉ `?tong-ket=<cycleId>` (link từ Lưu trữ / lớp mở thẳng); đóng thì xoá tham số. Thêm khoá vào `docThamSoHoSo` (`shared/domain`), có kiểm.
 - [ ] Trạng thái tải (khung xương), lỗi + "Thử lại".
+- Khối "Các lộ trình", FT đã đóng: Kết quả = "Thi thật {OVR}" + "Đạt / Chưa đạt Target" hoặc "Chờ kết quả thi thật"; cạnh đó nhãn hướng tiếp. Tên lộ trình FT kèm route ("Fast Track · LT1").
 - [ ] Commit: `feat(tk): khối Các lộ trình và ngăn Tổng kết lộ trình`.
 
 ### Task TK-9: Web — Lưu trữ + tab "Tổng kết" của lớp đã kết thúc
 Skill: `/impeccable layout` · `/impeccable clarify` · `/impeccable adapt`
 **Files:** sửa `web/src/modules/students/LuuTruPage.tsx`, `server/src/classes/luuTru.ts` (thêm `cycleIdCuoi` cho HV), `shared/domain/hocVienLop.ts:554` (`TAB_HO_SO_LOP` thêm `'tong-ket'`, nhãn "Tổng kết"), `ClassOverviewPage.tsx`; tạo `web/src/modules/classes/TabTongKetLop.tsx`.
 - [ ] Lưu trữ › Học viên: nút "Tổng kết" (chỉ khi có lộ trình đã đóng) → `/hoc-vien/:id?tab=hanh-trinh&tong-ket=<cycleIdCuoi>`. Lưu trữ › Lớp: nút "Tổng kết" → `/hoc-vien/lop/:id?tab=tong-ket`.
-- [ ] Hồ sơ lớp: tab "Tổng kết" **chỉ khi lớp đã kết thúc**, đứng đầu và là mặc định khi `status='finished'`. Dải số (FT: Học viên · Đạt Target · Chưa đạt; thường: Học viên · Lên FT · Lên lớp · Học lại). Bảng FT: Học viên · Đầu vào · Target · MT cuối (· n lượt) · L R W S · OVR · Kết luận · Hướng; thường: Học viên · Giữa khoá · Cuối khoá · Kết luận khoá. Em rời sớm: chữ nhạt, cuối bảng. Bấm hàng → ngăn Tổng kết của em. Rỗng: "Lớp chưa có học viên nào". 375: thẻ.
+- [ ] Hồ sơ lớp: tab "Tổng kết" **chỉ khi lớp đã kết thúc**, đứng đầu và là mặc định khi `status='finished'`. Dải số (FT: Học viên · Đạt Target · Chưa đạt · Chờ kết quả — theo **thi thật**; thường: Học viên · Lên FT · Lên lớp · Học lại). Bảng FT: Học viên · Đầu vào · Target · nhóm "MT cuối" (MT · n lượt · L R W S · OVR) · nhóm "Thi thật" (OVR · Kết quả) · Hướng tiếp; thường: Học viên · Giữa khoá · Cuối khoá · Kết luận khoá. Em rời sớm: kết quả "—". Em rời sớm: chữ nhạt, cuối bảng. Bấm hàng → ngăn Tổng kết của em. Rỗng: "Lớp chưa có học viên nào". 375: thẻ.
 - [ ] Kiểm `shared`: `tabHoSoLop('tong-ket')`; hàm chọn tab mặc định theo `finished`.
 - [ ] Commit: `feat(tk): Tổng kết ở Lưu trữ và hồ sơ lớp đã kết thúc`.
 
@@ -221,15 +275,16 @@ Skill: `/impeccable layout` · `/impeccable clarify` · `/impeccable adapt`
 3. Hồ sơ HV › Hành trình: "Các lộ trình" luôn hiện; lộ trình đã đóng → "Tổng kết" mở ngăn; "Mở hồ sơ" đưa về hồ sơ của lộ trình đó (như dải "Lộ trình ▾" cũ).
 4. Lưu trữ: HV có "Tổng kết" (lộ trình đóng gần nhất); lớp có "Tổng kết" → tab Tổng kết.
 5. Lớp đã kết thúc: tab "Tổng kết" mặc định, đủ em, em rời sớm nhạt ở cuối, lượt huỷ ghi rõ.
+5b. FT: ngăn Tổng kết có Đích → Thi thật → Hướng tiếp; chưa có kết quả hiện "Chờ kết quả thi thật"; GVCN lớp cuối nhập L R W S + ngày thi (kể cả em đã lưu trữ) → OVR, Đạt / Chưa đạt tự ra, bản chụp cập nhật; việc "Cập nhật kết quả thi thật" hiện đúng mốc, hạn 4 tuần, mất khi xong.
 6. Rỗng / một lượt / nhiều lượt / lượt huỷ đúng mockup; 375 không cuộn ngang trang (bảng trong khung cuộn được).
 7. Migrate chạy hai lần không đổi gì; xoá học viên không để sót bản chụp.
 8. Số truy vấn: `GET /students/{hv}` không đổi; 3 đường mới có trần; trần ghi hàng loạt đo lại có lý do.
 
-## Cần chủ sản phẩm quyết (4 câu)
-1. **Điểm nhập / sửa sau khi lộ trình đã đóng** (nhập bù MT cũ, Điểm theo lớp, khôi phục điểm): **A — bản chụp cập nhật điểm, giữ nguyên Target / kỳ vọng / chương trình lúc đóng** (khuyến nghị: điểm sửa là sửa sai, còn cái cần giữ là ngữ cảnh) · B — giữ nguyên bản chụp, điểm mới chỉ thấy ở hồ sơ lộ trình (bỏ TK-5).
-2. **Bảng cả lớp FT đã kết thúc lấy lượt nào:** **A — MT cuối có đủ 4 kỹ năng** (khuyến nghị, đúng "kết quả khi kết thúc") · B — MT tốt nhất · C — cả hai (bảng rộng hơn).
-3. **Chỗ đặt "Các lộ trình":** **A — đầu tab Hành trình, bỏ nút "Lộ trình ▾" ẩn ở đầu hồ sơ** (khuyến nghị, như mockup) · B — cuối tab Học thuật, giữ nút cũ · C — dải ở đầu hồ sơ, mọi tab đều thấy.
-4. **Kết luận FT khi chưa ai ghi "Đạt Target" lúc đóng:** **A — web tự kết luận theo MT cuối đủ 4 kỹ năng (OVR ≥ Target → Đạt, thấp hơn → Chưa đạt, thiếu → Chưa có căn cứ); ai ghi tay thì ghi tay thắng** (khuyến nghị: PR-NC cần cột này đủ) · B — để "Chưa có căn cứ kết luận" tới khi có người ghi.
+## Cần chủ sản phẩm quyết (1 câu)
+1. **"Kết thúc học" hiện tự lưu trữ em ngay** (`students.ts:~282`). Anh/chị nói "không phải lúc nào cũng lưu trữ ngay":
+   **A — lộ trình FT còn "Chờ kết quả thi thật" thì Kết thúc học chưa lưu trữ; em ở lại Học viên & Lớp tới khi GVCN nhập kết quả (hoặc "Không thi") thì tự vào Lưu trữ** (khuyến nghị, đúng ý anh/chị; đụng `setStudentStatus` — phần của PR-LUI-b) ·
+   B — giữ như nay (lưu trữ ngay); GVCN vẫn nhập kết quả thi thật được trên hồ sơ lưu trữ (ngoại lệ TK-K đã có).
+   Chọn A thì thêm vào TK-K: bước "tự lưu trữ khi có kết quả" + phép kiểm; lớp thường giữ như nay.
 
 ## Tôi đã tự quyết
 | Điểm | Quyết | Lý do |
@@ -241,12 +296,16 @@ Skill: `/impeccable layout` · `/impeccable clarify` · `/impeccable adapt`
 | Mở ngăn bằng địa chỉ `?tong-ket=` | Có | Lưu trữ, lớp, link chia sẻ mở thẳng |
 | Lộ trình đang chạy | Không có ngăn Tổng kết; nút "Học thuật ›" | Chưa đóng thì chưa có bản chụp |
 | Em chuyển lớp mà giữ lộ trình | Tab Tổng kết lớp cũ: hàng nhạt "Chuyển lớp", kết quả "—" | Không lấy số sống cho bảng "đã kết thúc" |
-| Thời gian | Mã tuần (`W2 MAY – W3 SEP`), "nay" cho lộ trình đang chạy | Luật 30/09 |
+| Thời gian | Mã tuần (`W2 MAY – W3 SEP`), "nay" cho lộ trình đang chạy; ngày chỉ cho **ngày thi thật** | Luật 30/09 |
+| Việc nhắc thi thật | Mốc = thứ Hai sau tháng / tuần / ngày thi dự kiến (không có → sau ngày đóng); hạn 4 tuần; đỏ không chặn; không chuông | Em báo điểm IELTS về thường trong 2–3 tuần (13 ngày ra kết quả) |
+| OVR thi thật | Máy tính từ 4 kỹ năng (`roundToHalf`), không cho gõ tay | Một nguồn, không lệch |
+| Kết luận FT | Chỉ máy so OVR thi thật với **Target lúc đóng**; bỏ ô chọn kết luận tay | Q4 chủ sản phẩm |
+| Lớp thường | Không có thi thật; Kết quả = % Cuối khoá + dải, Hướng tiếp = hướng đã chốt (K26) | Q4 chủ sản phẩm |
 
 ## Chồng với PR khác
 | PR | File chung | Cách xử lý |
 |---|---|---|
-| **PR-LUI-b** (Học lại, mở lại lớp, thao tác nhiều em) — chạy trước | `students/students.ts` (`setStudentStatus`), `classes/luatLoTrinh.ts`, `classes/luuTru.ts`, `LuuTruPage.tsx`, `xoaKetThucLop.ts` | TK-0 đối chiếu. **Mở lại không xoá bản chụp**; đóng lại → bản mới. Đường "kết thúc học nhiều em" của LUI-b phải gọi `ghiBanChup` (bất biến TK-3 bắt). Nếu TK merge trước LUI-b: ghi vào prompt LUI-b |
+| **PR-LUI-b** (Học lại, mở lại lớp, thao tác nhiều em) — chạy trước | `students/students.ts` (`setStudentStatus`), `classes/luatLoTrinh.ts`, `classes/luuTru.ts`, `LuuTruPage.tsx`, `xoaKetThucLop.ts` | TK-0 đối chiếu. **Mở lại không xoá bản chụp** (chủ sản phẩm 06/10); đóng lại → bản mới. Câu cần quyết (A) đổi luật lưu trữ khi Kết thúc học — nếu LUI-b chưa merge thì làm ở TK, ghi vào prompt LUI-b. Đường "kết thúc học nhiều em" của LUI-b phải gọi `ghiBanChup` (bất biến TK-3 bắt). Nếu TK merge trước LUI-b: ghi vào prompt LUI-b |
 | **PR-MT0** (MT0, Chuyển tiếp lớp) | `classes/transition.ts`, `lenhChuyen.ts`, `luatLoTrinh.ts` `apDungCaLop` | `ghiBanChup` gọi **sau** khi MT0 đổi `cycle_id`. MT0 "không dùng" vào bản chụp lớp thường với `trang_thai='khong_dung'` (nhãn `MT0 · không dùng` của MT0). PR merge sau thì `git merge origin/main` + chạy lại phép kiểm TK-3 |
 | **PR-MTa** (T20–T23 dời / khôi phục / xoá điểm = xoá trắng ô) | `fasttrack/attempts.ts`, `normal/regular.ts`, `absence.ts` | MTa đợt 4 merge trước. TK-5 gắn `lamMoiDiemBanChup` vào cả đường xoá điểm / khôi phục của MTa |
 | PR-BV (xoá điểm hàng loạt, Bỏ vắng) | `attempts.ts`, `regular.ts`, `absence.ts` | Merge sau TK thì phải gọi `lamMoiDiemBanChup` (phép kiểm bất biến phụ TK-5 bắt) |
@@ -256,11 +315,11 @@ Skill: `/impeccable layout` · `/impeccable clarify` · `/impeccable adapt`
 ## Prompt cho session code (dán nguyên khối, sau khi chủ sản phẩm duyệt)
 ```
 /ponytail lite
-Làm PR-TK theo docs/superpowers/plans/2026-10-06-pr-tk-tong-ket-lo-trinh.md (TK-0 → TK-10, prompt chung plan.md mục 9.0).
+Làm PR-TK theo docs/superpowers/plans/2026-10-06-pr-tk-tong-ket-lo-trinh.md (TK-0 → TK-10 và TK-K, prompt chung plan.md mục 9.0).
 Model Opus 5.5 · High (B: Sonnet 5.5 · High); không dùng Fable, kể cả subagent. Đầu phiên nói model đang chạy.
 Nhánh pr-tk-tong-ket-lo-trinh từ origin/main mới nhất (SAU khi PR-LUI-b merge), worktree .claude/worktrees/pr-tk-tong-ket-lo-trinh.
 Đọc "Chủ sản phẩm chốt" ở đầu file trước. Mockup đã duyệt: thiet-ke/mockup-tong-ket-lo-trinh-2026-10-06.html — chữ ĐÚNG mockup, ngắn.
-Phép kiểm đỏ trước: mỗi đường đóng lộ trình có bản chụp; bất biến "lộ trình đã đóng nào cũng có bản chụp" ở cuối run.ts; đóng băng
+Phép kiểm đỏ trước: mỗi đường đóng lộ trình có bản chụp; kết quả thi thật (quyền GVCN lớp cuối, so Target lúc đóng, việc nhắc đúng mốc); bất biến "lộ trình đã đóng nào cũng có bản chụp" ở cuối run.ts; đóng băng
 Target/route/chương trình; migrate prTk chạy hai lần không đổi gì. Ghi bản chụp CÙNG giao dịch với câu đóng.
 Impeccable: layout, clarify, harden, adapt (TK-8, TK-9), cuối /impeccable audit; /ponytail-review. Bấm thử 375/1440 sáng/tối,
 Quản trị, QL, GVCN, GVBM. Mô tả PR: số truy vấn trước/sau, chú thích ponytail:, ảnh.
@@ -270,4 +329,4 @@ Quản trị, QL, GVCN, GVBM. Mô tả PR: số truy vấn trước/sau, chú th
 - G1: Ngoài 5 đường ở Khảo sát không có câu nào đổi `learning_cycles.status` khỏi `active` (đã `git grep` 06/10). Bất biến TK-3 bắt nếu sai.
 - G2: `sos_cases` / Case không bị xoá khi lộ trình đóng (chỉ `xoaHocVien`), nên `case_id` trong bản chụp còn trỏ được.
 - G3: Hàm đánh giá đang dùng (`resultOf`, `evaluateRegular`) chạy được với `conn` của giao dịch đang mở (SQLite một kết nối). Nếu chúng tự mở kết nối khác → tách phần thuần, ghi ở commit TK-2.
-- G4: Nếu Q1 = B: bảng tổng kết hiện số lúc đóng; bỏ TK-5 và bất biến phụ.
+- G4: Lộ trình FT nhận diện bằng `programme_code = 'FT'` (route LT1/LT2/RF). TK-0 kiểm lại trên dữ liệu seed.
