@@ -284,10 +284,12 @@ export function caseHasIndependentBasis(caseId: number, excludeAttemptId: number
  * Phương án bị huỷ ở đây không được tính là thành công hay thất bại — nó không có kết quả,
  * vì nó chưa từng chạy.
  */
-export function retireCaseForCorrectedScore(p: Principal, caseId: number, label: string, passText = 'đạt kỳ vọng', huy = false) {
+export function retireCaseForCorrectedScore(p: Principal, caseId: number, label: string, passText = 'đạt kỳ vọng', huy = false, thiLai = false) {
   const conn = db();
   const c = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(caseId) as any;
   if (!c || c.status === 'done') return { ok: false };
+  /* PR-BV: XOÁ điểm (tẩy ô / Huỷ điểm) — nhập lại vẫn trượt thì mở lại đúng Case này (`CASE_DONG_DO_XOA`). Thi lại là bài mới → không. */
+  const xoa = huy && !thiLai;
 
   return tx(() => {
     /*
@@ -295,11 +297,12 @@ export function retireCaseForCorrectedScore(p: Principal, caseId: number, label:
      * (PR-N1 Q23: chạy từ lúc tạo nhưng chưa ghi gì thì cũng chưa có việc thật).
      * `closed_reason = 'score_fixed'` để báo cáo hiệu quả biết mà KHÔNG đếm nó vào mẫu số:
      * một phương án chưa từng chạy thì không thành công cũng không thất bại.
+     * Xoá điểm: `score_cleared:<trạng thái cũ>` — mở lại Case thì PA về đúng trạng thái đó.
      */
     const cancelled = conn
       .prepare(
         `UPDATE case_interventions
-            SET status = 'cancelled', closed_reason = 'score_fixed', updated_at = ?
+            SET status = 'cancelled', closed_reason = ${xoa ? `'score_cleared:' || status` : `'score_fixed'`}, updated_at = ?
           WHERE case_id = ? AND ((status = 'planned' AND NOT (preset = 1 AND confirmed_by IS NOT NULL))
                                  OR ${PA_QUY_CHE_CHUA_GHI('case_interventions')})`,
       )
@@ -311,7 +314,8 @@ export function retireCaseForCorrectedScore(p: Principal, caseId: number, label:
                 outcome_note = ?, dedup_key = NULL, updated_at = ? WHERE id = ?`,
       )
       .run(demoToday(), p.userId,
-           `${SIGNAL_WITHDRAW_SCORE_FIXED} — ${huy ? `điểm ${label} đã bị huỷ` : `điểm ${label} đã được sửa lại thành ${passText}`}.`,
+           /* PR-BV: xoá điểm ghi "đã bị xoá" — chữ riêng để `CASE_DONG_DO_XOA` không nhận nhầm Case đóng vì thi lại (cũ và mới đều "đã bị huỷ"). */
+           `${SIGNAL_WITHDRAW_SCORE_FIXED} — ${xoa ? `điểm ${label} đã bị xoá` : huy ? `điểm ${label} đã bị huỷ` : `điểm ${label} đã được sửa lại thành ${passText}`}.`,
            nowIso(), caseId);
     conn
       .prepare(
@@ -335,13 +339,21 @@ export function retireCaseForCorrectedScore(p: Principal, caseId: number, label:
  * (giữ lịch sử, huỷ phương án chưa ai làm); Case còn căn cứ độc lập thì GIỮ và nhắc người phụ trách. Không ghi mốc "đã tiến bộ":
  * sửa một con số nhập sai không phải một lần thi thứ hai. `passText`: "đạt kỳ vọng" (FT) · "đạt" (lớp thường).
  */
-export function reconcileCorrectedSignals(p: Principal, input: { attemptId: number; passingSkills: string[]; passText: string; clearedSkills?: string[] }) {
+export function reconcileCorrectedSignals(p: Principal, input: {
+  attemptId: number; passingSkills: string[]; passText: string; clearedSkills?: string[];
+  /** PR-BV: ô trống vì THI LẠI (không phải xoá) — Case đóng theo không mở lại khi nhập điểm mới. */
+  thiLai?: boolean;
+}) {
   gomTinHieu(p, input.attemptId, input.passingSkills, input.passText, false);
   /* PR-S3F #1: ô có tín hiệu mà nay TRỐNG (Huỷ điểm / Thi lại) — cùng luật, lý do "điểm đã huỷ". Thi lại trượt sau đó mở lại tín hiệu → Case mới. */
-  gomTinHieu(p, input.attemptId, input.clearedSkills ?? [], 'điểm đã huỷ', true);
+  gomTinHieu(p, input.attemptId, input.clearedSkills ?? [], 'điểm đã huỷ', true, !!input.thiLai);
 }
 
-function gomTinHieu(p: Principal, attemptId: number, skills: string[], passText: string, huy: boolean) {
+/** PR-BV: Case đóng do XOÁ điểm (không phải sửa thành đạt, không phải thi lại) — điều kiện SQL trên `sos_cases` bí danh `sc`. */
+export const CASE_DONG_DO_XOA = (sc = 'sc') =>
+  `(${sc}.status = 'done' AND ${sc}.system_close_reason IS NULL AND ${sc}.outcome_note LIKE '${SIGNAL_WITHDRAW_SCORE_FIXED} — điểm % đã bị xoá.')`;
+
+function gomTinHieu(p: Principal, attemptId: number, skills: string[], passText: string, huy: boolean, thiLai = false) {
   const conn = db();
   if (!skills.length) return;
   const { withdrawn, casesToReview } = withdrawSignalsNoLongerValid({
@@ -363,7 +375,7 @@ function gomTinHieu(p: Principal, attemptId: number, skills: string[], passText:
         });
       }
     } else {
-      retireCaseForCorrectedScore(p, item.caseId, item.label, passText, huy);
+      retireCaseForCorrectedScore(p, item.caseId, item.label, passText, huy, thiLai);
       conn.prepare(`UPDATE case_signals SET status = 'withdrawn', withdrawn_reason = ?, updated_at = ? WHERE id = ?`)
         .run(SIGNAL_WITHDRAW_SCORE_FIXED, nowIso(), item.signalId);
     }

@@ -18,14 +18,16 @@ import {
   ScoreError, assessedSkillOf, bandFromCriteria, bandFromRaw, entrySkillsOf, evaluateAttempt,
   failingEntrySkills, isCriteriaSkill, isRawSkill, type AttemptResult,
 } from './scoring.ts';
-import { mondayOf, quaHanNhapDiem, weekInfo } from '../platform/week.ts';
+import { mondayOf, quaHanNhapDiem, skillScoreDeadline, weekInfo } from '../platform/week.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import {
   completionWeekOf, ensureSkillRows, kiemDaToiTuanThi, kiemVuot, kiemXacNhanVuot, tuanCuoiSauKhiDoi, loadSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf,
   setSkillScope, setSkillWeek, skillScheduleOf, skippedSkillsOf, viewSkill,
   type SkillRow, type SkillScheduleView,
 } from './skillSchedule.ts';
-import { canRequest as canRequestAbsence, flagLateNoShow, pendingMove, rutDeNghiDoi, settleNoShows } from './absence.ts';
+import {
+  CAU_QUA_HAN_GO, canRequest as canRequestAbsence, dauDaChot, duocGoDau, flagLateNoShow, goVangDaChot, pendingMove, rutDeNghiDoi, settleNoShows,
+} from './absence.ts';
 import { raiseSignalsForResult, stepsFor } from '../cases/sos.ts';
 import { reconcileCorrectedSignals } from '../cases/signals.ts';
 import { currentCycle, cycleById, examPlanOf, luotSoCuaLoTrinh } from './cycles.ts';
@@ -46,6 +48,8 @@ export type ScoreRow = {
   /** Dấu '-' "không có bài" (PR-G) — tuần lịch lúc báo, người báo, lúc báo, báo muộn (C10), đã chốt chưa. */
   no_show_period_id?: number | null; no_show_by?: number | null; no_show_at?: string | null;
   no_show_late?: number | null; no_show_settled_at?: string | null; no_show_cu?: number | null;
+  /** PR-BV: thứ Hai của tuần có dấu "-" (JOIN sẵn — ô `daChot` không hỏi lẻ từng ô). */
+  no_show_week_start?: string | null;
   /** PR-HSM (T39): nhận xét của bài nhập (W1/W2/S) + GV chấm Speaking (tài khoản hoặc tên ngoài; tên tài khoản join sẵn). */
   comment?: string | null; examiner_user_id?: number | null; examiner_name?: string | null; examiner_user_name?: string | null;
   /** PR-Pb2-b (Q13): ngày nghiệp vụ lần đầu ô có điểm. */
@@ -56,8 +60,9 @@ export type ScoreRow = {
 export function scoresOf(attemptId: number): ScoreRow[] {
   return nho(`diem:${attemptId}`, () => db()
     .prepare(
-      `SELECT s.*, u.full_name AS entered_by_name, g.full_name AS examiner_user_name FROM assessment_scores s
-         LEFT JOIN users u ON u.id = s.entered_by LEFT JOIN users g ON g.id = s.examiner_user_id WHERE s.attempt_id = ?`,
+      `SELECT s.*, u.full_name AS entered_by_name, g.full_name AS examiner_user_name, ns.week_start AS no_show_week_start FROM assessment_scores s
+         LEFT JOIN users u ON u.id = s.entered_by LEFT JOIN users g ON g.id = s.examiner_user_id
+         LEFT JOIN report_periods ns ON ns.id = s.no_show_period_id WHERE s.attempt_id = ?`,
     )
     .all(attemptId) as ScoreRow[]);
 }
@@ -106,8 +111,9 @@ export function loadBundle(attemptIds: number[]): AttemptBundle {
     const ph = chunk.map(() => '?').join(',');
     for (const r of conn
       .prepare(
-        `SELECT s.*, u.full_name AS entered_by_name, g.full_name AS examiner_user_name FROM assessment_scores s
-           LEFT JOIN users u ON u.id = s.entered_by LEFT JOIN users g ON g.id = s.examiner_user_id WHERE s.attempt_id IN (${ph})`,
+        `SELECT s.*, u.full_name AS entered_by_name, g.full_name AS examiner_user_name, ns.week_start AS no_show_week_start FROM assessment_scores s
+           LEFT JOIN users u ON u.id = s.entered_by LEFT JOIN users g ON g.id = s.examiner_user_id
+           LEFT JOIN report_periods ns ON ns.id = s.no_show_period_id WHERE s.attempt_id IN (${ph})`,
       )
       .all(...chunk) as any[]) {
       if (!bundle.scores.has(r.attempt_id)) bundle.scores.set(r.attempt_id, []);
@@ -255,6 +261,12 @@ export type SkillCell = {
   } | null;
   /** S13: một dòng giải thích khi Quản lý đã đổi kết luận "không dự thi" của chính tuần này. `null` là bình thường. */
   noShowNote: string | null;
+  /**
+   * PR-BV (G3): dấu "-" ĐÃ CHỐT còn trên ô (Mock, không phải MT cũ) — ô hiện "-" tới khi có điểm; xoá "-" = trả như trước khi gõ.
+   * Không đổi việc / nợ của ô (`noShow` giữ nguyên nghĩa). `doiSang` = mã tuần hiện tại khi đã dời; `hanGo` = hạn gỡ của người xem (null:
+   * Quản lý, mọi lúc); `goDuoc` = người xem gỡ được lúc này.
+   */
+  daChot: { doiSang: string | null; hanGo: string | null; goDuoc: boolean } | null;
   /** PR-HSM (YC-13.5): nhận xét của bài nhập này — chỉ W1/W2/S, không bắt buộc. */
   nhanXet: string | null;
   /** PR-HSM (T39): GV chấm Speaking — tài khoản (`userId`) hoặc người ngoài (`userId: null`). Chỉ ô `speaking`. */
@@ -375,6 +387,21 @@ export function skillCells(
     }
     const noShowNote = row?.no_show_settled_at && !row.no_show_cu && row.no_show_period_id === view.periodId && view.sitStatus !== 'absent'
       ? NO_SHOW_OVERRIDDEN_NOTE : null;
+    const daChot = row?.no_show_settled_at && !row.no_show_cu && !hasScore && row.no_show_period_id && attempt.class_id
+      ? (() => {
+          const tuanGoc = row.no_show_week_start
+            ?? (db().prepare('SELECT week_start FROM report_periods WHERE id = ?').get(row.no_show_period_id) as any).week_start as string;
+          /* `editable` đã tính cho cả dòng — không hỏi quyền nhập lại cho từng ô (PR-TD: trần câu SQL). */
+          const loi = duocGoDau(p, { classId: attempt.class_id, skill, mode, tuanGocStart: tuanGoc, today, duocNhap: editable.includes(skill) });
+          return {
+            doiSang: view.periodId !== row.no_show_period_id && view.weekStart ? tuanLich(view.weekStart, today) : null,
+            /* Chỉ người có quyền gỡ (trong khung) mới có hạn; Quản lý không hạn; người không có quyền: null. */
+            hanGo: can(p, PERMISSIONS.PLAN_WEEK, { classId: attempt.class_id }) || (loi && loi !== CAU_QUA_HAN_GO)
+              ? null : skillScoreDeadline(mode, tuanGoc),
+            goDuoc: loi === null,
+          };
+        })()
+      : null;
     const noShow = ns.state === 'none' ? null : {
       /* Tuần viết bằng `tuanLich` (G-6): "W3 SEP", chỉ kèm năm khi khác năm hôm nay — không in mã tuần có năm. */
       state: ns.state, text: noShowText(ns, view.weekStart ? tuanLich(view.weekStart, today) : view.periodCode, today) ?? '',
@@ -422,6 +449,7 @@ export function skillCells(
       sitStatus: view.sitStatus,
       noShow,
       noShowNote,
+      daChot,
       nhanXet: row?.comment ?? null,
       gvCham: skill === 'speaking' && row && (row.examiner_user_id || row.examiner_name)
         ? { userId: row.examiner_user_id ?? null, ten: tenGvCham({ examinerUserName: row.examiner_user_name, examinerName: row.examiner_name }) ?? '' }
@@ -836,15 +864,24 @@ export function scoreHistoryOf(attemptId: number) {
        * PR-XOA: xoá hẳn học viên thì SQLite có thể cấp lại id lượt Test cũ cho lượt mới, còn nhật ký (Q1) vẫn giữ — chỉ lấy dòng nhật ký
        * KHÔNG cũ hơn chính lượt này, để lượt mới không hiện lịch sử điểm của em đã xoá.
        */
+      /* PR-BV: lớp thường ghi điểm vào nhật ký theo DÒNG ĐIỂM (`assessment_score`, `regular.score*`) và dấu "-" là `regular.no_show*`. */
       `SELECT l.id, l.action, l.entity_label, l.before_json, l.after_json, l.created_at, u.full_name AS actor_name
          FROM audit_logs l LEFT JOIN users u ON u.id = l.actor_user_id
          JOIN assessment_attempts a ON a.id = l.entity_id
         WHERE l.entity_type = 'assessment_attempt' AND l.entity_id = ? AND l.created_at >= a.created_at
           AND l.action IN ('score.edit', 'score.lich_su', 'score.override', 'score.no_show', 'score.no_show_cleared', 'score.nhan_xet',
-                           'score.huy_vuot', 'score.khoi_phuc')
-        ORDER BY l.id DESC`,
+                           'score.huy_vuot', 'score.khoi_phuc', 'regular.no_show', 'regular.no_show_cleared')
+       UNION ALL
+       SELECT l.id, l.action, l.entity_label, l.before_json, l.after_json, l.created_at, u.full_name AS actor_name
+         FROM assessment_scores s JOIN assessment_attempts a ON a.id = s.attempt_id
+         JOIN audit_logs l ON l.entity_type = 'assessment_score' AND l.entity_id = s.id
+         LEFT JOIN users u ON u.id = l.actor_user_id
+        WHERE s.attempt_id = ? AND l.created_at >= a.created_at AND l.action IN ('regular.score', 'regular.score.override')
+        ORDER BY 1 DESC`,
     )
-    .all(attemptId) as any[];
+    .all(attemptId, attemptId) as any[];
+  /* Điểm lớp thường là "đạt / tổng" (16/20); nhãn nhật ký lớp thường là "FOU · listening". */
+  const diemThuong = (r: any) => (!r ? 'Chưa có' : r.raw_score !== null && r.raw_score !== undefined ? `${r.raw_score}/${r.raw_total ?? '?'}` : 'Trống');
   /* Dn7: nhận xét W/S — trước → sau rút gọn 80 ký tự; lần chỉ đổi GV chấm (nhận xét giữ nguyên) không thành dòng. */
   const rutGon = (s: unknown) => { const t = typeof s === 'string' ? s.trim() : ''; return !t ? 'Trống' : t.length > 80 ? `${t.slice(0, 79)}…` : t; };
   return rows.flatMap<{
@@ -863,16 +900,24 @@ export function scoreHistoryOf(attemptId: number) {
     }
     /* T2 (PR-MTa): huỷ do dời vượt / khôi phục là `override` (web khỏi thêm loại); lý do nằm ở `after.lyDo`. */
     const vuot = l.action === 'score.huy_vuot', khoiPhuc = l.action === 'score.khoi_phuc';
-    const afterText = l.action === 'score.no_show' ? 'Báo "-" (không có bài)'
-      : l.action === 'score.no_show_cleared' ? 'Gỡ dấu "-"'
+    const thuong = l.action.startsWith('regular.score');
+    const vang = l.action === 'score.no_show' || l.action === 'regular.no_show';
+    const goVang = l.action === 'score.no_show_cleared' || l.action === 'regular.no_show_cleared';
+    const skill = thuong ? String(l.entity_label).split(' · ').pop()! : l.entity_label as string;
+    const afterText = vang ? 'Báo "-" (không có bài)'
+      : goVang ? 'Gỡ dấu "-"'
       : vuot ? 'Huỷ do dời vượt'
+      : thuong ? diemThuong(after)
       : scoreSummaryText(after);
     return [{
       id: l.id,
-      kind: (l.action === 'score.override' || vuot || khoiPhuc ? 'override' : l.action === 'score.edit' || l.action === 'score.lich_su' ? 'edit' : 'no_show') as 'override' | 'edit' | 'no_show',
-      skill: l.entity_label as string,
-      skillLabel: tenMon(null, l.entity_label),   // gồm cả môn lớp thường (trước đây `writing` hiện mã thô)
-      before: khoiPhuc ? 'Đã huỷ' : scoreSummaryText(before), after: afterText,
+      kind: (l.action === 'score.override' || l.action === 'regular.score.override' || vuot || khoiPhuc ? 'override'
+        : l.action === 'score.edit' || l.action === 'score.lich_su' || l.action === 'regular.score' ? 'edit' : 'no_show') as 'override' | 'edit' | 'no_show',
+      skill,
+      skillLabel: tenMon(null, skill),   // gồm cả môn lớp thường (trước đây `writing` hiện mã thô)
+      before: khoiPhuc ? 'Đã huỷ' : thuong ? diemThuong(before) : l.action === 'regular.no_show' ? 'Trống'
+        : l.action === 'regular.no_show_cleared' ? 'Báo "-" (không có bài)' : scoreSummaryText(before),
+      after: afterText,
       actorName: l.actor_name as string | null, createdAt: l.created_at as string,
       /* RB-5 — lý do hiệu chỉnh nằm ngay trong bản "sau" của nhật ký; lần nhập đầu không có. */
       lyDo: (after && typeof after === 'object' ? (after as any).lyDo ?? null : null) as string | null,
@@ -1402,7 +1447,7 @@ function luuNhanXet(
  * "Đã xong" = đã có điểm mọi kỹ năng BẮT BUỘC, không suy từ việc ngày kế hoạch đã trôi qua.
  * Sửa điểm làm đổi mức SOS thì Case giữ nguyên ID, hành động và lịch sử.
  */
-export function refreshOutcome(p: Principal, attemptId: number) {
+export function refreshOutcome(p: Principal, attemptId: number, thiLai = false) {
   const conn = db();
   lamMoiDiemBanChup(conn, [attemptId]);   // PR-TK (TK-5): lộ trình đã đóng → bản chụp theo điểm mới
   const fresh = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
@@ -1429,7 +1474,7 @@ export function refreshOutcome(p: Principal, attemptId: number) {
    * bộ. Nên đường này KHÔNG ghi mốc "đã tiến bộ" nào cả — nó chỉ rút lại thứ không còn căn
    * cứ. Và Case đã có việc thật diễn ra thì không bị đụng tới, chỉ được nhắc xem lại.
    */
-  reconcileCorrectedScores(p, attemptId, result);
+  reconcileCorrectedScores(p, attemptId, result, thiLai);
 }
 
 /**
@@ -1442,18 +1487,20 @@ export function refreshOutcome(p: Principal, attemptId: number) {
  *   · Case còn căn cứ khác (mốc từ đợt khác, quan sát, phương án đã chạy) → GIỮ, và báo
  *     người phụ trách xem lại xem có cần theo tiếp không. Không xoá việc đã diễn ra.
  */
-function reconcileCorrectedScores(p: Principal, attemptId: number, result: AttemptResult) {
+function reconcileCorrectedScores(p: Principal, attemptId: number, result: AttemptResult, thiLai = false) {
   const entry = entryBandsOf(scoresOf(attemptId));
   const failing = new Set(failingEntrySkills(result.expectation, entry, result.skipped));
   /* Ô đã có điểm mà KHÔNG nằm trong danh sách dưới kỳ vọng = ô đang đạt. */
   const passing = ENTRY_SKILLS.filter((k) => (entry[k] ?? null) !== null && !failing.has(k)) as string[];
   /* PR-S3F #1: ô nay TRỐNG và không bị bỏ (Huỷ điểm / Thi lại xoá điểm) — tín hiệu dựng trên điểm đó cũng hết căn cứ. */
   const cleared = ENTRY_SKILLS.filter((k) => (entry[k] ?? null) === null && !result.skipped.includes(assessedSkillOf(k))) as string[];
-  reconcileCorrectedSignals(p, { attemptId, passingSkills: passing, passText: 'đạt kỳ vọng', clearedSkills: cleared });
+  reconcileCorrectedSignals(p, { attemptId, passingSkills: passing, passText: 'đạt kỳ vọng', clearedSkills: cleared, thiLai });
 }
 
 export function saveScore(
   p: Principal, attemptId: number, skill: string, patch: ScorePatch, today: string = demoToday(),
+  /** PR-BV: `thiLai` — ô xoá để THI LẠI (Case đóng theo không mở lại khi nhập điểm mới). Chỉ `keHoach.thiLai` truyền. */
+  o: { thiLai?: boolean } = {},
 ) {
   const conn = db();
   const a = loadAttempt(attemptId);
@@ -1477,6 +1524,12 @@ export function saveScore(
    * `SCORE_OVERRIDE` SỬA ĐƯỢC, qua đúng đường `path = 'override'` (nhật ký `score.override`, RB-5 đòi lý do —
    * xem dưới). GVBM bị chặn hẳn, không còn đường `assigned` nữa dù đúng môn mình phụ trách.
    */
+  /* PR-BV: xoá "-" ĐÃ CHỐT (Mock) = trả như trước khi gõ — quyền / khung riêng (`duocGoDau`), đi trước R11 và chặn vắng / huỷ bên dưới. */
+  if (patch.noShow === false) {
+    settleNoShows(today);
+    const dau = dauDaChot(attemptId, skill);
+    if (dau) return goVangDaChot(p, attemptId, skill, dau, today);
+  }
   const hoanTat = dotHoanTat(attemptId, today);
   let path = a.class_id ? scoreEditPath(p, a.class_id, skill, { lich_su: a.lich_su ?? 0 }) : null;
   if (hoanTat.hoanTat) {
@@ -1766,7 +1819,7 @@ export function saveScore(
         reason: 'Suy từ việc đã có điểm', actor: p.userId,
       });
     }
-    refreshOutcome(p, attemptId);
+    refreshOutcome(p, attemptId, !!o.thiLai);
     const fresh = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
     return { score: after, result: resultOf(fresh), attemptStatus: fresh.status };
   });

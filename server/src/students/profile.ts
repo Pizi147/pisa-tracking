@@ -577,8 +577,9 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       for (const r of conn.prepare(`SELECT attempt_id, skill, required, sit_status, absence_move_count FROM attempt_skills WHERE attempt_id IN (${ph})`)
         .all(...lo) as any[]) lichCua.set(r.attempt_id, [...(lichCua.get(r.attempt_id) ?? []), r]);
       for (const r of conn.prepare(
-        `SELECT s.*, u.full_name AS entered_by_name, g.full_name AS examiner_user_name FROM assessment_scores s
-           LEFT JOIN users u ON u.id = s.entered_by LEFT JOIN users g ON g.id = s.examiner_user_id WHERE s.attempt_id IN (${ph})`,
+        `SELECT s.*, u.full_name AS entered_by_name, g.full_name AS examiner_user_name, ns.week_start AS no_show_week_start FROM assessment_scores s
+           LEFT JOIN users u ON u.id = s.entered_by LEFT JOIN users g ON g.id = s.examiner_user_id
+           LEFT JOIN report_periods ns ON ns.id = s.no_show_period_id WHERE s.attempt_id IN (${ph})`,
       ).all(...lo) as any[]) diemCua.get(r.attempt_id)!.push(r);
     });
     for (const [id, rows] of lichCua) {
