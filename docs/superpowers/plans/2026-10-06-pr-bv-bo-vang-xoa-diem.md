@@ -231,9 +231,9 @@ lớp thường, lỗi regular.ts), phép kiểm V1–V12 / L1–L4 / C1–C6 / 
 | G6 | Không mở lại Case đóng do MTa T2 (dời vượt, `ket_qua_huy`) | Ngoài phạm vi; MTa G9 đã chốt |
 | G7 | Không `tinhLaiMtCu` khi trả lịch | Trả về đúng lịch đã có, không phải xếp mới |
 
-## Câu hỏi cho chủ sản phẩm (session code theo khuyến nghị nếu chưa trả lời)
+## Câu hỏi cho chủ sản phẩm — ĐÃ TRẢ LỜI 06/10
 - **Q1 — Lịch sử ô ở lưới Mock Test (FT):** lưới FT không có ⋯ từng ô; điểm cũ hiện xem ở **hồ sơ Mock › Lịch sử** (bấm tên em). (A) Giữ
-  như vậy. (B) Thêm mục "Lịch sử" khi bấm vào ô (thêm giao diện). **Khuyến nghị A** (giao diện không đổi, đúng ý "làm gọn").
+  như vậy. (B) Thêm mục "Lịch sử" khi bấm vào ô (thêm giao diện). **Chủ sản phẩm chọn A (06/10).**
 
 ## Migrate
 Không. (Task 0 mục 8: nếu thiếu cột `system_close_reason` thì dùng tiền tố `outcome_note`, vẫn không migrate.)

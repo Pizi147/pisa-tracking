@@ -179,7 +179,7 @@ Chủ sản phẩm 05/10 đã chốt (mockup `thiet-ke/mockup-test-mt-2026-10-05
 
 Đợt 2 (PHH, SO, DH) và U12 đã xong, xem mục 2.
 
-### PR-BV · Xoá "-" trả lại như cũ + đường lui điểm (M) — chủ sản phẩm chốt 06/10 **bản 2** (bản 1 không duyệt: quá phức tạp). Kế hoạch `docs/superpowers/plans/2026-10-06-pr-bv-bo-vang-xoa-diem.md` + mockup `thiet-ke/mockup-bo-vang-xoa-diem-2026-10-06.html` **chờ duyệt** (Q1 cuối kế hoạch)
+### PR-BV · Xoá "-" trả lại như cũ + đường lui điểm (M) — chủ sản phẩm chốt 06/10 **bản 2** (bản 1 không duyệt: quá phức tạp). Kế hoạch `docs/superpowers/plans/2026-10-06-pr-bv-bo-vang-xoa-diem.md` + mockup `thiet-ke/mockup-bo-vang-xoa-diem-2026-10-06.html` **chờ duyệt mockup** (Q1 đã trả lời: A — Lịch sử FT giữ ở hồ sơ Mock)
 Nguồn: `docs/superpowers/specs/2026-10-06-ra-soat-duong-lui.md`. Chạy **sau MTa (#212) và MTb** (chung `attempts.ts`, `regular.ts`, `absence.ts`, `ScoreEntry.tsx`…), mockup duyệt trước.
 - **Vắng:** gõ "-" = vắng, **xoá "-" = hết vắng** (không nút mới). Xoá "-" đã chốt → máy chủ trả như trước khi gõ: lịch cũ, trừ lần vắng, rút đề nghị / thẻ chưa xử lý, kỹ năng huỷ do vắng lần 2 trở lại; quyết định của người giữ nguyên. Ai: GV chấm, GVCN trong khung chấm (tuần thi → hết thứ Tư tuần sau); QL / Quản trị mọi lúc.
 - **Điểm:** tẩy ô + Lưu = xoá (MTa T22); không kho khôi phục, không xoá hàng loạt. Nhập lại điểm sau khi xoá → **mở lại đúng Case** lần xoá đã đóng. Lịch sử ô lớp thường phải hiện điểm cũ (nay thiếu).
