@@ -2,7 +2,7 @@
  * LỊCH MT FAST TRACK — một nguồn cho web, máy chủ và lệnh ops (PR-MT, đặc tả 27/09 §5.2 M1–M8, T33–T36, T42, Q-B).
  *
  *   lịch mặc định   LT1/LT2: MT1/MT2/MT3 ở tuần học 6/12/16 · RF: MT1/MT2 ở tuần học 4/8 · lớp thường: không có
- *   MT lịch sử      lượt có tuần thi kết thúc TRƯỚC ngày tạo lượt — cờ `lich_su` lưu lúc tạo, không suy lại khi đọc (M-13)
+ *   MT cũ           (PR-MTa T1) lượt XẾP vào tuần thi cách tuần hiện tại ≥ 2 tuần — cờ `lich_su` tính lúc xếp/dời, không suy lại khi đọc
  *   cửa sổ Case     chỉ lượt lịch sử có tuần thi trong 4 tuần trước ngày tạo mới sinh Case/PA quy chế/Phối hợp (M4)
  *   đánh số         liền mạch: MT(n) chỉ tạo khi đã có MT(n−1); số huỷ KHÔNG điểm được dùng lại (Q-B)
  */
@@ -10,7 +10,6 @@ import { MOCK_FT_STUDY_WEEK } from './fasttrack.ts';
 import { addDaysIso } from './sos.ts';
 import { mondayOfDate } from './week.ts';
 import { tuanLich } from './hienThiNgay.ts';
-import { nhanDot } from './phanTich.ts';
 
 export const CUA_SO_CASE_LICH_SU_NGAY = 28;
 /** T37: một lộ trình tối đa MT8. */
@@ -30,9 +29,14 @@ export function tuanHocCuaMt(route: string | null, n: number): number {
   return MOCK_FT_STUDY_WEEK[n] ?? 16 + 4 * (n - 3);
 }
 
-/** T34: Chủ nhật tuần thi muộn nhất đã qua trước ngày tạo lượt. So NGÀY KẾT THÚC tuần, không so tuần bắt đầu. */
+/** Tuần (Chủ nhật `tuanKetThucMuonNhat`) đã kết thúc trước ngày `ngayTao`. So NGÀY KẾT THÚC tuần. Không phân loại MT — dùng `laMtCu`. */
 export function laLichSu(tuanKetThucMuonNhat: string, ngayTao: string): boolean {
   return tuanKetThucMuonNhat.slice(0, 10) < ngayTao.slice(0, 10);
+}
+
+/** T1 (PR-MTa): Chủ nhật tuần thi muộn nhất < thứ Hai của tuần trước (tuần thi cách tuần hiện tại ≥ 2 tuần). Tuần trước = MT thường. */
+export function laMtCu(tuanKetThucMuonNhat: string, homNay: string): boolean {
+  return tuanKetThucMuonNhat.slice(0, 10) < addDaysIso(mondayOfDate(homNay), -7);
 }
 
 /** M4: tuần thi kết thúc trong 28 ngày trước ngày tạo (biên tính là trong). */
@@ -67,19 +71,14 @@ export function kiemSoMtMoi(ds: LuotSo[], n: number): string | null {
 }
 
 /**
- * K2-33(1), Q8: tuần đã qua CHỈ để TẠO MT lịch sử — mọi kỹ năng đều tuần đã qua VÀ em vào web sau các tuần đó.
- * `ketThuc` = Chủ nhật tuần thi của từng kỹ năng (so Chủ nhật, không so thứ Hai).
+ * T1/T4 (PR-MTa, thay `kiemTuanDaQua`): tuần đã qua chỉ Quản lý / Quản trị (`quanLy` = có PLAN_WEEK) xếp được — không chặn theo ngày
+ * em vào web, không chặn trộn tuần qua / tới. `ketThuc` = Chủ nhật tuần thi từng kỹ năng. `quaTuan` → web vẽ một dòng vàng;
+ * `mtCu` = lượt sẽ là MT cũ (theo tuần muộn nhất).
  */
-export function kiemTuanDaQua(o: { ketThuc: string[]; ngayVaoWeb: string; homNay: string; taoMoi: boolean }): { cau: string | null; lichSu: boolean } {
-  const qua = o.ketThuc.filter((w) => laLichSu(w, o.homNay));
-  if (!qua.length) return { cau: null, lichSu: false };
-  if (!o.taoMoi) return { cau: 'Không dời vào tuần đã qua — chọn tuần từ tuần này trở đi.', lichSu: false };
-  if (qua.length < o.ketThuc.length) return { cau: 'Tuần đã qua chỉ dùng để nhập MT lịch sử — chọn tuần đã qua cho mọi kỹ năng.', lichSu: false };
-  const muonNhat = [...qua].sort()[qua.length - 1];
-  if (o.ngayVaoWeb.slice(0, 10) <= muonNhat.slice(0, 10)) {
-    return { cau: 'Em đã có trên web từ trước tuần này — không xếp MT lịch sử vào tuần em đã học trên web.', lichSu: false };
-  }
-  return { cau: null, lichSu: true };
+export function kiemTuanXep(o: { ketThuc: string[]; homNay: string; quanLy: boolean }): { cau: string | null; quaTuan: boolean; mtCu: boolean } {
+  const quaTuan = o.ketThuc.some((w) => laLichSu(w, o.homNay));
+  const mtCu = o.ketThuc.length > 0 && laMtCu([...o.ketThuc].sort()[o.ketThuc.length - 1], o.homNay);
+  return { cau: !o.quanLy && quaTuan ? 'Chọn tuần từ tuần này trở đi.' : null, quaTuan, mtCu };
 }
 
 /** Rà #120: "Đã thi tới MT" = d mà MT1…MT(d) có MT rơi vào tuần chưa qua → số các MT đó (để nhắc lùi Tuần bắt đầu). */
@@ -146,22 +145,34 @@ export function coMocTiepTheo(o: { coMoc: boolean; route: string | null; mtCuoi:
 export type LuotLanCan = { attemptId: number; attemptNo: number; kind: string; tuanDau: string | null; coDiem: boolean; daThi: boolean; huy: boolean };
 
 /**
- * Q-0310-1/2 + D1: dời lượt `attemptNo` tới tuần cuối `tuanCuoiMoi` thì mọi lượt SAU có tuần sớm nhất ≤ tuần đó là "bị vượt" —
- * huỷ lịch (bỏ tuần, giữ lượt) khi người dời xác nhận. Lượt bị vượt đã có điểm / đã thi → chặn: không bao giờ bỏ lịch phần đã thi.
+ * Q-0310-1 + D1 + T2 (PR-MTa): dời lượt `attemptNo` tới tuần cuối `tuanCuoiMoi` thì mọi lượt SAU có tuần sớm nhất ≤ tuần đó là "bị vượt"
+ * — bỏ lịch; có điểm thì kết quả bị huỷ (lưu ở `ket_qua_huy`, khôi phục được), không còn chặn.
  * Bỏ qua lượt trước, lượt đã huỷ, lượt chưa xếp tuần (`tuanDau` null — không có gì để vượt).
  */
-export function luotBiVuot(ds: readonly LuotLanCan[], o: { attemptNo: number; tuanCuoiMoi: string }): { biVuot: LuotLanCan[]; chan: string | null } {
-  const biVuot = ds
-    .filter((x) => x.attemptNo > o.attemptNo && !x.huy && x.tuanDau !== null && x.tuanDau.slice(0, 10) <= o.tuanCuoiMoi.slice(0, 10))
-    .sort((a, b) => a.attemptNo - b.attemptNo);
-  const vuong = biVuot.find((x) => x.coDiem) ?? biVuot.find((x) => x.daThi);
-  if (!vuong) return { biVuot, chan: null };
+export function luotBiVuot(ds: readonly LuotLanCan[], o: { attemptNo: number; tuanCuoiMoi: string }): { biVuot: LuotLanCan[] } {
   return {
-    biVuot,
-    chan: `${nhanDot(vuong.kind, vuong.attemptNo)} ${vuong.coDiem ? 'đã có điểm' : 'đã thi'} — không huỷ lịch được. `
-      + `Dời ${nhanDot(vuong.kind, o.attemptNo)} vào tuần trước ${tuanLich(vuong.tuanDau)}.`,
+    biVuot: ds
+      .filter((x) => x.attemptNo > o.attemptNo && !x.huy && x.tuanDau !== null && x.tuanDau.slice(0, 10) <= o.tuanCuoiMoi.slice(0, 10))
+      .sort((a, b) => a.attemptNo - b.attemptNo),
   };
 }
+
+/** Một lượt sẽ bị vượt — popup dời vượt (mockup phần 4). `soDiem` = số KỸ NĂNG có điểm (W1/W2 tính một). */
+export type LuotSeHuyLich = { attemptId: number; nhan: string; tuan: string; soDiem: number; soCase: number };
+
+/** 'MT2: huỷ 4 điểm, đóng 1 Case' · 'MT2: huỷ 1 điểm' · 'MT3: bỏ lịch'. */
+export function dongHeQuaVuot(x: LuotSeHuyLich): string {
+  if (!x.soDiem) return `${x.nhan}: bỏ lịch`;
+  return `${x.nhan}: huỷ ${x.soDiem} điểm${x.soCase ? `, đóng ${x.soCase} Case` : ''}`;
+}
+
+/** Popup + lý do chỉ khi có lượt bị vượt đã có điểm (T2 — chưa điểm thì chỉ dòng vàng). */
+export function canLyDoVuot(ds: readonly LuotSeHuyLich[]): boolean {
+  return ds.some((x) => x.soDiem > 0);
+}
+
+/** Kết quả đã huỷ (chưa khôi phục) của một lượt (T2). `vuotBoi` = nhãn lượt đã vượt ("MT1"). */
+export type KetQuaHuy = { id: number; attemptId: number; luc: string; lyDo: string; nguoi: string | null; soDiem: number; vuotBoi: string | null };
 
 /** Dòng đỏ trên hộp xếp lịch (PR-LM): "Lưu sẽ huỷ lịch MT2 (W3 JUL) và MT3 (W1 SEP) — hai lượt này về Chưa xếp lịch." */
 export function cauSeHuyLich(ds: readonly { nhan: string; tuan: string }[], homNay?: string | null): string {

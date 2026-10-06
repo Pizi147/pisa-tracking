@@ -37,7 +37,7 @@ const GOI_Y_COT: Partial<Record<CotNhap, string>> = {
   entryWriting: 'Writing TỔNG trên phiếu điểm — không chia W1/W2.',
   target: `Band 0–9, bước 0,5. Gõ KCK (hoặc -) nếu em không cam kết đầu ra: không kỳ vọng MT, không tính SOS. Bỏ trống = chưa có Target. Lớp thường: chỉ để theo dõi.`,
   examDate: 'Gõ dd/mm/yyyy nếu đã biết ngày, mm/yyyy nếu mới biết tháng.',
-  daThiToiMt: 'Em cũ đã thi tới MT mấy ngoài web — web tạo sẵn các lượt đó là MT lịch sử để nhập điểm bù. Bỏ trống = em mới.',
+  daThiToiMt: 'Em cũ đã thi tới MT mấy ngoài web — web tạo sẵn các lượt đó là MT cũ để nhập điểm bù. Bỏ trống = em mới.',
   startWeek: 'Theo tuần chọn ở đầu panel; đổi riêng từng dòng được.',
 };
 
@@ -155,7 +155,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
     : startWeek ? 'Đổi ở đây thì mọi dòng chưa sửa tay đổi theo.'
     : !cls.start_date ? 'Lớp chưa có ngày khai giảng nên mặc định tuần này. Đổi ở đây thì mọi dòng chưa sửa tay đổi theo.'
     : lopThuong ? 'Lấy sẵn tuần khai giảng của lớp. Đổi ở đây thì mọi dòng chưa sửa tay đổi theo.'
-    : 'Lấy sẵn tuần khai giảng của lớp. Em vào muộn thì đổi tuần — cột Trạng thái báo trước MT nào sẽ là MT lịch sử.';
+    : 'Lấy sẵn tuần khai giảng của lớp. Em vào muộn thì đổi tuần — cột Trạng thái báo trước MT nào sẽ là MT cũ.';
 
   const hoSoLop = classId ? `/hoc-vien/lop/${classId}` : null;
 
@@ -254,11 +254,11 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
             </Outcome>
             {!!ketQua.mt?.soLuotLichSu && (
               <span className="text-xs text-soon tabular-nums">
-                {ketQua.mt.soLuotLichSu} MT lịch sử chưa có điểm ({ketQua.mt.soEmCoLichSu} em)
+                {ketQua.mt.soLuotLichSu} MT cũ chưa có điểm ({ketQua.mt.soEmCoLichSu} em)
               </span>
             )}
             {ketQua.mt?.luotLichSuDau && (
-              <Link className="link text-xs" to={duongDotTest({ id: ketQua.mt.luotLichSuDau, kind: 'mock' })}>Nhập điểm MT lịch sử</Link>
+              <Link className="link text-xs" to={duongDotTest({ id: ketQua.mt.luotLichSuDau, kind: 'mock' })}>Nhập điểm MT cũ</Link>
             )}
             {hoSoLop && pathname !== hoSoLop && <Link className="link text-xs" to={hoSoLop}>Mở hồ sơ lớp</Link>}
           </div>

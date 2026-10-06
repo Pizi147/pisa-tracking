@@ -31,7 +31,6 @@ export const CHU_CHUYEN_LOP = {
 export const HUONG_LENH = ['len_lop', 'hoc_lai', 'fast_track', 'chuyen_lop', 'bao_luu', 'dung_hoc'] as const;
 export type HuongLenh = (typeof HUONG_LENH)[number];
 export type TrangThaiLenh = 'cho' | 'da_chuyen' | 'huy';
-export const LY_DO_LENH_TOI_THIEU = 3;
 export const NHAN_XET_TOI_THIEU = 15;
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
@@ -77,7 +76,7 @@ export function kiemDongLenh(d: {
   if (canLopDich(d.huong) && !d.lopDichId) return 'Chọn lớp chuyển đến';
   if (!tuanHopLe(d.tuan, d.homNay)) return 'Tuần bắt đầu phải từ tuần sau trở đi';
   const canLyDo = d.khacGoiY || d.huong === 'chuyen_lop' || d.huong === 'bao_luu' || d.huong === 'dung_hoc';
-  if (canLyDo && (d.lyDo ?? '').trim().length < LY_DO_LENH_TOI_THIEU) return 'Ghi lý do ngắn';
+  if (canLyDo && !(d.lyDo ?? '').trim()) return 'Ghi lý do ngắn';   // T7 (PR-MTa): không tối thiểu ký tự
   if (canLopDich(d.huong) && d.lopDichFt && !d.nguonFt && !mucTieuHopLe(d.mucTieu)) return 'Ghi Target (hoặc KCK)';
   if (d.huong === 'bao_luu' && !d.ngayXemLai) return 'Chọn tuần xem lại';
   return null;

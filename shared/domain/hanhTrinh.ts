@@ -389,8 +389,8 @@ export function nhanGhim(a: {
 }): NhanGhim {
   const ghep = (...phan: (string | null | undefined)[]) => phan.filter(Boolean).join(' · ');
   if (a.cheDo === 'ielts') {
-    const so = `MT${a.attemptNo}`;   // bản gọn (điện thoại) không kèm "lịch sử"
-    const mt = a.lichSu ? `${so} lịch sử` : so;
+    const so = `MT${a.attemptNo}`;   // bản gọn (điện thoại) không kèm "cũ"
+    const mt = a.lichSu ? `${so} cũ` : so;
     const tuan = a.tuan ? tuanLich(a.tuan, a.homNay) : null;
     if (a.soCoDiem === 0) return { chu: mt, gon: so, day: ghep(mt, tuan, a.lichSu ? 'nhập bù, không tính hạn' : 'chưa có điểm'), mau: 'tam', hai: [so, ''] };
     if (a.soCoDiem < a.soYeuCau) {

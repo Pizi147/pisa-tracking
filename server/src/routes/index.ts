@@ -35,6 +35,7 @@ const qScope = (req: Request): WorkScope | undefined => {
 import * as attemptSvc from '../fasttrack/attempts.ts';
 import * as skillScheduleSvc from '../fasttrack/skillSchedule.ts';
 import * as absenceSvc from '../fasttrack/absence.ts';
+import * as ketQuaHuySvc from '../fasttrack/ketQuaHuy.ts';
 import * as effectiveness from '../cases/effectiveness.ts';
 import * as cycleSvc from '../fasttrack/cycles.ts';
 import * as profileSvc from '../students/profile.ts';
@@ -498,6 +499,7 @@ api.post('/ke-hoach-test/hang-loat', requireAuth, wrap((req) => {
     dotTheoEm: req.body?.dotTheoEm && typeof req.body.dotTheoEm === 'object' ? req.body.dotTheoEm : undefined,
     thiLai: req.body?.thiLai && typeof req.body.thiLai === 'object' ? req.body.thiLai : undefined,
     lyDo: typeof req.body?.lyDo === 'string' ? req.body.lyDo : null,
+    xacNhanHuyLich: req.body?.xacNhanHuyLich === true,   // T2 (PR-MTa): popup gộp dời vượt đã xác nhận
   });
 }));
 
@@ -619,10 +621,16 @@ api.post('/attempts/:id/week', requireAuth, wrap((req) => {
     { force: req.body?.force === true, huyLichVuot: req.body?.xacNhanHuyLich === true });
 }));
 
-/** PR-LM (Q-0310-1): "Huỷ lịch" một lượt = bỏ tuần, giữ lượt — các kỹ năng chưa thi về "Chưa xếp lịch". Lý do bắt buộc. */
+/** PR-LM (Q-0310-1): "Huỷ lịch" một lượt = bỏ tuần, giữ lượt — các kỹ năng chưa thi về "Chưa xếp lịch". Lý do tuỳ chọn (T7). */
 api.post('/attempts/:id/bo-tuan', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return skillScheduleSvc.boTuanLuot(principalOf(req), pInt(req, 'id'), { lyDo: req.body?.lyDo ?? null });
+  return skillScheduleSvc.boTuanLuot(principalOf(req), pInt(req, 'id'), { lyDo: typeof req.body?.lyDo === 'string' ? req.body.lyDo : null });
+}));
+
+/** PR-MTa (T2): Quản lý khôi phục kết quả MT đã huỷ do dời vượt `{ lyDo? }`. */
+api.post('/attempts/:id/khoi-phuc-ket-qua', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return ketQuaHuySvc.khoiPhucKetQua(principalOf(req), pInt(req, 'id'), { lyDo: typeof req.body?.lyDo === 'string' ? req.body.lyDo : null });
 }));
 
 /** Đánh dấu một kỹ năng đánh giá là ngoài phạm vi yêu cầu của lượt này, hoặc bỏ đánh dấu. */
@@ -687,13 +695,28 @@ api.post('/attempts/:id/skills/:skill/restore', requireAuth, wrap((req) => {
   });
 }));
 
+/** PR-MTa (T3): GVCN / Quản lý "Xin dời" kỹ năng đã huỷ vì vắng 2 lần → thẻ Lịch thi ở Chờ duyệt `{ reason?, idempotencyKey? }`. */
+api.post('/attempts/:id/skills/:skill/xin-doi', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return absenceSvc.xinDoi(principalOf(req), pInt(req, 'id'), String(req.params.skill), {
+    lyDo: typeof req.body?.reason === 'string' ? req.body.reason : null,
+    idempotencyKey: typeof req.body?.idempotencyKey === 'string' ? req.body.idempotencyKey : null,
+  });
+}));
+
+/** PR-MTa (T3, Q3): Quản lý chốt "Không mock lại" — kỹ năng bỏ khỏi đợt `{ lyDo? }`. */
+api.post('/attempts/:id/skills/:skill/khong-mock-lai', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return absenceSvc.khongMockLai(principalOf(req), pInt(req, 'id'), String(req.params.skill), typeof req.body?.lyDo === 'string' ? req.body.lyDo : null);
+}));
+
 /** PR-XLMT (T38, K4-28): Báo vắng FT — ghi "-" mọi ô của kỹ năng + chốt ngay (lần 1 tự dời, lần 2 chờ Quản lý duyệt). */
 api.post('/attempts/:id/skills/:skill/bao-vang', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return absenceSvc.baoVang(principalOf(req), pInt(req, 'id'), String(req.params.skill), String(req.body?.lyDo ?? ''));
+  return absenceSvc.baoVang(principalOf(req), pInt(req, 'id'), String(req.params.skill), typeof req.body?.lyDo === 'string' ? req.body.lyDo : null);
 }));
 
-/** PR-XLMT (T38, rà #126): Huỷ điểm một kỹ năng FT — mọi ô chọn (W1/W2) trong một giao dịch, lý do bắt buộc. */
+/** PR-XLMT (T38, rà #126): Huỷ điểm một kỹ năng FT — mọi ô chọn (W1/W2) trong một giao dịch; lý do tuỳ chọn (PR-MTa, 06/10). */
 api.post('/attempts/:id/skills/:skill/huy-diem', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return keHoachSvc.huyDiem(principalOf(req), {
@@ -743,6 +766,8 @@ api.put('/attempts/:id/scores/:skill', requireAuth, wrap((req) => {
   return attemptSvc.saveScore(principalOf(req), pInt(req, 'id'), skill, {
     rawScore: b.rawScore, rawTotal: b.rawTotal,
     criteria: b.criteria, resultDate: b.resultDate, note: b.note,
+    /* T10 (PR-MTa): band trực tiếp (L/R thay số câu, W1/W2/S thay 4 tiêu chí) — `saveScore` kiểm bậc 0.5, không cả hai. */
+    band: b.band,
     /* RB-5 — lý do hiệu chỉnh khi sửa ô đã có điểm; máy chủ tự quyết khi nào bắt buộc. */
     lyDo: b.lyDo,
     /* Dấu '-' "không có bài" (PR-G) — chỉ nhận đúng true/false, không hiểu chuỗi lạ thành lệnh. */
@@ -1741,9 +1766,9 @@ api.post('/students/:id/transfer', requireAuth, wrap((req) => {
     nguoiNhan, mucTieu, thangThi,
   } = req.body ?? {};
   if (!toClassId) throw badRequest('Cần chọn lớp chuyển đến.');
-  /* PR-CT: panel mới gửi thẳng `lyDo` (một ô chữ ≥ 3 ký tự); đường lý do chọn nhanh cũ giữ cho phép kiểm và client cũ. */
+  /* PR-CT: panel mới gửi thẳng `lyDo` (một ô chữ, không trống — T7); đường lý do chọn nhanh cũ giữ cho phép kiểm và client cũ. */
   const lyDoTuDo = typeof req.body?.lyDo === 'string' ? chuTuDo(req.body.lyDo, 'Lý do chuyển lớp', 2000) ?? '' : '';   // PR-Dọn (Q4, quét #24)
-  if (req.body?.lyDo !== undefined && lyDoTuDo.length < 3) throw badRequest('Ghi lý do chuyển lớp (ít nhất 3 ký tự).');
+  if (req.body?.lyDo !== undefined && !lyDoTuDo) throw badRequest('Ghi lý do chuyển lớp.');
   /* RB-3: lý do chọn nhanh BẮT BUỘC; "Khác" phải ghi rõ ≥ 3 ký tự (T13). */
   if (!lyDoTuDo && laKhac(reasonCode)) {
     const loi = kiemGhiRoKhac(reasonNote);

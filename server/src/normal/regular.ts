@@ -5,17 +5,17 @@ import { dongBoBaoPh, monBaoPh } from '../yThuc/phoiHop.ts';
 import { raiseSignal, reconcileCorrectedSignals } from '../cases/signals.ts';
 import {
   ATTEMPT_KIND_LABEL, ATTEMPT_KIND_SHORT, PERMISSIONS, RATIO_PASS_THRESHOLD, boMonLich, boTroGiuaKhoa,
-  caseCategoriesFor, categoryOf, goiYCuoiKhoa, kiemLyDo, kiemLyDoThaoTac, ngay, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanKeTiep, tuanLich,
+  caseCategoriesFor, categoryOf, goiYCuoiKhoa, ngay, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanKeTiep, tuanLich,
   type AssessedSkill, type AttemptKind, type CaseCategory, type RatioOutcome, type SosLevel,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, editableSkills, isCoreTeacherOf, require_, scoreEditPath, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
-import { ensurePeriod, ensurePeriods } from '../platform/week.ts';
+import { ensurePeriod, ensurePeriods, mondayOf, skillScoreDeadline } from '../platform/week.ts';
 import { regularSkillViews, weekStartOf } from '../fasttrack/attempts.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
-import { checkSkillWeekMove, ensureSkillRows, loadSkillRows, setSkillWeek } from '../fasttrack/skillSchedule.ts';
+import { checkSkillWeekMove, ensureSkillRows, kiemDaToiTuanThi, loadSkillRows, setSkillWeek } from '../fasttrack/skillSchedule.ts';
 import { dotHoanTat, dotHoanTatMany, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
 import { canRequest } from '../fasttrack/absence.ts';
 import { classProgress, classProgressMany } from '../classes/schedule.ts';
@@ -225,19 +225,17 @@ export function evaluateRegular(
 }
 
 /**
- * Hạn nhập điểm của một bài kiểm tra lớp thường: HẾT CHỦ NHẬT của chính tuần đó.
- *
- * Khác lớp FT (hạn là thứ Tư tuần kế tiếp): lớp thường làm bài và chấm ngay trong tuần,
- * không có buổi Speaking lệch ngày phải chờ. Chưa có tuần kế hoạch thì KHÔNG có hạn —
- * trả về null thay vì dựng một hạn giả.
+ * Hạn nhập điểm của một bài kiểm tra lớp thường: HẾT THỨ TƯ tuần kế tiếp — như Fast Track (T19, PR-MTa, chủ sản phẩm 06/10; trước
+ * đây là Chủ nhật của chính tuần đó). Một luật với `skillScoreDeadline`. Chưa có tuần kế hoạch thì KHÔNG có hạn — trả về null thay vì
+ * dựng một hạn giả.
  */
 export function regularDeadline(attempt: { planned_period_id?: number | null; deadline_override?: string | null }): {
-  date: string | null; source: 'override' | 'week_end' | 'none';
+  date: string | null; source: 'override' | 'default' | 'none';
 } {
   if (attempt.deadline_override) return { date: attempt.deadline_override, source: 'override' };
   if (!attempt.planned_period_id) return { date: null, source: 'none' };
-  const rp = db().prepare('SELECT week_end FROM report_periods WHERE id = ?').get(attempt.planned_period_id) as any;
-  return rp ? { date: rp.week_end, source: 'week_end' } : { date: null, source: 'none' };
+  const rp = db().prepare('SELECT week_start FROM report_periods WHERE id = ?').get(attempt.planned_period_id) as any;
+  return rp ? { date: skillScoreDeadline('ratio', rp.week_start), source: 'default' } : { date: null, source: 'none' };
 }
 
 export function regularResultOf(attemptId: number): RegularResult {
@@ -508,6 +506,8 @@ export function saveRegularScore(
       'Bạn chỉ nhập được điểm của kỹ năng mình được phân công.');
   }
 
+  /* T19 (PR-MTa): ghi một điểm (không phải xoá) → môn phải tới tuần thi — cùng chốt với Mock. */
+  if (patch.score !== undefined && patch.score !== null) kiemDaToiTuanThi(ensureSkillRows(attemptId).find((r) => r.skill === skill) ?? { week_start: null }, today);
   const existing = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?')
     .get(attemptId, skill) as any;
   const before = existing ? { ...existing } : null;
@@ -529,12 +529,7 @@ export function saveRegularScore(
    * RB-5 — cùng luật với Fast Track: đổi (hay xoá) một điểm đã có thì phải ghi lý do. Điểm lớp thường là cặp
    * "số câu đúng / tổng số câu" — đổi tổng là đổi tỉ lệ đạt, nên cũng tính là sửa. Lưu lại đúng cặp cũ thì không.
    */
-  const doiGiaTri = (existing?.raw_score ?? null) !== null
-    && ((score ?? null) !== (existing?.raw_score ?? null) || (total ?? null) !== (existing?.raw_total ?? null));
-  if (doiGiaTri) {
-    const loi = kiemLyDo(patch.lyDo);
-    if (loi) throw badRequest(loi);
-  }
+  /* T7 + T22 (PR-MTa): đổi giá trị hay xoá điểm đã có → lý do tuỳ chọn. */
 
   /* PR-Pb2-b (Q13): cùng luật FT — ngày nghiệp vụ lần đầu ô có điểm, sửa sau giữ nguyên, xoá điểm về NULL. */
   const nhapDau = (score ?? null) !== null ? existing?.nhap_dau_ngay ?? today : null;
@@ -606,7 +601,6 @@ export function reportRegularNoShow(
   const prog = a.class_id ? programmeOfClass(a.class_id) : null;
   if (!prog || prog.scoringMode !== 'ratio') throw badRequest('Lượt này không thuộc lớp thường.');
   if (!prog.skills.includes(skill)) throw badRequest(`Lớp ${prog.name} không có kỹ năng ${tenMon(prog.code, skill)}.`);
-  if (lyDo !== undefined && bat) { const loi = kiemLyDoThaoTac('Báo vắng', lyDo); if (loi) throw badRequest(loi); }
 
   /*
    * Ghi dấu là việc của NGƯỜI CHẤM môn đó (hoặc người nhập bù) — cùng cửa với nhập điểm.
@@ -694,7 +688,7 @@ export function reportRegularNoShow(
       }
       /* Dời bằng ĐÚNG hàm dời lịch chung — `force` chỉ vượt được cảnh báo, không bao giờ vượt được chặn. */
       setSkillWeek(p, attemptId, skill, moi.id, {
-        reason: lyDo !== undefined ? `Báo vắng: ${lyDo.trim()}` : `Báo "-": em không làm bài tuần ${tuanLich(cu.weekStart, today)} — môn này dời sang tuần sau (C08).`,
+        reason: lyDo !== undefined ? (lyDo.trim() ? `Báo vắng: ${lyDo.trim()}` : 'Báo vắng') : `Báo "-": em không làm bài tuần ${tuanLich(cu.weekStart, today)} — môn này dời sang tuần sau (C08).`,
         force: true, today, ghiBuDau: true,
       });
       writeAudit({
@@ -996,7 +990,7 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
       return {
         attemptId: a.id,
         deadline: dl,
-        deadlineSource: dl ? 'week_end' : 'none',
+        deadlineSource: dl ? 'default' : 'none',
         hoanTat: hoanTat.hoanTat,
         chuNhatCuoi: hoanTat.chuNhatCuoi,
         /** Hạn chấm CỦA TỪNG MÔN, kèm tuần thi và trạng thái — mục 10.5. */
@@ -1018,7 +1012,10 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
             /** Thứ Hai của tuần `movedFrom` — để lưới viết "trả lịch về W3 SEP" bằng `tuanLich`. */
             movedFromStart: row?.no_show_period_id ? periodStart.get(row.no_show_period_id) ?? null : null,
             /** Người đang xem có nhập được điểm / ghi được "-" ở ô này không (phân công hoặc nhập bù). */
-            canEdit: hoanTat.hoanTat ? suaSauHoanTat : (canEditSkill.get(k) ?? false),
+            canEdit: (hoanTat.hoanTat ? suaSauHoanTat : (canEditSkill.get(k) ?? false))
+              /* T19 (PR-MTa): môn chưa tới tuần thi / chưa xếp tuần → ô khoá như máy chủ, kể cả ô đã có điểm (rà #212); ô mang dấu "-"
+               * (đã dời sang tuần sau) vẫn mở để gỡ dấu. */
+              && (!!row?.no_show_period_id || (!!v.weekStart && String(v.weekStart).slice(0, 10) <= mondayOf(today))),
             /* R11: đánh dấu "bài đã hoàn tất" cho MỌI người xem — Quản lý vẫn `khoa && canEdit` (sửa qua hộp lý do). */
             khoa: hoanTat.hoanTat,
           };

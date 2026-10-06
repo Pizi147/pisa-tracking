@@ -93,7 +93,12 @@ export async function runPrDlTests(t: YThucTestKit) {
    */
   const bam = (x: unknown) => createHash('sha256')
     .update(JSON.stringify(x, (k, v) => (k.endsWith('At') || k === 'chuNhatCuoi' ? undefined : v))).digest('hex').slice(0, 16);
-  const ANH_CHUP = { tuan: '8055f110c2c9b2a2', moi: 'ebacabae595c2807' };   // chụp lại khi gộp main 06/10 (U12/K26/SL chạy trước đổi dữ liệu), bằng mã 666dcfbf
+  /*
+   * Chụp lại 06/10 (PR-MTa): T1 đổi cờ MT cũ của lượt seed (tuần trước nay là MT thường) và các phép kiểm chạy trước (PR-MT, PR-XLMT, PR-LM)
+   * đổi dữ liệu MB FT 101. Không chụp được bằng mã 666dcfbf (gọi `kiemLyDo` đã bỏ ở T7) — băm của mã hiện tại; khẳng định `idsTuan` bên dưới
+   * vẫn đối chiếu độc lập tập lượt theo tuần. Chụp lại cho T19 (hạn lớp thường thứ Tư tuần sau, ô trước tuần thi khoá) và T22 (DL-4 xoá rồi nhập lại ô; GVCN sửa ô MT cũ), rà #212 (ô có điểm ở tuần chưa tới khoá; "-" MT cũ).
+   */
+  const ANH_CHUP = { tuan: '90f4386223866d98', moi: '6de1eea906cdf006' };
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id
@@ -380,15 +385,16 @@ export async function runPrDlTests(t: YThucTestKit) {
       assert(ds.macDinh === 'thuong:progress', `macDinh ${ds.macDinh}`);
     });
 
-    await t.checkAsync('DL-4 PUT một ô (đường ghi cũ) → oTrong giảm 1; sửa ô đã có điểm không lý do bị từ chối (override)', async () => {
+    await t.checkAsync('DL-4 PUT một ô (đường ghi cũ) → oTrong giảm 1; xoá ô đã có điểm không lý do → được (PR-MTa T22)', async () => {
       const truoc = luotCua((await goi(QL.userId, `/classes/${LOP}/diem-theo-luot`)).body, 'mt:2').oTrong;
       const w = await goi(QL.userId, `/attempts/${anh.aid}/scores/reading`, 'PUT', { rawScore: 28 });
       assert(w.status === 200, `PUT reading: ${w.status} ${JSON.stringify(w.body)}`);
       const sau = luotCua((await goi(QL.userId, `/classes/${LOP}/diem-theo-luot`)).body, 'mt:2').oTrong;
       assert(sau === truoc - 1, `oTrong ${truoc} → ${sau}`);
-      const s = await goi(QL.userId, `/attempts/${anh.aid}/scores/listening`, 'PUT', { rawScore: 35 });
-      assert(s.status >= 400 && s.status < 500, `sửa không lý do phải bị từ chối: ${s.status}`);
-      assert(get(`SELECT raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, anh.aid).raw_score === 30, 'điểm cũ bị đổi');
+      /* PR-MTa T7 thay RB-5 (sửa điểm — lý do tuỳ chọn); T22 thay "xoá cần lý do": xoá trắng ô cũng tuỳ chọn. Nhập lại 30 cho các phép kiểm sau. */
+      const s = await goi(QL.userId, `/attempts/${anh.aid}/scores/listening`, 'PUT', { rawScore: null });
+      assert(s.status === 200 && get(`SELECT raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, anh.aid).raw_score === null, `xoá: ${s.status}`);
+      assert((await goi(QL.userId, `/attempts/${anh.aid}/scores/listening`, 'PUT', { rawScore: 30 })).status === 200, 'nhập lại');
     });
 
     await t.checkAsync('DL-4 /diem-theo-lop/lop: GV thấy lớp mình dạy; GVCN thấy lớp chủ nhiệm; QL thấy lớp chi nhánh; oTrong = tổng các lượt', async () => {
@@ -457,7 +463,7 @@ export async function runPrDlTests(t: YThucTestKit) {
   check('DL-5 DiemTheoLop: chữ đúng đặc tả, tablist, hỏi khi còn ô đang lưu, nhớ "Chỉ ô còn trống" bọc try/catch', () => {
     const f = doc('web/src/modules/cham/DiemTheoLop.tsx');
     for (const chu of ['Còn ô đang lưu. Đợi lưu xong rồi chuyển?', 'Chưa có lịch {b!.luot.nhan} — ', 'xếp ở panel Lộ trình', "{ mo: 'lo-trinh' }", 'Chỉ ô còn trống',
-      'là lượt lịch sử (trước khi lớp dùng web): nhập bù điểm, không nhận dấu "-".',
+      'là MT cũ: nhập bù điểm; "-" là em không dự thi.',   // PR-MTa: "MT cũ"; T23 thay "không nhận dấu".
       'Lớp chưa có lượt Test nào. Xếp lịch ở Kế hoạch Test.', 'role="tablist"', 'colSpan', 'onRetry={'])
       assert(f.includes(chu) || doc('web/src/modules/cham/LuoiFT.tsx').includes(chu), `thiếu: ${chu}`);
     assert(/try\s*\{[^}]*localStorage\.getItem/.test(f) && /try\s*\{[^}]*localStorage\.setItem/.test(f), 'localStorage phải bọc try/catch');

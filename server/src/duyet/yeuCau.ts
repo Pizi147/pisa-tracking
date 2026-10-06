@@ -23,7 +23,6 @@ const P_DUYET = PERMISSIONS.REQUEST_APPROVE;
 /** "Đã xử lý" trong hộp và "bị từ chối" ở Tổng quan GV nhìn lại 30 ngày; "Yêu cầu của tôi" 60 ngày. */
 const NGAY_DA_XU_LY = 30;
 const NGAY_CUA_TOI = 60;
-const DO_DAI_LY_DO = 3;
 
 /**
  * MỐC GỬI / MỐC XỬ LÝ của thẻ theo NGÀY NGHIỆP VỤ. Bản chính (ngày nghiệp vụ = hôm nay) → giờ thật. Bản demo (ngày demo cố định,
@@ -422,7 +421,7 @@ export function duyetYeuCau(p: Principal, id: number, v: { ghiChu?: string | nul
 
 export function tuChoiYeuCau(p: Principal, id: number, lyDo: unknown) {
   const ld = typeof lyDo === 'string' ? chuTuDo(lyDo, 'Lý do', 2000) ?? '' : '';   // PR-Dọn (Q4, quét #24)
-  if (ld.length < DO_DAI_LY_DO) throw badRequest(`Ghi lý do từ chối (ít nhất ${DO_DAI_LY_DO} ký tự).`);
+  if (!ld) throw badRequest('Ghi lý do từ chối.');   // T7 (PR-MTa): không tối thiểu ký tự
   return quyetDinh(p, id, (yc, meta) => {
     if (meta.kieuNut !== 'duyet-tu-choi') throw badRequest('Yêu cầu này không có Từ chối.');
     dinhNghiaCua(yc.loai)?.khiTuChoi?.(p, yc, ld);
@@ -434,7 +433,7 @@ export function tuChoiYeuCau(p: Principal, id: number, lyDo: unknown) {
 
 export function traLoiYeuCau(p: Principal, id: number, traLoi: unknown) {
   const tl = typeof traLoi === 'string' ? chuTuDo(traLoi, 'Câu trả lời', 2000) ?? '' : '';   // PR-Dọn (Q4, quét #24)
-  if (tl.length < DO_DAI_LY_DO) throw badRequest(`Ghi câu trả lời (ít nhất ${DO_DAI_LY_DO} ký tự).`);
+  if (!tl) throw badRequest('Ghi câu trả lời.');
   return quyetDinh(p, id, (yc, meta) => {
     if (meta.kieuNut !== 'tra-loi') throw badRequest('Yêu cầu này cần Duyệt hoặc Từ chối, không phải Trả lời.');
     dinhNghiaCua(yc.loai)?.khiTraLoi?.(p, yc, tl);

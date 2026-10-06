@@ -677,8 +677,8 @@ export function editMgmtTask(p: Principal, taskId: number, patch: {
      */
     if (t.due_date && patch.due !== t.due_date) {
       const ly = (patch.lyDoDoiHan ?? '').trim();
-      if (ly.length < 2 || ly.length > 200) {
-        throw badRequest('Dời hạn phải ghi lý do (2–200 ký tự).');
+      if (!ly || ly.length > 200) {
+        throw badRequest('Dời hạn phải ghi lý do (tối đa 200 ký tự).');   // T7 (PR-MTa): không tối thiểu ký tự
       }
       historyRows.push({ field: 'due_date', oldValue: t.due_date, newValue: patch.due, reason: ly });
     } else if (!t.due_date && patch.due) {

@@ -479,6 +479,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 06/10/2026 | PR-MTa (Opus 5.5) · `pr-mta-luat-mock-test` | T1 MT cũ (≥ 2 tuần, lúc xếp/dời) · T4 QL xếp tuần đã qua (cả lớp thường) · T2 dời vượt huỷ kết quả → `ket_qua_huy`, khôi phục · T3 vắng lần 2 huỷ, Xin dời, Không mock lại · T7 lý do chỉ 4 trường hợp, bỏ tối thiểu ký tự mọi nơi · T10 band máy chủ · T11 chuông GVCN. Migrate `prMta`. |
 | 05/10/2026 | PR-DL · `pr-dl-diem-theo-lop` · Opus 5.5 | DL-0→7: bảng Điểm theo lớp (hồ sơ lớp ⋮ "Điểm MT cả lớp" + tab Test "Điểm theo lớp"), đọc theo lượt MT / Giữa–Cuối khoá, không đường ghi mới, không tự tạo lịch; lượt mặc định = lượt đang nhập. Thêm 3 đường đo tốc độ. |
 | 05/10/2026 | PR-NV (Opus 5.5) · `pr-nv-nhac-viec-chi-nhanh` | "Để QL biết" → Nhắc việc; Nhắc tất cả 50 thẻ ~93 000 → 121 câu SQL (gom theo người, `myWork` chỉ nhóm cần, dừng trước 10 s), hết 404 Mini Test/Cuối khoá; dải Chờ duyệt tím/xám/đỏ cam; chi nhánh mặc định theo vai QL / lớp dạy, nhớ lần chọn. NV-6 bỏ (→ LT3). |
 | 05/10/2026 | PR-SL (Opus 5.5) · `pr-sl-sua-ca-lop` | Panel Sửa thông tin học viên cả lớp (một giao dịch, Target cần lý do, GVCN không đổi Target); một mẫu Excel chung; I1 Đóng/Huỷ thay đổi, I2 Tạo Case, I3 Thêm HV, I4 KhungPanel (vẽ qua portal, Esc theo ngăn xếp), I6, D11. Check 2553 + 34 xanh. |

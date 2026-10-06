@@ -101,12 +101,13 @@ export async function runChamDiemTests(t: YThucTestKit) {
     assert(d.tuanKeTiep('2026-09-28') === '2026-10-05', d.tuanKeTiep('2026-09-28'));
   });
 
-  check('PR-Rc1 · RB-5 lý do hiệu chỉnh: bắt buộc, đủ dài, không nhận khoảng trắng', () => {
-    assert(d.LY_DO_TOI_THIEU === 5, 'Ngưỡng là 5 ký tự');
-    assert(d.kiemLyDo(null) !== null && d.kiemLyDo('   ') !== null, 'Trống thì phải báo lỗi');
-    assert(d.kiemLyDo('sai') !== null, 'Quá ngắn thì phải báo lỗi');
-    assert(d.kiemLyDo('Chấm nhầm đề B') === null, 'Lý do đủ dài thì hợp lệ');
-    assert(!/Hãy/.test(String(d.kiemLyDo(null))), 'Câu lỗi không mở đầu bằng "Hãy"');
+  // PR-MTa T7 thay RB-5 (LY_DO_TOI_THIEU, kiemLyDo): sửa điểm — lý do tuỳ chọn; huỷ điểm — bắt buộc, không tối thiểu ký tự.
+  /* Rà #212 (chủ sản phẩm 06/10) thay "lý do huỷ điểm bắt buộc": huỷ điểm tuỳ chọn; huỷ lượt vẫn bắt, không tối thiểu ký tự. */
+  check('PR-Rc1 · RB-5 lý do: huỷ điểm tuỳ chọn; huỷ lượt bắt buộc, không nhận khoảng trắng, không tối thiểu ký tự (PR-MTa T7, rà #212)', () => {
+    assert(d.kiemLyDoThaoTac('huy-diem', null) === null && d.kiemLyDoThaoTac('sua-diem', null) === null, 'Huỷ điểm, sửa điểm tuỳ chọn');
+    assert(d.kiemLyDoThaoTac('huy-luot', null) !== null && d.kiemLyDoThaoTac('huy-luot', '   ') !== null, 'Huỷ lượt trống thì phải báo lỗi');
+    assert(d.kiemLyDoThaoTac('huy-luot', 'sai') === null, 'Ngắn vẫn hợp lệ');
+    assert(!/Hãy/.test(String(d.kiemLyDoThaoTac('huy-luot', null))), 'Câu lỗi không mở đầu bằng "Hãy"');
   });
 
   check('PR-Rc1 · Câu trạng thái chấm dùng chung cho Lịch Test', () => {
@@ -201,7 +202,11 @@ export async function runChamDiemTests(t: YThucTestKit) {
     /* Task 7: lưới viết tuần bằng `tuanLich`, nên ô mang thứ Hai của tuần thi hiện tại và của tuần đã dời khỏi. */
     assert(o.weekStart === '2026-09-21' && o.movedFromStart === '2026-09-14',
       `Ô ${k}: weekStart=${o.weekStart}, movedFromStart=${o.movedFromStart}`);
-    assert(o.canEdit === true, 'GVBM sửa được ô môn mình');
+    /* PR-MTa T19 thay "sửa được ngay": ô chưa tới tuần thi khoá — nhưng ô đang mang dấu "-" vẫn mở để gỡ dấu (rà #212). */
+    assert(o.canEdit === true, 'Ô mang dấu "-" (đã dời sang 21/09) vẫn mở để gỡ dấu');
+    const oTuanThi = regular.regularSheet(P.normalSubjectTeacher, LOP, undefined, '2026-09-21').rows
+      .find((x: any) => x.attemptId === attemptId).skillSchedule.find((x: any) => x.skill === k);
+    assert(oTuanThi.canEdit === true, 'GVBM sửa được ô môn mình từ tuần thi');
     const oKhac = dong.skillSchedule.find((x: any) => x.skill === khac);
     assert(oKhac.noShow === false && oKhac.movedFrom === null, 'Môn không ghi dấu thì không có noShow/movedFrom');
     const khongDay = BON_MON.find((x) => !monCuaGv.includes(x));
@@ -426,12 +431,12 @@ export async function runChamDiemTests(t: YThucTestKit) {
   const xoaO = (attemptId: number, k: string) =>
     conn.prepare('DELETE FROM assessment_scores WHERE attempt_id = ? AND skill = ?').run(attemptId, k);
 
-  check('PR-Rc1 · RB-5 Sửa ô đã có điểm phải ghi lý do; lý do vào lịch sử điểm', () => {
+  // PR-MTa T7 thay RB-5: sửa ô đã có điểm — lý do TUỲ CHỌN; có lý do thì vẫn vào nhật ký / lịch sử điểm.
+  check('PR-Rc1 · RB-5 Sửa ô đã có điểm: lý do tuỳ chọn (PR-MTa T7); lý do ghi thì vào lịch sử điểm', () => {
     const { attemptId } = taoBaiThuong('2026-09-14');
     /* Quản lý không nhập điểm (Ruling 1) — đường nhập bù của Quản trị hệ thống. */
     regular.saveRegularScore(P.admin, attemptId, 'listening', { score: 30, total: 40 });
-    assertThrows(() => regular.saveRegularScore(P.admin, attemptId, 'listening', { score: 31, total: 40 }),
-      /lý do/, 'Sửa điểm đã có mà không ghi lý do thì bị chặn');
+    regular.saveRegularScore(P.admin, attemptId, 'listening', { score: 32, total: 40 });
     const ok = regular.saveRegularScore(P.admin, attemptId, 'listening',
       { score: 31, total: 40, lyDo: 'Cộng nhầm một câu' });
     assert((ok.score as any).raw_score === 31, 'Có lý do thì lưu được');
@@ -444,23 +449,22 @@ export async function runChamDiemTests(t: YThucTestKit) {
     const ft = luotFtGhiDuoc();
     xoaO(ft, 'listening');
     attempts.saveScore(P.admin, ft, 'listening', { rawScore: 30 });
-    assertThrows(() => attempts.saveScore(P.admin, ft, 'listening', { rawScore: 31 }), /lý do/,
-      'Fast Track cũng đòi lý do khi sửa điểm đã có');
+    attempts.saveScore(P.admin, ft, 'listening', { rawScore: 32 });   // PR-MTa T7: sửa không lý do được
     attempts.saveScore(P.admin, ft, 'listening', { rawScore: 31, lyDo: 'Chấm lại phần 3' });
     const h = attempts.scoreHistoryOf(ft);
     assert(h.some((x: any) => x.lyDo === 'Chấm lại phần 3'), 'Lịch sử điểm hiện lý do');
   });
 
-  check('PR-Rc1 · RB-5 Không đòi lý do khi ô đang trống, và xoá điểm cũng phải có lý do', () => {
+  /* PR-MTa T22 thay "xoá điểm cũng phải có lý do": xoá trắng ô đã có điểm = xoá, lý do tuỳ chọn. */
+  check('PR-Rc1 · RB-5 Không đòi lý do khi ô đang trống; xoá điểm đã có cũng không đòi (T22)', () => {
     const ft = luotFtGhiDuoc();
     xoaO(ft, 'reading');
     attempts.saveScore(P.admin, ft, 'reading', { rawScore: 28 });   // lần đầu: không cần lý do
-    assertThrows(() => attempts.saveScore(P.admin, ft, 'reading', { rawScore: null }), /lý do/,
-      'Xoá một điểm đã có cũng là hiệu chỉnh');
+    attempts.saveScore(P.admin, ft, 'reading', { rawScore: null });
     const { attemptId } = taoBaiThuong('2026-09-14');
     regular.saveRegularScore(P.admin, attemptId, 'reading', { score: 20, total: 40 });
-    assertThrows(() => regular.saveRegularScore(P.admin, attemptId, 'reading', { score: null }), /lý do/,
-      'Lớp thường: xoá điểm đã có cũng phải có lý do');
+    regular.saveRegularScore(P.admin, attemptId, 'reading', { score: null });
+    assert(dauCua(attemptId, 'reading')?.raw_score == null, 'Lớp thường: xoá không lý do');
   });
 
   check('PR-Rc1 · RB-5 Ghi lại đúng con số cũ (tự lưu) hay chỉ sửa ghi chú thì không đòi lý do', () => {
@@ -468,8 +472,8 @@ export async function runChamDiemTests(t: YThucTestKit) {
     regular.saveRegularScore(P.admin, attemptId, 'writing', { score: 15, total: 20 });
     const lai = regular.saveRegularScore(P.admin, attemptId, 'writing', { score: 15, total: 20 });
     assert((lai.score as any).raw_score === 15, 'Lớp thường: lưu lại cùng điểm không bị chặn');
-    assertThrows(() => regular.saveRegularScore(P.admin, attemptId, 'writing', { score: 15, total: 25 }), /lý do/,
-      'Lớp thường: đổi tổng câu là đổi kết quả nên cũng phải có lý do');
+    /* PR-MTa T7 thay RB-5: đổi tổng câu (sửa điểm) — lý do tuỳ chọn. */
+    assert((regular.saveRegularScore(P.admin, attemptId, 'writing', { score: 15, total: 25 }).score as any).raw_total === 25, 'Lớp thường: đổi tổng câu');
 
     const ft = luotFtGhiDuoc();
     xoaO(ft, 'listening');

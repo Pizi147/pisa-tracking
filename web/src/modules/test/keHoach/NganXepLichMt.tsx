@@ -9,7 +9,7 @@ import { BoLocDoan, NutChon } from '../../../ui/ui.tsx';
 import { BranchFilter } from '../../../ui/Filters.tsx';
 import { ChipLichSu } from '../../../ui/Nhan.tsx';
 import {
-  KY_NANG_KE_HOACH, LY_DO_TOI_THIEU, MT_TOI_DA, chuSeXep, gomChip, kiemTruong, tenMon, tenMonNgan, tomTatXepMt, tuanLich, tuanMacDinhDotMoi,
+  KY_NANG_KE_HOACH, MT_TOI_DA, chuSeXep, gomChip, tenMon, tenMonNgan, tomTatXepMt, tuanLich, tuanMacDinhDotMoi,
   type DongHangLoat, type KyNangKH, type LoiTruong,
 } from '@shared/domain/index.ts';
 import type { DanhSachLop, HangFT, LopKH, LuoiFTData } from './kieu.ts';
@@ -160,9 +160,8 @@ export function NganXepLichMt({ chiNhanhDau, lopDs, lopMoSan, coThuong, onDoiKhu
   const tt = tomTatXepMt(dongLuu);
   const coCanhBao = dongChon.some((d) => d.hanhDong !== 'loi' && d.bai.some((b) => b.ghiChu === 'canh-bao'));
   const canLyDo = dongChon.some((d) => d.canLyDo && d.hanhDong !== 'loi');
-  const thieuLyDo = canLyDo && lyDo.trim().length < LY_DO_TOI_THIEU;
   const lf = useLoiForm();
-  const loiForm: LoiTruong[] = thieuLyDo ? [{ khoa: 'ly-do', nhan: 'Lý do', lyDo: kiemTruong({ khoa: 'ly-do', nhan: 'Lý do', toiThieu: LY_DO_TOI_THIEU }, lyDo)! }] : [];
+  const loiForm: LoiTruong[] = [];   // T7 (PR-MTa): lý do tuỳ chọn
   const [busy, setBusy] = useState(false);
 
   const doiTick = (id: number, v: boolean) => setTicked((s) => { const n = new Set(s); if (v) n.add(id); else n.delete(id); return n; });
@@ -319,8 +318,7 @@ export function NganXepLichMt({ chiNhanhDau, lopDs, lopMoSan, coThuong, onDoiKhu
 
       {canLyDo && (
         <Khoi tieuDe="Lý do">
-          <Truong nhan="Lý do" batBuoc loi={lf.loiCua(loiForm, 'ly-do')} dem={{ co: lyDo.trim().length, can: LY_DO_TOI_THIEU }}
-            phu="Có bài dời khi tuần thi đã bắt đầu hoặc thi lại — ghi một lần cho cả lượt xếp.">
+          <Truong nhan="Lý do" tuyChon loi={lf.loiCua(loiForm, 'ly-do')}>
             <input className="field w-full" {...lf.o(loiForm, 'ly-do')} value={lyDo} onChange={(e) => setLyDo(e.target.value)}
               placeholder="Ví dụ: lịch học đổi, thi lại vì đề lỗi" />
           </Truong>
@@ -375,7 +373,7 @@ function HangEm({ h, hep, cot, dot, d, chon, rieng, thiLai, onTick, onDot, onThi
               return (
                 <button key={n} type="button" onClick={() => onDot(n)}
                   className={`relative inline-flex h-5 w-9 items-center justify-center gap-0.5 rounded border text-[11px] tabular-nums after:absolute after:-inset-1.5 after:content-[""] sm:after:hidden ${mauChip} ${o?.huyPhan ? 'line-through' : ''} ${rieng === n ? 'ring-1 ring-doing' : ''}`}
-                  title={`MT${n}${o?.lichSu ? ' · lịch sử' : ''}${g?.xong ? ' · xong' : o?.do ? ' · dở' : ''}${choDuyet ? ' · chờ Quản lý duyệt' : ''} — bấm để xếp đợt này cho riêng em`}>
+                  title={`MT${n}${o?.lichSu ? ' · cũ' : ''}${g?.xong ? ' · xong' : o?.do ? ' · dở' : ''}${choDuyet ? ' · chờ Quản lý duyệt' : ''} — bấm để xếp đợt này cho riêng em`}>
                   {kieu && <DauMt kieu={kieu} />}{n}
                 </button>
               );

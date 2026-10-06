@@ -242,7 +242,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     const c = caseTheoMon(em.id, 'writing'); const khoa = gvOf('MB BE 08', 'writing');
     sosAuto.xacNhanCase(khoa, c.id, { ...XN('writing', 'BE'), keHoach: KH });
     const the = theKh(c.id);
-    assertThrows(() => yc.tuChoiYeuCau(P.mbManager, the.id, 'ab'), /lý do/, 'từ chối phải có lý do');
+    assertThrows(() => yc.tuChoiYeuCau(P.mbManager, the.id, '  '), /lý do/, 'từ chối phải có lý do');   // PR-MTa T7: chỉ cần không trống
     yc.tuChoiYeuCau(P.mbManager, the.id, 'Kế hoạch chưa nêu rõ trọng tâm từng buổi, bổ sung giúp.');
     assert(get('SELECT 1 FROM case_issues WHERE case_id = ? AND role = ?', c.id, 'primary'), 'nguyên nhân phải giữ');
     assert(paBt(c.id).han_ke_hoach === d.hanXacNhan(TODAY) && paBt(c.id).status === 'planned', 'hạn nộp mới, PA còn chờ');

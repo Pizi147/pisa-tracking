@@ -1,6 +1,6 @@
 import { db, theoLo, tx } from '../db.ts';
 import {
-  CO_DIEM_SQL, KCK, LY_DO_TOI_THIEU, PERMISSIONS, TOI_DA_LUU_SUA_CA_LOP, cauMtSeDoi, cotLuoiNhap, type VanDeNhap,
+  CO_DIEM_SQL, KCK, PERMISSIONS, TOI_DA_LUU_SUA_CA_LOP, cauMtSeDoi, cotLuoiNhap, type VanDeNhap,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { chanGiaoDichNeuSapHetGio } from '../platform/hanGio.ts';
@@ -187,10 +187,7 @@ export function luuSuaCaLop(p: Principal, classId: number, input: DauVao & { ide
   if (loi) throw badRequest(`${loi.s.full_name} · ${NHAN[loi.issues[0].field] ?? loi.issues[0].field}: ${loi.issues[0].message}`,
     { rows: dong.filter((x) => x.issues.length).map((x) => ({ studentId: x.s.id, issues: x.issues })) });
   const lyDo = typeof input.lyDoTarget === 'string' ? input.lyDoTarget.trim() : '';
-  if (dong.some((x) => x.doiTarget)) {
-    if (!lyDo) throw badRequest('Ghi lý do đổi Target.');
-    if (lyDo.length < LY_DO_TOI_THIEU) throw badRequest(`Lý do đổi Target cần ít nhất ${LY_DO_TOI_THIEU} ký tự.`);
-  }
+  if (dong.some((x) => x.doiTarget) && !lyDo) throw badRequest('Ghi lý do đổi Target.');   // T7 (PR-MTa): không tối thiểu ký tự
 
   return tx(() => {
     const vuaGhi = daGhi();

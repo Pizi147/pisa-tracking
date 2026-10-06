@@ -555,7 +555,7 @@ Nguồn: `thiet-ke/NGUON-Rule-v3-YThuc-PhoiHop-2026-09-21.md`. Đặc tả: `thi
 - **M1 — thay luật cũ "nhập danh sách không lập lịch MT":** em có lộ trình FT (Thêm HV, vào lớp FT, mở lộ trình mới, đổi LT ↔ RF) →
   hệ thống **tự tạo** MT1/MT2/MT3 ở tuần học 6/12/16 (RF: MT1/MT2 tuần 4/8), bốn kỹ năng cùng tuần. Tuần do hệ thống tính từ tuần bắt
   đầu học, không lấy từ file dán. Không tự tạo MT4+. Đổi tuần bắt đầu → chỉ lượt hệ thống tự xếp, chưa có điểm, được dời theo.
-- **MT lịch sử (T34):** lượt có tuần thi kết thúc **trước ngày tạo lượt** — cờ lưu lúc tạo. Không nợ, không hạn, không quá hạn, không vào
+- **[ĐÃ THAY 06/10 — "MT cũ", PR-MTa T1, xem §20.1 dòng 20]** **MT lịch sử (T34):** lượt có tuần thi kết thúc **trước ngày tạo lượt** — cờ lưu lúc tạo. Không nợ, không hạn, không quá hạn, không vào
   Lịch Test/Nợ/Việc nhập điểm/độ phủ; không nhận dấu "-", không vào luồng vắng. GVCN của lớp nhập được ô trống cả 4 kỹ năng, Quản lý
   nhập/sửa mọi ô (sửa ô đã có điểm phải có lý do). Khoá sửa (R11) 7 ngày sau lần nhập cuối. Chỉ lượt lịch sử có tuần thi trong **4 tuần**
   trước ngày tạo mới sinh Case/PA quy chế/Phối hợp (ngày phát hiện = hôm nay).
@@ -574,7 +574,7 @@ Nguồn: `thiet-ke/NGUON-Rule-v3-YThuc-PhoiHop-2026-09-21.md`. Đặc tả: `thi
   đã đủ cho riêng em = **Thi lại**: hộp nói kỹ năng đã có điểm rồi mới hỏi; đồng ý → **xoá điểm cũ khỏi ô, giữ trong Lịch sử**, kỹ năng về
   "chờ thi", tuần mới; SOS/kỳ vọng tính theo điểm mới (chủ sản phẩm chốt 29/09, câu 1 = A). Chỉ Quản lý, chỉ lượt Mock đang chạy.
 - **Đợt mới mặc định (K4-14):** bốn kỹ năng CÙNG tuần tới; sửa riêng từng kỹ năng bên dưới.
-- **Tuần đã qua (K2-33, Q8):** chỉ dùng để TẠO MT lịch sử — mọi kỹ năng đều tuần đã qua **và** em vào web sau các tuần đó. Không dời
+- **[ĐÃ THAY 06/10 — PR-MTa T4, xem §20.1 dòng 21]** **Tuần đã qua (K2-33, Q8):** chỉ dùng để TẠO MT lịch sử — mọi kỹ năng đều tuần đã qua **và** em vào web sau các tuần đó. Không dời
   lượt có sẵn vào tuần đã qua; trộn tuần qua/tới bị chặn.
 - **Thao tác theo trạng thái (T38, K4-27):** mỗi kỹ năng ≤ 1 nút chính + ≤ 3 mục menu, bảng ở `thaoTacKyNang`:
 
@@ -588,7 +588,7 @@ Nguồn: `thiet-ke/NGUON-Rule-v3-YThuc-PhoiHop-2026-09-21.md`. Đặc tả: `thi
   | đã huỷ phần thi | Khôi phục và đặt tuần (QL) | — |
   | MT lịch sử chưa điểm | Nhập điểm | — |
 
-- **Lý do bắt buộc (K4-15):** dời bài khi tuần thi **đã bắt đầu**, dời hạn chấm, bỏ kỹ năng, báo vắng, huỷ điểm, huỷ lượt, thi lại (≥ 5 ký
+- **[ĐÃ THAY 06/10 — PR-MTa T7, xem §20.1 dòng 24]** **Lý do bắt buộc (K4-15):** dời bài khi tuần thi **đã bắt đầu**, dời hạn chấm, bỏ kỹ năng, báo vắng, huỷ điểm, huỷ lượt, thi lại (≥ 5 ký
   tự, máy chủ kiểm). Xếp / đổi tuần **tương lai** không cần lý do. Bài vắng Quản lý xếp lại vẫn không bắt lý do (K4-12).
 - **Bỏ kỹ năng (K4-13):** bị chặn khi đã có điểm (dùng Huỷ điểm) hoặc đã tới tuần thi (dùng Báo vắng). Lớp thường không có.
 - **Báo vắng (K4-28):** ghi "-" cho mọi ô của kỹ năng (W = W1 + W2) và **chốt ngay** — lần 1 máy tự dời tuần kế tiếp, từ lần 2 thành đề
@@ -664,12 +664,24 @@ Nguồn: ảnh MT4 "W1 OCT" hiện cùng lúc ở "Nợ tuần trước" và L�
 | 11 | §19: lớp Normal giữ mô hình tín hiệu theo số môn | Lớp thường **không có chữ SOS ở đâu cả**. Giữa khoá: môn < 70 % tự tạo Case + PA Bổ trợ bắt buộc. Cuối khoá: không sinh Case, dùng dải % tổng (mục 20.6) | T58, N1 · `ss/normal/regular.ts:746-838` · CODE-OK |
 | 12 | §17.1, §18.7: Normal chưa rõ có dùng "-" không (C08) | **Normal có dùng "-"**; luật chốt 02/10 ở mục 20.4. Code mới làm một phần | Chủ sản phẩm 02/10 · `ss/normal/regular.ts:591-738` · CODE-OK một phần, xem 20.4 |
 | 13 | §3.3, §10: Normal luôn đủ bốn môn L/R/W/S | **FOU** hiện L · R · **G+V** · **P**; **Pre FOU** không chia môn (một ô Tổng hợp, chỉ Cuối khoá); BE, ELE L · R · W · S | Q27-13 · `sd/normal.ts:156-163` · CODE-OK |
-| 14 | §10: QL/GVCN sửa mục tiêu, lộ trình | Chỉ **QL** sửa Target và lộ trình (`cycle.edit`, bắt lý do + ngày hiệu lực). GVCN bấm **Đề xuất sửa** (lý do ≥ 15 ký tự). GVCN vẫn tự sửa họ tên, ngày sinh, email, tuần bắt đầu, thi dự kiến | T44 · `ss/fasttrack/cycles.ts:244` · CODE-OK |
+| 14 | §10: QL/GVCN sửa mục tiêu, lộ trình | Chỉ **QL** sửa Target và lộ trình (`cycle.edit`, bắt lý do + ngày hiệu lực). GVCN bấm **Đề xuất sửa** (lý do bắt buộc — PR-MTa T7 bỏ tối thiểu 15 ký tự). GVCN vẫn tự sửa họ tên, ngày sinh, email, tuần bắt đầu, thi dự kiến | T44 · `ss/fasttrack/cycles.ts:244` · CODE-OK |
 | 15 | §10: Chuyển lớp (GVCN làm, có "Không có lưu ý") | Mọi lần chuyển lớp là **lệnh do Quản lý ra**; GVCN chỉ "Đề xuất chuyển lớp"; bàn giao có hạn riêng (mục 20.7) | Q30-1…4 · `ss/classes/lenhChuyen.ts` · CODE-OK |
 | 16 | §10: Thêm HV, '-' là thiếu dữ liệu | **Email bắt buộc khi thêm mới**; bảng dán **bắt buộc có dòng tiêu đề** chứa "Họ và tên"; dòng lỗi ở lại panel, không khoá cả lô **[ĐÃ THAY 04/10 — dòng tiêu đề không bắt buộc, xem dòng 19]** | NHAP-1/2 · `ss/classes/intake.ts:245-250` · CODE-OK |
 | 17 | §19: Phối hợp SOS điền sẵn, GVCN xác nhận hoặc bỏ | Phối hợp SOS là **việc thật, một dòng mỗi lớp cho GVCN, không hạn**; chỉ sinh từ lượt Mock FT (lớp thường có việc "Báo phụ huynh qua TVV" riêng) | VAI-a·Q14 · `ss/yThuc/phoiHop.ts:307` · CODE-OK |
 | 18 | §9, §17.7: không có hộp duyệt chung | **Một hộp "Chờ duyệt"** cho Quản lý (mục 20.5) | Q27-3 · `sd/yeuCauDuyet.ts` · CODE-OK |
 | 19 | §10, K2-41/YC-5.2: lớp thường không có Target; dán Excel bắt buộc tiêu đề | **Lớp thường có Target + Dự kiến thi** (chủ sản phẩm 04/10): nhập ở Thêm học viên (lưới 6 cột: Họ tên · Ngày sinh · Email · Target · Dự kiến thi · Tuần bắt đầu) và Thông tin HV; đầu hồ sơ hiện cạnh Cuối khoá. Đổi Target bắt lý do + `cycle.edit` (GVCN: Đề xuất sửa); Dự kiến thi `student.edit`. **Không** kỳ vọng, SOS, MT, Case, việc "Điền Target" theo Target lớp thường; KCK lớp thường không loại em khỏi số liệu lớp thường. Lên lớp / học lại / chuyển giữa các lớp thường **mang theo** Target + Dự kiến thi. Dán Excel **không bắt buộc dòng tiêu đề**: không có thì đọc theo thứ tự cột lưới, panel nói rõ cách đã đọc và cho đổi bằng một nút | PR-NT · `sd/nhapHocVien.ts` (`cotLuoiNhap`, `docDongDan`) · `ss/classes/intake.ts` (`parsePaste`) · `ss/classes/luatLoTrinh.ts` · `ss/fasttrack/cycles.ts` (`apTargetLuotChuaDiem`) · CODE-OK |
+| 20 | T34, K2-33(1): MT lịch sử = tuần thi kết thúc trước ngày tạo lượt; tuần đã qua chỉ để tạo MT lịch sử, phải trước ngày em vào web | **MT cũ** (chữ trên màn: "MT cũ", chip "cũ") = lượt được **xếp vào** tuần thi cách tuần hiện tại **≥ 2 tuần** (Chủ nhật tuần thi muộn nhất < thứ Hai tuần trước), tính lúc xếp / dời. Tuần trước = MT thường (có hạn chấm). Bỏ điều kiện ngày vào web | PR-MTa T1 · `sd/lichMt.ts` `laMtCu`, `kiemTuanXep` · `ss/fasttrack/skillSchedule.ts` `tinhLaiMtCu` · CODE-OK · PR-MTa |
+| 21 | K2-33: không ai dời lượt có sẵn vào tuần đã qua | **Quản lý / Quản trị** xếp / dời MT **và Test lớp thường** chưa thi về tuần đã qua được (trộn qua / tới được); GVCN / GV chỉ từ tuần này. Thi lại vẫn cần tuần từ tuần này | PR-MTa T4 · `ss/fasttrack/skillSchedule.ts` `setSkillWeek` · CODE-OK · PR-MTa |
+| 22 | Q-0310-2: dời MT vượt MT sau đã có điểm → chặn | Dời vượt **không chặn**. Lượt bị vượt: bỏ lịch; có điểm → điểm **chuyển sang `ket_qua_huy`** (không xoá, không tính SOS/báo cáo/Xuất Excel), Case sinh riêng tự đóng "Kết quả MT đã huỷ"; cần xác nhận + lý do. Chưa điểm → không hỏi. Quản lý **khôi phục** được (chặn khi ô đã có điểm mới hoặc lượt vượt vẫn đứng sau). Xếp hàng loạt: dòng mang hệ quả, lưu khi có xác nhận + lý do | PR-MTa T2 · `ss/fasttrack/ketQuaHuy.ts` · `skillSchedule.ts` `kiemXacNhanVuot`, `boLichLuotBiVuot` · CODE-OK · PR-MTa |
+| 23 | K4-28: "-" lần 2 → đề nghị chờ Quản lý | Vắng **lần 2** ở Mock → kỹ năng **huỷ (vắng 2 lần)**, chuông GVCN, không tự tạo thẻ. GVCN **Xin dời** → thẻ "Dời lịch" như cũ; QL từ chối hoặc bấm **Không mock lại** → kỹ năng bỏ khỏi đợt (đợt hoàn thành được); thẻ hết hạn → giữ huỷ. Lớp thường giữ luật "-" dời tuần sau | PR-MTa T3 · `ss/fasttrack/absence.ts` `huyVangNoi`, `xinDoi`, `khongMockLai` · CODE-OK · PR-MTa |
+| 24 | K4-15, RB-5: lý do ≥ 5 ký tự cho dời lịch (tuần đã bắt đầu), dời hạn, bỏ kỹ năng, báo vắng, sửa điểm, thi lại… | Lý do **bắt buộc chỉ khi** huỷ lượt, huỷ kết quả do dời vượt, Quản lý từ chối. Còn lại tuỳ chọn. **Không còn tối thiểu ký tự ở mọi nơi** (kể cả Đề xuất sửa 15, thẻ Chờ duyệt 3, chuyển lớp 3, đổi Target 5): bắt buộc = không trống | PR-MTa T7 · `sd/thaoTacMt.ts` `canLyDo`, `kiemLyDoThaoTac` · CODE-OK · PR-MTa |
+| 25 | L/R chỉ nhận số câu; W/S chỉ 4 tiêu chí | Máy chủ nhận **band trực tiếp** (`band`, 0–9 bậc 0.5) cho L/R/W1/W2/S, không cùng số câu / tiêu chí. Overall, SOS, kỳ vọng như cũ. Ô web là việc PR-MTb | PR-MTa T10 · `sd/chamDiem.ts` `kiemBand`, `docONhapLR` · `ss/fasttrack/attempts.ts` `saveScore` · CODE-OK máy chủ · PR-MTa |
+| 26 | — | Người **khác GVCN** dời Test lớp thường → **một chuông** "để biết" cho GVCN (một em một ngày; xếp hàng loạt một chuông cả lớp). GVCN tự dời, "-" không chuông. Không thẻ, không Case | PR-MTa T11 · `ss/fasttrack/skillSchedule.ts` `baoGvcnDoiLichThuong` · CODE-OK · PR-MTa |
+| 27 | C08: hạn chấm lớp thường hết Chủ nhật tuần thi; nhập điểm được trước tuần thi | **Không ai** (kể cả Quản lý, Quản trị) nhập điểm khi kỹ năng / môn **chưa tới tuần thi** hoặc chưa xếp tuần — ô khoá; MT cũ và bài quá hạn vẫn nhập (tính trễ như cũ). Hạn chấm lớp thường = **thứ Tư tuần sau** như Fast Track | PR-MTa T19 (chủ sản phẩm 06/10) · `ss/fasttrack/skillSchedule.ts` `kiemDaToiTuanThi` · `ss/platform/week.ts` `skillScoreDeadline` · CODE-OK · PR-MTa |
+| 28 | §10.4: phần đã thi / đã có điểm không dời như lịch tương lai | **Quản lý / Quản trị** dời kỹ năng / môn **đã có điểm** (FT và lớp thường) sang tuần bất kỳ, kể cả tuần cũ hơn — điểm đi theo, không đổi; cờ MT cũ tính lại. Dời vượt lượt sau vẫn theo dòng 22. GV giữ luật cũ | PR-MTa T20 (06/10) · `ss/fasttrack/skillSchedule.ts` `setSkillWeek` · `ss/keHoach/keHoachTest.ts` `kiemDotNoi` · CODE-OK · PR-MTa |
+| 29 | §10.6: khôi phục phần đã huỷ chỉ vào tuần chưa tới | Quản lý khôi phục vào **tuần này hoặc tuần đã qua** được, rồi nhập điểm ngay | PR-MTa T21 (06/10) · `ss/fasttrack/absence.ts` `restoreCancelledSkill` · CODE-OK · PR-MTa |
+| 30 | Dòng 24 (T7): xoá trắng ô có điểm = huỷ điểm, lý do bắt buộc; MT cũ: GVCN chỉ ô trống | Xoá trắng ô đã có điểm rồi Lưu = xoá, **lý do tuỳ chọn** (nhật ký vẫn ghi cũ → mới). Menu **Huỷ điểm** cũng **tuỳ chọn** (chủ sản phẩm 06/10); huỷ lượt, huỷ kết quả do dời vượt, từ chối vẫn bắt lý do. **MT cũ: Quản lý + GVCN lớp đó** sửa / xoá cả ô đã có điểm, kể cả sau khoá 7 ngày (R11) | PR-MTa T22 (06/10) · `ss/fasttrack/attempts.ts` `saveScore` · `ss/normal/regular.ts` `saveRegularScore` · `ss/permissions.ts` `scoreEditPath`, `editableSkills` · CODE-OK · PR-MTa |
+| 31 | K4-20: MT lịch sử không nhận "-" | MT cũ nhận **"-" = Không dự thi**: chốt cuối ngay lúc ghi (`no_show_cu`) — kể cả khi lượt sau đó thành MT thường, không tính lần vắng, không tự dời, không Case / thẻ / chuông; ô không còn đếm "còn trống" / "MT cũ chưa nhập"; gỡ dấu hoặc nhập điểm đè được | PR-MTa T23 (06/10) · `ss/fasttrack/attempts.ts` `saveScore` · `ss/fasttrack/absence.ts` `settleNoShows` (bỏ qua MT cũ) · `ss/cham/canCham.ts` `mtLichSuChuaNhap` · CODE-OK · PR-MTa |
 
 ### 20.2 Bảng hạn tổng hợp
 
@@ -682,14 +694,14 @@ Mọi hạn "n ngày" là **n ngày liên tiếp theo lịch, tính cả ngày b
 | Ghi kết quả PA hằng tuần | Hết **Thứ Hai** tuần kế | `sd/cases.ts:847` |
 | PA quy chế: ghi kết quả cuối | Khi chạm mốc quy chế: "1 tháng" · "đến MT kế tiếp" · "đến lúc thi" (MT5 trở đi: Tutor đến lúc thi). Quá mốc → hạn hết Thứ Hai. Chưa có lịch mốc → PA chạy tiếp, hiện "chờ lịch" | `sd/sos.ts:54-94` |
 | QL duyệt một thẻ | 5 ngày. Riêng **kế hoạch bổ trợ 3 ngày**; **dời lịch lần 2** hết Chủ nhật tuần gửi; **Báo lên** không hạn. Quá hạn chỉ báo QL + Quản trị, không tự đóng (trừ lịch thi: hết hạn thì huỷ phần thi) | `sd/yeuCauDuyet.ts:40-61` |
-| Chấm Fast Track | Hết **Thứ Tư** tuần kế tiếp tuần thi của chính kỹ năng đó. "Quá hạn" chỉ khi tuần thi đã hết và qua hạn. Hạn riêng cần lý do ≥ 5 ký tự | `ss/platform/week.ts:68-113` |
-| Chấm lớp thường | Hết **Chủ nhật** của tuần thi | `ss/platform/week.ts:89-92` |
+| Chấm Fast Track (và lớp thường từ PR-MTa T19) | Hết **Thứ Tư** tuần kế tiếp tuần thi của chính kỹ năng đó. "Quá hạn" chỉ khi tuần thi đã hết và qua hạn. Hạn riêng: lý do tuỳ chọn (PR-MTa T7) | `ss/platform/week.ts:68-113` |
+| Chấm lớp thường | Hết **Thứ Tư** tuần kế tiếp (PR-MTa T19, trước là Chủ nhật tuần thi) | `ss/platform/week.ts:89-92` |
 | Dấu "-" Fast Track | Sửa được đến hết Chủ nhật; chốt đầu Thứ Hai (cron 00:05 và 06:05 giờ VN) | `ss/ops/chotVangDinhKy.ts` |
 | Ý thức: xử lý | 5 ngày kể từ ngày ghi lên web (hoặc từ ngày vi phạm thứ 3 nếu "bắt buộc"); sau khi QL duyệt: 5 ngày để bấm Đã thực hiện | `sd/yThuc.ts:126,156-208` |
 | Bàn giao chuyển lớp | GVBM 2 ngày · GVCN 3 ngày, tính từ ngày ra lệnh; quá hạn không chặn việc chuyển | `sd/chuyenLop.ts:36-39` |
 | Mini Test (sau Cuối khoá) | Chủ nhật tuần cuối PA cộng 2 ngày lịch | `sd/cuoiKhoa.ts:89-93` |
-| Khoá sửa điểm sau khi đợt hoàn tất | GVBM không sửa; chỉ Quản lý. MT lịch sử khoá 7 ngày sau lần nhập cuối | `sd/keHoachTest.ts:69-81` |
-| Cửa sổ MT lịch sử sinh Case/PA/Phối hợp | 28 ngày trước ngày tạo | `sd/lichMt.ts:13` |
+| Khoá sửa điểm sau khi đợt hoàn tất | GVBM không sửa; chỉ Quản lý. MT cũ khoá 7 ngày sau lần nhập cuối | `sd/keHoachTest.ts:69-81` |
+| Cửa sổ MT cũ sinh Case/PA/Phối hợp | 28 ngày trước ngày tạo | `sd/lichMt.ts:13` |
 | Kỳ vọng MT | MT1 = Target − 1.0 · MT2 = Target − 0.5 · MT3 trở đi = Target · RF: mọi MT = Target. Trần MT8 | `sd/fasttrack.ts:15-21` |
 
 ### 20.3 Ý thức (thang xử lý) — thay §18.3
@@ -707,14 +719,14 @@ Mọi hạn "n ngày" là **n ngày liên tiếp theo lịch, tính cả ngày b
 ### 20.4 Dấu "-" (không có bài)
 
 **Fast Track — CODE-OK** (khớp §17.1 và khối PR-MT/PR-XLMT; chốt đầu Thứ Hai chạy bằng cron Netlify, có cả khi không ai mở web):
-- GV đúng ô gõ "-"; GVCN/QL báo vắng qua menu (lý do ≥ 5 ký tự, từ Thứ Hai tuần thi). Sửa được đến hết Chủ nhật; điểm thật thắng "-"; ô đã có điểm không xoá được bằng "-".
-- Hết Chủ nhật còn "-" → **Không dự thi**. **Lần 1 máy tự dời** sang tuần kế (nếu còn thi được), báo GVCN + GVBM đúng kỹ năng. **Lần 2** thành đề nghị chờ QL (hạn hết Chủ nhật tuần gửi, tuần đích mặc định = tuần chưa bắt đầu gần nhất hợp luật); QL từ chối (lý do ≥ 3 ký tự) hoặc hết hạn → **huỷ phần thi** (giữ điểm các phần khác); chỉ QL khôi phục.
+- GV đúng ô gõ "-"; GVCN/QL báo vắng qua menu (lý do tuỳ chọn — PR-MTa T7, từ Thứ Hai tuần thi). Sửa được đến hết Chủ nhật; điểm thật thắng "-"; ô đã có điểm không xoá được bằng "-".
+- Hết Chủ nhật còn "-" → **Không dự thi**. **Lần 1 máy tự dời** sang tuần kế (nếu còn thi được), báo GVCN + GVBM đúng kỹ năng. **Lần 2** (PR-MTa T3, §20.1 dòng 23) → kỹ năng **huỷ (vắng 2 lần)**, chuông GVCN; GVCN **Xin dời** → đề nghị chờ QL (hạn hết Chủ nhật tuần gửi, tuần đích mặc định = tuần chưa bắt đầu gần nhất hợp luật); QL từ chối (lý do bắt buộc, không tối thiểu ký tự) → không mock lại; hết hạn → giữ huỷ. Đề nghị chuyển QL ở lần 1 (xử lý muộn): từ chối / hết hạn → **huỷ phần thi** (giữ điểm các phần khác); chỉ QL khôi phục.
 - Nhập "-" cho tuần đã kết thúc: chốt ngay. Sau cuối tuần chỉ QL sửa kết luận, ghi đè trực tiếp. Writing chỉ chốt khi cả W1 và W2 đều "-", đếm một lần.
 
 **Lớp thường — chủ sản phẩm chốt 02/10 (thay §17.1 dòng "Normal không hủy", C08 §17.7, §18.7):**
 > Normal có dùng "-". Còn "-" thì bài **dời sang tuần sau, lặp lại**, cho đến khi **có điểm** hoặc **QL xác nhận huỷ kết quả điểm môn đó** thì dừng.
 
-Code đã có (`ss/normal/regular.ts:591-738`): GV đúng ô gõ "-" (hoặc GVCN/QL qua menu Báo vắng, lý do ≥ 5 ký tự, từ Thứ Hai tuần thi); môn **dời ngay sang tuần sau của chính bài đó**; lặp không giới hạn; thông báo GVCN từ lần vắng thứ 2; có điểm ở tuần mới thì "-" không gỡ được nữa.
+Code đã có (`ss/normal/regular.ts:591-738`): GV đúng ô gõ "-" (hoặc GVCN/QL qua menu Báo vắng, lý do tuỳ chọn, từ Thứ Hai tuần thi); môn **dời ngay sang tuần sau của chính bài đó**; lặp không giới hạn; thông báo GVCN từ lần vắng thứ 2; có điểm ở tuần mới thì "-" không gỡ được nữa.
 
 **CHƯA CÓ trong code (khoảng cách giữa luật chốt và web):**
 1. **Không có nút QL "xác nhận huỷ kết quả điểm môn đó".** Gần nhất chỉ có thẻ Báo lên "Cuối khoá dời quá hạn" (QL nhắc GVCN, không huỷ được gì).
@@ -726,7 +738,7 @@ Code đã có (`ss/normal/regular.ts:591-738`): GV đúng ô gõ "-" (hoặc GVC
 
 - Mọi việc "xin QL quyết" là **một thẻ** trong **một hộp** Công việc › **Chờ duyệt** (tab đầu của QL/Quản trị; giáo viên xem "Yêu cầu của tôi"). Năm phân loại: **Học thuật · Ý thức · Lịch thi · Thông tin HV · Báo lên**. Duyệt tài khoản đăng ký nằm ở Quản trị, ngoài hộp. `sd/yeuCauDuyet.ts:10-61`
 - Các loại thẻ và hạn: xem 20.2. Thẻ gồm: Đề xuất PA · Xin ý kiến · Không cần theo dõi · Kế hoạch bổ trợ (3 ngày) · Dời lịch lần 2 · Đề xuất sửa (target, lộ trình, lịch MT, khác — **không còn trường "Lớp"**) · Đề xuất chuyển lớp · Xử lý Ý thức cần duyệt · Báo lên.
-- **Từ chối bắt buộc lý do** (≥ 3 ký tự). Xin ý kiến chỉ "Trả lời"; Báo lên chỉ "Nhắc {GV}", không có nút Duyệt, tự đóng khi việc gốc xong. Duyệt hàng loạt chỉ cho Đề xuất PA và Dời lịch cùng loại.
+- **Từ chối bắt buộc lý do** (không trống — PR-MTa T7 bỏ tối thiểu 3 ký tự). Xin ý kiến chỉ "Trả lời"; Báo lên chỉ "Nhắc {GV}", không có nút Duyệt, tự đóng khi việc gốc xong. Duyệt hàng loạt chỉ cho Đề xuất PA và Dời lịch cùng loại.
 - **Chỉ QL và Quản trị hệ thống duyệt** (quyền `request.approve`) trong phạm vi chi nhánh. **GVCN và GVBM không bao giờ duyệt.** QL kiêm GV tự gửi thì **tự duyệt được**: thẻ ghi "tự duyệt", có nhật ký, báo Quản trị. (Câu "không bao giờ tự duyệt" trong đặc tả T23 đã bị Q-D thay; code theo Q-D.)
 - Thẻ quá hạn duyệt: trạng thái đỏ + một thông báo cho QL chi nhánh và Quản trị; thẻ "chết" (PA đã huỷ, Case đã đóng) tự đóng khi quét. Việc quét này **chỉ chạy khi có người mở web**, nên thông báo có thể chậm.
 
@@ -762,8 +774,8 @@ Vai trong hệ thống chỉ có **3**: Quản trị hệ thống · Quản lý 
 |---|---|
 | Nhập điểm FT / lớp thường | GVBM đúng ô (W1 và W2 là hai ô riêng); GVCN chỉ ô môn mình dạy; QL/Quản trị mọi ô |
 | Nhập ô S của Mock ở lớp FT khác | GV được phân công Speaking ở một lớp FT nhập được ô S mọi lớp FT cùng chi nhánh (chỉ là quyền, không phải việc/nợ). **Từ PR-LT3 (T18):** Speaking Mock không GV mặc định; quá hạn chỉ báo GVBM Speaking + GVCN lớp đó, không tính nợ cho họ; GV chấm chéo nhập muộn mới bị tính trễ |
-| Nhập MT lịch sử | GVCN ô trống cả 4 kỹ năng; QL mọi ô |
-| Sửa điểm đã nhập (lý do ≥ 5 ký tự) | GVBM đúng ô, chỉ trước khi đợt hoàn tất; QL mọi lúc |
+| Nhập MT cũ | GVCN ô trống cả 4 kỹ năng; QL mọi ô |
+| Sửa điểm đã nhập (lý do tuỳ chọn; xoá trắng ô = huỷ điểm, lý do bắt buộc) | GVBM đúng ô, chỉ trước khi đợt hoàn tất; QL mọi lúc |
 | Báo vắng FT | GVCN, QL (GVBM chỉ gõ "-" trong ô) |
 | Dời lịch thi một kỹ năng | **FT: chỉ QL.** Lớp thường: GVCN và GVBM đúng môn cũng dời được |
 | Dời hạn chấm, bỏ kỹ năng, xếp lịch MT, Kế hoạch Test, thi lại, huỷ lượt, trả lời đề nghị dời lần 2, khôi phục phần đã huỷ | Chỉ QL / Quản trị |

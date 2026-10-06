@@ -192,7 +192,7 @@ export async function runPrNhapTests(t: YThucTestKit) {
     const dong = { fullName: 'Nhập Em Cũ MT4', email: 'cu@demo.test', startWeek: tuan22, daThiToiMt: '4' };
     const pv = intake.previewIntake(P.admin, { classId: ft, rows: [dong] });
     const ly = pv.rows[0].issues.find((i: any) => i.field === 'startWeek');
-    assert(ly && ly.muc === 'luu_y' && /4 MT sẽ là MT lịch sử \(MT1, MT2, MT3, MT4\)/.test(ly.message), JSON.stringify(pv.rows[0].issues));
+    assert(ly && ly.muc === 'luu_y' && /4 MT sẽ là MT cũ \(MT1, MT2, MT3, MT4\)/.test(ly.message), JSON.stringify(pv.rows[0].issues));
     const r = intake.commitIntake(P.admin, { classId: ft, rows: [dong], idempotencyKey: 'nhap-7-cu' });
     const ls = luotCua('Nhập Em Cũ MT4');
     assert(ls.length === 4 && ls.every((a) => a.lich_su === 1), JSON.stringify(ls));
@@ -221,8 +221,8 @@ export async function runPrNhapTests(t: YThucTestKit) {
     const pv = intake.previewIntake(P.admin, { classId: ft, rows: [{ fullName: 'Nhập Theo Khai Giảng', email: 'kg@demo.test' }] });
     const kgT2 = d.mondayOfDate(kg);
     assert(pv.defaultStartWeek === kgT2, `${pv.defaultStartWeek} ≠ ${kgT2}`);
-    const mt1LichSu = d.laLichSu(t.addDays(kgT2, 5 * 7 + 6), demoToday());
-    const coLuuY = pv.rows[0].issues.some((i: any) => i.field === 'startWeek' && /MT lịch sử/.test(i.message));
+    const mt1LichSu = d.laMtCu(t.addDays(kgT2, 5 * 7 + 6), demoToday());   // PR-MTa T1: MT cũ = cách ≥ 2 tuần (laMtCu)
+    const coLuuY = pv.rows[0].issues.some((i: any) => i.field === 'startWeek' && /MT cũ/.test(i.message));
     assert(coLuuY === mt1LichSu, `MT1 lịch sử=${mt1LichSu} nhưng lưu ý=${coLuuY}`);
   });
 
