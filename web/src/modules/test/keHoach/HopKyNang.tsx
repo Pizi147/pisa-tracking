@@ -262,7 +262,13 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
       if (box.current?.contains(t) || anchor.contains(t) || t.closest('[role="dialog"], [role="menu"]')) return;
       onClose();
     };
-    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape' && !e.defaultPrevented && !document.querySelector('[aria-modal="true"]')) onClose(); };
+    /* Esc chỉ đóng lớp TRÊN CÙNG: có hộp / panel modal mở SAU hộp này (trong hộp, hoặc vẽ ra `body` sau nó) thì để lớp đó tự đóng. Panel mở
+       TRƯỚC hộp (Lộ trình hồ sơ HV) không chặn — trước đây chặn nên Esc không đóng được hộp ở đó. */
+    const esc = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.defaultPrevented || !box.current) return;
+      const phiaTren = [...document.querySelectorAll('[aria-modal="true"]')].some((m) => box.current!.compareDocumentPosition(m) & Node.DOCUMENT_POSITION_FOLLOWING);
+      if (!phiaTren) onClose();
+    };
     document.addEventListener('mousedown', away);
     document.addEventListener('keydown', esc);
     window.addEventListener('resize', dat);

@@ -225,7 +225,7 @@ export function NganXepLichMt({ chiNhanhDau, lopDs, lopMoSan, coThuong, onDoiKhu
           <BranchFilter branchId={branchId} onBranch={setBranchId} />
           <div className="min-w-0 flex-1">
             <span className="mb-1 block text-[11.5px] font-bold text-slate-200">Lớp</span>
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div role="group" aria-label="Lớp đã chọn" className="flex flex-wrap items-center gap-1.5">
               {lopChon.map((id) => {
                 const l = lopFT.find((x) => x.id === id) ?? lopTheoChiNhanh.find((x) => x.id === id);
                 return (
@@ -253,7 +253,7 @@ export function NganXepLichMt({ chiNhanhDau, lopDs, lopMoSan, coThuong, onDoiKhu
       </Khoi>
 
       <Khoi so={1} tieuDe="Đợt">
-        <div className="flex flex-wrap gap-1.5">
+        <div role="group" aria-label="Đợt" className="flex flex-wrap gap-1.5">
           <NutChon nho chon={dot === 'moi'} onClick={() => setDot('moi')}
             title="Mỗi em một đợt riêng: đợt nhỏ nhất chưa có lịch của em; không có thì đợt kế tiếp.">MT mới</NutChon>
           {cot.map((n) => <NutChon key={n} nho chon={dot === n} onClick={() => setDot(n)}>MT{n}</NutChon>)}
@@ -315,7 +315,7 @@ export function NganXepLichMt({ chiNhanhDau, lopDs, lopMoSan, coThuong, onDoiKhu
               <ChipDem tone="bad" n={dem.bad} loc={loc} onLoc={setLoc}>✕ Không xếp được {dem.bad}</ChipDem>
             </div>
             <div className="overflow-x-auto rounded-[10px] border" style={{ borderColor: 'var(--line)' }} aria-busy={dangXem}>
-              <table className="w-full min-w-[960px] border-separate border-spacing-0 text-xs">
+              <table aria-label="Học viên xếp lịch" className="w-full min-w-[960px] border-separate border-spacing-0 text-xs">
                 <thead>
                   <tr className="text-left text-[11px] uppercase tracking-wide text-slate-500">
                     <th className="sticky left-0 z-[2] w-[80px] px-2 py-2 font-semibold max-sm:w-[48px]" style={{ background: 'var(--surface-2)' }}>

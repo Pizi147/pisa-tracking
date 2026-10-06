@@ -232,7 +232,7 @@ export default function MockDetailPage() {
           <button className="btn btn-sm btn-ghost mb-1 min-h-[44px] sm:min-h-0" onClick={() => navigate(-1)}>← Quay lại</button>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <h1 className="text-lg font-semibold text-slate-100 min-w-0 break-words">
-              <span className="mr-2 text-sm font-medium text-slate-400">Hồ sơ Mock Test ·</span>{d.student.name} <span className="text-slate-500 text-sm">· {d.student.code}</span>
+              <span className="mr-2 text-sm font-medium text-slate-400">Hồ sơ Mock Test ·</span>{d.student.name} <span className="text-slate-500 text-sm whitespace-nowrap">· {d.student.code}</span>
               <span className="ml-2 align-middle"><OMt v={omtDau} homNay={homNay} /></span>
             </h1>
             {cancelled && <Tag>Đã huỷ</Tag>}
@@ -245,15 +245,15 @@ export default function MockDetailPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Link className="btn no-underline" to={`/hoc-vien/${d.student.id}`}>Hồ sơ học viên</Link>
+          <Link className="btn min-h-[44px] no-underline sm:min-h-0" to={`/hoc-vien/${d.student.id}`}>Hồ sơ học viên</Link>
           {d.classId && (
             /* R16 — mở lưới cả lớp đúng TUẦN của đợt đang xem, không phải tuần hôm nay. */
-            <Link className="btn no-underline"
+            <Link className="btn min-h-[44px] no-underline sm:min-h-0"
               to={`/nhap-diem/${d.classId}${d.period ? `?periodId=${d.period.id}` : ''}`}>
               Nhập điểm
             </Link>
           )}
-          <Menu label="Chỉnh lịch" items={headerItems} className="btn" />
+          <Menu label="Chỉnh lịch" items={headerItems} className="btn min-h-[44px] sm:min-h-0" />
         </div>
       </div>
 
@@ -524,7 +524,7 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory }: {
 
         <div role="cell" className="flex flex-wrap items-start gap-1.5 md:justify-end">
           {chinh && (
-            <button type="button" className="btn btn-sm btn-primary" onClick={() => chay(chinh)}>{nhanChinh}</button>
+            <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => chay(chinh)}>{nhanChinh}</button>
           )}
           {!chinh && !ownsSchedule && r.required && !canScore && r.sitStatus === 'absent' && (
             <span className="text-[11px] text-slate-500">Xử lý ở dòng W1</span>
@@ -552,7 +552,7 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory }: {
     <Card title="Lịch Test"
       action={<div className="flex items-center gap-2">
         {d.splitWeeks && <Tag>Đợt này thi ở nhiều tuần</Tag>}
-        <button type="button" className="btn btn-sm" onClick={onOpenHistory}>Lịch sử</button>
+        <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onOpenHistory}>Lịch sử</button>
       </div>}>
       {!d.completionWeek.valid && (
         <p className="text-xs text-amber-200 mt-0 mb-3">
