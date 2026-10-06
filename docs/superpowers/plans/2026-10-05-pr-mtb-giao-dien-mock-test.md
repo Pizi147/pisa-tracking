@@ -380,11 +380,11 @@ Skill: test-driven-development · `/impeccable layout` · `adapt`
 - [x] **Step 3:** `npm run check`. Bấm thử QL 1440/375: lớp FT 6 đợt, cuộn ngang tới đợt đang tới (giữ `:202-206`), ô "Đang thi" khác hẳn "Có lịch". Ảnh. **Commit** `feat(mtb): lưới Kế hoạch Test FT dùng Ô MT`.
 
 ### Task 10: Rà toàn bộ, tài liệu, PR
-- [ ] Rà mọi nơi hiện trạng thái MT (`grep -rn "MT\${" web/src`): đã dùng `OMt` ở panel, hộp (tiêu đề giữ chữ), Kế hoạch Test FT, Lộ trình, đầu trang hồ sơ Mock. **Không** đổi (chỉ là chữ MT trong câu/số liệu, không phải ô trạng thái): `HanhTrinh.tsx:480`, `Highlights.tsx:56`, `LuoiFT.tsx:248`, `MotKyNang.tsx:185`, `StudentManagePanel.tsx:280`, `cases/*`, `yThuc/*`; `IeltsAttempts` (`StudentDetailPage.tsx:458`) giữ liên kết `MT{n}` + `NhanDot` (cột Kết quả đã nói trạng thái) — ghi danh sách vào mô tả PR.
-- [ ] `CODE_MAP.md`: thêm 4 file mới, gỡ `HopXacNhanHuyLich.tsx`. `plan.md` mục 11 một dòng; `[x]` trong file này.
-- [ ] `npm run check` (một lần). Bấm thử 375/1440 sáng/tối, vai Quản trị (1), QL (2), GVCN (7), GVBM (9): panel · hộp (Kế hoạch Test + Lộ trình) · popup ở 4 cổng · hồ sơ Mock (Xin dời, lý do tuỳ chọn) · Nhập điểm band. Ảnh thật vào PR.
-- [ ] `/impeccable audit` các màn trên → sửa lỗi P0/P1 trong phạm vi.
-- [ ] `/ponytail-review`; `superpowers:requesting-code-review`; `superpowers:finishing-a-development-branch` (PR vào `main`, không merge). Mô tả PR: từng mục (panel, hộp, Ô MT, popup, T7, T4, T10, T3, "cũ"), câu trả lời Q1–Q3 đã dùng, 12 tự quyết, chữ ngoài mockup đã thêm ("Tuần đã qua", "Bỏ lịch MT2", "Lịch riêng ▾", toast), phép kiểm cũ đã sửa theo T13b, chú thích `ponytail:`, ảnh sổ tay `docs/so-tay/` bị lệch (panel Xếp lịch MT, hộp kỹ năng, hồ sơ Mock).
+- [x] Rà mọi nơi hiện trạng thái MT (`grep -rn "MT\${" web/src`): đã dùng `OMt` ở panel, hộp (tiêu đề giữ chữ), Kế hoạch Test FT, Lộ trình, đầu trang hồ sơ Mock. **Không** đổi (chỉ là chữ MT trong câu/số liệu, không phải ô trạng thái): `HanhTrinh.tsx:480`, `Highlights.tsx:56`, `LuoiFT.tsx:248`, `MotKyNang.tsx:185`, `StudentManagePanel.tsx:280`, `cases/*`, `yThuc/*`; `IeltsAttempts` (`StudentDetailPage.tsx:458`) giữ liên kết `MT{n}` + `NhanDot` (cột Kết quả đã nói trạng thái) — ghi danh sách vào mô tả PR.
+- [x] `CODE_MAP.md`: thêm 4 file mới, gỡ `HopXacNhanHuyLich.tsx`. `plan.md` mục 11 một dòng; `[x]` trong file này.
+- [x] `npm run check` (một lần). Bấm thử 375/1440 sáng/tối, vai Quản trị (1), QL (2), GVCN (7), GVBM (9): panel · hộp (Kế hoạch Test + Lộ trình) · popup ở 4 cổng · hồ sơ Mock (Xin dời, lý do tuỳ chọn) · Nhập điểm band. Ảnh thật vào PR.
+- [x] `/impeccable audit` các màn trên → sửa lỗi P0/P1 trong phạm vi.
+- [x] `/ponytail-review`; `superpowers:requesting-code-review`; `superpowers:finishing-a-development-branch` (PR vào `main`, không merge). Mô tả PR: từng mục (panel, hộp, Ô MT, popup, T7, T4, T10, T3, "cũ"), câu trả lời Q1–Q3 đã dùng, 12 tự quyết, chữ ngoài mockup đã thêm ("Tuần đã qua", "Bỏ lịch MT2", "Lịch riêng ▾", toast), phép kiểm cũ đã sửa theo T13b, chú thích `ponytail:`, ảnh sổ tay `docs/so-tay/` bị lệch (panel Xếp lịch MT, hộp kỹ năng, hồ sơ Mock).
 
 ## Nghiệm thu
 - Panel, hộp, Ô MT, popup **đúng chữ mockup bản 4**; không câu giải thích dưới nút/ô.
