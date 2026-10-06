@@ -40,6 +40,8 @@ export function tinhTrangLop(classId: number) {
   const dem = (sql: string, ...a: unknown[]) => (conn.prepare(sql).get(...a) as { n: number }).n;
   const soTungGhiDanh = dem('SELECT COUNT(*) n FROM enrollments WHERE class_id = ?', classId);
   const soDangHoc = dem(`SELECT COUNT(*) n FROM enrollments WHERE class_id = ? AND status = 'active'`, classId);
+  /* PR-LUI-b: quyết định chuyển lớp CHƯA thi hành mà lớp này là lớp ĐẾN ("Sắp nhận n em") — kết thúc lớp sẽ làm chúng hỏng. */
+  const soSapNhan = dem(`SELECT COUNT(*) n FROM lenh_chuyen_lop WHERE lop_dich_id = ? AND trang_thai = 'cho'`, classId);
   const gan: string[] = [];
   for (const [bang, nhan] of BANG_DU_LIEU) {
     const n = dem(`SELECT COUNT(*) n FROM ${bang} WHERE class_id = ?`, classId);
@@ -59,13 +61,15 @@ export function tinhTrangLop(classId: number) {
     nMiniTest > 0 ? `${nMiniTest} Mini Test chưa ghi` : null,
     cho.n > 0 && cho.tu ? `${CHU_CHUYEN_LOP.sapChuyen(tuanLich(cho.tu, demoToday()))} (${cho.n} em)` : null,
   ].filter(Boolean);
-  return { soTungGhiDanh, soDangHoc, gan, coDuLieu: soTungGhiDanh > 0 || gan.length > 0, conTreo: treo.length ? `Còn treo: ${treo.join(' · ')}` : null };
+  return { soTungGhiDanh, soDangHoc, soSapNhan, gan, coDuLieu: soTungGhiDanh > 0 || gan.length > 0, conTreo: treo.length ? `Còn treo: ${treo.join(' · ')}` : null };
 }
 
 /** Câu chặn Kết thúc lớp khi còn em đang học — nói đúng việc phải làm theo loại lớp (K2-35): FT chuyển từng em, lớp thường ra MỘT quyết định cho cả lớp. */
 function lyDoConEm(c: { is_fast_track: number }, soDangHoc: number): string {
   return `Còn ${soDangHoc} học viên đang học — ${c.is_fast_track ? 'chuyển lớp từng em hoặc chuyển nhiều em' : `${CHU_CHUYEN_LOP.quyetDinh} cho cả lớp`} trước.`;
 }
+
+const lyDoSapNhan = (n: number) => `Còn ${n} quyết định chuyển lớp ĐẾN lớp này — huỷ hoặc đổi lớp đến trước.`;
 
 /** GET /classes/:id/xoa-ket-thuc — cho panel biết nên hiện nút nào và vì sao. Quản lý của lớp hoặc Quản trị; `coTheXoa` chỉ Quản trị. */
 export function xemXoaKetThuc(p: Principal, classId: number) {
@@ -78,9 +82,9 @@ export function xemXoaKetThuc(p: Principal, classId: number) {
     soDangHoc: t.soDangHoc, soTungGhiDanh: t.soTungGhiDanh, coDuLieu: t.coDuLieu, dangGan: t.gan, conTreo: t.conTreo,
     /** Xoá: chỉ Quản trị, chỉ lớp trống hẳn. Kết thúc: lớp còn hoạt động và không còn học viên đang học. */
     coTheXoa: !t.coDuLieu && can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }),
-    coTheKetThuc: !daKetThuc && t.soDangHoc === 0,
+    coTheKetThuc: !daKetThuc && t.soDangHoc === 0 && t.soSapNhan === 0,
     lyDoChanKetThuc: daKetThuc ? 'Lớp đã kết thúc.'
-      : t.soDangHoc > 0 ? lyDoConEm(c, t.soDangHoc) : null,
+      : t.soDangHoc > 0 ? lyDoConEm(c, t.soDangHoc) : t.soSapNhan > 0 ? lyDoSapNhan(t.soSapNhan) : null,
   };
 }
 
@@ -113,13 +117,14 @@ export function ketThucLop(p: Principal, classId: number) {
   if (t.soDangHoc > 0) {
     throw badRequest(lyDoConEm(c, t.soDangHoc));
   }
+  if (t.soSapNhan > 0) throw badRequest(lyDoSapNhan(t.soSapNhan));
   const ngay = demoToday();
   const conn = db();
   tx(() => {
     conn.prepare(`UPDATE classes SET status = 'finished', finished_at = ? WHERE id = ?`).run(ngay, classId);
     writeAudit({
       actorUserId: p.userId, action: 'class.finished', entityType: 'class', entityId: classId, entityLabel: c.code,
-      before: { status: c.status }, after: { status: 'finished', on: ngay, by: 'system_admin' },
+      before: { status: c.status }, after: { status: 'finished', on: ngay },
     });
   });
   return { ok: true, ma: c.code, finishedAt: ngay };
@@ -144,5 +149,5 @@ export function moLaiLop(p: Principal, classId: number, o: { lyDo?: unknown } = 
       before: { status: 'finished', finishedAt: c.finished_at }, after: { status: 'active', lyDo },
     });
   });
-  return { ok: true, ma: c.code };
+  return { ok: true, ma: c.code, finishedAt: c.finished_at as string | null };
 }

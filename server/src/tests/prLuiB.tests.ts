@@ -342,5 +342,135 @@ export async function runPrLuiBTests(t: YThucTestKit) {
     assert(/length < 3/.test(t.slice(t.indexOf('huyNhieu.lyDo'))), 'lý do ≥ 3 ký tự');
   });
 
+  // ---------------------------------------------------------------- Sau rà #213 (I1–I3, mục 4–5)
+  const intakeSvc: any = await import('../classes/intake.ts');
+  const xk: any = await import('../classes/xoaKetThucLop.ts');
+  const mbId = (conn.prepare(`SELECT id FROM branches WHERE code = 'MB'`).get() as { id: number }).id;
+  const emNgoaiMb = (): number => (conn.prepare(`SELECT s.id FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
+      JOIN classes c ON c.id = e.class_id JOIN branches b ON b.id = c.branch_id WHERE b.code != 'MB' AND s.status = 'active' ORDER BY s.id LIMIT 1`).get() as any).id;
+
+  await checkAsync('LUIb-20 · I1 xemTruoc không lộ tên: GVBM 403 cả lô; học viên ngoài phạm vi Quản lý chỉ hiện "#id", mã trống, lớp null', () => thu(() => {
+    assert(maLoi(() => hl.xemTruoc(P.subjectTeacher, { viec: 'ket-thuc', studentIds: [1, 2, 3, 4, 5] })) === 403, 'GVBM xem trước → 403');
+    assert(maLoi(() => hl.xemTruoc(P.coreTeacher, { viec: 'ket-thuc', studentIds: dangHocTrong('MB FOU 12', 2) })) === 403, 'GVCN xem trước → 403');
+    const ngoai = emNgoaiMb();
+    const [trong] = dangHocTrong('MB FT 101', 1);
+    const xt = hl.xemTruoc(P.mbManager, { viec: 'ket-thuc', studentIds: [trong, ngoai] });
+    const r = xt.rows.find((x: any) => x.studentId === ngoai);
+    assert(r.ten === `#${ngoai}` && r.ma === '' && r.lop === null && r.lyDoBo === 'Ngoài phạm vi của bạn.', JSON.stringify(r));
+    assert(xt.rows.find((x: any) => x.studentId === trong).ten !== `#${trong}`, 'học viên trong phạm vi vẫn thấy tên');
+  }));
+
+  await checkAsync('LUIb-21 · I3 thangThi: chuỗi rác 400, "02/2027" → exam_month 2027-02', () => thu(() => {
+    const sid = dangHocTrong('MB FOU 12', 1)[0];
+    svc.setStudentStatus(P.mbManager, sid, 'finished', TODAY, 'Nghỉ học');
+    const ft = classId('MB FT 101');
+    assert(maLoi(() => svc.hocLai(P.mbManager, sid, { lopMoiId: ft, mucTieu: 6.5, thangThi: 'x'.repeat(60) })) === 400, 'chuỗi rác');
+    assert(maLoi(() => svc.hocLai(P.mbManager, sid, { lopMoiId: ft, mucTieu: 6.5, thangThi: '13/2027' })) === 400, 'tháng 13');
+    svc.hocLai(P.mbManager, sid, { lopMoiId: ft, mucTieu: 6.5, thangThi: '02/2027' });
+    assert((conn.prepare(`SELECT exam_month FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(sid) as any).exam_month === '2027-02', 'exam_month');
+  }));
+
+  await checkAsync('LUIb-22 · I2 Hoàn tác Học lại về lớp cũ: về đúng trạng thái sau Kết thúc học (ngày kết thúc + ngày lưu trữ cũ); lớp được mở cùng lúc đóng lại', () => thu(() => {
+    const sid = dangHocTrong('MB FOU 12', 1)[0];
+    const lop = classId('MB FOU 12');
+    const ngayKt = addDays(TODAY, -20);
+    svc.setStudentStatus(P.mbManager, sid, 'finished', ngayKt, 'Nghỉ học');
+    conn.prepare(`UPDATE classes SET status = 'finished', finished_at = ? WHERE id = ?`).run(ngayKt, lop);
+    const sauKt = anh(sid);
+    svc.hocLai(P.mbManager, sid, { moLaiLop: true });
+    assert((conn.prepare('SELECT status FROM classes WHERE id = ?').get(lop) as any).status === 'active', 'lớp mở lại');
+    svc.hoanTacHocLai(P.mbManager, sid);
+    assert(anh(sid) === sauKt, `không về trạng thái sau Kết thúc học:\n${sauKt}\n${anh(sid)}`);
+    const c = conn.prepare('SELECT status, finished_at FROM classes WHERE id = ?').get(lop) as any;
+    assert(c.status === 'finished' && c.finished_at === ngayKt, `lớp phải đóng lại với ngày cũ: ${JSON.stringify(c)}`);
+    assert(maLoi(() => svc.hoanTacHocLai(P.mbManager, sid)) === 409, 'hoàn tác hai lần → 409');
+    assert(maLoi(() => svc.hoanTacHocLai(P.coreTeacher, sid)) === 403, 'GVCN 403');
+  }));
+
+  await checkAsync('LUIb-23 · I2 Hoàn tác Học lại sang lớp mới: gỡ ghi danh + lộ trình + lịch mới + chuông chuyển vào; Học lại về lớp cũ sau đó vào đúng lớp cũ', () => thu(() => {
+    const sid = dangHocTrong('MB FOU 12', 1)[0];
+    const lopMoi = (conn.prepare(`SELECT id FROM classes WHERE status = 'active' AND is_fast_track = 0 AND id != ? ORDER BY id LIMIT 1`).get(classId('MB FOU 12')) as any).id as number;
+    svc.setStudentStatus(P.mbManager, sid, 'finished', addDays(TODAY, -5), 'Nghỉ học');
+    const sauKt = anh(sid);
+    svc.hocLai(P.mbManager, sid, { lopMoiId: lopMoi });
+    const cyMoi = (conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(sid) as any).id as number;
+    assert((conn.prepare('SELECT COUNT(*) n FROM assessment_attempts WHERE cycle_id = ?').get(cyMoi) as any).n > 0, 'lịch mặc định của lộ trình mới');
+    svc.hoanTacHocLai(P.mbManager, sid);
+    assert(anh(sid) === sauKt, `không về trạng thái sau Kết thúc học:\n${sauKt}\n${anh(sid)}`);
+    assert((conn.prepare('SELECT COUNT(*) n FROM assessment_attempts WHERE cycle_id = ?').get(cyMoi) as any).n === 0, 'bài / lượt của lộ trình mới phải gỡ');
+    assert((conn.prepare(`SELECT COUNT(*) n FROM notifications WHERE kind = 'transfer_in' AND entity_id = ?`).get(sid) as any).n === 0, 'chuông chuyển vào phải gỡ');
+    svc.hocLai(P.mbManager, sid);
+    assert((conn.prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active'`).get(sid) as any).class_id === classId('MB FOU 12'), 'Về lớp cũ phải vào lớp cũ');
+  }));
+
+  await checkAsync('LUIb-24 · I2 Hoàn tác Học lại sang lớp mới: lộ trình mới đã có dữ liệu → 409, giữ nguyên; học viên đổi trạng thái sau Học lại → 409', () => thu(() => {
+    const sid = dangHocTrong('MB FOU 12', 1)[0];
+    const lopMoi = (conn.prepare(`SELECT id FROM classes WHERE status = 'active' AND is_fast_track = 0 AND id != ? ORDER BY id LIMIT 1`).get(classId('MB FOU 12')) as any).id as number;
+    svc.setStudentStatus(P.mbManager, sid, 'finished', TODAY, 'Nghỉ học');
+    svc.hocLai(P.mbManager, sid, { lopMoiId: lopMoi });
+    const cyMoi = (conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(sid) as any).id as number;
+    conn.prepare(`UPDATE assessment_attempts SET status = 'done' WHERE id = (SELECT MIN(id) FROM assessment_attempts WHERE cycle_id = ?)`).run(cyMoi);
+    const truoc = anh(sid);
+    assert(maLoi(() => svc.hoanTacHocLai(P.mbManager, sid)) === 409, 'đã có dữ liệu → 409');
+    assert(anh(sid) === truoc, '409 không được đổi gì');
+    svc.setStudentStatus(P.mbManager, sid, 'inactive', TODAY, 'Nghỉ tạm');
+    assert(maLoi(() => svc.hoanTacHocLai(P.mbManager, sid)) === 409, 'đã đổi trạng thái sau Học lại → 409');
+  }));
+
+  await checkAsync('LUIb-25 · Mục 4: Hoàn tác Kết thúc học (một / nhiều học viên) mở lại ĐÚNG Case / PA / tín hiệu mà chính lần đó đóng; Case đã đóng từ trước giữ đóng', () => thu(() => {
+    const row = conn.prepare(`SELECT s.id FROM students s JOIN sos_cases c ON c.student_id = s.id AND c.status != 'done'
+        JOIN enrollments e ON e.student_id = s.id AND e.status = 'active' WHERE s.status = 'active' AND e.class_id = ? ORDER BY s.id LIMIT 1`).get(classId('MB FT 101')) as any;
+    assert(row, 'cần một học viên có Case mở');
+    const sid = row.id as number;
+    const cuDong = Number(conn.prepare(`INSERT INTO sos_cases (student_id, title, status, closed_at, created_at, updated_at) VALUES (?, 'Case đã đóng từ trước', 'done', '2026-01-01', '2026-01-01', '2026-01-01')`).run(sid).lastInsertRowid);
+    const chup = () => JSON.stringify({
+      c: conn.prepare('SELECT id, status, disposition, disposition_note, outcome_note, dedup_key, closed_at, closed_by, system_close_reason FROM sos_cases WHERE student_id = ? ORDER BY id').all(sid),
+      p: conn.prepare('SELECT iv.id, iv.status, iv.closed_reason FROM case_interventions iv JOIN sos_cases c ON c.id = iv.case_id WHERE c.student_id = ? ORDER BY iv.id').all(sid),
+      t: conn.prepare('SELECT id, status, withdrawn_reason FROM case_signals WHERE student_id = ? ORDER BY id').all(sid),
+    });
+    const truoc = chup();
+    hl.chay(P.mbManager, { viec: 'ket-thuc', studentIds: [sid], lyDo: 'Cuối khoá' });
+    assert(chup() !== truoc, 'Kết thúc học phải đóng Case');
+    assert((conn.prepare('SELECT status FROM sos_cases WHERE id = ?').get(cuDong) as any).status === 'done', 'Case cũ vẫn đóng');
+    const kq = hl.chay(P.mbManager, { viec: 'hoan-tac-ket-thuc', studentIds: [sid] });
+    assert(kq.ok.length === 1 && kq.failed.length === 0, JSON.stringify(kq));
+    assert(chup() === truoc, `Case / PA / tín hiệu phải về nguyên trạng:\n${truoc}\n${chup()}`);
+    assert((conn.prepare('SELECT status FROM students WHERE id = ?').get(sid) as any).status === 'active', 'học viên đang học lại');
+  }));
+
+  await checkAsync('LUIb-26 · 5a Kết thúc lớp bị chặn khi còn quyết định chuyển ĐẾN lớp đó; 5d máy chủ chặn Học lại hàng loạt sang lớp FT; 5e nhật ký kết thúc lớp ghi đúng người bấm', () => thu(() => {
+    const ma = 'MB-LUIB 1';
+    const c = intakeSvc.createClass(P.admin, { code: ma, branchId: mbId, kind: 'FOU', isFastTrack: false, startDate: '2026-08-03' }) as { id: number };
+    const sid = dangHocTrong('MB FOU 12', 1)[0];
+    conn.prepare(`INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, lop_dich_id, huong, boi_canh, tuan_bat_dau, nguoi_ra_lenh, ngay_ra_lenh, trang_thai, tao_luc)
+      VALUES (?,?,?, 'len_lop', 'cuoi-khoa', '2026-12-07', ?, ?, 'cho', ?)`).run(sid, classId('MB FOU 12'), c.id, P.mbManager.userId, TODAY, new Date().toISOString());
+    assert(maLoi(() => xk.ketThucLop(P.mbManager, c.id)) === 400, 'còn quyết định chuyển đến → 400');
+    assert(/quyết định chuyển/.test(xk.xemXoaKetThuc(P.mbManager, c.id).lyDoChanKetThuc ?? ''), 'xem phải nói lý do chặn');
+    conn.prepare(`UPDATE lenh_chuyen_lop SET trang_thai = 'huy' WHERE lop_dich_id = ?`).run(c.id);
+    xk.ketThucLop(P.mbManager, c.id);
+    const au = conn.prepare(`SELECT actor_user_id, after_json FROM audit_logs WHERE action = 'class.finished' AND entity_id = ? ORDER BY id DESC LIMIT 1`).get(c.id) as any;
+    assert(au.actor_user_id === P.mbManager.userId && !String(au.after_json).includes('system_admin'), `nhật ký: ${JSON.stringify(au)}`);
+    const dsFt = dangHocTrong('MB FOU 12', 2);
+    svc.setStudentStatus(P.mbManager, dsFt[0], 'finished', TODAY, 'Nghỉ học');
+    assert(maLoi(() => hl.chay(P.mbManager, { viec: 'hoc-lai', studentIds: [dsFt[0]], lopMoiId: classId('MB FT 101') })) === 400, 'Học lại hàng loạt sang FT → 400 ở máy chủ');
+  }));
+
+  await checkAsync('LUIb-27 · 5b Về lớp cũ khi lộ trình đã đóng bằng Kết luận: mở lộ trình MỚI ở lớp cũ, panel nói đúng ("Lộ trình mới"); 5e chuông chuyển vào có mã lớp cũ + tên chi nhánh, không "(—)"', () => thu(() => {
+    const sid = dangHocTrong('MB FOU 12', 1)[0];
+    conn.prepare(`UPDATE learning_cycles SET status = 'completed', ended_at = ? WHERE student_id = ? AND status = 'active'`).run(addDays(TODAY, -30), sid);
+    svc.setStudentStatus(P.mbManager, sid, 'finished', TODAY, 'Nghỉ học');
+    const hoi = svc.lopChoHocLai(P.mbManager, sid);
+    assert(hoi.loTrinh && hoi.loTrinh.chayTiep === false && typeof hoi.loTrinh.ten === 'string', JSON.stringify(hoi.loTrinh));
+    svc.hocLai(P.mbManager, sid);
+    const dang = conn.prepare(`SELECT id, seq FROM learning_cycles WHERE student_id = ? AND status = 'active'`).all(sid) as any[];
+    assert(dang.length === 1 && dang[0].seq === (conn.prepare('SELECT MAX(seq) n FROM learning_cycles WHERE student_id = ?').get(sid) as any).n, `phải có đúng một lộ trình mới đang chạy: ${JSON.stringify(dang)}`);
+    const lopMoi = (conn.prepare(`SELECT id FROM classes WHERE status = 'active' AND is_fast_track = 0 AND id != ? ORDER BY id LIMIT 1`).get(classId('MB FOU 12')) as any).id as number;
+    svc.setStudentStatus(P.mbManager, sid, 'finished', TODAY, 'Nghỉ học');
+    conn.prepare(`DELETE FROM notifications WHERE kind = 'transfer_in'`).run();
+    svc.hocLai(P.mbManager, sid, { lopMoiId: lopMoi });
+    const tb = conn.prepare(`SELECT body FROM notifications WHERE kind = 'transfer_in' AND entity_id = ? LIMIT 1`).get(sid) as any;
+    assert(tb && tb.body.includes('MB FOU 12') && !tb.body.includes('(—)'), `chuông: ${JSON.stringify(tb)}`);
+  }));
+
   void doc;
 }

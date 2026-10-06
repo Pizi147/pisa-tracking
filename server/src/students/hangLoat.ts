@@ -9,7 +9,7 @@ import { can, napTruocPhamVi, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { chanGiaoDichNeuSapHetGio } from '../platform/hanGio.ts';
 import { huyNhieuLenh, khoiPhucLenh } from '../classes/lenhChuyen.ts';
-import { archiveStudent, hocLai, setStudentStatus, unarchiveStudent } from './students.ts';
+import { archiveStudent, hoanTacHocLai, hoanTacKetThuc, hocLai, setStudentStatus, unarchiveStudent } from './students.ts';
 
 /**
  * LÀM NHIỀU HỌC VIÊN MỘT LẦN (PR-LUI-b, chủ sản phẩm 06/10) — Kết thúc học · Lưu trữ · Bỏ lưu trữ · Học lại · Huỷ chuyển lớp · Khôi phục chuyển lớp. CHỈ Quản lý /
@@ -45,6 +45,8 @@ function lyDoBo(p: Principal, viec: ViecHangLoat, e: Em): string | null {
     case 'hoc-lai': return s.status !== 'finished' ? 'Đang học' : lopCuoi?.status !== 'completed' ? 'Chưa có lớp để học lại' : null;
     case 'huy-lenh': return e.lenhCho ? null : 'Chưa có quyết định chuyển lớp';
     case 'khoi-phuc-lenh': return e.lenhHuy ? null : 'Không có quyết định vừa huỷ để khôi phục';
+    case 'hoan-tac-ket-thuc': return s.status === 'finished' ? null : 'Không còn ở trạng thái kết thúc học';
+    case 'hoan-tac-hoc-lai': return s.status === 'active' ? null : 'Không còn ở trạng thái đang học';
   }
 }
 
@@ -77,9 +79,13 @@ export function xemTruoc(p: Principal, input: { viec?: unknown; studentIds?: unk
   const ids = docIds(input?.studentIds, TOI_DA_HANG_LOAT_EM);
   napTruocPhamVi(ids);
   const em = docEm(ids);
+  /* Chỉ người có quyền ở ÍT NHẤT một học viên mới được xem trước (GVCN / GVBM → 403 cả lô, như `chay`); em ngoài phạm vi chỉ hiện "#id" — không lộ tên, mã, lớp. */
+  const trongPhamVi = (id: number) => em.has(id) && can(p, PERMISSIONS.PLAN_WEEK, { studentId: id });
+  if (!ids.some(trongPhamVi)) throw forbidden(CHI_QL);
   const rows: DongXemTruoc[] = ids.map((id) => {
     const e = em.get(id);
     if (!e) return { studentId: id, ten: `#${id}`, ma: '', lop: null, trangThai: 'dang-hoc', lyDoBo: 'Không tìm thấy học viên.' };
+    if (!trongPhamVi(id)) return { studentId: id, ten: `#${id}`, ma: '', lop: null, trangThai: 'dang-hoc', lyDoBo: 'Ngoài phạm vi của bạn.' };
     const s = e.s;
     return {
       studentId: id, ten: s.full_name, ma: s.student_code, lop: e.lopCuoi?.code ?? null,
@@ -126,6 +132,8 @@ export function chay(p: Principal, input: {
   if (viec === 'huy-lenh' && (lyDo?.length ?? 0) < 3) throw badRequest('Ghi lý do huỷ quyết định.');
   const lopMoiId = input.lopMoiId === undefined || input.lopMoiId === null ? null : Number(input.lopMoiId);
   if (lopMoiId !== null && (!Number.isInteger(lopMoiId) || lopMoiId <= 0)) throw badRequest('Lớp chuyển đến không hợp lệ.');
+  /* Sang lớp Fast Track cần Target của từng em — làm từng em ở hồ sơ, không làm hàng loạt. */
+  if (viec === 'hoc-lai' && lopMoiId !== null && (db().prepare('SELECT is_fast_track FROM classes WHERE id = ?').get(lopMoiId) as any)?.is_fast_track) throw badRequest('Học lại sang lớp Fast Track cần Target — làm từng học viên.');
   napTruocPhamVi(ids);
   const em = docEm(ids);
   /* Không học viên nào trong phạm vi người gọi → 403 cả lô (GVCN gọi thẳng API). */
@@ -152,6 +160,8 @@ export function chay(p: Principal, input: {
           else if (viec === 'luu-tru') archiveStudent(p, id);
           else if (viec === 'bo-luu-tru') unarchiveStudent(p, id);
           else if (viec === 'hoc-lai') hocLai(p, id, { date, lyDo, moLaiLop: input.moLaiLop === true, lopMoiId });
+          else if (viec === 'hoan-tac-ket-thuc') hoanTacKetThuc(p, id);
+          else if (viec === 'hoan-tac-hoc-lai') hoanTacHocLai(p, id);
           else { const r = khoiPhucLenh(p, [e.lenhHuy.id]); if (r.failed.length) throw new HttpError(409, r.failed[0].message); }
         });
         kq.ok.push(id);

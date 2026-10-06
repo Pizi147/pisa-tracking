@@ -57,7 +57,7 @@ export function closeCasesBySystem(input: {
   programme?: 'ratio' | 'band' | null;
   /** PR-MT (T67): chỉ đúng các Case này (huỷ lượt) — không thu hồi tín hiệu nào khác. */
   caseIds?: number[] | null;
-}): { closedCaseIds: number[]; withdrawnSignalIds: number[] } {
+}): { closedCaseIds: number[]; withdrawnSignalIds: number[]; chup: ChupCaseDong[] } {
   const conn = db();
   const label = SYSTEM_CLOSE_REASON_LABEL[input.reason];
   const inScope = (cycleId: number | null, row: any) =>
@@ -75,11 +75,14 @@ export function closeCasesBySystem(input: {
     .prepare(`SELECT * FROM case_signals WHERE student_id = ? AND status = 'pending' ORDER BY id`)
     .all(input.studentId) as any[]).filter((s) => inScope(s.cycle_id ?? null, { category: s.category, topic: s.skill, attempt_id: s.attempt_id }));
 
-  if (!open.length && !pendingSignals.length) return { closedCaseIds: [], withdrawnSignalIds: [] };
+  if (!open.length && !pendingSignals.length) return { closedCaseIds: [], withdrawnSignalIds: [], chup: [] };
 
   return tx(() => {
     const closed: number[] = [];
+    const chup: ChupCaseDong[] = [];
     for (const c of open) {
+      /* PR-LUI-b: chụp trạng thái TRƯỚC khi đóng — Hoàn tác Kết thúc học mở lại đúng Case / PA này (`moLaiCaseHeThongDong`). */
+      const truocPa = conn.prepare(`SELECT id, status FROM case_interventions WHERE case_id = ? AND status IN ('planned', 'started')`).all(c.id) as { id: number; status: string }[];
       const cancelled = conn
         .prepare(
           `UPDATE case_interventions SET status = 'cancelled', closed_reason = 'system_closed', updated_at = ?
@@ -114,6 +117,10 @@ export function closeCasesBySystem(input: {
         before: { status: c.status }, after: { status: 'done', reason: input.reason, cancelledPlans: cancelled },
       });
       closed.push(c.id);
+      chup.push({
+        id: c.id, status: c.status, disposition: c.disposition ?? null, disposition_note: c.disposition_note ?? null, outcome_note: c.outcome_note ?? null,
+        dedup_key: c.dedup_key ?? null, closed_at: c.closed_at ?? null, closed_by: c.closed_by ?? null, pa: truocPa,
+      });
     }
     for (const s of pendingSignals) {
       conn
@@ -124,8 +131,53 @@ export function closeCasesBySystem(input: {
         before: { status: 'pending' }, after: { status: 'withdrawn', reason: label },
       });
     }
-    return { closedCaseIds: closed, withdrawnSignalIds: pendingSignals.map((s) => s.id as number) };
+    return { closedCaseIds: closed, withdrawnSignalIds: pendingSignals.map((s) => s.id as number), chup };
   });
+}
+
+/** Trạng thái của MỘT Case trước khi hệ thống đóng (đủ để mở lại đúng như cũ). */
+export type ChupCaseDong = {
+  id: number; status: string; disposition: string | null; disposition_note: string | null; outcome_note: string | null;
+  dedup_key: string | null; closed_at: string | null; closed_by: number | null; pa: { id: number; status: string }[];
+};
+
+/**
+ * MỞ LẠI ĐÚNG CÁC CASE / PA / TÍN HIỆU mà MỘT lần hệ thống đóng (PR-LUI-b, chủ sản phẩm 06/10 — Hoàn tác Kết thúc học). `chup` + `tinHieu` là kết quả của
+ * `closeCasesBySystem` lần đó. Case đóng từ trước (không nằm trong `chup`) giữ đóng. Case đã bị người sửa / đóng lại theo cách khác (không còn
+ * `system_close_reason = reason`), hoặc đã có Case MỚI cùng khoá chống trùng thì bỏ qua và báo `boQua`. Gọi trong giao dịch của nơi gọi.
+ */
+export function moLaiCaseHeThongDong(input: {
+  actorUserId: number | null; studentId: number; reason: SystemCloseReason; chup: ChupCaseDong[]; tinHieu: number[];
+}): { moLai: number[]; boQua: number[] } {
+  const conn = db();
+  const moLai: number[] = [];
+  const boQua: number[] = [];
+  for (const c of input.chup) {
+    const nay = conn.prepare('SELECT status, system_close_reason FROM sos_cases WHERE id = ?').get(c.id) as any;
+    const trung = c.dedup_key ? conn.prepare('SELECT 1 FROM sos_cases WHERE dedup_key = ? AND id != ?').get(c.dedup_key, c.id) : null;
+    if (!nay || nay.status !== 'done' || nay.system_close_reason !== input.reason || trung) { boQua.push(c.id); continue; }
+    conn.prepare(
+      `UPDATE sos_cases SET status = ?, closed_at = ?, closed_by = ?, system_close_reason = NULL, disposition = ?, disposition_note = ?, outcome_note = ?,
+              dedup_key = ?, updated_at = ? WHERE id = ?`,
+    ).run(c.status, c.closed_at, c.closed_by, c.disposition, c.disposition_note, c.outcome_note, c.dedup_key, nowIso(), c.id);
+    for (const pa of c.pa) {
+      conn.prepare(`UPDATE case_interventions SET status = ?, closed_reason = NULL, updated_at = ? WHERE id = ? AND status = 'cancelled' AND closed_reason = 'system_closed'`)
+        .run(pa.status, nowIso(), pa.id);
+    }
+    conn.prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?, 'status', 'done', ?, ?, ?)`)
+      .run(c.id, c.status, input.actorUserId, nowIso());
+    conn.prepare('DELETE FROM case_milestones WHERE dedup_key = ?').run(`system_close:${c.id}`);
+    conn.prepare('DELETE FROM journey_events WHERE dedup_key = ?').run(`case_system_close:${c.id}`);
+    writeAudit({
+      actorUserId: input.actorUserId, action: 'case.system_reopen', entityType: 'sos_case', entityId: c.id, entityLabel: SYSTEM_CLOSE_REASON_LABEL[input.reason],
+      before: { status: 'done' }, after: { status: c.status, lyDo: 'Hoàn tác Kết thúc học' },
+    });
+    moLai.push(c.id);
+  }
+  for (const id of input.tinHieu) {
+    conn.prepare(`UPDATE case_signals SET status = 'pending', withdrawn_reason = NULL, updated_at = ? WHERE id = ? AND status = 'withdrawn'`).run(nowIso(), id);
+  }
+  return { moLai, boQua };
 }
 
 /** S17 + chiều ngược của §3.9: em sang lớp thường → đóng Case FT; em sang FT → đóng Case lớp thường. PR-LT gọi hàm này. */

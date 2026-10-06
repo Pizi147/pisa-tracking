@@ -63,7 +63,7 @@ export function lopDichChoChuyen(p: Principal, sid: number) {
 }
 
 /** Lớp ĐANG hoạt động để chọn làm lớp chuyển đến (trừ lớp `boQuaLopId`) + chi nhánh — dùng chung Chuyển lớp và Học lại sang lớp mới (PR-LUI-b). */
-export function danhSachLopDich(boQuaLopId: number) {
+export function danhSachLopDich(boQuaLopId: number, demHocVien = false) {
   const conn = db();
   const branches = conn.prepare(`SELECT id, name FROM branches WHERE status = 'active' ORDER BY name`).all() as any[];
   const lopRows = conn
@@ -75,6 +75,9 @@ export function danhSachLopDich(boQuaLopId: number) {
     )
     .all(boQuaLopId) as any[];
   const tienDo = classProgressMany(lopRows.map((r) => r.id));
+  /* Chỉ Học lại (Quản lý) hiện sĩ số; GVCN chọn lớp chuyển đến không được thấy số học viên lớp khác. */
+  const siSo = new Map<number, number>();
+  if (demHocVien) for (const r of conn.prepare(`SELECT class_id, COUNT(*) n FROM enrollments WHERE status = 'active' GROUP BY class_id`).all() as any[]) siSo.set(r.class_id, r.n);
   return {
     chiNhanh: branches.map((b) => ({ id: b.id, name: b.name })),
     lop: lopRows.map((r) => {
@@ -85,6 +88,7 @@ export function danhSachLopDich(boQuaLopId: number) {
         tenChuongTrinh: r.programme_code ? (programmeByCode(r.programme_code)?.name ?? null) : null,
         tuan: pr?.currentWeek && pr.totalWeeks && pr.currentWeek >= 1 ? `W${pr.currentWeek}/${pr.totalWeeks}` : null,
         gvcn: r.gvcn ?? null,
+        ...(demHocVien ? { siSo: siSo.get(r.id) ?? 0 } : {}),
       };
     }),
   };
