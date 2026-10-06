@@ -417,7 +417,7 @@ Bảng cổng (đặc tả mục 3 / mockup phần 0) → phép kiểm. Ô trố
 ```
 Repo pisa-tracking. Chỉ bắt đầu khi PR-DL, PR-K26, PR-SL đã merge vào main.
 Nhánh pr-mta-luat-mock-test từ origin/main mới nhất (worktree .claude/worktrees/pr-mta-luat-mock-test).
-Model: Opus 5.5 · XHigh (thay thế: Fable 5.1 · High).
+Model: Opus 5.5 · XHigh (thay thế: Opus 5.5 · High).
 Đọc CLAUDE.md, đặc tả docs/superpowers/specs/2026-10-05-test-mock-test-design.md, rồi làm đúng kế hoạch
 docs/superpowers/plans/2026-10-05-pr-mta-luat-mock-test.md, Task 0 → 11, theo thứ tự.
 Ponytail full (PR máy chủ); riêng lúc sửa web/ ở Task 1 và Task 10: /ponytail lite rồi trở lại full.

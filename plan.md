@@ -165,6 +165,9 @@ Chủ sản phẩm 05/10 đã chốt (mockup `thiet-ke/mockup-test-mt-2026-10-05
 | 04/10 | Điểm theo lớp: mockup `thiet-ke/mockup-diem-theo-lop-2026-10-04.html` đã duyệt | DL |
 | 04/10 | Deploy **sau mỗi đợt** | mục 5 |
 | 05/10 | Sửa thông tin cả lớp: **web tự chia lô 8 em** mỗi lần lưu (một nút Lưu; lô lỗi thì "Đã lưu n em · m em chưa lưu"), máy chủ có trần mỗi request · nút "Sửa thông tin" giữ ở hàng Cách xem + mục ⋮ · PR-SL **phải có mockup** duyệt dù bắt đầu trước luật mockup | SL |
+| 06/10 | Chờ duyệt **luôn mở "Tất cả" chi nhánh** (số dòng = badge); link trỏ một thẻ/lớp không áp chi nhánh mặc định | NV ✅ |
+| 06/10 | Điểm theo lớp: bỏ chú giải màu, câu "Lưu từng ô…", nút "Xong" của mockup (luật chữ ngắn); tab giữa Lịch Test và Kế hoạch Test | DL ✅ |
+| 06/10 | **Không dùng Fable** ở mọi session, kể cả subagent | mọi PR |
 
 ## 4. Việc chưa làm (đợt 3 còn DL, SL; đợt 4–6 ở mục 2c + kế hoạch 2026-10-05-*)
 
@@ -217,6 +220,7 @@ Việc đầu tiên: giao agent soạn kế hoạch theo mẫu A mục 10 (Opus 
 - **Tên web "PISA Tracking"** (chủ sản phẩm 05/10, PISA viết hoa hết): thay "Pisa Tracking" ở `index.html` `<title>`, `App.tsx:144`,
   `WelcomePage.tsx:137`, `server/src/index.ts:21`, phép kiểm `hocVienLop.tests.ts:71-73` + `suaLoiNong.tests.ts:281`, README/DEMO/TRIEN_KHAI,
   sổ tay `docs/so-tay/` (cùng lúc chụp lại ảnh). Không đổi tên gói npm, tên site Netlify, tên DB.
+- **Thêm từ rà PR-DL #206 (06/10):** tên học viên bị cắt khi có chip "Đã hoàn tất" (lưới chấm cũ + Điểm theo lớp) · `hoanTat.ts:42` tính theo giờ thật thay vì ngày nghiệp vụ (kiểm, có thật mới sửa).
 - **Thêm từ rà PR-SL #203 (05/10, Minor):** panel có form còn ghi cứng "Đóng" (chưa theo luật I1 `chan.daSua`): `ChuyenLopPanel.tsx:150`,
   `ClassProgressPanel.tsx:97`, `CatalogAdmin.tsx:177,248` · `KhungPanel.tsx` `nganPanel`: panel cha + con mở cùng một lần vẽ thì thứ tự Esc ngược
   (chưa gặp; có thật mới sửa) · hộp bốn tiêu chí: Esc khi đã gõ đóng luôn, không hỏi (có từ `Modal` cũ).
@@ -232,8 +236,8 @@ Chủ sản phẩm 04/10: **3 đợt**; deploy một lần (bản `main` lúc đ
 | Đợt | Chạy cùng lúc (mỗi PR một session) | Thứ tự merge | Vì sao không đụng nhau |
 |---|---|---|---|
 | ~~2~~ | ~~PHH · DH · SO~~ | ✅ xong 04/10 (#191, #190, #192) | — |
-| **3** (đang chạy) | ~~U12~~ ✅ #194 · ~~K26~~ ✅ #196 · **DL** · **SL** | DL → SL | U12: một bảng hồ sơ HV · DL: module điểm mới + một mục ⋮ · K26: `LoTrinhTiepPanel`, `lenLop.ts` · SL: panel/form chung. Chồng nhẹ: `DauTrangLop` (SL, DL, K26 thêm mục ⋮), `StudentDetailPage` (SL I4 ↔ U12). SL merge cuối: kiểm lại chân panel của DL, K26 theo luật I1 |
-| **4** | **NV** · **CHU** · **MTa** (sau khi DL, SL merge) | CHU → NV → MTa | NV: Chờ duyệt (`nhacNhieu`), ô chi nhánh, Lịch Test · CHU: chỉ thêm file `.md` + script · MTa: luật máy chủ Mock/Test. Chồng nhẹ: `duyet/yeuCau.ts` (NV thân `nhacNhieu`, MTa phần lý do), `mywork.ts` |
+| ~~3~~ | ~~U12~~ ✅ #194 · ~~K26~~ ✅ #196 · ~~DL~~ ✅ #206 · ~~SL~~ ✅ #203 | ✅ xong 06/10 | U12: một bảng hồ sơ HV · DL: module điểm mới + một mục ⋮ · K26: `LoTrinhTiepPanel`, `lenLop.ts` · SL: panel/form chung. Chồng nhẹ: `DauTrangLop` (SL, DL, K26 thêm mục ⋮), `StudentDetailPage` (SL I4 ↔ U12). SL merge cuối: kiểm lại chân panel của DL, K26 theo luật I1 |
+| **4** (đang chạy) | ~~CHU~~ ✅ #202 · ~~NV~~ ✅ #205 · **MTa** | MTa | NV: Chờ duyệt (`nhacNhieu`), ô chi nhánh, Lịch Test · CHU: chỉ thêm file `.md` + script · MTa: luật máy chủ Mock/Test. Chồng nhẹ: `duyet/yeuCau.ts` (NV thân `nhacNhieu`, MTa phần lý do), `mywork.ts` |
 | **5** | **MTb** · **MT0** · **LT3** | MTb → LT3 → MT0 | MTb: giao diện Mock Test · LT3: Lịch Test ba khối (`canCham.ts`, `lichTest/*`) · MT0: lượt MT0 + Chuyển tiếp lớp; MT0 dùng component ô MT của MTb và chồng `canCham.ts` với LT3 |
 | **6** | **HK2** (một mình) | — | Đụng ~15+ file khắp web, chụp lại sổ tay một lần |
 
@@ -247,17 +251,17 @@ Chủ sản phẩm 04/10: **3 đợt**; deploy một lần (bản `main` lúc đ
 DB THỬ (`pisatracking-demo`): không cần giữ tương thích; muốn dùng lại thì seed lại sau lần deploy sau.
 
 ## 6. Model, effort, skill cho từng PR
-Chọn model ở ô chọn model **trước khi dán prompt**. Subagent cùng model với session (không Haiku). Người rà: Opus 5.5, session khác.
+Chọn model ở ô chọn model **trước khi dán prompt**. Subagent cùng model với session (không Haiku, **không Fable** — chủ sản phẩm 06/10). Người rà: Opus 5.5, session khác.
 
 | PR | Khuyến nghị | Phương án B | Vì sao | Ponytail | Impeccable | Superpowers riêng |
 |---|---|---|---|---|---|---|
 | **PHH** | Opus 5.5 · High | Sonnet 5.5 · High | Có migrate, dữ liệu báo phụ huynh không được sai | lite (giao diện nhỏ) | `clarify` · `audit` | — (kế hoạch có sẵn) |
 | **DH** | Opus 5.5 · High | Sonnet 5.5 · High | Giao diện rộng, nhiều cột; model nhỏ từng lọt lỗi hình | lite | `critique` (chỉ đầu trang, DH-5) · `layout` · `clarify` (J6, J8, J10) · `adapt` (375) · `audit` | writing-plans (thêm task cuối kế hoạch) |
-| **SO** | Opus 5.5 · XHigh | Fable 5.1 · High | Gỡ mã migrate + gom hàm số liệu dùng chung: sai là lệch số hoặc hỏng nâng cấp DB | full | — | `/security-review` cuối PR |
+| **SO** | Opus 5.5 · XHigh | Opus 5.5 · High | Gỡ mã migrate + gom hàm số liệu dùng chung: sai là lệch số hoặc hỏng nâng cấp DB | full | — | `/security-review` cuối PR |
 | **U12** | Sonnet 5.5 · High | Opus 5.5 · Medium | Một bảng, theo mẫu đã có | lite | `layout` · `clarify` · `audit` | — |
-| **DL** | Opus 5.5 · High | Fable 5.1 · High | Tính năng mới, refactor `classScoreSheet`/`regularSheet` không được đổi kết quả cũ | lite | `layout` · `clarify` · `adapt` (375) · `audit` | brainstorming nếu DL-0 lệch G2 |
-| **K26** | Opus 5.5 · High | Fable 5.1 · High | Luật dải % + migrate đổi dữ liệu hướng + đường ghi cả lớp một giao dịch | lite | `layout` · `clarify` · `harden` · `adapt` · `audit` | — (kế hoạch có sẵn) |
-| **SL** | Opus 5.5 · High | Fable 5.1 · High | Ghi nhiều bảng một giao dịch + đổi khung panel dùng chung | lite | `layout` · `harden` (lỗi dưới ô, D11) · `clarify` (I2, I3, I6) · `audit` | writing-plans (thêm task) |
+| **DL** | Opus 5.5 · High | Sonnet 5.5 · High | Tính năng mới, refactor `classScoreSheet`/`regularSheet` không được đổi kết quả cũ | lite | `layout` · `clarify` · `adapt` (375) · `audit` | brainstorming nếu DL-0 lệch G2 |
+| **K26** | Opus 5.5 · High | Sonnet 5.5 · High | Luật dải % + migrate đổi dữ liệu hướng + đường ghi cả lớp một giao dịch | lite | `layout` · `clarify` · `harden` · `adapt` · `audit` | — (kế hoạch có sẵn) |
+| **SL** | Opus 5.5 · High | Sonnet 5.5 · High | Ghi nhiều bảng một giao dịch + đổi khung panel dùng chung | lite | `layout` · `harden` (lỗi dưới ô, D11) · `clarify` (I2, I3, I6) · `audit` | writing-plans (thêm task) |
 | **HK2** | Opus 5.5 · High | Sonnet 5.5 · High | ~15+ file, giữ nhất quán ba họ chip; chụp ảnh sổ tay giao subagent | lite | `polish` · `clarify` (J) · `adapt` (K4, K5, D7) · `audit` toàn web | writing-plans (kế hoạch bổ sung) · dispatching-parallel-agents (chụp ảnh) |
 | Rà PR | Opus 5.5 · High (SO, SL: XHigh) | — | Người rà khác người code | — | — | requesting-code-review (phía rà), receiving-code-review (phía code khi nhận tin sửa) |
 | Session planning | Opus 5.5 · XHigh | Opus 5.5 · High | Viết kế hoạch + rà cần suy luận dài | — | `critique` khi cần | brainstorming · writing-plans · dispatching-parallel-agents |
@@ -301,7 +305,7 @@ npm run check xanh (một lần một lúc) → bấm thử 375/1440 sáng/tối
 
 **PR-U12** — ✅ xong 05/10 (#194).
 
-**PR-DL** — Opus 5.5 · High (B: Fable 5.1 · High)
+**PR-DL** — Opus 5.5 · High (B: Sonnet 5.5 · High)
 ```
 /ponytail lite
 Làm PR-DL theo docs/superpowers/plans/2026-10-04-pr-dl-diem-theo-lop.md (DL-0 → DL-7). Nhánh pr-dl-diem-theo-lop.
@@ -311,7 +315,7 @@ Impeccable: DL-5, DL-6 /impeccable layout, /impeccable clarify, /impeccable adap
 DauTrangLop: chỉ thêm một mục menu ⋮. Merge đầu tiên còn lại của đợt 3 (U12 đã xong), trước K26 và SL.
 ```
 
-**PR-K26** — Opus 5.5 · High (B: Fable 5.1 · High)
+**PR-K26** — Opus 5.5 · High (B: Sonnet 5.5 · High)
 ```
 /ponytail lite
 Làm PR-K26 theo docs/superpowers/plans/2026-10-04-pr-k26-lo-trinh-tiep-theo-dai.md (K26-1 → K26-5, prompt chung plan.md mục 9.0).
@@ -320,7 +324,7 @@ Impeccable: K26-3 /impeccable layout + clarify; K26-4 /impeccable layout + harde
 Merge sau DL, trước SL (merge origin/main vào nhánh, giữ mọi migrate, chạy lại check).
 ```
 
-**PR-SL** — Opus 5.5 · High (B: Fable 5.1 · High)
+**PR-SL** — Opus 5.5 · High (B: Sonnet 5.5 · High)
 ```
 /ponytail lite
 Làm PR-SL theo docs/superpowers/plans/2026-10-03-pr-phien-lich-mt-dieu-huong-sua-lop.md (mục B Q-0310-3, "PR-SL", SL-1 → SL-2)
@@ -351,7 +355,7 @@ NV-1 đo số câu SQL ở bước đỏ trước khi sửa; không nới quyề
 Chữ trên màn ngắn, không câu giải thích dưới nút/ô. Merge sau CHU, trước MTa.
 ```
 
-**PR-MTa** — Opus 5.5 · XHigh (B: Fable 5.1 · High)
+**PR-MTa** — Opus 5.5 · XHigh (B: Opus 5.5 · High)
 ```
 Làm PR-MTa theo docs/superpowers/plans/2026-10-05-pr-mta-luat-mock-test.md (Task 0 → 11, prompt chung plan.md mục 9.0; đọc mục
 "Chủ sản phẩm chốt 05/10" ở đầu file trước — đè lên phần dưới). Đặc tả: docs/superpowers/specs/2026-10-05-test-mock-test-design.md.
@@ -362,7 +366,7 @@ Không đường TỰ ĐỘNG nào xoá điểm. Mỗi cổng ghi ở Task 11 c�
 
 ### 9.4. Đợt 5 — sau khi MTa merge
 
-**PR-MTb** — Opus 5.5 · High (B: Fable 5.1 · High)
+**PR-MTb** — Opus 5.5 · High (B: Sonnet 5.5 · High)
 ```
 /ponytail lite
 Làm PR-MTb theo docs/superpowers/plans/2026-10-05-pr-mtb-giao-dien-mock-test.md (Task 0 → 10, prompt chung plan.md mục 9.0; đọc mục
@@ -372,7 +376,7 @@ Impeccable theo từng task (layout, clarify, harden, adapt), cuối /impeccable
 Merge trước MT0.
 ```
 
-**PR-MT0** — Opus 5.5 · High (B: Fable 5.1 · High)
+**PR-MT0** — Opus 5.5 · High (B: Sonnet 5.5 · High)
 ```
 /ponytail lite
 Làm PR-MT0 theo docs/superpowers/plans/2026-10-05-pr-mt0.md (MT0-0 → MT0-9, prompt chung plan.md mục 9.0; đọc mục
@@ -381,7 +385,7 @@ MT0-0 (phép kiểm "MT0 không làm sai đếm") viết đỏ trước mọi th
 (merge origin/main vào nhánh, dùng component ô MT của MTb, chạy lại check). Impeccable layout/clarify, cuối /impeccable audit.
 ```
 
-**PR-LT3** — Opus 5.5 · XHigh (B: Fable 5.1 · High) — **chỉ chạy sau khi kế hoạch chi tiết được soạn và duyệt**
+**PR-LT3** — Opus 5.5 · XHigh (B: Opus 5.5 · High) — **chỉ chạy sau khi kế hoạch chi tiết được soạn và duyệt**
 ```
 Bước 1 (session planning): giao agent (mẫu A, mục 10) soạn thiet-ke/mockup-lich-test-ba-khoi-<ngày>.html (chủ sản phẩm duyệt) và docs/superpowers/plans/2026-10-0x-pr-lt3-lich-test-ba-khoi.md từ plan.md mục 2c (T15–T18)
 và mục 4 (PR-LT3), spec docs/superpowers/specs/2026-10-05-test-mock-test-design.md, Rulebook khối "PR-LT3". Đối chiếu canCham.ts, lichTest/*.
