@@ -887,4 +887,64 @@ export async function runPrMtbTests(t: YThucTestKit) {
     const m = nguon('web/src/modules/fasttrack/MockDetailPage.tsx');
     assert(/r\.huyVang \? '' : ', quá hạn thì huỷ phần thi'/.test(m), 'dòng đề nghị dời chưa phân biệt huyVang');
   });
+  // ------------------------------------------------------------------ sau rà độc lập — đợt 2 (giao diện)
+  check('MTb sau rà đợt 2 (1) · đầu hộp một đợt: tên là Link tới `duongDotTest` khi đã có đợt (đóng hộp khi bấm), đợt mới là chữ', () => {
+    const h = nguon('web/src/modules/test/keHoach/HopKyNang.tsx');
+    assert(/import \{ Link \} from 'react-router-dom'/.test(h) && /duongDotTest/.test(h), 'thiếu Link / duongDotTest');
+    assert(/attemptId !== null\s*\?\s*<Link to=\{duongDotTest\(\{ id: attemptId,[^}]*classId \}, null\)\} onClick=\{onClose\}/.test(h), 'tên chưa là Link đóng hộp');
+    const tieuDe = h.slice(h.indexOf('<Link to={duongDotTest'), h.indexOf('</Link>') + 120);
+    assert(/className="link flex min-h-\[44px\] items-center sm:min-h-0"/.test(tieuDe), 'Link chưa 44px ở 375');
+    assert(/<span className="block truncate">\{tieuDe\}<\/span>/.test(tieuDe), 'đợt mới phải là chữ');
+  });
+
+  check('MTb sau rà đợt 2 (2) · panel Xếp lịch: số em / bài và danh sách GỬI chỉ gồm em đang thấy (ẩn bởi Tìm / chip lọc thì không đếm, không gửi)', () => {
+    const n = nguon('web/src/modules/test/keHoach/NganXepLichMt.tsx');
+    assert(/const daChonThay = hienThi\.filter\(\(h\) => dangTick\(h\.studentId\)\)/.test(n), 'thiếu daChonThay từ hienThi');
+    assert(/const dongChon = daChonThay\.map/.test(n), 'số trên nút phải theo daChonThay');
+    assert(/const ids = daChonThay\.filter\(\(h\) => h\.classId === id\)\.map/.test(n), 'danh sách gửi phải theo daChonThay');
+    assert(!/hangs\.filter\(\(h\) => dangTick/.test(n) && !/hangs\.filter\(\(h\) => h\.classId === id && dangTick/.test(n), 'còn đếm / gửi em đang ẩn');
+    assert(/const dem = demSeXep\(trongLoc\./.test(n) && /const tickDuoc = hienThi\.filter/.test(n), 'chip đếm theo tìm/lớp; Chọn tất cả theo hienThi');
+  });
+
+  check('MTb sau rà đợt 2 (3) · ô MT "đang chọn" đã có ✓ trong chữ trạng thái thì chỉ MỘT dấu ✓ (vẫn đảo màu + aria-label "đang chọn")', () => {
+    const o = nguon('web/src/ui/OMt.tsx');
+    assert(/\{chon && !chu\.startsWith\('✓'\) && <span aria-hidden/.test(o), 'dấu ✓ đang chọn chưa bỏ khi chữ đã có ✓');
+    assert(/chon \? MAU_CHON/.test(o) && /chon \? 'đang chọn'|!!chon\)/.test(o), 'mất dấu đang chọn');
+  });
+
+  check('MTb sau rà đợt 2 (4) · dòng "xếp nốt": ô đợt sẽ xếp tô "đang chọn" và giữ chữ trạng thái (mockup: "2 vắng S"); chữ tuần chỉ cho tạo / dời', () => {
+    const n = nguon('web/src/modules/test/keHoach/NganXepLichMt.tsx');
+    assert(/const seXep = !!d && \(d\.hanhDong === 'tao' \|\| d\.hanhDong === 'doi'\)/.test(n), 'seXep');
+    assert(/const laDich = n === dich && seXep/.test(n) && /chon=\{laDich\} chuChon=\{laDich \? chuTuan : undefined\}/.test(n), 'ô đợt đích chưa chon');
+    assert(/d\.viec === 'tao' \|\| d\.viec === 'doi'/.test(n), 'chuTuan chỉ tạo / dời');
+    assert(/xếp nốt.*giữ chữ trạng thái/.test(n), 'ghi chú xếp nốt');
+  });
+
+  check('MTb sau rà đợt 2 (5) · ODiemLon: editor KHÔNG remount theo band nền; chỉ remount khi mở lại / lưu xong rồi band mới về (Task 8: ô Band không trống)', () => {
+    const o = nguon('web/src/modules/fasttrack/ODiemLon.tsx');
+    assert(!/key=\{`\$\{lan\}:\$\{c\.band\}`\}/.test(o), 'key còn theo band');
+    assert(/<InlineScoreEditor key=\{lan\}/.test(o), 'key chỉ theo lan');
+    assert(/useEffect\(\(\) => \{ if \(daLuu\) \{ setLan\(\(n\) => n \+ 1\); setDaLuu\(false\); \} \}, \[c\.band\]\)/.test(o), 'thiếu dựng lại khi band về sau lưu');
+    assert(/if \(ok\) setDaLuu\(true\)/.test(o), 'cờ daLuu chỉ đặt khi lưu thành công');
+  });
+
+  check('MTb sau rà đợt 2 (7) · chip dòng của hộp một đợt: MT cũ chưa điểm = "chờ chấm" XÁM; MT thường vẫn vàng; hộp truyền `lichSu`', () => {
+    const het: any = { trangThai: 'da-xep', tuan: '2026-09-07', periodId: 1, doiTu: null, batBuoc: true, khoa: null, sit: 'scheduled', tuanKetThuc: '2026-09-13', choDuyet: false, hanCham: null };
+    const cu = (d as any).chipDongKyNang(het, '2026-10-06', null, true);
+    assert(cu?.chu === 'chờ chấm' && cu.tone === 'muted', JSON.stringify(cu));
+    const thuong = (d as any).chipDongKyNang(het, '2026-10-06', null, false);
+    assert(thuong?.chu === 'chờ chấm' && thuong.tone === 'wait', JSON.stringify(thuong));
+    assert((d as any).chipDongKyNang(het, '2026-10-06')?.tone === 'wait', 'mặc định không phải MT cũ');
+    const h = nguon('web/src/modules/test/keHoach/HopKyNang.tsx');
+    assert(/chipDongKyNang\(o, homNay, ct, lichSu\)/.test(h) && /lichSu=\{lichSu\}/.test(h), 'hộp chưa truyền lichSu');
+    assert(/!\(chip\.chu === 'chưa xếp' && d\.weekStart\)/.test(h), 'chip xám "chờ chấm" bị ẩn cùng chip "chưa xếp"');
+  });
+
+  check('MTb sau rà đợt 2 (6) · nút ⋯: vùng bấm ở điện thoại đủ 44px (after theo mép trong viền 1px: 28 - 2 + 2 × 9) — hồ sơ Mock và Lộ trình dùng chung MenuDong', () => {
+    const m = nguon('web/src/ui/MenuDong.tsx');
+    assert(/h-7 min-w-7/.test(m) && /after:absolute after:-inset-\[9px\] after:content-\[''\] sm:after:hidden/.test(m), 'MenuDong: after phải -inset-[9px] (28 - 2 + 18 = 44)');
+    assert(!/after:-inset-2 /.test(m), 'còn -inset-2 (42px)');
+    for (const f of ['web/src/modules/fasttrack/MockDetailPage.tsx', 'web/src/modules/students/HangLichMt.tsx']) assert(/<MenuDong /.test(nguon(f)), `${f} không dùng MenuDong`);
+  });
+
 }

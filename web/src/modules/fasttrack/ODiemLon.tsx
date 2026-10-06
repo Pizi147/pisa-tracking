@@ -177,14 +177,18 @@ function HangSua({ c, laW, save, onXong }: {
   c: Cell; laW: boolean; save: (skill: string, patch: SavePatch) => Promise<boolean>; onXong: (() => void) | null;
 }) {
   const [lan, setLan] = useState(0);
+  /* Vừa lưu xong: `save` trả về TRƯỚC khi dữ liệu tải lại, nên editor dựng lại lúc đó còn band cũ. Dựng lại MỘT lần nữa khi band mới về;
+     tải nền (band không đổi vì mình lưu) thì không đụng vào chữ đang gõ. ponytail: lưu mà band không đổi → cờ chờ band đổi lần sau (một lần dựng lại). */
+  const [daLuu, setDaLuu] = useState(false);
+  useEffect(() => { if (daLuu) { setLan((n) => n + 1); setDaLuu(false); } }, [c.band]);   // eslint-disable-line react-hooks/exhaustive-deps
   const nhan = laW ? (c.skill === 'writing1' ? 'Task 1' : 'Task 2') : null;
   return (
     <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:gap-3">
       {nhan && <span className="w-16 shrink-0 pt-1 text-xs font-medium text-slate-400">{nhan}</span>}
       {suaDuoc(c) ? (
         <div className="min-w-0 flex-1">
-          {/* T10 (PR-MTb): dựng lại khi band đã lưu đổi — ô Band lấy giá trị đầu từ ô, không hiện bản cũ sau khi lưu. */}
-          <InlineScoreEditor key={`${lan}:${c.band}`} cell={c} onSave={(p) => save(c.skill, p)}
+          {/* T10 (PR-MTb): ô Band lấy giá trị đầu từ ô — sau khi lưu phải dựng lại với band mới (`daLuu`), không dựng lại theo mỗi lần tải nền. */}
+          <InlineScoreEditor key={lan} cell={c} onSave={async (p) => { const ok = await save(c.skill, p); if (ok) setDaLuu(true); return ok; }}
             onClose={() => (onXong ? onXong() : setLan((n) => n + 1))} />
         </div>
       ) : (

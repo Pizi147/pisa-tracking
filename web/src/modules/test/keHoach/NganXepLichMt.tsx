@@ -153,7 +153,9 @@ export function NganXepLichMt({ chiNhanhDau, lopDs, lopMoSan, coThuong, onDoiKhu
   const tickDuoc = hienThi.filter((h) => duocTick(h.studentId));
   const soTick = tickDuoc.filter((h) => ticked.has(h.studentId)).length;
   const tatCa = tickDuoc.length > 0 && soTick === tickDuoc.length;
-  const dongChon = hangs.filter((h) => dangTick(h.studentId)).map((h) => dong.get(h.studentId)).filter((d): d is DongHangLoat => !!d);
+  /* Chỉ em ĐANG THẤY (sau Tìm / chip lọc) mới được đếm và gửi: số trên nút luôn bằng số em đang nhìn thấy được tick. */
+  const daChonThay = hienThi.filter((h) => dangTick(h.studentId));
+  const dongChon = daChonThay.map((h) => dong.get(h.studentId)).filter((d): d is DongHangLoat => !!d);
   const tt = tomTatXepMt(dongChon);
   const [busy, setBusy] = useState(false);
   /* Q2 (PR-MTb T6): MỘT popup gộp cho mọi em có lượt bị vượt CÓ ĐIỂM. Lý do giữ ở đây — mở lại (em lỗi / số điểm đổi) không mất chữ. */
@@ -180,7 +182,7 @@ export function NganXepLichMt({ chiNhanhDau, lopDs, lopMoSan, coThuong, onDoiKhu
     const loi: DongHangLoat[] = [];
     try {
       for (const id of lopChon) {
-        const ids = hangs.filter((h) => h.classId === id && dangTick(h.studentId)).map((h) => h.studentId);
+        const ids = daChonThay.filter((h) => h.classId === id).map((h) => h.studentId);
         if (!ids.length) continue;
         try {
           const r = await api.post<{ dong: DongHangLoat[]; daLuu: number }>('/ke-hoach-test/hang-loat', {

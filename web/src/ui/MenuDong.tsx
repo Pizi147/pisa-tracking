@@ -85,7 +85,8 @@ export function MenuDong({ muc, nhan = 'Thao tác khác', bieuTuong = '⋯', luo
     <>
       <button ref={nut} type="button" title={nhan} aria-label={nhan} aria-haspopup="menu" aria-expanded={mo}
         onClick={(e) => { e.stopPropagation(); setMo((v) => !v); }}
-        className="relative inline-grid place-items-center h-7 min-w-7 px-1 rounded-md border bg-transparent text-[11px] font-semibold tabular-nums text-slate-400 hover:text-slate-100 hover:bg-white/5 cursor-pointer after:absolute after:-inset-2 after:content-[''] sm:after:hidden"
+        /* Vùng bấm 44px ở điện thoại: `after` neo theo mép TRONG viền 1px nên 28 - 2 + 18 = 44 (-inset-2 chỉ ra 42). */
+        className="relative inline-grid place-items-center h-7 min-w-7 px-1 rounded-md border bg-transparent text-[11px] font-semibold tabular-nums text-slate-400 hover:text-slate-100 hover:bg-white/5 cursor-pointer after:absolute after:-inset-[9px] after:content-[''] sm:after:hidden"
         style={{ borderColor: 'var(--line)' }}>
         {bieuTuong}
       </button>

@@ -1,11 +1,12 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { Link } from 'react-router-dom';
 import { ApiError, api, invalidate } from '../../../lib/api.ts';
 import { useNgayNghiepVu } from '../../../ui/ngayNghiepVu.ts';
 import { addDaysStr } from '../../../lib/format.ts';
 import { useToast } from '../../../ui/Toast.tsx';
 import {
-  CAU_TUAN_DA_QUA, CHU_MUC_HOP, cauSeHuyLich, chipDongKyNang, chuDoiVuot, chuLuuVuot, kiemTuanXep, menuHopKyNang, mondayOfDate,
+  CAU_TUAN_DA_QUA, CHU_MUC_HOP, cauSeHuyLich, chipDongKyNang, chuDoiVuot, chuLuuVuot, duongDotTest, kiemTuanXep, menuHopKyNang, mondayOfDate,
   nhanTuanKhoa, tenMon, tenMonNgan, thaoTacKyNang, trangThaiTT, tuanDaSo, tuanLich, tuanMacDinhDotMoi,
   type BaiXemTruoc, type DongHangLoat, type KyNangKH, type MucHop, type OKyNang, type ThaoTac, type TrangThaiTT,
 } from '@shared/domain/index.ts';
@@ -284,7 +285,13 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
       className={`surface-2 z-[60] border shadow-2xl outline-none ${dienThoai ? 'fixed inset-x-0 bottom-0 rounded-t-xl' : 'fixed w-[min(520px,calc(100vw-32px))] rounded-lg'}`}
       style={{ borderColor: 'var(--line-strong)', ...(dienThoai ? {} : { top: pos?.top ?? 0, left: pos?.left ?? 0, opacity: pos ? 1 : 0 }) }}>
       <div className="flex items-center justify-between gap-2 border-b px-3 py-2" style={{ borderColor: 'var(--line)' }}>
-        <div className="min-w-0 truncate text-sm font-bold text-slate-100" title={tieuDe}>{tieuDe}</div>
+        {/* Đợt đã có → tên là liên kết tới hồ sơ đợt (`duongDotTest`, một đường dẫn ở mọi màn); bấm thì đóng hộp. Đợt mới: chữ. */}
+        <div className="min-w-0 flex-1 text-sm font-bold text-slate-100" title={tieuDe}>
+          {attemptId !== null
+            ? <Link to={duongDotTest({ id: attemptId, kind: dot.loai === 'thuong' ? dot.kind : 'mock', classId }, null)} onClick={onClose}
+                className="link flex min-h-[44px] items-center sm:min-h-0"><span className="truncate">{tieuDe}</span></Link>
+            : <span className="block truncate">{tieuDe}</span>}
+        </div>
         <button type="button" className="btn btn-sm btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-[28px] sm:min-w-[28px]" onClick={onClose} aria-label="Đóng">✕</button>
       </div>
       <div className="max-h-[70vh] space-y-2 overflow-y-auto px-3 py-2.5">
@@ -298,7 +305,7 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
         )}
         <div>
           {ky.map((k) => (
-            <DongKyNangHop key={k} k={k} o={kn[k]} khoa={laKhoa(k)} moi={moi} loai={loai} d={rows[k]} ct={ct} homNay={ngayNghiepVu}
+            <DongKyNangHop key={k} k={k} o={kn[k]} khoa={laKhoa(k)} moi={moi} loai={loai} d={rows[k]} ct={ct} homNay={ngayNghiepVu} lichSu={lichSu}
               muc={menuCua(k)} riengTuan={!!rieng[k]} tickDuoc={moi || !(kn[k]?.batBuoc ?? false) || thaoTacKyNang(ttCua(k), quyen).menu.includes('bo-ky-nang')}
               noiBat={k === kyNangDau} khaiGiang={khaiGiang} tongTuan={tongTuan}
               onTick={(v) => datTick(k, v)} onTuan={(t) => datTuanDong(k, t)} onMuc={(muc, thay) => chonMuc(k, muc, thay)} goc={homNay} />
@@ -342,7 +349,9 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
   );
 }
 
-function DongKyNangHop({ k, o, khoa, moi, loai, d, noiBat, khaiGiang, tongTuan, onTick, onTuan, onMuc, goc, homNay, ct = null, muc, riengTuan, tickDuoc }: {
+function DongKyNangHop({ k, o, khoa, moi, loai, d, noiBat, khaiGiang, tongTuan, onTick, onTuan, onMuc, goc, homNay, ct = null, muc, riengTuan, tickDuoc, lichSu }: {
+  /** MT lịch sử: chip "chờ chấm" xám (không có hạn). */
+  lichSu: boolean;
   ct?: string | null; muc: ReturnType<typeof menuHopKyNang>; onMuc: (m: MucHop, thay?: 'xep-lai' | 'khoi-phuc') => void;
   /** Đã bấm "Đổi tuần" riêng → bộ chọn tuần ngay trên dòng. */
   riengTuan: boolean;
@@ -357,7 +366,7 @@ function DongKyNangHop({ k, o, khoa, moi, loai, d, noiBat, khaiGiang, tongTuan, 
   const coDiem = !moi && o?.khoa === 'đã có điểm';
   /* Tuần đã đổi (chưa lưu) thì trạng thái cũ (vắng, trễ chấm …) không còn đúng — chỉ hiện chip tuần mới. */
   const daDoiTuan = !moi && d.periodId !== (o?.periodId ?? null);
-  const chip = !moi && o && !daDoiTuan && homNay ? chipDongKyNang(o, homNay, ct) : null;
+  const chip = !moi && o && !daDoiTuan && homNay ? chipDongKyNang(o, homNay, ct, lichSu) : null;
   const chuTuan = (iso: string) => tuanLich(iso, homNay);
   const grid = coTick ? 'grid-cols-[24px_104px_minmax(0,1fr)_auto]' : 'grid-cols-[0px_104px_minmax(0,1fr)_auto]';
   return (
@@ -386,7 +395,7 @@ function DongKyNangHop({ k, o, khoa, moi, loai, d, noiBat, khaiGiang, tongTuan, 
         ) : (
           <span className="flex flex-wrap items-center gap-1">
             {d.weekStart && <Nhan tone="doing">{chuTuan(d.weekStart)}</Nhan>}
-            {chip && !(chip.tone === 'muted' && d.weekStart) && <Nhan tone={chip.tone}>{chip.chu}</Nhan>}
+            {chip && !(chip.chu === 'chưa xếp' && d.weekStart) && <Nhan tone={chip.tone}>{chip.chu}</Nhan>}
             {!d.weekStart && !chip && <span className="text-slate-500">chưa xếp</span>}
           </span>
         )}

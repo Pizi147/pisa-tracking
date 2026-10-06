@@ -77,13 +77,14 @@ export function oMt(v: OMtVao, homNay: string, ct?: string | null): { kieu: Kieu
  * Chip trạng thái MỘT dòng kỹ năng của hộp một đợt (mockup phần 2: `trễ chấm`, `chờ chấm`, `vắng`, `huỷ`, `chưa xếp`) — cùng luật `oMt`
  * (một nguồn: nhãn ô MT và chip dòng không lệch). Đang thi / có lịch / xong / không yêu cầu → null (dòng chỉ có chip tuần hoặc điểm).
  */
-export function chipDongKyNang(o: OKyNang, homNay: string, ct?: string | null): { chu: string; tone: 'bad' | 'wait' | 'soon' | 'muted' } | null {
+export function chipDongKyNang(o: OKyNang, homNay: string, ct?: string | null, cu = false): { chu: string; tone: 'bad' | 'wait' | 'soon' | 'muted' } | null {
   if (!o.batBuoc || o.khongDuThi) return null;
   // Ô MT cần một khe kỹ năng; dùng `listening` làm khe tạm cho đúng MỘT kỹ năng này.
-  const r = oMt({ so: 0, attemptId: 0, kn: { listening: o }, cu: false }, homNay, ct);
+  const r = oMt({ so: 0, attemptId: 0, kn: { listening: o }, cu }, homNay, ct);
   switch (r.kieu) {
     case 'tre-cham': return { chu: 'trễ chấm', tone: 'bad' };
     case 'cho-cham': return { chu: 'chờ chấm', tone: 'wait' };
+    case 'cho-cham-cu': return { chu: 'chờ chấm', tone: 'muted' };   // MT cũ chưa điểm: xám như ô MT
     case 'con-viec': return { chu: o.huyVang || o.trangThai === 'da-huy' ? 'huỷ' : 'vắng', tone: 'soon' };
     case 'chua-lich': return { chu: 'chưa xếp', tone: 'muted' };
     default: return null;

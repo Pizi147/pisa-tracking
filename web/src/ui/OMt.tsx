@@ -59,7 +59,7 @@ export function OMt({ v, homNay, ct = null, chon, chuChon, ghiChu, onClick, href
       {!chon && r.kieu === 'dang-thi' && <span aria-hidden className="h-[7px] w-[7px] flex-none rounded-full bg-current" />}
       <span className="font-bold tabular-nums">{v.so}</span>
       {chu && <span className="tabular-nums">{chu}</span>}
-      {chon && <span aria-hidden className="text-[11px]">✓</span>}
+      {chon && !chu.startsWith('✓') && <span aria-hidden className="text-[11px]">✓</span>}   {/* chữ đã có ✓ (lượt xong) thì không thêm dấu thứ hai */}
       {v.cu && <NhanCu />}
     </>
   );
