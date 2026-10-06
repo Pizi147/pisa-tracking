@@ -162,12 +162,13 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     assert(daDoi.raw_score === 32, 'Đúng Chủ nhật (chưa qua) GVBM phải còn sửa được, có lý do');
   });
 
-  check('PR-Rc2 · R11(b) Quản lý sửa được đợt hoàn tất khi có lý do; nhật ký score.override kèm sauHoanTat', () => {
+  // PR-MTa T7 thay RB-5: Quản lý sửa đợt hoàn tất — lý do tuỳ chọn; xoá điểm (huỷ điểm) vẫn bắt buộc.
+  check('PR-Rc2 · R11(b) Quản lý sửa được đợt hoàn tất (lý do tuỳ chọn, xoá cần lý do); nhật ký score.override kèm sauHoanTat', () => {
     const { attemptId, classId: clsId, chuNhatCuoi } = dungDotHoanTatFT();
     const sauChuNhat = addDays(chuNhatCuoi, 1);
     assertThrows(
-      () => attemptsMod.saveScore(P.mbManager, attemptId, 'listening', { rawScore: 34 }, sauChuNhat),
-      /lý do/i, 'Quản lý sửa đợt hoàn tất mà không ghi lý do vẫn được chấp nhận',
+      () => attemptsMod.saveScore(P.mbManager, attemptId, 'listening', { rawScore: null }, sauChuNhat),
+      /Huỷ điểm: cần ghi lý do/, 'Quản lý xoá điểm đợt hoàn tất mà không ghi lý do vẫn được chấp nhận',
     );
     attemptsMod.saveScore(P.mbManager, attemptId, 'listening', { rawScore: 34, lyDo: 'Quản lý hiệu chỉnh sau hoàn tất' }, sauChuNhat);
     const daDoi = conn.prepare('SELECT raw_score FROM assessment_scores WHERE attempt_id=? AND skill=?')
@@ -348,22 +349,27 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     assert(sAfter.planned_period_id === sBefore.planned_period_id, 'luuDot L R W không được đụng Speaking');
   });
 
-  check('PR-Rc2 · Task4(c) kiemDot trùng tuần đợt sau → chan (T15); luuDot ném, không đổi gì', () => {
+  /* PR-MTa T2 thay Q-0310-2: trùng tuần đầu MT3 = vượt MT3 — không chặn; MT3 có điểm → lưu cần xác nhận + lý do (409), không đổi gì. */
+  check('PR-Rc2 · Task4(c) kiemDot trùng tuần đợt sau → vượt (seHuyLich, PR-MTa T2); luuDot chưa xác nhận ném 409, không đổi gì', () => {
     const [mt1, mt2, mt3] = threeConsecutiveMocks();
     /* Seed MT2 có thể đã có điểm — kiemDot coi "đã có điểm" là giu, bỏ qua T15. Xoá điểm để kiểm ĐÚNG nhánh T15. */
     conn.prepare(`DELETE FROM assessment_scores WHERE attempt_id=? AND skill IN ('listening','reading','writing1','writing2')`)
       .run(mt2.attemptId);
     conn.prepare(`UPDATE attempt_skills SET sit_status='scheduled' WHERE attempt_id=? AND skill='listening'`)
       .run(mt2.attemptId);
+    /* PR-MTa T2: phép kiểm cần MT3 CÓ điểm (lưu chưa xác nhận → 409) — seed có thể chưa có, dựng một ô. */
+    conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, band) VALUES (?, 'speaking', 6)
+      ON CONFLICT(attempt_id, skill) DO UPDATE SET band = 6`).run(mt3.attemptId);
     const mt3Week = week.periodById(mt3.planned_period_id)!.week_start;
     const per = week.ensurePeriod(mt3Week);
     const kiem = keHoachMod.kiemDot(P.mbManager, { attemptId: mt2.attemptId, kyNang: [{ skill: 'listening', periodId: per.id }] });
-    assert(kiem.bai.length === 1 && kiem.bai[0].ghiChu === 'chan', `Trùng tuần đầu MT3 phải là chan (T15), đang ra ${JSON.stringify(kiem)}`);
+    assert(kiem.bai.length === 1 && kiem.bai[0].ghiChu !== 'chan' && kiem.seHuyLich.some((x: any) => x.attemptId === mt3.attemptId),
+      `Trùng tuần đầu MT3 phải là vượt MT3, đang ra ${JSON.stringify(kiem)}`);
     const before = conn.prepare(`SELECT planned_period_id FROM attempt_skills WHERE attempt_id=? AND skill='listening'`)
       .get(mt2.attemptId) as any;
     assertThrows(
       () => keHoachMod.luuDot(P.mbManager, { attemptId: mt2.attemptId, kyNang: [{ skill: 'listening', periodId: per.id }], force: true }),
-      /Trùng tuần|vượt qua|không huỷ lịch được/, 'luuDot phải ném khi có bài bị chặn',   // PR-LM 03/10: đổi theo Q-0310-2 (MT3 có điểm → chặn, câu mới)
+      /Xác nhận để tiếp tục|Trùng tuần/, 'luuDot phải ném khi chưa xác nhận',   // PR-MTa T2: MT3 có điểm → 409 cần xác nhận + lý do
     );
     const after = conn.prepare(`SELECT planned_period_id FROM attempt_skills WHERE attempt_id=? AND skill='listening'`)
       .get(mt2.attemptId) as any;
@@ -924,33 +930,28 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     assert(wTrangThai() !== 'xong', 'Xoá band W2 thì W hết xong');
   });
 
-  check('UX2 · T15 từng kỹ năng trong luuDot: S trùng tuần đầu đợt sau → cả lần lưu bị chặn, L không đổi (một tx)', () => {
+  /* PR-MTa T2 thay Q-0310-1 (409 mọi lượt bị vượt): MT2 bị vượt CHƯA có điểm → lưu luôn, MT2 bỏ lịch; L và S đổi trong một tx. */
+  check('UX2 · T15 từng kỹ năng trong luuDot: S trùng tuần đầu đợt sau (chưa điểm) → lưu, MT2 bỏ lịch, L và S cùng đổi (PR-MTa T2)', () => {
     const em = hvFT(2);
     const x = week.ensurePeriod('2027-11-01');
     const y = week.ensurePeriod('2027-11-22');
     const truocX = week.ensurePeriod('2027-10-25');
     const mt85 = keHoachMod.xepMoi(P.mbManager, { studentId: em, attemptNo: 1, tuan: t4(x.id), force: true });
-    keHoachMod.xepMoi(P.mbManager, { studentId: em, attemptNo: 2, tuan: t4(y.id), force: true });
-    assertThrows(
-      () => keHoachMod.luuDot(P.mbManager, {
-        attemptId: mt85.id, force: true, kyNang: [{ skill: 'listening', periodId: truocX.id }, { skill: 'speaking', periodId: y.id }],
-      }),
-      /Lưu sẽ huỷ lịch MT2/, 'S trùng tuần đầu MT2 phải chặn cả lần lưu',   // PR-LM 03/10: đổi theo Q-0310-1 (trùng tuần = vượt → 409 cần xác nhận)
-    );
-    assert(tuanCua(mt85.id, 'listening').w === x.weekStart, 'L đổi được dù cả lần lưu bị chặn — không phải một tx');
+    const mt2 = keHoachMod.xepMoi(P.mbManager, { studentId: em, attemptNo: 2, tuan: t4(y.id), force: true });
+    keHoachMod.luuDot(P.mbManager, {
+      attemptId: mt85.id, force: true, kyNang: [{ skill: 'listening', periodId: truocX.id }, { skill: 'speaking', periodId: y.id }],
+    });
+    assert(tuanCua(mt85.id, 'listening').w === truocX.weekStart && tuanCua(mt85.id, 'speaking').w === y.weekStart, 'L, S chưa đổi');
+    assert((conn.prepare('SELECT planned_period_id p FROM assessment_attempts WHERE id = ?').get(mt2.id) as any).p === null, 'MT2 chưa bỏ lịch');
   });
 
-  check('UX2 · Bỏ khỏi đợt: luuDot bo S có lý do → required=0; thiếu lý do → ném; lượt lớp thường bo → ném', () => {
+  /* PR-MTa T7: bỏ kỹ năng — lý do tuỳ chọn. */
+  check('UX2 · Bỏ khỏi đợt: luuDot bo S (lý do tuỳ chọn, PR-MTa T7) → required=0; lượt lớp thường bo → ném', () => {
     const em = hvFT(3);
     const w0 = week.ensurePeriod('2028-02-07');
     const mt = keHoachMod.xepMoi(P.mbManager, { studentId: em, attemptNo: 1, tuan: t4(w0.id), force: true });
-    assertThrows(
-      () => keHoachMod.luuDot(P.mbManager, { attemptId: mt.id, kyNang: [{ skill: 'speaking', bo: true }] }),
-      /lý do/i, 'Bỏ kỹ năng mà thiếu lý do vẫn được',
-    );
-    assert(tuanCua(mt.id, 'speaking').r === 1, 'Thiếu lý do mà S vẫn bị bỏ');
-    keHoachMod.luuDot(P.mbManager, { attemptId: mt.id, kyNang: [{ skill: 'speaking', bo: true }], lyDoBo: 'Em xin miễn Speaking đợt này' });
-    assert(tuanCua(mt.id, 'speaking').r === 0, 'Có lý do mà S không bị bỏ');
+    keHoachMod.luuDot(P.mbManager, { attemptId: mt.id, kyNang: [{ skill: 'speaking', bo: true }] });
+    assert(tuanCua(mt.id, 'speaking').r === 0, 'Không lý do mà S không bị bỏ');
     const o = keHoachMod.luoiFT(P.mbManager, mbClass).hang.find((h: any) => h.studentId === em).dot[1].kn.speaking;
     assert(o.trangThai === 'khong-yeu-cau' && o.batBuoc === false, 'S bị bỏ phải là khong-yeu-cau');
     const thuong = conn.prepare(

@@ -5,7 +5,7 @@ import { dongBoBaoPh, monBaoPh } from '../yThuc/phoiHop.ts';
 import { raiseSignal, reconcileCorrectedSignals } from '../cases/signals.ts';
 import {
   ATTEMPT_KIND_LABEL, ATTEMPT_KIND_SHORT, PERMISSIONS, RATIO_PASS_THRESHOLD, boMonLich, boTroGiuaKhoa,
-  caseCategoriesFor, categoryOf, goiYCuoiKhoa, kiemLyDo, kiemLyDoThaoTac, ngay, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanKeTiep, tuanLich,
+  caseCategoriesFor, categoryOf, goiYCuoiKhoa, kiemLyDoThaoTac, ngay, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanKeTiep, tuanLich,
   type AssessedSkill, type AttemptKind, type CaseCategory, type RatioOutcome, type SosLevel,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -529,10 +529,9 @@ export function saveRegularScore(
    * RB-5 — cùng luật với Fast Track: đổi (hay xoá) một điểm đã có thì phải ghi lý do. Điểm lớp thường là cặp
    * "số câu đúng / tổng số câu" — đổi tổng là đổi tỉ lệ đạt, nên cũng tính là sửa. Lưu lại đúng cặp cũ thì không.
    */
-  const doiGiaTri = (existing?.raw_score ?? null) !== null
-    && ((score ?? null) !== (existing?.raw_score ?? null) || (total ?? null) !== (existing?.raw_total ?? null));
-  if (doiGiaTri) {
-    const loi = kiemLyDo(patch.lyDo);
+  /* T7 (PR-MTa): đổi giá trị → lý do tuỳ chọn; xoá điểm đã có = huỷ điểm → bắt buộc. */
+  if ((existing?.raw_score ?? null) !== null && (score ?? null) === null) {
+    const loi = kiemLyDoThaoTac('huy-diem', patch.lyDo);
     if (loi) throw badRequest(loi);
   }
 
@@ -606,7 +605,6 @@ export function reportRegularNoShow(
   const prog = a.class_id ? programmeOfClass(a.class_id) : null;
   if (!prog || prog.scoringMode !== 'ratio') throw badRequest('Lượt này không thuộc lớp thường.');
   if (!prog.skills.includes(skill)) throw badRequest(`Lớp ${prog.name} không có kỹ năng ${tenMon(prog.code, skill)}.`);
-  if (lyDo !== undefined && bat) { const loi = kiemLyDoThaoTac('Báo vắng', lyDo); if (loi) throw badRequest(loi); }
 
   /*
    * Ghi dấu là việc của NGƯỜI CHẤM môn đó (hoặc người nhập bù) — cùng cửa với nhập điểm.
@@ -694,7 +692,7 @@ export function reportRegularNoShow(
       }
       /* Dời bằng ĐÚNG hàm dời lịch chung — `force` chỉ vượt được cảnh báo, không bao giờ vượt được chặn. */
       setSkillWeek(p, attemptId, skill, moi.id, {
-        reason: lyDo !== undefined ? `Báo vắng: ${lyDo.trim()}` : `Báo "-": em không làm bài tuần ${tuanLich(cu.weekStart, today)} — môn này dời sang tuần sau (C08).`,
+        reason: lyDo !== undefined ? (lyDo.trim() ? `Báo vắng: ${lyDo.trim()}` : 'Báo vắng') : `Báo "-": em không làm bài tuần ${tuanLich(cu.weekStart, today)} — môn này dời sang tuần sau (C08).`,
         force: true, today, ghiBuDau: true,
       });
       writeAudit({

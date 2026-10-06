@@ -12,8 +12,9 @@ import { nho } from '../platform/nguCanhRequest.ts';
 import { chotYeuCau, taoYeuCau } from '../duyet/yeuCau.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import {
-  boMonCuaLuot, checkSkillWeekMove, ensureSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf,
+  boMonCuaLuot, checkSkillWeekMove, ensureSkillRows, gvcnCua, logSchedule, recomputeCompletionWeek, scoringModeOf,
 } from './skillSchedule.ts';
+import { setSkillSkip } from './attempts.ts';
 
 /**
  * VẮNG, DỜI CÓ GIỚI HẠN VÀ KHÔI PHỤC — nơi sở hữu DUY NHẤT của mục 10.6.
@@ -174,8 +175,8 @@ export function chuTheDoiLan2(o: { skill: string; attemptNo: number | null; move
 
 export type MoveOutcome = {
   skill: AssessedSkill;
-  /** `moved` đã đổi lịch ngay · `pending` đang chờ duyệt · `escalated` phải chuyển Quản lý. */
-  result: 'moved' | 'pending' | 'escalated';
+  /** `moved` đã đổi lịch ngay · `pending` đang chờ duyệt · `escalated` phải chuyển Quản lý · `huy-vang` vắng lần 2 → huỷ (T3). */
+  result: 'moved' | 'pending' | 'escalated' | 'huy-vang';
   toWeek: string | null;
   moveNo: number;
   requestId: number | null;
@@ -217,7 +218,7 @@ export function requestAbsenceMove(p: Principal, attemptId: number, skills: stri
 
     for (const skill of list) {
       const row = rows.find((r) => r.skill === skill)!;
-      if (attempt.lich_su) throw badRequest('MT lịch sử không vào luồng vắng — nhập bù điểm, không dời lịch.');
+      if (attempt.lich_su) throw badRequest('MT cũ không vào luồng vắng — nhập bù điểm, không dời lịch.');
       /*
        * ĐIỂM TRỐNG CHƯA ĐỦ ĐỂ XÁC NHẬN VẮNG (mục 10.6). Phải có người xác nhận trước, và đó
        * là một thao tác riêng có tên và có thời điểm.
@@ -272,6 +273,9 @@ function xuLyVangMotKyNang(conn: any, actor: number | null, attempt: any, row: a
    * bắt đầu. Với lần dời ĐẦU của bài đã chốt, chỉ cần tuần đích CHƯA KẾT THÚC (còn thi được). Tuần đích đã qua hẳn thì vẫn chuyển
    * Quản lý, để xử lý muộn không âm thầm thành thêm tuần. Mọi trường hợp vắng khác giữ nguyên.
    */
+  /* T3 (PR-MTa): vắng LẦN 2 trở đi ở Mock → kỹ năng HUỶ (vắng 2 lần), chuông GVCN; KHÔNG tự tạo đề nghị — GVCN bấm "Xin dời". */
+  if (moveNo >= 2 && attempt.kind === 'mock' && !isRatio(attempt)) return huyVangNoi(conn, actor, attempt, row, moveNo);
+
   const fromNoShow = row.absent_from_no_show === 1;
   const tooLate = moveNo === 1 && fromNoShow
     ? addDays(target.week_start, 6) < today
@@ -308,6 +312,82 @@ function xuLyVangMotKyNang(conn: any, actor: number | null, attempt: any, row: a
     message: `${skillName(skill)}: đây là lần dời thứ ${moveNo}, cần Quản lý duyệt trước ${han}. `
       + 'Lịch giữ nguyên cho tới khi có quyết định.',
   };
+}
+
+/**
+ * T3 (PR-MTa, G11): huỷ một kỹ năng vì vắng lần `moveNo` (≥ 2) — `sit_status = 'cancelled'` + `huy_vang = 1`, giữ tuần cũ để tra lại.
+ * Mọi luật "phần thi đã huỷ" (không nợ, không quá hạn, Khôi phục và đặt tuần) dùng lại nguyên. Một chuông "để biết" cho mỗi GVCN.
+ * Gọi trong tx của nơi gọi.
+ */
+function huyVangNoi(conn: any, actor: number | null, attempt: any, row: any, moveNo: number): MoveOutcome {
+  const skill = row.skill as AssessedSkill;
+  conn.prepare(`UPDATE attempt_skills SET sit_status = 'cancelled', huy_vang = 1, absent_from_no_show = 0, updated_at = ? WHERE id = ?`).run(nowIso(), row.id);
+  logSchedule(attempt.id, { action: 'skill_cancelled_absence', field: skill, oldValue: row.period_code, newValue: null, reason: `Vắng lần ${moveNo}`, actor });
+  recomputeCompletionWeek(attempt.id, actor);
+  writeAudit({
+    actorUserId: actor, action: 'attempt.huy_vang', entityType: 'assessment_attempt', entityId: attempt.id,
+    entityLabel: `MT${attempt.attempt_no} · ${skill}`, before: { sitStatus: row.sit_status, week: row.period_code }, after: { sitStatus: 'cancelled', lan: moveNo },
+  });
+  const ai = conn.prepare(`SELECT s.full_name AS em, c.programme_code AS ct FROM students s LEFT JOIN classes c ON c.id = ? WHERE s.id = ?`)
+    .get(attempt.class_id ?? null, attempt.student_id) as any;
+  for (const userId of gvcnCua(attempt.class_id)) {
+    notify({
+      userId, kind: 'huy_vang', title: `Huỷ ${tenMonNgan(ai?.ct ?? null, skill)} · MT${attempt.attempt_no} · ${ai?.em ?? 'học viên'} (vắng ${moveNo} lần)`,
+      entityType: 'assessment_attempt', entityId: attempt.id, dedupKey: `huy_vang:${attempt.id}:${skill}:${moveNo}`,
+    });
+  }
+  return {
+    skill, result: 'huy-vang', toWeek: null, moveNo, requestId: null,
+    message: `${skillName(skill)}: vắng lần ${moveNo} — đã huỷ. GVCN có thể xin dời.`,
+  };
+}
+
+/**
+ * T3 (PR-MTa): GVCN / Quản lý "Xin dời" kỹ năng đã huỷ vì vắng 2 lần → MỘT đề nghị (thẻ Lịch thi ở Chờ duyệt, như hiện nay). Quản lý
+ * duyệt = kỹ năng về lịch mới (`applyMove`, bộ đếm +1); từ chối = không mock lại (Q3). GVBM → 403.
+ */
+export function xinDoi(p: Principal, attemptId: number, skill: string, o: { lyDo?: string | null; idempotencyKey?: string | null; today?: string } = {}): MoveOutcome {
+  const attempt = loadAttempt(attemptId);
+  if (!canRequest(p, attempt)) throw forbidden('Chỉ giáo viên chủ nhiệm của lớp và Quản lý xin dời được.');
+  if (attempt.status === 'cancelled') throw badRequest('Đợt này đã huỷ.');
+  if (attempt.lich_su) throw badRequest('MT cũ không vào luồng vắng — nhập bù điểm, không dời lịch.');
+  const row = ensureSkillRows(attemptId).find((r) => r.skill === skill);
+  if (!row || row.sit_status !== 'cancelled' || !row.huy_vang) throw badRequest('Chỉ xin dời kỹ năng đã huỷ vì vắng 2 lần.');
+  if (pendingMove(attemptId, skill)) throw badRequest(`${skillName(skill)} đã có một đề nghị dời đang chờ Quản lý trả lời.`);
+  const today = o.today ?? demoToday();
+  const dich = tuanDichMacDinh(attemptId, skill, today) ?? (() => { const w = ensurePeriod(addDays(mondayOf(today), 7)); return { id: w.id, code: w.code, week_start: w.weekStart }; })();
+  const moveNo = row.absence_move_count + 1;
+  return tx(() => {
+    const id = insertRequest(db(), {
+      attemptId, skill, moveNo, from: row.planned_period_id, to: dich.id, reason: o.lyDo?.trim() || null,
+      by: p.userId, on: today, decideBy: hanDuyetDoiLan2(today), idem: o.idempotencyKey ? `xin-doi:${o.idempotencyKey}` : null,
+    });
+    return {
+      skill: skill as AssessedSkill, result: 'pending' as const, toWeek: dich.code, moveNo, requestId: id,
+      message: `${skillName(skill)}: đã gửi Quản lý xin dời sang ${dich.code}.`,
+    };
+  });
+}
+
+/**
+ * T3 (PR-MTa, Q3): Quản lý chốt "Không mock lại" — kỹ năng đã huỷ (vắng 2 lần hoặc huỷ phần thi) bỏ khỏi đợt, đợt hoàn thành được.
+ * Đề nghị dời đang chờ của kỹ năng bị rút. Lý do tuỳ chọn (T7).
+ */
+export function khongMockLai(p: Principal, attemptId: number, skill: string, lyDo?: string | null): { ok: true } {
+  const attempt = loadAttempt(attemptId);
+  if (!canDecide(p, attempt)) throw forbidden('Chỉ Quản lý mới chốt được "Không mock lại".');
+  if (attempt.kind !== 'mock') throw badRequest('Chỉ áp cho Mock Test.');
+  const row = ensureSkillRows(attemptId).find((r) => r.skill === skill);
+  if (!row?.required || row.sit_status !== 'cancelled') throw badRequest(`${skillName(skill)} chưa huỷ — dùng "Bỏ kỹ năng khỏi đợt".`);
+  return tx(() => {
+    khongMockLaiNoi(p, attemptId, skill, lyDo);
+    return { ok: true as const };
+  });
+}
+
+function khongMockLaiNoi(p: Principal, attemptId: number, skill: string, lyDo?: string | null) {
+  rutDeNghiDoi(attemptId, skill);
+  setSkillSkip(p, attemptId, skill, true, lyDo?.trim() || 'Không mock lại', { khongMockLai: true });
 }
 
 function insertRequest(conn: any, r: {
@@ -352,7 +432,7 @@ function applyMove(
     .prepare(
       `UPDATE attempt_skills
           SET planned_period_id = ?, plan_source = 'manual', sit_status = 'scheduled',
-              sit_note = NULL, absent_from_no_show = 0, absence_move_count = ?, updated_at = ?
+              sit_note = NULL, absent_from_no_show = 0, huy_vang = 0, absence_move_count = ?, updated_at = ?
         WHERE id = ?`,
     )
     .run(target.id, moveNo, nowIso(), row.id);
@@ -386,14 +466,14 @@ export function decideAbsenceMove(p: Principal, requestId: number, input: {
   const attempt = loadAttempt(req.attempt_id);
   if (!canDecide(p, attempt)) throw forbidden('Chỉ Quản lý mới trả lời được đề nghị dời lịch.');
   /* PR-Dọn (VN10): cùng chốt với đường xin dời / báo vắng — đề nghị cũ còn treo trên MT lịch sử cũng không được duyệt. */
-  if (attempt.lich_su) throw badRequest('MT lịch sử không vào luồng vắng — nhập bù điểm, không dời lịch.');
+  if (attempt.lich_su) throw badRequest('MT cũ không vào luồng vắng — nhập bù điểm, không dời lịch.');
   if (req.status !== 'pending') {
     throw badRequest('Đề nghị này đã được xử lý — không trả lời lại được.');
   }
   if (attempt.status === 'cancelled') throw badRequest('Lượt này đã huỷ — đề nghị dời không còn hiệu lực.');
   const note = (input.note ?? '').trim() || null;
   /* PR-DUYET (§5.5, M8/Q11): từ chối = huỷ phần thi của em — bắt buộc lý do để GVCN biết vì sao. */
-  if (!input.approve && (note ?? '').length < 3) throw badRequest('Từ chối thì ghi lý do (ít nhất 3 ký tự) để GVCN biết vì sao.');
+  if (!input.approve) { const loi = kiemLyDoThaoTac('tu-choi', note); if (loi) throw badRequest(loi); }
 
   const today = demoToday();
   const rows = ensureSkillRows(req.attempt_id);
@@ -407,7 +487,9 @@ export function decideAbsenceMove(p: Principal, requestId: number, input: {
                   decision_note = ?, updated_at = ? WHERE id = ?`,
         )
         .run(p.userId, nowIso(), note, nowIso(), requestId);
-      cancelPart(conn, p.userId, attempt, row, requestId, 'Quản lý từ chối đề nghị dời lịch.');
+      /* T3 (Q3): từ chối "Xin dời" của kỹ năng đã huỷ vì vắng 2 lần = không mock lại (bỏ khỏi đợt). */
+      if (row.huy_vang) khongMockLaiNoi(p, req.attempt_id, req.skill, note);
+      else cancelPart(conn, p.userId, attempt, row, requestId, 'Quản lý từ chối đề nghị dời lịch.');
       chotYeuCau(conn, { loai: 'lich_thi', doiTuongLoai: 'skill_move', doiTuongId: requestId }, 'tu_choi', { nguoiDuyet: p.userId, lyDo: note });
       return { ok: true, status: 'declined', cancelled: true };
     }
@@ -475,8 +557,10 @@ export function sweepExpiredMoves(): number {
           `UPDATE skill_move_requests SET status = 'expired', updated_at = ? WHERE id = ? AND status = 'pending'`,
         )
         .run(nowIso(), req.id);
-      cancelPart(conn, null, attempt, row, req.id, 'Hết hạn duyệt mà chưa có quyết định.');
-      chotYeuCau(conn, { loai: 'lich_thi', doiTuongLoai: 'skill_move', doiTuongId: req.id }, 'tu_dong', { lyDo: 'Hết hạn duyệt — phần thi bị huỷ' });
+      /* T3 (PR-MTa): thẻ "Xin dời" hết hạn → kỹ năng giữ "huỷ (vắng 2 lần)", không huỷ lần hai, không báo Quản lý. */
+      if (!row.huy_vang) cancelPart(conn, null, attempt, row, req.id, 'Hết hạn duyệt mà chưa có quyết định.');
+      chotYeuCau(conn, { loai: 'lich_thi', doiTuongLoai: 'skill_move', doiTuongId: req.id }, 'tu_dong',
+        { lyDo: row.huy_vang ? 'Hết hạn duyệt — giữ huỷ (vắng 2 lần)' : 'Hết hạn duyệt — phần thi bị huỷ' });
       n += 1;
     }
     return n;
@@ -571,7 +655,7 @@ export function restoreCancelledSkill(p: Principal, attemptId: number, skill: st
     const conn = db();
     conn
       .prepare(
-        `UPDATE attempt_skills SET sit_status = 'scheduled', absent_from_no_show = 0, planned_period_id = ?,
+        `UPDATE attempt_skills SET sit_status = 'scheduled', absent_from_no_show = 0, huy_vang = 0, planned_period_id = ?,
                 plan_source = 'manual', updated_at = ? WHERE id = ?`,
       )
       .run(periodId, nowIso(), row.id);
@@ -839,15 +923,13 @@ export function resolveLateNoShow(
  * T38 "Báo vắng" (PR-XLMT, K4-28, Q10): ghi "-" cho MỌI ô nhập của kỹ năng (W = W1 + W2) rồi CHỐT NGAY qua `settleGroup` —
  * lần vắng đầu máy tự dời, từ lần 2 thành đề nghị chờ Quản lý (Q-A, nằm sẵn trong `settleGroup`). GVCN của lớp / Quản lý.
  */
-export function baoVang(p: Principal, attemptId: number, skill: string, lyDo: string, today: string = demoToday()) {
+export function baoVang(p: Principal, attemptId: number, skill: string, lyDo: string | null | undefined, today: string = demoToday()) {
   const conn = db();
   const a = loadAttempt(attemptId);
   if (!canRequest(p, a)) throw forbidden('Chỉ giáo viên chủ nhiệm của lớp và Quản lý báo vắng được.');
   if (a.kind !== 'mock') throw badRequest('Bài lớp thường báo vắng ở bảng điểm lớp thường.');
   if (a.status === 'cancelled') throw badRequest('Đợt này đã huỷ.');
-  if (a.lich_su) throw badRequest('MT lịch sử không vào luồng vắng — nhập bù điểm, không dời lịch.');
-  const loi = kiemLyDoThaoTac('Báo vắng', lyDo);
-  if (loi) throw badRequest(loi);
+  if (a.lich_su) throw badRequest('MT cũ không vào luồng vắng — nhập bù điểm, không dời lịch.');
   const row = ensureSkillRows(attemptId).find((r) => r.skill === skill);
   if (!row?.required) throw badRequest(`${skillName(skill)} không nằm trong lượt này.`);
   if (row.sit_status !== 'scheduled' || !row.planned_period_id || !row.week_start || !row.week_end) {
@@ -870,8 +952,8 @@ export function baoVang(p: Principal, attemptId: number, skill: string, lyDo: st
           .run(attemptId, e, row.planned_period_id, p.userId, nowIso()).lastInsertRowid));
       }
     }
-    settleGroup(conn, attemptId, row.id, skill, row.week_end!, row.period_code ?? '', ids, p.userId, `Báo vắng: ${lyDo.trim()}`, today);
+    settleGroup(conn, attemptId, row.id, skill, row.week_end!, row.period_code ?? '', ids, p.userId, lyDo?.trim() ? `Báo vắng: ${lyDo.trim()}` : 'Báo vắng', today);
     const sau = ensureSkillRows(attemptId).find((r) => r.skill === skill)!;
-    return { daDoi: sau.sit_status === 'scheduled', tuanMoi: sau.week_start, choDuyet: !!pendingMove(attemptId, skill) };
+    return { daDoi: sau.sit_status === 'scheduled', tuanMoi: sau.week_start, choDuyet: !!pendingMove(attemptId, skill), huyVang: !!sau.huy_vang };
   });
 }

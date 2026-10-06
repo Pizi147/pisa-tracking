@@ -168,7 +168,7 @@ export function duongThongBao(n: ThongBaoRow): string | null {
       if (n.kind === 'sos') {
         return n.student_id != null ? duongHoSoHocVien(n.student_id, { dot: n.attempt_id ?? n.entity_id }) : null;
       }
-      if (n.kind === 'schedule_move' || n.kind === 'tu_doi_lich') return duongDotTest({ id: n.attempt_id ?? n.entity_id });
+      if (n.kind === 'schedule_move' || n.kind === 'tu_doi_lich' || n.kind === 'huy_vang') return duongDotTest({ id: n.attempt_id ?? n.entity_id });
       return null;
     case 'skill_move_requests':
       return n.attempt_id != null ? duongDotTest({ id: n.attempt_id }) : null;

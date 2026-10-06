@@ -380,14 +380,15 @@ export async function runPrDlTests(t: YThucTestKit) {
       assert(ds.macDinh === 'thuong:progress', `macDinh ${ds.macDinh}`);
     });
 
-    await t.checkAsync('DL-4 PUT một ô (đường ghi cũ) → oTrong giảm 1; sửa ô đã có điểm không lý do bị từ chối (override)', async () => {
+    await t.checkAsync('DL-4 PUT một ô (đường ghi cũ) → oTrong giảm 1; xoá ô đã có điểm không lý do bị từ chối (PR-MTa T7)', async () => {
       const truoc = luotCua((await goi(QL.userId, `/classes/${LOP}/diem-theo-luot`)).body, 'mt:2').oTrong;
       const w = await goi(QL.userId, `/attempts/${anh.aid}/scores/reading`, 'PUT', { rawScore: 28 });
       assert(w.status === 200, `PUT reading: ${w.status} ${JSON.stringify(w.body)}`);
       const sau = luotCua((await goi(QL.userId, `/classes/${LOP}/diem-theo-luot`)).body, 'mt:2').oTrong;
       assert(sau === truoc - 1, `oTrong ${truoc} → ${sau}`);
-      const s = await goi(QL.userId, `/attempts/${anh.aid}/scores/listening`, 'PUT', { rawScore: 35 });
-      assert(s.status >= 400 && s.status < 500, `sửa không lý do phải bị từ chối: ${s.status}`);
+      /* PR-MTa T7 thay RB-5: sửa điểm — lý do tuỳ chọn; XOÁ điểm đã có (huỷ điểm) không lý do mới bị từ chối. */
+      const s = await goi(QL.userId, `/attempts/${anh.aid}/scores/listening`, 'PUT', { rawScore: null });
+      assert(s.status >= 400 && s.status < 500, `xoá không lý do phải bị từ chối: ${s.status}`);
       assert(get(`SELECT raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, anh.aid).raw_score === 30, 'điểm cũ bị đổi');
     });
 
@@ -457,7 +458,7 @@ export async function runPrDlTests(t: YThucTestKit) {
   check('DL-5 DiemTheoLop: chữ đúng đặc tả, tablist, hỏi khi còn ô đang lưu, nhớ "Chỉ ô còn trống" bọc try/catch', () => {
     const f = doc('web/src/modules/cham/DiemTheoLop.tsx');
     for (const chu of ['Còn ô đang lưu. Đợi lưu xong rồi chuyển?', 'Chưa có lịch {b!.luot.nhan} — ', 'xếp ở panel Lộ trình', "{ mo: 'lo-trinh' }", 'Chỉ ô còn trống',
-      'là lượt lịch sử (trước khi lớp dùng web): nhập bù điểm, không nhận dấu "-".',
+      'là MT cũ: nhập bù điểm, không nhận dấu "-".',   // PR-MTa: "MT cũ"
       'Lớp chưa có lượt Test nào. Xếp lịch ở Kế hoạch Test.', 'role="tablist"', 'colSpan', 'onRetry={'])
       assert(f.includes(chu) || doc('web/src/modules/cham/LuoiFT.tsx').includes(chu), `thiếu: ${chu}`);
     assert(/try\s*\{[^}]*localStorage\.getItem/.test(f) && /try\s*\{[^}]*localStorage\.setItem/.test(f), 'localStorage phải bọc try/catch');

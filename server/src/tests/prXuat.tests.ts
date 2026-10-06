@@ -79,7 +79,7 @@ export async function runPrXuatTests(t: YThucTestKit) {
     assert(d.trangThaiLuotXuat(b) === 'Đủ điểm', 'đủ');
     assert(d.trangThaiLuotXuat({ ...b, coDiem: 2, du: false }) === 'Thiếu điểm 2/4', 'thiếu');
     assert(d.trangThaiLuotXuat({ ...b, coDiem: 0, du: false }) === 'Chưa có điểm', 'chưa có');
-    assert(d.trangThaiLuotXuat({ ...b, coDiem: 2, du: false, lichSu: true }) === 'Thiếu điểm 2/4 · lịch sử', 'lịch sử');
+    assert(d.trangThaiLuotXuat({ ...b, coDiem: 2, du: false, lichSu: true }) === 'Thiếu điểm 2/4 · MT cũ', 'MT cũ');   // PR-MTa: "lịch sử" → "MT cũ"
     assert(d.trangThaiLuotXuat({ ...b, coDiem: 3, yeuCau: 3, du: false, huyPhan: true, tamThoi: true }) === 'Thiếu điểm 3/3 · đã huỷ phần còn lại · SOS tạm thời', 'huỷ phần');
     assert(d.trangThaiLuotXuat({ ...b, coDiem: 2, du: false, tamThoi: true, kck: true }) === 'Thiếu điểm 2/4 · không cam kết', 'KCK');
   });
@@ -237,7 +237,7 @@ async function mayChu(t: YThucTestKit) {
 
     const tatCa = hang(xm.duLieuXuatMt(P.admin, loc()));
     const nhan = (s: string) => tatCa.filter((r) => String(r[15]).includes(s)).length;
-    assert(nhan('đã huỷ phần còn lại') >= 1 && nhan(' · lịch sử') >= 1, `huỷ phần ${nhan('đã huỷ phần còn lại')}, lịch sử ${nhan(' · lịch sử')}`);
+    assert(nhan('đã huỷ phần còn lại') >= 1 && nhan(' · MT cũ') >= 1, `huỷ phần ${nhan('đã huỷ phần còn lại')}, MT cũ ${nhan(' · MT cũ')}`);   // PR-MTa: "MT cũ"
     const kck = tatCa.filter((r) => r[12] === 'KCK');
     assert(kck.length >= 1 && kck.every((r) => r[13] === null && r[14] === null), `KCK ${kck.length}: kỳ vọng/SOS phải trống`);
     /* Lượt huỷ cả lượt: không dòng nào của (học viên, MT) đó — trừ khi em có lượt MT cùng số được tạo lại (không bị huỷ). */

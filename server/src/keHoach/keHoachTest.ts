@@ -11,9 +11,9 @@
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { db, theoLo, tx } from '../db.ts';
 import {
-  CO_DIEM_SQL, KY_NANG_KE_HOACH, MT_TOI_DA, O_KE_HOACH, PERMISSIONS, boMonLich, kiemLyDoThaoTac, kiemSoMtMoi, kiemTuanDaQua, laLichSu, lichMtMacDinh, viecXepMt, laVaoMuon, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang,
+  CO_DIEM_SQL, KY_NANG_KE_HOACH, MT_TOI_DA, O_KE_HOACH, PERMISSIONS, boMonLich, kiemLyDoThaoTac, kiemSoMtMoi, kiemTuanXep, laLichSu, lichMtMacDinh, viecXepMt, laVaoMuon, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang,
   tuanKhoa as tuanKhoaCua,
-  type BaiXemTruoc, type DongHangLoat, type KyNangKH, type LuotSo, type LuotXep, type OKyNang,
+  type BaiXemTruoc, type DongHangLoat, type KetQuaHuy, type KyNangKH, type LuotSo, type LuotXep, type OKyNang,
 } from '../../../shared/domain/index.ts';
 import { badRequest, notFound } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
@@ -22,10 +22,11 @@ import { entrySkillsOf, expectationFor } from '../fasttrack/scoring.ts';
 import { createAttempt, loadBundle, saveScore, scoresOf, setSkillSkip } from '../fasttrack/attempts.ts';
 import { currentCycle, nextAttemptNo } from '../fasttrack/cycles.ts';
 import {
-  boTuanLuot, canXacNhanHuyLich, checkWeekVsNeighbours, kiemVuot, loadSkillRows, lyDoHuyVuot, setSitStatus, setSkillWeek, tuanCuoiSauKhiDoi,
+  baoGvcnDoiLichThuongLop, boLichLuotBiVuot, checkWeekVsNeighbours, kiemVuot, kiemXacNhanVuot, loadSkillRows, setSitStatus, setSkillWeek, tinhLaiMtCu, tuanCuoiSauKhiDoi,
   type LuotSeHuyLich,
 } from '../fasttrack/skillSchedule.ts';
 import { pendingMovesFor } from '../fasttrack/absence.ts';
+import { ketQuaHuyCua } from '../fasttrack/ketQuaHuy.ts';
 import { mondayOf } from '../platform/week.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { classProgress, classProgressMany, suggestedMockWeeks, type SuggestedMock } from '../classes/schedule.ts';
@@ -220,6 +221,7 @@ function oKyNangCua(cheDo: CheDo, row: any, scores: any[], daDoi: boolean, doiTu
     tuan: row.week_start ?? null, periodId: row.planned_period_id ?? null, doiTu: daDoi ? doiTu : null, batBuoc,
     khoa: khoaCua(cheDo, row, scores),
     sit: row.sit_status ?? null, tuanKetThuc: row.week_end ?? null, choDuyet,
+    ...(row.huy_vang ? { huyVang: true } : {}),
   };
 }
 
@@ -345,6 +347,8 @@ export type LuotLichMt = {
   kyVong: number | null;
   /** Ô từng kỹ năng đúng như lưới Kế hoạch Test — hộp xếp lịch (`HopKyNang`) dùng thẳng. */
   kn: Partial<Record<KyNangKH, OKyNang>>;
+  /** T2 (PR-MTa): kết quả đã huỷ do dời vượt, chưa khôi phục — Quản lý thấy nút Khôi phục (PR-MTb). */
+  ketQuaHuy: KetQuaHuy | null;
 };
 /** Một hàng: đề xuất của lịch mặc định (nếu lượt nằm trong lịch mặc định) + lượt thật (nếu đã có). */
 export type HangLichMt = Omit<SuggestedMock, 'studyWeek' | 'periodId' | 'weekStart' | 'code'> & {
@@ -370,6 +374,7 @@ export function lichMtLoTrinh(cycleId: number, today: string = demoToday()): {
   const rows = loadSkillRows(ids);
   const bundle = loadBundle(ids);
   const choDuyet = pendingMovesFor(ids);
+  const daHuy = ketQuaHuyCua(ids);
 
   const luotCua = (a: any): LuotLichMt => {
     const scores = bundle.scores.get(a.id) ?? [];
@@ -389,6 +394,7 @@ export function lichMtLoTrinh(cycleId: number, today: string = demoToday()): {
     return {
       attemptId: a.id, trangThai, lichSu: !!a.lich_su, kyNang, kn,
       kyVong: expectationFor(a.target_at_attempt ?? null, a.attempt_no, cy.route ?? null),
+      ketQuaHuy: daHuy.get(a.id) ?? null,
     };
   };
 
@@ -417,17 +423,16 @@ type YeuCauKyNang = { skill: KyNangKH; periodId: number };
 
 /**
  * Kiểm từng kỹ năng của một đợt đã có — KHÔNG ghi. `duaLai` = kỹ năng đang bị bỏ mà lần lưu này đưa lại (bỏ qua "không thi").
- * `pre` (PR-XLMT): dữ liệu đã đọc theo lô (hàng loạt nhiều em) — không đọc lại. `canLyDo` = có bài dời mà tuần thi cũ đã bắt đầu (K4-15).
- * Tuần đích đã qua → chặn (K2-33: tuần đã qua chỉ để TẠO MT lịch sử, không dời lượt có sẵn vào đó).
- * `pre.choHuyLich` (PR-LM, chỉ hộp một đợt): lượt sau bị vượt thành `seHuyLich` (lưu cần xác nhận) thay vì chặn; MT lịch sử (D3) đổi
- * tuần được kể cả kỹ năng đã có điểm, tuần đích đã qua theo luật tạo MT lịch sử, luôn cần lý do. Xếp hàng loạt giữ luật chặn cũ.
+ * `pre` (PR-XLMT): dữ liệu đã đọc theo lô (hàng loạt nhiều em) — không đọc lại. `canLyDo` luôn false (G17, T7 — giữ trường cho web cũ).
+ * Tuần đích đã qua không chặn: mọi nơi gọi đều đã đòi PLAN_WEEK (T4 — Quản lý xếp được tuần đã qua).
+ * Lượt sau bị vượt thành `seHuyLich` (kèm `soDiem`, `soCase`) thay vì chặn — mọi cổng, kể cả xếp hàng loạt (T2, chốt 05/10).
+ * `pre.choHuyLich` (chỉ hộp một đợt): MT cũ (D3) đổi tuần được kể cả kỹ năng đã có điểm.
  */
 function kiemDotNoi(a: any, kyNang: YeuCauKyNang[], duaLai: Set<KyNangKH> = new Set(),
   pre: { rows?: any[]; scores?: any[]; periods?: Map<number, any>; homNay?: string; choHuyLich?: boolean } = {},
 ): { bai: BaiXemTruoc[]; canLyDo: boolean; seHuyLich: LuotSeHuyLich[] } {
   const conn = db();
   const cheDo: CheDo = a.kind === 'mock' ? 'ft' : 'thuong';
-  const homNay = pre.homNay ?? demoToday();
   const lichSu = !!pre.choHuyLich && !!a.lich_su;
   const rows = pre.rows ?? (loadSkillRows([a.id]).get(a.id) ?? []) as any[];
   const scores = pre.scores ?? loadBundle([a.id]).scores.get(a.id) ?? [];
@@ -437,11 +442,10 @@ function kiemDotNoi(a: any, kyNang: YeuCauKyNang[], duaLai: Set<KyNangKH> = new 
     if (!pr) throw notFound('Không tìm thấy tuần');
     periods.set(id, pr);
   }
-  const vaoWeb = lichSu ? String((conn.prepare('SELECT created_at FROM students WHERE id = ?').get(a.student_id) as any)?.created_at ?? '') : '';
   const bai: BaiXemTruoc[] = [];
-  /* Vòng 1: bài giữ nguyên / bị khoá / tuần đã qua. Bài còn lại là bài DỜI — kiểm vượt và lượt lân cận ở vòng 2 (cần đủ bộ tuần mới). */
+  /* Vòng 1: bài giữ nguyên / bị khoá. Bài còn lại là bài DỜI — kiểm vượt và lượt lân cận ở vòng 2 (cần đủ bộ tuần mới). */
   const doi: Array<{ i: number; k: YeuCauKyNang; row: any; pr: any }> = [];
-  let canLyDo = false;
+  const canLyDo = false;   // G17 (PR-MTa T7): dời lịch không còn đòi lý do — giữ trường cho web cũ, PR-MTb bỏ
   for (const k of kyNang) {
     const row = rows.find((r) => r.skill === k.skill);
     const tu = row?.week_start ?? null;
@@ -453,14 +457,11 @@ function kiemDotNoi(a: any, kyNang: YeuCauKyNang[], duaLai: Set<KyNangKH> = new 
     const khoa = khoaCua(cheDo, row, scores);
     if (khoa && !(lichSu && khoa !== 'đã huỷ phần thi')) { bai.push({ skill: k.skill, tu, den: tu, ghiChu: 'giu', cau: khoa }); continue; }
     if (row.planned_period_id === k.periodId) { bai.push({ skill: k.skill, tu, den: tu, ghiChu: 'giu', cau: null }); continue; }
-    const qua = kiemTuanDaQua({ ketThuc: [pr.week_end], ngayVaoWeb: vaoWeb, homNay, taoMoi: lichSu }).cau;
-    if (qua) { bai.push({ skill: k.skill, tu, den: pr.week_start, ghiChu: 'chan', cau: qua }); continue; }
-    if (lichSu || (row.week_start && String(row.week_start).slice(0, 10) <= mondayOf(homNay) && row.sit_status !== 'absent')) canLyDo = true;
     doi.push({ i: bai.length, k, row, pr });
     bai.push({ skill: k.skill, tu, den: pr.week_start, ghiChu: 'doi', cau: null });
   }
 
-  const vuot = pre.choHuyLich && doi.length
+  const vuot = doi.length
     ? kiemVuot(a.id, tuanCuoiSauKhiDoi(rows, new Map(doi.map((d) => [d.k.skill, d.pr.week_start])))!)
     : { biVuot: [], chan: null };
   const boQua = vuot.biVuot.map((x) => x.attemptId);
@@ -498,7 +499,9 @@ export function luuDot(p: Principal, i: {
   lyDoBo?: string | null; force?: boolean; reason?: string | null;
   /** Lượt vừa tạo trong cùng lần xếp (`xepMoiThuong`) — đặt tuần, không phải dời (K4-15). */
   khiTao?: boolean;
-  /** PR-LM (Q-0310-1): người dùng đã xác nhận huỷ lịch các lượt bị vượt (`seHuyLich` của kiểm trước). Thiếu → 409. */
+  /** T11: xếp hàng loạt lớp thường báo GVCN một chuông cả lớp, không từng em. */
+  khongBaoGvcn?: boolean;
+  /** PR-LM + T2 (PR-MTa): người dùng đã xác nhận huỷ kết quả các lượt bị vượt có điểm. Thiếu → 409; thiếu `reason` → 400. */
   xacNhanHuyLich?: boolean;
 }): { ok: true; doi: KyNangKH[]; daHuyLich: LuotSeHuyLich[] } {
   const a = docDot(i.attemptId);
@@ -515,36 +518,39 @@ export function luuDot(p: Principal, i: {
   }
   const cb = kiem.bai.filter((b) => b.ghiChu === 'canh-bao');
   if (cb.length && !i.force) throw badRequest(`${[...new Set(cb.map((b) => b.cau))].join(' ')} ${CAU_XAC_NHAN}`);
-  if (kiem.seHuyLich.length && !i.xacNhanHuyLich) throw canXacNhanHuyLich(kiem.seHuyLich);
+  kiemXacNhanVuot(kiem.seHuyLich, { xacNhan: i.xacNhanHuyLich, lyDo: i.reason });
 
   const rows = (loadSkillRows([i.attemptId]).get(i.attemptId) ?? []) as any[];
   const tuanCuoi = kiem.bai.filter((b) => b.ghiChu === 'doi' || b.ghiChu === 'canh-bao').map((b) => b.den!).sort().pop() ?? '';
   return tx(() => {
-    for (const l of kiem.seHuyLich) boTuanLuot(p, l.attemptId, { lyDo: lyDoHuyVuot(a, tuanCuoi, i.reason), doVuotBoi: a.id });
+    boLichLuotBiVuot(p, kiem.seHuyLich, a, tuanCuoi, i.reason);
     for (const k of i.kyNang) {            // bo=true: đang bắt buộc → bỏ; bo=false: đang bỏ → đưa lại
       const r = rows.find((x) => x.skill === k.skill);
       if (k.bo !== undefined && r && !!r.required === k.bo) setSkillSkip(p, i.attemptId, k.skill, k.bo, i.lyDoBo ?? undefined);
     }
     const doi = kiem.bai.filter((b) => b.ghiChu === 'doi' || b.ghiChu === 'canh-bao');
     for (const b of doi) {
-      setSkillWeek(p, i.attemptId, b.skill, datTuan.find((k) => k.skill === b.skill)!.periodId, { reason: i.reason ?? null, force: true, khiTao: i.khiTao });
+      setSkillWeek(p, i.attemptId, b.skill, datTuan.find((k) => k.skill === b.skill)!.periodId, { reason: i.reason ?? null, force: true, khiTao: i.khiTao, khongBaoGvcn: i.khongBaoGvcn });
     }
     return { ok: true as const, doi: doi.map((b) => b.skill), daHuyLich: kiem.seHuyLich };
   });
 }
 
+const CAU_THI_LAI_TUAN_QUA = 'Thi lại: chọn tuần từ tuần này trở đi.';
+
 /**
  * THI LẠI (T37 "ép vào đợt trùng", §5.5, Q13 — chủ sản phẩm chốt 29/09 câu 1 = A): Quản lý cho em thi lại kỹ năng ĐÃ CÓ ĐIỂM ở
  * chính đợt đó — xoá ô (RB-5 ghi lý do, lịch sử điểm giữ giá trị cũ) → "chờ thi" → tuần mới. Mọi ô của kỹ năng (W1 + W2). Một `tx`.
  */
-export function thiLai(p: Principal, i: { attemptId: number; skills: string[]; periodId: number; lyDo: string; force?: boolean }) {
+export function thiLai(p: Principal, i: { attemptId: number; skills: string[]; periodId: number; lyDo?: string | null; force?: boolean }) {
   const a = docDot(i.attemptId);
   require_(p, PERMISSIONS.PLAN_WEEK, { classId: a.class_id }, PLAN_MSG);
   if (a.kind !== 'mock' || a.lich_su || a.status === 'cancelled') throw badRequest('Chỉ thi lại được ở lượt Mock đang chạy.');
-  const loi = kiemLyDoThaoTac('Thi lại', i.lyDo);
-  if (loi) throw badRequest(loi);
   if (!i.skills?.length) throw badRequest('Chưa chọn kỹ năng thi lại.');
-  const lyDo = `Thi lại: ${i.lyDo.trim()}`;
+  /* T4 (PR-MTa): Quản lý xếp được tuần đã qua — trừ thi lại: thi lại là một buổi thi thật, cần tuần từ tuần này trở đi. */
+  const pr = db().prepare('SELECT week_end FROM report_periods WHERE id = ?').get(i.periodId) as any;
+  if (pr && laLichSu(pr.week_end, demoToday())) throw badRequest(CAU_THI_LAI_TUAN_QUA);
+  const lyDo = i.lyDo?.trim() ? `Thi lại: ${i.lyDo.trim()}` : 'Thi lại';   // T7: lý do tuỳ chọn
   /* Rà #126: thi lại chỉ cho kỹ năng ĐÃ CÓ ĐIỂM — vắng / đã huỷ đi luồng Xếp lại bài vắng / Khôi phục, không qua đây. */
   const diem = scoresOf(i.attemptId);
   for (const k of i.skills.map(chonKyNang)) {
@@ -572,7 +578,7 @@ export function thiLai(p: Principal, i: { attemptId: number; skills: string[]; p
  * không còn nửa điểm (rà #126). Mỗi ô đi qua `saveScore` (quyền, R11, RB-5 ghi lý do vào Lịch sử).
  */
 export function huyDiem(p: Principal, i: { attemptId: number; skill: string; o?: string[]; lyDo: string }) {
-  const loi = kiemLyDoThaoTac('Huỷ điểm', i.lyDo);
+  const loi = kiemLyDoThaoTac('huy-diem', i.lyDo);
   if (loi) throw badRequest(loi);
   const tatCa = entrySkillsOf(chonKyNang(i.skill) as any) as string[];
   const o = i.o?.length ? i.o : tatCa;
@@ -651,11 +657,8 @@ export function xepMoi(p: Principal, i: {
   const dungTuan = KY_NANG_KE_HOACH.filter((k) => tuan[k] !== null);
   if (!dungTuan.length) throw badRequest('Cần ít nhất một kỹ năng thi trong đợt.');
   const periods = docTuan(dungTuan.map((k) => tuan[k]!));
-  /* T34 × K2-33 (PR-XLMT, Q8): tuần đã qua chỉ để TẠO MT lịch sử — mọi kỹ năng đã qua VÀ em vào web sau các tuần đó; trộn qua/tới bị chặn.
-   * Qua kiểm này thì tuần sớm nhất và muộn nhất cùng phía hôm nay → `createAttempt` đặt `lich_su` theo tuần sớm nhất vẫn đúng. */
-  const vaoWeb = String((conn.prepare('SELECT created_at FROM students WHERE id = ?').get(i.studentId) as any)?.created_at ?? '');
-  const qua = kiemTuanDaQua({ ketThuc: dungTuan.map((k) => periods.get(tuan[k]!).week_end), ngayVaoWeb: vaoWeb, homNay: demoToday(), taoMoi: true });
-  if (qua.cau) throw badRequest(qua.cau);
+  /* T1/T4 (PR-MTa): Quản lý xếp được tuần đã qua (kể cả trộn qua / tới), không chặn theo ngày em vào web. Cờ MT cũ tính sau khi đặt
+   * đủ tuần, theo tuần MUỘN NHẤT (`tinhLaiMtCu`). `require_` PLAN_WEEK ở trên nên `kiemTuanXep` không bao giờ chặn ở đây. */
 
   return tx(() => {
     const kiem = kiemTuanMoi(cycle.id, attemptNo, dungTuan.map((k) => periods.get(tuan[k]!).week_start));
@@ -669,7 +672,8 @@ export function xepMoi(p: Principal, i: {
       if (tuan[k] !== som.id) setSkillWeek(p, created.id, k, tuan[k]!, { force: true, khiTao: true });
     }
     for (const k of bo) setSkillSkip(p, created.id, k, true, i.lyDoBo ?? undefined, { khiTao: true });
-    return created;
+    tinhLaiMtCu(created.id, demoToday());
+    return conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(created.id);
   });
 }
 
@@ -893,7 +897,7 @@ const coDiemO = (scores: any[], skill: string) => scores.some((s) => (entrySkill
  */
 function xetMotEmFT(i: {
   studentId: number; ten: string; chon: number; ep: boolean; thiLai?: KyNangKH[];
-  tuan: Partial<Record<KyNangKH, number>>; periods: Map<number, any>; ngayVaoWeb: string; homNay: string;
+  tuan: Partial<Record<KyNangKH, number>>; periods: Map<number, any>; homNay: string;
   lo: ReturnType<typeof docFtTheoLo>;
 }): { dong: DongHangLoat; attemptId: number | null } {
   const dong = (x: Partial<DongHangLoat>): DongHangLoat => ({ studentId: i.studentId, ten: i.ten, hanhDong: 'loi', bai: [], loi: null, ...x });
@@ -920,13 +924,12 @@ function xetMotEmFT(i: {
   const co = KY_NANG_KE_HOACH.filter((k) => i.tuan[k]);
   if (viec.loai === 'tao') {
     if (co.length < KY_NANG_KE_HOACH.length) return { dong: dong({ loi: `Em chưa có MT${attemptNo} — cần chọn tuần cho cả 4 kỹ năng.`, viec: 'tao', attemptNo }), attemptId: null };
-    /* K2-33, Q8: tuần đã qua chỉ để TẠO MT lịch sử — mọi kỹ năng đã qua và em vào web sau các tuần đó. */
-    const qua = kiemTuanDaQua({ ketThuc: co.map((k) => i.periods.get(i.tuan[k]!).week_end), ngayVaoWeb: i.ngayVaoWeb, homNay: i.homNay, taoMoi: true });
-    if (qua.cau) return { dong: dong({ loi: qua.cau, viec: 'tao', attemptNo }), attemptId: null };
+    /* T1/T4 (PR-MTa): Quản lý xếp được tuần đã qua — `mtCu` báo trước lượt sẽ là MT cũ (tuần muộn nhất cách ≥ 2 tuần). */
+    const qua = kiemTuanXep({ ketThuc: co.map((k) => i.periods.get(i.tuan[k]!).week_end), homNay: i.homNay, quanLy: true });
     const kiem = kiemTuanMoi(cycle.id, attemptNo, co.map((k) => i.periods.get(i.tuan[k]!).week_start));
     const bai = baiMoi(co, i.tuan, i.periods, kiem);
     if (kiem.blockers.length) return { dong: dong({ loi: kiem.blockers.join(' '), bai, viec: 'tao', attemptNo }), attemptId: null };
-    return { dong: dong({ hanhDong: 'tao', bai, viec: 'tao', attemptNo, lichSu: qua.lichSu }), attemptId: null };
+    return { dong: dong({ hanhDong: 'tao', bai, viec: 'tao', attemptNo, lichSu: qua.mtCu }), attemptId: null };
   }
 
   const a = cuaEm.find((x) => x.attempt_no === attemptNo && x.status !== 'cancelled')!;
@@ -939,12 +942,12 @@ function xetMotEmFT(i: {
       const pr = i.periods.get(i.tuan[k]!);
       const tu = rowsCua(a).find((r) => r.skill === k)?.week_start ?? null;
       return laLichSu(pr.week_end, i.homNay)
-        ? { skill: k, tu, den: pr.week_start, ghiChu: 'chan', cau: 'Không dời vào tuần đã qua — chọn tuần từ tuần này trở đi.' }
+        ? { skill: k, tu, den: pr.week_start, ghiChu: 'chan', cau: CAU_THI_LAI_TUAN_QUA }
         : { skill: k, tu, den: pr.week_start, ghiChu: 'doi', cau: 'Thi lại — điểm cũ giữ trong Lịch sử.' };
     });
     const chan = bai.filter((b) => b.ghiChu === 'chan');
     if (chan.length) return { dong: dong({ loi: chan[0].cau, bai, viec: 'thi-lai', attemptNo, coDiem: viec.coDiem }), attemptId: a.id };
-    return { dong: dong({ hanhDong: 'doi', bai, viec: 'thi-lai', attemptNo, canLyDo: true, coDiem: viec.coDiem }), attemptId: a.id };
+    return { dong: dong({ hanhDong: 'doi', bai, viec: 'thi-lai', attemptNo, canLyDo: false, coDiem: viec.coDiem }), attemptId: a.id };
   }
 
   /* `doi` → mọi kỹ năng đã chọn tuần; `xep-not` → CHỈ kỹ năng còn thiếu. */
@@ -953,7 +956,8 @@ function xetMotEmFT(i: {
   const kiem = kiemDotNoi(a, ks.map((k) => ({ skill: k, periodId: i.tuan[k]! })), new Set(),
     { rows: rowsCua(a), scores: diemCua(a), periods: i.periods, homNay: i.homNay });
   const chan = kiem.bai.filter((b) => b.ghiChu === 'chan');
-  const chung = { bai: kiem.bai, viec: viec.loai, attemptNo, canLyDo: kiem.canLyDo };
+  /* T2 (PR-MTa, chốt 05/10): dời vượt KHÔNG chặn ở hàng loạt — dòng mang hệ quả `seHuyLich` để web hiện một popup gộp. */
+  const chung = { bai: kiem.bai, viec: viec.loai, attemptNo, canLyDo: kiem.canLyDo, ...(kiem.seHuyLich.length ? { seHuyLich: kiem.seHuyLich } : {}) };
   if (chan.length) return { dong: dong({ ...chung, loi: [...new Set(chan.map((b) => b.cau))].join(' ') }), attemptId: a.id };
   return { dong: dong({ ...chung, hanhDong: kiem.bai.some((b) => b.ghiChu !== 'giu') ? 'doi' : 'giu' }), attemptId: a.id };
 }
@@ -963,6 +967,8 @@ export function xepHangLoat(p: Principal, i: {
   tuan: Partial<Record<KyNangKH, number>>; force?: boolean; xemTruoc?: boolean;
   /** PR-XLMT (khung FT): Quản lý bấm chip đợt riêng cho em (`ep`) · kỹ năng cho thi lại · lý do (dời bài tuần đã bắt đầu, thi lại). */
   dotTheoEm?: Record<string, number>; thiLai?: Record<string, KyNangKH[]>; lyDo?: string | null;
+  /** T2 (PR-MTa, chốt 05/10): đã xác nhận popup gộp — huỷ kết quả các lượt bị vượt có điểm (`dong.seHuyLich`); cần `lyDo`. */
+  xacNhanHuyLich?: boolean;
 }, today: string = demoToday()): { dong: DongHangLoat[]; daLuu: number } {
   const conn = db();
   require_(p, PERMISSIONS.PLAN_WEEK, { classId: i.classId }, PLAN_MSG);
@@ -995,9 +1001,9 @@ export function xepHangLoat(p: Principal, i: {
   });
   const studentIds = idsGui.filter((id) => inClassIds.has(id));
   if (!studentIds.length) throw badRequest('Chưa chọn học viên nào.');
-  const hv = new Map<number, { ten: string; vaoWeb: string }>(
-    (conn.prepare(`SELECT id, full_name, created_at FROM students WHERE id IN (${phOf(studentIds.length)})`)
-      .all(...studentIds) as any[]).map((s) => [s.id, { ten: s.full_name, vaoWeb: String(s.created_at ?? '') }]),
+  const hv = new Map<number, { ten: string }>(
+    (conn.prepare(`SELECT id, full_name FROM students WHERE id IN (${phOf(studentIds.length)})`)
+      .all(...studentIds) as any[]).map((s) => [s.id, { ten: s.full_name }]),
   );
 
   const lo = laThuong ? null : docFtTheoLo(studentIds);
@@ -1007,21 +1013,17 @@ export function xepHangLoat(p: Principal, i: {
     const rieng = Number(i.dotTheoEm?.[studentId]) || 0;
     return xetMotEmFT({
       studentId, ten, chon: rieng || i.attemptNo!, ep: !!rieng, thiLai: (i.thiLai?.[studentId] ?? []).map(chonKyNang),
-      tuan, periods, ngayVaoWeb: hv.get(studentId)?.vaoWeb ?? '', homNay: today, lo: lo!,
+      tuan, periods, homNay: today, lo: lo!,
     });
   });
   if (i.xemTruoc) return { dong: xet.map((x) => x.dong), daLuu: 0 };
 
   let daLuu = 0;
+  let soEmDoi = 0;
   const ketQua = xet.map(({ dong, attemptId }) => {
     if (dong.hanhDong === 'giu' || dong.hanhDong === 'loi') return dong;
     const canhBao = [...new Set(dong.bai.filter((b) => b.ghiChu === 'canh-bao').map((b) => b.cau))];
     if (canhBao.length && !i.force) return { ...dong, hanhDong: 'loi' as const, loi: `${canhBao.join(' ')} ${CAU_XAC_NHAN}` };
-    /* K4-15: dời bài tuần đã bắt đầu / thi lại mà thiếu lý do → em này không lưu, các em khác vẫn lưu (R9b). */
-    if (dong.canLyDo) {
-      const loiLyDo = kiemLyDoThaoTac(dong.viec === 'thi-lai' ? 'Thi lại' : 'Dời lịch thi', i.lyDo);
-      if (loiLyDo) return { ...dong, hanhDong: 'loi' as const, loi: loiLyDo };
-    }
     const doi = dong.bai.filter((b) => b.ghiChu !== 'giu' && b.ghiChu !== 'chan');
     try {
       /* Mỗi em một `tx` riêng (bên trong các hàm dưới): lỗi của em này không huỷ các em khác (R9b, Q1). */
@@ -1034,9 +1036,10 @@ export function xepHangLoat(p: Principal, i: {
         tx(() => { for (const [periodId, skills] of theoTuan) thiLai(p, { attemptId: attemptId!, skills, periodId, lyDo: i.lyDo ?? '', force: true }); });
       } else {
         luuDot(p, {
-          attemptId: attemptId!, force: true, reason: i.lyDo?.trim() || null,
+          attemptId: attemptId!, force: true, reason: i.lyDo?.trim() || null, xacNhanHuyLich: !!i.xacNhanHuyLich, khongBaoGvcn: laThuong,
           kyNang: doi.map((b) => ({ skill: b.skill, periodId: tuan[b.skill]! })),
         });
+        if (laThuong) soEmDoi += 1;
       }
       daLuu += 1;
       return dong;
@@ -1047,6 +1050,7 @@ export function xepHangLoat(p: Principal, i: {
     }
   });
 
+  if (laThuong) baoGvcnDoiLichThuongLop(p, i.classId, i.kind!, soEmDoi, today);   // T11: một chuông cả lớp (bài mới tạo không tính)
   writeAudit({
     actorUserId: p.userId, action: 'ke_hoach.hang_loat', entityType: 'class', entityId: i.classId,
     entityLabel: laThuong ? KIND_NHAN[i.kind!] : `MT${i.attemptNo}`,

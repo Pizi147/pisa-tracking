@@ -204,7 +204,7 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   },
   missing_data: {
     label: 'Thiếu dữ liệu đánh giá',
-    hint: 'Thiếu những thông tin mà không có thì không đánh giá hay lên kế hoạch được: bài chưa xếp vào tuần nào, học viên FT chưa có Target, MT lịch sử chưa nhập (không tính hạn).',
+    hint: 'Thiếu những thông tin mà không có thì không đánh giá hay lên kế hoạch được: bài chưa xếp vào tuần nào, học viên FT chưa có Target, MT cũ chưa nhập (không tính hạn).',
   },
   /* ---------------------------------------------------- Ý thức (PR-YT4, V4-2…V4-5, K3-37) — người nhận = GVCN lớp đang học */
   yt_xu_ly: {
@@ -918,14 +918,14 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     }
   }
 
-  /* K2-32: MT LỊCH SỬ chưa nhập — một việc XÁM mỗi lớp (GVCN / Quản lý), không hạn, không quá hạn. Cùng hàm với dòng nhắc Lịch Test. */
+  /* K2-32: MT CŨ chưa nhập — một việc XÁM mỗi lớp (GVCN / Quản lý), không hạn, không quá hạn. Cùng hàm với dòng nhắc Lịch Test. */
   for (const l of co('missing_data') ? mtLichSuChuaNhap(p, { branchId: f.branchId ?? null }) : []) {
     items.push({
       key: `lich-su:${l.classId}`, group: 'missing_data', urgency: 'normal',
       studentId: null, studentName: `Lớp ${l.classCode}`, classId: l.classId, classCode: l.classCode,
       attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: null, count: l.soEm,
-      reason: `Nhập MT lịch sử · ${l.soEm} em · không tính hạn`,
-      tieuDe: 'Nhập điểm MT lịch sử', actionLabel: 'Nhập điểm', href: l.href,
+      reason: `Nhập MT cũ · ${l.soEm} em · không tính hạn`,
+      tieuDe: 'Nhập điểm MT cũ', actionLabel: 'Nhập điểm', href: l.href,
       ownerId: p.userId, owner: null, mine: true, due: null, statusLabel: 'Không tính hạn',
     });
   }

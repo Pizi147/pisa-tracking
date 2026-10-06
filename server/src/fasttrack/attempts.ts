@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, duongDotTest, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, ENTRY_SKILLS, ENTRY_SKILL_LABEL, MOCK_FT_STUDY_WEEK, NO_SHOW_OVERRIDDEN_NOTE,
-  BAI_CO_NHAN_XET, PERMISSIONS, awaitingScore, cachHuyLuot, kiemLyDo, kiemLyDoThaoTac, kiemNhanXet, kiemSoMtMoi, laLichSu, ngay, noShowStateOf, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanLich,
+  BAI_CO_NHAN_XET, PERMISSIONS, awaitingScore, cachHuyLuot, kiemBand, kiemLyDoThaoTac, kiemNhanXet, kiemSoMtMoi, laMtCu, ngay, noShowStateOf, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanLich,
   type CachHuy,
   type AssessedSkill, type EntrySkill, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
 } from '../../../shared/domain/index.ts';
@@ -21,7 +21,7 @@ import {
 import { quaHanNhapDiem, weekInfo } from '../platform/week.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import {
-  canXacNhanHuyLich, completionWeekOf, ensureSkillRows, kiemVuot, tuanCuoiSauKhiDoi, loadSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf,
+  completionWeekOf, ensureSkillRows, kiemVuot, kiemXacNhanVuot, tuanCuoiSauKhiDoi, loadSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf,
   setSkillScope, setSkillWeek, skillScheduleOf, skippedSkillsOf, viewSkill,
   type SkillRow, type SkillScheduleView,
 } from './skillSchedule.ts';
@@ -30,6 +30,7 @@ import { raiseSignalsForResult, stepsFor } from '../cases/sos.ts';
 import { reconcileCorrectedSignals } from '../cases/signals.ts';
 import { currentCycle, cycleById, examPlanOf, luotSoCuaLoTrinh } from './cycles.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
+import { ketQuaHuyCua } from './ketQuaHuy.ts';
 import { chuanHoaNguoiThucHien } from '../cases/nguoiThucHien.ts';
 import { allProgrammes, evaluateRegular, isRatioClass, regularDeadline } from '../normal/regular.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
@@ -807,6 +808,7 @@ export function scoreSummaryText(row: Partial<ScoreRow> | null | undefined): str
     return `Tiêu chí ${crit.map((v) => (v === null || v === undefined ? '–' : v)).join(' / ')}${band}`;
   }
   if (row.no_show_period_id) return 'Báo "-" (không có bài)';
+  if (band) return `Band ${Number(row.band).toFixed(1)}`;   // T10: band nhập thẳng
   return 'Trống';
 }
 
@@ -825,7 +827,8 @@ export function scoreHistoryOf(attemptId: number) {
          FROM audit_logs l LEFT JOIN users u ON u.id = l.actor_user_id
          JOIN assessment_attempts a ON a.id = l.entity_id
         WHERE l.entity_type = 'assessment_attempt' AND l.entity_id = ? AND l.created_at >= a.created_at
-          AND l.action IN ('score.edit', 'score.lich_su', 'score.override', 'score.no_show', 'score.no_show_cleared', 'score.nhan_xet')
+          AND l.action IN ('score.edit', 'score.lich_su', 'score.override', 'score.no_show', 'score.no_show_cleared', 'score.nhan_xet',
+                           'score.huy_vuot', 'score.khoi_phuc')
         ORDER BY l.id DESC`,
     )
     .all(attemptId) as any[];
@@ -845,15 +848,18 @@ export function scoreHistoryOf(attemptId: number) {
         actorName: l.actor_name as string | null, createdAt: l.created_at as string, lyDo: null as string | null,
       }];
     }
+    /* T2 (PR-MTa): huỷ do dời vượt / khôi phục là `override` (web khỏi thêm loại); lý do nằm ở `after.lyDo`. */
+    const vuot = l.action === 'score.huy_vuot', khoiPhuc = l.action === 'score.khoi_phuc';
     const afterText = l.action === 'score.no_show' ? 'Báo "-" (không có bài)'
       : l.action === 'score.no_show_cleared' ? 'Gỡ dấu "-"'
+      : vuot ? 'Huỷ do dời vượt'
       : scoreSummaryText(after);
     return [{
       id: l.id,
-      kind: (l.action === 'score.override' ? 'override' : l.action === 'score.edit' || l.action === 'score.lich_su' ? 'edit' : 'no_show') as 'override' | 'edit' | 'no_show',
+      kind: (l.action === 'score.override' || vuot || khoiPhuc ? 'override' : l.action === 'score.edit' || l.action === 'score.lich_su' ? 'edit' : 'no_show') as 'override' | 'edit' | 'no_show',
       skill: l.entity_label as string,
       skillLabel: tenMon(null, l.entity_label),   // gồm cả môn lớp thường (trước đây `writing` hiện mã thô)
-      before: scoreSummaryText(before), after: afterText,
+      before: khoiPhuc ? 'Đã huỷ' : scoreSummaryText(before), after: afterText,
       actorName: l.actor_name as string | null, createdAt: l.created_at as string,
       /* RB-5 — lý do hiệu chỉnh nằm ngay trong bản "sau" của nhật ký; lần nhập đầu không có. */
       lyDo: (after && typeof after === 'object' ? (after as any).lyDo ?? null : null) as string | null,
@@ -945,6 +951,8 @@ export function attemptDetail(p: Principal, attemptId: number) {
       const ma = doiMa.get(r.skill);
       return { ...r, doiTu: ma ? (doiNgay.has(ma) ? tuanLich(doiNgay.get(ma)!, today) : ma) : null };
     }),
+    /** T2 (PR-MTa): kết quả đã huỷ do dời vượt, chưa khôi phục (Quản lý: nút Khôi phục — PR-MTb). */
+    ketQuaHuy: ketQuaHuyCua([a.id]).get(a.id) ?? null,
     /** PR-HSM (K4 §4h): lượt đã huỷ — lý do, ai, khi (dòng `cancelled` mới nhất của lịch sử). */
     huy: huyDong ? { lyDo: huyDong.reason ?? null, ai: huyDong.actor_name ?? null, khi: huyDong.created_at } : null,
     /** Đợt này có tách tuần không — nhiều hơn một tuần trong các kỹ năng bắt buộc. */
@@ -1052,9 +1060,9 @@ export function createAttempt(p: Principal, input: {
                                           status, target_at_attempt, note, created_by, created_at, lich_su)
          VALUES (?,?,?, 'mock', ?,?, 'planned', ?,?,?,?,?)`,
       )
-      /* T34 (rà #119 mục 5): xếp vào tuần đã kết thúc = MT lịch sử ngay lúc tạo — không sinh một lượt quá hạn từ ngày đầu. */
+      /* T1 (PR-MTa): xếp vào tuần cách tuần này ≥ 2 tuần = MT cũ ngay lúc tạo; tuần trước vẫn là MT thường (có hạn chấm). */
       .run(cycle.id, student.id, attemptNo, classId, period.id, cycle.target_score, input.note ?? null, p.userId, nowIso(),
-        laLichSu(period.week_end, demoToday()) ? 1 : 0);
+        laMtCu(period.week_end, demoToday()) ? 1 : 0);
     const id = Number(info.lastInsertRowid);
     /*
      * Bốn dòng lịch kỹ năng được dựng NGAY khi tạo đợt, tất cả cùng tuần vừa chọn và mang
@@ -1076,7 +1084,7 @@ export function createAttempt(p: Principal, input: {
 
 /**
  * Q-B: tạo lại số MT đã "Huỷ cả lượt" (không điểm) = HỒI SINH chính dòng đó — cùng id, lịch kỹ năng dựng lại ở tuần mới, dấu "-" cũ
- * (không phải điểm) bỏ đi, đề nghị dời cũ rút. `created_at` = LÚC XẾP LẠI và `lich_su` tính theo HÔM NAY — cửa sổ Case 4 tuần (M4) đo
+ * (không phải điểm) bỏ đi, đề nghị dời cũ rút. `created_at` = LÚC XẾP LẠI và cờ MT cũ tính theo HÔM NAY — cửa sổ Case 4 tuần (M4) đo
  * từ đây, không từ lần tạo đầu. Gọi trong tx của `createAttempt`.
  */
 function hoiSinhLuot(p: Principal, cu: any, o: { classId: number | null; period: any; targetScore: number | null; note: string | null; studentCode: string }) {
@@ -1084,7 +1092,7 @@ function hoiSinhLuot(p: Principal, cu: any, o: { classId: number | null; period:
   conn.prepare(
     `UPDATE assessment_attempts SET status = 'planned', cancel_reason = NULL, cancelled_at = NULL, class_id = ?, planned_period_id = ?,
             plan_source = 'manual', target_at_attempt = ?, note = ?, lich_su = ?, created_at = ?, updated_at = ? WHERE id = ?`,
-  ).run(o.classId, o.period.id, o.targetScore, o.note, laLichSu(o.period.week_end, demoToday()) ? 1 : 0, nowIso(), nowIso(), cu.id);
+  ).run(o.classId, o.period.id, o.targetScore, o.note, laMtCu(o.period.week_end, demoToday()) ? 1 : 0, nowIso(), nowIso(), cu.id);
   rutDeNghiDoi(cu.id);   // phòng dữ liệu cũ: đề nghị của lượt đã huỷ không được sống lại cùng lượt
   conn.prepare('DELETE FROM assessment_scores WHERE attempt_id = ? AND band IS NULL AND raw_score IS NULL').run(cu.id);
   conn.prepare('DELETE FROM attempt_skills WHERE attempt_id = ?').run(cu.id);
@@ -1138,10 +1146,10 @@ export function setPlanningWeek(p: Principal, attemptId: number, periodId: numbe
       + 'đã huỷ phần thi hoặc vốn đã ở tuần này.',
     );
   }
-  /* Q-0310-1 (PR-LM): kiểm vượt trên CẢ lần dời (không từng kỹ năng) — 409 trước khi ghi bất cứ gì. */
+  /* Q-0310-1 (PR-LM) + T2 (PR-MTa): kiểm vượt trên CẢ lần dời (không từng kỹ năng) — 409 / 400 trước khi ghi bất cứ gì. */
   const vuot = kiemVuot(attemptId, tuanCuoiSauKhiDoi(rows, new Map(movable.map((r) => [r.skill, period.week_start])))!);
   if (vuot.chan) throw badRequest(vuot.chan);
-  if (vuot.biVuot.length && !opts.huyLichVuot) throw canXacNhanHuyLich(vuot.biVuot);
+  kiemXacNhanVuot(vuot.biVuot, { xacNhan: opts.huyLichVuot, lyDo: reason });
 
   return tx(() => {
     const warnings: string[] = [];
@@ -1186,7 +1194,7 @@ function hasAnyBand(attemptId: number, skill: string): boolean {
  * thao tác miễn môn, và không bỏ một môn khỏi phạm vi SAU khi đã xác nhận em vắng môn đó.
  * Ở đây chỉ còn việc tính lại kết luận của đợt sau khi phạm vi đổi.
  */
-export function setSkillSkip(p: Principal, attemptId: number, skill: string, skipped: boolean, reason?: string, opts: { khiTao?: boolean } = {}) {
+export function setSkillSkip(p: Principal, attemptId: number, skill: string, skipped: boolean, reason?: string, opts: { khiTao?: boolean; khongMockLai?: boolean } = {}) {
   const r = setSkillScope(p, attemptId, skill, !skipped, reason ?? null, opts);
   refreshOutcome(p, attemptId);
   return r;
@@ -1198,7 +1206,6 @@ export function setDeadlineOverride(p: Principal, attemptId: number, date: strin
   require_(p, PERMISSIONS.DEADLINE_OVERRIDE, { classId: a.class_id, studentId: a.student_id },
     'Chỉ Quản lý và Admin chi nhánh mới đặt được hạn riêng.');
   if (date && !isIsoDate(date)) throw badRequest('Hạn không hợp lệ.');
-  if (date) { const loi = kiemLyDoThaoTac('Dời hạn chấm', reason); if (loi) throw badRequest(loi); }   // K4-15
   db()
     .prepare(
       `UPDATE assessment_attempts SET deadline_override = ?, deadline_override_by = ?,
@@ -1223,12 +1230,7 @@ export function heQuaHuyLuot(attemptId: number): { cachDuoc: CachHuy; case: numb
   const ds = luotSoCuaLoTrinh(a.cycle_id);
   const cachDuoc = cachHuyLuot(ds.find((x) => x.attempt_no === a.attempt_no)!, ds);
   if (cachDuoc !== 'ca-luot') return { cachDuoc, case: 0, pa: 0, phoiHop: 0, caseIds: [] };
-  const caseIds = (conn.prepare(
-    `SELECT sc.id FROM sos_cases sc
-      WHERE sc.status != 'done' AND EXISTS (SELECT 1 FROM case_milestones m WHERE m.case_id = sc.id AND m.attempt_id = ?)
-        AND NOT EXISTS (SELECT 1 FROM case_milestones m WHERE m.case_id = sc.id AND m.attempt_id IS NOT NULL AND m.attempt_id != ?)
-        AND NOT EXISTS (SELECT 1 FROM case_followups f WHERE f.case_id = sc.id AND f.outcome IS NOT NULL)`,
-  ).all(attemptId, attemptId) as any[]).map((r) => r.id as number);
+  const caseIds = caseSinhRieng(attemptId);
   const pa = caseIds.length
     ? (conn.prepare(`SELECT COUNT(*) n FROM case_interventions WHERE status IN ('planned', 'started') AND case_id IN (${caseIds.map(() => '?').join(',')})`)
       .get(...caseIds) as any).n as number
@@ -1237,12 +1239,26 @@ export function heQuaHuyLuot(attemptId: number): { cachDuoc: CachHuy; case: numb
   return { cachDuoc, case: caseIds.length, pa, phoiHop, caseIds };
 }
 
+/**
+ * T67 / G8 (PR-MTa): Case SINH RIÊNG từ một lượt — mọi mốc đến từ lượt này, chưa PA nào có kết quả (Q13). Một tập cho hai đường huỷ:
+ * Huỷ cả lượt và huỷ kết quả do dời vượt (`huyKetQuaLuot`).
+ */
+export function caseSinhRieng(attemptId: number): number[] {
+  return (db().prepare(
+    `SELECT sc.id FROM sos_cases sc
+      WHERE sc.status != 'done' AND EXISTS (SELECT 1 FROM case_milestones m WHERE m.case_id = sc.id AND m.attempt_id = ?)
+        AND NOT EXISTS (SELECT 1 FROM case_milestones m WHERE m.case_id = sc.id AND m.attempt_id IS NOT NULL AND m.attempt_id != ?)
+        AND NOT EXISTS (SELECT 1 FROM case_followups f WHERE f.case_id = sc.id AND f.outcome IS NOT NULL)`,
+  ).all(attemptId, attemptId) as any[]).map((r) => r.id as number);
+}
+
 /** HUỶ LƯỢT (T36, M-12, T67). `cach` bỏ trống = cách được phép cho lượt này. */
 export function huyLuot(p: Principal, attemptId: number, input: { lyDo: string; cach?: 'ca-luot' | 'phan-con-lai' | null }) {
   const a = loadAttempt(attemptId);
   require_(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id, studentId: a.student_id }, 'Bạn không có quyền huỷ lượt Mock.');
-  const lyDo = String(input.lyDo ?? '').trim();
-  if (!lyDo) throw badRequest('Cần ghi lý do huỷ.');
+  const loiLyDo = kiemLyDoThaoTac('huy-luot', input.lyDo);
+  if (loiLyDo) throw badRequest(loiLyDo);
+  const lyDo = String(input.lyDo).trim();
   const hq = heQuaHuyLuot(attemptId);
   if (!hq.cachDuoc) throw badRequest('Lượt này đã huỷ.');
   const cach = input.cach ?? hq.cachDuoc;
@@ -1302,6 +1318,8 @@ export function reopenAttempt(p: Principal, attemptId: number) {
 
 export type ScorePatch = {
   rawScore?: number | null;
+  /** T10 (PR-MTa): band nhập thẳng — L/R thay số câu, W1/W2/S thay 4 tiêu chí; `null` = xoá. Không gửi = như cũ. */
+  band?: number | null;
   rawTotal?: number | null;
   criteria?: (number | null)[];
   resultDate?: string | null;
@@ -1371,7 +1389,7 @@ function luuNhanXet(
  * "Đã xong" = đã có điểm mọi kỹ năng BẮT BUỘC, không suy từ việc ngày kế hoạch đã trôi qua.
  * Sửa điểm làm đổi mức SOS thì Case giữ nguyên ID, hành động và lịch sử.
  */
-function refreshOutcome(p: Principal, attemptId: number) {
+export function refreshOutcome(p: Principal, attemptId: number) {
   const conn = db();
   const fresh = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
   if (!fresh || fresh.status === 'cancelled') return;
@@ -1428,7 +1446,7 @@ export function saveScore(
   if (!(ENTRY_SKILLS as readonly string[]).includes(skill)) throw badRequest('Kỹ năng không hợp lệ.');
   if (a.status === 'cancelled') throw badRequest('Lượt này đã huỷ, không nhập điểm được.');
   /* K4-20: MT lịch sử không vào luồng vắng — không có buổi nào để "không dự thi". */
-  if (patch.noShow === true && a.lich_su) throw badRequest('MT lịch sử không nhận dấu "-" — để trống ô nếu không có dữ liệu.');
+  if (patch.noShow === true && a.lich_su) throw badRequest('MT cũ không nhận dấu "-" — để trống ô nếu không có dữ liệu.');
   /*
    * DẤU "-" CỦA LỚP THƯỜNG ĐI CỬA KHÁC (C08, chốt 21/09/2026 đêm). Ở lớp thường, "-" không phải lời khai chờ chốt
    * Chủ nhật như Fast Track mà là một lần DỜI LỊCH: môn đó sang tuần sau ngay. Luật ấy nằm ở `normal/regular.ts`
@@ -1502,7 +1520,7 @@ export function saveScore(
     throw badRequest('GV chấm không hợp lệ — gửi người chấm, hoặc null để xoá.');
   }
   const gv = coGvCham ? (patch.gvCham ? gvChamHopLe(p, patch.gvCham) : null) : undefined;
-  const chiNhanXet = (coNhanXet || coGvCham) && patch.rawScore === undefined && patch.rawTotal === undefined
+  const chiNhanXet = (coNhanXet || coGvCham) && patch.rawScore === undefined && patch.band === undefined && patch.rawTotal === undefined
     && patch.criteria === undefined && patch.noShow === undefined && patch.resultDate === undefined && patch.note === undefined;
   if (chiNhanXet) return tx(() => luuNhanXet(p, attemptId, skill, nxGt, gv));
 
@@ -1590,11 +1608,24 @@ export function saveScore(
     let crit: (number | null)[] = [existing?.c1 ?? null, existing?.c2 ?? null, existing?.c3 ?? null, existing?.c4 ?? null];
     let band: number | null = existing?.band ?? null;
 
+    /* T10 (PR-MTa): band trực tiếp — bậc 0.5 trong 0..9; không gửi cùng số câu / tiêu chí có giá trị. */
+    const coBand = patch.band !== undefined;
+    if (coBand && patch.band !== null) { const loi = kiemBand(patch.band); if (loi) throw badRequest(loi); }
+    if (coBand && isRawSkill(skill) && patch.rawScore !== undefined) throw badRequest('Nhập số câu hoặc band, không cả hai.');
+    if (coBand && patch.band !== null && Array.isArray(patch.criteria) && patch.criteria.some((v) => v !== null && v !== undefined && (v as unknown) !== '')) {
+      throw badRequest('Nhập band hoặc 4 tiêu chí, không cả hai.');
+    }
     try {
-      if (isRawSkill(skill)) {
+      if (coBand) {
+        raw = null;
+        crit = [null, null, null, null];
+        band = patch.band ?? null;
+        if (patch.rawTotal !== undefined) total = patch.rawTotal;
+      } else if (isRawSkill(skill)) {
         if (patch.rawScore !== undefined) raw = patch.rawScore;
         if (patch.rawTotal !== undefined) total = patch.rawTotal;
-        band = raw === null || raw === undefined ? null : bandFromRaw(skill, raw);
+        /* Ô chỉ có band nhập thẳng (T10) mà lần ghi này không đụng số câu → giữ band. */
+        if (raw !== null || patch.rawScore !== undefined) band = raw === null || raw === undefined ? null : bandFromRaw(skill, raw);
         crit = [null, null, null, null];
       } else if (isCriteriaSkill(skill)) {
         if (patch.criteria !== undefined) {
@@ -1605,7 +1636,7 @@ export function saveScore(
             throw badRequest('Điểm tiêu chí phải là số từ 0 đến 9, bậc 0.5 (ví dụ 6 hoặc 6.5).');
           }
         }
-        band = bandFromCriteria(crit);
+        if (patch.criteria !== undefined || crit.some((v) => v !== null)) band = bandFromCriteria(crit);
         raw = null;
       }
     } catch (e) {
@@ -1622,14 +1653,10 @@ export function saveScore(
      * con số cũ không phải hiệu chỉnh — tự lưu không bị hỏi lý do.
      */
     const daCoDiem = (existing?.band ?? null) !== null || (existing?.raw_score ?? null) !== null;
-    if (daCoDiem) {
-      const cu = [existing!.raw_score, existing!.c1, existing!.c2, existing!.c3, existing!.c4, existing!.band]
-        .map((v) => v ?? null);
-      const moi = [raw, ...crit, band].map((v) => v ?? null);
-      if (cu.some((v, i) => v !== moi[i])) {
-        const loi = kiemLyDo(patch.lyDo);
-        if (loi) throw badRequest(loi);
-      }
+    /* T7 (PR-MTa): sửa giá trị → lý do tuỳ chọn; ô có điểm thành TRỐNG HẾT (điểm thô, 4 tiêu chí, band) = huỷ điểm → bắt buộc. */
+    if (daCoDiem && raw === null && band === null && crit.every((v) => v === null)) {
+      const loi = kiemLyDoThaoTac('huy-diem', patch.lyDo);
+      if (loi) throw badRequest(loi);
     }
 
     /*
@@ -1637,7 +1664,7 @@ export function saveScore(
      * ô trống mà còn ghi "Người nhập: X" là dùng tác giả của thao tác làm bằng chứng rằng đã có điểm. Ai đã sửa
      * gì, lúc nào vẫn nằm trong nhật ký (`score.edit`) — hiện ở "Lịch sử thay đổi" của hồ sơ Test.
      */
-    const hasValue = raw !== null || crit.some((v) => v !== null);
+    const hasValue = raw !== null || band !== null || crit.some((v) => v !== null);
     const enteredBy = hasValue ? p.userId : null;
     const enteredAt = hasValue ? nowIso() : null;
     /*

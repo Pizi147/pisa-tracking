@@ -1,7 +1,7 @@
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
-  CHUONG_TRINH_KHONG_CHIA_MON, boMonLich, CLASS_PHASE_LABEL, CO_DIEM_SQL, MOC_KE_TIEP_SQL, PERMISSIONS, kiemSoMtMoi, laLichSu, lichMtMacDinh, tuanHocCuaMt, tuanLich,
+  CHUONG_TRINH_KHONG_CHIA_MON, boMonLich, CLASS_PHASE_LABEL, CO_DIEM_SQL, MOC_KE_TIEP_SQL, PERMISSIONS, kiemSoMtMoi, laMtCu, lichMtMacDinh, tuanHocCuaMt, tuanLich,
   PROGRAMME_TEMPLATES, kyHieuLop, nextStepsAfter, programmeOf, studyWeekOf,
   type ClassPhase, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
@@ -10,7 +10,7 @@ import { demoToday } from '../demoConfig.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { ensurePeriods, mondayOf, periodById, weekInfo } from '../platform/week.ts';
-import { recomputeCompletionWeek, tinhLaiLichSu } from '../fasttrack/skillSchedule.ts';
+import { recomputeCompletionWeek, tinhLaiMtCu } from '../fasttrack/skillSchedule.ts';
 import { allProgrammes, programmeByCode, type ProgrammeInfo } from '../normal/regular.ts';
 
 /**
@@ -125,7 +125,7 @@ export { ngayTaoLuot } from '../fasttrack/skillSchedule.ts';
  * KHÔNG kiểm quyền: nơi gọi đã kiểm (hoặc là luật hệ thống, Q6).
  *
  *   tạo   số còn thiếu (không có dòng nào, kể cả dòng đã huỷ — số huỷ để người tạo lại); giữ đánh số liền mạch (`kiemSoMtMoi`).
- *         `lich_su` = tuần thi đã kết thúc trước `ngayTao` (mặc định hôm nay; T34 — lưu lúc tạo).
+ *         `lich_su` = MT cũ: tuần thi cách tuần của `ngayTao` ≥ 2 tuần (mặc định hôm nay; T1 PR-MTa — lưu lúc tạo).
  *   dời   (trừ khi `chiTao`) chỉ lượt `planned` + `plan_source='auto'` CHƯA có điểm nào, và chỉ kỹ năng 'auto' + 'scheduled';
  *         rồi tính lại `lich_su` theo ngày tạo của chính lượt. Lượt người đã chốt / đã có điểm / đã xong đứng yên — đó là toàn bộ
  *         ý nghĩa của hàm này: đổi tuần bắt đầu học thì lịch đề xuất chạy theo, còn cái người đã chốt thì đứng yên.
@@ -181,7 +181,7 @@ export function apLichMacDinhLo(yc: readonly YeuCauLichMt[], actorUserId: number
           if (kiemSoMtMoi(ds.map((x) => ({ attempt_no: x.attempt_no, status: x.status, coDiem: !!x.coDiem })), s.attemptNo)) {
             kq.kept += 1; continue;
           }
-          moi.push({ cy, s, lichSu: laLichSu(addDays(s.weekStart, 6), ngayTao), kq });
+          moi.push({ cy, s, lichSu: laMtCu(addDays(s.weekStart, 6), ngayTao), kq });
           ds.push({ id: 0, attempt_no: s.attemptNo, status: 'planned', plan_source: 'auto', planned_period_id: s.periodId, coDiem: 0 });
           continue;
         }
@@ -201,8 +201,8 @@ export function apLichMacDinhLo(yc: readonly YeuCauLichMt[], actorUserId: number
                      WHERE attempt_id = ? AND plan_source = 'auto' AND sit_status = 'scheduled'`)
           .run(s.periodId, nowIso(), had.id);
         recomputeCompletionWeek(had.id, actorUserId);
-        /* Dời theo tuần bắt đầu → tính lại `lich_su` so với ngày tạo CỦA CHÍNH LƯỢT (M-13; PR-LM D3 dùng cùng hàm). */
-        tinhLaiLichSu(had.id);
+        /* Dời theo tuần bắt đầu → tính lại cờ MT cũ so với NGÀY XẾP (T1, PR-MTa). */
+        tinhLaiMtCu(had.id, ngayTao);
         kq.moved.push({ attemptNo: s.attemptNo, weekStart: s.weekStart });
       }
     }
@@ -264,7 +264,7 @@ export function apLichMacDinhLo(yc: readonly YeuCauLichMt[], actorUserId: number
       'INSERT INTO journey_events (student_id, cycle_id, event_type, event_date, title, detail, ref_table, ref_id, created_by, created_at)',
       [...kqs].filter(([, kq]) => kq.created.length).map(([cycleId, kq]) => [goi.get(cycleId)!.cy.student_id, cycleId, 'mock_scheduled', ngayTao,
         `Lịch MT mặc định · ${kq.created.map((x) => `MT${x.attemptNo} ${tuanLich(x.weekStart, ngayTao)}`).join(' · ')}`,
-        kq.created.some((x) => x.lichSu) ? 'MT có tuần thi đã qua là MT lịch sử — nhập bù, không tính hạn' : null,
+        kq.created.some((x) => x.lichSu) ? 'MT có tuần thi cách ≥ 2 tuần là MT cũ — nhập bù, không tính hạn' : null,
         'learning_cycles', cycleId, actorUserId, nowIso()]));
     chenNhieuDong(
       'INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, entity_label, before_json, after_json, created_at)',

@@ -17,26 +17,27 @@ export async function runPrLmTests(t: YThucTestKit) {
   check('PR-LM (1) · luotBiVuot: MT1 sang sau MT2 → vượt MT2; sau cả MT3 → vượt MT2+MT3; trùng tuần cũng là vượt (D1)', () => {
     const ds = [L(2, '2026-07-13'), L(3, '2026-08-10')];
     const a = d.luotBiVuot(ds, { attemptNo: 1, tuanCuoiMoi: '2026-07-20' });
-    assert(a.chan === null && a.biVuot.map((x) => x.attemptNo).join() === '2', JSON.stringify(a));
+    assert(a.biVuot.map((x) => x.attemptNo).join() === '2', JSON.stringify(a));
     const b = d.luotBiVuot(ds, { attemptNo: 1, tuanCuoiMoi: '2026-08-17' });
     assert(b.biVuot.map((x) => x.attemptNo).join() === '2,3', JSON.stringify(b));
     const c = d.luotBiVuot(ds, { attemptNo: 1, tuanCuoiMoi: '2026-07-13' });
     assert(c.biVuot.map((x) => x.attemptNo).join() === '2', `trùng tuần: ${JSON.stringify(c)}`);
     const e = d.luotBiVuot(ds, { attemptNo: 1, tuanCuoiMoi: '2026-07-06' });
-    assert(e.biVuot.length === 0 && e.chan === null, `không vượt: ${JSON.stringify(e)}`);
+    assert(e.biVuot.length === 0, `không vượt: ${JSON.stringify(e)}`);
   });
 
   check('PR-LM (1) · luotBiVuot: bỏ qua lượt trước, lượt đã huỷ, lượt chưa xếp tuần', () => {
     const ds = [L(1, '2026-06-01'), L(3, '2026-07-13', { huy: true }), L(4, null)];
     const a = d.luotBiVuot(ds, { attemptNo: 2, tuanCuoiMoi: '2026-09-07' });
-    assert(a.biVuot.length === 0 && a.chan === null, JSON.stringify(a));
+    assert(a.biVuot.length === 0, JSON.stringify(a));
   });
 
-  check('PR-LM (1) · luotBiVuot: lượt bị vượt đã có điểm hoặc đã thi → chặn, nêu tên lượt (Q-0310-2)', () => {
+  // PR-MTa T2 thay Q-0310-2: lượt bị vượt đã có điểm / đã thi KHÔNG còn chặn — vẫn là "bị vượt" (huỷ kết quả, khôi phục được).
+  check('PR-LM (1) · luotBiVuot: lượt bị vượt đã có điểm hoặc đã thi vẫn bị vượt, không còn `chan` (PR-MTa T2)', () => {
     const a = d.luotBiVuot([L(2, '2026-07-13', { coDiem: true }), L(3, '2026-08-10')], { attemptNo: 1, tuanCuoiMoi: '2026-08-17' });
-    assert(a.chan !== null && /MT2 đã có điểm/.test(a.chan) && /không huỷ lịch được/.test(a.chan) && /Dời MT1 vào tuần trước W\d JUL/.test(a.chan), String(a.chan));
+    assert(!('chan' in a) && a.biVuot.map((x) => x.attemptNo).join() === '2,3', JSON.stringify(a));
     const b = d.luotBiVuot([L(2, '2026-07-13', { daThi: true })], { attemptNo: 1, tuanCuoiMoi: '2026-08-17' });
-    assert(b.chan !== null && /MT2 đã thi/.test(b.chan), String(b.chan));
+    assert(b.biVuot.length === 1, JSON.stringify(b));
   });
 
   check('PR-LM (2) · panel Lộ trình chỉ còn MỘT ô Dự kiến thi (ONgay), không còn WeekPicker tuần thi / examPeriodId', () => {
@@ -61,7 +62,7 @@ export async function runPrLmTests(t: YThucTestKit) {
     assert(/toiThieu\?: string/.test(wp), 'WeekPicker thiếu toiThieu');
     assert(/seHuyLich/.test(hop) && /xacNhanHuyLich: daXacNhan/.test(hop) && /<HopXacNhanHuyLich/.test(hop), 'thiếu xác nhận huỷ lịch');
     const xn = nguon('web/src/modules/test/keHoach/HopXacNhanHuyLich.tsx');
-    assert(/Huỷ lịch và lưu/.test(xn) && /closeLabel="Quay lại"/.test(xn) && /danger/.test(xn), 'hộp xác nhận: Quay lại / Huỷ lịch và lưu (đỏ)');
+    assert(/Dời và huỷ/.test(xn) && /closeLabel="Đóng"/.test(xn) && /danger/.test(xn), 'hộp xác nhận: Đóng / Dời và huỷ (đỏ) — PR-MTa T2, mockup 05/10 phần 4');
   });
 
   check('PR-LM (4) · Dời lịch thi cả đợt: WeekPicker có toiThieu, không <select>, không force: true cố định, kiểm trước + xác nhận huỷ lịch', () => {
@@ -144,11 +145,14 @@ export async function runPrLmMayChu(t: YThucTestKit) {
     assert(!k.bai.some((b: any) => b.ghiChu === 'chan'), JSON.stringify(k.bai));
   });
 
-  check('PR-LM (2.2) · lưu đợt không xác nhận → 409 nêu MT2, không đổi gì', () => {
-    const truoc = [tuanCua(a.m1), tuanCua(a.m2), tuanCua(a.m3)].join('|');
-    const e = loiCua(() => keHoach.luuDot(QL, { attemptId: a.m1, kyNang: bonKyNang(5) }));
-    assert(e.status === 409 && e.details?.seHuyLich?.[0]?.nhan === 'MT2' && /huỷ lịch MT2/.test(e.message), `${e.status} ${e.message} ${JSON.stringify(e.details)}`);
-    assert([tuanCua(a.m1), tuanCua(a.m2), tuanCua(a.m3)].join('|') === truoc, 'DB đã đổi');
+  // PR-MTa T2 thay PR-LM 2.2: 409 chỉ khi lượt bị vượt ĐÃ CÓ ĐIỂM (chưa điểm thì lưu luôn — MTa V4).
+  check('PR-LM (2.2) · lưu đợt không xác nhận, MT2 có điểm → 409 nêu MT2, không đổi gì', () => {
+    const b = emMoi();
+    diem(b.m2, 'listening');
+    const truoc = [tuanCua(b.m1), tuanCua(b.m2), tuanCua(b.m3)].join('|');
+    const e = loiCua(() => keHoach.luuDot(QL, { attemptId: b.m1, kyNang: bonKyNang(5) }));
+    assert(e.status === 409 && e.details?.seHuyLich?.[0]?.nhan === 'MT2' && /MT2: huỷ 1 điểm/.test(e.message), `${e.status} ${e.message} ${JSON.stringify(e.details)}`);
+    assert([tuanCua(b.m1), tuanCua(b.m2), tuanCua(b.m3)].join('|') === truoc, 'DB đã đổi');
   });
 
   check('PR-LM (2.3) · lưu đợt có xác nhận → MT1 ở T+5, MT2 bỏ tuần (giữ lượt, giữ số), MT3 không đổi, có nhật ký', () => {
@@ -171,31 +175,35 @@ export async function runPrLmMayChu(t: YThucTestKit) {
     assert(tuanCua(b.m2) === '-,-,-,-' && tuanCua(b.m3) === '-,-,-,-', `${tuanCua(b.m2)} | ${tuanCua(b.m3)}`);
   });
 
-  check('PR-LM (2.5) · MT2 có điểm L → kiểm trước chặn "MT2 đã có điểm — không huỷ lịch được"; lưu (dù xác nhận) → 400, không đổi', () => {
+  // PR-MTa T2 thay Q-0310-2: MT2 có điểm KHÔNG còn chặn — xác nhận + lý do thì huỷ kết quả (lưu ket_qua_huy).
+  check('PR-LM (2.5) · MT2 có điểm L → kiểm trước nêu "huỷ 1 điểm" (không chặn); xác nhận mà thiếu lý do → 400, không đổi', () => {
     const b = emMoi();
     diem(b.m2, 'listening');
     const k = keHoach.kiemDot(QL, { attemptId: b.m1, kyNang: bonKyNang(5) });
-    assert(k.bai.some((x: any) => x.ghiChu === 'chan' && /MT2 đã có điểm — không huỷ lịch được/.test(x.cau)), JSON.stringify(k.bai));
+    assert(!k.bai.some((x: any) => x.ghiChu === 'chan') && k.seHuyLich[0]?.soDiem === 1, JSON.stringify(k));
     const truoc = tuanCua(b.m1) + tuanCua(b.m2);
     const e = loiCua(() => keHoach.luuDot(QL, { attemptId: b.m1, kyNang: bonKyNang(5), xacNhanHuyLich: true }));
-    assert(e.status === 400 && /MT2 đã có điểm/.test(e.message), `${e.status} ${e.message}`);
+    assert(e.status === 400 && /Huỷ kết quả: cần ghi lý do/.test(e.message), `${e.status} ${e.message}`);
     assert(tuanCua(b.m1) + tuanCua(b.m2) === truoc, 'DB đã đổi');
   });
 
-  check('PR-LM (2.6) · Dời lịch cả đợt (/attempts/:id/week): không xác nhận → 409; có → MT2 bỏ tuần', () => {
+  // PR-MTa T2: 409 chỉ khi lượt bị vượt có điểm — dựng MT2 có điểm để giữ ý của phép kiểm.
+  check('PR-LM (2.6) · Dời lịch cả đợt (/attempts/:id/week): MT2 có điểm, không xác nhận → 409; xác nhận + lý do → MT2 bỏ tuần', () => {
     const b = emMoi();
+    diem(b.m2, 'listening');
     const e = loiCua(() => attemptsSvc.setPlanningWeek(QL, b.m1, tuan(5).id, undefined, {}));
     assert(e.status === 409 && e.details?.seHuyLich?.[0]?.nhan === 'MT2', `${e.status} ${e.message}`);
     assert(luot(b.m2).planned_period_id === tuan(4).id, 'MT2 đã đổi khi chưa xác nhận');
-    attemptsSvc.setPlanningWeek(QL, b.m1, tuan(5).id, undefined, { huyLichVuot: true });
+    attemptsSvc.setPlanningWeek(QL, b.m1, tuan(5).id, 'Lịch học đổi', { huyLichVuot: true });
     assert(luot(b.m2).planned_period_id === null && tuanCua(b.m1).split(',').every((x) => x === t.addDays(tuanNay, 35)), tuanCua(b.m1));
   });
 
-  check('PR-LM (2.6b) · Dời một kỹ năng vượt lượt sau đi cùng luật: không xác nhận → 409; có → 200', () => {
+  check('PR-LM (2.6b) · Dời một kỹ năng vượt lượt sau đi cùng luật: MT2 có điểm, không xác nhận → 409; xác nhận + lý do → 200', () => {
     const b = emMoi();
+    diem(b.m2, 'listening');
     const e = loiCua(() => skillSch.setSkillWeek(QL, b.m1, 'speaking', tuan(5).id, {}));
     assert(e.status === 409 && e.details?.seHuyLich?.[0]?.nhan === 'MT2', `${e.status} ${e.message}`);
-    skillSch.setSkillWeek(QL, b.m1, 'speaking', tuan(5).id, { huyLichVuot: true });
+    skillSch.setSkillWeek(QL, b.m1, 'speaking', tuan(5).id, { huyLichVuot: true, reason: 'Lịch học đổi' });
     assert(luot(b.m2).planned_period_id === null, 'MT2 chưa bỏ tuần');
   });
 
@@ -205,7 +213,8 @@ export async function runPrLmMayChu(t: YThucTestKit) {
       /Phần thi của lượt sau không được xếp trước phần cuối của lượt trước/, 'D2');
   });
 
-  check('PR-LM (2.8) · D3: MT lịch sử có điểm đổi sang tuần đã qua khác (có lý do) → được, điểm giữ; thiếu lý do / sau ngày vào web → 400', () => {
+  // PR-MTa T7 thay "D3 luôn cần lý do"; T1 thay "sau ngày vào web → 400": MT cũ đổi tuần không lý do, không xét ngày vào web.
+  check('PR-LM (2.8) · D3: MT cũ có điểm đổi sang tuần đã qua khác → được, điểm giữ; về tuần trước → thành MT thường (PR-MTa)', () => {
     const b = emMoi();
     for (const id of [b.m1, b.m2, b.m3]) conn.prepare(`UPDATE assessment_attempts SET status = 'cancelled' WHERE id = ?`).run(id);
     conn.prepare('UPDATE students SET created_at = ? WHERE id = ?').run(`${t.addDays(tuanNay, -14)}T08:00:00.000Z`, b.sid);
@@ -213,29 +222,30 @@ export async function runPrLmMayChu(t: YThucTestKit) {
     const mt = keHoach.xepMoi(QL, { studentId: b.sid, tuan: tuanQua(-6) });
     assert(luot(mt.id).lich_su === 1, 'chưa là MT lịch sử');
     diem(mt.id, 'listening');
-    assertThrows(() => skillSch.setSkillWeek(QL, mt.id, 'listening', tuan(-7).id, {}), /cần ghi lý do/, 'thiếu lý do');
-    skillSch.setSkillWeek(QL, mt.id, 'listening', tuan(-7).id, { reason: 'Nhập nhầm tuần thi' });
+    skillSch.setSkillWeek(QL, mt.id, 'listening', tuan(-7).id, {});
     const l = conn.prepare(`SELECT p.week_start AS w FROM attempt_skills k JOIN report_periods p ON p.id = k.planned_period_id WHERE k.attempt_id = ? AND k.skill = 'listening'`).get(mt.id) as any;
     assert(l.w === t.addDays(tuanNay, -49), JSON.stringify(l));
     const s = conn.prepare(`SELECT band FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`).get(mt.id) as any;
     assert(s?.band === 6, 'mất điểm');
-    assertThrows(() => skillSch.setSkillWeek(QL, mt.id, 'reading', tuan(-1).id, { reason: 'Nhập nhầm tuần thi' }),
-      /Em đã có trên web từ trước tuần này/, 'sau ngày vào web');
-    assert(luot(mt.id).lich_su === 1, 'cờ lịch sử phải giữ');
+    assert(luot(mt.id).lich_su === 1, 'cờ MT cũ phải giữ');
+    for (const k of ['listening', 'reading', 'writing', 'speaking']) skillSch.setSkillWeek(QL, mt.id, k, tuan(-1).id, {});
+    assert(luot(mt.id).lich_su === 0, 'về tuần trước → MT thường (tính lại lúc dời)');
   });
 
-  check('PR-LM (2.9) · D4: MT đang chạy dời vào tuần đã qua vẫn 400', () => {
+  // PR-MTa T4 thay K2-33 / D4: Quản lý dời MT chưa thi vào tuần đã qua được; GV/GVCN không có đường dời MT (PLAN_WEEK).
+  check('PR-LM (2.9) · D4: MT đang chạy, Quản lý dời vào tuần đã qua → được (PR-MTa T4); GVCN → 403', () => {
     const b = emMoi();
-    assertThrows(() => skillSch.setSkillWeek(QL, b.m1, 'listening', tuan(-1).id, {}), /Không dời vào tuần đã qua/, 'D4');
+    skillSch.setSkillWeek(QL, b.m1, 'listening', tuan(-1).id, {});
+    assert(luot(b.m1).lich_su === 0, 'tuần cuối vẫn là T+1 → MT thường');
+    assert(loiCua(() => skillSch.setSkillWeek(P.coreTeacher, b.m1, 'reading', tuan(-1).id, {})).status === 403, 'GVCN');
   });
 
-  check('PR-LM (2.10) · Huỷ lịch (bo-tuan): chưa điểm → bỏ tuần; có điểm → 400; lý do ngắn → 400; GV → 403', () => {
+  // PR-MTa T7 thay "lý do ngắn → 400": Huỷ lịch — lý do tuỳ chọn.
+  check('PR-LM (2.10) · Huỷ lịch (bo-tuan): chưa điểm → bỏ tuần (lý do tuỳ chọn); có điểm → 400; GV → 403', () => {
     const b = emMoi();
     const e403 = loiCua(() => skillSch.boTuanLuot(P.coreTeacher, b.m2, { lyDo: 'Em xin lùi lịch' }));
     assert(e403.status === 403, `${e403.status} ${e403.message}`);
-    const eNgan = loiCua(() => skillSch.boTuanLuot(QL, b.m2, { lyDo: 'ab' }));
-    assert(eNgan.status === 400 && /Huỷ lịch: lý do cần ít nhất/.test(eNgan.message), eNgan.message);
-    const r = skillSch.boTuanLuot(QL, b.m2, { lyDo: 'Em xin lùi lịch' });
+    const r = skillSch.boTuanLuot(QL, b.m2, { lyDo: 'ab' });
     assert(r.daBo.length === 4 && luot(b.m2).planned_period_id === null, JSON.stringify(r));
     diem(b.m3, 'reading');
     const eDiem = loiCua(() => skillSch.boTuanLuot(QL, b.m3, { lyDo: 'Em xin lùi lịch' }));

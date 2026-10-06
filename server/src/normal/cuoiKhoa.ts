@@ -470,7 +470,7 @@ export function ghiMiniTest(p: Principal, miniTestId: number, input: { tyLe?: un
   if (!daGhi && !la_ql && !nguoiDay && !gvcn) throw forbidden('Bạn không có quyền ghi Mini Test của học viên này.');
   const v = kiemMiniTest(mt, input);
   const lyDo = String(input.lyDo ?? '').trim();
-  if (daGhi && lyDo.length < 8) throw badRequest('Sửa Mini Test đã ghi thì phải ghi lý do, ít nhất 8 ký tự.');
+  /* T7 (PR-MTa): sửa điểm Mini Test đã ghi — lý do tuỳ chọn (như sửa điểm Test). */
   return tx(() => {
     if (!daGhi) {
       conn.prepare(

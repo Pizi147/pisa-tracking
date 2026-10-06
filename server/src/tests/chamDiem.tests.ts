@@ -101,12 +101,11 @@ export async function runChamDiemTests(t: YThucTestKit) {
     assert(d.tuanKeTiep('2026-09-28') === '2026-10-05', d.tuanKeTiep('2026-09-28'));
   });
 
-  check('PR-Rc1 · RB-5 lý do hiệu chỉnh: bắt buộc, đủ dài, không nhận khoảng trắng', () => {
-    assert(d.LY_DO_TOI_THIEU === 5, 'Ngưỡng là 5 ký tự');
-    assert(d.kiemLyDo(null) !== null && d.kiemLyDo('   ') !== null, 'Trống thì phải báo lỗi');
-    assert(d.kiemLyDo('sai') !== null, 'Quá ngắn thì phải báo lỗi');
-    assert(d.kiemLyDo('Chấm nhầm đề B') === null, 'Lý do đủ dài thì hợp lệ');
-    assert(!/Hãy/.test(String(d.kiemLyDo(null))), 'Câu lỗi không mở đầu bằng "Hãy"');
+  // PR-MTa T7 thay RB-5 (LY_DO_TOI_THIEU, kiemLyDo): sửa điểm — lý do tuỳ chọn; huỷ điểm — bắt buộc, không tối thiểu ký tự.
+  check('PR-Rc1 · RB-5 lý do huỷ điểm: bắt buộc, không nhận khoảng trắng, không tối thiểu ký tự (PR-MTa T7)', () => {
+    assert(d.kiemLyDoThaoTac('huy-diem', null) !== null && d.kiemLyDoThaoTac('huy-diem', '   ') !== null, 'Trống thì phải báo lỗi');
+    assert(d.kiemLyDoThaoTac('huy-diem', 'sai') === null && d.kiemLyDoThaoTac('sua-diem', null) === null, 'Ngắn vẫn hợp lệ; sửa điểm tuỳ chọn');
+    assert(!/Hãy/.test(String(d.kiemLyDoThaoTac('huy-diem', null))), 'Câu lỗi không mở đầu bằng "Hãy"');
   });
 
   check('PR-Rc1 · Câu trạng thái chấm dùng chung cho Lịch Test', () => {
@@ -426,12 +425,12 @@ export async function runChamDiemTests(t: YThucTestKit) {
   const xoaO = (attemptId: number, k: string) =>
     conn.prepare('DELETE FROM assessment_scores WHERE attempt_id = ? AND skill = ?').run(attemptId, k);
 
-  check('PR-Rc1 · RB-5 Sửa ô đã có điểm phải ghi lý do; lý do vào lịch sử điểm', () => {
+  // PR-MTa T7 thay RB-5: sửa ô đã có điểm — lý do TUỲ CHỌN; có lý do thì vẫn vào nhật ký / lịch sử điểm.
+  check('PR-Rc1 · RB-5 Sửa ô đã có điểm: lý do tuỳ chọn (PR-MTa T7); lý do ghi thì vào lịch sử điểm', () => {
     const { attemptId } = taoBaiThuong('2026-09-14');
     /* Quản lý không nhập điểm (Ruling 1) — đường nhập bù của Quản trị hệ thống. */
     regular.saveRegularScore(P.admin, attemptId, 'listening', { score: 30, total: 40 });
-    assertThrows(() => regular.saveRegularScore(P.admin, attemptId, 'listening', { score: 31, total: 40 }),
-      /lý do/, 'Sửa điểm đã có mà không ghi lý do thì bị chặn');
+    regular.saveRegularScore(P.admin, attemptId, 'listening', { score: 32, total: 40 });
     const ok = regular.saveRegularScore(P.admin, attemptId, 'listening',
       { score: 31, total: 40, lyDo: 'Cộng nhầm một câu' });
     assert((ok.score as any).raw_score === 31, 'Có lý do thì lưu được');
@@ -444,8 +443,7 @@ export async function runChamDiemTests(t: YThucTestKit) {
     const ft = luotFtGhiDuoc();
     xoaO(ft, 'listening');
     attempts.saveScore(P.admin, ft, 'listening', { rawScore: 30 });
-    assertThrows(() => attempts.saveScore(P.admin, ft, 'listening', { rawScore: 31 }), /lý do/,
-      'Fast Track cũng đòi lý do khi sửa điểm đã có');
+    attempts.saveScore(P.admin, ft, 'listening', { rawScore: 32 });   // PR-MTa T7: sửa không lý do được
     attempts.saveScore(P.admin, ft, 'listening', { rawScore: 31, lyDo: 'Chấm lại phần 3' });
     const h = attempts.scoreHistoryOf(ft);
     assert(h.some((x: any) => x.lyDo === 'Chấm lại phần 3'), 'Lịch sử điểm hiện lý do');
@@ -468,8 +466,8 @@ export async function runChamDiemTests(t: YThucTestKit) {
     regular.saveRegularScore(P.admin, attemptId, 'writing', { score: 15, total: 20 });
     const lai = regular.saveRegularScore(P.admin, attemptId, 'writing', { score: 15, total: 20 });
     assert((lai.score as any).raw_score === 15, 'Lớp thường: lưu lại cùng điểm không bị chặn');
-    assertThrows(() => regular.saveRegularScore(P.admin, attemptId, 'writing', { score: 15, total: 25 }), /lý do/,
-      'Lớp thường: đổi tổng câu là đổi kết quả nên cũng phải có lý do');
+    /* PR-MTa T7 thay RB-5: đổi tổng câu (sửa điểm) — lý do tuỳ chọn. */
+    assert((regular.saveRegularScore(P.admin, attemptId, 'writing', { score: 15, total: 25 }).score as any).raw_total === 25, 'Lớp thường: đổi tổng câu');
 
     const ft = luotFtGhiDuoc();
     xoaO(ft, 'listening');

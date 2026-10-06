@@ -615,6 +615,8 @@ CREATE TABLE attempt_skills (
    * làm cờ, lượt biên tập chữ sau sẽ vô tình gỡ nó. 1 khi `settleGroup` chốt; mọi đường đổi `sit_status` khác đặt lại 0.
    */
   absent_from_no_show INTEGER NOT NULL DEFAULT 0,
+  -- PR-MTa (T3): 1 = phần thi huỷ vì VẮNG LẦN 2 (sit_status = 'cancelled'). GVCN "Xin dời" / Quản lý "Không mock lại".
+  huy_vang INTEGER NOT NULL DEFAULT 0,
 
   created_at TEXT NOT NULL,
   updated_at TEXT,
@@ -1870,3 +1872,20 @@ CREATE TABLE mini_test (
   ty_le REAL, ngay_lam TEXT, ghi_boi INTEGER REFERENCES users(id), ghi_luc TEXT,
   UNIQUE (student_id, tu_attempt_id)
 );
+
+/*
+ * KẾT QUẢ MT ĐÃ HUỶ DO DỜI VƯỢT (PR-MTa T2): điểm của lượt bị vượt CHUYỂN sang đây (nguyên dòng), không xoá — nên mọi chỗ đọc
+ * `assessment_scores` (SOS, báo cáo, Phân tích, Xuất Excel, Điểm theo lớp) tự không tính; Quản lý khôi phục = chép ngược.
+ */
+CREATE TABLE ket_qua_huy (
+  id INTEGER PRIMARY KEY,
+  attempt_id INTEGER NOT NULL REFERENCES assessment_attempts(id),
+  vuot_boi_attempt_id INTEGER REFERENCES assessment_attempts(id),
+  diem_json TEXT NOT NULL,          -- mảng NGUYÊN dòng assessment_scores (mọi cột: điểm, nhận xét, GV chấm, ngày nhập đầu)
+  lich_json TEXT NOT NULL,          -- [{ skill, planned_period_id, sit_status, plan_source }] kỹ năng bắt buộc trước khi bỏ lịch
+  so_diem INTEGER NOT NULL,         -- số KỸ NĂNG có điểm (W1/W2 tính một)
+  ly_do TEXT NOT NULL,
+  huy_boi INTEGER REFERENCES users(id), huy_luc TEXT NOT NULL,
+  khoi_phuc_boi INTEGER REFERENCES users(id), khoi_phuc_luc TEXT, ly_do_khoi_phuc TEXT
+);
+CREATE INDEX idx_ket_qua_huy_attempt ON ket_qua_huy(attempt_id);
