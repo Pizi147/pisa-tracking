@@ -526,7 +526,9 @@ export async function runPrLuiBTests(t: YThucTestKit) {
   }));
 
   await checkAsync('LUIb-32 · Vòng 2 (3a): Học lại FT → FT: máy chủ báo lớp cũ là FT + Target cũ, web không bắt nhập Target lại mà điền sẵn', () => thu(() => {
-    const sid = dangHocTrong('MB FT 101', 1)[0];
+    /* Em chỉ có MỘT ghi danh đang học (bộ demo / phép kiểm khác có em hai ghi danh — khi đó "lớp cũ" có thể là lớp khác). */
+    const sid = (conn.prepare(`SELECT s.id FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'active' WHERE e.class_id = ? AND s.status = 'active'
+        AND (SELECT COUNT(*) FROM enrollments x WHERE x.student_id = s.id AND x.status IN ('active', 'paused')) = 1 ORDER BY s.id LIMIT 1`).get(classId('MB FT 101')) as any).id as number;
     svc.setStudentStatus(P.mbManager, sid, 'finished', addDays(TODAY, -3), 'Nghỉ học');
     const hoi = svc.lopChoHocLai(P.mbManager, sid);
     assert(hoi.lopCu.ft === true && 'target' in hoi.loTrinh, JSON.stringify([hoi.lopCu, hoi.loTrinh]));
