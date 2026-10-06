@@ -23,7 +23,7 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 | `docs/superpowers/plans/2026-10-06-pr-bv-bo-vang-xoa-diem.md` | PR-BV bản 2 (chạy sau MTa + MTb; mockup đã duyệt 06/10) |
 | `docs/superpowers/plans/2026-10-06-pr-lui-a-case-duyet-y-thuc.md` | PR-LUI-a tách **a1** (Ý thức) → **a2** (Case + Chờ duyệt); mockup `thiet-ke/mockup-duong-lui-case-duyet-y-thuc-2026-10-06.html` **bản 1 duyệt 06/10** (Q1–Q4 đã trả lời); bản 2 thêm Sửa / Xoá lần xử lý (a1) + Sửa / Xoá Case (a2), chờ Q5–Q6 |
 | `docs/superpowers/plans/2026-10-02-ux-sau-critique.md` | PR-HK2 (H1, H2, K2, K4–K7, J1–J4, J7, J9), PR-SL (I1–I4, I6) |
-| `docs/superpowers/plans/2026-10-07-pr-hk2-badge-chu.md` | PR-HK2 bước 2 (Task 0→11, hiện trạng từng ID 07/10); mockup `thiet-ke/mockup-hk2-2026-10-07.html` **chờ duyệt + Q1–Q4** |
+| `docs/superpowers/plans/2026-10-07-pr-hk2-badge-chu.md` | PR-HK2 bước 2 (Task 0→11, hiện trạng từng ID 07/10); mockup `thiet-ke/mockup-hk2-2026-10-07.html` **DUYỆT 07/10** (Q1 = A + 4 ý, Q2 A, Q3 A, Q4 B) |
 
 - **Khi các nguồn mâu thuẫn:** theo `CLAUDE.md` (quyết định chủ sản phẩm + kế hoạch đã duyệt → Rulebook + mockup → skill).
   Luật sản phẩm: `thiet-ke/PISA-Rulebook-2026-09-19.md` (mục 20 ưu tiên nhất). Đặc tả chính: `docs/superpowers/specs/2026-09-27-nang-cap-sau-deploy-design.md`.
@@ -257,7 +257,7 @@ Việc đầu tiên: giao agent soạn kế hoạch theo mẫu A mục 10 (Opus 
 - Chủ sản phẩm 04/10 (lúc làm PR-DL): "Giữa khoá" → **Progress Test**, "Cuối khoá" → **Final Test**, **cả nhãn dài** ("Bài kiểm tra
   giữa/cuối khoá") — thay ở mọi nơi (web, thông báo, báo cáo, sổ tay; ~940 chỗ / ~130 file). Làm sau khi U12, DL, K26, SL merge để tránh xung đột.
 
-### PR-HK2 · Badge & chữ (L, cuối cùng) — kế hoạch bổ sung `2026-10-07-pr-hk2-badge-chu.md` + mockup `mockup-hk2-2026-10-07.html` **chờ duyệt, Q1–Q4** (07/10); chạy sau KHUNG, LUI-a2
+### PR-HK2 · Badge & chữ (L, cuối cùng) — kế hoạch bổ sung `2026-10-07-pr-hk2-badge-chu.md` + mockup `mockup-hk2-2026-10-07.html` **DUYỆT 07/10** (Q1–Q4 đã trả lời); chạy sau KHUNG, LUI-a2
 - `2026-10-02-ux-sau-critique.md`: **H1/H2** ba họ chip · **K1** còn lại (nếu DH chưa làm hết) · **K2** Phân tích › Tổng hợp ·
   **K5** demo bar điện thoại · **K6** chữ nội dung 12 px · **K7** một kiểu icon ⋯ · **J1–J4, J7, J9** chữ.
 - **Thêm:** **K4 + "Vắng" thống nhất** lưới cả lớp ↔ màn từng kỹ năng, có Hoàn tác (quyết định 04/10) · **D7** thanh trên điện

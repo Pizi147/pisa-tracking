@@ -1,5 +1,14 @@
 # PR-HK2 · Badge & chữ (chạy cuối) — Kế hoạch bổ sung
 
+> **Chủ sản phẩm chốt 07/10 (đè phần dưới):** mockup **DUYỆT**.
+> **Q1 = A + bốn ý** (Phân tích › Tổng hợp): đầu cột 2 dòng, "16 ⚠1", gom nút vào ⋯, và (1) **bỏ cột "Tạm thời"**; (2) "Chưa đủ điểm" → **"Thiếu điểm"**;
+> (3) **gộp "HV có Case" + "Case" → một cột "HV - Case"**, ô ghi `17 - 26` (hai số, mỗi số bấm được, màu nhẹ theo bảng màu khoá); (4) cột **Đạt / SOS 1 / SOS 2 / SOS 3** số hiện dạng
+> **badge vuông có màu** (ok / sos1–3 như chip SOS), không đổi bảng màu. Mockup mục 4 đã sửa theo bốn ý (không cần duyệt lại). Hợp đồng số liệu giữ: **số mỗi ô = số dòng khi bấm**.
+> **Q2 = A** (planning tự quyết): điện thoại, Sáng/Tối vào menu Tài khoản. **Q3 = A**: màn `000048`, Excel `PISA-000048`.
+> **Q4 = B** (khác khuyến nghị): **bỏ "Hoàn tác"** ở nút Vắng — xoá "-" là đủ (PR-BV); mọi màn **một thông báo ngắn, không nút**.
+> **Thêm từ PR-KHUNG #230:** tên em cắt ở lưới chấm lớp thường 375 (`cham/LuoiThuong.tsx:420`) · tên PA ở dòng ngữ cảnh panel Ghi kết quả PA 375 (`cases/CapNhatTuan.tsx:253`) ·
+> Hồ sơ HV 375 vừa mở thì `<main>` tự cuộn xuống hàng tab (`ui/HangTab.tsx:19` `scrollIntoView`). → Task 6 (C33–C35).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: superpowers:subagent-driven-development (mỗi Task một subagent cùng model). Bước `- [ ]`.
 > **Model: Opus 5.5 · High (B: Sonnet 5.5 · High) — không Fable, kể cả subagent** (CLAUDE.md 06/10).
 
@@ -40,7 +49,7 @@
 | H1 chip "Thiếu n" / "+n" | (từ KHUNG) | `MissingBadge.tsx:79` vuông 11,5 medium, màu `amber-*` cứng; "+n" `StudentsPage.tsx:357`, `DauTrangLop.tsx:198` = `MenuDong` h-7 (28 px, khác mọi chip) | Task 1 |
 | **K1** | Bộ lọc Học viên & Lớp | ✅ hết hai hàng "Tất cả", đã có "Loại lớp" (`CongTacKhung.tsx:41-49`). ✗ ô tìm vẫn "🔍 Tìm tên, mã học viên hoặc mã lớp…" (`StudentsPage.tsx:191`); ✗ "+ Lớp mới" / "+ Học viên" vẫn ngoài trên điện thoại (`:174-176`) | Task 5 |
 | **K2** | Phân tích › Tổng hợp | ✗ 19 cột FT / 18 cột lớp thường (`shared/domain/phanTich.ts:181-261`), bảng 1476 > 1398 px ở 1440 (đo KHUNG #15); "16 (1 quá hạn)" `TongHopTestSos.tsx:150-151`; "Cột hiện ▾", "⤓ Xuất bảng này", "Xuất kết quả từng lượt" ngoài (`:212-229`); ~16 nút điều khiển | Task 4 |
-| **K4** + "Vắng" | Vắng thống nhất, có Hoàn tác | ◐ Ô nhập giống nhau ở lưới và màn từng kỹ năng (dùng chung ô). Lệch ở **thông báo**: nút "Vắng" điện thoại (`ScoreEntry.tsx:208-217, 434, 519, 1152-1160`) → toast **có Hoàn tác** "Đã ghi vắng R · Tên" (`useToastVang :272-277`); gõ "-" lớp thường → "Đã dời R sang tuần sau." **không Hoàn tác** (`cham/LuoiThuong.tsx:239`); gõ "-" FT → **không toast**. Gỡ "-" (PR-BV) → "Đã gỡ vắng … · về W…" | Task 7 (Q4) |
+| **K4** + "Vắng" | Vắng thống nhất (Q4 = B: bỏ Hoàn tác) | ◐ Ô nhập giống nhau ở lưới và màn từng kỹ năng (dùng chung ô). Lệch ở **thông báo**: nút "Vắng" điện thoại (`ScoreEntry.tsx:208-217, 434, 519, 1152-1160`) → toast **có Hoàn tác** "Đã ghi vắng R · Tên" (`useToastVang :272-277`); gõ "-" lớp thường → "Đã dời R sang tuần sau." **không Hoàn tác** (`cham/LuoiThuong.tsx:239`); gõ "-" FT → **không toast**. Gỡ "-" (PR-BV) → "Đã gỡ vắng … · về W…" | Task 7 (Q4) |
 | **K5** | Demo bar điện thoại | ✗ `platform/DemoBar.tsx:55-64`, không gập; 375 thành 2 hàng ≈ 95–100 px | Task 5 |
 | **K6** | Chữ nội dung 12 px | ✗ `text-[11px]` 353 chỗ (≈ 297 là chữ nội dung), `text-[11.5px]` 60. Lớp chung: `.th` 11 px (`index.css:218`, giữ), `.hang-con > td` 11,5 (`:249`), `Field` gợi ý `ui.tsx:338-339`, `SectionNote :354`, `KpiTile :301-306`. Top file: ScoreEntry, TransitionPanel, ui.tsx, HanhTrinh, MockDetailPage | Task 2 |
 | **K7** | Một kiểu ⋯ | ◐ `MenuDong` mặc định ⋯ (15 chỗ). Lệch: `DauTrangLop.tsx:174` `bieuTuong="⋮"`, `StudentDetailPage.tsx:214` `<Menu label="⋮">` (component khác, `ui/Menu.tsx:24`) | Task 1 |
@@ -94,7 +103,7 @@
 | T16 | **Mất kết nối:** `role="status"`; bấm "Thử lại" → nút khoá, chữ "Đang thử…", xong thì trở lại | Theo PR-PH | Không |
 | T17 | **Hồ sơ cá nhân:** không sửa (form một cột hẹp là đúng) trừ khi ảnh thật lộ lỗi | "Có thật mới sửa" | Không |
 
-## Câu cần chủ sản phẩm quyết (4 câu — mỗi câu có khuyến nghị)
+## Câu đã hỏi chủ sản phẩm — ĐÃ TRẢ LỜI 07/10 (xem khối đầu file; dưới là bản hỏi gốc)
 
 1. **Phân tích › Tổng hợp (máy tính 1440)** — bảng 19 cột rộng hơn màn. **A (khuyến nghị):** đầu cột xuống 2 dòng, "Chờ Quản lý duyệt" → "Chờ duyệt", ô "16 (1 quá hạn)" → "16 ⚠1", gom "Cột hiện", "Xuất bảng này", "Xuất kết quả từng lượt" vào nút ⋯ → vừa 1440, đủ cột. **B:** mặc định ẩn nhóm "Xử lý" (6 cột), bật lại ở ⋯ › Cột hiện. Rủi ro A: đầu cột cao gấp đôi. Rủi ro B: QL không thấy số Case nếu không bật. *(mockup mục 4)*
 2. **Điện thoại › thanh trên (mọi trang)** — mockup 23C không có nút Sáng/Tối. **A (khuyến nghị):** chuyển Sáng/Tối vào menu Tài khoản (bấm vòng tròn chữ cái) → thanh còn 3 nút như 23C. **B:** giữ nút Sáng/Tối trên thanh (4 nút). Rủi ro A: người quen bấm trên thanh phải tìm trong menu (một lần). *(mockup mục 5)*
@@ -115,10 +124,11 @@
 | `web/src/index.css` | `.nut-loc`, `.bang-dinh`, `.hang-con > td` 12 px | 1, 2, 3 |
 | ~10 file top K6 (ScoreEntry, TransitionPanel, HanhTrinh, MockDetailPage, BangCanHoTro, PhanTichGiaoVien, MeetingPage, CasePanel, MgmtTasksPage, StudentDetailPage) | chữ nội dung 11 → 12 px | 2 |
 | bảng ở mục "Đầu cột dính" (Task 3) | gắn `.bang-dinh`, `card` → `overflow-clip` | 3 |
-| `phanTich/TongHopTestSos.tsx`, `shared/domain/phanTich.ts` (chỉ nhãn "Chờ duyệt") | K2 | 4 |
+| `phanTich/TongHopTestSos.tsx`, `shared/domain/phanTich.ts`, `server/src/phanTich/tongHop.ts` + phép kiểm cũ có `tamThoi`/`hvCoCase` | K2 (bốn ý 07/10) | 4 |
 | `App.tsx:139-152`, `platform/Header.tsx`, `platform/DemoBar.tsx`, `StudentsPage.tsx:174-191` | D7, K5, K1/DH | 5 |
 | `SkillBoard.tsx:650`, `server/src/worklist/tongQuan.ts:115,136`, `KhoiCanXuLy.tsx:61`, `OverviewPage.tsx:94`, `server/src/worklist/mywork.ts:1221` + `WorkList.tsx`, `shared/domain/sosV4.ts:108`, `ScoreEntry.tsx:516`, `cham/GvCham.tsx`, `LuoiFT.tsx`, `LuoiThuong.tsx`, `MotKyNang.tsx`, `TabDiemLop.tsx:55`, `ChamDiemPage.tsx:84`, `StudentDetailPage.tsx:198,645-652`, `shared/domain/lopThuong.ts:63`, `chamDiem.ts:82`, `AdminPage.tsx:160`, `DeXuatSuaPanel.tsx:16`, `LuuTruPage.tsx:119,142`, mọi chỗ in `studentCode` (J2) | J, U12, bấm thử | 6 |
-| `ScoreEntry.tsx:272-277`, `cham/LuoiThuong.tsx:239`, `cham/LuoiFT.tsx` | K4 thông báo | 7 |
+| `ScoreEntry.tsx:272-277`, `cham/LuoiThuong.tsx:239`, `cham/LuoiFT.tsx` | K4 thông báo (bỏ Hoàn tác) | 7 |
+| `cham/LuoiThuong.tsx:420`, `cases/CapNhatTuan.tsx:253`, `ui/HangTab.tsx:19` | từ KHUNG #230 | 6 |
 | `DauTrangLop.tsx:94-100, 198` | "+n" dẫn đúng chỗ | 8 |
 | `ChuyenLopPanel.tsx:150`, `ClassProgressPanel.tsx:97`, `CatalogAdmin.tsx:177,248`, `ScoreEntry.tsx:617-620`, `App.tsx:131-137` | SL, Mất kết nối | 9 |
 | `server/src/students/hanhTrinh.ts:320-327` · `index.html`, `App.tsx:144`, `WelcomePage.tsx:137`, `server/src/index.ts:21`, `hocVienLop.tests.ts:71,73`, `README.md`, `DEMO.md`, `TRIEN_KHAI.md` | tuần học, tên web | 10 |
@@ -169,11 +179,24 @@
 - [ ] `/impeccable adapt`: dưới 768 px giữ nguyên (cuộn ngang trong khung như nay). Kiểm: lăn trang dài → đầu cột sát mép trên, không hở chữ; panel, menu ⋯, lịch `LichNho` vẫn đúng chỗ.
 - [ ] Xanh C9–C10; `do-khung.mjs` không thêm lỗi cuộn lồng / html cuộn. Commit `feat(hk2): đầu cột dính ở bảng dài (máy tính)`.
 
-### Task 4: K2 — Phân tích › Tổng hợp (theo Q1)
+### Task 4: K2 — Phân tích › Tổng hợp (Q1 = A + bốn ý, chủ sản phẩm 07/10)
 
-- [ ] **Đỏ** — C11: `TongHopTestSos.tsx` không còn chữ `quá hạn)`; có `⚠`. C12: "Cột hiện" và hai nút xuất nằm trong một `MenuDong` (không còn `Cột hiện ▾` ngoài). C13 (Q1 = A): đầu cột bảng này `whitespace-normal`; `phanTich.ts` cột `choDuyet` nhãn "Chờ duyệt" (Excel giữ `goiY` đầy đủ).
-- [ ] Sửa theo Q1. Ô "16 ⚠1": ⚠ màu `text-late`, `title="1 quá hạn"`. Menu ⋯: các ô tick "Cột hiện" + "Xuất bảng này" + "Xuất kết quả từng lượt" (giữ điều kiện `session?.nav?.xuatMt`).
-- [ ] Đo: bảng FT ≤ 1398 px ở 1440 (Q1 = A) → gắn `.bang-dinh`. `/impeccable layout`. Xanh C11–C13. Commit `feat(hk2): K2 Tổng hợp vừa 1440, "16 ⚠1", gom nút vào ⋯`.
+**Files:** `shared/domain/phanTich.ts:181-261, 276-280` (cột, nhãn, màu), `server/src/phanTich/tongHop.ts:29-48` (phân loại lượt), `web/src/modules/phanTich/TongHopTestSos.tsx` (ô, chú giải, nút); phép kiểm cũ có `tamThoi` / `chuaDu` / `hvCoCase` (`server/src/tests/phanTich.tests.ts:32`, `prPb2a`, `prXuat`, `panelUx3`, `suaLoiNong` — grep): sửa theo luật mới, không xoá.
+
+- [ ] **Đỏ (DB test + quét nguồn):**
+  - C11: lượt chưa đủ điểm mà đã kết luận được (nay `tamThoi`) rơi vào cột `chuaDu` — `phanLoaiLuot` (`tongHop.ts:33`) không còn trả `tamThoi`; `cotTongHopFor('ft')` không còn khoá `tamThoi`; **tổng các cột Kết quả = cột Lượt** (`cotKetQuaCong`) vẫn đúng trên DB demo.
+  - C12: nhãn cột `chuaDu` = **"Thiếu điểm"** (cả FT và lớp thường); `goiY` ghi "kể cả lượt đã tạm có mức SOS".
+  - C13: còn **một** cột `hvCase` (nhóm Xử lý) thay `hvCoCase` + `case`; ô hiện hai số `HV - Case`, **mỗi số là một `SoLieuO` riêng**, nguồn mở danh sách riêng (`cot=hvCoCase` / `cot=case` — giữ hai nguồn máy chủ cũ); Excel giữ **hai cột** riêng (số liệu thô).
+  - C14: **số mỗi ô = số dòng khi bấm**: mọi cột còn lại (gồm `chuaDu` mới và hai số của `hvCase`) — số trên bảng bằng số dòng của `/phan-tich/tong-hop/o` cùng khoá, trên DB demo (mở rộng phép kiểm hợp đồng số liệu sẵn có; chưa có thì thêm).
+  - C15 (quét nguồn): ô Đạt / SOS 1–3 (và cột lớp thường mượn thang `MAU_THUONG`) dùng `CHIP_VUONG` + tông `dat`/`sos1`/`sos2`/`sos3` khi `v > 0` (ô 0 giữ "0" xám); chú giải không còn mục "Tạm thời / Chưa đủ điểm"; `TongHopTestSos.tsx` không còn `quá hạn)` (ô "16 ⚠1"); "Cột hiện" và hai nút xuất trong một `MenuDong`; đầu cột bảng này `whitespace-normal`; `choDuyet` nhãn "Chờ duyệt".
+- [ ] Sửa:
+  - `tongHop.ts:33`: `if (!ev.complete) return 'chuaDu';` (bỏ nhánh `tamThoi`); bỏ `'tamThoi'` khỏi `PhanLoaiLuot` và danh sách cột. **Không** đụng "Dưới kỳ vọng" theo kỹ năng (vẫn đếm cả lượt tạm, Q14).
+  - Cột `hvCase`: nhãn "HV - Case"; ô `<SoLieuO hvCoCase/> - <SoLieuO case/>`; màu nhẹ token sẵn có — HV `text-doing`, Case `text-muted`, dấu "-" `text-faint`; `title` "17 học viên · 26 Case".
+  - Ô màu: `MAU_O` dat/sos1–3 → `CHIP_VUONG` + `bg-*-bg text-* border-*-line` (dáng chip SOS hiện nay, góc vuông); bỏ `tam`.
+  - "16 ⚠1": ⚠ `text-late`, `title="1 quá hạn"`. Menu ⋯: ô tick "Cột hiện" + "⤓ Xuất bảng này" + "Xuất kết quả từng lượt" (giữ điều kiện `session?.nav?.xuatMt`).
+  - Excel `bangXuatTongHop`: bỏ Tạm thời, "Thiếu điểm", giữ hai cột HV có Case / Case.
+  - "Cột hiện" lưu ở `localStorage` (`KHOA_LUU_COT_HIEN`) là nhóm, không phải cột → không cần đổi; kiểm lại.
+- [ ] Đo: bảng FT ≤ 1398 px ở 1440 → gắn `.bang-dinh`. 375: bảng cuộn ngang trong khung, cột đầu đứng yên (`sticky-col`), trang không tràn. `/impeccable layout`; `/impeccable colorize` chỉ ô Đạt/SOS (không màu mới). Xanh C11–C15. Commit `feat(hk2): K2 Tổng hợp — bỏ Tạm thời, Thiếu điểm, HV - Case, ô SOS dạng badge, gom nút vào ⋯`.
 
 ### Task 5: Điện thoại — thanh trên 23C (D7), demo bar (K5), Học viên & Lớp (K1/DH)
 
@@ -194,13 +217,14 @@
   - J9 (T10): `sosV4.ts:108`; `ScoreEntry.tsx:516-517`; `GvCham.tsx` đầu cột S lưới máy tính truyền `chiTen` như `MotKyNang.tsx:167`.
   - U12: `StudentDetailPage.tsx:645-646` chấm dở có môn trượt → dòng "Không đạt: …" màu `text-soon` (cùng màu số tạm SOS 1 ở bảng Mock Test); `lopThuong.ts:63`, `chamDiem.ts:82` bỏ " (đã chấm)".
   - "Khác" (T12), Lưu trữ rỗng (T13).
-- [ ] Xanh C18–C26. Ảnh: Tổng quan QL/GV, hồ sơ HV (Học thuật, Mock, lớp thường), Nhập điểm, Điểm theo lớp, Lưu trữ, Quản trị › Quyền. Commit `fix(hk2): chữ J1–J9, U12, "Khác", Lưu trữ rỗng`.
+  - **Từ KHUNG #230 (07/10):** C33 `cham/LuoiThuong.tsx:420` tên em < 640 px không `truncate` (xuống dòng `break-words`; máy tính giữ `truncate` + `title`). C34 `cases/CapNhatTuan.tsx:253` tên PA ở dòng ngữ cảnh < 640 px xuống dòng (bỏ `truncate` ở `max-sm:`; hạn + ⚠ xuống dòng dưới). C35 `ui/HangTab.tsx:19`: thay `scrollIntoView` bằng đặt `scrollLeft` của chính hàng tab (chỉ cuộn ngang) → mở Hồ sơ HV 375 không còn kéo `<main>` xuống hàng tab; quét nguồn: `HangTab.tsx` không còn `scrollIntoView`.
+- [ ] Xanh C18–C26, C33–C35. Ảnh: Hồ sơ HV 375 (vừa mở, đứng đầu trang), lưới chấm lớp thường 375, panel Ghi kết quả PA 375, Tổng quan QL/GV, hồ sơ HV (Học thuật, Mock, lớp thường), Nhập điểm, Điểm theo lớp, Lưu trữ, Quản trị › Quyền. Commit `fix(hk2): chữ J1–J9, U12, "Khác", Lưu trữ rỗng`.
 
-### Task 7: K4 — "Vắng" thống nhất (theo Q4)
+### Task 7: K4 — "Vắng" một thông báo ngắn, không Hoàn tác (Q4 = B)
 
-- [ ] **Đỏ** — C27 (Q4 = A): `LuoiThuong.tsx` và `LuoiFT.tsx` đường gõ "-" (bật vắng) gọi cùng hàm thông báo với nút "Vắng" (`useToastVang` — chuyển ra chỗ dùng chung, ví dụ `cham/thongBaoVang.ts`), có Hoàn tác; không còn chuỗi `Đã dời ${` riêng. (Q4 = B: `ScoreEntry.tsx` không còn `toast.hoanTac` cho vắng.)
-- [ ] Code: Hoàn tác = gửi `noShow: false` (đúng đường gỡ vắng PR-BV `LuoiThuong.tsx:233-241`); chữ "Đã ghi vắng R · Tên" + lớp thường " · dời W3 OCT" (tuần lấy từ `r.tuanMoi`). Khoá toast theo ô (giữ `key: vang:<id>`).
-- [ ] Bấm thử: máy tính gõ "-" → thông báo → Hoàn tác → ô trống, lịch về tuần cũ; điện thoại nút Vắng → như cũ. Lớp thường + FT. Xanh C27. Commit `fix(hk2): K4 vắng một thông báo ở mọi màn nhập điểm`.
+- [ ] **Đỏ** — C27: `ScoreEntry.tsx` không còn `toast.hoanTac` cho vắng (`useToastVang` bỏ hoặc thành `toast.push`); nút "Vắng" (điện thoại), gõ "-" lưới lớp thường và gõ "-" lưới FT gọi **cùng một** hàm thông báo (ví dụ `cham/thongBaoVang.ts`); không còn chuỗi `Đã dời ${` riêng.
+- [ ] Code: thông báo ngắn, không nút: **"Đã ghi vắng R · Tên"** (lớp thường thêm **" · dời W3 OCT"**, tuần lấy từ `r.tuanMoi`). Gỡ vắng (xoá "-") giữ thông báo PR-BV "Đã gỡ vắng … · về W…" / "· giữ W…". Khoá toast theo ô (giữ `key: vang:<id>`).
+- [ ] Bấm thử: máy tính gõ "-" → một thông báo; xoá "-" → "Đã gỡ vắng…", lịch về tuần cũ; điện thoại bấm "Vắng" → cùng thông báo, không nút; gỡ = xoá "-" trong ô. Lớp thường + FT. Xanh C27. Commit `fix(hk2): K4 vắng một thông báo ngắn ở mọi màn nhập điểm`.
 
 ### Task 8: DH — "+n" hồ sơ lớp dẫn đúng chỗ
 
@@ -227,7 +251,7 @@
 - [ ] `thiet-ke/HE_GIAO_DIEN.md`: §2 bảng chữ (12 px chữ nội dung; badge 11,5 px cao 20 px) · §3 thêm `CHIP_TRON` / `CHIP_VUONG`, `.nut-loc`, `.bang-dinh`.
 - [ ] `/impeccable audit` toàn web, `/ponytail-review`. `npm run check` **một lần**, foreground.
 - [ ] `[x]` các mục H1, H2, K1, K2, K4–K7, J1–J4, J7–J9 trong `2026-10-02-ux-sau-critique.md`; một dòng mục 11 `plan.md`; `CODE_MAP.md` nếu thêm file.
-- [ ] Mở PR vào `main`, **không merge**. Mô tả: model thật; từng ID (bảng Hiện trạng) — làm / đã xong trước / bác bỏ; phép kiểm C1–C32; ảnh; chú thích `ponytail:`; ảnh sổ tay `docs/so-tay/` bị lệch (để PR-SOTAY).
+- [ ] Mở PR vào `main`, **không merge**. Mô tả: model thật; từng ID (bảng Hiện trạng) — làm / đã xong trước / bác bỏ; phép kiểm C1–C35; ảnh; chú thích `ponytail:`; ảnh sổ tay `docs/so-tay/` bị lệch (để PR-SOTAY).
 
 ---
 
@@ -237,11 +261,11 @@
 2. Chỉ một kiểu nút menu ⋯; "+n" là chip tròn bấm được; "+n" ở hồ sơ lớp mở đúng chỗ (Phân công GV / danh sách thiếu thông tin), nhãn chặng là chữ.
 3. Chữ nội dung (meta dòng, nhãn ô, gợi ý) 12 px; tiêu đề cột và badge giữ 11–11,5 px; 1440 không cao thêm quá 1 dòng mỗi hàng.
 4. Máy tính: lăn bảng dài ở Tổng quan, Hồ sơ lớp, Test, Nhập điểm, Quản trị, Công việc → đầu cột dính sát mép trên; bảng phải cuộn ngang được liệt kê trong PR.
-5. Phân tích › Tổng hợp vừa 1440 (theo Q1), "16 ⚠1", nút gom vào ⋯.
+5. Phân tích › Tổng hợp vừa 1440: không còn cột Tạm thời, "Thiếu điểm", một cột "HV - Case" (`17 - 26`, mỗi số bấm ra đúng số dòng), ô Đạt/SOS là badge vuông có màu, "16 ⚠1", nút gom vào ⋯.
 6. Điện thoại: thanh trên = 23C (PISA · tìm · chuông · tài khoản); demo bar một dòng; Học viên & Lớp "+ Lớp mới" trong ⋯, ô tìm "Lọc trong danh sách này…".
-7. Chữ ở mockup mục 7 hiện đúng trên web; "Vắng" một thông báo ở mọi màn (theo Q4).
+7. Chữ ở mockup mục 7 hiện đúng trên web; "Vắng" một thông báo ngắn, không nút Hoàn tác, ở mọi màn; gỡ = xoá "-".
 8. Hành trình không ghi tuần học khi em không có lộ trình đang chạy; tên "PISA Tracking" ở tab trình duyệt, thanh trên, màn chào.
-9. `prHk2.tests.ts` C1–C32 xanh trong `npm run check`; `do-khung.mjs` không thêm lỗi.
+9. `prHk2.tests.ts` C1–C35 xanh trong `npm run check`; `do-khung.mjs` không thêm lỗi.
 
 ## File chồng với PR khác
 
@@ -262,15 +286,15 @@ Làm PR-HK2 theo docs/superpowers/plans/2026-10-07-pr-hk2-badge-chu.md (Task 0 �
 Đầu phiên nói model đang chạy. Không Fable kể cả subagent.
 Chỉ bắt đầu khi PR-KHUNG và PR-LUI-a2 #229 đã merge. Nhánh pr-hk2-badge-chu từ origin/main mới nhất,
 worktree .claude/worktrees/pr-hk2-badge-chu, PORT=4540 WEB_PORT=5540.
-Mockup đã duyệt: thiet-ke/mockup-hk2-2026-10-07.html mục 1–8; đọc câu trả lời Q1–Q4 trong kế hoạch.
+Mockup đã duyệt: thiet-ke/mockup-hk2-2026-10-07.html mục 1–8; đọc khối "Chủ sản phẩm chốt 07/10" đầu kế hoạch (Q1–Q4 + 3 mục từ KHUNG).
 Tinh chỉnh, KHÔNG làm lại: phông, màu, bố cục giữ. Chữ trên màn ngắn, đúng chữ mockup, không câu giải thích dưới nút/ô.
 Ô ngày (nếu chạm) = ô gõ + nút lịch (ONgay). Không chụp lại sổ tay (PR-SOTAY). Không toast Hoàn tác vi phạm.
 Task 0: grep lại bảng "Hiện trạng" — mục đã xong thì ghi vào PR, không làm lại.
-Đỏ trước: prHk2.tests.ts C1–C32 (Task 10 đỏ trên DB test). Sửa ở gốc chung (CHIP_TRON / CHIP_VUONG, .nut-loc, .bang-dinh), component chip giữ tên/API.
+Đỏ trước: prHk2.tests.ts C1–C35 (Task 10 đỏ trên DB test). Sửa ở gốc chung (CHIP_TRON / CHIP_VUONG, .nut-loc, .bang-dinh), component chip giữ tên/API.
 Impeccable: /impeccable polish (Task 1, 2), /impeccable layout (Task 4), /impeccable adapt (Task 3, 5, 7), /impeccable clarify (Task 6), cuối /impeccable audit toàn web.
 Đo: node scripts/do-khung.mjs trước (mốc) và sau (không thêm lỗi). Ảnh 1440/375 sáng/tối ≥ 3 vai vào thiet-ke/anh/hk2/.
 /ponytail-review. npm run check MỘT lần, foreground. Mở PR vào main, KHÔNG merge.
-Mô tả PR: model thật, từng ID (làm / đã xong trước / bác bỏ), C1–C32, ảnh, chú thích ponytail:, ảnh sổ tay lệch.
+Mô tả PR: model thật, từng ID (làm / đã xong trước / bác bỏ), C1–C35, ảnh, chú thích ponytail:, ảnh sổ tay lệch.
 ```
 
 ## Cái bỏ qua (và khi nào thêm)

@@ -73,6 +73,7 @@ p{margin:0}.note{color:var(--dim);font-size:13px;max-width:80ch}
 .v-can{color:var(--c3)}.v-lam{background:rgba(255,255,255,.06);border-color:transparent;color:var(--c3)}
 .v-cho{border-color:var(--wait-line);background:var(--wait-bg);color:var(--wait)}.v-qh{border-color:var(--late-line);background:var(--late-bg);color:var(--late)}
 .v-xong{border-color:transparent;color:var(--done)}.v-huy{border-color:transparent;color:var(--faint);text-decoration:line-through}
+.v-dat{border-color:transparent;background:var(--ok-bg);color:var(--ok)}.v-s1{border-color:var(--soon-line);background:var(--soon-bg);color:var(--soon)}.v-s2{border-color:var(--late-line);background:var(--late-bg);color:var(--late)}.v-s3{border-color:var(--bad-line);background:var(--bad-bg);color:var(--bad)}
 .v-thieu{border-color:var(--soon-line);background:var(--soon-bg);color:var(--soon)}
 .kq{display:inline-flex;align-items:center;border-radius:6px;border:1px solid var(--bad-line);padding:2px 8px;font:500 12px var(--sans);color:var(--bad)}
 .kq.dut{border-style:dashed}
@@ -164,7 +165,7 @@ table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
   <button class="btn btn-sm" aria-pressed="true" onclick="doi('dark',this)">Tối</button>
   <button class="btn btn-sm" aria-pressed="false" onclick="doi('light',this)">Sáng</button>
 </div>
-<p class="note">Tinh chỉnh, không làm lại: phông, màu, bố cục giữ. Mỗi mục: <b>TRƯỚC</b> (đọc từ mã thật) và <b>SAU</b> (sẽ code). Chữ trong khung màn là chữ thật trên web. Ô vàng <b>Q1–Q4</b> là câu cần chị chọn.</p>
+<p class="note">Tinh chỉnh, không làm lại: phông, màu, bố cục giữ. Mỗi mục: <b>TRƯỚC</b> (đọc từ mã thật) và <b>SAU</b> (sẽ code). Chữ trong khung màn là chữ thật trên web. Q1–Q4 đã chốt 07/10.</p>
 
 <!-- ============ 1. HAI HỌ CHIP ============ -->
 <section class="sec" id="m1">
@@ -276,30 +277,51 @@ table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
 <!-- ============ 4. PHÂN TÍCH › TỔNG HỢP ============ -->
 <section class="sec" id="m4">
   <h2>4 · Phân tích › Tổng hợp vừa màn 1440</h2>
-  <span class="where">Phân tích › Tổng hợp › bảng Fast Track · 1440</span>
-  <p class="note">Nay bảng 19 cột rộng 1476 px, màn chỉ có 1398 px → cột cuối bị đẩy ra ngoài, phải kéo ngang; ô "16 (1 quá hạn)" xuống dòng; ba nút "Cột hiện", "Xuất bảng này", "Xuất kết quả từng lượt" nằm ngoài.</p>
-  <div class="q"><b>Q1.</b> A (khuyến nghị): đầu cột xuống 2 dòng, "Chờ Quản lý duyệt" → "Chờ duyệt", ô ghi "16 ⚠1", ba nút vào ⋯ → vừa màn, đủ 19 cột. · B: mặc định ẩn 6 cột "Xử lý", bật lại ở ⋯ › Cột hiện.</div>
-  <span class="tag sau">Sau · A</span>
+  <span class="where">Phân tích › Tổng hợp › bảng Fast Track · 1440 và 375</span>
+  <p class="note">Chủ sản phẩm chốt 07/10 (Q1 = A + bốn ý): bỏ cột "Tạm thời" (lượt đó nằm trong "Thiếu điểm"); "Chưa đủ điểm" → "Thiếu điểm"; gộp "HV có Case" + "Case" thành "HV - Case" (17 - 26, bấm từng số mở đúng danh sách); ô Đạt / SOS là badge vuông có màu. Đầu cột 2 dòng, "16 ⚠1", ba nút vào ⋯. Từ 19 cột còn 17, vừa 1440.</p>
+  <span class="tag sau">Sau · 1440</span>
   <div class="rong"><div class="card" style="min-width:1240px">
     <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;flex-wrap:wrap">
       <span class="seg2"><span class="on">Theo tuần</span><span>Theo lớp</span><span>Theo đợt</span><span>Theo chi nhánh</span></span>
-      <span class="m12">■ Đạt ■ SOS 1 ■ SOS 2 ■ SOS 3</span><span style="flex:1"></span>
-      <span style="position:relative"><span class="dots" style="outline:2px solid var(--accent)">⋯</span>
-        <span class="menu" style="right:0;top:32px;width:230px"><span class="mi chu">Cột hiện</span><span class="mi">☑ Kết quả</span><span class="mi">☑ Dưới kỳ vọng</span><span class="mi">☑ Xử lý</span><hr><span class="mi">⤓ Xuất bảng này</span><span class="mi">Xuất kết quả từng lượt</span></span></span>
+      <span class="flex m12"><span class="vuong v-dat">Đạt</span><span class="vuong v-s1">SOS 1</span><span class="vuong v-s2">SOS 2</span><span class="vuong v-s3">SOS 3</span></span><span style="flex:1"></span>
+      <span class="dots">⋯</span>
     </div>
     <table style="font-size:12.5px">
       <thead>
-        <tr><th class="th"></th><th class="th" colspan="7" style="text-align:center">Kết quả</th><th class="th" colspan="5" style="text-align:center">Dưới kỳ vọng</th><th class="th" colspan="6" style="text-align:center">Xử lý</th></tr>
-        <tr style="vertical-align:bottom">
-          <th class="th" style="white-space:normal">Tuần</th><th class="th r" style="white-space:normal">Lượt MT</th><th class="th r">Đạt</th><th class="th r">SOS 1</th><th class="th r">SOS 2</th><th class="th r">SOS 3</th><th class="th r" style="white-space:normal">Tạm thời</th><th class="th r" style="white-space:normal">Chưa đủ điểm</th>
-          <th class="th r">L</th><th class="th r">R</th><th class="th r">W1</th><th class="th r">W2</th><th class="th r">S</th>
-          <th class="th r" style="white-space:normal">HV có Case</th><th class="th r">Case</th><th class="th r" style="white-space:normal">Chờ nguyên nhân</th><th class="th r" style="white-space:normal">Chờ duyệt</th><th class="th r" style="white-space:normal">Đang làm</th><th class="th r" style="white-space:normal">Xong/ Huỷ</th>
-        </tr>
+        <tr><th class="th" style="position:sticky;left:0;z-index:1"></th><th class="th" colspan="6" style="text-align:center">Kết quả</th><th class="th" colspan="5" style="text-align:center">Dưới kỳ vọng</th><th class="th" colspan="5" style="text-align:center">Xử lý</th></tr>
+        <tr style="vertical-align:bottom"><th class="th" style="position:sticky;left:0;z-index:1">Tuần</th><th class="th r" style="white-space:normal">Lượt MT</th><th class="th r">Đạt</th><th class="th r">SOS 1</th><th class="th r">SOS 2</th><th class="th r">SOS 3</th><th class="th r" style="white-space:normal">Thiếu điểm</th><th class="th r">L</th><th class="th r">R</th><th class="th r">W1</th><th class="th r">W2</th><th class="th r">S</th><th class="th r" style="white-space:normal">HV - Case</th><th class="th r" style="white-space:normal">Chờ nguyên nhân</th><th class="th r" style="white-space:normal">Chờ duyệt</th><th class="th r" style="white-space:normal">Đang làm</th><th class="th r" style="white-space:normal">Xong/ Huỷ</th></tr>
       </thead>
-      <tr><td class="td"><b>W1 OCT</b></td><td class="td r so">42</td><td class="td r so">18</td><td class="td r so">9</td><td class="td r so">6</td><td class="td r so">3</td><td class="td r so">4</td><td class="td r so">2</td><td class="td r so">7</td><td class="td r so">11</td><td class="td r so">5</td><td class="td r so">8</td><td class="td r so">6</td><td class="td r so">17</td><td class="td r so">26</td><td class="td r so">16 <span style="color:var(--late);font-weight:700" title="1 quá hạn">⚠1</span></td><td class="td r so">3</td><td class="td r so">5</td><td class="td r so">2</td></tr>
-      <tr><td class="td"><b>W4 SEP</b></td><td class="td r so">38</td><td class="td r so">20</td><td class="td r so">7</td><td class="td r so">5</td><td class="td r so">2</td><td class="td r so">3</td><td class="td r so">1</td><td class="td r so">6</td><td class="td r so">9</td><td class="td r so">4</td><td class="td r so">6</td><td class="td r so">5</td><td class="td r so">14</td><td class="td r so">19</td><td class="td r so">4</td><td class="td r so">1</td><td class="td r so">8</td><td class="td r so">6</td></tr>
+      <tr><td class="td" style="position:sticky;left:0;background:var(--surface)"><b>W1 OCT</b></td><td class="td r so">42</td><td class="td r"><span class="vuong v-dat so" style="min-width:28px;justify-content:center">18</span></td><td class="td r"><span class="vuong v-s1 so" style="min-width:28px;justify-content:center">9</span></td><td class="td r"><span class="vuong v-s2 so" style="min-width:28px;justify-content:center">6</span></td><td class="td r"><span class="vuong v-s3 so" style="min-width:28px;justify-content:center">3</span></td><td class="td r so" style="color:var(--muted)">6</td><td class="td r so">7</td><td class="td r so">11</td><td class="td r so">5</td><td class="td r so">8</td><td class="td r so">6</td><td class="td r so" title="17 học viên · 26 Case"><span style="color:var(--doing);font-weight:600">17</span> <span style="color:var(--faint)">-</span> <span style="color:var(--muted)">26</span></td><td class="td r so" style="color:var(--soon)">16 <span style="color:var(--late);font-weight:700" title="1 quá hạn">⚠1</span></td><td class="td r so">3</td><td class="td r so">5</td><td class="td r so">2</td></tr>
+<tr><td class="td" style="position:sticky;left:0;background:var(--surface)"><b>W4 SEP</b></td><td class="td r so">38</td><td class="td r"><span class="vuong v-dat so" style="min-width:28px;justify-content:center">20</span></td><td class="td r"><span class="vuong v-s1 so" style="min-width:28px;justify-content:center">7</span></td><td class="td r"><span class="vuong v-s2 so" style="min-width:28px;justify-content:center">5</span></td><td class="td r"><span class="vuong v-s3 so" style="min-width:28px;justify-content:center">2</span></td><td class="td r so" style="color:var(--muted)">4</td><td class="td r so">6</td><td class="td r so">9</td><td class="td r so">4</td><td class="td r so">6</td><td class="td r so">5</td><td class="td r so" title="14 học viên · 19 Case"><span style="color:var(--doing);font-weight:600">14</span> <span style="color:var(--faint)">-</span> <span style="color:var(--muted)">19</span></td><td class="td r so" style="color:var(--soon)">4</td><td class="td r so">1</td><td class="td r so">8</td><td class="td r so">6</td></tr>
+<tr><td class="td" style="position:sticky;left:0;background:var(--surface)"><b>W3 SEP</b></td><td class="td r so">35</td><td class="td r"><span class="vuong v-dat so" style="min-width:28px;justify-content:center">22</span></td><td class="td r"><span class="vuong v-s1 so" style="min-width:28px;justify-content:center">6</span></td><td class="td r"><span class="vuong v-s2 so" style="min-width:28px;justify-content:center">4</span></td><td class="td r so" style="color:var(--faint)">0</td><td class="td r so" style="color:var(--muted)">3</td><td class="td r so">5</td><td class="td r so">7</td><td class="td r so">3</td><td class="td r so">4</td><td class="td r so">4</td><td class="td r so" title="11 học viên · 14 Case"><span style="color:var(--doing);font-weight:600">11</span> <span style="color:var(--faint)">-</span> <span style="color:var(--muted)">14</span></td><td class="td r so" style="color:var(--soon)">0</td><td class="td r so">0</td><td class="td r so">3</td><td class="td r so">11</td></tr>
     </table>
   </div></div>
+  <div class="row">
+    <div><span class="tag sau">Sau · 1440 · bấm ⋯</span>
+      <div class="win" style="width:300px;max-width:100%;height:290px">
+        <div style="display:flex;justify-content:flex-end;padding:10px 12px"><span class="dots" style="outline:2px solid var(--accent)">⋯</span></div>
+        <div class="menu" style="right:12px;top:46px;width:240px"><span class="mi chu">Cột hiện</span><span class="mi">☑ Kết quả</span><span class="mi">☑ Dưới kỳ vọng</span><span class="mi">☑ Xử lý</span><hr><span class="mi">⤓ Xuất bảng này</span><span class="mi">Xuất kết quả từng lượt</span></div>
+      </div>
+    </div>
+    <div><span class="tag sau">Sau · 375 · kéo ngang trong khung, cột Tuần đứng yên</span>
+      <div class="win phone">
+        <div class="pbody" style="padding:12px 0 12px 12px">
+          <div class="card" style="overflow-x:auto;border-top-right-radius:0;border-bottom-right-radius:0">
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 10px"><span class="seg2"><span class="on">Theo tuần</span><span>Theo lớp</span><span>…</span></span><span class="dots" style="width:44px;height:44px;margin-left:auto">⋯</span></div>
+            <table style="font-size:12.5px;min-width:1000px">
+              <thead>
+        <tr><th class="th" style="position:sticky;left:0;z-index:1"></th><th class="th" colspan="6" style="text-align:center">Kết quả</th><th class="th" colspan="5" style="text-align:center">Dưới kỳ vọng</th><th class="th" colspan="5" style="text-align:center">Xử lý</th></tr>
+        <tr style="vertical-align:bottom"><th class="th" style="position:sticky;left:0;z-index:1">Tuần</th><th class="th r" style="white-space:normal">Lượt MT</th><th class="th r">Đạt</th><th class="th r">SOS 1</th><th class="th r">SOS 2</th><th class="th r">SOS 3</th><th class="th r" style="white-space:normal">Thiếu điểm</th><th class="th r">L</th><th class="th r">R</th><th class="th r">W1</th><th class="th r">W2</th><th class="th r">S</th><th class="th r" style="white-space:normal">HV - Case</th><th class="th r" style="white-space:normal">Chờ nguyên nhân</th><th class="th r" style="white-space:normal">Chờ duyệt</th><th class="th r" style="white-space:normal">Đang làm</th><th class="th r" style="white-space:normal">Xong/ Huỷ</th></tr>
+      </thead>
+              <tr><td class="td" style="position:sticky;left:0;background:var(--surface)"><b>W1 OCT</b></td><td class="td r so">42</td><td class="td r"><span class="vuong v-dat so" style="min-width:28px;justify-content:center">18</span></td><td class="td r"><span class="vuong v-s1 so" style="min-width:28px;justify-content:center">9</span></td><td class="td r"><span class="vuong v-s2 so" style="min-width:28px;justify-content:center">6</span></td><td class="td r"><span class="vuong v-s3 so" style="min-width:28px;justify-content:center">3</span></td><td class="td r so" style="color:var(--muted)">6</td><td class="td r so">7</td><td class="td r so">11</td><td class="td r so">5</td><td class="td r so">8</td><td class="td r so">6</td><td class="td r so" title="17 học viên · 26 Case"><span style="color:var(--doing);font-weight:600">17</span> <span style="color:var(--faint)">-</span> <span style="color:var(--muted)">26</span></td><td class="td r so" style="color:var(--soon)">16 <span style="color:var(--late);font-weight:700" title="1 quá hạn">⚠1</span></td><td class="td r so">3</td><td class="td r so">5</td><td class="td r so">2</td></tr>
+<tr><td class="td" style="position:sticky;left:0;background:var(--surface)"><b>W4 SEP</b></td><td class="td r so">38</td><td class="td r"><span class="vuong v-dat so" style="min-width:28px;justify-content:center">20</span></td><td class="td r"><span class="vuong v-s1 so" style="min-width:28px;justify-content:center">7</span></td><td class="td r"><span class="vuong v-s2 so" style="min-width:28px;justify-content:center">5</span></td><td class="td r"><span class="vuong v-s3 so" style="min-width:28px;justify-content:center">2</span></td><td class="td r so" style="color:var(--muted)">4</td><td class="td r so">6</td><td class="td r so">9</td><td class="td r so">4</td><td class="td r so">6</td><td class="td r so">5</td><td class="td r so" title="14 học viên · 19 Case"><span style="color:var(--doing);font-weight:600">14</span> <span style="color:var(--faint)">-</span> <span style="color:var(--muted)">19</span></td><td class="td r so" style="color:var(--soon)">4</td><td class="td r so">1</td><td class="td r so">8</td><td class="td r so">6</td></tr>
+<tr><td class="td" style="position:sticky;left:0;background:var(--surface)"><b>W3 SEP</b></td><td class="td r so">35</td><td class="td r"><span class="vuong v-dat so" style="min-width:28px;justify-content:center">22</span></td><td class="td r"><span class="vuong v-s1 so" style="min-width:28px;justify-content:center">6</span></td><td class="td r"><span class="vuong v-s2 so" style="min-width:28px;justify-content:center">4</span></td><td class="td r so" style="color:var(--faint)">0</td><td class="td r so" style="color:var(--muted)">3</td><td class="td r so">5</td><td class="td r so">7</td><td class="td r so">3</td><td class="td r so">4</td><td class="td r so">4</td><td class="td r so" title="11 học viên · 14 Case"><span style="color:var(--doing);font-weight:600">11</span> <span style="color:var(--faint)">-</span> <span style="color:var(--muted)">14</span></td><td class="td r so" style="color:var(--soon)">0</td><td class="td r so">0</td><td class="td r so">3</td><td class="td r so">11</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </section>
 
 <!-- ============ 5. ĐIỆN THOẠI: THANH TRÊN + DEMO BAR + HVL ============ -->
@@ -307,7 +329,7 @@ table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
   <h2>5 · Điện thoại — thanh trên theo mockup 23C, thanh demo một dòng</h2>
   <span class="where">Mọi trang › thanh trên cùng · 375 (máy tính giữ nguyên)</span>
   <p class="note">Nay thanh demo 2 hàng + thanh trên 56 px ≈ 155 px trước khi tới nội dung. Sau ≈ 108 px. Thanh trên: chữ PISA · tìm · chuông (số đè góc) · tài khoản; nút không viền, biểu tượng to hơn. Trang Học viên &amp; Lớp: "+ Lớp mới", "+ Học viên" vào ⋯; ô tìm ghi "Lọc trong danh sách này…".</p>
-  <div class="q"><b>Q2.</b> A (khuyến nghị): nút Sáng/Tối chuyển vào menu Tài khoản (thanh còn 3 nút như 23C). · B: giữ Sáng/Tối trên thanh (4 nút).</div>
+  <p class="note">Đã chốt 07/10 (Q2 = A): nút Sáng/Tối vào menu Tài khoản.</p>
   <div class="row">
     <div><span class="tag truoc">Trước · 375</span>
       <div class="win phone" style="height:470px">
@@ -324,7 +346,7 @@ table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
         </div>
       </div>
     </div>
-    <div><span class="tag sau">Sau · 375 · A</span>
+    <div><span class="tag sau">Sau · 375</span>
       <div class="win phone" style="height:470px">
         <div class="demo" style="flex-wrap:nowrap"><span class="alert-w">Demo</span><span class="so" style="font-weight:600">14/09/2026</span><span class="sp"></span><span class="btn btn-sm">Công cụ</span><span class="btn btn-sm btn-primary">Tài khoản</span></div>
         <div class="ttop" style="height:52px;gap:2px;padding:0 6px 0 16px"><span class="brand">PISA</span><span class="sp"></span>
@@ -346,7 +368,7 @@ table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
         <div class="menu" style="right:12px;top:62px;width:240px"><div class="mi">+ Lớp mới</div><div class="mi">+ Học viên</div><hr><div class="mi">Lưu trữ <span class="m12">3 lớp · 41 HV</span></div></div>
       </div>
     </div>
-    <div><span class="tag sau">Sau · A · bấm tài khoản</span>
+    <div><span class="tag sau">Sau · bấm tài khoản</span>
       <div class="win phone" style="height:300px">
         <div class="ttop" style="height:52px;gap:2px;padding:0 6px 0 16px"><span class="brand">PISA</span><span class="sp"></span>
           <span class="ib"><svg><use href="#i-search"/></svg></span><span class="ib"><svg><use href="#i-bell"/></svg><span class="so-g">4</span></span><span class="ib" style="outline:2px solid var(--accent);border-radius:10px"><span class="av">H</span></span></div>
@@ -362,25 +384,27 @@ table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
 
 <!-- ============ 6. VẮNG ============ -->
 <section class="sec" id="m6">
-  <h2>6 · "Vắng" — một thông báo ở mọi màn</h2>
+  <h2>6 · "Vắng" — một thông báo ngắn ở mọi màn</h2>
   <span class="where">Test › Nhập điểm (lưới cả lớp, máy tính) và màn từng kỹ năng (điện thoại)</span>
-  <p class="note">Nay: bấm nút "Vắng" trên điện thoại → báo có Hoàn tác. Gõ "-" trên máy tính → lớp thường báo "Đã dời R sang tuần sau." không có Hoàn tác; Fast Track không báo gì. Gỡ vắng vẫn là xoá "-" (PR-BV).</p>
-  <div class="q"><b>Q4.</b> A (khuyến nghị): cả hai cách cùng một thông báo, có Hoàn tác (Hoàn tác = xoá "-"). · B: bỏ Hoàn tác ở nút điện thoại; muốn gỡ thì xoá "-".</div>
+  <p class="note">Chủ sản phẩm chốt 07/10 (Q4 = B): bỏ "Hoàn tác". Gõ "-" hay bấm "Vắng" đều hiện cùng một thông báo ngắn, không nút. Gỡ vắng = xoá "-" trong ô (PR-BV trả lại như cũ).</p>
   <div class="row">
-    <div><span class="tag truoc">Trước · máy tính gõ "-" (lớp thường)</span>
+    <div><span class="tag truoc">Trước · điện thoại bấm "Vắng"</span>
+      <div class="toast"><span class="ok">✓</span>Đã ghi vắng W2 · Vũ Ngọc Lan<span class="ht">Hoàn tác</span></div>
+      <span class="tag truoc" style="margin-top:8px">Trước · máy tính gõ "-" (lớp thường)</span>
       <div class="flex"><span class="o focus">-</span></div>
       <div class="toast"><span class="ok">✓</span>Đã dời R sang tuần sau.</div>
       <span class="tag truoc" style="margin-top:8px">Trước · máy tính gõ "-" (Fast Track)</span>
       <div class="flex"><span class="o focus">-</span><span class="m12">(không có thông báo)</span></div>
     </div>
-    <div><span class="tag sau">Sau · A · máy tính gõ "-" và điện thoại bấm "Vắng"</span>
+    <div><span class="tag sau">Sau · gõ "-" hoặc bấm "Vắng" — mọi màn</span>
       <div class="flex"><span class="o focus">-</span></div>
-      <div class="toast"><span class="ok">✓</span>Đã ghi vắng R · Trần Minh Khoa · dời W3 OCT<span class="ht">Hoàn tác</span></div>
-      <div class="toast"><span class="ok">✓</span>Đã ghi vắng W2 · Vũ Ngọc Lan<span class="ht">Hoàn tác</span></div>
+      <div class="toast"><span class="ok">✓</span>Đã ghi vắng R · Trần Minh Khoa · dời W3 OCT</div>
+      <div class="toast"><span class="ok">✓</span>Đã ghi vắng W2 · Vũ Ngọc Lan</div>
       <span class="m12">Dòng trên: lớp thường · dòng dưới: Fast Track</span>
     </div>
-    <div><span class="tag q">B · điện thoại bấm "Vắng"</span>
-      <div class="toast"><span class="ok">✓</span>Đã ghi vắng W2 · Vũ Ngọc Lan</div>
+    <div><span class="tag sau">Sau · xoá "-" (như PR-BV)</span>
+      <div class="flex"><span class="o focus">&nbsp;</span></div>
+      <div class="toast"><span class="ok">✓</span>Đã gỡ vắng R · Trần Minh Khoa · về W2 OCT</div>
     </div>
   </div>
 </section>
@@ -389,7 +413,7 @@ table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
 <section class="sec" id="m7">
   <h2>7 · Chữ</h2>
   <span class="where">Nhiều trang — cột đầu ghi rõ trang › phần</span>
-  <div class="q"><b>Q3.</b> Mã học viên — A (khuyến nghị): trên màn luôn <span class="so">000048</span>; ô tìm nhận cả hai; file Excel xuất giữ <span class="so">PISA-000048</span>. · B: luôn <span class="so">PISA-000048</span>.</div>
+  <p class="note">Đã chốt 07/10 (Q3 = A): trên màn <span class="so">000048</span>; ô tìm nhận cả hai; file Excel giữ <span class="so">PISA-000048</span>.</p>
   <div class="card" style="padding:4px 6px;overflow-x:auto">
   <table class="chu" style="min-width:640px">
     <thead><tr><th>Trang › phần</th><th>Trước</th><th>Sau</th></tr></thead>
@@ -402,6 +426,9 @@ table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
     <tr><td>Nhập điểm (điện thoại) › ô chưa có điểm (J9)</td><td><span class="btn btn-sm">– sửa</span></td><td><span class="btn btn-sm">Nhập</span> <span class="m12">· ô có điểm giữ</span> <span class="btn btn-sm"><span class="so">6.5</span> sửa</span></td></tr>
     <tr><td>Nhập điểm (máy tính) › đầu cột S (J9)</td><td><span class="th" style="display:inline-block">S · GV chấm: Tôi ▾</span></td><td><span class="th" style="display:inline-block">S · GV chấm: Lê Thu Hà ▾</span></td></tr>
     <tr><td>Nhập điểm · Điểm theo lớp › tên em đã hoàn tất (J8)</td><td><span style="display:inline-flex;gap:6px;width:200px;overflow:hidden"><span class="ten-hv" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Nguyễn Hoàng Bảo Ngọc</span><span class="c-status" style="white-space:nowrap">Đã hoàn tất</span></span></td><td><span style="display:inline-flex;flex-direction:column;gap:3px;width:200px"><span class="ten-hv">Nguyễn Hoàng Bảo Ngọc</span><span class="vuong v-xong" style="width:fit-content;border-color:var(--line-strong)">Đã hoàn tất</span></span></td></tr>
+    <tr><td>Nhập điểm lớp thường (điện thoại) › tên em</td><td><span class="ten-hv" style="display:inline-block;width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom">Nguyễn Hoàng Bảo Ngọc</span></td><td><span class="ten-hv" style="display:inline-block;width:120px">Nguyễn Hoàng Bảo Ngọc</span></td></tr>
+    <tr><td>Panel Ghi kết quả PA (điện thoại) › dòng dưới tiêu đề</td><td><span style="display:inline-block;width:230px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom">Luyện matching headings hai bài/tuần, có chữa · hạn 08/10</span></td><td><span style="display:inline-block;width:230px">Luyện matching headings hai bài/tuần, có chữa<br><span style="color:var(--faint)">· hạn 08/10</span></span></td></tr>
+    <tr><td>Hồ sơ HV (điện thoại) › vừa mở</td><td>Trang tự cuộn xuống hàng tab, mất đầu hồ sơ</td><td>Đứng ở đầu hồ sơ; hàng tab chỉ tự kéo ngang tới tab đang mở</td></tr>
     <tr><td>Hồ sơ HV (lớp thường) › bảng điểm › bài chấm dở (U12)</td><td><span class="c-level t-muted">Chờ 2 môn</span><span class="d2" style="color:var(--faint)">Không đạt: Reading</span></td><td><span class="tron t-muted">Chờ 2 môn</span><span class="d2" style="color:var(--soon);font-weight:600">Không đạt: Reading</span></td></tr>
     <tr><td>Hồ sơ HV (lớp thường) › bài xong có môn huỷ (U12)</td><td>Listening 8/10 (đã chấm)</td><td>Listening 8/10</td></tr>
     <tr><td>Quản trị › Quyền theo vai trò › nhóm</td><td>Khác</td><td>Chưa xếp nhóm</td></tr>
