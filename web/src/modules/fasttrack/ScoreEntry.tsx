@@ -11,7 +11,7 @@ import { fmtBand, skillLabel } from '../../lib/format.ts';
 import { useSession } from '../../lib/session.tsx';
 import { DongGvCham, cungGvCham, gvChamPayload, gvChamThanhChon } from '../cham/GvCham.tsx';
 import {
-  BAI_CO_NHAN_XET, NHAN_XET_TOI_DA, NO_SHOW_HINT, demNguocSuaDau, kiemLyDoThaoTac, oLuoiThuong, tieuChiCua, tieuChiNganCua, tuanLich,
+  BAI_CO_NHAN_XET, NHAN_XET_TOI_DA, NO_SHOW_HINT, demNguocSuaDau, oLuoiThuong, tieuChiCua, tieuChiNganCua, tuanLich,
   type EntrySkill, type NguoiChon,
 } from '@shared/domain/index.ts';
 
@@ -74,9 +74,9 @@ export type SaveOpts = { nem?: boolean };
 export const coDiemChinhThuc = (cell: Cell) => cell.band !== null || cell.rawScore !== null;
 
 /** Ô đã chốt "không dự thi" hoặc đang chờ Quản lý: người nhập điểm không sửa được nữa (phải qua Quản lý). */
-/* T23 (PR-MTa): ô "-" của MT cũ không khoá — gỡ dấu hoặc nhập điểm đè được. */
-export const lockedByNoShow = (cell: Cell) => cell.progress !== 'lich_su'
-  && (cell.noShow?.state === 'khong-du-thi' || cell.noShow?.state === 'cho-ql-hieu-chinh');
+/* T23 (PR-MTa): "-" của MT cũ (chốt cuối, không vào luồng vắng — thi chưa `absent`) không khoá: gỡ dấu hoặc nhập điểm đè được. */
+export const lockedByNoShow = (cell: Cell) => (cell.noShow?.state === 'khong-du-thi' && cell.sitStatus === 'absent')
+  || cell.noShow?.state === 'cho-ql-hieu-chinh';
 
 /** R11 — ô của một đợt đã hoàn tất mà người xem không sửa được: thay cho câu "không được phân công". */
 export const KHOA_HOAN_TAT_HINT = 'Đợt này đã hoàn tất. Chỉ Quản lý sửa được điểm — nhờ Quản lý hiệu chỉnh, kèm lý do.';
@@ -661,15 +661,13 @@ export function InlineScoreEditor({ cell, onSave, onClose }: {
     ? { dash: vals[0].trim() === '-', preview: null as number | null, patch: rawPatchFrom(vals[0], cell) }
     : criteriaPatchFrom(vals, cell);
   /*
-   * RB-5 — ô ĐÃ CÓ điểm mà giá trị đổi (hoặc bị xoá) thì phải ghi lý do; ô lý do hiện ngay trong dòng đang sửa (không
-   * mở thêm khung). Lưu lại đúng số cũ không phải hiệu chỉnh nên không hỏi.
+   * RB-5 → T7 + T22 (PR-MTa): ô ĐÃ CÓ điểm mà giá trị đổi (hoặc bị xoá trắng) thì hiện ô lý do ngay trong dòng — TUỲ CHỌN, không khoá Lưu.
+   * Lưu lại đúng số cũ không phải hiệu chỉnh nên không hiện.
    */
   const canLyDo = coDiemChinhThuc(cell) && !built.dash && (isRaw
     ? (vals[0].trim() === '' ? null : Number(vals[0])) !== cell.rawScore
     : vals.some((v, i) => (v.trim() === '' ? null : Number(v)) !== cell.criteria[i]));
-  /* T7 (PR-MTa): sửa giá trị → lý do tuỳ chọn; xoá trắng ô đã có điểm = huỷ điểm → bắt buộc. */
-  const xoaHet = canLyDo && vals.every((v) => v.trim() === '');
-  const loiLyDo = !built.patch ? (isRaw ? LOI_SO_CAU : LOI_TIEU_CHI) : xoaHet ? kiemLyDoThaoTac('huy-diem', lyDo) : null;
+  const loiLyDo = !built.patch ? (isRaw ? LOI_SO_CAU : LOI_TIEU_CHI) : null;
 
   const submit = async () => {
     if (busy || loiLyDo || !built.patch) return;
@@ -707,7 +705,7 @@ export function InlineScoreEditor({ cell, onSave, onClose }: {
         )}
         {canLyDo && (
           <label className="block">
-            <span className="block text-[11px] text-slate-500">{xoaHet ? 'Lý do huỷ' : 'Lý do sửa (tuỳ chọn)'}</span>
+            <span className="block text-[11px] text-slate-500">Lý do (tuỳ chọn)</span>
             <input className="field w-56" value={lyDo} placeholder="Ví dụ: chấm lại bài, nhập nhầm"
               aria-label="Lý do sửa điểm đã nhập" onChange={(e) => setLyDo(e.target.value)} />
           </label>
@@ -793,7 +791,7 @@ export function SuaDiemCoLyDo({ tieuDe, moTaCu, children, onLuu, onDong, loiGiaT
   /* Giá trị mới đang nằm trong hộp, chưa gửi: bảng điểm theo lượt coi là "ô chưa lưu" và chặn đổi lượt (không mất điểm đang gõ). */
   useBaoHopLyDoMo(busy);
 
-  /* T7 (PR-MTa): sửa điểm — lý do tuỳ chọn; xoá trắng ô thì máy chủ đòi lý do và câu lỗi hiện dưới ô. */
+  /* T7 + T22 (PR-MTa): sửa hay xoá trắng ô — lý do tuỳ chọn; chỉ giá trị sai mới chặn Lưu. */
   const chan = loiGiaTri;
 
   const dat = useCallback(() => {

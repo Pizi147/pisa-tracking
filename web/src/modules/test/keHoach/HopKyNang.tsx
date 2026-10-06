@@ -24,7 +24,7 @@ type Dong = { tick: boolean; periodId: number | null; weekStart: string | null }
  *   · mỗi lần đổi tuần gọi `/ke-hoach-test/dot/kiem` (đợt đã có) hoặc xem trước hàng loạt một em (đợt chưa có) → MỘT dòng
  *     trạng thái: `Chặn: …` (Lưu tắt) · cảnh báo (nút đổi thành `Vẫn xếp vào tuần này`) · `S: W4 SEP → W1 OCT · không trùng đợt khác.`
  *   · PR-LM (Q-0310-1): dời vượt lượt sau → dòng ĐỎ "Lưu sẽ huỷ lịch MT2 (W3 JUL) …"; Lưu mở hộp xác nhận nêu từng lượt bị huỷ lịch.
- *     MT cũ (D3) chọn được tuần đã qua; MT đang chạy không lùi qua tuần này ở web (Quản lý chọn tuần đã qua: PR-MTb).
+ *     Hộp chỉ dành cho Quản lý / Quản trị: chọn được tuần đã qua ở mọi lượt (T4, T20 — rà #212).
  * Bộ chọn tuần KHỞI TẠO bằng TUẦN HIỆN CÓ của từng kỹ năng (Bổ sung sau rà #87): không để bộ chọn tự phát "tuần này" làm
  * nút Lưu mở ngay — Lưu mờ cho tới khi đổi tuần.
  */
@@ -239,8 +239,7 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
             coTickBo={loai === 'ft' && (!(kn[k]?.batBuoc ?? false) || menuTick(k))}
             noiBat={k === kyNangDau} khaiGiang={khaiGiang} tongTuan={tongTuan}
             onTick={(v) => setRows((s) => ({ ...s, [k]: { ...s[k], tick: v } }))}
-            onTuan={(t) => setRows((s) => ({ ...s, [k]: { ...s[k], periodId: t.periodId, weekStart: t.weekStart } }))} goc={homNay}
-            toiThieu={!moi && !lichSu ? homNay : null} />
+            onTuan={(t) => setRows((s) => ({ ...s, [k]: { ...s[k], periodId: t.periodId, weekStart: t.weekStart } }))} goc={homNay} />
         ))}
         {canLyDo && (
           <label className="block">
@@ -281,8 +280,8 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
   );
 }
 
-function DongKyNangHop({ k, o, khoa, moi, loai, d, noiBat, khaiGiang, tongTuan, onTick, onTuan, goc, ct = null, menu, onThaoTac, coTickBo, toiThieu }: {
-  ct?: string | null; menu: ThaoTac[]; onThaoTac: (t: ThaoTac) => void; toiThieu: string | null;
+function DongKyNangHop({ k, o, khoa, moi, loai, d, noiBat, khaiGiang, tongTuan, onTick, onTuan, goc, ct = null, menu, onThaoTac, coTickBo }: {
+  ct?: string | null; menu: ThaoTac[]; onThaoTac: (t: ThaoTac) => void;
   /** PR-XLMT (K4-13): ô tích bỏ kỹ năng chỉ khi bảng thao tác cho "Bỏ kỹ năng khỏi đợt" (chưa tới tuần thi, chưa điểm) hoặc để đưa lại. */
   coTickBo: boolean;
   k: KyNangKH; o?: OKyNang; khoa: boolean; moi: boolean; loai: 'ft' | 'thuong'; d: Dong; noiBat: boolean;
@@ -309,7 +308,8 @@ function DongKyNangHop({ k, o, khoa, moi, loai, d, noiBat, khaiGiang, tongTuan, 
           <div className="mt-2.5 text-xs text-slate-500">Bỏ kỹ năng khỏi đợt</div>
         ) : (
           <>
-            <TuanNho d={d} goc={goc} onTuan={onTuan} nhanKhoa={nhanTuan} toiThieu={toiThieu} />
+            {/* Rà #212 (T4/T20): hộp chỉ mở cho Quản lý / Quản trị (PLAN_WEEK) — chọn được cả tuần đã qua, máy chủ đã cho. */}
+            <TuanNho d={d} goc={goc} onTuan={onTuan} nhanKhoa={nhanTuan} />
           </>
         )}
       </div>

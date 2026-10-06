@@ -67,9 +67,9 @@ export async function runPrXlmtTests(t: YThucTestKit) {
         assert(tat.every((x) => !!d.CHU_THAO_TAC[x]), `${tt} ${m}: thiếu chữ`);
       }
     }
-    // PR-MTa T7 thay K4-15: dời lịch / báo vắng — lý do tuỳ chọn; huỷ điểm bắt buộc, không tối thiểu ký tự.
-    assert(d.canLyDo('doi-lich') === false && d.canLyDo('bao-vang') === false && d.canLyDo('huy-diem'), 'canLyDo');
-    assert(d.kiemLyDoThaoTac('bao-vang', '') === null && d.kiemLyDoThaoTac('huy-diem', ' ') === 'Huỷ điểm: cần ghi lý do.' && d.kiemLyDoThaoTac('huy-diem', 'x') === null, 'kiemLyDoThaoTac');
+    // PR-MTa T7 thay K4-15: dời lịch / báo vắng — lý do tuỳ chọn; huỷ điểm cũng tuỳ chọn (rà #212), không tối thiểu ký tự.
+    assert(d.canLyDo('doi-lich') === false && d.canLyDo('bao-vang') === false && !d.canLyDo('huy-diem'), 'canLyDo');   // rà #212: Huỷ điểm lý do tuỳ chọn
+    assert(d.kiemLyDoThaoTac('bao-vang', '') === null && d.kiemLyDoThaoTac('huy-diem', ' ') === null && d.kiemLyDoThaoTac('huy-luot', ' ') === 'Huỷ lượt: cần ghi lý do.', 'kiemLyDoThaoTac');
     assert(d.tuanMacDinhDotMoi('2026-09-16') === '2026-09-21', d.tuanMacDinhDotMoi('2026-09-16'));
   });
 
@@ -405,8 +405,7 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
     const band = (e: string) => attemptsSvc.scoresOf(a.id).find((x: any) => x.skill === e)?.band ?? null;
     assertThrows(() => keHoach.huyDiem(P.w1Teacher, { attemptId: a.id, skill: 'writing', lyDo: 'Nhập nhầm bài' }), /./, 'GV W1 không huỷ được W2');
     assert(band('writing1') !== null && band('writing2') !== null, 'lỗi ở W2 → W1 cuộn lại');
-    assertThrows(() => keHoach.huyDiem(QL, { attemptId: a.id, skill: 'writing', lyDo: ' ' }), /Huỷ điểm: cần ghi lý do/, 'lý do trống');   // PR-MTa T7
-    keHoach.huyDiem(QL, { attemptId: a.id, skill: 'writing', lyDo: 'Nhập nhầm bài của em khác' });
+    keHoach.huyDiem(QL, { attemptId: a.id, skill: 'writing', lyDo: ' ' });   // rà #212 thay PR-MTa T7: lý do tuỳ chọn
     assert(band('writing1') === null && band('writing2') === null, 'QL huỷ cả hai ô');
   });
 

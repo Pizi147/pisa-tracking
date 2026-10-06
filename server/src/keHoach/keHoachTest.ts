@@ -11,7 +11,7 @@
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { db, theoLo, tx } from '../db.ts';
 import {
-  CO_DIEM_SQL, KY_NANG_KE_HOACH, MT_TOI_DA, O_KE_HOACH, PERMISSIONS, boMonLich, kiemLyDoThaoTac, kiemSoMtMoi, kiemTuanXep, laLichSu, lichMtMacDinh, viecXepMt, laVaoMuon, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang,
+  CO_DIEM_SQL, KY_NANG_KE_HOACH, MT_TOI_DA, O_KE_HOACH, PERMISSIONS, boMonLich, kiemSoMtMoi, kiemTuanXep, laLichSu, lichMtMacDinh, viecXepMt, laVaoMuon, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang,
   tuanKhoa as tuanKhoaCua,
   type BaiXemTruoc, type DongHangLoat, type KetQuaHuy, type KyNangKH, type LuotSo, type LuotXep, type OKyNang,
 } from '../../../shared/domain/index.ts';
@@ -576,9 +576,7 @@ export function thiLai(p: Principal, i: { attemptId: number; skills: string[]; p
  * HUỶ ĐIỂM (T38) một kỹ năng FT — mọi ô được chọn (Writing: W1 và/hoặc W2) trong MỘT `tx`: lỗi ở ô sau thì ô trước cuộn lại,
  * không còn nửa điểm (rà #126). Mỗi ô đi qua `saveScore` (quyền, R11, RB-5 ghi lý do vào Lịch sử).
  */
-export function huyDiem(p: Principal, i: { attemptId: number; skill: string; o?: string[]; lyDo: string }) {
-  const loi = kiemLyDoThaoTac('huy-diem', i.lyDo);
-  if (loi) throw badRequest(loi);
+export function huyDiem(p: Principal, i: { attemptId: number; skill: string; o?: string[]; lyDo?: string | null }) {
   const tatCa = entrySkillsOf(chonKyNang(i.skill) as any) as string[];
   const o = i.o?.length ? i.o : tatCa;
   if (o.some((e) => !tatCa.includes(e))) throw badRequest('Ô không thuộc kỹ năng này.');
@@ -586,7 +584,7 @@ export function huyDiem(p: Principal, i: { attemptId: number; skill: string; o?:
   const coDiem = o.filter((e) => diem.some((x) => x.skill === e && (x.band != null || x.raw_score != null)));
   if (!coDiem.length) throw badRequest(`${tenMon(null, i.skill)} chưa có điểm để huỷ.`);
   return tx(() => {
-    for (const e of coDiem) saveScore(p, i.attemptId, e, { rawScore: null, criteria: [null, null, null, null], lyDo: i.lyDo.trim() });
+    for (const e of coDiem) saveScore(p, i.attemptId, e, { rawScore: null, criteria: [null, null, null, null], lyDo: i.lyDo?.trim() || null });
     return { ok: true as const, huy: coDiem };
   });
 }

@@ -96,9 +96,9 @@ export async function runPrDlTests(t: YThucTestKit) {
   /*
    * Chụp lại 06/10 (PR-MTa): T1 đổi cờ MT cũ của lượt seed (tuần trước nay là MT thường) và các phép kiểm chạy trước (PR-MT, PR-XLMT, PR-LM)
    * đổi dữ liệu MB FT 101. Không chụp được bằng mã 666dcfbf (gọi `kiemLyDo` đã bỏ ở T7) — băm của mã hiện tại; khẳng định `idsTuan` bên dưới
-   * vẫn đối chiếu độc lập tập lượt theo tuần. Chụp lại cho T19 (hạn lớp thường thứ Tư tuần sau, ô trước tuần thi khoá) và T22 (DL-4 xoá rồi nhập lại ô; GVCN sửa ô MT cũ).
+   * vẫn đối chiếu độc lập tập lượt theo tuần. Chụp lại cho T19 (hạn lớp thường thứ Tư tuần sau, ô trước tuần thi khoá) và T22 (DL-4 xoá rồi nhập lại ô; GVCN sửa ô MT cũ), rà #212 (ô có điểm ở tuần chưa tới khoá; "-" MT cũ).
    */
-  const ANH_CHUP = { tuan: '90f4386223866d98', moi: 'e59e113aeb7d0909' };
+  const ANH_CHUP = { tuan: '90f4386223866d98', moi: '6de1eea906cdf006' };
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id

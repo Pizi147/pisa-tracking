@@ -693,12 +693,14 @@ CREATE TABLE assessment_scores (
    *   no_show_late        1 = nhập khi tuần đó ĐÃ kết thúc → chờ Quản lý hiệu chỉnh, không tự chốt (C10).
    *   no_show_settled_at  lúc đã chốt "không dự thi". Có giá trị thì việc chốt KHÔNG lặp lại — mỗi
    *                       lần lịch/kỹ năng chỉ chốt một lần dù tác vụ chạy bao nhiêu lần.
+   *   no_show_cu          1 = dấu ghi ở MT cũ (PR-MTa T23): chốt cuối "Không dự thi" ngay lúc ghi, không bao giờ vào luồng vắng.
    */
   no_show_period_id INTEGER REFERENCES report_periods(id),
   no_show_by INTEGER REFERENCES users(id),
   no_show_at TEXT,
   no_show_late INTEGER NOT NULL DEFAULT 0,
   no_show_settled_at TEXT,
+  no_show_cu INTEGER NOT NULL DEFAULT 0,
   -- PR-HSM (YC-13.5, T39): nhận xét của MỘT BÀI NHẬP (writing1 | writing2 | speaking; L/R luôn NULL), 1–1000 ký tự.
   -- GV chấm chỉ dòng speaking: tài khoản HOẶC tên người ngoài (tối đa một trong hai khác NULL).
   -- Ô mất hết điểm (Huỷ điểm, Thi lại) thì cả ba về NULL; bản cũ nằm trong nhật ký `score.nhan_xet`.

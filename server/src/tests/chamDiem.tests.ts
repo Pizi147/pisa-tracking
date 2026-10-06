@@ -102,10 +102,12 @@ export async function runChamDiemTests(t: YThucTestKit) {
   });
 
   // PR-MTa T7 thay RB-5 (LY_DO_TOI_THIEU, kiemLyDo): sửa điểm — lý do tuỳ chọn; huỷ điểm — bắt buộc, không tối thiểu ký tự.
-  check('PR-Rc1 · RB-5 lý do huỷ điểm: bắt buộc, không nhận khoảng trắng, không tối thiểu ký tự (PR-MTa T7)', () => {
-    assert(d.kiemLyDoThaoTac('huy-diem', null) !== null && d.kiemLyDoThaoTac('huy-diem', '   ') !== null, 'Trống thì phải báo lỗi');
-    assert(d.kiemLyDoThaoTac('huy-diem', 'sai') === null && d.kiemLyDoThaoTac('sua-diem', null) === null, 'Ngắn vẫn hợp lệ; sửa điểm tuỳ chọn');
-    assert(!/Hãy/.test(String(d.kiemLyDoThaoTac('huy-diem', null))), 'Câu lỗi không mở đầu bằng "Hãy"');
+  /* Rà #212 (chủ sản phẩm 06/10) thay "lý do huỷ điểm bắt buộc": huỷ điểm tuỳ chọn; huỷ lượt vẫn bắt, không tối thiểu ký tự. */
+  check('PR-Rc1 · RB-5 lý do: huỷ điểm tuỳ chọn; huỷ lượt bắt buộc, không nhận khoảng trắng, không tối thiểu ký tự (PR-MTa T7, rà #212)', () => {
+    assert(d.kiemLyDoThaoTac('huy-diem', null) === null && d.kiemLyDoThaoTac('sua-diem', null) === null, 'Huỷ điểm, sửa điểm tuỳ chọn');
+    assert(d.kiemLyDoThaoTac('huy-luot', null) !== null && d.kiemLyDoThaoTac('huy-luot', '   ') !== null, 'Huỷ lượt trống thì phải báo lỗi');
+    assert(d.kiemLyDoThaoTac('huy-luot', 'sai') === null, 'Ngắn vẫn hợp lệ');
+    assert(!/Hãy/.test(String(d.kiemLyDoThaoTac('huy-luot', null))), 'Câu lỗi không mở đầu bằng "Hãy"');
   });
 
   check('PR-Rc1 · Câu trạng thái chấm dùng chung cho Lịch Test', () => {
@@ -200,8 +202,8 @@ export async function runChamDiemTests(t: YThucTestKit) {
     /* Task 7: lưới viết tuần bằng `tuanLich`, nên ô mang thứ Hai của tuần thi hiện tại và của tuần đã dời khỏi. */
     assert(o.weekStart === '2026-09-21' && o.movedFromStart === '2026-09-14',
       `Ô ${k}: weekStart=${o.weekStart}, movedFromStart=${o.movedFromStart}`);
-    /* PR-MTa T19 thay "sửa được ngay": ô đã dời sang tuần 21/09 khoá tới tuần thi. */
-    assert(o.canEdit === false, 'Chưa tới tuần thi 21/09 thì ô khoá (T19)');
+    /* PR-MTa T19 thay "sửa được ngay": ô chưa tới tuần thi khoá — nhưng ô đang mang dấu "-" vẫn mở để gỡ dấu (rà #212). */
+    assert(o.canEdit === true, 'Ô mang dấu "-" (đã dời sang 21/09) vẫn mở để gỡ dấu');
     const oTuanThi = regular.regularSheet(P.normalSubjectTeacher, LOP, undefined, '2026-09-21').rows
       .find((x: any) => x.attemptId === attemptId).skillSchedule.find((x: any) => x.skill === k);
     assert(oTuanThi.canEdit === true, 'GVBM sửa được ô môn mình từ tuần thi');

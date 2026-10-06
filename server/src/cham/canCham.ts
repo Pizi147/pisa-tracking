@@ -364,7 +364,7 @@ export type LichTest = {
 
 type OiemLuu = {
   skill: string; band: number | null; raw_score: number | null;
-  no_show_period_id: number | null; no_show_settled_at: string | null; no_show_late: number | null;
+  no_show_period_id: number | null; no_show_settled_at: string | null; no_show_late: number | null; no_show_cu?: number | null;
 };
 
 /**
@@ -389,7 +389,7 @@ function oFtXong(diem: OiemLuu[], nhap: string, v: { periodId: number; weekEnd: 
     });
     if (!(v.sitStatus === 'scheduled' && banCung)) ns = 'none';
   }
-  if (row.no_show_settled_at && ns !== 'none') ns = v.sitStatus === 'absent' ? 'khong-du-thi' : 'none';
+  if (row.no_show_settled_at && ns !== 'none' && !row.no_show_cu) ns = v.sitStatus === 'absent' ? 'khong-du-thi' : 'none';   // T23: "-" MT cũ giữ
   return ns !== 'none';
 }
 
@@ -465,7 +465,7 @@ export function lichTest(
   const diemCua = new Map<number, OiemLuu[]>();
   theoLo([...new Set(rows.map((r) => r.id as number))], (lo, ph) => {
     for (const x of conn.prepare(
-      `SELECT attempt_id, skill, band, raw_score, no_show_period_id, no_show_settled_at, no_show_late
+      `SELECT attempt_id, skill, band, raw_score, no_show_period_id, no_show_settled_at, no_show_late, no_show_cu
          FROM assessment_scores WHERE attempt_id IN (${ph})`,
     ).all(...lo) as any[]) {
       (diemCua.get(x.attempt_id) ?? diemCua.set(x.attempt_id, []).get(x.attempt_id)!).push(x);

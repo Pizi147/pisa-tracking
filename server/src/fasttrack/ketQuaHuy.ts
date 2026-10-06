@@ -66,32 +66,39 @@ export function huyKetQuaLuot(p: Principal, attemptId: number, o: { lyDo: string
 /**
  * Quản lý KHÔI PHỤC kết quả đã huỷ của một lượt (T2, Q2 = chặn). Lý do tuỳ chọn (T7). Chặn khi: không có kết quả đã huỷ · lượt đã huỷ ·
  * ô nào nay đã có điểm mới (không bao giờ ghi đè) · kỹ năng đã huỷ phần thi · tuần cũ vướng thứ tự đợt (lượt vượt vẫn đứng sau).
+ * Ô nay chỉ có dấu "-" mới: KHÔNG đè — bỏ qua ô đó (và lịch của kỹ năng đó), nêu trong `cau` (rà #212). Kiểm và ghi trong MỘT tx.
  * Case đã đóng không mở lại; còn trượt thì SOS mới tự sinh qua `refreshOutcome`.
  */
-export function khoiPhucKetQua(p: Principal, attemptId: number, o: { lyDo?: string | null } = {}): { ok: true; soDiem: number } {
+export function khoiPhucKetQua(p: Principal, attemptId: number, o: { lyDo?: string | null } = {}): {
+  ok: true; soDiem: number; boQua: string[]; cau: string | null;
+} {
   const conn = db();
   const a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
   if (!a) throw notFound('Không tìm thấy lượt kiểm tra');
   require_(p, PERMISSIONS.PLAN_WEEK, { classId: a.class_id, studentId: a.student_id }, 'Chỉ Quản lý mới khôi phục được kết quả MT.');
   const nhan = nhanDot(a.kind, a.attempt_no);
-  const kq = conn.prepare('SELECT * FROM ket_qua_huy WHERE attempt_id = ? AND khoi_phuc_luc IS NULL ORDER BY id DESC LIMIT 1').get(attemptId) as any;
-  if (!kq) throw badRequest(`${nhan} không có kết quả đã huỷ.`);
-  if (a.status === 'cancelled') throw badRequest(`${nhan} đã huỷ — mở lại lượt trước.`);
-  const diem = JSON.parse(kq.diem_json) as any[];
-  const lich = JSON.parse(kq.lich_json) as Array<{ skill: string; planned_period_id: number | null; sit_status: string; plan_source: string }>;
-  const hienTai = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ?').all(attemptId) as any[];
-  if (diem.some((d) => hienTai.some((h) => h.skill === d.skill && CO_DIEM(h)))) throw badRequest(`${nhan} đã có điểm mới — không khôi phục được.`);
-  const rows = ensureSkillRows(attemptId);
-  for (const l of lich) {
-    const r = rows.find((x) => x.skill === l.skill);
-    if (r?.sit_status === 'cancelled') throw badRequest(`${tenMon(null, l.skill)} của ${nhan} đã huỷ phần thi — không khôi phục được.`);
-    if (!l.planned_period_id) continue;
-    const pr = conn.prepare('SELECT week_start FROM report_periods WHERE id = ?').get(l.planned_period_id) as any;
-    const c = checkSkillWeekMove({ attemptId, skill: l.skill, newWeekStart: pr.week_start });
-    if (c.blockers.length) throw badRequest(`${c.blockers[0]} Dời lượt trước về trước rồi khôi phục.`);
-  }
   const lyDo = o.lyDo?.trim() || null;
   return tx(() => {
+    const kq = conn.prepare('SELECT * FROM ket_qua_huy WHERE attempt_id = ? AND khoi_phuc_luc IS NULL ORDER BY id DESC LIMIT 1').get(attemptId) as any;
+    if (!kq) throw badRequest(`${nhan} không có kết quả đã huỷ.`);
+    if (a.status === 'cancelled') throw badRequest(`${nhan} đã huỷ — mở lại lượt trước.`);
+    const diemHuy = JSON.parse(kq.diem_json) as any[];
+    const lichHuy = JSON.parse(kq.lich_json) as Array<{ skill: string; planned_period_id: number | null; sit_status: string; plan_source: string }>;
+    const hienTai = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ?').all(attemptId) as any[];
+    if (diemHuy.some((d) => hienTai.some((h) => h.skill === d.skill && CO_DIEM(h)))) throw badRequest(`${nhan} đã có điểm mới — không khôi phục được.`);
+    const boQua = diemHuy.filter((d) => hienTai.some((h) => h.skill === d.skill && h.no_show_period_id != null)).map((d) => d.skill as string);
+    const kyNangBoQua = new Set(boQua.map((k) => assessedSkillOf(k) as string));
+    const diem = diemHuy.filter((d) => !kyNangBoQua.has(assessedSkillOf(d.skill)));
+    const lich = lichHuy.filter((l) => !kyNangBoQua.has(l.skill));
+    const rows = ensureSkillRows(attemptId);
+    for (const l of lich) {
+      const r = rows.find((x) => x.skill === l.skill);
+      if (r?.sit_status === 'cancelled') throw badRequest(`${tenMon(null, l.skill)} của ${nhan} đã huỷ phần thi — không khôi phục được.`);
+      if (!l.planned_period_id) continue;
+      const pr = conn.prepare('SELECT week_start FROM report_periods WHERE id = ?').get(l.planned_period_id) as any;
+      const c = checkSkillWeekMove({ attemptId, skill: l.skill, newWeekStart: pr.week_start });
+      if (c.blockers.length) throw badRequest(`${c.blockers[0]} Dời lượt trước về trước rồi khôi phục.`);
+    }
     const now = nowIso();
     for (const l of lich) {
       conn.prepare(`UPDATE attempt_skills SET planned_period_id = ?, sit_status = ?, plan_source = 'manual', updated_at = ? WHERE attempt_id = ? AND skill = ?`)
@@ -113,7 +120,9 @@ export function khoiPhucKetQua(p: Principal, attemptId: number, o: { lyDo?: stri
     recomputeCompletionWeek(attemptId, p.userId);
     tinhLaiMtCu(attemptId, demoToday());
     refreshOutcome(p, attemptId);
-    return { ok: true as const, soDiem: kq.so_diem as number };
+    const soDiem = new Set(diem.filter(CO_DIEM).map((d) => assessedSkillOf(d.skill))).size;
+    const cau = boQua.length ? `Giữ "-" ở ${[...kyNangBoQua].map((k) => tenMon(null, k)).join(', ')} — không khôi phục ô đó.` : null;
+    return { ok: true as const, soDiem, boQua, cau };
   });
 }
 

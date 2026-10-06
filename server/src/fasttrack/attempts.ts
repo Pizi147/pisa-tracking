@@ -44,7 +44,7 @@ export type ScoreRow = {
   entered_by_name?: string | null;
   /** Dấu '-' "không có bài" (PR-G) — tuần lịch lúc báo, người báo, lúc báo, báo muộn (C10), đã chốt chưa. */
   no_show_period_id?: number | null; no_show_by?: number | null; no_show_at?: string | null;
-  no_show_late?: number | null; no_show_settled_at?: string | null;
+  no_show_late?: number | null; no_show_settled_at?: string | null; no_show_cu?: number | null;
   /** PR-HSM (T39): nhận xét của bài nhập (W1/W2/S) + GV chấm Speaking (tài khoản hoặc tên ngoài; tên tài khoản join sẵn). */
   comment?: string | null; examiner_user_id?: number | null; examiner_name?: string | null; examiner_user_name?: string | null;
   /** PR-Pb2-b (Q13): ngày nghiệp vụ lần đầu ô có điểm. */
@@ -293,7 +293,7 @@ export function skillCells(
   const mode = scoringModeOf(attempt);
   const schedule = skillScheduleOf(attempt, skillRows);
   const cancelled = attempt.status === 'cancelled';
-  const suaSauHoanTat = hoanTat.hoanTat && attempt.class_id ? quyenSuaSauHoanTat(p, attempt.class_id) : false;
+  const suaSauHoanTat = hoanTat.hoanTat && attempt.class_id ? quyenSuaSauHoanTat(p, attempt.class_id, !!attempt.lich_su) : false;
 
   /* Một kỹ năng đánh giá coi là ĐÃ CÓ ĐIỂM khi mọi ô nhập của nó đã có band (W cần cả W1 và W2). */
   const scoredAssessed = (assessed: AssessedSkill): boolean =>
@@ -358,7 +358,10 @@ export function skillCells(
       });
       if (!(view.sitStatus === 'scheduled' && partnersMarked)) ns = { state: 'none', effectiveOn: null, editableUntil: null };
     }
-    if (row?.no_show_settled_at && ns.state !== 'none') {
+    if (row?.no_show_cu && ns.state !== 'none') {
+      /* T23: "-" của MT cũ đã chốt cuối lúc ghi — luôn là "Không dự thi" của đúng tuần đó, không phải Quản lý đổi kết luận. */
+      ns = { state: 'khong-du-thi', effectiveOn: view.weekEnd ? view.weekEnd.slice(0, 10) : null, editableUntil: null };
+    } else if (row?.no_show_settled_at && ns.state !== 'none') {
       /*
        * ĐÃ CHỐT MỘT LẦN. Từ đó hiển thị theo trạng thái thi HIỆN TẠI: còn `absent` thì là không dự thi;
        * Quản lý đã sửa trạng thái thi (đảo kết luận) thì dấu '-' cũ không được tự sống lại.
@@ -367,7 +370,7 @@ export function skillCells(
         ? { state: 'khong-du-thi', effectiveOn: view.weekEnd ? view.weekEnd.slice(0, 10) : null, editableUntil: null }
         : { state: 'none', effectiveOn: null, editableUntil: null };
     }
-    const noShowNote = row?.no_show_settled_at && row.no_show_period_id === view.periodId && view.sitStatus !== 'absent'
+    const noShowNote = row?.no_show_settled_at && !row.no_show_cu && row.no_show_period_id === view.periodId && view.sitStatus !== 'absent'
       ? NO_SHOW_OVERRIDDEN_NOTE : null;
     const noShow = ns.state === 'none' ? null : {
       /* Tuần viết bằng `tuanLich` (G-6): "W3 SEP", chỉ kèm năm khi khác năm hôm nay — không in mã tuần có năm. */
@@ -395,8 +398,9 @@ export function skillCells(
       progress,
       /* E8 (T53 Q6): bài đã xác nhận vắng không nhập ở đâu cả — nhập bù thì Quản lý "Xếp lại bài vắng" / "Khôi phục" trước. */
       canEdit: required && !cancelled && view.sitStatus !== 'cancelled' && view.sitStatus !== 'absent'
-        /* T19 (PR-MTa): kỹ năng chưa tới tuần thi / chưa xếp tuần → ô khoá (máy chủ chặn ở `kiemDaToiTuanThi`); ô đã có điểm vẫn sửa được. */
-        && (cellScored || (!!view.weekStart && view.weekStart.slice(0, 10) <= mondayOf(today)))
+        /* T19 (PR-MTa): kỹ năng chưa tới tuần thi / chưa xếp tuần → ô khoá như máy chủ (`kiemDaToiTuanThi`), kể cả ô đã có điểm mà
+         * Quản lý dời sang tuần chưa tới (T20) — điểm vẫn hiện. */
+        && (!!view.weekStart && view.weekStart.slice(0, 10) <= mondayOf(today))
         && (hoanTat.hoanTat ? suaSauHoanTat : editable.includes(skill)),
       /* Việc nhập điểm của người xem (bảng lớp "Nhập điểm …") — như `canEdit` nhưng trước hoàn tất bỏ quyền sửa mọi lúc của Quản lý. */
       viec: required && !cancelled && view.sitStatus !== 'cancelled' && view.sitStatus !== 'absent'
@@ -1468,13 +1472,14 @@ export function saveScore(
   const hoanTat = dotHoanTat(attemptId, today);
   let path = a.class_id ? scoreEditPath(p, a.class_id, skill, { lich_su: a.lich_su ?? 0 }) : null;
   if (hoanTat.hoanTat) {
-    if (!a.class_id || !quyenSuaSauHoanTat(p, a.class_id)) {
+    if (!a.class_id || !quyenSuaSauHoanTat(p, a.class_id, !!a.lich_su)) {
       throw forbidden(
         `Đợt này đã hoàn tất (hết Chủ nhật ${ngay(hoanTat.chuNhatCuoi)}). `
         + 'Chỉ Quản lý sửa được điểm — nhờ Quản lý hiệu chỉnh, kèm lý do.',
       );
     }
-    path = 'override';
+    /* GVCN sửa MT cũ của lớp mình (T22) giữ đường `lich_su`; Quản lý / quyền sửa hộ đi `override`. */
+    path = quyenSuaSauHoanTat(p, a.class_id) ? 'override' : 'lich_su';
   } else if (!path) {
     require_(p, PERMISSIONS.SCORE_EDIT, { classId: a.class_id, studentId: a.student_id, skill },
       'Bạn chỉ nhập được điểm của kỹ năng mình được phân công.');
@@ -1558,22 +1563,26 @@ export function saveScore(
         }
         /* Báo lại cùng một tuần là VÔ HẠI: không đổi gì, và không biến một dấu báo đúng hạn thành báo muộn. */
         if (existing?.no_show_period_id === scheduleRow.planned_period_id) return done();
-        const late = today > scheduleRow.week_end.slice(0, 10);
+        /* T23 (rà #212): "-" ở MT cũ = chốt cuối "Không dự thi" ngay lúc ghi (`no_show_cu`, đã chốt) — lượt có thành MT thường sau đó
+         * (Quản lý dời kỹ năng khác) thì dấu này cũng không vào luồng vắng. */
+        const cu = a.lich_su ? 1 : 0;
+        const late = !cu && today > scheduleRow.week_end.slice(0, 10);
+        const now = nowIso();
         if (existing) {
           conn
             .prepare(
               `UPDATE assessment_scores SET no_show_period_id = ?, no_show_by = ?, no_show_at = ?,
-                      no_show_late = ?, no_show_settled_at = NULL WHERE id = ?`,
+                      no_show_late = ?, no_show_settled_at = ?, no_show_cu = ? WHERE id = ?`,
             )
-            .run(scheduleRow.planned_period_id, p.userId, nowIso(), late ? 1 : 0, existing.id);
+            .run(scheduleRow.planned_period_id, p.userId, now, late ? 1 : 0, cu ? now : null, cu, existing.id);
         } else {
           /* Cố ý KHÔNG ghi entered_by: người báo "không có bài" chưa nhập điểm nào (MT-P09). */
           conn
             .prepare(
-              `INSERT INTO assessment_scores (attempt_id, skill, no_show_period_id, no_show_by, no_show_at, no_show_late)
-               VALUES (?,?,?,?,?,?)`,
+              `INSERT INTO assessment_scores (attempt_id, skill, no_show_period_id, no_show_by, no_show_at, no_show_late, no_show_settled_at, no_show_cu)
+               VALUES (?,?,?,?,?,?,?,?)`,
             )
-            .run(attemptId, skill, scheduleRow.planned_period_id, p.userId, nowIso(), late ? 1 : 0);
+            .run(attemptId, skill, scheduleRow.planned_period_id, p.userId, now, late ? 1 : 0, cu ? now : null, cu);
         }
         writeAudit({
           actorUserId: p.userId, action: 'score.no_show', entityType: 'assessment_attempt', entityId: attemptId,
@@ -1592,7 +1601,7 @@ export function saveScore(
       conn
         .prepare(
           `UPDATE assessment_scores SET no_show_period_id = NULL, no_show_by = NULL, no_show_at = NULL,
-                  no_show_late = 0, no_show_settled_at = NULL WHERE id = ?`,
+                  no_show_late = 0, no_show_settled_at = NULL, no_show_cu = 0 WHERE id = ?`,
         )
         .run(existing.id);
       writeAudit({
@@ -1713,7 +1722,7 @@ export function saveScore(
       conn
         .prepare(
           `UPDATE assessment_scores SET no_show_period_id = NULL, no_show_by = NULL, no_show_at = NULL,
-                  no_show_late = 0, no_show_settled_at = NULL WHERE attempt_id = ? AND skill = ?`,
+                  no_show_late = 0, no_show_settled_at = NULL, no_show_cu = 0 WHERE attempt_id = ? AND skill = ?`,
         )
         .run(attemptId, skill);
     }

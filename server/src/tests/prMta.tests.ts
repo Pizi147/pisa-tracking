@@ -26,6 +26,8 @@ export async function runPrMtaTests(t: YThucTestKit) {
   const cycles: any = await import('../fasttrack/cycles.ts');
   const mywork: any = await import('../worklist/mywork.ts');
   const db: any = await import('../db.ts');
+  const hoanTatSvc: any = await import('../fasttrack/hoanTat.ts');
+  const perm: any = await import('../permissions.ts');
   const QL = P.mbManager;
   const LOP = classId('MB FT 101');
   const tuanNay = week.mondayOf(TODAY);
@@ -79,12 +81,13 @@ export async function runPrMtaTests(t: YThucTestKit) {
   // ------------------------------------------------------------------ T7 — lý do theo thao tác
   console.log('\nPR-MTa · T7 lý do chỉ bắt buộc khi mất kết quả / từ chối');
 
-  check('MTa T7 (L1) · chỉ 4 thao tác bắt buộc lý do, không tối thiểu ký tự', () => {
-    for (const x of ['huy-diem', 'huy-luot', 'huy-ket-qua', 'tu-choi'] as const) {
+  /* Rà #212 (chủ sản phẩm 06/10) thay "Huỷ điểm bắt lý do": còn 3 thao tác bắt buộc. */
+  check('MTa T7 (L1) · chỉ 3 thao tác bắt buộc lý do (huỷ lượt, huỷ kết quả, từ chối), không tối thiểu ký tự', () => {
+    for (const x of ['huy-luot', 'huy-ket-qua', 'tu-choi'] as const) {
       assert(d.canLyDo(x) && d.kiemLyDoThaoTac(x, '  ') === `${d.CHU_LY_DO[x]}: cần ghi lý do.`, x);
       assert(d.kiemLyDoThaoTac(x, 'x') === null, `${x}: 1 ký tự phải hợp lệ`);
     }
-    for (const x of ['doi-lich', 'doi-han', 'bo-ky-nang', 'bao-vang', 'thi-lai', 'sua-diem', 'huy-lich', 'xin-doi', 'khong-mock-lai'] as const) {
+    for (const x of ['huy-diem', 'doi-lich', 'doi-han', 'bo-ky-nang', 'bao-vang', 'thi-lai', 'sua-diem', 'huy-lich', 'xin-doi', 'khong-mock-lai'] as const) {
       assert(!d.canLyDo(x) && d.kiemLyDoThaoTac(x, '') === null, x);
     }
     assert(!('LY_DO_TOI_THIEU' in d) && !('kiemLyDo' in d), 'còn hằng/hàm cũ');
@@ -131,11 +134,11 @@ export async function runPrMtaTests(t: YThucTestKit) {
     assert(((conn.prepare(`SELECT raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`).get(b.aid) as any)?.raw_score ?? null) === null, 'chưa xoá');
   });
 
-  check('MTa T7 (L6) · huyDiem lý do trắng → 400, "x" → huỷ; huyLuot lý do trống → 400', () => {
+  /* Rà #212 (chủ sản phẩm 06/10) thay "huyDiem lý do trắng → 400". */
+  check('MTa T7 (L6) · huyDiem lý do trắng → huỷ được; huyLuot lý do trống → 400', () => {
     const a = emMoi([0, 4, 8]);
     diem(a.m1, 'listening');
-    assertThrows(() => keHoach.huyDiem(QL, { attemptId: a.m1, skill: 'listening', lyDo: '  ' }), /Huỷ điểm: cần ghi lý do/, 'trắng');
-    keHoach.huyDiem(QL, { attemptId: a.m1, skill: 'listening', lyDo: 'x' });
+    keHoach.huyDiem(QL, { attemptId: a.m1, skill: 'listening', lyDo: '  ' });
     assert(soDiem(a.m1) === 0, 'chưa huỷ');
     assertThrows(() => attemptsSvc.huyLuot(QL, a.m3, { lyDo: '' }), /Huỷ lượt: cần ghi lý do/, 'huỷ lượt');
   });
@@ -793,7 +796,7 @@ export async function runPrMtaTests(t: YThucTestKit) {
       `khôi phục: ${JSON.stringify(r)} ${JSON.stringify(diemCua(a.m1, 'speaking'))}`);
   });
 
-  check('MTa T22 · MT cũ: GVCN sửa và xoá trắng ô đã có điểm (không lý do), ô hiện sửa được; menu Huỷ điểm vẫn cần lý do', () => {
+  check('MTa T22 · MT cũ: GVCN sửa và xoá trắng ô đã có điểm (không lý do), ô hiện sửa được; menu Huỷ điểm cũng không cần lý do (rà #212)', () => {
     const cu = mtCu();
     attemptsSvc.saveScore(P.coreTeacher, cu.id, 'reading', { rawScore: 25 });
     attemptsSvc.saveScore(P.coreTeacher, cu.id, 'reading', { rawScore: 27 });
@@ -802,7 +805,8 @@ export async function runPrMtaTests(t: YThucTestKit) {
     attemptsSvc.saveScore(P.coreTeacher, cu.id, 'reading', { rawScore: null });
     assert(diemCua(cu.id, 'reading').raw_score === null, 'xoá');
     attemptsSvc.saveScore(P.admin, cu.id, 'listening', { rawScore: 30 });
-    assert(loiCua(() => keHoach.huyDiem(QL, { attemptId: cu.id, skill: 'listening', lyDo: '' })).status === 400, 'Huỷ điểm');
+    keHoach.huyDiem(QL, { attemptId: cu.id, skill: 'listening', lyDo: '' });
+    assert(diemCua(cu.id, 'listening').raw_score === null, 'Huỷ điểm không lý do');
   });
 
   check('MTa T23 · MT cũ nhận "-" = không dự thi: không vắng, không dời, không Case/thẻ/chuông; không còn nhắc "chưa nhập"; điểm đè được dấu', () => {
@@ -830,5 +834,82 @@ export async function runPrMtaTests(t: YThucTestKit) {
     attemptsSvc.saveScore(P.coreTeacher, cu.id, 'speaking', { noShow: true });
     attemptsSvc.saveScore(P.coreTeacher, cu.id, 'speaking', { band: 6 });
     assert(diemCua(cu.id, 'speaking').band === 6 && diemCua(cu.id, 'speaking').no_show_period_id === null, 'điểm đè dấu');
+  });
+  // ------------------------------------------------------------------ Rà #212 (06/10): sửa sau rà độc lập
+  console.log('\nPR-MTa · Rà #212: "-" MT cũ chốt cuối, Huỷ điểm không lý do, ô tuần chưa tới khoá, GVCN MT cũ sau hoàn tất, khôi phục không đè "-"');
+
+  check('Rà #212 (I2) · "-" ở MT cũ không vào luồng vắng kể cả khi Quản lý dời kỹ năng khác làm lượt thành MT thường', () => {
+    const cu = mtCu();
+    attemptsSvc.saveScore(P.coreTeacher, cu.id, 'speaking', { noShow: true });
+    const tb = (conn.prepare('SELECT COUNT(*) n FROM notifications').get() as any).n;
+    skillSch.setSkillWeek(QL, cu.id, 'listening', tuan(0).id, {});
+    assert(luot(cu.id).lich_su === 0, 'tiền đề: lượt thành MT thường');
+    absence.settleNoShows(TODAY);
+    const k = kyNang(cu.id, 'speaking');
+    assert(k.sit_status === 'scheduled' && k.absence_move_count === 0 && k.week_start === t.addDays(tuanNay, -28), JSON.stringify(k));
+    assert(!conn.prepare('SELECT 1 FROM skill_move_requests WHERE attempt_id = ?').get(cu.id), 'đề nghị dời');
+    assert((conn.prepare('SELECT COUNT(*) n FROM notifications').get() as any).n === tb, 'chuông');
+    const o = attemptsSvc.attemptDetail(QL, cu.id).cells.find((x: any) => x.skill === 'speaking');
+    assert(o.noShow?.state === 'khong-du-thi' && !o.noShowNote, JSON.stringify({ noShow: o.noShow, note: o.noShowNote }));
+    attemptsSvc.saveScore(QL, cu.id, 'speaking', { noShow: false });
+    assert(diemCua(cu.id, 'speaking').no_show_period_id === null, 'gỡ dấu');
+  });
+
+  check('Rà #212 (3) · menu Huỷ điểm không bắt lý do (chủ sản phẩm 06/10); huỷ lượt, huỷ kết quả, từ chối vẫn bắt', () => {
+    assert(!d.canLyDo('huy-diem') && d.kiemLyDoThaoTac('huy-diem', '') === null, 'huy-diem');
+    for (const x of ['huy-luot', 'huy-ket-qua', 'tu-choi'] as const) assert(d.canLyDo(x), x);
+    const a = emMoi([0, 4, 8]);
+    diem(a.m1, 'listening');
+    keHoach.huyDiem(QL, { attemptId: a.m1, skill: 'listening', lyDo: '' });
+    assert(soDiem(a.m1) === 0, 'chưa huỷ');
+  });
+
+  check('Rà #212 (4) · ô có điểm mà kỹ năng đã dời sang tuần chưa tới: khoá như máy chủ (FT và lớp thường)', () => {
+    const a = emMoi([0, 4, 8]);
+    attemptsSvc.saveScore(P.lrTeacher, a.m1, 'listening', { rawScore: 30 });
+    skillSch.setSkillWeek(QL, a.m1, 'listening', tuan(1).id, {});
+    const o = attemptsSvc.attemptDetail(P.admin, a.m1).cells.find((x: any) => x.skill === 'listening');
+    assert(o.rawScore === 30 && o.canEdit === false, JSON.stringify({ r: o.rawScore, e: o.canEdit }));
+    const b = baiThuong(0);
+    regular.saveRegularScore(P.admin, b.aid, 'speaking', { score: 7, total: 10 });
+    skillSch.setSkillWeek(QL, b.aid, 'speaking', tuan(1).id, {});
+    const dong = regular.regularSheet(P.admin, LOP_THUONG).rows.find((x: any) => x.attemptId === b.aid);
+    assert(dong.skillSchedule.find((x: any) => x.skill === 'speaking').canEdit === false, 'lớp thường');
+  });
+
+  check('Rà #212 (6) · MT cũ đã hoàn tất: GVCN lớp đó vẫn sửa / xoá được (T22); GV ngoài lớp vẫn bị chặn', () => {
+    const cu = mtCu();
+    for (const [k, patch] of [['listening', { rawScore: 30 }], ['reading', { rawScore: 25 }], ['writing1', { band: 6 }], ['writing2', { band: 6 }], ['speaking', { band: 6 }]] as const) {
+      attemptsSvc.saveScore(P.coreTeacher, cu.id, k, patch);
+    }
+    const sau = t.addDays(TODAY, 21);
+    const ht: any = hoanTatSvc.dotHoanTat(cu.id, sau);
+    assert(ht.hoanTat, `tiền đề: hoàn tất ${JSON.stringify(ht)}`);
+    attemptsSvc.saveScore(P.coreTeacher, cu.id, 'reading', { rawScore: 27 }, sau);
+    assert(!perm.isCoreTeacherOf(P.w1Teacher, LOP), 'tiền đề: GV W1 không chủ nhiệm');
+    assert(loiCua(() => attemptsSvc.saveScore(P.w1Teacher, cu.id, 'writing1', { band: 7 }, sau)).status === 403, 'GVBM');
+    attemptsSvc.saveScore(P.coreTeacher, cu.id, 'listening', { rawScore: null }, sau);
+    assert(diemCua(cu.id, 'reading').raw_score === 27 && diemCua(cu.id, 'listening').raw_score === null, 'GVCN');
+  });
+
+  check('Rà #212 (7) · khôi phục kết quả không đè ô chỉ có "-" mới: bỏ qua ô đó, nêu trong câu trả về', () => {
+    const b = emCoDiemMt2();
+    keHoach.luuDot(QL, { attemptId: b.m1, kyNang: bonKyNang(9), xacNhanHuyLich: true, reason: 'x' });
+    keHoach.luuDot(QL, { attemptId: b.m1, kyNang: bonKyNang(1) });
+    keHoach.luuDot(QL, { attemptId: b.m2, kyNang: bonKyNang(4) });
+    conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, no_show_period_id, no_show_at) VALUES (?, 'listening', ?, ?)`).run(b.m2, tuan(4).id, TODAY);
+    const kq = ketQuaHuy.khoiPhucKetQua(QL, b.m2);
+    const l = conn.prepare(`SELECT band, raw_score, no_show_period_id FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`).get(b.m2) as any;
+    assert(l.band === null && l.raw_score === null && l.no_show_period_id === tuan(4).id, `"-" bị đè: ${JSON.stringify(l)}`);
+    assert(kq.boQua?.includes('listening') && /Listening/.test(kq.cau ?? ''), JSON.stringify(kq));
+    assert(soDiem(b.m2) >= 1, 'các ô khác phải khôi phục');
+  });
+
+  check('Rà #212 (I1, 5) · web: xoá trắng ô có điểm không khoá Lưu, nhãn "Lý do (tuỳ chọn)"; hộp kỹ năng không chặn tuần đã qua', () => {
+    const se = nguon('web/src/modules/fasttrack/ScoreEntry.tsx');
+    assert(!/Lý do huỷ/.test(se) && !/kiemLyDoThaoTac\('huy-diem'/.test(se), 'ScoreEntry còn bắt lý do khi xoá');
+    assert(/Lý do \(tuỳ chọn\)/.test(se), 'nhãn');
+    const hk = nguon('web/src/modules/test/keHoach/HopKyNang.tsx');
+    assert(!/toiThieu=\{!moi && !lichSu \? homNay/.test(hk), 'HopKyNang còn chặn tuần đã qua');
   });
 }

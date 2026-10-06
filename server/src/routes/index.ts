@@ -716,7 +716,7 @@ api.post('/attempts/:id/skills/:skill/bao-vang', requireAuth, wrap((req) => {
   return absenceSvc.baoVang(principalOf(req), pInt(req, 'id'), String(req.params.skill), typeof req.body?.lyDo === 'string' ? req.body.lyDo : null);
 }));
 
-/** PR-XLMT (T38, rà #126): Huỷ điểm một kỹ năng FT — mọi ô chọn (W1/W2) trong một giao dịch, lý do bắt buộc. */
+/** PR-XLMT (T38, rà #126): Huỷ điểm một kỹ năng FT — mọi ô chọn (W1/W2) trong một giao dịch; lý do tuỳ chọn (PR-MTa, 06/10). */
 api.post('/attempts/:id/skills/:skill/huy-diem', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return keHoachSvc.huyDiem(principalOf(req), {

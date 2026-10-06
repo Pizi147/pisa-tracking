@@ -1013,8 +1013,9 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
             movedFromStart: row?.no_show_period_id ? periodStart.get(row.no_show_period_id) ?? null : null,
             /** Người đang xem có nhập được điểm / ghi được "-" ở ô này không (phân công hoặc nhập bù). */
             canEdit: (hoanTat.hoanTat ? suaSauHoanTat : (canEditSkill.get(k) ?? false))
-              /* T19 (PR-MTa): môn chưa tới tuần thi / chưa xếp tuần → ô khoá; ô đã có điểm vẫn sửa được. */
-              && (scored || (!!v.weekStart && String(v.weekStart).slice(0, 10) <= mondayOf(today))),
+              /* T19 (PR-MTa): môn chưa tới tuần thi / chưa xếp tuần → ô khoá như máy chủ, kể cả ô đã có điểm (rà #212); ô mang dấu "-"
+               * (đã dời sang tuần sau) vẫn mở để gỡ dấu. */
+              && (!!row?.no_show_period_id || (!!v.weekStart && String(v.weekStart).slice(0, 10) <= mondayOf(today))),
             /* R11: đánh dấu "bài đã hoàn tất" cho MỌI người xem — Quản lý vẫn `khoa && canEdit` (sửa qua hộp lý do). */
             khoa: hoanTat.hoanTat,
           };

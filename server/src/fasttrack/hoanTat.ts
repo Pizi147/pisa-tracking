@@ -7,7 +7,7 @@
  */
 import { db } from '../db.ts';
 import { dotDaHoanTat, mondayOfDate, PERMISSIONS } from '../../../shared/domain/index.ts';
-import { can, type Principal } from '../permissions.ts';
+import { can, isCoreTeacherOf, type Principal } from '../permissions.ts';
 import { addDays } from '../util.ts';
 
 export type HoanTatInfo = { hoanTat: boolean; chuNhatCuoi: string | null };
@@ -113,6 +113,8 @@ export function dotHoanTat(attemptId: number, today: string): HoanTatInfo {
 }
 
 /** R11: ai sửa được điểm của một đợt ĐÃ HOÀN TẤT — Quản lý/Quản trị (`PLAN_WEEK`) hoặc người nhập bù (`SCORE_OVERRIDE`). */
-export function quyenSuaSauHoanTat(p: Principal, classId: number): boolean {
-  return can(p, PERMISSIONS.PLAN_WEEK, { classId }) || can(p, PERMISSIONS.SCORE_OVERRIDE, { classId });
+export function quyenSuaSauHoanTat(p: Principal, classId: number, lichSu = false): boolean {
+  return can(p, PERMISSIONS.PLAN_WEEK, { classId }) || can(p, PERMISSIONS.SCORE_OVERRIDE, { classId })
+    /* T22 (PR-MTa, rà #212): MT cũ — GVCN lớp đó sửa / xoá được cả sau khi khoá 7 ngày. */
+    || (lichSu && isCoreTeacherOf(p, classId));
 }

@@ -1,5 +1,6 @@
 /**
- * PR-MTa: CHỈ CẤU TRÚC — cột `attempt_skills.huy_vang` (T3, vắng lần 2) và bảng `ket_qua_huy` (T2, điểm MT bị dời vượt). Không điền ngược:
+ * PR-MTa: CHỈ CẤU TRÚC — cột `attempt_skills.huy_vang` (T3, vắng lần 2), `assessment_scores.no_show_cu` (T23, "-" ở MT cũ) và bảng
+ * `ket_qua_huy` (T2, điểm MT bị dời vượt). Không điền ngược:
  * cờ MT cũ (`lich_su`) của lượt có sẵn giữ nguyên, đề nghị dời lần 2 đang chờ giữ nguyên (Quản lý vẫn duyệt / từ chối như cũ).
  * Tự kiểm cột / bảng nên chạy lặp được; lần hai không báo gì. Cùng định nghĩa nằm trong `schema.sql`.
  */
@@ -8,6 +9,10 @@ export function migratePrMta(conn: any, applied: string[]) {
   if (!coCot) {
     conn.exec('ALTER TABLE attempt_skills ADD COLUMN huy_vang INTEGER NOT NULL DEFAULT 0');
     applied.push('PR-MTa: cột attempt_skills.huy_vang');
+  }
+  if (!(conn.prepare('SELECT name FROM pragma_table_info(?)').all('assessment_scores') as any[]).some((x) => x.name === 'no_show_cu')) {
+    conn.exec('ALTER TABLE assessment_scores ADD COLUMN no_show_cu INTEGER NOT NULL DEFAULT 0');
+    applied.push('PR-MTa: cột assessment_scores.no_show_cu');
   }
   if (!conn.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'ket_qua_huy'").get()) {
     conn.exec(`CREATE TABLE ket_qua_huy (

@@ -57,7 +57,8 @@ export async function runPrLmTests(t: YThucTestKit) {
     const tn = nguon('web/src/modules/test/keHoach/TuanNho.tsx');
     const wp = nguon('web/src/ui/Filters.tsx');
     assert(!/w-\[372px\]/.test(hop) && /min\(520px/.test(hop), 'hộp còn w-[372px]');
-    assert(/<TuanNho[^>]*toiThieu=/.test(hop), 'TuanNho trong HopKyNang thiếu toiThieu');
+    /* Rà #212 (T4/T20) thay "tuần tối thiểu": hộp chỉ Quản lý / Quản trị mở — chọn được cả tuần đã qua. */
+    assert(!/<TuanNho[^>]*toiThieu=/.test(hop), 'TuanNho trong HopKyNang còn chặn tuần đã qua');
     assert(!/<WeekPicker/.test(tn) && /<LichNho/.test(tn), 'TuanNho còn render WeekPicker thứ hai');
     assert(/toiThieu\?: string/.test(wp), 'WeekPicker thiếu toiThieu');
     assert(/seHuyLich/.test(hop) && /xacNhanHuyLich: daXacNhan/.test(hop) && /<HopXacNhanHuyLich/.test(hop), 'thiếu xác nhận huỷ lịch');

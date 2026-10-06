@@ -600,6 +600,7 @@ export function kiemVuotTu(a: { attempt_no: number; kind: string }, rows: readon
   return {
     biVuot: kq.biVuot.map((x) => {
       const soDiem = rows.find((r) => r.id === x.attemptId)!.so_diem as number;
+      /* ponytail: một câu `caseSinhRieng` cho mỗi lượt bị vượt CÓ điểm (thường 0–1 lượt/em); gộp theo lô nếu xếp hàng loạt cả lớp vượt nhiều MT có điểm. */
       return { attemptId: x.attemptId, nhan: nhanDot(x.kind, x.attemptNo), tuan: x.tuanDau!, soDiem, soCase: soDiem ? caseSinhRieng(x.attemptId).length : 0 };
     }),
     chan: cho ? `${nhanDot(cho.kind, cho.attemptNo)} đang có đề nghị dời chờ duyệt — duyệt hoặc từ chối trước.` : null,
