@@ -11,7 +11,7 @@ export const NHAN_VIEC_QUAN_LY: Record<ViecQuanLy, string> = {
   'lo-trinh': 'Lộ trình',
   'chuyen-lop': 'Chuyển lớp…',
   'de-xuat-chuyen-lop': 'Đề xuất chuyển lớp…',
-  outcome: 'Kết luận lộ trình',
+  outcome: 'Kết quả thi thật',
   'tam-dung': 'Tạm dừng học',
   'quay-lai': 'Quay lại học',
   'ket-thuc': 'Kết thúc học',

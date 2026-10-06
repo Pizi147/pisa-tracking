@@ -15,6 +15,7 @@ import { sauChuyenCuoiKhoa } from '../normal/cuoiKhoa.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { chotHanXuLy, trangThaiYThuc } from '../yThuc/trangThai.ts';
 import { khoangTamDung } from '../students/tamDung.ts';
+import { ghiBanChup } from '../loTrinh/banChup.ts';
 
 /**
  * LUẬT LỘ TRÌNH — MỘT CHỖ (PR-LT, §3.9) dùng chung cho Chuyển lớp một em (`students.ts`) và
@@ -295,7 +296,11 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
    */
   const mucTieu = luat.canMucTieu || can(p, PERMISSIONS.CYCLE_EDIT, { studentId: d.sid }) ? d.mucTieu : undefined;
   if (luat.khoa === 'dong-mo') {
-    if (curCycle) conn.prepare(`UPDATE learning_cycles SET status = 'completed', ended_at = ? WHERE id = ?`).run(d.ngay, curCycle.id);
+    if (curCycle) {
+      conn.prepare(`UPDATE learning_cycles SET status = 'completed', ended_at = ? WHERE id = ?`).run(d.ngay, curCycle.id);
+      /* PR-TK: bản chụp CÙNG giao dịch, lớp lúc đóng = lớp cũ (ghi danh đã đổi ở trên). Lý do = đúng loại kết thúc ghi danh. */
+      ghiBanChup(conn, [curCycle.id], { lyDo: luat.endKind as 'len_lop' | 'hoc_lai' | 'sang_ft' | 'chuyen_lop', ngay: d.ngay, lopId: enr.class_id });
+    }
     const { moiId, route } = moLoTrinhMoi(p, { sid: d.sid, ngay: d.ngay, toClass, tuLop, denLop, cuCycle: curCycle, target: mucTieu ?? null, thangThi: d.thangThi });
     if (denLop.ft && tuLop.ft && curCycle) chuyenCaseSangLoTrinh(p.userId, d.sid, curCycle.id, moiId, route, d.ngay);   // K5-60
   }
@@ -491,8 +496,19 @@ export function apDungCaLop(p: Principal, o: {
   {
     const sids = o.dongs.map((d) => d.sid);
     const ph = sids.map(() => '?').join(',');
+    /* PR-TK: id các lộ trình đang chạy lấy TRƯỚC câu UPDATE, rồi ghi bản chụp MỘT lần cho cả lô (nhóm theo lý do: một lô có thể trộn lên lớp / học lại / sang FT). */
+    const huongCua = new Map(o.dongs.map((d) => [d.sid, d.huong]));
+    const dongTheoLyDo = new Map<'len_lop' | 'hoc_lai' | 'sang_ft', number[]>();
+    theoLo(sids, (lo, ph2) => {
+      for (const r of conn.prepare(`SELECT id, student_id FROM learning_cycles WHERE status = 'active' AND student_id IN (${ph2})`).all(...lo) as any[]) {
+        const h = huongCua.get(r.student_id);
+        const lyDo = h === 'fast_track' ? 'sang_ft' : h!;
+        dongTheoLyDo.set(lyDo, [...(dongTheoLyDo.get(lyDo) ?? []), r.id as number]);
+      }
+    });
     conn.prepare(`UPDATE learning_cycles SET status = 'completed', ended_at = ? WHERE student_id IN (${ph}) AND status = 'active'`)
       .run(o.ngay, ...sids);
+    for (const [lyDo, ids] of dongTheoLyDo) ghiBanChup(conn, ids, { lyDo, ngay: o.ngay, lopId: o.fromClass.id });
   }
 
   // 5) Mở khoá mới — đọc seq theo lô (MỘT câu), rồi MỘT INSERT nhiều dòng.

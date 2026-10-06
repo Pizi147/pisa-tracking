@@ -199,6 +199,7 @@ export async function runPrLuiBTests(t: YThucTestKit) {
 
   await checkAsync('LUIb-10 · Lưu trữ / Bỏ lưu trữ nhiều học viên: chỉ học viên đã kết thúc; Bỏ lưu trữ không làm học viên học lại', () => thu(() => {
     const sid = dangHocTrong('MB FT 101', 1)[0];
+    conn.prepare(`UPDATE learning_cycles SET thi_that_khong_thi = 1 WHERE student_id = ? AND status = 'active'`).run(sid);   // PR-TK: FT còn "Chờ kết quả thi thật" thì Kết thúc học chưa lưu trữ — đặt Không thi để phép kiểm này giữ ngữ cảnh lưu trữ
     assert(hl.xemTruoc(P.mbManager, { viec: 'luu-tru', studentIds: [sid] }).rows[0].lyDoBo === 'Chưa kết thúc học', 'học viên đang học không lưu trữ được');
     hl.chay(P.mbManager, { viec: 'ket-thuc', studentIds: [sid], lyDo: 'Cuối khoá' });
     assert(hl.chay(P.mbManager, { viec: 'bo-luu-tru', studentIds: [sid] }).ok.length === 1, 'bỏ lưu trữ');
@@ -273,6 +274,7 @@ export async function runPrLuiBTests(t: YThucTestKit) {
     assert(dong(P.mbManager)?.coTheMoLai === true && dong(P.admin)?.coTheMoLai === true, 'QL / QT thấy nút Mở lại');
     assert(dong(P.normalCoreTeacher) === undefined || dong(P.normalCoreTeacher).coTheMoLai === false, 'GVCN không có Mở lại');
     const sid = dangHocTrong('MB FT 101', 1)[0];
+    conn.prepare(`UPDATE learning_cycles SET thi_that_khong_thi = 1 WHERE student_id = ? AND status = 'active'`).run(sid);   // PR-TK: như LUIb-10
     svc.setStudentStatus(P.mbManager, sid, 'finished', TODAY, 'Nghỉ học');
     const hv = (p: any) => lt.danhSachLuuTru(p, {}).hocVien.find((x: any) => x.id === sid);
     assert(hv(P.mbManager).coTheHocLai === true && hv(P.admin).coTheHocLai === true, 'QL / QT thấy nút Học lại');
