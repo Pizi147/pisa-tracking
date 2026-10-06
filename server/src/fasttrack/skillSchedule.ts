@@ -582,7 +582,16 @@ export function kiemVuot(attemptId: number, tuanCuoiMoi: string): KiemVuot {
        FROM assessment_attempts a
       WHERE a.cycle_id = ? AND a.attempt_no > ? AND a.status != 'cancelled'`,
   ).all(a.cycle_id, a.attempt_no) as any[];
-  const ds: LuotLanCan[] = rows.map((r) => ({
+  return kiemVuotTu(a, rows, tuanCuoiMoi);
+}
+
+/** Một lượt SAU cùng lộ trình, đã đọc sẵn (xếp hàng loạt đọc theo lô — `docFtTheoLo`, không N+1). */
+export type LuotSauDoc = { id: number; attempt_no: number; kind: string; status: string; tuan_dau: string | null; so_diem: number; cho_duyet: boolean | number };
+
+/** Lõi thuần của `kiemVuot` trên dữ liệu đã đọc; chỉ hỏi DB `caseSinhRieng` cho lượt bị vượt có điểm. */
+export function kiemVuotTu(a: { attempt_no: number; kind: string }, rows: readonly LuotSauDoc[], tuanCuoiMoi: string): KiemVuot {
+  if (a.kind !== 'mock') return { biVuot: [], chan: null };
+  const ds: LuotLanCan[] = rows.filter((r) => r.attempt_no > a.attempt_no && r.status !== 'cancelled').map((r) => ({
     attemptId: r.id, attemptNo: r.attempt_no, kind: r.kind, tuanDau: r.tuan_dau ?? null,
     coDiem: r.so_diem > 0, daThi: false, huy: r.status === 'cancelled',
   }));

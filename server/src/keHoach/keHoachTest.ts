@@ -22,8 +22,8 @@ import { entrySkillsOf, expectationFor } from '../fasttrack/scoring.ts';
 import { createAttempt, loadBundle, saveScore, scoresOf, setSkillSkip } from '../fasttrack/attempts.ts';
 import { currentCycle, nextAttemptNo } from '../fasttrack/cycles.ts';
 import {
-  baoGvcnDoiLichThuongLop, boLichLuotBiVuot, checkWeekVsNeighbours, kiemVuot, kiemXacNhanVuot, loadSkillRows, setSitStatus, setSkillWeek, tinhLaiMtCu, tuanCuoiSauKhiDoi,
-  type LuotSeHuyLich,
+  baoGvcnDoiLichThuongLop, boLichLuotBiVuot, checkWeekVsNeighbours, kiemVuot, kiemVuotTu, kiemXacNhanVuot, loadSkillRows, setSitStatus, setSkillWeek, tinhLaiMtCu, tuanCuoiSauKhiDoi,
+  type LuotSauDoc, type LuotSeHuyLich,
 } from '../fasttrack/skillSchedule.ts';
 import { pendingMovesFor } from '../fasttrack/absence.ts';
 import { ketQuaHuyCua } from '../fasttrack/ketQuaHuy.ts';
@@ -429,7 +429,7 @@ type YeuCauKyNang = { skill: KyNangKH; periodId: number };
  * `pre.choHuyLich` (chỉ hộp một đợt): MT cũ (D3) đổi tuần được kể cả kỹ năng đã có điểm.
  */
 function kiemDotNoi(a: any, kyNang: YeuCauKyNang[], duaLai: Set<KyNangKH> = new Set(),
-  pre: { rows?: any[]; scores?: any[]; periods?: Map<number, any>; homNay?: string; choHuyLich?: boolean } = {},
+  pre: { rows?: any[]; scores?: any[]; periods?: Map<number, any>; homNay?: string; choHuyLich?: boolean; luotSau?: LuotSauDoc[] } = {},
 ): { bai: BaiXemTruoc[]; canLyDo: boolean; seHuyLich: LuotSeHuyLich[] } {
   const conn = db();
   const cheDo: CheDo = a.kind === 'mock' ? 'ft' : 'thuong';
@@ -461,9 +461,9 @@ function kiemDotNoi(a: any, kyNang: YeuCauKyNang[], duaLai: Set<KyNangKH> = new 
     bai.push({ skill: k.skill, tu, den: pr.week_start, ghiChu: 'doi', cau: null });
   }
 
-  const vuot = doi.length
-    ? kiemVuot(a.id, tuanCuoiSauKhiDoi(rows, new Map(doi.map((d) => [d.k.skill, d.pr.week_start])))!)
-    : { biVuot: [], chan: null };
+  const tuanCuoi = doi.length ? tuanCuoiSauKhiDoi(rows, new Map(doi.map((d) => [d.k.skill, d.pr.week_start])))! : '';
+  const vuot = !doi.length ? { biVuot: [], chan: null }
+    : pre.luotSau ? kiemVuotTu(a, pre.luotSau, tuanCuoi) : kiemVuot(a.id, tuanCuoi);
   const boQua = vuot.biVuot.map((x) => x.attemptId);
   const checks = new Map<string, { blockers: string[]; warnings: string[] }>();
   for (const d of doi) {
@@ -953,8 +953,15 @@ function xetMotEmFT(i: {
   /* `doi` → mọi kỹ năng đã chọn tuần; `xep-not` → CHỈ kỹ năng còn thiếu. */
   const ks = viec.loai === 'xep-not' ? viec.kyNang.filter((k) => i.tuan[k]) : co;
   if (!ks.length) return { dong: dong({ loi: 'Chưa chọn tuần cho kỹ năng còn thiếu.', viec: viec.loai, attemptNo }), attemptId: a.id };
+  /* T2: lượt sau cùng lộ trình dựng từ dữ liệu đã đọc theo lô — kiểm dời vượt không thêm câu SQL mỗi em. */
+  const luotSau: LuotSauDoc[] = cuaEm.filter((x) => x.kind === 'mock' && x.attempt_no > a.attempt_no).map((x) => {
+    const tuan = rowsCua(x).filter((r) => r.required && r.sit_status !== 'cancelled' && r.week_start).map((r) => String(r.week_start)).sort();
+    const daCo = new Set(diemCua(x).filter((d: any) => d.band != null || d.raw_score != null).map((d: any) => String(d.skill).replace(/^writing[12]$/, 'writing')));
+    return { id: x.id, attempt_no: x.attempt_no, kind: x.kind, status: x.status, tuan_dau: tuan[0] ?? null, so_diem: daCo.size,
+      cho_duyet: [...i.lo.choDuyet.keys()].some((k) => k.startsWith(`${x.id}:`)) };
+  });
   const kiem = kiemDotNoi(a, ks.map((k) => ({ skill: k, periodId: i.tuan[k]! })), new Set(),
-    { rows: rowsCua(a), scores: diemCua(a), periods: i.periods, homNay: i.homNay });
+    { rows: rowsCua(a), scores: diemCua(a), periods: i.periods, homNay: i.homNay, luotSau });
   const chan = kiem.bai.filter((b) => b.ghiChu === 'chan');
   /* T2 (PR-MTa, chốt 05/10): dời vượt KHÔNG chặn ở hàng loạt — dòng mang hệ quả `seHuyLich` để web hiện một popup gộp. */
   const chung = { bai: kiem.bai, viec: viec.loai, attemptNo, canLyDo: kiem.canLyDo, ...(kiem.seHuyLich.length ? { seHuyLich: kiem.seHuyLich } : {}) };

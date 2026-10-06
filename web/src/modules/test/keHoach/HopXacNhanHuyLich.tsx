@@ -24,7 +24,7 @@ export function HopXacNhanHuyLich({ ds, busy, onQuayLai, onXacNhan }: {
           </ul>
           <label className="block">
             <span className="label">Lý do</span>
-            <textarea className="field w-full" rows={2} maxLength={300} value={lyDo} onChange={(e) => setLyDo(e.target.value)} />
+            <textarea className="field w-full" rows={2} maxLength={300} autoFocus aria-required="true" value={lyDo} onChange={(e) => setLyDo(e.target.value)} />
           </label>
         </>
       )} />
