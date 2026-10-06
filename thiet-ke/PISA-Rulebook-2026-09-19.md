@@ -722,11 +722,14 @@ Mọi hạn "n ngày" là **n ngày liên tiếp theo lịch, tính cả ngày b
 - GV đúng ô gõ "-"; GVCN/QL báo vắng qua menu (lý do tuỳ chọn — PR-MTa T7, từ Thứ Hai tuần thi). Sửa được đến hết Chủ nhật; điểm thật thắng "-"; ô đã có điểm không xoá được bằng "-".
 - Hết Chủ nhật còn "-" → **Không dự thi**. **Lần 1 máy tự dời** sang tuần kế (nếu còn thi được), báo GVCN + GVBM đúng kỹ năng. **Lần 2** (PR-MTa T3, §20.1 dòng 23) → kỹ năng **huỷ (vắng 2 lần)**, chuông GVCN; GVCN **Xin dời** → đề nghị chờ QL (hạn hết Chủ nhật tuần gửi, tuần đích mặc định = tuần chưa bắt đầu gần nhất hợp luật); QL từ chối (lý do bắt buộc, không tối thiểu ký tự) → không mock lại; hết hạn → giữ huỷ. Đề nghị chuyển QL ở lần 1 (xử lý muộn): từ chối / hết hạn → **huỷ phần thi** (giữ điểm các phần khác); chỉ QL khôi phục.
 - Nhập "-" cho tuần đã kết thúc: chốt ngay. Sau cuối tuần chỉ QL sửa kết luận, ghi đè trực tiếp. Writing chỉ chốt khi cả W1 và W2 đều "-", đếm một lần.
+- **Xoá "-" = hết vắng** (PR-BV, chủ sản phẩm 06/10): ô đã chốt vẫn hiện "-" (kèm tuần mới nếu đã dời) tới khi có điểm. Xoá "-" → trả như trước khi gõ (tuần gốc, lần vắng −1, đề nghị / Xin dời chưa xử lý rút, huỷ vắng 2 lần trở lại); đã có quyết định của người (duyệt, từ chối, khôi phục, không mock lại, xếp lại) thì giữ lịch + trạng thái, thẻ thêm "vắng đã gỡ". Không chuông mới.
+- **Ai xoá "-"**: GV chấm ô đó hoặc GVCN đến hết thứ Tư sau tuần có "-"; QL / Quản trị mọi lúc. Quá khung: "Quá hạn chấm — nhờ Quản lý."
+- **Xoá điểm rồi nhập lại** (tẩy ô / Huỷ điểm làm Case đóng, nhập lại vẫn trượt) → mở lại đúng Case đó, PA cũ về như trước. Thi lại, sửa thành đạt, lượt khác → Case mới như cũ.
 
 **Lớp thường — chủ sản phẩm chốt 02/10 (thay §17.1 dòng "Normal không hủy", C08 §17.7, §18.7):**
 > Normal có dùng "-". Còn "-" thì bài **dời sang tuần sau, lặp lại**, cho đến khi **có điểm** hoặc **QL xác nhận huỷ kết quả điểm môn đó** thì dừng.
 
-Code đã có (`ss/normal/regular.ts:591-738`): GV đúng ô gõ "-" (hoặc GVCN/QL qua menu Báo vắng, lý do tuỳ chọn, từ Thứ Hai tuần thi); môn **dời ngay sang tuần sau của chính bài đó**; lặp không giới hạn; thông báo GVCN từ lần vắng thứ 2; có điểm ở tuần mới thì "-" không gỡ được nữa.
+Code đã có (`ss/normal/regular.ts:591-738`): GV đúng ô gõ "-" (hoặc GVCN/QL qua menu Báo vắng, lý do tuỳ chọn, từ Thứ Hai tuần thi); môn **dời ngay sang tuần sau của chính bài đó**; lặp không giới hạn; thông báo GVCN từ lần vắng thứ 2 (lần vắng = số lần ghi "-" trừ số lần xoá "-", PR-BV). Xoá "-" khi tuần mới đã có điểm: chỉ hết vắng, lịch và điểm giữ ở tuần mới (PR-BV); khung xoá như Fast Track. Xoá một môn của bài đã đủ điểm → bài về "Chờ điểm".
 
 **CHƯA CÓ trong code (khoảng cách giữa luật chốt và web):**
 1. **Không có nút QL "xác nhận huỷ kết quả điểm môn đó".** Gần nhất chỉ có thẻ Báo lên "Cuối khoá dời quá hạn" (QL nhắc GVCN, không huỷ được gì).

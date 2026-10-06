@@ -505,6 +505,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 07/10/2026 | PR-BV (Opus 5.5) · `pr-bv-bo-vang-xoa-diem` | Xoá "-" = hết vắng: Mock đã chốt trả như trước khi gõ (giữ quyết định của người), lớp thường trừ lần vắng / giữ lịch khi tuần mới có điểm, khung gỡ GV · GVCN đến thứ Tư; nhập lại điểm sau khi xoá mở lại đúng Case; Lịch sử ô lớp thường; bài lớp thường xoá điểm về chưa xong. Phép kiểm `prBv`. |
 | 06/10/2026 | PR-TK (Sonnet 5.5, phương án B) · `pr-tk-tong-ket-lo-trinh` | Tổng kết lộ trình: bản chụp lúc đóng mọi đường (migrate `prTk` điền ngược), kết quả thi thật L R W S (GVCN nhập, máy so Target lúc đóng) + việc nhắc, Kết thúc học FT chờ kết quả chưa lưu trữ, khối Các lộ trình · ngăn Tổng kết · tab Tổng kết lớp · nút Tổng kết ở Lưu trữ. Phép kiểm `prTk` TK-1…TK-L. |
 | 06/10/2026 | PR-LT3 (Opus 5.5) · `pr-lt3-lich-test-ba-khoi` | Lịch Test ba khối (quá hạn theo hôm nay · chấm tuần này · lịch tuần xem), một bài một khối; Speaking Mock chấm chéo: không nợ/trễ GVBM S, GVCN, trễ theo GV chấm, chuông thứ Hai |
 | 06/10/2026 | PR-LUI-b (Sonnet 5.5, phương án B) · `pr-lui-b-hoc-vien-lop` | Đường lui Học viên & Lớp: Học lại (về lớp cũ / sang lớp mới), Mở lại lớp, Quản lý kết thúc lớp, **Chọn nhiều học viên** (kết thúc học, lưu trữ, huỷ chuyển lớp; Lưu trữ: bỏ lưu trữ, học lại) có xem trước, lô 8, Hoàn tác. Phép kiểm `prLuiB` LUIb-1…27 (đã gồm sửa sau rà #213). |
