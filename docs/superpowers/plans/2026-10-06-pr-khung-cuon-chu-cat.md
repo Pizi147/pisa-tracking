@@ -1,5 +1,9 @@
 # PR-KHUNG · Một thanh cuộn, chữ không cắt, nút không tràn — Kế hoạch
 
+> **Chủ sản phẩm chốt 06/10 (đè phần dưới):** mockup DUYỆT (không cần mockup thêm). (1) Học viên & Lớp 1440: đầu cột + hàng lớp đang mở **dính trên cùng**.
+> (2) Hàng nút lọc / tab trên điện thoại: **một hàng, vuốt ngang**, có mép mờ báo còn nút (KHÔNG xuống dòng). (3) Đầu cột dính cho các bảng dài khác → **PR-HK2**.
+> (4) Mũi tên mở / thu nhóm lớp: giữ **biểu tượng thật** đang dùng (mockup vẽ tạm chữ "v" — không làm theo).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. **Model: Opus 5.5 hoặc Sonnet 5.5 — không Fable** (CLAUDE.md, 06/10).
 
 **Goal:** Chủ sản phẩm 06/10 (ảnh `1.png` Học viên & Lớp, `2.png` panel Ghi kết quả PA): (3) trang Học viên & Lớp có **hai thanh cuộn**, thông tin bị cắt; (4) **nút bị cắt và lệch** ("✓ ↗ Tiến bộ một phần" tràn viền, ✓ đè mép), "nhiều nút của hệ thống bị như vậy". Sửa **ở component dùng chung** để mọi trang hết cùng lúc; không làm lại giao diện.
