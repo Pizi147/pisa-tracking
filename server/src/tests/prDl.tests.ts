@@ -478,7 +478,7 @@ export async function runPrDlTests(t: YThucTestKit) {
     assert(/<LuoiThuong[^>]*anNutTao=\{anNutTao\}/.test(f('MotKyNang')), 'MotKyNang chuyền anNutTao khi quay về LuoiThuong');
     assert(/const nutTao = data\.canPlan && !anNutTao/.test(f('LuoiThuong')), 'LuoiThuong ẩn nút theo anNutTao');
     assert(!/anNutTao/.test(f('ChamDiemPage')) && !/anNutTao/.test(doc('web/src/modules/test/lichTest/LuoiNhung.tsx')), 'trang cũ giữ nút');
-    for (const ten of ['LuoiFT', 'MotKyNang']) assert(/row\.lichSu && <ChipLichSu \/>/.test(f(ten)), `${ten}: chip lịch sử cạnh tên`);
+    for (const ten of ['LuoiFT', 'MotKyNang']) assert(/row\.lichSu && <NhanCu \/>/.test(f(ten)), `${ten}: chip lịch sử cạnh tên`);  // PR-MTb T2 thay ChipLichSu → NhanCu
   });
 
   check('DL-5 fix 2 hộp hỏi đổi lượt: chỉ tự chuyển sau "Đợi rồi chuyển"; lưu hỏng bỏ đích chờ; hết lỗi thì hộp đóng', () => {
@@ -626,9 +626,9 @@ export async function runPrDlTests(t: YThucTestKit) {
     assert(f.includes('role="alert"') && !/role="alert"[^>]*aria-label/.test(f), 'role="alert" không aria-label');
     const ft = doc('web/src/modules/cham/LuoiFT.tsx');
     const dongTen = ft.slice(ft.indexOf('to={duongDotTest({ id: row.attemptId })}'), ft.indexOf('{row.studentCode}'));
-    assert(!dongTen.includes('ChipLichSu') && /\{row\.studentCode\}<\/span>\s*\{row\.lichSu && <ChipLichSu \/>\}/.test(ft), 'LuoiFT: chip lịch sử ở dòng mã HV');
+    assert(!dongTen.includes('NhanCu') && /\{row\.studentCode\}<\/span>\s*\{row\.lichSu && <NhanCu \/>\}/.test(ft), 'LuoiFT: chip lịch sử ở dòng mã HV');  // PR-MTb T2 thay ChipLichSu → NhanCu
     const mk = doc('web/src/modules/cham/MotKyNang.tsx');
-    assert(/luu=\{<>\{row\.lichSu && <ChipLichSu \/>\}<DauLuu/.test(mk) && !/nhan=\{<>\{row\.lichSu/.test(mk), 'MotKyNang: chip lịch sử ở dòng phụ');
+    assert(/luu=\{<>\{row\.lichSu && <NhanCu \/>\}<DauLuu/.test(mk) && !/nhan=\{<>\{row\.lichSu/.test(mk), 'MotKyNang: chip lịch sử ở dòng phụ');  // PR-MTb T2 thay ChipLichSu → NhanCu
   });
 
   {

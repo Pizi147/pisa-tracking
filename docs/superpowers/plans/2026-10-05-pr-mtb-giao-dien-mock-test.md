@@ -113,8 +113,22 @@
 ---
 
 ### Task 0: Đối chiếu PR-MTa (không code)
-- [ ] Đọc `docs/superpowers/plans/2026-10-05-pr-mta-luat-mock-test.md` (mục Interfaces) và mã MTa đã merge (`git log origin/main --grep MTa`). Với từng dòng A1–A8: tên thật là gì, đã có chưa.
-- [ ] Lệch tên → sửa tên trong mục Interfaces của các Task dưới (một commit `docs(mtb): khớp tên PR-MTa`). Thiếu hẳn một dòng A → dừng, báo planning (không tự làm luật máy chủ của MTa).
+- [x] Đọc `docs/superpowers/plans/2026-10-05-pr-mta-luat-mock-test.md` (mục Interfaces) và mã MTa đã merge (#212, main `db820c02`). Với từng dòng A1–A8: tên thật là gì, đã có chưa.
+- [x] Lệch tên → sửa tên trong mục Interfaces của các Task dưới (một commit `docs(mtb): khớp tên PR-MTa`). Thiếu hẳn một dòng A → dừng, báo planning (không tự làm luật máy chủ của MTa).
+
+**Kết quả Task 0 (06/10, main `db820c02` — DL #206, SL #203, K26, MTa #212 đã merge). ĐÈ lên mọi chỗ khác trong file nếu mâu thuẫn:**
+
+*A1–A8 đủ cả, tên khớp* (`laMtCu`, `kiemTuanXep`, `luotBiVuot`, `LuotSeHuyLich`, `dongHeQuaVuot`, `canLyDoVuot`, `KetQuaHuy`, `cauSeHuyLich` ở `shared/domain/lichMt.ts`; `docONhapLR`, `kiemBand` ở `chamDiem.ts`; `kiemLyDoThaoTac`, `canLyDo`, `CHU_LY_DO` ở `thaoTacMt.ts`; đường `xin-doi`, `khong-mock-lai`, `khoi-phuc-ket-qua`; `huyVang` trên `OKyNang`; `HangLichMt.luot.ketQuaHuy`). Lệch:
+1. **A7 lệch luật:** `LY_DO_BAT_BUOC = ['huy-luot','huy-ket-qua','tu-choi']` — **3 chỗ, không còn `huy-diem`** (T22 + rà #212: huỷ điểm / xoá trắng ô không bắt lý do). Mọi chỗ file này ghi "đúng 4 chỗ T7" / "huỷ điểm bắt buộc" → **3 chỗ**. Task 7 phép đỏ "QL huỷ điểm không lý do → 400" đổi thành **200**. `HopThaoTacMt` `batBuoc = canLyDo(t)` chỉ còn đúng khi `huy-luot` (ở hồ sơ Mock `CancelDialog`) — `huy-diem` tuỳ chọn.
+2. **A2 xác nhận:** trường lý do = `reason` ở `/ke-hoach-test/dot`, `/attempts/:id/week`, `/attempts/:id/skills/:skill/week`; `lyDo` ở `/ke-hoach-test/hang-loat`. Cờ `xacNhanHuyLich: true` ở cả bốn.
+3. **A3 MTa ĐÃ LÀM** (`DongHangLoat.seHuyLich`, `xacNhanHuyLich` + `lyDo` ở route `hang-loat`, `keHoachTest.ts:963-975`) → **bỏ Task 1 bước 3b**. Web panel `NganXepLichMt.tsx` chưa nối (không có `seHuyLich`) → Task 3 / 6.
+4. **T13b chưa có** (đúng như kế hoạch): `attemptNo: 'moi'`, `kyNang` tick, `viecXepMt` còn `continue` tự sang đợt kế (`shared/domain/keHoachTest.ts:248,255`), `OKyNang.hanCham` → Task 1 giữ nguyên.
+5. **Web MTa đã làm — KHÔNG làm trùng:** `InlineScoreEditor` + `SuaDiemCoLyDo` (lý do tuỳ chọn, xoá trắng = huỷ điểm, T22) · `HopKyNang` (QL chọn tuần đã qua, dòng đã điểm / đã thi dời được — T20, ô lý do **tuỳ chọn** `Lý do dời`) · ô khoá khi chưa tới tuần thi (T19, `cell.chuaToiTuan`) · "-" MT cũ = Không dự thi (T23, `cell.noShow`, cột `no_show_cu`) · `HopXacNhanHuyLich` đã có Lý do bắt buộc + "Dời và huỷ" (props cũ `ds / onQuayLai / onXacNhan`, tiêu đề "Dời và huỷ kết quả?") — Task 6 chỉ **vẽ lại theo mockup** (đổi props như Interfaces) · `HopThaoTacMt` / `WeekModal` / `DeadlineModal` đã gọi `kiemLyDoThaoTac` · chữ "cũ" đã hiện (`ChipLichSu` trả "cũ") — Task 2 chỉ **đổi tên** thành `NhanCu` (MT0 dùng tên đó).
+6. **Phạm vi thêm (plan.md 2c T20, chủ sản phẩm 06/10 khi giao việc):**
+   (a) Nút **"Dời lịch"** cho kỹ năng **đã có điểm** ở hồ sơ Mock: máy chủ đã cho QL / Quản trị (`setSkillWeek` `quanLy`), nhưng `thaoTacKyNang('co-diem')` (`shared/domain/thaoTacMt.ts:50`) chỉ trả `huy-diem` → thêm `'doi-lich'` cho `quanLy` (QL / Quản trị) vào menu `co-diem`; `MockDetailPage.tsx:445` (`ownsSchedule`) giữ. Hệ quả cho `menuHopKyNang` (Task 5): `co-diem` → **`doi-tuan` sáng** cho QL (không còn mờ "Đã có điểm"); phép đỏ Task 5 (b) sửa theo.
+   (b) **Dòng đỏ hộp kỹ năng** `cauSeHuyLich` ("Lưu sẽ huỷ lịch … về Chưa xếp lịch.") **không hiện khi MT bị vượt có điểm** (`canLyDoVuot`) — popup nói hệ quả; chỉ hiện chip vàng `Bỏ lịch MT3` khi vượt không điểm (tự quyết 6). Áp ở `HopKyNang.tsx` và `WeekModal` (`MockDetailPage.tsx:674`).
+   (c) **Gộp hai ô lý do (hộp + popup) thành một:** hộp một đợt bỏ ô lý do (tự quyết 3); ở `WeekModal` / `HopThaoTacMt` (còn ô lý do tuỳ chọn) — khi `canPopup` thì **ẩn** ô lý do của hộp, popup mang ô Lý do duy nhất; chữ đã gõ ở hộp đi theo vào popup qua prop `lyDoDau?: string`.
+7. Rulebook / thiet-ke: ghi "Đang chọn" của ô MT (mockup đã duyệt: nền sáng chữ tối ✓) vào `thiet-ke/HE_GIAO_DIEN.md` §2 (Task 2 / 10).
 
 ### Task 1: Máy chủ + luật panel — "MT mới", đúng đợt, tick kỹ năng, hạn chấm
 Skill: test-driven-development
@@ -144,7 +158,7 @@ export function demSeXep(dong: DongHangLoat[]): Record<ToneSeXep, number>;
 - Consumes: A1 (`luotBiVuot`, `kiemVuot`), A4 (`kiemTuanXep` thay `kiemTuanDaQua` trong `xetMotEmFT`).
 - Produces (A3, nếu MTa chưa làm): `DongHangLoat.seHuyLich?: LuotSeHuyLich[]` (xem trước) · body `xacNhanHuyLich: boolean` + `lyDo` · lưu: em có lượt bị vượt có điểm mà chưa xác nhận → dòng `loi` "Cần xác nhận huỷ kết quả." (em khác vẫn lưu, R9b).
 
-- [ ] **Step 1: Phép đỏ (luật thuần)** trong `prMtb.tests.ts` (`runPrMtbTests(t)`, mẫu `prLm.tests.ts:1-15`):
+- [x] **Step 1: Phép đỏ (luật thuần)** trong `prMtb.tests.ts` (`runPrMtbTests(t)`, mẫu `prLm.tests.ts:1-15`):
 ```ts
 check('MTb (1) · viecXepMt không tự sang đợt khác', () => {
   const kn = (o = {}) => ['listening','reading','writing','speaking'].map((skill) => ({ skill, batBuoc: true, coDiem: true, daThi: true, huyPhan: false, choDuyet: false, coTuan: true, ...o }));
@@ -163,16 +177,16 @@ check('MTb (1) · nhanSeXep một dòng 3 màu + demSeXep', () => {
 });
 ```
   Ghi đủ assert theo chú thích (giá trị lấy đúng mockup phần 1).
-- [ ] **Step 2: Phép đỏ (DB)**: lớp FT seed (helper như `keHoachTest.tests.ts:429-470`), `P.mbManager`:
+- [x] **Step 2: Phép đỏ (DB)**: lớp FT seed (helper như `keHoachTest.tests.ts:429-470`), `P.mbManager`:
   - `xepHangLoat(..., { attemptNo: 'moi', tuan, xemTruoc: true })`: em có MT1 xong + MT2 chưa có tuần → `attemptNo 2`; em MT1 xong, không MT2 → `attemptNo 2, hanhDong 'tao'`.
   - `attemptNo: 1` cho em MT1 đã xong → `hanhDong 'loi'`, câu "MT1 đã xong.", em khác không bị ảnh hưởng.
   - `kyNang: ['listening','reading','writing']` + tạo mới → lưu xong `attempt_skills.required = 0` cho speaking; đợt có sẵn → speaking không đổi.
   - `kyNang: []` → 400 "Chưa chọn kỹ năng nào." · `attemptNo: 'x'` → 400.
   - `luoiFT` trả `hanCham` = thứ Tư tuần kế của tuần thi (T6), `null` khi `lichSu`.
-- [ ] **Step 3: Sửa** — `viecXepMt`: bỏ `continue` ở `:244,:251` theo Interfaces; `xetMotEmFT` truyền `coTuan`; route: `attemptNo` = `'moi'` hoặc `toInt` (khác → 400), `kyNang` lọc qua `KY_NANG_KE_HOACH`; `oKyNangCua` thêm tham số `attemptOverride` và gọi `effectiveSkillDeadline` (`server/src/fasttrack/skillSchedule.ts:288-293`) — `lichSu`/không bắt buộc/huỷ → `null`. Nhãn audit `entityLabel`: `'MT mới'` khi `'moi'`.
-- [ ] **Step 3b (A3, chỉ khi MTa chưa làm):** `xetMotEmFT` nhánh `doi`/`xep-not` gọi `kiemDotNoi` với `choHuyLich: true` (bỏ "Xếp hàng loạt giữ luật chặn cũ" `server/src/keHoach/keHoachTest.ts:423`), đưa `seHuyLich` lên dòng; `xepHangLoat` lưu truyền `xacNhanHuyLich` + `reason: lyDo` xuống `luuDot`. Phép đỏ: hai em, em A vượt MT2 có điểm → xem trước có `seHuyLich[0].soDiem > 0`; lưu không xác nhận → A `loi`, B lưu; lưu có xác nhận + lý do → cả hai lưu, điểm MT2 của A vào `ket_qua_huy` (luật MTa).
-- [ ] **Step 4:** `npm run check` → xanh; mọi phép cũ `keHoachTest.tests.ts` (PR-Rc2, PR-XLMT) xanh. Phép cũ nào dựa vào "tự sang đợt kế" → sửa phép đó theo T13b, ghi tên vào mô tả PR.
-- [ ] **Step 5: Commit** `feat(mtb): panel MT mới, đúng đợt, tick kỹ năng; hạn chấm trên ô kỹ năng`.
+- [x] **Step 3: Sửa** — `viecXepMt`: bỏ `continue` ở `:244,:251` theo Interfaces; `xetMotEmFT` truyền `coTuan`; route: `attemptNo` = `'moi'` hoặc `toInt` (khác → 400), `kyNang` lọc qua `KY_NANG_KE_HOACH`; `oKyNangCua` thêm tham số `attemptOverride` và gọi `effectiveSkillDeadline` (`server/src/fasttrack/skillSchedule.ts:288-293`) — `lichSu`/không bắt buộc/huỷ → `null`. Nhãn audit `entityLabel`: `'MT mới'` khi `'moi'`.
+- [x] **Step 3b (A3 — BỎ: MTa đã làm, Task 0):** `xetMotEmFT` nhánh `doi`/`xep-not` gọi `kiemDotNoi` với `choHuyLich: true` (bỏ "Xếp hàng loạt giữ luật chặn cũ" `server/src/keHoach/keHoachTest.ts:423`), đưa `seHuyLich` lên dòng; `xepHangLoat` lưu truyền `xacNhanHuyLich` + `reason: lyDo` xuống `luuDot`. Phép đỏ: hai em, em A vượt MT2 có điểm → xem trước có `seHuyLich[0].soDiem > 0`; lưu không xác nhận → A `loi`, B lưu; lưu có xác nhận + lý do → cả hai lưu, điểm MT2 của A vào `ket_qua_huy` (luật MTa).
+- [x] **Step 4:** `npm run check` → xanh; mọi phép cũ `keHoachTest.tests.ts` (PR-Rc2, PR-XLMT) xanh. Phép cũ nào dựa vào "tự sang đợt kế" → sửa phép đó theo T13b, ghi tên vào mô tả PR.
+- [x] **Step 5: Commit** `feat(mtb): panel MT mới, đúng đợt, tick kỹ năng; hạn chấm trên ô kỹ năng`.
 
 ### Task 2: Luật + component Ô MT, nhãn "cũ"
 Skill: test-driven-development
@@ -199,11 +213,11 @@ export function NhanCu(): JSX.Element;   // "cũ", viền currentColor, 10px đ�
 ```
 Màu theo mockup phần 3, chỉ token: `chua-co-dot` viền đứt `border-muted-line text-muted` · `chua-lich` `bg-muted-bg text-muted` · `co-lich` viền `border-doing-line text-doing` · `dang-thi` `bg-doing-bg text-doing` + chấm 7px trước số · `cho-cham` `bg-wait-bg text-wait` · `tre-cham` `bg-bad-bg text-bad` · `con-viec` `bg-soon-bg text-soon` · `xong` `bg-done-bg text-done` · `chon` = màu đảo (nền `var(--text)`, chữ `var(--bg)`, viền 2px cùng nền, `✓` sau chữ; tự quyết 7). Số đợt đậm, chữ số Inter (`tabular-nums`), cao 26px, `whitespace-nowrap`; điện thoại vùng bấm 44px bằng `after:` như `ChipKyNang`. `href` → `<Link>`; `onClick` → `<button>`; còn lại `<span>`.
 
-- [ ] **Step 1: Phép đỏ** `oMt`: một ca cho **mỗi** dòng mockup phần 3 (13 dòng trừ "Đang chọn" và MT0) với `homNay = '2026-10-05'`: kiểm `kieu` + `chu` (`'chưa xếp'`, `'W2 OCT'`, `'tuần này'`, `'chờ chấm 2'`, `'trễ chấm W'`, `'vắng S'`, `'✓'`, `'✓ 3/4'`, `'S huỷ'`, `cu: true`). Thêm: trễ đứng trước vắng; `hanCham` null + tuần đã hết → `cho-cham` không bao giờ `tre-cham`.
-- [ ] **Step 2: Phép đỏ quét nguồn**: không file `web/src` nào còn `ChipLichSu` hay chữ `>lịch sử<`; `OMt.tsx` không có `#` hex; `HangLichMt.tsx`, `MockDetailPage.tsx` import `OMt`.
-- [ ] **Step 3:** Viết `oMt.ts`, `OMt.tsx`, `NhanCu`; thay các nơi gọi. Cột Lượt `HangLichMt` dựng `OMtVao` từ `h.luot` (`kn` đã là `OKyNang`), `cu = l.lichSu`, `attemptId = l?.attemptId ?? null`; `h.luot` null → `chua-co-dot`.
-- [ ] **Step 4:** `npm run check` xanh (gồm `prSang`). `/impeccable clarify` cho tooltip.
-- [ ] **Step 5: Commit** `feat(mtb): Ô MT dùng chung, nhãn "cũ"`.
+- [x] **Step 1: Phép đỏ** `oMt`: một ca cho **mỗi** dòng mockup phần 3 (13 dòng trừ "Đang chọn" và MT0) với `homNay = '2026-10-05'`: kiểm `kieu` + `chu` (`'chưa xếp'`, `'W2 OCT'`, `'tuần này'`, `'chờ chấm 2'`, `'trễ chấm W'`, `'vắng S'`, `'✓'`, `'✓ 3/4'`, `'S huỷ'`, `cu: true`). Thêm: trễ đứng trước vắng; `hanCham` null + tuần đã hết → `cho-cham` không bao giờ `tre-cham`.
+- [x] **Step 2: Phép đỏ quét nguồn**: không file `web/src` nào còn `ChipLichSu` hay chữ `>lịch sử<`; `OMt.tsx` không có `#` hex; `HangLichMt.tsx`, `MockDetailPage.tsx` import `OMt`.
+- [x] **Step 3:** Viết `oMt.ts`, `OMt.tsx`, `NhanCu`; thay các nơi gọi. Cột Lượt `HangLichMt` dựng `OMtVao` từ `h.luot` (`kn` đã là `OKyNang`), `cu = l.lichSu`, `attemptId = l?.attemptId ?? null`; `h.luot` null → `chua-co-dot`.
+- [x] **Step 4:** `npm run check` xanh (gồm `prSang`). `/impeccable clarify` cho tooltip.
+- [x] **Step 5: Commit** `feat(mtb): Ô MT dùng chung, nhãn "cũ"`.
 
 ### Task 3: Panel "Xếp lịch Mock Test" theo mockup phần 1
 Skill: test-driven-development · `/impeccable layout` · `clarify` · `adapt`
@@ -223,10 +237,10 @@ Bố cục (từ trên xuống, chữ đúng mockup):
 7. Bỏ: `:258` câu dưới Đợt, `:205` + `phu`/`dongTren` xem trước, `:319-327` khối Lý do, `:329-334` ô force, `hep :119` (tự quyết 2, 8). `HopThiLai :397-432` giữ, chỉ khi em có `dotTheoEm` và `viec === 'da-du'`.
 8. T4 (A4): `TuanNho` không `toiThieu` (trang của QL); tuần chung < tuần này → chip `Nhan tone="soon"` "Tuần đã qua" cạnh ô tuần, `title` "MT chưa thi xếp về tuần đã qua — tuần cách ≥ 2 tuần thì là MT cũ.".
 
-- [ ] **Step 1: Phép đỏ quét nguồn** `NganXepLichMt.tsx`: có `'MT mới'`, `'Lịch riêng ▸'`, `'Tuần và kỹ năng'`, `'Sẽ xếp '`, `'Cần xem '`, `'Không xếp được '`, `'⇆ cuộn ngang'`, `'Chọn tất cả'`, `kyNang`, `attemptNo: dot`, `<OMt`; **không** có `'Xem trước: '`, `'luôn ở trên'`, `'Vẫn xếp bài có cảnh báo'`, `LY_DO_TOI_THIEU`, `DauMt`, `innerWidth < 640`.
-- [ ] **Step 2:** Viết lại theo bố cục. Chú thích khối đầu file cập nhật (mockup phần 1, T13b).
-- [ ] **Step 3:** `npm run check` xanh. Bấm thử QL (2): 1440 + 375, sáng + tối — chọn 2 lớp, đổi "MT mới" → "MT2", bỏ tick S, lọc chip "Cần xem", cuộn ngang thấy cột tên đứng yên, lưu → R9b còn em lỗi. Chụp ảnh.
-- [ ] **Step 4: Commit** `feat(mtb): panel Xếp lịch Mock Test theo mockup bản 4`.
+- [x] **Step 1: Phép đỏ quét nguồn** `NganXepLichMt.tsx`: có `'MT mới'`, `'Lịch riêng ▸'`, `'Tuần và kỹ năng'`, `'Sẽ xếp '`, `'Cần xem '`, `'Không xếp được '`, `'⇆ cuộn ngang'`, `'Chọn tất cả'`, `kyNang`, `attemptNo: dot`, `<OMt`; **không** có `'Xem trước: '`, `'luôn ở trên'`, `'Vẫn xếp bài có cảnh báo'`, `LY_DO_TOI_THIEU`, `DauMt`, `innerWidth < 640`.
+- [x] **Step 2:** Viết lại theo bố cục. Chú thích khối đầu file cập nhật (mockup phần 1, T13b).
+- [x] **Step 3:** `npm run check` xanh. Bấm thử QL (2): 1440 + 375, sáng + tối — chọn 2 lớp, đổi "MT mới" → "MT2", bỏ tick S, lọc chip "Cần xem", cuộn ngang thấy cột tên đứng yên, lưu → R9b còn em lỗi. Chụp ảnh.
+- [x] **Step 4: Commit** `feat(mtb): panel Xếp lịch Mock Test theo mockup bản 4`.
 
 ### Task 4: `MenuDong` có mục mờ
 Skill: test-driven-development
@@ -242,9 +256,9 @@ export function MenuDong(p: { muc: MucMenu[]; nhan?: string; bieuTuong?: string;
 ```
 `luonHien` → vẽ nút kể cả khi mọi mục `tat`. Mục `tat`: `aria-disabled="true"`, chữ `text-slate-500`, `onClick` không gọi `onChon`, vẫn nhận focus phím ↑/↓ (đọc được tooltip), Enter không làm gì.
 
-- [ ] **Step 1: Phép đỏ quét nguồn**: `MenuDong.tsx` có `aria-disabled`, `luonHien`; dòng `if (!muc.length) return null` đổi thành điều kiện có `luonHien`.
-- [ ] **Step 2:** Sửa. Nơi gọi cũ không truyền `tat`/`luonHien` → hành vi cũ.
-- [ ] **Step 3:** `npm run check`. **Commit** `feat(mtb): MenuDong mục mờ, nút luôn hiện`.
+- [x] **Step 1: Phép đỏ quét nguồn**: `MenuDong.tsx` có `aria-disabled`, `luonHien`; dòng `if (!muc.length) return null` đổi thành điều kiện có `luonHien`.
+- [x] **Step 2:** Sửa. Nơi gọi cũ không truyền `tat`/`luonHien` → hành vi cũ.
+- [x] **Step 3:** `npm run check`. **Commit** `feat(mtb): MenuDong mục mờ, nút luôn hiện`.
 
 ### Task 5: Hộp một đợt `HopKyNang` theo mockup phần 2 (Kế hoạch Test + hồ sơ HV › Lộ trình)
 Skill: test-driven-development · `/impeccable layout` · `clarify` · `harden`
@@ -273,11 +287,11 @@ Bố cục (chữ đúng mockup):
 - Lưu: `chuDoiVuot(...).canPopup` → mở `HopXacNhanHuyLich` (Task 6); chỉ lượt chưa có điểm → lưu thẳng `xacNhanHuyLich: true`. 409 có `seHuyLich` → mở lại với danh sách mới (giữ `:191-193`).
 - T4: `toiThieu` của `TuanNho` = `null` (hộp chỉ QL dùng: Kế hoạch Test và Lộ trình `bang.coTheXep`); tuần đã chọn < tuần này và kỹ năng chưa thi → vàng "Tuần đã qua".
 
-- [ ] **Step 1: Phép đỏ (luật thuần)** `menuHopKyNang`: (a) `chua-toi-tuan`, QL → `doi-tuan` + `doi-han`? (đúng theo `thaoTacKyNang :43`: `chua-toi-tuan` không có `doi-han`) → kiểm mảng `duoc` = `[true,false,false,false,true]` khớp mockup "Menu ⋯ của Speaking (chưa tới tuần thi)" (Báo vắng, Huỷ điểm mờ; **Dời hạn chấm sáng** trong mockup → nếu `thaoTacKyNang` không cho, ghi vào PR là lệch mockup, giữ luật máy chủ); (b) `co-diem` → `huy-diem` sáng, `doi-tuan` mờ "Đã có điểm"; (c) `vang` → `doi-tuan` `thay: 'xep-lai'`; (d) `moi` → chỉ `doi-tuan` sáng; luôn 5 phần tử đúng thứ tự.
-- [ ] **Step 2: Phép đỏ quét nguồn** `HopKyNang.tsx`: có `'Tuần chung'`, `luonHien`, `menuHopKyNang`, `NganLichSuBai`, `chuDoiVuot`; không có `LY_DO_TOI_THIEU`, `'Lý do bỏ'`, `'không trùng đợt khác'`.
-- [ ] **Step 3:** Viết. Giữ: neo cạnh chip / tấm đáy < 640px (`:199-225`), Esc, `onHienDien`, kiểm `/ke-hoach-test/dot/kiem` mỗi lần đổi tuần (`:94-123`), đợt mới xem trước qua `hang-loat` một em (gửi `kyNang` tick).
-- [ ] **Step 4:** `npm run check`. Bấm thử QL: Kế hoạch Test bấm ô MT3 (L R có điểm, W trễ chấm, S có lịch) → đúng mockup phần 2; mở ⋯ Speaking chưa tới tuần → 3 mục mờ có tooltip; hồ sơ HV › Lộ trình "Dời lịch" mở cùng hộp. 375: tấm đáy, ⋯ ≥ 44px. Ảnh.
-- [ ] **Step 5: Commit** `feat(mtb): hộp một đợt — tuần chung, ⋯ luôn hiện, mục mờ`.
+- [x] **Step 1: Phép đỏ (luật thuần)** `menuHopKyNang`: (a) `chua-toi-tuan`, QL → `doi-tuan` + `doi-han`? (đúng theo `thaoTacKyNang :43`: `chua-toi-tuan` không có `doi-han`) → kiểm mảng `duoc` = `[true,false,false,false,true]` khớp mockup "Menu ⋯ của Speaking (chưa tới tuần thi)" (Báo vắng, Huỷ điểm mờ; **Dời hạn chấm sáng** trong mockup → nếu `thaoTacKyNang` không cho, ghi vào PR là lệch mockup, giữ luật máy chủ); (b) `co-diem` → `huy-diem` sáng, `doi-tuan` mờ "Đã có điểm"; (c) `vang` → `doi-tuan` `thay: 'xep-lai'`; (d) `moi` → chỉ `doi-tuan` sáng; luôn 5 phần tử đúng thứ tự.
+- [x] **Step 2: Phép đỏ quét nguồn** `HopKyNang.tsx`: có `'Tuần chung'`, `luonHien`, `menuHopKyNang`, `NganLichSuBai`, `chuDoiVuot`; không có `LY_DO_TOI_THIEU`, `'Lý do bỏ'`, `'không trùng đợt khác'`.
+- [x] **Step 3:** Viết. Giữ: neo cạnh chip / tấm đáy < 640px (`:199-225`), Esc, `onHienDien`, kiểm `/ke-hoach-test/dot/kiem` mỗi lần đổi tuần (`:94-123`), đợt mới xem trước qua `hang-loat` một em (gửi `kyNang` tick).
+- [x] **Step 4:** `npm run check`. Bấm thử QL: Kế hoạch Test bấm ô MT3 (L R có điểm, W trễ chấm, S có lịch) → đúng mockup phần 2; mở ⋯ Speaking chưa tới tuần → 3 mục mờ có tooltip; hồ sơ HV › Lộ trình "Dời lịch" mở cùng hộp. 375: tấm đáy, ⋯ ≥ 44px. Ảnh.
+- [x] **Step 5: Commit** `feat(mtb): hộp một đợt — tuần chung, ⋯ luôn hiện, mục mờ`.
 
 ### Task 6: Popup dời vượt ở mọi cổng dời (mockup phần 4)
 Skill: test-driven-development · `/impeccable harden`
@@ -306,12 +320,12 @@ export function HopXacNhanHuyLich(p: { tieuDe: string; cau: string; dong: string
 ```
 Mỗi cổng: `chuDoiVuot(...).canPopup` → mở hộp; xác nhận → gửi lại `xacNhanHuyLich: true` + lý do (trường theo A2, đề xuất `reason`). Không `canPopup` mà có `seHuyLich` → chip vàng `chip` (title `cauSeHuyLich`), lưu thẳng `xacNhanHuyLich: true`. 409 có `details.seHuyLich` → mở lại với danh sách mới (giữ `HopKyNang.tsx:191-193`, `MockDetailPage.tsx:656-658`).
 
-- [ ] **Step 1: Phép đỏ (luật thuần)** `chuDoiVuot`: ví dụ mockup phần 4 (MT1 → W2 NOV; MT2 `soDiem 4, soCase 1`; MT3 `soDiem 0`) → `tieuDe 'Dời MT1 sang W2 NOV?'`, `cau 'MT1 muộn hơn MT2, MT3.'`, `dong ['MT2: huỷ 4 điểm, đóng 1 Case','MT3: bỏ lịch']`, `canPopup true`; chỉ MT3 → `canPopup false`, `chip 'Bỏ lịch MT3'`.
-- [ ] **Step 2: Phép đỏ (DB, khoá tên trường web dùng)**: QL dời MT1 qua MT2 có điểm ở **mỗi** cổng — `POST /ke-hoach-test/dot`, `/attempts/:id/week`, `/attempts/:id/skills/:skill/week`, `/ke-hoach-test/hang-loat` (A3) — không xác nhận → 409, `details.seHuyLich[0].soDiem === 4`; xác nhận thiếu lý do → 400; đủ → 200. Phép hành vi đầy đủ là của MTa; ở đây chỉ assert tên trường và mã lỗi.
-- [ ] **Step 3: Phép đỏ quét nguồn**: `HopXacNhanHuyLich.tsx` có `'Dời và huỷ'`, `'Lý do'`, `'Đóng'`, `kiemLyDoThaoTac`, không còn `'Huỷ lịch và lưu'`, `'Quay lại'`; 4 cổng có `chuDoiVuot`.
-- [ ] **Step 4:** Vẽ lại + nối 4 cổng. Toast sau lưu: `Đã lưu lịch · huỷ kết quả MT2` / `· bỏ lịch MT3`.
-- [ ] **Step 5:** `npm run check`. Bấm thử QL ở 4 cổng; giả 409 giữa chừng (tab 2 nhập thêm điểm MT2, tab 1 bấm "Dời và huỷ") → hộp mở lại số mới, Lý do còn nguyên. Ảnh.
-- [ ] **Step 6: Commit** `feat(mtb): popup dời vượt ở mọi cổng dời`.
+- [x] **Step 1: Phép đỏ (luật thuần)** `chuDoiVuot`: ví dụ mockup phần 4 (MT1 → W2 NOV; MT2 `soDiem 4, soCase 1`; MT3 `soDiem 0`) → `tieuDe 'Dời MT1 sang W2 NOV?'`, `cau 'MT1 muộn hơn MT2, MT3.'`, `dong ['MT2: huỷ 4 điểm, đóng 1 Case','MT3: bỏ lịch']`, `canPopup true`; chỉ MT3 → `canPopup false`, `chip 'Bỏ lịch MT3'`.
+- [x] **Step 2: Phép đỏ (DB, khoá tên trường web dùng)**: QL dời MT1 qua MT2 có điểm ở **mỗi** cổng — `POST /ke-hoach-test/dot`, `/attempts/:id/week`, `/attempts/:id/skills/:skill/week`, `/ke-hoach-test/hang-loat` (A3) — không xác nhận → 409, `details.seHuyLich[0].soDiem === 4`; xác nhận thiếu lý do → 400; đủ → 200. Phép hành vi đầy đủ là của MTa; ở đây chỉ assert tên trường và mã lỗi.
+- [x] **Step 3: Phép đỏ quét nguồn**: `HopXacNhanHuyLich.tsx` có `'Dời và huỷ'`, `'Lý do'`, `'Đóng'`, `kiemLyDoThaoTac`, không còn `'Huỷ lịch và lưu'`, `'Quay lại'`; 4 cổng có `chuDoiVuot`.
+- [x] **Step 4:** Vẽ lại + nối 4 cổng. Toast sau lưu: `Đã lưu lịch · huỷ kết quả MT2` / `· bỏ lịch MT3`.
+- [x] **Step 5:** `npm run check`. Bấm thử QL ở 4 cổng; giả 409 giữa chừng (tab 2 nhập thêm điểm MT2, tab 1 bấm "Dời và huỷ") → hộp mở lại số mới, Lý do còn nguyên. Ảnh.
+- [x] **Step 6: Commit** `feat(mtb): popup dời vượt ở mọi cổng dời`.
 
 ### Task 7: Lý do tuỳ chọn (T7) + tuần đã qua cho QL (T4) ở web
 Skill: test-driven-development · `/impeccable harden`
@@ -325,11 +339,11 @@ Skill: test-driven-development · `/impeccable harden`
 
 **Interfaces:** Consumes A7, A4 (`kiemTuanXep(...).quaTuan` cho chip vàng — web gọi với `quanLy: true`). Ô tuỳ chọn: `Truong tuyChon` (đã có), bỏ `dem`.
 
-- [ ] **Step 1: Phép đỏ quét nguồn**: `web/src` không còn `LY_DO_TOI_THIEU`, `kiemLyDo(` (trừ `DeXuatSuaPanel.tsx` — hằng riêng 15 ký tự, ngoài phạm vi), không còn `dem={{ co: lyDo` / `dem={{ co: reason` ở ô tuỳ chọn; `HopThaoTacMt.tsx` chỉ chặn tuần đã qua trong nhánh `!quanLy`.
-- [ ] **Step 2: Phép đỏ (DB, khoá A7/A4)**: GVCN báo vắng không lý do → 200; QL dời hạn không lý do → 200; QL huỷ điểm không lý do → 400; GVCN `/attempts/:id/skills/:skill/week` tuần đã qua → 400; QL cùng tuần (MT chưa thi) → 200.
-- [ ] **Step 3:** Sửa các file trên.
-- [ ] **Step 4:** `npm run check`. Bấm thử: GVCN (7) hồ sơ Mock "Báo vắng" không lý do lưu được; QL "Dời lịch thi cả đợt" chọn tuần đã qua → chip "Tuần đã qua", lưu được; GVCN không lùi được qua tuần này. Ảnh.
-- [ ] **Step 5: Commit** `feat(mtb): lý do tuỳ chọn trừ 4 chỗ bắt buộc; QL xếp tuần đã qua`.
+- [x] **Step 1: Phép đỏ quét nguồn**: `web/src` không còn `LY_DO_TOI_THIEU`, `kiemLyDo(` (trừ `DeXuatSuaPanel.tsx` — hằng riêng 15 ký tự, ngoài phạm vi), không còn `dem={{ co: lyDo` / `dem={{ co: reason` ở ô tuỳ chọn; `HopThaoTacMt.tsx` chỉ chặn tuần đã qua trong nhánh `!quanLy`.
+- [x] **Step 2: Phép đỏ (DB, khoá A7/A4)**: GVCN báo vắng không lý do → 200; QL dời hạn không lý do → 200; QL huỷ điểm không lý do → 400; GVCN `/attempts/:id/skills/:skill/week` tuần đã qua → 400; QL cùng tuần (MT chưa thi) → 200.
+- [x] **Step 3:** Sửa các file trên.
+- [x] **Step 4:** `npm run check`. Bấm thử: GVCN (7) hồ sơ Mock "Báo vắng" không lý do lưu được; QL "Dời lịch thi cả đợt" chọn tuần đã qua → chip "Tuần đã qua", lưu được; GVCN không lùi được qua tuần này. Ảnh.
+- [x] **Step 5: Commit** `feat(mtb): lý do tuỳ chọn trừ 3 chỗ bắt buộc; QL xếp tuần đã qua`.
 
 ### Task 8: Nhập band (T10) · Xin dời / Không mock lại (T3) · Khôi phục kết quả (T2)
 Skill: test-driven-development · `/impeccable clarify`
@@ -349,28 +363,28 @@ Skill: test-driven-development · `/impeccable clarify`
 - Ô "Band" (`w-14`, `inputMode="decimal"`, nhãn `Band`) ở `InlineScoreEditor`, `CriteriaModal`, sửa tiêu chí. `LOI_SO_CAU` / `LOI_TIEU_CHI` (tooltip) thêm "hoặc band 6.5 / b6".
 - Chữ ngoài mockup (≤ 3 từ, ghi vào PR): "Không mock lại" (= chữ của MTa), "Khôi phục kết quả". "Xin dời" đúng mockup phần 3.
 
-- [ ] **Step 1: Phép đỏ (luật thuần)**: `rawPatchFrom('6.5', cell)` → `{ band: 6.5 }`; `'b6'` → `{ band: 6 }`; `'32'` → `{ rawScore: 32 }`; `'b6.3'`, `'10.5'`, `'6,5'` → `null`; `criteriaPatchFrom(['','','',''], cell, '6.5')` → `patch.band === 6.5 && preview === 6.5`; `criteriaPatchFrom(['6','6','',''], cell, '6.5')` → `patch === null`.
-- [ ] **Step 2: Phép đỏ (DB, khoá tên A6/A6b/A8)**: GVBM L `PUT … { band: 6.5 }` → `band 6.5`, `raw_score` null; GVCN `xin-doi` kỹ năng `huyVang` → một `skill_move_requests` `pending`; GVBM gọi `xin-doi` → 403; `GET /attempts/:id` của lượt bị vượt có `ketQuaHuy`.
-- [ ] **Step 3: Phép đỏ quét nguồn**: `ScoreEntry.tsx` có `'Band'` ở 3 hộp tiêu chí; `HopThaoTacMt.tsx` có `'xin-doi'`, `'khong-mock-lai'`; `MockDetailPage.tsx` có `'Khôi phục kết quả'`; không còn `'từ lần 2 Quản lý duyệt'`.
-- [ ] **Step 4:** Sửa. Lưới `LuoiFT.tsx:275,305`, `MotKyNang.tsx:198-200`, `ODiemLon.tsx:186` thừa hưởng (không sửa).
-- [ ] **Step 5:** `npm run check`. Bấm thử GVBM (9): L gõ `6.5` → ô hiện `6.5`; W1 chỉ điền Band → lưu. GVCN (7): kỹ năng `S huỷ` → "Xin dời" → thẻ ở Chờ duyệt của QL. QL (2): "Không mock lại" → đợt thành `✓ 3/4`; MT bị vượt → "Khôi phục kết quả". Ảnh.
-- [ ] **Step 6: Commit** `feat(mtb): nhập band, Xin dời / Không mock lại, Khôi phục kết quả`.
+- [x] **Step 1: Phép đỏ (luật thuần)**: `rawPatchFrom('6.5', cell)` → `{ band: 6.5 }`; `'b6'` → `{ band: 6 }`; `'32'` → `{ rawScore: 32 }`; `'b6.3'`, `'10.5'`, `'6,5'` → `null`; `criteriaPatchFrom(['','','',''], cell, '6.5')` → `patch.band === 6.5 && preview === 6.5`; `criteriaPatchFrom(['6','6','',''], cell, '6.5')` → `patch === null`.
+- [x] **Step 2: Phép đỏ (DB, khoá tên A6/A6b/A8)**: GVBM L `PUT … { band: 6.5 }` → `band 6.5`, `raw_score` null; GVCN `xin-doi` kỹ năng `huyVang` → một `skill_move_requests` `pending`; GVBM gọi `xin-doi` → 403; `GET /attempts/:id` của lượt bị vượt có `ketQuaHuy`.
+- [x] **Step 3: Phép đỏ quét nguồn**: `ScoreEntry.tsx` có `'Band'` ở 3 hộp tiêu chí; `HopThaoTacMt.tsx` có `'xin-doi'`, `'khong-mock-lai'`; `MockDetailPage.tsx` có `'Khôi phục kết quả'`; không còn `'từ lần 2 Quản lý duyệt'`.
+- [x] **Step 4:** Sửa. Lưới `LuoiFT.tsx:275,305`, `MotKyNang.tsx:198-200`, `ODiemLon.tsx:186` thừa hưởng (không sửa).
+- [x] **Step 5:** `npm run check`. Bấm thử GVBM (9): L gõ `6.5` → ô hiện `6.5`; W1 chỉ điền Band → lưu. GVCN (7): kỹ năng `S huỷ` → "Xin dời" → thẻ ở Chờ duyệt của QL. QL (2): "Không mock lại" → đợt thành `✓ 3/4`; MT bị vượt → "Khôi phục kết quả". Ảnh.
+- [x] **Step 6: Commit** `feat(mtb): nhập band, Xin dời / Không mock lại, Khôi phục kết quả`.
 
 ### Task 9: Lưới Kế hoạch Test FT dùng Ô MT (theo Q1 — mặc định A)
 Skill: test-driven-development · `/impeccable layout` · `adapt`
 
 **Files:** Modify `web/src/modules/test/keHoach/LuoiKeHoach.tsx:196,246-256` (FT: ô = `OMt` + `onClick` mở `HopKyNang` với `kyNangDau: null`; ô `chuaToiLuot` = `chua-co-dot` không bấm, title "Xếp MT trước rồi mới tới MT{n}"; ô trống tới lượt = `chua-co-dot` bấm được), `rongDot` FT 176 → 120. `ChipKyNang.tsx` chỉ còn nhánh lớp thường (xoá nhánh FT `:31-41`, `lichSu`, `dangDo` nếu không còn ai dùng). Test: quét nguồn.
 
-- [ ] **Step 1: Phép đỏ quét nguồn**: `LuoiKeHoach.tsx` có `<OMt` cho `loai === 'ft'`; `ChipKyNang` không còn chữ `'+ xếp'`.
-- [ ] **Step 2:** Sửa. Q1 = B → bỏ Task này, chỉ thay `ChipLichSu` (Task 2 đã làm).
-- [ ] **Step 3:** `npm run check`. Bấm thử QL 1440/375: lớp FT 6 đợt, cuộn ngang tới đợt đang tới (giữ `:202-206`), ô "Đang thi" khác hẳn "Có lịch". Ảnh. **Commit** `feat(mtb): lưới Kế hoạch Test FT dùng Ô MT`.
+- [x] **Step 1: Phép đỏ quét nguồn**: `LuoiKeHoach.tsx` có `<OMt` cho `loai === 'ft'`; `ChipKyNang` không còn chữ `'+ xếp'`.
+- [x] **Step 2:** Sửa. Q1 = B → bỏ Task này, chỉ thay `ChipLichSu` (Task 2 đã làm).
+- [x] **Step 3:** `npm run check`. Bấm thử QL 1440/375: lớp FT 6 đợt, cuộn ngang tới đợt đang tới (giữ `:202-206`), ô "Đang thi" khác hẳn "Có lịch". Ảnh. **Commit** `feat(mtb): lưới Kế hoạch Test FT dùng Ô MT`.
 
 ### Task 10: Rà toàn bộ, tài liệu, PR
-- [ ] Rà mọi nơi hiện trạng thái MT (`grep -rn "MT\${" web/src`): đã dùng `OMt` ở panel, hộp (tiêu đề giữ chữ), Kế hoạch Test FT, Lộ trình, đầu trang hồ sơ Mock. **Không** đổi (chỉ là chữ MT trong câu/số liệu, không phải ô trạng thái): `HanhTrinh.tsx:480`, `Highlights.tsx:56`, `LuoiFT.tsx:248`, `MotKyNang.tsx:185`, `StudentManagePanel.tsx:280`, `cases/*`, `yThuc/*`; `IeltsAttempts` (`StudentDetailPage.tsx:458`) giữ liên kết `MT{n}` + `NhanDot` (cột Kết quả đã nói trạng thái) — ghi danh sách vào mô tả PR.
-- [ ] `CODE_MAP.md`: thêm 4 file mới, gỡ `HopXacNhanHuyLich.tsx`. `plan.md` mục 11 một dòng; `[x]` trong file này.
-- [ ] `npm run check` (một lần). Bấm thử 375/1440 sáng/tối, vai Quản trị (1), QL (2), GVCN (7), GVBM (9): panel · hộp (Kế hoạch Test + Lộ trình) · popup ở 4 cổng · hồ sơ Mock (Xin dời, lý do tuỳ chọn) · Nhập điểm band. Ảnh thật vào PR.
-- [ ] `/impeccable audit` các màn trên → sửa lỗi P0/P1 trong phạm vi.
-- [ ] `/ponytail-review`; `superpowers:requesting-code-review`; `superpowers:finishing-a-development-branch` (PR vào `main`, không merge). Mô tả PR: từng mục (panel, hộp, Ô MT, popup, T7, T4, T10, T3, "cũ"), câu trả lời Q1–Q3 đã dùng, 12 tự quyết, chữ ngoài mockup đã thêm ("Tuần đã qua", "Bỏ lịch MT2", "Lịch riêng ▾", toast), phép kiểm cũ đã sửa theo T13b, chú thích `ponytail:`, ảnh sổ tay `docs/so-tay/` bị lệch (panel Xếp lịch MT, hộp kỹ năng, hồ sơ Mock).
+- [x] Rà mọi nơi hiện trạng thái MT (`grep -rn "MT\${" web/src`): đã dùng `OMt` ở panel, hộp (tiêu đề giữ chữ), Kế hoạch Test FT, Lộ trình, đầu trang hồ sơ Mock. **Không** đổi (chỉ là chữ MT trong câu/số liệu, không phải ô trạng thái): `HanhTrinh.tsx:480`, `Highlights.tsx:56`, `LuoiFT.tsx:248`, `MotKyNang.tsx:185`, `StudentManagePanel.tsx:280`, `cases/*`, `yThuc/*`; `IeltsAttempts` (`StudentDetailPage.tsx:458`) giữ liên kết `MT{n}` + `NhanDot` (cột Kết quả đã nói trạng thái) — ghi danh sách vào mô tả PR.
+- [x] `CODE_MAP.md`: thêm 4 file mới, gỡ `HopXacNhanHuyLich.tsx`. `plan.md` mục 11 một dòng; `[x]` trong file này.
+- [x] `npm run check` (một lần). Bấm thử 375/1440 sáng/tối, vai Quản trị (1), QL (2), GVCN (7), GVBM (9): panel · hộp (Kế hoạch Test + Lộ trình) · popup ở 4 cổng · hồ sơ Mock (Xin dời, lý do tuỳ chọn) · Nhập điểm band. Ảnh thật vào PR.
+- [x] `/impeccable audit` các màn trên → sửa lỗi P0/P1 trong phạm vi.
+- [x] `/ponytail-review`; `superpowers:requesting-code-review`; `superpowers:finishing-a-development-branch` (PR vào `main`, không merge). Mô tả PR: từng mục (panel, hộp, Ô MT, popup, T7, T4, T10, T3, "cũ"), câu trả lời Q1–Q3 đã dùng, 12 tự quyết, chữ ngoài mockup đã thêm ("Tuần đã qua", "Bỏ lịch MT2", "Lịch riêng ▾", toast), phép kiểm cũ đã sửa theo T13b, chú thích `ponytail:`, ảnh sổ tay `docs/so-tay/` bị lệch (panel Xếp lịch MT, hộp kỹ năng, hồ sơ Mock).
 
 ## Nghiệm thu
 - Panel, hộp, Ô MT, popup **đúng chữ mockup bản 4**; không câu giải thích dưới nút/ô.

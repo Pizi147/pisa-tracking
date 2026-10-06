@@ -21,6 +21,7 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 | `docs/superpowers/plans/2026-10-06-pr-tk-tong-ket-lo-trinh.md` | PR-TK (mockup `thiet-ke/mockup-tong-ket-lo-trinh-2026-10-06.html`, bản 2 đã duyệt 06/10; chạy sau LUI-b #213) |
 | `docs/superpowers/plans/2026-10-03-pr-phien-lich-mt-dieu-huong-sua-lop.md` | PR-SL (mục B Q-0310-3, "PR-SL", SL-1→2). Phần PH, LM, DH đã xong |
 | `docs/superpowers/plans/2026-10-06-pr-bv-bo-vang-xoa-diem.md` | PR-BV bản 2 (chạy sau MTa + MTb; mockup đã duyệt 06/10) |
+| `docs/superpowers/plans/2026-10-06-pr-lui-a-case-duyet-y-thuc.md` | PR-LUI-a tách **a1** (Ý thức) → **a2** (Case + Chờ duyệt); mockup `thiet-ke/mockup-duong-lui-case-duyet-y-thuc-2026-10-06.html` **bản 1 duyệt 06/10** (Q1–Q4 đã trả lời); bản 2 thêm Sửa / Xoá lần xử lý (a1) + Sửa / Xoá Case (a2), chờ Q5–Q6 |
 | `docs/superpowers/plans/2026-10-02-ux-sau-critique.md` | PR-HK2 (H1, H2, K2, K4–K7, J1–J4, J7, J9), PR-SL (I1–I4, I6) |
 
 - **Khi các nguồn mâu thuẫn:** theo `CLAUDE.md` (quyết định chủ sản phẩm + kế hoạch đã duyệt → Rulebook + mockup → skill).
@@ -187,9 +188,9 @@ Nguồn: `docs/superpowers/specs/2026-10-06-ra-soat-duong-lui.md`. Chạy **sau 
 - **Điểm:** tẩy ô + Lưu = xoá (MTa T22); không kho khôi phục, không xoá hàng loạt. Nhập lại điểm sau khi xoá → **mở lại đúng Case** lần xoá đã đóng. Lịch sử ô lớp thường phải hiện điểm cũ (nay thiếu).
 - Sửa lỗi: bài lớp thường xoá điểm xong vẫn "đã xong" (`regular.ts:752-756`).
 
-### PR-LUI · Đường lui (L, có thể tách a/b) — chủ sản phẩm 06/10, **kế hoạch + mockup chưa soạn**
+### PR-LUI · Đường lui (L, tách a/b) — chủ sản phẩm 06/10 · **b xong #213** · **a: mockup duyệt 06/10 (bản 2 thêm Sửa / Xoá lần xử lý, Sửa / Xoá Case — chờ Q5, Q6)** (`2026-10-06-pr-lui-a-case-duyet-y-thuc.md`, tách a1 Ý thức → a2 Case + Chờ duyệt)
 Nguồn như PR-BV. Chỉ mở cho QL / Quản trị, không nới quyền GV. Chạy sau đợt 5, trước HK2.
-- **a · Case + Chờ duyệt + Ý thức:** mở lại Case đã hoàn thành (sửa luôn chữ sai ở `ThaoTacCase.tsx:218` đang nói "Case này mở lại" mà máy chủ tạo Case mới) · huỷ quyết định duyệt / từ chối bấm nhầm trong ngày + từ chối hàng loạt · vi phạm Ý thức xoá mềm + khôi phục (nay xoá hẳn cả tệp) · ghi vi phạm cho nhiều em một lần.
+- **a (mở rộng 06/10, xem kế hoạch):** ghi vi phạm nhiều học viên / nhiều vi phạm một học viên, ô `Vi phạm` ngắn + `Mô tả`, bằng chứng ngay trong form một nút Lưu, **không Hoàn tác** · Tạo Case có bằng chứng · Ghi kết quả PA có `Người phụ trách`, gộp `Vấn đề còn tồn / Ghi chú`, nút kết quả không cắt (toàn web: PR-KHUNG) · bản cũ: mở lại Case đã hoàn thành (sửa luôn chữ sai ở `ThaoTacCase.tsx:218` đang nói "Case này mở lại" mà máy chủ tạo Case mới) · huỷ quyết định duyệt / từ chối bấm nhầm trong ngày + từ chối hàng loạt · vi phạm Ý thức xoá mềm + khôi phục (nay xoá hẳn cả tệp) · ghi vi phạm cho nhiều em một lần.
 - **b · Học viên & lớp:** "Học lại" cho em đã kết thúc học · mở lại lớp đã kết thúc · lưu trữ / kết thúc học / huỷ quyết định chuyển lớp cho nhiều em một lần.
 
 ### PR-TK · Tổng kết lộ trình — điểm 4 kỹ năng khi kết thúc (M) — chủ sản phẩm 06/10, **làm trong đợt này**, kế hoạch + mockup **đã soạn 06/10, chờ duyệt** (`2026-10-06-pr-tk-tong-ket-lo-trinh.md`; Q1–Q4 chốt 06/10 — Q4: kết quả **thi thật** L R W S do GVCN nhập, Đích → Kết quả → Hướng tiếp, việc nhắc "Cập nhật kết quả thi thật"; Kết thúc học FT chờ kết quả thi thật chưa lưu trữ (TK-L) — **đã duyệt 06/10, chạy sau LUI-b #213**; khảo sát thêm đường đóng thứ 5: `PATCH /cycles/:id` `cycles.ts:312-314`)
@@ -206,6 +207,10 @@ Dựa trên bản chụp PR-TK. Ý tưởng (brainstorm planning, chờ chủ s�
 HV không đạt mấy lần liên tiếp, kỹ năng hay trượt nhất; từ band đầu vào → kết quả cuối khoá (nhóm band); hiệu quả Case / PA (trượt → đạt sau PA); Target đặt vs thực đạt;
 tỉ lệ vắng, trễ chấm; xuất Excel bộ số liệu thô (một dòng một lượt × kỹ năng) để nghiên cứu ngoài web. Tái dùng `evaluateAttempt`, `evaluateRegular`, `daiCuoiKhoa`, `xuatExcel` MT.
 Màn dự kiến: Phân tích › "Tổng kết khoá" (lọc khoảng thời gian, chương trình, chi nhánh) + nút Xuất. Cần 2–3 tháng dữ liệu bản chụp mới có ý nghĩa.
+
+### PR-KHUNG · Một thanh cuộn, không cắt chữ, nút không tràn (M) — chủ sản phẩm 06/10, mockup DUYỆT, kế hoạch `docs/superpowers/plans/2026-10-06-pr-khung-cuon-chu-cat.md`
+Gốc chung G1–G7 (App.tsx `<main>` thiếu relative → Học viên & Lớp hai thanh cuộn; NutChon chừa chỗ ✓; BoLocDoan / HangTab trên 375; ViecTiep; WorkList, TheKyNang; AdminPage nhật ký; PhanTichLopTab).
+Chốt: đầu cột + hàng lớp dính (Học viên & Lớp) · nút lọc / tab điện thoại một hàng vuốt ngang có mép mờ · đầu cột dính các bảng khác → HK2. Chạy sau MTb, LT3, TK, BV, MT0, LUI-a; trước HK2.
 
 ### PR-LT3 · Lịch Test ba khối + Speaking chấm chéo (L) — luật T15–T18 (mục 2c), **kế hoạch chi tiết chưa soạn**
 Chủ sản phẩm 05/10 (sau khi thấy MT4 "W1 OCT" hiện ở cả Nợ lẫn Lịch tuần này — luật hạn **đúng**, cách hiện gây rối).
@@ -239,8 +244,8 @@ Việc đầu tiên: giao agent soạn kế hoạch theo mẫu A mục 10 (Opus 
   **K5** demo bar điện thoại · **K6** chữ nội dung 12 px · **K7** một kiểu icon ⋯ · **J1–J4, J7, J9** chữ.
 - **Thêm:** **K4 + "Vắng" thống nhất** lưới cả lớp ↔ màn từng kỹ năng, có Hoàn tác (quyết định 04/10) · **D7** thanh trên điện
   thoại theo mockup 23C · bấm thử: chữ "Khác" mơ hồ, trạng thái rỗng trang lưu trữ, khoảng trống hồ sơ cá nhân (có thật mới sửa) ·
-  dải "Mất kết nối" của PR-PH (nút "Đang thử…", `role=status`, ảnh) · toast Hoàn tác sau khi ghi vi phạm (Y_THUC §7.2) nếu
-  dựng chung toast · **chụp lại toàn bộ ảnh sổ tay** `docs/so-tay/`.
+  dải "Mất kết nối" của PR-PH (nút "Đang thử…", `role=status`, ảnh) · ~~toast Hoàn tác sau khi ghi vi phạm~~ (**bỏ**, chủ sản phẩm 06/10:
+  đã có Sửa / Xoá — PR-LUI-a1) · **chụp lại toàn bộ ảnh sổ tay** `docs/so-tay/`.
 - **Thêm từ PR-DH (chủ sản phẩm chốt 04/10 tối):**
   - Hồ sơ lớp, menu "+n" (`DauTrangLop.tsx` `bamBadge`): "Thiếu GV …" → mở panel Phân công GV bộ môn (chỉ người có quyền; không có quyền thì
     mục là chữ thường); "Thiếu n thông tin" → danh sách em thiếu thông tin của lớp (cùng đích với chip "Thiếu thông tin" ở Học viên & Lớp);
@@ -251,6 +256,7 @@ Việc đầu tiên: giao agent soạn kế hoạch theo mẫu A mục 10 (Opus 
 - **Thêm từ PR-U12 (chủ sản phẩm chốt 05/10):** bài lớp thường chấm dở mà đã có môn trượt → dòng "Không đạt: …" **tô màu cảnh báo**
   (khớp bảng Mock Test giữ màu SOS cho số tạm) · bài đã xong có môn huỷ phần không còn chữ "(đã chấm)" · kiểm nhãn "dời W1/W2" ở bảng Mock
   Test sau khi đổi `skillShort` → `tenMonNgan` (`StudentDetailPage.tsx` `NhanDot`).
+- **Từ PR-KHUNG (06/10):** đầu cột dính khi cuộn cho bảng dài (Tổng quan, Hồ sơ lớp, Test, Nhập điểm, Quản trị) · Phân tích › Tổng hợp rộng hơn 1440 (K2) · tên cắt vài px ở Điểm theo lớp / Nhập điểm (J8 còn lại) · cỡ chip "Thiếu n" / "+1" (H1).
 - **Tên web "PISA Tracking"** (chủ sản phẩm 05/10, PISA viết hoa hết): thay "Pisa Tracking" ở `index.html` `<title>`, `App.tsx:144`,
   `WelcomePage.tsx:137`, `server/src/index.ts:21`, phép kiểm `hocVienLop.tests.ts:71-73` + `suaLoiNong.tests.ts:281`, README/DEMO/TRIEN_KHAI,
   sổ tay `docs/so-tay/` (cùng lúc chụp lại ảnh). Không đổi tên gói npm, tên site Netlify, tên DB.
@@ -435,7 +441,7 @@ Speaking quá hạn không tính nợ GVBM/GVCN, tính trễ khi GV chấm chéo
 /ponytail lite
 Làm PR-HK2 theo prompt "PR-HK2 — sau deploy" trong docs/superpowers/plans/2026-10-02-ux-sau-critique.md và plan.md mục 4 "PR-HK2".
 Nhánh pr-hk2-badge-chu. Trước khi làm, dùng superpowers:writing-plans viết kế hoạch bổ sung cho các mục "Thêm" ở plan.md
-(K4 + "Vắng" thống nhất có Hoàn tác, D7 mockup 23C, J1–J4, J7, J9, ba mục bấm thử, dải "Mất kết nối", toast Hoàn tác vi phạm).
+(K4 + "Vắng" thống nhất có Hoàn tác, D7 mockup 23C, J1–J4, J7, J9, ba mục bấm thử, dải "Mất kết nối", bỏ toast Hoàn tác vi phạm — chủ sản phẩm 06/10).
 Impeccable: /impeccable polish (H1, H2, K6, K7), /impeccable clarify (J), /impeccable adapt (K4, K5, D7), cuối /impeccable audit toàn web.
 Chụp lại toàn bộ ảnh docs/so-tay/ trong PR này (superpowers:dispatching-parallel-agents, mỗi agent một nhóm trang, cùng model).
 ```
@@ -484,6 +490,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 |---|---|---|
 | 06/10/2026 | PR-TK (Sonnet 5.5, phương án B) · `pr-tk-tong-ket-lo-trinh` | Tổng kết lộ trình: bản chụp lúc đóng mọi đường (migrate `prTk` điền ngược), kết quả thi thật L R W S (GVCN nhập, máy so Target lúc đóng) + việc nhắc, Kết thúc học FT chờ kết quả chưa lưu trữ, khối Các lộ trình · ngăn Tổng kết · tab Tổng kết lớp · nút Tổng kết ở Lưu trữ. Phép kiểm `prTk` TK-1…TK-L. |
 | 06/10/2026 | PR-LUI-b (Sonnet 5.5, phương án B) · `pr-lui-b-hoc-vien-lop` | Đường lui Học viên & Lớp: Học lại (về lớp cũ / sang lớp mới), Mở lại lớp, Quản lý kết thúc lớp, **Chọn nhiều học viên** (kết thúc học, lưu trữ, huỷ chuyển lớp; Lưu trữ: bỏ lưu trữ, học lại) có xem trước, lô 8, Hoàn tác. Phép kiểm `prLuiB` LUIb-1…27 (đã gồm sửa sau rà #213). |
+| 06/10/2026 | PR-MTb (Sonnet 5.5, phương án B) · `pr-mtb-giao-dien-mock-test` | Giao diện Mock Test theo mockup bản 4: Ô MT dùng chung (`OMt`, nhãn "cũ") · panel Xếp lịch Mock Test ("MT mới", tick kỹ năng, "Sẽ xếp" 3 màu) · hộp một đợt (Tuần chung, ⋯ luôn hiện, Nhật ký) · popup dời vượt 4 cổng · lý do tuỳ chọn · nhập band · Xin dời / Không mock lại / Khôi phục kết quả · lưới FT dùng Ô MT. |
 | 06/10/2026 | PR-MTa (Opus 5.5) · `pr-mta-luat-mock-test` | T1 MT cũ (≥ 2 tuần, lúc xếp/dời) · T4 QL xếp tuần đã qua (cả lớp thường) · T2 dời vượt huỷ kết quả → `ket_qua_huy`, khôi phục · T3 vắng lần 2 huỷ, Xin dời, Không mock lại · T7 lý do chỉ 4 trường hợp, bỏ tối thiểu ký tự mọi nơi · T10 band máy chủ · T11 chuông GVCN. Migrate `prMta`. |
 | 05/10/2026 | PR-DL · `pr-dl-diem-theo-lop` · Opus 5.5 | DL-0→7: bảng Điểm theo lớp (hồ sơ lớp ⋮ "Điểm MT cả lớp" + tab Test "Điểm theo lớp"), đọc theo lượt MT / Giữa–Cuối khoá, không đường ghi mới, không tự tạo lịch; lượt mặc định = lượt đang nhập. Thêm 3 đường đo tốc độ. |
 | 05/10/2026 | PR-NV (Opus 5.5) · `pr-nv-nhac-viec-chi-nhanh` | "Để QL biết" → Nhắc việc; Nhắc tất cả 50 thẻ ~93 000 → 121 câu SQL (gom theo người, `myWork` chỉ nhóm cần, dừng trước 10 s), hết 404 Mini Test/Cuối khoá; dải Chờ duyệt tím/xám/đỏ cam; chi nhánh mặc định theo vai QL / lớp dạy, nhớ lần chọn. NV-6 bỏ (→ LT3). |

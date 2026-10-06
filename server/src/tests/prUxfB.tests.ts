@@ -196,7 +196,7 @@ export async function runPrUxfBTests(t: YThucTestKit) {
   check('UXF-b (5) · quét chữ: lưới chấm, một kỹ năng, chip Lịch Test, Kết quả gần nhất, hồ sơ HV (muc + id) dùng đường chung', () => {
     assert(/duongDotTest\(/.test(doc('web/src/modules/cham/LuoiFT.tsx')), 'LuoiFT');
     assert(/duongDotTest\(\{ id: row\.attemptId \}, k\)/.test(doc('web/src/modules/cham/MotKyNang.tsx')), 'MotKyNang (kn)');
-    assert(/duongDotTest\(/.test(doc('web/src/modules/test/keHoach/ChipKyNang.tsx')), 'ChipKyNang');
+    // PR-MTb T9 thay: ô FT của lưới Kế hoạch Test là Ô MT mở hộp một đợt (không còn liên kết thẳng tới hồ sơ Mock); ChipKyNang chỉ còn lớp thường.
     assert(/duongDotTest\(/.test(doc('web/src/modules/students/BangHocVienLop.tsx')), 'Kết quả gần nhất');
     assert(/duongDotTest\(/.test(doc('web/src/modules/cases/CasePanel.tsx')) || /m\.href/.test(doc('web/src/modules/cases/CasePanel.tsx')), 'lịch sử Case');
     assert(/p\.muc === 'ket-luan-khoa'/.test(doc('web/src/modules/students/StudentDetailPage.tsx')), 'StudentDetailPage đọc muc');

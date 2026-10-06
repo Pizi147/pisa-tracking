@@ -691,10 +691,11 @@ export async function runPrMtaTests(t: YThucTestKit) {
 
   check('MTa (W1) · web: hộp dời vượt dùng dongHeQuaVuot + Lý do bắt buộc; ba nơi gọi mở hộp bằng canLyDoVuot và gửi lý do', () => {
     const hop = nguon('web/src/modules/test/keHoach/HopXacNhanHuyLich.tsx');
-    assert(/dongHeQuaVuot\(/.test(hop) && !/type LuotSeHuyLich =/.test(hop) && /confirmDisabled=\{!lyDo\.trim\(\)\}/.test(hop)
+    /* PR-MTb T6 thay: chữ do nơi gọi dựng bằng chuDoiVuot (props tieuDe / cau / dong); nút mờ theo kiemLyDoThaoTac, không còn lyDo.trim() trần. */
+    assert(/dong\.map/.test(hop) && !/type LuotSeHuyLich =/.test(hop) && /confirmDisabled=\{!!loi\}/.test(hop) && /kiemLyDoThaoTac\('huy-ket-qua'/.test(hop)
       && /Dời và huỷ/.test(hop) && /closeLabel="Đóng"/.test(hop), 'HopXacNhanHuyLich');
     for (const f of ['web/src/modules/test/keHoach/HopKyNang.tsx', 'web/src/modules/fasttrack/MockDetailPage.tsx']) {
-      assert(/canLyDoVuot\(/.test(nguon(f)) && /onXacNhan=\{\(ly\) =>/.test(nguon(f)), f);
+      assert(/chuDoiVuot\(/.test(nguon(f)) && /\.canPopup/.test(nguon(f)) && /onXacNhan=\{\(ly\) =>/.test(nguon(f)), f);
     }
     assert(/onXacNhan=\{\(ly\) =>/.test(nguon('web/src/modules/fasttrack/HopThaoTacMt.tsx')), 'HopThaoTacMt');
   });

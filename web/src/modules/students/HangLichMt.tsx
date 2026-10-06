@@ -8,10 +8,12 @@ import { ConfirmDialog } from '../../ui/Drawer.tsx';
 import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
 import { Truong } from '../../ui/KhungPanel.tsx';
 import { Skeleton, Status } from '../../ui/ui.tsx';
+import { OMt } from '../../ui/OMt.tsx';
 import { HopKyNang } from '../test/keHoach/HopKyNang.tsx';
+import { HopKhoiPhucKetQua } from '../test/keHoach/HopXacNhanHuyLich.tsx';
 import { DaiODiemLon, type KyNangLon, type LichKn } from '../fasttrack/ODiemLon.tsx';
 import { useSaveScore } from '../fasttrack/ScoreEntry.tsx';
-import { duongDotTest, ngay, tuanLich, type KyNangKH, type OKyNang } from '@shared/domain/index.ts';
+import { duongDotTest, ngay, tuanLich, type KetQuaHuy, type KyNangKH, type OKyNang } from '@shared/domain/index.ts';
 
 /** Một hàng của bảng lịch MT — khớp `HangLichMt` của `server/src/keHoach/keHoachTest.ts` (`GET /cycles/:id/suggested-mocks`). */
 export type HangMt = {
@@ -21,6 +23,8 @@ export type HangMt = {
     attemptId: number; trangThai: 'chua-xep' | 'da-xep' | 'co-diem' | 'lich-su' | 'huy'; lichSu: boolean; kyVong: number | null;
     kyNang: Array<{ skill: KyNangKH; periodId: number | null; weekStart: string | null; coDiem: boolean; daThi: boolean; batBuoc: boolean }>;
     kn: Partial<Record<KyNangKH, OKyNang>>;
+    /** T2 (PR-MTa): kết quả đã huỷ do dời vượt, còn khôi phục được — `null` khi không có. */
+    ketQuaHuy?: KetQuaHuy | null;
   } | null;
 };
 export type BangLichMt = { hang: HangMt[]; soKeTiep: number; classId: number | null; studentId: number; coTheXep: boolean };
@@ -49,6 +53,7 @@ export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienD
   const navigate = useNavigate();
   const [hop, setHop] = useState<HTMLElement | null>(null);
   const [huyLich, setHuyLich] = useState(false);
+  const [khoiPhuc, setKhoiPhuc] = useState(false);
   const l = h.luot;
   const coDeXuat = h.studyWeek !== null;
   const that = l ? tuanThat(l, homNay) : null;
@@ -68,13 +73,15 @@ export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienD
       muc.push({ key: 'doi-lich', nhan: 'Dời lịch', onChon: () => { const el = document.getElementById(`mt-${l.attemptId}`); if (el) moHop(el); } });
     }
   }
+  /* T2: lượt bị vượt có kết quả đã huỷ → Quản lý khôi phục được (⋯ chỉ có mục này khi có `ketQuaHuy`). */
+  if (l?.ketQuaHuy && bang.coTheXep) muc.push({ key: 'khoi-phuc-ket-qua', nhan: 'Khôi phục kết quả', onChon: () => setKhoiPhuc(true) });
   if (moHoSo) muc.push({ key: 'ho-so', nhan: 'Mở hồ sơ MT', onChon: moHoSo, keTruoc: muc.length > 0 });
 
   return (
     <>
       <tr className="row-hover">
         <td className="td whitespace-nowrap">
-          <span className="text-slate-100">MT{h.attemptNo}</span>
+          <OMt v={{ so: h.attemptNo, attemptId: l?.attemptId ?? null, kn: l?.kn ?? {}, cu: !!l?.lichSu }} homNay={homNay} />
           {l?.kyVong != null && <span className="block text-[11px] tabular-nums text-slate-500">kỳ vọng {fmtBand(l.kyVong)}</span>}
         </td>
         <td className="td text-slate-400 whitespace-nowrap tabular-nums">{h.studyWeek !== null ? `tuần ${h.studyWeek}` : '—'}</td>
@@ -103,7 +110,7 @@ export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienD
         <td className="td whitespace-nowrap">
           <span className="flex items-center justify-end gap-1">
             {chinh ? (
-              <button id={l ? `mt-${l.attemptId}` : undefined} type="button" className="btn btn-sm min-h-[40px] sm:min-h-0"
+              <button id={l ? `mt-${l.attemptId}` : undefined} type="button" className="btn btn-sm min-h-[44px] sm:min-h-0"
                 aria-expanded={chinh.nhan === 'Nhập điểm' ? moDiem : undefined}
                 onClick={(e) => chinh!.lam(e.currentTarget)}>{chinh.nhan}</button>
             ) : !l ? <span className="text-xs text-slate-500">Áp lịch để tạo</span> : null}
@@ -122,6 +129,9 @@ export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienD
         <HopKyNang anchor={hop} tieuDe={`${hocVien} · MT${h.attemptNo}`} loai="ft" classId={bang.classId} studentId={bang.studentId}
           dot={{ loai: 'ft', attemptNo: h.attemptNo }} attemptId={l.attemptId} kn={l.kn} kyNangDau={null} lichSu={l.lichSu}
           onClose={() => setHop(null)} onSaved={onDoi} onHienDien={onHienDien} />
+      )}
+      {khoiPhuc && l?.ketQuaHuy && (
+        <HopKhoiPhucKetQua attemptId={l.attemptId} nhan={`MT${h.attemptNo}`} ketQua={l.ketQuaHuy} onDong={() => setKhoiPhuc(false)} onXong={onDoi} />
       )}
       {huyLich && l && (
         <HopHuyLich attemptId={l.attemptId} nhan={`MT${h.attemptNo}`} tuan={that} onDong={() => setHuyLich(false)} onDoi={onDoi} />
@@ -173,7 +183,7 @@ function DaiDiemMt({ attemptId, homNay, onDoi, onDong }: { attemptId: number; ho
       <DaiODiemLon cells={ct.data.cells} lich={ct.data.skillSchedule as LichKn[]} result={ct.data.result} lichSu={ct.data.lichSu} homNay={homNay}
         mo={mo} onMo={setMo} save={save} />
       <div className="flex justify-end">
-        <button type="button" className="btn btn-sm btn-ghost min-h-[40px] sm:min-h-0" onClick={onDong}>Đóng dải điểm</button>
+        <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={onDong}>Đóng dải điểm</button>
       </div>
     </div>
   );

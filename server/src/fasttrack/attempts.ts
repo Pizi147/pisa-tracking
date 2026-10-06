@@ -1477,7 +1477,7 @@ export function saveScore(
     if (!a.class_id || !quyenSuaSauHoanTat(p, a.class_id, !!a.lich_su)) {
       throw forbidden(
         `Đợt này đã hoàn tất (hết Chủ nhật ${ngay(hoanTat.chuNhatCuoi)}). `
-        + 'Chỉ Quản lý sửa được điểm — nhờ Quản lý hiệu chỉnh, kèm lý do.',
+        + 'Chỉ Quản lý sửa được điểm — nhờ Quản lý hiệu chỉnh.',
       );
     }
     /* GVCN sửa MT cũ của lớp mình (T22) giữ đường `lich_su`; Quản lý / quyền sửa hộ đi `override`. */

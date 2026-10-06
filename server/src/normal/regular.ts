@@ -498,7 +498,7 @@ export function saveRegularScore(
     if (!a.class_id || !quyenSuaSauHoanTat(p, a.class_id)) {
       throw forbidden(
         `Đợt này đã hoàn tất (hết Chủ nhật ${ngay(hoanTat.chuNhatCuoi)}). `
-        + 'Chỉ Quản lý sửa được điểm — nhờ Quản lý hiệu chỉnh, kèm lý do.',
+        + 'Chỉ Quản lý sửa được điểm — nhờ Quản lý hiệu chỉnh.',
       );
     }
     path = 'override';
@@ -614,7 +614,7 @@ export function reportRegularNoShow(
     if (!quyenSuaSauHoanTat(p, a.class_id)) {
       throw forbidden(
         `Đợt này đã hoàn tất (hết Chủ nhật ${ngay(hoanTat.chuNhatCuoi)}). `
-        + 'Chỉ Quản lý sửa được điểm — nhờ Quản lý hiệu chỉnh, kèm lý do.',
+        + 'Chỉ Quản lý sửa được điểm — nhờ Quản lý hiệu chỉnh.',
       );
     }
     path = 'override';

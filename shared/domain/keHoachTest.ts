@@ -8,7 +8,7 @@
 
 import { studyWeekOf } from './fasttrack.ts';
 import { tuanKhoa, tuanLich } from './hienThiNgay.ts';
-import { MT_TOI_DA, dongHeQuaVuot, kiemSoMtMoi, type LuotSeHuyLich, type LuotSo } from './lichMt.ts';
+import { MT_TOI_DA, canLyDoVuot, chipVuot, dongHeQuaVuot, kiemSoMtMoi, soMtKeTiep, type LuotSeHuyLich, type LuotSo } from './lichMt.ts';
 import { tenMonNgan } from './normal.ts';
 import { addDaysIso } from './sos.ts';
 import { mondayOfDate } from './week.ts';
@@ -114,6 +114,12 @@ export type OKyNang = {
   sit: string | null; tuanKetThuc: string | null; choDuyet: boolean;
   /** T3 (PR-MTa): huỷ vì vắng 2 lần — ô MT "S huỷ" (PR-MTb). */
   huyVang?: boolean;
+  /** PR-MTb sau rà (I2): MT cũ ghi "-" (không dự thi, `no_show_cu`) — tính là xong / không yêu cầu, ô MT ✓ 3/4. */
+  khongDuThi?: boolean;
+  /** T6 (PR-MTb): hạn chấm hiệu lực (ngày) — null: không yêu cầu, MT cũ, đã huỷ phần thi, chưa có tuần. */
+  hanCham: string | null;
+  /** T5 (PR-MTb): điểm đã có để hộp một đợt ghi `W3 SEP · 6.5` — FT: band (Writing `5.5 / 6.5`); lớp thường: `x/y`. Chưa có điểm → vắng trường. */
+  diem?: string;
 };
 
 export type ChipKH = { kyNang: KyNangKH[]; tuan: string | null; trangThai: TrangThaiO; doiTu: string | null };
@@ -231,33 +237,45 @@ export function tomTatLopFT(i: { dangThi: number | null; chuaXep: { dot: number;
 /** K4-14, M9: đợt mới — 4 kỹ năng CÙNG tuần tới (thứ Hai sau thứ Hai tuần này). Hộp kỹ năng và ngăn Xếp lịch MT dùng chung. */
 export function tuanMacDinhDotMoi(homNay: string): string { return addDaysIso(mondayOfDate(homNay), 7); }
 
-export type KnXep = { skill: KyNangKH; batBuoc: boolean; coDiem: boolean; daThi: boolean; huyPhan: boolean; choDuyet: boolean };
+/** `coTuan` (PR-MTb): kỹ năng đã có tuần thi — "MT mới" tìm đợt mà mọi kỹ năng bắt buộc còn chưa có tuần. */
+export type KnXep = { skill: KyNangKH; batBuoc: boolean; coDiem: boolean; daThi: boolean; huyPhan: boolean; choDuyet: boolean; coTuan: boolean };
 export type LuotXep = { no: number; huy: boolean; lichSu: boolean; kn: KnXep[] };
 export type ViecXep =
   | { loai: 'tao'; no: number } | { loai: 'doi'; no: number } | { loai: 'xep-not'; no: number; kyNang: KyNangKH[] }
   | { loai: 'da-du'; no: number; coDiem: KyNangKH[] } | { loai: 'chan'; no: number; cau: string };
 
 /**
- * K4-17 · T37 · M9: từ đợt đã chọn đi tới đợt ĐẦU TIÊN còn việc. `ep` = Quản lý bấm chip CHÍNH đợt đó cho riêng em (không
- * tự chuyển): đợt đã đủ → `da-du` (web hỏi thi lại). Thứ tự kiểm cố định — không đảo: huỷ → lịch sử → còn kỹ năng phải thi.
+ * K4-17 · T37 · M9 · T13b (PR-MTb): việc đúng cho ĐÚNG đợt `chon` — KHÔNG tự sang đợt khác. Đợt đã đủ → `da-du` nếu `ep` (Quản lý
+ * bấm chip CHÍNH đợt đó cho riêng em: web hỏi thi lại), không thì chặn "MT{n} đã xong."; MT cũ → chặn (nhập điểm bù), không xét `ep`.
+ * Thứ tự kiểm cố định — không đảo: huỷ → MT cũ → còn kỹ năng phải thi.
  */
 export function viecXepMt(ds: LuotXep[], chon: number, so: LuotSo[], ep = false): ViecXep {
-  for (let n = chon; n <= MT_TOI_DA; n++) {
-    const a = ds.find((x) => x.no === n && !x.huy);
-    if (!a) { const loi = kiemSoMtMoi(so, n); return loi ? { loai: 'chan', no: n, cau: loi } : { loai: 'tao', no: n }; }
-    if (a.lichSu) { if (ep) return { loai: 'chan', no: n, cau: `MT${n} là MT cũ — nhập bù điểm, không xếp lại.` }; continue; }
-    const can = a.kn.filter((k) => k.batBuoc && !k.huyPhan);
-    const conThi = can.filter((k) => !k.coDiem && !k.daThi && !k.choDuyet);
-    if (!conThi.length) {
-      if (can.some((k) => k.choDuyet)) return { loai: 'chan', no: n, cau: `MT${n} còn kỹ năng chờ Quản lý duyệt dời — trả lời đề nghị trước.` };
-      const cd = can.filter((k) => k.coDiem).map((k) => k.skill);
-      if (ep) return cd.length ? { loai: 'da-du', no: n, coDiem: cd } : { loai: 'chan', no: n, cau: `MT${n} đã thi, đang chờ chấm.` };
-      continue;
-    }
-    if (can.some((k) => k.coDiem || k.daThi)) return { loai: 'xep-not', no: n, kyNang: conThi.map((k) => k.skill) };
-    return { loai: 'doi', no: n };
+  const n = chon;
+  if (n > MT_TOI_DA) return { loai: 'chan', no: MT_TOI_DA, cau: `Đã đủ MT${MT_TOI_DA} — tối đa của một lộ trình.` };
+  const a = ds.find((x) => x.no === n && !x.huy);
+  if (!a) { const loi = kiemSoMtMoi(so, n); return loi ? { loai: 'chan', no: n, cau: loi } : { loai: 'tao', no: n }; }
+  if (a.lichSu) return { loai: 'chan', no: n, cau: `MT${n} là MT cũ — nhập điểm bù.` };
+  const can = a.kn.filter((k) => k.batBuoc && !k.huyPhan);
+  const conThi = can.filter((k) => !k.coDiem && !k.daThi && !k.choDuyet);
+  if (!conThi.length) {
+    if (can.some((k) => k.choDuyet)) return { loai: 'chan', no: n, cau: `MT${n} còn kỹ năng chờ Quản lý duyệt dời — trả lời đề nghị trước.` };
+    const cd = can.filter((k) => k.coDiem).map((k) => k.skill);
+    if (!ep) return { loai: 'chan', no: n, cau: `MT${n} đã xong.` };
+    return cd.length ? { loai: 'da-du', no: n, coDiem: cd } : { loai: 'chan', no: n, cau: `MT${n} đã thi, đang chờ chấm.` };
   }
-  return { loai: 'chan', no: MT_TOI_DA, cau: `Đã đủ MT${MT_TOI_DA} — tối đa của một lộ trình.` };
+  if (can.some((k) => k.coDiem || k.daThi)) return { loai: 'xep-not', no: n, kyNang: conThi.map((k) => k.skill) };
+  return { loai: 'doi', no: n };
+}
+
+/**
+ * "MT mới" (T13b, PR-MTb): đợt nhỏ nhất còn hiệu lực mà mọi kỹ năng bắt buộc CHƯA có tuần (lượt đã huỷ lịch); không có → số kế
+ * tiếp của lộ trình. MT cũ bị bỏ qua (chỉ nhập điểm bù — không xếp được).
+ */
+export function dotMtMoi(ds: LuotXep[], so: LuotSo[]): number {
+  const chuaCoLich = ds
+    .filter((x) => !x.huy && !x.lichSu && x.kn.every((k) => !k.batBuoc || !k.coTuan))
+    .map((x) => x.no);
+  return chuaCoLich.length ? Math.min(...chuaCoLich) : soMtKeTiep(so);
 }
 
 const dsMon = (ct: string | null, ks: readonly KyNangKH[]) => ks.map((k) => tenMonNgan(ct, k)).join(' ');
@@ -300,5 +318,42 @@ export function tomTatXepMt(dong: DongHangLoat[]): {
     t.soEm += 1;
     t.soBai += d.bai.filter((b) => b.ghiChu !== 'giu' && b.ghiChu !== 'chan').length;
   }
+  return t;
+}
+
+// ---------------------------------------------------------------- PR-MTb: cột "Sẽ xếp" MỘT dòng, ba màu (mockup phần 1)
+
+export type ToneSeXep = 'ok' | 'soon' | 'bad';
+
+/**
+ * Cột "Sẽ xếp" của panel Xếp lịch Mock Test (mockup bản 4, phần 1): MỘT dòng ngắn + màu. `ok` = xếp thẳng · `soon` = cần xem (xếp
+ * nốt, cảnh báo, dời vượt, MT cũ, thi lại / đã đủ) · `bad` = "Không xếp được". `phu` = chữ nhỏ sau (`· trùng MT2`); `title` =
+ * câu đầy đủ (`chuSeXep` + câu cảnh báo) cho tooltip. Em có lượt bị vượt (T2) luôn `soon` — popup nói hệ quả.
+ */
+export function nhanSeXep(d: DongHangLoat, ct: string | null): { tone: ToneSeXep; chu: string; phu: string | null; title: string } {
+  if (d.hanhDong === 'loi') return { tone: 'bad', chu: 'Không xếp được', phu: null, title: chuSeXep(d, ct) };
+  const mt = d.attemptNo ? `MT${d.attemptNo}` : 'MT';
+  const bai = d.bai.filter((b) => b.ghiChu !== 'giu');
+  const canhBao = [...new Set(bai.filter((b) => b.ghiChu === 'canh-bao' && b.cau).map((b) => b.cau as string))];
+  const title = [chuSeXep(d, ct), ...canhBao].join(' · ');
+  if (d.hanhDong === 'giu' || !bai.length) {
+    return { tone: 'soon', chu: d.coDiem?.length ? `${mt} · đã có điểm` : 'Giữ nguyên', phu: null, title };
+  }
+  const nhom = gomBaiXemTruoc(bai);
+  const tuanChung = nhom.length === 1 ? tuanLich(nhom[0].den) : nhom.map((g) => `${dsMon(ct, g.kyNang)} ${tuanLich(g.den)}`).join(' · ');
+  const phanMon = d.viec === 'xep-not' || d.viec === 'thi-lai';   // chỉ một vài kỹ năng: ghi rõ kỹ năng nào
+  const chu = phanMon && nhom.length === 1 ? `${mt} · ${dsMon(ct, bai.map((b) => b.skill))} · ${tuanChung}` : `${mt} · ${tuanChung}`;
+  const trung = canhBao.map((c) => /^Trùng tuần .* với (MT\d+)/.exec(c)?.[1]).find(Boolean);
+  /* Vượt lượt sau CHƯA có điểm: chữ phụ "· bỏ lịch MT2" (có điểm thì popup nói — không ghi thêm). */
+  const boLich = d.seHuyLich?.length && !canLyDoVuot(d.seHuyLich) ? `· ${chipVuot(d.seHuyLich).replace(/^B/, 'b')}` : null;
+  const phu = trung ? `· trùng ${trung}` : boLich ?? (d.hanhDong === 'tao' && d.lichSu ? '· cũ' : null);
+  const soon = phanMon || !!canhBao.length || !!d.seHuyLich?.length || (d.hanhDong === 'tao' && !!d.lichSu);
+  return { tone: soon ? 'soon' : 'ok', chu, phu, title };
+}
+
+/** Ba chip tóm tắt của panel: `✓ Sẽ xếp n` · `! Cần xem n` · `✕ Không xếp được n` — đếm EM theo màu từng dòng. */
+export function demSeXep(dong: DongHangLoat[]): Record<ToneSeXep, number> {
+  const t: Record<ToneSeXep, number> = { ok: 0, soon: 0, bad: 0 };
+  for (const d of dong) t[nhanSeXep(d, null).tone] += 1;
   return t;
 }
