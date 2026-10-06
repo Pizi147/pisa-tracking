@@ -375,9 +375,9 @@ Skill: test-driven-development · `/impeccable layout` · `adapt`
 
 **Files:** Modify `web/src/modules/test/keHoach/LuoiKeHoach.tsx:196,246-256` (FT: ô = `OMt` + `onClick` mở `HopKyNang` với `kyNangDau: null`; ô `chuaToiLuot` = `chua-co-dot` không bấm, title "Xếp MT trước rồi mới tới MT{n}"; ô trống tới lượt = `chua-co-dot` bấm được), `rongDot` FT 176 → 120. `ChipKyNang.tsx` chỉ còn nhánh lớp thường (xoá nhánh FT `:31-41`, `lichSu`, `dangDo` nếu không còn ai dùng). Test: quét nguồn.
 
-- [ ] **Step 1: Phép đỏ quét nguồn**: `LuoiKeHoach.tsx` có `<OMt` cho `loai === 'ft'`; `ChipKyNang` không còn chữ `'+ xếp'`.
-- [ ] **Step 2:** Sửa. Q1 = B → bỏ Task này, chỉ thay `ChipLichSu` (Task 2 đã làm).
-- [ ] **Step 3:** `npm run check`. Bấm thử QL 1440/375: lớp FT 6 đợt, cuộn ngang tới đợt đang tới (giữ `:202-206`), ô "Đang thi" khác hẳn "Có lịch". Ảnh. **Commit** `feat(mtb): lưới Kế hoạch Test FT dùng Ô MT`.
+- [x] **Step 1: Phép đỏ quét nguồn**: `LuoiKeHoach.tsx` có `<OMt` cho `loai === 'ft'`; `ChipKyNang` không còn chữ `'+ xếp'`.
+- [x] **Step 2:** Sửa. Q1 = B → bỏ Task này, chỉ thay `ChipLichSu` (Task 2 đã làm).
+- [x] **Step 3:** `npm run check`. Bấm thử QL 1440/375: lớp FT 6 đợt, cuộn ngang tới đợt đang tới (giữ `:202-206`), ô "Đang thi" khác hẳn "Có lịch". Ảnh. **Commit** `feat(mtb): lưới Kế hoạch Test FT dùng Ô MT`.
 
 ### Task 10: Rà toàn bộ, tài liệu, PR
 - [ ] Rà mọi nơi hiện trạng thái MT (`grep -rn "MT\${" web/src`): đã dùng `OMt` ở panel, hộp (tiêu đề giữ chữ), Kế hoạch Test FT, Lộ trình, đầu trang hồ sơ Mock. **Không** đổi (chỉ là chữ MT trong câu/số liệu, không phải ô trạng thái): `HanhTrinh.tsx:480`, `Highlights.tsx:56`, `LuoiFT.tsx:248`, `MotKyNang.tsx:185`, `StudentManagePanel.tsx:280`, `cases/*`, `yThuc/*`; `IeltsAttempts` (`StudentDetailPage.tsx:458`) giữ liên kết `MT{n}` + `NhanDot` (cột Kết quả đã nói trạng thái) — ghi danh sách vào mô tả PR.

@@ -772,4 +772,15 @@ export async function runPrMtbTests(t: YThucTestKit) {
       .flatMap((f) => (f.isDirectory() ? duyet(`${dir}/${f.name}`) : /\.tsx?$/.test(f.name) ? [`${dir}/${f.name}`] : []));
     for (const f of [...duyet('web/src'), ...duyet('shared')]) assert(!/từ lần 2 Quản lý duyệt/.test(nguon(f)), `${f} còn câu luật cũ`);
   });
+
+  // ------------------------------------------------------------------ Task 9 — lưới Kế hoạch Test FT dùng Ô MT (Q1 = A)
+  check('MTb (T9) · quét nguồn: lưới FT vẽ <OMt (mở hộp, kyNangDau null, chưa tới lượt không bấm, rộng 152); ChipKyNang chỉ còn lớp thường', () => {
+    const l = nguon('web/src/modules/test/keHoach/LuoiKeHoach.tsx');
+    assert(/import \{ OMt \} from '[^']*ui\/OMt\.tsx'/.test(l) && /<OMt\b/.test(l), 'LuoiKeHoach chưa vẽ <OMt');
+    assert(/loai === 'ft' && c\.dot\.loai === 'ft'/.test(l.slice(0, l.indexOf('<OMt'))), '<OMt không nằm trong nhánh FT');
+    assert(/kyNangDau: null/.test(l) && /Xếp MT trước rồi mới tới/.test(l), 'thiếu mở hộp / ô chưa tới lượt');
+    assert(/loai === 'ft' \? 152 : 208/.test(l), 'rongDot FT phải 152');
+    const c = nguon('web/src/modules/test/keHoach/ChipKyNang.tsx');
+    assert(!c.includes('+ xếp') && !/chuaToiLuot|lichSu|dangDo|duongDotTest|NhanCu/.test(c), 'ChipKyNang còn nhánh FT');
+  });
 }
