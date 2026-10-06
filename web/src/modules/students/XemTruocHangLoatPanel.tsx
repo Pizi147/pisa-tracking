@@ -30,7 +30,7 @@ export function XemTruocHangLoatPanel({ viec, ids, maLop, onClose, onDone }: {
   /* Học lại hàng loạt: `Về lớp cũ` (mặc định) hoặc `Sang lớp mới` — chỉ lớp THƯỜNG (sang Fast Track cần Target từng học viên → học lại từng em). */
   const [dich, setDich] = useState<'cu' | 'moi'>('cu');
   const [lopMoiId, setLopMoiId] = useState<number | ''>('');
-  const dsLop = useApi<{ lop: { id: number; code: string; ft: boolean; tenChuongTrinh: string | null; gvcn: string | null }[] }>(
+  const dsLop = useApi<{ lop: { id: number; code: string; ft: boolean; tenChuongTrinh: string | null; gvcn: string | null; siSo?: number }[] }>(
     viec === 'hoc-lai' && dich === 'moi' ? `/students/${ids[0]}/hoc-lai/lop-dich` : null, [dich]);
   const [tienDo, setTienDo] = useState<{ xong: number; tong: number } | null>(null);
   const [chuaLuu, setChuaLuu] = useState<{ studentId: number; message: string }[]>([]);
@@ -68,7 +68,7 @@ export function XemTruocHangLoatPanel({ viec, ids, maLop, onClose, onDone }: {
     toast.hoanTac(`${NHAN_VIEC_HANG_LOAT[viec]} ${tatCa.length} học viên`, async () => {
       const r = await hoanTacHangLoat(viec, tatCa);
       for (const k of ['/students', '/classes', '/hoc-vien-lop', '/cases', '/lenh-chuyen', '/my-work']) invalidate(k);
-      toast.push(r.failed.length ? 'error' : 'ok', r.failed.length ? `Hoàn tác ${r.ok.length} học viên · ${r.failed.length} học viên chưa được` : 'Đã hoàn tác');
+      toast.push(r.failed.length ? 'error' : 'ok', r.failed.length ? `Hoàn tác ${r.ok.length} học viên · ${r.failed.length} học viên chưa được — ${r.failed[0].message}` : 'Đã hoàn tác');
       onDone();
     }, { key: `hang-loat:${viec}` });
     onDone(); onClose();
@@ -106,12 +106,13 @@ export function XemTruocHangLoatPanel({ viec, ids, maLop, onClose, onDone }: {
                   <Truong nhan="Lớp" batBuoc loi={lf.loiCua(loi, 'lop')}>
                     <select className="field w-full" {...lf.o(loi, 'lop')} value={lopMoiId} onChange={(e) => setLopMoiId(e.target.value ? Number(e.target.value) : '')}>
                       <option value="">Chọn lớp</option>
-                      {(dsLop.data?.lop ?? []).filter((l) => !l.ft).map((l) => <option key={l.id} value={l.id}>{[l.code, l.tenChuongTrinh, l.gvcn ? `GVCN ${l.gvcn}` : null].filter(Boolean).join(' · ')}</option>)}
+                      {(dsLop.data?.lop ?? []).filter((l) => !l.ft).map((l) => <option key={l.id} value={l.id}>{[l.code, l.tenChuongTrinh, l.gvcn ? `GVCN ${l.gvcn}` : null, l.siSo != null ? `${l.siSo} em` : null].filter(Boolean).join(' · ')}</option>)}
                     </select>
                   </Truong>
                 )}
               </>
             )}
+            {CO_NGAY.includes(viec) && <Truong nhan="Có hiệu lực từ"><ChonNgayGan value={ngayHl} onChange={setNgayHl} soNgay={30} chuaChon="Mặc định: hôm nay" /></Truong>}
             {batBuoc && (
               <Truong nhan="Lý do" batBuoc loi={lf.loiCua(loi, 'ly-do')}>
                 <input className="field w-full" maxLength={2000} {...lf.o(loi, 'ly-do')} value={lyDo} onChange={(e) => setLyDo(e.target.value)} />
@@ -120,7 +121,6 @@ export function XemTruocHangLoatPanel({ viec, ids, maLop, onClose, onDone }: {
             {!batBuoc && viec !== 'luu-tru' && viec !== 'bo-luu-tru' && (
               <Truong nhan="Lý do" tuyChon><input className="field w-full" maxLength={2000} value={lyDo} onChange={(e) => setLyDo(e.target.value)} /></Truong>
             )}
-            {CO_NGAY.includes(viec) && <Truong nhan="Có hiệu lực từ"><ChonNgayGan value={ngayHl} onChange={setNgayHl} soNgay={30} chuaChon="Mặc định: hôm nay" /></Truong>}
           </Khoi>
           {dangThu && (
             <Khoi tieuDe={`Chưa lưu · ${chuaLuu.length}`}>

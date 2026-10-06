@@ -12,6 +12,7 @@ import {
 } from '@shared/domain/index.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { hoanTacHangLoat } from './hangLoatEm.ts';
 import { LoTrinhTiepPanel } from './LoTrinhTiepPanel.tsx';
 import { ChuyenLopPanel } from './ChuyenLopPanel.tsx';
 import { XoaHocVienPanel } from './XoaHocVienPanel.tsx';
@@ -109,7 +110,16 @@ function TrangThaiPanel({ studentId, studentName, lop, onClose, onDone, status, 
     try {
       await api.post(`/students/${studentId}/status`, { status, date: ngayHl || undefined, reason: lyDo || undefined });
       invalidate('/students'); invalidate('/classes'); invalidate('/hoc-vien-lop'); invalidate('/cases');
-      toast.push('ok', 'Đã lưu');
+      /* PR-LUI-b (06/10): Kết thúc học có Hoàn tác — mở lại đúng ghi danh / lộ trình / Case / PA lần này đóng (máy chủ: `hoan-tac-ket-thuc`). */
+      if (status === 'finished') {
+        toast.hoanTac(`Đã kết thúc học ${studentName}`, async () => {
+          const r = await hoanTacHangLoat('ket-thuc', [studentId]);
+          for (const k of ['/students', '/classes', '/hoc-vien-lop', '/cases']) invalidate(k);
+          if (r.failed.length) { toast.push('error', r.failed[0].message); return; }
+          toast.push('ok', 'Đã hoàn tác');
+          onDone();
+        }, { key: `ket-thuc:${studentId}` });
+      } else toast.push('ok', 'Đã lưu');
       onDone();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
@@ -180,13 +190,13 @@ function LuuTruPanel({ studentId, studentName, lop, onClose, onDone, boLuuTru }:
   );
 }
 
-type LopDich = { id: number; code: string; ft: boolean; tenChuongTrinh: string | null; tuan: string | null; gvcn: string | null; studentCount?: number };
-type DuLieuHocLai = { lopCu: { id: number; code: string; daKetThuc: boolean } | null; chiNhanh: { id: number; name: string }[]; lop: LopDich[] };
+type LopDich = { id: number; code: string; ft: boolean; ma: string | null; route: string | null; tenChuongTrinh: string | null; tuan: string | null; gvcn: string | null; siSo?: number };
+type DuLieuHocLai = { lopCu: { id: number; code: string; daKetThuc: boolean } | null; loTrinh: { chayTiep: boolean; ten: string | null }; chiNhanh: { id: number; name: string }[]; lop: LopDich[] };
 
 /**
  * HỌC LẠI (PR-LUI-b, chủ sản phẩm 06/10) — đường lui của Kết thúc học, chỉ Quản lý / Quản trị. CHỌN ĐÍCH: `Về lớp cũ` (lộ trình cũ chạy tiếp; lớp cũ đã kết thúc thì
  * mở lại cùng lúc) hoặc `Sang lớp mới` (chọn lớp đang học, mở lộ trình mới, lộ trình cũ giữ ở Hành trình; sang Fast Track từ lớp thường phải có Target).
- * Lý do tuỳ chọn. Hoàn tác = Kết thúc học lại (đúng hàm cũ, lý do "Hoàn tác học lại").
+ * Lý do tuỳ chọn. Hoàn tác = `hoan-tac-hoc-lai` (máy chủ trả học viên về đúng trạng thái sau Kết thúc học; lộ trình mới đã có dữ liệu thì từ chối kèm câu rõ).
  */
 function HocLaiPanel({ studentId, studentName, lop, onClose, onDone }: ChungViec) {
   const toast = useToast();
@@ -201,10 +211,10 @@ function HocLaiPanel({ studentId, studentName, lop, onClose, onDone }: ChungViec
   const [busy, setBusy] = useState(false);
   const lopMoi = data?.lop.find((l) => l.id === lopMoiId) ?? null;
   const canTarget = dich === 'moi' && !!lopMoi?.ft;
-  const loi = dsLoi([
-    ...(dich === 'moi' ? [{ khoa: 'lop', nhan: 'Lớp', toiThieu: 1 }] : []),
-    ...(canTarget ? [{ khoa: 'target', nhan: 'Target', toiThieu: 1 }] : []),
-  ], { lop: lopMoiId === '' ? '' : String(lopMoiId), target });
+  const loi = dsLoi([...(dich === 'moi' ? [{ khoa: 'lop', nhan: 'Lớp', toiThieu: 1 }] : [])], { lop: lopMoiId === '' ? '' : String(lopMoiId) });
+  if (canTarget && !target.trim()) loi.push({ khoa: 'target', nhan: 'Target', lyDo: 'Lên FT cần Target' });
+  /* Tên lộ trình đúng như hồ sơ gọi: lớp FT = LT1 / RF…, lớp thường = chương trình (FOU…). */
+  const tenLoTrinhMoi = lopMoi ? (lopMoi.ft ? lopMoi.route : lopMoi.ma) : null;
   const chan = !data?.lopCu ? 'Chưa có lớp để học lại' : null;
 
   const luu = async () => {
@@ -218,12 +228,11 @@ function HocLaiPanel({ studentId, studentName, lop, onClose, onDone }: ChungViec
       });
       for (const k of ['/students', '/classes', '/hoc-vien-lop', '/cases']) invalidate(k);
       toast.hoanTac(`Đã cho ${studentName} học lại${lopMoi ? ` · ${lopMoi.code}` : ''}`, async () => {
-        try {
-          await api.post(`/students/${studentId}/status`, { status: 'finished', reason: 'Hoàn tác học lại' });
-          for (const k of ['/students', '/classes', '/hoc-vien-lop', '/cases']) invalidate(k);
-          toast.push('ok', 'Đã hoàn tác');
-          onDone();
-        } catch (e: any) { toast.push('error', e.message); }
+        const r = await hoanTacHangLoat('hoc-lai', [studentId]);
+        for (const k of ['/students', '/classes', '/hoc-vien-lop', '/cases']) invalidate(k);
+        if (r.failed.length) { toast.push('error', r.failed[0].message); return; }
+        toast.push('ok', 'Đã hoàn tác');
+        onDone();
       }, { key: `hoc-lai:${studentId}` });
       onDone();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
@@ -246,7 +255,7 @@ function HocLaiPanel({ studentId, studentName, lop, onClose, onDone }: ChungViec
             </span>
             {dich === 'cu' ? (
               <ul className="m-0 list-none space-y-1 p-0 text-sm text-slate-200">
-                <li>Về lớp {data.lopCu?.code}</li><li>Lộ trình chạy tiếp</li><li>Ra khỏi Lưu trữ</li>
+                <li>Về lớp {data.lopCu?.code}</li><li>{data.loTrinh.chayTiep ? 'Lộ trình chạy tiếp' : 'Lộ trình mới'}{data.loTrinh.ten ? ` · ${data.loTrinh.ten}` : ''}</li><li>Ra khỏi Lưu trữ</li>
                 {data.lopCu?.daKetThuc && <li className="text-soon">Mở lại lớp {data.lopCu.code}</li>}
               </ul>
             ) : (
@@ -254,7 +263,7 @@ function HocLaiPanel({ studentId, studentName, lop, onClose, onDone }: ChungViec
                 <Truong nhan="Lớp" batBuoc loi={lf.loiCua(loi, 'lop')}>
                   <select className="field w-full" {...lf.o(loi, 'lop')} value={lopMoiId} onChange={(e) => setLopMoiId(e.target.value ? Number(e.target.value) : '')}>
                     <option value="">Chọn lớp</option>
-                    {data.lop.filter((l) => l.id !== data.lopCu?.id).map((l) => <option key={l.id} value={l.id}>{[l.code, l.ft ? 'Fast Track' : l.tenChuongTrinh, l.gvcn ? `GVCN ${l.gvcn}` : null].filter(Boolean).join(' · ')}</option>)}
+                    {data.lop.filter((l) => l.id !== data.lopCu?.id).map((l) => <option key={l.id} value={l.id}>{[l.code, l.ft ? 'Fast Track' : l.tenChuongTrinh, l.gvcn ? `GVCN ${l.gvcn}` : null, l.siSo != null ? `${l.siSo} em` : null].filter(Boolean).join(' · ')}</option>)}
                   </select>
                 </Truong>
                 {canTarget && (
@@ -267,7 +276,7 @@ function HocLaiPanel({ studentId, studentName, lop, onClose, onDone }: ChungViec
                 )}
                 {lopMoi && (
                   <ul className="m-0 list-none space-y-1 p-0 text-sm text-slate-200">
-                    <li>Vào lớp {lopMoi.code}</li><li>Lộ trình mới</li><li>Lộ trình cũ giữ ở Hành trình</li><li>Ra khỏi Lưu trữ</li>
+                    <li>Vào lớp {lopMoi.code}</li><li>Lộ trình mới{tenLoTrinhMoi ? ` · ${tenLoTrinhMoi}` : ''}</li><li>Lộ trình cũ giữ ở Hành trình</li><li>Ra khỏi Lưu trữ</li>
                   </ul>
                 )}
               </>

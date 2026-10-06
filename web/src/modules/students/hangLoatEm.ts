@@ -26,7 +26,10 @@ export async function chayHangLoat(
   return kq;
 }
 
-/** Hoàn tác = làm việc NGƯỢC cho đúng các học viên đã làm được (kết thúc ↔ học lại, lưu trữ ↔ bỏ lưu trữ, huỷ ↔ khôi phục chuyển lớp). */
+/**
+ * Hoàn tác = làm việc NGƯỢC cho đúng các học viên đã làm được: Kết thúc học → `hoan-tac-ket-thuc` (mở lại đúng Case / PA đã đóng), Học lại → `hoan-tac-hoc-lai`
+ * (gỡ ghi danh / lộ trình mới; có dữ liệu thì máy chủ từ chối kèm câu rõ), lưu trữ ↔ bỏ lưu trữ, huỷ ↔ khôi phục chuyển lớp.
+ */
 export async function hoanTacHangLoat(viec: ViecHangLoat, ids: number[]): Promise<KetQuaHangLoat> {
-  return chayHangLoat(VIEC_NGUOC[viec], ids, { lyDo: VIEC_NGUOC[viec] === 'ket-thuc' ? 'Hoàn tác học lại' : undefined, moLaiLop: true });
+  return chayHangLoat(VIEC_NGUOC[viec], ids, {});
 }

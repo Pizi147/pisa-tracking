@@ -68,7 +68,7 @@ export function danhSachLopDich(boQuaLopId: number, demHocVien = false) {
   const branches = conn.prepare(`SELECT id, name FROM branches WHERE status = 'active' ORDER BY name`).all() as any[];
   const lopRows = conn
     .prepare(
-      `SELECT c.id, c.code, c.branch_id, c.programme_code, c.is_fast_track,
+      `SELECT c.id, c.code, c.branch_id, c.programme_code, c.is_fast_track, c.route,
               (SELECT u.full_name FROM teacher_assignments ta JOIN users u ON u.id = ta.user_id
                 WHERE ta.class_id = c.id AND ta.is_core = 1 AND ta.status = 'active' LIMIT 1) AS gvcn
          FROM classes c WHERE c.status = 'active' AND c.id != ?`,
@@ -84,7 +84,7 @@ export function danhSachLopDich(boQuaLopId: number, demHocVien = false) {
       const pr = tienDo.get(r.id);
       return {
         id: r.id, code: r.code, chiNhanhId: r.branch_id, ma: (r.programme_code ?? null) as ProgrammeCode | null,
-        ft: !!r.is_fast_track,
+        ft: !!r.is_fast_track, route: (r.route ?? null) as string | null,
         tenChuongTrinh: r.programme_code ? (programmeByCode(r.programme_code)?.name ?? null) : null,
         tuan: pr?.currentWeek && pr.totalWeeks && pr.currentWeek >= 1 ? `W${pr.currentWeek}/${pr.totalWeeks}` : null,
         gvcn: r.gvcn ?? null,
