@@ -148,6 +148,10 @@ Chủ sản phẩm 05/10 đã chốt (mockup `thiet-ke/mockup-test-mt-2026-10-05
 | T17 | Khối 1 — cột và mục con | Phần dòng lớp (Lớp · Đợt · Kỹ năng · Còn · Hạn · GV chấm · nhãn · Thu) **chỉ dùng cho khối 1** để mở ra lớp / học viên đang quá hạn. **GV chấm: kéo rộng, chỉ ghi tên GV còn chưa chấm** (GV đã nhập xong không hiện), không cắt chữ. Lưới học viên là **mục con** của dòng lớp, thể hiện nhẹ: thụt vào + một vạch dọc mảnh bên trái nối với dòng lớp, nền nhạt hơn, **không** khung bo + viền thứ hai, header cột chữ nhỏ; "Mở lưới đầy đủ" đưa lên dòng lớp. Chi tiết do `impeccable layout` quyết trong PR, giữ bảng màu / phông đã khoá |
 | T18 | **Speaking Mock chấm chéo** (chủ sản phẩm 05/10) | Speaking Mock **không có GV mặc định**; cột GV chấm ghi "Chấm chéo" tới khi có người nhập. **Quá hạn**: chỉ **báo** cho **GVBM Speaking của lớp** và **GVCN lớp đó** (dòng ở khối 1 + chuông), nhưng **không tính nợ / quá hạn** vào chỉ số của hai người này (không số đỏ, không "đúng hạn" của Phân tích GV, không "Chờ bạn chấm"). Khi **GV chấm chéo nhập điểm** (người ghi ở "GV chấm Speaking", T39) thì mới tính: nhập sau mốc trễ (`mocTreNhapDiem`) = **trễ của chính người đó**. GV chấm là tên người ngoài (không tài khoản) → không tính trễ cho ai. Thay dòng "ô S vẫn là việc / nợ điểm của GV được phân công S lớp đó" (PR-HSM) |
 | T19 | **Khung nhập điểm** (chủ sản phẩm 06/10) | Mock Test **và** Test lớp thường: **không ai** (kể cả QL, Quản trị) nhập điểm khi **chưa tới tuần thi** của kỹ năng/môn đó (muốn nhập sớm thì dời lịch thi về tuần này trước). Hạn chấm **cả hai = thứ Tư tuần sau tuần thi** (lớp thường đổi từ Chủ nhật tuần thi). Qua hạn **vẫn nhập được, tính trễ** như hiện nay (khối "Test quá hạn chấm", Phân tích GV). MT cũ (tuần đã qua) không bị chặn. Vào **PR-MTa Task 12** |
+| T20 | **Dời lịch đã có điểm, về tuần cũ** (06/10) | QL / Quản trị dời kỹ năng / bài **đã có điểm** (FT và lớp thường) sang tuần khác, **kể cả tuần cũ hơn** — điểm đi theo; hiện chỉ dời được kỹ năng chưa chấm. Giữ luật T2 khi dời vượt lượt sau. Vào **PR-MTa** |
+| T21 | **Khôi phục phần thi đã huỷ** (06/10) | QL khôi phục vào **tuần này hoặc tuần đã qua** (nay chỉ tuần chưa tới — kẹt điểm bài đã thi thật, nhất là sau T19). Vào **PR-MTa** |
+| T22 | **Xoá điểm = xoá trắng ô rồi Lưu** (06/10, sửa T7) | Người được nhập ô đó (GV chấm trong khung T19, GVCN, QL) xoá trắng ô đã có điểm rồi bấm Lưu là xoá — **không bắt buộc lý do** (ô lý do tuỳ chọn, nhật ký vẫn ghi cũ → mới). Áp cho bài đang cần chấm, bài trong tuần test **và MT cũ**. **MT cũ: QL + GVCN lớp đó** sửa / xoá ô đã có điểm (nay GVCN chỉ ghi ô trống). Lý do vẫn bắt buộc khi huỷ lượt, huỷ kết quả do dời vượt, từ chối. Vào **PR-MTa** |
+| T23 | **"-" ở MT cũ = Không dự thi** (06/10) | Cho gõ "-" ở MT cũ: chỉ ghi em không dự thi kỹ năng đó — không tính lần vắng, không tự dời, không Case, không báo QL; ô không còn đếm "còn trống". Vào **PR-MTa** |
 
 ## 3. Quyết định còn hiệu lực cho việc chưa làm
 | Ngày | Quyết định | Vào PR |
@@ -173,6 +177,17 @@ Chủ sản phẩm 05/10 đã chốt (mockup `thiet-ke/mockup-test-mt-2026-10-05
 ## 4. Việc chưa làm (đợt 3 còn DL, SL; đợt 4–6 ở mục 2c + kế hoạch 2026-10-05-*)
 
 Đợt 2 (PHH, SO, DH) và U12 đã xong, xem mục 2.
+
+### PR-BV · Bỏ vắng + xoá điểm hàng loạt có khôi phục (M–L) — chủ sản phẩm 06/10, **kế hoạch + mockup chưa soạn**
+Nguồn: `docs/superpowers/specs/2026-10-06-ra-soat-duong-lui.md` (rà 06/10, 11 phép thử API). Chạy **sau MTa** (cùng `attempts.ts`, `regular.ts`, `absence.ts`), có mockup duyệt trước.
+- **Bỏ vắng / Em có thi:** bài đã chốt vắng hoặc gõ "-" nhầm → trả **lịch cũ + số lần vắng**, rồi nhập điểm được. Ai: **QL / Quản trị mọi lúc; GV chấm bài đó trong khung nhập T19** (tuần thi → thứ Tư tuần sau). Lý do tuỳ chọn, nhật ký đủ. Máy chủ đã có hàm sửa trạng thái thi nhưng chưa có đường gọi.
+- **Xoá điểm hàng loạt** (nhiều em, cả đợt một em, cả cột kỹ năng cả lớp): **xoá mềm, khôi phục được**; màn xem trước số điểm + Case bị ảnh hưởng. Chỉ QL / Quản trị. Điểm xoá tay từng ô cũng khôi phục được.
+- Sửa lỗi: bài lớp thường xoá điểm xong vẫn "đã xong" (`regular.ts:759`).
+
+### PR-LUI · Đường lui (L, có thể tách a/b) — chủ sản phẩm 06/10, **kế hoạch + mockup chưa soạn**
+Nguồn như PR-BV. Chỉ mở cho QL / Quản trị, không nới quyền GV. Chạy sau đợt 5, trước HK2.
+- **a · Case + Chờ duyệt + Ý thức:** mở lại Case đã hoàn thành (sửa luôn chữ sai ở `ThaoTacCase.tsx:218` đang nói "Case này mở lại" mà máy chủ tạo Case mới) · huỷ quyết định duyệt / từ chối bấm nhầm trong ngày + từ chối hàng loạt · vi phạm Ý thức xoá mềm + khôi phục (nay xoá hẳn cả tệp) · ghi vi phạm cho nhiều em một lần.
+- **b · Học viên & lớp:** "Học lại" cho em đã kết thúc học · mở lại lớp đã kết thúc · lưu trữ / kết thúc học / huỷ quyết định chuyển lớp cho nhiều em một lần.
 
 ### PR-LT3 · Lịch Test ba khối + Speaking chấm chéo (L) — luật T15–T18 (mục 2c), **kế hoạch chi tiết chưa soạn**
 Chủ sản phẩm 05/10 (sau khi thấy MT4 "W1 OCT" hiện ở cả Nợ lẫn Lịch tuần này — luật hạn **đúng**, cách hiện gây rối).
