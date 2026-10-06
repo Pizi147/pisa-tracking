@@ -72,7 +72,7 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
         ngCanh={d ? <span className="truncate">{d.statusLabel}{d.bac ? ` · bậc ${d.bac} trên thang` : ' · ngoài thang, không đổi bậc'}</span> : undefined}
         chan={{
           huy: sua ? { nhan: 'Huỷ thay đổi', onClick: () => setSua(false), disabled: busy } : { nhan: 'Đóng', onClick: dong },
-          xoa: d?.coTheXoa ? { nhan: 'Xoá lần xử lý', onClick: () => { setLoiMay(null); setHoiXoa(true); } } : undefined,
+          xoa: d?.coTheXoa && !sua ? { nhan: 'Xoá lần xử lý', onClick: () => { setLoiMay(null); setHoiXoa(true); } } : undefined,
           chinh: sua
             ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void luu()}>{busy ? 'Đang lưu…' : 'Lưu'}</button>
             : d?.status === 'da_duyet' && d.canManage && onDaThucHien

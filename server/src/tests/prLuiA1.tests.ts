@@ -197,11 +197,11 @@ export async function runPrLuiA1Tests(t: YThucTestKit) {
   await checkAsync('LUIa1-15 · quyền: GVBM 403; GVCN lần đã thực hiện 403, lần chờ duyệt / đã duyệt được; QL ngoài phạm vi 403; nháp → 400', () => thu(() => {
     const sid = moiEm('15'); const [v1, v2, v3] = nVp(sid, 3);
     const r1 = xuLy(gvcn, sid, [v1]);
-    assertThrows(() => xu.suaViPhamXuLy(gvbm, r1.id, { violationIds: [v1, v2] }), /chủ nhiệm|Quản lý/, 'GVBM sửa');
-    assertThrows(() => xu.xoaXuLy(gvbm, r1.id), /chủ nhiệm|Quản lý/, 'GVBM xoá');
+    assertThrows(() => xu.suaViPhamXuLy(gvbm, r1.id, { violationIds: [v1, v2] }), /chủ nhiệm/, 'GVBM sửa: câu quyền chung, không phải "chỉ Quản lý"');
+    assertThrows(() => xu.xoaXuLy(gvbm, r1.id), /chủ nhiệm/, 'GVBM xoá');
     assertThrows(() => xu.suaViPhamXuLy(gvcn, r1.id, { violationIds: [v1, v2] }), /chỉ Quản lý/, 'GVCN sửa lần đã thực hiện');
     assertThrows(() => xu.xoaXuLy(gvcn, r1.id), /chỉ Quản lý/, 'GVCN xoá lần đã thực hiện');
-    assertThrows(() => xu.xoaXuLy(P.cpManager, r1.id), /phạm vi|quyền|chủ nhiệm|Quản lý/, 'QL ngoài phạm vi');
+    assertThrows(() => xu.xoaXuLy(P.cpManager, r1.id), /chủ nhiệm/, 'QL chi nhánh khác: câu quyền chung');
     assert(xu.xemXuLy(gvcn, r1.id).coTheSua === false && xu.xemXuLy(P.mbManager, r1.id).coTheSua === true, 'cờ coTheSua');
     for (const st of ['cho_duyet', 'da_duyet']) {
       conn.prepare('UPDATE discipline_measures SET status = ? WHERE id = ?').run(st, r1.id);
@@ -230,7 +230,7 @@ export async function runPrLuiA1Tests(t: YThucTestKit) {
       const ra = att.chepTep(gvbm, { tuId: goc.id, ownerType: 'violation', ownerIds: [b, c] });
       const dong = hang('SELECT url, display_name, size_bytes FROM attachments WHERE owner_type = ? AND owner_id IN (?, ?, ?)', 'violation', a, b, c);
       assert(ra.length === 2 && dong.length === 3 && new Set(dong.map((x) => x.url)).size === 1 && dong.every((x) => x.display_name === 'anh-vo-btvn.jpg'), JSON.stringify(dong));
-      assertThrows(() => att.chepTep(gvbm, { tuId: goc.id, ownerType: 'violation', ownerIds: Array.from({ length: 61 }, (_, i) => 100000 + i) }), /từ 1 đến 60/, '> 60');
+      assertThrows(() => att.chepTep(gvbm, { tuId: goc.id, ownerType: 'violation', ownerIds: Array.from({ length: 9 }, (_, i) => 100000 + i) }), /từ 1 đến 8/, '> 8');
       assertThrows(() => att.chepTep(P.cpManager, { tuId: goc.id, ownerType: 'violation', ownerIds: [b] }), /phạm vi|quyền/, 'nguồn ngoài quyền xem');
     } finally { await kho().xoa(url9); }
   }));
@@ -249,5 +249,83 @@ export async function runPrLuiA1Tests(t: YThucTestKit) {
       viol.deleteViolation(gvbm, c);
       assert(await kho().doc(url) === null, 'dòng cuối đi thì kho xoá');
     } finally { await kho().xoa(url); }
+  }));
+
+  // ---------------------------------------------------------------- sửa sau rà (I1–I3 + mục nhỏ)
+  const xoaHV: any = await import('../students/xoaHocVien.ts');
+  const { soCauSql } = await import('../platform/nguCanhRequest.ts');
+
+  await checkAsync('LUIa1-16 · I1: xoá MỘT học viên không làm mất tệp dùng chung của em khác (kho theo dòng còn lại)', () => thu(async () => {
+    const [a, b, c] = emLop('MB FT 101', 3);
+    const ids = viol.recordViolations(gvbm, { studentIds: [a, b, c], lines: [dongChung], idempotencyKey: 'luia1-16-khoa' }).ok.map((o: any) => o.ids[0] as number);
+    const goc = await att.addFile(gvbm, { ownerType: 'violation', ownerId: ids[0], fileName: 'anh.jpg', data: Buffer.from('anh') });
+    att.chepTep(gvbm, { tuId: goc.id, ownerType: 'violation', ownerIds: ids.slice(1) });
+    const url = hang('SELECT url FROM attachments WHERE id = ?', goc.id)[0].url as string;
+    try {
+      const ma = (hang('SELECT student_code FROM students WHERE id = ?', a)[0]).student_code as string;
+      xoaHV.xoaHocVien(P.admin, a, { maXacNhan: ma });
+      assert(hang('SELECT id FROM violations WHERE id = ?', ids[0]).length === 0, 'em a đã xoá');
+      assert(await kho().doc(url) !== null, 'tệp chung phải còn trong kho cho hai em kia');
+      assert(hang('SELECT id FROM attachments WHERE url = ?', url).length === 2, 'hai dòng tệp còn');
+    } finally { await kho().xoa(url); }
+  }));
+
+  await checkAsync('LUIa1-17 · I2: số câu SQL — ghi 8 em, 1 em 10 dòng, chép tệp 8 bản ghi đều ≤ 200 (trần 10 s Netlify)', () => thu(async () => {
+    const tam = emLop('MB FT 101', 8);
+    let n0 = soCauSql();
+    viol.recordViolations(gvbm, { studentIds: tam, lines: [dongChung], idempotencyKey: 'luia1-17-khoa-a' });
+    const c8 = soCauSql() - n0;
+    const mot = tam[0];
+    n0 = soCauSql();
+    viol.recordViolations(gvbm, { studentIds: [mot], lines: Array.from({ length: 10 }, (_, i) => ({ ...dongChung, ten: `Vi phạm số ${i + 1}` })), idempotencyKey: 'luia1-17-khoa-b' });
+    const d10 = soCauSql() - n0;
+    const ids = hang('SELECT id FROM violations WHERE idempotency_key LIKE ?', 'luia1-17-khoa-a:%').map((r) => r.id as number);
+    const goc = await att.addFile(gvbm, { ownerType: 'violation', ownerId: ids[0], fileName: 'anh.jpg', data: Buffer.from('anh') });
+    const url = hang('SELECT url FROM attachments WHERE id = ?', goc.id)[0].url as string;
+    try {
+      n0 = soCauSql();
+      att.chepTep(gvbm, { tuId: goc.id, ownerType: 'violation', ownerIds: ids.slice(1) });
+      const cc = soCauSql() - n0;
+      console.log(`      (đo: ghi 8 em ${c8} câu · 1 em 10 dòng ${d10} câu · chép 7 bản ghi ${cc} câu)`);
+      assert(c8 <= 200, `ghi 8 em ${c8} câu`);
+      assert(d10 <= 200, `1 em 10 dòng ${d10} câu`);
+      assert(cc <= 200, `chép tệp ${cc} câu`);
+    } finally { await kho().xoa(url); }
+  }));
+
+  check('LUIa1-18 · I3: nhiều em + nhiều dòng báo lỗi ngay tại ô (dsLoiGhiViPham), không gửi', () => {
+    const l = d.dsLoiGhiViPham({ hocVien: [1, 2], dong: [{ nhom: 'homework', ten: 'Quên vở' }, { nhom: 'homework', ten: 'Đi muộn' }] });
+    assert(l.length === 1 && l[0].khoa === 'hoc-vien' && l[0].lyDo === 'Chọn nhiều học viên thì ghi một vi phạm.', JSON.stringify(l));
+    assert(d.dsLoiGhiViPham({ hocVien: [1], dong: [{ nhom: 'homework', ten: 'Quên vở' }, { nhom: 'homework', ten: 'Đi muộn' }] }).length === 0, 'một em nhiều dòng vẫn hợp lệ');
+  });
+
+  await checkAsync('LUIa1-19 · mục nhỏ: lines:[null] → 400; môn sai → 400 trước khi ghi; một em nhiều dòng bỏ mô tả riêng; chép chỉ cùng loại; lần bị từ chối không chặn xoá', () => thu(async () => {
+    const [a, b] = emLop('MB FT 101', 2);
+    assertThrows(() => viol.recordViolations(gvbm, { studentIds: [a], lines: [null as any], idempotencyKey: 'luia1-19-khoa-0' }), /Vi phạm|dòng/, 'lines:[null]');
+    assertThrows(() => viol.recordViolations(gvbm, { studentIds: [a, b], lines: [{ ...dongChung, skill: 'mon-la' }], idempotencyKey: 'luia1-19-khoa-1' }), /Môn không hợp lệ/, 'môn sai');
+    assert(hang('SELECT id FROM violations WHERE idempotency_key LIKE ?', 'luia1-19-khoa-1:%').length === 0, 'môn sai thì không em nào được lưu');
+    viol.recordViolations(gvbm, { studentIds: [a], lines: [{ ...dongChung, moTa: 'm1' }, { ...dongChung, ten: 'Dòng hai', moTa: 'm2' }], moTaRieng: { [a]: 'riêng' }, idempotencyKey: 'luia1-19-khoa-2' });
+    const ds = hang('SELECT description FROM violations WHERE idempotency_key LIKE ? ORDER BY id', 'luia1-19-khoa-2:%').map((r) => r.description);
+    assert(ds.join('|') === 'm1|m2', 'một em nhiều dòng: mô tả riêng không đè — ' + ds.join('|'));
+    const v = viol.recordViolation(gvbm, { studentId: a, category: 'homework', ten: 'Chép tệp' }).violation.id as number;
+    const goc = await att.addFile(gvbm, { ownerType: 'violation', ownerId: v, fileName: 'a.jpg', data: Buffer.from('x') });
+    const url = hang('SELECT url FROM attachments WHERE id = ?', goc.id)[0].url as string;
+    try {
+      assertThrows(() => att.chepTep(gvbm, { tuId: goc.id, ownerType: 'discipline_measure', ownerIds: [1] }), /cùng loại/, 'chép khác loại bản ghi');
+    } finally { await kho().xoa(url); }
+    const sid = moiEm('19'); const [v1, v2] = nVp(sid, 2);
+    const r1 = xuLy(gvcn, sid, [v1]); const r2 = xuLy(gvcn, sid, [v2]);
+    conn.prepare("UPDATE discipline_measures SET status = 'tu_choi' WHERE id = ?").run(r2.id);
+    assert(xu.xoaXuLy(P.mbManager, r1.id).ok, 'lần sau bị từ chối không chặn xoá lần trước');
+  }));
+
+  await checkAsync('LUIa1-20 · nhật ký Xoá lần xử lý ghi "đã báo PH" khi em có việc Báo phụ huynh đã xong', () => thu(() => {
+    const sid = moiEm('20'); const [v1] = nVp(sid, 1);
+    const r1 = xuLy(gvcn, sid, [v1]);
+    const att0 = Number((conn.prepare('SELECT id FROM assessment_attempts LIMIT 1').get() as any).id);
+    conn.prepare("INSERT INTO sos_coordination_actions (attempt_id, student_id, kind, preset, status, created_at) VALUES (?, ?, 'bao_ph_tvv', 1, 'done', ?)").run(att0, sid, new Date().toISOString());
+    xu.xoaXuLy(P.mbManager, r1.id);
+    const nk = hang("SELECT before_json FROM audit_logs WHERE action = 'discipline.delete' AND entity_id = ?", r1.id);
+    assert(JSON.parse(nk[0].before_json).daBaoPhuHuynh === true, nk[0].before_json);
   }));
 }

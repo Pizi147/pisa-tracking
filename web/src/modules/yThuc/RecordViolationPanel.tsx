@@ -138,7 +138,11 @@ export function RecordViolationPanel({
         });
         for (const o of r.ok) { daXong.push(o.studentId); ids.push(...o.ids); }
         for (const l of r.loi) loiMoi[l.studentId] = l.loi;
-      } catch (e: any) { loiChung = e.message; break; }
+      } catch (e: any) {
+        /* Lỗi 4xx khi CHƯA lưu được em nào (nội dung bị từ chối): báo toast, ô vẫn sửa được — không vào "lưu dở" (Thử lại sẽ lặp mãi). */
+        if (daXong.length === 0 && e?.status >= 400 && e.status < 500) throw e;
+        loiChung = e.message; break;
+      }
     }
     for (const s of con) if (!daXong.includes(s) && !loiMoi[s]) loiMoi[s] = loiChung ?? 'Chưa lưu học viên này.';
     return { daXong, ids, loi: loiMoi };

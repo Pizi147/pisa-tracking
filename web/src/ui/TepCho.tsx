@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { ApiError, api } from '../lib/api.ts';
-import { ATTACHMENT_EXTENSIONS, ATTACHMENT_MAX_BYTES, laLienKet, tenAnhDan } from '@shared/domain/index.ts';
+import { ATTACHMENT_EXTENSIONS, ATTACHMENT_MAX_BYTES, LO_GHI_VI_PHAM, chiaLo, laLienKet, tenAnhDan } from '@shared/domain/index.ts';
 
 /**
  * TỆP CHỜ TRONG FORM (PR-LUI-a1) — bằng chứng chọn NGAY khi ghi (Ghi vi phạm, Tạo Case), chưa tải lên: tệp chỉ đi khi bấm Lưu,
@@ -157,7 +157,8 @@ export async function taiTepCho(ds: TepChoMuc[], o: { ownerType: string; ownerId
           : await api.post<{ id: number }>('/attachments/link', { ownerType: o.ownerType, ownerId: dau, url: m.url, displayName: m.ten || null });
         tuId = row.id;
       }
-      if (con.length) await api.post('/attachments/chep', { tuId, ownerType: o.ownerType, ownerIds: con });
+      /* Chép theo lô (máy chủ nhận ≤ LO_GHI_VI_PHAM bản ghi mỗi request, và bỏ qua bản ghi đã có → thử lại sau lỗi giữa chừng không nhân đôi). */
+      for (const lo of chiaLo(con, LO_GHI_VI_PHAM)) await api.post('/attachments/chep', { tuId, ownerType: o.ownerType, ownerIds: lo });
       ra.push({ ...m, xong: true, daGui: undefined, loi: undefined, tuId });
     } catch (e) {
       ra.push({ ...m, daGui: true, tuId, loi: e instanceof ApiError ? e.message : 'Không tải được tệp — kiểm tra kết nối rồi thử lại.' });

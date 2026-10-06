@@ -71,6 +71,8 @@ export function kiemTenViPham(text: unknown): string | null {
 export function dsLoiGhiViPham(i: { hocVien: readonly number[]; dong: readonly { nhom: string; ten: string }[] }): LoiTruong[] {
   const out: LoiTruong[] = [];
   if (!i.hocVien.length) out.push({ khoa: 'hoc-vien', nhan: 'Học viên', lyDo: 'Chọn ít nhất một học viên' });
+  /* Nhiều học viên = MỘT vi phạm chung (Q1). Báo ngay tại ô, không gửi để máy chủ từ chối cả lô. */
+  else if (i.hocVien.length > 1 && i.dong.length > 1) out.push({ khoa: 'hoc-vien', nhan: 'Học viên', lyDo: 'Chọn nhiều học viên thì ghi một vi phạm.' });
   i.dong.forEach((d, k) => {
     const so = i.dong.length > 1 ? ` ${k + 1}` : '';
     if (!d.nhom) out.push({ khoa: `nhom-${k + 1}`, nhan: `Nhóm${so}`, lyDo: 'Chọn Nhóm' });

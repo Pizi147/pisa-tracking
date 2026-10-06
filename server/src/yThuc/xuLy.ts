@@ -361,8 +361,8 @@ export function yThucHocVien(p: Principal, studentId: number, o: { phamVi?: 'chu
  *   · người khác ghi → "Vi phạm mới — {HV} ({nhóm}) · ghi nhận hoặc xử lý trước dd/mm" (V4-5)
  *   · lần ghi làm em thành bắt buộc → "{HV} có 3 vi phạm trong 2 tuần — cần xử lý trước dd/mm" (V4-2)
  */
-export function baoKhiGhiViPham(p: Principal, studentId: number, violationId: number, category: string, truocBatBuoc: boolean) {
-  const em = emCua(studentId);
+export function baoKhiGhiViPham(p: Principal, studentId: number, violationId: number, category: string, truocBatBuoc: boolean, emSau?: EmYThuc) {
+  const em = emSau ?? emCua(studentId);
   if (!em.gvcnId || em.tamDung || em.gvcnId === p.userId) return;
   const hv = hocVien(studentId);
   const homNay = demoToday();
@@ -379,13 +379,12 @@ export function baoKhiGhiViPham(p: Principal, studentId: number, violationId: nu
 }
 
 /** Em đang bắt buộc xử lý chưa (trước khi ghi thêm) — để chỉ báo "3 vi phạm trong 2 tuần" ở lần ghi làm em bắt buộc. */
-export function dangBatBuoc(studentId: number): boolean {
-  return emCua(studentId).soBatBuoc > 0;
+export function dangBatBuoc(studentId: number, em: EmYThuc = emCua(studentId)): boolean {
+  return em.soBatBuoc > 0;
 }
 
 /** Người ghi có phải GVCN lớp em đang học (Q5 — tự Ghi nhận). */
-export function laGvcnDangHoc(p: Principal, studentId: number): boolean {
-  const em = emCua(studentId);
+export function laGvcnDangHoc(p: Principal, studentId: number, em: EmYThuc = emCua(studentId)): boolean {
   return em.gvcnId === p.userId || (!!em.lopId && p.assignments.some((a) => a.isCore && a.classId === em.lopId
     && a.effectiveFrom <= demoToday() && (!a.effectiveTo || a.effectiveTo >= demoToday())));
 }
@@ -475,10 +474,11 @@ function loadXuLy(id: number): any {
 
 /** Lần xử lý MỚI HƠN trong cùng chuỗi (lần đã dựa trên lần này) — mới nhất trước; không có = lần này là lần mới nhất. */
 function lanSauCua(m: any, em: EmYThuc): any | null {
+  /* Lần bị từ chối / nháp không phải lần "đã dựa trên lần này" — không chặn xoá. */
   const chuoi = em.chuoi;
   const trongChuoi = m.cycle_id != null && chuoi.includes(m.cycle_id);
   const sau = db().prepare(
-    `SELECT id, kind, custom_name, cycle_id FROM discipline_measures WHERE student_id = ? AND status != 'nhap' AND id > ? ORDER BY id DESC`,
+    `SELECT id, kind, custom_name, cycle_id FROM discipline_measures WHERE student_id = ? AND status IN ('done', 'cho_duyet', 'da_duyet') AND id > ? ORDER BY id DESC`,
   ).all(m.student_id, m.id) as any[];
   return sau.find((r) => (trongChuoi ? r.cycle_id != null && chuoi.includes(r.cycle_id) : r.cycle_id === m.cycle_id)) ?? null;
 }
@@ -486,7 +486,8 @@ function lanSauCua(m: any, em: EmYThuc): any | null {
 function requireSuaXuLy(p: Principal, m: any) {
   if (m.status === 'nhap') throw badRequest('Đây là đề xuất chưa gửi — đóng panel để xoá nháp.');
   if (!quyenSuaXuLy(p, m)) {
-    throw forbidden(m.status === 'done' ? 'Lần xử lý đã thực hiện — chỉ Quản lý sửa hoặc xoá được.' : MANAGE_MESSAGE);
+    /* "Chỉ Quản lý" chỉ đúng với người VỐN xử lý được Ý thức của em (GVCN) gặp lần đã thực hiện; GVBM / QL chi nhánh khác nhận câu quyền chung. */
+    throw forbidden(m.status === 'done' && canManageDiscipline(p, m.student_id) ? 'Lần xử lý đã thực hiện — chỉ Quản lý sửa hoặc xoá được.' : MANAGE_MESSAGE);
   }
 }
 
@@ -539,6 +540,7 @@ export function xoaXuLy(p: Principal, measureId: number): { ok: true; bac: numbe
       throw badRequest(`Đã có ${ten} sau lần này — xoá ${ten} trước.`);
     }
     const vIds = (db().prepare('SELECT violation_id FROM measure_violations WHERE measure_id = ? ORDER BY violation_id').all(measureId) as any[]).map((r) => r.violation_id as number);
+    const daBaoPh = !!db().prepare("SELECT 1 FROM sos_coordination_actions WHERE student_id = ? AND kind = 'bao_ph_tvv' AND status = 'done' LIMIT 1").get(m.student_id);
     const files = purgeAttachmentsOf('discipline_measure', measureId, p.userId, khoaTep);
     for (const id of vIds) noteMeasureChange(id, measureId, null, p.userId);
     db().prepare('DELETE FROM measure_violations WHERE measure_id = ?').run(measureId);
@@ -548,7 +550,7 @@ export function xoaXuLy(p: Principal, measureId: number): { ok: true; bac: numbe
     writeAudit({ actorUserId: p.userId, action: 'discipline.delete', entityType: 'discipline_measure', entityId: measureId,
       entityLabel: `${hv.student_code} · xoá ${nhanLoaiXuLy(m.kind, m.custom_name)}`,
       before: { studentId: m.student_id, kind: m.kind, customName: m.custom_name ?? null, status: m.status, note: m.note ?? null, performedOn: m.performed_on ?? null,
-        performedBy: m.performed_by ?? null, performerName: m.performer_name ?? null, createdBy: m.created_by, violations: vIds, attachments: files } });
+        performedBy: m.performed_by ?? null, performerName: m.performer_name ?? null, createdBy: m.created_by, violations: vIds, attachments: files, daBaoPhuHuynh: daBaoPh } });
     return emCua(m.student_id).bac;
   });
   xoaTepSauGiaoDich(khoaTep);

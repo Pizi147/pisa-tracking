@@ -5,6 +5,7 @@ import {
   type ViolationCategory, type TrangThaiVp,
 } from '../../../shared/domain/index.ts';
 import { chotHanXuLy, trangThaiYThuc, type EmYThuc } from './trangThai.ts';
+import { xoaNho } from '../platform/nguCanhRequest.ts';
 import { baoKhiGhiViPham, dangBatBuoc, laGvcnDangHoc } from './xuLy.ts';
 import type { Principal } from '../permissions.ts';
 import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -152,8 +153,7 @@ function checkSkill(skill: unknown): string | null {
 }
 
 /** V03: mặc định hôm nay, cho chọn ngày quá khứ (GV nhớ ra sau), không cho ngày tương lai. */
-function checkOccurredOn(value: unknown): string {
-  const today = demoToday();
+function checkOccurredOn(value: unknown, today: string = demoToday()): string {
   if (value === undefined || value === null || value === '') return today;
   if (!isIsoDate(value)) throw badRequest('Ngày xảy ra không hợp lệ.');
   if (value > today) throw badRequest('Ngày xảy ra không được ở tương lai.');
@@ -164,9 +164,8 @@ function checkOccurredOn(value: unknown): string {
  * V04: môn TỰ ĐIỀN theo phân công của giáo viên ở lớp đó. Dạy đúng một môn thì điền môn đó; dạy nhiều môn, hoặc không dạy
  * môn nào (GVCN thuần, Quản lý), thì để trống cho người ghi chọn — hệ thống không đoán.
  */
-export function defaultSkillFor(p: Principal, classId: number | null): string | null {
+export function defaultSkillFor(p: Principal, classId: number | null, today: string = demoToday()): string | null {
   if (!classId) return null;
-  const today = demoToday();
   const skills = new Set(
     p.assignments
       .filter((a) => a.classId === classId && a.skill && a.effectiveFrom <= today && (!a.effectiveTo || a.effectiveTo >= today))
@@ -195,17 +194,18 @@ export function similarViolations(
 /** Một dòng vi phạm đã kiểm (dùng cho cả ghi một em và ghi nhiều em). */
 type DongDaKiem = { category: ViolationCategory; skill: string | null; occurredOn: string; ten: string; moTa: string };
 
-/** Phần ghi của MỘT vi phạm — gọi TRONG `tx` của nơi gọi. */
-function ghiMotViPham(p: Principal, student: any, classId: number, dong: DongDaKiem, key: string | null, truocBatBuoc: boolean, laGvcn: boolean): number {
-  const cycle = currentCycle(student.id);
-  const today = demoToday();
+/**
+ * Phần ghi của MỘT vi phạm — gọi TRONG `tx` của nơi gọi. KHÔNG báo GVCN / chốt hạn: nơi gọi làm MỘT lần cho cả em (sau mọi dòng) vì hai việc đó
+ * tính lại trạng thái Ý thức của em (nhiều câu SQL) — làm mỗi dòng thì 10 dòng vượt trần 10 s của Netlify.
+ */
+function ghiMotViPham(p: Principal, student: any, classId: number, cycleId: number | null, today: string, dong: DongDaKiem, key: string | null, laGvcn: boolean): number {
   const info = db()
     .prepare(
       `INSERT INTO violations (student_id, cycle_id, class_id, category, skill, occurred_on, reported_on, reported_by,
                                ten, description, idempotency_key, created_at)
        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
     )
-    .run(student.id, cycle?.id ?? null, classId, dong.category, dong.skill, dong.occurredOn, today, p.userId, dong.ten, dong.moTa, key, nowIso());
+    .run(student.id, cycleId, classId, dong.category, dong.skill, dong.occurredOn, today, p.userId, dong.ten, dong.moTa, key, nowIso());
   const newId = Number(info.lastInsertRowid);
   /*
    * Q5 (Câu 1 = A): GVCN lớp đang học tự ghi → tự "Đã ghi nhận" (vẫn đếm vào luật ≥ 3). PR-S3F #6: LUÔN đặt dấu, kể cả khi chính lần ghi này là
@@ -219,14 +219,11 @@ function ghiMotViPham(p: Principal, student: any, classId: number, dong: DongDaK
     entityLabel: `${student.student_code} · ${VIOLATION_CATEGORY_LABEL[dong.category]}`,
     after: { category: dong.category, skill: dong.skill, occurredOn: dong.occurredOn, ten: dong.ten, description: dong.moTa },
   });
-  baoKhiGhiViPham(p, student.id, newId, dong.category, truocBatBuoc);
-  chotHanXuLy([student.id]);
   return newId;
 }
 
 /** V07: khoá đã dùng → chỉ phát lại cho đúng người ghi và đúng học viên; khoá của bản ghi khác mà trả về là lộ vi phạm của em ngoài phạm vi. */
-function daGhiTheoKhoa(p: Principal, studentId: number, key: string): number | null {
-  const seen = db().prepare('SELECT id, student_id, reported_by FROM violations WHERE idempotency_key = ?').get(key) as any;
+function daGhiTheoKhoa(p: Principal, studentId: number, seen: any): number | null {
   if (!seen) return null;
   if (seen.student_id !== studentId || seen.reported_by !== p.userId) throw badRequest(KEY_TAKEN_MESSAGE);
   return seen.id;
@@ -253,7 +250,7 @@ export function recordViolation(p: Principal, input: {
   const key = input.idempotencyKey?.trim() || null;
   if (key) {
     /* V07: gửi lại cùng một request (bấm hai lần, thử lại sau lỗi mạng) không tạo dòng thứ hai và không ghi audit thêm. */
-    const cu = daGhiTheoKhoa(p, input.studentId, key);
+    const cu = daGhiTheoKhoa(p, input.studentId, db().prepare('SELECT id, student_id, reported_by FROM violations WHERE idempotency_key = ?').get(key));
     if (cu) return { violation: loadViolation(cu), similar: [] };
   }
 
@@ -267,7 +264,12 @@ export function recordViolation(p: Principal, input: {
   const truocBatBuoc = dangBatBuoc(input.studentId);
   const laGvcn = laGvcnDangHoc(p, input.studentId);
 
-  const id = tx(() => ghiMotViPham(p, student, classId, { category, skill, occurredOn, ten, moTa }, key, truocBatBuoc, laGvcn));
+  const id = tx(() => {
+    const newId = ghiMotViPham(p, student, classId, currentCycle(input.studentId)?.id ?? null, demoToday(), { category, skill, occurredOn, ten, moTa }, key, laGvcn);
+    baoKhiGhiViPham(p, input.studentId, newId, category, truocBatBuoc);
+    chotHanXuLy([input.studentId]);
+    return newId;
+  });
   return { violation: loadViolation(id), similar };
 }
 
@@ -275,8 +277,9 @@ export type DongViPhamVao = { category?: string; skill?: string | null; occurred
 
 /**
  * GHI NHIỀU (PR-LUI-a1, chủ sản phẩm 06/10): một học viên nhiều dòng, HOẶC nhiều học viên một dòng. ≤ `LO_GHI_VI_PHAM` em mỗi request (web chia lô);
- * mỗi em MỘT giao dịch, lỗi một em không cuộn lại em khác. Nội dung sai (khuôn, nhóm, Vi phạm, ngày) → 400 TRƯỚC khi ghi gì.
+ * mỗi em MỘT giao dịch, lỗi một em không cuộn lại em khác. Nội dung sai (khuôn, nhóm, Vi phạm, ngày, môn) → 400 TRƯỚC khi ghi gì.
  * Gửi lại cùng `idempotencyKey`: mỗi dòng có khoá `{key}:{em}:{i}` nên không thêm dòng, trả lại đúng id.
+ * Ít câu SQL (trần 10 s Netlify × ~35 ms/câu): học viên, khoá gửi, trạng thái Ý thức đọc MỘT lần theo lô; báo GVCN + chốt hạn một lần sau khi ghi cả lô.
  */
 export function recordViolations(p: Principal, input: {
   studentIds: number[]; lines: DongViPhamVao[]; moTaRieng?: Record<string, string> | null; idempotencyKey: string;
@@ -287,40 +290,66 @@ export function recordViolations(p: Principal, input: {
   }
   const lines = Array.isArray(input.lines) ? input.lines : [];
   if (!lines.length || lines.length > VI_PHAM_TOI_DA_DONG) throw badRequest(`Mỗi học viên ghi từ 1 đến ${VI_PHAM_TOI_DA_DONG} vi phạm.`);
+  if (!lines.every((l) => l && typeof l === 'object')) throw badRequest('Vi phạm: dòng không hợp lệ.');
   if (ids.length > 1 && lines.length > 1) throw badRequest('Chọn nhiều học viên thì ghi một vi phạm.');
   const key = String(input.idempotencyKey ?? '').trim();
   if (key.length < 8 || key.length > 80) throw badRequest('Thiếu khoá gửi (idempotencyKey).');
-  const rieng = input.moTaRieng ?? {};
+  const today = demoToday();
   const dong = lines.map((l) => ({
-    category: checkCategory(l.category), occurredOn: checkOccurredOn(l.occurredOn),
-    ...checkTenMoTa({ ten: l.ten ?? '', description: l.moTa }), skillGui: l.skill,
+    category: checkCategory(l.category), occurredOn: checkOccurredOn(l.occurredOn, today),
+    ...checkTenMoTa({ ten: l.ten ?? '', description: l.moTa }),
+    /* Môn: kiểm TRƯỚC khi ghi gì; `undefined` = tự điền theo phân công của từng em. */
+    skill: l.skill === undefined ? undefined : checkSkill(l.skill),
   }));
+  /* Mô tả riêng từng em chỉ có nghĩa khi MỘT dòng chung cho nhiều em — một em nhiều dòng thì bỏ qua (khỏi đè mọi dòng). */
+  const rieng = lines.length === 1 ? input.moTaRieng ?? {} : {};
   const moTaRieng = new Map<number, string>();
   for (const sid of ids) {
     const r = rieng[String(sid)];
     if (r !== undefined && String(r).trim()) moTaRieng.set(sid, chuTuDo(r, 'Mô tả riêng', 2000) ?? '');
   }
 
+  /* Đọc theo lô một lần: học viên, khoá đã dùng, trạng thái Ý thức TRƯỚC khi ghi. */
+  const hang = (n: number) => Array.from({ length: n }, () => '?').join(',');
+  const students = new Map((db().prepare(`SELECT * FROM students WHERE id IN (${hang(ids.length)})`).all(...ids) as any[]).map((r) => [r.id as number, r]));
+  const khoa = (sid: number, i: number) => `${key}:${sid}:${i}`;
+  const tatCaKhoa = ids.flatMap((sid) => dong.map((_, i) => khoa(sid, i)));
+  const daCo = new Map((db().prepare(`SELECT id, student_id, reported_by, idempotency_key FROM violations WHERE idempotency_key IN (${hang(tatCaKhoa.length)})`)
+    .all(...tatCaKhoa) as any[]).map((r) => [r.idempotency_key as string, r]));
+  const truoc = trangThaiYThuc(ids);
+
   const ok: { studentId: number; ids: number[] }[] = [];
   const loi: { studentId: number; loi: string; ma: number }[] = [];
+  const viec: { sid: number; lastId: number; category: ViolationCategory; truocBatBuoc: boolean }[] = [];
   for (const sid of ids) {
     try {
-      const student = loadStudent(sid);
+      const student = students.get(sid);
+      if (!student) throw notFound('Không tìm thấy học viên');
       requireRecordViolation(p, sid);
       const classId = activeClassOf(sid);
       if (!classId) throw badRequest('Học viên này chưa xếp lớp hoặc không còn đang học — chưa ghi được vi phạm.');
-      const cu = dong.map((_, i) => daGhiTheoKhoa(p, sid, `${key}:${sid}:${i}`));
+      const cu = dong.map((_, i) => daGhiTheoKhoa(p, sid, daCo.get(khoa(sid, i))));
       if (cu.every((x) => x !== null)) { ok.push({ studentId: sid, ids: cu as number[] }); continue; }
-      const truocBatBuoc = dangBatBuoc(sid);
-      const laGvcn = laGvcnDangHoc(p, sid);
-      const moi = tx(() => dong.map((dg, i) => cu[i] ?? ghiMotViPham(p, student, classId, {
+      const emT = truoc.get(sid)!;
+      const laGvcn = laGvcnDangHoc(p, sid, emT);
+      const cycleId = currentCycle(sid)?.id ?? null;
+      const moi = tx(() => dong.map((dg, i) => cu[i] ?? ghiMotViPham(p, student, classId, cycleId, today, {
         category: dg.category, occurredOn: dg.occurredOn, ten: dg.ten, moTa: moTaRieng.get(sid) ?? dg.moTa,
-        skill: dg.skillGui === undefined ? defaultSkillFor(p, classId) : checkSkill(dg.skillGui),
-      }, `${key}:${sid}:${i}`, truocBatBuoc, laGvcn)));
+        skill: dg.skill === undefined ? defaultSkillFor(p, classId, today) : dg.skill,
+      }, khoa(sid, i), laGvcn)));
       ok.push({ studentId: sid, ids: moi });
+      const dongMoi = cu.map((x, i) => (x === null ? i : -1)).filter((i) => i >= 0);
+      viec.push({ sid, lastId: moi[dongMoi[dongMoi.length - 1]], category: dong[dongMoi[dongMoi.length - 1]].category, truocBatBuoc: dangBatBuoc(sid, emT) });
     } catch (e: any) {
       loi.push({ studentId: sid, loi: String(e?.message ?? 'Không lưu được.'), ma: Number(e?.status) || 500 });
     }
+  }
+  /* Sau cả lô: MỘT lần tính lại trạng thái các em vừa ghi → báo GVCN (dedup mỗi em mỗi ngày) + chốt hạn xử lý. */
+  if (viec.length) {
+    xoaNho();
+    const sau = trangThaiYThuc(viec.map((v) => v.sid));
+    for (const v of viec) baoKhiGhiViPham(p, v.sid, v.lastId, v.category, v.truocBatBuoc, sau.get(v.sid));
+    chotHanXuLy(viec.map((v) => v.sid), { trang: sau });
   }
   return { ok, loi };
 }
