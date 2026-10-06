@@ -128,7 +128,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
   }
   if (view.loai === 'sua' && data.viewer.coTheSua) {
     return (
-      <SuaCasePanel {...chung} c={data} tenCase={data.title ?? ten} onSaved={xong}
+      <SuaCasePanel {...chung} c={data} tenCase={(() => { const t = data.title ?? ten; const kn = data.categoryLabel; return kn && !t.startsWith(kn) ? `${kn} — ${t}` : t; })()} onSaved={xong}
         soPaChuaLam={(data.interventions ?? []).filter((x: any) => x.status === 'planned' || x.status === 'started').length}
         onDeleted={() => { onChanged?.(); onClose(); }} />
     );
@@ -165,7 +165,10 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
     ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={moLaiBusy} onClick={() => void moLai()}>{moLaiBusy ? 'Đang mở lại…' : 'Mở lại'}</button>
     : canDong && data.viewer.coTheSua
       ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setView({ loai: 'sua' })}>Sửa</button>
-      : null;
+      /* Rà #229: Case hệ thống đóng — không có Mở lại tay, nói đường mở. */
+      : data.status === 'done' && data.systemCloseLabel && data.viewer.canApprove
+        ? <span className="text-xs text-slate-400">Hệ thống đóng — Hoàn tác Kết thúc học để mở</span>
+        : null;
   const nutChinh = (() => {
     if (!data.viewer.canEdit || !canDong) return undefined;
     const nut = (chu: string, lam: () => void, title?: string) => <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" title={title} onClick={lam}>{chu}</button>;

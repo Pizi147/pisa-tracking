@@ -3193,7 +3193,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
   const mtGhi = mtDong ? kiemMiniTest(mtDong, input.miniTest!) : null;
   const remainingIssue = String(input.remainingIssue ?? '').trim() || null;
   if (remainingIssue && remainingIssue.length > 300) throw badRequest('Vấn đề còn tồn / Ghi chú tối đa 300 ký tự.');
-  const phuTrach = chuanHoaNguoiThucHien(p, input.phuTrach ?? {}, { nhom: 'nhan_vien', batBuoc: false });
+  const phuTrach = chuanHoaNguoiThucHien(p, input.phuTrach ?? {}, { nhom: 'nhan_vien', batBuoc: false, nhan: 'Người phụ trách' });
   if (!phuTrach && opts.batBuocPhuTrach) throw badRequest('Ghi Người phụ trách.');
   /* Điều chỉnh: chuẩn hoá TRƯỚC giao dịch; sai thì không ghi gì. */
   const adjustPatch = nextStep === 'adjust' ? chuanHoaDieuChinh(p, iv, input.adjust, observedOn) : null;

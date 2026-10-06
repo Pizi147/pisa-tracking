@@ -153,9 +153,10 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       return {
         tieuDe: `Đề xuất PA${x?.topic ? ` · ${caseTopicLabel(x.topic)}` : ''}`,
         phu: x ? nhanDotNgan(x.attempt_kind, x.attempt_no) : null,
-        dong: [`${nguoiXin(yc, ngu)} đề xuất ${ngay(yc.tao_luc, ngu)}: “${moTa}”`],
+        dong: [`${nguoiXin(yc, ngu)} đề xuất ${ngay(yc.tao_luc, ngu)}: “${moTa}”`, ...(x ? [] : ['PA đã xoá'])],
         neuDuyet: 'PA bắt đầu hôm nay, ghi kết quả hằng tuần hạn hết T2.',
-        mo: yc.hoc_vien_id && x ? duongHoSoHocVien(yc.hoc_vien_id, { caseId: x.case_id }) : undefined,
+        /* Rà #229: PA / Case đã xoá (PR-LUI-a2) — không có nút Mở trỏ vào chỗ không còn. */
+        mo: yc.hoc_vien_id && x ? duongHoSoHocVien(yc.hoc_vien_id, { caseId: x.case_id }) : x ? undefined : '',
       };
     },
   },
@@ -240,7 +241,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
           `${nguoiXin(yc, ngu)} (${ngay(yc.tao_luc, ngu)}): “${yc.ly_do ?? ''}”`,
           ...(x?.outcome ? [`Kết quả tuần: ${outcomeLabelFor(x.outcome)}${x.note ? ` — ${x.note}` : ''}`] : []),
         ],
-        mo: yc.hoc_vien_id && x ? duongHoSoHocVien(yc.hoc_vien_id, { caseId: x.case_id }) : undefined,
+        mo: yc.hoc_vien_id && x ? duongHoSoHocVien(yc.hoc_vien_id, { caseId: x.case_id }) : x ? undefined : '',   // rà #229: PA đã xoá
         duLieu: x ? { caseId: x.case_id } : undefined,
       };
     },

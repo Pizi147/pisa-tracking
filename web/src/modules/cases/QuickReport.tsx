@@ -201,11 +201,13 @@ export function QuickReport({
    */
   const xongLuu = async (d: DaLuu) => {
     invalidate('/cases'); invalidate('/students'); invalidate('/tong-quan');
-    const kq = tep.length ? await taiTepCho(tep, { ownerType: 'sos_case', ownerIds: [d.id] }) : tep;
+    /* Rà #229: ghi vào Case đang có mà không có quyền sửa Case đó → không tải (máy chủ 403, panel kẹt) — nói rõ trong toast. */
+    const boTep = d.gop && !d.canEdit && tep.length > 0;
+    const kq = tep.length && !boTep ? await taiTepCho(tep, { ownerType: 'sos_case', ownerIds: [d.id] }) : tep;
     setTep(kq);
-    if (kq.some((m) => !m.xong)) { setDaLuu(d); return; }
+    if (!boTep && kq.some((m) => !m.xong)) { setDaLuu(d); return; }
     const themPa = d.canEdit && !d.gop && onMoCase && d.viecTiep?.chu === CHU_THEM_PA;
-    toast.push('ok', d.gop ? `Đã ghi vào Case đang có «${d.tieuDe}»` : `Đã lưu Case «${d.tieuDe}»`,
+    toast.push('ok', d.gop ? `Đã ghi vào Case đang có «${d.tieuDe}»${boTep ? ' · bằng chứng không đính kèm (Case môn khác)' : ''}` : `Đã lưu Case «${d.tieuDe}»`,
       themPa ? { hanhDong: { nhan: 'Thêm PA', onBam: () => onMoCase!(d.id, 'them-pa') }, ms: 7000 } : undefined);
     reset(); onClose(); onDone?.(d.id);
   };

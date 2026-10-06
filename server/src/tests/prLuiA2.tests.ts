@@ -70,7 +70,7 @@ export async function runPrLuiA2Tests(t: YThucTestKit) {
     ketQua(ivId);
     assert(fu(ivId).phu_trach_user_id === null && fu(ivId).phu_trach_ten === null, 'lời gọi cũ');
     conn.prepare(`UPDATE users SET status = 'inactive' WHERE id = ?`).run(P.sTeacher.userId);
-    assertThrows(() => ketQua(ivId, { phuTrach: { performerUserId: P.sTeacher.userId } }, { batBuocPhuTrach: true }), /nhân viên đang làm việc/, 'tài khoản nghỉ');
+    assertThrows(() => ketQua(ivId, { phuTrach: { performerUserId: P.sTeacher.userId } }, { batBuocPhuTrach: true }), /^Người phụ trách phải là nhân viên đang làm việc/, 'tài khoản nghỉ');
   }));
 
   check('LUIa2-2 · caseDetail trả phuTrach ở lịch sử + dòng PA; Vấn đề còn tồn / Ghi chú 301 ký tự → 400', () => thu(() => {
@@ -104,6 +104,24 @@ export async function runPrLuiA2Tests(t: YThucTestKit) {
     assert(r.id && r.ownerId === caseId, JSON.stringify(r));
     assert(maLoi(() => att.addLink(P.sTeacher, { ownerType: 'sos_case', ownerId: caseId, url: 'https://example.com/x' })) === 403, 'GV khác');
   }));
+
+  await checkAsync('LUIa2-4b · rà #229: người tạo Case (chỉ nhờ là người tạo) gỡ được tệp MÌNH tải, KHÔNG gỡ tệp của QL', async () => {
+    conn.exec('BEGIN IMMEDIATE');
+    try {
+      const sid = moiEm();
+      const mon = ['listening', 'reading', 'speaking', 'writing1', 'writing2'].find((k) => !can(P.coreTeacher, 'sos.edit', { classId: LOP, studentId: sid, skill: k }))!;
+      const caseId = taoCase(sid, P.coreTeacher, mon);
+      const cuaToi = att.addLink(P.coreTeacher, { ownerType: 'sos_case', ownerId: caseId, url: 'https://example.com/cua-toi' });
+      const cuaQl = att.addLink(QL, { ownerType: 'sos_case', ownerId: caseId, url: 'https://example.com/cua-ql' });
+      let ma: unknown = 'không ném';
+      try { await att.removeAttachment(P.coreTeacher, cuaQl.id); } catch (e: any) { ma = e?.status; }
+      assert(ma === 403, `gỡ tệp của QL: ${String(ma)}`);
+      assert(!!mot('SELECT 1 FROM attachments WHERE id = ?', cuaQl.id), 'tệp QL bị gỡ');
+      await att.removeAttachment(P.coreTeacher, cuaToi.id);
+      assert(!mot('SELECT 1 FROM attachments WHERE id = ?', cuaToi.id), 'không gỡ được tệp của mình');
+      await att.removeAttachment(QL, cuaQl.id);   // QL vẫn gỡ được mọi tệp
+    } finally { conn.exec('ROLLBACK'); }
+  });
 
   // ---------------------------------------------------------------- a2-3 · Mở lại Case
   check('LUIa2-5 · Mở lại: status về đang theo dõi, kết luận xoá, khoá giữ, PA vẫn khép; lịch sử + mốc + Hành trình + nhật ký; đóng–mở–đóng chạy', () => thu(() => {
@@ -173,15 +191,15 @@ export async function runPrLuiA2Tests(t: YThucTestKit) {
     assert(r.ok.length === 3 && r.loi.length === 1 && r.loi[0].id === the[3] && /đã được xử lý/.test(r.loi[0].loi), JSON.stringify(r));
     const n0 = soCauSql();
     assert(yc.tuChoiNhieu(QL, the.slice(4), 'Chưa đủ căn cứ').ok.length === 5, 'lô 5');
-    const cau = Math.ceil((soCauSql() - n0) / 5 * 8);   // web gửi lô 8
+    const cau = Math.ceil((soCauSql() - n0) / 5 * 6);   // web gửi lô 6 (rà #229)
     for (let i = 0; i < 3; i++) {
       const y = mot('SELECT trang_thai, ly_do_tu_choi FROM yeu_cau_duyet WHERE id = ?', the[i]);
       const iv = mot('SELECT status, approval_state FROM case_interventions WHERE id = ?', pa[i]);
       assert(y.trang_thai === 'tu_choi' && y.ly_do_tu_choi === 'Chưa đủ căn cứ' && iv.status === 'cancelled' && iv.approval_state === 'declined', JSON.stringify({ y, iv }));
     }
     assert(d.tomTatKetQuaHangLoat('tu-choi', 3, []) === 'Đã từ chối 3/3', d.tomTatKetQuaHangLoat('tu-choi', 3, []));
-    console.log(`      (đo: từ chối một lô 8 thẻ ≈ ${cau} câu)`);
-    assert(cau <= 200, `từ chối lô 8 thẻ ≈ ${cau} câu`);
+    console.log(`      (đo: từ chối một lô 6 thẻ ≈ ${cau} câu)`);
+    assert(cau <= 200, `từ chối lô 6 thẻ ≈ ${cau} câu`);
   }));
 
   // ---------------------------------------------------------------- a2-5 · Huỷ quyết định
@@ -312,6 +330,8 @@ export async function runPrLuiA2Tests(t: YThucTestKit) {
     assert(hang(`SELECT 1 FROM journey_events WHERE (ref_table = 'sos_cases' AND ref_id = ?) OR (ref_table = 'case_interventions' AND ref_id = ?)`, caseId, ivId).length === 0, 'Hành trình');
     const y = mot('SELECT trang_thai, ly_do_dong FROM yeu_cau_duyet WHERE id = ?', the);
     assert(y.trang_thai === 'tu_dong' && y.ly_do_dong === 'Case đã xoá', JSON.stringify(y));
+    const theDa = yc.hopChoDuyet(QL, { xem: 'da-xu-ly' }).the.find((t: any) => t.id === the);
+    assert(theDa && theDa.mo === '' && theDa.dong.includes('PA đã xoá'), `rà #229: thẻ của PA đã xoá không có Mở: ${JSON.stringify(theDa?.mo)}`);
     const nk = mot(`SELECT before_json FROM audit_logs WHERE action = 'case.delete' AND entity_id = ?`, caseId);
     assert(nk && JSON.parse(nk.before_json).pa.length === 1 && JSON.parse(nk.before_json).case.id === caseId, 'nhật ký');
     /* Case từ Test → dùng "Không cần theo dõi". */

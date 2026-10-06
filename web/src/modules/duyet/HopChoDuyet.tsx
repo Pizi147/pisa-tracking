@@ -16,7 +16,7 @@ type Hop = { the: TheYeuCauDto[]; dem: Record<KhoaChip, number>; demBiet: number
 
 /** `?the=12` → cuộn tới thẻ, viền nhấn 2 giây. Dùng chung hộp và Yêu cầu của tôi. */
 /** PR-LUI-a2: Từ chối nhiều gửi theo lô (mỗi thẻ ~16 câu SQL) — một request ≤ 200 câu. */
-const LO_TU_CHOI = 8;
+const LO_TU_CHOI = 6;
 
 export function useTheNhanManh(ds: TheYeuCauDto[] | undefined): number | null {
   const [params] = useSearchParams();
@@ -129,7 +129,7 @@ export function HopChoDuyet() {
     if (busy || !chon.size || !lyDoTc?.trim()) return;
     setBusy(true);
     try {
-      /* Lô 8 thẻ mỗi request (~16 câu SQL mỗi thẻ → ≤ 200 câu, kịp trần 10 s). Lô lỗi mạng giữa chừng: báo, làm mới để thấy thẻ nào đã xong. */
+      /* Lô 6 thẻ mỗi request (~21 câu SQL mỗi thẻ, Case nhiều PA nhiều hơn → ≤ 200 câu, kịp trần 10 s). Lô lỗi mạng giữa chừng: báo, làm mới để thấy thẻ nào đã xong. */
       const r = { ok: [] as number[], loi: [] as { id: number; loi: string; ma: number }[] };
       for (const lo of chiaLo([...chon], LO_TU_CHOI)) {
         const k = await api.post<typeof r>('/yeu-cau/tu-choi-nhieu', { ids: lo, lyDo: lyDoTc.trim() });

@@ -317,8 +317,13 @@ export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, o
           daSua,
           xoa: c.viewer.coTheXoa ? { nhan: 'Xoá Case', onClick: () => setHoiXoa(true) } : undefined,
           /* Còn PA có kết quả: Xoá Case khoá + câu hướng dẫn (mockup mục 20). */
-          phu: c.viewer.chanXoa ? <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" disabled>Xoá Case</button> : undefined,
-          conThieu: lf.conThieu(loi)?.length ? lf.conThieu(loi) : c.viewer.chanXoa ? [{ nhan: 'Xoá Case', lyDo: c.viewer.chanXoa }] : undefined,
+          phu: c.viewer.chanXoa ? (
+            <span className="flex flex-wrap items-center justify-end gap-2">
+              <span className="text-[11px] text-bad">{c.viewer.chanXoa}</span>
+              <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" disabled>Xoá Case</button>
+            </span>
+          ) : undefined,
+          conThieu: lf.conThieu(loi),
           chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>{busy ? 'Đang lưu…' : 'Lưu'}</button>,
         }}>
         <Khoi tieuDe="Case">
