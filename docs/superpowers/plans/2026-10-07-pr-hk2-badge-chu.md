@@ -14,6 +14,7 @@
 > **Đổi tên (chủ sản phẩm 07/10, PR-TEN cũ gộp vào HK2):** "Giữa khoá / Cuối khoá" → **"Progress Test / Final Test"** trên toàn web (cả nhãn dài "Bài kiểm tra giữa/cuối khoá"; "% Cuối khoá" → "% Final Test").
 > Nhãn lấy từ **một nguồn** (`ATTEMPT_KIND_LABEL` / `ATTEMPT_KIND_SHORT` `shared/domain/normal.ts:59-64` + hằng tên lượt), không sửa rải rác; gồm chữ máy chủ (thông báo, câu lỗi, nhãn nhật ký), Excel, bảng điểm,
 > Hành trình, Kết luận khoá, panel Xếp lịch, Lịch Test. **Dữ liệu (`kind` progress/final) KHÔNG đổi.** → **Task 12** (C38–C40).
+> **Khác mockup ① = A (chủ sản phẩm 07/10):** `ViecTiep` ở ≥ 640 px tối đa 2 dòng; việc quá hạn đặt "⚠ n ngày" **lên đầu** khối (C37).
 > **PR-KHUNG #230 đã merge 07/10** — kế hoạch đã đối chiếu lại với main mới (mục "Đối chiếu sau KHUNG" ngay dưới).
 
 ## Đối chiếu sau KHUNG #230 (main 62736403, 07/10)
@@ -38,7 +39,7 @@ KHUNG đã sửa: `App.tsx:156` `<main relative>` · `NutChon` (`ui/ui.tsx:486-4
 ### Khác mockup đã duyệt (planning hỏi chủ sản phẩm)
 
 ① **Cột "Việc tiếp theo" / "Theo dõi" (1440) — C37 tối đa 2 dòng.** KHUNG cho cụm hạn ("· hạn 08/10", "⚠ quá hạn 3 ngày") chạy liền **sau** chữ việc. Cắt 2 dòng ở khối ngoài thì với việc rất dài, **cụm hạn / ⚠ rơi vào dòng 3 và bị ẩn** (chỉ còn trong `title`).
-**Khuyến nghị A:** khi việc **quá hạn**, đặt "⚠ n ngày" **lên đầu** dòng (trước chữ việc) → không bao giờ bị cắt; hạn thường giữ sau chữ (bị cắt thì còn `title`). **B:** cắt 2 dòng chỉ chữ việc, cụm hạn xuống dòng riêng (mọi việc dài thành 3 dòng — trái ý "tối đa 2 dòng"). **C:** không cắt (giữ như KHUNG). Rủi ro A: ⚠ đứng đầu khác chỗ so với Công việc (⚠ ở cột Hạn riêng).
+**ĐÃ CHỐT 07/10: A.** Khuyến nghị A: khi việc **quá hạn**, đặt "⚠ n ngày" **lên đầu** dòng (trước chữ việc) → không bao giờ bị cắt; hạn thường giữ sau chữ (bị cắt thì còn `title`). **B:** cắt 2 dòng chỉ chữ việc, cụm hạn xuống dòng riêng (mọi việc dài thành 3 dòng — trái ý "tối đa 2 dòng"). **C:** không cắt (giữ như KHUNG). Rủi ro A: ⚠ đứng đầu khác chỗ so với Công việc (⚠ ở cột Hạn riêng).
 Ngoài ①, các chỉnh còn lại chỉ để khớp mã KHUNG — **không đổi gì nhìn thấy** so với mockup HK2 đã duyệt.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: superpowers:subagent-driven-development (mỗi Task một subagent cùng model). Bước `- [ ]`.
