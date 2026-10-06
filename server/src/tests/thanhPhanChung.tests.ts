@@ -105,7 +105,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
   check('NEN (2) · máy chủ: Khác cần ≥ 3 ký tự ghi rõ, bỏ luật 30 ký tự; tìm người không cần gõ 3 ký tự', () => {
     const src = doc('server/src/yThuc/violations.ts') + doc('server/src/cases/cases.ts') + doc('shared/domain/yThuc.ts');
     assert(!/VIOLATION_OTHER_DESCRIPTION_MIN|summary\.length < 30/.test(src), 'còn luật 30 ký tự');
-    for (const f of ['server/src/yThuc/violations.ts', 'server/src/cases/cases.ts', 'server/src/yThuc/xuLy.ts',
+    for (const f of ['server/src/cases/cases.ts', 'server/src/yThuc/xuLy.ts',
       'server/src/yThuc/phoiHop.ts', 'server/src/cases/sosAuto.ts', 'server/src/routes/index.ts'])
       assert(/kiemGhiRoKhac\(/.test(doc(f)), `${f} chưa kiểm bằng kiemGhiRoKhac`);
     assert(!/term\.length < 3/.test(doc('server/src/platform/timNguoi.ts')), 'còn ngưỡng 3 ký tự');
@@ -185,7 +185,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
 
   check('NEN (6) · YC-8: mọi form có mục "Khác" đi qua OKhac; không còn luật "Khác ≥ 30 ký tự" trên web', () => {
     const ds = ['web/src/modules/cases/QuickReport.tsx', 'web/src/modules/yThuc/CaseSosControls.tsx', 'web/src/modules/cases/ThaoTacCase.tsx',
-      'web/src/modules/cases/CapNhatTuan.tsx', 'web/src/modules/yThuc/PhoiHopSosSection.tsx', 'web/src/modules/yThuc/RecordViolationPanel.tsx',
+      'web/src/modules/cases/CapNhatTuan.tsx', 'web/src/modules/yThuc/PhoiHopSosSection.tsx', /* PR-LUI-a1: Ghi vi phạm bỏ ô Ghi rõ */
       /* PR-YT4: "Khác" của Đề xuất QL duyệt */ 'web/src/modules/yThuc/XacNhanXuLyPanel.tsx'];   // PR-CT: ChuyenLopPanel không còn mục "Khác" — lý do là một ô chữ tự do
     for (const f of ds) assert(/<OKhac\b/.test(doc(f)), `${f} chưa dùng OKhac`);
     const web = tepNguon('web/src').map(doc).join('\n');
@@ -252,7 +252,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
   check('NEN (R2) · form có useLoiForm: Ghi rõ là một dòng luật, ô ngày bắt buộc nhận id/onBlur; khung Truong/Field không đổi thẻ; nhãn ChonNguoi có đích', () => {
     const m = 'web/src/modules/';
     for (const f of ['cases/QuickReport.tsx', 'cases/ThaoTacCase.tsx', 'cases/CapNhatTuan.tsx',
-      'yThuc/XacNhanXuLyPanel.tsx', 'yThuc/RecordViolationPanel.tsx']) {
+      'yThuc/XacNhanXuLyPanel.tsx']) {
       const s = doc(m + f);
       assert(/khoa: 'ghi-ro'/.test(s) && /id=\{lf\.oId\('ghi-ro'\)\}/.test(s) && !/loiGhiRo/.test(s), `${f}: Ghi rõ chưa vào luật useLoiForm / còn cơ chế dự phòng`);
     }

@@ -1019,7 +1019,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     const rows = auditRows('violation.delete', v);
     assert(rows.length === 1 && rows[0].actor_user_id === gvcn.userId && rows[0].entity_type === 'violation' && rows[0].created_at, `Audit: ${JSON.stringify(rows)}`);
     const before = JSON.parse(rows[0].before_json);
-    assert(before.description.startsWith('Vi phạm thứ 1') && before.category === 'homework' && before.occurredOn === addDays(TODAY, -1)
+    assert(before.ten.startsWith('Vi phạm thứ 1') && before.category === 'homework' && before.occurredOn === addDays(TODAY, -1)
       && before.reportedBy === gvcn.userId && JSON.stringify(before.measureIds) === JSON.stringify([m.id]) && before.studentId === st.id, `Nội dung đã xoá: ${rows[0].before_json}`);
     assert(count("SELECT COUNT(*) n FROM audit_logs WHERE action = 'attachment.delete' AND before_json LIKE ?", '%"ownerId":' + v + '%') === 1, 'Tệp bị xoá theo phải có audit riêng');
   });

@@ -1,6 +1,6 @@
 import { db } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
-import { ATTEMPT_KIND_SHORT, addDaysIso, daiDienNhomBoTro, baiId, duongCase, duongDotTest, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, metricById, tachBaiId, tenMon, tenMonNgan, tuanLich, type AttemptKind, type ChiSo, type ChuongTrinh } from '../../../shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, addDaysIso, daiDienNhomBoTro, baiId, duongCase, duongDotTest, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, tachTenMoTa, metricById, tachBaiId, tenMon, tenMonNgan, tuanLich, type AttemptKind, type ChiSo, type ChuongTrinh } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { classScopeSql, scopeFor, type Principal, type Scope } from '../permissions.ts';
 import { badRequest, forbidden, HttpError, notFound } from '../util.ts';
@@ -184,13 +184,13 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[]): MetricRow[] {
     } else if (unit === 'vi-pham') {
       /* Ý thức (PR-J): dòng vi phạm mở hồ sơ học viên — tab Ý thức là việc của PR-K. */
       for (const r of conn.prepare(
-        `SELECT v.id, v.student_id, v.category, v.skill, v.occurred_on, v.description, s.full_name, s.student_code
+        `SELECT v.id, v.student_id, v.category, v.skill, v.occurred_on, v.ten, v.description, s.full_name, s.student_code
            FROM violations v JOIN students s ON s.id = v.student_id WHERE v.id IN (${ph})`,
       ).all(...chunk) as any[]) {
         const cat = VIOLATION_CATEGORY_LABEL[r.category as keyof typeof VIOLATION_CATEGORY_LABEL] ?? r.category;
         byId.set(r.id, {
           id: r.id, title: `${cat} · ${String(r.occurred_on).slice(8, 10)}/${String(r.occurred_on).slice(5, 7)}`,
-          sub: [r.full_name, r.student_code, String(r.description).slice(0, 60)].filter(Boolean).join(' · '), href: `/hoc-vien/${r.student_id}`,
+          sub: [r.full_name, r.student_code, tachTenMoTa(r.ten, r.description, r.category).ten].filter(Boolean).join(' · '), href: `/hoc-vien/${r.student_id}`,
         });
       }
     } else if (unit === 'bien-phap') {

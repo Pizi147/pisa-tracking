@@ -1,8 +1,8 @@
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { DB_PATH, ROOT, db, laDbTuXa } from '../db.ts';
+import { DB_PATH, ROOT, db, laDbTuXa, tx } from '../db.ts';
 import { badRequest, notFound, nowIso } from '../util.ts';
-import { ATTACHMENT_EXTENSIONS, ATTACHMENT_MAX_BYTES, ATTACHMENT_MIME_BY_EXT, PERMISSIONS } from '../../../shared/domain/index.ts';
+import { ATTACHMENT_EXTENSIONS, ATTACHMENT_MAX_BYTES, ATTACHMENT_MIME_BY_EXT, PERMISSIONS, LO_GHI_VI_PHAM } from '../../../shared/domain/index.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { caseAccess } from '../cases/cases.ts';
 import { coordinationOwner, measureOwner, violationOwner } from '../yThuc/access.ts';
@@ -198,6 +198,36 @@ export async function addFile(p: Principal, input: {
   }
 }
 
+/**
+ * PR-LUI-a1: MỘT TỆP CHO NHIỀU BẢN GHI (Ghi vi phạm nhiều học viên / nhiều vi phạm dùng chung một bằng chứng) — thêm DÒNG trỏ cùng khoá kho,
+ * không tải lại. Kho chỉ xoá khi dòng cuối đi (`xoaTepSauGiaoDich`). Quyền: xem bản ghi nguồn + sửa MỖI bản ghi đích, sai một bản ghi thì không dòng nào thêm.
+ * Chỉ chép sang bản ghi CÙNG LOẠI, tối đa `LO_GHI_VI_PHAM` mỗi lần (một request ≈ 13 câu / bản ghi, trần 10 s Netlify) — web chia lô. Chạy lại cùng lô không thêm dòng thứ hai.
+ */
+export function chepTep(p: Principal, input: { tuId: number; ownerType: string; ownerIds: number[] }): AttachmentRow[] {
+  const src = db().prepare('SELECT * FROM attachments WHERE id = ?').get(input.tuId) as any;
+  if (!src) throw notFound('Không tìm thấy tệp');
+  ownerAccess(src.owner_type, src.owner_id).requireView(p);
+  if (input.ownerType !== src.owner_type) throw badRequest('Chỉ chép sang bản ghi cùng loại.');
+  const ids = [...new Set(input.ownerIds)].filter((x) => Number.isInteger(x) && x > 0 && x !== src.owner_id);
+  if (!ids.length || ids.length > LO_GHI_VI_PHAM) throw badRequest(`Chọn từ 1 đến ${LO_GHI_VI_PHAM} bản ghi mỗi lần.`);
+  for (const id of ids) ownerAccess(input.ownerType, id).requireEdit(p);
+  const co = new Set((db().prepare(`SELECT owner_id FROM attachments WHERE owner_type = ? AND url = ? AND owner_id IN (${ids.map(() => '?').join(',')})`)
+    .all(input.ownerType, src.url, ...ids) as any[]).map((r) => r.owner_id as number));
+  return tx(() => ids.filter((id) => !co.has(id)).map((id) => insert(p, input.ownerType, id, {
+    kind: src.kind, url: src.url, displayName: src.display_name, mimeType: src.mime_type, sizeBytes: src.size_bytes,
+  })));
+}
+
+/** Còn dòng tệp nào khác trỏ cùng khoá kho không (tệp dùng chung) — còn thì KHÔNG xoá khỏi kho. */
+const conDongKhac = (urls: string[]): Set<string> => {
+  const giu = new Set<string>();
+  for (let k = 0; k < urls.length; k += 400) {
+    const lo = urls.slice(k, k + 400);
+    for (const r of db().prepare(`SELECT DISTINCT url FROM attachments WHERE kind = 'file' AND url IN (${lo.map(() => '?').join(',')})`).all(...lo) as any[]) giu.add(r.url as string);
+  }
+  return giu;
+};
+
 // ---------------------------------------------------------------- tải và xoá
 
 function load(id: number) {
@@ -227,7 +257,10 @@ export async function openAttachment(p: Principal, id: number): Promise<
  */
 export function xoaTepSauGiaoDich(khoaTep: string[]): void {
   const kho = khoTepHienTai(uploadsDir());
+  /* PR-LUI-a1: tệp DÙNG CHUNG — còn dòng `attachments` nào của bản ghi khác trỏ tới khoá này thì giữ trong kho (xoá học viên / vi phạm / lần xử lý / Case). MỘT câu cho cả lô. */
+  const giu = khoaTep.length ? conDongKhac(khoaTep) : new Set<string>();
   for (const k of khoaTep) {
+    if (giu.has(k)) continue;
     ghiNhanViecNenKhoTep(kho.xoa(k).catch((e) => console.error('[kho tệp] không xoá được', k, e)));
   }
 }
@@ -265,7 +298,7 @@ export async function removeAttachment(p: Principal, id: number): Promise<void> 
     before: { ownerType: r.owner_type, ownerId: r.owner_id, kind: r.kind, sizeBytes: r.size_bytes, uploadedBy: r.uploaded_by },
   });
   /* Dòng bảng + audit TRƯỚC, tệp trong kho SAU; xoá tệp lỗi thì chỉ còn một tệp mồ côi — không ném. */
-  if (r.kind === 'file') {
+  if (r.kind === 'file' && !conDongKhac([r.url]).size) {
     try { await khoTepHienTai(uploadsDir()).xoa(r.url); } catch (e) { console.error('[kho tệp] không xoá được', r.url, e); }
   }
 }
