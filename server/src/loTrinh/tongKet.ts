@@ -205,7 +205,7 @@ export function tongKetLop(p: Principal, classId: number) {
   return {
     lop: { id: lop.id as number, code: lop.code as string, loai: laFt ? 'ft' as const : 'thuong' as const, programmeCode: lop.programme_code as string | null },
     dai: laFt
-      ? { hocVien: dem(() => true), datTarget: dem((d) => d.ketLuan === 'reached'), chuaDat: dem((d) => d.ketLuan === 'not_reached'), choKetQua: dem((d) => !!d.thiThat && !d.thiThat.khongThi && d.ketLuan !== 'reached' && d.ketLuan !== 'not_reached') }
+      ? { hocVien: dem(() => true), datTarget: dem((d) => d.ketLuan === 'reached'), chuaDat: dem((d) => d.ketLuan === 'not_reached'), choKetQua: dem((d) => !!d.thiThat && !d.thiThat.khongThi && d.thiThat.ovr === null && d.ketLuan !== 'reached' && d.ketLuan !== 'not_reached') }
       : { hocVien: dem(() => true), lenFt: dem((d) => d.huongKhoa === 'len_ft'), lenLop: dem((d) => d.huongKhoa === 'len_lop'), hocLai: dem((d) => d.huongKhoa === 'hoc_lai') },
     dong,
   };

@@ -27,6 +27,7 @@ function ketQuaThi(d: Dong): { tone: ToneNhan; chu: string } | null {
   if (d.roiSom || d.huongKhoa === 'chuyen_lop') return null;   // em chuyển lớp (đóng-mở): không đi thi
   if (d.ketLuan === 'reached') return { tone: 'ok', chu: 'Đạt Target' };
   if (d.ketLuan === 'not_reached') return { tone: 'late', chu: 'Chưa đạt Target' };
+  if (d.thiThat?.ovr != null) return null;   // có Overall (kết quả cũ) mà kết luận chưa rõ: không nhãn "Chờ"
   return { tone: 'muted', chu: d.thiThat?.khongThi ? 'Không thi' : 'Chờ kết quả thi thật' };
 }
 const Huong = ({ d }: { d: Dong }) => (d.huongTiep ? <Nhan tone={toneHuong(d.huongTiep)}>{d.huongTiep}</Nhan> : <span className="text-slate-600">—</span>);
