@@ -54,12 +54,47 @@ import { HttpError } from './util.ts';
     };
   }
   const getGoc = proto.get;
-  proto.get = function (this: unknown, ...args: unknown[]) {
-    const row = getGoc.apply(this, motNull(args));
-    demCau();
+  proto.get = function (this: { daLuu?: boolean; all(...a: unknown[]): unknown[] }, ...args: unknown[]) {
+    /* PR-BN: `get()` của libsql trên statement DÙNG LẠI trả dòng của lần gọi TRƯỚC (tham số mới bị bỏ qua) — `all()` thì đúng. */
+    const row = this.daLuu ? this.all(...args)[0] : getGoc.apply(this, motNull(args));
+    if (!this.daLuu) demCau();   // đường `all` đã đếm qua `iterate`
     if (row && typeof row === 'object' && '_metadata' in row) delete (row as Record<string, unknown>)._metadata;
     return row;
   };
+  /*
+   * PR-BN: `prepare()` của libsql 0.5.29 RÒ ~4,9 KB bộ nhớ native MỖI lần gọi và `gc()` không trả lại (đo: 100 000 lần → +480 MB).
+   * Mã gọi `db().prepare(...)` ở mọi lần dùng; bộ phép kiểm gọi 6,8 triệu lần (chỉ ~9,5 nghìn câu SQL khác nhau) → RSS tới 6,7 GB.
+   * Nhớ đối tượng Rust theo (kết nối, câu SQL). Mỗi lần `prepare` trả một lớp bọc JS MỚI: `pluck` nằm ở lớp bọc nên tự mới;
+   * `raw`/`safeIntegers` nằm ở đối tượng Rust nên đặt lại về mặc định (saoLuu dùng `.safeIntegers(true)`). `get()` của câu dùng
+   * lại sai (xem trên) nên đi đường `all()[0]` (cờ `daLuu`). Không dùng `.iterate()` ở mã máy chủ; `all()` chạy hết một lượt.
+   * Tối đa TOI_DA_CAU câu mỗi kết nối, bỏ câu lâu chưa dùng nhất (SQL ghép động như INSERT nhiều dòng có thể muôn hình).
+   */
+  const TOI_DA_CAU = 1000;
+  type Bao = { stmt: unknown; pluckMode: boolean; daLuu?: boolean; raw(b: boolean): void; safeIntegers(b: boolean): void };
+  const boNho = new WeakMap<object, Map<string, Bao>>();
+  const prepareGoc = Database.prototype.prepare;
+  Database.prototype.prepare = function (this: object, sql: string) {
+    let theoCau = boNho.get(this);
+    if (!theoCau) boNho.set(this, theoCau = new Map());
+    const cu = theoCau.get(sql);
+    if (cu) {
+      theoCau.delete(sql);
+      theoCau.set(sql, cu);
+      const moi = Object.create(Object.getPrototypeOf(cu)) as Bao;
+      moi.stmt = cu.stmt;
+      moi.pluckMode = false;
+      moi.daLuu = true;
+      /* libsql ném lỗi khi đặt chế độ trên câu không trả dữ liệu (PRAGMA, DDL) — câu như vậy cũng không thể đã bị đặt chế độ. */
+      try { moi.raw(false); } catch { /* không trả dữ liệu */ }
+      try { moi.safeIntegers(false); } catch { /* không trả dữ liệu */ }
+      return moi;
+    }
+    const st = prepareGoc.call(this, sql) as unknown as Bao;
+    st.daLuu = true;
+    theoCau.set(sql, st);
+    if (theoCau.size > TOI_DA_CAU) theoCau.delete(theoCau.keys().next().value as string);
+    return st;
+  } as unknown as typeof Database.prototype.prepare;
 }
 /*
  * CẢNH BÁO cho mọi mã sau này — với libsql:
