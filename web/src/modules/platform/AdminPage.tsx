@@ -92,7 +92,7 @@ function ConfigTab({ data, onDone }: { data: AdminData; onDone: () => void }) {
         </Card>
 
         <Card title="Nhật ký thay đổi gần nhất" bodyClass="p-0">
-          <ul className="divide-y list-none p-0 m-0 max-h-96 overflow-y-auto" style={{ borderColor: 'var(--line)' }}>
+          <ul className="divide-y list-none p-0 m-0" style={{ borderColor: 'var(--line)' }}>
             {data.audit.map((a) => (
               <li key={a.id} className="px-4 py-2 text-xs">
                 <span className="text-slate-200" title={a.action}>{nhanHanhDongNhatKy(a.action)}</span>

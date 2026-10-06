@@ -168,8 +168,9 @@
   /*
    * Bảng rộng hơn màn hình thì CUỘN TRONG CHÍNH NÓ, không đẩy cả trang trượt ngang.
    * Trang trượt ngang là lỗi nặng nhất ở màn hẹp: thanh điều hướng cũng trôi theo.
+   * PR-KHUNG: overflow-y hidden — thanh cuộn ngang làm khối cao thừa 2–3 px, sinh cuộn dọc lồng trong trang.
    */
-  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .table-scroll { overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; }
 
   /* VN17: có panel / hộp thoại mở thì toast lên trên (dưới đầu panel), không che nút ở chân panel. */
   body:has([aria-modal="true"]) .vung-toast { top: 3.75rem; bottom: auto; }
