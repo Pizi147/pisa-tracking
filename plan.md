@@ -505,6 +505,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 07/10/2026 | PR-LUI-a2 (Opus 5.5) · `pr-lui-a2-case-duyet` | Case + Chờ duyệt: Người phụ trách khi ghi kết quả PA (cột mới, migrate `prLuiA2`), gộp `Vấn đề còn tồn / Ghi chú`, nút kết quả 2 cột; Tạo Case có bằng chứng; Mở lại Case (QL/QT); Sửa Case · Xoá Case báo tay · Xoá PA; Từ chối nhiều; Huỷ quyết định Đề xuất PA trong ngày; nhật ký hạn theo dõi. Phép kiểm `LUIa2-1…16`. |
 | 07/10/2026 | PR-BV (Opus 5.5) · `pr-bv-bo-vang-xoa-diem` | Xoá "-" = hết vắng: Mock đã chốt trả như trước khi gõ (giữ quyết định của người), lớp thường trừ lần vắng / giữ lịch khi tuần mới có điểm, khung gỡ GV · GVCN đến thứ Tư; nhập lại điểm sau khi xoá mở lại đúng Case; Lịch sử ô lớp thường; bài lớp thường xoá điểm về chưa xong. Phép kiểm `prBv`. |
 | 07/10/2026 | PR-MT0 (Opus 5.5) · `pr-mt0` | MT0 (T5, T5b): Lên FT (FOU/BE/ELE) tự có MT0 tuần Final, chấm band, hạn CN tuần sau, SOS chỉ hiển thị; dời muộn nhất tuần 2 FT, trước MT1, theo Final; Chuyển tiếp nối MT0 làm đầu vào FT / `MT0 · không dùng`; việc QL `Chốt lên FT · lớp` tự xong. Phép kiểm `prMt0` MT0-0…MT0-8. |
 | 06/10/2026 | PR-TK (Sonnet 5.5, phương án B) · `pr-tk-tong-ket-lo-trinh` | Tổng kết lộ trình: bản chụp lúc đóng mọi đường (migrate `prTk` điền ngược), kết quả thi thật L R W S (GVCN nhập, máy so Target lúc đóng) + việc nhắc, Kết thúc học FT chờ kết quả chưa lưu trữ, khối Các lộ trình · ngăn Tổng kết · tab Tổng kết lớp · nút Tổng kết ở Lưu trữ. Phép kiểm `prTk` TK-1…TK-L. |

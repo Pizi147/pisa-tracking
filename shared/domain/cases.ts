@@ -231,6 +231,8 @@ export const MILESTONE_KINDS = [
   'xac_nhan_case', 'xin_khong_theo_doi', 'ql_duyet_khong_theo_doi', 'ql_tu_choi_khong_theo_doi',
   /* PR-LT2a (T54, M-05): kế hoạch bổ trợ lớp thường — nộp · Quản lý duyệt · Quản lý từ chối. */
   'nop_ke_hoach', 'ke_hoach_duyet', 'ke_hoach_tu_choi',
+  /* PR-LUI-a2: Quản lý mở lại Case đã hoàn thành (PR-BV dùng chung mốc này khi nhập lại điểm). */
+  'reopened',
 ] as const;
 export type MilestoneKind = (typeof MILESTONE_KINDS)[number];
 export const MILESTONE_KIND_LABEL: Record<MilestoneKind, string> = {
@@ -248,6 +250,7 @@ export const MILESTONE_KIND_LABEL: Record<MilestoneKind, string> = {
   nop_ke_hoach: 'Nộp kế hoạch bổ trợ',
   ke_hoach_duyet: 'Quản lý duyệt kế hoạch',
   ke_hoach_tu_choi: 'Quản lý từ chối kế hoạch',
+  reopened: 'Mở lại',
 };
 
 /**

@@ -406,46 +406,46 @@ const conDongKhac = (url: string) => !!db().prepare("SELECT 1 FROM attachments W
 ### Task a2-0: Mockup + đối chiếu
 
 - [x] Mockup mục 10–15 (bản 1 duyệt 06/10) + 18–19 (bản 2, chờ duyệt cùng Q6).
-- [ ] Chủ sản phẩm duyệt. Chưa duyệt → chỉ làm phần máy chủ (a2-1 máy chủ, a2-3, a2-4, a2-5 máy chủ).
-- [ ] Đối chiếu (ghi vào commit đầu): (1) giá trị `case_interventions` của PA cần duyệt **lúc tạo** (`status`, `cycle_started_on`, `started_date`, `action_due`) — đọc `recordIntervention` nhánh `needs_approval`; (2) `MILESTONE_KINDS` có `'reopened'` chưa (PR-BV Task 3 có thể đã thêm), bảng `case_milestones.kind` có CHECK không; (3) Case báo tay (`origin_kind='teacher_report'`) có `dedup_key` không (`cases.ts:381`); (4) nơi vẽ hàng nút của Case `done` trong `CasePanel.tsx` / `NganCase.tsx`; (5) `ChonNguoi nhom="nhan_vien"` trả cả QL / nhân viên chi nhánh. Lệch lớn → **dừng, báo planning**.
+- [x] Chủ sản phẩm duyệt. Chưa duyệt → chỉ làm phần máy chủ (a2-1 máy chủ, a2-3, a2-4, a2-5 máy chủ).
+- [x] Đối chiếu (ghi vào commit đầu): (1) giá trị `case_interventions` của PA cần duyệt **lúc tạo** (`status`, `cycle_started_on`, `started_date`, `action_due`) — đọc `recordIntervention` nhánh `needs_approval`; (2) `MILESTONE_KINDS` có `'reopened'` chưa (PR-BV Task 3 có thể đã thêm), bảng `case_milestones.kind` có CHECK không; (3) Case báo tay (`origin_kind='teacher_report'`) có `dedup_key` không (`cases.ts:381`); (4) nơi vẽ hàng nút của Case `done` trong `CasePanel.tsx` / `NganCase.tsx`; (5) `ChonNguoi nhom="nhan_vien"` trả cả QL / nhân viên chi nhánh. Lệch lớn → **dừng, báo planning**.
 
 ### Task a2-1: Ghi kết quả PA — Người phụ trách, gộp ô, nút không cắt
 
 **Files:** `server/src/migrate/prLuiA2.ts` (mới), `migrate.ts`, `schema.sql`, `server/src/cases/cases.ts`, `server/src/routes/index.ts:1673-1676`, `shared/domain/sosV4.ts:20`, `web/src/modules/cases/CapNhatTuan.tsx`, `web/src/modules/cases/CasePanel.tsx:405`, `prLuiA2.tests.ts` (mới), `run.ts`
 
-- [ ] **Đỏ** (`prLuiA2.tests.ts`, khung như a1):
+- [x] **Đỏ** (`prLuiA2.tests.ts`, khung như a1):
   - `LUIa2-1` `updateResult(p, pa, { ..., phuTrach: { performerUserId: gvLeHa } }, { batBuocPhuTrach: true })` → dòng `case_followups` có `phu_trach_user_id`; `phuTrach: { performerName: 'Tutor Minh' }` → `phu_trach_ten`; không gửi + `batBuocPhuTrach` → 400 `Ghi Người phụ trách.`; không gửi, không cờ (seed / phép kiểm cũ) → vẫn lưu, cột NULL. Tài khoản đã nghỉ → 400 (luật `chuanHoaNguoiThucHien`).
   - `LUIa2-2` `caseDetail` / dòng lịch sử kết quả trả `phuTrach: 'Lê Hà'`; `remainingIssue` 301 ký tự → 400 `Vấn đề còn tồn / Ghi chú tối đa 300 ký tự.`
   - `LUIa2-3` migrate `prLuiA2` lần hai không báo gì.
-- [ ] **Xanh — máy chủ:** `migratePrLuiA2` thêm hai cột (mẫu a1). `updateResult(p, id, input, opts: { batBuocPhuTrach?: boolean } = {})`: trước `tx`, `const pt = chuanHoaNguoiThucHien(p, input.phuTrach ?? {}, { nhom: 'nhan_vien', batBuoc: false }); if (!pt && opts.batBuocPhuTrach) throw badRequest('Ghi Người phụ trách.');` → INSERT thêm `phu_trach_user_id, phu_trach_ten`. Đọc (`:1499`, `:2558`): `LEFT JOIN users` → `phuTrach: tên tài khoản ?? phu_trach_ten ?? null`. Câu lỗi 300 ký tự đổi chữ. Route truyền `{ batBuocPhuTrach: true }`. `GOI_Y_KET_QUA_PA` = `'Đã cải thiện ở phần nào, như thế nào, kết quả cụ thể'`.
-- [ ] **Xanh — web `CapNhatTuan.tsx`:**
+- [x] **Xanh — máy chủ:** `migratePrLuiA2` thêm hai cột (mẫu a1). `updateResult(p, id, input, opts: { batBuocPhuTrach?: boolean } = {})`: trước `tx`, `const pt = chuanHoaNguoiThucHien(p, input.phuTrach ?? {}, { nhom: 'nhan_vien', batBuoc: false }); if (!pt && opts.batBuocPhuTrach) throw badRequest('Ghi Người phụ trách.');` → INSERT thêm `phu_trach_user_id, phu_trach_ten`. Đọc (`:1499`, `:2558`): `LEFT JOIN users` → `phuTrach: tên tài khoản ?? phu_trach_ten ?? null`. Câu lỗi 300 ký tự đổi chữ. Route truyền `{ batBuocPhuTrach: true }`. `GOI_Y_KET_QUA_PA` = `'Đã cải thiện ở phần nào, như thế nào, kết quả cụ thể'`.
+- [x] **Xanh — web `CapNhatTuan.tsx`:**
   - State `phuTrach: NguoiChon | null` = `nguoiBanDau(pa)`; luật `{ khoa: 'phu-trach', nhan: 'Người phụ trách', chon: true }` (lỗi dưới ô `Chọn Người phụ trách`); `<Truong nhan="Người phụ trách" batBuoc as="div" loi=…><ChonNguoi nhom="nhan_vien" value={phuTrach} onChange={setPhuTrach} /></Truong>` ngay dưới `Tiến triển`; body thêm `phuTrach: nguoiThanhPayload(phuTrach)`.
   - `Vấn đề còn tồn` → nhãn `Vấn đề còn tồn / Ghi chú`, `tuyChon`; xoá khối `3 · Ghi chú` (`:356-362`); `decisionNote` chỉ gửi khi có ô lý do thật (adjust / replace / ask_manager / lần cuối "Chưa đủ dữ liệu").
   - Nút kết quả (`:273-280`): `className="grid grid-cols-2 gap-2"` (bỏ `sm:grid-cols-4`), `NutChon … className="justify-center text-sm"` (bỏ `whitespace-nowrap px-1.5 text-xs`), chữ = `outcomeLabelFor(o)` (bỏ `OUTCOME_MARK`).
   - `CasePanel.tsx:405`: `Còn tồn / Ghi chú: …`; thêm `Phụ trách: …` khi có.
-- [ ] Bấm thử: ảnh panel 1440 + 375, sáng/tối — bốn nút không cắt, không lệch, chữ một dòng ở 1440; danh sách gợi ý người mở đúng dưới ô; lỗi khi xoá trắng người.
-- [ ] Xanh; commit `feat(lui-a2): Ghi kết quả PA — Người phụ trách, gộp Vấn đề còn tồn / Ghi chú, nút kết quả không cắt`.
+- [x] Bấm thử: ảnh panel 1440 + 375, sáng/tối — bốn nút không cắt, không lệch, chữ một dòng ở 1440; danh sách gợi ý người mở đúng dưới ô; lỗi khi xoá trắng người.
+- [x] Xanh; commit `feat(lui-a2): Ghi kết quả PA — Người phụ trách, gộp Vấn đề còn tồn / Ghi chú, nút kết quả không cắt`.
 
 ### Task a2-2: Tạo Case có bằng chứng (**sau khi a1 merge**)
 
 **Files:** `web/src/modules/cases/QuickReport.tsx`, `server/src/platform/attachments.ts` (`caseOwner`), `prLuiA2.tests.ts`
 
-- [ ] `git merge origin/main` (lấy `TepCho`, `/attachments/chep`).
-- [ ] **Đỏ:** `LUIa2-4` GVCN tạo Case môn mình không dạy (`reportIssue`) → `addFile` vào Case đó **được** (người tạo); GV khác không dạy môn, không phải người tạo → 403 như cũ.
-- [ ] **Xanh — máy chủ:** `caseOwner(caseId).requireEdit`: `if (c.reported_by === p.userId) return;` trước `a.requireEdit` (đọc `reported_by` qua `loadCase`).
-- [ ] **Xanh — web:** thay khối chữ `:548-553` bằng `<Khoi tieuDe="Bằng chứng · không bắt buộc"><TepCho …/></Khoi>` (cả hai tab "Đang gặp vấn đề" / "Đã xong từ trước"). Sau `send` / `sendBackfill` thành công: `const loi = await taiTepCho(tep, { ownerType: 'sos_case', ownerIds: [res.id] })`; không lỗi → `reset(); onClose(); onDone?.(res.id)`, toast `Đã lưu Case «…»` (`hanhDong: { nhan: 'Thêm PA', onBam: () => onMoCase(res.id, 'them-pa') }` khi `viecTiep.chu === CHU_THEM_PA && canEdit`); có lỗi → giữ bước `daLuu` (`:296-321`) nhưng khối Bằng chứng = `TepCho` với dòng lỗi + `Thử lại` rồi `BangChung` hiện tệp đã tải. Gộp vào Case đang có: tệp gắn Case đó; 403 hiện ở dòng tệp.
-- [ ] Bấm thử (GVBM, GVCN môn không dạy, QL): tạo Case có 2 tệp + 1 liên kết → mở Case thấy đủ; toast `Thêm PA` mở đúng Ngăn Case.
-- [ ] Commit `feat(lui-a2): Tạo Case có bằng chứng ngay trong form, Lưu một lần`.
+- [x] `git merge origin/main` (lấy `TepCho`, `/attachments/chep`).
+- [x] **Đỏ:** `LUIa2-4` GVCN tạo Case môn mình không dạy (`reportIssue`) → `addFile` vào Case đó **được** (người tạo); GV khác không dạy môn, không phải người tạo → 403 như cũ.
+- [x] **Xanh — máy chủ:** `caseOwner(caseId).requireEdit`: `if (c.reported_by === p.userId) return;` trước `a.requireEdit` (đọc `reported_by` qua `loadCase`).
+- [x] **Xanh — web:** thay khối chữ `:548-553` bằng `<Khoi tieuDe="Bằng chứng · không bắt buộc"><TepCho …/></Khoi>` (cả hai tab "Đang gặp vấn đề" / "Đã xong từ trước"). Sau `send` / `sendBackfill` thành công: `const loi = await taiTepCho(tep, { ownerType: 'sos_case', ownerIds: [res.id] })`; không lỗi → `reset(); onClose(); onDone?.(res.id)`, toast `Đã lưu Case «…»` (`hanhDong: { nhan: 'Thêm PA', onBam: () => onMoCase(res.id, 'them-pa') }` khi `viecTiep.chu === CHU_THEM_PA && canEdit`); có lỗi → giữ bước `daLuu` (`:296-321`) nhưng khối Bằng chứng = `TepCho` với dòng lỗi + `Thử lại` rồi `BangChung` hiện tệp đã tải. Gộp vào Case đang có: tệp gắn Case đó; 403 hiện ở dòng tệp.
+- [x] Bấm thử (GVBM, GVCN môn không dạy, QL): tạo Case có 2 tệp + 1 liên kết → mở Case thấy đủ; toast `Thêm PA` mở đúng Ngăn Case.
+- [x] Commit `feat(lui-a2): Tạo Case có bằng chứng ngay trong form, Lưu một lần`.
 
 ### Task a2-3: Mở lại Case đã hoàn thành
 
 **Files:** `server/src/cases/cases.ts`, `shared/domain/cases.ts` (`MILESTONE_KINDS`), `server/src/routes/index.ts`, `tocDoDuong.ts`, `web/src/modules/cases/CasePanel.tsx` (+ `NganCase.tsx` nếu nút ở đó), `web/src/modules/cases/ThaoTacCase.tsx:218`, `prLuiA2.tests.ts`
 
-- [ ] **Đỏ:**
+- [x] **Đỏ:**
   - `LUIa2-5` Case Listening có PA đã khép → `closeCaseOutcome` → `moLaiCase(QL)` → `status` = `in_progress` (có PA) / `open` (không PA), `outcome*`, `closed_*`, `dismiss_reason_*` = NULL, `dedup_key` vẫn của nó; PA giữ `completed`/`cancelled`; `sos_case_history` `done → in_progress`; mốc `reopened`; Hành trình `Mở lại Case`; nhật ký `case.reopen` có `before` = kết luận cũ; `closeBlockers` lại cho Hoàn thành (vòng đóng–mở–đóng chạy).
   - `LUIa2-6` GVCN / GVBM → 403; Case chưa `done` → 400 `Case này chưa hoàn thành.`; Case đã nhả khoá cho Case mới (`upsertCategoryCase` tạo Case nối) → 400 `Đã có Case Listening mới — mở Case đó.`; Case "Không cần theo dõi" (đóng qua `apDungKhongTheoDoi`) mở lại được.
   - `LUIa2-7` `caseDetail(QL).viewer.coTheMoLai === true` khi `done` và mở được; GV `false`.
-- [ ] **Xanh:**
+- [x] **Xanh:**
 ```ts
 /** MỞ LẠI CASE ĐÃ HOÀN THÀNH (PR-LUI-a, chủ sản phẩm 06/10) — chỉ QL/QT, một bấm. Kết luận cũ ở lại trong mốc `closed` + nhật ký; PA đã khép không sống lại. */
 export function moLaiCase(p: Principal, caseId: number) {
@@ -469,29 +469,29 @@ export function moLaiCase(p: Principal, caseId: number) {
 }
 ```
   (Tên cột thật theo `schema.sql` — kiểm ở a2-0; `caseDedupKey` trả null cho Case không khoá → chỉ chặn khi có khoá.) `caseDetail.viewer.coTheMoLai = c.status === 'done' && can(p, CASE_APPROVE, ctx) && !(giu && giu.id !== c.id)`. Route `POST /cases/:id/mo-lai`; trần.
-- [ ] **Web:** Case `done`: nút `Mở lại` (`btn btn-sm`) cạnh nhãn `Đã hoàn thành` khi `viewer.coTheMoLai`; bấm → `POST`, `invalidate('/cases','/my-work','/students')`, toast `Đã mở lại Case`; lỗi → toast lỗi. `ThaoTacCase.tsx:218` `luat=` → `Đóng nhầm thì Quản lý mở lại được. MT sau trượt lại thì có Case mới nối Case này.`
-- [ ] Xanh; commit `feat(lui-a2): Mở lại Case đã hoàn thành (QL/QT) + sửa chữ ⓘ Hoàn thành Case`.
+- [x] **Web:** Case `done`: nút `Mở lại` (`btn btn-sm`) cạnh nhãn `Đã hoàn thành` khi `viewer.coTheMoLai`; bấm → `POST`, `invalidate('/cases','/my-work','/students')`, toast `Đã mở lại Case`; lỗi → toast lỗi. `ThaoTacCase.tsx:218` `luat=` → `Đóng nhầm thì Quản lý mở lại được. MT sau trượt lại thì có Case mới nối Case này.`
+- [x] Xanh; commit `feat(lui-a2): Mở lại Case đã hoàn thành (QL/QT) + sửa chữ ⓘ Hoàn thành Case`.
 
 ### Task a2-4: Chờ duyệt — Từ chối nhiều
 
 **Files:** `server/src/duyet/yeuCau.ts:445-468`, `server/src/routes/index.ts:~1644`, `tocDoDuong.ts`, `shared/domain/yeuCauDuyet.ts:124`, `web/src/modules/duyet/HopChoDuyet.tsx:100-221`, `prLuiA2.tests.ts`
 
-- [ ] **Đỏ:** `LUIa2-8` 3 thẻ Đề xuất PA chờ → `tuChoiNhieu(QL, ids, 'Chưa đủ căn cứ')` → 3 thẻ `tu_choi` cùng lý do, 3 PA `cancelled` + `approval_state='declined'`; lý do trống → 400 trước khi đụng thẻ nào; trộn hai loại → 400; một thẻ đã xử lý → vào `loi`, hai thẻ kia vẫn xong; GV → 403; > 50 → 400. `tomTatKetQuaHangLoat('tu-choi', 3, [])` = `Đã từ chối 3/3`.
-- [ ] **Xanh:** tách thân `duyetNhieu` thành `lamNhieu(p, ids, lam: (id) => void, nhan: 'duyệt' | 'từ chối')` (kiểm quyền, khuôn, cùng loại `hangLoat`, vòng lặp, `ok`/`loi`); `duyetNhieu = lamNhieu(…, (id) => duyetYeuCau(p, id))`; `tuChoiNhieu(p, ids, lyDo)` kiểm `lyDo` (`chuTuDo`, không rỗng) **trước**, rồi `lamNhieu(…, (id) => tuChoiYeuCau(p, id, lyDo))`. Route `POST /yeu-cau/tu-choi-nhieu`. `tomTatKetQuaHangLoat` nhận `'tu-choi'`.
-- [ ] **Web** thanh chọn (`:203-221`): thêm nút `Từ chối {n}…` (trước `Duyệt n yêu cầu`); bấm → thanh mở thêm một hàng: ô `Lý do từ chối (người gửi sẽ đọc) *` + `Đóng` + `Gửi từ chối {n}` (lỗi trống `Chưa điền`); gửi → `baoKetQua('tu-choi', …)`, bỏ chọn, làm mới.
-- [ ] Xanh; commit `feat(lui-a2): Chờ duyệt — Từ chối nhiều thẻ một lần (một lý do)`.
+- [x] **Đỏ:** `LUIa2-8` 3 thẻ Đề xuất PA chờ → `tuChoiNhieu(QL, ids, 'Chưa đủ căn cứ')` → 3 thẻ `tu_choi` cùng lý do, 3 PA `cancelled` + `approval_state='declined'`; lý do trống → 400 trước khi đụng thẻ nào; trộn hai loại → 400; một thẻ đã xử lý → vào `loi`, hai thẻ kia vẫn xong; GV → 403; > 50 → 400. `tomTatKetQuaHangLoat('tu-choi', 3, [])` = `Đã từ chối 3/3`.
+- [x] **Xanh:** tách thân `duyetNhieu` thành `lamNhieu(p, ids, lam: (id) => void, nhan: 'duyệt' | 'từ chối')` (kiểm quyền, khuôn, cùng loại `hangLoat`, vòng lặp, `ok`/`loi`); `duyetNhieu = lamNhieu(…, (id) => duyetYeuCau(p, id))`; `tuChoiNhieu(p, ids, lyDo)` kiểm `lyDo` (`chuTuDo`, không rỗng) **trước**, rồi `lamNhieu(…, (id) => tuChoiYeuCau(p, id, lyDo))`. Route `POST /yeu-cau/tu-choi-nhieu`. `tomTatKetQuaHangLoat` nhận `'tu-choi'`.
+- [x] **Web** thanh chọn (`:203-221`): thêm nút `Từ chối {n}…` (trước `Duyệt n yêu cầu`); bấm → thanh mở thêm một hàng: ô `Lý do từ chối (người gửi sẽ đọc) *` + `Đóng` + `Gửi từ chối {n}` (lỗi trống `Chưa điền`); gửi → `baoKetQua('tu-choi', …)`, bỏ chọn, làm mới.
+- [x] Xanh; commit `feat(lui-a2): Chờ duyệt — Từ chối nhiều thẻ một lần (một lý do)`.
 
 ### Task a2-5: Chờ duyệt — Huỷ quyết định trong ngày
 
 **Files:** `server/src/duyet/yeuCau.ts`, `server/src/duyet/loaiYeuCau.ts:71-90, 121-147`, `server/src/cases/cases.ts` (cạnh `respondToPlan`), `server/src/routes/index.ts`, `tocDoDuong.ts`, `web/src/modules/duyet/TheYeuCau.tsx`, `prLuiA2.tests.ts`
 
-- [ ] **Đỏ:**
+- [x] **Đỏ:**
   - `LUIa2-9` Đề xuất PA: chụp dòng `case_interventions` (bỏ `updated_at`) trước khi duyệt → `duyetYeuCau` → `huyQuyetDinh(QL, id)` → thẻ `cho` (`nguoi_duyet`, `xu_ly_luc`, `ly_do_tu_choi`, `tra_loi` NULL, `tu_duyet = 0`), dòng PA **bằng đúng** ảnh chụp; Hành trình `Quản lý huỷ quyết định PA`; nhật ký `request.undo`; người gửi nhận chuông `Quản lý huỷ quyết định · Đề xuất PA · chờ duyệt lại`. Cùng phép với **từ chối** rồi huỷ.
   - `LUIa2-10` chặn: PA đã có `case_followups` → 400 `PA đã có kết quả — không huỷ quyết định được.`; quyết hôm qua (đặt `xu_ly_luc` lùi một ngày) → 400 `Chỉ huỷ được quyết định trong ngày.`; thẻ `lich_thi` → 400 `Loại yêu cầu này không huỷ quyết định được.`; Case đã đóng → 400; GV → 403; thẻ `cho` → 400.
   - `LUIa2-11` danh sách `xem=da-xu-ly`: thẻ Đề xuất PA quyết hôm nay có `coTheHuy: true`; thẻ cũ / loại khác `false`.
-- [ ] **Xanh:** `DinhNghiaLoai.khiHuy?: (p, yc) => void` (ném nếu không đảo sạch). `de_xuat_pa.khiHuy = (p, yc) => huyQuyetDinhPa(p, yc.doi_tuong_id)`. `huyQuyetDinhPa` (`cases.ts`): đọc PA + Case như `respondToPlan`; kiểm `approval_state ∈ {approved, declined}`, không followup, Case chưa `done`; UPDATE về đúng giá trị lúc tạo (a2-0 mục 1): `approval_state='pending'`, `approval_by/at/note = NULL`, `status`, `cycle_started_on`, `started_date`, `action_due` = giá trị lúc tạo; `addJourney` `plan_approval_undone`. `huyQuyetDinh(p, id)` (`yeuCau.ts`): kiểm quyền theo thẻ (`P_DUYET`, `ctxThe`), trong `tx`: thẻ `duyet|tu_choi`, `xu_ly_luc` cùng ngày nghiệp vụ (`mocNghiepVu`), có `khiHuy` → gọi → UPDATE thẻ về `cho` (`WHERE id = ? AND trang_thai = ?`) → `writeAudit('request.undo', before)` → `notify` người xin (khác người huỷ). Cờ `coTheHuy` trong hàm liệt kê. Route `POST /yeu-cau/:id/huy-quyet-dinh`.
-- [ ] **Web** `TheYeuCau.tsx`: thẻ đã xử lý (cột phải, dưới `NhanTrangThai`) có `coTheHuy` → nút `Huỷ quyết định` (`btn btn-sm`); bấm → `POST`, `onXong(id)`, toast `Đã huỷ quyết định · thẻ về Chờ duyệt`; lỗi → `loiMay` dưới thẻ.
-- [ ] Xanh; commit `feat(lui-a2): Chờ duyệt — Huỷ quyết định Đề xuất PA bấm nhầm trong ngày`.
+- [x] **Xanh:** `DinhNghiaLoai.khiHuy?: (p, yc) => void` (ném nếu không đảo sạch). `de_xuat_pa.khiHuy = (p, yc) => huyQuyetDinhPa(p, yc.doi_tuong_id)`. `huyQuyetDinhPa` (`cases.ts`): đọc PA + Case như `respondToPlan`; kiểm `approval_state ∈ {approved, declined}`, không followup, Case chưa `done`; UPDATE về đúng giá trị lúc tạo (a2-0 mục 1): `approval_state='pending'`, `approval_by/at/note = NULL`, `status`, `cycle_started_on`, `started_date`, `action_due` = giá trị lúc tạo; `addJourney` `plan_approval_undone`. `huyQuyetDinh(p, id)` (`yeuCau.ts`): kiểm quyền theo thẻ (`P_DUYET`, `ctxThe`), trong `tx`: thẻ `duyet|tu_choi`, `xu_ly_luc` cùng ngày nghiệp vụ (`mocNghiepVu`), có `khiHuy` → gọi → UPDATE thẻ về `cho` (`WHERE id = ? AND trang_thai = ?`) → `writeAudit('request.undo', before)` → `notify` người xin (khác người huỷ). Cờ `coTheHuy` trong hàm liệt kê. Route `POST /yeu-cau/:id/huy-quyet-dinh`.
+- [x] **Web** `TheYeuCau.tsx`: thẻ đã xử lý (cột phải, dưới `NhanTrangThai`) có `coTheHuy` → nút `Huỷ quyết định` (`btn btn-sm`); bấm → `POST`, `onXong(id)`, toast `Đã huỷ quyết định · thẻ về Chờ duyệt`; lỗi → `loiMay` dưới thẻ.
+- [x] Xanh; commit `feat(lui-a2): Chờ duyệt — Huỷ quyết định Đề xuất PA bấm nhầm trong ngày`.
 
 ### Task a2-6: Sửa / Xoá Case + nhật ký hạn theo dõi (**mockup mục 18–19**)
 
@@ -499,23 +499,23 @@ export function moLaiCase(p: Principal, caseId: number) {
 
 **Interfaces:** `suaCase(p, caseId, { title?, summary?, urgency?, topic?, primaryCode?, observation? })` · `xoaCase(p, caseId): { ok: true }` · `caseDetail.viewer` thêm `coTheSua`, `coTheXoa`, `khoaKyNang`.
 
-- [ ] **Đối chiếu trước (ghi vào commit):** 12 bảng `REFERENCES sos_cases` (`schema.sql:869, 984, 1006, 1134, 1198, 1224, 1301, 1318, 1337, 1430, 1463, 1529`) + `attachments` (`sos_case`, `case_intervention`), `journey_events` (`ref_table='sos_cases'`), `yeu_cau_duyet` (đối tượng Case / PA) — bảng nào xoá theo, bảng nào chỉ gỡ khoá (vd `previous_case_id` → NULL).
-- [ ] **Đỏ:**
+- [x] **Đối chiếu trước (ghi vào commit):** 12 bảng `REFERENCES sos_cases` (`schema.sql:869, 984, 1006, 1134, 1198, 1224, 1301, 1318, 1337, 1430, 1463, 1529`) + `attachments` (`sos_case`, `case_intervention`), `journey_events` (`ref_table='sos_cases'`), `yeu_cau_duyet` (đối tượng Case / PA) — bảng nào xoá theo, bảng nào chỉ gỡ khoá (vd `previous_case_id` → NULL).
+- [x] **Đỏ:**
   - `LUIa2-12` `suaCase(GVBM đúng môn, …)` đổi tên / mô tả / mức / nhóm nguyên nhân trên Case **đã xác nhận** → lưu (luật như `xacNhanCase`: tên 3–80, mô tả 15–2000, nhóm thuộc bộ của kỹ năng, Khác cần ghi rõ); mỗi ô đổi một dòng `sos_case_history` + nhật ký `case.edit`; không đổi gì → không ghi. Người tạo (`reported_by`), GVCN lớp em, QL được; GV khác → 403. Case `done` → 400 `Case đã hoàn thành — Mở lại trước khi sửa.`
   - `LUIa2-13` đổi kỹ năng: Case chưa có PA → đổi `topic`/`category`, khoá chống trùng đổi theo; có PA → 400 `Case đã có PA — không đổi kỹ năng.`; đã có Case khác cùng kỹ năng mới đang mở → 400 `Đã có Case Reading đang mở.`
   - `LUIa2-14` `xoaCase(QL)` Case báo tay có 1 PA `planned` → mọi bảng ở bước đối chiếu không còn dòng trỏ Case / PA đó (phép kiểm quét đủ 12 bảng + `attachments` + `yeu_cau_duyet` chờ); thẻ Chờ duyệt của PA đóng `tu_dong`; nhật ký `case.delete` chụp Case + PA. Chặn: GVCN / GVBM → 403; Case `mock` → 400 `Case từ kết quả Test — dùng "Không cần theo dõi".`; còn PA có kết quả → 400 `Case còn PA có kết quả — xoá các PA trước.` (Q6); xoá hết PA đó (`xoaPa`) rồi xoá Case → được
   - `LUIa2-16` **Xoá PA** `xoaPa(QL, ivId)` PA có 2 kết quả tuần → xoá PA, `case_followups`, `case_intervention_revisions`, tệp, thẻ Chờ duyệt của PA (`tu_dong`); nhật ký `intervention.delete` chụp PA + mọi kết quả; Case còn PA khác → giữ trạng thái; hết PA → Case về `open` ("chưa có PA"). Số "PA cần cập nhật" (`mywork`, Việc cần làm) giảm đúng 1; Phân tích GV "PA hiệu quả" / "Ghi kết quả PA đúng hạn" tính lại không còn PA đó (đọc thẳng bảng, không số lưu sẵn — kiểm bằng hàm Phân tích trước / sau). GV → 403; PA đang chờ QL duyệt → xoá được (thẻ đóng).
   - `LUIa2-15` `setFollowUntil` đổi ngày → nhật ký `case.follow_until` (trước / sau); cùng ngày → không ghi.
-- [ ] **Xanh:** `suaCase` dùng lại phần kiểm của `xacNhanCase` (tách hàm thuần `kiemNoiDungCase` khỏi `sosAuto.ts:197-215`, **không đổi hành vi**; phép kiểm Xác nhận Case cũ phải xanh nguyên). Quyền: `caseAccess(id).requireEdit` **hoặc** `c.reported_by === p.userId` **hoặc** GVCN lớp em. `xoaCase`: `require_(p, PERMISSIONS.CASE_APPROVE, ctx)`; kiểm `origin_kind`, `case_followups`; một `tx` xoá con → cha theo danh sách đối chiếu, `purgeAttachmentsOf` cho Case + từng PA, `chotYeuCau … 'tu_dong' { lyDo: 'Case đã xoá' }`; `xoaTepSauGiaoDich` sau `tx`. `setFollowUntil`: thêm `writeAudit({ action: 'case.follow_until', before, after })` khi đổi.
-- [ ] **Xanh — Xoá PA:** `xoaPa(p, ivId)` trong `cases.ts` (`require_(p, PERMISSIONS.CASE_APPROVE, ctx)`), một `tx` xoá con → cha, `dongBoTrangThaiCase(caseId)`; route `DELETE /interventions/:id`; menu ⋯ của thẻ PA (QL / QT) có `Xoá PA` → hỏi một dòng `Xoá PA này?` · `Học kèm 1-1 với Tutor · 2 kết quả tuần sẽ xoá` · nút `Xoá PA` · toast `Đã xoá PA`.
-- [ ] **Web:** đầu Ngăn Case (Case chưa đóng, `viewer.coTheSua`): nút `Sửa` → `SuaCasePanel` (ô như mockup mục 18; kỹ năng khoá khi `khoaKyNang`); chân trái `Xoá Case` khi `viewer.coTheXoa` → hộp hỏi một dòng (mẫu `DeleteViolationConfirm`) → toast `Đã xoá Case`, đóng Ngăn Case, làm mới danh sách.
-- [ ] Xanh; commit `feat(lui-a2): Sửa Case, Xoá Case báo tay tạo nhầm (QL/QT), nhật ký hạn theo dõi`.
+- [x] **Xanh:** `suaCase` dùng lại phần kiểm của `xacNhanCase` (tách hàm thuần `kiemNoiDungCase` khỏi `sosAuto.ts:197-215`, **không đổi hành vi**; phép kiểm Xác nhận Case cũ phải xanh nguyên). Quyền: `caseAccess(id).requireEdit` **hoặc** `c.reported_by === p.userId` **hoặc** GVCN lớp em. `xoaCase`: `require_(p, PERMISSIONS.CASE_APPROVE, ctx)`; kiểm `origin_kind`, `case_followups`; một `tx` xoá con → cha theo danh sách đối chiếu, `purgeAttachmentsOf` cho Case + từng PA, `chotYeuCau … 'tu_dong' { lyDo: 'Case đã xoá' }`; `xoaTepSauGiaoDich` sau `tx`. `setFollowUntil`: thêm `writeAudit({ action: 'case.follow_until', before, after })` khi đổi.
+- [x] **Xanh — Xoá PA:** `xoaPa(p, ivId)` trong `cases.ts` (`require_(p, PERMISSIONS.CASE_APPROVE, ctx)`), một `tx` xoá con → cha, `dongBoTrangThaiCase(caseId)`; route `DELETE /interventions/:id`; menu ⋯ của thẻ PA (QL / QT) có `Xoá PA` → hỏi một dòng `Xoá PA này?` · `Học kèm 1-1 với Tutor · 2 kết quả tuần sẽ xoá` · nút `Xoá PA` · toast `Đã xoá PA`.
+- [x] **Web:** đầu Ngăn Case (Case chưa đóng, `viewer.coTheSua`): nút `Sửa` → `SuaCasePanel` (ô như mockup mục 18; kỹ năng khoá khi `khoaKyNang`); chân trái `Xoá Case` khi `viewer.coTheXoa` → hộp hỏi một dòng (mẫu `DeleteViolationConfirm`) → toast `Đã xoá Case`, đóng Ngăn Case, làm mới danh sách.
+- [x] Xanh; commit `feat(lui-a2): Sửa Case, Xoá Case báo tay tạo nhầm (QL/QT), nhật ký hạn theo dõi`.
 
 ### Task a2-7: Kiểm cuối, bấm thử, audit, PR
 
-- [ ] Như a1-7 (cổng 4420/5420). Bấm thử mockup mục 10–15, 18–19; vai: QL (Mở lại, Từ chối nhiều, Huỷ quyết định), Quản trị, GVCN (không có Mở lại / Huỷ quyết định), GVBM (Ghi kết quả PA có Người phụ trách).
-- [ ] `/impeccable audit`, `/ponytail-review`; mô tả PR: mục 6–9 + Sửa / Xoá Case · phép kiểm `LUIa2-*` · ảnh · chú thích `ponytail:` (dự kiến: Huỷ quyết định chỉ Đề xuất PA; Mở lại không lý do).
-- [ ] `[x]` a2; một dòng mục 11 `plan.md`; `CODE_MAP.md` thêm `migrate/prLuiA2.ts`.
+- [x] Như a1-7 (cổng 4420/5420). Bấm thử mockup mục 10–15, 18–19; vai: QL (Mở lại, Từ chối nhiều, Huỷ quyết định), Quản trị, GVCN (không có Mở lại / Huỷ quyết định), GVBM (Ghi kết quả PA có Người phụ trách).
+- [x] `/impeccable audit`, `/ponytail-review`; mô tả PR: mục 6–9 + Sửa / Xoá Case · phép kiểm `LUIa2-*` · ảnh · chú thích `ponytail:` (dự kiến: Huỷ quyết định chỉ Đề xuất PA; Mở lại không lý do).
+- [x] `[x]` a2; một dòng mục 11 `plan.md`; `CODE_MAP.md` thêm `migrate/prLuiA2.ts`.
 
 ---
 
