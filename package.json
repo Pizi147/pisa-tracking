@@ -23,7 +23,7 @@
     "xoa-kho-tep": "npm run build:server && node dist-server/server/src/ops/xoaKhoTep.js",
     "build": "node scripts/goi-libsql-linux.mjs && tsc -p tsconfig.web.json --noEmit && npm run build:server && vite build",
     "typecheck": "tsc -p tsconfig.web.json --noEmit && tsc -p tsconfig.build.json --noEmit",
-    "test": "npm run build:server && node dist-server/server/src/tests/run.js && node dist-server/server/src/tests/tocDo.run.js",
+    "test": "npm run build:server && node --expose-gc dist-server/server/src/tests/run.js && node --expose-gc dist-server/server/src/tests/tocDo.run.js",
     "check": "npm run build:server && npm test && npm run typecheck",
     "preview": "vite preview",
     "migrate": "node scripts/check-node.mjs && npm run build:server && node dist-server/server/src/migrate/run.js"
