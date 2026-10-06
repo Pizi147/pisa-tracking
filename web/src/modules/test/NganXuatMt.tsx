@@ -174,8 +174,7 @@ export function NganXuatMt({ khung: khungDau, chiNhanh, lop, thoiGianMacDinh, on
                     <div className="flex flex-wrap gap-1.5">
                       {lopChon.map((l) => (
                         <button key={l.id} type="button" title={`Bỏ lớp ${l.ma}`} onClick={() => setLopChon((ds) => ds.filter((x) => x.id !== l.id))}
-                          className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full border px-3 text-xs text-slate-200 sm:min-h-[28px]"
-                          style={{ borderColor: 'var(--accent-line)', background: 'var(--accent-soft)' }}>
+                          className="nut-loc nut-loc-dang">
                           {l.ma}<span aria-hidden>✕</span><span className="sr-only">bỏ lớp</span>
                         </button>
                       ))}

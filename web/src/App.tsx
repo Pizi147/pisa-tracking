@@ -6,6 +6,7 @@ import { DemoBar } from './modules/platform/DemoBar.tsx';
 import { LA_BAN_CHINH } from './lib/banChinh.ts';
 import { Header } from './modules/platform/Header.tsx';
 import { Skeleton } from './ui/ui.tsx';
+import { CHIP_TRON } from './ui/Nhan.tsx';
 import WelcomePage from './modules/platform/WelcomePage.tsx';
 import { NAV_RONG, duongMoi, khuVucCuaDuong, khuVucHienThi, type DemYeuCau, type KhuVuc, type KhuVucMuc } from '@shared/domain/index.ts';
 
@@ -46,7 +47,7 @@ function SoCho({ so, className = 'ml-1.5' }: { so: SoBadge; className?: string }
   if (!so?.n) return null;
   return (
     <>
-      <span aria-hidden className={`${className} inline-flex min-w-[1.25rem] justify-center rounded-full border px-1 text-[11.5px] font-semibold leading-4 tabular-nums ${
+      <span aria-hidden className={`${className} ${CHIP_TRON} min-w-[1.25rem] justify-center tabular-nums ${
         so.quaHan ? 'border-late-line bg-late-bg text-late' : 'border-transparent bg-white/10 text-slate-300'}`}>{so.n}</span>
       <span className="sr-only">, {so.sr}</span>
     </>

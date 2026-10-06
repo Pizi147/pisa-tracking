@@ -312,8 +312,7 @@ export function LichTestTab() {
       {urlClassId && (
         <div>
           <button type="button" onClick={() => datThamSo({ classId: null, kn: null })} title="Bỏ lọc lớp"
-            className="inline-flex min-h-[28px] items-center gap-1 rounded-full border px-2.5 text-xs text-slate-200"
-            style={{ borderColor: 'var(--accent-line)', background: 'var(--accent-soft)' }}>
+            className="nut-loc nut-loc-dang">
             Đang lọc: lớp {data.lopDangLoc?.code ?? `#${urlClassId}`} <span aria-hidden>✕</span>
           </button>
         </div>

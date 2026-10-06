@@ -416,7 +416,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     const web = fs.readFileSync(path.join(REPO, 'web/src/modules/cases/SkillBoard.tsx'), 'utf8');
     const dong11 = web.split('\n').filter((l) => l.includes('text-[11px]'));
     assert(dong11.every((l) => /rounded/.test(l)), `còn chữ 11 px không phải nhãn: ${dong11.map((l) => l.trim().slice(0, 90)).join(' | ')}`);
-    assert(/loai === 'Case' \? 'border border-current/.test(web) && /bg-\[color:var\(--line-strong\)\]/.test(web), 'Case khung rỗng / PA khối đặc');
+    assert(/loai === 'Case' \? 'border-current/.test(web) && /bg-\[color:var\(--line-strong\)\]/.test(web), 'Case khung rỗng / PA khối đặc');
     assert(/<NhanLoai loai="Case" \/>/.test(web) && /<NhanLoai loai="PA" cho=\{choDuyetKh\} \/>/.test(web), 'hàng Case / hàng PA dùng NhanLoai');
     assert(!/ngan\(p\.startedOn\)|ngan\(p\.lastOutcomeOn\)/.test(web), 'khoảng PA / kết quả còn dd/mm');
   });

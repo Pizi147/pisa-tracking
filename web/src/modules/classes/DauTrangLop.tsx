@@ -171,7 +171,7 @@ export function DauTrangLop({ data, periodId, onViec, onBanGiao }: {
             : chinh.loai ? (
               <button type="button" className="btn btn-sm btn-primary" onClick={() => onViec(chinh.loai === 'them-hv' ? 'hoc-vien' : 'chuyen-tiep')}>{chinh.nhan}</button>
             ) : null}
-          <MenuDong muc={menu} bieuTuong="⋮" nhan="Thao tác khác" />
+          <MenuDong muc={menu} nhan="Thao tác khác" />
         </div>
       </div>
 
@@ -195,7 +195,7 @@ export function DauTrangLop({ data, periodId, onViec, onBanGiao }: {
               : <Nhan key={x.key} tone={toneNhanTuBadge(x.tone)} title={x.title}>{x.nhan}</Nhan>;
           })}
           {b.an.length > 0 && (
-            <MenuDong bieuTuong={`+${b.an.length}`} nhan={`${b.an.length} việc khác của lớp`}
+            <MenuDong kieu="chip" bieuTuong={`+${b.an.length}`} nhan={`${b.an.length} việc khác của lớp`}
               muc={b.an.map((x) => ({ key: x.key, nhan: x.nhan, onChon: () => (bamBadge(x) ?? (() => undefined))() }))} />
           )}
         </div>

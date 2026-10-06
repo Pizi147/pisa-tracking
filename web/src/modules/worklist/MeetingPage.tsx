@@ -5,6 +5,7 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { BoLocDoan, Card, Empty, ErrorState, Info, NutChon, Outcome, Skeleton, Status, Th } from '../../ui/ui.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
+import { CHIP_TRON } from '../../ui/Nhan.tsx';
 import { WeekPicker, nhoChiNhanh, resolveWeek, useChiNhanhMacDinh, usePeriodWindow } from '../../ui/Filters.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { SignalList } from './SignalList.tsx';
@@ -370,7 +371,7 @@ function NganBaoCao({ unit, cell, periodId, editable, editWindow, onClose, onSav
             <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-1.5">Nối với việc:</h3>
             <div className="flex flex-wrap gap-1.5">
               {cell.linkedTasks.map((t) => (
-                <span key={t.id} className="inline-flex items-center gap-1 surface-2 rounded-full px-2 py-1 text-xs">
+                <span key={t.id} className={`${CHIP_TRON} gap-1 surface-2 !font-medium`}>
                   <button type="button" className="appearance-none bg-transparent border-0 p-0 text-slate-200 hover:underline cursor-pointer"
                     onClick={() => navigate(`/cong-viec/van-hanh?open=${t.id}`)}>
                     {t.title} · {t.progressLabel}{t.due ? ` · ${fmtDate(t.due)}` : ''}

@@ -1,5 +1,5 @@
 import type { NguCanhDs, NhanYThucEm } from '@shared/domain/index.ts';
-import { DauDuoi } from '../../ui/Nhan.tsx';
+import { CHIP_VUONG, DauDuoi } from '../../ui/Nhan.tsx';
 import { NhanCu } from '../../ui/OMt.tsx';
 import { ViecTiep } from '../../ui/ViecTiep.tsx';
 import { Link } from 'react-router-dom';
@@ -290,7 +290,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
  *   · Chưa có kết quả (xám) · Không tính SOS (xám, em Target KCK) · Đã kết thúc (xám).
  */
 function KetLuan({ row }: { row: RosterRow }) {
-  const xam = 'inline-flex items-center rounded-md border px-1.5 py-0.5 text-[11.5px] font-medium whitespace-nowrap bg-slate-300/8 text-slate-400 border-slate-300/20';
+  const xam = `${CHIP_VUONG} border-muted-line bg-muted-bg text-muted`;
   if (row.status !== 'active') return <span className={xam}>{row.ketThucVi ?? 'Đã kết thúc'}</span>;
   /* Q29-1: em KCK có điểm vẫn không có kỳ vọng — nói rõ "không tính SOS", không để đọc thành "chưa chấm". */
   if (row.sosLevel === null && row.cycle?.khongCamKet) return <span className={xam} title={GIAI_THICH_KCK}>Không tính SOS</span>;

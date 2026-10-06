@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { buocDanhSach } from '@shared/domain/index.ts';
+import { CHIP_TRON } from './Nhan.tsx';
 
 export type MucMenu = {
   key: string; nhan: string; onChon: () => void;
@@ -23,9 +24,11 @@ export type MucMenu = {
  * Bàn phím (E2): mở → focus mục đầu; ↑/↓/Home/End đi vòng; Enter chọn; Esc/Tab đóng và trả focus về nút ⋯. Esc chỉ đóng menu,
  * không đóng panel chứa nó (pha bắt + chặn lan, như `LichNho`).
  */
-export function MenuDong({ muc, nhan = 'Thao tác khác', bieuTuong = '⋯', luonHien = false }: {
+export function MenuDong({ muc, nhan = 'Thao tác khác', bieuTuong = '⋯', luonHien = false, kieu }: {
   /** `bieuTuong`: ⋯ · ⋮, hoặc chữ ngắn như "+2" (badge còn ẩn của hộp lớp — PR-HVL B4). `luonHien`: vẽ nút kể cả khi không có mục / mọi mục `tat`. */
   muc: MucMenu[]; nhan?: string; bieuTuong?: string; luonHien?: boolean;
+  /** `chip`: mặt nút là chip họ tròn xám ("+2" cạnh các badge lớp, PR-HK2) thay cho ô vuông viền. */
+  kieu?: 'chip';
 }) {
   const [mo, setMo] = useState(false);
   const nut = useRef<HTMLButtonElement>(null);
@@ -86,8 +89,10 @@ export function MenuDong({ muc, nhan = 'Thao tác khác', bieuTuong = '⋯', luo
       <button ref={nut} type="button" title={nhan} aria-label={nhan} aria-haspopup="menu" aria-expanded={mo}
         onClick={(e) => { e.stopPropagation(); setMo((v) => !v); }}
         /* Vùng bấm 44px ở điện thoại: `after` neo theo mép TRONG viền 1px nên 28 - 2 + 18 = 44 (-inset-2 chỉ ra 42). */
-        className="relative inline-grid place-items-center h-7 min-w-7 px-1 rounded-md border bg-transparent text-[11px] font-semibold tabular-nums text-slate-400 hover:text-slate-100 hover:bg-white/5 cursor-pointer after:absolute after:-inset-[9px] after:content-[''] sm:after:hidden"
-        style={{ borderColor: 'var(--line)' }}>
+        className={kieu === 'chip'
+          ? `${CHIP_TRON} relative min-h-[28px] bg-muted-bg text-muted tabular-nums cursor-pointer hover:brightness-125 max-sm:after:absolute max-sm:after:-inset-y-2 max-sm:after:inset-x-0 max-sm:after:content-['']`
+          : "relative inline-grid place-items-center h-7 min-w-7 px-1 rounded-md border bg-transparent text-[11px] font-semibold tabular-nums text-slate-400 hover:text-slate-100 hover:bg-white/5 cursor-pointer after:absolute after:-inset-[9px] after:content-[''] sm:after:hidden"}
+        style={kieu === 'chip' ? undefined : { borderColor: 'var(--line)' }}>
         {bieuTuong}
       </button>
       {mo && createPortal(

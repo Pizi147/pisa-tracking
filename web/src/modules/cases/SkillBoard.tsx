@@ -4,7 +4,7 @@ import { Empty, ErrorState, NhanTrangThai, Outcome, SCORE_CHIP, SCORE_TEXT, Skel
 import { Han } from '../../ui/Han.tsx';
 import { fmtBand } from '../../lib/format.ts';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
-import { Nhan } from '../../ui/Nhan.tsx';
+import { CHIP_VUONG, Nhan } from '../../ui/Nhan.tsx';
 import { IconCanhBao } from '../../ui/BieuTuong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useDienThoai } from '../../ui/TheDong.tsx';
@@ -366,9 +366,9 @@ export function KhoaQuyChe() {
  * PA chờ Quản lý duyệt kế hoạch: nền tím nhạt.
  */
 export function NhanLoai({ loai, cho }: { loai: 'Case' | 'PA'; cho?: boolean }) {
-  const lop = loai === 'Case' ? 'border border-current text-slate-100'
-    : cho ? 'bg-wait-bg text-wait' : 'bg-[color:var(--line-strong)] text-slate-100';
-  return <span className={`inline-flex shrink-0 items-center rounded px-[5px] text-[11px] font-bold leading-[15px] ${lop}`}>{loai}</span>;
+  const lop = loai === 'Case' ? 'border-current text-slate-100'
+    : cho ? 'border-transparent bg-wait-bg text-wait' : 'border-transparent bg-[color:var(--line-strong)] text-slate-100';
+  return <span className={`${CHIP_VUONG} shrink-0 ${lop}`}>{loai}</span>;
 }
 
 /** Màu vạch trái 3px của hàng Case theo nhãn trạng thái (token có sẵn — không màu mới). */

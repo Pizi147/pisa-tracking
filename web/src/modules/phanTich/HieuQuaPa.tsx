@@ -116,8 +116,7 @@ export function HieuQuaPa(props: PhamViPhanTich) {
               <span>{[props.ct ? CHUONG_TRINH_LABEL[props.ct] : null, tenChiNhanh, khoang].filter(Boolean).join(' · ')}</span>
               {data.loc.gv && (
                 <button type="button" onClick={() => boLoc('gv')} title="Bỏ lọc giáo viên"
-                  className="inline-flex min-h-[44px] sm:min-h-[28px] items-center gap-1 rounded-full border px-2.5 text-xs text-slate-200"
-                  style={{ borderColor: 'var(--accent-line)', background: 'var(--accent-soft)' }}>
+                  className="nut-loc nut-loc-dang">
                   Giáo viên: {data.loc.gv.ten} <span aria-hidden>✕</span>
                 </button>
               )}
@@ -126,8 +125,7 @@ export function HieuQuaPa(props: PhamViPhanTich) {
               )}
               {data.loc.theoKhoang && (
                 <button type="button" onClick={() => boLoc('tu', 'den')} title="Bỏ lọc khoảng tuần"
-                  className="inline-flex min-h-[44px] sm:min-h-[28px] items-center gap-1 rounded-full border px-2.5 text-xs text-slate-200 tabular-nums"
-                  style={{ borderColor: 'var(--accent-line)', background: 'var(--accent-soft)' }}>
+                  className="nut-loc nut-loc-dang tabular-nums">
                   {khoang} <span aria-hidden>✕</span>
                 </button>
               )}

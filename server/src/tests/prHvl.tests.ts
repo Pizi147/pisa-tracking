@@ -352,7 +352,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
     assert(/<CongTacKhung trang="hoc-vien-lop" coTatCa/.test(s) && /demLoc\(/.test(s), 'thiếu công tắc khung / demLoc');
     assert(/<section key=\{g\.k\}/.test(s) && /md:sticky md:-top-5/.test(s), 'mỗi nhóm khung phải là một <section> chứa khối tiêu đề dính');
     assert(!/Target \/ Khoá/.test(s) && /'Sắp tới'/.test(s), 'cột');
-    assert(/<MenuDong bieuTuong=\{`\+\$\{b\.an\.length\}`\}/.test(s) && !/x\.key === 'case'/.test(s), '"+n" phải là MenuDong, không còn badge Case');
+    assert(/<MenuDong kieu="chip" bieuTuong=\{`\+\$\{b\.an\.length\}`\}/.test(s) && !/x\.key === 'case'/.test(s), '"+n" phải là MenuDong, không còn badge Case');
   });
 
   check('PR-HVL (4) · Kết quả hai dòng không cắt "…" (không truncate); việc tiếp bấm được; hàng "Cả lớp"; tên em đậm', () => {
@@ -549,7 +549,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
 
   check('PR-HVL (7) · web đầu hồ sơ lớp: một nút chính theo chặng, ⋮ có Tuần khai giảng / Lịch kiểm tra, LT bọc abbr; panel không còn "Lộ trình lớp" / "Mở từng em rồi bấm"; ô Giữa khoá ẩn với Pre FOU', () => {
     const dau = web('modules/classes/DauTrangLop.tsx'); const pn = web('modules/classes/ClassProgressPanel.tsx'); const pg = web('modules/classes/ClassOverviewPage.tsx');
-    assert(/nutChinhDauTrang\(/.test(dau) && /phu\.slice\(0, 2\)/.test(dau) && /'Tuần khai giảng'/.test(dau) && /ROUTE_NAME\[/.test(dau) && /<MenuDong bieuTuong=\{`\+\$\{b\.an\.length\}`\}/.test(dau), 'DauTrangLop');
+    assert(/nutChinhDauTrang\(/.test(dau) && /phu\.slice\(0, 2\)/.test(dau) && /'Tuần khai giảng'/.test(dau) && /ROUTE_NAME\[/.test(dau) && /<MenuDong kieu="chip" bieuTuong=\{`\+\$\{b\.an\.length\}`\}/.test(dau), 'DauTrangLop');
     assert(!/Lộ trình lớp/.test(dau + pn + pg) && !/Mở từng em rồi bấm/.test(pn), 'chữ cũ còn sót');
     assert(/data\.coGiuaKhoa &&/.test(pn) && /onChuyenTiep/.test(pn) && /tomTatMt/.test(pn) && /Đổi tuần khai giảng không dời lịch MT/.test(pn), 'ClassProgressPanel');
     assert(!/rgba\(242, 161, 161/.test(pn), 'khung hết khoá không còn tô đỏ');

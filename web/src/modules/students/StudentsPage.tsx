@@ -215,11 +215,7 @@ export default function StudentsPage() {
             {chips.map((k) => (
               <button key={k} type="button" title={LOC_HOC_VIEN_NHAN[k].goiY} aria-pressed={loc === k}
                 onClick={() => setParam({ view: k === 'tat-ca' ? null : k, open: null })}
-                className={`inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-xs font-semibold cursor-pointer max-sm:min-h-[44px] ${
-                  loc === k
-                    ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)] border-[color:var(--accent-line)]'
-                    : 'bg-transparent text-slate-300 border-slate-300/30 hover:bg-white/5'
-                }`}>
+                className="nut-loc">
                 {LOC_HOC_VIEN_NHAN[k].nhan}<span className="tabular-nums font-medium">{dem[k]}</span>
               </button>
             ))}
@@ -354,7 +350,7 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, dsHoc
 
   const menuBadgeAn = b.an.length > 0 && (
     /* B4: "+n" bấm được — mỗi mục là một badge còn ẩn, bấm đi đúng đích (không có đích riêng thì mở Hồ sơ lớp, nơi số đó hiện). */
-    <MenuDong bieuTuong={`+${b.an.length}`} nhan={`${b.an.length} việc khác của lớp ${lop.code}`}
+    <MenuDong kieu="chip" bieuTuong={`+${b.an.length}`} nhan={`${b.an.length} việc khác của lớp ${lop.code}`}
       muc={b.an.map((x) => ({ key: x.key, nhan: x.nhan, onChon: () => navigate(denBadge(x) ?? `/hoc-vien/lop/${lop.id}`) }))} />
   );
   const cacBadge = b.hien.map((x) => {

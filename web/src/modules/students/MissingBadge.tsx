@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { CHIP_VUONG } from '../../ui/Nhan.tsx';
 
 const RONG = 240;   // 15rem — cùng bề rộng tối thiểu cũ
 
@@ -76,7 +77,7 @@ export function MissingBadge({ items, className = '', gon = false }: {
         onClick={(e) => { e.stopPropagation(); e.preventDefault(); setOpen((v) => !v); }}
       >
         {/* G-4: ⚠ chỉ nghĩa là quá hạn — thiếu thông tin là badge chữ (Q12). */}
-        <span className="inline-flex items-center rounded-md border px-1.5 py-0.5 text-[11.5px] font-medium whitespace-nowrap bg-amber-300/10 text-amber-200 border-amber-300/30">
+        <span className={`${CHIP_VUONG} border-soon-line bg-soon-bg text-soon`}>
           {gon ? `Thiếu ${items.length}` : `Thiếu ${items.length} thông tin`}
         </span>
       </button>

@@ -1,6 +1,7 @@
 import { Fragment, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { SCORE_CHIP, type ScoreTone } from '../../ui/ui.tsx';
+import { CHIP_TRON, CHIP_VUONG } from '../../ui/Nhan.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import {
   IconCanhBao, IconChuyenLop, IconDangLam, IconDat, IconGap, IconKhong, IconLen, IconMotPhan, IconSang, IconTamDung,
@@ -30,8 +31,8 @@ export type ChuongWeb = {
 const MAU_PIN: Record<MauKetQua, ScoreTone> = { dat: 'emerald', sos1: 'sos1', sos2: 'sos2', sos3: 'sos3', tam: 'tam' };
 /** PA = khối ĐẶC tô theo kết quả (luật chung với bảng kỹ năng và trục tuần, Q13); chờ = viền đứt tím. */
 const KHOI_PA: Record<TonePaChuong, string> = {
-  ok: 'bg-ok-bg text-ok', part: 'bg-soon-bg text-soon', bad: 'bg-bad-bg text-bad', run: 'bg-doing-bg text-doing',
-  wait: 'border border-dashed border-wait text-wait', done: 'bg-done-bg text-done',
+  ok: 'border-transparent bg-ok-bg text-ok', part: 'border-transparent bg-soon-bg text-soon', bad: 'border-transparent bg-bad-bg text-bad', run: 'border-transparent bg-doing-bg text-doing',
+  wait: 'border-dashed border-wait text-wait', done: 'border-transparent bg-done-bg text-done',
 };
 const DAU_PA: Record<TonePaChuong, ReactNode> = {
   ok: <IconDat />, part: <IconMotPhan />, bad: <IconKhong />, run: <IconDangLam />, wait: <IconTamDung />, done: <IconDat />,
@@ -140,7 +141,7 @@ function TheChuong({ c, homNay, onChon }: { c: ChuongWeb; homNay: string; onChon
               return (
                 <Link key={g.attemptId} to={duongDotTest({ id: g.attemptId, kind: g.kind, classId: g.classId })} title={nh.day}
                   onClick={(e) => e.stopPropagation()}
-                  className={`inline-flex items-center whitespace-nowrap rounded-full border px-2 text-[12px] font-semibold leading-[19px] no-underline ${SCORE_CHIP[MAU_PIN[nh.mau]]}`}>
+                  className={`${CHIP_TRON} no-underline ${SCORE_CHIP[MAU_PIN[nh.mau]]}`}>
                   {nh.chuong ?? nh.chu}
                 </Link>
               );
@@ -161,7 +162,7 @@ function TheChuong({ c, homNay, onChon }: { c: ChuongWeb; homNay: string; onChon
                 <span className="flex flex-wrap items-center gap-1">
                   {x.pa.map((p) => (
                     <span key={p.id} title={p.ten}
-                      className={`inline-flex h-5 min-w-0 max-w-full items-center gap-1 overflow-hidden whitespace-nowrap rounded-md px-[7px] text-[11.5px] font-semibold max-sm:h-auto max-sm:min-h-5 max-sm:py-0.5 max-sm:whitespace-normal ${KHOI_PA[p.tone]}`}>
+                      className={`${CHIP_VUONG} h-5 min-w-0 max-w-full gap-1 overflow-hidden max-sm:h-auto max-sm:min-h-5 max-sm:py-0.5 max-sm:whitespace-normal ${KHOI_PA[p.tone]}`}>
                       {DAU_PA[p.tone]}<span className={`truncate max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words ${p.tone === 'wait' ? '' : 'text-slate-100'}`}>{p.ten}</span>
                     </span>
                   ))}

@@ -198,6 +198,18 @@
   .btn-ghost { background: transparent; border-color: transparent; }
   .btn-ghost:hover:not(:disabled) { background: rgb(var(--phu-rgb) / 0.1); }
 
+  /*
+   * NÚT LỌC DẠNG VIÊN THUỐC (PR-HK2, T4) — là NÚT, không phải badge: chữ 12 px, cao 32 (điện thoại 44). Dáng đã duyệt ở Học viên & Lớp.
+   * Đang lọc = `aria-pressed="true"` (nút bật/tắt) hoặc `.nut-loc-dang` (nút "bỏ lọc ✕" luôn ở trạng thái đang lọc).
+   */
+  .nut-loc {
+    @apply inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full border border-slate-300/30 bg-transparent px-3 text-xs font-semibold text-slate-300 max-sm:min-h-[44px];
+  }
+  .nut-loc:hover { filter: brightness(1.2); }
+  .nut-loc:where([aria-pressed='true'], .nut-loc-dang) {   /* :where = độ đặc 0 — tông màu riêng (ChipDem) vẫn đè được */
+    border-color: var(--accent-line); background: var(--accent-soft); color: var(--accent-strong);
+  }
+
   .field {
     width: 100%; padding: 0.45rem 0.6rem; border-radius: 0.5rem;
     background: var(--o-nhap-nen); border: 1px solid var(--o-nhap-vien); color: var(--text);

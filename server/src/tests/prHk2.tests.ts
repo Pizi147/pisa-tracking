@@ -42,8 +42,8 @@ export async function runPrHk2Tests(t: Pick<YThucTestKit, 'check' | 'assert'>) {
       assert(!/text-\[11px\]/.test(n), `${ten} còn text-[11px]`);
     }
     for (const [f, ten] of [['web/src/modules/students/MissingBadge.tsx', null], ['web/src/modules/yThuc/NhanViPham.tsx', null], ['web/src/modules/cases/SkillBoard.tsx', 'NhanLoai']] as const) {
-      const s = ten ? than(doc(f), ten) : doc(f);
-      assert(/CHIP_VUONG/.test(s) && !/text-\[11(\.5)?px\]/.test(s), `${f}: chưa dùng CHIP_VUONG hoặc còn chữ 11 px trong chip`);
+      const s = ten ? than(doc(f), ten).split(/\r?\n\}\r?\n/)[0] : doc(f);   // đúng thân hàm, không lấn sang hàm kế
+      assert(/CHIP_VUONG/.test(s) && !/text-\[11\.5px\]/.test(s) && !/rounded-md border px-/.test(s), `${f}: chưa dùng CHIP_VUONG hoặc còn chip tự dựng`);
     }
   });
 
