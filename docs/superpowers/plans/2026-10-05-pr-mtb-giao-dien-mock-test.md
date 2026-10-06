@@ -36,7 +36,7 @@
 ## Skill và model
 | Lúc | Skill / lệnh |
 |---|---|
-| Đầu phiên | Model **Opus 5.5 · High** (B: Fable 5.1 · High). `superpowers:subagent-driven-development`. Gõ `/ponytail lite` |
+| Đầu phiên | Model **Opus 5.5 · High** (B: Sonnet 5.5 · High). `superpowers:subagent-driven-development`. Gõ `/ponytail lite` |
 | Task 0 | Đối chiếu PR-MTa (đọc kế hoạch + mã đã merge); lệch bảng "Phụ thuộc" → sửa Interfaces trong file này trước khi code |
 | Mỗi task | `superpowers:test-driven-development` (đỏ trên DB test trước) · lỗi lạ → `superpowers:systematic-debugging` |
 | Task 3, 4, 9 | `/impeccable layout` (panel, hộp, lưới) |

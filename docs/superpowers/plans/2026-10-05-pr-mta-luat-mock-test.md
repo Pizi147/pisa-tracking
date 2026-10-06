@@ -13,6 +13,7 @@
 **Phụ thuộc / thứ tự:** chạy **sau khi PR-DL, PR-K26, PR-SL đã merge** (đặc tả mục 4). Nhánh `pr-mta-luat-mock-test` từ `origin/main` mới nhất. Song song được với PR-NV, PR-CHU. PR-MTb và PR-MT0 dựa vào khối **Interfaces chung** dưới đây.
 
 ## Chủ sản phẩm chốt 05/10 (sau khi soạn) — ĐÈ lên phần dưới nếu khác
+- **T19 (06/10) — khung nhập điểm:** xem Task 12. Không ai nhập điểm trước tuần thi; hạn lớp thường = thứ Tư tuần sau như FT; quá hạn vẫn nhập, tính trễ.
 - **MT cũ** = MT được **xếp vào tuần đã qua** (cờ `lich_su` tính lúc xếp/dời, như kế hoạch). MT thường đã qua ≥ 2 tuần vẫn là MT thường (quá hạn vẫn quá hạn).
 - **T4 áp cả Test lớp thường**: Quản lý / Quản trị xếp / dời về tuần đã qua được, không chặn. GVCN / GV vẫn từ tuần này. (Sửa tự quyết "chỉ áp Mock".)
 - **T7 áp MỌI chỗ, kể cả ngoài Test**: bỏ tối thiểu ký tự ở Đề xuất sửa (15), thẻ Chờ duyệt (3), chuyển lớp (3)… Chỗ bắt buộc chỉ cần không trống; chỗ không bắt buộc để tuỳ chọn. Thêm task rà `server/src/duyet/*`, `classes/lenhChuyen.ts`, `transition.ts` và web tương ứng.
@@ -404,6 +405,13 @@ Bảng cổng (đặc tả mục 3 / mockup phần 0) → phép kiểm. Ô trố
 - [ ] `npm run check` xanh (một lần, foreground) → `/ponytail-review` → `requesting-code-review` → `finishing-a-development-branch` (mở PR vào `main`, không merge).
 - [ ] Commit `docs(mta): Rulebook §20, CODE_MAP, plan.md`.
 
+### Task 12: T19 — khung nhập điểm (chủ sản phẩm 06/10)
+**Files:** `server/src/platform/week.ts` `skillScoreDeadline` (lớp thường `ratio`: thứ Tư tuần sau = `addDays(monday, 9)` như FT); `server/src/fasttrack/attempts.ts` `saveScore`; `server/src/normal/regular.ts` `saveRegularScore`; mọi đường ghi điểm khác nếu có (grep `saveScore\|saveRegularScore\|assessment_scores` ở routes). Không đổi `mocTreNhapDiem`.
+- [ ] **Bước 1 — kiểm đỏ (DB):** F1 GVBM nhập L của MT có tuần thi = tuần sau → 400 câu `Chưa tới tuần thi {W…} — chưa nhập điểm được.`, không ghi gì; F2 cùng việc với QL và Quản trị → 400; F3 tuần thi = tuần này → 200; F4 qua thứ Tư tuần sau → 200 và bài vẫn tính trễ (quá hạn) như cũ; F5 lớp thường y hệt F1–F4; F6 `skillScoreDeadline('ratio', T2)` = thứ Tư tuần sau; F7 MT cũ (tuần đã qua) nhập được; F8 kỹ năng chưa có tuần (chưa xếp) → 400 như chưa tới tuần; F9 sửa điểm / ghi "-" không đổi luật cũ của chúng.
+- [ ] **Bước 2:** sửa ở **một hàm dùng chung** cả hai đường ghi (không lặp kiểm ở từng nơi gọi); kiểm theo tuần thi của **kỹ năng/môn** (`attempt_skills.planned_period_id`), ngày nghiệp vụ `demoToday()`.
+- [ ] **Bước 3:** web: ô của kỹ năng chưa tới tuần thi hiện khoá (không cho gõ), không thêm câu giải thích; phép kiểm cũ khẳng định hạn lớp thường = Chủ nhật (grep `addDays(monday, 6)`, `Chủ nhật tuần thi` trong tests, `prS6f`, `prLt`) → sửa theo T19; số quá hạn lớp thường ở Lịch Test / Tổng quan / Phân tích GV đổi theo hạn mới (ghi trong mô tả PR).
+- [ ] **Bước 4:** commit `feat(mta): T19 khung nhập điểm — không nhập trước tuần thi, hạn lớp thường thứ Tư tuần sau`.
+
 ## Nghiệm thu
 1. QL xếp MT2 chưa thi vào tuần trước → MT thường (có hạn chấm, có "Nợ tuần trước"); vào 3 tuần trước → nhãn "cũ", không hạn. GVCN/GV không chọn được tuần đã qua. Em vào web hôm nay vẫn xếp được MT cũ.
 2. Dời MT1 muộn hơn MT2 chưa điểm → lưu ngay, MT2 "Chưa có lịch". MT2 có điểm → hộp nêu "MT2: huỷ n điểm[, đóng m Case]", bắt lý do; lưu → điểm MT2 biến khỏi bảng điểm, SOS, Phân tích, Xuất Excel; còn trong nhật ký; Case sinh riêng từ MT2 đóng ("Kết quả MT đã huỷ"). QL bấm Khôi phục (sau khi dời MT1 về trước) → điểm và tuần cũ trở lại.
@@ -417,7 +425,7 @@ Bảng cổng (đặc tả mục 3 / mockup phần 0) → phép kiểm. Ô trố
 ```
 Repo pisa-tracking. Chỉ bắt đầu khi PR-DL, PR-K26, PR-SL đã merge vào main.
 Nhánh pr-mta-luat-mock-test từ origin/main mới nhất (worktree .claude/worktrees/pr-mta-luat-mock-test).
-Model: Opus 5.5 · XHigh (thay thế: Fable 5.1 · High).
+Model: Opus 5.5 · XHigh (thay thế: Opus 5.5 · High).
 Đọc CLAUDE.md, đặc tả docs/superpowers/specs/2026-10-05-test-mock-test-design.md, rồi làm đúng kế hoạch
 docs/superpowers/plans/2026-10-05-pr-mta-luat-mock-test.md, Task 0 → 11, theo thứ tự.
 Ponytail full (PR máy chủ); riêng lúc sửa web/ ở Task 1 và Task 10: /ponytail lite rồi trở lại full.
