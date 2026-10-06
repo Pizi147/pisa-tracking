@@ -341,7 +341,9 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | **Luật Ý thức v4 (PR-YT4)** — thang `THANG`, `batBuocTu` (3 vi phạm / 2 tuần), `trangThaiViPham` (sáu nhãn), `chuoiThang`, `bacKeTiep`, `nhomEm`, `macDinhTick`, `dongThang`, `HAN_Y_THUC_NGAY` | `shared/domain/yThuc.ts` (thuần) |
 | **Một cửa trạng thái** — nhãn, nhóm em, bậc, hạn của mọi em (tab lớp, tab HV, Việc của tôi, Tổng quan, chỉ số, Báo lên) | `server/src/yThuc/trangThai.ts` → `trangThaiYThuc`, `ungVienYThuc`, `ungVienVaThe`, `emCuaLop` |
 | Ghi nhận · Xác nhận xử lý (bậc máy chủ quyết, 409) · Khai bậc · Đề xuất QL duyệt (nháp → gửi) · Đã thực hiện · đọc tab HV | `server/src/yThuc/xuLy.ts` |
-| Ghi · sửa · xoá một vi phạm; GVCN tự ghi → Đã ghi nhận (Q5) | `server/src/yThuc/violations.ts` |
+| Ghi · sửa · xoá một vi phạm; GVCN tự ghi → Đã ghi nhận (Q5) · **ghi nhiều** (`recordViolations`: nhiều học viên một vi phạm, hoặc một học viên nhiều dòng; lô 8, mỗi em một giao dịch) · ô `Vi phạm` (cột `ten`) + `Mô tả` | `server/src/yThuc/violations.ts` · `server/src/migrate/prLuiA1.ts` (cột `violations.ten`) · luật `shared/domain/yThuc.ts` (`kiemTenViPham`, `tachTenMoTa`, `dsLoiGhiViPham`) |
+| **Sửa vi phạm của lần xử lý · Xoá lần xử lý mới nhất** (bậc tính lại; Q5) | `server/src/yThuc/xuLy.ts` (`suaViPhamXuLy`, `xoaXuLy`) · `web/src/modules/yThuc/XemXuLyPanel.tsx` |
+| **Tệp chờ trong form** (chọn khi ghi, tải sau khi có id; một tệp nhiều bản ghi `POST /attachments/chep`) | `web/src/ui/TepCho.tsx` (`TepCho`, `taiTepCho`) · `server/src/platform/attachments.ts` (`chepTep`, kho chỉ xoá khi dòng cuối đi) · panel `web/src/modules/yThuc/RecordViolationPanel.tsx` · phép kiểm `server/src/tests/prLuiA1.tests.ts` |
 | Thẻ `y_thuc` (duyệt / từ chối) và `bao_len_y_thuc` (Báo lên quá hạn) ở hộp Chờ duyệt | `server/src/duyet/loaiYeuCau.ts` (hai phần tử cuối `DINH_NGHIA_LOAI`) |
 | Chỉ số Ý thức, mỗi chỉ số một hàm trả tập ID (`bien-phap-cho-duyet`, `hv-theo-bac`) | `server/src/yThuc/thongKe.ts` |
 | Tab Ý thức trong lớp (M6: khung trái nhóm em · khung phải dòng thời gian) | `server/src/yThuc/board.ts` → `web/src/modules/yThuc/ClassYThucCard.tsx` |

@@ -96,7 +96,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong = false }:
   } : {
     key: `v${x.id}`, ngay: x.ngay,
     cot2: <span className="text-[11px] text-slate-400">Vi phạm</span>,
-    tieuDe: x.moTa,
+    tieuDe: x.viPham,
     dongPhu: [x.nhom, x.mon, x.nguoiGhi ? `${x.nguoiGhi} ghi` : null].filter(Boolean).join(' · '),
     cuoi: (
       <span className="flex flex-wrap items-center justify-end gap-1.5">

@@ -875,7 +875,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   });
   check('YT4 (8) · + Ghi vi phạm (T31): tiêu đề "Ghi vi phạm", KHÔNG chọn sẵn nhóm (K3-35), nhóm bắt buộc chọn', () => {
     const s = docW(`${YT}/RecordViolationPanel.tsx`);
-    assert(/'Ghi vi phạm'/.test(s) && /useState<string>\(''\)/.test(s) && /khoa: 'nhom', nhan: 'Nhóm', chon: true/.test(s), 'panel ghi');
+    assert(/'Ghi vi phạm'/.test(s) && /nhom: ''/.test(s) && /dsLoiGhiViPham/.test(s), 'panel ghi (nhóm không chọn sẵn, bắt buộc chọn — luật ở dsLoiGhiViPham)');
     assert(!/Ghi nhận vi phạm/.test(boChuThich(s)), 'chữ cũ');
   });
   check('YT4 (8) · DongThoiGian D5: dưới sm ngày + cột 2 một dòng, nội dung và cột cuối chiếm cả dòng dưới', () => {

@@ -400,7 +400,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     assert(maLoi(() => xoaHV.xoaHocVien(P.admin, 99_999_999, { maXacNhan: 'x' })) === 404, 'id lạ xoá phải 404');
   });
 
-  check('PR-XOA X10 · Số câu SQL: xoá ≤ 47 (PR-CT thêm 2 câu; PR-TK thêm 2 câu xoá bản chụp) và KHÔNG đổi theo số lượt Test (2 lượt vs 7 lượt); xem trước ≤ 3', () => {
+  check('PR-XOA X10 · Số câu SQL: xoá ≤ 48 (PR-CT thêm 2 câu; PR-TK thêm 2 câu xoá bản chụp; PR-LUI-a1 thêm 1 câu kiểm tệp dùng chung) và KHÔNG đổi theo số lượt Test (2 lượt vs 7 lượt); xem trước ≤ 3', () => {
     const it = taoHocVienDuDuLieu();
     const nhieu = taoHocVienDuDuLieu({ soLuotThem: 5 });
     const xemIt = demTruyVan(() => { xoaHV.xemXoaHocVien(P.admin, it.sid); });
@@ -410,7 +410,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     try {
       const nIt = demTruyVan(() => { xoaHV.xoaHocVien(P.admin, it.sid, { maXacNhan: it.ma }); });
       const nNhieu = demTruyVan(() => { xoaHV.xoaHocVien(P.admin, nhieu.sid, { maXacNhan: nhieu.ma }); });
-      assert(nIt <= 47, `xoá tốn ${nIt} câu (> 47)`);
+      assert(nIt <= 48, `xoá tốn ${nIt} câu (> 48)`);
       assert(nNhieu === nIt, `số câu đổi theo số lượt: ${nIt} → ${nNhieu}`);
     } finally { khoTepMod.datKhoTepChoKiemThu(null); tepDaXoa.length = 0; }
   });

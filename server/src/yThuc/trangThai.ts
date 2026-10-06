@@ -212,12 +212,12 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
  *   · vi phạm hết bắt buộc (sửa / xoá vi phạm khác, Q1) mà chưa phản hồi → bỏ hạn chốt.
  * Gọi TRONG giao dịch ghi của: ghi · sửa · xoá vi phạm, QL từ chối đề xuất, Quay lại học.
  */
-export function chotHanXuLy(studentIds: readonly number[], o: { ghiDe?: boolean } = {}): void {
+export function chotHanXuLy(studentIds: readonly number[], o: { ghiDe?: boolean; /** Trạng thái đã tính SAU khi ghi (nơi gọi theo lô đã `xoaNho()`) — khỏi tính lại. */ trang?: Map<number, EmYThuc> } = {}): void {
   if (!studentIds.length) return;
-  xoaNho();
+  if (!o.trang) xoaNho();
   const theoHan = new Map<string, number[]>();
   const bo: number[] = [];
-  for (const em of trangThaiYThuc(studentIds).values()) {
+  for (const em of (o.trang ?? trangThaiYThuc(studentIds)).values()) {
     for (const [id, t] of em.viPham) {
       if (t.t === 'can_xu_ly' || t.lyDoQuaHan === 'xu-ly') {
         if (t.han) theoHan.set(t.han, [...(theoHan.get(t.han) ?? []), id]);

@@ -175,13 +175,13 @@ Cả hai sau đợt 5 (MTb #219, LT3 #218, MT0) và TK #220 nếu được; khô
 
 - [x] Soạn mockup đủ trạng thái, 375 và 1440, sáng và tối, đúng chữ thật (planning 06/10).
 - [x] Chủ sản phẩm duyệt bản 1 (06/10, Q1–Q4 đã trả lời); bản 2 (mục 16–19 + Mô tả mở sẵn) duyệt cùng Q5, Q6. Chưa duyệt bản 2 → không code giao diện của a1-6 / a2-6. Phần máy chủ a1-1 → a1-3 làm được ngay (không đổi theo mockup), trừ trần 60 ký tự (Q2) — đổi một hằng.
-- [ ] Đối chiếu: `git grep -n "VIOLATION_DESCRIPTION_MIN\|ghiRoKhac\|ChonNgayGan" -- web server shared` → ghi danh sách nơi dùng vào commit đầu.
+- [x] Đối chiếu: `git grep -n "VIOLATION_DESCRIPTION_MIN\|ghiRoKhac\|ChonNgayGan" -- web server shared` → ghi danh sách nơi dùng vào commit đầu.
 
 ### Task a1-1: Miền + migrate (cột `ten`)
 
 **Files:** `shared/domain/yThuc.ts`, `server/src/migrate/prLuiA1.ts` (mới), `server/src/migrate.ts`, `server/src/schema.sql`, `server/src/tests/prLuiA1.tests.ts` (mới), `server/src/tests/run.ts`
 
-- [ ] **Đỏ** — `prLuiA1.tests.ts`:
+- [x] **Đỏ** — `prLuiA1.tests.ts`:
 
 ```ts
 /** PHÉP KIỂM PR-LUI-a1 — Ý thức: ghi nhiều học viên / nhiều vi phạm, ô Vi phạm + Mô tả, tệp dùng chung. */
@@ -229,7 +229,7 @@ await runPrLuiA1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 ```
 Run: `npm run build:server` rồi chạy phép kiểm. Expected: FAIL (`kiemTenViPham` undefined).
 
-- [ ] **Xanh** — `shared/domain/yThuc.ts` (thay dòng `VIOLATION_DESCRIPTION_MIN`):
+- [x] **Xanh** — `shared/domain/yThuc.ts` (thay dòng `VIOLATION_DESCRIPTION_MIN`):
 
 ```ts
 /** PR-LUI-a (chủ sản phẩm 06/10): ô "Vi phạm" ngắn, bắt buộc — dòng chính ở mọi danh sách. "Mô tả" không bắt buộc (≤ 2000, máy chủ `chuTuDo`). */
@@ -286,7 +286,7 @@ export function migratePrLuiA1(conn: any, applied: string[]) {
 ```
 `migrate.ts`: import + gọi sau `migratePrMta` (`:271`) — xung đột với PR khác thì **giữ cả hai dòng**. `schema.sql` bảng `violations`: thêm `ten TEXT, -- PR-LUI-a: "Vi phạm" ngắn 3–60 ký tự; NULL ở dòng cũ (tachTenMoTa)` và sửa chú thích `description` → `-- "Mô tả", không bắt buộc ('' khi không có)`.
 
-- [ ] `npm run build:server` + phép kiểm xanh; commit `feat(lui-a1): ô Vi phạm ngắn + tách dữ liệu cũ khi đọc (chỉ thêm cột)`.
+- [x] `npm run build:server` + phép kiểm xanh; commit `feat(lui-a1): ô Vi phạm ngắn + tách dữ liệu cũ khi đọc (chỉ thêm cột)`.
 
 ### Task a1-2: Máy chủ — ghi nhiều, sửa có `ten`
 
@@ -297,29 +297,29 @@ export function migratePrLuiA1(conn: any, applied: string[]) {
 - `DongViPhamVao = { category; skill?; occurredOn?; ten; moTa? }`
 - `ViolationView` thêm `ten: string; moTa: string` (từ `tachTenMoTa`); `description` giữ (thô) cho nơi gọi cũ.
 
-- [ ] **Đỏ** (mỗi phép kiểm chạy trong `BEGIN IMMEDIATE … ROLLBACK` như `thu()` của `prLuiB.tests.ts`):
+- [x] **Đỏ** (mỗi phép kiểm chạy trong `BEGIN IMMEDIATE … ROLLBACK` như `thu()` của `prLuiB.tests.ts`):
   - `LUIa1-4` GVBM dạy lớp ghi `studentIds` = 3 em lớp MB FT 101, một dòng `{ category:'homework', skill:'reading', ten:'Không nộp BTVN Reading' }`, `moTaRieng[em2] = 'Nộp nửa bài'` → 3 dòng `violations`, `ten` đúng, mô tả em2 = `Nộp nửa bài`, em khác `''`; mỗi em một dòng nhật ký `violation.record`; GVCN nhận **một** chuông mỗi em (dedup ngày).
   - `LUIa1-5` một em, 3 dòng khác môn / nhóm / ngày → 3 dòng, đúng từng trường; `studentIds.length > 1` **và** `lines.length > 1` → 400 `Chọn nhiều học viên thì ghi một vi phạm.` (Q1-A); `lines.length > 10` → 400; `studentIds.length > 8` → 400 (lô).
   - `LUIa1-6` gửi lại cùng `idempotencyKey` → không thêm dòng, trả lại đúng id; khoá đó gửi bởi người khác → 400 `KEY_TAKEN_MESSAGE`.
   - `LUIa1-7` một em ngoài phạm vi (lớp CP) lẫn trong lô → em đó vào `loi` (403), hai em kia vẫn lưu; dòng nội dung sai (ten 2 ký tự) → 400 **trước khi ghi gì** (không em nào được lưu).
   - `LUIa1-8` gọi cũ `recordViolation({ description: 'Đi muộn 15 phút' })` (không `ten`) vẫn chạy: `ten = 'Đi muộn 15 phút'`, `description = ''` — phép kiểm Ý thức cũ không phải sửa; `description` ngắn hơn 10 nay **được**; sửa (`editViolation`) gửi `ten` mới → một dòng `violation_history` field `ten`.
-- [ ] **Xanh** — `violations.ts`:
+- [x] **Xanh** — `violations.ts`:
   - `checkTenMoTa(input: { ten?: unknown; description?: unknown })`: `moTa = chuTuDo(input.description, 'Mô tả vi phạm', 2000) ?? ''`; `ten` = `input.ten` (trim) hoặc, khi không gửi, `tachTenMoTa(null, moTa, '').ten`; `kiemTenViPham` lỗi → `badRequest(\`Vi phạm: ${loi}.\`)`; trả `{ ten, moTa: tenKhongGui && moTa === ten ? '' : moTa }`. Xoá `checkDescription` + nhánh ghép "Khác" (`ghepKhac` không còn dùng ở đây).
   - Tách thân `recordViolation` (`:223-259`) thành `ghiMotViPham(p, student, classId, dong, key)` (INSERT thêm cột `ten`, `description = moTa`). `recordViolation` giữ chữ ký cũ, gọi `ghiMotViPham` trong `tx` như cũ.
   - `recordViolations`: kiểm khuôn (`studentIds` nguyên dương, không trùng, 1–`LO_GHI_VI_PHAM`; `lines` 1–`VI_PHAM_TOI_DA_DONG`; nhiều em thì một dòng; `idempotencyKey` 8–80 ký tự) → kiểm **mọi dòng** (`checkCategory`, `checkTenMoTa`, `checkSkill`, `checkOccurredOn`) trước vòng lặp → mỗi em: `try { loadStudent; requireRecordViolation; activeClassOf; khoá phát lại; tx(() => lines.map((dong, i) => ghiMotViPham(..., moTaRieng[sid] ?? dong.moTa, \`${key}:${sid}:${i}\`))) }` → `ok` / `loi` (mã từ `e.status`). Môn tự điền (`skill` không gửi) như cũ, theo lớp của từng em.
   - `editViolation` nhận `ten` (đổi → lịch sử field `ten`), `description` là Mô tả (được rỗng); bỏ `ghiRoKhac`.
   - `shapeViolation`: `const tm = tachTenMoTa(r.ten, r.description, r.category); … ten: tm.ten, moTa: tm.moTa`.
-- [ ] Route `POST /violations/nhieu` (`maybeSimulateSaveFailure`, body `studentIds`, `lines`, `moTaRieng`, `idempotencyKey`); `/violations` và `PATCH` thêm `ten`, bỏ `ghiRoKhac`. Trần `tocDoDuong.ts` cho `/violations/nhieu` (lô 8 × 10 dòng).
-- [ ] Xanh; commit `feat(lui-a1): ghi vi phạm nhiều học viên / nhiều dòng một lần (lô 8, mỗi em một giao dịch)`.
+- [x] Route `POST /violations/nhieu` (`maybeSimulateSaveFailure`, body `studentIds`, `lines`, `moTaRieng`, `idempotencyKey`); `/violations` và `PATCH` thêm `ten`, bỏ `ghiRoKhac`. Trần `tocDoDuong.ts` cho `/violations/nhieu` (lô 8 × 10 dòng).
+- [x] Xanh; commit `feat(lui-a1): ghi vi phạm nhiều học viên / nhiều dòng một lần (lô 8, mỗi em một giao dịch)`.
 
 ### Task a1-3: Máy chủ — tệp dùng chung (`/attachments/chep`)
 
 **Files:** `server/src/platform/attachments.ts`, `server/src/routes/index.ts:~907`, `tocDoDuong.ts`, `prLuiA1.tests.ts`
 
-- [ ] **Đỏ:**
+- [x] **Đỏ:**
   - `LUIa1-9` `addFile` vào vi phạm A → `chepTep(p, { tuId, ownerType:'violation', ownerIds:[B, C] })` → 3 dòng cùng `url`, cùng tên / cỡ; người không có quyền sửa C → 403 và **không** dòng nào thêm; `ownerIds` > 60 → 400; nguồn ngoài quyền xem → 403.
   - `LUIa1-10` xoá vi phạm A (`deleteViolation`) → tệp trong kho **còn** (B, C tải được); xoá B, C → kho xoá (kiểm bằng kho ổ đĩa của DB test: tệp biến mất). Gỡ một dòng tệp (`DELETE /attachments/:id`) cũng theo luật này.
-- [ ] **Xanh:**
+- [x] **Xanh:**
 ```ts
 /** PR-LUI-a1: một tệp cho nhiều bản ghi — thêm DÒNG trỏ cùng khoá kho (không tải lại). Kho chỉ xoá khi dòng cuối đi (`conDongKhac`). */
 export function chepTep(p: Principal, input: { tuId: number; ownerType: string; ownerIds: number[] }): AttachmentRow[] {
@@ -336,16 +336,16 @@ export function chepTep(p: Principal, input: { tuId: number; ownerType: string; 
 const conDongKhac = (url: string) => !!db().prepare("SELECT 1 FROM attachments WHERE kind = 'file' AND url = ? LIMIT 1").get(url);
 ```
   Trong `purgeAttachmentsOf` và hàm xoá một tệp: sau `DELETE FROM attachments WHERE id = ?`, chỉ đưa khoá vào danh sách xoá kho / gọi `kho.xoa` khi `!conDongKhac(r.url)`. `insert` đã ghi nhật ký `attachment.add` (kiểm; chưa có thì ghi `attachment.copy` một dòng cho cả lô).
-- [ ] Route `POST /attachments/chep` (body `tuId`, `ownerType`, `ownerIds`); trần `tocDoDuong.ts`.
-- [ ] Xanh; commit `feat(lui-a1): một tệp bằng chứng cho nhiều vi phạm (chép dòng, xoá kho khi dòng cuối đi)`.
+- [x] Route `POST /attachments/chep` (body `tuId`, `ownerType`, `ownerIds`); trần `tocDoDuong.ts`.
+- [x] Xanh; commit `feat(lui-a1): một tệp bằng chứng cho nhiều vi phạm (chép dòng, xoá kho khi dòng cuối đi)`.
 
 ### Task a1-4: Hiển thị — dòng chính là `Vi phạm`, mô tả khi mở
 
 **Files:** `server/src/yThuc/board.ts:98`, `server/src/worklist/metrics.ts:186-192`, `web/src/modules/yThuc/{StudentYThucSection.tsx:99, ClassYThucCard.tsx:135,157, ChiTietViPham.tsx, XacNhanXuLyPanel.tsx:173-176, XemXuLyPanel.tsx:56, RecordViolationPanel.tsx (dòng trùng)}`, `web/src/modules/yThuc/kieu.ts`, `prLuiA1.tests.ts`
 
-- [ ] **Đỏ:** `LUIa1-11` `boardHocVien` (đường dữ liệu tab Ý thức HV) trả dòng vi phạm có `ten` = chữ ngắn, `moTa` riêng; vi phạm cũ (ten NULL, mô tả 90 ký tự) → `ten` ≤ 61 ký tự kết thúc `…`, `moTa` đủ 90; `metrics.ts` dòng phụ dùng `ten`.
-- [ ] **Xanh:** máy chủ trả `ten` + `moTa` (board: `moTa` cũ đổi tên `ten`, thêm `moTaChiTiet`); web: dòng chính = `ten`; `ChiTietViPham` hiện khối `Mô tả` (đoạn chữ, chỉ khi có) trên `Bằng chứng (n)`; hộp xử lý (`XacNhanXuLyPanel`, `XemXuLyPanel`) liệt kê `ten`. Grep thêm `\.description` ở `web/src/modules/{yThuc,students,classes}` và `server/src/{yThuc,phanTich,worklist}` cho vi phạm → đổi cho đủ; ghi danh sách vào commit.
-- [ ] Xanh; commit `feat(lui-a1): danh sách vi phạm hiện dòng Vi phạm, mô tả trong chi tiết`.
+- [x] **Đỏ:** `LUIa1-11` `boardHocVien` (đường dữ liệu tab Ý thức HV) trả dòng vi phạm có `ten` = chữ ngắn, `moTa` riêng; vi phạm cũ (ten NULL, mô tả 90 ký tự) → `ten` ≤ 61 ký tự kết thúc `…`, `moTa` đủ 90; `metrics.ts` dòng phụ dùng `ten`.
+- [x] **Xanh:** máy chủ trả `ten` + `moTa` (board: `moTa` cũ đổi tên `ten`, thêm `moTaChiTiet`); web: dòng chính = `ten`; `ChiTietViPham` hiện khối `Mô tả` (đoạn chữ, chỉ khi có) trên `Bằng chứng (n)`; hộp xử lý (`XacNhanXuLyPanel`, `XemXuLyPanel`) liệt kê `ten`. Grep thêm `\.description` ở `web/src/modules/{yThuc,students,classes}` và `server/src/{yThuc,phanTich,worklist}` cho vi phạm → đổi cho đủ; ghi danh sách vào commit.
+- [x] Xanh; commit `feat(lui-a1): danh sách vi phạm hiện dòng Vi phạm, mô tả trong chi tiết`.
 
 ### Task a1-5: Web — `TepCho` + panel Ghi vi phạm mới (**chờ duyệt mockup mục 1–8**)
 
@@ -356,8 +356,8 @@ const conDongKhac = (url: string) => !!db().prepare("SELECT 1 FROM attachments W
 - `taiTepCho(ds, { ownerType, ownerIds }): Promise<Record<number, string>>` — mỗi mục: tệp → `api.upload('/attachments/file', ownerIds[0])`, liên kết → `/attachments/link`; còn `ownerIds` khác → `POST /attachments/chep`; trả lỗi theo `key` (rỗng = xong).
 - `RecordViolationPanel` giữ props cũ, thêm `chonNhieu?: boolean` (chỉ nơi gọi từ hồ sơ lớp truyền `true` kèm `students`).
 
-- [ ] **Đỏ** (phép kiểm miền, không DOM): `LUIa1-12` hàm thuần `dsLoiGhiViPham({ hocVien, dong })` (đặt trong `shared/domain/yThuc.ts`, web dùng cho `useLoiForm`) trả đúng `Chọn ít nhất một học viên` / `Chọn Nhóm` / `Ghi vi phạm` theo từng dòng, khoá ô `nhom-1`, `ten-2`…
-- [ ] **Xanh — panel** (một bước, theo mockup):
+- [x] **Đỏ** (phép kiểm miền, không DOM): `LUIa1-12` hàm thuần `dsLoiGhiViPham({ hocVien, dong })` (đặt trong `shared/domain/yThuc.ts`, web dùng cho `useLoiForm`) trả đúng `Chọn ít nhất một học viên` / `Chọn Nhóm` / `Ghi vi phạm` theo từng dòng, khoá ô `nhom-1`, `ten-2`…
+- [x] **Xanh — panel** (một bước, theo mockup):
   1. Bỏ `daGhi`, `hoanTac`, `hoanTacTrongPanel`, bước "Đã ghi" (`:58-59, 124-155, 191-206`), `OKhac`, `ChonNgayGan` → `ONgay kieu="ngay" toiDa={homNay}`.
   2. State: `hocVien: number[]` (mặc định `[studentId]` khi có), `moTaRieng: Record<number,string>`, `dong: { key, ngay, mon, daChonMon, nhom, ten, moTa, moMoTa }[]` (một dòng mặc định), `tep: TepChoMuc[]`, `luu: { daXong: number[]; loi: Record<number,string>; tien?: [n, m] } | null`.
   3. Khối `Học viên` chỉ khi `chonNhieu`: ô bấm mở danh sách có ô tìm + `Cả lớp · n` + ô chọn; dưới ô, mỗi em một dòng `Tên · + Mô tả riêng · ✕`.
@@ -366,9 +366,9 @@ const conDongKhac = (url: string) => !!db().prepare("SELECT 1 FROM attachments W
   6. Khối `Bằng chứng · không bắt buộc` = `TepCho` (ghi mới) / `BangChung` (đang sửa — đã có id).
   7. Lưu: `lf.bam()`; lỗi → dừng. Một em + một dòng + không chọn nhiều → `POST /violations` (như cũ, thêm `ten`). Còn lại → `chiaLo(hocVien, LO_GHI_VI_PHAM)` gửi lần lượt `POST /violations/nhieu` (cùng `idempotencyKey` của lần mở form), nút `Đang lưu n/m…`. Có `loi` → ô nhập khoá, chân `Đã lưu n học viên · m học viên chưa lưu`, lỗi dưới tên em, nút `Thử lại m học viên` (chỉ gửi em còn lỗi). Xong hết → `taiTepCho(tep, { ownerType:'violation', ownerIds: mọi id vừa tạo })`; không lỗi → `invalidate(...)`, đóng, toast (`Đã ghi vi phạm cho …` / `Đã ghi 3 vi phạm cho …` / `Đã ghi vi phạm cho 3 học viên`); tệp lỗi → thân panel chỉ còn khối `Đã ghi` + `TepCho` với dòng lỗi + `Thử lại`, chân `Xong`.
   8. Sửa vi phạm: một em, một dòng, ô nạp từ `ten` / `moTa` (đã tách), PATCH gửi `ten` + `description`; chân trái `Xoá vi phạm` như cũ.
-- [ ] Nơi gọi: `panelYThuc.tsx` / `thaoTacDongHocVien.tsx` — mở từ hồ sơ lớp truyền `students` + `chonNhieu`; hồ sơ HV giữ một em.
-- [ ] Bấm thử ảnh thật (QL, GVCN, GVBM; 375/1440; sáng/tối): một em; ba em + mô tả riêng; một em ba dòng; lỗi ô; có tệp; lưu dở (giả lỗi: `maybeSimulateSaveFailure` hoặc một em ngoài phạm vi trên DB test); tệp lỗi (tệp > 4 MB đổi tên đuôi `.jpg` qua kiểm máy khách → dùng tệp thật 4,1 MB). Impeccable `layout`, `clarify`, `harden`, `adapt`.
-- [ ] Commit `feat(lui-a1): panel Ghi vi phạm — nhiều học viên / nhiều vi phạm, bằng chứng trong form, một nút Lưu`.
+- [x] Nơi gọi: `panelYThuc.tsx` / `thaoTacDongHocVien.tsx` — mở từ hồ sơ lớp truyền `students` + `chonNhieu`; hồ sơ HV giữ một em.
+- [x] Bấm thử ảnh thật (QL, GVCN, GVBM; 375/1440; sáng/tối): một em; ba em + mô tả riêng; một em ba dòng; lỗi ô; có tệp; lưu dở (giả lỗi: `maybeSimulateSaveFailure` hoặc một em ngoài phạm vi trên DB test); tệp lỗi (tệp > 4 MB đổi tên đuôi `.jpg` qua kiểm máy khách → dùng tệp thật 4,1 MB). Impeccable `layout`, `clarify`, `harden`, `adapt`.
+- [x] Commit `feat(lui-a1): panel Ghi vi phạm — nhiều học viên / nhiều vi phạm, bằng chứng trong form, một nút Lưu`.
 
 ### Task a1-6: Sửa / Xoá lần xử lý Ý thức đã xác nhận (+ Xoá vi phạm giữ nguyên) (**mockup mục 16–17**)
 
@@ -376,26 +376,28 @@ const conDongKhac = (url: string) => !!db().prepare("SELECT 1 FROM attachments W
 
 **Interfaces:** `suaViPhamXuLy(p, measureId, { violationIds: number[] }): XuLyView` · `xoaXuLy(p, measureId): { ok: true; bac: number }` · `XuLyView` thêm `coTheSua`, `coTheXoa`, `lanSau: string | null` (tên lần xử lý sau, nếu có).
 
-- [ ] **Xoá vi phạm (mục 5, Q4):** không đổi. `DeleteViolationConfirm.tsx` giữ chữ; `LUIa1-10` đã bảo vệ tệp dùng chung.
-- [ ] **Đỏ:**
+- [x] **Xoá vi phạm (mục 5, Q4):** không đổi. `DeleteViolationConfirm.tsx` giữ chữ; `LUIa1-10` đã bảo vệ tệp dùng chung.
+- [x] **Đỏ:**
   - `LUIa1-13` em có 3 vi phạm → `xacNhanXuLy` Report 1 với 2 vi phạm → `suaViPhamXuLy(QL, m, [v1, v3])` → `measure_violations` = {v1, v3}; `violation_history` field `measure` cho v2 (bỏ) và v3 (thêm) (`noteMeasureChange`); v2 về chưa xử lý; nhật ký `discipline.edit` (trước / sau). Vi phạm của em khác / đã nằm trong lần xử lý khác → 400; danh sách rỗng → 400 `Còn ít nhất 1 vi phạm`.
   - `LUIa1-14` Report 1 rồi Report 2 → `xoaXuLy(QL, report2)` → dòng, liên kết vi phạm, tệp (kho theo luật dùng chung) biến mất; `yThucHocVien` bậc = Report 1, `keTiep` = Report 2 (bậc không lưu sẵn — `bacHienTai` `trangThai.ts:167` tự tính); nhật ký `discipline.delete` có `before` đủ (kind, note, ngày, người, vi phạm, tệp, đã báo QL); thẻ `y_thuc` của lần đó (nếu còn) đóng `tu_dong` `Lần xử lý đã xoá`. Xoá Report 1 khi còn Report 2 → 400 `Đã có Report 2 sau lần này — xoá Report 2 trước.`
   - `LUIa1-15` quyền: GVBM → 403; GVCN lớp em: lần `done` → 403 (Q5-A), lần `cho_duyet` / `da_duyet` → được; QL ngoài phạm vi → 403. Lần `nhap` vẫn đi `xoaNhap` như cũ.
-- [ ] **Xanh — máy chủ:**
+- [x] **Xanh — máy chủ:**
   - Quyền `quyenSuaXuLy(p, m)`: `can(p, PERMISSIONS.REQUEST_APPROVE, { studentId })` (QL / QT, cùng cổng `suaKhaiBac` `:199`) **hoặc** (`m.status ∈ {cho_duyet, da_duyet}` và `canManageDiscipline(p, m.student_id)`). Đổi khi Q5 trả lời khác.
   - `suaViPhamXuLy`: trong `tx` — kiểm từng id (của em, chưa nằm trong lần xử lý khác `done` / `cho_duyet` / `da_duyet`), ≥ 1; xoá / thêm `measure_violations` theo chênh lệch + `noteMeasureChange`; `chotHanXuLy([sid])`; nhật ký.
   - `xoaXuLy`: lần mới nhất của chuỗi = không có lần xử lý nào khác của em (cùng chuỗi, `status != 'nhap'`) có `id` lớn hơn; sai → 400 nêu tên lần sau. Trong `tx`: chụp `before`, `purgeAttachmentsOf('discipline_measure', id, p.userId, khoaTep)`, `DELETE measure_violations`, `DELETE discipline_measures`, `chotYeuCau(conn, { loai: 'y_thuc', doiTuongLoai: 'discipline_measure', doiTuongId: id }, 'tu_dong', { lyDo: 'Lần xử lý đã xoá' })`, `chotHanXuLy`; sau `tx` `xoaTepSauGiaoDich(khoaTep)`. Trả bậc mới. Báo PH đã gửi **giữ nguyên** (`phoiHop.ts` không trỏ lần xử lý).
   - Route `PATCH /discipline-measures/:id/vi-pham`, `DELETE /discipline-measures/:id` (cạnh route `xoaNhap` — grep `xoaNhap` trong `routes/index.ts`); trần `tocDoDuong.ts`.
-- [ ] **Xanh — web** (`XemXuLyPanel.tsx`): khối `Vi phạm · n` có nút `Sửa vi phạm` khi `coTheSua` → danh sách ô chọn (vi phạm đang gắn + vi phạm chưa xử lý của em, dòng chính = `ten`) → chân `Lưu`; chân trái `Xoá lần xử lý` (`btn-danger`) khi `coTheXoa` → hộp hỏi một dòng (mẫu `DeleteViolationConfirm`: `KhungPanel longTrong z-[60]`, tiêu đề `Xoá lần xử lý này?`, dòng `Report 2 · 2 vi phạm · bậc về Report 1`) → toast `Đã xoá Report 2`, đóng panel, làm mới thang.
-- [ ] Xanh; commit `feat(lui-a1): sửa vi phạm của lần xử lý, xoá lần xử lý mới nhất (bậc tính lại)`.
+- [x] **Xanh — web** (`XemXuLyPanel.tsx`): khối `Vi phạm · n` có nút `Sửa vi phạm` khi `coTheSua` → danh sách ô chọn (vi phạm đang gắn + vi phạm chưa xử lý của em, dòng chính = `ten`) → chân `Lưu`; chân trái `Xoá lần xử lý` (`btn-danger`) khi `coTheXoa` → hộp hỏi một dòng (mẫu `DeleteViolationConfirm`: `KhungPanel longTrong z-[60]`, tiêu đề `Xoá lần xử lý này?`, dòng `Report 2 · 2 vi phạm · bậc về Report 1`) → toast `Đã xoá Report 2`, đóng panel, làm mới thang.
+- [x] Xanh; commit `feat(lui-a1): sửa vi phạm của lần xử lý, xoá lần xử lý mới nhất (bậc tính lại)`.
 
 ### Task a1-7: Kiểm cuối, bấm thử, audit, PR
 
-- [ ] `git fetch origin && git merge origin/main`; xung đột `routes/index.ts`, `run.ts`, `migrate.ts`, `schema.sql`, `CODE_MAP.md`, `plan.md` mục 11: **giữ cả hai**. `npm run check` MỘT LẦN, foreground.
-- [ ] Bấm thử ảnh thật mọi mục mockup 1–9, 16–17 (375/1440, sáng/tối, QL · Quản trị · GVCN · GVBM): GVBM chỉ chọn được em lớp mình dạy (máy chủ 403 em khác); dòng `Vi phạm` dài 60 ký tự không tràn ở 375; vi phạm cũ (seed) hiện dòng cắt `…`, mở ra có mô tả đủ.
-- [ ] `/impeccable audit`; `/ponytail-review`; liệt kê `ponytail:` (dự kiến: chuông GVCN mỗi em một cái khi ghi nhiều em; tệp chép chung khoá kho).
-- [ ] `superpowers:verification-before-completion` → `requesting-code-review` (người rà Opus 5.5 session khác) → `finishing-a-development-branch`: PR **vào `main`**, KHÔNG merge. Mô tả PR: mục 1–5 + Sửa / Xoá lần xử lý · file · phép kiểm `LUIa1-*` · ảnh · chú thích `ponytail:` · "PR-HK2 bỏ toast Hoàn tác vi phạm".
-- [ ] `[x]` a1 ở file này; một dòng mục 11 `plan.md`; `CODE_MAP.md` thêm `ui/TepCho.tsx`, `migrate/prLuiA1.ts`.
+> Ghi chú làm: ghi mới dùng `POST /violations` khi 1 em × 1 dòng, còn lại `/violations/nhieu` (đúng kế hoạch). Route ghi không vào `tocDoDuong.ts` (danh sách đó chỉ đo trang GET). Mô tả riêng chỉ hiện khi 2–8 em.
+
+- [x] `git fetch origin && git merge origin/main`; xung đột `routes/index.ts`, `run.ts`, `migrate.ts`, `schema.sql`, `CODE_MAP.md`, `plan.md` mục 11: **giữ cả hai**. `npm run check` MỘT LẦN, foreground.
+- [x] Bấm thử ảnh thật mọi mục mockup 1–9, 16–17 (375/1440, sáng/tối, QL · Quản trị · GVCN · GVBM): GVBM chỉ chọn được em lớp mình dạy (máy chủ 403 em khác); dòng `Vi phạm` dài 60 ký tự không tràn ở 375; vi phạm cũ (seed) hiện dòng cắt `…`, mở ra có mô tả đủ.
+- [x] `/impeccable audit`; `/ponytail-review`; liệt kê `ponytail:` (dự kiến: chuông GVCN mỗi em một cái khi ghi nhiều em; tệp chép chung khoá kho).
+- [x] `superpowers:verification-before-completion` → `requesting-code-review` (người rà Opus 5.5 session khác) → `finishing-a-development-branch`: PR **vào `main`**, KHÔNG merge. Mô tả PR: mục 1–5 + Sửa / Xoá lần xử lý · file · phép kiểm `LUIa1-*` · ảnh · chú thích `ponytail:` · "PR-HK2 bỏ toast Hoàn tác vi phạm".
+- [x] `[x]` a1 ở file này; một dòng mục 11 `plan.md`; `CODE_MAP.md` thêm `ui/TepCho.tsx`, `migrate/prLuiA1.ts`.
 
 ---
 
