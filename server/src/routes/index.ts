@@ -39,6 +39,7 @@ import * as ketQuaHuySvc from '../fasttrack/ketQuaHuy.ts';
 import * as effectiveness from '../cases/effectiveness.ts';
 import * as cycleSvc from '../fasttrack/cycles.ts';
 import * as thiThatSvc from '../loTrinh/thiThat.ts';
+import * as tongKetSvc from '../loTrinh/tongKet.ts';
 import * as profileSvc from '../students/profile.ts';
 import { hanhTrinhHocVien } from '../students/hanhTrinh.ts';
 import { docHet, thongBaoCua } from '../platform/thongBao.ts';
@@ -1268,6 +1269,22 @@ api.get('/students/:id/cycles', requireAuth, wrap((req) => {
   const id = pInt(req, 'id');
   require_(p, PERMISSIONS.STUDENT_VIEW, { studentId: id }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
   return cycleSvc.cyclesOf(id);
+}));
+
+/** PR-TK (TK-7): khối "Các lộ trình" của hồ sơ HV — lộ trình đã đóng đọc từ bản chụp. */
+api.get('/students/:id/lo-trinh', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return tongKetSvc.cacLoTrinh(principalOf(req), pInt(req, 'id'));
+}));
+/** PR-TK (TK-7): ngăn "Tổng kết lộ trình" — chỉ lộ trình đã đóng (đang chạy → 404). */
+api.get('/lo-trinh/:cycleId/tong-ket', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return tongKetSvc.tongKetLoTrinh(principalOf(req), pInt(req, 'cycleId'));
+}));
+/** PR-TK (TK-7): tab "Tổng kết" của lớp ĐÃ KẾT THÚC. */
+api.get('/classes/:id/tong-ket', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return tongKetSvc.tongKetLop(principalOf(req), pInt(req, 'id'));
 }));
 
 api.post('/students/:id/cycles', requireAuth, wrap((req) => {

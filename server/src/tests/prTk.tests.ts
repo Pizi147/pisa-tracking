@@ -380,6 +380,85 @@ export async function runPrTkTests(t: YThucTestKit) {
     void ql;
   }));
 
+  // ------------------------------------------------------------------ TK-7 · đường đọc
+  const tongKetSvc: any = await import('../loTrinh/tongKet.ts');
+  /** Lượt `no` của em ở `clsId` có điểm: FT = band cả 4 kỹ năng (W1 = W2); lớp thường = điểm đạt / tổng theo `kind`. */
+  const themLuot = (hv: { sid: number; cy: number }, clsId: number, no: number, o: { kind?: string; band?: number; status?: string; ty?: [number, number] } = {}) => {
+    const now = new Date().toISOString();
+    const kind = o.kind ?? 'mock';
+    const a = Number(conn.prepare(`INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, status, target_at_attempt, created_at) VALUES (?,?,?,?,?,?,6.5,?)`)
+      .run(hv.cy, hv.sid, no, kind, clsId, o.status ?? 'done', now).lastInsertRowid);
+    if (o.status === 'cancelled') return a;
+    const skills = kind === 'mock' ? ['listening', 'reading', 'writing1', 'writing2', 'speaking'] : [...regular.programmeOfClass(clsId).skills];
+    for (const k of skills) {
+      if (kind === 'mock') conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, band, raw_score, raw_total, entered_by, entered_at) VALUES (?,?,?,?,?,?,?)').run(a, k, o.band ?? 6, k === 'listening' || k === 'reading' ? 30 : null, k === 'listening' || k === 'reading' ? 40 : null, P.admin.userId, now);
+      else conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total, entered_by, entered_at) VALUES (?,?,?,?,?,?)').run(a, k, o.ty![0], o.ty![1], P.admin.userId, now);
+    }
+    return a;
+  };
+
+  await checkAsync('TK-7 · cacLoTrinh: lộ trình mới nhất trước; đang chạy "Đang học" + kết quả sống; đã đóng từ bản chụp + hướng; quyền 403 trước truy vấn', () => thu(() => {
+    const ft = taoLop('FT', true);
+    const a = taoHV(ft, 'FT', true, 6.5);
+    themLuot(a, ft, 1, { band: 6 });
+    cyclesSvc.createCycle(P.admin, { studentId: a.sid, route: 'LT2', targetScore: 7 });
+    const ds = tongKetSvc.cacLoTrinh(P.admin, a.sid);
+    assert(ds.length === 2 && ds[0].dangHoc && ds[0].ten === 'Fast Track · LT2' && /nay$/.test(ds[0].thoiGian), JSON.stringify(ds[0]));
+    assert(!ds[1].dangHoc && ds[1].ten === 'Fast Track · LT1' && ds[1].lyDo === 'lo_trinh_moi' && ds[1].huong === 'Lên LT2' && ds[1].ketQua?.chinh === 'Chờ kết quả thi thật', JSON.stringify(ds[1]));
+    assert(maLoi(() => tongKetSvc.cacLoTrinh(P.normalSubjectTeacher, a.sid)) === 403, 'GVBM ngoài phạm vi');
+    assert(maLoi(() => tongKetSvc.cacLoTrinh(P.cpManager, a.sid)) === 403, 'QL chi nhánh khác');
+    assert(tongKetSvc.cacLoTrinh(P.admin, taoHV(taoLop('FOU', false), 'FOU', false).sid).length === 1, 'một lộ trình vẫn có khối');
+  }));
+  await checkAsync('TK-7 · tongKetLoTrinh: lộ trình đang chạy → 404; đã đóng → Đích / Kết quả / Hướng tiếp + lượt; GVBM 403', () => thu(() => {
+    const ft = taoLop('FT', true);
+    const a = taoHV(ft, 'FT', true, 6.5);
+    themLuot(a, ft, 1, { band: 6 }); themLuot(a, ft, 2, { status: 'cancelled' });
+    assert(maLoi(() => tongKetSvc.tongKetLoTrinh(P.admin, a.cy)) === 404, 'đang chạy → 404');
+    assert(maLoi(() => tongKetSvc.tongKetLoTrinh(P.admin, 999999)) === 404, 'sai id → 404');
+    studentsSvc.setStudentStatus(P.admin, a.sid, 'finished', NGAY, 'Nghỉ học');
+    const r = tongKetSvc.tongKetLoTrinh(P.admin, a.cy);
+    assert(r.loai === 'ft' && r.dich.target === 6.5 && r.ketQua.choNhap === true && r.ketQua.coTheNhap === true && r.huongTiep.nhan === 'Kết thúc' && r.lyDo === 'ket_thuc', JSON.stringify(r.ketQua));
+    assert(r.luot.length === 2 && r.luot[0].nhan === 'MT1' && r.luot[0].kyNang.map((k: any) => k.nhan).join('') === 'LRWS' && r.luot[1].trangThai === 'cancelled', JSON.stringify(r.luot));
+    assert(maLoi(() => tongKetSvc.tongKetLoTrinh(P.normalSubjectTeacher, a.cy)) === 403, 'GVBM 403');
+    assert(maLoi(() => tongKetSvc.tongKetLoTrinh(P.cpManager, a.cy)) === 403, 'QL chi nhánh khác 403');
+    const gvcn = ganGvcn(ft, P.normalCoreTeacher.userId);
+    thiThatSvc.datKetQuaThiThat(gvcn, a.cy, NHAP4);
+    const r2 = tongKetSvc.tongKetLoTrinh(P.admin, a.cy);
+    assert(r2.ketQua.ovr === 6.5 && r2.ketQua.nhan === 'Đạt Target' && r2.ketQua.choNhap === false, JSON.stringify(r2.ketQua));
+  }));
+  await checkAsync('TK-7 · tongKetLop FT: lớp chưa kết thúc → 404; đúng lượt đại diện, lượt cuối huỷ ghi rõ, em chuyển lớp giữ lộ trình → roiSom (không lộ điểm lớp mới)', () => thu(() => {
+    const ft = taoLop('FT', true); const ft2 = taoLop('FT', true);
+    const a = taoHV(ft, 'FT', true, 6.5); const b = taoHV(ft, 'FT', true, 6.5); const c = taoHV(ft, 'FT', true, 6.5);
+    themLuot(a, ft, 1, { band: 5.5 }); themLuot(a, ft, 2, { band: 6.5 });
+    themLuot(b, ft, 1, { band: 6 }); themLuot(b, ft, 2, { status: 'cancelled' });
+    themLuot(c, ft, 1, { band: 6 });
+    assert(maLoi(() => tongKetSvc.tongKetLop(P.admin, ft)) === 404, 'lớp còn học → 404');
+    studentsSvc.transferStudent(P.admin, c.sid, ft2, NGAY, 'Đổi lịch học', { noNote: true });   // FT → FT giữ lộ trình
+    themLuot(c, ft2, 2, { band: 9 });                                                             // điểm ở LỚP MỚI — không được lộ ở tab lớp cũ
+    studentsSvc.setStudentStatus(P.admin, a.sid, 'finished', NGAY, 'Nghỉ học');
+    studentsSvc.setStudentStatus(P.admin, b.sid, 'finished', NGAY, 'Nghỉ học');
+    conn.prepare(`UPDATE classes SET status = 'finished', finished_at = ? WHERE id = ?`).run(NGAY, ft);   // lớp FT hết em đang học (đóng theo lịch ở luồng thật)
+    const r = tongKetSvc.tongKetLop(P.admin, ft);
+    const hang = (sid: number) => r.dong.find((d: any) => d.studentId === sid);
+    assert(r.dong.length === 3 && r.dong.at(-1).studentId === c.sid && hang(c.sid).roiSom && hang(c.sid).luotCuoi === null, JSON.stringify(hang(c.sid)));
+    assert(hang(a.sid).luotCuoi.nhan === 'MT2' && hang(a.sid).luotCuoi.overall === 6.5 && hang(a.sid).soLuot === 2, JSON.stringify(hang(a.sid)));
+    assert(hang(b.sid).luotCuoi.nhan === 'MT1' && hang(b.sid).luotCuoiHuy === 'MT2' && hang(b.sid).soLuot === 1, JSON.stringify(hang(b.sid)));
+    assert(r.dai.hocVien === 2 && r.dai.choKetQua === 2 && r.dai.datTarget === 0, JSON.stringify(r.dai));
+    assert(maLoi(() => tongKetSvc.tongKetLop(P.normalSubjectTeacher, ft)) === 403 && maLoi(() => tongKetSvc.tongKetLop(P.cpManager, ft)) === 403, 'quyền lớp');
+  }));
+  await checkAsync('TK-7 · tongKetLop lớp thường: Giữa khoá / Cuối khoá / hướng đã chốt từ bản chụp', () => thu(() => {
+    const cls = taoLop('FOU', false); const be = taoLop('BE', false);
+    const a = taoHV(cls, 'FOU', false); const b = taoHV(cls, 'FOU', false);
+    themLuot(a, cls, 1, { kind: 'progress', ty: [14, 20] }); themLuot(a, cls, 2, { kind: 'final', ty: [16, 20] });
+    themLuot(b, cls, 1, { kind: 'final', ty: [10, 20] });
+    transitionSvc.applyTransition(P.admin, { fromClassId: cls, effectiveDate: NGAY, dongs: [{ studentId: a.sid, huong: 'len_lop', toClassId: be }, { studentId: b.sid, huong: 'hoc_lai', toClassId: taoLop('FOU', false) }] });
+    conn.prepare(`UPDATE classes SET status = 'finished', finished_at = ? WHERE id = ?`).run(NGAY, cls);
+    const r = tongKetSvc.tongKetLop(P.admin, cls);
+    const ra = r.dong.find((d: any) => d.studentId === a.sid); const rb = r.dong.find((d: any) => d.studentId === b.sid);
+    assert(r.lop.loai === 'thuong' && ra.huongTiep === 'Lên lớp' && rb.huongTiep === 'Học lại' && r.dai.lenLop === 1 && r.dai.hocLai === 1, JSON.stringify(r.dai));
+    assert(ra.cuoiKhoa.tyLe === 0.8 && ra.giuaKhoa.tyLe === 0.7 && ra.cuoiKhoa.dai === 'dat' && rb.giuaKhoa === null && rb.cuoiKhoa.tyLe === 0.5, JSON.stringify([ra.cuoiKhoa, ra.giuaKhoa, rb.cuoiKhoa]));
+  }));
+
   // @@BAT-BIEN@@ — luôn ở CUỐI file: soi mọi lộ trình các phép kiểm trước để lại. Thêm phép kiểm mới Ở TRÊN dòng này.
   await checkAsync('TK-5 · BẤT BIẾN PHỤ: mọi lượt của lộ trình đã đóng — điểm trong bản chụp MỚI NHẤT = điểm sống', async () => {
     const lech = all(`SELECT l.attempt_id, l.ky_nang, l.diem, s.band, s.raw_score FROM ban_chup_luot l
