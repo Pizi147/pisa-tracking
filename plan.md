@@ -21,7 +21,7 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 | `docs/superpowers/plans/2026-10-06-pr-tk-tong-ket-lo-trinh.md` | PR-TK (mockup `thiet-ke/mockup-tong-ket-lo-trinh-2026-10-06.html`, bản 2 đã duyệt 06/10; chạy sau LUI-b #213) |
 | `docs/superpowers/plans/2026-10-03-pr-phien-lich-mt-dieu-huong-sua-lop.md` | PR-SL (mục B Q-0310-3, "PR-SL", SL-1→2). Phần PH, LM, DH đã xong |
 | `docs/superpowers/plans/2026-10-06-pr-bv-bo-vang-xoa-diem.md` | PR-BV bản 2 (chạy sau MTa + MTb; mockup đã duyệt 06/10) |
-| `docs/superpowers/plans/2026-10-06-pr-lui-a-case-duyet-y-thuc.md` | PR-LUI-a tách **a1** (Ý thức) → **a2** (Case + Chờ duyệt); mockup `thiet-ke/mockup-duong-lui-case-duyet-y-thuc-2026-10-06.html` **chờ duyệt** (Q1–Q4 cuối file) |
+| `docs/superpowers/plans/2026-10-06-pr-lui-a-case-duyet-y-thuc.md` | PR-LUI-a tách **a1** (Ý thức) → **a2** (Case + Chờ duyệt); mockup `thiet-ke/mockup-duong-lui-case-duyet-y-thuc-2026-10-06.html` **bản 1 duyệt 06/10** (Q1–Q4 đã trả lời); bản 2 thêm Sửa / Xoá lần xử lý (a1) + Sửa / Xoá Case (a2), chờ Q5–Q6 |
 | `docs/superpowers/plans/2026-10-02-ux-sau-critique.md` | PR-HK2 (H1, H2, K2, K4–K7, J1–J4, J7, J9), PR-SL (I1–I4, I6) |
 
 - **Khi các nguồn mâu thuẫn:** theo `CLAUDE.md` (quyết định chủ sản phẩm + kế hoạch đã duyệt → Rulebook + mockup → skill).
@@ -188,7 +188,7 @@ Nguồn: `docs/superpowers/specs/2026-10-06-ra-soat-duong-lui.md`. Chạy **sau 
 - **Điểm:** tẩy ô + Lưu = xoá (MTa T22); không kho khôi phục, không xoá hàng loạt. Nhập lại điểm sau khi xoá → **mở lại đúng Case** lần xoá đã đóng. Lịch sử ô lớp thường phải hiện điểm cũ (nay thiếu).
 - Sửa lỗi: bài lớp thường xoá điểm xong vẫn "đã xong" (`regular.ts:752-756`).
 
-### PR-LUI · Đường lui (L, tách a/b) — chủ sản phẩm 06/10 · **b xong #213** · **a: kế hoạch + mockup đã soạn 06/10, chờ duyệt** (`2026-10-06-pr-lui-a-case-duyet-y-thuc.md`, tách a1 Ý thức → a2 Case + Chờ duyệt)
+### PR-LUI · Đường lui (L, tách a/b) — chủ sản phẩm 06/10 · **b xong #213** · **a: mockup duyệt 06/10 (bản 2 thêm Sửa / Xoá lần xử lý, Sửa / Xoá Case — chờ Q5, Q6)** (`2026-10-06-pr-lui-a-case-duyet-y-thuc.md`, tách a1 Ý thức → a2 Case + Chờ duyệt)
 Nguồn như PR-BV. Chỉ mở cho QL / Quản trị, không nới quyền GV. Chạy sau đợt 5, trước HK2.
 - **a (mở rộng 06/10, xem kế hoạch):** ghi vi phạm nhiều học viên / nhiều vi phạm một học viên, ô `Vi phạm` ngắn + `Mô tả`, bằng chứng ngay trong form một nút Lưu, **không Hoàn tác** · Tạo Case có bằng chứng · Ghi kết quả PA có `Người phụ trách`, gộp `Vấn đề còn tồn / Ghi chú`, nút kết quả không cắt (toàn web: PR-KHUNG) · bản cũ: mở lại Case đã hoàn thành (sửa luôn chữ sai ở `ThaoTacCase.tsx:218` đang nói "Case này mở lại" mà máy chủ tạo Case mới) · huỷ quyết định duyệt / từ chối bấm nhầm trong ngày + từ chối hàng loạt · vi phạm Ý thức xoá mềm + khôi phục (nay xoá hẳn cả tệp) · ghi vi phạm cho nhiều em một lần.
 - **b · Học viên & lớp:** "Học lại" cho em đã kết thúc học · mở lại lớp đã kết thúc · lưu trữ / kết thúc học / huỷ quyết định chuyển lớp cho nhiều em một lần.

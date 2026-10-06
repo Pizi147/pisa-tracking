@@ -215,8 +215,8 @@ h1{font-size:22px;margin:0}h2{font-size:17px;margin:0}p{margin:0}
 <body>
 <div class="wrap">
 <header class="sec">
-  <h1>Ý thức · Case · Chờ duyệt — mockup (PR-LUI-a)</h1>
-  <p class="note">Đúng chữ sẽ hiện trên web. Dữ liệu ví dụ: lớp MB FT 101, ngày demo 14/09/2026 (W3 SEP). Mỗi mục: khung rộng (1440) ở trên, điện thoại (375) ở dưới. Mục 1–9: PR-LUI-a1 (Ý thức). Mục 10–15: PR-LUI-a2 (Case, Chờ duyệt).</p>
+  <h1>Ý thức · Case · Chờ duyệt — mockup bản 2 (PR-LUI-a)</h1>
+  <p class="note">Đúng chữ sẽ hiện trên web. Dữ liệu ví dụ: lớp MB FT 101, ngày demo 14/09/2026 (W3 SEP). Mỗi mục: khung rộng (1440) ở trên, điện thoại (375) ở dưới. Mục 1–9, 16–17: PR-LUI-a1 (Ý thức). Mục 10–15, 18–19: PR-LUI-a2 (Case, Chờ duyệt). <b>Bản 2 (06/10):</b> ô Mô tả mở sẵn; thêm mục 16–19.</p>
   <div class="bar">
     <span class="lbl">Giao diện</span>
     <button class="btn btn-sm" data-theme-btn="light">Sáng</button>
@@ -224,7 +224,7 @@ h1{font-size:22px;margin:0}h2{font-size:17px;margin:0}p{margin:0}
   </div>
 </header>
 
-<section class="sec"><h2>1. Ghi vi phạm — một học viên</h2><span class="where">Hồ sơ học viên › Ý thức & Phối hợp › + Ghi vi phạm · ô ngày gõ + lịch · Mô tả ẩn tới khi bấm</span>
+<section class="sec"><h2>1. Ghi vi phạm — một học viên</h2><span class="where">Hồ sơ học viên › Ý thức & Phối hợp › + Ghi vi phạm · ô ngày gõ + lịch · ô Mô tả mở sẵn (không bắt buộc)</span>
   <div class="pair"><div class="frame desk" data-s="mot"></div><div class="frame phone" data-s="mot" data-w="375"></div></div></section>
 
 <section class="sec"><h2>2. Ghi vi phạm — chọn học viên</h2><span class="where">Hồ sơ lớp › Ý thức & Phối hợp › + Ghi vi phạm · ô Học viên mở danh sách lớp</span>
@@ -265,6 +265,18 @@ h1{font-size:22px;margin:0}h2{font-size:17px;margin:0}p{margin:0}
 
 <section class="sec"><h2>14. Chờ duyệt — huỷ quyết định bấm nhầm</h2><span class="where">Chờ duyệt › Đã xử lý (30 ngày) · chỉ thẻ Đề xuất PA quyết hôm nay</span>
   <div class="pair"><div class="frame desk" data-s="huy"></div><div class="frame phone" data-s="huy" data-w="375"></div><div class="frame desk" data-s="huy-xong"></div><div class="frame phone" data-s="huy-xong" data-w="375"></div></div></section>
+
+<section class="sec"><h2>16. Lần xử lý đã xác nhận — sửa vi phạm</h2><span class="where">Hồ sơ học viên › Ý thức & Phối hợp › dòng Xử lý › Xem › Sửa vi phạm · Quản lý / Quản trị (GVCN khi chưa “Đã thực hiện”)</span>
+  <div class="pair"><div class="frame desk" data-s="xl"></div><div class="frame phone" data-s="xl" data-w="375"></div></div></section>
+
+<section class="sec"><h2>17. Lần xử lý — xoá</h2><span class="where">Chỉ lần xử lý mới nhất · hỏi một dòng · bậc tự tính lại · lần cũ hơn không có nút Xoá</span>
+  <div class="pair"><div class="frame desk" data-s="xl-xoa"></div><div class="frame phone" data-s="xl-xoa" data-w="375"></div><div class="frame desk" data-s="xl-xong"></div><div class="frame phone" data-s="xl-xong" data-w="375"></div></div></section>
+
+<section class="sec"><h2>18. Sửa Case</h2><span class="where">Ngăn Case › Sửa · người tạo / GVCN / GV đúng môn / Quản lý · Case đã có PA ghi kết quả: Kỹ năng khoá, không có Xoá Case</span>
+  <div class="pair"><div class="frame desk" data-s="sua-case"></div><div class="frame phone" data-s="sua-case" data-w="375"></div></div></section>
+
+<section class="sec"><h2>19. Xoá Case tạo nhầm</h2><span class="where">Case báo tay, chưa PA nào ghi kết quả · chỉ Quản lý / Quản trị · hỏi một dòng · PA chưa làm huỷ theo</span>
+  <div class="pair"><div class="frame desk" data-s="xoa-case"></div><div class="frame phone" data-s="xoa-case" data-w="375"></div><div class="frame desk" data-s="xoa-case-xong"></div><div class="frame phone" data-s="xoa-case-xong" data-w="375"></div></div></section>
 
 <section class="sec"><h2>15. GVCN — không thấy Mở lại</h2><span class="where">Ngăn Case đã hoàn thành của GVCN / GVBM: không có nút Mở lại · Chờ duyệt chỉ Quản lý</span>
   <div class="pair"><div class="frame desk" data-s="gv"></div><div class="frame phone" data-s="gv" data-w="375"></div></div></section>
@@ -321,9 +333,8 @@ const nhomCtl = (chon, err) => ctl('Nhóm', '', { bb: 1, err, raw: '<div class="
 function dongVp(o, w) {
   const dem = (o.ten || '').length + '/60';
   const tenCtl = ctl('Vi phạm', o.ten, { bb: 1, dem, ph: 'Ví dụ: Không nộp BTVN Reading', err: o.err && o.err.ten });
-  const moTa = o.moMoTa
-    ? ctl('Mô tả', o.moTa, { tc: 1, ta: 1, ph: 'Chi tiết nếu cần' })
-    : '<div><button class="lk sm">+ Mô tả</button></div>';
+  /* Chủ sản phẩm 06/10: ô Mô tả MỞ SẴN (không bắt buộc). */
+  const moTa = ctl('Mô tả', o.moTa, { tc: 1, ta: 1, ph: 'Chi tiết nếu cần' });
   const tren = '<div class="h2c">' + ctl('Ngày', '', { bb: 1, raw: oNgay(o.ngay || '14/09/2026', w) }) +
     ctl('Môn', o.mon, { ph: 'Chưa chọn', dd: 1, phu: o.monPhu }) + '</div>';
   const than = tren + nhomCtl(o.nhom, o.err && o.err.nhom) + tenCtl + moTa +
@@ -466,7 +477,69 @@ const S = {
   'huy-xong': (w) => trangDuyet(w, 'da-xong'),
 
   gv: (w) => trangHv(w) + panel(casePanel(w, {})),
+
+  xl: (w) => trangDsXl(w) + panel(xlPanel(w)),
+  'xl-xoa': (w) => trangDsXl(w) + panel(xlPanel(w)) + hoi('Xoá lần xử lý này?', 'Report 2 · 2 vi phạm · bậc về Report 1', 'Xoá lần xử lý'),
+  'xl-xong': (w) => trangDsXl(w, { daXoa: 1 }) + '<div class="toast top">Đã xoá Report 2</div>',
+  'sua-case': (w) => trangHv(w) + panel(suaCasePanel(w)),
+  'xoa-case': (w) => trangHv(w) + panel(suaCasePanel(w, { baoTay: 1 })) + hoi('Xoá Case này?', 'Listening — nghe sót số liệu · 1 PA chưa làm sẽ huỷ', 'Xoá Case'),
+  'xoa-case-xong': (w) => trangHv(w) + '<div class="toast top">Đã xoá Case</div>',
 };
+
+/* Hộp hỏi một dòng (mẫu DeleteViolationConfirm: panel chồng lên, lớp trên). */
+function hoi(tieuDe, dong, nut) {
+  return '<div class="scrim" style="z-index:6"></div><div class="panel" style="z-index:7"><div class="ph"><h4>' + tieuDe + '</h4><span class="ctx"></span>' + X + '</div>' +
+    '<div class="pb"><p style="padding-top:12px;font-size:14px;color:var(--c3)">' + dong + '</p></div>' +
+    '<div class="pf"><div class="nut"><span class="btn">Đóng</span><span class="sp"></span><span class="btn btn-danger">' + nut + '</span></div></div></div>';
+}
+
+/* Trang hồ sơ HV · tab Ý thức với dòng thời gian có hai lần xử lý. */
+function trangDsXl(w, o) {
+  o = o || {};
+  const it = (ngay, cot, ten, phu, cuoi) => '<div class="it"><span class="m nf">' + ngay + '</span><span class="m c2">' + cot + '</span><span style="min-width:0"><b>' + ten + '</b><span class="m">' + phu + '</span></span><span>' + cuoi + '</span></div>';
+  const xem = '<span class="btn btn-sm">Xem</span>';
+  return '<div class="page"><span class="crumb">‹ Học viên & Lớp</span><div class="row"><h3>Nguyễn Minh Anh</h3><span class="chip moi">Đang học</span></div>' +
+    '<div class="tabs"><span>Tổng quan</span><span>Case</span><span class="on">Ý thức & Phối hợp</span></div>' +
+    '<div class="thang">Thang xử lý vi phạm · LT1 &nbsp; <span class="m">' + (o.daXoa ? '✓ Report 1 › <b style="color:var(--accent)">Report 2</b> › WL 1 › …' : '✓ Report 1 › ✓ Report 2 › <b style="color:var(--accent)">WL 1</b> › …') + '</span></div>' +
+    '<div class="tl">' +
+    (o.daXoa ? '' : it('13/09', 'Xử lý', 'Report 2', '2 vi phạm · Lê Hà · 1 tệp', xem)) +
+    it('13/09', 'Vi phạm', 'Chép bài bạn trong giờ Writing', 'Thái độ / hành vi · Writing Task 2 · Trần Vy ghi', o.daXoa ? '<span class="chip moi">Mới</span>' : '<span class="chip xong">Đã xử lý</span>') +
+    it('12/09', 'Vi phạm', 'Không nộp BTVN Reading', 'BTVN · Reading · Lê Hà ghi', o.daXoa ? '<span class="chip moi">Mới</span>' : '<span class="chip xong">Đã xử lý</span>') +
+    it('05/09', 'Xử lý', 'Report 1', '3 vi phạm · Lê Hà', xem) +
+    '</div></div>';
+}
+
+/* Panel Xem lần xử lý · đang Sửa vi phạm. */
+function xlPanel(w) {
+  const dong = (on, ngay, ten, phu) => '<div class="it">' + cb(on) + '<span style="min-width:0"><span style="display:block">' + ten + '</span><small>' + ngay + ' · ' + phu + '</small></span></div>';
+  return {
+    t: 'Report 2', ctx: 'Nguyễn Minh Anh · MB FT 101',
+    body: khoi('Đã thực hiện', '<div class="h2c"><div class="ctl"><label><span>Ngày thực hiện</span></label><span>13/09/2026</span></div><div class="ctl"><label><span>Người thực hiện</span></label><span>Lê Hà</span></div></div>' +
+        '<div class="ctl"><label><span>Mô tả</span></label><span style="color:var(--c3)">Gọi phụ huynh, em hứa nộp bù bài Reading trước thứ Hai</span></div>') +
+      khoi('Vi phạm · 2', '<div class="pop" style="box-shadow:none;background:var(--surface)">' +
+        dong(true, '12/09', 'Không nộp BTVN Reading', 'BTVN') + dong(true, '13/09', 'Chép bài bạn trong giờ Writing', 'Thái độ / hành vi') +
+        dong(false, '14/09', 'Đi muộn 20 phút', 'Chuyên cần · chưa xử lý') + '</div>', '<span class="btn btn-sm" aria-pressed="true">Sửa vi phạm</span>') +
+      khoi('Tệp hoặc liên kết', '<div class="tep">' + tepDong('bien-ban-goi-ph.pdf', '210 KB · Lê Hà · 13/09', '', '<span class="btn btn-sm btn-ghost">Gỡ</span>') + '</div>'),
+    xoa: 'Xoá lần xử lý', trai: 'Huỷ thay đổi', chinh: nutChinh('Lưu'),
+  };
+}
+
+/* Panel Sửa Case. */
+function suaCasePanel(w, o) {
+  o = o || {};
+  const kn = o.baoTay
+    ? ctl('Kỹ năng', '', { bb: 1, raw: '<div class="g3">' + nutChon(['Listening', 'Reading', 'Writing', 'Speaking'], 'Listening') + '</div>' })
+    : ctl('Kỹ năng', 'Listening', { bb: 1, tat: 1, phu: undefined });
+  return {
+    t: 'Sửa Case', ctx: 'Nguyễn Minh Anh · MB FT 101', ngc: '<b>*</b> = bắt buộc',
+    body: khoi('Case', kn +
+      ctl('Nhóm nguyên nhân', 'Nghe sót số liệu, tên riêng', { bb: 1, dd: 1 }) +
+      ctl('Mức độ', '', { bb: 1, raw: '<div class="g2" style="max-width:320px">' + nutChon(['Bình thường', 'Gấp'], 'Gấp') + '</div>' }) +
+      ctl('Tên Case', 'Listening — nghe sót số liệu', { bb: 1 }) +
+      ctl('Mô tả', 'Section 1–2 sai 6/20 câu điền số, nhầm 15 và 50; MT2 nghe lại vẫn sai 4 câu', { bb: 1, ta: 1, dem: '76/15' })),
+    xoa: o.baoTay ? 'Xoá Case' : '', trai: 'Huỷ thay đổi', chinh: nutChinh('Lưu'),
+  };
+}
 
 /* ---------- Ghi kết quả PA ---------- */
 function kqPanel(w, kieu) {
@@ -505,7 +578,7 @@ function kqPanel(w, kieu) {
 function casePanel(w, o) {
   const nho = w === 375;
   const nhan = o.daMo ? '<span class="chip moi">Đang theo dõi</span>' : '<span class="chip xong">Đã hoàn thành</span>';
-  const nut = o.ql && !o.daMo ? '<span class="btn btn-sm">Mở lại</span>' : '';
+  const nut = o.ql && !o.daMo ? '<span class="btn btn-sm">Mở lại</span>' : o.daMo ? '<span class="btn btn-sm">Sửa</span>' : '';
   const ketLuan = o.daMo ? '' : khoi('Kết quả cuối', '<p style="font-size:14px;color:var(--c2)">Tiến bộ rõ — MT3 Listening lên 6.0, không còn sai dạng điền số</p><span class="m">Lê Hà · 10/09/2026</span>');
   const moc = khoi('Mốc', '<ul class="mc">' + (o.daMo ? '<li><span>14/09</span><span>Mở lại · Trần Thu Hà</span></li>' : '') +
     '<li><span>10/09</span><span>Hoàn thành · Tiến bộ rõ — MT3 Listening lên 6.0, không còn sai dạng điền số</span></li>' +
