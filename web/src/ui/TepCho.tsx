@@ -96,7 +96,7 @@ export function TepCho({ value, onChange, khoa, onThuLai }: {
                 {m.loi && <span className="text-bad" role="alert">{m.loi}</span>}
                 {m.loi && m.daGui && onThuLai && <button type="button" className="btn btn-sm btn-ghost" onClick={onThuLai}>Thử lại</button>}
                 {!khoa && !m.xong && (
-                  <button type="button" className="appearance-none cursor-pointer border-0 bg-transparent p-0 text-slate-500 hover:text-bad" aria-label={`Bỏ ${tenHienThi(m)}`} onClick={() => bo(m.key)}>✕</button>
+                  <button type="button" className="appearance-none cursor-pointer border-0 bg-transparent p-0 text-slate-500 hover:text-bad max-sm:grid max-sm:min-h-[44px] max-sm:min-w-[44px] max-sm:place-items-center" aria-label={`Bỏ ${tenHienThi(m)}`} onClick={() => bo(m.key)}>✕</button>
                 )}
               </span>
             </li>

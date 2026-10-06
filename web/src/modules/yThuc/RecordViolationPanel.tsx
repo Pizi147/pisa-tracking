@@ -202,6 +202,7 @@ export function RecordViolationPanel({
         /* Sửa: chân trái là `Xoá vi phạm` (viền đỏ). Nơi gọi tự đóng form này và quyết định lúc nào mở lại panel trước đó. */
         xoa: editing && violation && onDelete ? { nhan: 'Xoá vi phạm', onClick: () => onDelete(violation.id) } : undefined,
         daSua: !editing && (dong.some((d) => d.ten || d.moTa || d.nhom) || tep.length > 0),
+        huy: luu ? { nhan: 'Đóng', onClick: dongPanel, disabled: busy } : undefined,
         conThieu: lf.conThieu(loi),
         phu: luu && !luu.tien ? <span className="text-xs text-slate-400">Đã lưu {luu.daXong.length} học viên · {chuaLuu.length} học viên chưa lưu</span> : undefined,
         chinh: luu && !busy
@@ -346,7 +347,8 @@ function ChonHocVien({ ds, chon, onChange, loi, lf, loiList, rieng, onRieng }: {
   const nhan = chon.length === 0 ? 'Chọn học viên' : chon.length === 1 ? ds.find((s) => s.id === chon[0])?.name ?? '1 học viên' : `${chon.length} học viên`;
 
   return (
-    <div className="space-y-2">
+    /* Rời khỏi khối (bấm chỗ khác) thì danh sách tự gấp lại. */
+    <div className="space-y-2" onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setMo(false); }}>
       <Truong nhan="Học viên" batBuoc as="div" loi={loi}>
         <button type="button" className="field flex w-full items-center justify-between gap-2 text-left" aria-expanded={mo} {...lf.o(loiList, 'hoc-vien')} onClick={() => setMo((v) => !v)}>
           <span className={`min-w-0 truncate ${chon.length ? '' : 'text-slate-500'}`}>{nhan}</span>
@@ -370,7 +372,7 @@ function ChonHocVien({ ds, chon, onChange, loi, lf, loiList, rieng, onRieng }: {
               <div className="flex items-center gap-2 text-sm">
                 <span className="min-w-0 flex-1 truncate text-slate-200">{ds.find((s) => s.id === id)?.name}</span>
                 {rieng[id] === undefined && <button type="button" className="link appearance-none border-0 bg-transparent p-0" onClick={() => onRieng({ ...rieng, [id]: '' })}>+ Mô tả riêng</button>}
-                <button type="button" className="appearance-none border-0 bg-transparent p-0 text-slate-500 hover:text-bad" aria-label={`Bỏ ${ds.find((s) => s.id === id)?.name}`} onClick={() => bo(id)}>✕</button>
+                <button type="button" className="appearance-none border-0 bg-transparent p-0 text-slate-500 hover:text-bad max-sm:grid max-sm:min-h-[44px] max-sm:min-w-[44px] max-sm:place-items-center" aria-label={`Bỏ ${ds.find((s) => s.id === id)?.name}`} onClick={() => bo(id)}>✕</button>
               </div>
               {rieng[id] !== undefined && (
                 <div className="mt-1.5 space-y-1">
@@ -391,7 +393,7 @@ function ChonHocVien({ ds, chon, onChange, loi, lf, loiList, rieng, onRieng }: {
 function ONhieu({ chon, onClick, children }: { chon: boolean; onClick: () => void; children: ReactNode }) {
   return (
     <button type="button" aria-pressed={chon} onClick={onClick}
-      className="flex min-h-[44px] w-full items-center gap-2 rounded-md px-2 text-left text-sm hover:bg-white/5 sm:min-h-[32px]">
+      className="flex min-h-[44px] w-full items-center gap-2 rounded-md px-2 text-left text-sm hover:bg-slate-500/10 sm:min-h-[32px]">
       <span aria-hidden className={`w-3 text-[11px] text-teal-300 ${chon ? '' : 'invisible'}`}>✓</span>
       <span className="min-w-0 truncate">{children}</span>
     </button>
