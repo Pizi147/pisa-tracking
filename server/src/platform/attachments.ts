@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import { DB_PATH, ROOT, db, laDbTuXa, tx } from '../db.ts';
 import { badRequest, notFound, nowIso } from '../util.ts';
 import { ATTACHMENT_EXTENSIONS, ATTACHMENT_MAX_BYTES, ATTACHMENT_MIME_BY_EXT, PERMISSIONS, LO_GHI_VI_PHAM } from '../../../shared/domain/index.ts';
-import { require_, type Principal } from '../permissions.ts';
+import { can, require_, type Principal } from '../permissions.ts';
 import { caseAccess } from '../cases/cases.ts';
 import { coordinationOwner, measureOwner, violationOwner } from '../yThuc/access.ts';
 import { writeAudit } from './audit.ts';
@@ -45,7 +45,11 @@ export function uploadsDir(): string {
 
 // ---------------------------------------------------------------- nơi chủ và quyền
 
-type OwnerAccess = { requireView: (p: Principal) => void; requireEdit: (p: Principal) => void };
+type OwnerAccess = {
+  requireView: (p: Principal) => void; requireEdit: (p: Principal) => void;
+  /** Gỡ MỘT tệp (người tải lên = `uploadedBy`). Không có thì dùng `requireEdit`. */
+  requireRemove?: (p: Principal, uploadedBy: number) => void;
+};
 
 /**
  * QUYỀN CỦA TỪNG LOẠI BẢN GHI CHỦ — một nơi. Loại nào chưa có nơi chủ thì bị từ chối rõ ràng chứ không lặng lẽ
@@ -88,7 +92,18 @@ function caseOwner(caseId: number): OwnerAccess {
   const a = caseAccess(caseId);
   return {
     requireView: (p) => a.requireView(p, 'Bản ghi này nằm ngoài phạm vi bạn được xem.'),
-    requireEdit: (p) => a.requireEdit(p, 'Bạn không có quyền đính kèm hoặc gỡ bằng chứng của bản ghi này.'),
+    requireEdit: (p) => {
+      /* PR-LUI-a2: người tạo Case đính kèm được vào Case mình tạo (Tạo Case có bằng chứng — GVCN tạo Case môn không dạy). */
+      if (a.reportedBy === p.userId) return a.requireView(p, 'Bản ghi này nằm ngoài phạm vi bạn được xem.');
+      a.requireEdit(p, 'Bạn không có quyền đính kèm hoặc gỡ bằng chứng của bản ghi này.');
+    },
+    /* Rà #229: người CHỈ có quyền nhờ là người tạo Case thì chỉ gỡ tệp mình tải lên; người sửa được Case gỡ mọi tệp như cũ. */
+    requireRemove: (p, uploadedBy) => {
+      if (a.reportedBy === p.userId && uploadedBy === p.userId && !can(p, PERMISSIONS.SOS_EDIT, a.ctx)) {
+        return a.requireView(p, 'Bản ghi này nằm ngoài phạm vi bạn được xem.');
+      }
+      a.requireEdit(p, 'Bạn không có quyền gỡ bằng chứng của bản ghi này.');
+    },
   };
 }
 
@@ -291,7 +306,8 @@ export function purgeAttachmentsOf(
 
 export async function removeAttachment(p: Principal, id: number): Promise<void> {
   const r = load(id);
-  ownerAccess(r.owner_type, r.owner_id).requireEdit(p);
+  const quyen = ownerAccess(r.owner_type, r.owner_id);
+  if (quyen.requireRemove) quyen.requireRemove(p, r.uploaded_by); else quyen.requireEdit(p);
   db().prepare('DELETE FROM attachments WHERE id = ?').run(id);
   writeAudit({
     actorUserId: p.userId, action: 'attachment.delete', entityType: 'attachment', entityId: id, entityLabel: r.display_name,

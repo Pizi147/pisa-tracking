@@ -178,6 +178,33 @@ export function tenGiuaCua(c: { title?: string | null; topic?: string | null; ca
 }
 
 /**
+ * KIỂM NỘI DUNG CASE — nhóm nguyên nhân (thuộc bộ của kỹ năng; "Khác" cần Ghi rõ), mức gấp, mô tả 15–2000, tên 3–80. Hàm thuần, dùng chung
+ * `xacNhanCase` và `suaCase` (PR-LUI-a2) — cùng luật, cùng câu lỗi.
+ */
+export function kiemNoiDungCase(topic: string | null, ct: string | null, input: {
+  primaryCode?: string | null; observation?: string | null; urgency?: string | null; moTa?: string | null; tenGiua?: string | null;
+}) {
+  const primaryCode = String(input.primaryCode ?? '').trim();
+  if (!primaryCode) throw badRequest('Chọn nhóm nguyên nhân.');
+  if (!issueBranchOf(primaryCode) || !issuesForTopic(topic as string, ct).some((i) => i.code === primaryCode)) {
+    throw badRequest(`Phân loại đã chọn không thuộc bộ phân loại của ${caseTopicLabel(topic ?? '', ct)}.`);
+  }
+  const observation = String(input.observation ?? '').trim() || null;
+  if (laKhac(primaryCode)) {
+    const loi = kiemGhiRoKhac(observation);
+    if (loi) throw badRequest(`Phân loại "Khác": ${loi}.`);
+  }
+  const urgency = String(input.urgency ?? '');
+  if (!(URGENCY_LEVELS as readonly string[]).includes(urgency)) throw badRequest('Chọn mức độ gấp.');
+  const moTa = String(input.moTa ?? '').trim();
+  if (moTa.length < 15) throw badRequest('Mô tả cần ít nhất 15 ký tự — sai ở đâu, bài hay buổi nào.');
+  if (moTa.length > 2000) throw badRequest('Mô tả tối đa 2000 ký tự.');
+  const tenGiua = String(input.tenGiua ?? '').trim();
+  if (tenGiua.length < 3 || tenGiua.length > 80) throw badRequest('Tên Case (phần giữa) cần từ 3 đến 80 ký tự.');
+  return { primaryCode, observation, urgency, moTa, tenGiua };
+}
+
+/**
  * XÁC NHẬN CASE (S4-3, M7, YC-12.3): GVBM đúng kỹ năng (C02) hoặc Quản lý trong phạm vi ghi nguyên nhân + mức gấp + mô tả + phần giữa tên.
  * Chỉ khi Case từ SOS còn chờ nguyên nhân và KHÔNG có thẻ Không cần theo dõi đang chờ (S4-2 hai lựa chọn loại trừ). Case vẫn `open`
  * tới khi có PA do người xác nhận (Q28-5) — giao diện chuyển thẳng sang Xác nhận PA.
@@ -197,23 +224,9 @@ export function xacNhanCase(p: Principal, caseId: number, input: {
   if (st.hasCause) throw badRequest('Case đã xác nhận nguyên nhân rồi.');
   if (st.choDuyetKhongTheoDoi) throw badRequest('Case đang chờ Quản lý duyệt "Không cần theo dõi" — chờ trả lời rồi mới xác nhận.');
   const ct = c.cycle_id ? (conn.prepare('SELECT programme_code ct FROM learning_cycles WHERE id = ?').get(c.cycle_id) as any)?.ct ?? null : null;
-  const primaryCode = String(input.primaryCode ?? '').trim();
-  if (!primaryCode) throw badRequest('Chọn nhóm nguyên nhân.');
-  if (!issueBranchOf(primaryCode) || !issuesForTopic(c.topic, ct).some((i) => i.code === primaryCode)) {
-    throw badRequest(`Phân loại đã chọn không thuộc bộ phân loại của ${caseTopicLabel(c.topic, ct)}.`);
-  }
-  const observation = String(input.observation ?? '').trim() || null;
-  if (laKhac(primaryCode)) {
-    const loi = kiemGhiRoKhac(observation);
-    if (loi) throw badRequest(`Phân loại "Khác": ${loi}.`);
-  }
-  const urgency = String(input.urgency ?? '');
-  if (!(URGENCY_LEVELS as readonly string[]).includes(urgency)) throw badRequest('Chọn mức độ gấp.');
-  const moTa = String(input.moTa ?? '').trim();
-  if (moTa.length < 15) throw badRequest('Mô tả cần ít nhất 15 ký tự — sai ở đâu, bài hay buổi nào.');
-  if (moTa.length > 2000) throw badRequest('Mô tả tối đa 2000 ký tự.');
-  const tenGiua = input.tenGiua === undefined || input.tenGiua === null ? tenGiuaCua(c) : String(input.tenGiua).trim();
-  if (tenGiua.length < 3 || tenGiua.length > 80) throw badRequest('Tên Case (phần giữa) cần từ 3 đến 80 ký tự.');
+  const { primaryCode, observation, urgency, moTa, tenGiua } = kiemNoiDungCase(c.topic, ct, {
+    ...input, tenGiua: input.tenGiua === undefined || input.tenGiua === null ? tenGiuaCua(c) : input.tenGiua,
+  });
   /* PR-LT2a: kiểm kế hoạch TRƯỚC khi ghi nguyên nhân — thiếu thì 400, không ghi nửa chừng. */
   const keHoach = phaiGuiKemKeHoach(p, caseId) ? (kiemKeHoach(input.keHoach), input.keHoach!) : null;
   const today = demoToday();

@@ -1697,6 +1697,17 @@ api.post('/yeu-cau/duyet-nhieu', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return yeuCauSvc.duyetNhieu(principalOf(req), (req.body ?? {}).ids);
 }));
+/* PR-LUI-a2: Từ chối nhiều — cùng luật Duyệt nhiều, một lý do chung. */
+api.post('/yeu-cau/tu-choi-nhieu', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = (req.body ?? {}) as Record<string, any>;
+  return yeuCauSvc.tuChoiNhieu(principalOf(req), b.ids, b.lyDo);
+}));
+/* PR-LUI-a2: Huỷ quyết định bấm nhầm trong ngày (chỉ loại có đường đảo — Đề xuất PA). */
+api.post('/yeu-cau/:id/huy-quyet-dinh', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return yeuCauSvc.huyQuyetDinh(principalOf(req), pInt(req, 'id'));
+}));
 /* PR-GVb (Q-B): Nhắc tất cả — kiểm quyền từng thẻ ở `nhacNhieu`; đặt trước `/yeu-cau/:id/...`. */
 api.post('/yeu-cau/nhac-nhieu', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -1724,7 +1735,7 @@ api.post('/yeu-cau/:id/tra-loi', requireAuth, wrap((req) => {
  */
 api.post('/interventions/:id/result', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return caseSvc.updateResult(principalOf(req), pInt(req, 'id'), req.body ?? {});
+  return caseSvc.updateResult(principalOf(req), pInt(req, 'id'), req.body ?? {}, { batBuocPhuTrach: true });   // PR-LUI-a2: web luôn gửi Người phụ trách
 }));
 
 /**
@@ -1734,6 +1745,25 @@ api.post('/interventions/:id/result', requireAuth, wrap((req) => {
 api.post('/cases/:id/outcome', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return caseSvc.closeCaseOutcome(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
+/** PR-LUI-a2: Quản lý / Quản trị mở lại Case đã hoàn thành — một bấm. */
+api.post('/cases/:id/mo-lai', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSvc.moLaiCase(principalOf(req), pInt(req, 'id'));
+}));
+/** PR-LUI-a2: Sửa Case (tên, mô tả, mức, kỹ năng khi chưa có PA, nhóm nguyên nhân) · Xoá Case báo tay tạo nhầm · Xoá PA (QL / QT). */
+api.patch('/cases/:id', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSvc.suaCase(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
+}));
+api.delete('/cases/:id', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSvc.xoaCase(principalOf(req), pInt(req, 'id'));
+}));
+api.delete('/interventions/:id', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSvc.xoaPa(principalOf(req), pInt(req, 'id'));
 }));
 
 /** Đổi hạn BÁO KẾT QUẢ của case. Mặc định hết tuần MT kế tiếp, nhưng sửa được. */
