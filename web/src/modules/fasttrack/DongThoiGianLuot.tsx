@@ -17,7 +17,8 @@ const NHAN_VIEC: Record<string, { chu: string; loai: Loai }> = {
   skill_skipped: { chu: CHU_THAO_TAC['bo-ky-nang'], loai: 'huy' }, skill_restored: { chu: CHU_THAO_TAC['dua-lai'], loai: 'lich' },
   skill_no_show_settled: { chu: `${CHU_THAO_TAC['bao-vang']} / không dự thi`, loai: 'vang' },
   skill_week_moved_absence: { chu: 'Dời do vắng', loai: 'vang' }, skill_unscheduled: { chu: 'Huỷ lịch (về Chưa xếp lịch)', loai: 'huy' },
-  cancelled: { chu: 'Huỷ cả lượt', loai: 'huy' }, skill_part_cancelled: { chu: 'Huỷ phần còn lại', loai: 'huy' }, reopened: { chu: 'Mở lại', loai: 'lich' },
+  cancelled: { chu: 'Huỷ cả lượt', loai: 'huy' }, skill_part_cancelled: { chu: 'Huỷ phần còn lại', loai: 'huy' },
+  skill_cancelled_absence: { chu: 'Huỷ do vắng 2 lần', loai: 'huy' }, skill_part_restored: { chu: CHU_THAO_TAC['khoi-phuc'], loai: 'lich' }, reopened: { chu: 'Mở lại', loai: 'lich' },
   skill_sit_status: { chu: 'Trạng thái thi', loai: 'lich' }, completion_week: { chu: 'Tuần dự kiến hoàn tất', loai: 'lich' },
 };
 const SIT: Record<string, string> = { scheduled: 'Theo lịch', sat: 'Đã thi', absent: 'Vắng', cancelled: 'Đã huỷ phần thi', required: 'Trong đợt', skipped: 'Đã bỏ khỏi đợt' };

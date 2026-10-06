@@ -14,7 +14,7 @@ import { useTrangThaiLuuO } from '../../ui/SaveState.tsx';
 import { ODiemThuong, laTuChoi, type SaveOpts } from '../fasttrack/ScoreEntry.tsx';
 import { caseStatusLabel, sosTone } from '../../lib/format.ts';
 import {
-  ATTEMPT_KIND_SHORT, CHU_THAO_TAC, CHUONG_TRINH_KHONG_CHIA_MON, ketQuaThuong, mondayOfDate, ngay, tenMon, tenMonNgan, thaoTacKyNang, trangThaiTT, tuanLich,
+  ATTEMPT_KIND_SHORT, CHU_THAO_TAC, CHUONG_TRINH_KHONG_CHIA_MON, ketQuaThuong, ngay, tenMon, tenMonNgan, thaoTacKyNang, trangThaiTT, tuanLich,
   type AttemptKind, type ThaoTac,
 } from '@shared/domain/index.ts';
 import { MenuDong } from '../../ui/MenuDong.tsx';
@@ -406,7 +406,7 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
     const s = lichCua(row, hop.k);
     return (
       <HopThaoTacMt key={`${hop.t}:${hop.k}`} thaoTac={hop.t} attemptId={row.attemptId} skill={hop.k} ct={ct} laThuong
-        tuanDaBatDau={!!s?.weekStart && s.weekStart.slice(0, 10) <= mondayOfDate(homNay)}
+        quanLy={sheet.canPlan}
         row={{ periodId: null, weekStart: s?.weekStart ?? null, deadline: s?.deadline ?? null }}
         onClose={() => setHop(null)} onDone={onReload} />
     );
@@ -419,7 +419,7 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
         <div className="flex items-center gap-1 min-w-0">
           <Link className="link block truncate max-sm:py-3 max-sm:-my-3" to={`/hoc-vien/${row.studentId}`} title={row.studentName}>{row.studentName}</Link>
           {row.hoanTat && (
-            <Info title={`Hết Chủ nhật ${ngay(row.chuNhatCuoi)}. Chỉ Quản lý sửa được điểm — nhờ Quản lý hiệu chỉnh, kèm lý do.`}>
+            <Info title={`Hết Chủ nhật ${ngay(row.chuNhatCuoi)}. Chỉ Quản lý sửa được điểm — nhờ Quản lý hiệu chỉnh.`}>
               Đã hoàn tất
             </Info>
           )}

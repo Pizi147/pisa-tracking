@@ -657,6 +657,8 @@ export function restoreCancelledSkill(p: Principal, attemptId: number, skill: st
                 plan_source = 'manual', updated_at = ? WHERE id = ?`,
       )
       .run(periodId, nowIso(), row.id);
+    /* PR-MTb sau rà (I1): đề nghị dời đang chờ của kỹ năng này rút cùng lúc — không rút thì hết hạn quét huỷ lại kỹ năng vừa khôi phục. */
+    rutDeNghiDoi(attemptId, skill);
     logSchedule(attemptId, {
       action: 'skill_part_restored', field: skill,
       oldValue: row.period_code, newValue: period.code,

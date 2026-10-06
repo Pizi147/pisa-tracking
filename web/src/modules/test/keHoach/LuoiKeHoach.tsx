@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Empty, Th } from '../../../ui/ui.tsx';
 import type { KyNangKH } from '@shared/domain/index.ts';
+import { OMt } from '../../../ui/OMt.tsx';
+import { useNgayNghiepVu } from '../../../ui/ngayNghiepVu.ts';
 import { ChipKyNang } from './ChipKyNang.tsx';
 import { HopKyNang } from './HopKyNang.tsx';
 import {
@@ -16,8 +18,8 @@ const RONG_TEN = 180;
 /**
  * LƯỚI DÙNG CHUNG CHO CẢ LỚP FT VÀ LỚP THƯỜNG (mockup 14 (1), (4)): hàng = học viên, cột = đợt (FT `MT1…MT5[+]`, lớp
  * thường `Giữa khoá` · `Cuối khoá` kèm `đề xuất W4/8`). Bảng `table-layout: fixed` + `colgroup` (G-2), cuộn ngang TRONG
- * thẻ, cột tên dính trái (G-11); trên điện thoại tự cuộn tới đợt đang tới (đợt nhỏ nhất còn em chưa xong). Ô = `ChipKyNang`;
- * bấm chip mở `HopKyNang` neo cạnh chip.
+ * thẻ, cột tên dính trái (G-11); trên điện thoại tự cuộn tới đợt đang tới (đợt nhỏ nhất còn em chưa xong). Ô FT = `OMt` (PR-MTb T9),
+ * ô lớp thường = `ChipKyNang`; bấm ô mở `HopKyNang` neo cạnh ô.
  */
 export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = false }: {
   loai: 'ft' | 'thuong'; data: LuoiFTData | LuoiThuongData; onReload: () => void; onHienDien: (open: boolean) => void;
@@ -25,6 +27,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
   chiCanXepLai?: boolean;
 }) {
   const [hop, setHop] = useState<Hop | null>(null);
+  const homNay = useNgayNghiepVu().homNay;
   const cuon = useRef<HTMLDivElement>(null);
 
   const cots: Cot[] = useMemo(() => {
@@ -39,7 +42,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
     }));
   }, [loai, data]);
 
-  const rongDot = loai === 'ft' ? 176 : 208;
+  const rongDot = loai === 'ft' ? 152 : 208;
   const dotDenLuot = useMemo(() => cots.findIndex((c) => (data.hang as Array<HangFT | HangThuong>).some((h) => (
     !emXongDot(dotCuaEm(loai === 'ft' ? { loai: 'ft', luoi: data as LuoiFTData, hang: h as HangFT } : { loai: 'thuong', luoi: data as LuoiThuongData, hang: h as HangThuong }, c.dot))
   ))), [cots, data, loai]);
@@ -91,13 +94,25 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
               </td>
               {cots.map((c) => {
                 const dot = o(h, c);
+                const moHop = (el: HTMLElement) => setHop({ anchor: el, hang: h, cot: c, kyNangDau: null });
                 return (
-                  <td key={c.key} className="td py-1.5 align-middle">
-                    <ChipKyNang kn={dot.kn} attemptId={dot.attemptId} loai={loai} ct={loai === 'thuong' ? (data as LuoiThuongData).chuongTrinh : null} khaiGiang={khaiGiang} tongTuan={tongTuan}
-                      chuaToiLuot={loai === 'ft' && c.dot.loai === 'ft' && c.dot.attemptNo !== (h as HangFT).soKeTiep}
-                      lichSu={!!dot.lichSu} dangDo={!!dot.do}
-                      deXuat={c.deXuat} nhanDeXuat={c.nhanDeXuat} tenDot={nhanDot(c.dot)}
-                      onMo={(skill, el) => setHop({ anchor: el, hang: h, cot: c, kyNangDau: skill })} />
+                  <td key={c.key} className={`td py-1.5 align-middle ${loai === 'ft' ? 'text-center' : ''}`}>
+                    {loai === 'ft' && c.dot.loai === 'ft' ? (
+                      /* PR-MTb T9 (Q1 = A): lớp FT = một Ô MT (cùng component với panel, Lộ trình, hồ sơ Mock); chi tiết từng kỹ năng ở tooltip + hộp. */
+                      !homNay ? <span className="text-[11px] text-slate-500">…</span> : (
+                        <OMt v={{ so: c.dot.attemptNo, attemptId: dot.attemptId, kn: dot.kn, cu: !!dot.lichSu }} homNay={homNay}
+                          /* "Đang chọn" = ô của em đang mở hộp. */
+                          chon={hop?.hang.studentId === h.studentId && hop.cot.key === c.key}
+                          /* Em chưa tới lượt (số MT liền mạch, K4-08): ô nét đứt, không bấm. Ô trống tới lượt: bấm mở hộp đợt mới. */
+                          {...(dot.attemptId === null && c.dot.attemptNo !== (h as HangFT).soKeTiep
+                            ? { ghiChu: `Xếp MT trước rồi mới tới ${nhanDot(c.dot)}` }
+                            : { onClick: moHop, ...(dot.attemptId === null ? { ghiChu: `Bấm để xếp ${nhanDot(c.dot)}` } : {}) })} />
+                      )
+                    ) : (
+                      <ChipKyNang kn={dot.kn} attemptId={dot.attemptId} ct={(data as LuoiThuongData).chuongTrinh} khaiGiang={khaiGiang} tongTuan={tongTuan}
+                        deXuat={c.deXuat} nhanDeXuat={c.nhanDeXuat} tenDot={nhanDot(c.dot)}
+                        onMo={(skill, el) => setHop({ anchor: el, hang: h, cot: c, kyNangDau: skill })} />
+                    )}
                   </td>
                 );
               })}

@@ -8,6 +8,8 @@ export type MucMenu = {
   keTruoc?: boolean;
   /** Việc khó đảo ngược (xoá) — chữ đỏ, như `danger` của `Menu`. */
   nguyHiem?: boolean;
+  /** Mục chưa làm được: vẫn hiện, mờ, không bấm được; `title` nói vì sao (mockup test-MT phần 2 "mục chưa làm được thì mờ"). */
+  tat?: boolean; title?: string;
 };
 
 /**
@@ -15,13 +17,15 @@ export type MucMenu = {
  *
  * Menu vẽ RA NGOÀI bảng (portal, `fixed`): bảng cuộn ngang trong thẻ (G-11) sẽ cắt mất menu nếu vẽ bên trong. `z-[60]` — trên thanh
  * dưới điện thoại (z-30) và menu đầu trang (z-40). Đủ chỗ thì mở xuống, không thì mở lên; cuộn hay đổi cỡ màn thì đóng.
- * Không có mục nào thì không vẽ nút (không để nút bấm không làm gì). Tooltip bắt buộc (G-7).
+ * Không có mục nào thì không vẽ nút (không để nút bấm không làm gì) — trừ `luonHien` (PR-MTb: nút luôn hiện, mục chưa làm được thì mờ).
+ * Mục `tat`: `aria-disabled` (không dùng `disabled` để vẫn nhận focus ↑/↓ — đọc được tooltip `title`), chữ mờ, bấm / Enter / Space không làm
+ * gì và menu giữ mở. Tooltip bắt buộc (G-7).
  * Bàn phím (E2): mở → focus mục đầu; ↑/↓/Home/End đi vòng; Enter chọn; Esc/Tab đóng và trả focus về nút ⋯. Esc chỉ đóng menu,
  * không đóng panel chứa nó (pha bắt + chặn lan, như `LichNho`).
  */
-export function MenuDong({ muc, nhan = 'Thao tác khác', bieuTuong = '⋯' }: {
-  /** `bieuTuong`: ⋯ · ⋮, hoặc chữ ngắn như "+2" (badge còn ẩn của hộp lớp — PR-HVL B4). */
-  muc: MucMenu[]; nhan?: string; bieuTuong?: string;
+export function MenuDong({ muc, nhan = 'Thao tác khác', bieuTuong = '⋯', luonHien = false }: {
+  /** `bieuTuong`: ⋯ · ⋮, hoặc chữ ngắn như "+2" (badge còn ẩn của hộp lớp — PR-HVL B4). `luonHien`: vẽ nút kể cả khi không có mục / mọi mục `tat`. */
+  muc: MucMenu[]; nhan?: string; bieuTuong?: string; luonHien?: boolean;
 }) {
   const [mo, setMo] = useState(false);
   const nut = useRef<HTMLButtonElement>(null);
@@ -76,12 +80,13 @@ export function MenuDong({ muc, nhan = 'Thao tác khác', bieuTuong = '⋯' }: {
   const coViTri = viTri !== null;
   useEffect(() => { if (mo && coViTri) tro(0); }, [mo, coViTri]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!muc.length) return null;
+  if (!muc.length && !luonHien) return null;
   return (
     <>
       <button ref={nut} type="button" title={nhan} aria-label={nhan} aria-haspopup="menu" aria-expanded={mo}
         onClick={(e) => { e.stopPropagation(); setMo((v) => !v); }}
-        className="relative inline-grid place-items-center h-7 min-w-7 px-1 rounded-md border bg-transparent text-[11px] font-semibold tabular-nums text-slate-400 hover:text-slate-100 hover:bg-white/5 cursor-pointer after:absolute after:-inset-2 after:content-[''] sm:after:hidden"
+        /* Vùng bấm 44px ở điện thoại: `after` neo theo mép TRONG viền 1px nên 28 - 2 + 18 = 44 (-inset-2 chỉ ra 42). */
+        className="relative inline-grid place-items-center h-7 min-w-7 px-1 rounded-md border bg-transparent text-[11px] font-semibold tabular-nums text-slate-400 hover:text-slate-100 hover:bg-white/5 cursor-pointer after:absolute after:-inset-[9px] after:content-[''] sm:after:hidden"
         style={{ borderColor: 'var(--line)' }}>
         {bieuTuong}
       </button>
@@ -96,10 +101,12 @@ export function MenuDong({ muc, nhan = 'Thao tác khác', bieuTuong = '⋯' }: {
           style={{ borderColor: 'var(--line-strong)', top: viTri?.top ?? 0, left: viTri?.left ?? 0, visibility: viTri ? 'visible' : 'hidden' }}>
           {muc.map((m, i) => (
             <button key={m.key} type="button" role="menuitem" tabIndex={-1} onFocus={() => setDang(i)}
-              className={`block min-h-[44px] w-full rounded-md px-3 py-2 text-left text-sm sm:min-h-0 ${m.nguyHiem ? 'text-rose-200' : 'text-slate-200'} bg-transparent border-0 hover:bg-white/5 focus-visible:bg-white/5 cursor-pointer ${
+              title={m.title} aria-disabled={m.tat ? 'true' : undefined}
+              className={`block min-h-[44px] w-full rounded-md px-3 py-2 text-left text-sm sm:min-h-0 bg-transparent border-0 focus-visible:bg-white/5 ${
+                m.tat ? 'text-slate-500 cursor-not-allowed' : `${m.nguyHiem ? 'text-rose-200' : 'text-slate-200'} hover:bg-white/5 cursor-pointer`} ${
                 m.keTruoc ? 'mt-1 rounded-t-none pt-2.5' : ''}`}
               style={m.keTruoc ? { borderTop: '1px solid var(--line)' } : undefined}
-              onClick={() => { dongVeNut(); m.onChon(); }}>
+              onClick={(e) => { if (m.tat) { e.stopPropagation(); return; } dongVeNut(); m.onChon(); }}>
               {m.nhan}
             </button>
           ))}

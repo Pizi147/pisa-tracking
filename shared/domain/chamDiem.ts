@@ -158,3 +158,64 @@ export function docONhapLR(s: string): ONhapLR | { loi: string } | null {
   const loi = kiemBand(band);
   return loi ? { loi } : { band };
 }
+
+/** Lệnh điểm một ô gửi máy chủ (phần chung của `SavePatch` ở web). */
+export type PatchDiem = { rawScore?: number | null; band?: number | null; criteria?: (number | null)[]; noShow?: boolean };
+/** Ô chỉ cần biết có dấu "-" đang hiệu lực không. */
+type OCoDau = { noShow?: unknown };
+
+/**
+ * Chữ người dùng gõ ở ô SỐ CÂU ĐÚNG (L/R) → lệnh gửi máy chủ. '-' LÀ MỘT LỆNH, KHÔNG PHẢI MỘT SỐ (rule book §17.1): "học
+ * viên có lịch mà không làm bài". Ô trống vẫn chỉ là chưa nhập; xoá ô đang có dấu '-' là gỡ dấu, không phải chấm điểm.
+ * T10: số có dấu chấm hoặc tiền tố "b" là BAND ("6.5", "6.0", "b6"); số nguyên trơn là số câu ("6" = 6 câu).
+ * MỘT hàm cho mọi nơi nhập (bảng cả lớp, hồ sơ Test) — không có luật thứ hai.
+ *
+ * `null` = chữ không hợp lệ ("--", "abc", "6,5", "b6.3", "10.5"…): KHÔNG gửi gì. Trước đây `Number("--")` ra NaN, lên
+ * máy chủ thành `null` — tức là xoá ô mà không ai định xoá.
+ */
+export const LOI_SO_CAU = 'Số câu đúng là số nguyên, hoặc band 6.5 / b6, hoặc "-" nếu học viên không làm bài.';
+export function rawPatchFrom(text: string, cell: OCoDau): PatchDiem | null {
+  const t = text.trim();
+  if (t === '-') return { noShow: true };
+  if (t === '') return cell.noShow ? { noShow: false } : { rawScore: null };
+  const o = docONhapLR(t);
+  if (!o || 'loi' in o) return null;
+  return 'band' in o ? { band: o.band } : { rawScore: o.raw };
+}
+
+/**
+ * Bốn ô tiêu chí (+ ô Band tuỳ chọn) → lệnh gửi máy chủ + band xem trước. MỘT DẤU '-' TRONG BỐN Ô LÀ ĐỦ báo chưa có bài
+ * cho ĐÚNG BÀI NÀY: không ghi các tiêu chí thành 0, không xoá bài khác. Xoá sạch bốn ô của bài đang có dấu '-' là GỠ dấu;
+ * xoá sạch bốn ô của bài có điểm là xoá điểm như cũ.
+ *
+ * T10: `bandText` có chữ → chỉ nhận khi bốn tiêu chí đều trống (`{ band }`, xem trước = band); band cùng tiêu chí → lỗi
+ * "Điền band hoặc tiêu chí" (máy chủ trả 400 trường hợp này).
+ *
+ * `patch: null` = có ô không hợp lệ (không phải số, không phải đúng một "-", ví dụ "--"): KHÔNG gửi gì — trước đây ô
+ * đó thành NaN rồi thành `null` trên máy chủ, tức là xoá tiêu chí mà không ai định xoá. `loi` = câu nói vì sao.
+ */
+export const LOI_TIEU_CHI = 'Mỗi tiêu chí là một số như 6.5, hoặc "-" nếu học viên không làm bài.';
+export const LOI_BAND_HOAC_TIEU_CHI = 'Điền band hoặc tiêu chí';
+export function criteriaPatchFrom(vals: string[], cell: OCoDau, bandText = ''): {
+  dash: boolean; preview: number | null; patch: PatchDiem | null; loi: string | null;
+} {
+  const hong = vals.some((v) => { const t = v.trim(); return t !== '' && t !== '-' && !Number.isFinite(Number(t)); });
+  if (hong) return { dash: false, preview: null, patch: null, loi: LOI_TIEU_CHI };
+  const dash = vals.some((v) => v.trim() === '-');
+  const allEmpty = vals.every((v) => v.trim() === '');
+  const bt = bandText.trim();
+  if (bt) {
+    if (!allEmpty) return { dash, preview: null, patch: null, loi: LOI_BAND_HOAC_TIEU_CHI };
+    const m = /^[bB]?(\d+(?:\.\d+)?)$/.exec(bt);
+    const band = m ? Number(m[1]) : NaN;
+    const loi = kiemBand(band);
+    return loi ? { dash: false, preview: null, patch: null, loi } : { dash: false, preview: band, patch: { band }, loi: null };
+  }
+  const nums = vals.map((v) => (v.trim() === '' || v.trim() === '-' ? null : Number(v)));
+  const filled = nums.filter((v) => v !== null) as number[];
+  const preview = !dash && filled.length === 4 ? Math.round((filled.reduce((a, b) => a + b, 0) / 4) * 2 + 1e-9) / 2 : null;
+  const patch: PatchDiem = dash ? { noShow: true }
+    : allEmpty && cell.noShow ? { noShow: false }
+    : { criteria: nums };
+  return { dash, preview, patch, loi: null };
+}
