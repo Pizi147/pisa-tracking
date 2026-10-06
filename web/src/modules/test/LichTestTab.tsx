@@ -11,7 +11,7 @@ import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { KhoiNhom } from '../../ui/HangNhom.tsx';
 import { useManHinhHep } from '../cham/LuoiChamLop.tsx';
-import { chuOChuaLuu, tenMon, tuanDauThangCua, tuanLich } from '@shared/domain/index.ts';
+import { addDaysIso, chuOChuaLuu, tenMon, tuanDauThangCua, tuanLich } from '@shared/domain/index.ts';
 import { khoaHang, type DongNo, type LichTest, type LopLichTest } from './lichTest/kieu.ts';
 import { DaiSo, type OSo } from './lichTest/DaiSo.tsx';
 import { KhoiNo } from './lichTest/KhoiNo.tsx';
@@ -82,7 +82,8 @@ export function LichTestTab() {
   const baoDaLuu = useGopTaiLai(reload);
 
   /* Hàng đang mở: nhớ theo tuần xem (localStorage, khoá `khoaHang`) + hàng bị "ép mở" bởi đường dẫn / dải số. Khối 2: hàng đã chấm
-     xong KHÔNG nhớ qua lần tải lại (Q4 — luôn thu gọn), mở tay chỉ trong phiên (`moXong`). */
+     xong KHÔNG nhớ qua lần tải lại (Q4 — luôn thu gọn). `moXong` = hàng khối 2 đang mở TRONG PHIÊN — hàng vừa chấm xong ô cuối vẫn mở
+     (Q14: lưới không biến mất giữa lúc gõ), tới khi người dùng thu. */
   const tuanId = data?.tuan?.id ?? null;
   const [nho, setNho] = useState<Record<string, boolean>>({});
   const [moXong, setMoXong] = useState<Set<string>>(new Set());
@@ -109,8 +110,8 @@ export function LichTestTab() {
     const khoa = `${nguoiId ?? 0}|${data.tuan.id}|${urlClassId ?? ''}`;
     if (daKhoiTao.current === khoa) return;
     daKhoiTao.current = khoa;
-    setNho(docMo(nguoiId, data.tuan.id));
-    setMoXong(new Set());
+    const nhoMoi = docMo(nguoiId, data.tuan.id);
+    setNho(nhoMoi);
     const khoi = { k1: false, k2: true, k3: !data.laTuanNay };
     const khopKn = (k: string) => !!urlKn && (k === urlKn || (urlKn === 'writing' && k.startsWith('writing')));
     const noCuaLop = urlClassId ? data.no.filter((d) => d.classId === urlClassId) : [];
@@ -129,6 +130,9 @@ export function LichTestTab() {
     }
     setMoKhoi(khoi);
     setEpMo(new Set(ep)); setConTro(new Set(ep));
+    /* Hàng khối 2 còn bài đang mở lúc vào trang — giữ mở trong phiên dù chấm xong (hàng đã xong từ trước thì thu: Q4). */
+    setMoXong(new Set((data.chamTuanNay ?? []).filter((l) => l.conBai > 0 && dangMo({ key: khoaHang(l), moSan: l.moSan }, nhoMoi, new Set(ep)))
+      .map(khoaHang)));
   }, [data, urlClassId, urlKn, nguoiId]);
 
   const laXong2 = (l: LopLichTest, khoi2: boolean) => khoi2 && l.conBai === 0;
@@ -140,10 +144,8 @@ export function LichTestTab() {
     const k = khoaHang(l);
     const dangMoHang = moCua(khoi2)(l);
     if (!dangMoHang) setConTro((s) => new Set(s).add(k));
-    if (laXong2(l, khoi2)) {
-      setMoXong((s) => { const n = new Set(s); if (dangMoHang) n.delete(k); else n.add(k); return n; });
-      return;
-    }
+    if (khoi2) setMoXong((s) => { const n = new Set(s); if (dangMoHang) n.delete(k); else n.add(k); return n; });
+    if (laXong2(l, khoi2)) return;
     const moi = { ...nho, [k]: !dangMoHang };
     setNho(moi);
     if (tuanId) ghiMo(nguoiId, tuanId, moi);
@@ -194,7 +196,9 @@ export function LichTestTab() {
     const k = data.laTuanNay ? 'k2' : 'k3';
     setMoKhoi((m) => ({ ...m, [k]: true }));
     if (o === 'con-phai-cham') {
-      setEpMo((s) => new Set([...s, ...(data.laTuanNay ? k2Tab : lopTab).filter((l) => l.conBai > 0).map(khoaHang)]));
+      const ep = (data.laTuanNay ? k2Tab : lopTab).filter((l) => l.conBai > 0).map(khoaHang);
+      setEpMo((s) => new Set([...s, ...ep]));
+      if (data.laTuanNay) setMoXong((s) => new Set([...s, ...ep]));
     }
     cuon(data.laTuanNay ? 'lich-test-k2' : 'lich-test-k3');
   };
@@ -208,9 +212,11 @@ export function LichTestTab() {
   const trong = data.lop.length === 0 && data.no.length === 0 && !(data.chamTuanNay ?? []).length && !dongMo;
   const soLop = (ds: LopLichTest[]) => `${new Set(ds.map((l) => l.classId)).size} lớp`;
   const conBai = (ds: LopLichTest[]) => ds.reduce((n, l) => n + l.conBai, 0);
+  /* Tuần chính của khối (hàng của tuần khác ghi Đợt kèm mã tuần): khối 2 = tuần trước, khối 3 = tuần đang xem. */
+  const tuanXem = data.tuan?.weekStart ?? '';
   const hangLop = (ds: LopLichTest[], khoi2: boolean) => (
     <HangLop lop={ds} moCua={moCua(khoi2)} onMo={doiMo(khoi2)} coChiNhanh={branchCount > 1 && !branchId} hep={hep} homNay={homNay}
-      tuanChinh={ds[0]?.weekStart ?? ''} kieuQuaHan={khoi2 ? 'badge' : undefined} urlClassId={urlClassId} urlKn={urlKn}
+      tuanChinh={khoi2 && tuanXem ? addDaysIso(tuanXem, -7) : tuanXem} kieuQuaHan={khoi2 ? 'badge' : undefined} urlClassId={urlClassId} urlKn={urlKn}
       conTro={conTro} onDaLuu={baoDaLuu} chuaLuu={chuaLuu} baoChuaLuu={baoChuaLuu} />
   );
   /* Khối 2 / khối 3 (hàng lớp): khối rỗng vẫn hiện tiêu đề + 0, không mở được (D1). */

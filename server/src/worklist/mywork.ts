@@ -355,7 +355,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
           kind: d.kind, testLabel, skill: d.skill, skillLabel,
           /* PR-UX1 Q13: bấm Chấm mở Lịch Test đúng lớp, con trỏ vào môn này; bài không có lớp giữ hồ sơ lượt. */
           students: new Map(), due: null,
-          href: d.classId ? duongLichTest({ classId: d.classId, kn: d.skill, periodId: d.periodId }) : attemptHref({ id: d.attemptId, kind: d.kind, classId: d.classId }),
+          /* PR-LT3: không kèm tuần — Lịch Test ở tuần hiện tại có đủ ba khối (bài tuần trước ở khối 2, quá hạn ở khối 1); kèm tuần thi
+             thì màn mở chế độ "tuần khác" (không có khối 2). */
+          href: d.classId ? duongLichTest({ classId: d.classId, kn: d.skill }) : attemptHref({ id: d.attemptId, kind: d.kind, classId: d.classId }),
           attemptId: d.attemptId, ownerId: d.ownerId, quaHan: false,
         };
         buckets.set(k, b);

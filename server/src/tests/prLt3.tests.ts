@@ -86,6 +86,10 @@ export async function runPrLt3Tests(t: YThucTestKit) {
     assert(oCua(r, aid, HAI).k1 === 0 && oCua(r, aid, HAI).k2 > 0, `hạn riêng → khối 2: ${JSON.stringify(oCua(r, aid, HAI))}`);
     const h = r.chamTuanNay.find((l: any) => l.weekStart === HAI);
     assert(h.periodId === pid(HAI) && h.conBai === h.tong, `hàng hạn riêng chỉ các ô còn nợ: ${h.conBai}/${h.tong}`);
+    /* W1 đã chấm, W2 còn: hàng hạn riêng không kéo W1 vào (lọc theo Ô NHẬP, không theo kỹ năng gộp). */
+    att.saveScore(P.admin, aid, 'writing1', { criteria: [6, 6, 6, 6] }, TODAY);
+    const h2 = xem(NAY).chamTuanNay.find((l: any) => l.weekStart === HAI);
+    assert(h2 && h2.conBai === h2.tong && h2.tong === h.tong - 1, `W1 đã chấm không vào hàng hạn riêng: ${h2?.conBai}/${h2?.tong} (trước ${h.tong})`);
   });
   check('LT3-2 (c) lùi / tiến tuần: khối 1 không đổi, khối 2 ẩn, khối 3 theo tuần xem', () => {
     emMoi(5, HAI);
@@ -162,16 +166,22 @@ export async function runPrLt3Tests(t: YThucTestKit) {
     assert(tc && tc.statusLabel === d.CHAM_CHEO && !tc.mine, `"Tất cả trong phạm vi": ${JSON.stringify(tc && [tc.statusLabel, tc.mine])}`);
   });
   check('LT3-3 (c) khối 1: cột GV chấm ghi "GV chấm chéo", không tên GVBM S; GVBM S không "Chờ bạn chấm"', () => {
-    const aid = emMoi(5, HAI, true);
+    const aid = emMoi(6, HAI, true);   // MT6: dòng khối 1 chỉ có ô S (MT5 tuần HAI còn em khác đủ L/R/W)
     const dong = xem(NAY).no.find((x: any) => x.attemptIds.includes(aid));
     assert(dong && dong.gvNo.includes(d.CHAM_CHEO) && !dong.gvNo.includes(P.sTeacher.fullName) && !dong.gvNo.includes('chưa phân công'),
       JSON.stringify(dong?.gvNo));
     const gv = cham.lichTest(P.sTeacher, pid(NAY), null, TODAY, { classId: LOP }).no.find((x: any) => x.attemptIds.includes(aid));
-    assert(gv && gv.cuaToi === false && gv.duocCham === true, JSON.stringify(gv && [gv.cuaToi, gv.duocCham]));
+    assert(gv && gv.cuaToi === false && gv.duocCham === true && gv.coDayLop === false, JSON.stringify(gv && [gv.cuaToi, gv.duocCham, gv.coDayLop]));
+    /* GVCN (dạy lớp): dòng chỉ còn ô S Mock → "Chờ chấm" (coDayLop false), không "Chờ GV khác". */
+    const cn = cham.lichTest(P.coreTeacher, pid(NAY), null, TODAY, { classId: LOP }).no.find((x: any) => x.attemptIds.includes(aid));
+    assert(cn && cn.cuaToi === false && cn.coDayLop === false, JSON.stringify(cn && [cn.cuaToi, cn.coDayLop]));
     /* Khối 2/3: S Mock không là "bài của tôi" của GVBM S (nhãn "Chờ bạn chấm" / tự mở). */
     emMoi(5, TRUOC, true);
     const h = xem(NAY, P.sTeacher).chamTuanNay.find((l: any) => l.classId === LOP && l.weekStart === TRUOC);
     assert(h && h.conBai > 0 && h.conBaiCuaToi === 0 && h.nhan.loai !== 'cho-ban', JSON.stringify(h && [h.conBai, h.conBaiCuaToi, h.nhan]));
+    /* Việc cần làm trỏ Lịch Test KHÔNG kèm tuần (tuần hiện tại có đủ ba khối). */
+    const viecS = (mw.myWork(P.mbManager, { nguoi: 'tat-ca' }).items as any[]).filter((i) => i.group === 'score' && i.classId === LOP);
+    assert(viecS.length > 0 && viecS.every((i) => !/periodId=/.test(i.href)), JSON.stringify(viecS.map((i) => i.href)));
   });
   check('LT3-3 (d) Phân tích GV: GV chấm chéo lưu muộn (không chọn GV chấm) → ghi người lưu, trễ của người đó; người ngoài → không ai; chưa nhập → GVBM S không trễ', () => {
     assert(cheoId, 'dữ liệu demo: cần một GV Speaking lớp FT khác cùng chi nhánh');

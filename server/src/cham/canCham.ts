@@ -213,8 +213,8 @@ function dungLuiLich(
   return out;
 }
 
-/** Ô chưa chấm thi trước tuần trước mà CHƯA quá hạn (hạn riêng dời xa — T15): khối 2 dựng lại hàng lớp tuần đó cho đúng các ô này. */
-export type OHanRieng = { periodId: number; attemptId: number; kyNang: string };
+/** Ô chưa chấm thi trước tuần trước mà CHƯA quá hạn (hạn riêng dời xa — T15): khối 2 dựng lại hàng lớp tuần đó cho đúng các ô này. `oNhap` = ô nhập (W1/W2 riêng). */
+export type OHanRieng = { periodId: number; attemptId: number; oNhap: string };
 
 /**
  * KHỐI 1 "TEST QUÁ HẠN CHẤM" (PR-LT3 T15–T17) — ô còn nợ mà `khoiCham` xếp `'qua-han'`, tính theo HÔM NAY (không theo tuần đang xem:
@@ -267,7 +267,7 @@ export function noQuaHan(
       if (!x.weekStart) continue;
       if (khoiCham({ tuanThi: x.weekStart, tuanHomNay, quaHan: x.overdue }) !== 'qua-han') {
         if (x.weekStart < tuanTruoc && x.periodId) {
-          hanRieng.push({ periodId: x.periodId, attemptId: a.id, kyNang: assessedSkillOf(x.skill) });
+          hanRieng.push({ periodId: x.periodId, attemptId: a.id, oNhap: x.skill });
         }
         continue;
       }
@@ -315,6 +315,8 @@ export function noQuaHan(
       attemptIds: [..._aid],
       luiLich: luiLichOf.get(d.key) ?? null,
       cuaToi: mySkills(p, d.classId, kyNang.filter((k) => !laChamCheo(d.kind, k))).length > 0,
+      /* Chỉ còn ô Speaking Mock (không của ai) → "Chờ chấm", không "Chờ GV khác" (mockup LT3, T18). */
+      coDayLop: rest.coDayLop && kyNang.some((k) => !laChamCheo(d.kind, k)),
       duocCham: editableSkills(p, d.classId, kyNang).length > 0,
       hrefDayDu: d.mode === 'ielts_band'
         ? `/nhap-diem/${d.classId}${d.periodId ? `?periodId=${d.periodId}` : ''}`
@@ -416,6 +418,10 @@ function oFtXong(diem: OiemLuu[], nhap: string, v: { periodId: number; weekEnd: 
   return ns !== 'none';
 }
 
+/** Ô nhập của một dòng lịch: Writing FT là hai ô W1, W2; còn lại một ô cùng tên môn. */
+const oNhapCua = (r: { skill: string; programme_code: string | null }): string[] =>
+  (cheDoCua(r.programme_code) === 'ielts_band' && r.skill === 'writing' ? ['writing1', 'writing2'] : [r.skill]);
+
 const THU_TU_MON =
   `CASE ask.skill WHEN 'listening' THEN 1 WHEN 'reading' THEN 2 WHEN 'writing' THEN 3 WHEN 'speaking' THEN 4 WHEN 'tong_hop' THEN 5 ELSE 6 END`;
 
@@ -437,7 +443,8 @@ function hangLopTuan(
     lopCuaToi: ReadonlySet<number>; giuLop: (classId: number) => boolean;
   },
   tuan: { id: number; week_start: string; week_end: string },
-  loc?: (attemptId: number, kyNangDanhGia: string) => boolean,
+  /** Khối 2 hạn riêng: chỉ các ô `${attemptId}:${ô nhập}` này. */
+  loc?: ReadonlySet<string>,
 ): LopLichTest[] {
   const { cs, branchId, today, coPhanCong, lopCuaToi, giuLop } = ctx;
   const conn = db();
@@ -463,7 +470,7 @@ function hangLopTuan(
     )
     .all(...params)
     /* `loc` (khối 2 hạn riêng): chỉ các ô (lượt, kỹ năng đánh giá) được đưa vào — lọc ngay sau câu SQL, mọi đếm phía dưới đi theo. */
-    .filter((r: any) => !loc || loc(r.id, r.skill)) as any[];
+    .filter((r: any) => !loc || oNhapCua(r).some((k) => loc.has(`${r.id}:${k}`))) as any[];
 
   /* Điểm + dấu "-" của mọi lượt trong tuần: MỘT câu gom lô (thay các câu con lồng theo từng dòng). */
   const diemCua = new Map<number, OiemLuu[]>();
@@ -486,7 +493,7 @@ function hangLopTuan(
   };
   type DongTam = Omit<DongLichTest, 'trangThai'> & { quaHan: boolean };
   type LopTam = Omit<LopLichTest, 'dong' | 'nhan' | 'moSan' | 'daCham' | 'dotLabel' | 'kyNangTuan' | 'han' | 'choDuyetDoi' | 'periodId' | 'weekStart'> & {
-    dong: Map<string, DongTam>; _dot: string[]; _kn: Set<string>; _hanNo: string | null;
+    dong: Map<string, DongTam>; _dot: string[]; _kn: Set<string>; _hanNo: string | null; _conKhongCheo: number;
   };
   const byLop = new Map<string, LopTam>();
   /* PR-MT: bài vắng tuần này có đề nghị dời chờ Quản lý — MỘT lần tra sổ đề nghị cho cả trang (không hỏi từng dòng). */
@@ -514,7 +521,7 @@ function hangLopTuan(
         hrefDayDu: mode === 'ratio'
           ? `/nhap-diem/${r.class_id}?kind=${encodeURIComponent(r.kind)}`
           : `/nhap-diem/${r.class_id}?periodId=${periodId}`,
-        dong: new Map(), _dot: [], _kn: new Set(), _hanNo: null,
+        dong: new Map(), _dot: [], _kn: new Set(), _hanNo: null, _conKhongCheo: 0,
       };
       byLop.set(khoa, lop);
     }
@@ -544,7 +551,7 @@ function hangLopTuan(
      * Mỗi ô xong khi có điểm hoặc đã báo "-" ở chính tuần này.
      */
     const diem = diemCua.get(r.id) ?? [];
-    const cacO = (mode === 'ielts_band' && r.skill === 'writing' ? ['writing1', 'writing2'] : [r.skill as string])
+    const cacO = oNhapCua(r).filter((k) => !loc || loc.has(`${r.id}:${k}`))
       .map((nhap) => ({
         nhap,
         xong: mode === 'ielts_band'
@@ -559,6 +566,7 @@ function hangLopTuan(
       lop.conBai += con.length;
       /* T18: Speaking Mock không là "bài của tôi" của ai (không "Chờ bạn chấm", không tự mở vì nó). */
       lop.conBaiCuaToi += con.filter((o) => !laChamCheo(r.kind, o.nhap) && monCuaToi(r.class_id, o.nhap)).length;
+      lop._conKhongCheo += con.filter((o) => !laChamCheo(r.kind, o.nhap)).length;
       /* Hạn theo đúng thứ tự của `viewSkill`: hạn riêng của môn → hạn riêng của đợt → hạn mặc định theo tuần môn. */
       const han = r.han_mon ?? r.han_dot ?? skillScoreDeadline(mode === 'ratio' ? 'ratio' : 'band', tuan.week_start);
       if (!lop._hanNo || han < lop._hanNo) lop._hanNo = han;
@@ -569,13 +577,14 @@ function hangLopTuan(
   }
 
   /* PR-UXF-a U1: lớp sắp theo `soSanhLop` (không theo chữ — "MB FT 10" không đứng trước "MB FT 9"). */
-  return [...byLop.values()].sort((a, b) => soSanhLop({ code: a.classCode }, { code: b.classCode })).map(({ dong, _dot, _kn, _hanNo, ...l }) => ({
+  return [...byLop.values()].sort((a, b) => soSanhLop({ code: a.classCode }, { code: b.classCode })).map(({ dong, _dot, _kn, _hanNo, _conKhongCheo, ...l }) => ({
     ...l,
     dotLabel: _dot.join(', '),
     kyNangTuan: [...new Set([..._kn].map((k) => assessedSkillOf(k)))].sort(theoThuTu),
     daCham: l.tong - l.conBai,
     han: _hanNo ?? skillScoreDeadline(l.mode === 'ratio' ? 'ratio' : 'band', tuan.week_start),
-    nhan: nhanLopLichTest({ conBai: l.conBai, conBaiCuaToi: l.conBaiCuaToi, chuaToiHan, coDayLop: lopCuaToi.has(l.classId) }),
+    /* Chỉ còn ô Speaking Mock (không của ai) → "Chờ chấm" cả với người dạy lớp (T18). */
+    nhan: nhanLopLichTest({ conBai: l.conBai, conBaiCuaToi: l.conBaiCuaToi, chuaToiHan, coDayLop: lopCuaToi.has(l.classId) && _conKhongCheo > 0 }),
     /* Tuần chưa tới thì chưa có gì để chấm — không tự mở. */
     moSan: !chuaToiHan && lopTuMo({ conBai: l.conBai, conBaiCuaToi: l.conBaiCuaToi, coPhanCong }),
     choDuyetDoi: l.mode === 'ielts_band' ? choDuyetCua.get(l.classId) ?? 0 : 0,
@@ -641,10 +650,10 @@ export function lichTest(
     chamTuanNay = truoc ? hangLopTuan(p, ctx, truoc) : [];
     /* ponytail: mỗi tuần có ô hạn riêng thêm ~3 câu SQL — hiếm (chỉ khi Quản lý dời hạn); gộp `IN` nếu đo thấy nhiều. */
     const theoTuan = new Map<number, Set<string>>();
-    for (const h of no.hanRieng) (theoTuan.get(h.periodId) ?? theoTuan.set(h.periodId, new Set()).get(h.periodId)!).add(`${h.attemptId}:${h.kyNang}`);
+    for (const h of no.hanRieng) (theoTuan.get(h.periodId) ?? theoTuan.set(h.periodId, new Set()).get(h.periodId)!).add(`${h.attemptId}:${h.oNhap}`);
     for (const [id, cacO] of theoTuan) {
       const t = tuanCua('id = ?', id);
-      if (t) chamTuanNay.push(...hangLopTuan(p, ctx, t, (aid, k) => cacO.has(`${aid}:${k}`)));
+      if (t) chamTuanNay.push(...hangLopTuan(p, ctx, t, cacO));
     }
     /* Q4 (chủ sản phẩm 06/10): lớp còn bài trước (theo lớp, tuần mới trước); lớp đã chấm xong xếp cuối — web luôn thu gọn. */
     chamTuanNay.sort((x, y) => Number(x.conBai === 0) - Number(y.conBai === 0)
