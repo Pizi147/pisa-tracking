@@ -33,10 +33,10 @@ const KHONG_PHAN_CONG = 'Bạn không được phân công kỹ năng này';
 
 type Chung = { onReload: () => void; kn?: string | null; hv?: number | null };
 
-export function MotKyNang(p: Chung & ({ mode: 'ielts_band'; data: FtSheet; hangMo?: HangMo[] } | { mode: 'ratio'; data: ThuongSheet; anNutTao?: boolean })) {
+export function MotKyNang(p: Chung & ({ mode: 'ielts_band'; data: FtSheet; hangMo?: HangMo[] } | { mode: 'ratio'; data: ThuongSheet; anNutTao?: boolean; tuanDangXem?: string | null })) {
   return p.mode === 'ielts_band'
     ? <MotKyNangFt data={p.data} onReload={p.onReload} kn={p.kn ?? null} hv={p.hv ?? null} hangMo={p.hangMo ?? []} />
-    : <MotKyNangThuong data={p.data} onReload={p.onReload} kn={p.kn ?? null} hv={p.hv ?? null} anNutTao={p.anNutTao} />;
+    : <MotKyNangThuong data={p.data} onReload={p.onReload} kn={p.kn ?? null} hv={p.hv ?? null} anNutTao={p.anNutTao} tuanDangXem={p.tuanDangXem ?? null} />;
 }
 
 /**
@@ -190,7 +190,7 @@ function DongFt({ row, k, nhieuMt, active, onReload, gvMacDinh, inputRef, onKeyD
   gvMacDinh: NguoiChon | null;
   inputRef: (el: HTMLInputElement | null) => void; onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
 }) {
-  const { save, status, lastError, retry, o, loi, luuLai, soLoi, loiNhap, coGuiLai } = useSaveScore(row.attemptId, onReload);
+  const { save, status, lastError, retry, o, loi, luuLai, soLoi, loiNhap, coGuiLai } = useSaveScore(row.attemptId, onReload, row.studentName);
   const c = oCua(row, k);
   const kv = row.result?.expectation ?? null;
   const phu = [nhieuMt ? `MT${row.attemptNo}` : null, kv !== null ? `KV ${fmtBand(kv)}` : row.studentCode]
@@ -229,8 +229,8 @@ const tinhThuong = (r: DongThuongRow, k: string) => {
   return !!s && s.progress !== 'cancelled' && s.progress !== 'absent';
 };
 
-function MotKyNangThuong({ data, onReload, kn, hv, anNutTao }: {
-  data: ThuongSheet; onReload: () => void; kn: string | null; hv: number | null; anNutTao?: boolean;
+function MotKyNangThuong({ data, onReload, kn, hv, anNutTao, tuanDangXem }: {
+  data: ThuongSheet; onReload: () => void; kn: string | null; hv: number | null; anNutTao?: boolean; tuanDangXem: string | null;
 }) {
   const skills = data.programme.skills;
   const minh = (k: string) => data.editableSkills.includes(k) || data.rows.some((r) => lichCua(r, k)?.canEdit);
@@ -278,7 +278,7 @@ function MotKyNangThuong({ data, onReload, kn, hv, anNutTao }: {
       )}
       <ul className="m-0 p-0 list-none">
         {data.rows.map((r, i) => (
-          <DongThuongMot key={r.attemptId} row={r} k={chon} sheet={data} tongCot={tongCot}
+          <DongThuongMot key={r.attemptId} row={r} k={chon} sheet={data} tongCot={tongCot} tuanDangXem={tuanDangXem}
             active={hv !== null && r.studentId === hv} onReload={onReload}
             inputRef={dangKy(i)} onKeyDown={phim(i)} />
         ))}
@@ -287,11 +287,11 @@ function MotKyNangThuong({ data, onReload, kn, hv, anNutTao }: {
   );
 }
 
-function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onKeyDown }: {
-  row: DongThuongRow; k: string; sheet: ThuongSheet; tongCot: number | null; active: boolean; onReload: () => void;
+function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onKeyDown, tuanDangXem }: {
+  row: DongThuongRow; k: string; sheet: ThuongSheet; tongCot: number | null; active: boolean; onReload: () => void; tuanDangXem: string | null;
   inputRef: (el: HTMLInputElement | null) => void; onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
 }) {
-  const { luu, dau, status, lastError, retry, o, loi, luuLai, soLoi, loiNhap, coGuiLai } = useLuuThuong(row.attemptId, onReload, sheet.programme.code);
+  const { luu, dau, status, lastError, retry, o, loi, luuLai, soLoi, loiNhap, coGuiLai } = useLuuThuong(row.attemptId, onReload, sheet.programme.code, row.studentName);
   const { s, canEdit, trong, dung, chuDung, quaHan, cell } = oThuong(row, k, sheet.today);
   const tenMonO = tenMon(sheet.programme.code, k);
   /*
@@ -322,7 +322,7 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
             <ChoNutDau />
           </span>
         ) : (
-          <ODiemThuong lon tongLaySan cell={cell} tongCot={tongCot} canEdit={canEdit} tenMon={tenMonO} tenHv={row.studentName}
+          <ODiemThuong lon tongLaySan cell={{ ...cell, oTuanCu: !!tuanDangXem && s?.movedFromStart === tuanDangXem }} tongCot={tongCot} canEdit={canEdit} tenMon={tenMonO} tenHv={row.studentName}
             onSave={(p, o) => luu(k, p, o)} onDau={(bat, im) => dau(k, bat, im)} onLoiNhap={(x) => loiNhap(k, x)}
             inputRef={inputRef} onKeyDown={onKeyDown} />
         )}

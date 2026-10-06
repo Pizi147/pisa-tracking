@@ -9,7 +9,7 @@ import { demoToday } from '../demoConfig.ts';
 import { addDays, nowIso } from '../util.ts';
 import { type Principal } from '../permissions.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
-import { raiseSignal, labelOf } from './signals.ts';
+import { caseDongDoXoaSql, raiseSignal, labelOf } from './signals.ts';
 import { failingEntrySkills, type AttemptResult, type EntryBands } from '../fasttrack/scoring.ts';
 import { weekStartOf } from '../fasttrack/attempts.ts';
 import { scoringModeOf } from '../fasttrack/skillSchedule.ts';
@@ -152,7 +152,7 @@ export function chuongTrinhCuaLop(classId: number | null | undefined): string | 
 export function upsertCategoryCase(
   p: Principal, attempt: any, category: CaseCategory, topic: string,
   sosLevel: number | null, detectedAt: string,
-): { id: number; kind: MilestoneKind } {
+): { id: number; kind: MilestoneKind | 'reopened' } {
   const conn = db();
   const key = caseDedupKey({
     category, studentId: attempt.student_id, cycleId: attempt.cycle_id,
@@ -166,6 +166,36 @@ export function upsertCategoryCase(
   /* PR-DEPLOY (0b-3): Case MỞ của chương trình khác (FOU "G+V" → BE "Writing") nhả khoá cho Case mới; Case cũ giữ nguyên mọi thứ, vẫn là Case "Từ lớp trước". */
   const cuaChuongTrinhKhac = !!existing && existing.status !== 'done' && caseKhacChuongTrinh(existing, chuongTrinhCuaLop(attempt.class_id));
   if (cuaChuongTrinhKhac) conn.prepare('UPDATE sos_cases SET dedup_key = NULL, updated_at = ? WHERE id = ?').run(nowIso(), existing.id);
+
+  /*
+   * PR-BV (G5): NHẬP LẠI ĐIỂM SAU KHI XOÁ — Case mà lần xoá đó đóng (cùng lượt + cùng kỹ năng) MỞ LẠI, không tạo Case mới: PA bị huỷ lúc
+   * xoá về trạng thái cũ, lịch sử giữ cả hai lần. Sửa thành đạt / thi lại / lượt khác vẫn theo luật dưới.
+   */
+  if (!existing || cuaChuongTrinhKhac || existing.status === 'done') {
+    const cu = conn.prepare(
+      `SELECT * FROM sos_cases sc WHERE sc.student_id = ? AND COALESCE(sc.cycle_id, 0) = ? AND sc.category = ?
+          AND ${caseDongDoXoaSql('sc')} ORDER BY sc.id DESC LIMIT 1`,
+    ).get(attempt.student_id, attempt.cycle_id ?? 0, category, `${attempt.id}:${topic}`) as any;
+    if (cu) {
+      if (existing && existing.status === 'done') conn.prepare('UPDATE sos_cases SET dedup_key = NULL, updated_at = ? WHERE id = ?').run(nowIso(), existing.id);
+      const truoc = (conn.prepare(`SELECT old_value FROM sos_case_history WHERE case_id = ? AND field = 'status' AND new_value = 'done' ORDER BY id DESC LIMIT 1`)
+        .get(cu.id) as any)?.old_value ?? 'open';
+      conn.prepare(
+        `UPDATE sos_cases SET status = ?, closed_at = NULL, closed_by = NULL, outcome_note = NULL, dedup_key = ?, sos_level = ?, updated_at = ? WHERE id = ?`,
+      ).run(truoc, key, sosLevel, nowIso(), cu.id);
+      const paLai = conn.prepare(
+        `UPDATE case_interventions SET status = substr(closed_reason, 15), closed_reason = NULL, updated_at = ?
+          WHERE case_id = ? AND status = 'cancelled' AND closed_reason LIKE 'score_cleared:%'`,
+      ).run(nowIso(), cu.id).changes;
+      recordChange(cu.id, 'status', 'done', truoc, p.userId);
+      if (cu.sos_level !== sosLevel) recordChange(cu.id, 'sos_level', String(cu.sos_level), String(sosLevel), p.userId);
+      writeAudit({
+        actorUserId: p.userId, action: 'case.mo_lai_xoa_diem', entityType: 'sos_case', entityId: cu.id, entityLabel: topic,
+        before: { status: 'done' }, after: { status: truoc, attemptId: attempt.id, paMoLai: paLai },
+      });
+      return { id: cu.id, kind: 'reopened' };
+    }
+  }
 
   if (!existing || cuaChuongTrinhKhac) {
     const info = conn
@@ -501,8 +531,14 @@ export function taoCaseTuDong(p: Principal, x: {
   const conn = db();
   const { attempt } = x;
   const up = upsertCategoryCase(p, attempt, x.category, x.skill, x.sosLevel, x.detectedAt);
-  const han = hanXacNhan(demoToday());
   const boTro = x.pa === 'bo_tro';
+  /* PR-BV: Case mở lại sau khi nhập lại điểm — giữ hạn, mốc, PA cũ, không báo lại; chỉ nối tín hiệu vừa mở lại vào đúng Case đó. */
+  if (up.kind === 'reopened') {
+    conn.prepare(`UPDATE case_signals SET status = 'linked', case_id = ?, resolved_at = ?, resolution_note = ?, updated_at = ? WHERE id = ?`)
+      .run(up.id, nowIso(), 'Nhập lại điểm sau khi xoá — mở lại Case cũ.', nowIso(), x.signalId);
+    return conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(up.id);
+  }
+  const han = hanXacNhan(demoToday());
   const ct = boTro ? (conn.prepare('SELECT programme_code FROM classes WHERE id = ?').get(attempt.class_id ?? 0) as any)?.programme_code ?? null : null;
   conn.prepare('UPDATE sos_cases SET han_xac_nhan = ? WHERE id = ?').run(han, up.id);
   const open = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(up.id) as any;

@@ -281,8 +281,11 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
 /** Thẻ đã xử lý: ai quyết, lý do/câu trả lời, vì sao tự đóng. */
 function KetQua({ yc, ngan }: { yc: TheYeuCauDto; ngan: (d: string | null | undefined) => string }) {
   const ai = yc.nguoiDuyet ? `${yc.nguoiDuyet}` : 'Quản lý';
-  if (yc.trangThai === 'tu_choi') return <p className="m-0 mt-1 text-[12px] text-slate-400">{ai} từ chối{yc.xuLyLuc ? ` ${ngan(yc.xuLyLuc)}` : ''}: “{yc.lyDoTuChoi}”</p>;
+  /* PR-BV: thẻ đã quyết mà sau đó "-" bị xoá — giữ quyết định, thêm "vắng đã gỡ" (`lyDoDong`). */
+  const goVang = yc.lyDoDong && yc.trangThai !== 'tu_dong' ? ` · ${yc.lyDoDong}` : '';
+  if (yc.trangThai === 'tu_choi') return <p className="m-0 mt-1 text-[12px] text-slate-400">{ai} từ chối{yc.xuLyLuc ? ` ${ngan(yc.xuLyLuc)}` : ''}: “{yc.lyDoTuChoi}”{goVang}</p>;
   if (yc.trangThai === 'da_tra_loi') return <p className="m-0 mt-1 text-[12px] text-slate-400">{ai} trả lời: “{yc.traLoi}”</p>;
   if (yc.trangThai === 'tu_dong') return <p className="m-0 mt-1 text-[12px] text-slate-400">Tự đóng: {yc.lyDoDong}</p>;
-  return yc.traLoi ? <p className="m-0 mt-1 text-[12px] text-slate-400">{ai}: “{yc.traLoi}”</p> : null;
+  if (!yc.traLoi) return goVang ? <p className="m-0 mt-1 text-[12px] text-slate-400">{ai} đã duyệt{goVang}</p> : null;
+  return <p className="m-0 mt-1 text-[12px] text-slate-400">{ai}: “{yc.traLoi}”{goVang}</p>;
 }

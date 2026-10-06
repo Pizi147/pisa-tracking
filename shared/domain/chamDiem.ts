@@ -162,7 +162,7 @@ export function docONhapLR(s: string): ONhapLR | { loi: string } | null {
 /** Lệnh điểm một ô gửi máy chủ (phần chung của `SavePatch` ở web). */
 export type PatchDiem = { rawScore?: number | null; band?: number | null; criteria?: (number | null)[]; noShow?: boolean };
 /** Ô chỉ cần biết có dấu "-" đang hiệu lực không. */
-type OCoDau = { noShow?: unknown };
+type OCoDau = { noShow?: unknown; daChot?: unknown };   // PR-BV: dấu đã chốt (`daChot`) cũng là ô mang dấu
 
 /**
  * Chữ người dùng gõ ở ô SỐ CÂU ĐÚNG (L/R) → lệnh gửi máy chủ. '-' LÀ MỘT LỆNH, KHÔNG PHẢI MỘT SỐ (rule book §17.1): "học
@@ -177,7 +177,7 @@ export const LOI_SO_CAU = 'Số câu đúng là số nguyên, hoặc band 6.5 / 
 export function rawPatchFrom(text: string, cell: OCoDau): PatchDiem | null {
   const t = text.trim();
   if (t === '-') return { noShow: true };
-  if (t === '') return cell.noShow ? { noShow: false } : { rawScore: null };
+  if (t === '') return cell.noShow || cell.daChot ? { noShow: false } : { rawScore: null };
   const o = docONhapLR(t);
   if (!o || 'loi' in o) return null;
   return 'band' in o ? { band: o.band } : { rawScore: o.raw };
@@ -215,7 +215,7 @@ export function criteriaPatchFrom(vals: string[], cell: OCoDau, bandText = ''): 
   const filled = nums.filter((v) => v !== null) as number[];
   const preview = !dash && filled.length === 4 ? Math.round((filled.reduce((a, b) => a + b, 0) / 4) * 2 + 1e-9) / 2 : null;
   const patch: PatchDiem = dash ? { noShow: true }
-    : allEmpty && cell.noShow ? { noShow: false }
+    : allEmpty && (cell.noShow || cell.daChot) ? { noShow: false }
     : { criteria: nums };
   return { dash, preview, patch, loi: null };
 }

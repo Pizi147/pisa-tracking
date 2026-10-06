@@ -50,9 +50,11 @@ export async function runPrS3fTests(t: YThucTestKit) {
     assert(c.status === 'open', 'chưa có Case L');
     keHoach.huyDiem(P.admin, { attemptId: a.id, skill: 'listening', lyDo: 'Chấm nhầm bài, huỷ điểm' });
     const sau = get('SELECT * FROM sos_cases WHERE id = ?', c.id);
-    assert(sau.status === 'done' && /điểm Listening.* đã bị huỷ/.test(sau.outcome_note ?? ''), JSON.stringify(sau));
+    /* PR-BV thay S3F (1) "đã bị huỷ": Huỷ điểm là xoá điểm — chữ "đã bị xoá" (thi lại giữ "đã bị huỷ"). */
+    assert(sau.status === 'done' && /điểm Listening.* đã bị xoá/.test(sau.outcome_note ?? ''), JSON.stringify(sau));
     assert(get(`SELECT status FROM case_signals WHERE case_id = ? OR (attempt_id = ? AND skill = 'listening')`, c.id, a.id).status === 'withdrawn', 'tín hiệu chưa rút');
-    assert(all('SELECT closed_reason r, status s FROM case_interventions WHERE case_id = ?', c.id).every((x: any) => x.s === 'cancelled' && x.r === 'score_fixed'), 'PA chưa huỷ đúng lý do');
+    /* PR-BV thay S3F (1) "closed_reason = score_fixed": xoá điểm ghi `score_cleared:<trạng thái cũ>` để nhập lại điểm mở lại PA đúng như cũ. */
+    assert(all('SELECT closed_reason r, status s FROM case_interventions WHERE case_id = ?', c.id).every((x: any) => x.s === 'cancelled' && /^score_cleared:(planned|started)$/.test(x.r)), 'PA chưa huỷ đúng lý do');
     assert(caseOf(st.id, 'reading').status === 'open', 'Case R không được đụng');
   });
   check('S3F (1) · Thi lại L: Case cũ đóng; điểm mới vẫn trượt → Case MỚI theo điểm mới', () => {
