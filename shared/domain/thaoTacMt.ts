@@ -27,7 +27,8 @@ export function trangThaiTT(o: {
   if (!o.batBuoc) return 'khong-yeu-cau';
   if (o.coDiem) return 'co-diem';
   if (o.lichSu) return 'lich-su';          // MT cũ chưa điểm: chỉ nhập bù — không dời, không vắng, không hạn
-  if (o.huyVang && o.sit === 'cancelled') return 'huy-vang';
+  /* PR-MTb sau rà (I1): huỷ vì vắng mà đang có đề nghị dời chờ → "chờ duyệt" (Quản lý trả lời đề nghị, không Khôi phục / Không mock lại song song). */
+  if (o.huyVang && o.sit === 'cancelled') return o.choDuyet ? 'cho-duyet' : 'huy-vang';
   if (o.sit === 'cancelled') return 'da-huy';
   if (o.choDuyet) return 'cho-duyet';
   if (o.sit === 'absent') return 'vang';
@@ -47,7 +48,9 @@ export function thaoTacKyNang(tt: TrangThaiTT, q: QuyenTT): { chinh: ThaoTac | n
     case 'chua-toi-tuan': return { chinh: q.nhapDiem ? 'nhap-diem' : null, menu: [...(ql ? ['doi-lich'] : []), ...(ftQl ? ['bo-ky-nang'] : [])] as ThaoTac[] };
     case 'dang-thi': return { chinh: q.nhapDiem ? 'nhap-diem' : null,
       menu: [...(q.gvcn || ql ? ['bao-vang'] : []), ...(ql ? ['doi-han', 'doi-lich'] : [])] as ThaoTac[] };
-    case 'co-diem': return { chinh: q.nhapDiem ? 'sua-diem' : null, menu: (q.dotHoanTat ? ql : q.nhapDiem || ql) ? ['huy-diem'] : [] };
+    /* PR-MTb T20: Quản lý / Quản trị dời được kỹ năng đã có điểm (điểm đi theo; máy chủ `setSkillWeek` `quanLy`). */
+    case 'co-diem': return { chinh: q.nhapDiem ? 'sua-diem' : null,
+      menu: [...(ql ? ['doi-lich'] : []), ...((q.dotHoanTat ? ql : q.nhapDiem || ql) ? ['huy-diem'] : [])] as ThaoTac[] };
     case 'vang': return { chinh: q.gvcn || ql ? 'xep-lai' : null, menu: [] };
     case 'cho-duyet': return { chinh: ql ? 'tra-loi-de-nghi' : null, menu: [] };
     case 'da-huy': return { chinh: ql ? 'khoi-phuc' : null, menu: [] };
@@ -55,6 +58,47 @@ export function thaoTacKyNang(tt: TrangThaiTT, q: QuyenTT): { chinh: ThaoTac | n
     /* T3 (PR-MTa): Quản lý khôi phục và đặt tuần / không mock lại; GVCN xin dời; GVBM không có thao tác. */
     case 'huy-vang': return { chinh: q.quanLy ? 'khoi-phuc' : q.gvcn ? 'xin-doi' : null, menu: q.quanLy ? ['khong-mock-lai'] : [] };
   }
+}
+
+/**
+ * MENU ⋯ CỦA HỘP MỘT ĐỢT (PR-MTb Task 5, mockup phần 2): NĂM mục cố định, thứ tự cố định — mục chưa làm được vẫn hiện, mờ, `viSao` là tooltip.
+ * `duoc` lấy từ `thaoTacKyNang` (một nguồn). `thay` = thao tác thật khi bấm "Đổi tuần" ở dòng vắng / đã huỷ (đường cũ: Xếp lại bài vắng /
+ * Khôi phục và đặt tuần). "Xin dời", "Không mock lại", "Khôi phục kết quả" không nằm ở đây (hồ sơ Mock / ⋯ hàng Lộ trình).
+ */
+export type MucHop = 'doi-tuan' | 'doi-han' | 'bao-vang' | 'huy-diem' | 'nhat-ky';
+export const CHU_MUC_HOP: Record<MucHop, string> = { 'doi-tuan': 'Đổi tuần', 'doi-han': 'Dời hạn chấm', 'bao-vang': 'Báo vắng', 'huy-diem': 'Huỷ điểm', 'nhat-ky': 'Nhật ký' };
+
+/** Vì sao mục mờ (≤ 6 từ). `moi` = đợt chưa tạo. */
+function viSaoMo(muc: MucHop, tt: TrangThaiTT, moi: boolean): string {
+  if (moi) return 'Đợt chưa tạo';
+  if (muc === 'huy-diem' && tt !== 'co-diem') return 'Chưa có điểm';
+  switch (tt) {
+    case 'co-diem': return 'Đã có điểm';
+    case 'chua-xep': case 'chua-toi-tuan': return 'Chưa tới tuần thi';
+    case 'vang': return 'Bài đang vắng';
+    case 'da-huy': case 'huy-vang': return 'Phần thi đã huỷ';
+    case 'cho-duyet': return 'Chờ duyệt';
+    case 'lich-su': return 'MT cũ';
+    default: return muc === 'doi-tuan' ? 'Chỉ Quản lý' : 'Không thi đợt này';
+  }
+}
+
+export function menuHopKyNang(tt: TrangThaiTT, q: QuyenTT, moi: boolean):
+  Array<{ muc: MucHop; duoc: boolean; thay?: 'xep-lai' | 'khoi-phuc'; viSao: string | null }> {
+  const t = thaoTacKyNang(tt, q);
+  const thay = t.chinh === 'xep-lai' ? 'xep-lai' as const : t.chinh === 'khoi-phuc' ? 'khoi-phuc' as const : undefined;
+  /* MT cũ chưa điểm: `thaoTacKyNang` không cho dời, nhưng Quản lý vẫn sửa tuần hồ sơ (PR-LM D3, T20 — máy chủ `setSkillWeek` cho). */
+  const doiTuan = moi ? q.quanLy : t.chinh === 'dat-lich' || t.menu.includes('doi-lich') || !!thay || (tt === 'lich-su' && q.quanLy);
+  const duoc: Record<MucHop, boolean> = {
+    'doi-tuan': doiTuan,
+    'doi-han': !moi && t.menu.includes('doi-han'),
+    'bao-vang': !moi && t.menu.includes('bao-vang'),
+    'huy-diem': !moi && t.menu.includes('huy-diem'),
+    'nhat-ky': !moi,
+  };
+  return (Object.keys(CHU_MUC_HOP) as MucHop[]).map((muc) => ({
+    muc, duoc: duoc[muc], ...(muc === 'doi-tuan' && !moi && thay ? { thay } : {}), viSao: duoc[muc] ? null : viSaoMo(muc, tt, moi),
+  }));
 }
 
 /** Thao tác có ô lý do (T7) — các nút của `ThaoTac` cộng những thao tác không nằm trong menu kỹ năng. */

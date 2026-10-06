@@ -81,6 +81,9 @@ export function kiemTuanXep(o: { ketThuc: string[]; homNay: string; quanLy: bool
   return { cau: !o.quanLy && quaTuan ? 'Chọn tuần từ tuần này trở đi.' : null, quaTuan, mtCu };
 }
 
+/** Tooltip chip vàng "Tuần đã qua" (T4) — panel Xếp lịch, hộp một đợt: Quản lý xếp MT chưa thi về tuần đã qua. */
+export const CAU_TUAN_DA_QUA = 'MT chưa thi xếp về tuần đã qua — tuần cách ≥ 2 tuần thì là MT cũ.';
+
 /** Rà #120: "Đã thi tới MT" = d mà MT1…MT(d) có MT rơi vào tuần chưa qua → số các MT đó (để nhắc lùi Tuần bắt đầu). */
 export function mtDaThiChuaQua(route: string | null, tuanBatDau: string, daThiToiMt: number, homNay: string): number[] {
   return Array.from({ length: daThiToiMt }, (_, i) => i + 1)
@@ -169,6 +172,53 @@ export function dongHeQuaVuot(x: LuotSeHuyLich): string {
 /** Popup + lý do chỉ khi có lượt bị vượt đã có điểm (T2 — chưa điểm thì chỉ dòng vàng). */
 export function canLyDoVuot(ds: readonly LuotSeHuyLich[]): boolean {
   return ds.some((x) => x.soDiem > 0);
+}
+
+/** Nhãn "MT2, MT3" của các lượt (ghép bằng dấu phẩy). */
+const ghepNhan = (ds: readonly { nhan: string }[]) => ds.map((x) => x.nhan).join(', ');
+
+/** Chip vàng: không popup → "Bỏ lịch MT2, MT3"; có popup → "Huỷ điểm MT2" (chỉ lượt có điểm); rỗng → ''. */
+export function chipVuot(ds: readonly LuotSeHuyLich[]): string {
+  if (!ds.length) return '';
+  return canLyDoVuot(ds) ? `Huỷ điểm ${ghepNhan(ds.filter((x) => x.soDiem > 0))}` : `Bỏ lịch ${ghepNhan(ds)}`;
+}
+
+/**
+ * Chữ popup dời vượt (PR-MTb T6, mockup phần 4). `canPopup = canLyDoVuot(ds)` — lượt bị vượt chưa có điểm thì KHÔNG popup, chỉ chip vàng.
+ * `chip`: không popup → "Bỏ lịch MT2, MT3" (các lượt bị bỏ lịch); có popup → "Huỷ điểm MT2" (chỉ các lượt có điểm; hộp đã nói đủ, chip là chữ ngắn
+ * dự phòng cạnh nút Lưu). `ds` rỗng → chip ''.
+ */
+export function chuDoiVuot(i: { nhan: string; tuanMoi: string; ds: readonly LuotSeHuyLich[] }, homNay?: string | null):
+  { canPopup: boolean; tieuDe: string; cau: string; dong: string[]; chip: string } {
+  return {
+    canPopup: canLyDoVuot(i.ds),
+    tieuDe: i.tuanMoi ? `Dời ${i.nhan} sang ${tuanLich(i.tuanMoi, homNay)}?` : `Dời ${i.nhan}?`,   // chưa biết tuần mới (kiểm trước lỗi, 409 lúc lưu)
+    cau: `${i.nhan} muộn hơn ${ghepNhan(i.ds)}.`,
+    dong: i.ds.map(dongHeQuaVuot),
+    chip: chipVuot(i.ds),
+  };
+}
+
+/** Toast sau khi lưu dời vượt: "Đã lưu lịch · huỷ kết quả MT2 · bỏ lịch MT3" (lượt có điểm → huỷ kết quả; còn lại → bỏ lịch). Không vượt gì → chỉ `dau` ("Đã lưu lịch" hoặc câu của hộp mẹ). */
+export function chuLuuVuot(ds: readonly LuotSeHuyLich[], dau = 'Đã lưu lịch'): string {
+  const co = ds.filter((x) => x.soDiem > 0);
+  const khong = ds.filter((x) => !x.soDiem);
+  return [dau, ...(co.length ? [`huỷ kết quả ${ghepNhan(co)}`] : []), ...(khong.length ? [`bỏ lịch ${ghepNhan(khong)}`] : [])].join(' · ');
+}
+
+/**
+ * Popup GỘP của panel "Xếp lịch Mock Test" (Q2, T6): mỗi em có lượt bị vượt CÓ ĐIỂM một dòng "Tú · MT2: huỷ 4 điểm, đóng 1 Case";
+ * em chỉ bỏ lịch không điểm không vào popup (cột "Sẽ xếp" ghi "· bỏ lịch MT2"). `soEm` = số em đang xếp (tiêu đề).
+ */
+export function chuXepVuotGop(dong: readonly { ten: string; seHuyLich?: readonly LuotSeHuyLich[] }[], soEm: number):
+  { canPopup: boolean; tieuDe: string; cau: string; dong: string[] } {
+  const co = dong.filter((x) => canLyDoVuot(x.seHuyLich ?? []));
+  return {
+    canPopup: co.length > 0,
+    tieuDe: `Xếp lịch ${soEm} em?`,
+    cau: '',
+    dong: co.map((x) => `${x.ten} · ${(x.seHuyLich ?? []).map(dongHeQuaVuot).join('; ')}`),
+  };
 }
 
 /** Kết quả đã huỷ (chưa khôi phục) của một lượt (T2). `vuotBoi` = nhãn lượt đã vượt ("MT1"). */

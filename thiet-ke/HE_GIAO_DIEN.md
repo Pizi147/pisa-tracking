@@ -45,6 +45,8 @@ Bảng `ink` trong `tailwind.config.js` chỉ còn `ink-800` ("Đang chọn") v�
 | Chữ phụ | `slate-400` = `--text-dim`, `slate-500` = `--text-faint` | `71 85 105`, `91 102 120` | Chú thích; luôn ≥ 4.5:1 |
 | Dấu trang trí | `slate-600/700` = `chu-mo*` | nhạt | **Chỉ** dấu (`—`, `/`, `›`, `→`); chữ thật dùng `slate-500` trở lên (phép kiểm S8) |
 
+**Đang chọn của ô MT** (`ui/OMt.tsx`, mockup Mock Test 05/10 phần 3): màu **đảo** — nền `var(--text)`, chữ `var(--bg)`, viền 2px cùng nền, `✓` sau chữ. Tối: nền sáng chữ tối (đúng mockup); sáng: nền tối chữ sáng. Vẫn khác hẳn "Đang thi" (nền `doing`) ở cả hai chế độ, nên **không** dùng `chon-*` cho ô MT.
+
 Màu nghĩa (`ok, bad, late, soon, doing, done, wait, muted` — chữ · nền · viền) có giá trị riêng cho từng chế độ, **cùng nghĩa, cùng tông**, chỉ đậm/nhạt khác;
 SOS 1 vàng · SOS 2 cam · SOS 3 đỏ · Đạt xanh lá giữ nguyên ở chế độ sáng. Đổi chế độ **tức thì**, không hiệu ứng chuyển màu.
 
