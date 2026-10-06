@@ -27,8 +27,8 @@ import {
   addDaysStr, attemptHref, attemptStatusLabel, fmtBand, fmtDate, progressLabel, skillLabel,
 } from '../../lib/format.ts';
 import {
-  ATTEMPT_KIND_SHORT, CAU_TUAN_DA_QUA, CHU_THAO_TAC, cauSeHuyLich, chuDoiVuot, chuLuuVuot, kiemLyDoThaoTac, kiemTuanXep, mondayOfDate, nhanLuot, thaoTacKyNang, trangThaiTT, tuanLich,
-  type AttemptKind, type LoiTruong, type TheYeuCauDto, type ThaoTac,
+  ATTEMPT_KIND_SHORT, CAU_TUAN_DA_QUA, CHU_THAO_TAC, cauSeHuyLich, chipSosMt0, chuDoiVuot, chuLuuVuot, kiemLyDoThaoTac, kiemTuanXep, mondayOfDate, nhanLuot, thaoTacKyNang, trangThaiTT, tuanLich,
+  type AssessedSkill, type AttemptKind, type LoiTruong, type TheYeuCauDto, type ThaoTac,
   docKnMock, KY_NANG_KE_HOACH, khongDuThiTuO, oKyNangTuLich, type KetQuaHuy, type OMtVao,
 } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -57,6 +57,8 @@ type Detail = {
   /** PR-HSM (K4 §4h): lượt đã huỷ — lý do, ai, khi. */
   huy: { lyDo: string | null; ai: string | null; khi: string } | null;
   result: any; cells: Cell[]; skips: any[];
+  /** PR-MT0: MT0 — chip SOS chỉ để nhìn (band ≤ Target − 2.0); không kỳ vọng, không Case. */
+  mt0?: { sos: { skill: AssessedSkill; band: number }[] } | null;
   /** Lịch và phạm vi. */
   history: any[];
   /** Điểm: ai sửa, trước → sau (PR-I). */
@@ -155,12 +157,16 @@ export default function MockDetailPage() {
    * nhưng đường dẫn cũ, thông báo cũ và link người dùng lưu lại thì vẫn còn, nên chặn ngay
    * ở đây thay vì tin rằng không ai vào được.
    */
-  if (data.kind && data.kind !== 'mock') {
+  if (data.kind && data.kind !== 'mock' && data.kind !== 'mt0') {   // PR-MT0: MT0 chấm band, dùng màn này
     return <Navigate to={attemptHref({ id: data.id, kind: data.kind, classId: data.classId })} replace />;
   }
 
   const d = data;
   const cancelled = d.status === 'cancelled';
+  /** PR-MT0: kết luận MT0 đủ điểm — chip SOS hiển thị, hoặc `MT0 ✓` (cùng chữ Chuyển tiếp lớp, lưới Nhập điểm). */
+  const ketQuaMt0 = d.mt0 && d.result.complete
+    ? (d.mt0.sos.length ? <>{d.mt0.sos.map((x) => <Nhan key={x.skill} tone="bad">{chipSosMt0(x)}</Nhan>)}</> : <Nhan tone="ok">MT0 ✓</Nhan>)
+    : null;
   /* Ô MT đầu trang (không bấm): cùng luật `oMt` với lưới và bảng Lộ trình. */
   const omtDau: OMtVao = {
     so: d.attemptNo, attemptId: d.id, cu: d.lichSu,
@@ -249,7 +255,8 @@ export default function MockDetailPage() {
           {d.classId && (
             /* R16 — mở lưới cả lớp đúng TUẦN của đợt đang xem, không phải tuần hôm nay. */
             <Link className="btn min-h-[44px] no-underline sm:min-h-0"
-              to={`/nhap-diem/${d.classId}${d.period ? `?periodId=${d.period.id}` : ''}`}>
+              to={d.mt0 ? `/nhap-diem/${d.classId}?kind=mt0${d.period ? `&periodId=${d.period.id}` : ''}`
+                : `/nhap-diem/${d.classId}${d.period ? `?periodId=${d.period.id}` : ''}`}>
               Nhập điểm
             </Link>
           )}
@@ -259,11 +266,14 @@ export default function MockDetailPage() {
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         {/* Rà #119: `sosLevel` (chặn trần 3) — `failedCount` 4 môn từng ra "SOS 4". */}
-        <KetQuaDot coDiem={d.result.scoredRequired} yeuCau={d.result.required.length} dat={passed}
-          sos={d.result.sosLevel ?? null} />
-        <span className="text-sm text-slate-400 tabular-nums">
-          Kỳ vọng {fmtBand(d.result.expectation)}{laRf && d.result.expectation !== null ? ' = Target' : ''}
-        </span>
+        {/* PR-MT0 (planning 07/10): MT0 không có kỳ vọng — đủ điểm thì chỉ `MT0 ✓` / chip SOS, không câu "chưa có kỳ vọng". */}
+        {ketQuaMt0 ?? <KetQuaDot coDiem={d.result.scoredRequired} yeuCau={d.result.required.length} dat={passed}
+          sos={d.result.sosLevel ?? null} />}
+        {d.mt0 ? (!ketQuaMt0 && d.mt0.sos.map((x) => <Nhan key={x.skill} tone="bad">{chipSosMt0(x)}</Nhan>)) : (
+          <span className="text-sm text-slate-400 tabular-nums">
+            Kỳ vọng {fmtBand(d.result.expectation)}{laRf && d.result.expectation !== null ? ' = Target' : ''}
+          </span>
+        )}
         {d.deadlineOverride && (
           <Tag title={d.deadlineOverride.reason ?? undefined}>
             Hạn chấm cả đợt {fmtDate(d.deadlineOverride.date)}{d.deadlineOverride.by ? ` · ${d.deadlineOverride.by}` : ''}
@@ -273,7 +283,7 @@ export default function MockDetailPage() {
 
       {/* B. NĂM Ô ĐIỂM LỚN — tầng 1 của màn; bấm ô là sửa tại chỗ (YC-13.7, YC-13.8). */}
       <div id="dai-diem" className="scroll-mt-4">
-        <DaiODiemLon cells={d.cells} lich={d.skillSchedule as LichKn[]} result={d.result} lichSu={d.lichSu} homNay={homNay}
+        <DaiODiemLon cells={d.cells} lich={d.skillSchedule as LichKn[]} result={d.result} lichSu={d.lichSu} homNay={homNay} ketLuanOverall={ketQuaMt0}
           mo={moO} onMo={setMoO} save={save} />
       </div>
 

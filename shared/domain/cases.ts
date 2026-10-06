@@ -1047,13 +1047,14 @@ export function decisionNeedsReason(d: string): boolean {
 export const CONFIRM_EDIT_REASON = 'Chỉnh khi xác nhận gợi ý tự động';
 
 /** Nguồn của điểm xuất phát. Thiếu căn cứ thì để trống, KHÔNG lấy MT1 làm điểm đầu vào. */
-export const BASELINE_SOURCES = ['entrance', 'previous_cycle', 'external', 'manual'] as const;
+export const BASELINE_SOURCES = ['entrance', 'previous_cycle', 'external', 'manual', 'mt0'] as const;
 export type BaselineSource = (typeof BASELINE_SOURCES)[number];
 export const BASELINE_SOURCE_LABEL: Record<BaselineSource, string> = {
   entrance: 'Bài kiểm tra đầu vào',
   previous_cycle: 'Kết quả cuối lộ trình trước',
   external: 'Điểm bên ngoài (IELTS, nơi khác)',
   manual: 'Nhập tay có ghi chú',
+  mt0: 'MT0',   // PR-MT0: MT0 nối vào lộ trình FT lúc Chuyển tiếp lớp
 };
 
 /** Kết thúc hành chính KHÁC đạt Target. */

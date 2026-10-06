@@ -71,7 +71,7 @@ export function cacLoTrinh(p: Principal, studentId: number): DongCacLoTrinh[] {
   for (const b of conn.prepare('SELECT * FROM ban_chup_lo_trinh WHERE student_id = ? ORDER BY lan').all(studentId) as any[]) bc.set(b.cycle_id, b);
   const dangChay = cycles.filter((c) => c.status === 'active');
   const luot = dangChay.length ? conn.prepare(
-    `SELECT a.id, a.cycle_id, a.attempt_no, a.status, a.target_at_attempt FROM assessment_attempts a WHERE a.cycle_id IN (${dangChay.map(() => '?').join(',')}) ORDER BY a.cycle_id, a.attempt_no, a.id`,
+    `SELECT a.id, a.cycle_id, a.attempt_no, a.status, a.target_at_attempt FROM assessment_attempts a WHERE a.kind != 'mt0' AND a.cycle_id IN (${dangChay.map(() => '?').join(',')}) ORDER BY a.cycle_id, a.attempt_no, a.id`,
   ).all(...dangChay.map((c) => c.id)) as any[] : [];
   const diem = new Map<number, any[]>();
   theoLo(luot.map((a) => a.id as number), (lo, ph) => {

@@ -224,7 +224,8 @@ export async function runPrK26Tests(t: YThucTestKit) {
     for (const sid of it.sids) ghiCuoiKhoa(it.luot.get(sid)!, 25);
     const a = dem(() => loTrinh.layLoTrinhTiepCaLop(P.admin, it.classId));
     const b = dem(() => loTrinh.layLoTrinhTiepCaLop(P.admin, nhieu.classId));
-    assert(a === b && b <= 15, `3 em ${a} câu · 30 em ${b} câu`);
+    /* PR-MT0: +MT0 cả lớp (một câu) + tuần Final ở thanh đầu (`classProgress`) — trần 15 → 20, vẫn không tăng theo số em. */
+    assert(a === b && b <= 20, `3 em ${a} câu · 30 em ${b} câu`);
   });
   check('K26-4c · hồ sơ lớp: mục ⋮ "Ghi lộ trình tiếp theo cả lớp" chỉ hiện khi có quyền ghi; panel cả lớp lỗi theo dòng', () => {
     const dau = nguon('modules/classes/DauTrangLop.tsx') + nguon('modules/classes/ClassOverviewPage.tsx');

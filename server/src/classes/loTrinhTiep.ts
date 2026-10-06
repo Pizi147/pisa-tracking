@@ -11,6 +11,7 @@ import { classProgress } from './schedule.ts';
 import { standingFor } from '../students/standing.ts';
 import { coTheRaLenh } from './quyenChuyenLop.ts';
 import { cuoiKhoaTheoHocVien } from '../normal/cuoiKhoa.ts';
+import { dongBoMt0, mt0TheoHocVien } from '../fasttrack/mt0.ts';
 
 /**
  * LỘ TRÌNH TIẾP THEO (PR-LT, Q1, §3.9.1) — dự định của một em SAU lớp đang học, ghi trước khi
@@ -50,7 +51,7 @@ export function layLoTrinhTiep(p: Principal, studentId: number) {
   require_(p, PERMISSIONS.STUDENT_VIEW, { studentId }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
 
   const enr = enrollmentDangHoc(studentId);
-  if (!enr) return { lop: null, banGhi: null, lopDuKien: [] as LopDuKien[], coTheGhi: false, ketQua: null, cuoiKhoa: null };
+  if (!enr) return { lop: null, banGhi: null, lopDuKien: [] as LopDuKien[], coTheGhi: false, ketQua: null, cuoiKhoa: null, mt0: null };
 
   const ma = (enr.programme_code ?? null) as ProgrammeCode | null;
   const laLopThuong = !enr.is_fast_track;
@@ -80,6 +81,8 @@ export function layLoTrinhTiep(p: Principal, studentId: number) {
     ketQua: standingFor([studentId]).get(studentId) ?? null,
     /** PR-LT2b (K2-26): dòng dữ kiện đầu panel — % Cuối khoá, môn trượt, hướng gợi ý (không lưu). */
     cuoiKhoa: laLopThuong ? cuoiKhoaTheoHocVien(enr.class_id, [studentId]).get(studentId) ?? null : null,
+    /** PR-MT0: dòng phụ `MT0 · W4 OCT` dưới lựa chọn Lên FT. */
+    mt0: mt0TheoHocVien([studentId]).get(studentId) ?? null,
   };
 }
 
@@ -160,6 +163,8 @@ function ghiCacDong(p: Principal, dongs: readonly DongGhi[]): void {
       huong: d.huong, lopDuKienId: d.lopDuKienId, mucTieu: d.mucTieu, thangThi: d.thangThi, ngayXemLai: d.ngayXemLai,
     }), now]),
   );
+  /* PR-MT0: Lên FT (FOU/BE/ELE) tạo / mở lại MT0 tuần Final; rời Lên FT huỷ MT0 chưa điểm — cùng giao dịch, theo lô. */
+  dongBoMt0(p.userId, dongs);
 }
 
 /** PUT /students/:id/lo-trinh-tiep (STUDENT_EDIT ở lớp đang học). */
@@ -205,13 +210,15 @@ export function layLoTrinhTiepCaLop(p: Principal, classId: number) {
   const sids = em.map((r) => r.id as number);
   const ck = sids.length ? cuoiKhoaTheoHocVien(classId, sids) : new Map();
   const banGhi = tiepTheoTheoHocVien([classId]);
+  const mt0 = mt0TheoHocVien(sids);
   return {
-    lop: { id: classId, code: cls.code as string, ma, maKe },
+    /** PR-MT0: `tuanFinal` cho thanh đầu `{lớp} · {n} em · Final W4 OCT`. */
+    lop: { id: classId, code: cls.code as string, ma, maKe, tuanFinal: classProgress(classId).finalWeekStart ?? null },
     coTheGhi: can(p, PERMISSIONS.STUDENT_EDIT, { classId }),
     toiDa: GHI_CA_LOP_TOI_DA,
     hocVien: em.map((r) => ({
       id: r.id as number, ten: r.full_name as string, ma: r.student_code as string,
-      cuoiKhoa: ck.get(r.id) ?? null, banGhi: banGhi.get(r.id) ?? null,
+      cuoiKhoa: ck.get(r.id) ?? null, banGhi: banGhi.get(r.id) ?? null, mt0: mt0.get(r.id) ?? null,
     })),
   };
 }

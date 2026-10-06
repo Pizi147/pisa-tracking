@@ -2,7 +2,7 @@ import { suggestCaseOwner } from './owner.ts';
 import { db, tx } from '../db.ts';
 import {
   ENTRY_SKILL_LABEL,
-  SOS_LABEL, caseDedupKey, categoryOf, hanXacNhan, luotSinhViec,
+  SOS_LABEL, caseDedupKey, categoryOf, hanXacNhan, laMt0, luotSinhViec,
   type CaseCategory, type EntrySkill, type MilestoneKind, type SosLevel,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -285,6 +285,7 @@ export function addMilestone(input: {
  */
 export function raiseSignalsForResult(p: Principal, attempt: any, result: AttemptResult) {
   if (result.sosLevel === null) return null;
+  if (laMt0(attempt)) return null;   // MT0: SOS chỉ hiển thị (T5) — không tín hiệu / Case / PA / Phối hợp / thông báo
   const conn = db();
   /*
    * PR-S3F #3 (Q29-1): lộ trình HIỆN TẠI của em là KCK (không cam kết) thì lượt có điểm một phần vẫn giữ `target_at_attempt` cũ

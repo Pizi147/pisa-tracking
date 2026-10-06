@@ -9,7 +9,7 @@
  * lúc, Esc đóng), dùng `InlineScoreEditor` có sẵn (RB-5 lý do khi sửa điểm đã có). W có HAI hàng W1 (TA CC LR GRA) · W2 (TR CC
  * LR GRA), mỗi hàng lưu riêng — hai task có thể hai GV (K4-31).
  */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { chuDoiVang, ngay, skillShort, tuanLich } from '@shared/domain/index.ts';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
@@ -62,8 +62,10 @@ function trangThaiO(l: LichKn | undefined, c: Cell | undefined, lichSu: boolean,
   return { chu: 'Chưa có điểm' };
 }
 
-export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo, save }: {
+export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo, save, ketLuanOverall }: {
   cells: Cell[]; lich: LichKn[]; result: any; lichSu: boolean; homNay: string;
+  /** PR-MT0: thay dòng kết luận dưới Overall (MT0 không có kỳ vọng — `MT0 ✓` / chip SOS). */
+  ketLuanOverall?: ReactNode;
   /** Ô đang mở khung sửa (lifted — nút chính "Nhập điểm" của bảng dưới cũng mở ô lớn). */
   mo: KyNangLon | null; onMo: (k: KyNangLon | null) => void;
   save: (skill: string, patch: SavePatch) => Promise<boolean>;
@@ -145,9 +147,9 @@ export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo, sav
             {result.overall === null ? '—' : fmtBand(result.overall)}
           </span>
           <span className="mt-1 block min-h-[1rem] truncate">
-            <KetQuaDot phan="overall" coDiem={result.scoredRequired} yeuCau={result.required.length} dat={ketLuan}
+            {ketLuanOverall ?? <KetQuaDot phan="overall" coDiem={result.scoredRequired} yeuCau={result.required.length} dat={ketLuan}
               sos={result.sosLevel ?? null}
-              duoiKyVong={(result.verdicts ?? []).filter((x: any) => x.passed === false).map((x: any) => skillShort(x.skill))} />
+              duoiKyVong={(result.verdicts ?? []).filter((x: any) => x.passed === false).map((x: any) => skillShort(x.skill))} />}
           </span>
         </div>
       </div>

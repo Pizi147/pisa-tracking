@@ -79,4 +79,5 @@ export * from './taiKhoan.ts';
 export * from './daiDienBoTro.ts';
 export * from './diemTheoLuot.ts';
 export * from './chiNhanhMacDinh.ts';
+export * from './mt0.ts';
 export * from './tongKetLoTrinh.ts';

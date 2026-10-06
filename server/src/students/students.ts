@@ -111,7 +111,7 @@ export function latestResult(studentId: number) {
     .prepare(
       `SELECT a.*, cy.seq AS cycle_seq, cy.route, pr.week_end AS period_end FROM assessment_attempts a
          JOIN learning_cycles cy ON cy.id = a.cycle_id LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
-        WHERE a.student_id = ? AND a.status != 'cancelled'
+        WHERE a.student_id = ? AND a.status != 'cancelled' AND a.kind != 'mt0'   /* PR-MT0: MT0 không là "kết quả gần nhất" */
         ORDER BY cy.seq DESC, a.attempt_no DESC`,
     )
     .all(studentId) as any[];

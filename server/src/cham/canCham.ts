@@ -16,7 +16,7 @@ import {
   activeAt, can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, lopFtChoGvSpeaking, mySkills, scopeXemLuotCham, type Principal,
 } from '../permissions.ts';
 import {
-  ATTEMPT_KIND_SHORT, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, CHAM_CHEO, LUOT_TINH_NO_SQL, PERMISSIONS, boMonLich, khoiCham, khungCua, laChamCheo, lopTuMo,
+  ASSESSED_SKILLS, ATTEMPT_KIND_SHORT, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, CHAM_CHEO, LUOT_TINH_NO_SQL, PERMISSIONS, boMonLich, khoiCham, khungCua, laChamCheo, lopTuMo,
   tenMonNgan, type Khung, nhanLopLichTest, noShowStateOf,
   soSanhLop, trangThaiChamLabel, type AssessedSkill, type AttemptKind, type LoaiNhanLop, type PhamViLichTest,
 } from '../../../shared/domain/index.ts';
@@ -43,6 +43,10 @@ export function chamSheet(
     canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { classId }),
     today,
   };
+  /* PR-MT0: MT0 ở lớp thường chấm band — lưới FT chỉ các MT0 của lớp (tuỳ chọn tuần). */
+  if (opts.kind === 'mt0') {
+    return { ...chung, mode: 'ielts_band' as const, ft: classScoreSheet(p, classId, { theo: 'mt0', periodId: opts.periodId ?? null }, today), thuong: null };
+  }
   if (isRatioClass(classId)) {
     return { ...chung, mode: 'ratio' as const, thuong: regularSheet(p, classId, opts.kind ?? undefined, today), ft: null };
   }
@@ -275,8 +279,9 @@ export function noQuaHan(
       const key = `${a.classId}:${a.kind}:${a.attemptNo ?? 0}:${x.periodId ?? 0}`;
       let cu = gom.get(key);
       if (!cu) {
+        const mt0 = a.kind === 'mt0';   // PR-MT0: MT0 ở lớp thường chấm band, tên môn IELTS
         cu = {
-          key, classId: a.classId, classCode: a.classCode ?? '—', mode: lopOf(a.classId).mode, chuongTrinh: lopOf(a.classId).ct,
+          key, classId: a.classId, classCode: a.classCode ?? '—', mode: mt0 ? 'ielts_band' : lopOf(a.classId).mode, chuongTrinh: mt0 ? null : lopOf(a.classId).ct,
           kind: a.kind, attemptNo: a.attemptNo ?? null, dotLabel: dotLabelOf(a.kind, a.attemptNo ?? null),
           periodId: x.periodId, weekStart: x.weekStart,
           kyNang: [], kyNangLabel: '', conBai: 0, soHv: 0, attemptIds: [], han: null, quaHan: false, luiLich: null,
@@ -319,7 +324,8 @@ export function noQuaHan(
       /* Chỉ còn ô Speaking Mock (không của ai) → "Chờ chấm", không "Chờ GV khác" (mockup LT3, T18). */
       coDayLop: rest.coDayLop && kyNang.some((k) => !laChamCheo(d.kind, k)),
       duocCham: editableSkills(p, d.classId, kyNang).length > 0,
-      hrefDayDu: d.mode === 'ielts_band'
+      hrefDayDu: d.kind === 'mt0' ? `/nhap-diem/${d.classId}?kind=mt0${d.periodId ? `&periodId=${d.periodId}` : ''}`
+        : d.mode === 'ielts_band'
         ? `/nhap-diem/${d.classId}${d.periodId ? `?periodId=${d.periodId}` : ''}`
         : `/nhap-diem/${d.classId}?kind=${encodeURIComponent(d.kind)}`,
     };
@@ -420,8 +426,8 @@ function oFtXong(diem: OiemLuu[], nhap: string, v: { periodId: number; weekEnd: 
 }
 
 /** Ô nhập của một dòng lịch: Writing FT là hai ô W1, W2; còn lại một ô cùng tên môn. */
-const oNhapCua = (r: { skill: string; programme_code: string | null }): string[] =>
-  (cheDoCua(r.programme_code) === 'ielts_band' && r.skill === 'writing' ? ['writing1', 'writing2'] : [r.skill]);
+const oNhapCua = (r: { skill: string; programme_code: string | null; kind?: string }): string[] =>
+  ((r.kind === 'mt0' || cheDoCua(r.programme_code) === 'ielts_band') && r.skill === 'writing' ? ['writing1', 'writing2'] : [r.skill]);
 
 const THU_TU_MON =
   `CASE ask.skill WHEN 'listening' THEN 1 WHEN 'reading' THEN 2 WHEN 'writing' THEN 3 WHEN 'speaking' THEN 4 WHEN 'tong_hop' THEN 5 ELSE 6 END`;
@@ -509,17 +515,20 @@ function hangLopTuan(
     /* Chỉ đếm lượt còn ngồi thi (chưa vắng, chưa huỷ phần thi): em vắng không làm dòng thành "Đã chấm xong". */
     if (r.sit_status !== 'scheduled' && r.sit_status !== 'sat') continue;
     if (!giuLop(r.class_id)) continue;
-    const mode = cheDoCua(r.programme_code);
-    const khoa = mode === 'ratio' ? `${r.class_id}:${r.kind}` : String(r.class_id);
+    /* PR-MT0 (mockup ⑤): MT0 ở lớp thường = một hàng riêng `{lớp}:mt0`, lưới band, tên môn IELTS, mở Nhập điểm `kind=mt0`. */
+    const mt0 = r.kind === 'mt0';
+    const mode: CheDo = mt0 ? 'ielts_band' : cheDoCua(r.programme_code);
+    const khoa = mt0 || mode === 'ratio' ? `${r.class_id}:${r.kind}` : String(r.class_id);
     let lop = byLop.get(khoa);
     if (!lop) {
       lop = {
         key: khoa, classId: r.class_id, classCode: r.class_code, branchName: r.branch_name, mode,
-        chuongTrinh: r.programme_code ?? null,
-        boMon: [...boMonLich(r.programme_code, modes.get(r.programme_code)?.skills)],
-        kind: mode === 'ratio' ? r.kind : null,
+        chuongTrinh: mt0 ? null : r.programme_code ?? null,
+        boMon: mt0 ? [...ASSESSED_SKILLS] : [...boMonLich(r.programme_code, modes.get(r.programme_code)?.skills)],
+        kind: mt0 || mode === 'ratio' ? r.kind : null,
         tong: 0, conBai: 0, conBaiCuaToi: 0, quaHan: false,
-        hrefDayDu: mode === 'ratio'
+        hrefDayDu: mt0 ? `/nhap-diem/${r.class_id}?kind=mt0&periodId=${periodId}`
+          : mode === 'ratio'
           ? `/nhap-diem/${r.class_id}?kind=${encodeURIComponent(r.kind)}`
           : `/nhap-diem/${r.class_id}?periodId=${periodId}`,
         dong: new Map(), _dot: [], _kn: new Set(), _hanNo: null, _conKhongCheo: 0,
@@ -541,7 +550,7 @@ function hangLopTuan(
       const q = qs.toString();
       d = {
         key, dotLabel: dot, kyNang: [r.skill],
-        kyNangLabel: tenMonNgan(r.programme_code, r.skill), soHv: 0, conBai: 0, quaHan: false,
+        kyNangLabel: tenMonNgan(mt0 ? null : r.programme_code, r.skill), soHv: 0, conBai: 0, quaHan: false,
         href: `/nhap-diem/${r.class_id}${q ? `?${q}` : ''}`,
       };
       lop.dong.set(key, d);
@@ -569,7 +578,7 @@ function hangLopTuan(
       lop.conBaiCuaToi += con.filter((o) => !laChamCheo(r.kind, o.nhap) && monCuaToi(r.class_id, o.nhap)).length;
       lop._conKhongCheo += con.filter((o) => !laChamCheo(r.kind, o.nhap)).length;
       /* Hạn theo đúng thứ tự của `viewSkill`: hạn riêng của môn → hạn riêng của đợt → hạn mặc định theo tuần môn. */
-      const han = r.han_mon ?? r.han_dot ?? skillScoreDeadline(mode === 'ratio' ? 'ratio' : 'band', tuan.week_start);
+      const han = r.han_mon ?? r.han_dot ?? skillScoreDeadline(mode === 'ratio' ? 'ratio' : 'band', tuan.week_start, mt0);
       if (!lop._hanNo || han < lop._hanNo) lop._hanNo = han;
       if (!chuaToiHan && quaHanNhapDiem(han, tuan.week_start, today)) {   // PR-UXF-a Q10
         d.quaHan = true; lop.quaHan = true;
@@ -583,7 +592,7 @@ function hangLopTuan(
     dotLabel: _dot.join(', '),
     kyNangTuan: [...new Set([..._kn].map((k) => assessedSkillOf(k)))].sort(theoThuTu),
     daCham: l.tong - l.conBai,
-    han: _hanNo ?? skillScoreDeadline(l.mode === 'ratio' ? 'ratio' : 'band', tuan.week_start),
+    han: _hanNo ?? skillScoreDeadline(l.mode === 'ratio' ? 'ratio' : 'band', tuan.week_start, l.kind === 'mt0'),
     /* Chỉ còn ô Speaking Mock (không của ai) → "Chờ chấm" cả với người dạy lớp (T18). */
     nhan: nhanLopLichTest({ conBai: l.conBai, conBaiCuaToi: l.conBaiCuaToi, chuaToiHan, coDayLop: lopCuaToi.has(l.classId) && _conKhongCheo > 0 }),
     /* Tuần chưa tới thì chưa có gì để chấm — không tự mở. */
@@ -596,6 +605,9 @@ function hangLopTuan(
     })),
   }));
 }
+
+/** PR-MT0: khung của một hàng Lịch Test — MT0 chấm band nhưng ở lớp thường, nên thuộc khung "Lớp thường". */
+const khungDong = (x: { mode: CheDo; kind: string | null }): Khung => (x.kind === 'mt0' ? 'thuong' : khungCua(x.mode));
 
 /**
  * "TUẦN NÀY CÓ NHỮNG LƯỢT TEST NÀO, CÒN PHẢI CHẤM GÌ" — MỘT lời gọi đủ cho màn Lịch Test (PR-UX1, PR-LT3 T15–T17). Ba khối, một bài
@@ -673,7 +685,7 @@ export function lichTest(
     lopDangLoc: lopDangLoc ? { id: lopDangLoc.id as number, code: lopDangLoc.code as string } : null,
     tongQuan: tq(k23, no.dong),
     tongQuanKhung: Object.fromEntries((['ft', 'thuong'] as const).map((k) => [k,
-      tq(k23.filter((x) => khungCua(x.mode) === k), no.dong.filter((x) => khungCua(x.mode) === k))])) as Record<Khung, TongQuanLich>,
+      tq(k23.filter((x) => khungDong(x) === k), no.dong.filter((x) => khungDong(x) === k))])) as Record<Khung, TongQuanLich>,
     no: no.dong,
     chamTuanNay,
     lop,

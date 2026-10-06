@@ -271,6 +271,14 @@ export const METRICS: readonly ChiSo[] = [
     donVi: 'lop',
     tapDuDieuKien: 'Lớp đang mở trong phạm vi người xem được phân công giáo viên, có ít nhất một môn của chương trình chưa có giáo viên đang dạy — cùng hàm với badge "Thiếu GV" ở Học viên & Lớp. Pre FOU không chia môn (GVCN dạy luôn) nên không tính.',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi lớp chỉ đếm 1 lần', drilldown: '/metrics/lop-thieu-gv-mon',
+  },
+  /* PR-MT0 (T5b): việc "Chốt lên FT · lớp" của Quản lý — tự hết khi mọi em đã có hướng. */
+  {
+    id: 'lop-chua-chot-len-ft', ten: 'Lớp cần Chốt lên FT',
+    cauHoi: 'Bao nhiêu lớp FOU/BE/ELE sắp tới tuần Cuối khoá mà còn em chưa có hướng Lộ trình tiếp theo?',
+    donVi: 'lop',
+    tapDuDieuKien: 'Lớp thường FOU/BE/ELE đang mở trong phạm vi sửa lớp của người xem, từ 13 ngày trước hạn (Chủ nhật trước tuần Cuối khoá) tới hết tuần Cuối khoá, còn em đang học chưa có hướng hoặc "Chưa quyết" — cùng hàm với việc "Chốt lên FT".',
+    thoiGian: 'hien-trang', khuTrung: 'Mỗi lớp chỉ đếm 1 lần', drilldown: '/metrics/lop-chua-chot-len-ft',
   },];
 
 /**

@@ -42,7 +42,8 @@ export default function ChamDiemPage() {
    */
   const periodId = periodParam ?? current.data?.id ?? null;
   const choTuan = periodParam === null && !current.data && !current.error;
-  const path = classId && !choTuan ? duongCham(Number(classId), { periodId }) : null;
+  /* PR-MT0: `?kind=mt0` ở lớp thường → máy chủ trả lưới band các MT0 (không phải bảng tỷ lệ). */
+  const path = classId && !choTuan ? duongCham(Number(classId), { periodId, kind: kindParam === 'mt0' ? 'mt0' : null }) : null;
   const { data, error, reload } = useApi<Cham>(path);
 
   /* "Đã lưu 10:31 ✓" ở đầu trang: giờ của lần lưu thành công gần nhất trên cả lưới. */

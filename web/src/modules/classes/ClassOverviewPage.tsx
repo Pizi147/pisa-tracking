@@ -64,7 +64,8 @@ export default function ClassOverviewPage() {
    */
   useEffect(() => {
     const v = params.get('viec');
-    if (data && ((v === 'chuyen-tiep' && data.viewer.coTheChuyenTiep) || (v === 'phan-cong' && (data.viewer.canAssign || data.viewer.canAssignSubject)))) {
+    /* PR-MT0: việc QL "Chốt lên FT · lớp" mở thẳng bảng Ghi lộ trình tiếp theo cả lớp (`?viec=lo-trinh-ca-lop`). */
+    if (data && ((v === 'chuyen-tiep' && data.viewer.coTheChuyenTiep) || v === 'lo-trinh-ca-lop' || (v === 'phan-cong' && (data.viewer.canAssign || data.viewer.canAssignSubject)))) {
       setViec(v);
       doiThamSo({ viec: null });
     } else if (data && v === 'ban-giao') {

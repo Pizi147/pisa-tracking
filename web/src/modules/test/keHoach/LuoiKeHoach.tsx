@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Empty, Th } from '../../../ui/ui.tsx';
-import type { KyNangKH } from '@shared/domain/index.ts';
+import { duongDotTest, type KyNangKH } from '@shared/domain/index.ts';
 import { OMt } from '../../../ui/OMt.tsx';
 import { useNgayNghiepVu } from '../../../ui/ngayNghiepVu.ts';
 import { ChipKyNang } from './ChipKyNang.tsx';
@@ -109,9 +109,16 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
                             : { onClick: moHop, ...(dot.attemptId === null ? { ghiChu: `Bấm để xếp ${nhanDot(c.dot)}` } : {}) })} />
                       )
                     ) : (
-                      <ChipKyNang kn={dot.kn} attemptId={dot.attemptId} ct={(data as LuoiThuongData).chuongTrinh} khaiGiang={khaiGiang} tongTuan={tongTuan}
-                        deXuat={c.deXuat} nhanDeXuat={c.nhanDeXuat} tenDot={nhanDot(c.dot)}
-                        onMo={(skill, el) => setHop({ anchor: el, hang: h, cot: c, kyNangDau: skill })} />
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <ChipKyNang kn={dot.kn} attemptId={dot.attemptId} ct={(data as LuoiThuongData).chuongTrinh} khaiGiang={khaiGiang} tongTuan={tongTuan}
+                          deXuat={c.deXuat} nhanDeXuat={c.nhanDeXuat} tenDot={nhanDot(c.dot)}
+                          onMo={(skill, el) => setHop({ anchor: el, hang: h, cot: c, kyNangDau: skill })} />
+                        {/* PR-MT0 (mockup ④): ô MT0 ngay sau Final — tên môn IELTS (`ct` null); bấm mở hồ sơ Mock để dời / nhập. */}
+                        {c.key === 'final' && (h as HangThuong).mt0 && homNay && (() => {
+                          const m = (h as HangThuong).mt0!;
+                          return <OMt v={{ so: 0, attemptId: m.attemptId, kn: m.kn, cu: false, khongDung: m.khongDung }} homNay={homNay} href={duongDotTest({ id: m.attemptId, kind: 'mt0' })} />;
+                        })()}
+                      </div>
                     )}
                   </td>
                 );

@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, CHU_KY_NANG, CO_DIEM_SQL, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, boMonLich, canLyDoVuot, dongHeQuaVuot, duongDotTest, kiemLyDoThaoTac,
-  kiemTuanXep, laMtCu, luotBiVuot, nhanDot, tenMon, tuanLich,
+  kiemTuanMt0, kiemTuanXep, laMtCu, luotBiVuot, nhanDot, tenMon, tuanLich, tuanMuonNhatMt0,
   type AssessedSkill, type LuotLanCan, type LuotSeHuyLich, type SitStatus, type SkillProgress,
 } from '../../../shared/domain/index.ts';
 import { HttpError, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -12,6 +12,7 @@ import { programmeByCode } from '../normal/regular.ts';
 import { rutDeNghiDoi } from './absence.ts';
 import { caseSinhRieng } from './attempts.ts';
 import { huyKetQuaLuot } from './ketQuaHuy.ts';
+import { classProgress } from '../classes/schedule.ts';
 import {
   effectiveSkillDeadline, mondayOf, quaHanNhapDiem, weekInfo, type ScoringMode,
 } from '../platform/week.ts';
@@ -108,6 +109,7 @@ export function clearScoringModeCache() {
 export function scoringModeOf(
   attempt: { class_id?: number | null; kind?: string | null; scoring_mode?: string | null },
 ): ScoringMode {
+  if (attempt.kind === 'mt0') return 'band';   // PR-MT0: MT0 chấm band dù nằm ở lớp thường
   if (attempt.scoring_mode) return attempt.scoring_mode === 'ratio' ? 'ratio' : 'band';
   if (!attempt.class_id) return attempt.kind && attempt.kind !== 'mock' ? 'ratio' : 'band';
   const cached = modeByClass.get(attempt.class_id);
@@ -134,7 +136,8 @@ export function scoringModeOf(
  */
 /** K5-38, PF6: bộ môn xếp lịch của MỘT lượt — FT 4 kỹ năng đánh giá; lớp thường theo `programme_skills` (Pre FOU một ô). */
 export function boMonCuaLuot(conn: any, attemptId: number): readonly string[] {
-  const r = conn.prepare(`SELECT c.programme_code AS ct FROM assessment_attempts a JOIN classes c ON c.id = a.class_id WHERE a.id = ?`).get(attemptId) as any;
+  const r = conn.prepare(`SELECT c.programme_code AS ct, a.kind FROM assessment_attempts a JOIN classes c ON c.id = a.class_id WHERE a.id = ?`).get(attemptId) as any;
+  if (r?.kind === 'mt0') return ASSESSED_SKILLS;   // PR-MT0: MT0 luôn bốn kỹ năng IELTS
   return boMonLich(r?.ct ?? null, programmeByCode(r?.ct)?.skills);
 }
 
@@ -284,6 +287,8 @@ export function viewSkill(input: {
   pendingMove?: { id: number; decideBy: string; toWeek: string | null; moveNo: number } | null;
   /** PR-MT (T34, M3): lượt MT lịch sử — không nợ, không hạn, không quá hạn. Chốt MỘT chỗ; mọi nơi đếm nợ đọc `progress` này. */
   lichSu?: boolean;
+  /** PR-MT0: hạn chấm MT0 = Chủ nhật tuần sau. */
+  mt0?: boolean;
 }): SkillScheduleView {
   const { row, mode, scored } = input;
   const today = input.today ?? demoToday();
@@ -296,6 +301,7 @@ export function viewSkill(input: {
         mode, weekStart,
         skillOverride: row.deadline_override,
         attemptOverride: input.attemptOverride,
+        mt0: input.mt0,
       })
     : { date: null, source: 'none' as const };
 
@@ -402,7 +408,8 @@ export function recomputeCompletionWeek(attemptId: number, actorUserId: number |
   const conn = db();
   const rows = ensureSkillRows(attemptId);
   const cw = completionWeekOf(rows);
-  const a = conn.prepare('SELECT planned_period_id FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
+  const a = conn.prepare('SELECT planned_period_id, kind, cycle_id FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
+  if (a?.kind === 'final') mt0TheoFinal(a.cycle_id, rows, actorUserId);
   if (!a || a.planned_period_id === cw.periodId) return cw;
 
   const codeOf = (id: number | null) =>
@@ -417,6 +424,29 @@ export function recomputeCompletionWeek(attemptId: number, actorUserId: number |
     actor: actorUserId,
   });
   return cw;
+}
+
+/**
+ * PR-MT0 (chủ sản phẩm chốt Q2 = A): Cuối khoá của khoá lớp thường đổi tuần → MT0 cùng khoá đi theo tuần ĐẦU của Cuối khoá, khi MT0 còn
+ * `planned`, chưa có điểm và chưa ai dời tay (mọi dòng kỹ năng `plan_source = 'auto'`). Một câu đọc; chỉ ghi khi phải dời.
+ */
+function mt0TheoFinal(cycleId: number, rows: readonly SkillRow[], actorUserId: number | null): void {
+  const dau = rows.filter((r) => r.required && r.sit_status !== 'cancelled' && r.planned_period_id && r.week_start)
+    .sort((x, y) => String(x.week_start).localeCompare(String(y.week_start)))[0];
+  if (!dau) return;
+  const conn = db();
+  const m = conn.prepare(
+    `SELECT a.id FROM assessment_attempts a
+      WHERE a.cycle_id = ? AND a.kind = 'mt0' AND a.status = 'planned'
+        AND NOT EXISTS (SELECT 1 FROM attempt_skills k WHERE k.attempt_id = a.id AND k.plan_source != 'auto')
+        AND EXISTS (SELECT 1 FROM attempt_skills k WHERE k.attempt_id = a.id AND COALESCE(k.planned_period_id, 0) != ?)
+        AND NOT EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND (s.band IS NOT NULL OR s.raw_score IS NOT NULL))`,
+  ).get(cycleId, dau.planned_period_id) as any;
+  if (!m) return;
+  const now = nowIso();
+  conn.prepare('UPDATE attempt_skills SET planned_period_id = ?, updated_at = ? WHERE attempt_id = ?').run(dau.planned_period_id, now, m.id);
+  conn.prepare('UPDATE assessment_attempts SET planned_period_id = ?, updated_at = ? WHERE id = ?').run(dau.planned_period_id, now, m.id);
+  logSchedule(m.id, { action: 'week_set', field: 'planned_period', newValue: dau.period_code ?? null, reason: 'Theo tuần Cuối khoá', actor: actorUserId });
 }
 
 export function logSchedule(attemptId: number, e: {
@@ -474,6 +504,8 @@ export function checkWeekVsNeighbours(input: {
   newWeekStart: string;
   /** PR-LM: lượt sắp bị huỷ lịch vì bị vượt (đã xác nhận) — không còn là lượt lân cận. */
   boQua?: readonly number[];
+  /** PR-MT0: loại lượt đang dời — MT0 ở khoá lớp thường không là lân cận của Giữa / Cuối khoá (cùng tuần Final là đúng luật). */
+  kind?: string | null;
 }): ScheduleCheck {
   const conn = db();
   const blockers: string[] = [];
@@ -483,8 +515,9 @@ export function checkWeekVsNeighbours(input: {
    * nêu được kỹ năng nào của đợt lân cận đang ở tuần đó (PR-UX2, Q17) — gom min/max ngay trong JS. */
   const skillRows = conn
     .prepare(
-      `SELECT a.id, a.attempt_no, a.kind, ask.skill, pr.week_start
+      `SELECT a.id, a.attempt_no, a.kind, ask.skill, pr.week_start, cy.route
          FROM assessment_attempts a
+         JOIN learning_cycles cy ON cy.id = a.cycle_id
          JOIN attempt_skills ask ON ask.attempt_id = a.id AND ask.required = 1 AND ask.sit_status != 'cancelled'
          JOIN report_periods pr ON pr.id = ask.planned_period_id
         WHERE a.cycle_id = ? AND a.id != ? AND a.status != 'cancelled'`,
@@ -496,6 +529,7 @@ export function checkWeekVsNeighbours(input: {
   }>();
   for (const r of skillRows) {
     if (input.boQua?.includes(r.id)) continue;
+    if (!r.route && (r.kind === 'mt0') !== (input.kind === 'mt0')) continue;   // PR-MT0: khoá lớp thường — MT0 có luật tuần riêng
     const g = byAttempt.get(r.id);
     if (!g) byAttempt.set(r.id, { attempt_no: r.attempt_no, kind: r.kind, first_week: r.week_start, last_week: r.week_start, rows: [{ skill: r.skill, week: r.week_start }] });
     else {
@@ -554,7 +588,7 @@ export function checkSkillWeekMove(input: {
   if (!a) return { blockers: ['Không tìm thấy lượt kiểm tra'], warnings: [] };
   return checkWeekVsNeighbours({
     cycleId: a.cycle_id, attemptNo: a.attempt_no, excludeAttemptId: input.attemptId,
-    newWeekStart: input.newWeekStart, boQua: input.boQua,
+    newWeekStart: input.newWeekStart, boQua: input.boQua, kind: a.kind,
   });
 }
 
@@ -568,8 +602,11 @@ export type KiemVuot = { biVuot: LuotSeHuyLich[]; chan: string | null };
  * (`soDiem`, W1/W2 tính một) và số Case sinh riêng (`soCase`) sẽ đóng. `chan` chỉ còn khi lượt bị vượt đang có đề nghị dời chờ duyệt.
  * Chỉ lượt MT: Giữa khoá / Cuối khoá của lớp thường giữ luật chặn cũ (`checkWeekVsNeighbours`). Không ghi.
  */
-export function kiemVuot(attemptId: number, tuanCuoiMoi: string): KiemVuot {
+export function kiemVuot(attemptId: number, tuanCuoiMoi: string, tuanMoi: string = tuanCuoiMoi): KiemVuot {
   const conn = db();
+  /* PR-MT0: MT0 muộn nhất tuần 2 FT và luôn trước MT1 — chặn TRƯỚC khi tới `luotBiVuot` (MT0 không bao giờ "vượt" MT1). */
+  const mt0 = kiemTuanMt0Cho(attemptId, tuanMoi, tuanCuoiMoi);
+  if (mt0) return { biVuot: [], chan: mt0 };
   const a = conn.prepare('SELECT id, cycle_id, attempt_no, kind FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
   if (!a || a.kind !== 'mock') return { biVuot: [], chan: null };
   const rows = conn.prepare(
@@ -583,6 +620,40 @@ export function kiemVuot(attemptId: number, tuanCuoiMoi: string): KiemVuot {
       WHERE a.cycle_id = ? AND a.attempt_no > ? AND a.status != 'cancelled'`,
   ).all(a.cycle_id, a.attempt_no) as any[];
   return kiemVuotTu(a, rows, tuanCuoiMoi);
+}
+
+/**
+ * PR-MT0: tuần mới của lượt có hợp luật MT0 không. MT0: tuần muộn nhất (`tuanCuoiMoi`) ≤ thứ Hai tuần 2 FT (chưa có lộ trình FT: tuần
+ * Cuối khoá + 14 ngày) và trước MT1. MT1 của lộ trình có MT0: tuần mới (`tuanMoi`, sớm nhất vừa đặt) phải sau tuần muộn nhất của MT0.
+ * Lượt khác → null (không đọc thêm gì ngoài một câu).
+ */
+export function kiemTuanMt0Cho(attemptId: number, tuanMoi: string, tuanCuoiMoi: string = tuanMoi): string | null {
+  const conn = db();
+  const a = conn.prepare(
+    `SELECT a.kind, a.attempt_no, a.cycle_id, a.class_id, cy.route, sp.week_start AS bat_dau
+       FROM assessment_attempts a JOIN learning_cycles cy ON cy.id = a.cycle_id LEFT JOIN report_periods sp ON sp.id = cy.start_period_id
+      WHERE a.id = ?`,
+  ).get(attemptId) as any;
+  if (!a || !(a.kind === 'mt0' || (a.kind === 'mock' && a.attempt_no === 1))) return null;
+  const tuanLuot = (kind: string, no: number, ham: 'MIN' | 'MAX') => (conn.prepare(
+    `SELECT ${ham}(pr.week_start) AS w FROM assessment_attempts x JOIN attempt_skills k ON k.attempt_id = x.id AND k.required = 1 AND k.sit_status != 'cancelled'
+       JOIN report_periods pr ON pr.id = k.planned_period_id
+      WHERE x.cycle_id = ? AND x.kind = ? AND x.attempt_no = ? AND x.status != 'cancelled'`,
+  ).get(a.cycle_id, kind, no) as any)?.w ?? null;
+  if (a.kind === 'mt0') {
+    const tuanMuonNhat = tuanMuonNhatMt0({
+      tuanBatDauFt: a.route ? a.bat_dau ?? null : null,
+      tuanCuoiKhoa: a.route || !a.class_id ? null : classProgress(a.class_id).finalWeekStart,
+    });
+    /* Sớm nhất = tuần Cuối khoá của em (khoá lớp thường; lượt Final của em, chưa có thì tuần Final của lớp). Đã nối FT: không cần. */
+    const tuanSomNhat = a.route ? null : (conn.prepare(
+      `SELECT MIN(pr.week_start) AS w FROM assessment_attempts x JOIN attempt_skills k ON k.attempt_id = x.id AND k.required = 1 AND k.sit_status != 'cancelled'
+         JOIN report_periods pr ON pr.id = k.planned_period_id WHERE x.cycle_id = ? AND x.kind = 'final' AND x.status != 'cancelled'`,
+    ).get(a.cycle_id) as any)?.w ?? (a.class_id ? classProgress(a.class_id).finalWeekStart : null);
+    return kiemTuanMt0({ tuanMoi: tuanCuoiMoi, tuanDau: tuanMoi, tuanSomNhat, tuanMuonNhat, tuanMt1: a.route ? tuanLuot('mock', 1, 'MIN') : null });
+  }
+  const tuanMt0 = tuanLuot('mt0', 0, 'MAX');
+  return tuanMt0 ? kiemTuanMt0({ tuanMoi: tuanMt0, tuanMuonNhat: null, tuanMt1: tuanMoi }) : null;
 }
 
 /** Một lượt SAU cùng lộ trình, đã đọc sẵn (xếp hàng loạt đọc theo lô — `docFtTheoLo`, không N+1). */
@@ -806,7 +877,7 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
 
   /* Q-0310-1 (PR-LM) + T2 (PR-MTa): dời vượt lượt sau → bỏ lịch lượt bị vượt; có điểm thì cần xác nhận + lý do (huỷ kết quả). */
   const vuot = opts.khiTao ? { biVuot: [], chan: null } as KiemVuot
-    : kiemVuot(attemptId, tuanCuoiSauKhiDoi(ensureSkillRows(attemptId), new Map([[row.skill, period.week_start]]))!);
+    : kiemVuot(attemptId, tuanCuoiSauKhiDoi(ensureSkillRows(attemptId), new Map([[row.skill, period.week_start]]))!, period.week_start);
   if (vuot.chan) throw badRequest(vuot.chan);
   kiemXacNhanVuot(vuot.biVuot, { xacNhan: opts.huyLichVuot, lyDo: opts.reason });
 
