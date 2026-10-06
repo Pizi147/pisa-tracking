@@ -38,6 +38,7 @@ import * as absenceSvc from '../fasttrack/absence.ts';
 import * as ketQuaHuySvc from '../fasttrack/ketQuaHuy.ts';
 import * as effectiveness from '../cases/effectiveness.ts';
 import * as cycleSvc from '../fasttrack/cycles.ts';
+import * as thiThatSvc from '../loTrinh/thiThat.ts';
 import * as profileSvc from '../students/profile.ts';
 import { hanhTrinhHocVien } from '../students/hanhTrinh.ts';
 import { docHet, thongBaoCua } from '../platform/thongBao.ts';
@@ -1299,7 +1300,10 @@ api.put('/cycles/:id/baseline', requireAuth, wrap((req) => {
 /** Kết luận cuối lộ trình. Đóng lộ trình về hành chính KHÁC với đạt Target. */
 api.put('/cycles/:id/outcome', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return cycleSvc.setOutcome(principalOf(req), pInt(req, 'id'), req.body ?? {});
+  /* PR-TK (TK-K): thân mới { ngayThi, l, r, w, s, khongThi, ghiChu } = kết quả thi thật (máy tính OVR + Đạt / Chưa đạt). Thân cũ { outcome, score, note } giữ nguyên hành vi. */
+  const body = (req.body ?? {}) as Record<string, any>;
+  if (['ngayThi', 'l', 'r', 'w', 's', 'khongThi', 'ghiChu'].some((k) => k in body)) return thiThatSvc.datKetQuaThiThat(principalOf(req), pInt(req, 'id'), body);
+  return cycleSvc.setOutcome(principalOf(req), pInt(req, 'id'), body as any);
 }));
 
 /** PR-DUYET (T44): GV của lớp gửi Đề xuất sửa thông tin HV — thành thẻ ở hộp Chờ duyệt. */

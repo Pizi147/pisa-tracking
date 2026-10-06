@@ -266,6 +266,119 @@ export async function runPrTkTests(t: YThucTestKit) {
     assert(dongS().diem === 6 && dongS().ky_vong === truoc.ky_vong, 'đổi route về sau: kỳ vọng vẫn giữ');
   }));
 
+  // ------------------------------------------------------------------ TK-K · kết quả thi thật (GVCN nhập, máy so Target)
+  const thiThatSvc: any = await import('../loTrinh/thiThat.ts');
+  const hangLoat: any = await import('../students/hangLoat.ts');
+  const { loadPrincipal } = await import('../permissions.ts');
+  const myWork: any = await import('../worklist/mywork.ts');
+  const maLoi = (fn: () => unknown): number | null => { try { fn(); return null; } catch (e: any) { return e.status ?? 500; } };
+  /** Lớp FT có GVCN `userId` (principal nạp lại sau khi gán). */
+  const ganGvcn = (clsId: number, userId: number) => {
+    conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at) VALUES (?, ?, NULL, 1, '2026-01-01', 'active', ?)`)
+      .run(userId, clsId, new Date().toISOString());
+    return loadPrincipal(userId);
+  };
+  const em = (cy: number) => get('SELECT * FROM learning_cycles WHERE id = ?', cy);
+  const hoSo = (sid: number) => get('SELECT status, archived_at FROM students WHERE id = ?', sid);
+  const NHAP4 = { ngayThi: NGAY, l: 7, r: 6.5, w: 6, s: 6.5 };
+
+  await checkAsync('TK-K · GVCN lớp FT nhập 4 kỹ năng → outcome reached, OVR 6.5; thiếu S → unknown; điểm / ngày sai → 400; GVBM, GVCN lớp khác → 403; lớp thường → 400', () => thu(() => {
+    const ft = taoLop('FT', true); const ft2 = taoLop('FT', true);
+    const a = taoHV(ft, 'FT', true, 6.5);
+    const gvcn = ganGvcn(ft, P.normalCoreTeacher.userId);
+    thiThatSvc.datKetQuaThiThat(gvcn, a.cy, NHAP4);
+    assert(em(a.cy).outcome === 'reached' && em(a.cy).outcome_score === 6.5 && em(a.cy).thi_that_nhap_boi === gvcn.userId, JSON.stringify(em(a.cy)));
+    thiThatSvc.datKetQuaThiThat(gvcn, a.cy, { s: null });
+    assert(em(a.cy).outcome === 'unknown' && em(a.cy).outcome_score === null, 'thiếu S');
+    for (const [x, ten] of [[{ l: 9.5 }, '9.5'], [{ l: 6.3 }, '6.3'], [{ ngayThi: '2099-01-01' }, 'ngày mai']] as const) {
+      assert(maLoi(() => thiThatSvc.datKetQuaThiThat(gvcn, a.cy, x)) === 400, `${ten} phải 400`);
+    }
+    assert(maLoi(() => thiThatSvc.datKetQuaThiThat(P.normalSubjectTeacher, a.cy, NHAP4)) === 403, 'GVBM 403');
+    const gvKhac = ganGvcn(ft2, P.normalSubjectTeacher.userId);
+    assert(maLoi(() => thiThatSvc.datKetQuaThiThat(gvKhac, a.cy, NHAP4)) === 403, 'GVCN lớp khác 403');
+    const th = taoHV(taoLop('FOU', false), 'FOU', false);
+    assert(maLoi(() => thiThatSvc.datKetQuaThiThat(P.admin, th.cy, NHAP4)) === 400, 'lộ trình lớp thường 400');
+    assert(em(a.cy).outcome === 'unknown', 'lỗi không ghi dở');
+  }));
+  await checkAsync('TK-K · ĐÃ Kết thúc học: GVCN lớp cuối vẫn nhập được; bản chụp có điểm thi thật, so Target LÚC ĐÓNG (đổi Target sau không làm lệch)', () => thu(() => {
+    const ft = taoLop('FT', true);
+    const a = taoHV(ft, 'FT', true, 6.5);
+    const gvcn = ganGvcn(ft, P.normalCoreTeacher.userId);
+    studentsSvc.setStudentStatus(P.admin, a.sid, 'finished', NGAY, 'Nghỉ học');
+    conn.prepare('UPDATE learning_cycles SET target_score = 9 WHERE id = ?').run(a.cy);   // Target hiện tại đổi sau khi đóng
+    thiThatSvc.datKetQuaThiThat(gvcn, a.cy, NHAP4);
+    const b = dongCuaCycle(a.cy);
+    assert(b.thi_that_ovr === 6.5 && b.thi_that_l === 7 && b.thi_that_ngay === NGAY && b.target === 6.5 && b.ket_luan === 'reached' && b.lam_moi_luc !== null, JSON.stringify(b));
+    assert(em(a.cy).outcome === 'not_reached', 'số sống so Target hiện tại (9) — khác bản chụp');
+  }));
+  await checkAsync('TK-K · việc nhắc: hiện từ thứ Hai sau tháng thi, hạn +4 tuần; có kết quả / Không thi → mất; GVCN lớp cuối thấy, GVBM không', () => thu(() => {
+    const ft = taoLop('FT', true);
+    const a = taoHV(ft, 'FT', true, 6.5);
+    const gvcn = ganGvcn(ft, P.normalCoreTeacher.userId);
+    const thang = `${new Date(Date.parse(NGAY) - 40 * 86400000).toISOString().slice(0, 7)}`;   // tháng thi đã qua
+    conn.prepare('UPDATE learning_cycles SET exam_month = ?, exam_date = NULL, exam_period_id = NULL WHERE id = ?').run(thang, a.cy);
+    const viec = (pr: any) => (myWork.myWork(pr, {}) as any).groups.flatMap((g: any) => g.items ?? []).filter((x: any) => x.group === 'thi_that' && x.studentId === a.sid);
+    const v = viec(gvcn);
+    assert(v.length === 1 && v[0].tieuDe === 'Cập nhật kết quả thi thật' && v[0].mine && v[0].due !== null && v[0].href.includes('viec=thi-that'), JSON.stringify(v));
+    assert(viec(P.normalSubjectTeacher).length === 0, 'GVBM không thấy');
+    conn.prepare('UPDATE learning_cycles SET exam_month = ? WHERE id = ?').run(new Date(Date.parse(NGAY) + 40 * 86400000).toISOString().slice(0, 7), a.cy);
+    assert(viec(gvcn).length === 0, 'tháng thi còn tương lai → chưa hiện');
+    conn.prepare('UPDATE learning_cycles SET exam_month = ? WHERE id = ?').run(thang, a.cy);
+    thiThatSvc.datKetQuaThiThat(gvcn, a.cy, NHAP4);
+    assert(viec(gvcn).length === 0, 'đủ 4 kỹ năng → mất');
+    thiThatSvc.datKetQuaThiThat(gvcn, a.cy, { s: null });
+    assert(viec(gvcn).length === 1, 'xoá S → hiện lại');
+    thiThatSvc.datKetQuaThiThat(gvcn, a.cy, { khongThi: true });
+    assert(viec(gvcn).length === 0, 'Không thi → mất');
+  }));
+
+  // ------------------------------------------------------------------ TK-L · Kết thúc học chưa lưu trữ khi FT còn "Chờ kết quả thi thật"
+  const luuTruSvc: any = await import('../classes/luuTru.ts');
+  const trongLuuTru = (sid: number) => (luuTruSvc.danhSachLuuTru(P.admin, {}) as any).hocVien?.some?.((h: any) => h.id === sid) ?? null;
+  await checkAsync('TK-L · (1) FT chưa có kết quả → Kết thúc học: lộ trình đóng, có bản chụp, CHƯA lưu trữ; (2) nhập đủ 4 kỹ năng → tự vào Lưu trữ; (4) thiếu S thì chưa', () => thu(() => {
+    const ft = taoLop('FT', true);
+    const a = taoHV(ft, 'FT', true, 6.5);
+    const gvcn = ganGvcn(ft, P.normalCoreTeacher.userId);
+    studentsSvc.setStudentStatus(P.admin, a.sid, 'finished', NGAY, 'Nghỉ học');
+    assert(hoSo(a.sid).status === 'finished' && hoSo(a.sid).archived_at === null && trangThai(a.cy) === 'abandoned' && banChup(a.cy).length === 1, JSON.stringify(hoSo(a.sid)));
+    assert(trongLuuTru(a.sid) === false, 'chưa ở Lưu trữ');
+    thiThatSvc.datKetQuaThiThat(gvcn, a.cy, { ...NHAP4, s: null });
+    assert(hoSo(a.sid).archived_at === null, 'thiếu S: chưa lưu trữ');
+    thiThatSvc.datKetQuaThiThat(gvcn, a.cy, { s: 6.5 });
+    assert(hoSo(a.sid).archived_at === NGAY, `đủ 4: ${hoSo(a.sid).archived_at}`);
+    assert(trongLuuTru(a.sid) === true && get(`SELECT 1 x FROM audit_logs WHERE entity_type = 'student' AND entity_id = ? AND action = 'student.archive'`, a.sid), 'có ở Lưu trữ + nhật ký student.archive');
+  }));
+  await checkAsync('TK-L · (3) "Không thi" → tự lưu trữ; (5) FT đã có kết quả trước → lưu trữ ngay; (6) lớp thường → lưu trữ ngay', () => thu(() => {
+    const ft = taoLop('FT', true);
+    const gvcn = ganGvcn(ft, P.normalCoreTeacher.userId);
+    const a = taoHV(ft, 'FT', true, 6.5);
+    studentsSvc.setStudentStatus(P.admin, a.sid, 'finished', NGAY, 'Nghỉ');
+    thiThatSvc.datKetQuaThiThat(gvcn, a.cy, { khongThi: true });
+    assert(hoSo(a.sid).archived_at === NGAY, 'Không thi → lưu trữ');
+    const b = taoHV(ft, 'FT', true, 6.5);
+    thiThatSvc.datKetQuaThiThat(gvcn, b.cy, NHAP4);
+    studentsSvc.setStudentStatus(P.admin, b.sid, 'finished', NGAY, 'Nghỉ');
+    assert(hoSo(b.sid).archived_at === NGAY, 'đã có kết quả → lưu trữ ngay');
+    const c = taoHV(taoLop('FOU', false), 'FOU', false);
+    studentsSvc.setStudentStatus(P.admin, c.sid, 'finished', NGAY, 'Nghỉ');
+    assert(hoSo(c.sid).archived_at === NGAY, 'lớp thường → lưu trữ ngay');
+  }));
+  await checkAsync('TK-L · (7) kết thúc học NHIỀU em trộn FT chờ + FT có kết quả + lớp thường: mỗi em đúng luật; (8) Hoàn tác về đúng trạng thái trước', () => thu(() => {
+    const ft = taoLop('FT', true); const th = taoLop('FOU', false);
+    const gvcn = ganGvcn(ft, P.normalCoreTeacher.userId);
+    const cho = taoHV(ft, 'FT', true, 6.5); const co = taoHV(ft, 'FT', true, 6.5); const thuong = taoHV(th, 'FOU', false);
+    thiThatSvc.datKetQuaThiThat(gvcn, co.cy, NHAP4);
+    const r = hangLoat.chay(P.admin, { viec: 'ket-thuc', studentIds: [cho.sid, co.sid, thuong.sid], date: NGAY, lyDo: 'Nghỉ học' }) as any;
+    assert(r.ok.length === 3, JSON.stringify(r));
+    assert(hoSo(cho.sid).archived_at === null && hoSo(co.sid).archived_at === NGAY && hoSo(thuong.sid).archived_at === NGAY, 'mỗi em đúng luật');
+    studentsSvc.hoanTacKetThuc(P.admin, cho.sid);
+    assert(hoSo(cho.sid).status === 'active' && hoSo(cho.sid).archived_at === null && trangThai(cho.cy) === 'active', 'Hoàn tác (em chưa bị lưu trữ)');
+    studentsSvc.hoanTacKetThuc(P.admin, co.sid);
+    assert(hoSo(co.sid).status === 'active' && hoSo(co.sid).archived_at === null, 'Hoàn tác (em đã lưu trữ): trả về học');
+    const ql = loadPrincipal(P.mbManager.userId);
+    void ql;
+  }));
+
   // @@BAT-BIEN@@ — luôn ở CUỐI file: soi mọi lộ trình các phép kiểm trước để lại. Thêm phép kiểm mới Ở TRÊN dòng này.
   await checkAsync('TK-5 · BẤT BIẾN PHỤ: mọi lượt của lộ trình đã đóng — điểm trong bản chụp MỚI NHẤT = điểm sống', async () => {
     const lech = all(`SELECT l.attempt_id, l.ky_nang, l.diem, s.band, s.raw_score FROM ban_chup_luot l
