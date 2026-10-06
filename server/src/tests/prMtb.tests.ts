@@ -690,7 +690,8 @@ export async function runPrMtbTests(t: YThucTestKit) {
     for (const x of ['b6.3', '10.5', '6,5', 'abc', '--', '7.25']) assert(d.rawPatchFrom(x, o) === null, `${x} phải null`);
     assert(j('-') === '{"noShow":true}' && j('') === '{"rawScore":null}', '- / trống');
     assert(j('', { noShow: { state: 'khong-co-bai' } }) === '{"noShow":false}', 'trống gỡ dấu');
-    assert(typeof d.LOI_SO_CAU === 'string' && /band/.test(d.LOI_SO_CAU) && /band/.test(d.LOI_TIEU_CHI), 'câu lỗi nhắc band');
+    /* PR-MTb sau rà thay: LOI_TIEU_CHI không còn nhắc band / b6 (ô tiêu chí chỉ nhận số; band có ô riêng). */
+    assert(typeof d.LOI_SO_CAU === 'string' && /band/.test(d.LOI_SO_CAU), 'câu lỗi nhắc band');
   });
 
   check('MTb (T10) · criteriaPatchFrom: band một mình → {band}, preview = band; band + tiêu chí → null + lỗi; band sai → null; không band → như cũ', () => {
@@ -792,5 +793,98 @@ export async function runPrMtbTests(t: YThucTestKit) {
     const cell: any = { skill: 'listening', rawScore: null, band: 6.5, criteria: [null, null, null, null], noShow: false };
     assert(JSON.stringify(d.rawPatchFrom('6.5', cell)) === JSON.stringify({ band: 6.5 }), 'đọc lại "6.5" phải là band 6.5');
     assert(JSON.stringify(d.rawPatchFrom('6.0', cell)) === JSON.stringify({ band: 6 }), 'đọc lại "6.0" phải là band 6');
+  });
+
+  // ------------------------------------------------------------------ Sau rà độc lập (06/10) — Đợt 1
+  console.log('\nPR-MTb · Sau rà độc lập: khôi phục rút đề nghị dời, MT cũ "-", màu ô, câu máy chủ');
+
+  check('MTb sau rà (I1) · Khôi phục kỹ năng huỷ vắng RÚT đề nghị dời đang chờ — quá hạn quét không huỷ lại', () => {
+    const a = emHuyVang();
+    const r = absence.xinDoi(P.coreTeacher, a.m1, 'speaking', { lyDo: '' });
+    assert(soDeNghi(a.m1) === 1, 'tiền đề: có đề nghị chờ');
+    conn.prepare('UPDATE skill_move_requests SET decide_by = ? WHERE id = ?').run(t.addDays(TODAY, -1), r.requestId);
+    absence.restoreCancelledSkill(QL, a.m1, 'speaking', tuan(2).id);
+    assert(soDeNghi(a.m1) === 0, 'đề nghị còn pending sau khôi phục');
+    assert((conn.prepare('SELECT status FROM skill_move_requests WHERE id = ?').get(r.requestId) as any).status === 'withdrawn', 'phải là withdrawn');
+    absence.sweepExpiredMoves();
+    const k = conn.prepare(`SELECT sit_status, huy_vang FROM attempt_skills WHERE attempt_id = ? AND skill = 'speaking'`).get(a.m1) as any;
+    assert(k.sit_status === 'scheduled' && k.huy_vang === 0, `kỹ năng bị huỷ lại: ${JSON.stringify(k)}`);
+  });
+
+  check('MTb sau rà (I1) · trangThaiTT: huyVang + đề nghị chờ → cho-duyet (QL: Trả lời đề nghị, không Khôi phục + Không mock lại song song)', () => {
+    const o = { batBuoc: true, tuanBatDau: '2026-09-07', coDiem: false, sit: 'cancelled', lichSu: false, homNay: '2026-09-16', huyVang: true };
+    assert(d.trangThaiTT({ ...o, choDuyet: true }) === 'cho-duyet', 'huyVang + choDuyet');
+    assert(d.trangThaiTT({ ...o, choDuyet: false }) === 'huy-vang', 'huyVang không đề nghị');
+    assert(d.trangThaiTT({ ...o, choDuyet: true, huyVang: false }) === 'da-huy', 'huỷ thường vẫn da-huy');
+    const ql = { nhapDiem: true, quanLy: true, gvcn: false, laFt: true, dotHoanTat: false };
+    assert(d.thaoTacKyNang('cho-duyet', ql).chinh === 'tra-loi-de-nghi', 'QL');
+    assert(d.thaoTacKyNang('cho-duyet', { ...ql, quanLy: false, gvcn: true }).chinh === null, 'GVCN hết nút');
+    const m = d.menuHopKyNang('cho-duyet', ql, false);
+    assert(m.every((x: any) => x.thay === undefined), 'menu hộp không đưa Khôi phục');
+    // Ô MT vẫn "S huỷ", tooltip nói chờ Quản lý duyệt.
+    const s: any = { trangThai: 'da-huy', tuan: '2026-09-07', periodId: 1, doiTu: null, batBuoc: true, khoa: null, sit: 'cancelled', tuanKetThuc: '2026-09-13', choDuyet: true, huyVang: true, hanCham: null };
+    const r = d.oMt({ so: 1, attemptId: 1, kn: { speaking: s }, cu: false }, '2026-09-16');
+    assert(r.kieu === 'con-viec' && r.chu === 'S huỷ' && /chờ Quản lý duyệt/.test(r.title), JSON.stringify(r));
+    assert(d.chipDongKyNang(s, '2026-09-16')?.chu === 'huỷ', 'chip');
+  });
+
+  /** MT cũ: L R W có điểm, S ghi "-" (không dự thi, `no_show_cu`). */
+  const mtCuKhongS = () => {
+    const a = emMoi([-4, 4, 8]);
+    conn.prepare(`UPDATE assessment_attempts SET lich_su = 1 WHERE id = ?`).run(a.m1);
+    for (const [s, b] of [['listening', 6], ['reading', 6], ['writing1', 6], ['writing2', 6]] as const) {
+      conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, band, raw_score, nhap_dau_ngay) VALUES (?,?,?,?,?)`).run(a.m1, s, b, null, TODAY);
+    }
+    attemptsSvc.saveScore(QL, a.m1, 'speaking', { noShow: true });
+    return a;
+  };
+  check('MTb sau rà (I2) · MT cũ có S "-": luoiFT trả khongDuThi cho S (không cho L/R/W), ô MT ✓ 3/4', () => {
+    const a = mtCuKhongS();
+    assert((conn.prepare(`SELECT no_show_cu c FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`).get(a.m1) as any).c === 1, 'tiền đề no_show_cu');
+    const kn = keHoach.luoiFT(QL, LOP, TODAY).hang.find((h: any) => h.studentId === a.sid).dot[1].kn;
+    assert(kn.speaking.khongDuThi === true, JSON.stringify(kn.speaking));
+    assert(!kn.listening.khongDuThi && !kn.reading.khongDuThi && !kn.writing.khongDuThi, 'L/R/W không được có cờ');
+    const r = d.oMt({ so: 1, attemptId: a.m1, kn, cu: true }, TODAY);
+    assert(r.kieu === 'xong' && r.chu === '✓ 3/4', JSON.stringify(r));
+  });
+
+  check('MTb sau rà (I2) · luật thuần: khongDuThi = không yêu cầu (✓ 3/4); oKyNangTuLich + khongDuThiTuO đọc từ ô hồ sơ Mock MT cũ', () => {
+    const xong: any = { trangThai: 'xong', tuan: '2026-09-07', periodId: 1, doiTu: null, batBuoc: true, khoa: 'đã có điểm', sit: 'scheduled', tuanKetThuc: '2026-09-13', choDuyet: false, hanCham: null };
+    const kn = { listening: xong, reading: xong, writing: xong, speaking: { ...xong, trangThai: 'da-xep', khoa: null, khongDuThi: true } };
+    const r = d.oMt({ so: 1, attemptId: 1, kn, cu: true }, '2026-10-06');
+    assert(r.kieu === 'xong' && r.chu === '✓ 3/4', JSON.stringify(r));
+    assert(/Speaking: .*không dự thi/.test(r.title), r.title);
+    const lich = { required: true, periodId: 1, weekStart: '2026-09-07', weekEnd: '2026-09-13', sitStatus: 'scheduled', scored: false, pendingMove: null, absenceMoveCount: 0, deadline: null, doiTu: null };
+    assert((d as any).oKyNangTuLich(lich, true).khongDuThi === true && !(d as any).oKyNangTuLich(lich).khongDuThi, 'oKyNangTuLich');
+    const cell = (assessedSkill: string, state: string | null, band: number | null = null) => ({ assessedSkill, band, rawScore: null, noShow: state ? { state } : null });
+    assert((d as any).khongDuThiTuO([cell('speaking', 'khong-du-thi')], 'speaking', true) === true, 'S "-"');
+    assert((d as any).khongDuThiTuO([cell('speaking', 'khong-du-thi')], 'speaking', false) === false, 'không phải MT cũ');
+    assert((d as any).khongDuThiTuO([cell('writing', 'khong-du-thi'), cell('writing', null, 6)], 'writing', true) === false, 'W1 "-" W2 có điểm');
+    assert((d as any).khongDuThiTuO([cell('writing', 'khong-du-thi'), cell('writing', 'khong-du-thi')], 'writing', true) === true, 'W1 W2 "-"');
+    assert((d as any).khongDuThiTuO([], 'speaking', true) === false, 'không có ô');
+  });
+
+  check('MTb sau rà (3, 4) · màu ô "xong" = token ok (xanh lá); MT cũ chưa điểm = kiểu xám "cho-cham-cu", chữ "chờ chấm n"', () => {
+    const o = nguon('web/src/ui/OMt.tsx');
+    assert(/xong: 'border-transparent bg-ok-bg text-ok'/.test(o), 'xong chưa dùng ok');
+    assert(/'cho-cham-cu': '[^']*bg-muted-bg[^']*text-muted'/.test(o), 'cho-cham-cu chưa xám');
+    const het: any = { trangThai: 'da-xep', tuan: '2026-09-07', periodId: 1, doiTu: null, batBuoc: true, khoa: null, sit: 'scheduled', tuanKetThuc: '2026-09-13', choDuyet: false, hanCham: null };
+    const cu = d.oMt({ so: 1, attemptId: 1, kn: { listening: het }, cu: true }, '2026-10-06');
+    assert((cu.kieu as string) === 'cho-cham-cu' && cu.chu === 'chờ chấm 1' && cu.cu === true, JSON.stringify(cu));
+    assert(d.oMt({ so: 1, attemptId: 1, kn: { listening: het }, cu: false }, '2026-10-06').kieu === 'cho-cham', 'MT thường vẫn cho-cham');
+    assert(d.chipDongKyNang(het, '2026-10-06')?.chu === 'chờ chấm', 'chip dòng');
+  });
+
+  check('MTb sau rà (6) · 3 câu máy chủ "Chỉ Quản lý sửa được điểm" không còn bắt "kèm lý do" (T7/T22)', () => {
+    for (const f of ['server/src/fasttrack/attempts.ts', 'server/src/normal/regular.ts']) {
+      assert(!/nhờ Quản lý hiệu chỉnh, kèm lý do/.test(nguon(f)), `${f} còn câu cũ`);
+    }
+  });
+
+  check('MTb sau rà (minor) · LOI_TIEU_CHI không nhắc "b6"; lịch sử có nhãn skill_cancelled_absence; dòng đề nghị dời khi huyVang không nói "quá hạn thì huỷ"', () => {
+    assert(!/b6/.test(d.LOI_TIEU_CHI), d.LOI_TIEU_CHI);
+    assert(/skill_cancelled_absence: \{ chu: 'Huỷ do vắng 2 lần'/.test(nguon('web/src/modules/fasttrack/DongThoiGianLuot.tsx')), 'nhãn lịch sử');
+    const m = nguon('web/src/modules/fasttrack/MockDetailPage.tsx');
+    assert(/r\.huyVang \? '' : ', quá hạn thì huỷ phần thi'/.test(m), 'dòng đề nghị dời chưa phân biệt huyVang');
   });
 }

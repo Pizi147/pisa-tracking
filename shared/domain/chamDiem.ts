@@ -174,7 +174,7 @@ export function rawPatchFrom(text: string, cell: OCoDau): PatchDiem | null {
  * `patch: null` = có ô không hợp lệ (không phải số, không phải đúng một "-", ví dụ "--"): KHÔNG gửi gì — trước đây ô
  * đó thành NaN rồi thành `null` trên máy chủ, tức là xoá tiêu chí mà không ai định xoá. `loi` = câu nói vì sao.
  */
-export const LOI_TIEU_CHI = 'Mỗi tiêu chí là một số, hoặc band 6.5 / b6, hoặc "-" nếu học viên không làm bài.';
+export const LOI_TIEU_CHI = 'Mỗi tiêu chí là một số như 6.5, hoặc "-" nếu học viên không làm bài.';
 export const LOI_BAND_HOAC_TIEU_CHI = 'Điền band hoặc tiêu chí';
 export function criteriaPatchFrom(vals: string[], cell: OCoDau, bandText = ''): {
   dash: boolean; preview: number | null; patch: PatchDiem | null; loi: string | null;

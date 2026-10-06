@@ -27,7 +27,8 @@ export function trangThaiTT(o: {
   if (!o.batBuoc) return 'khong-yeu-cau';
   if (o.coDiem) return 'co-diem';
   if (o.lichSu) return 'lich-su';          // MT cũ chưa điểm: chỉ nhập bù — không dời, không vắng, không hạn
-  if (o.huyVang && o.sit === 'cancelled') return 'huy-vang';
+  /* PR-MTb sau rà (I1): huỷ vì vắng mà đang có đề nghị dời chờ → "chờ duyệt" (Quản lý trả lời đề nghị, không Khôi phục / Không mock lại song song). */
+  if (o.huyVang && o.sit === 'cancelled') return o.choDuyet ? 'cho-duyet' : 'huy-vang';
   if (o.sit === 'cancelled') return 'da-huy';
   if (o.choDuyet) return 'cho-duyet';
   if (o.sit === 'absent') return 'vang';

@@ -10,7 +10,8 @@ import { O_KE_HOACH, trangThaiKyNang, type KyNangKH, type OKyNang } from './keHo
 import { tenMon, tenMonNgan } from './normal.ts';
 import { addDaysIso } from './sos.ts';
 
-export type KieuOMt = 'chua-co-dot' | 'chua-lich' | 'co-lich' | 'dang-thi' | 'cho-cham' | 'tre-cham' | 'con-viec' | 'xong';
+/** `cho-cham-cu`: MT cũ chờ nhập bù điểm — cùng chữ "chờ chấm n" nhưng xám (MT cũ không có hạn; chủ sản phẩm 06/10). */
+export type KieuOMt = 'chua-co-dot' | 'chua-lich' | 'co-lich' | 'dang-thi' | 'cho-cham' | 'cho-cham-cu' | 'tre-cham' | 'con-viec' | 'xong';
 
 /** `attemptId` null = chưa có lượt (ô nét đứt, chỉ còn số). `cu` truyền thẳng ra nhãn "cũ". */
 export type OMtVao = { so: number; attemptId: number | null; kn: Partial<Record<KyNangKH, OKyNang>>; cu: boolean };
@@ -21,7 +22,7 @@ const ngayCua = (s: string) => s.slice(0, 10);
 
 /** Một kỹ năng đang ở đâu. Tuần đã hết = Chủ nhật tuần thi < hôm nay, chưa có điểm, không vắng / huỷ. */
 function loaiKn(o: OKyNang, homNay: string): Loai {
-  if (!o.batBuoc) return 'khong-yeu-cau';
+  if (!o.batBuoc || o.khongDuThi) return 'khong-yeu-cau';   // khongDuThi: MT cũ "-" (PR-MTb sau rà I2)
   if (o.trangThai === 'xong') return 'xong';
   if (o.huyVang || o.trangThai === 'da-huy') return 'da-huy';
   if (o.choDuyet || o.trangThai === 'vang' || o.trangThai === 'cho-duyet') return 'vang';
@@ -35,8 +36,8 @@ const troCham = (o: OKyNang, homNay: string) => !!o.hanCham && homNay > ngayCua(
 /** Tooltip một kỹ năng: `Listening: W3 SEP · xong`. */
 function dongKn(ct: string | null | undefined, k: KyNangKH, o: OKyNang, loai: Loai, homNay: string, cu: boolean): string {
   const tt: Record<Loai, string | null> = {
-    xong: 'xong', 'khong-yeu-cau': 'không yêu cầu', 'tuan-nay': 'tuần này', 'co-lich': null, 'chua-lich': null,
-    'da-huy': o.huyVang ? 'huỷ (vắng 2 lần)' : 'đã huỷ',
+    xong: 'xong', 'khong-yeu-cau': o.khongDuThi ? 'không dự thi' : 'không yêu cầu', 'tuan-nay': 'tuần này', 'co-lich': null, 'chua-lich': null,
+    'da-huy': `${o.huyVang ? 'huỷ (vắng 2 lần)' : 'đã huỷ'}${o.choDuyet ? ' · chờ Quản lý duyệt' : ''}`,   // đề nghị dời đang chờ (I1)
     vang: o.choDuyet ? 'chờ Quản lý duyệt' : 'vắng',
     // Hạn chấm là hạn cụ thể → được hiện ngày (luật thời gian trên màn); null (MT cũ, không hạn) thì không ghi.
     'het-tuan': `${troCham(o, homNay) ? 'trễ chấm' : 'chờ chấm'}${o.hanCham ? ` · hạn ${ngay(o.hanCham, homNay)}` : ''}`,
@@ -65,7 +66,7 @@ export function oMt(v: OMtVao, homNay: string, ct?: string | null): { kieu: Kieu
   const huy = cua('da-huy');
   if (huy.length) return ra('con-viec', `${ten(huy)} huỷ`, title);
   const cho = cua('het-tuan');
-  if (cho.length) return ra('cho-cham', `chờ chấm ${cho.length}`, title);
+  if (cho.length) return ra(v.cu ? 'cho-cham-cu' : 'cho-cham', `chờ chấm ${cho.length}`, title);
   if (cua('tuan-nay').length) return ra('dang-thi', 'tuần này', title);
   const som = cua('co-lich').map((x) => ngayCua(x.o.tuan!)).sort()[0];
   if (som) return ra('co-lich', tuanLich(som, homNay), title);
@@ -77,7 +78,7 @@ export function oMt(v: OMtVao, homNay: string, ct?: string | null): { kieu: Kieu
  * (một nguồn: nhãn ô MT và chip dòng không lệch). Đang thi / có lịch / xong / không yêu cầu → null (dòng chỉ có chip tuần hoặc điểm).
  */
 export function chipDongKyNang(o: OKyNang, homNay: string, ct?: string | null): { chu: string; tone: 'bad' | 'wait' | 'soon' | 'muted' } | null {
-  if (!o.batBuoc) return null;
+  if (!o.batBuoc || o.khongDuThi) return null;
   // Ô MT cần một khe kỹ năng; dùng `listening` làm khe tạm cho đúng MỘT kỹ năng này.
   const r = oMt({ so: 0, attemptId: 0, kn: { listening: o }, cu: false }, homNay, ct);
   switch (r.kieu) {
@@ -96,7 +97,7 @@ export function chipDongKyNang(o: OKyNang, homNay: string, ct?: string | null): 
 export function oKyNangTuLich(r: {
   required: boolean; periodId: number | null; weekStart: string | null; weekEnd?: string | null; sitStatus: string; scored: boolean;
   pendingMove: unknown; absenceMoveCount: number; deadline: string | null; doiTu: string | null; huyVang?: boolean;
-}): OKyNang {
+}, khongDuThi = false): OKyNang {
   const choDuyet = !!r.pendingMove;
   return {
     trangThai: trangThaiKyNang({
@@ -106,6 +107,19 @@ export function oKyNangTuLich(r: {
     tuan: r.weekStart, periodId: r.periodId, doiTu: r.doiTu, batBuoc: r.required, khoa: null,
     sit: r.sitStatus, tuanKetThuc: r.weekEnd ?? null, choDuyet,
     ...(r.huyVang ? { huyVang: true } : {}),
+    ...(khongDuThi ? { khongDuThi: true } : {}),
     hanCham: r.deadline,
   };
+}
+
+/**
+ * MT cũ: kỹ năng có dấu "-" ở MỌI ô nhập của nó (Writing: cả W1 và W2) và chưa có điểm = không dự thi (PR-MTb sau rà I2; máy chủ
+ * `khongDuThiCua` cùng luật). `cells` = ô của hồ sơ Mock (`attemptDetail.cells`). Lượt thường: false (vắng có luồng riêng).
+ */
+export function khongDuThiTuO(
+  cells: Array<{ assessedSkill: string; band: number | null; rawScore: number | null; noShow?: { state?: string } | null }>,
+  skill: string, lichSu: boolean,
+): boolean {
+  const o = cells.filter((c) => c.assessedSkill === skill);
+  return lichSu && o.length > 0 && o.every((c) => c.noShow?.state === 'khong-du-thi' && c.band === null && c.rawScore === null);
 }

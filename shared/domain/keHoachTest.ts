@@ -114,6 +114,8 @@ export type OKyNang = {
   sit: string | null; tuanKetThuc: string | null; choDuyet: boolean;
   /** T3 (PR-MTa): huỷ vì vắng 2 lần — ô MT "S huỷ" (PR-MTb). */
   huyVang?: boolean;
+  /** PR-MTb sau rà (I2): MT cũ ghi "-" (không dự thi, `no_show_cu`) — tính là xong / không yêu cầu, ô MT ✓ 3/4. */
+  khongDuThi?: boolean;
   /** T6 (PR-MTb): hạn chấm hiệu lực (ngày) — null: không yêu cầu, MT cũ, đã huỷ phần thi, chưa có tuần. */
   hanCham: string | null;
   /** T5 (PR-MTb): điểm đã có để hộp một đợt ghi `W3 SEP · 6.5` — FT: band (Writing `5.5 / 6.5`); lớp thường: `x/y`. Chưa có điểm → vắng trường. */

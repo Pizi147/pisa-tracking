@@ -14,16 +14,17 @@ export function NhanCu() {
   );
 }
 
-/** Màu từng kiểu (mockup phần 3) — chỉ token nghĩa. `xong` dùng `done` như `ChipKyNang` (nhãn "Xong" cạnh nhau cùng một màu). */
+/** Màu từng kiểu (mockup phần 3) — chỉ token nghĩa. `xong` = xanh lá `ok` (mockup đã duyệt; chủ sản phẩm 06/10). */
 const MAU: Record<KieuOMt, string> = {
   'chua-co-dot': 'border-dashed border-muted-line bg-transparent text-muted',
   'chua-lich': 'border-muted-line bg-muted-bg text-muted',
   'co-lich': 'border-doing-line bg-transparent text-doing',
   'dang-thi': 'border-doing-line bg-doing-bg text-doing',
   'cho-cham': 'border-transparent bg-wait-bg text-wait',
+  'cho-cham-cu': 'border-muted-line bg-muted-bg text-muted',   // MT cũ chưa điểm: không hạn → xám, không màu chờ
   'tre-cham': 'border-transparent bg-bad-bg text-bad',
   'con-viec': 'border-transparent bg-soon-bg text-soon',
-  xong: 'border-transparent bg-done-bg text-done',
+  xong: 'border-transparent bg-ok-bg text-ok',
 };
 /** "Đang chọn" = màu đảo (thiet-ke/HE_GIAO_DIEN.md §2 "Đang chọn của ô MT"): nền màu chữ chính, chữ màu nền, viền 2px cùng nền. */
 const MAU_CHON = 'border-2 border-[var(--text)] bg-[var(--text)] px-[7px] font-bold text-[var(--bg)]';
