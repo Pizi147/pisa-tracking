@@ -6,7 +6,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 
-/** `GET /classes/:id/xoa-ket-thuc` (chỉ Quản trị hệ thống). */
+/** `GET /classes/:id/xoa-ket-thuc` (Quản trị hệ thống; PR-LUI-b: Quản lý của lớp cũng xem được — `coTheXoa` vẫn chỉ Quản trị). */
 export type TinhTrangXoaKetThuc = {
   id: number; ma: string; chiNhanh: string; daKetThuc: boolean; soDangHoc: number; soTungGhiDanh: number;
   coDuLieu: boolean; dangGan: string[]; coTheXoa: boolean; coTheKetThuc: boolean; lyDoChanKetThuc: string | null;
@@ -98,6 +98,48 @@ export function KetThucLopPanel({ classId, classCode, onClose, onDone }: { class
             {tt.data.conTreo && <p className="m-0 mt-1 text-xs text-slate-400">{tt.data.conTreo} — không chặn kết thúc lớp.</p>}
           </Khoi>
         )}
+    </KhungPanel>
+  );
+}
+
+/**
+ * ⋮ HỒ SƠ LỚP ĐÃ KẾT THÚC › MỞ LẠI LỚP / LƯU TRỮ › MỞ LẠI (PR-LUI-b, 06/10) — Quản lý của lớp hoặc Quản trị. Lý do tuỳ chọn. Hoàn tác = Kết thúc lớp lại
+ * (Quản lý của lớp cũng kết thúc được lớp không còn học viên đang học).
+ */
+export function MoLaiLopPanel({ classId, classCode, chiNhanh, ketThuc, onClose, onDone }: {
+  classId: number; classCode: string; chiNhanh?: string | null; ketThuc?: string | null; onClose: () => void; onDone: () => void;
+}) {
+  const toast = useToast();
+  const [lyDo, setLyDo] = useState('');
+  const [busy, setBusy] = useState(false);
+  const lamMoi = () => { invalidate('/classes'); invalidate('/hoc-vien-lop'); invalidate('/tong-quan'); };
+  const moLai = async () => {
+    setBusy(true);
+    try {
+      await api.post(`/classes/${classId}/mo-lai`, { lyDo: lyDo.trim() || undefined });
+      lamMoi();
+      toast.hoanTac(`Đã mở lại lớp ${classCode}`, async () => {
+        try {
+          await api.post(`/classes/${classId}/ket-thuc`, {});
+          lamMoi(); toast.push('ok', 'Đã hoàn tác'); onDone();
+        } catch (e: any) { toast.push('error', e.message); }
+      }, { key: `mo-lai-lop:${classId}` });
+      onDone(); onClose();
+    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+  };
+  return (
+    <KhungPanel tieuDe="Mở lại lớp" lop={classCode} onDong={onClose}
+      chan={{ daSua: !!lyDo.trim(), chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={moLai}>Mở lại lớp</button> }}>
+      <Khoi tieuDe="Mở lại lớp">
+        <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+          <dt className="text-slate-400">Lớp</dt><dd className="m-0 font-semibold text-slate-100">{classCode}</dd>
+          {chiNhanh && (<><dt className="text-slate-400">Chi nhánh</dt><dd className="m-0 text-slate-200">{chiNhanh}</dd></>)}
+          {ketThuc && (<><dt className="text-slate-400">Kết thúc</dt><dd className="m-0 text-slate-200">{ketThuc}</dd></>)}
+        </dl>
+        <Truong nhan="Lý do" tuyChon>
+          <input className="field w-full" maxLength={2000} value={lyDo} onChange={(e) => setLyDo(e.target.value)} />
+        </Truong>
+      </Khoi>
     </KhungPanel>
   );
 }

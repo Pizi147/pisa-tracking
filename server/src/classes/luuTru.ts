@@ -10,11 +10,15 @@ import { can, classScopeSql, napTruocPhamVi, scopeFor, type Principal } from '..
 export type LopLuuTru = {
   id: number; code: string; ma: ProgrammeCode | null; tenChuongTrinh: string | null;
   chiNhanh: string; gvcn: string | null; soHvTungHoc: number; finishedAt: string | null;
+  /** PR-LUI-b: nút "Mở lại" cuối dòng (Quản lý của lớp / Quản trị — `class.edit`). */
+  coTheMoLai: boolean;
 };
 export type HocVienLuuTru = {
   id: number; studentCode: string; fullName: string; lopCuoi: string | null; chiNhanh: string | null; archivedAt: string;
   /** Nút "Bỏ lưu trữ" cuối dòng (chỉ Quản lý — cùng luật `archiveStudent`/`unarchiveStudent`, PLAN_WEEK). */
   coTheBoLuuTru: boolean;
+  /** PR-LUI-b: nút "Học lại" (cùng luật `hocLai`: `plan.week` của học viên). */
+  coTheHocLai: boolean;
 };
 
 /** GET /hoc-vien-lop/luu-tru — cùng phạm vi lớp với `/hoc-vien-lop` chính (ATTEMPT_VIEW); HV theo đúng luật STUDENT_VIEW. */
@@ -49,6 +53,7 @@ export function danhSachLuuTru(p: Principal, f: { branchId?: number | null; q?: 
     .map((r) => ({
     id: r.id, code: r.code, ma: (r.programme_code ?? null) as ProgrammeCode | null, tenChuongTrinh: r.programme_name ?? null,
     chiNhanh: r.branch_name, gvcn: r.gvcn ?? null, soHvTungHoc: r.so_hv_tung_hoc, finishedAt: r.finished_at ?? null,
+    coTheMoLai: can(p, PERMISSIONS.CLASS_EDIT, { classId: r.id }),
   }));
 
   // ---------------------------------------------------------------- học viên đã lưu trữ
@@ -95,6 +100,7 @@ export function danhSachLuuTru(p: Principal, f: { branchId?: number | null; q?: 
         lopCuoi: lopCuoiCua.get(s.id)?.code ?? null, chiNhanh: lopCuoiCua.get(s.id)?.branchName ?? null,
         archivedAt: s.archived_at,
         coTheBoLuuTru: can(p, PERMISSIONS.PLAN_WEEK, { studentId: s.id }),
+        coTheHocLai: can(p, PERMISSIONS.PLAN_WEEK, { studentId: s.id }),
       }));
   }
 

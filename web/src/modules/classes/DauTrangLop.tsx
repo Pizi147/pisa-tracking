@@ -45,13 +45,15 @@ export type HoSoLop = {
     canReportCase: boolean; canRecordViolation: boolean; canEnterScores: boolean;
     /** PR-LT: nút Chuyển tiếp lớp/badge — cùng luật CLASS_EDIT với canEditProgress, tên riêng cho rõ ý. */
     coTheChuyenTiep: boolean;
-    /** PR-UX3: ⋮ Xoá lớp / Kết thúc lớp — chỉ Quản trị hệ thống (máy chủ kiểm lại). */
+    /** PR-UX3: ⋮ Xoá lớp — chỉ Quản trị hệ thống (máy chủ kiểm lại). */
     coTheXoaKetThuc?: boolean;
+    /** PR-LUI-b (06/10): Quản lý của lớp cũng ⋮ Kết thúc lớp (lớp còn hoạt động) và ⋮ Mở lại lớp (lớp đã kết thúc). */
+    coTheKetThucLop?: boolean; coTheMoLaiLop?: boolean;
     /** PR-DL: ⋮ "Điểm MT cả lớp" + khối cuối trang — cùng luật `requireXemLuotCham`. */
     coTheXemDiem?: boolean;
   };
 };
-export type ViecDauTrang = 'tien-do' | 'chuyen-tiep' | 'lo-trinh-ca-lop' | 'ban-giao' | 'phan-cong' | 'thong-tin' | 'case' | 'hoc-vien' | 'xoa-lop' | 'ket-thuc-lop' | 'xuat-mt' | 'sua-hoc-vien' | 'diem-lop';
+export type ViecDauTrang = 'tien-do' | 'chuyen-tiep' | 'lo-trinh-ca-lop' | 'ban-giao' | 'phan-cong' | 'thong-tin' | 'case' | 'hoc-vien' | 'xoa-lop' | 'ket-thuc-lop' | 'xuat-mt' | 'sua-hoc-vien' | 'diem-lop' | 'mo-lai-lop';
 
 /**
  * ĐẦU TRANG HỒ SƠ LỚP (đặc tả §3.7, mockup 06c §1; PR-HVL K2-14, B4, E7, K2-13). Nằm ở: Học viên & Lớp → Hồ sơ lớp → đầu trang.
@@ -96,8 +98,9 @@ export function DauTrangLop({ data, periodId, onViec, onBanGiao }: {
       : x.key === 'xep-lop' && data.viewer.coTheChuyenTiep ? () => onViec('chuyen-tiep')
       : x.key === 'cho-duyet' ? () => navigate(`/cong-viec/cho-duyet?lop=${data.id}`)
       : null;
-  /* Chỉ Quản trị hệ thống mới gọi được đường này (403 với người khác) — nên chỉ hỏi khi có cờ. */
-  const xk = useApi<TinhTrangXoaKetThuc>(data.viewer.coTheXoaKetThuc ? `/classes/${data.id}/xoa-ket-thuc` : null, [data.id, data.viewer.coTheXoaKetThuc]);
+  /* Quản trị hoặc Quản lý của lớp gọi được đường này (403 với người khác) — nên chỉ hỏi khi có cờ. `coTheXoa` do máy chủ trả: chỉ Quản trị. */
+  const hoiXk = !!data.viewer.coTheXoaKetThuc || !!data.viewer.coTheKetThucLop;
+  const xk = useApi<TinhTrangXoaKetThuc>(hoiXk ? `/classes/${data.id}/xoa-ket-thuc` : null, [data.id, hoiXk]);
   const nhapDiem = thuong ? `/bang-diem-thuong/${data.id}` : `/nhap-diem/${data.id}${periodId ? `?periodId=${periodId}` : ''}`;
   /* K2-14: MỘT nút chính theo chặng; nút phụ tối đa 2, thừa vào ⋮. "Nhập điểm" là chính khi còn bài chờ nhập của người xem. */
   const chinh = nutChinhDauTrang({
@@ -127,7 +130,9 @@ export function DauTrangLop({ data, periodId, onViec, onBanGiao }: {
     ...(data.viewer.coTheXemDiem ? [{ key: 'diem-lop', nhan: thuong ? 'Điểm Test cả lớp' : 'Điểm MT cả lớp', onChon: () => onViec('diem-lop') }] : []),
     /* PR-XUAT (Q8): GVCN của lớp hoặc người xếp lịch (Quản lý) — máy chủ xuất vẫn kiểm lại phạm vi. */
     ...(session?.nav?.xuatMt && (data.viewer.isCoreTeacher || data.viewer.canPlanWeek) ? [{ key: 'xuat-mt', nhan: 'Xuất Excel', onChon: () => onViec('xuat-mt') }] : []),
-    /* Cuối menu, sau đường kẻ: Xoá lớp (lớp còn trống) · Kết thúc lớp (lớp đã có dữ liệu, còn hoạt động). */
+    /* PR-LUI-b: lớp đã kết thúc → Mở lại lớp (Quản lý của lớp / Quản trị). */
+    ...(data.viewer.coTheMoLaiLop ? [{ key: 'mo-lai-lop', nhan: 'Mở lại lớp', onChon: () => onViec('mo-lai-lop') }] : []),
+    /* Cuối menu, sau đường kẻ: Xoá lớp (lớp còn trống, Quản trị) · Kết thúc lớp (lớp đã có dữ liệu, còn hoạt động; Quản lý hoặc Quản trị). */
     ...(xk.data?.coTheXoa ? [{ key: 'xoa-lop', nhan: 'Xoá lớp', keTruoc: true, onChon: () => onViec('xoa-lop') }] : []),
     ...(xk.data && xk.data.coDuLieu && !xk.data.daKetThuc
       ? [{ key: 'ket-thuc-lop', nhan: 'Kết thúc lớp', keTruoc: !xk.data.coTheXoa, onChon: () => onViec('ket-thuc-lop') }] : []),

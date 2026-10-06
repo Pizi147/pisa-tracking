@@ -804,6 +804,9 @@ function classOverviewThat(p: Principal, classId: number) {
     }),
       /** ⋮ Xoá lớp / Kết thúc lớp — CHỈ Quản trị hệ thống (PR-UX3); máy chủ kiểm lại ở từng đường. */
       coTheXoaKetThuc: can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }),
+      /** PR-LUI-b (06/10): Quản lý của lớp cũng Kết thúc lớp / Mở lại lớp được (Xoá lớp vẫn chỉ Quản trị). `coTheMoLaiLop` nằm ngoài nhánh `finished`: lớp đã đóng thì mọi cờ khác false. */
+      coTheKetThucLop: !finished && can(p, PERMISSIONS.CLASS_EDIT, { classId }),
+      coTheMoLaiLop: finished && can(p, PERMISSIONS.CLASS_EDIT, { classId }),
       /** PR-DL: ⋮ "Điểm MT cả lớp" + khối cuối trang — cùng luật `requireXemLuotCham` của `/classes/:id/diem-theo-luot`. */
       coTheXemDiem: coTheXemLuotCham(p, { classId }),
     },

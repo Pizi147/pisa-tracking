@@ -2,7 +2,7 @@
  * MENU ⋮ Ở HỒ SƠ HỌC VIÊN (PR-UX3, Q10) — luật thuần: mục nào hiện, theo quyền và tình trạng. Web (`StudentManagePanel.tsx`) chỉ vẽ menu thả
  * và mở THẲNG panel của mục được chọn. Ẩn một mục không phải là chặn nó: máy chủ vẫn kiểm quyền.
  */
-export type ViecQuanLy = 'info' | 'lo-trinh-tiep' | 'lo-trinh' | 'chuyen-lop' | 'outcome' | 'tam-dung' | 'quay-lai' | 'ket-thuc' | 'luu-tru' | 'bo-luu-tru'
+export type ViecQuanLy = 'info' | 'lo-trinh-tiep' | 'lo-trinh' | 'chuyen-lop' | 'outcome' | 'tam-dung' | 'quay-lai' | 'ket-thuc' | 'hoc-lai' | 'luu-tru' | 'bo-luu-tru'
   | 'xoa-hoc-vien' | 'de-xuat-sua' | 'de-xuat-chuyen-lop';
 
 export const NHAN_VIEC_QUAN_LY: Record<ViecQuanLy, string> = {
@@ -15,6 +15,7 @@ export const NHAN_VIEC_QUAN_LY: Record<ViecQuanLy, string> = {
   'tam-dung': 'Tạm dừng học',
   'quay-lai': 'Quay lại học',
   'ket-thuc': 'Kết thúc học',
+  'hoc-lai': 'Học lại',
   'luu-tru': 'Lưu trữ',
   'bo-luu-tru': 'Bỏ lưu trữ',
   'xoa-hoc-vien': 'Xoá học viên',
@@ -24,6 +25,8 @@ export const NHAN_VIEC_QUAN_LY: Record<ViecQuanLy, string> = {
 export type LopHocQuyen = {
   ghiLoTrinhTiep: boolean; chuyenLop: boolean; /** PR-CT: GVCN đề xuất; Quản lý (`chuyenLop`) ra lệnh. */ deXuatChuyenLop?: boolean; tamDung: boolean; quayLai: boolean;
   ketThuc: boolean; luuTru: boolean; boLuuTru: boolean;
+  /** PR-LUI-b: Quản lý / Quản trị cho em đã kết thúc học quay lại (về lớp cũ hoặc sang lớp mới). */
+  hocLai?: boolean;
 };
 
 /**
@@ -56,6 +59,7 @@ export function mucQuanLyHocVien({ canEdit, lopHoc, cycle, status, coTheXoa, deX
   if (quyen?.quayLai && !dangHoc && status === 'inactive') ds.push('quay-lai');
   if (quyen?.ketThuc && status !== 'finished') ds.push('ket-thuc');
   if (quyen?.luuTru) ds.push('luu-tru');
+  if (quyen?.hocLai) ds.push('hoc-lai');
   if (quyen?.boLuuTru) ds.push('bo-luu-tru');
   if (coTheXoa) ds.push('xoa-hoc-vien');
   /* PR-VAI-b (K3-48): chia nhóm Thông tin · Lộ trình · Lớp (giữ thứ tự trong nhóm, TẬP MỤC THEO QUYỀN KHÔNG ĐỔI); vạch đậm trước Tạm dừng /
@@ -75,7 +79,7 @@ const THU_TU_NHOM: readonly NhomViecQuanLy[] = ['thong-tin', 'lo-trinh', 'lop'];
 const NHOM_VIEC: Record<ViecQuanLy, NhomViecQuanLy> = {
   info: 'thong-tin', 'de-xuat-sua': 'thong-tin',
   'lo-trinh-tiep': 'lo-trinh', 'lo-trinh': 'lo-trinh', outcome: 'lo-trinh',
-  'chuyen-lop': 'lop', 'de-xuat-chuyen-lop': 'lop', 'tam-dung': 'lop', 'quay-lai': 'lop', 'ket-thuc': 'lop', 'luu-tru': 'lop', 'bo-luu-tru': 'lop',
+  'chuyen-lop': 'lop', 'de-xuat-chuyen-lop': 'lop', 'tam-dung': 'lop', 'quay-lai': 'lop', 'ket-thuc': 'lop', 'hoc-lai': 'lop', 'luu-tru': 'lop', 'bo-luu-tru': 'lop',
   'xoa-hoc-vien': 'lop',
 };
 /** Một dòng hệ quả (mockup 24 B) — chỉ mục có hệ quả mới có. */
@@ -87,5 +91,6 @@ const PHU_VIEC: Partial<Record<ViecQuanLy, string>> = {
   'tam-dung': 'mọi hạn của em dừng · giữ lớp, lộ trình',
   'quay-lai': 'hạn tính lại từ ngày quay lại',
   'ket-thuc': 'đóng lộ trình · hồ sơ chỉ xem',
+  'hoc-lai': 'về lớp cũ · lộ trình chạy tiếp',
   'xoa-hoc-vien': 'chỉ Quản trị hệ thống thấy dòng này',
 };

@@ -9137,6 +9137,10 @@ await runPrDlTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, ad
 const { runPrMtaTests } = await import('./prMta.tests.ts');
 await runPrMtaTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
+// ==================================================================== PR-LUI-b (đường lui Học viên & Lớp)
+const { runPrLuiBTests } = await import('./prLuiB.tests.ts');
+await runPrLuiBTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

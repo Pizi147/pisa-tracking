@@ -135,12 +135,12 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
       'Tiền đề: bộ demo phải có em thôi học');
   });
 
-  check('PR-XOA L7 · Hồ sơ em vừa Kết thúc học: chỉ xem, ⋮ chỉ còn Bỏ lưu trữ (QL)', () => {
+  check('PR-XOA L7 · Hồ sơ em vừa Kết thúc học: chỉ xem, ⋮ chỉ còn Học lại + Bỏ lưu trữ (QL; Học lại: PR-LUI-b)', () => {
     const sid = taoHV(taoLop(3));
     studentsSvc.setStudentStatus(P.mbManager, sid, 'finished', TODAY, 'Nghỉ hẳn');
     const l = loTrinhTiepSvc.lopHocCua(P.mbManager, sid, null);
     const bat = Object.entries(l.quyen).filter(([, v]) => v).map(([k]) => k);
-    assert(l.chiXem === true && bat.join() === 'boLuuTru', `chiXem=${l.chiXem}, cờ bật: ${bat.join()}`);
+    assert(l.chiXem === true && bat.join() === 'boLuuTru,hocLai', `chiXem=${l.chiXem}, cờ bật: ${bat.join()}`);
   });
 
   // ==================================================================== Task 2 — xoá học viên + phép kiểm "không sót"
