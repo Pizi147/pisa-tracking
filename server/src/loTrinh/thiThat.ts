@@ -47,7 +47,7 @@ export function datKetQuaThiThat(p: Principal, cycleId: number, input: NhapThiTh
   if (!c) throw notFound('Không tìm thấy lộ trình');
   if (!coTheNhapThiThat(p, c)) throw forbidden('Chỉ GVCN lớp cuối hoặc Quản lý nhập được kết quả thi thật.');
   if (!c.route) throw badRequest('Chỉ lộ trình Fast Track có kết quả thi thật.');
-  if (db().prepare(`SELECT ly_do FROM ban_chup_lo_trinh WHERE cycle_id = ? ORDER BY lan DESC LIMIT 1`).get(cycleId)?.ly_do === 'chuyen_lop') throw badRequest('Lộ trình đóng vì chuyển lớp — em không đi thi.');
+  if ((db().prepare(`SELECT ly_do FROM ban_chup_lo_trinh WHERE cycle_id = ? ORDER BY lan DESC LIMIT 1`).get(cycleId) as any)?.ly_do === 'chuyen_lop') throw badRequest('Lộ trình đóng vì chuyển lớp — em không đi thi.');
   const homNay = demoToday();
   const khongThi = input.khongThi === true;
   let ngayThi: string | null = c.thi_that_ngay ?? null;
