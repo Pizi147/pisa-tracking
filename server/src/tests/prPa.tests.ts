@@ -192,7 +192,7 @@ export async function runPrPaTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ PA2 · migrate
-  check('PA2 · migratePrPa: thêm 6 cột, chạy hai lần không lỗi; điền bù bo_tro_mien_phi ← mini_test.so_buoi và Tutor kỳ vọng ← 10 (chỉ dòng NULL)', () => {
+  check('PA2 · migratePrPa: thêm 6 cột, chạy hai lần không lỗi; điền bù bo_tro_mien_phi ← mini_test.so_buoi và Tutor kỳ vọng ← 10 CHỈ lần vừa thêm cột; lần sau Số buổi đã xoá giữ trống', () => {
     const coCot = (c: any, bang: string, cot: string) => (c.prepare('SELECT name FROM pragma_table_info(?)').all(bang) as any[]).some((x) => x.name === cot);
     const tam = new SqliteDb(':memory:');
     tam.exec(`CREATE TABLE sos_cases (id INTEGER PRIMARY KEY, origin_kind TEXT, title TEXT);
@@ -209,21 +209,19 @@ export async function runPrPaTests(t: YThucTestKit) {
     assert(cot.every(([b, c]) => coCot(tam, b, c)), `thiếu cột: ${a.join('; ')}`);
     const so = () => (tam.prepare('SELECT id, so_buoi FROM case_interventions ORDER BY id').all() as any[]).map((r) => r.so_buoi).join();
     assert(so() === '10,,,4,', `điền bù: ${so()}`);
-    tam.prepare('UPDATE case_interventions SET so_buoi = 7 WHERE id = 1').run();
+    /* Lần 2 (cột đã có): người dùng xoá Số buổi (Sửa PA "để trống") → migrate KHÔNG điền lại. */
+    tam.prepare('UPDATE case_interventions SET so_buoi = NULL WHERE id IN (1, 4)').run();
     const b: string[] = []; migratePrPa(tam, b);
-    assert(b.length === 0 && so() === '7,,,4,', `lần 2: ${b.join('; ')} · ${so()}`);
+    assert(b.length === 0 && so() === ',,,,', `lần 2: ${b.join('; ')} · ${so()}`);
     tam.close();
-    /* DB thật (schema.sql đã có cột): xoá số buổi của PA vừa tạo ở PA1e/PA1f → migrate điền lại. */
+    /* DB thật (schema.sql đã có cột): xoá số buổi của PA vừa tạo ở PA1e/PA1f → migrate không đổi gì, vẫn trống. */
     assert(cot.every(([bg, c]) => coCot(conn, bg, c)), 'schema.sql thiếu cột PR-PA');
     const moi = [...ids.mienPhi, ...ids.tutor];
     assert(moi.length >= 3, 'PA1e/PA1f chưa chạy');
-    const truoc = moi.map((id) => get('SELECT so_buoi FROM case_interventions WHERE id = ?', id).so_buoi).join();
     conn.prepare(`UPDATE case_interventions SET so_buoi = NULL WHERE id IN (${moi.map(() => '?').join(',')})`).run(...moi);
     const c: string[] = []; migratePrPa(conn, c);
-    const sau = moi.map((id) => get('SELECT so_buoi FROM case_interventions WHERE id = ?', id).so_buoi).join();
-    assert(sau === truoc && c.length > 0, `DB thật: ${truoc} → ${sau} · ${c.join('; ')}`);
-    const e: string[] = []; migratePrPa(conn, e);
-    assert(e.length === 0, `lần 2 DB thật: ${e.join('; ')}`);
+    const sau = moi.map((id) => get('SELECT so_buoi FROM case_interventions WHERE id = ?', id).so_buoi);
+    assert(c.length === 0 && sau.every((x) => x === null), `DB thật: ${JSON.stringify(sau)} · ${c.join('; ')}`);
   });
 
   // ------------------------------------------------------------------ PA3 · recordIntervention: người không bắt buộc, số buổi
