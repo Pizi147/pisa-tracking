@@ -270,6 +270,8 @@ export function ChonNguoi({
   /** Dòng "tên ngoài" chưa đủ 2 ký tự: hiện mờ, bấm không làm gì, mũi tên bỏ qua. */
   const tat = (opt: ChonNguoiOption) => opt.kind === 'ngoai' && opt.text.length < 2;
   const chonDuoc = options.flatMap((o, i) => (tat(o) ? [] : [i]));
+  /* Đang gõ: TÔ SÁNG SẴN người khớp đầu — thấy trước Enter sẽ chọn ai (không chọn ngầm dòng không tô sáng). */
+  useEffect(() => { setActiveIndex(term.trim() ? options.findIndex((o) => o.kind === 'nguoi') : -1); }, [term, options]);
 
   const chon = (opt: ChonNguoiOption) => {
     if (tat(opt)) return;
@@ -363,10 +365,8 @@ export function ChonNguoi({
               document.getElementById(`${uid}-opt-${chonDuoc[k]}`)?.scrollIntoView({ block: 'nearest' });
             }
           } else if (e.key === 'Enter') {
-            /* Chưa ↓ mà đã gõ: Enter chọn người khớp đầu (không bắt ↓ trước). */
-            const dau = activeIndex < 0 && term.trim() && !loading ? options.find((o) => o.kind === 'nguoi') : undefined;
-            const opt = activeIndex >= 0 && activeIndex < options.length ? options[activeIndex] : dau;
-            if (opt) { e.preventDefault(); chon(opt); }
+            /* Enter chọn ĐÚNG dòng đang tô sáng (đang gõ thì người khớp đầu đã tô sẵn); không tô sáng → không chọn. */
+            if (activeIndex >= 0 && activeIndex < options.length) { e.preventDefault(); chon(options[activeIndex]); }
           } else if (e.key === 'Escape' && open) {
             e.stopPropagation();
             setOpen(false);

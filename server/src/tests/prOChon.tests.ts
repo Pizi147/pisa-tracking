@@ -45,10 +45,15 @@ export async function runPrOChonTests(t: Pick<YThucTestKit, 'check' | 'assert'>)
     const pp = doc('web/src/ui/PeoplePicker.tsx');
     assert(/onBlur=\{\(e\) => \{[\s\S]{0,200}relatedTarget[\s\S]{0,200}roiO\(\)/.test(pp), 'ChonNguoi chưa bắt focusout trên khung (Tab / bấm ra ngoài)');
     assert(/const roiO = [\s\S]{0,400}chotChuGo\(/.test(pp) && /setTerm\(''\)/.test(pp), 'rời ô chưa chọn người khớp duy nhất / xoá chữ gõ');
-    assert(/activeIndex < 0[\s\S]{0,200}kind === 'nguoi'/.test(pp), 'Enter khi chưa ↓ chưa chọn người khớp đầu');
     assert(!/document\.addEventListener\('mousedown', away\)/.test(than(pp, 'ChonNguoi')), 'ChonNguoi còn bắt mousedown riêng (rời ô đi một đường)');
   });
 
+  check('OC5 · đang gõ: tô sáng sẵn người khớp đầu; Enter chỉ chọn dòng đang tô sáng (không chọn ngầm)', () => {
+    const pp = doc('web/src/ui/PeoplePicker.tsx');
+    assert(/setActiveIndex\(term\.trim\(\) \? options\.findIndex\(\(o\) => o\.kind === 'nguoi'\)/.test(pp), 'chưa tô sáng sẵn người khớp đầu khi gõ');
+    assert(!/const dau = /.test(pp), 'Enter còn chọn người không tô sáng');
+    assert(/e\.key === 'Enter'\) \{[\s\S]{0,200}if \(activeIndex >= 0 && activeIndex < options\.length\) \{ e\.preventDefault\(\); chon\(options\[activeIndex\]\)/.test(pp), 'Enter không theo dòng tô sáng');
+  });
   check('OC3 · ChonNguoi kiểu `ds`: không gọi máy chủ, có dòng trống (choTrong), nhận id/onBlur/invalid như ONgay', () => {
     const pp = doc('web/src/ui/PeoplePicker.tsx');
     assert(/locNguoiChon\(/.test(pp), 'ChonNguoi chưa lọc danh sách có sẵn bằng locNguoiChon');

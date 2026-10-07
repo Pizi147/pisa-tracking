@@ -54,6 +54,10 @@ const KICH_BAN = [
     await p.locator('#noi-dung td button[aria-label^="MT"]').first().click(); await p.waitForTimeout(500);
     if (!(await p.locator('[role=dialog][aria-label^="Lịch "]').count())) throw new Error('không thấy hộp kỹ năng');
   }],
+  ['panel-xep-lich-mt', 2, '/test/ke-hoach', async (p) => {   // PR-OMT: panel toàn màn, bảng không cuộn ngang ở 1440
+    await p.getByRole('button', { name: /Xếp lịch MT/ }).first().click(); await p.waitForTimeout(1500);
+    if (!(await p.locator('[role=dialog]').count())) throw new Error('không thấy panel');
+  }],
   ['chon-nhieu-hv', 2, '/hoc-vien/lop/3?tab=hoc-vien', async (p) => {
     await nut(/^Chọn nhiều học viên$/)(p);
     await p.locator('#noi-dung input[type=checkbox]').first().check(); await p.waitForTimeout(300);

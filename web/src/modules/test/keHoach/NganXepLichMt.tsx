@@ -219,7 +219,7 @@ export function NganXepLichMt({ chiNhanhDau, lopDs, lopMoSan, coThuong, onDoiKhu
   const lopConLai = lopTheoChiNhanh.filter((l) => !lopChon.includes(l.id));
 
   return (
-    <KhungPanel tieuDe="Xếp lịch Mock Test" rong="rong" onDong={onClose}
+    <KhungPanel tieuDe="Xếp lịch Mock Test" rong="toan" onDong={onClose}
       tabs={<KhungXepLich value="ft" onChange={onDoiKhung} coFt coThuong={coThuong} />}
       chan={{ huy: { nhan: 'Đóng', onClick: onClose }, chinh: nutChinh }}>
       <Khoi tieuDe="Lọc">
@@ -328,9 +328,9 @@ export function NganXepLichMt({ chiNhanhDau, lopDs, lopMoSan, coThuong, onDoiKhu
                       </label>
                     </th>
                     <th className="sticky left-[80px] z-[2] px-2.5 py-2 font-semibold max-sm:left-[48px]" style={{ background: 'var(--surface-2)' }}>Học viên</th>
-                    <th className="whitespace-nowrap px-2.5 py-2 font-semibold" style={{ background: 'var(--surface-2)' }}>Lớp</th>
+                    <th className="w-[130px] whitespace-nowrap px-2.5 py-2 font-semibold" style={{ background: 'var(--surface-2)' }}>Lớp</th>
                     <th className="whitespace-nowrap px-2.5 py-2 font-semibold" style={{ background: 'var(--surface-2)' }}>Mock Test</th>
-                    <th className="whitespace-nowrap px-2.5 py-2 font-semibold" style={{ background: 'var(--surface-2)' }}>Sẽ xếp</th>
+                    <th className="whitespace-nowrap px-2.5 py-2 font-semibold sm:w-[300px]" style={{ background: 'var(--surface-2)' }}>Sẽ xếp</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -400,7 +400,7 @@ function HangEm({ h, homNay, cot, dot, d, chon, dangXem, rieng, thiLai, onTick, 
         <td className="whitespace-nowrap border-t px-2.5 py-1.5 text-slate-300" style={{ borderColor: 'var(--line)' }}>{h.classCode}</td>
         <td className="border-t px-2.5 py-1.5" style={{ borderColor: 'var(--line)' }}>
           {homNay ? (
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1 sm:flex-nowrap sm:gap-1.5">
               {cot.filter((n) => h.dot[n]?.attemptId || n === h.soKeTiep || n === dich).map((n) => {
                 const o = h.dot[n];
                 const laDich = n === dich && seXep;

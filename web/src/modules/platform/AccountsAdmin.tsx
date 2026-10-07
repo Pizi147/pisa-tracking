@@ -24,7 +24,7 @@ type Account = {
   title: string | null; status: string; approvalState: string; hasPassword: boolean;
   /** PR-XOA: tài khoản xoá mềm (`status = 'deleted'`). */
   deletedAt: string | null;
-  roles: RoleGrant[]; skills: string[];
+  roles: RoleGrant[]; skills: string[]; extraEmails: string[];
   extra: { permission: string; name: string; branchCode: string | null }[];
 };
 type Pending = {
@@ -48,6 +48,7 @@ export function AccountsAdmin() {
   /** PR-XOA: nút lọc trên bảng — mặc định "Đang dùng"; "Đã xoá" là tài khoản xoá mềm (còn dấu vết). */
   const [loc, setLoc] = useState<'dang-dung' | 'da-xoa'>('dang-dung');
   const [xoaId, setXoaId] = useState<number | null>(null);
+  const [suaTt, setSuaTt] = useState<Account | null>(null);
   /* PR-BC L3: bộ lọc nhớ trong URL (gửi link là mở đúng bộ lọc). Hook đặt TRƯỚC mọi `return` sớm (Rules of Hooks). */
   const [params, setParams] = useSearchParams();
   const [dongNhom, setDongNhom] = useState<Set<string>>(new Set());
@@ -93,7 +94,7 @@ export function AccountsAdmin() {
   const xoaLoc = () => datParams(ghiBoLocTaiKhoan(BO_LOC_TAI_KHOAN_TRONG));
   const nhom = nhomTheo ? nhomTaiKhoan(rows, nhomTheo, new Map((branches.data ?? []).map((b) => [b.code, b.name])), roleLabel, loc3) : null;
   const hang = (u: Account, key: string | number) => (
-    <HangTaiKhoan key={key} u={u} hienQuyenRieng={hienQuyenRieng} onSua={() => setEditing(u)} onXoa={() => setXoaId(u.id)} />
+    <HangTaiKhoan key={key} u={u} hienQuyenRieng={hienQuyenRieng} onSua={() => setEditing(u)} onSuaTt={() => setSuaTt(u)} onXoa={() => setXoaId(u.id)} />
   );
   const pending = accounts.data?.pending ?? [];
   const reload = () => { accounts.reload(); invalidate('/demo/accounts'); };
@@ -162,7 +163,7 @@ export function AccountsAdmin() {
             <thead>
               <tr>
                 <Th className="sticky-col" hint="Tên hiện ở mọi nơi trong hệ thống. Chính người đó sửa được ở Hồ sơ cá nhân.">Họ tên</Th>
-                <Th hint="Địa chỉ dùng để đăng nhập. KHÔNG sửa được sau khi tạo — đổi email là đổi danh tính.">Email đăng nhập</Th>
+                <Th hint="Địa chỉ dùng để đăng nhập. Quản trị đổi được ở ⋯ › Sửa thông tin.">Email đăng nhập</Th>
                 <Th hint="Một người mang được nhiều vai ở nhiều chi nhánh. Quyền = vai × chi nhánh của chính lần cấp đó.">Vai trò · chi nhánh</Th>
                 {/* J10: không ai có quyền cấp riêng thì ẩn cả cột (form Sửa vẫn cấp được). */}
                 {hienQuyenRieng && <Th hint="Quyền cấp thêm cho riêng người này, CỘNG vào quyền của vai chứ không thay thế.">Quyền cấp riêng</Th>}
@@ -209,6 +210,9 @@ export function AccountsAdmin() {
         <AccountDialog account={editing} branches={branches.data ?? []} onClose={() => setEditing(null)}
           onDone={() => { setEditing(null); reload(); }} />
       )}
+      {suaTt && (
+        <SuaThongTinPanel account={suaTt} onClose={() => setSuaTt(null)} onDone={() => { setSuaTt(null); reload(); }} />
+      )}
       {xoaId !== null && (
         <XoaTaiKhoanPanel userId={xoaId} onClose={() => setXoaId(null)} onDone={() => { setXoaId(null); reload(); }} />
       )}
@@ -221,7 +225,9 @@ const NHAN_PHAN_LOAI: Record<(typeof PHAN_LOAI_TAI_KHOAN)[number], string> = {
 };
 
 /** Một hàng của bảng Tài khoản — tách ra để dùng chung cho bảng phẳng và bảng nhóm (PR-BC L3); markup giữ nguyên. */
-function HangTaiKhoan({ u, hienQuyenRieng, onSua, onXoa }: { u: Account; hienQuyenRieng: boolean; onSua: () => void; onXoa: () => void }) {
+function HangTaiKhoan({ u, hienQuyenRieng, onSua, onSuaTt, onXoa }: {
+  u: Account; hienQuyenRieng: boolean; onSua: () => void; onSuaTt: () => void; onXoa: () => void;
+}) {
   return (
     <tr className={u.status === 'deleted' ? 'opacity-60' : 'row-hover'}>
       <td className="td sticky-col whitespace-nowrap">
@@ -258,7 +264,10 @@ function HangTaiKhoan({ u, hienQuyenRieng, onSua, onXoa }: { u: Account; hienQuy
         ) : (
           <span className="inline-flex items-center gap-1.5">
             <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onSua}>Sửa</button>
-            <MenuDong nhan="Thao tác khác" muc={[{ key: 'xoa', nhan: 'Xoá tài khoản', nguyHiem: true, onChon: onXoa }]} />
+            <MenuDong nhan="Thao tác khác" muc={[
+              { key: 'sua-tt', nhan: 'Sửa thông tin', onChon: onSuaTt },
+              { key: 'xoa', nhan: 'Xoá tài khoản', nguyHiem: true, keTruoc: true, onChon: onXoa },
+            ]} />
           </span>
         )}
       </td>
@@ -553,6 +562,70 @@ function AccountDialog({ account, branches, onClose, onDone }: {
             </Field>
           </>
         )}
+      </div>
+    </KhungPanel>
+  );
+}
+
+/**
+ * Tài khoản › ⋯ › Sửa thông tin (chủ sản phẩm 07/10) — CÙNG các ô của Tạo tài khoản / Hồ sơ cá nhân: họ tên, chức danh, email đăng nhập,
+ * điện thoại, email khác. Lưu: `PATCH /admin/accounts/:id` (chỉ Quản trị; máy chủ kiểm lại đủ). Đổi email không đăng xuất người đó.
+ */
+function SuaThongTinPanel({ account, onClose, onDone }: { account: Account; onClose: () => void; onDone: () => void }) {
+  const toast = useToast();
+  const [goc] = useState(() => ({
+    fullName: account.fullName, title: account.title ?? '', email: account.email ?? '', phone: account.phone ?? '',
+    extraEmails: account.extraEmails.join(', '),
+  }));
+  const [form, setForm] = useState(goc);
+  const [busy, setBusy] = useState(false);
+  const daDoi = (Object.keys(goc) as (keyof typeof goc)[]).some((k) => form[k] !== goc[k]);
+  const lf = useLoiForm();
+  const email = form.email.trim().toLowerCase();
+  const loi: LoiTruong[] = [
+    ...dsLoi([{ khoa: 'ho-ten', nhan: 'Họ và tên', toiThieu: 1 }], { 'ho-ten': form.fullName.trim() }),
+    ...(!email.endsWith('.pisa@gmail.com') ? [{ khoa: 'email', nhan: 'Email đăng nhập', lyDo: email ? 'Phải có đuôi .pisa@gmail.com' : 'Chưa điền' }] : []),
+  ];
+  const save = async () => {
+    lf.bam();
+    if (loi.length > 0 || busy) return;
+    setBusy(true);
+    try {
+      await api.patch(`/admin/accounts/${account.id}`, {
+        fullName: form.fullName, title: form.title || null, email: form.email, phone: form.phone || null,
+        extraEmails: form.extraEmails.split(/[,;\s]+/).map((x) => x.trim()).filter(Boolean),
+      });
+      toast.push('ok', 'Đã lưu thông tin');
+      onDone();
+    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+  };
+  const o = (k: keyof typeof goc) => ({ value: form[k], onChange: (e: { target: { value: string } }) => setForm({ ...form, [k]: e.target.value }) });
+
+  return (
+    <KhungPanel tieuDe="Sửa thông tin" hocVien={account.fullName} onDong={onClose}
+      chan={{
+        daSua: daDoi, huy: { onClick: onClose, disabled: busy },
+        conThieu: lf.conThieu(loi),
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={save} disabled={busy || !daDoi}>{busy ? 'Đang lưu…' : 'Lưu'}</button>,
+      }}>
+      <div className="grid gap-4 pt-3 sm:grid-cols-2">
+        <Field label="Họ và tên" required loi={lf.loiCua(loi, 'ho-ten')}>
+          <input className="field w-full" maxLength={100} {...lf.o(loi, 'ho-ten')} {...o('fullName')} />
+        </Field>
+        <Field label="Chức danh">
+          <input className="field w-full" maxLength={100} {...o('title')} />
+        </Field>
+        <Field label="Email đăng nhập" required loi={lf.loiCua(loi, 'email')}>
+          <input className="field w-full" type="email" {...lf.o(loi, 'email')} {...o('email')} />
+        </Field>
+        <Field label="Số điện thoại">
+          <input className="field w-full" type="tel" maxLength={20} {...o('phone')} />
+        </Field>
+        <div className="sm:col-span-2">
+          <Field label="Email khác">
+            <input className="field w-full" {...o('extraEmails')} />
+          </Field>
+        </div>
       </div>
     </KhungPanel>
   );
