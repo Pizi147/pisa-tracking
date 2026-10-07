@@ -13,7 +13,7 @@ import { useSession } from '../../lib/session.tsx';
 import { DongGvCham, cungGvCham, gvChamPayload, gvChamThanhChon } from '../cham/GvCham.tsx';
 import {
   BAI_CO_NHAN_XET, LOI_SO_CAU, NHAN_XET_TOI_DA, NO_SHOW_HINT, criteriaPatchFrom, demNguocSuaDau, oLuoiThuong,
-  rawPatchFrom, tieuChiCua, tieuChiNganCua, tuanLich, type EntrySkill, type NguoiChon,
+  rawPatchFrom, tieuChiCua, tieuChiNganCua, tuanLich, ENTRY_SKILL_SHORT, type EntrySkill, type NguoiChon,
 } from '@shared/domain/index.ts';
 
 export type Cell = {
@@ -137,7 +137,7 @@ export function useSaveScore(attemptId: number, onSaved?: () => void, tenHv?: st
       const r = await api.put<any>(`/attempts/${attemptId}/scores/${skill}`, patch);
       /* PR-BV: xoá "-" đã chốt — máy chủ trả tuần bài về / giữ (mockup bản 2). */
       if (r?.goVang?.tuanVe) {
-        toast.push('ok', `Đã gỡ vắng ${skillLabel(skill)}${tenHv ? ` · ${tenHv}` : ''} · ${r.goVang.giuLich ? 'giữ' : 'về'} ${r.goVang.tuanVe}`);
+        toast.push('ok', `Đã gỡ vắng ${ENTRY_SKILL_SHORT[skill as EntrySkill]}${tenHv ? ` · ${tenHv}` : ''} · ${r.goVang.giuLich ? 'giữ' : 'về'} ${r.goVang.tuanVe}`);
       }
       invalidate('/attempts');
       invalidate('/tong-quan');
@@ -145,7 +145,7 @@ export function useSaveScore(attemptId: number, onSaved?: () => void, tenHv?: st
       invalidate('/students');
       invalidate('/my-work');   // PR-S6F-a: badge quá hạn của GV tải lại sau khi nhập điểm
       /* K4: gõ "-" và nút "Vắng" (điện thoại) cùng đi qua đây — một thông báo ngắn, không Hoàn tác. */
-      if (patch.noShow === true) thongBaoVang(toast, `${attemptId}:${skill}`, skillLabel(skill), tenHv);
+      if (patch.noShow === true) thongBaoVang(toast, `${attemptId}:${skill}`, ENTRY_SKILL_SHORT[skill as EntrySkill], tenHv);
       tt.thanhCong(skill);
       onSaved?.();
       return true;

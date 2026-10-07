@@ -460,6 +460,8 @@ export async function runPrHk2Tests(t: YThucTestKit) {
       assert(!/Đã ghi vắng/.test(s), `${rel}: chữ "Đã ghi vắng" phải nằm ở một nơi (thongBaoVang.ts)`);
     }
     assert(/Đã gỡ vắng/.test(lt) && /Đã gỡ vắng/.test(se), 'thông báo gỡ vắng (PR-BV) phải giữ');
+    assert(/thongBaoVang\([^)]*tenMonNgan\(/.test(lt) && /thongBaoVang\([^)]*ENTRY_SKILL_SHORT\[/.test(se), 'mockup mục 6: thông báo ghi mã môn ngắn (R, W2), không tên đầy đủ');
+    assert(!/Đã gỡ vắng \$\{(tenO|skillLabel)\(/.test(lt + se), 'thông báo gỡ vắng cũng ghi mã môn ngắn');
   });
 
   check('C41 · điện thoại: dòng "Còn n ngày để sửa" dưới ô "-" (DongDau) xuống dòng, không cắt "…" (máy tính giữ truncate + title)', () => {
