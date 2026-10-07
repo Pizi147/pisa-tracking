@@ -89,7 +89,7 @@ import { khungPtGvTuThamSo } from '../../../shared/domain/index.ts';   // PR-Pb2
 import { metricResponse, metricSet, rowsFor } from '../worklist/metrics.ts';
 import { myWork, viecCuaNguoi } from '../worklist/mywork.ts';
 import { bangGvChiNhanh, hoSoGiaoVien, ketQuaHoSoGv, oHoSoGv, viecHoSoGv } from '../giaoVien/hoSo.ts';
-import { nhacViec } from '../worklist/nhacViec.ts';
+import { nhacViec, nhacViecLo } from '../worklist/nhacViec.ts';
 import * as caseSvc from '../cases/cases.ts';
 import * as regularSvc from '../normal/regular.ts';
 import * as chamSvc from '../cham/canCham.ts';
@@ -405,6 +405,12 @@ api.post('/my-work/nhac', requireAuth, wrap((req) => {
   const ownerId = toInt(req.body?.ownerId);
   if (!key || !ownerId) throw badRequest('Thiếu key hoặc ownerId.');
   return nhacViec(principalOf(req), { key, ownerId });
+}));
+
+/* VIEC-NHO-2: "Nhắc tất cả (n)" ở Của GV — kiểm quyền + từng dòng ở `nhacViecLo` (lõi PR-NV). */
+api.post('/my-work/nhac-nhieu', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return nhacViecLo(principalOf(req), (req.body ?? {}).viec);
 }));
 
 // ============================================================ Mock Test

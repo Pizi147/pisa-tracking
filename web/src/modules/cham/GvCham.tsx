@@ -27,17 +27,20 @@ export function cungGvCham(a: NguoiChon | null, b: NguoiChon | null, toiId: numb
   return khoa(a) === khoa(b);
 }
 
-/** Ô nhớ trên máy: người dùng × lớp × tuần (PR-S4F #10 — máy dùng chung: đổi tài khoản không kế thừa lựa chọn của người trước). */
-export const khoaGvChamCot = (userId: number | null | undefined, classId: number | null | undefined, periodId: number | null | undefined) =>
-  userId && classId && periodId ? `pisa:gv-cham:${userId}:${classId}:${periodId}` : null;
+/**
+ * Ô nhớ trên máy: người dùng × lớp × đợt (PR-S4F #10 — máy dùng chung: đổi tài khoản không kế thừa lựa chọn của người trước). Đợt = id tuần
+ * hoặc "mt{n}" ở Điểm theo lớp xem theo MT (`dotGvCham`, VIEC-NHO-2).
+ */
+export const khoaGvChamCot = (userId: number | null | undefined, classId: number | null | undefined, dot: string | null | undefined) =>
+  userId && classId && dot ? `pisa:gv-cham:${userId}:${classId}:${dot}` : null;
 
 /**
  * GV chấm mặc định của cột S — lớp × tuần, nhớ trên máy. Không có/hỏng → CHÍNH người đang xem (Q3, PR-LT3, chủ sản phẩm 06/10: Speaking
  * Mock không có GV mặc định — người lưu không đổi thì ghi chính người đó, trễ tính cho người đó).
  */
-export function useGvChamCot(classId: number | null | undefined, periodId: number | null | undefined) {
+export function useGvChamCot(classId: number | null | undefined, dot: string | null | undefined) {
   const { session } = useSession();
-  const khoa = khoaGvChamCot(session?.user?.id, classId, periodId);
+  const khoa = khoaGvChamCot(session?.user?.id, classId, dot);
   const doc = (): NguoiChon | null => {
     const macDinh: NguoiChon = { kieu: 'toi' };
     if (!khoa) return macDinh;
@@ -47,7 +50,7 @@ export function useGvChamCot(classId: number | null | undefined, periodId: numbe
     } catch { return macDinh; }
   };
   const [gt, setGt] = useState<{ khoa: string | null; v: NguoiChon | null }>(() => ({ khoa, v: doc() }));
-  /* Đổi tuần/lớp thì đọc lại đúng ô nhớ của lớp × tuần mới. */
+  /* Đổi tuần/MT/lớp thì đọc lại đúng ô nhớ mới. */
   const v = gt.khoa === khoa ? gt.v : doc();
   const dat = (moi: NguoiChon | null) => {
     setGt({ khoa, v: moi });
@@ -58,6 +61,8 @@ export function useGvChamCot(classId: number | null | undefined, periodId: numbe
 }
 
 const GOI_Y_COT = 'Áp cho các bài Speaking lưu sau đó ở lớp này, tuần này. Sửa riêng một em trong hộp tiêu chí.';
+/** Điểm theo lớp xem theo MT (VIEC-NHO-2): nhớ theo lớp × MT. */
+export const GOI_Y_COT_MT = 'Áp cho các bài Speaking lưu sau đó ở lớp này, MT này. Sửa riêng một em trong hộp tiêu chí.';
 
 /** Tên ngắn để hiện trên nút: "Tôi", tên tài khoản, tên người ngoài. */
 export function tenNgan(v: NguoiChon | null): string | null {
@@ -70,10 +75,12 @@ export function tenNgan(v: NguoiChon | null): string | null {
  * Luôn ghi "GV chấm: {tên thật}" (mockup HK2 J9): "Tôi" hiện bằng tên tài khoản. Tên dài xuống dòng (không cắt); tooltip có đủ tên.
  * Bấm mở hộp nhỏ chọn người (`ChonNguoi nhom="nhan_vien" choNgoai`).
  */
-export function NutGvCham({ value, onChange, lon = false, goiY = GOI_Y_COT, nhan = 'GV chấm' }: {
+export function NutGvCham({ value, onChange, lon = false, hang = false, goiY = GOI_Y_COT, nhan = 'GV chấm' }: {
   /** Chữ trước tên (lưới FT: "GV chấm S" — nút nằm trên bảng, không trong đầu cột S). */
   nhan?: string;
   value: NguoiChon | null; onChange: (v: NguoiChon | null) => void; lon?: boolean;
+  /** VIEC-NHO-2 (điện thoại, dưới hàng chip): hàng "GV chấm S [tên ▾]" — nhãn + ô có viền cao 44 px như ô chọn khác. */
+  hang?: boolean;
   /** Câu giải thích dưới ô chọn — cột S (mặc định) hay một bài (hồ sơ Mock). */
   goiY?: string;
 }) {
@@ -82,6 +89,30 @@ export function NutGvCham({ value, onChange, lon = false, goiY = GOI_Y_COT, nhan
   const ten = value?.kieu === 'toi' ? session?.user?.fullName ?? 'Tôi' : tenNgan(value);
   const cut = ten ? ten.lastIndexOf(' ') + 1 : 0;   // từ cuối dính mũi tên: mũi tên không rơi xuống dòng riêng
   const dau = ten ? ten.slice(0, cut) : '', cuoi = ten ? ten.slice(cut) : <span className="text-slate-500">chưa chọn</span>;
+  const panel = mo && (
+    /* I4 (PR-SL): khung panel chung. Chọn là lưu ngay (nhớ trên máy) → chân chỉ có "Xong". Mở được từ trong panel khác → `longTrong`. */
+    <KhungPanel tieuDe="GV chấm Speaking" longTrong z="z-[60]" onDong={() => setMo(false)}
+      chan={{ huy: { nhan: 'Xong', onClick: () => setMo(false) } }}>
+      <div className="space-y-2 pt-3">
+        <ChonNguoi value={value} onChange={(v) => { onChange(v); }} nhom="nhan_vien" choNgoai ariaLabel="GV chấm Speaking" />
+        <p className="m-0 text-xs text-slate-400">{goiY}</p>
+      </div>
+    </KhungPanel>
+  );
+  if (hang) {
+    return (
+      <div className="flex items-center gap-2.5 px-3 pb-2">
+        <span className="whitespace-nowrap text-xs font-bold text-slate-300">{nhan}</span>
+        <button type="button" onClick={() => setMo(true)} aria-haspopup="dialog" title={`${goiY}`}
+          aria-label={`${nhan}: ${ten ?? 'chưa chọn'}`} className="field flex min-h-[44px] min-w-0 flex-1 items-center gap-1.5 py-2 text-left text-sm">
+          {/* Tên dài xuống dòng, không cắt. */}
+          <span className="min-w-0 flex-1 whitespace-normal break-words">{ten ?? <span className="text-slate-500">chưa chọn</span>}</span>
+          <span aria-hidden className="shrink-0 text-slate-500"><MuiTenGap mo /></span>
+        </button>
+        {panel}
+      </div>
+    );
+  }
   return (
     <>
       <button type="button" onClick={() => setMo(true)} aria-haspopup="dialog"
@@ -90,16 +121,7 @@ export function NutGvCham({ value, onChange, lon = false, goiY = GOI_Y_COT, nhan
         {/* Mũi tên cùng dòng chữ (không phải cột flex riêng): ô S hẹp nên tên xuống dòng chiếm trọn bề rộng. */}
         <span className="min-w-0 whitespace-normal break-words">{`${nhan}: `}{dau}<span className="whitespace-nowrap">{cuoi}{' '}<span className="inline-block align-middle text-slate-500"><MuiTenGap mo /></span></span></span>
       </button>
-      {/* I4 (PR-SL): khung panel chung. Chọn là lưu ngay (nhớ trên máy) → chân chỉ có "Xong". Mở được từ trong panel khác → `longTrong`. */}
-      {mo && (
-        <KhungPanel tieuDe="GV chấm Speaking" longTrong z="z-[60]" onDong={() => setMo(false)}
-          chan={{ huy: { nhan: 'Xong', onClick: () => setMo(false) } }}>
-          <div className="space-y-2 pt-3">
-            <ChonNguoi value={value} onChange={(v) => { onChange(v); }} nhom="nhan_vien" choNgoai ariaLabel="GV chấm Speaking" />
-            <p className="m-0 text-xs text-slate-400">{goiY}</p>
-          </div>
-        </KhungPanel>
-      )}
+      {panel}
     </>
   );
 }
