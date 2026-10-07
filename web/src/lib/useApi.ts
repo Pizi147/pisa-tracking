@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ApiError, api, cachedGet, onInvalidate } from './api.ts';
+import { ApiError, api, cachedGet, currentEpoch, onInvalidate } from './api.ts';
 
 /*
  * PR-S6F-b (D14): GET ĐANG BAY cùng đường dẫn dùng chung MỘT lời gọi — Tổng quan có nhiều khối cùng đọc `/my-work`, `/tong-quan/quan-ly`.
@@ -47,7 +47,8 @@ function getChung<T>(path: string): Promise<T> {
 /** PR-TD2-c: bắt đầu tải một đường trước khi khối cần nó gắn (song song với đường khác); khối gắn sau dùng lại qua `dangBay`/bản vừa xem. */
 export function taiTruoc(path: string): void {
   if (conMoi(path)) return;
-  getChung(path).then((d) => nhoBanXem(path, d), () => { /* lỗi để khối gắn sau tự gọi lại và báo */ });
+  const e = currentEpoch();   // đổi tài khoản lúc đang tải → bỏ kết quả, không để hook của tài khoản mới dùng (rà #254)
+  getChung(path).then((d) => { if (currentEpoch() === e) nhoBanXem(path, d); }, () => { /* lỗi để khối gắn sau tự gọi lại và báo */ });
 }
 
 /** Gộp tải lại sau lần lưu cuối (PR-UX1 Q14) — tải lại sau mỗi ô làm nặng Turso. */

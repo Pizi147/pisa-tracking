@@ -65,4 +65,12 @@ export async function runPrTd2bcTests(t: YThucTestKit) {
     assert(/export function taiTruoc/.test(ua) && /cachedGet/.test(ua) && /'\/ref\/branches'/.test(ua) && /'\/ref\/periods'/.test(ua), 'useApi.ts thiếu taiTruoc / cachedGet cho /ref');
     assert(/MOI_MS/.test(ua), 'useApi chưa dùng lại bản vừa tải khi mới gắn (Case route gọi /cases/:id hai lần)');
   });
+
+  check('TD2-c · đổi tài khoản lúc đang tải: taiTruoc và cachedGet chỉ lưu khi epoch không đổi (không lộ dữ liệu tài khoản cũ)', () => {
+    const than = (f: string, dau: string) => { const s = nguon(f).replace(/\r\n/g, '\n'); const i = s.indexOf(dau); return s.slice(i, s.indexOf('\n}\n', i)); };
+    const tt = than('web/src/lib/useApi.ts', 'export function taiTruoc');
+    assert(/const e = currentEpoch\(\);[\s\S]*getChung\(path\)[\s\S]*currentEpoch\(\) === e[\s\S]*nhoBanXem/.test(tt), `taiTruoc: ${tt}`);
+    const cg = than('web/src/lib/api.ts', 'export async function cachedGet');
+    assert(/const e = cacheEpoch;[\s\S]*await api\.get[\s\S]*if \(cacheEpoch === e\) cache\.set\(path, \{ epoch: e,/.test(cg), `cachedGet: ${cg}`);
+  });
 }
