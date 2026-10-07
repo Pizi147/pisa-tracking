@@ -20,3 +20,13 @@ export function nhanXetW(w1: string | null, w2: string | null): string | null {
 /** Tên GV chấm Speaking: tài khoản trước, tên người ngoài sau. */
 export const tenGvCham = (o: { examinerUserName?: string | null; examinerName?: string | null }) =>
   o.examinerUserName ?? o.examinerName ?? null;
+
+/**
+ * VIEC-NHO-2: "đợt" nhớ GV chấm S trên máy — lưới theo tuần: id tuần (khoá cũ giữ nguyên); Điểm theo lớp xem theo MT (không tuần, cả
+ * lưới một MT): "mt{n}". Trộn nhiều MT không tuần → null (không có nút).
+ */
+export function dotGvCham(periodId: number | null | undefined, attemptNos: readonly number[]): string | null {
+  if (periodId) return String(periodId);
+  const mt = new Set(attemptNos);
+  return mt.size === 1 ? `mt${[...mt][0]}` : null;
+}

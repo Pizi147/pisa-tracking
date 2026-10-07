@@ -335,7 +335,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     assert(/'Nhập'/.test(nut) && /cell\.band === null/.test(nut), 'ô trống chưa ghi "Nhập"');
     assert(!/lon && cell\.band === null && nhanDau \? ''/.test(nut), 'ô trống còn chữ rỗng + "sửa"');
     assert(/>sửa</.test(nut) && /fmtBand\(cell\.band\)/.test(nut), 'ô có điểm phải giữ "6.5 sửa"');
-    assert(/<NutGvCham nhan="GV chấm S" value=/.test(doc('web/src/modules/cham/LuoiFT.tsx')) && /<NutGvCham lon value=/.test(doc('web/src/modules/cham/MotKyNang.tsx')), 'đầu cột S dùng NutGvCham (luôn ghi "GV chấm: tên thật")');
+    assert(/<NutGvCham nhan="GV chấm S" value=/.test(doc('web/src/modules/cham/LuoiFT.tsx')) && /<NutGvCham hang nhan="GV chấm S" value=/.test(doc('web/src/modules/cham/MotKyNang.tsx')), 'đầu cột S dùng NutGvCham (luôn ghi "GV chấm: tên thật")');
     assert(/title=\{`GV chấm Speaking: \$\{ten/.test(doc('web/src/modules/cham/GvCham.tsx')), 'GvCham: title phải ghi tên (phòng khi tên dài)');
   });
 

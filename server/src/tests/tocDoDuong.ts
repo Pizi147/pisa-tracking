@@ -731,6 +731,8 @@ export const TRAN_DONG: Record<string, number> = {
 };
 
 export const TRAN_GHI_LO = {
+  /** POST /my-work/nhac-nhieu — VIEC-NHO-2: "Nhắc tất cả" ở Công việc › Của GV, lô 50 việc (trần 10 s Netlify ≈ 200 câu ở 35 ms/câu). */
+  nhacTatCaCuaGv: 200,
   /** POST /notifications/doc-het — một câu UPDATE (S6F-a 10e) + phiên/quyền. PR-Dọn (9d): trần đặt sau khi đo. */
   docHet: 19,   // đo 9 câu → max(9 + 10, ⌈9 × 1,3⌉)
   /** POST /intake/commit — 35 em lớp FT (lịch MT mặc định, có em "Đã thi tới MT", ngày thi, tuần riêng). Trước PR-TOC 1949, sau 44 (49 sau gộp PR-MON + rà #121: đọc chương trình lớp, đọc lại khoá trong giao dịch). */
