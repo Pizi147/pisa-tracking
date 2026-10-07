@@ -438,4 +438,26 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     assert(han > viec, 'hạn thường giữ sau chữ việc');
     assert(!/shrink-0/.test(v), 'cụm hạn còn shrink-0');
   });
+
+  console.log('\nPR-HK2 · Task 7 · K4 "Vắng" một thông báo ngắn, không Hoàn tác (Q4 = B)');
+
+  check('C27 · "Vắng": nút điện thoại, gõ "-" lưới lớp thường, gõ "-" lưới FT cùng MỘT hàm thongBaoVang; không Hoàn tác, không chuỗi "Đã dời ${" riêng', () => {
+    const f = doc('web/src/modules/cham/thongBaoVang.ts');
+    assert(/export function thongBaoVang\(/.test(f), 'chưa có cham/thongBaoVang.ts export thongBaoVang');
+    assert(/Đã ghi vắng \$\{/.test(f) && /· dời \$\{/.test(f), 'chữ phải là "Đã ghi vắng R · Tên" (+ " · dời W3 OCT")');
+    assert(/key: `vang:/.test(f), 'toast phải có khoá theo ô (vang:<id>)');
+    assert(!/hoanTac|hanhDong|Hoàn tác/.test(f), 'thông báo vắng không có nút');
+    const se = doc('web/src/modules/fasttrack/ScoreEntry.tsx');
+    assert(!/useToastVang|toastVang|toast\.hoanTac/.test(se), 'ScoreEntry còn toast Hoàn tác / useToastVang cho vắng');
+    assert(!/onDau\(true, true\)/.test(se), 'nút Vắng điện thoại không còn đường "im lặng" riêng — đi cùng onDau(true)');
+    assert(/noShow === true[\s\S]{0,160}thongBaoVang\(/.test(than(se, 'useSaveScore')), 'FT: save() ghi "-" xong phải gọi thongBaoVang (gõ "-" và nút Vắng cùng đường)');
+    const lt = doc('web/src/modules/cham/LuoiThuong.tsx');
+    assert(/thongBaoVang\(/.test(lt) && /tuanMoi/.test(lt), 'lưới lớp thường chưa gọi thongBaoVang với r.tuanMoi');
+    for (const rel of ['web/src/modules/cham/LuoiThuong.tsx', 'web/src/modules/cham/MotKyNang.tsx', 'web/src/modules/cham/LuoiFT.tsx', 'web/src/modules/fasttrack/ScoreEntry.tsx']) {
+      const s = doc(rel);
+      assert(!/Đã dời \$\{/.test(s) && !/sang tuần sau\./.test(s), `${rel}: còn chuỗi "Đã dời …" riêng`);
+      assert(!/Đã ghi vắng/.test(s), `${rel}: chữ "Đã ghi vắng" phải nằm ở một nơi (thongBaoVang.ts)`);
+    }
+    assert(/Đã gỡ vắng/.test(lt) && /Đã gỡ vắng/.test(se), 'thông báo gỡ vắng (PR-BV) phải giữ');
+  });
 }
