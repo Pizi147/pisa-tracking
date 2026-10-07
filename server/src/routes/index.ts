@@ -2257,6 +2257,8 @@ api.get('/admin/accounts', requireAuth, wrap((req) => ({
   pending: accountSvc.pendingQueue(principalOf(req)),
 })));
 api.post('/admin/accounts', requireAuth, wrap((req) => accountSvc.createAccount(principalOf(req), req.body ?? {})));
+/** Tài khoản › ⋯ › Sửa thông tin — CHỈ Quản trị hệ thống (07/10): họ tên, email đăng nhập, điện thoại, chức danh, email khác. */
+api.patch('/admin/accounts/:id', requireAuth, wrap((req) => accountSvc.adminUpdateAccount(principalOf(req), pInt(req, 'id'), req.body ?? {})));
 api.post('/admin/accounts/:id/approve', requireAuth, wrap((req) => accountSvc.approve(
   principalOf(req), Number(req.params.id), req.body ?? {},
 )));
