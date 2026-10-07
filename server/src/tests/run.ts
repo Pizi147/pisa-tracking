@@ -9196,6 +9196,9 @@ await runFixChotLenFtTests({ check, checkAsync, assert, assertThrows, conn, TODA
 // ==================================================================== VIEC-NHO (6 việc nhỏ 08/10)
 const { runPrViecNhoTests } = await import('./prViecNho.tests.ts');
 await runPrViecNhoTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-HAN-XAC-NHAN (hạn xác nhận 5 ngày; Gấp / SOS 3: 3 ngày)
+const { runPrHanTests } = await import('./prHan.tests.ts');
+await runPrHanTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0

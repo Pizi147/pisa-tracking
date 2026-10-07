@@ -465,7 +465,7 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
         if (autoCases && sosCaseState(open.id).hasCause
             && !conn.prepare(`SELECT 1 FROM case_interventions iv WHERE iv.case_id = ? AND ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned'`).get(open.id)) {
           if (createPresetPlan({ caseId: open.id, attempt, category, sosLevel: result.sosLevel })) {
-            conn.prepare('UPDATE sos_cases SET han_xac_nhan = ? WHERE id = ?').run(hanXacNhan(demoToday()), open.id);
+            conn.prepare('UPDATE sos_cases SET han_xac_nhan = ? WHERE id = ?').run(hanXacNhan(demoToday(), { sosLevel: result.sosLevel, urgency: open.urgency }), open.id);
           }
         }
         /* Gắn thẳng, không qua tay người: Case này đã có người phụ trách và đang chạy. */
@@ -521,7 +521,7 @@ function recordChange(caseId: number, field: string, oldValue: string | null, ne
 /**
  * CASE TỰ TẠO TỪ SOS (S01, S4-1) — mỗi kỹ năng trượt một Case, W1/W2 tách (S02 — `failing` đã là kết quả của luật hai tầng nên không bao giờ
  * có case "Writing tổng"). Case đã ĐÓNG mà trượt lại thì `upsertCategoryCase` mở Case mới NỐI vào Case cũ. Case mới có PA theo quy chế
- * CHỜ XÁC NHẬN (Q28-3) + hạn xác nhận 3 ngày tính từ NGÀY CASE RA ĐỜI (không phải tuần thi — K5 §4 #6).
+ * CHỜ XÁC NHẬN (Q28-3) + hạn xác nhận 5 ngày (SOS 3: 3 ngày — `hanXacNhan`) tính từ NGÀY CASE RA ĐỜI (không phải tuần thi — K5 §4 #6).
  * Tách hàm (Q15) để PR-LT2a gọi lại với PA Bổ trợ — không đổi luật FT. Trả dòng `sos_cases`.
  * PR-LT2a: `pa: 'bo_tro'` = Giữa khoá lớp thường — PA Bổ trợ thay PA quy chế, tên `[Giữa khoá] G+V không đạt`, không nhãn SOS (`sosLevel` null).
  */
@@ -540,7 +540,7 @@ export function taoCaseTuDong(p: Principal, x: {
       .run(up.id, nowIso(), 'Nhập lại điểm sau khi xoá — mở lại Case cũ.', nowIso(), x.signalId);
     return conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(up.id);
   }
-  const han = hanXacNhan(demoToday());
+  const han = hanXacNhan(demoToday(), { sosLevel: x.sosLevel });
   const ct = boTro ? (conn.prepare('SELECT programme_code FROM classes WHERE id = ?').get(attempt.class_id ?? 0) as any)?.programme_code ?? null : null;
   conn.prepare('UPDATE sos_cases SET han_xac_nhan = ? WHERE id = ?').run(han, up.id);
   const open = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(up.id) as any;

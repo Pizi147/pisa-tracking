@@ -237,7 +237,7 @@ const COT_XU_LY: CotTongHop[] = [
   COT_HV_CASE,
   /* PR-SOS (K1-20): bốn cột theo MỘT nhãn trạng thái Case (`trangThaiCaseV4`) — tình trạng hôm nay. */
   { khoa: 'choNguyenNhan', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Chờ nguyên nhân',
-    goiY: 'Case chưa xác nhận nguyên nhân — trong ngoặc là số đã quá hạn 3 ngày.' },
+    goiY: 'Case chưa xác nhận nguyên nhân — trong ngoặc là số đã quá hạn xác nhận.' },
   { khoa: 'choDuyet', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Chờ duyệt', goiY: 'Case đã gửi "Không cần theo dõi" hoặc kế hoạch bổ trợ, chờ Quản lý duyệt.' },
   { khoa: 'dangLam', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Đang làm', goiY: 'Case đã có nguyên nhân (kể cả PA theo quy chế còn chờ xác nhận) hoặc Case giáo viên báo, chưa xong.' },
   { khoa: 'xongHuy', nhom: 'xu-ly', donVi: 'case', nhan: () => 'Xong/Huỷ', goiY: 'Case đã hoàn thành, huỷ vì không cần theo dõi, hoặc hệ thống đóng.' },
@@ -422,7 +422,7 @@ export type VanDeHvKetQua = {
   gop: boolean; chiChinh: boolean;
   tomTat: { hv: number; case: number; lop: number };
   hang: DongVanDeHv[];
-  /** PR-SOS (K1-22): `quaHan` = số Case chờ xác nhận nguyên nhân đã quá hạn 3 ngày. */
+  /** PR-SOS (K1-22): `quaHan` = số Case chờ xác nhận nguyên nhân đã quá hạn xác nhận (`sos_cases.han_xac_nhan`). */
   chuaPhanLoai: { case: number; hv: number; lop: number; quaHan: number };
   scopeEmpty: boolean;
 };

@@ -2,19 +2,18 @@
  * SOS v4 (PR-SOS, đặc tả 27/09 §3.1d + §5.3 S4-1…S4-7, Q28-1…Q28-5) — LUẬT THUẦN, không đụng database.
  *
  * Mock FT dưới kỳ vọng → Case tự tạo + PA theo quy chế "Chờ xác nhận" (preset=1, planned, confirmed_at NULL — biểu diễn có sẵn).
- * GVBM có 3 ngày (tính cả ngày đầu) chọn MỘT trong hai: Xác nhận nguyên nhân (→ Xác nhận PA, PA chạy từ hôm đó) hoặc
+ * GVBM có 5 ngày — Gấp / SOS 3: 3 ngày (tính cả ngày đầu, `soNgayHanXacNhan`) — chọn MỘT trong hai: Xác nhận nguyên nhân (→ Xác nhận PA, PA chạy từ hôm đó) hoặc
  * Không cần theo dõi (thẻ Chờ duyệt). PA quy chế không thay, không kết thúc sớm; tới mốc → "Ghi kết quả cuối".
  */
-import { hanTheoNgay, PLAN_DECISIONS, type PlanDecision } from './cases.ts';
+import { hanTheoNgay, PLAN_DECISIONS, soNgayHanXacNhan, type PlanDecision } from './cases.ts';
 import { sosPlanEndDate, type AcademicSupportSpan } from './sos.ts';
 import { CHU_THEM_PA, type DeadlineKind } from './display.ts';
 import type { TrangThai } from './trangThai.ts';
 import { ngay, tuanLich } from './hienThiNgay.ts';
 import { mocChuBoTro } from './lopThuong.ts';
 
-const HAN_XAC_NHAN_NGAY = 3;
-/** Hạn Xác nhận nguyên nhân / Xác nhận PA: 3 ngày tính cả ngày đầu ('2026-09-14' → '2026-09-16'). */
-export const hanXacNhan = (ngay: string) => hanTheoNgay(ngay, HAN_XAC_NHAN_NGAY);
+/** Hạn Xác nhận nguyên nhân / Xác nhận PA: 5 ngày ('2026-09-14' → '2026-09-18'); Gấp / SOS 3: 3 ngày (→ '2026-09-16'). */
+export const hanXacNhan = (ngay: string, muc: { sosLevel?: number | null; urgency?: string | null } = {}) => hanTheoNgay(ngay, soNgayHanXacNhan(muc));
 
 export const GOI_Y_MO_TA_PA = 'Nêu hướng dẫn và trọng tâm cụ thể; ai sẽ thực hiện / hỗ trợ / Tutor';                       // Q28-1
 export const GOI_Y_KET_QUA_PA = 'Đã cải thiện ở phần nào, như thế nào, kết quả cụ thể';  // Q28-2; PR-LUI-a2: "ai" đã có ô Người phụ trách

@@ -333,10 +333,13 @@ export function banGiaoPaQuyChe(studentId: number, toClassId: number, actorUserI
  */
 export function datLaiHanCase(studentId: number, homNay: string) {
   const conn = db();
-  conn.prepare(`UPDATE sos_cases SET han_xac_nhan = ?, updated_at = ? WHERE student_id = ? AND status != 'done' AND han_xac_nhan IS NOT NULL
+  /* PR-HAN: hạn theo mức từng Case (5 ngày; Gấp / SOS 3: 3 ngày). */
+  for (const c of conn.prepare(`SELECT id, sos_level, urgency FROM sos_cases WHERE student_id = ? AND status != 'done' AND han_xac_nhan IS NOT NULL
       AND (NOT EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sos_cases.id AND ci.role = 'primary')
            OR EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sos_cases.id AND ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND iv.kind != 'bo_tro'))`)
-    .run(hanXacNhan(homNay), nowIso(), studentId);
+    .all(studentId) as any[]) {
+    conn.prepare('UPDATE sos_cases SET han_xac_nhan = ?, updated_at = ? WHERE id = ?').run(hanXacNhan(homNay, { sosLevel: c.sos_level, urgency: c.urgency }), nowIso(), c.id);
+  }
   /* PR-LT2a: kế hoạch bổ trợ đang chờ nộp cũng nhận hạn mới từ ngày quay lại. */
   conn.prepare(`UPDATE case_interventions SET han_ke_hoach = ?, updated_at = ? WHERE kind = 'bo_tro' AND status = 'planned' AND han_ke_hoach IS NOT NULL
       AND case_id IN (SELECT id FROM sos_cases WHERE student_id = ? AND status != 'done')`)
@@ -413,7 +416,7 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
 /**
  * `KHÔNG CẦN THEO DÕI` (S4-5…S4-7, T23, YC-12.4): GVBM đúng kỹ năng (C02) hoặc Quản lý trong phạm vi GỬI Quản lý duyệt một thẻ `khong_theo_doi`
  * kèm lý do chọn nhanh. Case CHƯA đóng: hàng Case "Chờ Quản lý duyệt · không theo dõi", việc Xác nhận nguyên nhân rời Việc của GVBM và không
- * sinh Báo QL (`awaitingCauseCaseIds` loại thẻ đang chờ). Duyệt → `apDungKhongTheoDoi`; Từ chối → `tuChoiKhongTheoDoi` (hạn mới 3 ngày).
+ * sinh Báo QL (`awaitingCauseCaseIds` loại thẻ đang chờ). Duyệt → `apDungKhongTheoDoi`; Từ chối → `tuChoiKhongTheoDoi` (hạn mới theo `hanXacNhan`).
  *
  * Chỉ khi Case còn CHỜ NGUYÊN NHÂN (S4-2: hai lựa chọn loại trừ, Q4) — đã xác nhận nguyên nhân thì kết thúc bằng Hoàn thành Case.
  * QL kiêm GVBM tự gửi thì tự duyệt được như mọi thẻ (Q-D, Câu hỏi 2 = A: thẻ ghi "tự duyệt", báo Quản trị).
@@ -505,13 +508,13 @@ export function apDungKhongTheoDoi(conn: any, yc: { doi_tuong_id: number; du_lie
   });
 }
 
-/** QUẢN LÝ TỪ CHỐI "Không cần theo dõi" (trong tx của hộp): Case về chờ nguyên nhân, hạn mới 3 ngày từ ngày từ chối; báo GVBM phụ trách. */
+/** QUẢN LÝ TỪ CHỐI "Không cần theo dõi" (trong tx của hộp): Case về chờ nguyên nhân, hạn mới 5 ngày (Gấp / SOS 3: 3) từ ngày từ chối; báo GVBM phụ trách. */
 export function tuChoiKhongTheoDoi(conn: any, yc: { doi_tuong_id: number; nguoi_xin: number | null }, nguoiDuyet: number, lyDo: string) {
   const caseId = yc.doi_tuong_id;
-  const c = conn.prepare('SELECT id, owner_user_id, (SELECT full_name FROM students WHERE id = sos_cases.student_id) AS hv FROM sos_cases WHERE id = ?').get(caseId) as any;
+  const c = conn.prepare('SELECT id, owner_user_id, sos_level, urgency, (SELECT full_name FROM students WHERE id = sos_cases.student_id) AS hv FROM sos_cases WHERE id = ?').get(caseId) as any;
   if (!c) throw notFound('Không tìm thấy Case');
   const today = demoToday();
-  const han = hanXacNhan(today);
+  const han = hanXacNhan(today, { sosLevel: c.sos_level, urgency: c.urgency });
   conn.prepare('UPDATE sos_cases SET han_xac_nhan = ?, updated_at = ? WHERE id = ?').run(han, nowIso(), caseId);
   ghiMoc(caseId, 'ql_tu_choi_khong_theo_doi', today, lyDo, nguoiDuyet);
   /* Người xin đã nhận "Quản lý từ chối: …" từ hộp; GVBM phụ trách khác người xin thì báo riêng. */

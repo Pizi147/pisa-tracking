@@ -682,9 +682,7 @@ export function autoSupportKind(sosLevel: number, attemptNo: number): 'self_stud
 /**
  * Mức ưu tiên suy ra từ SOS. SUY LÚC HIỂN THỊ, không ghi vào Case — xem Q11.
  *
- * Ba mức SOS ánh xạ MỘT–MỘT sang ba mức độ ưu tiên, theo đúng bảng 3.1 của tài liệu chốt vòng 4:
- * SOS 1 → 7 ngày · SOS 2 → 5 ngày · SOS 3 → 3 ngày. Bản trước gộp SOS 1 và SOS 2 vào cùng
- * mức "cần chú ý", nên một em trượt đúng một kỹ năng bị thúc gấp như em trượt hai kỹ năng.
+ * Hạn KHÔNG còn theo ba mức (7/5/3 ngày của vòng 4): từ 08/10 SOS 1–2 → 5 ngày, SOS 3 → 3 ngày — xem `soNgayHanXacNhan`.
  */
 export function urgencyFromSos(sosLevel: number | null): 'normal' | 'attention' | 'urgent' {
   if (sosLevel === null || sosLevel <= 0) return 'normal';
@@ -820,16 +818,13 @@ export const SIGNAL_WITHDRAW_SCORE_FIXED = 'Không còn hợp lệ do sửa đi�
 export const SIGNAL_DISMISS_NOTE = 'Bỏ qua';
 
 /**
- * BẢNG HẠN CỦA MỤC 8.3 — mọi hạn theo ngày đều TÍNH CẢ NGÀY ĐẦU.
- *
- * Ba ngày là ngày đầu + 2, năm ngày là + 4, bảy ngày là + 6. Đây là chỗ rất dễ lệch một
- * ngày, nên con số cộng thêm luôn nhỏ hơn số ngày đúng một đơn vị, và không nơi nào được
- * tự cộng lấy.
- *
- * Hạn phụ thuộc MỨC ĐỘ, và đó là lý do mức độ chỉ còn hai bậc chứ không phải ba: mỗi bậc
- * dẫn tới một con số khác nhau, nên nó có việc để làm.
+ * SỐ NGÀY HẠN XÁC NHẬN — MỘT NƠI QUYẾT (chủ sản phẩm 08/10, đặc tả cuối khoá §4): Xác nhận nguyên nhân Case SOS, Xác nhận PA và
+ * hạn phải có PA của Case tạo tay = **5 ngày**; Case **Gấp** hoặc **SOS 3** = **3 ngày**. Tính cả ngày đầu (`hanTheoNgay`).
+ * Chỉ áp cho hạn sinh từ nay; Case đang mở giữ `sos_cases.han_xac_nhan` đã ghi.
  */
-export const PLAN_DUE_DAYS: Record<string, number> = { urgent: 3, attention: 5 };
+export function soNgayHanXacNhan(muc: { sosLevel?: number | null; urgency?: string | null }): number {
+  return muc.urgency === 'urgent' || (muc.sosLevel ?? 0) >= 3 ? 3 : 5;
+}
 
 /**
  * HẠN PHẢI CÓ PHƯƠNG ÁN, tính từ lúc Case được xác định và giao trách nhiệm.
@@ -840,8 +835,7 @@ export const PLAN_DUE_DAYS: Record<string, number> = { urgent: 3, attention: 5 }
  * gốc, vì một nghĩa vụ đã phát sinh thì không biến mất khi người giữ nó đổi tên.
  */
 export function planDueDate(assignedOn: string, urgency: string | null | undefined): string {
-  const days = PLAN_DUE_DAYS[urgency ?? DEFAULT_URGENCY] ?? PLAN_DUE_DAYS.attention;
-  return hanTheoNgay(assignedOn, days);
+  return hanTheoNgay(assignedOn, soNgayHanXacNhan({ urgency }));
 }
 
 /**

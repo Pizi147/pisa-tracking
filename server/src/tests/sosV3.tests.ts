@@ -457,7 +457,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     for (const c of [c1, c2]) {
       assert(plansOf(c.id).length === 0 && get('SELECT origin_kind FROM sos_cases WHERE id = ?', c.id).origin_kind === 'teacher_report', 'Case tạo tay không được có phương án điền sẵn');
     }
-    assert(domain.PLAN_DUE_DAYS.attention === 5 && domain.PLAN_DUE_DAYS.urgent === 3, 'Hằng số hạn 5/3 ngày');
+    assert(domain.soNgayHanXacNhan({ urgency: 'attention' }) === 5 && domain.soNgayHanXacNhan({ urgency: 'urgent' }) === 3, 'Hạn 5/3 ngày (PR-HAN)');
     assert(domain.planDueDate(TODAY, 'attention') === addDays(TODAY, 4) && domain.planDueDate(TODAY, 'urgent') === addDays(TODAY, 2), 'Tính cả ngày đầu');
   });
 

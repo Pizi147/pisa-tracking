@@ -912,7 +912,7 @@ CREATE TABLE sos_cases (
    * Chú thích này cố ý KHÔNG có dấu phẩy: SQLite `DROP COLUMN` cột cuối bảng cắt ngược tới dấu phẩy gần nhất.
    */
   system_close_reason TEXT,
-  /* PR-SOS (K5-06 · Q28-3): hạn Xác nhận nguyên nhân + Xác nhận PA — 3 ngày tính cả ngày đầu (hanXacNhan). Case tay NULL. Không dấu phẩy (DROP COLUMN) */
+  /* PR-SOS (K5-06 · Q28-3): hạn Xác nhận nguyên nhân + Xác nhận PA — hanXacNhan (5 ngày; Gấp / SOS 3: 3; PR-HAN 08/10). Case tay NULL. Không dấu phẩy (DROP COLUMN) */
   han_xac_nhan TEXT,
   /*
    * PR-DEPLOY (0b-3 · R5-5): LỚP và CHƯƠNG TRÌNH GỐC lúc Case mở — không đổi khi em chuyển lớp hay lên chương trình khác. Trigger `trg_sos_cases_goc` ghi
