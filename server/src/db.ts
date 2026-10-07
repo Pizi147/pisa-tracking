@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cauHinhDb, choPhepSeedTurso, coCoBanChinh } from './moiTruong.ts';
 import { chanGiaoDichNeuSapHetGio, conLaiMs, KHONG_MO_GIAO_DICH_KHI_CON_MS } from './platform/hanGio.ts';
-import { demCau, xoaNho } from './platform/nguCanhRequest.ts';
+import { demCau, demDong, xoaNho } from './platform/nguCanhRequest.ts';
 import { HttpError } from './util.ts';
 
 /*
@@ -40,7 +40,12 @@ import { HttpError } from './util.ts';
   for (const ten of ['all', 'run', 'iterate'] as const) {
     const goc = proto[ten];
     if (ten === 'all') {
-      proto[ten] = function (this: unknown, ...args: unknown[]) { return goc.apply(this, motNull(args)); };
+      /* TD2-0: đếm dòng ở `all` (mọi `get` của câu dùng lại cũng đi qua đây) — chỉ cộng length. */
+      proto[ten] = function (this: unknown, ...args: unknown[]) {
+        const out = goc.apply(this, motNull(args));
+        if (Array.isArray(out)) demDong(out.length);
+        return out;
+      };
       continue;
     }
     proto[ten] = function (this: unknown, ...args: unknown[]) {
@@ -57,7 +62,7 @@ import { HttpError } from './util.ts';
   proto.get = function (this: { daLuu?: boolean; all(...a: unknown[]): unknown[] }, ...args: unknown[]) {
     /* PR-BN: `get()` của libsql trên statement DÙNG LẠI trả dòng của lần gọi TRƯỚC (tham số mới bị bỏ qua) — `all()` thì đúng. */
     const row = this.daLuu ? this.all(...args)[0] : getGoc.apply(this, motNull(args));
-    if (!this.daLuu) demCau();   // đường `all` đã đếm qua `iterate`
+    if (!this.daLuu) { demCau(); demDong(row ? 1 : 0); }   // đường `all` đã đếm qua `iterate` / `all`
     if (row && typeof row === 'object' && '_metadata' in row) delete (row as Record<string, unknown>)._metadata;
     return row;
   };
