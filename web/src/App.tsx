@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, type ReactNode } from 'react';
+import { Suspense, lazy, useEffect, useState, type ReactNode } from 'react';
 import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useSession } from './lib/session.tsx';
 import { useApi } from './lib/useApi.ts';
@@ -93,6 +93,9 @@ function NutDay({ muc, active, so }: { muc: KhuVucMuc; active: boolean; so: SoBa
 export default function App() {
   const { session, loading, reload } = useSession();
   const location = useLocation();
+  /* PR-PH / HK2: bấm "Thử lại" ở dải Mất kết nối → nút khoá, chữ "Đang thử…" tới khi tải xong. */
+  const [dangThu, setDangThu] = useState(false);
+  const thuLai = async () => { setDangThu(true); try { await reload(); } finally { setDangThu(false); } };
   /* Một lần mỗi lần đổi trang (không hỏi lặp theo giờ); chỉ người duyệt được (Q10). */
   const dem = useApi<DemYeuCau>(session?.authenticated && session.nav?.workApprove ? '/yeu-cau/dem' : null, [location.pathname]).data;
   /*
@@ -130,10 +133,10 @@ export default function App() {
       {!banChinh && <DemoBar />}
       {/* PR-PH: mất kết nối khi tải lại phiên KHÔNG phải đăng xuất — giữ nguyên màn, chỉ báo và cho thử lại. */}
       {session.loiKetNoi && (
-        <div role="alert" className="shrink-0 flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-3 sm:px-4 py-2 text-xs"
+        <div role="status" className="shrink-0 flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-3 sm:px-4 py-2 text-xs"
           style={{ borderColor: 'rgb(var(--soon-line-rgb))', background: 'rgb(var(--soon-bg-rgb))', color: 'rgb(var(--soon-rgb))' }}>
           <span>Mất kết nối tới máy chủ — dữ liệu trên màn có thể chưa mới. Bạn vẫn đang đăng nhập.</span>
-          <button type="button" className="btn btn-sm" onClick={() => { void reload(); }}>Thử lại</button>
+          <button type="button" className="btn btn-sm" disabled={dangThu} onClick={() => { void thuLai(); }}>{dangThu ? 'Đang thử…' : 'Thử lại'}</button>
         </div>
       )}
       <header className="relative shrink-0 border-b bg-[color:var(--surface)]" style={{ borderColor: 'var(--line)' }}>

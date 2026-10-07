@@ -156,6 +156,7 @@ export function CatalogAdmin() {
 function RouteDialog({ row, onClose, onDone }: { row: RouteRow; onClose: () => void; onDone: () => void }) {
   const toast = useToast();
   const [f, setF] = useState({ name: row.name, note: row.note ?? '', active: row.status === 'active' });
+  const [goc] = useState(() => JSON.stringify(f));   // luật I1: sửa so với giá trị đã lưu → "Huỷ thay đổi"
   const [busy, setBusy] = useState(false);
   const lf = useLoiForm();
   const loi = dsLoi([{ khoa: 'ten', nhan: 'Tên gọi', toiThieu: 1 }], { ten: f.name });
@@ -174,7 +175,7 @@ function RouteDialog({ row, onClose, onDone }: { row: RouteRow; onClose: () => v
   return (
     <KhungPanel tieuDe={`Sửa lộ trình ${row.code}`} onDong={onClose}
       chan={{
-        huy: { nhan: 'Đóng', onClick: onClose, disabled: busy },
+        daSua: JSON.stringify(f) !== goc, huy: { onClick: onClose, disabled: busy },
         conThieu: lf.conThieu(loi),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={save} disabled={busy}>Lưu</button>,
       }}>
@@ -212,6 +213,7 @@ function ProgrammeDialog({ row, onClose, onDone }: {
     finalWeek: String(moc(row, 'final') ?? ''),
     active: row.status === 'active',
   });
+  const [goc] = useState(() => JSON.stringify(f));   // luật I1
   const [busy, setBusy] = useState(false);
   const kh = kyHieuLop(row.code, null);
   const lf = useLoiForm();
@@ -245,7 +247,7 @@ function ProgrammeDialog({ row, onClose, onDone }: {
   return (
     <KhungPanel tieuDe={`Sửa chương trình ${kh ?? row.name}`} onDong={onClose}
       chan={{
-        huy: { nhan: 'Đóng', onClick: onClose, disabled: busy },
+        daSua: JSON.stringify(f) !== goc, huy: { onClick: onClose, disabled: busy },
         conThieu: lf.conThieu(loi),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={save} disabled={busy}>Lưu</button>,
       }}>

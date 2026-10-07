@@ -605,11 +605,15 @@ export function CriteriaModal({ cell, onSave, onClose, gvMacDinh = null }: {
     if (ok) onClose();
   };
 
+  const daSua = vals.some((v, i) => v !== vals0[i]) || bandText !== bandBanDau(cell) || nx !== (cell.nhanXet ?? '') || (laS && !cungGvCham(gv, gv0, session?.user?.id));
+
   return (
-    /* I4 (PR-SL): khung panel chung, chân luật S3 (đã gõ ô nào / đổi nhận xét / GV chấm → "Huỷ thay đổi"). */
-    <KhungPanel tieuDe={`${skillLabel(cell.skill)} — bốn tiêu chí`} longTrong z="z-[60]" onDong={() => { if (!busy) onClose(); }}
+    /* I4 (PR-SL): khung panel chung, chân luật S3 (đã gõ ô nào / đổi nhận xét / GV chấm → "Huỷ thay đổi").
+       SL: Esc / bấm nền / ✕ khi ĐÃ gõ thì hỏi trước (mất bản nháp là mất công); nút "Huỷ thay đổi" ở chân là chủ ý bỏ → đóng thẳng. */
+    <KhungPanel tieuDe={`${skillLabel(cell.skill)} — bốn tiêu chí`} longTrong z="z-[60]"
+      onDong={() => { if (busy) return; if (daSua && !window.confirm('Bỏ các giá trị đã gõ?')) return; onClose(); }}
       chan={{
-        daSua: vals.some((v, i) => v !== vals0[i]) || bandText !== bandBanDau(cell) || nx !== (cell.nhanXet ?? '') || (laS && !cungGvCham(gv, gv0, session?.user?.id)),
+        daSua,
         huy: { onClick: onClose, disabled: busy },
         chinh: (
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={submit} disabled={busy || !patch} title={patch ? undefined : loi ?? undefined}>

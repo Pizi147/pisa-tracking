@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
@@ -84,6 +84,12 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
     setChiNhanhId(dich?.chiNhanhId ?? xem.data?.hienTai.chiNhanhId ?? lopDich.data.chiNhanh[0]?.id ?? null);
   }, [lopDich.data, xem.data, toClassId, chiNhanhId]);
 
+  /* Luật I1: "Huỷ thay đổi" thay "Đóng" khi đã sửa. Mốc = giá trị sau khi điền sẵn (lệnh đang có / đề xuất cần duyệt) xong. */
+  const hienTai = JSON.stringify([toClassId, tuan, lyDo, mucTieu, thangThi]);
+  const goc = useRef<string | null>(null);
+  if ((daDien || dx) && goc.current === null) goc.current = hienTai;
+  const daSua = goc.current !== null && hienTai !== goc.current;
+
   const lopCuaChiNhanh = useMemo(() => (lopDich.data?.lop ?? []).filter((l) => l.chiNhanhId === chiNhanhId), [lopDich.data, chiNhanhId]);
   const dich = (lopDich.data?.lop ?? []).find((l) => l.id === toClassId) ?? null;
   const nhanLop = (l: LopDich) => [l.code, l.tenChuongTrinh, l.tuan ? `tuần học ${l.tuan}` : null, `GVCN ${l.gvcn ?? 'chưa có'}`].filter(Boolean).join(' · ');
@@ -147,7 +153,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
   return (
     <KhungPanel tieuDe={dx ? 'Đề xuất chuyển lớp' : 'Chuyển lớp'} hocVien={studentName} lop={lop} onDong={onClose}
       chan={{
-        huy: { nhan: 'Đóng', onClick: onClose, disabled: busy },
+        daSua, huy: { onClick: onClose, disabled: busy },
         ...(!dx && lenh && !duyet ? { xoa: { nhan: CHU_CHUYEN_LOP.huy, onClick: () => setDangHuy((v) => !v) } } : {}),
         conThieu: lf.conThieu(loi),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={gui} disabled={busy}>{nhanChinh}</button>,

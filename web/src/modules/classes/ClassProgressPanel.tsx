@@ -75,6 +75,11 @@ export function ClassProgressPanel({ classId, classCode, tieuDe, onClose, onDone
     ...(laLopThuong && ngoaiKhoa(finalWeek) ? [{ khoa: 'cuoi-khoa', nhan: 'Tuần thi Cuối khoá', lyDo: `Từ 1 đến ${data.totalWeeks}` }] : []),
   ];
 
+  /* Luật I1: đã sửa ô nào so với giá trị đã lưu → chân ghi "Huỷ thay đổi". */
+  const daSua = !!data && (startPeriodId !== (data.startPeriodId ?? null)
+    || progressWeek !== (data.progressOverridden && data.progressWeek ? String(data.progressWeek) : '')
+    || finalWeek !== (data.finalOverridden && data.finalWeek ? String(data.finalWeek) : ''));
+
   const save = async () => {
     lf.bam();
     if (loi.length > 0 || busy) return;
@@ -94,7 +99,7 @@ export function ClassProgressPanel({ classId, classCode, tieuDe, onClose, onDone
   return (
     <KhungPanel tieuDe={tieuDe} lop={classCode} onDong={onClose}
       chan={{
-        huy: { nhan: 'Đóng', onClick: onClose, disabled: busy },
+        daSua, huy: { onClick: onClose, disabled: busy },
         conThieu: lf.conThieu(loi),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={save} disabled={busy}>Lưu</button>,
       }}>
