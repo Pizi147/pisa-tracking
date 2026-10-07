@@ -14,7 +14,7 @@ import { NHAN_TRANG_THAI } from './trangThai.ts';
 import { chuTamDung } from './students.ts';
 import { ngay, tuanLich } from './hienThiNgay.ts';
 import { VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, type ViolationCategory } from './yThuc.ts';
-import { nhanBaiThuong } from './normal.ts';
+import { moiNhatTruoc, nhanBaiThuong } from './normal.ts';
 
 // ====================================================================== ba tab (D2, A6)
 
@@ -143,7 +143,7 @@ export type KetQuaTestGanNhat = {
 export function ketQuaTestGanNhat(attempts: readonly LuotTomTat[], homNay?: string | null): KetQuaTestGanNhat | null {
   const a = [...attempts]
     .filter((x) => x.status !== 'cancelled' && x.scored > 0 && x.sinhViec !== false && x.kind !== 'mt0')   // PR-MT0: không là kết quả gần nhất
-    .sort((x, y) => y.attemptNo - x.attemptNo)[0];
+    .sort((x, y) => moiNhatTruoc({ kind: x.kind, attempt_no: x.attemptNo }, { kind: y.kind, attempt_no: y.attemptNo }))[0];   // lớp thường theo loại
   if (!a) return null;
   const ratio = a.mode === 'ratio';
   const dau = ratio ? nhanBaiThuong(a.kind) : `MT${a.attemptNo}`;

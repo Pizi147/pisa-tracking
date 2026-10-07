@@ -513,6 +513,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 07/10/2026 | `fix-kq-gan-nhat-thuong` · Opus 5.5 | Lớp thường: "Kết quả gần nhất" theo loại (`moiNhatTruoc` = `soThuTuLuot` đảo, MT0 giữ cuối) ở danh sách lớp, SOS/Công việc, hồ sơ HV, tên Case; FT không đổi (chụp 391 mục giống hệt); phép kiểm `fixKqGanNhat.tests.ts` |
 | 07/10/2026 | `fix-dtl-omt` · Opus 5.5 | Hồ sơ Mock từ Điểm theo lớp 500 trên Turso (câu UNION `scoreHistoryOf` thiếu AS); ô MT "chờ" của MT cũ tím (C2), chip lưới FT không cắt chữ; phép kiểm `fixDtlOmt.tests.ts` |
 | 07/10/2026 | `o-chon-ten` · Opus 5.5 | Ô chọn người gõ được: Phân công GV (Tạo lớp, Tạo nhiều lớp, Sửa phân công) + ô Học viên của Tạo Case → `ChonNguoi` kiểu `ds`; phép kiểm `prOChon.tests.ts` |
 | 07/10/2026 | qt-sua-tai-khoan (Opus 5.5) | Quản trị › Tài khoản › ⋯ › Sửa thông tin: họ tên, email đăng nhập, ĐT, chức danh, email khác; PATCH chỉ QT, trùng email 409, nhật ký cũ → mới, đổi email không đăng xuất |

@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { db } from '../db.ts';
-import { CHUONG_TRINH_KHONG_CHIA_MON, PERMISSIONS, luotSinhViec } from '../../../shared/domain/index.ts';
+import { CHUONG_TRINH_KHONG_CHIA_MON, PERMISSIONS, luotSinhViec, moiNhatTruoc } from '../../../shared/domain/index.ts';
 import { ngayTaoLuot } from '../classes/schedule.ts';
 import { classScopeSql, scopeFor, type Principal } from '../permissions.ts';
 import { loadBundle, resultOf, type AttemptBundle } from '../fasttrack/attempts.ts';
@@ -140,9 +140,10 @@ function attemptsNewestFirstGoc(studentIds: number[]): Map<number, any[]> {
       out.get(r.student_id)!.push(r);
     }
   }
-  /* K5-54: "mới nhất" = số MT LỚN NHẤT của lộ trình mới nhất — không theo tuần hay ngày nhập (MT lịch sử nhập bù hôm nay vẫn là MT cũ). */
+  /* K5-54: "mới nhất" = số MT LỚN NHẤT của lộ trình mới nhất — không theo tuần hay ngày nhập (MT lịch sử nhập bù hôm nay vẫn là MT cũ).
+   * Lớp thường theo loại (Final sau Progress — `moiNhatTruoc`). */
   for (const list of out.values()) {
-    list.sort((x, y) => y.cycle_id - x.cycle_id || y.attempt_no - x.attempt_no || y.id - x.id);
+    list.sort((x, y) => y.cycle_id - x.cycle_id || moiNhatTruoc(x, y) || y.id - x.id);
   }
   return out;
 }
