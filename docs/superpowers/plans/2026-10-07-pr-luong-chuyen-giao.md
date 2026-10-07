@@ -6,8 +6,10 @@
 thấy Công việc còn "Chốt lên FT · CP FOU 23" quá hạn dù đã ghi Lộ trình tiếp theo và lớp đang "Bàn giao · GVCN đang bàn giao 0/11".
 **Luật chủ sản phẩm nhắc lại 07/10:** em **Lên FT** → điểm đầu vào lộ trình FT mới = **MT0** (MT0 tự xếp); **Target giữ như đã ghi ban đầu**;
 **không phải bấm từng học sinh**.
-**Liên quan:** nhánh `fix-chot-len-ft` (agent khác, đang làm) sửa riêng phần ĐẾM của việc "Chốt lên FT" (`mt0.ts` `tinhLopChoChotLenFt`: em có lệnh
-= đã có hướng; lớp có lệnh Cuối khoá = xong). PR-LC **không** sửa lại câu đếm đó; chạy SAU khi nhánh đó merge.
+**Liên quan:** PR **`fix-chot-len-ft-2`** (đang làm, thay #250 đã revert) sửa riêng phần ĐẾM của việc "Chốt lên FT" (`mt0.ts` `tinhLopChoChotLenFt`:
+em có lệnh = đã có hướng; lớp có lệnh Cuối khoá = xong). PR-LC **không** sửa lại câu đếm đó; **`fix-chot-len-ft-2` phải merge TRƯỚC PR-LCa.**
+**Bản 2 (07/10 tối, chủ sản phẩm xem ảnh CP ELE 30):** panel "Ghi lộ trình tiếp theo cả lớp" và "Chuyển lớp · {lớp}" "đang làm một việc y hệt nhau"
+→ ở **lớp thường GỘP thành MỘT panel** (mục 4 PR-LCb, mockup `thiet-ke/mockup-panel-cuoi-khoa-2026-10-07.html`). Q1–Q3 + cách A đã đồng ý.
 **Khảo sát:** đọc mã `origin/main` 09223024 + bấm thử thật (seed, API :4400, Vite :5400, Playwright `chrome`, QL id 2, GVCN id 7) trên lớp
 `MB FOU 12` (7 em, ngày demo 14/09 = tuần Final): 4 em Lên FT, 1 Lên BE→QL đổi Lên FT, 1 Học lại, 1 Chưa quyết→QL cho Lên BE. Ảnh: `thiet-ke/anh/luong-chuyen-2026-10-07/`.
 
@@ -93,7 +95,7 @@ thấy Công việc còn "Chốt lên FT · CP FOU 23" quá hạn dù đã ghi L
 
 ## 4. Thay đổi — chia 2 PR
 
-### PR-LCa · máy chủ (M) — chạy sau `fix-chot-len-ft` merge. Không giao diện.
+### PR-LCa · máy chủ (M) — chạy sau `fix-chot-len-ft-2` merge. Không giao diện.
 - [ ] **LCa-0 (đỏ trước)** `server/src/tests/prLc.tests.ts` (`runPrLcTests`, gọi cuối `run.ts`): dựng lớp FOU tuần Final 4 em, Target khoá 6.0.
   - (a) QL `raLenh` Lên FT cho em **không** có LTT → có MT0 `planned` tuần Final, `lo_trinh_tiep_theo.huong = 'fast_track'`. (đỏ: L1)
   - (b) `raLenh` Lên FT không `mucTieu`, khoá có Target 6.0 → ok, lệnh `muc_tieu = 6.0`; khoá KCK → `khong_cam_ket = 1`; không Target nào → lỗi "Ghi Target (hoặc KCK)". (đỏ: T2)
@@ -104,6 +106,8 @@ thấy Công việc còn "Chốt lên FT · CP FOU 23" quá hạn dù đã ghi L
   - (g) `transitionPlan` trả `dienSan` cho em có LTT hướng chuyển lớp dù chưa lớp dự kiến: `{ huong, mucTieu (đã áp thứ tự), lopDichId|null }`. (đỏ)
   - (h) Tuần Final: `myWork` của QL có "Chuyển tiếp lớp · lớp" và **không** có "Chốt lên FT · lớp" cùng lớp. (đỏ: T3)
   - (i) Số câu SQL `raLenh` 30 em không tăng theo số em (trần `tocDoDuong.ts`).
+  - (j) GVCN `GET /classes/:id/transition` lớp thường → 200, `coTheGhiHuong` true, `coTheRaLenh` false, không `candidates`. (đỏ)
+  - (k) GVCN ghi LTT cho em đã có lệnh `cho` → 409; QL → được, lệnh và LTT cùng hướng. (đỏ)
 - [ ] **LCa-1** `lenhChuyen.ts` `raLenh` (bối cảnh `cuoi-khoa`, lớp nguồn thường): sau `chenNhieuDong` lệnh, trong cùng `tx`, gọi một hàm mới
   (cả `suaLenh` khi đổi hướng/Target) `dongBoTuLenh(p, hang)` ở `loTrinhTiep.ts`: upsert `lo_trinh_tiep_theo` (huong, `lop_du_kien_id = lop_dich_id`, `muc_tieu`; **giữ** `ghi_chu`, `thang_thi`
   khi không gửi — `COALESCE(excluded.x, lo_trinh_tiep_theo.x)`), nhật ký Hành trình "QL quyết: …" chỉ khi hướng đổi, rồi `dongBoMt0`. Dùng lại `ghiCacDong`
@@ -114,24 +118,48 @@ thấy Công việc còn "Chốt lên FT · CP FOU 23" quá hạn dù đã ghi L
   `da_ap_dung_luc`, Target thật. Sau `noiMt0VaoFt`, `UPDATE assessment_attempts SET target_at_attempt = <target lộ trình FT>` cho MT0 vừa nối **chưa điểm** (một câu theo lô, `mt0.ts`).
 - [ ] **LCa-4** `transitionPlan`: thêm `dienSan` mỗi em (hàm thuần `dienSanChuyenTiep(lt, khoa, candidates)`): hướng từ LTT, Target theo LCa-2,
   lớp chuyển đến = lớp dự kiến nếu hợp lệ, hoặc **lớp duy nhất** hợp lệ của hướng đó, còn lại null. Web cũ không đọc → vô hại.
-- [ ] **LCa-5** `mt0.ts` `lopChoChotLenFt` (sau khi gộp `fix-chot-len-ft` — PR #250): bỏ lớp đã tới tuần Final (`today >= finalWeekStart`) khỏi tập — từ tuần
+- [ ] **LCa-5** `mt0.ts` `lopChoChotLenFt` (sau khi gộp `fix-chot-len-ft-2`): bỏ lớp đã tới tuần Final (`today >= finalWeekStart`) khỏi tập — từ tuần
   Final lớp chỉ có việc Chuyển tiếp lớp. Sửa `hint` `chot_len_ft` (`mywork.ts:211`) và mô tả chỉ số `lop-chua-chot-len-ft` (`shared/domain/metrics.ts:280`).
   **Hỏi planning nếu nhánh fix đã làm khác.**
 - [ ] **LCa-6** Rulebook §20.6/§20.7 + `CODE_MAP.md` (dòng Lộ trình tiếp theo, Chuyển tiếp, MT0): "hướng một nguồn; Target lên FT giữ; Chốt lên FT trước tuần Final".
+- [ ] **LCa-7 (cho panel gộp)** `transitionPlan` (`GET /classes/:id/transition`) thành nguồn dữ liệu DUY NHẤT của panel gộp ở lớp thường: thêm cờ
+  `coTheGhiHuong` (`STUDENT_EDIT` lớp — GVCN) và `coTheRaLenh` (`quyenChuyenLop.ts` — QL/QT); GVCN không nhận `candidates`, `goiYLopMoi`, `tuanChon`.
+  `PUT /classes/:id/lo-trinh-tiep` nhận thêm `mucTieu` mỗi dòng (chỉ người có `cycle.edit`) để nút "Lưu hướng" của QL ghi Target mà không ra lệnh.
+  Em có lệnh `cho`: GVCN ghi hướng → 409 "Quản lý đã quyết" (QL sửa qua lệnh). Phép kiểm LCa-0 (j)(k).
 - [ ] Migrate `server/src/migrate/prLc.ts` (chạy lặp được, gọi cuối dãy): lệnh `cuoi-khoa` còn `cho` → đồng bộ LTT + `dongBoMt0` (xem mục 6).
 
-### PR-LCb · giao diện (M) — **cần mockup** `thiet-ke/mockup-luong-chuyen-2026-10-xx.html` duyệt trước (375/1440, sáng/tối, đủ trạng thái). Sau LCa.
-- [ ] **LCb-1** Chuyển tiếp lớp (`TransitionPanel.tsx`): dùng `dienSan` (bỏ `deXuatGvcn` tự suy ở web); dòng điền sẵn ghi "Theo Lộ trình tiếp theo"
-  như nay; Target hiện **giá trị thật** (không placeholder "6.0" — `:485`), sửa được; ô Target chỉ đòi nhập khi không có Target nào.
-- [ ] **LCb-2** Chọn lớp theo nhóm hướng: dưới thanh tuần chung, một hàng mỗi hướng có em ("Lên FT · 4 em [chọn lớp ▾]", "Lên BE · 1 em [▾]",
-  "Học lại · 1 em [▾]"), chọn một lần áp mọi em nhóm đó chưa có lớp; từng em vẫn đổi được. Thay thao tác tick + "Áp cho n em" cho trường hợp thường gặp.
-- [ ] **LCb-3** Bảng LTT cả lớp: cột Target **chỉ xem** (Target khoá / LTT) cạnh hướng Lên FT để GVCN thấy Target sẽ mang sang — không thêm ô nhập.
-- [ ] **LCb-4** Chữ: việc Chốt lên FT "Ghi hướng trước Final"; Hành trình "QL quyết: Lên FT (GVCN: Lên BE)". Luật chữ ngắn, `TU_DIEN_VA_CHU.md`.
-- Lệnh impeccable: `layout` (nhóm hướng), `clarify` (chữ), `harden` (em thiếu Target, lớp hết chỗ), `audit` trước PR. `/ponytail lite`.
+### PR-LCb · giao diện (M) — panel gộp lớp thường · **cần mockup** `thiet-ke/mockup-panel-cuoi-khoa-2026-10-07.html` (đã soạn 07/10, chờ duyệt). Sau LCa.
+**Một panel** `PanelCuoiKhoa.tsx` (lớp thường), tên "Lộ trình tiếp theo · {lớp} · n em" (QM1). Một bảng, mỗi em một dòng:
+Học viên · Final Test · Hệ thống gợi ý · **Hướng** (một ô, nguồn `lo_trinh_tiep_theo`) · Target (điền sẵn theo Q2) · Lớp chuyển đến · Tuần · Ghi chú (Lý do khi hướng cần).
+- [ ] **LCb-1 GVCN** (`coTheGhiHuong && !coTheRaLenh`): ghi Hướng + Ghi chú; Target chỉ xem; cột "Quản lý quyết" chỉ xem (lớp · tuần khi đã có lệnh,
+  lúc đó Hướng khoá — QM2); không chọn nhiều em, không tuần; chân "Lưu n em" → `PUT /classes/:id/lo-trinh-tiep`. Em 50–59%: chip "QL quyết" (K26).
+- [ ] **LCb-2 QL/QT** (`coTheRaLenh`): thêm Target (sửa được; đỏ "Ghi Target" chỉ khi không có Target nào; bỏ placeholder "6.0" `TransitionPanel.tsx:485`),
+  Lớp chuyển đến, Tuần bắt đầu chung/riêng (`OTuan`), chọn nhiều em + "Áp cho n em", hàng **nhóm hướng** ("Lên FT · 4 em [lớp ▾]") áp lớp một lần,
+  "+ Mở lớp mới…" giữ. Chân: đếm theo hướng · "Đóng" · "Lưu hướng" (ghi LTT, không ra lệnh) · "Tiếp tục · n em" → **2 Xác nhận** (tóm tắt theo hướng,
+  "Gửi quyết định · n em" → `POST /classes/:id/transition`). Lên FT hiện `MT0 · W4 SEP` (+ chip SOS MT0) dưới ô Hướng ngay sau khi lưu.
+- [ ] **LCb-3 Lối vào — mọi lối mở panel này** (`?viec=lo-trinh-ca-lop` và `?viec=chuyen-tiep` cùng mở `PanelCuoiKhoa` ở lớp thường):
+  nút chính hồ sơ lớp (`DauTrangLop.tsx:125`, `ClassProgressPanel.tsx:174`, `DaiChuyenLop.tsx:42`) đổi chữ "Lộ trình tiếp theo…"; ⋮ (`DauTrangLop.tsx:127`)
+  còn MỘT mục; việc "Chốt lên FT" (`mywork.ts:593`, `tongQuan.ts:149`) và "Chuyển tiếp lớp" (`mywork.ts:578-579`) nút "Lộ trình tiếp theo". GVCN cũng thấy nút.
+- [ ] **LCb-4 Gỡ / giữ:**
+
+  | Thành phần | Lớp thường | Lớp FT |
+  |---|---|---|
+  | `LoTrinhTiepCaLopPanel.tsx` | **gỡ** (thay bằng panel gộp) | — (chưa từng dùng) |
+  | `TransitionPanel.tsx` | **không mở nữa** ở lớp thường; phần dùng lại (`OTuan`, hàm kiểm dòng lệnh) tách ra dùng chung | **giữ nguyên** "Chuyển lớp · {lớp}" (gộp / tách lớp, đổi lộ trình giữa khoá) |
+  | `LoTrinhTiepPanel.tsx` (một em) | **giữ** (⋯ dòng em, Kết luận khoá) — cùng bảng `lo_trinh_tiep_theo` | — |
+  | `ChuyenLopPanel.tsx` (chuyển một em giữa khoá, GVCN đề xuất) | giữ | giữ |
+  | `GET /classes/:id/lo-trinh-tiep` | giữ (phép kiểm K26), web thôi gọi — gỡ ở PR dọn sau | — |
+
+  Câu dài bỏ: "Chỉ là dự định, chưa đổi lớp. Hướng Hệ thống gợi ý…" (`LoTrinhTiepCaLopPanel.tsx:105`), "Chỉ chọn từ tuần sau trở đi; web chuyển em…",
+  "Gửi phần đã quyết trước, quyết nốt sau. Tới hết tuần kết thúc lớp…" (chân `TransitionPanel`). Chữ theo mockup, `TU_DIEN_VA_CHU.md`.
+- [ ] **LCb-5** Hành trình: "QL quyết: Lên FT (GVCN: Học lại)" khi QL đổi hướng GVCN ghi.
+- Lệnh impeccable: `layout` (bảng hai vai, nhóm hướng), `clarify` (chữ ngắn), `harden` (thiếu Target, lớp đầy, lỗi một dòng giữ dòng khác), `adapt` (375 thẻ),
+  `audit` trước PR. `/ponytail lite`.
 
 ## 5. Phép kiểm web (LCb, bấm thật)
-Lớp FOU tuần Final, GVCN ghi bảng cả lớp 4 Lên FT + 1 Lên BE + 1 Học lại + 1 Chưa quyết; QL mở Chuyển tiếp: 6/7 em có hướng, 4 em Lên FT có Target
-từ khoá, chọn lớp 3 lần, Gửi → lệnh đủ 6; Công việc QL chỉ còn "Chuyển tiếp lớp · … · 1 HV". Thi hành → 4 lộ trình FT `baseline = MT0`, Target = khoá.
+Lớp FOU tuần Final, GVCN mở panel gộp ghi 4 Lên FT + 1 Lên BE + 1 Học lại + 1 Chưa quyết, Lưu → 4 MT0. QL mở CÙNG panel (từ việc "Chuyển tiếp lớp"):
+6/7 em có hướng, 4 em Lên FT có Target từ khoá, chọn lớp 3 lần (nhóm hướng), Tiếp tục, Gửi → lệnh đủ 6; Công việc QL chỉ còn "Chuyển tiếp lớp · … · 1 HV";
+GVCN mở lại: 6 em Hướng khoá, cột "Quản lý quyết" có lớp · tuần. Thi hành → 4 lộ trình FT `baseline = MT0`, Target = khoá. Lớp FT: ⋮ "Chuyển tiếp lớp…" vẫn mở panel cũ.
 Ảnh 375 + 1440, sáng + tối, vai QL (2), GVCN (7).
 
 ## 6. Rủi ro dữ liệu (lớp đang giữa chừng)
@@ -154,16 +182,20 @@ từ khoá, chọn lớp 3 lần, Gửi → lệnh đủ 6; Công việc QL ch�
 - **Q3.** Kỳ vọng đầu ra BE/ELE (QL đánh dấu từng em): làm PR sau "Đánh dấu cả lớp một lần, web gợi ý Đạt/Không đạt theo band MT0 (BE 4.0, ELE 4.5)"?
   **Khuyến nghị: để sau PR-LC, cần mockup.**
 
+**Câu mới (mockup bản 2, chờ trả lời):**
+- **QM1.** Tên panel / nút: "Lộ trình tiếp theo" cho cả GVCN lẫn QL (khuyến nghị) hay "Chuyển tiếp lớp"?
+- **QM2.** QL đã gửi quyết định thì GVCN còn đổi Hướng? Khuyến nghị: **không** — khoá, hiện lớp · tuần; muốn đổi thì QL sửa / huỷ quyết định.
+
 ## 8. Chồng file
 `lenhChuyen.ts`, `loTrinhTiep.ts`, `transition.ts`, `mt0.ts`, `luatLoTrinh.ts`, `TransitionPanel.tsx`, `LoTrinhTiepCaLopPanel.tsx`, `mywork.ts`.
-Chồng `fix-chot-len-ft` (`mt0.ts`, `run.ts`) → chạy sau. Chồng PR-EN (chữ `TransitionPanel`) → LCb trước EN-b hoặc gộp chữ vào từ điển EN.
+Chồng `fix-chot-len-ft-2` (`mt0.ts`, `run.ts`) → chạy sau. LCb chồng `DauTrangLop.tsx`, `ClassOverviewPage.tsx`, `ClassProgressPanel.tsx`, `DaiChuyenLop.tsx`. Chồng PR-EN (chữ `TransitionPanel`) → LCb trước EN-b hoặc gộp chữ vào từ điển EN.
 
 ## 9. PROMPT session code
 
 **PR-LCa** — Model: **Opus 5.5 · XHigh** (B: **Opus 5.5 · High**) — cả hai chạy tiếp; Fable hoặc model khác thì dừng.
 ```
 Làm PR-LCa theo docs/superpowers/plans/2026-10-07-pr-luong-chuyen-giao.md (mục 3, 4 PR-LCa, 6). Đọc CLAUDE.md, plan.md mục 1 và 9.0.
-Điều kiện: nhánh fix-chot-len-ft (PR #250) đã merge vào main; chưa thì dừng, báo planning.
+Điều kiện: PR fix-chot-len-ft-2 đã merge vào main; chưa thì dừng, báo planning.
 Worktree: git worktree add .claude/worktrees/pr-lca-luong-chuyen -b pr-lca-luong-chuyen origin/main (chỉ trong .claude/worktrees/).
 Ponytail full (mặc định). Skill: superpowers:subagent-driven-development, superpowers:test-driven-development (LCa-0 đỏ trước, đúng
 hành vi, không khớp chuỗi nguồn), superpowers:systematic-debugging khi lỗi lạ.
@@ -178,9 +210,10 @@ Mở PR vào main, KHÔNG merge; thêm một dòng plan.md mục 11. Commit kế
 **PR-LCb** — Model: **Opus 5.5 · XHigh** (B: **Opus 5.5 · High**) — cả hai chạy tiếp; Fable hoặc model khác thì dừng.
 ```
 Làm PR-LCb theo docs/superpowers/plans/2026-10-07-pr-luong-chuyen-giao.md (mục 4 PR-LCb, 5). Điều kiện: PR-LCa đã merge VÀ mockup
-thiet-ke/mockup-luong-chuyen-2026-10-xx.html đã được chủ sản phẩm duyệt; chưa thì dừng (không tự chế giao diện).
+thiet-ke/mockup-panel-cuoi-khoa-2026-10-07.html đã được chủ sản phẩm duyệt (kèm trả lời QM1, QM2); chưa thì dừng (không tự chế giao diện).
 Worktree: .claude/worktrees/pr-lcb-luong-chuyen từ origin/main. Gõ /ponytail lite đầu phiên.
-impeccable: layout (nhóm hướng ở Chuyển tiếp lớp), clarify (chữ ngắn, TU_DIEN_VA_CHU), harden (em thiếu Target, lớp đầy), adapt (375);
+Gộp hai panel lớp thường thành PanelCuoiKhoa (mục 4 LCb-4: gỡ gì, giữ gì cho lớp FT).
+impeccable: layout (bảng hai vai, nhóm hướng), clarify (chữ ngắn, TU_DIEN_VA_CHU), harden (em thiếu Target, lớp đầy), adapt (375);
 audit trước khi mở PR. Không chạy init/document/hooks. Giữ phông Be Vietnam Pro, màu, bố cục; ô ngày = ONgay.
 Bấm thử thật cổng riêng PORT=4400 WEB_PORT=5400, Playwright channel 'chrome', POST /api/demo/session {userId} 2 và 7; ảnh 375/1440 sáng/tối.
 npm run check song song ≤ 3. /ponytail-review trước PR. PR vào main, KHÔNG merge; dòng plan.md mục 11; Co-Authored-By như trên.

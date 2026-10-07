@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="vi" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mockup Panel cuối khoá</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Token lấy đúng web/src/index.css (như mockup-xep-lich-mt-gon-2026-10-07.html): tối mặc định, sáng = [data-theme=light]. */
+:root{
+  color-scheme:dark;
+  --bg:#0c1220;--surface:#141d2f;--surface-2:#1a2437;--line:rgba(160,178,214,.14);--line-strong:rgba(160,178,214,.26);
+  --accent:#7db3f0;--accent-ink:rgb(11 22 38);--accent-soft:rgba(125,179,240,.14);--accent-line:rgba(125,179,240,.38);
+  --text:#dde5f2;--dim:rgb(147 163 192);--faint:rgb(130 146 174);--c1:rgb(241 245 249);--c3:rgb(203 213 225);
+  --ok:rgb(111 220 159);--ok-bg:rgb(18 53 38);
+  --bad:rgb(255 154 162);--bad-bg:rgb(60 29 36);--bad-line:rgb(136 64 74);
+  --soon:rgb(242 196 80);--soon-bg:rgb(53 43 16);--soon-line:rgb(122 98 34);
+  --o-nen:#0e1727;--o-vien:#64748b;
+  --sans:'Be Vietnam Pro',system-ui,'Segoe UI',sans-serif;--so:'Inter','Be Vietnam Pro',sans-serif;
+}
+:root[data-theme="light"]{
+  color-scheme:light;
+  --bg:#f5f7fa;--surface:#ffffff;--surface-2:#eef1f5;--line:rgba(15,23,42,.12);--line-strong:rgba(15,23,42,.22);
+  --accent:#1d5fbf;--accent-ink:#fff;--accent-soft:rgba(29,95,191,.08);--accent-line:rgba(29,95,191,.35);
+  --text:#0f172a;--dim:rgb(71 85 105);--faint:rgb(91 102 120);--c1:rgb(15 23 42);--c3:rgb(51 65 85);
+  --ok:rgb(21 122 66);--ok-bg:rgb(220 243 229);
+  --bad:rgb(180 35 35);--bad-bg:rgb(253 226 226);--bad-line:rgb(240 163 163);
+  --soon:rgb(138 90 0);--soon-bg:rgb(253 241 207);--soon-line:rgb(230 196 107);
+  --o-nen:#fff;--o-vien:#7c8799;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 var(--sans);-webkit-font-smoothing:antialiased;padding:0 16px 64px}
+.wrap{max-width:1480px;margin:0 auto;display:flex;flex-direction:column;gap:44px}
+h1{font-size:20px;margin:0}h2{font-size:17px;margin:0}p{margin:0}
+.note{color:var(--dim);font-size:13px;max-width:92ch}.note b{color:var(--text)}
+ul.note{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.bar{position:sticky;top:0;z-index:50;display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--bg);padding:10px 0;border-bottom:1px solid var(--line)}
+.bar .sp{flex:1}
+.sec{display:flex;flex-direction:column;gap:14px}
+.where{font-size:12.5px;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:3px 10px;width:fit-content;max-width:100%}
+.rong{overflow-x:auto;max-width:100%;padding-bottom:4px}
+.row2{display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start}
+.q{border:1px solid var(--soon-line);background:var(--soon-bg);border-radius:10px;padding:10px 14px;font-size:13px}.q b{color:var(--soon)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;padding:.45rem .85rem;border-radius:.5rem;border:1px solid var(--line-strong);background:var(--surface-2);color:var(--text);font:500 14px var(--sans);white-space:nowrap;cursor:pointer}
+.btn-sm{padding:.25rem .6rem;font-size:12px;border-radius:.4rem}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn[disabled]{opacity:.5}
+.bar .btn[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
+/* khung màn */
+.win{position:relative;border:1px solid var(--line-strong);border-radius:12px;overflow:hidden;background:var(--surface);flex:none}
+.w1440{width:1440px}.w375{width:375px}
+.ph{display:flex;align-items:center;gap:8px;height:52px;padding:0 16px;border-bottom:1px solid var(--line)}
+.ph h3{margin:0;font-size:14px;font-weight:800;color:var(--c1)}.ph .sp{flex:1}
+.x{display:inline-grid;place-items:center;min-width:32px;min-height:32px;color:var(--text)}
+.pb{padding:12px 16px 16px}
+.dau{font:600 13px var(--sans);color:var(--c3);font-variant-numeric:tabular-nums}
+.buoc{font-size:12px;color:var(--faint)}
+.lbl{display:block;margin-bottom:4px;font-size:11.5px;font-weight:700;color:var(--c3)}
+.field{padding:.3rem .5rem;border-radius:.5rem;background:var(--o-nen);border:1px solid var(--o-vien);color:var(--text);font-size:13px;min-height:32px;display:flex;align-items:center;gap:6px;white-space:nowrap;min-width:0}
+.field.ro{background:transparent;border-color:transparent;padding-left:0}
+.field.loi{border-color:var(--bad)}
+.field .v{margin-left:auto;color:var(--faint);font-size:10px}
+.so{font-family:var(--so);font-variant-numeric:tabular-nums}
+.nut{display:inline-flex;align-items:center;height:30px;padding:0 10px;border:1px solid var(--line-strong);border-radius:.45rem;font-size:12.5px;white-space:nowrap;background:var(--surface-2)}
+.nut.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);font-weight:600}
+.tuan{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.nhom{margin-top:12px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.nhom .h{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.nhom .h b{font-size:12.5px;min-width:120px}
+.chip{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap}
+.chip.soon{background:var(--soon-bg);color:var(--soon);border:1px solid var(--soon-line)}
+.chip.ok{background:var(--ok-bg);color:var(--ok)}
+.m{color:var(--faint);font-size:11.5px}
+.err{color:var(--bad);font-size:11.5px}
+table.t{width:100%;border-collapse:collapse;margin-top:12px}
+.t th{text-align:left;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);padding:6px 8px;border-bottom:1px solid var(--line)}
+.t td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top;font-size:13px}
+.t tr.loi td{background:color-mix(in srgb,var(--bad-bg) 55%,transparent)}
+.t td .ten{font-weight:600;color:var(--c1)}
+.cb{width:16px;height:16px;border:1px solid var(--o-vien);border-radius:3px;display:inline-block}
+.cb.on{background:var(--accent);border-color:var(--accent)}
+.chan{display:flex;align-items:center;gap:10px;border-top:1px solid var(--line);padding:10px 16px;background:var(--surface)}
+.chan .sp{flex:1}
+.dem{font-size:12.5px;color:var(--c3)}.dem b{font-family:var(--so)}
+/* 375: thẻ mỗi em */
+.the{border-bottom:1px solid var(--line);padding:12px 0;display:flex;flex-direction:column;gap:8px}
+.the .h{display:flex;align-items:baseline;gap:8px}.the .h .sp{flex:1}
+.lu{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tom{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:12px}
+.tom div{display:flex;gap:8px;padding:4px 0;font-size:13px}.tom div b{min-width:150px}
+</style>
+</head>
+<body>
+<div class="bar">
+  <b>Mockup · Panel cuối khoá lớp thường (gộp Lộ trình tiếp theo cả lớp + Chuyển tiếp lớp)</b>
+  <span class="sp"></span>
+  <button class="btn btn-sm" aria-pressed="true" onclick="doi('dark',this)">Tối</button>
+  <button class="btn btn-sm" aria-pressed="false" onclick="doi('light',this)">Sáng</button>
+</div>
+<div class="wrap">
+
+<section class="sec" style="margin-top:20px">
+  <h1>Một panel cho quyết định hướng cuối khoá</h1>
+  <ul class="note">
+    <li><b>Thay</b> hai panel: "Ghi lộ trình tiếp theo cả lớp" và "Chuyển lớp · {lớp}" (lớp thường). Lớp FT giữ panel Chuyển lớp cũ.</li>
+    <li><b>Một nguồn:</b> cột Hướng = Lộ trình tiếp theo. Ai lưu cũng vậy. Lên FT → MT0 tự xếp ngay. Target điền sẵn: Target GVCN ghi, không có thì Target khoá.</li>
+    <li><b>Lối vào (mọi lối mở panel này):</b> hồ sơ lớp › nút chính "Lộ trình tiếp theo…" và ⋮ · Công việc "Chốt lên FT · lớp" · Công việc "Chuyển tiếp lớp · lớp · n HV".</li>
+    <li><b>GVCN:</b> ghi Hướng + Ghi chú, nút Lưu. <b>Quản lý / Quản trị:</b> thêm Target, Lớp chuyển đến, Tuần, chọn nhiều em, Tiếp tục → Xác nhận (ra lệnh).</li>
+    <li>Không có câu giải thích dài trong panel. Ví dụ lớp CP ELE 30 (8 em), ngày 28/09, Final W4 SEP.</li>
+  </ul>
+</section>
+
+<!-- ============ ① QL 1440 · Bước 1 Soạn ============ -->
+<section class="sec">
+  <h2>① Quản lý · 1440 · Bước 1 Soạn</h2>
+  <span class="where">Hồ sơ lớp CP ELE 30 › Lộ trình tiếp theo…  (hoặc Công việc › Chuyển tiếp lớp · CP ELE 30 · 8 HV)</span>
+  <div class="rong"><div class="win w1440">
+    <div class="ph"><h3>Lộ trình tiếp theo · CP ELE 30 · 8 em</h3><span class="sp"></span><span class="buoc">1 Soạn › 2 Xác nhận</span><span class="x">✕</span></div>
+    <div class="pb">
+      <p class="dau">CP ELE 30 · 8 em · Final W4 SEP</p>
+      <div style="margin-top:10px"><span class="lbl">Tuần bắt đầu chung</span>
+        <div class="tuan"><span class="nut on">W1 OCT</span><span class="nut">W2 OCT</span><span class="nut">W3 OCT</span><span class="nut">W4 OCT</span><span class="nut">W5 OCT</span><span class="nut">W1 NOV</span></div>
+      </div>
+      <div class="nhom">
+        <div class="h"><b>Lên FT · 4 em</b><span class="field" style="width:240px">CP FT 12 · LT1 · 9 em<span class="v">▾</span></span></div>
+        <div class="h"><b>Học lại · 2 em</b><span class="field" style="width:240px">CP ELE 33 · 4 em<span class="v">▾</span></span></div>
+      </div>
+      <div class="nhom" style="flex-direction:row;align-items:center;gap:8px;flex-wrap:wrap">
+        <span class="dem"><b>2</b> em đang chọn</span>
+        <span class="nut">Lên FT</span><span class="nut">Học lại</span><span class="nut">Tạm dừng học (bảo lưu)</span><span class="nut">Dừng học hẳn</span>
+        <span class="btn btn-sm">Áp cho 2 em</span>
+      </div>
+      <table class="t">
+        <thead><tr><th style="width:28px"></th><th>Học viên</th><th>Final Test</th><th>Hệ thống gợi ý</th><th style="width:210px">Hướng</th><th style="width:110px">Target</th><th style="width:200px">Lớp chuyển đến</th><th>Tuần</th><th style="width:200px">Ghi chú</th></tr></thead>
+        <tbody>
+          <tr><td><span class="cb"></span></td><td><span class="ten">Nguyễn Minh Anh</span><br><span class="m so">000231</span></td><td><b class="so">78%</b><br><span class="m">4/4 môn đạt</span></td><td>Lên FT</td>
+            <td><span class="field">Lên FT<span class="v">▾</span></span><span class="m so">MT0 · W4 SEP</span></td><td><span class="field so">6.0</span></td><td><span class="field">CP FT 12 · LT1<span class="v">▾</span></span></td><td class="so">W1 OCT</td><td><span class="field">Mạnh Speaking</span></td></tr>
+          <tr><td><span class="cb"></span></td><td><span class="ten">Trần Gia Huy</span><br><span class="m so">000232</span></td><td><b class="so">72%</b><br><span class="m">4/4 môn đạt</span></td><td>Lên FT</td>
+            <td><span class="field">Lên FT<span class="v">▾</span></span><span class="m so">MT0 · W4 SEP · W 4.0 SOS</span></td><td><span class="field so">6.5</span></td><td><span class="field">CP FT 12 · LT1<span class="v">▾</span></span></td><td class="so">W1 OCT</td><td><span class="field"></span></td></tr>
+          <tr><td><span class="cb"></span></td><td><span class="ten">Lê Bảo Ngọc</span><br><span class="m so">000233</span></td><td><b class="so">81%</b><br><span class="m">4/4 môn đạt</span></td><td>Lên FT</td>
+            <td><span class="field">Lên FT<span class="v">▾</span></span><span class="m so">MT0 · W4 SEP</span></td><td><span class="field so">6.5</span></td><td><span class="field">CP FT 12 · LT1<span class="v">▾</span></span></td><td class="so">W2 OCT <span class="m">riêng</span></td><td><span class="field"></span></td></tr>
+          <tr class="loi"><td><span class="cb"></span></td><td><span class="ten">Phạm Đức Long</span><br><span class="m so">000234</span></td><td><b class="so">66%</b><br><span class="m">3/4 · chưa đạt W</span></td><td>Lên FT</td>
+            <td><span class="field">Lên FT<span class="v">▾</span></span><span class="m so">MT0 · W4 SEP</span></td><td><span class="field loi so"></span><span class="err">Ghi Target</span></td><td><span class="field">CP FT 12 · LT1<span class="v">▾</span></span></td><td class="so">W1 OCT</td><td><span class="field"></span></td></tr>
+          <tr><td><span class="cb on"></span></td><td><span class="ten">Hoàng Khánh Linh</span><br><span class="m so">000235</span></td><td><b class="so">56%</b><br><span class="m">2/4 môn đạt</span></td><td><span class="chip soon">Quản lý cân nhắc</span></td>
+            <td><span class="field">Học lại<span class="v">▾</span></span><span class="m">GVCN đề xuất: Học lại</span></td><td class="m">—</td><td><span class="field">CP ELE 33<span class="v">▾</span></span></td><td class="so">W1 OCT</td><td><span class="field"></span></td></tr>
+          <tr><td><span class="cb on"></span></td><td><span class="ten">Vũ Thu Hà</span><br><span class="m so">000236</span></td><td><b class="so">48%</b><br><span class="m">1/4 môn đạt</span></td><td>Học lại</td>
+            <td><span class="field">Học lại<span class="v">▾</span></span></td><td class="m">—</td><td><span class="field">CP ELE 33<span class="v">▾</span></span></td><td class="so">W1 OCT</td><td><span class="field"></span></td></tr>
+          <tr><td><span class="cb"></span></td><td><span class="ten">Bùi Thanh Tâm</span><br><span class="m so">000237</span></td><td><b class="so">70%</b><br><span class="m">4/4 môn đạt</span></td><td>Lên FT</td>
+            <td><span class="field">Dừng học hẳn<span class="v">▾</span></span></td><td class="m">—</td><td class="m">—</td><td class="so">W1 OCT</td><td><span class="lbl" style="margin:0 0 2px">Lý do</span><span class="field">Chuyển trường</span></td></tr>
+          <tr><td><span class="cb"></span></td><td><span class="ten">Đặng Quốc Bảo</span><br><span class="m so">000238</span></td><td class="m">Chưa đủ điểm</td><td class="m">—</td>
+            <td><span class="field" style="color:var(--faint)">Chọn hướng<span class="v">▾</span></span></td><td class="m">—</td><td class="m">—</td><td class="m">—</td><td><span class="field"></span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="chan"><span class="dem">Lên FT <b>4</b> · Học lại <b>2</b> · Dừng học hẳn <b>1</b> · Chưa quyết <b>1</b> · <span class="err">1 em thiếu Target</span></span><span class="sp"></span>
+      <span class="btn">Đóng</span><span class="btn">Lưu hướng</span><span class="btn btn-primary">Tiếp tục · 6 em</span></div>
+  </div></div>
+  <ul class="note">
+    <li>Hàng "Lên FT · 4 em [lớp]": chọn một lần, áp mọi em hướng đó chưa có lớp. Từng em vẫn đổi được ở cột Lớp chuyển đến.</li>
+    <li>"Lưu hướng" = lưu cột Hướng / Target / Ghi chú (không ra lệnh) — như GVCN. "Tiếp tục" chỉ đếm em đủ: có hướng chuyển, có lớp, có Target (Lên FT).</li>
+    <li>Target trống chỉ khi em không có Target nào (khoá và Lộ trình tiếp theo). Không còn chữ mờ "6.0".</li>
+  </ul>
+</section>
+
+<!-- ============ ② QL 1440 · Bước 2 Xác nhận ============ -->
+<section class="sec">
+  <h2>② Quản lý · 1440 · Bước 2 Xác nhận</h2>
+  <div class="rong"><div class="win" style="width:760px">
+    <div class="ph"><h3>Lộ trình tiếp theo · CP ELE 30 · 8 em</h3><span class="sp"></span><span class="buoc">1 Soạn › 2 Xác nhận</span><span class="x">✕</span></div>
+    <div class="pb">
+      <div class="tom">
+        <div><b>Lên FT · CP FT 12</b><span>Nguyễn Minh Anh, Trần Gia Huy, Lê Bảo Ngọc <span class="m">(W2 OCT)</span> · MT0 làm đầu vào</span></div>
+        <div><b>Học lại · CP ELE 33</b><span>Hoàng Khánh Linh, Vũ Thu Hà</span></div>
+        <div><b>Dừng học hẳn</b><span>Bùi Thanh Tâm</span></div>
+        <div><b>Chưa gửi</b><span class="m">Phạm Đức Long (thiếu Target) · Đặng Quốc Bảo (chưa quyết)</span></div>
+      </div>
+      <p class="m" style="margin-top:10px">Chuyển vào W1 OCT · GVCN Trần Ngọc Hà có việc Bàn giao</p>
+    </div>
+    <div class="chan"><span class="sp"></span><span class="btn">← Quay lại</span><span class="btn btn-primary">Gửi quyết định · 6 em</span></div>
+  </div></div>
+</section>
+
+<!-- ============ ③ GVCN 1440 ============ -->
+<section class="sec">
+  <h2>③ GVCN · 1440 · cùng panel, chỉ ghi Hướng + Ghi chú</h2>
+  <span class="where">Hồ sơ lớp CP ELE 30 › Lộ trình tiếp theo…</span>
+  <div class="rong"><div class="win w1440">
+    <div class="ph"><h3>Lộ trình tiếp theo · CP ELE 30 · 8 em</h3><span class="sp"></span><span class="x">✕</span></div>
+    <div class="pb">
+      <p class="dau">CP ELE 30 · 8 em · Final W4 SEP</p>
+      <table class="t">
+        <thead><tr><th>Học viên</th><th>Final Test</th><th>Hệ thống gợi ý</th><th style="width:230px">Hướng</th><th>Target</th><th>Quản lý quyết</th><th style="width:240px">Ghi chú</th></tr></thead>
+        <tbody>
+          <tr><td><span class="ten">Nguyễn Minh Anh</span></td><td><b class="so">78%</b><br><span class="m">4/4 môn đạt</span></td><td>Lên FT</td>
+            <td><span class="field">Lên FT<span class="v">▾</span></span><span class="m so">MT0 · W4 SEP</span></td><td class="so">6.0</td><td class="m">—</td><td><span class="field">Mạnh Speaking</span></td></tr>
+          <tr><td><span class="ten">Hoàng Khánh Linh</span></td><td><b class="so">56%</b><br><span class="m">2/4 môn đạt</span></td><td><span class="chip soon">Quản lý cân nhắc</span></td>
+            <td><span class="field">Học lại<span class="v">▾</span></span><span class="chip soon" style="margin-top:4px">QL quyết</span></td><td class="m">—</td><td class="m">—</td><td><span class="field"></span></td></tr>
+          <tr><td><span class="ten">Vũ Thu Hà</span></td><td><b class="so">48%</b><br><span class="m">1/4 môn đạt</span></td><td>Học lại</td>
+            <td><span class="field ro">Học lại</span></td><td class="m">—</td><td><span class="chip ok">CP ELE 33 · W1 OCT</span></td><td><span class="field ro"></span></td></tr>
+          <tr><td><span class="ten">Đặng Quốc Bảo</span></td><td class="m">Chưa đủ điểm</td><td class="m">—</td>
+            <td><span class="field" style="color:var(--faint)">Chọn hướng<span class="v">▾</span></span></td><td class="m">—</td><td class="m">—</td><td><span class="field"></span></td></tr>
+        </tbody>
+      </table>
+      <p class="m" style="margin-top:8px">… 4 em khác</p>
+    </div>
+    <div class="chan"><span class="sp"></span><span class="btn">Huỷ</span><span class="btn btn-primary">Lưu 2 em</span></div>
+  </div></div>
+  <ul class="note">
+    <li>GVCN không thấy Lớp chuyển đến, Tuần, chọn nhiều em. Cột "Quản lý quyết" chỉ xem: hiện lớp + tuần khi Quản lý đã gửi quyết định; lúc đó Hướng của em khoá (chữ thường, không ô).</li>
+    <li>Em 50–59%: GVCN chọn = đề xuất (chip "QL quyết"), Quản lý quyết ở ①.</li>
+  </ul>
+</section>
+
+<!-- ============ ④ 375 ============ -->
+<section class="sec">
+  <h2>④ 375 · Quản lý (trái) · GVCN (phải)</h2>
+  <div class="row2">
+    <div class="win w375">
+      <div class="ph"><h3>Lộ trình tiếp theo · CP ELE 30</h3><span class="sp"></span><span class="x">✕</span></div>
+      <div class="pb">
+        <p class="dau">8 em · Final W4 SEP · 1 Soạn</p>
+        <div style="margin-top:8px"><span class="lbl">Tuần bắt đầu chung</span><span class="field">W1 OCT<span class="v">▾</span></span></div>
+        <div class="nhom">
+          <div class="h"><b>Lên FT · 4 em</b></div><span class="field">CP FT 12 · LT1<span class="v">▾</span></span>
+          <div class="h"><b>Học lại · 2 em</b></div><span class="field">CP ELE 33<span class="v">▾</span></span>
+        </div>
+        <div class="the"><div class="h"><span class="ten">Nguyễn Minh Anh</span><span class="sp"></span><b class="so">78%</b></div>
+          <span class="m">Gợi ý: Lên FT</span>
+          <div class="lu"><div><span class="lbl">Hướng</span><span class="field">Lên FT<span class="v">▾</span></span></div><div><span class="lbl">Target</span><span class="field so">6.0</span></div></div>
+          <span class="m so">MT0 · W4 SEP · CP FT 12 · W1 OCT</span>
+          <div><span class="lbl">Ghi chú</span><span class="field">Mạnh Speaking</span></div></div>
+        <div class="the"><div class="h"><span class="ten">Phạm Đức Long</span><span class="sp"></span><b class="so">66%</b></div>
+          <div class="lu"><div><span class="lbl">Hướng</span><span class="field">Lên FT<span class="v">▾</span></span></div><div><span class="lbl">Target</span><span class="field loi"></span><span class="err">Ghi Target</span></div></div></div>
+      </div>
+      <div class="chan"><span class="btn btn-sm">Lưu hướng</span><span class="sp"></span><span class="btn btn-primary btn-sm">Tiếp tục · 6 em</span></div>
+    </div>
+    <div class="win w375">
+      <div class="ph"><h3>Lộ trình tiếp theo · CP ELE 30</h3><span class="sp"></span><span class="x">✕</span></div>
+      <div class="pb">
+        <p class="dau">8 em · Final W4 SEP</p>
+        <div class="the"><div class="h"><span class="ten">Nguyễn Minh Anh</span><span class="sp"></span><b class="so">78%</b></div>
+          <span class="m">Gợi ý: Lên FT · Target 6.0</span>
+          <div><span class="lbl">Hướng</span><span class="field">Lên FT<span class="v">▾</span></span><span class="m so">MT0 · W4 SEP</span></div>
+          <div><span class="lbl">Ghi chú</span><span class="field">Mạnh Speaking</span></div></div>
+        <div class="the"><div class="h"><span class="ten">Vũ Thu Hà</span><span class="sp"></span><b class="so">48%</b></div>
+          <span class="m">Học lại</span><span class="chip ok" style="width:fit-content">CP ELE 33 · W1 OCT</span></div>
+        <div class="the"><div class="h"><span class="ten">Đặng Quốc Bảo</span><span class="sp"></span><span class="m">Chưa đủ điểm</span></div>
+          <div><span class="lbl">Hướng</span><span class="field" style="color:var(--faint)">Chọn hướng<span class="v">▾</span></span></div></div>
+      </div>
+      <div class="chan"><span class="sp"></span><span class="btn btn-primary btn-sm">Lưu 2 em</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ⑤ Lối vào ============ -->
+<section class="sec">
+  <h2>⑤ Lối vào — đều mở panel trên</h2>
+  <div class="win" style="width:900px"><div class="pb">
+    <table class="t" style="margin-top:0">
+      <tbody>
+        <tr><td><span class="chip soon">Cần làm</span></td><td><b>Chốt lên FT · CP ELE 30</b><br><span class="m">Trước tuần Final · 3 em chưa có hướng</span></td><td class="m">hạn hết CN 20/09</td><td><span class="btn btn-sm">Lộ trình tiếp theo</span></td></tr>
+        <tr><td><span class="chip soon">Cần làm</span></td><td><b>Chuyển tiếp lớp · CP ELE 30 · 2 HV</b><br><span class="m">Từ tuần Final · thay việc trên</span></td><td class="m">Chưa có hạn</td><td><span class="btn btn-sm">Lộ trình tiếp theo</span></td></tr>
+      </tbody>
+    </table>
+    <p class="m" style="margin-top:10px">Hồ sơ lớp thường: nút chính "Lộ trình tiếp theo…" (thay "Chuyển tiếp lớp…"); ⋮ một mục cùng tên (thay "Ghi lộ trình tiếp theo cả lớp"). Panel một em giữ nguyên.</p>
+  </div></div>
+</section>
+
+<section class="sec">
+  <h2>Câu hỏi</h2>
+  <div class="q"><b>QM1.</b> Tên panel và nút: "Lộ trình tiếp theo" cho cả GVCN lẫn Quản lý (khuyến nghị — GVCN quen tên này), hay "Chuyển tiếp lớp"?</div>
+  <div class="q"><b>QM2.</b> Quản lý gửi quyết định rồi, GVCN còn đổi Hướng được không? Khuyến nghị: <b>không</b> — Hướng khoá, cột "Quản lý quyết" hiện lớp + tuần; muốn đổi thì Quản lý sửa / huỷ quyết định.</div>
+</section>
+</div>
+<script>
+function doi(t,b){document.documentElement.dataset.theme=t;document.querySelectorAll('.bar .btn').forEach(x=>x.setAttribute('aria-pressed',x===b))}
+</script>
+</body>
+</html>
