@@ -130,25 +130,18 @@ function progressMapOf(classIds: number[]) {
   return out;
 }
 
-/** Một truy vấn cho mỗi loại dữ liệu, không hỏi lại theo từng lớp. */
-/*
- * PR-DUYET (K5-28): sổ đề nghị dời đang chờ (`pendingMove`, gọi ở từng ô lịch) nay nhớ THEO REQUEST. Hai trang đọc nặng dưới
- * đây tự mở bộ nhớ tạm (`trongBoNho`, như `listCases`) để gọi ngoài request GET (phép kiểm, lệnh ops) vẫn nạp sổ một lần.
+/**
+ * Lớp đang hoạt động trong phạm vi xem, đúng thứ tự của `listClassSummaries` — KHÔNG nạp lượt (PR-TD2-b: danh sách Trước/Sau).
+ * `null` = người xem không có phạm vi nào.
  */
-export function listClassSummaries(p: Principal, f: { branchId?: number; q?: string; scope?: WorkScope } = {}) {
-  return trongBoNho(() => listClassSummariesThat(p, f));
-}
-function listClassSummariesThat(p: Principal, f: { branchId?: number; q?: string; scope?: WorkScope }) {
+export function lopTrongPhamVi(p: Principal, branchId?: number): any[] | null {
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
-  if (scope.none) return { rows: [] as ClassSummary[], scopeEmpty: true };
-  const workScope: WorkScope = f.scope ?? defaultWorkScope(p);
-  const conn = db();
+  if (scope.none) return null;
   const cs = classScopeSql(scope);
   const where: string[] = [cs.sql, "c.status = 'active'"];
   const params: unknown[] = [...cs.params];
-  if (f.branchId) { where.push('c.branch_id = ?'); params.push(f.branchId); }
-
-  const classes = conn
+  if (branchId) { where.push('c.branch_id = ?'); params.push(branchId); }
+  const classes = db()
     .prepare(
       `SELECT c.id, c.code, c.kind, c.programme_code, c.route, c.branch_id, c.start_date,
               b.code AS branch_code, b.name AS branch_name,
@@ -161,8 +154,23 @@ function listClassSummariesThat(p: Principal, f: { branchId?: number; q?: string
         WHERE ${where.join(' AND ')} ORDER BY b.id, c.code`,
     )
     .all(...params) as any[];
+  return classes.sort((a, b) => soSanhLop({ code: a.code, branchId: a.branch_id }, { code: b.code, branchId: b.branch_id }));
+}
+
+/** Một truy vấn cho mỗi loại dữ liệu, không hỏi lại theo từng lớp. */
+/*
+ * PR-DUYET (K5-28): sổ đề nghị dời đang chờ (`pendingMove`, gọi ở từng ô lịch) nay nhớ THEO REQUEST. Hai trang đọc nặng dưới
+ * đây tự mở bộ nhớ tạm (`trongBoNho`, như `listCases`) để gọi ngoài request GET (phép kiểm, lệnh ops) vẫn nạp sổ một lần.
+ */
+export function listClassSummaries(p: Principal, f: { branchId?: number; q?: string; scope?: WorkScope } = {}) {
+  return trongBoNho(() => listClassSummariesThat(p, f));
+}
+function listClassSummariesThat(p: Principal, f: { branchId?: number; q?: string; scope?: WorkScope }) {
+  const classes = lopTrongPhamVi(p, f.branchId);
+  if (!classes) return { rows: [] as ClassSummary[], scopeEmpty: true };
+  const workScope: WorkScope = f.scope ?? defaultWorkScope(p);
+  const conn = db();
   if (!classes.length) return { rows: [], scopeEmpty: false };
-  classes.sort((a, b) => soSanhLop({ code: a.code, branchId: a.branch_id }, { code: b.code, branchId: b.branch_id }));
 
   const ids = classes.map((c) => c.id);
   const ph = ids.map(() => '?').join(',');
@@ -296,11 +304,12 @@ function listClassSummariesThat(p: Principal, f: { branchId?: number; q?: string
   return { rows, scopeEmpty: false };
 }
 
-/**
- * Danh sách học viên của một lớp — chỉ nạp khi người dùng mở rộng lớp đó.
- * Mỗi em kèm tiến trình MT gọn để không phải mở chi tiết mới biết đang ở đâu.
- */
-export function classRoster(p: Principal, classId: number, q?: string) {
+/** PR-TD2-b: danh sách Trước/Sau của hồ sơ HV — id + tên, cùng tập, cùng thứ tự, cùng luật quyền với `classRoster`; không nạp lượt. */
+export function rosterIds(p: Principal, classId: number) {
+  return hocVienCuaLop(p, classId).students.map((s) => ({ id: s.id as number, fullName: s.full_name as string, archived: !!s.archived_at }));
+}
+
+function hocVienCuaLop(p: Principal, classId: number, q?: string) {
   require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
   const conn = db();
   const cls = conn.prepare('SELECT status FROM classes WHERE id = ?').get(classId) as any;
@@ -330,9 +339,16 @@ export function classRoster(p: Principal, classId: number, q?: string) {
     params.push(`%${q.trim()}%`, `%${q.trim().toLowerCase()}%`, `%${q.trim().toUpperCase()}%`);
   }
   sql += ' ORDER BY s.archived_at IS NOT NULL, s.full_name';
-  const students = conn.prepare(sql).all(...params) as any[];
-  if (!students.length) return [];
+  return { conn, finished, students: conn.prepare(sql).all(...params) as any[] };
+}
 
+/**
+ * Danh sách học viên của một lớp — chỉ nạp khi người dùng mở rộng lớp đó.
+ * Mỗi em kèm tiến trình MT gọn để không phải mở chi tiết mới biết đang ở đâu.
+ */
+export function classRoster(p: Principal, classId: number, q?: string) {
+  const { conn, finished, students } = hocVienCuaLop(p, classId, q);
+  if (!students.length) return [];
   const sids = students.map((s) => s.id);
   const ph = sids.map(() => '?').join(',');
   const attempts = conn
