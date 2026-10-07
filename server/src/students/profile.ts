@@ -5,7 +5,7 @@ import {
   ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, JOURNEY_GROUP, PERMISSIONS,
   caseHeadline, duongCase, issueLabel, caseCategoryLabel, categoryOf, fmtExamMonth, cauTomTat, ketQuaTestGanNhat, oHocThuat, oSapToi, oYThuc,
   bacHoacNgoaiThang, nhanLoaiXuLy, programmeOf, tenBacKe, tenMonNgan, mocKeTiep, quaHan, studyWeekOf, tenMon, tuanHocTai, tuanLich,
-  type AssessedSkill, type EntrySkill, type InterventionKind, nhanBaiThuong, ATTEMPT_KIND_SHORT } from '../../../shared/domain/index.ts';
+  type AssessedSkill, type EntrySkill, type InterventionKind, nhanBaiThuong, ATTEMPT_KIND_SHORT, soThuTuLuot } from '../../../shared/domain/index.ts';
 import { outcomeGroup } from '../cases/effectiveness.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, diffDays, notFound } from '../util.ts';
@@ -658,10 +658,10 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   const examPlan = examPlanOf(selected);
 
   // Mốc tiếp theo. FT (K2-31): lượt planned, không lịch sử, từ tuần này, sớm nhất — cùng `mocKeTiep` với danh sách lớp.
-  // Lớp thường giữ luật cũ: lượt planned số nhỏ nhất.
+  // Lớp thường: lượt planned sớm nhất theo loại (Progress trước Final — soThuTuLuot), không theo attempt_no.
   const nextRow = selected?.route
     ? mocKeTiep(attemptRows.map((a) => ({ ...a, weekStart: a.week_start ?? null })), today)
-    : attemptRows.filter((a) => a.status === 'planned').sort((a, b) => a.attempt_no - b.attempt_no)[0] ?? null;
+    : attemptRows.filter((a) => a.status === 'planned').sort(soThuTuLuot)[0] ?? null;
 
   // --------------------------------------------------------- đường đi từng kỹ năng
   /*
