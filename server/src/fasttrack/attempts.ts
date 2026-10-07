@@ -866,7 +866,10 @@ export function scoreHistoryOf(attemptId: number) {
        * KHÔNG cũ hơn chính lượt này, để lượt mới không hiện lịch sử điểm của em đã xoá.
        */
       /* PR-BV: lớp thường ghi điểm vào nhật ký theo DÒNG ĐIỂM (`assessment_score`, `regular.score*`) và dấu "-" là `regular.no_show*`. */
-      `SELECT l.id, l.action, l.entity_label, l.before_json, l.after_json, l.created_at, u.full_name AS actor_name
+      /* FIX-DTL: câu gộp → MỌI cột vế đầu có AS. Turso không đặt tên `l.action` là "action" như libsql file (bản chính: hồ sơ Mock
+       * có lịch sử điểm 500 "reading 'startsWith'"); phép kiểm DTL1 quét mọi câu UNION. */
+      `SELECT l.id AS id, l.action AS action, l.entity_label AS entity_label, l.before_json AS before_json, l.after_json AS after_json,
+              l.created_at AS created_at, u.full_name AS actor_name
          FROM audit_logs l LEFT JOIN users u ON u.id = l.actor_user_id
          JOIN assessment_attempts a ON a.id = l.entity_id
         WHERE l.entity_type = 'assessment_attempt' AND l.entity_id = ? AND l.created_at >= a.created_at
@@ -947,8 +950,10 @@ export function attemptDetail(p: Principal, attemptId: number) {
   const cells = skillCells(p, a, scores, skips, today, skillRows, dotHoanTat(attemptId, today));
   const mode = scoringModeOf(a);
   const completion = completionWeekOf(skillRows);
-  const scheduleRows = ASSESSED_SKILLS.map((skill) => {
-    const row = skillRows.find((r) => r.skill === skill)!;
+  /* FIX-DTL: bài lớp thường bộ môn khác (PREFOU `tong_hop`) không có dòng L/R/W/S — bỏ qua thay vì 500, để màn nhận `kind` rồi chuyển trang. */
+  const scheduleRows = ASSESSED_SKILLS.flatMap((skill) => {
+    const row = skillRows.find((r) => r.skill === skill);
+    if (!row) return [];
     const view = viewSkill({
       row, mode,
       attemptOverride: a.deadline_override ?? null,
@@ -958,7 +963,7 @@ export function attemptDetail(p: Principal, attemptId: number) {
       lichSu: !!a.lich_su,
       mt0: laMt0(a),
     });
-    return { ...view, label: ASSESSED_SKILL_LABEL[skill] };
+    return [{ ...view, label: ASSESSED_SKILL_LABEL[skill] }];
   });
   const history = conn
     .prepare(
