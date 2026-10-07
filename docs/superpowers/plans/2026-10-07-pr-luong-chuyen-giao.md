@@ -129,6 +129,8 @@ em có lệnh = đã có hướng; lớp có lệnh Cuối khoá = xong). PR-LC 
 - [ ] Migrate `server/src/migrate/prLc.ts` (chạy lặp được, gọi cuối dãy): lệnh `cuoi-khoa` còn `cho` → đồng bộ LTT + `dongBoMt0` (xem mục 6).
 
 ### PR-LCb · giao diện (M) — panel gộp lớp thường · **cần mockup** `thiet-ke/mockup-panel-cuoi-khoa-2026-10-07.html` (đã soạn 07/10, chờ duyệt). Sau LCa.
+**Chủ sản phẩm 07/10: QM1 = "Lộ trình tiếp theo" (tên panel + nút cho mọi vai); QM2 = GVCN KHÔNG đổi Hướng sau khi QL đã gửi quyết định (khoá, QL sửa/huỷ).**
+
 **Một panel** `PanelCuoiKhoa.tsx` (lớp thường), tên "Lộ trình tiếp theo · {lớp} · n em" (QM1). Một bảng, mỗi em một dòng:
 Học viên · Final Test · Hệ thống gợi ý · **Hướng** (một ô, nguồn `lo_trinh_tiep_theo`) · Target (điền sẵn theo Q2) · Lớp chuyển đến · Tuần · Ghi chú (Lý do khi hướng cần).
 - [ ] **LCb-1 GVCN** (`coTheGhiHuong && !coTheRaLenh`): ghi Hướng + Ghi chú; Target chỉ xem; cột "Quản lý quyết" chỉ xem (lớp · tuần khi đã có lệnh,
