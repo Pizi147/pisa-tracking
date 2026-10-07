@@ -145,6 +145,8 @@ từ khoá, chọn lớp 3 lần, Gửi → lệnh đủ 6; Công việc QL ch�
 | Turso | Migrate theo lô (`theoLo`, ≤ 900 tham số), một giao dịch mỗi lớp; thử `npm run migrate` trên bản sao DB trước |
 
 ## 7. Câu hỏi chủ sản phẩm (đề xuất mặc định nếu không trả lời)
+**Chủ sản phẩm 07/10: ĐỒNG Ý cả Q1, Q2, Q3 theo khuyến nghị (Q1 có, Q2 đồng ý, Q3 để PR sau). Cách A (Lộ trình tiếp theo là nguồn duy nhất) — planning chốt.**
+
 - **Q1.** QL chọn ở Chuyển tiếp lớp **khác** GVCN ghi (vd Lên BE → Lên FT): web tự sửa Lộ trình tiếp theo theo QL + tạo/huỷ MT0 ngay, Hành trình ghi
   "QL quyết". **Khuyến nghị: có** (bắt buộc để luật Lên FT → MT0 đúng mọi đường).
 - **Q2.** Target khi Lên FT = Target GVCN ghi ở Lộ trình tiếp theo, không có thì Target khoá lớp thường (cả KCK); Chuyển tiếp chỉ hiện để sửa, chỉ hỏi
