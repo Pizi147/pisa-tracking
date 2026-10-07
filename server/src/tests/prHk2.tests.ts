@@ -532,4 +532,88 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     const roi = hanhTrinh.hanhTrinhHocVien(P.mbManager, sid, null).chuong.find((c: any) => c.classId === lop);
     assert(roi && !roi.dangHoc && roi.tuanHoc != null, `chương đã rời mất tuần học: ${JSON.stringify(roi?.tuanHoc)}`);
   });
+
+  console.log('\nPR-HK2 · Task 12 · đổi tên Giữa khoá / Cuối khoá → Progress Test / Final Test');
+
+  const xm: any = await import('../phanTich/xuatMt.ts');
+  const { caseTitleOf } = await import('../cases/cases.ts');
+  /* Chữ cũ, mọi biến thể dấu (khoá/khóa). Chỉ tìm trong chữ hiện ra — bỏ chú thích. */
+  const CHU_CU = /(giữa|cuối)\s+kh[oóô]?[aáàảãạ]/i;
+  const nguonTs = (dir: string): string[] => fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true }).flatMap((e) =>
+    e.isDirectory() ? (e.name === 'tests' || e.name === 'node_modules' ? [] : nguonTs(`${dir}/${e.name}`)) : /\.tsx?$/.test(e.name) ? [`${dir}/${e.name}`] : []);
+  const dongCu = (dirs: string[], choPhep: readonly string[]) => {
+    const sai: string[] = [];
+    for (const dir of dirs) for (const f of nguonTs(dir)) {
+      doc(f).split('\n').forEach((dong, i) => {
+        const dg = dong.normalize('NFC');
+        if (CHU_CU.test(dg) && !choPhep.some((c) => dg.includes(c))) sai.push(`${f}:${i + 1}: ${dg.trim().slice(0, 100)}`);
+      });
+    }
+    return sai;
+  };
+
+  check('C38 · ATTEMPT_KIND_LABEL / SHORT = Progress Test / Final Test; web/src (chữ hiện ra) không còn Giữa khoá / Cuối khoá', () => {
+    assert(d.ATTEMPT_KIND_LABEL.progress === 'Progress Test' && d.ATTEMPT_KIND_LABEL.final === 'Final Test', JSON.stringify(d.ATTEMPT_KIND_LABEL));
+    assert(d.ATTEMPT_KIND_SHORT.progress === 'Progress Test' && d.ATTEMPT_KIND_SHORT.final === 'Final Test', JSON.stringify(d.ATTEMPT_KIND_SHORT));
+    assert(d.ATTEMPT_KIND_LABEL.mock === 'Mock Test' && d.ATTEMPT_KIND_SHORT.mock === 'MT' && d.ATTEMPT_KIND_SHORT.mt0 === 'MT0', 'mock / mt0 giữ nguyên');
+    const CHO_PHEP_WEB: readonly string[] = [];   // chỗ cho phép ở web: chưa có
+    const sai = dongCu(['web/src'], CHO_PHEP_WEB);
+    assert(sai.length === 0, `${sai.length} chỗ web còn chữ cũ:\n${sai.slice(0, 40).join('\n')}`);
+  });
+
+  const luotThuong = (kind: 'progress' | 'final') => ({
+    cheDo: 'ratio', attemptNo: 1, kind, overall: null, sosLevel: 1, soCoDiem: 4, soYeuCau: 4, soDat: 3,
+    khongChiaMon: false, tyLe: kind === 'final' ? 0.66 : null, goiY: null, maLop: null, kyNangChuaDat: [],
+  });
+
+  check('C39 · chữ sinh MỚI dùng tên mới: tên Case, tên bài, nhóm Phân tích, ghim Hành trình, đợt Excel, câu lỗi bộ lọc, Kết luận khoá', () => {
+    const tc = d.tenCaseThuong({ dot: 'progress', giua: 'G+V không đạt' });
+    assert(tc === '[Progress Test] G+V không đạt', tc);
+    assert(d.tenCaseThuong({ dot: 'final', giua: 'P không đạt' }) === '[Final Test] P không đạt', 'tên Case Final Test');
+    assert(d.tenBaiThuong([{ kind: 'progress', attemptNo: 1 }], { kind: 'progress', attemptNo: 1 }) === 'Progress Test', 'tên bài Progress Test');
+    assert(d.tenBaiThuong([{ kind: 'final', attemptNo: 1 }, { kind: 'final', attemptNo: 2 }], { kind: 'final', attemptNo: 2 }) === 'Final Test 2', 'tên bài Final Test 2');
+    assert(d.NHAN_NHOM_CON.giua === 'Progress Test (theo môn)' && d.NHAN_NHOM_CON.cuoi === 'Final Test (% tổng)', JSON.stringify(d.NHAN_NHOM_CON));
+    assert(d.nhanKhoaDot('giua') === 'Progress Test' && d.nhanKhoaDot('cuoi') === 'Final Test', 'nhãn đợt');
+    assert(d.tenSheetThuong('FOU') === 'FOU · Progress–Final Test', d.tenSheetThuong('FOU'));
+    const pg = d.nhanGhim(luotThuong('progress')), fg = d.nhanGhim(luotThuong('final'));
+    assert(pg.day.startsWith('Progress Test') && fg.day.startsWith('Final Test') && fg.chu.startsWith('Final') && pg.hai[0] === 'Progress' && fg.hai[0] === 'Final', JSON.stringify([pg, fg]));
+    const sai = d.docBoLocXuatMt({ khung: 'thuong', tg: 'dot', dot: 'mt:1' });
+    assert(typeof sai === 'string' && /Progress Test và Final Test/.test(sai) && !CHU_CU.test(sai), String(sai));
+    const kl = d.chuHopKetLuan({ ct: 'FOU', tyLe: 0.66, scored: 4, required: 4, mon: [], goiY: { dai: 'dat', nhan: 'Pass', nhanNgan: 'Pass' } as any, quyetDinh: null, ketLuanFt: null });
+    assert(kl.chinh === 'Final Test 66%', kl.chinh);
+    assert(d.chuHopKetLuan({ ct: 'FOU', tyLe: null, scored: 2, required: 4, mon: [], goiY: null, quyetDinh: null, ketLuanFt: null }).chinh === 'Final Test · 2/4 môn có điểm', 'thiếu môn');
+  });
+
+  check('C39 · Excel xuất lớp thường (DB): sheet, cột Bài, tên tệp dùng Progress Test / Final Test', () => {
+    const f = d.docBoLocXuatMt({ khung: 'thuong', tg: 'dot', dot: 'giua,cuoi', cot: 'day-du' });
+    assert(typeof f !== 'string', String(f));
+    const r = xm.duLieuXuatMt(P.normalCoreTeacher, f);
+    const ten = r.sheets.map((s: any) => s.ten) as string[];
+    assert(ten.includes('FOU · Progress–Final Test'), ten.join('|'));
+    const dong = r.sheets.find((s: any) => s.ten === 'FOU · Progress–Final Test').aoa.slice(1);
+    assert(dong.length > 0 && dong.every((x: any) => x[4] === 'Progress Test' || x[4] === 'Final Test'), 'cột Bài');
+    assert(/Progress-Test-Final-Test\.xlsx$/.test(r.tenTep), r.tenTep);
+    assert(!CHU_CU.test(JSON.stringify(r.sheets)), 'còn chữ cũ trong ô Excel');
+  });
+
+  check('C39 · shared + server/src (chữ hiện ra, trừ tests) không còn Giữa khoá / Cuối khoá', () => {
+    const CHO_PHEP_MAY: readonly string[] = [];   // chỗ cho phép ở shared / máy chủ: chưa có
+    const sai = dongCu(['shared', 'server/src'], CHO_PHEP_MAY);
+    assert(sai.length === 0, `${sai.length} chỗ còn chữ cũ:\n${sai.slice(0, 80).join('\n')}`);
+  });
+
+  check('C40 · dữ liệu không đổi: kind progress / final, khoá hành động nhật ký; tên Case cũ đọc nguyên chữ; không mã nào tách tên Case theo tiền tố', () => {
+    const { conn } = t;
+    assert(d.ATTEMPT_KINDS.join() === 'mock,progress,final,mt0', d.ATTEMPT_KINDS.join());
+    const kinds = (conn.prepare(`SELECT DISTINCT kind FROM assessment_attempts`).all() as any[]).map((r) => r.kind as string);
+    assert(kinds.includes('progress') && kinds.includes('final') && kinds.every((k) => d.ATTEMPT_KINDS.includes(k)), kinds.join());
+    assert(d.nhanHanhDongNhatKy('case.auto_from_giua_khoa') === 'Tạo Case từ Progress Test', d.nhanHanhDongNhatKy('case.auto_from_giua_khoa'));
+    /* Tên đã lưu bằng tiền tố cũ (Case tạo tay có tên riêng) giữ nguyên chữ. */
+    const cu = '[Giữa khoá] G+V không đạt';
+    assert(caseTitleOf({ id: 0, origin_kind: 'manual', title: cu }) === cu, 'tên cũ bị đổi');
+    /* Tên Case lớp thường suy lúc đọc, không ghi DB; không mã nào tách nó theo tiền tố (cũ hay mới). */
+    const tachTienTo = [...nguonTs('web/src'), ...nguonTs('shared'), ...nguonTs('server/src')]
+      .filter((f) => /startsWith\(\s*['"`]\[(Giữa|Cuối|Progress|Final)|\^\\\[(Giữa|Cuối|Progress|Final)|\\\[\((Giữa|Cuối|Progress|Final)/.test(doc(f).normalize('NFC')));
+    assert(tachTienTo.length === 0, `đọc tên Case theo tiền tố: ${tachTienTo.join(', ')}`);
+  });
 }
