@@ -79,7 +79,7 @@ export function ketQuaThuong(i: { dat: number; daCham: number; tong: number; thi
   if (i.daCham === 0) return { chinh: 'Chưa nhập điểm', phu: null };
   const du = i.daCham >= i.tong;
   return {
-    chinh: du ? `${i.dat}/${i.tong} môn đạt` : `${i.dat}/${i.daCham} môn đạt (đã chấm)`,
+    chinh: du ? `${i.dat}/${i.tong} môn đạt` : `${i.dat}/${i.daCham} môn đạt`,
     phu: du || !i.thieu.length ? null : `còn ${i.thieu.join(', ')} chưa chấm`,
   };
 }

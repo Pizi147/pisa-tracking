@@ -1218,7 +1218,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       .all(...ownerIds) as any[]) names.set(r.id, r.full_name);
     for (const it of items) {
       if (it.ownerId === null) continue;   // đã có tên chữ, hoặc thật sự chưa có ai
-      it.owner = it.ownerId === p.userId ? 'Bạn' : (names.get(it.ownerId) ?? null);
+      it.owner = it.ownerId === p.userId ? null : (names.get(it.ownerId) ?? null);   // việc của chính người xem: không ghi tên (J7)
       it.mine = it.ownerId === p.userId;
     }
   }

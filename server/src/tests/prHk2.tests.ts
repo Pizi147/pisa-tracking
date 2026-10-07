@@ -280,7 +280,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     const sb = doc('web/src/modules/cases/SkillBoard.tsx');
     const g = /export function gapText\([^)]*\): string \{[^]*?\n\}/.exec(sb)?.[0] ?? '';
     assert(g.includes("'đạt kỳ vọng'") && /`-\$\{Math\.abs\(gap\)\}`/.test(g) && /`\+\$\{gap\}`/.test(g) && !/thiếu|vượt/.test(g), `gapText: ${g}`);
-    assert(/title=\{[^}]*dưới kỳ vọng/.test(sb), 'SkillBoard: số lệch thiếu title "dưới kỳ vọng"');
+    assert(/title=\{[^\n]*dưới/.test(sb), 'SkillBoard: số lệch thiếu title "dưới kỳ vọng"');
   });
 
   check('C19 · J4: KhoiCanXuLy không còn "Gộp hai khung", OverviewPage không còn "Chỉ phần số đổi"', () => {

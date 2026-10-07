@@ -13,7 +13,7 @@ import { GIAI_THICH_KCK, KCK, dsLoi, type LuatTruong, type TruongDeXuat } from '
  */
 const TRUONG: { key: TruongDeXuat; nhan: string }[] = [
   { key: 'target', nhan: 'Target' }, { key: 'lo-trinh', nhan: 'Lộ trình' },
-  { key: 'lich-mt', nhan: 'Lịch MT' }, { key: 'khac', nhan: 'Khác' },
+  { key: 'lich-mt', nhan: 'Lịch MT' }, { key: 'khac', nhan: 'Thông tin khác' },
 ];
 
 export function DeXuatSuaPanel({ studentId, studentName, lop, truongDau, hienTai, onClose, onDone }: {

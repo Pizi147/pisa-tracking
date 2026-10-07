@@ -7,7 +7,7 @@ import { Info } from '../../ui/ui.tsx';
 import { CongTacGiaoDien } from '../../ui/CongTacGiaoDien.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { roleLabel, skillShort } from '../../lib/format.ts';
-import { buocDanhSach, chuanHoaMaLop, duongThongBao, ngayTheoGioVN, noiDenThongBao, nhomThongBao, thoiGianThongBao } from '@shared/domain/index.ts';
+import { buocDanhSach, chuanHoaMaLop, duongThongBao, maHocVienNgan, ngayTheoGioVN, noiDenThongBao, nhomThongBao, thoiGianThongBao } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useToast } from '../../ui/Toast.tsx';
 
@@ -151,7 +151,7 @@ export function Header() {
             <li key={`hv${h.id}`} role="none">
               <button {...nutMuc(i)}>
                 <span className="text-slate-100">{h.fullName}</span>
-                <span className="text-slate-500 text-xs ml-2">{h.studentCode}</span>
+                <span className="text-slate-500 text-xs ml-2">{maHocVienNgan(h.studentCode)}</span>
                 {h.classCode && <span className="text-slate-500 text-xs ml-2">{h.classCode}</span>}
               </button>
             </li>

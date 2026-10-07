@@ -234,14 +234,14 @@ async function runTask9(t: YThucTestKit, d: any) {
     assert(!doc('server/src/worklist/tongQuan.ts').includes('chờ hàng "Chưa phân công"'), 'chú thích ponytail cũ');
   });
 
-  check('S6F-b (9) · "em chưa có quyết định chuyển lớp": hạn (tuần sau tuần kết thúc) đã qua → Quá hạn, chữ "quá hạn từ {tuần}"', () => {
+  check('S6F-b (9) · "em chưa có quyết định chuyển lớp": hạn (tuần sau tuần kết thúc) đã qua → Quá hạn, chữ "quá hạn n ngày" (HK2 J3)', () => {
     const lop = lopChoLenhChuyen(P.mbManager, null, TODAY) as any[];
     const ketThuc = lop.map((l) => l.moc.tuanKetThuc).filter(Boolean).sort()[0] as string | undefined;
     const dong = (tq.tongQuanQuanLy(P.mbManager, {}).canXuLy as any[]).find((x) => x.metricId === 'hv-chua-co-lenh-chuyen');
     assert(dong && ketThuc, 'bộ demo phải có lớp hết khoá còn em chưa có lệnh');
     const qua = addDays(ketThuc!, 7) <= TODAY;
     assert(qua, `bộ demo: hạn ${addDays(ketThuc!, 7)} phải đã qua`);
-    assert(dong.trangThai === 'qua-han' && dong.han.chu === `quá hạn từ ${d.tuanLich(addDays(ketThuc!, 7), TODAY)}` && dong.han.quaHan === true, JSON.stringify({ t: dong.trangThai, han: dong.han }));
+    assert(dong.trangThai === 'qua-han' && dong.han.chu === `quá hạn ${Math.max(1, Math.round((Date.parse(TODAY) - Date.parse(addDays(ketThuc!, 7))) / 86400000))} ngày` && dong.han.quaHan === true, JSON.stringify({ t: dong.trangThai, han: dong.han }));
   });
 
   check('S6F-b (9) · bảng GV chi nhánh: không hàng GV nhưng có "Chưa phân công" → không Empty (Σ = ô)', () => {

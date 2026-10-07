@@ -513,8 +513,8 @@ export function CriteriaButton({ cell, onSave, buttonRef, lon = false, gvMacDinh
         onClick={() => setOpen(true)}
         title={hieuChinh ? 'Sửa bốn tiêu chí đã chấm.' : `Mở bốn tiêu chí. ${NO_SHOW_HINT}`}
       >
-        {coDau(cell) ? '-' : lon && cell.band === null && nhanDau ? '' : fmtBand(cell.band)}
-        <span className="text-slate-500 text-xs">sửa</span>
+        {coDau(cell) ? '-' : cell.band === null ? 'Nhập' : fmtBand(cell.band)}
+        {(coDau(cell) || cell.band !== null) && <span className="text-slate-500 text-xs">sửa</span>}
       </button>
       {lon && <NutDau title={NUT_DAU_FT} an={!nhanDau} tat={dangBao} onBam={() => void bamDau()} />}
       </span>

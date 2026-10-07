@@ -157,7 +157,7 @@ function QuyenTheoVai({ onDaLuu }: { onDaLuu: () => void }) {
   const moTa = MO_TA_QUYEN as Record<string, { nhom: string; moTa: string; phamVi?: string } | undefined>;
   const nhom = [
     ...NHOM_QUYEN.map((g) => ({ key: g.key as string, ten: g.ten, quyen: d.quyen.filter((q) => moTa[q.key]?.nhom === g.key) })),
-    { key: 'khac', ten: 'Khác', quyen: d.quyen.filter((q) => !moTa[q.key]) },
+    { key: 'khac', ten: 'Chưa xếp nhóm', quyen: d.quyen.filter((q) => !moTa[q.key]) },
   ].filter((g) => g.quyen.length > 0);
   const gvcn = new Map(d.suyRaGv.filter((x) => x.ai === 'GVCN').map((x) => [x.quyen, x.ghiChu]));
   const tenQuyen = new Map(d.quyen.map((q) => [q.key, q.ten]));

@@ -11,7 +11,7 @@ import { MoLaiLopPanel } from '../classes/XoaKetThucLopPanel.tsx';
 import { OChon, ThanhChonNhieu, useChonNhieu } from './chonNhieuHocVien.tsx';
 import { XemTruocHangLoatPanel } from './XemTruocHangLoatPanel.tsx';
 import { StudentManagePanel } from './StudentManagePanel.tsx';
-import { duongHoSoHocVien, ngay, type ViecHangLoat } from '@shared/domain/index.ts';
+import { duongHoSoHocVien, maHocVienNgan, ngay, type ViecHangLoat } from '@shared/domain/index.ts';
 
 type LopLuuTru = {
   id: number; code: string; ma: string | null; tenChuongTrinh: string | null;
@@ -43,6 +43,7 @@ export default function LuuTruPage() {
   const branchId = cnUrl ? Number(cnUrl) : macDinh;
   const q = params.get('q') ?? '';
   const [draftQ, setDraftQ] = useState(q);
+  const loc = q.trim();
   const [moLai, setMoLai] = useState<LopLuuTru | null>(null);
   /* PR-LUI-b: "Chọn nhiều học viên" (cùng mẫu hồ sơ lớp) — thanh dính đáy Bỏ lưu trữ · Học lại; Học lại từng em mở panel Học lại có chọn đích. */
   const chon = useChonNhieu();
@@ -116,7 +117,7 @@ export default function LuuTruPage() {
       {loading && !data && <Skeleton rows={6} />}
       {data && tab === 'lop' && (
         data.lop.length === 0
-          ? <Card><Empty title="Chưa có lớp nào kết thúc" /></Card>
+          ? <Card><Empty title={loc ? `Không có lớp khớp "${loc}"` : 'Chưa có lớp nào kết thúc'} /></Card>
           : <div className="space-y-1.5">
               {data.lop.map((l) => (
                 <div key={l.id} className="card flex flex-wrap items-center gap-x-2 gap-y-1 p-3">
@@ -139,7 +140,7 @@ export default function LuuTruPage() {
       )}
       {data && tab === 'hv' && (
         data.hocVien.length === 0
-          ? <Card><Empty title="Chưa có học viên nào được lưu trữ" /></Card>
+          ? <Card><Empty title={loc ? `Không có học viên khớp "${loc}"` : 'Chưa có học viên nào được lưu trữ'} /></Card>
           : <div className="space-y-1.5">
               {data.hocVien.some((s) => s.coTheBoLuuTru) && (
                 <div className="flex justify-end">
@@ -151,7 +152,7 @@ export default function LuuTruPage() {
                 <div key={s.id} className={`card flex flex-wrap items-center gap-x-2 gap-y-1 p-3 ${chon.chon.has(s.id) ? 'bg-[color:var(--accent-soft)]' : ''}`}>
                   {chon.bat && s.coTheBoLuuTru && <OChon chon={chon} id={s.id} ten={s.fullName} />}
                   <Link to={`/hoc-vien/${s.id}`} className="link font-semibold">{s.fullName}</Link>
-                  <span className="text-[11px] tabular-nums text-slate-500">{s.studentCode}</span>
+                  <span className="text-[11px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
                   <span className="text-xs text-slate-500">
                     {s.lopCuoi ? <>lớp cuối {s.lopCuoi}</> : 'chưa từng học lớp nào'}{s.chiNhanh && <> · {s.chiNhanh}</>}
                   </span>

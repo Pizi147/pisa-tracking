@@ -13,7 +13,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ATTEMPT_KIND_SHORT, BAI_CO_NHAN_XET, ENTRY_SKILLS, ngay, tenMon, tenMonNgan, type AttemptKind, type NguoiChon,
+  ATTEMPT_KIND_SHORT, BAI_CO_NHAN_XET, ENTRY_SKILLS, maHocVienNgan, ngay, tenMon, tenMonNgan, type AttemptKind, type NguoiChon,
 } from '@shared/domain/index.ts';
 import { duongDotTest } from '@shared/domain/index.ts';
 import { fmtBand } from '../../lib/format.ts';
@@ -193,12 +193,12 @@ function DongFt({ row, k, nhieuMt, active, onReload, gvMacDinh, inputRef, onKeyD
   const { save, status, lastError, retry, o, loi, luuLai, soLoi, loiNhap, coGuiLai } = useSaveScore(row.attemptId, onReload, row.studentName);
   const c = oCua(row, k);
   const kv = row.result?.expectation ?? null;
-  const phu = [nhieuMt ? `MT${row.attemptNo}` : null, kv !== null ? `KV ${fmtBand(kv)}` : row.studentCode]
+  const phu = [nhieuMt ? `MT${row.attemptNo}` : null, kv !== null ? `KV ${fmtBand(kv)}` : maHocVienNgan(row.studentCode)]
     .filter(Boolean).join(' · ');
   const laSoCau = k === 'listening' || k === 'reading';
   return (
     <DongHv studentId={row.studentId} active={active} ten={row.studentName} href={duongDotTest({ id: row.attemptId }, k)}
-      phu={phu} phuTitle={kv !== null ? `Kỳ vọng (KV) của lượt này: ${fmtBand(kv)} · ${row.studentCode}` : undefined}
+      phu={phu} phuTitle={kv !== null ? `Kỳ vọng (KV) của lượt này: ${fmtBand(kv)} · ${maHocVienNgan(row.studentCode)}` : undefined}
       luu={<>{row.lichSu && <NhanCu />}<DauLuu lon status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} /></>}
       nhan={<NhanHoanTat hoanTat={row.hoanTat} chuNhatCuoi={row.chuNhatCuoi} />}>
       <div className={`shrink-0 flex items-center justify-end gap-1 rounded-md ${o[k] === 'loi' ? VIEN_LOI : ''}`} data-kn={k}
@@ -304,10 +304,10 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
     ?? quaHan
     ?? (cell.chuaToiTuan && cell.tuanHienTai ? `Thi ${cell.tuanHienTai}` : null)
     ?? ketQua
-    ?? row.studentCode;
+    ?? maHocVienNgan(row.studentCode);
   return (
     <DongHv studentId={row.studentId} active={active} ten={row.studentName} href={`/hoc-vien/${row.studentId}`}
-      phu={phu} phuTitle={`${tenMonO} · ${row.studentCode}`} phuDo={phu === ketQua && cell.ketQua === 'fail'}
+      phu={phu} phuTitle={`${tenMonO} · ${maHocVienNgan(row.studentCode)}`} phuDo={phu === ketQua && cell.ketQua === 'fail'}
       luu={<DauLuu lon status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />}
       nhan={<NhanHoanTat hoanTat={row.hoanTat} chuNhatCuoi={row.chuNhatCuoi} />}>
       <div className={`shrink-0 flex items-center justify-end gap-1 rounded-md ${o[k] === 'loi' ? VIEN_LOI : ''}`} data-kn={k}

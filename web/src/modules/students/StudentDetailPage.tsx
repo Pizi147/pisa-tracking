@@ -24,7 +24,7 @@ import {
 } from '../../lib/format.ts';
 import {
   HO_SO_TAB_LABEL, NHAN_NHOM_VIEC_QUAN_LY, duongDotTest, caseCategoriesFor, tenMon, tenMonNgan, docThamSoHoSo, duongHoSoHocVien,
-  nhanKetQuaThuong, tenBaiThuong, CHUONG_TRINH_KHONG_CHIA_MON, ngay, tuanLich, type HoSoTab,
+  nhanKetQuaThuong, tenBaiThuong, CHUONG_TRINH_KHONG_CHIA_MON, ngay, tuanLich, maHocVienNgan, type HoSoTab,
 } from '@shared/domain/index.ts';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
@@ -195,7 +195,7 @@ export default function StudentDetailPage() {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
               <span className="block text-xs text-slate-500">
-                Hồ sơ học viên · {data.studentCode}
+                Hồ sơ học viên · {maHocVienNgan(data.studentCode)}
               </span>
               <h1 className="text-xl font-semibold text-slate-100 flex flex-wrap items-center gap-2 m-0 mt-0.5">
                 {data.fullName}
@@ -643,7 +643,7 @@ function KetQuaThuongO({ a, ct }: { a: any; ct: string | null }) {
     return (
       <>
         <Level tone="muted">Chờ {a.required - a.scored} môn</Level>
-        {kq.phu && <div className="text-xs text-slate-400">{kq.phu}</div>}
+        {kq.phu && <div className="text-xs font-semibold text-soon">{kq.phu}</div>}
       </>
     );
   }

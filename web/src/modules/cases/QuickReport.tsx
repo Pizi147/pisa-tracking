@@ -17,7 +17,7 @@ import {
   URGENCY_LEVELS, URGENCY_LABEL, issuesForTopic, FOLLOWUP_OUTCOMES, GOI_Y_MO_TA_PA, outcomeLabelFor,
   CASE_OUTCOMES, CASE_OUTCOME_LABEL, CHU_THEM_PA, tenMon, tenMonNgan,
   categoryOf, componentsFor, componentsAreCounts,
-  nguoiThanhPayload, nguoiThieu, tuanLich, type NguoiChon, dsLoi, type LuatTruong, laKhac, kiemGhiRoKhac, KHAC_TOI_THIEU,
+  nguoiThanhPayload, nguoiThieu, tuanLich, type NguoiChon, dsLoi, type LuatTruong, laKhac, kiemGhiRoKhac, KHAC_TOI_THIEU, maHocVienNgan,
 } from '@shared/domain/index.ts';
 
 type DaLuu = { id: number; tieuDe: string; gop: boolean; canEdit: boolean; viecTiep?: { chu: string; han: string | null } | null };
@@ -373,7 +373,7 @@ export function QuickReport({
           <Truong nhan="Học viên" batBuoc loi={loiCua('hoc-vien')}>
             <select className="field w-full" {...o('hoc-vien')} value={studentId || ''} onChange={(e) => onPickStudent?.(Number(e.target.value) || 0)}>
               <option value="">Chọn học viên</option>
-              {students.map((st) => <option key={st.id} value={st.id}>{st.name}{st.code ? ` · ${st.code}` : ''}</option>)}
+              {students.map((st) => <option key={st.id} value={st.id}>{st.name}{st.code ? ` · ${maHocVienNgan(st.code)}` : ''}</option>)}
             </select>
           </Truong>
         )}

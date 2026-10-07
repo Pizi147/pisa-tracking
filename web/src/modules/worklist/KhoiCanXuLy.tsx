@@ -47,7 +47,7 @@ export function KhoiCanXuLy({ branchId }: { branchId: number | null }) {
   ));
   const han = (x: DongCanXuLy) => ('ngay' in x.han
     ? <span className="[&>span]:text-xs"><Han loai={x.han.loai} han={x.han.ngay} haiDong /></span>
-    : <span className={`text-xs tabular-nums ${x.han.quaHan ? 'font-semibold text-late' : 'text-slate-500'}`}>{x.han.chu}</span>);
+    : <span className={`text-xs tabular-nums ${x.han.quaHan ? 'font-semibold text-late' : 'text-slate-500'}`}>{x.han.quaHan ? <>⚠ {x.han.chu}</> : x.han.chu}</span>);
   const nut = (x: DongCanXuLy) => (x.den
     ? <Link to={x.den} className="btn btn-sm w-full min-h-[44px] justify-center no-underline sm:min-h-[32px]">{x.nut}</Link>
     : <button type="button" className="btn btn-sm w-full min-h-[44px] justify-center sm:min-h-[32px]" onClick={() => setMo({ id: x.metricId, n: x.n })}>{x.nut}</button>);
@@ -58,7 +58,6 @@ export function KhoiCanXuLy({ branchId }: { branchId: number | null }) {
         <h2 id="can-xu-ly" className="m-0 text-sm font-semibold text-slate-200">
           Cần xử lý {data && <span className="font-normal text-slate-500">· {data.canXuLy.length} việc · quá hạn lên đầu</span>}
         </h2>
-        <span className="text-xs text-slate-500">Gộp hai khung · việc giáo viên đang trễ và việc chờ bạn sắp xếp</span>
       </header>
       {loading || !data ? <div className="p-4"><Skeleton rows={4} /></div> : !data.canXuLy.length ? (
         <p className="m-0 px-4 py-3 text-sm text-slate-400">Không có việc nào đang tồn trong phạm vi.</p>

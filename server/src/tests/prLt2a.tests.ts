@@ -55,7 +55,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     const du = d.nhanKetQuaThuong({ ...base, scored: 4, required: 4, failedSkills: ['writing', 'pronunciation'], tyLeTong: 0.61 });
     assert(du.chinh === '2/4 môn đạt' && du.phu === 'Không đạt: G+V P' && du.pct === '61%' && du.dat === false, JSON.stringify(du));
     const thieu = d.nhanKetQuaThuong({ ...base, scored: 3, required: 4, failedSkills: ['reading'], tyLeTong: null });
-    assert(thieu.chinh === '2/3 môn đạt (đã chấm)' && thieu.pct === null && thieu.dat === false, JSON.stringify(thieu));
+    assert(thieu.chinh === '2/3 môn đạt' && thieu.pct === null && thieu.dat === false, JSON.stringify(thieu));
     const dat = d.nhanKetQuaThuong({ ...base, scored: 4, required: 4, failedSkills: [], tyLeTong: 0.8 });
     assert(dat.chinh === '4/4 môn đạt' && dat.dat === true && dat.phu === null, JSON.stringify(dat));
     const preFou = d.nhanKetQuaThuong({ kind: 'final', ct: 'PREFOU', scored: 1, required: 1, failedSkills: [], tyLeTong: 0.68, khongChiaMon: true });
@@ -482,7 +482,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     ];
     assert(ca[0].chinh === '2/4 môn đạt' && ca[0].phu === 'Không đạt: G+V P' && ca[0].dat === false, JSON.stringify(ca[0]));
     assert(ca[1].chinh === '4/4 môn đạt' && ca[1].phu === null && ca[1].dat === true, JSON.stringify(ca[1]));
-    assert(ca[2].chinh === '2/2 môn đạt (đã chấm)' && ca[2].dat === null, JSON.stringify(ca[2]));
+    assert(ca[2].chinh === '2/2 môn đạt' && ca[2].dat === null, JSON.stringify(ca[2]));
     assert(ca[3].chinh === '64%' && ca[3].phu === 'Không đạt: R', JSON.stringify(ca[3]));
     assert(ca[4].chinh === '68%' && ca[4].phu === null && ca[4].dat === false, JSON.stringify(ca[4]));
     assert(ca[5].chinh === '—' && ca[5].dat === null, JSON.stringify(ca[5]));

@@ -133,7 +133,7 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null }) {
       case 'hv-chua-co-lenh-chuyen': {
         const lop = lopLenh;
         const han = !ketThuc ? chuaCoHan
-          : lenhQuaHan ? { chu: `quá hạn từ ${tuanLich(addDays(ketThuc, 7), today)}`, quaHan: true as const }
+          : lenhQuaHan ? { chu: `quá hạn ${Math.max(1, soNgay(addDays(ketThuc, 7), today))} ngày`, quaHan: true as const }
           : { chu: `trước ${tuanLich(addDays(ketThuc, 7), today)}` };
         if (lop.length === 1) {
           return { ...x, ...chung, truoc: `Chuyển tiếp lớp · ${lop[0].code} ·`, nhan: 'em chưa có quyết định chuyển lớp',

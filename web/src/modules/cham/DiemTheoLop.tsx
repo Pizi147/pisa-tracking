@@ -15,7 +15,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { BaoDangLuuContext } from '../../ui/SaveState.tsx';
 import { Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import {
-  HOI_DOI_LUOT_RONG, buocHoiDoiLuot, cauChanDoiLuot, dongPhuLuot, duongHoSoHocVien, hangThuongConTrong, oTrongLuotFt, tuanLich,
+  HOI_DOI_LUOT_RONG, buocHoiDoiLuot, cauChanDoiLuot, dongPhuLuot, duongHoSoHocVien, hangThuongConTrong, maHocVienNgan, oTrongLuotFt, tuanLich,
   yeuCauDoiLuot, type HoiDoiLuot, type TomTatLuot,
 } from '@shared/domain/index.ts';
 import {
@@ -127,7 +127,7 @@ export function DiemTheoLop({ classId, luotBanDau, gon = false, congRoi, onDaLuu
     return new Set(ids);
   }, [chiOTrong, b]);
   const hangMo = useMemo<HangMo[]>(() => (b?.chuaCoLich ?? []).map((h) => ({
-    studentId: h.studentId, ten: h.fullName, ma: h.studentCode,
+    studentId: h.studentId, ten: h.fullName, ma: maHocVienNgan(h.studentCode),
     chu: <>Chưa có lịch {b!.luot.nhan} — <Link className="link" to={duongHoSoHocVien(h.studentId, { mo: 'lo-trinh' })}>xếp ở panel Lộ trình</Link></>,
   })), [b]);
 

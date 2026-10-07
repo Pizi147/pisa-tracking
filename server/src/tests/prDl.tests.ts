@@ -627,8 +627,8 @@ export async function runPrDlTests(t: YThucTestKit) {
     assert(/on \? 'text-slate-400' : 'text-slate-500'/.test(f), 'dòng phụ tab chọn: text-slate-400 (--text-dim, tối 5,07:1, sáng 6,75:1)');
     assert(f.includes('role="alert"') && !/role="alert"[^>]*aria-label/.test(f), 'role="alert" không aria-label');
     const ft = doc('web/src/modules/cham/LuoiFT.tsx');
-    const dongTen = ft.slice(ft.indexOf('to={duongDotTest({ id: row.attemptId })}'), ft.indexOf('{row.studentCode}'));
-    assert(!dongTen.includes('NhanCu') && /\{row\.studentCode\}<\/span>\s*\{row\.lichSu && <NhanCu \/>\}/.test(ft), 'LuoiFT: chip lịch sử ở dòng mã HV');  // PR-MTb T2 thay ChipLichSu → NhanCu
+    const dongTen = ft.slice(ft.indexOf('to={duongDotTest({ id: row.attemptId })}'), ft.indexOf('{maHocVienNgan(row.studentCode)}'));
+    assert(!dongTen.includes('NhanCu') && /\{maHocVienNgan\(row\.studentCode\)\}<\/span>\s*\{row\.lichSu && <NhanCu \/>\}/.test(ft), 'LuoiFT: chip lịch sử ở dòng mã HV');  // PR-MTb T2 thay ChipLichSu → NhanCu
     const mk = doc('web/src/modules/cham/MotKyNang.tsx');
     assert(/luu=\{<>\{row\.lichSu && <NhanCu \/>\}<DauLuu/.test(mk) && !/nhan=\{<>\{row\.lichSu/.test(mk), 'MotKyNang: chip lịch sử ở dòng phụ');  // PR-MTb T2 thay ChipLichSu → NhanCu
   });

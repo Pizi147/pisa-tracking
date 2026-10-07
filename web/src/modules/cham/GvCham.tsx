@@ -82,7 +82,7 @@ export function NutGvCham({ value, onChange, lon = false, goiY = GOI_Y_COT, chiT
   return (
     <>
       <button type="button" onClick={() => setMo(true)} aria-haspopup="dialog"
-        title={`GV chấm Speaking — ${goiY}`} aria-label={`GV chấm Speaking: ${ten ?? 'chưa chọn'}`}
+        title={chiTen ? `GV chấm Speaking: ${ten ?? 'chưa chọn'} — ${goiY}` : `GV chấm Speaking — ${goiY}`} aria-label={`GV chấm Speaking: ${ten ?? 'chưa chọn'}`}
         className={`inline-flex max-w-full items-center gap-1 normal-case tracking-normal text-xs text-slate-400 hover:text-slate-200 ${lon ? 'min-h-[44px] px-1' : 'max-sm:py-3 max-sm:-my-3'}`}>
         <span className="truncate">{chiTen ? null : 'GV chấm: '}{ten ?? <span className="text-slate-500">chưa chọn</span>}</span>
         <span className="text-slate-500"><MuiTenGap mo /></span>

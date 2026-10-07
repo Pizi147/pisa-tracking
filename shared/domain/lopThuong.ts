@@ -60,7 +60,7 @@ export function nhanKetQuaThuong(r: {
   const truot = r.failedSkills.length;
   const thieu = r.scored < r.required;
   const chinh = r.kind === 'final' && pct ? pct
-    : `${r.scored - truot}/${r.scored} môn đạt${thieu ? ' (đã chấm)' : ''}`;
+    : `${r.scored - truot}/${r.scored} môn đạt`;
   return {
     chinh, pct,
     phu: truot ? `Không đạt: ${r.failedSkills.map((s) => tenMonNgan(r.ct, s)).join(' ')}` : null,

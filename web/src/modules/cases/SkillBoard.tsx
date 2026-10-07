@@ -612,7 +612,7 @@ function ScoreCell({ row }: { row: Row }) {
         {value}
       </span>
       {!row.ratio && g !== null && (
-        <span className={`text-[12px] ml-1.5 font-medium ${scoreToneText(row)}`}>{gapText(g)}</span>
+        <span className={`text-[12px] ml-1.5 font-medium tabular-nums ${scoreToneText(row)}`} title={g === 0 ? 'đạt kỳ vọng' : `${g < 0 ? 'dưới' : 'trên'} kỳ vọng ${Math.abs(g)}`}>{gapText(g)}</span>
       )}
       <span className="block text-[12px] text-slate-400 mt-0.5"><DongMt row={row} /></span>
       {!row.ratio && t !== null && row.trendFrom !== null && (
@@ -649,7 +649,7 @@ function boNamCungNam(code: string | null, homNay: string): string {
 
 export function gapText(gap: number): string {
   if (gap === 0) return 'đạt kỳ vọng';
-  return gap < 0 ? `thiếu ${Math.abs(gap)}` : `vượt ${gap}`;
+  return gap < 0 ? `-${Math.abs(gap)}` : `+${gap}`;
 }
 
 /* Bảng bốn màu điểm nằm ở MỘT chỗ duy nhất: `ui.tsx` (SCORE_CHIP / SCORE_TEXT). */
