@@ -303,46 +303,60 @@ export async function runPrMtbTests(t: YThucTestKit) {
   };
 
   // Mỗi dòng mockup phần 3 (trừ "Đang chọn" và MT0)
-  check('MTb (T2) · oMt: mười một dòng mockup phần 3, homNay 2026-10-05', () => {
-    vaoRa(luot({}, { attemptId: null, so: 3 }), 'chua-co-dot', '');
+  check('MTb (T2 · PR-OMT C2–C5) · oMt: mười một dòng mockup bản 2, homNay 2026-10-05 — `MT2 · tuần` + MỘT chữ việc; xong / cũ không chữ', () => {
+    vaoRa(luot({}, { attemptId: null, so: 3 }), 'chua-lich', 'chưa xếp');   // C5: chưa có đợt = chưa xếp, một kiểu
     vaoRa(luot(bonKn('chua-xep', null)), 'chua-lich', 'chưa xếp');
     vaoRa(luot(bonKn('da-xep', TUAN.toi)), 'co-lich', 'W3 OCT');
-    vaoRa(luot(bonKn('da-xep', TUAN.nay)), 'dang-thi', 'tuần này');
+    vaoRa(luot(bonKn('da-xep', TUAN.nay)), 'dang-thi', 'W2 OCT');   // đang thi: tuần + chấm tròn (OMt.tsx), không chữ "tuần này"
     vaoRa(luot(bonKn('xong', '2026-09-14', {
       listening: { trangThai: 'da-xep', tuan: TUAN.vua, tuanKetThuc: '2026-10-04', hanCham: '2026-10-07' },
       reading: { trangThai: 'da-xep', tuan: TUAN.vua, tuanKetThuc: '2026-10-04', hanCham: '2026-10-07' },
-    })), 'cho-cham', 'chờ chấm 2');
-    vaoRa(luot(xongKn('2026-09-14', { writing: { trangThai: 'da-xep', tuan: TUAN.qua, tuanKetThuc: '2026-09-27', hanCham: '2026-09-30' } })), 'tre-cham', 'trễ chấm W');
-    vaoRa(luot(xongKn('2026-09-14', { speaking: { trangThai: 'vang', tuan: TUAN.qua, tuanKetThuc: '2026-09-27', sit: 'absent' } })), 'con-viec', 'vắng S');
-    vaoRa(luot(xongKn()), 'xong', '✓');
-    vaoRa(luot(xongKn('2026-09-14', { speaking: { trangThai: 'khong-yeu-cau', batBuoc: false, tuan: null } })), 'xong', '✓ 3/4');
-    vaoRa(luot(xongKn('2026-09-14', { speaking: { trangThai: 'da-huy', tuan: TUAN.qua, sit: 'cancelled', huyVang: true } })), 'con-viec', 'S huỷ');
-    vaoRa(luot(xongKn(), { so: 1, cu: true }), 'xong', '✓', true);
+    })), 'cho-cham', 'W1 OCT · chờ L R');
+    const het = { tuanKetThuc: '2026-10-04', hanCham: '2026-10-07' };
+    vaoRa(luot(bonKn('da-xep', TUAN.vua, { listening: het, reading: het, writing: het, speaking: het })), 'cho-cham', 'W1 OCT · chờ');   // đủ bốn kỹ năng: không liệt kê
+    vaoRa(luot(xongKn('2026-09-14', { writing: { trangThai: 'da-xep', tuan: TUAN.qua, tuanKetThuc: '2026-09-27', hanCham: '2026-09-30' } })), 'tre-cham', 'W4 SEP · trễ W');
+    vaoRa(luot(xongKn('2026-09-14', { speaking: { trangThai: 'vang', tuan: TUAN.qua, tuanKetThuc: '2026-09-27', sit: 'absent' } })), 'con-viec', 'W4 SEP · vắng S');
+    vaoRa(luot(xongKn()), 'xong', 'W3 SEP');   // C3: xanh, KHÔNG chữ "xong"
+    vaoRa(luot(xongKn('2026-09-14', { speaking: { trangThai: 'khong-yeu-cau', batBuoc: false, tuan: null } })), 'xong', 'W3 SEP');   // C3: không "✓ 3/4"
+    vaoRa(luot(xongKn('2026-09-14', { speaking: { trangThai: 'da-huy', tuan: TUAN.qua, sit: 'cancelled', huyVang: true } })), 'con-viec', 'W4 SEP · huỷ S');
+    // C4: Quản lý chốt "Không mock lại" → kỹ năng bỏ khỏi đợt (batBuoc false) → đủ phần còn lại xong thì xanh, không chữ.
+    vaoRa(luot(xongKn('2026-09-14', { speaking: { trangThai: 'khong-yeu-cau', batBuoc: false, sit: 'cancelled', huyVang: true, tuan: TUAN.qua } })), 'xong', 'W3 SEP');
+    vaoRa(luot(xongKn(), { so: 1, cu: true }), 'xong', 'W3 SEP', true);   // C3: MT cũ xong = chỉ màu, không chữ "cũ"
   });
 
-  check('MTb (T2) · oMt: trễ chấm đứng trước vắng; hanCham null → chờ chấm, không bao giờ trễ chấm', () => {
+  check('MTb (PR-OMT C2/C3) · oMt: `doc` cho người đọc màn hình đọc đủ trạng thái (màu không có chữ)', () => {
+    const doc = (v: any) => d.oMt(v, H).doc;
+    assert(doc(luot(xongKn())) === 'MT2, xong, W3 SEP', doc(luot(xongKn())));
+    assert(doc(luot(bonKn('da-xep', TUAN.nay))) === 'MT2, đang thi, W2 OCT', 'đang thi');
+    assert(doc(luot(bonKn('da-xep', TUAN.toi))) === 'MT2, có lịch, W3 OCT', 'có lịch');
+    assert(doc(luot({}, { attemptId: null, so: 3 })) === 'MT3, chưa xếp', 'chưa xếp');
+    assert(doc(luot(xongKn('2026-09-14', { writing: { trangThai: 'da-xep', tuan: TUAN.qua, tuanKetThuc: '2026-09-27', hanCham: '2026-09-30' } }))) === 'MT2, W4 SEP, trễ chấm W', 'trễ');
+    assert(doc(luot(xongKn('2026-09-14', { speaking: { trangThai: 'vang', tuan: TUAN.qua, tuanKetThuc: '2026-09-27', sit: 'absent' } }))) === 'MT2, W4 SEP, vắng S', 'vắng');
+  });
+
+  check('MTb (T2) · oMt: trễ chấm đứng trước vắng; hanCham null → chờ, không bao giờ trễ', () => {
     vaoRa(luot(xongKn('2026-09-14', {
       listening: { trangThai: 'da-xep', tuan: TUAN.qua, tuanKetThuc: '2026-09-27', hanCham: '2026-09-30' },
       speaking: { trangThai: 'vang', tuan: TUAN.qua, tuanKetThuc: '2026-09-27', sit: 'absent' },
-    })), 'tre-cham', 'trễ chấm L');
+    })), 'tre-cham', 'W4 SEP · trễ L');
     const trePhu = d.oMt(luot(xongKn('2026-09-14', { writing: { trangThai: 'da-xep', tuan: TUAN.qua, tuanKetThuc: '2026-09-27', hanCham: '2026-09-30' } })), H);
     assert(trePhu.title.split('\n')[2] === 'Writing: W4 SEP · trễ chấm · hạn 30/09', trePhu.title);
     const kn = xongKn('2026-09-14', { writing: { trangThai: 'da-xep', tuan: TUAN.qua, tuanKetThuc: '2026-09-27', hanCham: null } });
-    vaoRa(luot(kn), 'cho-cham', 'chờ chấm 1');
+    vaoRa(luot(kn), 'cho-cham', 'W4 SEP · chờ W');
     // hôm nay đúng hạn chấm: chưa trễ
-    vaoRa(luot(xongKn('2026-09-14', { writing: { trangThai: 'da-xep', tuan: TUAN.vua, tuanKetThuc: '2026-10-04', hanCham: H } })), 'cho-cham', 'chờ chấm 1');
+    vaoRa(luot(xongKn('2026-09-14', { writing: { trangThai: 'da-xep', tuan: TUAN.vua, tuanKetThuc: '2026-10-04', hanCham: H } })), 'cho-cham', 'W1 OCT · chờ W');
   });
 
   check('MTb (T2) · oMt: chờ Quản lý duyệt dời = "vắng S" + tooltip; vắng đứng trước đã huỷ; tuần sớm nhất; tên môn theo chương trình', () => {
     const cd = d.oMt(luot(xongKn('2026-09-14', { speaking: { trangThai: 'cho-duyet', tuan: TUAN.qua, sit: 'absent', choDuyet: true } })), H);
-    assert(cd.kieu === 'con-viec' && cd.chu === 'vắng S' && /Speaking: .*chờ Quản lý duyệt/.test(cd.title), JSON.stringify(cd));
+    assert(cd.kieu === 'con-viec' && cd.viec === 'vắng S' && /Speaking: .*chờ Quản lý duyệt/.test(cd.title), JSON.stringify(cd));
     vaoRa(luot(xongKn('2026-09-14', {
       speaking: { trangThai: 'da-huy', tuan: TUAN.qua, sit: 'cancelled', huyVang: true },
       reading: { trangThai: 'vang', tuan: TUAN.qua, tuanKetThuc: '2026-09-27', sit: 'absent' },
-    })), 'con-viec', 'vắng R');
+    })), 'con-viec', 'W4 SEP · vắng R');
     vaoRa(luot(bonKn('da-xep', TUAN.xa, { speaking: { tuan: TUAN.toi, tuanKetThuc: '2026-10-18' } })), 'co-lich', 'W3 OCT');
     const fou = d.oMt(luot(xongKn('2026-09-14', { writing: { trangThai: 'vang', tuan: TUAN.qua, tuanKetThuc: '2026-09-27', sit: 'absent' } })), H, 'FOU');
-    assert(fou.chu === 'vắng G+V', JSON.stringify(fou));
+    assert(fou.viec === 'vắng G+V', JSON.stringify(fou));
   });
 
   check('MTb (T2) · oMt: tooltip một dòng mỗi kỹ năng, "· cũ" khi MT cũ', () => {
@@ -351,7 +365,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert(dong.length === 4 && dong[0] === 'Listening: W3 SEP · xong' && dong[3] === 'Speaking: chưa xếp', JSON.stringify(dong));
     const cu = d.oMt(luot(xongKn(), { cu: true }), H).title.split('\n');
     assert(cu.every((x: string) => / · cũ$/.test(x)), JSON.stringify(cu));
-    assert(d.oMt(luot({}, { attemptId: null }), H).title === 'Chưa có đợt', 'chua-co-dot có tooltip');
+    assert(d.oMt(luot({}, { attemptId: null }), H).title === 'Chưa có đợt', 'chưa có đợt có tooltip');
   });
 
   check('MTb (T2) · oKyNangTuLich: hàng lịch hồ sơ Mock → OKyNang cho đầu trang', () => {
@@ -775,12 +789,12 @@ export async function runPrMtbTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ Task 9 — lưới Kế hoạch Test FT dùng Ô MT (Q1 = A)
-  check('MTb (T9) · quét nguồn: lưới FT vẽ <OMt (mở hộp, kyNangDau null, chưa tới lượt không bấm, rộng 152); ChipKyNang chỉ còn lớp thường', () => {
+  check('MTb (T9) · quét nguồn: lưới FT vẽ <OMt (mở hộp, kyNangDau null, chưa tới lượt không bấm, rộng 168); ChipKyNang chỉ còn lớp thường', () => {
     const l = nguon('web/src/modules/test/keHoach/LuoiKeHoach.tsx');
     assert(/import \{ OMt \} from '[^']*ui\/OMt\.tsx'/.test(l) && /<OMt\b/.test(l), 'LuoiKeHoach chưa vẽ <OMt');
     assert(/loai === 'ft' && c\.dot\.loai === 'ft'/.test(l.slice(0, l.indexOf('<OMt'))), '<OMt không nằm trong nhánh FT');
-    assert(/kyNangDau: null/.test(l) && /Xếp MT trước rồi mới tới/.test(l), 'thiếu mở hộp / ô chưa tới lượt');
-    assert(/loai === 'ft' \? 152 : 208/.test(l), 'rongDot FT phải 152');
+    assert(/kyNangDau: null/.test(l) && /Xếp MT trước rồi mới tới/.test(l), 'thiếu mở hộp / ô chưa tới lượt');   // PR-OMT C6: đợt đã có lịch = ChipDotFT, chưa có đợt vẫn <OMt
+    assert(/loai === 'ft' \? 168 : 208/.test(l), 'rongDot FT phải 168');
     const c = nguon('web/src/modules/test/keHoach/ChipKyNang.tsx');
     assert(!c.includes('+ xếp') && !/chuaToiLuot|lichSu|dangDo|duongDotTest|NhanCu/.test(c), 'ChipKyNang còn nhánh FT');
   });
@@ -821,10 +835,10 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert(d.thaoTacKyNang('cho-duyet', { ...ql, quanLy: false, gvcn: true }).chinh === null, 'GVCN hết nút');
     const m = d.menuHopKyNang('cho-duyet', ql, false);
     assert(m.every((x: any) => x.thay === undefined), 'menu hộp không đưa Khôi phục');
-    // Ô MT vẫn "S huỷ", tooltip nói chờ Quản lý duyệt.
+    // Ô MT vẫn "huỷ S" (một kỹ năng bắt buộc = đủ cả đợt: chữ `huỷ`), tooltip nói chờ Quản lý duyệt.
     const s: any = { trangThai: 'da-huy', tuan: '2026-09-07', periodId: 1, doiTu: null, batBuoc: true, khoa: null, sit: 'cancelled', tuanKetThuc: '2026-09-13', choDuyet: true, huyVang: true, hanCham: null };
     const r = d.oMt({ so: 1, attemptId: 1, kn: { speaking: s }, cu: false }, '2026-09-16');
-    assert(r.kieu === 'con-viec' && r.chu === 'S huỷ' && /chờ Quản lý duyệt/.test(r.title), JSON.stringify(r));
+    assert(r.kieu === 'con-viec' && r.viec === 'huỷ' && r.tuan === 'W2 SEP' && /chờ Quản lý duyệt/.test(r.title), JSON.stringify(r));
     assert(d.chipDongKyNang(s, '2026-09-16')?.chu === 'huỷ', 'chip');
   });
 
@@ -838,21 +852,21 @@ export async function runPrMtbTests(t: YThucTestKit) {
     attemptsSvc.saveScore(QL, a.m1, 'speaking', { noShow: true });
     return a;
   };
-  check('MTb sau rà (I2) · MT cũ có S "-": luoiFT trả khongDuThi cho S (không cho L/R/W), ô MT ✓ 3/4', () => {
+  check('MTb sau rà (I2) · MT cũ có S "-": luoiFT trả khongDuThi cho S (không cho L/R/W), ô MT xong (xanh, không chữ việc)', () => {
     const a = mtCuKhongS();
     assert((conn.prepare(`SELECT no_show_cu c FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`).get(a.m1) as any).c === 1, 'tiền đề no_show_cu');
     const kn = keHoach.luoiFT(QL, LOP, TODAY).hang.find((h: any) => h.studentId === a.sid).dot[1].kn;
     assert(kn.speaking.khongDuThi === true, JSON.stringify(kn.speaking));
     assert(!kn.listening.khongDuThi && !kn.reading.khongDuThi && !kn.writing.khongDuThi, 'L/R/W không được có cờ');
     const r = d.oMt({ so: 1, attemptId: a.m1, kn, cu: true }, TODAY);
-    assert(r.kieu === 'xong' && r.chu === '✓ 3/4', JSON.stringify(r));
+    assert(r.kieu === 'xong' && r.viec === null, JSON.stringify(r));
   });
 
-  check('MTb sau rà (I2) · luật thuần: khongDuThi = không yêu cầu (✓ 3/4); oKyNangTuLich + khongDuThiTuO đọc từ ô hồ sơ Mock MT cũ', () => {
+  check('MTb sau rà (I2) · luật thuần: khongDuThi = không yêu cầu (xanh, không "3/4"); oKyNangTuLich + khongDuThiTuO đọc từ ô hồ sơ Mock MT cũ', () => {
     const xong: any = { trangThai: 'xong', tuan: '2026-09-07', periodId: 1, doiTu: null, batBuoc: true, khoa: 'đã có điểm', sit: 'scheduled', tuanKetThuc: '2026-09-13', choDuyet: false, hanCham: null };
     const kn = { listening: xong, reading: xong, writing: xong, speaking: { ...xong, trangThai: 'da-xep', khoa: null, khongDuThi: true } };
     const r = d.oMt({ so: 1, attemptId: 1, kn, cu: true }, '2026-10-06');
-    assert(r.kieu === 'xong' && r.chu === '✓ 3/4', JSON.stringify(r));
+    assert(r.kieu === 'xong' && r.chu === 'W2 SEP', JSON.stringify(r));
     assert(/Speaking: .*không dự thi/.test(r.title), r.title);
     const lich = { required: true, periodId: 1, weekStart: '2026-09-07', weekEnd: '2026-09-13', sitStatus: 'scheduled', scored: false, pendingMove: null, absenceMoveCount: 0, deadline: null, doiTu: null };
     assert((d as any).oKyNangTuLich(lich, true).khongDuThi === true && !(d as any).oKyNangTuLich(lich).khongDuThi, 'oKyNangTuLich');
@@ -864,13 +878,13 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert((d as any).khongDuThiTuO([], 'speaking', true) === false, 'không có ô');
   });
 
-  check('MTb sau rà (3, 4) · màu ô "xong" = token ok (xanh lá); MT cũ chưa điểm = kiểu xám "cho-cham-cu", chữ "chờ chấm n"', () => {
+  check('MTb sau rà (3, 4) · màu ô "xong" = token ok (xanh lá); MT cũ chưa điểm = kiểu xám "cho-cham-cu", chữ "chờ"', () => {
     const o = nguon('web/src/ui/OMt.tsx');
     assert(/xong: 'border-transparent bg-ok-bg text-ok'/.test(o), 'xong chưa dùng ok');
     assert(/'cho-cham-cu': '[^']*bg-muted-bg[^']*text-muted'/.test(o), 'cho-cham-cu chưa xám');
     const het: any = { trangThai: 'da-xep', tuan: '2026-09-07', periodId: 1, doiTu: null, batBuoc: true, khoa: null, sit: 'scheduled', tuanKetThuc: '2026-09-13', choDuyet: false, hanCham: null };
     const cu = d.oMt({ so: 1, attemptId: 1, kn: { listening: het }, cu: true }, '2026-10-06');
-    assert((cu.kieu as string) === 'cho-cham-cu' && cu.chu === 'chờ chấm 1' && cu.cu === true, JSON.stringify(cu));
+    assert((cu.kieu as string) === 'cho-cham-cu' && cu.viec === 'chờ' && cu.cu === true, JSON.stringify(cu));
     assert(d.oMt({ so: 1, attemptId: 1, kn: { listening: het }, cu: false }, '2026-10-06').kieu === 'cho-cham', 'MT thường vẫn cho-cham');
     assert(d.chipDongKyNang(het, '2026-10-06')?.chu === 'chờ chấm', 'chip dòng');
   });
@@ -906,9 +920,9 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert(/const dem = demSeXep\(trongLoc\./.test(n) && /const tickDuoc = hienThi\.filter/.test(n), 'chip đếm theo tìm/lớp; Chọn tất cả theo hienThi');
   });
 
-  check('MTb sau rà đợt 2 (3) · ô MT "đang chọn" đã có ✓ trong chữ trạng thái thì chỉ MỘT dấu ✓ (vẫn đảo màu + aria-label "đang chọn")', () => {
+  check('MTb sau rà đợt 2 (3) · ô MT "đang chọn" (PR-OMT: không còn chữ ✓ trong chữ trạng thái): luôn đúng MỘT dấu ✓, vẫn đảo màu + aria-label "đang chọn"', () => {
     const o = nguon('web/src/ui/OMt.tsx');
-    assert(/\{chon && !chu\.startsWith\('✓'\) && <span aria-hidden/.test(o), 'dấu ✓ đang chọn chưa bỏ khi chữ đã có ✓');
+    assert(/\{chon && <span aria-hidden/.test(o) && !/startsWith\('✓'\)/.test(o), 'dấu ✓ đang chọn: đúng một dấu');
     assert(/chon \? MAU_CHON/.test(o) && /chon \? 'đang chọn'|!!chon\)/.test(o), 'mất dấu đang chọn');
   });
 
@@ -945,6 +959,56 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert(/h-7 min-w-7/.test(m) && /after:absolute after:-inset-\[9px\] after:content-\[''\] sm:after:hidden/.test(m), 'MenuDong: after phải -inset-[9px] (28 - 2 + 18 = 44)');
     assert(!/after:-inset-2 /.test(m), 'còn -inset-2 (42px)');
     for (const f of ['web/src/modules/fasttrack/MockDetailPage.tsx', 'web/src/modules/students/HangLichMt.tsx']) assert(/<MenuDong /.test(nguon(f)), `${f} không dùng MenuDong`);
+  });
+
+  // ------------------------------------------------------------------ PR-OMT: ô MT gọn + lưới FT G1 + panel toàn màn
+  console.log('\nPR-OMT · Ô MT gọn (C1–C7)');
+  check('PR-OMT (C6) · nhomKyNang: cả đợt cùng tuần + cùng trạng thái = MỘT nhóm; tách tuần / khác trạng thái = nhiều nhóm; xong hết = một nhóm xanh', () => {
+    const g = (kn: any, cu = false) => d.nhomKyNang(kn, H, null, cu);
+    const mot = g(bonKn('da-xep', TUAN.toi));
+    assert(mot.length === 1 && mot[0].ten === 'L R W S' && mot[0].tuan === 'W3 OCT' && mot[0].viec === null && mot[0].kieu === 'co-lich', JSON.stringify(mot));
+    // S vắng, ba kỹ năng còn lại xong cùng tuần → hai chip: `L R W · W4 SEP` (xong) + `S · vắng · W4 SEP`
+    const hai = g(xongKn('2026-09-21', { speaking: { trangThai: 'vang', tuan: TUAN.qua, tuanKetThuc: '2026-09-27', sit: 'absent' } }));
+    assert(hai.length === 2 && hai[0].ten === 'L R W' && hai[0].kieu === 'xong' && hai[1].ten === 'S' && hai[1].viec === 'vắng' && hai[1].kieu === 'con-viec', JSON.stringify(hai));
+    // W trễ, còn lại xong cùng tuần: nhóm trễ tách riêng; chữ `trễ`
+    const tre = g(xongKn('2026-09-21', { writing: { trangThai: 'da-xep', tuan: TUAN.qua, tuanKetThuc: '2026-09-27', hanCham: '2026-09-30' } }));
+    assert(tre.length === 2 && tre[1].ten === 'W' && tre[1].viec === 'trễ' && tre[1].kieu === 'tre-cham', JSON.stringify(tre));
+    // Tách tuần (cùng trạng thái có lịch): S sang tuần khác → hai nhóm, mỗi nhóm một tuần
+    const tuanKhac = g(bonKn('da-xep', TUAN.xa, { speaking: { tuan: TUAN.toi, tuanKetThuc: '2026-10-18' } }));
+    assert(tuanKhac.length === 2 && tuanKhac[0].ten === 'L R W' && tuanKhac[0].tuan === 'W5 OCT' && tuanKhac[1].ten === 'S' && tuanKhac[1].tuan === 'W3 OCT', JSON.stringify(tuanKhac));
+    // Xong hết (kể cả kỹ năng "không yêu cầu" bỏ đi): MỘT nhóm xanh, tuần muộn nhất, không chữ việc
+    const xong = g(xongKn('2026-09-14', { speaking: { tuan: '2026-09-21' }, writing: { trangThai: 'khong-yeu-cau', batBuoc: false, tuan: null } }));
+    assert(xong.length === 1 && xong[0].ten === 'L R S' && xong[0].kieu === 'xong' && xong[0].tuan === 'W4 SEP' && xong[0].viec === null, JSON.stringify(xong));
+    // Chưa xếp: chip `chưa xếp` (không tuần), MT cũ chưa điểm: `chờ` xám
+    const chua = g(bonKn('chua-xep', null));
+    assert(chua.length === 1 && chua[0].kieu === 'chua-lich' && chua[0].tuan === null, JSON.stringify(chua));
+    const het = { tuanKetThuc: '2026-10-04', hanCham: null };
+    const cho = g(bonKn('da-xep', TUAN.vua, { listening: het, reading: het, writing: het, speaking: het }), true);
+    assert(cho.length === 1 && cho[0].kieu === 'cho-cham-cu' && cho[0].viec === 'chờ', JSON.stringify(cho));
+    assert(g({}).length === 0, 'không kỹ năng → không nhóm');
+  });
+
+  check('PR-OMT (C2, C3) · quét nguồn: OMt.tsx cỡ chip vuông 20px / 11,5px, không nhãn "cũ" trong ô, không hex, chấm đang thi; NhanCu còn cho nơi khác', () => {
+    const o = nguon('web/src/ui/OMt.tsx');
+    assert(/h-5 /.test(o) && /text-\[11\.5px\]/.test(o) && /rounded-md/.test(o), 'cỡ chip 20 / 11,5 / góc 6');
+    assert(!/\{v\.cu && <NhanCu/.test(o) && /export function NhanCu\b/.test(o), 'ô MT không còn nhãn cũ; NhanCu còn xuất');
+    assert(/r\.kieu === 'dang-thi' && <span aria-hidden/.test(o) && /r\.doc/.test(o), 'chấm đang thi + aria-label từ doc');
+    assert(!/#[0-9a-fA-F]{3,8}\b/.test(o), 'OMt.tsx có mã hex');
+    assert(/MT\{v\.so\}/.test(o), 'mẫu `MT2 · tuần` (có chữ MT)');
+    for (const f of ['web/src/modules/cham/LuoiFT.tsx', 'web/src/modules/cham/MotKyNang.tsx', 'web/src/modules/students/ClassRoster.tsx', 'web/src/modules/students/StudentDetailPage.tsx']) {
+      assert(/NhanCu/.test(nguon(f)), `${f}: nhãn "cũ" ngoài ô MT phải giữ (C7)`);
+    }
+  });
+
+  check('PR-OMT (C1, C6) · quét nguồn: panel Xếp lịch MT toàn màn, cột Mock Test không xuống dòng ở sm+; lưới FT vẽ ChipDotFT (đợt có lịch) + OMt (chưa có đợt), cột hẹp', () => {
+    const p = nguon('web/src/modules/test/keHoach/NganXepLichMt.tsx');
+    assert(/<KhungPanel tieuDe="Xếp lịch Mock Test" rong="toan"/.test(p), 'panel rong="toan"');
+    assert(/sm:flex-nowrap/.test(p) && /sm:w-\[300px\]/.test(p), 'Mock Test nowrap, cột Sẽ xếp 300px');
+    const l = nguon('web/src/modules/test/keHoach/LuoiKeHoach.tsx');
+    assert(/<ChipDotFT\b/.test(l) && /dot\.attemptId !== null/.test(l) && /<OMt\b/.test(l), 'lưới FT: ChipDotFT + OMt');
+    assert(/loai === 'ft' \? 168 : 208/.test(l), 'cột đợt FT 168 (tối đa theo C6)');
+    const c = nguon('web/src/modules/test/keHoach/ChipKyNang.tsx');
+    assert(/export function ChipDotFT\b/.test(c) && /nhomKyNang\(/.test(c) && /MAU_O_MT\[g\.kieu\]/.test(c) && !/#[0-9a-fA-F]{3,8}\b/.test(c), 'ChipDotFT theo nhomKyNang, màu token');
   });
 
 }

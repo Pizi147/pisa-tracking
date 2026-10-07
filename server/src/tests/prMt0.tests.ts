@@ -488,10 +488,10 @@ export async function runPrMt0Tests(t: YThucTestKit) {
     assert(fin && fin.mode === 'ratio' && fin.dong.every((d: any) => d.soHv === 2), `Final vẫn 2 em: ${JSON.stringify(fin?.dong)}`);
     assert(lt0.tongQuanKhung.thuong.tong === lt0.tongQuan.tong && lt0.tongQuanKhung.ft.tong === 0, 'MT0 đếm vào khung Lớp thường');
   });
-  check('MT0-7d · oMt: số 0 xong → ✓; khongDung → tooltip "MT0 · không dùng"; ô MT thường không đổi', () => {
+  check('MT0-7d · oMt: số 0 xong → kiểu xong (xanh, không chữ việc); khongDung → tooltip "MT0 · không dùng"; ô MT thường không đổi', () => {
     const xong = { trangThai: 'xong', tuan: '2026-09-14', periodId: 1, doiTu: null, batBuoc: true, khoa: null, sit: 'sat', tuanKetThuc: '2026-09-20', choDuyet: false, hanCham: null };
     const kn = { listening: xong, reading: xong, writing: xong, speaking: xong };
-    assert(dm.oMt({ so: 0, attemptId: 1, kn, cu: false }, '2026-10-05', null).chu === '✓', 'MT0 xong');
+    assert(dm.oMt({ so: 0, attemptId: 1, kn, cu: false }, '2026-10-05', null).kieu === 'xong' && dm.oMt({ so: 0, attemptId: 1, kn, cu: false }, '2026-10-05', null).viec === null, 'MT0 xong');
     assert(dm.oMt({ so: 0, attemptId: 1, kn, cu: false, khongDung: true }, '2026-10-05', null).title.startsWith('MT0 · không dùng'), 'không dùng');
     assert(!dm.oMt({ so: 2, attemptId: 1, kn, cu: false }, '2026-10-05', null).title.includes('không dùng'), 'ô thường');
   });

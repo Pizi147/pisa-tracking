@@ -1,9 +1,10 @@
-import { gomChip, tenMon, tenMonNgan, nhanTuanKhoa, tuanLich, type ChipKH, type KyNangKH } from '@shared/domain/index.ts';
+import { gomChip, nhomKyNang, tenMon, tenMonNgan, nhanTuanKhoa, tuanLich, type ChipKH, type KyNangKH } from '@shared/domain/index.ts';
+import { MAU_O_MT } from '../../../ui/OMt.tsx';
 import type { KnO } from './kieu.ts';
 
 /**
  * Ô MỘT ĐỢT của lớp THƯỜNG (Giữa khoá / Cuối khoá — mockup 14 phương án B): gộp chip cùng tuần + cùng trạng thái, khác tuần tách dòng,
- * đợt xong gọn `Xong W3 SEP ✓`. Lớp FT dùng `OMt` (PR-MTb T9), không qua đây. Ô cao CỐ ĐỊNH 44px = 2 dòng chip (G-2) nên mọi hàng bằng
+ * đợt xong gọn `Xong W3 SEP ✓`. Lớp FT: ô đợt đã có lịch = `ChipDotFT` ở cuối tệp (PR-OMT C6); ô chưa có đợt = `OMt`. Ô cao CỐ ĐỊNH 44px = 2 dòng chip (G-2) nên mọi hàng bằng
  * nhau; hiếm khi hơn 2 nhóm thì dòng 2 ghi `+n`. Màu chỉ dùng token nghĩa (N-1): xong `--done` · đã xếp `--doing` · đã dời `--soon` ·
  * chưa xếp viền đứt `--muted`. `onMo(kỹ năng, phần tử)` mở hộp sửa neo cạnh chip vừa bấm.
  */
@@ -108,5 +109,31 @@ function Chip({ c, khaiGiang, tongTuan, them, title, onMo, ct = null }: {
         {them && <span className="ml-1 text-[11px]" title={them.ds}>+{them.n}</span>}
       </span>
     </button>
+  );
+}
+
+/**
+ * Ô MỘT ĐỢT của lớp FT ở lưới Kế hoạch Test (PR-OMT C6, mockup G1 — kiểu cũ): cả đợt cùng tuần + cùng trạng thái → MỘT chip
+ * `L R W S · W4 SEP`; tách tuần / khác trạng thái → một chip mỗi nhóm (`L R W · W4 SEP`, `S · vắng · W4 SEP`); hiện đủ kỹ năng và trạng thái.
+ * Ô dày (nhiều dòng) nhưng hẹp: xuống dòng theo nhóm, không kéo cột. Màu + chữ việc theo `nhomKyNang` (cùng luật ô MT). Mọi chip mở hộp cả đợt.
+ */
+export function ChipDotFT({ so, kn, cu, homNay, ct = null, chon, onMo }: {
+  so: number; kn: KnO; cu: boolean; homNay: string; ct?: string | null; chon: boolean; onMo: (el: HTMLElement) => void;
+}) {
+  const nhom = nhomKyNang(kn, homNay, ct, cu);
+  if (!nhom.length) return <span className="block text-center text-[11px] text-slate-600" title="Đợt này không thi kỹ năng nào">—</span>;
+  return (
+    <div className="mx-auto flex w-full max-w-[168px] flex-col gap-[3px]">
+      {nhom.map((g) => (
+        <button key={g.ten} type="button" onClick={(e) => onMo(e.currentTarget)} title={g.title}
+          aria-label={`MT${so}, ${g.ten}${g.viec ? `, ${g.viec.replace(/^(chờ|trễ)$/, '$1 chấm')}` : ''}, ${g.tuan ?? 'chưa xếp'}`}
+          className={`flex h-5 w-full items-center justify-between gap-1 rounded-md border px-1.5 text-left text-[11.5px] font-semibold leading-[18px] ${MAU_O_MT[g.kieu]} ${chon ? 'ring-2 ring-[var(--text)]' : ''}`}>
+          <span className="min-w-0 truncate font-bold">
+            {g.ten}{g.viec && <span className="font-medium"> · {g.viec}</span>}
+          </span>
+          <span className="whitespace-nowrap tabular-nums">{g.tuan ?? 'chưa xếp'}</span>
+        </button>
+      ))}
+    </div>
   );
 }

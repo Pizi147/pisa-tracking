@@ -14,9 +14,11 @@ export function NhanCu() {
   );
 }
 
-/** Màu từng kiểu (mockup phần 3) — chỉ token nghĩa. `xong` = xanh lá `ok` (mockup đã duyệt; chủ sản phẩm 06/10). */
-const MAU: Record<KieuOMt, string> = {
-  'chua-co-dot': 'border-dashed border-muted-line bg-transparent text-muted',
+/**
+ * Màu từng kiểu (mockup bản 2) — MÀU Ô = TRẠNG THÁI, chỉ token nghĩa. `xong` = xanh lá `ok` và KHÔNG chữ; chưa có đợt và chưa xếp là
+ * cùng MỘT kiểu `chua-lich` (C5).
+ */
+export const MAU_O_MT: Record<KieuOMt, string> = {
   'chua-lich': 'border-muted-line bg-muted-bg text-muted',
   'co-lich': 'border-doing-line bg-transparent text-doing',
   'dang-thi': 'border-doing-line bg-doing-bg text-doing',
@@ -26,44 +28,34 @@ const MAU: Record<KieuOMt, string> = {
   'con-viec': 'border-transparent bg-soon-bg text-soon',
   xong: 'border-transparent bg-ok-bg text-ok',
 };
-/** "Đang chọn" = màu đảo (thiet-ke/HE_GIAO_DIEN.md §2 "Đang chọn của ô MT"): nền màu chữ chính, chữ màu nền, viền 2px cùng nền. */
-const MAU_CHON = 'border-2 border-[var(--text)] bg-[var(--text)] px-[7px] font-bold text-[var(--bg)]';
-
-/** Câu đọc cho người dùng đọc màn hình: "MT2, chờ chấm 2". */
-function nhanDoc(so: number, kieu: KieuOMt, chu: string, cu: boolean, chon: boolean, khongDung = false): string {
-  const tt = kieu === 'chua-co-dot' ? 'chưa có đợt'
-    : kieu === 'chua-lich' ? 'chưa xếp lịch'
-    : kieu === 'co-lich' ? `có lịch ${chu}`
-    : kieu === 'dang-thi' ? 'đang thi, tuần này'
-    : kieu === 'xong' ? (chu === '✓' ? 'xong' : `xong ${chu.slice(2).trim()}`)
-    : chu;
-  return [`MT${so}`, tt, cu ? 'MT cũ' : null, khongDung ? 'không dùng' : null, chon ? 'đang chọn' : null].filter(Boolean).join(', ');
-}
+/** "Đang chọn" = màu đảo (thiet-ke/HE_GIAO_DIEN.md §2 "Đang chọn của ô MT"): nền màu chữ chính, chữ màu nền, viền cùng nền. */
+const MAU_CHON = 'border-[var(--text)] bg-[var(--text)] font-bold text-[var(--bg)]';
 
 /**
- * MỘT Ô MT, DÙNG Ở MỌI NƠI (mockup phần 3): số đợt đậm + trạng thái ngắn + nhãn "cũ". Cao 26px, không xuống dòng. Luật ở
- * `shared/domain/oMt.ts` (`oMt`); ở đây chỉ vẽ. `href` → liên kết · `onClick` → nút (điện thoại: vùng bấm 44px bằng `after:`) ·
- * còn lại là chữ. `chon` = đang được chọn (màu đảo, ✓ sau chữ); `chuChon` thay chữ trạng thái bằng chữ mới (vd tuần sắp xếp).
+ * MỘT Ô MT, DÙNG Ở MỌI NƠI (mockup bản 2): `MT2 · W4 SEP` + tối đa MỘT chữ việc (`chờ` · `trễ W` · `vắng S` · `huỷ S`), màu = trạng thái.
+ * Cỡ chip vuông lớp thường: cao 20px, chữ 11,5px. Xong / MT cũ: chỉ màu (không chữ "xong", không nhãn "cũ"); đang thi: một chấm tròn.
+ * Màu không có chữ nên `aria-label` đọc đủ (`oMt().doc`). Luật ở `shared/domain/oMt.ts`; ở đây chỉ vẽ. `href` → liên kết · `onClick` → nút
+ * (điện thoại: vùng bấm 44px bằng `after:`) · còn lại là chữ. `chon` = đang được chọn (màu đảo, ✓ cuối); `chuChon` thay chữ sau `MT2 ·` bằng
+ * chữ mới (vd tuần sắp xếp).
  */
 export function OMt({ v, homNay, ct = null, chon, chuChon, ghiChu, onClick, href, id }: {
   v: OMtVao; homNay: string; ct?: string | null; chon?: boolean; chuChon?: string; /** Câu thêm cuối tooltip (vd "bấm để chọn đợt này cho riêng em"). */ ghiChu?: string;
   onClick?: (el: HTMLElement) => void; href?: string; id?: string;
 }) {
   const r = oMt(v, homNay, ct);
-  const chu = chon && chuChon !== undefined ? chuChon : r.chu;
+  const phan = chon && chuChon !== undefined ? [chuChon] : [r.tuan, r.viec].filter(Boolean);
   const tuongTac = !!(onClick || href);
-  const cls = `relative inline-flex min-h-[26px] items-center gap-1 whitespace-nowrap rounded-[7px] border px-2 py-[3px] text-[12px] font-semibold leading-none no-underline ${
-    chon ? MAU_CHON : MAU[r.kieu]} ${v.khongDung ? 'opacity-60' : ''} ${tuongTac ? "max-sm:after:absolute max-sm:after:-inset-y-[9px] max-sm:after:inset-x-0 max-sm:after:content-['']" : ''}`;
+  const cls = `relative inline-flex h-5 items-center gap-1 whitespace-nowrap rounded-md border px-1.5 text-[11.5px] font-semibold leading-[18px] no-underline ${
+    chon ? MAU_CHON : MAU_O_MT[r.kieu]} ${v.khongDung ? 'opacity-60' : ''} ${tuongTac ? "max-sm:after:absolute max-sm:after:-inset-y-3 max-sm:after:inset-x-0 max-sm:after:content-['']" : ''}`;
   const ruot = (
     <>
-      {!chon && r.kieu === 'dang-thi' && <span aria-hidden className="h-[7px] w-[7px] flex-none rounded-full bg-current" />}
-      <span className="font-bold tabular-nums">{v.so}</span>
-      {chu && <span className="tabular-nums">{chu}</span>}
-      {chon && !chu.startsWith('✓') && <span aria-hidden className="text-[11px]">✓</span>}   {/* chữ đã có ✓ (lượt xong) thì không thêm dấu thứ hai */}
-      {v.cu && <NhanCu />}
+      {!chon && r.kieu === 'dang-thi' && <span aria-hidden className="h-1.5 w-1.5 flex-none rounded-full bg-current" />}
+      <span className="font-bold tabular-nums">MT{v.so}</span>
+      {phan.map((x, i) => <span key={i} className="inline-flex items-center gap-1 tabular-nums"><span aria-hidden className="font-medium opacity-60">·</span>{x}</span>)}
+      {chon && <span aria-hidden>✓</span>}
     </>
   );
-  const doc = nhanDoc(v.so, r.kieu, chu, v.cu, !!chon, !!v.khongDung);
+  const doc = [chon && chuChon !== undefined ? `MT${v.so}, ${chuChon}` : r.doc, v.cu ? 'MT cũ' : null, v.khongDung ? 'không dùng' : null, chon ? 'đang chọn' : null].filter(Boolean).join(', ');
   const tip = ghiChu ? `${r.title}\n${ghiChu}` : r.title;
   if (href) return <Link id={id} to={href} className={cls} title={tip} aria-label={doc}>{ruot}</Link>;
   if (onClick) return <button id={id} type="button" className={cls} title={tip} aria-label={doc} onClick={(e) => onClick(e.currentTarget)}>{ruot}</button>;
