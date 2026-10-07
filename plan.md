@@ -216,6 +216,12 @@ Công việc của tôi, chuông, câu báo lỗi máy chủ trên các đườn
   chủ sản phẩm duyệt cùng mockup; phép kiểm: mọi khoá có đủ hai tiếng, không còn chữ Việt trên các màn GV khi ở EN (quét bằng Playwright).
 - **Chống chữ cắt (bắt buộc):** chụp mọi màn GV ở EN, 375 + 1440, sáng + tối; đo tự động phần tử tràn / cắt chữ như PR-KHUNG (dùng lại script đo của KHUNG); câu EN dài thì rút gọn, không thu cỡ chữ.
 
+### SAU DEPLOY 10/2026 — việc nhỏ chủ sản phẩm chốt 07/10 (chưa làm)
+- **Xếp lịch Mock Test gọn** (Test › Kế hoạch Test › Xếp lịch Test…): panel rộng hẳn, ô MT cỡ ô lớp thường, "MT2 · W4 NOV", trạng thái đồng bộ (A đủ chữ / B gọn) — mockup `thiet-ke/mockup-xep-lich-mt-gon-2026-10-07.html` chờ duyệt.
+- **Công việc › Của GV: "Nhắc tất cả"** (trước hoãn ở mục 8, nay làm).
+- **Chờ duyệt › lọc "Nhắc việc"**: bấm vào thì các bộ lọc khác biến mất → hẫng. Làm cho đỡ hẫng (vd giữ hàng lọc, mờ đi + một dòng "Đang xem Nhắc việc · Quay lại"); cần mockup.
+- `db.ts` `laLoiMatKetNoiTurso`: "fetch failed" khớp cả lỗi kho tệp (Netlify Blobs) → GET tải tệp thử lại thừa một lần (Minor, rà #236).
+
 ### PR-SOTAY · Sổ tay mới theo web mới nhất (M) — chủ sản phẩm 06/10, **làm cuối cùng, sau PR-EN**
 Sáu file PDF, viết lại theo `main` cuối cùng (ảnh thật chụp app chạy cục bộ, 07/10), tận dụng bộ dựng sẵn `docs/so-tay/` (thay bản 02/10):
 `PTA - TEACHER MANUAL - MINI` / `- FULL` (GV Việt Nam, tiếng Việt) · `PTA - FOREIGN TEACHER MANUAL - MINI` / `- FULL` (GVNN, tiếng Anh, ảnh màn EN) ·
