@@ -9193,6 +9193,9 @@ await runPrTd2bcTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== FIX-CHOT-LEN-FT (Chốt lên FT tự xong khi đã có lộ trình / bàn giao)
 const { runFixChotLenFtTests } = await import('./fixChotLenFt.tests.ts');
 await runFixChotLenFtTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== VIEC-NHO (6 việc nhỏ 08/10)
+const { runPrViecNhoTests } = await import('./prViecNho.tests.ts');
+await runPrViecNhoTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0

@@ -175,8 +175,12 @@ export function closeDb() {
  * migrate/run.ts dùng chung hàm này.
  */
 const LOI_MAT_KET_NOI = /stream not found|connection closed|Hrana\(Http|fetch failed|ECONNRESET/i;
+/*
+ * CHỈ lỗi do libsql ném: `SqliteError` (lỗi SQLite/Hrana đã đổi kiểu) hoặc `Error` thường (lỗi gốc của lớp native). `fetch failed` của
+ * fetch Node — kho tệp Netlify Blobs (platform/khoTep.ts) — là `TypeError`: không phải Turso, không bỏ kết nối còn tốt, không thử lại (VIEC-NHO 6).
+ */
 export function laLoiMatKetNoiTurso(e: unknown): boolean {
-  return e instanceof Error && LOI_MAT_KET_NOI.test(e.message);
+  return e instanceof Error && (e.constructor === Error || e.name === 'SqliteError') && LOI_MAT_KET_NOI.test(e.message);
 }
 
 /** Lỗi ném ra từ bên trong tx() — kể cả savepoint lồng. Bộ thử lại bỏ qua các lỗi này: giao dịch có thể đã ghi dở. */

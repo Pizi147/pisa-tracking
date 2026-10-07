@@ -109,7 +109,11 @@ export function oMt(v: OMtVao, homNay: string, ct?: string | null): OMtRa {
 }
 
 /** Một nhóm kỹ năng CÙNG tuần + CÙNG trạng thái của một đợt — một chip ở lưới FT Kế hoạch Test (C6, mockup G1). */
-export type NhomKyNang = { kyNang: KyNangKH[]; ten: string; kieu: KieuOMt; tuan: string | null; viec: string | null; title: string };
+export type NhomKyNang = {
+  kyNang: KyNangKH[]; ten: string; kieu: KieuOMt; tuan: string | null; viec: string | null; title: string;
+  /** Câu đọc màn hình (sau `MT2, `): `L R W S, xong, W4 SEP` — chip không chữ việc vẫn nói trạng thái, như `doc` của `oMt` (VIEC-NHO 1). */
+  doc: string;
+};
 
 /**
  * LƯỚI FT (C6, kiểu G1): `L R W S · W4 SEP` khi cả đợt cùng tuần + cùng trạng thái; tách tuần / khác trạng thái → một chip mỗi nhóm
@@ -122,7 +126,8 @@ export function nhomKyNang(kn: OMtVao['kn'], homNay: string, ct?: string | null,
   const ten = (xs: typeof ds) => xs.map((x) => tenMonNgan(ct, x.k)).join(' ');
   if (ds.length && ds.every((x) => x.loai === 'xong')) {
     const muon = ds.map((x) => (x.o.tuan ? ngayCua(x.o.tuan) : null)).filter((x): x is string => !!x).sort().pop();
-    return [{ kyNang: ds.map((x) => x.k), ten: ten(ds), kieu: 'xong', tuan: muon ? tuanLich(muon, homNay) : null, viec: null, title: dong(ds) }];
+    const tuan = muon ? tuanLich(muon, homNay) : null;
+    return [{ kyNang: ds.map((x) => x.k), ten: ten(ds), kieu: 'xong', tuan, viec: null, title: dong(ds), doc: [ten(ds), 'xong', tuan].filter(Boolean).join(', ') }];
   }
   const nhom = new Map<string, typeof ds>();
   for (const x of ds) {
@@ -137,7 +142,9 @@ export function nhomKyNang(kn: OMtVao['kn'], homNay: string, ct?: string | null,
       : tre ? ['tre-cham', 'trễ'] : x.loai === 'het-tuan' ? [cu ? 'cho-cham-cu' : 'cho-cham', 'chờ']
       : x.loai === 'vang' ? ['con-viec', 'vắng'] : x.loai === 'da-huy' ? ['con-viec', 'huỷ']
       : x.loai === 'tuan-nay' ? ['dang-thi', null] : x.loai === 'co-lich' ? ['co-lich', null] : ['chua-lich', null];
-    return { kyNang: xs.map((y) => y.k), ten: ten(xs), kieu, tuan: x.o.tuan ? tuanLich(x.o.tuan, homNay) : null, viec, title: dong(xs) };
+    const tuan = x.o.tuan ? tuanLich(x.o.tuan, homNay) : null;
+    const tt = viec?.replace(/^(chờ|trễ)$/, '$1 chấm') ?? ({ xong: 'xong', 'dang-thi': 'đang thi', 'co-lich': 'có lịch' } as Partial<Record<KieuOMt, string>>)[kieu] ?? null;
+    return { kyNang: xs.map((y) => y.k), ten: ten(xs), kieu, tuan, viec, title: dong(xs), doc: [ten(xs), tt, tuan ?? 'chưa xếp'].filter(Boolean).join(', ') };
   });
 }
 

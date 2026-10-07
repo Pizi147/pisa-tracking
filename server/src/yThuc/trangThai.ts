@@ -86,8 +86,9 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
   const vp = new Map<number, ViPhamEm[]>();
   const xl = new Map<number, Map<number, XuLyEm>>();
   for (const r of conn.prepare(
-    `SELECT 0 AS loai, id, student_id, cycle_id, category AS a, occurred_on AS b, reported_on AS c, ghi_nhan_luc AS d, class_id AS e,
-            NULL AS f, NULL AS g, NULL AS h
+    /* VIEC-NHO 2: MỌI cột vế đầu có AS (cả cột trần `id`) — Turso đặt tên cột khác libsql file (như `scoreHistoryOf` #256; DTL1). */
+    `SELECT 0 AS loai, id AS id, student_id AS student_id, cycle_id AS cycle_id,
+            category AS a, occurred_on AS b, reported_on AS c, ghi_nhan_luc AS d, class_id AS e, NULL AS f, NULL AS g, NULL AS h
        FROM violations WHERE student_id IN (${ph})
      UNION ALL
      SELECT 1, m.id, m.student_id, m.cycle_id, m.kind, m.status, m.performed_on, m.quyet_luc, mv.violation_id, m.custom_name, m.created_at,
