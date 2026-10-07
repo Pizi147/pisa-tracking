@@ -261,6 +261,6 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     const khung = doc('web/src/ui/KhungPanel.tsx') + doc('web/src/ui/ui.tsx');
     assert(!/idO \? 'div'/.test(khung) && (khung.match(/coOTuNhan\(children\)/g) ?? []).length === 2, 'khung Truong/Field còn đổi thẻ theo id ô báo lên');
     assert(!/loi \? <div/.test(doc('web/src/ui/KhungPanel.tsx')), 'Truong còn bọc/bỏ bọc ô theo loi (ô dựng lại, mất focus)');
-    assert(/<button id=\{`\$\{uid\}-o`\}/.test(doc('web/src/ui/PeoplePicker.tsx')), 'ChonNguoi đang hiện tên: nhãn không trỏ vào nút Đổi');
+    assert(/<button id=\{oId\}/.test(doc('web/src/ui/PeoplePicker.tsx')) && /const oId = id \?\? `\$\{uid\}-o`/.test(doc('web/src/ui/PeoplePicker.tsx')), 'ChonNguoi đang hiện tên: nhãn không trỏ vào nút Đổi');
   });
 }

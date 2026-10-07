@@ -7,11 +7,12 @@ import { useLoiForm, type MucThieu } from '../../ui/loiForm.tsx';
 import { WeekPicker } from '../../ui/Filters.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { NutChon } from '../../ui/ui.tsx';
+import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { LuoiTaoLop, dongMoi, type TrangThaiLuoi } from './LuoiTaoLop.tsx';
 import {
   CHO_TAO_PRE_FOU, ENTRY_SKILLS, PROGRAMME_TEMPLATES,
   chonKhiDoiTach, chuanHoaMaLop, dsLoi, ghepMaLop, kiemPhanCong, kiemSoLop, kyHieuLop, kyNangGoiY, locSoLop, nhanDayDuoc, oPhanCong, slotsTuO,
-  type LoiPhanCong, type LoiTruong, type OPhanCong,
+  type LoiPhanCong, type LoiTruong, type NguoiChon, type OPhanCong,
 } from '@shared/domain/index.ts';
 
 type Branch = { id: number; code: string; name: string };
@@ -248,8 +249,9 @@ export function NutTachFou({ fou, chiXem }: { fou: ReturnType<typeof useTachFou>
 }
 
 /**
- * Lưới ô phân công (mockup 21 mục 1, 4) — Tạo lớp và Sửa phân công dùng chung: nhãn trái cùng bề rộng, mỗi ô MỘT `<select>`,
+ * Lưới ô phân công (mockup 21 mục 1, 4) — Tạo lớp và Sửa phân công dùng chung: nhãn trái cùng bề rộng, mỗi ô MỘT người,
  * lỗi một dòng dưới ô. `nhanTrong` thay chữ mục rỗng (dữ liệu cũ nhiều người một ô hiện cả tên).
+ * PR-O-CHON (chủ sản phẩm 07/10): ô là `ChonNguoi` kiểu `ds` — gõ tên rồi chọn ở danh sách bên dưới, đúng danh sách `nguoi`.
  */
 export function LuoiPhanCong({ oList, chon, onChon, nguoi, loi, oId, nhanTrong, chiXem, chuongTrinh = null }: {
   oList: OPhanCong[]; chon: Record<string, number | ''>; onChon: (khoa: string, v: number | '') => void; oId: (khoa: string) => string;
@@ -266,32 +268,35 @@ export function LuoiPhanCong({ oList, chon, onChon, nguoi, loi, oId, nhanTrong, 
   };
   const xep = (o: OPhanCong) => [...nguoi].sort((a, b) => Number(hop(o, b).length > 0) - Number(hop(o, a).length > 0));
   return (
-    <div className="grid grid-cols-[6rem_1fr] items-center gap-x-2.5 gap-y-1.5">
+    <div className="grid grid-cols-[6rem_minmax(0,1fr)] items-start gap-x-2.5 gap-y-1.5">
       {oList.map((o) => {
         const l = loi(o.khoa);
         return (
           <div key={o.khoa} className="contents">
-            <label htmlFor={oId(o.khoa)} className="text-xs font-bold text-slate-200">{o.nhan}</label>
-            <select id={oId(o.khoa)} className={`field w-full ${l ? 'border-late' : ''}`} value={chon[o.khoa] ?? ''}
-              aria-invalid={l ? true : undefined} disabled={chiXem}
-              onChange={(e) => onChon(o.khoa, e.target.value ? Number(e.target.value) : '')}>
-              <option value="">{nhanTrong?.(o.khoa) ?? '— Chưa chọn —'}</option>
-              {xep(o).map((t) => {
-                /* PR-S6F-a: tên môn theo chương trình lớp (FOU "L, R, G+V" / "P"), không mã kỹ năng FT (W1, S). */
-                const k = nhanDayDuoc(chuongTrinh, o, t.skills ?? []);
-                return (
-                  <option key={t.id} value={t.id}>
-                    {t.name}{t.classCount ? ` · ${t.classCount} lớp` : ''}{k.length ? ` — dạy được ${k.join(', ')}` : ''}
-                  </option>
-                );
-              })}
-            </select>
+            <label htmlFor={oId(o.khoa)} className="pt-3 text-xs font-bold text-slate-200 max-sm:pt-4">{o.nhan}</label>
+            <ChonNguoi id={oId(o.khoa)} nhom="giao_vien" choToi={false} choNgoai={false} disabled={chiXem} invalid={!!l}
+              ariaLabel={`${o.nhan}: chọn giáo viên`} choTrong="— Chưa chọn —" macDinhTrong={nhanTrong?.(o.khoa)}
+              ds={xep(o).map((t) => ({ id: t.id, ten: t.name, phu: phuGv(t, nhanDayDuoc(chuongTrinh, o, t.skills ?? [])) }))}
+              value={chonNguoi(chon[o.khoa], nguoi, (t) => phuGv(t, nhanDayDuoc(chuongTrinh, o, t.skills ?? [])))}
+              onChange={(v) => onChon(o.khoa, v?.kieu === 'tai_khoan' ? v.id : '')} />
             {l && <span className="col-start-2 -mt-0.5 text-xs text-late">{l}</span>}
           </div>
         );
       })}
     </div>
   );
+}
+
+/** Dòng phụ một GV trong ô phân công: `3 lớp · dạy được L, R` (PR-S6F-a: tên môn theo chương trình lớp, không mã FT). */
+export function phuGv(t: { classCount: number }, dayDuoc: string[] = []): string {
+  return [t.classCount ? `${t.classCount} lớp` : '', dayDuoc.length ? `dạy được ${dayDuoc.join(', ')}` : ''].filter(Boolean).join(' · ');
+}
+
+/** Giá trị ô `ChonNguoi` từ id đã chọn; id không có trong danh sách (đang tải) hiện "…". */
+export function chonNguoi<T extends { id: number; name: string }>(id: number | '' | undefined, ds: T[], phu: (t: T) => string): NguoiChon | null {
+  if (!id) return null;
+  const t = ds.find((x) => x.id === id);
+  return { kieu: 'tai_khoan', id, ten: t?.name ?? '…', phu: t ? phu(t) : undefined };
 }
 
 /** Một hàng lựa chọn trong form: `NutChon` (đang chọn nền ink-800 + viền teal + ✓, không `btn-primary` — B3, Q19). */

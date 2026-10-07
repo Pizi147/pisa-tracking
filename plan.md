@@ -511,6 +511,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 07/10/2026 | `o-chon-ten` · Opus 5.5 | Ô chọn người gõ được: Phân công GV (Tạo lớp, Tạo nhiều lớp, Sửa phân công) + ô Học viên của Tạo Case → `ChonNguoi` kiểu `ds`; phép kiểm `prOChon.tests.ts` |
 | 07/10/2026 | qt-sua-tai-khoan (Opus 5.5) | Quản trị › Tài khoản › ⋯ › Sửa thông tin: họ tên, email đăng nhập, ĐT, chức danh, email khác; PATCH chỉ QT, trùng email 409, nhật ký cũ → mới, đổi email không đăng xuất |
 | 07/10/2026 | Planning (Opus 5.5) · `ke-hoach-deploy-07-10` | #236 sửa lỗi Turso (connection closed, thử lại ở kiểm phiên) đã merge — rà sau merge bằng agent Opus; soạn `DEPLOY_2026-10.md`; deploy lần 1 ngay, EN + SOTAY lần 2 |
 | 07/10/2026 | fix-turso-ket-noi-dong (Opus 5.5) · PR #236 | `laLoiMatKetNoiTurso` nhận connection closed / Hrana(Http / fetch failed / ECONNRESET; GET thử lại, lỗi ở kiểm phiên thử lại mọi method, ghi trong đường API không thử lại |

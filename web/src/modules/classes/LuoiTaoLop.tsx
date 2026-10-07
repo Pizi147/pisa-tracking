@@ -5,6 +5,7 @@ import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { useLoiForm, type MucThieu } from '../../ui/loiForm.tsx';
 import { WeekPicker } from '../../ui/Filters.tsx';
 import { useToast } from '../../ui/Toast.tsx';
+import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import {
   CHO_TAO_PRE_FOU, ENTRY_SKILLS, PROGRAMME_TEMPLATES, TOI_DA_DONG_TAO_LOP,
   chuanHoaMaLop, ghepMaLop, goiYSoTiep, gopLoiTheoDong, kiemPhanCong, kiemSoLop, kyHieuLop, locSoLop, oPhanCong, slotsTuO,
@@ -288,6 +289,7 @@ function DongThe({ t, i, soDong, busy, routes, branches, gv, hienLoi, idO, sua, 
   const o = (k: O) => ({ id: idO(k), 'aria-invalid': !!hienLoi(k) || undefined });
   const ft = d.chuongTrinh === 'FT';
   const dsGv = Array.isArray(gv) ? gv : [];
+  const dsChon = dsGv.map((g) => ({ id: g.id, ten: g.name, phu: g.classCount ? `${g.classCount} lớp` : undefined }));
   return (
     <li className={`rounded-lg border p-3 ${hienLoi('chung') ? 'border-late' : ''}`} style={hienLoi('chung') ? undefined : { borderColor: 'var(--line)' }}>
       <div className="mb-2 flex items-center gap-2">
@@ -303,7 +305,7 @@ function DongThe({ t, i, soDong, busy, routes, branches, gv, hienLoi, idO, sua, 
       <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-[minmax(9rem,1.2fr)_8.5rem_6rem_6.5rem_minmax(17rem,2.2fr)]">
         <O1 nhan="Chi nhánh" batBuoc htmlFor={idO('branchId')} loi={hienLoi('branchId')}>
           <select className="field w-full" {...o('branchId')} value={d.branchId ?? ''}
-            onChange={(e) => sua({ branchId: e.target.value ? Number(e.target.value) : null })}>
+            onChange={(e) => sua({ branchId: e.target.value ? Number(e.target.value) : null, chon: {} /* GV cũ không thuộc chi nhánh mới */ })}>
             <option value="">— Chọn —</option>
             {branches.map((b) => <option key={b.id} value={b.id}>{b.name} ({b.code})</option>)}
           </select>
@@ -343,11 +345,12 @@ function DongThe({ t, i, soDong, busy, routes, branches, gv, hienLoi, idO, sua, 
             const l = t.loiO(x);
             return (
               <O1 key={x.khoa} nhan={x.nhan} htmlFor={idO(x.khoa)} loi={l}>
-                <select id={idO(x.khoa)} className="field w-full" value={d.chon[x.khoa] ?? ''} aria-invalid={l ? true : undefined}
-                  onChange={(e) => sua({ chon: { ...d.chon, [x.khoa]: e.target.value ? Number(e.target.value) : '' } })}>
-                  <option value="">— Chưa chọn —</option>
-                  {dsGv.map((g) => <option key={g.id} value={g.id}>{g.name}{g.classCount ? ` · ${g.classCount} lớp` : ''}</option>)}
-                </select>
+                {/* PR-O-CHON: gõ tên rồi chọn ở danh sách bên dưới — đúng danh sách GV của chi nhánh dòng này. */}
+                <ChonNguoi id={idO(x.khoa)} nhom="giao_vien" choToi={false} choNgoai={false} invalid={!!l}
+                  ariaLabel={`${x.nhan}: chọn giáo viên`} choTrong="— Chưa chọn —" ds={dsChon}
+                  value={(() => { const id = d.chon[x.khoa]; const g = id ? dsChon.find((z) => z.id === id) : undefined;
+                    return id ? { kieu: 'tai_khoan' as const, id, ten: g?.ten ?? '…', phu: g?.phu } : null; })()}
+                  onChange={(v) => sua({ chon: { ...d.chon, [x.khoa]: v?.kieu === 'tai_khoan' ? v.id : '' } })} />
               </O1>
             );
           })}

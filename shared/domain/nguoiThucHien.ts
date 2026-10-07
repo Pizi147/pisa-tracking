@@ -7,6 +7,19 @@
  * (`server/src/cases/nguoiThucHien.ts`).
  */
 
+import { chuanTieuDe } from './nhapHocVien.ts';
+
+/** Lọc danh sách người CÓ SẴN của ô `ChonNguoi` kiểu `ds` (phân công GV, học viên của lớp) theo chữ gõ — không dấu, giữ thứ tự. */
+export function locNguoiChon<T extends { ten: string }>(ds: readonly T[], go: string): T[] {
+  const q = chuanTieuDe(go);
+  return q ? ds.filter((x) => chuanTieuDe(x.ten).includes(q)) : [...ds];
+}
+
+/** Rời ô gõ mà chưa chọn: chữ gõ khớp ĐÚNG MỘT người → người đó; còn lại → null (xoá chữ gõ, không chọn bừa). */
+export function chotChuGo<T>(go: string, khop: readonly T[]): T | null {
+  return go.trim() && khop.length === 1 ? khop[0] : null;
+}
+
 /** Nhóm người hợp lệ cho một ô chọn: PA học thuật chỉ nhận giáo viên, Ý thức nhận cả giáo viên lẫn quản lý. */
 export const NHOM_NGUOI = ['giao_vien', 'nhan_vien'] as const;
 export type NhomNguoi = (typeof NHOM_NGUOI)[number];
