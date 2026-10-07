@@ -59,7 +59,7 @@ Planning tự chọn (chủ sản phẩm 07/10), chủ sản phẩm xem trước
 | Việt | Anh | Lý do chọn |
 |---|---|---|
 | Giáo viên (GV) | Teacher | |
-| GVCN | Homeroom teacher · ngắn: **HRT** | Trung tâm quốc tế ở VN dùng "homeroom teacher"; chip / đầu cột dùng HRT |
+| GVCN | **Core teacher** | Chủ sản phẩm chốt 07/10 |
 | GVBM | Subject teacher | Một kỹ năng / môn |
 | GV chấm | Marker | Ngành thi IELTS gọi người chấm là *marker* |
 | Quản lý (QL) | Manager | |
@@ -67,7 +67,7 @@ Planning tự chọn (chủ sản phẩm 07/10), chủ sản phẩm xem trước
 | TVV (tư vấn viên) | Counsellor | Bộ phận tư vấn ghi danh, liên lạc phụ huynh |
 | Phụ huynh (PH) | Parents | |
 | Học viên (HV) | Student · đếm: "10 students" | Không viết tắt HV |
-| Lớp · Lớp thường | Class · **Standard class** | "Normal class" nghe như lớp kém; *standard* trung tính |
+| Lớp · Lớp thường | Class · **Normal class** | Chủ sản phẩm chốt 07/10 |
 | Fast Track (FT) | Fast Track (FT) | Tên chương trình giữ |
 | Chi nhánh | Branch | |
 | Người phụ trách | Owner | Một chữ, đúng nghĩa "người giữ việc"; "Person in charge" quá dài cho đầu cột |
@@ -237,6 +237,6 @@ Planning tự chọn (chủ sản phẩm 07/10), chủ sản phẩm xem trước
 |---|---|---|---|
 | Vi phạm | **Incident** | Violation | Nhẹ, đúng văn trường học; "violation" nghe như phạt |
 | Kỳ vọng | **Expected** (band) | Benchmark | Ngắn, đọc ra ngay "band mong đợi ở lượt này", khác Target |
-| Lớp thường | **Standard class** | Regular / General | "Regular" GV hiểu là "bình thường" kiểu kém nổi bật |
-| GVCN | **Homeroom teacher (HRT)** | Form tutor, Class manager | Phổ biến nhất ở trường quốc tế VN |
+| Lớp thường | **Normal class** | Standard / Regular | Chủ sản phẩm chốt 07/10 |
+| GVCN | **Core teacher** | Core teacher (Core teacher) | Chủ sản phẩm chốt 07/10 |
 | Ý thức | **Conduct** | Discipline, Attitude | Bao trọn chuyên cần + BTVN + thái độ |
