@@ -388,4 +388,36 @@ export async function runPrPaTests(t: YThucTestKit) {
     assert(get('SELECT performer_user_id u FROM case_interventions WHERE id = ?', tu).u === null, 'bàn giao gán người cho Tự học');
     /* Nhập bù không người: form.tests (F3-BF). */
   });
+
+  check('PA9 · Sửa PA: PA đang chờ Quản lý duyệt → 400; PA quy chế chưa xác nhận → 400 (sửa lúc Xác nhận PA)', () => {
+    const c = caseThu('CHAN');
+    const dx = cases.recordIntervention(P.lrTeacher, c, { kind: 'extra_support', description: 'Học kèm 1-1 với Tutor 2 buổi/tuần', status: 'planned' }) as any;
+    const cho = dx.interventions.find((x: any) => x.approvalState === 'pending').id;
+    const e1 = maLoi(() => cases.suaPa(P.lrTeacher, cho, { description: 'Học kèm 1-1 với Tutor 3 buổi/tuần' }));
+    assert(e1.status === 400 && e1.msg.includes('chờ Quản lý duyệt'), `chờ duyệt: ${JSON.stringify(e1)}`);
+    const [ps] = taoPa.chenPa(conn, [{ caseId: c, kind: 'tutor', description: 'Tutor theo quy chế', status: 'planned', preset: true, mocQuyChe: 'one_month' }]);
+    const e2 = maLoi(() => cases.suaPa(P.lrTeacher, ps, { soBuoi: 8 }));
+    assert(e2.status === 400 && e2.msg.includes('Xác nhận PA'), `chưa xác nhận: ${JSON.stringify(e2)}`);
+    assert(revCua(cho).length === 0 && revCua(ps).length === 0 && get('SELECT so_buoi FROM case_interventions WHERE id = ?', ps).so_buoi === null, 'lỗi mà vẫn ghi');
+  });
+
+  check('PA10 · Sửa PA bổ trợ nhóm: áp mọi dòng đang chạy của nhóm, mỗi dòng một nhật ký; Số buổi kiểm theo đã dạy của TỪNG dòng', () => {
+    const NHOM = 'mt:pa10';
+    const ids: number[] = taoPa.chenPa(conn, [caseThu('N10A'), caseThu('N10B')].map((caseId) => ({
+      caseId, kind: 'bo_tro_mien_phi', description: 'Bổ trợ miễn phí nhóm thử', status: 'started', soBuoi: 6, nhomBoTro: NHOM,
+      startedDate: TODAY, cycleStartedOn: TODAY, actionDue: d.weeklyUpdateDue(TODAY),
+    })));
+    cases.updateResult(P.lrTeacher, ids[0], { ...KQ, soBuoi: 4, nguoiDay: { performerName: 'Cô Hà ngoài' } });   // chép sang dòng 2: cả hai đã dạy 4
+    /* Dòng 2 đã dạy thêm 3 (7) → Số buổi 5 hợp lệ với dòng 1 (4) nhưng không với dòng 2 → 400, không dòng nào đổi. */
+    conn.prepare(`INSERT INTO case_followups (case_id, intervention_id, observed_on, outcome, note, next_step, cycle_no, late, created_at, so_buoi)
+      SELECT case_id, id, ?, 'partial', 'Buổi riêng', 'continue', 1, 0, ?, 3 FROM case_interventions WHERE id = ?`).run(TODAY, new Date().toISOString(), ids[1]);
+    const e = maLoi(() => cases.suaPa(P.lrTeacher, ids[0], { soBuoi: 5 }));
+    assert(e.status === 400 && e.msg.includes('Đã dạy 7 buổi'), `đã dạy của dòng anh em: ${JSON.stringify(e)}`);
+    assert(ids.every((id) => get('SELECT so_buoi FROM case_interventions WHERE id = ?', id).so_buoi === 6 && revCua(id).length === 0), 'lỗi mà vẫn ghi');
+    cases.suaPa(P.lrTeacher, ids[0], { soBuoi: 9, description: 'Bổ trợ miễn phí nhóm, thêm ba buổi' });
+    const r = ids.map((id) => get('SELECT so_buoi, description FROM case_interventions WHERE id = ?', id));
+    assert(r.every((x) => x.so_buoi === 9 && x.description === 'Bổ trợ miễn phí nhóm, thêm ba buổi'), `cả nhóm: ${JSON.stringify(r)}`);
+    assert(ids.every((id) => revCua(id).length === 1 && revCua(id)[0].source === 'sua_pa' && revCua(id)[0].old_so_buoi === 6 && revCua(id)[0].new_so_buoi === 9),
+      `nhật ký từng dòng: ${JSON.stringify(ids.map(revCua))}`);
+  });
 }

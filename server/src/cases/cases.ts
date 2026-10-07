@@ -1,5 +1,5 @@
 import { db, laTrungKhoa, theoKhoaGui, theoLo, tx } from '../db.ts';
-import { boTroCuaCase, chepKetQuaNhom, quyenBoTro, type BoTroDto } from './boTro.ts';
+import { anhEmNhom, boTroCuaCase, chepKetQuaNhom, quyenBoTro, type BoTroDto } from './boTro.ts';
 import { ghiMiniTestTrongTx, kiemMiniTest } from '../normal/cuoiKhoa.ts';
 import {
   DISPOSITIONS, INTERVENTION_KINDS, SYSTEM_KINDS, INTERVENTION_KIND_LABEL, INTERVENTION_STATUSES, tenPaViecTiep,
@@ -3087,17 +3087,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
   if (!iv) throw notFound('Không tìm thấy phương án.');
   const c = loadCase(iv.case_id);
   kiemQuyenPa(p, iv, c);
-
-  if (iv.preset === 1 && !iv.confirmed_at) {
-    throw badRequest('Phương án điền sẵn này chưa được xác nhận — xác nhận (hoặc sửa / thay) trước khi ghi kết quả.');
-  }
-  if (iv.approval_state === 'pending') {
-    throw badRequest('Phương án này đang chờ Quản lý duyệt — việc thực hiện chưa bắt đầu.');
-  }
-  if (iv.status === 'cancelled') throw badRequest('Phương án này đã huỷ.');
-  if (iv.status === 'completed') {
-    throw badRequest('Phương án này đã kết thúc — không cập nhật thêm được.');
-  }
+  chanPaChuaChay(iv, 'Phương án điền sẵn này chưa được xác nhận — xác nhận (hoặc sửa / thay) trước khi ghi kết quả.');
 
   /*
    * PR-S2 (S4): `decision` là cách gọi mới, dịch về ĐÚNG cặp `mode`/`nextStep` mà mọi luật bên dưới đã kiểm.
@@ -3371,11 +3361,20 @@ function kiemQuyenPa(p: Principal, iv: any, c: any, msg = 'Bạn không có quy�
   }
 }
 
+/** PR-PA: PA chưa chạy (quy chế chưa xác nhận, chờ Quản lý duyệt) hoặc đã khép → không ghi Kết quả, không Sửa PA. */
+function chanPaChuaChay(iv: any, chuaXacNhan: string) {
+  if (iv.preset === 1 && !iv.confirmed_at) throw badRequest(chuaXacNhan);
+  if (iv.approval_state === 'pending') throw badRequest('Phương án này đang chờ Quản lý duyệt — việc thực hiện chưa bắt đầu.');
+  if (iv.status === 'cancelled') throw badRequest('Phương án này đã huỷ.');
+  if (iv.status === 'completed') throw badRequest('Phương án này đã kết thúc — không cập nhật thêm được.');
+}
+
 /**
  * SỬA PA (PR-PA §8) — cùng form Thêm PA; Loại khoá (đổi loại là Thay). Quyền như Kết quả (`kiemQuyenPa`).
  * Số buổi ≥ đã dạy (null = xoá); Ngày bắt đầu chỉ đổi khi PA chưa có Kết quả. Ô người: gửi BẤT KỲ khoá nào trong ba
  * (`performerSelf` / `performerUserId` / `performerName`) = đặt lại (cả ba trống = xoá người); không gửi khoá nào = giữ. Tự học: bỏ qua người.
- * Không đổi gì → trả Case, không ghi. Đổi → MỘT dòng nhật ký `sua_pa` (cũ → mới) + audit `intervention.edit`.
+ * Không đổi gì → trả Case, không ghi. Đổi → MỘT dòng nhật ký `sua_pa` (cũ → mới) + audit `intervention.edit` cho mỗi dòng đổi.
+ * PA bổ trợ nhóm: chỗ đổi áp MỌI dòng đang chạy của nhóm (như Điều chỉnh — `chepKetQuaNhom`), Số buổi kiểm theo đã dạy của từng dòng.
  */
 export function suaPa(p: Principal, interventionId: number, input: {
   description?: string | null; soBuoi?: unknown; kind?: string; startedDate?: string | null;
@@ -3385,8 +3384,7 @@ export function suaPa(p: Principal, interventionId: number, input: {
   const iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(interventionId) as any;
   if (!iv) throw notFound('Không tìm thấy phương án.');
   kiemQuyenPa(p, iv, loadCase(iv.case_id), 'Bạn không có quyền sửa PA này.');
-  if (iv.status === 'cancelled') throw badRequest('Phương án này đã huỷ.');
-  if (iv.status === 'completed') throw badRequest('Phương án này đã kết thúc — không sửa được.');
+  chanPaChuaChay(iv, 'PA theo quy chế chưa xác nhận — sửa ngay trong Xác nhận PA.');
   if (input.kind !== undefined && input.kind !== iv.kind) throw badRequest('Không đổi được Loại PA — đổi loại thì chọn Thay PA.');
   const oldDesc = (iv.description ?? null) as string | null;
   let description = oldDesc;
@@ -3399,32 +3397,51 @@ export function suaPa(p: Principal, interventionId: number, input: {
   const nguoi = guiNguoi ? chuanHoaNguoiThucHien(p, input, { nhom: 'giao_vien', batBuoc: false }) : null;
   const performerUserId = guiNguoi ? nguoi?.userId ?? null : (iv.performer_user_id ?? null) as number | null;
   const performerName = guiNguoi ? nguoi?.name ?? null : (iv.performer_name ?? null) as string | null;
+  const coKetQua = (id: number) => !!conn.prepare('SELECT 1 FROM case_followups WHERE intervention_id = ? LIMIT 1').get(id);
   let startedDate = (iv.started_date ?? null) as string | null;
   if (input.startedDate && input.startedDate !== startedDate) {
     if (!isIsoDate(input.startedDate)) throw badRequest('Ngày bắt đầu không hợp lệ.');
-    if (conn.prepare('SELECT 1 FROM case_followups WHERE intervention_id = ? LIMIT 1').get(interventionId)) {
-      throw badRequest('PA đã có Kết quả — không đổi Ngày bắt đầu được.');
-    }
+    if (coKetQua(interventionId)) throw badRequest('PA đã có Kết quả — không đổi Ngày bắt đầu được.');
     startedDate = input.startedDate;
   }
-  const truoc = { description: oldDesc, soBuoi: iv.so_buoi ?? null, performerUserId: iv.performer_user_id ?? null, performerName: iv.performer_name ?? null, startedDate: iv.started_date ?? null };
-  const sau = { description, soBuoi, performerUserId, performerName, startedDate };
-  if ((Object.keys(sau) as (keyof typeof sau)[]).every((k) => sau[k] === truoc[k])) return caseDetail(p, iv.case_id);
+  const mat = (r: any) => ({
+    description: (r.description ?? null) as string | null, soBuoi: (r.so_buoi ?? null) as number | null,
+    performerUserId: (r.performer_user_id ?? null) as number | null, performerName: (r.performer_name ?? null) as string | null,
+    startedDate: (r.started_date ?? null) as string | null,
+  });
+  type Mat = ReturnType<typeof mat>;
+  const sau: Mat = { description, soBuoi, performerUserId, performerName, startedDate };
+  const doi = (Object.keys(sau) as (keyof Mat)[]).filter((k) => sau[k] !== mat(iv)[k]);
+  if (!doi.length) return caseDetail(p, iv.case_id);
+  /* Dòng anh em nhận ĐÚNG các ô vừa đổi; kiểm lại theo dòng đó (đã dạy, đã có Kết quả) — một dòng sai thì không dòng nào đổi. */
+  const dong: { row: any; sau: Mat }[] = [{ row: iv, sau }];
+  for (const s of anhEmNhom(conn, iv)) {
+    const moi = { ...mat(s), ...Object.fromEntries(doi.map((k) => [k, sau[k]])) } as Mat;
+    if (doi.includes('soBuoi')) soBuoiMoi(s, moi.soBuoi, daDayCua(s.id));
+    if (doi.includes('startedDate') && moi.startedDate !== mat(s).startedDate && coKetQua(s.id)) {
+      throw badRequest('Một dòng của nhóm đã có Kết quả — không đổi Ngày bắt đầu được.');
+    }
+    dong.push({ row: s, sau: moi });
+  }
   return tx(() => {
-    /* Chu kỳ đầu đang chạy (chưa có Kết quả) tính lại từ Ngày bắt đầu mới — như lúc Thêm PA. */
-    const doiChuKy = startedDate !== truoc.startedDate && iv.status === 'started' && !!iv.cycle_started_on && !!startedDate;
-    conn.prepare(`UPDATE case_interventions SET description = ?, so_buoi = ?, performer_user_id = ?, performer_name = ?, started_date = ?,
-        cycle_started_on = ?, action_due = ?, updated_at = ? WHERE id = ?`)
-      .run(description, soBuoi, performerUserId, performerName, startedDate,
-        doiChuKy ? startedDate : iv.cycle_started_on ?? null, doiChuKy ? weeklyUpdateDue(startedDate!) : iv.action_due ?? null, nowIso(), interventionId);
-    ghiBanDieuChinh({
-      iv, source: 'sua_pa', reason: 'Sửa PA', on: demoToday(), actorUserId: p.userId, followupId: null,
-      after: { ...sau, followupDue: iv.followup_due ?? null },
-    });
-    writeAudit({
-      actorUserId: p.userId, action: 'intervention.edit', entityType: 'case_intervention', entityId: interventionId,
-      entityLabel: `Case ${iv.case_id} · ${iv.kind}`, before: truoc, after: sau,
-    });
+    for (const { row, sau: m } of dong) {
+      const truoc = mat(row);
+      if ((Object.keys(m) as (keyof Mat)[]).every((k) => m[k] === truoc[k])) continue;
+      /* Chu kỳ đầu đang chạy (chưa có Kết quả) tính lại từ Ngày bắt đầu mới — như lúc Thêm PA. */
+      const doiChuKy = m.startedDate !== truoc.startedDate && row.status === 'started' && !!row.cycle_started_on && !!m.startedDate;
+      conn.prepare(`UPDATE case_interventions SET description = ?, so_buoi = ?, performer_user_id = ?, performer_name = ?, started_date = ?,
+          cycle_started_on = ?, action_due = ?, updated_at = ? WHERE id = ?`)
+        .run(m.description, m.soBuoi, m.performerUserId, m.performerName, m.startedDate,
+          doiChuKy ? m.startedDate : row.cycle_started_on ?? null, doiChuKy ? weeklyUpdateDue(m.startedDate!) : row.action_due ?? null, nowIso(), row.id);
+      ghiBanDieuChinh({
+        iv: row, source: 'sua_pa', reason: 'Sửa PA', on: demoToday(), actorUserId: p.userId, followupId: null,
+        after: { ...m, followupDue: row.followup_due ?? null },
+      });
+      writeAudit({
+        actorUserId: p.userId, action: 'intervention.edit', entityType: 'case_intervention', entityId: row.id,
+        entityLabel: `Case ${row.case_id} · ${row.kind}`, before: truoc, after: m,
+      });
+    }
     return caseDetail(p, iv.case_id);
   });
 }

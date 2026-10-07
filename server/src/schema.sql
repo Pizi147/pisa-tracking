@@ -1197,6 +1197,7 @@ CREATE INDEX idx_followup_case ON case_followups(case_id);
  *
  *   source  adjust        Điều chỉnh trong một lần Ghi kết quả (có `followup_id`)
  *           confirm_edit  Sửa gợi ý tự động từ SOS ngay lúc xác nhận (không có `followup_id`)
+ *           sua_pa        Sửa PA (PR-PA §8) — cũ → mới gồm Số buổi, Ngày bắt đầu (không có `followup_id`)
  *
  * Loại PA (`kind`) không đổi qua điều chỉnh. Đổi loại là Thay.
  */

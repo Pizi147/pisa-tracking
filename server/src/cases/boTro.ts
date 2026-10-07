@@ -205,6 +205,15 @@ export function chayNeuKeHoachDaDuyet(conn: any, caseId: number, homNay: string,
   return the?.trang_thai === 'duyet' ? chayPaBoTro(conn, pa.nhom_bo_tro, the.nguoi_xin ?? nguoiLam, homNay) : 0;
 }
 
+/** Các dòng KHÁC cùng nhóm bổ trợ đang chạy, Case chưa đóng — Kết quả / Điều chỉnh / Sửa PA (PR-PA) áp cả nhóm. */
+export function anhEmNhom(conn: any, iv: { id: number; nhom_bo_tro: string | null }): any[] {
+  if (!iv.nhom_bo_tro) return [];
+  return conn.prepare(
+    `SELECT iv.* FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
+      WHERE iv.nhom_bo_tro = ? AND iv.kind IN ('bo_tro', 'bo_tro_mien_phi') AND iv.id != ? AND iv.status = 'started' AND sc.status != 'done' ORDER BY iv.id`,
+  ).all(iv.nhom_bo_tro, iv.id) as any[];
+}
+
 /**
  * GHI KẾT QUẢ CHÉP CẢ NHÓM (M-03, Q10): PA chung (FOU) ghi MỘT lần — các dòng KHÁC cùng nhóm đang chạy, Case chưa đóng, nhận một bản
  * `case_followups` GIỐNG HỆT (đổi case_id / intervention_id) rồi áp CÙNG cập nhật trạng thái đã áp cho dòng chính (chu kỳ mới + hạn mới, hoặc
@@ -216,10 +225,7 @@ export function chepKetQuaNhom(conn: any, iv: any, followupId: number, x: {
 }): number {
   if (!iv.nhom_bo_tro) return 0;
   const f = conn.prepare('SELECT * FROM case_followups WHERE id = ?').get(followupId) as any;
-  const anhEm = conn.prepare(
-    `SELECT iv.* FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
-      WHERE iv.nhom_bo_tro = ? AND iv.kind IN ('bo_tro', 'bo_tro_mien_phi') AND iv.id != ? AND iv.status = 'started' AND sc.status != 'done' ORDER BY iv.id`,
-  ).all(iv.nhom_bo_tro, iv.id) as any[];
+  const anhEm = anhEmNhom(conn, iv);
   for (const s of anhEm) {
     const info = conn.prepare(
       `INSERT INTO case_followups (case_id, intervention_id, observed_on, observer_user_id, outcome, note, evidence_attempt_id, next_step, cycle_no, cycle_due,
