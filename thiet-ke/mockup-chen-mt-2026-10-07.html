@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chèn MT đánh số lại</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Inter:wght@500;600&display=swap">
+<style>
+:root{--bg:#f5f7fa;--surface:#fff;--surface-2:#eef1f5;--line:rgba(15,23,42,.12);--accent:#1d5fbf;--accent-ink:#fff;
+--text:#0f172a;--dim:#475569;--soon:#8a5a00;--soon-bg:#fdf1cf;--phu:rgba(15,23,42,.38);
+--sans:"Be Vietnam Pro",system-ui,sans-serif;--num:"Inter","Be Vietnam Pro",sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0c1220;--surface:#141d2f;--surface-2:#1a2437;
+--line:rgba(160,178,214,.14);--accent:#7db3f0;--accent-ink:#0b1626;--text:#dde5f2;--dim:#93a3c0;--soon:#f2c450;--soon-bg:#352b10;--phu:rgba(5,9,18,.62)}}
+:root[data-theme="dark"]{--bg:#0c1220;--surface:#141d2f;--surface-2:#1a2437;--line:rgba(160,178,214,.14);--accent:#7db3f0;
+--accent-ink:#0b1626;--text:#dde5f2;--dim:#93a3c0;--soon:#f2c450;--soon-bg:#352b10;--phu:rgba(5,9,18,.62)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 var(--sans);padding:16px}
+.bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}.bar button{font:inherit;padding:4px 10px;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:6px;cursor:pointer}
+h2{font-size:13px;color:var(--dim);font-weight:500;margin:24px 0 8px}
+.khung{position:relative;background:var(--phu);border-radius:10px;padding:40px 16px;display:flex;justify-content:center}
+.hop{background:var(--surface);border:1px solid var(--line);border-radius:10px;width:100%;max-width:420px;padding:20px}
+.hop h3{margin:0 0 12px;font-size:16px;font-weight:600}
+.ds{margin:0 0 12px;padding:0;list-style:none;border:1px solid var(--line);border-radius:8px}
+.ds li{display:flex;justify-content:space-between;padding:8px 12px;border-top:1px solid var(--line)}.ds li:first-child{border-top:0}
+.so{font-family:var(--num);font-weight:600}.moi{background:var(--soon-bg)}.tuan{font-family:var(--num);color:var(--dim)}
+p{margin:0 0 16px;color:var(--dim)}
+.nut{display:flex;gap:8px;justify-content:flex-end}.nut button{font:inherit;font-weight:500;padding:8px 14px;border-radius:6px;border:1px solid var(--line);background:var(--surface-2);color:var(--text)}
+.nut .chinh{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.nk{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;max-width:420px}
+.nk .tuan{font-size:12px}
+</style></head><body>
+<div class="bar"><button onclick="document.documentElement.dataset.theme='light'">Sáng</button><button onclick="document.documentElement.dataset.theme='dark'">Tối</button><button onclick="delete document.documentElement.dataset.theme">Theo máy</button></div>
+
+<h2>1 · Bấm Lưu ở hộp "Chu Minh Hiếu · MT4" (Tuần chung W4 AUG) — chỉ QL / QT thấy hộp này</h2>
+<div class="khung"><div class="hop" role="dialog" aria-labelledby="t1">
+  <h3 id="t1">Đánh số lại Mock Test?</h3>
+  <ul class="ds">
+    <li class="moi"><span><span class="so">MT4 → MT2</span></span><span class="tuan">W4 AUG</span></li>
+    <li><span class="so">MT2 → MT3</span><span class="tuan">W3 SEP</span></li>
+    <li><span class="so">MT3 → MT4</span><span class="tuan">W3 OCT</span></li>
+  </ul>
+  <p>Điểm đi theo bài.</p>
+  <div class="nut"><button>Huỷ</button><button class="chinh">Lưu và đánh số lại</button></div>
+</div></div>
+
+<h2>2 · GVCN / GV: giữ câu chặn cũ, không có popup</h2>
+<div class="nk">MT3 có phần thi ở tuần W3 OCT. Phần thi của lượt sau không được xếp trước phần cuối của lượt trước.</div>
+
+<h2>3 · Nhật ký của bài (một dòng)</h2>
+<div class="nk">Đánh số lại: MT4 → MT2 · MT2 → MT3 · MT3 → MT4 <span class="tuan">· 07/10 · Nguyễn QL</span></div>
+</body></html>
