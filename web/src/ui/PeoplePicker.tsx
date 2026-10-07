@@ -2,7 +2,7 @@ import { Fragment, useContext, useEffect, useId, useLayoutEffect, useMemo, useRe
 import { api } from '../lib/api.ts';
 import { Info } from './ui.tsx';
 import { BaoOTrongNhan } from './ONgay.tsx';
-import { buocDanhSach, locNguoiChon, skillShort, type NguoiChon } from '@shared/domain/index.ts';
+import { buocDanhSach, chotChuGo, locNguoiChon, skillShort, type NguoiChon } from '@shared/domain/index.ts';
 import { useSession } from '../lib/session.tsx';
 
 export type Person = { id: number; name: string; title: string | null; role: string | null; branches: string[] };
@@ -253,20 +253,11 @@ export function ChonNguoi({
     suaTruoc.current = editing;
   }, [editing]);
 
-  /* Giá trị đến sau khi ô đã vẽ (panel nạp phân công hiện tại) → hiện tên, trừ khi người dùng đang gõ trong danh sách. */
-  useEffect(() => { if (value && !open) setEditing(false); }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (!editing) return;
-    const away = (e: MouseEvent) => {
-      if (box.current && !box.current.contains(e.target as Node)) {
-        setOpen(false);
-        if (value || khongDoi !== undefined || macDinhTrong !== undefined) setEditing(false);
-      }
-    };
-    document.addEventListener('mousedown', away);
-    return () => document.removeEventListener('mousedown', away);
-  }, [editing, value, khongDoi, macDinhTrong]);
+  /* Giá trị đến sau khi ô đã vẽ (panel nạp phân công hiện tại) → hiện tên, trừ khi người dùng đang gõ trong danh sách.
+     So theo người (kiểu/id), không theo object: nơi gọi dựng lại object mỗi lần vẽ. */
+  const khoaGiaTri = !value ? '' : value.kieu === 'tai_khoan' ? `u${value.id}` : value.kieu === 'ngoai' ? `n${value.ten}` : value.kieu;
+  useEffect(() => { if (khoaGiaTri && !open) setEditing(false); }, [khoaGiaTri]); // eslint-disable-line react-hooks/exhaustive-deps
+  const coChuThayThe = !!value || khongDoi !== undefined || macDinhTrong !== undefined;
 
   const options = useMemo<ChonNguoiOption[]>(() => {
     const out: ChonNguoiOption[] = [];
@@ -292,23 +283,41 @@ export function ChonNguoi({
     if (opt.kind !== 'trong' || khongDoi !== undefined || macDinhTrong !== undefined) setEditing(false);
   };
 
+  /**
+   * Rời ô (bấm ra ngoài, Tab) — MỘT đường cho mọi cách rời: đóng danh sách; chữ gõ khớp đúng một người thì chọn người đó
+   * (gõ đủ tên rồi bấm Lưu không mất ý định), không thì xoá chữ gõ — ô không bao giờ hiện chữ như đã chọn mà thật ra trống.
+   */
+  const roiO = () => {
+    setOpen(false);
+    setActiveIndex(-1);
+    const nguoi = loading ? null : chotChuGo(term, options.filter((o) => o.kind === 'nguoi'));
+    if (nguoi) { chon(nguoi); return; }
+    setTerm('');
+    if (coChuThayThe) setEditing(false);
+  };
+
   const nguoiLabel = nhom === 'giao_vien' ? 'giáo viên' : 'người';
 
-  if (!editing) {
+  /* Chỉ xem mà trống: hiện "Chưa chọn", không hiện ô gõ khoá có chữ gợi ý. */
+  if (!editing || (disabled && !value)) {
     let chinh: string; let phu: string;
     if (value?.kieu === 'toi') { chinh = 'Tôi'; phu = session?.user?.fullName ?? ''; }
     else if (value?.kieu === 'tai_khoan') { chinh = value.ten; phu = value.phu ?? ''; }
     else if (value?.kieu === 'ngoai') { chinh = value.ten; phu = 'ngoài hệ thống'; }
     else if (khongDoi !== undefined) { chinh = `Không đổi · hiện: ${khongDoi}`; phu = ''; }
-    else { chinh = macDinhTrong ?? '—'; phu = ''; }
+    else { chinh = macDinhTrong ?? (disabled ? 'Chưa chọn' : '—'); phu = ''; }
 
     return (
-      <div className={`field flex items-center justify-between gap-2${invalid ? ' border-late' : ''}`} onBlur={onBlur}>
+      /* Cùng chiều cao ô gõ (lưới Tạo nhiều lớp): nút Đổi -my-1 nằm gọn trong dòng chữ; vùng bấm điện thoại = cả ô (bấm đâu cũng mở). */
+      <div className={`field flex items-center justify-between gap-2${invalid ? ' border-late' : ''}${disabled ? '' : ' cursor-pointer'}`}
+        onBlur={onBlur} onClick={disabled ? undefined : () => setEditing(true)}>
         <span className="min-w-0 truncate">
           <span className="text-slate-100">{chinh}</span>
           {phu && <span className="text-slate-500 text-xs"> · {phu}</span>}
         </span>
-        {!disabled && <button id={oId} type="button" className="btn btn-sm min-h-[44px] shrink-0 sm:min-h-0" onClick={() => setEditing(true)}>Đổi</button>}
+        {/* Nhãn ô trỏ vào nút này (htmlFor) — aria-label giữ chữ "Đổi" trong tên đọc, không thành tên ô trơn. */}
+        {!disabled && <button id={oId} type="button" className="btn btn-sm -my-1 h-7 shrink-0 !py-0 max-sm:min-h-0" aria-label={ariaLabel ? `Đổi · ${ariaLabel}` : undefined}
+          onClick={(e) => { e.stopPropagation(); setEditing(true); }}>Đổi</button>}
       </div>
     );
   }
@@ -322,7 +331,11 @@ export function ChonNguoi({
       : null;
 
   return (
-    <div ref={box} onBlur={onBlur}>
+    <div ref={box} onBlur={(e) => {
+      if (box.current?.contains(e.relatedTarget as Node)) return;   // focus còn trong ô (dòng danh sách) → chưa rời
+      roiO();
+      onBlur?.();
+    }}>
       <input
         ref={inputRef}
         id={oId}
@@ -350,7 +363,10 @@ export function ChonNguoi({
               document.getElementById(`${uid}-opt-${chonDuoc[k]}`)?.scrollIntoView({ block: 'nearest' });
             }
           } else if (e.key === 'Enter') {
-            if (activeIndex >= 0 && activeIndex < options.length) { e.preventDefault(); chon(options[activeIndex]); }
+            /* Chưa ↓ mà đã gõ: Enter chọn người khớp đầu (không bắt ↓ trước). */
+            const dau = activeIndex < 0 && term.trim() && !loading ? options.find((o) => o.kind === 'nguoi') : undefined;
+            const opt = activeIndex >= 0 && activeIndex < options.length ? options[activeIndex] : dau;
+            if (opt) { e.preventDefault(); chon(opt); }
           } else if (e.key === 'Escape' && open) {
             e.stopPropagation();
             setOpen(false);
@@ -358,7 +374,8 @@ export function ChonNguoi({
         }}
       />
       {open && (
-        <div id={`${uid}-listbox`} role="listbox" className="mt-1 max-h-56 overflow-y-auto surface-2 rounded-lg border" style={{ borderColor: 'var(--line-strong)' }}>
+        /* mousedown không lấy focus khỏi ô gõ (Safari không focus nút khi bấm) → rời ô không chạy trước cú bấm chọn. */
+        <div id={`${uid}-listbox`} role="listbox" onMouseDown={(e) => e.preventDefault()} className="mt-1 max-h-56 overflow-y-auto surface-2 rounded-lg border" style={{ borderColor: 'var(--line-strong)' }}>
           {options.map((opt, i) => (
             <Fragment key={opt.kind === 'nguoi' ? `u${opt.row.id}` : opt.kind}>
               {opt.kind === 'ngoai' && trangThai}

@@ -305,7 +305,7 @@ function DongThe({ t, i, soDong, busy, routes, branches, gv, hienLoi, idO, sua, 
       <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-[minmax(9rem,1.2fr)_8.5rem_6rem_6.5rem_minmax(17rem,2.2fr)]">
         <O1 nhan="Chi nhánh" batBuoc htmlFor={idO('branchId')} loi={hienLoi('branchId')}>
           <select className="field w-full" {...o('branchId')} value={d.branchId ?? ''}
-            onChange={(e) => sua({ branchId: e.target.value ? Number(e.target.value) : null })}>
+            onChange={(e) => sua({ branchId: e.target.value ? Number(e.target.value) : null, chon: {} /* GV cũ không thuộc chi nhánh mới */ })}>
             <option value="">— Chọn —</option>
             {branches.map((b) => <option key={b.id} value={b.id}>{b.name} ({b.code})</option>)}
           </select>

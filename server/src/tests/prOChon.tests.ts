@@ -9,6 +9,7 @@ import type { YThucTestKit } from './yThuc.tests.ts';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..');
 const doc = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
+const than = (src: string, ten: string) => src.slice(src.indexOf(`export function ${ten}`));
 
 export async function runPrOChonTests(t: Pick<YThucTestKit, 'check' | 'assert'>) {
   const { check, assert } = t;
@@ -33,6 +34,19 @@ export async function runPrOChonTests(t: Pick<YThucTestKit, 'check' | 'assert'>)
     const qr = doc('web/src/modules/cases/QuickReport.tsx');
     assert(!/students\.map\([^)]*\) => <option/.test(qr), 'QuickReport: ô Học viên còn <select>');
     assert(/<ChonNguoi[\s\S]{0,400}\bds=/.test(qr), 'QuickReport: ô Học viên chưa dùng ChonNguoi');
+  });
+
+  check('OC4 · rời ô (bấm ra ngoài / Tab) không mất ý định: gõ khớp đúng 1 người → chọn; không → xoá chữ; Enter chưa ↓ → người khớp đầu', () => {
+    const ds = [{ id: 1, ten: 'Phạm Thu Trang' }, { id: 2, ten: 'Trần Ngọc Hà' }, { id: 3, ten: 'Trần Văn Hà' }];
+    assert(d.chotChuGo('Phạm Thu Trang', d.locNguoiChon(ds, 'Phạm Thu Trang'))?.id === 1, 'gõ đủ tên một người → chọn người đó');
+    assert(d.chotChuGo('pham', d.locNguoiChon(ds, 'pham'))?.id === 1, 'khớp đúng 1 (không dấu) → chọn');
+    assert(d.chotChuGo('tran', d.locNguoiChon(ds, 'tran')) === null, 'khớp 2 người → không chọn bừa');
+    assert(d.chotChuGo('xyz', d.locNguoiChon(ds, 'xyz')) === null && d.chotChuGo('  ', ds) === null, 'không khớp / ô trống → không chọn');
+    const pp = doc('web/src/ui/PeoplePicker.tsx');
+    assert(/onBlur=\{\(e\) => \{[\s\S]{0,200}relatedTarget[\s\S]{0,200}roiO\(\)/.test(pp), 'ChonNguoi chưa bắt focusout trên khung (Tab / bấm ra ngoài)');
+    assert(/const roiO = [\s\S]{0,400}chotChuGo\(/.test(pp) && /setTerm\(''\)/.test(pp), 'rời ô chưa chọn người khớp duy nhất / xoá chữ gõ');
+    assert(/activeIndex < 0[\s\S]{0,200}kind === 'nguoi'/.test(pp), 'Enter khi chưa ↓ chưa chọn người khớp đầu');
+    assert(!/document\.addEventListener\('mousedown', away\)/.test(than(pp, 'ChonNguoi')), 'ChonNguoi còn bắt mousedown riêng (rời ô đi một đường)');
   });
 
   check('OC3 · ChonNguoi kiểu `ds`: không gọi máy chủ, có dòng trống (choTrong), nhận id/onBlur/invalid như ONgay', () => {
