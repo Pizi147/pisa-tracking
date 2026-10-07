@@ -349,6 +349,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
       assert(sai.length === 0, `${f}: in studentCode thẳng ra màn ở dòng ${sai.map((x) => x[1]).join(', ')}`);
     }
     assert(/maHocVienNgan\(st\.code\)/.test(doc('web/src/modules/cases/QuickReport.tsx')), 'QuickReport: mã trong ô chọn học viên phải qua maHocVienNgan');
+    assert(/maHocVienNgan\(d\.student\.code\)/.test(doc('web/src/modules/fasttrack/MockDetailPage.tsx')), 'MockDetailPage: mã học viên cạnh tên phải qua maHocVienNgan');
     assert(d.maHocVienNgan('PISA-000048') === '000048', 'maHocVienNgan');
     assert(!/maHocVienNgan/.test(doc('server/src/phanTich/xuatMt.ts')), 'Excel phải giữ mã đầy đủ (không rút gọn)');
   });
@@ -459,6 +460,13 @@ export async function runPrHk2Tests(t: YThucTestKit) {
       assert(!/Đã ghi vắng/.test(s), `${rel}: chữ "Đã ghi vắng" phải nằm ở một nơi (thongBaoVang.ts)`);
     }
     assert(/Đã gỡ vắng/.test(lt) && /Đã gỡ vắng/.test(se), 'thông báo gỡ vắng (PR-BV) phải giữ');
+  });
+
+  check('C41 · điện thoại: dòng "Còn n ngày để sửa" dưới ô "-" (DongDau) xuống dòng, không cắt "…" (máy tính giữ truncate + title)', () => {
+    const se2 = doc('web/src/modules/fasttrack/ScoreEntry.tsx'), i = se2.indexOf('function DongDau(');
+    assert(i >= 0, 'không thấy DongDau');
+    const dd = se2.slice(i, i + 700);   // thân hàm ngắn; không dò dấu } vì tệp có thể CRLF
+    assert(/truncate[^"]*max-sm:max-w-none[^"]*max-sm:whitespace-normal/.test(dd), 'DongDau: thiếu max-sm:max-w-none + max-sm:whitespace-normal');
   });
 
   console.log('\nPR-HK2 · Task 8 · DH "+n" hồ sơ lớp dẫn đúng chỗ');

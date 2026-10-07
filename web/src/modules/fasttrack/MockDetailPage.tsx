@@ -27,7 +27,7 @@ import {
   addDaysStr, attemptHref, attemptStatusLabel, fmtBand, fmtDate, progressLabel, skillLabel,
 } from '../../lib/format.ts';
 import {
-  ATTEMPT_KIND_SHORT, CAU_TUAN_DA_QUA, CHU_THAO_TAC, cauSeHuyLich, chipSosMt0, chuDoiVuot, chuLuuVuot, kiemLyDoThaoTac, kiemTuanXep, mondayOfDate, nhanLuot, thaoTacKyNang, trangThaiTT, tuanLich,
+  ATTEMPT_KIND_SHORT, CAU_TUAN_DA_QUA, maHocVienNgan, CHU_THAO_TAC, cauSeHuyLich, chipSosMt0, chuDoiVuot, chuLuuVuot, kiemLyDoThaoTac, kiemTuanXep, mondayOfDate, nhanLuot, thaoTacKyNang, trangThaiTT, tuanLich,
   type AssessedSkill, type AttemptKind, type LoiTruong, type TheYeuCauDto, type ThaoTac,
   docKnMock, KY_NANG_KE_HOACH, khongDuThiTuO, oKyNangTuLich, type KetQuaHuy, type OMtVao,
 } from '@shared/domain/index.ts';
@@ -238,7 +238,7 @@ export default function MockDetailPage() {
           <button className="btn btn-sm btn-ghost mb-1 min-h-[44px] sm:min-h-0" onClick={() => navigate(-1)}>← Quay lại</button>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <h1 className="text-lg font-semibold text-slate-100 min-w-0 break-words">
-              <span className="mr-2 text-sm font-medium text-slate-400">Hồ sơ Mock Test ·</span>{d.student.name} <span className="text-slate-500 text-sm whitespace-nowrap">· {d.student.code}</span>
+              <span className="mr-2 text-sm font-medium text-slate-400">Hồ sơ Mock Test ·</span>{d.student.name} <span className="text-slate-500 text-sm whitespace-nowrap">· {maHocVienNgan(d.student.code)}</span>
               <span className="ml-2 align-middle"><OMt v={omtDau} homNay={homNay} /></span>
             </h1>
             {cancelled && <Tag>Đã huỷ</Tag>}

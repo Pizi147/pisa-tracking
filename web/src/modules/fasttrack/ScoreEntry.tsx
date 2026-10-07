@@ -195,7 +195,7 @@ function DongDau({ cell }: { cell: Cell }) {
   if (!cell.noShow) return null;
   const dem = cell.noShow.state === 'khong-co-bai' ? demNguocSuaDau(cell.noShow.editableUntil ?? null, homNay) : null;
   return (
-    <span className="block max-w-[6rem] truncate text-xs text-slate-400 leading-tight" title={cell.noShow.text}>
+    <span className="block max-w-[6rem] truncate text-xs text-slate-400 leading-tight max-sm:max-w-none max-sm:whitespace-normal max-sm:text-right" title={cell.noShow.text}>
       {dem ?? cell.noShow.text}
     </span>
   );
