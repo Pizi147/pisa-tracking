@@ -42,10 +42,12 @@ export function migratePrLc(conn: any, applied: string[]) {
     });
   }
   if (lech.length) applied.push(`PR-LC: đồng bộ Lộ trình tiếp theo theo ${lech.length} quyết định chuyển lớp đang chờ`);
+}
 
-  const ftChuaDauVao = (conn.prepare(
+/** Lộ trình FT đã thi hành mà không có điểm đầu vào (L1 cũ) — chỉ đếm; `migrate/run.ts` in ra (bộ kiểm gọi `migrate()` không in). */
+export function demFtChuaDauVao(conn: any): number {
+  return (conn.prepare(
     `SELECT COUNT(*) AS n FROM learning_cycles cy WHERE cy.route IS NOT NULL AND cy.baseline_attempt_id IS NULL AND cy.baseline_score IS NULL
         AND EXISTS (SELECT 1 FROM enrollments e WHERE e.student_id = cy.student_id AND e.end_kind = 'sang_ft' AND e.ended_at = cy.started_at)`,
   ).get() as any).n as number;
-  if (ftChuaDauVao) console.log(`[migrate] PR-LC: ${ftChuaDauVao} lộ trình FT (Lên FT đã thi hành) chưa có điểm đầu vào — không tự sửa, QL đặt ở hồ sơ học viên.`);
 }

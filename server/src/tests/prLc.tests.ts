@@ -1,6 +1,6 @@
 /**
  * PHÉP KIỂM PR-LCa — luồng cuối khoá lớp thường → lộ trình tiếp: mỗi quyết định nhập MỘT lần (kế hoạch 2026-10-07-pr-luong-chuyen-giao, LCa-0).
- * Lộ trình tiếp theo (`lo_trinh_tiep_theo`) là nguồn DUY NHẤT của Hướng + Target trước khi thi hành; Lên FT ở đâu cũng có MT0.
+ * Lộ trình tiếp theo (`lo_trinh_tiep_theo`) là nguồn DUY NHẤT của Hướng + Target trước khi thi hành; Lên FT ở Lộ trình tiếp theo hoặc quyết định Cuối khoá đều có MT0.
  * Lớp nguồn: FOU tuần Final (tuần 8/8), khoá Target 6.0. Lớp chuyển đến: một FT, một BE (lên lớp), một FOU (học lại) — đầu khoá.
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
@@ -251,7 +251,7 @@ export async function runPrLcTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ (k) QL đã quyết → không đổi Hướng ở LTT (QM2, R2)
-  check('LC-k · em có lệnh chờ: đổi Hướng ở LTT (một em / cả lớp) → 409, không lưu dòng nào; cùng Hướng + ghi chú được; QL sửa lệnh → LTT theo', () => {
+  check('LC-k · em có lệnh chờ: đổi Hướng ở LTT (một em / cả lớp) → 409, không lưu dòng nào; cùng Hướng + ghi chú được; đổi Target Lên FT (GVCN, QL) → 409; QL sửa lệnh → LTT theo', () => {
     const l = taoLop(2);
     const [sid, ban] = l.sids;
     const gvcn = gvcnCua(l.classId, 5);
@@ -274,6 +274,11 @@ export async function runPrLcTests(t: YThucTestKit) {
     assert(!e6 && ltt(sid, l.classId)?.muc_tieu === 6, `GVCN cả lớp giữ Target lệnh được: ${e6?.message} · ${ltt(sid, l.classId)?.muc_tieu}`);
     const e7 = loi(() => loTrinh.ghiLoTrinhTiep(gvcn, sid, { huong: 'fast_track', mucTieu: 7 }));
     assert(e7?.status === 409 && ltt(sid, l.classId)?.muc_tieu === 6, `GVCN Target 7 ≠ lệnh 6 → 409: ${e7?.status ?? 'không ném'} · ${ltt(sid, l.classId)?.muc_tieu}`);
+    /* R11: Quản lý cũng không đổi Target của quyết định Lên FT ở LTT (sửa quyết định); gửi lại đúng Target đó được. */
+    const e7q = loi(() => loTrinh.ghiLoTrinhTiepCaLop(QL, l.classId, { items: [{ studentId: sid, huong: 'fast_track', mucTieu: 7 }] }));
+    assert(e7q?.status === 409 && ltt(sid, l.classId)?.muc_tieu === 6, `QL Target 7 ≠ lệnh 6 → 409: ${e7q?.status ?? 'không ném'} · ${ltt(sid, l.classId)?.muc_tieu}`);
+    const e7r = loi(() => loTrinh.ghiLoTrinhTiepCaLop(QL, l.classId, { items: [{ studentId: sid, huong: 'fast_track', mucTieu: 6 }] }));
+    assert(!e7r && ltt(sid, l.classId)?.muc_tieu === 6, `QL gửi lại Target 6 được: ${e7r?.status ?? ''} ${e7r?.message ?? ''}`);
     /* QL đổi Lên FT → Lên lớp: lệnh còn Target cũ — Target chỉ so khi lệnh Lên FT, GVCN sửa ghi chú vẫn được. */
     lenh.suaLenh(QL, lenhCua(sid).id, { huong: 'len_lop', toClassId: BE });
     assert(lenhCua(sid).huong === 'len_lop', `tiền đề: lệnh Lên lớp — ${lenhCua(sid).huong}`);
@@ -320,5 +325,82 @@ export async function runPrLcTests(t: YThucTestKit) {
     const a2: string[] = [];
     migrate.migratePrLc(conn, a2);
     assert(!a2.length && soHanhTrinh() === n1 && mt0Cua(sid).length === 1, `lần hai: ${JSON.stringify({ a2, hanhTrinh: [n1, soHanhTrinh()], mt0: mt0Cua(sid).length })}`);
+  });
+
+  // ------------------------------------------------------------------ (o) Migrate: đủ các nhánh "lệch", hai lớp một lượt
+  check('LC-o · migrate prLc: chưa LTT (Lên lớp; Lên FT → MT0), Lên FT chỉ lệch Target, Lên FT KCK (Target trống), em đã khớp không đụng; hai lớp, hai người ra lệnh một lượt; lần hai không đổi gì', () => {
+    const a = taoLop(4);
+    const b = taoLop(1);
+    const [lenLop, lenFt, lechTarget, khop] = a.sids;
+    const kck = b.sids[0];
+    const lopCua = (sid: number) => (sid === kck ? b.classId : a.classId);
+    loTrinh.ghiLoTrinhTiep(QL, lechTarget, { huong: 'fast_track', mucTieu: 7 });
+    loTrinh.ghiLoTrinhTiep(QL, kck, { huong: 'fast_track', mucTieu: 6 });
+    raDu(a.classId, [{ studentId: khop, huong: 'len_lop', toClassId: BE }]);
+    /* Lệnh ghi thẳng như trước PR-LCa (không qua raLenh). Lớp b: người ra lệnh khác (Quản trị). */
+    const tho = conn.prepare(`INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, lop_dich_id, huong, boi_canh, tuan_bat_dau, muc_tieu, khong_cam_ket, nguoi_ra_lenh, ngay_ra_lenh, trang_thai, tao_luc)
+      VALUES (?, ?, ?, ?, 'cuoi-khoa', ?, ?, ?, ?, ?, 'cho', ?)`);
+    const luc = new Date().toISOString();
+    tho.run(lenLop, a.classId, BE, 'len_lop', THU_HAI, null, 0, QL.userId, TODAY, luc);
+    tho.run(lenFt, a.classId, FT, 'fast_track', THU_HAI, 6.5, 0, QL.userId, TODAY, luc);
+    tho.run(lechTarget, a.classId, FT, 'fast_track', THU_HAI, 6.5, 0, QL.userId, TODAY, luc);
+    tho.run(kck, b.classId, FT, 'fast_track', THU_HAI, null, 1, P.admin.userId, TODAY, luc);
+    assert(!ltt(lenLop, a.classId) && !ltt(lenFt, a.classId) && !mt0Cua(lenFt).length, 'tiền đề: hai em chưa có LTT, chưa MT0');
+    /** Ảnh một em: số Hành trình next_step, số nhật ký LTT, số MT0, giờ sửa LTT. */
+    const anh = (sid: number) => JSON.stringify([
+      get(`SELECT COUNT(*) AS n FROM journey_events WHERE student_id = ? AND event_type = 'next_step'`, sid).n,
+      get(`SELECT COUNT(*) AS n FROM audit_logs WHERE entity_type = 'student' AND entity_id = ? AND action = 'student.next_step'`, sid).n,
+      mt0Cua(sid).length, ltt(sid, lopCua(sid))?.updated_at ?? null,
+    ]);
+    const tatCa = () => [...a.sids, kck].map(anh).join();
+    const khop0 = anh(khop);
+    const hanhTrinhLech0 = get(`SELECT COUNT(*) AS n FROM journey_events WHERE student_id = ? AND event_type = 'next_step'`, lechTarget).n;
+
+    const a1: string[] = [];
+    migrate.migratePrLc(conn, a1);
+    assert(a1.length === 1 && a1[0].includes('theo 4 quyết định'), `đúng 4 lệnh lệch (em khớp không chọn): ${a1.join(' | ')}`);
+    const t0 = ltt(lenLop, a.classId);
+    assert(t0?.huong === 'len_lop' && t0.lop_du_kien_id === BE, `chưa LTT → Lên lớp: ${JSON.stringify({ h: t0?.huong, lop: t0?.lop_du_kien_id })}`);
+    assert(hanhTrinh(lenLop)?.startsWith('QL quyết: ') && !hanhTrinh(lenLop)!.includes('(GVCN:'), `Hành trình "QL quyết" không "(GVCN: …)": ${hanhTrinh(lenLop)}`);
+    const t1 = ltt(lenFt, a.classId);
+    const m1 = mt0Cua(lenFt);
+    assert(t1?.huong === 'fast_track' && t1.lop_du_kien_id === FT && t1.muc_tieu === 6.5, `chưa LTT → Lên FT 6.5: ${JSON.stringify({ h: t1?.huong, lop: t1?.lop_du_kien_id, mt: t1?.muc_tieu })}`);
+    assert(m1.length === 1 && m1[0].status === 'planned' && m1[0].target_at_attempt === 6.5, `MT0 chờ 6.5: ${JSON.stringify(m1.map((m) => [m.status, m.target_at_attempt]))}`);
+    const m2 = mt0Cua(lechTarget);
+    assert(ltt(lechTarget, a.classId)?.muc_tieu === 6.5 && m2.length === 1 && m2[0].target_at_attempt === 6.5,
+      `lệch Target 7 → 6.5 (LTT + MT0): ${ltt(lechTarget, a.classId)?.muc_tieu} · ${JSON.stringify(m2.map((m) => m.target_at_attempt))}`);
+    assert(get(`SELECT COUNT(*) AS n FROM journey_events WHERE student_id = ? AND event_type = 'next_step'`, lechTarget).n === hanhTrinhLech0, 'cùng Hướng → không thêm Hành trình');
+    const t3 = ltt(kck, b.classId);
+    assert(t3?.huong === 'fast_track' && t3.muc_tieu == null, `KCK → LTT Target trống: ${JSON.stringify({ h: t3?.huong, mt: t3?.muc_tieu })}`);
+    assert(get(`SELECT actor_user_id AS u FROM audit_logs WHERE entity_type = 'student' AND entity_id = ? AND action = 'student.next_step' ORDER BY id DESC LIMIT 1`, kck).u === P.admin.userId,
+      'nhật ký ghi đúng người ra lệnh lớp b');
+    assert(anh(khop) === khop0, `em đã khớp không đụng: ${khop0} → ${anh(khop)}`);
+
+    const sau1 = tatCa();
+    const a2: string[] = [];
+    migrate.migratePrLc(conn, a2);
+    assert(!a2.length && tatCa() === sau1, `lần hai không ghi gì: ${JSON.stringify({ a2, truoc: sau1, sau: tatCa() })}`);
+  });
+
+  // ------------------------------------------------------------------ (p) khôi phục quyết định → LTT + MT0 theo lại (I1)
+  check('LC-p · lệnh Lên FT → huỷ → GVCN ghi Lên lớp (MT0 huỷ) → khôi phục lệnh: LTT Lên FT + Target lệnh, CÙNG MT0 chờ lại, Hành trình "QL quyết: … (GVCN: …)"', () => {
+    const l = taoLop(1);
+    const sid = l.sids[0];
+    const gvcn = gvcnCua(l.classId, 4);
+    raDu(l.classId, [{ studentId: sid, huong: 'fast_track', toClassId: FT, mucTieu: 6.5 }]);
+    const m = mt0Cua(sid)[0]?.id as number;
+    const id = lenhCua(sid).id as number;
+    assert(lenh.huyNhieuLenh(QL, [id], 'Đổi ý').ok.includes(id), 'tiền đề: huỷ được');
+    loTrinh.ghiLoTrinhTiep(gvcn, sid, { huong: 'len_lop' });
+    assert(ltt(sid, l.classId)?.huong === 'len_lop' && get('SELECT status FROM assessment_attempts WHERE id = ?', m).status === 'cancelled',
+      'tiền đề: hết lệnh chờ → GVCN ghi Lên lớp, MT0 huỷ');
+    const kp = lenh.khoiPhucLenh(QL, [id]);
+    assert(kp.ok.includes(id), `khôi phục: ${JSON.stringify(kp.failed)}`);
+    const t = ltt(sid, l.classId);
+    assert(t?.huong === 'fast_track' && t.muc_tieu === 6.5 && t.lop_du_kien_id === FT, `LTT theo lệnh: ${JSON.stringify({ h: t?.huong, mt: t?.muc_tieu, lop: t?.lop_du_kien_id })}`);
+    const ds = mt0Cua(sid);
+    assert(ds.length === 1 && ds[0].id === m && ds[0].status === 'planned' && ds[0].target_at_attempt === 6.5,
+      `cùng MT0 chờ lại: ${JSON.stringify(ds.map((x) => [x.id, x.status, x.target_at_attempt]))} (MT0 cũ ${m})`);
+    assert(hanhTrinh(sid)?.startsWith('QL quyết: ') && hanhTrinh(sid)!.includes('(GVCN: '), `Hành trình: ${hanhTrinh(sid)}`);
   });
 }

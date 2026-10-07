@@ -385,6 +385,20 @@ export function khoiPhucLenh(p: Principal, ids: unknown): KetQuaLenhNhieu {
           `UPDATE lenh_chuyen_lop SET trang_thai = 'cho', huy_boi = NULL, huy_luc = NULL, ly_do_huy = NULL, thu_ngay = NULL, loi = NULL, sua_luc = ?
             WHERE id = ? AND trang_thai = 'huy'`,
         ).run(nowIso(), id);
+        /*
+         * PR-LCa (I1): quyết định Cuối khoá lớp thường chờ lại → Lộ trình tiếp theo + MT0 theo quyết định như `raLenh` (bất biến lệnh chờ ⇒
+         * LTT cùng Hướng). Hướng LTT khác là do ghi SAU khi huỷ — của GVCN (`cuLaQl: false`). Mỗi lệnh một giao dịch nên đọc theo lệnh.
+         */
+        const nguonThuong = l.boi_canh === 'cuoi-khoa' ? conn.prepare(
+          `SELECT c.programme_code, t.huong FROM classes c LEFT JOIN lo_trinh_tiep_theo t ON t.class_id = c.id AND t.student_id = ?
+            WHERE c.id = ? AND c.is_fast_track = 0`,
+        ).get(l.student_id, l.lop_nguon_id) as any : null;
+        if (nguonThuong) {
+          dongBoTuLenh(p, [{
+            studentId: l.student_id, classId: l.lop_nguon_id, ma: (nguonThuong.programme_code ?? null) as ProgrammeCode | null, huong: l.huong as Huong,
+            lopDuKienId: l.lop_dich_id ?? null, mucTieu: l.khong_cam_ket ? null : l.muc_tieu ?? null, huongCu: (nguonThuong.huong ?? null) as Huong | null, cuLaQl: false,
+          }]);
+        }
         writeAudit({ actorUserId: p.userId, action: 'lenh_chuyen.khoi_phuc', entityType: 'student', entityId: l.student_id, before: { trangThai: 'huy' }, after: { huong: l.huong, tuan: l.tuan_bat_dau } });
       });
       kq.ok.push(id); khoi.push(l);

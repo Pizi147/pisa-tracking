@@ -198,18 +198,17 @@ export function dongBoTuLenh(p: Principal, hang: readonly {
 
 /**
  * PR-LCa (QM2, R2): em đã có quyết định Cuối khoá `cho` ở lớp này → không ai đổi Hướng ở Lộ trình tiếp theo (409, không lưu dòng nào);
- * cùng Hướng (sửa ghi chú) được. Quản lý đổi hướng bằng cách sửa quyết định. R8: người không có `cycle.edit` (GVCN) cũng không đổi Target
- * khác Target của quyết định Lên FT (KCK = trống); gửi lại đúng Target đó được. MỘT câu cho cả lô. `ten`: có → lỗi nêu tên em (ghi cả lớp).
+ * cùng Hướng (sửa ghi chú) được. R8 + R11: không ai (GVCN hay Quản lý) đổi Target khác Target của quyết định Lên FT (KCK = trống); gửi lại
+ * đúng Target đó được. Quản lý đổi Hướng / Target bằng cách sửa quyết định. MỘT câu cho cả lô. `ten`: có → lỗi nêu tên em (ghi cả lớp).
  */
-function chanQlDaQuyet(p: Principal, classId: number, dongs: readonly DongGhi[], ten?: (sid: number) => string): void {
+function chanQlDaQuyet(classId: number, dongs: readonly DongGhi[], ten?: (sid: number) => string): void {
   const lenh = new Map((db().prepare(
     `SELECT student_id, huong, muc_tieu, khong_cam_ket FROM lenh_chuyen_lop WHERE lop_nguon_id = ? AND boi_canh = 'cuoi-khoa' AND trang_thai = 'cho'`,
   ).all(classId) as any[]).map((r) => [r.student_id as number, r]));
-  const suaTarget = can(p, PERMISSIONS.CYCLE_EDIT, { classId });
   for (const d of dongs) {
     const l = lenh.get(d.studentId);
     /* Target chỉ so khi quyết định là Lên FT — lệnh đổi sang hướng khác có thể còn Target cũ. */
-    const doiTarget = !suaTarget && l?.huong === 'fast_track' && (l.khong_cam_ket ? null : l.muc_tieu ?? null) !== d.mucTieu;
+    const doiTarget = l?.huong === 'fast_track' && (l.khong_cam_ket ? null : l.muc_tieu ?? null) !== d.mucTieu;
     if (l && (l.huong !== d.huong || doiTarget)) {
       throw conflict(`${ten ? `${ten(d.studentId)}: ` : ''}Quản lý đã quyết.`, { studentId: d.studentId });
     }
@@ -227,7 +226,7 @@ export function ghiLoTrinhTiep(p: Principal, studentId: number, input: GhiVao) {
   if (enr.is_fast_track) throw badRequest('Lộ trình tiếp theo chỉ áp dụng cho lớp thường.');
   const cu = conn.prepare('SELECT ngay_xem_lai FROM lo_trinh_tiep_theo WHERE student_id = ? AND class_id = ?').get(studentId, enr.class_id) as any;
   const dong = kiemDong(studentId, enr, input, docLopDuKien([input.lopDuKienId]), cu?.ngay_xem_lai ?? null);
-  tx(() => { chanQlDaQuyet(p, enr.class_id, [dong]); ghiCacDong(p, [dong]); });
+  tx(() => { chanQlDaQuyet(enr.class_id, [dong]); ghiCacDong(p, [dong]); });
   return layLoTrinhTiep(p, studentId);
 }
 
@@ -316,7 +315,7 @@ export function ghiLoTrinhTiepCaLop(p: Principal, classId: number, body: { items
     try { return kiemDong(sid, em.get(sid), input, lopDuKien, cu?.ngayXemLai ?? null); }
     catch (e: any) { throw badRequest(`${em.get(sid).full_name}: ${e.message}`, { studentId: sid }); }
   });
-  tx(() => { chanQlDaQuyet(p, classId, dongs, (sid) => em.get(sid).full_name); ghiCacDong(p, dongs); });
+  tx(() => { chanQlDaQuyet(classId, dongs, (sid) => em.get(sid).full_name); ghiCacDong(p, dongs); });
   return { daLuu: items.length };
 }
 
