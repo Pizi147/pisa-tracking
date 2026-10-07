@@ -7,6 +7,9 @@
  */
 import { hanTheoNgay } from './cases.ts';
 import type { HuongGoiY } from './cuoiKhoa.ts';
+import { NORMAL_LADDER } from './fasttrack.ts';
+import type { Huong } from './lenLop.ts';
+import type { ProgrammeCode } from './normal.ts';
 import { tuanLich } from './hienThiNgay.ts';
 import { mondayOfDate } from './week.ts';
 
@@ -63,6 +66,38 @@ export const canLopDich = (h: HuongLenh): boolean => h !== 'bao_luu' && h !== 'd
 export type MucTieuLenh = number | 'KCK';
 const mucTieuHopLe = (m: MucTieuLenh | null | undefined) =>
   m === 'KCK' || (typeof m === 'number' && m >= 0 && m <= 9 && Math.round(m * 2) === m * 2);
+
+/**
+ * PR-LCa (LCa-2, Q2): Target Lên FT khi Quản lý không gửi — Target ghi ở Lộ trình tiếp theo → khoá lớp thường đang chạy (KCK giữ KCK)
+ * → `null` (nơi gọi để `kiemDongLenh` báo "Ghi Target (hoặc KCK)").
+ */
+export function targetLenFt({ lt, khoa }: {
+  lt: { mucTieu: number | null } | null; khoa: { target: number | null; kck: boolean } | null;
+}): MucTieuLenh | null {
+  if (typeof lt?.mucTieu === 'number') return lt.mucTieu;
+  if (khoa?.kck) return 'KCK';
+  return typeof khoa?.target === 'number' ? khoa.target : null;
+}
+
+/**
+ * PR-LCa (LCa-4, R6): điền sẵn một dòng Chuyển tiếp lớp từ Lộ trình tiếp theo — Hướng của LTT; Target theo `targetLenFt` (chỉ Lên FT);
+ * lớp chuyển đến = lớp dự kiến nếu hợp lệ cho hướng, không thì lớp hợp lệ DUY NHẤT, còn lại null. Không LTT / Chưa quyết → null.
+ */
+export function dienSanChuyenTiep(
+  lt: { huong: Huong; lopDuKienId: number | null; mucTieu: number | null } | null,
+  khoa: { target: number | null; kck: boolean } | null,
+  candidates: readonly { id: number; ft: boolean; programmeCode: ProgrammeCode | null }[],
+  ctx: { maTu: ProgrammeCode | null },
+): { huong: HuongLenh; mucTieu: MucTieuLenh | null; lopDichId: number | null } | null {
+  const huong = lt?.huong;
+  if (!lt || (huong !== 'len_lop' && huong !== 'hoc_lai' && huong !== 'fast_track' && huong !== 'bao_luu' && huong !== 'dung_hoc')) return null;
+  const mucTieu = huong === 'fast_track' ? targetLenFt({ lt, khoa }) : null;
+  if (huong === 'bao_luu' || huong === 'dung_hoc') return { huong, mucTieu, lopDichId: null };
+  const ma = huong === 'len_lop' ? NORMAL_LADDER[ctx.maTu as ProgrammeCode] ?? null : ctx.maTu;
+  const hopLe = candidates.filter((c) => (huong === 'fast_track' ? c.ft : !c.ft && !!ma && c.programmeCode === ma));
+  const lopDichId = hopLe.some((c) => c.id === lt.lopDuKienId) ? lt.lopDuKienId : hopLe.length === 1 ? hopLe[0].id : null;
+  return { huong, mucTieu, lopDichId };
+}
 
 /**
  * Kiểm MỘT dòng trước khi ghi — câu lỗi tiếng Việt hoặc `null`. Lên FT (nguồn thường → đích FT): Target (0–9 bước .5 hoặc KCK)

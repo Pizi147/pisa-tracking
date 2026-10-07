@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import { DB_PATH, closeDb, db, laDbTuXa, laLoiMatKetNoiTurso } from '../db.ts';
 import { hasLegacyDisciplineModel, migrate } from '../migrate.ts';
 import { choPhepMigrateTurso } from '../moiTruong.ts';
+import { demFtChuaDauVao } from './prLc.ts';
 
 /*
  * TURSO (bản chính / bản thử): nâng cấp chỉ khi người chạy XÁC NHẬN bằng đúng nguyên tên máy chủ của database — và phải
@@ -55,4 +56,7 @@ for (const s of skipped) console.log(`  · ${s}`);
 console.log(applied.length
   ? '[migrate] Hoàn tất. Dữ liệu cũ được giữ nguyên, không xoá database.'
   : '[migrate] Không có gì để nâng cấp.');
+/* PR-LC (kế hoạch 2026-10-07 mục 6): lộ trình FT cũ thiếu điểm đầu vào — chỉ báo số, không tự sửa. */
+const ftChuaDauVao = demFtChuaDauVao(db());
+if (ftChuaDauVao) console.log(`[migrate] PR-LC: ${ftChuaDauVao} lộ trình FT (Lên FT đã thi hành) chưa có điểm đầu vào — không tự sửa, QL đặt ở hồ sơ học viên.`);
 closeDb();

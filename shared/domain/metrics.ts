@@ -277,7 +277,7 @@ export const METRICS: readonly ChiSo[] = [
     id: 'lop-chua-chot-len-ft', ten: 'Lớp cần Chốt lên FT',
     cauHoi: 'Bao nhiêu lớp FOU/BE/ELE sắp tới tuần Final Test mà còn em chưa có hướng Lộ trình tiếp theo?',
     donVi: 'lop',
-    tapDuDieuKien: 'Lớp thường FOU/BE/ELE đang mở trong phạm vi sửa lớp của người xem, từ 13 ngày trước hạn (Chủ nhật trước tuần Final Test) tới hết tuần Final Test, còn em đang học chưa có hướng hoặc "Chưa quyết" — cùng hàm với việc "Chốt lên FT".',
+    tapDuDieuKien: 'Lớp thường FOU/BE/ELE đang mở trong phạm vi sửa lớp của người xem, từ 13 ngày trước hạn tới hết hạn (Chủ nhật trước tuần Final Test; từ tuần Final Test lớp sang việc Chuyển tiếp lớp), còn em đang học chưa có hướng hoặc "Chưa quyết" — cùng hàm với việc "Chốt lên FT".',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi lớp chỉ đếm 1 lần', drilldown: '/metrics/lop-chua-chot-len-ft',
   },];
 

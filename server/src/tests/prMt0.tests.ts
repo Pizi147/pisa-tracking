@@ -417,10 +417,10 @@ export async function runPrMt0Tests(t: YThucTestKit) {
     loTrinh.ghiLoTrinhTiep(QL, l.sids[1], { huong: 'len_lop' });
     assert(!viecChot(QL).some((i: any) => i.classId === l.classId), 'mọi em có hướng → tự hết');
   });
-  check('MT0-6a · quá hạn (lớp ở tuần Final) → urgency overdue; ghi Lên FT sau hạn vẫn được', () => {
+  check('MT0-6a · qua hạn (lớp ở tuần Final) → không còn "Chốt lên FT", có "Chuyển tiếp lớp" (PR-LCa R1); ghi Lên FT sau hạn vẫn được', () => {
     const l = taoLop('ELE', 10, 1);
-    const v = viecChot(QL).find((i: any) => i.classId === l.classId);
-    assert(v?.urgency === 'overdue', JSON.stringify(v));
+    const items = mywork.myWork(QL, { branchId: MB }).groups.flatMap((g: any) => g.items).filter((i: any) => i.classId === l.classId);
+    assert(!items.some((i: any) => i.group === 'chot_len_ft') && items.some((i: any) => i.group === 'placement'), items.map((i: any) => i.group).join());
     loTrinh.ghiLoTrinhTiep(QL, l.sids[0], { huong: 'fast_track' });
     assert(mt0Cua(l.sids[0]).length === 1, 'ghi sau hạn vẫn tạo MT0');
   });

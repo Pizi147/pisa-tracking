@@ -11,7 +11,7 @@ import {
 import { nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { ensurePeriods } from '../platform/week.ts';
-import { classProgressMany } from '../classes/schedule.ts';
+import { classProgressMany, mocKetKhoa } from '../classes/schedule.ts';
 import { assessedBands } from './scoring.ts';
 import { can, type Principal } from '../permissions.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
@@ -177,6 +177,11 @@ export function noiMt0VaoFt(
     conn.prepare(`UPDATE learning_cycles SET baseline_attempt_id = CASE id ${lo.map(() => 'WHEN ? THEN ?').join(' ')} END, baseline_source = 'mt0'
                    WHERE id IN (${lo.map(() => '?').join(',')}) AND baseline_attempt_id IS NULL AND baseline_score IS NULL`)
       .run(...lo.flatMap((x) => [x.ftCycleId, x.mt0Id]), ...lo.map((x) => x.ftCycleId));
+    /* PR-LCa (LCa-3): MT0 chưa điểm mang Target của lộ trình FT vừa mở (KCK: `datKck` xoá sau). */
+    conn.prepare(`UPDATE assessment_attempts SET target_at_attempt = (SELECT cy.target_score FROM learning_cycles cy WHERE cy.id = assessment_attempts.cycle_id)
+                   WHERE id IN (${lo.map(() => '?').join(',')})
+                     AND NOT EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = assessment_attempts.id AND (s.band IS NOT NULL OR s.raw_score IS NOT NULL))`)
+      .run(...lo.map((x) => x.mt0Id));
   }, 250);
   chenNhieuDong(
     'INSERT INTO journey_events (student_id, cycle_id, event_type, event_date, title, ref_table, ref_id, dedup_key, created_by, created_at)',
@@ -235,7 +240,8 @@ export function mt0TheoHocVien(sids: readonly number[]): Map<number, Mt0View> {
 /**
  * VIỆC QUẢN LÝ "Chốt lên FT · {lớp}" (T5b; chủ sản phẩm chốt Q1 05/10: TỰ XONG khi mọi em đang học đã có hướng — khác trống / Chưa quyết;
  * không nút, không cột mới). Lớp thường FOU/BE/ELE đang mở, người xem có `CLASS_EDIT`; hạn = Chủ nhật trước tuần Cuối khoá (`hanChotLenFt`);
- * hiện từ 13 ngày trước hạn tới hết tuần Cuối khoá. Không chặn gì: ghi Lên FT sau hạn vẫn được. Một câu lớp + một câu em cho cả phạm vi.
+ * hiện từ 13 ngày trước hạn tới hết hạn. PR-LCa (LCa-5): từ tuần Cuối khoá lớp sang "Chuyển tiếp lớp" (`mocKetKhoa(...).tuCuoiKhoa`, cùng điều kiện
+ * `lopChoLenhChuyen`) — mỗi lớp một việc mỗi lúc. Không chặn gì: ghi Lên FT sau hạn vẫn được. Một câu lớp + một câu em cho cả phạm vi.
  */
 /** `soEm`: em đang học chưa có hướng (gồm em chờ duyệt); `soChoDuyet`: trong số đó, em đã có đề xuất chuyển lớp của GVCN chờ Quản lý duyệt. */
 export type ChotLenFt = { classId: number; code: string; han: string; soEm: number; soChoDuyet: number };
@@ -253,10 +259,10 @@ function tinhLopChoChotLenFt(p: Principal, branchId: number | null, today: strin
   ).all(...MT0_CHUONG_TRINH, ...(branchId ? [branchId] : [])) as any[];
   const tienDo = classProgressMany(lop.map((c) => c.id as number));
   const toi = lop.flatMap((c) => {
-    const final = tienDo.get(c.id)?.finalWeekStart;
-    if (!final) return [];
-    const han = hanChotLenFt(final);
-    return today >= addDaysIso(han, -13) && today <= addDaysIso(final, 6) && can(p, PERMISSIONS.CLASS_EDIT, { classId: c.id })
+    const pr = tienDo.get(c.id);
+    if (!pr?.finalWeekStart) return [];
+    const han = hanChotLenFt(pr.finalWeekStart);
+    return today >= addDaysIso(han, -13) && !mocKetKhoa(pr, today).tuCuoiKhoa && can(p, PERMISSIONS.CLASS_EDIT, { classId: c.id })
       ? [{ classId: c.id as number, code: c.code as string, han }] : [];
   });
   if (!toi.length) return [];

@@ -513,6 +513,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 08/10/2026 | PR-LCa · `pr-lca-luong-chuyen` · Opus 5.5 | Máy chủ: quyết định Cuối khoá ghi ngược Lộ trình tiếp theo + MT0 ngay (Hành trình "QL quyết"), Target Lên FT tự lấy LTT → khoá → hỏi, GVCN/QL không đổi Hướng/Target em đã quyết ở LTT (409), thi hành giữ ghi chú/lớp dự kiến, `dienSan` + cờ panel gộp, "Chốt lên FT" chỉ trước tuần Final, migrate `prLc`; phép kiểm `prLc.tests.ts` LC-a…p |
 | 08/10/2026 | `pr-han-xac-nhan` · Opus 5.5 | Hạn xác nhận nguyên nhân / PA = 5 ngày, Gấp hoặc SOS 3 = 3 ngày qua một hàm `soNgayHanXacNhan`; Case đang mở giữ hạn cũ (không migrate); phép kiểm `prHan.tests.ts` |
 | 08/10/2026 | `pr-viec-nho-2` · Opus 5.5 | Mockup 08/10 phần 1, 2, 4: "Nhắc tất cả (n)" ở Công việc › Của GV (`POST /my-work/nhac-nhieu`, lõi PR-NV, ≤ 50, hỏi lại); Chờ duyệt: Trạng thái đứng đầu, Loại mờ ở Nhắc việc; "GV chấm S" thành hàng có viền ở điện thoại + có ở Điểm theo lớp (nhớ lớp × MT); phép kiểm `prViecNho2.tests.ts` |
 | 08/10/2026 | `pr-viec-nho-1008` · Opus 5.5 | 6 việc nhỏ: chip lưới FT đọc trạng thái; UNION Ý thức đủ AS + DTL1 quét cột trần; 409 email dưới ô Sửa thông tin; chip `+n` 44px ở điện thoại; Chốt lên FT tách "n em chờ duyệt đề xuất"; lỗi kho tệp ≠ mất kết nối Turso; phép kiểm `prViecNho.tests.ts` |
