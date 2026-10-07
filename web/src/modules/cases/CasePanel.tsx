@@ -412,7 +412,7 @@ function buildLichSu(data: CaseDetail, ngan: (d: string | null | undefined) => s
             </span>
           )}
           {f.note && <span className="block text-slate-300">{f.note}</span>}
-          {f.phuTrach && <span className="block text-xs text-slate-400">Phụ trách: {f.phuTrach}</span>}
+          {f.nguoiDay && <span className="block text-xs text-slate-400">Phụ trách: {f.nguoiDay}</span>}
           {f.remainingIssue && <span className="block text-xs text-slate-400">Còn tồn / Ghi chú: {f.remainingIssue}</span>}
           {f.decisionNote && (
             <span className="block text-xs text-slate-400">{f.nextStep === 'adjust' || f.nextStep === 'propose' ? 'Lý do' : 'Ghi chú'}: {f.decisionNote}</span>

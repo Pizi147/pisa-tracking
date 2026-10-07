@@ -62,10 +62,12 @@ export function buildLt2bDemo(ctx: BuildCtx): { em: number } {
   ]);
   // D11 · ghi Mini Test 58% của Lâm Khánh Vy (người dạy bổ trợ = GVCN lớp ELE 02, mặc định khi chưa có GVBM đúng môn)
   const pa = (sid: number) => conn.prepare(
-    `SELECT iv.id FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE sc.student_id = ? AND iv.kind = 'bo_tro_mien_phi' AND iv.status = 'started' ORDER BY iv.id LIMIT 1`).get(sid) as any;
-  updateResult(ql, pa(vy).id, {
+    `SELECT iv.id, iv.performer_user_id FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE sc.student_id = ? AND iv.kind = 'bo_tro_mien_phi' AND iv.status = 'started' ORDER BY iv.id LIMIT 1`).get(sid) as any;
+  const paVy = pa(vy);
+  updateResult(ql, paVy.id, {
     outcome: 'unchanged', note: 'Em làm Mini Test còn sai nhiều phần Writing và Speaking.', observedOn: '2026-09-14',
     miniTest: { tyLe: 58, ngay: '2026-09-13' },
+    soBuoi: 1, nguoiDay: { performerUserId: paVy.performer_user_id },   // PR-PA (§8): PA có Số buổi (Mini Test) → Số buổi tuần này + Người dạy
   } as any);
 
   // D12 · Pre FOU 03 — một em 52%, Quản lý cho lên FOU 15

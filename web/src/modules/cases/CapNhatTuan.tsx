@@ -149,7 +149,7 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved, on
         remainingIssue: remaining.trim() || undefined,
         /* Lý do chỉ gửi khi có ô lý do thật — ô "Ghi chú" riêng đã gộp vào "Vấn đề còn tồn / Ghi chú" (PR-LUI-a2). */
         decisionNote: (needReason || decision === 'ask_manager' || (lanCuoi && outcome === 'insufficient')) ? reason.trim() || undefined : undefined,
-        phuTrach: nguoiThanhPayload(phuTrach),
+        nguoiDay: nguoiThanhPayload(phuTrach),   // PR-PA: body đổi tên (Task 5 làm lại panel)
       };
       if (decision === 'end') body.completedOn = endOn || undefined;
       if (coMiniTest) body.miniTest = { tyLe: Number(mtTyLe.replace(',', '.')), ngay: mtNgay };

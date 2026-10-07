@@ -398,6 +398,8 @@ export async function runPrSosTests(t: YThucTestKit) {
     const lopMoi = get(`SELECT c.id, ta.user_id FROM classes c JOIN teacher_assignments ta ON ta.class_id = c.id AND ta.skill = 'writing2' AND ta.status = 'active'
       WHERE c.is_fast_track = 1 AND c.status = 'active' AND c.id != ? AND ta.user_id != COALESCE(?, 0) LIMIT 1`, CLASS, iv.performer_user_id);   // PR-PA: PA Tự học không người
     assert(lopMoi, 'Bộ thử thiếu lớp FT khác có GV W2 khác');
+    /* PR-PA (§8): Tự học không có người — bàn giao bỏ qua (prPa PA8); PA Tutor thì đổi người. */
+    conn.prepare(`UPDATE case_interventions SET kind = 'tutor' WHERE id = ?`).run(iv.id);
     sosAuto.banGiaoPaQuyChe(st.id, lopMoi.id, P.admin.userId);
     assert(get('SELECT performer_user_id u FROM case_interventions WHERE id = ?', iv.id).u === lopMoi.user_id, 'chưa đổi người');
     assert(get(`SELECT new_value v FROM sos_case_history WHERE case_id = ? AND field = 'pa_performer'`, c.id)?.v.includes(' → '), 'thiếu lịch sử bàn giao');

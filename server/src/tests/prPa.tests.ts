@@ -239,4 +239,153 @@ export async function runPrPaTests(t: YThucTestKit) {
     assert(e.status === 400, `loại không có số buổi: ${JSON.stringify(e)}`);
     assert(!get(`SELECT 1 FROM case_interventions WHERE case_id = ? AND description = 'PA thử số buổi sai'`, c), 'PA sai vẫn được ghi');
   });
+
+  // ------------------------------------------------------------------ Task 2 · Kết quả có số buổi, Sửa PA, Điều chỉnh cùng ô
+  console.log('\nPR-PA · Task 2 (Kết quả có số buổi, Sửa PA, Điều chỉnh)');
+  const sosAuto: any = await import('../cases/sosAuto.ts');
+  const { can } = await import('../permissions.ts');
+  const KQ = { decision: 'keep', outcome: 'partial', note: 'Em nghe chép đều hơn tuần trước' };
+  const GV_L = P.lrTeacher.userId;
+  /** Case mới + PA Tutor 10 buổi, Người dạy = GV Listening, bắt đầu 3 tuần trước. */
+  const tutor10 = (ten: string, o: Record<string, unknown> = {}) => {
+    const c = caseThu(ten);
+    const dto = cases.recordIntervention(P.lrTeacher, c, {
+      kind: 'tutor', description: 'Tutor nghe chép 10 buổi', soBuoi: 10, performerUserId: GV_L, status: 'started', startedDate: t.addDays(TODAY, -21), ...o,
+    }) as any;
+    return { c, iv: Math.max(...dto.interventions.map((x: any) => x.id)) as number };
+  };
+  const paDto = (c: number, iv: number) => (cases.caseDetail(P.lrTeacher, c) as any).interventions.find((x: any) => x.id === iv);
+  const fuCua = (iv: number) => all('SELECT * FROM case_followups WHERE intervention_id = ? ORDER BY id', iv);
+  const revCua = (iv: number) => all('SELECT * FROM case_intervention_revisions WHERE intervention_id = ? ORDER BY id', iv);
+
+  check('PA4 · Kết quả: PA có Số buổi → "Số buổi tuần này" bắt buộc 0–60; Người dạy tuần này bắt buộc khi ≥ 1 (không khi 0); đếm 3 + 2 + 0 = 5/10 qua 3 tuần', () => {
+    const { c, iv } = tutor10('KQ');
+    const thieu = maLoi(() => cases.updateResult(P.lrTeacher, iv, { ...KQ, nguoiDay: { performerUserId: GV_L } }));
+    assert(thieu.status === 400 && thieu.msg.includes('Số buổi tuần này'), `thiếu số buổi: ${JSON.stringify(thieu)}`);
+    const vuot = maLoi(() => cases.updateResult(P.lrTeacher, iv, { ...KQ, soBuoi: 61, nguoiDay: { performerUserId: GV_L } }));
+    assert(vuot.status === 400 && vuot.msg.includes('Từ 0 đến 60 buổi'), `61: ${JSON.stringify(vuot)}`);
+    const khongNguoi = maLoi(() => cases.updateResult(P.lrTeacher, iv, { ...KQ, soBuoi: 3, observedOn: t.addDays(TODAY, -14) }));
+    assert(khongNguoi.status === 400 && khongNguoi.msg.includes('Người dạy tuần này'), `thiếu người dạy: ${JSON.stringify(khongNguoi)}`);
+    assert(fuCua(iv).length === 0, 'lỗi mà vẫn ghi');
+    cases.updateResult(P.lrTeacher, iv, { ...KQ, soBuoi: 3, nguoiDay: { performerUserId: GV_L }, observedOn: t.addDays(TODAY, -14) });
+    cases.updateResult(P.lrTeacher, iv, { ...KQ, soBuoi: '2', nguoiDay: { performerName: 'Tutor ngoài Hà' }, observedOn: t.addDays(TODAY, -7) });
+    cases.updateResult(P.lrTeacher, iv, { ...KQ, soBuoi: 0, nguoiDay: null });   // 0 = em nghỉ: không cần người dạy
+    const f = fuCua(iv);
+    assert(f.map((x) => x.so_buoi).join() === '3,2,0', `so_buoi: ${f.map((x) => x.so_buoi)}`);
+    assert(f[0].phu_trach_user_id === GV_L && f[1].phu_trach_ten === 'Tutor ngoài Hà' && f[2].phu_trach_user_id === null && f[2].phu_trach_ten === null, JSON.stringify(f));
+    const pa = paDto(c, iv);
+    assert(pa.soBuoi === 10 && pa.daDay === 5, `DTO: soBuoi ${pa.soBuoi} daDay ${pa.daDay}`);
+    const ten = get('SELECT full_name FROM users WHERE id = ?', GV_L).full_name;
+    const fd = (cases.caseDetail(P.lrTeacher, c) as any).followups.filter((x: any) => x.interventionId === iv);
+    assert(fd.length === 3 && fd.every((x: any) => 'soBuoi' in x && 'nguoiDay' in x && !('phuTrach' in x)), JSON.stringify(fd));
+    assert(fd.find((x: any) => x.soBuoi === 3).nguoiDay === ten && fd.find((x: any) => x.soBuoi === 2).nguoiDay === 'Tutor ngoài Hà', JSON.stringify(fd));
+    /* PA không có Số buổi: không bắt; Tự học (có Số buổi) không có người dạy — gửi kèm bị bỏ qua, không bắt người. */
+    const thuong = cases.recordIntervention(P.lrTeacher, c, { kind: 'teaching_adjust', description: 'Đổi cách chữa bài nghe', status: 'started', startedDate: TODAY }) as any;
+    const ta = Math.max(...thuong.interventions.map((x: any) => x.id));
+    cases.updateResult(P.lrTeacher, ta, KQ);
+    assert(fuCua(ta)[0].so_buoi === null && paDto(c, ta).soBuoi === null && paDto(c, ta).daDay === 0, 'PA không số buổi');
+    const tu = cases.recordIntervention(P.lrTeacher, c, { kind: 'self_study', description: 'Tự học nghe chép 8 buổi', soBuoi: 8, status: 'started', startedDate: TODAY }) as any;
+    const ss = Math.max(...tu.interventions.map((x: any) => x.id));
+    cases.updateResult(P.lrTeacher, ss, { ...KQ, soBuoi: 2, nguoiDay: { performerUserId: GV_L } });
+    const fs = fuCua(ss)[0];
+    assert(fs.so_buoi === 2 && fs.phu_trach_user_id === null && fs.phu_trach_ten === null, `Tự học: ${JSON.stringify(fs)}`);
+  });
+
+  check('PA5 · Sửa PA: Số buổi < đã dạy → 400; Ngày bắt đầu khoá sau Kết quả; Loại không đổi; nhật ký sua_pa cũ → mới + audit; không đổi gì → không ghi; PA kết thúc → 400; người ngoài quyền → 403', () => {
+    const { c, iv } = tutor10('SUA');
+    cases.updateResult(P.lrTeacher, iv, { ...KQ, soBuoi: 5, nguoiDay: { performerUserId: GV_L } });
+    const nho = maLoi(() => cases.suaPa(P.lrTeacher, iv, { soBuoi: 4 }));
+    assert(nho.status === 400 && nho.msg.includes('Đã dạy 5 buổi'), `số buổi < đã dạy: ${JSON.stringify(nho)}`);
+    const ngay = maLoi(() => cases.suaPa(P.lrTeacher, iv, { startedDate: t.addDays(TODAY, -20) }));
+    assert(ngay.status === 400 && ngay.msg.includes('Ngày bắt đầu'), `ngày bắt đầu sau kết quả: ${JSON.stringify(ngay)}`);
+    const loai = maLoi(() => cases.suaPa(P.lrTeacher, iv, { kind: 'self_study' }));
+    assert(loai.status === 400, `đổi loại: ${JSON.stringify(loai)}`);
+    assert(revCua(iv).length === 0, 'lỗi mà vẫn ghi nhật ký');
+    const ra = cases.suaPa(P.lrTeacher, iv, { description: 'Tutor nghe chép 12 buổi, thêm Section 4', soBuoi: 12, performerName: 'Tutor ngoài Lan' }) as any;
+    const r = revCua(iv);
+    assert(r.length === 1 && r[0].source === 'sua_pa' && r[0].old_so_buoi === 10 && r[0].new_so_buoi === 12
+      && r[0].old_performer_user_id === GV_L && r[0].new_performer_name === 'Tutor ngoài Lan' && r[0].new_performer_user_id === null
+      && r[0].old_description === 'Tutor nghe chép 10 buổi' && r[0].new_description === 'Tutor nghe chép 12 buổi, thêm Section 4'
+      && r[0].old_started_date === t.addDays(TODAY, -21) && r[0].new_started_date === t.addDays(TODAY, -21), JSON.stringify(r));
+    const row = get('SELECT * FROM case_interventions WHERE id = ?', iv);
+    assert(row.so_buoi === 12 && row.performer_name === 'Tutor ngoài Lan' && row.performer_user_id === null && row.kind === 'tutor', JSON.stringify(row));
+    const pa = ra.interventions.find((x: any) => x.id === iv);
+    assert(pa.daDay === 5 && pa.revisions.length === 1 && pa.revisions[0].source === 'sua_pa'
+      && pa.revisions[0].before.soBuoi === 10 && pa.revisions[0].after.soBuoi === 12
+      && pa.revisions[0].before.startedDate === t.addDays(TODAY, -21), JSON.stringify(pa.revisions));
+    assert(get(`SELECT COUNT(*) n FROM audit_logs WHERE action = 'intervention.edit' AND entity_id = ?`, iv).n === 1, 'audit intervention.edit');
+    /* Không đổi gì → trả Case, không ghi. Để trống Số buổi được (null = xoá) — vẫn ≥ đã dạy không áp. */
+    cases.suaPa(P.lrTeacher, iv, { description: 'Tutor nghe chép 12 buổi, thêm Section 4', soBuoi: 12 });
+    assert(revCua(iv).length === 1, 'không đổi mà vẫn ghi');
+    cases.suaPa(P.lrTeacher, iv, { soBuoi: null });
+    assert(get('SELECT so_buoi FROM case_interventions WHERE id = ?', iv).so_buoi === null && revCua(iv).length === 2 && revCua(iv)[1].new_so_buoi === null, 'xoá số buổi');
+    /* PA chưa có Kết quả: đổi Ngày bắt đầu được, nhật ký cũ → mới. */
+    const moi = tutor10('SUA2', { startedDate: TODAY });
+    cases.suaPa(P.lrTeacher, moi.iv, { startedDate: t.addDays(TODAY, -3) });
+    const r2 = revCua(moi.iv);
+    assert(get('SELECT started_date FROM case_interventions WHERE id = ?', moi.iv).started_date === t.addDays(TODAY, -3)
+      && r2.length === 1 && r2[0].old_started_date === TODAY && r2[0].new_started_date === t.addDays(TODAY, -3), JSON.stringify(r2));
+    /* Người ngoài quyền (GV Speaking, Case Listening) → 403. */
+    assert(!can(P.sTeacher, 'sos.edit', { classId: classId('MB FT 101'), skill: 'listening' }), 'GV Speaking có quyền Listening?');
+    const q = maLoi(() => cases.suaPa(P.sTeacher, moi.iv, { soBuoi: 11 }));
+    assert(q.status === 403, `quyền: ${JSON.stringify(q)}`);
+    /* Tự học: gửi người bị bỏ qua (không có ô người). */
+    const tu = cases.recordIntervention(P.lrTeacher, moi.c, { kind: 'self_study', description: 'Tự học nghe chép mỗi ngày', status: 'started', startedDate: TODAY }) as any;
+    const ss = Math.max(...tu.interventions.map((x: any) => x.id));
+    cases.suaPa(P.lrTeacher, ss, { soBuoi: 6, performerUserId: GV_L });
+    const sr = get('SELECT * FROM case_interventions WHERE id = ?', ss);
+    assert(sr.so_buoi === 6 && sr.performer_user_id === null && sr.performer_name === null, `Tự học: ${JSON.stringify(sr)}`);
+    /* PA đã kết thúc → 400. */
+    cases.updateResult(P.lrTeacher, moi.iv, { decision: 'end', outcome: 'improved', note: 'Em nghe số và tên riêng đúng hết', soBuoi: 1, nguoiDay: { performerUserId: GV_L } });
+    const ket = maLoi(() => cases.suaPa(P.lrTeacher, moi.iv, { soBuoi: 11 }));
+    assert(ket.status === 400, `PA đã kết thúc: ${JSON.stringify(ket)}`);
+  });
+
+  check('PA6 · Điều chỉnh đổi Số buổi: ghi revisions adjust cũ → mới; nhỏ hơn đã dạy (tính cả tuần này) → 400', () => {
+    const { c, iv } = tutor10('DC');
+    cases.updateResult(P.lrTeacher, iv, { ...KQ, soBuoi: 4, nguoiDay: { performerUserId: GV_L } });
+    const nho = maLoi(() => cases.updateResult(P.lrTeacher, iv, { ...KQ, decision: 'adjust', decisionNote: 'Rút ngắn số buổi', soBuoi: 2, nguoiDay: { performerUserId: GV_L }, adjust: { soBuoi: 5 } }));
+    assert(nho.status === 400 && nho.msg.includes('Đã dạy 6 buổi'), `nhỏ hơn đã dạy: ${JSON.stringify(nho)}`);
+    cases.updateResult(P.lrTeacher, iv, { ...KQ, decision: 'adjust', decisionNote: 'Em cần thêm buổi chép chính tả', soBuoi: 2, nguoiDay: { performerUserId: GV_L }, adjust: { soBuoi: 14 } });
+    const r = revCua(iv);
+    assert(r.length === 1 && r[0].source === 'adjust' && r[0].old_so_buoi === 10 && r[0].new_so_buoi === 14 && r[0].followup_id !== null, JSON.stringify(r));
+    const pa = paDto(c, iv);
+    assert(pa.soBuoi === 14 && pa.daDay === 6 && pa.revisions[0].before.soBuoi === 10 && pa.revisions[0].after.soBuoi === 14, JSON.stringify(pa));
+  });
+
+  check('PA7 · Bổ trợ nhóm: Kết quả chép Số buổi + Người dạy tuần này sang dòng anh em; Điều chỉnh Số buổi áp cả nhóm', () => {
+    const NHOM = 'mt:pa7';
+    const ids: number[] = taoPa.chenPa(conn, [caseThu('NHOM1'), caseThu('NHOM2')].map((caseId) => ({
+      caseId, kind: 'bo_tro_mien_phi', description: 'Bổ trợ miễn phí nhóm thử', status: 'started', soBuoi: 6, nhomBoTro: NHOM,
+      startedDate: TODAY, cycleStartedOn: TODAY, actionDue: d.weeklyUpdateDue(TODAY),
+    })));
+    cases.updateResult(P.lrTeacher, ids[0], { ...KQ, soBuoi: 2, nguoiDay: { performerName: 'Cô Hà ngoài' } });
+    const anh = fuCua(ids[1]);
+    assert(anh.length === 1 && anh[0].so_buoi === 2 && anh[0].phu_trach_ten === 'Cô Hà ngoài', `anh em: ${JSON.stringify(anh)}`);
+    cases.updateResult(P.lrTeacher, ids[0], { ...KQ, decision: 'adjust', decisionNote: 'Nhóm cần thêm buổi', soBuoi: 1, nguoiDay: { performerName: 'Cô Hà ngoài' }, adjust: { soBuoi: 8 } });
+    assert(ids.every((id) => get('SELECT so_buoi FROM case_interventions WHERE id = ?', id).so_buoi === 8), 'Điều chỉnh chưa áp cả nhóm');
+    assert(revCua(ids[1]).length === 1 && revCua(ids[1])[0].new_so_buoi === 8, 'nhật ký dòng anh em');
+  });
+
+  check('PA8 · Xác nhận PA quy chế nhận Số buổi (1–60); Tự học bỏ người ở Xác nhận PA + bàn giao', () => {
+    const c = caseThu('XN');
+    const [tut, tu] = taoPa.chenPa(conn, [
+      { caseId: c, kind: 'tutor', description: 'Tutor theo quy chế', status: 'planned', preset: true, mocQuyChe: 'one_month' },
+      { caseId: c, kind: 'self_study', description: 'Tự học theo quy chế', status: 'planned', preset: true, mocQuyChe: 'one_month' },
+    ]);
+    const MO_TA = 'Tutor Listening hai buổi mỗi tuần, cô Hà chữa bài nghe.';
+    const sai = maLoi(() => sosAuto.xacNhanPaQuyChe(P.lrTeacher, tut, { description: MO_TA, soBuoi: 61 }));
+    assert(sai.status === 400 && sai.msg.includes('Từ 1 đến 60 buổi'), `61: ${JSON.stringify(sai)}`);
+    sosAuto.xacNhanPaQuyChe(P.lrTeacher, tut, { description: MO_TA, soBuoi: 8, performerSelf: true });
+    const r = get('SELECT * FROM case_interventions WHERE id = ?', tut);
+    assert(r.so_buoi === 8 && r.status === 'started' && r.performer_user_id === GV_L, JSON.stringify(r));
+    assert(revCua(tut).length === 1 && revCua(tut)[0].new_so_buoi === 8, 'nhật ký xác nhận có số buổi');
+    sosAuto.xacNhanPaQuyChe(P.lrTeacher, tu, { description: 'Tự học Listening, nghe chép mỗi ngày 15 phút.', performerUserId: GV_L });
+    const s = get('SELECT * FROM case_interventions WHERE id = ?', tu);
+    assert(s.performer_user_id === null && s.performer_name === null && s.status === 'started', `Tự học xác nhận: ${JSON.stringify(s)}`);
+    const sid = get('SELECT student_id FROM sos_cases WHERE id = ?', c).student_id;
+    sosAuto.banGiaoPaQuyChe(sid, classId('MB FT 101'), P.admin.userId);
+    assert(get('SELECT performer_user_id u FROM case_interventions WHERE id = ?', tu).u === null, 'bàn giao gán người cho Tự học');
+    /* Nhập bù không người: form.tests (F3-BF). */
+  });
 }

@@ -28,7 +28,7 @@ export async function runDieuChinhPaTests(t: YThucTestKit) {
    * MỘT học viên mới ở MB FT 101, MỘT Case Listening do GV Listening (`P.lrTeacher`) mở, MỘT PA tự học đang chạy từ hôm nay,
    * người thực hiện là chính GV đó. Mô tả gốc: "Tự học Listening — nghe chép 15 phút mỗi ngày".
    */
-  function taoCase(): { sid: number; caseId: number; ivId: number } {
+  function taoCase(kind = 'self_study'): { sid: number; caseId: number; ivId: number } {
     soThuTu += 1;
     const tag = `S2-${soThuTu}`;
     const cid = classId('MB FT 101');
@@ -46,10 +46,10 @@ export async function runDieuChinhPaTests(t: YThucTestKit) {
       primaryCode: domain.issuesForTopic('listening')[0].code, idempotencyKey: `pr-s2-${tag}`,
     }) as any;
     const d = cases.recordIntervention(P.lrTeacher, c.id, {
-      kind: 'self_study', description: 'Tự học Listening — nghe chép 15 phút mỗi ngày',
+      kind, description: 'Tự học Listening — nghe chép 15 phút mỗi ngày',
       performerSelf: true, status: 'started', startedDate: TODAY,
     }) as any;
-    const ivId = d.interventions.find((i: any) => i.kind === 'self_study').id as number;
+    const ivId = d.interventions.find((i: any) => i.kind === kind).id as number;
     return { sid, caseId: c.id as number, ivId };
   }
   const ivRow = (id: number) => conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(id) as any;
@@ -205,7 +205,7 @@ export async function runDieuChinhPaTests(t: YThucTestKit) {
   });
 
   check('PR-S2 · S2: Điều chỉnh hai lần: đọc lại được cả hai bản cũ, ngày, người, lý do; PA vẫn là MỘT, loại không đổi', () => {
-    const { ivId, caseId } = taoCase();
+    const { ivId, caseId } = taoCase('teaching_adjust');   // PR-PA (§8): Tự học không có ô người — đổi người cần loại có người
     cases.updateResult(P.lrTeacher, ivId, {
       ...ADJ_OK, outcome: 'unchanged', note: 'Nghe chép chưa đều, em bỏ hai buổi',
       adjust: { kind: 'tutor', description: 'Tự học Listening — nghe chép 15 phút buổi sáng' },
@@ -216,14 +216,13 @@ export async function runDieuChinhPaTests(t: YThucTestKit) {
     });
     const iv = ivRow(ivId);
     const revs = revRows(ivId);
-    assert(iv.kind === 'self_study', `Điều chỉnh không được đổi loại PA: ${iv.kind}`);
+    assert(iv.kind === 'teaching_adjust', `Điều chỉnh không được đổi loại PA: ${iv.kind}`);
     assert(iv.description === 'Tự học Listening — nghe chép 25 phút buổi sáng' && iv.performer_name === 'Trợ giảng Mai'
       && iv.performer_user_id === null && iv.followup_due === null /* PR-SOS Q28-4: ngày gửi kèm bị bỏ qua */, `Bản hiện tại sai: ${JSON.stringify(iv)}`);
     assert(revs.length === 2, `Phải có 2 dòng lịch sử, có ${revs.length}`);
     assert(revs[0].old_description === 'Tự học Listening — nghe chép 15 phút mỗi ngày'
       && revs[0].new_description === 'Tự học Listening — nghe chép 15 phút buổi sáng', `Bản 1 sai: ${JSON.stringify(revs[0])}`);
-    /* PR-PA (§8): Tự học tạo ra không có người (performerSelf bị bỏ) → bản cũ không người. */
-    assert(revs[1].old_description === revs[0].new_description && revs[1].old_performer_user_id === null
+    assert(revs[1].old_description === revs[0].new_description && revs[1].old_performer_user_id === P.lrTeacher.userId
       && revs[1].new_performer_name === 'Trợ giảng Mai' && revs[1].new_performer_user_id === null, `Bản 2 sai: ${JSON.stringify(revs[1])}`);
     assert(revs[0].reason === 'Em đi học thêm buổi tối nên đổi giờ' && revs[0].actor_user_id === P.lrTeacher.userId
       && revs[1].actor_user_id === P.mbManager.userId, 'Lý do / người điều chỉnh sai');
@@ -338,13 +337,13 @@ export async function runDieuChinhPaTests(t: YThucTestKit) {
   console.log('\nPR-S2 · 5. Sửa gợi ý lúc xác nhận có lịch sử; "Ghi đã làm" không ghi đè mô tả');
 
   check('PR-S2 · S2 → PR-SOS: sửa mô tả / người thực hiện lúc Xác nhận PA ghi MỘT dòng lịch sử (bản máy gán → bản đã sửa); xác nhận nguyên văn thì không; không nhận ngày kết thúc (Q28-4)', () => {
-    const goiY = (caseId: number) => Number(conn.prepare(
+    const goiY = (caseId: number, kind = 'self_study') => Number(conn.prepare(
       `INSERT INTO case_interventions (case_id, kind, description, status, preset, moc_quy_che, performer_user_id, created_at)
-       VALUES (?, 'self_study', 'Tự học · 1 tháng', 'planned', 1, 'one_month', ?, ?)`,
-    ).run(caseId, P.lrTeacher.userId, NOW).lastInsertRowid);
+       VALUES (?, ?, 'Tự học · 1 tháng', 'planned', 1, 'one_month', ?, ?)`,
+    ).run(caseId, kind, P.lrTeacher.userId, NOW).lastInsertRowid);
     const a = goiY(taoCase().caseId);
     const b = goiY(taoCase().caseId);
-    const c = goiY(taoCase().caseId);
+    const c = goiY(taoCase().caseId, 'tutor');   // PR-PA (§8): đổi người chỉ với loại có ô người (Tự học bỏ qua)
     sosAuto.xacNhanPaQuyChe(P.lrTeacher, a, { description: 'Tự học 1 tháng — nghe chép Section 2 mỗi ngày' });
     sosAuto.xacNhanPaQuyChe(P.lrTeacher, b, { description: 'Tự học · 1 tháng' });   // PR-S4F #9: nguyên văn = gửi lại đúng chữ máy gán
     sosAuto.xacNhanPaQuyChe(P.lrTeacher, c, { description: 'Tự học · 1 tháng', performerUserId: P.w1Teacher.userId, followupDue: addDays(TODAY, 40) } as any);

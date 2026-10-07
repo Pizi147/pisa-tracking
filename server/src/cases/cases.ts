@@ -34,9 +34,9 @@ import { isRatioCycle, programmeCodeOfCycle } from '../normal/regular.ts';
 import { suggestCaseOwner } from './owner.ts';
 import { caseKhacChuongTrinh, chuongTrinhCuaLop } from './sos.ts';
 import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
-import { PLAN_DECISIONS, coNguoiDay, coSoBuoi, decisionToStep, duongDotTest, kiemSoBuoiPa, soBuoiTu, tuanLich, type PlanDecision } from '../../../shared/domain/index.ts';
+import { PLAN_DECISIONS, coNguoiDay, decisionToStep, duongDotTest, kiemSoBuoiTuan, soBuoiTu, tuanLich, type PlanDecision } from '../../../shared/domain/index.ts';
 import { chenPa } from './taoPa.ts';
-import { apDungDieuChinh, chuanHoaDieuChinh, lichSuDieuChinhCuaCase } from './planRevisions.ts';
+import { apDungDieuChinh, chuanHoaDieuChinh, daDayCua, ghiBanDieuChinh, lichSuDieuChinhCuaCase, soBuoiMoi } from './planRevisions.ts';
 import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
 import { dienMocQuyChe, kiemNoiDungCase, tenGiuaCua } from './sosAuto.ts';
 import { xoaTepSauGiaoDich } from '../platform/attachments.ts';
@@ -905,10 +905,7 @@ export function recordIntervention(p: Principal, caseId: number, input: {
     throw badRequest('Việc đã làm xong rồi thì không còn gì để duyệt — phương án cần duyệt phải ở "đã lên kế hoạch".');
   }
   /* PR-PA (§8): Số buổi chỉ ở loại có số buổi; người KHÔNG bắt buộc. Tự học không có người — vẫn kiểm (gửi sai vẫn 400) nhưng không lưu. */
-  const soBuoi = soBuoiTu(input.soBuoi);
-  if (soBuoi !== null && !coSoBuoi(input.kind)) throw badRequest('Loại PA này không có Số buổi.');
-  const loiSoBuoi = kiemSoBuoiPa(input.soBuoi);
-  if (loiSoBuoi) throw badRequest(`Số buổi: ${loiSoBuoi}.`);
+  const soBuoi = soBuoiMoi({ kind: input.kind }, input.soBuoi, 0);
   const nguoi = chuanHoaNguoiThucHien(p, input, { nhom: 'giao_vien', batBuoc: false });
   const performerUserId = coNguoiDay(input.kind) ? nguoi?.userId ?? null : null;
   const performerName = coNguoiDay(input.kind) ? nguoi?.name ?? null : null;
@@ -1365,7 +1362,7 @@ export function backfillCase(p: Principal, input: {
     if (a.fromDate > a.toDate) throw badRequest('Một dòng "đã làm gì" có ngày bắt đầu sau ngày kết thúc.');
     if (a.toDate > today) throw badRequest('Không ghi được một việc đã xong ở ngày tương lai.');
     if ((chuTuDo(a.description, `Dòng PA ${i + 1}`, 2000) ?? '').length < 3) throw badRequest('Mỗi dòng "đã làm gì" phải nói rõ đã làm gì.');
-    chuanHoaNguoiThucHien(p, a, { nhom: 'giao_vien', batBuoc: true });
+    chuanHoaNguoiThucHien(p, a, { nhom: 'giao_vien', batBuoc: false });   // PR-PA (§8): Người dạy không bắt buộc
   }
   const note = chuTuDo(input.note, 'Kết luận', 2000) ?? '';   // PR-Dọn (Q4, quét #24)
   /*
@@ -1670,6 +1667,9 @@ export function caseDetail(p: Principal, caseId: number) {
   const theCuaPa = theCuaDoiTuong('intervention',
     (conn.prepare('SELECT id FROM case_interventions WHERE case_id = ?').all(caseId) as any[]).map((r) => r.id as number));
   const mtKeCua = mtKeTheoPa(caseId);
+  /* PR-PA (§8): Đã dạy của mọi PA trong Case — một câu. */
+  const daDayTheoPa = new Map((conn.prepare('SELECT intervention_id i, COALESCE(SUM(so_buoi), 0) n FROM case_followups WHERE case_id = ? GROUP BY intervention_id')
+    .all(caseId) as any[]).map((r) => [r.i as number, Number(r.n)]));
 
   const interventions = (conn
     .prepare(
@@ -1684,6 +1684,9 @@ export function caseDetail(p: Principal, caseId: number) {
     )
     .all(caseId) as any[]).map((iv) => ({
       id: iv.id, kind: iv.kind, description: iv.description, status: iv.status,
+      /** PR-PA (§8): Số buổi của PA (null = không đếm) và Đã dạy (tổng Số buổi tuần này). */
+      soBuoi: (iv.so_buoi ?? null) as number | null,
+      daDay: daDayTheoPa.get(iv.id) ?? 0,
       performer: iv.performer_account ?? iv.performer_name ?? null,
       /** Tài khoản người làm hiện tại — panel Điều chỉnh lấy làm giá trị đầu (PR-UX3 Q15); null khi người làm ngoài hệ thống. */
       performerUserId: iv.performer_user_id ?? null,
@@ -1764,8 +1767,9 @@ export function caseDetail(p: Principal, caseId: number) {
       /* PR-S2 (S4): vấn đề còn tồn, và lý do (Điều chỉnh/Thay) hoặc ghi chú của quyết định. */
       remainingIssue: (f.remaining_issue ?? null) as string | null,
       decisionNote: (f.decision_note ?? null) as string | null,
-      /* PR-LUI-a2: Người phụ trách của lần ghi (tài khoản hoặc tên ngoài). Dòng cũ null. */
-      phuTrach: (f.phu_trach_account ?? f.phu_trach_ten ?? null) as string | null,
+      /* PR-PA (§8): Người dạy tuần này (cột cũ `phu_trach_*` — PR-LUI-a2) + Số buổi tuần này. Dòng cũ null. */
+      nguoiDay: (f.phu_trach_account ?? f.phu_trach_ten ?? null) as string | null,
+      soBuoi: (f.so_buoi ?? null) as number | null,
     }));
 
   /* PR-DEPLOY (0b-3): chương trình GỐC của Case (lúc mở) trước, rồi mới tới chương trình lộ trình — Case "G+V" của em đã lên BE vẫn ghi "G+V", bộ nguyên nhân của FOU. */
@@ -3038,6 +3042,8 @@ export function updateResult(p: Principal, interventionId: number, input: {
     performerSelf?: boolean;
     /** Phương án mới là đề xuất "Khác" (`other_proposal`): chữ ô Ghi rõ (T13). */
     ghiRoKhac?: string | null;
+    /** PR-PA (§8): Số buổi của PA mới (Thay PA dùng cùng form Thêm PA). */
+    soBuoi?: unknown;
   } | null;
   /** Như `newPlan.ghiRoKhac` — nhận cả ở cấp ngoài cho tiện gửi từ form. */
   ghiRoKhac?: string | null;
@@ -3061,28 +3067,26 @@ export function updateResult(p: Principal, interventionId: number, input: {
     description?: string | null;
     performerSelf?: boolean; performerUserId?: number | null; performerName?: string | null;
     followupDue?: string | null;
+    /** PR-PA (§8): Số buổi mới của PA — ≥ đã dạy (tính cả tuần này); null = xoá. */
+    soBuoi?: unknown;
   } | null;
   /** Người thực hiện chu kỳ vừa rồi, nếu chưa ghi lúc lên kế hoạch. */
   performerSelf?: boolean; performerUserId?: number | null; performerName?: string | null;
   /** Điểm GIÁO VIÊN TỰ CHẤM kèm theo — không phải điểm chính thức. */
   metrics?: unknown;
-  /** PR-LUI-a2: Người phụ trách của lần ghi này — tài khoản nhân viên hoặc tên ngoài hệ thống. Không đổi người thực hiện PA. */
-  phuTrach?: { performerUserId?: number | null; performerName?: string | null } | null;
-}, opts: {
-  /** PR-LUI-a2: route bắt Người phụ trách; seed / phép kiểm cũ gọi thẳng không cần. */
-  batBuocPhuTrach?: boolean;
-} = {}) {
+  /**
+   * PR-PA (§8): Người dạy tuần này — tài khoản nhân viên hoặc tên ngoài (lưu cột cũ `phu_trach_*`, X2). Không đổi người của PA.
+   * Bắt buộc khi PA có Số buổi và `soBuoi ≥ 1`; Tự học không có ô người (bỏ qua).
+   */
+  nguoiDay?: { performerUserId?: number | null; performerName?: string | null } | null;
+  /** PR-PA (§8): Số buổi tuần này — bắt buộc khi PA có Số buổi, số nguyên 0–60 (0 = em nghỉ). */
+  soBuoi?: unknown;
+}) {
   const conn = db();
   const iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(interventionId) as any;
   if (!iv) throw notFound('Không tìm thấy phương án.');
   const c = loadCase(iv.case_id);
-  /* PR-LT2a (Q9): PA Bổ trợ do người dạy (mặc định GVCN cho FOU) ghi — `quyenBoTro`; PA khác vẫn theo kỹ năng (C02). */
-  if (iv.kind === 'bo_tro' || iv.kind === 'bo_tro_mien_phi') {
-    if (!quyenBoTro(p, iv)) throw forbidden('Bạn không có quyền cập nhật kết quả của Case này.');
-  } else {
-    require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c),
-      'Bạn không có quyền cập nhật kết quả của Case này.');
-  }
+  kiemQuyenPa(p, iv, c);
 
   if (iv.preset === 1 && !iv.confirmed_at) {
     throw badRequest('Phương án điền sẵn này chưa được xác nhận — xác nhận (hoặc sửa / thay) trước khi ghi kết quả.');
@@ -3191,10 +3195,17 @@ export function updateResult(p: Principal, interventionId: number, input: {
   const mtGhi = mtDong ? kiemMiniTest(mtDong, input.miniTest!) : null;
   const remainingIssue = String(input.remainingIssue ?? '').trim() || null;
   if (remainingIssue && remainingIssue.length > 300) throw badRequest('Vấn đề còn tồn / Ghi chú tối đa 300 ký tự.');
-  const phuTrach = chuanHoaNguoiThucHien(p, input.phuTrach ?? {}, { nhom: 'nhan_vien', batBuoc: false, nhan: 'Người phụ trách' });
-  if (!phuTrach && opts.batBuocPhuTrach) throw badRequest('Ghi Người phụ trách.');
-  /* Điều chỉnh: chuẩn hoá TRƯỚC giao dịch; sai thì không ghi gì. */
-  const adjustPatch = nextStep === 'adjust' ? chuanHoaDieuChinh(p, iv, input.adjust, observedOn) : null;
+  /* PR-PA (§8): PA có Số buổi → Số buổi tuần này bắt buộc (0–60); Người dạy tuần này bắt buộc khi ≥ 1. PA không Số buổi: không lưu số. */
+  const coDem = iv.so_buoi != null;
+  const loiTuan = coDem ? kiemSoBuoiTuan(input.soBuoi) : null;
+  if (loiTuan) throw badRequest(`Số buổi tuần này: ${loiTuan}.`);
+  const soBuoiTuan = coDem ? soBuoiTu(input.soBuoi) : null;
+  const nguoiDay = coNguoiDay(iv.kind)
+    ? chuanHoaNguoiThucHien(p, input.nguoiDay ?? {}, { nhom: 'nhan_vien', batBuoc: false, nhan: 'Người dạy tuần này' }) : null;
+  if (!nguoiDay && coNguoiDay(iv.kind) && (soBuoiTuan ?? 0) >= 1) throw badRequest('Ghi Người dạy tuần này.');
+  /* Điều chỉnh: chuẩn hoá TRƯỚC giao dịch; sai thì không ghi gì. Số buổi mới ≥ đã dạy SAU tuần này. */
+  const adjustPatch = nextStep === 'adjust'
+    ? chuanHoaDieuChinh(p, iv, input.adjust, observedOn, daDayCua(interventionId) + (soBuoiTuan ?? 0)) : null;
   const metrics = normalizeMetrics(input.metrics);
   if (input.evidenceAttemptId) {
     const a = conn.prepare('SELECT student_id FROM assessment_attempts WHERE id = ?').get(input.evidenceAttemptId) as any;
@@ -3212,13 +3223,13 @@ export function updateResult(p: Principal, interventionId: number, input: {
         `INSERT INTO case_followups (case_id, intervention_id, observed_on, observer_user_id,
                                      outcome, note, evidence_attempt_id,
                                      next_step, cycle_no, cycle_due, late, metrics,
-                                     remaining_issue, decision_note, created_at, phu_trach_user_id, phu_trach_ten)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+                                     remaining_issue, decision_note, created_at, phu_trach_user_id, phu_trach_ten, so_buoi)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       )
       .run(iv.case_id, interventionId, observedOn, p.userId,
            input.outcome, note, input.evidenceAttemptId ?? null,
            nextStep, cycleNo, cycleDue, late, metrics ? JSON.stringify(metrics) : null,
-           remainingIssue, decisionNote, nowIso(), phuTrach?.userId ?? null, phuTrach?.name ?? null);
+           remainingIssue, decisionNote, nowIso(), nguoiDay?.userId ?? null, nguoiDay?.name ?? null, soBuoiTuan);
     const followupId = Number(fInfo.lastInsertRowid);
 
     /*
@@ -3226,7 +3237,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
      * `performer_name = COALESCE(?, performer_name)` giữ tên cũ khi chỉ gửi `performerUserId` — kết quả là CẢ HAI cột
      * cùng có giá trị, phá luật "chỉ một trong hai" (Q5). Nay không gửi gì thì giữ nguyên cả hai cột đúng như cũ.
      */
-    const nguoiGuiLen = input.performerSelf || input.performerUserId != null || (input.performerName ?? '').trim()
+    const nguoiGuiLen = coNguoiDay(iv.kind) && (input.performerSelf || input.performerUserId != null || (input.performerName ?? '').trim())   // PR-PA: Tự học không người
       ? chuanHoaNguoiThucHien(p, input, { nhom: 'giao_vien', batBuoc: false })
       : null;
     const performerUserId = nguoiGuiLen ? nguoiGuiLen.userId : iv.performer_user_id;
@@ -3291,6 +3302,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
         status: 'started', startedDate: observedOn,
         rescheduleTarget: input.newPlan!.rescheduleTarget ?? null,
         ghiRoKhac: input.newPlan!.ghiRoKhac ?? input.ghiRoKhac ?? null,
+        soBuoi: input.newPlan!.soBuoi,
       }) as any;
       created = (conn
         .prepare('SELECT id FROM case_interventions WHERE case_id = ? ORDER BY id DESC LIMIT 1')
@@ -3342,6 +3354,76 @@ export function updateResult(p: Principal, interventionId: number, input: {
       entityType: 'case_intervention', entityId: interventionId,
       entityLabel: iv.description ?? iv.kind,
       after: { outcome: input.outcome, mode, nextStep, late: !!late, cycleNo, remainingIssue, decisionNote, adjust: adjustPatch },
+    });
+    return caseDetail(p, iv.case_id);
+  });
+}
+
+/**
+ * PR-PA: quyền ghi Kết quả / Sửa PA của MỘT PA — một chỗ (Task 3 thêm "người giữ việc" ở đây).
+ * PR-LT2a (Q9): PA Bổ trợ do người dạy (mặc định GVCN cho FOU) ghi — `quyenBoTro`; PA khác theo kỹ năng (C02).
+ */
+function kiemQuyenPa(p: Principal, iv: any, c: any, msg = 'Bạn không có quyền cập nhật kết quả của Case này.') {
+  if (iv.kind === 'bo_tro' || iv.kind === 'bo_tro_mien_phi') {
+    if (!quyenBoTro(p, iv)) throw forbidden(msg);
+  } else {
+    require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c), msg);
+  }
+}
+
+/**
+ * SỬA PA (PR-PA §8) — cùng form Thêm PA; Loại khoá (đổi loại là Thay). Quyền như Kết quả (`kiemQuyenPa`).
+ * Số buổi ≥ đã dạy (null = xoá); Ngày bắt đầu chỉ đổi khi PA chưa có Kết quả. Ô người: gửi BẤT KỲ khoá nào trong ba
+ * (`performerSelf` / `performerUserId` / `performerName`) = đặt lại (cả ba trống = xoá người); không gửi khoá nào = giữ. Tự học: bỏ qua người.
+ * Không đổi gì → trả Case, không ghi. Đổi → MỘT dòng nhật ký `sua_pa` (cũ → mới) + audit `intervention.edit`.
+ */
+export function suaPa(p: Principal, interventionId: number, input: {
+  description?: string | null; soBuoi?: unknown; kind?: string; startedDate?: string | null;
+  performerSelf?: boolean; performerUserId?: number | null; performerName?: string | null;
+}) {
+  const conn = db();
+  const iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(interventionId) as any;
+  if (!iv) throw notFound('Không tìm thấy phương án.');
+  kiemQuyenPa(p, iv, loadCase(iv.case_id), 'Bạn không có quyền sửa PA này.');
+  if (iv.status === 'cancelled') throw badRequest('Phương án này đã huỷ.');
+  if (iv.status === 'completed') throw badRequest('Phương án này đã kết thúc — không sửa được.');
+  if (input.kind !== undefined && input.kind !== iv.kind) throw badRequest('Không đổi được Loại PA — đổi loại thì chọn Thay PA.');
+  const oldDesc = (iv.description ?? null) as string | null;
+  let description = oldDesc;
+  if (typeof input.description === 'string' && input.description.trim() !== (oldDesc ?? '').trim()) {
+    description = input.description.trim();
+    if (description.length < 8) throw badRequest('Mô tả ngắn phải nói rõ làm gì cho em — ít nhất 8 ký tự.');
+  }
+  const soBuoi = soBuoiMoi(iv, input.soBuoi, daDayCua(interventionId));
+  const guiNguoi = coNguoiDay(iv.kind) && ['performerSelf', 'performerUserId', 'performerName'].some((k) => k in input);
+  const nguoi = guiNguoi ? chuanHoaNguoiThucHien(p, input, { nhom: 'giao_vien', batBuoc: false }) : null;
+  const performerUserId = guiNguoi ? nguoi?.userId ?? null : (iv.performer_user_id ?? null) as number | null;
+  const performerName = guiNguoi ? nguoi?.name ?? null : (iv.performer_name ?? null) as string | null;
+  let startedDate = (iv.started_date ?? null) as string | null;
+  if (input.startedDate && input.startedDate !== startedDate) {
+    if (!isIsoDate(input.startedDate)) throw badRequest('Ngày bắt đầu không hợp lệ.');
+    if (conn.prepare('SELECT 1 FROM case_followups WHERE intervention_id = ? LIMIT 1').get(interventionId)) {
+      throw badRequest('PA đã có Kết quả — không đổi Ngày bắt đầu được.');
+    }
+    startedDate = input.startedDate;
+  }
+  const truoc = { description: oldDesc, soBuoi: iv.so_buoi ?? null, performerUserId: iv.performer_user_id ?? null, performerName: iv.performer_name ?? null, startedDate: iv.started_date ?? null };
+  const sau = { description, soBuoi, performerUserId, performerName, startedDate };
+  if ((Object.keys(sau) as (keyof typeof sau)[]).every((k) => sau[k] === truoc[k])) return caseDetail(p, iv.case_id);
+  return tx(() => {
+    /* Chu kỳ đầu đang chạy (chưa có Kết quả) tính lại từ Ngày bắt đầu mới — như lúc Thêm PA. */
+    const doiChuKy = startedDate !== truoc.startedDate && iv.status === 'started' && !!iv.cycle_started_on && !!startedDate;
+    conn.prepare(`UPDATE case_interventions SET description = ?, so_buoi = ?, performer_user_id = ?, performer_name = ?, started_date = ?,
+        cycle_started_on = ?, action_due = ?, updated_at = ? WHERE id = ?`)
+      .run(description, soBuoi, performerUserId, performerName, startedDate,
+        doiChuKy ? startedDate : iv.cycle_started_on ?? null, doiChuKy ? weeklyUpdateDue(startedDate!) : iv.action_due ?? null, nowIso(), interventionId);
+    ghiBanDieuChinh({
+      iv, source: 'sua_pa', reason: 'Sửa PA', on: demoToday(), actorUserId: p.userId, followupId: null,
+      after: { ...sau, followupDue: iv.followup_due ?? null },
+    });
+    writeAudit({
+      actorUserId: p.userId, action: 'intervention.edit', entityType: 'case_intervention', entityId: interventionId,
+      entityLabel: `Case ${iv.case_id} · ${iv.kind}`, before: truoc, after: sau,
     });
     return caseDetail(p, iv.case_id);
   });
