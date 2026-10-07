@@ -49,37 +49,39 @@ export type Ctx = {
   date?: string;
 };
 
+/**
+ * PR-TD2-d: principal đọc bằng MỘT câu (trước: 5 câu nối tiếp, mỗi câu một lượt mạng Turso). Các cột dưới đây gắn vào câu có
+ * `users u` — `loadPrincipal` (theo id) và `resolveSession` (phiên JOIN users) dùng chung, đọc lại MỖI request (thu quyền có
+ * hiệu lực ngay). Ba khối JSON giữ đúng câu cũ (lọc, JOIN, thứ tự): vai (kèm quyền theo vai), quyền cấp riêng, phân công.
+ * `json(...)` vì cột con lấy qua truy vấn con mất kiểu JSON — không bọc thì quyền thành chuỗi.
+ */
+export const COT_PRINCIPAL = `u.id AS u_id, u.code AS u_code, u.full_name AS u_full_name, u.title AS u_title,
+  (SELECT json_group_array(json_array(g.id, g.branch_id, g.role_key, g.role_name, g.branch_name, json(g.perms))) FROM (
+     SELECT ur.id, ur.branch_id, r.key AS role_key, r.name_vi AS role_name, b.name AS branch_name,
+            (SELECT json_group_array(p.key) FROM role_permissions rp JOIN permissions p ON p.id = rp.permission_id
+              WHERE rp.role_id = r.id) AS perms
+       FROM user_roles ur JOIN roles r ON r.id = ur.role_id
+       LEFT JOIN branches b ON b.id = ur.branch_id
+      WHERE ur.user_id = u.id AND ur.status = 'active' ORDER BY ur.id) g) AS u_grants,
+  (SELECT json_group_array(json_array(up.branch_id, p.key, b.name))
+     FROM user_permissions up
+     JOIN permissions p ON p.id = up.permission_id
+     LEFT JOIN branches b ON b.id = up.branch_id
+    WHERE up.user_id = u.id) AS u_rieng,
+  (SELECT json_group_array(json_array(ta.id, ta.class_id, ta.skill, ta.is_core, ta.effective_from, ta.effective_to))
+     FROM teacher_assignments ta WHERE ta.user_id = u.id AND ta.status = 'active') AS u_phan_cong`;
+
 export function loadPrincipal(userId: number): Principal {
-  const conn = db();
-  const user = conn.prepare('SELECT * FROM users WHERE id = ?').get(userId) as any;
-  if (!user) throw forbidden('Tài khoản không tồn tại');
+  const row = db().prepare(`SELECT ${COT_PRINCIPAL} FROM users u WHERE u.id = ?`).get(userId) as any;
+  if (!row) throw forbidden('Tài khoản không tồn tại');
+  return principalTuDong(row);
+}
 
-  const permsByRole = new Map<string, Set<string>>();
-  for (const row of conn
-    .prepare(
-      `SELECT r.key AS role_key, p.key AS perm_key FROM role_permissions rp
-         JOIN roles r ON r.id = rp.role_id JOIN permissions p ON p.id = rp.permission_id`,
-    )
-    .all() as any[]) {
-    if (!permsByRole.has(row.role_key)) permsByRole.set(row.role_key, new Set());
-    permsByRole.get(row.role_key)!.add(row.perm_key);
-  }
-
-  const grants: Grant[] = (conn
-    .prepare(
-      `SELECT ur.id, ur.branch_id, r.key AS role_key, r.name_vi AS role_name, b.name AS branch_name
-         FROM user_roles ur JOIN roles r ON r.id = ur.role_id
-         LEFT JOIN branches b ON b.id = ur.branch_id
-        WHERE ur.user_id = ? AND ur.status = 'active' ORDER BY ur.id`,
-    )
-    .all(userId) as any[]).map((g) => ({
-      id: g.id,
-      roleKey: g.role_key,
-      roleName: g.role_name,
-      branchId: g.branch_id,
-      branchName: g.branch_name,
-      permissions: permsByRole.get(g.role_key) ?? new Set<string>(),
-    }));
+/** Dòng có các cột `COT_PRINCIPAL` → Principal. */
+export function principalTuDong(row: any): Principal {
+  const grants: Grant[] = (JSON.parse(row.u_grants) as any[][]).map(([id, branchId, roleKey, roleName, branchName, perms]) => ({
+    id, roleKey, roleName, branchId, branchName, permissions: new Set<string>(perms),
+  }));
 
   /*
    * QUYỀN CẤP RIÊNG CHO CÁ NHÂN (mục 7.3) — thêm vào dưới dạng một GRANT nữa.
@@ -90,44 +92,26 @@ export function loadPrincipal(userId: number): Principal {
    * kiểm — và chỗ quên kiểm ở một hệ thống phân quyền thì không ai phát hiện ra cho tới lúc
    * ai đó nhìn thấy thứ họ không được nhìn.
    */
-  for (const row of conn
-    .prepare(
-      `SELECT up.branch_id, p.key AS perm_key, b.name AS branch_name
-         FROM user_permissions up
-         JOIN permissions p ON p.id = up.permission_id
-         LEFT JOIN branches b ON b.id = up.branch_id
-        WHERE up.user_id = ?`,
-    )
-    .all(userId) as any[]) {
+  for (const [branchId, permKey, branchName] of JSON.parse(row.u_rieng) as any[][]) {
     grants.push({
       id: -1,
       roleKey: 'granted',
       roleName: 'Quyền cấp riêng',
-      branchId: row.branch_id,
-      branchName: row.branch_name,
-      permissions: new Set<string>([row.perm_key]),
+      branchId,
+      branchName,
+      permissions: new Set<string>([permKey]),
     });
   }
 
-  const assignments: Assignment[] = (conn
-    .prepare(
-      `SELECT id, class_id, skill, is_core, effective_from, effective_to
-         FROM teacher_assignments WHERE user_id = ? AND status = 'active'`,
-    )
-    .all(userId) as any[]).map((a) => ({
-      id: a.id,
-      classId: a.class_id,
-      skill: a.skill,
-      isCore: a.is_core === 1,
-      effectiveFrom: a.effective_from,
-      effectiveTo: a.effective_to,
-    }));
+  const assignments: Assignment[] = (JSON.parse(row.u_phan_cong) as any[][]).map(
+    ([id, classId, skill, isCore, effectiveFrom, effectiveTo]) => ({ id, classId, skill, isCore: isCore === 1, effectiveFrom, effectiveTo }),
+  );
 
   return {
-    userId: user.id,
-    code: user.code,
-    fullName: user.full_name,
-    title: user.title,
+    userId: row.u_id,
+    code: row.u_code,
+    fullName: row.u_full_name,
+    title: row.u_title,
     grants,
     /* `granted` không phải một vai trò — nó chỉ là chỗ chứa quyền cấp riêng. */
     roleKeys: [...new Set(grants.map((g) => g.roleKey).filter((k) => k !== 'granted'))],
