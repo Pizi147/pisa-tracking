@@ -21,7 +21,7 @@ const tsx = (dir: string): string[] => fs.readdirSync(path.join(ROOT, dir), { wi
   e.isDirectory() ? tsx(`${dir}/${e.name}`) : e.name.endsWith('.tsx') ? [`${dir}/${e.name}`] : []);
 
 export async function runPrHk2Tests(t: YThucTestKit) {
-  const { check, assert, P } = t;
+  const { check, checkAsync, assert, P } = t;
   const d: any = await import('../../../shared/domain/index.ts');
   const th: any = await import('../phanTich/tongHop.ts');
   console.log('\nPR-HK2 · Task 1 · hai họ chip, "+n", ⋯, nút lọc');
@@ -272,5 +272,113 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     assert(/dienThoai && data\?\.coTheTaoLop/.test(mn) && /nhan: '\+ Lớp mới'/.test(mn), 'mục "+ Lớp mới" trong menu chỉ khi dienThoai');
     assert(/dienThoai && \(data\?\.rows[^)]*\)\.some\(\(r\) => r\.viewer\.coTheSuaHocVien\)/.test(mn) && /nhan: '\+ Học viên'/.test(mn), 'mục "+ Học viên" trong menu chỉ khi dienThoai');
     assert(/keTruoc/.test(mn), 'Lưu trữ cách một đường kẻ khi có mục thêm');
+  });
+
+  console.log('\nPR-HK2 · Task 6a · chữ: J1, J2, J3, J4, J7, J9, U12, "Khác", Lưu trữ rỗng');
+
+  check('C18 · J1: gapText trả "-1.5" / "+0.5" / "đạt kỳ vọng" (không còn "thiếu" / "vượt"); chỗ in có title "dưới kỳ vọng"', () => {
+    const sb = doc('web/src/modules/cases/SkillBoard.tsx');
+    const g = /export function gapText\([^)]*\): string \{[^]*?\n\}/.exec(sb)?.[0] ?? '';
+    assert(g.includes("'đạt kỳ vọng'") && /`-\$\{Math\.abs\(gap\)\}`/.test(g) && /`\+\$\{gap\}`/.test(g) && !/thiếu|vượt/.test(g), `gapText: ${g}`);
+    assert(/title=\{[^}]*dưới kỳ vọng/.test(sb), 'SkillBoard: số lệch thiếu title "dưới kỳ vọng"');
+  });
+
+  check('C19 · J4: KhoiCanXuLy không còn "Gộp hai khung", OverviewPage không còn "Chỉ phần số đổi"', () => {
+    assert(!/Gộp hai khung/.test(doc('web/src/modules/worklist/KhoiCanXuLy.tsx')), 'còn "Gộp hai khung"');
+    assert(!/Chỉ phần số đổi/.test(doc('web/src/modules/worklist/OverviewPage.tsx')), 'còn "Chỉ phần số đổi"');
+  });
+
+  const tq: any = await import('../worklist/tongQuan.ts');
+  check('C20 · J3 (DB): tongQuan không còn chuỗi "quá hạn từ"; mọi dòng Cần xử lý quá hạn ghi "quá hạn n ngày"; web in "⚠" trước', () => {
+    assert(!/quá hạn từ/.test(doc('server/src/worklist/tongQuan.ts')), 'tongQuan.ts còn "quá hạn từ"');
+    let soQuaHan = 0;
+    for (const p of [P.mbManager, P.admin]) {
+      for (const x of tq.tongQuanQuanLy(p, {}).canXuLy as any[]) {
+        if (!('chu' in x.han) || !x.han.quaHan) continue;
+        soQuaHan++;
+        assert(/^quá hạn \d+(–\d+)? ngày$/.test(x.han.chu), `${x.metricId}: "${x.han.chu}"`);
+      }
+    }
+    assert(soQuaHan > 0, 'bộ demo phải có dòng quá hạn dạng chữ');
+    assert(/⚠ \{x\.han\.chu\}/.test(doc('web/src/modules/worklist/KhoiCanXuLy.tsx')), 'KhoiCanXuLy chưa in ⚠ trước chữ quá hạn');
+  });
+
+  const mywork: any = await import('../worklist/mywork.ts');
+  check('C21 · J7 (DB): việc của chính người xem có owner = null (web không in "Bạn"); việc người khác (QL xem tất cả) vẫn ghi tên; cột Tổng quan QL giữ "Bạn"', () => {
+    for (const p of [P.subjectTeacher, P.mbManager]) {
+      const mine = (mywork.myWork(p, {}).items as any[]).filter((i) => i.ownerId === p.userId);
+      for (const i of mine) assert(i.owner === null && i.mine === true, `${i.key}: owner=${i.owner} mine=${i.mine}`);
+    }
+    const ts = (mywork.myWork(P.subjectTeacher, {}).items as any[]).filter((i) => i.ownerId === P.subjectTeacher.userId);
+    assert(ts.length > 0, 'GV bộ môn phải có việc của chính mình');
+    const tatCa = mywork.myWork(P.mbManager, { nguoi: 'tat-ca' }).items as any[];
+    const khac = tatCa.filter((i) => i.ownerId !== null && i.ownerId !== P.mbManager.userId);
+    assert(khac.length > 0 && khac.every((i) => typeof i.owner === 'string' && i.owner !== 'Bạn'), 'việc người khác phải ghi tên thật');
+    assert(!/'Bạn'/.test(doc('server/src/worklist/mywork.ts')), 'mywork.ts còn "Bạn"');
+    assert(/Bạn/.test(doc('web/src/modules/worklist/KhoiCanXuLy.tsx')), 'cột "Người giữ việc" của Tổng quan QL phải giữ "Bạn"');
+  });
+
+  check('C22 · J9: "Xác nhận PA Tutor" không kèm mô tả máy gán (· đến lúc thi / đến MT n / 1 tháng); tên người dạy tự viết giữ nguyên, kể cả có " · "', () => {
+    const c = { status: 'open' as const, fromSos: true, hasCause: true, dismissed: false, systemClosed: false, choDuyetKhongTheoDoi: false, coPaChoXacNhan: true, hanXacNhan: '2026-09-16' };
+    const pa = (ten: string) => ({ id: 1, ten, batBuoc: true, choXacNhan: true, xong: false, actionDue: '2026-09-28', followupDue: '2026-10-18' });
+    const chu = (ten: string) => d.viecTiepCuaCase(c, [pa(ten)], '2026-09-22')?.chu;
+    assert(chu('Tutor · đến lúc thi') === 'Xác nhận PA Tutor', chu('Tutor · đến lúc thi'));
+    assert(chu('Tutor · đến MT3') === 'Xác nhận PA Tutor' && chu('Tự học · 1 tháng') === 'Xác nhận PA Tự học', 'MT n / 1 tháng');
+    assert(chu('Kèm 1-1 · Reading') === 'Xác nhận PA Kèm 1-1 · Reading', 'tên tự viết bị cắt');
+  });
+
+  check('C23 · J9: ô FT chưa có điểm ghi "Nhập" (không "— sửa"); ô có điểm giữ "6.5 sửa"; đầu cột S nhận chiTen + title có tên', () => {
+    const s = doc('web/src/modules/fasttrack/ScoreEntry.tsx');
+    const i = s.indexOf("title={hieuChinh ? 'Sửa bốn tiêu chí đã chấm.'");
+    assert(i >= 0, 'không thấy nút bốn tiêu chí');
+    const nut = s.slice(i, s.indexOf('</button>', i));
+    assert(/'Nhập'/.test(nut) && /cell\.band === null/.test(nut), 'ô trống chưa ghi "Nhập"');
+    assert(!/lon && cell\.band === null && nhanDau \? ''/.test(nut), 'ô trống còn chữ rỗng + "sửa"');
+    assert(/>sửa</.test(nut) && /fmtBand\(cell\.band\)/.test(nut), 'ô có điểm phải giữ "6.5 sửa"');
+    assert(/<NutGvCham chiTen/.test(doc('web/src/modules/cham/LuoiFT.tsx')) && /<NutGvCham lon chiTen/.test(doc('web/src/modules/cham/MotKyNang.tsx')), 'đầu cột S phải truyền chiTen');
+    assert(/title=\{chiTen \? `GV chấm Speaking: \$\{ten/.test(doc('web/src/modules/cham/GvCham.tsx')), 'GvCham: chiTen phải có title ghi tên (tên dài bị cắt)');
+  });
+
+  check('C24 · J2 (Q3 = A): mọi chỗ in mã học viên ra màn đi qua maHocVienNgan; Excel giữ mã đầy đủ', () => {
+    const CAC_FILE = ['web/src/modules/students/StudentDetailPage.tsx', 'web/src/modules/cham/LuoiFT.tsx', 'web/src/modules/cham/LuoiThuong.tsx', 'web/src/modules/cham/MotKyNang.tsx',
+      'web/src/modules/cham/DiemTheoLop.tsx', 'web/src/modules/students/LuuTruPage.tsx', 'web/src/modules/classes/TransitionPanel.tsx', 'web/src/modules/platform/Header.tsx',
+      'web/src/modules/students/ClassRoster.tsx', 'web/src/modules/students/BangHocVienLop.tsx', 'web/src/modules/classes/BangDiemLopThuong.tsx'];
+    for (const f of CAC_FILE) {
+      const s = doc(f).replace(/maHocVienNgan\([^()]*\)/g, '');
+      const sai = s.split('\n').map((dong, i) => [dong, i + 1] as const).filter(([dong]) => /\.studentCode\b/.test(dong));
+      assert(sai.length === 0, `${f}: in studentCode thẳng ra màn ở dòng ${sai.map((x) => x[1]).join(', ')}`);
+    }
+    assert(/maHocVienNgan\(st\.code\)/.test(doc('web/src/modules/cases/QuickReport.tsx')), 'QuickReport: mã trong ô chọn học viên phải qua maHocVienNgan');
+    assert(d.maHocVienNgan('PISA-000048') === '000048', 'maHocVienNgan');
+    assert(!/maHocVienNgan/.test(doc('server/src/phanTich/xuatMt.ts')), 'Excel phải giữ mã đầy đủ (không rút gọn)');
+  });
+
+  await checkAsync('C20b · J2 (DB): tìm học viên theo "000048" và "PISA-000048" (và chữ thường) cùng ra một em', async () => {
+    const { listStudents } = await import('../students/students.ts');
+    const hv = (listStudents(P.admin, {}) as any).rows[0];
+    const ma: string = hv.studentCode;
+    assert(/^PISA-\d{6}$/.test(ma), `mã demo: ${ma}`);
+    for (const q of [ma, ma.replace(/\D/g, ''), ma.toLowerCase()]) {
+      const r = (listStudents(P.admin, { q }) as any).rows as any[];
+      assert(r.some((x) => x.id === hv.id), `q="${q}" không ra ${ma}`);
+    }
+  });
+
+  check('C25 · U12: "(đã chấm)" bỏ khỏi lopThuong.ts và chamDiem.ts; "Không đạt: …" của bài chấm dở màu text-soon', () => {
+    assert(!/\(đã chấm\)/.test(doc('shared/domain/lopThuong.ts')) && !/\(đã chấm\)/.test(doc('shared/domain/chamDiem.ts')), 'còn "(đã chấm)"');
+    const kq = d.nhanKetQuaThuong({ kind: 'progress', ct: 'MB', scored: 2, required: 4, failedSkills: ['reading'], tyLeTong: null, khongChiaMon: false });
+    assert(kq.chinh === '1/2 môn đạt' && /^Không đạt: /.test(kq.phu), JSON.stringify(kq));
+    const chuaXong = /Chờ \{a\.required - a\.scored\} môn[^]*?<\/>/.exec(doc('web/src/modules/students/StudentDetailPage.tsx'))?.[0] ?? '';
+    assert(/text-soon/.test(chuaXong) && !/text-slate-400/.test(chuaXong), 'dòng "Không đạt" của bài chấm dở chưa text-soon');
+  });
+
+  check('C26 · "Khác" (T12): nhóm quyền "Chưa xếp nhóm", ô Đề xuất sửa "Thông tin khác"; Lưu trữ rỗng khi tìm: "Không có … khớp"', () => {
+    const ad = doc('web/src/modules/platform/AdminPage.tsx');
+    assert(!/ten: 'Khác'/.test(ad) && /ten: 'Chưa xếp nhóm'/.test(ad), 'AdminPage');
+    const dx = doc('web/src/modules/duyet/DeXuatSuaPanel.tsx');
+    assert(/nhan: 'Thông tin khác'/.test(dx) && !/nhan: 'Khác'/.test(dx), 'DeXuatSuaPanel');
+    const lt = doc('web/src/modules/students/LuuTruPage.tsx');
+    assert(/Không có lớp khớp "\$\{/.test(lt) && /Không có học viên khớp "\$\{/.test(lt), 'LuuTruPage chưa có câu "Không có … khớp"');
+    assert(/Chưa có lớp nào kết thúc/.test(lt) && /Chưa có học viên nào được lưu trữ/.test(lt), 'ô tìm trống phải giữ câu cũ');
   });
 }
