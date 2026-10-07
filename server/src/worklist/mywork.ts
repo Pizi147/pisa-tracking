@@ -585,11 +585,14 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
 
   // ------------------------------------------------- 2d. PR-MT0: Chốt lên FT (một việc mỗi lớp, Quản lý) — cùng hàm với chỉ số `lop-chua-chot-len-ft`
   for (const x of co('chot_len_ft') ? lopChoChotLenFt(p, f.branchId ?? null, today) : []) {
+    /* VIEC-NHO 5: em chỉ có đề xuất GVCN chờ duyệt tách riêng — việc của Quản lý ở Chờ duyệt, không phải "chưa có hướng". Hiện ở dòng phụ. */
+    const chu = [x.soEm > x.soChoDuyet ? `${x.soEm - x.soChoDuyet} em chưa có hướng` : null, x.soChoDuyet ? `${x.soChoDuyet} em chờ duyệt đề xuất` : null]
+      .filter(Boolean).join(' · ');
     items.push({
       key: `chotft:${x.classId}`, group: 'chot_len_ft', urgency: urgencyOf(x.han, today),
       studentId: null, studentName: `Lớp ${x.code}`, classId: x.classId, classCode: x.code,
-      attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: null, count: x.soEm,
-      reason: `${x.soEm} em chưa có hướng`,
+      attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: chu, count: x.soEm,
+      reason: chu,
       tieuDe: `Chốt lên FT · ${x.code}`, actionLabel: 'Ghi lộ trình',
       href: `/hoc-vien/lop/${x.classId}?viec=lo-trinh-ca-lop`,
       ownerId: null, owner: null, mine: false, due: x.han, statusLabel: 'Chưa chốt',

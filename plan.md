@@ -221,7 +221,7 @@ Công việc của tôi, chuông, câu báo lỗi máy chủ trên các đườn
 - **PR-LC · Luồng cuối khoá → lộ trình tiếp, mỗi quyết định nhập MỘT lần** (07/10, chủ SP: "thao tác trùng"). Kế hoạch `docs/superpowers/plans/2026-10-07-pr-luong-chuyen-giao.md`: LCa máy chủ (Chuyển tiếp ghi ngược Lộ trình tiếp theo + MT0, Target Lên FT tự giữ, thi hành không xoá ghi chú, Chốt lên FT chỉ trước tuần Final) sau `fix-chot-len-ft-2`; LCb = **một panel gộp** (Lộ trình tiếp theo cả lớp + Chuyển tiếp lớp, lớp thường; FT giữ panel cũ), mockup `thiet-ke/mockup-panel-cuoi-khoa-2026-10-07.html` chờ duyệt (QM1, QM2). Q1–Q3 đã đồng ý. Thứ tự: `fix-chot-len-ft-2` → LCa → LCb.
 - **Công việc › Của GV: "Nhắc tất cả"** (trước hoãn ở mục 8, nay làm).
 - **Chờ duyệt › lọc "Nhắc việc"**: bấm vào thì các bộ lọc khác biến mất → hẫng. Làm cho đỡ hẫng (vd giữ hàng lọc, mờ đi + một dòng "Đang xem Nhắc việc · Quay lại"); cần mockup.
-- `db.ts` `laLoiMatKetNoiTurso`: "fetch failed" khớp cả lỗi kho tệp (Netlify Blobs) → GET tải tệp thử lại thừa một lần (Minor, rà #236).
+- `db.ts` `laLoiMatKetNoiTurso`: "fetch failed" khớp cả lỗi kho tệp (Netlify Blobs) → GET tải tệp thử lại thừa một lần (Minor, rà #236). ✅ `pr-viec-nho-1008` 08/10.
 - **PR-TD2 · Tốc độ chuyển trang** (chủ sản phẩm 07/10 "chuyển trang khá chậm") — kế hoạch `docs/superpowers/plans/2026-10-07-pr-toc-do-chuyen-trang.md`: đo log + cục bộ, gốc = `loadBundle` đọc rộng/lặp (0,4–0,9 MB ×2–3 mỗi request), Trước/Sau tải cả danh sách, waterfall hồ sơ lớp/HV, phiên 6 câu. Thứ tự TD2-a(+0) → b+c → d; e/f sau log. Chưa làm.
 
 ### PR-SOTAY · Sổ tay mới theo web mới nhất (M) — chủ sản phẩm 06/10, **làm cuối cùng, sau PR-EN**
@@ -513,6 +513,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 08/10/2026 | `pr-viec-nho-1008` · Opus 5.5 | 6 việc nhỏ: chip lưới FT đọc trạng thái; UNION Ý thức đủ AS + DTL1 quét cột trần; 409 email dưới ô Sửa thông tin; chip `+n` 44px ở điện thoại; Chốt lên FT tách "n em chờ duyệt đề xuất"; lỗi kho tệp ≠ mất kết nối Turso; phép kiểm `prViecNho.tests.ts` |
 | 07/10/2026 | `fix-kq-gan-nhat-thuong` · Opus 5.5 | Lớp thường: "Kết quả gần nhất" theo loại (`moiNhatTruoc` = `soThuTuLuot` đảo, MT0 giữ cuối) ở danh sách lớp, SOS/Công việc, hồ sơ HV, tên Case; FT không đổi (chụp 391 mục giống hệt); phép kiểm `fixKqGanNhat.tests.ts` |
 | 07/10/2026 | `fix-dtl-omt` · Opus 5.5 | Hồ sơ Mock từ Điểm theo lớp 500 trên Turso (câu UNION `scoreHistoryOf` thiếu AS); ô MT "chờ" của MT cũ tím (C2), chip lưới FT không cắt chữ; phép kiểm `fixDtlOmt.tests.ts` |
 | 07/10/2026 | `o-chon-ten` · Opus 5.5 | Ô chọn người gõ được: Phân công GV (Tạo lớp, Tạo nhiều lớp, Sửa phân công) + ô Học viên của Tạo Case → `ChonNguoi` kiểu `ds`; phép kiểm `prOChon.tests.ts` |

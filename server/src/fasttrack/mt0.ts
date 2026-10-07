@@ -237,12 +237,15 @@ export function mt0TheoHocVien(sids: readonly number[]): Map<number, Mt0View> {
  * không nút, không cột mới). Lớp thường FOU/BE/ELE đang mở, người xem có `CLASS_EDIT`; hạn = Chủ nhật trước tuần Cuối khoá (`hanChotLenFt`);
  * hiện từ 13 ngày trước hạn tới hết tuần Cuối khoá. Không chặn gì: ghi Lên FT sau hạn vẫn được. Một câu lớp + một câu em cho cả phạm vi.
  */
-export function lopChoChotLenFt(p: Principal, branchId: number | null, today: string): { classId: number; code: string; han: string; soEm: number }[] {
+/** `soEm`: em đang học chưa có hướng (gồm em chờ duyệt); `soChoDuyet`: trong số đó, em đã có đề xuất chuyển lớp của GVCN chờ Quản lý duyệt. */
+export type ChotLenFt = { classId: number; code: string; han: string; soEm: number; soChoDuyet: number };
+
+export function lopChoChotLenFt(p: Principal, branchId: number | null, today: string): ChotLenFt[] {
   /* Tổng quan gọi hai lần (chỉ số + dòng Cần xử lý) — nhớ trong request. */
   return nho(`chot-len-ft:${p.userId}:${branchId ?? ''}:${today}`, () => tinhLopChoChotLenFt(p, branchId, today));
 }
 
-function tinhLopChoChotLenFt(p: Principal, branchId: number | null, today: string): { classId: number; code: string; han: string; soEm: number }[] {
+function tinhLopChoChotLenFt(p: Principal, branchId: number | null, today: string): ChotLenFt[] {
   const conn = db();
   const lop = conn.prepare(
     `SELECT c.id, c.code FROM classes c
@@ -261,16 +264,20 @@ function tinhLopChoChotLenFt(p: Principal, branchId: number | null, today: strin
    * FIX-CHOT-LEN-FT: Lộ trình tiếp theo (K26) ghi thẳng `lo_trinh_tiep_theo`; Quyết định chuyển lớp (PR-CT) ghi ở `lenh_chuyen_lop`.
    * Em đã có hướng khi một trong hai có hướng ≠ Chưa quyết (lệnh chưa huỷ, mọi bối cảnh). Việc xong khi MỌI em đang học đã có hướng (T5b).
    */
-  const soEm = new Map<number, number>();
+  /* VIEC-NHO 5: em chỉ có ĐỀ XUẤT chuyển lớp của GVCN (chờ Quản lý duyệt, `emChoDuyetChuyenLop`) vẫn chưa có hướng — đếm riêng để chữ việc tách. */
+  const soEm = new Map<number, { n: number; cho: number }>();
   theoLo(toi.map((x) => x.classId), (lo, ph) => {
     for (const r of conn.prepare(
-      `SELECT e.class_id, COUNT(*) n FROM enrollments e JOIN students s ON s.id = e.student_id
+      `SELECT e.class_id AS class_id, COUNT(*) AS n,
+              SUM(EXISTS (SELECT 1 FROM yeu_cau_duyet y WHERE y.trang_thai = 'cho' AND y.loai = 'de_xuat_chuyen_lop'
+                            AND y.doi_tuong_loai = 'student:chuyen-lop' AND y.doi_tuong_id = e.student_id)) AS cho
+         FROM enrollments e JOIN students s ON s.id = e.student_id
          LEFT JOIN lo_trinh_tiep_theo lt ON lt.student_id = e.student_id AND lt.class_id = e.class_id
         WHERE e.status = 'active' AND e.class_id IN (${ph}) AND ${HV_DANG_HOC_SQL('s')} AND (lt.huong IS NULL OR lt.huong = 'chua_quyet')
           AND NOT EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.student_id = e.student_id AND l.lop_nguon_id = e.class_id
                             AND l.trang_thai != 'huy' AND l.huong != 'chua_quyet')
         GROUP BY e.class_id`,
-    ).all(...lo) as any[]) soEm.set(r.class_id, r.n);
+    ).all(...lo) as any[]) soEm.set(r.class_id, { n: r.n, cho: r.cho });
   });
-  return toi.flatMap((x) => (soEm.get(x.classId) ? [{ ...x, soEm: soEm.get(x.classId)! }] : []));
+  return toi.flatMap((x) => { const d = soEm.get(x.classId); return d?.n ? [{ ...x, soEm: d.n, soChoDuyet: d.cho }] : []; });
 }
