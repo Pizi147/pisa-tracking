@@ -52,7 +52,7 @@ export async function runNenGiaoDienTests(t: YThucTestKit) {
 
   check('UX0 · N-1: một chỗ khai báo — component nền không chứa hex hay màu Tailwind cứng', () => {
     const hong: string[] = [];
-    for (const f of ['web/src/ui/ui.tsx', 'web/src/ui/Han.tsx', 'web/src/ui/Nhan.tsx', 'web/src/ui/HangNhom.tsx', 'web/src/ui/KhungPanel.tsx']) {
+    for (const f of ['web/src/ui/ui.tsx', 'web/src/ui/Han.tsx', 'web/src/ui/Nhan.tsx', 'web/src/ui/HangNhom.tsx', 'web/src/ui/KhungPanel.tsx', 'web/src/modules/students/MissingBadge.tsx']) {
       const p = path.join(REPO, f);
       if (!fs.existsSync(p)) continue;
       const text = fs.readFileSync(p, 'utf8');
@@ -103,7 +103,7 @@ export async function runNenGiaoDienTests(t: YThucTestKit) {
     assert(thay >= 1, 'Dữ liệu mẫu phải có ít nhất một việc xếp lớp / lộ trình để kiểm');
   });
 
-  check('UX0 · #13: việc của lớp thường ghi Giữa khoá/Cuối khoá, không "MT"', () => {
+  check('UX0 · #13: việc của lớp thường ghi Progress Test/Final Test, không "MT"', () => {
     const ratio = new Set((conn.prepare(
       `SELECT c.id FROM classes c JOIN programmes p ON p.code = c.programme_code WHERE p.scoring_mode = 'ratio'`,
     ).all() as any[]).map((r) => r.id as number));

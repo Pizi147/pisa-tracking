@@ -175,7 +175,7 @@ export async function runPrLuiBTests(t: YThucTestKit) {
       `SELECT COUNT(*) n FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
         WHERE COALESCE(sc.student_id, a.student_id) IN (?, ?) AND sc.status != 'done'`).get(ids[0], ids[1]) as any).n;
     assert(xt.tong.caseDong === caseMo, `Case đóng ${xt.tong.caseDong} ≠ ${caseMo}`);
-    const kq = hl.chay(P.mbManager, { viec: 'ket-thuc', studentIds: ids.slice(0, 2), lyDo: 'Cuối khoá' });
+    const kq = hl.chay(P.mbManager, { viec: 'ket-thuc', studentIds: ids.slice(0, 2), lyDo: 'Final Test' });
     assert(kq.ok.length === 2 && kq.failed.length === 0, JSON.stringify(kq));
     assert(ids.slice(0, 2).every((id) => (conn.prepare('SELECT status FROM students WHERE id = ?').get(id) as any).status === 'finished'), 'cả hai phải kết thúc');
     const nguoc = hl.chay(P.mbManager, { viec: 'hoc-lai', studentIds: kq.ok, moLaiLop: true });
@@ -187,7 +187,7 @@ export async function runPrLuiBTests(t: YThucTestKit) {
     const trongMb = dangHocTrong('MB FT 101', 2);
     const ngoai = (conn.prepare(`SELECT s.id FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
         JOIN classes c ON c.id = e.class_id JOIN branches b ON b.id = c.branch_id WHERE b.code != 'MB' AND s.status = 'active' ORDER BY s.id LIMIT 1`).get() as any).id as number;
-    const kq = hl.chay(P.mbManager, { viec: 'ket-thuc', studentIds: [trongMb[0], ngoai, trongMb[1]], lyDo: 'Cuối khoá' });
+    const kq = hl.chay(P.mbManager, { viec: 'ket-thuc', studentIds: [trongMb[0], ngoai, trongMb[1]], lyDo: 'Final Test' });
     assert(kq.ok.join() === [trongMb[0], trongMb[1]].join() && kq.failed.length === 1 && kq.failed[0].studentId === ngoai && kq.failed[0].message === 'Ngoài phạm vi của bạn.', JSON.stringify(kq));
     assert((conn.prepare('SELECT status FROM students WHERE id = ?').get(ngoai) as any).status === 'active', 'học viên ngoài quyền không được đổi');
     assert(maLoi(() => hl.chay(P.coreTeacher, { viec: 'ket-thuc', studentIds: dangHocTrong('MB FOU 12', 2), lyDo: 'x' })) === 403, 'GVCN 403 cả lô');
@@ -201,7 +201,7 @@ export async function runPrLuiBTests(t: YThucTestKit) {
     const sid = dangHocTrong('MB FT 101', 1)[0];
     conn.prepare(`UPDATE learning_cycles SET thi_that_khong_thi = 1 WHERE student_id = ? AND status = 'active'`).run(sid);   // PR-TK: FT còn "Chờ kết quả thi thật" thì Kết thúc học chưa lưu trữ — đặt Không thi để phép kiểm này giữ ngữ cảnh lưu trữ
     assert(hl.xemTruoc(P.mbManager, { viec: 'luu-tru', studentIds: [sid] }).rows[0].lyDoBo === 'Chưa kết thúc học', 'học viên đang học không lưu trữ được');
-    hl.chay(P.mbManager, { viec: 'ket-thuc', studentIds: [sid], lyDo: 'Cuối khoá' });
+    hl.chay(P.mbManager, { viec: 'ket-thuc', studentIds: [sid], lyDo: 'Final Test' });
     assert(hl.chay(P.mbManager, { viec: 'bo-luu-tru', studentIds: [sid] }).ok.length === 1, 'bỏ lưu trữ');
     const s = conn.prepare('SELECT status, archived_at FROM students WHERE id = ?').get(sid) as any;
     assert(s.status === 'finished' && s.archived_at === null, `bỏ lưu trữ không phải học lại: ${JSON.stringify(s)}`);
@@ -434,7 +434,7 @@ export async function runPrLuiBTests(t: YThucTestKit) {
       t: conn.prepare('SELECT id, status, withdrawn_reason FROM case_signals WHERE student_id = ? ORDER BY id').all(sid),
     });
     const truoc = chup();
-    hl.chay(P.mbManager, { viec: 'ket-thuc', studentIds: [sid], lyDo: 'Cuối khoá' });
+    hl.chay(P.mbManager, { viec: 'ket-thuc', studentIds: [sid], lyDo: 'Final Test' });
     assert(chup() !== truoc, 'Kết thúc học phải đóng Case');
     assert((conn.prepare('SELECT status FROM sos_cases WHERE id = ?').get(cuDong) as any).status === 'done', 'Case cũ vẫn đóng');
     const kq = hl.chay(P.mbManager, { viec: 'hoan-tac-ket-thuc', studentIds: [sid] });

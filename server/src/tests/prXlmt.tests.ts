@@ -9,10 +9,10 @@ export async function runPrXlmtTests(t: YThucTestKit) {
   // ------------------------------------------------------------------ khối 1: luật thuần
   const L = (attempt_no: number, status = 'planned', coDiem = false) => ({ attempt_no, status, coDiem });
 
-  check('PR-XLMT (1) · trần MT8: kiemSoMtMoi(MT1…MT8, 9) chặn "Tối đa MT8"; thuTuDot MT8 trước Giữa khoá (T37, K1-21)', () => {
+  check('PR-XLMT (1) · trần MT8: kiemSoMtMoi(MT1…MT8, 9) chặn "Tối đa MT8"; thuTuDot MT8 trước Progress Test (T37, K1-21)', () => {
     const ds = [1, 2, 3, 4, 5, 6, 7, 8].map((n) => L(n, 'completed', true));
     assert(d.kiemSoMtMoi(ds, 9) === 'Tối đa MT8 cho một lộ trình.', String(d.kiemSoMtMoi(ds, 9)));
-    assert(d.thuTuDot('mt:8') < d.thuTuDot('giua') && d.thuTuDot('mt:6') > d.thuTuDot('mt:5'), 'MT6–MT8 xếp trước Giữa khoá');
+    assert(d.thuTuDot('mt:8') < d.thuTuDot('giua') && d.thuTuDot('mt:6') > d.thuTuDot('mt:5'), 'MT6–MT8 xếp trước Progress Test');
     assert(d.thuTuDot('giua') < d.thuTuDot('cuoi') && d.thuTuDot('la') > d.thuTuDot('cuoi'), 'Giữa < Cuối < khoá lạ');
   });
 

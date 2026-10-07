@@ -90,7 +90,7 @@ export function TheSos({ t, cot1 = 'luot', onGoAcademic, onChanged }: {
         className="grid gap-x-3 gap-y-1 items-center px-3 py-2.5 cursor-pointer row-hover grid-cols-2 md:grid-cols-[minmax(0,13rem)_minmax(0,1fr)_auto]">
         <div className="col-span-2 md:col-span-1 min-w-0">
           <span className="block text-sm font-semibold text-slate-100">{cot1 === 'luot' ? mtSos : t.studentName}</span>
-          <span className="block text-[11px] text-slate-500">
+          <span className="block text-xs text-slate-500">
             {cot1 === 'luot' ? kyNang : `${mtSos}${t.skillLabels.length > 0 ? ` · ${t.skillLabels.join(' + ')}` : ''}`}
           </span>
         </div>
@@ -98,12 +98,12 @@ export function TheSos({ t, cot1 = 'luot', onGoAcademic, onChanged }: {
           <span className="block text-sm font-semibold text-slate-100">{t.summary.label} việc hoàn thành</span>
           {cot1 === 'luot' ? (
             onGoAcademic ? (
-              <button type="button" className="link text-[11px] appearance-none bg-transparent border-0 p-0 cursor-pointer text-left"
+              <button type="button" className="link text-xs appearance-none bg-transparent border-0 p-0 cursor-pointer text-left"
                 onClick={(e) => { e.stopPropagation(); onGoAcademic(); }}>
                 Hỗ trợ học thuật xem ở tab Học thuật
               </button>
-            ) : <span className="block text-[11px] text-slate-500">Hỗ trợ học thuật xem ở tab Học thuật</span>
-          ) : <span className="block text-[11px] text-slate-500">Học thuật theo dõi ở bảng kỹ năng</span>}
+            ) : <span className="block text-xs text-slate-500">Hỗ trợ học thuật xem ở tab Học thuật</span>
+          ) : <span className="block text-xs text-slate-500">Học thuật theo dõi ở bảng kỹ năng</span>}
         </div>
         <div className="justify-self-end">
           <NhanTrangThai t={t.summary.complete ? 'xong' : 'dang-lam'} />
@@ -147,12 +147,12 @@ function ActionRow({ a, canAct, onChanged }: { a: CoordAction; canAct: boolean; 
       <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 py-2 items-start">
         <span className="min-w-0 break-words">
           <span className="block text-sm text-slate-200">{laMeetingCx(a.kind) ? nhanMeetingSauMock(a.kind) : a.name}</span>
-          {laMeetingCx(a.kind) && <span className="block text-[11px] text-slate-500 mt-0.5">Việc phối hợp sau Mock — không phải xử lý vi phạm, không cần QL duyệt</span>}
-          {dongPhu && <span className="block text-[11px] text-slate-500 mt-0.5">{dongPhu}</span>}
+          {laMeetingCx(a.kind) && <span className="block text-xs text-slate-500 mt-0.5">Việc phối hợp sau Mock — không phải xử lý vi phạm, không cần QL duyệt</span>}
+          {dongPhu && <span className="block text-xs text-slate-500 mt-0.5">{dongPhu}</span>}
           {a.noiDung && a.noiDung.length > 0 && (
             <details className="mt-1">
-              <summary className="cursor-pointer text-[11px] text-slate-400">{a.status === 'done' ? 'Nội dung đã báo TVV' : 'Nội dung gửi TVV'} ({a.noiDung.length})</summary>
-              {a.noiDungLaHienTai && <p className="m-0 mt-1 text-[11px] text-slate-500">Chưa lưu nội dung lúc báo — dưới đây là nội dung hiện tại</p>}
+              <summary className="cursor-pointer text-xs text-slate-400">{a.status === 'done' ? 'Nội dung đã báo TVV' : 'Nội dung gửi TVV'} ({a.noiDung.length})</summary>
+              {a.noiDungLaHienTai && <p className="m-0 mt-1 text-xs text-slate-500">Chưa lưu nội dung lúc báo — dưới đây là nội dung hiện tại</p>}
               <ol className="m-0 mt-1 space-y-1 pl-4 text-xs text-slate-300">
                 {a.noiDung.map((x, i) => <li key={i}>{x}</li>)}
               </ol>

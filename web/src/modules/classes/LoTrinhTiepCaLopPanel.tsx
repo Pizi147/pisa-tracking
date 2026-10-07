@@ -84,7 +84,7 @@ export function LoTrinhTiepCaLopPanel({ classId, onClose, onDone }: { classId: n
     } finally { setBusy(false); }
   };
 
-  const nhan = 'mb-0.5 block text-[11px] text-slate-500 lg:hidden';
+  const nhan = 'mb-0.5 block text-xs text-slate-500 lg:hidden';
   return (
     <KhungPanel tieuDe="Ghi lộ trình tiếp theo cả lớp" lop={data.lop.code} rong="toan" onDong={onClose}
       chan={data.coTheGhi && data.hocVien.length ? {
@@ -101,7 +101,7 @@ export function LoTrinhTiepCaLopPanel({ classId, onClose, onDone }: { classId: n
         {[data.lop.code, `${data.hocVien.length} em`, data.lop.tuanFinal ? `Final ${tuanLich(data.lop.tuanFinal)}` : null].filter(Boolean).join(' · ')}
       </p>
       <p className="m-0 mt-1 text-xs text-slate-400">
-        Chỉ là dự định, chưa đổi lớp. Hướng Hệ thống gợi ý theo Cuối khoá đứng đầu ô chọn. Em Cuối khoá 50–59%: bạn ghi đề xuất, Quản lý quyết khi chuyển lớp.
+        Chỉ là dự định, chưa đổi lớp. Hướng Hệ thống gợi ý theo Final Test đứng đầu ô chọn. Em Final Test 50–59%: bạn ghi đề xuất, Quản lý quyết khi chuyển lớp.
       </p>
       {!data.coTheGhi && <p className="mt-3 text-sm text-slate-400">Bạn chỉ xem được — không có quyền ghi lộ trình tiếp theo cho lớp này.</p>}
       {data.hocVien.length === 0 ? (
@@ -110,7 +110,7 @@ export function LoTrinhTiepCaLopPanel({ classId, onClose, onDone }: { classId: n
         <div role="table" aria-label={`Lộ trình tiếp theo lớp ${data.lop.code}`} className="mt-3">
           <div role="row" className={`hidden gap-x-3 border-b px-3 pb-1.5 text-[11px] font-semibold text-slate-500 lg:grid ${LUOI}`} style={{ borderColor: 'var(--line)' }}>
             <span role="columnheader">Học viên</span>
-            <span role="columnheader">Cuối khoá</span>
+            <span role="columnheader">Final Test</span>
             <span role="columnheader">Lộ trình tiếp theo</span>
             <span role="columnheader">Ghi chú</span>
           </div>
@@ -132,7 +132,7 @@ export function LoTrinhTiepCaLopPanel({ classId, onClose, onDone }: { classId: n
                     <span className="block text-[11px] tabular-nums text-slate-500">{h.ma}{doiDong ? ' · sẽ lưu' : ''}</span>
                   </span>
                   <span role="cell" className="min-w-0">
-                    <span className={nhan}>Cuối khoá</span>
+                    <span className={nhan}>Final Test</span>
                     {!k ? <span className="text-slate-500">—</span> : (
                       <>
                         <span className="block font-semibold tabular-nums text-slate-100">{k.chinh}</span>
@@ -154,11 +154,11 @@ export function LoTrinhTiepCaLopPanel({ classId, onClose, onDone }: { classId: n
                           </>
                         ) : cacHuong.map(opt)}
                       </select>
-                      {ck?.goiY?.canQuanLy && <Nhan tone="soon" title="Cuối khoá 50–59%: hướng bạn chọn là đề xuất, Quản lý quyết khi chuyển lớp">QL quyết</Nhan>}
+                      {ck?.goiY?.canQuanLy && <Nhan tone="soon" title="Final Test 50–59%: hướng bạn chọn là đề xuất, Quản lý quyết khi chuyển lớp">QL quyết</Nhan>}
                     </span>
                     {/* PR-MT0 (mockup ②): Lên FT → `MT0 · W4 OCT` (đã có MT0 thì tuần thật, chưa lưu thì tuần Final sẽ tạo). */}
                     {d.huong === 'fast_track' && coMt0(data.lop.ma, 'fast_track') && (h.mt0?.maTuan || data.lop.tuanFinal) && (
-                      <small className="mt-1 block text-[11px] tabular-nums text-slate-400">MT0 · {h.mt0?.maTuan ?? tuanLich(data.lop.tuanFinal!)}</small>
+                      <small className="mt-1 block text-xs tabular-nums text-slate-400">MT0 · {h.mt0?.maTuan ?? tuanLich(data.lop.tuanFinal!)}</small>
                     )}
                     {loi && <span id={idLoi} role="alert" className="mt-1 block text-[12px] text-late">{loi}</span>}
                   </span>

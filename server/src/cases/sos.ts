@@ -545,7 +545,7 @@ export function taoCaseTuDong(p: Principal, x: {
   addMilestone({
     caseId: up.id, kind: 'opened', attemptId: attempt.id, attemptNo: attempt.attempt_no,
     band: x.band, expectation: x.expectation, sosLevel: x.sosLevel,
-    occurredOn: x.detectedAt, note: boTro ? 'Giữa khoá tự tạo Case' : 'SOS tự tạo Case từ kết quả Mock Test', createdBy: p.userId,
+    occurredOn: x.detectedAt, note: boTro ? 'Progress Test tự tạo Case' : 'SOS tự tạo Case từ kết quả Mock Test', createdBy: p.userId,
     dedupKey: `mt:${attempt.id}:${up.id}:opened`,
   });
   if (boTro) taoPaBoTro(conn, { caseId: up.id, attempt, skill: x.skill, category: x.category, ct, han });
@@ -556,7 +556,7 @@ export function taoCaseTuDong(p: Principal, x: {
       `UPDATE case_signals SET status = 'linked', case_id = ?, resolved_by = NULL, resolved_at = ?,
               resolution_note = ?, updated_at = ? WHERE id = ?`,
     )
-    .run(up.id, nowIso(), boTro ? 'Giữa khoá đã tự tạo Case và PA Bổ trợ cho môn này — chờ GVBM xác nhận nguyên nhân.'
+    .run(up.id, nowIso(), boTro ? 'Progress Test đã tự tạo Case và PA Bổ trợ cho môn này — chờ GVBM xác nhận nguyên nhân.'
       : 'Mock Test có SOS đã tự tạo Case và PA theo quy chế cho kỹ năng này — chờ GVBM xác nhận nguyên nhân.', nowIso(), x.signalId);
   announceAutoCase({
     caseId: up.id, studentId: attempt.student_id, cycleId: attempt.cycle_id ?? null, skillLabel: labelOf({ skill: x.skill, programme_code: ct }),

@@ -130,7 +130,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong = false }:
             onXuLy={() => mo({ loai: 'xu-ly', studentId })}
             onDeXuat={d.canManage ? () => mo({ loai: 'xu-ly', studentId, cheDo: 'de-xuat' }) : undefined} />
           {d.canSuaKhai && d.khai && (
-            <p className="m-0 text-[11px] text-slate-500">
+            <p className="m-0 text-xs text-slate-500">
               Đã xác nhận cấp bậc vi phạm{d.khai.bac > 0 ? ` (bậc ${d.khai.bac})` : ''} ngày {ngay(d.khai.luc, homNay)}.{' '}
               <button type="button" className="link inline-flex items-center appearance-none border-0 bg-transparent p-0 min-h-[44px] sm:min-h-0" onClick={() => mo({ loai: 'khai', studentId, sua: true })}>Sửa cấp bậc</button>
             </p>

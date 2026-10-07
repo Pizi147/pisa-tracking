@@ -1,4 +1,4 @@
-# Pisa Tracking — bản demo: xem gì, ở đâu, và những điều đã chốt
+# PISA Tracking — bản demo: xem gì, ở đâu, và những điều đã chốt
 
 Một tệp duy nhất thay cho hai tệp demo cũ (kịch bản xem và giả định đã chốt). Viết lại ngày **21/09/2026** khi mô hình
 **Ý thức** đổi từ "Case Ý thức" sang **Vi phạm và Biện pháp xử lý**; mục 1 viết lại **29/09/2026** theo Ý thức v4 (PR-YT4).
@@ -212,7 +212,7 @@ Dời Speaking sang tuần sau **chỉ đổi hạn Speaking**. Môn chưa đế
 |---|---|
 | **Phạm Bảo Ngọc** → MT3 → thẻ "Lịch thi theo kỹ năng" | "Đợt này thi ở nhiều tuần". L, R có điểm (hạn 23/9); Writing chưa chấm; **Speaking** tuần 21–27/9 "Chưa đến lịch", hạn 30/9. "Tuần hoàn tất" là **W4 SEP**. |
 | **Tạ Thu Quỳnh** · MB FT 102 → MT2 | **Chiều ngược lại**: Speaking trước, R/L/W tuần sau. |
-| **Lớp MB FOU 12** → Bảng điểm → bài cuối khoá | Final Test trải **ba tuần**; vẫn phải đủ cả bốn môn mới hoàn tất. |
+| **Lớp MB FOU 12** → Bảng điểm → bài Final Test | Final Test trải **ba tuần**; vẫn phải đủ cả bốn môn mới hoàn tất. |
 
 ---
 
@@ -483,41 +483,41 @@ Dựng bằng hàm nghiệp vụ (`server/src/seed/hvlSeed.ts`), sau ngày demo.
 |---|---|---|
 | H1 · hai Case cùng Reading | **Trịnh Bảo Ngọc** (MB FT 101) | Hồ sơ lớp › Học viên › **Cần hỗ trợ**: hàng R hai Case (SOS tự tạo `[MT1]` + Case GV tạo tay), hàng W một Case đang chờ Quản lý duyệt "không theo dõi"; Học viên & Lớp: em có chip **Cần làm** (Xác nhận nguyên nhân) và lớp có badge **chờ duyệt** cho Quản lý |
 | H2 · lớp FOU | **Hồ Diệu Linh** (MB FOU 12) | Cần hỗ trợ lớp FOU: hàng `G+V` và `P` mỗi hàng một Case, L R gộp `Không có Case: L · R` |
-| H2 · Cuối khoá | **Nguyễn Thảo Vy** (MB FOU 12) | Học viên & Lớp: cột Kết quả `58%`, dòng 1 `Cuối khoá`, không "SOS" |
+| H2 · Final Test | **Nguyễn Thảo Vy** (MB FOU 12) | Học viên & Lớp: cột Kết quả `58%`, dòng 1 `Final Test`, không "SOS" |
 | H3 · Pre FOU | em ở **MB Pre FOU 03** (đã có từ PR-MON D12) | `64%` một dòng, không dòng 2; Cần hỗ trợ một hàng `Tổng hợp` |
 | H4 · MT lịch sử | **Đoàn Khánh Chi** (MB FT 101, đã có từ PR-XLMT X3) | Bảng điểm FT: MT1–MT3 nhãn `lịch sử`, ô điểm **xám**; cột Kết quả `Chưa có kết quả`; không ▾ đỏ |
 
 Hàng **"Chung"** (Case không gắn kỹ năng) không có ở bộ demo: mọi Case phải có kỹ năng khi tạo; hàng này chỉ xuất hiện với Case bàn giao / dữ liệu cũ — kiểm bằng phép kiểm thuần `hangCanHoTro`.
 
-## 14. PR-LT2a — Lớp thường · Giữa khoá (chỉ máy dev, 30/09/2026)
+## 14. PR-LT2a — Lớp thường · Progress Test (chỉ máy dev, 30/09/2026)
 
-Dựng bằng hàm nghiệp vụ (`server/src/seed/lt2aSeed.ts`), sau ngày demo, ở hai lớp mới **MB FOU 15** (Giữa khoá W2 SEP) và **MB BE 03**. Tài khoản gợi ý: **Quản lý Nguyễn Khánh Vy**, **GVCN Trần Ngọc Hà**, GVBM **Lê Minh Khoa** (G+V, W) và **Phạm Thu Trang** (P, S). Phép kiểm `LT2a (11)` soi từng dòng ngay sau khi dựng. Lớp thường **không có chữ SOS** ở đâu cả.
+Dựng bằng hàm nghiệp vụ (`server/src/seed/lt2aSeed.ts`), sau ngày demo, ở hai lớp mới **MB FOU 15** (Progress Test W2 SEP) và **MB BE 03**. Tài khoản gợi ý: **Quản lý Nguyễn Khánh Vy**, **GVCN Trần Ngọc Hà**, GVBM **Lê Minh Khoa** (G+V, W) và **Phạm Thu Trang** (P, S). Phép kiểm `LT2a (11)` soi từng dòng ngay sau khi dựng. Lớp thường **không có chữ SOS** ở đâu cả.
 
 | Kịch bản | Học viên | Bạn sẽ thấy |
 |---|---|---|
-| G1 (D9) · trượt G+V, P | **Lê Hoàng Anh** (MB FOU 15) | Hồ sơ › Học thuật: hai hàng `[Giữa khoá] G+V không đạt` (Chờ Quản lý duyệt · kế hoạch bổ trợ, viền tím) và `[Giữa khoá] P không đạt` (Cần làm · Xác nhận nguyên nhân); PA thụt vào `Bổ trợ 2 buổi/tuần · chung các môn trượt…` + `PA chung · G+V, P`. Vy có thẻ **Kế hoạch bổ trợ** ở Chờ duyệt; Phối hợp: `Báo phụ huynh qua TVV` chưa làm |
+| G1 (D9) · trượt G+V, P | **Lê Hoàng Anh** (MB FOU 15) | Hồ sơ › Học thuật: hai hàng `[Progress Test] G+V không đạt` (Chờ Quản lý duyệt · kế hoạch bổ trợ, viền tím) và `[Progress Test] P không đạt` (Cần làm · Xác nhận nguyên nhân); PA thụt vào `Bổ trợ 2 buổi/tuần · chung các môn trượt…` + `PA chung · G+V, P`. Vy có thẻ **Kế hoạch bổ trợ** ở Chờ duyệt; Phối hợp: `Báo phụ huynh qua TVV` chưa làm |
 | G2 · trượt R | **Bùi Minh Châu** (MB FOU 15) | Case Đang làm, PA bổ trợ chạy, một lần ghi kết quả; Báo PH `Đã làm` |
 | G3 (D10) · trượt W | **Hoàng Quốc Bình** (MB BE 03) | PA `Bổ trợ 1 buổi/tuần · W` đang chạy sau khi Vy duyệt |
 | G4 · trượt S | **Mai Hải Long** (MB BE 03) | Kế hoạch bị từ chối (lý do trong khung vàng); Việc cần làm của Trang: `Nộp kế hoạch bổ trợ` hạn 3 ngày |
-| G6 · Hà chưa nộp kế hoạch | **Trương Gia Bảo** (MB FOU 15) | Việc cần làm của Hà: `Nộp kế hoạch bổ trợ · Giữa khoá · G+V · Trương Gia Bảo` hạn 3 ngày (Khoa đã xác nhận nguyên nhân) |
+| G6 · Hà chưa nộp kế hoạch | **Trương Gia Bảo** (MB FOU 15) | Việc cần làm của Hà: `Nộp kế hoạch bổ trợ · Progress Test · G+V · Trương Gia Bảo` hạn 3 ngày (Khoa đã xác nhận nguyên nhân) |
 | G5 · Báo lên / Không cần theo dõi | **Phan Khánh Linh**, **Ngô Gia Hân** (MB FOU 15) | Case L chờ nguyên nhân quá hạn → thẻ Báo lên; Case P `Không cần theo dõi` chờ Quản lý duyệt |
 
-Bài Giữa khoá đã qua tuần nên `commitIntake` không tự dựng (M1b bỏ mốc đã qua) — seed xếp bằng `planRegularTests` (Quản lý được xếp tuần đã qua).
+Bài Progress Test đã qua tuần nên `commitIntake` không tự dựng (M1b bỏ mốc đã qua) — seed xếp bằng `planRegularTests` (Quản lý được xếp tuần đã qua).
 
 - **Hồ sơ giáo viên (PR-GV):** menu tài khoản › Hồ sơ giáo viên (**Trần Ngọc Hà**, id 7). QL MB (Nguyễn Khánh Vy): Tổng quan › Theo lớp › Theo giáo viên › bấm tên. GVBM (Phạm Thu Trang) mở `/giao-vien/7` → 403.
 
-## 15. PR-LT2b — Lớp thường · Cuối khoá (chỉ máy dev, 30/09/2026)
+## 15. PR-LT2b — Lớp thường · Final Test (chỉ máy dev, 30/09/2026)
 
-Dựng bằng hàm nghiệp vụ (`server/src/seed/lt2bSeed.ts`), sau bộ LT2a, ở hai lớp mới **MB BE 04** (Cuối khoá W1 SEP) và **MB ELE 02** (lớp đích). Tài khoản gợi ý: **Quản lý Nguyễn Khánh Vy**, **GVCN Trần Ngọc Hà** (ELE 02). Phép kiểm `LT2b (10)` soi từng dòng ngay sau khi dựng. Không còn thẻ "Quyết định Cuối khoá": 50–59% chỉ hiện chip **Quản lý cân nhắc** (Quản lý chọn khi chuyển lớp).
+Dựng bằng hàm nghiệp vụ (`server/src/seed/lt2bSeed.ts`), sau bộ LT2a, ở hai lớp mới **MB BE 04** (Final Test W1 SEP) và **MB ELE 02** (lớp đích). Tài khoản gợi ý: **Quản lý Nguyễn Khánh Vy**, **GVCN Trần Ngọc Hà** (ELE 02). Phép kiểm `LT2b (10)` soi từng dòng ngay sau khi dựng. Không còn thẻ "Quyết định Final Test": 50–59% chỉ hiện chip **Quản lý cân nhắc** (Quản lý chọn khi chuyển lớp).
 
 | Kịch bản | Học viên | Bạn sẽ thấy |
 |---|---|---|
-| D10 · 45% Học lại | **Hồ Thu Trang** (đã sang MB BE 03) | Vy có việc **Báo phụ huynh qua TVV · Hồ Thu Trang · Cuối khoá 45%** (Công việc › Phối hợp); GVCN không có |
-| D10 · 55% | **Đặng Minh Khôi** (MB BE 04) | Hồ sơ › Học thuật: hộp Kết luận khoá `Cuối khoá 55%` + `Quản lý cân nhắc…`; đầu hồ sơ lớp BE 04: `1 em Quản lý cân nhắc` |
-| D10 · 64% đã lên ELE | **Vương Bảo Ngọc** (MB ELE 02) | Hai Case `Cuối khoá BE · W không đạt` / `S` **Đang làm** (không chờ nguyên nhân), PA `Bổ trợ miễn phí` chạy; ô **Mini Test · — · hạn 15/09** + nút `Ghi Mini Test`; việc của Hà `Ghi Mini Test` |
+| D10 · 45% Học lại | **Hồ Thu Trang** (đã sang MB BE 03) | Vy có việc **Báo phụ huynh qua TVV · Hồ Thu Trang · Final Test 45%** (Công việc › Phối hợp); GVCN không có |
+| D10 · 55% | **Đặng Minh Khôi** (MB BE 04) | Hồ sơ › Học thuật: hộp Kết luận khoá `Final Test 55%` + `Quản lý cân nhắc…`; đầu hồ sơ lớp BE 04: `1 em Quản lý cân nhắc` |
+| D10 · 64% đã lên ELE | **Vương Bảo Ngọc** (MB ELE 02) | Hai Case `Final Test BE · W không đạt` / `S` **Đang làm** (không chờ nguyên nhân), PA `Bổ trợ miễn phí` chạy; ô **Mini Test · — · hạn 15/09** + nút `Ghi Mini Test`; việc của Hà `Ghi Mini Test` |
 | D10 · 78% Pass | **Tạ Đức Huy** (MB BE 04) | Hộp Kết luận khoá `Pass`; không Case |
 | D11 · Mini Test 58% | **Lâm Khánh Vy** (MB ELE 02) | Ô `Mini Test 58% · Chưa đạt — đã báo QL`; Case còn mở; Chờ duyệt › Báo lên: thẻ **Mini Test chưa đạt** |
-| D12 · Pre FOU 52% lên FOU | **Ninh Gia Bảo** (MB FOU 15) | Case `Cuối khoá Pre FOU · Tổng hợp không đạt`, PA `4 buổi miễn phí · 2 tuần`, Mini Test hạn W1 OCT — GVCN FOU ghi được, GVBM L không |
+| D12 · Pre FOU 52% lên FOU | **Ninh Gia Bảo** (MB FOU 15) | Case `Final Test Pre FOU · Tổng hợp không đạt`, PA `4 buổi miễn phí · 2 tuần`, Mini Test hạn W1 OCT — GVCN FOU ghi được, GVBM L không |
 | D13 · Trung tâm | **Chu Nhật Minh** (MB FT 101) | Case FT `Kỳ vọng đầu ra chưa đạt · Reading` + PA `Tutor 10 buổi` |
 | D13 · Học sinh | **Kiều Thảo Nhi** (MB FT 101) | Không Case; hộp Kết luận khoá (trước khi chuyển) ghi phương án case-by-case |
 

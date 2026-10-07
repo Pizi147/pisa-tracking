@@ -6,6 +6,7 @@
  * PR-KHUNG G5: dưới 640px mép phải mờ + đệm pr-8 (cùng mẫu bộ lọc Học viên & Lớp) — biết là còn tab để vuốt.
  */
 import { useEffect, useRef } from 'react';
+import { CHIP_TRON } from './Nhan.tsx';
 
 export type HangTabMuc<K extends string> = { key: K; label: string; so?: number | null; canhBao?: boolean };
 
@@ -15,9 +16,15 @@ export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, ca
   cap?: 'chinh' | 'con';
 }) {
   const hang = useRef<HTMLDivElement>(null);
-  /* Mở trang với tab ở cuối hàng (ví dụ `?tab=y-thuc`) thì tab đang chọn tự cuộn vào tầm nhìn, không bị khuất. */
+  /* Mở trang với tab ở cuối hàng (ví dụ `?tab=y-thuc`) thì tab đang chọn tự cuộn vào giữa hàng, không bị khuất. Chỉ đặt
+     scrollLeft của CHÍNH hàng tab: `scrollIntoView` kéo cả <main> xuống hàng tab (Hồ sơ HV 375 vừa mở không đứng đầu trang). */
   useEffect(() => {
-    hang.current?.querySelector<HTMLElement>('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    const tab = hang.current?.querySelector<HTMLElement>('[aria-selected="true"]');
+    const h = hang.current;
+    if (!tab || !h) return;
+    /* getBoundingClientRect, không `offsetLeft`: hàng tab không phải offsetParent của nút nên offsetLeft tính từ tổ tiên khác. */
+    const lech = tab.getBoundingClientRect().left - h.getBoundingClientRect().left;
+    h.scrollLeft = Math.max(0, h.scrollLeft + lech - (h.clientWidth - tab.offsetWidth) / 2);
   }, [value]);
   return (
     <div ref={hang} role="tablist" aria-label={ariaLabel} className="flex gap-1 overflow-x-auto overflow-y-hidden border-b max-sm:[scrollbar-width:none] max-sm:pr-8 max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)]" style={{ borderColor: 'var(--line)' }}>
@@ -31,7 +38,7 @@ export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, ca
             {t.label}
             {t.canhBao && <span className="ml-1 text-soon" role="img" aria-label="Đã nhắc" title="Đã nhắc">●</span>}
             {!!t.so && t.so > 0 && (
-              <span className="ml-1.5 rounded-full px-1.5 text-[11.5px] tabular-nums bg-doing-bg text-doing">{t.so}</span>
+              <span className={`ml-1.5 ${CHIP_TRON} tabular-nums bg-doing-bg text-doing`}>{t.so}</span>
             )}
           </button>
         );

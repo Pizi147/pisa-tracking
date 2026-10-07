@@ -43,7 +43,7 @@ export function ManagerTaskList({ periodId, chiNhanh = 'tat-ca' }: { periodId: n
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-sm text-slate-100">{t.title}</span>
                 {t.kind === 'teacher_task' && t.topicLabel && <Task>{t.topicLabel}</Task>}
-                {t.className && <span className="text-[11px] text-slate-500">{t.className}</span>}
+                {t.className && <span className="text-xs text-slate-500">{t.className}</span>}
               </div>
               <p className="text-xs text-slate-500 mt-0.5 mb-0">
                 {t.code}

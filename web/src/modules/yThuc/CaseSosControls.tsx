@@ -111,7 +111,7 @@ export function XacNhanCasePanel({ caseId, topic, kyNang, ct, tenSos, paQuyChe, 
         </Truong>
         <Truong nhan="Tên Case" batBuoc phu={boTro ? 'Chỉ sửa được phần giữa. Đợt kiểm tra do hệ thống gắn.' : 'Chỉ sửa được phần giữa. MT# và SOS do hệ thống gắn.'} loi={lf.loiCua(loi, 'ten')}>
           <span className="flex items-center gap-1.5">
-            {boTro ? <Chip>Giữa khoá</Chip> : tenSos?.mt ? <Chip>{`MT${tenSos.mt}`}</Chip> : null}
+            {boTro ? <Chip>Progress Test</Chip> : tenSos?.mt ? <Chip>{`MT${tenSos.mt}`}</Chip> : null}
             <input className="field min-w-0 flex-1" maxLength={80} {...lf.o(loi, 'ten')} value={giua} onChange={(e) => setGiua(e.target.value)} />
             {tenSos?.sos ? <Chip sos={tenSos.sos}>{`SOS ${tenSos.sos}`}</Chip> : null}
           </span>
@@ -264,7 +264,7 @@ export function KhongTheoDoiForm({ caseId, onClose, onDone }: { caseId: number; 
       </div>
       <OKhac hien={reasonNeedsText(reason)} value={text} onChange={setText} goiY="Ví dụ: Em nghỉ ốm cả tuần thi" loi={daBam ? loiGhiRo : null} />
       {daBam && thieu && <p className="m-0 text-xs text-bad" role="alert">{thieu}</p>}
-      <p className="m-0 text-[11px] text-slate-500">Gửi Quản lý duyệt · trả lời trong 5 ngày · xem ở Yêu cầu của tôi</p>
+      <p className="m-0 text-xs text-slate-500">Gửi Quản lý duyệt · trả lời trong 5 ngày · xem ở Yêu cầu của tôi</p>
       <div className="flex gap-1.5">
         <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>Đóng</button>
         <button type="button" className="btn btn-sm btn-primary" disabled={busy} onClick={gui}>Gửi Quản lý duyệt</button>

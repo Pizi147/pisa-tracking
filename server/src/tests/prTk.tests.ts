@@ -107,7 +107,7 @@ export async function runPrTkTests(t: YThucTestKit) {
     const fx = get(`SELECT c.id, c.student_id, a.class_id, a.id AS aid FROM learning_cycles c JOIN assessment_attempts a ON a.cycle_id = c.id AND a.kind = 'final' AND a.status != 'cancelled'
                       JOIN enrollments e ON e.student_id = c.student_id AND e.class_id = a.class_id AND e.status = 'active'
                      WHERE c.route IS NULL AND EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND s.raw_score IS NOT NULL) LIMIT 1`);
-    assert(fx, 'tiền đề: bộ demo có em lớp thường đã có điểm Cuối khoá');
+    assert(fx, 'tiền đề: bộ demo có em lớp thường đã có điểm Final Test');
     const prog = regular.programmeOfClass(fx.class_id);
     const [bcId] = ghiBanChup(conn, [fx.id], { lyDo: 'len_lop', ngay: NGAY });
     const bc = get('SELECT * FROM ban_chup_lo_trinh WHERE id = ?', bcId);
@@ -116,7 +116,7 @@ export async function runPrTkTests(t: YThucTestKit) {
     assert(ck.tyLe !== null && Math.abs(bc.ty_le_cuoi_khoa - ck.tyLe) < 1e-9, `${bc.ty_le_cuoi_khoa} ≠ ${ck.tyLe}`);
     assert(bc.dai_cuoi_khoa === d.daiCuoiKhoa(ck.tyLe) && bc.huong_tiep === 'len_lop' && bc.ket_luan === null, `${bc.dai_cuoi_khoa} ${bc.huong_tiep}`);
     const moLuot = luotCua(bcId).filter((r) => r.attempt_id === fx.aid);
-    assert(moLuot.map((r) => r.ky_nang).join() === prog.skills.join() && moLuot.every((r) => r.ty_le_tong !== null), 'dòng kỹ năng của bài Cuối khoá');
+    assert(moLuot.map((r) => r.ky_nang).join() === prog.skills.join() && moLuot.every((r) => r.ty_le_tong !== null), 'dòng kỹ năng của bài Final Test');
   }));
   await checkAsync('TK-2 · ĐÓNG BĂNG: đổi route / Target / đầu vào / môn chương trình / target_at_attempt sau khi ghi → bản chụp không đổi', () => thu(() => {
     const fx = ftNhieuLuot(1);
@@ -447,7 +447,7 @@ export async function runPrTkTests(t: YThucTestKit) {
     assert(r.dai.hocVien === 2 && r.dai.choKetQua === 2 && r.dai.datTarget === 0, JSON.stringify(r.dai));
     assert(maLoi(() => tongKetSvc.tongKetLop(P.normalSubjectTeacher, ft)) === 403 && maLoi(() => tongKetSvc.tongKetLop(P.cpManager, ft)) === 403, 'quyền lớp');
   }));
-  await checkAsync('TK-7 · tongKetLop lớp thường: Giữa khoá / Cuối khoá / hướng đã chốt từ bản chụp', () => thu(() => {
+  await checkAsync('TK-7 · tongKetLop lớp thường: Progress Test / Final Test / hướng đã chốt từ bản chụp', () => thu(() => {
     const cls = taoLop('FOU', false); const be = taoLop('BE', false);
     const a = taoHV(cls, 'FOU', false); const b = taoHV(cls, 'FOU', false);
     themLuot(a, cls, 1, { kind: 'progress', ty: [14, 20] }); themLuot(a, cls, 2, { kind: 'final', ty: [16, 20] });

@@ -158,7 +158,7 @@ export async function runPrDlTests(t: YThucTestKit) {
   // ------------------------------------------------------------------ DL-3: regularSheet chọn bài theo `kind` (lớp thường; DL-0: không có attemptNo)
   const regular: any = await import('../normal/regular.ts');
   const MB = get("SELECT id FROM branches WHERE code = 'MB'").id as number;
-  const tuanKg = week.ensurePeriod(t.addDays(TODAY, -35));   // FOU: Giữa khoá tuần học 4 (đã qua), Cuối khoá tuần 8 (chưa tới)
+  const tuanKg = week.ensurePeriod(t.addDays(TODAY, -35));   // FOU: Progress Test tuần học 4 (đã qua), Final Test tuần 8 (chưa tới)
   const lopT = intake.createClass(P.admin, { code: 'MB FOU DL3', branchId: MB, kind: 'FOU', startPeriodId: tuanKg.id, startDate: tuanKg.weekStart }).id as number;
   const nowIso = new Date().toISOString();
   conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at) VALUES (?,?, NULL, 1, '2026-01-01', 'active', ?)`)
@@ -179,8 +179,8 @@ export async function runPrDlTests(t: YThucTestKit) {
   intake.commitIntake(P.admin, { classId: lopT, rows: [{ fullName: 'DL3 Bảo', email: 'hv@demo.test' }], idempotencyKey: 'dl3-bao' });
   const sidB = get(`SELECT id FROM students WHERE full_name = 'DL3 Bảo'`).id as number;
 
-  check('DL-3 regularSheet(gvcn, lớp, "progress"): bài Giữa khoá đã qua có điểm cũ; lịch riêng của lớp vẫn ra đúng bài; em vào sau không có hàng', () => {
-    assert(t.addDays(giuaA.week_start, 6) < TODAY, `tiền đề: Giữa khoá phải đã qua (${giuaA.week_start})`);
+  check('DL-3 regularSheet(gvcn, lớp, "progress"): bài Progress Test đã qua có điểm cũ; lịch riêng của lớp vẫn ra đúng bài; em vào sau không có hàng', () => {
+    assert(t.addDays(giuaA.week_start, 6) < TODAY, `tiền đề: Progress Test phải đã qua (${giuaA.week_start})`);
     const sh = regular.regularSheet(gvcn, lopT, 'progress', TODAY);
     assert(sh.rows.length === 1 && sh.rows[0].attemptId === giuaA.id && sh.rows[0].kind === 'progress', JSON.stringify(sh.rows.map((r: any) => [r.studentId, r.kind])));
     const sched = new Map(sh.rows[0].skillSchedule.map((k: any) => [k.skill, k]));
@@ -188,12 +188,12 @@ export async function runPrDlTests(t: YThucTestKit) {
     assert((sched.get('listening') as any).weekStart === giuaA.week_start, 'Listening giữ tuần mặc định');
     const l = sh.rows[0].result.skills.find((k: any) => k.skill === 'listening');
     assert(l && l.score === 31, `điểm cũ Listening: ${JSON.stringify(l)}`);
-    assert(!sh.rows.some((r: any) => r.studentId === sidB), 'em vào sau Giữa khoá không có hàng');
+    assert(!sh.rows.some((r: any) => r.studentId === sidB), 'em vào sau Progress Test không có hàng');
   });
 
-  check('DL-3 regularSheet(gvcn, lớp, "final"): cả hai em, đúng một bài Cuối khoá mỗi em (attempt_no theo từng em, không dùng làm khoá)', () => {
+  check('DL-3 regularSheet(gvcn, lớp, "final"): cả hai em, đúng một bài Final Test mỗi em (attempt_no theo từng em, không dùng làm khoá)', () => {
     const sh = regular.regularSheet(gvcn, lopT, 'final', TODAY);
-    assert(sh.rows.every((r: any) => r.skillSchedule[0].weekStart > TODAY), 'tiền đề: Cuối khoá chưa thi');
+    assert(sh.rows.every((r: any) => r.skillSchedule[0].weekStart > TODAY), 'tiền đề: Final Test chưa thi');
     const ids = sh.rows.map((r: any) => r.studentId).sort((x: number, y: number) => x - y);
     assert(JSON.stringify(ids) === JSON.stringify([sidA, sidB].sort((x, y) => x - y)) && sh.rows.every((r: any) => r.kind === 'final'), JSON.stringify(sh.rows.map((r: any) => [r.studentId, r.kind])));
     const so = new Map(sh.rows.map((r: any) => [r.studentId, get('SELECT attempt_no FROM assessment_attempts WHERE id = ?', r.attemptId).attempt_no]));
@@ -380,7 +380,7 @@ export async function runPrDlTests(t: YThucTestKit) {
       assert(b.mode === 'ratio' && b.thuong.rows.length === 1 && b.thuong.rows[0].studentId === sidA && b.chuaCoLich.length === 0, 'bảng progress');
     });
 
-    check('DL-6b danhSachLuot lớp thường: Giữa khoá đã qua còn ô + Cuối khoá chưa tới → macDinh thuong:progress', () => {
+    check('DL-6b danhSachLuot lớp thường: Progress Test đã qua còn ô + Final Test chưa tới → macDinh thuong:progress', () => {
       const ds = dl.danhSachLuot(gvcn, lopT, TODAY);
       const g = luotCua(ds, 'thuong:progress'), c = luotCua(ds, 'thuong:final');
       assert(g.oTrong > 0 && g.tuanStart <= week.mondayOf(TODAY) && c.oTrong > 0 && c.tuanStart > week.mondayOf(TODAY), `tiền đề: ${JSON.stringify(ds.luot)}`);
@@ -469,7 +469,7 @@ export async function runPrDlTests(t: YThucTestKit) {
       'Lớp chưa có lượt Test nào. Xếp lịch ở Kế hoạch Test.', 'role="tablist"', 'colSpan', 'onRetry={'])
       assert(f.includes(chu) || doc('web/src/modules/cham/LuoiFT.tsx').includes(chu), `thiếu: ${chu}`);
     assert(/try\s*\{[^}]*localStorage\.getItem/.test(f) && /try\s*\{[^}]*localStorage\.setItem/.test(f), 'localStorage phải bọc try/catch');
-    assert(!/'MT\d|Giữa khoá|Cuối khoá|lần 2/.test(f), 'nhãn lượt lấy từ máy chủ, không viết cứng');
+    assert(!/'MT\d|Progress Test|Final Test|lần 2/.test(f), 'nhãn lượt lấy từ máy chủ, không viết cứng');
   });
 
   check('DL-5 fix: Điểm theo lớp ẩn nút "Tạo bài kiểm tra theo chương trình"; chip "lịch sử" cạnh tên em ở bảng và 375', () => {
@@ -627,8 +627,8 @@ export async function runPrDlTests(t: YThucTestKit) {
     assert(/on \? 'text-slate-400' : 'text-slate-500'/.test(f), 'dòng phụ tab chọn: text-slate-400 (--text-dim, tối 5,07:1, sáng 6,75:1)');
     assert(f.includes('role="alert"') && !/role="alert"[^>]*aria-label/.test(f), 'role="alert" không aria-label');
     const ft = doc('web/src/modules/cham/LuoiFT.tsx');
-    const dongTen = ft.slice(ft.indexOf('to={duongDotTest({ id: row.attemptId })}'), ft.indexOf('{row.studentCode}'));
-    assert(!dongTen.includes('NhanCu') && /\{row\.studentCode\}<\/span>\s*\{row\.lichSu && <NhanCu \/>\}/.test(ft), 'LuoiFT: chip lịch sử ở dòng mã HV');  // PR-MTb T2 thay ChipLichSu → NhanCu
+    const dongTen = ft.slice(ft.indexOf('to={duongDotTest({ id: row.attemptId })}'), ft.indexOf('{maHocVienNgan(row.studentCode)}'));
+    assert(!dongTen.includes('NhanCu') && /\{maHocVienNgan\(row\.studentCode\)\}<\/span>\s*\{row\.lichSu && <NhanCu \/>\}/.test(ft), 'LuoiFT: chip lịch sử ở dòng mã HV');  // PR-MTb T2 thay ChipLichSu → NhanCu
     const mk = doc('web/src/modules/cham/MotKyNang.tsx');
     assert(/luu=\{<>\{row\.lichSu && <NhanCu \/>\}<DauLuu/.test(mk) && !/nhan=\{<>\{row\.lichSu/.test(mk), 'MotKyNang: chip lịch sử ở dòng phụ');  // PR-MTb T2 thay ChipLichSu → NhanCu
   });

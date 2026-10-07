@@ -1,6 +1,9 @@
 // PR-KHUNG — đo khung trên trang thật (chạy tay, không vào `npm run check`): 1440/375 × tối/sáng.
 // Lỗi: (a) html cuộn (chỉ <main> được cuộn) hoặc trang trượt ngang; (b) cuộn lồng trong trang (ngoài panel);
-// (c) chữ truncate / line-clamp bị cắt; (d) chữ nút chọn / nút lọc / tab tràn khỏi viền. Kịch bản không mở được cũng là lỗi.
+// (c) chữ truncate / line-clamp bị cắt; (d) chữ nút chọn / nút lọc / tab tràn khỏi viền; (e) <main id="noi-dung"> trượt ngang
+// (bảng / chữ ẩn tràn khỏi khối cuộn — PR-HK2 I1, I2); (f) chữ bị cha overflow-hidden/clip che (ghim "Progress" cắt thành "rogres" — I3).
+// Kịch bản không mở được cũng là lỗi. Phần tử thứ 5 của kịch bản = mảng chiều rộng chạy (mặc định 1440 và 375);
+// KHUNG_RONG=1280,1366 thêm các chiều rộng đó cho MỌI kịch bản (dò trang nào tràn).
 // Chạy: npm run dev (PORT/WEB_PORT riêng) rồi `KHUNG_BASE=http://localhost:5530 node scripts/do-khung.mjs [lọc]`.
 // Playwright không nằm trong package.json: `npm i --no-save playwright` hoặc trỏ PW=<đường tới playwright>.
 import fs from 'node:fs';
@@ -17,19 +20,21 @@ fs.mkdirSync(ANH, { recursive: true });
  *  nội dung panel Ghi kết quả PA (`CapNhatTuan.tsx` — PR-LUI-a2; nút chọn trong panel vẫn đo ở (d)). */
 const BO_QUA_CAT = ['lichTest', 'diem-lop', 'mock', 'nhap-diem', 'bang-diem-thuong', 'panel-pa'];
 
+const RONG_MAY = [1440, 375, 1366, 1280];   // kịch bản có bảng dính đầu (bang-dinh): đo thêm ở 1366 và 1280, nơi bảng có thể rộng hơn khung
+const RONG_THEM = (process.env.KHUNG_RONG ?? '').split(',').filter(Boolean).map(Number);
 const nut = (ten) => async (p) => { await p.getByRole('button', { name: ten }).first().click(); await p.waitForTimeout(500); };
 const KICH_BAN = [
   // [tên, vai, đường, thao tác thêm]
   ['hvl', 2, '/hoc-vien'], ['hvl-gvcn', 7, '/hoc-vien'],
   ['hvl-cuoi', 2, '/hoc-vien', async (p) => { await p.evaluate(() => { const m = document.getElementById('noi-dung'); m.scrollTop = m.scrollHeight; window.scrollTo(0, 1e6); }); await p.waitForTimeout(300); }],
-  ['tong-quan', 2, '/'], ['tong-quan-gv', 7, '/'], ['phan-tich', 2, '/phan-tich'],
+  ['tong-quan', 2, '/'], ['tong-quan-gv', 7, '/'], ['phan-tich', 2, '/phan-tich', null, RONG_MAY], ['phan-tich-thuong', 2, '/phan-tich?ct=thuong', null, RONG_MAY],
   ['cv-ho-tro', 2, '/cong-viec'], ['cv-cho-duyet', 2, '/cong-viec/cho-duyet'], ['cv-van-hanh', 2, '/cong-viec/van-hanh'],
   ['cv-bao-cao', 2, '/cong-viec/bao-cao'], ['cv-gv', 7, '/cong-viec'],
   ['lop-ft', 7, '/hoc-vien/lop/3?tab=hoc-vien'], ['lop-ft-phan-tich', 7, '/hoc-vien/lop/3?tab=phan-tich'],
   ['lop-ft-y-thuc', 7, '/hoc-vien/lop/3?tab=y-thuc'], ['lop-thuong', 2, '/hoc-vien/lop/6?tab=hoc-vien'],
   ['lop-thuong-phan-tich', 2, '/hoc-vien/lop/6?tab=phan-tich'],
   ['hv-hoc-thuat', 7, '/hoc-vien/3'], ['hv-y-thuc', 7, '/hoc-vien/3?tab=y-thuc'], ['hv-hanh-trinh', 7, '/hoc-vien/3?tab=hanh-trinh'],
-  ['hv-thuong', 2, '/hoc-vien/8'], ['luu-tru', 2, '/hoc-vien/luu-tru'],
+  ['hv-thuong', 2, '/hoc-vien/8'], ['hv-thuong-hanh-trinh', 2, '/hoc-vien/8?tab=hanh-trinh'], ['luu-tru', 2, '/hoc-vien/luu-tru'],
   ['test-lichTest', 2, '/test/lich'], ['test-diem-lop', 2, '/test/diem-lop'], ['test-ke-hoach', 2, '/test/ke-hoach'],
   ['nhap-diem', 2, '/nhap-diem/3'], ['bang-diem-thuong', 2, '/bang-diem-thuong/6'], ['mock', 2, '/mock-test/5'],
   ['quan-tri', 1, '/quan-tri'], ['quan-tri-quyen', 1, '/quan-tri', async (p) => { await p.getByRole('tab', { name: /Quyền/ }).click(); await p.waitForTimeout(800); }], ['ho-so-ca-nhan', 7, '/ho-so-ca-nhan'],
@@ -66,6 +71,30 @@ function doTrang() {
   const se = document.scrollingElement;
   if (se.scrollHeight > se.clientHeight + 1) loi.push(`a html cuộn ${se.scrollHeight}/${se.clientHeight}`);
   if (se.scrollWidth > se.clientWidth + 1) loi.push(`a trang trượt ngang ${se.scrollWidth}/${se.clientWidth}`);
+  // (e) vùng nội dung trượt ngang: bảng cuộn / chữ ẩn thoát khỏi khối cuộn của nó (không có trong khung cuộn ngang riêng).
+  const nd = document.getElementById('noi-dung');
+  if (nd && nd.scrollWidth > nd.clientWidth + 1) loi.push(`e vùng nội dung trượt ngang ${nd.scrollWidth}/${nd.clientWidth}`);
+  // (f) chữ bị khối cha overflow-hidden/clip che. Bỏ: chữ sr-only, chữ truncate / line-clamp (đo ở (c)), khối cha cuộn được (auto/scroll).
+  const tw0 = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let n = tw0.nextNode(); n; n = tw0.nextNode()) {
+    if (!n.textContent.trim()) continue;
+    const el = n.parentElement;
+    if (!el || ['SCRIPT', 'STYLE'].includes(el.tagName) || !thay(el) || an(el)) continue;
+    const rg = document.createRange(); rg.selectNodeContents(n);
+    let tl = Infinity, tp = -Infinity;
+    for (const q of rg.getClientRects()) if (q.width) { tl = Math.min(tl, q.left); tp = Math.max(tp, q.right); }
+    if (tp < tl) continue;
+    for (let a = el; a && a !== document.body; a = a.parentElement) {
+      const ac = getComputedStyle(a);
+      if (ac.textOverflow === 'ellipsis' || ac.webkitLineClamp !== 'none' && ac.webkitLineClamp !== '') break;
+      if (ac.position === 'fixed' || /auto|scroll/.test(ac.overflowX)) break;
+      if (ac.maskImage && ac.maskImage !== 'none' || ac.webkitMaskImage && ac.webkitMaskImage !== 'none') break;   // mép mờ báo "còn nữa" (hàng bước Ý thức…)
+      if (a !== el && /hidden|clip/.test(ac.overflowX)) {
+        const r = a.getBoundingClientRect();
+        if (r.width > 0 && (tl < r.left - 1 || tp > r.right + 1)) { ghi(el, `f chữ bị cắt bởi khối overflow-hidden ${Math.round(r.width)}<${Math.round(tp - tl)} «${ten(el)}»`); break; }
+      }
+    }
+  }
   const panel = document.querySelector('[role=dialog]');
   for (const el of document.querySelectorAll('body *')) {
     if (!thay(el) || an(el)) continue;
@@ -84,7 +113,7 @@ function doTrang() {
     // (d) chữ tràn khỏi viền nút chọn / nút lọc / tab.
     if (el.matches('button, [role=tab], [role=radio], a.btn') && ten(el)) {
       const r = el.getBoundingClientRect();
-      // Chữ THẤY được: bỏ chữ sr-only và chữ nằm trong khối con tự cắt (khối đó đã đo ở (c)).
+      // Chữ THẤY được: bỏ chữ sr-only và chữ nằm trong khối con tự cắt (khối đó đã đo ở (c)) và dấu ✓ đè góc của NutChon (absolute, aria-hidden — cố ý nhô ra viền, PR-HK2 C36).
       let trai = Infinity, phai = -Infinity;
       const tw = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
       for (let n = tw.nextNode(); n; n = tw.nextNode()) {
@@ -92,7 +121,7 @@ function doTrang() {
         let a = n.parentElement, boQua = false;
         for (; a && a !== el.parentElement; a = a.parentElement) {
           const ac = getComputedStyle(a);
-          if (an(a) || a !== el && ac.overflowX !== 'visible') { boQua = true; break; }
+          if (an(a) || a !== el && (ac.overflowX !== 'visible' || ac.position === 'absolute' && a.hasAttribute('aria-hidden'))) { boQua = true; break; }
         }
         if (boQua) continue;
         const rg = document.createRange(); rg.selectNodeContents(n);
@@ -120,14 +149,15 @@ function doTrang() {
 
 const trinh = await chromium.launch({ channel: 'msedge' }).catch(() => chromium.launch({ channel: 'chrome' }));
 let tongLoi = 0;
-for (const [w, h] of [[1440, 900], [375, 812]]) for (const sang of [false, true]) {
+for (const [w, h] of [[1440, 900], [375, 812], [1366, 768], [1280, 800]]) for (const sang of [false, true]) {
   const ctx = await trinh.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1 });
   await ctx.addInitScript((s) => { try { localStorage.setItem('pisa-giao-dien', s ? 'light' : 'dark'); } catch {} }, sang);
   const p = await ctx.newPage();
   p.setDefaultTimeout(8000);
   let vai = 0;
-  for (const [tenKb, v, duong, them] of KICH_BAN) {
+  for (const [tenKb, v, duong, them, rong = [1440, 375]] of KICH_BAN) {
     if (LOC && !tenKb.includes(LOC)) continue;
+    if (!rong.includes(w) && !RONG_THEM.includes(w)) continue;
     if (v !== vai) {
       const r = await p.request.post(`${BASE}/api/demo/session`, { data: { userId: v } });
       if (!r.ok()) throw new Error(`đăng nhập vai ${v}: ${r.status()}`);

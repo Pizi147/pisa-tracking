@@ -5,6 +5,7 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { BoLocDoan, Card, Empty, ErrorState, Info, NutChon, Outcome, Skeleton, Status, Th } from '../../ui/ui.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
+import { CHIP_TRON } from '../../ui/Nhan.tsx';
 import { WeekPicker, nhoChiNhanh, resolveWeek, useChiNhanhMacDinh, usePeriodWindow } from '../../ui/Filters.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { SignalList } from './SignalList.tsx';
@@ -226,7 +227,7 @@ export function MeetingBoard() {
                   action={<button type="button" className="btn btn-sm" onClick={xoaLoc}>Xoá lọc</button>} />
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="table-scroll bang-dinh">
                 <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: '46rem' }}>
                   <colgroup>
                     <col style={{ width: '20%' }} />
@@ -252,7 +253,7 @@ export function MeetingBoard() {
                         {u.cells.length < COT_GIUA.length && Array.from({ length: COT_GIUA.length - u.cells.length }).map((_, i) => <td key={`pad-${i}`} className="td text-slate-600">—</td>)}
                         <td className="td">
                           <Status kind={u.trangThai.ma === 'da-nop' ? 'done' : u.trangThai.ma === 'nhap' ? 'waiting' : 'idle'}>{u.trangThai.nhan}</Status>
-                          {u.trangThai.phu && <div className="text-[11px] text-slate-500 mt-0.5">{u.trangThai.phu}</div>}
+                          {u.trangThai.phu && <div className="text-xs text-slate-500 mt-0.5">{u.trangThai.phu}</div>}
                         </td>
                       </tr>
                     ))}
@@ -301,11 +302,11 @@ function OTaBang({ cell, thTutor }: { cell: Cell; thTutor?: string }) {
     <span className={nhat ? 'opacity-70' : ''}>
       {thTutor && <span className="text-slate-500">{thTutor}: </span>}
       <Outcome tone={unitTone(cell.status)}>{unitStatusLabel(cell.status)}</Outcome>
-      {nhat && <span className="text-[11px] text-slate-500 ml-1">nháp</span>}
+      {nhat && <span className="text-xs text-slate-500 ml-1">nháp</span>}
       {cell.worstStatus && cell.worstStatus !== cell.status && (
-        <span className="text-[11px] text-slate-500"> (từng {unitStatusLabel(cell.worstStatus).toLowerCase()})</span>
+        <span className="text-xs text-slate-500"> (từng {unitStatusLabel(cell.worstStatus).toLowerCase()})</span>
       )}
-      {cell.weeksTotal ? <span className="text-[11px] text-slate-500"> · đã nộp {cell.weeksReported}/{cell.weeksTotal} tuần</span> : ''}
+      {cell.weeksTotal ? <span className="text-xs text-slate-500"> · đã nộp {cell.weeksReported}/{cell.weeksTotal} tuần</span> : ''}
     </span>
   );
 }
@@ -370,7 +371,7 @@ function NganBaoCao({ unit, cell, periodId, editable, editWindow, onClose, onSav
             <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-1.5">Nối với việc:</h3>
             <div className="flex flex-wrap gap-1.5">
               {cell.linkedTasks.map((t) => (
-                <span key={t.id} className="inline-flex items-center gap-1 surface-2 rounded-full px-2 py-1 text-xs">
+                <span key={t.id} className={`${CHIP_TRON} gap-1 surface-2 !font-medium`}>
                   <button type="button" className="appearance-none bg-transparent border-0 p-0 text-slate-200 hover:underline cursor-pointer"
                     onClick={() => navigate(`/cong-viec/van-hanh?open=${t.id}`)}>
                     {t.title} · {t.progressLabel}{t.due ? ` · ${fmtDate(t.due)}` : ''}
@@ -407,10 +408,10 @@ function NganBaoCao({ unit, cell, periodId, editable, editWindow, onClose, onSav
 
           {cell.history.length > 0 && (
             <details>
-              <summary className="text-[11px] text-slate-500 cursor-pointer">Lịch sử ({cell.history.length})</summary>
+              <summary className="text-xs text-slate-500 cursor-pointer">Lịch sử ({cell.history.length})</summary>
               <ul className="list-none p-0 m-0 mt-1 space-y-0.5">
                 {cell.history.map((h, i) => (
-                  <li key={i} className="text-[11px] text-slate-500">
+                  <li key={i} className="text-xs text-slate-500">
                     {fmtDate(h.at.slice(0, 10))} · {unitStatusLabel(h.status)}{h.kind ? ` · ${h.kind === 'nop' ? 'nộp' : 'nháp'}` : ''}
                     {h.actor ? ` · ${h.actor}` : ''}
                   </li>
@@ -429,8 +430,8 @@ function NganBaoCao({ unit, cell, periodId, editable, editWindow, onClose, onSav
               <button className="btn btn-primary btn-sm" disabled={busy !== null || !status || !(editWindow?.open ?? true)} onClick={() => luu(true)}>
                 {busy === 'nop' ? 'Đang nộp…' : daNop ? 'Nộp lại' : 'Nộp'}
               </button>
-              {!(editWindow?.open ?? true) && <span className="text-[11px] text-slate-500">Cửa sổ nộp đã đóng — vẫn lưu nháp được.</span>}
-              {(editWindow?.open ?? true) && !status && <span className="text-[11px] text-slate-500">Chọn mức trước khi nộp.</span>}
+              {!(editWindow?.open ?? true) && <span className="text-xs text-slate-500">Cửa sổ nộp đã đóng — vẫn lưu nháp được.</span>}
+              {(editWindow?.open ?? true) && !status && <span className="text-xs text-slate-500">Chọn mức trước khi nộp.</span>}
             </div>
           )}
         </div>

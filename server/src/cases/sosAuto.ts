@@ -2,8 +2,7 @@ import { db, tx } from '../db.ts';
 import {
   CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, CONFIRM_EDIT_REASON, URGENCY_LEVELS, academicSupportFor, caseTopicLabel, issueBranchOf, tenMonNgan,
   hanXacNhan, issuesForTopic, kiemGhiRoKhac, laKhac, mocQuyChe, ngay, reasonNeedsText, tenCaseSos, weeklyUpdateDue,
-  type AcademicSupportPreset, type CaseDismissReason, type MilestoneKind,
-} from '../../../shared/domain/index.ts';
+  type AcademicSupportPreset, type CaseDismissReason, type MilestoneKind, nhanBaiThuong } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, badRequest, notFound, nowIso } from '../util.ts';
 import type { Principal } from '../permissions.ts';
@@ -134,7 +133,7 @@ export function announceAutoCase(input: {
   const ten = input.ten ?? tenCaseSos({ mt: input.attemptNo, giua: `${input.skillLabel} không đạt`, sos: input.sosLevel });
   addJourney({
     studentId: input.studentId, cycleId: input.cycleId, eventType: 'case_opened', eventDate: input.detectedOn,
-    title: input.dot === 'giua-khoa' ? `Giữa khoá tự tạo Case ${ten}` : `SOS tự tạo Case ${ten}`,
+    title: input.dot === 'giua-khoa' ? `Progress Test tự tạo Case ${ten}` : `SOS tự tạo Case ${ten}`,
     detail: input.dot === 'giua-khoa' ? 'PA Bổ trợ chờ GVBM xác nhận nguyên nhân và kế hoạch bài giảng.' : 'PA theo quy chế chờ GVBM xác nhận.',
     refTable: 'sos_cases', refId: input.caseId, createdBy: input.actorUserId,
     dedupKey: `case_open:${input.caseId}`,
@@ -150,7 +149,7 @@ export function announceAutoCase(input: {
     notify({
       userId: input.ownerUserId, kind: 'sos',
       title: `Xác nhận nguyên nhân ${input.skillLabel} · ${[st?.full_name, lop].filter(Boolean).join(' · ')}`,
-      body: `Case mới sau ${input.dot === 'giua-khoa' ? 'Giữa khoá' : `MT${input.attemptNo}`}: ${ten} · hạn ${ngay(input.hanXacNhan, demoToday())}`,
+      body: `Case mới sau ${input.dot === 'giua-khoa' ? nhanBaiThuong('progress') : `MT${input.attemptNo}`}: ${ten} · hạn ${ngay(input.hanXacNhan, demoToday())}`,
       entityType: 'sos_case', entityId: input.caseId, dedupKey: `sos-case:${input.caseId}`,
     });
   }

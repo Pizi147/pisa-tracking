@@ -6,8 +6,7 @@
 import { THAM_SO_TOI_DA, db, theoLo } from '../db.ts';
 import {
   ASSESSED_SKILLS, HUONG_TIEP_TK_NHAN, LY_DO_DONG_NHAN, PERMISSIONS, ketQuaThiThat, khoangTuan, luotDaiDien, tenMonNgan, tuanLich,
-  type HuongTiepTk, type LyDoDong,
-} from '../../../shared/domain/index.ts';
+  type HuongTiepTk, type LyDoDong, ATTEMPT_KIND_LABEL } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notFound } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
@@ -106,7 +105,7 @@ export type DongLuotTongKet = {
   overall: number | null; kyVong: number | null; sos: number | null; tyLe: number | null; ketQua: string | null;
 };
 
-const NHAN_LUOT: Record<string, string> = { mock: 'Mock Test', progress: 'Giữa khoá', final: 'Cuối khoá' };
+const NHAN_LUOT: Record<string, string> = ATTEMPT_KIND_LABEL;
 
 function gomLuot(rows: any[], maCt: string | null, laFt: boolean, homNay: string): DongLuotTongKet[] {
   const theo = new Map<number, any[]>();

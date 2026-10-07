@@ -198,7 +198,7 @@ export async function runPrDeployTests(t: YThucTestKit) {
     return { sid: st.id as number, luot };
   };
   const nhap = (aid: number, dd: Record<string, number>) => { for (const [k, v] of Object.entries(dd)) regular.saveRegularScore(P.admin, aid, k, { score: v, total: 20, lyDo: 'Phép kiểm 0b-3' }); };
-  check('0b-3b · em FOU có Case G+V → lên BE → trượt Writing Giữa khoá BE ⇒ 2 Case; Case G+V vẫn ghi "G+V" ở mọi chỗ (bảng kỹ năng, Ngăn Case, danh sách); Case Writing BE ghi "Writing"', () => {
+  check('0b-3b · em FOU có Case G+V → lên BE → trượt Writing Progress Test BE ⇒ 2 Case; Case G+V vẫn ghi "G+V" ở mọi chỗ (bảng kỹ năng, Ngăn Case, danh sách); Case Writing BE ghi "Writing"', () => {
     const em = taoEm('MB FOU 12');
     nhap(em.luot('progress')!, { listening: 18, reading: 18, writing: 11, speaking: 18 });
     const gv = all('SELECT * FROM sos_cases WHERE student_id = ? ORDER BY id', em.sid);
@@ -210,9 +210,9 @@ export async function runPrDeployTests(t: YThucTestKit) {
     assert(r.done.length === 1, `không chuyển được em: ${JSON.stringify(r)}`);
     const sau = get('SELECT * FROM sos_cases WHERE id = ?', caseGv.id);
     assert(sau.goc_programme_code === 'FOU' && sau.goc_class_id === caseGv.goc_class_id, 'lớp gốc đổi sau khi chuyển lớp');
-    regular.planRegularTests(P.admin, be, { studentIds: [em.sid], kinds: ['progress'] });   // Giữa khoá BE có thể đã qua lúc em vào — QL xếp bù (như pb2bSeed)
+    regular.planRegularTests(P.admin, be, { studentIds: [em.sid], kinds: ['progress'] });   // Progress Test BE có thể đã qua lúc em vào — QL xếp bù (như pb2bSeed)
     const luotBe = em.luot('progress', be);
-    assert(luotBe, 'em chưa có bài Giữa khoá ở BE');
+    assert(luotBe, 'em chưa có bài Progress Test ở BE');
     nhap(luotBe!, { listening: 18, reading: 18, writing: 10, speaking: 18 });
     const cs = all('SELECT * FROM sos_cases WHERE student_id = ? ORDER BY id', em.sid);
     assert(cs.length === 2, `phải 2 Case (G+V của FOU, Writing của BE): ${cs.length}`);

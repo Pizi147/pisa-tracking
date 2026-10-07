@@ -83,10 +83,10 @@ export const CLASS_PHASE_LABEL: Record<ClassPhase, string> = {
   unknown: 'Chưa khai tuần bắt đầu',
   not_started: 'Chưa khai giảng',
   running: 'Đang học',
-  progress_soon: 'Tuần sau thi Giữa khoá',
-  progress_week: 'Thi Giữa khoá tuần này',
-  final_soon: 'Tuần sau thi Cuối khoá',
-  final_week: 'Thi Cuối khoá tuần này',
+  progress_soon: 'Tuần sau thi Progress Test',
+  progress_week: 'Thi Progress Test tuần này',
+  final_soon: 'Tuần sau thi Final Test',
+  final_week: 'Thi Final Test tuần này',
   finished: 'Đã hết khoá',
 };
 

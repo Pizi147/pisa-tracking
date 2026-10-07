@@ -141,11 +141,11 @@ export async function runTongQuanTests(t: YThucTestKit) {
   });
 
   // ================================================================== 2. Nợ S1 (1)
-  check('PR-Pa · Nợ S1 (PR-LT2a): Case Giữa khoá quá hạn xác nhận nguyên nhân vào chỉ số case-xac-dinh-nguyen-nhan-qua-han — chỉ lớp thường, đúng phạm vi; tín hiệu chờ xác minh đã bỏ khỏi mã', () => {
+  check('PR-Pa · Nợ S1 (PR-LT2a): Case Progress Test quá hạn xác nhận nguyên nhân vào chỉ số case-xac-dinh-nguyen-nhan-qua-han — chỉ lớp thường, đúng phạm vi; tín hiệu chờ xác minh đã bỏ khỏi mã', () => {
     const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'listening', 10, 40);
     const c = conn.prepare('SELECT id, status FROM sos_cases WHERE student_id = ?').get(hv.sid) as any;
-    assert(c, 'Giữa khoá trượt phải tự tạo Case');
+    assert(c, 'Progress Test trượt phải tự tạo Case');
     const vaoTap = () => ids('case-xac-dinh-nguyen-nhan-qua-han').includes(c.id);
     assert(!vaoTap(), 'Case còn trong hạn 3 ngày thì chưa quá hạn');
     conn.prepare('UPDATE sos_cases SET han_xac_nhan = ? WHERE id = ?').run(t.addDays(TODAY, -1), c.id);
@@ -273,14 +273,14 @@ export async function runTongQuanTests(t: YThucTestKit) {
     }
   });
 
-  check('PR-Pa · rowsFor: Case Giữa khoá ghi tên môn (không chữ thô "listening"); bài thi có dòng', () => {
+  check('PR-Pa · rowsFor: Case Progress Test ghi tên môn (không chữ thô "listening"); bài thi có dòng', () => {
     const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'listening', 10, 40);
     const c = conn.prepare('SELECT id FROM sos_cases WHERE student_id = ?').get(hv.sid) as any;
     const row = metricsSvc.rowsFor('case', [c.id])[0];
     assert(/Listening/.test(row.title) && !/listening/.test(row.title), `Chữ thô: ${row.title}`);
     const bai = metricsSvc.rowsFor('bai-thi', [hv.attemptId])[0];
-    assert(bai.href !== '#' && /Giữa khoá|Bài/.test(bai.title), `Bài thi không có dòng: ${JSON.stringify(bai)}`);
+    assert(bai.href !== '#' && /Progress Test|Bài/.test(bai.title), `Bài thi không có dòng: ${JSON.stringify(bai)}`);
   });
 
   // ================================================================== 5. Cần xử lý · Điểm đáng chú ý · HV cần hỗ trợ
@@ -391,7 +391,7 @@ export async function runTongQuanTests(t: YThucTestKit) {
   });
 
   // ================================================================== 8. Nợ S1 (2)
-  check('PR-Pa · Nợ S1 (PR-LT2a): không ai dạy Speaking → Case Giữa khoá tự tạo về GVCN, PA bổ trợ FOU do GVCN dạy; Việc cần làm không còn dòng "verify"', () => {
+  check('PR-Pa · Nợ S1 (PR-LT2a): không ai dạy Speaking → Case Progress Test tự tạo về GVCN, PA bổ trợ FOU do GVCN dạy; Việc cần làm không còn dòng "verify"', () => {
     const cid = classId('MB FOU 12');
     const tam = (conn.prepare(`SELECT id FROM teacher_assignments WHERE class_id = ? AND skill = 'speaking' AND status = 'active'`)
       .all(cid) as any[]).map((r) => r.id as number);

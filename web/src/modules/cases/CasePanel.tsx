@@ -203,7 +203,7 @@ export function ThanCase({ data, onViec }: { data: CaseDetail; onViec: (v: ViewC
             <ol className="m-0 mt-2 list-none space-y-2 border-l p-0 pl-3" style={{ borderColor: 'var(--line)' }}>
               {lichSu.map((m) => (
                 <li key={m.key} className="text-xs">
-                  <span className="block text-[11px] tabular-nums text-slate-500">{ngan(m.on)}{m.dot ? <> · {m.dotHref ? <Link to={m.dotHref} className="link">{m.dot}</Link> : m.dot}</> : ''}</span>
+                  <span className="block text-xs tabular-nums text-slate-500">{ngan(m.on)}{m.dot ? <> · {m.dotHref ? <Link to={m.dotHref} className="link">{m.dot}</Link> : m.dot}</> : ''}</span>
                   <span className="flex flex-wrap items-center gap-1.5 text-slate-200">{m.tieuDe}{m.badge}</span>
                   {m.than}
                 </li>
@@ -248,7 +248,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="text-sm font-semibold text-slate-100">{INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? iv.kind}</span>
         {/* PR-N1 S4-1: PA theo quy chế SOS do máy gán — dấu nhỏ cạnh tên (khoảng cách lấy từ `gap-1.5` của hàng, nên không thêm `ml-1.5`). */}
-        {iv.preset && <span className="inline-flex items-center gap-1 whitespace-nowrap text-[11px] text-slate-400" title={iv.kind === 'bo_tro' ? 'PA Bổ trợ bắt buộc đến Cuối khoá — không thay, không kết thúc sớm' : 'PA theo quy chế SOS — không thay, không kết thúc sớm'}><KhoaNho />theo quy chế</span>}
+        {iv.preset && <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-slate-400" title={iv.kind === 'bo_tro' ? 'PA Bổ trợ bắt buộc đến Final Test — không thay, không kết thúc sớm' : 'PA theo quy chế SOS — không thay, không kết thúc sớm'}><KhoaNho />theo quy chế</span>}
         {/* Trạng thái CÔNG VIỆC, không phải kết quả (mục 2.2): "Đã xong" chỉ nghĩa việc đã làm xong. */}
         {/* PR-SOS: PA quy chế chưa xác nhận = "Chờ xác nhận" (cùng chữ với hàng PA ở bảng kỹ năng), không phải "Đã lên kế hoạch". */}
         <Nhan tone={toneTrangThaiPa(iv.status)}>{chuaChay ? (choKeHoachDuyet ? 'Chờ Quản lý duyệt' : 'Chờ kế hoạch') : iv.awaitingConfirmation ? 'Chờ xác nhận' : INTERVENTION_STATUS_LABEL[iv.status as keyof typeof INTERVENTION_STATUS_LABEL] ?? iv.status}</Nhan>
@@ -261,14 +261,14 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
       </div>
       {iv.description && <p className="m-0 mt-1 text-sm text-slate-300">{iv.description}</p>}
       {iv.kind === 'bo_tro' && bt?.chung && bt.mon.length > 1 && (
-        <p className="m-0 mt-0.5 text-[11px] text-slate-400">PA chung · {bt.mon.map((m) => m.tenMon).join(', ')}</p>
+        <p className="m-0 mt-0.5 text-xs text-slate-400">PA chung · {bt.mon.map((m) => m.tenMon).join(', ')}</p>
       )}
       {(thayCho || thayBang) && (
-        <p className="m-0 mt-0.5 truncate text-[11px] text-slate-500">
+        <p className="m-0 mt-0.5 truncate text-xs text-slate-500">
           {[thayCho && `Thay cho: ${tenPA(thayCho)}`, thayBang && `Được thay bằng: ${tenPA(thayBang)}`].filter(Boolean).join(' · ')}
         </p>
       )}
-      <p className="m-0 mt-1 text-[11px] text-slate-500">
+      <p className="m-0 mt-1 text-xs text-slate-500">
         {[nguoi, khoang, iv.mocChu ? `kết thúc theo quy chế: ${iv.mocChu}` : null].filter(Boolean).join(' · ')}
         {hanGhi && !choDuyet && !data.tamDungTu && <> · hạn ghi kết quả {hanGhi.han.replace(/^hạn /, '')}</>}
       </p>
@@ -281,7 +281,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
       <DongXinYKien x={iv.xinYKien} ngan={ngan} />
       {revisions.length > 0 && (
         <details className="mt-1">
-          <summary className="cursor-pointer text-[11px] text-slate-400">Đã điều chỉnh {revisions.length} lần</summary>
+          <summary className="cursor-pointer text-xs text-slate-400">Đã điều chỉnh {revisions.length} lần</summary>
           <div className="mt-1"><LichSuDieuChinh revisions={revisions} /></div>
         </details>
       )}
@@ -399,23 +399,23 @@ function buildLichSu(data: CaseDetail, ngan: (d: string | null | undefined) => s
           {f.outcome && (
             <Outcome tone={OUTCOME_TONE[f.outcome] ?? 'muted'} mark={OUTCOME_MARK[f.outcome]}>{outcomeLabelFor(f.outcome)}</Outcome>
           )}
-          {f.late && <span className="text-[11px] text-slate-500">ghi trễ{tre && tre > 0 ? ` ${tre} ngày` : ''}</span>}
+          {f.late && <span className="text-xs text-slate-500">ghi trễ{tre && tre > 0 ? ` ${tre} ngày` : ''}</span>}
         </>
       ),
       than: (
         <>
           {(f.nextStep || f.observerName) && (
-            <span className="block text-[11px] text-slate-500">
+            <span className="block text-xs text-slate-500">
               {f.nextStep && <>→ {NEXT_STEP_LABEL[f.nextStep as keyof typeof NEXT_STEP_LABEL] ?? f.nextStep}</>}
               {f.nextStep && f.observerName && ' · '}
               {f.observerName && <>{f.observerName} ghi</>}
             </span>
           )}
           {f.note && <span className="block text-slate-300">{f.note}</span>}
-          {f.phuTrach && <span className="block text-[11px] text-slate-400">Phụ trách: {f.phuTrach}</span>}
-          {f.remainingIssue && <span className="block text-[11px] text-slate-400">Còn tồn / Ghi chú: {f.remainingIssue}</span>}
+          {f.phuTrach && <span className="block text-xs text-slate-400">Phụ trách: {f.phuTrach}</span>}
+          {f.remainingIssue && <span className="block text-xs text-slate-400">Còn tồn / Ghi chú: {f.remainingIssue}</span>}
           {f.decisionNote && (
-            <span className="block text-[11px] text-slate-400">{f.nextStep === 'adjust' || f.nextStep === 'propose' ? 'Lý do' : 'Ghi chú'}: {f.decisionNote}</span>
+            <span className="block text-xs text-slate-400">{f.nextStep === 'adjust' || f.nextStep === 'propose' ? 'Lý do' : 'Ghi chú'}: {f.decisionNote}</span>
           )}
           <MetricPills metrics={f.metrics} ct={data.chuongTrinh ?? null} />
         </>

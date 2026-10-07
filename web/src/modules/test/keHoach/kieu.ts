@@ -1,7 +1,6 @@
 import {
   KY_NANG_KE_HOACH, gomChip, tenMonNgan, tuanLich,
-  type KyNangKH, type OKyNang,
-} from '@shared/domain/index.ts';
+  type KyNangKH, type OKyNang, ATTEMPT_KIND_SHORT } from '@shared/domain/index.ts';
 
 /** Kiểu dữ liệu của Kế hoạch Test phía web — khớp `server/src/keHoach/keHoachTest.ts`. */
 
@@ -23,7 +22,7 @@ export type LuoiFTData = { classId: number; classCode: string; cot: number[]; ha
 
 export type DotThuong = { attemptId: number | null; kn: KnO };
 export type KindThuong = 'progress' | 'final';
-export type CotThuong = { kind: KindThuong; nhan: 'Giữa khoá' | 'Cuối khoá'; deXuat: string | null; nhanDeXuat: string | null };
+export type CotThuong = { kind: KindThuong; nhan: string; deXuat: string | null; nhanDeXuat: string | null };
 export type HangThuong = {
   studentId: number; ten: string; ma: string; dot: Partial<Record<KindThuong, DotThuong>>;
   /** PR-MT0 (mockup ④): MT0 của em — ô MT số 0 cạnh Final. */
@@ -39,8 +38,7 @@ export type LuoiThuongData = {
 /** Một đợt của lớp: FT = MT{n}, lớp thường = Giữa khoá / Cuối khoá. */
 export type DotChon = { loai: 'ft'; attemptNo: number } | { loai: 'thuong'; kind: KindThuong };
 
-export const NHAN_KIND: Record<KindThuong, 'Giữa khoá' | 'Cuối khoá'> = { progress: 'Giữa khoá', final: 'Cuối khoá' };
-export const nhanDot = (d: DotChon): string => (d.loai === 'ft' ? `MT${d.attemptNo}` : NHAN_KIND[d.kind]);
+export const nhanDot = (d: DotChon): string => (d.loai === 'ft' ? `MT${d.attemptNo}` : ATTEMPT_KIND_SHORT[d.kind]);
 export const khoaDot = (d: DotChon): string => (d.loai === 'ft' ? `mt${d.attemptNo}` : d.kind);
 /** Phần định danh đợt trong body gửi máy chủ (`/xep-moi`, `/hang-loat`). */
 export const thanDot = (d: DotChon) => (d.loai === 'ft' ? { attemptNo: d.attemptNo } : { kind: d.kind });

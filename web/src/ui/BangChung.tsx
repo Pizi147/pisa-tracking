@@ -194,13 +194,13 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = 'Bằng chứn
       </div>
 
       {error && (
-        <p className="text-[11px] text-bad m-0 mt-1.5">
+        <p className="text-xs text-bad m-0 mt-1.5">
           Không tải được danh sách bằng chứng. <button type="button" className="link appearance-none bg-transparent border-0 p-0 cursor-pointer" onClick={reload}>Tải lại</button>
         </p>
       )}
-      {loading && !data && <p className="text-[11px] text-slate-500 m-0 mt-1.5">Đang tải…</p>}
+      {loading && !data && <p className="text-xs text-slate-500 m-0 mt-1.5">Đang tải…</p>}
       {data && rows.length === 0 && uploads.length === 0 && !linkOpen && (
-        <p className="text-[11px] text-slate-500 m-0 mt-1.5">
+        <p className="text-xs text-slate-500 m-0 mt-1.5">
           {canEdit ? CHU_KHOI_BANG_CHUNG : 'Chưa có bằng chứng nào.'}
         </p>
       )}
@@ -228,7 +228,7 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = 'Bằng chứn
                 </span>
               )}
             </span>
-            {rowError?.id === r.id && <span className="block text-[11px] text-bad">{rowError.message}</span>}
+            {rowError?.id === r.id && <span className="block text-xs text-bad">{rowError.message}</span>}
           </li>
         ))}
 
@@ -255,11 +255,11 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = 'Bằng chứn
       {canEdit && linkOpen && (
         <div className="mt-2 grid gap-1.5 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_auto] items-end">
           <label className="block">
-            <span className="text-[11px] text-slate-500 block">Địa chỉ liên kết</span>
+            <span className="text-xs text-slate-500 block">Địa chỉ liên kết</span>
             <input className="field" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" inputMode="url" />
           </label>
           <label className="block">
-            <span className="text-[11px] text-slate-500 block">Tên hiển thị (không bắt buộc)</span>
+            <span className="text-xs text-slate-500 block">Tên hiển thị (không bắt buộc)</span>
             <input className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ví dụ: Bài viết tuần 3" />
           </label>
           <span className="flex gap-1.5">
@@ -268,7 +268,7 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = 'Bằng chứn
             </button>
             <button type="button" className="btn btn-sm" disabled={linkBusy} onClick={() => { setLinkOpen(false); setLinkError(null); }}>Đóng</button>
           </span>
-          {linkError && <p className="text-[11px] text-bad m-0 sm:col-span-3" role="alert">{linkError}</p>}
+          {linkError && <p className="text-xs text-bad m-0 sm:col-span-3" role="alert">{linkError}</p>}
         </div>
       )}
     </div>

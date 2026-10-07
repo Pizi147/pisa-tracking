@@ -19,7 +19,7 @@ export async function runPrDhTests(t: YThucTestKit) {
     assert(c({ nhanLuot: 'MT2', tuanBatDau: '2026-10-12', kyVong: 5.5 }) === `MT2 · ${tuan} · 5.5`, String(c({ nhanLuot: 'MT2', tuanBatDau: '2026-10-12', kyVong: 5.5 })));
     assert(c({ nhanLuot: 'MT2', tuanBatDau: '2026-10-12', kyVong: null }) === `MT2 · ${tuan}`, 'không kỳ vọng');
     assert(c({ nhanLuot: 'MT3', tuanBatDau: '2026-10-12', kyVong: 6 }) === `MT3 · ${tuan} · 6.0`, 'một chữ số thập phân');
-    assert(c({ nhanLuot: 'Giữa khoá', tuanBatDau: '2026-10-12', kyVong: 5.5, khung: 'thuong' }) === `Giữa khoá · ${tuan}`, 'lớp thường không hiện kỳ vọng');
+    assert(c({ nhanLuot: 'Progress Test', tuanBatDau: '2026-10-12', kyVong: 5.5, khung: 'thuong' }) === `Progress Test · ${tuan}`, 'lớp thường không hiện kỳ vọng');
   });
 
   check('PR-DH (1) · chuSapToi: còn lượt chưa xếp tuần → "MT2 · chưa xếp"; hết MT → "Thi thật · <dự kiến>"; lớp thường hết mốc → null', () => {
@@ -83,9 +83,9 @@ export async function runPrDhTests(t: YThucTestKit) {
     assert(/stopPropagation/.test(m), 'chặn nổi bọt qua portal');
   });
 
-  check('PR-DH (11) · ViecTiep: chữ việc không cắt (PR-KHUNG G3: chạy liền, chật thì xuống dòng — trước là line-clamp-2); title giữ câu đủ', () => {
+  check('PR-DH (11) · ViecTiep: chữ việc không cắt (PR-KHUNG G3: chạy liền, chật thì xuống dòng; HK2 C37: chỉ `sm:line-clamp-2`, < 640 px đủ chữ); title giữ câu đủ', () => {
     const v = doc('web/src/ui/ViecTiep.tsx').replace(/\/\*[\s\S]*?\*\//g, '');
-    assert(/className="break-words"/.test(v) && !/truncate|line-clamp/.test(v) && /title=\{v\.title\}/.test(v), 'ViecTiep');
+    assert(/className="break-words"/.test(v) && !/truncate/.test(v) && !/(^|[\s"'`])line-clamp/.test(v) && /title=\{v\.title\}/.test(v), 'ViecTiep');
   });
 
   check('PR-DH (12) · J10: ô điểm chưa có dữ liệu chỉ gạch (title "Chưa có điểm"), thẻ gọn không "—" cạnh "chưa có điểm"', () => {

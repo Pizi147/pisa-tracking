@@ -212,7 +212,7 @@ export async function runPrVaiATests(t: YThucTestKit) {
     } finally { don(hv.sid); }
   });
 
-  check('VAI-a (2d) · hv-len-ft-chua-ky-vong: em BE có lệnh lên FT + bài Cuối khoá → có; ghiKetLuanFt(Đạt) → ra; QL CP không thấy', () => {
+  check('VAI-a (2d) · hv-len-ft-chua-ky-vong: em BE có lệnh lên FT + bài Final Test → có; ghiKetLuanFt(Đạt) → ra; QL CP không thấy', () => {
     const hv = taoHv('MB BE 04', null);
     try {
       const pr = week.ensurePeriod(week.mondayOf(TODAY)).id;
@@ -221,7 +221,7 @@ export async function runPrVaiATests(t: YThucTestKit) {
       conn.prepare(`INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, huong, boi_canh, tuan_bat_dau, nguoi_ra_lenh, ngay_ra_lenh, tao_luc)
         VALUES (?, ?, 'fast_track', 'cuoi_khoa', ?, ?, ?, ?)`).run(hv.sid, hv.cid, t.addDays(week.mondayOf(TODAY), 7), P.mbManager.userId, TODAY, NOW);
       const co = (who = P.mbManager) => metricsSvc.metricSet(who, 'hv-len-ft-chua-ky-vong', {}).ids.includes(hv.sid);
-      assert(co(), 'lệnh lên FT, có Cuối khoá, chưa đánh dấu → có');
+      assert(co(), 'lệnh lên FT, có Final Test, chưa đánh dấu → có');
       assert(!co(P.cpManager), 'phủ định: QL CP không thấy em MB');
       cuoiKhoa.ghiKetLuanFt(P.mbManager, hv.sid, { dat: true });
       assert(!co(), 'đánh dấu Đạt → ra');
@@ -339,7 +339,7 @@ export async function runPrVaiATests(t: YThucTestKit) {
     eq(d.TAB_TONG_QUAN_LABEL['tong-quan'], 'Việc hôm nay', 'tên tab');
     const ung = [
       { loai: 'lop-chua-dat', metricId: 'hv-duoi-ky-vong-mon', extra: { ctLop: 'FOU' }, tu: 5, mau: 22, nhanMon: 'FOU', tenBai: null },
-      { loai: 'lop-chua-dat', metricId: 'hv-duoi-ky-vong-mon', extra: { ctLop: 'BE' }, tu: 2, mau: 3, nhanMon: 'BE', tenBai: 'Giữa khoá' },
+      { loai: 'lop-chua-dat', metricId: 'hv-duoi-ky-vong-mon', extra: { ctLop: 'BE' }, tu: 2, mau: 3, nhanMon: 'BE', tenBai: 'Progress Test' },
       { loai: 'pa-cai-thien', metricId: 'ty-le-co-cai-thien', tu: 12, mau: 15 },
     ];
     const r = d.chonDiemDangChuY(ung, 'thuong');

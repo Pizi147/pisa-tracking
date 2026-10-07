@@ -1,5 +1,5 @@
 import { db } from '../db.ts';
-import { CHU_THEM_PA, PERMISSIONS, hanBanGiao, nhanLoaiXuLy, tenMon, tuanLich, type DaiHocVien } from '../../../shared/domain/index.ts';
+import { CHU_THEM_PA, PERMISSIONS, hanBanGiao, nhanLoaiXuLy, tenMon, tuanLich, type DaiHocVien, nhanBaiThuong } from '../../../shared/domain/index.ts';
 import { can, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, diffDays } from '../util.ts';
@@ -117,7 +117,7 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
   ).all(sid) as any[];
   for (const x of baoPh) {
     const cuoi = x.kind === 'final';
-    ds.push({ key: `baoph:${x.id}`, loai: 'bao-ph', chu: `Báo phụ huynh qua TVV · kết quả ${cuoi ? 'Cuối khoá' : 'Giữa khoá'}`, kyNang: null, caseId: null, paId: null,
+    ds.push({ key: `baoph:${x.id}`, loai: 'bao-ph', chu: `Báo phụ huynh qua TVV · kết quả ${nhanBaiThuong(cuoi ? 'final' : 'progress')}`, kyNang: null, caseId: null, paId: null,
       han: null, tone: 'info', nguoiId: cuoi ? null : -1, vaiChu: cuoi ? 'Quản lý' : undefined,
       cuaBanTheoVai: cuoi ? can(p, PERMISSIONS.REQUEST_APPROVE, { classId: n.lopId, studentId: sid }) : undefined,
       nut: 'Đánh dấu đã làm', mo: { loai: 'tab', tab: 'y-thuc', sub: 'phoi-hop' } });

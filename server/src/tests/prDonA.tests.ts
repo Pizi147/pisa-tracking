@@ -785,13 +785,13 @@ export async function runPrDonATests(t: YThucTestKit) {
       .filter((f) => /buổi sáng|buổi chiều|ca tối|đổi ca/.test(docNguon(`server/src/seed/${f}`)));
     assert(!con.length, `còn ở: ${con.join(', ')}`);
   });
-  check('Dọn-a (10c) · Q28 khoá lại: không có lượt Giữa khoá (kind = progress) nào thuộc lớp Pre FOU', () => {
+  check('Dọn-a (10c) · Q28 khoá lại: không có lượt Progress Test (kind = progress) nào thuộc lớp Pre FOU', () => {
     const n = get(`SELECT COUNT(*) n FROM assessment_attempts a JOIN classes c ON c.id = a.class_id WHERE c.programme_code = 'PREFOU' AND a.kind = 'progress'`).n;
-    assert(n === 0, `${n} lượt Giữa khoá ở lớp Pre FOU`);
+    assert(n === 0, `${n} lượt Progress Test ở lớp Pre FOU`);
   });
   check('Dọn-a (10d) · Câu 2 = B: badge "n HV chưa có quyết định chuyển lớp" của lớp = số em của dòng Cần xử lý (lopChoLenhChuyen) = số em có cờ ở bảng học viên; em có lệnh chờ → không cờ', () => {
     const lop = lenhSvc.lopChoLenhChuyen(P.mbManager, MB, TODAY) as any[];
-    assert(lop.length > 0, 'dữ liệu demo: cần một lớp thường đã tới Cuối khoá còn em chưa có lệnh');
+    assert(lop.length > 0, 'dữ liệu demo: cần một lớp thường đã tới Final Test còn em chưa có lệnh');
     const tom = classesSvc.listClassSummaries(P.mbManager, { branchId: MB }).rows as any[];
     for (const x of lop) {
       const r = tom.find((c) => c.id === x.classId);
@@ -802,6 +802,6 @@ export async function runPrDonATests(t: YThucTestKit) {
     }
     const b = d.badgeLop({ vai: 'ql', needsPlacement: false, canXepLop: 0, soChuaLoTrinhTiep: 3, missingSkills: [], soBaiChoCham: 0, needScoresTitle: null, phase: 'running', missingCount: 0 });
     const x = [...b.hien, ...b.an].find((y: any) => y.key === 'xep-lop');
-    assert(x?.nhan === '3 HV chưa có quyết định chuyển lớp' && x.title === 'Quản lý quyết định ở ⋮ Chuyển tiếp lớp', JSON.stringify(x));
+    assert(x?.nhan === '3 HV chưa có quyết định chuyển lớp' && x.title === 'Quản lý quyết định ở ⋯ Chuyển tiếp lớp', JSON.stringify(x));
   });
 }

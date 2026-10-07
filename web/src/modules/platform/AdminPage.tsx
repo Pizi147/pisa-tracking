@@ -157,7 +157,7 @@ function QuyenTheoVai({ onDaLuu }: { onDaLuu: () => void }) {
   const moTa = MO_TA_QUYEN as Record<string, { nhom: string; moTa: string; phamVi?: string } | undefined>;
   const nhom = [
     ...NHOM_QUYEN.map((g) => ({ key: g.key as string, ten: g.ten, quyen: d.quyen.filter((q) => moTa[q.key]?.nhom === g.key) })),
-    { key: 'khac', ten: 'Khác', quyen: d.quyen.filter((q) => !moTa[q.key]) },
+    { key: 'khac', ten: 'Chưa xếp nhóm', quyen: d.quyen.filter((q) => !moTa[q.key]) },
   ].filter((g) => g.quyen.length > 0);
   const gvcn = new Map(d.suyRaGv.filter((x) => x.ai === 'GVCN').map((x) => [x.quyen, x.ghiChu]));
   const tenQuyen = new Map(d.quyen.map((q) => [q.key, q.ten]));
@@ -198,10 +198,10 @@ function QuyenTheoVai({ onDaLuu }: { onDaLuu: () => void }) {
     if (chip && !ghiChu) return null;
     return (
       <span title={ghiChu ?? (nhuGv ? 'Có vì GVCN cũng là Giáo viên' : 'Không tự có theo chủ nhiệm')}
-        className={chip ? 'inline-flex min-h-[32px] items-center gap-1 rounded-md border border-dashed border-muted-line px-2 text-[11px] text-slate-300'
+        className={chip ? 'inline-flex min-h-[32px] items-center gap-1 rounded-md border border-dashed border-muted-line px-2 text-xs text-slate-300'
           : `block text-sm ${ghiChu ? 'text-sky-200' : nhuGv ? 'text-slate-400' : 'text-slate-600'}`}>
         {chip && 'GVCN: '}{ghiChu || nhuGv ? 'có' : '—'}
-        {ghiChu && <span className={`${chip ? '' : 'block '}text-[11px] text-slate-400`}>chỉ lớp chủ nhiệm</span>}
+        {ghiChu && <span className={`${chip ? '' : 'block '}text-xs text-slate-400`}>chỉ lớp chủ nhiệm</span>}
       </span>
     );
   };
@@ -220,9 +220,9 @@ function QuyenTheoVai({ onDaLuu }: { onDaLuu: () => void }) {
       <>
         <span className="block text-slate-100">{q.ten}</span>
         {m && <span className="block text-xs text-slate-400">{m.moTa}</span>}
-        {m?.phamVi && <span className="block text-[11px] text-slate-500">{m.phamVi}</span>}
+        {m?.phamVi && <span className="block text-xs text-slate-500">{m.phamVi}</span>}
         {ds.map((k) => (
-          <span key={k.lyDo} className="mt-0.5 flex items-start gap-1 text-[11px] text-slate-400">
+          <span key={k.lyDo} className="mt-0.5 flex items-start gap-1 text-xs text-slate-400">
             <IconKhoa className="mt-0.5" /><span><span className="text-slate-300">{k.vai.join(', ')}:</span> {k.lyDo}</span>
           </span>
         ))}
@@ -234,7 +234,7 @@ function QuyenTheoVai({ onDaLuu }: { onDaLuu: () => void }) {
     <Card title="Quyền theo vai trò" bodyClass="p-0"
       action={!dangSua && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setDangSua(true)}>Sửa quyền</button>}>
       {/* ≥ 640px: bảng. Cột "Quyền" rộng nhất vì mang mô tả; cột vai hẹp, căn giữa. */}
-      <div className="hidden sm:block overflow-x-auto">
+      <div className="hidden sm:block table-scroll bang-dinh">
         <table className="w-full text-sm">
           <thead>
             <tr>
@@ -379,8 +379,8 @@ function OVai({ tenVai, tenQuyen, coSan, daDoi, lyDoKhoa, dangSua, onBam, chip }
     >
       {chip && <span className="text-slate-300">{tenVai}:</span>}
       {co ? 'có' : '—'}
-      {lyDoKhoa && <span className="ml-1 inline-flex items-center gap-0.5 text-[11px] text-slate-400"><IconKhoa />khoá</span>}
-      {daDoi && <span className="ml-1 text-[11px] text-slate-400">đổi</span>}
+      {lyDoKhoa && <span className="ml-1 inline-flex items-center gap-0.5 text-xs text-slate-400"><IconKhoa />khoá</span>}
+      {daDoi && <span className="ml-1 text-xs text-slate-400">đổi</span>}
     </button>
   );
 }

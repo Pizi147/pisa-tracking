@@ -319,7 +319,7 @@ export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, o
           /* Còn PA có kết quả: Xoá Case khoá + câu hướng dẫn (mockup mục 20). */
           phu: c.viewer.chanXoa ? (
             <span className="flex flex-wrap items-center justify-end gap-2">
-              <span className="text-[11px] text-bad">{c.viewer.chanXoa}</span>
+              <span className="text-xs text-bad">{c.viewer.chanXoa}</span>
               <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" disabled>Xoá Case</button>
             </span>
           ) : undefined,

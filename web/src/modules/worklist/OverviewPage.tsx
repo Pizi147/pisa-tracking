@@ -91,7 +91,6 @@ export default function OverviewPage({ tab: tabProp = 'tong-quan' }: { tab?: Tab
                 <h2 id="so-lieu" className="m-0 text-base font-semibold text-slate-100">Số liệu</h2>
                 <CongTacKhung trang="tong-quan" value={khung} onChange={(k) => setKhung(k === 'thuong' ? 'thuong' : 'ft')} />
               </div>
-              <span className="text-xs text-slate-500">Chỉ phần số đổi theo khung · Chờ duyệt và Cần xử lý luôn gộp</span>
             </div>
             <MetricTiles branchId={branchId} ct={khung} />
             <div className="grid items-start gap-3 lg:grid-cols-2">

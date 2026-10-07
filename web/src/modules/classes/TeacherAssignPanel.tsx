@@ -116,8 +116,8 @@ export function TeacherAssignPanel({ open, onClose, classId, classCode, onDone }
                 <span className="text-xs font-bold text-slate-200">GVCN</span>
                 <span className="text-sm text-slate-300">
                   {data.core.map((c) => c.name).join(' · ') || 'Chưa có'}
-                  <span className="block text-[11px] text-slate-500">Đổi GVCN: nhờ Quản lý chi nhánh.</span>
-                  {loiO('gvcn') && <span className="block text-[11px] text-late">{loiO('gvcn')}</span>}
+                  <span className="block text-xs text-slate-500">Đổi GVCN: nhờ Quản lý chi nhánh.</span>
+                  {loiO('gvcn') && <span className="block text-xs text-late">{loiO('gvcn')}</span>}
                 </span>
               </div>
             )}
@@ -127,7 +127,7 @@ export function TeacherAssignPanel({ open, onClose, classId, classCode, onDone }
                 onChon={(khoa, v) => setChon((c) => ({ ...c, [khoa]: v }))} />
             )}
             <NutTachFou fou={fou} chiXem={!suaDuoc} />
-            <p className="m-0 text-[11px] text-slate-500">
+            <p className="m-0 text-xs text-slate-500">
               {oList.length === 1 ? 'Lớp Pre FOU không chia môn — GVCN dạy luôn.' : 'Mỗi ô một người. Một người nhận nhiều ô được.'}
             </p>
           </Khoi>

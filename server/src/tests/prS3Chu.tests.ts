@@ -241,9 +241,9 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
     assert(/lanXuLyMoi/.test(docNguon('server/src/phanTich/yThucPhanTich.ts')) && /lanXuLyMoi/.test(docNguon('web/src/modules/phanTich/YThucPhoiHop.tsx')), 'lần xử lý mới hơn kèm nhãn trạng thái');
   });
   // ------------------------------------------------------------------ Task 8 · Case viết hoa, PA ngắn · Phương án rộng, Normal / Progress / Final còn sót
-  khongCon('S3 (8) · "Case" luôn viết hoa trong chữ người dùng thấy; không còn "lớp Normal" / Progress Test / Final Test; nút "Kết thúc PA", "Thay PA"', [
+  khongCon('S3 (8) · "Case" luôn viết hoa trong chữ người dùng thấy; không còn "lớp Normal"; nút "Kết thúc PA", "Thay PA"', [
     ['case thường', /^(?!\s*(case|default)\b)(?=.*[^\x00-\x7F]).*?(?<![\w'`.${}-])case(?![\w:.${}-])(?!\s+['"`])(?!\s+[\w.]+\s*:)/],
-    ['Normal / Progress / Final', /[Ll]ớp Normal|Progress Test|Final Test/],
+    ['Normal', /[Ll]ớp Normal/],
     ['Kết thúc phương án', /Kết thúc phương án|Thay phương án/],
   ], KY_THUAT);
   // ------------------------------------------------------------------ Task 9 · việc nhỏ chuyển cho S3
@@ -268,7 +268,8 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
     cao('web/src/modules/fasttrack/MockDetailPage.tsx', /mb-1 min-h-\[44px\] sm:min-h-0" onClick=\{\(\) => navigate\(-1\)\}>← Quay lại/);
     cao('web/src/ui/ThanhTruocSau.tsx', /btn btn-sm btn-ghost min-h-\[44px\] sm:min-h-0[^']*';[\s\S]*← Quay lại/);   // PR-DH 04/10: nút Quay lại hồ sơ HV nay nằm trong ThanhTruocSau
     cao('web/src/modules/students/StudentDetailPage.tsx', /className="btn btn-primary min-h-\[44px\] sm:min-h-0" onClick=\{\(\) => setReportOpen\(true\)\}>\+ Case/);
-    cao('web/src/modules/students/StudentsPage.tsx', /cursor-pointer max-sm:min-h-\[44px\]/);
+    cao('web/src/modules/students/StudentsPage.tsx', /className="nut-loc"/);   // PR-HK2: lớp .nut-loc giữ 44 px ở điện thoại
+    cao('web/src/index.css', /\.nut-loc \{[^}]*max-sm:min-h-\[44px\]/);
     cao('web/src/modules/worklist/LopToiDay.tsx', /max-sm:before:-inset-y-3/);
   });
 }

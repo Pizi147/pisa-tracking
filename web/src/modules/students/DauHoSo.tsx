@@ -202,7 +202,7 @@ export function BonO({ o, homNay, onDot, onKn, onYThuc, kyNangHref }: {
   const y = o.yThuc;
   const s = o.sapToi;
   const giaTriKq = !kq ? '—'
-    : k.ratio ? (kq.phanTram !== null ? `Cuối khoá ${kq.phanTram}%` : kq.dat === null ? `${kq.coDiem}/${kq.yeuCau} môn có điểm` : `${kq.yeuCau - (kq.soMonChuaDat ?? 0)}/${kq.yeuCau} môn đạt`)
+    : k.ratio ? (kq.phanTram !== null ? `Final Test ${kq.phanTram}%` : kq.dat === null ? `${kq.coDiem}/${kq.yeuCau} môn có điểm` : `${kq.yeuCau - (kq.soMonChuaDat ?? 0)}/${kq.yeuCau} môn đạt`)
     : k.kck ? null
     : kq.sos ? <KetQuaDot coDiem={kq.coDiem} yeuCau={kq.yeuCau} dat={kq.dat} sos={kq.sos} />   /* G1: một câu chung, giữ "tạm thời" + viền đứt */
     : kq.dat ? <span className="text-ok">Đạt kỳ vọng</span> : 'Chưa đủ điểm';

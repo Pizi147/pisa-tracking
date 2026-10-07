@@ -243,7 +243,7 @@ function DongEmO({ x, nhom, chon, homNay, onChon }: { x: DongEm; nhom: NhomEm; c
         </span>
         <span className="pt-0.5 text-right">
           {han ? <Han loai={nhom === 'cho_duyet' && x.deXuat?.status === 'cho_duyet' ? 'duyet' : 'xu-ly-vi-pham'} han={han} haiDong />
-            : nhom === 'da_xu_ly' ? <span className="text-[11px] text-done">Xong</span> : null}
+            : nhom === 'da_xu_ly' ? <span className="text-xs text-done">Xong</span> : null}
         </span>
       </button>
     </li>

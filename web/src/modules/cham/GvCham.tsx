@@ -67,25 +67,26 @@ export function tenNgan(v: NguoiChon | null): string | null {
 
 /**
  * NÚT "GV chấm: {tên} ▾" — gọn, dưới chữ "S (band)" của tiêu đề cột (máy tính) hoặc đầu danh sách (điện thoại, `lon`).
- * `chiTen` (đầu cột S, Q3 PR-LT3): chỉ tên — "Hoàng Thị Lan ▾"; "Tôi" hiện bằng tên tài khoản. Tooltip / aria vẫn "GV chấm Speaking".
+ * Luôn ghi "GV chấm: {tên thật}" (mockup HK2 J9): "Tôi" hiện bằng tên tài khoản. Tên dài xuống dòng (không cắt); tooltip có đủ tên.
  * Bấm mở hộp nhỏ chọn người (`ChonNguoi nhom="nhan_vien" choNgoai`).
  */
-export function NutGvCham({ value, onChange, lon = false, goiY = GOI_Y_COT, chiTen = false }: {
+export function NutGvCham({ value, onChange, lon = false, goiY = GOI_Y_COT }: {
   value: NguoiChon | null; onChange: (v: NguoiChon | null) => void; lon?: boolean;
   /** Câu giải thích dưới ô chọn — cột S (mặc định) hay một bài (hồ sơ Mock). */
   goiY?: string;
-  chiTen?: boolean;
 }) {
   const [mo, setMo] = useState(false);
   const { session } = useSession();
-  const ten = chiTen && value?.kieu === 'toi' ? session?.user?.fullName ?? 'Tôi' : tenNgan(value);
+  const ten = value?.kieu === 'toi' ? session?.user?.fullName ?? 'Tôi' : tenNgan(value);
+  const cut = ten ? ten.lastIndexOf(' ') + 1 : 0;   // từ cuối dính mũi tên: mũi tên không rơi xuống dòng riêng
+  const dau = ten ? ten.slice(0, cut) : '', cuoi = ten ? ten.slice(cut) : <span className="text-slate-500">chưa chọn</span>;
   return (
     <>
       <button type="button" onClick={() => setMo(true)} aria-haspopup="dialog"
-        title={`GV chấm Speaking — ${goiY}`} aria-label={`GV chấm Speaking: ${ten ?? 'chưa chọn'}`}
-        className={`inline-flex max-w-full items-center gap-1 normal-case tracking-normal text-xs text-slate-400 hover:text-slate-200 ${lon ? 'min-h-[44px] px-1' : 'max-sm:py-3 max-sm:-my-3'}`}>
-        <span className="truncate">{chiTen ? null : 'GV chấm: '}{ten ?? <span className="text-slate-500">chưa chọn</span>}</span>
-        <span className="text-slate-500"><MuiTenGap mo /></span>
+        title={`GV chấm Speaking: ${ten ?? 'chưa chọn'} — ${goiY}`} aria-label={`GV chấm Speaking: ${ten ?? 'chưa chọn'}`}
+        className={`inline-flex max-w-full items-start gap-1 text-left font-normal normal-case tracking-normal text-xs text-slate-400 hover:text-slate-200 ${lon ? 'min-h-[44px] items-center px-1' : 'max-sm:py-3 max-sm:-my-3'}`}>
+        {/* Mũi tên cùng dòng chữ (không phải cột flex riêng): ô S hẹp nên tên xuống dòng chiếm trọn bề rộng. */}
+        <span className="min-w-0 whitespace-normal break-words">{'GV chấm: '}{dau}<span className="whitespace-nowrap">{cuoi}{' '}<span className="inline-block align-middle text-slate-500"><MuiTenGap mo /></span></span></span>
       </button>
       {/* I4 (PR-SL): khung panel chung. Chọn là lưu ngay (nhớ trên máy) → chân chỉ có "Xong". Mở được từ trong panel khác → `longTrong`. */}
       {mo && (

@@ -29,11 +29,8 @@ export async function runPhanTichTests(t: YThucTestKit) {
       eq(d.mauOKetQua(k, 3), k, `${k} có số → chính nó`);
       eq(d.mauOKetQua(k, 0), 'xam', `${k} bằng 0 → xám`);
     }
-    for (const k of ['tamThoi', 'chuaDu']) {
-      eq(d.mauOKetQua(k, 2), 'tam', `${k} có số → tam`);
-      eq(d.mauOKetQua(k, 0), 'xam', `${k} bằng 0 → xám`);
-    }
-    for (const k of ['luot', 'kn:listening', 'hvCoCase', 'case', 'choNguyenNhan', 'dangLam']) eq(d.mauOKetQua(k, 5), null, `${k} không tô`);
+    /* PR-HK2 (Q1): bỏ "Tạm thời"; "Thiếu điểm" không tô nền (chữ xám do ô quyết) — như mọi cột ngoài Đạt/SOS. */
+    for (const k of ['luot', 'kn:listening', 'hvCase', 'hvCoCase', 'case', 'choNguyenNhan', 'dangLam', 'chuaDu']) eq(d.mauOKetQua(k, 5), null, `${k} không tô`);
   });
 
   check('PR-Pb · gocNhinTuThamSo: Q16 — tham số cũ; PR-Pb2-a: không còn suy về Danh sách Case', () => {
@@ -105,14 +102,14 @@ export async function runPhanTichTests(t: YThucTestKit) {
     eq(d.nhanSoVoiTruoc(null), { chu: '—', tone: 'muted' }, 'null');
   });
 
-  check('PR-Pb · nhanDot / khoaDot / thuTuDot: MT1…MT5, Giữa khoá, Cuối khoá đúng thứ tự', () => {
+  check('PR-Pb · nhanDot / khoaDot / thuTuDot: MT1…MT5, Progress Test, Final Test đúng thứ tự', () => {
     eq(d.nhanDot('mock', 3), 'MT3', 'FT');
-    eq(d.nhanDot('progress', null), 'Giữa khoá', 'lớp thường giữa khoá');
-    eq(d.nhanDot('final', null), 'Cuối khoá', 'lớp thường cuối khoá');
+    eq(d.nhanDot('progress', null), 'Progress Test', 'lớp thường Progress Test');
+    eq(d.nhanDot('final', null), 'Final Test', 'lớp thường Final Test');
     eq(d.khoaDot('mock', 2), 'mt:2', 'khoá MT2');
-    eq(d.khoaDot('progress', null), 'giua', 'khoá giữa khoá');
+    eq(d.khoaDot('progress', null), 'giua', 'khoá Progress Test');
     const khoa = ['cuoi', 'mt:2', 'giua', 'mt:1'];
-    eq(khoa.slice().sort((a, b) => d.thuTuDot(a) - d.thuTuDot(b)), ['mt:1', 'mt:2', 'giua', 'cuoi'], 'sắp đúng thứ tự MT1, MT2, Giữa khoá, Cuối khoá');
+    eq(khoa.slice().sort((a, b) => d.thuTuDot(a) - d.thuTuDot(b)), ['mt:1', 'mt:2', 'giua', 'cuoi'], 'sắp đúng thứ tự MT1, MT2, Progress Test, Final Test');
   });
 
   check('PR-Pb · bangXuatTongHop: bỏ đúng nhóm cột ẩn, dòng con thụt, dòng Tổng cuối, không lộ khoá kỹ thuật, không ISO', () => {
@@ -162,7 +159,7 @@ export async function runPhanTichTests(t: YThucTestKit) {
   for (const theo of ['tuan', 'lop', 'dot', 'cn'] as const) for (const ct of ['ft', 'thuong'] as const) {
     check(`PR-Pb · Tổng hợp (${theo} · ${ct}): sáu cột Kết quả cộng lại đúng bằng Lượt, ở mọi dòng và dòng con`, () => {
       const kq = tongHopSvc.tongHop(P.admin, { branchId: null, ct, soTuan: 52, classId: null, theo });
-      const KET_QUA_COLS = d.cotKetQuaCong(ct) as string[];   // PR-Pb2-a: lớp thường Giữa khoá · Cuối khoá · Chưa đủ điểm
+      const KET_QUA_COLS = d.cotKetQuaCong(ct) as string[];   // PR-Pb2-a: lớp thường Progress Test · Final Test · Chưa đủ điểm
       for (const dong of layMoiDong(kq.hang)) {
         const tongKetQua = KET_QUA_COLS.reduce((s, c) => s + (dong.o[c] ?? 0), 0);
         assert(tongKetQua === dong.o.luot, `Dòng "${dong.nhan}": ${KET_QUA_COLS.map((c) => dong.o[c]).join('+')} = ${tongKetQua} ≠ luot ${dong.o.luot}`);

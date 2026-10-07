@@ -1,4 +1,5 @@
 import type { TrangThaiVp } from '@shared/domain/index.ts';
+import { CHIP_VUONG } from '../../ui/Nhan.tsx';
 
 /** Dấu tích mảnh 12 px, nét 1.5 — không dùng ký tự ✓ (Inter cỡ nhỏ vẽ thành chấm, memory "bẫy ký tự nhỏ"). */
 export function DauTich({ className = '' }: { className?: string }) {
@@ -39,7 +40,7 @@ export function NhanViPham({ t, nhan, title }: { t: TrangThaiVp; nhan: string; t
   const chu = t === 'da_ghi_nhan' ? 'Đã ghi nhận' : nhan;
   return (
     <span title={title ?? (t === 'da_ghi_nhan' ? 'GVCN đã xem, không cần xử lý' : undefined)}
-      className={`inline-flex items-center gap-1 whitespace-nowrap rounded-md border px-1.5 py-0.5 text-[11.5px] font-semibold tabular-nums ${LOP[t]}`}>
+      className={`${CHIP_VUONG} gap-1 ${LOP[t]}`}>
       {t === 'da_ghi_nhan' && <DauTich />}
       {chu}
     </span>

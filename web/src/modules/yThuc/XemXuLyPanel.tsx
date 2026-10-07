@@ -112,14 +112,14 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
                           <input type="checkbox" className="mt-1" checked={chon.includes(v.id)} onChange={() => doi(v.id)} aria-label={`${ngay(v.occurredOn, homNay)} ${v.categoryLabel}: ${v.ten}`} />
                           <span className="min-w-0 flex-1 text-sm text-slate-200">
                             {v.ten}
-                            <span className="block text-[11px] text-slate-500">{ngay(v.occurredOn, homNay)} · {v.categoryLabel}{dangGan.has(v.id) ? '' : ' · chưa xử lý'}</span>
+                            <span className="block text-xs text-slate-500">{ngay(v.occurredOn, homNay)} · {v.categoryLabel}{dangGan.has(v.id) ? '' : ' · chưa xử lý'}</span>
                           </span>
                         </label>
                       </li>
                     ))}
                   </ul>
-                  {daBam && !chon.length && <p className="m-0 text-[11px] text-late" role="alert">Còn ít nhất 1 vi phạm</p>}
-                  {loiMay && <p className="m-0 text-[11px] text-late" role="alert">{loiMay}</p>}
+                  {daBam && !chon.length && <p className="m-0 text-xs text-late" role="alert">Còn ít nhất 1 vi phạm</p>}
+                  {loiMay && <p className="m-0 text-xs text-late" role="alert">{loiMay}</p>}
                 </>
               ) : d.viPham.length === 0 ? <p className="m-0 text-xs text-slate-400">Vi phạm đã bị xoá — lần xử lý vẫn giữ, bậc không lùi.</p> : (
                 <ul className="m-0 list-none space-y-1 p-0 text-xs text-slate-400">

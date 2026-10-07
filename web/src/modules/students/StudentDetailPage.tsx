@@ -24,7 +24,7 @@ import {
 } from '../../lib/format.ts';
 import {
   HO_SO_TAB_LABEL, NHAN_NHOM_VIEC_QUAN_LY, duongDotTest, caseCategoriesFor, tenMon, tenMonNgan, docThamSoHoSo, duongHoSoHocVien,
-  nhanKetQuaThuong, tenBaiThuong, CHUONG_TRINH_KHONG_CHIA_MON, ngay, tuanLich, type HoSoTab,
+  nhanKetQuaThuong, tenBaiThuong, CHUONG_TRINH_KHONG_CHIA_MON, ngay, tuanLich, maHocVienNgan, type HoSoTab,
 } from '@shared/domain/index.ts';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
@@ -194,8 +194,8 @@ export default function StudentDetailPage() {
              style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <span className="block text-[11px] text-slate-500">
-                Hồ sơ học viên · {data.studentCode}
+              <span className="block text-xs text-slate-500">
+                Hồ sơ học viên · {maHocVienNgan(data.studentCode)}
               </span>
               <h1 className="text-xl font-semibold text-slate-100 flex flex-wrap items-center gap-2 m-0 mt-0.5">
                 {data.fullName}
@@ -211,7 +211,7 @@ export default function StudentDetailPage() {
                 <button className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => setReportOpen(true)}>+ Case</button>
               )}
               {/* ⋮ = MENU THẢ; mỗi mục mở THẲNG panel của việc đó (Q10). Không có quyền nào → Menu không vẽ gì. */}
-              <Menu label="⋮" className="btn min-h-[44px] sm:min-h-0" items={mucQuanLyHocVien({
+              <Menu label="⋯" className="btn min-h-[44px] sm:min-h-0" items={mucQuanLyHocVien({
                 canEdit: data.viewer.canEdit, lopHoc: data.lopHoc ?? null, cycle: cy, status: data.status, coTheXoa: !!data.viewer.coTheXoa,
                 deXuatSua: !!data.viewer.coTheDeXuatSua,
               }).map((m) => ({
@@ -597,11 +597,11 @@ function RatioAttempts({ attempts, dotId, homNay, onOpen, ct = null }: {
       <table className="w-full text-sm min-w-[640px]">
         <thead>
           <tr>
-            <Th hint="Giữa khoá hay Cuối khoá của khoá học. Bấm để mở bảng điểm đợt.">Bài</Th>
+            <Th hint="Progress Test hay Final Test của khoá học. Bấm để mở bảng điểm đợt.">Bài</Th>
             <Th hint="Lớp em học VÀO LÚC làm bài này — chuyển lớp không viết lại lịch sử.">Lớp</Th>
             <Th hint="Tuần kế hoạch của lượt này. Một lượt chỉ thuộc đúng một tuần — không có ngày thi cụ thể.">Tuần</Th>
             <Th hint="Số câu đúng / tổng số câu từng môn. Đạt khi từ 70% trở lên.">Điểm từng phần</Th>
-            <Th hint="Giữa khoá: số môn đạt trên tổng, kèm môn không đạt. Cuối khoá: % tổng. Môn chưa có điểm không tính là chưa đạt.">Kết quả</Th>
+            <Th hint="Progress Test: số môn đạt trên tổng, kèm môn không đạt. Final Test: % tổng. Môn chưa có điểm không tính là chưa đạt.">Kết quả</Th>
           </tr>
         </thead>
         <tbody>
@@ -643,7 +643,7 @@ function KetQuaThuongO({ a, ct }: { a: any; ct: string | null }) {
     return (
       <>
         <Level tone="muted">Chờ {a.required - a.scored} môn</Level>
-        {kq.phu && <div className="text-xs text-slate-400">{kq.phu}</div>}
+        {kq.phu && <div className="text-xs font-semibold text-soon">{kq.phu}</div>}
       </>
     );
   }

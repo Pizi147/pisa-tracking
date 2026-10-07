@@ -92,7 +92,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong = 'hep', tabs, ngCanh, q
         )}
         {tabs && <div className="shrink-0 border-b px-4" style={{ borderColor: 'var(--line)' }}>{tabs}</div>}
         {/* PR-KHUNG: pb-2 — thân cuộn bắt đầu cách dòng ngữ cảnh; không có thì ô bị cắt ngay sát chữ, trông như đè nhãn (rà LUI-a1, 375). */}
-        {ngCanh && <div className="shrink-0 truncate px-4 pb-2 pt-2 text-xs text-slate-400">{ngCanh}</div>}
+        {ngCanh && <div className="shrink-0 truncate px-4 pb-2 pt-2 text-xs text-slate-400 max-sm:whitespace-normal">{ngCanh}</div>}
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4">{children}</div>
         {chan && (
           <footer className="shrink-0 border-t" style={{ borderColor: 'var(--line)' }}>
@@ -146,7 +146,7 @@ export function Truong({ nhan, batBuoc, tuyChon, phu, loi, dem, as = 'label', ch
       {nhan}{batBuoc && <><span aria-hidden className="text-bad"> *</span><span className="sr-only"> (bắt buộc)</span></>}
       {tuyChon && <span className="font-normal text-slate-500"> (không bắt buộc)</span>}
     </span>
-    {dem && <span className={`text-[11px] font-normal tabular-nums ${dem.co < dem.can ? 'text-slate-500' : 'text-slate-400'}`}>{dem.co}/{dem.can}</span>}
+    {dem && <span className={`text-xs font-normal tabular-nums ${dem.co < dem.can ? 'text-slate-500' : 'text-slate-400'}`}>{dem.co}/{dem.can}</span>}
   </>;
   const lopNhan = 'mb-1 flex items-baseline gap-2 text-[11.5px] font-bold text-slate-200';
   const noi = useNoiLoi(loi);
@@ -156,8 +156,8 @@ export function Truong({ nhan, batBuoc, tuyChon, phu, loi, dem, as = 'label', ch
         {troO ? <label htmlFor={troO} className={lopNhan}>{chu}</label> : <span id={idNhan} className={lopNhan}>{chu}</span>}
         {/* Luôn cùng một lớp bọc (`contents`, không đổi bố cục): bọc/bỏ bọc theo `loi` làm ô dựng lại → mất focus khi đang gõ. */}
         <div ref={noi.ref} className={loi ? 'contents [&_.field]:border-late [&_.field]:ring-1 [&_.field]:ring-late/40' : 'contents'}>{children}</div>
-        {phu && <span className="mt-1 block truncate text-[11px] text-slate-500">{phu}</span>}
-        {loi && <span id={noi.id} className="mt-1 block text-[11px] text-late">{loi}</span>}
+        {phu && <span className="mt-1 block truncate text-xs text-slate-500">{phu}</span>}
+        {loi && <span id={noi.id} className="mt-1 block text-xs text-late">{loi}</span>}
       </Vo>
     </BaoOTrongNhan.Provider>
   );

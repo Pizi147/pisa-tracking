@@ -134,7 +134,7 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, canEditCycle = t
 
           {ratio ? (
             <SectionNote>
-              Đây là lớp thường nên không có lịch MT riêng từng em — cả lớp làm bài Giữa khoá và Cuối khoá cùng tuần theo chương trình. Xem và sửa hai mốc đó ở trang lớp.
+              Đây là lớp thường nên không có lịch MT riêng từng em — cả lớp làm bài Progress Test và Final Test cùng tuần theo chương trình. Xem và sửa hai mốc đó ở trang lớp.
             </SectionNote>
           ) : (
             <div>
@@ -301,7 +301,7 @@ function TargetAndBaseline({ cycleId, cy, canEditCycle, onDeXuatSua, onDone }: {
             <ONgay kieu="ngay" value={effectiveFrom} onChange={setEffectiveFrom}
               id={lfT.oId('hieu-luc')} onBlur={lfT.roi('hieu-luc')} invalid={!!lfT.loiCua(loiT, 'hieu-luc')} />
           </Field>
-          {lfT.daBam && loiT.length > 0 && <p className="m-0 text-[11px] text-slate-500">{loiT.length} ô cần sửa ↑</p>}
+          {lfT.daBam && loiT.length > 0 && <p className="m-0 text-xs text-slate-500">{loiT.length} ô cần sửa ↑</p>}
           <button className="btn btn-primary btn-sm" disabled={busy}
             onClick={saveTarget}>
             {busy ? 'Đang lưu…' : 'Lưu Target mới'}

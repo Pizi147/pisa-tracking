@@ -90,13 +90,18 @@ export function DauTrangLop({ data, periodId, onViec, onBanGiao }: {
   });
   /* PR-S5F-a (mockup 20): lớp đã có dải "Kết thúc khoá" thì bỏ chip "n HV cần xếp lớp tiếp" — hai chỗ nói cùng một việc. */
   const boXep = (ds: BadgeLop[]) => (data.dai?.ketThucKhoa ? ds.filter((x) => x.key !== 'xep-lop') : ds);
-  const b = { hien: boXep(bGoc.hien), an: boXep(bGoc.an) };
+  const b0 = { hien: boXep(bGoc.hien), an: boXep(bGoc.an) };
+  /* DH: nhãn chặng chỉ là chữ — không vào menu "+n" (mục bấm không làm gì); nếu bị ẩn thì hiện thẳng ở hàng. */
+  const b = { hien: [...b0.hien, ...b0.an.filter((x) => x.key === 'chang')], an: b0.an.filter((x) => x.key !== 'chang') };
   const bamBadge = (x: BadgeLop): (() => void) | null =>
     /* PR-S4F #4: cùng đích với hộp lớp ở Học viên & Lớp — số trên badge = số dòng. */
     x.key === 'qua-han' ? () => navigate(`/hoc-vien?view=qua-han&classId=${data.id}`)
       : x.key === 'cham' ? () => navigate(duongLichTest({ classId: data.id }))
       : x.key === 'xep-lop' && data.viewer.coTheChuyenTiep ? () => onViec('chuyen-tiep')
       : x.key === 'cho-duyet' ? () => navigate(`/cong-viec/cho-duyet?lop=${data.id}`)
+      /* DH: "Thiếu GV …" → panel Phân công (chỉ ai sửa được phân công, người khác để chữ); "Thiếu n thông tin" → em thiếu của lớp. */
+      : x.key === 'thieu-gv' && (data.viewer.canAssign || data.viewer.canAssignSubject) ? () => onViec('phan-cong')
+      : x.key === 'thieu-tt' ? () => navigate(`/hoc-vien?view=thieu_tt&classId=${data.id}`)
       : null;
   /* Quản trị hoặc Quản lý của lớp gọi được đường này (403 với người khác) — nên chỉ hỏi khi có cờ. `coTheXoa` do máy chủ trả: chỉ Quản trị. */
   const hoiXk = !!data.viewer.coTheXoaKetThuc || !!data.viewer.coTheKetThucLop;
@@ -161,7 +166,7 @@ export function DauTrangLop({ data, periodId, onViec, onBanGiao }: {
       )}
       <div className="flex flex-wrap items-end gap-2">
         <div className="min-w-0">
-          <div className="text-[11px] text-slate-500">Hồ sơ lớp</div>
+          <div className="text-xs text-slate-500">Hồ sơ lớp</div>
           <h1 className="m-0 text-lg font-semibold text-slate-100">{data.code} · {data.programme?.name ?? data.kind}</h1>
         </div>
         <div className="flex-1" />
@@ -171,13 +176,13 @@ export function DauTrangLop({ data, periodId, onViec, onBanGiao }: {
             : chinh.loai ? (
               <button type="button" className="btn btn-sm btn-primary" onClick={() => onViec(chinh.loai === 'them-hv' ? 'hoc-vien' : 'chuyen-tiep')}>{chinh.nhan}</button>
             ) : null}
-          <MenuDong muc={menu} bieuTuong="⋮" nhan="Thao tác khác" />
+          <MenuDong muc={menu} nhan="Thao tác khác" />
         </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
         <span>{thongTin.map((x, i) => <Fragment key={i}>{i > 0 && ' · '}{x}</Fragment>)}</span>
-        {data.cuoiKhoa && <span className="tabular-nums text-slate-300">Cuối khoá: {data.cuoiKhoa.du}/{data.cuoiKhoa.tong} em có đủ điểm{data.cuoiKhoa.canQl ? ` · ${data.cuoiKhoa.canQl} em Quản lý cân nhắc` : ''}</span>}
+        {data.cuoiKhoa && <span className="tabular-nums text-slate-300">Final Test: {data.cuoiKhoa.du}/{data.cuoiKhoa.tong} em có đủ điểm{data.cuoiKhoa.canQl ? ` · ${data.cuoiKhoa.canQl} em Quản lý cân nhắc` : ''}</span>}
         <span className="whitespace-nowrap rounded-md border px-2 py-0.5 text-slate-300" style={{ borderColor: 'var(--line)' }}>
           <abbr title="Giáo viên chủ nhiệm" className="no-underline">GVCN</abbr>{' '}
           {gvcn ? <TenGiaoVien id={gvcn.id} ten={gvcn.name} /> : <span className="text-amber-200">Chưa có GVCN</span>}
@@ -195,8 +200,8 @@ export function DauTrangLop({ data, periodId, onViec, onBanGiao }: {
               : <Nhan key={x.key} tone={toneNhanTuBadge(x.tone)} title={x.title}>{x.nhan}</Nhan>;
           })}
           {b.an.length > 0 && (
-            <MenuDong bieuTuong={`+${b.an.length}`} nhan={`${b.an.length} việc khác của lớp`}
-              muc={b.an.map((x) => ({ key: x.key, nhan: x.nhan, onChon: () => (bamBadge(x) ?? (() => undefined))() }))} />
+            <MenuDong kieu="chip" bieuTuong={`+${b.an.length}`} nhan={`${b.an.length} việc khác của lớp`}
+              muc={b.an.map((x) => { const bam = bamBadge(x); return { key: x.key, nhan: x.nhan, tieuDe: !bam, onChon: bam ?? (() => undefined) }; })} />
           )}
         </div>
       )}

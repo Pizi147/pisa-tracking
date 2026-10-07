@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, type ReactNode } from 'react';
+import { Suspense, lazy, useEffect, useState, type ReactNode } from 'react';
 import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useSession } from './lib/session.tsx';
 import { useApi } from './lib/useApi.ts';
@@ -6,6 +6,7 @@ import { DemoBar } from './modules/platform/DemoBar.tsx';
 import { LA_BAN_CHINH } from './lib/banChinh.ts';
 import { Header } from './modules/platform/Header.tsx';
 import { Skeleton } from './ui/ui.tsx';
+import { CHIP_TRON } from './ui/Nhan.tsx';
 import WelcomePage from './modules/platform/WelcomePage.tsx';
 import { NAV_RONG, duongMoi, khuVucCuaDuong, khuVucHienThi, type DemYeuCau, type KhuVuc, type KhuVucMuc } from '@shared/domain/index.ts';
 
@@ -46,7 +47,7 @@ function SoCho({ so, className = 'ml-1.5' }: { so: SoBadge; className?: string }
   if (!so?.n) return null;
   return (
     <>
-      <span aria-hidden className={`${className} inline-flex min-w-[1.25rem] justify-center rounded-full border px-1 text-[11.5px] font-semibold leading-4 tabular-nums ${
+      <span aria-hidden className={`${className} ${CHIP_TRON} min-w-[1.25rem] justify-center tabular-nums ${
         so.quaHan ? 'border-late-line bg-late-bg text-late' : 'border-transparent bg-white/10 text-slate-300'}`}>{so.n}</span>
       <span className="sr-only">, {so.sr}</span>
     </>
@@ -92,6 +93,9 @@ function NutDay({ muc, active, so }: { muc: KhuVucMuc; active: boolean; so: SoBa
 export default function App() {
   const { session, loading, reload } = useSession();
   const location = useLocation();
+  /* PR-PH / HK2: bấm "Thử lại" ở dải Mất kết nối → nút khoá, chữ "Đang thử…" tới khi tải xong. */
+  const [dangThu, setDangThu] = useState(false);
+  const thuLai = async () => { setDangThu(true); try { await reload(); } finally { setDangThu(false); } };
   /* Một lần mỗi lần đổi trang (không hỏi lặp theo giờ); chỉ người duyệt được (Q10). */
   const dem = useApi<DemYeuCau>(session?.authenticated && session.nav?.workApprove ? '/yeu-cau/dem' : null, [location.pathname]).data;
   /*
@@ -129,20 +133,22 @@ export default function App() {
       {!banChinh && <DemoBar />}
       {/* PR-PH: mất kết nối khi tải lại phiên KHÔNG phải đăng xuất — giữ nguyên màn, chỉ báo và cho thử lại. */}
       {session.loiKetNoi && (
-        <div role="alert" className="shrink-0 flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-3 sm:px-4 py-2 text-xs"
+        <div role="status" className="shrink-0 flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-3 sm:px-4 py-2 text-xs"
           style={{ borderColor: 'rgb(var(--soon-line-rgb))', background: 'rgb(var(--soon-bg-rgb))', color: 'rgb(var(--soon-rgb))' }}>
           <span>Mất kết nối tới máy chủ — dữ liệu trên màn có thể chưa mới. Bạn vẫn đang đăng nhập.</span>
-          <button type="button" className="btn btn-sm" onClick={() => { void reload(); }}>Thử lại</button>
+          <button type="button" className="btn btn-sm" disabled={dangThu} onClick={() => { void thuLai(); }}>{dangThu ? 'Đang thử…' : 'Thử lại'}</button>
         </div>
       )}
       <header className="relative shrink-0 border-b bg-[color:var(--surface)]" style={{ borderColor: 'var(--line)' }}>
-        <div className="flex items-center gap-3 px-3 sm:px-4 h-14 min-w-0">
+        {/* D7 (mockup 23C): điện thoại cao 52 px, chữ PISA thay ô "P", nút sát nhau; máy tính giữ nguyên. */}
+        <div className="flex items-center gap-3 px-3 sm:px-4 h-14 max-sm:h-[52px] max-sm:gap-0.5 max-sm:pl-4 max-sm:pr-1.5 min-w-0">
           <div className="flex items-center gap-2 shrink-0">
-            <div className="w-7 h-7 rounded-md border grid place-items-center font-bold text-xs"
+            <span className="sm:hidden text-[15px] font-bold tracking-[0.06em] text-slate-100">PISA</span>
+            <div className="w-7 h-7 rounded-md border hidden sm:grid place-items-center font-bold text-xs"
               style={{ background: 'var(--accent-soft)', borderColor: 'var(--accent-line)', color: 'var(--accent)' }}>P</div>
             <div className="leading-tight hidden sm:block">
-              <div className="text-sm font-semibold text-slate-100">Pisa Tracking</div>
-              {!banChinh && <div className="text-[11px] text-slate-500">Bản demo nội bộ</div>}
+              <div className="text-sm font-semibold text-slate-100">PISA Tracking</div>
+              {!banChinh && <div className="text-xs text-slate-500">Bản demo nội bộ</div>}
             </div>
           </div>
           <nav aria-label="Điều hướng chính" className="hidden md:flex items-center gap-1 min-w-0 overflow-x-auto">

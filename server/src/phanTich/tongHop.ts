@@ -3,7 +3,7 @@ import {
   COT_XU_LY_V4, LEGACY_REGULAR_SKILL_MAP, METRIC_UNIT_LABEL, NGUONG_MINI_TEST, NHAN_NHOM_CON, PERMISSIONS, daiCuoiKhoa, isNoPlanCase, khoaDot, trangThaiCaseV4,
   nhanDot, thuTuDot, tuDauKhoang, type ChuongTrinh, type CotTongHop, type DongTongHop, type TheoDong, type TongHopKetQua,
 } from '../../../shared/domain/index.ts';
-import { cotTongHopFor } from '../../../shared/domain/phanTich.ts';
+import { cotSoLieu, cotTongHopFor } from '../../../shared/domain/phanTich.ts';
 import { ngay, tuanLich } from '../../../shared/domain/hienThiNgay.ts';
 import { badRequest, forbidden } from '../util.ts';
 import { classScopeSql, scopeFor, type Principal } from '../permissions.ts';
@@ -26,11 +26,11 @@ import { CO_THE_KHONG_THEO_DOI, LA_CASE_SOS, UNCONFIRMED_PRESET, YC_KE_HOACH } f
 
 // ------------------------------------------------------------------ Q17: hai hàm thuần, cùng luật với weekly.ts
 
-export type PhanLoaiLuot = 'dat' | 'sos1' | 'sos2' | 'sos3' | 'tamThoi' | 'chuaDu';
+export type PhanLoaiLuot = 'dat' | 'sos1' | 'sos2' | 'sos3' | 'chuaDu';
 
-/** Đúng thứ tự xét của `weekly.ts` (chưa đủ điểm → tạm thời/chưa đủ; đủ điểm → đạt/sos1/2/3). */
+/** Chưa đủ điểm → `chuaDu` (cột "Thiếu điểm", kể cả lượt đã tạm có mức SOS — PR-HK2 bỏ cột Tạm thời); đủ điểm → đạt/sos1/2/3. */
 export function phanLoaiLuot(ev: { sosLevel: number | null; complete: boolean }): PhanLoaiLuot {
-  if (!ev.complete) return ev.sosLevel === null ? 'chuaDu' : 'tamThoi';
+  if (!ev.complete) return 'chuaDu';
   if (ev.sosLevel === null) return 'chuaDu';
   if (ev.sosLevel === 0) return 'dat';
   if (ev.sosLevel === 1) return 'sos1';
@@ -192,7 +192,7 @@ function tinh(p: Principal, f: FilterTongHop) {
   const tongTap: Tap = new Map();
   const tongCoDot = coDotMoi();
   const laThuong = f.ct === 'thuong';
-  const cuoiDaDem: number[] = [];   // bài Cuối khoá đã vào bảng → Mini Test gắn đúng dòng của nó
+  const cuoiDaDem: number[] = [];   // bài Final Test đã vào bảng → Mini Test gắn đúng dòng của nó
   for (const a of attempts) {
     const { cha, con } = dongOf(a);
     if (laThuong) for (const x of [cha.coDot, con.coDot, tongCoDot]) { if (a.kind === 'final') x.cuoi = true; else x.giua = true; }
@@ -292,7 +292,7 @@ export function tongHop(p: Principal, f: FilterTongHop): TongHopKetQua {
   const r = tinh(p, f);
   /* PR-SOS: `choNguyenNhanQuaHan` đi kèm (số trong ngoặc của cột Chờ nguyên nhân), không phải cột riêng. */
   const cols = cotTongHopFor(r.ct).map((c) => c.khoa);
-  const oCols = [...cols, 'choNguyenNhanQuaHan'];
+  const oCols = [...cotSoLieu(r.ct).map((c) => c.khoa), 'choNguyenNhanQuaHan'];   // cột ghép "HV - Case" mang hai số: hvCoCase và case
   const gon = (d: DongRaw): DongTongHop => ({
     khoa: d.khoa, nhan: d.nhan, phu: d.phu, o: soCuaTap(d.tap, oCols), ...(r.ct === 'thuong' ? { coDot: d.coDot } : {}),
     con: (d as any).conSorted?.length ? (d as any).conSorted.map(gon) : undefined,
@@ -303,7 +303,7 @@ export function tongHop(p: Principal, f: FilterTongHop): TongHopKetQua {
 /** Danh sách của MỘT ô — tính lại bằng chính `tinh`, nên danh sách luôn đúng bằng con số (G-10). */
 export function oTongHop(p: Principal, f: FilterTongHop & { khoa: string; cot: string }):
   { n: number; tieuDe: string; rows: MetricRow[] } {
-  const cotDef = (cotTongHopFor(f.ct) as CotTongHop[]).find((c) => c.khoa === f.cot);
+  const cotDef = (cotSoLieu(f.ct) as CotTongHop[]).find((c) => c.khoa === f.cot);
   if (!cotDef) throw badRequest(`Cột "${f.cot}" không có trong bảng.`);
   const r = tinh(p, f);
   let tap: Tap | null = null; let nhanDong = '';

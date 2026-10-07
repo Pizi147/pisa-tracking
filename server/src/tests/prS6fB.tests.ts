@@ -156,9 +156,9 @@ async function runTask13(t: YThucTestKit, d: any) {
     assert(!s.includes('setHowTo(!howTo)') && /onClick=\{\(\) => setHowTo\(true\)\}/.test(s), 'SoLieu: onClick còn đảo howTo');
   });
 
-  check('S6F-b (13) · chữ theo mockup 24 D1 / 26: ghim chương "Giữa khoá · 3/4 môn"; chân "Lên FT + bổ trợ S"; chú giải "dự kiến"; ô Sắp tới em Tạm dừng "giữ lịch · Quản lý dời nếu cần"', () => {
+  check('S6F-b (13) · chữ theo mockup 24 D1 / 26: ghim chương "Progress Test · 3/4 môn"; chân "Lên FT + bổ trợ S"; chú giải "dự kiến"; ô Sắp tới em Tạm dừng "giữ lịch · Quản lý dời nếu cần"', () => {
     const g = d.nhanGhim({ cheDo: 'ratio', attemptNo: 1, kind: 'progress', overall: null, sosLevel: 1, soDat: 3, soYeuCau: 4, soCoDiem: 4 });
-    assert(g.chuong === 'Giữa khoá · 3/4 môn' && g.chu === 'Giữa · 3/4 môn đạt', JSON.stringify(g));
+    assert(g.chuong === 'Progress Test · 3/4 môn' && g.chu === 'Progress · 3/4 môn đạt', JSON.stringify(g));
     assert(/nhanGhim\([^)]*\)[\s\S]{0,700}nh\.chuong \?\? nh\.chu/.test(doc('web/src/modules/students/ChuongLop.tsx')), 'ChuongLop dùng nhãn chương');
     assert(d.chuLen({ ft: true, ct: null }, { soBuoi: 4, soTuan: 2, theoMon: true, mon: ['speaking'] }, 'BE') === 'Lên FT + bổ trợ S', d.chuLen({ ft: true, ct: null }, { soBuoi: 4, soTuan: 2, theoMon: true, mon: ['speaking'] }, 'BE'));
     assert(d.chuLen({ ft: false, ct: 'BE' }, null, 'FOU') === 'Lên BE' && d.chuLen(null, null, 'FOU') === 'Lên lớp sau', 'không bổ trợ');
@@ -234,14 +234,14 @@ async function runTask9(t: YThucTestKit, d: any) {
     assert(!doc('server/src/worklist/tongQuan.ts').includes('chờ hàng "Chưa phân công"'), 'chú thích ponytail cũ');
   });
 
-  check('S6F-b (9) · "em chưa có quyết định chuyển lớp": hạn (tuần sau tuần kết thúc) đã qua → Quá hạn, chữ "quá hạn từ {tuần}"', () => {
+  check('S6F-b (9) · "em chưa có quyết định chuyển lớp": hạn (tuần sau tuần kết thúc) đã qua → Quá hạn, chữ "quá hạn n ngày" (HK2 J3)', () => {
     const lop = lopChoLenhChuyen(P.mbManager, null, TODAY) as any[];
     const ketThuc = lop.map((l) => l.moc.tuanKetThuc).filter(Boolean).sort()[0] as string | undefined;
     const dong = (tq.tongQuanQuanLy(P.mbManager, {}).canXuLy as any[]).find((x) => x.metricId === 'hv-chua-co-lenh-chuyen');
     assert(dong && ketThuc, 'bộ demo phải có lớp hết khoá còn em chưa có lệnh');
     const qua = addDays(ketThuc!, 7) <= TODAY;
     assert(qua, `bộ demo: hạn ${addDays(ketThuc!, 7)} phải đã qua`);
-    assert(dong.trangThai === 'qua-han' && dong.han.chu === `quá hạn từ ${d.tuanLich(addDays(ketThuc!, 7), TODAY)}` && dong.han.quaHan === true, JSON.stringify({ t: dong.trangThai, han: dong.han }));
+    assert(dong.trangThai === 'qua-han' && dong.han.chu === `quá hạn ${Math.max(1, Math.round((Date.parse(TODAY) - Date.parse(addDays(ketThuc!, 7))) / 86400000))} ngày` && dong.han.quaHan === true, JSON.stringify({ t: dong.trangThai, han: dong.han }));
   });
 
   check('S6F-b (9) · bảng GV chi nhánh: không hàng GV nhưng có "Chưa phân công" → không Empty (Σ = ô)', () => {
@@ -365,13 +365,13 @@ async function runTask8(t: YThucTestKit, d: any) {
     assert(!/chuaLich && <span className="text-soon"> · chưa có lịch<\/span>/.test(doc('web/src/modules/cases/SkillBoard.tsx')), 'hàng PA lặp "chưa có lịch"');
   });
 
-  check('S6F-b (8) · hồ sơ HV lớp thường có bài Cuối khoá đã xếp lịch: tuần "Cuối khoá" ở đầu hồ sơ = tuần bài Cuối khoá (ô Sắp tới)', () => {
+  check('S6F-b (8) · hồ sơ HV lớp thường có bài Final Test đã xếp lịch: tuần "Final Test" ở đầu hồ sơ = tuần bài Final Test (ô Sắp tới)', () => {
     const r = get(`SELECT a.student_id id, pr.week_start w FROM assessment_attempts a JOIN report_periods pr ON pr.id = a.planned_period_id
         JOIN classes c ON c.id = a.class_id JOIN enrollments e ON e.student_id = a.student_id AND e.class_id = c.id AND e.status = 'active'
        WHERE a.kind = 'final' AND a.status != 'cancelled' AND c.is_fast_track = 0 AND a.student_id <= ? ORDER BY a.student_id LIMIT 1`, seedMax.students);
-    assert(r, 'bộ demo phải có bài Cuối khoá đã xếp tuần');
+    assert(r, 'bộ demo phải có bài Final Test đã xếp tuần');
     const tt = hs(P.admin, r.id).thongTin;
-    assert(tt.thiDuKien?.nhan === 'Cuối khoá' && tt.thiDuKien.gt === d.tuanLich(r.w, TODAY), `${JSON.stringify(tt.thiDuKien)} ≠ ${d.tuanLich(r.w, TODAY)}`);
+    assert(tt.thiDuKien?.nhan === 'Final Test' && tt.thiDuKien.gt === d.tuanLich(r.w, TODAY), `${JSON.stringify(tt.thiDuKien)} ≠ ${d.tuanLich(r.w, TODAY)}`);
   });
 }
 

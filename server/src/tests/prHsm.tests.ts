@@ -192,13 +192,13 @@ export async function runPrHsmTests(t: YThucTestKit) {
 
   // ------------------------------------------------------------------ khối 3: ô điểm dùng chung (đọc nguồn)
   const { docSach } = await import('./panelUx3.tests.ts');
-  check('HSM (3) · ScoreEntry: tiêu chí qua tieuChiCua, không "— (—)", lỗi dưới ô có aria, nút Vắng + Hoàn tác, nhận xét ≤ 1000', () => {
+  check('HSM (3) · ScoreEntry: tiêu chí qua tieuChiCua, không "— (—)", lỗi dưới ô có aria, nút Vắng + thông báo ngắn (không Hoàn tác), nhận xét ≤ 1000', () => {
     const se = docSach('web/src/modules/fasttrack/ScoreEntry.tsx');
     assert(!/CRITERIA\[|criteriaSetFor\(/.test(se) && /tieuChiCua\(/.test(se), 'còn CRITERIA / criteriaSetFor');
     assert(!se.includes("'—'} ({"), 'còn kiểu "— (—)"');
     assert(/aria-invalid/.test(se) && /aria-describedby/.test(se) && /role="alert"/.test(se), 'lỗi dưới ô thiếu aria');
     const nut = se.slice(se.indexOf('function NutDau'), se.indexOf('function NutDau') + 900);
-    assert(/Vắng/.test(nut) && /hoanTac\(/.test(se), 'nút Vắng / toast Hoàn tác');
+    assert(/Vắng/.test(nut) && /thongBaoVang\(/.test(se) && !/hoanTac\(/.test(se), 'nút Vắng / thông báo ngắn, không Hoàn tác (PR-HK2 Q4 = B)');
     const modal = se.slice(se.indexOf('export function CriteriaModal'), se.indexOf('export function InlineScoreEditor'));
     assert(/NHAN_XET_TOI_DA/.test(modal) && /\+ Nhận xét/.test(modal) && /key === 'Enter'/.test(modal), 'hộp tiêu chí thiếu nhận xét / Enter');
     assert(/progress === 'lich_su'\) return <Info pending>Nhập bù, không tính hạn<\/Info>/.test(se), 'mất nhánh Nhập bù (PR-MT)');

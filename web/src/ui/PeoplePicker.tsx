@@ -87,7 +87,7 @@ export function PersonPicker({ value, valueName, onChange, disabled, placeholder
               onClick={() => { onChange(p.id, p); setOpen(false); setTerm(''); }}
             >
               <div className="text-sm text-slate-100">{p.name}</div>
-              <div className="text-[11px] text-slate-500">{contextOf(p) || p.title || '—'}</div>
+              <div className="text-xs text-slate-500">{contextOf(p) || p.title || '—'}</div>
             </button>
           ))}
         </div>
@@ -283,7 +283,7 @@ export function ChonNguoi({
       <div className="field flex items-center justify-between gap-2">
         <span className="min-w-0 truncate">
           <span className="text-slate-100">{chinh}</span>
-          {phu && <span className="text-slate-500 text-[11px]"> · {phu}</span>}
+          {phu && <span className="text-slate-500 text-xs"> · {phu}</span>}
         </span>
         {!disabled && <button id={`${uid}-o`} type="button" className="btn btn-sm min-h-[44px] shrink-0 sm:min-h-0" onClick={() => setEditing(true)}>Đổi</button>}
       </div>
@@ -293,9 +293,9 @@ export function ChonNguoi({
   const activeId = activeIndex >= 0 && activeIndex < options.length ? `${uid}-opt-${activeIndex}` : undefined;
   /* Dòng trạng thái nằm dưới danh sách người, TRÊN dòng "Dùng tên ngoài hệ thống" (mockup 22 §4). */
   const trangThai = loading
-    ? <div className="px-3 py-2 text-[11px] text-slate-500">Đang tìm…</div>
+    ? <div className="px-3 py-2 text-xs text-slate-500">Đang tìm…</div>
     : term.trim() && rows.length === 0
-      ? <div className="px-3 py-2 text-[11px] text-slate-500">Không tìm thấy {nguoiLabel} khớp «{term.trim()}»</div>
+      ? <div className="px-3 py-2 text-xs text-slate-500">Không tìm thấy {nguoiLabel} khớp «{term.trim()}»</div>
       : null;
 
   return (
@@ -353,13 +353,13 @@ export function ChonNguoi({
                 {opt.kind === 'toi' && (
                   <>
                     <div className="text-sm text-slate-100">Tôi</div>
-                    {session?.user?.fullName && <div className="text-[11px] text-slate-500">{session.user.fullName}</div>}
+                    {session?.user?.fullName && <div className="text-xs text-slate-500">{session.user.fullName}</div>}
                   </>
                 )}
                 {opt.kind === 'nguoi' && (
                   <>
                     <div className="text-sm text-slate-100">{opt.row.name}</div>
-                    <div className="text-[11px] text-slate-500">{nguoiContextOf(opt.row)}</div>
+                    <div className="text-xs text-slate-500">{nguoiContextOf(opt.row)}</div>
                   </>
                 )}
                 {opt.kind === 'ngoai' && (tat(opt)

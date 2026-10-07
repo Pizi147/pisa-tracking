@@ -133,7 +133,7 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null }) {
       case 'hv-chua-co-lenh-chuyen': {
         const lop = lopLenh;
         const han = !ketThuc ? chuaCoHan
-          : lenhQuaHan ? { chu: `quá hạn từ ${tuanLich(addDays(ketThuc, 7), today)}`, quaHan: true as const }
+          : lenhQuaHan ? { chu: `quá hạn ${Math.max(1, soNgay(addDays(ketThuc, 7), today))} ngày`, quaHan: true as const }
           : { chu: `trước ${tuanLich(addDays(ketThuc, 7), today)}` };
         if (lop.length === 1) {
           return { ...x, ...chung, truoc: `Chuyển tiếp lớp · ${lop[0].code} ·`, nhan: 'em chưa có quyết định chuyển lớp',
@@ -276,8 +276,8 @@ export function lopToiDay(p: Principal, f: { ct: 'ft' | 'thuong' }) {
       const c = cua.get(l.id)!;
       const ten = (k: string) => (f.ct === 'ft' ? tenMon(l.ct, k) : tenMonNgan(l.ct, k));
       const pr = tienDo.get(l.id);
-      const moc = pr?.progressWeekStart && pr.progressWeekStart >= thu2 ? `Giữa khoá · ${tuanLich(pr.progressWeekStart, today)}`
-        : pr?.finalWeekStart && pr.finalWeekStart >= thu2 ? `Cuối khoá · ${tuanLich(pr.finalWeekStart, today)}` : null;
+      const moc = pr?.progressWeekStart && pr.progressWeekStart >= thu2 ? `Progress Test · ${tuanLich(pr.progressWeekStart, today)}`
+        : pr?.finalWeekStart && pr.finalWeekStart >= thu2 ? `Final Test · ${tuanLich(pr.finalWeekStart, today)}` : null;
       const t = tap.get(l.id)!;
       return {
         classId: l.id as number, code: l.code as string, route: l.route ?? null, ct: l.ct ?? null,

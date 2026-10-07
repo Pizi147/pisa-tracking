@@ -2,8 +2,7 @@ import { db, theoLo } from '../db.ts';
 import {
   CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS, caseCategoriesFor, caseTitle, chiaChuong, goiYCuoiKhoa, lapLaiQuaLop,
   ASSESSED_SKILLS, tenCaseSos, tenMon, tenMonNgan, tuanHocTai, type CaseCategory, type CaseChuongVao, type LopChuong, type TonePaChuong,
-  mondayOfDate, nhanMt0, type AssessedSkill, type DiemMoc, type DotRef,
-} from '../../../shared/domain/index.ts';
+  mondayOfDate, nhanMt0, type AssessedSkill, type DiemMoc, type DotRef, nhanBaiThuong } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { allProgrammes } from '../normal/regular.ts';
@@ -187,7 +186,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
       if (t.mode === 'ratio') {
         const r = t.ratio!;
         return {
-          ...chung, cheDo: 'ratio' as const, nhanNgan: a.kind === 'final' ? 'Cuối khoá' : 'Giữa khoá',
+          ...chung, cheDo: 'ratio' as const, nhanNgan: nhanBaiThuong(a.kind),
           overall: null, sosLevel: r.sosLevel, soDat: r.skills.filter((s) => s.outcome === 'pass').length, soYeuCau: r.required, soCoDiem: r.scored,
           kyVong: null as number | null,
           kyNangChuaDat: r.skills.filter((s) => s.outcome === 'fail').map((s) => s.skill as string),
@@ -318,10 +317,12 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
      */
     const dangDung = e.status === 'paused' && !e.ended_at;
     const dangHoc = e.status === 'active' || dangDung;
-    const cy = ft ? loTrinhTinhTuan(ftCycles, { dangHoc, ngayVao: e.started_at }) : null;   // PR-Dọn Q11: chương đang học → lộ trình đang chạy
-    const batDau = cy ? cy.start_week ?? cy.started_at : null;
-    const hienTai = cy && batDau && dangHoc ? tuanHocTai(batDau, homNay, dung) : null;
-    const tuanHoc = cy && batDau ? {
+    const cy = ft ? loTrinhTinhTuan(ftCycles, { dangHoc, ngayVao: e.started_at }) : null;   // PR-Dọn Q11: chương đang học → lộ trình đang chạy (nhãn, mục tiêu)
+    /* PR-HK2: đang học mà không có lộ trình `active` → KHÔNG ghi tuần học (không rơi về lộ trình gần nhất) — khớp profile / transition. */
+    const cyTuan = dangHoc && cy?.status !== 'active' ? null : cy;
+    const batDau = cyTuan ? cyTuan.start_week ?? cyTuan.started_at : null;
+    const hienTai = cyTuan && batDau && dangHoc ? tuanHocTai(batDau, homNay, dung) : null;
+    const tuanHoc = cyTuan && batDau ? {
       tu: dangHoc ? hienTai?.tuan ?? null : tuanHocTai(batDau, e.started_at, dung)?.tuan ?? 1,
       /* Rời lớp trong tuần dừng → tuần học cuối TRƯỚC tuần dừng (không null). */
       den: dangHoc ? null : e.ended_at ? tuanHocTai(batDau, addDays(e.ended_at, -1), dung)?.tuan ?? null : null,

@@ -7,6 +7,7 @@ import {
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { Card, Empty, ErrorState, NhanTrangThai, Skeleton, Th } from '../../ui/ui.tsx';
+import { CHIP_TRON } from '../../ui/Nhan.tsx';
 import { SoLieuO } from '../../ui/SoLieuO.tsx';
 import { ViecTiep } from '../../ui/ViecTiep.tsx';
 import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
@@ -165,14 +166,14 @@ function ChipBanGiaoLop({ l }: { l: LopHs }) {
   const b = l.banGiao;
   if (!b) return null;
   return (
-    <Link to={`/hoc-vien/lop/${l.id}?viec=ban-giao${b.maMon ? `&mon=${b.maMon}` : ''}`} className="inline-flex whitespace-nowrap rounded-full bg-soon-bg px-2 text-xs font-semibold leading-5 tabular-nums text-soon no-underline hover:underline"
+    <Link to={`/hoc-vien/lop/${l.id}?viec=ban-giao${b.maMon ? `&mon=${b.maMon}` : ''}`} className={`${CHIP_TRON} bg-soon-bg tabular-nums text-soon no-underline hover:underline`}
       title={b.loai === 'gvcn' ? 'Phiếu bàn giao đã xác nhận / số em có quyết định chuyển lớp' : `Môn ${b.mon}: số em đã ghi bàn giao / số em cần ghi`}>
       Bàn giao{b.mon ? ` ${b.mon} ·` : ''} {b.da}/{b.n} em
     </Link>
   );
 }
 const chipKhung = (k: 'ft' | 'thuong') => (
-  <span className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 whitespace-nowrap ${k === 'ft' ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent)]' : 'border border-[color:var(--line-strong)] text-slate-300'}`}>
+  <span className={`${CHIP_TRON} ${k === 'ft' ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent)]' : '!border-[color:var(--line-strong)] text-slate-300'}`}>
     {k === 'ft' ? 'FT' : 'Lớp thường'}
   </span>
 );

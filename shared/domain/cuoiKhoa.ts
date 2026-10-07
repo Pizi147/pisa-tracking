@@ -133,10 +133,10 @@ export function chuHopKetLuan(x: HopKetLuanVao): HopKetLuan {
     : null;
   const g = x.goiY;
   if (x.tyLe === null || !g || !ct) {
-    return { chinh: `Cuối khoá · ${x.scored}/${x.required} môn có điểm`, phu: null, nhan: null, tone: 'muted', kyVong };
+    return { chinh: `Final Test · ${x.scored}/${x.required} môn có điểm`, phu: null, nhan: null, tone: 'muted', kyVong };
   }
   const phu = x.mon.map((m) => `${tenMonNgan(ct, m.skill)} ${m.ratio === null ? '—' : Math.round(m.ratio * 100)}`).join(' · ');
-  const chinh = `Cuối khoá ${Math.round(x.tyLe * 100)}%`;
+  const chinh = `Final Test ${Math.round(x.tyLe * 100)}%`;
   if (g.dai === 'dat') return { chinh, phu, nhan: 'Pass', tone: 'ok', kyVong };
   if (g.dai === '60_69') return { chinh, phu, nhan: g.nhan, tone: 'warn', kyVong };
   if (g.dai === 'duoi_50') return { chinh, phu, nhan: `${g.nhan} · Quản lý báo phụ huynh qua TVV`, tone: 'bad', kyVong };

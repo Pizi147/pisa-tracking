@@ -7,7 +7,7 @@ export function OSoNho({ nhan, so, tone }: { nhan: string; so: number | string; 
   const mau = tone === 'danger' ? 'text-bad' : tone === 'warn' ? 'text-soon' : 'text-slate-100';
   return (
     <div className="rounded-lg border px-3 py-2 min-w-[7rem]" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
-      <span className="block text-[11px] text-slate-500">{nhan}</span>
+      <span className="block text-xs text-slate-500">{nhan}</span>
       <span className={`block text-base font-semibold tabular-nums leading-tight mt-0.5 ${mau}`}>{so}</span>
     </div>
   );

@@ -2,8 +2,7 @@ import { db, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, CHU_KY_NANG, CO_DIEM_SQL, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, boMonLich, canLyDoVuot, dongHeQuaVuot, duongDotTest, kiemLyDoThaoTac,
   kiemTuanMt0, kiemTuanXep, laMtCu, luotBiVuot, nhanDot, tenMon, tuanLich, tuanMuonNhatMt0,
-  type AssessedSkill, type LuotLanCan, type LuotSeHuyLich, type SitStatus, type SkillProgress,
-} from '../../../shared/domain/index.ts';
+  type AssessedSkill, type LuotLanCan, type LuotSeHuyLich, type SitStatus, type SkillProgress, nhanBaiThuong } from '../../../shared/domain/index.ts';
 import { HttpError, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, explain, require_, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -446,7 +445,7 @@ function mt0TheoFinal(cycleId: number, rows: readonly SkillRow[], actorUserId: n
   const now = nowIso();
   conn.prepare('UPDATE attempt_skills SET planned_period_id = ?, updated_at = ? WHERE attempt_id = ?').run(dau.planned_period_id, now, m.id);
   conn.prepare('UPDATE assessment_attempts SET planned_period_id = ?, updated_at = ? WHERE id = ?').run(dau.planned_period_id, now, m.id);
-  logSchedule(m.id, { action: 'week_set', field: 'planned_period', newValue: dau.period_code ?? null, reason: 'Theo tuần Cuối khoá', actor: actorUserId });
+  logSchedule(m.id, { action: 'week_set', field: 'planned_period', newValue: dau.period_code ?? null, reason: 'Theo tuần Final Test', actor: actorUserId });
 }
 
 export function logSchedule(attemptId: number, e: {
@@ -488,8 +487,7 @@ export type ScheduleCheck = { blockers: string[]; warnings: string[] };
  */
 function labelDot(n: number, kind: string): string {
   if (kind === 'mock') return `MT${n}`;
-  if (kind === 'progress') return 'Giữa khoá';
-  if (kind === 'final') return 'Cuối khoá';
+  if (kind === 'progress' || kind === 'final') return nhanBaiThuong(kind);
   return `đợt ${n}`;
 }
 
@@ -1015,7 +1013,7 @@ export function setSkillScope(
   if (!required) {
     if (scoringModeOf(attempt) === 'ratio') {
       throw badRequest(
-        'Lớp thường luôn phải đủ bốn môn L/R/W/S. Không có thao tác miễn môn để hoàn tất Giữa khoá / Cuối khoá.',
+        'Lớp thường luôn phải đủ bốn môn L/R/W/S. Không có thao tác miễn môn để hoàn tất Progress Test / Final Test.',
       );
     }
     /* K4-13 (PR-XLMT): đã có điểm → dùng "Huỷ điểm"; đã tới tuần thi → dùng "Báo vắng". */

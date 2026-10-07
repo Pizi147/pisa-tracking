@@ -59,7 +59,7 @@ export function daiLop(p: Principal, classId: number, o: { pr: TienDoMoc; ft: bo
     } : null;
 
   let ketThucKhoa: DaiLop['ketThucKhoa'] = null;
-  const moc = o.ft ? null : mocKetKhoa(o.pr, homNay);   // PR-S5F-a: từ tuần Cuối khoá (kể cả khi dời sớm), không theo chặng
+  const moc = o.ft ? null : mocKetKhoa(o.pr, homNay);   // PR-S5F-a: từ tuần Final Test (kể cả khi dời sớm), không theo chặng
   if (moc?.tuCuoiKhoa) {
     const so = demChuaCoLenh([classId]).get(classId) ?? 0;
     if (so > 0) {

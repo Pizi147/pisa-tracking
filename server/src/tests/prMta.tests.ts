@@ -637,7 +637,7 @@ export async function runPrMtaTests(t: YThucTestKit) {
     keHoach.luuDot(QL, { attemptId: a.aid, kyNang: [{ skill: 'listening', periodId: tuan(3).id }, { skill: 'reading', periodId: tuan(3).id }] });
     assert(dt(a.aid) === 1, `QL: ${dt(a.aid)}`);
     const n = conn.prepare(`SELECT title, duong FROM notifications WHERE kind = 'doi_lich_thuong' AND entity_id = ?`).get(a.aid) as any;
-    assert(/^Giữa khoá · .+ · dời sang W\d [A-Z]{3}$/.test(n.title) && /^\/bang-diem-thuong\//.test(n.duong), JSON.stringify(n));
+    assert(/^Progress Test · .+ · dời sang W\d [A-Z]{3}$/.test(n.title) && /^\/bang-diem-thuong\//.test(n.duong), JSON.stringify(n));
     const gvbm = conn.prepare(`SELECT skill FROM teacher_assignments WHERE user_id = ? AND class_id = ? AND skill IS NOT NULL AND status = 'active'`).get(P.normalSubjectTeacher.userId, LOP_THUONG) as any;
     const b = baiThuong(2);
     skillSch.setSkillWeek(P.normalSubjectTeacher, b.aid, gvbm.skill === 'writing1' || gvbm.skill === 'writing2' ? 'writing' : gvbm.skill, tuan(3).id, {});
@@ -655,7 +655,7 @@ export async function runPrMtaTests(t: YThucTestKit) {
     assert(r.daLuu === 3, JSON.stringify(r.dong.map((x: any) => x.loi)));
     assert(ds.every((x) => dt(x.aid) === 0), 'chuông từng em ở hàng loạt');
     const lop = conn.prepare(`SELECT title FROM notifications WHERE kind = 'doi_lich_thuong' AND user_id = ? AND entity_type = 'class' AND entity_id = ?`).all(GV_CN.userId, LOP_THUONG) as any[];
-    assert(lop.length === 1 && /^Giữa khoá · 3 em · đổi lịch$/.test(lop[0].title), JSON.stringify(lop));
+    assert(lop.length === 1 && /^Progress Test · 3 em · đổi lịch$/.test(lop[0].title), JSON.stringify(lop));
     assert(d.nhomThongBao({ kind: 'doi_lich_thuong' }) === 'de-biet', 'để biết');
   });
 

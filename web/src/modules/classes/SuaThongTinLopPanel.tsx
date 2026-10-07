@@ -96,7 +96,7 @@ export function SuaThongTinLopPanel({ lop, onClose, onDone }: {
             <PhanDoan nhan="Lộ trình" giaTri={loTrinh} onChon={setLoTrinh}
               muc={(routes.data ?? []).map((r) => ({ v: r.code, nhan: r.code, title: r.name, tat: !doiDuoc && r.code !== loTrinh }))} />
             {!doiDuoc && (
-              <span className="mt-1 block text-[11px] text-slate-400">
+              <span className="mt-1 block text-xs text-slate-400">
                 Lớp đã có {lop.soHocVien} học viên — muốn đổi lộ trình thì chuyển các em sang lớp {kyHieuLop('FT', lop.route === 'RF' ? 'LT1' : 'RF')} khác
               </span>
             )}

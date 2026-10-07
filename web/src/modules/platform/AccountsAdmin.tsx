@@ -157,7 +157,7 @@ export function AccountsAdmin() {
           ))}
           {dangLoc && <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0 sm:ml-auto" onClick={xoaLoc}>Xoá lọc</button>}
         </div>
-        <div className="table-scroll">
+        <div className="table-scroll bang-dinh">
           <table className="w-full text-sm">
             <thead>
               <tr>
@@ -287,12 +287,12 @@ function PendingRow({ user, branches, onDone }: {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="text-sm text-slate-100">{user.fullName}</div>
-          <div className="text-[11px] text-slate-500">
+          <div className="text-xs text-slate-500">
             {user.email}{user.phone ? ` · ${user.phone}` : ''} · đăng ký {fmtDate(user.createdAt)}
           </div>
           {user.note && <div className="text-xs text-slate-400 mt-1">“{user.note}”</div>}
           {user.skills.length > 0 && (
-            <div className="text-[11px] text-slate-500 mt-1">
+            <div className="text-xs text-slate-500 mt-1">
               Kỹ năng phụ trách được: {user.skills.map(skillLabel).join(', ')}
             </div>
           )}
@@ -312,7 +312,7 @@ function PendingRow({ user, branches, onDone }: {
       </div>
 
       <div className="mt-2">
-        <span className="text-[11px] text-slate-500 mr-2">Chi nhánh (người đăng ký tự khai, sửa được):</span>
+        <span className="text-xs text-slate-500 mr-2">Chi nhánh (người đăng ký tự khai, sửa được):</span>
         <span className="inline-flex flex-wrap gap-1 align-middle">
           {branches.map((b) => (
             <NutChon key={b.code} nho chon={picked.has(b.code)}
@@ -473,7 +473,7 @@ function AccountDialog({ account, branches, onClose, onDone }: {
             </button>
           </div>
           <div className="space-y-2" {...lf.o(loi, 'vai-tro')}>
-            {lf.loiCua(loi, 'vai-tro') && <p className="m-0 text-[11px] text-late">{lf.loiCua(loi, 'vai-tro')}</p>}
+            {lf.loiCua(loi, 'vai-tro') && <p className="m-0 text-xs text-late">{lf.loiCua(loi, 'vai-tro')}</p>}
             {grants.map((g, i) => (
               <div key={i} className="surface-2 rounded-lg p-2.5 flex flex-wrap items-center gap-2">
                 <select className="field w-44" value={g.role}
@@ -516,15 +516,15 @@ function AccountDialog({ account, branches, onClose, onDone }: {
             <div>
               <div className="flex items-baseline justify-between gap-2 mb-1">
                 <span className="label m-0">Quyền cấp riêng cho người này</span>
-                <span className="text-[11px] tabular-nums text-slate-500">{chonQuyen.size ? `${chonQuyen.size} quyền` : 'Chưa cấp riêng quyền nào'}</span>
+                <span className="text-xs tabular-nums text-slate-500">{chonQuyen.size ? `${chonQuyen.size} quyền` : 'Chưa cấp riêng quyền nào'}</span>
               </div>
               <div tabIndex={-1} {...lf.o(loi, 'quyen-rieng')}>
-                {lf.loiCua(loi, 'quyen-rieng') && <p className="m-0 mb-1 text-[11px] text-late">{lf.loiCua(loi, 'quyen-rieng')}</p>}
+                {lf.loiCua(loi, 'quyen-rieng') && <p className="m-0 mb-1 text-xs text-late">{lf.loiCua(loi, 'quyen-rieng')}</p>}
                 <CapQuyenRieng value={extra} chon={chonQuyen} branches={branches} macDinh={macDinhPhamVi} vai={grants.map((g) => g.role).filter(Boolean)}
                   onChange={(v, c) => { setExtra(v); setChonQuyen(c); }} />
               </div>
               {quyenBo.length > 0 && (
-                <p className="m-0 mt-1.5 text-[11px] text-slate-400">
+                <p className="m-0 mt-1.5 text-xs text-slate-400">
                   Không còn cấp riêng được, lưu lần này sẽ gỡ: {quyenBo.map((x) => x.name).join(', ')}.
                 </p>
               )}

@@ -69,7 +69,7 @@ export function DongThoiGianLuot({ history, scoreHistory, ct = null, gioiHan = 5
                 <span className="font-medium">{d.viec}</span>{d.mon && <span className="text-slate-400"> · {d.mon}</span>}
                 {d.doi && <span className="text-slate-400"> · {d.doi}</span>}
               </div>
-              <div className="text-[11px] text-slate-500 tabular-nums">
+              <div className="text-xs text-slate-500 tabular-nums">
                 {d.ai ?? '—'} · {d.at ? fmtDateTime(d.at) : '—'}
                 {d.lyDo && <> · <span className="inline-block max-w-full truncate align-bottom sm:max-w-[26rem]" title={`Lý do: ${d.lyDo}`}>Lý do: {d.lyDo}</span></>}
               </div>

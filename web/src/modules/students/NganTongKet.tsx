@@ -38,7 +38,7 @@ const MUI = (
 function O({ nho, children, cho }: { nho: string; children: ReactNode; cho?: boolean }) {
   return (
     <div className={`min-w-0 rounded-[10px] border px-3 py-2.5 ${cho ? 'text-slate-400' : ''}`} style={{ background: 'var(--surface-2)', borderColor: 'var(--line)' }}>
-      <small className="mb-0.5 block text-[11px] text-slate-500">{nho}</small>
+      <small className="mb-0.5 block text-xs text-slate-500">{nho}</small>
       {children}
     </div>
   );
@@ -82,7 +82,7 @@ function BangLuot({ luot, ft }: { luot: Luot[]; ft: boolean }) {
               const huy = l.trangThai === 'cancelled'; const nl = nhanLuot(l, ft);
               return (
                 <tr key={`${l.attemptNo}-${l.kind}`} className={`h-11 border-t ${huy ? 'opacity-70' : ''}`} style={{ borderColor: 'var(--line)' }}>
-                  <td className="whitespace-nowrap px-3 font-bold text-slate-100">{l.nhan}{tag(l) && <span className="ml-1.5 text-[11px] font-normal text-late">{tag(l)}</span>}</td>
+                  <td className="whitespace-nowrap px-3 font-bold text-slate-100">{l.nhan}{tag(l) && <span className="ml-1.5 text-xs font-normal text-late">{tag(l)}</span>}</td>
                   <td className="px-3 text-slate-300">{l.lop ?? '—'}</td>
                   <td className="whitespace-nowrap px-3 tabular-nums text-slate-300">{l.tuan ?? '—'}</td>
                   {ft ? (
@@ -113,7 +113,7 @@ function BangLuot({ luot, ft }: { luot: Luot[]; ft: boolean }) {
             <li key={`${l.attemptNo}-${l.kind}`} className={`border-t px-3 py-2.5 first:border-t-0 ${huy ? 'opacity-70' : ''}`} style={{ borderColor: 'var(--line)' }}>
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <b className="text-slate-100">{l.nhan}</b>{tag(l) && <span className="ml-1.5 text-[11px] text-late">{tag(l)}</span>}
+                  <b className="text-slate-100">{l.nhan}</b>{tag(l) && <span className="ml-1.5 text-xs text-late">{tag(l)}</span>}
                   <div className="text-xs text-slate-500">{l.tuan ?? '—'} · {l.lop ?? '—'}</div>
                 </div>
                 {nl && <Nhan tone={nl.tone}>{nl.chu}</Nhan>}
@@ -183,8 +183,8 @@ export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onCl
               ) : (
                 <>
                   {kq.tyLe === null
-                    ? <O nho="Cuối khoá" cho><div className="text-sm font-semibold text-slate-400">Chưa có điểm</div></O>
-                    : <O nho="Cuối khoá"><Lon>{Math.round(kq.tyLe * 100)}%</Lon>{kq.dai && DAI[kq.dai] && <div className="mt-1.5"><Nhan tone={DAI[kq.dai].tone}>{DAI[kq.dai].nhan}</Nhan></div>}</O>}
+                    ? <O nho="Final Test" cho><div className="text-sm font-semibold text-slate-400">Chưa có điểm</div></O>
+                    : <O nho="Final Test"><Lon>{Math.round(kq.tyLe * 100)}%</Lon>{kq.dai && DAI[kq.dai] && <div className="mt-1.5"><Nhan tone={DAI[kq.dai].tone}>{DAI[kq.dai].nhan}</Nhan></div>}</O>}
                   {MUI}
                 </>
               )}

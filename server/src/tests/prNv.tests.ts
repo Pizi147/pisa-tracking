@@ -58,7 +58,7 @@ export async function runPrNvTests(t: YThucTestKit) {
     assert(tb && tb.duong, `chuông: ${JSON.stringify(tb)}`);
   });
 
-  check('NV-1 (b) · nhắc thẻ Cuối khoá dời quá hạn tới đúng GVCN; đổi GVCN → 404', () => {
+  check('NV-1 (b) · nhắc thẻ Final Test dời quá hạn tới đúng GVCN; đổi GVCN → 404', () => {
     const a = conn.prepare(
       `SELECT a.id, a.student_id, a.class_id, ta.user_id AS gv FROM assessment_attempts a
          JOIN classes c ON c.id = a.class_id
@@ -74,7 +74,7 @@ export async function runPrNvTests(t: YThucTestKit) {
     const r = yc.nhacNhieu(P.admin, [the.id]);
     assert(r.ok.length === 1 && r.ok[0].moi, JSON.stringify(r));
     const tb = conn.prepare(`SELECT * FROM notifications WHERE user_id = ? AND dedup_key = ?`).get(a.gv, `nhac:cuoi_khoa:${a.id}:${TODAY}`) as any;
-    assert(tb && tb.duong === d.duongHoSoHocVien(a.student_id) && tb.title.startsWith('Cuối khoá dời quá hạn · ') && tb.title.endsWith(`· ${P.admin.fullName} nhắc`),
+    assert(tb && tb.duong === d.duongHoSoHocVien(a.student_id) && tb.title.startsWith('Final Test dời quá hạn · ') && tb.title.endsWith(`· ${P.admin.fullName} nhắc`),
       `chuông: ${JSON.stringify(tb)}`);
     xoaNhac();
     conn.prepare(`UPDATE teacher_assignments SET status = 'ended' WHERE class_id = ? AND user_id = ? AND is_core = 1 AND status = 'active'`).run(a.class_id, a.gv);
@@ -323,9 +323,9 @@ export async function runPrNvTests(t: YThucTestKit) {
     for (const p of [P.admin, P.mbManager]) assert(yc.hopChoDuyet(p, {}).dem['tat-ca'] === yc.demYeuCau(p).cho, `badge ≠ chip Tất cả (${p.userId})`);
   });
 
-  check('NV-3 (rà) · thẻ Mini Test / Cuối khoá có tên người nhận; nhắc xong GET trả daNhacLuc (nút Nhắc tất cả không đếm lại)', () => {
+  check('NV-3 (rà) · thẻ Mini Test / Final Test có tên người nhận; nhắc xong GET trả daNhacLuc (nút Nhắc tất cả không đếm lại)', () => {
     const ds = theCho().filter((r) => r.loai === 'bao_len_mini_test' || r.loai === 'bao_len_cuoi_khoa');
-    assert(ds.length > 0, 'seed cần thẻ Mini Test / Cuối khoá có người nhận');
+    assert(ds.length > 0, 'seed cần thẻ Mini Test / Final Test có người nhận');
     xoaNhac();
     const truoc = yc.hopChoDuyet(P.admin, { xem: 'de-biet' }).the.filter((x: any) => ds.some((r) => r.id === x.id));
     assert(truoc.length && truoc.every((x: any) => typeof x.duLieu?.tenGv === 'string' && !x.duLieu?.daNhacLuc), JSON.stringify(truoc.map((x: any) => x.duLieu)));

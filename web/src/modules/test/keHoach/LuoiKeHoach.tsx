@@ -88,7 +88,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
             <tr key={h.studentId} className="row-hover">
               <td className="td sticky-col py-1.5 align-middle">
                 <div className="truncate text-slate-100" title={h.ten}>{h.ten}</div>
-                <div className="text-[11px] text-slate-500">
+                <div className="text-xs text-slate-500">
                   {h.ma}{'vaoMuon' in h && h.vaoMuon && <span> · vào muộn</span>}
                 </div>
               </td>

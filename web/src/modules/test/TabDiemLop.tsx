@@ -52,7 +52,7 @@ export function TabDiemLop() {
             <button key={l.classId} type="button" aria-current={on || undefined} onClick={() => chonLop(l.classId)}
               className={`flex items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-sm ${
                 on ? 'bg-[color:var(--accent-soft)] font-semibold text-[color:var(--accent-strong)]' : 'text-slate-200 hover:bg-[color:var(--surface-2)]'}`}>
-              <span className="min-w-0 truncate">{l.classCode}</span>
+              <span className="min-w-0 truncate" title={l.classCode}>{l.classCode}</span>
               <span className={`shrink-0 text-xs tabular-nums ${on ? '' : 'text-slate-500'}`}>{conTrong(l)}</span>
             </button>
           );

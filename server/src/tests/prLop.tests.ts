@@ -52,7 +52,7 @@ export async function runPrLopTests(t: YThucTestKit) {
     assert(nhan('BE', d.REGULAR_SKILLS) === 'GVCN L R W S', nhan('BE', d.REGULAR_SKILLS));
     assert(nhan('FOU', d.REGULAR_SKILLS) === 'GVCN L R G+V P', nhan('FOU', d.REGULAR_SKILLS));
     assert(nhan('PREFOU', ['tong_hop']) === 'GVCN', nhan('PREFOU', ['tong_hop']));
-    assert(d.PROGRAMME_TEMPLATES.PREFOU.weeks === 5 && d.PROGRAMME_TEMPLATES.PREFOU.checkpoints.length === 1, 'PREFOU 5 tuần, chỉ Cuối khoá');
+    assert(d.PROGRAMME_TEMPLATES.PREFOU.weeks === 5 && d.PROGRAMME_TEMPLATES.PREFOU.checkpoints.length === 1, 'PREFOU 5 tuần, chỉ Final Test');
     assert(d.programmeOf('PREFOU') === 'PREFOU' && d.NORMAL_LADDER.PREFOU === 'FOU' && (d.ROUTES as readonly string[]).includes('RF'), 'hằng số');
   });
   check('LOP (2) · kiemPhanCong: một ô một người, GVCN dạy ≥ 1 kỹ năng; Pre FOU chỉ GVCN, GVCN dạy luôn (L3, L4, T56, M-09)', () => {
@@ -158,7 +158,7 @@ export async function runPrLopTests(t: YThucTestKit) {
     const src = docSach('web/src/modules/classes/ClassCreatePanel.tsx');
     assert(!/\/teachers`|api\.put\(/.test(src), 'còn gọi lệnh phân công thứ hai');
     assert(/oPhanCong\(/.test(src) && /kiemPhanCong\(/.test(src) && /ghepMaLop\(/.test(src) && /locSoLop\(/.test(src), 'chưa dùng luật chung');
-    assert(!/hai người dạy|TeacherPick|\+ Thêm giáo viên|Normal|Progress Test|Final Test/.test(src), 'còn chữ/ô cũ');
+    assert(!/hai người dạy|TeacherPick|\+ Thêm giáo viên|Normal/.test(src), 'còn chữ/ô cũ');
     assert(/CHO_TAO_PRE_FOU/.test(src) && /navigate\(`\/hoc-vien\/lop\//.test(src), 'PF6 / mở hồ sơ lớp');
     assert(/useLoiForm\(/.test(src) && /dsLoi\(/.test(src) && !/SoOCanSua|Còn thiếu/.test(src), 'báo lỗi form chưa theo PR-N1 (YC-12.5.2)');
   });
@@ -203,11 +203,11 @@ export async function runPrLopTests(t: YThucTestKit) {
     }
   });
 
-  check('LOP (10) · Quản trị Lộ trình & chương trình: không thêm mã, Pre FOU không có Giữa khoá, Cuối khoá mặc định = số tuần (K1-46…K1-50)', () => {
+  check('LOP (10) · Quản trị Lộ trình & chương trình: không thêm mã, Pre FOU không có Progress Test, Final Test mặc định = số tuần (K1-46…K1-50)', () => {
     assertThrows(() => sys.saveRoute(P.admin, { code: 'LT3', name: 'x' }), /không thêm/i, 'thêm được lộ trình');
     assertThrows(() => sys.saveProgramme(P.admin, { code: 'PRE-IELTS', name: 'x' }), /không thêm/i, 'thêm được chương trình');
     assertThrows(() => sys.saveProgramme(P.admin, { code: 'PREFOU', name: 'Pre Foundation', weeks: 5, progressWeek: 2 }),
-      /không có bài Giữa khoá/, 'Pre FOU nhận tuần Giữa khoá');
+      /không có bài Progress Test/, 'Pre FOU nhận tuần Progress Test');
     const r = sys.saveProgramme(P.admin, { code: 'PREFOU', name: 'Pre Foundation', weeks: 6 });
     try {
       const pf = sys.listProgrammes(P.admin).find((x: any) => x.code === 'PREFOU');
@@ -219,7 +219,7 @@ export async function runPrLopTests(t: YThucTestKit) {
     const lt = sys.listRoutes(true).find((x: any) => x.code === 'RF');
     assert(lt.kyVong === 'Mọi MT = Target' && lt.lichMt === 'Tuần 4 · 8', JSON.stringify(lt));
     const src = docSach('web/src/modules/platform/CatalogAdmin.tsx');
-    assert(!/\+ Thêm|Progress Test|Final Test|loại lớp|btn-primary' : ''|ALL_SKILLS/i.test(src), 'CatalogAdmin còn chữ/nút cũ');
+    assert(!/\+ Thêm|loại lớp|btn-primary' : ''|ALL_SKILLS/i.test(src), 'CatalogAdmin còn chữ/nút cũ');
     assert(/Lộ trình & chương trình/.test(docSach('web/src/modules/platform/AdminPage.tsx')), 'tên tab');
   });
   check('LOP (10) · ô tìm đầu trang có nhóm Lớp; chữ mẫu tên lớp mới trong web + shared/domain (K1-43, T2)', () => {

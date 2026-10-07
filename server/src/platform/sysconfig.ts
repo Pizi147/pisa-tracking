@@ -1,5 +1,5 @@
 import { db, tx } from '../db.ts';
-import { LUAT_LO_TRINH_HIEN, PERMISSIONS, QUYEN_SUY_RA_GV, ROUTES as BUILTIN_ROUTES, ROUTE_NAME, lyDoCamVai } from '../../../shared/domain/index.ts';
+import { LUAT_LO_TRINH_HIEN, PERMISSIONS, QUYEN_SUY_RA_GV, ROUTES as BUILTIN_ROUTES, ROUTE_NAME, lyDoCamVai, nhanBaiThuong } from '../../../shared/domain/index.ts';
 import { badRequest, notFound, nowIso } from '../util.ts';
 import { clearScoringModeCache } from '../fasttrack/skillSchedule.ts';
 import { require_, type Principal } from '../permissions.ts';
@@ -114,9 +114,9 @@ export function saveProgramme(p: Principal, input: {
   const finalWeek = input.finalWeek || weeks;
   const progressWeek = input.progressWeek || null;
   const coGiuaKhoa = !!conn.prepare("SELECT 1 FROM programme_checkpoints WHERE programme_code = ? AND kind = 'progress'").get(code);
-  if (progressWeek && !coGiuaKhoa) throw badRequest('Chương trình này không có bài Giữa khoá.');
-  if (weeks !== null && coGiuaKhoa && !progressWeek) throw badRequest('Chọn tuần Giữa khoá.');
-  if (progressWeek && finalWeek && Number(progressWeek) >= Number(finalWeek)) throw badRequest('Giữa khoá phải ở trước Cuối khoá.');
+  if (progressWeek && !coGiuaKhoa) throw badRequest('Chương trình này không có bài Progress Test.');
+  if (weeks !== null && coGiuaKhoa && !progressWeek) throw badRequest('Chọn tuần Progress Test.');
+  if (progressWeek && finalWeek && Number(progressWeek) >= Number(finalWeek)) throw badRequest('Progress Test phải ở trước Final Test.');
 
   return tx(() => {
     /*
@@ -133,7 +133,7 @@ export function saveProgramme(p: Principal, input: {
         if (!w) continue;
         const n = Number(w);
         if (!Number.isInteger(n) || n < 1 || n > weeks) {
-          throw badRequest(`Tuần ${kind === 'progress' ? 'Giữa khoá' : 'Cuối khoá'} phải nằm trong 1–${weeks}.`);
+          throw badRequest(`Tuần ${nhanBaiThuong(kind)} phải nằm trong 1–${weeks}.`);
         }
       }
       conn.prepare('DELETE FROM programme_checkpoints WHERE programme_code = ?').run(code);

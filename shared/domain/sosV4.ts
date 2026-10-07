@@ -31,7 +31,7 @@ export function mocQuyChe(span: AcademicSupportSpan, ctx: { ngayXacNhan: string;
 export function mocChuPa(x: { span: string | null; followupDue: string | null; mtKe: number | null; daXacNhan: boolean }, homNay: string): string {
   if (x.span === 'mini_test') return x.daXacNhan && x.followupDue ? `đến Mini Test · ${ngay(x.followupDue, homNay)}` : 'đến Mini Test';   // PR-LT2b
   /* PR-LT2a: PA bổ trợ. PR-S5F-b: mốc Cuối khoá có từ lúc tạo PA (`taoPaBoTro`) — PA chưa chạy (BE chờ kế hoạch) cũng nói mã tuần. */
-  if (x.span === 'den_cuoi_khoa') return x.daXacNhan || x.followupDue ? mocChuBoTro(x.followupDue, homNay) : 'đến Cuối khoá';
+  if (x.span === 'den_cuoi_khoa') return x.daXacNhan || x.followupDue ? mocChuBoTro(x.followupDue, homNay) : 'đến Final Test';
   const dau = x.span === 'one_month' ? '1 tháng' : x.span === 'until_next_mt' ? (x.mtKe ? `đến MT${x.mtKe}` : 'đến MT kế tiếp')
     : x.span === 'until_exam' ? 'đến lúc thi' : '';
   if (!dau || !x.daXacNhan) return dau;
@@ -84,6 +84,9 @@ export function trangThaiCaseV4(c: CaseV4Input, homNay: string): { k: TrangThaiC
   return { k: 'dang-lam', t: 'dang-lam', chu: 'Đang làm', han: null };
 }
 
+/** J9: bỏ phần mốc máy gán ở đuôi tên PA (`Tutor · đến lúc thi` → `Tutor`); tên người dạy tự viết giữ nguyên. */
+const tenPaGon = (ten: string) => ten.replace(/ · (đến lúc thi|đến MT\d+|1 tháng)$/, '');
+
 /** Một PA như `viecTiepCuaCase` cần. Chỉ truyền PA CHƯA huỷ. */
 export type PaViecTiep = {
   id: number; ten: string; batBuoc: boolean; choXacNhan: boolean; xong: boolean;
@@ -105,15 +108,15 @@ export function viecTiepCuaCase(c: CaseV4Input, pas: PaViecTiep[], homNay: strin
   if (s.k === 'cho-ke-hoach') return { chu: 'Nộp kế hoạch bổ trợ', loaiHan: 'ke-hoach-bo-tro', han: s.han };
   if (s.k === 'cho-duyet-ke-hoach') return { chu: 'Chờ Quản lý duyệt kế hoạch', loaiHan: null, han: null };
   const choXn = pas.find((p) => p.choXacNhan && !p.xong);
-  if (choXn) return { chu: `Xác nhận PA ${choXn.ten}`, loaiHan: 'xac-minh-sos', han: c.hanXacNhan, paId: choXn.id };
+  if (choXn) return { chu: `Xác nhận PA ${tenPaGon(choXn.ten)}`, loaiHan: 'xac-minh-sos', han: c.hanXacNhan, paId: choXn.id };
   const chayTatCa = pas.filter((p) => !p.xong && !p.choXacNhan && !p.choDuyet);
   /* PR-S5F-a: có PA ở lớp mới (bổ trợ miễn phí) thì việc tiếp là của PA đó; PA lớp cũ chỉ thành việc tiếp khi không còn PA nào khác, ghi rõ "(lớp cũ)". */
   const chay = chayTatCa.some((p) => !p.lopCu) ? chayTatCa.filter((p) => !p.lopCu) : chayTatCa;
   const cu = (p: PaViecTiep) => (p.lopCu ? ' (lớp cũ)' : '');
   const cuoi = chay.find((p) => laLanGhiCuoi({ preset: p.batBuoc, followupDue: p.followupDue, actionDue: p.actionDue }, homNay));
-  if (cuoi) return { chu: `Ghi kết quả cuối ${cuoi.ten}${cu(cuoi)}`, loaiHan: 'cap-nhat-pa', han: cuoi.actionDue, paId: cuoi.id };
+  if (cuoi) return { chu: `Ghi kết quả cuối ${tenPaGon(cuoi.ten)}${cu(cuoi)}`, loaiHan: 'cap-nhat-pa', han: cuoi.actionDue, paId: cuoi.id };
   const ganNhat = [...chay].sort((a, b) => (a.actionDue ?? '9999').localeCompare(b.actionDue ?? '9999'))[0];
-  if (ganNhat) return { chu: `Ghi kết quả PA ${ganNhat.ten}${cu(ganNhat)}`, loaiHan: 'cap-nhat-pa', han: ganNhat.actionDue, paId: ganNhat.id };
+  if (ganNhat) return { chu: `Ghi kết quả PA ${tenPaGon(ganNhat.ten)}${cu(ganNhat)}`, loaiHan: 'cap-nhat-pa', han: ganNhat.actionDue, paId: ganNhat.id };
   if (!pas.length) return { chu: CHU_THEM_PA, loaiHan: 'lap-pa', han: hanLapPa };
   if (pas.every((p) => p.xong)) return { chu: 'Hoàn thành Case', loaiHan: null, han: null };
   return null;   // chỉ còn PA chờ Quản lý duyệt — việc của Quản lý

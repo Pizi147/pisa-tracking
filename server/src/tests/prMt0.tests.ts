@@ -75,7 +75,7 @@ export async function runPrMt0Tests(t: YThucTestKit) {
     const l = taoLop('BE', 9, 2, 6);
     const [sid, sid2] = l.sids;   // sid: MT0 có điểm (W 3.0); sid2: MT0 chưa điểm (còn planned)
     const tuanFinal = schedule.classProgress(l.classId).finalWeekStart as string;
-    assert(!!tuanFinal, 'tiền đề: lớp có tuần Cuối khoá');
+    assert(!!tuanFinal, 'tiền đề: lớp có tuần Final Test');
     const demEm = (bang: string) => get(`SELECT COUNT(*) n FROM ${bang} WHERE student_id IN (?, ?)`, sid, sid2).n as number;
     const chup = () => {
       const ds = hvl.danhSachHocVienLop(QL, { branchId: MB });
@@ -287,7 +287,7 @@ export async function runPrMt0Tests(t: YThucTestKit) {
     attempts.setPlanningWeek(QL, e.aid, tuanSo(e.tuanFinal, 2));   // biên: đúng tuần 2 FT (Final + 14 ngày) vẫn được
     assert(tuanKn(e.aid) === addDays(e.tuanFinal, 14), 'biên tuần 2 FT');
   });
-  check('MT0-4 · Q2 (A): dời Cuối khoá của em → MT0 chưa điểm, chưa dời tay đi theo; đã dời tay thì đứng yên; lân cận lớp thường không chặn', () => {
+  check('MT0-4 · Q2 (A): dời Final Test của em → MT0 chưa điểm, chưa dời tay đi theo; đã dời tay thì đứng yên; lân cận lớp thường không chặn', () => {
     const e = lenFt('ELE', 8);
     const fin = get(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'final'`, e.sid).id as number;
     attempts.setPlanningWeek(QL, fin, tuanSo(e.tuanFinal, 1));   // Final cùng tuần MT0 trước đó: không bị "trùng tuần với MT0"
@@ -305,7 +305,7 @@ export async function runPrMt0Tests(t: YThucTestKit) {
     skillSch.setSkillWeek(QL, e.aid, 'listening', qua);
     assert(tuanKn(e.aid).includes(addDays(e.tuanFinal, 7)), 'QL dời về tuần đã qua được');
   });
-  check('Rà #226 (5) · MT0 không sớm hơn tuần Cuối khoá: QL dời về Final − 1 tuần → 400 "sớm nhất"', () => {
+  check('Rà #226 (5) · MT0 không sớm hơn tuần Final Test: QL dời về Final − 1 tuần → 400 "sớm nhất"', () => {
     const e = lenFt('BE', 8);
     const x = loi(() => attempts.setPlanningWeek(QL, e.aid, tuanSo(e.tuanFinal, -1)));
     assert(x?.status === 400 && /sớm nhất/.test(x.message), `${x?.status} ${x?.message}`);
@@ -347,7 +347,7 @@ export async function runPrMt0Tests(t: YThucTestKit) {
     assert(mt1?.attempt_no === 1, 'MT1 mặc định vẫn số 1');
     const soMock = get(`SELECT COUNT(*) n FROM assessment_attempts WHERE cycle_id = ? AND kind = 'mock'`, ft.id).n as number;
     assert(cycles.nextAttemptNo(ft.id) === soMock + 1, `nextAttemptNo ${cycles.nextAttemptNo(ft.id)} vs ${soMock + 1}`);
-    assert(get('SELECT COUNT(*) n FROM assessment_attempts WHERE cycle_id = ?', cuA).n >= 2, 'Giữa/Cuối khoá ở lại khoá cũ');
+    assert(get('SELECT COUNT(*) n FROM assessment_attempts WHERE cycle_id = ?', cuA).n >= 2, 'Progress/Final Test ở lại khoá cũ');
     assert(get(`SELECT COUNT(*) n FROM journey_events WHERE dedup_key = ?`, `mt0:${mA}:noi`).n === 1, 'hành trình nối');
     const vB = mt0Svc.mt0TheoHocVien([B]).get(B);
     assert(vB?.trangThai === 'khong_dung' && JSON.stringify(vB.sos) === JSON.stringify([{ skill: 'listening', band: 3.5 }]), `B: ${JSON.stringify(vB)}`);
@@ -476,7 +476,7 @@ export async function runPrMt0Tests(t: YThucTestKit) {
     const h0 = sau.hang.find((h: any) => h.studentId === l.sids[0]);
     assert(h0.mt0?.attemptId === m && Object.keys(h0.mt0.kn).length === 4, JSON.stringify(h0.mt0));
     assert(sau.hang.find((h: any) => h.studentId === l.sids[1]).mt0 === null, 'em không Lên FT: không MT0');
-    assert(truoc.hvChuaCoLich === sau.hvChuaCoLich && JSON.stringify(truoc.hang.map((h: any) => h.dot)) === JSON.stringify(sau.hang.map((h: any) => h.dot)), 'ô Giữa/Cuối khoá không đổi');
+    assert(truoc.hvChuaCoLich === sau.hvChuaCoLich && JSON.stringify(truoc.hang.map((h: any) => h.dot)) === JSON.stringify(sau.hang.map((h: any) => h.dot)), 'ô Progress/Final Test không đổi');
     const tuanFinal = schedule.classProgress(l.classId).finalWeekStart as string;
     const lt0 = canCham.lichTest(QL, week.ensurePeriod(tuanFinal).id, MB, TODAY, { classId: l.classId });
     const hang = [...(lt0.chamTuanNay ?? []), ...lt0.lop].filter((x: any) => x.classId === l.classId);

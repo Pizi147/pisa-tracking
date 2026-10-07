@@ -61,7 +61,7 @@ export async function runPrNtTests(t: YThucTestKit) {
   const soLuot = (sql: string) => soLuotCua(em.cid, sql);
 
   check('NT-2 · em lớp thường có Target: không lượt MT, không target_at_attempt, không Case tự động', () => {
-    assert(soLuot('1 = 1') > 0, 'em lớp thường phải có bài Giữa/Cuối khoá (PR-LT2a)');
+    assert(soLuot('1 = 1') > 0, 'em lớp thường phải có bài Progress/Final Test (PR-LT2a)');
     assert(soLuot(`kind = 'mock'`) === 0, 'có lượt MT cho em lớp thường');
     assert(soLuot('target_at_attempt IS NOT NULL') === 0, 'lượt lớp thường bị chụp target');
     assert((conn.prepare('SELECT COUNT(*) n FROM sos_cases WHERE student_id = ?').get(em.sid) as any).n === 0, 'không Case tự động');
@@ -177,7 +177,7 @@ export async function runPrNtTests(t: YThucTestKit) {
     assert(rv && rv.new_target === 6.5 && rv.reason === 'Phụ huynh đổi mục tiêu', JSON.stringify(rv));
     assert(conn.prepare(`SELECT id FROM journey_events WHERE ref_table = 'cycle_target_revisions' AND ref_id = ?`).get(rv.id), 'thiếu dòng Hành trình');
     assert(soLuot(`kind = 'mock'`) === 0, 'đổi Target không xếp MT');
-    assert(soLuot('target_at_attempt IS NOT NULL') === 0, 'đổi Target chụp target vào bài Giữa/Cuối khoá lớp thường');
+    assert(soLuot('target_at_attempt IS NOT NULL') === 0, 'đổi Target chụp target vào bài Progress/Final Test lớp thường');
   });
   check('NT-4 · Dự kiến thi lớp thường: GVCN (student.edit) sửa được; ngày → ngày + tháng + tuần; tháng → chỉ tháng; trống → xoá', () => {
     const doc = () => conn.prepare('SELECT exam_month, exam_date, exam_period_id FROM learning_cycles WHERE id = ?').get(em.cid) as any;
@@ -193,11 +193,11 @@ export async function runPrNtTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ NT-5: đầu hồ sơ
-  check('NT-5 · đầu hồ sơ lớp thường: có Target + thi IELTS dự kiến, vẫn giữ Cuối khoá', () => {
+  check('NT-5 · đầu hồ sơ lớp thường: có Target + thi IELTS dự kiến, vẫn giữ Final Test', () => {
     conn.prepare("UPDATE learning_cycles SET target_score = 6.5, khong_cam_ket = 0, exam_month = '2027-05', exam_date = NULL, exam_period_id = NULL WHERE id = ?").run(em.cid);
     const tt = prof.studentProfile(P.admin, em.sid).dauHoSo.thongTin;
     assert(tt.target === 6.5, JSON.stringify(tt));
-    assert(tt.thiDuKien === null || tt.thiDuKien.nhan === 'Cuối khoá', 'Cuối khoá giữ nguyên: ' + JSON.stringify(tt.thiDuKien));
+    assert(tt.thiDuKien === null || tt.thiDuKien.nhan === 'Final Test', 'Final Test giữ nguyên: ' + JSON.stringify(tt.thiDuKien));
     assert(tt.thiIelts === '05/2027', JSON.stringify(tt));
     conn.prepare("UPDATE learning_cycles SET khong_cam_ket = 1, target_score = NULL, exam_month = NULL WHERE id = ?").run(em.cid);
     const kck = prof.studentProfile(P.admin, em.sid).dauHoSo.thongTin;

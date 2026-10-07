@@ -69,7 +69,7 @@ export const STUDENTS: StudentSeed[] = [
           {
             topic: 'reading', fromTest: 2, sosLevel: 1, detectedAt: '2026-04-26',
             primaryCode: 'student.reading.technique',
-            title: 'Reading cuối khoá Beginner còn dưới ngưỡng',
+            title: 'Reading Final Test Beginner còn dưới ngưỡng',
             summary: 'Em làm hết bài nhưng sai nhiều câu dạng matching headings.',
             status: 'in_progress', owner: 'T_KHOA',
             plans: [
@@ -86,7 +86,7 @@ export const STUDENTS: StudentSeed[] = [
         seq: 3, route: 'LT1', target: 6.5, classCode: 'MB FT 101', status: 'active',
         startWeek: '2026-06-01', startedAt: '2026-06-01',
         examMonth: '2027-02', examWeek: '2027-02-08',
-        baseline: { score: 5.0, source: 'previous_cycle', note: 'Kết quả cuối khoá Beginner quy đổi.' },
+        baseline: { score: 5.0, source: 'previous_cycle', note: 'Kết quả Final Test Beginner quy đổi.' },
         tests: [
           {
             /* Kỳ vọng MT1 = 5.5. Reading 5.0 dưới kỳ vọng → SOS 1. */
@@ -616,7 +616,7 @@ export const STUDENTS: StudentSeed[] = [
           {
             topic: 'writing', fromTest: 1, sosLevel: 1, detectedAt: '2026-08-23',
             primaryCode: 'student.writing.organisation',
-            title: 'Writing giữa khoá chưa đạt',
+            title: 'Writing Progress Test chưa đạt',
             summary: 'Bài viết đủ ý nhưng câu rời rạc, thiếu từ nối.',
             status: 'in_progress', owner: 'T_KHOA',
             plans: [
@@ -1303,7 +1303,7 @@ export const STUDENTS: StudentSeed[] = [
   },
   {
     code: 'S15', name: 'Đỗ Khánh Chi', branch: 'HD', dob: '2011-04-16',
-    story: 'Cũng chưa được xếp lớp tiếp, nhưng kết quả cuối khoá còn thiếu môn Speaking — '
+    story: 'Cũng chưa được xếp lớp tiếp, nhưng kết quả Final Test còn thiếu môn Speaking — '
       + 'hai chuyện khác nhau và bảng phải nói được cả hai.',
     enrollments: [{ class: 'HD FOU 05', from: '2026-06-01', status: 'active' }],
     cycles: [{
@@ -1357,7 +1357,7 @@ export const STUDENTS: StudentSeed[] = [
                 closedReason: 'done',
                 followups: [{
                   on: '2026-08-03', outcome: 'partial', nextStep: 'continue',
-                  note: 'Cuối khoá Writing 11/20 — có nhích nhưng vẫn dưới ngưỡng. Bàn giao sang lớp Beginner.',
+                  note: 'Final Test Writing 11/20 — có nhích nhưng vẫn dưới ngưỡng. Bàn giao sang lớp Beginner.',
                 }],
               },
               {
@@ -1719,7 +1719,7 @@ export const STUDENTS: StudentSeed[] = [
   },
   {
     code: 'S23', name: 'Đinh Thu Hương', branch: 'UB', dob: '2011-11-05',
-    story: 'Cũng ở lớp đã hết chương trình, và kết quả cuối khoá có hai môn dưới ngưỡng — cần cân '
+    story: 'Cũng ở lớp đã hết chương trình, và kết quả Final Test có hai môn dưới ngưỡng — cần cân '
       + 'nhắc khi xếp lớp tiếp.',
     enrollments: [{ class: 'UB FOU 07', from: '2026-07-06', status: 'active' }],
     cycles: [{
@@ -1735,7 +1735,7 @@ export const STUDENTS: StudentSeed[] = [
         {
           topic: 'listening', fromTest: 2, sosLevel: 2, detectedAt: '2026-08-30',
           primaryCode: 'student.listening.other',
-          summary: 'Cuối khoá vẫn dưới ngưỡng ở cả Listening và Reading.',
+          summary: 'Final Test vẫn dưới ngưỡng ở cả Listening và Reading.',
           status: 'in_progress', owner: 'T_KIEN',
           plans: [
             {
@@ -1771,7 +1771,7 @@ export const STUDENTS: StudentSeed[] = [
         {
           topic: 'reading', fromTest: 2, sosLevel: 1, detectedAt: '2026-04-26',
           primaryCode: 'student.reading.other',
-          summary: 'Reading cuối khoá còn dưới ngưỡng; em nghỉ học ngay sau đó nên chưa xử lý xong.',
+          summary: 'Reading Final Test còn dưới ngưỡng; em nghỉ học ngay sau đó nên chưa xử lý xong.',
           status: 'in_progress', owner: 'T_KHOA',
         },
       ],
@@ -1832,7 +1832,7 @@ export const STUDENTS: StudentSeed[] = [
 
   {
     code: 'S25', name: 'Trịnh Bảo Khang', branch: 'UB', dob: '2011-09-14',
-    story: 'Lớp Normal với BA môn dưới ngưỡng ở bài cuối khoá → SOS 3. Bộ demo cần đủ cả ba mức '
+    story: 'Lớp Normal với BA môn dưới ngưỡng ở bài Final Test → SOS 3. Bộ demo cần đủ cả ba mức '
       + 'SOS ở lớp Normal, không chỉ ở lớp Fast Track.',
     enrollments: [{ class: 'UB FOU 07', from: '2026-07-06', status: 'active' }],
     cycles: [{
@@ -1848,7 +1848,7 @@ export const STUDENTS: StudentSeed[] = [
         {
           topic: 'listening', fromTest: 2, sosLevel: 3, detectedAt: '2026-08-30',
           primaryCode: 'student.listening.other',
-          summary: 'Ba môn cùng dưới ngưỡng ở bài cuối khoá.',
+          summary: 'Ba môn cùng dưới ngưỡng ở bài Final Test.',
           status: 'in_progress', owner: 'T_KIEN',
           plans: [
             {
@@ -1867,7 +1867,7 @@ export const STUDENTS: StudentSeed[] = [
 
   {
     code: 'S26', name: 'Lê Minh Châu', branch: 'MB', dob: '2013-03-11',
-    story: 'Pre FOU: Cuối khoá 26/50 = 52% — chưa đạt, hiện "52%" chứ không "SOS".',
+    story: 'Pre FOU: Final Test 26/50 = 52% — chưa đạt, hiện "52%" chứ không "SOS".',
     enrollments: [{ class: 'MB Pre FOU 03', from: '2026-08-17', status: 'active' }],
     cycles: [{
       seq: 1, route: null, target: null, classCode: 'MB Pre FOU 03', status: 'active',
@@ -1880,7 +1880,7 @@ export const STUDENTS: StudentSeed[] = [
   },
   {
     code: 'S27', name: 'Nguyễn Hải Đăng', branch: 'MB', dob: '2013-06-02',
-    story: 'Pre FOU: Cuối khoá 32/50 = 64% — chưa đạt, sát ngưỡng 70%.',
+    story: 'Pre FOU: Final Test 32/50 = 64% — chưa đạt, sát ngưỡng 70%.',
     enrollments: [{ class: 'MB Pre FOU 03', from: '2026-08-17', status: 'active' }],
     cycles: [{
       seq: 1, route: null, target: null, classCode: 'MB Pre FOU 03', status: 'active',
@@ -1893,7 +1893,7 @@ export const STUDENTS: StudentSeed[] = [
   },
   {
     code: 'S28', name: 'Phan Thảo Nhi', branch: 'MB', dob: '2013-10-25',
-    story: 'Pre FOU: Cuối khoá 39/50 = 78% — đạt.',
+    story: 'Pre FOU: Final Test 39/50 = 78% — đạt.',
     enrollments: [{ class: 'MB Pre FOU 03', from: '2026-08-17', status: 'active' }],
     cycles: [{
       seq: 1, route: null, target: null, classCode: 'MB Pre FOU 03', status: 'active',
@@ -1906,7 +1906,7 @@ export const STUDENTS: StudentSeed[] = [
   },
   {
     code: 'S29', name: 'Vũ Đức Anh', branch: 'MB', dob: '2013-01-17',
-    story: 'Pre FOU: Cuối khoá chưa nhập điểm — GVCN đang nợ một bài Tổng hợp.',
+    story: 'Pre FOU: Final Test chưa nhập điểm — GVCN đang nợ một bài Tổng hợp.',
     enrollments: [{ class: 'MB Pre FOU 03', from: '2026-08-17', status: 'active' }],
     cycles: [{
       seq: 1, route: null, target: null, classCode: 'MB Pre FOU 03', status: 'active',

@@ -171,12 +171,15 @@ export default function StudentsPage() {
             * chắc chắn ra 403 (`hasAssignment` đòi `ctx.classId`/`ctx.branchId` cụ thể). Dùng đúng cờ máy chủ đã tính theo
             * TỪNG lớp/chi nhánh thay vào đó.
             */}
-          {data?.coTheTaoLop && <button type="button" className="btn btn-sm" onClick={() => setTaoLop(true)}>+ Lớp mới</button>}
+          {data?.coTheTaoLop && <button type="button" className="btn btn-sm max-sm:hidden" onClick={() => setTaoLop(true)}>+ Lớp mới</button>}
           {(data?.rows ?? []).some((r) => r.viewer.coTheSuaHocVien) && (
-            <button type="button" className="btn btn-sm btn-primary" onClick={() => setThem(null)}>+ Học viên</button>
+            <button type="button" className="btn btn-sm btn-primary max-sm:hidden" onClick={() => setThem(null)}>+ Học viên</button>
           )}
+          {/* Điện thoại (< 640 px, K1/DH): hai nút tạo vào ⋯ — đầu trang chỉ còn một nút 44 px. */}
           <MenuDong nhan="Thao tác trang" muc={[
-            { key: 'luu-tru', nhan: nhanLuuTru(data?.demLuuTru ?? { lop: 0, hv: 0 }), onChon: () => navigate('/hoc-vien/luu-tru') },
+            ...(dienThoai && data?.coTheTaoLop ? [{ key: 'lop-moi', nhan: '+ Lớp mới', onChon: () => setTaoLop(true) }] : []),
+            ...(dienThoai && (data?.rows ?? []).some((r) => r.viewer.coTheSuaHocVien) ? [{ key: 'hoc-vien-moi', nhan: '+ Học viên', onChon: () => setThem(null) }] : []),
+            { key: 'luu-tru', nhan: nhanLuuTru(data?.demLuuTru ?? { lop: 0, hv: 0 }), keTruoc: dienThoai && !!data?.coTheTaoLop, onChon: () => navigate('/hoc-vien/luu-tru') },
           ]} />
         </div>
       </div>
@@ -188,7 +191,7 @@ export default function StudentsPage() {
         */}
       <div className="space-y-2 pb-1">
         <div className="flex flex-wrap items-center gap-2">
-          <input className="field w-full sm:w-80" aria-label="Tìm" placeholder="🔍 Tìm tên, mã học viên hoặc mã lớp…"
+          <input className="field w-full sm:w-80" aria-label="Tìm" placeholder="🔍 Lọc trong danh sách này…"
             value={draftQ} onChange={(e) => setDraftQ(e.target.value)} />
           {pv && pv.coThe.length > 1 && (
             <select className={SELECT_GON} aria-label="Phạm vi" value={pv.dangDung}
@@ -215,11 +218,7 @@ export default function StudentsPage() {
             {chips.map((k) => (
               <button key={k} type="button" title={LOC_HOC_VIEN_NHAN[k].goiY} aria-pressed={loc === k}
                 onClick={() => setParam({ view: k === 'tat-ca' ? null : k, open: null })}
-                className={`inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-xs font-semibold cursor-pointer max-sm:min-h-[44px] ${
-                  loc === k
-                    ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)] border-[color:var(--accent-line)]'
-                    : 'bg-transparent text-slate-300 border-slate-300/30 hover:bg-white/5'
-                }`}>
+                className="nut-loc">
                 {LOC_HOC_VIEN_NHAN[k].nhan}<span className="tabular-nums font-medium">{dem[k]}</span>
               </button>
             ))}
@@ -354,7 +353,7 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, dsHoc
 
   const menuBadgeAn = b.an.length > 0 && (
     /* B4: "+n" bấm được — mỗi mục là một badge còn ẩn, bấm đi đúng đích (không có đích riêng thì mở Hồ sơ lớp, nơi số đó hiện). */
-    <MenuDong bieuTuong={`+${b.an.length}`} nhan={`${b.an.length} việc khác của lớp ${lop.code}`}
+    <MenuDong kieu="chip" bieuTuong={`+${b.an.length}`} nhan={`${b.an.length} việc khác của lớp ${lop.code}`}
       muc={b.an.map((x) => ({ key: x.key, nhan: x.nhan, onChon: () => navigate(denBadge(x) ?? `/hoc-vien/lop/${lop.id}`) }))} />
   );
   const cacBadge = b.hien.map((x) => {
@@ -375,7 +374,7 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, dsHoc
             </svg>
             <span className="min-w-0">
               <span className="block font-extrabold text-slate-100">{lop.code}</span>
-              <span className="block text-[11px] text-slate-400">
+              <span className="block text-xs text-slate-400">
                 {chuLop}{lop.gvcn && <> · GVCN {lop.gvcn.name}</>}
               </span>
             </span>
@@ -396,7 +395,7 @@ function HopLop({ lop, mo, onDoiMo, chiHien, sapXep, onThemHocVien, onDoi, dsHoc
             <Link to={`/hoc-vien/lop/${lop.id}`} state={{ ds: dsLop }} className="shrink-0 font-extrabold text-slate-100 underline decoration-dotted underline-offset-4">
               {lop.code}
             </Link>
-            <span className="min-w-0 truncate text-[11px] font-normal text-slate-400"
+            <span className="min-w-0 truncate text-xs font-normal text-slate-400"
               title={`${chuLop}${lop.gvcn ? ` · GVCN ${lop.gvcn.name}` : ''}`}>
               {chuLop}
               {lop.gvcn && <> · <abbr title="Giáo viên chủ nhiệm" className="no-underline">GVCN</abbr> <TenGiaoVien id={lop.gvcn.id} ten={lop.gvcn.name} /></>}

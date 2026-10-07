@@ -34,7 +34,7 @@ function KhungThe({ children }: { children: ReactNode }) {
   return <article className="rounded-[10px] border bg-[color:var(--surface)] px-3 py-2.5" style={{ borderColor: 'var(--line)' }}>{children}</article>;
 }
 
-/** Kỹ năng đạt / không Case: một dòng `Listening · vượt 0.5 · 6.0 ✓` — bấm mở thẻ đủ. */
+/** Kỹ năng đạt / không Case: một dòng `Listening · +0.5 · 6.0 ✓` — bấm mở thẻ đủ. */
 function TheGon({ row, onMoCase }: { row: SkillBoardRow; onMoCase: (caseId: number, o?: MoCase) => void }) {
   const [mo, setMo] = useState(false);
   if (mo) return <TheKyNang row={row} onMoCase={onMoCase} onGap={() => setMo(false)} />;

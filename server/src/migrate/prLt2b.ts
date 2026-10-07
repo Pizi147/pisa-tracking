@@ -26,7 +26,7 @@ export function migratePrLt2b(conn: any, applied: string[]) {
     conn.exec(`CREATE TABLE mini_test (
       id INTEGER PRIMARY KEY,
       student_id INTEGER NOT NULL REFERENCES students(id), cycle_id INTEGER NOT NULL REFERENCES learning_cycles(id),  -- lộ trình MỚI
-      tu_attempt_id INTEGER NOT NULL REFERENCES assessment_attempts(id),   -- bài Cuối khoá sinh ra nó
+      tu_attempt_id INTEGER NOT NULL REFERENCES assessment_attempts(id),   -- bài Final Test sinh ra nó
       nhom_bo_tro TEXT NOT NULL, so_buoi INTEGER NOT NULL, ngay_du_kien TEXT NOT NULL, han TEXT NOT NULL,
       ty_le REAL, ngay_lam TEXT, ghi_boi INTEGER REFERENCES users(id), ghi_luc TEXT,
       UNIQUE (student_id, tu_attempt_id))`);

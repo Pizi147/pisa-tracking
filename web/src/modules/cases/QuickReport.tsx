@@ -17,7 +17,7 @@ import {
   URGENCY_LEVELS, URGENCY_LABEL, issuesForTopic, FOLLOWUP_OUTCOMES, GOI_Y_MO_TA_PA, outcomeLabelFor,
   CASE_OUTCOMES, CASE_OUTCOME_LABEL, CHU_THEM_PA, tenMon, tenMonNgan,
   categoryOf, componentsFor, componentsAreCounts,
-  nguoiThanhPayload, nguoiThieu, tuanLich, type NguoiChon, dsLoi, type LuatTruong, laKhac, kiemGhiRoKhac, KHAC_TOI_THIEU,
+  nguoiThanhPayload, nguoiThieu, tuanLich, type NguoiChon, dsLoi, type LuatTruong, laKhac, kiemGhiRoKhac, KHAC_TOI_THIEU, maHocVienNgan,
 } from '@shared/domain/index.ts';
 
 type DaLuu = { id: number; tieuDe: string; gop: boolean; canEdit: boolean; viecTiep?: { chu: string; han: string | null } | null };
@@ -373,7 +373,7 @@ export function QuickReport({
           <Truong nhan="Học viên" batBuoc loi={loiCua('hoc-vien')}>
             <select className="field w-full" {...o('hoc-vien')} value={studentId || ''} onChange={(e) => onPickStudent?.(Number(e.target.value) || 0)}>
               <option value="">Chọn học viên</option>
-              {students.map((st) => <option key={st.id} value={st.id}>{st.name}{st.code ? ` · ${st.code}` : ''}</option>)}
+              {students.map((st) => <option key={st.id} value={st.id}>{st.name}{st.code ? ` · ${maHocVienNgan(st.code)}` : ''}</option>)}
             </select>
           </Truong>
         )}
@@ -454,7 +454,7 @@ export function QuickReport({
         <Truong nhan="Mô tả và dẫn chứng" batBuoc phu="Sai ở đâu, bài hay buổi nào" loi={loiCua('mo-ta')}
           dem={{ co: summary.trim().length, can: 15 }}>
           <textarea className="field w-full" {...o('mo-ta')} rows={3} value={summary} onChange={(e) => setSummary(e.target.value)}
-            placeholder="Ví dụ: Giữa khoá sai 4/5 câu Not Given" />
+            placeholder="Ví dụ: Progress Test sai 4/5 câu Not Given" />
         </Truong>
         </>)}
       </Khoi>
@@ -498,7 +498,7 @@ export function QuickReport({
                           onChange={(e) => setBfActions(bfActions.map((x, j) => (j === i ? { ...x, description: e.target.value } : x)))} />
                         {/* YC-12.5.3: kết quả của PA này — hàng PA hiện kết quả thay "Chưa có kết quả". */}
                         <div role="group" aria-label={`Kết quả PA ${i + 1} (bắt buộc)`}>
-                          <span className="mb-1 block text-[11px] text-slate-400">Kết quả PA <span aria-hidden className="text-bad">*</span></span>
+                          <span className="mb-1 block text-xs text-slate-400">Kết quả PA <span aria-hidden className="text-bad">*</span></span>
                           <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
                             {FOLLOWUP_OUTCOMES.filter((k) => k !== 'insufficient').map((k) => (
                               <NutChon key={k} nho chon={a.ketQua === k} className="justify-center"
@@ -536,7 +536,7 @@ export function QuickReport({
                         <button type="button" className="link appearance-none border-0 bg-transparent p-0" onClick={() => setMoSua([...moSua, i])}>Sửa</button>
                       </p>
                     )}
-                    {(bfErrors[i] || (i === 0 && loiCua('pa-0'))) && <p className="m-0 mt-1 text-[11px] text-late">{bfErrors[i] || loiCua('pa-0')}</p>}
+                    {(bfErrors[i] || (i === 0 && loiCua('pa-0'))) && <p className="m-0 mt-1 text-xs text-late">{bfErrors[i] || loiCua('pa-0')}</p>}
                   </div>
                 );
               })}

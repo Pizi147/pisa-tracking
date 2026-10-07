@@ -155,7 +155,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[]): MetricRow[] {
            LEFT JOIN classes c ON c.id = a.class_id LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
           WHERE a.id IN (${ph})`,
       ).all(...chunk) as any[]) {
-        const name = r.kind === 'mock' ? `MT${r.attempt_no}` : r.kind === 'final' ? 'Bài cuối khoá' : 'Bài giữa khoá';
+        const name = r.kind === 'mock' ? `MT${r.attempt_no}` : r.kind === 'final' ? 'Bài Final Test' : 'Bài Progress Test';
         byId.set(r.id, {
           id: r.id, title: `${name} · ${r.full_name}`,
           sub: [r.student_code, r.class_code, r.period_code].filter(Boolean).join(' · '),

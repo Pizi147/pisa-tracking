@@ -4,6 +4,7 @@ import { GIAI_THICH_KCK, KCK, chuTrangThai, type TrangThai } from '@shared/domai
 import { fmtBand } from '../lib/format.ts';
 import { BaoOTrongNhan, coOTuNhan } from './ONgay.tsx';
 import { useNoiLoi } from './loiForm.tsx';
+import { CHIP_TRON, CHIP_VUONG } from './Nhan.tsx';
 
 export function Card({ title, action, children, className = '', bodyClass = 'p-4' }: {
   title?: ReactNode; action?: ReactNode; children: ReactNode; className?: string; bodyClass?: string;
@@ -109,11 +110,11 @@ export function Level({ tone = 'neutral', children, title, dut }: { tone?: Level
   dut?: boolean;
 }) {
   const lop = dut
-    ? `border border-dashed border-current bg-transparent ${LEVEL_CLASS[tone].split(' ').filter((c) => c.startsWith('text-')).join(' ')}`
+    ? `border-dashed !border-current bg-transparent ${LEVEL_CLASS[tone].split(' ').filter((c) => c.startsWith('text-')).join(' ')}`
     : LEVEL_CLASS[tone];
   return (
     <span title={title}
-      className={`inline-flex items-center gap-1 rounded-full px-2 py-px text-[11px] font-bold tracking-[0.01em] whitespace-nowrap ${lop}`}>
+      className={`${CHIP_TRON} gap-1 ${lop}`}>
       {children}
     </span>
   );
@@ -143,10 +144,10 @@ export function Task({ tone = 'neutral', children, title, as = 'span', onClick }
   const inner = (
     <>
       <span className={`w-[3px] self-stretch rounded-sm ${c.bar}`} aria-hidden />
-      <span className="py-0.5 pr-2">{children}</span>
+      <span className="pr-1.5">{children}</span>
     </>
   );
-  const cls = `inline-flex items-stretch gap-1.5 overflow-hidden rounded border pl-0 text-[11px] font-medium whitespace-nowrap ${c.box}`;
+  const cls = `${CHIP_VUONG} !items-stretch !pl-0 gap-1.5 overflow-hidden ${c.box}`;
   if (as === 'button') {
     return <button type="button" title={title} onClick={onClick} className={`${cls} hover:brightness-125`}>{inner}</button>;
   }
@@ -160,7 +161,7 @@ export function Task({ tone = 'neutral', children, title, as = 'span', onClick }
 export function Info({ children, title, pending }: { children: ReactNode; title?: string; pending?: boolean }) {
   return (
     <span title={title}
-      className={`inline-flex items-center gap-1 rounded border px-2 py-0.5 text-[11px] whitespace-nowrap ${
+      className={`${CHIP_VUONG} gap-1 ${
         pending ? 'border-dashed border-muted-line text-faint' : 'border-muted-line text-dim'
       }`}>
       {children}
@@ -193,7 +194,7 @@ export function Status({ kind, children, title }: {
 }) {
   return (
     <span title={title}
-      className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium whitespace-nowrap ${STATUS_CLASS[kind]}`}>
+      className={`${CHIP_VUONG} gap-1 ${STATUS_CLASS[kind]}`}>
       <span aria-hidden className="opacity-70">{STATUS_MARK[kind]}</span>
       {children}
     </span>
@@ -213,7 +214,7 @@ export function Alert({ tone = 'danger', children, title, quaHan }: {
   const coDau = quaHan ?? (typeof children === 'string' && /^quá hạn/i.test(children));
   return (
     <span title={title}
-      className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap ${
+      className={`${CHIP_VUONG} gap-1 ${
         tone === 'danger'
           ? 'bg-late-bg text-late border-late-line'
           : 'bg-soon-bg text-soon border-soon-line'
@@ -247,7 +248,7 @@ export function Outcome({ tone, mark, children, title }: {
 }) {
   return (
     <span title={title}
-      className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium whitespace-nowrap ${OUTCOME_CLASS[tone]}`}>
+      className={`${CHIP_VUONG} gap-1 ${OUTCOME_CLASS[tone]}`}>
       {mark && <span aria-hidden>{mark}</span>}
       {children}
     </span>
@@ -302,8 +303,8 @@ export function KpiTile({ label, value, tone = 'neutral', to, sub }: {
       <div className={`mt-2 text-2xl font-semibold tabular-nums ${
         tone === 'danger' ? 'text-bad' : tone === 'warn' ? 'text-soon' : tone === 'ok' ? 'text-doing' : 'text-slate-100'
       }`}>{value}</div>
-      {sub && <div className="text-[11px] text-slate-500 mt-1">{sub}</div>}
-      {to && <div className="text-[11px] text-doing mt-2">Xem danh sách →</div>}
+      {sub && <div className="text-xs text-slate-500 mt-1">{sub}</div>}
+      {to && <div className="text-xs text-doing mt-2">Xem danh sách →</div>}
     </div>
   );
   return to ? <Link to={to} className="block h-full no-underline">{inner}</Link> : inner;
@@ -335,8 +336,8 @@ export function Field({ label, children, hint, required, loi, as = 'label' }: {
         {troO ? <label htmlFor={troO} className="label">{chu}</label> : <span id={idNhan} className="label">{chu}</span>}
         {/* Luôn cùng một lớp bọc (như `Truong`): bọc/bỏ bọc theo `loi` làm ô dựng lại → mất focus khi đang gõ. */}
         <div ref={noi.ref} className={loi ? 'contents [&_.field]:border-late [&_.field]:ring-1 [&_.field]:ring-late/40' : 'contents'}>{children}</div>
-        {hint && <span className="block text-[11px] text-slate-500 mt-1">{hint}</span>}
-        {loi && <span id={noi.id} className="mt-1 block text-[11px] text-late">{loi}</span>}
+        {hint && <span className="block text-xs text-slate-500 mt-1">{hint}</span>}
+        {loi && <span id={noi.id} className="mt-1 block text-xs text-late">{loi}</span>}
       </Wrap>
     </BaoOTrongNhan.Provider>
   );
@@ -351,7 +352,7 @@ export function Field({ label, children, hint, required, loi, as = 'label' }: {
  */
 export function SectionNote({ children }: { children: ReactNode }) {
   return (
-    <div className="text-[11px] text-slate-500 leading-relaxed border-l-2 border-slate-700 pl-2">{children}</div>
+    <div className="text-xs text-slate-500 leading-relaxed border-l-2 border-slate-700 pl-2">{children}</div>
   );
 }
 
@@ -486,8 +487,8 @@ type NutChonProps = {
 export function NutChon({ chon, onClick, children, nho, className = '', disabled, title }: NutChonProps) {
   return (
     <button type="button" aria-pressed={chon} onClick={onClick} disabled={disabled} title={title}
-      className={`btn ${nho ? 'btn-sm' : ''} min-h-[44px] min-w-0 gap-1 whitespace-normal text-center leading-tight sm:min-h-0 ${chon ? CHON : ''} ${className}`}>
-      {chon && <span aria-hidden className="shrink-0 text-[11px] leading-none text-teal-300">✓</span>}{children}
+      className={`btn ${nho ? 'btn-sm' : ''} relative min-h-[44px] min-w-0 gap-1 whitespace-normal text-center leading-tight sm:min-h-0 ${chon ? CHON : ''} ${className}`}>
+      {chon && <span aria-hidden className="pointer-events-none absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-md border border-teal-600 bg-[color:var(--surface)] text-[11px] leading-none text-teal-300">✓</span>}{children}
     </button>
   );
 }
@@ -529,6 +530,6 @@ export function NhanTrangThai({ t, soNgay, title, chu }: {
   /** Chữ riêng của một loại việc (Vận hành: THUAT_NGU C-069…C-073) — kiểu nhãn vẫn theo `t`. */
   chu?: string;
 }) {
-  return <span title={title} className={`inline-flex items-center whitespace-nowrap rounded-md border px-1.5 py-0.5 text-[11.5px] font-semibold tabular-nums ${NHAN_LOP[t]}`}>
+  return <span title={title} className={`${CHIP_VUONG} ${NHAN_LOP[t]}`}>
     {chu ?? chuTrangThai(t, soNgay)}</span>;
 }

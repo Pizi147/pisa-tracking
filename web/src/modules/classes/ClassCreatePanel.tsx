@@ -98,7 +98,7 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
   const moc = (k: string) => mau?.checkpoints.find((c) => c.kind === k)?.studyWeek;
   const lopSeCo = ct === 'FT'
     ? 'Lịch MT theo từng HV'
-    : [mau?.weeks && `${mau.weeks} tuần`, moc('progress') && `Giữa khoá tuần ${moc('progress')}`, moc('final') && `Cuối khoá tuần ${moc('final')}`]
+    : [mau?.weeks && `${mau.weeks} tuần`, moc('progress') && `Progress Test tuần ${moc('progress')}`, moc('final') && `Final Test tuần ${moc('final')}`]
       .filter(Boolean).join(' · ');
 
   const tao = async () => {
@@ -199,7 +199,7 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
         <LuoiPhanCong oList={oList} chon={chon} nguoi={teachers.data ?? []} loi={loiPcO} oId={lf.oId} chuongTrinh={ct}
           onChon={(khoa, v) => setChon((c) => ({ ...c, [khoa]: v }))} />
         <NutTachFou fou={fou} />
-        <p className="m-0 text-[11px] text-slate-500">
+        <p className="m-0 text-xs text-slate-500">
           {oList.length === 1
             ? 'Lớp Pre FOU không chia môn — GVCN dạy luôn.'
             : 'Mỗi ô một người. Một người nhận nhiều ô được. Thiếu ô nào vẫn tạo được lớp — bổ sung ở hồ sơ lớp.'}
@@ -286,7 +286,7 @@ export function LuoiPhanCong({ oList, chon, onChon, nguoi, loi, oId, nhanTrong, 
                 );
               })}
             </select>
-            {l && <span className="col-start-2 -mt-0.5 text-[11px] text-late">{l}</span>}
+            {l && <span className="col-start-2 -mt-0.5 text-xs text-late">{l}</span>}
           </div>
         );
       })}

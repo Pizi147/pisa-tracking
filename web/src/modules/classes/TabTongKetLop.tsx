@@ -45,7 +45,7 @@ function Cuoi({ c }: { c: Dong['cuoiKhoa'] }) {
 
 const So = ({ nhan, v, tone }: { nhan: string; v: number | undefined; tone?: 'ok' | 'warn' }) => (
   <div className="min-w-[120px] rounded-[10px] border px-3 py-1.5 max-sm:min-w-0 max-sm:flex-1 max-sm:px-2.5" style={{ background: 'var(--surface)', borderColor: 'var(--line)' }}>
-    <small className="block text-[11px] text-slate-500">{nhan}</small>
+    <small className="block text-xs text-slate-500">{nhan}</small>
     <strong className={`text-xl font-bold tabular-nums max-sm:text-base ${v && tone === 'ok' ? 'text-ok' : v && tone === 'warn' ? 'text-soon' : 'text-slate-100'}`}>{v ?? 0}</strong>
   </div>
 );
@@ -80,12 +80,12 @@ export function TabTongKetLop({ classId }: { classId: number }) {
           </>
         )}
       </div>
-      <section className="card overflow-hidden">
+      <section className="card overflow-clip">
         {moRong && <Empty title="Lớp chưa có học viên nào" />}
         {!moRong && (
           <>
             {/* ≥ sm: bảng (cuộn ngang TRONG khung) */}
-            <div className="hidden overflow-x-auto sm:block">
+            <div className="hidden table-scroll bang-dinh sm:block">
               {ft ? (
                 <table className="w-full min-w-[1000px] text-[13px]">
                   <thead>
@@ -109,7 +109,7 @@ export function TabTongKetLop({ classId }: { classId: number }) {
                           <td className="px-3 text-right tabular-nums">{b1(d.dauVao)}</td><td className="px-3 text-right tabular-nums">{b1(d.target)}</td>
                           <td className="whitespace-nowrap px-3 tabular-nums">
                             {d.luotCuoi ? <>{d.luotCuoi.nhan} <span className="text-slate-500">· {d.soLuot} lượt</span></> : Gach}
-                            {d.luotCuoiHuy && <span className="ml-1.5 text-[11px] text-late">đã huỷ</span>}
+                            {d.luotCuoiHuy && <span className="ml-1.5 text-xs text-late">đã huỷ</span>}
                           </td>
                           {[d.luotCuoi?.l, d.luotCuoi?.r, d.luotCuoi?.w, d.luotCuoi?.s, d.luotCuoi?.overall].map((v, i) => <td key={i} className="px-3 text-right tabular-nums">{b1(v)}</td>)}
                           <td className="px-3 text-right font-semibold tabular-nums text-slate-100">{b1(d.thiThat?.ovr)}</td>
@@ -124,7 +124,7 @@ export function TabTongKetLop({ classId }: { classId: number }) {
                 <table className="w-full min-w-[620px] text-[13px]">
                   <thead>
                     <tr className="text-left text-[11.5px] text-slate-400" style={{ background: 'var(--surface-2)' }}>
-                      <th className="px-3 py-2 font-semibold">Học viên</th><th className="px-3 py-2 font-semibold">Giữa khoá</th><th className="px-3 py-2 font-semibold">Cuối khoá</th><th className="px-3 py-2 font-semibold">Kết luận khoá</th>
+                      <th className="px-3 py-2 font-semibold">Học viên</th><th className="px-3 py-2 font-semibold">Progress Test</th><th className="px-3 py-2 font-semibold">Final Test</th><th className="px-3 py-2 font-semibold">Kết luận khoá</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -161,8 +161,8 @@ export function TabTongKetLop({ classId }: { classId: number }) {
                         </>
                       ) : (
                         <>
-                          <dt className="text-slate-500">Giữa khoá</dt><dd className="m-0"><Giua g={d.giuaKhoa} /></dd>
-                          <dt className="text-slate-500">Cuối khoá</dt><dd className="m-0"><Cuoi c={d.cuoiKhoa} /></dd>
+                          <dt className="text-slate-500">Progress Test</dt><dd className="m-0"><Giua g={d.giuaKhoa} /></dd>
+                          <dt className="text-slate-500">Final Test</dt><dd className="m-0"><Cuoi c={d.cuoiKhoa} /></dd>
                         </>
                       )}
                     </dl>

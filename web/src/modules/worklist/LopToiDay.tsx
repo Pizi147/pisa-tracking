@@ -85,7 +85,7 @@ export function LopToiDay() {
           ))}
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="table-scroll bang-dinh">
           <table className="w-full min-w-[760px] border-collapse text-sm">
             <thead>
               <tr className="text-left text-[11.5px] font-semibold text-slate-400">

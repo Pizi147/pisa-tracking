@@ -8,7 +8,7 @@ import {
 import {
   fmtBand, skillLabel, skillShort, sosLabel, sosTone,
 } from '../../lib/format.ts';
-import { ENTRY_SKILLS, chipSosMt0, chuOChuaLuu, duongDotTest, ngay, nhanLuot, tuanLich, type AssessedSkill, type NguoiChon, type TrangThaiLuuO } from '@shared/domain/index.ts';
+import { ENTRY_SKILLS, chipSosMt0, chuOChuaLuu, duongDotTest, maHocVienNgan, ngay, nhanLuot, tuanLich, type AssessedSkill, type NguoiChon, type TrangThaiLuuO } from '@shared/domain/index.ts';
 import { NutGvCham, useGvChamCot } from './GvCham.tsx';
 
 /** Dữ liệu lưới FT — chính là `cham.ft` (`classScoreSheet` ở máy chủ). */
@@ -125,8 +125,9 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
 
   const toCot = (s: string) => (khopKn(s, kn) ? 'text-[color:var(--accent-strong)]' : '');
 
+  // ponytail: gon (Điểm theo lớp / Lịch Test, 1108 px) vừa khung → đầu cột dính; đủ cột (Nhập điểm) rộng 1400 > khung 1398 ở 1440 → giữ cuộn ngang.
   return (
-    <div className="overflow-x-auto">
+    <div className={gon ? 'table-scroll bang-dinh bang-dinh-1440' : 'overflow-x-auto'}>
       <table className="w-full text-sm tabular-nums" style={{ tableLayout: 'fixed', minWidth: RONG }}>
         <colgroup>{COT.map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
         <thead>
@@ -149,7 +150,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
             <Th align="right" className={toCot('speaking')} hint={`${skillLabel('speaking')} — bấm ô để chấm bốn tiêu chí, ra band.`}>
               {skillShort('speaking')} <span className="normal-case text-slate-500">(band)</span>
               {suaS && data.period && (
-                <div className="flex justify-end"><NutGvCham chiTen value={gvCot} onChange={setGvCot} /></div>
+                <div className="flex justify-end"><NutGvCham value={gvCot} onChange={setGvCot} /></div>
               )}
             </Th>
             {cot.kyVong && <Th align="right" hint="Mức mong đợi của chính lượt này, tính theo Target tại thời điểm đó.">Kỳ vọng</Th>}
@@ -254,15 +255,17 @@ function SheetRow({ row, rowIndex, active, cot, tuanDangXem, onReload, gvMacDinh
   return (
     <tr className={`row-hover h-16 ${active ? 'row-active' : ''}`} data-hv={row.studentId}>
       <td className="td py-1.5 sticky-col">
-        <div className="flex items-center gap-1 min-w-0">
-          <Link className="link block truncate max-sm:py-3 max-sm:-my-3" to={duongDotTest({ id: row.attemptId })} title={row.studentName}>{row.studentName}</Link>
+        <div className="min-w-0">
+          <Link className="link block break-words max-sm:py-3 max-sm:-my-3" to={duongDotTest({ id: row.attemptId })} title={row.studentName}>{row.studentName}</Link>
           {row.hoanTat && (
-            <Info title={`Hết Chủ nhật ${ngay(row.chuNhatCuoi)}. ${KHOA_HOAN_TAT_HINT}`}>Đã hoàn tất</Info>
+            <div className="mt-0.5">
+              <Info title={`Hết Chủ nhật ${ngay(row.chuNhatCuoi)}. ${KHOA_HOAN_TAT_HINT}`}>Đã hoàn tất</Info>
+            </div>
           )}
         </div>
         {/* Tóm tắt lưu của dòng: "n ô chưa lưu" khi còn ô lỗi (không bao giờ "đã lưu" che ô lỗi) — trạng thái từng ô ở ô. */}
-        <div className="flex items-center gap-1.5 text-[11px] text-slate-500 min-w-0">
-          <span className="shrink-0">{row.studentCode}</span>
+        <div className="flex items-center gap-1.5 text-xs text-slate-500 min-w-0">
+          <span className="shrink-0">{maHocVienNgan(row.studentCode)}</span>
           {row.lichSu && <NhanCu />}
           <DauLuu status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />
         </div>
@@ -347,7 +350,7 @@ function SheetRow({ row, rowIndex, active, cot, tuanDangXem, onReload, gvMacDinh
             </Level>
           )}
           {row.result.scopeNote && (
-            <span className="text-[11px] text-slate-500 truncate max-w-full" title={row.result.scopeDetail ?? row.result.scopeNote}>
+            <span className="text-xs text-slate-500 truncate max-w-full" title={row.result.scopeDetail ?? row.result.scopeNote}>
               {row.result.scopeNote}
             </span>
           )}

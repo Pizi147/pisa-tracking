@@ -13,7 +13,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ATTEMPT_KIND_SHORT, BAI_CO_NHAN_XET, ENTRY_SKILLS, ngay, tenMon, tenMonNgan, type AttemptKind, type NguoiChon,
+  ATTEMPT_KIND_SHORT, BAI_CO_NHAN_XET, ENTRY_SKILLS, maHocVienNgan, ngay, tenMon, tenMonNgan, type AttemptKind, type NguoiChon,
 } from '@shared/domain/index.ts';
 import { duongDotTest } from '@shared/domain/index.ts';
 import { fmtBand } from '../../lib/format.ts';
@@ -112,11 +112,11 @@ function DongHv({ studentId, active, ten, href, phu, phuTitle, phuDo = false, lu
       className={`flex items-center gap-3 px-3 py-2 min-h-[60px] border-t ${active ? 'row-active' : ''}`}
       style={{ borderColor: 'var(--line)' }}>
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1 min-w-0">
-          <Link className="link block truncate max-sm:py-3 max-sm:-my-3" to={href} title={ten}>{ten}</Link>
-          {nhan}
+        <div className="min-w-0">
+          <Link className="link block break-words max-sm:py-3 max-sm:-my-3" to={href} title={ten}>{ten}</Link>
+          {nhan && <div className="mt-0.5">{nhan}</div>}
         </div>
-        <div className="flex items-center gap-1.5 text-[11px] text-slate-500 min-w-0 tabular-nums">
+        <div className="flex items-center gap-1.5 text-xs text-slate-500 min-w-0 tabular-nums">
           <span className={`truncate ${phuDo ? 'text-rose-300' : ''}`} title={phuTitle}>{phu}</span>
           {luu}
         </div>
@@ -164,7 +164,7 @@ function MotKyNangFt({ data, onReload, kn, hv, hangMo }: {
     <div>
       <HangChip ds={chips} chon={chon} onChon={setChon} />
       {chon === 'speaking' && minh.has('speaking') && data.period && (
-        <div className="flex justify-end px-3 pb-1"><NutGvCham lon chiTen value={gvCot} onChange={setGvCot} /></div>
+        <div className="flex justify-end px-3 pb-1"><NutGvCham lon value={gvCot} onChange={setGvCot} /></div>
       )}
       <ul className="m-0 p-0 list-none">
         {data.rows.map((r, i) => (
@@ -193,12 +193,12 @@ function DongFt({ row, k, nhieuMt, active, onReload, gvMacDinh, inputRef, onKeyD
   const { save, status, lastError, retry, o, loi, luuLai, soLoi, loiNhap, coGuiLai } = useSaveScore(row.attemptId, onReload, row.studentName);
   const c = oCua(row, k);
   const kv = row.result?.expectation ?? null;
-  const phu = [nhieuMt ? `MT${row.attemptNo}` : null, kv !== null ? `KV ${fmtBand(kv)}` : row.studentCode]
+  const phu = [nhieuMt ? `MT${row.attemptNo}` : null, kv !== null ? `KV ${fmtBand(kv)}` : maHocVienNgan(row.studentCode)]
     .filter(Boolean).join(' · ');
   const laSoCau = k === 'listening' || k === 'reading';
   return (
     <DongHv studentId={row.studentId} active={active} ten={row.studentName} href={duongDotTest({ id: row.attemptId }, k)}
-      phu={phu} phuTitle={kv !== null ? `Kỳ vọng (KV) của lượt này: ${fmtBand(kv)} · ${row.studentCode}` : undefined}
+      phu={phu} phuTitle={kv !== null ? `Kỳ vọng (KV) của lượt này: ${fmtBand(kv)} · ${maHocVienNgan(row.studentCode)}` : undefined}
       luu={<>{row.lichSu && <NhanCu />}<DauLuu lon status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} /></>}
       nhan={<NhanHoanTat hoanTat={row.hoanTat} chuNhatCuoi={row.chuNhatCuoi} />}>
       <div className={`shrink-0 flex items-center justify-end gap-1 rounded-md ${o[k] === 'loi' ? VIEN_LOI : ''}`} data-kn={k}
@@ -304,10 +304,10 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
     ?? quaHan
     ?? (cell.chuaToiTuan && cell.tuanHienTai ? `Thi ${cell.tuanHienTai}` : null)
     ?? ketQua
-    ?? row.studentCode;
+    ?? maHocVienNgan(row.studentCode);
   return (
     <DongHv studentId={row.studentId} active={active} ten={row.studentName} href={`/hoc-vien/${row.studentId}`}
-      phu={phu} phuTitle={`${tenMonO} · ${row.studentCode}`} phuDo={phu === ketQua && cell.ketQua === 'fail'}
+      phu={phu} phuTitle={`${tenMonO} · ${maHocVienNgan(row.studentCode)}`} phuDo={phu === ketQua && cell.ketQua === 'fail'}
       luu={<DauLuu lon status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />}
       nhan={<NhanHoanTat hoanTat={row.hoanTat} chuNhatCuoi={row.chuNhatCuoi} />}>
       <div className={`shrink-0 flex items-center justify-end gap-1 rounded-md ${o[k] === 'loi' ? VIEN_LOI : ''}`} data-kn={k}
@@ -315,7 +315,7 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
         <DauO lon tt={o[k]} loi={loi[k]} onLuuLai={() => luuLai(k)} />
         {dung || !s ? (
           <span className="inline-flex items-center gap-1">
-            <span className="text-[11px] text-slate-500" title={`${tenMonO}: ${chuDung ?? 'không có lịch'}`}>
+            <span className="text-xs text-slate-500" title={`${tenMonO}: ${chuDung ?? 'không có lịch'}`}>
               {chuDung ?? '—'}
             </span>
             {/* Giữ chỗ nút "−" để chữ trạng thái thẳng cột với ô nhập của các dòng khác. */}
@@ -323,7 +323,7 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
           </span>
         ) : (
           <ODiemThuong lon tongLaySan cell={{ ...cell, oTuanCu: !!tuanDangXem && s?.movedFromStart === tuanDangXem }} tongCot={tongCot} canEdit={canEdit} tenMon={tenMonO} tenHv={row.studentName}
-            onSave={(p, o) => luu(k, p, o)} onDau={(bat, im) => dau(k, bat, im)} onLoiNhap={(x) => loiNhap(k, x)}
+            onSave={(p, o) => luu(k, p, o)} onDau={(bat) => dau(k, bat)} onLoiNhap={(x) => loiNhap(k, x)}
             inputRef={inputRef} onKeyDown={onKeyDown} />
         )}
       </div>

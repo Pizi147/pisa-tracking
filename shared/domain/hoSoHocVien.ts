@@ -14,6 +14,7 @@ import { NHAN_TRANG_THAI } from './trangThai.ts';
 import { chuTamDung } from './students.ts';
 import { ngay, tuanLich } from './hienThiNgay.ts';
 import { VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, type ViolationCategory } from './yThuc.ts';
+import { nhanBaiThuong } from './normal.ts';
 
 // ====================================================================== ba tab (D2, A6)
 
@@ -145,7 +146,7 @@ export function ketQuaTestGanNhat(attempts: readonly LuotTomTat[], homNay?: stri
     .sort((x, y) => y.attemptNo - x.attemptNo)[0];
   if (!a) return null;
   const ratio = a.mode === 'ratio';
-  const dau = ratio ? (a.kind === 'final' ? 'Cuối khoá' : 'Giữa khoá') : `MT${a.attemptNo}`;
+  const dau = ratio ? nhanBaiThuong(a.kind) : `MT${a.attemptNo}`;
   const nhan = a.weekStart ? `${dau} · ${tuanLich(a.weekStart, homNay)}` : dau;
   const dat = ratio
     ? (a.complete ? a.sosLevel === 0 : null)
@@ -310,7 +311,7 @@ export function oSapToi(i: {
 }): { tren: string; gt: string; phu: string | null } {
   if (i.ketLuan) return { tren: 'lộ trình đã khép', gt: `Kết luận: ${i.ketLuan}`, phu: null };
   if (i.sauCuoiKhoa) {
-    return { tren: 'sau Cuối khoá', gt: 'Chuyển lớp', phu: `chờ Quản lý quyết định${i.sauCuoiKhoa.tuanKetThuc ? ` · lớp kết thúc ${tuanLich(i.sauCuoiKhoa.tuanKetThuc, i.homNay)}` : ''}` };
+    return { tren: 'sau Final Test', gt: 'Chuyển lớp', phu: `chờ Quản lý quyết định${i.sauCuoiKhoa.tuanKetThuc ? ` · lớp kết thúc ${tuanLich(i.sauCuoiKhoa.tuanKetThuc, i.homNay)}` : ''}` };
   }
   const n = i.next;
   if (!n) return { tren: 'mốc kế tiếp', gt: 'Chưa có mốc', phu: 'chưa xếp lịch Test' };

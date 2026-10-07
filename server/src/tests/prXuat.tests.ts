@@ -20,8 +20,8 @@ export async function runPrXuatTests(t: YThucTestKit) {
     sai({ tg: 'tuan', tu: '2026-01-05', den: '2028-01-10' }, /104 tuần/);           // 105 tuần
     sai({ tg: 'thang', tu: '2026-01', den: '2028-01' }, /24 tháng/);
     sai({ tg: 'dot', dot: 'mt:9' }, /MT1 đến MT8/);
-    sai({ tg: 'dot', dot: 'giua' }, /MT1 đến MT8/);                                // giữa khoá ở khung FT
-    sai({ tg: 'dot', dot: 'mt:1', khung: 'thuong' }, /Giữa khoá và Cuối khoá/);
+    sai({ tg: 'dot', dot: 'giua' }, /MT1 đến MT8/);                                // Progress Test ở khung FT
+    sai({ tg: 'dot', dot: 'mt:1', khung: 'thuong' }, /Progress Test và Final Test/);
     sai({ tg: 'dot', dot: '' }, /ít nhất một đợt/);
     sai({ ...tuan, chiNhanh: 'abc' }, /Chi nhánh không hợp lệ/);
     sai({ ...tuan, lop: '-1' }, /Lớp không hợp lệ/);
@@ -87,14 +87,14 @@ export async function runPrXuatTests(t: YThucTestKit) {
   check('PR-XUAT (1) · tenTepXuatMt chỉ [A-Za-z0-9_.-]; bỏ dấu; > 3 chi nhánh → "4-chi-nhanh"; không chọn → "tat-ca"; đợt liền → MT1-MT3', () => {
     const tg = { kieu: 'tuan' as const, tu: '2026-09-07', den: '2026-09-28' };
     const a = d.tenTepXuatMt({ khung: 'ft', chiNhanhTen: ['Cầu Giấy'], lopMa: [], thoiGian: tg });
-    assert(a === 'Pisa-Tracking_MT_Cau-Giay_W2SEP-W1OCT.xlsx', a);   // 28/09/2026: thứ Năm của tuần đó là 01/10 → W1 OCT
+    assert(a === 'PISA-Tracking_MT_Cau-Giay_W2SEP-W1OCT.xlsx', a);   // 28/09/2026: thứ Năm của tuần đó là 01/10 → W1 OCT
     assert(/^[A-Za-z0-9_.-]+$/.test(a), 'ASCII');
     assert(d.tenTepXuatMt({ khung: 'ft', chiNhanhTen: ['a', 'b', 'c', 'd'], lopMa: [], thoiGian: tg }).includes('_4-chi-nhanh_'), '4 chi nhánh');
     assert(d.tenTepXuatMt({ khung: 'ft', chiNhanhTen: [], lopMa: [], thoiGian: tg }).includes('_tat-ca_'), 'tất cả');
     assert(d.tenTepXuatMt({ khung: 'ft', chiNhanhTen: [], lopMa: ['MB FT 101'], thoiGian: { kieu: 'dot', dot: ['mt:3', 'mt:1', 'mt:2'] } })
-      === 'Pisa-Tracking_MT_MB-FT-101_MT1-MT3.xlsx', 'lớp + đợt');
+      === 'PISA-Tracking_MT_MB-FT-101_MT1-MT3.xlsx', 'lớp + đợt');
     assert(d.tenTepXuatMt({ khung: 'thuong', chiNhanhTen: [], lopMa: [], thoiGian: { kieu: 'dot', dot: ['giua', 'cuoi'] } })
-      === 'Pisa-Tracking_Test-lop-thuong_tat-ca_Giua-khoa-Cuoi-khoa.xlsx', 'lớp thường');
+      === 'PISA-Tracking_Test-lop-thuong_tat-ca_Progress-Test-Final-Test.xlsx', 'lớp thường');
     assert(d.tenTepXuatMt({ khung: 'ft', chiNhanhTen: [], lopMa: [], thoiGian: { kieu: 'thang', tu: '2026-09', den: '2026-11' } })
       .endsWith('_2026-09-den-2026-11.xlsx'), 'tháng');
   });
@@ -284,8 +284,8 @@ async function mayChu(t: YThucTestKit) {
   check('PR-XUAT (3) · lớp thường: sheet theo chương trình, tên môn MH3 (G+V, P), ô % là số, không chữ SOS (T58)', () => {
     const r = xm.duLieuXuatMt(P.normalCoreTeacher, locThuong({ cot: 'day-du' }));
     const ten = r.sheets.map((s) => s.ten);
-    assert(ten.includes('FOU · Giữa–Cuối khoá') && ten.at(-1) === 'Bộ lọc đã dùng', ten.join('|'));   // GVCN này có thể còn lớp chương trình khác (bộ kiểm thêm lớp)
-    const sheetFou = r.sheets.find((s) => s.ten === 'FOU · Giữa–Cuối khoá')!;
+    assert(ten.includes('FOU · Progress–Final Test') && ten.at(-1) === 'Bộ lọc đã dùng', ten.join('|'));   // GVCN này có thể còn lớp chương trình khác (bộ kiểm thêm lớp)
+    const sheetFou = r.sheets.find((s) => s.ten === 'FOU · Progress–Final Test')!;
     const [tieuDe, ...dong] = sheetFou.aoa;
     for (const cot of ['Grammar + Vocabulary %', 'Pronunciation %', 'Listening %', '% tổng', 'Grammar + Vocabulary điểm', 'Pronunciation tổng', 'Tuần Pronunciation', 'Bài']) {
       assert(tieuDe.includes(cot), `thiếu cột "${cot}": ${tieuDe.join(' | ')}`);
@@ -294,15 +294,15 @@ async function mayChu(t: YThucTestKit) {
     const iGv = tieuDe.indexOf('Grammar + Vocabulary %'), iD = tieuDe.indexOf('Grammar + Vocabulary điểm'), iT = tieuDe.indexOf('Grammar + Vocabulary tổng');
     const co = dong.filter((x) => x[iD] !== null);
     assert(co.length > 0 && co.every((x) => typeof x[iGv] === 'number' && x[iGv] === Math.round(((x[iD] as number) / (x[iT] as number)) * 1000) / 10), 'ô % là số = điểm/tổng làm tròn 1 chữ số');
-    assert(dong.every((x) => x[4] === 'Giữa khoá' || x[4] === 'Cuối khoá'), 'cột Bài');
+    assert(dong.every((x) => x[4] === 'Progress Test' || x[4] === 'Final Test'), 'cột Bài');
     assert(!JSON.stringify(r.sheets).includes('SOS') && !JSON.stringify(r.sheets).includes('Overall'), 'không tiêu đề/ô nào chứa SOS hay Overall');
     assert(dong.some((x) => typeof x[tieuDe.indexOf('% tổng')] === 'number') && dong.some((x) => x[tieuDe.indexOf('% tổng')] === null), '% tổng: số khi đủ điểm, trống khi thiếu');
-    assert(r.tenTep === 'Pisa-Tracking_Test-lop-thuong_Monbay_Giua-khoa-Cuoi-khoa.xlsx', r.tenTep);
+    assert(r.tenTep === 'PISA-Tracking_Test-lop-thuong_Monbay_Progress-Test-Final-Test.xlsx', r.tenTep);
   });
 
   check('PR-XUAT (3) · khung thường + đợt MT → 400 câu tiếng Việt; GVCN lớp FT lọc lớp FT hỏi khung thường → 0 lượt, không lỗi; Pre FOU đúng một cột "Tổng hợp %"', () => {
     const sai = d.docBoLocXuatMt({ khung: 'thuong', tg: 'dot', dot: 'mt:1' });
-    assert(typeof sai === 'string' && /Giữa khoá và Cuối khoá/.test(sai), String(sai));
+    assert(typeof sai === 'string' && /Progress Test và Final Test/.test(sai), String(sai));
     const rong = xm.duLieuXuatMt(P.coreTeacher, locThuong({ lop: String(mbLop) }));
     assert(rong.dem.luot === 0 && rong.sheets.map((s) => s.ten).join() === 'Bộ lọc đã dùng', `${rong.dem.luot} lượt, sheet ${rong.sheets.map((s) => s.ten)}`);
     const pf = xm.duLieuXuatMt(P.admin, locThuong());

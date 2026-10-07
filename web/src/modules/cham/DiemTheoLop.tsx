@@ -15,7 +15,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { BaoDangLuuContext } from '../../ui/SaveState.tsx';
 import { Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import {
-  HOI_DOI_LUOT_RONG, buocHoiDoiLuot, cauChanDoiLuot, dongPhuLuot, duongHoSoHocVien, hangThuongConTrong, oTrongLuotFt, tuanLich,
+  HOI_DOI_LUOT_RONG, buocHoiDoiLuot, cauChanDoiLuot, dongPhuLuot, duongHoSoHocVien, hangThuongConTrong, maHocVienNgan, oTrongLuotFt, tuanLich,
   yeuCauDoiLuot, type HoiDoiLuot, type TomTatLuot,
 } from '@shared/domain/index.ts';
 import {
@@ -127,7 +127,7 @@ export function DiemTheoLop({ classId, luotBanDau, gon = false, congRoi, onDaLuu
     return new Set(ids);
   }, [chiOTrong, b]);
   const hangMo = useMemo<HangMo[]>(() => (b?.chuaCoLich ?? []).map((h) => ({
-    studentId: h.studentId, ten: h.fullName, ma: h.studentCode,
+    studentId: h.studentId, ten: h.fullName, ma: maHocVienNgan(h.studentCode),
     chu: <>Chưa có lịch {b!.luot.nhan} — <Link className="link" to={duongHoSoHocVien(h.studentId, { mo: 'lo-trinh' })}>xếp ở panel Lộ trình</Link></>,
   })), [b]);
 
@@ -218,7 +218,7 @@ export function DiemTheoLop({ classId, luotBanDau, gon = false, congRoi, onDaLuu
               : chiAttempt && chiAttempt.size === 0 && !hangMo.length
                 ? <Empty title="Lượt này không còn ô trống." hint='Bỏ chọn "Chỉ ô còn trống" để xem cả bảng.' />
                 : (
-                  <div className="rounded-lg border overflow-hidden" style={{ borderColor: 'var(--line)' }}>
+                  <div className="rounded-lg border overflow-clip" style={{ borderColor: 'var(--line)' }}>
                     <BaoDangLuuContext.Provider value={baoLuu}>
                       <LuoiChamLop data={b} kind={null} onReload={daLuuO} gon datConTro={false}
                         chiAttempt={chiAttempt} hangMo={hangMo} anNutTao />

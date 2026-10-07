@@ -130,7 +130,7 @@ export type KetQuaHien = {
   dat: boolean; sos: string | null;
   /** Chỉ có (true) khi SOS mới chấm một phần, còn đổi được khi đủ điểm: vẽ viền nét đứt, không ⚠ (⚠ chỉ nghĩa quá hạn). */
   sosTamThoi?: boolean;
-  dong1: string | null;          // "MT3 · kỳ vọng 7.0 · 3/4 kỹ năng có điểm" · "Cuối khoá · 2/4 môn có điểm" · "Chưa có kết quả"
+  dong1: string | null;          // "MT3 · kỳ vọng 7.0 · 3/4 kỹ năng có điểm" · "Final Test · 2/4 môn có điểm" · "Chưa có kết quả"
   dong2: string | null;          // "Không đạt: L R W" · "Không đạt: L G+V" · null
 };
 
@@ -228,7 +228,7 @@ export function badgeLop(c: {
     co['xep-lop'] = {
       /* PR-Dọn (Câu 2 = B): lớp chưa hết khoá → em chưa có quyết định chuyển lớp (cùng tập dòng Cần xử lý). */
       key: 'xep-lop', nhan: c.needsPlacement ? `${nXep} HV cần xếp lớp tiếp` : `${nXep} HV ${CHU_CHUYEN_LOP.chua.toLowerCase()}`, tone: 'warn',
-      title: c.needsPlacement ? 'Lớp đã hết khoá: những học viên này chưa được xếp lớp tiếp' : 'Quản lý quyết định ở ⋮ Chuyển tiếp lớp',
+      title: c.needsPlacement ? 'Lớp đã hết khoá: những học viên này chưa được xếp lớp tiếp' : 'Quản lý quyết định ở ⋯ Chuyển tiếp lớp',
     };
   }
   if (c.missingSkills.length) co['thieu-gv'] = { key: 'thieu-gv', nhan: `Thiếu GV ${c.missingSkills.map((k) => tenMonNgan(c.chuongTrinh, k)).join(', ')}`, tone: 'warn' };
@@ -419,7 +419,7 @@ export function viecTiepCuaEm(i: {
   }
   const xep = out.map((v, idx) => ({ v, idx })).sort((a, b) => HANG_TONE[a.v.tone] - HANG_TONE[b.v.tone] || a.idx - b.idx).map((x) => x.v);
   /* Báo phụ huynh qua TVV: không hạn → luôn SAU việc có hạn (mở tab Ý thức & Phối hợp). */
-  if (i.baoPh) xep.push({ viec: 'Báo phụ huynh qua TVV', han: null, quaHanNgay: null, tone: 'info', dich: { loai: 'y-thuc' }, title: 'Báo phụ huynh qua TVV · Giữa khoá' });
+  if (i.baoPh) xep.push({ viec: 'Báo phụ huynh qua TVV', han: null, quaHanNgay: null, tone: 'info', dich: { loai: 'y-thuc' }, title: 'Báo phụ huynh qua TVV · Progress Test' });
   return xep;
 }
 

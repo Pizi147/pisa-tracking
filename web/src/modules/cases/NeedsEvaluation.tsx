@@ -39,7 +39,7 @@ export function NeedsEvaluation({ count, url }: { count: number; url: string }) 
                         className="block rounded-lg border px-3 py-2 no-underline hover:brightness-125"
                         style={{ borderColor: 'var(--line)' }}>
                         <span className="block text-sm text-slate-100">{r.title}</span>
-                        {r.sub && <span className="block text-[11px] text-slate-500 mt-0.5">{r.sub}</span>}
+                        {r.sub && <span className="block text-xs text-slate-500 mt-0.5">{r.sub}</span>}
                       </Link>
                     </li>
                   ))}

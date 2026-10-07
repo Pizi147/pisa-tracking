@@ -42,11 +42,11 @@ export function TuanNho({ d, goc, onTuan, nhanKhoa = null, toiThieu = null }: {
           aria-haspopup="dialog" aria-expanded={mo} onClick={() => setMo((v) => !v)}
           title={d.weekStart ? `${khoang(d.weekStart)} · bấm để chọn tuần khác` : 'Chọn tuần khác'}>
           <span className="whitespace-nowrap text-slate-100">{d.weekStart ? tuanLich(d.weekStart, homNay) : 'Chọn tuần'}</span>
-          {d.weekStart && <span className="text-[11px] tabular-nums text-slate-500">{khoang(d.weekStart)}</span>}
+          {d.weekStart && <span className="text-xs tabular-nums text-slate-500">{khoang(d.weekStart)}</span>}
         </button>
         <button type="button" className={nut} disabled={busy || !co} onClick={() => co && chon(addDaysStr(co, 7))} aria-label="Tuần sau">›</button>
       </div>
-      {nhanKhoa && <div className="mt-0.5 text-[11px] text-slate-500">{nhanKhoa}</div>}
+      {nhanKhoa && <div className="mt-0.5 text-xs text-slate-500">{nhanKhoa}</div>}
       {mo && homNay && (
         <LichNho kieu="tuan" goNgay value={d.weekStart ?? null} homNay={homNay} luat={toiThieu ? { toiThieu } : {}} neo={giua}
           onChon={chon} onDong={() => setMo(false)} />

@@ -115,18 +115,18 @@ export function TepCho({ value, onChange, khoa, onThuLai }: {
       {!khoa && linkOpen && (
         <div className="mt-2 grid items-end gap-1.5 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_auto]">
           <label className="block">
-            <span className="block text-[11px] text-slate-500">Địa chỉ liên kết</span>
+            <span className="block text-xs text-slate-500">Địa chỉ liên kết</span>
             <input className="field" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" inputMode="url" />
           </label>
           <label className="block">
-            <span className="block text-[11px] text-slate-500">Tên hiển thị (không bắt buộc)</span>
+            <span className="block text-xs text-slate-500">Tên hiển thị (không bắt buộc)</span>
             <input className="field" value={ten} onChange={(e) => setTen(e.target.value)} placeholder="Ví dụ: Nhóm lớp" />
           </label>
           <span className="flex gap-1.5">
             <button type="button" className="btn btn-sm btn-primary" disabled={!url.trim()} onClick={luuLink}>Thêm</button>
             <button type="button" className="btn btn-sm" onClick={() => { setLinkOpen(false); setLoiLink(null); }}>Đóng</button>
           </span>
-          {loiLink && <p className="m-0 text-[11px] text-bad sm:col-span-3" role="alert">{loiLink}</p>}
+          {loiLink && <p className="m-0 text-xs text-bad sm:col-span-3" role="alert">{loiLink}</p>}
         </div>
       )}
     </div>

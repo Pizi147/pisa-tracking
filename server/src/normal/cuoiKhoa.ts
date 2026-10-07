@@ -121,7 +121,7 @@ export function cuoiKhoaTheoHocVien(classId: number, sids?: readonly number[], o
       WHERE e.class_id = ? AND e.status ${o.daRoi ? "IN ('active', 'transferred')" : "= 'active'"}${loc} ORDER BY a.id`,
   ).all(classId, ...(sids ?? [])) as any[];
   const luotCuaEm = new Map<number, number | null>();
-  for (const r of dong) luotCuaEm.set(r.student_id, r.attempt_id ?? luotCuaEm.get(r.student_id) ?? null);   // nhiều bài Cuối khoá → bài id lớn nhất
+  for (const r of dong) luotCuaEm.set(r.student_id, r.attempt_id ?? luotCuaEm.get(r.student_id) ?? null);   // nhiều bài Final Test → bài id lớn nhất
   const tyLe = tyLeTongLo([...luotCuaEm.values()].filter((x): x is number => x !== null));
   const dinhKem = new Map<number, any>();
   for (const r of conn.prepare(
@@ -300,9 +300,9 @@ export function sauChuyenCuoiKhoa(p: Principal, dongs: readonly DongSauChuyen[])
         o.push({ d, toCycle, luot, ct: t.ct!, mon, skill, category: categoryOf(skill) ?? skill, b, batDau, lich, phanTram });
       }
       mtRows.push([d.sid, toCycle, luot.id, `mt:${luot.id}`, b.soBuoi, lich.ngayMiniTest, lich.hanMiniTest]);
-      nhatKy.push([d.sid, toCycle, 'intervention', d.ngay, `Cuối khoá ${phanTram}% — bổ trợ miễn phí ${b.soBuoi} buổi · Mini Test hạn ${ngay(lich.hanMiniTest, d.ngay)}`, p.userId, nowIso()]);
+      nhatKy.push([d.sid, toCycle, 'intervention', d.ngay, `Final Test ${phanTram}% — bổ trợ miễn phí ${b.soBuoi} buổi · Mini Test hạn ${ngay(lich.hanMiniTest, d.ngay)}`, p.userId, nowIso()]);
       for (const g of chuNhiem.get(d.toClassId) ?? []) {
-        thongBao.push([g, 'bo_tro_mien_phi', 'Mang theo PA Bổ trợ miễn phí', `Cuối khoá ${phanTram}% — Mini Test hạn ${ngay(lich.hanMiniTest, d.ngay)}.`, 'student', d.sid, `bo-tro-mien-phi:${luot.id}:${g}`, nowIso(), null]);
+        thongBao.push([g, 'bo_tro_mien_phi', 'Mang theo PA Bổ trợ miễn phí', `Final Test ${phanTram}% — Mini Test hạn ${ngay(lich.hanMiniTest, d.ngay)}.`, 'student', d.sid, `bo-tro-mien-phi:${luot.id}:${g}`, nowIso(), null]);
       }
       emCoBoTro.push(d.sid);
     }
@@ -332,7 +332,7 @@ export function sauChuyenCuoiKhoa(p: Principal, dongs: readonly DongSauChuyen[])
   theoLo(caseMoi, (lo) => {
     /* `attempt_id` NULL: quyền xem/ghi Case theo LỚP ĐANG HỌC của em (không theo lớp cũ của bài Cuối khoá); bài gốc ở mốc `opened` + `mini_test.tu_attempt_id`. */
     const rows = lo.map((x) => [null, x.d.sid, x.toCycle, x.skill, x.category, x.d.ngay, khoaCua(x),
-      `Cuối khoá ${kyHieuLop(x.ct, null) ?? x.ct} · ${tenMon(x.ct, x.mon)} không đạt`, coSan.get(khoaCua(x))?.id ?? null, nguoiPhuTrach(x.d.toClassId, x.category), nowIso(), 'chuyen_cap', 'in_progress']);
+      `Final Test ${kyHieuLop(x.ct, null) ?? x.ct} · ${tenMon(x.ct, x.mon)} không đạt`, coSan.get(khoaCua(x))?.id ?? null, nguoiPhuTrach(x.d.toClassId, x.category), nowIso(), 'chuyen_cap', 'in_progress']);
     for (const r of conn.prepare(
       `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, topic, category, detected_at, dedup_key, title, previous_case_id, owner_user_id, created_at, origin_kind, status)
        VALUES ${rows.map(() => `(${Array(COT_CASE).fill('?').join(',')})`).join(',')} RETURNING id, dedup_key`,
@@ -346,7 +346,7 @@ export function sauChuyenCuoiKhoa(p: Principal, dongs: readonly DongSauChuyen[])
     const laMoi = caseMoi.includes(x);
     /* Case Giữa khoá đi theo em nhận PA mới: lịch sử Case vẫn có mốc Cuối khoá (PR-S5F-a) — `repeat` = trượt lại ở bài sau. */
     if (!daMo.has(khoa)) {
-      mocRows.push([caseId, laMoi ? 'opened' : 'repeat', x.luot.id, x.luot.attemptNo, x.d.ngay, `Cuối khoá ${x.phanTram}% — bổ trợ miễn phí`, p.userId, nowIso(), `cuoi-khoa:${x.luot.id}:${caseId}`]);
+      mocRows.push([caseId, laMoi ? 'opened' : 'repeat', x.luot.id, x.luot.attemptNo, x.d.ngay, `Final Test ${x.phanTram}% — bổ trợ miễn phí`, p.userId, nowIso(), `cuoi-khoa:${x.luot.id}:${caseId}`]);
       if (!laMoi) canDongBo.push(caseId);
       daMo.add(khoa);
     }
@@ -354,7 +354,7 @@ export function sauChuyenCuoiKhoa(p: Principal, dongs: readonly DongSauChuyen[])
     paRows.push([caseId, 'bo_tro_mien_phi', CHU_BO_TRO(x.b.soBuoi, x.b.soTuan, x.b.theoMon ? chuMonTruot(x.ct, x.b.mon) : null), ownerId, p.userId, 'started', x.batDau, 0, 1, p.userId, nowIso(),
       1, x.batDau, weeklyUpdateDue(x.batDau), x.lich.ngayMiniTest, 'mini_test', `mt:${x.luot.id}`, nowIso()]);
   }
-  for (const id of canDongBo) dongBoTrangThaiCase(id);   // Case cũ đi theo em (Giữa khoá) nhận PA mới — có thể đổi trạng thái
+  for (const id of canDongBo) dongBoTrangThaiCase(id);   // Case cũ đi theo em (Progress Test) nhận PA mới — có thể đổi trạng thái
 
   /* Pha 3 — ghi theo lô. */
   chenNhieuDong('INSERT OR IGNORE INTO case_milestones (case_id, kind, attempt_id, attempt_no, occurred_on, note, created_by, created_at, dedup_key)', mocRows);
@@ -524,7 +524,7 @@ export function ghiKetLuanFt(p: Principal, sid: number, input: { dat?: unknown; 
   if (!lopBeEle) throw badRequest('Chỉ lớp BE/ELE (hoặc em vừa lên FT từ BE/ELE) mới có kỳ vọng đầu ra.');
   /* PR-S5F-a: kết luận kỳ vọng đầu ra dựa trên bài Cuối khoá — chưa có bài thì không ghi (không chèn dòng "chưa rõ" vào Lộ trình tiếp theo). */
   if (!conn.prepare(`SELECT 1 FROM assessment_attempts WHERE student_id = ? AND class_id = ? AND kind = 'final' AND status != 'cancelled' LIMIT 1`).get(sid, lopBeEle)) {
-    throw badRequest('Em chưa có bài Cuối khoá ở lớp này — chưa đánh dấu kỳ vọng đầu ra được.');
+    throw badRequest('Em chưa có bài Final Test ở lớp này — chưa đánh dấu kỳ vọng đầu ra được.');
   }
   if (typeof input.dat !== 'boolean') throw badRequest('Chọn Đạt hoặc Không đạt kỳ vọng đầu ra.');
   const dat = input.dat;
@@ -566,7 +566,7 @@ export function ghiKetLuanFt(p: Principal, sid: number, input: { dat?: unknown; 
 /** K4-23 vế 2: bài Cuối khoá bị dời quá tuần cuối khoá → MỘT thẻ Báo QL (không duyệt, QL nhắc GVCN). Chạy trong tx của `reportRegularNoShow`. */
 export function baoLenCuoiKhoaDoiQuaHan(conn: any, a: { id: number; student_id: number; class_id: number }): void {
   const gvcn = (conn.prepare(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active' LIMIT 1`).get(a.class_id) as any)?.user_id ?? null;
-  const lyDo = 'Bài Cuối khoá bị dời quá tuần cuối khoá của lớp';
+  const lyDo = 'Bài Final Test bị dời quá tuần Final Test của lớp';
   taoYeuCau(conn, {
     loai: 'bao_len_cuoi_khoa', doiTuongLoai: 'attempt', doiTuongId: a.id, hocVienId: a.student_id, lopId: a.class_id, nguoiXin: null, hanDuyet: null, lyDo,
     duLieu: { viecKey: `cuoi_khoa:${a.id}`, ownerId: gvcn, lyDo },

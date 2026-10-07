@@ -105,7 +105,7 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload }: Chung) {
       chan={{
         huy: { nhan: 'Đóng', onClick: onClose },
         dongTren: ghi && em && !em.xacNhan ? (
-          <p className="m-0 px-4 pt-2 text-right text-[11px] text-slate-400">Xác nhận được khi đủ nhận xét chung. Môn chưa có thông tin sẽ ghi “GVBM chưa bàn giao”.</p>
+          <p className="m-0 px-4 pt-2 text-right text-xs text-slate-400">Xác nhận được khi đủ nhận xét chung. Môn chưa có thông tin sẽ ghi “GVBM chưa bàn giao”.</p>
         ) : undefined,
         chinh: ghi && em && !em.xacNhan ? (
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={xacNhan} disabled={busy || !nhap.trim()} title={!nhap.trim() ? 'Viết nhận xét chung trước khi xác nhận' : undefined}>{CHU_CHUYEN_LOP.banGiao}</button>
@@ -125,7 +125,7 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload }: Chung) {
                   <span className="min-w-0 truncate text-sm text-slate-100">{e.ten}</span>
                   <Nhan tone={e.phieu.khoa === 'da-xac-nhan' ? 'ok' : e.phieu.khoa === 'mon' ? 'soon' : 'muted'}>{e.phieu.nhan}</Nhan>
                 </div>
-                <div className="truncate text-[11px] text-slate-500">
+                <div className="truncate text-xs text-slate-500">
                   {e.lopDich ? `→ ${e.lopDich.code} · ${tuanLich(e.tuan, homNay)}` : e.huong === 'bao_luu' ? `Tạm dừng học (bảo lưu)${e.ngayXemLai ? ` · xem lại ${tuanLich(e.ngayXemLai, homNay)}` : ''}` : tuanLich(e.tuan, homNay)}
                 </div>
               </li>
@@ -247,7 +247,7 @@ function BangGvbm({ dto, mon, lenhId, onClose, onDone, reload }: Chung & { mon: 
       ngCanh={<span className="tabular-nums">{dto.lop.code} · {dto.tong} em{han && <> · <Han loai="viec-van-hanh" han={han} /></>} · mỗi em một câu</span>}
       chan={{
         huy: { nhan: 'Xong', onClick: () => { onDone(); onClose(); } },
-        dongTren: <p className="m-0 px-4 pt-2 text-right text-[11px] tabular-nums text-slate-400">Lưu từng dòng khi rời ô · {soDaCo}/{dto.tong} đã có</p>,
+        dongTren: <p className="m-0 px-4 pt-2 text-right text-xs tabular-nums text-slate-400">Lưu từng dòng khi rời ô · {soDaCo}/{dto.tong} đã có</p>,
       }}>
       <div className="surface-2 mt-3 divide-y rounded-lg" style={{ borderColor: 'var(--line)' }} role="table" aria-label={`Bàn giao môn ${m0.ngan}`}>
         <div role="row" className="hidden grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)_minmax(0,2fr)] gap-3 px-3 py-2 text-[11px] font-extrabold uppercase tracking-[.06em] text-slate-500 sm:grid">
@@ -259,16 +259,16 @@ function BangGvbm({ dto, mon, lenhId, onClose, onDone, reload }: Chung & { mon: 
           return (
             <div key={e.lenhId} role="row" className="grid gap-x-3 gap-y-1 px-3 py-2.5 text-sm sm:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)_minmax(0,2fr)]">
               <span role="cell" className="min-w-0 truncate text-slate-100" title={e.ten}>{e.ten}
-                {e.lopDich && <span className="block text-[11px] text-slate-500">→ {e.lopDich.code} · {tuanLich(e.tuan, homNay)}</span>}</span>
+                {e.lopDich && <span className="block text-xs text-slate-500">→ {e.lopDich.code} · {tuanLich(e.tuan, homNay)}</span>}</span>
               <span role="cell" className="min-w-0 text-xs text-slate-400">{e.tuDien?.ketQua ?? '—'}</span>
               <span role="cell" className="min-w-0">
                 <input id={`o-bg-${e.lenhId}`} className="field w-full" maxLength={300} readOnly={khoa} aria-label={`Bàn giao môn ${m0.ngan} của ${e.ten}`}
                   aria-invalid={!!loi[e.lenhId]} placeholder="Viết một câu…" value={chu[e.lenhId] ?? cu}
                   onChange={(ev) => { setChu((x) => ({ ...x, [e.lenhId]: ev.target.value })); setLuu((x) => ({ ...x, [e.lenhId]: false })); }}
                   onBlur={() => void ghi(e)} />
-                {loi[e.lenhId] && <span role="alert" className="mt-0.5 block text-[11px] text-late">{loi[e.lenhId]}</span>}
-                {!loi[e.lenhId] && luu[e.lenhId] && <span className="mt-0.5 block text-[11px] text-ok">Đã lưu</span>}
-                {khoa && <span className="mt-0.5 block text-[11px] text-slate-500">GVCN đã xác nhận phiếu — không sửa thêm</span>}
+                {loi[e.lenhId] && <span role="alert" className="mt-0.5 block text-xs text-late">{loi[e.lenhId]}</span>}
+                {!loi[e.lenhId] && luu[e.lenhId] && <span className="mt-0.5 block text-xs text-ok">Đã lưu</span>}
+                {khoa && <span className="mt-0.5 block text-xs text-slate-500">GVCN đã xác nhận phiếu — không sửa thêm</span>}
               </span>
             </div>
           );

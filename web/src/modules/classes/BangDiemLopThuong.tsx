@@ -31,7 +31,7 @@ type DongThuong = {
   /** PR-UXF-a K2-12: % tổng + gợi ý hướng Cuối khoá — cùng hàm với panel Chuyển lớp (`cuoiKhoaTheoHocVien`). */
   cuoiKhoa?: { tyLe: number | null; goiY: GoiYCuoiKhoa | null } | null;
 };
-const TIEU_DE_HUONG = 'Theo luật Cuối khoá — Quản lý quyết ở panel Chuyển lớp';
+const TIEU_DE_HUONG = 'Theo luật Final Test — Quản lý quyết ở panel Chuyển lớp';
 
 /** Hồ sơ lớp cũ chưa gửi mốc: Giữa khoá + Cuối khoá như trước. */
 const MOC_MAC_DINH = ['progress', 'final'];
@@ -119,7 +119,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
   }
 
   return (
-    <div className="card table-scroll">
+    <div className="card table-scroll bang-dinh xl:overflow-clip">
       <table className={`w-full ${coCuoiKhoa ? 'min-w-[1040px]' : 'min-w-[920px]'} table-fixed text-sm`}>
         <colgroup>
           <col className="w-[19%]" /><col className="w-[6%]" /><col className="w-[9%]" />
@@ -195,7 +195,7 @@ function OPhanTram({ v }: { v: number | null }) {
 
 /** Chữ "Hướng gợi ý" — cùng chữ, cùng chip với cột Hệ thống gợi ý của panel Chuyển lớp (`goiY.nhanHuong`; 50–59 % chip "Quản lý cân nhắc"). */
 function OHuongGoiY({ goiY }: { goiY: GoiYCuoiKhoa | null }) {
-  if (!goiY) return <span className="text-slate-600" title="Hiện khi đủ điểm Cuối khoá">—</span>;
+  if (!goiY) return <span className="text-slate-600" title="Hiện khi đủ điểm Final Test">—</span>;
   if (goiY.canQuanLy) return <Nhan tone="soon" title={goiY.nhan}>Quản lý cân nhắc</Nhan>;
   return <span className="text-[12px] text-slate-300" title={`${goiY.nhan} · ${TIEU_DE_HUONG}`}>{goiY.nhanHuong}</span>;
 }
@@ -213,8 +213,8 @@ function ODiemThuong({ o, tuan, homNay }: { o: ODiem | null; tuan: string | null
   if (tuan) {
     /* Tuần thi đã QUA mà vẫn chưa có điểm là một dạng quá hạn nhập điểm — khác với tuần chưa tới lịch. */
     const daQua = tuan < mondayOfDate(homNay);
-    if (daQua) return <span className="text-[11px] text-amber-200" title="Tuần thi đã qua nhưng chưa nhập điểm">Chưa có điểm</span>;
-    return <span className="text-[11px] text-slate-500" title="Tuần thi môn này">{tuanLich(tuan, homNay)}</span>;
+    if (daQua) return <span className="text-xs text-amber-200" title="Tuần thi đã qua nhưng chưa nhập điểm">Chưa có điểm</span>;
+    return <span className="text-xs text-slate-500" title="Tuần thi môn này">{tuanLich(tuan, homNay)}</span>;
   }
   return <span className="text-slate-700">–</span>;
 }

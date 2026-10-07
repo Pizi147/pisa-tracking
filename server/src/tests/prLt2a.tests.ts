@@ -23,10 +23,10 @@ export async function runPrLt2aTests(t: YThucTestKit) {
   const { createApp } = await import('../app.ts');
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
-  console.log('\nPR-LT2a · Lớp thường Giữa khoá');
+  console.log('\nPR-LT2a · Lớp thường Progress Test');
 
   // ------------------------------------------------------------------ khối 1 · luật thuần (Task 1)
-  check('LT2a (1) · boTroGiuaKhoa: FOU chung 2 buổi/tuần · BE, ELE 1 buổi/tuần/môn · Pre FOU và FT không có Giữa khoá (PF2)', () => {
+  check('LT2a (1) · boTroGiuaKhoa: FOU chung 2 buổi/tuần · BE, ELE 1 buổi/tuần/môn · Pre FOU và FT không có Progress Test (PF2)', () => {
     assert(JSON.stringify(d.boTroGiuaKhoa('FOU')) === '{"buoiMoiTuan":2,"chung":true}', 'FOU');
     for (const ct of ['BE', 'ELE']) assert(JSON.stringify(d.boTroGiuaKhoa(ct)) === '{"buoiMoiTuan":1,"chung":false}', ct);
     for (const ct of ['PREFOU', 'FT', null]) assert(d.boTroGiuaKhoa(ct) === null, String(ct));
@@ -45,9 +45,9 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     const be = d.moTaBoTro('BE', 'writing');
     assert(be.includes('1 buổi/tuần') && be.includes('W') && be.includes('trừ buổi Free'), be);
     const ten = d.tenCaseThuong({ dot: 'progress', giua: 'G+V không đạt' });
-    assert(ten === '[Giữa khoá] G+V không đạt' && !/SOS/.test(ten), ten);
-    assert(d.mocChuBoTro(null, t.TODAY) === 'đến Cuối khoá · chưa có lịch', 'chưa có lịch');
-    assert(/^đến Cuối khoá · W\d /.test(d.mocChuBoTro(t.addDays(t.TODAY, 20), t.TODAY)), 'mã tuần');
+    assert(ten === '[Progress Test] G+V không đạt' && !/SOS/.test(ten), ten);
+    assert(d.mocChuBoTro(null, t.TODAY) === 'đến Final Test · chưa có lịch', 'chưa có lịch');
+    assert(/^đến Final Test · W\d /.test(d.mocChuBoTro(t.addDays(t.TODAY, 20), t.TODAY)), 'mã tuần');
   });
 
   check('LT2a (1) · nhanKetQuaThuong: 6 ca, KHÔNG ca nào có chữ SOS', () => {
@@ -55,7 +55,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     const du = d.nhanKetQuaThuong({ ...base, scored: 4, required: 4, failedSkills: ['writing', 'pronunciation'], tyLeTong: 0.61 });
     assert(du.chinh === '2/4 môn đạt' && du.phu === 'Không đạt: G+V P' && du.pct === '61%' && du.dat === false, JSON.stringify(du));
     const thieu = d.nhanKetQuaThuong({ ...base, scored: 3, required: 4, failedSkills: ['reading'], tyLeTong: null });
-    assert(thieu.chinh === '2/3 môn đạt (đã chấm)' && thieu.pct === null && thieu.dat === false, JSON.stringify(thieu));
+    assert(thieu.chinh === '2/3 môn đạt' && thieu.pct === null && thieu.dat === false, JSON.stringify(thieu));
     const dat = d.nhanKetQuaThuong({ ...base, scored: 4, required: 4, failedSkills: [], tyLeTong: 0.8 });
     assert(dat.chinh === '4/4 môn đạt' && dat.dat === true && dat.phu === null, JSON.stringify(dat));
     const preFou = d.nhanKetQuaThuong({ kind: 'final', ct: 'PREFOU', scored: 1, required: 1, failedSkills: [], tyLeTong: 0.68, khongChiaMon: true });
@@ -80,7 +80,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     const v = d.viecTiepCuaCase(nop, [], '2026-09-19');
     assert(v?.chu === 'Nộp kế hoạch bổ trợ' && v.loaiHan === 'ke-hoach-bo-tro' && v.han === '2026-09-20', JSON.stringify(v));
     assert(d.viecTiepCuaCase({ ...c, boTro: { choNop: false, choDuyet: true, hanKeHoach: null } }, [], '2026-09-19')?.chu === 'Chờ Quản lý duyệt kế hoạch', 'chờ duyệt');
-    assert(d.mocChuPa({ span: 'den_cuoi_khoa', followupDue: null, mtKe: null, daXacNhan: false }, '2026-09-19') === 'đến Cuối khoá', 'PA chưa chạy');
+    assert(d.mocChuPa({ span: 'den_cuoi_khoa', followupDue: null, mtKe: null, daXacNhan: false }, '2026-09-19') === 'đến Final Test', 'PA chưa chạy');
   });
 
   check('LT2a (1) · noiDungBaoPh đúng 4 phần tử; nguyên nhân trống → "GVBM chưa xác nhận"; loại thẻ ke_hoach_bo_tro hạn 3 ngày', () => {
@@ -123,7 +123,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
   const paCua = (caseId: number) => all(`SELECT * FROM case_interventions WHERE case_id = ? AND kind = 'bo_tro' ORDER BY id`, caseId);
   const gvcnFou = P.normalCoreTeacher.userId;
 
-  check('LT2a (3) · FOU Giữa khoá trượt G+V, P → 2 Case không nhãn SOS, mỗi Case một PA bổ trợ chờ cùng nhóm, người dạy GVCN; chạy lặp không nhân đôi', () => {
+  check('LT2a (3) · FOU Progress Test trượt G+V, P → 2 Case không nhãn SOS, mỗi Case một PA bổ trợ chờ cùng nhóm, người dạy GVCN; chạy lặp không nhân đôi', () => {
     const em = taoEm('LT2a FOU A', 'MB FOU 12');
     nhap(em.pt!, { listening: 18, reading: 18, writing: 11, speaking: 12 });
     let cs = caseCua(em.id);
@@ -131,7 +131,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     assert(cs.every((c) => c.sos_level === null && c.origin_kind === 'mock'), 'sos_level phải NULL');
     assert(cs.every((c) => c.han_xac_nhan === d.hanXacNhan(TODAY)), 'hạn xác nhận 3 ngày tính cả hôm nay');
     const ten = cs.map((c) => cases.caseTitleOf(c)).sort();
-    assert(ten[0] === '[Giữa khoá] G+V không đạt' && ten[1] === '[Giữa khoá] P không đạt' && !ten.some((x) => /SOS|MT/.test(x)), ten.join(' | '));
+    assert(ten[0] === '[Progress Test] G+V không đạt' && ten[1] === '[Progress Test] P không đạt' && !ten.some((x) => /SOS|MT/.test(x)), ten.join(' | '));
     const pas = cs.flatMap((c) => paCua(c.id));
     assert(pas.length === 2 && pas.every((x) => x.status === 'planned' && x.preset === 1 && x.confirmed_at === null && x.confirmed_by === null), 'PA chờ');
     assert(new Set(pas.map((x) => x.nhom_bo_tro)).size === 1 && pas[0].nhom_bo_tro === `gk:${em.pt}`, 'cùng một nhóm FOU');
@@ -147,7 +147,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     assert(!tb.some((x) => /SOS/.test(`${x.title} ${x.body}`)), 'không thông báo nào có chữ SOS');
   });
 
-  check('LT2a (3) · BE Giữa khoá trượt W, S → 2 PA KHÁC nhóm, người dạy = GVBM từng môn', () => {
+  check('LT2a (3) · BE Progress Test trượt W, S → 2 PA KHÁC nhóm, người dạy = GVBM từng môn', () => {
     const em = taoEm('LT2a BE A', 'MB BE 08');
     nhap(em.pt!, { listening: 18, reading: 18, writing: 10, speaking: 10 });
     const pas = caseCua(em.id).flatMap((c) => paCua(c.id));
@@ -158,10 +158,10 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     assert(dayW === gv('MB BE 08', 'writing') && dayS === gv('MB BE 08', 'speaking'), `người dạy ${dayW}/${dayS}`);
   });
 
-  check('LT2a (3) · Cuối khoá trượt → 0 tín hiệu, 0 Case (cả FOU và Pre FOU); Giữa khoá sửa lên đạt → Case tự huỷ + PA huỷ, hết môn trượt → Báo PH removed', () => {
+  check('LT2a (3) · Final Test trượt → 0 tín hiệu, 0 Case (cả FOU và Pre FOU); Progress Test sửa lên đạt → Case tự huỷ + PA huỷ, hết môn trượt → Báo PH removed', () => {
     const em = taoEm('LT2a FOU B', 'MB FOU 12');
     nhap(em.ft!, { listening: 5, reading: 5, writing: 5, speaking: 5 });
-    assert(!all('SELECT 1 FROM case_signals WHERE attempt_id = ?', em.ft).length && !caseCua(em.id).length, 'Cuối khoá FOU không tín hiệu/Case');
+    assert(!all('SELECT 1 FROM case_signals WHERE attempt_id = ?', em.ft).length && !caseCua(em.id).length, 'Final Test FOU không tín hiệu/Case');
     const pre = taoEm('LT2a PRE A', 'MB Pre FOU 03');
     for (const aid of [pre.pt, pre.ft].filter(Boolean) as number[]) nhap(aid, { tong_hop: 5 });
     assert(!all('SELECT 1 FROM case_signals WHERE student_id = ?', pre.id).length && !caseCua(pre.id).length, 'Pre FOU không tín hiệu/Case');
@@ -186,7 +186,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
   const caseTheoMon = (hv: number, topic: string) => get('SELECT * FROM sos_cases WHERE student_id = ? AND topic = ? ORDER BY id DESC', hv, topic);
   const chiTiet = (who: any, caseId: number) => cases.caseDetail(who, caseId) as any;
 
-  check('LT2a (4) · BE: GVBM W xác nhận THIẾU kế hoạch → 400; đủ → Case "Chờ Quản lý duyệt · kế hoạch bổ trợ", thẻ chờ hạn 3 ngày, PA còn chờ; QL duyệt → PA chạy (hạn T2 tuần sau, mốc Cuối khoá, người nộp), Case Đang làm', () => {
+  check('LT2a (4) · BE: GVBM W xác nhận THIẾU kế hoạch → 400; đủ → Case "Chờ Quản lý duyệt · kế hoạch bổ trợ", thẻ chờ hạn 3 ngày, PA còn chờ; QL duyệt → PA chạy (hạn T2 tuần sau, mốc Final Test, người nộp), Case Đang làm', () => {
     const em = taoEm('LT2a BE KH', 'MB BE 08');
     nhap(em.pt!, { listening: 18, reading: 18, writing: 10, speaking: 18 });
     const c = caseTheoMon(em.id, 'writing');
@@ -205,7 +205,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     yc.duyetYeuCau(P.mbManager, the.id);
     const pa = paBt(c.id);
     assert(pa.status === 'started' && pa.confirmed_by === khoa.userId && pa.action_due === d.weeklyUpdateDue(TODAY) && pa.started_date === TODAY, JSON.stringify(pa));
-    assert(pa.followup_due === boTro.mocCuoiKhoa(em.pt ? get('SELECT cycle_id c FROM assessment_attempts WHERE id = ?', em.pt).c : null, classId('MB BE 08')), 'mốc Cuối khoá');
+    assert(pa.followup_due === boTro.mocCuoiKhoa(em.pt ? get('SELECT cycle_id c FROM assessment_attempts WHERE id = ?', em.pt).c : null, classId('MB BE 08')), 'mốc Final Test');
     assert(chiTiet(khoa, c.id).trangThaiV4.k === 'dang-lam' && get('SELECT status FROM sos_cases WHERE id = ?', c.id).status === 'in_progress', 'Case Đang làm');
     const moc = all('SELECT kind FROM case_milestones WHERE case_id = ?', c.id).map((m) => m.kind);
     assert(['xac_nhan_case', 'nop_ke_hoach', 'ke_hoach_duyet'].every((k) => moc.includes(k)), moc.join());
@@ -321,10 +321,10 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     assert(the.length === 1 && the[0].doi_tuong_id === ivGv.id, 'chỉ một thẻ Xin ý kiến');
   });
 
-  check('LT2a (5) · Tuần Cuối khoá: Hoàn thành ẩn tới khi PA khép (dòng "Hoàn thành được sau khi PA theo quy chế kết thúc (đến Cuối khoá · …)"); ghi kết quả cuối → CẢ HAI PA completed het_moc; rồi việc tiếp "Hoàn thành Case"', () => {
+  check('LT2a (5) · Tuần Final Test: Hoàn thành ẩn tới khi PA khép (dòng "Hoàn thành được sau khi PA theo quy chế kết thúc (đến Final Test · …)"); ghi kết quả cuối → CẢ HAI PA completed het_moc; rồi việc tiếp "Hoàn thành Case"', () => {
     const { cGv, cP, ha } = dungFouChay('LT2a FOU CUOI');
     const dt0 = chiTiet(ha, cGv.id);
-    assert(dt0.hoanThanh?.an === true && /Hoàn thành được sau khi PA theo quy chế kết thúc \(đến Cuối khoá/.test(dt0.hoanThanh.dong), JSON.stringify(dt0.hoanThanh));
+    assert(dt0.hoanThanh?.an === true && /Hoàn thành được sau khi PA theo quy chế kết thúc \(đến Final Test/.test(dt0.hoanThanh.dong), JSON.stringify(dt0.hoanThanh));
     conn.prepare(`UPDATE case_interventions SET followup_due = ? WHERE nhom_bo_tro = ?`).run(d.addDaysIso(TODAY, -1), paBt(cGv.id).nhom_bo_tro);
     assert(/^Ghi kết quả cuối/.test(chiTiet(ha, cGv.id).viecTiep.chu), `việc tiếp: ${chiTiet(ha, cGv.id).viecTiep.chu}`);
     cases.updateResult(ha, paBt(cGv.id).id, { outcome: 'improved', note: 'Đã đạt yêu cầu về thì và cách đặt câu cơ bản.' });
@@ -367,10 +367,10 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     sosAuto.xacNhanCase(khoa, cGv.id, XN('writing', 'FOU'));
     const kh = dongViec(ha, 'kehoach:', em.id);
     assert(kh.length === 1 && kh[0].group === 'ke_hoach_bo_tro' && kh[0].due === d.hanXacNhan(TODAY), `dòng kế hoạch: ${JSON.stringify(kh.map((x) => [x.group, x.due]))}`);
-    assert(kh[0].tieuDe === `Nộp kế hoạch bổ trợ · Giữa khoá · G+V, P · Học viên LT2a VIEC` || /^Nộp kế hoạch bổ trợ · Giữa khoá · G\+V, P · /.test(kh[0].tieuDe), kh[0].tieuDe);
+    assert(kh[0].tieuDe === `Nộp kế hoạch bổ trợ · Progress Test · G+V, P · Học viên LT2a VIEC` || /^Nộp kế hoạch bổ trợ · Progress Test · G\+V, P · /.test(kh[0].tieuDe), kh[0].tieuDe);
     assert(d.LOAI_HAN_CUA_VIEC.ke_hoach_bo_tro === 'ke-hoach-bo-tro' && d.nhomViecCua('ke_hoach_bo_tro') === 'case-hoc-thuat' && d.nhomViecCua('phoi_hop') === 'case-hoc-thuat', 'nhóm + loại hạn');
     const bp = dongViec(ha, 'baoph:', em.id);
-    assert(bp.length === 1 && bp[0].group === 'phoi_hop' && bp[0].due === null && bp[0].tieuDe === 'Báo phụ huynh qua TVV · LT2a VIEC · Giữa khoá', `Báo PH: ${JSON.stringify(bp.map((x) => [x.group, x.due, x.tieuDe]))}`);
+    assert(bp.length === 1 && bp[0].group === 'phoi_hop' && bp[0].due === null && bp[0].tieuDe === 'Báo phụ huynh qua TVV · LT2a VIEC · Progress Test', `Báo PH: ${JSON.stringify(bp.map((x) => [x.group, x.due, x.tieuDe]))}`);
     assert(!dongViec(khoa, 'kehoach:', em.id).length && !dongViec(khoa, 'baoph:', em.id).length, 'GVBM G+V không phải người dạy — không thấy việc nộp kế hoạch / Báo PH');
     assert(!dongViec(khoa, 'xnpa:', em.id).length && !dongViec(ha, 'xnpa:', em.id).length, 'không có dòng "Xác nhận PA" cho PA bổ trợ');
     boTro.nopKeHoachBoTro(ha, paBt(cGv.id).id, KH);
@@ -386,14 +386,14 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     void cP;
   });
 
-  check('LT2a (7) · Phối hợp: thẻ "Giữa khoá · 2/4 môn đạt" + 4 nội dung Báo PH; GVCN đánh dấu đã làm → xong; GVBM không phải GVCN → 403', () => {
+  check('LT2a (7) · Phối hợp: thẻ "Progress Test · 2/4 môn đạt" + 4 nội dung Báo PH; GVCN đánh dấu đã làm → xong; GVBM không phải GVCN → 403', () => {
     const em = taoEm('LT2a PHOIHOP', 'MB FOU 12');
     nhap(em.pt!, { listening: 18, reading: 18, writing: 11, speaking: 12 });
     const cGv = caseTheoMon(em.id, 'writing');
     sosAuto.xacNhanCase(gvOf('MB FOU 12', 'writing'), cGv.id, XN('writing', 'FOU'));
     const ha = P.normalCoreTeacher, khoa = gvOf('MB FOU 12', 'writing');
     const luot = (phoiHop.coordinationOfStudent(ha, em.id) as any).rows.find((r: any) => r.attemptId === em.pt);
-    assert(luot && luot.nhanDot === 'Giữa khoá' && luot.sosLevel === null && luot.ketQua.chinh === '2/4 môn đạt' && luot.ketQua.phu === 'Không đạt: G+V P', JSON.stringify(luot && { n: luot.nhanDot, s: luot.sosLevel, k: luot.ketQua }));
+    assert(luot && luot.nhanDot === 'Progress Test' && luot.sosLevel === null && luot.ketQua.chinh === '2/4 môn đạt' && luot.ketQua.phu === 'Không đạt: G+V P', JSON.stringify(luot && { n: luot.nhanDot, s: luot.sosLevel, k: luot.ketQua }));
     const act = luot.actions.find((x: any) => x.kind === 'bao_ph_tvv');
     assert(act && act.kindLabel === 'Báo phụ huynh qua TVV' && act.noiDung?.length === 4, JSON.stringify(act && act.noiDung));
     assert(act.noiDung[0].includes('2/4 môn đạt') && act.noiDung[1].includes('G+V, P') && act.noiDung[2].includes('Em mất điểm ở phần này') && act.noiDung[3].includes('học lại'), act.noiDung.join(' | '));
@@ -406,7 +406,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
 
   check('LT2a (7) · Vắng cùng môn lần 2 → GVCN nhận thông báo (dời sang tuần …); lần 1 thì không', () => {
     const em = taoEm('LT2a VANG', 'MB FOU 12');
-    conn.prepare(`UPDATE assessment_attempts SET status = 'cancelled' WHERE cycle_id = (SELECT cycle_id FROM assessment_attempts WHERE id = ?) AND kind = 'final'`).run(em.pt);   // Cuối khoá tuần này chặn dời L (T15) — bỏ để thử vắng lần 2
+    conn.prepare(`UPDATE assessment_attempts SET status = 'cancelled' WHERE cycle_id = (SELECT cycle_id FROM assessment_attempts WHERE id = ?) AND kind = 'final'`).run(em.pt);   // Final Test tuần này chặn dời L (T15) — bỏ để thử vắng lần 2
     const ha = P.normalCoreTeacher;
     const co = (lan: number) => all('SELECT 1 FROM notifications WHERE user_id = ? AND dedup_key = ?', ha.userId, `vang-thuong:${em.pt}:reading:${lan}`).length;
     regular.saveRegularScore(P.admin, em.pt!, 'reading', { noShow: true });
@@ -414,7 +414,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     regular.saveRegularScore(P.admin, em.pt!, 'reading', { noShow: true });
     assert(co(2) === 1, 'lần 2 phải có thông báo');
     const tb = get('SELECT title FROM notifications WHERE user_id = ? AND dedup_key = ?', ha.userId, `vang-thuong:${em.pt}:reading:2`);
-    assert(/vắng R Giữa khoá lần 2 — đã dời sang W\d/.test(tb.title) && !/SOS/.test(tb.title), tb.title);
+    assert(/vắng R Progress Test lần 2 — đã dời sang W\d/.test(tb.title) && !/SOS/.test(tb.title), tb.title);
   });
 
   // ------------------------------------------------------------------ khối 8 · M1b — em vào lớp thường tự có bài Giữa khoá + Cuối khoá (Task 8)
@@ -438,7 +438,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
   };
   const baiCua = (sid: number) => all(`SELECT a.id, a.kind, a.status, a.class_id, (SELECT COUNT(*) FROM attempt_skills k WHERE k.attempt_id = a.id AND k.required = 1) AS mon FROM assessment_attempts a WHERE a.student_id = ? ORDER BY a.attempt_no`, sid);
 
-  check('LT2a (8) · Thêm 3 HV vào FOU khai giảng hôm nay → mỗi em 2 bài (Giữa khoá tuần 4, Cuối khoá tuần 8) planned đủ 4 môn; Pre FOU 1 bài (Cuối khoá); chạy lại không trùng', () => {
+  check('LT2a (8) · Thêm 3 HV vào FOU khai giảng hôm nay → mỗi em 2 bài (Progress Test tuần 4, Final Test tuần 8) planned đủ 4 môn; Pre FOU 1 bài (Final Test); chạy lại không trùng', () => {
     const fou = dungLop('FOU', 0);
     const em = themEm(fou, ['LT2a M1b A', 'LT2a M1b B', 'LT2a M1b C']);
     for (const id of em) {
@@ -451,11 +451,11 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     assert(bp.length === 1 && bp[0].kind === 'final' && bp[0].mon === 1, JSON.stringify(bp));
     assert(regular.taoBaiThuongMacDinh(all('SELECT id FROM learning_cycles WHERE student_id IN (?, ?)', em[0], ep).map((c) => c.id), P.admin.userId).length === 0, 'chạy lại không tạo trùng');
     const gk = get(`SELECT rp.week_start w FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id WHERE a.student_id = ? AND a.kind = 'progress'`, em[0]).w;
-    assert(gk === t.addDays(get('SELECT start_date d FROM classes WHERE id = ?', fou).d, 21), `Giữa khoá tuần 4 = khai giảng + 3 tuần: ${gk}`);
+    assert(gk === t.addDays(get('SELECT start_date d FROM classes WHERE id = ?', fou).d, 21), `Progress Test tuần 4 = khai giảng + 3 tuần: ${gk}`);
   });
 
-  check('LT2a (8) · Thêm HV vào lớp đã QUA tuần Giữa khoá → chỉ Cuối khoá (không dựng bài quá hạn); QL vẫn xếp tay được bài đã qua (planRegularTests)', () => {
-    const fou = dungLop('FOU', 5);                                    // khai giảng 5 tuần trước → hôm nay ở tuần 6: Giữa khoá (tuần 4) đã qua
+  check('LT2a (8) · Thêm HV vào lớp đã QUA tuần Progress Test → chỉ Final Test (không dựng bài quá hạn); QL vẫn xếp tay được bài đã qua (planRegularTests)', () => {
+    const fou = dungLop('FOU', 5);                                    // khai giảng 5 tuần trước → hôm nay ở tuần 6: Progress Test (tuần 4) đã qua
     const [em] = themEm(fou, ['LT2a M1b Muon']);
     const b = baiCua(em);
     assert(b.length === 1 && b[0].kind === 'final', JSON.stringify(b));
@@ -474,7 +474,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ khối 9 · lớp thường không nhãn SOS (Task 9 · T58)
-  check('LT2a (9) · nhanKetQuaThuong: 6 ca — Giữa khoá n/4 môn đạt + Không đạt, đủ đạt, đang chấm dở, Cuối khoá %, Pre FOU %, chưa có điểm; không ca nào có chữ SOS', () => {
+  check('LT2a (9) · nhanKetQuaThuong: 6 ca — Progress Test n/4 môn đạt + Không đạt, đủ đạt, đang chấm dở, Final Test %, Pre FOU %, chưa có điểm; không ca nào có chữ SOS', () => {
     const k = (o: any) => d.nhanKetQuaThuong({ kind: 'progress', ct: 'FOU', scored: 4, required: 4, failedSkills: [], tyLeTong: null, khongChiaMon: false, ...o });
     const ca = [
       k({ failedSkills: ['writing', 'speaking'] }), k({}), k({ scored: 2 }), k({ kind: 'final', tyLeTong: 0.64, failedSkills: ['reading'] }),
@@ -482,23 +482,23 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     ];
     assert(ca[0].chinh === '2/4 môn đạt' && ca[0].phu === 'Không đạt: G+V P' && ca[0].dat === false, JSON.stringify(ca[0]));
     assert(ca[1].chinh === '4/4 môn đạt' && ca[1].phu === null && ca[1].dat === true, JSON.stringify(ca[1]));
-    assert(ca[2].chinh === '2/2 môn đạt (đã chấm)' && ca[2].dat === null, JSON.stringify(ca[2]));
+    assert(ca[2].chinh === '2/2 môn đạt' && ca[2].dat === null, JSON.stringify(ca[2]));
     assert(ca[3].chinh === '64%' && ca[3].phu === 'Không đạt: R', JSON.stringify(ca[3]));
     assert(ca[4].chinh === '68%' && ca[4].phu === null && ca[4].dat === false, JSON.stringify(ca[4]));
     assert(ca[5].chinh === '—' && ca[5].dat === null, JSON.stringify(ca[5]));
     assert(!/SOS/.test(JSON.stringify(ca)), 'không chữ SOS');
   });
 
-  check('LT2a (9) · Ghim Hành trình lớp thường: "Giữa · 2/4 môn đạt", "Cuối · 64%" — không SOS; ghim FT (MT) vẫn "SOS n"', () => {
+  check('LT2a (9) · Ghim Hành trình lớp thường: "Progress · 2/4 môn đạt", "Final · 64%" — không SOS; ghim FT (MT) vẫn "SOS n"', () => {
     const g = (o: any) => d.nhanGhim({ cheDo: 'ratio', attemptNo: 1, kind: 'progress', overall: null, sosLevel: 2, soDat: 2, soYeuCau: 4, soCoDiem: 4, ...o });
     const gk = g({}), ck = g({ kind: 'final', sosLevel: 1, soDat: 3, tyLe: 0.64 }), dat = g({ sosLevel: 0, soDat: 4 });
-    assert(gk.chu === 'Giữa · 2/4 môn đạt' && ck.chu === 'Cuối · 64%' && dat.chu === 'Giữa · 4/4 môn đạt', `${gk.chu} | ${ck.chu} | ${dat.chu}`);
+    assert(gk.chu === 'Progress · 2/4 môn đạt' && ck.chu === 'Final · 64%' && dat.chu === 'Progress · 4/4 môn đạt', `${gk.chu} | ${ck.chu} | ${dat.chu}`);
     assert(!/SOS/.test(JSON.stringify([gk, ck, dat])), 'không chữ SOS');
     const ft = d.nhanGhim({ cheDo: 'ielts', attemptNo: 2, kind: 'mock', overall: 5.5, sosLevel: 2, soDat: null, soYeuCau: 4, soCoDiem: 4 });
     assert(/SOS 2/.test(ft.chu), ft.chu);
   });
 
-  check('LT2a (9) · Tổng hợp Test khung thường (PR-Pb2-a): Giữa khoá theo môn "Đạt hết / 1 môn trượt / ≥ 2 môn trượt", không chữ SOS; khung FT vẫn "SOS 1..3"', () => {
+  check('LT2a (9) · Tổng hợp Test khung thường (PR-Pb2-a): Progress Test theo môn "Đạt hết / 1 môn trượt / ≥ 2 môn trượt", không chữ SOS; khung FT vẫn "SOS 1..3"', () => {
     const nhan = (ct: any) => d.cotTongHopFor(ct).filter((c: any) => /^sos[123]$/.test(c.khoa)).map((c: any) => c.nhan(ct)).join('|');
     const giua = d.cotTongHopFor('thuong').filter((c: any) => c.nhomCon === 'giua').map((c: any) => c.nhan('thuong')).join('|');
     assert(giua === 'Đạt hết|1 môn trượt|≥ 2 môn trượt' && !d.cotTongHopFor('thuong').some((c: any) => /SOS/.test(c.nhan('thuong'))), giua);
@@ -517,7 +517,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     const c = caseTheoMon(em.id, 'writing');
     assert(get('SELECT sos_level s FROM sos_cases WHERE id = ?', c.id).s === null, 'Case lớp thường: sos_level NULL');
     const ms: any[] = (cases as any).milestonesOf(c.id);
-    assert(ms.length > 0 && ms.filter((m) => m.attemptNo).every((m) => m.dot === 'Giữa khoá'), JSON.stringify(ms.map((m) => [m.kind, m.dot])));
+    assert(ms.length > 0 && ms.filter((m) => m.attemptNo).every((m) => m.dot === 'Progress Test'), JSON.stringify(ms.map((m) => [m.kind, m.dot])));
   });
 
   // ------------------------------------------------------------------ khối 10 · giao diện Case Giữa khoá, kế hoạch bổ trợ (Task 10)
@@ -553,7 +553,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ khối 11 · dữ liệu demo G1–G5 (Task 11)
-  check('LT2a (11) · Demo: 0 tín hiệu pending của lớp thường; G1–G5 đúng trạng thái; mỗi em trượt Giữa khoá có đúng 1 dòng Báo PH', () => {
+  check('LT2a (11) · Demo: 0 tín hiệu pending của lớp thường; G1–G5 đúng trạng thái; mỗi em trượt Progress Test có đúng 1 dòng Báo PH', () => {
     assert(get(`SELECT COUNT(*) n FROM case_signals cs JOIN assessment_attempts a ON a.id = cs.attempt_id WHERE cs.status = 'pending' AND a.kind IN ('progress', 'final')`).n === 0, 'lớp thường không còn tín hiệu pending');
     const hv = (ten: string) => get('SELECT id FROM students WHERE full_name = ?', ten).id as number;
     const cs = (ten: string, topic: string) => get('SELECT * FROM sos_cases WHERE student_id = ? AND topic = ? ORDER BY id DESC', hv(ten), topic);
@@ -577,7 +577,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     assert(v4('Ngô Gia Hân', 'speaking').k === 'cho-duyet-khong-theo-doi', JSON.stringify(v4('Ngô Gia Hân', 'speaking')));
     /* G6: Khoa (không phải người dạy FOU) đã xác nhận → GVCN Hà có việc Nộp kế hoạch bổ trợ, hạn hôm nay + 2; Trang có việc cho G4 */
     const viecHa = ((mywork.myWork(P.normalCoreTeacher) as any).items as any[]).filter((x) => x.key.startsWith('kehoach:') && x.studentId === hv('Trương Gia Bảo'));
-    assert(viecHa.length === 1 && viecHa[0].due === d.hanXacNhan(TODAY) && /^Nộp kế hoạch bổ trợ · Giữa khoá · G\+V · /.test(viecHa[0].tieuDe), JSON.stringify(viecHa.map((x) => [x.tieuDe, x.due])));
+    assert(viecHa.length === 1 && viecHa[0].due === d.hanXacNhan(TODAY) && /^Nộp kế hoạch bổ trợ · Progress Test · G\+V · /.test(viecHa[0].tieuDe), JSON.stringify(viecHa.map((x) => [x.tieuDe, x.due])));
     for (const ten of ['Lê Hoàng Anh', 'Bùi Minh Châu', 'Hoàng Quốc Bình', 'Mai Hải Long', 'Phan Khánh Linh', 'Ngô Gia Hân', 'Trương Gia Bảo']) {
       assert(get(`SELECT COUNT(*) n FROM sos_coordination_actions WHERE student_id = ? AND kind = 'bao_ph_tvv' AND status != 'removed'`, hv(ten)).n === 1, `Báo PH của ${ten}`);
     }

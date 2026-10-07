@@ -33,7 +33,7 @@ function KetQuaGanNhatEm({ ketQua }: { ketQua: KetQuaVao | null }) {
     <Khoi tieuDe="Kết quả gần nhất">
       <div className="flex flex-wrap items-center gap-x-2">
         <span className="text-sm font-bold tabular-nums text-slate-100">{k.chinh}</span>
-        {k.lech && <span className="text-[11px] font-semibold tabular-nums text-bad" title={`Dưới kỳ vọng ${k.lech.replace('−', '')}`}>{k.lech}</span>}
+        {k.lech && <span className="text-xs font-semibold tabular-nums text-bad" title={`Dưới kỳ vọng ${k.lech.replace('−', '')}`}>{k.lech}</span>}
         {k.sos && <Level tone={sosTone(ketQua?.sosLevel ?? null)} dut={k.sosTamThoi}>{k.sos}{k.sosTamThoi ? ' tạm thời' : ''}</Level>}
       </div>
       {k.dong1 && <span className="block text-[12px] leading-4 text-slate-500">{k.dong1}</span>}
@@ -154,10 +154,10 @@ function NoiDungLoTrinhTiep({ onClose, studentId, studentName, lop, onDone }: {
         <span aria-hidden className={`mt-[3px] inline-block h-3 w-3 shrink-0 rounded-full border ${chon ? 'border-[color:var(--accent)] bg-[color:var(--accent)]' : 'border-slate-500'}`} />
         <span className="min-w-0">
           <span className="block text-sm font-semibold text-slate-100">{nhanCua(h)}</span>
-          <span className="block text-[11px] text-slate-500">{NGHIA_HUONG[h]}</span>
-          {h === 'fast_track' && mt0Chu && <span className="block text-[11px] font-semibold tabular-nums text-slate-300">{mt0Chu}</span>}
+          <span className="block text-xs text-slate-500">{NGHIA_HUONG[h]}</span>
+          {h === 'fast_track' && mt0Chu && <span className="block text-xs font-semibold tabular-nums text-slate-300">{mt0Chu}</span>}
         </span>
-        {coGoiY && <span className="ml-auto shrink-0 self-center text-[11px] font-semibold text-teal-300">Hệ thống gợi ý</span>}
+        {coGoiY && <span className="ml-auto shrink-0 self-center text-xs font-semibold text-teal-300">Hệ thống gợi ý</span>}
       </button>
     );
   };
@@ -171,9 +171,9 @@ function NoiDungLoTrinhTiep({ onClose, studentId, studentName, lop, onDone }: {
       }}>
       <KetQuaGanNhatEm ketQua={data.ketQua} />
       {goiY && (
-        <Khoi tieuDe="Hệ thống gợi ý theo Cuối khoá">
+        <Khoi tieuDe="Hệ thống gợi ý theo Final Test">
           <div className="flex flex-wrap items-baseline gap-x-2">
-            <span className="text-sm font-bold tabular-nums text-slate-100">Cuối khoá {Math.round((data.cuoiKhoa?.tyLe ?? 0) * 100)}%</span>
+            <span className="text-sm font-bold tabular-nums text-slate-100">Final Test {Math.round((data.cuoiKhoa?.tyLe ?? 0) * 100)}%</span>
             {(data.cuoiKhoa?.monTruot.length ?? 0) > 0 && <span className="text-[12px] text-slate-500">không đạt {data.cuoiKhoa!.monTruot.map((m) => tenMonNgan(lopHoc.ma, m)).join(', ')}</span>}
           </div>
           <span className="block text-[12px] leading-4 text-slate-400">{goiY.nhan}</span>
@@ -182,7 +182,7 @@ function NoiDungLoTrinhTiep({ onClose, studentId, studentName, lop, onDone }: {
       <Khoi tieuDe={deXuat ? 'Hướng bạn đề xuất (Quản lý quyết)' : 'Hướng đi'}>
         <p className="m-0 mb-2 text-xs text-slate-400">
           {deXuat
-            ? 'Cuối khoá 50–59%: bạn ghi đề xuất, Quản lý chọn hướng cuối cùng khi chuyển lớp. Chưa đổi lớp.'
+            ? 'Final Test 50–59%: bạn ghi đề xuất, Quản lý chọn hướng cuối cùng khi chuyển lớp. Chưa đổi lớp.'
             : 'Chỉ là dự định, chưa đổi lớp. Ghi trước để người kế nhiệm biết em sẽ đi đâu sau lớp này.'}
         </p>
         <div {...lf.o(loi, 'huong')} tabIndex={-1} role="radiogroup" aria-label={deXuat ? 'Hướng đề xuất' : 'Hướng đi'} className="space-y-1.5 outline-none">
@@ -198,7 +198,7 @@ function NoiDungLoTrinhTiep({ onClose, studentId, studentName, lop, onDone }: {
             </>
           )}
         </div>
-        {lf.loiCua(loi, 'huong') && <span className="block text-[11px] text-late">{lf.loiCua(loi, 'huong')}</span>}
+        {lf.loiCua(loi, 'huong') && <span className="block text-xs text-late">{lf.loiCua(loi, 'huong')}</span>}
       </Khoi>
 
       {huong && (
@@ -222,7 +222,7 @@ function NoiDungLoTrinhTiep({ onClose, studentId, studentName, lop, onDone }: {
             </Hang2>
           )}
           {huong === 'chua_quyet' && (
-            <Truong nhan="Ngày xem lại" tuyChon phu="Để trống thì hệ thống nhắc lại em này ở hai tuần cuối khoá">
+            <Truong nhan="Ngày xem lại" tuyChon phu="Để trống thì hệ thống nhắc lại em này ở hai tuần cuối của khoá">
               <ONgay kieu="ngay" value={ngayXemLai} onChange={doi(setNgayXemLai)} toiThieu={homNay || undefined} ariaLabel="Ngày xem lại" />
             </Truong>
           )}

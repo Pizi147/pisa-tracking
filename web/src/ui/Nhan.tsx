@@ -9,6 +9,14 @@ export function QuaHan({ ngay, gon }: { ngay: number | null; gon?: boolean }) {
   return <span className="whitespace-nowrap font-bold text-late">⚠ {nhanQuaHan(ngay, gon)}</span>;
 }
 
+/**
+ * HAI HỌ CHIP, MỘT CỠ (PR-HK2, Q-H 02/10): 11,5 px, cao 20 px (dòng 18 + viền 1). Mọi chip chữ đều lấy lớp từ đây — thêm tông màu, không đổi dáng.
+ * `CHIP_TRON` = trạng thái học viên / lớp + số đếm (menu, tab, nhóm). `CHIP_VUONG` = trạng thái việc, kết quả, "Thiếu n", nhãn xám.
+ * Họ tròn viền trong suốt (tông có viền thì đè); tông viền đứt dùng `!border-current`.
+ */
+export const CHIP_TRON = 'inline-flex items-center whitespace-nowrap rounded-full border border-transparent px-[7px] text-[11.5px] font-bold leading-[18px]';
+export const CHIP_VUONG = 'inline-flex items-center whitespace-nowrap rounded-md border px-1.5 text-[11.5px] font-semibold leading-[18px] tabular-nums';
+
 export type ToneNhan = 'ok' | 'done' | 'bad' | 'late' | 'soon' | 'doing' | 'wait' | 'muted';
 
 const NHAN: Record<ToneNhan, string> = {
@@ -27,8 +35,7 @@ export { TONE_TRANG_THAI };
 export function Nhan({ tone, dut, title, onClick, children }: {
   tone: ToneNhan; dut?: boolean; title?: string; onClick?: () => void; children: ReactNode;
 }) {
-  const cls = `inline-flex items-center rounded-full px-[7px] text-[11.5px] font-bold leading-[18px] whitespace-nowrap ${NHAN[tone]} ${
-    dut ? 'bg-transparent border border-dashed border-current' : ''}`;
+  const cls = `${CHIP_TRON} ${NHAN[tone]} ${dut ? 'bg-transparent border-dashed !border-current' : ''}`;
   if (onClick) {
     return (
       <button type="button" title={title} onClick={onClick} className={`${cls} relative min-h-[28px] hover:brightness-125 max-sm:after:absolute max-sm:after:-inset-y-2 max-sm:after:inset-x-0 max-sm:after:content-['']`}>{children}</button>

@@ -9,12 +9,13 @@ import { useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
+import { thongBaoVang } from './thongBaoVang.ts';
 import { Empty, Info, Level, Status } from '../../ui/ui.tsx';
 import { useTrangThaiLuuO } from '../../ui/SaveState.tsx';
 import { ODiemThuong, laTuChoi, type SaveOpts } from '../fasttrack/ScoreEntry.tsx';
 import { caseStatusLabel, sosTone } from '../../lib/format.ts';
 import {
-  ATTEMPT_KIND_SHORT, CHU_THAO_TAC, CHUONG_TRINH_KHONG_CHIA_MON, ketQuaThuong, ngay, tenMon, tenMonNgan, thaoTacKyNang, trangThaiTT, tuanLich,
+  ATTEMPT_KIND_SHORT, CHU_THAO_TAC, CHUONG_TRINH_KHONG_CHIA_MON, ketQuaThuong, maHocVienNgan, ngay, tenMon, tenMonNgan, thaoTacKyNang, trangThaiTT, tuanLich,
   type AttemptKind, type ThaoTac,
 } from '@shared/domain/index.ts';
 import { MenuDong } from '../../ui/MenuDong.tsx';
@@ -233,12 +234,14 @@ export function useLuuThuong(attemptId: number, onReload: () => void, ct: string
     (await gui(skill, p.lyDo ? { score: p.score, total: p.total, lyDo: p.lyDo } : { score: p.score, total: p.total }, opts)) !== null;
 
   /* Dấu "-" gửi RIÊNG (máy chủ không nhận kèm điểm/tổng): ghi dấu là dời môn sang tuần sau, gỡ dấu là trả về tuần cũ. */
-  const dau = async (skill: string, bat: boolean, im = false) => {
+  const dau = async (skill: string, bat: boolean) => {
     const r = await gui(skill, { noShow: bat });
-    if (r && r.moved && !im) {
-      toast.push('ok', bat ? `Đã dời ${tenO(skill)} sang tuần sau.` : `Đã gỡ vắng ${tenO(skill)}${tenHv ? ` · ${tenHv}` : ''} · về ${r.tuanMoi ?? 'tuần cũ'}`);
-    } else if (r && !bat && r.giuLich && !im) {
-      toast.push('ok', `Đã gỡ vắng ${tenO(skill)}${tenHv ? ` · ${tenHv}` : ''} · giữ ${r.tuanMoi ?? 'tuần mới'}`);   // PR-BV: tuần mới đã có điểm
+    if (r && bat) {
+      thongBaoVang(toast, `${attemptId}:${skill}`, tenMonNgan(ct, skill), tenHv, r.tuanMoi);   // K4: gõ "-" và nút Vắng cùng một thông báo
+    } else if (r && r.moved) {
+      toast.push('ok', `Đã gỡ vắng ${tenMonNgan(ct, skill)}${tenHv ? ` · ${tenHv}` : ''} · về ${r.tuanMoi ?? 'tuần cũ'}`);
+    } else if (r && r.giuLich) {
+      toast.push('ok', `Đã gỡ vắng ${tenMonNgan(ct, skill)}${tenHv ? ` · ${tenHv}` : ''} · giữ ${r.tuanMoi ?? 'tuần mới'}`);   // PR-BV: tuần mới đã có điểm
     }
     return r !== null;
   };
@@ -299,7 +302,7 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
       <Empty
         title="Lớp này chưa có bài kiểm tra nào"
         hint={anNutTao ? undefined : data.canPlan
-          ? 'Bấm "Tạo bài kiểm tra theo chương trình" để sinh bài giữa khoá và cuối khoá theo đúng mốc tuần học.'
+          ? 'Bấm "Tạo bài kiểm tra theo chương trình" để sinh bài Progress Test và Final Test theo đúng mốc tuần học.'
           : 'Quản lý cần tạo kế hoạch kiểm tra cho lớp này.'}
         action={nutTao || undefined}
       />
@@ -316,7 +319,7 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
 
   return (
     <div>
-      <div className="overflow-x-auto">
+      <div className="table-scroll bang-dinh">
         <table className="w-full text-sm tabular-nums" style={{ tableLayout: 'fixed', minWidth: rong }}>
           <colgroup>
             <col style={{ width: COT_HV }} />
@@ -334,7 +337,7 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
                       <span title={tenMon(data.programme.code, k)}>{tenMonNgan(data.programme.code, k)}</span>
                       {cotSuaDuoc(k) && (
                         <span className="flex flex-wrap items-center justify-end gap-1 normal-case tracking-normal font-normal">
-                          <span className="text-[11px] text-slate-500">tổng</span>
+                          <span className="text-xs text-slate-500">tổng</span>
                           <input className="field w-11 px-1 py-0.5 text-center text-[12px] tabular-nums"
                             inputMode="numeric" value={chuTong(k)} placeholder="—"
                             title="Tổng số câu của đề cả lớp làm — ô còn trống tổng lấy sẵn số này; bấm Điền cả cột để điền luôn."
@@ -421,17 +424,19 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
     <tr className={`row-hover h-14 ${row.studentStatus !== 'active' ? 'row-muted' : ''} ${active ? 'row-active' : ''}`}
       data-hv={row.studentId}>
       <td className="td py-1.5 sticky-col">
-        <div className="flex items-center gap-1 min-w-0">
-          <Link className="link block truncate max-sm:py-3 max-sm:-my-3" to={`/hoc-vien/${row.studentId}`} title={row.studentName}>{row.studentName}</Link>
+        <div className="min-w-0">
+          <Link className="link block max-sm:break-words max-sm:py-3 max-sm:-my-3 sm:truncate" to={`/hoc-vien/${row.studentId}`} title={row.studentName}>{row.studentName}</Link>
           {row.hoanTat && (
-            <Info title={`Hết Chủ nhật ${ngay(row.chuNhatCuoi)}. Chỉ Quản lý sửa được điểm — nhờ Quản lý hiệu chỉnh.`}>
-              Đã hoàn tất
-            </Info>
+            <div className="mt-0.5">
+              <Info title={`Hết Chủ nhật ${ngay(row.chuNhatCuoi)}. Chỉ Quản lý sửa được điểm — nhờ Quản lý hiệu chỉnh.`}>
+                Đã hoàn tất
+              </Info>
+            </div>
           )}
         </div>
         {/* Trạng thái lưu RIÊNG TỪNG DÒNG — lỗi nói rõ ở dòng nào, có nút Thử lại. */}
-        <div className="flex items-center gap-1.5 text-[11px] text-slate-500 min-w-0">
-          <span className="shrink-0">{row.studentCode}</span>
+        <div className="flex items-center gap-1.5 text-xs text-slate-500 min-w-0">
+          <span className="shrink-0">{maHocVienNgan(row.studentCode)}</span>
           <DauLuu status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />
         </div>
       </td>
@@ -453,7 +458,7 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
         if (dung) {
           return (
             <td key={k} className="td group relative py-1.5 text-right" data-kn={k}>
-              <span className="text-[11px] text-slate-500 leading-tight" title={`${tenMon(sheet.programme.code, k)}: ${chuDung}`}>{chuDung}</span>
+              <span className="text-xs text-slate-500 leading-tight" title={`${tenMon(sheet.programme.code, k)}: ${chuDung}`}>{chuDung}</span>
               {menuO(k)}
             </td>
           );
@@ -474,7 +479,7 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
               tenMon={tenMon(sheet.programme.code, k)}
               tenHv={row.studentName}
               onSave={(p, o) => luu(k, p, o)}
-              onDau={(bat, im) => dau(k, bat, im)}
+              onDau={(bat) => dau(k, bat)}
               onLoiNhap={(c) => loiNhap(k, c)}
               inputRef={(el) => register(ci, el)}
               onKeyDown={(e) => {

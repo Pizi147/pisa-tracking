@@ -4,7 +4,7 @@ import { Empty, ErrorState, NhanTrangThai, Outcome, SCORE_CHIP, SCORE_TEXT, Skel
 import { Han } from '../../ui/Han.tsx';
 import { fmtBand } from '../../lib/format.ts';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
-import { Nhan } from '../../ui/Nhan.tsx';
+import { CHIP_VUONG, Nhan } from '../../ui/Nhan.tsx';
 import { IconCanhBao } from '../../ui/BieuTuong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useDienThoai } from '../../ui/TheDong.tsx';
@@ -366,9 +366,9 @@ export function KhoaQuyChe() {
  * PA chờ Quản lý duyệt kế hoạch: nền tím nhạt.
  */
 export function NhanLoai({ loai, cho }: { loai: 'Case' | 'PA'; cho?: boolean }) {
-  const lop = loai === 'Case' ? 'border border-current text-slate-100'
-    : cho ? 'bg-wait-bg text-wait' : 'bg-[color:var(--line-strong)] text-slate-100';
-  return <span className={`inline-flex shrink-0 items-center rounded px-[5px] text-[11px] font-bold leading-[15px] ${lop}`}>{loai}</span>;
+  const lop = loai === 'Case' ? 'border-current text-slate-100'
+    : cho ? 'border-transparent bg-wait-bg text-wait' : 'border-transparent bg-[color:var(--line-strong)] text-slate-100';
+  return <span className={`${CHIP_VUONG} shrink-0 ${lop}`}>{loai}</span>;
 }
 
 /** Màu vạch trái 3px của hàng Case theo nhãn trạng thái (token có sẵn — không màu mới). */
@@ -506,7 +506,7 @@ function HangPA({ p, c, ngan, onMoCase }: {
   /* Q19: khoảng PA nói MÃ TUẦN (`từ W3 SEP · đến MT2 · W4 OCT`), không dd/mm. PA Bổ trợ: mốc đã nằm trong tên. */
   const khoang = chuKhoangPa({ startedOn: p.startedOn, completedOn: p.completedOn, mocChu: boTro ? null : p.mocChu }, homNay);
   /* PR-S5F-b (mockup LT2a): tên PA Bổ trợ = `Bổ trợ 2 buổi/tuần · đến Cuối khoá · W4 OCT · trừ buổi Free` — mốc nằm trong tên, không lặp ở dòng phụ. */
-  const ten = boTro ? `Bổ trợ ${c.boTro!.buoiMoiTuan} buổi/tuần · ${p.mocChu ?? 'đến Cuối khoá'} · trừ buổi Free` : p.name;
+  const ten = boTro ? `Bổ trợ ${c.boTro!.buoiMoiTuan} buổi/tuần · ${p.mocChu ?? 'đến Final Test'} · trừ buổi Free` : p.name;
   const chuaChay = !!p.chuaChay;
   const choDuyetKh = chuaChay && c.boTro?.keHoach?.trangThai === 'cho';
   const chung = c.boTro?.chung && c.boTro.mon.length > 1 ? `PA chung · ${c.boTro.mon.map((m) => m.tenMon).join(', ')}` : null;
@@ -524,7 +524,7 @@ function HangPA({ p, c, ngan, onMoCase }: {
             {ten}
           </button>
           {p.batBuoc && (
-            <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-[12px] text-slate-400" title={p.kind === 'bo_tro' ? 'PA Bổ trợ bắt buộc đến Cuối khoá — không thay, không kết thúc sớm' : 'PA theo quy chế SOS — không thay, không kết thúc sớm'}>
+            <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-[12px] text-slate-400" title={p.kind === 'bo_tro' ? 'PA Bổ trợ bắt buộc đến Final Test — không thay, không kết thúc sớm' : 'PA theo quy chế SOS — không thay, không kết thúc sớm'}>
               <KhoaQuyChe />theo quy chế
             </span>
           )}
@@ -612,7 +612,7 @@ function ScoreCell({ row }: { row: Row }) {
         {value}
       </span>
       {!row.ratio && g !== null && (
-        <span className={`text-[12px] ml-1.5 font-medium ${scoreToneText(row)}`}>{gapText(g)}</span>
+        <span className={`text-[12px] ml-1.5 font-medium tabular-nums ${scoreToneText(row)}`} title={g === 0 ? 'đạt kỳ vọng' : `${g < 0 ? 'dưới' : 'trên'} kỳ vọng ${Math.abs(g)}`}>{gapText(g)}</span>
       )}
       <span className="block text-[12px] text-slate-400 mt-0.5"><DongMt row={row} /></span>
       {!row.ratio && t !== null && row.trendFrom !== null && (
@@ -649,7 +649,7 @@ function boNamCungNam(code: string | null, homNay: string): string {
 
 export function gapText(gap: number): string {
   if (gap === 0) return 'đạt kỳ vọng';
-  return gap < 0 ? `thiếu ${Math.abs(gap)}` : `vượt ${gap}`;
+  return gap < 0 ? `-${Math.abs(gap)}` : `+${gap}`;
 }
 
 /* Bảng bốn màu điểm nằm ở MỘT chỗ duy nhất: `ui.tsx` (SCORE_CHIP / SCORE_TEXT). */

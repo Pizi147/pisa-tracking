@@ -1,4 +1,5 @@
 import type { MouseEvent, ReactNode } from 'react';
+import { CHIP_TRON } from './Nhan.tsx';
 
 /**
  * HÀNG LỚN / HÀNG CON (PR-UX0, N-2 — mockup 17 phương án A). Kiểu dáng nằm ở `index.css` (`.hang-lon`, `.hang-con`,
@@ -69,7 +70,7 @@ export function KhoiNhom({ mo, onMo, nhan, tieuDe, dem, demMau, phu, children, i
         <div className={`khoi-nhom-dau dong rong ${phang ? 'max-sm:min-h-[44px]' : ''}`}>
           <span className="h-4 w-4 shrink-0" aria-hidden />
           <span className="text-slate-400">{tieuDe}</span>
-          {dem !== undefined && <span className="rounded-full px-1.5 text-xs font-bold tabular-nums text-slate-400" style={{ background: 'var(--surface-2)' }}>{dem}</span>}
+          {dem !== undefined && <span className={`${CHIP_TRON} tabular-nums text-slate-400`} style={{ background: 'var(--surface-2)' }}>{dem}</span>}
         </div>
       </section>
     );
@@ -79,8 +80,8 @@ export function KhoiNhom({ mo, onMo, nhan, tieuDe, dem, demMau, phu, children, i
       <div className={`khoi-nhom-dau ${mo ? '' : 'dong'} ${phang ? 'max-sm:min-h-[44px]' : ''}`} onClick={(e) => boQuaNutCon(e, onMo)}>
         <MuiTenMo mo={mo} onMo={onMo} nhan={nhan} />
         <span className="text-slate-100">{tieuDe}</span>
-        {dem !== undefined && <span className={`rounded-full px-1.5 text-xs font-bold tabular-nums ${demCls}`} style={demMau ? undefined : { background: 'var(--surface-2)' }}>{dem}</span>}
-        {phu && <span className="text-[11px] font-normal text-slate-500">{phu}</span>}
+        {dem !== undefined && <span className={`${CHIP_TRON} tabular-nums ${demCls}`} style={demMau ? undefined : { background: 'var(--surface-2)' }}>{dem}</span>}
+        {phu && <span className="text-xs font-normal text-slate-500">{phu}</span>}
       </div>
       {mo && <div id={id} className={phang ? '' : 'khoi-nhom-con'}>{children}</div>}
     </section>

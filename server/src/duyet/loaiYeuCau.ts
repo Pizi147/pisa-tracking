@@ -594,7 +594,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       const ten = mon.map((m) => tenMonNgan(x?.ct ?? null, m)).join(', ');
       return {
         tieuDe: `Kế hoạch bổ trợ${ten ? ` · ${ten}` : ''}`,
-        phu: 'Giữa khoá',
+        phu: 'Progress Test',
         dong: [
           `Người dạy bổ trợ: ${x?.nguoi_day ?? 'chưa chọn'}${mon[0] ? ` · ${moTaBoTro(x?.ct ?? null, mon[0])}` : ''}`,
           `Nội dung yếu: ${d.noiDungYeu ?? ''}`,
@@ -641,9 +641,9 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     moTa: (yc, ngu) => {
       const x = ngu.them.get(yc.id);
       return {
-        tieuDe: 'Cuối khoá dời quá tuần cuối khoá',
+        tieuDe: 'Final Test dời quá tuần Final Test',
         phu: x?.full_name ?? null,
-        dong: [`Bài Cuối khoá bị dời tới ${x?.week_start ? tuanLich(x.week_start, ngu.homNay) : 'tuần sau'} — sau tuần cuối khoá của lớp.`],
+        dong: [`Bài Final Test bị dời tới ${x?.week_start ? tuanLich(x.week_start, ngu.homNay) : 'tuần sau'} — sau tuần Final Test của lớp.`],
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id) : undefined,
         duLieu: { tenGv: x?.ten_gv ?? null, daNhacLuc: x?.da_nhac ?? null },
       };

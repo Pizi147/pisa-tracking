@@ -58,7 +58,7 @@ export function CatalogAdmin() {
     <div className="grid gap-4 lg:grid-cols-2 items-start">
       <Card title="Lộ trình" className="min-w-0" bodyClass="p-0">
         {routes.loading ? <div className="p-4"><Skeleton rows={3} /></div> : (
-          <div className="overflow-x-auto"><table className="w-full text-sm">
+          <div className="table-scroll bang-dinh"><table className="w-full text-sm">
             <thead>
               <tr>
                 <th className="th">Lộ trình</th><th className="th">Kỳ vọng MT</th><th className="th">Lịch MT mặc định</th>
@@ -94,12 +94,12 @@ export function CatalogAdmin() {
 
       <Card title="Chương trình" className="min-w-0" bodyClass="p-0">
         {programmes.loading ? <div className="p-4"><Skeleton rows={3} /></div> : (
-          <div className="overflow-x-auto"><table className="w-full text-sm">
+          <div className="table-scroll bang-dinh"><table className="w-full text-sm">
             <thead>
               <tr>
                 <th className="th">Chương trình</th>
-                <th className="th text-right">Số tuần</th><th className="th text-right">Giữa khoá</th>
-                <th className="th text-right">Cuối khoá</th><th className="th text-right">Lớp</th><th className="th" />
+                <th className="th text-right">Số tuần</th><th className="th text-right">Progress Test</th>
+                <th className="th text-right">Final Test</th><th className="th text-right">Lớp</th><th className="th" />
               </tr>
             </thead>
             <tbody>
@@ -128,7 +128,7 @@ export function CatalogAdmin() {
         {ghiChu && <p className="px-4 pt-3 text-xs text-ok" role="status">{ghiChu}</p>}
         <div className="p-3">
           <SectionNote>
-            Sửa được tên, số tuần, tuần Giữa/Cuối khoá. Số mới <strong>áp cho lớp tạo sau khi lưu</strong> — lớp đang
+            Sửa được tên, số tuần, tuần Progress/Final Test. Số mới <strong>áp cho lớp tạo sau khi lưu</strong> — lớp đang
             học giữ số tuần lúc tạo. Cách chấm và bộ môn của chương trình không đổi ở đây: đổi là đổi ý nghĩa của điểm đã nhập.
           </SectionNote>
         </div>
@@ -156,6 +156,7 @@ export function CatalogAdmin() {
 function RouteDialog({ row, onClose, onDone }: { row: RouteRow; onClose: () => void; onDone: () => void }) {
   const toast = useToast();
   const [f, setF] = useState({ name: row.name, note: row.note ?? '', active: row.status === 'active' });
+  const [goc] = useState(() => JSON.stringify(f));   // luật I1: sửa so với giá trị đã lưu → "Huỷ thay đổi"
   const [busy, setBusy] = useState(false);
   const lf = useLoiForm();
   const loi = dsLoi([{ khoa: 'ten', nhan: 'Tên gọi', toiThieu: 1 }], { ten: f.name });
@@ -174,7 +175,7 @@ function RouteDialog({ row, onClose, onDone }: { row: RouteRow; onClose: () => v
   return (
     <KhungPanel tieuDe={`Sửa lộ trình ${row.code}`} onDong={onClose}
       chan={{
-        huy: { nhan: 'Đóng', onClick: onClose, disabled: busy },
+        daSua: JSON.stringify(f) !== goc, huy: { onClick: onClose, disabled: busy },
         conThieu: lf.conThieu(loi),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={save} disabled={busy}>Lưu</button>,
       }}>
@@ -212,6 +213,7 @@ function ProgrammeDialog({ row, onClose, onDone }: {
     finalWeek: String(moc(row, 'final') ?? ''),
     active: row.status === 'active',
   });
+  const [goc] = useState(() => JSON.stringify(f));   // luật I1
   const [busy, setBusy] = useState(false);
   const kh = kyHieuLop(row.code, null);
   const lf = useLoiForm();
@@ -221,8 +223,8 @@ function ProgrammeDialog({ row, onClose, onDone }: {
   const loi: LoiTruong[] = [
     ...dsLoi([{ khoa: 'ten', nhan: 'Tên gọi', toiThieu: 1 }], { ten: f.name }),
     ...(soTuan !== null && (!Number.isInteger(soTuan) || soTuan < 1 || soTuan > 104) ? [{ khoa: 'so-tuan', nhan: 'Số tuần', lyDo: 'Từ 1 đến 104' }] : []),
-    ...(coGiuaKhoa && ngoaiKhoa(f.progressWeek) ? [{ khoa: 'giua-khoa', nhan: 'Tuần Giữa khoá', lyDo: `Từ 1 đến ${soTuan}` }] : []),
-    ...(ngoaiKhoa(f.finalWeek) ? [{ khoa: 'cuoi-khoa', nhan: 'Tuần Cuối khoá', lyDo: `Từ 1 đến ${soTuan}` }] : []),
+    ...(coGiuaKhoa && ngoaiKhoa(f.progressWeek) ? [{ khoa: 'giua-khoa', nhan: 'Tuần Progress Test', lyDo: `Từ 1 đến ${soTuan}` }] : []),
+    ...(ngoaiKhoa(f.finalWeek) ? [{ khoa: 'cuoi-khoa', nhan: 'Tuần Final Test', lyDo: `Từ 1 đến ${soTuan}` }] : []),
   ];
 
   const save = async () => {
@@ -245,7 +247,7 @@ function ProgrammeDialog({ row, onClose, onDone }: {
   return (
     <KhungPanel tieuDe={`Sửa chương trình ${kh ?? row.name}`} onDong={onClose}
       chan={{
-        huy: { nhan: 'Đóng', onClick: onClose, disabled: busy },
+        daSua: JSON.stringify(f) !== goc, huy: { onClick: onClose, disabled: busy },
         conThieu: lf.conThieu(loi),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={save} disabled={busy}>Lưu</button>,
       }}>
@@ -267,13 +269,13 @@ function ProgrammeDialog({ row, onClose, onDone }: {
               })} />
           </Field>
           {f.weeks.trim() !== '' && coGiuaKhoa && (
-            <Field label="Tuần Giữa khoá" loi={lf.loiCua(loi, 'giua-khoa')}>
+            <Field label="Tuần Progress Test" loi={lf.loiCua(loi, 'giua-khoa')}>
               <input type="number" min={1} className="field w-full tabular-nums" {...lf.o(loi, 'giua-khoa')} value={f.progressWeek}
                 onChange={(e) => setF({ ...f, progressWeek: e.target.value })} />
             </Field>
           )}
           {f.weeks.trim() !== '' && (
-            <Field label="Tuần Cuối khoá" hint="Bỏ trống = số tuần." loi={lf.loiCua(loi, 'cuoi-khoa')}>
+            <Field label="Tuần Final Test" hint="Bỏ trống = số tuần." loi={lf.loiCua(loi, 'cuoi-khoa')}>
               <input type="number" min={1} className="field w-full tabular-nums" {...lf.o(loi, 'cuoi-khoa')} value={f.finalWeek} placeholder={f.weeks}
                 onChange={(e) => setF({ ...f, finalWeek: e.target.value })} />
             </Field>

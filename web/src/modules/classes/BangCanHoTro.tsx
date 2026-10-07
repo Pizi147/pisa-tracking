@@ -112,17 +112,17 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
                 )}
               </div>
               {r?.cycle && (
-                <p className="m-0 text-[11px] text-slate-400">
+                <p className="m-0 text-xs text-slate-400">
                   {r.cycle.route && <><abbr title={ROUTE_NAME[r.cycle.route as keyof typeof ROUTE_NAME] ?? r.cycle.route} className="no-underline">{r.cycle.route}</abbr> · </>}
                   target <span className="tabular-nums"><TargetText band={r.cycle.target} kck={r.cycle.khongCamKet} /></span>
                 </p>
               )}
-              <p className="m-0 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-400">
+              <p className="m-0 flex flex-wrap items-center gap-1.5 text-xs text-slate-400">
                 {k.sos ? <Level tone={sosTone(r?.standing?.sosLevel ?? null)} dut={k.sosTamThoi}>{k.sos}{k.sosTamThoi ? ' tạm thời' : ''}</Level>
                   : <span className="tabular-nums text-slate-300">{k.chinh}</span>}
                 {r?.standing?.attemptLabel && <span>{r.standing.attemptLabel}</span>}
               </p>
-              <p className="m-0 text-[11px] tabular-nums text-slate-500">
+              <p className="m-0 text-xs tabular-nums text-slate-500">
                 {e.cases.length} Case{nQuaHan > 0 && <> · <span className="font-semibold text-late">{nQuaHan} việc quá hạn</span></>}
               </p>
             </div>
@@ -163,7 +163,7 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
           </article>
         );
       })}
-      {soEmHoc > em.length && <p className="m-0 text-[11px] text-slate-500">{soEmHoc - em.length} học viên không có Case đang mở{bat ? ' ở kỹ năng bạn dạy' : ''}.</p>}
+      {soEmHoc > em.length && <p className="m-0 text-xs text-slate-500">{soEmHoc - em.length} học viên không có Case đang mở{bat ? ' ở kỹ năng bạn dạy' : ''}.</p>}
       {tt.panels}
       {ngan && (
         <NganCase caseId={ngan.caseId} paId={ngan.paId} viec={ngan.viec} hocVien={ngan.em} lop={maLop}
@@ -222,7 +222,7 @@ function DongCase({ h, c, dau, ct, homNay, onMo, the = false }: {
         <button type="button" className="link block max-w-full cursor-pointer truncate border-0 bg-transparent p-0 text-left text-xs font-semibold" title={c.tieuDe}
           onClick={() => onMo()}><TenCase c={{ title: c.tieuDe, tenSos: c.tenSos }} /></button>
         {(c.nguyenNhan || c.moTu) && <span className="block text-[11.5px] text-slate-500">{[c.nguyenNhan, c.moTu].filter(Boolean).join(' · ')}</span>}
-        <span className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[11px] text-slate-500">
+        <span className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-slate-500">
           <NhanTrangThai t={c.trangThai.t} title={c.trangThai.chu} />
           {c.banGiaoTu && <span title="Case bàn giao">từ {c.banGiaoTu}</span>}
         </span>

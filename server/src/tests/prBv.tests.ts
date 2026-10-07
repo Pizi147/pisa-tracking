@@ -75,7 +75,7 @@ export async function runPrBvTests(t: YThucTestKit) {
   // ------------------------------------------------------------------ R · bài lớp thường xoá điểm về "chưa xong" (Task 1)
   console.log('\nPR-BV · R bài lớp thường xoá điểm về chưa xong');
 
-  check('BV R1 + R2 · Giữa khoá đủ môn (done) → xoá một môn → planned; nhập lại đủ → done', () => {
+  check('BV R1 + R2 · Progress Test đủ môn (done) → xoá một môn → planned; nhập lại đủ → done', () => {
     const b = baiThuong(0);
     nhapThuong(P.admin, b.aid, Object.fromEntries(BON.map((k) => [k, 18])));
     assert(luot(b.aid).status === 'done', `đủ môn phải done: ${luot(b.aid).status}`);
@@ -186,7 +186,7 @@ export async function runPrBvTests(t: YThucTestKit) {
     assert(ds.length === 2 && get('SELECT status FROM sos_cases WHERE id = ?', c.id).status === 'done' && ds[1].status !== 'done', JSON.stringify(ds.map((x) => [x.id, x.status, x.attempt_id])));
   });
 
-  check('BV C5 · lớp thường Giữa khoá: Nghe trượt → Case + PA bổ trợ; xoá → đóng; nhập lại trượt → cùng Case, PA cũ', () => {
+  check('BV C5 · lớp thường Progress Test: Nghe trượt → Case + PA bổ trợ; xoá → đóng; nhập lại trượt → cùng Case, PA cũ', () => {
     const b = baiThuong(0);
     nhapThuong(P.admin, b.aid, { listening: 10, reading: 18, writing: 18, speaking: 18 });
     const [c] = caseL(b.sid);

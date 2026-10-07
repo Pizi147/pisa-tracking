@@ -7,7 +7,7 @@
  */
 import { outcomeLabelFor } from './cases.ts';
 import { tuanHocFt, tuanLich } from './hienThiNgay.ts';
-import { tenMonNgan } from './normal.ts';
+import { tenMonNgan, nhanBaiThuong, ATTEMPT_KIND_NGAN } from './normal.ts';
 import type { BoTroMienPhi } from './cuoiKhoa.ts';
 import { RATIO_PASS_THRESHOLD } from './normal.ts';
 import { addDaysIso } from './sos.ts';
@@ -278,7 +278,7 @@ export type DotRef = { cheDo: 'ielts' | 'ratio'; attemptNo: number; kind: string
 /** Nhãn một đợt: Fast Track `MT2`; lớp thường `Giữa khoá MB FOU 03` / `Cuối khoá` (không bao giờ chữ "MT"). */
 export function nhanDotTest(d: DotRef): string {
   if (d.cheDo === 'ielts') return `MT${d.attemptNo}`;
-  const kind = d.kind === 'final' ? 'Cuối khoá' : 'Giữa khoá';
+  const kind = nhanBaiThuong(d.kind);
   return d.maLop ? `${kind} ${d.maLop}` : kind;
 }
 
@@ -415,8 +415,8 @@ export function nhanGhim(a: {
       day: ghep(mt, tuan, overall, ky.length ? `${sos} — ${ky.join(', ')} dưới kỳ vọng` : sos), mau, hai: [so, band],
     };
   }
-  const daiKind = a.kind === 'final' ? 'Cuối khoá' : 'Giữa khoá';
-  const ngan = a.kind === 'final' ? 'Cuối' : 'Giữa';
+  const daiKind = nhanBaiThuong(a.kind);
+  const ngan = ATTEMPT_KIND_NGAN[a.kind === 'final' ? 'final' : 'progress'];
   const dai = a.maLop ? `${daiKind} ${a.maLop}` : daiKind;
   if (a.soCoDiem === 0) return { chu: ngan, gon: ngan, day: dai, mau: 'tam', hai: [ngan, ''] };
   if (a.khongChiaMon && a.tyLe != null) {
@@ -465,15 +465,15 @@ export const RONG_TEN_KY_NANG = { ielts: 118, ratio: 96 } as const;
 
 export type BoCuc = { cotTen: number; cotTuan: string; xuongDong: boolean; toiDaMoc: number };
 
-const COT = { ten: 300, tenRong: 320, tenToiDa: 440, tenHep: 148, tuanToiThieu: 48, tuanGon: 40 } as const;
+const COT = { ten: 300, tenRong: 320, tenToiDa: 440, tenHep: 160, tuanToiThieu: 48, tuanGon: 40, tuanGonThuong: 60 } as const;
 
 /**
- * BỐ CỤC CỘT: Xem gọn → cột tên 148px, tuần 40px, chuỗi điểm xuống dòng dưới tên, 3 mốc. Ngược lại cột tên rộng
+ * BỐ CỤC CỘT: Xem gọn → cột tên 148px, tuần 40px (lớp thường 60px: ghim "Progress" cần ~59px — rà #235 I3), chuỗi điểm xuống dòng dưới tên, 3 mốc. Ngược lại cột tên rộng
  * `RONG_TEN_KY_NANG + rongChuoi + 18` kẹp [300 (≥ 1800px: 320), 440]; nếu không đủ chỗ cho `soTuan` cột ≥ 48px thì
  * rơi về dạng hẹp (148px, chuỗi xuống dòng, 3 mốc) nhưng cột tuần vẫn co giãn.
  */
 export function boCucHanhTrinh(i: { rong: number; soTuan: number; xemGon: boolean; rongChuoi: number; cheDo: 'ielts' | 'ratio' }): BoCuc {
-  if (i.xemGon) return { cotTen: COT.tenHep, cotTuan: `${COT.tuanGon}px`, xuongDong: true, toiDaMoc: 3 };
+  if (i.xemGon) return { cotTen: COT.tenHep, cotTuan: `${i.cheDo === 'ratio' ? COT.tuanGonThuong : COT.tuanGon}px`, xuongDong: true, toiDaMoc: 3 };
   const san = i.rong >= 1800 ? COT.tenRong : COT.ten;
   const ten = Math.min(COT.tenToiDa, Math.max(san, RONG_TEN_KY_NANG[i.cheDo] + i.rongChuoi + 18));
   const cotTuan = `minmax(${COT.tuanToiThieu}px, 1fr)`;
@@ -483,7 +483,8 @@ export function boCucHanhTrinh(i: { rong: number; soTuan: number; xemGon: boolea
 
 /** Bề rộng (px) thật của một cột tuần — để quyết định khối PA có đủ chỗ vẽ tên (`KHOI_PA_CO_TEN`). */
 export function rongCotTuan(b: BoCuc, rong: number, soTuan: number): number {
-  if (b.cotTuan === `${COT.tuanGon}px`) return COT.tuanGon;
+  const co = /^(\d+)px$/.exec(b.cotTuan);   // cột cố định (xem gọn); còn lại minmax(48px, 1fr)
+  if (co) return Number(co[1]);
   return Math.max(COT.tuanToiThieu, (rong - b.cotTen) / Math.max(1, soTuan));
 }
 
@@ -608,7 +609,7 @@ export function chiaChuong<G extends { classId: number | null; tuan: string | nu
       loai,
       chu: loai === 'len' ? chuLen(sau, boTroCuaChuong(l.classId), l.ct) : loai === 'chuyen' ? 'Chuyển lớp' : loai === 'hoc-lai' ? 'Học lại'
         : loai === 'bao-luu' ? 'Tạm dừng học (bảo lưu)' : loai === 'dung' ? 'Dừng học hẳn' : loai === 'ket-thuc' ? 'Kết thúc học' : l.status === 'paused' ? 'Tạm dừng học' : 'Rời lớp',
-      how: l.lenh ? 'Quản lý quyết định' : loai === 'len' ? 'theo Cuối khoá' : l.endReason,
+      how: l.lenh ? 'Quản lý quyết định' : loai === 'len' ? 'theo Final Test' : l.endReason,
       tu: sau?.tu ?? null,
       docBanGiao: l.lenh?.xacNhan ? { lenhId: l.lenh.id, lopNguonId: l.classId } : null,
     };

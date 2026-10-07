@@ -81,7 +81,7 @@ export default function ChamDiemPage() {
         <div className="min-w-0">
           <Link className="btn btn-sm btn-ghost mb-1 no-underline" to="/test" title="Về khu vực Test">← Test</Link>
           <h1 className="text-lg font-semibold text-slate-100 flex items-center gap-2 m-0">
-            <span className="truncate">{data.classCode}{tenDot ? ` · ${tenDot}` : ''}</span>
+            <span className="truncate" title={`${data.classCode}${tenDot ? ` · ${tenDot}` : ''}`}>{data.classCode}{tenDot ? ` · ${tenDot}` : ''}</span>
             <NutLuat label="Luật chấm điểm">
               <span className="block">
                 Ô để trống là chưa nhập, không phải 0 điểm. Chỉ kỹ năng bạn được phân công mới sửa được; kỹ năng khác
@@ -133,13 +133,13 @@ export default function ChamDiemPage() {
           )}
           {han && <div className="pb-2"><Han loai="nhap-diem" han={han} /></div>}
           {chuaLuu > 0 && (
-            <span className="pb-2 text-[11px] font-semibold text-bad whitespace-nowrap" role="alert"
+            <span className="pb-2 text-xs font-semibold text-bad whitespace-nowrap" role="alert"
               title="Ô viền đỏ chưa lưu được — bấm Lưu lại ở ô đó.">
               {chuOChuaLuu(chuaLuu)}
             </span>
           )}
           {luuLuc && chuaLuu === 0 && (
-            <span className="pb-2 text-[11px] text-slate-500 tabular-nums whitespace-nowrap"
+            <span className="pb-2 text-xs text-slate-500 tabular-nums whitespace-nowrap"
               title="Mỗi ô tự lưu khi rời ô hoặc bấm Enter.">
               Đã lưu {String(luuLuc.getHours()).padStart(2, '0')}:{String(luuLuc.getMinutes()).padStart(2, '0')} ✓
             </span>

@@ -346,7 +346,7 @@ export function NganXepLichMt({ chiNhanhDau, lopDs, lopMoSan, coThuong, onDoiKhu
                 </tbody>
               </table>
             </div>
-            <p className="m-0 text-[11px] text-slate-500">⇆ cuộn ngang</p>
+            <p className="m-0 text-xs text-slate-500">⇆ cuộn ngang</p>
           </>
         )}
       </Khoi>
@@ -365,7 +365,7 @@ function ChipDem({ tone, n, loc, onLoc, children }: { tone: ToneSeXep; n: number
   const ten = tone === 'ok' ? 'Sẽ xếp' : tone === 'soon' ? 'Cần xem' : 'Không xếp được';
   return (
     <button type="button" aria-pressed={loc === tone} onClick={() => onLoc(loc === tone ? null : tone)} title={`Chỉ hiện nhóm "${ten}"`}
-      className={`relative inline-flex min-h-[26px] items-center whitespace-nowrap rounded-full px-[9px] text-xs font-semibold tabular-nums max-sm:after:absolute max-sm:after:-inset-y-[9px] max-sm:after:inset-x-0 max-sm:after:content-[''] ${mau} ${loc === tone ? 'ring-2 ring-current' : ''}`}>
+      className={`nut-loc relative border-transparent tabular-nums ${mau} ${loc === tone ? 'ring-2 ring-current' : ''}`}>
       {children}
     </button>
   );

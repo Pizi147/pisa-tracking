@@ -174,7 +174,7 @@ export async function runPrUxfBTests(t: YThucTestKit) {
     assert(d.docThamSoHoSo((k: string) => q.get(k)).muc === 'ket-luan-khoa', 'đọc lại');
     assert(d.docThamSoHoSo((k: string) => (k === 'muc' ? 'xyz' : null)).muc === undefined, 'muc lạ');
   });
-  check('UXF-b (5) · việc "Đánh dấu kỳ vọng đầu ra" (QL): href mở hồ sơ cuộn tới hộp Kết luận khoá (muc=ket-luan-khoa) — kèm lo-trinh của lộ trình có bài Cuối khoá', () => {
+  check('UXF-b (5) · việc "Đánh dấu kỳ vọng đầu ra" (QL): href mở hồ sơ cuộn tới hộp Kết luận khoá (muc=ket-luan-khoa) — kèm lo-trinh của lộ trình có bài Final Test', () => {
     const src = doc('server/src/worklist/mywork.ts');
     assert(/muc: 'ket-luan-khoa'/.test(src), 'mywork.ts chưa gắn muc');
     const items = (myworkSvc.myWork(t.P.mbManager, {}) as any).items.filter((x: any) => x.group === 'ky_vong_dau_ra');
@@ -297,10 +297,10 @@ export async function runPrUxfBTests(t: YThucTestKit) {
   // ------------------------------------------------------------------ Task 9 · Báo phụ huynh qua TVV theo CASE, không theo môn trượt (R5-4, Câu 2 = A)
   const phoiHopSvc: any = await import('../yThuc/phoiHop.ts');
   const sosAutoSvc: any = await import('../cases/sosAuto.ts');
-  check('UXF-b (9) · R5-4: bài Giữa khoá 2 môn trượt + 2 Case → MỘT việc Báo PH; Case G+V "Không cần theo dõi" → việc còn, "môn khó khăn" chỉ còn môn kia; cả hai → việc chưa làm tự rút; mở lại → hồi; việc đã làm không đụng; chạy lặp không nhân đôi', () => {
+  check('UXF-b (9) · R5-4: bài Progress Test 2 môn trượt + 2 Case → MỘT việc Báo PH; Case G+V "Không cần theo dõi" → việc còn, "môn khó khăn" chỉ còn môn kia; cả hai → việc chưa làm tự rút; mở lại → hồi; việc đã làm không đụng; chạy lặp không nhân đôi', () => {
     const bai = t.conn.prepare(`SELECT a.id, a.student_id AS sid FROM assessment_attempts a JOIN sos_coordination_actions co ON co.attempt_id = a.id AND co.kind = 'bao_ph_tvv' AND co.status = 'pending'
       WHERE a.kind = 'progress' AND (SELECT COUNT(DISTINCT cs.skill) FROM case_signals cs WHERE cs.attempt_id = a.id AND cs.status != 'withdrawn' AND cs.case_id IS NOT NULL) >= 2 LIMIT 1`).get() as any;
-    assert(bai, 'seed không có bài Giữa khoá 2 môn trượt có Báo PH');
+    assert(bai, 'seed không có bài Progress Test 2 môn trượt có Báo PH');
     const sig = t.conn.prepare(`SELECT skill, case_id FROM case_signals WHERE attempt_id = ? AND status != 'withdrawn' AND case_id IS NOT NULL ORDER BY id`).all(bai.id) as any[];
     const [s1, s2] = [sig[0], sig.find((x) => x.skill !== sig[0].skill)];
     const viec = () => t.conn.prepare(`SELECT id, status, remove_reason_code FROM sos_coordination_actions WHERE attempt_id = ? AND kind = 'bao_ph_tvv'`).all(bai.id) as any[];

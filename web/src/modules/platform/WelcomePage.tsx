@@ -66,7 +66,7 @@ function SetupHelp({ serverDown, onRetry }: { serverDown: boolean; onRetry: () =
 
       <button className="btn btn-primary mt-4" onClick={onRetry}>Tải lại danh sách tài khoản</button>
 
-      <p className="text-[11px] text-slate-500 mt-3 leading-relaxed">
+      <p className="text-xs text-slate-500 mt-3 leading-relaxed">
         Lưu ý: phải gõ lệnh trong thư mục có tệp <code className="text-slate-400">package.json</code>.
         Nếu báo lỗi <code className="text-slate-400">ENOENT ... package.json</code> nghĩa là bạn đang đứng sai thư mục.
       </p>
@@ -134,7 +134,7 @@ export default function WelcomePage() {
         <div className="flex items-center gap-3 mb-1">
           <div className="w-9 h-9 rounded-lg bg-sky-300/12 border border-sky-300/40 grid place-items-center text-sky-200 font-bold">P</div>
           <div>
-            <h1 className="text-xl font-semibold text-slate-100">Pisa Tracking</h1>
+            <h1 className="text-xl font-semibold text-slate-100">PISA Tracking</h1>
             <div className="text-xs text-slate-500">{LA_BAN_CHINH ? 'Hệ thống quản lý học vụ và vận hành' : 'Hệ thống quản lý học vụ và vận hành — bản demo chạy local'}</div>
           </div>
           {!LA_BAN_CHINH && <div className="ml-auto"><Alert tone="warn">Dữ liệu demo</Alert></div>}
@@ -325,8 +325,8 @@ function RegisterForm({ info, onDone }: { info: AuthInfo | null; onDone: () => v
 
 /** Tài khoản xem được kịch bản mới — PR-MT (Task 10): MT lịch sử, lớp RF, dời do vắng lần 2 · PR-YT4 (K1-55): Ý thức v4 · PR-XLMT: xếp lịch MT nhiều lớp. */
 const XEM_DUOC: Record<string, string[]> = {
-  'Nguyễn Khánh Vy': ['Xem được: MT cũ, lớp RF, dời lần 2', 'Chờ duyệt Ý thức + Báo QL', 'Xếp lịch MT nhiều lớp, Cần xếp lại', 'Giữa khoá lớp thường: thẻ kế hoạch bổ trợ chờ duyệt (MB FOU 15)'],
-  'Trần Ngọc Hà': ['Xem được: MT cũ, lớp RF, dời lần 2', 'Ý thức: em quá hạn, em bắt buộc, xác nhận cấp bậc vi phạm, WL 2', 'Giữa khoá lớp thường: nộp kế hoạch bổ trợ, Báo phụ huynh qua TVV (MB FOU 15)'],
+  'Nguyễn Khánh Vy': ['Xem được: MT cũ, lớp RF, dời lần 2', 'Chờ duyệt Ý thức + Báo QL', 'Xếp lịch MT nhiều lớp, Cần xếp lại', 'Progress Test lớp thường: thẻ kế hoạch bổ trợ chờ duyệt (MB FOU 15)'],
+  'Trần Ngọc Hà': ['Xem được: MT cũ, lớp RF, dời lần 2', 'Ý thức: em quá hạn, em bắt buộc, xác nhận cấp bậc vi phạm, WL 2', 'Progress Test lớp thường: nộp kế hoạch bổ trợ, Báo phụ huynh qua TVV (MB FOU 15)'],
 };
 
 function DemoAccounts({ accounts, loading }: { accounts: Account[]; loading: boolean }) {
@@ -365,7 +365,7 @@ function DemoAccounts({ accounts, loading }: { accounts: Account[]; loading: boo
                     {a.assignmentCount > 0 && <Info>{a.assignmentCount} phân công</Info>}
                   </div>
                   {XEM_DUOC[a.fullName] && (
-                    <div className="mt-2 space-y-0.5 text-[11px] text-slate-500">{XEM_DUOC[a.fullName].map((x) => <div key={x}>{x}</div>)}</div>
+                    <div className="mt-2 space-y-0.5 text-xs text-slate-500">{XEM_DUOC[a.fullName].map((x) => <div key={x}>{x}</div>)}</div>
                   )}
                 </button>
               ))}
