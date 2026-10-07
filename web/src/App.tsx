@@ -137,9 +137,11 @@ export default function App() {
         </div>
       )}
       <header className="relative shrink-0 border-b bg-[color:var(--surface)]" style={{ borderColor: 'var(--line)' }}>
-        <div className="flex items-center gap-3 px-3 sm:px-4 h-14 min-w-0">
+        {/* D7 (mockup 23C): điện thoại cao 52 px, chữ PISA thay ô "P", nút sát nhau; máy tính giữ nguyên. */}
+        <div className="flex items-center gap-3 px-3 sm:px-4 h-14 max-sm:h-[52px] max-sm:gap-0.5 max-sm:pl-4 max-sm:pr-1.5 min-w-0">
           <div className="flex items-center gap-2 shrink-0">
-            <div className="w-7 h-7 rounded-md border grid place-items-center font-bold text-xs"
+            <span className="sm:hidden text-[15px] font-bold tracking-[0.06em] text-slate-100">PISA</span>
+            <div className="w-7 h-7 rounded-md border hidden sm:grid place-items-center font-bold text-xs"
               style={{ background: 'var(--accent-soft)', borderColor: 'var(--accent-line)', color: 'var(--accent)' }}>P</div>
             <div className="leading-tight hidden sm:block">
               <div className="text-sm font-semibold text-slate-100">Pisa Tracking</div>

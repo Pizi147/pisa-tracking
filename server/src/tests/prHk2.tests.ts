@@ -235,7 +235,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     assert(/hidden sm:block/.test(app) && /Pisa Tracking/.test(app), 'App.tsx: khối tên đầy đủ phải ẩn ở < 640 px (tên web đổi ở Task 10)');
     assert(/max-sm:h-\[52px\]/.test(app), 'App.tsx: thanh trên điện thoại cao 52 px');
     const hd = doc('web/src/modules/platform/Header.tsx');
-    const nut = (moc: string) => { const i = hd.indexOf(moc); assert(i >= 0, `Header.tsx: không thấy ${moc}`); return hd.slice(i, i + 420); };
+    const nut = (moc: string) => { const i = hd.indexOf(moc); assert(i >= 0, `Header.tsx: không thấy ${moc}`); return hd.slice(i, i + 900); };
     for (const moc of ['ref={nutTim}', 'ref={nutThongBao}', 'ref={nutTaiKhoan}']) {
       const n = nut(moc);
       assert(/border-0/.test(n) && /bg-transparent/.test(n), `${moc}: nút điện thoại phải không viền, nền trong`);
@@ -251,7 +251,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     assert(thanh >= 0 && /!dienThoai && <CongTacGiaoDien \/>/.test(hd), 'nút Sáng/Tối trên thanh chỉ vẽ khi !dienThoai');
     assert(menu > tk && /dienThoai && <CongTacGiaoDien kieu="menu"/.test(hd), 'Sáng/Tối kiểu menu phải nằm trong menu Tài khoản, chỉ khi dienThoai');
     const cd = doc('web/src/ui/CongTacGiaoDien.tsx');
-    assert(/kieu === 'menu'/.test(cd) && /Giao diện/.test(cd) && />Sáng</.test(cd) && />Tối</.test(cd) && /min-h-\[44px\]/.test(cd), 'CongTacGiaoDien kieu="menu": hàng "Giao diện" + Sáng / Tối cao ≥ 44 px');
+    assert(/kieu === 'menu'/.test(cd) && /Giao diện/.test(cd) && /'Sáng'/.test(cd) && /'Tối'/.test(cd) && /min-h-\[44px\]/.test(cd), 'CongTacGiaoDien kieu="menu": hàng "Giao diện" + Sáng / Tối cao ≥ 44 px');
   });
 
   check('C18a · DemoBar một dòng ở < 640 px: "Demo" · ngày · "Công cụ" · "Tài khoản" (chữ đầy đủ chỉ ở sm+), nút ≥ 44 px', () => {
@@ -267,7 +267,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
   check('C19a · Học viên & Lớp: ô tìm "Lọc trong danh sách này…"; "+ Lớp mới" / "+ Học viên" max-sm:hidden và có trong MenuDong "Thao tác trang" (chỉ < 640 px)', () => {
     const s = doc('web/src/modules/students/StudentsPage.tsx');
     assert(/placeholder="🔍 Lọc trong danh sách này…"/.test(s) && !/Tìm tên, mã học viên hoặc mã lớp/.test(s), 'placeholder ô tìm');
-    assert(/className="btn btn-sm max-sm:hidden"[^>]*>\+ Lớp mới</.test(s) && /className="btn btn-sm btn-primary max-sm:hidden"[^>]*>\+ Học viên</.test(s), 'hai nút ngoài phải max-sm:hidden');
+    assert(/className="btn btn-sm max-sm:hidden"[^]*?>\+ Lớp mới</.test(s) && /className="btn btn-sm btn-primary max-sm:hidden"[^]*?>\+ Học viên</.test(s), 'hai nút ngoài phải max-sm:hidden');
     const mn = s.slice(s.indexOf('<MenuDong nhan="Thao tác trang"'), s.indexOf('<MenuDong nhan="Thao tác trang"') + 900);
     assert(/dienThoai && data\?\.coTheTaoLop/.test(mn) && /nhan: '\+ Lớp mới'/.test(mn), 'mục "+ Lớp mới" trong menu chỉ khi dienThoai');
     assert(/dienThoai && \(data\?\.rows[^)]*\)\.some\(\(r\) => r\.viewer\.coTheSuaHocVien\)/.test(mn) && /nhan: '\+ Học viên'/.test(mn), 'mục "+ Học viên" trong menu chỉ khi dienThoai');

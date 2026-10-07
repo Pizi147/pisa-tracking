@@ -176,12 +176,12 @@ export function Header() {
   );
 
   return (
-    <div className="flex items-center gap-2 min-w-0" ref={boxRef}>
+    <div className="flex items-center gap-2 max-sm:gap-0.5 min-w-0" ref={boxRef}>
       {dienThoai ? (
         <>
-          <button ref={nutTim} type="button" className="btn btn-sm min-h-[44px] min-w-[44px] justify-center" aria-label="Tìm học viên, lớp"
+          <button ref={nutTim} type="button" className="btn btn-sm min-h-[44px] min-w-[44px] justify-center border-0 bg-transparent" aria-label="Tìm học viên, lớp"
             aria-expanded={moTimDt} onClick={() => { setMoTimDt((v) => !v); setOpenMenu(null); }}>
-            <svg aria-hidden width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <svg aria-hidden width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
               <circle cx="7" cy="7" r="4.5" /><path d="m10.5 10.5 3 3" /></svg>
           </button>
           {moTimDt && <div className="card absolute inset-x-2 top-full z-40 mt-1 p-2 shadow-2xl">{oTimVaKetQua}</div>}
@@ -191,14 +191,14 @@ export function Header() {
       )}
 
       <div className="sm:relative">
-        <button ref={nutThongBao} className="btn btn-sm min-h-[44px] sm:min-h-0"
+        <button ref={nutThongBao} className="btn btn-sm relative max-sm:min-h-[44px] max-sm:min-w-[44px] max-sm:justify-center max-sm:border-0 max-sm:bg-transparent"
           onClick={() => { if (openMenu !== 'notif') notifications.reload(); setOpenMenu(openMenu === 'notif' ? null : 'notif'); setMoTimDt(false); }}
           aria-label={`Thông báo${unread ? `, ${unread} chưa đọc` : ''}`} aria-expanded={openMenu === 'notif'}>
           <span className="hidden sm:inline">Thông báo</span>
-          {/* Chuông nét mảnh 14 px thay emoji (luật "dấu nhỏ gọn"). */}
-          <svg className="sm:hidden" aria-hidden width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+          {/* Chuông nét mảnh 20 px thay emoji (luật "dấu nhỏ gọn", 23C). Số chưa đọc đè góc trên phải trên điện thoại. */}
+          <svg className="sm:hidden" aria-hidden width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M4 11V7a4 4 0 0 1 8 0v4l1.5 1.5h-11L4 11ZM6.5 14a1.5 1.5 0 0 0 3 0" strokeLinejoin="round" /></svg>
-          {unread > 0 && <span className="ml-1 rounded bg-doing-bg text-doing px-1.5 text-[11.5px] tabular-nums">{unread}</span>}
+          {unread > 0 && <span className="ml-1 rounded bg-doing-bg text-doing px-1.5 text-[11.5px] tabular-nums max-sm:absolute max-sm:right-px max-sm:top-[3px] max-sm:ml-0 max-sm:min-w-[18px] max-sm:rounded-[9px] max-sm:text-center max-sm:leading-[18px]">{unread}</span>}
         </button>
         {openMenu === 'notif' && (
           /*
@@ -261,10 +261,11 @@ export function Header() {
         )}
       </div>
 
-      <CongTacGiaoDien />
+      {/* Q2 = A: điện thoại (< 640 px) — Sáng/Tối nằm trong menu Tài khoản (bên dưới), không chiếm chỗ trên thanh. */}
+      {!dienThoai && <CongTacGiaoDien />}
 
       <div className="relative">
-        <button ref={nutTaiKhoan} className="btn btn-sm min-h-[44px] min-w-[44px] justify-center sm:min-h-0 sm:min-w-0" onClick={() => { setOpenMenu(openMenu === 'account' ? null : 'account'); setMoTimDt(false); }}
+        <button ref={nutTaiKhoan} className="btn btn-sm max-sm:min-h-[44px] max-sm:min-w-[44px] max-sm:justify-center max-sm:border-0 max-sm:bg-transparent" onClick={() => { setOpenMenu(openMenu === 'account' ? null : 'account'); setMoTimDt(false); }}
           aria-label={`Tài khoản ${hoTen}`} aria-expanded={openMenu === 'account'}>
           <span aria-hidden className="grid h-[30px] w-[30px] place-items-center rounded-full text-[13px] font-bold sm:hidden"
             style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}>{chuCaiDau}</span>
@@ -309,6 +310,7 @@ export function Header() {
               những màn dưới đây mở thỉnh thoảng nên không cần chiếm chỗ trên thanh menu.
             */}
             <div className="border-t pt-2 mb-2 space-y-1" style={{ borderColor: 'var(--line)' }}>
+              {dienThoai && <CongTacGiaoDien kieu="menu" />}
               {/*
                 "Tổng hợp theo tuần" và "Báo cáo tuần" ĐÃ RỜI THANH ĐIỀU HƯỚNG ở vòng 4.
 

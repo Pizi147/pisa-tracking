@@ -52,16 +52,19 @@ export function DemoBar() {
   };
 
   return (
-    <div className="flex items-center gap-2 flex-wrap px-4 py-1.5 text-xs border-b bg-[color:var(--bg)]" style={{ borderColor: 'var(--line)' }}>
-      <Alert tone="warn">Dữ liệu demo</Alert>
+    /* K5 (mockup HK2 mục 5): điện thoại một dòng — "Demo" · ngày · Công cụ · Tài khoản (nút 44 px, cả thanh ≤ 53 px). Máy tính giữ nguyên. */
+    <div className="flex items-center gap-2 flex-wrap px-4 py-1.5 max-sm:px-3 max-sm:py-1 text-xs border-b bg-[color:var(--bg)]" style={{ borderColor: 'var(--line)' }}>
+      <Alert tone="warn"><span className="sm:hidden">Demo</span><span className="max-sm:hidden">Dữ liệu demo</span></Alert>
       <span className="text-slate-500 hidden sm:inline">Toàn bộ dữ liệu là giả, không phải dữ liệu thật của trung tâm.</span>
       <div className="flex-1" />
-      <span className="text-slate-400">
-        Ngày demo: <strong className="text-slate-200">{fmtDate(session?.demoDate)}</strong>
+      <span className="text-slate-400 whitespace-nowrap">
+        <span className="max-sm:hidden">Ngày demo: </span><strong className="text-slate-200 max-sm:font-semibold">{fmtDate(session?.demoDate)}</strong>
       </span>
       {scenario !== 'normal' && <Alert>Kịch bản: {SCENARIOS.find((s) => s.key === scenario)?.label}</Alert>}
-      <button className="btn btn-sm" onClick={() => setToolsOpen(true)}>Công cụ demo</button>
-      <button className="btn btn-sm btn-primary" onClick={() => setPickerOpen(true)}>Đổi tài khoản demo</button>
+      <button className="btn btn-sm max-sm:min-h-[44px]" aria-label="Công cụ demo" onClick={() => setToolsOpen(true)}>
+        <span className="sm:hidden">Công cụ</span><span className="max-sm:hidden">Công cụ demo</span></button>
+      <button className="btn btn-sm btn-primary max-sm:min-h-[44px]" aria-label="Đổi tài khoản demo" onClick={() => setPickerOpen(true)}>
+        <span className="sm:hidden">Tài khoản</span><span className="max-sm:hidden">Đổi tài khoản demo</span></button>
 
       <Modal open={pickerOpen} onClose={() => setPickerOpen(false)} title="Chọn tài khoản demo" width="max-w-3xl">
         <p className="text-xs text-slate-400 mb-3">

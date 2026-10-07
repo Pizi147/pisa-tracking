@@ -171,12 +171,15 @@ export default function StudentsPage() {
             * chắc chắn ra 403 (`hasAssignment` đòi `ctx.classId`/`ctx.branchId` cụ thể). Dùng đúng cờ máy chủ đã tính theo
             * TỪNG lớp/chi nhánh thay vào đó.
             */}
-          {data?.coTheTaoLop && <button type="button" className="btn btn-sm" onClick={() => setTaoLop(true)}>+ Lớp mới</button>}
+          {data?.coTheTaoLop && <button type="button" className="btn btn-sm max-sm:hidden" onClick={() => setTaoLop(true)}>+ Lớp mới</button>}
           {(data?.rows ?? []).some((r) => r.viewer.coTheSuaHocVien) && (
-            <button type="button" className="btn btn-sm btn-primary" onClick={() => setThem(null)}>+ Học viên</button>
+            <button type="button" className="btn btn-sm btn-primary max-sm:hidden" onClick={() => setThem(null)}>+ Học viên</button>
           )}
+          {/* Điện thoại (< 640 px, K1/DH): hai nút tạo vào ⋯ — đầu trang chỉ còn một nút 44 px. */}
           <MenuDong nhan="Thao tác trang" muc={[
-            { key: 'luu-tru', nhan: nhanLuuTru(data?.demLuuTru ?? { lop: 0, hv: 0 }), onChon: () => navigate('/hoc-vien/luu-tru') },
+            ...(dienThoai && data?.coTheTaoLop ? [{ key: 'lop-moi', nhan: '+ Lớp mới', onChon: () => setTaoLop(true) }] : []),
+            ...(dienThoai && (data?.rows ?? []).some((r) => r.viewer.coTheSuaHocVien) ? [{ key: 'hoc-vien-moi', nhan: '+ Học viên', onChon: () => setThem(null) }] : []),
+            { key: 'luu-tru', nhan: nhanLuuTru(data?.demLuuTru ?? { lop: 0, hv: 0 }), keTruoc: dienThoai && !!data?.coTheTaoLop, onChon: () => navigate('/hoc-vien/luu-tru') },
           ]} />
         </div>
       </div>
@@ -188,7 +191,7 @@ export default function StudentsPage() {
         */}
       <div className="space-y-2 pb-1">
         <div className="flex flex-wrap items-center gap-2">
-          <input className="field w-full sm:w-80" aria-label="Tìm" placeholder="🔍 Tìm tên, mã học viên hoặc mã lớp…"
+          <input className="field w-full sm:w-80" aria-label="Tìm" placeholder="🔍 Lọc trong danh sách này…"
             value={draftQ} onChange={(e) => setDraftQ(e.target.value)} />
           {pv && pv.coThe.length > 1 && (
             <select className={SELECT_GON} aria-label="Phạm vi" value={pv.dangDung}
