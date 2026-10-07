@@ -54,13 +54,13 @@ Các mục sau deploy làm chung một đợt với việc chụp lại ảnh s�
 Hiện có hai họ badge: `Nhan` (bo tròn hẳn, đậm 700, không viền, `ui/Nhan.tsx:26`) và `NhanTrangThai`/ClassRoster/MissingBadge
 (bo `rounded-md`, 600, có viền, `ui/ui.tsx:525`, `students/ClassRoster.tsx:285`, `students/MissingBadge.tsx:32`).
 Cỡ chữ có 4 mức (11 / 11,5 / 12 / 12,5 px) và 3 chiều cao dòng cho cùng một chip "Quá hạn"/"Cần làm".
-- [ ] **H1. Ba kiểu chip, mỗi kiểu một nghĩa** (chủ sản phẩm chốt 02/10, Q-H):
+- [x] **H1. Ba kiểu chip, mỗi kiểu một nghĩa** (chủ sản phẩm chốt 02/10, Q-H): → PR-HK2: hai họ chip (tròn / vuông viền) cộng `KetQuaDot`, 11,5 px cao 20 px.
   - **Tròn hẳn, nền đặc** (`Nhan`): trạng thái của học viên hoặc lớp (Cần chú ý, Tốt, Chờ chấm, SOS). Số tạm thì viền đứt (`dut`).
   - **Góc vuông bo nhẹ, viền liền** (`NhanTrangThai`): trạng thái của **việc** (Cần làm, Đang làm, Chờ duyệt, Quá hạn, Xong, Đã huỷ).
     ClassRoster `:285` và MissingBadge `:32` dùng chung kiểu này.
   - **Góc vuông, viền đứt khi tạm** (`KetQuaDot`): kết quả điểm. Giữ nguyên như đã chốt 26/09.
   - Cả ba thống nhất cỡ chữ 11,5 px và một chiều cao dòng (hiện có 4 cỡ và 3 chiều cao dòng).
-- [ ] **H2.** Gom các chip làm riêng lẻ về họ đã chốt:
+- [x] **H2.** Gom các chip làm riêng lẻ về họ đã chốt:
   - `test/lichTest/KhoiNo.tsx:91` · `test/LichTestTab.tsx:272`
   - `giaoVien/HoSoGiaoVienPage.tsx:168,175`
   - `students/ChuongLop.tsx:143`
@@ -96,11 +96,11 @@ Cỡ chữ có 4 mức (11 / 11,5 / 12 / 12,5 px) và 3 chiều cao dòng cho c�
   - Chữ "(bắt buộc)" lặp 3 lần: dùng dấu `*` kèm một dòng chú thích.
 
 ## Gói UX-J — Chữ · ƯU TIÊN 4 (P2–P3, đối chiếu `thiet-ke/TU_DIEN_VA_CHU.md`, `THUAT_NGU_DA_CHOT.md`)
-- [ ] **J1. "Thiếu" đang có hai nghĩa:** thiếu thông tin hồ sơ ("Thiếu 2 thông tin") và dưới kỳ vọng ("thiếu 2" cạnh 5.0).
+- [x] **J1. "Thiếu" đang có hai nghĩa:** thiếu thông tin hồ sơ ("Thiếu 2 thông tin") và dưới kỳ vọng ("thiếu 2" cạnh 5.0).
   Sửa vế dưới kỳ vọng thành "dưới KV 2" hoặc chỉ dấu ▾.
-- [ ] **J2. Mã học viên có hai dạng:** `000048` ở bảng lớp, `PISA-000048` ở hồ sơ và ở bảng nhập điểm. Dùng một dạng.
-- [ ] **J3.** Cột "Cần xử lý" ở Tổng quan QL trộn "quá hạn từ W1 SEP" với "quá hạn 7 ngày". Dùng một cách ghi.
-- [ ] **J4. Bỏ lời giải thích viết cho người làm app** ở Tổng quan QL ("Gộp hai khung · …", "Chỉ phần số đổi theo khung · …"),
+- [x] **J2. Mã học viên có hai dạng:** `000048` ở bảng lớp, `PISA-000048` ở hồ sơ và ở bảng nhập điểm. Dùng một dạng. → PR-HK2: trên màn luôn `000048`, ô tìm nhận cả hai, file Excel giữ `PISA-000048` (Q3 = A).
+- [x] **J3.** Cột "Cần xử lý" ở Tổng quan QL trộn "quá hạn từ W1 SEP" với "quá hạn 7 ngày". Dùng một cách ghi.
+- [x] **J4. Bỏ lời giải thích viết cho người làm app** ở Tổng quan QL ("Gộp hai khung · …", "Chỉ phần số đổi theo khung · …"),
   hoặc chuyển vào ⓘ.
 - [x] **J5.** (PR-GVb) Dòng tóm tắt Chờ duyệt "gồm 9 Báo QL (1 Mini Test chưa đạt, 2 Case…)" đổi thành hàng chip đếm.
 - [x] **J5b. Tách "Để QL biết" khỏi Chờ duyệt** (PR-GVb) (chủ sản phẩm chốt 02/10, Q-D). Các mục "Không cần duyệt — để QL biết"
@@ -108,19 +108,19 @@ Cỡ chữ có 4 mức (11 / 11,5 / 12 / 12,5 px) và 3 chiều cao dòng cho c�
   Chờ duyệt chỉ đếm những mục đó. Tìm file nguồn: `web/src/modules/duyet/*`, `server/src/` (nguồn danh sách duyệt).
   Phép kiểm: số trên badge Chờ duyệt bằng số dòng có nút Duyệt.
 - [x] **J6.** ĐÃ CHỐT (chủ sản phẩm, `THUAT_NGU_2026-10-01.md`): giữ **"Target"**, không đổi thành "Mục tiêu". Không làm.
-- [ ] **J7.** Bỏ chữ "Bạn" lặp ở mỗi dòng (31 việc) của Tổng quan GV.
+- [x] **J7.** Bỏ chữ "Bạn" lặp ở mỗi dòng (31 việc) của Tổng quan GV.
 - [x] **J8.** Chữ bị cắt mất nghĩa: "Ghi kết q…" (Theo dõi ở trang lớp), "Cao Khánh Linh, Lê …", "L, R, W1, W…". Cho xuống dòng
   hoặc rút gọn có chủ đích kèm title.
-- [ ] **J9.** Làm rõ "Xác nhận PA Tutor · đến lúc thi"; nút "– sửa" ở Nhập điểm; tiêu đề cột S "GV chấm: Tôi ⌄".
+- [x] **J9.** Làm rõ "Xác nhận PA Tutor · đến lúc thi"; nút "– sửa" ở Nhập điểm; tiêu đề cột S "GV chấm: Tôi ⌄".
 - [x] **J10.** Chi tiết nhỏ:
   - Cột "Quyền cấp riêng" ở Quản trị toàn "—": ẩn khi rỗng.
   - Ô "—" kèm chữ "chưa có dữ liệu" ngay dưới "chưa có điểm" ở hồ sơ HV đang nói một ý hai lần.
 
 ## Gói UX-K — Mật độ, bộ lọc, điện thoại · ƯU TIÊN 5 (P2–P3)
-- [~] **K1. Bộ lọc Học viên & Lớp:** (PR-HK1 xong phần điện thoại; gộp dropdown "Loại lớp" để sau deploy vì đổi giao diện desktop)
+- [x] **K1. Bộ lọc Học viên & Lớp:** (PR-HK1 xong phần điện thoại; gộp dropdown "Loại lớp" để sau deploy vì đổi giao diện desktop)
   - Hai hàng "Tất cả" khác kiểu (dạng chia đoạn `Tất cả 19` và dạng viên thuốc `Tất cả 95`): gộp thành một hàng, thêm dropdown "Loại lớp".
   - [x] Trên điện thoại, hàng chip trôi khỏi màn và nút ⋯ rơi xuống dòng riêng. (PR-HK1: mép mờ + khối nút)
-- [ ] **K2. Phân tích › Tổng hợp:**
+- [x] **K2. Phân tích › Tổng hợp:**
   - Tiêu đề cột bị cắt ("TẠM THỜ", "CHƯA ĐI"); ô "16 (1 quá hạn)" xuống dòng. Sửa: tiêu đề nhóm gọn và dính trên, ghi "16 ⚠1".
   - Có hơn 15 nút điều khiển: gom "Cột hiện" và hai nút xuất vào menu ⋯.
 - [x] **K3. Vùng bấm trên điện thoại ≥ 40 px** (đo ở 375 px):
@@ -128,11 +128,11 @@ Cỡ chữ có 4 mức (11 / 11,5 / 12 / 12,5 px) và 3 chiều cao dòng cho c�
   - Link tên học viên ở /test và /nhap-diem (20 px); số bấm được ở Tổng quan (10–20×24).
   - Tab Phân tích (32 px); `.field`/select (36–37 px).
   - Chỉ áp ở màn nhỏ (`max-sm:`), giữ mật độ desktop.
-- [ ] **K4.** Nút "Vắng" ở bảng nhập điểm điện thoại ghi ngay một chạm: thêm Hoàn tác trong toast (đối chiếu UX-C 26/09).
-- [ ] **K5.** Demo bar cộng header chiếm khoảng 125 px trên điện thoại: thu demo bar thành một dòng hoặc cho gập. Chỉ ảnh hưởng bản demo.
-- [ ] **K6.** Chữ 11 px: overlay đếm khoảng 300 chỗ `text-[11px]`. Không sửa đại trà. Chỉ nâng lên 12 px với chữ mang nội dung (meta
+- [x] **K4.** Nút "Vắng" ở bảng nhập điểm điện thoại ghi ngay một chạm: thêm Hoàn tác trong toast (đối chiếu UX-C 26/09). → PR-HK2: làm kiểu bỏ "Hoàn tác" (chủ sản phẩm 07/10, Q4 = B): một thông báo ngắn ở mọi màn nhập điểm, gỡ vắng = xoá "-".
+- [x] **K5.** Demo bar cộng header chiếm khoảng 125 px trên điện thoại: thu demo bar thành một dòng hoặc cho gập. Chỉ ảnh hưởng bản demo.
+- [x] **K6.** Chữ 11 px: overlay đếm khoảng 300 chỗ `text-[11px]`. Không sửa đại trà. Chỉ nâng lên 12 px với chữ mang nội dung (meta
   dòng, nhãn ô), giữ 11–11,5 px cho tiêu đề cột và badge. Cần chủ sản phẩm chốt (Q-K).
-- [ ] **K7.** Icon ⋯ ngang và ⋮ dọc đang dùng lẫn: dùng một loại.
+- [x] **K7.** Icon ⋯ ngang và ⋮ dọc đang dùng lẫn: dùng một loại.
 
 ## Ghi nhận tốt (giữ nguyên, đừng làm lại)
 - Tổng quan QL, khối "Cần xử lý": quá hạn lên đầu, có cột người phụ trách, mỗi dòng một nút.

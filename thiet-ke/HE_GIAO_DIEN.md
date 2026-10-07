@@ -84,8 +84,9 @@ không có số cùng độ rộng: `tabular-nums` vẫn là cách canh số th�
 |---|---|---|
 | Nội dung chính, số trong bảng | 14–16px | Không dùng cỡ này cho chú thích |
 | Kết quả, hạn, trạng thái, người phụ trách, số đếm việc | **≥ 12px** (`text-xs`) | Sàn cứng; kèm `slate-400` trở lên |
-| Phụ, ghi chú, mã, chú giải, ký hiệu nhỏ | 11px (`text-[11px]`) — không chữ nào nhỏ hơn (phép kiểm S8) | **Cấm** dùng cho kết quả, hạn, người phụ trách |
-| Badge `Nhan`, số đếm trên menu / chuông | 11,5px | |
+| **Chữ nội dung** phụ: dòng meta, gợi ý dưới ô, nhãn ô (PR-HK2) | **12px** (`text-xs`; `Field`, `SectionNote`, `KpiTile`, `.hang-con`) | Chuẩn mới; không dùng 11px cho chữ người đọc để hiểu việc |
+| Tiêu đề cột, mã, chú giải, ký hiệu nhỏ | 11px (`text-[11px]`) — không chữ nào nhỏ hơn (phép kiểm S8); số chỗ 11px chỉ được giảm (C8) | **Cấm** dùng cho kết quả, hạn, người phụ trách, chữ nội dung |
+| Badge (`CHIP_TRON`, `CHIP_VUONG`), số đếm trên menu / chuông | **11,5px, cao 20px** (dòng 18 + viền 1) | Hai họ cùng cỡ |
 | Giữa hai khu vực lớn | 20–24px | |
 | Trong một khối | 12–16px | |
 
@@ -119,10 +120,14 @@ có ít nhất hai màn gọi nó" vẫn giữ.
 | `ONgay` | `web/src/ui/ONgay.tsx` | Mọi ô ngày · tuần · tháng · ngày-hoặc-tháng: gõ `dd/mm/yyyy` hoặc bấm biểu tượng lịch (mục 9) |
 | `LichNho` | `web/src/ui/LichNho.tsx` | Lịch tự vẽ, lõi chung của `ONgay` và `WeekPicker`: lưới tháng, chọn cả tuần, hàng "Gần đây" |
 | `OKhac` | `web/src/ui/OKhac.tsx` | Chọn "Khác" → ô chữ nhỏ ngay dưới (nhãn mặc định `Ghi rõ`, mỗi chỗ có thể đặt nhãn riêng), bắt buộc ≥ 3 ký tự (mục 10) |
-| `NutChon` | `web/src/ui/ui.tsx` | Lựa chọn trong form (chọn một trong vài nút): đang chọn = nền `ink-800` + viền `teal-600` + ✓, khác hẳn nút chính (Lưu). Dấu ✓ luôn giữ chỗ nên chữ không nhảy khi chọn |
+| `NutChon` | `web/src/ui/ui.tsx` | Lựa chọn trong form (chọn một trong vài nút): đang chọn = nền `ink-800` + viền `teal-600` + ✓, khác hẳn nút chính (Lưu). Dấu ✓ **đè góc trên phải** của nút đang chọn (không chiếm chỗ trong nút, nên chữ không nhảy và không tràn; PR-HK2 C36) |
 | `BoLocDoan` | `web/src/ui/ui.tsx` | Một kiểu cho mọi bộ lọc dạng nút liền nhau (có số đếm bên cạnh). Tab của trang vẫn là `HangTab` gạch chân |
 | `NhanTrangThai` | `web/src/ui/ui.tsx` | Sáu nhãn trạng thái chung: `Cần làm` · `Đang làm` · `Chờ duyệt` · `Quá hạn` (kèm số ngày) · `Xong` · `Đã huỷ`. Đang áp ở Phối hợp SOS, bảng Case, Học viên & Lớp (góc SOS); Vận hành giữ `Status` |
 | `useGiuFocus` | `web/src/ui/giuFocus.ts` | Giữ focus trong panel, Modal, lịch: Tab đi vòng bên trong, đóng thì trả focus (mục 10) |
+| `CHIP_TRON` · `CHIP_VUONG` | `web/src/ui/Nhan.tsx` (export) | **Hai họ chip, một cỡ** (11,5px, cao 20px). **Tròn** = trạng thái học viên / lớp và số đếm (`Nhan`, `Level`, "+n") · **vuông viền** = trạng thái việc, "Thiếu n", nhãn xám (`Status`, `Alert`, `Outcome`, `Info`, `Task`, `MissingBadge`…). `KetQuaDot` giữ nguyên (ô kết quả điểm). Chip mới lấy lớp từ hai hằng này — thêm tông màu, không đổi dáng; không tạo họ thứ ba |
+| `.nut-loc` | `web/src/index.css` | Nút lọc dạng viên thuốc (Học viên & Lớp, Lịch Test, Hiệu quả PA, ngăn MT): là **nút**, không phải chip. 12px, cao 32 (điện thoại 44); đang lọc = `aria-pressed="true"` hoặc `.nut-loc-dang` |
+| `.bang-dinh` | `web/src/index.css` | Đầu cột dính ở bảng dài, **chỉ từ 1280px** (ngưỡng thực tế sau đo — ở 768–1100px nhiều bảng rộng hơn khung nên không dùng 768). Gắn trên khối bọc `table-scroll` hoặc thẳng `<table>`; khung bao dùng `overflow-clip` thay `overflow-hidden`. Bảng phải cuộn ngang thì KHÔNG gắn. Top = −1,25rem (như `md:-top-5` ở Học viên & Lớp) |
+| `MenuDong kieu="chip"` | `web/src/ui/MenuDong.tsx` | Mặt nút menu dạng chip tròn xám cho "+n" (mở thêm badge lớp); `MenuDong` mặc định là nút ⋯ một kiểu duy nhất (không còn ⋮) |
 
 `ChonNguoi` đổi cách dùng: vào ô là có danh sách ngay (chưa gõ: 20 người, giáo viên cùng lớp đứng đầu), không còn bắt gõ 3
 ký tự. Chỗ nhận người ngoài hệ thống luôn có dòng cuối `Dùng tên ngoài hệ thống: «tên»` (tên ≥ 2 ký tự). Người theo dõi
