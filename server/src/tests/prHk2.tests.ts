@@ -626,4 +626,13 @@ export async function runPrHk2Tests(t: YThucTestKit) {
       .filter((f) => /startsWith\(\s*['"`]\[(Giữa|Cuối|Progress|Final)|\^\\\[(Giữa|Cuối|Progress|Final)|\\\[\((Giữa|Cuối|Progress|Final)/.test(doc(f).normalize('NFC')));
     assert(tachTienTo.length === 0, `đọc tên Case theo tiền tố: ${tachTienTo.join(', ')}`);
   });
+
+  check('C41 · audit: không còn chữ ghép hỏng "Testng" (đổi tên làm hỏng "khoảng"); HangTab đo bằng getBoundingClientRect; "⚠n" của Chờ nguyên nhân có chữ cho trình đọc màn hình', () => {
+    const hong = [...nguonTs('web/src'), ...nguonTs('shared'), ...nguonTs('server/src')].filter((f) => /(Final|Progress) Testng/.test(fs.readFileSync(path.join(ROOT, f), 'utf8')));
+    assert(hong.length === 0, `chữ ghép hỏng: ${hong.join(', ')}`);
+    const tab = doc('web/src/ui/HangTab.tsx');
+    assert(/getBoundingClientRect/.test(tab) && !/offsetLeft/.test(tab), 'HangTab phải đo theo getBoundingClientRect');
+    const th = doc('web/src/modules/phanTich/TongHopTestSos.tsx');
+    assert(/⚠\{quaHan\}<span className="sr-only">/.test(th), '⚠n thiếu chữ sr-only');
+  });
 }

@@ -415,7 +415,7 @@ function HangEm({ s, d, ft, tuDeXuat, luoi, maKe, routeTu, tuanCh, homNay, loi, 
         {ft && s.tuanHoc && <span className="block text-xs text-slate-500">{[s.route, chuTuanHoc(s.tuanHoc.tuan, s.tuanHoc.tong, s.tuanHoc.dangDung)].filter(Boolean).join(' · ')}</span>}
       </span>
       <span role="cell" className="min-w-0">
-        <span className={nhan}>{ft ? 'Kết quả gần nhất' : 'Final Test'}</span>
+        <span className={nhan}>{ft ? 'Kết quả gần nhất' : ATTEMPT_KIND_SHORT.final}</span>
         <span className="block" title={k.dong1 ?? undefined}>
           {thieuDiem ? <span className="text-slate-500">—</span> : <span className="font-bold tabular-nums text-slate-100">{k.chinh}</span>}
           {!thieuDiem && k.lech && <span className="ml-1.5 text-xs font-semibold tabular-nums text-bad">{k.lech}</span>}

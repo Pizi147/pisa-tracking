@@ -359,7 +359,7 @@ export async function runPrPb2bTests(t: YThucTestKit) {
     assert(!tatCa.includes(d.baiId(a1.id, 'speaking')), 'ô dấu "-" không được tính');
     assert(!tatCa.includes(d.baiId(a1.id, 'writing1')), 'ô chưa tới hạn chưa nhập không được tính');
   });
-  check('Pb2b (4e) · em Tạm dừng → ô không có mặt; đổi phân công Progress Testng → người ở ngày đó (dòng mới thắng)', () => {
+  check('Pb2b (4e) · em Tạm dừng → ô không có mặt; đổi phân công giữa khoảng → người ở ngày đó (dòng mới thắng)', () => {
     const e2 = emMoi('MB FT 101');
     boLichTuTao(conn, e2.cy);
     const a2 = luotThu(conn, svc.createAttempt, P.admin, { studentId: e2.sid, cycleId: e2.cy, classId: MB_FT, no: 1, periodId: week.ensurePeriod(tuanNay).id });

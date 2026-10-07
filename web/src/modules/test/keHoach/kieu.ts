@@ -38,8 +38,7 @@ export type LuoiThuongData = {
 /** Một đợt của lớp: FT = MT{n}, lớp thường = Giữa khoá / Cuối khoá. */
 export type DotChon = { loai: 'ft'; attemptNo: number } | { loai: 'thuong'; kind: KindThuong };
 
-export const NHAN_KIND: Record<KindThuong, string> = { progress: ATTEMPT_KIND_SHORT.progress, final: ATTEMPT_KIND_SHORT.final };
-export const nhanDot = (d: DotChon): string => (d.loai === 'ft' ? `MT${d.attemptNo}` : NHAN_KIND[d.kind]);
+export const nhanDot = (d: DotChon): string => (d.loai === 'ft' ? `MT${d.attemptNo}` : ATTEMPT_KIND_SHORT[d.kind]);
 export const khoaDot = (d: DotChon): string => (d.loai === 'ft' ? `mt${d.attemptNo}` : d.kind);
 /** Phần định danh đợt trong body gửi máy chủ (`/xep-moi`, `/hang-loat`). */
 export const thanDot = (d: DotChon) => (d.loai === 'ft' ? { attemptNo: d.attemptNo } : { kind: d.kind });

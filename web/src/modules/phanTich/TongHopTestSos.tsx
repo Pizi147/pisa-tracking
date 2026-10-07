@@ -163,15 +163,16 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
     if (v <= 0) return soBam(row, col);
     /* PR-SOS (K1-20): Chờ nguyên nhân kèm "⚠ n" quá hạn (PR-HK2: ⚠ đỏ cam, chữ đầy đủ ở title). */
     const quaHan = col.khoa === 'choNguyenNhan' ? row.o.choNguyenNhanQuaHan ?? 0 : 0;
-    if (!mau) return <span className={MAU_COT[col.khoa] ?? ''}>{soBam(row, col)}{quaHan > 0 && <span className="ml-1 font-bold text-late" title={`${quaHan} quá hạn`}>⚠{quaHan}</span>}</span>;
+    if (!mau) return <span className={MAU_COT[col.khoa] ?? ''}>{soBam(row, col)}{quaHan > 0 && <span className="ml-1 font-bold text-late" title={`${quaHan} quá hạn`}>⚠{quaHan}<span className="sr-only"> quá hạn</span></span>}</span>;
     return <span className={`${CHIP_VUONG} min-w-[28px] justify-center ${MAU_O[mau]}`}>{soBam(row, col)}</span>;
   };
 
   /* PR-HK2 (Q1): ba nút ngoài (Cột hiện ▾, Xuất bảng này, Xuất kết quả từng lượt) gom vào MỘT menu ⋯. */
+  const khongXuat = !data || data.hang.length === 0 || !demoDate;
   const mucMenu: MucMenu[] = [
     { key: 'cot-hien', nhan: 'Cột hiện', tieuDe: true, onChon: () => {} },
     ...NHOM_MAC_DINH.map((n) => ({ key: n, nhan: nhomCotNhanNgan(n, ct), chon: cotHien.has(n), onChon: () => toggleCotHien(n) })),
-    ...(() => { const khongXuat = !data || data.hang.length === 0 || !demoDate; return [{ key: 'xuat', nhan: '⤓ Xuất bảng này', keTruoc: true, onChon: xuatExcel, tat: khongXuat, title: khongXuat ? 'Chưa có dữ liệu để xuất' : undefined }]; })(),
+    { key: 'xuat', nhan: '⤓ Xuất bảng này', keTruoc: true, onChon: xuatExcel, tat: khongXuat, title: khongXuat ? 'Chưa có dữ liệu để xuất' : undefined },
     ...(session?.nav?.xuatMt ? [{ key: 'xuat-mt', nhan: 'Xuất kết quả từng lượt', onChon: () => setMoXuat(true) }] : []),
   ];
 

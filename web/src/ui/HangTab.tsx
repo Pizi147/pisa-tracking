@@ -22,7 +22,9 @@ export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, ca
     const tab = hang.current?.querySelector<HTMLElement>('[aria-selected="true"]');
     const h = hang.current;
     if (!tab || !h) return;
-    h.scrollLeft = Math.max(0, tab.offsetLeft - (h.clientWidth - tab.offsetWidth) / 2);
+    /* getBoundingClientRect, không `offsetLeft`: hàng tab không phải offsetParent của nút nên offsetLeft tính từ tổ tiên khác. */
+    const lech = tab.getBoundingClientRect().left - h.getBoundingClientRect().left;
+    h.scrollLeft = Math.max(0, h.scrollLeft + lech - (h.clientWidth - tab.offsetWidth) / 2);
   }, [value]);
   return (
     <div ref={hang} role="tablist" aria-label={ariaLabel} className="flex gap-1 overflow-x-auto overflow-y-hidden border-b max-sm:[scrollbar-width:none] max-sm:pr-8 max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)]" style={{ borderColor: 'var(--line)' }}>

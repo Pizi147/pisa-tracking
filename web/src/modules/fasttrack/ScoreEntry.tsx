@@ -1007,7 +1007,6 @@ export function ODiemThuong({
   tongCot: number | null;
   canEdit: boolean;
   onSave: (patch: { score: number | null; total: number | null; lyDo?: string }, opts?: SaveOpts) => Promise<boolean>;
-  /** `im` = không toast "Đã dời …" (nút Vắng tự báo bằng toast Hoàn tác). */
   onDau: (bat: boolean) => Promise<boolean>;
   inputRef?: (el: HTMLInputElement | null) => void;
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
