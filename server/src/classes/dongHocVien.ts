@@ -7,7 +7,7 @@
  * riêng rồi gọi `listCases(p, {})` KHÔNG lọc phạm vi gì để lấy Case — quét mọi Case trong hệ thống, chậm hàng chục giây
  * trên Turso. Xem `.superpowers/sdd/2026-09-22-pr-qa-hoc-vien-lop/task-17-planning-fix-report.md`.
  */
-import { ATTEMPT_KIND_SHORT, PERMISSIONS, nhomCuaLoai, viecTiepCuaEm, type AttemptKind, type CaseViec, type NhanYThucEm, type ViecTiepTheo } from '../../../shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, PERMISSIONS, soThuTuLuot, nhomCuaLoai, viecTiepCuaEm, type AttemptKind, type CaseViec, type NhanYThucEm, type ViecTiepTheo } from '../../../shared/domain/index.ts';
 import { db } from '../db.ts';
 import { activeAt, can, isCoreTeacherOf, type Principal } from '../permissions.ts';
 import { emCoBaoPhChuaLam } from '../yThuc/phoiHop.ts';
@@ -66,12 +66,12 @@ export function nhapDiemTheoEm(p: Principal, classIds: readonly number[], homNay
   /* Lớp người xem có VIỆC nhập điểm: đang được phân công, hoặc vai không phải giáo viên có SCORE_EDIT ở lớp (Quản trị) — như `mySkills`. */
   const day = new Set(p.assignments.filter((a) => activeAt(a, homNay)).map((a) => a.classId));
   const lop = [...new Set(classIds)].filter((id) => day.has(id) || can(p, PERMISSIONS.SCORE_EDIT, { classId: id }));
-  const out = new Map<number, NhapDiemViec & { thuTu: number; hanQua?: string | null }>();
+  const out = new Map<number, NhapDiemViec & { thuTu: { kind: string; attempt_no: number } | null; hanQua?: string | null }>();
   if (!lop.length) return out;
   for (const a of listAttempts(p, { classIds: lop, chiDangHoc: true }).rows as any[]) {
     const cho = (a.myPendingDetail ?? []) as { skill: string; deadline: string | null; overdue: boolean }[];
     if (a.status === 'cancelled' || !cho.length || lopCua(a.studentId) !== a.classId) continue;
-    const x = out.get(a.studentId) ?? { kyNang: [], dot: null, quaHan: false, han: null, thuTu: Infinity, hanQua: null };
+    const x = out.get(a.studentId) ?? { kyNang: [], dot: null, quaHan: false, han: null, thuTu: null, hanQua: null };
     for (const c of cho) {
       if (!x.kyNang.includes(c.skill)) x.kyNang.push(c.skill);
       if (c.overdue) x.quaHan = true;
@@ -79,7 +79,8 @@ export function nhapDiemTheoEm(p: Principal, classIds: readonly number[], homNay
       if (c.overdue && c.deadline && (!x.hanQua || c.deadline < x.hanQua)) x.hanQua = c.deadline;
     }
     /* Đợt = lượt còn nợ SỚM NHẤT (như bảng lớp đọc timeline từ đầu). */
-    if (a.attemptNo < x.thuTu) { x.thuTu = a.attemptNo; x.dot = a.kind === 'mock' ? `MT${a.attemptNo}` : ATTEMPT_KIND_SHORT[a.kind as AttemptKind] ?? a.kind; }
+    const luot = { kind: a.kind as string, attempt_no: a.attemptNo as number };
+    if (!x.thuTu || soThuTuLuot(luot, x.thuTu) < 0) { x.thuTu = luot; x.dot = a.kind === 'mock' ? `MT${a.attemptNo}` : ATTEMPT_KIND_SHORT[a.kind as AttemptKind] ?? a.kind; }
     out.set(a.studentId, x);
   }
   /* PR-S6F-a Q6: có ô quá hạn thì hạn hiện là hạn của ô quá hạn — hạn sớm của ô chưa quá hạn không làm em "trễ". */
