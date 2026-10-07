@@ -113,15 +113,15 @@ export function raLenh(p: Principal, v: {
      * PR-LCa: lớp nguồn thường — Lộ trình tiếp theo ở lớp này (Target Lên FT LCa-2 + Hướng cũ cho đồng bộ LCa-1) và khoá lớp thường đang
      * chạy (Target / KCK, LCa-2) của em hợp lệ: một câu mỗi bảng cho cả lô.
      */
-    const ltt = new Map<number, { huong: Huong; mucTieu: number | null }>();
+    const ltt = new Map<number, { huong: Huong; mucTieu: number | null; thangThi: string | null }>();
     const khoa = new Map<number, { target: number | null; kck: boolean }>();
     /* Khoá chỉ cần khi có dòng Lên FT chưa ghi Target. */
     const canKhoa = dongs.some((d) => d.huong === 'fast_track' && d.mucTieu == null);
     if (!nguonFt) {
       theoLo(dongs.filter((d) => hopLe.has(d.studentId)).map((d) => d.studentId), (lo, ph) => {
         for (const r of conn.prepare(
-          `SELECT student_id, huong, muc_tieu FROM lo_trinh_tiep_theo WHERE class_id = ? AND student_id IN (${ph})`,
-        ).all(v.lopNguonId, ...lo) as any[]) ltt.set(r.student_id, { huong: r.huong, mucTieu: r.muc_tieu ?? null });
+          `SELECT student_id, huong, muc_tieu, thang_thi FROM lo_trinh_tiep_theo WHERE class_id = ? AND student_id IN (${ph})`,
+        ).all(v.lopNguonId, ...lo) as any[]) ltt.set(r.student_id, { huong: r.huong, mucTieu: r.muc_tieu ?? null, thangThi: r.thang_thi ?? null });
         if (canKhoa) for (const r of conn.prepare(
           `SELECT student_id, target_score, khong_cam_ket FROM learning_cycles WHERE status = 'active' AND route IS NULL AND student_id IN (${ph})`,
         ).all(...lo) as any[]) khoa.set(r.student_id, { target: r.target_score ?? null, kck: !!r.khong_cam_ket });
@@ -147,6 +147,8 @@ export function raLenh(p: Principal, v: {
       if (!nguonFt && d.huong === 'fast_track' && d.mucTieu == null) {
         d = { ...d, mucTieu: targetLenFt({ lt: ltt.get(d.studentId) ?? null, khoa: khoa.get(d.studentId) ?? null }) };
       }
+      /* PR-LCb (§7): Lên FT không gửi Dự kiến thi → tháng thi ở LTT; không có thì để trống — thi hành giữ Dự kiến thi của khoá (`moLoTrinhMoi`). */
+      if (!nguonFt && d.huong === 'fast_track' && !d.ngayThi && ltt.get(d.studentId)?.thangThi) d = { ...d, ngayThi: ltt.get(d.studentId)!.thangThi };
       const sai = kiemDongLenh({
         huong: d.huong, lopDichId: lopDich?.id ?? null, lopDichFt: !!lopDich?.is_fast_track, nguonFt, tuan: tuan ?? null, homNay,
         lyDo: d.lyDo ?? null, khacGoiY: khac, mucTieu: d.mucTieu ?? null, ngayXemLai: d.ngayXemLai ?? null,

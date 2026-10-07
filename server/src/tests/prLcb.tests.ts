@@ -170,4 +170,148 @@ export async function runPrLcbTests(t: YThucTestKit) {
     assert(a3.length === 3 && a12.length === 12, `số lớp ${a3.length} · ${a12.length}`);
     assert(a === b, `3 lớp ${a} câu · 12 lớp ${b} câu`);
   });
+
+  // ================================================================== T3 · API panel + dữ liệu (B3, B4)
+  const transition: any = await import('../classes/transition.ts');
+  const yeuCau: any = await import('../duyet/yeuCau.ts');
+  const migLcb: any = await import('../migrate/prLcb.ts');
+  const { getConfig, setConfig } = await import('../demoConfig.ts');
+  const lopMB = (code: string, kind: string, ft = false, branchId = MB) => (intake.createClass(P.admin, {
+    code, branchId, kind, isFastTrack: ft, route: ft ? 'LT1' : null, startDate: thu2(1), startPeriodId: week.ensurePeriod(thu2(1)).id,
+  }) as any).id as number;
+  const FT_DICH = lopMB('MB LCB FT DICH', 'FT', true);
+  const ltt = (sid: number, classId: number) => get('SELECT * FROM lo_trinh_tiep_theo WHERE student_id = ? AND class_id = ?', sid, classId);
+  const lenhCua = (sid: number) => get('SELECT * FROM lenh_chuyen_lop WHERE student_id = ? ORDER BY id DESC LIMIT 1', sid);
+  const loi = (fn: () => unknown): any => { try { fn(); } catch (e) { return e; } return null; };
+  /** Thi hành lệnh lớp `lop` ở thứ Hai tuần sau (mẫu `thiHanh` của prLc): lệnh lớp khác tạm đặt `thu_ngay` để lượt quét bỏ qua, xong trả lại. */
+  const thiHanh = (lop: number) => {
+    const khac = conn.prepare(`SELECT id, thu_ngay FROM lenh_chuyen_lop WHERE trang_thai = 'cho' AND lop_nguon_id != ?`).all(lop) as any[];
+    const dat = conn.prepare('UPDATE lenh_chuyen_lop SET thu_ngay = ? WHERE id = ?');
+    for (const x of khac) dat.run(THU_HAI, x.id);
+    const cu = getConfig('demo_date');
+    setConfig('demo_date', THU_HAI);
+    try { lenh.thiHanhLenhDenHan(THU_HAI); } finally {
+      setConfig('demo_date', cu);
+      for (const x of khac) dat.run(x.thu_ngay ?? null, x.id);
+    }
+  };
+
+  // ------------------------------------------------------------------ (h) transitionPlan: lớp chuyển đến mọi chi nhánh, mã lớp + ngày ra lệnh
+  check('LCb-h · transitionPlan: lenh.lopDichMa + ngayRaLenh; candidates có lớp chi nhánh khác + branchCode; GVCN không candidates; dienSan ưu tiên lớp cùng chi nhánh', () => {
+    /* Lớp nguồn ở chi nhánh riêng có đúng MỘT lớp BE → điền sẵn lớp đó dù ứng viên BE mọi chi nhánh nhiều hơn một. */
+    const cn = chiNhanh('LCBH');
+    const l = taoLop('FOU', 8, 1, cn);
+    const BE_CN = lopMB('LCBH BE 01', 'BE', false, cn);
+    loTrinh.ghiLoTrinhTiep(P.admin, l.sids[0], { huong: 'len_lop' });   // chưa lớp dự kiến
+    const r = transition.transitionPlan(P.admin, l.classId);
+    const cand = r.candidates as any[];
+    assert(cand.find((c) => c.id === BE_DICH)?.branchCode === 'MB', `ứng viên chi nhánh khác: ${JSON.stringify(cand.find((c) => c.id === BE_DICH))}`);
+    assert(cand.find((c) => c.id === BE_CN)?.branchCode === 'LCBH', `ứng viên cùng chi nhánh: ${JSON.stringify(cand.find((c) => c.id === BE_CN))}`);
+    assert(cand.filter((c) => !c.ft && c.programmeCode === 'BE').length > 1, 'tiền đề: nhiều lớp BE (mọi chi nhánh)');
+    assert(r.students[0]?.dienSan?.lopDichId === BE_CN, `dienSan ưu tiên cùng chi nhánh: ${JSON.stringify(r.students[0]?.dienSan)}`);
+
+    /* Lớp MB: QL ra lệnh sang lớp chi nhánh khác → GVCN (không ứng viên) vẫn đọc mã lớp chuyển đến + ngày ra lệnh. */
+    const m = taoLop('FOU', 8, 1);
+    const r0 = lenh.raLenh(QL, { lopNguonId: m.classId, boiCanh: 'cuoi-khoa', tuanChung: THU_HAI, dongs: [{ studentId: m.sids[0], huong: 'len_lop', toClassId: BE_CN }] });
+    assert(!r0.failed.length, `tiền đề: lệnh sang lớp chi nhánh khác — ${JSON.stringify(r0.failed)}`);
+    assert((transition.transitionPlan(QL, m.classId).candidates as any[]).some((c) => c.id === BE_CN), 'QL MB thấy ứng viên chi nhánh khác');
+    const gvcn = ganGv(m.classId, 9, null, true);
+    const rg = transition.transitionPlan(gvcn, m.classId);
+    const lb = rg.students[0]?.lenh;
+    assert(!(rg.candidates as any[]).length, `GVCN: ${rg.candidates.length} ứng viên`);
+    assert(lb?.lopDichMa === 'LCBH BE 01' && lb?.ngayRaLenh === TODAY, `lenh: ${JSON.stringify(lb)}`);
+    /* Lớp dự kiến LTT = lớp chi nhánh khác (từ lệnh): GVCN sửa ghi chú vẫn lưu được — giá trị đang lưu không bị kiểm "cùng chi nhánh" lại. */
+    const e = loi(() => loTrinh.ghiLoTrinhTiepCaLop(gvcn, m.classId, { items: [{ studentId: m.sids[0], huong: 'len_lop', ghiChu: 'Ghi chú sau lệnh' }] }));
+    assert(!e && ltt(m.sids[0], m.classId)?.ghi_chu === 'Ghi chú sau lệnh' && ltt(m.sids[0], m.classId)?.lop_du_kien_id === BE_CN, `GVCN sửa ghi chú: ${e?.message}`);
+    /* Lớp dự kiến MỚI ở chi nhánh khác vẫn bị chặn như cũ. */
+    const e2 = loi(() => loTrinh.ghiLoTrinhTiep(P.admin, l.sids[0], { huong: 'len_lop', lopDuKienId: BE_DICH }));
+    assert(e2 && /lớp dự kiến/.test(e2.message), `lớp dự kiến mới chi nhánh khác: ${e2?.message}`);
+  });
+
+  // ------------------------------------------------------------------ (i) huongGvcn: đề xuất GVCN còn sau quyết định của Quản lý
+  check('LCb-i · GVCN ghi Học lại → QL ra lệnh Lên FT: LTT fast_track, huongGvcn hoc_lai; GVCN sửa ghi chú → vẫn hoc_lai; QL "Lưu hướng" em khác → huongGvcn không đổi', () => {
+    const l = taoLop('FOU', 8, 3);
+    const [a, b, c] = l.sids;
+    const gvcn = ganGv(l.classId, 10, null, true);
+    loTrinh.ghiLoTrinhTiepCaLop(gvcn, l.classId, { items: [{ studentId: a, huong: 'hoc_lai' }, { studentId: b, huong: 'len_lop' }] });
+    assert(ltt(a, l.classId)?.huong_gvcn === 'hoc_lai' && ltt(b, l.classId)?.huong_gvcn === 'len_lop', `GVCN ghi: ${ltt(a, l.classId)?.huong_gvcn} · ${ltt(b, l.classId)?.huong_gvcn}`);
+    const r = lenh.raLenh(QL, { lopNguonId: l.classId, boiCanh: 'cuoi-khoa', tuanChung: THU_HAI, dongs: [{ studentId: a, huong: 'fast_track', toClassId: FT_DICH }] });
+    assert(!r.failed.length, JSON.stringify(r.failed));
+    assert(ltt(a, l.classId)?.huong === 'fast_track' && ltt(a, l.classId)?.huong_gvcn === 'hoc_lai', `sau lệnh: ${JSON.stringify(ltt(a, l.classId))}`);
+    loTrinh.ghiLoTrinhTiepCaLop(gvcn, l.classId, { items: [{ studentId: a, huong: 'fast_track', ghiChu: 'Em cố gắng' }] });
+    assert(ltt(a, l.classId)?.ghi_chu === 'Em cố gắng' && ltt(a, l.classId)?.huong_gvcn === 'hoc_lai', `GVCN sửa ghi chú: ${JSON.stringify(ltt(a, l.classId))}`);
+    loTrinh.ghiLoTrinhTiepCaLop(QL, l.classId, { items: [{ studentId: b, huong: 'hoc_lai' }, { studentId: c, huong: 'len_lop' }] });
+    assert(ltt(b, l.classId)?.huong === 'hoc_lai' && ltt(b, l.classId)?.huong_gvcn === 'len_lop' && ltt(c, l.classId)?.huong_gvcn == null,
+      `QL Lưu hướng: ${ltt(b, l.classId)?.huong_gvcn} · ${ltt(c, l.classId)?.huong_gvcn}`);
+    const plan = transition.transitionPlan(QL, l.classId);
+    const v = (sid: number) => plan.students.find((x: any) => x.id === sid)?.loTrinhTiep?.huongGvcn ?? null;
+    assert(v(a) === 'hoc_lai' && v(b) === 'len_lop' && v(c) === null, `API huongGvcn: ${v(a)} · ${v(b)} · ${v(c)}`);
+    assert(loTrinh.layLoTrinhTiep(QL, a).banGhi?.huongGvcn === 'hoc_lai', 'layLoTrinhTiep.banGhi.huongGvcn');
+  });
+
+  // ------------------------------------------------------------------ (j) Minor (b): đề xuất GVCN duyệt trong tuần Final dời sớm sang lớp thường
+  check('LCb-j · FOU Final dời tuần 6 (nay tuần 7): duyệt đề xuất sang FOU khác → cuối khoá Học lại; sang BE → Lên lớp; sang ELE / Pre FOU → lỗi, không lệnh, thẻ còn chờ; không dời (tuần 5) → giữa khoá', () => {
+    const FOU2 = lopMB('MB LCB FOU DICH', 'FOU');
+    const ELE = lopMB('MB LCB ELE DICH', 'ELE');
+    const PF = lopMB('MB LCB PREFOU DICH', 'PREFOU');
+    const l = taoLop('FOU', 7, 4);
+    conn.prepare('UPDATE classes SET final_week_override = 6 WHERE id = ?').run(l.classId);
+    const gvcn = ganGv(l.classId, 11, null, true);
+    const deXuat = (sid: number, toClassId: number) => {
+      const yc = lenh.guiDeXuatChuyenLop(gvcn, sid, { toClassId, lyDo: 'LCb-j' });
+      return { yc, e: loi(() => yeuCau.duyetYeuCau(QL, yc.id, { duLieu: { lopDichId: toClassId, tuan: THU_HAI } })) };
+    };
+    const [a, b, c, e] = l.sids;
+    const ra = deXuat(a, FOU2).e ?? deXuat(b, BE_DICH).e;
+    assert(!ra, `tiền đề: duyệt FOU / BE không lỗi — ${ra?.message}`);
+    const la = lenhCua(a); const lb = lenhCua(b);
+    assert(la?.boi_canh === 'cuoi-khoa' && la.huong === 'hoc_lai' && ltt(a, l.classId)?.huong === 'hoc_lai', `FOU: ${JSON.stringify([la?.boi_canh, la?.huong, ltt(a, l.classId)?.huong])}`);
+    assert(lb?.boi_canh === 'cuoi-khoa' && lb.huong === 'len_lop' && ltt(b, l.classId)?.huong === 'len_lop', `BE: ${JSON.stringify([lb?.boi_canh, lb?.huong, ltt(b, l.classId)?.huong])}`);
+    for (const [sid, dich] of [[c, ELE], [e, PF]] as const) {
+      const { yc, e: err } = deXuat(sid, dich);
+      assert(err && /chương trình kế tiếp/.test(String(err.message)), `lệch bậc phải lỗi: ${err?.message}`);
+      assert(!lenhCua(sid) && get('SELECT trang_thai FROM yeu_cau_duyet WHERE id = ?', yc.id).trang_thai === 'cho' && !ltt(sid, l.classId), `không lệnh / thẻ chờ / LTT: ${sid}`);
+    }
+    const l5 = taoLop('FOU', 5, 1);
+    const g5 = ganGv(l5.classId, 12, null, true);
+    const yc5 = lenh.guiDeXuatChuyenLop(g5, l5.sids[0], { toClassId: BE_DICH, lyDo: 'LCb-j tuần 5' });
+    yeuCau.duyetYeuCau(QL, yc5.id, { duLieu: { lopDichId: BE_DICH, tuan: THU_HAI } });
+    assert(lenhCua(l5.sids[0])?.boi_canh === 'giua-khoa', `tuần 5: ${lenhCua(l5.sids[0])?.boi_canh}`);
+  });
+
+  // ------------------------------------------------------------------ (k) Dự kiến thi giữ như cũ khi Lên FT (§7)
+  check('LCb-k · Lên FT không gửi Dự kiến thi: khoá exam_month 2027-03 → lộ trình FT 2027-03; LTT thang_thi 2027-05 → lệnh ngay_thi 2027-05 → FT 2027-05', () => {
+    const l = taoLop('FOU', 8, 2);
+    const [a, b] = l.sids;
+    conn.prepare(`UPDATE learning_cycles SET exam_month = '2027-03' WHERE status = 'active' AND student_id IN (?, ?)`).run(a, b);
+    loTrinh.ghiLoTrinhTiep(QL, b, { huong: 'fast_track', thangThi: '2027-05' });
+    const r = lenh.raLenh(QL, { lopNguonId: l.classId, boiCanh: 'cuoi-khoa', tuanChung: THU_HAI, dongs: [a, b].map((sid) => ({ studentId: sid, huong: 'fast_track', toClassId: FT_DICH })) });
+    assert(!r.failed.length, JSON.stringify(r.failed));
+    assert(lenhCua(a).ngay_thi == null && lenhCua(b).ngay_thi === '2027-05', `lệnh ngay_thi: ${lenhCua(a).ngay_thi} · ${lenhCua(b).ngay_thi}`);
+    thiHanh(l.classId);
+    assert(lenhCua(a).trang_thai === 'da_chuyen' && lenhCua(b).trang_thai === 'da_chuyen', `tiền đề thi hành: ${lenhCua(a).trang_thai} ${lenhCua(a).loi ?? ''}`);
+    const ft = (sid: number) => get(`SELECT route, exam_month FROM learning_cycles WHERE student_id = ? AND status = 'active'`, sid);
+    assert(ft(a)?.route && ft(a).exam_month === '2027-03', `em a: ${JSON.stringify(ft(a))}`);
+    assert(ft(b)?.route && ft(b).exam_month === '2027-05', `em b: ${JSON.stringify(ft(b))}`);
+  });
+
+  // ------------------------------------------------------------------ (l) migrate prLcb: thêm cột + điền bù dòng GVCN ghi; chạy lặp được
+  check('LCb-l · migrate prLcb: thêm cột huong_gvcn; dòng GVCN đang hiệu lực ghi được điền; dòng QL ghi để trống; chạy lần hai không đổi gì', () => {
+    const l = taoLop('FOU', 8, 2);
+    const [a, b] = l.sids;
+    const gvcn = ganGv(l.classId, 13, null, true);
+    loTrinh.ghiLoTrinhTiep(gvcn, a, { huong: 'hoc_lai' });
+    loTrinh.ghiLoTrinhTiep(QL, b, { huong: 'len_lop' });
+    conn.exec('ALTER TABLE lo_trinh_tiep_theo DROP COLUMN huong_gvcn');   // DB trước PR-LCb
+    const cot = () => (conn.prepare('SELECT name FROM pragma_table_info(?)').all('lo_trinh_tiep_theo') as any[]).some((x) => x.name === 'huong_gvcn');
+    assert(!cot(), 'tiền đề: chưa có cột');
+    const lan1: string[] = [];
+    migLcb.migratePrLcb(conn, lan1);
+    assert(cot() && lan1.length > 0, `lần 1: ${JSON.stringify(lan1)}`);
+    assert(ltt(a, l.classId)?.huong_gvcn === 'hoc_lai' && ltt(b, l.classId)?.huong_gvcn == null, `điền bù: ${ltt(a, l.classId)?.huong_gvcn} · ${ltt(b, l.classId)?.huong_gvcn}`);
+    const truoc = JSON.stringify(conn.prepare('SELECT id, huong_gvcn FROM lo_trinh_tiep_theo ORDER BY id').all());
+    const lan2: string[] = [];
+    migLcb.migratePrLcb(conn, lan2);
+    assert(!lan2.length && JSON.stringify(conn.prepare('SELECT id, huong_gvcn FROM lo_trinh_tiep_theo ORDER BY id').all()) === truoc, `lần 2: ${JSON.stringify(lan2)}`);
+  });
 }
