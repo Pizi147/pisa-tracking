@@ -198,5 +198,7 @@ Báo lại ≤ 20 dòng: số PR, bảng trước/sau, việc còn lại.
 
 ## 7. Câu hỏi cho chủ sản phẩm
 
+**Chủ sản phẩm 07/10: ĐỒNG Ý cả hai — (1) Chờ duyệt trễ tối đa 60 s: có; (2) TD2-e/f: để sau, đo lại sau a–d rồi quyết.**
+
 1. Huy hiệu "Chờ duyệt" được phép trễ tối đa 60 s khi **người khác** gửi yêu cầu mới (đổi lại mỗi lần chuyển trang bớt một lượt gọi)? Mặc định kế hoạch: **có**.
 2. Sau TD2-a…d, nếu Tổng quan QL vẫn > 1,5 s: gom các ô số thành một lượt gọi (TD2-e) — chấp nhận "một ô lỗi thì cả khối báo lỗi"? Mặc định: hỏi lại sau khi có log.
