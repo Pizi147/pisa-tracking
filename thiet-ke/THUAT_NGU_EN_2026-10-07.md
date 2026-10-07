@@ -1,7 +1,7 @@
 # Bảng thuật ngữ Việt → Anh (PR-EN) — 07/10/2026
 
 Planning tự chọn (chủ sản phẩm 07/10), chủ sản phẩm xem trước khi merge PR-EN. Nguồn chữ Việt: `TU_DIEN_VA_CHU.md`, `THUAT_NGU_2026-10-01.md`,
-`THUAT_NGU_DA_CHOT.md`, `CHU_CAN_SUA_2026-10*.md` và chữ thật trên web `origin/main` f904d06d (đã đọc màn GV 07/10).
+`THUAT_NGU_DA_CHOT.md`, `CHU_CAN_SUA_2026-10*.md` và chữ thật trên web `origin/main` f904d06d (đã đọc màn GV 07/10); **đối chiếu lại `main` 90fc7bcd sau HK2 #235 (07/10)**.
 **Đọc theo chữ Việt SAU PR-HK2** (HK2 chạy trước EN): HK2 đổi "Giữa khoá / Cuối khoá" → **"Progress Test / Final Test"** cả ở bản Việt (chủ sản phẩm 07/10),
 "thiếu 1.5" → "-1.5", "quá hạn từ W1 SEP" → "quá hạn n ngày", "Xác nhận PA Tutor · đến lúc thi" → "Xác nhận PA Tutor", ô trống "– sửa" → "Nhập", bỏ "Bạn" ở dòng việc của mình,
 "Khác" (nhóm quyền) → "Chưa xếp nhóm", "Hoàn tác" ở nút Vắng bỏ, tên web "PISA Tracking".
@@ -36,6 +36,12 @@ Planning tự chọn (chủ sản phẩm 07/10), chủ sản phẩm xem trước
 | Tìm học viên, lớp… | Search student, class… | |
 | Hồ sơ cá nhân | My profile | |
 | Giao diện sáng / tối | Light / Dark | |
+| Hàng menu Tài khoản (điện thoại): Ngôn ngữ · Giao diện Tối \| Sáng | Language · Display Dark \| Light | Hai hàng liền nhau, khối dưới menu (HK2 Q2) |
+| Phạm vi được cấp · Toàn hệ thống | Access · All branches | Menu Tài khoản |
+| GVCN (đầu mục menu) · chip `GVCN MB FOU 12` | Core teacher · chip `MB FOU 12` | Đầu mục đã nói vai, chip chỉ mã lớp |
+| Kỹ năng được phân công | Assigned skills | Menu Tài khoản |
+| Hồ sơ giáo viên | Teacher profile | |
+| Bản demo nội bộ · Hệ thống quản lý học vụ và vận hành — bản demo chạy local | Internal demo · Academic and operations tracking — local demo | Thanh trên / màn đăng nhập |
 | Bỏ qua tới nội dung | Skip to content | |
 | Mất kết nối tới máy chủ… | Connection lost — data may be out of date. You are still signed in. | |
 | Thử lại · Đang thử… | Retry · Retrying… | |
@@ -93,7 +99,7 @@ Planning tự chọn (chủ sản phẩm 07/10), chủ sản phẩm xem trước
 | Bàn giao | Handover | |
 | Lưu trữ | Archive | |
 | Hành trình (tab hồ sơ HV) | Journey | Dòng thời gian học của em |
-| Cuối khoá · Kết luận khoá | End of course · Course outcome | |
+| Kết luận khoá | Course outcome | "Cuối khoá" không còn trên màn (HK2 → Final Test) |
 | Tổng kết lộ trình | Pathway summary | |
 | Kết quả thi thật | Real exam result | Phân biệt rõ với Mock Test |
 | Cập nhật kết quả thi thật | Update real exam result | |
@@ -117,7 +123,7 @@ Planning tự chọn (chủ sản phẩm 07/10), chủ sản phẩm xem trước
 | Số câu (L, R) · band | correct answers · band | Đầu cột: `L (correct)` / `W1 (band)` |
 | Vắng (gõ "-") | Absent (type "-") | |
 | Đã ghi vắng R · Tên · dời W3 OCT | Absent R · Name · moved to W3 OCT | HK2 Q4 = B: không nút Hoàn tác |
-| Đã gỡ vắng · về W… | Absence removed · back to W… | PR-BV |
+| Đã gỡ vắng R · Tên · về W… / giữ W… | Absence removed R · Name · back to W… / kept W… | PR-BV (`LuoiThuong.tsx:242-244`, `ScoreEntry.tsx:140`) |
 | Dời lịch thi | Reschedule test | |
 | Dời hạn chấm | Extend marking deadline | Khác "Dời lịch thi" (khái niệm tách) |
 | Hạn chấm | Marking due | |
@@ -146,7 +152,7 @@ Planning tự chọn (chủ sản phẩm 07/10), chủ sản phẩm xem trước
 | Ghi Mini Test | Record mini test | |
 | Chốt tuần MT | Confirm MT week | |
 | Xuất Excel | Export Excel | |
-| Lớp thường · Fast Track (công tắc) | Standard · Fast Track | |
+| Lớp thường · Fast Track (công tắc) | Normal · Fast Track | Theo "Normal class" (chủ sản phẩm 07/10) |
 
 ## 5. Case, PA, SOS (học thuật)
 
@@ -238,5 +244,5 @@ Planning tự chọn (chủ sản phẩm 07/10), chủ sản phẩm xem trước
 | Vi phạm | **Incident** | Violation | Nhẹ, đúng văn trường học; "violation" nghe như phạt |
 | Kỳ vọng | **Expected** (band) | Benchmark | Ngắn, đọc ra ngay "band mong đợi ở lượt này", khác Target |
 | Lớp thường | **Normal class** | Standard / Regular | Chủ sản phẩm chốt 07/10 |
-| GVCN | **Core teacher** | Core teacher (Core teacher) | Chủ sản phẩm chốt 07/10 |
+| GVCN | **Core teacher** | Homeroom teacher · Form teacher | Chủ sản phẩm chốt 07/10 |
 | Ý thức | **Conduct** | Discipline, Attitude | Bao trọn chuyên cần + BTVN + thái độ |
