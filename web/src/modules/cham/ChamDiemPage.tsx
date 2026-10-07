@@ -81,7 +81,7 @@ export default function ChamDiemPage() {
         <div className="min-w-0">
           <Link className="btn btn-sm btn-ghost mb-1 no-underline" to="/test" title="Về khu vực Test">← Test</Link>
           <h1 className="text-lg font-semibold text-slate-100 flex items-center gap-2 m-0">
-            <span className="truncate">{data.classCode}{tenDot ? ` · ${tenDot}` : ''}</span>
+            <span className="truncate" title={`${data.classCode}${tenDot ? ` · ${tenDot}` : ''}`}>{data.classCode}{tenDot ? ` · ${tenDot}` : ''}</span>
             <NutLuat label="Luật chấm điểm">
               <span className="block">
                 Ô để trống là chưa nhập, không phải 0 điểm. Chỉ kỹ năng bạn được phân công mới sửa được; kỹ năng khác

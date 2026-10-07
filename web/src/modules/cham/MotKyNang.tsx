@@ -112,9 +112,9 @@ function DongHv({ studentId, active, ten, href, phu, phuTitle, phuDo = false, lu
       className={`flex items-center gap-3 px-3 py-2 min-h-[60px] border-t ${active ? 'row-active' : ''}`}
       style={{ borderColor: 'var(--line)' }}>
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1 min-w-0">
-          <Link className="link block truncate max-sm:py-3 max-sm:-my-3" to={href} title={ten}>{ten}</Link>
-          {nhan}
+        <div className="min-w-0">
+          <Link className="link block break-words max-sm:py-3 max-sm:-my-3" to={href} title={ten}>{ten}</Link>
+          {nhan && <div className="mt-0.5">{nhan}</div>}
         </div>
         <div className="flex items-center gap-1.5 text-xs text-slate-500 min-w-0 tabular-nums">
           <span className={`truncate ${phuDo ? 'text-rose-300' : ''}`} title={phuTitle}>{phu}</span>

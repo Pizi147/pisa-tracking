@@ -487,8 +487,8 @@ type NutChonProps = {
 export function NutChon({ chon, onClick, children, nho, className = '', disabled, title }: NutChonProps) {
   return (
     <button type="button" aria-pressed={chon} onClick={onClick} disabled={disabled} title={title}
-      className={`btn ${nho ? 'btn-sm' : ''} min-h-[44px] min-w-0 gap-1 whitespace-normal text-center leading-tight sm:min-h-0 ${chon ? CHON : ''} ${className}`}>
-      {chon && <span aria-hidden className="shrink-0 text-[11px] leading-none text-teal-300">✓</span>}{children}
+      className={`btn ${nho ? 'btn-sm' : ''} relative min-h-[44px] min-w-0 gap-1 whitespace-normal text-center leading-tight sm:min-h-0 ${chon ? CHON : ''} ${className}`}>
+      {chon && <span aria-hidden className="pointer-events-none absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-md border border-teal-600 bg-[color:var(--surface)] text-[11px] leading-none text-teal-300">✓</span>}{children}
     </button>
   );
 }

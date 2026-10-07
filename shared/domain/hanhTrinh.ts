@@ -465,7 +465,7 @@ export const RONG_TEN_KY_NANG = { ielts: 118, ratio: 96 } as const;
 
 export type BoCuc = { cotTen: number; cotTuan: string; xuongDong: boolean; toiDaMoc: number };
 
-const COT = { ten: 300, tenRong: 320, tenToiDa: 440, tenHep: 148, tuanToiThieu: 48, tuanGon: 40 } as const;
+const COT = { ten: 300, tenRong: 320, tenToiDa: 440, tenHep: 160, tuanToiThieu: 48, tuanGon: 40 } as const;
 
 /**
  * BỐ CỤC CỘT: Xem gọn → cột tên 148px, tuần 40px, chuỗi điểm xuống dòng dưới tên, 3 mốc. Ngược lại cột tên rộng

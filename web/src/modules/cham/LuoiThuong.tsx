@@ -421,12 +421,14 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
     <tr className={`row-hover h-14 ${row.studentStatus !== 'active' ? 'row-muted' : ''} ${active ? 'row-active' : ''}`}
       data-hv={row.studentId}>
       <td className="td py-1.5 sticky-col">
-        <div className="flex items-center gap-1 min-w-0">
-          <Link className="link block truncate max-sm:py-3 max-sm:-my-3" to={`/hoc-vien/${row.studentId}`} title={row.studentName}>{row.studentName}</Link>
+        <div className="min-w-0">
+          <Link className="link block max-sm:break-words max-sm:py-3 max-sm:-my-3 sm:truncate" to={`/hoc-vien/${row.studentId}`} title={row.studentName}>{row.studentName}</Link>
           {row.hoanTat && (
-            <Info title={`Hết Chủ nhật ${ngay(row.chuNhatCuoi)}. Chỉ Quản lý sửa được điểm — nhờ Quản lý hiệu chỉnh.`}>
-              Đã hoàn tất
-            </Info>
+            <div className="mt-0.5">
+              <Info title={`Hết Chủ nhật ${ngay(row.chuNhatCuoi)}. Chỉ Quản lý sửa được điểm — nhờ Quản lý hiệu chỉnh.`}>
+                Đã hoàn tất
+              </Info>
+            </div>
           )}
         </div>
         {/* Trạng thái lưu RIÊNG TỪNG DÒNG — lỗi nói rõ ở dòng nào, có nút Thử lại. */}

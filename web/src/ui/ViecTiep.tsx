@@ -15,13 +15,13 @@ export function ViecTiep({ v, den, onBam }: { v: ViecTiepTheo; den?: string | nu
    * `nowrap` là chữ trong dòng nên chật thì cả cụm xuống dòng. Câu đủ vẫn ở title.
    */
   return (
-    <span className="block max-w-full text-xs text-slate-200" title={v.title}>
+    <span className="block max-w-full text-xs text-slate-200 sm:line-clamp-2" title={v.title}>
+      {v.quaHanNgay !== null && <span className="whitespace-nowrap"><QuaHan ngay={v.quaHanNgay} />&nbsp;</span>}
       <span className="break-words">
         {onBam ? <button type="button" className="link cursor-pointer border-0 bg-transparent p-0 text-left text-xs" onClick={onBam}>{v.viec}</button>
           : den ? <Link to={den} className="link">{v.viec}</Link> : v.viec}
       </span>
-      {v.quaHanNgay !== null ? <span className="whitespace-nowrap">&nbsp;<QuaHan ngay={v.quaHanNgay} /></span>
-        : v.han ? <span className="whitespace-nowrap text-slate-500">&nbsp;· {v.han}</span> : null}
+      {v.quaHanNgay === null && v.han ? <span className="whitespace-nowrap text-slate-500">&nbsp;· {v.han}</span> : null}
     </span>
   );
 }

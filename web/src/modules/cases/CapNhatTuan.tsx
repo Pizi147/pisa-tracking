@@ -258,10 +258,14 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved, on
   return (
     <KhungPanel tieuDe={lanCuoi ? 'Ghi kết quả cuối' : 'Ghi kết quả'} hocVien={hocVien} lop={lop} quayLai={quayLai} onDong={onClose}
       ngCanh={(
-        <span className="flex items-center gap-1.5">
-          <span className="truncate" title={tenPa}>{tenPa}{pa.cycleNo && pa.cycleNo > 1 ? ` · Đợt ${pa.cycleNo}` : ''}</span>
-          {hanGhi && <span className="whitespace-nowrap text-slate-500">· {hanGhi.han}</span>}
-          {hanGhi?.tone === 'overdue' && <QuaHan ngay={hanGhi.daysOverdue} />}
+        <span className="flex items-center gap-1.5 max-sm:flex-col max-sm:items-start max-sm:gap-0.5">
+          <span className="truncate max-sm:whitespace-normal max-sm:break-words" title={tenPa}>{tenPa}{pa.cycleNo && pa.cycleNo > 1 ? ` · Đợt ${pa.cycleNo}` : ''}</span>
+          {hanGhi && (
+            <span className="flex items-center gap-1.5">
+              <span className="whitespace-nowrap text-slate-500"><span className="max-sm:hidden">· </span>{hanGhi.han}</span>
+              {hanGhi.tone === 'overdue' && <QuaHan ngay={hanGhi.daysOverdue} />}
+            </span>
+          )}
         </span>
       )}
       chan={{

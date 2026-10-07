@@ -84,7 +84,7 @@ function doTrang() {
     // (d) chữ tràn khỏi viền nút chọn / nút lọc / tab.
     if (el.matches('button, [role=tab], [role=radio], a.btn') && ten(el)) {
       const r = el.getBoundingClientRect();
-      // Chữ THẤY được: bỏ chữ sr-only và chữ nằm trong khối con tự cắt (khối đó đã đo ở (c)).
+      // Chữ THẤY được: bỏ chữ sr-only và chữ nằm trong khối con tự cắt (khối đó đã đo ở (c)) và dấu ✓ đè góc của NutChon (absolute, aria-hidden — cố ý nhô ra viền, PR-HK2 C36).
       let trai = Infinity, phai = -Infinity;
       const tw = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
       for (let n = tw.nextNode(); n; n = tw.nextNode()) {
@@ -92,7 +92,7 @@ function doTrang() {
         let a = n.parentElement, boQua = false;
         for (; a && a !== el.parentElement; a = a.parentElement) {
           const ac = getComputedStyle(a);
-          if (an(a) || a !== el && ac.overflowX !== 'visible') { boQua = true; break; }
+          if (an(a) || a !== el && (ac.overflowX !== 'visible' || ac.position === 'absolute' && a.hasAttribute('aria-hidden'))) { boQua = true; break; }
         }
         if (boQua) continue;
         const rg = document.createRange(); rg.selectNodeContents(n);

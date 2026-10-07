@@ -16,9 +16,13 @@ export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, ca
   cap?: 'chinh' | 'con';
 }) {
   const hang = useRef<HTMLDivElement>(null);
-  /* Mở trang với tab ở cuối hàng (ví dụ `?tab=y-thuc`) thì tab đang chọn tự cuộn vào tầm nhìn, không bị khuất. */
+  /* Mở trang với tab ở cuối hàng (ví dụ `?tab=y-thuc`) thì tab đang chọn tự cuộn vào giữa hàng, không bị khuất. Chỉ đặt
+     scrollLeft của CHÍNH hàng tab: `scrollIntoView` kéo cả <main> xuống hàng tab (Hồ sơ HV 375 vừa mở không đứng đầu trang). */
   useEffect(() => {
-    hang.current?.querySelector<HTMLElement>('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    const tab = hang.current?.querySelector<HTMLElement>('[aria-selected="true"]');
+    const h = hang.current;
+    if (!tab || !h) return;
+    h.scrollLeft = Math.max(0, tab.offsetLeft - (h.clientWidth - tab.offsetWidth) / 2);
   }, [value]);
   return (
     <div ref={hang} role="tablist" aria-label={ariaLabel} className="flex gap-1 overflow-x-auto overflow-y-hidden border-b max-sm:[scrollbar-width:none] max-sm:pr-8 max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)]" style={{ borderColor: 'var(--line)' }}>
