@@ -252,7 +252,7 @@ export async function runPrS4fTests(t: YThucTestKit) {
     attemptsSvc.saveScore(P.admin, e.aid, 'speaking', { gvCham: null }, t.TODAY);
     assert(get(`SELECT examiner_user_id u FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`, e.aid).u === null, 'null = xoá GV chấm');
     const gc = docWeb('modules/cham/GvCham.tsx'), od = docWeb('modules/fasttrack/ODiemLon.tsx');
-    assert(gc.includes('`pisa:gv-cham:${userId}:${classId}:${periodId}`') && gc.includes('khoaGvChamCot(session?.user?.id'), 'khoá localStorage GV chấm phải gắn userId');
+    assert(gc.includes('`pisa:gv-cham:${userId}:${classId}:${dot}`') && gc.includes('khoaGvChamCot(session?.user?.id'), 'khoá localStorage GV chấm phải gắn userId');
     assert(od.includes('const vo = `flex min-w-0 flex-col') && od.includes('col-span-2 flex min-w-0 flex-col'), 'ô nút và ô chỉ đọc/Overall cùng flex-col');
     assert(od.includes('title: `GV chấm: ${bai[0].gvCham.ten}`') && od.includes('duoiKyVong='), 'title GV chấm + chip Dưới kỳ vọng');
     assert(docWeb('ui/KetQuaDot.tsx').includes('`Dưới kỳ vọng: ${duoiKyVong.join'), 'KetQuaDot liệt kê kỹ năng dưới kỳ vọng');

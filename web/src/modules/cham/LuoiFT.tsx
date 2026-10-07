@@ -8,8 +8,8 @@ import {
 import {
   fmtBand, skillLabel, skillShort, sosLabel, sosTone,
 } from '../../lib/format.ts';
-import { ENTRY_SKILLS, chipSosMt0, chuOChuaLuu, duongDotTest, maHocVienNgan, ngay, nhanLuot, tuanLich, type AssessedSkill, type NguoiChon, type TrangThaiLuuO } from '@shared/domain/index.ts';
-import { NutGvCham, useGvChamCot } from './GvCham.tsx';
+import { ENTRY_SKILLS, chipSosMt0, chuOChuaLuu, dotGvCham, duongDotTest, maHocVienNgan, ngay, nhanLuot, tuanLich, type AssessedSkill, type NguoiChon, type TrangThaiLuuO } from '@shared/domain/index.ts';
+import { GOI_Y_COT_MT, NutGvCham, useGvChamCot } from './GvCham.tsx';
 
 /** Dữ liệu lưới FT — chính là `cham.ft` (`classScoreSheet` ở máy chủ). */
 export type FtSheet = {
@@ -106,7 +106,9 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
   const RONG = COT.reduce((a, b) => a + b, 0);
   /* K4-24: GV chấm chọn MỘT lần ở đầu cột S (nhớ theo lớp × tuần); chỉ người sửa được S, chỉ khi có tuần. */
   const suaS = data.editableSkills.includes('speaking');
-  const [gvCot, setGvCot] = useGvChamCot(data.classId, data.period?.id);
+  /* VIEC-NHO-2: Điểm theo lớp xem theo MT (không tuần) nhớ theo lớp × MT; MT cũ cũng có nút, không bắt buộc chọn. */
+  const dot = dotGvCham(data.period?.id, data.rows.map((r) => r.attemptNo));
+  const [gvCot, setGvCot] = useGvChamCot(data.classId, dot);
 
   if (data.rows.length === 0 && hangMo.length === 0) {
     return (
@@ -129,7 +131,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
   return (
     <>
     {/* FIX-DTL (chủ sản phẩm 07/10): GV chấm S ở hàng trên bảng — đầu cột S chỉ "S (band)", thẳng hàng các cột khác. */}
-    {suaS && data.period && <div className="flex justify-end px-3 pb-1"><NutGvCham nhan="GV chấm S" value={gvCot} onChange={setGvCot} /></div>}
+    {suaS && dot && <div className="flex justify-end px-3 pb-1"><NutGvCham nhan="GV chấm S" value={gvCot} onChange={setGvCot} goiY={data.period ? undefined : GOI_Y_COT_MT} /></div>}
     <div className={gon ? 'table-scroll bang-dinh bang-dinh-1440' : 'overflow-x-auto'}>
       <table className="w-full text-sm tabular-nums" style={{ tableLayout: 'fixed', minWidth: RONG }}>
         <colgroup>{COT.map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>

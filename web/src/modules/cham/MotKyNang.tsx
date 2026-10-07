@@ -15,7 +15,7 @@ import { Link } from 'react-router-dom';
 import {
   ATTEMPT_KIND_SHORT, BAI_CO_NHAN_XET, ENTRY_SKILLS, maHocVienNgan, ngay, tenMon, tenMonNgan, type AttemptKind, type NguoiChon,
 } from '@shared/domain/index.ts';
-import { duongDotTest } from '@shared/domain/index.ts';
+import { dotGvCham, duongDotTest } from '@shared/domain/index.ts';
 import { fmtBand } from '../../lib/format.ts';
 import { Info } from '../../ui/ui.tsx';
 import { NhanCu } from '../../ui/OMt.tsx';
@@ -23,7 +23,7 @@ import {
   ChoNutDau, CriteriaButton, KHOA_HOAN_TAT_HINT, ODiemThuong, RawScoreInput, datPhanTram, lockedByNoShow, useSaveScore, type Cell,
 } from '../fasttrack/ScoreEntry.tsx';
 import { HopNhanXet } from '../fasttrack/NhanXet.tsx';
-import { NutGvCham, useGvChamCot } from './GvCham.tsx';
+import { GOI_Y_COT_MT, NutGvCham, useGvChamCot } from './GvCham.tsx';
 import { DauLuu, DauO, LuoiFT, VIEN_LOI, khopKn, oTrongFt, type FtSheet, type HangMo } from './LuoiFT.tsx';
 import {
   LuoiThuong, ketQuaCua, lichCua, oThuong, tongPhoBien, useLuuThuong, type ThuongSheet,
@@ -150,7 +150,8 @@ function MotKyNangFt({ data, onReload, kn, hv, hangMo }: {
   const [chon, setChon] = useKyNangChon(dsKn, (k) => minh.has(k), conTrong, kn);
   const { phim, dangKy } = useDiChuyen();
   /* K4-24: GV chấm chọn một lần cho cả lớp × tuần — cùng ô nhớ với tiêu đề cột S của lưới máy tính. */
-  const [gvCot, setGvCot] = useGvChamCot(data.classId, data.period?.id);
+  const dot = dotGvCham(data.period?.id, data.rows.map((r) => r.attemptNo));
+  const [gvCot, setGvCot] = useGvChamCot(data.classId, dot);
 
   if (data.rows.length === 0 || !chon) return <LuoiFT data={data} onReload={onReload} kn={kn} hv={hv} hangMo={hangMo} />;
 
@@ -163,8 +164,9 @@ function MotKyNangFt({ data, onReload, kn, hv, hangMo }: {
   return (
     <div>
       <HangChip ds={chips} chon={chon} onChon={setChon} />
-      {chon === 'speaking' && minh.has('speaking') && data.period && (
-        <div className="flex justify-end px-3 pb-1"><NutGvCham lon value={gvCot} onChange={setGvCot} /></div>
+      {/* VIEC-NHO-2: hàng "GV chấm S [tên ▾]" có viền ngay dưới chip — cả Điểm theo lớp xem theo MT (nhớ theo lớp × MT). */}
+      {chon === 'speaking' && minh.has('speaking') && dot && (
+        <NutGvCham hang nhan="GV chấm S" value={gvCot} onChange={setGvCot} goiY={data.period ? undefined : GOI_Y_COT_MT} />
       )}
       <ul className="m-0 p-0 list-none">
         {data.rows.map((r, i) => (

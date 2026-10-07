@@ -7,6 +7,7 @@
  * Kế hoạch: docs/superpowers/plans/2026-09-23-pr-ra-cong-viec.md (Q1–Q18).
  */
 import { catDongPhu } from './hocVienLop.ts';
+import { TRAN_HANG_LOAT } from './yeuCauDuyet.ts';
 import { ngay } from './hienThiNgay.ts';
 import { mondayOfDate } from './week.ts';
 import { TASK_GROUPS, TASK_PROGRESS_CLOSED, type TaskGroup, type TaskProgress } from './worklist.ts';
@@ -114,6 +115,23 @@ export function thamSoNguoi(s: string | null | undefined): 'toi' | 'tat-ca' | nu
   if (s === 'toi' || s === 'tat-ca') return s;
   if (s != null && /^[1-9]\d*$/.test(s)) return Number(s);
   return null;
+}
+
+/**
+ * VIEC-NHO-2: "Nhắc tất cả (n)" ở Công việc › Của GV — việc ĐANG THẤY có nút Nhắc, chưa nhắc hôm nay (`boQua` đếm riêng).
+ * Lô gửi tối đa `TRAN_HANG_LOAT` (như Chờ duyệt); `gv` = người nhận của lô, nhiều việc trước (hộp hỏi lại).
+ */
+export function lapNhacTatCa<T extends { owner: string | null; nhac?: { ownerId: number; daNhacLuc: string | null } | null }>(items: readonly T[]) {
+  const coNut = items.filter((it) => it.nhac);
+  const con = coNut.filter((it) => !it.nhac!.daNhacLuc);
+  const gui = con.slice(0, TRAN_HANG_LOAT);
+  const theoGv = new Map<number, { ownerId: number; ten: string; so: number }>();
+  for (const it of gui) {
+    const g = theoGv.get(it.nhac!.ownerId) ?? { ownerId: it.nhac!.ownerId, ten: it.owner ?? '', so: 0 };
+    g.so += 1;
+    theoGv.set(g.ownerId, g);
+  }
+  return { gui, tong: con.length, boQua: coNut.length - con.length, gv: [...theoGv.values()].sort((a, b) => b.so - a.so) };
 }
 
 // ====================================================================== Vận hành — hàng số, facet, bốn trạng thái
