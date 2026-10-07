@@ -177,7 +177,8 @@ Chủ sản phẩm 05/10 đã chốt (mockup `thiet-ke/mockup-test-mt-2026-10-05
 | 06/10 | Chờ duyệt **luôn mở "Tất cả" chi nhánh** (số dòng = badge); link trỏ một thẻ/lớp không áp chi nhánh mặc định | NV ✅ |
 | 06/10 | Điểm theo lớp: bỏ chú giải màu, câu "Lưu từng ô…", nút "Xong" của mockup (luật chữ ngắn); tab giữa Lịch Test và Kế hoạch Test | DL ✅ |
 | 06/10 | **Ô nhập ngày ở mọi nơi = ô gõ + nút lịch** (`ONgay`), không làm hàng nút Hôm nay / Hôm qua / 2 ngày trước; nhãn tuỳ chọn giữ chữ chuẩn "(không bắt buộc)" | mọi PR (LUI-b giữ ô ngày) |
-| 07/10 | **Deploy MỘT lần sau khi xong HẾT** (… → KHUNG → HK2 → PR-EN → PR-SOTAY → deploy), thay "deploy sau HK2". Sổ tay viết theo `main` cuối cùng (ảnh chụp app chạy cục bộ), không chờ bản chính | EN, SOTAY, deploy |
+| 07/10 chiều | **Đổi lại: deploy NGAY sau HK2 + #236** (sửa lỗi Turso), theo `DEPLOY_2026-10.md`; **PR-EN + PR-SOTAY deploy lần 2**. Thay dòng dưới | deploy |
+| 07/10 | ~~**Deploy MỘT lần sau khi xong HẾT** (… → KHUNG → HK2 → PR-EN → PR-SOTAY → deploy), thay "deploy sau HK2". Sổ tay viết theo `main` cuối cùng (ảnh chụp app chạy cục bộ), không chờ bản chính~~ (bỏ, xem dòng trên) | EN, SOTAY, deploy |
 | 07/10 | PR-EN: nút **"VI \| EN"** chữ nhỏ cạnh nút Sáng/Tối; màn đăng nhập **hai nút to "Tiếng Việt \| English" ngay trên khung**; **bảng thuật ngữ EN planning tự chọn** (tiếng Anh tự nhiên của trung tâm IELTS), chủ sản phẩm xem trước khi merge; **lần này planning được tự duyệt mockup EN** (chỉ đổi chữ + nút đổi ngôn ngữ, giữ giao diện) **và dàn ý sổ tay**, chủ sản phẩm xem ảnh trước khi merge | EN, SOTAY |
 | 06/10 | **Không dùng Fable** ở mọi session, kể cả subagent | mọi PR |
 
@@ -300,7 +301,7 @@ Chủ sản phẩm 04/10: **3 đợt**; deploy một lần (bản `main` lúc đ
 | **5** | **MTb** · **MT0** · **LT3** | MTb → LT3 → MT0 | MTb: giao diện Mock Test · LT3: Lịch Test ba khối (`canCham.ts`, `lichTest/*`) · MT0: lượt MT0 + Chuyển tiếp lớp; MT0 dùng component ô MT của MTb và chồng `canCham.ts` với LT3 |
 | **6** | **HK2** (một mình) | — | Đụng ~15+ file khắp web, chụp lại sổ tay một lần |
 
-**Deploy lần sau (sau HK2)** — làm một lần cho cả 8 PR, theo `TRIEN_KHAI.md` mục 8 và 11.1:
+**Deploy lần 1 (sau HK2 + #236, 07/10)** — hướng dẫn từng bước cho chủ sản phẩm: **`DEPLOY_2026-10.md`** (A→H: sao lưu, khôi phục bản sao vào DB tạm `pisatracking-demo-thu-mig`, migrate hai lần, xem thử, migrate DB THỬ, nháp ba vai, báo GV, migrate + deploy chính, planning đọc nhật ký 30 phút). Tóm tắt cũ:
 1. Sao lưu bản chính (`npm run sao-luu`).
 2. Tập dượt trên **bản sao DB bản chính** (DB tạm): `npm run migrate` hai lần (lần hai không đổi gì) — có migrate PHH và bản đã gỡ mã cũ của SO.
 3. Bấm thử 375/1440 sáng/tối, ba vai: báo PH đã làm giữ nội dung; Học viên & Lớp cột mới, Trước/Sau; sửa cả lớp; Điểm theo lớp
@@ -503,6 +504,8 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 07/10/2026 | Planning (Opus 5.5) · `ke-hoach-deploy-07-10` | #236 sửa lỗi Turso (connection closed, thử lại ở kiểm phiên) đã merge — rà sau merge bằng agent Opus; soạn `DEPLOY_2026-10.md`; deploy lần 1 ngay, EN + SOTAY lần 2 |
+| 07/10/2026 | fix-turso-ket-noi-dong (Opus 5.5) · PR #236 | `laLoiMatKetNoiTurso` nhận connection closed / Hrana(Http / fetch failed / ECONNRESET; GET thử lại, lỗi ở kiểm phiên thử lại mọi method, ghi trong đường API không thử lại |
 | 07/10/2026 | PR-HK2 (Sonnet 5.5, phương án B) · `pr-hk2-badge-chu` · PR #235 | Hai họ chip một cỡ (`CHIP_TRON` / `CHIP_VUONG`, 11,5 px cao 20 px; "+n" chip tròn dẫn đúng chỗ), ⋯ một kiểu, `.nut-loc`, chữ nội dung 12 px, đầu cột dính ≥ 1280 px (`.bang-dinh`), Tổng hợp vừa 1440 (bỏ Tạm thời, "HV - Case", ô badge), thanh trên điện thoại 23C + demo bar một dòng, "Vắng" một thông báo không Hoàn tác, chữ J1–J9, Progress Test / Final Test, tên PISA Tracking, Hành trình không ghi tuần học khi không có lộ trình chạy. Phép kiểm `prHk2` C1–C41; ảnh `thiet-ke/anh/hk2/`. |
 | 07/10/2026 | PR-KHUNG (Opus 5.5) · `pr-khung-cuon-chu-cat` | G1–G7 ở gốc chung: chỉ `<main>` cuộn (Học viên & Lớp đầu cột + hàng lớp dính), `NutChon` xuống dòng (✓ chỉ nút đang chọn), việc / Case / PA không cắt chữ ở 375, lọc + tab điện thoại một hàng vuốt mép mờ, bỏ cuộn lồng (nhật ký quản trị, `.table-scroll`), `KhungPanel` "* = bắt buộc" không đè nhãn. Phép kiểm `prKhung` K1–K9 + `scripts/do-khung.mjs`. |
 | 07/10/2026 | PR-LUI-a2 (Opus 5.5) · `pr-lui-a2-case-duyet` | Case + Chờ duyệt: Người phụ trách khi ghi kết quả PA (cột mới, migrate `prLuiA2`), gộp `Vấn đề còn tồn / Ghi chú`, nút kết quả 2 cột; Tạo Case có bằng chứng; Mở lại Case (QL/QT); Sửa Case · Xoá Case báo tay · Xoá PA; Từ chối nhiều; Huỷ quyết định Đề xuất PA trong ngày; nhật ký hạn theo dõi. Phép kiểm `LUIa2-1…16`. |
