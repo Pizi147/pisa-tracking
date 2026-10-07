@@ -221,6 +221,7 @@ Công việc của tôi, chuông, câu báo lỗi máy chủ trên các đườn
 - **Công việc › Của GV: "Nhắc tất cả"** (trước hoãn ở mục 8, nay làm).
 - **Chờ duyệt › lọc "Nhắc việc"**: bấm vào thì các bộ lọc khác biến mất → hẫng. Làm cho đỡ hẫng (vd giữ hàng lọc, mờ đi + một dòng "Đang xem Nhắc việc · Quay lại"); cần mockup.
 - `db.ts` `laLoiMatKetNoiTurso`: "fetch failed" khớp cả lỗi kho tệp (Netlify Blobs) → GET tải tệp thử lại thừa một lần (Minor, rà #236).
+- **PR-TD2 · Tốc độ chuyển trang** (chủ sản phẩm 07/10 "chuyển trang khá chậm") — kế hoạch `docs/superpowers/plans/2026-10-07-pr-toc-do-chuyen-trang.md`: đo log + cục bộ, gốc = `loadBundle` đọc rộng/lặp (0,4–0,9 MB ×2–3 mỗi request), Trước/Sau tải cả danh sách, waterfall hồ sơ lớp/HV, phiên 6 câu. Thứ tự TD2-a(+0) → b+c → d; e/f sau log. Chưa làm.
 
 ### PR-SOTAY · Sổ tay mới theo web mới nhất (M) — chủ sản phẩm 06/10, **làm cuối cùng, sau PR-EN**
 Sáu file PDF, viết lại theo `main` cuối cùng (ảnh thật chụp app chạy cục bộ, 07/10), tận dụng bộ dựng sẵn `docs/so-tay/` (thay bản 02/10):
