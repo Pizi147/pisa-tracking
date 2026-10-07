@@ -9169,6 +9169,10 @@ await runPrKhungTests({ check, assert });
 const { runPrHk2Tests } = await import('./prHk2.tests.ts');
 await runPrHk2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
+// ==================================================================== PR-QT-TK (Quản trị sửa thông tin tài khoản)
+const { runPrQtTkTests } = await import('./prQtTk.tests.ts');
+await runPrQtTkTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

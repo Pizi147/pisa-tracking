@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { db, tx } from '../db.ts';
 import { ENTRY_SKILLS, PERMISSIONS, duocCapRieng, lyDoCamCapRieng } from '../../../shared/domain/index.ts';
-import { badRequest, chuTuDo, forbidden, notFound, nowIso, padCode } from '../util.ts';
+import { badRequest, chuTuDo, conflict, forbidden, notFound, nowIso, padCode } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { notify, writeAudit } from './audit.ts';
 
@@ -361,6 +361,76 @@ export function resetPassword(p: Principal, userId: number, password: string) {
   return { ok: true };
 }
 
+/** Email khác (email phụ): không bắt đuôi `.pisa@gmail.com` — để liên lạc, không đăng nhập. Bỏ trùng và bỏ email đăng nhập. */
+function emailKhac(raw: unknown[], emailDangNhap: string | null): string[] {
+  const list = [...new Set(raw.map((x) => normalizeEmail(String(x ?? ''))).filter(Boolean))].filter((e) => e !== emailDangNhap);
+  if (list.length > 20) throw badRequest('Tối đa 20 email khác.');
+  for (const e of list) {
+    if (e.length > 200 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) throw badRequest(`"${e.slice(0, 60)}" không giống một địa chỉ email.`);
+  }
+  return list;
+}
+
+function ghiEmailKhac(conn: any, userId: number, list: string[]) {
+  conn.prepare('DELETE FROM user_emails WHERE user_id = ?').run(userId);
+  for (const e of list) conn.prepare('INSERT INTO user_emails (user_id, email, created_at) VALUES (?,?,?)').run(userId, e, nowIso());
+}
+
+/**
+ * QUẢN TRỊ SỬA THÔNG TIN MỘT TÀI KHOẢN (chủ sản phẩm 07/10): họ tên, email đăng nhập, điện thoại, chức danh, email khác.
+ * Không đổi mật khẩu / vai / kỹ năng ở đây (đã có đường riêng). Trường không gửi thì giữ nguyên.
+ *
+ * Đổi email đăng nhập KHÔNG đăng xuất người đó: phiên (`demo_sessions`) gắn theo `user_id`, không theo email.
+ * Lần đăng nhập sau phải dùng email mới — email cũ không còn khớp tài khoản nào.
+ */
+export function adminUpdateAccount(p: Principal, userId: number, input: {
+  fullName?: unknown; email?: unknown; phone?: unknown; title?: unknown; extraEmails?: unknown;
+}) {
+  require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, 'Chỉ Quản trị hệ thống sửa được thông tin tài khoản khác.');
+  const conn = db();
+  const u = conn.prepare('SELECT * FROM users WHERE id = ?').get(userId) as any;
+  if (!u) throw notFound('Không tìm thấy tài khoản.');
+  if (u.status === 'deleted') throw badRequest('Tài khoản đã xoá.');
+  const phuCu = (conn.prepare('SELECT email FROM user_emails WHERE user_id = ? ORDER BY id').all(userId) as any[]).map((r) => r.email as string);
+  const cu = { fullName: u.full_name, email: u.email, phone: u.phone, title: u.title, extraEmails: phuCu };
+  const moi = { ...cu };
+  /* Kiểm HẾT trước khi ghi — một ô sai thì không đụng gì. */
+  if (input.fullName !== undefined) {
+    const name = chuTuDo(input.fullName, 'Họ tên', 100);
+    if (!name) throw badRequest('Họ tên không được để trống.');
+    moi.fullName = name;
+  }
+  if (input.email !== undefined) {
+    if (typeof input.email !== 'string') throw badRequest('Email: giá trị không hợp lệ — cần chữ.');
+    moi.email = checkEmail(input.email);
+    if (moi.email !== u.email && conn.prepare('SELECT 1 FROM users WHERE email = ? AND id <> ?').get(moi.email, userId)) {
+      throw conflict(`Email ${moi.email} đã có tài khoản khác dùng.`);
+    }
+  }
+  if (input.phone !== undefined) moi.phone = chuTuDo(input.phone, 'Điện thoại', 20);
+  if (input.title !== undefined) moi.title = chuTuDo(input.title, 'Chức danh', 100);
+  if (input.extraEmails !== undefined) {
+    if (!Array.isArray(input.extraEmails)) throw badRequest('Email khác: cần danh sách.');
+    moi.extraEmails = emailKhac(input.extraEmails, moi.email);
+  } else {
+    moi.extraEmails = phuCu.filter((e) => e !== moi.email);   // email đăng nhập mới từng là email phụ → bỏ khỏi email phụ
+  }
+  const doi = (Object.keys(cu) as (keyof typeof cu)[]).filter((k) => JSON.stringify(cu[k]) !== JSON.stringify(moi[k]));
+  if (doi.length) {
+    tx(() => {
+      conn.prepare('UPDATE users SET full_name = ?, email = ?, phone = ?, title = ? WHERE id = ?')
+        .run(moi.fullName, moi.email, moi.phone, moi.title, userId);
+      if (doi.includes('extraEmails')) ghiEmailKhac(conn, userId, moi.extraEmails);
+      writeAudit({
+        actorUserId: p.userId, action: 'user_info_set', entityType: 'users', entityId: userId, entityLabel: moi.fullName,
+        before: Object.fromEntries(doi.map((k) => [k, cu[k]])),
+        after: { ...Object.fromEntries(doi.map((k) => [k, moi[k]])), note: doi.join(', ') },
+      });
+    });
+  }
+  return { id: userId, ...moi };
+}
+
 /* ------------------------------------------------------------------ hồ sơ cá nhân */
 
 export function myProfile(p: Principal) {
@@ -401,17 +471,8 @@ export function updateProfile(p: Principal, input: {
     }
     if (input.skills !== undefined) setSkills(conn, p.userId, input.skills);
     if (input.extraEmails !== undefined) {
-      /* Email phụ KHÔNG bắt đuôi `.pisa@gmail.com`: đó là email cá nhân để liên lạc, không phải để đăng nhập. */
-      const list = [...new Set(input.extraEmails.map(normalizeEmail).filter(Boolean))]
-        .filter((e) => e !== u.email);
-      for (const e of list) {
-        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) throw badRequest(`"${e}" không giống một địa chỉ email.`);
-      }
-      conn.prepare('DELETE FROM user_emails WHERE user_id = ?').run(p.userId);
-      for (const e of list) {
-        conn.prepare('INSERT INTO user_emails (user_id, email, created_at) VALUES (?,?,?)')
-          .run(p.userId, e, nowIso());
-      }
+      if (!Array.isArray(input.extraEmails)) throw badRequest('Email khác: cần danh sách.');
+      ghiEmailKhac(conn, p.userId, emailKhac(input.extraEmails, u.email));
     }
     if (input.newPassword) {
       /* Đổi mật khẩu phải nhập mật khẩu cũ — chặn người mượn máy đang mở sẵn của người khác. */
@@ -518,6 +579,7 @@ export function listAccounts(p: Principal) {
       )
       .all(u.id) as any[]),
     skills: (conn.prepare('SELECT skill FROM user_skills WHERE user_id = ?').all(u.id) as any[]).map((r) => r.skill),
+    extraEmails: (conn.prepare('SELECT email FROM user_emails WHERE user_id = ? ORDER BY id').all(u.id) as any[]).map((r) => r.email),
     extra: (conn
       .prepare(
         `SELECT p.key AS permission, p.name_vi AS name, b.code AS branchCode
