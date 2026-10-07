@@ -335,7 +335,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     assert(/'Nhập'/.test(nut) && /cell\.band === null/.test(nut), 'ô trống chưa ghi "Nhập"');
     assert(!/lon && cell\.band === null && nhanDau \? ''/.test(nut), 'ô trống còn chữ rỗng + "sửa"');
     assert(/>sửa</.test(nut) && /fmtBand\(cell\.band\)/.test(nut), 'ô có điểm phải giữ "6.5 sửa"');
-    assert(/<NutGvCham value=/.test(doc('web/src/modules/cham/LuoiFT.tsx')) && /<NutGvCham lon value=/.test(doc('web/src/modules/cham/MotKyNang.tsx')), 'đầu cột S dùng NutGvCham (luôn ghi "GV chấm: tên thật")');
+    assert(/<NutGvCham nhan="GV chấm S" value=/.test(doc('web/src/modules/cham/LuoiFT.tsx')) && /<NutGvCham hang nhan="GV chấm S" value=/.test(doc('web/src/modules/cham/MotKyNang.tsx')), 'đầu cột S dùng NutGvCham (luôn ghi "GV chấm: tên thật")');
     assert(/title=\{`GV chấm Speaking: \$\{ten/.test(doc('web/src/modules/cham/GvCham.tsx')), 'GvCham: title phải ghi tên (phòng khi tên dài)');
   });
 
@@ -672,8 +672,8 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     const nut = than(g, 'NutGvCham');
     assert(!/chiTen/.test(nut), 'NutGvCham còn chế độ chiTen (chỉ tên, không chữ "GV chấm:")');
     assert(/session\?\.user\?\.fullName/.test(nut) && /kieu === 'toi'/.test(nut), '"Tôi" phải đổi thành tên tài khoản');
-    assert(/GV chấm: /.test(nut) && /title=\{`GV chấm Speaking: \$\{ten/.test(nut), 'nút phải ghi "GV chấm: tên" và title có tên');
-    const nhan = /<span className="([^"]*)">\{'GV chấm: '\}/.exec(nut)?.[1] ?? /<span className="([^"]*)">GV chấm: /.exec(nut)?.[1];
+    assert(/nhan = 'GV chấm'/.test(nut) && /\{`\$\{nhan\}: `\}/.test(nut) && /title=\{`GV chấm Speaking: \$\{ten/.test(nut), 'nút phải ghi "GV chấm: tên" và title có tên');
+    const nhan = /<span className="([^"]*)">\{`\$\{nhan\}: `\}/.exec(nut)?.[1];
     assert(nhan !== undefined && !/truncate/.test(nhan) && /break-words/.test(nhan), `nhãn tên không được cắt: ${nhan}`);
     for (const f of ['web/src/modules/cham/LuoiFT.tsx', 'web/src/modules/cham/MotKyNang.tsx'])
       assert(!/chiTen/.test(doc(f)) && /<NutGvCham /.test(doc(f)), `${f}: còn chiTen hoặc thiếu NutGvCham`);

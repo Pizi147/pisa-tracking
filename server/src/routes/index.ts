@@ -89,7 +89,7 @@ import { khungPtGvTuThamSo } from '../../../shared/domain/index.ts';   // PR-Pb2
 import { metricResponse, metricSet, rowsFor } from '../worklist/metrics.ts';
 import { myWork, viecCuaNguoi } from '../worklist/mywork.ts';
 import { bangGvChiNhanh, hoSoGiaoVien, ketQuaHoSoGv, oHoSoGv, viecHoSoGv } from '../giaoVien/hoSo.ts';
-import { nhacViec } from '../worklist/nhacViec.ts';
+import { nhacViec, nhacViecLo } from '../worklist/nhacViec.ts';
 import * as caseSvc from '../cases/cases.ts';
 import * as regularSvc from '../normal/regular.ts';
 import * as chamSvc from '../cham/canCham.ts';
@@ -405,6 +405,12 @@ api.post('/my-work/nhac', requireAuth, wrap((req) => {
   const ownerId = toInt(req.body?.ownerId);
   if (!key || !ownerId) throw badRequest('Thiếu key hoặc ownerId.');
   return nhacViec(principalOf(req), { key, ownerId });
+}));
+
+/* VIEC-NHO-2: "Nhắc tất cả (n)" ở Của GV — kiểm quyền + từng dòng ở `nhacViecLo` (lõi PR-NV). */
+api.post('/my-work/nhac-nhieu', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return nhacViecLo(principalOf(req), (req.body ?? {}).viec);
 }));
 
 // ============================================================ Mock Test
@@ -853,6 +859,7 @@ api.get('/classes', requireAuth, wrap((req) => {
 /** Danh sách học viên của lớp — chỉ gọi khi người dùng mở rộng lớp đó. */
 api.get('/classes/:id/roster', requireAuth, wrap((req) => {
   maybeSimulateReadError();
+  if (qStr(req, 'chiId') === '1') return classSvc.rosterIds(principalOf(req), pInt(req, 'id'));   // id + tên cho Trước/Sau (PR-TD2-b)
   return classSvc.classRoster(principalOf(req), pInt(req, 'id'), qStr(req, 'q'));
 }));
 
@@ -1174,6 +1181,9 @@ api.get('/hoc-vien-lop', requireAuth, wrap((req) => {
     cnNho: qInt(req, 'cnNho') ?? null,
   });
 }));
+
+/** Trước/Sau của hồ sơ lớp mở bằng link (PR-TD2-b): id + cách chấm của `/hoc-vien-lop` mặc định, không nạp lượt. */
+api.get('/hoc-vien-lop/ids', requireAuth, wrap((req) => hocVienLopSvc.idsHocVienLop(principalOf(req))));
 
 /** Khu Lưu trữ (PR-LT, Q16/Q22): lớp đã kết thúc · học viên đã lưu trữ — ⋯ góc phải trang Học viên & Lớp. */
 api.get('/hoc-vien-lop/luu-tru', requireAuth, wrap((req) => {

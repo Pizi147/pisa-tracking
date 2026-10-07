@@ -96,8 +96,13 @@ export default function App() {
   /* PR-PH / HK2: bấm "Thử lại" ở dải Mất kết nối → nút khoá, chữ "Đang thử…" tới khi tải xong. */
   const [dangThu, setDangThu] = useState(false);
   const thuLai = async () => { setDangThu(true); try { await reload(); } finally { setDangThu(false); } };
-  /* Một lần mỗi lần đổi trang (không hỏi lặp theo giờ); chỉ người duyệt được (Q10). */
-  const dem = useApi<DemYeuCau>(session?.authenticated && session.nav?.workApprove ? '/yeu-cau/dem' : null, [location.pathname]).data;
+  /*
+   * Chỉ người duyệt được (Q10). PR-TD2-c (chủ sản phẩm 07/10): đổi trang chỉ hỏi lại khi lần trước đã quá 60 s — huy hiệu trễ tối đa 60 s
+   * khi NGƯỜI KHÁC gửi yêu cầu; việc của chính mình gọi `invalidate('/yeu-cau')` nên cập nhật ngay. Không hỏi lặp theo giờ.
+   */
+  const [lanDem, setLanDem] = useState(() => Date.now());
+  useEffect(() => { if (Date.now() - lanDem > 60_000) setLanDem(Date.now()); }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+  const dem = useApi<DemYeuCau>(session?.authenticated && session.nav?.workApprove ? '/yeu-cau/dem' : null, [lanDem]).data;
   /*
    * Q16: giáo viên đọc MỘT lần (deps rỗng) — tự tải lại khi `/my-work` bị làm mới (`invalidate` theo tiền tố). D14: chính `/my-work` (Tổng quan,
    * Công việc cũng đọc — `useApi` gộp GET đang bay, máy chủ tính `myWork` một lần).

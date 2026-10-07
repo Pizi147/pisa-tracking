@@ -582,9 +582,12 @@ function SuaThongTinPanel({ account, onClose, onDone }: { account: Account; onCl
   const daDoi = (Object.keys(goc) as (keyof typeof goc)[]).some((k) => form[k] !== goc[k]);
   const lf = useLoiForm();
   const email = form.email.trim().toLowerCase();
+  /** Email máy chủ báo trùng (409) — lỗi dưới ô cho tới khi đổi sang email khác. */
+  const [trung, setTrung] = useState<string | null>(null);
   const loi: LoiTruong[] = [
     ...dsLoi([{ khoa: 'ho-ten', nhan: 'Họ và tên', toiThieu: 1 }], { 'ho-ten': form.fullName.trim() }),
-    ...(!email.endsWith('.pisa@gmail.com') ? [{ khoa: 'email', nhan: 'Email đăng nhập', lyDo: email ? 'Phải có đuôi .pisa@gmail.com' : 'Chưa điền' }] : []),
+    ...(!email.endsWith('.pisa@gmail.com') ? [{ khoa: 'email', nhan: 'Email đăng nhập', lyDo: email ? 'Phải có đuôi .pisa@gmail.com' : 'Chưa điền' }]
+      : trung === email ? [{ khoa: 'email', nhan: 'Email đăng nhập', lyDo: 'Đã có tài khoản khác dùng' }] : []),
   ];
   const save = async () => {
     lf.bam();
@@ -597,7 +600,10 @@ function SuaThongTinPanel({ account, onClose, onDone }: { account: Account; onCl
       });
       toast.push('ok', 'Đã lưu thông tin');
       onDone();
-    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+    } catch (e: any) {
+      if (e?.status === 409) { setTrung(email); document.getElementById(lf.oId('email'))?.focus(); }
+      else toast.push('error', e.message);
+    } finally { setBusy(false); }
   };
   const o = (k: keyof typeof goc) => ({ value: form[k], onChange: (e: { target: { value: string } }) => setForm({ ...form, [k]: e.target.value }) });
 

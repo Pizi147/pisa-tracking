@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { api, invalidate } from '../../lib/api.ts';
+import { ApiError, api, invalidate } from '../../lib/api.ts';
+import { ConfirmDialog } from '../../ui/Drawer.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { BoLocDoan, Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
@@ -14,7 +15,8 @@ import { NganViecVanHanh } from '../worklist/MgmtTasksPage.tsx';
 import { ChonPhuTrach, type NguoiPhuTrach } from './ChonPhuTrach.tsx';
 import { CongTacKhung, khungDaNho, type KhungLoc } from '../../ui/CongTacKhung.tsx';
 import {
-  LOC_NHANH, LOC_NHANH_LABEL, NHOM_VIEC, NHOM_VIEC_LABEL, demLocNhanh, demNhomChip, gomNhomViec, khopLocNhanh, nhomViecCua, type LocNhanh, type NhomViec as MaNhomViec,
+  LOC_NHANH, LOC_NHANH_LABEL, NHOM_VIEC, NHOM_VIEC_LABEL, TRAN_HANG_LOAT, demLocNhanh, demNhomChip, gomNhomViec, khopLocNhanh, lapNhacTatCa, nhomViecCua,
+  tomTatKetQuaHangLoat, type LocNhanh, type NhomViec as MaNhomViec,
 } from '@shared/domain/index.ts';
 
 type Work = {
@@ -104,6 +106,45 @@ export function HoTroHocVienTab() {
     } catch (e: any) { toast.push('error', e.message); } finally { setDangNhac((s) => ({ ...s, [it.key]: false })); }
   };
 
+  /*
+   * VIEC-NHO-2: "Nhắc tất cả (n)" — n = việc ĐANG THẤY (mọi bộ lọc) có nút Nhắc, trừ đã nhắc hôm nay và việc vừa nhắc lỗi (bấm lại cũng
+   * lỗi y hệt; 503 "chưa kịp" thì tính lại). Hỏi lại trước khi gửi; máy chủ tự kiểm lại từng dòng, không nhắc lặp.
+   */
+  const [nhacLoi, setNhacLoi] = useState<Set<string>>(new Set());
+  const [hoiNhac, setHoiNhac] = useState(false);
+  useEffect(() => { setNhacLoi(new Set()); }, [url]);
+  const [dangNhacHet, setDangNhacHet] = useState(false);
+  const khoaNhac = (key: string, ownerId: number) => `${ownerId}|${key}`;
+  const nhacHet = useMemo(
+    () => lapNhacTatCa(cuoiItems.filter((it) => !it.nhac || !nhacLoi.has(khoaNhac(it.key, it.nhac.ownerId)))),
+    [cuoiItems, nhacLoi],
+  );
+  const coNutNhacHet = laQuanLy && nguoi !== 'toi' && nhacHet.tong > 0;
+
+  const nhacTatCa = async () => {
+    setHoiNhac(false);
+    if (dangNhacHet || !nhacHet.gui.length) return;
+    setDangNhacHet(true);
+    type Dong = { key: string; ownerId: number };
+    try {
+      const r = await api.post<{ ok: (Dong & { daNhacLuc: string })[]; loi: (Dong & { loi: string; ma: number })[] }>(
+        '/my-work/nhac-nhieu', { viec: nhacHet.gui.map((it) => ({ key: it.key, ownerId: it.nhac!.ownerId })) });
+      const luc = new Map(r.ok.map((x) => [khoaNhac(x.key, x.ownerId), x.daNhacLuc]));
+      setData((prev) => (prev ? {
+        ...prev,
+        items: prev.items.map((x) => {
+          const l = x.nhac ? luc.get(khoaNhac(x.key, x.nhac.ownerId)) : undefined;
+          return l ? { ...x, nhac: { ...x.nhac!, daNhacLuc: l } } : x;
+        }),
+      } : prev) as Work);
+      setNhacLoi((s) => new Set([...s, ...r.loi.filter((l) => l.ma !== 503).map((l) => khoaNhac(l.key, l.ownerId))]));
+      toast.push(r.loi.length ? 'error' : 'ok', tomTatKetQuaHangLoat('nhac', r.ok.length, r.loi));
+    } catch (e: any) {
+      toast.push('error', e instanceof ApiError ? e.message : 'Mất kết nối giữa chừng — danh sách đã làm mới để thấy việc nào đã nhắc.');
+      reload();
+    } finally { setDangNhacHet(false); }
+  };
+
   const nutPhu = (it: WorkItem) => {
     if (it.nhac) {
       if (it.nhac.daNhacLuc) return <span className="text-xs text-slate-500 whitespace-nowrap">Đã nhắc {fmtTime(it.nhac.daNhacLuc)}</span>;
@@ -146,6 +187,30 @@ export function HoTroHocVienTab() {
             ...NHOM_VIEC.map((k) => ({ key: k, nhan: NHOM_VIEC_LABEL[k], so: demNhom[k] }))]} />
         <BranchFilter branchId={branchId} onBranch={(id) => setParam('cn', id ? String(id) : null)} />
       </div>
+
+      {coNutNhacHet && (
+        <div><button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={dangNhacHet} onClick={() => setHoiNhac(true)}>
+          {dangNhacHet ? 'Đang nhắc…' : nhacHet.tong > TRAN_HANG_LOAT ? `Nhắc ${TRAN_HANG_LOAT} việc đầu` : `Nhắc tất cả (${nhacHet.tong})`}
+        </button></div>
+      )}
+      <ConfirmDialog open={hoiNhac} onClose={() => setHoiNhac(false)} onConfirm={() => void nhacTatCa()}
+        title={`Nhắc ${nhacHet.gui.length} việc · ${nhacHet.gv.length} GV?`} confirmLabel={`Nhắc ${nhacHet.gv.length} GV`}
+        body={
+          <>
+            {/* Quá 6 GV: 5 dòng đầu + "và k GV khác" (mockup phần 1 ②). */}
+            <ul className="m-0 list-none rounded-lg border p-0 tabular-nums" style={{ borderColor: 'var(--line)' }}>
+              {(nhacHet.gv.length > 6 ? nhacHet.gv.slice(0, 5) : nhacHet.gv).map((g, i) => (
+                <li key={g.ownerId} className={`flex gap-2 px-2.5 py-1.5 ${i ? 'border-t' : ''}`} style={{ borderColor: 'var(--line)' }}>
+                  <span className="min-w-0 flex-1 break-words text-slate-200">{g.ten}</span><span className="whitespace-nowrap">{g.so} việc</span>
+                </li>
+              ))}
+              {nhacHet.gv.length > 6 && (
+                <li className="border-t px-2.5 py-1.5 text-slate-400" style={{ borderColor: 'var(--line)' }}>và {nhacHet.gv.length - 5} GV khác</li>
+              )}
+            </ul>
+            {nhacHet.boQua > 0 && <p className="mb-0 mt-2 text-xs text-slate-400">Bỏ qua {nhacHet.boQua} việc đã nhắc hôm nay.</p>}
+          </>
+        } />
 
       {loading && <Card><Skeleton rows={8} /></Card>}
       {data && (data.scopeEmpty) && (

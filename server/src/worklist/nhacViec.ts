@@ -11,11 +11,11 @@
  */
 import { chenNhieuDong, db, tx } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
-import { HttpError, forbidden, nowIso } from '../util.ts';
+import { HttpError, badRequest, forbidden, nowIso } from '../util.ts';
 import { can, loadPrincipal, scopeFor, type Principal } from '../permissions.ts';
 import { trongBoNho } from '../platform/nguCanhRequest.ts';
 import { conLaiMs } from '../platform/hanGio.ts';
-import { PERMISSIONS } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, TRAN_HANG_LOAT } from '../../../shared/domain/index.ts';
 import { myWork, type WorkGroupKey } from './mywork.ts';
 
 const THAN_BAO_TOI_DA = 200;
@@ -188,4 +188,30 @@ export function nhacViec(p: Principal, i: { key: string; ownerId: number }): { d
   const kq = nhacViecNhieu(p, [{ the: null, key: i.key, ownerId: i.ownerId }], { boQuaDaNhacTruoc: false });
   if (kq.loi.length) throw new HttpError(kq.loi[0].ma, kq.loi[0].loi);
   return { daNhacLuc: kq.ok[0].daNhacLuc };
+}
+
+/**
+ * VIEC-NHO-2: "Nhắc tất cả (n)" ở Công việc › Của GV — lô (khoá, người) do web gửi, tối đa `TRAN_HANG_LOAT`. Quyền như Nhắc ở Chờ duyệt
+ * (Quản lý/Quản trị duyệt yêu cầu); từng dòng vẫn qua lõi: tra lại `myWork` của người nhận, kiểm phạm vi DÒNG, đã nhắc hôm nay → không gửi
+ * lại (`moi = false`). `boQuaDaNhacTruoc: false` vì khoá do web gửi: kiểm dòng xong mới trả giờ đã nhắc (không dò được khoá ngoài phạm vi).
+ */
+export function nhacViecLo(p: Principal, ds: unknown) {
+  if (!can(p, PERMISSIONS.REQUEST_APPROVE, { anyScope: true })) throw forbidden('Chỉ Quản lý và Quản trị hệ thống nhắc được giáo viên.');
+  if (!Array.isArray(ds) || !ds.length || ds.length > TRAN_HANG_LOAT) throw badRequest(`Chọn từ 1 đến ${TRAN_HANG_LOAT} việc để nhắc.`);
+  const viec: ViecCanNhac[] = [];
+  const da = new Set<string>();
+  for (const x of ds) {
+    const key = x?.key, ownerId = x?.ownerId;
+    if (typeof key !== 'string' || !key || key.length > 200 || !Number.isInteger(ownerId) || ownerId <= 0) throw badRequest('Việc cần nhắc không hợp lệ.');
+    if (da.has(`${ownerId}|${key}`)) continue;
+    da.add(`${ownerId}|${key}`);
+    viec.push({ the: viec.length, key, ownerId });
+  }
+  const kq = nhacViecNhieu(p, viec, { boQuaDaNhacTruoc: false });
+  /* `the` = chỉ số trong lô → trả lại đúng (khoá web gửi, người); lõi đã chuẩn hoá khoá Mini Test cũ. */
+  const goc = (i: number | null) => ({ key: viec[i!].key, ownerId: viec[i!].ownerId });
+  return {
+    ok: kq.ok.map((x) => ({ ...goc(x.the), daNhacLuc: x.daNhacLuc, moi: x.moi })),
+    loi: kq.loi.map((x) => ({ ...goc(x.the), loi: x.loi, ma: x.ma })),
+  };
 }

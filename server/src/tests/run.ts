@@ -9178,9 +9178,27 @@ await runPrQtTkTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 // ==================================================================== FIX-XEP-BAI-THUONG (lớp thường: Progress trước Final theo loại)
 const { runFixXepBaiThuongTests } = await import('./fixXepBaiThuong.tests.ts');
 await runFixXepBaiThuongTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-TD2-d (phiên + quyền một câu SQL)
+const { runPrTd2dTests } = await import('./prTd2d.tests.ts');
+await runPrTd2dTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== FIX-KQ-GAN-NHAT-THUONG (lớp thường: kết quả gần nhất theo loại)
+const { runFixKqGanNhatTests } = await import('./fixKqGanNhat.tests.ts');
+await runFixKqGanNhatTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== FIX-DTL-OMT (hồ sơ Mock từ Điểm theo lớp; ô MT chờ ≠ chưa xếp)
+const { runFixDtlOmtTests } = await import('./fixDtlOmt.tests.ts');
+await runFixDtlOmtTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-TD2-b+c (Trước/Sau nhẹ, bớt request trùng)
+const { runPrTd2bcTests } = await import('./prTd2bc.tests.ts');
+await runPrTd2bcTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== FIX-CHOT-LEN-FT (Chốt lên FT tự xong khi đã có lộ trình / bàn giao)
 const { runFixChotLenFtTests } = await import('./fixChotLenFt.tests.ts');
 await runFixChotLenFtTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== VIEC-NHO (6 việc nhỏ 08/10)
+const { runPrViecNhoTests } = await import('./prViecNho.tests.ts');
+await runPrViecNhoTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== VIEC-NHO-2 (Nhắc tất cả ở Của GV, lọc Chờ duyệt, GV chấm S)
+const { runPrViecNho2Tests } = await import('./prViecNho2.tests.ts');
+await runPrViecNho2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-LCa (luồng cuối khoá → lộ trình tiếp: mỗi quyết định nhập một lần)
 const { runPrLcTests } = await import('./prLc.tests.ts');
 await runPrLcTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);

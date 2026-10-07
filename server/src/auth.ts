@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 import crypto from 'node:crypto';
 import { db } from './db.ts';
-import { loadPrincipal, type Principal } from './permissions.ts';
+import { COT_PRINCIPAL, principalTuDong, type Principal } from './permissions.ts';
 import { HttpError, nowIso } from './util.ts';
 
 /**
@@ -48,12 +48,13 @@ export function resolveSession(token: string | undefined): Principal | null {
   /*
    * AN-6 (PR-AN, quyết định 4.11): phiên chỉ có hiệu lực cho tài khoản ĐÃ DUYỆT và đang hoạt động. Hôm nay chỉ đường đăng nhập
    * phát phiên và nó đã từ chối tài khoản chờ duyệt — lớp này để một đường phát phiên thêm sau này không mở cửa cho họ.
-   * Một câu JOIN, không thêm lượt hỏi database.
+   * PR-TD2-d: cùng câu JOIN đó đọc luôn principal (`COT_PRINCIPAL`) — cả bước kiểm phiên là MỘT lượt hỏi database. Phiên không
+   * hợp lệ thì phần principal đọc thừa và bỏ đi; không nhớ gì giữa các request.
    */
   const row = db()
     .prepare(
-      `SELECT s.*, u.approval_state, u.status AS user_status FROM demo_sessions s
-         JOIN users u ON u.id = s.user_id WHERE s.token = ?`,
+      `SELECT s.created_at, s.last_seen_at, u.approval_state, u.status AS user_status, ${COT_PRINCIPAL}
+         FROM demo_sessions s JOIN users u ON u.id = s.user_id WHERE s.token = ?`,
     )
     .get(token) as any;
   if (!row) return null;
@@ -66,7 +67,7 @@ export function resolveSession(token: string | undefined): Principal | null {
   if (Date.now() - Date.parse(row.last_seen_at ?? row.created_at) > GHI_LAI_MOC_DUNG_SAU_PHUT * 60_000) {
     db().prepare('UPDATE demo_sessions SET last_seen_at = ? WHERE token = ?').run(nowIso(), token);
   }
-  return loadPrincipal(row.user_id);
+  return principalTuDong(row);
 }
 
 /**

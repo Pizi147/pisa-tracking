@@ -164,11 +164,6 @@ export function HopChoDuyet() {
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-end gap-2">
-        {xem !== 'de-biet' && (
-          <BoLocDoan ariaLabel="Loại yêu cầu" value={phan} onChange={(k) => setParam('phan', k === 'tat-ca' ? null : k)}
-            muc={[{ key: 'tat-ca' as KhoaChip, nhan: 'Tất cả', so: dem?.['tat-ca'] ?? null },
-              ...PHAN_LOAI_CAN_QUYET.map((k) => ({ key: k as KhoaChip, nhan: PHAN_LOAI_LABEL[k], so: dem?.[k] ?? null }))]} />
-        )}
         <BoLocDoan ariaLabel="Trạng thái" value={xem} onChange={(k) => {
           const next = new URLSearchParams(params);
           if (k === 'cho') next.delete('xem'); else next.set('xem', k);
@@ -179,6 +174,12 @@ export function HopChoDuyet() {
           muc={[{ key: 'cho', nhan: 'Chờ duyệt', so: xem === 'da-xu-ly' ? null : dem?.['tat-ca'] ?? null },
             { key: 'de-biet', nhan: 'Nhắc việc', so: xem === 'da-xu-ly' ? null : data?.demBiet ?? null },
             { key: 'da-xu-ly', nhan: 'Đã xử lý (30 ngày)' }]} />
+        {/* VIEC-NHO-2 (phương án A): Trạng thái đứng đầu; nhóm Loại GIỮ CHỖ, mờ ở Nhắc việc — bấm Nhắc việc thì hàng lọc không nhảy. */}
+        <span className="mx-1 hidden h-5 w-px self-center sm:block" style={{ background: 'var(--line)' }} />
+        <BoLocDoan ariaLabel="Loại yêu cầu" value={phan} onChange={(k) => setParam('phan', k === 'tat-ca' ? null : k)}
+          tat={xem === 'de-biet' ? 'Nhắc việc không chia loại' : undefined}
+          muc={[{ key: 'tat-ca' as KhoaChip, nhan: 'Tất cả', so: dem?.['tat-ca'] ?? null },
+            ...PHAN_LOAI_CAN_QUYET.map((k) => ({ key: k as KhoaChip, nhan: PHAN_LOAI_LABEL[k], so: dem?.[k] ?? null }))]} />
         <BranchFilter branchId={branchId} onBranch={(id) => setParam('cn', id ? String(id) : null)} />
         {quaHan && (
           <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" title="Bỏ lọc quá hạn" onClick={() => setParam('qua-han', null)}>

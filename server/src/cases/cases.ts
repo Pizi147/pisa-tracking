@@ -18,7 +18,7 @@ import {
   HAN_DUYET_NGAY, hanTheoNgay,
   type NextStep, type RescheduleTarget,
   issueBranchOf, issueLabel, caseTopicLabel, urgencyFromSos,
-  SIGNAL_WITHDRAW_SCORE_FIXED, caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac, chanHoanThanh, laLanGhiCuoi, mocChuPa, programmeOf, quyetDinhChoPa, trangThaiCaseV4, viecTiepCuaCase, tenCaseSos, tenCaseThuong, nhanDot, tenMon, tenMonNgan,
+  SIGNAL_WITHDRAW_SCORE_FIXED, caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac, chanHoanThanh, laLanGhiCuoi, mocChuPa, programmeOf, quyetDinhChoPa, trangThaiCaseV4, viecTiepCuaCase, tenCaseSos, tenCaseThuong, nhanDot, tenMon, tenMonNgan, moiNhatTruoc,
   type CaseOutcome, type FollowUpOutcome, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -81,10 +81,9 @@ export function caseTitleOf(c: {
          FROM case_milestones m
          LEFT JOIN assessment_attempts a ON a.id = m.attempt_id
          LEFT JOIN classes cl ON cl.id = a.class_id
-        WHERE m.case_id = ? AND m.attempt_no IS NOT NULL
-        ORDER BY m.attempt_no DESC LIMIT 1`,
+        WHERE m.case_id = ? AND m.attempt_no IS NOT NULL`,
     )
-    .get(c.id) as any;
+    .all(c.id).sort(moiNhatTruoc as any)[0] as any;   // lớp thường: Final mới hơn Progress dù attempt_no nhỏ hơn
   /* PR-S5F-a: tên môn theo chương trình LÚC MỞ Case (FOU "G+V") — Case bàn giao sang BE vẫn một tên, không lúc "G+V" lúc "Writing". */
   const ctTen = latest?.ct_goc ?? latest?.ct ?? null;
   /* PR-SOS T21: Case SOS Fast Track = `[MT1] {phần giữa} [SOS 3]`; phần giữa người sửa được (`title`), mặc định `{kỹ năng} không đạt`. */
