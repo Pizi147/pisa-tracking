@@ -7,11 +7,11 @@ export type DongGiuKetQua = { id: number; topic: string | null; nhomBoTro: strin
 
 /**
  * PR-PA (§8): NGƯỜI GIỮ việc "Kết quả" của mỗi PA — một luật cho Công việc, chỉ số `pa-can-cap-nhat` và quyền ghi.
- * Case `tong_hop` / PA Bổ trợ nhóm chung (`gk:{lượt}`) → GVCN lớp hiện tại; còn lại → GVBM đúng môn ở lớp hiện tại (phân công
+ * Case `tong_hop` / PA Bổ trợ nhóm chung (`gk:{lượt}`, miễn phí `mt:{lượt}` — như `quyenBoTro`, M-03) → GVCN lớp hiện tại; còn lại → GVBM đúng môn ở lớp hiện tại (phân công
  * đang hiệu lực, `writing1/2` → `writing` khi lớp không phân công riêng W1/W2); không có → chủ Case. Theo lô: tối đa hai câu mỗi lô lớp.
  */
 export function nguoiGiuKetQua(rows: readonly DongGiuKetQua[], ngay: string): Map<number, number | null> {
-  const chung = (r: DongGiuKetQua) => r.topic === 'tong_hop' || (!!r.nhomBoTro && r.nhomBoTro.startsWith('gk:') && nhomChung(r.nhomBoTro));
+  const chung = (r: DongGiuKetQua) => r.topic === 'tong_hop' || (!!r.nhomBoTro && nhomChung(r.nhomBoTro));
   const lop = (ds: readonly DongGiuKetQua[]) => [...new Set(ds.map((r) => r.classId).filter((x): x is number => x != null))];
   const gvbm = phanCongDangHieuLuc(lop(rows.filter((r) => !chung(r))), ngay);
   const gvcn = new Map<number, number>();

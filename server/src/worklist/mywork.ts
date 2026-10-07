@@ -4,7 +4,7 @@ import {
   ATTEMPT_KIND_SHORT, CHAM_CHEO, CHU_CHUYEN_LOP, daiDienNhomBoTro, laChamCheo,
   INTERVENTION_KIND_LABEL, PERMISSIONS,
   SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, cycleDeadline,
-  duongHoSoHocVien, duongLichTest, nhanDotNgan, planDueDate, urgencyFromSos,
+  duongCaseRieng, duongHoSoHocVien, duongLichTest, nhanDotNgan, planDueDate, urgencyFromSos,
   khungCua, laLanGhiCuoi, tenMon, tenMonNgan, tenNhomMon, REGULAR_SKILLS, nhanLoaiXuLy, soSanhLop,
   type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -545,10 +545,13 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       contextLabel: nhanDot(iv.attempt_kind, iv.attempt_no), count: null,
       reason: [tenPa, iv.kind === 'bo_tro' && iv.nhom_bo_tro && (monCuaNhom.get(iv.nhom_bo_tro)?.length ?? 0) > 1
         ? `PA chung · ${tenNhomMon(ctCua(iv.eff_class_id), REGULAR_SKILLS.filter((k) => monCuaNhom.get(iv.nhom_bo_tro)!.includes(k)))}` : null,
-        mine ? null : 'người thực hiện chưa ghi'].filter(Boolean).join(' — '),
+        mine ? null : 'chưa ghi'].filter(Boolean).join(' — '),
       tieuDe: tuanCuoi ? `Ghi kết quả cuối · ${tenPa}` : `Ghi kết quả PA${duoiKyNang(iv.topic, ctCua(iv.eff_class_id))}`,
       actionLabel: tuanCuoi ? 'Ghi kết quả cuối' : 'Ghi kết quả',
-      href: duongHoSoHocVien(iv.eff_student_id, { caseId: iv.case_id, paId: iv.id, viec: 'ghi-ket-qua' }),
+      /* PR-PA (§8): người giữ việc không xem được hồ sơ HV (vd. chủ Case, lớp mới chưa phân công môn) → Ngăn Case đứng riêng. */
+      href: mine && !can(p, PERMISSIONS.STUDENT_VIEW, { studentId: iv.eff_student_id })
+        ? duongCaseRieng(iv.case_id, { paId: iv.id, viec: 'ghi-ket-qua' })
+        : duongHoSoHocVien(iv.eff_student_id, { caseId: iv.case_id, paId: iv.id, viec: 'ghi-ket-qua' }),
       ownerId: iv.owner_id ?? null,
       owner: iv.owner_id ? null : ((iv.performer_name ?? '').trim() || null),
       mine, due: iv.action_due, statusLabel: 'Chờ ghi kết quả',

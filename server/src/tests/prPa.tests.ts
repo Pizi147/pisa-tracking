@@ -459,6 +459,7 @@ export async function runPrPaTests(t: YThucTestKit) {
     const { c, iv } = emChuyenLop('MOI', { chu: GV4[0], sauChuyen: (b) => { ganGv(b, GV4[1], 'listening'); ganGv(b, GV4[2], 'reading'); } });
     const dong = dongKq(GV4[1], iv);
     assert(dong && dong.mine && dong.ownerId === GV4[1], `GVBM lớp mới: ${JSON.stringify(dong && { mine: dong.mine, ownerId: dong.ownerId })}`);
+    assert(dong.href.startsWith('/hoc-vien/') && dong.reason === 'Tutor nghe chép 10 buổi', `GVBM xem được hồ sơ → href hồ sơ: ${dong.href} · ${dong.reason}`);
     assert(!dongKq(GV4[0], iv)?.mine, 'GV lớp cũ vẫn giữ việc');
     assert(nguoiChiSo(iv) === GV4[1], `chỉ số pa-can-cap-nhat: ${nguoiChiSo(iv)}`);
     const pa = (p: number) => (cases.caseDetail(loadPrincipal(p), c) as any).interventions.find((x: any) => x.id === iv);
@@ -472,6 +473,10 @@ export async function runPrPaTests(t: YThucTestKit) {
     const { c, iv } = emChuyenLop('CHU', { chu: GV4[3], sauChuyen: () => {} });
     const dong = dongKq(GV4[3], iv);
     assert(dong && dong.mine && dong.ownerId === GV4[3], `chủ Case: ${JSON.stringify(dong && { mine: dong.mine, ownerId: dong.ownerId })}`);
+    /* Chủ Case không xem được hồ sơ HV (em đã sang lớp khác) → Ngăn Case đứng riêng, mở thẳng Kết quả. */
+    assert(dong.href === `/hoc-thuat/case/${c}?pa=${iv}&viec=ghi-ket-qua` && d.duongCaseRieng(c, { paId: iv, viec: 'ghi-ket-qua' }) === dong.href, `href: ${dong.href}`);
+    const qlDong = (mw.myWork(P.admin, { nguoi: 'tat-ca' }).groups as any[]).flatMap((g) => g.items).find((it: any) => it.key === `action:${iv}`);
+    assert(qlDong && qlDong.href.startsWith('/hoc-vien/') && qlDong.reason.endsWith(' — chưa ghi'), `Quản trị (không giữ việc): ${qlDong?.href} · ${qlDong?.reason}`);
     assert(nguoiChiSo(iv) === GV4[3], `chỉ số: ${nguoiChiSo(iv)}`);
     const chu = loadPrincipal(GV4[3]);
     assert((cases.caseDetail(chu, c) as any).interventions.find((x: any) => x.id === iv).ghiDuoc === true, 'ghiDuoc của chủ Case');
@@ -482,8 +487,8 @@ export async function runPrPaTests(t: YThucTestKit) {
     assert(e.status === 403, `người ngoài: ${JSON.stringify(e)}`);
   });
 
-  check('PA13 · PA Bổ trợ nhóm chung (gk:{lượt}) và Case tong_hop → GVCN lớp hiện tại giữ việc (không phải GVBM môn)', () => {
-    for (const [ten, o] of [['GK', { kind: 'bo_tro', nhom: 'gk:990013' }], ['TH', { topic: 'tong_hop' }]] as const) {
+  check('PA13 · PA Bổ trợ nhóm chung (gk:{lượt}), Bổ trợ miễn phí (mt:{lượt}) và Case tong_hop → GVCN lớp hiện tại giữ việc (không phải GVBM môn)', () => {
+    for (const [ten, o] of [['GK', { kind: 'bo_tro', nhom: 'gk:990013' }], ['MT', { kind: 'bo_tro_mien_phi', nhom: 'mt:990013' }], ['TH', { topic: 'tong_hop' }]] as const) {
       const { iv } = emChuyenLop(`GVCN-${ten}`, { chu: GV4[0], ...o, sauChuyen: (b) => { ganGv(b, GV4[1], 'listening'); ganGv(b, GV4[2], 'reading'); ganGvcn(b, GV4[2]); } });
       const dong = dongKq(GV4[2], iv);
       assert(dong && dong.mine && dong.ownerId === GV4[2], `${ten} GVCN: ${JSON.stringify(dong && { mine: dong.mine, ownerId: dong.ownerId })}`);

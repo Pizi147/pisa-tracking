@@ -696,11 +696,12 @@ export async function runPrDonATests(t: YThucTestKit) {
       WHERE sc.id <= ? AND COALESCE(sc.student_id, a.student_id) IS NULL`, t.seedMax.sos_cases ?? 1e9).n;
     assert(n === 0, `${n} Case không có học viên`);
   });
-  check('Dọn-a (8c) · máy chủ không sinh href /hoc-thuat/case/; duongCase luôn dẫn về hồ sơ HV; CaseRoutePage chỉ chuyển hướng', () => {
+  /* PR-PA (§8): ngoại lệ DUY NHẤT — `duongCaseRieng` (?viec=ghi-ket-qua) mở Ngăn Case đứng riêng cho người giữ việc không xem được hồ sơ (prPa PA12). */
+  check('Dọn-a (8c) · máy chủ không tự ghép href /hoc-thuat/case/; duongCase luôn dẫn về hồ sơ HV; CaseRoutePage chỉ chuyển hướng (trừ duongCaseRieng)', () => {
     assert(!/hoc-thuat\/case\//.test(docNguon('server/src/worklist/mywork.ts')), 'mywork.ts còn /hoc-thuat/case/');
     assert(d.duongCase(12, 34) === d.duongHoSoHocVien(12, { caseId: 34 }) && !/export const duongCase[^;]*hoc-thuat/.test(docNguon('shared/domain/duongHoSo.ts')), `duongCase: ${d.duongCase(12, 34)}`);
     const rt = docNguon('web/src/modules/cases/CaseBoardPage.tsx');
-    assert(!/NganCase|<nav/.test(rt) && /<Navigate replace to=\{duongHoSoHocVien\(/.test(rt) && /hoc-thuat\/case\/:id/.test(docNguon('web/src/App.tsx')), 'CaseRoutePage');
+    assert(!/<nav/.test(rt) && /const rieng = viec === 'ghi-ket-qua'/.test(rt) && /if \(rieng\) return <NganCase/.test(rt) && /<Navigate replace to=\{duongHoSoHocVien\(/.test(rt) && /hoc-thuat\/case\/:id/.test(docNguon('web/src/App.tsx')), 'CaseRoutePage');
   });
 
   // ------------------------------------------------------------------ khối 9 · tốc độ (phần đo số câu nằm ở tocDo.run.ts: 9a, 9c, 9d)

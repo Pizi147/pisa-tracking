@@ -1,4 +1,4 @@
-import { db, theoLo } from '../db.ts';
+import { THAM_SO_TOI_DA, db, theoLo } from '../db.ts';
 import { LUOT_TINH_NO_SQL, boMonLich, laChamCheo } from '../../../shared/domain/index.ts';
 import type { Principal } from '../permissions.ts';
 import { loadBundle, regularSkillViews, skillCells } from '../fasttrack/attempts.ts';
@@ -41,7 +41,7 @@ export function phanCongDangHieuLuc(classIds: readonly number[], ngay: string): 
       const k = `${r.class_id}|${r.skill}`;
       if (!out.has(k)) out.set(k, { userId: r.user_id, ten: r.full_name });
     }
-  });
+  }, THAM_SO_TOI_DA - 2);   // + 2 tham số ngày
   return out;
 }
 
