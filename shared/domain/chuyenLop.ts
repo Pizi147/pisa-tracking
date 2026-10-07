@@ -65,6 +65,18 @@ const mucTieuHopLe = (m: MucTieuLenh | null | undefined) =>
   m === 'KCK' || (typeof m === 'number' && m >= 0 && m <= 9 && Math.round(m * 2) === m * 2);
 
 /**
+ * PR-LCa (LCa-2, Q2): Target Lên FT khi Quản lý không gửi — Target ghi ở Lộ trình tiếp theo → khoá lớp thường đang chạy (KCK giữ KCK)
+ * → `null` (nơi gọi để `kiemDongLenh` báo "Ghi Target (hoặc KCK)").
+ */
+export function targetLenFt({ lt, khoa }: {
+  lt: { mucTieu: number | null } | null; khoa: { target: number | null; kck: boolean } | null;
+}): MucTieuLenh | null {
+  if (typeof lt?.mucTieu === 'number') return lt.mucTieu;
+  if (khoa?.kck) return 'KCK';
+  return typeof khoa?.target === 'number' ? khoa.target : null;
+}
+
+/**
  * Kiểm MỘT dòng trước khi ghi — câu lỗi tiếng Việt hoặc `null`. Lên FT (nguồn thường → đích FT): Target (0–9 bước .5 hoặc KCK)
  * bắt buộc. KHÔNG có nhánh "thiếu điểm Cuối khoá" (Q30-4: em thiếu điểm vẫn chuyển được).
  */

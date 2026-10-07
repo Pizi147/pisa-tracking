@@ -252,4 +252,18 @@ export async function runPrLcTests(t: YThucTestKit) {
     assert(lenhCua(sid).huong === 'fast_track' && ltt(sid, l.classId)?.huong === 'fast_track',
       `QL sửa lệnh: lệnh ${lenhCua(sid).huong} · LTT ${ltt(sid, l.classId)?.huong}`);
   });
+
+  // ------------------------------------------------------------------ (l) Target trên bảng cả lớp: chỉ Quản lý (R5)
+  check('LC-l · PUT /classes/:id/lo-trinh-tiep có mucTieu: GVCN → 403, không lưu; QL → Target ghi đè; không gửi → giữ Target cũ', () => {
+    const l = taoLop(1);
+    const sid = l.sids[0];
+    const gvcn = gvcnCua(l.classId, 6);
+    loTrinh.ghiLoTrinhTiep(QL, sid, { huong: 'fast_track', mucTieu: 6 });
+    const e = loi(() => loTrinh.ghiLoTrinhTiepCaLop(gvcn, l.classId, { items: [{ studentId: sid, huong: 'fast_track', mucTieu: 7 }] }));
+    assert(e?.status === 403 && ltt(sid, l.classId)?.muc_tieu === 6, `GVCN gửi Target: ${e?.status ?? 'không ném'} · ${ltt(sid, l.classId)?.muc_tieu}`);
+    loTrinh.ghiLoTrinhTiepCaLop(QL, l.classId, { items: [{ studentId: sid, huong: 'fast_track', mucTieu: 7 }] });
+    assert(ltt(sid, l.classId)?.muc_tieu === 7, `QL ghi Target: ${ltt(sid, l.classId)?.muc_tieu}`);
+    loTrinh.ghiLoTrinhTiepCaLop(gvcn, l.classId, { items: [{ studentId: sid, huong: 'fast_track', ghiChu: 'n' }] });
+    assert(ltt(sid, l.classId)?.muc_tieu === 7, `không gửi Target → giữ: ${ltt(sid, l.classId)?.muc_tieu}`);
+  });
 }

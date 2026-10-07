@@ -99,8 +99,9 @@ export async function runPrDlTests(t: YThucTestKit) {
    * đổi dữ liệu MB FT 101. Không chụp được bằng mã 666dcfbf (gọi `kiemLyDo` đã bỏ ở T7) — băm của mã hiện tại; khẳng định `idsTuan` bên dưới
    * vẫn đối chiếu độc lập tập lượt theo tuần. Chụp lại cho T19 (hạn lớp thường thứ Tư tuần sau, ô trước tuần thi khoá) và T22 (DL-4 xoá rồi nhập lại ô; GVCN sửa ô MT cũ), rà #212 (ô có điểm ở tuần chưa tới khoá; "-" MT cũ).
    * Chụp lại 06/10 (PR-LT3 T18): ô Speaking của Mock không còn `mine`/`viec` của ai (bảng chấm vẫn sửa được — `canEdit` giữ).
+   * Chụp lại 08/10 (PR-LCa LCa-1): quyết định Lên FT ở các bộ kiểm chạy trước nay tạo MT0 → id lượt (`attemptId` của Ánh/Bình) dời; MB FT 101 không thêm lượt MT0 nào.
    */
-  const ANH_CHUP = { tuan: '322c027570c9198a', moi: 'b2738722ea426be0' };
+  const ANH_CHUP = { tuan: '866f702edcad8ff7', moi: 'a7b4d6a0b4e10618' };
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id
