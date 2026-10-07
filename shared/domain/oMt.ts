@@ -68,6 +68,12 @@ export type OMtRa = {
 /** Chữ việc: bỏ danh sách kỹ năng khi đủ MỌI kỹ năng bắt buộc của đợt (`chờ`, không `chờ L R W S`). */
 const chuViec = (viec: string, ten: string, du: boolean) => (du || !ten ? viec : `${viec} ${ten}`);
 
+/** Tuần MUỘN nhất (đã đổi ra mã `W4 SEP`) của các kỹ năng; null nếu không kỹ năng nào có tuần. */
+const tuanMuon = (xs: Array<{ o: OKyNang }>, homNay: string) => {
+  const t = xs.map((x) => (x.o.tuan ? ngayCua(x.o.tuan) : null)).filter((x): x is string => !!x).sort().pop();
+  return t ? tuanLich(t, homNay) : null;
+};
+
 export function oMt(v: OMtVao, homNay: string, ct?: string | null): OMtRa {
   const ra = (kieu: KieuOMt, tuan: string | null, viec: string | null, title: string): OMtRa => {
     const chu = [tuan, viec].filter(Boolean).join(' · ');
@@ -91,8 +97,7 @@ export function oMt(v: OMtVao, homNay: string, ct?: string | null): OMtRa {
   const viec = (cho: string, xs: typeof ds) => chuViec(cho, ten(xs), xs.length === batBuoc.length);
 
   if (batBuoc.length && batBuoc.every((x) => x.loai === 'xong')) {
-    const muon = batBuoc.map((x) => (x.o.tuan ? ngayCua(x.o.tuan) : null)).filter((x): x is string => !!x).sort().pop();
-    return ra('xong', muon ? tuanLich(muon, homNay) : null, null, title);
+    return ra('xong', tuanMuon(batBuoc, homNay), null, title);
   }
   const tre = cua('het-tuan').filter((x) => troCham(x.o, homNay));
   if (tre.length) return ra('tre-cham', tuanSom(tre), viec('trễ', tre), title);
@@ -121,8 +126,7 @@ export function nhomKyNang(kn: OMtVao['kn'], homNay: string, ct?: string | null,
   const dong = (xs: typeof ds) => xs.map((x) => dongKn(ct, x.k, x.o, x.loai, homNay, cu)).join('\n');
   const ten = (xs: typeof ds) => xs.map((x) => tenMonNgan(ct, x.k)).join(' ');
   if (ds.length && ds.every((x) => x.loai === 'xong')) {
-    const muon = ds.map((x) => (x.o.tuan ? ngayCua(x.o.tuan) : null)).filter((x): x is string => !!x).sort().pop();
-    return [{ kyNang: ds.map((x) => x.k), ten: ten(ds), kieu: 'xong', tuan: muon ? tuanLich(muon, homNay) : null, viec: null, title: dong(ds) }];
+    return [{ kyNang: ds.map((x) => x.k), ten: ten(ds), kieu: 'xong', tuan: tuanMuon(ds, homNay), viec: null, title: dong(ds) }];
   }
   const nhom = new Map<string, typeof ds>();
   for (const x of ds) {
