@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="vi" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mockup Xếp lịch MT gọn</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Token lấy đúng web/src/index.css (như mockup-hk2-2026-10-07.html): tối mặc định, sáng = [data-theme=light]. */
+:root{
+  color-scheme:dark;
+  --bg:#0c1220;--surface:#141d2f;--surface-2:#1a2437;--line:rgba(160,178,214,.14);--line-strong:rgba(160,178,214,.26);
+  --accent:#7db3f0;--accent-ink:rgb(11 22 38);--accent-soft:rgba(125,179,240,.14);--accent-line:rgba(125,179,240,.38);
+  --text:#dde5f2;--dim:rgb(147 163 192);--faint:rgb(130 146 174);--c1:rgb(241 245 249);--c3:rgb(203 213 225);
+  --ok:rgb(111 220 159);--ok-bg:rgb(18 53 38);
+  --bad:rgb(255 154 162);--bad-bg:rgb(60 29 36);--bad-line:rgb(136 64 74);
+  --soon:rgb(242 196 80);--soon-bg:rgb(53 43 16);--soon-line:rgb(122 98 34);
+  --doing:rgb(128 184 255);--doing-bg:rgb(19 44 77);--doing-line:rgb(52 96 150);
+  --done:rgb(169 181 200);
+  --wait:rgb(196 169 255);--wait-bg:rgb(39 32 67);--wait-line:rgb(87 74 138);
+  --muted:rgb(201 212 230);--muted-bg:rgb(29 42 64);--muted-line:rgba(160,178,214,.30);
+  --o-nen:#0e1727;--o-vien:#64748b;--duoc:rgb(94 234 212);
+  --sans:'Be Vietnam Pro',system-ui,'Segoe UI',sans-serif;--so:'Inter','Be Vietnam Pro',sans-serif;
+}
+:root[data-theme="light"]{
+  color-scheme:light;
+  --bg:#f5f7fa;--surface:#ffffff;--surface-2:#eef1f5;--line:rgba(15,23,42,.12);--line-strong:rgba(15,23,42,.22);
+  --accent:#1d5fbf;--accent-ink:#fff;--accent-soft:rgba(29,95,191,.08);--accent-line:rgba(29,95,191,.35);
+  --text:#0f172a;--dim:rgb(71 85 105);--faint:rgb(91 102 120);--c1:rgb(15 23 42);--c3:rgb(51 65 85);
+  --ok:rgb(21 122 66);--ok-bg:rgb(220 243 229);
+  --bad:rgb(180 35 35);--bad-bg:rgb(253 226 226);--bad-line:rgb(240 163 163);
+  --soon:rgb(138 90 0);--soon-bg:rgb(253 241 207);--soon-line:rgb(230 196 107);
+  --doing:rgb(29 95 191);--doing-bg:rgb(227 237 251);--doing-line:rgb(147 182 232);
+  --done:rgb(75 85 99);
+  --wait:rgb(91 63 184);--wait-bg:rgb(236 230 253);--wait-line:rgb(189 174 240);
+  --muted:rgb(51 65 85);--muted-bg:rgb(238 241 245);--muted-line:rgba(15,23,42,.25);
+  --o-nen:#fff;--o-vien:#7c8799;--duoc:rgb(15 118 110);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 var(--sans);-webkit-font-smoothing:antialiased;padding:0 16px 64px}
+::selection{background:var(--accent-soft)}
+.wrap{max-width:1480px;margin:0 auto;display:flex;flex-direction:column;gap:44px}
+h1{font-size:20px;margin:0}h2{font-size:17px;margin:0}
+p{margin:0}.note{color:var(--dim);font-size:13px;max-width:92ch}
+.note b{color:var(--text)}
+.bar{position:sticky;top:0;z-index:50;display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--bg);padding:10px 0;border-bottom:1px solid var(--line)}
+.bar .sp{flex:1}
+.sec{display:flex;flex-direction:column;gap:14px}
+.where{font-size:12.5px;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:3px 10px;width:fit-content;max-width:100%}
+.tag{display:inline-flex;align-items:center;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--dim)}
+.tag.truoc{color:var(--bad)}.tag.sau{color:var(--duoc)}
+.rong{overflow-x:auto;max-width:100%;padding-bottom:4px}
+.row{display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start}
+.row>div{display:flex;flex-direction:column;gap:8px;min-width:0;max-width:100%}
+.m12{color:var(--faint);font-size:12px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;padding:.45rem .85rem;border-radius:.5rem;border:1px solid var(--line-strong);background:var(--surface-2);color:var(--text);font:500 14px var(--sans);white-space:nowrap;cursor:pointer}
+.btn-sm{padding:.25rem .6rem;font-size:12px;border-radius:.4rem}
+.btn-ghost{background:transparent;border-color:transparent}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.bar .btn[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.q{border:1px solid var(--soon-line);background:var(--soon-bg);color:var(--text);border-radius:10px;padding:10px 14px;font-size:13px}
+.q b{color:var(--soon)}
+ul.note{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+
+/* ===== khung màn ===== */
+.win{max-width:none!important;position:relative;border:1px solid var(--line-strong);border-radius:12px;overflow:hidden;background:var(--bg);flex:none}
+.w1440{width:1440px}.w375{width:375px}
+.app{display:flex;min-height:100%}
+.nen{position:absolute;inset:0;background:rgb(0 0 0/.6)}
+.panel{position:relative;display:flex;flex-direction:column;background:var(--surface);border-left:1px solid var(--line-strong);box-shadow:-12px 0 32px rgb(0 0 0/.35)}
+.ph{display:flex;align-items:center;gap:8px;height:52px;padding:0 16px;border-bottom:1px solid var(--line)}
+.ph h3{margin:0;font-size:14px;font-weight:800;color:var(--c1)}
+.ph .sp{flex:1}
+.x{display:inline-grid;place-items:center;min-width:32px;min-height:32px;border-radius:6px;color:var(--text)}
+.ptab{padding:8px 16px;border-bottom:1px solid var(--line)}
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden}
+.seg span{padding:6px 12px;font-size:12.5px;white-space:nowrap}.seg .on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.pb{padding:0 16px 16px}
+.khoi{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.khoi:first-child{margin-top:0;border-top:0}
+.khoi h4{margin:0 0 10px;display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
+.num{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--doing-bg);color:var(--doing);font:700 11px var(--so)}
+.loc{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px}
+.lbl{display:block;margin-bottom:4px;font-size:11.5px;font-weight:700;color:var(--c3)}
+.field{padding:.45rem .6rem;border-radius:.5rem;background:var(--o-nen);border:1px solid var(--o-vien);color:var(--text);font-size:14px;min-height:36px;display:flex;align-items:center;white-space:nowrap}
+.field.ph2{color:var(--faint)}
+.lopchip{display:inline-flex;height:28px;align-items:center;gap:4px;border:1px solid var(--line-strong);border-radius:4px;padding:0 8px;font-size:12px;color:var(--c3);white-space:nowrap}
+.lopchip i{font-style:normal;color:var(--dim);padding:0 4px}
+.sel{display:inline-flex;height:28px;align-items:center;padding:0 8px;border:1px solid var(--o-vien);border-radius:.5rem;background:var(--o-nen);font-size:12px;color:var(--text);white-space:nowrap}
+.nutchon{display:inline-flex;align-items:center;height:28px;padding:0 10px;border:1px solid var(--line-strong);border-radius:8px;font:600 12px var(--sans);white-space:nowrap;color:var(--c3)}
+.nutchon.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.flex{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.tuan{display:flex;align-items:center;gap:6px;min-width:240px;max-width:380px;flex:1}
+.tuan .box{flex:1;display:flex;justify-content:space-between;gap:10px;border:1px solid var(--o-vien);border-radius:8px;background:var(--o-nen);padding:6px 10px;white-space:nowrap}
+.tuan .box b{font-family:var(--so)}.tuan .box span{color:var(--faint);font:12.5px var(--so)}
+.tick{display:inline-flex;align-items:center;min-height:32px;gap:4px;border:1px solid var(--doing-line);background:var(--doing-bg);color:var(--doing);border-radius:8px;padding:0 10px;font-size:12px;font-weight:600}
+.nutloc{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:999px;font:600 12px var(--sans);white-space:nowrap;font-variant-numeric:tabular-nums}
+.l-ok{background:var(--ok-bg);color:var(--ok)}.l-soon{background:var(--soon-bg);color:var(--soon)}.l-bad{background:var(--bad-bg);color:var(--bad)}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px;margin-top:10px}
+table{border-collapse:separate;border-spacing:0;width:100%;font-size:12px}
+th{background:var(--surface-2);color:var(--faint);font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:8px 10px;text-align:left;white-space:nowrap}
+td{border-top:1px solid var(--line);padding:6px 10px;vertical-align:middle}
+.st{position:sticky;left:0;z-index:1;background:var(--surface)}
+th.st{background:var(--surface-2);z-index:2}
+.tenhv b{display:block;color:var(--c1);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.w375 .tenhv b{white-space:normal}
+.tenhv small{color:var(--faint);font-size:11px}
+.cb{width:16px;height:16px;accent-color:var(--accent);margin:0}
+.se{white-space:nowrap;font-size:13px;color:var(--c1)}
+.se .i{display:inline-block;width:16px;text-align:center;font-weight:700}
+.se .ok{color:var(--ok)}.se .soon{color:var(--soon)}.se .bad{color:var(--bad)}
+.se .phu{color:var(--faint);margin-left:4px}.se .phu.soon{color:var(--soon)}
+.hint{font-size:12px;color:var(--faint);margin-top:6px}
+.pf{display:flex;align-items:center;gap:8px;padding:10px 16px;border-top:1px solid var(--line);background:var(--surface)}
+.pf .sp{flex:1}
+.chan-mau{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;padding:8px 10px;border-top:1px solid var(--line);font-size:12px;color:var(--dim)}
+.chan-mau span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+/* trang nền mờ sau panel hẹp */
+.trang{flex:1;padding:16px;opacity:.55}
+.trang .tb{height:30px;width:280px;border-radius:6px;background:var(--surface-2);margin-bottom:12px}
+.trang .ln{height:42px;border-bottom:1px solid var(--line)}
+
+/* ===== Ô MT: HIỆN TẠI (OMt.tsx: cao 26, chữ 12, góc 7) ===== */
+.cu{position:relative;display:inline-flex;align-items:center;gap:4px;min-height:26px;padding:3px 8px;border:1px solid;border-radius:7px;font:600 12px/1 var(--sans);white-space:nowrap;font-variant-numeric:tabular-nums}
+.cu .n{font-weight:700}
+.cu .old{display:inline-flex;align-items:center;border:1px solid currentColor;border-radius:4px;padding:0 3px;font-size:11px;font-weight:700;line-height:16px;opacity:.9}
+.cu .dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+
+/* ===== Ô MT: MỚI = dáng CHIP_VUONG (cao 20, chữ 11,5, góc 6) — như chip lớp thường ===== */
+.mt{position:relative;display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 6px;border:1px solid;border-radius:6px;font:600 11.5px/18px var(--sans);white-space:nowrap;font-variant-numeric:tabular-nums}
+.mt .n{font-weight:700}
+.mt .s{opacity:.6;font-weight:500}
+.mt .dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+/* tông (cả hiện tại lẫn A) — đúng MAU trong OMt.tsx */
+.k-chua-co-dot{border-style:dashed;border-color:var(--muted-line);background:transparent;color:var(--muted)}
+.k-chua-lich{border-color:var(--muted-line);background:var(--muted-bg);color:var(--muted)}
+.k-co-lich{border-color:var(--doing-line);background:transparent;color:var(--doing)}
+.k-dang-thi{border-color:var(--doing-line);background:var(--doing-bg);color:var(--doing)}
+.k-cho-cham{border-color:transparent;background:var(--wait-bg);color:var(--wait)}
+.k-cho-cham-cu{border-color:var(--muted-line);background:var(--muted-bg);color:var(--muted)}
+.k-tre-cham{border-color:transparent;background:var(--bad-bg);color:var(--bad)}
+.k-con-viec{border-color:transparent;background:var(--soon-bg);color:var(--soon)}
+.k-xong{border-color:transparent;background:var(--ok-bg);color:var(--ok)}
+.chon{border-color:var(--text)!important;background:var(--text)!important;color:var(--bg)!important;font-weight:700}
+.cu.chon{border-width:2px;padding:2px 7px}
+/* chip lớp thường (ChipKyNang, để so cỡ) */
+.thuong{display:flex;align-items:center;justify-content:space-between;gap:4px;width:184px;height:20px;padding:0 6px;border:1px solid var(--doing-line);border-radius:4px;background:var(--doing-bg);color:var(--doing);font:11px/1 var(--sans);font-variant-numeric:tabular-nums}
+.thuong.xong{border-color:var(--line-strong);background:var(--surface-2);color:var(--done)}
+.mts{display:flex;flex-wrap:wrap;gap:4px}
+
+/* bảng so trạng thái */
+.so3{display:grid;grid-template-columns:200px minmax(0,1fr) minmax(0,1fr);gap:10px 18px;align-items:center;font-size:12.5px;padding:16px}
+.so3 .hd{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--dim)}
+.so3 .ten{color:var(--dim)}
+@media (max-width:760px){.so3{grid-template-columns:120px minmax(0,1fr)}.so3 .an{display:none}}
+/* lưới FT */
+.luoi{table-layout:fixed}
+.luoi td,.luoi th{text-align:center}
+.luoi td:first-child,.luoi th:first-child{text-align:left}
+.luoi td{padding:6px 8px;height:56px}
+.pgh{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);font-size:13px}
+.pgh b{font-size:15px}
+/* ô 2 dòng cố định (như ChipKyNang: 44 px) */
+.o2{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;height:44px}
+.o2.trai{align-items:stretch}
+/* G1: chip nhóm như UX cũ (ChipKyNang) */
+.nhom{display:flex;align-items:center;justify-content:space-between;gap:6px;height:20px;padding:0 6px;border:1px solid;border-radius:6px;font:600 11.5px/18px var(--sans);white-space:nowrap;font-variant-numeric:tabular-nums}
+.nhom b{letter-spacing:.04em}
+/* G2: chữ kỹ năng tô màu */
+.kn{display:inline-flex;align-items:center;gap:6px;height:20px;padding:0 6px;border:1px solid var(--line-strong);border-radius:6px;font:600 11.5px/18px var(--sans);white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--c3)}
+.kn .n{font-weight:700;color:var(--c1)}
+.kn .s{opacity:.6;font-weight:500}
+.kn .ch{display:inline-flex;gap:3px;font-weight:800;letter-spacing:.02em}
+.lech{display:inline-flex;align-items:center;gap:4px;font:600 11.5px/18px var(--sans);white-space:nowrap;color:var(--dim)}
+.lech b{font-weight:800}
+.x-xong{color:var(--ok)}.x-lich{color:var(--faint)}.x-thi{color:var(--doing)}.x-cho{color:var(--wait)}.x-tre{color:var(--bad)}
+.x-vang{color:var(--soon)}.x-huy{color:var(--soon);text-decoration:line-through;text-decoration-thickness:1.5px}.x-chua{color:var(--faint);opacity:.75}
+.cach{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(420px,100%),1fr));gap:16px}
+.cach .card{padding:12px 14px;display:flex;flex-direction:column;gap:8px;font-size:13px}
+.cach h3{margin:0;font-size:14px}
+.cach .card.chon{border-color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="bar">
+  <b>Xếp lịch Mock Test · bản 2</b>
+  <span class="m12">07/10 · mã main 1ba3134a · hôm nay W1 OCT (07/10)</span>
+  <span class="sp"></span>
+  <button class="btn btn-sm" aria-pressed="true" onclick="doi('dark',this)">Tối</button>
+  <button class="btn btn-sm" aria-pressed="false" onclick="doi('light',this)">Sáng</button>
+</div>
+
+<header class="sec">
+  <h1>Panel “Xếp lịch Mock Test”, Ô MT và lưới FT — bản 2</h1>
+  <p class="note">Chủ sản phẩm đã chọn A (07/10); bản 2 gọn hơn theo bốn ý: (1) xong = màu xanh là đủ, bỏ chữ “xong”, “cũ”, “3/4”; (2) “chờ chấm” → <b>chờ</b>, “trễ chấm” → <b>trễ</b>; (3) panel rộng thì để thoải mái; (4) lưới FT trở lại kiểu hiện 4 kỹ năng. B (chấm màu + chú thích) đã bỏ. Chữ trong khung màn là chữ sẽ hiện; giải thích nằm ngoài khung. Bấm <b>Tối / Sáng</b> ở thanh trên.</p>
+</header>
+
+<section class="sec" id="s0">
+  <h2>0 · Hiện trạng (như ảnh 07/10)</h2>
+  <span class="where">Test › Kế hoạch Test › nút “Xếp lịch Test…” › Fast Track · 1440</span>
+  <p class="note">Panel 720 px, bảng phải cuộn ngang; ô MT 26 px, “2 chờ chấm 4 [cũ]”, số MT dính tuần “3 W2 OCT”.</p>
+  <span class="tag truoc">Trước · 1440</span>
+  <div class="rong"><div class="win w1440" id="f-cu"></div></div>
+</section>
+
+<section class="sec" id="s1">
+  <h2>1 · Ô MT bản 2 — mọi trạng thái</h2>
+  <span class="where">Panel Xếp lịch MT · Hồ sơ HV › Lộ trình · đầu Hồ sơ Mock Test · ô MT0 cột Final lớp thường</span>
+  <p class="note">Luật: <b>MT số · tuần</b>, màu = trạng thái. Chỉ thêm <b>một chữ việc</b> khi có việc phải làm: <b>chờ</b> · <b>trễ</b> · <b>vắng</b> · <b>huỷ</b>, kèm kỹ năng nếu không phải cả bốn (“trễ W”). Đang thi = chấm tròn (ký hiệu, không chữ). Xong, MT cũ, xong 3/4: chỉ màu xanh; chi tiết ở tooltip như nay. Cỡ chip lớp thường: cao 20 px, chữ 11,5 px.</p>
+  <div class="card"><div class="so3" id="bang-tt"></div></div>
+</section>
+
+<section class="sec" id="s1b">
+  <h2>2 · Các cách đã thử cho phần “việc” trong ô</h2>
+  <div class="cach">
+    <div class="card chon"><h3>① Một chữ việc — chọn cho ô MT</h3><div class="mts" id="c1"></div><p class="note">Đọc được ngay, không cần chú thích. Chữ chỉ xuất hiện ở ô có việc → mắt dừng đúng chỗ.</p></div>
+    <div class="card"><h3>② Kỹ năng tô màu trong ô</h3><div class="mts" id="c2"></div><p class="note">Gọn, đủ 4 kỹ năng; nhưng phải nhớ màu tím = chờ, đỏ = trễ. Hợp lưới FT (mục 4), chật ở panel nhiều MT một dòng.</p></div>
+    <div class="card"><h3>③ Ký hiệu</h3><div class="mts" id="c3"></div><p class="note">“✓ / ⏱ / !” ngắn nhất nhưng phải đoán; ✓ thừa vì xanh đã là xong. Không khuyến nghị.</p></div>
+  </div>
+</section>
+
+<section class="sec" id="sA">
+  <h2>3 · Panel bản 2 (A gọn, toàn màn)</h2>
+  <span class="where">Test › Kế hoạch Test › “Xếp lịch Test…” › Fast Track · Quản lý</span>
+  <p class="note">Panel rộng 1440 (khuôn toàn màn sẵn có). Rộng rãi: cột Mock Test không xuống dòng ở 1440, cột Sẽ xếp 300 px, dòng cao hơn chút cho dễ quét.</p>
+  <span class="tag sau">1440</span>
+  <div class="rong"><div class="win w1440" id="f-a1440"></div></div>
+  <span class="tag sau">375</span>
+  <div class="rong"><div class="win w375" id="f-a375"></div></div>
+</section>
+
+<section class="sec" id="sFT">
+  <h2>4 · Lưới FT ở Kế hoạch Test — 3 cách</h2>
+  <span class="where">Test › Kế hoạch Test › Fast Track › MB FT 102</span>
+  <p class="note">Ô cao cố định 2 dòng (44 px) như lớp thường. Cột đợt 168 px (nay 152). Màu kỹ năng theo bảng màu đã khoá: xanh lá xong · xám chưa tới · xanh dương đang thi · <b>tím chờ</b> · đỏ trễ · vàng vắng · vàng gạch ngang huỷ.</p>
+  <div class="cach">
+    <div class="card"><h3>G1 · Như UX cũ</h3><p class="note">Chip nhóm “L R W S · W4 SEP”, tách tuần / trạng thái thì thêm dòng. Quen, nhưng hai chip/ô dày và lặp lại tuần.</p></div>
+    <div class="card chon"><h3>G2 · MT · tuần + kỹ năng tô màu — khuyến nghị</h3><p class="note">Cả 4 kỹ năng cùng tuần, cùng trạng thái → một chip màu “MT2 · W4 SEP”. Khác nhau → chip viền + L R W S tô màu từng chữ; kỹ năng lệch tuần ghi dòng 2 “S W1 OCT”.</p></div>
+    <div class="card"><h3>G3 · Giống ô MT ở panel</h3><p class="note">“MT2 · W4 SEP · vắng S” — một component mọi nơi, nhưng không thấy L R W S từng kỹ năng.</p></div>
+  </div>
+  <span class="tag sau">G1 · 1440</span><div class="rong"><div class="win w1440" id="g1"></div></div>
+  <span class="tag sau">G2 · 1440 (khuyến nghị)</span><div class="rong"><div class="win w1440" id="g2"></div></div>
+  <span class="tag sau">G3 · 1440</span><div class="rong"><div class="win w1440" id="g3"></div></div>
+  <div class="rong"><div class="row" style="flex-wrap:nowrap">
+    <div><span class="tag sau">G1 · 375</span><div class="win w375" id="g1m"></div></div>
+    <div><span class="tag sau">G2 · 375</span><div class="win w375" id="g2m"></div></div>
+    <div><span class="tag sau">G3 · 375</span><div class="win w375" id="g3m"></div></div>
+  </div></div>
+</section>
+
+<section class="sec" id="sKhac">
+  <h2>5 · Các chỗ khác dùng Ô MT (đổi theo)</h2>
+  <p class="note">Đổi một component <code>OMt</code> là đổi cùng lúc. Nhãn “cũ” viền ở Chấm, danh sách lớp, hồ sơ HV giữ nguyên (không phải Ô MT).</p>
+  <div class="row" id="khac"></div>
+</section>
+
+<section class="sec" id="sKL">
+  <h2>6 · Khuyến nghị</h2>
+  <div class="q"><b>Ô MT = cách ①</b> (panel, hồ sơ HV, hồ sơ Mock, MT0). <b>Lưới FT = G2</b>: thấy đủ L R W S và trạng thái từng kỹ năng trong một ô 2 dòng, cột chỉ nới 152 → 168 px.</div>
+  <ul class="note">
+    <li><b>Việc code:</b> cỡ <b>M</b>, một PR giao diện: panel <code>rong="toan"</code>; <code>OMt</code> dáng <code>CHIP_VUONG</code> + chữ mới trong <code>shared/domain/oMt.ts</code>; ô FT mới (dùng lại <code>gomChip</code>/<code>trangThaiKyNang</code> đã có) thay <code>OMt</code> trong <code>LuoiKeHoach.tsx</code>; sửa phép kiểm khớp chữ cũ. Không đổi máy chủ.</li>
+  </ul>
+</section>
+</div>
+
+<script>
+const TC='W2 OCT';
+const KY=['L','R','W','S'];
+/* Một đợt: M(so, [trạng thái chung, tuần], {kỹ năng lệch: [tt, tuần]}, cũ, chọn, xếp nốt). tt: xong lich thi cho tre vang huy chua */
+function M(so,chung,lech,cu,chon,xn){if(chung===null)return{so,none:1,chon,xn};const kn={};KY.forEach(k=>kn[k]=(lech&&lech[k])||chung);return{so,kn,cu,chon,xn};}
+const HV=[
+ {ten:'Chu Minh Hiếu',ma:'PISA-000006',lop:'MB FT 102',mt:[M(1,['xong','W2 AUG'],0,1),M(2,['xong','W3 SEP']),M(3,null,0,0,1)],se:['ok','MT3 · W2 OCT'],tick:1},
+ {ten:'Phan Minh Tú',ma:'PISA-000012',lop:'BC FT 205',mt:[M(1,['xong','W4 AUG']),M(2,['chua',null],0,0,1)],se:['ok','MT2 · W2 OCT'],tick:1},
+ {ten:'Tạ Thu Quỳnh',ma:'PISA-000007',lop:'MB FT 102',mt:[M(1,['xong','W1 SEP']),M(2,['xong','W4 SEP'],{S:['vang','W4 SEP']},0,1,1)],se:['soon','MT2 · S · W2 OCT'],tick:1},
+ {ten:'Hoàng Bảo Ngọc',ma:'PISA-000051',lop:'MB FT 101',mt:[M(1,['xong','W1 AUG'],0,1),M(2,['xong','W3 AUG'],0,1),M(3,['xong','W1 SEP']),M(4,['xong','W4 SEP']),M(5,null,0,0,1)],se:['ok','MT5 · W2 OCT'],tick:1},
+ {ten:'Đặng Thu Vân',ma:'PISA-000013',lop:'BC FT 205',mt:[M(1,['xong','W2 SEP']),M(2,['xong','W4 SEP'],{W:['cho','W4 SEP'],S:['cho','W4 SEP']}),M(3,null,0,0,1)],se:['ok','MT3 · W2 OCT'],tick:1},
+ {ten:'Mai Ngọc Diệp',ma:'PISA-000015',lop:'BC FT 205',mt:[M(1,['xong','W2 SEP']),M(2,['lich','W2 OCT']),M(3,null,0,0,1)],se:['soon','MT3 · W2 OCT','· trùng MT2'],tick:1},
+ {ten:'Vũ Đức Anh',ma:'PISA-000021',lop:'MB FT 102',mt:[M(1,['xong','W3 SEP']),M(2,['thi','W1 OCT']),M(3,null,0,0,1)],se:['ok','MT3 · W2 OCT'],tick:1},
+ {ten:'Lê Quang Huy',ma:'PISA-000024',lop:'MB FT 102',mt:[M(1,['xong','W1 SEP']),M(2,['xong','W3 SEP'],{W:['tre','W3 SEP']}),M(3,null,0,0,1)],se:['ok','MT3 · W2 OCT'],tick:1},
+ {ten:'Trịnh Hà My',ma:'PISA-000030',lop:'MB FT 101',mt:[M(1,['xong','W2 AUG'],0,1),M(2,['cho','W4 AUG'],0,1),M(3,null,0,0,1)],se:['ok','MT3 · W2 OCT'],tick:1},
+ {ten:'Ngô Gia Bảo',ma:'PISA-000033',lop:'BC FT 205',mt:[M(1,['xong','W3 AUG']),M(2,['xong','W4 SEP'],{S:['huy','W4 SEP']},0,1,1)],se:['soon','MT2 · S · W2 OCT'],tick:1},
+ {ten:'Đỗ Khánh Linh',ma:'PISA-000036',lop:'BC FT 205',mt:[M(1,['xong','W1 SEP']),M(2,['xong','W4 SEP']),M(3,['lich','W2 OCT'])],se:['soon','Giữ nguyên'],tick:0},
+ {ten:'Bùi Thanh Tâm',ma:'PISA-000040',lop:'MB FT 101',mt:[M(1,['xong','W3 AUG']),M(2,['chua',null])],se:['bad','Không xếp được'],tick:0},
+ {ten:'Phùng Nhật Minh',ma:'PISA-000044',lop:'MB FT 102',mt:[M(1,['cho','W4 SEP']),M(2,null,0,0,1)],se:['ok','MT2 · W2 OCT'],tick:1},
+];
+
+/* Luật ô (cùng thứ tự oMt): xong → trễ → vắng → huỷ → chờ → đang thi → có lịch → chưa xếp */
+function luat(m){
+  if(m.none) return {kieu:'chua-co-dot',tuan:null,viec:null};
+  const ds=KY.map(k=>({k,tt:m.kn[k][0],t:m.kn[k][1]}));
+  const cua=tt=>ds.filter(x=>x.tt===tt), ten=xs=>xs.length===4?'':' '+xs.map(x=>x.k).join(' ');
+  const som=xs=>xs.map(x=>x.t).filter(Boolean)[0];
+  if(ds.every(x=>x.tt==='xong')) return {kieu:'xong',tuan:ds[3].t,viec:null};
+  for(const[tt,kieu,chu] of [['tre','tre-cham','trễ'],['vang','con-viec','vắng'],['huy','con-viec','huỷ'],['cho',m.cu?'cho-cham-cu':'cho-cham','chờ']]){
+    const xs=cua(tt); if(xs.length) return {kieu,tuan:som(xs),viec:chu+ten(xs),tt,xs};}
+  if(cua('thi').length) return {kieu:'dang-thi',tuan:som(cua('thi')),viec:null};
+  if(cua('lich').length) return {kieu:'co-lich',tuan:som(cua('lich')),viec:null};
+  return {kieu:'chua-lich',tuan:null,viec:'chưa xếp'};
+}
+/* ---- hiện tại (OMt.tsx) ---- */
+function oCu(m){const r=luat(m);const chon=m.chon&&!m.xn;
+  const chu=chon?TC:{'chua-co-dot':'','chua-lich':'chưa xếp','co-lich':r.tuan,'dang-thi':'tuần này','cho-cham':'chờ chấm '+(r.xs?r.xs.length:4),'cho-cham-cu':'chờ chấm 4',
+    'tre-cham':'trễ chấm'+(r.xs&&r.xs.length<4?' '+(r.xs||[]).map(x=>x.k).join(' '):''),'con-viec':r.tt==='huy'?(r.xs||[]).map(x=>x.k).join(' ')+' huỷ':'vắng '+(r.xs||[]).map(x=>x.k).join(' '),'xong':'✓'}[r.kieu];
+  return `<span class="cu k-${r.kieu}${m.chon?' chon':''}">${!m.chon&&r.kieu==='dang-thi'?'<span class="dot"></span>':''}<span class="n">${m.so}</span>${chu?`<span>${chu}</span>`:''}${m.chon&&!String(chu).startsWith('✓')?'<span style="font-size:11px">✓</span>':''}${m.cu?'<span class="old">cũ</span>':''}</span>`;}
+/* ---- bản 2: cách ① ---- */
+function oMt(m){const r=luat(m);const chon=m.chon&&!m.xn;
+  const p=[`MT${m.so}`]; if(chon)p.push(TC); else{ if(r.tuan)p.push(r.tuan); if(r.viec)p.push(r.viec);}
+  const ruot=p.map((x,i)=>i===0?`<span class="n">${x}</span>`:`<span class="s">·</span><span>${x}</span>`).join('');
+  return `<span class="mt k-${r.kieu}${m.chon?' chon':''}">${!m.chon&&r.kieu==='dang-thi'?'<span class="dot"></span>':''}${ruot}${m.chon?'<span>✓</span>':''}</span>`;}
+/* ---- cách ②: kỹ năng tô màu ---- */
+function chuKn(m,lo){return `<span class="ch">${KY.filter(k=>!lo||lo.includes(k)).map(k=>`<span class="x-${m.kn[k][0]}">${k}</span>`).join('')}</span>`;}
+function oKn(m){const r=luat(m);if(m.none||m.chon)return oMt(m);
+  const dong=KY.every(k=>m.kn[k][0]===m.kn.L[0]&&m.kn[k][1]===m.kn.L[1]);
+  if(dong) return oMt(Object.assign({},m,{kn:m.kn}));
+  return `<span class="kn"><span class="n">MT${m.so}</span><span class="s">·</span><span>${r.tuan||'—'}</span>${chuKn(m)}</span>`;}
+/* ---- cách ③: ký hiệu ---- */
+function oKh(m){const r=luat(m);const kh={'tre-cham':'!','cho-cham':'⏱','cho-cham-cu':'⏱','con-viec':'!','xong':'✓'}[r.kieu];
+  return `<span class="mt k-${r.kieu}">${r.kieu==='dang-thi'?'<span class="dot"></span>':''}<span class="n">MT${m.so}</span>${r.tuan?`<span class="s">·</span><span>${r.tuan}</span>`:''}${kh?`<span>${kh}${r.xs&&r.xs.length<4?' '+(r.xs||[]).map(x=>x.k).join(' '):''}</span>`:''}</span>`;}
+
+/* ---- bảng trạng thái ---- */
+(function(){
+  const dong=[
+    ['Chưa có đợt',M(3,null)],['Chưa xếp',M(2,['chua',null])],['Đã có lịch',M(2,['lich','W3 OCT'])],['Đang thi',M(2,['thi','W1 OCT'])],
+    ['Chờ (cả 4)',M(2,['cho','W4 SEP'])],['Chờ (W S)',M(2,['xong','W4 SEP'],{W:['cho','W4 SEP'],S:['cho','W4 SEP']})],['Trễ (W)',M(3,['xong','W3 SEP'],{W:['tre','W3 SEP']})],
+    ['Vắng (S)',M(2,['xong','W4 SEP'],{S:['vang','W4 SEP']})],['Đã huỷ — vắng 2 lần (S)',M(2,['xong','W4 SEP'],{S:['huy','W4 SEP']})],
+    ['Đã xong',M(1,['xong','W3 SEP'])],['Xong 3/4 kỹ năng',M(3,['xong','W1 SEP'])],['MT cũ, đã xong',M(1,['xong','W2 AUG'],0,1)],
+    ['MT cũ, chờ nhập điểm',M(2,['cho','W4 AUG'],0,1)],['Đang chọn (panel)',M(3,null,0,0,1)],
+  ];
+  let h=`<span class="hd"></span><span class="hd an">Hiện tại · 26 px</span><span class="hd">Bản 2 · 20 px</span>`;
+  for(const[t,m] of dong) h+=`<span class="ten">${t}</span><span class="an">${oCu(m)}</span><span>${oMt(m)}</span>`;
+  h+=`<span class="ten">Chip lớp thường (so cỡ)</span><span class="an"></span><span><span class="thuong"><b>L R W S</b><span>W3 OCT</span></span></span>`;
+  document.getElementById('bang-tt').innerHTML=h;
+  const vd=[M(2,['cho','W4 SEP']),M(3,['xong','W3 SEP'],{W:['tre','W3 SEP']}),M(2,['xong','W4 SEP'],{S:['vang','W4 SEP']}),M(2,['xong','W4 SEP'],{S:['huy','W4 SEP']}),M(1,['xong','W3 SEP'])];
+  document.getElementById('c1').innerHTML=vd.map(oMt).join('');
+  document.getElementById('c2').innerHTML=vd.map(oKn).join('');
+  document.getElementById('c3').innerHTML=vd.map(oKh).join('');
+})();
+
+/* ---- panel ---- */
+function panel(bien,w){
+  const dt=w<768, o=bien==='cu'?oCu:oMt, d={ok:0,soon:0,bad:0}; HV.forEach(h=>d[h.se[0]]++);
+  const soEm=HV.filter(h=>h.tick).length, soBai=HV.filter(h=>h.tick).reduce((s,h)=>s+(h.se[1].includes(' S ')?1:4),0);
+  const rows=HV.map(h=>{const[t,c,p]=h.se;
+    return `<tr><td class="st" style="width:${dt?48:80}px;${dt?'':'padding-top:9px;padding-bottom:9px'}"><input type="checkbox" class="cb"${h.tick?' checked':''}${t==='bad'?' disabled':''} aria-label="Chọn ${h.ten}"></td>
+    <td class="st tenhv" style="left:${dt?48:80}px;${dt?'min-width:112px;max-width:112px':'min-width:200px;max-width:260px'};border-right:1px solid var(--line)"><b title="${h.ten}">${h.ten}</b><small>${h.ma}</small></td>
+    <td style="white-space:nowrap;color:var(--c3)">${h.lop}</td>
+    <td style="${dt?'min-width:250px':''}"><div class="mts" style="${dt?'':'flex-wrap:nowrap;gap:6px'}">${h.mt.map(o).join('')}</div></td>
+    <td class="se"><span class="i ${t}">${t==='ok'?'✓':t==='soon'?'!':'✕'}</span><span${t==='bad'?' style="color:var(--bad)"':''}>${c}</span>${p?`<span class="phu soon">${p}</span>`:''}</td></tr>`;}).join('');
+  const bang=`<div class="tbl"><table style="min-width:${bien==='cu'||dt?960:0}px">
+    <thead><tr><th class="st" style="width:${dt?48:80}px"><label style="display:flex;gap:6px;align-items:center"><input type="checkbox" class="cb" aria-label="Chọn tất cả">${dt?'':'<span>Tất cả</span>'}</label></th><th class="st" style="left:${dt?48:80}px">Học viên</th><th style="width:${bien==='cu'?'auto':'130px'}">Lớp</th><th>Mock Test</th><th style="width:${bien==='cu'?'auto':'300px'}">Sẽ xếp</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>${(bien==='cu'||dt)?'<p class="hint">⇆ cuộn ngang</p>':''}`;
+  const p=`<div class="panel" style="width:${bien==='cu'?720:w}px">
+    <div class="ph"><h3>Xếp lịch Mock Test</h3><span class="sp"></span><span class="x" aria-label="Đóng">✕</span></div>
+    <div class="ptab"><div class="seg"><span class="on">Fast Track</span><span>Lớp thường</span></div></div>
+    <div class="pb">
+      <div class="khoi"><h4>Lọc</h4><div class="loc">
+        <div><span class="lbl">Chi nhánh</span><div class="field">Mỹ Đình ▾</div></div>
+        <div style="flex:1;min-width:0"><span class="lbl">Lớp</span><div class="flex"><span class="lopchip">MB FT 101<i>✕</i></span><span class="lopchip">MB FT 102<i>✕</i></span><span class="lopchip">BC FT 205<i>✕</i></span><span class="sel">+ lớp ▾</span></div></div>
+        <div style="width:${dt?'100%':'240px'}"><span class="lbl">Tìm học viên</span><div class="field ph2">Tên hoặc mã</div></div>
+      </div></div>
+      <div class="khoi"><h4><span class="num">1</span>Đợt</h4><div class="flex"><span class="nutchon on">MT mới</span><span class="nutchon">MT1</span><span class="nutchon">MT2</span><span class="nutchon">MT3</span><span class="nutchon">MT4</span><span class="nutchon">MT5</span><span class="nutchon">MT6</span></div></div>
+      <div class="khoi"><h4><span class="num">2</span>Tuần và kỹ năng</h4><div class="flex" style="gap:8px">
+        <div class="tuan"><span class="btn btn-sm">‹</span><div class="box"><b>${TC}</b><span>12/10 – 18/10</span></div><span class="btn btn-sm">›</span></div>
+        <span class="tick">✓ L</span><span class="tick">✓ R</span><span class="tick">✓ W</span><span class="tick">✓ S</span><span class="btn btn-sm btn-ghost">Lịch riêng ▸</span></div></div>
+      <div class="khoi"><h4><span class="num">3</span>Học viên</h4>
+        <div class="flex"><span class="nutloc l-ok">✓ Sẽ xếp ${d.ok}</span><span class="nutloc l-soon">! Cần xem ${d.soon}</span><span class="nutloc l-bad">✕ Không xếp được ${d.bad}</span></div>
+        ${bang}</div>
+    </div>
+    <div class="pf"><span class="btn">Đóng</span><span class="sp"></span><span class="btn btn-primary">Xếp lịch ${soEm} em · ${soBai} bài</span></div>
+  </div>`;
+  if(bien==='cu') return `<div class="app" style="height:1260px"><div class="trang"><div class="tb"></div>${'<div class="ln"></div>'.repeat(20)}</div><div class="nen"></div>${p}</div>`;
+  return p;
+}
+document.getElementById('f-cu').innerHTML=panel('cu',1440);
+document.querySelector('#f-cu .panel').style.cssText+=';position:absolute;right:0;top:0;bottom:0';
+document.getElementById('f-a1440').innerHTML=panel('a',1440);
+document.getElementById('f-a375').innerHTML=panel('a',375);
+
+/* ---- lưới FT ---- */
+const LUOI=[
+ {ten:'Chu Minh Hiếu',ma:'PISA-000006',o:[M(1,['xong','W2 AUG'],0,1),M(2,['xong','W3 SEP']),M(3,['lich','W2 OCT']),M(4,null)]},
+ {ten:'Tạ Thu Quỳnh',ma:'PISA-000007',o:[M(1,['xong','W1 SEP']),M(2,['xong','W4 SEP'],{S:['vang','W4 SEP']}),M(3,null),M(4,null)]},
+ {ten:'Vũ Đức Anh',ma:'PISA-000021',o:[M(1,['xong','W3 SEP']),M(2,['thi','W1 OCT']),M(3,['chua',null]),M(4,null)]},
+ {ten:'Lê Quang Huy',ma:'PISA-000024',o:[M(1,['xong','W1 SEP']),M(2,['xong','W3 SEP'],{L:['tre','W3 SEP'],W:['tre','W3 SEP']}),M(3,['lich','W3 OCT']),M(4,null)]},
+ {ten:'Đặng Thu Vân',ma:'PISA-000013',o:[M(1,['xong','W2 SEP']),M(2,['xong','W4 SEP'],{W:['cho','W4 SEP'],S:['lich','W2 OCT']}),M(3,null),M(4,null)]},
+ {ten:'Trịnh Hà My',ma:'PISA-000030',o:[M(1,['xong','W2 AUG'],0,1),M(2,['cho','W4 AUG'],0,1),M(3,['chua',null]),M(4,null)]},
+ {ten:'Phùng Nhật Minh',ma:'PISA-000044',o:[M(1,['cho','W4 SEP']),M(2,['lich','W2 OCT'],{S:['chua',null]}),M(3,null),M(4,null)]},
+ {ten:'Hoàng Bảo Ngọc',ma:'PISA-000051',o:[M(1,['xong','W1 AUG'],0,1),M(2,['xong','W3 AUG'],0,1),M(3,['xong','W1 SEP']),M(4,['xong','W4 SEP'],{S:['huy','W4 SEP']})]},
+];
+const MAU_NHOM={xong:'k-xong',lich:'k-co-lich',thi:'k-dang-thi',cho:'k-cho-cham',tre:'k-tre-cham',vang:'k-con-viec',huy:'k-con-viec',chua:'k-chua-co-dot'};
+const DUOI={vang:'vắng',huy:'huỷ',tre:'trễ',cho:'chờ'};
+/* G1: nhóm theo (tuần, trạng thái) như gomChip; xong cả đợt = một chip xanh */
+function g1(m){if(m.none)return `<div class="o2">${oMt(m)}</div>`;
+  const nh=new Map();KY.forEach(k=>{const[tt,t]=m.kn[k];const key=tt+'|'+t;if(!nh.has(key))nh.set(key,{tt,t,k:[]});nh.get(key).k.push(k);});
+  const ds=[...nh.values()];
+  if(ds.length===1&&ds[0].tt==='xong') return `<div class="o2 trai"><span class="nhom k-xong"><b>L R W S</b><span>${ds[0].t}</span></span></div>`;
+  return `<div class="o2 trai">${ds.slice(0,2).map(g=>`<span class="nhom ${MAU_NHOM[g.tt]}${g.tt==='huy'?'" style="text-decoration:line-through':''}"><b>${g.k.join(' ')}${DUOI[g.tt]?` <span style="font-weight:500">· ${DUOI[g.tt]}</span>`:''}</b><span>${g.t||'chưa xếp'}</span></span>`).join('')}</div>`;}
+/* G2: cùng tuần + cùng trạng thái → chip màu; khác → chip viền + chữ tô màu; lệch tuần → dòng 2 */
+function g2(m){if(m.none)return `<div class="o2">${oMt(m)}</div>`;
+  const dem={};KY.forEach(k=>{const t=m.kn[k][1]||'';dem[t]=(dem[t]||0)+1;});
+  const chinh=Object.keys(dem).filter(Boolean).sort((a,b)=>dem[b]-dem[a])[0]||'';
+  const cung=KY.every(k=>m.kn[k][0]===m.kn.L[0]&&(m.kn[k][1]||'')===(m.kn.L[1]||''));
+  if(cung) return `<div class="o2">${oMt(m)}</div>`;
+  const tai=KY.filter(k=>(m.kn[k][1]||'')===chinh), lech=KY.filter(k=>(m.kn[k][1]||'')!==chinh);
+  const d1=`<span class="kn"><span class="n">MT${m.so}</span><span class="s">·</span><span>${chinh||'chưa xếp'}</span>${chuKn(m,tai)}</span>`;
+  const d2=lech.length?`<span class="lech">${lech.map(k=>`<b class="x-${m.kn[k][0]}">${k}</b><span>${m.kn[k][1]||'chưa xếp'}</span>`).join(' ')}</span>`:'';
+  return `<div class="o2">${d1}${d2}</div>`;}
+function g3(m){return `<div class="o2">${oMt(m)}</div>`;}
+function luoi(f,w,col){
+  const dt=w<768, ten=dt?132:180, tw=ten+4*col;
+  return `<div style="background:var(--surface)"><div class="pgh"><b>MB FT 102</b><span class="m12">Fast Track · 8 em</span></div>
+  <div style="overflow-x:auto"><table class="luoi" style="width:${tw}px;min-width:100%"><colgroup><col style="width:${ten}px">${('<col style="width:'+col+'px">').repeat(4)}</colgroup>
+  <thead><tr><th class="st">Học viên</th><th>MT1</th><th>MT2</th><th>MT3</th><th>MT4</th></tr></thead>
+  <tbody>${LUOI.map(h=>`<tr><td class="st tenhv"><b>${h.ten}</b><small>${h.ma}</small></td>${h.o.map(x=>`<td>${f(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`;
+}
+const W1=208,W2=168,W3=180;
+document.getElementById('g1').innerHTML=luoi(g1,1440,W1);
+document.getElementById('g2').innerHTML=luoi(g2,1440,W2);
+document.getElementById('g3').innerHTML=luoi(g3,1440,W3);
+document.getElementById('g1m').innerHTML=luoi(g1,375,W1);
+document.getElementById('g2m').innerHTML=luoi(g2,375,W2);
+document.getElementById('g3m').innerHTML=luoi(g3,375,W3);
+
+/* ---- chỗ khác ---- */
+(function(){
+  const lt=[M(1,['xong','W2 AUG'],0,1),M(2,['xong','W3 SEP']),M(3,['xong','W3 SEP'],{W:['tre','W3 SEP']}),M(4,['lich','W3 OCT']),M(5,null)];
+  const tuan=['W2 AUG','W3 SEP','W3 SEP','W3 OCT','—'];
+  const the=(tieu,noi)=>`<div class="card" style="width:360px;max-width:100%;overflow:hidden"><div class="pgh" style="font-size:12px;color:var(--dim)">${tieu}</div><div style="padding:10px">${noi}</div></div>`;
+  document.getElementById('khac').innerHTML=
+    the('Hồ sơ HV › Lộ trình · Chu Minh Hiếu',`<table style="font-size:12.5px"><thead><tr><th>Mock Test</th><th>Tuần học</th><th>Tuần thi</th></tr></thead><tbody>${lt.map((m,i)=>`<tr><td style="white-space:nowrap">${oMt(m)}</td><td style="color:var(--dim)">tuần ${(i+1)*4}</td><td style="white-space:nowrap">${tuan[i]}</td></tr>`).join('')}</tbody></table>`)+
+    the('Hồ sơ Mock Test · đầu trang',`<div style="font-size:15px;font-weight:700">Lê Quang Huy · MB FT 102 <span style="margin-left:6px">${oMt(lt[2])}</span></div>`)+
+    the('Kế hoạch Test › Lớp thường › BE 04 · cột Final',`<div class="flex"><span class="thuong"><b>L R W S</b><span>W4 OCT</span></span>${oMt(M(0,['lich','W4 OCT']))}</div>`);
+})();
+function doi(t,b){try{document.documentElement.dataset.theme=t;document.querySelectorAll('.bar .btn').forEach(function(x){x.setAttribute('aria-pressed',x===b)});}catch(e){}}
+</script>
+</body>
+</html>
