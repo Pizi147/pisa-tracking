@@ -455,7 +455,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     assert(/thongBaoVang\(/.test(lt) && /tuanMoi/.test(lt), 'lưới lớp thường chưa gọi thongBaoVang với r.tuanMoi');
     for (const rel of ['web/src/modules/cham/LuoiThuong.tsx', 'web/src/modules/cham/MotKyNang.tsx', 'web/src/modules/cham/LuoiFT.tsx', 'web/src/modules/fasttrack/ScoreEntry.tsx']) {
       const s = doc(rel);
-      assert(!/Đã dời \$\{/.test(s) && !/sang tuần sau\./.test(s), `${rel}: còn chuỗi "Đã dời …" riêng`);
+      assert(!/Đã dời \$\{/.test(s) && !/Đã dời [^'`\r\n]*sang tuần sau/.test(s), `${rel}: còn chuỗi "Đã dời …" riêng`);
       assert(!/Đã ghi vắng/.test(s), `${rel}: chữ "Đã ghi vắng" phải nằm ở một nơi (thongBaoVang.ts)`);
     }
     assert(/Đã gỡ vắng/.test(lt) && /Đã gỡ vắng/.test(se), 'thông báo gỡ vắng (PR-BV) phải giữ');

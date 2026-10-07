@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type 
 import { createPortal } from 'react-dom';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
+import { thongBaoVang } from '../cham/thongBaoVang.ts';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { Info, SectionNote, Status } from '../../ui/ui.tsx';
 import { useBaoHopLyDoMo, useTrangThaiLuuO } from '../../ui/SaveState.tsx';
@@ -143,6 +144,8 @@ export function useSaveScore(attemptId: number, onSaved?: () => void, tenHv?: st
       invalidate('/classes');
       invalidate('/students');
       invalidate('/my-work');   // PR-S6F-a: badge quá hạn của GV tải lại sau khi nhập điểm
+      /* K4: gõ "-" và nút "Vắng" (điện thoại) cùng đi qua đây — một thông báo ngắn, không Hoàn tác. */
+      if (patch.noShow === true) thongBaoVang(toast, `${attemptId}:${skill}`, skillLabel(skill), tenHv);
       tt.thanhCong(skill);
       onSaved?.();
       return true;
@@ -268,13 +271,6 @@ function useBaoLoiNhap(cau: string | null, onLoiNhap?: (cau: string | null) => v
   useEffect(() => { bao.current?.(cau); }, [cau]);
   useEffect(() => () => { bao.current?.(null); }, []);
 }
-/** Toast "Đã ghi vắng … · Hoàn tác" (C2, Q11) — khoá theo ô để bấm hai ô liền không nuốt nhau. */
-function useToastVang() {
-  const toast = useToast();
-  const khoa = useId();
-  return (mon: string, tenHv: string | undefined, hoanTac: () => void, hauQua = '') =>
-    toast.hoanTac(`Đã ghi vắng ${mon}${tenHv ? ` · ${tenHv}` : ''}${hauQua}`, hoanTac, { key: `vang:${khoa}` });
-}
 
 /**
  * GÕ "-" LÊN Ô SỐ ĐANG HIỆN "-": giá trị không đổi (đè lên "-" đang chọn) hoặc thành "--" (con trỏ sau "-") — cả hai
@@ -347,7 +343,6 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false, 
   const [loi, setLoi] = useState<string | null>(null);
   const idLoi = useId();
   useBaoLoiNhap(loi, onLoiNhap);
-  const toastVang = useToastVang();
 
   useEffect(() => {
     if (!dirty) setDraft(shown());
@@ -382,7 +377,7 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false, 
     setBusy(true);
     const ok = await onSave({ noShow: true });
     setBusy(false);
-    if (ok) { setDirty(false); toastVang(skillLabel(cell.skill), tenHv, () => void onSave({ noShow: false })); }
+    if (ok) setDirty(false);
   };
 
   if (chiGoDau(cell)) return <OChiGoDau cell={cell} onSave={onSave} lon={lon} />;
@@ -480,13 +475,11 @@ export function CriteriaButton({ cell, onSave, buttonRef, lon = false, gvMacDinh
   /* Nút − (điện thoại): bốn ô tiêu chí dùng bàn phím số thập phân — iPhone không gõ được "-". */
   const [dangBao, setDangBao] = useState(false);
   const nhanDau = editable && !hieuChinh && !chanDau(cell);   // T23: MT cũ nhận "-" = không dự thi
-  const toastVang = useToastVang();
   const bamDau = async () => {
     if (!nhanDau || dangBao) return;
     setDangBao(true);
-    const ok = await onSave({ noShow: true });
+    await onSave({ noShow: true });
     setDangBao(false);
-    if (ok) toastVang(skillLabel(cell.skill), tenHv, () => void onSave({ noShow: false }));
   };
   if (chiGoDau(cell)) return <OChiGoDau cell={cell} onSave={onSave} lon={lon} />;
   /* E5: ô không sửa được là CHỮ SỐ (không viền nút, không mờ) — cùng câu "vì sao" với ô số câu; vắng ghi "vắng". */
@@ -1011,7 +1004,7 @@ export function ODiemThuong({
   canEdit: boolean;
   onSave: (patch: { score: number | null; total: number | null; lyDo?: string }, opts?: SaveOpts) => Promise<boolean>;
   /** `im` = không toast "Đã dời …" (nút Vắng tự báo bằng toast Hoàn tác). */
-  onDau: (bat: boolean, im?: boolean) => Promise<boolean>;
+  onDau: (bat: boolean) => Promise<boolean>;
   inputRef?: (el: HTMLInputElement | null) => void;
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   dienTong?: { gt: number; lan: number } | null;
@@ -1025,7 +1018,6 @@ export function ODiemThuong({
   onLoiNhap?: (cau: string | null) => void;
 }) {
   const toast = useToast();
-  const toastVang = useToastVang();
   const idLoi = useId();
   const dau = cell.dau ?? cell.tuanDoiTu !== null;
   const coDiem = cell.diem !== null;
@@ -1148,15 +1140,11 @@ export function ODiemThuong({
    * dở của ô chưa có dấu → chỉ chặn "--", "-" đó lưu khi rời ô như thường. Ba lối vào: xem `useGoLaiDau`.
    */
   const goLaiDau = () => { if (dau) ghiDau(); };
-  /* Nút "Vắng" (điện thoại, C2): ghi ngay + toast Hoàn tác (gỡ dấu, lịch về tuần cũ). */
+  /* Nút "Vắng" (điện thoại, C2): đúng lệnh của gõ "-" — thông báo ngắn do `onDau` lo (K4, không Hoàn tác). */
   const bamVang = () => {
     if (!nhanDau || dangGui.current) return;
     setCanhBao(null);
-    void gui(async () => {
-      const ok = await onDau(true, true);
-      if (ok) toastVang(tenMon, tenHv, () => void onDau(false), ' — dời sang tuần sau');
-      return ok;
-    }, true);
+    void gui(() => onDau(true), true);
   };
   const goLai = useGoLaiDau(diem, goLaiDau, inputRef);
 

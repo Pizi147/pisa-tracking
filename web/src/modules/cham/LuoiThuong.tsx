@@ -9,6 +9,7 @@ import { useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
+import { thongBaoVang } from './thongBaoVang.ts';
 import { Empty, Info, Level, Status } from '../../ui/ui.tsx';
 import { useTrangThaiLuuO } from '../../ui/SaveState.tsx';
 import { ODiemThuong, laTuChoi, type SaveOpts } from '../fasttrack/ScoreEntry.tsx';
@@ -233,11 +234,13 @@ export function useLuuThuong(attemptId: number, onReload: () => void, ct: string
     (await gui(skill, p.lyDo ? { score: p.score, total: p.total, lyDo: p.lyDo } : { score: p.score, total: p.total }, opts)) !== null;
 
   /* Dấu "-" gửi RIÊNG (máy chủ không nhận kèm điểm/tổng): ghi dấu là dời môn sang tuần sau, gỡ dấu là trả về tuần cũ. */
-  const dau = async (skill: string, bat: boolean, im = false) => {
+  const dau = async (skill: string, bat: boolean) => {
     const r = await gui(skill, { noShow: bat });
-    if (r && r.moved && !im) {
-      toast.push('ok', bat ? `Đã dời ${tenO(skill)} sang tuần sau.` : `Đã gỡ vắng ${tenO(skill)}${tenHv ? ` · ${tenHv}` : ''} · về ${r.tuanMoi ?? 'tuần cũ'}`);
-    } else if (r && !bat && r.giuLich && !im) {
+    if (r && bat) {
+      thongBaoVang(toast, `${attemptId}:${skill}`, tenO(skill), tenHv, r.tuanMoi);   // K4: gõ "-" và nút Vắng cùng một thông báo
+    } else if (r && r.moved) {
+      toast.push('ok', `Đã gỡ vắng ${tenO(skill)}${tenHv ? ` · ${tenHv}` : ''} · về ${r.tuanMoi ?? 'tuần cũ'}`);
+    } else if (r && r.giuLich) {
       toast.push('ok', `Đã gỡ vắng ${tenO(skill)}${tenHv ? ` · ${tenHv}` : ''} · giữ ${r.tuanMoi ?? 'tuần mới'}`);   // PR-BV: tuần mới đã có điểm
     }
     return r !== null;
@@ -476,7 +479,7 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
               tenMon={tenMon(sheet.programme.code, k)}
               tenHv={row.studentName}
               onSave={(p, o) => luu(k, p, o)}
-              onDau={(bat, im) => dau(k, bat, im)}
+              onDau={(bat) => dau(k, bat)}
               onLoiNhap={(c) => loiNhap(k, c)}
               inputRef={(el) => register(ci, el)}
               onKeyDown={(e) => {
