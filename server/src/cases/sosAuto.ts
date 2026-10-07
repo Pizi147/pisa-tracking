@@ -262,7 +262,8 @@ export function dienMocQuyChe(theo: { caseIds?: number[]; studentId?: number }) 
   /*
    * PR-S3F #4: ngày thi (JOIN lộ trình + tuần thi) và tuần của MT kế tiếp lấy NGAY trong câu chọn chính — trước đây mỗi dòng thêm 3 câu
    * (`luotSinhPa`, `followUntilAfter`, `examDateOf`) nên Công việc QL với 30 PA "đến lúc thi" chưa có ngày thi tốn 63 → 147 câu. `src` = lượt
-   * sinh PA (cùng luật `luotSinhPa`); `tuan_mt_ke` = tuần của lượt kế tiếp chưa huỷ (cùng luật `followUntilAfter`).
+   * sinh PA (cùng luật `luotSinhPa`); `tuan_mt_ke` = tuần của lượt kế tiếp chưa huỷ THEO attempt_no (chỉ PA quy chế FT;
+   * `followUntilAfter` xếp theo `soThuTuLuot` cho lớp thường — ở FT hai luật trùng nhau).
    */
   const chon = `SELECT iv.*, sc.cycle_id AS case_cycle_id, cy.exam_period_id, cy.exam_month, cy.exam_date,
          ep.code AS exam_week_code, ep.week_start AS exam_week_start,

@@ -12,6 +12,7 @@ export async function runFixXepBaiThuongTests(t: YThucTestKit) {
   const profileMod: any = await import('../students/profile.ts');
   const dongMod: any = await import('../classes/dongHocVien.ts');
   const perm: any = await import('../permissions.ts');
+  const sosMod: any = await import('../cases/sos.ts');
   console.log('\nFIX-XEP-BAI-THUONG · Progress trước Final theo loại, không theo attempt_no');
 
   const lop = classId('MB FOU 12');
@@ -79,5 +80,26 @@ export async function runFixXepBaiThuongTests(t: YThucTestKit) {
     const gv = (conn.prepare(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND status = 'active' AND skill = 'listening' LIMIT 1`).get(lop) as any).user_id;
     const x = dongMod.nhapDiemTheoEm(perm.loadPrincipal(gv), [lop], TODAY, () => lop).get(sid);
     assert(x?.dot === 'Progress Test', `đợt phải Progress, ra ${x?.dot}`);
+  });
+
+  check('XBT 6 · followUntilAfter(Progress no 2): lượt kế = Final (no 1) → hết Chủ nhật tuần Final', () => {
+    const { sid } = taoEm('PISA-XBT-6');
+    const r = keHoachMod.xepMoiThuong(P.admin, { classId: lop, studentId: sid, kind: 'progress', tuan: t4(tuanNay.id), force: true });
+    const a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(r.id) as any;
+    const mong = addDays(week.mondayOf(addDays(TODAY, 35)), 6);
+    const ra = sosMod.followUntilAfter(a);
+    assert(ra === mong, `hạn phải ${mong}, ra ${ra}`);
+  });
+
+  check('XBT 7 · khoá lớp thường có MT0: followUntilAfter(Final) = null (MT0 không là lượt kế); Progress → tuần Final', () => {
+    const { sid, fin } = taoEm('PISA-XBT-7');
+    const r = keHoachMod.xepMoiThuong(P.admin, { classId: lop, studentId: sid, kind: 'progress', tuan: t4(tuanNay.id), force: true });
+    const f = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(fin.id) as any;
+    conn.prepare(`INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id, status, created_at)
+      VALUES (?,?,0,'mt0',?,?, 'planned', ?)`).run(f.cycle_id, sid, lop, week.ensurePeriod(addDays(TODAY, 42)).id, now);
+    assert(sosMod.followUntilAfter(f) === null, `Final phải null, ra ${sosMod.followUntilAfter(f)}`);
+    const a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(r.id) as any;
+    const mong = addDays(week.mondayOf(addDays(TODAY, 35)), 6);
+    assert(sosMod.followUntilAfter(a) === mong, `Progress phải ${mong}, ra ${sosMod.followUntilAfter(a)}`);
   });
 }
