@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import crypto from 'node:crypto';
-import { db, laLoiMatLuongTurso } from './db.ts';
+import { db } from './db.ts';
 import { loadPrincipal, type Principal } from './permissions.ts';
 import { HttpError, nowIso } from './util.ts';
 
@@ -69,6 +69,12 @@ export function resolveSession(token: string | undefined): Principal | null {
   return loadPrincipal(row.user_id);
 }
 
+/**
+ * Cờ trên req: đã qua bước kiểm phiên, sắp vào đường API. Lỗi mất kết nối Turso TRƯỚC cờ này (trong resolveSession) thì chạy lại được
+ * với mọi method — đường API chưa chạy; resolveSession chỉ có thể đã xoá phiên hết hạn / ghi mốc dùng, chạy lại vô hại (app.ts).
+ */
+export const DA_VAO_API = Symbol('daVaoDuongApi');
+
 export function attachPrincipal(req: Request, _res: Response, next: NextFunction) {
   const token = req.cookies?.[SESSION_COOKIE] as string | undefined;
   try {
@@ -87,6 +93,7 @@ export function attachPrincipal(req: Request, _res: Response, next: NextFunction
     next(e);
     return;
   }
+  (req as Request & { [DA_VAO_API]?: true })[DA_VAO_API] = true;
   next();
 }
 

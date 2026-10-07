@@ -400,6 +400,7 @@ export async function runAnToanTests(t: AnToanTestKit) {
   console.log('\nPR-AN · 7. Không mở giao dịch Turso khi hàm Netlify sắp hết 10 giây');
   const hg = await load('../platform/hanGio.ts');
   const dbMod: any = await import('../db.ts');
+  const authMod: any = await import('../auth.ts');
   const coKhoa = (k: string) => !!conn.prepare('SELECT 1 FROM demo_config WHERE key = ?').get(k);
   const ghiThu = (k: string) => conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run(k, 'x', new Date().toISOString());
 
@@ -542,19 +543,21 @@ export async function runAnToanTests(t: AnToanTestKit) {
    * Gài lỗi vào `prepare` của kết nối đang dùng: câu SQL khớp `khop` ném `loi` ở lần khớp thứ nhất, các lần sau chạy thật.
    * Sau fn: gỡ chỗ gài, đóng kết nối mới (nếu máy chủ đã mở lại) và đặt lại kết nối cũ — các phép sau dùng `conn` của harness.
    */
-  const giaLoi = async <T>(khop: RegExp, loi: string, fn: (cu: any) => Promise<T>): Promise<{ kq: T; log: string; moLai: boolean }> => {
+  const giaLoi = async <T>(khop: RegExp, loi: string, fn: (cu: any) => Promise<T>, moiLan = false): Promise<{ kq: T; log: string; moLai: boolean }> => {
     const cu = dbMod.db();
-    const goc = cu.prepare;
+    /* moiLan: ném ở MỌI lần khớp, cả trên kết nối mới mở lại (gài vào prototype) — mô phỏng "lần hai vẫn lỗi". */
+    const dich = moiLan ? Object.getPrototypeOf(cu) : cu;
+    const goc = dich.prepare;
     let daNem = false;
-    cu.prepare = function (this: unknown, ...a: unknown[]) {
-      if (!daNem && khop.test(String(a[0]))) { daNem = true; throw new Error(loi); }
+    dich.prepare = function (this: unknown, ...a: unknown[]) {
+      if ((moiLan || !daNem) && khop.test(String(a[0]))) { daNem = true; throw new Error(loi); }
       return goc.apply(this, a);
     };
     try {
       const { kq, log } = await batLog(() => fn(cu));
       return { kq, log, moLai: dbMod.db() !== cu };
     } finally {
-      delete cu.prepare;
+      if (moiLan) dich.prepare = goc; else delete cu.prepare;
       const moi = dbMod.db();
       if (moi !== cu) { try { moi.close(); } catch { /* đã đóng */ } }
       dbMod.datKetNoiChoPhepKiem(cu);
@@ -584,11 +587,88 @@ export async function runAnToanTests(t: AnToanTestKit) {
     assert(!moLai && !/\[turso\]/.test(log) && /hỏng đĩa giả/.test(log), `moLai=${moLai} log: ${log}`);
   });
 
-  await checkAsync('PR-PH · lỗi Turso KHÁC "stream not found" ở bước kiểm phiên → 500 có mã, KHÔNG phải 401 "đăng nhập lại", KHÔNG phải authenticated:false', async () => {
+  /*
+   * Bản chính 07/10 (log `mã fa58786a`, GET /api/students/102/y-thuc): Turso đóng kết nối HTTP giữa chừng —
+   * `Hrana(Http("connection closed before message completed"))` ở resolveSession. Cùng nghĩa với mất luồng: kết nối chết.
+   */
+  const LOI_MANG = [
+    'Hrana(Http("connection closed before message completed"))',
+    'fetch failed',
+    'read ECONNRESET',
+  ];
+  await checkAsync('Mất kết nối Turso (connection closed / fetch failed / ECONNRESET) ở GET → mở lại kết nối, thử lại một lần → 200; log ghi rõ kiểu lỗi', async () => {
+    const mau = await goi('GET', '/ref/branches', { cookie: cookieLuong });
+    for (const loi of LOI_MANG) {
+      const { kq: s, log: logS, moLai: moLaiS } = await giaLoi(/FROM demo_sessions/, loi, () => goi('GET', '/demo/session', { cookie: cookieLuong }));
+      assert(s.status === 200 && s.json?.authenticated === true, `/demo/session với "${loi}": ${s.status} ${JSON.stringify(s.json).slice(0, 160)}`);
+      assert(moLaiS && (logS.match(/\[turso\]/g) ?? []).length === 1 && logS.includes(loi), `"${loi}" moLai=${moLaiS} log: ${logS}`);
+      const { kq: r, moLai } = await giaLoi(/FROM branches WHERE status='active'/, loi, () => goi('GET', '/ref/branches', { cookie: cookieLuong }));
+      assert(r.status === 200 && JSON.stringify(r.json) === JSON.stringify(mau.json) && moLai, `/ref/branches với "${loi}": ${r.status} moLai=${moLai}`);
+    }
+  });
+
+  await checkAsync('Mất kết nối Turso ở POST → KHÔNG thử lại (tránh ghi hai lần): 500 có mã, vẫn bỏ kết nối chết', async () => {
+    const tk = taoTaiKhoan('anz2b.ketnoi');
+    const { kq: r, log, moLai } = await giaLoi(/auth_attempts/, LOI_MANG[0], () => dangNhap(tk, '203.0.113.63'));
+    assert(r.status === 500 && /Có lỗi · mã/.test(r.json?.error ?? '') && !r.setCookie, `${r.status} ${JSON.stringify(r.json)}`);
+    assert(moLai && /KHÔNG thử lại POST/.test(log), `moLai=${moLai} log: ${log}`);
+  });
+
+  await checkAsync('Mất kết nối ở BƯỚC KIỂM PHIÊN của PATCH (chưa vào đường API, chưa ghi gì) → mở lại + chạy lại một lần → 200, ghi đúng MỘT lần', async () => {
+    const tk = taoTaiKhoan('anz2b.kiemphien');
+    const cookie = String((await dangNhap(tk, '203.0.113.64')).setCookie).split(';')[0];
+    /* Gài vào prototype: đếm câu ghi trên MỌI kết nối (cả kết nối mở lại); ném ở câu kiểm phiên đầu tiên. */
+    const proto = Object.getPrototypeOf(dbMod.db());
+    const goc = proto.prepare;
+    let daNem = false;
+    let ghi = 0;
+    proto.prepare = function (this: unknown, ...a: unknown[]) {
+      const sql = String(a[0]);
+      if (!daNem && /FROM demo_sessions/.test(sql)) { daNem = true; throw new Error(LOI_MANG[0]); }
+      if (/UPDATE users SET full_name/.test(sql)) ghi++;
+      return goc.apply(this, a);
+    };
+    const cu = dbMod.db();
+    let kq: any;
+    let log = '';
+    try {
+      ({ kq, log } = await batLog(() => goi('PATCH', '/me/profile', { cookie, body: { fullName: 'Thử kiểm phiên' } })));
+    } finally {
+      proto.prepare = goc;
+      const moi = dbMod.db();
+      if (moi !== cu) { try { moi.close(); } catch { /* đã đóng */ } }
+      dbMod.datKetNoiChoPhepKiem(cu);
+    }
+    assert(daNem && kq.status === 200 && ghi === 1, `status=${kq.status} ghi=${ghi} ${JSON.stringify(kq.json).slice(0, 160)}`);
+    assert(/thử lại PATCH \/api\/me\/profile/.test(log) && !/KHÔNG thử lại/.test(log), `Log: ${log}`);
+  });
+
+  check('Mất kết nối SAU khi đã vào đường API: PUT không thử lại (có thể đã ghi), GET vẫn thử lại; trước đường API thì PUT thử lại', () => {
+    const chay = (method: string, daVaoApi: boolean) => {
+      let goiLai = 0;
+      let chuyenTiep: unknown = null;
+      const loi = new Error(LOI_MANG[0]);
+      const req: any = { method, path: '/x' };
+      if (daVaoApi) req[authMod.DA_VAO_API] = true;
+      const cu = dbMod.db();
+      appMod.thuLaiKhiMatKetNoi(() => { goiLai++; })(loi, req, { headersSent: false }, (e: unknown) => { chuyenTiep = e; });
+      const moi = dbMod.db();
+      if (moi !== cu) { try { moi.close(); } catch { /* đã đóng */ } dbMod.datKetNoiChoPhepKiem(cu); }
+      return { goiLai, chuyenTiep: chuyenTiep === loi, moLai: moi !== cu };
+    };
+    const putSau = chay('PUT', true);
+    const getSau = chay('GET', true);
+    const putTruoc = chay('PUT', false);
+    assert(putSau.goiLai === 0 && putSau.chuyenTiep && putSau.moLai, `PUT sau: ${JSON.stringify(putSau)}`);
+    assert(getSau.goiLai === 1 && getSau.moLai, `GET sau: ${JSON.stringify(getSau)}`);
+    assert(putTruoc.goiLai === 1 && putTruoc.moLai, `PUT trước: ${JSON.stringify(putTruoc)}`);
+  });
+
+  await checkAsync('PR-PH · lỗi ở bước kiểm phiên không qua được (lỗi khác, hoặc mất kết nối cả lần thử lại) → 500 có mã, KHÔNG phải 401 "đăng nhập lại", KHÔNG phải authenticated:false', async () => {
     for (const loi of ['Hrana(Http("error sending request for url"))', 'SQLITE_IOERR: hỏng đĩa giả', 'fetch failed: ECONNRESET']) {
-      const { kq: s } = await giaLoi(/FROM demo_sessions/, loi, () => goi('GET', '/demo/session', { cookie: cookieLuong }));
+      const { kq: s } = await giaLoi(/FROM demo_sessions/, loi, () => goi('GET', '/demo/session', { cookie: cookieLuong }), true);
       assert(s.status === 500 && /Có lỗi · mã/.test(s.json?.error ?? ''), `/demo/session với "${loi}": ${s.status} ${JSON.stringify(s.json)}`);
-      const { kq: r } = await giaLoi(/FROM demo_sessions/, loi, () => goi('GET', '/ref/branches', { cookie: cookieLuong }));
+      const { kq: r } = await giaLoi(/FROM demo_sessions/, loi, () => goi('GET', '/ref/branches', { cookie: cookieLuong }), true);
       assert(r.status === 500 && !/đăng nhập/i.test(r.json?.error ?? ''), `/ref/branches với "${loi}": ${r.status} ${JSON.stringify(r.json)}`);
     }
   });
@@ -622,13 +702,25 @@ export async function runAnToanTests(t: AnToanTestKit) {
   check('Z2c-b/c · Lỗi mất luồng xảy ra TRONG giao dịch (tx) được đánh dấu → bộ thử lại bỏ qua kể cả với GET, nhưng vẫn bỏ kết nối chết (A2); lỗi thường không bị nhận nhầm', () => {
     let trong: unknown = null;
     try { dbMod.tx(() => { throw new Error(LOI_LUONG); }); } catch (e) { trong = e; }
-    assert(dbMod.laLoiMatLuongTurso(trong) && dbMod.loiTrongGiaoDich(trong), 'Lỗi ném trong tx phải được nhận là mất luồng VÀ trong giao dịch');
+    assert(dbMod.laLoiMatKetNoiTurso(trong) && dbMod.loiTrongGiaoDich(trong), 'Lỗi ném trong tx phải được nhận là mất luồng VÀ trong giao dịch');
     const ngoai = new Error(LOI_LUONG);
-    assert(dbMod.laLoiMatLuongTurso(ngoai) && !dbMod.loiTrongGiaoDich(ngoai), 'Lỗi ngoài tx không mang dấu giao dịch');
-    assert(!dbMod.laLoiMatLuongTurso(new Error('SQLITE_BUSY: database is locked')) && !dbMod.laLoiMatLuongTurso(null), 'Lỗi khác không phải mất luồng');
+    assert(dbMod.laLoiMatKetNoiTurso(ngoai) && !dbMod.loiTrongGiaoDich(ngoai), 'Lỗi ngoài tx không mang dấu giao dịch');
+    assert(!dbMod.laLoiMatKetNoiTurso(new Error('SQLITE_BUSY: database is locked')) && !dbMod.laLoiMatKetNoiTurso(null), 'Lỗi khác không phải mất luồng');
+    for (const loi of LOI_MANG) {
+      let t: unknown = null;
+      try { dbMod.tx(() => { throw new Error(loi); }); } catch (e) { t = e; }
+      assert(dbMod.laLoiMatKetNoiTurso(t) && dbMod.loiTrongGiaoDich(t), `"${loi}" trong tx: phải nhận là mất kết nối VÀ trong giao dịch`);
+      let goi2 = 0;
+      let ct: unknown = null;
+      const cu2 = dbMod.db();
+      appMod.thuLaiKhiMatKetNoi(() => { goi2++; })(t, { method: 'GET', path: '/x' }, { headersSent: false }, (e: unknown) => { ct = e; });
+      const moi2 = dbMod.db();
+      if (moi2 !== cu2) { try { moi2.close(); } catch { /* đã đóng */ } dbMod.datKetNoiChoPhepKiem(cu2); }
+      assert(goi2 === 0 && ct === t && moi2 !== cu2, `"${loi}" trong tx: không chạy lại nhưng phải bỏ kết nối chết (goiLai=${goi2})`);
+    }
     let goiLai = 0;
     let chuyenTiep: unknown = null;
-    const thuLai = appMod.thuLaiKhiMatLuong(() => { goiLai++; });
+    const thuLai = appMod.thuLaiKhiMatKetNoi(() => { goiLai++; });
     const cu = dbMod.db();
     let moLai = false;
     try {
@@ -647,7 +739,7 @@ export async function runAnToanTests(t: AnToanTestKit) {
     const cu = dbMod.db();
     let trong: unknown = null;
     try { dbMod.tx(() => { throw new Error('SQLITE_IOERR: hỏng đĩa giả'); }); } catch (e) { trong = e; }
-    const thuLai = appMod.thuLaiKhiMatLuong(() => { throw new Error('không được gọi'); });
+    const thuLai = appMod.thuLaiKhiMatKetNoi(() => { throw new Error('không được gọi'); });
     let chuyenTiep: unknown = null;
     thuLai(trong, { method: 'POST', path: '/x' }, { headersSent: false }, (e: unknown) => { chuyenTiep = e; });
     const moLai = dbMod.db() !== cu;
