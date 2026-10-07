@@ -2,7 +2,7 @@ import { Fragment, useContext, useEffect, useId, useLayoutEffect, useMemo, useRe
 import { api } from '../lib/api.ts';
 import { Info } from './ui.tsx';
 import { BaoOTrongNhan } from './ONgay.tsx';
-import { buocDanhSach, skillShort, type NguoiChon } from '@shared/domain/index.ts';
+import { buocDanhSach, locNguoiChon, skillShort, type NguoiChon } from '@shared/domain/index.ts';
 import { useSession } from '../lib/session.tsx';
 
 export type Person = { id: number; name: string; title: string | null; role: string | null; branches: string[] };
@@ -177,9 +177,13 @@ function nguoiContextOf(r: NguoiKetQua): string {
   return [r.role, r.branches.join('/')].filter(Boolean).join(' · ') || (r.cungLop ? 'dạy lớp này' : '—');
 }
 
+/** Một người trong danh sách của ô: tên + dòng phụ (vai · chi nhánh, "3 lớp — dạy được L", mã học viên…). */
+export type NguoiTrongDs = { id: number; ten: string; phu?: string };
+
 type ChonNguoiOption =
+  | { kind: 'trong' }
   | { kind: 'toi' }
-  | { kind: 'nguoi'; row: NguoiKetQua }
+  | { kind: 'nguoi'; row: NguoiTrongDs }
   | { kind: 'ngoai'; text: string };
 
 /**
@@ -190,10 +194,12 @@ type ChonNguoiOption =
  * "Dùng tên ngoài hệ thống" (tên cần ≥ 2 ký tự, Q11). ↑/↓ đi vòng, Enter chốt, Esc đóng danh sách (không đóng panel).
  * Mở panel không tự nhảy vào ô gõ (Q18 — không bật bàn phím điện thoại; panel đang giữ focus ở khung): danh sách mở khi focus/bấm
  * vào ô, hoặc ngay khi bấm "Đổi". `tuMo`: nơi gọi vừa được bấm để chọn người (menu "Chọn giáo viên…") → focus + mở ngay.
+ * `ds` (PR-O-CHON, chủ sản phẩm 07/10): danh sách người CÓ SẴN của nơi gọi (GV phân công được theo chi nhánh, học viên của lớp)
+ * — lọc không dấu tại chỗ, không gọi `/ref/nguoi`, giữ đúng danh sách + quyền của nơi gọi. `choTrong`: dòng đầu = bỏ chọn.
  */
 export function ChonNguoi({
   value, onChange, nhom, studentId, choToi = true, choNgoai = true, cungChiNhanh = false,
-  khongDoi, macDinhTrong, ariaLabel, disabled, tuMo,
+  khongDoi, macDinhTrong, ariaLabel, disabled, tuMo, ds, choTrong, placeholder, id, onBlur, invalid,
 }: {
   value: NguoiChon | null;
   onChange: (v: NguoiChon | null) => void;
@@ -209,6 +215,13 @@ export function ChonNguoi({
   ariaLabel?: string;
   disabled?: boolean;
   tuMo?: boolean;
+  /** Danh sách có sẵn — không gọi máy chủ (xem trên). */
+  ds?: NguoiTrongDs[];
+  /** Nhãn dòng đầu danh sách, chọn → `onChange(null)` (ví dụ "— Chưa chọn —"). */
+  choTrong?: string;
+  placeholder?: string;
+  /** Như `ONgay`: id cho nhãn / "n ô cần sửa ↑", rời ô, viền lỗi. */
+  id?: string; onBlur?: () => void; invalid?: boolean;
 }) {
   const { session } = useSession();
   const [editing, setEditing] = useState(!value && khongDoi === undefined && macDinhTrong === undefined);
@@ -218,12 +231,16 @@ export function ChonNguoi({
   const box = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const uid = useId();
-  const { rows, loading } = useNguoiSearch(term, nhom, studentId, editing, cungChiNhanh);
+  const tim = useNguoiSearch(term, nhom, studentId, editing && !ds, cungChiNhanh);
+  const rows = useMemo<NguoiTrongDs[]>(() => (ds ? locNguoiChon(ds, term)
+    : tim.rows.map((r) => ({ id: r.id, ten: r.name, phu: nguoiContextOf(r) }))), [ds, term, tim.rows]);
+  const loading = !ds && tim.loading;
+  const oId = id ?? `${uid}-o`;
   /* Nằm dưới Truong/Field: nhãn trỏ vào ô gõ (label htmlFor), không bọc cả danh sách + nút "Đổi" (`BaoOTrongNhan`). */
   const bao = useContext(BaoOTrongNhan);
   /* Đang hiện tên (chưa sửa): nhãn trỏ vào nút "Đổi"; không có nút (disabled) thì không trỏ đâu. */
   const coO = editing || !disabled;
-  useLayoutEffect(() => { bao?.(coO ? `${uid}-o` : null); return () => bao?.(null); }, [bao, uid, coO]);
+  useLayoutEffect(() => { bao?.(coO ? oId : null); return () => bao?.(null); }, [bao, oId, coO]);
 
   /* Chỉ khi VỪA chuyển sang sửa (bấm "Đổi") mới focus + mở; lúc vẽ đầu thì không, trừ `tuMo`. */
   const suaTruoc = useRef(tuMo ? false : editing);
@@ -235,6 +252,9 @@ export function ChonNguoi({
     }
     suaTruoc.current = editing;
   }, [editing]);
+
+  /* Giá trị đến sau khi ô đã vẽ (panel nạp phân công hiện tại) → hiện tên, trừ khi người dùng đang gõ trong danh sách. */
+  useEffect(() => { if (value && !open) setEditing(false); }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!editing) return;
@@ -250,23 +270,26 @@ export function ChonNguoi({
 
   const options = useMemo<ChonNguoiOption[]>(() => {
     const out: ChonNguoiOption[] = [];
+    if (choTrong && !term.trim()) out.push({ kind: 'trong' });   // đang gõ tên → ↓ Enter chọn người khớp đầu, không phải dòng trống
     if (choToi) out.push({ kind: 'toi' });
     for (const r of rows) out.push({ kind: 'nguoi', row: r });
     if (choNgoai) out.push({ kind: 'ngoai', text: term.trim() });
     return out;
-  }, [choToi, rows, choNgoai, term]);
+  }, [choTrong, choToi, rows, choNgoai, term]);
   /** Dòng "tên ngoài" chưa đủ 2 ký tự: hiện mờ, bấm không làm gì, mũi tên bỏ qua. */
   const tat = (opt: ChonNguoiOption) => opt.kind === 'ngoai' && opt.text.length < 2;
   const chonDuoc = options.flatMap((o, i) => (tat(o) ? [] : [i]));
 
   const chon = (opt: ChonNguoiOption) => {
     if (tat(opt)) return;
-    if (opt.kind === 'toi') onChange({ kieu: 'toi' });
-    else if (opt.kind === 'nguoi') onChange({ kieu: 'tai_khoan', id: opt.row.id, ten: opt.row.name, phu: nguoiContextOf(opt.row) });
+    if (opt.kind === 'trong') onChange(null);
+    else if (opt.kind === 'toi') onChange({ kieu: 'toi' });
+    else if (opt.kind === 'nguoi') onChange({ kieu: 'tai_khoan', id: opt.row.id, ten: opt.row.ten, phu: opt.row.phu });
     else onChange({ kieu: 'ngoai', ten: opt.text });
     setTerm('');
     setOpen(false);
-    setEditing(false);
+    /* Bỏ chọn ở ô không có chữ thay thế (phân công GV trống): ở lại ô gõ, không hiện "—" + Đổi. */
+    if (opt.kind !== 'trong' || khongDoi !== undefined || macDinhTrong !== undefined) setEditing(false);
   };
 
   const nguoiLabel = nhom === 'giao_vien' ? 'giáo viên' : 'người';
@@ -280,12 +303,12 @@ export function ChonNguoi({
     else { chinh = macDinhTrong ?? '—'; phu = ''; }
 
     return (
-      <div className="field flex items-center justify-between gap-2">
+      <div className={`field flex items-center justify-between gap-2${invalid ? ' border-late' : ''}`} onBlur={onBlur}>
         <span className="min-w-0 truncate">
           <span className="text-slate-100">{chinh}</span>
           {phu && <span className="text-slate-500 text-xs"> · {phu}</span>}
         </span>
-        {!disabled && <button id={`${uid}-o`} type="button" className="btn btn-sm min-h-[44px] shrink-0 sm:min-h-0" onClick={() => setEditing(true)}>Đổi</button>}
+        {!disabled && <button id={oId} type="button" className="btn btn-sm min-h-[44px] shrink-0 sm:min-h-0" onClick={() => setEditing(true)}>Đổi</button>}
       </div>
     );
   }
@@ -299,11 +322,12 @@ export function ChonNguoi({
       : null;
 
   return (
-    <div ref={box}>
+    <div ref={box} onBlur={onBlur}>
       <input
         ref={inputRef}
-        id={`${uid}-o`}
-        className="field"
+        id={oId}
+        className={`field${invalid ? ' border-late' : ''}`}
+        aria-invalid={invalid || undefined}
         role="combobox"
         aria-expanded={open}
         aria-controls={`${uid}-listbox`}
@@ -312,7 +336,7 @@ export function ChonNguoi({
         autoComplete="off"
         value={term}
         disabled={disabled}
-        placeholder={nhom === 'giao_vien' ? 'Gõ tên giáo viên…' : 'Gõ tên…'}
+        placeholder={placeholder ?? (nhom === 'giao_vien' ? 'Gõ tên giáo viên…' : 'Gõ tên…')}
         onFocus={() => setOpen(true)}
         onChange={(e) => { setTerm(e.target.value); setOpen(true); setActiveIndex(-1); }}
         onKeyDown={(e) => {
@@ -350,6 +374,7 @@ export function ChonNguoi({
                 onMouseEnter={() => { if (!tat(opt)) setActiveIndex(i); }}
                 onClick={() => chon(opt)}
               >
+                {opt.kind === 'trong' && <div className="text-sm text-slate-400">{choTrong}</div>}
                 {opt.kind === 'toi' && (
                   <>
                     <div className="text-sm text-slate-100">Tôi</div>
@@ -358,8 +383,8 @@ export function ChonNguoi({
                 )}
                 {opt.kind === 'nguoi' && (
                   <>
-                    <div className="text-sm text-slate-100">{opt.row.name}</div>
-                    <div className="text-xs text-slate-500">{nguoiContextOf(opt.row)}</div>
+                    <div className="text-sm text-slate-100">{opt.row.ten}</div>
+                    {opt.row.phu && <div className="text-xs text-slate-500">{opt.row.phu}</div>}
                   </>
                 )}
                 {opt.kind === 'ngoai' && (tat(opt)

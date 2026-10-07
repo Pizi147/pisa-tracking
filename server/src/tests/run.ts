@@ -9169,6 +9169,10 @@ await runPrKhungTests({ check, assert });
 const { runPrHk2Tests } = await import('./prHk2.tests.ts');
 await runPrHk2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 
+// ==================================================================== PR-O-CHON (ô chọn người gõ được — dùng lại ChonNguoi)
+const { runPrOChonTests } = await import('./prOChon.tests.ts');
+await runPrOChonTests({ check, assert });
+
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

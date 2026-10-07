@@ -371,10 +371,12 @@ export function QuickReport({
         {/* CHỌN HỌC VIÊN — chỉ khi mở từ trang lớp (mục 13.1); ở hồ sơ một em thì không hỏi lại. */}
         {students && (
           <Truong nhan="Học viên" batBuoc loi={loiCua('hoc-vien')}>
-            <select className="field w-full" {...o('hoc-vien')} value={studentId || ''} onChange={(e) => onPickStudent?.(Number(e.target.value) || 0)}>
-              <option value="">Chọn học viên</option>
-              {students.map((st) => <option key={st.id} value={st.id}>{st.name}{st.code ? ` · ${maHocVienNgan(st.code)}` : ''}</option>)}
-            </select>
+            {/* PR-O-CHON: gõ tên rồi chọn ở danh sách bên dưới, như mọi ô chọn người — chỉ học viên của lớp. */}
+            <ChonNguoi id={o('hoc-vien').id} onBlur={o('hoc-vien').onBlur} invalid={!!loiCua('hoc-vien')} nhom="nhan_vien" choToi={false} choNgoai={false}
+              ariaLabel="Học viên" placeholder="Gõ tên học viên…"
+              ds={students.map((st) => ({ id: st.id, ten: st.name, phu: st.code ? maHocVienNgan(st.code) : undefined }))}
+              value={studentId ? { kieu: 'tai_khoan', id: studentId, ten: tenChon ?? '…' } : null}
+              onChange={(v) => onPickStudent?.(v?.kieu === 'tai_khoan' ? v.id : 0)} />
           </Truong>
         )}
 

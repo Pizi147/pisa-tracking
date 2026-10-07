@@ -511,6 +511,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 07/10/2026 | `o-chon-ten` · Opus 5.5 | Ô chọn người gõ được: Phân công GV (Tạo lớp, Tạo nhiều lớp, Sửa phân công) + ô Học viên của Tạo Case → `ChonNguoi` kiểu `ds`; phép kiểm `prOChon.tests.ts` |
 | 07/10/2026 | Planning (Opus 5.5) · `ke-hoach-deploy-07-10` | #236 sửa lỗi Turso (connection closed, thử lại ở kiểm phiên) đã merge — rà sau merge bằng agent Opus; soạn `DEPLOY_2026-10.md`; deploy lần 1 ngay, EN + SOTAY lần 2 |
 | 07/10/2026 | fix-turso-ket-noi-dong (Opus 5.5) · PR #236 | `laLoiMatKetNoiTurso` nhận connection closed / Hrana(Http / fetch failed / ECONNRESET; GET thử lại, lỗi ở kiểm phiên thử lại mọi method, ghi trong đường API không thử lại |
 | 07/10/2026 | PR-HK2 (Sonnet 5.5, phương án B) · `pr-hk2-badge-chu` · PR #235 | Hai họ chip một cỡ (`CHIP_TRON` / `CHIP_VUONG`, 11,5 px cao 20 px; "+n" chip tròn dẫn đúng chỗ), ⋯ một kiểu, `.nut-loc`, chữ nội dung 12 px, đầu cột dính ≥ 1280 px (`.bang-dinh`), Tổng hợp vừa 1440 (bỏ Tạm thời, "HV - Case", ô badge), thanh trên điện thoại 23C + demo bar một dòng, "Vắng" một thông báo không Hoàn tác, chữ J1–J9, Progress Test / Final Test, tên PISA Tracking, Hành trình không ghi tuần học khi không có lộ trình chạy. Phép kiểm `prHk2` C1–C41; ảnh `thiet-ke/anh/hk2/`. |
