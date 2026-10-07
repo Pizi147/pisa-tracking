@@ -503,4 +503,33 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     assert(/disabled=\{dangThu\}/.test(dai) && /Đang thử…/.test(dai), '"Thử lại" phải disabled khi đang thử và đổi chữ "Đang thử…"');
     assert(/const \[dangThu, setDangThu\] = useState\(false\)/.test(s), 'thiếu state dangThu');
   });
+
+  console.log('\nPR-HK2 · Task 10 · tuần học khi không có lộ trình đang chạy');
+
+  const intake: any = await import('../classes/intake.ts');
+  const hanhTrinh: any = await import('../students/hanhTrinh.ts');
+  const profileSvc: any = await import('../students/profile.ts');
+  const transitionSvc: any = await import('../classes/transition.ts');
+  check('C32 · em FT ghi danh active + lộ trình completed (không có active): Hành trình, đầu hồ sơ, Chuyển lớp cùng KHÔNG ghi "tuần học n"; chương đã rời giữ cách tính cũ', () => {
+    const { conn, P, TODAY, classId } = t;
+    const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
+    const lop = classId('MB FT 101');
+    const ten = 'HK2 HV C32';
+    intake.commitIntake(P.admin, { classId: lop, rows: [{ fullName: ten, target: 6.5, email: 'hv@demo.test' }], idempotencyKey: 'hk2-c32' });
+    const sid = get('SELECT id FROM students WHERE full_name = ?', ten).id as number;
+    conn.prepare(`UPDATE learning_cycles SET status = 'completed', ended_at = ? WHERE student_id = ? AND status = 'active'`).run(TODAY, sid);
+    assert(!get(`SELECT 1 AS x FROM learning_cycles WHERE student_id = ? AND status = 'active'`, sid), 'dựng sai: còn lộ trình active');
+    const chuongDangHoc = () => hanhTrinh.hanhTrinhHocVien(P.mbManager, sid, null).chuong.find((c: any) => c.classId === lop && c.dangHoc);
+    const ct = chuongDangHoc();
+    assert(ct, 'chương đang học phải có');
+    assert(ct.tuanHoc == null, `Hành trình còn ghi tuần học: ${JSON.stringify(ct.tuanHoc)}`);
+    const th = profileSvc.studentProfile(P.mbManager, sid).dauHoSo.thongTin;
+    assert(th.tuanHoc == null, `đầu hồ sơ còn ghi tuần học: ${JSON.stringify(th.tuanHoc)}`);
+    const ca = transitionSvc.transitionPlan(P.mbManager, lop).students.find((s: any) => s.id === sid);
+    assert(!ca || ca.tuanHoc == null, `Chuyển lớp còn ghi tuần học: ${JSON.stringify(ca?.tuanHoc)}`);
+    /* Chương đã rời: cách tính cũ (lộ trình gần nhất) vẫn cho tuần học. */
+    conn.prepare(`UPDATE enrollments SET status = 'completed', ended_at = ? WHERE student_id = ? AND class_id = ?`).run(TODAY, sid, lop);
+    const roi = hanhTrinh.hanhTrinhHocVien(P.mbManager, sid, null).chuong.find((c: any) => c.classId === lop);
+    assert(roi && !roi.dangHoc && roi.tuanHoc != null, `chương đã rời mất tuần học: ${JSON.stringify(roi?.tuanHoc)}`);
+  });
 }
