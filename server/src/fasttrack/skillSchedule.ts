@@ -523,13 +523,13 @@ export function checkWeekVsNeighbours(input: {
     .all(input.cycleId, input.excludeAttemptId ?? -1) as any[];
   const thuTuKn = (k: string) => (KY_NANG_KE_HOACH as readonly string[]).indexOf(k);
   const byAttempt = new Map<number, {
-    attempt_no: number; kind: string; first_week: string; last_week: string; rows: Array<{ skill: string; week: string }>;
+    attempt_no: number; kind: string; route: string | null; first_week: string; last_week: string; rows: Array<{ skill: string; week: string }>;
   }>();
   for (const r of skillRows) {
     if (input.boQua?.includes(r.id)) continue;
     if (!r.route && (r.kind === 'mt0') !== (input.kind === 'mt0')) continue;   // PR-MT0: khoá lớp thường — MT0 có luật tuần riêng
     const g = byAttempt.get(r.id);
-    if (!g) byAttempt.set(r.id, { attempt_no: r.attempt_no, kind: r.kind, first_week: r.week_start, last_week: r.week_start, rows: [{ skill: r.skill, week: r.week_start }] });
+    if (!g) byAttempt.set(r.id, { attempt_no: r.attempt_no, kind: r.kind, route: r.route ?? null, first_week: r.week_start, last_week: r.week_start, rows: [{ skill: r.skill, week: r.week_start }] });
     else {
       g.rows.push({ skill: r.skill, week: r.week_start });
       if (r.week_start < g.first_week) g.first_week = r.week_start;
@@ -541,8 +541,14 @@ export function checkWeekVsNeighbours(input: {
     .map((k) => (CHU_KY_NANG as Record<string, string>)[k] ?? k).join(' ');
   const others = [...byAttempt.values()];
 
+  /* Khoá lớp thường: Progress luôn trước Final theo LOẠI — attempt_no chỉ là thứ tự tạo (Final tự tạo khi vào lớp lúc mốc Progress
+   * đã qua, Progress xếp tay sau → số lớn hơn). Cùng loại / lộ trình FT: theo attempt_no như cũ. */
+  const hang = (kind: string | null | undefined) => (kind === 'progress' ? 1 : kind === 'final' ? 2 : 0);
+  const soSanh = (o: { attempt_no: number; kind: string; route: string | null }) =>
+    (!o.route && hang(o.kind) && hang(input.kind) && hang(o.kind) !== hang(input.kind)
+      ? hang(o.kind) - hang(input.kind) : o.attempt_no - input.attemptNo);
   for (const o of others) {
-    if (o.attempt_no < input.attemptNo) {
+    if (soSanh(o) < 0) {
       if (input.newWeekStart < o.last_week) {
         blockers.push(
           `${labelDot(o.attempt_no, o.kind)} có phần thi ở tuần ${tuanLich(o.last_week)}. `
@@ -556,7 +562,7 @@ export function checkWeekVsNeighbours(input: {
       } else if (daysBetween(o.last_week, input.newWeekStart) === 7) {
         warnings.push(`Chỉ cách ${labelDot(o.attempt_no, o.kind)} đúng một tuần.`);
       }
-    } else if (o.attempt_no > input.attemptNo) {
+    } else if (soSanh(o) > 0) {
       if (input.newWeekStart > o.first_week) {
         blockers.push(
           `${labelDot(o.attempt_no, o.kind)} đã có phần thi ở tuần ${tuanLich(o.first_week)}. `

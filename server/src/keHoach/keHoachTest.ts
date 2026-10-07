@@ -652,13 +652,13 @@ function tuanDayDu(
 }
 
 /** T15 cho một đợt chưa tạo: mỗi tuần khác nhau qua `checkWeekVsNeighbours`. */
-function kiemTuanMoi(cycleId: number | null, attemptNo: number, weeks: string[]): { blockers: string[]; warnings: string[]; theoTuan: Map<string, { blockers: string[]; warnings: string[] }> } {
+function kiemTuanMoi(cycleId: number | null, attemptNo: number, weeks: string[], kind?: string): { blockers: string[]; warnings: string[]; theoTuan: Map<string, { blockers: string[]; warnings: string[] }> } {
   const blockers = new Set<string>();
   const warnings = new Set<string>();
   const theoTuan = new Map<string, { blockers: string[]; warnings: string[] }>();
   for (const w of new Set(weeks)) {
     const c = cycleId === null ? { blockers: [], warnings: [] }
-      : checkWeekVsNeighbours({ cycleId, attemptNo, excludeAttemptId: null, newWeekStart: w });
+      : checkWeekVsNeighbours({ cycleId, attemptNo, excludeAttemptId: null, newWeekStart: w, kind });
     theoTuan.set(w, c);
     c.blockers.forEach((b) => blockers.add(b));
     c.warnings.forEach((x) => warnings.add(x));
@@ -839,7 +839,7 @@ export function xepMoiThuong(p: Principal, i: {
     }
     if (cycle) {
       const nextNo = ((conn.prepare('SELECT MAX(attempt_no) m FROM assessment_attempts WHERE cycle_id = ?').get(cycle.id) as any)?.m ?? 0) + 1;
-      const kiem = kiemTuanMoi(cycle.id, nextNo, bo.map((k) => periods.get(tuan[k]).week_start));
+      const kiem = kiemTuanMoi(cycle.id, nextNo, bo.map((k) => periods.get(tuan[k]).week_start), i.kind);
       if (kiem.blockers.length) throw badRequest(kiem.blockers.join(' '));
       if (kiem.warnings.length && !i.force) throw badRequest(`${kiem.warnings.join(' ')} ${CAU_XAC_NHAN}`);
     }
@@ -889,7 +889,7 @@ function xetMotEmThuong(i: {
     /* Em chưa có bài: bài mới luôn tạo đủ dòng lịch (Q2) nên cần đủ bộ môn. */
     if (co.length < i.bo.length) return loi(`Em chưa có ${nhanDot} — ${cauThieuMon(i.bo).replace(/^C/, 'c')}`);
     const attemptNo = cycle ? ((conn.prepare('SELECT MAX(attempt_no) m FROM assessment_attempts WHERE cycle_id = ?').get(cycle.id) as any)?.m ?? 0) + 1 : 1;
-    const kiem = kiemTuanMoi(cycle?.id ?? null, attemptNo, co.map((k) => i.periods.get(i.tuan[k]!).week_start));
+    const kiem = kiemTuanMoi(cycle?.id ?? null, attemptNo, co.map((k) => i.periods.get(i.tuan[k]!).week_start), i.kind);
     const bai = baiMoi(co, i.tuan, i.periods, kiem);
     if (kiem.blockers.length) return loi(kiem.blockers.join(' '), bai);
     return { dong: { studentId: i.studentId, ten: i.ten, hanhDong: 'tao', bai, loi: null }, attemptId: null };
