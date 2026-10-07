@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ApiError, api, onInvalidate } from './api.ts';
+import { ApiError, api, cachedGet, currentEpoch, onInvalidate } from './api.ts';
 
 /*
  * PR-S6F-b (D14): GET ĐANG BAY cùng đường dẫn dùng chung MỘT lời gọi — Tổng quan có nhiều khối cùng đọc `/my-work`, `/tong-quan/quan-ly`.
@@ -14,23 +14,41 @@ const dangBay = new Map<string, Promise<unknown>>();
  */
 const daXem = new Map<string, unknown>();
 const DA_XEM_TOI_DA = 60;
+/*
+ * PR-TD2-c: lúc lưu từng bản vừa xem. Hook MỚI GẮN gặp bản lưu chưa quá MOI_MS thì dùng luôn, không gọi lại máy chủ — bản tải trước
+ * (`taiTruoc`), `/cases/:id` của trang chuyển tiếp Case, nhiều khối gắn nối nhau cùng đọc một đường. `reload`/`deps` vẫn luôn gọi lại;
+ * ghi dữ liệu xong `invalidate` xoá bản lưu nên không dùng nhầm bản cũ.
+ */
+const luc = new Map<string, number>();
+const MOI_MS = 10_000;
+/** Gần như tĩnh — giữ tới khi `invalidate` (đổi tài khoản / ghi trúng tiền tố), không tải lại mỗi lần gắn (PR-TD2-c). */
+const TINH = new Set(['/ref/branches', '/ref/periods']);
 onInvalidate((prefix) => {
   for (const k of [...dangBay.keys()]) if (prefix === null || k.startsWith(prefix)) dangBay.delete(k);
   for (const k of [...daXem.keys()]) if (prefix === null || k.startsWith(prefix)) daXem.delete(k);
 });
+const conMoi = (path: string) => daXem.has(path) && Date.now() - (luc.get(path) ?? 0) < MOI_MS;
 function nhoBanXem(path: string, d: unknown) {
   daXem.delete(path);
   daXem.set(path, d);
+  luc.set(path, Date.now());
   if (daXem.size > DA_XEM_TOI_DA) daXem.delete(daXem.keys().next().value as string);
 }
 function getChung<T>(path: string): Promise<T> {
   const cu = dangBay.get(path) as Promise<T> | undefined;
   if (cu) return cu;
-  const p = api.get<T>(path);
+  const p = TINH.has(path) ? cachedGet<T>(path) : api.get<T>(path);
   dangBay.set(path, p);
   const bo = () => { if (dangBay.get(path) === p) dangBay.delete(path); };
   p.then(bo, bo);
   return p;
+}
+
+/** PR-TD2-c: bắt đầu tải một đường trước khi khối cần nó gắn (song song với đường khác); khối gắn sau dùng lại qua `dangBay`/bản vừa xem. */
+export function taiTruoc(path: string): void {
+  if (conMoi(path)) return;
+  const e = currentEpoch();   // đổi tài khoản lúc đang tải → bỏ kết quả, không để hook của tài khoản mới dùng (rà #254)
+  getChung(path).then((d) => { if (currentEpoch() === e) nhoBanXem(path, d); }, () => { /* lỗi để khối gắn sau tự gọi lại và báo */ });
 }
 
 /** Gộp tải lại sau lần lưu cuối (PR-UX1 Q14) — tải lại sau mỗi ô làm nặng Turso. */
@@ -91,6 +109,8 @@ export function useApi<T>(path: string | null, deps: unknown[] = []): ApiState<T
     if (currentPath.current !== path) {
       setDataState((daXem.get(path) as T | undefined) ?? null);
       currentPath.current = path;
+      /* Mới gắn / đổi đường, bản lưu còn mới → dùng luôn (PR-TD2-c). */
+      if (conMoi(path)) { latest.current += 1; setFetching(false); setError(null); return; }
     }
     const seq = ++latest.current;
     setFetching(true);

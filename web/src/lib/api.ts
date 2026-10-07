@@ -80,7 +80,9 @@ export const api = {
 export async function cachedGet<T>(path: string): Promise<T> {
   const hit = cache.get(path);
   if (hit && hit.epoch === cacheEpoch) return hit.data as T;
+  /* Đổi tài khoản lúc đang chờ → không lưu dữ liệu tài khoản cũ vào kho của tài khoản mới (rà #254). */
+  const e = cacheEpoch;
   const data = await api.get<T>(path);
-  cache.set(path, { epoch: cacheEpoch, data });
+  if (cacheEpoch === e) cache.set(path, { epoch: e, data });
   return data;
 }
