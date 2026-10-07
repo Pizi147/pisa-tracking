@@ -47,7 +47,7 @@ export const MO_TA_QUYEN: Record<PermissionKey, { nhom: NhomQuyenKey; moTa: stri
   'class.create': { nhom: 'hv_lop', moTa: 'Tạo lớp mới, một lớp hoặc nhiều lớp một lần.' },
   'class.assign_subject': { nhom: 'hv_lop', moTa: 'Phân công giáo viên bộ môn cho lớp mình chủ nhiệm.',
     phamVi: 'Chỉ GVCN, chỉ lớp mình chủ nhiệm, không đổi được ô GVCN.' },
-  'class.edit': { nhom: 'hv_lop', moTa: 'Sửa tiến độ lớp: tuần bắt đầu, tuần Giữa khoá, tuần Cuối khoá.' },
+  'class.edit': { nhom: 'hv_lop', moTa: 'Sửa tiến độ lớp: tuần bắt đầu, tuần Progress Test, tuần Final Test.' },
   'student.view': { nhom: 'hv_lop', moTa: 'Xem hồ sơ học viên.', phamVi: GV_LOP_MINH },
   'student.edit': { nhom: 'hv_lop', moTa: 'Sửa hồ sơ học viên, thêm học viên vào lớp, chuyển lớp.',
     phamVi: 'GV: chỉ GVCN, học viên lớp mình chủ nhiệm.' },

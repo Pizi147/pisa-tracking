@@ -299,7 +299,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
 
   // ================================================================== 6. PR-LT2a — Giữa khoá tự tạo Case (thay S1 "tín hiệu Tạo Case / Bỏ qua")
 
-  console.log('\nPR-LT2a · 6. Lớp thường Giữa khoá: mỗi môn trượt TỰ TẠO Case về GV môn đó (không ai dạy thì GVCN); tín hiệu chỉ còn là dây nối');
+  console.log('\nPR-LT2a · 6. Lớp thường Progress Test: mỗi môn trượt TỰ TẠO Case về GV môn đó (không ai dạy thì GVCN); tín hiệu chỉ còn là dây nối');
   const signals: any = await import('../cases/signals.ts');
   const mywork: any = await import('../worklist/mywork.ts');
   const metricsSvc: any = await import('../worklist/metrics.ts');
@@ -322,7 +322,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     assert(cl.sos_level === null && cs.sos_level === null, 'Lớp thường không nhãn SOS (T58)');
   });
 
-  check('S1→LT2a · Case Giữa khoá mang đủ dữ liệu cho dòng việc: nhóm "Xác nhận nguyên nhân", đúng Case, hạn 3 ngày tính cả hôm nay, đúng người; GV môn khác không thấy', () => {
+  check('S1→LT2a · Case Progress Test mang đủ dữ liệu cho dòng việc: nhóm "Xác nhận nguyên nhân", đúng Case, hạn 3 ngày tính cả hôm nay, đúng người; GV môn khác không thấy', () => {
     const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'listening', 20, 40);
     const c = caseCua(hv.sid, 'listening');
@@ -397,9 +397,9 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
 
   // ================================================================== 8. PR-LT2a — Case Giữa khoá đúng môn, đúng khoá
 
-  console.log('\nPR-LT2a · 8. Case Giữa khoá tự tạo: đúng môn, đúng khoá, mốc mở; Writing lớp thường (một môn W)');
+  console.log('\nPR-LT2a · 8. Case Progress Test tự tạo: đúng môn, đúng khoá, mốc mở; Writing lớp thường (một môn W)');
 
-  check('S1→LT2a · Giữa khoá Listening trượt → Case môn Listening của đúng khoá, tín hiệu "linked", mốc mở "Giữa khoá tự tạo Case"', () => {
+  check('S1→LT2a · Progress Test Listening trượt → Case môn Listening của đúng khoá, tín hiệu "linked", mốc mở "Progress Test tự tạo Case"', () => {
     const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'listening', 10, 40);
     const sg = tinHieu(hv.attemptId, 'listening');
@@ -407,7 +407,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     assert(c.category === 'listening' && c.cycle_id === hv.cycleId, `Case sai môn/khoá: ${JSON.stringify({ category: c.category, cycle: c.cycle_id })}`);
     assert(sg.status === 'linked' && sg.case_id === c.id, `Tín hiệu chưa gắn: ${JSON.stringify(sg)}`);
     const m = conn.prepare(`SELECT note FROM case_milestones WHERE case_id = ? AND kind = 'opened'`).get(c.id) as any;
-    assert(m && String(m.note) === 'Giữa khoá tự tạo Case', `Mốc mở: ${m?.note}`);
+    assert(m && String(m.note) === 'Progress Test tự tạo Case', `Mốc mở: ${m?.note}`);
   });
 
   check('S1→LT2a · Một môn trượt chỉ sinh Case đúng môn đó (Listening trượt không sinh Case Reading)', () => {
@@ -429,7 +429,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     }), /Chủ đề không hợp lệ/, 'Học viên FT tạo Case Writing chung');
   });
 
-  check('S1→LT2a · Case Giữa khoá nằm đúng lộ trình của lượt (không phải khoá cũ đã hoàn tất của cùng em)', () => {
+  check('S1→LT2a · Case Progress Test nằm đúng lộ trình của lượt (không phải khoá cũ đã hoàn tất của cùng em)', () => {
     const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     const other = Number(conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, programme_code, started_at, status, created_at)
       VALUES (?, 2, NULL, 'FOU', ?, 'completed', ?)`).run(hv.sid, '2026-05-04', NOW).lastInsertRowid);
@@ -438,7 +438,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     assert(c.cycle_id === hv.cycleId && c.cycle_id !== other, 'Case phải nằm đúng khoá của lượt');
   });
 
-  check('S1→LT2a · Case Giữa khoá đã đóng (Không cần theo dõi) thì chấm lại điểm KHÔNG mở lại — chạy lặp không đảo quyết định của GVBM', () => {
+  check('S1→LT2a · Case Progress Test đã đóng (Không cần theo dõi) thì chấm lại điểm KHÔNG mở lại — chạy lặp không đảo quyết định của GVBM', () => {
     const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'reading', 10, 40);
     const c = caseCua(hv.sid, 'reading');
@@ -449,7 +449,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
 
   // ================================================================== 9. PR-LT2a — việc cần làm + chỉ số
 
-  console.log('\nPR-LT2a · 9. Một dòng "Xác nhận nguyên nhân" mỗi Case Giữa khoá; ô "Case chờ nguyên nhân quá hạn" đếm cả lớp thường');
+  console.log('\nPR-LT2a · 9. Một dòng "Xác nhận nguyên nhân" mỗi Case Progress Test; ô "Case chờ nguyên nhân quá hạn" đếm cả lớp thường');
 
   check('S1→LT2a · Việc cần làm của GV môn đó có MỘT dòng cho mỗi Case (không mỗi tín hiệu), kèm môn, hạn; GV khác không thấy', () => {
     const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
@@ -463,7 +463,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     assert(items(pSpeakingFou).some((i) => i.key === `cause:${cs.id}`), 'GV Speaking không thấy Case của mình');
   });
 
-  check('S1→LT2a · Chỉ số case-xac-dinh-nguyen-nhan-qua-han: Case Giữa khoá quá hạn 3 ngày có; còn trong hạn không; đã đóng không', () => {
+  check('S1→LT2a · Chỉ số case-xac-dinh-nguyen-nhan-qua-han: Case Progress Test quá hạn 3 ngày có; còn trong hạn không; đã đóng không', () => {
     const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     diem(hv.attemptId, 'listening', 10, 40);
     diem(hv.attemptId, 'reading', 10, 40);
@@ -515,7 +515,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     assert(n === 1, 'Người phụ trách phải được nhắc xem lại đúng một lần');
   });
 
-  check('RB-8 · Không đóng Case vô cớ: Giữa khoá trượt → Case có việc; Cuối khoá đạt cả bốn môn → Case vẫn mở, không nhãn SOS (mức NULL), có mốc "đã đạt"', () => {
+  check('RB-8 · Không đóng Case vô cớ: Progress Test trượt → Case có việc; Final Test đạt cả bốn môn → Case vẫn mở, không nhãn SOS (mức NULL), có mốc "đã đạt"', () => {
     const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-08-24' });
     diem(hv.attemptId, 'listening', 10, 40);
     const c = caseTuTinHieu(pGvcnFou, tinHieu(hv.attemptId, 'listening'));
@@ -527,7 +527,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     const row = conn.prepare('SELECT status, sos_level FROM sos_cases WHERE id = ?').get(c.id) as any;
     assert(row.status !== 'done' && row.sos_level === null, `Case phải còn mở, không nhãn SOS: ${JSON.stringify(row)}`);
     const passed = (conn.prepare(`SELECT COUNT(*) n FROM case_milestones WHERE case_id = ? AND kind = 'passed' AND attempt_id = ?`).get(c.id, fin) as any).n;
-    assert(passed === 1, 'Thiếu mốc "đã đạt" của Cuối khoá');
+    assert(passed === 1, 'Thiếu mốc "đã đạt" của Final Test');
   });
 
   // ================================================================== 11. RB-6
@@ -743,28 +743,28 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
 
   // ================================================================== 16. §6 chữ lớp thường
 
-  console.log('\nPR-S1 · 16. §6 — chữ lớp thường ở máy chủ: "Giữa khoá / Cuối khoá", "môn", "3/4 môn đạt"; FT giữ nguyên');
+  console.log('\nPR-S1 · 16. §6 — chữ lớp thường ở máy chủ: "Progress Test / Final Test", "môn", "3/4 môn đạt"; FT giữ nguyên');
   const standing: any = await import('../students/standing.ts');
 
   check('§6 · caseHeadline lớp thường không ghi "MT{n}" và "kỳ vọng"; FT giữ nguyên', () => {
     const h = (x: any) => domain.caseHeadline({ originKind: 'mock', ...x });
-    assert(h({ sosLevel: 2, attemptNo: 1, attemptKind: 'progress' }) === 'Giữa khoá: 2 môn chưa đạt', h({ sosLevel: 2, attemptNo: 1, attemptKind: 'progress' }));
-    assert(h({ sosLevel: 0, attemptNo: 2, attemptKind: 'final' }) === 'Cuối khoá: đạt tất cả các môn', h({ sosLevel: 0, attemptNo: 2, attemptKind: 'final' }));
-    assert(h({ sosLevel: 3, attemptNo: 2, attemptKind: 'final' }) === 'Cuối khoá: từ 3 môn chưa đạt', 'SOS 3 = từ 3 môn');
+    assert(h({ sosLevel: 2, attemptNo: 1, attemptKind: 'progress' }) === 'Progress Test: 2 môn chưa đạt', h({ sosLevel: 2, attemptNo: 1, attemptKind: 'progress' }));
+    assert(h({ sosLevel: 0, attemptNo: 2, attemptKind: 'final' }) === 'Final Test: đạt tất cả các môn', h({ sosLevel: 0, attemptNo: 2, attemptKind: 'final' }));
+    assert(h({ sosLevel: 3, attemptNo: 2, attemptKind: 'final' }) === 'Final Test: từ 3 môn chưa đạt', 'SOS 3 = từ 3 môn');
     assert(h({ sosLevel: 1, attemptNo: 2, attemptKind: 'mock' }) === 'MT2: 1 kỹ năng dưới kỳ vọng', 'FT phải giữ nguyên');
     assert(h({ sosLevel: 1, attemptNo: 2 }) === 'MT2: 1 kỹ năng dưới kỳ vọng', 'Không truyền attemptKind thì như FT (tương thích)');
   });
 
   check('§6 · standingLine lớp thường: "Đạt n/4 môn", "khoá này", "môn"; FT giữ "đạt kỳ vọng", "lộ trình này"', () => {
     const base = {
-      studentId: 1, cycleId: 1, mode: 'ratio', attemptId: 5, attemptNo: 1, attemptKind: 'progress', attemptLabel: 'Giữa khoá',
+      studentId: 1, cycleId: 1, mode: 'ratio', attemptId: 5, attemptNo: 1, attemptKind: 'progress', attemptLabel: 'Progress Test',
       periodCode: null, sosLevel: 0, provisional: false, scored: 4, required: 4, failed: 0,
       nextAttemptNo: null, nextAttemptLabel: null, nextPeriodCode: null, openCases: 0, handoverCases: 0,
     };
     const line = (x: any) => standing.standingLine({ ...base, ...x });
-    assert(line({}) === 'Giữa khoá: 4/4 môn đạt', line({}));
-    assert(line({ sosLevel: 1, failed: 1 }) === 'Giữa khoá: 3/4 môn đạt · SOS 1', line({ sosLevel: 1, failed: 1 }));
-    assert(line({ sosLevel: 2, failed: 2, provisional: true, scored: 3 }) === 'Giữa khoá: 1/4 môn đạt · SOS 2 tạm thời · mới có điểm 3/4 môn',
+    assert(line({}) === 'Progress Test: 4/4 môn đạt', line({}));
+    assert(line({ sosLevel: 1, failed: 1 }) === 'Progress Test: 3/4 môn đạt · SOS 1', line({ sosLevel: 1, failed: 1 }));
+    assert(line({ sosLevel: 2, failed: 2, provisional: true, scored: 3 }) === 'Progress Test: 1/4 môn đạt · SOS 2 tạm thời · mới có điểm 3/4 môn',
       line({ sosLevel: 2, failed: 2, provisional: true, scored: 3 }));
     assert(line({ attemptId: null, sosLevel: null, scored: 0 }) === 'Chưa có kết quả trong khoá này', line({ attemptId: null, sosLevel: null, scored: 0 }));
     const ft = { mode: 'ielts_band', attemptLabel: 'MT2', failed: null };

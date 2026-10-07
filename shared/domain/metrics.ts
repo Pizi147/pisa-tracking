@@ -67,7 +67,7 @@ export const METRICS: readonly ChiSo[] = [
   /* Ba chỉ số của khối Cần xử lý (PR-Pa, đặc tả §3.2) — mỗi dòng của khối là một chỉ số, để bấm vào ra đúng tập. */
   {
     id: 'case-xac-dinh-nguyen-nhan-qua-han', ten: 'Case quá hạn xác nhận nguyên nhân',
-    cauHoi: 'Bao nhiêu Case tự tạo (SOS Fast Track, Giữa khoá lớp thường) đã quá hạn 3 ngày mà GVBM chưa xác nhận nguyên nhân?',
+    cauHoi: 'Bao nhiêu Case tự tạo (SOS Fast Track, Progress Test lớp thường) đã quá hạn 3 ngày mà GVBM chưa xác nhận nguyên nhân?',
     donVi: 'case',
     tapDuDieuKien: 'Trong tập "Case chờ xác nhận nguyên nhân": Case mà hạn xác nhận (3 ngày, tính cả ngày Case ra đời) đã qua. Hết ngày hạn mới tính quá hạn.',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi Case chỉ đếm 1 lần', drilldown: '/metrics/case-xac-dinh-nguyen-nhan-qua-han',
@@ -88,9 +88,9 @@ export const METRICS: readonly ChiSo[] = [
   },
   {
     id: 'case-cho-xac-dinh-nguyen-nhan', ten: 'Case chờ xác nhận nguyên nhân',
-    cauHoi: 'Bao nhiêu Case tự tạo (SOS Fast Track, Giữa khoá lớp thường) đang chờ GVBM xác nhận nguyên nhân?',
+    cauHoi: 'Bao nhiêu Case tự tạo (SOS Fast Track, Progress Test lớp thường) đang chờ GVBM xác nhận nguyên nhân?',
     donVi: 'case',
-    tapDuDieuKien: 'Case HỌC THUẬT do Mock Test Fast Track hoặc Giữa khoá lớp thường tự tạo, đang mở, mà chưa có nguyên nhân (nhóm nguyên nhân chính) và không có yêu cầu "Không cần theo dõi" đang chờ Quản lý duyệt (SOS v4, K5-51). Case tạo tay và Case đã đóng (kể cả `Không cần theo dõi`) không thuộc tập.',
+    tapDuDieuKien: 'Case HỌC THUẬT do Mock Test Fast Track hoặc Progress Test lớp thường tự tạo, đang mở, mà chưa có nguyên nhân (nhóm nguyên nhân chính) và không có yêu cầu "Không cần theo dõi" đang chờ Quản lý duyệt (SOS v4, K5-51). Case tạo tay và Case đã đóng (kể cả `Không cần theo dõi`) không thuộc tập.',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi Case chỉ đếm 1 lần', drilldown: '/metrics/case-cho-xac-dinh-nguyen-nhan',
   },
   {
@@ -245,9 +245,9 @@ export const METRICS: readonly ChiSo[] = [
   },
   {
     id: 'hv-chua-co-lenh-chuyen', ten: 'Học viên chưa có quyết định chuyển lớp',
-    cauHoi: 'Bao nhiêu em của lớp thường đã tới tuần Cuối khoá mà Quản lý chưa ra quyết định chuyển lớp?',
+    cauHoi: 'Bao nhiêu em của lớp thường đã tới tuần Final Test mà Quản lý chưa ra quyết định chuyển lớp?',
     donVi: 'hoc-vien',
-    tapDuDieuKien: 'Em đang học ở lớp thường (không FT) đang mở, từ tuần Cuối khoá tính theo hôm nay, chưa có quyết định chuyển lớp đang chờ — cùng hàm với việc "Chuyển tiếp lớp" của Quản lý.',
+    tapDuDieuKien: 'Em đang học ở lớp thường (không FT) đang mở, từ tuần Final Test tính theo hôm nay, chưa có quyết định chuyển lớp đang chờ — cùng hàm với việc "Chuyển tiếp lớp" của Quản lý.',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi học viên chỉ đếm 1 lần', drilldown: '/metrics/hv-chua-co-lenh-chuyen',
   },
   {
@@ -261,7 +261,7 @@ export const METRICS: readonly ChiSo[] = [
     id: 'hv-len-ft-chua-ky-vong', ten: 'Học viên lên FT chưa đánh dấu kỳ vọng đầu ra',
     cauHoi: 'Bao nhiêu em BE/ELE có quyết định lên FT mà Quản lý chưa đánh dấu Đạt / Không đạt kỳ vọng đầu ra?',
     donVi: 'hoc-vien',
-    tapDuDieuKien: 'Em có quyết định chuyển lớp hướng Fast Track (đang chờ hoặc đã chuyển) từ lớp BE/ELE, đã có bài Cuối khoá ở lớp đó, chưa có kết luận kỳ vọng đầu ra ở Lộ trình tiếp theo của lớp đó.',
+    tapDuDieuKien: 'Em có quyết định chuyển lớp hướng Fast Track (đang chờ hoặc đã chuyển) từ lớp BE/ELE, đã có bài Final Test ở lớp đó, chưa có kết luận kỳ vọng đầu ra ở Lộ trình tiếp theo của lớp đó.',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi học viên chỉ đếm 1 lần', drilldown: '/metrics/hv-len-ft-chua-ky-vong',
   },
   /* PR-VAI-a (K1-05, Q6): gốc của "Case chưa có người phụ trách" — lớp có môn mà chưa ai dạy. Dòng Cần xử lý "Sửa phân công". */
@@ -275,9 +275,9 @@ export const METRICS: readonly ChiSo[] = [
   /* PR-MT0 (T5b): việc "Chốt lên FT · lớp" của Quản lý — tự hết khi mọi em đã có hướng. */
   {
     id: 'lop-chua-chot-len-ft', ten: 'Lớp cần Chốt lên FT',
-    cauHoi: 'Bao nhiêu lớp FOU/BE/ELE sắp tới tuần Cuối khoá mà còn em chưa có hướng Lộ trình tiếp theo?',
+    cauHoi: 'Bao nhiêu lớp FOU/BE/ELE sắp tới tuần Final Test mà còn em chưa có hướng Lộ trình tiếp theo?',
     donVi: 'lop',
-    tapDuDieuKien: 'Lớp thường FOU/BE/ELE đang mở trong phạm vi sửa lớp của người xem, từ 13 ngày trước hạn (Chủ nhật trước tuần Cuối khoá) tới hết tuần Cuối khoá, còn em đang học chưa có hướng hoặc "Chưa quyết" — cùng hàm với việc "Chốt lên FT".',
+    tapDuDieuKien: 'Lớp thường FOU/BE/ELE đang mở trong phạm vi sửa lớp của người xem, từ 13 ngày trước hạn (Chủ nhật trước tuần Final Test) tới hết tuần Final Test, còn em đang học chưa có hướng hoặc "Chưa quyết" — cùng hàm với việc "Chốt lên FT".',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi lớp chỉ đếm 1 lần', drilldown: '/metrics/lop-chua-chot-len-ft',
   },];
 

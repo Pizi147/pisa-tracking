@@ -99,9 +99,9 @@ export async function runHoSoHocVienTests(t: YThucTestKit) {
     assert(k && k.attemptId === 2, `(e) lượt mới nhất chưa có điểm → lấy lượt trước: ${JSON.stringify(k)}`);
     assert(f([L({ attemptNo: 1, scored: 0, complete: false })]) === null && f([]) === null, '(f) không lượt nào có điểm → null');
     k = f([L({ attemptNo: 1, kind: 'progress', mode: 'ratio', overall: null, expectation: null, sosLevel: 0, weekStart: '2026-09-14' })]);
-    assert(k && k.dat === true && k.nhan === 'Giữa khoá · W3 SEP', `(g) Normal đủ, SOS 0 → đạt, nhãn Giữa khoá: ${JSON.stringify(k)}`);
+    assert(k && k.dat === true && k.nhan === 'Progress Test · W3 SEP', `(g) Normal đủ, SOS 0 → đạt, nhãn Progress Test: ${JSON.stringify(k)}`);
     k = f([L({ attemptNo: 2, kind: 'final', mode: 'ratio', overall: null, expectation: null, sosLevel: null, scored: 2, complete: false, weekStart: null })]);
-    assert(k && k.dat === null && k.nhan === 'Cuối khoá', `(h) Normal thiếu → dat null, nhãn Cuối khoá không tuần: ${JSON.stringify(k)}`);
+    assert(k && k.dat === null && k.nhan === 'Final Test', `(h) Normal thiếu → dat null, nhãn Final Test không tuần: ${JSON.stringify(k)}`);
     k = f([L({ attemptNo: 1, mode: 'ratio', required: 5, scored: 5, overall: null, expectation: null })]);
     assert(k && k.dungKetQuaDot === false && k.yeuCau === 5, `(i) required 5 → không dùng KetQuaDot: ${JSON.stringify(k)}`);
     k = f([L({ attemptNo: 1 }), L({ attemptNo: 2 }), L({ attemptNo: 3 })]);

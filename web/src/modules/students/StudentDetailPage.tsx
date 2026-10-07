@@ -597,11 +597,11 @@ function RatioAttempts({ attempts, dotId, homNay, onOpen, ct = null }: {
       <table className="w-full text-sm min-w-[640px]">
         <thead>
           <tr>
-            <Th hint="Giữa khoá hay Cuối khoá của khoá học. Bấm để mở bảng điểm đợt.">Bài</Th>
+            <Th hint="Progress Test hay Final Test của khoá học. Bấm để mở bảng điểm đợt.">Bài</Th>
             <Th hint="Lớp em học VÀO LÚC làm bài này — chuyển lớp không viết lại lịch sử.">Lớp</Th>
             <Th hint="Tuần kế hoạch của lượt này. Một lượt chỉ thuộc đúng một tuần — không có ngày thi cụ thể.">Tuần</Th>
             <Th hint="Số câu đúng / tổng số câu từng môn. Đạt khi từ 70% trở lên.">Điểm từng phần</Th>
-            <Th hint="Giữa khoá: số môn đạt trên tổng, kèm môn không đạt. Cuối khoá: % tổng. Môn chưa có điểm không tính là chưa đạt.">Kết quả</Th>
+            <Th hint="Progress Test: số môn đạt trên tổng, kèm môn không đạt. Final Test: % tổng. Môn chưa có điểm không tính là chưa đạt.">Kết quả</Th>
           </tr>
         </thead>
         <tbody>

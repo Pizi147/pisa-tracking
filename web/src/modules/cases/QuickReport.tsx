@@ -454,7 +454,7 @@ export function QuickReport({
         <Truong nhan="Mô tả và dẫn chứng" batBuoc phu="Sai ở đâu, bài hay buổi nào" loi={loiCua('mo-ta')}
           dem={{ co: summary.trim().length, can: 15 }}>
           <textarea className="field w-full" {...o('mo-ta')} rows={3} value={summary} onChange={(e) => setSummary(e.target.value)}
-            placeholder="Ví dụ: Giữa khoá sai 4/5 câu Not Given" />
+            placeholder="Ví dụ: Progress Test sai 4/5 câu Not Given" />
         </Truong>
         </>)}
       </Khoi>

@@ -171,9 +171,9 @@ function NoiDungLoTrinhTiep({ onClose, studentId, studentName, lop, onDone }: {
       }}>
       <KetQuaGanNhatEm ketQua={data.ketQua} />
       {goiY && (
-        <Khoi tieuDe="Hệ thống gợi ý theo Cuối khoá">
+        <Khoi tieuDe="Hệ thống gợi ý theo Final Test">
           <div className="flex flex-wrap items-baseline gap-x-2">
-            <span className="text-sm font-bold tabular-nums text-slate-100">Cuối khoá {Math.round((data.cuoiKhoa?.tyLe ?? 0) * 100)}%</span>
+            <span className="text-sm font-bold tabular-nums text-slate-100">Final Test {Math.round((data.cuoiKhoa?.tyLe ?? 0) * 100)}%</span>
             {(data.cuoiKhoa?.monTruot.length ?? 0) > 0 && <span className="text-[12px] text-slate-500">không đạt {data.cuoiKhoa!.monTruot.map((m) => tenMonNgan(lopHoc.ma, m)).join(', ')}</span>}
           </div>
           <span className="block text-[12px] leading-4 text-slate-400">{goiY.nhan}</span>
@@ -182,7 +182,7 @@ function NoiDungLoTrinhTiep({ onClose, studentId, studentName, lop, onDone }: {
       <Khoi tieuDe={deXuat ? 'Hướng bạn đề xuất (Quản lý quyết)' : 'Hướng đi'}>
         <p className="m-0 mb-2 text-xs text-slate-400">
           {deXuat
-            ? 'Cuối khoá 50–59%: bạn ghi đề xuất, Quản lý chọn hướng cuối cùng khi chuyển lớp. Chưa đổi lớp.'
+            ? 'Final Test 50–59%: bạn ghi đề xuất, Quản lý chọn hướng cuối cùng khi chuyển lớp. Chưa đổi lớp.'
             : 'Chỉ là dự định, chưa đổi lớp. Ghi trước để người kế nhiệm biết em sẽ đi đâu sau lớp này.'}
         </p>
         <div {...lf.o(loi, 'huong')} tabIndex={-1} role="radiogroup" aria-label={deXuat ? 'Hướng đề xuất' : 'Hướng đi'} className="space-y-1.5 outline-none">
@@ -222,7 +222,7 @@ function NoiDungLoTrinhTiep({ onClose, studentId, studentName, lop, onDone }: {
             </Hang2>
           )}
           {huong === 'chua_quyet' && (
-            <Truong nhan="Ngày xem lại" tuyChon phu="Để trống thì hệ thống nhắc lại em này ở hai tuần cuối khoá">
+            <Truong nhan="Ngày xem lại" tuyChon phu="Để trống thì hệ thống nhắc lại em này ở hai tuần cuối của khoá">
               <ONgay kieu="ngay" value={ngayXemLai} onChange={doi(setNgayXemLai)} toiThieu={homNay || undefined} ariaLabel="Ngày xem lại" />
             </Truong>
           )}

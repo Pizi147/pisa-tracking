@@ -226,7 +226,7 @@ export function moLoTrinhMoi(p: Principal, o: {
       giuThi ? cu?.exam_date ?? null : null, giuThi ? cu?.exam_period_id ?? null : null,
       startPeriodId, o.ngay, nowIso()).lastInsertRowid);
   if (o.denLop.ft) taoMtMacDinh(moiId, { actorUserId: p.userId });   // M1: vào lớp FT / đổi LT ↔ RF = lộ trình mới có lịch MT mặc định
-  else taoBaiThuongMacDinh([moiId], p.userId, o.ngay);               // PR-LT2a M1b: sang lớp thường = tự có bài Giữa khoá / Cuối khoá
+  else taoBaiThuongMacDinh([moiId], p.userId, o.ngay);               // PR-LT2a M1b: sang lớp thường = tự có bài Progress Test / Final Test
   return { moiId, route };
 }
 

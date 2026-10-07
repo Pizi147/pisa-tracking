@@ -130,7 +130,7 @@ export type KetQuaHien = {
   dat: boolean; sos: string | null;
   /** Chỉ có (true) khi SOS mới chấm một phần, còn đổi được khi đủ điểm: vẽ viền nét đứt, không ⚠ (⚠ chỉ nghĩa quá hạn). */
   sosTamThoi?: boolean;
-  dong1: string | null;          // "MT3 · kỳ vọng 7.0 · 3/4 kỹ năng có điểm" · "Cuối khoá · 2/4 môn có điểm" · "Chưa có kết quả"
+  dong1: string | null;          // "MT3 · kỳ vọng 7.0 · 3/4 kỹ năng có điểm" · "Final Test · 2/4 môn có điểm" · "Chưa có kết quả"
   dong2: string | null;          // "Không đạt: L R W" · "Không đạt: L G+V" · null
 };
 
@@ -419,7 +419,7 @@ export function viecTiepCuaEm(i: {
   }
   const xep = out.map((v, idx) => ({ v, idx })).sort((a, b) => HANG_TONE[a.v.tone] - HANG_TONE[b.v.tone] || a.idx - b.idx).map((x) => x.v);
   /* Báo phụ huynh qua TVV: không hạn → luôn SAU việc có hạn (mở tab Ý thức & Phối hợp). */
-  if (i.baoPh) xep.push({ viec: 'Báo phụ huynh qua TVV', han: null, quaHanNgay: null, tone: 'info', dich: { loai: 'y-thuc' }, title: 'Báo phụ huynh qua TVV · Giữa khoá' });
+  if (i.baoPh) xep.push({ viec: 'Báo phụ huynh qua TVV', han: null, quaHanNgay: null, tone: 'info', dich: { loai: 'y-thuc' }, title: 'Báo phụ huynh qua TVV · Progress Test' });
   return xep;
 }
 

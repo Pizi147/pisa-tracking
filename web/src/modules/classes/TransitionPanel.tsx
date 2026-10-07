@@ -10,8 +10,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { chayHangLoat, hoanTacHangLoat } from '../students/hangLoatEm.ts';
 import {
   CHU_CHUYEN_LOP, NORMAL_LADDER, chipSosMt0, chuHopKetLuan, nhanHuongNgan, chuTuanHoc, hanBanGiao, khacGoiY, kiemDongLenh, ketQuaGanNhat, maHocVienNgan, ngay, tomTatLenh, tuanLich,
-  type AssessedSkill, type DongTomTatLenh, type GoiYCuoiKhoa, type HopKetLuanVao, type HuongLenh, type KetQuaVao, type MucTieuLenh, type ProgrammeCode,
-} from '@shared/domain/index.ts';
+  type AssessedSkill, type DongTomTatLenh, type GoiYCuoiKhoa, type HopKetLuanVao, type HuongLenh, type KetQuaVao, type MucTieuLenh, type ProgrammeCode, ATTEMPT_KIND_SHORT } from '@shared/domain/index.ts';
 import { ClassCreatePanel } from './ClassCreatePanel.tsx';
 
 /** Cách Quản lý chọn trên hàng (mockup 20 — B, I). `doi` = Đổi lộ trình (FT): lớp chuyển đến khác lộ trình, vẫn là `chuyen_lop` (Q3). */
@@ -332,7 +331,7 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
                   checked={chon.size > 0 && chon.size === students.length}
                   onChange={(e) => setChon(e.target.checked ? new Set(students.map((s) => s.id)) : new Set())} /></span>
                 <span role="columnheader">Học viên</span>
-                <span role="columnheader">{ft ? 'Kết quả gần nhất' : 'Cuối khoá'}</span>
+                <span role="columnheader">{ft ? 'Kết quả gần nhất' : ATTEMPT_KIND_SHORT.final}</span>
                 {!ft && <span role="columnheader">Hệ thống gợi ý</span>}
                 <span role="columnheader">Quản lý quyết định</span>
                 <span role="columnheader">Lớp chuyển đến</span>
@@ -416,7 +415,7 @@ function HangEm({ s, d, ft, tuDeXuat, luoi, maKe, routeTu, tuanCh, homNay, loi, 
         {ft && s.tuanHoc && <span className="block text-xs text-slate-500">{[s.route, chuTuanHoc(s.tuanHoc.tuan, s.tuanHoc.tong, s.tuanHoc.dangDung)].filter(Boolean).join(' · ')}</span>}
       </span>
       <span role="cell" className="min-w-0">
-        <span className={nhan}>{ft ? 'Kết quả gần nhất' : 'Cuối khoá'}</span>
+        <span className={nhan}>{ft ? 'Kết quả gần nhất' : 'Final Test'}</span>
         <span className="block" title={k.dong1 ?? undefined}>
           {thieuDiem ? <span className="text-slate-500">—</span> : <span className="font-bold tabular-nums text-slate-100">{k.chinh}</span>}
           {!thieuDiem && k.lech && <span className="ml-1.5 text-xs font-semibold tabular-nums text-bad">{k.lech}</span>}
@@ -429,7 +428,7 @@ function HangEm({ s, d, ft, tuDeXuat, luoi, maKe, routeTu, tuanCh, homNay, loi, 
         <span role="cell" className="min-w-0">
           <span className={nhan}>Hệ thống gợi ý</span>
           {/* PR-S5F-a (mockup 20): ghi HƯỚNG ("Lên BE", "Học lại FOU"); 50–59% chỉ chip "Quản lý cân nhắc" — không "→ Pass". */}
-          {!ck?.goiY ? <span className="text-slate-500" title="Gợi ý theo luật Cuối khoá sẽ hiện khi có điểm">—</span>
+          {!ck?.goiY ? <span className="text-slate-500" title="Gợi ý theo luật Final Test sẽ hiện khi có điểm">—</span>
             : ck.goiY.canQuanLy ? <Nhan tone="soon" title={ck.goiY.nhan}>Quản lý cân nhắc</Nhan>
             : <span className="block text-xs text-slate-300" title={ck.goiY.nhan}>{ck.goiY.nhanHuong}</span>}
         </span>
@@ -514,7 +513,7 @@ function HangEm({ s, d, ft, tuDeXuat, luoi, maKe, routeTu, tuanCh, homNay, loi, 
         </div>
       )}
       {thieuDiem && d.kieu && (
-        <p className="m-0 text-[12px] text-slate-400 lg:col-start-2 lg:col-end-[-1]">Vẫn chuyển đúng tuần. Khi có điểm, web áp luật Cuối khoá ở lớp mới (bổ trợ, Mini Test nếu cần).</p>
+        <p className="m-0 text-[12px] text-slate-400 lg:col-start-2 lg:col-end-[-1]">Vẫn chuyển đúng tuần. Khi có điểm, web áp luật Final Test ở lớp mới (bổ trợ, Mini Test nếu cần).</p>
       )}
       {!ft && d.kieu === 'ft' && kyVong && (
         <p className="m-0 text-[12px] text-slate-400 lg:col-start-2 lg:col-end-[-1]">

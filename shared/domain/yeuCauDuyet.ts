@@ -57,7 +57,7 @@ export const LOAI_YC_META: Record<LoaiYeuCau, LoaiYcMeta> = {
   ke_hoach_bo_tro: { phanLoai: 'hoc-thuat', nhan: 'Kế hoạch bổ trợ', kieuNut: 'duyet-tu-choi', hanNgay: 3, hangLoat: false },
   /* PR-LT2b (M-05, T76): Mini Test dưới 70% — QL xử lý case-by-case. Bài Cuối khoá dời quá tuần cuối khoá (K4-23) — QL biết và nhắc. */
   bao_len_mini_test: { phanLoai: 'bao-len', nhan: 'Mini Test chưa đạt', kieuNut: 'nhac', hanNgay: null, hangLoat: false },
-  bao_len_cuoi_khoa: { phanLoai: 'bao-len', nhan: 'Cuối khoá dời quá hạn', kieuNut: 'nhac', hanNgay: null, hangLoat: false },
+  bao_len_cuoi_khoa: { phanLoai: 'bao-len', nhan: 'Final Test dời quá hạn', kieuNut: 'nhac', hanNgay: null, hangLoat: false },
 };
 
 export function laPhanLoai(x: unknown): x is PhanLoai {

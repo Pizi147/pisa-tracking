@@ -631,7 +631,7 @@ export function kiemDongTaoLop(input: TaoLopInput, dong: number): { ok: DongDaKi
   if (ct === 'FT' && !activeRouteCodes().includes(loTrinh!)) loi.push({ dong, truong: 'loTrinh', loi: 'Chọn lộ trình LT1, LT2 hoặc RF.' });
   const loiSo = kiemSoLop(String(input.so ?? ''));
   if (loiSo) loi.push({ dong, truong: 'so', loi: loiSo });
-  if (ct !== 'FT' && !input.startPeriodId) loi.push({ dong, truong: 'tuan', loi: 'Chọn tuần khai giảng — mốc Giữa/Cuối khoá đếm từ tuần này.' });
+  if (ct !== 'FT' && !input.startPeriodId) loi.push({ dong, truong: 'tuan', loi: 'Chọn tuần khai giảng — mốc Progress/Final Test đếm từ tuần này.' });
   /* Lớp thường: ngày khai giảng = thứ Hai của tuần khai giảng (mốc Giữa/Cuối khoá đếm từ đây). */
   const tuan = input.startPeriodId ? periodById(input.startPeriodId) : null;
   if (input.startPeriodId && !tuan) loi.push({ dong, truong: 'tuan', loi: 'Tuần khai giảng không hợp lệ.' });

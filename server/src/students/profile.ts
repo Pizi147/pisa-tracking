@@ -5,8 +5,7 @@ import {
   ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, JOURNEY_GROUP, PERMISSIONS,
   caseHeadline, duongCase, issueLabel, caseCategoryLabel, categoryOf, fmtExamMonth, cauTomTat, ketQuaTestGanNhat, oHocThuat, oSapToi, oYThuc,
   bacHoacNgoaiThang, nhanLoaiXuLy, programmeOf, tenBacKe, tenMonNgan, mocKeTiep, quaHan, studyWeekOf, tenMon, tuanHocTai, tuanLich,
-  type AssessedSkill, type EntrySkill, type InterventionKind,
-} from '../../../shared/domain/index.ts';
+  type AssessedSkill, type EntrySkill, type InterventionKind, nhanBaiThuong, ATTEMPT_KIND_SHORT } from '../../../shared/domain/index.ts';
 import { outcomeGroup } from '../cases/effectiveness.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, diffDays, notFound } from '../util.ts';
@@ -211,7 +210,7 @@ function progressOf(
 
   for (const a of asc) {
     const label = ratio
-      ? (a.kind === 'final' ? 'Cuối khoá' : 'Giữa khoá')
+      ? nhanBaiThuong(a.kind)
       : `MT${a.attemptNo}`;
     if (ratio) {
       for (const sk of a.skills ?? []) {
@@ -386,7 +385,7 @@ function boOVaCau(i: {
   const kq = ketQuaTestGanNhat(attempts, today);
   const a = kq ? attempts.find((x) => x.id === kq.attemptId) : null;
   const ratio = a?.mode === 'ratio';
-  const dauDot = (x: any) => (x.mode === 'ratio' ? (x.kind === 'final' ? 'Cuối khoá' : 'Giữa khoá') : `MT${x.attemptNo}`);
+  const dauDot = (x: any) => (x.mode === 'ratio' ? nhanBaiThuong(x.kind) : `MT${x.attemptNo}`);
   const tenKn = new Map(board.rows.filter((r) => !r.tuLopTruoc).map((r) => [r.category as string, r.label as string]));   // PR-UXF-b (R5-5): nhóm "Case bàn giao" không đè tên hàng chuẩn
   const vi = em?.viPham ? [...em.viPham.values()] as any[] : [];
   const quaHanYt = Math.max(0, ...vi.map((t) => t.quaHanNgay ?? 0)) || null;
@@ -484,7 +483,7 @@ function dongThongTin(i: {
       tuanHoc = { tuan: Math.min(khoa.tuanHienTai, khoa.tongTuan), tong: khoa.tongTuan, dangDung: !!dangDung };
     }
     const tuanCk = i.tuanCuoiKhoa ?? khoa.tuanKetThuc;
-    if (tuanCk) thiDuKien = { nhan: 'Cuối khoá', gt: tuanLich(tuanCk, today) };
+    if (tuanCk) thiDuKien = { nhan: ATTEMPT_KIND_SHORT.final, gt: tuanLich(tuanCk, today) };
     if (dangChay) thiIelts = nhanThi(dangChay);
   } else if (dangChay) {
     const batDau = dangChay.start_period_id
@@ -798,7 +797,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     if (!dangHoc) return null;
     const kem = (r: any, x: EmCuoiKhoa | null, daChuyen: boolean) => (x ? { ...x, ct: r.programme_code ?? null, lop: r.code ?? null, daChuyen } : null);
     const dang = !dangHoc.is_fast_track && isRatioClass(dangHoc.class_id) ? cuoiKhoaTheoHocVien(dangHoc.class_id, [studentId]).get(studentId) ?? null : null;
-    if (dang && dang.scored > 0) return kem(dangHoc, dang, false);   // bài Cuối khoá của lớp đang học đã có điểm
+    if (dang && dang.scored > 0) return kem(dangHoc, dang, false);   // bài Final Test của lớp đang học đã có điểm
     const cu = ds.find((r) => r.status === 'transferred');
     const x = cu && isRatioClass(cu.class_id) ? cuoiKhoaTheoHocVien(cu.class_id, [studentId], { daRoi: true }).get(studentId) ?? null : null;
     return x && x.scored > 0 ? kem(cu, x, true) : kem(dangHoc, dang, false);

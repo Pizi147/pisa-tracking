@@ -108,7 +108,7 @@ function docLoc(p: Principal, f: FilterHieuQuaPa) {
 
 const NHAN_QUY_CHE: Record<string, string> = {
   'qc:sos1': 'SOS 1', 'qc:sos2': 'SOS 2', 'qc:sos3': 'SOS 3',
-  'qc:gk': 'Bổ trợ Giữa khoá', 'qc:mt': 'Bổ trợ sau Cuối khoá', 'qc:khac': 'PA theo quy chế khác',
+  'qc:gk': 'Bổ trợ Progress Test', 'qc:mt': 'Bổ trợ sau Final Test', 'qc:khac': 'PA theo quy chế khác',
 };
 const THU_TU_QUY_CHE = Object.keys(NHAN_QUY_CHE);
 /** PR-S6F-a Q8: hàng con (loại PA) của khối quy chế theo thứ tự cố định — không xếp theo số PA. */

@@ -69,7 +69,7 @@ export async function runPrCtTests(t: YThucTestKit) {
   check('CT (1i) · kiemDongLenh: tạm dừng học (bảo lưu) thiếu tuần xem lại → "Chọn tuần xem lại"', () => {
     assert(d.kiemDongLenh(dong({ huong: 'bao_luu', lopDichId: null, lyDo: 'đi xa' })) === 'Chọn tuần xem lại', 'thiếu tuần xem lại');
   });
-  check('CT (1j) · Q30-4: kiemDongLenh không có nhánh "thiếu điểm Cuối khoá" — dòng cùng dữ liệu vẫn null (mọi tham số đều không nhắc điểm)', () => {
+  check('CT (1j) · Q30-4: kiemDongLenh không có nhánh "thiếu điểm Final Test" — dòng cùng dữ liệu vẫn null (mọi tham số đều không nhắc điểm)', () => {
     assert(d.kiemDongLenh(dong()) === null, 'em thiếu điểm P vẫn chuyển được');
     assert(!/điểm/i.test(String(d.kiemDongLenh(dong({ huong: null })))), 'câu lỗi không nói điểm');
   });
@@ -254,7 +254,7 @@ export async function runPrCtTests(t: YThucTestKit) {
     assert(bl.lop_dich_id === null && bl.ngay_xem_lai === TUAN[3] && bl.han_gvcn, JSON.stringify(bl));
     assert(get(`SELECT COUNT(*) n FROM audit_logs WHERE action = 'lenh_chuyen.tao' AND entity_id = ?`, nguon).n === 1, 'một dòng nhật ký cho cả lô');
   });
-  check('CT (3b) · Q30-4: em thiếu điểm Cuối khoá vẫn có lệnh (không dòng nào bị khoá vì điểm) — cả 7 em đều chưa có điểm nào', () => {
+  check('CT (3b) · Q30-4: em thiếu điểm Final Test vẫn có lệnh (không dòng nào bị khoá vì điểm) — cả 7 em đều chưa có điểm nào', () => {
     assert(get(`SELECT COUNT(*) n FROM assessment_scores s JOIN assessment_attempts a ON a.id = s.attempt_id WHERE a.student_id IN (${em.join(',')})`).n === 0, 'dữ liệu: chưa em nào có điểm');
     assert(get(`SELECT COUNT(*) n FROM lenh_chuyen_lop WHERE lop_nguon_id = ?`, nguon).n === 7, 'đủ 7 lệnh');
   });
@@ -468,7 +468,7 @@ export async function runPrCtTests(t: YThucTestKit) {
   const dLai = lopMoi({ kind: 'FOU', tuanHienTai: 1 });
   const dFt = lopMoi({ kind: 'FT', ft: true, route: 'LT1', tuanHienTai: 2 });
   const s8 = Array.from({ length: 8 }, () => hocVien(nE, 'FOU', false).sid);
-  check('CT (4g) · lớp thường 8 em cuối khoá (lên BE · lên FT có MT1–MT3 · KCK · học lại · tạm dừng học (bảo lưu) · dừng) → đúng luật cũ; em thiếu điểm Cuối khoá vẫn chuyển (Q30-4)', () => {
+  check('CT (4g) · lớp thường 8 em Final Test (lên BE · lên FT có MT1–MT3 · KCK · học lại · tạm dừng học (bảo lưu) · dừng) → đúng luật cũ; em thiếu điểm Final Test vẫn chuyển (Q30-4)', () => {
     ra(P.mbManager, nE, 'cuoi-khoa', [
       dongCua(s8[0], 'len_lop', dBe), dongCua(s8[1], 'len_lop', dBe), dongCua(s8[2], 'len_lop', dBe),
       dongCua(s8[3], 'fast_track', dFt, { mucTieu: 6.5, ngayThi: '2027-03' }), dongCua(s8[4], 'fast_track', dFt, { mucTieu: 'KCK' }),
@@ -494,7 +494,7 @@ export async function runPrCtTests(t: YThucTestKit) {
     assert(get(`SELECT status FROM classes WHERE id = ?`, nE).status === 'finished', 'em cuối cùng đi → lớp kết thúc');
   });
 
-  check('CT (4h) · FT tách 2 em cùng lộ trình (giữa khoá): lộ trình GIỮ NGUYÊN, Case đi theo em, người nhận = GV cùng môn lớp mới (M-04)', () => {
+  check('CT (4h) · FT tách 2 em cùng lộ trình (Progress Test): lộ trình GIỮ NGUYÊN, Case đi theo em, người nhận = GV cùng môn lớp mới (M-04)', () => {
     const ftA = lopMoi({ kind: 'FT', ft: true, route: 'LT1', tuanHienTai: 5 });
     const ftB = lopMoi({ kind: 'FT', ft: true, route: 'LT1', tuanHienTai: 5 });
     const gvW = P.w1Teacher ?? P.normalCoreTeacher;
@@ -807,7 +807,7 @@ export async function runPrCtTests(t: YThucTestKit) {
     yc.quetYeuCau(TODAY);
     assert(theBl('bao_len_chua_lenh', het).trang_thai === 'tu_dong', 'đủ lệnh → thẻ tự đóng');
   });
-  check('CT (6f) · việc của Quản lý: từ tuần Cuối khoá đếm em CHƯA CÓ LỆNH ("n em chưa có quyết định chuyển lớp"); GVCN hết đếm em đã có lệnh vào "chưa có lộ trình tiếp theo"', () => {
+  check('CT (6f) · việc của Quản lý: từ tuần Final Test đếm em CHƯA CÓ LỆNH ("n em chưa có quyết định chuyển lớp"); GVCN hết đếm em đã có lệnh vào "chưa có lộ trình tiếp theo"', () => {
     const cuoi = lopMoi({ kind: 'FOU', tuanHienTai: 8 });
     ganGv(cuoi, GV[3].userId, null, true);
     const ds = [hocVien(cuoi, 'FOU', false).sid, hocVien(cuoi, 'FOU', false).sid, hocVien(cuoi, 'FOU', false).sid];
@@ -822,7 +822,7 @@ export async function runPrCtTests(t: YThucTestKit) {
     assert(!pl(), 'đủ lệnh → hết việc');
     const giua = lopMoi({ kind: 'FOU', tuanHienTai: 3 });
     hocVien(giua, 'FOU', false);
-    assert(!(myWork(P.mbManager) as any).items.some((i: any) => i.group === 'placement' && i.classId === giua), 'chưa tới tuần Cuối khoá: chưa có việc');
+    assert(!(myWork(P.mbManager) as any).items.some((i: any) => i.group === 'placement' && i.classId === giua), 'chưa tới tuần Final Test: chưa có việc');
   });
   check('CT (6g) · Đề xuất chuyển lớp: GVCN lớp em gửi được; GVBM / GVCN lớp khác / lý do < 15 ký tự → lỗi; gửi trùng → 400; "lớp" bị bỏ khỏi Đề xuất sửa', () => {
     const lop = lopMoi({ kind: 'FOU', tuanHienTai: 4 });
@@ -903,7 +903,7 @@ export async function runPrCtTests(t: YThucTestKit) {
   const em7 = Array.from({ length: 7 }, () => hocVien(n7, 'FOU', false).sid);
   const daiCua = (who: any, lop: number) => classesSvc.classOverview(who, lop).dai;
 
-  check('CT (7a) · dải lớp nguồn dạng 1 "chưa lệnh": tới tuần Cuối khoá còn 7 em chưa có lệnh → ketThucKhoa; QL có nút Chuyển tiếp lớp, GVCN / GVBM không', () => {
+  check('CT (7a) · dải lớp nguồn dạng 1 "chưa lệnh": tới tuần Final Test còn 7 em chưa có lệnh → ketThucKhoa; QL có nút Chuyển tiếp lớp, GVCN / GVBM không', () => {
     const q = daiCua(P.mbManager, n7);
     assert(q.ketThucKhoa && q.ketThucKhoa.soChuaLenh === 7 && q.ketThucKhoa.tuanGoiY === TUAN[0] && q.ketThucKhoa.tuanKetThuc && q.ketThucKhoa.tuanCuoiKhoa, JSON.stringify(q.ketThucKhoa));
     assert(q.viewer.coTheRaLenh === true && q.viewer.coTheChuyenNhieuEm === false, JSON.stringify(q.viewer));
@@ -984,7 +984,7 @@ export async function runPrCtTests(t: YThucTestKit) {
     const chuaCo = hocVien(lopMoi({ kind: 'FOU', tuanHienTai: 2 }), 'FOU', false).sid;
     assert(profileSvc.studentProfile(P.admin, chuaCo).dai === null, 'em chưa có lệnh');
   });
-  check('CT (7g) · số câu SQL của dải: daiHocVien ≤ 4, daiLop ≤ 4 (gồm 1–2 câu tra chi nhánh của `can()`; chưa tới Cuối khoá)', () => {
+  check('CT (7g) · số câu SQL của dải: daiHocVien ≤ 4, daiLop ≤ 4 (gồm 1–2 câu tra chi nhánh của `can()`; chưa tới Final Test)', () => {
     const e = hocVien(n7, 'FOU', false).sid;
     ra(P.mbManager, n7, 'cuoi-khoa', [dongCua(e, 'len_lop', d7)]);
     const a = demTruyVan(() => { dai.daiHocVien(P.mbManager, e); });

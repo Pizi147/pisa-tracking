@@ -187,7 +187,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
       `SELECT id AS attemptId FROM assessment_attempts
         WHERE class_id = ? AND status != 'cancelled' AND kind = 'progress' LIMIT 1`,
     ).get(foundationClass) as any;
-    assert(row, 'Seed thiếu một bài Giữa khoá ở MB FOU 12 để kiểm R11 lớp thường');
+    assert(row, 'Seed thiếu một bài Progress Test ở MB FOU 12 để kiểm R11 lớp thường');
     const attemptId = row.attemptId as number;
     const per = week.ensurePeriod('2026-05-04');
     conn.prepare(`UPDATE attempt_skills SET required=1, sit_status='scheduled', planned_period_id=? WHERE attempt_id=?`)
@@ -518,10 +518,10 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     assert(luuLai.daLuu === 1, `Lưu lại với tuần khác phải thành công, đang ra ${JSON.stringify(luuLai)}`);
   });
 
-  check('PR-Rc2 · Task6(a) luoiThuong: hai cột Giữa/Cuối × 4 kỹ năng từng em; lớp mới chưa có bài → deXuat khớp planRegularTests', () => {
+  check('PR-Rc2 · Task6(a) luoiThuong: hai cột Progress/Final × 4 kỹ năng từng em; lớp mới chưa có bài → deXuat khớp planRegularTests', () => {
     const foundationClass = classId('MB FOU 12');
     const foundation = keHoachMod.luoiThuong(P.mbManager, foundationClass);
-    assert(foundation.cot.length === 2 && foundation.cot[0].nhan === 'Giữa khoá' && foundation.cot[1].nhan === 'Cuối khoá', 'MB FOU 12 phải có 2 cột Giữa/Cuối khoá');
+    assert(foundation.cot.length === 2 && foundation.cot[0].nhan === 'Progress Test' && foundation.cot[1].nhan === 'Final Test', 'MB FOU 12 phải có 2 cột Progress/Final Test');
     assert(foundation.hang.length >= 2, 'MB FOU 12 phải có hàng từng học viên');
     for (const h of foundation.hang) {
       for (const kind of ['progress', 'final']) {
@@ -545,7 +545,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
       .run(student.id, newClassId, '2029-01-01', now);
 
     const lt = keHoachMod.luoiThuong(P.mbManager, newClassId);
-    assert(lt.cot.length === 2 && lt.cot[0].nhan === 'Giữa khoá' && lt.cot[1].nhan === 'Cuối khoá', 'Sai nhãn hai cột');
+    assert(lt.cot.length === 2 && lt.cot[0].nhan === 'Progress Test' && lt.cot[1].nhan === 'Final Test', 'Sai nhãn hai cột');
     assert(lt.cot[0].deXuat && lt.cot[1].deXuat, 'Lớp mới phải có đề xuất tuần cho cả hai cột');
     assert(lt.hvChuaCoLich === 1 && lt.hang.length === 1 && Object.keys(lt.hang[0].dot.progress.kn).length === 0, 'Lớp mới chưa có bài nào');
     const deXuatGiua = lt.cot[0].deXuat;
@@ -570,10 +570,10 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
          JOIN attempt_skills ask ON ask.attempt_id = a.id AND ask.skill = 'listening'
          JOIN report_periods pr ON pr.id = ask.planned_period_id
         WHERE a.class_id = ? AND a.status != 'cancelled' AND a.kind='progress' AND s.status='active' AND s.archived_at IS NULL
-          AND NOT EXISTS (SELECT 1 FROM assessment_attempts f WHERE f.cycle_id = a.cycle_id AND f.kind = 'final' AND f.status != 'cancelled')   /* PR-LT2a M1b: em vào lớp qua Thêm HV nay tự có Cuối khoá (tuần sau chặn dời L, T15) — chọn em chưa có */
+          AND NOT EXISTS (SELECT 1 FROM assessment_attempts f WHERE f.cycle_id = a.cycle_id AND f.kind = 'final' AND f.status != 'cancelled')   /* PR-LT2a M1b: em vào lớp qua Thêm HV nay tự có Final Test (tuần sau chặn dời L, T15) — chọn em chưa có */
         LIMIT 1`,
     ).get(foundationClass) as any;
-    assert(row, 'Seed thiếu một bài Giữa khoá ở MB FOU 12 đã có lịch L để kiểm R14');
+    assert(row, 'Seed thiếu một bài Progress Test ở MB FOU 12 đã có lịch L để kiểm R14');
     /* Dùng ĐÚNG tuần L đã có sẵn trong seed (không tự đặt tuần khác) — tránh chạm T15 với bài Cuối khoá cùng
        lộ trình. Chỉ cần "hôm nay" đã qua tuần đó để "-" ghi được (Rc1). */
     conn.prepare(`UPDATE attempt_skills SET sit_status='scheduled' WHERE attempt_id=? AND skill='listening'`)
@@ -605,7 +605,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
          JOIN students s ON s.id = a.student_id JOIN enrollments e ON e.student_id=s.id AND e.status='active' AND e.class_id=a.class_id
         WHERE a.class_id = ? AND a.status != 'cancelled' AND a.kind='progress' AND s.status='active' AND s.archived_at IS NULL`,
     ).all(foundationClass) as any[];
-    assert(attempts.length >= 2, 'Seed thiếu ít nhất 2 bài Giữa khoá ở MB FOU 12 để kiểm luuDot lớp thường');
+    assert(attempts.length >= 2, 'Seed thiếu ít nhất 2 bài Progress Test ở MB FOU 12 để kiểm luuDot lớp thường');
     /* CHỈ THAO TÁC TRÊN HAI EM ĐÃ KIỂM SOÁT ĐƯỢC — các em khác trong lớp thật có lộ trình/lịch riêng. */
     const [emCoDiem, emMove] = attempts;
 
@@ -879,9 +879,9 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
         .run(em.id, lopMoi, '2029-06-04', now);
     }
     const ket = regularMod.planRegularTests(P.mbManager, lopMoi, { studentIds: [em1.id], kinds: ['final'] });
-    assert(ket.created === 1, `Chỉ 1 bài (em 1, Cuối khoá), ra ${ket.created}`);
+    assert(ket.created === 1, `Chỉ 1 bài (em 1, Final Test), ra ${ket.created}`);
     const dem = (em: number, kind: string) => (conn.prepare('SELECT COUNT(*) n FROM assessment_attempts WHERE class_id=? AND student_id=? AND kind=?').get(lopMoi, em, kind) as any).n;
-    assert(dem(em1.id, 'final') === 1 && dem(em1.id, 'progress') === 0, 'Em 1 phải có đúng 1 bài Cuối khoá, không có Giữa khoá');
+    assert(dem(em1.id, 'final') === 1 && dem(em1.id, 'progress') === 0, 'Em 1 phải có đúng 1 bài Final Test, không có Progress Test');
     assert(dem(em2.id, 'final') === 0 && dem(em2.id, 'progress') === 0, 'Em 2 không được có bài nào');
   });
 
@@ -989,9 +989,9 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
       `SELECT a.id AS attemptId, a.student_id FROM assessment_attempts a
          JOIN students s ON s.id = a.student_id JOIN enrollments e ON e.student_id=s.id AND e.status='active' AND e.class_id=a.class_id
         WHERE a.class_id = ? AND a.status != 'cancelled' AND a.kind='progress' AND s.status='active' AND s.archived_at IS NULL
-          AND NOT EXISTS (SELECT 1 FROM assessment_attempts f WHERE f.cycle_id = a.cycle_id AND f.kind = 'final' AND f.status != 'cancelled')   /* PR-LT2a M1b: chọn em chưa có Cuối khoá tự tạo (T15 chặn dời S sang tuần thi Cuối khoá) */`,
+          AND NOT EXISTS (SELECT 1 FROM assessment_attempts f WHERE f.cycle_id = a.cycle_id AND f.kind = 'final' AND f.status != 'cancelled')   /* PR-LT2a M1b: chọn em chưa có Final Test tự tạo (T15 chặn dời S sang tuần thi Final Test) */`,
     ).all(foundationClass) as any[];
-    assert(dong.length >= 2, 'Seed thiếu ít nhất 2 bài Giữa khoá ở MB FOU 12');
+    assert(dong.length >= 2, 'Seed thiếu ít nhất 2 bài Progress Test ở MB FOU 12');
     const [emA, emB] = dong;
     conn.prepare(`DELETE FROM assessment_scores WHERE attempt_id=? AND skill='speaking'`).run(emA.attemptId);
     conn.prepare(`UPDATE attempt_skills SET sit_status='scheduled' WHERE attempt_id=? AND skill='speaking'`).run(emA.attemptId);
@@ -1058,7 +1058,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     assert(luu.daLuu === 2, `Chỉ 2 em lưu, ra ${luu.daLuu}`);
     for (const em of [em1, em2]) {
       const a = conn.prepare(`SELECT id FROM assessment_attempts WHERE class_id=? AND student_id=? AND kind='final'`).get(lopMoi, em) as any;
-      assert(a, `Em ${em} phải có bài Cuối khoá`);
+      assert(a, `Em ${em} phải có bài Final Test`);
       for (const k of ['listening', 'reading', 'writing']) assert(tuanCua(a.id, k).w === p0.weekStart, `${k} của em ${em} phải ở tuần đã chọn`);
       assert(tuanCua(a.id, 'speaking').w === p1.weekStart, `S của em ${em} phải ở tuần riêng`);
     }

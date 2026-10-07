@@ -5,7 +5,7 @@
  * FOU: 2 buổi/tuần CHUNG cho mọi môn trượt (một nhóm); BE/ELE: 1 buổi/tuần/môn (nhóm một dòng). Pre FOU không có Giữa khoá (PF2).
  * LT2b thêm hàm Cuối khoá (% hướng) CUỐI file này.
  */
-import { programmeOf, RATIO_PASS_THRESHOLD, tenMonNgan } from './normal.ts';
+import { programmeOf, RATIO_PASS_THRESHOLD, tenMonNgan, nhanBaiThuong } from './normal.ts';
 import { tuanLich } from './hienThiNgay.ts';
 
 /** N1: FOU bổ trợ CHUNG 2 buổi/tuần cho mọi môn trượt; BE/ELE 1 buổi/tuần/môn. Pre FOU (và FT) không có Giữa khoá → null. */
@@ -25,13 +25,13 @@ export function moTaBoTro(ct: string | null | undefined, skill: string): string 
   const b = boTroGiuaKhoa(ct);
   if (!b) return '';
   return b.chung
-    ? `Bổ trợ ${b.buoiMoiTuan} buổi/tuần · chung các môn trượt · đến Cuối khoá · trừ buổi Free`
-    : `Bổ trợ ${b.buoiMoiTuan} buổi/tuần · ${tenMonNgan(ct, skill)} · đến Cuối khoá · trừ buổi Free`;
+    ? `Bổ trợ ${b.buoiMoiTuan} buổi/tuần · chung các môn trượt · đến Final Test · trừ buổi Free`
+    : `Bổ trợ ${b.buoiMoiTuan} buổi/tuần · ${tenMonNgan(ct, skill)} · đến Final Test · trừ buổi Free`;
 }
 
 /** Tên Case lớp thường: `[Giữa khoá] G+V không đạt` — không `[SOS n]` (T58, K3 §4b). `dot` chỉ để nhận diện lượt. */
 export function tenCaseThuong(x: { dot: 'progress' | 'final'; giua: string }): string {
-  return `[${x.dot === 'progress' ? 'Giữa khoá' : 'Cuối khoá'}] ${x.giua}`;
+  return `[${nhanBaiThuong(x.dot)}] ${x.giua}`;
 }
 
 /**
@@ -41,7 +41,7 @@ export function tenCaseThuong(x: { dot: 'progress' | 'final'; giua: string }): s
 export function tenBaiThuong(
   rows: readonly { kind: string; attemptNo: number }[], a: { kind: string; attemptNo: number },
 ): string {
-  const ten = a.kind === 'final' ? 'Cuối khoá' : 'Giữa khoá';
+  const ten = nhanBaiThuong(a.kind);
   const cung = rows.filter((r) => (r.kind === 'final') === (a.kind === 'final'));
   return cung.length > 1 ? `${ten} ${cung.filter((r) => r.attemptNo <= a.attemptNo).length}` : ten;
 }
@@ -77,13 +77,13 @@ export function noiDungBaoPh(x: { ketQua: string; monTruot: string[]; nguyenNhan
     `Thực trạng kết quả học tập: ${x.ketQua}`,
     `Kỹ năng đang gặp khó khăn: ${x.monTruot.join(', ') || '—'}`,
     `Nguyên nhân / đánh giá ban đầu của giáo viên: ${x.nguyenNhan.filter(Boolean).join(' · ') || 'GVBM chưa xác nhận'}`,
-    `Phương án hỗ trợ: ${x.boTro}. Khả năng phải học lại level nếu không pass bài Cuối khoá.`,
+    `Phương án hỗ trợ: ${x.boTro}. Khả năng phải học lại level nếu không pass bài Final Test.`,
   ];
 }
 
 /** Chữ mốc PA bổ trợ: `đến Cuối khoá · W4 OCT` / `đến Cuối khoá · chưa có lịch`. */
 export function mocChuBoTro(followupDue: string | null, homNay: string): string {
-  return followupDue ? `đến Cuối khoá · ${tuanLich(followupDue, homNay)}` : 'đến Cuối khoá · chưa có lịch';
+  return followupDue ? `đến Final Test · ${tuanLich(followupDue, homNay)}` : 'đến Final Test · chưa có lịch';
 }
 
 /** Tên các môn của một nhóm theo `ct`, dạng `G+V, P` (dùng cho tiêu đề việc/thẻ). */

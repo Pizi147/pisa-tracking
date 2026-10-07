@@ -394,8 +394,8 @@ export async function runChamDiemTests(t: YThucTestKit) {
       primaryCode: d.issuesForTopic('listening')[0].code, ...extra,
     }) as any;
     /* Case CŨ của môn này đã xong (như Case nhập bù — đóng ngay lúc tạo), rồi một Case MỚI đang mở cùng môn, cùng khoá. */
-    const cu = conn.prepare(`SELECT id FROM sos_cases WHERE student_id = ? AND topic = 'listening' AND status != 'done' ORDER BY id DESC LIMIT 1`).get(a.student_id) as any;   // Case Giữa khoá tự tạo
-    assert(cu, 'Giữa khoá trượt Listening phải tự tạo Case');
+    const cu = conn.prepare(`SELECT id FROM sos_cases WHERE student_id = ? AND topic = 'listening' AND status != 'done' ORDER BY id DESC LIMIT 1`).get(a.student_id) as any;   // Case Progress Test tự tạo
+    assert(cu, 'Progress Test trượt Listening phải tự tạo Case');
     conn.prepare(`UPDATE sos_cases SET status = 'done' WHERE id = ?`).run(cu.id);
     const moi = baoCase({ cycleId });
     assert(moi.id > cu.id, 'Case mới có id lớn hơn');
@@ -516,7 +516,7 @@ export async function runChamDiemTests(t: YThucTestKit) {
     assert(thuong.length > 0, 'Phải có ít nhất một dòng lớp thường để kiểm tên đợt');
     for (const x of thuong) {
       assert(!/MT/.test(x.dotLabel), `Lớp thường không gọi đợt là MT: ${x.dotLabel}`);
-      assert(['Giữa khoá', 'Cuối khoá'].includes(x.dotLabel), x.dotLabel);
+      assert(['Progress Test', 'Final Test'].includes(x.dotLabel), x.dotLabel);
     }
     /* PR-UXF-a (UX-F7): nhóm theo LỚP; trong mỗi lớp, quá hạn xếp trước. */
     for (const cid of new Set(no.map((x: any) => x.classId))) {
@@ -703,7 +703,7 @@ export async function runChamDiemTests(t: YThucTestKit) {
     const hang = (p: any) => cham.lichTest(p, pid, null, TODAY, { classId: LOP }).lop.find((l: any) => l.key === `${LOP}:progress`);
     const gv = hang(P.normalSubjectTeacher);
     const ql = hang(P.mbManager);
-    assert(gv && ql, 'Lớp thường có bài Giữa khoá tuần trước');
+    assert(gv && ql, 'Lớp thường có bài Progress Test tuần trước');
     assert(gv.conBaiCuaToi > 0, 'Seed của phép trên: GVBM còn bài của mình');
     assert(gv.nhan.loai === 'cho-ban' && gv.nhan.chu === 'Chờ bạn chấm' && gv.moSan, `GVBM: ${gv.nhan.chu}, moSan ${gv.moSan}`);
     assert(ql.nhan.loai === 'cho-cham' && ql.moSan, `QL: ${ql.nhan.chu}, moSan ${ql.moSan}`);
@@ -715,7 +715,7 @@ export async function runChamDiemTests(t: YThucTestKit) {
     const keys = r.lop.map((l: any) => l.key);
     assert(keys.includes(`${LOP}:progress`) && keys.includes(`${LOP}:final`), `Hai hàng: ${keys.join(', ')}`);
     assert(r.lop.find((l: any) => l.key === `${LOP}:final`).hrefDayDu === `/nhap-diem/${LOP}?kind=final`, 'Lưới đầy đủ đúng bài');
-    assert(r.lop.find((l: any) => l.key === `${LOP}:final`).dotLabel === 'Cuối khoá', 'Tên đợt lớp thường');
+    assert(r.lop.find((l: any) => l.key === `${LOP}:final`).dotLabel === 'Final Test', 'Tên đợt lớp thường');
   });
 
   check('PR-Rc1 · Q14 Lịch Test: tuần chưa tới là "Chưa đến lịch"; em vắng không được đếm vào dòng', () => {

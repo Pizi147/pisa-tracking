@@ -182,7 +182,7 @@ export function DauTrangLop({ data, periodId, onViec, onBanGiao }: {
 
       <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
         <span>{thongTin.map((x, i) => <Fragment key={i}>{i > 0 && ' · '}{x}</Fragment>)}</span>
-        {data.cuoiKhoa && <span className="tabular-nums text-slate-300">Cuối khoá: {data.cuoiKhoa.du}/{data.cuoiKhoa.tong} em có đủ điểm{data.cuoiKhoa.canQl ? ` · ${data.cuoiKhoa.canQl} em Quản lý cân nhắc` : ''}</span>}
+        {data.cuoiKhoa && <span className="tabular-nums text-slate-300">Final Test: {data.cuoiKhoa.du}/{data.cuoiKhoa.tong} em có đủ điểm{data.cuoiKhoa.canQl ? ` · ${data.cuoiKhoa.canQl} em Quản lý cân nhắc` : ''}</span>}
         <span className="whitespace-nowrap rounded-md border px-2 py-0.5 text-slate-300" style={{ borderColor: 'var(--line)' }}>
           <abbr title="Giáo viên chủ nhiệm" className="no-underline">GVCN</abbr>{' '}
           {gvcn ? <TenGiaoVien id={gvcn.id} ten={gvcn.name} /> : <span className="text-amber-200">Chưa có GVCN</span>}

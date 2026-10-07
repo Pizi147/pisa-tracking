@@ -13,8 +13,7 @@ import { db, theoLo, tx } from '../db.ts';
 import {
   CO_DIEM_SQL, KY_NANG_KE_HOACH, MT_TOI_DA, kiemTuanMt0, O_KE_HOACH, dotMtMoi, PERMISSIONS, boMonLich, kiemSoMtMoi, kiemTuanXep, laLichSu, lichMtMacDinh, viecXepMt, laVaoMuon, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang,
   tuanKhoa as tuanKhoaCua,
-  type BaiXemTruoc, type DongHangLoat, type KetQuaHuy, type KyNangKH, type LuotSo, type LuotXep, type OKyNang,
-} from '../../../shared/domain/index.ts';
+  type BaiXemTruoc, type DongHangLoat, type KetQuaHuy, type KyNangKH, type LuotSo, type LuotXep, type OKyNang, ATTEMPT_KIND_SHORT } from '../../../shared/domain/index.ts';
 import { badRequest, notFound } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -33,7 +32,7 @@ import { writeAudit } from '../platform/audit.ts';
 import { classProgress, classProgressMany, suggestedMockWeeks, type SuggestedMock } from '../classes/schedule.ts';
 import { planRegularTests, programmeByCode, programmeOfClass } from '../normal/regular.ts';
 
-const KIND_NHAN: Record<'progress' | 'final', 'Giữa khoá' | 'Cuối khoá'> = { progress: 'Giữa khoá', final: 'Cuối khoá' };
+const KIND_NHAN: Record<'progress' | 'final', string> = { progress: ATTEMPT_KIND_SHORT.progress, final: ATTEMPT_KIND_SHORT.final };
 const CAU_XAC_NHAN = 'Xác nhận lại nếu vẫn muốn xếp vào tuần này.';
 const PLAN_MSG = 'Chỉ Quản lý xếp được lịch Test.';
 
@@ -824,7 +823,7 @@ export function xepMoiThuong(p: Principal, i: {
   const conn = db();
   require_(p, PERMISSIONS.PLAN_WEEK, { classId: i.classId }, PLAN_MSG);
   const { prog } = docLopThuong(i.classId);
-  if (i.kind !== 'progress' && i.kind !== 'final') throw badRequest('Cần chọn Giữa khoá hoặc Cuối khoá.');
+  if (i.kind !== 'progress' && i.kind !== 'final') throw badRequest('Cần chọn Progress Test hoặc Final Test.');
   const bo = boMonThuong(prog);
   const dangHoc = conn
     .prepare(`SELECT 1 FROM enrollments WHERE class_id = ? AND student_id = ? AND status = 'active'`)
@@ -1049,9 +1048,9 @@ export function xepHangLoat(p: Principal, i: {
     .get(i.classId) as any;
   if (!cls) throw notFound('Không tìm thấy lớp');
   const laThuong = cls.mode === 'ratio';
-  if (i.attemptNo && laThuong) throw badRequest('Lớp này là lớp thường — chọn Giữa khoá hoặc Cuối khoá.');
+  if (i.attemptNo && laThuong) throw badRequest('Lớp này là lớp thường — chọn Progress Test hoặc Final Test.');
   if (i.kind && !laThuong) throw badRequest('Lớp này là Fast Track — chọn MT.');
-  if (i.kind && i.kind !== 'progress' && i.kind !== 'final') throw badRequest('Cần chọn Giữa khoá hoặc Cuối khoá.');
+  if (i.kind && i.kind !== 'progress' && i.kind !== 'final') throw badRequest('Cần chọn Progress Test hoặc Final Test.');
   if (typeof i.attemptNo === 'number' && (i.attemptNo < 1 || i.attemptNo > MT_TOI_DA)) throw badRequest(`Tối đa MT${MT_TOI_DA} cho một lộ trình.`);
   if (i.kyNang !== undefined && !laThuong && (!Array.isArray(i.kyNang) || !i.kyNang.length)) throw badRequest('Chưa chọn kỹ năng nào.');
 

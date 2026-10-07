@@ -98,8 +98,8 @@ export function CatalogAdmin() {
             <thead>
               <tr>
                 <th className="th">Chương trình</th>
-                <th className="th text-right">Số tuần</th><th className="th text-right">Giữa khoá</th>
-                <th className="th text-right">Cuối khoá</th><th className="th text-right">Lớp</th><th className="th" />
+                <th className="th text-right">Số tuần</th><th className="th text-right">Progress Test</th>
+                <th className="th text-right">Final Test</th><th className="th text-right">Lớp</th><th className="th" />
               </tr>
             </thead>
             <tbody>
@@ -128,7 +128,7 @@ export function CatalogAdmin() {
         {ghiChu && <p className="px-4 pt-3 text-xs text-ok" role="status">{ghiChu}</p>}
         <div className="p-3">
           <SectionNote>
-            Sửa được tên, số tuần, tuần Giữa/Cuối khoá. Số mới <strong>áp cho lớp tạo sau khi lưu</strong> — lớp đang
+            Sửa được tên, số tuần, tuần Progress/Final Test. Số mới <strong>áp cho lớp tạo sau khi lưu</strong> — lớp đang
             học giữ số tuần lúc tạo. Cách chấm và bộ môn của chương trình không đổi ở đây: đổi là đổi ý nghĩa của điểm đã nhập.
           </SectionNote>
         </div>
@@ -223,8 +223,8 @@ function ProgrammeDialog({ row, onClose, onDone }: {
   const loi: LoiTruong[] = [
     ...dsLoi([{ khoa: 'ten', nhan: 'Tên gọi', toiThieu: 1 }], { ten: f.name }),
     ...(soTuan !== null && (!Number.isInteger(soTuan) || soTuan < 1 || soTuan > 104) ? [{ khoa: 'so-tuan', nhan: 'Số tuần', lyDo: 'Từ 1 đến 104' }] : []),
-    ...(coGiuaKhoa && ngoaiKhoa(f.progressWeek) ? [{ khoa: 'giua-khoa', nhan: 'Tuần Giữa khoá', lyDo: `Từ 1 đến ${soTuan}` }] : []),
-    ...(ngoaiKhoa(f.finalWeek) ? [{ khoa: 'cuoi-khoa', nhan: 'Tuần Cuối khoá', lyDo: `Từ 1 đến ${soTuan}` }] : []),
+    ...(coGiuaKhoa && ngoaiKhoa(f.progressWeek) ? [{ khoa: 'giua-khoa', nhan: 'Tuần Progress Test', lyDo: `Từ 1 đến ${soTuan}` }] : []),
+    ...(ngoaiKhoa(f.finalWeek) ? [{ khoa: 'cuoi-khoa', nhan: 'Tuần Final Test', lyDo: `Từ 1 đến ${soTuan}` }] : []),
   ];
 
   const save = async () => {
@@ -269,13 +269,13 @@ function ProgrammeDialog({ row, onClose, onDone }: {
               })} />
           </Field>
           {f.weeks.trim() !== '' && coGiuaKhoa && (
-            <Field label="Tuần Giữa khoá" loi={lf.loiCua(loi, 'giua-khoa')}>
+            <Field label="Tuần Progress Test" loi={lf.loiCua(loi, 'giua-khoa')}>
               <input type="number" min={1} className="field w-full tabular-nums" {...lf.o(loi, 'giua-khoa')} value={f.progressWeek}
                 onChange={(e) => setF({ ...f, progressWeek: e.target.value })} />
             </Field>
           )}
           {f.weeks.trim() !== '' && (
-            <Field label="Tuần Cuối khoá" hint="Bỏ trống = số tuần." loi={lf.loiCua(loi, 'cuoi-khoa')}>
+            <Field label="Tuần Final Test" hint="Bỏ trống = số tuần." loi={lf.loiCua(loi, 'cuoi-khoa')}>
               <input type="number" min={1} className="field w-full tabular-nums" {...lf.o(loi, 'cuoi-khoa')} value={f.finalWeek} placeholder={f.weeks}
                 onChange={(e) => setF({ ...f, finalWeek: e.target.value })} />
             </Field>

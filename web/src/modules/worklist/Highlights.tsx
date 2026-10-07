@@ -57,8 +57,8 @@ export function LichSapToi({ branchId, ct }: { branchId: number | null; ct: Chuo
       if (w.ft.examStudents) them(`Dự kiến thi IELTS · ${w.ft.examStudents} em`, null, 'thi');
     }
     if (hienThuong) {
-      for (const r of w.normal.progressClasses) them(`Giữa khoá · ${r.code} · ${r.students} em`, `/hoc-vien/lop/${r.id}`, `g${r.id}`);
-      for (const r of w.normal.finalClasses) them(`Cuối khoá · ${r.code} · ${r.students} em`, `/hoc-vien/lop/${r.id}`, `c${r.id}`);
+      for (const r of w.normal.progressClasses) them(`Progress Test · ${r.code} · ${r.students} em`, `/hoc-vien/lop/${r.id}`, `g${r.id}`);
+      for (const r of w.normal.finalClasses) them(`Final Test · ${r.code} · ${r.students} em`, `/hoc-vien/lop/${r.id}`, `c${r.id}`);
       for (const r of w.normal.endingClasses) them(`Hết khoá · ${r.code} · chuẩn bị chuyển lớp`, `/hoc-vien/lop/${r.id}?viec=chuyen-tiep`, `h${r.id}`);
     }
   }

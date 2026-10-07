@@ -124,7 +124,7 @@ export function TabTongKetLop({ classId }: { classId: number }) {
                 <table className="w-full min-w-[620px] text-[13px]">
                   <thead>
                     <tr className="text-left text-[11.5px] text-slate-400" style={{ background: 'var(--surface-2)' }}>
-                      <th className="px-3 py-2 font-semibold">Học viên</th><th className="px-3 py-2 font-semibold">Giữa khoá</th><th className="px-3 py-2 font-semibold">Cuối khoá</th><th className="px-3 py-2 font-semibold">Kết luận khoá</th>
+                      <th className="px-3 py-2 font-semibold">Học viên</th><th className="px-3 py-2 font-semibold">Progress Test</th><th className="px-3 py-2 font-semibold">Final Test</th><th className="px-3 py-2 font-semibold">Kết luận khoá</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -161,8 +161,8 @@ export function TabTongKetLop({ classId }: { classId: number }) {
                         </>
                       ) : (
                         <>
-                          <dt className="text-slate-500">Giữa khoá</dt><dd className="m-0"><Giua g={d.giuaKhoa} /></dd>
-                          <dt className="text-slate-500">Cuối khoá</dt><dd className="m-0"><Cuoi c={d.cuoiKhoa} /></dd>
+                          <dt className="text-slate-500">Progress Test</dt><dd className="m-0"><Giua g={d.giuaKhoa} /></dd>
+                          <dt className="text-slate-500">Final Test</dt><dd className="m-0"><Cuoi c={d.cuoiKhoa} /></dd>
                         </>
                       )}
                     </dl>

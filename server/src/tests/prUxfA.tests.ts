@@ -66,18 +66,18 @@ export async function runPrUxfATests(t: YThucTestKit) {
   });
 
   // ==================================================================== Task 2 · K2-01 + K2-12
-  check('UXF-a (2) · ketQuaGanNhat lớp thường Cuối khoá đủ điểm: hậu tố hướng ở dòng 1 (45/55/64/78 %); thiếu điểm, Giữa khoá: không hậu tố', () => {
+  check('UXF-a (2) · ketQuaGanNhat lớp thường Final Test đủ điểm: hậu tố hướng ở dòng 1 (45/55/64/78 %); thiếu điểm, Progress Test: không hậu tố', () => {
     const k = (o: any) => d.ketQuaGanNhat({
-      mode: 'ratio', attemptLabel: 'Cuối khoá', attemptKind: 'final', sosLevel: 0, provisional: false, scored: 4, required: 4, failed: 0,
+      mode: 'ratio', attemptLabel: 'Final Test', attemptKind: 'final', sosLevel: 0, provisional: false, scored: 4, required: 4, failed: 0,
       overall: null, expectation: null, belowSkills: [], failedSkills: [], chuongTrinh: 'BE', ...o,
     });
     const truot = [{ skill: 'writing', score: 8, total: 20 }, { skill: 'speaking', score: 9, total: 20 }];
-    assert(k({ tyLeTong: 0.45 }).dong1 === 'Cuối khoá → học lại', k({ tyLeTong: 0.45 }).dong1);
-    assert(k({ tyLeTong: 0.55 }).dong1 === 'Cuối khoá → QL cân nhắc', '55%');
-    assert(k({ tyLeTong: 0.64, failed: 2, failedSkills: truot }).dong1 === 'Cuối khoá → lên + bổ trợ', '64%');
-    assert(k({ tyLeTong: 0.78 }).dong1 === 'Cuối khoá → Pass', '78%');
-    assert(k({ tyLeTong: null, scored: 3 }).dong1 === 'Cuối khoá · 3/4 môn có điểm', 'thiếu điểm');
-    assert(k({ attemptLabel: 'Giữa khoá', attemptKind: 'progress', tyLeTong: 0.45 }).dong1 === 'Giữa khoá', 'Giữa khoá');
+    assert(k({ tyLeTong: 0.45 }).dong1 === 'Final Test → học lại', k({ tyLeTong: 0.45 }).dong1);
+    assert(k({ tyLeTong: 0.55 }).dong1 === 'Final Test → QL cân nhắc', '55%');
+    assert(k({ tyLeTong: 0.64, failed: 2, failedSkills: truot }).dong1 === 'Final Test → lên + bổ trợ', '64%');
+    assert(k({ tyLeTong: 0.78 }).dong1 === 'Final Test → Pass', '78%');
+    assert(k({ tyLeTong: null, scored: 3 }).dong1 === 'Final Test · 3/4 môn có điểm', 'thiếu điểm');
+    assert(k({ attemptLabel: 'Progress Test', attemptKind: 'progress', tyLeTong: 0.45 }).dong1 === 'Progress Test', 'Progress Test');
     assert(!/\d%/.test(k({ tyLeTong: 0.45 }).dong1), 'hậu tố không dính số %');
   });
 
@@ -135,22 +135,22 @@ export async function runPrUxfATests(t: YThucTestKit) {
   const ganGv = (uid: number, skill: string) => conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at) VALUES (?,?,?,0,'2026-01-01','active',?)`).run(uid, LOP, skill, NOW);
   ganGv(gvMb[0], 'listening'); ganGv(gvMb[1], 'reading');
   /* PR-MTa T19 thay tuần 07/09: hạn lớp thường nay hết thứ Tư tuần sau — tuần 31/08 (hạn 09/09) mới quá hạn ở 14/09. */
-  const X = taoHv(LOP, false);                         // Giữa khoá tuần 31/08 (đã hết), còn thiếu ô L → L quá hạn
+  const X = taoHv(LOP, false);                         // Progress Test tuần 31/08 (đã hết), còn thiếu ô L → L quá hạn
   const luotX = themLuot({ ...X, cid: LOP, no: 1, kind: 'progress', tuan: '2026-08-31' });
   diem(luotX, { reading: [30, 40], writing: [30, 40], speaking: [8, 10] });
   const Y = taoHv(LOP, false);                         // chưa có bài nào
-  const Z = taoHv(LOP, false);                         // chỉ có bài Cuối khoá đã xong, không lượt planned
+  const Z = taoHv(LOP, false);                         // chỉ có bài Final Test đã xong, không lượt planned
   const luotZ = themLuot({ ...Z, cid: LOP, no: 2, kind: 'final', tuan: '2026-09-07', status: 'done' });
   diem(luotZ, { listening: [30, 40], reading: [30, 40], writing: [30, 40], speaking: [8, 10] });
   const pL = loadPrincipal(gvMb[0]), pR = loadPrincipal(gvMb[1]), pNgoai = loadPrincipal(gvMb[2]);
 
   // ==================================================================== Task 3
-  check('UXF-a (3) · K2-05 hai đường: em lớp thường đã có Cuối khoá (không lượt planned) không "thiếu mốc tiếp theo" ở cả roster lẫn Học viên & Lớp; em chưa có bài nào thì cả hai có', () => {
+  check('UXF-a (3) · K2-05 hai đường: em lớp thường đã có Final Test (không lượt planned) không "thiếu mốc tiếp theo" ở cả roster lẫn Học viên & Lớp; em chưa có bài nào thì cả hai có', () => {
     const roster = classes.classRoster(P.admin, LOP) as any[];
     const hv = hvl.danhSachHocVienLop(P.admin, { phamVi: 'chi-nhanh', branchId: MB }).hocVien as any[];
     const thieuMoc = (sid: number) => roster.find((r) => r.id === sid).missing.some((m: any) => m.key === 'next_milestone');
     const thieuTt = (sid: number) => hv.find((h) => h.id === sid).loc.includes('thieu_tt');
-    assert(!thieuMoc(Z.sid), `Z đã xong Cuối khoá mà roster còn "thiếu mốc tiếp theo"`);
+    assert(!thieuMoc(Z.sid), `Z đã xong Final Test mà roster còn "thiếu mốc tiếp theo"`);
     assert(thieuMoc(Y.sid) && thieuTt(Y.sid), `Y chưa có bài: roster ${thieuMoc(Y.sid)} · hvl ${thieuTt(Y.sid)}`);
     /* Hai đường: badge Thiếu thông tin ở Học viên & Lớp = danh sách thiếu của roster (cùng `missingForStudent`, cùng `coMocTiepTheoThuong`). */
     for (const r of roster) assert(thieuTt(r.id) === r.missing.length > 0, `hai đường lệch ở ${r.fullName}: hvl ${thieuTt(r.id)} · roster ${JSON.stringify(r.missing)}`);
@@ -159,7 +159,7 @@ export async function runPrUxfATests(t: YThucTestKit) {
     const r2 = (classes.classRoster(P.admin, LOP) as any[]).find((r) => r.id === Z.sid);
     const h2 = (hvl.danhSachHocVienLop(P.admin, { phamVi: 'chi-nhanh', branchId: MB }).hocVien as any[]).find((h) => h.id === Z.sid);
     conn.prepare(`UPDATE assessment_attempts SET status = 'done' WHERE id = ?`).run(luotZ);
-    assert(r2.missing.some((m: any) => m.key === 'next_milestone') && h2.loc.includes('thieu_tt'), 'Cuối khoá đã huỷ → thiếu mốc ở cả hai đường');
+    assert(r2.missing.some((m: any) => m.key === 'next_milestone') && h2.loc.includes('thieu_tt'), 'Final Test đã huỷ → thiếu mốc ở cả hai đường');
   });
 
   check('UXF-a (3) · VN29 hai đường: GVBM L có ô L quá hạn → em vào Cần làm + Quá hạn; dem = số dòng = badge hồ sơ lớp; PHỦ ĐỊNH GVBM R không nhận việc của ô L', () => {
@@ -351,7 +351,7 @@ export async function runPrUxfATests(t: YThucTestKit) {
 
   // ==================================================================== Task 6 · một luật quá hạn (Q10) + dòng Nợ có tuần thi, nhóm theo lớp
   const TUAN_NAY = d.mondayOfDate(TODAY);                      // W3 SEP (14/09) — tuần đang chạy
-  const W = taoHv(LOP, false);                                // Giữa khoá tuần NÀY, hạn bị đặt đè sớm hơn Chủ nhật (13/09)
+  const W = taoHv(LOP, false);                                // Progress Test tuần NÀY, hạn bị đặt đè sớm hơn Chủ nhật (13/09)
   const luotW = themLuot({ ...W, cid: LOP, no: 1, kind: 'progress', tuan: TUAN_NAY });
   conn.prepare(`UPDATE attempt_skills SET deadline_override = ? WHERE attempt_id = ?`).run(t.addDays(TODAY, -1), luotW);
   const V = taoHv(LOP, false);                                // tuần tương lai (W1 OCT)

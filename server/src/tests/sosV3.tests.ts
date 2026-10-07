@@ -440,7 +440,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(stu && attempt, 'Không dựng được học viên Normal + Progress Test để thử');
     const skills = regular.programmeOfClass(fou.id).skills as string[];
     skills.forEach((skill, i) => regular.saveRegularScore(P.admin, attempt.id, skill, { score: i < 2 ? 4 : 36, total: 40 }));   // hai môn trượt, hai môn đạt
-    assert(count('SELECT COUNT(*) n FROM sos_cases WHERE student_id = ?', stu.id) === 2, 'Giữa khoá trượt hai môn phải tự tạo hai Case');
+    assert(count('SELECT COUNT(*) n FROM sos_cases WHERE student_id = ?', stu.id) === 2, 'Progress Test trượt hai môn phải tự tạo hai Case');
     const pas = all('SELECT iv.* FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE sc.student_id = ?', stu.id);
     assert(pas.length === 2 && pas.every((x) => x.kind === 'bo_tro' && x.preset === 1 && x.status === 'planned'), `Mỗi Case một PA Bổ trợ chờ: ${JSON.stringify(pas.map((x) => [x.kind, x.status]))}`);
     const phoiHop = all('SELECT kind FROM sos_coordination_actions WHERE attempt_id = ?', attempt.id).map((x) => x.kind);

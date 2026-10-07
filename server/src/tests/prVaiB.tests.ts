@@ -106,7 +106,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     const x = (studentProfile(P.admin, th!) as any);
     const tt2 = x.dauHoSo.thongTin;
     assert(tt2.tuanHoc && tt2.tuanHoc.tong === x.currentClass.khoa.tongTuan && tt2.target === null, `lớp thường: ${JSON.stringify(tt2)}`);
-    assert(tt2.thiDuKien?.nhan === 'Cuối khoá' && /^W\d [A-Z]{3}/.test(tt2.thiDuKien.gt), `Cuối khoá mã tuần: ${JSON.stringify(tt2.thiDuKien)}`);
+    assert(tt2.thiDuKien?.nhan === 'Final Test' && /^W\d [A-Z]{3}/.test(tt2.thiDuKien.gt), `Final Test mã tuần: ${JSON.stringify(tt2.thiDuKien)}`);
   });
 
   check('VAI-b (1) · em Tạm dừng: tamDung { tu, lyDo, boi }, tuần học đứng ở tuần trước ngày dừng ("đang dừng")', () => {
@@ -244,19 +244,19 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     for (const r of [td, kck, sc, kt]) assert(r.length <= 3 && !r.some((m) => /_|cho_duyet|inactive/.test(m.chu)), `quá 3 mảnh / mã thô: ${JSON.stringify(r)}`);
   });
 
-  check('VAI-b (3) · cauTomTat lớp thường: "Giữa khoá 2/4 môn đạt: không đạt G+V và P" + việc chờ Quản lý duyệt (tím) — KHÔNG chữ SOS; đạt hết → "· không có việc đang mở"', () => {
+  check('VAI-b (3) · cauTomTat lớp thường: "Progress Test 2/4 môn đạt: không đạt G+V và P" + việc chờ Quản lý duyệt (tím) — KHÔNG chữ SOS; đạt hết → "· không có việc đang mở"', () => {
     const r = cau({
-      ketQua: { dau: 'Giữa khoá', ratio: true, sos: 2, dat: false, overall: null, kck: false, soDat: 2, soMon: 4, monTruot: ['G+V', 'P'], phanTram: null },
+      ketQua: { dau: 'Progress Test', ratio: true, sos: 2, dat: false, overall: null, kck: false, soDat: 2, soMon: 4, monTruot: ['G+V', 'P'], phanTram: null },
       hoTro: ['Grammar + Vocabulary', 'Pronunciation'],
       viec: [{ loai: 'cho-duyet', chu: 'PA Bổ trợ chung chờ Quản lý duyệt kế hoạch', kyNangTen: null, quaHanNgay: null }],
     });
-    assert(chu(r).join(' · ') === 'Giữa khoá 2/4 môn đạt: không đạt G+V và P · PA Bổ trợ chung chờ Quản lý duyệt kế hoạch', JSON.stringify(r));
+    assert(chu(r).join(' · ') === 'Progress Test 2/4 môn đạt: không đạt G+V và P · PA Bổ trợ chung chờ Quản lý duyệt kế hoạch', JSON.stringify(r));
     assert(r[1].tone === 'wait' && !JSON.stringify(r).includes('SOS'), JSON.stringify(r));
     const dat = cau({ ketQua: { ...KQ_FT, dau: 'MT2', sos: 0, dat: true } });
     assert(chu(dat).join(' · ') === 'MT2 đạt kỳ vọng · không có việc đang mở', JSON.stringify(dat));
   });
 
-  check('VAI-b (3) · oHocThuat / oYThuc / oSapToi: số = số Case mở; nhãn §7.3 + việc; Ý thức bậc + bắt buộc; mốc FT/KCK/lớp thường/sau Cuối khoá', () => {
+  check('VAI-b (3) · oHocThuat / oYThuc / oSapToi: số = số Case mở; nhãn §7.3 + việc; Ý thức bậc + bắt buộc; mốc FT/KCK/lớp thường/sau Final Test', () => {
     const c = (o: Record<string, unknown>) => ({ status: 'in_progress', trangThaiV4: { t: 'dang-lam' }, viecTiep: null, plans: [], boTro: null, ...o });
     const h = d.oHocThuat([
       { short: 'L', label: 'Listening', category: 'listening', missed: false, cases: [] },
@@ -279,8 +279,8 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     assert(s.gt === 'MT2 · W4 OCT' && s.phu === 'kỳ vọng 6.0 · 5 phần', JSON.stringify(s));
     s = st({ kck: true });
     assert(s.phu === 'so với MT1, không kỳ vọng' && !s.phu.includes('kỳ vọng 6'), JSON.stringify(s));
-    s = st({ ratio: true, bacKe: 'BE', next: { dau: 'Cuối khoá', attemptNo: 2, tuan: '2026-10-19', kyVong: null, soPhan: 4, final: true } });
-    assert(s.gt === 'Cuối khoá · W4 OCT' && s.phu === '4 môn · xét lên BE', JSON.stringify(s));
+    s = st({ ratio: true, bacKe: 'BE', next: { dau: 'Final Test', attemptNo: 2, tuan: '2026-10-19', kyVong: null, soPhan: 4, final: true } });
+    assert(s.gt === 'Final Test · W4 OCT' && s.phu === '4 môn · xét lên BE', JSON.stringify(s));
     s = st({ sauCuoiKhoa: { tuanKetThuc: '2026-10-19' } });
     assert(s.gt === 'Chuyển lớp' && s.phu === 'chờ Quản lý quyết định · lớp kết thúc W4 OCT', JSON.stringify(s));
     assert(st({ ketLuan: 'Đạt Target' }).gt === 'Kết luận: Đạt Target', 'kết luận');
@@ -493,7 +493,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     assert(ch[3].caseDong[0].caseId === 7 && ch[3].caseDong[0].pa.map((p: any) => p.id).join() === '71' && ch[3].caseDong[0].xongO === 'MT2', JSON.stringify(ch[3].caseDong));
     assert(ch[2].ghim.length === 1 && ch[3].ghim[0].nhanNgan === 'MT2', 'ghim theo lớp');
     assert(ch[2].tamDung.length === 1 && ch[3].tamDung.length === 0, 'Tạm dừng nằm đúng chương');
-    assert(ch[0].ra.chu === 'Lên FOU' && ch[0].ra.how === 'theo Cuối khoá' && ch[0].ra.tu === '2026-03-09', JSON.stringify(ch[0].ra));
+    assert(ch[0].ra.chu === 'Lên FOU' && ch[0].ra.how === 'theo Final Test' && ch[0].ra.tu === '2026-03-09', JSON.stringify(ch[0].ra));
     assert(ch[2].ra.loai === 'chuyen' && ch[2].ra.how === 'Quản lý quyết định' && ch[2].ra.docBanGiao?.lenhId === 9, JSON.stringify(ch[2].ra));
     assert(ch[3].ra === null, 'chương đang học không có "ra"');
     assert(!/"(han|nguoi|ownerId|endKind|lenh)"/.test(JSON.stringify(ch)), 'chương không kể việc / hạn / người giữ việc');
@@ -570,7 +570,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     assert(JSON.stringify(g({ cheDo: 'ielts', attemptNo: 3, soCoDiem: 0 })) === '["MT3",""]', 'FT chưa điểm');
     const giua = g({ cheDo: 'ratio', attemptNo: 1, soDat: 3 });
     const cuoi = g({ cheDo: 'ratio', attemptNo: 2, kind: 'final', soDat: 3, tyLe: 0.8 });
-    assert(JSON.stringify(giua) === '["Giữa","3/4"]' && JSON.stringify(cuoi) === '["Cuối","80%"]', `lớp thường: ${giua} · ${cuoi}`);
+    assert(JSON.stringify(giua) === '["Progress","3/4"]' && JSON.stringify(cuoi) === '["Final","80%"]', `lớp thường: ${giua} · ${cuoi}`);
     assert(!/MT|SOS/.test(JSON.stringify([giua, cuoi])), 'lớp thường có chữ MT/SOS');
   });
 

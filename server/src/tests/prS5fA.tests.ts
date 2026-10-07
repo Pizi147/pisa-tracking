@@ -9,7 +9,7 @@ export async function runPrS5fATests(t: YThucTestKit) {
   const week: any = await import('../platform/week.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   const { getConfig, setConfig } = await import('../demoConfig.ts');
-  console.log('\nPR-S5F-a · Sửa sau rà cuối đợt 5 — chuyển lớp, bàn giao, Cuối khoá');
+  console.log('\nPR-S5F-a · Sửa sau rà cuối đợt 5 — chuyển lớp, bàn giao, Final Test');
 
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const MB = get(`SELECT id FROM branches WHERE code = 'MB'`).id as number;
@@ -151,7 +151,7 @@ export async function runPrS5fATests(t: YThucTestKit) {
     conn.prepare(`UPDATE lenh_chuyen_lop SET trang_thai = 'huy' WHERE student_id = ?`).run(e);   // không lẫn vào số đếm thi hành của khối sau
   });
 
-  check('S5F-a (3)(4) · phiếu lớp thường: Kết quả = "Cuối khoá n%" (không SOS); Việc còn dở có PA bổ trợ Giữa khoá; chuyển xong: chủ Case = GV đúng môn lớp mới, PA giữ người dạy cũ', () => {
+  check('S5F-a (3)(4) · phiếu lớp thường: Kết quả = "Final Test n%" (không SOS); Việc còn dở có PA bổ trợ Progress Test; chuyển xong: chủ Case = GV đúng môn lớp mới, PA giữ người dạy cũ', () => {
     const nguon = lopMoi({ kind: 'FOU', tuanHienTai: 9 });
     const dich = lopMoi({ kind: 'BE', tuanHienTai: 1 });
     ganGv(nguon, GV[0], null, true);
@@ -163,12 +163,12 @@ export async function runPrS5fATests(t: YThucTestKit) {
     const caseId = moCase(e, cyc, 'reading', GV[1]);
     const ivId = Number(conn.prepare(
       `INSERT INTO case_interventions (case_id, kind, description, performer_user_id, recorded_by, status, started_date, needs_approval, preset, created_at)
-       VALUES (?, 'bo_tro', 'Bổ trợ Giữa khoá Reading', ?, ?, 'started', ?, 0, 0, ?)`,
+       VALUES (?, 'bo_tro', 'Bổ trợ Progress Test Reading', ?, ?, 'started', ?, 0, 0, ?)`,
     ).run(caseId, GV[1], GV[1], t.addDays(TODAY, -14), new Date().toISOString()).lastInsertRowid);
     lenh.raLenh(P.mbManager, { lopNguonId: nguon, boiCanh: 'cuoi-khoa', tuanChung: null, dongs: [dongCua(e, 'len_lop', dich)] });
     const td = bg.phieuBanGiao(P.mbManager, { lopNguonId: nguon }).ds[0].tuDien;
-    assert(/^Cuối khoá 63%/.test(td.ketQua) && !/SOS/.test(td.ketQua), td.ketQua);
-    assert(/PA bổ trợ Giữa khoá .* chờ ghi kết quả cuối/.test(td.viecConDo), td.viecConDo);
+    assert(/^Final Test 63%/.test(td.ketQua) && !/SOS/.test(td.ketQua), td.ketQua);
+    assert(/PA bổ trợ Progress Test .* chờ ghi kết quả cuối/.test(td.viecConDo), td.viecConDo);
     daChuyen(e, THU_HAI);
     const c = get('SELECT owner_user_id, cycle_id FROM sos_cases WHERE id = ?', caseId);
     assert(c.owner_user_id === GV[2] && c.cycle_id !== cyc, `chủ Case: ${JSON.stringify(c)}`);
@@ -183,7 +183,7 @@ export async function runPrS5fATests(t: YThucTestKit) {
     assert(hai?.paId === 2 && / \(lớp cũ\)$/.test(mot?.chu ?? ''), `${JSON.stringify(hai)} ${JSON.stringify(mot)}`);
   });
 
-  check('S5F-a (5)(6) · điểm Cuối khoá nhập muộn → PA bổ trợ + Mini Test tính từ hôm nay (không quá hạn ngay); sửa điểm em đã sang FT không tạo lại Case Tutor đã Hoàn thành', () => {
+  check('S5F-a (5)(6) · điểm Final Test nhập muộn → PA bổ trợ + Mini Test tính từ hôm nay (không quá hạn ngay); sửa điểm em đã sang FT không tạo lại Case Tutor đã Hoàn thành', () => {
     const nguon = lopMoi({ kind: 'FOU', tuanHienTai: 9 });
     const dich = lopMoi({ kind: 'BE', tuanHienTai: 1 });
     const e = hocVien(nguon, 'FOU', false).sid;
@@ -224,7 +224,7 @@ export async function runPrS5fATests(t: YThucTestKit) {
     assert(!/ketLuanFt\.nhan/.test(src) && /chuHopKetLuan\(/.test(src), 'TransitionPanel');
   });
 
-  check('S5F-a (9) · Quản lý dời Cuối khoá sớm (tuần 6/8): tuần 8 (chặng "running") vẫn có dải Kết thúc khoá + việc "Chuyển tiếp lớp"', () => {
+  check('S5F-a (9) · Quản lý dời Final Test sớm (tuần 6/8): tuần 8 (chặng "running") vẫn có dải Kết thúc khoá + việc "Chuyển tiếp lớp"', () => {
     const lop = lopMoi({ kind: 'FOU', tuanHienTai: 8 });
     conn.prepare('UPDATE classes SET final_week_override = 6 WHERE id = ?').run(lop);
     hocVien(lop, 'FOU', false);
@@ -236,7 +236,7 @@ export async function runPrS5fATests(t: YThucTestKit) {
     assert(viec?.group === 'placement', `việc: ${JSON.stringify(viec ?? null)}`);
   });
 
-  check('S5F-a (10) · GVCN đề xuất chuyển em lớp thường ĐÃ HẾT KHOÁ → duyệt ra quyết định hướng cuối khoá (lên lớp), không "giữa khoá / chuyển lớp"', () => {
+  check('S5F-a (10) · GVCN đề xuất chuyển em lớp thường ĐÃ HẾT KHOÁ → duyệt ra quyết định hướng Final Test (lên lớp), không "Progress Test / chuyển lớp"', () => {
     const lop = lopMoi({ kind: 'FOU', tuanHienTai: 9 });
     const dich = lopMoi({ kind: 'BE', tuanHienTai: 1 });
     ganGv(lop, GV[0], null, true);
@@ -283,7 +283,7 @@ export async function runPrS5fATests(t: YThucTestKit) {
     conn.prepare(`UPDATE lenh_chuyen_lop SET trang_thai = 'huy' WHERE lop_nguon_id = ?`).run(nguon);
   });
 
-  check('S5F-a (13) · Cuối khoá sau chuyển: hồ sơ vẫn thấy %, thẻ Test gần nhất ghi %, tên Case giữ môn gốc, việc tiếp không nhồi mô tả PA, kết luận FT cần bài Cuối khoá, Trung tâm thiếu điểm → Case Tutor khi điểm về, Báo PH có GVCN', () => {
+  check('S5F-a (13) · Final Test sau chuyển: hồ sơ vẫn thấy %, thẻ Test gần nhất ghi %, tên Case giữ môn gốc, việc tiếp không nhồi mô tả PA, kết luận FT cần bài Final Test, Trung tâm thiếu điểm → Case Tutor khi điểm về, Báo PH có GVCN', () => {
     /* Hồ sơ HV sau chuyển FOU → BE: vẫn thấy % Cuối khoá của lớp vừa rời. */
     const fou = lopMoi({ kind: 'FOU', tuanHienTai: 9 });
     const be = lopMoi({ kind: 'BE', tuanHienTai: 1 });
@@ -300,7 +300,7 @@ export async function runPrS5fATests(t: YThucTestKit) {
     /* Tên Case giữ môn gốc: mốc đầu ở bài FOU (G+V), mốc sau ở bài Giữa khoá BE → vẫn "G+V". */
     const cyBe = get(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`, e).id;
     const aBe = get(`SELECT id FROM assessment_attempts WHERE cycle_id = ? AND kind = 'progress'`, cyBe);
-    assert(aBe, 'lộ trình BE có bài Giữa khoá mặc định');
+    assert(aBe, 'lộ trình BE có bài Progress Test mặc định');
     const cId = Number(conn.prepare(`INSERT INTO sos_cases (student_id, cycle_id, category, topic, origin_kind, status, detected_at, created_at) VALUES (?,?, 'writing', 'writing', 'mock', 'in_progress', ?, ?)`)
       .run(e, cyBe, TODAY, new Date().toISOString()).lastInsertRowid);
     const moc = conn.prepare(`INSERT INTO case_milestones (case_id, kind, attempt_id, attempt_no, occurred_on, created_at) VALUES (?, ?, ?, ?, ?, ?)`);
@@ -316,7 +316,7 @@ export async function runPrS5fATests(t: YThucTestKit) {
     /* ket-luan-ft: em BE chưa có bài Cuối khoá → 400, không chèn dòng Lộ trình tiếp theo. */
     const be2 = lopMoi({ kind: 'BE', tuanHienTai: 11 });
     const chua = hocVien(be2, 'BE', false).sid;
-    assert(maLoi(() => ck.ghiKetLuanFt(P.mbManager, chua, { dat: true })) === 400 && !get('SELECT 1 FROM lo_trinh_tiep_theo WHERE student_id = ?', chua), 'chưa có bài Cuối khoá');
+    assert(maLoi(() => ck.ghiKetLuanFt(P.mbManager, chua, { dat: true })) === 400 && !get('SELECT 1 FROM lo_trinh_tiep_theo WHERE student_id = ?', chua), 'chưa có bài Final Test');
     /* Trung tâm + thiếu điểm lúc chuyển → Case Tutor tạo khi điểm về. */
     const ft = lopMoi({ kind: 'FT', ft: true, route: 'LT1', tuanHienTai: 1 });
     const f = hocVien(be2, 'BE', false).sid;

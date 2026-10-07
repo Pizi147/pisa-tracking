@@ -587,13 +587,13 @@ export function setClassProgress(p: Principal, classId: number, input: {
     if (weeks && v > weeks) throw badRequest(`${label} không thể vượt quá ${weeks} tuần của chương trình.`);
     return v;
   };
-  const progress = 'progressWeek' in input ? checkWeek(input.progressWeek, 'Tuần Giữa khoá') : undefined;
-  const final = 'finalWeek' in input ? checkWeek(input.finalWeek, 'Tuần Cuối khoá') : undefined;
+  const progress = 'progressWeek' in input ? checkWeek(input.progressWeek, 'Tuần Progress Test') : undefined;
+  const final = 'finalWeek' in input ? checkWeek(input.finalWeek, 'Tuần Final Test') : undefined;
   if (progress && c.so_tuan !== null && c.so_tuan !== undefined && (c.tuan_giua_khoa === null || c.tuan_giua_khoa === undefined)) {
-    throw badRequest('Chương trình này không có bài Giữa khoá.');
+    throw badRequest('Chương trình này không có bài Progress Test.');
   }
   if (progress !== undefined && final !== undefined && progress && final && progress >= final) {
-    throw badRequest('Giữa khoá phải ở trước Cuối khoá.');
+    throw badRequest('Progress Test phải ở trước Final Test.');
   }
   if (input.startPeriodId && !periodById(input.startPeriodId)) throw badRequest('Tuần bắt đầu không hợp lệ.');
 

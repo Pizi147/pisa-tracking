@@ -33,7 +33,7 @@ export function LopKeHoach({ lop, mo, onToggle, onHienDien, chiCanXepLai = false
   };
   const nutXep = lop.loai === 'thuong' && lop.hvChuaCoLich > 0 ? (
     <button type="button" className="btn btn-sm ml-2 min-h-[28px] align-middle font-normal" disabled={busy} onClick={() => void xepCaLop()}
-      title={`${lop.hvChuaCoLich} em chưa có Giữa khoá / Cuối khoá`}>
+      title={`${lop.hvChuaCoLich} em chưa có Progress Test / Final Test`}>
       {busy ? 'Đang tạo…' : 'Xếp cả lớp theo đề xuất'}
     </button>
   ) : null;

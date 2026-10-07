@@ -290,10 +290,10 @@ export async function runPrMonTests(t: YThucTestKit) {
   const standingMod: any = await import('../students/standing.ts');
   const awaitPtl: any = await import('../classes/phanTichLop.ts');
   const PF = classId('MB Pre FOU 03');
-  check('MON (8) · Kế hoạch Test Pre FOU chỉ Cuối khoá, bộ môn tong_hop (K4-16, PF6)', () => {
+  check('MON (8) · Kế hoạch Test Pre FOU chỉ Final Test, bộ môn tong_hop (K4-16, PF6)', () => {
     const l = keHoachMod.luoiThuong(P.mbManager, PF);
     assert(l.cot.length === 1 && l.cot[0].kind === 'final' && l.boMon.join() === 'tong_hop', JSON.stringify({ cot: l.cot, bo: l.boMon }));
-    assert(l.hang.length === 4 && l.hang.every((h: any) => !('progress' in h.dot)), 'hàng có cột Giữa khoá');
+    assert(l.hang.length === 4 && l.hang.every((h: any) => !('progress' in h.dot)), 'hàng có cột Progress Test');
     const co = l.hang.filter((h: any) => h.dot.final?.kn?.tong_hop);
     assert(co.length === 4, `ô tong_hop: ${co.length}`);
   });
@@ -320,11 +320,11 @@ export async function runPrMonTests(t: YThucTestKit) {
     assert(lop.code === 'MB Pre FOU 77' && sk === 'tong_hop', `${lop.code} ${sk}`);
     assert(ta.length === 2 && ta.every((x) => x.user_id === GVCN_HA) && ta[1].skill === 'tong_hop', JSON.stringify(ta));
   });
-  check('MON (8) · hồ sơ lớp Pre FOU trả mốc chỉ Cuối khoá (bảng điểm lớp một nhóm cột) + phân tích lớp một dòng', () => {
+  check('MON (8) · hồ sơ lớp Pre FOU trả mốc chỉ Final Test (bảng điểm lớp một nhóm cột) + phân tích lớp một dòng', () => {
     const ov = clsMod.classOverview(P.admin, PF);
     assert(ov.programme.checkpoints.join() === 'final', JSON.stringify(ov.programme));
     const ptl = (awaitPtl as any).phanTichLop(P.admin, PF);
-    assert(ptl.dong.map((x: any) => x.nhan).join() === 'Tổng hợp' && ptl.cot.map((x: any) => x.nhan).join() === 'Cuối khoá', JSON.stringify({ d: ptl.dong, c: ptl.cot }));
+    assert(ptl.dong.map((x: any) => x.nhan).join() === 'Tổng hợp' && ptl.cot.map((x: any) => x.nhan).join() === 'Final Test', JSON.stringify({ d: ptl.dong, c: ptl.cot }));
   });
   check('MON (8) · % Pre FOU trên hàng HV: em 52% → "52%", không SOS (MH7)', () => {
     const sid = (conn.prepare(`SELECT id FROM students WHERE student_code = (SELECT student_code FROM students WHERE full_name = 'Lê Minh Châu')`).get() as any).id;

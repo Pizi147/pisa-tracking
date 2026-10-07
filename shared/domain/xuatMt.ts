@@ -2,6 +2,7 @@ import { mondayOfDate, owningMonthOf } from './week.ts';
 import { tuanLich } from './hienThiNgay.ts';
 import { tieuChiNganCua } from './skills.ts';
 import { kyHieuLop } from './tenLop.ts';
+import { ATTEMPT_KIND_SHORT } from './normal.ts';
 
 /**
  * XUẤT EXCEL KẾT QUẢ TEST (PR-XUAT · YC-13.9 · T40). LUẬT THUẦN: đọc + kiểm bộ lọc, bộ cột, dựng mảng hai chiều, tên tệp.
@@ -76,7 +77,7 @@ export function docBoLocXuatMt(o: Record<string, unknown>): BoLocXuatMt | string
     if (!ds || !ds.length) return 'Chọn ít nhất một đợt.';
     const hopLe: readonly string[] = khung === 'ft' ? DOT_XUAT_FT : DOT_XUAT_THUONG;
     const sai = ds.find((x) => !hopLe.includes(x));
-    if (sai) return khung === 'ft' ? 'Khung Fast Track chỉ có đợt MT1 đến MT8.' : 'Lớp thường chỉ có đợt Giữa khoá và Cuối khoá.';
+    if (sai) return khung === 'ft' ? 'Khung Fast Track chỉ có đợt MT1 đến MT8.' : 'Lớp thường chỉ có đợt Progress Test và Final Test.';
     thoiGian = { kieu: 'dot', dot: [...new Set(ds)] };
   } else return 'Chọn cách lọc thời gian: theo tuần, theo tháng hoặc theo đợt.';
   return { khung, chiNhanh, lop, thoiGian, chiDuDiem: du, cot };
@@ -98,7 +99,7 @@ export function queryXuatMt(f: BoLocXuatMt): string {
 
 // ------------------------------------------------------------------ nhãn
 
-export const nhanKhoaDot = (k: string) => (k === 'giua' ? 'Giữa khoá' : k === 'cuoi' ? 'Cuối khoá' : k.startsWith('mt:') ? `MT${k.slice(3)}` : k);
+export const nhanKhoaDot = (k: string) => (k === 'giua' ? ATTEMPT_KIND_SHORT.progress : k === 'cuoi' ? ATTEMPT_KIND_SHORT.final : k.startsWith('mt:') ? `MT${k.slice(3)}` : k);
 const maTuanCoNam = (thuHai: string) => `${tuanLich(thuHai)} ${owningMonthOf(thuHai).year}`;
 /** Thứ Hai của tuần ĐẦU của tháng sở hữu tuần `thuHai` (tuần thuộc tháng chứa ngày thứ Năm của nó) — mặc định "từ tuần" của ngăn xuất. */
 export function tuanDauThangCua(thuHai: string): string {
@@ -117,7 +118,7 @@ const nhanThang = (m: string) => `${m.slice(5)}/${m.slice(0, 4)}`;
 export function moTaBoLoc(f: BoLocXuatMt, ten: { chiNhanh: string[]; lop: string[] }): [string, string][] {
   const t = f.thoiGian;
   return [
-    ['Khung', f.khung === 'ft' ? 'Fast Track (Mock Test)' : 'Lớp thường (Giữa khoá · Cuối khoá)'],
+    ['Khung', f.khung === 'ft' ? 'Fast Track (Mock Test)' : 'Lớp thường (Progress Test · Final Test)'],
     ['Chi nhánh', ten.chiNhanh.length ? ten.chiNhanh.join(', ') : 'Mọi chi nhánh trong phạm vi'],
     ['Lớp', ten.lop.length ? ten.lop.join(', ') : 'Mọi lớp trong phạm vi'],
     ['Thời gian', t.kieu === 'tuan' ? `Theo tuần: ${maTuanCoNam(t.tu)} – ${maTuanCoNam(t.den)}`
@@ -194,7 +195,7 @@ export function bangThuong(dong: DongThuong[], cot: 'gon' | 'day-du'): Cell[][] 
 export const phanTram = (ratio: number | null) => (ratio === null ? null : Math.round(ratio * 1000) / 10);
 
 /** Tên sheet lớp thường: `FOU · Giữa–Cuối khoá` — tên HIỂN THỊ của chương trình ("Pre FOU", không "PREFOU"; PR-S4F #12), ≤ 31 ký tự, không `: \ / ? * [ ]`. */
-export const tenSheetThuong = (ct: string) => `${(kyHieuLop(ct, null) ?? ct).replace(/[:\\/?*[\]]/g, ' ').trim()} · Giữa–Cuối khoá`.slice(0, 31);
+export const tenSheetThuong = (ct: string) => `${(kyHieuLop(ct, null) ?? ct).replace(/[:\\/?*[\]]/g, ' ').trim()} · Progress–Final Test`.slice(0, 31);
 
 /** PR-S4F #12: xếp người theo TÊN (chữ cuối) rồi họ đệm, `localeCompare('vi')` — "An" trước "Bình" dù họ là "Vũ". */
 export function soTenVi(a: string, b: string): number {

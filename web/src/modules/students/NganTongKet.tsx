@@ -183,8 +183,8 @@ export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onCl
               ) : (
                 <>
                   {kq.tyLe === null
-                    ? <O nho="Cuối khoá" cho><div className="text-sm font-semibold text-slate-400">Chưa có điểm</div></O>
-                    : <O nho="Cuối khoá"><Lon>{Math.round(kq.tyLe * 100)}%</Lon>{kq.dai && DAI[kq.dai] && <div className="mt-1.5"><Nhan tone={DAI[kq.dai].tone}>{DAI[kq.dai].nhan}</Nhan></div>}</O>}
+                    ? <O nho="Final Test" cho><div className="text-sm font-semibold text-slate-400">Chưa có điểm</div></O>
+                    : <O nho="Final Test"><Lon>{Math.round(kq.tyLe * 100)}%</Lon>{kq.dai && DAI[kq.dai] && <div className="mt-1.5"><Nhan tone={DAI[kq.dai].tone}>{DAI[kq.dai].nhan}</Nhan></div>}</O>}
                   {MUI}
                 </>
               )}

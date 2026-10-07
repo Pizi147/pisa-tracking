@@ -241,9 +241,9 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
     assert(/lanXuLyMoi/.test(docNguon('server/src/phanTich/yThucPhanTich.ts')) && /lanXuLyMoi/.test(docNguon('web/src/modules/phanTich/YThucPhoiHop.tsx')), 'lần xử lý mới hơn kèm nhãn trạng thái');
   });
   // ------------------------------------------------------------------ Task 8 · Case viết hoa, PA ngắn · Phương án rộng, Normal / Progress / Final còn sót
-  khongCon('S3 (8) · "Case" luôn viết hoa trong chữ người dùng thấy; không còn "lớp Normal" / Progress Test / Final Test; nút "Kết thúc PA", "Thay PA"', [
+  khongCon('S3 (8) · "Case" luôn viết hoa trong chữ người dùng thấy; không còn "lớp Normal"; nút "Kết thúc PA", "Thay PA"', [
     ['case thường', /^(?!\s*(case|default)\b)(?=.*[^\x00-\x7F]).*?(?<![\w'`.${}-])case(?![\w:.${}-])(?!\s+['"`])(?!\s+[\w.]+\s*:)/],
-    ['Normal / Progress / Final', /[Ll]ớp Normal|Progress Test|Final Test/],
+    ['Normal', /[Ll]ớp Normal/],
     ['Kết thúc phương án', /Kết thúc phương án|Thay phương án/],
   ], KY_THUAT);
   // ------------------------------------------------------------------ Task 9 · việc nhỏ chuyển cho S3

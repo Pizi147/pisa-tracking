@@ -103,7 +103,7 @@ export async function runNenGiaoDienTests(t: YThucTestKit) {
     assert(thay >= 1, 'Dữ liệu mẫu phải có ít nhất một việc xếp lớp / lộ trình để kiểm');
   });
 
-  check('UX0 · #13: việc của lớp thường ghi Giữa khoá/Cuối khoá, không "MT"', () => {
+  check('UX0 · #13: việc của lớp thường ghi Progress Test/Final Test, không "MT"', () => {
     const ratio = new Set((conn.prepare(
       `SELECT c.id FROM classes c JOIN programmes p ON p.code = c.programme_code WHERE p.scoring_mode = 'ratio'`,
     ).all() as any[]).map((r) => r.id as number));

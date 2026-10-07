@@ -134,7 +134,7 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, canEditCycle = t
 
           {ratio ? (
             <SectionNote>
-              Đây là lớp thường nên không có lịch MT riêng từng em — cả lớp làm bài Giữa khoá và Cuối khoá cùng tuần theo chương trình. Xem và sửa hai mốc đó ở trang lớp.
+              Đây là lớp thường nên không có lịch MT riêng từng em — cả lớp làm bài Progress Test và Final Test cùng tuần theo chương trình. Xem và sửa hai mốc đó ở trang lớp.
             </SectionNote>
           ) : (
             <div>

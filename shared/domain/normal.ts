@@ -57,11 +57,15 @@ export const RATIO_PASS_THRESHOLD_PREVIOUS = 0.6;
 export const ATTEMPT_KINDS = ['mock', 'progress', 'final', 'mt0'] as const;
 export type AttemptKind = (typeof ATTEMPT_KINDS)[number];
 export const ATTEMPT_KIND_LABEL: Record<AttemptKind, string> = {
-  mock: 'Mock Test', progress: 'Bài kiểm tra giữa khoá', final: 'Bài kiểm tra cuối khoá', mt0: 'MT0',
+  mock: 'Mock Test', progress: 'Progress Test', final: 'Final Test', mt0: 'MT0',
 };
 export const ATTEMPT_KIND_SHORT: Record<AttemptKind, string> = {
-  mock: 'MT', progress: 'Giữa khoá', final: 'Cuối khoá', mt0: 'MT0',
+  mock: 'MT', progress: 'Progress Test', final: 'Final Test', mt0: 'MT0',
 };
+/** Tên bài của lớp thường theo `kind` (không phải `final` thì là Progress Test) — một chỗ cho mọi nhãn cứng. */
+export const nhanBaiThuong = (kind: string): string => (kind === 'final' ? ATTEMPT_KIND_SHORT.final : ATTEMPT_KIND_SHORT.progress);
+/** Một từ cho cột hẹp (ghim Hành trình): `Progress` / `Final`. */
+export const ATTEMPT_KIND_NGAN = { progress: 'Progress', final: 'Final' } as const;
 
 /**
  * BỐN Ô MÔN CỦA LỚP THƯỜNG FOU/BE/ELE: L · R · W · S. Pre FOU chỉ một ô `tong_hop` (PF6).

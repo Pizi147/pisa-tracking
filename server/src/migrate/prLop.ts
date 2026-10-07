@@ -22,7 +22,7 @@ export function migratePrLop(conn: any, applied: string[]) {
   tx(() => {
     const moi = ['so_tuan', 'tuan_giua_khoa', 'tuan_cuoi_khoa'].filter((c) => !coCot(conn, c));
     for (const c of moi) conn.exec(`ALTER TABLE classes ADD COLUMN ${c} INTEGER`);
-    if (moi.length) applied.push('Thêm số tuần và mốc Giữa/Cuối khoá chụp vào từng lớp (PF1)');
+    if (moi.length) applied.push('Thêm số tuần và mốc Progress/Final Test chụp vào từng lớp (PF1)');
     if (!conn.prepare("SELECT 1 FROM routes WHERE code = 'RF'").get()) {
       const seq = (conn.prepare('SELECT COALESCE(MAX(seq), 0) + 1 AS n FROM routes').get() as any).n;
       conn.prepare("INSERT INTO routes (code, name, note, seq, status, created_at) VALUES ('RF', 'Refire', NULL, ?, 'active', ?)").run(seq, now);
@@ -32,7 +32,7 @@ export function migratePrLop(conn: any, applied: string[]) {
       conn.prepare("INSERT INTO programmes (code, name, weeks, scoring_mode, status, created_at) VALUES ('PREFOU', 'Pre Foundation', 5, 'ratio', 'active', ?)").run(now);
       conn.prepare("INSERT INTO programme_skills (programme_code, skill, seq) VALUES ('PREFOU', 'tong_hop', 0)").run();
       conn.prepare("INSERT INTO programme_checkpoints (programme_code, kind, study_week) VALUES ('PREFOU', 'final', 5)").run();
-      applied.push('Thêm chương trình Pre FOU (5 tuần, chỉ Cuối khoá, một điểm Tổng hợp)');
+      applied.push('Thêm chương trình Pre FOU (5 tuần, chỉ Final Test, một điểm Tổng hợp)');
     }
     const trung = conn.prepare(`SELECT ${khoaMaLopSql()} AS k FROM classes GROUP BY k HAVING COUNT(*) > 1 LIMIT 1`).get();
     if (!trung && !conn.prepare("SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = 'ux_classes_ma_chuan'").get()) {

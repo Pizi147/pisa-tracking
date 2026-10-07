@@ -98,7 +98,7 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo }: {
   const moc = (k: string) => mau?.checkpoints.find((c) => c.kind === k)?.studyWeek;
   const lopSeCo = ct === 'FT'
     ? 'Lịch MT theo từng HV'
-    : [mau?.weeks && `${mau.weeks} tuần`, moc('progress') && `Giữa khoá tuần ${moc('progress')}`, moc('final') && `Cuối khoá tuần ${moc('final')}`]
+    : [mau?.weeks && `${mau.weeks} tuần`, moc('progress') && `Progress Test tuần ${moc('progress')}`, moc('final') && `Final Test tuần ${moc('final')}`]
       .filter(Boolean).join(' · ');
 
   const tao = async () => {

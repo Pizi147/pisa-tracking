@@ -502,7 +502,7 @@ function seedMeeting(conn: any, ctx: {
 
   /* ── 2. Việc MỚI, chưa ai bắt đầu ── */
   addTask({
-    title: 'Chuẩn bị bộ đề Giữa khoá cho lớp Elementary khoá tới',
+    title: 'Chuẩn bị bộ đề Progress Test cho lớp Elementary khoá tới',
     unit: unitOf('BC'), branch: 'BC', assignee: 'MGR_BC', due: '2026-10-09',
     progress: 'not_started', type: 'in_period', periodId: currentPeriodId, group: 'curriculum',
   });

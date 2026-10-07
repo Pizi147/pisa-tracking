@@ -19,7 +19,7 @@ export async function runPrDhTests(t: YThucTestKit) {
     assert(c({ nhanLuot: 'MT2', tuanBatDau: '2026-10-12', kyVong: 5.5 }) === `MT2 · ${tuan} · 5.5`, String(c({ nhanLuot: 'MT2', tuanBatDau: '2026-10-12', kyVong: 5.5 })));
     assert(c({ nhanLuot: 'MT2', tuanBatDau: '2026-10-12', kyVong: null }) === `MT2 · ${tuan}`, 'không kỳ vọng');
     assert(c({ nhanLuot: 'MT3', tuanBatDau: '2026-10-12', kyVong: 6 }) === `MT3 · ${tuan} · 6.0`, 'một chữ số thập phân');
-    assert(c({ nhanLuot: 'Giữa khoá', tuanBatDau: '2026-10-12', kyVong: 5.5, khung: 'thuong' }) === `Giữa khoá · ${tuan}`, 'lớp thường không hiện kỳ vọng');
+    assert(c({ nhanLuot: 'Progress Test', tuanBatDau: '2026-10-12', kyVong: 5.5, khung: 'thuong' }) === `Progress Test · ${tuan}`, 'lớp thường không hiện kỳ vọng');
   });
 
   check('PR-DH (1) · chuSapToi: còn lượt chưa xếp tuần → "MT2 · chưa xếp"; hết MT → "Thi thật · <dự kiến>"; lớp thường hết mốc → null', () => {

@@ -275,8 +275,8 @@ export function caseTitle(c: {
    */
   const kind = c.latestAttemptKind ?? 'mock';
   const prefix = !c.latestAttemptNo ? ''
-    : kind === 'final' ? 'Cuối khoá - '
-    : kind === 'progress' ? 'Giữa khoá - '
+    : kind === 'final' ? 'Final Test - '
+    : kind === 'progress' ? 'Progress Test - '
     : `MT${c.latestAttemptNo} - `;
   return `${prefix}${label} dưới kỳ vọng`;
 }

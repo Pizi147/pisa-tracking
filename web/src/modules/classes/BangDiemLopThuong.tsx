@@ -31,7 +31,7 @@ type DongThuong = {
   /** PR-UXF-a K2-12: % tổng + gợi ý hướng Cuối khoá — cùng hàm với panel Chuyển lớp (`cuoiKhoaTheoHocVien`). */
   cuoiKhoa?: { tyLe: number | null; goiY: GoiYCuoiKhoa | null } | null;
 };
-const TIEU_DE_HUONG = 'Theo luật Cuối khoá — Quản lý quyết ở panel Chuyển lớp';
+const TIEU_DE_HUONG = 'Theo luật Final Test — Quản lý quyết ở panel Chuyển lớp';
 
 /** Hồ sơ lớp cũ chưa gửi mốc: Giữa khoá + Cuối khoá như trước. */
 const MOC_MAC_DINH = ['progress', 'final'];
@@ -195,7 +195,7 @@ function OPhanTram({ v }: { v: number | null }) {
 
 /** Chữ "Hướng gợi ý" — cùng chữ, cùng chip với cột Hệ thống gợi ý của panel Chuyển lớp (`goiY.nhanHuong`; 50–59 % chip "Quản lý cân nhắc"). */
 function OHuongGoiY({ goiY }: { goiY: GoiYCuoiKhoa | null }) {
-  if (!goiY) return <span className="text-slate-600" title="Hiện khi đủ điểm Cuối khoá">—</span>;
+  if (!goiY) return <span className="text-slate-600" title="Hiện khi đủ điểm Final Test">—</span>;
   if (goiY.canQuanLy) return <Nhan tone="soon" title={goiY.nhan}>Quản lý cân nhắc</Nhan>;
   return <span className="text-[12px] text-slate-300" title={`${goiY.nhan} · ${TIEU_DE_HUONG}`}>{goiY.nhanHuong}</span>;
 }

@@ -6,7 +6,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
   const d = await import('../../../shared/domain/index.ts');
   const { migratePrLt2b } = await import('../migrate/prLt2b.ts');
   const { default: SqliteDb } = await import('libsql');
-  console.log('\nPR-LT2b · Cuối khoá lớp thường');
+  console.log('\nPR-LT2b · Final Test lớp thường');
 
   // ------------------------------------------------------------------ Task 1 · luật thuần
   check('LT2b (1) · dải trên số CHƯA làm tròn: 0.4999 / 0.5 / 0.595 / 0.6 / 0.6999 / 0.7', () => {
@@ -80,7 +80,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     const c: string[] = []; migratePrLt2b(conn, c);
     assert(c.length === 0 && COT_MOI.every((x) => cotCua(conn, 'lo_trinh_tiep_theo').includes(x)), 'schema.sql thiếu cột PR-LT2b');
   });
-  check('LT2b (2) · mini_test: UNIQUE (em, bài Cuối khoá) chặn Mini Test thứ hai', () => {
+  check('LT2b (2) · mini_test: UNIQUE (em, bài Final Test) chặn Mini Test thứ hai', () => {
     const tam = dbCu();
     migratePrLt2b(tam, []);
     tam.exec('INSERT INTO students (id) VALUES (1); INSERT INTO learning_cycles (id) VALUES (1); INSERT INTO assessment_attempts (id) VALUES (1)');
@@ -162,7 +162,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     const nhieu = dem(() => { cuoiKhoaMod.cuoiKhoaTheoHocVien(ba.classId); });
     assert(nhieu <= 8 && nhieu === it, `3 em ${it} câu · 30 em ${nhieu} câu (bao gồm 3 câu đọc chương trình)`);
   });
-  check('LT2b (3) · sửa một điểm Cuối khoá → gợi ý đổi theo (không lưu ở đâu)', () => {
+  check('LT2b (3) · sửa một điểm Final Test → gợi ý đổi theo (không lưu ở đâu)', () => {
     const l = taoLop('BE', 1);
     const a = l.luot.get(l.sids[0])!;
     ghiDiem(a, { [L]: 24, [R]: 24, [W]: 24, [S]: 24 });      // 60% → 60_69
@@ -204,13 +204,13 @@ export async function runPrLt2bTests(t: YThucTestKit) {
       assert(x?.goiY?.dai === '60_69' && x.tyLe === 104 / 160, `${ten}: ${JSON.stringify(x?.goiY)}`);
     }
     assert(dong.goiY.dai === '60_69' && dong.goiY.nhanNgan === '→ lên + bổ trợ', 'lưới lớp');
-    assert(regularMod.regularSheet(P.admin, l.classId, 'progress').rows.every((r: any) => r.goiY === null), 'bài Giữa khoá không có hướng Cuối khoá');
+    assert(regularMod.regularSheet(P.admin, l.classId, 'progress').rows.every((r: any) => r.goiY === null), 'bài Progress Test không có hướng Final Test');
     const ft = profileMod.studentProfile(P.admin, (conn.prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' AND student_id IN (SELECT student_id FROM enrollments WHERE status = 'active' GROUP BY student_id HAVING COUNT(*) = 1) LIMIT 1`).get(classId('MB FT 101')) as any).student_id);
     assert(ft.cuoiKhoa === null, `em FT không có cuoiKhoa: ${JSON.stringify(ft.cuoiKhoa)} · ${typeof ft.cuoiKhoa}`);
   });
 
   // ------------------------------------------------------------------ Task 4 · Quản lý quyết khi chuyển (không còn thẻ — Q30-3, Q30-4)
-  check('LT2b (4) · Quản lý chuyển em 50–59% → ghi quyet_boi/quyet_luc + nhật ký; em 78% không ghi; không có thẻ Quyết định Cuối khoá', () => {
+  check('LT2b (4) · Quản lý chuyển em 50–59% → ghi quyet_boi/quyet_luc + nhật ký; em 78% không ghi; không có thẻ Quyết định Final Test', () => {
     const l = taoLop('BE', 2);
     ghiDiem(l.luot.get(l.sids[0])!, { [L]: 22, [R]: 22, [W]: 22, [S]: 22 });   // 55%
     ghiDiem(l.luot.get(l.sids[1])!, { [L]: 32, [R]: 32, [W]: 30, [S]: 31 });   // 78%
@@ -226,7 +226,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     assert(q(0).quyet_boi === P.mbManager.userId && !!q(0).quyet_luc, JSON.stringify(q(0)));
     assert(q(1).quyet_boi === null && q(1).quyet_luc === null, '78% không phải Quản lý quyết');
     assert(!!conn.prepare(`SELECT 1 FROM audit_logs WHERE action = 'cuoi_khoa.quyet' AND entity_id = ?`).get(l.classId), 'thiếu nhật ký cuoi_khoa.quyet');
-    assert(!conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'quyet_dinh_cuoi_khoa'`).get(), 'không được có thẻ Quyết định Cuối khoá (Q30-3)');
+    assert(!conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'quyet_dinh_cuoi_khoa'`).get(), 'không được có thẻ Quyết định Final Test (Q30-3)');
   });
 
   // ------------------------------------------------------------------ Task 5 · sau khi chuyển (Case Cuối khoá + PA Bổ trợ miễn phí, Báo PH, Tutor FT)
@@ -262,7 +262,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
   const caseCuaEm = (sid: number, cycleId: number) => conn.prepare('SELECT * FROM sos_cases WHERE student_id = ? AND cycle_id = ? ORDER BY id').all(sid, cycleId) as any[];
   const paCuaCase = (caseId: number) => conn.prepare(`SELECT * FROM case_interventions WHERE case_id = ? AND kind = 'bo_tro_mien_phi' ORDER BY id`).all(caseId) as any[];
 
-  check('LT2b (5) · FOU 65% trượt L, G+V → BE: 2 Case chuyen_cap + 2 PA cùng nhóm + 1 Mini Test; Case Giữa khoá cùng môn được dùng lại (M-01); KHÔNG phải Case SOS', () => {
+  check('LT2b (5) · FOU 65% trượt L, G+V → BE: 2 Case chuyen_cap + 2 PA cùng nhóm + 1 Mini Test; Case Progress Test cùng môn được dùng lại (M-01); KHÔNG phải Case SOS', () => {
     const l = taoLop('FOU', 3);
     const [s0, s1, s2] = l.sids;
     ghiDiem(l.luot.get(s0)!, { [L]: 20, [R]: 30, [W]: 20, [S]: 34 });   // 65%: trượt L, W
@@ -280,10 +280,10 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     const cases = caseCuaEm(s0, moi0);
     assert(cases.length === 2 && cases.map((c) => c.category).sort().join() === 'listening,writing', `Case ở lộ trình mới: ${cases.map((c) => c.category)}`);
     const gv = cases.find((c) => c.category === 'listening');
-    assert(gv.origin_kind === 'mock', 'Case Giữa khoá cùng môn phải được dùng lại (không tạo Case thứ hai)');
+    assert(gv.origin_kind === 'mock', 'Case Progress Test cùng môn phải được dùng lại (không tạo Case thứ hai)');
     const cc = cases.find((c) => c.category === 'writing');
     assert(cc.origin_kind === 'chuyen_cap' && cc.sos_level === null && cc.han_xac_nhan === null && cc.status === 'in_progress', JSON.stringify(cc));
-    assert(cc.title === 'Cuối khoá FOU · Grammar + Vocabulary không đạt', cc.title);
+    assert(cc.title === 'Final Test FOU · Grammar + Vocabulary không đạt', cc.title);
     const pa = [...paCuaCase(gv.id), ...paCuaCase(cc.id)];
     assert(pa.length === 2 && new Set(pa.map((x) => x.nhom_bo_tro)).size === 1 && pa[0].nhom_bo_tro === `mt:${l.luot.get(s0)}`, JSON.stringify(pa.map((x) => x.nhom_bo_tro)));
     assert(pa.every((x) => x.preset === 1 && !!x.confirmed_at && x.status === 'started' && x.moc_quy_che === 'mini_test'), 'PA phải chạy ngay, có mốc Mini Test');
@@ -293,23 +293,23 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     /* Không phải Case SOS: không chờ nguyên nhân, không ở việc `cause`, không Báo QL nguyên nhân. */
     const st = sosState.sosCaseState(cc.id);
     assert(!st.fromSos && !st.awaitingCause, JSON.stringify(st));
-    assert(!(sosState.awaitingCauseCaseIds([cc.id]) as number[]).includes(cc.id), 'Case Cuối khoá không được chờ nguyên nhân');
+    assert(!(sosState.awaitingCauseCaseIds([cc.id]) as number[]).includes(cc.id), 'Case Final Test không được chờ nguyên nhân');
     /* 78% Pass: không Case, không PA. */
     assert(caseCuaEm(s2, cycleMoi(s2)).length === 0, '78% không có Case');
     /* 45% học lại: đúng một việc Báo PH qua TVV làm bởi Quản lý (không phải GVCN). */
     const baoPh = conn.prepare(`SELECT * FROM sos_coordination_actions WHERE student_id = ? AND kind = 'bao_ph_tvv'`).all(s1) as any[];
     assert(baoPh.length === 1 && baoPh[0].attempt_id === l.luot.get(s1) && baoPh[0].preset === 1 && baoPh[0].status === 'pending', JSON.stringify(baoPh));
     const viec = (who: any) => (myWorkMod.myWork(who, { nguoi: 'tat-ca' }) as any).items.filter((x: any) => x.key === `baoph:${baoPh[0].id}`);
-    assert(viec(P.mbManager).length === 1 && viec(P.mbManager)[0].tieuDe.includes('Cuối khoá 45%'), 'Quản lý phải thấy việc Báo PH: ' + JSON.stringify(viec(P.mbManager).map((x: any) => x.tieuDe)));
-    assert(viec(permMod.loadPrincipal(P.normalCoreTeacher.userId)).length === 0, 'GVCN không có việc Báo PH của Cuối khoá');
+    assert(viec(P.mbManager).length === 1 && viec(P.mbManager)[0].tieuDe.includes('Final Test 45%'), 'Quản lý phải thấy việc Báo PH: ' + JSON.stringify(viec(P.mbManager).map((x: any) => x.tieuDe)));
+    assert(viec(permMod.loadPrincipal(P.normalCoreTeacher.userId)).length === 0, 'GVCN không có việc Báo PH của Final Test');
     assert(caseCuaEm(s1, cycleMoi(s1)).length === 0, '45% học lại không có Case bổ trợ');
   });
-  check('LT2b (5) · Cuối khoá không sinh tín hiệu / Case ở lớp cũ khi nhập điểm trượt (T70)', () => {
+  check('LT2b (5) · Final Test không sinh tín hiệu / Case ở lớp cũ khi nhập điểm trượt (T70)', () => {
     const l = taoLop('BE', 1);
     const truocCase = (conn.prepare('SELECT COUNT(*) n FROM sos_cases').get() as any).n, truocTin = (conn.prepare('SELECT COUNT(*) n FROM case_signals').get() as any).n;
     for (const [k, s] of [[L, 10], [R, 10], [W, 10], [S, 10]] as const) regularMod.saveRegularScore(P.admin, l.luot.get(l.sids[0])!, k, { score: s, total: 40 }, TODAY);
-    assert((conn.prepare('SELECT COUNT(*) n FROM sos_cases').get() as any).n === truocCase, 'Cuối khoá trượt không được sinh Case');
-    assert((conn.prepare('SELECT COUNT(*) n FROM case_signals').get() as any).n === truocTin, 'Cuối khoá trượt không được sinh tín hiệu');
+    assert((conn.prepare('SELECT COUNT(*) n FROM sos_cases').get() as any).n === truocCase, 'Final Test trượt không được sinh Case');
+    assert((conn.prepare('SELECT COUNT(*) n FROM case_signals').get() as any).n === truocTin, 'Final Test trượt không được sinh tín hiệu');
   });
   check('LT2b (5) · Pre FOU 52% QL cho lên FOU: Case tong_hop, 4 buổi · 2 tuần; GVCN FOU ghi được, GVBM L của lớp FOU → 403', () => {
     const l = taoLop('PREFOU', 1);
@@ -317,7 +317,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     const fou = taoLopDich('FOU', true);
     chuyen(l.classId, [{ studentId: l.sids[0], huong: 'len_lop', toClassId: fou }]);
     const c = caseCuaEm(l.sids[0], cycleMoi(l.sids[0]));
-    assert(c.length === 1 && c[0].category === 'tong_hop' && c[0].title === 'Cuối khoá Pre FOU · Tổng hợp không đạt', JSON.stringify(c.map((x) => x.title)));
+    assert(c.length === 1 && c[0].category === 'tong_hop' && c[0].title === 'Final Test Pre FOU · Tổng hợp không đạt', JSON.stringify(c.map((x) => x.title)));
     const pa = paCuaCase(c[0].id);
     assert(pa.length === 1 && /4 buổi miễn phí · 2 tuần/.test(pa[0].description), pa[0]?.description);
     const mt = conn.prepare('SELECT * FROM mini_test WHERE student_id = ?').get(l.sids[0]) as any;
@@ -327,7 +327,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     ghi(permMod.loadPrincipal(P.normalCoreTeacher.userId));
     assert((conn.prepare('SELECT ty_le FROM mini_test WHERE id = ?').get(mt.id) as any).ty_le === 0.8, 'GVCN phải ghi được Mini Test');
   });
-  check('LT2b (5) · lớp thường → lớp thường: Case Giữa khoá đi theo em; BE 55% chuyển bởi QL → soTuan 2; đường chuyển một em (apDungMotDong) cũng tạo bổ trợ', () => {
+  check('LT2b (5) · lớp thường → lớp thường: Case Progress Test đi theo em; BE 55% chuyển bởi QL → soTuan 2; đường chuyển một em (apDungMotDong) cũng tạo bổ trợ', () => {
     const l = taoLop('BE', 1);
     const s = l.sids[0];
     ghiDiem(l.luot.get(s)!, { [L]: 22, [R]: 22, [W]: 22, [S]: 22 });   // 55%
@@ -358,7 +358,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     const r2 = cuoiSvc.ghiKetLuanFt(P.mbManager, c2, { dat: true });
     assert(caseCuaEm(c2, cycleMoi(c2)).length === 1 && /giữ nguyên/.test(r2.luuY), 'đổi sang Đạt không xoá Case, có ghi chú');
   });
-  check('LT2b (5) · điểm Cuối khoá nhập ĐỦ sau khi em đã chuyển (Q30-4): dòng vẫn chuyển; luật áp ở lộ trình mới, chạy lại không sinh trùng', () => {
+  check('LT2b (5) · điểm Final Test nhập ĐỦ sau khi em đã chuyển (Q30-4): dòng vẫn chuyển; luật áp ở lộ trình mới, chạy lại không sinh trùng', () => {
     const l = taoLop('FOU', 1);
     const s = l.sids[0];
     ghiDiem(l.luot.get(s)!, { [L]: 20, [R]: 30, [W]: 20 });   // thiếu Speaking
@@ -372,21 +372,21 @@ export async function runPrLt2bTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ Task 8 · % Cuối khoá + hướng ở lưới, Hành trình, Excel
-  check('LT2b (8) · nhanGhim Cuối khoá đủ điểm có hướng, không chữ SOS; màu Pass = dat; Pre FOU giữ % + hướng', () => {
+  check('LT2b (8) · nhanGhim Final Test đủ điểm có hướng, không chữ SOS; màu Pass = dat; Pre FOU giữ % + hướng', () => {
     const g = d.goiYCuoiKhoa({ ct: 'BE', tyLe: 0.64, monTruot: ['reading'] })!;
     const gh = d.nhanGhim({ cheDo: 'ratio', attemptNo: 2, kind: 'final', overall: null, sosLevel: 1, soDat: 3, soYeuCau: 4, soCoDiem: 4, tyLe: 0.64, goiY: g, kyNangChuaDat: ['reading'], maLop: 'MB BE 08' });
-    assert(gh.chu === 'Cuối · 64% → lên + bổ trợ' && !/SOS/.test(`${gh.chu} ${gh.day}`) && gh.day.includes('Lên ELE'), JSON.stringify(gh));
+    assert(gh.chu === 'Final · 64% → lên + bổ trợ' && !/SOS/.test(`${gh.chu} ${gh.day}`) && gh.day.includes('Lên ELE'), JSON.stringify(gh));
     const pass = d.nhanGhim({ cheDo: 'ratio', attemptNo: 2, kind: 'final', overall: null, sosLevel: 0, soDat: 4, soYeuCau: 4, soCoDiem: 4, tyLe: 0.78, goiY: d.goiYCuoiKhoa({ ct: 'BE', tyLe: 0.78, monTruot: [] })! });
-    assert(pass.mau === 'dat' && pass.chu === 'Cuối · 78% → Pass', JSON.stringify(pass));
+    assert(pass.mau === 'dat' && pass.chu === 'Final · 78% → Pass', JSON.stringify(pass));
     const pf = d.nhanGhim({ cheDo: 'ratio', attemptNo: 1, kind: 'final', overall: null, sosLevel: 1, soDat: null, soYeuCau: 1, soCoDiem: 1, khongChiaMon: true, tyLe: 0.52, goiY: d.goiYCuoiKhoa({ ct: 'PREFOU', tyLe: 0.52, monTruot: [] })! });
-    assert(pf.chu === 'Cuối · 52% → QL cân nhắc', pf.chu);
-    assert(d.nhanGhim({ cheDo: 'ratio', attemptNo: 1, kind: 'progress', overall: null, sosLevel: 1, soDat: 2, soYeuCau: 4, soCoDiem: 4, goiY: null }).chu === 'Giữa · 2/4 môn đạt', 'Giữa khoá không có hướng');
+    assert(pf.chu === 'Final · 52% → QL cân nhắc', pf.chu);
+    assert(d.nhanGhim({ cheDo: 'ratio', attemptNo: 1, kind: 'progress', overall: null, sosLevel: 1, soDat: 2, soYeuCau: 4, soCoDiem: 4, goiY: null }).chu === 'Progress · 2/4 môn đạt', 'Progress Test không có hướng');
   });
-  check('LT2b (8) · Excel lớp thường: cột "Hướng gợi ý" sau "% tổng", số cột khớp tiêu đề, Giữa khoá để trống', () => {
+  check('LT2b (8) · Excel lớp thường: cột "Hướng gợi ý" sau "% tổng", số cột khớp tiêu đề, Progress Test để trống', () => {
     const mon = ['Listening', 'Reading', 'Writing', 'Speaking'].map((ten) => ({ ten, pct: 70, diem: 28, tong: 40, tuan: 'W1 OCT' }));
     const dong = (bai: string, huong: string | null) => ({ ma: 'PISA-1', ten: 'A', chiNhanh: 'MB', lop: 'MB BE 08', bai, tuan: 'W1 OCT', tuanBd: '2026-10-05', mon, tyLeTong: 64, trangThai: 'Đủ điểm', nguoiNhap: null, huong });
     for (const cot of ['gon', 'day-du'] as const) {
-      const b = d.bangThuong([dong('Cuối khoá', 'Lên ELE + bổ trợ'), dong('Giữa khoá', null)], cot);
+      const b = d.bangThuong([dong('Final Test', 'Lên ELE + bổ trợ'), dong('Progress Test', null)], cot);
       const i = b[0].indexOf('Hướng gợi ý');
       assert(i === b[0].indexOf('% tổng') + 1 && b.every((h) => h.length === b[0].length), `${cot}: cột ${i}`);
       assert(b[1][i] === 'Lên ELE + bổ trợ' && b[2][i] === null, `${cot}: ô hướng`);
@@ -483,7 +483,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     cuoiSvc.ghiKetLuanFt(P.mbManager, s, { dat: true });
     assert(cuoiKhoaMod.cuoiKhoaTheoHocVien(be.classId).get(s).ketLuanFt.dat === true, 'đọc lại kết luận');
   });
-  check('LT2b (7) · Cuối khoá dời quá tuần cuối khoá → MỘT thẻ Báo QL; Giữa khoá dời quá → không thẻ; nhập đủ điểm → tự đóng', () => {
+  check('LT2b (7) · Final Test dời quá tuần Final Test → MỘT thẻ Báo QL; Progress Test dời quá → không thẻ; nhập đủ điểm → tự đóng', () => {
     const l = taoLop('BE', 1);
     const s = l.sids[0];
     const luot = l.luot.get(s)!;
@@ -499,7 +499,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     else assert(sau === 1 && (conn.prepare(`SELECT COUNT(*) n FROM yeu_cau_duyet WHERE loai = 'bao_len_cuoi_khoa'`).get() as any).n === truoc + 1, 'phải có đúng một thẻ Báo QL');
     const giua = conn.prepare(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'progress' AND class_id = ?`).get(s, l.classId) as any;
     if (giua) { try { regularMod.reportRegularNoShow(P.admin, giua.id, 'listening', true, TODAY); } catch { /* chưa tới tuần */ } }
-    assert(!conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_cuoi_khoa' AND doi_tuong_id = ?`).get(giua?.id ?? -1), 'Giữa khoá dời quá không có thẻ');
+    assert(!conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_cuoi_khoa' AND doi_tuong_id = ?`).get(giua?.id ?? -1), 'Progress Test dời quá không có thẻ');
     ghiDiem(luot, { [L]: 30, [R]: 30, [W]: 30, [S]: 30 });
     conn.prepare(`UPDATE assessment_attempts SET status = 'done' WHERE id = ?`).run(luot);
     duyetMod.quetYeuCau();
@@ -514,11 +514,11 @@ export async function runPrLt2bTests(t: YThucTestKit) {
       ct, tyLe, scored: m.length, required: 4, mon: mon(m), goiY: d.goiYCuoiKhoa({ ct, tyLe, monTruot: truot }), quyetDinh: quyet, ketLuanFt: kv, homNay: TODAY,
     });
     const thieu = dung('BE', null, [70, 60, 66], []);
-    assert(thieu.chinh === 'Cuối khoá · 3/4 môn có điểm' && thieu.nhan === null && thieu.tone === 'muted', JSON.stringify(thieu));
+    assert(thieu.chinh === 'Final Test · 3/4 môn có điểm' && thieu.nhan === null && thieu.tone === 'muted', JSON.stringify(thieu));
     const pass = dung('BE', 0.78, [80, 75, 78, 79], []);
-    assert(pass.chinh === 'Cuối khoá 78%' && pass.nhan === 'Pass' && pass.tone === 'ok', JSON.stringify(pass));
+    assert(pass.chinh === 'Final Test 78%' && pass.nhan === 'Pass' && pass.tone === 'ok', JSON.stringify(pass));
     const len = dung('FOU', 0.64, [70, 58, 66, 62], ['reading', 'speaking']);
-    assert(len.chinh === 'Cuối khoá 64%' && len.phu === 'L 70 · R 58 · G+V 66 · P 62' && /^Lên BE \+ bổ trợ miễn phí 2 buổi/.test(len.nhan!), JSON.stringify(len));
+    assert(len.chinh === 'Final Test 64%' && len.phu === 'L 70 · R 58 · G+V 66 · P 62' && /^Lên BE \+ bổ trợ miễn phí 2 buổi/.test(len.nhan!), JSON.stringify(len));
     const cn = dung('BE', 0.55, [50, 60, 55, 55], ['listening']);
     assert(/^Quản lý cân nhắc/.test(cn.nhan!) && cn.tone === 'warn', cn.nhan!);
     const qd = dung('BE', 0.55, [50, 60, 55, 55], ['listening'], { huong: 'len_lop', luc: `${NGAY_CHUYEN}T08:00:00Z` });
@@ -571,7 +571,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
   check('LT2b (10) · demo D12–D13: Pre FOU 52% lên FOU; Trung tâm → Case FT + Tutor; Học sinh → không Case, có ghi chú', () => {
     const bao = hv('Ninh Gia Bảo');
     const c = caseChuyenCap(bao);
-    assert(lopHienTai(bao).code === 'MB FOU 15' && c.length === 1 && c[0].title === 'Cuối khoá Pre FOU · Tổng hợp không đạt', JSON.stringify(c.map((x) => x.title)));
+    assert(lopHienTai(bao).code === 'MB FOU 15' && c.length === 1 && c[0].title === 'Final Test Pre FOU · Tổng hợp không đạt', JSON.stringify(c.map((x) => x.title)));
     assert(/4 buổi miễn phí · 2 tuần/.test(paCuaCase(c[0].id)[0].description), 'Pre FOU 4 buổi · 2 tuần');
     const minh = hv('Chu Nhật Minh'), nhi = hv('Kiều Thảo Nhi');
     const cm = caseChuyenCap(minh);

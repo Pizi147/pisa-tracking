@@ -6,8 +6,7 @@ import {
   SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, cycleDeadline,
   duongHoSoHocVien, duongLichTest, nhanDotNgan, planDueDate, urgencyFromSos,
   khungCua, laLanGhiCuoi, tenMon, tenMonNgan, tenNhomMon, REGULAR_SKILLS, nhanLoaiXuLy, soSanhLop,
-  type Khung, type AttemptKind, type InterventionKind,
-} from '../../../shared/domain/index.ts';
+  type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, forbidden } from '../util.ts';
 import { activeAt, bangLop, can, isCoreTeacherOf, loadPrincipal, napTruocPhamVi, scopeFor, teachesClass, type Principal } from '../permissions.ts';
@@ -155,7 +154,7 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   /* PR-LT2a (N2, T54, M-05): Giữa khoá lớp thường — đã xác nhận nguyên nhân, còn nộp kế hoạch bài giảng để Quản lý duyệt. */
   ke_hoach_bo_tro: {
     label: 'Nộp kế hoạch bổ trợ',
-    hint: 'Giữa khoá: đã xác nhận nguyên nhân — nộp kế hoạch bài giảng để Quản lý duyệt, PA bổ trợ bắt đầu khi được duyệt. 3 ngày, tính cả hôm nay.',
+    hint: 'Progress Test: đã xác nhận nguyên nhân — nộp kế hoạch bài giảng để Quản lý duyệt, PA bổ trợ bắt đầu khi được duyệt. 3 ngày, tính cả hôm nay.',
   },
   /* PR-LT2a (N3, T45): GVCN báo phụ huynh qua TVV — không hạn (M-05). */
   phoi_hop: {
@@ -176,7 +175,7 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   /* PR-VAI-a (K5-11): em BE/ELE lên Fast Track — Quản lý đánh dấu Đạt / Không đạt kỳ vọng đầu ra. */
   ky_vong_dau_ra: {
     label: 'Đánh dấu kỳ vọng đầu ra',
-    hint: 'Em có quyết định lên FT từ BE/ELE và đã có bài Cuối khoá — đánh dấu Đạt hoặc Không đạt kỳ vọng đầu ra ở Kết luận khoá.',
+    hint: 'Em có quyết định lên FT từ BE/ELE và đã có bài Final Test — đánh dấu Đạt hoặc Không đạt kỳ vọng đầu ra ở Kết luận khoá.',
   },
 
   /* PR-TK (TK-K): kết quả thi thật do GVCN lớp cuối nhập — hạn = thứ Hai sau kỳ thi + 4 tuần, đỏ không chặn. */
@@ -211,11 +210,11 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   },
   chot_len_ft: {
     label: 'Chốt lên FT',
-    hint: 'Ghi hướng cho mọi em của lớp trước tuần Cuối khoá — em Lên FT có MT0 ở tuần Final.',
+    hint: 'Ghi hướng cho mọi em của lớp trước tuần Final Test — em Lên FT có MT0 ở tuần Final.',
   },
   placement: {
     label: 'Chuyển tiếp lớp',
-    hint: 'Lớp tới tuần Cuối khoá mà còn em chưa có quyết định chuyển lớp. Quản lý quyết định (lên lớp, học lại, tạm dừng học (bảo lưu), dừng học hẳn) trước hết tuần kết thúc — việc này không tự xảy ra.',
+    hint: 'Lớp tới tuần Final Test mà còn em chưa có quyết định chuyển lớp. Quản lý quyết định (lên lớp, học lại, tạm dừng học (bảo lưu), dừng học hẳn) trước hết tuần kết thúc — việc này không tự xảy ra.',
   },
   missing_data: {
     label: 'Thiếu dữ liệu đánh giá',
@@ -573,7 +572,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       studentId: null, studentName: `Lớp ${code}`,
       classId, classCode: code,
       attemptId: null, attemptNo: null, caseId: null, level: null,
-      contextLabel: pr.phase === 'finished' ? `Hết ${pr.totalWeeks} tuần` : `Tuần Cuối khoá`, count: nChua,
+      contextLabel: pr.phase === 'finished' ? `Hết ${pr.totalWeeks} tuần` : `Tuần Final Test`, count: nChua,
       reason: `${nChua} em chưa có quyết định chuyển lớp`,
       tieuDe: `Chuyển tiếp lớp · ${code} · ${nChua} HV`,   // mockup 20 (PR-S5F-a): lớp · số em chưa có lệnh
       actionLabel: 'Chuyển tiếp lớp',
@@ -812,7 +811,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       attemptId: iv.attempt_id ?? null, attemptNo: iv.attempt_no ?? null, caseId: iv.case_id as number, level: null,
       contextLabel: nhanDot(iv.attempt_kind, iv.attempt_no), count: null,
       reason: `${mon} chưa đạt — đã xác nhận nguyên nhân, cần kế hoạch bài giảng để Quản lý duyệt${mine ? '' : ' — người dạy chưa nộp'}`,
-      tieuDe: `Nộp kế hoạch bổ trợ · Giữa khoá · ${mon} · ${iv.full_name ?? 'Học viên'}`,
+      tieuDe: `Nộp kế hoạch bổ trợ · Progress Test · ${mon} · ${iv.full_name ?? 'Học viên'}`,
       actionLabel: 'Nộp kế hoạch',
       href: duongHoSoHocVien(iv.eff_student_id, { caseId: iv.case_id, viec: 'ke-hoach' }),
       ownerId: iv.performer_user_id ?? null, owner: iv.performer_user_id ? null : ((iv.performer_name ?? '').trim() || null), mine,
@@ -836,7 +835,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   for (const [id, t] of tyLeTongLo(baoPh.filter((r) => r.attempt_kind === 'final').map((r) => r.attempt_id))) if (t.tyLe !== null) phanTramCuoi.set(id, ` ${Math.round(t.tyLe * 100)}%`);
   for (const r of baoPh) {
     if (f.branchId && r.branch_id !== f.branchId) continue;
-    const laCuoiKhoa = r.attempt_kind === 'final';   // PR-LT2b: Cuối khoá < 50% → việc của Quản lý (`request.approve`), không của GVCN
+    const laCuoiKhoa = r.attempt_kind === 'final';   // PR-LT2b: Final Test < 50% → việc của Quản lý (`request.approve`), không của GVCN
     const gvcn = !laCuoiKhoa && isCoreTeacherOf(p, r.cur_class_id, today);
     const cuaGv = (tatCa || laCuoiKhoa) && can(p, laCuoiKhoa ? PERMISSIONS.REQUEST_APPROVE : PERMISSIONS.CASE_APPROVE, { classId: r.cur_class_id, studentId: r.student_id });
     if (!gvcn && !cuaGv) continue;
@@ -847,7 +846,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       attemptId: r.attempt_id, attemptNo: r.attempt_no ?? null, caseId: null, level: null,
       contextLabel: nhanDot(r.attempt_kind, r.attempt_no), count: null,
       reason: 'Nhờ TVV báo phụ huynh (4 nội dung), xong thì đánh dấu đã làm: kết quả, môn khó khăn, nguyên nhân, phương án hỗ trợ và khả năng học lại.',
-      tieuDe: `Báo phụ huynh qua TVV · ${r.full_name ?? 'Học viên'} · ${laCuoiKhoa ? `Cuối khoá${phanTramCuoi.get(r.attempt_id) ?? ''}` : 'Giữa khoá'}`,
+      tieuDe: `Báo phụ huynh qua TVV · ${r.full_name ?? 'Học viên'} · ${laCuoiKhoa ? `${nhanBaiThuong('final')}${phanTramCuoi.get(r.attempt_id) ?? ''}` : nhanBaiThuong('progress')}`,
       actionLabel: 'Mở Phối hợp SOS',
       href: duongHoSoHocVien(r.student_id, { tab: 'y-thuc', sub: 'phoi-hop' }),
       ownerId: gvcn || (laCuoiKhoa && cuaGv) ? p.userId : laCuoiKhoa ? null : r.gvcn_id ?? null, owner: null, mine: gvcn || (laCuoiKhoa && cuaGv),
@@ -1149,7 +1148,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         key: `ky_vong:${r.id}`, group: 'ky_vong_dau_ra', urgency: 'normal',
         studentId: r.id, studentName: r.ten, classId: r.lopNguonId, classCode: r.lopNguon,
         attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: 'Lên FT', count: null,
-        reason: 'Em BE/ELE lên FT đã có bài Cuối khoá — đánh dấu Đạt hoặc Không đạt kỳ vọng đầu ra',
+        reason: 'Em BE/ELE lên FT đã có bài Final Test — đánh dấu Đạt hoặc Không đạt kỳ vọng đầu ra',
         tieuDe: `Đánh dấu kỳ vọng đầu ra · ${r.ten}`, actionLabel: 'Mở hồ sơ',
         href: duongHoSoHocVien(r.id, { loTrinh: cuoiKhoaCua.get(r.id), muc: 'ket-luan-khoa' }), ownerId: p.userId, owner: null, mine: true, due: null, statusLabel: 'Chưa đánh dấu',
       });

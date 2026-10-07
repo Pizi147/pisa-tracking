@@ -93,7 +93,7 @@ function tuDienTheoLo(nguon: { id: number; ct: string | null }, ds: { id: number
          LEFT JOIN users u ON u.id = iv.performer_user_id
         WHERE iv.kind = 'bo_tro' AND iv.status IN ('planned', 'started') AND sc.status != 'done' AND sc.student_id IN (${ph}) ORDER BY iv.id`,
     ).all(...lo) as any[]) {
-      paDo.set(r.student_id, [...(paDo.get(r.student_id) ?? []), `PA bổ trợ Giữa khoá ${tenMonNgan(nguon.ct, r.category)} chờ ghi kết quả cuối${r.gv ? ` (${r.gv})` : ''}`]);
+      paDo.set(r.student_id, [...(paDo.get(r.student_id) ?? []), `PA bổ trợ Progress Test ${tenMonNgan(nguon.ct, r.category)} chờ ghi kết quả cuối${r.gv ? ` (${r.gv})` : ''}`]);
     }
   });
   /* Người nhận gợi ý: MỘT lần mỗi lớp chuyển đến (không mỗi em). */

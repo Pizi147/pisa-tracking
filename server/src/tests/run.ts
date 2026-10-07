@@ -1947,21 +1947,21 @@ check('Mốc kiểm tra tính theo TUẦN HỌC của lớp, không phải tuầ
   ].filter((r) => r.week_start);
   const progress = rows.find((r) => r.kind === 'progress');
   const final = rows.find((r) => r.kind === 'final');
-  assert(progress?.week_start && final?.week_start, 'Thiếu bài giữa khoá hoặc cuối khoá');
+  assert(progress?.week_start && final?.week_start, 'Thiếu bài Progress Test hoặc Final Test');
   // Tuần học 4 = 3 tuần sau khai giảng; tuần học 8 = 7 tuần sau.
   assert(progress!.week_start === week.mondayOf(addDays(fouClass.start_date, 3 * 7)),
-    `Bài giữa khoá phải rơi vào tuần học 4, đang là ${progress!.week_start}`);
+    `Bài Progress Test phải rơi vào tuần học 4, đang là ${progress!.week_start}`);
   assert(final!.week_start === week.mondayOf(addDays(fouClass.start_date, 7 * 7)),
-    `Bài cuối khoá phải rơi vào tuần học 8, đang là ${final!.week_start}`);
+    `Bài Final Test phải rơi vào tuần học 8, đang là ${final!.week_start}`);
   // BE/ELE là tuần học 5 và 10.
   const be = [
     { kind: 'progress', week_start: firstWeek(beClass.id, 'progress') },
     { kind: 'final', week_start: firstWeek(beClass.id, 'final') },
   ];
   assert(be.find((r) => r.kind === 'progress')?.week_start === week.mondayOf(addDays(beClass.start_date, 4 * 7)),
-    'Bài giữa khoá BE phải rơi vào tuần học 5');
+    'Bài Progress Test BE phải rơi vào tuần học 5');
   assert(be.find((r) => r.kind === 'final')?.week_start === week.mondayOf(addDays(beClass.start_date, 9 * 7)),
-    'Bài cuối khoá BE phải rơi vào tuần học 10');
+    'Bài Final Test BE phải rơi vào tuần học 10');
 });
 
 check('Nhập điểm phải có cả số câu đúng và tổng; không tự điền tổng', () => {
@@ -2058,7 +2058,7 @@ check('Sửa điểm lớp thường thì GIỮ case và ghi lịch sử, không
         ORDER BY sc.id LIMIT 1`,
     )
     .get() as any;
-  assert(target, 'Cần một Case Giữa khoá lớp thường đang mở để thử');
+  assert(target, 'Cần một Case Progress Test lớp thường đang mở để thử');
   const prog = regular.programmeOfClass(target.class_id)!;
   // Nâng mọi kỹ năng lên mức đạt: Case không được biến mất — còn để tra lịch sử.
   for (const skill of prog.skills) {
@@ -2564,7 +2564,7 @@ check('Ba nguồn case dùng CHUNG một vòng đời', () => {
   const fromMock = cases.listCases(P.admin, { origin: 'mock' }).rows;
   const fromTeacher = cases.listCases(P.admin, { origin: 'teacher_report' }).rows;
   const fromTask = cases.listCases(P.admin, { origin: 'manager_task' }).rows;
-  const fromChuyenCap = cases.listCases(P.admin, { origin: 'chuyen_cap' }).rows;   // PR-LT2b: Case Cuối khoá / Kỳ vọng đầu ra sinh khi chuyển lớp
+  const fromChuyenCap = cases.listCases(P.admin, { origin: 'chuyen_cap' }).rows;   // PR-LT2b: Case Final Test / Kỳ vọng đầu ra sinh khi chuyển lớp
   assert(fromMock.length > 0 && fromTeacher.length > 0, 'Thiếu một trong hai nguồn case chính');
   const total = cases.listCases(P.admin, {}).rows.length;
   assert(total === fromMock.length + fromTeacher.length + fromTask.length + fromChuyenCap.length,
@@ -5674,12 +5674,12 @@ check('[6.2] Không phương án nào còn được sinh tự động từ đi�
   assert(orphan.n === 0, `${orphan.n} phương án thuộc case chưa ai xác minh`);
 });
 
-check('[6.2] Tín hiệu KHÔNG được đếm như case đã xác định; PR-LT2a: không còn tín hiệu chờ xác minh (FT nối ngay vào Case, lớp thường Giữa khoá tự tạo Case)', () => {
+check('[6.2] Tín hiệu KHÔNG được đếm như case đã xác định; PR-LT2a: không còn tín hiệu chờ xác minh (FT nối ngay vào Case, lớp thường Progress Test tự tạo Case)', () => {
   /* PR-LT2a (N4): trước đây phép kiểm này đòi bộ demo CÓ tín hiệu chờ. Nay không tín hiệu nào được ở trạng thái chờ — mọi tín hiệu là dây nối. */
   const pending = conn
     .prepare(`SELECT COUNT(*) n FROM case_signals sg JOIN classes c ON c.id = sg.class_id WHERE sg.status = 'pending' AND c.is_fast_track = 0 AND sg.attempt_id IN (SELECT id FROM assessment_attempts WHERE kind = 'progress')`)
     .get() as any;
-  assert(pending.n === 0, `${pending.n} tín hiệu Giữa khoá lớp thường còn "chờ xác minh" — mô hình đã bỏ`);
+  assert(pending.n === 0, `${pending.n} tín hiệu Progress Test lớp thường còn "chờ xác minh" — mô hình đã bỏ`);
 
   /* Không tín hiệu chờ nào có case: chờ nghĩa là chưa thành gì cả. */
   const wrong = conn
@@ -5700,13 +5700,13 @@ check('[6.2] Tín hiệu KHÔNG được đếm như case đã xác định; PR-
   assert(!('listSignals' in signalsSvc), 'PR-LT2a: hàng "tín hiệu chờ xác minh" đã bỏ khỏi mã');
 });
 
-check('[6.2] Hồ sơ học viên và Việc cần làm không còn tín hiệu chờ xác minh; Case Giữa khoá tự tạo nằm ở nhóm "Xác nhận nguyên nhân" của đúng GVBM', () => {
+check('[6.2] Hồ sơ học viên và Việc cần làm không còn tín hiệu chờ xác minh; Case Progress Test tự tạo nằm ở nhóm "Xác nhận nguyên nhân" của đúng GVBM', () => {
   const c = conn
     .prepare(`SELECT sc.* FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id
                WHERE a.kind = 'progress' AND sc.origin_kind = 'mock' AND sc.status = 'open' AND sc.owner_user_id IS NOT NULL
                  AND NOT EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sc.id AND iv.kind = 'bo_tro' AND iv.confirmed_at IS NOT NULL) LIMIT 1`)
     .get() as any;
-  assert(c, 'Bộ demo thiếu Case Giữa khoá tự tạo (chưa xác nhận) có người phụ trách');
+  assert(c, 'Bộ demo thiếu Case Progress Test tự tạo (chưa xác nhận) có người phụ trách');
   const prof = profile.studentProfile(P.admin, c.student_id) as any;
   assert(!('pendingSignals' in prof), 'Hồ sơ học viên không còn khối tín hiệu chờ xác minh');
   const owner = loadPrincipal(c.owner_user_id);
@@ -6361,12 +6361,12 @@ check('[4.2] Kỹ năng KHÔNG có case vẫn có hàng riêng — "chưa có d�
   }
 });
 
-check('[4.2] Case Giữa khoá tự tạo (PR-LT2a) nằm ở ĐÚNG hàng kỹ năng của nó, không lọt sang hàng khác', () => {
+check('[4.2] Case Progress Test tự tạo (PR-LT2a) nằm ở ĐÚNG hàng kỹ năng của nó, không lọt sang hàng khác', () => {
   const c = conn
     .prepare(`SELECT sc.* FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id
                WHERE a.kind = 'progress' AND sc.origin_kind = 'mock' AND sc.category IS NOT NULL AND sc.status != 'done' LIMIT 1`)
     .get() as any;
-  assert(c, 'Bộ demo không còn Case Giữa khoá tự tạo nào');
+  assert(c, 'Bộ demo không còn Case Progress Test tự tạo nào');
   const board = (cases.skillSupportBoard(P.admin, c.student_id, c.cycle_id) as any).rows;
   /* PR-UXF-b (R5-5): Case hiện ở ĐÚNG MỘT hàng cùng hạng mục — hàng chuẩn, hoặc nhóm "Case bàn giao" khi em đã sang chương trình có TÊN MÔN khác (FOU G+V → BE Writing). */
   const hangCo = board.filter((r: any) => r.cases.some((x: any) => x.id === c.id));

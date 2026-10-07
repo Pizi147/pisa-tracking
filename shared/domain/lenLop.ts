@@ -179,7 +179,7 @@ export type DongTomTat = {
   mucTieu?: number | null;
   caseCount?: number;             // Case đang mở của em ở chương trình đang học
   caseWillClose?: boolean;        // Case sẽ bị hệ thống tự đóng (sang FT — S17)
-  baiChuaLam?: number;            // lượt Giữa/Cuối khoá `planned` của khoá đang đóng
+  baiChuaLam?: number;            // lượt Progress/Final Test `planned` của khoá đang đóng
 };
 
 export function tomTatChuyenTiep(dongs: readonly DongTomTat[]): {

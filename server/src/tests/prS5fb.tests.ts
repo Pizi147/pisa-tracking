@@ -19,7 +19,7 @@ export async function runPrS5fbTests(t: YThucTestKit) {
   const fs = await import('node:fs');
   const path = await import('node:path');
   const doc = (f: string) => fs.readFileSync(path.join(process.cwd(), 'web/src/modules', f), 'utf8');
-  console.log('\nPR-S5F-b · Sửa sau rà cuối đợt 5 — Giữa khoá, hồ sơ GV, tốc độ');
+  console.log('\nPR-S5F-b · Sửa sau rà cuối đợt 5 — Progress Test, hồ sơ GV, tốc độ');
 
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const maLoi = (fn: () => unknown) => { try { fn(); return 200; } catch (e: any) { return e.status ?? 500; } };
@@ -89,10 +89,10 @@ export async function runPrS5fbTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ 5 · Phối hợp lớp thường không còn dấu SOS
-  check('S5F-b (5) · Phối hợp Giữa khoá: GVBM đánh dấu Báo PH → 403 với câu KHÔNG nói "SOS"; thẻ Giữa khoá không có "+ Thêm việc"; màn rỗng không nói SOS', () => {
+  check('S5F-b (5) · Phối hợp Progress Test: GVBM đánh dấu Báo PH → 403 với câu KHÔNG nói "SOS"; thẻ Progress Test không có "+ Thêm việc"; màn rỗng không nói SOS', () => {
     const { hv, khoa } = emFou('S5F-b FOU PH');
     const act = get(`SELECT id FROM sos_coordination_actions WHERE student_id = ? AND kind = 'bao_ph_tvv'`, hv);
-    assert(act, 'Giữa khoá trượt phải có việc Báo phụ huynh qua TVV');
+    assert(act, 'Progress Test trượt phải có việc Báo phụ huynh qua TVV');
     let loi: any = null;
     try { phoiHop.confirmCoordination(khoa, act.id, { performedOn: TODAY }); } catch (e) { loi = e; }
     assert(loi?.status === 403 && !/SOS/.test(loi.message), `403 không nói SOS: ${loi?.status} ${loi?.message}`);
@@ -120,18 +120,18 @@ export async function runPrS5fbTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ 7 · Dòng PA Bổ trợ có mã tuần
-  check('S5F-b (7) · PA Bổ trợ CHƯA chạy (BE chờ kế hoạch) vẫn có mã tuần "đến Cuối khoá · W.. OCT"; hàng PA ghi "từ W.." và giữ "trừ buổi Free"', () => {
+  check('S5F-b (7) · PA Bổ trợ CHƯA chạy (BE chờ kế hoạch) vẫn có mã tuần "đến Final Test · W.. OCT"; hàng PA ghi "từ W.." và giữ "trừ buổi Free"', () => {
     const moc = d.mocChuPa({ span: 'den_cuoi_khoa', followupDue: '2026-10-18', mtKe: null, daXacNhan: false }, '2026-09-14');
-    assert(moc === d.mocChuBoTro('2026-10-18', '2026-09-14') && /^đến Cuối khoá · W\d [A-Z]{3}$/.test(moc), moc);
-    assert(d.mocChuPa({ span: 'den_cuoi_khoa', followupDue: null, mtKe: null, daXacNhan: false }, '2026-09-14') === 'đến Cuối khoá', 'không có mốc thì không bịa tuần');
+    assert(moc === d.mocChuBoTro('2026-10-18', '2026-09-14') && /^đến Final Test · W\d [A-Z]{3}$/.test(moc), moc);
+    assert(d.mocChuPa({ span: 'den_cuoi_khoa', followupDue: null, mtKe: null, daXacNhan: false }, '2026-09-14') === 'đến Final Test', 'không có mốc thì không bịa tuần');
     const web = doc('cases/SkillBoard.tsx');
     /* PR-VAI-b (Q19): khoảng PA qua `chuKhoangPa` (mã tuần cho MỌI PA, không riêng Bổ trợ). */
-    assert(/buổi\/tuần · \$\{p\.mocChu \?\? 'đến Cuối khoá'\} · trừ buổi Free/.test(web) && /chuKhoangPa\(\{ startedOn: p\.startedOn/.test(web)
+    assert(/buổi\/tuần · \$\{p\.mocChu \?\? 'đến Final Test'\} · trừ buổi Free/.test(web) && /chuKhoangPa\(\{ startedOn: p\.startedOn/.test(web)
       && d.chuKhoangPa({ startedOn: '2026-09-16', completedOn: null, mocChu: null }, '2026-09-14') === 'từ W3 SEP', 'tên PA Bổ trợ có mốc + trừ buổi Free; từ W..');
   });
 
   // ------------------------------------------------------------------ 8 · Case rút do sửa điểm
-  check('S5F-b (8) · Sửa điểm Giữa khoá thành đạt → Case chờ nguyên nhân bị rút: bảng kỹ năng ghi "Đã rút (sửa điểm)" (không "Xong"), không việc tiếp', () => {
+  check('S5F-b (8) · Sửa điểm Progress Test thành đạt → Case chờ nguyên nhân bị rút: bảng kỹ năng ghi "Đã rút (sửa điểm)" (không "Xong"), không việc tiếp', () => {
     const { hv, pt } = emFou('S5F-b FOU RUT');
     const cP = caseTheoMon(hv, 'speaking');
     regular.saveRegularScore(P.admin, pt, 'speaking', { score: 17, total: 20, lyDo: 'Nhập nhầm — sửa lại đúng điểm bài' });

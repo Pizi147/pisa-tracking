@@ -2,8 +2,7 @@ import { db, theoLo } from '../db.ts';
 import {
   CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS, caseCategoriesFor, caseTitle, chiaChuong, goiYCuoiKhoa, lapLaiQuaLop,
   ASSESSED_SKILLS, tenCaseSos, tenMon, tenMonNgan, tuanHocTai, type CaseCategory, type CaseChuongVao, type LopChuong, type TonePaChuong,
-  mondayOfDate, nhanMt0, type AssessedSkill, type DiemMoc, type DotRef,
-} from '../../../shared/domain/index.ts';
+  mondayOfDate, nhanMt0, type AssessedSkill, type DiemMoc, type DotRef, nhanBaiThuong } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { allProgrammes } from '../normal/regular.ts';
@@ -187,7 +186,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
       if (t.mode === 'ratio') {
         const r = t.ratio!;
         return {
-          ...chung, cheDo: 'ratio' as const, nhanNgan: a.kind === 'final' ? 'Cuối khoá' : 'Giữa khoá',
+          ...chung, cheDo: 'ratio' as const, nhanNgan: nhanBaiThuong(a.kind),
           overall: null, sosLevel: r.sosLevel, soDat: r.skills.filter((s) => s.outcome === 'pass').length, soYeuCau: r.required, soCoDiem: r.scored,
           kyVong: null as number | null,
           kyNangChuaDat: r.skills.filter((s) => s.outcome === 'fail').map((s) => s.skill as string),

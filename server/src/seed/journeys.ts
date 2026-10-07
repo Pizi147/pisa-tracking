@@ -299,7 +299,7 @@ export const CLASSES: ClassSeed[] = [
     code: 'MB Pre FOU 03', branch: 'MB', kind: 'PREFOU', route: null, isFastTrack: false,
     startDate: '2026-08-17', status: 'active',
     teachers: { tong_hop: 'T_HA' },
-    core: 'T_HA', note: 'Pre FOU 5 tuần — Cuối khoá tuần này, một em chưa nhập điểm.',
+    core: 'T_HA', note: 'Pre FOU 5 tuần — Final Test tuần này, một em chưa nhập điểm.',
   },
 
   /* ------------------------------------------------------------------ Bãi Cháy */
@@ -376,13 +376,13 @@ export const CLASSES: ClassSeed[] = [
     code: 'MB FOU 15', branch: 'MB', kind: 'FOU', route: null, isFastTrack: false,
     startDate: '2026-08-17', status: 'active',
     teachers: { listening: 'T_HA', reading: 'T_HA', writing: 'T_KHOA', speaking: 'T_TRANG' },
-    core: 'T_HA', note: 'Tuần 5/8 — Giữa khoá tuần trước, Cuối khoá W1 OCT.',
+    core: 'T_HA', note: 'Tuần 5/8 — Progress Test tuần trước, Final Test W1 OCT.',
   },
   {
     code: 'MB BE 03', branch: 'MB', kind: 'BE', route: null, isFastTrack: false,
     startDate: '2026-08-10', status: 'active',
     teachers: { listening: 'T_HA', reading: 'T_HA', writing: 'T_KHOA', speaking: 'T_TRANG' },
-    core: 'T_HA', note: 'Tuần 6/10 — Giữa khoá tuần trước.',
+    core: 'T_HA', note: 'Tuần 6/10 — Progress Test tuần trước.',
   },
 
   /* ------------------------------------------------------------------ PR-LT2b — Cuối khoá lớp thường (demo D10–D13, thêm CUỐI mảng) */
@@ -390,7 +390,7 @@ export const CLASSES: ClassSeed[] = [
     code: 'MB BE 04', branch: 'MB', kind: 'BE', route: null, isFastTrack: false,
     startDate: '2026-06-29', status: 'active',
     teachers: { listening: 'T_HA', reading: 'T_HA', writing: 'T_KHOA', speaking: 'T_TRANG' },
-    core: 'T_KHOA', note: 'Tuần 11/10 — Cuối khoá tuần trước; một số em đã chuyển.',
+    core: 'T_KHOA', note: 'Tuần 11/10 — Final Test tuần trước; một số em đã chuyển.',
   },
   {
     code: 'MB ELE 02', branch: 'MB', kind: 'ELE', route: null, isFastTrack: false,

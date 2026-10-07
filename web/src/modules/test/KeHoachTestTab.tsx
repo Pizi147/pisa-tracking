@@ -145,7 +145,7 @@ export function KeHoachTestTab() {
               </span>
             ) : (
               <span className="block">
-                Mỗi đợt (Giữa khoá, Cuối khoá) xếp riêng từng môn của chương trình lớp
+                Mỗi đợt (Progress Test, Final Test) xếp riêng từng môn của chương trình lớp
                 {monTheoCt.length ? ': ' : '.'}
                 {monTheoCt.map(([ct, mon], i) => (
                   <span key={ct}>{i ? ' · ' : ''}<b>{ct}</b> {mon}</span>

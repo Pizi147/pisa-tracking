@@ -1,8 +1,7 @@
 import { db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import {
-  ASSESSED_SKILLS, CHUONG_TRINH_KHONG_CHIA_MON, PROGRAMME_TEMPLATES, REGULAR_SKILLS, SOS_LABEL, boMonLich, mocKeTiep,
-} from '../../../shared/domain/index.ts';
+  ASSESSED_SKILLS, CHUONG_TRINH_KHONG_CHIA_MON, PROGRAMME_TEMPLATES, REGULAR_SKILLS, SOS_LABEL, boMonLich, mocKeTiep, nhanBaiThuong } from '../../../shared/domain/index.ts';
 import { entryBandsOf, loadBundle } from '../fasttrack/attempts.ts';
 import { evaluateAttempt, expectationFor } from '../fasttrack/scoring.ts';
 import { allProgrammes, evaluateRegular } from '../normal/regular.ts';
@@ -132,7 +131,7 @@ const EMPTY = (studentId: number, cycleId: number | null): Standing => ({
 });
 
 const labelOf = (kind: string | null, no: number | null) =>
-  kind === 'final' ? 'Cuối khoá' : kind === 'progress' ? 'Giữa khoá' : `MT${no ?? '?'}`;
+  kind === 'final' || kind === 'progress' ? nhanBaiThuong(kind) : `MT${no ?? '?'}`;
 
 /**
  * Tính tình trạng cho MỘT LOẠT học viên trong một lần.

@@ -81,7 +81,7 @@ export async function runPrS4fTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ 3 · Lớp thường xoá điểm môn trượt
-  await checkAsync('S4F (3) · Lớp thường: xoá điểm R trượt (API) → Case chỉ dựng trên điểm đó đóng, không mốc "đã đạt"; sửa lên đạt cũng không mốc; lượt sau đạt → có mốc (Case Giữa khoá tự tạo — PR-LT2a)', async () => {
+  await checkAsync('S4F (3) · Lớp thường: xoá điểm R trượt (API) → Case chỉ dựng trên điểm đó đóng, không mốc "đã đạt"; sửa lên đạt cũng không mốc; lượt sau đạt → có mốc (Case Progress Test tự tạo — PR-LT2a)', async () => {
     const fou = classId('MB FOU 12');
     const taoEm = (ten: string) => {
       intake.commitIntake(P.admin, { classId: fou, rows: [{ fullName: ten, email: 'hv@demo.test' }], idempotencyKey: `s4f-${ten}` });
@@ -129,9 +129,9 @@ export async function runPrS4fTests(t: YThucTestKit) {
     if (c.ft) {
       nhap(c.ft, false);
       assert(mocDat(caseC).some((m: any) => m.dedup_key === `mt:${c.ft}:${caseC}:passed`), `lượt sau đạt phải có mốc: ${JSON.stringify(mocDat(caseC))}`);
-      assert(get('SELECT sos_level FROM sos_cases WHERE id = ?', caseC).sos_level === null, 'Case Giữa khoá không nhãn SOS — lượt sau đạt không đổi mức');
+      assert(get('SELECT sos_level FROM sos_cases WHERE id = ?', caseC).sos_level === null, 'Case Progress Test không nhãn SOS — lượt sau đạt không đổi mức');
     } else {
-      assert(false, 'dữ liệu: em mới không có bài Cuối khoá');
+      assert(false, 'dữ liệu: em mới không có bài Final Test');
     }
   });
 
@@ -275,7 +275,7 @@ export async function runPrS4fTests(t: YThucTestKit) {
   });
 
   check('S4F (12) · Xuất: sheet "Pre FOU · …"; dòng xếp theo TÊN rồi họ; vượt trần cỡ → 400 "Thu hẹp phạm vi"; xem trước không cắt chữ', () => {
-    assert(d.tenSheetThuong('PREFOU') === 'Pre FOU · Giữa–Cuối khoá' && d.tenSheetThuong('FOU') === 'FOU · Giữa–Cuối khoá', d.tenSheetThuong('PREFOU'));
+    assert(d.tenSheetThuong('PREFOU') === 'Pre FOU · Progress–Final Test' && d.tenSheetThuong('FOU') === 'FOU · Progress–Final Test', d.tenSheetThuong('PREFOU'));
     const ds = ['Vũ Thị An', 'Nguyễn Văn Bình', 'Trần Minh An', 'Đỗ Hà'].sort(d.soTenVi);
     assert(ds.join('|') === 'Trần Minh An|Vũ Thị An|Nguyễn Văn Bình|Đỗ Hà', ds.join('|'));
     const f = d.docBoLocXuatMt({ tg: 'dot', dot: 'mt:1,mt:2,mt:3,mt:4,mt:5,mt:6,mt:7,mt:8', lop: String(FT), cot: 'day-du' });

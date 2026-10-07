@@ -216,9 +216,9 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     const mt4 = d.nhanGhim({ cheDo: 'ielts', attemptNo: 4, kind: 'mock', overall: null, sosLevel: null, soDat: null, soYeuCau: 4, soCoDiem: 0 });
     assert(mt4.chu === 'MT4' && mt4.mau === 'tam', `MT chưa có điểm: ${JSON.stringify(mt4)}`);
     const giua = d.nhanGhim({ cheDo: 'ratio', attemptNo: 1, kind: 'progress', overall: null, sosLevel: null, soDat: 3, soYeuCau: 4, soCoDiem: 4 });
-    assert(giua.gon === 'Giữa' && giua.day.startsWith('Giữa khoá · 3/4 môn đạt') && giua.mau === 'sos1', `Giữa khoá: ${JSON.stringify(giua)}`);
+    assert(giua.gon === 'Progress' && giua.day.startsWith('Progress Test · 3/4 môn đạt') && giua.mau === 'sos1', `Progress Test: ${JSON.stringify(giua)}`);
     const cuoi = d.nhanGhim({ cheDo: 'ratio', attemptNo: 1, kind: 'final', overall: null, sosLevel: null, soDat: 4, soYeuCau: 4, soCoDiem: 4 });
-    assert(cuoi.gon === 'Cuối' && cuoi.mau === 'dat', `Cuối khoá đạt: ${JSON.stringify(cuoi)}`);
+    assert(cuoi.gon === 'Final' && cuoi.mau === 'dat', `Final Test đạt: ${JSON.stringify(cuoi)}`);
     for (const r of [giua, cuoi]) assert(!r.chu.includes('MT') && !r.gon.includes('MT') && !r.day.includes('MT'), `Lớp thường không chứa MT: ${JSON.stringify(r)}`);
   });
 
@@ -265,13 +265,13 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     assert(d.chuoiDiem([{ gt: 6, chuaDat: false, attemptNo: 2, kind: 'mock' }], 'ielts', false)[0].title === 'MT2 · 6.0', 'Thiếu kyVong: chỉ MT + điểm');
   });
 
-  check('PR-UX5 (1) · chuoiDiem lớp thường: title "Giữa khoá … ngưỡng 70%", KHÔNG chữ "kỳ vọng" / "MT" (Q1)', () => {
+  check('PR-UX5 (1) · chuoiDiem lớp thường: title "Progress Test … ngưỡng 70%", KHÔNG chữ "kỳ vọng" / "MT" (Q1)', () => {
     const m = d.chuoiDiem([
       { gt: 13, tong: 20, chuaDat: true, attemptNo: 1, kind: 'progress', maLop: 'MB FOU 03' },
       { gt: 16, tong: 20, chuaDat: false, attemptNo: 2, kind: 'final', maLop: 'MB FOU 03' },
     ], 'ratio', false);
-    assert(m[0].title === 'Giữa khoá MB FOU 03 · 65% (13/20) · Chưa đạt — ngưỡng 70%', `Title: ${m[0].title}`);
-    assert(m[1].title === 'Cuối khoá MB FOU 03 · 80% (16/20) · Đạt', `Title đạt: ${m[1].title}`);
+    assert(m[0].title === 'Progress Test MB FOU 03 · 65% (13/20) · Chưa đạt — ngưỡng 70%', `Title: ${m[0].title}`);
+    assert(m[1].title === 'Final Test MB FOU 03 · 80% (16/20) · Đạt', `Title đạt: ${m[1].title}`);
     for (const x of m) assert(!x.title.includes('kỳ vọng') && !x.title.includes('MT'), `Không "kỳ vọng"/"MT": ${x.title}`);
   });
 
@@ -303,16 +303,16 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     assert(chuaKy.mau === 'tam' && chuaKy.day.includes('chưa có kỳ vọng'), `Chưa có kỳ vọng: ${JSON.stringify(chuaKy)}`);
   });
 
-  check('PR-UX5 (1) · nhanGhim lớp thường: "Giữa · 3/4 môn đạt" / "Cuối · 64%" / "Cuối · tạm thời", không chữ "MT" và không "SOS" (PR-LT2a T58)', () => {
+  check('PR-UX5 (1) · nhanGhim lớp thường: "Progress · 3/4 môn đạt" / "Final · 64%" / "Final · tạm thời", không chữ "MT" và không "SOS" (PR-LT2a T58)', () => {
     const base = { cheDo: 'ratio' as const, attemptNo: 1, overall: null, soYeuCau: 4, maLop: 'MB FOU 03' };
     const g = d.nhanGhim({ ...base, kind: 'progress', sosLevel: 1, soDat: 3, soCoDiem: 4 });
-    assert(g.chu === 'Giữa · 3/4 môn đạt' && g.mau === 'sos1' && g.day === 'Giữa khoá MB FOU 03 · 3/4 môn đạt · 1 môn trượt', `Giữa: ${JSON.stringify(g)}`);
+    assert(g.chu === 'Progress · 3/4 môn đạt' && g.mau === 'sos1' && g.day === 'Progress Test MB FOU 03 · 3/4 môn đạt · 1 môn trượt', `Giữa: ${JSON.stringify(g)}`);
     const c = d.nhanGhim({ ...base, kind: 'final', sosLevel: 0, soDat: 4, soCoDiem: 4, tyLe: 0.64 });
-    assert(c.chu === 'Cuối · 64%' && c.mau === 'dat', `Cuối: ${JSON.stringify(c)}`);
+    assert(c.chu === 'Final · 64%' && c.mau === 'dat', `Cuối: ${JSON.stringify(c)}`);
     const t = d.nhanGhim({ ...base, kind: 'final', sosLevel: 2, soDat: 2, soCoDiem: 3 });
-    assert(t.chu === 'Cuối · tạm thời' && t.mau === 'tam' && t.day.includes('mới chấm 3/4 môn'), `Tạm thời: ${JSON.stringify(t)}`);
+    assert(t.chu === 'Final · tạm thời' && t.mau === 'tam' && t.day.includes('mới chấm 3/4 môn'), `Tạm thời: ${JSON.stringify(t)}`);
     const trong = d.nhanGhim({ ...base, kind: 'progress', sosLevel: null, soDat: null, soCoDiem: 0 });
-    assert(trong.chu === 'Giữa' && trong.mau === 'tam', `Chưa điểm: ${JSON.stringify(trong)}`);
+    assert(trong.chu === 'Progress' && trong.mau === 'tam', `Chưa điểm: ${JSON.stringify(trong)}`);
     for (const r of [g, c, t, trong]) assert(!/MT|SOS/.test(`${r.chu}${r.gon}${r.day}`), `Không "MT"/"SOS": ${JSON.stringify(r)}`);
   });
 
@@ -766,9 +766,9 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     assert(v.text === '2/4 môn đạt', `Chữ: ${v.text}`);   // PR-LT2a (T58)
   });
 
-  check('PR-Qb (6) · StudentDetailPage.tsx không còn chữ cấm §6: "Số MT đánh lại", "Progress Test", "Final Test", "Lớp Normal", "Mở case"', () => {
+  check('PR-Qb (6) · StudentDetailPage.tsx không còn chữ cấm §6: "Số MT đánh lại", "Lớp Normal", "Mở case"', () => {
     const src = doc('web/src/modules/students/StudentDetailPage.tsx');
-    for (const cam of ['Số MT đánh lại', 'Progress Test', 'Final Test', 'Lớp Normal', 'Mở case']) {
+    for (const cam of ['Số MT đánh lại', 'Lớp Normal', 'Mở case']) {
       assert(!src.includes(cam), `Còn chữ cấm "${cam}"`);
     }
   });

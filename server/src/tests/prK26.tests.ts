@@ -4,7 +4,7 @@ import type { YThucTestKit } from './yThuc.tests.ts';
 export async function runPrK26Tests(t: YThucTestKit) {
   const { check, assert, assertThrows, conn, P, TODAY, addDays } = t;
   const d: any = await import('../../../shared/domain/index.ts');
-  console.log('\nPR-K26 · Lộ trình tiếp theo theo dải % Cuối khoá');
+  console.log('\nPR-K26 · Lộ trình tiếp theo theo dải % Final Test');
 
   // ------------------------------------------------------------------ K26-1 · luật hướng (thuần)
   check('K26-1 · chuanHoaHuong: chua_ro/xep_sau → chua_quyet; hợp lệ giữ; lạ → null', () => {
@@ -145,7 +145,7 @@ export async function runPrK26Tests(t: YThucTestKit) {
   // ------------------------------------------------------------------ K26-3 · panel một em: gợi ý đứng đầu, 50–59% là đề xuất
   const fs = await import('node:fs');
   const nguon = (f: string) => fs.readFileSync(new URL(`../../../../web/src/${f}`, import.meta.url), 'utf8');
-  check('K26-3a · layLoTrinhTiep: em Cuối khoá 55% → goiY.canQuanLy; 78% → len; 45% → hoc_lai; thiếu điểm → không gợi ý', () => {
+  check('K26-3a · layLoTrinhTiep: em Final Test 55% → goiY.canQuanLy; 78% → len; 45% → hoc_lai; thiếu điểm → không gợi ý', () => {
     const l = taoLop('BE', 11, 4);
     const gvcn = ganGVCN(l.classId, P.normalCoreTeacher.userId);
     ghiCuoiKhoa(l.luot.get(l.sids[0])!, 22);   // 55%

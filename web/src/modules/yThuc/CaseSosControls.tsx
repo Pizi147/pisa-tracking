@@ -111,7 +111,7 @@ export function XacNhanCasePanel({ caseId, topic, kyNang, ct, tenSos, paQuyChe, 
         </Truong>
         <Truong nhan="Tên Case" batBuoc phu={boTro ? 'Chỉ sửa được phần giữa. Đợt kiểm tra do hệ thống gắn.' : 'Chỉ sửa được phần giữa. MT# và SOS do hệ thống gắn.'} loi={lf.loiCua(loi, 'ten')}>
           <span className="flex items-center gap-1.5">
-            {boTro ? <Chip>Giữa khoá</Chip> : tenSos?.mt ? <Chip>{`MT${tenSos.mt}`}</Chip> : null}
+            {boTro ? <Chip>Progress Test</Chip> : tenSos?.mt ? <Chip>{`MT${tenSos.mt}`}</Chip> : null}
             <input className="field min-w-0 flex-1" maxLength={80} {...lf.o(loi, 'ten')} value={giua} onChange={(e) => setGiua(e.target.value)} />
             {tenSos?.sos ? <Chip sos={tenSos.sos}>{`SOS ${tenSos.sos}`}</Chip> : null}
           </span>

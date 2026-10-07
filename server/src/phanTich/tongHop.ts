@@ -192,7 +192,7 @@ function tinh(p: Principal, f: FilterTongHop) {
   const tongTap: Tap = new Map();
   const tongCoDot = coDotMoi();
   const laThuong = f.ct === 'thuong';
-  const cuoiDaDem: number[] = [];   // bài Cuối khoá đã vào bảng → Mini Test gắn đúng dòng của nó
+  const cuoiDaDem: number[] = [];   // bài Final Test đã vào bảng → Mini Test gắn đúng dòng của nó
   for (const a of attempts) {
     const { cha, con } = dongOf(a);
     if (laThuong) for (const x of [cha.coDot, con.coDot, tongCoDot]) { if (a.kind === 'final') x.cuoi = true; else x.giua = true; }

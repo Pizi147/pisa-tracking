@@ -15,7 +15,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
 
   const ft = { mode: 'ielts_band', attemptLabel: 'MT3', attemptKind: 'mock', sosLevel: 2, provisional: false, scored: 4, required: 4, failed: null,
     overall: 6.5, expectation: 7.0, belowSkills: [{ skill: 'listening', band: 6 }, { skill: 'reading', band: 6 }, { skill: 'writing', band: 6 }], failedSkills: [] };
-  const thuong = (o: any = {}) => ({ mode: 'ratio', attemptLabel: 'Giữa khoá', attemptKind: 'progress', sosLevel: 1, provisional: false, scored: 4, required: 4,
+  const thuong = (o: any = {}) => ({ mode: 'ratio', attemptLabel: 'Progress Test', attemptKind: 'progress', sosLevel: 1, provisional: false, scored: 4, required: 4,
     failed: 1, overall: null, expectation: null, belowSkills: [], failedSkills: [{ skill: 'writing', score: 12, total: 20 }], chuongTrinh: 'FOU', ...o });
 
   check('PR-HVL (1) · T18 kết quả FT hai dòng: đủ điểm / thiếu điểm / không cam kết; lệch "−0.5", không "…"', () => {
@@ -28,15 +28,15 @@ export async function runPrHvlTests(t: YThucTestKit) {
     for (const k of [d.ketQuaGanNhat(ft), thieu, kck]) assert(!/…/.test(JSON.stringify(k)), `Có "…": ${JSON.stringify(k)}`);
   });
 
-  check('PR-HVL (1) · T58 kết quả lớp thường: "n/4 môn đạt" + "Không đạt: G+V"; Cuối khoá đủ điểm "58%"; Pre FOU "64%"; không SOS, không "…"', () => {
-    eq(d.ketQuaGanNhat(thuong()), { chinh: '3/4 môn đạt', lech: null, dat: false, sos: null, dong1: 'Giữa khoá', dong2: 'Không đạt: G+V' }, 'FOU Giữa khoá');
-    const be = d.ketQuaGanNhat(thuong({ chuongTrinh: 'BE', attemptLabel: 'Cuối khoá', attemptKind: 'final', tyLeTong: 0.58, failed: 2,
+  check('PR-HVL (1) · T58 kết quả lớp thường: "n/4 môn đạt" + "Không đạt: G+V"; Final Test đủ điểm "58%"; Pre FOU "64%"; không SOS, không "…"', () => {
+    eq(d.ketQuaGanNhat(thuong()), { chinh: '3/4 môn đạt', lech: null, dat: false, sos: null, dong1: 'Progress Test', dong2: 'Không đạt: G+V' }, 'FOU Progress Test');
+    const be = d.ketQuaGanNhat(thuong({ chuongTrinh: 'BE', attemptLabel: 'Final Test', attemptKind: 'final', tyLeTong: 0.58, failed: 2,
       failedSkills: [{ skill: 'reading', score: 10, total: 20 }, { skill: 'writing', score: 8, total: 20 }] }));
-    eq([be.chinh, be.dong1, be.dong2, be.sos], ['58%', 'Cuối khoá → QL cân nhắc', 'Không đạt: R W', null], 'BE Cuối khoá đủ điểm (PR-UXF-a K2-01: hậu tố hướng)');
-    const pre = d.ketQuaGanNhat(thuong({ chuongTrinh: 'PREFOU', khongChiaMon: true, attemptLabel: 'Cuối khoá', attemptKind: 'final', tyLeTong: 0.64, failed: 0, sosLevel: 0, failedSkills: [] }));
-    eq([pre.chinh, pre.dong1, pre.dong2, pre.dat], ['64%', 'Cuối khoá → lên + bổ trợ', null, true], 'Pre FOU: không dòng 2 (PR-UXF-a K2-01: hậu tố hướng)');
-    const thieu = d.ketQuaGanNhat(thuong({ attemptLabel: 'Cuối khoá', attemptKind: 'final', scored: 2, failed: 0, sosLevel: null, failedSkills: [] }));
-    eq([thieu.chinh, thieu.dong1], ['2/2 môn đạt', 'Cuối khoá · 2/4 môn có điểm'], 'Cuối khoá còn thiếu môn thì chưa có %');
+    eq([be.chinh, be.dong1, be.dong2, be.sos], ['58%', 'Final Test → QL cân nhắc', 'Không đạt: R W', null], 'BE Final Test đủ điểm (PR-UXF-a K2-01: hậu tố hướng)');
+    const pre = d.ketQuaGanNhat(thuong({ chuongTrinh: 'PREFOU', khongChiaMon: true, attemptLabel: 'Final Test', attemptKind: 'final', tyLeTong: 0.64, failed: 0, sosLevel: 0, failedSkills: [] }));
+    eq([pre.chinh, pre.dong1, pre.dong2, pre.dat], ['64%', 'Final Test → lên + bổ trợ', null, true], 'Pre FOU: không dòng 2 (PR-UXF-a K2-01: hậu tố hướng)');
+    const thieu = d.ketQuaGanNhat(thuong({ attemptLabel: 'Final Test', attemptKind: 'final', scored: 2, failed: 0, sosLevel: null, failedSkills: [] }));
+    eq([thieu.chinh, thieu.dong1], ['2/2 môn đạt', 'Final Test · 2/4 môn có điểm'], 'Final Test còn thiếu môn thì chưa có %');
     eq(d.ketQuaGanNhat(thuong({ scored: 0, failed: 0, sosLevel: null, failedSkills: [] })).chinh, '—', 'chưa môn nào có điểm: không "0/0 môn đạt"');
     for (const k of [d.ketQuaGanNhat(thuong()), be, pre, thieu]) assert(!/SOS|…/.test(JSON.stringify(k)), `Có "SOS"/"…": ${JSON.stringify(k)}`);
     eq(d.ketQuaGanNhat(null).dong1, 'Chưa có kết quả', 'Chưa có');
@@ -81,7 +81,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
 
   check('PR-HVL (1) · K2-04 viecTiepCuaEm: Xác nhận nguyên nhân / Xác nhận PA / Ghi kết quả (hạn hết T2) / Xử lý vi phạm / Nhập điểm, có đích bấm được', () => {
     const v = d.viecTiepCuaEm({
-      nhapDiem: { kyNang: ['listening', 'reading'], dot: 'Giữa khoá', quaHan: false },
+      nhapDiem: { kyNang: ['listening', 'reading'], dot: 'Progress Test', quaHan: false },
       cases: [
         viecCase(11, 'listening', { chu: 'Xác nhận nguyên nhân', loaiHan: 'xac-minh-sos', han: '2026-09-16' }),
         viecCase(12, 'reading', { chu: 'Xác nhận PA Ôn lại dạng bài True/False/NG', loaiHan: 'xac-minh-sos', han: '2026-09-14', paId: 90 }),
@@ -119,10 +119,10 @@ export async function runPrHvlTests(t: YThucTestKit) {
   });
 
   check('PR-HVL (1) · Q6 tachViecChung: việc Nhập điểm trùng chữ ở ≥ 2 em thành một dòng "Cả lớp"; một em thì không gộp', () => {
-    const nd = (han: string | null = null) => d.viecTiepCuaEm({ nhapDiem: { kyNang: ['listening', 'reading'], dot: 'Cuối khoá', quaHan: false, han }, cases: [], yThuc: null, homNay: HN })[0];
+    const nd = (han: string | null = null) => d.viecTiepCuaEm({ nhapDiem: { kyNang: ['listening', 'reading'], dot: 'Final Test', quaHan: false, han }, cases: [], yThuc: null, homNay: HN })[0];
     const rieng = d.viecTiepCuaEm({ nhapDiem: null, cases: [viecCase(1, 'reading', { chu: 'Xác nhận nguyên nhân', loaiHan: 'xac-minh-sos', han: '2026-09-17' })], yThuc: null, homNay: HN });
     const r = d.tachViecChung([1, 2, 3, 4].map((id) => ({ id, viec: id === 1 ? [nd(), ...rieng] : [nd()] })));
-    eq([r.chung.soEm, r.chung.viec.viec], [4, 'Nhập điểm L, R · Cuối khoá'], 'Bốn em');
+    eq([r.chung.soEm, r.chung.viec.viec], [4, 'Nhập điểm L, R · Final Test'], 'Bốn em');
     eq([r.conLai.get(1).map((x: any) => x.viec), r.conLai.get(2)], [['Xác nhận nguyên nhân R'], []], 'Việc chung bỏ khỏi từng em, việc riêng còn');
     const mot = d.tachViecChung([{ id: 1, viec: [nd()] }, { id: 2, viec: [] }]);
     eq([mot.chung, mot.conLai.get(1).length], [null, 1], 'Một em: không gộp');
@@ -158,10 +158,10 @@ export async function runPrHvlTests(t: YThucTestKit) {
     eq(d.sapEmCanHoTro(em).map((x: any) => x.ten), ['Ánh Dương', 'Bùi Thảo Vy', 'An Bình', 'Đỗ Minh Khôi'], 'Thứ tự');
   });
 
-  check('PR-HVL (1) · K2-14 nutChinhDauTrang: lớp rỗng / cuối khoá lớp thường / nhập điểm / không nút', () => {
+  check('PR-HVL (1) · K2-14 nutChinhDauTrang: lớp rỗng / Final Test lớp thường / nhập điểm / không nút', () => {
     const g = { thuong: false, phase: 'running', needsPlacement: false, soHocVien: 8, coTheThemHv: true, coTheNhapDiem: false, coTheChuyenTiep: true, soEmChuyen: 0 };
     eq(d.nutChinhDauTrang({ ...g, soHocVien: 0 }), { loai: 'them-hv', nhan: '+ Học viên' }, 'Lớp rỗng');
-    eq(d.nutChinhDauTrang({ ...g, thuong: true, phase: 'final_week', soEmChuyen: 6 }), { loai: null, nhan: '' }, 'PR-CT: cuối khoá lớp thường');
+    eq(d.nutChinhDauTrang({ ...g, thuong: true, phase: 'final_week', soEmChuyen: 6 }), { loai: null, nhan: '' }, 'PR-CT: Final Test lớp thường');
     eq(d.nutChinhDauTrang({ ...g, thuong: true, phase: 'running', needsPlacement: true, soEmChuyen: 2 }).loai, null, 'PR-CT: cần xếp lớp — nút ở dải');
     eq(d.nutChinhDauTrang({ ...g, thuong: true, phase: 'final_week', coTheChuyenTiep: false, coTheNhapDiem: true }).loai, 'nhap-diem', 'Không chuyển tiếp được → Nhập điểm');
     eq(d.nutChinhDauTrang({ ...g, coTheNhapDiem: true }), { loai: 'nhap-diem', nhan: 'Nhập điểm' }, 'Nhập điểm');
@@ -528,12 +528,12 @@ export async function runPrHvlTests(t: YThucTestKit) {
     assert(t.coMocSapToi <= t.soEm && t.daXongMtCuoi <= t.soEm, JSON.stringify(t));
     eq(t.coMocSapToi, new Set(ro.filter((r: any) => r.standing?.nextAttemptNo != null).map((r: any) => r.id)).size, 'em có MT sắp tới = roster');
     const pr = schedMod.classProgress(LOP_FT);
-    eq([pr.coGiuaKhoa, pr.programmeCode], [false, 'FT'], 'FT không có mốc Giữa khoá chung');
+    eq([pr.coGiuaKhoa, pr.programmeCode], [false, 'FT'], 'FT không có mốc Progress Test chung');
     const src = fs.readFileSync(path.join(REPO, 'server/src/routes/index.ts'), 'utf8');
     assert(/tomTatMt = pr\.programmeCode === 'FT' && can\(/.test(src), 'route progress phải kiểm quyền trước khi trả tomTatMt');
   });
 
-  checkAsync('PR-HVL (7) · K2-23: coGiuaKhoa theo chương trình — FOU có, Pre FOU không; lớp thường cuối khoá có cuoiKhoa {du, tong}, FT không', async () => {
+  checkAsync('PR-HVL (7) · K2-23: coGiuaKhoa theo chương trình — FOU có, Pre FOU không; lớp thường Final Test có cuoiKhoa {du, tong}, FT không', async () => {
     eq(schedMod.classProgress(LOP_FOU).coGiuaKhoa, true, 'FOU');
     const pre = (conn.prepare(`SELECT id FROM classes WHERE code = 'MB Pre FOU 77'`).get() as any)?.id;
     if (pre) eq(schedMod.classProgress(pre).coGiuaKhoa, false, 'Pre FOU');
@@ -543,11 +543,11 @@ export async function runPrHvlTests(t: YThucTestKit) {
     const lop = (intakeMod.createClass(P.admin, { code: 'MB FOU HVL7', branchId: MB, kind: 'FOU', isFastTrack: false, startDate: batDau, startPeriodId: weekMod.ensurePeriod(batDau).id }) as any).id as number;
     for (const ten of ['HVL7 An', 'HVL7 Binh']) intakeMod.commitIntake(P.admin, { classId: lop, rows: [{ fullName: ten, email: 'hv@demo.test' }], idempotencyKey: `hvl7-${ten}` });
     const ov = classesMod.classOverview(P.admin, lop);
-    assert(['final_week', 'finished'].includes(ov.summary.phase), `Lớp khai giảng 7 tuần trước phải ở tuần Cuối khoá: ${ov.summary.phase}`);
-    eq(ov.cuoiKhoa, { du: 0, tong: 2, canQl: 0 }, 'chưa em nào có điểm Cuối khoá');
+    assert(['final_week', 'finished'].includes(ov.summary.phase), `Lớp khai giảng 7 tuần trước phải ở tuần Final Test: ${ov.summary.phase}`);
+    eq(ov.cuoiKhoa, { du: 0, tong: 2, canQl: 0 }, 'chưa em nào có điểm Final Test');
   });
 
-  check('PR-HVL (7) · web đầu hồ sơ lớp: một nút chính theo chặng, ⋮ có Tuần khai giảng / Lịch kiểm tra, LT bọc abbr; panel không còn "Lộ trình lớp" / "Mở từng em rồi bấm"; ô Giữa khoá ẩn với Pre FOU', () => {
+  check('PR-HVL (7) · web đầu hồ sơ lớp: một nút chính theo chặng, ⋮ có Tuần khai giảng / Lịch kiểm tra, LT bọc abbr; panel không còn "Lộ trình lớp" / "Mở từng em rồi bấm"; ô Progress Test ẩn với Pre FOU', () => {
     const dau = web('modules/classes/DauTrangLop.tsx'); const pn = web('modules/classes/ClassProgressPanel.tsx'); const pg = web('modules/classes/ClassOverviewPage.tsx');
     assert(/nutChinhDauTrang\(/.test(dau) && /phu\.slice\(0, 2\)/.test(dau) && /'Tuần khai giảng'/.test(dau) && /ROUTE_NAME\[/.test(dau) && /<MenuDong kieu="chip" bieuTuong=\{`\+\$\{b\.an\.length\}`\}/.test(dau), 'DauTrangLop');
     assert(!/Lộ trình lớp/.test(dau + pn + pg) && !/Mở từng em rồi bấm/.test(pn), 'chữ cũ còn sót');
@@ -574,7 +574,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
     const lt = web('modules/students/LoTrinhTiepPanel.tsx');
     assert(/Kết quả gần nhất/.test(lt) && /ketQuaGanNhat\(/.test(lt) && !/luat="Chỉ là dự định/.test(lt) && /Chỉ là dự định, chưa đổi lớp/.test(lt), 'LoTrinhTiepPanel');
     const tp = web('modules/classes/TransitionPanel.tsx');
-    assert(/useLoiForm\(\)/.test(tp) && /lf\.bam\(\)/.test(tp) && /daSua/.test(tp) && /Cuối khoá/.test(tp) && /Kết quả gần nhất/.test(tp) && /ketQuaGanNhat\(/.test(tp), 'TransitionPanel (PR-CT: cột Cuối khoá / Kết quả gần nhất dùng ketQuaGanNhat)');
+    assert(/useLoiForm\(\)/.test(tp) && /lf\.bam\(\)/.test(tp) && /daSua/.test(tp) && /Final Test/.test(tp) && /Kết quả gần nhất/.test(tp) && /ketQuaGanNhat\(/.test(tp), 'TransitionPanel (PR-CT: cột Final Test / Kết quả gần nhất dùng ketQuaGanNhat)');
     assert(!/disabled=\{coLoi \|\| !data\?\.canEdit\}/.test(tp), 'nút Tiếp tục không được khoá vì lỗi (phải bấm được để hiện lỗi)');
   });
 
@@ -640,14 +640,14 @@ export async function runPrHvlDemoTests(t: YThucTestKit) {
     assert(em.cases.some((c: any) => c.tenSos?.mt === 1), 'Case SOS tự tạo mang chip [MT1]');
   });
 
-  check('PR-HVL (10) · demo H2: MB FOU 12 — Hồ Diệu Linh có Case G+V và P; Nguyễn Thảo Vy Cuối khoá đủ điểm hiện "58%" không SOS; H3 Pre FOU 03 "64%"; H4 Đoàn Khánh Chi MT lịch sử → "Chưa có kết quả"', () => {
+  check('PR-HVL (10) · demo H2: MB FOU 12 — Hồ Diệu Linh có Case G+V và P; Nguyễn Thảo Vy Final Test đủ điểm hiện "58%" không SOS; H3 Pre FOU 03 "64%"; H4 Đoàn Khánh Chi MT lịch sử → "Chưa có kết quả"', () => {
     const fou = canHoTro.canHoTroLop(P.admin, LOP_FOU);
     const linh = fou.em.find((e: any) => e.id === idHv('Hồ Diệu Linh'));
     assert(linh, 'H2: Hồ Diệu Linh phải có mặt ở Cần hỗ trợ lớp FOU (Case G+V và P)');
     eq(nhanHang(d.hangCanHoTro({ ct: fou.ct, cases: linh.cases })), ['~Không có Case: L · R', 'G+V:1', 'P:1'], 'Hàng G+V và P');
     const vy = standingMod.standingFor([idHv('Nguyễn Thảo Vy')!]).get(idHv('Nguyễn Thảo Vy')!);
     const kq = d.ketQuaGanNhat(vy);
-    eq([kq.chinh, kq.sos, kq.dong1], ['58%', null, 'Cuối khoá → QL cân nhắc'], 'H2 Cuối khoá 58/100 (PR-UXF-a K2-01)');
+    eq([kq.chinh, kq.sos, kq.dong1], ['58%', null, 'Final Test → QL cân nhắc'], 'H2 Final Test 58/100 (PR-UXF-a K2-01)');
     const pre = (conn.prepare(`SELECT s.id FROM students s JOIN enrollments e ON e.student_id = s.id JOIN classes c ON c.id = e.class_id
                                 WHERE c.code = 'MB Pre FOU 03' AND e.status = 'active'`).all() as any[]).map((r) => r.id as number);
     const chinhPre = [...standingMod.standingFor(pre).values()].map((s: any) => d.ketQuaGanNhat(s).chinh);

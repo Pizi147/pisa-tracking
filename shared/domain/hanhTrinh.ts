@@ -7,7 +7,7 @@
  */
 import { outcomeLabelFor } from './cases.ts';
 import { tuanHocFt, tuanLich } from './hienThiNgay.ts';
-import { tenMonNgan } from './normal.ts';
+import { tenMonNgan, nhanBaiThuong, ATTEMPT_KIND_NGAN } from './normal.ts';
 import type { BoTroMienPhi } from './cuoiKhoa.ts';
 import { RATIO_PASS_THRESHOLD } from './normal.ts';
 import { addDaysIso } from './sos.ts';
@@ -278,7 +278,7 @@ export type DotRef = { cheDo: 'ielts' | 'ratio'; attemptNo: number; kind: string
 /** Nhãn một đợt: Fast Track `MT2`; lớp thường `Giữa khoá MB FOU 03` / `Cuối khoá` (không bao giờ chữ "MT"). */
 export function nhanDotTest(d: DotRef): string {
   if (d.cheDo === 'ielts') return `MT${d.attemptNo}`;
-  const kind = d.kind === 'final' ? 'Cuối khoá' : 'Giữa khoá';
+  const kind = nhanBaiThuong(d.kind);
   return d.maLop ? `${kind} ${d.maLop}` : kind;
 }
 
@@ -415,8 +415,8 @@ export function nhanGhim(a: {
       day: ghep(mt, tuan, overall, ky.length ? `${sos} — ${ky.join(', ')} dưới kỳ vọng` : sos), mau, hai: [so, band],
     };
   }
-  const daiKind = a.kind === 'final' ? 'Cuối khoá' : 'Giữa khoá';
-  const ngan = a.kind === 'final' ? 'Cuối' : 'Giữa';
+  const daiKind = nhanBaiThuong(a.kind);
+  const ngan = ATTEMPT_KIND_NGAN[a.kind === 'final' ? 'final' : 'progress'];
   const dai = a.maLop ? `${daiKind} ${a.maLop}` : daiKind;
   if (a.soCoDiem === 0) return { chu: ngan, gon: ngan, day: dai, mau: 'tam', hai: [ngan, ''] };
   if (a.khongChiaMon && a.tyLe != null) {
@@ -608,7 +608,7 @@ export function chiaChuong<G extends { classId: number | null; tuan: string | nu
       loai,
       chu: loai === 'len' ? chuLen(sau, boTroCuaChuong(l.classId), l.ct) : loai === 'chuyen' ? 'Chuyển lớp' : loai === 'hoc-lai' ? 'Học lại'
         : loai === 'bao-luu' ? 'Tạm dừng học (bảo lưu)' : loai === 'dung' ? 'Dừng học hẳn' : loai === 'ket-thuc' ? 'Kết thúc học' : l.status === 'paused' ? 'Tạm dừng học' : 'Rời lớp',
-      how: l.lenh ? 'Quản lý quyết định' : loai === 'len' ? 'theo Cuối khoá' : l.endReason,
+      how: l.lenh ? 'Quản lý quyết định' : loai === 'len' ? 'theo Final Test' : l.endReason,
       tu: sau?.tu ?? null,
       docBanGiao: l.lenh?.xacNhan ? { lenhId: l.lenh.id, lopNguonId: l.classId } : null,
     };

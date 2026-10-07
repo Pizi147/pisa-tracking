@@ -119,12 +119,12 @@ export async function runHocVienLopTests(t: YThucTestKit) {
   });
 
   check('PR-Qa · §2/§3.6 Kết quả gần nhất lớp thường: "3/4 môn đạt", không "kỳ vọng", không "MT"', () => {
-    const th = { mode: 'ratio', attemptLabel: 'Giữa khoá', sosLevel: 1, provisional: false, scored: 4, required: 4, failed: 1,
+    const th = { mode: 'ratio', attemptLabel: 'Progress Test', sosLevel: 1, provisional: false, scored: 4, required: 4, failed: 1,
       overall: null, expectation: null, belowSkills: [], failedSkills: [{ skill: 'writing', score: 12, total: 20 }] };
     const k = d.ketQuaGanNhat(th);
-    eq(k, { chinh: '3/4 môn đạt', lech: null, dat: false, sos: null, dong1: 'Giữa khoá', dong2: 'Không đạt: W' }, 'Đủ điểm (T58: lớp thường không SOS)');
-    eq(d.ketQuaGanNhat({ ...th, attemptLabel: 'Cuối khoá', scored: 2, failed: 0, sosLevel: null, failedSkills: [] }),
-      { chinh: '2/2 môn đạt', lech: null, dat: false, sos: null, dong1: 'Cuối khoá · 2/4 môn có điểm', dong2: null }, 'Còn thiếu môn');
+    eq(k, { chinh: '3/4 môn đạt', lech: null, dat: false, sos: null, dong1: 'Progress Test', dong2: 'Không đạt: W' }, 'Đủ điểm (T58: lớp thường không SOS)');
+    eq(d.ketQuaGanNhat({ ...th, attemptLabel: 'Final Test', scored: 2, failed: 0, sosLevel: null, failedSkills: [] }),
+      { chinh: '2/2 môn đạt', lech: null, dat: false, sos: null, dong1: 'Final Test · 2/4 môn có điểm', dong2: null }, 'Còn thiếu môn');
     eq(d.ketQuaGanNhat({ ...th, sosLevel: 0, failed: 0, failedSkills: [] }).dat, true, 'Đạt đủ bốn môn');
     assert(!/kỳ vọng|MT\d|Overall|Normal|SOS|…/.test(JSON.stringify(k)), `Chữ FT / SOS / "…" lọt vào lớp thường: ${JSON.stringify(k)}`);
   });
@@ -150,8 +150,8 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     eq([...ql.hien, ...ql.an].find((x: any) => x.key === 'cho-duyet').tone, 'wait', 'cho-duyet tone wait');
     const c = d.badgeLop({ vai: 'gv', needsPlacement: false, canXepLop: 8, missingSkills: [], soBaiChoCham: 0, needScoresTitle: null, phase: 'running', missingCount: 0 });
     eq(c.hien, [], 'Không còn badge "Case mở" (K2-06)');
-    assert(!/Progress|Final/.test(Object.values(d.CLASS_PHASE_LABEL).join(' ')), 'CLASS_PHASE_LABEL còn Progress/Final');
-    eq(d.CLASS_PHASE_LABEL.progress_week, 'Thi Giữa khoá tuần này', 'Chữ chặng thi');
+    assert(!/Progress(?! Test)|Final(?! Test)/.test(Object.values(d.CLASS_PHASE_LABEL).join(' ')), 'CLASS_PHASE_LABEL còn Progress/Final');
+    eq(d.CLASS_PHASE_LABEL.progress_week, 'Thi Progress Test tuần này', 'Chữ chặng thi');
   });
 
   check('PR-Qa · §3.7 dòng GV bộ môn gom theo người ("L · R Trần Ngọc Hà"), kỹ năng thiếu người ghi "Chưa phân công"', () => {
@@ -194,7 +194,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
   check('PR-Qa · Q13 việc tiếp theo: nhập điểm + việc của Case, quá hạn lên đầu, chữ hạn trùng <Han>', () => {
     /* PR-HVL (K2-04): việc của Case lấy NGUYÊN `viecTiepCuaCase` (đầu vào `viecTiep`); `viecTiepTheoCua` cũ đã bị `viecTiepCuaEm` thay. */
     const v = d.viecTiepCuaEm({
-      nhapDiem: { kyNang: ['listening', 'writing'], dot: 'Giữa khoá', quaHan: false },
+      nhapDiem: { kyNang: ['listening', 'writing'], dot: 'Progress Test', quaHan: false },
       cases: [
         { caseId: 1, topic: 'writing2', viecTiep: { chu: 'Thêm PA', loaiHan: 'lap-pa', han: null } },
         { caseId: 2, topic: 'listening', viecTiep: { chu: 'Ghi kết quả PA Nghe podcast', loaiHan: 'cap-nhat-pa', han: '2026-09-13', paId: 9 } },
@@ -207,7 +207,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     eq(v.map((x: any) => [x.viec, x.han, x.quaHanNgay, x.tone, x.title]), [
       /* PR-S5F-b (mockup 21): việc ghi kết quả PA nói tuần của kết quả. */
       ['Ghi kết quả PA L · tuần W1 SEP', 'hạn hết T2 13/09', 1, 'danger', 'Ghi kết quả PA Nghe podcast · Listening · tuần W1 SEP · hạn hết T2 13/09 · quá hạn 1 ngày'],
-      ['Nhập điểm L, W · Giữa khoá', null, null, 'warn', 'Nhập điểm L, W · Giữa khoá'],
+      ['Nhập điểm L, W · Progress Test', null, null, 'warn', 'Nhập điểm L, W · Progress Test'],
       ['Thêm PA W2', null, null, 'warn', 'Thêm PA · Writing Task 2'],
       ['Ghi kết quả PA R · tuần W2 SEP', 'hạn hết T2 20/09', null, 'info', 'Ghi kết quả PA Đọc báo · Reading · tuần W2 SEP · hạn hết T2 20/09'],
     ], 'Thứ tự và chữ (Case không việc bị bỏ)');
@@ -301,7 +301,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     eq(s.failedSkills, [{ skill: 'writing', score: 12, total: 20 }], 'W 12/20 = 60% < 70%');
     eq([s.overall, s.expectation, s.belowSkills], [null, null, []], 'Lớp thường không có Overall/kỳ vọng');
     // PR-MON (MH2): em lớp FOU — ô W hiện G+V.
-    eq(d.ketQuaGanNhat(s), { chinh: '3/4 môn đạt', lech: null, dat: false, sos: null, dong1: 'Giữa khoá', dong2: 'Không đạt: G+V' }, 'Chữ cột');
+    eq(d.ketQuaGanNhat(s), { chinh: '3/4 môn đạt', lech: null, dat: false, sos: null, dong1: 'Progress Test', dong2: 'Không đạt: G+V' }, 'Chữ cột');
   });
 
   // ------------------------------------------------------------------ Task 5 · GET /hoc-vien-lop
@@ -390,7 +390,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     conn.prepare('DELETE FROM teacher_assignments WHERE id = ?').run(pcW);
     /* PR-N1 A6: máy chủ truyền hạn nhập điểm → việc trễ nói đủ "quá hạn n ngày". */
     // PR-MON (MH2): lớp FOU — ô W hiện G+V.
-    eq(row.viecTiepTheo[0], { viec: 'Nhập điểm G+V · Giữa khoá', han: 'hạn 09/09', quaHanNgay: 5, tone: 'danger', dich: { loai: 'nhap-diem' }, title: 'Nhập điểm G+V · Giữa khoá · hạn 09/09 · quá hạn 5 ngày' }, 'Writing tuần 31/08 chưa có điểm, hạn thứ Tư 09/09 đã qua');
+    eq(row.viecTiepTheo[0], { viec: 'Nhập điểm G+V · Progress Test', han: 'hạn 09/09', quaHanNgay: 5, tone: 'danger', dich: { loai: 'nhap-diem' }, title: 'Nhập điểm G+V · Progress Test · hạn 09/09 · quá hạn 5 ngày' }, 'Writing tuần 31/08 chưa có điểm, hạn thứ Tư 09/09 đã qua');
     const t = row.timeline.find((x: any) => x.kind === 'progress');
     eq(t.tuanMon.writing, '2026-08-31', 'Tuần thi của môn Writing');
     assert(row.viecTiepTheo.every((v: any) => !/MT\d|kỳ vọng/.test(v.viec)), 'Chữ FT lọt vào lớp thường');
@@ -425,7 +425,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     assertThrows(() => ptl.phanTichLop(P.subjectTeacher, cid), /phạm vi/, 'GV không dạy lớp này');
   });
 
-  check('PR-Qa · §3.7 Phân tích lớp thường: 4 môn × Giữa khoá / Cuối khoá, ô = n/N HV đạt (từ 70%)', () => {
+  check('PR-Qa · §3.7 Phân tích lớp thường: 4 môn × Progress Test / Final Test, ô = n/N HV đạt (từ 70%)', () => {
     const cid = taoLop('MB FOU QA3', 'FOU');
     const a = taoHocVien({ cid, ft: false });
     const b = taoHocVien({ cid, ft: false });
@@ -433,11 +433,11 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     diemThuong(themLuot({ ...b, cid, no: 1, kind: 'progress', weekStart: '2026-09-07' }), { writing: [15, 20] });
     const r = ptl.phanTichLop(P.admin, cid);
     eq([r.loai, r.dong.map((x: any) => x.nhan).join(' '), r.cot.map((x: any) => x.nhan).join(' ')],
-      ['thuong', 'Cả bài L R G+V P', 'Giữa khoá Cuối khoá'], 'Khung');   // PR-MON (MH2): lớp FOU; PR-HVL (K2-40): dòng đầu "Cả bài"
+      ['thuong', 'Cả bài L R G+V P', 'Progress Test Final Test'], 'Khung');   // PR-MON (MH2): lớp FOU; PR-HVL (K2-40): dòng đầu "Cả bài"
     assert(r.o['ca-bai|progress'] === undefined, '"Cả bài" chỉ tính khi bài đủ điểm (em mới có 1–2 môn thì chưa có % tổng)');
-    eq(r.o['writing|progress'], { dat: 1, tong: 2 }, 'W Giữa khoá');
-    eq(r.o['listening|progress'], { dat: 1, tong: 1 }, 'L Giữa khoá');
-    assert(!/MT\d|kỳ vọng|Progress|Final/.test(JSON.stringify(r)), 'Chữ FT lọt vào lớp thường');
+    eq(r.o['writing|progress'], { dat: 1, tong: 2 }, 'W Progress Test');
+    eq(r.o['listening|progress'], { dat: 1, tong: 1 }, 'L Progress Test');
+    assert(!/MT\d|kỳ vọng|Progress(?! Test)|Final(?! Test)/.test(JSON.stringify(r)), 'Chữ FT lọt vào lớp thường');
   });
 
   // ------------------------------------------------------------------ Task 8 · Sửa thông tin lớp
@@ -488,7 +488,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
   check('PR-Qa · §2/§6 chữ: bảng lớp thường không "MT", "kỳ vọng", "Progress/Final", "Normal"; không còn "case SOS" ở danh sách', () => {
     const doc = (p: string) => fsMod.readFileSync(pathMod.join(REPO, p), 'utf8');
     const thuong = doc('web/src/modules/classes/BangDiemLopThuong.tsx');
-    assert(!/MT\d|MT\$\{|kỳ vọng|Progress|Final|Normal/.test(thuong), 'BangDiemLopThuong.tsx có chữ FT/tiếng Anh');
+    assert(!/MT\d|MT\$\{|kỳ vọng|Progress(?! Test)|Final(?! Test)|Normal/.test(thuong), 'BangDiemLopThuong.tsx có chữ FT/tiếng Anh');
     assert(!/case SOS/.test(doc('web/src/modules/students/StudentsPage.tsx')), 'Q2: còn nhãn "case SOS"');
     const roster = doc('web/src/modules/students/ClassRoster.tsx');
     assert(!/Lớp Normal|isRatio|REGULAR_SKILL_LABEL/.test(roster), 'ClassRoster.tsx còn nhánh lớp thường');

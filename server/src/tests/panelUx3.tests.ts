@@ -66,9 +66,9 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     assert(ds.map((x: any) => x.nhan).join() === '11/2026,12/2026,01/2027', ds.map((x: any) => x.nhan).join());
   });
 
-  check('UX3 (1) · nhanDotNgan: mock → MT2, giữa khoá, cuối khoá; không có đợt → null', () => {
+  check('UX3 (1) · nhanDotNgan: mock → MT2, Progress Test, Final Test; không có đợt → null', () => {
     assert(d.nhanDotNgan('mock', 2) === 'MT2', 'mock');
-    assert(d.nhanDotNgan('progress', 1) === 'Giữa khoá' && d.nhanDotNgan('final', 2) === 'Cuối khoá', 'lớp thường không mang MT');
+    assert(d.nhanDotNgan('progress', 1) === 'Progress Test' && d.nhanDotNgan('final', 2) === 'Final Test', 'lớp thường không mang MT');
     assert(d.nhanDotNgan(null, null) === null, 'không có đợt');
   });
 
@@ -94,7 +94,7 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
 
   check('UX3 (1) · viecTiepCuaEm: động từ + đối tượng, hạn tách riêng; không còn "Cập nhật"/"Xác định nguyên nhân"', () => {
     const v = d.viecTiepCuaEm({
-      nhapDiem: { kyNang: ['listening', 'reading'], dot: 'Giữa khoá', quaHan: false },
+      nhapDiem: { kyNang: ['listening', 'reading'], dot: 'Progress Test', quaHan: false },
       cases: [
         { caseId: 1, topic: 'writing2', viecTiep: { chu: 'Thêm PA', loaiHan: 'lap-pa', han: null } },
         { caseId: 2, topic: 'listening', viecTiep: { chu: 'Ghi kết quả PA Nghe podcast', loaiHan: 'cap-nhat-pa', han: '2026-09-13', paId: 9 } },
@@ -103,7 +103,7 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
       homNay: '2026-09-16',
     });
     const nd = v.find((x: any) => /^Nhập điểm/.test(x.viec));
-    assert(nd && nd.viec === 'Nhập điểm L, R · Giữa khoá' && nd.han === null, JSON.stringify(nd));
+    assert(nd && nd.viec === 'Nhập điểm L, R · Progress Test' && nd.han === null, JSON.stringify(nd));
     const dp = v.find((x: any) => /^Thêm PA/.test(x.viec));
     assert(dp && dp.viec === 'Thêm PA W2' && dp.quaHanNgay === null, JSON.stringify(dp));
     const gk = v.find((x: any) => /^Ghi kết quả/.test(x.viec));
