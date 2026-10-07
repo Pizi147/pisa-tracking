@@ -2,7 +2,7 @@ import { db, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, CHU_KY_NANG, CO_DIEM_SQL, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, boMonLich, canLyDoVuot, dongHeQuaVuot, duongDotTest, kiemLyDoThaoTac,
   kiemTuanMt0, kiemTuanXep, laMtCu, luotBiVuot, nhanDot, tenMon, tuanLich, tuanMuonNhatMt0,
-  type AssessedSkill, type LuotLanCan, type LuotSeHuyLich, type SitStatus, type SkillProgress, nhanBaiThuong } from '../../../shared/domain/index.ts';
+  type AssessedSkill, type LuotLanCan, type LuotSeHuyLich, type SitStatus, type SkillProgress, nhanBaiThuong, soThuTuLuot } from '../../../shared/domain/index.ts';
 import { HttpError, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, explain, require_, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -543,10 +543,8 @@ export function checkWeekVsNeighbours(input: {
 
   /* Khoá lớp thường: Progress luôn trước Final theo LOẠI — attempt_no chỉ là thứ tự tạo (Final tự tạo khi vào lớp lúc mốc Progress
    * đã qua, Progress xếp tay sau → số lớn hơn). Cùng loại / lộ trình FT: theo attempt_no như cũ. */
-  const hang = (kind: string | null | undefined) => (kind === 'progress' ? 1 : kind === 'final' ? 2 : 0);
   const soSanh = (o: { attempt_no: number; kind: string; route: string | null }) =>
-    (!o.route && hang(o.kind) && hang(input.kind) && hang(o.kind) !== hang(input.kind)
-      ? hang(o.kind) - hang(input.kind) : o.attempt_no - input.attemptNo);
+    (!o.route ? soThuTuLuot(o, { kind: input.kind ?? '', attempt_no: input.attemptNo }) : o.attempt_no - input.attemptNo);
   for (const o of others) {
     if (soSanh(o) < 0) {
       if (input.newWeekStart < o.last_week) {

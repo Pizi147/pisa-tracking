@@ -9,6 +9,9 @@ export async function runFixXepBaiThuongTests(t: YThucTestKit) {
   const regularMod: any = await import('../normal/regular.ts');
   const keHoachMod: any = await import('../keHoach/keHoachTest.ts');
   const week: any = await import('../platform/week.ts');
+  const profileMod: any = await import('../students/profile.ts');
+  const dongMod: any = await import('../classes/dongHocVien.ts');
+  const perm: any = await import('../permissions.ts');
   console.log('\nFIX-XEP-BAI-THUONG · Progress trước Final theo loại, không theo attempt_no');
 
   const lop = classId('MB FOU 12');
@@ -58,5 +61,23 @@ export async function runFixXepBaiThuongTests(t: YThucTestKit) {
     assertThrows(() => keHoachMod.luuDot(P.admin, { attemptId: fin.id, force: true, kyNang: [{ skill: 'listening', periodId: tuanQua.id }] }),
       /Progress Test/, 'Final trước Progress phải bị chặn');
     assert(r.id, 'thiếu id');
+  });
+
+  check('XBT 4 · hồ sơ HV lớp thường: Mốc tiếp theo = Progress Test (attempt_no 2) còn nợ, không phải Final Test (attempt_no 1)', () => {
+    const { sid } = taoEm('PISA-XBT-4');
+    keHoachMod.xepMoiThuong(P.admin, { classId: lop, studentId: sid, kind: 'progress', tuan: t4(tuanNay.id), force: true });
+    const hs: any = profileMod.studentProfile(P.admin, sid);
+    assert(hs.nextCheckpoint?.kind === 'progress', `Mốc tiếp theo phải Progress, ra ${hs.nextCheckpoint?.kind}`);
+  });
+
+  check('XBT 5 · nhapDiemTheoEm: đợt còn nợ sớm nhất = Progress Test khi nợ cả Progress (no 2) và Final (no 1)', () => {
+    const { sid, fin } = taoEm('PISA-XBT-5');
+    const tuan2 = week.ensurePeriod(addDays(TODAY, -14));
+    keHoachMod.xepMoiThuong(P.admin, { classId: lop, studentId: sid, kind: 'progress', tuan: t4(tuan2.id), force: true });
+    keHoachMod.luuDot(P.admin, { attemptId: fin.id, force: true, kyNang: Object.entries(t4(tuanQua.id)).map(([skill, periodId]) => ({ skill, periodId })) });
+    /* Việc nhập điểm là của giáo viên được phân công ở lớp (Quản trị không có hàng đợi riêng). */
+    const gv = (conn.prepare(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND status = 'active' AND skill = 'listening' LIMIT 1`).get(lop) as any).user_id;
+    const x = dongMod.nhapDiemTheoEm(perm.loadPrincipal(gv), [lop], TODAY, () => lop).get(sid);
+    assert(x?.dot === 'Progress Test', `đợt phải Progress, ra ${x?.dot}`);
   });
 }
