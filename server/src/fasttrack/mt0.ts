@@ -177,6 +177,11 @@ export function noiMt0VaoFt(
     conn.prepare(`UPDATE learning_cycles SET baseline_attempt_id = CASE id ${lo.map(() => 'WHEN ? THEN ?').join(' ')} END, baseline_source = 'mt0'
                    WHERE id IN (${lo.map(() => '?').join(',')}) AND baseline_attempt_id IS NULL AND baseline_score IS NULL`)
       .run(...lo.flatMap((x) => [x.ftCycleId, x.mt0Id]), ...lo.map((x) => x.ftCycleId));
+    /* PR-LCa (LCa-3): MT0 chưa điểm mang Target của lộ trình FT vừa mở (KCK: `datKck` xoá sau). */
+    conn.prepare(`UPDATE assessment_attempts SET target_at_attempt = (SELECT cy.target_score FROM learning_cycles cy WHERE cy.id = assessment_attempts.cycle_id)
+                   WHERE id IN (${lo.map(() => '?').join(',')})
+                     AND NOT EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = assessment_attempts.id AND (s.band IS NOT NULL OR s.raw_score IS NOT NULL))`)
+      .run(...lo.map((x) => x.mt0Id));
   }, 250);
   chenNhieuDong(
     'INSERT INTO journey_events (student_id, cycle_id, event_type, event_date, title, ref_table, ref_id, dedup_key, created_by, created_at)',

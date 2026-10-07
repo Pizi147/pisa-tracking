@@ -64,6 +64,7 @@ export async function runPrLcTests(t: YThucTestKit) {
   const lenhCua = (sid: number) => get('SELECT * FROM lenh_chuyen_lop WHERE student_id = ? ORDER BY id DESC LIMIT 1', sid);
   const mt0Cua = (sid: number) => conn.prepare(`SELECT * FROM assessment_attempts WHERE student_id = ? AND kind = 'mt0'`).all(sid) as any[];
   const loi = (fn: () => unknown): any => { try { fn(); } catch (e) { return e; } return null; };
+  const hanhTrinh = (sid: number) => get(`SELECT title FROM journey_events WHERE student_id = ? AND event_type = 'next_step' ORDER BY id DESC LIMIT 1`, sid)?.title as string | undefined;
   const ra = (lop: number, dongs: any[]) => lenh.raLenh(QL, { lopNguonId: lop, boiCanh: 'cuoi-khoa', tuanChung: THU_HAI, dongs });
   const raDu = (lop: number, dongs: any[]) => {
     const r = ra(lop, dongs);
@@ -139,6 +140,7 @@ export async function runPrLcTests(t: YThucTestKit) {
     raDu(l.classId, [{ studentId: sid, huong: 'hoc_lai', toClassId: FOU }]);
     assert(get('SELECT status FROM assessment_attempts WHERE id = ?', m).status === 'cancelled', 'lệnh Học lại → MT0 chưa điểm huỷ ngay');
     assert(ltt(sid, l.classId)?.huong === 'hoc_lai', `LTT sau lệnh Học lại: ${ltt(sid, l.classId)?.huong}`);
+    assert(hanhTrinh(sid)?.startsWith('QL quyết: ') && hanhTrinh(sid)!.includes('(GVCN: '), `Hành trình nêu hướng GVCN (R9): ${hanhTrinh(sid)}`);
     const id = lenhCua(sid).id as number;
     lenh.suaLenh(QL, id, { huong: 'fast_track', toClassId: FT, mucTieu: 6 });
     const ds = mt0Cua(sid);
@@ -170,6 +172,8 @@ export async function runPrLcTests(t: YThucTestKit) {
     loTrinh.ghiLoTrinhTiep(QL, sid, { huong: 'fast_track' });
     const m = mt0Cua(sid)[0]?.id as number;
     raDu(l.classId, [{ studentId: sid, huong: 'fast_track', toClassId: FT, mucTieu: 6.5 }]);
+    /* MT0 Target cũ (dữ liệu trước PR-LCa) → lúc thi hành vẫn lấy Target lộ trình FT (LCa-3). */
+    conn.prepare('UPDATE assessment_attempts SET target_at_attempt = 6 WHERE id = ?').run(m);
     thiHanh(l.classId);
     const lc = lenhCua(sid);
     assert(lc.trang_thai === 'da_chuyen', `tiền đề: lệnh đã thi hành — ${lc.trang_thai} ${lc.loi ?? ''}`);
@@ -248,9 +252,16 @@ export async function runPrLcTests(t: YThucTestKit) {
     const e4 = loi(() => loTrinh.ghiLoTrinhTiep(gvcn, sid, { huong: 'len_lop', ghiChu: 'g' }));
     assert(!e4, `cùng Hướng + ghi chú được: ${e4?.message}`);
     assert(ltt(sid, l.classId)?.ghi_chu === 'g', 'ghi chú đã lưu');
+    const e5 = loi(() => loTrinh.ghiLoTrinhTiep(gvcn, sid, { huong: 'len_lop', mucTieu: 7 }));
+    assert(e5?.status === 409, `GVCN đổi Target em đã quyết → 409 (R8): ${e5?.status ?? 'không ném'}`);
     lenh.suaLenh(QL, lenhCua(sid).id, { huong: 'fast_track', toClassId: FT, mucTieu: 6 });
     assert(lenhCua(sid).huong === 'fast_track' && ltt(sid, l.classId)?.huong === 'fast_track',
       `QL sửa lệnh: lệnh ${lenhCua(sid).huong} · LTT ${ltt(sid, l.classId)?.huong}`);
+    assert(hanhTrinh(sid)?.startsWith('QL quyết: ') && !hanhTrinh(sid)!.includes('(GVCN:'), `hướng cũ là của QL → không "(GVCN: …)" (R9): ${hanhTrinh(sid)}`);
+    const e6 = loi(() => loTrinh.ghiLoTrinhTiepCaLop(gvcn, l.classId, { items: [{ studentId: sid, huong: 'fast_track', ghiChu: 'h' }] }));
+    assert(!e6 && ltt(sid, l.classId)?.muc_tieu === 6, `GVCN cả lớp giữ Target lệnh được: ${e6?.message} · ${ltt(sid, l.classId)?.muc_tieu}`);
+    const e7 = loi(() => loTrinh.ghiLoTrinhTiep(gvcn, sid, { huong: 'fast_track', mucTieu: 7 }));
+    assert(e7?.status === 409 && ltt(sid, l.classId)?.muc_tieu === 6, `GVCN Target 7 ≠ lệnh 6 → 409: ${e7?.status ?? 'không ném'} · ${ltt(sid, l.classId)?.muc_tieu}`);
   });
 
   // ------------------------------------------------------------------ (l) Target trên bảng cả lớp: chỉ Quản lý (R5)
@@ -263,6 +274,8 @@ export async function runPrLcTests(t: YThucTestKit) {
     assert(e?.status === 403 && ltt(sid, l.classId)?.muc_tieu === 6, `GVCN gửi Target: ${e?.status ?? 'không ném'} · ${ltt(sid, l.classId)?.muc_tieu}`);
     loTrinh.ghiLoTrinhTiepCaLop(QL, l.classId, { items: [{ studentId: sid, huong: 'fast_track', mucTieu: 7 }] });
     assert(ltt(sid, l.classId)?.muc_tieu === 7, `QL ghi Target: ${ltt(sid, l.classId)?.muc_tieu}`);
+    const e2 = loi(() => loTrinh.ghiLoTrinhTiepCaLop(QL, l.classId, { items: [{ studentId: sid, huong: 'fast_track', mucTieu: 6.3 }] }));
+    assert(e2?.status === 400 && ltt(sid, l.classId)?.muc_tieu === 7, `Target 6.3 → 400 (R10): ${e2?.status ?? 'không ném'} ${e2?.message ?? ''}`);
     loTrinh.ghiLoTrinhTiepCaLop(gvcn, l.classId, { items: [{ studentId: sid, huong: 'fast_track', ghiChu: 'n' }] });
     assert(ltt(sid, l.classId)?.muc_tieu === 7, `không gửi Target → giữ: ${ltt(sid, l.classId)?.muc_tieu}`);
   });

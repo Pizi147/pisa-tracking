@@ -90,7 +90,7 @@ export function raLenh(p: Principal, v: {
     const daCo = new Map<number, any>();
     theoLo(dongs.map((d) => d.studentId), (lo, ph) => {
       for (const r of conn.prepare(
-        `SELECT student_id, lop_nguon_id, tuan_bat_dau FROM lenh_chuyen_lop WHERE trang_thai = 'cho' AND student_id IN (${ph})`,
+        `SELECT student_id, lop_nguon_id, tuan_bat_dau, huong FROM lenh_chuyen_lop WHERE trang_thai = 'cho' AND student_id IN (${ph})`,
       ).all(...lo) as any[]) daCo.set(r.student_id, r);
     });
     /* Lớp chuyển đến đọc THEO LÔ: đang hoạt động, khác lớp nguồn. */
@@ -115,12 +115,14 @@ export function raLenh(p: Principal, v: {
      */
     const ltt = new Map<number, { huong: Huong; mucTieu: number | null }>();
     const khoa = new Map<number, { target: number | null; kck: boolean }>();
+    /* Khoá chỉ cần khi có dòng Lên FT chưa ghi Target. */
+    const canKhoa = dongs.some((d) => d.huong === 'fast_track' && d.mucTieu == null);
     if (!nguonFt) {
       theoLo(dongs.filter((d) => hopLe.has(d.studentId)).map((d) => d.studentId), (lo, ph) => {
         for (const r of conn.prepare(
           `SELECT student_id, huong, muc_tieu FROM lo_trinh_tiep_theo WHERE class_id = ? AND student_id IN (${ph})`,
         ).all(v.lopNguonId, ...lo) as any[]) ltt.set(r.student_id, { huong: r.huong, mucTieu: r.muc_tieu ?? null });
-        for (const r of conn.prepare(
+        if (canKhoa) for (const r of conn.prepare(
           `SELECT student_id, target_score, khong_cam_ket FROM learning_cycles WHERE status = 'active' AND route IS NULL AND student_id IN (${ph})`,
         ).all(...lo) as any[]) khoa.set(r.student_id, { target: r.target_score ?? null, kck: !!r.khong_cam_ket });
       });
@@ -193,6 +195,8 @@ export function raLenh(p: Principal, v: {
         dongBoTuLenh(p, hang.map((h) => ({
           studentId: h[0], classId: v.lopNguonId, ma: maTu, huong: h[3] as Huong, lopDuKienId: h[2], mucTieu: h[6],
           huongCu: ltt.get(h[0])?.huong ?? null,
+          /* R9: Hướng LTT cũ đã là quyết định `cho` của lớp này → của QL, không phải GVCN. */
+          cuLaQl: daCo.get(h[0])?.lop_nguon_id === v.lopNguonId && daCo.get(h[0])?.huong === ltt.get(h[0])?.huong,
         })));
       }
     }
