@@ -205,7 +205,7 @@ Kỳ vọng, chương trình, band đầu vào, đạt/trượt, mức SOS **kh�
 - **Xem lại:** hồ sơ HV có mục "Các lộ trình" hiện rõ (không ẩn), mở một lộ trình cũ = bảng tổng kết 4 kỹ năng theo lượt; mở từ **Lưu trữ** (HV và lớp đã kết thúc) xem được; lớp đã kết thúc: bảng tổng kết cả lớp.
 - Chồng: PR-LUI-b (`students.ts`, `luuTru.ts`, Học lại), PR-MT0 (Chuyển tiếp lớp). Chạy sau LUI-b, song song MTb được. Bảng bản chụp là nguồn cho PR-NC.
 
-### PR-EN · Bản tiếng Anh cho GV nước ngoài (L) — chủ sản phẩm 06/10, **làm sau HK2, trước SOTAY; deploy một lần sau cùng** (07/10), kế hoạch + mockup chưa soạn
+### PR-EN · Bản tiếng Anh cho GV nước ngoài (L) — chủ sản phẩm 06/10, **làm sau HK2, trước SOTAY; deploy một lần sau cùng** (07/10), kế hoạch `docs/superpowers/plans/2026-10-07-pr-en-tieng-anh.md` (4 đợt EN-a…d) + thuật ngữ `thiet-ke/THUAT_NGU_EN_2026-10-07.md` + mockup `thiet-ke/mockup-en-2026-10-07.html` **đã soạn 07/10, planning tự duyệt mockup**
 Chốt: **chỉ phần GV dùng** — Đăng nhập, thanh trên, Tổng quan (GV), Lịch Test, Điểm theo lớp / nhập điểm, hồ sơ lớp + hồ sơ HV (xem), Case – PA (tạo, ghi kết quả), Ghi vi phạm,
 Công việc của tôi, chuông, câu báo lỗi máy chủ trên các đường đó. Màn QL / Quản trị (Kế hoạch Test, Chờ duyệt, Phân tích, Quản trị) giữ tiếng Việt.
 - **Nút đổi ngôn ngữ:** góc trên thanh đầu (cạnh nút sáng/tối) **và** một nút to, dễ thấy ở màn đăng nhập (trước khi đăng nhập). Nhớ theo tài khoản (lưu ở máy chủ) + trên máy trước khi đăng nhập.
