@@ -16,6 +16,7 @@ export async function runPrLcTests(t: YThucTestKit) {
   const lenh: any = await import('../classes/lenhChuyen.ts');
   const loTrinh: any = await import('../classes/loTrinhTiep.ts');
   const mywork: any = await import('../worklist/mywork.ts');
+  const migrate: any = await import('../migrate/prLc.ts');
   const d: any = await import('../../../shared/domain/index.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   const { getConfig, setConfig } = await import('../demoConfig.ts');
@@ -294,5 +295,30 @@ export async function runPrLcTests(t: YThucTestKit) {
     assert(e2?.status === 400 && ltt(sid, l.classId)?.muc_tieu === 7, `Target 6.3 → 400 (R10): ${e2?.status ?? 'không ném'} ${e2?.message ?? ''}`);
     loTrinh.ghiLoTrinhTiepCaLop(gvcn, l.classId, { items: [{ studentId: sid, huong: 'fast_track', ghiChu: 'n' }] });
     assert(ltt(sid, l.classId)?.muc_tieu === 7, `không gửi Target → giữ: ${ltt(sid, l.classId)?.muc_tieu}`);
+  });
+
+  // ------------------------------------------------------------------ (n) Migrate: quyết định `cho` có từ trước PR-LCa
+  check('LC-n · migrate prLc: lệnh chờ Lên FT (dữ liệu cũ) mà LTT Lên lớp → LTT Lên FT + Target lệnh, giữ ghi chú, một MT0; chạy lại không đổi gì', () => {
+    const l = taoLop(1);
+    const sid = l.sids[0];
+    loTrinh.ghiLoTrinhTiep(QL, sid, { huong: 'len_lop', lopDuKienId: BE, ghiChu: 'gc' });
+    /* Lệnh ghi thẳng như trước PR-LCa — không đi qua raLenh nên LTT chưa theo lệnh, chưa có MT0. */
+    conn.prepare(`INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, lop_dich_id, huong, boi_canh, tuan_bat_dau, muc_tieu, nguoi_ra_lenh, ngay_ra_lenh, trang_thai, tao_luc)
+      VALUES (?, ?, ?, 'fast_track', 'cuoi-khoa', ?, 6.5, ?, ?, 'cho', ?)`).run(sid, l.classId, FT, THU_HAI, QL.userId, TODAY, new Date().toISOString());
+    assert(ltt(sid, l.classId)?.huong === 'len_lop' && !mt0Cua(sid).length, 'tiền đề: LTT Lên lớp, chưa MT0');
+    const soHanhTrinh = () => get(`SELECT COUNT(*) AS n FROM journey_events WHERE student_id = ? AND event_type = 'next_step'`, sid).n as number;
+    const a1: string[] = [];
+    migrate.migratePrLc(conn, a1);
+    const t1 = ltt(sid, l.classId);
+    assert(t1?.huong === 'fast_track' && t1.lop_du_kien_id === FT && t1.muc_tieu === 6.5 && t1.ghi_chu === 'gc',
+      `LTT theo lệnh, giữ ghi chú: ${JSON.stringify({ h: t1?.huong, lop: t1?.lop_du_kien_id, mt: t1?.muc_tieu, gc: t1?.ghi_chu })}`);
+    const m1 = mt0Cua(sid);
+    assert(m1.length === 1 && m1[0].status === 'planned' && m1[0].target_at_attempt === 6.5, `một MT0 chờ, Target 6.5: ${JSON.stringify(m1.map((m) => [m.status, m.target_at_attempt]))}`);
+    assert(hanhTrinh(sid)?.startsWith('QL quyết: '), `Hành trình "QL quyết": ${hanhTrinh(sid)}`);
+    assert(a1.length === 1 && /^PR-LC: /.test(a1[0]), `báo đúng một dòng PR-LC: ${a1.join(' | ')}`);
+    const n1 = soHanhTrinh();
+    const a2: string[] = [];
+    migrate.migratePrLc(conn, a2);
+    assert(!a2.length && soHanhTrinh() === n1 && mt0Cua(sid).length === 1, `lần hai: ${JSON.stringify({ a2, hanhTrinh: [n1, soHanhTrinh()], mt0: mt0Cua(sid).length })}`);
   });
 }
