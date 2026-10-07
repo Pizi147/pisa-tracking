@@ -11,7 +11,7 @@ import {
 import { nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { ensurePeriods } from '../platform/week.ts';
-import { classProgressMany } from '../classes/schedule.ts';
+import { classProgressMany, mocKetKhoa } from '../classes/schedule.ts';
 import { assessedBands } from './scoring.ts';
 import { can, type Principal } from '../permissions.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
@@ -240,7 +240,8 @@ export function mt0TheoHocVien(sids: readonly number[]): Map<number, Mt0View> {
 /**
  * VIỆC QUẢN LÝ "Chốt lên FT · {lớp}" (T5b; chủ sản phẩm chốt Q1 05/10: TỰ XONG khi mọi em đang học đã có hướng — khác trống / Chưa quyết;
  * không nút, không cột mới). Lớp thường FOU/BE/ELE đang mở, người xem có `CLASS_EDIT`; hạn = Chủ nhật trước tuần Cuối khoá (`hanChotLenFt`);
- * hiện từ 13 ngày trước hạn tới hết tuần Cuối khoá. Không chặn gì: ghi Lên FT sau hạn vẫn được. Một câu lớp + một câu em cho cả phạm vi.
+ * hiện từ 13 ngày trước hạn tới hết hạn. PR-LCa (LCa-5): từ tuần Cuối khoá lớp sang "Chuyển tiếp lớp" (`mocKetKhoa(...).tuCuoiKhoa`, cùng điều kiện
+ * `lopChoLenhChuyen`) — mỗi lớp một việc mỗi lúc. Không chặn gì: ghi Lên FT sau hạn vẫn được. Một câu lớp + một câu em cho cả phạm vi.
  */
 export function lopChoChotLenFt(p: Principal, branchId: number | null, today: string): { classId: number; code: string; han: string; soEm: number }[] {
   /* Tổng quan gọi hai lần (chỉ số + dòng Cần xử lý) — nhớ trong request. */
@@ -255,10 +256,10 @@ function tinhLopChoChotLenFt(p: Principal, branchId: number | null, today: strin
   ).all(...MT0_CHUONG_TRINH, ...(branchId ? [branchId] : [])) as any[];
   const tienDo = classProgressMany(lop.map((c) => c.id as number));
   const toi = lop.flatMap((c) => {
-    const final = tienDo.get(c.id)?.finalWeekStart;
-    if (!final) return [];
-    const han = hanChotLenFt(final);
-    return today >= addDaysIso(han, -13) && today <= addDaysIso(final, 6) && can(p, PERMISSIONS.CLASS_EDIT, { classId: c.id })
+    const pr = tienDo.get(c.id);
+    if (!pr?.finalWeekStart) return [];
+    const han = hanChotLenFt(pr.finalWeekStart);
+    return today >= addDaysIso(han, -13) && !mocKetKhoa(pr, today).tuCuoiKhoa && can(p, PERMISSIONS.CLASS_EDIT, { classId: c.id })
       ? [{ classId: c.id as number, code: c.code as string, han }] : [];
   });
   if (!toi.length) return [];

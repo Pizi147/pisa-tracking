@@ -210,7 +210,7 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   },
   chot_len_ft: {
     label: 'Chốt lên FT',
-    hint: 'Ghi hướng cho mọi em của lớp trước tuần Final Test — em Lên FT có MT0 ở tuần Final.',
+    hint: 'Ghi hướng cho mọi em của lớp, hạn Chủ nhật trước tuần Final Test — em Lên FT có MT0 ở tuần Final. Từ tuần Final Test lớp sang việc Chuyển tiếp lớp.',
   },
   placement: {
     label: 'Chuyển tiếp lớp',
