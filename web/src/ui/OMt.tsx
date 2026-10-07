@@ -23,7 +23,7 @@ export const MAU_O_MT: Record<KieuOMt, string> = {
   'co-lich': 'border-doing-line bg-transparent text-doing',
   'dang-thi': 'border-doing-line bg-doing-bg text-doing',
   'cho-cham': 'border-transparent bg-wait-bg text-wait',
-  'cho-cham-cu': 'border-muted-line bg-muted-bg text-muted',   // MT cũ chưa điểm: không hạn → xám, không màu chờ
+  'cho-cham-cu': 'border-transparent bg-wait-bg text-wait',   // MT cũ chưa điểm: vẫn TÍM như mọi "chờ" (C2) — xám là "chưa xếp"
   'tre-cham': 'border-transparent bg-bad-bg text-bad',
   'con-viec': 'border-transparent bg-soon-bg text-soon',
   xong: 'border-transparent bg-ok-bg text-ok',

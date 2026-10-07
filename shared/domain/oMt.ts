@@ -12,10 +12,10 @@ import { O_KE_HOACH, trangThaiKyNang, type KyNangKH, type OKyNang } from './keHo
 import { tenMon, tenMonNgan } from './normal.ts';
 import { addDaysIso } from './sos.ts';
 
-/** `cho-cham-cu`: MT cũ chờ nhập bù điểm — cùng chữ "chờ chấm n" nhưng xám (MT cũ không có hạn; chủ sản phẩm 06/10). */
+/** `cho-cham-cu`: MT cũ chờ nhập bù điểm — chữ `chờ`, màu TÍM như `cho-cham` (C2 07/10; trước đây xám, trùng "chưa xếp"). Tooltip không hạn. */
 export type KieuOMt = 'chua-lich' | 'co-lich' | 'dang-thi' | 'cho-cham' | 'cho-cham-cu' | 'tre-cham' | 'con-viec' | 'xong';
 
-/** `attemptId` null = chưa có lượt (cùng kiểu "chưa xếp", C5). `cu` chỉ còn đổi màu "chờ" sang xám + tooltip (ô không ghi chữ "cũ", C3). */
+/** `attemptId` null = chưa có lượt (cùng kiểu "chưa xếp", C5). `cu` chỉ còn đổi tooltip + `aria-label` (ô không ghi chữ "cũ", C3). */
 export type OMtVao = {
   so: number; attemptId: number | null; kn: Partial<Record<KyNangKH, OKyNang>>; cu: boolean;
   /** PR-MT0: MT0 có điểm mà em không lên FT — ô mờ, tooltip thêm `MT0 · không dùng`. */
@@ -152,7 +152,7 @@ export function chipDongKyNang(o: OKyNang, homNay: string, ct?: string | null, c
   switch (r.kieu) {
     case 'tre-cham': return { chu: 'trễ chấm', tone: 'bad' };
     case 'cho-cham': return { chu: 'chờ chấm', tone: 'wait' };
-    case 'cho-cham-cu': return { chu: 'chờ chấm', tone: 'muted' };   // MT cũ chưa điểm: xám như ô MT
+    case 'cho-cham-cu': return { chu: 'chờ chấm', tone: 'wait' };   // MT cũ chưa điểm: tím như ô MT (C2)
     case 'con-viec': return { chu: o.huyVang || o.trangThai === 'da-huy' ? 'huỷ' : 'vắng', tone: 'soon' };
     case 'chua-lich': return { chu: 'chưa xếp', tone: 'muted' };
     default: return null;

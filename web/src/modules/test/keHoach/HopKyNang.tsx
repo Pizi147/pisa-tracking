@@ -350,7 +350,7 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
 }
 
 function DongKyNangHop({ k, o, khoa, moi, loai, d, noiBat, khaiGiang, tongTuan, onTick, onTuan, onMuc, goc, homNay, ct = null, muc, riengTuan, tickDuoc, lichSu }: {
-  /** MT lịch sử: chip "chờ chấm" xám (không có hạn). */
+  /** MT lịch sử: chip "chờ chấm" tím như mọi "chờ" (C2); tooltip không hạn. */
   lichSu: boolean;
   ct?: string | null; muc: ReturnType<typeof menuHopKyNang>; onMuc: (m: MucHop, thay?: 'xep-lai' | 'khoi-phuc') => void;
   /** Đã bấm "Đổi tuần" riêng → bộ chọn tuần ngay trên dòng. */
