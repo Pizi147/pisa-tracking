@@ -9178,6 +9178,9 @@ await runPrQtTkTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 // ==================================================================== FIX-XEP-BAI-THUONG (lớp thường: Progress trước Final theo loại)
 const { runFixXepBaiThuongTests } = await import('./fixXepBaiThuong.tests.ts');
 await runFixXepBaiThuongTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== FIX-KQ-GAN-NHAT-THUONG (lớp thường: kết quả gần nhất theo loại)
+const { runFixKqGanNhatTests } = await import('./fixKqGanNhat.tests.ts');
+await runFixKqGanNhatTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
