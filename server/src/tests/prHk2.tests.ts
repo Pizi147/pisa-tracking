@@ -473,4 +473,34 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     assert(/'chang'/.test(s.slice(s.indexOf('const b = '), s.indexOf('const bamBadge'))), 'nhãn chặng (chang) phải được lọc khỏi mục "+n"');
     assert(/tieuDe:\s*!bamBadge\(x\)|tieuDe:\s*!bam\b/.test(m.slice(0, 600)), 'mục không bấm được phải là chữ thường (tieuDe), không phải nút');
   });
+
+  console.log('\nPR-HK2 · Task 9 · chân panel theo daSua, Esc hộp tiêu chí, dải mất kết nối');
+
+  check('C29 · ChuyenLopPanel, ClassProgressPanel, CatalogAdmin: không còn nhan: \'Đóng\' ghi cứng — chân truyền daSua (KhungPanel tự chọn Đóng / Huỷ thay đổi)', () => {
+    for (const [rel, n] of [['web/src/modules/students/ChuyenLopPanel.tsx', 1], ['web/src/modules/classes/ClassProgressPanel.tsx', 1], ['web/src/modules/platform/CatalogAdmin.tsx', 2]] as const) {
+      const s = doc(rel);
+      assert(!/nhan: 'Đóng'/.test(s), `${rel}: còn nhan: 'Đóng'`);
+      assert((s.match(/chan=\{\{\s*daSua/g) ?? []).length === n, `${rel}: chan phải truyền daSua (${n} chỗ)`);
+    }
+  });
+
+  check('C30 · CriteriaModal (hộp bốn tiêu chí): đã gõ thì Esc / bấm nền / ✕ hỏi trước khi bỏ; nút "Huỷ thay đổi" ở chân bỏ thẳng', () => {
+    const s = doc('web/src/modules/fasttrack/ScoreEntry.tsx');
+    const m = s.slice(s.indexOf('export function CriteriaModal'));
+    const kp = m.slice(m.indexOf('<KhungPanel'), m.indexOf('<KhungPanel') + 700);
+    assert(/const daSua =/.test(m), 'CriteriaModal chưa tách daSua');
+    assert(/onDong=\{\(\) => \{ if \(busy\) return; if \(daSua && !window\.confirm\(/.test(kp), `onDong chưa hỏi khi daSua: ${kp}`);
+    assert(/chan=\{\{\s*daSua,/.test(kp) && /huy: \{ onClick: onClose,/.test(kp), 'chân phải truyền daSua và Huỷ thay đổi gọi onClose thẳng');
+  });
+
+  check('C31 · App: dải Mất kết nối role="status"; "Thử lại" khoá khi đang thử, chữ "Đang thử…"', () => {
+    const s = doc('web/src/App.tsx');
+    const i = s.indexOf('session.loiKetNoi &&');
+    assert(i >= 0, 'không thấy dải mất kết nối');
+    const khoi = s.slice(i, s.indexOf('</header>', i));
+    const dai = khoi.slice(0, khoi.indexOf('Thử lại') + 20);
+    assert(/role="status"/.test(dai) && !/role="alert"/.test(dai), 'dải phải role="status"');
+    assert(/disabled=\{dangThu\}/.test(dai) && /Đang thử…/.test(dai), '"Thử lại" phải disabled khi đang thử và đổi chữ "Đang thử…"');
+    assert(/const \[dangThu, setDangThu\] = useState\(false\)/.test(s), 'thiếu state dangThu');
+  });
 }
