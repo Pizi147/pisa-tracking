@@ -9181,6 +9181,9 @@ await runFixXepBaiThuongTests({ check, checkAsync, assert, assertThrows, conn, T
 // ==================================================================== FIX-CHOT-LEN-FT (Chốt lên FT tự xong khi đã có lộ trình / bàn giao)
 const { runFixChotLenFtTests } = await import('./fixChotLenFt.tests.ts');
 await runFixChotLenFtTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-LCa (luồng cuối khoá → lộ trình tiếp: mỗi quyết định nhập một lần)
+const { runPrLcTests } = await import('./prLc.tests.ts');
+await runPrLcTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
