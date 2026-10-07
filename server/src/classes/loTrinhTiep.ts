@@ -199,7 +199,7 @@ export function dongBoTuLenh(p: Principal, hang: readonly {
 /**
  * PR-LCa (QM2, R2): em đã có quyết định Cuối khoá `cho` ở lớp này → không ai đổi Hướng ở Lộ trình tiếp theo (409, không lưu dòng nào);
  * cùng Hướng (sửa ghi chú) được. Quản lý đổi hướng bằng cách sửa quyết định. R8: người không có `cycle.edit` (GVCN) cũng không đổi Target
- * khác Target của quyết định (KCK = trống); gửi lại đúng Target đó được. MỘT câu cho cả lô. `ten`: có → lỗi nêu tên em (ghi cả lớp).
+ * khác Target của quyết định Lên FT (KCK = trống); gửi lại đúng Target đó được. MỘT câu cho cả lô. `ten`: có → lỗi nêu tên em (ghi cả lớp).
  */
 function chanQlDaQuyet(p: Principal, classId: number, dongs: readonly DongGhi[], ten?: (sid: number) => string): void {
   const lenh = new Map((db().prepare(
@@ -208,7 +208,9 @@ function chanQlDaQuyet(p: Principal, classId: number, dongs: readonly DongGhi[],
   const suaTarget = can(p, PERMISSIONS.CYCLE_EDIT, { classId });
   for (const d of dongs) {
     const l = lenh.get(d.studentId);
-    if (l && (l.huong !== d.huong || (!suaTarget && (l.khong_cam_ket ? null : l.muc_tieu ?? null) !== d.mucTieu))) {
+    /* Target chỉ so khi quyết định là Lên FT — lệnh đổi sang hướng khác có thể còn Target cũ. */
+    const doiTarget = !suaTarget && l?.huong === 'fast_track' && (l.khong_cam_ket ? null : l.muc_tieu ?? null) !== d.mucTieu;
+    if (l && (l.huong !== d.huong || doiTarget)) {
       throw conflict(`${ten ? `${ten(d.studentId)}: ` : ''}Quản lý đã quyết.`, { studentId: d.studentId });
     }
   }

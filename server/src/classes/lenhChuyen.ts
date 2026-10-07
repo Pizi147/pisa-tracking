@@ -579,6 +579,10 @@ function thiHanhCuoiKhoa(p: Principal, g: any, con: any[]): { id: number; loi: s
   }, { daDuyet: true });
   const hong = new Set<number>(r.failed.map((f: any) => f.studentId));
   datKck(p, con.filter((l) => !hong.has(l.student_id)));
+  /* PR-LCa (LCa-3): KCK đi qua `applyTransition` bằng số tạm — Lộ trình tiếp theo giữ Target thật (KCK = trống). */
+  theoLo(con.filter((l) => l.khong_cam_ket && !hong.has(l.student_id)).map((l) => l.student_id as number), (lo, ph) => {
+    db().prepare(`UPDATE lo_trinh_tiep_theo SET muc_tieu = NULL WHERE class_id = ? AND student_id IN (${ph})`).run(g.lop_nguon_id, ...lo);
+  });
   return r.failed.map((f: any) => ({ id: byStudent.get(f.studentId)!.id as number, loi: f.message as string }));
 }
 

@@ -184,6 +184,19 @@ export async function runPrLcTests(t: YThucTestKit) {
     assert(a.cycle_id === ft.id && a.target_at_attempt === 6.5, `MT0: ${JSON.stringify(a)}`);
   });
 
+  // ------------------------------------------------------------------ (m) thi hành Lên FT KCK: không số tạm vào LTT
+  check('LC-m · lệnh Lên FT KCK → thi hành: LTT muc_tieu trống (không số tạm), lộ trình FT KCK', () => {
+    const l = taoLop(1);
+    const sid = l.sids[0];
+    raDu(l.classId, [{ studentId: sid, huong: 'fast_track', toClassId: FT, mucTieu: 'KCK' }]);
+    thiHanh(l.classId);
+    const lc = lenhCua(sid);
+    assert(lc.trang_thai === 'da_chuyen', `tiền đề: lệnh đã thi hành — ${lc.trang_thai} ${lc.loi ?? ''}`);
+    const ft = get(`SELECT route, target_score, khong_cam_ket FROM learning_cycles WHERE student_id = ? AND status = 'active'`, sid);
+    assert(ft?.route && ft.khong_cam_ket === 1 && ft.target_score == null, `lộ trình FT: ${JSON.stringify(ft)}`);
+    assert(ltt(sid, l.classId)?.muc_tieu == null, `LTT muc_tieu: ${ltt(sid, l.classId)?.muc_tieu}`);
+  });
+
   // ------------------------------------------------------------------ (g) transitionPlan điền sẵn từ LTT dù chưa lớp dự kiến
   check('LC-g · transitionPlan `dienSan`: LTT Lên FT chưa lớp dự kiến → { fast_track, Target khoá, lớp FT duy nhất | null }; có lớp dự kiến → lớp đó; không LTT → null', () => {
     const l = taoLop(3);
@@ -252,8 +265,6 @@ export async function runPrLcTests(t: YThucTestKit) {
     const e4 = loi(() => loTrinh.ghiLoTrinhTiep(gvcn, sid, { huong: 'len_lop', ghiChu: 'g' }));
     assert(!e4, `cùng Hướng + ghi chú được: ${e4?.message}`);
     assert(ltt(sid, l.classId)?.ghi_chu === 'g', 'ghi chú đã lưu');
-    const e5 = loi(() => loTrinh.ghiLoTrinhTiep(gvcn, sid, { huong: 'len_lop', mucTieu: 7 }));
-    assert(e5?.status === 409, `GVCN đổi Target em đã quyết → 409 (R8): ${e5?.status ?? 'không ném'}`);
     lenh.suaLenh(QL, lenhCua(sid).id, { huong: 'fast_track', toClassId: FT, mucTieu: 6 });
     assert(lenhCua(sid).huong === 'fast_track' && ltt(sid, l.classId)?.huong === 'fast_track',
       `QL sửa lệnh: lệnh ${lenhCua(sid).huong} · LTT ${ltt(sid, l.classId)?.huong}`);
@@ -262,6 +273,11 @@ export async function runPrLcTests(t: YThucTestKit) {
     assert(!e6 && ltt(sid, l.classId)?.muc_tieu === 6, `GVCN cả lớp giữ Target lệnh được: ${e6?.message} · ${ltt(sid, l.classId)?.muc_tieu}`);
     const e7 = loi(() => loTrinh.ghiLoTrinhTiep(gvcn, sid, { huong: 'fast_track', mucTieu: 7 }));
     assert(e7?.status === 409 && ltt(sid, l.classId)?.muc_tieu === 6, `GVCN Target 7 ≠ lệnh 6 → 409: ${e7?.status ?? 'không ném'} · ${ltt(sid, l.classId)?.muc_tieu}`);
+    /* QL đổi Lên FT → Lên lớp: lệnh còn Target cũ — Target chỉ so khi lệnh Lên FT, GVCN sửa ghi chú vẫn được. */
+    lenh.suaLenh(QL, lenhCua(sid).id, { huong: 'len_lop', toClassId: BE });
+    assert(lenhCua(sid).huong === 'len_lop', `tiền đề: lệnh Lên lớp — ${lenhCua(sid).huong}`);
+    const e8 = loi(() => loTrinh.ghiLoTrinhTiep(gvcn, sid, { huong: 'len_lop', ghiChu: 'k' }));
+    assert(!e8 && ltt(sid, l.classId)?.ghi_chu === 'k', `Lên lớp (Target lệnh ${lenhCua(sid).muc_tieu}): GVCN sửa ghi chú được — ${e8?.status ?? ''} ${e8?.message ?? ''}`);
   });
 
   // ------------------------------------------------------------------ (l) Target trên bảng cả lớp: chỉ Quản lý (R5)
