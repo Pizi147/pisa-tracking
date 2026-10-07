@@ -381,4 +381,61 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     assert(/Không có lớp khớp "\$\{/.test(lt) && /Không có học viên khớp "\$\{/.test(lt), 'LuuTruPage chưa có câu "Không có … khớp"');
     assert(/Chưa có lớp nào kết thúc/.test(lt) && /Chưa có học viên nào được lưu trữ/.test(lt), 'ô tìm trống phải giữ câu cũ');
   });
+
+  console.log('\nPR-HK2 · Task 6b · J8, C33–C37');
+
+  check('J8 · tên lớp / đợt có title; lưới chấm: tên break-words, chip "Đã hoàn tất" xuống dòng DƯỚI tên (không cùng hàng flex)', () => {
+    assert(/<span className="min-w-0 truncate" title=\{l\.classCode\}>/.test(doc('web/src/modules/test/TabDiemLop.tsx')), 'TabDiemLop: tên lớp thiếu title');
+    assert(/<span className="truncate" title=\{`?[^}]*classCode/.test(doc('web/src/modules/cham/ChamDiemPage.tsx')), 'ChamDiemPage: tiêu đề "lớp · đợt" thiếu title');
+    for (const f of ['LuoiFT', 'LuoiThuong', 'MotKyNang']) {
+      const m = /<div className="([^"]*)">\s*<Link className="([^"]*)" to=\{.*\} title=\{(?:row\.studentName|ten)\}>/.exec(doc(`web/src/modules/cham/${f}.tsx`));
+      assert(m, `${f}: không thấy khối tên em`);
+      assert(/break-words/.test(m![2]), `${f}: tên em chưa break-words (${m![2]})`);
+      assert(!/(^|\s)flex(\s|$)/.test(m![1]), `${f}: chip còn cùng hàng flex với tên (${m![1]})`);
+    }
+  });
+
+  check('C33 · LuoiThuong: tên em < 640 px xuống dòng (max-sm:break-words), máy tính giữ truncate + title', () => {
+    const m = /<Link className="([^"]*)" to=\{`\/hoc-vien\/\$\{row\.studentId\}`\} title=\{row\.studentName\}>/.exec(doc('web/src/modules/cham/LuoiThuong.tsx'));
+    assert(m, 'không thấy Link tên em');
+    assert(/max-sm:break-words/.test(m![1]) && /(^|\s)sm:truncate(\s|$)/.test(m![1]) && !/(^|\s)truncate(\s|$)/.test(m![1]), m![1]);
+  });
+
+  check('C34 · CapNhatTuan: tên PA < 640 px xuống dòng, hạn + ⚠ xuống dòng dưới; KhungPanel ngCanh max-sm:whitespace-normal, giữ pb-2', () => {
+    const s = doc('web/src/modules/cases/CapNhatTuan.tsx');
+    const i = s.indexOf('title={tenPa}');
+    assert(i >= 0, 'không thấy tên PA');
+    const ten = s.slice(s.lastIndexOf('<span', i), i);
+    assert(/max-sm:whitespace-normal/.test(ten) && /max-sm:break-words/.test(ten), `tên PA: ${ten}`);
+    const ngoai = s.slice(s.lastIndexOf('<span', s.lastIndexOf('<span', i) - 1), s.lastIndexOf('<span', i));
+    assert(/max-sm:flex-col/.test(ngoai), `khối ngữ cảnh < 640 px phải xếp cột (hạn xuống dòng dưới): ${ngoai}`);
+    const kp = /\{ngCanh && <div className="([^"]*)"/.exec(doc('web/src/ui/KhungPanel.tsx'));
+    assert(kp && /max-sm:whitespace-normal/.test(kp[1]) && /(^|\s)pb-2(\s|$)/.test(kp[1]), `KhungPanel ngCanh: ${kp?.[1]}`);
+  });
+
+  check('C35 · HangTab: không scrollIntoView (kéo cả <main>); chỉ đặt scrollLeft của hàng tab', () => {
+    const s = doc('web/src/ui/HangTab.tsx');
+    assert(!/scrollIntoView/.test(s), 'còn scrollIntoView');
+    assert(/hang\.scrollLeft\s*=/.test(s) || /\.scrollLeft\s*=/.test(s), 'chưa đặt scrollLeft');
+  });
+
+  check('C36 · NutChon: ✓ đè góc (absolute), nút relative, không padding / chừa chỗ theo `chon`; giữ min-w-0 whitespace-normal leading-tight', () => {
+    const n = than(doc('web/src/ui/ui.tsx'), 'NutChon');
+    assert(/(^|[\s`'"])relative(\s|$)/.test(n.split('{chon &&')[0]), 'nút chưa relative');
+    const v = /\{chon && <span([^>]*)>/.exec(n);
+    assert(v && /(^|\s)absolute(\s|$)/.test(v[1]) && /-right-1\.5/.test(v[1]) && /-top-1\.5/.test(v[1]), `✓: ${v?.[1]}`);
+    assert(!/shrink-0/.test(v![1]), '✓ còn nằm trong luồng chữ (shrink-0)');
+    assert(!/\$\{chon \? '[^']*\bp[lrx]-/.test(n) && !/invisible/.test(n), 'chừa chỗ ✓ bằng padding / invisible');
+    for (const lop of ['min-w-0', 'whitespace-normal', 'text-center', 'leading-tight']) assert(n.includes(lop), `mất ${lop}`);
+  });
+
+  check('C37 · ViecTiep: ≥ 640 px tối đa 2 dòng (sm:line-clamp-2 ở khối ngoài, title câu đủ); quá hạn → "⚠" đứng ĐẦU khối; < 640 px không cắt', () => {
+    const v = than(doc('web/src/ui/ViecTiep.tsx'), 'ViecTiep');
+    const ngoai = /<span className="([^"]*)" title=\{v\.title\}>/.exec(v);
+    assert(ngoai && /(^|\s)sm:line-clamp-2(\s|$)/.test(ngoai[1]) && !/(^|\s)line-clamp-2(\s|$)/.test(ngoai[1]), `khối ngoài: ${ngoai?.[1]}`);
+    const qh = v.indexOf('<QuaHan'), viec = v.indexOf('{v.viec}'), han = v.indexOf('{v.han}');
+    assert(qh >= 0 && qh < viec, '⚠ quá hạn phải đứng trước chữ việc');
+    assert(han > viec, 'hạn thường giữ sau chữ việc');
+    assert(!/shrink-0/.test(v), 'cụm hạn còn shrink-0');
+  });
 }

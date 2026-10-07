@@ -38,9 +38,9 @@ export async function runPrKhungTests(t: Pick<YThucTestKit, 'check' | 'assert'>)
     assert(sai.length === 0, `chỗ gọi ép nowrap: ${sai.join(', ')}`);
   });
 
-  check('K3 · ViecTiep: chữ việc chạy liền, không line-clamp-2, cụm hạn không shrink-0', () => {
+  check('K3 · ViecTiep: chữ việc chạy liền, không line-clamp-2 trần (chỉ sm:line-clamp-2 của HK2 C37), cụm hạn không shrink-0', () => {
     const v = than(doc('web/src/ui/ViecTiep.tsx'), 'ViecTiep');
-    assert(!/line-clamp-2/.test(v), 'còn line-clamp-2');
+    assert(!/(^|[\s"'`])line-clamp-2/.test(v), 'còn line-clamp-2 trần (< 640 px phải đủ chữ)');
     assert(!/shrink-0/.test(v), 'cụm hạn còn shrink-0');
   });
 
