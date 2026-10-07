@@ -240,12 +240,13 @@ export async function runFormTests(t: YThucTestKit) {
 
     check('PR-Form · performerUserId (GV) + performerName cùng lúc → chỉ lưu performer_user_id, performer_name NULL', () => {
       const { caseId } = taoCase();
+      /* PR-PA (§8): Tự học không có người — thử bằng Tutor. */
       const d = cases.recordIntervention(P.lrTeacher, caseId, {
-        kind: 'self_study', description: 'Tự học Listening mỗi ngày',
+        kind: 'tutor', description: 'Tutor Listening mỗi ngày',
         performerUserId: P.w1Teacher.userId, performerName: 'Tên tự do bị bỏ qua',
         status: 'started', startedDate: TODAY,
       }) as any;
-      const iv = d.interventions.find((i: any) => i.kind === 'self_study');
+      const iv = d.interventions.find((i: any) => i.kind === 'tutor');
       const row = ivRow(iv.id);
       assert(row.performer_user_id === P.w1Teacher.userId, `performer_user_id đúng: ${row.performer_user_id}`);
       assert(row.performer_name === null, `performer_name phải NULL: ${row.performer_name}`);

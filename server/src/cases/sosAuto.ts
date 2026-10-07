@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, CONFIRM_EDIT_REASON, URGENCY_LEVELS, academicSupportFor, caseTopicLabel, issueBranchOf, tenMonNgan,
+  CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, CONFIRM_EDIT_REASON, URGENCY_LEVELS, academicSupportFor, caseTopicLabel, coNguoiDay, issueBranchOf, tenMonNgan,
   hanXacNhan, issuesForTopic, kiemGhiRoKhac, laKhac, mocQuyChe, ngay, reasonNeedsText, tenCaseSos, weeklyUpdateDue,
   type AcademicSupportPreset, type CaseDismissReason, type MilestoneKind, nhanBaiThuong } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -12,6 +12,7 @@ import { examPlanOf } from '../fasttrack/cycles.ts';
 import { routeCuaLuot } from '../fasttrack/attempts.ts';
 import { addIssues, caseAccess, caseDetail, caseTitleOf } from './cases.ts';
 import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
+import { chenPa } from './taoPa.ts';
 import { followUntilAfter } from './sos.ts';
 import { mondayOf } from '../platform/week.ts';
 import { taoYeuCau } from '../duyet/yeuCau.ts';
@@ -79,14 +80,7 @@ export function createPresetPlan(input: {
   if (!p) return null;
   const performer = suggestCaseOwner({ classId: input.attempt.class_id ?? null, category: input.category });
   // Q28-3: PA quy chế KHÔNG tự chạy. Chờ xác nhận = preset=1, planned, confirmed_at NULL (UNCONFIRMED_PRESET). Mốc tính lúc Xác nhận PA.
-  const info = db()
-    .prepare(
-      `INSERT INTO case_interventions (case_id, kind, description, performer_user_id, recorded_by, status, needs_approval, preset,
-                                       moc_quy_che, created_at)
-       VALUES (?,?,?,?, NULL, 'planned', 0, 1, ?, ?)`,
-    )
-    .run(input.caseId, p.kind, p.description, performer, p.span, nowIso());
-  return Number(info.lastInsertRowid);
+  return chenPa(db(), [{ caseId: input.caseId, kind: p.kind, description: p.description, performerUserId: performer, status: 'planned', preset: true, mocQuyChe: p.span }])[0];
 }
 
 /**
@@ -106,19 +100,23 @@ export function resyncUnconfirmedPresets(
   /* PR-SOS: chỉ PA CHỜ XÁC NHẬN (PA đã xác nhận là việc thật — không đụng); `followup_due` luôn NULL tới lúc xác nhận. */
   const rows = db()
     .prepare(
-      `SELECT iv.id, iv.kind, iv.description, iv.moc_quy_che
+      `SELECT iv.id, iv.kind, iv.description, iv.moc_quy_che, iv.performer_user_id, iv.performer_name, sc.category
          FROM case_interventions iv
          JOIN sos_cases sc ON sc.id = iv.case_id
         WHERE ${PA_QUY_CHE_CHUA_GHI('iv')} AND ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND sc.status != 'done'
           AND EXISTS (SELECT 1 FROM case_milestones m WHERE m.case_id = sc.id AND m.kind IN ('opened', 'repeat') AND m.attempt_id = ?)`,
     )
     .all(attempt.id) as any[];
+  const lop = rows.length ? (db().prepare('SELECT class_id FROM assessment_attempts WHERE id = ?').get(attempt.id) as any)?.class_id ?? null : null;
   for (const iv of rows) {
     const p = presetFor(attempt, sosLevel)!;
-    if (iv.kind === p.kind && iv.description === p.description && iv.moc_quy_che === p.span) continue;
+    /* PR-PA (§8): đổi loại thì người theo loại mới — Tự học không người; Tutor chưa có người → GVBM đúng kỹ năng (như lúc dựng). */
+    const nguoi = coNguoiDay(p.kind) ? iv.performer_user_id ?? (iv.performer_name ? null : suggestCaseOwner({ classId: lop, category: iv.category })) : null;
+    const ten = coNguoiDay(p.kind) ? iv.performer_name : null;
+    if (iv.kind === p.kind && iv.description === p.description && iv.moc_quy_che === p.span && nguoi === iv.performer_user_id && ten === iv.performer_name) continue;
     db()
-      .prepare('UPDATE case_interventions SET kind = ?, description = ?, moc_quy_che = ?, updated_at = ? WHERE id = ?')
-      .run(p.kind, p.description, p.span, nowIso(), iv.id);
+      .prepare('UPDATE case_interventions SET kind = ?, description = ?, moc_quy_che = ?, performer_user_id = ?, performer_name = ?, updated_at = ? WHERE id = ?')
+      .run(p.kind, p.description, p.span, nguoi, ten, nowIso(), iv.id);
   }
 }
 

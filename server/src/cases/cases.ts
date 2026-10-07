@@ -34,7 +34,8 @@ import { isRatioCycle, programmeCodeOfCycle } from '../normal/regular.ts';
 import { suggestCaseOwner } from './owner.ts';
 import { caseKhacChuongTrinh, chuongTrinhCuaLop } from './sos.ts';
 import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
-import { PLAN_DECISIONS, decisionToStep, duongDotTest, tuanLich, type PlanDecision } from '../../../shared/domain/index.ts';
+import { PLAN_DECISIONS, coNguoiDay, coSoBuoi, decisionToStep, duongDotTest, kiemSoBuoiPa, soBuoiTu, tuanLich, type PlanDecision } from '../../../shared/domain/index.ts';
+import { chenPa } from './taoPa.ts';
 import { apDungDieuChinh, chuanHoaDieuChinh, lichSuDieuChinhCuaCase } from './planRevisions.ts';
 import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
 import { dienMocQuyChe, kiemNoiDungCase, tenGiuaCua } from './sosAuto.ts';
@@ -811,6 +812,8 @@ export function recordIntervention(p: Principal, caseId: number, input: {
   thayThe?: boolean;
   /** PR-GVa (F01 = D13): mã của MỘT lần mở form — gửi lại cùng mã trả Case với PA đã ghi, không ghi PA thứ hai. */
   idempotencyKey?: string | null;
+  /** PR-PA (§8): Số buổi — chỉ Tutor / Tự học; trống được; số nguyên 1–60. */
+  soBuoi?: unknown;
 }) {
   const conn = db();
   const c = loadCase(caseId);
@@ -901,9 +904,14 @@ export function recordIntervention(p: Principal, caseId: number, input: {
   if (needsApproval && input.completedDate) {
     throw badRequest('Việc đã làm xong rồi thì không còn gì để duyệt — phương án cần duyệt phải ở "đã lên kế hoạch".');
   }
-  const nguoi = chuanHoaNguoiThucHien(p, input, { nhom: 'giao_vien', batBuoc: status !== 'planned' });
-  const performerUserId = nguoi?.userId ?? null;
-  const performerName = nguoi?.name ?? null;
+  /* PR-PA (§8): Số buổi chỉ ở loại có số buổi; người KHÔNG bắt buộc. Tự học không có người — vẫn kiểm (gửi sai vẫn 400) nhưng không lưu. */
+  const soBuoi = soBuoiTu(input.soBuoi);
+  if (soBuoi !== null && !coSoBuoi(input.kind)) throw badRequest('Loại PA này không có Số buổi.');
+  const loiSoBuoi = kiemSoBuoiPa(input.soBuoi);
+  if (loiSoBuoi) throw badRequest(`Số buổi: ${loiSoBuoi}.`);
+  const nguoi = chuanHoaNguoiThucHien(p, input, { nhom: 'giao_vien', batBuoc: false });
+  const performerUserId = coNguoiDay(input.kind) ? nguoi?.userId ?? null : null;
+  const performerName = coNguoiDay(input.kind) ? nguoi?.name ?? null : null;
 
   /*
    * PR-GVa (F01 = D13): gửi lại CÙNG khoá của lần mở form → trả Case với PA đã ghi. Kiểm quyền / dữ liệu ở trên chạy TRƯỚC khi tra khoá.
@@ -944,22 +952,13 @@ export function recordIntervention(p: Principal, caseId: number, input: {
     const updateDue = input.backfill ? null : (!cycleStart ? null : weeklyUpdateDue(cycleStart));
     const cycleDue = updateDue;
 
-    const info = conn
-      .prepare(
-        `INSERT INTO case_interventions (case_id, kind, description, performer_user_id, performer_name,
-                                         recorded_by, status, planned_date, started_date, completed_date,
-                                         followup_due, action_due, cycle_no, cycle_started_on,
-                                         needs_approval, approval_state, approval_due,
-                                         reschedule_target, created_at, idempotency_key)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,1,?,?,?,?,?,?,?)`,
-      )
-      .run(caseId, input.kind, description,
-           performerUserId, performerName, p.userId, effStatus,
-           input.plannedDate ?? null, input.startedDate ?? null, input.completedDate ?? null,
-           null, cycleDue, cycleStart,
-           needsApproval ? 1 : 0, needsApproval ? 'pending' : null, approvalDue,
-           rescheduleTarget, nowIso(), khoa);
-    const id = Number(info.lastInsertRowid);
+    const [id] = chenPa(conn, [{
+      caseId, kind: input.kind, description, soBuoi, performerUserId, performerName, recordedBy: p.userId, status: effStatus,
+      plannedDate: input.plannedDate ?? null, startedDate: input.startedDate ?? null, completedDate: input.completedDate ?? null,
+      actionDue: cycleDue, cycleStartedOn: cycleStart,
+      needsApproval, approvalState: needsApproval ? 'pending' : null, approvalDue,
+      rescheduleTarget, idempotencyKey: khoa,
+    }]);
     const performerDisplayName = performerName
       ?? (performerUserId
         ? ((conn.prepare('SELECT full_name FROM users WHERE id = ?').get(performerUserId) as any)?.full_name ?? null)

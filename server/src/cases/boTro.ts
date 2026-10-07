@@ -9,6 +9,7 @@ import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { taoYeuCau } from '../duyet/yeuCau.ts';
 import { caseAccess, caseDetail } from './cases.ts';
 import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
+import { chenPa } from './taoPa.ts';
 import { dongBoTrangThaiCase } from './sosState.ts';
 import { ghiMoc } from './sosAuto.ts';
 
@@ -49,12 +50,10 @@ export function taoPaBoTro(conn: any, x: { caseId: number; attempt: any; skill: 
   const gvcn = () => (conn.prepare(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active' LIMIT 1`)
     .get(x.attempt.class_id ?? 0) as any)?.user_id ?? null;
   const nguoiDay = truoc ?? (b?.chung ? gvcn() : suggestCaseOwner({ classId: x.attempt.class_id ?? null, category: x.category }));
-  const info = conn.prepare(
-    `INSERT INTO case_interventions (case_id, kind, description, performer_user_id, recorded_by, status, needs_approval, preset, moc_quy_che,
-                                     nhom_bo_tro, han_ke_hoach, followup_due, created_at)
-     VALUES (?, 'bo_tro', ?, ?, NULL, 'planned', 0, 1, 'den_cuoi_khoa', ?, ?, ?, ?)`,
-  ).run(x.caseId, moTaBoTro(x.ct, x.skill), nguoiDay, nhom, x.han, mocCuoiKhoa(x.attempt.cycle_id ?? null, x.attempt.class_id ?? null), nowIso());
-  return Number(info.lastInsertRowid);
+  return chenPa(conn, [{
+    caseId: x.caseId, kind: 'bo_tro', description: moTaBoTro(x.ct, x.skill), performerUserId: nguoiDay, status: 'planned', preset: true,
+    mocQuyChe: 'den_cuoi_khoa', nhomBoTro: nhom, hanKeHoach: x.han, followupDue: mocCuoiKhoa(x.attempt.cycle_id ?? null, x.attempt.class_id ?? null),
+  }])[0];
 }
 
 // ==================================================================== Xác nhận Case + Nộp kế hoạch + thẻ `ke_hoach_bo_tro`

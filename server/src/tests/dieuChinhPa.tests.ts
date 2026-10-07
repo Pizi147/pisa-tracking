@@ -97,7 +97,8 @@ export async function runDieuChinhPaTests(t: YThucTestKit) {
     const fresh = new SqliteDb(':memory:');
     fresh.exec(SCHEMA);
     /* PR-GVa thêm `case_followups.idempotency_key` ở bước migrate của mình (sau PR-S2) — so PR-S2 trên phần schema của đúng bước này. */
-    const sauPrS2 = (db: any, tb: string) => colsOf(db, tb).filter((c) => !c.startsWith('idempotency_key:') && !c.startsWith('phu_trach_'));   // PR-LUI-a2: phu_trach_* thêm ở bước migrate sau
+    const sauPrS2 = (db: any, tb: string) => colsOf(db, tb).filter((c) => !c.startsWith('idempotency_key:') && !c.startsWith('phu_trach_')   // PR-LUI-a2: phu_trach_* thêm ở bước migrate sau
+      && !/^(so_buoi|old_so_buoi|new_so_buoi|old_started_date|new_started_date):/.test(c));   // PR-PA: thêm ở bước migrate sau
     for (const tb of ['case_intervention_revisions', 'case_followups']) {
       assert(JSON.stringify(sauPrS2(m, tb)) === JSON.stringify(sauPrS2(fresh, tb)),
         `${tb} sau nâng cấp khác schema.sql:\n  ${colsOf(m, tb).join(',')}\n  ${colsOf(fresh, tb).join(',')}`);
@@ -221,7 +222,8 @@ export async function runDieuChinhPaTests(t: YThucTestKit) {
     assert(revs.length === 2, `Phải có 2 dòng lịch sử, có ${revs.length}`);
     assert(revs[0].old_description === 'Tự học Listening — nghe chép 15 phút mỗi ngày'
       && revs[0].new_description === 'Tự học Listening — nghe chép 15 phút buổi sáng', `Bản 1 sai: ${JSON.stringify(revs[0])}`);
-    assert(revs[1].old_description === revs[0].new_description && revs[1].old_performer_user_id === P.lrTeacher.userId
+    /* PR-PA (§8): Tự học tạo ra không có người (performerSelf bị bỏ) → bản cũ không người. */
+    assert(revs[1].old_description === revs[0].new_description && revs[1].old_performer_user_id === null
       && revs[1].new_performer_name === 'Trợ giảng Mai' && revs[1].new_performer_user_id === null, `Bản 2 sai: ${JSON.stringify(revs[1])}`);
     assert(revs[0].reason === 'Em đi học thêm buổi tối nên đổi giờ' && revs[0].actor_user_id === P.lrTeacher.userId
       && revs[1].actor_user_id === P.mbManager.userId, 'Lý do / người điều chỉnh sai');
@@ -301,7 +303,8 @@ export async function runDieuChinhPaTests(t: YThucTestKit) {
     assert(r.on === TODAY && r.reason === 'Chuyển sang nghe buổi sáng' && r.source === 'adjust' && r.by, `Bản điều chỉnh sai: ${JSON.stringify(r)}`);
     assert(r.before.description === 'Tự học Listening — nghe chép 15 phút mỗi ngày'
       && r.after.description === 'Tự học Listening — nghe chép buổi sáng 20 phút', 'Bản cũ / bản mới sai');
-    assert(r.before.performer && r.before.performer === r.after.performer, 'Người thực hiện không đổi phải đọc ra cùng một tên');
+    /* PR-PA (§8): Tự học không có người → cả hai bản cùng trống. */
+    assert(r.before.performer === r.after.performer, 'Người thực hiện không đổi phải đọc ra cùng một tên');
     const f = d.followups.find((x: any) => x.interventionId === ivId);
     assert(f.remainingIssue === 'Tên riêng' && f.decisionNote === 'Chuyển sang nghe buổi sáng' && f.nextStep === 'adjust',
       `Lần cập nhật sai: ${JSON.stringify(f)}`);

@@ -396,7 +396,7 @@ export async function runPrSosTests(t: YThucTestKit) {
   check('SOS (6) · Chuyển lớp FT → FT: PA quy chế chưa khép đổi người sang GVBM đúng kỹ năng lớp mới, ghi lịch sử (K3-44)', () => {
     const { st, c, iv } = w2DangChay('T6e');
     const lopMoi = get(`SELECT c.id, ta.user_id FROM classes c JOIN teacher_assignments ta ON ta.class_id = c.id AND ta.skill = 'writing2' AND ta.status = 'active'
-      WHERE c.is_fast_track = 1 AND c.status = 'active' AND c.id != ? AND ta.user_id != ? LIMIT 1`, CLASS, iv.performer_user_id);
+      WHERE c.is_fast_track = 1 AND c.status = 'active' AND c.id != ? AND ta.user_id != COALESCE(?, 0) LIMIT 1`, CLASS, iv.performer_user_id);   // PR-PA: PA Tự học không người
     assert(lopMoi, 'Bộ thử thiếu lớp FT khác có GV W2 khác');
     sosAuto.banGiaoPaQuyChe(st.id, lopMoi.id, P.admin.userId);
     assert(get('SELECT performer_user_id u FROM case_interventions WHERE id = ?', iv.id).u === lopMoi.user_id, 'chưa đổi người');
