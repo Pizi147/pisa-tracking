@@ -1,4 +1,4 @@
-# Pisa Tracking — bản demo: xem gì, ở đâu, và những điều đã chốt
+# PISA Tracking — bản demo: xem gì, ở đâu, và những điều đã chốt
 
 Một tệp duy nhất thay cho hai tệp demo cũ (kịch bản xem và giả định đã chốt). Viết lại ngày **21/09/2026** khi mô hình
 **Ý thức** đổi từ "Case Ý thức" sang **Vi phạm và Biện pháp xử lý**; mục 1 viết lại **29/09/2026** theo Ý thức v4 (PR-YT4).

@@ -134,7 +134,7 @@ export default function WelcomePage() {
         <div className="flex items-center gap-3 mb-1">
           <div className="w-9 h-9 rounded-lg bg-sky-300/12 border border-sky-300/40 grid place-items-center text-sky-200 font-bold">P</div>
           <div>
-            <h1 className="text-xl font-semibold text-slate-100">Pisa Tracking</h1>
+            <h1 className="text-xl font-semibold text-slate-100">PISA Tracking</h1>
             <div className="text-xs text-slate-500">{LA_BAN_CHINH ? 'Hệ thống quản lý học vụ và vận hành' : 'Hệ thống quản lý học vụ và vận hành — bản demo chạy local'}</div>
           </div>
           {!LA_BAN_CHINH && <div className="ml-auto"><Alert tone="warn">Dữ liệu demo</Alert></div>}

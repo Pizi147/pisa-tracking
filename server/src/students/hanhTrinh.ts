@@ -318,10 +318,12 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
      */
     const dangDung = e.status === 'paused' && !e.ended_at;
     const dangHoc = e.status === 'active' || dangDung;
-    const cy = ft ? loTrinhTinhTuan(ftCycles, { dangHoc, ngayVao: e.started_at }) : null;   // PR-Dọn Q11: chương đang học → lộ trình đang chạy
-    const batDau = cy ? cy.start_week ?? cy.started_at : null;
-    const hienTai = cy && batDau && dangHoc ? tuanHocTai(batDau, homNay, dung) : null;
-    const tuanHoc = cy && batDau ? {
+    const cy = ft ? loTrinhTinhTuan(ftCycles, { dangHoc, ngayVao: e.started_at }) : null;   // PR-Dọn Q11: chương đang học → lộ trình đang chạy (nhãn, mục tiêu)
+    /* PR-HK2: đang học mà không có lộ trình `active` → KHÔNG ghi tuần học (không rơi về lộ trình gần nhất) — khớp profile / transition. */
+    const cyTuan = dangHoc && cy?.status !== 'active' ? null : cy;
+    const batDau = cyTuan ? cyTuan.start_week ?? cyTuan.started_at : null;
+    const hienTai = cyTuan && batDau && dangHoc ? tuanHocTai(batDau, homNay, dung) : null;
+    const tuanHoc = cyTuan && batDau ? {
       tu: dangHoc ? hienTai?.tuan ?? null : tuanHocTai(batDau, e.started_at, dung)?.tuan ?? 1,
       /* Rời lớp trong tuần dừng → tuần học cuối TRƯỚC tuần dừng (không null). */
       den: dangHoc ? null : e.ended_at ? tuanHocTai(batDau, addDays(e.ended_at, -1), dung)?.tuan ?? null : null,

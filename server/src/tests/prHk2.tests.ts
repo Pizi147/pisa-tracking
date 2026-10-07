@@ -229,10 +229,10 @@ export async function runPrHk2Tests(t: YThucTestKit) {
 
   console.log('\nPR-HK2 · Task 5 · điện thoại: thanh trên 23C, demo bar một dòng, Học viên & Lớp');
 
-  check('C16a · thanh trên: chữ PISA ở < 640 px (khối "Pisa Tracking" ẩn ở sm-); Tìm / Thông báo / Tài khoản không viền, biểu tượng 20, số chuông đè góc', () => {
+  check('C16a · thanh trên: chữ PISA ở < 640 px (khối "PISA Tracking" ẩn ở sm-); Tìm / Thông báo / Tài khoản không viền, biểu tượng 20, số chuông đè góc', () => {
     const app = doc('web/src/App.tsx');
     assert(/sm:hidden[^>]*>PISA</.test(app), 'App.tsx: thiếu chữ PISA (sm:hidden)');
-    assert(/hidden sm:block/.test(app) && /Pisa Tracking/.test(app), 'App.tsx: khối tên đầy đủ phải ẩn ở < 640 px (tên web đổi ở Task 10)');
+    assert(/hidden sm:block/.test(app) && /PISA Tracking/.test(app), 'App.tsx: khối tên đầy đủ phải ẩn ở < 640 px');
     assert(/max-sm:h-\[52px\]/.test(app), 'App.tsx: thanh trên điện thoại cao 52 px');
     const hd = doc('web/src/modules/platform/Header.tsx');
     const nut = (moc: string) => { const i = hd.indexOf(moc); assert(i >= 0, `Header.tsx: không thấy ${moc}`); return hd.slice(i, i + 900); };
