@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { useApi } from '../../lib/useApi.ts';
+import { taiTruoc, useApi } from '../../lib/useApi.ts';
 import { invalidate } from '../../lib/api.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
@@ -46,6 +46,16 @@ export default function ClassOverviewPage() {
   /** PR-CT: panel Bàn giao mở kèm môn (GVBM) và/hoặc đúng một lệnh (từ hồ sơ HV). */
   const [bg, setBg] = useState<{ mon: string | null; lenhId: number | null; lop: number | null }>({ mon: null, lenhId: null, lop: null });
   const [caseFor, setCaseFor] = useState(0);
+  /*
+   * PR-TD2-c: tab Học viên (mặc định của lớp đang chạy) cần roster + danh sách lượt điểm — bắt đầu tải CÙNG LÚC với `/overview`
+   * thay vì chờ nó xong mới gắn bảng (bớt một tầng chờ). Khối con dùng lại bản tải trước (`useApi`: dangBay / bản vừa xem).
+   */
+  const tabUrl = params.get('tab');
+  useEffect(() => {
+    if (!classId || (tabUrl && tabUrl !== 'hoc-vien')) return;
+    taiTruoc(`/classes/${classId}/roster`);
+    taiTruoc(duongDiemTheoLuot(Number(classId)));
+  }, [classId]); // eslint-disable-line react-hooks/exhaustive-deps
   const { data, loading, error, reload } = useApi<HoSoLop>(classId ? `/classes/${classId}/overview` : null);
   /* Danh sách em cho ô chọn học viên của "+ Case" — chỉ nạp khi mở. */
   const roster = useApi<any[]>(classId && viec === 'case' ? `/classes/${classId}/roster` : null, [classId, viec]);

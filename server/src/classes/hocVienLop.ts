@@ -13,7 +13,7 @@ import {
 import { demoToday } from '../demoConfig.ts';
 import { addDays } from '../util.ts';
 import { bangLop, can, editableSkills, scopeFor, type Principal } from '../permissions.ts';
-import { listClassSummaries, type ClassSummary } from './classes.ts';
+import { listClassSummaries, lopTrongPhamVi, type ClassSummary } from './classes.ts';
 import { classProgressMany, missingForStudent } from './schedule.ts';
 import { standingFor } from '../students/standing.ts';
 import { listCases } from '../cases/cases.ts';
@@ -46,10 +46,8 @@ export type TrangHocVienLop = {
 
 const demRong = (): Record<LocHocVien, number> => demLoc([], 'tat-ca');
 
-export function danhSachHocVienLop(
-  p: Principal, f: { branchId?: number | null; q?: string | null; phamVi?: string | null; cnNho?: number | null } = {},
-): TrangHocVienLop {
-  const today = demoToday();
+/** Phạm vi đang dùng của trang (Lớp tôi dạy · Chi nhánh · Toàn hệ thống) + chi nhánh đang xem — dùng chung cho `/hoc-vien-lop` và `/hoc-vien-lop/ids`. */
+function phamViTrang(p: Principal, f: { branchId?: number | null; phamVi?: string | null; cnNho?: number | null }, today: string) {
   const conn = db();
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   const phanCong = p.assignments.filter((a) => a.effectiveFrom <= today && (!a.effectiveTo || a.effectiveTo >= today));
@@ -61,11 +59,6 @@ export function danhSachHocVienLop(
   const duocXemChiNhanh = scope.all
     ? (conn.prepare(`SELECT id FROM branches WHERE status = 'active' ORDER BY id`).all() as any[]).map((r) => r.id as number)
     : scope.branchIds;
-  /*
-   * "+ LỚP MỚI" đầu trang: không gắn với lớp nào — PR-QU (B) kiểm `CLASS_CREATE` theo TỪNG chi nhánh đang hoạt động (không chỉ chi nhánh
-   * người xem thấy được: GV được cấp riêng `class.create` ở một chi nhánh vẫn chỉ "thấy" lớp mình dạy).
-   */
-  const coTheTaoLop = chiNhanhTaoLop(p).length > 0;
   /* Link cũ `/hoc-vien?branchId=` (bảng chi nhánh, báo cáo tuần) không ghi phạm vi → coi là xem MỘT chi nhánh. */
   const muon = f.phamVi ?? (f.branchId && coThe.includes('chi-nhanh') ? 'chi-nhanh' : null);
   const dangDung: PhamVi = (coThe as string[]).includes(muon ?? '') ? (muon as PhamVi) : phamViMacDinh(coThe, p.roleKeys.some((k) => k === 'manager' || k === 'system_admin'));
@@ -77,6 +70,31 @@ export function danhSachHocVienLop(
     const goiY = goiYChiNhanh(p, today);
     chiNhanh = hopLe(f.branchId) ? f.branchId : hopLe(f.cnNho) ? f.cnNho : hopLe(goiY) ? goiY : duocXemChiNhanh[0] ?? null;
   }
+  return { coThe, dangDung, chiNhanh, phanCong };
+}
+
+/**
+ * PR-TD2-b: id lớp (+ cách chấm) của `/hoc-vien-lop` mặc định, cùng phạm vi và thứ tự — cho danh sách Trước/Sau của hồ sơ lớp mở bằng link.
+ * Không nạp lượt/Case/học viên như trang đầy đủ (đường đó ~1,6 MB trên bản chính).
+ */
+export function idsHocVienLop(p: Principal): { rows: { id: number; scoringMode: string | null }[] } {
+  const { dangDung, chiNhanh, phanCong } = phamViTrang(p, {}, demoToday());
+  const lopToi = new Set(phanCong.map((a) => a.classId));
+  const lops = (lopTrongPhamVi(p, chiNhanh ?? undefined) ?? []).filter((c) => dangDung !== 'toi' || lopToi.has(c.id));
+  return { rows: lops.map((c) => ({ id: c.id as number, scoringMode: (c.scoring_mode ?? null) as string | null })) };
+}
+
+export function danhSachHocVienLop(
+  p: Principal, f: { branchId?: number | null; q?: string | null; phamVi?: string | null; cnNho?: number | null } = {},
+): TrangHocVienLop {
+  const today = demoToday();
+  const conn = db();
+  const { coThe, dangDung, chiNhanh, phanCong } = phamViTrang(p, f, today);
+  /*
+   * "+ LỚP MỚI" đầu trang: không gắn với lớp nào — PR-QU (B) kiểm `CLASS_CREATE` theo TỪNG chi nhánh đang hoạt động (không chỉ chi nhánh
+   * người xem thấy được: GV được cấp riêng `class.create` ở một chi nhánh vẫn chỉ "thấy" lớp mình dạy).
+   */
+  const coTheTaoLop = chiNhanhTaoLop(p).length > 0;
   const phamVi = { coThe, dangDung, chiNhanh };
   const dl = danhSachLuuTru(p, {});
   const demLuuTru = { lop: dl.lop.length, hv: dl.hocVien.length };

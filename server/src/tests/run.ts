@@ -9181,6 +9181,12 @@ await runFixXepBaiThuongTests({ check, checkAsync, assert, assertThrows, conn, T
 // ==================================================================== FIX-DTL-OMT (hồ sơ Mock từ Điểm theo lớp; ô MT chờ ≠ chưa xếp)
 const { runFixDtlOmtTests } = await import('./fixDtlOmt.tests.ts');
 await runFixDtlOmtTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-TD2-b+c (Trước/Sau nhẹ, bớt request trùng)
+const { runPrTd2bcTests } = await import('./prTd2bc.tests.ts');
+await runPrTd2bcTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== FIX-CHOT-LEN-FT (Chốt lên FT tự xong khi đã có lộ trình / bàn giao)
+const { runFixChotLenFtTests } = await import('./fixChotLenFt.tests.ts');
+await runFixChotLenFtTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0

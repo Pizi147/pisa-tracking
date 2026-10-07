@@ -19,7 +19,7 @@ import {
   failingEntrySkills, isCriteriaSkill, isRawSkill, type AttemptResult,
 } from './scoring.ts';
 import { mondayOf, quaHanNhapDiem, skillScoreDeadline, weekInfo } from '../platform/week.ts';
-import { nho } from '../platform/nguCanhRequest.ts';
+import { nho, nhoTheoId } from '../platform/nguCanhRequest.ts';
 import {
   completionWeekOf, ensureSkillRows, kiemDaToiTuanThi, kiemVuot, kiemXacNhanVuot, tuanCuoiSauKhiDoi, loadSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf,
   setSkillScope, setSkillWeek, skillScheduleOf, skippedSkillsOf, viewSkill,
@@ -68,6 +68,31 @@ export function scoresOf(attemptId: number): ScoreRow[] {
 }
 
 /**
+ * Điểm của NHIỀU lượt (chia lô 900 tham số), nhớ theo từng lượt trong request GET dưới CÙNG khoá `diem:` của `scoresOf` (TD2-a) —
+ * `loadBundle`, hồ sơ HV và `scoresOf` dùng chung một lần đọc. Chỉ lượt có điểm mới có trong Map.
+ */
+export function diemCuaLuot(attemptIds: number[]): Map<number, ScoreRow[]> {
+  return nhoTheoId('diem:', attemptIds, (ids) => {
+    const out = new Map<number, ScoreRow[]>();
+    const conn = db();
+    for (let i = 0; i < ids.length; i += 900) {
+      const chunk = ids.slice(i, i + 900);
+      for (const r of conn
+        .prepare(
+          `SELECT s.*, u.full_name AS entered_by_name, g.full_name AS examiner_user_name, ns.week_start AS no_show_week_start FROM assessment_scores s
+             LEFT JOIN users u ON u.id = s.entered_by LEFT JOIN users g ON g.id = s.examiner_user_id
+             LEFT JOIN report_periods ns ON ns.id = s.no_show_period_id WHERE s.attempt_id IN (${chunk.map(() => '?').join(',')})`,
+        )
+        .all(...chunk) as (ScoreRow & { attempt_id: number })[]) {
+        if (!out.has(r.attempt_id)) out.set(r.attempt_id, []);
+        out.get(r.attempt_id)!.push(r);
+      }
+    }
+    return out;
+  });
+}
+
+/**
  * Kỹ năng ĐÁNH GIÁ nằm NGOÀI phạm vi yêu cầu của lượt này. Không có dòng nào = phải đủ bốn.
  *
  * Từ vòng 7 phạm vi thuộc về bảng lịch từng kỹ năng, không còn là một bảng ngoại lệ riêng.
@@ -103,22 +128,13 @@ export function loadBundle(attemptIds: number[]): AttemptBundle {
   const bundle: AttemptBundle = { scores: new Map(), skips: new Map(), skillRows: new Map(), cases: new Map() };
   if (!attemptIds.length) return bundle;
   bundle.skillRows = loadSkillRows(attemptIds);
+  bundle.scores = diemCuaLuot(attemptIds);
   const conn = db();
   // SQLite giới hạn số tham số của một câu lệnh (999 ở bản cũ), nên chia lô thay vì nối một danh sách dài. PR-MT: 400 → 900 —
   // mỗi em FT nay có sẵn 3 MT từ ngày đầu (M1), lô 400 làm danh sách chi nhánh tách thêm lô sớm.
   for (let i = 0; i < attemptIds.length; i += 900) {
     const chunk = attemptIds.slice(i, i + 900);
     const ph = chunk.map(() => '?').join(',');
-    for (const r of conn
-      .prepare(
-        `SELECT s.*, u.full_name AS entered_by_name, g.full_name AS examiner_user_name, ns.week_start AS no_show_week_start FROM assessment_scores s
-           LEFT JOIN users u ON u.id = s.entered_by LEFT JOIN users g ON g.id = s.examiner_user_id
-           LEFT JOIN report_periods ns ON ns.id = s.no_show_period_id WHERE s.attempt_id IN (${ph})`,
-      )
-      .all(...chunk) as any[]) {
-      if (!bundle.scores.has(r.attempt_id)) bundle.scores.set(r.attempt_id, []);
-      bundle.scores.get(r.attempt_id)!.push(r);
-    }
     /*
      * Phạm vi lấy từ bảng lịch kỹ năng khi đợt đã có; đợt cũ chưa di trú thì đọc bảng
      * ngoại lệ cũ. Danh sách là màn CHỈ ĐỌC nên không tự tạo dòng ở đây (mục 18.1).
