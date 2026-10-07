@@ -144,38 +144,48 @@ th.st{background:var(--surface-2);z-index:2}
 .k-xong{border-color:transparent;background:var(--ok-bg);color:var(--ok)}
 .chon{border-color:var(--text)!important;background:var(--text)!important;color:var(--bg)!important;font-weight:700}
 .cu.chon{border-width:2px;padding:2px 7px}
-/* B: ô trung tính, chấm màu nói trạng thái */
-.mt.b{border-color:var(--line-strong);background:transparent;color:var(--c3)}
-.mt.b.k-chua-co-dot{border-style:dashed;border-color:var(--muted-line);color:var(--muted)}
-.mt.b.k-dang-thi{background:var(--doing-bg);border-color:var(--doing-line)}
-.mt.b .dot{width:7px;height:7px}
-.mt.b .dot.vong{background:transparent;border:1.5px solid currentColor}
-.d-chua-lich{color:var(--faint)}.d-co-lich,.d-dang-thi{color:var(--doing)}.d-cho-cham{color:var(--wait)}.d-cho-cham-cu{color:var(--faint)}
-.d-tre-cham{color:var(--bad)}.d-con-viec{color:var(--soon)}.d-xong{color:var(--ok)}
 /* chip lớp thường (ChipKyNang, để so cỡ) */
 .thuong{display:flex;align-items:center;justify-content:space-between;gap:4px;width:184px;height:20px;padding:0 6px;border:1px solid var(--doing-line);border-radius:4px;background:var(--doing-bg);color:var(--doing);font:11px/1 var(--sans);font-variant-numeric:tabular-nums}
 .thuong.xong{border-color:var(--line-strong);background:var(--surface-2);color:var(--done)}
 .mts{display:flex;flex-wrap:wrap;gap:4px}
 
 /* bảng so trạng thái */
-.so3{display:grid;grid-template-columns:180px minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);gap:10px 18px;align-items:center;font-size:12.5px;padding:16px}
+.so3{display:grid;grid-template-columns:200px minmax(0,1fr) minmax(0,1fr);gap:10px 18px;align-items:center;font-size:12.5px;padding:16px}
 .so3 .hd{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--dim)}
 .so3 .ten{color:var(--dim)}
 @media (max-width:760px){.so3{grid-template-columns:120px minmax(0,1fr)}.so3 .an{display:none}}
-
 /* lưới FT */
 .luoi{table-layout:fixed}
 .luoi td,.luoi th{text-align:center}
 .luoi td:first-child,.luoi th:first-child{text-align:left}
-.luoi td{padding:6px 10px;height:44px}
+.luoi td{padding:6px 8px;height:56px}
 .pgh{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);font-size:13px}
 .pgh b{font-size:15px}
+/* ô 2 dòng cố định (như ChipKyNang: 44 px) */
+.o2{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;height:44px}
+.o2.trai{align-items:stretch}
+/* G1: chip nhóm như UX cũ (ChipKyNang) */
+.nhom{display:flex;align-items:center;justify-content:space-between;gap:6px;height:20px;padding:0 6px;border:1px solid;border-radius:6px;font:600 11.5px/18px var(--sans);white-space:nowrap;font-variant-numeric:tabular-nums}
+.nhom b{letter-spacing:.04em}
+/* G2: chữ kỹ năng tô màu */
+.kn{display:inline-flex;align-items:center;gap:6px;height:20px;padding:0 6px;border:1px solid var(--line-strong);border-radius:6px;font:600 11.5px/18px var(--sans);white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--c3)}
+.kn .n{font-weight:700;color:var(--c1)}
+.kn .s{opacity:.6;font-weight:500}
+.kn .ch{display:inline-flex;gap:3px;font-weight:800;letter-spacing:.02em}
+.lech{display:inline-flex;align-items:center;gap:4px;font:600 11.5px/18px var(--sans);white-space:nowrap;color:var(--dim)}
+.lech b{font-weight:800}
+.x-xong{color:var(--ok)}.x-lich{color:var(--faint)}.x-thi{color:var(--doing)}.x-cho{color:var(--wait)}.x-tre{color:var(--bad)}
+.x-vang{color:var(--soon)}.x-huy{color:var(--soon);text-decoration:line-through;text-decoration-thickness:1.5px}.x-chua{color:var(--faint);opacity:.75}
+.cach{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(420px,100%),1fr));gap:16px}
+.cach .card{padding:12px 14px;display:flex;flex-direction:column;gap:8px;font-size:13px}
+.cach h3{margin:0;font-size:14px}
+.cach .card.chon{border-color:var(--accent)}
 </style>
 </head>
 <body>
 <div class="wrap">
 <div class="bar">
-  <b>Xếp lịch Mock Test · panel rộng, ô MT gọn</b>
+  <b>Xếp lịch Mock Test · bản 2</b>
   <span class="m12">07/10 · mã main 1ba3134a · hôm nay W1 OCT (07/10)</span>
   <span class="sp"></span>
   <button class="btn btn-sm" aria-pressed="true" onclick="doi('dark',this)">Tối</button>
@@ -183,170 +193,172 @@ th.st{background:var(--surface-2);z-index:2}
 </div>
 
 <header class="sec">
-  <h1>Panel “Xếp lịch Mock Test” và Ô MT — để chủ sản phẩm chọn A hoặc B</h1>
-  <p class="note">Theo góp ý 07/10: (1) panel quá chật, (2) ô MT to quá, (3) cần dấu “·” giữa số MT và tuần, (4) chữ trong ô một kiểu. Tinh chỉnh, không làm lại: phông, màu, bố cục các bước giữ nguyên. Chữ trong khung màn là chữ sẽ hiện trên web; giải thích nằm ngoài khung. Bấm <b>Tối / Sáng</b> ở thanh trên để xem cả hai chế độ.</p>
-  <ul class="note">
-    <li><b>Panel:</b> dùng khuôn “toàn màn” đã có (như Thêm học viên, Tạo nhiều lớp): ở 1440 panel rộng <b>1440 px</b> (nay 720 px). Bảng học viên không còn phải cuộn ngang ở 1440; dòng “⇆ cuộn ngang” chỉ hiện trên điện thoại.</li>
-    <li><b>Ô MT:</b> đổi sang dáng chip vuông của lớp thường — cao <b>20 px</b>, chữ <b>11,5 px</b> (nay 26 px, 12 px). Màu giữ đúng bảng màu ô MT đã duyệt.</li>
-    <li><b>Chữ:</b> luôn “MT2 · …”. Nhãn “cũ” viền riêng bỏ, thành chữ “· cũ” (A) hoặc chấm rỗng (B).</li>
-  </ul>
+  <h1>Panel “Xếp lịch Mock Test”, Ô MT và lưới FT — bản 2</h1>
+  <p class="note">Chủ sản phẩm đã chọn A (07/10); bản 2 gọn hơn theo bốn ý: (1) xong = màu xanh là đủ, bỏ chữ “xong”, “cũ”, “3/4”; (2) “chờ chấm” → <b>chờ</b>, “trễ chấm” → <b>trễ</b>; (3) panel rộng thì để thoải mái; (4) lưới FT trở lại kiểu hiện 4 kỹ năng. B (chấm màu + chú thích) đã bỏ. Chữ trong khung màn là chữ sẽ hiện; giải thích nằm ngoài khung. Bấm <b>Tối / Sáng</b> ở thanh trên.</p>
 </header>
 
 <section class="sec" id="s0">
-  <h2>0 · Hiện trạng (vẽ lại như ảnh 07/10)</h2>
-  <span class="where">Test › Kế hoạch Test › nút “Xếp lịch Test…” › khung Fast Track · 1440 · Quản lý</span>
-  <p class="note">Panel 720 px trên màn 1440; bảng tối thiểu 960 px nên phải cuộn ngang. Ô MT cao 26 px: “2 chờ chấm 4 [cũ]”, “3 trễ chấm L R W” — số MT dính vào tuần (“4 W2 OCT”), có ô ghi tuần, có ô ghi việc, có ô chỉ có số.</p>
+  <h2>0 · Hiện trạng (như ảnh 07/10)</h2>
+  <span class="where">Test › Kế hoạch Test › nút “Xếp lịch Test…” › Fast Track · 1440</span>
+  <p class="note">Panel 720 px, bảng phải cuộn ngang; ô MT 26 px, “2 chờ chấm 4 [cũ]”, số MT dính tuần “3 W2 OCT”.</p>
   <span class="tag truoc">Trước · 1440</span>
   <div class="rong"><div class="win w1440" id="f-cu"></div></div>
 </section>
 
 <section class="sec" id="s1">
-  <h2>1 · Ô MT — mọi trạng thái</h2>
-  <span class="where">Một component <code>OMt</code> dùng ở: panel Xếp lịch MT · lưới FT ở Kế hoạch Test · ô MT0 ở lớp thường · Hồ sơ HV › Lộ trình · đầu Hồ sơ Mock Test</span>
-  <p class="note"><b>A “đủ chữ”:</b> mọi ô cùng mẫu <b>MT số · tuần · việc</b>; ô chỉ có lịch thì không có “việc”. Kỹ năng ghi tên khi việc chỉ thuộc một vài kỹ năng (“trễ chấm W”), thi cả bốn thì không ghi. <b>B “gọn”:</b> mọi ô chỉ <b>MT số · tuần</b>, màu chấm nói trạng thái; chú thích màu ở chân bảng; câu đủ ở tooltip như nay. Hai phương án cùng cỡ chip lớp thường (dòng cuối để so).</p>
+  <h2>1 · Ô MT bản 2 — mọi trạng thái</h2>
+  <span class="where">Panel Xếp lịch MT · Hồ sơ HV › Lộ trình · đầu Hồ sơ Mock Test · ô MT0 cột Final lớp thường</span>
+  <p class="note">Luật: <b>MT số · tuần</b>, màu = trạng thái. Chỉ thêm <b>một chữ việc</b> khi có việc phải làm: <b>chờ</b> · <b>trễ</b> · <b>vắng</b> · <b>huỷ</b>, kèm kỹ năng nếu không phải cả bốn (“trễ W”). Đang thi = chấm tròn (ký hiệu, không chữ). Xong, MT cũ, xong 3/4: chỉ màu xanh; chi tiết ở tooltip như nay. Cỡ chip lớp thường: cao 20 px, chữ 11,5 px.</p>
   <div class="card"><div class="so3" id="bang-tt"></div></div>
 </section>
 
-<section class="sec" id="sA">
-  <h2>2 · Phương án A — đủ chữ</h2>
-  <span class="where">Test › Kế hoạch Test › “Xếp lịch Test…” › Fast Track · panel toàn màn</span>
-  <span class="tag sau">A · 1440</span>
-  <div class="rong"><div class="win w1440" id="f-a1440"></div></div>
-  <span class="tag sau">A · 375</span>
-  <div class="rong"><div class="win w375" id="f-a375"></div></div>
-</section>
-
-<section class="sec" id="sB">
-  <h2>3 · Phương án B — gọn</h2>
-  <span class="where">Test › Kế hoạch Test › “Xếp lịch Test…” › Fast Track · panel toàn màn</span>
-  <span class="tag sau">B · 1440</span>
-  <div class="rong"><div class="win w1440" id="f-b1440"></div></div>
-  <span class="tag sau">B · 375</span>
-  <div class="rong"><div class="win w375" id="f-b375"></div></div>
-</section>
-
-<section class="sec" id="sFT">
-  <h2>4 · Lưới FT ở Kế hoạch Test (đổi theo vì cùng Ô MT)</h2>
-  <span class="where">Test › Kế hoạch Test › Fast Track › MB FT 102</span>
-  <p class="note">Cột một đợt nay 152 px. A cần chữ dài hơn → cột <b>208 px</b>, bằng cột một đợt của lớp thường. B giữ 152 px. Trên điện thoại lưới vẫn cuộn ngang và tự tới đợt đang tới như nay.</p>
-  <span class="tag truoc">Trước · 1440</span>
-  <div class="rong"><div class="win w1440" id="g-cu"></div></div>
-  <span class="tag sau">A · 1440</span>
-  <div class="rong"><div class="win w1440" id="g-a"></div></div>
-  <span class="tag sau">B · 1440</span>
-  <div class="rong"><div class="win w1440" id="g-b"></div></div>
-  <div class="row">
-    <div><span class="tag sau">A · 375</span><div class="win w375" id="g-a375"></div></div>
-    <div><span class="tag sau">B · 375</span><div class="win w375" id="g-b375"></div></div>
+<section class="sec" id="s1b">
+  <h2>2 · Các cách đã thử cho phần “việc” trong ô</h2>
+  <div class="cach">
+    <div class="card chon"><h3>① Một chữ việc — chọn cho ô MT</h3><div class="mts" id="c1"></div><p class="note">Đọc được ngay, không cần chú thích. Chữ chỉ xuất hiện ở ô có việc → mắt dừng đúng chỗ.</p></div>
+    <div class="card"><h3>② Kỹ năng tô màu trong ô</h3><div class="mts" id="c2"></div><p class="note">Gọn, đủ 4 kỹ năng; nhưng phải nhớ màu tím = chờ, đỏ = trễ. Hợp lưới FT (mục 4), chật ở panel nhiều MT một dòng.</p></div>
+    <div class="card"><h3>③ Ký hiệu</h3><div class="mts" id="c3"></div><p class="note">“✓ / ⏱ / !” ngắn nhất nhưng phải đoán; ✓ thừa vì xanh đã là xong. Không khuyến nghị.</p></div>
   </div>
 </section>
 
+<section class="sec" id="sA">
+  <h2>3 · Panel bản 2 (A gọn, toàn màn)</h2>
+  <span class="where">Test › Kế hoạch Test › “Xếp lịch Test…” › Fast Track · Quản lý</span>
+  <p class="note">Panel rộng 1440 (khuôn toàn màn sẵn có). Rộng rãi: cột Mock Test không xuống dòng ở 1440, cột Sẽ xếp 300 px, dòng cao hơn chút cho dễ quét.</p>
+  <span class="tag sau">1440</span>
+  <div class="rong"><div class="win w1440" id="f-a1440"></div></div>
+  <span class="tag sau">375</span>
+  <div class="rong"><div class="win w375" id="f-a375"></div></div>
+</section>
+
+<section class="sec" id="sFT">
+  <h2>4 · Lưới FT ở Kế hoạch Test — 3 cách</h2>
+  <span class="where">Test › Kế hoạch Test › Fast Track › MB FT 102</span>
+  <p class="note">Ô cao cố định 2 dòng (44 px) như lớp thường. Cột đợt 168 px (nay 152). Màu kỹ năng theo bảng màu đã khoá: xanh lá xong · xám chưa tới · xanh dương đang thi · <b>tím chờ</b> · đỏ trễ · vàng vắng · vàng gạch ngang huỷ.</p>
+  <div class="cach">
+    <div class="card"><h3>G1 · Như UX cũ</h3><p class="note">Chip nhóm “L R W S · W4 SEP”, tách tuần / trạng thái thì thêm dòng. Quen, nhưng hai chip/ô dày và lặp lại tuần.</p></div>
+    <div class="card chon"><h3>G2 · MT · tuần + kỹ năng tô màu — khuyến nghị</h3><p class="note">Cả 4 kỹ năng cùng tuần, cùng trạng thái → một chip màu “MT2 · W4 SEP”. Khác nhau → chip viền + L R W S tô màu từng chữ; kỹ năng lệch tuần ghi dòng 2 “S W1 OCT”.</p></div>
+    <div class="card"><h3>G3 · Giống ô MT ở panel</h3><p class="note">“MT2 · W4 SEP · vắng S” — một component mọi nơi, nhưng không thấy L R W S từng kỹ năng.</p></div>
+  </div>
+  <span class="tag sau">G1 · 1440</span><div class="rong"><div class="win w1440" id="g1"></div></div>
+  <span class="tag sau">G2 · 1440 (khuyến nghị)</span><div class="rong"><div class="win w1440" id="g2"></div></div>
+  <span class="tag sau">G3 · 1440</span><div class="rong"><div class="win w1440" id="g3"></div></div>
+  <div class="rong"><div class="row" style="flex-wrap:nowrap">
+    <div><span class="tag sau">G1 · 375</span><div class="win w375" id="g1m"></div></div>
+    <div><span class="tag sau">G2 · 375</span><div class="win w375" id="g2m"></div></div>
+    <div><span class="tag sau">G3 · 375</span><div class="win w375" id="g3m"></div></div>
+  </div></div>
+</section>
+
 <section class="sec" id="sKhac">
-  <h2>5 · Các chỗ khác dùng Ô MT</h2>
-  <p class="note">Không cần sửa riêng: đổi một component <code>OMt</code> là năm chỗ đổi cùng lúc. Nhãn “cũ” viền (<code>NhanCu</code>) ở Chấm › lưới FT, chấm một kỹ năng, danh sách lớp, hồ sơ HV <b>giữ nguyên</b> (không phải Ô MT).</p>
+  <h2>5 · Các chỗ khác dùng Ô MT (đổi theo)</h2>
+  <p class="note">Đổi một component <code>OMt</code> là đổi cùng lúc. Nhãn “cũ” viền ở Chấm, danh sách lớp, hồ sơ HV giữ nguyên (không phải Ô MT).</p>
   <div class="row" id="khac"></div>
 </section>
 
 <section class="sec" id="sKL">
   <h2>6 · Khuyến nghị</h2>
-  <div class="q"><b>Chọn A.</b> PISA là công cụ làm việc: đọc chữ nhanh hơn tra màu. A nói luôn việc cần làm và của kỹ năng nào (“vắng S”, “trễ chấm W”) — đó là thứ Quản lý cần khi xếp lịch; B phải rê chuột mới biết. Panel đã rộng nên chữ đủ chỗ; lưới FT chỉ cần cột 208 px như lớp thường. B hợp khi lưới có rất nhiều đợt và chỉ cần nhìn lướt.</div>
+  <div class="q"><b>Ô MT = cách ①</b> (panel, hồ sơ HV, hồ sơ Mock, MT0). <b>Lưới FT = G2</b>: thấy đủ L R W S và trạng thái từng kỹ năng trong một ô 2 dòng, cột chỉ nới 152 → 168 px.</div>
   <ul class="note">
-    <li><b>Việc code (A):</b> cỡ <b>S–M</b>, một PR giao diện: <code>KhungPanel rong="toan"</code> cho panel; <code>OMt.tsx</code> sang dáng <code>CHIP_VUONG</code>; chữ ô trong <code>shared/domain/oMt.ts</code> (thêm “MT”, tuần, “· cũ”, “huỷ S”); cột FT 208 px; sửa phép kiểm quét nguồn đang khớp chữ cũ (“tuần này”, “S huỷ”). Không đổi máy chủ, không đổi luật trạng thái.</li>
-    <li><b>Việc code (B):</b> cỡ <b>M</b>: như A nhưng thêm chấm màu, chú thích màu ở chân bốn bảng, và aria/tooltip phải mang toàn bộ trạng thái.</li>
+    <li><b>Việc code:</b> cỡ <b>M</b>, một PR giao diện: panel <code>rong="toan"</code>; <code>OMt</code> dáng <code>CHIP_VUONG</code> + chữ mới trong <code>shared/domain/oMt.ts</code>; ô FT mới (dùng lại <code>gomChip</code>/<code>trangThaiKyNang</code> đã có) thay <code>OMt</code> trong <code>LuoiKeHoach.tsx</code>; sửa phép kiểm khớp chữ cũ. Không đổi máy chủ.</li>
   </ul>
 </section>
 </div>
 
 <script>
-/* ===== Dữ liệu ví dụ: hôm nay 07/10 (W1 OCT), tuần chung W2 OCT ===== */
 const TC='W2 OCT';
-/* ô: [so, kieu, tuan, kn, cu, chon, xep(not)] ; kn = chữ kỹ năng của việc ("" = cả bốn) */
+const KY=['L','R','W','S'];
+/* Một đợt: M(so, [trạng thái chung, tuần], {kỹ năng lệch: [tt, tuần]}, cũ, chọn, xếp nốt). tt: xong lich thi cho tre vang huy chua */
+function M(so,chung,lech,cu,chon,xn){if(chung===null)return{so,none:1,chon,xn};const kn={};KY.forEach(k=>kn[k]=(lech&&lech[k])||chung);return{so,kn,cu,chon,xn};}
 const HV=[
- {ten:'Chu Minh Hiếu',ma:'PISA-000006',lop:'MB FT 102',mt:[[1,'xong','W2 AUG','',1],[2,'xong','W3 SEP'],[3,'chua-co-dot',null,'',0,1]],se:['ok','MT3 · W2 OCT'],tick:1},
- {ten:'Phan Minh Tú',ma:'PISA-000012',lop:'BC FT 205',mt:[[1,'xong','W4 AUG'],[2,'chua-lich',null,'',0,1]],se:['ok','MT2 · W2 OCT'],tick:1},
- {ten:'Tạ Thu Quỳnh',ma:'PISA-000007',lop:'MB FT 102',mt:[[1,'xong','W1 SEP'],[2,'con-viec','W4 SEP','S',0,1,1]],se:['soon','MT2 · S · W2 OCT'],tick:1},
- {ten:'Hoàng Bảo Ngọc',ma:'PISA-000051',lop:'MB FT 101',mt:[[1,'xong','W1 AUG','',1],[2,'xong','W3 AUG','',1],[3,'xong','W1 SEP','3/4'],[4,'xong','W4 SEP'],[5,'chua-co-dot',null,'',0,1]],se:['ok','MT5 · W2 OCT'],tick:1},
- {ten:'Đặng Thu Vân',ma:'PISA-000013',lop:'BC FT 205',mt:[[1,'xong','W2 SEP'],[2,'cho-cham','W4 SEP','L R'],[3,'chua-co-dot',null,'',0,1]],se:['ok','MT3 · W2 OCT'],tick:1},
- {ten:'Mai Ngọc Diệp',ma:'PISA-000015',lop:'BC FT 205',mt:[[1,'xong','W2 SEP'],[2,'co-lich','W2 OCT'],[3,'chua-co-dot',null,'',0,1]],se:['soon','MT3 · W2 OCT','· trùng MT2'],tick:1},
- {ten:'Vũ Đức Anh',ma:'PISA-000021',lop:'MB FT 102',mt:[[1,'xong','W3 SEP'],[2,'dang-thi','W1 OCT'],[3,'chua-co-dot',null,'',0,1]],se:['ok','MT3 · W2 OCT'],tick:1},
- {ten:'Lê Quang Huy',ma:'PISA-000024',lop:'MB FT 102',mt:[[1,'xong','W1 SEP'],[2,'tre-cham','W3 SEP','W'],[3,'chua-co-dot',null,'',0,1]],se:['ok','MT3 · W2 OCT'],tick:1},
- {ten:'Trịnh Hà My',ma:'PISA-000030',lop:'MB FT 101',mt:[[1,'xong','W2 AUG','',1],[2,'cho-cham-cu','W4 AUG','',1],[3,'chua-co-dot',null,'',0,1]],se:['ok','MT3 · W2 OCT'],tick:1},
- {ten:'Ngô Gia Bảo',ma:'PISA-000033',lop:'BC FT 205',mt:[[1,'xong','W3 AUG'],[2,'huy','W4 SEP','S',0,1,1]],se:['soon','MT2 · S · W2 OCT'],tick:1},
- {ten:'Đỗ Khánh Linh',ma:'PISA-000036',lop:'BC FT 205',mt:[[1,'xong','W1 SEP'],[2,'xong','W4 SEP'],[3,'co-lich','W2 OCT']],se:['soon','MT3 · đã có điểm'],tick:0},
- {ten:'Bùi Thanh Tâm',ma:'PISA-000040',lop:'MB FT 101',mt:[[1,'xong','W3 AUG'],[2,'chua-lich',null]],se:['bad','Không xếp được'],tick:0},
- {ten:'Phùng Nhật Minh',ma:'PISA-000044',lop:'MB FT 102',mt:[[1,'cho-cham','W4 SEP',''],[2,'chua-co-dot',null,'',0,1]],se:['ok','MT2 · W2 OCT'],tick:1},
+ {ten:'Chu Minh Hiếu',ma:'PISA-000006',lop:'MB FT 102',mt:[M(1,['xong','W2 AUG'],0,1),M(2,['xong','W3 SEP']),M(3,null,0,0,1)],se:['ok','MT3 · W2 OCT'],tick:1},
+ {ten:'Phan Minh Tú',ma:'PISA-000012',lop:'BC FT 205',mt:[M(1,['xong','W4 AUG']),M(2,['chua',null],0,0,1)],se:['ok','MT2 · W2 OCT'],tick:1},
+ {ten:'Tạ Thu Quỳnh',ma:'PISA-000007',lop:'MB FT 102',mt:[M(1,['xong','W1 SEP']),M(2,['xong','W4 SEP'],{S:['vang','W4 SEP']},0,1,1)],se:['soon','MT2 · S · W2 OCT'],tick:1},
+ {ten:'Hoàng Bảo Ngọc',ma:'PISA-000051',lop:'MB FT 101',mt:[M(1,['xong','W1 AUG'],0,1),M(2,['xong','W3 AUG'],0,1),M(3,['xong','W1 SEP']),M(4,['xong','W4 SEP']),M(5,null,0,0,1)],se:['ok','MT5 · W2 OCT'],tick:1},
+ {ten:'Đặng Thu Vân',ma:'PISA-000013',lop:'BC FT 205',mt:[M(1,['xong','W2 SEP']),M(2,['xong','W4 SEP'],{W:['cho','W4 SEP'],S:['cho','W4 SEP']}),M(3,null,0,0,1)],se:['ok','MT3 · W2 OCT'],tick:1},
+ {ten:'Mai Ngọc Diệp',ma:'PISA-000015',lop:'BC FT 205',mt:[M(1,['xong','W2 SEP']),M(2,['lich','W2 OCT']),M(3,null,0,0,1)],se:['soon','MT3 · W2 OCT','· trùng MT2'],tick:1},
+ {ten:'Vũ Đức Anh',ma:'PISA-000021',lop:'MB FT 102',mt:[M(1,['xong','W3 SEP']),M(2,['thi','W1 OCT']),M(3,null,0,0,1)],se:['ok','MT3 · W2 OCT'],tick:1},
+ {ten:'Lê Quang Huy',ma:'PISA-000024',lop:'MB FT 102',mt:[M(1,['xong','W1 SEP']),M(2,['xong','W3 SEP'],{W:['tre','W3 SEP']}),M(3,null,0,0,1)],se:['ok','MT3 · W2 OCT'],tick:1},
+ {ten:'Trịnh Hà My',ma:'PISA-000030',lop:'MB FT 101',mt:[M(1,['xong','W2 AUG'],0,1),M(2,['cho','W4 AUG'],0,1),M(3,null,0,0,1)],se:['ok','MT3 · W2 OCT'],tick:1},
+ {ten:'Ngô Gia Bảo',ma:'PISA-000033',lop:'BC FT 205',mt:[M(1,['xong','W3 AUG']),M(2,['xong','W4 SEP'],{S:['huy','W4 SEP']},0,1,1)],se:['soon','MT2 · S · W2 OCT'],tick:1},
+ {ten:'Đỗ Khánh Linh',ma:'PISA-000036',lop:'BC FT 205',mt:[M(1,['xong','W1 SEP']),M(2,['xong','W4 SEP']),M(3,['lich','W2 OCT'])],se:['soon','Giữ nguyên'],tick:0},
+ {ten:'Bùi Thanh Tâm',ma:'PISA-000040',lop:'MB FT 101',mt:[M(1,['xong','W3 AUG']),M(2,['chua',null])],se:['bad','Không xếp được'],tick:0},
+ {ten:'Phùng Nhật Minh',ma:'PISA-000044',lop:'MB FT 102',mt:[M(1,['cho','W4 SEP']),M(2,null,0,0,1)],se:['ok','MT2 · W2 OCT'],tick:1},
 ];
-/* Đỗ Khánh Linh: Giữ nguyên vì MT3 đã có lịch W2 OCT; chữ đúng nhanSeXep khi không có điểm */
-HV[10].se=['soon','Giữ nguyên'];
-const esc=s=>String(s);
-const kieuCss=k=>k==='huy'?'con-viec':k;
 
-/* ---- HIỆN TẠI: chữ đúng oMt() + OMt.tsx ---- */
-function chuCu(o){const[so,k,t,kn,cu,chon,xn]=o;
-  if(chon&&!xn) return {chu:TC,chon:1};
-  const c={'chua-co-dot':'','chua-lich':'chưa xếp','co-lich':t,'dang-thi':'tuần này','cho-cham':'chờ chấm '+(kn?kn.split(' ').length:4),
-    'cho-cham-cu':'chờ chấm 4','tre-cham':'trễ chấm '+(kn||'L R W'),'con-viec':'vắng '+kn,'huy':kn+' huỷ','xong':kn==='3/4'?'✓ 3/4':'✓'}[k];
-  return {chu:c,chon:chon};}
-function oCu(o){const[so,k,t,kn,cu]=o;const r=chuCu(o);
-  return `<span class="cu k-${kieuCss(k)}${r.chon?' chon':''}">${!r.chon&&k==='dang-thi'?'<span class="dot"></span>':''}<span class="n">${so}</span>${r.chu?`<span>${r.chu}</span>`:''}${r.chon&&!String(r.chu).startsWith('✓')?'<span style="font-size:11px">✓</span>':''}${cu?'<span class="old">cũ</span>':''}</span>`;}
-
-/* ---- A: MT số · tuần · việc ---- */
-function phanA(o){const[so,k,t,kn,cu,chon,xn]=o;
-  if(chon&&!xn) return [[`MT${so}`,TC],1];
-  const viec={'chua-co-dot':null,'chua-lich':'chưa xếp','co-lich':null,'dang-thi':'đang thi','cho-cham':'chờ chấm'+(kn?' '+kn:''),'cho-cham-cu':'chờ chấm',
-    'tre-cham':'trễ chấm'+(kn?' '+kn:''),'con-viec':'vắng '+kn,'huy':'huỷ '+kn,'xong':kn==='3/4'?'xong 3/4':'xong'}[k];
-  const p=[`MT${so}`];if(t)p.push(t);if(viec)p.push(viec);if(cu)p.push('cũ');return [p,chon];}
-function oA(o){const[so,k]=o;const[p,chon]=phanA(o);
+/* Luật ô (cùng thứ tự oMt): xong → trễ → vắng → huỷ → chờ → đang thi → có lịch → chưa xếp */
+function luat(m){
+  if(m.none) return {kieu:'chua-co-dot',tuan:null,viec:null};
+  const ds=KY.map(k=>({k,tt:m.kn[k][0],t:m.kn[k][1]}));
+  const cua=tt=>ds.filter(x=>x.tt===tt), ten=xs=>xs.length===4?'':' '+xs.map(x=>x.k).join(' ');
+  const som=xs=>xs.map(x=>x.t).filter(Boolean)[0];
+  if(ds.every(x=>x.tt==='xong')) return {kieu:'xong',tuan:ds[3].t,viec:null};
+  for(const[tt,kieu,chu] of [['tre','tre-cham','trễ'],['vang','con-viec','vắng'],['huy','con-viec','huỷ'],['cho',m.cu?'cho-cham-cu':'cho-cham','chờ']]){
+    const xs=cua(tt); if(xs.length) return {kieu,tuan:som(xs),viec:chu+ten(xs),tt,xs};}
+  if(cua('thi').length) return {kieu:'dang-thi',tuan:som(cua('thi')),viec:null};
+  if(cua('lich').length) return {kieu:'co-lich',tuan:som(cua('lich')),viec:null};
+  return {kieu:'chua-lich',tuan:null,viec:'chưa xếp'};
+}
+/* ---- hiện tại (OMt.tsx) ---- */
+function oCu(m){const r=luat(m);const chon=m.chon&&!m.xn;
+  const chu=chon?TC:{'chua-co-dot':'','chua-lich':'chưa xếp','co-lich':r.tuan,'dang-thi':'tuần này','cho-cham':'chờ chấm '+(r.xs?r.xs.length:4),'cho-cham-cu':'chờ chấm 4',
+    'tre-cham':'trễ chấm'+(r.xs&&r.xs.length<4?' '+(r.xs||[]).map(x=>x.k).join(' '):''),'con-viec':r.tt==='huy'?(r.xs||[]).map(x=>x.k).join(' ')+' huỷ':'vắng '+(r.xs||[]).map(x=>x.k).join(' '),'xong':'✓'}[r.kieu];
+  return `<span class="cu k-${r.kieu}${m.chon?' chon':''}">${!m.chon&&r.kieu==='dang-thi'?'<span class="dot"></span>':''}<span class="n">${m.so}</span>${chu?`<span>${chu}</span>`:''}${m.chon&&!String(chu).startsWith('✓')?'<span style="font-size:11px">✓</span>':''}${m.cu?'<span class="old">cũ</span>':''}</span>`;}
+/* ---- bản 2: cách ① ---- */
+function oMt(m){const r=luat(m);const chon=m.chon&&!m.xn;
+  const p=[`MT${m.so}`]; if(chon)p.push(TC); else{ if(r.tuan)p.push(r.tuan); if(r.viec)p.push(r.viec);}
   const ruot=p.map((x,i)=>i===0?`<span class="n">${x}</span>`:`<span class="s">·</span><span>${x}</span>`).join('');
-  return `<span class="mt k-${kieuCss(k)}${chon?' chon':''}" title="${p.join(' · ')}">${!chon&&k==='dang-thi'?'<span class="dot"></span>':''}${ruot}${chon?'<span>✓</span>':''}</span>`;}
-
-/* ---- B: MT số · tuần + chấm màu ---- */
-function oB(o){const[so,k,t,kn,cu,chon,xn]=o;
-  if(chon&&!xn) return `<span class="mt b chon"><span class="n">MT${so}</span><span class="s">·</span><span>${TC}</span><span>✓</span></span>`;
-  if(chon&&xn) return `<span class="mt b chon"><span class="dot"></span><span class="n">MT${so}</span><span class="s">·</span><span>${t}</span><span>✓</span></span>`;
-  const dot=k==='chua-co-dot'?'':`<span class="dot d-${kieuCss(k)}${cu?' vong':''}"></span>`;
-  return `<span class="mt b k-${kieuCss(k)}">${dot}<span class="n">MT${so}</span>${t?`<span class="s">·</span><span>${t}</span>`:''}</span>`;}
-
-const CHAN_MAU=`<div class="chan-mau"><span><span class="dot d-xong" style="width:7px;height:7px;border-radius:50%;background:currentColor"></span>xong</span><span><span class="dot d-co-lich" style="width:7px;height:7px;border-radius:50%;background:currentColor"></span>có lịch</span><span><span class="mt b k-dang-thi" style="padding:0 5px"><span class="dot d-dang-thi"></span></span>đang thi</span><span><span style="width:7px;height:7px;border-radius:50%;background:var(--wait)"></span>chờ chấm</span><span><span style="width:7px;height:7px;border-radius:50%;background:var(--bad)"></span>trễ chấm</span><span><span style="width:7px;height:7px;border-radius:50%;background:var(--soon)"></span>vắng · huỷ</span><span><span style="width:7px;height:7px;border-radius:50%;background:var(--faint)"></span>chưa xếp</span><span><span style="width:7px;height:7px;border-radius:50%;border:1.5px solid var(--dim)"></span>MT cũ</span><span><span class="mt b k-chua-co-dot" style="width:22px"></span>chưa có đợt</span></div>`;
+  return `<span class="mt k-${r.kieu}${m.chon?' chon':''}">${!m.chon&&r.kieu==='dang-thi'?'<span class="dot"></span>':''}${ruot}${m.chon?'<span>✓</span>':''}</span>`;}
+/* ---- cách ②: kỹ năng tô màu ---- */
+function chuKn(m,lo){return `<span class="ch">${KY.filter(k=>!lo||lo.includes(k)).map(k=>`<span class="x-${m.kn[k][0]}">${k}</span>`).join('')}</span>`;}
+function oKn(m){const r=luat(m);if(m.none||m.chon)return oMt(m);
+  const dong=KY.every(k=>m.kn[k][0]===m.kn.L[0]&&m.kn[k][1]===m.kn.L[1]);
+  if(dong) return oMt(Object.assign({},m,{kn:m.kn}));
+  return `<span class="kn"><span class="n">MT${m.so}</span><span class="s">·</span><span>${r.tuan||'—'}</span>${chuKn(m)}</span>`;}
+/* ---- cách ③: ký hiệu ---- */
+function oKh(m){const r=luat(m);const kh={'tre-cham':'!','cho-cham':'⏱','cho-cham-cu':'⏱','con-viec':'!','xong':'✓'}[r.kieu];
+  return `<span class="mt k-${r.kieu}">${r.kieu==='dang-thi'?'<span class="dot"></span>':''}<span class="n">MT${m.so}</span>${r.tuan?`<span class="s">·</span><span>${r.tuan}</span>`:''}${kh?`<span>${kh}${r.xs&&r.xs.length<4?' '+(r.xs||[]).map(x=>x.k).join(' '):''}</span>`:''}</span>`;}
 
 /* ---- bảng trạng thái ---- */
 (function(){
   const dong=[
-    ['Chưa có đợt',[3,'chua-co-dot',null]],['Chưa xếp',[2,'chua-lich',null]],['Đã có lịch',[2,'co-lich','W3 OCT']],['Đang thi',[2,'dang-thi','W1 OCT']],
-    ['Chờ chấm',[2,'cho-cham','W4 SEP','L R']],['Trễ chấm',[3,'tre-cham','W3 SEP','L R W']],['Vắng',[2,'con-viec','W4 SEP','S']],
-    ['Đã huỷ (vắng 2 lần)',[2,'huy','W4 SEP','S']],['Đã xong',[1,'xong','W3 SEP']],['Xong, 3/4 kỹ năng',[3,'xong','W1 SEP','3/4']],
-    ['Cũ, đã xong',[1,'xong','W2 AUG','',1]],['Cũ, chờ nhập điểm',[2,'cho-cham-cu','W4 AUG','',1]],['Đang chọn (panel)',[3,'chua-co-dot',null,'',0,1]],
+    ['Chưa có đợt',M(3,null)],['Chưa xếp',M(2,['chua',null])],['Đã có lịch',M(2,['lich','W3 OCT'])],['Đang thi',M(2,['thi','W1 OCT'])],
+    ['Chờ (cả 4)',M(2,['cho','W4 SEP'])],['Chờ (W S)',M(2,['xong','W4 SEP'],{W:['cho','W4 SEP'],S:['cho','W4 SEP']})],['Trễ (W)',M(3,['xong','W3 SEP'],{W:['tre','W3 SEP']})],
+    ['Vắng (S)',M(2,['xong','W4 SEP'],{S:['vang','W4 SEP']})],['Đã huỷ — vắng 2 lần (S)',M(2,['xong','W4 SEP'],{S:['huy','W4 SEP']})],
+    ['Đã xong',M(1,['xong','W3 SEP'])],['Xong 3/4 kỹ năng',M(3,['xong','W1 SEP'])],['MT cũ, đã xong',M(1,['xong','W2 AUG'],0,1)],
+    ['MT cũ, chờ nhập điểm',M(2,['cho','W4 AUG'],0,1)],['Đang chọn (panel)',M(3,null,0,0,1)],
   ];
-  let h=`<span class="hd"></span><span class="hd an">Hiện tại · 26 px</span><span class="hd">A · đủ chữ · 20 px</span><span class="hd">B · gọn · 20 px</span>`;
-  for(const[t,o] of dong) h+=`<span class="ten">${t}</span><span class="an">${oCu(o)}</span><span>${oA(o)}</span><span>${oB(o)}</span>`;
-  h+=`<span class="ten">Chip lớp thường (so cỡ)</span><span class="an"></span><span><span class="thuong"><b>L R W S</b><span>W3 OCT</span></span></span><span><span class="thuong xong"><b>Xong</b><span>W3 SEP ✓</span></span></span>`;
+  let h=`<span class="hd"></span><span class="hd an">Hiện tại · 26 px</span><span class="hd">Bản 2 · 20 px</span>`;
+  for(const[t,m] of dong) h+=`<span class="ten">${t}</span><span class="an">${oCu(m)}</span><span>${oMt(m)}</span>`;
+  h+=`<span class="ten">Chip lớp thường (so cỡ)</span><span class="an"></span><span><span class="thuong"><b>L R W S</b><span>W3 OCT</span></span></span>`;
   document.getElementById('bang-tt').innerHTML=h;
+  const vd=[M(2,['cho','W4 SEP']),M(3,['xong','W3 SEP'],{W:['tre','W3 SEP']}),M(2,['xong','W4 SEP'],{S:['vang','W4 SEP']}),M(2,['xong','W4 SEP'],{S:['huy','W4 SEP']}),M(1,['xong','W3 SEP'])];
+  document.getElementById('c1').innerHTML=vd.map(oMt).join('');
+  document.getElementById('c2').innerHTML=vd.map(oKn).join('');
+  document.getElementById('c3').innerHTML=vd.map(oKh).join('');
 })();
 
 /* ---- panel ---- */
-function dem(){const d={ok:0,soon:0,bad:0};HV.forEach(h=>d[h.se[0]]++);return d;}
 function panel(bien,w){
-  const dt=w<768, o=bien==='cu'?oCu:bien==='a'?oA:oB, d=dem();
-  const soEm=HV.filter(h=>h.tick).length;
+  const dt=w<768, o=bien==='cu'?oCu:oMt, d={ok:0,soon:0,bad:0}; HV.forEach(h=>d[h.se[0]]++);
+  const soEm=HV.filter(h=>h.tick).length, soBai=HV.filter(h=>h.tick).reduce((s,h)=>s+(h.se[1].includes(' S ')?1:4),0);
   const rows=HV.map(h=>{const[t,c,p]=h.se;
-    const dis=t==='bad'?' disabled':'';
-    return `<tr><td class="st" style="width:${dt?48:80}px"><input type="checkbox" class="cb"${h.tick?' checked':''}${dis} aria-label="Chọn ${h.ten}"></td>
-    <td class="st tenhv" style="left:${dt?48:80}px;${dt?'min-width:112px;max-width:112px':'min-width:170px;max-width:240px'};border-right:1px solid var(--line)"><b title="${h.ten}">${h.ten}</b><small>${h.ma}</small></td>
+    return `<tr><td class="st" style="width:${dt?48:80}px;${dt?'':'padding-top:9px;padding-bottom:9px'}"><input type="checkbox" class="cb"${h.tick?' checked':''}${t==='bad'?' disabled':''} aria-label="Chọn ${h.ten}"></td>
+    <td class="st tenhv" style="left:${dt?48:80}px;${dt?'min-width:112px;max-width:112px':'min-width:200px;max-width:260px'};border-right:1px solid var(--line)"><b title="${h.ten}">${h.ten}</b><small>${h.ma}</small></td>
     <td style="white-space:nowrap;color:var(--c3)">${h.lop}</td>
-    <td style="${dt?'min-width:250px':''}"><div class="mts">${h.mt.map(o).join('')}</div></td>
+    <td style="${dt?'min-width:250px':''}"><div class="mts" style="${dt?'':'flex-wrap:nowrap;gap:6px'}">${h.mt.map(o).join('')}</div></td>
     <td class="se"><span class="i ${t}">${t==='ok'?'✓':t==='soon'?'!':'✕'}</span><span${t==='bad'?' style="color:var(--bad)"':''}>${c}</span>${p?`<span class="phu soon">${p}</span>`:''}</td></tr>`;}).join('');
   const bang=`<div class="tbl"><table style="min-width:${bien==='cu'||dt?960:0}px">
-    <thead><tr><th class="st" style="width:${dt?48:80}px"><label style="display:flex;gap:6px;align-items:center"><input type="checkbox" class="cb" aria-label="Chọn tất cả">${dt?'':'<span>Tất cả</span>'}</label></th><th class="st" style="left:${dt?48:80}px">Học viên</th><th style="width:${bien==='cu'?'auto':'120px'}">Lớp</th><th>Mock Test</th><th style="width:${bien==='cu'?'auto':'300px'}">Sẽ xếp</th></tr></thead>
-    <tbody>${rows}</tbody></table>${bien==='b'?CHAN_MAU:''}</div>${(bien==='cu'||dt)?'<p class="hint">⇆ cuộn ngang</p>':''}`;
-  const pw=bien==='cu'?720:w;
-  const p=`<div class="panel" style="width:${pw}px">
+    <thead><tr><th class="st" style="width:${dt?48:80}px"><label style="display:flex;gap:6px;align-items:center"><input type="checkbox" class="cb" aria-label="Chọn tất cả">${dt?'':'<span>Tất cả</span>'}</label></th><th class="st" style="left:${dt?48:80}px">Học viên</th><th style="width:${bien==='cu'?'auto':'130px'}">Lớp</th><th>Mock Test</th><th style="width:${bien==='cu'?'auto':'300px'}">Sẽ xếp</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>${(bien==='cu'||dt)?'<p class="hint">⇆ cuộn ngang</p>':''}`;
+  const p=`<div class="panel" style="width:${bien==='cu'?720:w}px">
     <div class="ph"><h3>Xếp lịch Mock Test</h3><span class="sp"></span><span class="x" aria-label="Đóng">✕</span></div>
     <div class="ptab"><div class="seg"><span class="on">Fast Track</span><span>Lớp thường</span></div></div>
     <div class="pb">
       <div class="khoi"><h4>Lọc</h4><div class="loc">
         <div><span class="lbl">Chi nhánh</span><div class="field">Mỹ Đình ▾</div></div>
         <div style="flex:1;min-width:0"><span class="lbl">Lớp</span><div class="flex"><span class="lopchip">MB FT 101<i>✕</i></span><span class="lopchip">MB FT 102<i>✕</i></span><span class="lopchip">BC FT 205<i>✕</i></span><span class="sel">+ lớp ▾</span></div></div>
-        <div style="width:${dt?'100%':'208px'}"><span class="lbl">Tìm học viên</span><div class="field ph2">Tên hoặc mã</div></div>
+        <div style="width:${dt?'100%':'240px'}"><span class="lbl">Tìm học viên</span><div class="field ph2">Tên hoặc mã</div></div>
       </div></div>
       <div class="khoi"><h4><span class="num">1</span>Đợt</h4><div class="flex"><span class="nutchon on">MT mới</span><span class="nutchon">MT1</span><span class="nutchon">MT2</span><span class="nutchon">MT3</span><span class="nutchon">MT4</span><span class="nutchon">MT5</span><span class="nutchon">MT6</span></div></div>
       <div class="khoi"><h4><span class="num">2</span>Tuần và kỹ năng</h4><div class="flex" style="gap:8px">
@@ -356,56 +368,71 @@ function panel(bien,w){
         <div class="flex"><span class="nutloc l-ok">✓ Sẽ xếp ${d.ok}</span><span class="nutloc l-soon">! Cần xem ${d.soon}</span><span class="nutloc l-bad">✕ Không xếp được ${d.bad}</span></div>
         ${bang}</div>
     </div>
-    <div class="pf"><span class="btn">Đóng</span><span class="sp"></span><span class="btn btn-primary">Xếp lịch ${soEm} em · ${HV.filter(h=>h.tick).reduce((s,h)=>s+(h.se[1].includes(' S ')?1:4),0)} bài</span></div>
+    <div class="pf"><span class="btn">Đóng</span><span class="sp"></span><span class="btn btn-primary">Xếp lịch ${soEm} em · ${soBai} bài</span></div>
   </div>`;
   if(bien==='cu') return `<div class="app" style="height:1260px"><div class="trang"><div class="tb"></div>${'<div class="ln"></div>'.repeat(20)}</div><div class="nen"></div>${p}</div>`;
   return p;
 }
 document.getElementById('f-cu').innerHTML=panel('cu',1440);
+document.querySelector('#f-cu .panel').style.cssText+=';position:absolute;right:0;top:0;bottom:0';
 document.getElementById('f-a1440').innerHTML=panel('a',1440);
 document.getElementById('f-a375').innerHTML=panel('a',375);
-document.getElementById('f-b1440').innerHTML=panel('b',1440);
-document.getElementById('f-b375').innerHTML=panel('b',375);
-document.querySelector('#f-cu .panel').style.cssText+=';position:absolute;right:0;top:0;bottom:0';
 
 /* ---- lưới FT ---- */
 const LUOI=[
- {ten:'Chu Minh Hiếu',ma:'PISA-000006',o:[[1,'xong','W2 AUG','',1],[2,'xong','W3 SEP'],[3,'co-lich','W2 OCT'],[4,'chua-co-dot',null]]},
- {ten:'Tạ Thu Quỳnh',ma:'PISA-000007',o:[[1,'xong','W1 SEP'],[2,'con-viec','W4 SEP','S'],[3,'chua-co-dot',null],[4,'chua-co-dot',null]]},
- {ten:'Vũ Đức Anh',ma:'PISA-000021',o:[[1,'xong','W3 SEP'],[2,'dang-thi','W1 OCT'],[3,'chua-lich',null],[4,'chua-co-dot',null]]},
- {ten:'Lê Quang Huy',ma:'PISA-000024',o:[[1,'xong','W1 SEP'],[2,'tre-cham','W3 SEP','L R W'],[3,'co-lich','W3 OCT'],[4,'chua-co-dot',null]]},
- {ten:'Trịnh Hà My',ma:'PISA-000030',o:[[1,'xong','W2 AUG','',1],[2,'cho-cham-cu','W4 AUG','',1],[3,'chua-lich',null],[4,'chua-co-dot',null]]},
- {ten:'Phùng Nhật Minh',ma:'PISA-000044',o:[[1,'cho-cham','W4 SEP',''],[2,'chua-lich',null],[3,'chua-co-dot',null],[4,'chua-co-dot',null]]},
- {ten:'Hoàng Bảo Ngọc',ma:'PISA-000051',o:[[1,'xong','W1 AUG','',1],[2,'xong','W3 AUG','',1],[3,'xong','W1 SEP','3/4'],[4,'huy','W4 SEP','S']]},
+ {ten:'Chu Minh Hiếu',ma:'PISA-000006',o:[M(1,['xong','W2 AUG'],0,1),M(2,['xong','W3 SEP']),M(3,['lich','W2 OCT']),M(4,null)]},
+ {ten:'Tạ Thu Quỳnh',ma:'PISA-000007',o:[M(1,['xong','W1 SEP']),M(2,['xong','W4 SEP'],{S:['vang','W4 SEP']}),M(3,null),M(4,null)]},
+ {ten:'Vũ Đức Anh',ma:'PISA-000021',o:[M(1,['xong','W3 SEP']),M(2,['thi','W1 OCT']),M(3,['chua',null]),M(4,null)]},
+ {ten:'Lê Quang Huy',ma:'PISA-000024',o:[M(1,['xong','W1 SEP']),M(2,['xong','W3 SEP'],{L:['tre','W3 SEP'],W:['tre','W3 SEP']}),M(3,['lich','W3 OCT']),M(4,null)]},
+ {ten:'Đặng Thu Vân',ma:'PISA-000013',o:[M(1,['xong','W2 SEP']),M(2,['xong','W4 SEP'],{W:['cho','W4 SEP'],S:['lich','W2 OCT']}),M(3,null),M(4,null)]},
+ {ten:'Trịnh Hà My',ma:'PISA-000030',o:[M(1,['xong','W2 AUG'],0,1),M(2,['cho','W4 AUG'],0,1),M(3,['chua',null]),M(4,null)]},
+ {ten:'Phùng Nhật Minh',ma:'PISA-000044',o:[M(1,['cho','W4 SEP']),M(2,['lich','W2 OCT'],{S:['chua',null]}),M(3,null),M(4,null)]},
+ {ten:'Hoàng Bảo Ngọc',ma:'PISA-000051',o:[M(1,['xong','W1 AUG'],0,1),M(2,['xong','W3 AUG'],0,1),M(3,['xong','W1 SEP']),M(4,['xong','W4 SEP'],{S:['huy','W4 SEP']})]},
 ];
-function luoi(bien,w){
-  const dt=w<768, col=bien==='a'?208:152, ten=dt?132:180, o=bien==='cu'?oCu:bien==='a'?oA:oB;
-  const tw=ten+4*col;
-  return `<div style="background:var(--surface)"><div class="pgh"><b>MB FT 102</b><span class="m12">Fast Track · 7 em</span></div>
+const MAU_NHOM={xong:'k-xong',lich:'k-co-lich',thi:'k-dang-thi',cho:'k-cho-cham',tre:'k-tre-cham',vang:'k-con-viec',huy:'k-con-viec',chua:'k-chua-co-dot'};
+const DUOI={vang:'vắng',huy:'huỷ',tre:'trễ',cho:'chờ'};
+/* G1: nhóm theo (tuần, trạng thái) như gomChip; xong cả đợt = một chip xanh */
+function g1(m){if(m.none)return `<div class="o2">${oMt(m)}</div>`;
+  const nh=new Map();KY.forEach(k=>{const[tt,t]=m.kn[k];const key=tt+'|'+t;if(!nh.has(key))nh.set(key,{tt,t,k:[]});nh.get(key).k.push(k);});
+  const ds=[...nh.values()];
+  if(ds.length===1&&ds[0].tt==='xong') return `<div class="o2 trai"><span class="nhom k-xong"><b>L R W S</b><span>${ds[0].t}</span></span></div>`;
+  return `<div class="o2 trai">${ds.slice(0,2).map(g=>`<span class="nhom ${MAU_NHOM[g.tt]}${g.tt==='huy'?'" style="text-decoration:line-through':''}"><b>${g.k.join(' ')}${DUOI[g.tt]?` <span style="font-weight:500">· ${DUOI[g.tt]}</span>`:''}</b><span>${g.t||'chưa xếp'}</span></span>`).join('')}</div>`;}
+/* G2: cùng tuần + cùng trạng thái → chip màu; khác → chip viền + chữ tô màu; lệch tuần → dòng 2 */
+function g2(m){if(m.none)return `<div class="o2">${oMt(m)}</div>`;
+  const dem={};KY.forEach(k=>{const t=m.kn[k][1]||'';dem[t]=(dem[t]||0)+1;});
+  const chinh=Object.keys(dem).filter(Boolean).sort((a,b)=>dem[b]-dem[a])[0]||'';
+  const cung=KY.every(k=>m.kn[k][0]===m.kn.L[0]&&(m.kn[k][1]||'')===(m.kn.L[1]||''));
+  if(cung) return `<div class="o2">${oMt(m)}</div>`;
+  const tai=KY.filter(k=>(m.kn[k][1]||'')===chinh), lech=KY.filter(k=>(m.kn[k][1]||'')!==chinh);
+  const d1=`<span class="kn"><span class="n">MT${m.so}</span><span class="s">·</span><span>${chinh||'chưa xếp'}</span>${chuKn(m,tai)}</span>`;
+  const d2=lech.length?`<span class="lech">${lech.map(k=>`<b class="x-${m.kn[k][0]}">${k}</b><span>${m.kn[k][1]||'chưa xếp'}</span>`).join(' ')}</span>`:'';
+  return `<div class="o2">${d1}${d2}</div>`;}
+function g3(m){return `<div class="o2">${oMt(m)}</div>`;}
+function luoi(f,w,col){
+  const dt=w<768, ten=dt?132:180, tw=ten+4*col;
+  return `<div style="background:var(--surface)"><div class="pgh"><b>MB FT 102</b><span class="m12">Fast Track · 8 em</span></div>
   <div style="overflow-x:auto"><table class="luoi" style="width:${tw}px;min-width:100%"><colgroup><col style="width:${ten}px">${('<col style="width:'+col+'px">').repeat(4)}</colgroup>
   <thead><tr><th class="st">Học viên</th><th>MT1</th><th>MT2</th><th>MT3</th><th>MT4</th></tr></thead>
-  <tbody>${LUOI.map(h=>`<tr><td class="st tenhv"><b>${h.ten}</b><small>${h.ma}</small></td>${h.o.map(x=>`<td>${o(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>${bien==='b'?CHAN_MAU:''}</div>`;
+  <tbody>${LUOI.map(h=>`<tr><td class="st tenhv"><b>${h.ten}</b><small>${h.ma}</small></td>${h.o.map(x=>`<td>${f(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`;
 }
-document.getElementById('g-cu').innerHTML=luoi('cu',1440);
-document.getElementById('g-a').innerHTML=luoi('a',1440);
-document.getElementById('g-b').innerHTML=luoi('b',1440);
-document.getElementById('g-a375').innerHTML=luoi('a',375);
-document.getElementById('g-b375').innerHTML=luoi('b',375);
+const W1=208,W2=168,W3=180;
+document.getElementById('g1').innerHTML=luoi(g1,1440,W1);
+document.getElementById('g2').innerHTML=luoi(g2,1440,W2);
+document.getElementById('g3').innerHTML=luoi(g3,1440,W3);
+document.getElementById('g1m').innerHTML=luoi(g1,375,W1);
+document.getElementById('g2m').innerHTML=luoi(g2,375,W2);
+document.getElementById('g3m').innerHTML=luoi(g3,375,W3);
 
 /* ---- chỗ khác ---- */
 (function(){
-  const lt=[[1,'xong','W2 AUG','',1],[2,'xong','W3 SEP'],[3,'tre-cham','W3 SEP','W'],[4,'co-lich','W3 OCT'],[5,'chua-co-dot',null]];
-  const lotrinh=f=>`<table style="font-size:12.5px"><thead><tr><th>Mock Test</th><th>Tuần học</th><th>Tuần thi</th></tr></thead><tbody>${lt.map(x=>`<tr><td style="white-space:nowrap">${f(x)}</td><td style="color:var(--dim)">tuần ${x[0]*4}</td><td style="white-space:nowrap">${x[2]||'—'}</td></tr>`).join('')}</tbody></table>`;
-  const the=(tieu,noi,an)=>`<div><span class="tag sau">${an}</span><div class="card" style="width:360px;max-width:100%;overflow:hidden"><div class="pgh" style="font-size:12px;color:var(--dim)">${tieu}</div><div style="padding:10px">${noi}</div></div></div>`;
-  let h='';
-  for(const[b,f] of [['A',oA],['B',oB]]){
-    h+=the('Hồ sơ HV › Lộ trình · Chu Minh Hiếu',lotrinh(f),b);
-    h+=the('Hồ sơ Mock Test · đầu trang',`<div style="font-size:15px;font-weight:700">Lê Quang Huy · MB FT 102 <span style="margin-left:6px">${f([3,'tre-cham','W3 SEP','W'])}</span></div>`,b);
-    h+=the('Kế hoạch Test › Lớp thường › BE 04 · cột Final',`<div class="flex"><span class="thuong"><b>L R W S</b><span>W4 OCT</span></span>${f([0,'co-lich','W4 OCT'])}</div>`,b);
-  }
-  document.getElementById('khac').innerHTML=h;
+  const lt=[M(1,['xong','W2 AUG'],0,1),M(2,['xong','W3 SEP']),M(3,['xong','W3 SEP'],{W:['tre','W3 SEP']}),M(4,['lich','W3 OCT']),M(5,null)];
+  const tuan=['W2 AUG','W3 SEP','W3 SEP','W3 OCT','—'];
+  const the=(tieu,noi)=>`<div class="card" style="width:360px;max-width:100%;overflow:hidden"><div class="pgh" style="font-size:12px;color:var(--dim)">${tieu}</div><div style="padding:10px">${noi}</div></div>`;
+  document.getElementById('khac').innerHTML=
+    the('Hồ sơ HV › Lộ trình · Chu Minh Hiếu',`<table style="font-size:12.5px"><thead><tr><th>Mock Test</th><th>Tuần học</th><th>Tuần thi</th></tr></thead><tbody>${lt.map((m,i)=>`<tr><td style="white-space:nowrap">${oMt(m)}</td><td style="color:var(--dim)">tuần ${(i+1)*4}</td><td style="white-space:nowrap">${tuan[i]}</td></tr>`).join('')}</tbody></table>`)+
+    the('Hồ sơ Mock Test · đầu trang',`<div style="font-size:15px;font-weight:700">Lê Quang Huy · MB FT 102 <span style="margin-left:6px">${oMt(lt[2])}</span></div>`)+
+    the('Kế hoạch Test › Lớp thường › BE 04 · cột Final',`<div class="flex"><span class="thuong"><b>L R W S</b><span>W4 OCT</span></span>${oMt(M(0,['lich','W4 OCT']))}</div>`);
 })();
-
 function doi(t,b){try{document.documentElement.dataset.theme=t;document.querySelectorAll('.bar .btn').forEach(function(x){x.setAttribute('aria-pressed',x===b)});}catch(e){}}
 </script>
 </body>
