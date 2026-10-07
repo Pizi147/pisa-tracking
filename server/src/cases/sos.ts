@@ -109,13 +109,15 @@ export function followUntilAfter(attempt: any): string | null {
   /* Lượt kế theo `soThuTuLuot`: lớp thường Progress → Final theo loại (Final tự tạo có thể mang attempt_no nhỏ hơn); FT theo attempt_no như cũ. */
   const next = (conn
     .prepare(
-      `SELECT a.id, a.kind, a.attempt_no, p.week_start
+      `SELECT a.id, a.kind, a.attempt_no, p.week_start, cy.route
          FROM assessment_attempts a
+         JOIN learning_cycles cy ON cy.id = a.cycle_id
          LEFT JOIN report_periods p ON p.id = a.planned_period_id
         WHERE a.cycle_id = ? AND a.id != ? AND a.status != 'cancelled'`,
     )
     .all(attempt.cycle_id, attempt.id ?? -1) as any[])
-    .filter((x) => soThuTuLuot(x, attempt) > 0).sort(soThuTuLuot)[0];
+    .filter((x) => (x.route || x.kind !== 'mt0') && soThuTuLuot(x, attempt) > 0)
+    .sort(soThuTuLuot)[0];   // khoá lớp thường: MT0 không là lượt kế (Case Final giữ follow_until null)
   if (!next) return null;
   const anchor = next.week_start;
   if (!anchor) return null;

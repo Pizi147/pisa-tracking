@@ -70,7 +70,8 @@ export const ATTEMPT_KIND_SHORT: Record<AttemptKind, string> = {
 export const hangLuot = (kind: string | null | undefined): number => (kind === 'progress' ? 1 : kind === 'final' ? 2 : kind === 'mt0' ? 3 : 0);
 export const soThuTuLuot = (a: { kind: string; attempt_no: number }, b: { kind: string; attempt_no: number }): number =>
   (hangLuot(a.kind) && hangLuot(b.kind) && hangLuot(a.kind) !== hangLuot(b.kind) ? hangLuot(a.kind) - hangLuot(b.kind) : a.attempt_no - b.attempt_no);
-export const nhanBaiThuong =(kind: string): string => (kind === 'final' ? ATTEMPT_KIND_SHORT.final : ATTEMPT_KIND_SHORT.progress);
+/** Tên bài của lớp thường theo `kind` (không phải `final` thì là Progress Test) — một chỗ cho mọi nhãn cứng. */
+export const nhanBaiThuong = (kind: string): string => (kind === 'final' ? ATTEMPT_KIND_SHORT.final : ATTEMPT_KIND_SHORT.progress);
 /** Một từ cho cột hẹp (ghim Hành trình): `Progress` / `Final`. */
 export const ATTEMPT_KIND_NGAN = { progress: 'Progress', final: 'Final' } as const;
 
