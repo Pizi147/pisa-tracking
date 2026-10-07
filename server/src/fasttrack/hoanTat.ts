@@ -9,11 +9,12 @@ import { db } from '../db.ts';
 import { dotDaHoanTat, mondayOfDate, PERMISSIONS } from '../../../shared/domain/index.ts';
 import { can, isCoreTeacherOf, type Principal } from '../permissions.ts';
 import { addDays } from '../util.ts';
+import { loadSkillRows } from './skillSchedule.ts';
 
 export type HoanTatInfo = { hoanTat: boolean; chuNhatCuoi: string | null };
 
 /**
- * ĐỢT ĐÃ HOÀN TẤT CHO CẢ DANH SÁCH — ba câu SQL, không phụ thuộc số đợt:
+ * ĐỢT ĐÃ HOÀN TẤT CHO CẢ DANH SÁCH — ba câu SQL (câu 2 dùng chung bộ nhớ `loadSkillRows`), không phụ thuộc số đợt:
  *   1. Chế độ chấm (band FT hay tỷ lệ lớp thường) của từng đợt.
  *   2. Lịch từng kỹ năng (`attempt_skills`): bắt buộc, huỷ, hạn (`report_periods.week_end`).
  *   3. Điểm (`assessment_scores`): band / raw_score / dấu "-" theo TỪNG Ô NHẬP (writing tách writing1, writing2
@@ -49,14 +50,8 @@ export function dotHoanTatMany(attemptIds: number[], today: string): Map<number,
   }
 
   const skillsOf = new Map<number, Array<{ skill: string; batBuoc: boolean; huy: boolean; sitAbsent: boolean; weekEnd: string | null }>>();
-  for (const r of conn
-    .prepare(
-      `SELECT ask.attempt_id, ask.skill, ask.required, ask.sit_status, pr.week_end
-         FROM attempt_skills ask
-         LEFT JOIN report_periods pr ON pr.id = ask.planned_period_id
-        WHERE ask.attempt_id IN (${ph})`,
-    )
-    .all(...attemptIds) as any[]) {
+  /* TD2-a: lịch kỹ năng qua `loadSkillRows` (nhớ theo lượt trong request) — bảng điểm lớp đã đọc đúng các lượt này ngay trước. */
+  for (const r of [...loadSkillRows(attemptIds).values()].flat()) {
     if (!skillsOf.has(r.attempt_id)) skillsOf.set(r.attempt_id, []);
     skillsOf.get(r.attempt_id)!.push({
       skill: r.skill, batBuoc: r.required === 1, huy: r.sit_status === 'cancelled',

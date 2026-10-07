@@ -11,7 +11,8 @@ import { HttpError } from '../util.ts';
  */
 export const HAN_HAM_NETLIFY_MS = 10_000;
 export const KHONG_MO_GIAO_DICH_KHI_CON_MS = 2_500;
-export const LOG_CHAM_MS = 3_000;
+/** TD2-0: 3 s → 1 s để log thấy cả trang 1–3 s. */
+export const LOG_CHAM_MS = 1_000;
 
 const kho = new AsyncLocalStorage<{ hetLuc: number }>();
 

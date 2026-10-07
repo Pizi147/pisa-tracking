@@ -26,12 +26,12 @@ const { runSeed } = await import('../seed/seed.ts');
 const { createApp } = await import('../app.ts');
 const { createSession } = await import('../auth.ts');
 const {
-  chayTrongRequest, nho, coNho, trongBoNho, soCauSql, demHienTai,
+  chayTrongRequest, nho, coNho, trongBoNho, soCauSql, soDongSql, demHienTai,
 } = await import('../platform/nguCanhRequest.ts');
 const { loadPrincipal, can, napTruocPhamVi, scopeFor } = await import('../permissions.ts');
 const { PERMISSIONS, LO_LUU_SUA_CA_LOP } = await import('../../../shared/domain/index.ts');
 const { listCases } = await import('../cases/cases.ts');
-const { DUONG_DO, TRAN, TRAN_GHI_LO } = await import('./tocDoDuong.ts');
+const { DUONG_DO, TRAN, TRAN_DONG, TRAN_GHI_LO } = await import('./tocDoDuong.ts');
 
 runSeed();
 
@@ -62,6 +62,12 @@ const conn = db();
  */
 type CauDo = { nhan: string; thamSo: number; ve: number; datTen: boolean; sql: string };
 const doTurso = { bat: false, nhan: '(ngoài request)', soCau: 0, nangThamSo: [] as CauDo[], nangVe: [] as CauDo[], datTen: [] as CauDo[] };
+/*
+ * TD2-a: "không đọc lặp" — trong MỘT request GET, câu lịch kỹ năng (`FROM attempt_skills ask`) và câu điểm (`FROM assessment_scores s
+ * LEFT JOIN users u`) không được trả lại cùng một `attempt_id` hai lần. `null` = không theo dõi.
+ */
+const doLap: { thay: Map<string, Map<number, number>> | null } = { thay: null };
+const CAU_LUOT: [string, RegExp][] = [['lịch kỹ năng', /FROM attempt_skills ask\b/], ['điểm', /FROM assessment_scores s\s+LEFT JOIN users u\b/]];
 {
   const dbProto = Object.getPrototypeOf(conn);
   const prepGoc = dbProto.prepare;
@@ -90,7 +96,16 @@ const doTurso = { bat: false, nhan: '(ngoài request)', soCau: 0, nangThamSo: []
         giuTop(doTurso.nangVe, c, 've');
         if (c.datTen && doTurso.datTen.length < 5) doTurso.datTen.push(c);
       }
-      return goc.apply(this, args);
+      const out = goc.apply(this, args);
+      if (doLap.thay && m === 'all' && this.__sql && Array.isArray(out)) {
+        for (const [ten, re] of CAU_LUOT) {
+          if (!re.test(this.__sql)) continue;
+          const dem = doLap.thay.get(ten) ?? new Map<number, number>();
+          doLap.thay.set(ten, dem);
+          for (const id of new Set(out.map((r: any) => r.attempt_id as number))) dem.set(id, (dem.get(id) ?? 0) + 1);
+        }
+      }
+      return out;
     };
   }
 }
@@ -196,11 +211,11 @@ async function callHttp(vai: Vai, method: string, url: string, body?: unknown) {
 }
 
 /** Đếm câu SQL của MỘT lượt gọi HTTP — gọi TUẦN TỰ (không song song, để số không lẫn giữa các lượt gọi). */
-async function doSql(vai: Vai, method: string, url: string): Promise<{ n: number; status: number }> {
-  const truoc = soCauSql();
+async function doSql(vai: Vai, method: string, url: string): Promise<{ n: number; dong: number; status: number }> {
+  const truoc = soCauSql(), dongTruoc = soDongSql();
   const { status } = await callHttp(vai, method, url);
   const sau = soCauSql();
-  return { n: sau - truoc, status };
+  return { n: sau - truoc, dong: soDongSql() - dongTruoc, status };
 }
 
 // ==================================================================== Task 1 — hạ tầng nguCanhRequest.ts
@@ -588,20 +603,49 @@ await checkAsync(
 
 // ==================================================================== Task 5 — trần câu SQL và nhân dữ liệu
 
-/** Đo lại TOÀN BỘ DUONG_DO một lượt — dùng làm mốc "trước" cho cả phép trần và phép nhân dữ liệu. */
-async function doMotLuot(): Promise<Map<string, number>> {
+/**
+ * Đo lại TOÀN BỘ DUONG_DO một lượt — dùng làm mốc "trước" cho cả phép trần và phép nhân dữ liệu. `dong` (TD2-a): số dòng SQL trả về
+ * của từng (vai × đường) ghi vào Map truyền vào. `lap`: ghi các (vai × đường) đọc lặp một lượt (xem `doLap`).
+ */
+async function doMotLuot(dong?: Map<string, number>, lap?: string[]): Promise<Map<string, number>> {
   const ra = new Map<string, number>();
   for (const muc of DUONG_DO) {
     for (const vai of muc.vai) {
       const url = urlFor(muc.url);
-      const { n } = await doSql(vai, 'GET', url);
-      ra.set(`${vai} ${url}`, n);
+      if (lap) doLap.thay = new Map();
+      const r = await doSql(vai, 'GET', url);
+      ra.set(`${vai} ${url}`, r.n);
+      dong?.set(`${vai} ${url}`, r.dong);
+      if (lap) {
+        for (const [ten, dem] of doLap.thay!) {
+          const lai = [...dem].filter(([, k]) => k > 1).map(([id]) => id);
+          if (lai.length) lap.push(`${vai} ${url}: ${ten} đọc lại ${lai.length} lượt (vd. ${lai.slice(0, 5).join(', ')})`);
+        }
+        doLap.thay = null;
+      }
     }
   }
   return ra;
 }
 
-const truocNhan = await doMotLuot();
+const dongTruocNhan = new Map<string, number>();
+const docLap: string[] = [];
+const truocNhan = await doMotLuot(dongTruocNhan, docLap);
+
+check('TD2-a · không đọc lặp — mỗi request GET: câu lịch kỹ năng / câu điểm không trả cùng một lượt hai lần', () => {
+  assert(docLap.length === 0, `Đọc lặp:\n${docLap.join('\n')}`);
+});
+
+check('TD2-a · trần dòng đọc — mọi (đường × vai) trong TRAN_DONG ≤ trần, và mọi khoá TRAN_DONG khớp một đường đã đo', () => {
+  const sai: string[] = [];
+  for (const [khoa, tran] of Object.entries(TRAN_DONG)) {
+    const d = dongTruocNhan.get(khoa);
+    if (d === undefined) sai.push(`${khoa}: không có trong đường đo`);
+    else if (d > tran) sai.push(`${khoa}: ${d} dòng > trần ${tran}`);
+  }
+  assert(Object.keys(TRAN_DONG).length >= 10, `TRAN_DONG phải phủ các đường nặng (có ${Object.keys(TRAN_DONG).length})`);
+  assert(!sai.length, sai.join('\n'));
+});
 
 await checkAsync('PR-TD Task5(1) · trần câu SQL — mọi (đường × vai) đã có trong TRAN đều ≤ trần riêng và ≤ 100', async () => {
   const sai: string[] = [];
@@ -738,6 +782,7 @@ function nhanDuLieu(n: number): { hvTruoc: number; hvSau: number; caseTruoc: num
 }
 
 const soNhanDuLieu = nhanDuLieu(3);
+const dongSauNhan = new Map<string, number>();
 doTurso.bat = true;   // PR-DEPLOY (Q7): từ đây ghi mọi câu SQL — mọi (đường × vai) sau nhân dữ liệu + mọi đường ghi lô
 /*
  * PR-SOS: bản sao chép cả `sos_cases.han_xac_nhan` → Case chờ nguyên nhân quá hạn của bản sao sinh thẻ Báo QL ở lần quét ĐẦU (việc ghi
@@ -749,7 +794,7 @@ console.log(
 );
 
 await checkAsync('PR-TD Task5(2) · sau khi nhân dữ liệu ×3, mọi (đường × vai) không tăng quá 5 câu so với trước', async () => {
-  const sauNhan = await doMotLuot();
+  const sauNhan = await doMotLuot(dongSauNhan);
   const sai: string[] = [];
   for (const [khoa, truoc] of truocNhan) {
     const sau = sauNhan.get(khoa) ?? 0;
@@ -761,6 +806,17 @@ await checkAsync('PR-TD Task5(2) · sau khi nhân dữ liệu ×3, mọi (đư�
     const sau = sauNhan.get(khoa) ?? 0;
     if (sau !== truoc) console.log(`  ${khoa}: ${truoc} → ${sau}`);
   }
+});
+
+/* TD2-a: dòng tăng theo dữ liệu là đúng (×3 học viên) — đọc lặp thì vượt. Trần sau nhân = 3 × trần gốc. */
+check('TD2-a · sau khi nhân dữ liệu ×3, mọi (đường × vai) trong TRAN_DONG ≤ 3 × trần dòng', () => {
+  const sai: string[] = [];
+  for (const [khoa, tran] of Object.entries(TRAN_DONG)) {
+    const d = dongSauNhan.get(khoa) ?? 0;
+    console.log(`      (đo dòng: ${khoa} ${dongTruocNhan.get(khoa)} → ${d})`);
+    if (d > 3 * tran) sai.push(`${khoa}: ${d} dòng > 3 × ${tran}`);
+  }
+  assert(!sai.length, sai.join('\n'));
 });
 
 await checkAsync('PR-TD Task5(3) · sau khi nhân dữ liệu, listCases vẫn ra ĐÚNG tập id như tham chiếu — 3 vai chính', async () => {

@@ -16,16 +16,19 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 type Kho = {
   /** null = không mở bộ nhớ cho request này (không phải GET). */
   nho: Map<string, unknown> | null;
-  dem: { n: number };
+  /** n = số câu SQL, dong = số dòng các câu trả về (TD2-0: `[cham]` in cả hai). */
+  dem: { n: number; dong: number };
 };
 
 const kho = new AsyncLocalStorage<Kho>();
 
 /** Tổng câu SQL từ lúc tiến trình khởi động — dùng cho phép kiểm ĐO (chênh lệch trước/sau một đoạn mã). */
 let tongCau = 0;
+/** Tổng dòng SQL trả về từ lúc tiến trình khởi động (TD2-0) — phép kiểm ĐO trừ trước/sau như `tongCau`. */
+let tongDong = 0;
 
 export function chayTrongRequest<T>(method: string, fn: () => T): T {
-  return kho.run({ nho: method === 'GET' ? new Map() : null, dem: { n: 0 } }, fn);
+  return kho.run({ nho: method === 'GET' ? new Map() : null, dem: { n: 0, dong: 0 } }, fn);
 }
 
 /**
@@ -65,6 +68,28 @@ export function datNho<T>(khoa: string, giaTri: T): void {
   s.nho.set(khoa, process.env.PISA_DONG_BANG_NHO === '1' ? dongBangMotTang(giaTri) : giaTri);
 }
 
+/**
+ * TD2-a: đọc NHIỀU id theo lô nhưng nhớ THEO TỪNG ID (`${tienTo}${id}`) — các màn danh sách gọi lại cùng tập lượt 2–3 lần mỗi request
+ * (`loadSkillRows`, câu điểm của `loadBundle`). Chỉ hỏi `doc` với id chưa nhớ; id không có dòng nhớ `[]`. Không có bộ nhớ → gọi thẳng
+ * `doc(ids)` như cũ. Có bộ nhớ → Map MỚI (chỉ id có dòng, theo thứ tự `ids`), mảng và từng dòng chép nông: nơi gọi sửa tại chỗ không
+ * làm hỏng bộ nhớ dùng chung.
+ */
+export function nhoTheoId<T extends object>(tienTo: string, ids: number[], doc: (thieu: number[]) => Map<number, T[]>): Map<number, T[]> {
+  const s = kho.getStore();
+  if (!s || s.nho === null) return doc(ids);
+  const thieu = [...new Set(ids)].filter((id) => !s.nho!.has(tienTo + id));
+  if (thieu.length) {
+    const moi = doc(thieu);
+    for (const id of thieu) datNho(tienTo + id, moi.get(id) ?? []);
+  }
+  const out = new Map<number, T[]>();
+  for (const id of ids) {
+    const rows = s.nho.get(tienTo + id) as T[];
+    if (rows.length && !out.has(id)) out.set(id, rows.map((r) => ({ ...r })));
+  }
+  return out;
+}
+
 /** Đang có bộ nhớ mở không (request GET, hoặc bên trong `trongBoNho`)? */
 export function coNho(): boolean {
   const s = kho.getStore();
@@ -92,7 +117,7 @@ export function xoaNho(): void {
 export function trongBoNho<T>(fn: () => T): T {
   const s = kho.getStore();
   if (s && s.nho !== null) return fn();
-  return kho.run({ nho: new Map(), dem: s?.dem ?? { n: 0 } }, fn);
+  return kho.run({ nho: new Map(), dem: s?.dem ?? { n: 0, dong: 0 } }, fn);
 }
 
 /** Gọi mỗi lần chạy một câu SQL thật (`get`/`run`/`iterate` — KHÔNG gọi cho `all`, xem chú thích ở db.ts). */
@@ -102,12 +127,24 @@ export function demCau(): void {
   tongCau++;
 }
 
+/** Gọi với số dòng một câu SQL trả về (`all` → length, `get` → 0/1; chỉ cộng, không JSON hoá — TD2-0). */
+export function demDong(k: number): void {
+  const s = kho.getStore();
+  if (s) s.dem.dong += k;
+  tongDong += k;
+}
+
+/** Tổng dòng SQL trả về từ lúc tiến trình khởi động — phép kiểm ĐO tự trừ trước/sau. */
+export function soDongSql(): number {
+  return tongDong;
+}
+
 /** Tổng câu SQL từ lúc tiến trình khởi động (không riêng một request) — phép kiểm ĐO tự trừ trước/sau. */
 export function soCauSql(): number {
   return tongCau;
 }
 
 /** Bộ đếm của request đang chạy (tham chiếu sống — đọc `.n` sau khi request xong), hoặc null nếu không trong request. */
-export function demHienTai(): { n: number } | null {
+export function demHienTai(): { n: number; dong: number } | null {
   return kho.getStore()?.dem ?? null;
 }

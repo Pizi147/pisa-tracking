@@ -6,6 +6,7 @@ import {
 import { HttpError, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, explain, require_, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
+import { nhoTheoId } from '../platform/nguCanhRequest.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { programmeByCode } from '../normal/regular.ts';
 import { rutDeNghiDoi } from './absence.ts';
@@ -80,8 +81,14 @@ export type SkillRow = {
   period_code: string | null;
 };
 
+/*
+ * TD2-a: đúng các cột của `SkillRow` thay vì `ask.*` — danh sách đọc hàng nghìn dòng mỗi request; người/lúc (`*_by`, `*_at`,
+ * `created_at`, `updated_at`) không màn nào đọc từ đây (nhật ký có bảng riêng).
+ */
 const SELECT_SKILLS = `
-  SELECT ask.*, pr.week_start, pr.week_end, pr.code AS period_code
+  SELECT ask.id, ask.attempt_id, ask.skill, ask.required, ask.scope_reason, ask.planned_period_id, ask.plan_source, ask.sit_status,
+         ask.sit_note, ask.deadline_override, ask.deadline_override_reason, ask.absence_move_count, ask.absent_from_no_show, ask.huy_vang,
+         pr.week_start, pr.week_end, pr.code AS period_code
     FROM attempt_skills ask
     LEFT JOIN report_periods pr ON pr.id = ask.planned_period_id`;
 
@@ -179,19 +186,22 @@ function sortRows(rows: SkillRow[], bo: readonly string[] = ASSESSED_SKILLS): Sk
  * Nơi gọi tự suy tạm từ tuần chung của đợt, và dòng thật sẽ được tạo ở lần sửa đầu tiên.
  */
 export function loadSkillRows(attemptIds: number[]): Map<number, SkillRow[]> {
-  const out = new Map<number, SkillRow[]>();
-  if (!attemptIds.length) return out;
-  const conn = db();
-  for (let i = 0; i < attemptIds.length; i += 900) {   // cùng cỡ lô với loadBundle (PR-MT)
-    const chunk = attemptIds.slice(i, i + 900);
-    const ph = chunk.map(() => '?').join(',');
-    for (const r of conn.prepare(`${SELECT_SKILLS} WHERE ask.attempt_id IN (${ph})`).all(...chunk) as SkillRow[]) {
-      if (!out.has(r.attempt_id)) out.set(r.attempt_id, []);
-      out.get(r.attempt_id)!.push(r);
+  if (!attemptIds.length) return new Map();
+  /* TD2-a: nhớ theo từng lượt trong request GET — `loadBundle` và nơi gọi thường đọc lại cùng tập lượt. */
+  return nhoTheoId('lich-kn:', attemptIds, (ids) => {
+    const out = new Map<number, SkillRow[]>();
+    const conn = db();
+    for (let i = 0; i < ids.length; i += 900) {   // cùng cỡ lô với loadBundle (PR-MT)
+      const chunk = ids.slice(i, i + 900);
+      const ph = chunk.map(() => '?').join(',');
+      for (const r of conn.prepare(`${SELECT_SKILLS} WHERE ask.attempt_id IN (${ph})`).all(...chunk) as SkillRow[]) {
+        if (!out.has(r.attempt_id)) out.set(r.attempt_id, []);
+        out.get(r.attempt_id)!.push(r);
+      }
     }
-  }
-  for (const [k, v] of out) out.set(k, sortRows(v));
-  return out;
+    for (const [k, v] of out) out.set(k, sortRows(v));
+    return out;
+  });
 }
 
 /**

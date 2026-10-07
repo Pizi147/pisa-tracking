@@ -119,8 +119,8 @@ function coreTeacherOf(classCode) {
   return row.id;
 }
 
-const LOP_FT = classId('MB-FT 101');
-const LOP_THUONG = classId('MB-FOU 12');
+const LOP_FT = classId('MB FT 101');
+const LOP_THUONG = classId('MB FOU 12');
 const CN = conn.prepare('SELECT branch_id AS b FROM classes WHERE id = ?').get(LOP_FT).b;
 const HV = conn
   .prepare(`SELECT student_id AS id FROM enrollments WHERE class_id = ? AND status = 'active' ORDER BY student_id LIMIT 1`)
@@ -134,9 +134,9 @@ const KASE = conn
 
 const USER = {
   QL: userByRole('manager', 'MB'),
-  GVCN: coreTeacherOf('MB-FT 101'),
-  GVBM: subjectOnlyTeacherOf('MB-FT 101'),
-  GVCN_THUONG: coreTeacherOf('MB-FOU 12'),
+  GVCN: coreTeacherOf('MB FT 101'),
+  GVBM: subjectOnlyTeacherOf('MB FT 101'),
+  GVCN_THUONG: coreTeacherOf('MB FOU 12'),
   QT: userByRole('system_admin', null),
 };
 

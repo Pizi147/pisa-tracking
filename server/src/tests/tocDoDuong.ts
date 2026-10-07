@@ -450,10 +450,10 @@ export const TRAN: Record<string, number> = {
   'GVCN /classes/3/diem-theo-luot': 27,
   'GVBM /classes/3/diem-theo-luot': 27,
   'QT /classes/3/diem-theo-luot': 26,
-  'QL /classes/3/diem-theo-luot/mt:2': 42,
-  'GVCN /classes/3/diem-theo-luot/mt:2': 42,
-  'GVBM /classes/3/diem-theo-luot/mt:2': 42,
-  'QT /classes/3/diem-theo-luot/mt:2': 41,
+  'QL /classes/3/diem-theo-luot/mt:2': 41,   // TD2-a: đo 31 → max(đo+10, ⌈đo×1,3⌉), cũ 42
+  'GVCN /classes/3/diem-theo-luot/mt:2': 41,   // TD2-a: đo 31 → max(đo+10, ⌈đo×1,3⌉), cũ 42
+  'GVBM /classes/3/diem-theo-luot/mt:2': 41,   // TD2-a: đo 31 → max(đo+10, ⌈đo×1,3⌉), cũ 42
+  'QT /classes/3/diem-theo-luot/mt:2': 40,   // TD2-a: đo 30 → max(đo+10, ⌈đo×1,3⌉), cũ 41
   'QL /diem-theo-lop/lop': 26,
   'GVCN /diem-theo-lop/lop': 26,
   'GVBM /diem-theo-lop/lop': 26,
@@ -467,7 +467,7 @@ export const TRAN: Record<string, number> = {
   /* PR-S6F-b (UXF-a P2): roster lớp thường — id lớp {lopThuong} nay là 6 (các khoá /classes/5/… cũ không còn khớp, xem thân PR). Đo 01/10. */
   'QL /classes/6/roster': 68,
   'QT /classes/6/roster': 64,
-  'GVCN_THUONG /classes/6/roster': 76,
+  'GVCN_THUONG /classes/6/roster': 73,   // TD2-a: đo 56 → max(đo+10, ⌈đo×1,3⌉), cũ 76
   // PR-UX1 (3), 23/09/2026 — Lịch Test gộp Cần chấm (thêm `listAttempts` cho khối Nợ tuần trước): 16 → 26 câu (QT 28),
   // vẫn ít hơn hai trang cũ cộng lại (16 + 24). Trần max(sau+10, ⌈sau×1.3⌉).
   // PR-LT3 06/10 — ba khối (khối 2 = hàng lớp tuần trước, thêm ~3 câu; mỗi tuần có ô hạn riêng thêm ~3): đo 30–34 câu (QT 34) — trong trần cũ, giữ.
@@ -498,18 +498,18 @@ export const TRAN: Record<string, number> = {
   'GVCN /ref/nguoi?nhom=giao_vien&studentId=1': 25,
   'GVBM /ref/nguoi?nhom=giao_vien&studentId=1': 25,
   /* PR-Dọn (9c): khoá lớp thường đổi /5 → /6 ({lopThuong} thật) — đo 01/10, trần max(đo + 10, ⌈đo × 1,3⌉), trần cứng 100. */
-  'QL /classes/6/overview': 97,
-  'QT /classes/6/overview': 93,
-  'GVCN_THUONG /classes/6/overview': 100,
+  'QL /classes/6/overview': 94,   // TD2-a: đo 72 → max(đo+10, ⌈đo×1,3⌉), cũ 97
+  'QT /classes/6/overview': 90,   // TD2-a: đo 69 → max(đo+10, ⌈đo×1,3⌉), cũ 93
+  'GVCN_THUONG /classes/6/overview': 99,   // TD2-a: đo 76 → max(đo+10, ⌈đo×1,3⌉), cũ 100
   'QL /classes/6/phan-tich-lop': 29,
   'QT /classes/6/phan-tich-lop': 28,
   'GVCN_THUONG /classes/6/phan-tich-lop': 30,
   'QL /classes/6/y-thuc': 28,
   'QT /classes/6/y-thuc': 27,
   'GVCN_THUONG /classes/6/y-thuc': 28,
-  'QL /classes/6/cham': 35,
-  'QT /classes/6/cham': 34,
-  'GVCN_THUONG /classes/6/cham': 35,
+  'QL /classes/6/cham': 34,   // TD2-a: đo 24 → max(đo+10, ⌈đo×1,3⌉), cũ 35
+  'QT /classes/6/cham': 33,   // TD2-a: đo 23 → max(đo+10, ⌈đo×1,3⌉), cũ 34
+  'GVCN_THUONG /classes/6/cham': 34,   // TD2-a: đo 24 → max(đo+10, ⌈đo×1,3⌉), cũ 35
   'QL /cases?classId=6': 27,
   'QT /cases?classId=6': 24,
   'GVCN_THUONG /cases?classId=6': 27,
@@ -559,8 +559,8 @@ export const TRAN: Record<string, number> = {
   'GVBM /ke-hoach-test/lop?branchId=1': 21,
   'GVCN_THUONG /ke-hoach-test/lop?branchId=1': 21,
   'QT /ke-hoach-test/lop?branchId=1': 22,   // PR-XLMT: +1 câu đếm "cần xếp lại"
-  'QL /ke-hoach-test/ft/3': 30,   // PR-XLMT: +1 câu đề nghị dời chờ duyệt (chip chờ Quản lý duyệt)
-  'QT /ke-hoach-test/ft/3': 30,   // PR-XLMT: +1 câu đề nghị dời chờ duyệt (chip chờ Quản lý duyệt)
+  'QL /ke-hoach-test/ft/3': 28,   // TD2-a: đo 18 → max(đo+10, ⌈đo×1,3⌉), cũ 30   // PR-XLMT: +1 câu đề nghị dời chờ duyệt (chip chờ Quản lý duyệt)
+  'QT /ke-hoach-test/ft/3': 27,   // TD2-a: đo 17 → max(đo+10, ⌈đo×1,3⌉), cũ 30   // PR-XLMT: +1 câu đề nghị dời chờ duyệt (chip chờ Quản lý duyệt)
   // PR-UX2: lưới lớp thường theo HV × kỹ năng — đo 25/24 câu, trần = max(đo+10, ⌈đo×1.3⌉).
   // PR-LT (rà PR #86) — mốc chốt trên số đo sau khi rà, giống công thức chung: max(sau+10, ⌈sau×1.3⌉).
   'QL /hoc-vien-lop/luu-tru': 22,
@@ -670,6 +670,50 @@ export const TRAN: Record<string, number> = {
  * câu là một lượt mạng 20–50 ms; trước PR-TOC Thêm 35 em FT tốn ~1900 câu (~1 phút) → Netlify cắt, cả lô thất bại. Mốc chốt ngay
  * sau PR-TOC theo cùng công thức `max(sau + 10, ⌈sau × 1.3⌉)`. PR sau làm tăng PHẢI nâng trần kèm lý do, không âm thầm sửa số.
  */
+/**
+ * TRẦN DÒNG ĐỌC (TD2-a) — khoá như `TRAN`. Số dòng mọi câu SQL trả về trong request (`all` → length, `get` → 0/1; đếm ở db.ts).
+ * Turso: khối dữ liệu đọc (dòng × cột) chiếm phần lớn thời gian các trang chậm, số câu không bắt được — trần này bắt đọc lặp/đọc thừa.
+ * Trần = max(đo + 50, ⌈đo × 1,3⌉), đo NGAY SAU TD2-a trên bộ demo gốc. Sau nhân dữ liệu ×3: ≤ 3 × trần.
+ */
+export const TRAN_DONG: Record<string, number> = {
+  'QL /hoc-vien-lop': 4220,   // đo 3246
+  'GVCN /hoc-vien-lop': 3443,   // đo 2648
+  'GVBM /hoc-vien-lop': 4023,   // đo 3094
+  'GVCN_THUONG /hoc-vien-lop': 3443,   // đo 2648
+  'QT /hoc-vien-lop': 4116,   // đo 3166
+  'QL /my-work': 2975,   // đo 2288
+  'GVCN /my-work': 2498,   // đo 1921
+  'GVBM /my-work': 2823,   // đo 2171
+  'GVCN_THUONG /my-work': 2498,   // đo 1921
+  'QT /my-work': 3932,   // đo 3024
+  'QL /my-work?nguoi=tat-ca': 3497,   // đo 2690
+  'QT /my-work?nguoi=tat-ca': 4669,   // đo 3591
+  'QL /classes/3/overview': 3024,   // đo 2326
+  'GVCN /classes/3/overview': 2573,   // đo 1979
+  'GVBM /classes/3/overview': 2936,   // đo 2258
+  'GVCN_THUONG /classes/3/overview': 2573,   // đo 1979
+  'QT /classes/3/overview': 3964,   // đo 3049
+  'QL /classes/3/roster': 2226,   // đo 1712
+  'GVCN /classes/3/roster': 2447,   // đo 1882
+  'GVBM /classes/3/roster': 2463,   // đo 1894
+  'GVCN_THUONG /classes/3/roster': 2447,   // đo 1882
+  'QT /classes/3/roster': 2153,   // đo 1656
+  'QL /cham/lich-test': 2448,   // đo 1883
+  'GVCN /cham/lich-test': 1822,   // đo 1401
+  'GVBM /cham/lich-test': 2175,   // đo 1673
+  'GVCN_THUONG /cham/lich-test': 1822,   // đo 1401
+  'QT /cham/lich-test': 3427,   // đo 2636
+  'QL /tong-quan/chi-nhanh': 3336,   // đo 2566
+  'QT /tong-quan/chi-nhanh': 4397,   // đo 3382
+  'QL /tong-quan/diem-chu-y?ct=ft': 3260,   // đo 2507
+  'QT /tong-quan/diem-chu-y?ct=ft': 4235,   // đo 3257
+  'GVCN /tong-quan/lop-toi-day?ct=ft': 2703,   // đo 2079
+  'GVBM /tong-quan/lop-toi-day?ct=ft': 3059,   // đo 2353
+  'GVCN_THUONG /tong-quan/lop-toi-day?ct=ft': 2703,   // đo 2079
+  'QL /metrics/hv-duoi-ky-vong-mon': 2093,   // đo 1610
+  'QT /metrics/hv-duoi-ky-vong-mon': 3040,   // đo 2338
+};
+
 export const TRAN_GHI_LO = {
   /** POST /notifications/doc-het — một câu UPDATE (S6F-a 10e) + phiên/quyền. PR-Dọn (9d): trần đặt sau khi đo. */
   docHet: 19,   // đo 9 câu → max(9 + 10, ⌈9 × 1,3⌉)
