@@ -13,8 +13,8 @@ export async function runPrSosTests(t: YThucTestKit) {
   console.log('\nPR-SOS · SOS v4');
 
   // ------------------------------------------------------------------ Task 1 · luật thuần
-  check('SOS (1) · hanXacNhan: 3 ngày tính cả ngày đầu', () => {
-    assert(d.hanXacNhan('2026-09-14') === '2026-09-16', d.hanXacNhan('2026-09-14'));
+  check('SOS (1) · hanXacNhan: 5 ngày, SOS 3 → 3 ngày, tính cả ngày đầu (PR-HAN 08/10)', () => {
+    assert(d.hanXacNhan('2026-09-14', { sosLevel: 1 }) === '2026-09-18' && d.hanXacNhan('2026-09-14', { sosLevel: 3 }) === '2026-09-16', d.hanXacNhan('2026-09-14'));
   });
   check('SOS (1) · laLanGhiCuoi: 5 ca (T22, K5-25, M-17)', () => {
     const ca: [boolean, string | null, string | null, string, boolean][] = [
@@ -154,14 +154,15 @@ export async function runPrSosTests(t: YThucTestKit) {
     .run(caseId, d.issuesForTopic('listening', null)[0].code, new Date().toISOString());
 
   // ------------------------------------------------------------------ Task 3 · Case tự tạo v4
-  check('SOS (3) · MT1 SOS3: Case + PA quy chế CHỜ XÁC NHẬN (planned, không hạn, không mốc, moc_quy_che), hạn xác nhận 3 ngày; không có việc Ghi kết quả', () => {
+  check('SOS (3) · MT1 SOS3: Case + PA quy chế CHỜ XÁC NHẬN (planned, không hạn, không mốc, moc_quy_che), hạn xác nhận theo mức lúc Case ra đời; không có việc Ghi kết quả', () => {
     const { st } = mt1Sos3('T3a');
     const c = caseOf(st.id, 'listening');
     const iv = plansOf(c.id)[0];
     assert(plansOf(c.id).length === 1 && iv.preset === 1 && iv.kind === 'tutor' && iv.description === 'Tutor · đến MT2' && iv.status === 'planned'
       && iv.confirmed_at === null && iv.confirmed_by === null && iv.action_due === null && iv.followup_due === null && iv.started_date === null
       && iv.moc_quy_che === 'until_next_mt', JSON.stringify(iv));
-    assert(c.status === 'open' && c.han_xac_nhan === d.hanXacNhan(TODAY), JSON.stringify(c));
+    /* Listening nhập trước (SOS 1 lúc Case ra đời) → 5 ngày; Speaking nhập sau cùng (SOS 3) → 3 ngày (PR-HAN). */
+    assert(c.status === 'open' && c.han_xac_nhan === d.hanXacNhan(TODAY, { sosLevel: 1 }) && caseOf(st.id, 'speaking').han_xac_nhan === d.hanXacNhan(TODAY, { sosLevel: 3 }), JSON.stringify(c));
     const s = sosState.sosCaseState(c.id);
     assert(s.dueOn === c.han_xac_nhan && s.awaitingCause && s.coPaChoXacNhan && s.choDuyetKhongTheoDoi === null, JSON.stringify(s));
     const keys = (myworkSvc.myWork(P.admin, { nguoi: 'tat-ca' }).items as any[]).map((i: any) => i.key as string);
@@ -198,7 +199,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     const ivs = plansOf(c.id);
     assert(ivs.length === 2 && JSON.stringify(ivs[0]) === cu, JSON.stringify(ivs));
     assert(ivs[1].status === 'planned' && ivs[1].confirmed_at === null && ivs[1].description === 'Tutor · đến MT3' && ivs[1].moc_quy_che === 'until_next_mt', JSON.stringify(ivs[1]));
-    assert(get('SELECT han_xac_nhan h FROM sos_cases WHERE id = ?', c.id).h === d.hanXacNhan(TODAY), 'hạn chưa đặt lại');
+    assert(get('SELECT han_xac_nhan h FROM sos_cases WHERE id = ?', c.id).h === d.hanXacNhan(TODAY, { sosLevel: 1 }), 'hạn chưa đặt lại (L nhập trước: SOS 1 lúc đặt → 5 ngày)');
     assert(all(`SELECT kind FROM case_milestones WHERE case_id = ? AND attempt_id = ?`, c.id, a2.id).some((m: any) => m.kind === 'repeat'), 'thiếu mốc repeat');
     /* Lưu lại điểm (chạy lặp) không thêm PA thứ ba. */
     enter(a2, 'listening', 5);

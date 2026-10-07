@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import { addDays, badRequest, forbidden, notFound, nowIso } from '../util.ts';
-import { PERMISSIONS, boTroGiuaKhoa, hanXacNhan, moTaBoTro, ngay, nhomBoTro, tenMonNgan, weeklyUpdateDue } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, boTroGiuaKhoa, hanTheoNgay, moTaBoTro, ngay, nhomBoTro, tenMonNgan, weeklyUpdateDue } from '../../../shared/domain/index.ts';
 import { classProgress } from '../classes/schedule.ts';
 import { suggestCaseOwner } from './owner.ts';
 import { can, isCoreTeacherOf, type Principal } from '../permissions.ts';
@@ -255,14 +255,15 @@ export function khiTuChoiKeHoach(p: Principal, yc: { id: number; du_lieu: string
   const conn = db();
   const d = JSON.parse(yc.du_lieu ?? '{}') as { nhom: string };
   const today = demoToday();
+  const hanMoi = hanTheoNgay(today, 3);   // Q6: nộp lại kế hoạch trong 3 ngày — không phải hạn xác nhận (PR-HAN không đổi)
   const dong = dongNhom(conn, d.nhom).filter((r) => r.case_status !== 'done');
   conn.prepare(`UPDATE case_interventions SET han_ke_hoach = ?, updated_at = ? WHERE nhom_bo_tro = ? AND kind = 'bo_tro' AND status = 'planned'`)
-    .run(hanXacNhan(today), nowIso(), d.nhom);
+    .run(hanMoi, nowIso(), d.nhom);
   for (const r of dong) ghiMoc(r.case_id, 'ke_hoach_tu_choi', today, lyDo, p.userId, `ke-hoach-tu-choi:${yc.id}:${r.case_id}`);
   const nguoiDay = dong.find((r) => r.performer_user_id)?.performer_user_id as number | undefined;
   for (const uid of new Set([nguoiDay, yc.nguoi_xin].filter((x): x is number => !!x && x !== p.userId))) {
     notify({
-      userId: uid, kind: 'sos', title: 'Bị từ chối · Kế hoạch bổ trợ', body: `${lyDo.slice(0, 120)} — nộp lại trước ${ngay(hanXacNhan(today), today)}.`,
+      userId: uid, kind: 'sos', title: 'Bị từ chối · Kế hoạch bổ trợ', body: `${lyDo.slice(0, 120)} — nộp lại trước ${ngay(hanMoi, today)}.`,
       entityType: 'sos_case', entityId: dong[0]?.case_id ?? null, dedupKey: `ke-hoach-tu-choi:${yc.id}:${uid}`,
     });
   }

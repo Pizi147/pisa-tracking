@@ -67,9 +67,9 @@ export const METRICS: readonly ChiSo[] = [
   /* Ba chỉ số của khối Cần xử lý (PR-Pa, đặc tả §3.2) — mỗi dòng của khối là một chỉ số, để bấm vào ra đúng tập. */
   {
     id: 'case-xac-dinh-nguyen-nhan-qua-han', ten: 'Case quá hạn xác nhận nguyên nhân',
-    cauHoi: 'Bao nhiêu Case tự tạo (SOS Fast Track, Progress Test lớp thường) đã quá hạn 3 ngày mà GVBM chưa xác nhận nguyên nhân?',
+    cauHoi: 'Bao nhiêu Case tự tạo (SOS Fast Track, Progress Test lớp thường) đã quá hạn xác nhận mà GVBM chưa xác nhận nguyên nhân?',
     donVi: 'case',
-    tapDuDieuKien: 'Trong tập "Case chờ xác nhận nguyên nhân": Case mà hạn xác nhận (3 ngày, tính cả ngày Case ra đời) đã qua. Hết ngày hạn mới tính quá hạn.',
+    tapDuDieuKien: 'Trong tập "Case chờ xác nhận nguyên nhân": Case mà hạn xác nhận (5 ngày; Gấp / SOS 3: 3 ngày — tính cả ngày Case ra đời) đã qua. Hết ngày hạn mới tính quá hạn.',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi Case chỉ đếm 1 lần', drilldown: '/metrics/case-xac-dinh-nguyen-nhan-qua-han',
   },
   {

@@ -667,7 +667,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     if (!mayDecide) continue;
 
     /*
-     * HẠN PHẢI CÓ PHƯƠNG ÁN THEO MỨC ĐỘ (mục 8.3): Gấp 3 ngày, Bình thường 5 ngày, tính cả
+     * HẠN PHẢI CÓ PHƯƠNG ÁN THEO MỨC ĐỘ (`soNgayHanXacNhan`): Gấp / SOS 3 3 ngày, còn lại 5 ngày, tính cả
      * ngày đầu. Chỉ áp cho Case học thuật.
      *
      * Trước vòng 7 hạn này bằng nguyên một chu kỳ hỗ trợ (hai tuần), nên một Case Gấp nằm
@@ -703,7 +703,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
 
   // ------------------------------------- 3b. Case TỰ TẠO TỪ SOS: Xác nhận nguyên nhân · Xác nhận PA (S4-2, §3.1d)
   /*
-   * MỘT DÒNG MỖI CASE (nguyên nhân) / MỖI PA (xác nhận PA). Hạn = `sos_cases.han_xac_nhan` (3 ngày tính cả ngày đầu), hết ngày hạn mới tính
+   * MỘT DÒNG MỖI CASE (nguyên nhân) / MỖI PA (xác nhận PA). Hạn = `sos_cases.han_xac_nhan` (`hanXacNhan`: 5 ngày, Gấp / SOS 3: 3), hết ngày hạn mới tính
    * quá hạn. "Chờ nguyên nhân" là của `awaitingCauseCaseIds` (đã loại thẻ Không cần theo dõi đang chờ).
    *
    * AI THẤY: người phụ trách Case (GVBM đúng kỹ năng); "Của GV (nhắc)" liệt kê dòng của GV cho Quản lý. Em Tạm dừng không sinh dòng (K3-41).

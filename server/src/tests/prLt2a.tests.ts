@@ -245,7 +245,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     assertThrows(() => yc.tuChoiYeuCau(P.mbManager, the.id, '  '), /lý do/, 'từ chối phải có lý do');   // PR-MTa T7: chỉ cần không trống
     yc.tuChoiYeuCau(P.mbManager, the.id, 'Kế hoạch chưa nêu rõ trọng tâm từng buổi, bổ sung giúp.');
     assert(get('SELECT 1 FROM case_issues WHERE case_id = ? AND role = ?', c.id, 'primary'), 'nguyên nhân phải giữ');
-    assert(paBt(c.id).han_ke_hoach === d.hanXacNhan(TODAY) && paBt(c.id).status === 'planned', 'hạn nộp mới, PA còn chờ');
+    assert(paBt(c.id).han_ke_hoach === d.addDaysIso(TODAY, 2) && paBt(c.id).status === 'planned', 'hạn nộp mới (3 ngày, Q6), PA còn chờ');
     const dt = chiTiet(khoa, c.id);
     assert(dt.trangThaiV4.k === 'cho-ke-hoach' && dt.viecTiep.chu === 'Nộp kế hoạch bổ trợ', JSON.stringify(dt.trangThaiV4));
     assert(dt.boTro.keHoach?.trangThai === 'tu_choi' && /trọng tâm/.test(dt.boTro.keHoach.lyDoTuChoi), 'panel phải cho thấy lý do từ chối');
