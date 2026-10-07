@@ -513,6 +513,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 08/10/2026 | `pr-han-xac-nhan` · Opus 5.5 | Hạn xác nhận nguyên nhân / PA = 5 ngày, Gấp hoặc SOS 3 = 3 ngày qua một hàm `soNgayHanXacNhan`; Case đang mở giữ hạn cũ (không migrate); phép kiểm `prHan.tests.ts` |
 | 08/10/2026 | `pr-viec-nho-2` · Opus 5.5 | Mockup 08/10 phần 1, 2, 4: "Nhắc tất cả (n)" ở Công việc › Của GV (`POST /my-work/nhac-nhieu`, lõi PR-NV, ≤ 50, hỏi lại); Chờ duyệt: Trạng thái đứng đầu, Loại mờ ở Nhắc việc; "GV chấm S" thành hàng có viền ở điện thoại + có ở Điểm theo lớp (nhớ lớp × MT); phép kiểm `prViecNho2.tests.ts` |
 | 08/10/2026 | `pr-viec-nho-1008` · Opus 5.5 | 6 việc nhỏ: chip lưới FT đọc trạng thái; UNION Ý thức đủ AS + DTL1 quét cột trần; 409 email dưới ô Sửa thông tin; chip `+n` 44px ở điện thoại; Chốt lên FT tách "n em chờ duyệt đề xuất"; lỗi kho tệp ≠ mất kết nối Turso; phép kiểm `prViecNho.tests.ts` |
 | 07/10/2026 | `fix-kq-gan-nhat-thuong` · Opus 5.5 | Lớp thường: "Kết quả gần nhất" theo loại (`moiNhatTruoc` = `soThuTuLuot` đảo, MT0 giữ cuối) ở danh sách lớp, SOS/Công việc, hồ sơ HV, tên Case; FT không đổi (chụp 391 mục giống hệt); phép kiểm `fixKqGanNhat.tests.ts` |

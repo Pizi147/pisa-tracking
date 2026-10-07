@@ -67,7 +67,7 @@ export type SosCaseState = {
    * "Không cần theo dõi" chờ Quản lý duyệt (T23 — việc đã chuyển sang Quản lý). Chỉ số `case-cho-xac-dinh-nguyen-nhan` đếm đúng tập này.
    */
   awaitingCause: boolean;
-  /** Hạn Xác nhận nguyên nhân / Xác nhận PA — `sos_cases.han_xac_nhan` (3 ngày tính cả ngày đầu). Chỉ có với Case từ SOS. */
+  /** Hạn Xác nhận nguyên nhân / Xác nhận PA — `sos_cases.han_xac_nhan` (`hanXacNhan`: 5 ngày, Gấp / SOS 3: 3). Chỉ có với Case từ SOS. */
   dueOn: string | null;
   /** Đóng vì `Không cần theo dõi` (S05). */
   dismissed: { code: string; label: string; text: string | null } | null;
