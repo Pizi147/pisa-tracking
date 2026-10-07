@@ -162,12 +162,16 @@ export function closeDb() {
 }
 
 /*
- * MẤT LUỒNG TURSO (PR-Z2c-b). Kết nối Turso giữ ở cấp module; phía Turso có lúc đã đóng "luồng" (stream) mà kết nối đang
- * dùng — câu kế tiếp hỏng với `Hrana(Api("status=404 … stream not found: …"))` (bản nháp 23/09, log `mã 17476fd8`, 1/~900
- * lời gọi). Kết nối đó coi như chết: bỏ nó, lần gọi db() sau mở kết nối mới. Chỉ request GET được chạy lại (app.ts).
+ * MẤT KẾT NỐI TURSO (PR-Z2c-b; mở rộng 07/10). Kết nối Turso giữ ở cấp module; phía Turso có lúc đã bỏ nó — câu kế tiếp hỏng với
+ *   · `Hrana(Api("status=404 … stream not found: …"))` (bản nháp 23/09, log `mã 17476fd8`, 1/~900 lời gọi), hoặc
+ *   · `Hrana(Http("connection closed before message completed"))` (bản chính 07/10, `mã fa58786a`, `fbb92cd0`: câu đầu tiên của
+ *     request sau lúc rảnh), `fetch failed`, `ECONNRESET`.
+ * Kết nối đó coi như chết: bỏ nó, lần gọi db() sau mở kết nối mới. Khi nào được chạy lại: xem thuLaiKhiMatKetNoi (app.ts).
+ * migrate/run.ts dùng chung hàm này.
  */
-export function laLoiMatLuongTurso(e: unknown): boolean {
-  return e instanceof Error && /stream not found/i.test(e.message);
+const LOI_MAT_KET_NOI = /stream not found|connection closed|Hrana\(Http|fetch failed|ECONNRESET/i;
+export function laLoiMatKetNoiTurso(e: unknown): boolean {
+  return e instanceof Error && LOI_MAT_KET_NOI.test(e.message);
 }
 
 /** Lỗi ném ra từ bên trong tx() — kể cả savepoint lồng. Bộ thử lại bỏ qua các lỗi này: giao dịch có thể đã ghi dở. */

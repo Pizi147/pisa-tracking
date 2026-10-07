@@ -2,13 +2,13 @@ import crypto from 'node:crypto';
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import type { NextFunction, Request, Response } from 'express';
-import { attachPrincipal } from './auth.ts';
+import { attachPrincipal, DA_VAO_API } from './auth.ts';
 import { api } from './routes/index.ts';
 import { HttpError } from './util.ts';
 import { taoSuKhoe } from './platform/suKhoe.ts';
 import { HAN_HAM_NETLIFY_MS, LOG_CHAM_MS, chayVoiHan } from './platform/hanGio.ts';
 import { chayTrongRequest, demHienTai } from './platform/nguCanhRequest.ts';
-import { donGiaoDichTreo, laLoiMatLuongTurso, loiTrongGiaoDich, moLaiKetNoi } from './db.ts';
+import { donGiaoDichTreo, laLoiMatKetNoiTurso, loiTrongGiaoDich, moLaiKetNoi } from './db.ts';
 import { laBanChinh } from './moiTruong.ts';
 
 /**
@@ -36,7 +36,7 @@ export function createApp() {
   /* AN-4: đặt trước attachPrincipal — gọi health kèm cookie cũ cũng không tốn một lượt hỏi phiên. */
   app.get('/api/health', taoSuKhoe());
 
-  /* Phần chạy lại được khi mất luồng Turso (PR-Z2c-b): kiểm phiên + mọi đường API. */
+  /* Phần chạy lại được khi mất kết nối Turso (PR-Z2c-b): kiểm phiên + mọi đường API. */
   const luong = express.Router();
   luong.use(attachPrincipal);
   luong.use('/api', api);
@@ -45,7 +45,7 @@ export function createApp() {
   });
   app.use(luong);
 
-  app.use(thuLaiKhiMatLuong(luong));
+  app.use(thuLaiKhiMatKetNoi(luong));
   app.use(traLoiLoi);
 
   return app;
@@ -85,30 +85,34 @@ function moNguCanhRequest(req: Request, res: Response, next: NextFunction): void
   });
 }
 
-const DA_THU_LAI = Symbol('daThuLaiMatLuong');
+const DA_THU_LAI = Symbol('daThuLaiMatKetNoi');
 
 /**
- * MẤT LUỒNG TURSO → THỬ LẠI MỘT LẦN (PR-Z2c-b). Lỗi `stream not found` nghĩa là kết nối Turso giữ ở cấp module đã chết (xem
- * db.ts). Chỉ chạy lại khi an toàn:
- *   · request GET (POST/PUT/DELETE có thể đã ghi — chạy lại là ghi hai lần), chưa thử lại lần nào, chưa gửi gì về;
- *   · lỗi KHÔNG ném ra từ trong tx() (giao dịch có thể đã ghi dở).
- * Khi đó: bỏ kết nối cũ, ghi log một dòng, chạy lại kiểm phiên + đường API trong một ngữ cảnh request mới (bộ nhớ tra cứu
- * trống). Lần hai vẫn lỗi → lỗi đi thẳng tới traLoiLoi như cũ (người dùng thấy "Có lỗi · mã …"). Lỗi khác không bị đụng tới.
- * Không thử lại (POST, lỗi trong tx(), lần hai) vẫn BỎ kết nối chết (Z2c-c, A2): giữ nó thì mọi lời gọi sau trên cùng bản hàm
- * cũng hỏng theo, tới khi có một GET đi qua đường thử lại.
+ * MẤT KẾT NỐI TURSO → THỬ LẠI MỘT LẦN (PR-Z2c-b; mở rộng 07/10). Các lỗi laLoiMatKetNoiTurso nhận (db.ts: `stream not found`,
+ * `connection closed`, `Hrana(Http…)`, `fetch failed`, `ECONNRESET`) nghĩa là kết nối Turso giữ ở cấp module đã chết. Chỉ chạy lại khi
+ * an toàn — chưa thử lại lần nào, chưa gửi gì về, lỗi KHÔNG ném ra từ trong tx() (giao dịch có thể đã ghi dở), và:
+ *   · request GET, hoặc
+ *   · lỗi ở bước kiểm phiên (chưa có cờ DA_VAO_API, auth.ts) — đường API chưa chạy nên POST/PUT/DELETE chạy lại không ghi hai lần.
+ *     Bản chính 07/10: mọi lần lỗi đều ở câu đầu tiên của request (kết nối cũ bị Turso đóng sau lúc rảnh), kể cả lệnh ghi.
+ * Lỗi trong đường API của lệnh ghi: không chạy lại (có thể đã ghi — chạy lại là ghi hai lần).
+ * Khi chạy lại: bỏ kết nối cũ, ghi log một dòng (kèm thông điệp lỗi), chạy lại kiểm phiên + đường API trong một ngữ cảnh request mới
+ * (bộ nhớ tra cứu trống). Lần hai vẫn lỗi → lỗi đi thẳng tới traLoiLoi như cũ (người dùng thấy "Có lỗi · mã …"). Lỗi khác không bị đụng.
+ * Không thử lại vẫn BỎ kết nối chết (Z2c-c, A2): giữ nó thì mọi lời gọi sau trên cùng bản hàm cũng hỏng theo.
  */
-export function thuLaiKhiMatLuong(luong: (req: Request, res: Response, next: NextFunction) => void) {
+export function thuLaiKhiMatKetNoi(luong: (req: Request, res: Response, next: NextFunction) => void) {
   return (err: unknown, req: Request, res: Response, next: NextFunction): void => {
-    if (!laLoiMatLuongTurso(err)) { next(err); return; }
+    if (!laLoiMatKetNoiTurso(err)) { next(err); return; }
     moLaiKetNoi();
-    const r = req as Request & { [DA_THU_LAI]?: true };
-    if (req.method !== 'GET' || r[DA_THU_LAI] || res.headersSent || loiTrongGiaoDich(err)) {
-      console.warn(`[turso] mất luồng (stream not found) — đã mở lại kết nối, KHÔNG thử lại ${req.method} ${req.path}`);
+    const r = req as Request & { [DA_THU_LAI]?: true; [DA_VAO_API]?: true };
+    const kieu = (err as Error).message.slice(0, 120);
+    const chuaGhi = req.method === 'GET' || !r[DA_VAO_API];
+    if (!chuaGhi || r[DA_THU_LAI] || res.headersSent || loiTrongGiaoDich(err)) {
+      console.warn(`[turso] mất kết nối (${kieu}) — đã mở lại kết nối, KHÔNG thử lại ${req.method} ${req.path}`);
       next(err);
       return;
     }
     r[DA_THU_LAI] = true;
-    console.warn(`[turso] mất luồng (stream not found) — đã mở lại kết nối, thử lại ${req.method} ${req.path} một lần`);
+    console.warn(`[turso] mất kết nối (${kieu}) — đã mở lại kết nối, thử lại ${req.method} ${req.path} một lần`);
     chayTrongRequest(req.method, () => luong(req, res, next));
   };
 }

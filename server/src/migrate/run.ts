@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { DB_PATH, closeDb, db, laDbTuXa } from '../db.ts';
+import { DB_PATH, closeDb, db, laDbTuXa, laLoiMatKetNoiTurso } from '../db.ts';
 import { hasLegacyDisciplineModel, migrate } from '../migrate.ts';
 import { choPhepMigrateTurso } from '../moiTruong.ts';
 
@@ -40,7 +40,7 @@ function migrateCoThuLai(): ReturnType<typeof migrate> {
     try {
       return migrate();
     } catch (e) {
-      const loiMang = laDbTuXa() && /connection closed|Hrana\(Http|stream not found|fetch failed/i.test(String((e as Error)?.message));
+      const loiMang = laDbTuXa() && laLoiMatKetNoiTurso(e);
       if (!loiMang || lan >= LAN_THU) throw e;
       console.warn(`[migrate] Mất kết nối Turso (lần ${lan}/${LAN_THU}) — thử lại với kết nối mới…`);
       closeDb();
