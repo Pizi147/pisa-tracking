@@ -162,7 +162,7 @@ export async function runLenLopTests(t: YThucTestKit) {
     assert(het.an[0].nhan === '3 HV cần xếp lớp tiếp' && /hết khoá/.test(het.an[0].title ?? ''), 'Hết khoá: số em cần xếp lớp');
     const chua = d.badgeLop({ ...goc, needsPlacement: false, canXepLop: 0 });
     /* PR-Dọn (Câu 2 = B): lớp chưa hết khoá → em chưa có quyết định chuyển lớp (cùng tập dòng Cần xử lý). */
-    assert(chua.an[0].nhan === '5 HV chưa có quyết định chuyển lớp' && /Chuyển tiếp lớp/.test(chua.an[0].title ?? '') && chua.an[0].tone === 'warn', JSON.stringify(chua.an[0]));
+    assert(chua.an[0].nhan === '5 HV chưa có quyết định chuyển lớp' && /Lộ trình tiếp theo/.test(chua.an[0].title ?? '') && chua.an[0].tone === 'warn', JSON.stringify(chua.an[0]));
   });
 
   // ==================================================================== trongHaiTuanCuoi

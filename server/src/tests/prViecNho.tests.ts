@@ -4,7 +4,7 @@
  *  2. Câu UNION của Ý thức đặt AS mọi cột (DTL1 mở rộng ở fixDtlOmt.tests.ts).
  *  3. Sửa thông tin tài khoản: 409 trùng email hiện dưới ô "Email đăng nhập".
  *  4. Nút ⋯ dòng: vùng bấm ≥ 44 px ở điện thoại (ảnh thật trong mô tả PR; ở đây chỉ giữ luật CSS).
- *  5. Việc "Chốt lên FT · lớp": em chỉ có đề xuất GVCN chờ duyệt ghi tách "n em chờ duyệt đề xuất".
+ *  5. Việc "Chốt lên FT · lớp" (PR-LCb: "Chốt lộ trình"): em chỉ có đề xuất GVCN chờ duyệt ghi tách "n em chờ duyệt đề xuất".
  *  6. Lỗi kho tệp (`fetch failed` của fetch Node — Netlify Blobs) không bị nhận là mất kết nối Turso.
  */
 import fs from 'node:fs';
@@ -45,7 +45,7 @@ export async function runPrViecNhoTests(t: YThucTestKit) {
   const intake: any = await import('../classes/intake.ts');
   const regular: any = await import('../normal/regular.ts');
   const mywork: any = await import('../worklist/mywork.ts');
-  const mt0: any = await import('../fasttrack/mt0.ts');
+  const lenhSvc: any = await import('../classes/lenhChuyen.ts');
   const yeuCau: any = await import('../duyet/yeuCau.ts');
   const QL = P.mbManager;
   const MB = (conn.prepare(`SELECT id FROM branches WHERE code = 'MB'`).get() as any).id as number;
@@ -76,14 +76,15 @@ export async function runPrViecNhoTests(t: YThucTestKit) {
   });
   const viec = (lop: number) => mywork.myWork(QL, { branchId: MB }).groups.flatMap((g: any) => g.items).find((i: any) => i.group === 'chot_len_ft' && i.classId === lop);
 
-  check('VN5 · Chốt lên FT: em chỉ có đề xuất GVCN chờ duyệt → chữ việc tách "n em chờ duyệt đề xuất" khỏi "m em chưa có hướng"; số đếm đúng', () => {
+  check('VN5 · Chốt lộ trình (trước: Chốt lên FT): em chỉ có đề xuất GVCN chờ duyệt → chữ việc tách "n em chờ duyệt đề xuất" khỏi "m em chưa có hướng"; số đếm đúng', () => {
     const l = taoLop(3);
     assert(viec(l.classId)?.reason === '3 em chưa có hướng', `trước đề xuất: ${viec(l.classId)?.reason}`);
     assert(deXuat(l.sids[0]) !== null, 'tạo đề xuất');
-    const x = mt0.lopChoChotLenFt(QL, MB, TODAY).find((r: any) => r.classId === l.classId);
-    assert(x?.soEm === 3 && x?.soChoDuyet === 1, JSON.stringify(x));
+    const x = lenhSvc.lopChoChotLoTrinh(QL, MB, TODAY).find((r: any) => r.classId === l.classId);
+    assert(x?.chuaLenh === 3 && x?.choDuyet === 1 && x?.chuaHuong === 2, JSON.stringify(x));
     const v = viec(l.classId);
-    assert(v?.reason === '2 em chưa có hướng · 1 em chờ duyệt đề xuất' && v?.contextLabel === v?.reason && v?.count === 3, `${v?.reason} · count ${v?.count}`);
+    /* PR-LCb (chữ mới, mockup cuối khoá 2 phần 1a + 4): "{tổng} em · m em chưa có hướng · n em chờ duyệt đề xuất". */
+    assert(v?.reason === '3 em · 2 em chưa có hướng · 1 em chờ duyệt đề xuất' && v?.contextLabel === v?.reason && v?.count === 3, `${v?.reason} · count ${v?.count}`);
     deXuat(l.sids[1]); deXuat(l.sids[2]);
     assert(viec(l.classId)?.reason === '3 em chờ duyệt đề xuất', `chỉ còn đề xuất: ${viec(l.classId)?.reason}`);
   });

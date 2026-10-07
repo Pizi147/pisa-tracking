@@ -289,8 +289,8 @@ export const TRAN: Record<string, number> = {
   'GVCN /tong-quan/lop-toi-day/o?ct=ft&classId=3&cot=bai-qua-han': 54,   // PR-S6F-b D10 — đo 46 (01/10)
   'QL /signals': 41,   // PR-S6F-b: đo 38 (một metricSet mỗi chỉ số)
   'QT /signals': 38,   // đo 35
-  'QL /tong-quan/quan-ly': 80,   // PR-MT0: + chỉ số lop-chua-chot-len-ft (lớp + tiến độ lớp + đếm em, nhớ trong request): đo 76
-  'QT /tong-quan/quan-ly': 80,   // PR-MT0: đo 76 (trước 71)
+  'QL /tong-quan/quan-ly': 64,   // PR-LCb: một hàm Chốt lộ trình thay lopChoLenhChuyen + lopChoChotLenFt, bỏ hv-chua-co-lenh-chuyen: đo 60 (PR-MT0 đo 76)
+  'QT /tong-quan/quan-ly': 64,   // PR-LCb: đo 60 (PR-MT0 đo 76)
   'GVCN /tong-quan/quan-ly': 15,
   'GVBM /tong-quan/quan-ly': 15,
   'QL /highlights': 25,

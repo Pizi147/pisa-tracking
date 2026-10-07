@@ -789,19 +789,19 @@ export async function runPrDonATests(t: YThucTestKit) {
     const n = get(`SELECT COUNT(*) n FROM assessment_attempts a JOIN classes c ON c.id = a.class_id WHERE c.programme_code = 'PREFOU' AND a.kind = 'progress'`).n;
     assert(n === 0, `${n} lượt Progress Test ở lớp Pre FOU`);
   });
-  check('Dọn-a (10d) · Câu 2 = B: badge "n HV chưa có quyết định chuyển lớp" của lớp = số em của dòng Cần xử lý (lopChoLenhChuyen) = số em có cờ ở bảng học viên; em có lệnh chờ → không cờ', () => {
-    const lop = lenhSvc.lopChoLenhChuyen(P.mbManager, MB, TODAY) as any[];
-    assert(lop.length > 0, 'dữ liệu demo: cần một lớp thường đã tới Final Test còn em chưa có lệnh');
-    const tom = classesSvc.listClassSummaries(P.mbManager, { branchId: MB }).rows as any[];
-    for (const x of lop) {
-      const r = tom.find((c) => c.id === x.classId);
-      const roster = classesSvc.classRoster(P.mbManager, x.classId) as any[];
+  /* PR-LCb: dòng Cần xử lý `hv-chua-co-lenh-chuyen` (`lopChoLenhChuyen`) đã bỏ — giữ ý badge = tập em chưa có lệnh (`emChuaCoLenh`) = cờ bảng học viên. */
+  check('Dọn-a (10d) · Câu 2 = B: badge "n HV chưa có quyết định chuyển lớp" của lớp = số em chưa có lệnh (emChuaCoLenh) = số em có cờ ở bảng học viên; em có lệnh chờ → không cờ', () => {
+    const tom = (classesSvc.listClassSummaries(P.mbManager, { branchId: MB }).rows as any[]).filter((c) => c.soChuaLoTrinhTiep > 0);
+    assert(tom.length > 0, 'dữ liệu demo: cần một lớp thường đã tới Final Test còn em chưa có lệnh');
+    const em = lenhSvc.emChuaCoLenh(tom.map((c) => c.id)) as Map<number, number[]>;
+    for (const r of tom) {
+      const ds = [...(em.get(r.id) ?? [])].sort((a: number, b: number) => a - b);
+      const roster = classesSvc.classRoster(P.mbManager, r.id) as any[];
       const coCo = roster.filter((s) => s.chuaLoTrinh).map((s) => s.id).sort((a: number, b: number) => a - b);
-      assert(r && r.soChuaLoTrinhTiep === x.emIds.length && JSON.stringify(coCo) === JSON.stringify([...x.emIds].sort((a: number, b: number) => a - b)),
-        `${x.code}: badge ${r?.soChuaLoTrinhTiep} · Cần xử lý ${x.emIds.length} · cờ ${coCo.length}`);
+      assert(r.soChuaLoTrinhTiep === ds.length && JSON.stringify(coCo) === JSON.stringify(ds), `${r.code}: badge ${r.soChuaLoTrinhTiep} · em chưa có lệnh ${ds.length} · cờ ${coCo.length}`);
     }
     const b = d.badgeLop({ vai: 'ql', needsPlacement: false, canXepLop: 0, soChuaLoTrinhTiep: 3, missingSkills: [], soBaiChoCham: 0, needScoresTitle: null, phase: 'running', missingCount: 0 });
     const x = [...b.hien, ...b.an].find((y: any) => y.key === 'xep-lop');
-    assert(x?.nhan === '3 HV chưa có quyết định chuyển lớp' && x.title === 'Quản lý quyết định ở ⋯ Chuyển tiếp lớp', JSON.stringify(x));
+    assert(x?.nhan === '3 HV chưa có quyết định chuyển lớp' && x.title === 'Quản lý quyết định ở Lộ trình tiếp theo', JSON.stringify(x));
   });
 }

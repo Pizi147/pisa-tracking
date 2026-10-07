@@ -1,8 +1,8 @@
 import { chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
-  KHOI_PHUC_LENH_GIO, LO_HANG_LOAT_EM, NHAN_XET_TOI_THIEU, PERMISSIONS, coPhieu, canLopDich, hanBanGiao, khacGoiY, kiemDongChuyenTiep, kiemDongLenh, targetLenFt, tuanHopLe, tuanLich,
-  type Huong, type HuongLenh, type MucTieuLenh, type ProgrammeCode,
+  KHOI_PHUC_LENH_GIO, LO_HANG_LOAT_EM, NHAN_XET_TOI_THIEU, PERMISSIONS, addDaysIso, coPhieu, canLopDich, hanBanGiao, hanChotLenFt, khacGoiY, kiemDongChuyenTiep, kiemDongLenh, targetLenFt, tuanHopLe, tuanLich,
+  type DemChotLoTrinh, type Huong, type HuongLenh, type MucTieuLenh, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { HttpError, badRequest, chuTuDo, conflict, forbidden, notFound, nowIso } from '../util.ts';
 import { can, loadPrincipal, require_, type Principal } from '../permissions.ts';
@@ -682,21 +682,54 @@ export function demChuaCoLenh(classIds: readonly number[]): Map<number, number> 
 }
 
 /**
- * LỚP THƯỜNG TỚI CUỐI KHOÁ CÒN EM CHƯA CÓ LỆNH CHUYỂN (PR-CT Q30-4 + PR-S5F-a: theo HÔM NAY, không theo chặng) mà người xem ra lệnh được
- * (`class.edit`). MỘT luật cho việc "Chuyển tiếp lớp" của `myWork` và chỉ số `hv-chua-co-lenh-chuyen` ở Cần xử lý (PR-VAI-a Q8b).
+ * VIỆC QUẢN LÝ "Chốt lộ trình · {lớp}" (PR-LCb, đặc tả 08/10 §1 — thay "Chốt lên FT" + "Chuyển tiếp lớp"). MỘT luật cho việc của `myWork`,
+ * chỉ số `lop-chua-chot-len-ft` và dòng Cần xử lý. Mọi lớp thường đang mở (Pre FOU, FOU, BE, ELE) người xem sửa được (`class.edit`);
+ * hạn = Chủ nhật trước tuần Final (`hanChotLenFt`, theo `final_week_override`); hiện từ 13 ngày trước hạn, KHÔNG hết hạn — quá hạn đỏ, không
+ * chặn gì. Lớp không có tuần Final mà đã hết khoá → vẫn có việc, `han = null`. Xong khi MỌI em đang học có quyết định chuyển lớp đang chờ
+ * (Xác nhận = ra lệnh); em chỉ có đề xuất GVCN chờ duyệt vẫn là chưa xong (đếm riêng). Một câu lớp + tiến độ lớp + một câu em theo lô.
  */
-export function lopChoLenhChuyen(p: Principal, branchId: number | null, homNay: string) {
+export type ChotLoTrinh = DemChotLoTrinh & { classId: number; code: string; han: string | null };
+
+export function lopChoChotLoTrinh(p: Principal, branchId: number | null, today: string): ChotLoTrinh[] {
+  /* Tổng quan gọi hai lần (chỉ số + dòng Cần xử lý) — nhớ trong request. */
+  return nho(`chot-lo-trinh:${p.userId}:${branchId ?? ''}:${today}`, () => tinhLopChoChotLoTrinh(p, branchId, today));
+}
+
+function tinhLopChoChotLoTrinh(p: Principal, branchId: number | null, today: string): ChotLoTrinh[] {
   const conn = db();
-  const lop = conn.prepare(`SELECT c.id, c.code FROM classes c WHERE c.status = 'active'${branchId ? ' AND c.branch_id = ?' : ''}`)
-    .all(...(branchId ? [branchId] : [])) as any[];
-  const ma = new Map(lop.map((c) => [c.id as number, c.code as string]));
-  const tienDo = classProgressMany([...ma.keys()]);
-  const toi = [...tienDo].filter(([id, pr]) => pr.programmeCode !== 'FT' && mocKetKhoa(pr, homNay).tuCuoiKhoa && can(p, PERMISSIONS.CLASS_EDIT, { classId: id }));
-  const em = emChuaCoLenh(toi.map(([id]) => id));
-  return toi.flatMap(([classId, pr]) => {
-    const ds = em.get(classId) ?? [];
-    return ds.length ? [{ classId, code: ma.get(classId)!, pr, emIds: ds, moc: mocKetKhoa(pr, homNay) }] : [];
+  const lop = conn.prepare(
+    `SELECT c.id, c.code FROM classes c
+      WHERE c.status = 'active' AND c.is_fast_track = 0 AND c.programme_code IN ('PREFOU', 'FOU', 'BE', 'ELE')${branchId ? ' AND c.branch_id = ?' : ''}`,
+  ).all(...(branchId ? [branchId] : [])) as any[];
+  const tienDo = classProgressMany(lop.map((c) => c.id as number));
+  const toi = lop.flatMap((c) => {
+    const pr = tienDo.get(c.id);
+    if (!pr) return [];
+    const han = pr.finalWeekStart ? hanChotLenFt(pr.finalWeekStart) : null;
+    const den = han ? today >= addDaysIso(han, -13) : mocKetKhoa(pr, today).hetKhoa;
+    return den && can(p, PERMISSIONS.CLASS_EDIT, { classId: c.id }) ? [{ classId: c.id as number, code: c.code as string, han }] : [];
   });
+  if (!toi.length) return [];
+  const dem = new Map<number, DemChotLoTrinh>();
+  theoLo(toi.map((x) => x.classId), (lo, ph) => {
+    for (const r of conn.prepare(
+      `SELECT x.class_id, COUNT(*) AS tong, SUM(NOT x.co_lenh) AS chua_lenh, SUM(NOT x.co_lenh AND x.cho_duyet) AS cho_duyet,
+              SUM(NOT x.co_lenh AND NOT x.cho_duyet AND x.co_huong) AS de_xuat
+         FROM (SELECT e.class_id,
+                      EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.student_id = e.student_id AND l.trang_thai = 'cho') AS co_lenh,
+                      EXISTS (SELECT 1 FROM yeu_cau_duyet y WHERE y.trang_thai = 'cho' AND y.loai = 'de_xuat_chuyen_lop'
+                                AND y.doi_tuong_loai = 'student:chuyen-lop' AND y.doi_tuong_id = e.student_id) AS cho_duyet,
+                      (lt.huong IS NOT NULL AND lt.huong != 'chua_quyet') AS co_huong
+                 FROM enrollments e JOIN students s ON s.id = e.student_id
+                 LEFT JOIN lo_trinh_tiep_theo lt ON lt.student_id = e.student_id AND lt.class_id = e.class_id
+                WHERE e.status = 'active' AND e.class_id IN (${ph}) AND ${HV_DANG_HOC_SQL('s')}) x
+        GROUP BY x.class_id`,
+    ).all(...lo) as any[]) {
+      const chuaLenh = Number(r.chua_lenh), choDuyet = Number(r.cho_duyet), deXuat = Number(r.de_xuat);
+      dem.set(r.class_id, { tong: Number(r.tong), chuaLenh, choDuyet, deXuat, chuaHuong: chuaLenh - choDuyet - deXuat });
+    }
+  });
+  return toi.flatMap((x) => { const d = dem.get(x.classId); return d?.chuaLenh ? [{ ...x, ...d }] : []; });
 }
 
 /**

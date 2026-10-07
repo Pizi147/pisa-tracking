@@ -164,6 +164,26 @@ export function tomTatLenh(ds: readonly DongTomTatLenh[], homNay: string): strin
   return cau;
 }
 
+/**
+ * PR-LCb: số đếm của việc Quản lý "Chốt lộ trình · {lớp}". `tong` em đang học; `chuaLenh` em chưa có quyết định chuyển lớp đang chờ; trong
+ * `chuaLenh`: `choDuyet` có đề xuất chuyển lớp của GVCN chờ duyệt, `deXuat` có hướng Lộ trình tiếp theo (≠ Chưa quyết), `chuaHuong` còn lại.
+ */
+export type DemChotLoTrinh = { tong: number; chuaLenh: number; chuaHuong: number; deXuat: number; choDuyet: number };
+
+/**
+ * Chữ dòng việc "Chốt lộ trình" (mockup cuối khoá 2 phần 1a + 4): "8 em · 2 em chưa có hướng · GVCN đã đề xuất 6" · "6 em · đủ hướng, chưa
+ * xác nhận" · "1 em chưa xác nhận" · "1 em chờ duyệt đề xuất". Mọi em đều chưa có hướng → bỏ "{tong} em ·" (mockup "7 em chưa có hướng").
+ */
+export function chuViecChotLoTrinh(x: DemChotLoTrinh): string {
+  const conLai = x.chuaLenh - x.choDuyet;
+  const chu = x.chuaHuong > 0
+    ? `${x.chuaHuong === x.tong ? '' : `${x.tong} em · `}${x.chuaHuong} em chưa có hướng${x.deXuat > 0 ? ` · GVCN đã đề xuất ${x.deXuat}` : ''}`
+    : conLai <= 0 ? ''
+    : x.deXuat === conLai && x.chuaLenh === x.tong ? `${x.tong} em · đủ hướng, chưa xác nhận`
+    : `${conLai} em chưa xác nhận`;
+  return [chu, x.choDuyet > 0 ? `${x.choDuyet} em chờ duyệt đề xuất` : ''].filter(Boolean).join(' · ');
+}
+
 /** Trạng thái phiếu một em cho danh sách trái màn F. */
 export function trangThaiPhieu(x: { soMonDaGhi: number; soMon: number; daXacNhan: boolean }): { khoa: 'da-xac-nhan' | 'mon' | 'chua-lam'; nhan: string } {
   if (x.daXacNhan) return { khoa: 'da-xac-nhan', nhan: 'Đã xác nhận' };

@@ -91,8 +91,8 @@ function progressMapOf(classIds: number[]) {
   const prs = classProgressMany(classIds);
   const ms = missingForClasses(classIds);
   /*
-   * PR-Dọn (Câu 2 = B): badge "n HV chưa có quyết định chuyển lớp" — CÙNG tập với dòng Cần xử lý `hv-chua-co-lenh-chuyen` (`lopChoLenhChuyen`):
-   * lớp thường đã tới tuần Cuối khoá (`mocKetKhoa`), em đang học chưa có lệnh chờ (`emChuaCoLenh`), chia theo lớp.
+   * PR-Dọn (Câu 2 = B): badge "n HV chưa có quyết định chuyển lớp" — lớp thường đã tới tuần Cuối khoá (`mocKetKhoa`), em đang học chưa có
+   * lệnh chờ (`emChuaCoLenh`), chia theo lớp. (PR-LCb bỏ dòng Cần xử lý `hv-chua-co-lenh-chuyen`; việc QL là "Chốt lộ trình".)
    */
   const homNay = demoToday();
   const toiCuoiKhoa = (pr: ReturnType<typeof prs.get>) => !!pr && pr.programmeCode !== 'FT' && mocKetKhoa(pr, homNay).tuCuoiKhoa;

@@ -5,8 +5,7 @@ import {
   duongHoSoHocVien, nguoiGiuViecChu, soSanhLop, tuanCuaHanGhiKetQua, tuanLich,
   type ChuongTrinh, type DiemChuY, type DongCanXuLyGoc, type MaCanXuLy, type UngVienChuY,
 } from '../../../shared/domain/index.ts';
-import { lopChoLenhChuyen } from '../classes/lenhChuyen.ts';
-import { lopChoChotLenFt } from '../fasttrack/mt0.ts';
+import { lopChoChotLoTrinh } from '../classes/lenhChuyen.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, badRequest, forbidden } from '../util.ts';
 import { activeAt, can, scopeFor, type Principal } from '../permissions.ts';
@@ -82,14 +81,10 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null }) {
     : [];
   const hanVh: string | null = viecVh.find((t) => t.due_date)?.due_date ?? null;
   const coQuyenDuyet = can(p, PERMISSIONS.CASE_APPROVE, { anyScope: true });
-  /* Q8b + Q24: lớp hết khoá còn em chưa có lệnh — cùng hàm với chỉ số; hạn "trước {tuần sau tuần kết thúc}" đã qua → dòng Quá hạn (như Vận hành). */
-  const lopLenh = dem['hv-chua-co-lenh-chuyen'] ? lopChoLenhChuyen(p, base.branchId, today) : [];
-  const ketThuc = lopLenh.map((l) => l.moc.tuanKetThuc).filter((w): w is string => !!w).sort()[0] ?? null;
-  const lenhQuaHan = !!ketThuc && addDays(ketThuc, 7) <= today;
-  /* PR-MT0: lớp cần Chốt lên FT — quá hạn khi hạn sớm nhất đã qua. */
-  const lopChot = dem['lop-chua-chot-len-ft'] ? lopChoChotLenFt(p, base.branchId, today) : [];
+  /* PR-LCb: lớp cần Chốt lộ trình (cùng hàm với chỉ số) — quá hạn khi có lớp đã qua hạn (Chủ nhật trước tuần Final). */
+  const lopChot = dem['lop-chua-chot-len-ft'] ? lopChoChotLoTrinh(p, base.branchId, today) : [];
   const dongs = sapCanXuLy(dem, coQuyenDuyet, {
-    'van-hanh-can-quyet-dinh': !!hanVh && hanVh < today, 'hv-chua-co-lenh-chuyen': lenhQuaHan, 'lop-chua-chot-len-ft': lopChot.some((l) => l.han < today),
+    'van-hanh-can-quyet-dinh': !!hanVh && hanVh < today, 'lop-chua-chot-len-ft': lopChot.some((l) => !!l.han && l.han < today),
   });
 
   /* Tên người giữ việc của MỌI dòng GV trễ — một câu (Q4); tập người lấy từ `chiTiet` của chính tập ID. */
@@ -130,23 +125,12 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null }) {
       case 'van-hanh-can-quyet-dinh':
         return { ...x, ...chung, phu: dongPhuGon(viecVh.map((t) => [t.title, t.cn].filter(Boolean).join(' · '))),
           han: hanVh ? { ngay: hanVh, loai: 'viec-van-hanh' as const } : chuaCoHan, den: `/cong-viec/van-hanh?hang=can-quyet-dinh${cn}` };
-      case 'hv-chua-co-lenh-chuyen': {
-        const lop = lopLenh;
-        const han = !ketThuc ? chuaCoHan
-          : lenhQuaHan ? { chu: `quá hạn ${Math.max(1, soNgay(addDays(ketThuc, 7), today))} ngày`, quaHan: true as const }
-          : { chu: `trước ${tuanLich(addDays(ketThuc, 7), today)}` };
-        if (lop.length === 1) {
-          return { ...x, ...chung, truoc: `Chuyển tiếp lớp · ${lop[0].code} ·`, nhan: 'em chưa có quyết định chuyển lớp',
-            phu: ketThuc ? `Lớp kết thúc ${tuanLich(ketThuc, today)}` : '', han, den: `/hoc-vien/lop/${lop[0].classId}?viec=chuyen-tiep` };
-        }
-        return { ...x, ...chung, truoc: `${lop.length} lớp ·`, phu: tachTheoLop(r.unit, r.ids), han, den: null };
-      }
       case 'lop-chua-chot-len-ft': {
-        /* PR-MT0 (mockup ③): một lớp → "Chốt lên FT · BE 04" + hạn; nhiều lớp → dòng phụ tên lớp, hạn sớm nhất. */
+        /* PR-LCb (mockup cuối khoá 2 phần 4): một lớp → "Chốt lộ trình · CP ELE 30" + hạn; nhiều lớp → dòng phụ tên lớp, hạn sớm nhất. */
         const lop = lopChot;
-        const han = lop.map((l) => l.han).sort()[0];
+        const han = lop.map((l) => l.han).filter((h): h is string => !!h).sort()[0];
         const h = han ? { ngay: han, loai: 'chot-len-ft' as const } : chuaCoHan;
-        if (lop.length === 1) return { ...x, ...chung, truoc: `Chốt lên FT · ${lop[0].code}`, nhan: '', phu: '', han: h, den: `/hoc-vien/lop/${lop[0].classId}?viec=lo-trinh-ca-lop` };
+        if (lop.length === 1) return { ...x, ...chung, truoc: `Chốt lộ trình · ${lop[0].code}`, nhan: '', phu: '', han: h, den: `/hoc-vien/lop/${lop[0].classId}?viec=lo-trinh-ca-lop` };
         return { ...x, ...chung, phu: dongPhuGon(lop.map((l) => l.code)), han: h, den: null };
       }
       case 'lop-thieu-gv-mon': {

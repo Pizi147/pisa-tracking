@@ -807,22 +807,23 @@ export async function runPrCtTests(t: YThucTestKit) {
     yc.quetYeuCau(TODAY);
     assert(theBl('bao_len_chua_lenh', het).trang_thai === 'tu_dong', 'đủ lệnh → thẻ tự đóng');
   });
-  check('CT (6f) · việc của Quản lý: từ tuần Final Test đếm em CHƯA CÓ LỆNH ("n em chưa có quyết định chuyển lớp"); GVCN hết đếm em đã có lệnh vào "chưa có lộ trình tiếp theo"', () => {
+  /* PR-LCb: việc QL là "Chốt lộ trình · {lớp}" (thay "Chuyển tiếp lớp") — vẫn đếm em CHƯA CÓ LỆNH, hết khi đủ lệnh. */
+  check('CT (6f) · việc của Quản lý: từ tuần Final Test đếm em CHƯA CÓ LỆNH ("Chốt lộ trình"); GVCN hết đếm em đã có lệnh vào "chưa có lộ trình tiếp theo"', () => {
     const cuoi = lopMoi({ kind: 'FOU', tuanHienTai: 8 });
     ganGv(cuoi, GV[3].userId, null, true);
     const ds = [hocVien(cuoi, 'FOU', false).sid, hocVien(cuoi, 'FOU', false).sid, hocVien(cuoi, 'FOU', false).sid];
-    const pl = () => (myWork(P.mbManager) as any).items.find((i: any) => i.group === 'placement' && i.classId === cuoi);
-    assert(pl().reason === '3 em chưa có quyết định chuyển lớp' && /^Chuyển tiếp lớp · \S.* · 3 HV$/.test(pl().tieuDe) && pl().href === `/hoc-vien/lop/${cuoi}?viec=chuyen-tiep`, JSON.stringify(pl()));
+    const pl = () => (myWork(P.mbManager) as any).items.find((i: any) => i.group === 'chot_len_ft' && i.classId === cuoi);
+    assert(pl().reason === '3 em chưa có hướng' && /^Chốt lộ trình · \S/.test(pl().tieuDe) && pl().count === 3 && pl().href === `/hoc-vien/lop/${cuoi}?viec=lo-trinh-ca-lop`, JSON.stringify(pl()));
     ra(P.mbManager, cuoi, 'cuoi-khoa', [dongCua(ds[0], 'len_lop', d6)]);
-    assert(pl().reason === '2 em chưa có quyết định chuyển lớp', pl().reason);
-    /* PR-VAI-a (Q27): GVCN không còn việc "Ghi lộ trình tiếp theo" — việc "Chuyển tiếp lớp" của Quản lý đã phủ. */
+    assert(pl().reason === '3 em · 2 em chưa có hướng', pl().reason);
+    /* PR-VAI-a (Q27): GVCN không còn việc "Ghi lộ trình tiếp theo" — việc của Quản lý ("Chốt lộ trình", PR-LCb) đã phủ. */
     assert(!(myWork(loadPrincipal(GV[3].userId)) as any).items.some((i: any) => i.group === 'next_step'), 'GVCN không còn việc next_step');
     assert(pl() && pl().count === 2, 'việc của Quản lý còn, đúng 2 em');
     ra(P.mbManager, cuoi, 'cuoi-khoa', [dongCua(ds[1], 'len_lop', d6), dongCua(ds[2], 'len_lop', d6)]);
     assert(!pl(), 'đủ lệnh → hết việc');
     const giua = lopMoi({ kind: 'FOU', tuanHienTai: 3 });
     hocVien(giua, 'FOU', false);
-    assert(!(myWork(P.mbManager) as any).items.some((i: any) => i.group === 'placement' && i.classId === giua), 'chưa tới tuần Final Test: chưa có việc');
+    assert(!(myWork(P.mbManager) as any).items.some((i: any) => i.group === 'chot_len_ft' && i.classId === giua), 'chưa tới cửa sổ Chốt lộ trình: chưa có việc');
   });
   check('CT (6g) · Đề xuất chuyển lớp: GVCN lớp em gửi được; GVBM / GVCN lớp khác / lý do < 15 ký tự → lỗi; gửi trùng → 400; "lớp" bị bỏ khỏi Đề xuất sửa', () => {
     const lop = lopMoi({ kind: 'FOU', tuanHienTai: 4 });

@@ -243,13 +243,7 @@ export const METRICS: readonly ChiSo[] = [
     tapDuDieuKien: 'Việc Vận hành (gốc) trong phạm vi mà tạm ngưng đã tới ngày xem lại, hoặc mọi việc con đã khép mà việc cha chưa khép — đúng hàng số "cần quyết định" của tab Vận hành.',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi việc chỉ đếm 1 lần', drilldown: '/metrics/van-hanh-can-quyet-dinh',
   },
-  {
-    id: 'hv-chua-co-lenh-chuyen', ten: 'Học viên chưa có quyết định chuyển lớp',
-    cauHoi: 'Bao nhiêu em của lớp thường đã tới tuần Final Test mà Quản lý chưa ra quyết định chuyển lớp?',
-    donVi: 'hoc-vien',
-    tapDuDieuKien: 'Em đang học ở lớp thường (không FT) đang mở, từ tuần Final Test tính theo hôm nay, chưa có quyết định chuyển lớp đang chờ — cùng hàm với việc "Chuyển tiếp lớp" của Quản lý.',
-    thoiGian: 'hien-trang', khuTrung: 'Mỗi học viên chỉ đếm 1 lần', drilldown: '/metrics/hv-chua-co-lenh-chuyen',
-  },
+  /* PR-LCb: bỏ `hv-chua-co-lenh-chuyen` (việc "Chuyển tiếp lớp") — gộp vào `lop-chua-chot-len-ft` ("Chốt lộ trình"). */
   {
     id: 'hv-ft-xong-mt-cuoi-chua-mt-ke', ten: 'Học viên FT xong MT cuối, chưa có MT kế tiếp',
     cauHoi: 'Bao nhiêu em Fast Track đã xong MT cuối của lịch mặc định mà chưa có mốc đánh giá kế tiếp?',
@@ -272,12 +266,12 @@ export const METRICS: readonly ChiSo[] = [
     tapDuDieuKien: 'Lớp đang mở trong phạm vi người xem được phân công giáo viên, có ít nhất một môn của chương trình chưa có giáo viên đang dạy — cùng hàm với badge "Thiếu GV" ở Học viên & Lớp. Pre FOU không chia môn (GVCN dạy luôn) nên không tính.',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi lớp chỉ đếm 1 lần', drilldown: '/metrics/lop-thieu-gv-mon',
   },
-  /* PR-MT0 (T5b): việc "Chốt lên FT · lớp" của Quản lý — tự hết khi mọi em đã có hướng. */
+  /* PR-MT0 (T5b) → PR-LCb: việc "Chốt lộ trình · lớp" của Quản lý (mã giữ tên cũ) — hết khi mọi em có quyết định chuyển lớp. */
   {
-    id: 'lop-chua-chot-len-ft', ten: 'Lớp cần Chốt lên FT',
-    cauHoi: 'Bao nhiêu lớp FOU/BE/ELE sắp tới tuần Final Test mà còn em chưa có hướng Lộ trình tiếp theo?',
+    id: 'lop-chua-chot-len-ft', ten: 'Lớp cần Chốt lộ trình',
+    cauHoi: 'Bao nhiêu lớp thường đã tới lúc chốt lộ trình mà còn em chưa có quyết định chuyển lớp?',
     donVi: 'lop',
-    tapDuDieuKien: 'Lớp thường FOU/BE/ELE đang mở trong phạm vi sửa lớp của người xem, từ 13 ngày trước hạn tới hết hạn (Chủ nhật trước tuần Final Test; từ tuần Final Test lớp sang việc Chuyển tiếp lớp), còn em đang học chưa có hướng hoặc "Chưa quyết" — cùng hàm với việc "Chốt lên FT".',
+    tapDuDieuKien: 'Lớp thường (Pre FOU, FOU, BE, ELE) đang mở trong phạm vi sửa lớp của người xem, từ 13 ngày trước hạn (Chủ nhật trước tuần Final Test), không hết hạn cho tới khi mọi em đang học có quyết định chuyển lớp (em chỉ có đề xuất GVCN chờ duyệt vẫn tính là chưa có); cùng hàm với việc "Chốt lộ trình".',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi lớp chỉ đếm 1 lần', drilldown: '/metrics/lop-chua-chot-len-ft',
   },];
 
