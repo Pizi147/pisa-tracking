@@ -10,7 +10,7 @@ import { outcomeGroup } from '../cases/effectiveness.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, diffDays, notFound } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
-import { entryBandsOf, routeCuaLuot, scoresOf, skipsOf } from '../fasttrack/attempts.ts';
+import { diemCuaLuot, entryBandsOf, routeCuaLuot, scoresOf, skipsOf } from '../fasttrack/attempts.ts';
 import { assessedBands, evaluateAttempt, expectationFor } from '../fasttrack/scoring.ts';
 import { evaluateRegular, isRatioClass, isRatioCycle, programmeByCode, programmeCodeOfCycle, programmeOfClass } from '../normal/regular.ts';
 import { cycleById, cyclesOf, currentCycle, examPlanOf, targetRevisions } from '../fasttrack/cycles.ts';
@@ -571,22 +571,16 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   if (attemptRows.length) {
     const ids = attemptRows.map((a) => a.id);
     const lichCua = new Map<number, any[]>();
-    const diemCua = new Map<number, any[]>(ids.map((id) => [id, []]));
     theoLo(ids, (lo, ph) => {
       for (const r of conn.prepare(`SELECT attempt_id, skill, required, sit_status, absence_move_count FROM attempt_skills WHERE attempt_id IN (${ph})`)
         .all(...lo) as any[]) lichCua.set(r.attempt_id, [...(lichCua.get(r.attempt_id) ?? []), r]);
-      for (const r of conn.prepare(
-        `SELECT s.*, u.full_name AS entered_by_name, g.full_name AS examiner_user_name, ns.week_start AS no_show_week_start FROM assessment_scores s
-           LEFT JOIN users u ON u.id = s.entered_by LEFT JOIN users g ON g.id = s.examiner_user_id
-           LEFT JOIN report_periods ns ON ns.id = s.no_show_period_id WHERE s.attempt_id IN (${ph})`,
-      ).all(...lo) as any[]) diemCua.get(r.attempt_id)!.push(r);
     });
+    diemCuaLuot(ids);   // TD2-a: nạp sẵn khoá `diem:` của `scoresOf` (một lần đọc dùng chung với `loadBundle`)
     for (const [id, rows] of lichCua) {
       const batBuoc = rows.filter((r) => r.required === 1).map(({ required: _, ...r }) => r);
       if (batBuoc.length) kyNangCua.set(id, batBuoc);
       datNho(`bo-mon:${id}`, rows.filter((r) => !r.required).map((r) => r.skill as AssessedSkill));
     }
-    for (const [id, rows] of diemCua) datNho(`diem:${id}`, rows);
   }
 
   const homNayHs = demoToday();

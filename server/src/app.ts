@@ -55,7 +55,7 @@ export function createApp() {
  * ĐẾM GIỜ MỖI LỜI GỌI (AN-5). Đặt SAU express.json/cookieParser: ngữ cảnh AsyncLocalStorage không đi qua sự kiện luồng của bộ đọc
  * thân yêu cầu. Đường tải tệp (multer) có thể mất hạn — khi đó chỉ là không chặn (an toàn như trước PR này).
  *   · Dọn giao dịch treo của lần gọi trước.
- *   · Log `[cham]` mọi lời gọi ≥ LOG_CHAM_MS — PR-Z2c đọc để biết trang nào cần gộp truy vấn.
+ *   · Log `[cham]` mọi lời gọi ≥ LOG_CHAM_MS kèm số câu SQL và số dòng trả về (TD2-0, `res.locals.dem` do moNguCanhRequest gắn).
  *   · Bản chính: gắn hạn HAN_HAM_NETLIFY_MS cho cả lời gọi.
  */
 export function demGio(req: Request, res: Response, next: NextFunction): void {
@@ -63,7 +63,8 @@ export function demGio(req: Request, res: Response, next: NextFunction): void {
   if (donGiaoDichTreo()) console.error('[api] đã cuộn lại một giao dịch bỏ dở từ lần gọi trước');
   res.on('finish', () => {
     const ms = Date.now() - batDau;
-    if (ms >= LOG_CHAM_MS) console.warn(`[cham] ${req.method} ${req.path} ${ms} ms`);
+    const dem = res.locals?.dem as { n: number; dong: number } | undefined;
+    if (ms >= LOG_CHAM_MS) console.warn(`[cham] ${req.method} ${req.path} ${ms} ms · ${dem?.n ?? 0} câu, ${dem?.dong ?? 0} dòng`);
   });
   if (!laBanChinh()) { next(); return; }
   chayVoiHan(batDau + HAN_HAM_NETLIFY_MS, next);
@@ -77,9 +78,10 @@ export function demGio(req: Request, res: Response, next: NextFunction): void {
  */
 function moNguCanhRequest(req: Request, res: Response, next: NextFunction): void {
   chayTrongRequest(req.method, () => {
+    res.locals.dem = demHienTai();
     if (process.env.PISA_DEM_SQL === '1') {
       const dem = demHienTai();
-      res.on('finish', () => console.log(`[sql] ${req.method} ${req.originalUrl} ${dem?.n ?? 0} câu`));
+      res.on('finish', () => console.log(`[sql] ${req.method} ${req.originalUrl} ${dem?.n ?? 0} câu, ${dem?.dong ?? 0} dòng`));
     }
     next();
   });
@@ -113,7 +115,7 @@ export function thuLaiKhiMatKetNoi(luong: (req: Request, res: Response, next: Ne
     }
     r[DA_THU_LAI] = true;
     console.warn(`[turso] mất kết nối (${kieu}) — đã mở lại kết nối, thử lại ${req.method} ${req.path} một lần`);
-    chayTrongRequest(req.method, () => luong(req, res, next));
+    chayTrongRequest(req.method, () => { if (res.locals) res.locals.dem = demHienTai(); luong(req, res, next); });
   };
 }
 
