@@ -9181,6 +9181,9 @@ await runFixXepBaiThuongTests({ check, checkAsync, assert, assertThrows, conn, T
 // ==================================================================== FIX-KQ-GAN-NHAT-THUONG (lớp thường: kết quả gần nhất theo loại)
 const { runFixKqGanNhatTests } = await import('./fixKqGanNhat.tests.ts');
 await runFixKqGanNhatTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== FIX-CHOT-LEN-FT (Chốt lên FT tự xong khi đã có lộ trình / bàn giao)
+const { runFixChotLenFtTests } = await import('./fixChotLenFt.tests.ts');
+await runFixChotLenFtTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
