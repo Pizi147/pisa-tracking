@@ -327,7 +327,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     assert(chu('Kèm 1-1 · Reading') === 'Xác nhận PA Kèm 1-1 · Reading', 'tên tự viết bị cắt');
   });
 
-  check('C23 · J9: ô FT chưa có điểm ghi "Nhập" (không "— sửa"); ô có điểm giữ "6.5 sửa"; đầu cột S nhận chiTen + title có tên', () => {
+  check('C23 · J9: ô FT chưa có điểm ghi "Nhập" (không "— sửa"); ô có điểm giữ "6.5 sửa"; đầu cột S ghi "GV chấm: tên thật" + title có tên', () => {
     const s = doc('web/src/modules/fasttrack/ScoreEntry.tsx');
     const i = s.indexOf("title={hieuChinh ? 'Sửa bốn tiêu chí đã chấm.'");
     assert(i >= 0, 'không thấy nút bốn tiêu chí');
@@ -335,8 +335,8 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     assert(/'Nhập'/.test(nut) && /cell\.band === null/.test(nut), 'ô trống chưa ghi "Nhập"');
     assert(!/lon && cell\.band === null && nhanDau \? ''/.test(nut), 'ô trống còn chữ rỗng + "sửa"');
     assert(/>sửa</.test(nut) && /fmtBand\(cell\.band\)/.test(nut), 'ô có điểm phải giữ "6.5 sửa"');
-    assert(/<NutGvCham chiTen/.test(doc('web/src/modules/cham/LuoiFT.tsx')) && /<NutGvCham lon chiTen/.test(doc('web/src/modules/cham/MotKyNang.tsx')), 'đầu cột S phải truyền chiTen');
-    assert(/title=\{chiTen \? `GV chấm Speaking: \$\{ten/.test(doc('web/src/modules/cham/GvCham.tsx')), 'GvCham: chiTen phải có title ghi tên (tên dài bị cắt)');
+    assert(/<NutGvCham value=/.test(doc('web/src/modules/cham/LuoiFT.tsx')) && /<NutGvCham lon value=/.test(doc('web/src/modules/cham/MotKyNang.tsx')), 'đầu cột S dùng NutGvCham (luôn ghi "GV chấm: tên thật")');
+    assert(/title=\{`GV chấm Speaking: \$\{ten/.test(doc('web/src/modules/cham/GvCham.tsx')), 'GvCham: title phải ghi tên (phòng khi tên dài)');
   });
 
   check('C24 · J2 (Q3 = A): mọi chỗ in mã học viên ra màn đi qua maHocVienNgan; Excel giữ mã đầy đủ', () => {
@@ -634,5 +634,58 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     assert(/getBoundingClientRect/.test(tab) && !/offsetLeft/.test(tab), 'HangTab phải đo theo getBoundingClientRect');
     const th = doc('web/src/modules/phanTich/TongHopTestSos.tsx');
     assert(/⚠\{quaHan\}<span className="sr-only">/.test(th), '⚠n thiếu chữ sr-only');
+  });
+
+  console.log('\nPR-HK2 · rà độc lập (#235) · I1, I2, I3, J9, mục 7');
+  const cssRaw = fs.readFileSync(path.join(ROOT, 'web/src/index.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+
+  check('C42 · I1: .table-scroll là `position: relative` — chữ sr-only (absolute) trong bảng cuộn không thoát ra làm <main> trượt ngang', () => {
+    const m = /\.table-scroll\s*\{([^}]*)\}/.exec(cssRaw);
+    assert(m, 'không thấy .table-scroll');
+    assert(/position:\s*relative/.test(m![1]), `.table-scroll thiếu position: relative: ${m![1].trim()}`);
+  });
+
+  check('C43 · I2: bảng Tổng hợp chỉ dính đầu từ 1440 px (bang-dinh-1440: 1280–1439 giữ khung cuộn riêng); các bảng khác giữ ngưỡng chung 1280', () => {
+    const ngoai = /@media \(min-width:\s*1280px\) and \(max-width:\s*1439(?:\.98)?px\)\s*\{([^@]*?\})\s*\}/.exec(cssRaw);
+    assert(ngoai, 'thiếu khối @media 1280–1439 cho .bang-dinh-1440');
+    assert(/\.bang-dinh\.bang-dinh-1440\s*\{[^}]*overflow-x:\s*auto[^}]*overflow-y:\s*hidden/.test(ngoai![1]), '.bang-dinh.bang-dinh-1440 ở 1280–1439 phải là khung cuộn (overflow-x auto, overflow-y hidden)');
+    assert(/@media \(min-width:\s*1280px\)\s*\{\s*\.bang-dinh\s*\{/.test(cssRaw), 'ngưỡng chung của .bang-dinh phải còn 1280');
+    const th = doc('web/src/modules/phanTich/TongHopTestSos.tsx');
+    assert(/className="table-scroll bang-dinh bang-dinh-1440"/.test(th), 'bảng Tổng hợp chưa gắn bang-dinh-1440');
+    const khac = tsx('web/src').filter((f) => f !== 'web/src/modules/phanTich/TongHopTestSos.tsx' && /bang-dinh-1440/.test(doc(f)));
+    assert(khac.length === 0, `bang-dinh-1440 chỉ dành cho bảng Tổng hợp: ${khac.join(', ')}`);
+  });
+
+  check('C44 · I3: Hành trình điện thoại (xem gọn) lớp thường — cột tuần ≥ 56 px để ghim "Progress" (46,6 px chữ + viền + lề) không bị cắt; FT giữ 40 px; rongCotTuan khớp', () => {
+    const px = (s: string) => Number(/^(\d+)px$/.exec(s)?.[1] ?? NaN);
+    const thuong = d.boCucHanhTrinh({ rong: 375, soTuan: 13, xemGon: true, rongChuoi: 100, cheDo: 'ratio' });
+    const ft = d.boCucHanhTrinh({ rong: 375, soTuan: 13, xemGon: true, rongChuoi: 100, cheDo: 'ielts' });
+    assert(px(thuong.cotTuan) >= 56, `lớp thường gọn: cột tuần ${thuong.cotTuan}`);
+    assert(ft.cotTuan === '40px', `FT gọn phải giữ 40px: ${ft.cotTuan}`);
+    assert(d.rongCotTuan(thuong, 375, 13) === px(thuong.cotTuan), `rongCotTuan lớp thường: ${d.rongCotTuan(thuong, 375, 13)}`);
+    assert(d.rongCotTuan(ft, 375, 13) === 40, 'rongCotTuan FT');
+  });
+
+  check('C45 · J9: nút GV chấm luôn ghi "GV chấm: {tên thật}" (Tôi → tên tài khoản), xuống dòng không cắt; đầu cột S lưới FT, màn từng kỹ năng, hồ sơ Mock cùng một nút', () => {
+    const g = doc('web/src/modules/cham/GvCham.tsx');
+    const nut = than(g, 'NutGvCham');
+    assert(!/chiTen/.test(nut), 'NutGvCham còn chế độ chiTen (chỉ tên, không chữ "GV chấm:")');
+    assert(/session\?\.user\?\.fullName/.test(nut) && /kieu === 'toi'/.test(nut), '"Tôi" phải đổi thành tên tài khoản');
+    assert(/GV chấm: /.test(nut) && /title=\{`GV chấm Speaking: \$\{ten/.test(nut), 'nút phải ghi "GV chấm: tên" và title có tên');
+    const nhan = /<span className="([^"]*)">\{'GV chấm: '\}/.exec(nut)?.[1] ?? /<span className="([^"]*)">GV chấm: /.exec(nut)?.[1];
+    assert(nhan !== undefined && !/truncate/.test(nhan) && /break-words/.test(nhan), `nhãn tên không được cắt: ${nhan}`);
+    for (const f of ['web/src/modules/cham/LuoiFT.tsx', 'web/src/modules/cham/MotKyNang.tsx'])
+      assert(!/chiTen/.test(doc(f)) && /<NutGvCham /.test(doc(f)), `${f}: còn chiTen hoặc thiếu NutGvCham`);
+    assert(/<NutGvCham value=/.test(doc('web/src/modules/fasttrack/MockDetailPage.tsx')), 'hồ sơ Mock dùng chung NutGvCham');
+  });
+
+  check('C46 · mục 7: DEMO.md không còn Giữa khoá / Cuối khoá; tên tệp Excel PISA-Tracking_… (không Pisa-Tracking_) ở shared/server/web', () => {
+    const demo = fs.readFileSync(path.join(ROOT, 'DEMO.md'), 'utf8');
+    const sai = demo.split('\n').map((s, i) => [i + 1, s] as const).filter(([, s]) => CHU_CU.test(s)).map(([i, s]) => `DEMO.md:${i} ${s.slice(0, 70)}`);
+    assert(sai.length === 0, `DEMO.md còn chữ cũ:\n${sai.join('\n')}`);
+    const f = d.tenTepXuatMt({ khung: 'ft', chiNhanhTen: [], lopMa: [], thoiGian: { kieu: 'dot', dot: ['mt:1'] } });
+    assert(f.startsWith('PISA-Tracking_'), f);
+    const cu = [...nguonTs('web/src'), ...nguonTs('shared'), ...nguonTs('server/src')].filter((x) => /Pisa-Tracking_/.test(fs.readFileSync(path.join(ROOT, x), 'utf8')));
+    assert(cu.length === 0, `còn Pisa-Tracking_ ở: ${cu.join(', ')}`);
   });
 }
