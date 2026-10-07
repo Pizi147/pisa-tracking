@@ -279,7 +279,7 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     assert(!/hoanTac\(/.test(src) && !/ms: 10000/.test(src), 'Ghi vi phạm không được tự dựng Hoàn tác riêng');
   });
 
-  // ==================================================================== 11. Tên Pisa Tracking, chữ máy lọt ra màn hình (YC-6, A7)
+  // ==================================================================== 11. Tên PISA Tracking (PR-HK2: viết hoa PISA), chữ máy lọt ra màn hình (YC-6, A7)
   check('N1 (11) · YC-6 + A7: không còn "PISA Progress", "npm", "COUNT DISTINCT", ngày ISO trong thông báo; nhật ký có nhãn tiếng Việt', () => {
     const hien = [...tepTsx('web/src'), 'index.html', 'shared/domain/metrics.ts'];
     const tenCu = hien.filter((f) => /PISA Progress/.test(docSach(f)));

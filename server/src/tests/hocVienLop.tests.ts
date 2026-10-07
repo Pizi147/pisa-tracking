@@ -68,9 +68,13 @@ export async function runHocVienLopTests(t: YThucTestKit) {
 
   // ------------------------------------------------------------------ Task 2 · nợ PR-O
 
-  check('PR-Qa · Nợ PR-O: tiêu đề tab trình duyệt "Pisa Tracking" (YC-6); thanh dưới điện thoại z-30', () => {
+  check('PR-Qa · Nợ PR-O: tên web "PISA Tracking" ở tab, thanh trên, màn chào, API (YC-6, PR-HK2); thanh dưới điện thoại z-30', () => {
     const html = fsMod.readFileSync(pathMod.join(REPO, 'index.html'), 'utf8');
-    assert(/<title>Pisa Tracking<\/title>/.test(html) && !/Bản demo nội bộ/.test(html), 'index.html còn tiêu đề cũ');
+    assert(/<title>PISA Tracking<\/title>/.test(html) && !/Bản demo nội bộ/.test(html), 'index.html còn tiêu đề cũ');
+    for (const f of ['web/src/App.tsx', 'web/src/modules/platform/WelcomePage.tsx', 'server/src/index.ts']) {
+      const src = fsMod.readFileSync(pathMod.join(REPO, f), 'utf8');
+      assert(src.includes('PISA Tracking') && !/Pisa Tracking/.test(src), `${f}: tên web phải là "PISA Tracking"`);
+    }
     const app = fsMod.readFileSync(pathMod.join(REPO, 'web/src/App.tsx'), 'utf8');
     const dong = app.split('\n').find((l) => l.includes('md:hidden fixed bottom-0'));
     assert(!!dong && /\bz-30\b/.test(dong) && !/\bz-40\b/.test(dong), `Thanh dưới: ${dong}`);
