@@ -1,7 +1,7 @@
 import { db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import {
-  ASSESSED_SKILLS, CHUONG_TRINH_KHONG_CHIA_MON, PROGRAMME_TEMPLATES, REGULAR_SKILLS, SOS_LABEL, boMonLich, mocKeTiep, nhanBaiThuong } from '../../../shared/domain/index.ts';
+  ASSESSED_SKILLS, CHUONG_TRINH_KHONG_CHIA_MON, PROGRAMME_TEMPLATES, REGULAR_SKILLS, SOS_LABEL, boMonLich, mocKeTiep, moiNhatTruoc, nhanBaiThuong } from '../../../shared/domain/index.ts';
 import { entryBandsOf, loadBundle } from '../fasttrack/attempts.ts';
 import { evaluateAttempt, expectationFor } from '../fasttrack/scoring.ts';
 import { allProgrammes, evaluateRegular } from '../normal/regular.ts';
@@ -191,6 +191,8 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
     if (!byStudent.has(a.student_id)) byStudent.set(a.student_id, []);
     byStudent.get(a.student_id)!.push(a);
   }
+  /* Cũ trước mới sau: lớp thường theo loại (Final sau Progress dù attempt_no nhỏ hơn); FT vẫn theo attempt_no. */
+  for (const list of byStudent.values()) list.sort((x, y) => moiNhatTruoc(y, x));
 
   /* Case đang mở, đếm riêng phần mang từ lộ trình trước sang. */
   for (const r of conn
