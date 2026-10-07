@@ -218,6 +218,7 @@ Công việc của tôi, chuông, câu báo lỗi máy chủ trên các đườn
 
 ### SAU DEPLOY 10/2026 — việc nhỏ chủ sản phẩm chốt 07/10 (chưa làm)
 - **PR-OMT · Xếp lịch Mock Test gọn** — CHỐT 07/10 (panel A, ô MT cách 1, lưới FT G1, xong/cũ không chữ, huỷ đã chốt → xanh, chưa có đợt = chưa xếp). Kế hoạch + prompt: `docs/superpowers/plans/2026-10-07-pr-omt-gon.md`. Sau deploy. ✅ code xong 07/10 (nhánh `pr-omt-gon`, chờ merge).
+- **PR-LC · Luồng cuối khoá → lộ trình tiếp, mỗi quyết định nhập MỘT lần** (07/10, chủ SP: "thao tác trùng"). Kế hoạch `docs/superpowers/plans/2026-10-07-pr-luong-chuyen-giao.md`: LCa máy chủ (Chuyển tiếp ghi ngược Lộ trình tiếp theo + MT0, Target Lên FT tự giữ, thi hành không xoá ghi chú, Chốt lên FT chỉ trước tuần Final) sau `fix-chot-len-ft`; LCb giao diện **cần mockup**. Chờ Q1–Q3.
 - **Công việc › Của GV: "Nhắc tất cả"** (trước hoãn ở mục 8, nay làm).
 - **Chờ duyệt › lọc "Nhắc việc"**: bấm vào thì các bộ lọc khác biến mất → hẫng. Làm cho đỡ hẫng (vd giữ hàng lọc, mờ đi + một dòng "Đang xem Nhắc việc · Quay lại"); cần mockup.
 - `db.ts` `laLoiMatKetNoiTurso`: "fetch failed" khớp cả lỗi kho tệp (Netlify Blobs) → GET tải tệp thử lại thừa một lần (Minor, rà #236).
