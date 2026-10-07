@@ -460,4 +460,17 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     }
     assert(/Đã gỡ vắng/.test(lt) && /Đã gỡ vắng/.test(se), 'thông báo gỡ vắng (PR-BV) phải giữ');
   });
+
+  console.log('\nPR-HK2 · Task 8 · DH "+n" hồ sơ lớp dẫn đúng chỗ');
+
+  check('C28 · DauTrangLop: bamBadge có thieu-gv (→ phan-cong khi có quyền, không thì null) và thieu-tt (→ /hoc-vien?view=thieu_tt); chang không vào menu "+n"; mục không bấm được là chữ thường', () => {
+    const s = doc('web/src/modules/classes/DauTrangLop.tsx');
+    const i = s.indexOf('const bamBadge');
+    const bam = s.slice(i, s.indexOf('const hoiXk', i));
+    assert(/x\.key === 'thieu-gv'[^:]*\(data\.viewer\.canAssign \|\| data\.viewer\.canAssignSubject\)[^:]*onViec\('phan-cong'\)/.test(bam.replace(/\s+/g, ' ')), `thieu-gv chưa dẫn tới phan-cong (có quyền)`);
+    assert(/x\.key === 'thieu-tt'[^:]*navigate\(`\/hoc-vien\?view=thieu_tt&classId=\$\{data\.id\}`\)/.test(bam.replace(/\s+/g, ' ')), 'thieu-tt chưa dẫn tới /hoc-vien?view=thieu_tt&classId=');
+    const m = s.slice(s.indexOf('<MenuDong kieu="chip"'));
+    assert(/'chang'/.test(s.slice(s.indexOf('const b = '), s.indexOf('const bamBadge'))), 'nhãn chặng (chang) phải được lọc khỏi mục "+n"');
+    assert(/tieuDe:\s*!bamBadge\(x\)|tieuDe:\s*!bam\b/.test(m.slice(0, 600)), 'mục không bấm được phải là chữ thường (tieuDe), không phải nút');
+  });
 }
