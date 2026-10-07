@@ -70,3 +70,11 @@ Thứ tự: 1, 2 song song ngay · 3 (LCa) → 5 → 6 · 4 song song 5 · 7 cu�
 
 ## Kiểm
 Mỗi PR: phép kiểm đỏ trước theo hành vi; `npm run check`; PR giao diện ảnh 375/1440 sáng/tối; rà bởi agent khác; planning tự merge khi đạt.
+
+## §7. Chốt thêm 08/10 (sau mockup `mockup-cuoi-khoa-2-2026-10-08.html` — DUYỆT, trừ hộp "Sửa PA" phần 3)
+- Chuyển lớp (phần 2): **vẫn có ô chọn Tuần** (có mặc định).
+- Lên FT / chuyển từ FT: **Target và Dự kiến thi giữ như cũ**, không đổi. Bỏ ô Target ở Chuyển lớp (Q2); chỉ hỏi khi em chưa có Target nào.
+- Đổi chữ: "Xem lại hướng" → **"Xét lại lộ trình"**; "điểm lệch hướng đã chốt" → **"Kết quả không phù hợp lộ trình"**.
+- Q1: **gộp mọi loại việc theo lớp** (Nhập điểm, Thêm PA lớp thường, Ý thức…), giữ từng dòng Case SOS FT và thẻ Chờ duyệt.
+- Q3: GV cũ không còn dạy → **để trống người dạy**, QL chọn khi sửa PA.
+- **PA phải đồng bộ một mẫu** (PA tay, PA mặc định chế tài, PA Bổ trợ): Số buổi (tuỳ chọn) cho Tự học / Tutor, tự đếm sau mỗi tuần; "Ghi kết quả" → **"Kết quả"**; người dạy / người theo dõi — mockup riêng `mockup-pa-dong-bo-2026-10-08.html` (đang soạn).
