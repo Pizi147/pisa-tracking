@@ -170,7 +170,7 @@
    * Trang trượt ngang là lỗi nặng nhất ở màn hẹp: thanh điều hướng cũng trôi theo.
    * PR-KHUNG: overflow-y hidden — thanh cuộn ngang làm khối cao thừa 2–3 px, sinh cuộn dọc lồng trong trang.
    */
-  .table-scroll { overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; }
+  .table-scroll { position: relative; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; }   /* relative: chữ sr-only (absolute) trong bảng không thoát ra làm <main> trượt ngang (PR-HK2 rà #235 I1) */
 
   /*
    * ĐẦU CỘT DÍNH (PR-HK2, T15) — chỉ từ 1280 px (xl), chỉ bảng VỪA khung ở 1440 (không cần cuộn ngang). Đo: ở 768–1100 px nhiều bảng rộng hơn khung → bỏ khung cuộn thì <main> trượt ngang; từ 1200 px không trang nào tràn. Đặt `bang-dinh` cạnh `table-scroll`
@@ -184,6 +184,10 @@
     :where(.bang-dinh > table > thead, table.bang-dinh > thead) { position: sticky; top: var(--th-top); z-index: 10; }   /* cả khối đầu, để đầu hai hàng không chồng nhau */
     :where(.bang-dinh > table > thead > tr > th, table.bang-dinh > thead > tr > th) { background: var(--surface-2); }
     td .bang-dinh { overflow-x: auto; overflow-y: hidden; --th-top: 0px; }
+  }
+  /* Rà #235 I2: bảng RỘNG HƠN khung ở 1280–1439 px (Tổng hợp 1332–1393 px; lưới Điểm theo lớp 1108 px, khung 950 px) giữ khung cuộn riêng, chỉ dính đầu từ 1440. */
+  @media (min-width: 1280px) and (max-width: 1439px) {
+    .bang-dinh.bang-dinh-1440 { overflow-x: auto; overflow-y: hidden; }
   }
 
   /* VN17: có panel / hộp thoại mở thì toast lên trên (dưới đầu panel), không che nút ở chân panel. */

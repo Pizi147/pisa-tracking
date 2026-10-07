@@ -240,7 +240,7 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
         : data.scopeEmpty ? <div className="p-4"><Empty title="Bạn chưa được cấp phạm vi nào" /></div>
         : data.hang.length === 0 ? <div className="p-4"><Empty title={`Chưa có lượt nào có điểm trong ${KHOANG_LABEL[tg]}`} /></div>
         : (
-          <div className="table-scroll bang-dinh">
+          <div className="table-scroll bang-dinh bang-dinh-1440">
             <table className="w-full text-sm" style={{ tableLayout: 'fixed' }}>
               <colgroup>
                 {/* PR-HK2: bảng đủ cột (FT 17 · lớp thường 18) vừa 1440 (≤ 1398 px) — đầu cột hai dòng; ô "HV - Case" rộng hơn. Điện thoại: cột Tuần đứng yên nhỏ lại, nhường chỗ cho số. */}

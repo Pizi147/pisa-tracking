@@ -164,7 +164,7 @@ function MotKyNangFt({ data, onReload, kn, hv, hangMo }: {
     <div>
       <HangChip ds={chips} chon={chon} onChon={setChon} />
       {chon === 'speaking' && minh.has('speaking') && data.period && (
-        <div className="flex justify-end px-3 pb-1"><NutGvCham lon chiTen value={gvCot} onChange={setGvCot} /></div>
+        <div className="flex justify-end px-3 pb-1"><NutGvCham lon value={gvCot} onChange={setGvCot} /></div>
       )}
       <ul className="m-0 p-0 list-none">
         {data.rows.map((r, i) => (

@@ -645,15 +645,16 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     assert(/position:\s*relative/.test(m![1]), `.table-scroll thiếu position: relative: ${m![1].trim()}`);
   });
 
-  check('C43 · I2: bảng Tổng hợp chỉ dính đầu từ 1440 px (bang-dinh-1440: 1280–1439 giữ khung cuộn riêng); các bảng khác giữ ngưỡng chung 1280', () => {
+  check('C43 · I2: bảng Tổng hợp và lưới Điểm theo lớp (rộng hơn khung ở 1280) chỉ dính đầu từ 1440 px (bang-dinh-1440: 1280–1439 giữ khung cuộn riêng); các bảng khác giữ ngưỡng chung 1280', () => {
     const ngoai = /@media \(min-width:\s*1280px\) and \(max-width:\s*1439(?:\.98)?px\)\s*\{([^@]*?\})\s*\}/.exec(cssRaw);
     assert(ngoai, 'thiếu khối @media 1280–1439 cho .bang-dinh-1440');
     assert(/\.bang-dinh\.bang-dinh-1440\s*\{[^}]*overflow-x:\s*auto[^}]*overflow-y:\s*hidden/.test(ngoai![1]), '.bang-dinh.bang-dinh-1440 ở 1280–1439 phải là khung cuộn (overflow-x auto, overflow-y hidden)');
     assert(/@media \(min-width:\s*1280px\)\s*\{\s*\.bang-dinh\s*\{/.test(cssRaw), 'ngưỡng chung của .bang-dinh phải còn 1280');
     const th = doc('web/src/modules/phanTich/TongHopTestSos.tsx');
     assert(/className="table-scroll bang-dinh bang-dinh-1440"/.test(th), 'bảng Tổng hợp chưa gắn bang-dinh-1440');
-    const khac = tsx('web/src').filter((f) => f !== 'web/src/modules/phanTich/TongHopTestSos.tsx' && /bang-dinh-1440/.test(doc(f)));
-    assert(khac.length === 0, `bang-dinh-1440 chỉ dành cho bảng Tổng hợp: ${khac.join(', ')}`);
+    assert(/gon \? 'table-scroll bang-dinh bang-dinh-1440' : 'overflow-x-auto'/.test(doc('web/src/modules/cham/LuoiFT.tsx')), 'lưới Điểm theo lớp (gọn 1108 px, khung 950 px ở 1280) chưa gắn bang-dinh-1440');
+    const khac = tsx('web/src').filter((f) => !['web/src/modules/phanTich/TongHopTestSos.tsx', 'web/src/modules/cham/LuoiFT.tsx'].includes(f) && /bang-dinh-1440/.test(doc(f)));
+    assert(khac.length === 0, `bang-dinh-1440 chỉ cho bảng rộng hơn khung ở 1280 (Tổng hợp, lưới Điểm theo lớp): ${khac.join(', ')}`);
   });
 
   check('C44 · I3: Hành trình điện thoại (xem gọn) lớp thường — cột tuần ≥ 56 px để ghim "Progress" (46,6 px chữ + viền + lề) không bị cắt; FT giữ 40 px; rongCotTuan khớp', () => {

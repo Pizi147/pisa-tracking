@@ -12,11 +12,12 @@ export function ViecTiep({ v, den, onBam }: { v: ViecTiepTheo; den?: string | nu
   /*
    * PR-S4F #13: max-w-full — trong cột flex `items-start` (Theo dõi, Việc tiếp theo) phần tử rộng theo chữ nên chữ lấn lề ô.
    * PR-KHUNG G3: chữ chạy liền (khối thường, không flex, không cắt dòng) — chật thì xuống dòng, không mất chữ; cụm hạn
-   * `nowrap` là chữ trong dòng nên chật thì cả cụm xuống dòng. Câu đủ vẫn ở title.
+   * `nowrap` là chữ trong dòng nên chật thì cả cụm xuống dòng. Câu đủ vẫn ở title. Dấu cách THƯỜNG (không &nbsp;) giữa "⚠ quá hạn n ngày" và việc:
+   * &nbsp; cấm ngắt dòng trước liên kết inline-block nên liên kết tràn ô ở 375 px (rà #235, đo bằng do-khung).
    */
   return (
     <span className="block max-w-full text-xs text-slate-200 sm:line-clamp-2" title={v.title}>
-      {v.quaHanNgay !== null && <span className="whitespace-nowrap"><QuaHan ngay={v.quaHanNgay} />&nbsp;</span>}
+      {v.quaHanNgay !== null && <><span className="whitespace-nowrap"><QuaHan ngay={v.quaHanNgay} /></span>{' '}</>}
       <span className="break-words">
         {onBam ? <button type="button" className="link cursor-pointer border-0 bg-transparent p-0 text-left text-xs" onClick={onBam}>{v.viec}</button>
           : den ? <Link to={den} className="link">{v.viec}</Link> : v.viec}

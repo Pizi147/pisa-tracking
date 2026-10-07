@@ -127,7 +127,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
 
   // ponytail: gon (Điểm theo lớp / Lịch Test, 1108 px) vừa khung → đầu cột dính; đủ cột (Nhập điểm) rộng 1400 > khung 1398 ở 1440 → giữ cuộn ngang.
   return (
-    <div className={gon ? 'table-scroll bang-dinh' : 'overflow-x-auto'}>
+    <div className={gon ? 'table-scroll bang-dinh bang-dinh-1440' : 'overflow-x-auto'}>
       <table className="w-full text-sm tabular-nums" style={{ tableLayout: 'fixed', minWidth: RONG }}>
         <colgroup>{COT.map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
         <thead>
@@ -150,7 +150,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
             <Th align="right" className={toCot('speaking')} hint={`${skillLabel('speaking')} — bấm ô để chấm bốn tiêu chí, ra band.`}>
               {skillShort('speaking')} <span className="normal-case text-slate-500">(band)</span>
               {suaS && data.period && (
-                <div className="flex justify-end"><NutGvCham chiTen value={gvCot} onChange={setGvCot} /></div>
+                <div className="flex justify-end"><NutGvCham value={gvCot} onChange={setGvCot} /></div>
               )}
             </Th>
             {cot.kyVong && <Th align="right" hint="Mức mong đợi của chính lượt này, tính theo Target tại thời điểm đó.">Kỳ vọng</Th>}
