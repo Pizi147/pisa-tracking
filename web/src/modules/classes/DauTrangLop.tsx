@@ -90,13 +90,18 @@ export function DauTrangLop({ data, periodId, onViec, onBanGiao }: {
   });
   /* PR-S5F-a (mockup 20): lớp đã có dải "Kết thúc khoá" thì bỏ chip "n HV cần xếp lớp tiếp" — hai chỗ nói cùng một việc. */
   const boXep = (ds: BadgeLop[]) => (data.dai?.ketThucKhoa ? ds.filter((x) => x.key !== 'xep-lop') : ds);
-  const b = { hien: boXep(bGoc.hien), an: boXep(bGoc.an) };
+  const b0 = { hien: boXep(bGoc.hien), an: boXep(bGoc.an) };
+  /* DH: nhãn chặng chỉ là chữ — không vào menu "+n" (mục bấm không làm gì); nếu bị ẩn thì hiện thẳng ở hàng. */
+  const b = { hien: [...b0.hien, ...b0.an.filter((x) => x.key === 'chang')], an: b0.an.filter((x) => x.key !== 'chang') };
   const bamBadge = (x: BadgeLop): (() => void) | null =>
     /* PR-S4F #4: cùng đích với hộp lớp ở Học viên & Lớp — số trên badge = số dòng. */
     x.key === 'qua-han' ? () => navigate(`/hoc-vien?view=qua-han&classId=${data.id}`)
       : x.key === 'cham' ? () => navigate(duongLichTest({ classId: data.id }))
       : x.key === 'xep-lop' && data.viewer.coTheChuyenTiep ? () => onViec('chuyen-tiep')
       : x.key === 'cho-duyet' ? () => navigate(`/cong-viec/cho-duyet?lop=${data.id}`)
+      /* DH: "Thiếu GV …" → panel Phân công (chỉ ai sửa được phân công, người khác để chữ); "Thiếu n thông tin" → em thiếu của lớp. */
+      : x.key === 'thieu-gv' && (data.viewer.canAssign || data.viewer.canAssignSubject) ? () => onViec('phan-cong')
+      : x.key === 'thieu-tt' ? () => navigate(`/hoc-vien?view=thieu_tt&classId=${data.id}`)
       : null;
   /* Quản trị hoặc Quản lý của lớp gọi được đường này (403 với người khác) — nên chỉ hỏi khi có cờ. `coTheXoa` do máy chủ trả: chỉ Quản trị. */
   const hoiXk = !!data.viewer.coTheXoaKetThuc || !!data.viewer.coTheKetThucLop;
@@ -196,7 +201,7 @@ export function DauTrangLop({ data, periodId, onViec, onBanGiao }: {
           })}
           {b.an.length > 0 && (
             <MenuDong kieu="chip" bieuTuong={`+${b.an.length}`} nhan={`${b.an.length} việc khác của lớp`}
-              muc={b.an.map((x) => ({ key: x.key, nhan: x.nhan, onChon: () => (bamBadge(x) ?? (() => undefined))() }))} />
+              muc={b.an.map((x) => { const bam = bamBadge(x); return { key: x.key, nhan: x.nhan, tieuDe: !bam, onChon: bam ?? (() => undefined) }; })} />
           )}
         </div>
       )}
