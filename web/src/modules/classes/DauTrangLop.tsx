@@ -158,7 +158,7 @@ export function DauTrangLop({ data, periodId, onViec, onBanGiao }: {
       <ThanhTruocSau loai="lop" id={data.id}
         duong={(cid) => `/hoc-vien/lop/${cid}${sp.get('tab') ? `?tab=${sp.get('tab')}` : ''}`}
         dsDuPhong={async () => {
-          const r = await api.get<{ rows: { id: number; scoringMode: string | null }[] }>('/hoc-vien-lop');
+          const r = await api.get<{ rows: { id: number; scoringMode: string | null }[] }>('/hoc-vien-lop/ids');   // PR-TD2-b: không tải cả trang
           return { ids: r.rows.filter((c) => khungCua(c.scoringMode) === (thuong ? 'thuong' : 'ft')).map((c) => c.id), nhan: thuong ? 'Lớp thường' : 'Fast Track' };
         }} />
       {data.status === 'finished' && (

@@ -95,8 +95,10 @@ export default function StudentDetailPage() {
    */
   /* Lộ trình ĐANG XEM, không phải tham số trên URL: không có tham số thì là lộ trình đang chạy. */
   const boardCycleId: number | null = data?.cycle?.id ?? null;
+  /* PR-TD2-c: URL không chỉ lộ trình/đợt → hồ sơ và bảng cùng chọn lộ trình đang chạy (`currentCycle`), nên gọi bảng NGAY, song song với hồ sơ. */
   const board = useApi<{ rows: SkillBoardRow[]; tamDungTu?: string | null }>(
-    id && boardCycleId ? `/students/${id}/skill-board?cycleId=${boardCycleId}` : null,
+    !id ? null : !p.loTrinh && p.dot == null ? `/students/${id}/skill-board`
+      : boardCycleId ? `/students/${id}/skill-board?cycleId=${boardCycleId}` : null,
     [id, boardCycleId],
   );
   const skillRows = board.data?.rows ?? null;
@@ -184,7 +186,7 @@ export default function StudentDetailPage() {
         <ThanhTruocSau loai="hoc-vien" id={data.id}
           duong={(sid) => duongHoSoHocVien(sid, { tab: p.tab })}
           dsDuPhong={data.currentClass ? async () => {
-            const r = await api.get<{ id: number; fullName: string; archived: boolean }[]>(`/classes/${data.currentClass.id}/roster`);
+            const r = await api.get<{ id: number; fullName: string; archived: boolean }[]>(`/classes/${data.currentClass.id}/roster?chiId=1`);   // PR-TD2-b
             return { ids: r.filter((x) => !x.archived).sort((a, b) => a.fullName.localeCompare(b.fullName, 'vi')).map((x) => x.id), nhan: `Lớp ${data.currentClass.code}` };
           } : undefined} />
         {data.lopHoc?.chiXem && (
