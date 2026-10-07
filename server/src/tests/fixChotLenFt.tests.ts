@@ -51,11 +51,33 @@ export async function runFixChotLenFtTests(t: YThucTestKit) {
     assert(!coViec(l.classId), 'Công việc còn việc Chốt lên FT');
     assert(!tqCo(l.classId), 'Tổng quan còn lớp');
   });
-  check('FCF 3 · lớp đã sang bàn giao (một phần em có lệnh) → việc tự xong; lệnh đã huỷ không tính', () => {
-    const l = taoLop(2);
+  check('FCF 3 · một phần em có lệnh (kể cả Dừng học) → việc còn, đếm đúng số em chưa có hướng; đủ em → xong; lệnh huỷ không tính', () => {
+    const l = taoLop(3);
+    const soEm = () => mt0.lopChoChotLenFt(QL, MB, TODAY).find((x: any) => x.classId === l.classId)?.soEm ?? 0;
     lenh(l.sids[0], l.classId, 'len_lop', 'huy');
-    assert(coViec(l.classId), 'lệnh huỷ không tính là bàn giao');
-    lenh(l.sids[0], l.classId, 'len_lop');
-    assert(!coViec(l.classId), 'đã bàn giao → xong');
+    assert(soEm() === 3, `lệnh huỷ không tính: ${soEm()}`);
+    lenh(l.sids[0], l.classId, 'dung_hoc');
+    assert(coViec(l.classId) && soEm() === 2, `một em Dừng học, hai em chưa có hướng → còn việc: ${soEm()}`);
+    lenh(l.sids[1], l.classId, 'len_lop');
+    lenh(l.sids[2], l.classId, 'fast_track');
+    assert(!coViec(l.classId), 'đủ em có hướng → xong');
+  });
+  check('FCF 4 · lo_trinh_tiep_theo "Chưa quyết" nhưng lệnh chưa huỷ có hướng khác → đã có hướng', () => {
+    const l = taoLop(1);
+    const now = new Date().toISOString();
+    conn.prepare(`INSERT INTO lo_trinh_tiep_theo (student_id, class_id, huong, created_at, updated_at) VALUES (?, ?, 'chua_quyet', ?, ?)`).run(l.sids[0], l.classId, now, now);
+    assert(coViec(l.classId), 'Chưa quyết, chưa lệnh → còn việc');
+    conn.prepare(`INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, huong, boi_canh, tuan_bat_dau, nguoi_ra_lenh, ngay_ra_lenh, trang_thai, tao_luc)
+      VALUES (?, ?, 'fast_track', 'giua-khoa', ?, ?, ?, 'cho', ?)`).run(l.sids[0], l.classId, addDays(week.mondayOf(TODAY), 7), QL.userId, TODAY, now);
+    assert(!coViec(l.classId), 'lệnh có hướng thắng Chưa quyết');
+  });
+  check('FCF 5 · seed: MB FOU 23 (mọi em có lệnh) hết việc; MB FOU 22 còn việc chỉ vì em chưa có lệnh (em GVCN đề xuất)', () => {
+    const con = new Map(mt0.lopChoChotLenFt(QL, MB, TODAY).map((x: any) => [x.classId, x.soEm]));
+    assert(!con.has(t.classId('MB FOU 23')), 'MB FOU 23 còn việc');
+    const l22 = t.classId('MB FOU 22');
+    const chuaLenh = (conn.prepare(`SELECT COUNT(*) n FROM enrollments e WHERE e.class_id = ? AND e.status = 'active'
+      AND NOT EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.student_id = e.student_id AND l.lop_nguon_id = e.class_id AND l.trang_thai != 'huy' AND l.huong != 'chua_quyet')
+      AND NOT EXISTS (SELECT 1 FROM lo_trinh_tiep_theo lt WHERE lt.student_id = e.student_id AND lt.class_id = e.class_id AND lt.huong != 'chua_quyet')`).get(l22) as any).n;
+    assert((con.get(l22) ?? 0) === chuaLenh, `MB FOU 22: việc đếm ${con.get(l22)}, em chưa có hướng ${chuaLenh}`);
   });
 }

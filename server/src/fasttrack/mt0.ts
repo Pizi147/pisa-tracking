@@ -258,8 +258,8 @@ function tinhLopChoChotLenFt(p: Principal, branchId: number | null, today: strin
   });
   if (!toi.length) return [];
   /*
-   * FIX-CHOT-LEN-FT: "Lộ trình tiếp theo" cả lớp / từng em (PR-CT) ghi ở `lenh_chuyen_lop`; `lo_trinh_tiep_theo` chỉ có dòng khi lệnh
-   * thi hành. Em có lệnh (chưa huỷ, hướng ≠ Chưa quyết) = đã có hướng; lớp đã có lệnh Cuối khoá chưa huỷ = đã sang bàn giao → xong cả lớp.
+   * FIX-CHOT-LEN-FT: Lộ trình tiếp theo (K26) ghi thẳng `lo_trinh_tiep_theo`; Quyết định chuyển lớp (PR-CT) ghi ở `lenh_chuyen_lop`.
+   * Em đã có hướng khi một trong hai có hướng ≠ Chưa quyết (lệnh chưa huỷ, mọi bối cảnh). Việc xong khi MỌI em đang học đã có hướng (T5b).
    */
   const soEm = new Map<number, number>();
   theoLo(toi.map((x) => x.classId), (lo, ph) => {
@@ -269,7 +269,6 @@ function tinhLopChoChotLenFt(p: Principal, branchId: number | null, today: strin
         WHERE e.status = 'active' AND e.class_id IN (${ph}) AND ${HV_DANG_HOC_SQL('s')} AND (lt.huong IS NULL OR lt.huong = 'chua_quyet')
           AND NOT EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.student_id = e.student_id AND l.lop_nguon_id = e.class_id
                             AND l.trang_thai != 'huy' AND l.huong != 'chua_quyet')
-          AND NOT EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.lop_nguon_id = e.class_id AND l.boi_canh = 'cuoi-khoa' AND l.trang_thai != 'huy')
         GROUP BY e.class_id`,
     ).all(...lo) as any[]) soEm.set(r.class_id, r.n);
   });
