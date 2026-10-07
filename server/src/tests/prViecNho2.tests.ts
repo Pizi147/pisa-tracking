@@ -103,8 +103,8 @@ export async function runPrViecNho2Tests(t: YThucTestKit) {
       const n = soCauSql() - a;
       console.log('VN2-1d số câu', JSON.stringify({ viec: lo.length, soGv, n, ok: r.ok.length, loi: r.loi.length }));
       assert(lo.length >= 20 && soGv >= 3, `cần lô lớn: ${lo.length} việc / ${soGv} GV`);
-      /* DB cuối `run.ts` có PA do phép kiểm khác tạo mà người nhận nay không còn dòng đó → 404 riêng dòng là đúng; không được có lỗi khác. */
-      assert(r.ok.length + r.loi.length === lo.length && r.ok.length >= lo.length / 2 && r.loi.every((l: any) => l.ma === 404), `lỗi: ${JSON.stringify(r.loi.slice(0, 3))}`);
+      /* PR-PA (Task 3): việc Kết quả giao người giữ việc, người đó luôn thấy dòng → không còn 404 "mồ côi". */
+      assert(r.loi.length === 0 && r.ok.length === lo.length, `lỗi: ${JSON.stringify(r.loi.slice(0, 3))}`);
       assert(n <= TRAN_GHI_LO.nhacTatCaCuaGv, `${n} câu > trần ${TRAN_GHI_LO.nhacTatCaCuaGv}`);
     });
   } finally {

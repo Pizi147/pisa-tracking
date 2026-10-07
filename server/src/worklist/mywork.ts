@@ -23,6 +23,7 @@ import { tyLeTongLo } from '../normal/cuoiKhoa.ts';
 import { myCoordinationLines } from '../yThuc/phoiHop.ts';
 import { hvLenFtChuaKyVong } from './metrics.ts';
 import { phanCongDangHieuLuc } from './scoreDebt.ts';
+import { nguoiGiuKetQua } from '../cases/giuKetQua.ts';
 import { dienMocQuyChe } from '../cases/sosAuto.ts';
 import { settleNoShows, sweepExpiredMoves } from '../fasttrack/absence.ts';
 import { quetYeuCau } from '../duyet/yeuCau.ts';
@@ -484,12 +485,12 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   const ghiKetQua = !co('ghi_ket_qua_pa', 'no_plan') ? [] : conn   // `reviewedCases` của 2b loại Case khỏi `no_plan`
     .prepare(
       `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.action_due, iv.followup_due, iv.preset, iv.nhom_bo_tro,
-              iv.performer_user_id, iv.performer_name, COALESCE(iv.performer_user_id, sc.owner_user_id) AS owner_id,   -- PR-Dọn: cùng người giữ việc với chỉ số pa-can-cap-nhat
+              iv.performer_user_id, iv.performer_name, sc.owner_user_id,
               sc.topic, sc.sos_level, sc.urgency, sc.summary, sc.origin_kind, sc.attempt_id,
               COALESCE(sc.student_id, a.student_id) AS eff_student_id,
-              COALESCE(a.class_id, cur.class_id) AS eff_class_id,
-              COALESCE(ac.branch_id, cc.branch_id) AS eff_branch_id,
-              COALESCE(ac.code, cc.code) AS class_code,
+              COALESCE(cur.class_id, a.class_id) AS eff_class_id,   -- PR-PA (§8): lớp HIỆN TẠI trước, như LOP_CUA_CASE
+              COALESCE(cc.branch_id, ac.branch_id) AS eff_branch_id,
+              COALESCE(cc.code, ac.code) AS class_code,
               s.full_name, a.attempt_no, a.kind AS attempt_kind
          FROM case_interventions iv
          JOIN sos_cases sc ON sc.id = iv.case_id
@@ -507,6 +508,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     )
     .all(addDays(today, 1)) as any[];
   napTruocPhamVi(ghiKetQua.map((r) => r.eff_student_id));
+  /* PR-PA (§8): người giữ việc — cùng hàm với chỉ số `pa-can-cap-nhat` và quyền ghi; tính một lần cho mọi dòng. */
+  const giu = nguoiGiuKetQua(ghiKetQua.map((r) => ({ id: r.id, topic: r.topic ?? null, nhomBoTro: r.nhom_bo_tro ?? null, classId: r.eff_class_id ?? null, ownerUserId: r.owner_user_id ?? null })), today);
+  for (const r of ghiKetQua) r.owner_id = giu.get(r.id) ?? null;
   /* PR-LT2a (M-03): PA bổ trợ chung gộp MỘT dòng mỗi nhóm — `reason` nêu các môn chung. */
   const monCuaNhom = new Map<string, string[]>();
   for (const r of ghiKetQua) {
@@ -517,8 +521,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     if (f.branchId && iv.eff_branch_id !== f.branchId) return false;
     /* PR-S5F-b: lọc rẻ trước (việc của mình · lớp mình dạy · QL quá hạn), quyền sau — tính từ cột đã JOIN, không đọc lại từng Case. */
     const mine = iv.owner_id === p.userId;
+    if (mine) return true;   // PR-PA (§8): người giữ việc luôn thấy dòng của mình (không mồ côi)
     const qlQuaHan = urgencyOf(iv.action_due, today) === 'overdue' && can(p, PERMISSIONS.CASE_APPROVE, { classId: iv.eff_class_id, studentId: iv.eff_student_id });
-    if (!mine && !teachesClass(p, iv.eff_class_id) && !qlQuaHan) return false;
+    if (!teachesClass(p, iv.eff_class_id) && !qlQuaHan) return false;
     return iv.kind === 'bo_tro'
       ? quyenBoTro(p, { ...iv, ctx: { classId: iv.eff_class_id ?? null, studentId: iv.eff_student_id ?? null, topic: iv.topic ?? null } })
       : can(p, PERMISSIONS.SOS_EDIT, { classId: iv.eff_class_id, studentId: iv.eff_student_id, skill: iv.topic ?? undefined });
@@ -544,8 +549,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       tieuDe: tuanCuoi ? `Ghi kết quả cuối · ${tenPa}` : `Ghi kết quả PA${duoiKyNang(iv.topic, ctCua(iv.eff_class_id))}`,
       actionLabel: tuanCuoi ? 'Ghi kết quả cuối' : 'Ghi kết quả',
       href: duongHoSoHocVien(iv.eff_student_id, { caseId: iv.case_id, paId: iv.id, viec: 'ghi-ket-qua' }),
-      ownerId: iv.performer_user_id ?? iv.owner_id ?? null,
-      owner: iv.performer_user_id ? null : ((iv.performer_name ?? '').trim() || null),
+      ownerId: iv.owner_id ?? null,
+      owner: iv.owner_id ? null : ((iv.performer_name ?? '').trim() || null),
       mine, due: iv.action_due, statusLabel: 'Chờ ghi kết quả',
     });
   }

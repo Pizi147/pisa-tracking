@@ -36,6 +36,7 @@ import { caseKhacChuongTrinh, chuongTrinhCuaLop } from './sos.ts';
 import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
 import { PLAN_DECISIONS, coNguoiDay, decisionToStep, duongDotTest, kiemSoBuoiTuan, soBuoiTu, tuanLich, type PlanDecision } from '../../../shared/domain/index.ts';
 import { chenPa } from './taoPa.ts';
+import { nguoiGiuKetQua } from './giuKetQua.ts';
 import { apDungDieuChinh, chuanHoaDieuChinh, daDayCua, ghiBanDieuChinh, lichSuDieuChinhCuaCase, soBuoiMoi } from './planRevisions.ts';
 import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
 import { dienMocQuyChe, kiemNoiDungCase, tenGiuaCua } from './sosAuto.ts';
@@ -1636,8 +1637,12 @@ function tamDungTuCua(student: { id: number; status: string } | null | undefined
 export function caseDetail(p: Principal, caseId: number) {
   const conn = db();
   const c = loadCase(caseId);
-  require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId: c.class_id, studentId: c.eff_student_id },
-    'Case này nằm ngoài phạm vi bạn được xem.');
+  /* PR-PA (§8): người giữ việc Kết quả của một PA trong Case xem được Case (vd. chủ Case khi lớp mới chưa phân công môn). */
+  const ivCuaCase = conn.prepare('SELECT id, nhom_bo_tro FROM case_interventions WHERE case_id = ?').all(caseId) as any[];
+  const giu = giuCuaCase(c, ivCuaCase);
+  if (![...giu.values()].includes(p.userId)) {
+    require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId: c.class_id, studentId: c.eff_student_id }, 'Case này nằm ngoài phạm vi bạn được xem.');
+  }
   dienMocQuyChe({ caseIds: [caseId] });   // PR-SOS K3-14: mốc quy chế còn trống — có lịch rồi thì điền
 
   const student = conn
@@ -1664,8 +1669,7 @@ export function caseDetail(p: Principal, caseId: number) {
   /* PR-S2 (S2): lịch sử điều chỉnh của mọi PA trong Case, một truy vấn. */
   const revs = lichSuDieuChinhCuaCase(caseId);
   /* PR-DUYET (Task 5, 9): thẻ hộp Chờ duyệt của mọi PA trong Case — một câu cho cả Case. */
-  const theCuaPa = theCuaDoiTuong('intervention',
-    (conn.prepare('SELECT id FROM case_interventions WHERE case_id = ?').all(caseId) as any[]).map((r) => r.id as number));
+  const theCuaPa = theCuaDoiTuong('intervention', ivCuaCase.map((r) => r.id as number));
   const mtKeCua = mtKeTheoPa(caseId);
   /* PR-PA (§8): Đã dạy của mọi PA trong Case — một câu. */
   const daDayTheoPa = new Map((conn.prepare('SELECT intervention_id i, COALESCE(SUM(so_buoi), 0) n FROM case_followups WHERE case_id = ? GROUP BY intervention_id')
@@ -1687,6 +1691,8 @@ export function caseDetail(p: Principal, caseId: number) {
       /** PR-PA (§8): Số buổi của PA (null = không đếm) và Đã dạy (tổng Số buổi tuần này). */
       soBuoi: (iv.so_buoi ?? null) as number | null,
       daDay: daDayTheoPa.get(iv.id) ?? 0,
+      /** PR-PA (§8): người xem ghi được Kết quả của PA này — quyền theo vai trò hoặc là người giữ việc. */
+      ghiDuoc: giu.get(iv.id) === p.userId || quyenPaTheoVaiTro(p, iv, c),
       performer: iv.performer_account ?? iv.performer_name ?? null,
       /** Tài khoản người làm hiện tại — panel Điều chỉnh lấy làm giá trị đầu (PR-UX3 Q15); null khi người làm ngoài hệ thống. */
       performerUserId: iv.performer_user_id ?? null,
@@ -3349,16 +3355,21 @@ export function updateResult(p: Principal, interventionId: number, input: {
   });
 }
 
-/**
- * PR-PA: quyền ghi Kết quả / Sửa PA của MỘT PA — một chỗ (Task 3 thêm "người giữ việc" ở đây).
- * PR-LT2a (Q9): PA Bổ trợ do người dạy (mặc định GVCN cho FOU) ghi — `quyenBoTro`; PA khác theo kỹ năng (C02).
- */
+/** PR-PA (§8): người giữ việc Kết quả của các PA trong MỘT Case (`c` từ `loadCase`: lớp hiện tại trước). */
+const giuCuaCase = (c: any, ivs: readonly any[]) => nguoiGiuKetQua(ivs.map((iv) => ({
+  id: iv.id, topic: c.topic ?? null, nhomBoTro: iv.nhom_bo_tro ?? null, classId: c.class_id ?? null, ownerUserId: c.owner_user_id ?? null,
+})), demoToday());
+const laBoTro = (iv: any) => iv.kind === 'bo_tro' || iv.kind === 'bo_tro_mien_phi';
+/** PR-LT2a (Q9): PA Bổ trợ do người dạy (mặc định GVCN cho FOU) ghi — `quyenBoTro`; PA khác theo kỹ năng (C02). */
+const quyenPaTheoVaiTro = (p: Principal, iv: any, c: any) => laBoTro(iv)
+  ? quyenBoTro(p, { ...iv, ctx: { classId: c.class_id ?? null, studentId: c.eff_student_id ?? null, topic: c.topic ?? null } })
+  : can(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c));
+
+/** PR-PA: quyền ghi Kết quả / Sửa PA của MỘT PA — một chỗ. Người giữ việc (§8) luôn ghi được, dù không qua quyền theo vai trò. */
 function kiemQuyenPa(p: Principal, iv: any, c: any, msg = 'Bạn không có quyền cập nhật kết quả của Case này.') {
-  if (iv.kind === 'bo_tro' || iv.kind === 'bo_tro_mien_phi') {
-    if (!quyenBoTro(p, iv)) throw forbidden(msg);
-  } else {
-    require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c), msg);
-  }
+  if (quyenPaTheoVaiTro(p, iv, c) || giuCuaCase(c, [iv]).get(iv.id) === p.userId) return;
+  if (laBoTro(iv)) throw forbidden(msg);
+  require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c), msg);   // ném kèm gợi ý quyền
 }
 
 /** PR-PA: PA chưa chạy (quy chế chưa xác nhận, chờ Quản lý duyệt) hoặc đã khép → không ghi Kết quả, không Sửa PA. */

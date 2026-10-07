@@ -59,7 +59,7 @@ export function taoPaBoTro(conn: any, x: { caseId: number; attempt: any; skill: 
 // ==================================================================== Xác nhận Case + Nộp kế hoạch + thẻ `ke_hoach_bo_tro`
 
 const CO_NGUYEN_NHAN = `EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary')`;
-const nhomChung = (nhom: string) => nhom.split(':').length === 2;   // `gk:{lượt}` = FOU chung · `gk:{lượt}:{môn}` = BE/ELE
+export const nhomChung = (nhom: string) => nhom.split(':').length === 2;   // `gk:{lượt}` = FOU chung · `gk:{lượt}:{môn}` = BE/ELE
 
 /** Các dòng PA bổ trợ CÒN SỐNG của một nhóm (kèm Case) — cũ trước mới sau. */
 function dongNhom(conn: any, nhom: string): any[] {

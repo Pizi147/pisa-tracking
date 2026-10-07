@@ -420,4 +420,76 @@ export async function runPrPaTests(t: YThucTestKit) {
     assert(ids.every((id) => revCua(id).length === 1 && revCua(id)[0].source === 'sua_pa' && revCua(id)[0].old_so_buoi === 6 && revCua(id)[0].new_so_buoi === 9),
       `nhật ký từng dòng: ${JSON.stringify(ids.map(revCua))}`);
   });
+  // ------------------------------------------------------------------ Task 3 · người giữ việc Kết quả (không mồ côi)
+  console.log('\nPR-PA · Task 3 (người giữ việc Kết quả)');
+  const { loadPrincipal } = await import('../permissions.ts');
+  const mw: any = await import('../worklist/mywork.ts');
+  const metrics: any = await import('../worklist/metrics.ts');
+  const GV4 = (conn.prepare(`SELECT DISTINCT ur.user_id FROM user_roles ur JOIN roles r ON r.id = ur.role_id
+     WHERE r.key = 'teacher' AND ur.status = 'active' AND ur.branch_id = ? ORDER BY ur.user_id LIMIT 4`).all(MB) as any[]).map((r) => r.user_id as number);
+  const ganGvcn = (lop: number, userId: number) => conn.prepare(
+    `INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at) VALUES (?,?, NULL, 1, '2026-01-01', 'active', ?)`,
+  ).run(userId, lop, new Date().toISOString());
+  /** Em ở lớp A, Case Listening gắn lượt Final ở lớp A (chủ Case = `chu`), PA quá hạn Kết quả; rồi em chuyển sang lớp B. */
+  const emChuyenLop = (ten: string, o: { chu: number; topic?: string; kind?: string; nhom?: string | null; sauChuyen: (b: number) => void }) => {
+    const a = lopMoi('BE', false, 3), b = lopMoi('BE', false, 3);
+    ganGv(a, GV4[0], 'listening');
+    const sid = hocVien(a, 'BE');
+    regular.planRegularTests(P.admin, a, { studentIds: [sid], kinds: ['final'] });
+    const luot = get(`SELECT id FROM assessment_attempts WHERE student_id = ? AND class_id = ? ORDER BY id DESC LIMIT 1`, sid, a).id;
+    const c = (cases.reportIssue(P.admin, {
+      title: `Giữ việc ${ten}`, primaryCode: 'student.listening.technique', studentId: sid, topic: 'listening',
+      summary: 'Case dựng cho phép kiểm người giữ việc.', idempotencyKey: `pa-giu-${ten}`, parallel: true,
+    }) as any).id as number;
+    conn.prepare('UPDATE sos_cases SET attempt_id = ?, owner_user_id = ?, topic = ? WHERE id = ?').run(luot, o.chu, o.topic ?? 'listening', c);
+    const [iv] = taoPa.chenPa(conn, [{
+      caseId: c, kind: o.kind ?? 'tutor', description: 'Tutor nghe chép 10 buổi', status: 'started', soBuoi: 10, performerUserId: GV4[0],
+      nhomBoTro: o.nhom ?? null, startedDate: t.addDays(TODAY, -14), cycleStartedOn: t.addDays(TODAY, -14), actionDue: t.addDays(TODAY, -1),
+    }]);
+    conn.prepare(`UPDATE enrollments SET status = 'transferred', ended_at = ? WHERE student_id = ? AND status = 'active'`).run(TODAY, sid);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`).run(sid, b, TODAY, new Date().toISOString());
+    o.sauChuyen(b);
+    return { c, iv: iv as number, a, b };
+  };
+  const dongKq = (userId: number, iv: number) => (mw.myWork(loadPrincipal(userId)).groups as any[]).flatMap((g) => g.items).find((it: any) => it.key === `action:${iv}`);
+  const nguoiChiSo = (iv: number) => metrics.metricSet(P.admin, 'pa-can-cap-nhat', {}).chiTiet?.get(iv)?.nguoi?.[0] ?? null;
+  const KQ1 = { ...KQ, soBuoi: 1, nguoiDay: { performerName: 'Tutor ngoài' } };
+
+  check('PA11 · em chuyển lớp → việc Kết quả về GVBM môn đó ở lớp MỚI: thấy ở Công việc (của mình), chỉ số cùng người, ghi được; GV lớp cũ không còn giữ', () => {
+    const { c, iv } = emChuyenLop('MOI', { chu: GV4[0], sauChuyen: (b) => { ganGv(b, GV4[1], 'listening'); ganGv(b, GV4[2], 'reading'); } });
+    const dong = dongKq(GV4[1], iv);
+    assert(dong && dong.mine && dong.ownerId === GV4[1], `GVBM lớp mới: ${JSON.stringify(dong && { mine: dong.mine, ownerId: dong.ownerId })}`);
+    assert(!dongKq(GV4[0], iv)?.mine, 'GV lớp cũ vẫn giữ việc');
+    assert(nguoiChiSo(iv) === GV4[1], `chỉ số pa-can-cap-nhat: ${nguoiChiSo(iv)}`);
+    const pa = (p: number) => (cases.caseDetail(loadPrincipal(p), c) as any).interventions.find((x: any) => x.id === iv);
+    assert(pa(GV4[1]).ghiDuoc === true && pa(GV4[2]).ghiDuoc === false && (cases.caseDetail(P.admin, c) as any).interventions.find((x: any) => x.id === iv).ghiDuoc === true,
+      `ghiDuoc: GVBM ${pa(GV4[1]).ghiDuoc} · GV môn khác ${pa(GV4[2]).ghiDuoc}`);
+    cases.updateResult(loadPrincipal(GV4[1]), iv, KQ1);
+    assert(fuCua(iv).length === 1, 'GVBM lớp mới chưa ghi được');
+  });
+
+  check('PA12 · lớp mới chưa phân công môn → chủ Case giữ việc: thấy dòng, ghi được Kết quả và Sửa PA dù không dạy lớp mới; người ngoài vẫn 403', () => {
+    const { c, iv } = emChuyenLop('CHU', { chu: GV4[3], sauChuyen: () => {} });
+    const dong = dongKq(GV4[3], iv);
+    assert(dong && dong.mine && dong.ownerId === GV4[3], `chủ Case: ${JSON.stringify(dong && { mine: dong.mine, ownerId: dong.ownerId })}`);
+    assert(nguoiChiSo(iv) === GV4[3], `chỉ số: ${nguoiChiSo(iv)}`);
+    const chu = loadPrincipal(GV4[3]);
+    assert((cases.caseDetail(chu, c) as any).interventions.find((x: any) => x.id === iv).ghiDuoc === true, 'ghiDuoc của chủ Case');
+    cases.updateResult(chu, iv, KQ1);
+    cases.suaPa(chu, iv, { soBuoi: 12 });
+    assert(fuCua(iv).length === 1 && get('SELECT so_buoi FROM case_interventions WHERE id = ?', iv).so_buoi === 12, 'chủ Case chưa ghi / sửa được');
+    const e = maLoi(() => cases.updateResult(loadPrincipal(GV4[1]), iv, KQ1));
+    assert(e.status === 403, `người ngoài: ${JSON.stringify(e)}`);
+  });
+
+  check('PA13 · PA Bổ trợ nhóm chung (gk:{lượt}) và Case tong_hop → GVCN lớp hiện tại giữ việc (không phải GVBM môn)', () => {
+    for (const [ten, o] of [['GK', { kind: 'bo_tro', nhom: 'gk:990013' }], ['TH', { topic: 'tong_hop' }]] as const) {
+      const { iv } = emChuyenLop(`GVCN-${ten}`, { chu: GV4[0], ...o, sauChuyen: (b) => { ganGv(b, GV4[1], 'listening'); ganGv(b, GV4[2], 'reading'); ganGvcn(b, GV4[2]); } });
+      const dong = dongKq(GV4[2], iv);
+      assert(dong && dong.mine && dong.ownerId === GV4[2], `${ten} GVCN: ${JSON.stringify(dong && { mine: dong.mine, ownerId: dong.ownerId })}`);
+      assert(!dongKq(GV4[1], iv)?.mine && nguoiChiSo(iv) === GV4[2], `${ten}: GVBM vẫn giữ / chỉ số ${nguoiChiSo(iv)}`);
+      cases.updateResult(loadPrincipal(GV4[2]), iv, KQ1);
+      assert(fuCua(iv).length === 1, `${ten}: GVCN chưa ghi được`);
+    }
+  });
 }
