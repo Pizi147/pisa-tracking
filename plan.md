@@ -207,6 +207,7 @@ Kỳ vọng, chương trình, band đầu vào, đạt/trượt, mức SOS **kh�
 - Chồng: PR-LUI-b (`students.ts`, `luuTru.ts`, Học lại), PR-MT0 (Chuyển tiếp lớp). Chạy sau LUI-b, song song MTb được. Bảng bản chụp là nguồn cho PR-NC.
 
 ### PR-EN · Bản tiếng Anh cho GV nước ngoài (L) — chủ sản phẩm 06/10, **làm sau HK2, trước SOTAY; deploy một lần sau cùng** (07/10), kế hoạch `docs/superpowers/plans/2026-10-07-pr-en-tieng-anh.md` (4 đợt EN-a…d) + thuật ngữ `thiet-ke/THUAT_NGU_EN_2026-10-07.md` + mockup `thiet-ke/mockup-en-2026-10-07.html` **đã soạn 07/10, planning tự duyệt mockup**
+**Bản 2 (07/10, sau HK2 #235):** đếm lại 3 626 chuỗi màn GV + 348 chữ máy chủ + 504 chỗ lỗi; chia **EN-a nền + khung (504) · EN-b việc + Test + nhập điểm (~1 300) · EN-c hồ sơ (~1 100) · EN-d Case + Ý thức + quét (~1 050)**, mỗi đợt một PR nối tiếp, prompt riêng trong kế hoạch. Điện thoại: Language ngay trên Display trong menu Tài khoản.
 Chốt: **chỉ phần GV dùng** — Đăng nhập, thanh trên, Tổng quan (GV), Lịch Test, Điểm theo lớp / nhập điểm, hồ sơ lớp + hồ sơ HV (xem), Case – PA (tạo, ghi kết quả), Ghi vi phạm,
 Công việc của tôi, chuông, câu báo lỗi máy chủ trên các đường đó. Màn QL / Quản trị (Kế hoạch Test, Chờ duyệt, Phân tích, Quản trị) giữ tiếng Việt.
 - **Nút đổi ngôn ngữ:** góc trên thanh đầu (cạnh nút sáng/tối) **và** một nút to, dễ thấy ở màn đăng nhập (trước khi đăng nhập). Nhớ theo tài khoản (lưu ở máy chủ) + trên máy trước khi đăng nhập.
