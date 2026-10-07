@@ -9172,6 +9172,9 @@ await runPrHk2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 // ==================================================================== PR-O-CHON (ô chọn người gõ được — dùng lại ChonNguoi)
 const { runPrOChonTests } = await import('./prOChon.tests.ts');
 await runPrOChonTests({ check, assert });
+// ==================================================================== FIX-XEP-BAI-THUONG (lớp thường: Progress trước Final theo loại)
+const { runFixXepBaiThuongTests } = await import('./fixXepBaiThuong.tests.ts');
+await runFixXepBaiThuongTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
