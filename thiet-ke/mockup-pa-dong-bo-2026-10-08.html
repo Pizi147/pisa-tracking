@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="vi" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mẫu PA thống nhất</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Token lấy đúng web/src/index.css (như mockup-cuoi-khoa-2-2026-10-08.html): tối mặc định, sáng = [data-theme=light]. */
+:root{
+  color-scheme:dark;
+  --bg:#0c1220;--surface:#141d2f;--surface-2:#1a2437;--line:rgba(160,178,214,.14);--line-strong:rgba(160,178,214,.26);
+  --accent:#7db3f0;--accent-strong:#a9cdf7;--accent-ink:rgb(11 22 38);--accent-soft:rgba(125,179,240,.14);--accent-line:rgba(125,179,240,.38);
+  --text:#dde5f2;--dim:rgb(147 163 192);--faint:rgb(130 146 174);--c1:rgb(241 245 249);--c2:rgb(226 232 240);--c3:rgb(203 213 225);
+  --ok:rgb(111 220 159);--ok-bg:rgb(18 53 38);--ok-line:rgb(43 112 80);
+  --bad:rgb(255 154 162);--bad-bg:rgb(60 29 36);--bad-line:rgb(136 64 74);
+  --late:rgb(255 145 102);--late-bg:rgb(62 31 19);--late-line:rgb(154 74 42);
+  --soon:rgb(242 196 80);--soon-bg:rgb(53 43 16);--soon-line:rgb(122 98 34);
+  --wait:rgb(196 169 255);--wait-bg:rgb(39 32 67);--wait-line:rgb(87 74 138);
+  --doing:rgb(128 184 255);--doing-bg:rgb(19 44 77);--doing-line:rgb(47 93 149);
+  --chon-bg:rgb(19 33 45);--chon-vien:rgb(13 148 136);
+  --o-nen:#0e1727;--o-vien:#64748b;--phu:rgba(255,255,255,.035);--mask:rgba(5,9,18,.62);
+  --sans:'Be Vietnam Pro',system-ui,'Segoe UI',sans-serif;--so:'Inter','Be Vietnam Pro',sans-serif;
+}
+:root[data-theme="light"]{
+  color-scheme:light;
+  --bg:#f5f7fa;--surface:#ffffff;--surface-2:#eef1f5;--line:rgba(15,23,42,.12);--line-strong:rgba(15,23,42,.22);
+  --accent:#1d5fbf;--accent-strong:#174e9e;--accent-ink:#fff;--accent-soft:rgba(29,95,191,.08);--accent-line:rgba(29,95,191,.35);
+  --text:#0f172a;--dim:rgb(71 85 105);--faint:rgb(91 102 120);--c1:rgb(15 23 42);--c2:rgb(30 41 59);--c3:rgb(51 65 85);
+  --ok:rgb(21 122 66);--ok-bg:rgb(220 243 229);--ok-line:rgb(143 209 171);
+  --bad:rgb(180 35 35);--bad-bg:rgb(253 226 226);--bad-line:rgb(240 163 163);
+  --late:rgb(180 64 15);--late-bg:rgb(253 230 216);--late-line:rgb(241 174 138);
+  --soon:rgb(138 90 0);--soon-bg:rgb(253 241 207);--soon-line:rgb(230 196 107);
+  --wait:rgb(91 63 184);--wait-bg:rgb(236 230 253);--wait-line:rgb(189 174 240);
+  --doing:rgb(29 95 191);--doing-bg:rgb(227 237 251);--doing-line:rgb(157 187 232);
+  --chon-bg:rgb(224 242 239);--chon-vien:rgb(15 118 110);
+  --o-nen:#fff;--o-vien:#7c8799;--phu:rgba(15,23,42,.03);--mask:rgba(15,23,42,.38);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 var(--sans);-webkit-font-smoothing:antialiased;padding:0 16px 64px}
+.wrap{max-width:1480px;margin:0 auto;display:flex;flex-direction:column;gap:44px}
+h1{font-size:20px;margin:0}h2{font-size:17px;margin:0}h3.sub{font-size:14.5px;margin:0;color:var(--c2)}p{margin:0}
+.so{font-family:var(--so);font-variant-numeric:tabular-nums}
+.note{color:var(--dim);font-size:13px;max-width:100ch}.note b{color:var(--text)}
+ul.note{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.top{position:sticky;top:0;z-index:50;display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--bg);padding:10px 0;border-bottom:1px solid var(--line)}
+.top .sp{flex:1}.top .btn[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
+.toc{display:flex;gap:6px;flex-wrap:wrap;font-size:12.5px}.toc a{color:var(--accent)}
+.sec{display:flex;flex-direction:column;gap:14px}
+.sec>h2{padding-top:8px;border-top:2px solid var(--line-strong)}
+.nhan-khoi{font-size:11.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--faint)}
+.nhan-khoi.moi{color:var(--accent)}
+.rong{overflow-x:auto;max-width:100%;padding-bottom:4px}
+.row2{display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;max-width:100%}
+.cot{display:flex;flex-direction:column;gap:6px}
+.cap{font-size:12px;color:var(--faint);max-width:375px}
+.q{border:1px solid var(--soon-line);background:var(--soon-bg);border-radius:10px;padding:10px 14px;font-size:13px;max-width:100ch}.q b{color:var(--soon)}
+.sp{flex:1}
+/* bảng giải thích (ngoài khung) */
+table.gt{border-collapse:collapse;font-size:12.5px;min-width:1100px}
+.gt th,.gt td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+.gt th{background:var(--surface-2);color:var(--c3);font-weight:700}
+.gt td.lech{color:var(--late)}
+.gt .ok{color:var(--ok)}
+.cach{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;max-width:1300px}
+@media (max-width:900px){.cach{grid-template-columns:1fr}}
+.cach>div{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--surface);font-size:13px;display:flex;flex-direction:column;gap:6px}
+.cach>div.chon{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.cach h4{margin:0;font-size:14px}.cach ul{margin:0;padding-left:18px;color:var(--c3)}
+/* nút */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;min-height:36px;padding:0 .85rem;border-radius:.5rem;border:1px solid var(--line-strong);background:var(--surface-2);color:var(--text);font:500 14px var(--sans);white-space:nowrap;cursor:pointer}
+.btn-sm{min-height:32px;padding:0 .6rem;font-size:12.5px;border-radius:.4rem}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn-ghost{background:transparent;border-color:transparent}
+.w375 .btn{min-height:44px}
+.link{color:var(--accent);font-size:12.5px}
+/* khung màn */
+.win{position:relative;border:1px solid var(--line-strong);border-radius:12px;overflow:hidden;background:var(--bg);flex:none}
+.w1440{width:1440px}.w375{width:375px}
+.app{display:flex;align-items:center;gap:18px;height:48px;padding:0 20px;border-bottom:1px solid var(--line);background:var(--surface);font-size:13px;color:var(--dim)}
+.app b{color:var(--c1);font-size:14px}
+.nen{padding:16px 20px;display:flex;flex-direction:column;gap:10px;opacity:.5}
+.nen .tde{font-size:18px;font-weight:800;color:var(--c1)}
+.nen .gia{height:34px;border-radius:8px;background:var(--surface);border:1px solid var(--line)}
+.mask{position:absolute;inset:48px 0 0 0;background:var(--mask)}
+/* KhungPanel */
+.pn{position:absolute;top:0;right:0;bottom:0;width:560px;background:var(--surface);border-left:1px solid var(--line-strong);display:flex;flex-direction:column;box-shadow:-20px 0 40px rgba(0,0,0,.25)}
+.w375 .pn{width:100%;border-left:0}
+.pn-h{display:flex;align-items:center;gap:8px;height:52px;flex:none;padding:0 8px 0 16px;border-bottom:1px solid var(--line)}
+.pn-h h4{margin:0;font-size:14px;font-weight:800;color:var(--c1);white-space:nowrap}
+.pn-h .ngu{flex:1;min-width:0;font-size:12px;color:var(--faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.x{display:inline-grid;place-items:center;min-width:32px;min-height:32px;color:var(--text);font-size:14px}
+.w375 .x{min-width:44px;min-height:44px}
+.pn-ql{flex:none;border-bottom:1px solid var(--line);padding:6px 16px;font-size:12px}
+.pn-cx{flex:none;padding:8px 16px;font-size:12px;color:var(--faint);display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center}
+.pn-b{flex:1;min-height:0;overflow:auto;padding:0 16px 16px}
+.pn-f{flex:none;border-top:1px solid var(--line)}
+.pn-f .fr{display:flex;align-items:center;gap:8px;padding:10px 16px;flex-wrap:wrap}
+.thieu{padding:6px 16px 0;font-size:12px;color:var(--late)}
+/* Khoi (form) */
+.kh{margin-top:14px;border-top:1px solid var(--line);padding-top:14px}
+.kh:first-child{margin-top:0;border-top:0}
+.kh>h3{margin:0 0 10px;display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
+.ii{display:inline-grid;place-items:center;width:15px;height:15px;border-radius:50%;border:1px solid var(--line-strong);font:600 10px var(--so);font-style:normal;text-transform:none;color:var(--dim)}
+.kh-b{display:flex;flex-direction:column;gap:12px}
+.tr{display:block;min-width:0}
+.nh{display:flex;align-items:baseline;gap:6px;margin-bottom:4px;font-size:11.5px;font-weight:700;color:var(--c2)}
+.nh .bb{color:var(--bad);font-weight:700}
+.nh .tc{font-weight:400;color:var(--faint)}
+.nh .dm{margin-left:auto;font-weight:400;font-family:var(--so);color:var(--faint)}
+.phu{display:block;margin-top:4px;font-size:12px;color:var(--faint)}
+.loi{display:block;margin-top:4px;font-size:12px;color:var(--late)}
+.h2c{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.w375 .h2c{grid-template-columns:1fr}
+.field{display:flex;align-items:center;gap:6px;width:100%;min-height:36px;padding:6px 10px;border-radius:.5rem;background:var(--o-nen);border:1px solid var(--o-vien);color:var(--text);font-size:13.5px;min-width:0}
+.w375 .field{min-height:44px}
+.field.nho{width:120px}
+.field.loi-o{border-color:var(--late);box-shadow:0 0 0 1px color-mix(in srgb,var(--late) 40%,transparent)}
+.field.khoa{opacity:.7;background:var(--surface-2)}
+.field .tr-ph{color:var(--faint)}
+.field .bo{margin-left:auto;font-size:12px;color:var(--accent);white-space:nowrap}
+.field .xx{margin-left:auto;color:var(--faint);font-size:12px}
+.field.ta{display:block;min-height:58px;line-height:1.45}
+.chev{margin-left:auto;width:7px;height:7px;border:solid var(--dim);border-width:0 1.5px 1.5px 0;transform:rotate(45deg) translateY(-2px);flex:none}
+.lich{margin-left:auto;width:16px;height:14px;border:1.5px solid var(--dim);border-radius:3px;position:relative;flex:none}
+.lich::before{content:"";position:absolute;left:-1.5px;right:-1.5px;top:2px;border-top:1.5px solid var(--dim)}
+.nc{display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:4px 10px;border-radius:.45rem;border:1px solid var(--line-strong);background:var(--surface-2);font-size:13px;color:var(--c2);text-align:center}
+.nc.on{background:var(--chon-bg);border-color:var(--chon-vien);color:var(--c1);font-weight:600}
+.nc.nho{min-height:28px;font-size:12px;padding:2px 8px}
+.w375 .nc{min-height:44px}.w375 .nc.nho{min-height:36px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.qd{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.qd .r{width:12px;height:12px;border-radius:50%;border:1px solid var(--o-vien);margin-top:4px;flex:none}
+.qd.on{border-color:var(--accent);background:var(--accent-soft)}.qd.on .r{background:var(--accent);border-color:var(--accent)}
+.qd b{display:block;font-size:13.5px;color:var(--c1)}.qd span{display:block;font-size:12px;color:var(--faint)}
+.con{margin:8px 0 0 12px;padding-left:12px;border-left:2px solid var(--accent-line);display:flex;flex-direction:column;gap:10px}
+/* nhãn */
+.chip{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap;border:1px solid transparent}
+.chip.doing{background:var(--doing-bg);color:var(--doing);border-color:var(--doing-line)}
+.chip.wait{background:var(--wait-bg);color:var(--wait);border-color:var(--wait-line)}
+.chip.ok{background:var(--ok-bg);color:var(--ok);border-color:var(--ok-line)}
+.chip.late{background:var(--late-bg);color:var(--late);border-color:var(--late-line)}
+.chip.xam{background:var(--surface-2);color:var(--dim);border-color:var(--line)}
+.lv{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:4px;font:700 11.5px var(--so);background:var(--bad-bg);color:var(--bad);border:1px solid var(--bad-line);white-space:nowrap}
+.khoa-i{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--faint);white-space:nowrap}
+.khoa-i svg{flex:none}
+.moi-t{font-size:11px;font-weight:700;color:var(--accent);border:1px dashed var(--accent-line);border-radius:4px;padding:0 5px;white-space:nowrap}
+/* thẻ PA (hiện tại) */
+.pa0{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--surface-2);display:flex;flex-direction:column;gap:4px;list-style:none}
+.pa0 .h{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.pa0 .t{font-size:14px;font-weight:600;color:var(--c1)}
+.pa0 .d{font-size:13.5px;color:var(--c3)}
+.pa0 .m{font-size:12px;color:var(--faint)}
+/* ĐỀ XUẤT: khối Case dạng thẻ */
+.dau{margin:0 -16px;padding:10px 16px 12px;border-bottom:1px solid var(--line);background:var(--phu);display:flex;flex-direction:column;gap:6px}
+.dau .h1{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.dau .mo{font-size:12.5px;color:var(--faint)}
+.dau .dk{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--c3)}
+.dau .dk b{color:var(--c1);font-weight:600}
+.kt{margin-top:12px;border:1px solid var(--line-strong);border-radius:10px;background:var(--surface);overflow:hidden}
+.kt-h{display:flex;align-items:center;gap:8px;min-height:40px;padding:6px 12px;border-bottom:1px solid var(--line);background:var(--surface-2)}
+.kt-h h5{margin:0;font-size:13.5px;font-weight:700;color:var(--c1)}
+.kt-h .dem{font:600 12px var(--so);color:var(--faint)}
+.kt-b{padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.vd-t{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:14px;font-weight:700;color:var(--c1)}
+.vd-d{font-size:13.5px;color:var(--c3)}
+.dl{display:grid;grid-template-columns:max-content 1fr;gap:3px 12px;font-size:12.5px}
+.dl dt{color:var(--faint)}.dl dd{margin:0;color:var(--c2)}
+/* dòng PA thống nhất */
+.pa{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--surface-2);display:flex;flex-direction:column;gap:5px}
+.pa.xong{opacity:.75}
+.pa .h{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.pa .t{font-size:14px;font-weight:700;color:var(--c1)}
+.pa .dd{font-size:13.5px;color:var(--c3)}
+.pa .ng{display:flex;flex-wrap:wrap;gap:2px 14px;font-size:12.5px;color:var(--c3)}
+.pa .ng i{font-style:normal;color:var(--faint)}
+.pa .ng .trong{color:var(--faint)}
+.buoi{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12.5px;color:var(--c3)}
+.buoi b{font-family:var(--so);color:var(--c1)}
+.vach{position:relative;width:120px;height:6px;border-radius:999px;background:var(--line-strong);overflow:hidden;flex:none}
+.vach>i{position:absolute;left:0;top:0;bottom:0;background:var(--accent);border-radius:999px}
+.vach.du>i{background:var(--ok)}.vach.vuot>i{background:var(--late)}
+.buoi .du{color:var(--ok);font-weight:600}.buoi .vuot{color:var(--late);font-weight:600}
+.pa .ch{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-top:4px;border-top:1px dashed var(--line)}
+.pa .ch .han{font-size:12.5px;color:var(--faint)}
+.pa .ch .han.qh{color:var(--late);font-weight:600}
+.pa details summary{font-size:12px;color:var(--faint);cursor:pointer}
+.ba-cham{min-width:32px;min-height:32px;display:inline-grid;place-items:center;border-radius:6px;color:var(--dim);font-weight:700}
+.w375 .ba-cham{min-width:44px;min-height:44px}
+.nk{font-size:12px;color:var(--faint);display:flex;flex-direction:column;gap:2px;margin-top:4px}
+.nk b{color:var(--c3);font-weight:600}
+.dem-buoi{border:1px solid var(--line);border-radius:8px;background:var(--surface-2);padding:10px 12px;display:flex;flex-direction:column;gap:10px}
+.dem-buoi .kq{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--c3)}
+.dem-buoi .kq b{font-family:var(--so);color:var(--c1)}
+.menu{position:absolute;right:10px;top:36px;min-width:150px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);padding:4px;box-shadow:0 10px 24px rgba(0,0,0,.25);z-index:2}
+.menu span{display:block;padding:8px 10px;border-radius:6px;font-size:13px}
+.menu .hl{background:var(--accent-soft);color:var(--c1)}.menu .xoa{color:var(--bad)}
+.bc{font-size:13px;color:var(--faint);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ls{font-size:12.5px;color:var(--faint);display:flex;align-items:center;gap:6px}
+</style>
+</head>
+<body>
+<div class="top">
+  <b>Mockup · Mẫu PA thống nhất + panel Case</b>
+  <span class="toc"><a href="#ht">Hiện trạng</a>·<a href="#cach">3 cách</a>·<a href="#mau">Mẫu</a>·<a href="#a">a Thêm PA</a>·<a href="#b">b Chế tài</a>·<a href="#c">c Sửa PA</a>·<a href="#d">d Kết quả</a>·<a href="#e">e Dòng PA</a>·<a href="#f">f Panel Case</a>·<a href="#q">Câu hỏi</a></span>
+  <span class="sp"></span>
+  <button class="btn btn-sm" aria-pressed="true" onclick="doi('dark',this)">Tối</button>
+  <button class="btn btn-sm" aria-pressed="false" onclick="doi('light',this)">Sáng</button>
+</div>
+<div class="wrap">
+
+<section class="sec" style="margin-top:20px">
+  <h1>Một mẫu PA cho mọi nơi: tạo tay, mặc định chế tài, Bổ trợ</h1>
+  <ul class="note">
+    <li>Chủ sản phẩm 08/10: chê hộp "Sửa PA" ở <span class="so">mockup-cuoi-khoa-2</span> phần 3 ("như một PA hoàn toàn khác"). Yêu cầu <b>một mẫu PA</b>; Tutor / Tự học / Bổ trợ có <b>Số buổi</b> (không bắt buộc, sửa được), web <b>tự đếm</b> sau mỗi tuần; "Ghi kết quả" → <b>"Kết quả"</b>; người dạy <b>không bắt buộc</b> lúc tạo, ghi "người dạy tuần này" ở Kết quả.</li>
+    <li>Chữ trong khung = chữ sẽ hiện trên web. Giải thích nằm ngoài khung. Khung 1440: panel 560 bên phải (đúng <span class="so">KhungPanel</span>). Nút <b>Tối / Sáng</b> ở trên đổi cả trang.</li>
+    <li>Không đổi phông, màu, bố cục khoá. Dùng lại: <span class="so">KhungPanel · Khoi · Truong · ChonNguoi · ONgay · NutChon · Nhan</span>.</li>
+  </ul>
+</section>
+
+<!-- ============================================================ HIỆN TRẠNG -->
+<section class="sec" id="ht">
+  <h2>1 · Hiện trạng (mã main 08/10): bảy cửa, năm bộ trường</h2>
+  <div class="rong"><table class="gt">
+    <thead><tr><th>Nơi (mã)</th><th>Loại PA</th><th>Trường</th><th>Người thực hiện mặc định · ai đổi</th><th>Ai nhận việc "Ghi kết quả"</th><th>Số buổi</th><th>Sửa nội dung sau</th></tr></thead>
+    <tbody>
+      <tr><td>Thêm PA tay<br><span class="so">ThaoTacCase.tsx ThemPaPanel</span></td><td>Tự học · Tutor · Điều chỉnh cách dạy · Tăng cường BT · (đề xuất) Hỗ trợ học thuật · Khác</td><td>Loại* · Mô tả* · Người thực hiện · Ngày bắt đầu · "PA đã làm trước đây"</td><td>"Tôi" · người tạo chọn bất kỳ GV / tên ngoài</td><td>Người thực hiện, không có → chủ Case</td><td class="lech">không có</td><td>Điều chỉnh (trong Ghi kết quả)</td></tr>
+      <tr><td>Thay PA<br><span class="so">CapNhatTuan.tsx</span></td><td>như trên</td><td>PA mới* · Nội dung* · Người thực hiện · Lý do thay*</td><td>"Tôi"</td><td>như trên</td><td class="lech">không có</td><td class="lech">không ngày bắt đầu</td></tr>
+      <tr><td>PA quy chế SOS FT<br><span class="so">sosAuto.ts · XacNhanPaPanel</span></td><td>Tự học (1 tháng) · Tutor (đến MT sau / đến lúc thi)</td><td>Loại khoá · Mô tả* ≥ 15 (viết khi xác nhận) · Người thực hiện · mốc quy chế</td><td>GVBM kỹ năng lớp hiện tại · đổi khi Xác nhận PA</td><td>Người thực hiện</td><td class="lech">không có</td><td>Điều chỉnh</td></tr>
+      <tr><td>Bổ trợ Giữa khoá<br><span class="so">boTro.ts</span></td><td>Bổ trợ (hệ thống)</td><td>Mô tả máy viết "Bổ trợ 1 buổi/tuần · …" · nhóm · kế hoạch</td><td>FOU: GVCN · BE/ELE: GVBM môn · đổi khi Nộp kế hoạch</td><td>Người thực hiện</td><td class="lech">chỉ nằm trong chữ mô tả</td><td>Điều chỉnh</td></tr>
+      <tr><td>Bổ trợ miễn phí (Final)<br><span class="so">cuoiKhoa.ts paRows</span></td><td>Bổ trợ miễn phí (hệ thống)</td><td>Mô tả máy "n buổi miễn phí · 1 tuần · Mini Test…"</td><td>GVBM môn lớp mới</td><td>Người thực hiện</td><td class="lech">ở bảng <span class="so">mini_test.so_buoi</span>, không ở PA</td><td>Điều chỉnh</td></tr>
+      <tr><td>Tutor 10 buổi (kỳ vọng đầu ra)<br><span class="so">cuoiKhoa.ts:190</span></td><td>Tutor</td><td>Mô tả máy "Tutor 10 buổi/kỹ năng · …"</td><td class="lech">GVBM lớp FT mới (đặc tả §3: người dạy = GV cũ)</td><td class="lech">GVBM FT mới — nếu đặt GV cũ làm người thực hiện thì GV cũ nhận việc ghi</td><td class="lech">chỉ nằm trong chữ</td><td class="lech">không (chỉ Xoá PA)</td></tr>
+      <tr><td>Ghi kết quả<br><span class="so">CapNhatTuan.tsx</span></td><td>mọi loại</td><td>Kết quả* · Tiến triển* · Người phụ trách* (LUI-a2) · Vấn đề còn tồn / Ghi chú · Quyết định* · Ngày ghi</td><td>Người phụ trách điền sẵn = người thực hiện</td><td>—</td><td class="lech">không đếm</td><td>—</td></tr>
+    </tbody>
+  </table></div>
+  <ul class="note">
+    <li><b>Lệch 1 · số buổi</b>: ba chỗ, ba cách lưu (chữ mô tả, <span class="so">mini_test</span>, không có). Không đếm được "đã dạy / còn lại".</li>
+    <li><b>Lệch 2 · một ô người làm hai việc</b>: "Người thực hiện" vừa là người dạy vừa là người nhận việc ghi kết quả. Tutor chế tài cần hai người khác nhau (GV cũ dạy, GVBM FT mới theo dõi) nên mã nay gán nhầm.</li>
+    <li><b>Lệch 3 · sửa PA</b>: chỉ có Điều chỉnh (trong Ghi kết quả: nội dung + người) và Xoá PA. Không có Sửa PA; hộp Sửa PA ở mockup trước lại thêm một bộ trường thứ năm.</li>
+    <li><b>Lệch 4 · tên</b>: nút / panel / việc nói "Ghi kết quả", "Ghi kết quả PA …", "Ghi kết quả cuối" (22 chỗ trong <span class="so">web/src</span>, <span class="so">shared/domain</span>).</li>
+  </ul>
+</section>
+
+<!-- ============================================================ 3 CÁCH -->
+<section class="sec" id="cach">
+  <h2>2 · Ba cách đồng bộ, khuyến nghị cách 1</h2>
+  <div class="cach">
+    <div class="chon"><h4>1 · Một form PA, hai ô người tuỳ chọn (khuyến nghị)</h4>
+      <ul><li>Mọi nơi dùng đúng một form: Thêm PA, Sửa PA, Thay PA, Điều chỉnh, PA mặc định (web điền sẵn rồi mở cùng form).</li>
+      <li>Ô: Loại · Nội dung · Số buổi (Tutor, Tự học, Bổ trợ) · Người dạy / Người thực hiện · Người theo dõi · Ngày bắt đầu.</li>
+      <li>Người dạy và Người theo dõi đều <b>không bắt buộc</b>. Việc Kết quả: người theo dõi → không có thì người dạy → không có thì chủ Case.</li>
+      <li>Migrate: 2 cột PA + 2 cột kết quả tuần.</li></ul></div>
+    <div><h4>2 · Người theo dõi = chủ Case, không thêm ô</h4>
+      <ul><li>PA chỉ có Người dạy; việc Kết quả luôn về chủ Case.</li>
+      <li>Ít cột hơn, nhưng đổi người nhận việc của <b>mọi</b> PA đang chạy (GV tự làm PA "Điều chỉnh cách dạy" nay tự ghi, sau sẽ về chủ Case).</li>
+      <li>Hai PA cùng Case không có người theo dõi khác nhau được.</li></ul></div>
+    <div><h4>3 · Giữ form cũ, thêm form riêng cho PA hệ thống</h4>
+      <ul><li>Ít sửa nhất, nhưng chính là "PA thứ hai" chủ sản phẩm đã chê.</li>
+      <li>Số buổi vẫn ở hai nơi. Loại.</li></ul></div>
+  </div>
+</section>
+
+<!-- ============================================================ MẪU -->
+<section class="sec" id="mau">
+  <h2>3 · Mẫu thống nhất: ô nào hiện với loại nào</h2>
+  <div class="rong"><table class="gt">
+    <thead><tr><th>Ô</th><th>Tutor</th><th>Tự học</th><th>Bổ trợ · Bổ trợ miễn phí (web tạo)</th><th>Điều chỉnh cách dạy · Tăng cường BT</th><th>Đề xuất (Hỗ trợ học thuật · Khác)</th></tr></thead>
+    <tbody>
+      <tr><td>Loại PA *</td><td colspan="5">Chọn khi Thêm; Sửa PA: khoá ("Đổi loại → Kết quả › Thay PA"). Bổ trợ không có trong danh sách chọn.</td></tr>
+      <tr><td>Nội dung *</td><td colspan="5">≥ 8 ký tự (PA quy chế khi Xác nhận: ≥ 15, giữ luật cũ)</td></tr>
+      <tr><td>Số buổi</td><td class="ok">có · không bắt buộc</td><td class="ok">có · không bắt buộc</td><td class="ok">có · web điền (miễn phí: 1–2; Giữa khoá: trống)</td><td>không</td><td>không</td></tr>
+      <tr><td>Ô người 1</td><td>Người dạy · trống mặc định</td><td>— (em tự học)</td><td>Người dạy · web điền</td><td>Người thực hiện · "Tôi"</td><td>Người thực hiện · "Tôi"</td></tr>
+      <tr><td>Người theo dõi</td><td colspan="5">không bắt buộc · trống mặc định · dòng phụ nói ai sẽ nhận việc Kết quả</td></tr>
+      <tr><td>Ngày bắt đầu</td><td colspan="5"><span class="so">ONgay</span> (ô gõ + nút lịch), mặc định hôm nay. Có kết quả tuần rồi thì khoá.</td></tr>
+      <tr><td>Ở Kết quả hằng tuần</td><td>Số buổi tuần này · Người dạy tuần này</td><td>Số buổi tuần này</td><td>Số buổi tuần này · Người dạy tuần này</td><td colspan="2">không thêm ô</td></tr>
+    </tbody>
+  </table></div>
+  <ul class="note">
+    <li><b>Mâu thuẫn đã giải</b>: Tutor chế tài = Người dạy GV cũ (điền sẵn, xoá được) + Người theo dõi GVBM FT mới (điền sẵn) → GVBM FT mới nhận việc Kết quả. Tutor tạo tay: để trống cả hai → chủ Case nhận việc, tutor từng tuần ghi ở Kết quả. Tự học không người theo dõi → chủ Case nhận việc.</li>
+    <li>Điều chỉnh (trong Kết quả) dùng đúng ô Nội dung · Số buổi · người của mẫu này + Lý do. Sửa PA (Quản lý / Quản trị, menu ⋯) = cùng form, không cần lý do, ghi nhật ký cũ → mới.</li>
+  </ul>
+</section>
+
+<section class="sec" id="a"><h2>4 · (a) Thêm PA tay</h2>
+  <span class="nhan-khoi moi">1440 · Tutor · người dạy để trống</span>
+  <div class="rong" data-k="a1440"></div>
+  <span class="nhan-khoi moi">375 · Tự học không người theo dõi · Điều chỉnh cách dạy (không Số buổi) · lỗi sau khi bấm</span>
+  <div class="row2" data-k="a375"></div>
+  <ul class="note">
+    <li>Đổi Loại thì ô đổi theo bảng mục 3; chữ đã gõ ở Nội dung giữ nguyên. "Số buổi" chỉ nhận số nguyên 1–60.</li>
+    <li>Dòng phụ dưới Người theo dõi tính sẵn ai nhận việc Kết quả, để người tạo không phải nhớ luật.</li>
+  </ul>
+</section>
+
+<section class="sec" id="b"><h2>5 · (b) PA mặc định chế tài: Tutor 10 buổi, GV cũ dạy</h2>
+  <span class="nhan-khoi moi">1440 · Quản lý bấm ⋯ › Sửa PA trên PA web vừa tạo: cùng form, đã điền sẵn</span>
+  <div class="rong" data-k="b1440"></div>
+  <span class="nhan-khoi moi">375 · GV cũ đã nghỉ: Người dạy để trống, vẫn lưu được</span>
+  <div class="row2" data-k="b375"></div>
+  <ul class="note">
+    <li>Web tạo PA khi Quản lý Lưu panel "Kỳ vọng đầu ra" (đặc tả §3): Loại Tutor · Số buổi 10 · Người dạy = GV cũ kỹ năng đó ở lớp BE/ELE · Người theo dõi = GVBM kỹ năng đó ở lớp FT mới. Không có hộp riêng.</li>
+    <li>GV cũ đã nghỉ / không còn tài khoản đang dạy: web để trống Người dạy (trả lời Q3 của mockup trước, không cần hỏi lại).</li>
+  </ul>
+</section>
+
+<section class="sec" id="c"><h2>6 · (c) Sửa PA đã chạy (cùng form)</h2>
+  <div class="row2" data-k="c"></div>
+  <ul class="note">
+    <li>Đã có kết quả tuần: Số buổi không nhỏ hơn số đã dạy; Ngày bắt đầu khoá. Loại khoá ở mọi lúc (đổi loại = Thay PA).</li>
+    <li>Chân panel: <b>Huỷ thay đổi / Lưu</b> (luật S3 của <span class="so">KhungPanel</span>). Mỗi lần lưu thêm một dòng Nhật ký; nhật ký dùng chung với Điều chỉnh.</li>
+  </ul>
+</section>
+
+<section class="sec" id="d"><h2>7 · (d) Kết quả tuần: tự đếm buổi</h2>
+  <span class="nhan-khoi moi">1440 · Tutor 3/10, tuần này 2 buổi → 5/10</span>
+  <div class="rong" data-k="d1440"></div>
+  <span class="nhan-khoi moi">375 · đủ buổi · vượt buổi · PA chưa có số buổi · thiếu người dạy tuần này</span>
+  <div class="row2" data-k="d375"></div>
+  <ul class="note">
+    <li>"Số buổi tuần này" chỉ hiện khi PA có Số buổi; bắt buộc, <b>0 được</b> (em nghỉ). "Người dạy tuần này" hiện với Tutor và Bổ trợ, điền sẵn người dạy của PA, bắt buộc khi số buổi ≥ 1.</li>
+    <li>Đủ buổi: chữ xanh, gợi ý Kết thúc PA (không tự kết thúc). Vượt: chữ cam, vẫn lưu. Người phụ trách điền sẵn = người theo dõi (không có → người dạy → chủ Case).</li>
+    <li>Đổi tên: panel "Kết quả" · "Kết quả cuối"; nút lưu "Lưu kết quả" (Giữ nguyên) — các quyết định khác giữ chữ "Lưu điều chỉnh / Thay PA / Kết thúc PA".</li>
+  </ul>
+</section>
+
+<section class="sec" id="e"><h2>8 · (e) Dòng PA trong Case</h2>
+  <div class="row2" data-k="e"></div>
+  <ul class="note">
+    <li>Một mẫu dòng cho mọi loại: tên loại + khoá quy chế + trạng thái · nội dung · Dạy / Theo dõi · vạch buổi (khi có) · hạn Kết quả + nút <b>Kết quả</b>. ⋯ = Sửa PA · Xoá PA (Quản lý / Quản trị).</li>
+    <li>"Đã điều chỉnh n lần" gộp vào <b>Nhật ký PA</b> (Sửa PA + Điều chỉnh, cũ → mới). Bảng kỹ năng (<span class="so">SkillBoard</span>) đổi chữ nút "Ghi kết quả" → "Kết quả" và thêm "3/10 buổi" vào dòng phụ.</li>
+  </ul>
+</section>
+
+<section class="sec" id="f"><h2>9 · Panel Case: đầu panel và các khối</h2>
+  <span class="nhan-khoi">Hiện tại · 1440 · 375</span>
+  <div data-k="f0"></div>
+  <ul class="note">
+    <li>Chip "Đang làm" + chữ "Đang làm" lặp; nút "Sửa" đứng một mình một hàng; câu điều kiện hoàn thành xám dài; ba khối chỉ có tiêu đề chữ in hoa 11px xám nên chìm.</li>
+  </ul>
+  <span class="nhan-khoi moi">Đề xuất · 1440 · 375</span>
+  <div data-k="f1"></div>
+  <ul class="note">
+    <li><b>Đầu panel</b>: một dải nền nhạt — trạng thái một lần (chip) · "mở W2 OCT · Trang báo" · nút <b>Sửa</b> cùng hàng bên phải. Điều kiện hoàn thành gọn một dòng có ổ khoá: "Hoàn thành sau khi PA quy chế kết thúc · đến lúc thi (06/12)".</li>
+    <li><b>Khối</b> Vấn đề / Phương án / Bằng chứng thành thẻ: viền <span class="so">--line-strong</span>, đầu thẻ nền <span class="so">--surface-2</span>, tiêu đề 13.5px đậm + số đếm. Không màu mới, không phông mới.</li>
+    <li>Vấn đề: tên Case + SOS cùng hàng, mô tả, "Nhóm nguyên nhân" thành hàng nhãn–giá trị. Lịch sử kết quả nằm cuối thẻ Phương án (thu gọn). Chân: Đóng · + Thêm PA · <b>Kết quả</b>.</li>
+  </ul>
+</section>
+
+<section class="sec" id="q">
+  <h2>10 · Câu hỏi cho chủ sản phẩm · migrate</h2>
+  <div class="q"><b>Q1.</b> Chọn <b>cách 1</b> (hai ô người tuỳ chọn, người theo dõi nhận việc Kết quả — khuyến nghị) · hay cách 2 (không ô theo dõi, việc Kết quả luôn về chủ Case)?</div>
+  <div class="q"><b>Q2.</b> "Số buổi tuần này" <b>bắt buộc, 0 được</b> khi PA có Số buổi (khuyến nghị — đếm mới đúng) · hay không bắt buộc (trống = 0)?</div>
+  <div class="q"><b>Q3.</b> Đủ buổi: <b>chỉ gợi ý</b> Kết thúc PA (khuyến nghị) · hay web tự kết thúc PA khi đã dạy đủ?</div>
+  <ul class="note">
+    <li><b>Cần migrate</b> (một PR máy chủ, cộng cột, không đổi dữ liệu cũ): <span class="so">case_interventions.so_buoi</span>, <span class="so">case_interventions.theo_doi_user_id / theo_doi_ten</span>, <span class="so">case_followups.so_buoi</span>, <span class="so">case_followups.nguoi_day_user_id / nguoi_day_ten</span>. "Đã dạy" = tổng <span class="so">so_buoi</span> các tuần, không lưu riêng.</li>
+    <li>Điền bù: Bổ trợ miễn phí lấy <span class="so">mini_test.so_buoi</span>; Tutor kỳ vọng đầu ra = 10 + chuyển người thực hiện hiện tại (GVBM FT mới) sang người theo dõi. PA cũ khác: Số buổi trống.</li>
+    <li>Việc "Kết quả PA" (<span class="so">mywork.ts:487</span>) đổi người giữ việc: theo dõi → người thực hiện → chủ Case.</li>
+  </ul>
+</section>
+</div>
+
+<script>
+function doi(t,b){document.documentElement.dataset.theme=t;document.querySelectorAll('.top .btn').forEach(x=>x.setAttribute('aria-pressed',x===b))}
+const KHOA='<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><rect x="2.25" y="5.25" width="7.5" height="5.5" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M4 5.25V3.75a2 2 0 0 1 4 0v1.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';
+/* ---------- mảnh nhỏ */
+const kh=(t,b,luat)=>`<section class="kh"><h3>${t}${luat?'<i class="ii">i</i>':''}</h3><div class="kh-b">${b}</div></section>`;
+const tr=(n,c,o={})=>`<div class="tr"><span class="nh"><span>${n}${o.bb?' <b class="bb">*</b>':''}${o.tc?' <span class="tc">(không bắt buộc)</span>':''}</span>${o.dem?`<span class="dm">${o.dem}</span>`:''}</span>${c}${o.phu?`<span class="phu">${o.phu}</span>`:''}${o.loi?`<span class="loi">${o.loi}</span>`:''}</div>`;
+const fd=(t,c='')=>`<span class="field ${c}">${t}</span>`;
+const sel=(t,c='')=>fd(`<span>${t}</span><span class="chev"></span>`,c);
+const ngay=t=>fd(`<span class="so">${t}</span><span class="lich"></span>`);
+const ta=(t,c='')=>fd(t,'ta '+c);
+const ng=(ten,o={})=>ten?fd(`<span>${ten}</span>${o.phu?`<span style="color:var(--faint);font-size:12px">${o.phu}</span>`:''}<span class="bo">Đổi</span>`,o.c||''):fd('<span class="tr-ph">Chưa chọn · gõ tên để tìm</span>',o.c||'');
+const h2=(a,b)=>`<div class="h2c">${a}${b}</div>`;
+const btn=(t,c='')=>`<span class="btn ${c}">${t}</span>`;
+function panel(o){
+  return `<div class="pn"><div class="pn-h"><h4>${o.t}</h4><span class="ngu">${o.ngu||''}</span><span class="x">✕</span></div>
+  ${o.ql?`<div class="pn-ql"><span class="link">← ${o.ql}</span></div>`:''}
+  ${o.cx?`<div class="pn-cx">${o.cx}</div>`:''}
+  <div class="pn-b">${o.b}</div>
+  <div class="pn-f">${o.thieu?`<div class="thieu">Còn thiếu: ${o.thieu}</div>`:''}<div class="fr">${o.huy===null?'':btn(o.huy||'Đóng')}<span class="sp"></span>${o.phu||''}${o.chinh||''}</div></div></div>`;
+}
+const nen=()=>`<div class="app"><b>PISA</b><span>Tổng quan</span><span>Học viên</span><span>Lớp</span><span>Công việc</span></div><div class="nen"><div class="tde">Nguyễn Minh Ngọc · CP FT 131</div>${'<div class="gia"></div>'.repeat(10)}</div><div class="mask"></div>`;
+const f1440=(p,h=820)=>`<div class="win w1440" style="height:${h}px">${nen()}${p}</div>`;
+const f375=(p,h=900,cap='')=>`<div class="cot"><div class="win w375" style="height:${h}px">${p}</div>${cap?`<span class="cap">${cap}</span>`:''}</div>`;
+
+/* ---------- FORM PA (một mẫu) */
+const LOAI={tutor:'Học Tutor',self:'Xếp tự học',adj:'Điều chỉnh cách dạy',bo:'Bổ trợ miễn phí'};
+function formPA(o){
+  const coBuoi=['tutor','self','bo'].includes(o.k);
+  const nguoi1=o.k==='self'?'':tr(o.k==='tutor'||o.k==='bo'?'Người dạy':'Người thực hiện',ng(o.day,{phu:o.dayPhu}),{tc:true,phu:o.dayGhi});
+  const theoDoi=tr('Người theo dõi',ng(o.td),{tc:true,phu:o.tdGhi});
+  const loai=o.sua?tr('Loại PA',fd(`<span>${LOAI[o.k]}</span>${o.khoaQc?`<span class="khoa-i" style="margin-left:auto">${KHOA}theo quy chế</span>`:`<span class="khoa-i" style="margin-left:auto">${KHOA}</span>`}`,'khoa'),{phu:'Đổi loại: Kết quả › Thay PA'})
+    :tr('Loại PA',sel(LOAI[o.k]),{bb:true});
+  const buoi=coBuoi?tr('Số buổi',`<span class="field nho so ${o.buoiLoi?'loi-o':''}">${o.buoi||'<span class="tr-ph">—</span>'}</span>`,{tc:true,phu:o.buoiPhu||'Có số buổi thì web đếm sau mỗi tuần Kết quả',loi:o.buoiLoi}):'';
+  const nk=o.nk?`<section class="kh"><h3>Nhật ký PA</h3><div class="nk">${o.nk.map(x=>`<span>${x}</span>`).join('')}</div></section>`:'';
+  return (o.dau?`<p style="padding-top:12px;font-size:12.5px;color:var(--c3)">${o.dau}</p>`:'')
+   +kh('Phương án',loai+tr('Nội dung',ta(o.nd||'<span class="tr-ph">Hướng dẫn, trọng tâm, ai thực hiện</span>',o.ndLoi?'loi-o':''),{bb:true,dem:o.dem,loi:o.ndLoi})+buoi,!o.sua)
+   +kh('Người và thời gian',(nguoi1?h2(nguoi1,theoDoi):theoDoi)+(o.sua&&o.daChay?tr('Ngày bắt đầu',fd('<span class="so">W1 OCT · 29/09/2026</span>','khoa'),{phu:'Đã có kết quả tuần — không đổi'}):tr('Ngày bắt đầu',ngay(o.bd||'08/10/2026')))
+     +(o.sua?'':'<span class="link">Ghi một PA đã làm trước đây</span>'))+nk;
+}
+const tdGhi=(ai)=>`Trống → ${ai} nhận việc Kết quả`;
+
+/* (a) */
+document.querySelector('[data-k=a1440]').innerHTML=f1440(panel({t:'Thêm PA',ngu:'Nguyễn Minh Ngọc · CP FT 131',ql:'Case Listening',
+  b:formPA({k:'tutor',nd:'Tutor 1-1 Listening Section 3–4, luyện bắt ý chính và từ khoá',dem:'58/8',buoi:'8',day:null,dayGhi:'Chưa biết ai dạy thì để trống — ghi ở Kết quả từng tuần',td:null,tdGhi:tdGhi('Lê Minh Khoa (chủ Case)')}),
+  chinh:btn('Thêm PA','btn-primary')}));
+document.querySelector('[data-k=a375]').innerHTML=
+ f375(panel({t:'Thêm PA',ngu:'Nguyễn Minh Ngọc',ql:'Case Listening',b:formPA({k:'self',nd:'Làm 2 đề Listening/tuần trên app, gửi ảnh kết quả',dem:'49/8',buoi:'',td:null,tdGhi:'Không có người theo dõi → Lê Minh Khoa (chủ Case) nhận việc Kết quả'}),chinh:btn('Thêm PA','btn-primary')}),900,'Tự học: không có ô người dạy; Số buổi trống = không đếm.')
++f375(panel({t:'Thêm PA',ngu:'Nguyễn Minh Ngọc',ql:'Case Listening',b:formPA({k:'adj',nd:'Dạy chậm đoạn số liệu, cho nghe lại 2 lần trên lớp',dem:'50/8',day:'Tôi (Lê Minh Khoa)',td:null,tdGhi:tdGhi('Lê Minh Khoa (người thực hiện)')}),chinh:btn('Thêm PA','btn-primary')}),900,'Loại khác: không có Số buổi; ô người 1 là "Người thực hiện", mặc định "Tôi".')
++f375(panel({t:'Thêm PA',ngu:'Nguyễn Minh Ngọc',ql:'Case Listening',b:formPA({k:'tutor',nd:'Tutor',ndLoi:'Cần ít nhất 8 ký tự (đang có 5)',dem:'5/8',buoi:'0',buoiLoi:'Từ 1 đến 60 buổi, hoặc để trống',td:null,tdGhi:tdGhi('Lê Minh Khoa (chủ Case)')}),thieu:'Nội dung · Số buổi',chinh:btn('Thêm PA','btn-primary')}),900,'Lỗi chỉ hiện sau khi bấm Thêm PA.');
+
+/* (b) */
+const ndTutor='Tutor 10 buổi/kỹ năng · tính vào buổi Free, có lương GV';
+document.querySelector('[data-k=b1440]').innerHTML=f1440(panel({t:'Sửa PA',ngu:'Trần Gia Huy · CP FT 12',ql:'Case Writing 2',
+  b:formPA({sua:true,k:'tutor',dau:'Web tạo theo Kỳ vọng đầu ra · 06/10. Sửa được mọi ô trừ Loại.',nd:ndTutor,dem:'54/8',buoi:'10',day:'Phạm Thu Trang',dayPhu:'GV Writing · CP ELE 30',td:'Lê Minh Khoa',tdGhi:'GVBM Writing · CP FT 12 — nhận việc Kết quả',nk:['<b>06/10 · Web</b> · Tạo "Học Tutor" · 10 buổi · dạy Phạm Thu Trang · theo dõi Lê Minh Khoa']}),
+  huy:'Đóng',chinh:btn('Lưu','btn-primary')}));
+document.querySelector('[data-k=b375]').innerHTML=
+ f375(panel({t:'Sửa PA',ngu:'Trần Gia Huy',ql:'Case Writing 2',b:formPA({sua:true,k:'tutor',dau:'Web tạo theo Kỳ vọng đầu ra · 06/10.',nd:ndTutor,dem:'54/8',buoi:'10',day:null,dayGhi:'GV Writing cũ (CP ELE 30) không còn dạy — chọn sau hoặc ghi ở Kết quả',td:'Lê Minh Khoa',tdGhi:'Nhận việc Kết quả',nk:['<b>06/10 · Web</b> · Tạo "Học Tutor" · 10 buổi · người dạy trống']}),chinh:btn('Lưu','btn-primary')}),1000);
+
+/* (c) */
+document.querySelector('[data-k=c]').innerHTML=
+ `<div class="rong">${f1440(panel({t:'Sửa PA',ngu:'Trần Gia Huy · CP FT 12',ql:'Case Writing 2',
+   b:formPA({sua:true,daChay:true,k:'tutor',nd:'Tutor 1-1 Writing Task 1–2, chữa bài theo tiêu chí band 4.5',dem:'60/8',buoi:'8',buoiPhu:'Đã dạy 3 buổi — không nhỏ hơn 3',day:'Phạm Thu Trang',td:'Lê Minh Khoa',tdGhi:'Nhận việc Kết quả',
+   nk:['<b>08/10 · Ngô Bảo Nam</b> · Sửa PA · Số buổi 10 → 8 · Nội dung đổi','<b>06/10 · Phạm Thu Trang</b> · Kết quả W1 OCT · dạy 3 buổi','<b>29/09 · Web</b> · Tạo "Học Tutor" · 10 buổi']}),
+   huy:'Huỷ thay đổi',chinh:btn('Lưu','btn-primary')}))}</div>`
++f375(panel({t:'Sửa PA',ngu:'Trần Gia Huy',ql:'Case Writing 2',b:formPA({sua:true,daChay:true,k:'tutor',nd:'Tutor 1-1 Writing Task 1–2',dem:'27/8',buoi:'2',buoiLoi:'Đã dạy 3 buổi — Số buổi từ 3 trở lên, hoặc để trống',day:'Phạm Thu Trang',td:'Lê Minh Khoa',nk:['<b>29/09 · Web</b> · Tạo "Học Tutor" · 10 buổi']}),huy:'Huỷ thay đổi',thieu:'Số buổi',chinh:btn('Lưu','btn-primary')}),1000,'375 · lỗi: số buổi nhỏ hơn số đã dạy.');
+
+/* (d) Kết quả */
+function vach(da,tong,cls=''){const p=Math.min(100,Math.round(da/tong*100));return `<span class="vach ${cls}"><i style="width:${p}%"></i></span>`;}
+function formKQ(o){
+  const oc=['Tiến bộ rõ','Tiến bộ một phần','Không tiến bộ','Kém hơn'].map((x,i)=>`<span class="nc ${i===o.oc?'on':''}">${x}</span>`).join('');
+  let buoi='';
+  if(o.tong||o.ngDay!==undefined){
+    const sau=o.tong?o.da+o.tuan:null;
+    let kq='';
+    if(o.tong){
+      const cls=sau>o.tong?'vuot':sau===o.tong?'du':'';
+      kq=`<div class="kq">${vach(sau,o.tong,cls)}<span>Đã dạy <b>${o.da}/${o.tong}</b> → sau khi lưu <b>${sau}/${o.tong}</b></span>${cls==='du'?'<span class="du" style="color:var(--ok);font-weight:600">· đủ buổi</span>':cls==='vuot'?`<span style="color:var(--late);font-weight:600">· vượt ${sau-o.tong} buổi</span>`:`<span>· còn <b>${o.tong-sau}</b></span>`}</div>`
+        +(cls==='du'?'<span class="phu" style="margin:0">Xong PA thì chọn Kết thúc PA ở mục 2.</span>':'');
+    }
+    const o1=o.tong?tr('Số buổi tuần này',`<span class="field nho so">${o.tuan}</span>`,{bb:true}):'';const o2=o.ngDay!==undefined?tr('Người dạy tuần này',ng(o.ngDay,{c:o.ngLoi?'loi-o':''}),{bb:!!o.tong,tc:!o.tong,loi:o.ngLoi}):'';
+    buoi=`<div class="dem-buoi">${o1&&o2?h2(o1,o2):o1+o2}${kq}${!o.tong?'<span class="phu" style="margin:0">PA chưa có Số buổi — thêm ở ⋯ › Sửa PA nếu muốn đếm.</span>':''}</div>`;
+  }
+  const qd=['Giữ nguyên|Tiếp tục PA này, hẹn kết quả tuần sau','Điều chỉnh|Cùng PA, sửa nội dung, số buổi hoặc người','Thay PA|Khép PA này, mở PA khác thay vào','Kết thúc PA|Khép PA này; Case chỉ xong khi mọi PA đã khép']
+   .map((x,i)=>{const [a,b]=x.split('|');return `<div class="qd ${i===o.qd?'on':''}"><span class="r"></span><div><b>${a}</b><span>${b}</span></div></div>${i===1&&o.qd===1?`<div class="con">${tr('Nội dung PA',ta('Tutor 1-1 Writing Task 1–2, chữa bài theo tiêu chí band 4.5'))}${h2(tr('Số buổi',`<span class="field nho so">12</span>`,{tc:true}),tr('Người dạy',ng('Phạm Thu Trang'),{tc:true}))}${tr('Người theo dõi',ng('Lê Minh Khoa'),{tc:true})}${tr('Lý do điều chỉnh',fd('Em cần thêm 2 buổi Task 2'),{bb:true})}</div>`:''}`;}).join('');
+  return kh('1 · Kết quả tuần W2 OCT',`<div class="g2">${oc}</div><p style="font-size:12px;color:var(--faint);display:flex;gap:6px;align-items:center;flex-wrap:wrap">Chưa có bài để so? <span class="nc nho">Chưa đủ dữ liệu</span></p>`
+     +tr('Tiến triển',ta(o.tt||'Task 1 đúng bố cục, Task 2 còn thiếu ví dụ'),{bb:true,dem:'41/8'})+buoi
+     +tr('Người phụ trách',ng(o.pt||'Lê Minh Khoa'),{bb:true,phu:'Điền sẵn: người theo dõi của PA'})+tr('Vấn đề còn tồn / Ghi chú',fd(o.ghi||'<span class="tr-ph">Ví dụ: còn sai dạng T/F/NG</span>'),{tc:true}))
+   +kh('2 · Quyết định',qd+'<span class="link">Xin hỗ trợ từ Quản lý</span>',true)
+   +`<div style="margin-top:14px">${tr('Ngày ghi',ngay('13/10/2026'))}</div>`;
+}
+const cxKQ=(t)=>`<span>${t}</span><span style="color:var(--faint)">· hạn T2 13/10</span>`;
+document.querySelector('[data-k=d1440]').innerHTML=f1440(panel({t:'Kết quả',ngu:'Trần Gia Huy · CP FT 12',ql:'Case Writing 2',cx:cxKQ('Học Tutor · 10 buổi'),
+  b:formKQ({oc:1,da:3,tong:10,tuan:2,ngDay:'Phạm Thu Trang',qd:0}),chinh:btn('Lưu kết quả','btn-primary')}),1180);
+document.querySelector('[data-k=d375]').innerHTML=
+ f375(panel({t:'Kết quả',ngu:'Trần Gia Huy',ql:'Case Writing 2',cx:cxKQ('Học Tutor · 10 buổi'),b:formKQ({oc:0,da:8,tong:10,tuan:2,ngDay:'Phạm Thu Trang',qd:3}),chinh:btn('Kết thúc PA','btn-primary')}),1320,'Đủ buổi: 10/10, chọn Kết thúc PA.')
++f375(panel({t:'Kết quả',ngu:'Trần Gia Huy',ql:'Case Writing 2',cx:cxKQ('Học Tutor · 10 buổi'),b:formKQ({oc:1,da:10,tong:10,tuan:1,ngDay:'Đỗ Hải Yến',qd:1}),chinh:btn('Lưu điều chỉnh','btn-primary')}),1690,'Vượt buổi: 11/10 vẫn lưu; Điều chỉnh mở đúng các ô của mẫu PA.')
++f375(panel({t:'Kết quả',ngu:'Nguyễn Minh Ngọc',ql:'Case Listening',cx:cxKQ('Học Tutor · theo quy chế'),b:formKQ({oc:2,ngDay:null,pt:'Lê Minh Khoa',qd:0}),chinh:btn('Lưu kết quả','btn-primary')}),1220,'PA chưa có Số buổi: không có ô đếm; Người dạy tuần này không bắt buộc.')
++f375(panel({t:'Kết quả',ngu:'Trần Gia Huy',ql:'Case Writing 2',cx:cxKQ('Học Tutor · 8 buổi'),b:formKQ({oc:1,da:0,tong:8,tuan:2,ngDay:null,ngLoi:'Dạy 2 buổi — ghi ai dạy',qd:0}),thieu:'Người dạy tuần này',chinh:btn('Lưu kết quả','btn-primary')}),1350,'Thiếu người dạy tuần này (PA tạo tay, chưa biết tutor).');
+
+/* (e) dòng PA */
+function dongPA(o){
+  const buoi=o.tong?`<div class="buoi">${vach(o.da,o.tong,o.da>o.tong?'vuot':o.da===o.tong?'du':'')}<span>Đã dạy <b>${o.da}/${o.tong}</b></span>${o.da>o.tong?`<span class="vuot">· vượt ${o.da-o.tong}</span>`:o.da===o.tong?'<span class="du">· đủ buổi</span>':`<span>· còn <b>${o.tong-o.da}</b></span>`}</div>`:'';
+  const ngs=[];
+  if(o.day!==undefined) ngs.push(`<span><i>Dạy</i> ${o.day||'<span class="trong">chưa chọn</span>'}</span>`);
+  ngs.push(`<span><i>Theo dõi</i> ${o.td||'<span class="trong">không có</span>'}</span>`);
+  ngs.push(`<span><i>Từ</i> <span class="so">${o.tu||'W1 OCT'}</span>${o.moc?` · ${o.moc}`:''}</span>`);
+  return `<div class="pa ${o.xong?'xong':''}" style="position:relative"><div class="h"><span class="t">${o.t}</span>${o.qc?`<span class="khoa-i">${KHOA}theo quy chế</span>`:''}<span class="chip ${o.chip[0]}">${o.chip[1]}</span><span class="sp"></span>${o.menu===false?'':'<span class="ba-cham">⋯</span>'}</div>
+  <div class="dd">${o.nd}</div><div class="ng">${ngs.join('')}</div>${buoi}
+  ${o.ch===false?'':`<div class="ch"><span class="han ${o.qh?'qh':''}">${o.han||'Kết quả · hạn T2 13/10'}</span><span class="sp"></span>${o.nut===false?'':btn(o.nutChu||'Kết quả','btn-sm btn-primary')}</div>`}
+  ${o.nk?`<details><summary>Nhật ký PA (${o.nk})</summary></details>`:''}${o.mnu?'<div class="menu"><span class="hl">Sửa PA</span><span class="xoa">Xoá PA</span></div>':''}</div>`;
+}
+const DS=[
+ {t:'Học Tutor',chip:['doing','Đang thực hiện'],nd:'Tutor 1-1 Writing Task 1–2, chữa bài theo tiêu chí band 4.5',day:'Phạm Thu Trang',td:'Lê Minh Khoa',da:3,tong:10,nk:3,mnu:true},
+ {t:'Học Tutor',chip:['doing','Đang thực hiện'],nd:'Tutor 1-1 Listening Section 3–4',day:null,td:null,han:'Kết quả · quá hạn 2 ngày',qh:true},
+ {t:'Học Tutor',chip:['doing','Đang thực hiện'],nd:'Tutor 10 buổi/kỹ năng · tính vào buổi Free, có lương GV',day:'Phạm Thu Trang',td:'Lê Minh Khoa',da:10,tong:10,nk:11},
+ {t:'Học Tutor',chip:['doing','Đang thực hiện'],nd:'Tutor 1-1 Reading, dạng Matching',day:'Đỗ Hải Yến',td:'Lê Minh Khoa',da:12,tong:10,nk:6},
+ {t:'Xếp tự học',chip:['doing','Đang thực hiện'],nd:'Làm 2 đề Listening/tuần trên app, gửi ảnh kết quả',td:null,da:2,tong:8},
+ {t:'Bổ trợ miễn phí',qc:true,menu:false,chip:['doing','Đang thực hiện'],nd:'2 buổi miễn phí · 1 tuần · Mini Test sau buổi cuối',day:'Vũ Thanh Hà',td:null,da:1,tong:2,moc:'đến Mini Test 19/10',nutChu:'Kết quả cuối'},
+ {t:'Hỗ trợ học thuật',chip:['wait','Chờ Quản lý duyệt'],nd:'Xin 4 buổi Speaking với GV bản ngữ',day:'Tôi (Lê Minh Khoa)',td:null,han:'Quản lý trả lời · hạn 13/10',nut:false,menu:false},
+];
+const CAP=['Tutor 3/10 · menu ⋯ đang mở','Chưa có số buổi · người dạy trống · không người theo dõi · quá hạn','Đủ 10/10','Vượt 12/10','Tự học · không người theo dõi','Bổ trợ miễn phí (web tạo, khoá)','Đề xuất chờ duyệt'];
+document.querySelector('[data-k=e]').innerHTML=
+ `<div class="cot" style="width:528px">${DS.map((d,i)=>`<span class="cap">${CAP[i]}</span>${dongPA(d)}`).join('')}<span class="cap">Khung 528 = thân panel 560 trừ lề.</span></div>`
++`<div class="win w375" style="height:auto;padding:12px 16px;background:var(--surface)"><div class="cot">${[0,1,3,5].map(i=>`<span class="cap">${CAP[i]}</span>${dongPA(Object.assign({},DS[i],{mnu:false}))}`).join('')}</div></div>`;
+
+/* (f) Panel Case */
+const thanCu=()=>`<div style="display:flex;justify-content:flex-end;padding-top:12px">${btn('Sửa','btn-sm')}</div>
+<p style="padding-top:12px;font-size:12px;color:var(--faint)">Hoàn thành được sau khi PA theo quy chế kết thúc (đến lúc thi · đến 06/12)</p>
+${kh('Vấn đề',`<div><p style="font-size:14px;font-weight:600;color:var(--c1)">[MT4] Listening không đạt [SOS 3]</p><p style="margin-top:4px;font-size:13.5px;color:var(--c3)">Listening 4.5, kỳ vọng 5.5. Sai nhiều Section 3–4.</p></div><p style="font-size:12px;color:var(--faint)">Nhóm nguyên nhân: <span style="color:var(--c2)">Nghe ý chính</span></p>`)}
+${kh('Phương án · 1',`<ul style="margin:0;padding:0"><li class="pa0"><div class="h"><span class="t">Học Tutor</span><span class="khoa-i">${KHOA}theo quy chế</span><span class="chip doing">Đang thực hiện</span></div><span class="d">Tutor 1-1 Listening Section 3–4, 2 buổi/tuần</span><span class="m">Lê Minh Khoa · từ W2 OCT · kết thúc theo quy chế: đến lúc thi · 06/12 · hạn ghi kết quả T2 13/10</span><span class="m">▸ Đã điều chỉnh 1 lần</span><div style="margin-top:4px">${btn('Ghi kết quả','btn-sm btn-primary')}</div></li></ul><span style="font-size:12px;color:var(--faint)">▸ Lịch sử (1)</span>`,true)}
+${kh('Bằng chứng',`<span class="bc">Chưa có bằng chứng ${btn('+ Thêm','btn-sm')}</span>`)}`;
+const panelCu=()=>panel({t:'Case Listening',ngu:'Nguyễn Minh Ngọc · CP FT 131',cx:`<span class="chip doing">● Đang làm</span><span style="color:var(--c3)">Đang làm</span><span>· mở W2 OCT</span>`,b:thanCu(),phu:btn('+ Thêm PA'),chinh:btn('Ghi kết quả','btn-primary')});
+const thanMoi=(n)=>`<div class="dau"><div class="h1"><span class="chip doing">Đang làm</span><span class="mo">mở W2 OCT · Lê Minh Khoa báo</span><span class="sp"></span>${btn('Sửa','btn-sm')}</div>
+<div class="dk"><span class="khoa-i">${KHOA}</span><span>Hoàn thành sau khi PA quy chế kết thúc · <b>đến lúc thi (06/12)</b></span></div></div>
+<div class="kt"><div class="kt-h"><h5>Vấn đề</h5></div><div class="kt-b"><div class="vd-t">[MT4] Listening không đạt <span class="lv">SOS 3</span></div><p class="vd-d">Listening 4.5, kỳ vọng 5.5. Sai nhiều Section 3–4.</p><dl class="dl"><dt>Nhóm nguyên nhân</dt><dd>Nghe ý chính</dd></dl></div></div>
+<div class="kt"><div class="kt-h"><h5>Phương án</h5><span class="dem">1</span><span class="sp"></span><i class="ii">i</i></div><div class="kt-b">${dongPA({t:'Học Tutor',qc:true,chip:['doing','Đang thực hiện'],nd:'Tutor 1-1 Listening Section 3–4, 2 buổi/tuần',day:null,td:'Lê Minh Khoa',tu:'W2 OCT',moc:'đến lúc thi (06/12)',nk:2})}<span class="ls">▸ Lịch sử kết quả (1)</span></div></div>
+<div class="kt"><div class="kt-h"><h5>Bằng chứng</h5><span class="dem">0</span><span class="sp"></span>${btn('+ Thêm','btn-sm')}</div><div class="kt-b"><span class="bc">Chưa có bằng chứng</span></div></div>`;
+const panelMoi=()=>panel({t:'Case Listening',ngu:'Nguyễn Minh Ngọc · CP FT 131',b:thanMoi(),phu:btn('+ Thêm PA'),chinh:btn('Kết quả','btn-primary')});
+document.querySelector('[data-k=f0]').innerHTML=`<div class="rong">${f1440(panelCu(),760)}</div><div class="row2" style="margin-top:12px">${f375(panelCu(),860)}</div>`;
+document.querySelector('[data-k=f1]').innerHTML=`<div class="rong">${f1440(panelMoi(),760)}</div><div class="row2" style="margin-top:12px">${f375(panelMoi(),980)}</div>`;
+</script>
+</body>
+</html>
