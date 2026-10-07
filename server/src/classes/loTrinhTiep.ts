@@ -144,8 +144,9 @@ function kiemDong(studentId: number, enr: LopNguon, input: GhiVao, lopDuKien: Ma
 /**
  * GHI theo lô: bản ghi + hành trình + nhật ký — ba câu cho cả lô (Turso: không N câu trong một giao dịch). Gọi trong `tx`.
  * `tuLenh` (PR-LCa, LCa-1): ghi theo quyết định của Quản lý — map em → Hướng LTT trước đó (không có dòng → không có khoá) + hướng đó có
- * phải của GVCN không (R9: đã là quyết định `cho` của QL thì không). Khi đó ghi chú, tháng thi trống thì GIỮ cái đã lưu, và chỉ em ĐỔI
- * hướng mới có dòng Hành trình "QL quyết: …" (ra lệnh lại / migrate không nhân đôi).
+ * phải của GVCN không (R9: đã là quyết định `cho` của QL thì không). Khi đó Target, ghi chú, tháng thi, ngày xem lại trống thì GIỮ cái đã
+ * lưu (chủ sản phẩm 08/10: lệnh hướng khác không xoá Target GVCN ghi; thay R7), và chỉ em ĐỔI hướng mới có dòng Hành trình "QL quyết: …"
+ * (ra lệnh lại / migrate không nhân đôi).
  */
 function ghiCacDong(p: Principal, dongs: readonly DongGhi[], tuLenh?: ReadonlyMap<number, { huong: Huong; cuaGvcn: boolean }>): void {
   const now = nowIso();
@@ -156,8 +157,8 @@ function ghiCacDong(p: Principal, dongs: readonly DongGhi[], tuLenh?: ReadonlyMa
        (student_id, class_id, huong, lop_du_kien_id, muc_tieu, thang_thi, ghi_chu, ngay_xem_lai, updated_by, created_at, updated_at)`,
     dongs.map((d) => [d.studentId, d.classId, d.huong, d.lopDuKienId, d.mucTieu, d.thangThi, d.ghiChu, d.ngayXemLai, p.userId, now, now]),
     ` ON CONFLICT(student_id, class_id) DO UPDATE SET
-       huong = excluded.huong, lop_du_kien_id = excluded.lop_du_kien_id, muc_tieu = excluded.muc_tieu,
-       thang_thi = ${giu('thang_thi')}, ghi_chu = ${giu('ghi_chu')}, ngay_xem_lai = excluded.ngay_xem_lai, da_ap_dung_luc = NULL,
+       huong = excluded.huong, lop_du_kien_id = excluded.lop_du_kien_id, muc_tieu = ${giu('muc_tieu')},
+       thang_thi = ${giu('thang_thi')}, ghi_chu = ${giu('ghi_chu')}, ngay_xem_lai = ${giu('ngay_xem_lai')}, da_ap_dung_luc = NULL,
        updated_by = excluded.updated_by, updated_at = excluded.updated_at`,
   );
   const nhan = (d: DongGhi, h: Huong) => nhanHuong(h, { ma: d.ma, maKe: NORMAL_LADDER[d.ma as ProgrammeCode] ?? null });
@@ -182,17 +183,17 @@ function ghiCacDong(p: Principal, dongs: readonly DongGhi[], tuLenh?: ReadonlyMa
 
 /**
  * PR-LCa (LCa-1): Quản lý ra / sửa quyết định Cuối khoá → Lộ trình tiếp theo theo ĐÚNG quyết định (hướng, lớp dự kiến = lớp chuyển đến,
- * Target; KCK → null) + MT0 ngay (`dongBoMt0` qua `ghiCacDong`). `huongCu`: Hướng LTT trước đó (nơi gọi đã đọc theo lô); `cuLaQl`: hướng
+ * Target, ngày xem lại của Bảo lưu; trống / KCK → giữ cái đã lưu) + MT0 ngay (`dongBoMt0` qua `ghiCacDong`). `huongCu`: Hướng LTT trước đó (nơi gọi đã đọc theo lô); `cuLaQl`: hướng
  * đó đã là quyết định `cho` của lớp này (R9 — Hành trình không ghi "(GVCN: …)"). Gọi trong `tx`.
  */
 export function dongBoTuLenh(p: Principal, hang: readonly {
   studentId: number; classId: number; ma: ProgrammeCode | null; huong: Huong; lopDuKienId: number | null; mucTieu: number | null;
-  huongCu: Huong | null; cuLaQl: boolean;
+  ngayXemLai: string | null; huongCu: Huong | null; cuLaQl: boolean;
 }[]): void {
   if (!hang.length) return;
   ghiCacDong(p, hang.map((h) => ({
     studentId: h.studentId, classId: h.classId, ma: h.ma, huong: h.huong, lopDuKienId: h.lopDuKienId, mucTieu: h.mucTieu,
-    thangThi: null, ghiChu: null, ngayXemLai: null,
+    thangThi: null, ghiChu: null, ngayXemLai: h.ngayXemLai,
   })), new Map(hang.filter((h) => h.huongCu).map((h) => [h.studentId, { huong: h.huongCu!, cuaGvcn: !h.cuLaQl }])));
 }
 
@@ -203,12 +204,17 @@ export function dongBoTuLenh(p: Principal, hang: readonly {
  */
 function chanQlDaQuyet(classId: number, dongs: readonly DongGhi[], ten?: (sid: number) => string): void {
   const lenh = new Map((db().prepare(
-    `SELECT student_id, huong, muc_tieu, khong_cam_ket FROM lenh_chuyen_lop WHERE lop_nguon_id = ? AND boi_canh = 'cuoi-khoa' AND trang_thai = 'cho'`,
+    `SELECT l.student_id, l.huong, l.muc_tieu, l.khong_cam_ket, t.muc_tieu AS muc_tieu_ltt FROM lenh_chuyen_lop l
+       LEFT JOIN lo_trinh_tiep_theo t ON t.student_id = l.student_id AND t.class_id = l.lop_nguon_id
+      WHERE l.lop_nguon_id = ? AND l.boi_canh = 'cuoi-khoa' AND l.trang_thai = 'cho'`,
   ).all(classId) as any[]).map((r) => [r.student_id as number, r]));
   for (const d of dongs) {
     const l = lenh.get(d.studentId);
-    /* Target chỉ so khi quyết định là Lên FT — lệnh đổi sang hướng khác có thể còn Target cũ. */
-    const doiTarget = l?.huong === 'fast_track' && (l.khong_cam_ket ? null : l.muc_tieu ?? null) !== d.mucTieu;
+    /*
+     * Target chỉ so khi quyết định là Lên FT — lệnh đổi sang hướng khác có thể còn Target cũ. Gửi lại Target đang lưu ở LTT được: lệnh KCK
+     * không xoá Target đã ghi (I3), ghi lại ghi chú không bị chặn.
+     */
+    const doiTarget = l?.huong === 'fast_track' && (l.khong_cam_ket ? null : l.muc_tieu ?? null) !== d.mucTieu && (l.muc_tieu_ltt ?? null) !== d.mucTieu;
     if (l && (l.huong !== d.huong || doiTarget)) {
       throw conflict(`${ten ? `${ten(d.studentId)}: ` : ''}Quản lý đã quyết.`, { studentId: d.studentId });
     }

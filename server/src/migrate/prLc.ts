@@ -12,7 +12,7 @@ import type { Principal } from '../permissions.ts';
 
 export function migratePrLc(conn: any, applied: string[]) {
   const lech = (conn.prepare(
-    `SELECT l.student_id, l.lop_nguon_id, l.lop_dich_id, l.huong, l.muc_tieu, l.nguoi_ra_lenh, c.programme_code, t.huong AS huong_cu, t.muc_tieu AS muc_tieu_cu,
+    `SELECT l.student_id, l.lop_nguon_id, l.lop_dich_id, l.huong, l.muc_tieu, l.ngay_xem_lai, l.nguoi_ra_lenh, c.programme_code, t.huong AS huong_cu, t.muc_tieu AS muc_tieu_cu,
             EXISTS (SELECT 1 FROM learning_cycles cy WHERE cy.student_id = l.student_id AND cy.status = 'active' AND cy.route IS NULL) AS co_khoa,
             EXISTS (SELECT 1 FROM learning_cycles cy JOIN assessment_attempts a ON a.cycle_id = cy.id AND a.kind = 'mt0' AND a.status <> 'cancelled'
                      WHERE cy.student_id = l.student_id AND cy.status = 'active' AND cy.route IS NULL) AS co_mt0
@@ -20,8 +20,8 @@ export function migratePrLc(conn: any, applied: string[]) {
        LEFT JOIN lo_trinh_tiep_theo t ON t.student_id = l.student_id AND t.class_id = l.lop_nguon_id
       WHERE l.trang_thai = 'cho' AND l.boi_canh = 'cuoi-khoa'`,
   ).all() as any[]).filter((r) => r.huong_cu !== r.huong || (r.huong === 'fast_track' && (
-    /* muc_tieu của lệnh KCK đã là NULL (raLenh) — đúng giá trị LTT phải có. */
-    (r.muc_tieu_cu ?? null) !== (r.muc_tieu ?? null) || (coMt0(r.programme_code, r.huong) && r.co_khoa && !r.co_mt0))));
+    /* Lệnh KCK (muc_tieu NULL) không xoá Target LTT (I3) — chỉ lệch khi lệnh có số khác; không thì lần hai chọn lại mãi. */
+    (r.muc_tieu != null && r.muc_tieu_cu !== r.muc_tieu) || (coMt0(r.programme_code, r.huong) && r.co_khoa && !r.co_mt0))));
 
   /* Nhóm theo lớp nguồn, rồi theo người ra lệnh (Hành trình / nhật ký ghi đúng người quyết). */
   const theoLop = new Map<number, Map<number, any[]>>();
@@ -35,7 +35,7 @@ export function migratePrLc(conn: any, applied: string[]) {
       for (const [userId, rs] of theoNguoi) {
         dongBoTuLenh({ userId } as Principal, rs.map((r) => ({
           studentId: r.student_id, classId, ma: (r.programme_code ?? null) as ProgrammeCode | null, huong: r.huong as Huong,
-          lopDuKienId: r.lop_dich_id ?? null, mucTieu: r.muc_tieu ?? null, huongCu: (r.huong_cu ?? null) as Huong | null,
+          lopDuKienId: r.lop_dich_id ?? null, mucTieu: r.muc_tieu ?? null, ngayXemLai: r.ngay_xem_lai ?? null, huongCu: (r.huong_cu ?? null) as Huong | null,
           cuLaQl: false,   // LTT trước PR-LCa do GVCN ghi (ra lệnh từ PR-LCa đã tự đồng bộ)
         })));
       }

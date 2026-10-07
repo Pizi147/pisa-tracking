@@ -193,7 +193,7 @@ export function raLenh(p: Principal, v: {
       /* LCa-1 (Q1, R4): quyết định Cuối khoá lớp thường → Lộ trình tiếp theo theo quyết định + MT0 ngay, cùng giao dịch (sửa lệnh đi qua đây). */
       if (v.boiCanh === 'cuoi-khoa' && !nguonFt) {
         dongBoTuLenh(p, hang.map((h) => ({
-          studentId: h[0], classId: v.lopNguonId, ma: maTu, huong: h[3] as Huong, lopDuKienId: h[2], mucTieu: h[6],
+          studentId: h[0], classId: v.lopNguonId, ma: maTu, huong: h[3] as Huong, lopDuKienId: h[2], mucTieu: h[6], ngayXemLai: h[9],
           huongCu: ltt.get(h[0])?.huong ?? null,
           /* R9: Hướng LTT cũ đã là quyết định `cho` của lớp này → của QL, không phải GVCN. */
           cuLaQl: daCo.get(h[0])?.lop_nguon_id === v.lopNguonId && daCo.get(h[0])?.huong === ltt.get(h[0])?.huong,
@@ -396,7 +396,8 @@ export function khoiPhucLenh(p: Principal, ids: unknown): KetQuaLenhNhieu {
         if (nguonThuong) {
           dongBoTuLenh(p, [{
             studentId: l.student_id, classId: l.lop_nguon_id, ma: (nguonThuong.programme_code ?? null) as ProgrammeCode | null, huong: l.huong as Huong,
-            lopDuKienId: l.lop_dich_id ?? null, mucTieu: l.khong_cam_ket ? null : l.muc_tieu ?? null, huongCu: (nguonThuong.huong ?? null) as Huong | null, cuLaQl: false,
+            lopDuKienId: l.lop_dich_id ?? null, mucTieu: l.khong_cam_ket ? null : l.muc_tieu ?? null, ngayXemLai: l.ngay_xem_lai ?? null,
+            huongCu: (nguonThuong.huong ?? null) as Huong | null, cuLaQl: false,
           }]);
         }
         writeAudit({ actorUserId: p.userId, action: 'lenh_chuyen.khoi_phuc', entityType: 'student', entityId: l.student_id, before: { trangThai: 'huy' }, after: { huong: l.huong, tuan: l.tuan_bat_dau } });
@@ -742,12 +743,16 @@ export function apDungDeXuatChuyenLop(p: Principal, yc: { id: number; hoc_vien_i
   if (!lopDich) throw badRequest('Chọn lớp chuyển đến trước khi duyệt.');
   const dich = lopDichHopLe(lopDich, enr.class_id);
   if (!dich) throw badRequest('Lớp chuyển đến không hợp lệ.');
-  /* PR-S5F-a (planning chốt): lớp thường đã hết khoá / đang tuần kết thúc → hướng CUỐI KHOÁ (lên lớp / học lại / FT) như panel cả lớp, cùng luật lớp chuyển đến. */
-  const hetKhoa = !enr.is_fast_track && mocKetKhoa(classProgressMany([enr.class_id]).get(enr.class_id), demoToday()).hetKhoa;
+  /*
+   * PR-S5F-a (planning chốt): lớp thường đã tới Cuối khoá → hướng CUỐI KHOÁ (lên lớp / học lại / FT) như panel cả lớp, cùng luật lớp chuyển đến.
+   * PR-LCa (planning 08/10): từ tuần Final (cùng mốc `tuCuoiKhoa` của raLenh / Chuyển tiếp lớp), không đợi hết khoá — Lên FT duyệt lúc này
+   * đi đường cuối khoá (đồng bộ Lộ trình tiếp theo + MT0).
+   */
+  const tuCuoiKhoa = !enr.is_fast_track && mocKetKhoa(classProgressMany([enr.class_id]).get(enr.class_id), demoToday()).tuCuoiKhoa;
   const huong: HuongLenh = dich.is_fast_track && !enr.is_fast_track ? 'fast_track'
-    : !hetKhoa ? 'chuyen_lop' : dich.programme_code === enr.programme_code ? 'hoc_lai' : 'len_lop';
+    : !tuCuoiKhoa ? 'chuyen_lop' : dich.programme_code === enr.programme_code ? 'hoc_lai' : 'len_lop';
   const r = raLenh(p, {
-    lopNguonId: enr.class_id, boiCanh: hetKhoa ? 'cuoi-khoa' : 'giua-khoa', tuanChung: null, tuYeuCauId: yc.id,
+    lopNguonId: enr.class_id, boiCanh: tuCuoiKhoa ? 'cuoi-khoa' : 'giua-khoa', tuanChung: null, tuYeuCauId: yc.id,
     dongs: [{
       studentId: yc.hoc_vien_id, huong, toClassId: lopDich,
       tuan: typeof d.tuan === 'string' ? d.tuan : null, mucTieu: soHoacKck(d.mucTieu), ngayThi: typeof d.ngayThi === 'string' ? d.ngayThi : null,
