@@ -44,6 +44,16 @@ thấy Công việc còn "Chốt lên FT · CP FOU 23" quá hạn dù đã ghi L
   "Chuyển tiếp lớp · MB FOU 12 · 7 HV" (Cần làm, chưa có hạn) — ảnh `04`. Hạn khác nhau cho cùng một việc.
 - **T4 · QL làm việc của GVCN.** Nút "Ghi lộ trình" của việc Chốt lên FT mở bảng LTT cả lớp → QL ghi hướng một lần ở đó, rồi lại ghi ở Chuyển tiếp.
 
+- **T5 · Hai bảng cho một quyết định (gốc của T1, L1, L4, L5)** — PR #250 (`fix-chot-len-ft`) xác nhận: việc "Chốt lên FT" chỉ đếm `lo_trinh_tiep_theo`
+  (`mt0.ts:245-270`), còn quyết định ở Chuyển tiếp lớp nằm ở `lenh_chuyen_lop`; LTT chỉ được cập nhật theo lệnh **lúc thi hành** (`transition.ts:337-359`).
+  (Đối chiếu mã: panel Lộ trình tiếp theo một em / cả lớp ghi `lo_trinh_tiep_theo` — `loTrinhTiep.ts:146`; chỉ Chuyển tiếp lớp ghi `lenh_chuyen_lop`.)
+  #250 chỉ vá điều kiện tự xong, không gộp nguồn. Phương án:
+  | | A. Giữ hai bảng, đồng bộ hướng/Target lúc ra/sửa lệnh (chọn) | B. Gộp một bảng |
+  |---|---|---|
+  | Làm gì | LTT = MỘT nguồn **hướng + Target** trước thi hành; `raLenh`/`suaLenh` ghi ngược LTT + `dongBoMt0` (LCa-1); lệnh giữ phần riêng của nó (lớp đích, tuần, bàn giao, trạng thái) | Bỏ `lo_trinh_tiep_theo` hoặc bỏ cột hướng của lệnh; sửa mọi chỗ đọc (Chốt lên FT, MT0, điền sẵn, kỳ vọng đầu ra, Kết luận khoá, Chuyển tiếp) |
+  | Rủi ro | Hai bảng vẫn có hướng nhưng luôn bằng nhau sau mỗi giao dịch; phép kiểm LCa-0 (a)(d) giữ bất biến | L, đụng PR-CT, K26, MT0, TK, LUI-b; migrate dữ liệu đang chạy |
+  Bất biến cần phép kiểm: em có lệnh Cuối khoá `cho` ⇒ `lo_trinh_tiep_theo.huong` = `lenh_chuyen_lop.huong`. Khi đúng bất biến này, câu đếm của #250 (thêm điều kiện lệnh) có thể quay về chỉ đếm LTT — **không** gỡ trong LCa, để rà sau.
+
 ### Sai luật / lỗi
 - **L1 · Lên FT chỉ quyết ở Chuyển tiếp → KHÔNG có MT0.** Bấm thử em Dương Ngọc Ánh (GVCN ghi Lên BE, QL ra lệnh Lên FT): không MT0,
   lộ trình FT mở ra `baseline_attempt_id = NULL`, lượt bắt đầu MT1. Vì `raLenh` không gọi `dongBoMt0` (`lenhChuyen.ts:68-205`). **Trái luật Lên FT → MT0.**
@@ -95,7 +105,7 @@ thấy Công việc còn "Chốt lên FT · CP FOU 23" quá hạn dù đã ghi L
   - (h) Tuần Final: `myWork` của QL có "Chuyển tiếp lớp · lớp" và **không** có "Chốt lên FT · lớp" cùng lớp. (đỏ: T3)
   - (i) Số câu SQL `raLenh` 30 em không tăng theo số em (trần `tocDoDuong.ts`).
 - [ ] **LCa-1** `lenhChuyen.ts` `raLenh` (bối cảnh `cuoi-khoa`, lớp nguồn thường): sau `chenNhieuDong` lệnh, trong cùng `tx`, gọi một hàm mới
-  `dongBoTuLenh(p, hang)` ở `loTrinhTiep.ts`: upsert `lo_trinh_tiep_theo` (huong, `lop_du_kien_id = lop_dich_id`, `muc_tieu`; **giữ** `ghi_chu`, `thang_thi`
+  (cả `suaLenh` khi đổi hướng/Target) `dongBoTuLenh(p, hang)` ở `loTrinhTiep.ts`: upsert `lo_trinh_tiep_theo` (huong, `lop_du_kien_id = lop_dich_id`, `muc_tieu`; **giữ** `ghi_chu`, `thang_thi`
   khi không gửi — `COALESCE(excluded.x, lo_trinh_tiep_theo.x)`), nhật ký Hành trình "QL quyết: …" chỉ khi hướng đổi, rồi `dongBoMt0`. Dùng lại `ghiCacDong`
   nếu được (một luật, theo lô) — không viết câu thứ hai. Huỷ lệnh (`huyLenh`, `huyNhieuLenh`): **không** đổi LTT (dự định GVCN vẫn đúng).
 - [ ] **LCa-2** Target: hàm thuần `targetLenFt({ lt, khoa })` ở `shared/domain/chuyenLop.ts` (LTT → khoá → null, giữ KCK); `raLenh` dùng khi `mucTieu` trống
@@ -104,7 +114,7 @@ thấy Công việc còn "Chốt lên FT · CP FOU 23" quá hạn dù đã ghi L
   `da_ap_dung_luc`, Target thật. Sau `noiMt0VaoFt`, `UPDATE assessment_attempts SET target_at_attempt = <target lộ trình FT>` cho MT0 vừa nối **chưa điểm** (một câu theo lô, `mt0.ts`).
 - [ ] **LCa-4** `transitionPlan`: thêm `dienSan` mỗi em (hàm thuần `dienSanChuyenTiep(lt, khoa, candidates)`): hướng từ LTT, Target theo LCa-2,
   lớp chuyển đến = lớp dự kiến nếu hợp lệ, hoặc **lớp duy nhất** hợp lệ của hướng đó, còn lại null. Web cũ không đọc → vô hại.
-- [ ] **LCa-5** `mt0.ts` `lopChoChotLenFt` (sau khi gộp `fix-chot-len-ft`): bỏ lớp đã tới tuần Final (`today >= finalWeekStart`) khỏi tập — từ tuần
+- [ ] **LCa-5** `mt0.ts` `lopChoChotLenFt` (sau khi gộp `fix-chot-len-ft` — PR #250): bỏ lớp đã tới tuần Final (`today >= finalWeekStart`) khỏi tập — từ tuần
   Final lớp chỉ có việc Chuyển tiếp lớp. Sửa `hint` `chot_len_ft` (`mywork.ts:211`) và mô tả chỉ số `lop-chua-chot-len-ft` (`shared/domain/metrics.ts:280`).
   **Hỏi planning nếu nhánh fix đã làm khác.**
 - [ ] **LCa-6** Rulebook §20.6/§20.7 + `CODE_MAP.md` (dòng Lộ trình tiếp theo, Chuyển tiếp, MT0): "hướng một nguồn; Target lên FT giữ; Chốt lên FT trước tuần Final".
@@ -151,7 +161,7 @@ Chồng `fix-chot-len-ft` (`mt0.ts`, `run.ts`) → chạy sau. Chồng PR-EN (ch
 **PR-LCa** — Model: **Opus 5.5 · XHigh** (B: **Opus 5.5 · High**) — cả hai chạy tiếp; Fable hoặc model khác thì dừng.
 ```
 Làm PR-LCa theo docs/superpowers/plans/2026-10-07-pr-luong-chuyen-giao.md (mục 3, 4 PR-LCa, 6). Đọc CLAUDE.md, plan.md mục 1 và 9.0.
-Điều kiện: nhánh fix-chot-len-ft đã merge vào main; chưa thì dừng, báo planning.
+Điều kiện: nhánh fix-chot-len-ft (PR #250) đã merge vào main; chưa thì dừng, báo planning.
 Worktree: git worktree add .claude/worktrees/pr-lca-luong-chuyen -b pr-lca-luong-chuyen origin/main (chỉ trong .claude/worktrees/).
 Ponytail full (mặc định). Skill: superpowers:subagent-driven-development, superpowers:test-driven-development (LCa-0 đỏ trước, đúng
 hành vi, không khớp chuỗi nguồn), superpowers:systematic-debugging khi lỗi lạ.
