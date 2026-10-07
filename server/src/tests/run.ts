@@ -9199,6 +9199,9 @@ await runPrViecNhoTests({ check, checkAsync, assert, assertThrows, conn, TODAY, 
 // ==================================================================== PR-HAN-XAC-NHAN (hạn xác nhận 5 ngày; Gấp / SOS 3: 3 ngày)
 const { runPrHanTests } = await import('./prHan.tests.ts');
 await runPrHanTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== VIEC-NHO-2 (Nhắc tất cả ở Của GV, lọc Chờ duyệt, GV chấm S)
+const { runPrViecNho2Tests } = await import('./prViecNho2.tests.ts');
+await runPrViecNho2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
