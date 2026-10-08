@@ -1890,7 +1890,7 @@ export function caseDetail(p: Principal, caseId: number) {
     sos: sosSt,
     /** PR-SOS (S4-5): thẻ ĐANG CHỜ ở mức Case ("Không cần theo dõi") — Ngăn Case nhúng `TheYeuCau gon` cho Quản lý. */
     yeuCauCase: theCuaDoiTuong('sos_case', [caseId]).find((y) => y.trangThai === 'cho' && y.loai === 'khong_theo_doi') ?? null,
-    /** PR-LT2a (N1, N2): khối PA Bổ trợ Giữa khoá — nhóm, môn, người dạy, kế hoạch (thẻ), hạn nộp, người xem nộp được không. `null` = Case không có PA bổ trợ. */
+    /** PR-LT2a (N1, N2): khối PA Bổ trợ Giữa khoá — nhóm, số buổi, chung, môn (PR-CT2: bỏ kế hoạch). `null` = Case không có PA bổ trợ. */
     boTro: boTroCuaCase([caseId]).get(caseId) ?? null,
     /** PR-SOS (T21, §7.3, K3-07): tên Case SOS ba phần · MỘT nhãn trạng thái · MỘT việc tiếp — Ngăn Case chọn nút chính theo đây. */
     tenSos: c.origin_kind === 'mock' && (c.attempt_kind ?? 'mock') === 'mock'

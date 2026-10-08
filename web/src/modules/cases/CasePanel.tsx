@@ -32,9 +32,7 @@ import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
 /** Khối `boTro` như `GET /cases/:id` trả (xem `BoTroDto` ở máy chủ) — chỉ các trường giao diện cần. */
 export type BoTro = {
   nhom: string; buoiMoiTuan: 1 | 2; chung: boolean;
-  mon: { caseId: number; mon: string; tenMon: string; coNguyenNhan: boolean; moTa: string | null }[];
-  nguoiDay: { userId: number | null; ten: string | null } | null;
-  denKhi: string | null;
+  mon: { caseId: number; mon: string; tenMon: string }[];
 };
 
 export type CaseDetail = {
@@ -47,7 +45,7 @@ export type CaseDetail = {
   sos?: { fromSos: boolean; hasCause: boolean; awaitingCause: boolean; dueOn: string | null;
     choDuyetKhongTheoDoi: { hanDuyet: string | null } | null; coPaChoXacNhan: boolean } | null;
   tenSos?: { mt: number | null; giua: string; sos: number | null } | null;
-  /** PR-LT2a: khối PA Bổ trợ Giữa khoá (nhóm, môn, người dạy) — null nếu Case không có PA bổ trợ. */
+  /** PR-LT2a: khối PA Bổ trợ Giữa khoá (nhóm, môn) — null nếu Case không có PA bổ trợ. */
   boTro?: BoTro | null;
   trangThaiV4?: { k: string; t: TrangThai; chu: string; han: string | null };
   /** PR-VAI-b (T65): em đang Tạm dừng → ngày dừng; "quá hạn" thành nhãn vàng. */

@@ -1,4 +1,4 @@
-import { db, theoLo } from '../db.ts';
+import { THAM_SO_TOI_DA, db, theoLo } from '../db.ts';
 import { CASE_DISMISS_REASON_LABEL, type CaseDismissReason } from '../../../shared/domain/index.ts';
 
 /**
@@ -58,7 +58,7 @@ export function dongBoTrangThaiCaseLo(caseIds: readonly number[]): void {
       const ids = doi.filter((r) => r.moi === st).map((r) => r.id);
       if (ids.length) conn.prepare(`UPDATE sos_cases SET status = ?, updated_at = ? WHERE status NOT IN ('done', ?) AND id IN (${ids.map(() => '?').join(',')})`).run(st, luc, st, ...ids);
     }
-  }, 900 - 3);
+  }, THAM_SO_TOI_DA - 3);
 }
 
 export type SosCaseState = {

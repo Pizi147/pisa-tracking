@@ -484,8 +484,8 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     const dtHa = chiTiet(ha, cGv.id);
     const pa = dtHa.interventions.find((x: any) => x.kind === 'bo_tro');
     assert(pa && pa.chuaChay === true && pa.awaitingConfirmation === false, JSON.stringify(pa && [pa.chuaChay, pa.awaitingConfirmation]));
-    assert(dtHa.boTro.denKhi && !('phaiGuiKem' in dtHa.boTro) && !('keHoach' in dtHa.boTro) && !('coTheNop' in dtHa.boTro), JSON.stringify(dtHa.boTro));
-    assert(dtHa.boTro.nguoiDay?.userId === ha.userId && dtHa.boTro.chung === true && dtHa.boTro.mon.length === 2, JSON.stringify(dtHa.boTro));
+    assert(!('phaiGuiKem' in dtHa.boTro) && !('keHoach' in dtHa.boTro) && !('coTheNop' in dtHa.boTro), JSON.stringify(dtHa.boTro));
+    assert(pa.performerUserId === ha.userId && dtHa.boTro.chung === true && dtHa.boTro.mon.length === 2, JSON.stringify([pa.performerUserId, dtHa.boTro]));
     assert(!dtHa.sos.coPaChoXacNhan, 'PA bổ trợ không tính là PA chờ xác nhận');
     sosAuto.xacNhanCase(khoa, cGv.id, XN('writing', 'FOU'));
     const sau = chiTiet(ha, cGv.id).interventions.find((x: any) => x.kind === 'bo_tro');

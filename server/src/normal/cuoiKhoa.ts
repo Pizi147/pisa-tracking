@@ -463,11 +463,11 @@ function taoBoTroFinal(p: Principal, dongs: readonly DongBoTroFinal[]): void {
       cycleStartedOn: y.batDau, actionDue: weeklyUpdateDue(y.batDau), followupDue: y.lich.ngayMiniTest, mocQuyChe: 'mini_test', nhomBoTro: `mt:${y.x.luot.id}`,
     });
   }
-  dongBoTrangThaiCaseLo(canDongBo);   // Case cũ đi theo em (Giữa khoá / Progress Test) nhận PA mới — có thể đổi trạng thái; theo lô (Turso)
 
   /* Pha 3 — ghi theo lô. */
   chenNhieuDong('INSERT OR IGNORE INTO case_milestones (case_id, kind, attempt_id, attempt_no, occurred_on, note, created_by, created_at, dedup_key)', mocRows);
   chenPa(conn, paRows);
+  dongBoTrangThaiCaseLo(canDongBo);   // SAU chenPa: Case cũ đi theo em (Giữa khoá / Progress Test) nhận PA mới — có thể đổi trạng thái; theo lô (Turso)
   chenNhieuDong('INSERT OR IGNORE INTO mini_test (student_id, cycle_id, tu_attempt_id, nhom_bo_tro, so_buoi, ngay_du_kien, han)', mtRows);
   chenNhieuDong('INSERT INTO notifications (user_id, kind, title, body, entity_type, entity_id, dedup_key, created_at, duong)', thongBao,
     ' ON CONFLICT(user_id, dedup_key) DO UPDATE SET title = excluded.title, body = excluded.body');
@@ -566,7 +566,7 @@ function huyBoTroFinal(p: Principal, classId: number, mts: readonly { id: number
       .run(nowIso(), ...lo);
     conn.prepare(`DELETE FROM notifications WHERE kind = 'bo_tro_mien_phi' AND (${lo.map(() => 'dedup_key LIKE ?').join(' OR ')})`)
       .run(...lo.map((n) => `bo-tro-mien-phi:${n.slice(3)}:%`));
-  }, 900 - 1);
+  }, THAM_SO_TOI_DA - 1);
   const giu = cs.filter((c) => !c.mo);   // Case Giữa khoá nhận PA: mốc `repeat` của lần sinh
   theoLo(giu.map((c) => `cuoi-khoa:${c.nhom.slice(3)}:${c.id}`), (lo, ph) => { conn.prepare(`DELETE FROM case_milestones WHERE dedup_key IN (${ph})`).run(...lo); });
   dongBoTrangThaiCaseLo(cs.filter((c) => !dong.includes(c.id)).map((c) => c.id));   // Case còn mở (Case Giữa khoá / có PA khác) — theo lô
@@ -642,8 +642,7 @@ export function ghiMiniTestTrongTx(conn: any, p: Principal, mt: any, x: { tyLe: 
   } else if (cases.length) {
     const lopId = (conn.prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1`).get(mt.student_id) as any)?.class_id ?? null;
     /* PR-CT2 (§8): thẻ về người giữ việc Ghi Mini Test (GVCN lớp đang học; không có → chủ Case), không về Người dạy (GV cũ). */
-    const owner = (conn.prepare(`SELECT MIN(sc.owner_user_id) AS o FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE iv.nhom_bo_tro = ?`).get(mt.nhom_bo_tro) as any)?.o ?? null;
-    const chu = nguoiGiuMiniTest([{ id: mt.id, nhom: mt.nhom_bo_tro, lop: lopId, owner }]).get(mt.id) ?? null;
+    const chu = nguoiGiuMotMiniTest(conn, mt, lopId);
     const lyDo = `Mini Test ${phanTram}% chưa đạt (cần từ 70%) — Quản lý xử lý từng trường hợp`;
     taoYeuCau(conn, {
       loai: 'bao_len_mini_test', doiTuongLoai: 'mini_test', doiTuongId: mt.id, hocVienId: mt.student_id, lopId, nguoiXin: null, hanDuyet: null, lyDo,
@@ -668,10 +667,7 @@ export function ghiMiniTest(p: Principal, miniTestId: number, input: { tyLe?: un
   const nguoiDay = conn.prepare(`SELECT 1 FROM case_interventions WHERE nhom_bo_tro = ? AND performer_user_id = ? LIMIT 1`).get(mt.nhom_bo_tro, p.userId);
   const gvcn = lopHienTai ? isCoreTeacherOf(p, lopHienTai) : false;
   /* PR-CT2 (§8): người giữ việc Ghi Mini Test (`nguoiGiuMiniTest`) ghi được lần đầu. */
-  const giu = () => {
-    const r = conn.prepare(`SELECT MIN(sc.owner_user_id) AS owner FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE iv.nhom_bo_tro = ?`).get(mt.nhom_bo_tro) as any;
-    return nguoiGiuMiniTest([{ id: mt.id, nhom: mt.nhom_bo_tro, lop: lopHienTai, owner: r?.owner ?? null }]).get(mt.id) === p.userId;
-  };
+  const giu = () => nguoiGiuMotMiniTest(conn, mt, lopHienTai) === p.userId;
   if (daGhi && !la_ql) throw forbidden('Chỉ Quản lý mới sửa được Mini Test đã ghi.');
   if (!daGhi && !la_ql && !nguoiDay && !gvcn && !giu()) throw forbidden('Bạn không có quyền ghi Mini Test của học viên này.');
   const v = kiemMiniTest(mt, input);
@@ -785,6 +781,12 @@ export function baoLenCuoiKhoaDoiQuaHan(conn: any, a: { id: number; student_id: 
  */
 export function nguoiGiuMiniTest(rows: readonly { id: number; nhom: string; lop: number | null; owner: number | null }[]): Map<number, number | null> {
   return nguoiGiuKetQua(rows.map((r) => ({ id: r.id, topic: null, nhomBoTro: r.nhom, classId: r.lop, ownerUserId: r.owner })), demoToday());
+}
+
+/** `nguoiGiuMiniTest` cho MỘT Mini Test (`lop` = lớp em đang học): chủ Case = MIN owner trên nhóm. */
+function nguoiGiuMotMiniTest(conn: any, mt: { id: number; nhom_bo_tro: string }, lop: number | null): number | null {
+  const owner = (conn.prepare(`SELECT MIN(sc.owner_user_id) AS o FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE iv.nhom_bo_tro = ?`).get(mt.nhom_bo_tro) as any)?.o ?? null;
+  return nguoiGiuMiniTest([{ id: mt.id, nhom: mt.nhom_bo_tro, lop, owner }]).get(mt.id) ?? null;
 }
 
 /** Em còn Mini Test CHƯA ghi (MỘT câu + người giữ theo lô): hạn, Case + PA để mở form, người giữ việc (`nguoiGiuMiniTest`). */

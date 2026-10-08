@@ -14,6 +14,7 @@ export async function runPrCt2Tests(t: YThucTestKit) {
   const d: any = await import('../../../shared/domain/index.ts');
   const cases: any = await import('../cases/cases.ts');
   const intake: any = await import('../classes/intake.ts');
+  const profile: any = await import('../students/profile.ts');
   const { migratePrCt2 } = await import('../migrate/prCt2.ts');
   const { default: SqliteDb } = await import('libsql');
   console.log('\nPR-CT2 · chế tài cuối khoá — Task 1 (Người dạy không bắt buộc, điền bù buổi, bộ đếm)');
@@ -294,6 +295,7 @@ export async function runPrCt2Tests(t: YThucTestKit) {
     const giu = nguoiGiuKetQua(pa.map((x) => ({ id: x.id, topic: x.topic, nhomBoTro: x.nhom_bo_tro, classId: f.dich, ownerUserId: x.owner_user_id })), THU_HAI);
     assert(pa.every((x) => giu.get(x.id) === GV[3]), `người giữ Kết quả: ${JSON.stringify([...giu])}`);
     assert(ck.emConMiniTest([f.sid]).get(f.sid)?.gv === GV[3], `người giữ Ghi Mini Test: ${JSON.stringify(ck.emConMiniTest([f.sid]).get(f.sid))}`);
+    assert(profile.studentProfile(P.admin, f.sid).miniTest?.gv === GV[3], `hồ sơ: người giữ Ghi Mini Test ${profile.studentProfile(P.admin, f.sid).miniTest?.gv}`);
     /* Mini Test 58% → thẻ Báo QL về người giữ việc (GVCN lớp mới), không về Người dạy (GV cũ). */
     const cu = getConfig('demo_date');
     setConfig('demo_date', m[0].ngay_du_kien);
@@ -408,6 +410,20 @@ export async function runPrCt2Tests(t: YThucTestKit) {
     assert(moi.route && pa.length === 2 && pa.every((x) => x.cycle_id === moi.id && x.so_buoi === 4), `FT: ${chuKy(pa)} · ${JSON.stringify(moi)}`);
     assert(pa.some((x) => x.topic === 'writing2' && x.performer_user_id === GV[1]), `Writing 2 giữ GV cũ: ${chuKy(pa)}`);
     assert(mts(e.sid).length === 1 && mts(e.sid)[0].cycle_id === moi.id, JSON.stringify(mts(e.sid)));
+  });
+  check('CT2-11 · Case Giữa khoá "Chưa xử lý" (có nguyên nhân, PA quy chế đã huỷ) nhận PA Final → "Đang xử lý" (đồng bộ trạng thái SAU khi chèn PA)', () => {
+    const f = dungFou();
+    const now = new Date().toISOString();
+    const gk = Number(conn.prepare(
+      `INSERT INTO sos_cases (student_id, cycle_id, category, topic, origin_kind, status, owner_user_id, detected_at, dedup_key, created_at)
+       VALUES (?,?, 'writing', 'writing', 'mock', 'open', ?, ?, ?, ?)`,
+    ).run(f.sid, f.cyc, GV[1], TODAY, d.caseDedupKey({ category: 'writing', studentId: f.sid, cycleId: f.cyc }), now).lastInsertRowid);
+    conn.prepare(`INSERT INTO case_issues (case_id, role, taxonomy_code, created_at) VALUES (?, 'primary', 'x', ?)`).run(gk, now);
+    conn.prepare(`INSERT INTO case_interventions (case_id, kind, status, preset, created_at) VALUES (?, 'tutor', 'cancelled', 1, ?)`).run(gk, now);
+    ra(f.nguon, f.sid, 'len_lop', f.dich);
+    nhap(f.a, { listening: 18, reading: 18, writing: 10, speaking: 9 });
+    assert(paMt(f.a).some((x) => x.case_id === gk), 'Case Giữa khoá phải nhận PA Final');
+    assert(get('SELECT status FROM sos_cases WHERE id = ?', gk).status === 'in_progress', `trạng thái: ${get('SELECT status FROM sos_cases WHERE id = ?', gk).status}`);
   });
   check('CT2-10 · migrate C: em đủ điểm Final + lệnh chờ lên, chưa Mini Test (dữ liệu trước PR-CT2) → đủ bộ, người ra lệnh ghi; lần hai applied rỗng; em đã chuyển có bổ trợ → không đổi', () => {
     /* Em đã chuyển (bổ trợ sinh sẵn) — ảnh chụp trước migrate. */

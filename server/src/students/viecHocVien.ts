@@ -34,7 +34,7 @@ type Nguon = {
 /**
  * VIỆC CỦA MỘT EM THEO NGƯỜI (PR-VAI-b Task 2, K3-01) — mọi việc đang mở của em, MỖI VIỆC CÓ NGƯỜI LÀM, cùng luật người làm với Công việc (Q2):
  *   Xác nhận nguyên nhân / Thêm PA / Xác nhận PA → người phụ trách Case · Ghi kết quả PA → người giữ việc (`nguoiGiuKetQua`, đọc từ `plan.nguoiId` của bảng)
- *   · Báo PH qua TVV, Xử lý vi phạm, Ghi nhận vi phạm mới, Ghi "Đã thực hiện" → GVCN (Báo PH Cuối khoá → Quản lý) · Mini Test → người dạy bổ trợ, không có thì GVCN · Bàn giao → người xem
+ *   · Báo PH qua TVV, Xử lý vi phạm, Ghi nhận vi phạm mới, Ghi "Đã thực hiện" → GVCN (Báo PH Cuối khoá → Quản lý) · Mini Test → người giữ việc (`nguoiGiuMiniTest`, PR-CT2), không có thì GVCN · Bàn giao → người xem
  *   theo `dai.nut` · "Chờ Quản lý duyệt…" → "Quản lý" (không ai trong số giáo viên, không vào thanh việc).
  * KHÔNG chạy `myWork` (quét cả phạm vi): Case/PA đọc từ `board` đã dựng, Ý thức / Mini Test / dải chuyển lớp do hồ sơ nạp sẵn.
  * Thêm hai câu: Báo PH của em · tên + vai người làm. Em Tạm dừng / đã kết thúc → rỗng (mọi hạn dừng, T65).
@@ -103,7 +103,7 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
       cuaBanTheoVai: cuoi ? can(p, PERMISSIONS.REQUEST_APPROVE, { classId: n.lopId, studentId: sid }) : undefined,
       nut: 'Đánh dấu đã làm', mo: { loai: 'tab', tab: 'y-thuc', sub: 'phoi-hop' } });
   }
-  /* Mini Test — người dạy bổ trợ (có tài khoản đầu tiên của nhóm, cùng câu `mywork.ts` Mini Test), không có thì GVCN. */
+  /* Mini Test — người giữ việc (`emConMiniTest().gv` = `nguoiGiuMiniTest`, cùng `mywork.ts`), không có thì GVCN. */
   const mt = n.miniTest;
   if (mt && mt.tyLe === null) {
     const gv = mt.gv ?? -1;

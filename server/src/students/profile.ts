@@ -20,7 +20,7 @@ import { luotSinhViecRow } from '../worklist/danhGia.ts';
 import { missingForStudent, suggestedMockWeeks } from '../classes/schedule.ts';
 import { lopHocCua } from '../classes/loTrinhTiep.ts';
 import { daiHocVien } from '../classes/daiChuyenLop.ts';
-import { cuoiKhoaTheoHocVien, miniTestCuaHocVien, type EmCuoiKhoa } from '../normal/cuoiKhoa.ts';
+import { cuoiKhoaTheoHocVien, emConMiniTest, miniTestCuaHocVien, type EmCuoiKhoa } from '../normal/cuoiKhoa.ts';
 import { quyenBoTro } from '../cases/boTro.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { activeClassOf, canManageDiscipline } from '../yThuc/access.ts';
@@ -755,15 +755,15 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     const mt = miniTestCuaHocVien([studentId]).get(studentId);
     if (!mt) return null;
     /* PA còn mở + CHÍNH Case của nó (không lấy MIN hai cột riêng — lệch Case thì form mở sai chỗ, không có ô Mini Test). */
-    /* `gv`: người dạy bổ trợ có tài khoản đầu tiên của nhóm — cùng câu với việc Mini Test ở Công việc (`mywork.ts`), trong cùng câu đọc PA. */
     const iv = db().prepare(
-      `SELECT case_id, CASE WHEN status IN ('planned', 'started') THEN id END AS pa_id,
-              (SELECT x.performer_user_id FROM case_interventions x WHERE x.nhom_bo_tro = ? AND x.performer_user_id IS NOT NULL ORDER BY x.id LIMIT 1) AS gv
+      `SELECT case_id, CASE WHEN status IN ('planned', 'started') THEN id END AS pa_id
          FROM case_interventions WHERE nhom_bo_tro = ?
         ORDER BY status NOT IN ('planned', 'started'), id LIMIT 1`,
-    ).get(mt.nhom, mt.nhom) as any;
+    ).get(mt.nhom) as any;
     const pa = iv?.pa_id ? db().prepare('SELECT * FROM case_interventions WHERE id = ?').get(iv.pa_id) as any : null;
-    return { ...mt, caseId: iv?.case_id ?? null, paId: iv?.pa_id ?? null, gv: (iv?.gv ?? null) as number | null, coTheGhi: mt.tyLe === null && !!pa && quyenBoTro(p, pa) };
+    /* PR-CT2 (§8): `gv` = người giữ việc Ghi Mini Test (`nguoiGiuMiniTest` qua `emConMiniTest`, cùng Công việc / bảng lớp) — không còn là Người dạy (GV cũ). */
+    const gv = mt.tyLe === null ? emConMiniTest([studentId]).get(studentId)?.gv ?? null : null;
+    return { ...mt, caseId: iv?.case_id ?? null, paId: iv?.pa_id ?? null, gv, coTheGhi: mt.tyLe === null && !!pa && (gv === p.userId || quyenBoTro(p, pa)) };
   })();
   const dai = daiHocVien(p, studentId);
   /*

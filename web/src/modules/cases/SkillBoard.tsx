@@ -547,10 +547,8 @@ function HangPA({ p, c, ngan, onMoCase }: {
         ) : <span className="text-[12px] text-slate-500">{v.loai === 'cho-xac-nhan' || chuaChay ? 'Chưa bắt đầu' : 'Chưa có kết quả'}</span>}
       </td>
       <td className="td">
-        {chuaChay ? (
-          /* PR-CT2: PA Bổ trợ chờ Xác nhận Case — không còn nộp / duyệt kế hoạch. */
-          <CotPhai phu="Chưa bắt đầu" />
-        ) : v.loai === 'cho-duyet' ? (
+        {chuaChay ? null   /* PR-CT2: PA Bổ trợ chờ Xác nhận Case (việc ở hàng Case); "Chưa bắt đầu" đã ở cột Kết quả — không lặp. */
+        : v.loai === 'cho-duyet' ? (
           <CotPhai phu={<><span className="text-wait">{v.text}</span>{v.due ? ` · hạn ${ngan(v.due)}` : null}</>} />
         ) : v.loai === 'cho-xac-nhan' ? (
           <CotPhai

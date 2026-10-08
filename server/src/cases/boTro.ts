@@ -148,11 +148,8 @@ export function chepKetQuaNhom(conn: any, iv: any, followupId: number, x: {
 
 export type BoTroDto = {
   nhom: string; buoiMoiTuan: 1 | 2; chung: boolean;
-  /** Mỗi môn của nhóm: Case, tên môn ngắn, đã có nguyên nhân chưa, Mô tả Xác nhận Case (nguyên nhân). */
-  mon: { caseId: number; mon: string; tenMon: string; coNguyenNhan: boolean; moTa: string | null }[];
-  nguoiDay: { userId: number | null; ten: string | null } | null;
-  /** Ngày mốc Cuối khoá của PA (`followup_due`) — web dựng chữ `đến Cuối khoá · W4 OCT` qua `mocChuBoTro`. */
-  denKhi: string | null;
+  /** Mỗi môn của nhóm: Case, tên môn ngắn (PR-CT2: bỏ nguyên nhân / Mô tả / người dạy / mốc — chỉ form kế hoạch đã xoá đọc). */
+  mon: { caseId: number; mon: string; tenMon: string }[];
 };
 
 /** Khối `boTro` cho Ngăn Case và thẻ Case — đọc THEO TẬP (một câu), không hỏi từng Case. Case không có PA bổ trợ → không có khoá. */
@@ -162,10 +159,8 @@ export function boTroCuaCase(caseIds: number[]): Map<number, BoTroDto> {
   const conn = db();
   const ph = caseIds.map(() => '?').join(',');
   const dong = conn.prepare(
-    `SELECT iv.id, iv.case_id, iv.nhom_bo_tro, iv.status, iv.performer_user_id, iv.performer_name, iv.followup_due, u.full_name AS ten_gv,
-            sc.topic, sc.summary, sc.status AS case_status, sc.student_id, cy.programme_code AS ct, ${CO_NGUYEN_NHAN} AS co_nn
-       FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id LEFT JOIN users u ON u.id = iv.performer_user_id
-       LEFT JOIN learning_cycles cy ON cy.id = sc.cycle_id
+    `SELECT iv.case_id, iv.nhom_bo_tro, sc.topic, cy.programme_code AS ct
+       FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id LEFT JOIN learning_cycles cy ON cy.id = sc.cycle_id
       WHERE iv.kind = 'bo_tro' AND iv.status != 'cancelled'
         AND iv.nhom_bo_tro IN (SELECT nhom_bo_tro FROM case_interventions WHERE case_id IN (${ph}) AND kind = 'bo_tro' AND nhom_bo_tro IS NOT NULL)
       ORDER BY iv.id`,
@@ -178,12 +173,9 @@ export function boTroCuaCase(caseIds: number[]): Map<number, BoTroDto> {
     if (!r0) continue;
     const rows = theoNhom.get(r0.nhom_bo_tro)!;
     const b = boTroGiuaKhoa(r0.ct) ?? { buoiMoiTuan: 1 as const, chung: nhomChung(r0.nhom_bo_tro) };
-    const gv = rows.find((r) => r.performer_user_id || r.performer_name);
     out.set(cid, {
       nhom: r0.nhom_bo_tro, buoiMoiTuan: b.buoiMoiTuan, chung: b.chung,
-      mon: rows.map((r) => ({ caseId: r.case_id, mon: r.topic, tenMon: tenMonNgan(r.ct, r.topic), coNguyenNhan: !!r.co_nn, moTa: r.co_nn ? r.summary ?? null : null })),
-      nguoiDay: gv ? { userId: gv.performer_user_id ?? null, ten: gv.ten_gv ?? gv.performer_name ?? null } : null,
-      denKhi: rows.map((r) => r.followup_due as string | null).filter(Boolean).sort()[0] ?? null,
+      mon: rows.map((r) => ({ caseId: r.case_id, mon: r.topic, tenMon: tenMonNgan(r.ct, r.topic) })),
     });
   }
   return out;

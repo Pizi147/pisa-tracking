@@ -833,8 +833,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     .all() as any[];
   napTruocPhamVi(miniTest.map((r) => r.student_id));
   const giuMt = nguoiGiuMiniTest(miniTest.map((m) => ({ id: m.id, nhom: m.nhom_bo_tro, lop: m.cur_class_id, owner: m.owner ?? null })));
-  for (const m of miniTest) m.gv = giuMt.get(m.id) ?? null;
   for (const m of miniTest) {
+    m.gv = giuMt.get(m.id) ?? null;
     if (f.branchId && m.branch_id !== f.branchId) continue;
     const mine = m.gv ? m.gv === p.userId : isCoreTeacherOf(p, m.cur_class_id, today);
     const cuaGv = tatCa && can(p, PERMISSIONS.CASE_APPROVE, { classId: m.cur_class_id, studentId: m.student_id });

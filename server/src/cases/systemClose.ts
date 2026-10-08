@@ -1,4 +1,4 @@
-import { chenNhieuDong, db, theoLo, tx } from '../db.ts';
+import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import { SYSTEM_CLOSE_REASON_LABEL, caseDedupKey, categoryOf, type SystemCloseReason } from '../../../shared/domain/index.ts';
 import { nowIso } from '../util.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
@@ -166,7 +166,7 @@ export function dongCaseHeThongLo(input: { actorUserId: number | null; reason: S
       `UPDATE sos_cases SET status = 'done', closed_at = ?, closed_by = NULL, system_close_reason = ?, disposition = COALESCE(disposition, 'other'),
               disposition_note = COALESCE(disposition_note, ?), outcome_note = ?, dedup_key = NULL, updated_at = ? WHERE id IN (${ph}) AND status != 'done'`,
     ).run(input.on, input.reason, label, `Hệ thống đóng · ${label}`, luc, ...lo);
-  }, 900 - 5);
+  }, THAM_SO_TOI_DA - 5);
   chenNhieuDong('INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at)',
     open.map((c) => [c.id, 'status', c.status, 'done', input.actorUserId, luc]));
   chenNhieuDong('INSERT INTO case_milestones (case_id, kind, occurred_on, note, created_by, created_at, dedup_key)',
