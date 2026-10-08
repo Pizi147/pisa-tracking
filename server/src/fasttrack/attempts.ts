@@ -21,7 +21,7 @@ import {
 import { mondayOf, quaHanNhapDiem, skillScoreDeadline, weekInfo } from '../platform/week.ts';
 import { nho, nhoTheoId } from '../platform/nguCanhRequest.ts';
 import {
-  completionWeekOf, ensureSkillRows, kiemDaToiTuanThi, kiemVuot, kiemXacNhanVuot, tuanCuoiSauKhiDoi, loadSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf,
+  checkWeekVsNeighbours, completionWeekOf, ensureSkillRows, kiemDaToiTuanThi, kiemVuot, tuanCuoiSauKhiDoi, loadSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf,
   setSkillScope, setSkillWeek, skillScheduleOf, skippedSkillsOf, viewSkill,
   type SkillRow, type SkillScheduleView,
 } from './skillSchedule.ts';
@@ -1178,6 +1178,13 @@ function hoiSinhLuot(p: Principal, cu: any, o: { classId: number | null; period:
   ).run(o.classId, o.period.id, o.targetScore, o.note, laMtCu(o.period.week_end, demoToday()) ? 1 : 0, nowIso(), nowIso(), cu.id);
   rutDeNghiDoi(cu.id);   // phòng dữ liệu cũ: đề nghị của lượt đã huỷ không được sống lại cùng lượt
   conn.prepare('DELETE FROM assessment_scores WHERE attempt_id = ? AND band IS NULL AND raw_score IS NULL').run(cu.id);
+  /* PR-MTGON (MTG-3b): kết quả đã huỷ do dời vượt (dữ liệu cũ) không theo lượt xếp lại — bỏ, nhật ký giữ nguyên dòng. */
+  const kqCu = conn.prepare('SELECT * FROM ket_qua_huy WHERE attempt_id = ? AND khoi_phuc_luc IS NULL').all(cu.id) as any[];
+  if (kqCu.length) {
+    conn.prepare('DELETE FROM ket_qua_huy WHERE attempt_id = ? AND khoi_phuc_luc IS NULL').run(cu.id);
+    writeAudit({ actorUserId: p.userId, action: 'ket_qua_huy.bo', entityType: 'assessment_attempt', entityId: cu.id,
+      entityLabel: `${o.studentCode} MT${cu.attempt_no}`, before: kqCu, after: null });
+  }
   conn.prepare('DELETE FROM attempt_skills WHERE attempt_id = ?').run(cu.id);
   ensureSkillRows(cu.id);
   logSchedule(cu.id, { action: 'recreated', field: 'planned_period', newValue: o.period.code, reason: `Tạo lại MT${cu.attempt_no} (số dùng lại)`, actor: p.userId });
@@ -1202,14 +1209,13 @@ function loadAttempt(attemptId: number) {
  * ĐỔI TUẦN CHO CẢ ĐỢT — một lối tắt, không phải một lịch thứ hai.
  *
  * Từ vòng 7 lịch thật nằm ở từng kỹ năng. Thao tác này áp MỘT tuần cho mọi kỹ năng còn
- * dời được, rồi để hệ thống tính lại tuần kế hoạch hoàn tất. Phần ĐÃ THI hoặc ĐÃ CÓ ĐIỂM
- * đứng yên (mục 10.4): "phần đã thi không dời như một lịch tương lai".
+ * dời được, rồi để hệ thống tính lại tuần kế hoạch hoàn tất. Phần đã có điểm dời theo, điểm giữ (PR-MTGON luật 1).
  *
  * Nhờ đi qua đúng một hàm nghiệp vụ cho từng kỹ năng, mọi ràng buộc thứ tự đợt, cảnh báo
  * hai đợt quá gần và nhật ký đều giữ nguyên — đường hàng loạt không lỏng hơn đường lẻ.
  */
 export function setPlanningWeek(p: Principal, attemptId: number, periodId: number, reason?: string,
-  opts: { force?: boolean; huyLichVuot?: boolean } = {}) {
+  opts: { force?: boolean } = {}) {
   const a = loadAttempt(attemptId);
   require_(p, PERMISSIONS.PLAN_WEEK, { classId: a.class_id, studentId: a.student_id },
     'Chỉ Quản lý mới chốt được tuần kế hoạch.');
@@ -1218,27 +1224,20 @@ export function setPlanningWeek(p: Principal, attemptId: number, periodId: numbe
   if (!period) throw notFound('Không tìm thấy tuần');
 
   const rows = ensureSkillRows(attemptId);
-  /* D3 (PR-LM): MT lịch sử dời cả đợt — kể cả kỹ năng đã có điểm / đã thi (sửa hồ sơ, `setSkillWeek` đòi lý do). */
-  const movable = rows.filter(
-    (r) => r.required && r.sit_status !== 'cancelled' && r.planned_period_id !== periodId
-      && (a.lich_su || (r.sit_status !== 'sat' && !hasAnyBand(attemptId, r.skill))),
-  );
+  /* PR-MTGON (luật 1): Quản lý dời cả đợt = mọi kỹ năng bắt buộc chưa huỷ, kể cả đã có điểm / đã thi — điểm giữ, chỉ dời (như hộp một đợt). */
+  const movable = rows.filter((r) => r.required && r.sit_status !== 'cancelled' && r.planned_period_id !== periodId);
   if (!movable.length) {
-    throw badRequest(
-      'Không kỹ năng nào còn đổi được tuần: các kỹ năng bắt buộc đã thi, đã có điểm, '
-      + 'đã huỷ phần thi hoặc vốn đã ở tuần này.',
-    );
+    throw badRequest('Không kỹ năng nào còn đổi được tuần: các kỹ năng bắt buộc đã huỷ phần thi hoặc vốn đã ở tuần này.');
   }
-  /* Q-0310-1 (PR-LM) + T2 (PR-MTa): kiểm vượt trên CẢ lần dời (không từng kỹ năng) — 409 / 400 trước khi ghi bất cứ gì. */
-  const vuot = kiemVuot(attemptId, tuanCuoiSauKhiDoi(rows, new Map(movable.map((r) => [r.skill, period.week_start])))!);
-  if (vuot.chan) throw badRequest(vuot.chan);
-  kiemXacNhanVuot(vuot.biVuot, { xacNhan: opts.huyLichVuot, lyDo: reason });
+  /* Kiểm vượt trên CẢ lần dời (không từng kỹ năng) — 400 trước khi ghi bất cứ gì. */
+  const vuot = kiemVuot(attemptId, tuanCuoiSauKhiDoi(rows, new Map(movable.map((r) => [r.skill, period.week_start])))!).chan;
+  if (vuot) throw badRequest(vuot);
 
   return tx(() => {
     const warnings: string[] = [];
     const kept: string[] = [];
     for (const r of movable) {
-      const res = setSkillWeek(p, attemptId, r.skill, periodId, { reason, force: opts.force, huyLichVuot: opts.huyLichVuot });
+      const res = setSkillWeek(p, attemptId, r.skill, periodId, { reason, force: opts.force });
       warnings.push(...res.warnings);
       kept.push(r.skill);
     }
@@ -1251,23 +1250,11 @@ export function setPlanningWeek(p: Principal, attemptId: number, periodId: numbe
     return {
       ok: true,
       moved: kept,
-      /** Kỹ năng KHÔNG dời — đã thi hoặc đã có điểm. Giao diện phải nói ra, không im lặng. */
+      /** Kỹ năng KHÔNG dời — đã huỷ phần thi. Giao diện phải nói ra, không im lặng. */
       keptInPlace: frozen.map((r) => r.skill),
       warnings: [...new Set(warnings)],
     };
   });
-}
-
-/** Kỹ năng đánh giá này đã có band chưa (Writing cần ít nhất một trong hai task). */
-function hasAnyBand(attemptId: number, skill: string): boolean {
-  const entry = entrySkillsOf(skill as AssessedSkill)   // tong_hop (Pre FOU) → [tong_hop], không có band;
-  const row = db()
-    .prepare(
-      `SELECT COUNT(*) AS n FROM assessment_scores
-        WHERE attempt_id = ? AND band IS NOT NULL AND skill IN (${entry.map(() => '?').join(',')})`,
-    )
-    .get(attemptId, ...entry) as any;
-  return row.n > 0;
 }
 
 /**
@@ -1277,10 +1264,42 @@ function hasAnyBand(attemptId: number, skill: string): boolean {
  * thao tác miễn môn, và không bỏ một môn khỏi phạm vi SAU khi đã xác nhận em vắng môn đó.
  * Ở đây chỉ còn việc tính lại kết luận của đợt sau khi phạm vi đổi.
  */
-export function setSkillSkip(p: Principal, attemptId: number, skill: string, skipped: boolean, reason?: string, opts: { khiTao?: boolean; khongMockLai?: boolean } = {}) {
-  const r = setSkillScope(p, attemptId, skill, !skipped, reason ?? null, opts);
-  refreshOutcome(p, attemptId);
-  return r;
+export function setSkillSkip(p: Principal, attemptId: number, skill: string, skipped: boolean, reason?: string | null,
+  /** `xoaDiem` (PR-MTGON luật 3): Quản lý đã xác nhận "Xoá điểm và huỷ kỹ năng?" — điểm xoá qua đường Huỷ điểm, cùng tx. */
+  opts: { khiTao?: boolean; khongMockLai?: boolean; xoaDiem?: boolean } = {}) {
+  return tx(() => {
+    if (skipped && opts.xoaDiem) {
+      const a = loadAttempt(attemptId);
+      require_(p, PERMISSIONS.ATTEMPT_SKIP_SKILL, { classId: a.class_id, studentId: a.student_id }, 'Chỉ Quản lý mới đổi được phạm vi kỹ năng của một đợt.');
+      xoaDiemCua(p, attemptId, entrySkillsOf(skill as AssessedSkill), reason?.trim() || 'Huỷ kỹ năng');
+    }
+    const r = setSkillScope(p, attemptId, skill, !skipped, reason ?? null, opts);
+    refreshOutcome(p, attemptId);
+    return r;
+  });
+}
+
+/** Xoá mọi ô CÓ ĐIỂM trong `o` (W1 + W2 …) qua `saveScore` — nhật ký RB-5 giữ giá trị cũ. Gọi trong tx của nơi gọi. */
+function xoaDiemCua(p: Principal, attemptId: number, o: readonly string[], lyDo: string) {
+  for (const s of scoresOf(attemptId)) {
+    if (o.includes(s.skill) && ((s.band ?? null) !== null || (s.raw_score ?? null) !== null)) {
+      saveScore(p, attemptId, s.skill, { rawScore: null, criteria: [null, null, null, null], lyDo });
+    }
+  }
+}
+
+/** PR-MTGON (Hồ sơ MT khi mọi kỹ năng đã huỷ): "Đưa lại cả 4 kỹ năng" — mọi kỹ năng đã huỷ / không yêu cầu về đợt, MỘT tx. */
+export function duaLaiCaLuot(p: Principal, attemptId: number) {
+  const a = loadAttempt(attemptId);
+  require_(p, PERMISSIONS.ATTEMPT_SKIP_SKILL, { classId: a.class_id, studentId: a.student_id }, 'Chỉ Quản lý mới đưa lại kỹ năng vào đợt.');
+  if (a.status === 'cancelled') throw badRequest(`MT${a.attempt_no} đã huỷ — mở lại lượt trước.`);
+  const ds = ensureSkillRows(attemptId).filter((r) => !r.required || r.sit_status === 'cancelled');
+  if (!ds.length) throw badRequest('Không có kỹ năng nào đã huỷ.');
+  return tx(() => {
+    for (const r of ds) setSkillScope(p, attemptId, r.skill, true, null);
+    refreshOutcome(p, attemptId);
+    return { ok: true as const, kyNang: ds.map((r) => r.skill as string) };
+  });
 }
 
 /** Hạn nhập điểm riêng cho cả lượt. Phạm vi từng kỹ năng còn chờ quyết định — xem O02. */
@@ -1335,8 +1354,12 @@ export function caseSinhRieng(attemptId: number): number[] {
   ).all(attemptId, attemptId) as any[]).map((r) => r.id as number);
 }
 
-/** HUỶ LƯỢT (T36, M-12, T67). `cach` bỏ trống = cách được phép cho lượt này. */
-export function huyLuot(p: Principal, attemptId: number, input: { lyDo: string; cach?: 'ca-luot' | 'phan-con-lai' | null }) {
+/**
+ * HUỶ MT{n} (T36, T67; PR-MTGON luật 4 — chủ sản phẩm 08/10): Quản lý huỷ MỌI lượt, mọi lúc. Điểm của lượt xoá qua đường Huỷ điểm
+ * (nhật ký giữ từng ô) để số MT dùng lại được khi xếp lại; đóng những thứ sinh riêng từ lượt (Case chưa có kết quả PA, Phối hợp còn chờ).
+ * Không còn "Huỷ phần còn lại" — bỏ từng kỹ năng là "Huỷ kỹ năng" (`setSkillSkip`).
+ */
+export function huyLuot(p: Principal, attemptId: number, input: { lyDo: string }) {
   const a = loadAttempt(attemptId);
   require_(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id, studentId: a.student_id }, 'Bạn không có quyền huỷ lượt Mock.');
   const loiLyDo = kiemLyDoThaoTac('huy-luot', input.lyDo);
@@ -1344,56 +1367,55 @@ export function huyLuot(p: Principal, attemptId: number, input: { lyDo: string; 
   const lyDo = String(input.lyDo).trim();
   const hq = heQuaHuyLuot(attemptId);
   if (!hq.cachDuoc) throw badRequest('Lượt này đã huỷ.');
-  const cach = input.cach ?? hq.cachDuoc;
-  if (cach !== 'ca-luot' && cach !== 'phan-con-lai') throw badRequest('Cách huỷ không hợp lệ.');
-  if (cach === 'ca-luot' && hq.cachDuoc !== 'ca-luot') {
-    throw badRequest('Chỉ huỷ cả lượt được với MT cuối cùng của lộ trình khi chưa có điểm và chưa thi kỹ năng nào — dùng "Huỷ phần còn lại".');
-  }
   const conn = db();
   return tx(() => {
-    if (cach === 'ca-luot') {
-      conn.prepare(`UPDATE assessment_attempts SET status='cancelled', cancel_reason=?, cancelled_at=?, updated_at=? WHERE id=?`)
-        .run(lyDo, nowIso(), nowIso(), attemptId);
-      logSchedule(attemptId, { action: 'cancelled', reason: lyDo, actor: p.userId });
-      /* Đề nghị dời đang chờ của lượt này hết nghĩa — không rút thì hết hạn sẽ huỷ phần thi của lượt xếp lại sau (cùng id). */
-      rutDeNghiDoi(attemptId);
-      addJourney({ studentId: a.student_id, eventType: 'mock_cancelled', eventDate: demoToday(),
-        title: `Huỷ MT${a.attempt_no}`, detail: lyDo, refTable: 'assessment_attempts', refId: attemptId, createdBy: p.userId });
-      writeAudit({ actorUserId: p.userId, action: 'attempt.cancel', entityType: 'assessment_attempt', entityId: attemptId,
-        before: { status: a.status }, after: { status: 'cancelled', reason: lyDo } });
-      const phoiHop = conn.prepare(
-        `UPDATE sos_coordination_actions SET status = 'removed', remove_reason_code = 'system_luot_huy', removed_by = NULL,
-                removed_at = ?, updated_at = ? WHERE attempt_id = ? AND status = 'pending'`).run(nowIso(), nowIso(), attemptId).changes;
-      const dong = hq.caseIds.length
-        ? closeCasesBySystem({ actorUserId: p.userId, studentId: a.student_id, reason: 'luot_da_huy', on: demoToday(), caseIds: hq.caseIds }).closedCaseIds.length
-        : 0;
-      return { cach, kyNangHuy: [] as string[], dong: { case: dong, pa: hq.pa, phoiHop } };
-    }
-    /* Huỷ phần còn lại (Q12): kỹ năng chưa có điểm VÀ chưa thi — đã thi chờ chấm vẫn còn nghĩa vụ chấm. Lượt giữ số và trạng thái. */
-    const diem = scoresOf(attemptId);
-    const coDiem = (assessed: AssessedSkill) => entrySkillsOf(assessed)
-      .some((k) => diem.some((d) => d.skill === k && ((d.band ?? null) !== null || (d.raw_score ?? null) !== null)));
-    const huy = ensureSkillRows(attemptId).filter((r) => r.required && r.sit_status === 'scheduled' && !coDiem(r.skill as AssessedSkill));   // tong_hop (Pre FOU) → entrySkillsOf trả [tong_hop]
-    for (const r of huy) {
-      conn.prepare(`UPDATE attempt_skills SET sit_status = 'cancelled', updated_at = ? WHERE id = ?`).run(nowIso(), r.id);
-      logSchedule(attemptId, { action: 'skill_part_cancelled', field: r.skill, oldValue: r.period_code, newValue: null, reason: lyDo, actor: p.userId });
-      writeAudit({ actorUserId: p.userId, action: 'attempt.cancel_part', entityType: 'assessment_attempt', entityId: attemptId,
-        entityLabel: `MT${a.attempt_no} · ${r.skill}`, before: { week: r.period_code }, after: { reason: lyDo } });
-    }
-    if (huy.length) recomputeCompletionWeek(attemptId, p.userId);
-    return { cach, kyNangHuy: huy.map((r) => r.skill as string), dong: { case: 0, pa: 0, phoiHop: 0 } };
+    xoaDiemCua(p, attemptId, scoresOf(attemptId).map((x) => x.skill), lyDo);
+    conn.prepare(`UPDATE assessment_attempts SET status='cancelled', cancel_reason=?, cancelled_at=?, updated_at=? WHERE id=?`)
+      .run(lyDo, nowIso(), nowIso(), attemptId);
+    logSchedule(attemptId, { action: 'cancelled', reason: lyDo, actor: p.userId });
+    /* Đề nghị dời đang chờ của lượt này hết nghĩa — không rút thì hết hạn sẽ huỷ phần thi của lượt xếp lại sau (cùng id). */
+    rutDeNghiDoi(attemptId);
+    addJourney({ studentId: a.student_id, eventType: 'mock_cancelled', eventDate: demoToday(),
+      title: `Huỷ MT${a.attempt_no}`, detail: lyDo, refTable: 'assessment_attempts', refId: attemptId, createdBy: p.userId });
+    writeAudit({ actorUserId: p.userId, action: 'attempt.cancel', entityType: 'assessment_attempt', entityId: attemptId,
+      before: { status: a.status }, after: { status: 'cancelled', reason: lyDo } });
+    const phoiHop = conn.prepare(
+      `UPDATE sos_coordination_actions SET status = 'removed', remove_reason_code = 'system_luot_huy', removed_by = NULL,
+              removed_at = ?, updated_at = ? WHERE attempt_id = ? AND status = 'pending'`).run(nowIso(), nowIso(), attemptId).changes;
+    const caseIds = caseSinhRieng(attemptId);   // đọc lại SAU khi xoá điểm: Case sinh từ điểm vừa xoá cũng đóng
+    const dong = caseIds.length
+      ? closeCasesBySystem({ actorUserId: p.userId, studentId: a.student_id, reason: 'luot_da_huy', on: demoToday(), caseIds }).closedCaseIds.length
+      : 0;
+    return { cach: 'ca-luot' as const, kyNangHuy: [] as string[], dong: { case: dong, pa: hq.pa, phoiHop } };
   });
 }
 
+/**
+ * MỞ LẠI LƯỢT. PR-MTGON (MTG-3c): tuần cũ nay vướng thứ tự đợt (trùng / vượt lượt khác) → mở lại ở "Chưa xếp lịch" thay vì nằm sai
+ * thứ tự; Quản lý xếp lại sau.
+ */
 export function reopenAttempt(p: Principal, attemptId: number) {
   const a = loadAttempt(attemptId);
   require_(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id, studentId: a.student_id });
   return tx(() => {
-    db().prepare(`UPDATE assessment_attempts SET status='planned', cancel_reason=NULL, cancelled_at=NULL, updated_at=? WHERE id=?`)
+    const conn = db();
+    conn.prepare(`UPDATE assessment_attempts SET status='planned', cancel_reason=NULL, cancelled_at=NULL, updated_at=? WHERE id=?`)
       .run(nowIso(), attemptId);
     logSchedule(attemptId, { action: 'reopened', actor: p.userId });
+    const tuan = ensureSkillRows(attemptId).filter((r) => r.required && r.sit_status !== 'cancelled' && r.week_start)
+      .map((r) => String(r.week_start).slice(0, 10)).sort();
+    const sai = tuan.length > 0 && (!!kiemVuot(attemptId, tuan[tuan.length - 1], tuan[0]).chan || [...new Set(tuan)].some((w) => checkWeekVsNeighbours({
+      cycleId: a.cycle_id, attemptNo: a.attempt_no, excludeAttemptId: attemptId, newWeekStart: w, kind: a.kind,
+    }).blockers.length));
+    if (sai) {
+      conn.prepare(`UPDATE attempt_skills SET planned_period_id = NULL, plan_source = 'manual', updated_at = ? WHERE attempt_id = ? AND required = 1 AND sit_status != 'cancelled'`)
+        .run(nowIso(), attemptId);
+      conn.prepare(`UPDATE assessment_attempts SET plan_source = 'manual' WHERE id = ?`).run(attemptId);
+      logSchedule(attemptId, { action: 'skill_unscheduled', reason: 'Mở lại lượt: tuần cũ vướng thứ tự đợt — về Chưa xếp lịch', actor: p.userId });
+      recomputeCompletionWeek(attemptId, p.userId);
+    }
     refreshOutcome(p, attemptId);
-    return db().prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId);
+    return conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId);
   });
 }
 
