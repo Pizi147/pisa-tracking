@@ -185,6 +185,8 @@ export function transitionPlan(p: Principal, classId: number) {
     students: students.map((s) => ({
       id: s.id, studentCode: s.student_code, fullName: s.full_name,
       cycleId: s.cycle_id ?? null, target: s.target_score ?? null,
+      /** PR-LCb: Target khoá là KCK — panel Lộ trình tiếp theo coi như đã có Target (không hỏi lại, §7). */
+      kck: !!s.khong_cam_ket,
       /** PR-UXF-a (mockup 20 màn I): FT `{ tuan, tong: null }` — "LT1 · tuần học 9"; lớp thường null (cột Khoá đã có tuần của lớp). */
       route: (s.route ?? null) as string | null,
       tuanHoc: ft && s.start_week ? (() => { const th = tuanHocTai(s.start_week, tuanNay, dungCua[s.id] ?? []); return th ? { tuan: th.tuan, tong: null, dangDung: th.dangDung } : null; })() : null,

@@ -199,7 +199,7 @@ type ChonNguoiOption =
  */
 export function ChonNguoi({
   value, onChange, nhom, studentId, choToi = true, choNgoai = true, cungChiNhanh = false,
-  khongDoi, macDinhTrong, ariaLabel, disabled, tuMo, ds, choTrong, placeholder, id, onBlur, invalid,
+  khongDoi, macDinhTrong, ariaLabel, disabled, tuMo, ds, choTrong, placeholder, id, onBlur, invalid, khongKhop,
 }: {
   value: NguoiChon | null;
   onChange: (v: NguoiChon | null) => void;
@@ -222,6 +222,8 @@ export function ChonNguoi({
   placeholder?: string;
   /** Như `ONgay`: id cho nhãn / "n ô cần sửa ↑", rời ô, viền lỗi. */
   id?: string; onBlur?: () => void; invalid?: boolean;
+  /** Chữ khi gõ không khớp ai (ô gõ tên lớp, PR-LCb: `Không có lớp khớp “…”`). */
+  khongKhop?: (go: string) => string;
 }) {
   const { session } = useSession();
   const [editing, setEditing] = useState(!value && khongDoi === undefined && macDinhTrong === undefined);
@@ -329,7 +331,7 @@ export function ChonNguoi({
   const trangThai = loading
     ? <div className="px-3 py-2 text-xs text-slate-500">Đang tìm…</div>
     : term.trim() && rows.length === 0
-      ? <div className="px-3 py-2 text-xs text-slate-500">Không tìm thấy {nguoiLabel} khớp «{term.trim()}»</div>
+      ? <div className="px-3 py-2 text-xs text-slate-500">{khongKhop ? khongKhop(term.trim()) : `Không tìm thấy ${nguoiLabel} khớp «${term.trim()}»`}</div>
       : null;
 
   return (

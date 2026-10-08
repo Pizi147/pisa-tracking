@@ -314,4 +314,31 @@ export async function runPrLcbTests(t: YThucTestKit) {
     migLcb.migratePrLcb(conn, lan2);
     assert(!lan2.length && JSON.stringify(conn.prepare('SELECT id, huong_gvcn FROM lo_trinh_tiep_theo ORDER BY id').all()) === truoc, `lần 2: ${JSON.stringify(lan2)}`);
   });
+
+  // ------------------------------------------------------------------ (w) web: panel Lộ trình tiếp theo (lớp thường) + lối vào — đọc nguồn
+  const fs = await import('node:fs');
+  const web = (f: string) => fs.readFileSync(new URL(`../../../../web/src/${f}`, import.meta.url), 'utf8');
+  const coTep = (f: string) => fs.existsSync(new URL(`../../../../web/src/${f}`, import.meta.url));
+  check('LCb-w · lớp thường: chuyen-tiep + lo-trinh-ca-lop mở PanelCuoiKhoa, FT chuyen-tiep mở TransitionPanel; ⋮ một mục "Lộ trình tiếp theo…"; panel cũ đã xoá; PanelCuoiKhoa dùng ChonNguoi ds, OTuan, hanChotLenFt, không placeholder 6.0', () => {
+    const ov = web('modules/classes/ClassOverviewPage.tsx');
+    assert(/viec === 'lo-trinh-ca-lop' \|\| \(viec === 'chuyen-tiep' && thuong\)\) && <PanelCuoiKhoa/.test(ov), 'lớp thường: hai lối cùng PanelCuoiKhoa');
+    assert(/open=\{viec === 'chuyen-tiep' && !thuong\}/.test(ov), 'lớp FT: TransitionPanel');
+    assert(!/LoTrinhTiepCaLopPanel/.test(ov) && !coTep('modules/classes/LoTrinhTiepCaLopPanel.tsx'), 'panel cả lớp cũ đã gỡ');
+    const dt = web('modules/classes/DauTrangLop.tsx');
+    assert((dt.match(/nhan: 'Lộ trình tiếp theo…'/g) ?? []).length === 1 && !dt.includes('Ghi lộ trình tiếp theo cả lớp'), '⋮ lớp thường đúng một mục');
+    assert(/!thuong && data\.dai\?\.viewer\.coTheChuyenNhieuEm \? \[\{ key: 'chuyen-tiep', nhan: 'Chuyển tiếp lớp…'/.test(dt), 'FT giữ Chuyển tiếp lớp…');
+    assert(web('modules/classes/DaiChuyenLop.tsx').includes('(v.laGvcn || v.coTheRaLenh)') && web('modules/classes/DaiChuyenLop.tsx').includes('Lộ trình tiếp theo…'), 'dải Kết thúc khoá');
+    assert(web('modules/classes/ClassProgressPanel.tsx').includes('Lộ trình tiếp theo…'), 'Lịch Test');
+    const pn = web('modules/classes/PanelCuoiKhoa.tsx');
+    for (const chu of ['<ChonNguoi', 'ds={', '<OTuan', 'hanChotLenFt(', 'Lộ trình tiếp theo · ', '1 Soạn › 2 Xác nhận', 'Lưu hướng', 'Tiếp tục · ', 'Xác nhận · ', 'Gõ tên lớp…', 'Chọn ở hàng nhóm', 'Không có lớp khớp', 'Quản lý đã xác nhận', 'Hướng khoá', 'Bạn đề xuất: ', 'GVCN: chưa đề xuất', 'Quản lý đã quyết', 'Lớp chưa có học viên đang học.', 'không chờ điểm Final']) {
+      assert(pn.includes(chu), `PanelCuoiKhoa thiếu: ${chu}`);
+    }
+    assert(!pn.includes('placeholder="6.0"') && !/Dự kiến thi/.test(pn), 'không ô Target mờ 6.0, không ô Dự kiến thi');
+  });
+  check('LCb-w2 · transitionPlan: em có cờ kck (Target khoá KCK) — panel biết em đã có Target, không hỏi lại', () => {
+    const l = taoLop('FOU', 8, 1);
+    conn.prepare(`UPDATE learning_cycles SET target_score = NULL, khong_cam_ket = 1 WHERE student_id = ?`).run(l.sids[0]);
+    const s0 = transition.transitionPlan(QL, l.classId).students[0];
+    assert(s0.kck === true && s0.target === null, JSON.stringify({ kck: s0.kck, target: s0.target }));
+  });
 }
