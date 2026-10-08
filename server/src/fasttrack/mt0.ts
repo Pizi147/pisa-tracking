@@ -65,7 +65,7 @@ export function dongBoMt0(actorUserId: number, dongs: readonly DongMt0[]): void 
     }
   }
 
-  if (huy.length) huyLuot(actorUserId, huy, 'Bỏ hướng Lên FT');
+  if (huy.length) huyLuotChuaDiem(actorUserId, huy, 'Bỏ hướng Lên FT');
   if (moLai.length) {
     theoLo(moLai, (lo, ph) => {
       conn.prepare(`UPDATE assessment_attempts SET status = 'planned', cancel_reason = NULL, cancelled_at = NULL, updated_at = ? WHERE id IN (${ph})`).run(now, ...lo);
@@ -123,7 +123,7 @@ export function dongBoMt0(actorUserId: number, dongs: readonly DongMt0[]): void 
 }
 
 /** Huỷ các lượt (MT0, Mock — chưa điểm, nơi gọi đã lọc) với lý do; ghi lịch sử. Trong `tx`. Không xoá gì. */
-export function huyLuot(actorUserId: number, ids: readonly number[], lyDo: string): void {
+export function huyLuotChuaDiem(actorUserId: number, ids: readonly number[], lyDo: string): void {
   if (!ids.length) return;
   const now = nowIso();
   theoLo(ids, (lo, ph) => {
@@ -161,7 +161,7 @@ export function noiMt0VaoFt(
     const m = mt0.get(x.cuCycleId!);
     return m && x.ftCycleId ? [{ ...x, ftCycleId: x.ftCycleId, mt0Id: m.id }] : [];
   });
-  huyLuot(actorUserId, co.flatMap((x) => {
+  huyLuotChuaDiem(actorUserId, co.flatMap((x) => {
     const m = mt0.get(x.cuCycleId!);
     return m && !x.ftCycleId && !m.coDiem ? [m.id] : [];
   }), lyDoHuy);
@@ -224,16 +224,19 @@ export function keHoachVeThuong(ft: { id: number; student_id: number; seq: numbe
 }
 
 /**
- * FT → LỚP THƯỜNG khi thi hành (PR-CL B4, đặc tả 08/10 §1): gọi TRONG tx của `apDungMotDong`, TRƯỚC bản chụp lộ trình FT. MT0 có điểm → về khoá
- * thường trước (khoá đã đóng → "MT0 · không dùng"); MT0 chưa điểm + Mock chưa điểm → huỷ "Học lại lớp thường"; lộ trình FT bỏ đầu vào MT0.
- * Không xoá dòng hay điểm nào. Không giới hạn thời gian (D3). ≤ 4 câu ghi, không tham số đặt tên.
+ * FT → LỚP THƯỜNG khi thi hành (PR-CL B4, đặc tả 08/10 §1) — HAI bước trong tx của `apDungMotDong`, quanh bản chụp lộ trình FT (R-C1: bản chụp = trạng thái
+ * lúc đóng). Bước 1 (`huyKhiVeThuong`, TRƯỚC bản chụp): MT0 chưa điểm + Mock chưa điểm → huỷ "Học lại lớp thường". Bước 2 (`doiMt0KhiVeThuong`, SAU
+ * bản chụp — bản chụp FT còn đầu vào + dòng MT0 có điểm): MT0 có điểm → về khoá thường trước (khoá đã đóng → "MT0 · không dùng"); lộ trình FT bỏ đầu vào MT0.
+ * Không xoá dòng hay điểm nào. Không giới hạn thời gian (D3). Cả hai bước ≤ 4 câu ghi, không tham số đặt tên.
  */
-export function veLopThuong(actorUserId: number, ft: { id: number; student_id: number; seq: number }): void {
+export function huyKhiVeThuong(actorUserId: number, k: KeHoachVeThuong): void {
+  huyLuotChuaDiem(actorUserId, [...(k.mt0 && !k.mt0.coDiem ? [k.mt0.id] : []), ...k.mockHuy.map((x) => x.id)], 'Học lại lớp thường');
+}
+export function doiMt0KhiVeThuong(ftCycleId: number, k: KeHoachVeThuong): void {
+  if (!k.mt0) return;
   const conn = db();
-  const k = keHoachVeThuong(ft);
-  if (k.mt0?.coDiem) conn.prepare('UPDATE assessment_attempts SET cycle_id = ?, updated_at = ? WHERE id = ?').run(k.khoaTruocId, nowIso(), k.mt0.id);
-  huyLuot(actorUserId, [...(k.mt0 && !k.mt0.coDiem ? [k.mt0.id] : []), ...k.mockHuy.map((x) => x.id)], 'Học lại lớp thường');
-  if (k.mt0) conn.prepare('UPDATE learning_cycles SET baseline_attempt_id = NULL, baseline_source = NULL WHERE id = ? AND baseline_attempt_id = ?').run(ft.id, k.mt0.id);
+  if (k.mt0.coDiem) conn.prepare('UPDATE assessment_attempts SET cycle_id = ?, updated_at = ? WHERE id = ?').run(k.khoaTruocId, nowIso(), k.mt0.id);
+  conn.prepare('UPDATE learning_cycles SET baseline_attempt_id = NULL, baseline_source = NULL WHERE id = ? AND baseline_attempt_id = ?').run(ftCycleId, k.mt0.id);
 }
 
 export type Mt0View = {

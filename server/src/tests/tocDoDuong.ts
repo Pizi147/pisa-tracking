@@ -531,6 +531,8 @@ export const TRAN: Record<string, number> = {
   'GVCN_THUONG /cases?classId=6': 22,
   'QL /ke-hoach-test/thuong/6': 30,
   'QT /ke-hoach-test/thuong/6': 29,
+  /* PR-CL (B3): HV 1 (FT) → MB FOU 12 = nhánh FT → thường của xem trước (kế hoạch lượt, tuLopThuong, Case theo chương trình) — đo 08/10 QL 15 / QT 14;
+     min(trần cũ, max(đo+10, ⌈đo×1,3⌉)) = trần cũ. */
   'QL /students/1/chuyen-lop?toClassId=6': 22,
   'QT /students/1/chuyen-lop?toClassId=6': 21,
   'GVCN /students/1/chuyen-lop?toClassId=6': 13,
@@ -614,6 +616,7 @@ export const TRAN: Record<string, number> = {
   'QT /students/1/lo-trinh-tiep': 21,
   'GVCN /students/1/lo-trinh-tiep': 25,
   'GVBM /students/1/lo-trinh-tiep': 25,
+  /* PR-CL (B2): + câu sĩ số (QL/QT), branchCode cùng câu lớp — đo 08/10 QL 14 / QT 13 / GVCN 13; min(trần cũ, max(đo+10, ⌈đo×1,3⌉)) = trần cũ. */
   'QL /chuyen-lop/lop-dich?studentId=1': 23,
   'QT /chuyen-lop/lop-dich?studentId=1': 22,
   'GVCN /chuyen-lop/lop-dich?studentId=1': 23,

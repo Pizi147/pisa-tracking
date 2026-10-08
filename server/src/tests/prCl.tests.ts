@@ -164,6 +164,13 @@ export async function runPrClTests(t: YThucTestKit) {
     assert(soDiem() === diemTruoc, `số điểm: ${soDiem()} ≠ ${diemTruoc}`);
     const c = get('SELECT status, system_close_reason FROM sos_cases WHERE id = ?', caseId);
     assert(c.status === 'done' && c.system_close_reason === 'moved_to_normal', `Case FT: ${JSON.stringify(c)}`);
+    /* Fix I1 (R-C1): bản chụp lộ trình FT = trạng thái lúc đóng — còn đầu vào MT0 và dòng MT0 có điểm; Mock chưa điểm đã huỷ. */
+    const bc = get('SELECT id, dau_vao_nguon, dau_vao_l, dau_vao_r FROM ban_chup_lo_trinh WHERE cycle_id = ? ORDER BY id DESC LIMIT 1', x.ft.id);
+    assert(bc && bc.dau_vao_nguon === 'mt0' && bc.dau_vao_l === 6 && bc.dau_vao_r === 6, `bản chụp FT đầu vào: ${JSON.stringify(bc)}`);
+    const dongMt0 = all('SELECT trang_thai FROM ban_chup_luot WHERE ban_chup_id = ? AND attempt_id = ?', bc.id, x.mt0Id);
+    assert(dongMt0.length > 0 && dongMt0.every((r) => r.trang_thai === 'khong_dung'), `bản chụp FT dòng MT0: ${JSON.stringify(dongMt0)}`);
+    const dongMock = all('SELECT DISTINCT trang_thai FROM ban_chup_luot WHERE ban_chup_id = ? AND attempt_id = ?', bc.id, huyDuKien[0]);
+    assert(dongMock.length === 1 && dongMock[0].trang_thai === 'cancelled', `bản chụp FT Mock huỷ: ${JSON.stringify(dongMock)}`);
   });
 
   // ------------------------------------------------------------------ (b) biến thể: MT0 chưa điểm; vào thẳng FT; không giới hạn thời gian
@@ -294,7 +301,13 @@ export async function runPrClTests(t: YThucTestKit) {
     const x = emDaLenFt(FT_A.id);
     const mock = all(`SELECT id, attempt_no FROM assessment_attempts WHERE cycle_id = ? AND kind != 'mt0' AND status = 'planned' ORDER BY attempt_no`, x.ft.id);
     diem(mock[0].id, 'listening');
+    /* Fix M1: Case FT (đóng "moved_to_normal") + Case khoá ELE cũ (lớp thường — KHÔNG đóng) → chỉ đếm 1. */
+    const caseFt = taoCase(x.sid, x.ft.id);
+    const caseThuong = taoCase(x.sid, x.khoaEle);
     const v = luatLoTrinh.xemChuyenLop(QL, x.sid, ELE_DICH.id);
+    assert(v.khiChuyen.includes('1 Case FT tự đóng'), `Case: ${JSON.stringify(v.khiChuyen)}`);
+    const seDong = (id: number) => v.caseMo.find((c: any) => c.id === id)?.seDong;
+    assert(seDong(caseFt) === true && seDong(caseThuong) === false, `seDong: ${JSON.stringify(v.caseMo)}`);
     const n = mock.length - 1;
     const ten = mock.slice(1).map((m) => `MT${m.attempt_no}`).join(', ');
     assert(v.canhBao === true, 'canhBao');

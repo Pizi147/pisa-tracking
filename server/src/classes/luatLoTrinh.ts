@@ -7,7 +7,7 @@ import { demoToday } from '../demoConfig.ts';
 import { badRequest, notFound, nowIso } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
-import { chuyenCaseSangLoTrinh, closeCasesOnProgrammeSwitch } from '../cases/systemClose.ts';
+import { chuyenCaseSangLoTrinh, closeCasesOnProgrammeSwitch, programmeOfCase } from '../cases/systemClose.ts';
 import { banGiaoPaQuyChe } from '../cases/sosAuto.ts';
 import { taoMtMacDinh, taoMtMacDinhLo } from '../fasttrack/mtMacDinh.ts';
 import { classProgressMany, mocKetKhoa } from './schedule.ts';
@@ -16,7 +16,7 @@ import { sauChuyenCuoiKhoa } from '../normal/cuoiKhoa.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { chotHanXuLy, trangThaiYThuc } from '../yThuc/trangThai.ts';
 import { khoangTamDung } from '../students/tamDung.ts';
-import { keHoachVeThuong, noiMt0VaoFt, veLopThuong } from '../fasttrack/mt0.ts';
+import { doiMt0KhiVeThuong, huyKhiVeThuong, keHoachVeThuong, noiMt0VaoFt } from '../fasttrack/mt0.ts';
 import { ghiBanChup } from '../loTrinh/banChup.ts';
 
 /**
@@ -342,11 +342,13 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
     });
     /* PR-MT0 (T5b): từ lớp thường — sang FT thì MT0 thành mốc đầu vào lộ trình mới; hướng khác thì MT0 chưa điểm huỷ. */
     if (!tuLop.ft && curCycle) noiMt0VaoFt(p.userId, [{ sid: d.sid, cuCycleId: curCycle.id, ftCycleId: denLop.ft ? moiId : null, ngay: d.ngay }]);
-    /* PR-CL (B4): FT → thường — MT0 "không dùng" / huỷ, Mock chưa điểm huỷ; TRƯỚC bản chụp để lộ trình FT chụp trạng thái cuối. */
-    if (veThuong) veLopThuong(p.userId, curCycle);
+    /* PR-CL (B4, R-C1): FT → thường — huỷ MT0 / Mock chưa điểm TRƯỚC bản chụp; MT0 có điểm về khoá thường + bỏ đầu vào SAU bản chụp (bản chụp = lúc đóng). */
+    const veTh = veThuong ? keHoachVeThuong(curCycle) : null;
+    if (veTh) huyKhiVeThuong(p.userId, veTh);
     /* PR-TK: bản chụp CÙNG giao dịch, lớp lúc đóng = lớp cũ (ghi danh đã đổi ở trên). Lý do = đúng loại kết thúc ghi danh.
        PR-MT0: ghi SAU khi MT0 đã sang lộ trình FT (bản chụp khoá cũ không giữ MT0 đã thành đầu vào FT), TRƯỚC khi Case FT→FT đi theo. */
     if (curCycle) ghiBanChup(conn, [curCycle.id], { lyDo: luat.endKind as 'len_lop' | 'hoc_lai' | 'sang_ft' | 'chuyen_lop', ngay: d.ngay, lopId: enr.class_id });
+    if (veTh) doiMt0KhiVeThuong(curCycle.id, veTh);
     if (denLop.ft && tuLop.ft && curCycle) chuyenCaseSangLoTrinh(p.userId, d.sid, curCycle.id, moiId, route, d.ngay);   // K5-60
   }
 
@@ -420,8 +422,8 @@ export function xemChuyenLop(p: Principal, sid: number, toClassId?: number | nul
   const homNay = demoToday();
   const openCases = conn
     .prepare(
-      `SELECT sc.id, sc.title, sc.category, u.full_name AS owner FROM sos_cases sc
-         LEFT JOIN users u ON u.id = sc.owner_user_id
+      `SELECT sc.id, sc.title, sc.category, sc.topic, sc.attempt_id, COALESCE(sc.cycle_id, a.cycle_id) AS eff_cycle_id, u.full_name AS owner FROM sos_cases sc
+         LEFT JOIN users u ON u.id = sc.owner_user_id LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
         WHERE sc.student_id = ? AND sc.status != 'done' ORDER BY sc.id`,
     )
     .all(sid) as any[];
@@ -435,6 +437,7 @@ export function xemChuyenLop(p: Principal, sid: number, toClassId?: number | nul
   let luat: LuatDoiLop | null = null;
   let goiY = new Map<number, { id: number; ten: string } | null>();
   let doiChiNhanh = false;
+  const seDong = new Set<number>();
   let huong: { boiCanh: 'cuoi-khoa' | 'giua-khoa'; huong: HuongLenh } | null = null;
   let targetSan: MucTieuLenh | null = null;
   let nguonTarget: 'gvcn' | 'khoa' | null = null;
@@ -466,11 +469,14 @@ export function xemChuyenLop(p: Principal, sid: number, toClassId?: number | nul
       const k = keHoachVeThuong(cyc);
       veThuong = { route: cyc.route ?? null, mt0: k.mt0 && { coDiem: k.mt0.coDiem, kyNang: k.mt0.kyNang }, mockHuy: k.mockHuy.map((x) => x.ten), giuDiem: k.giuDiem };
     }
+    /* Fix M1: Case tự đóng = đúng phạm vi `closeCasesOnProgrammeSwitch` (chương trình cũ); Case khác đi theo em. Vài Case một em — `programmeOfCase` từng Case. */
+    const ctDong = luat.dongCase === 'normal' ? 'band' : luat.dongCase === 'ft' ? 'ratio' : null;
+    for (const c of openCases) if (ctDong && programmeOfCase({ ...c, cycle_id: c.eff_cycle_id ?? null }) === ctDong) seDong.add(c.id);
     const nhan = openCases.map((c) => goiY.get(c.id)).find(Boolean);
     khoi = dongKhiChuyen({
       nguonFt: ft, dichFt: denLop.ft, khoa: luat.khoa, routeNguon: enr.route ?? null, routeDich: denLop.ft ? (toClass.route ?? enr.route ?? 'LT1') : null,
       maNguon: tuLop.ma, mt0, target: targetSan === null || !nguonTarget ? null : { giaTri: targetSan, nguon: nguonTarget }, veThuong,
-      soCase: openCases.length, dongCase: luat.dongCase, goiYNhan: nhan?.ten ?? null, doiChiNhanh,
+      soCase: ctDong ? seDong.size : openCases.length, dongCase: luat.dongCase, goiYNhan: nhan?.ten ?? null, doiChiNhanh,
     });
   }
   const truoc = ft ? conn.prepare(
@@ -493,7 +499,7 @@ export function xemChuyenLop(p: Principal, sid: number, toClassId?: number | nul
     },
     caseMo: openCases.map((c) => ({
       id: c.id, title: c.title, category: c.category, owner: c.owner ?? null,
-      seDong: toClassId ? luat!.dongCase !== null : false,
+      seDong: seDong.has(c.id),
       goiY: toClassId ? (goiY.get(c.id) ?? null) : null,
     })),
     luat, canLuuY: openCases.length === 0, doiChiNhanh,
