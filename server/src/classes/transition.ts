@@ -119,7 +119,8 @@ export function transitionPlan(p: Principal, classId: number) {
   const baiChuaLamByCycle = new Map(baiChuaLamRows.map((r) => [r.cycle_id, r.n as number]));
 
   /*
-   * LỚP ĐÍCH GỢI Ý: lớp MỌI CHI NHÁNH (PR-LCb — `raLenh` nhận lớp chi nhánh khác, báo "Sắp nhận" QL chi nhánh đích), đúng MỘT TRONG các chương trình ở `options` (bậc kế,
+   * LỚP ĐÍCH GỢI Ý: lớp thường → lớp MỌI CHI NHÁNH (PR-LCb — `raLenh` nhận lớp chi nhánh khác, báo "Sắp nhận" QL chi nhánh đích); lớp FT (panel
+   * Chuyển lớp cũ) giữ CÙNG chi nhánh (R-B3), đúng MỘT TRONG các chương trình ở `options` (bậc kế,
    * FT, hoặc cùng chương trình để học lại), còn đang chạy và chưa học quá nửa chương trình.
    * `classProgressMany` MỘT LẦN cho cả danh sách ứng viên — không classProgress trong vòng lặp (N+1).
    */
@@ -129,11 +130,11 @@ export function transitionPlan(p: Principal, classId: number) {
         `SELECT c.id, c.code, c.programme_code, c.is_fast_track, c.route, c.branch_id, b.code AS branch_code,
                 (SELECT COUNT(*) FROM enrollments e WHERE e.class_id = c.id AND e.status='active') AS n
            FROM classes c JOIN branches b ON b.id = c.branch_id
-          WHERE c.status = 'active' AND c.id != ?
+          WHERE c.status = 'active' AND c.id != ?${ft ? ' AND c.branch_id = ?' : ''}
             AND c.programme_code IN (${optionCodes.map(() => '?').join(',')})
           ORDER BY c.code`,
       )
-      .all(classId, ...optionCodes) as any[])
+      .all(classId, ...(ft ? [cls.branch_id] : []), ...optionCodes) as any[])
       .sort((a, b) => soSanhLop({ code: a.code }, { code: b.code }))
     : [];
   const candidateProgress = classProgressMany(candidateRows.map((c) => c.id));

@@ -701,12 +701,13 @@ function tinhLopChoChotLoTrinh(p: Principal, branchId: number | null, today: str
   const conn = db();
   const lop = conn.prepare(
     `SELECT c.id, c.code FROM classes c
-      WHERE c.status = 'active' AND c.is_fast_track = 0 AND c.programme_code IN ('PREFOU', 'FOU', 'BE', 'ELE')${branchId ? ' AND c.branch_id = ?' : ''}`,
+      WHERE c.status = 'active' AND c.is_fast_track = 0${branchId ? ' AND c.branch_id = ?' : ''}`,
   ).all(...(branchId ? [branchId] : [])) as any[];
   const tienDo = classProgressMany(lop.map((c) => c.id as number));
   const toi = lop.flatMap((c) => {
     const pr = tienDo.get(c.id);
-    if (!pr) return [];
+    /* Chương trình theo `classProgress` (programme_code, lớp cũ NULL thì theo `kind`) — như việc `placement` cũ. */
+    if (!pr || !['PREFOU', 'FOU', 'BE', 'ELE'].includes(pr.programmeCode ?? '')) return [];
     const han = pr.finalWeekStart ? hanChotLenFt(pr.finalWeekStart) : null;
     const den = han ? today >= addDaysIso(han, -13) : mocKetKhoa(pr, today).hetKhoa;
     return den && can(p, PERMISSIONS.CLASS_EDIT, { classId: c.id }) ? [{ classId: c.id as number, code: c.code as string, han }] : [];

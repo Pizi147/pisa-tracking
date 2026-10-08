@@ -137,16 +137,14 @@ export function PanelCuoiKhoa({ classId, onClose, onDone }: { classId: number; o
   const thieuTarget = rows.filter((r) => oTarget(r.s, r.d) && mucTieuO(r.d) === null).length;
   /** Ghi chú đổi so với Lộ trình tiếp theo đã lưu. */
   const doiGhiChu = (s: Em, d: Dong) => d.ghiChu.trim() !== (s.loTrinhTiep?.ghiChu ?? '');
-  /** Hướng của em có lệnh khi chỉ sửa ghi chú: Hướng LTT (đã đồng bộ theo lệnh). */
-  const huongLenh = (s: Em) => (s.loTrinhTiep?.huong ?? s.lenh!.huong) as Huong;
   /** Dòng "Lưu hướng" / "Lưu n em": em chưa lệnh đổi Hướng / Ghi chú / Target (ô); em có lệnh chỉ ghi chú, hướng giữ. */
   const luuDuoc = rows.filter(({ s, d }) => {
-    if (s.lenh) return doiGhiChu(s, d) && (!laQl || !daSua.has(s.id) || d.huong === huongLenh(s));
+    if (s.lenh) return doiGhiChu(s, d) && (!laQl || !daSua.has(s.id) || d.huong === huongLenhGv(s));
     if (!d.huong) return false;
     return d.huong !== s.loTrinhTiep?.huong || doiGhiChu(s, d) || (laQl && oTarget(s, d) && typeof mucTieuO(d) === 'number');
   });
   const itemLuu = ({ s, d }: (typeof rows)[number]) => ({
-    studentId: s.id, huong: s.lenh ? huongLenh(s) : d.huong, ghiChu: d.ghiChu.trim() || null,
+    studentId: s.id, huong: s.lenh ? huongLenhGv(s) : d.huong, ghiChu: d.ghiChu.trim() || null,
     ...(laQl && !s.lenh && oTarget(s, d) && typeof mucTieuO(d) === 'number' ? { mucTieu: mucTieuO(d) } : {}),
   });
   const lamMoi = () => { for (const k of ['/classes', '/students', '/hoc-vien-lop', '/my-work', '/lenh-chuyen', '/yeu-cau']) invalidate(k); };
@@ -182,15 +180,23 @@ export function PanelCuoiKhoa({ classId, onClose, onDone }: { classId: number; o
       });
       /* Ghi chú đi đường Lộ trình tiếp theo (lệnh không mang ghi chú) — sau lệnh, Hướng LTT = hướng vừa xác nhận. */
       const gc = canGui.filter(({ s, d }) => r.ok.includes(s.id) && doiGhiChu(s, d));
+      let loiGc = false;
       if (gc.length) {
-        await api.put(`/classes/${classId}/lo-trinh-tiep`, { items: gc.map(({ s, d }) => ({ studentId: s.id, huong: d.huong, ghiChu: d.ghiChu.trim() || null })) })
-          .catch((e: any) => toast.push('error', `Chưa lưu ghi chú. ${e.message}`));
+        try {
+          await api.put(`/classes/${classId}/lo-trinh-tiep`, { items: gc.map(({ s, d }) => ({ studentId: s.id, huong: d.huong, ghiChu: d.ghiChu.trim() || null })) });
+        } catch (e: any) { loiGc = true; toast.push('error', `Chưa lưu ghi chú — bấm Lưu hướng để lưu lại. ${e.message}`); }
       }
       lamMoi();
-      if (r.failed.length) {
+      if (r.failed.length || loiGc) {
+        /* Em đã xác nhận xong rời tập "đã sửa" (không gửi lại lệnh); ghi chú chưa lưu được thì GIỮ để Lưu hướng. Em lỗi giữ nguyên + lỗi từng hàng. */
+        const xong = new Set(r.ok);
+        setDaSua((x) => new Set([...x].filter((id) => !xong.has(id))));
+        setDongs((m) => Object.fromEntries(Object.entries(m).flatMap(([k, x]) => (!xong.has(Number(k)) ? [[k, x]]
+          : loiGc && x.ghiChu !== undefined ? [[k, { ghiChu: x.ghiChu }]] : []))));
         setLoiDong(Object.fromEntries(r.failed.map((f) => [f.studentId, f.message])));
         setBuoc(1);
-        toast.push('error', `${r.failed.length} em chưa xác nhận được — xem lỗi ở từng hàng`);
+        if (r.failed.length) toast.push('error', `${r.failed.length} em chưa xác nhận được — xem lỗi ở từng hàng`);
+        else toast.push('ok', `Đã xác nhận ${r.ok.length} em`);
         if (r.ok.length) reload();
       } else {
         toast.push('ok', `Đã xác nhận ${r.ok.length} em`);
@@ -201,14 +207,15 @@ export function PanelCuoiKhoa({ classId, onClose, onDone }: { classId: number; o
 
   const huyLenh = async () => {
     const s = huy && students.find((x) => x.id === huy.sid);
-    if (!s?.lenh) return;
+    if (!s?.lenh || busy) return;
+    setBusy(true);
     try {
       await api.post(`/lenh-chuyen/${s.lenh.id}/huy`, { lyDo: huy!.lyDo });
       lamMoi();
       setDongs((m) => { const { [s.id]: _, ...con } = m; return con; });
       setHuy(null); reload();
       toast.push('ok', 'Đã huỷ quyết định');
-    } catch (e: any) { toast.push('error', e.message); }
+    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
   const chonCoLenh = students.filter((s) => chon.has(s.id) && s.lenh);
   const huyNhieuLenh = async () => {
@@ -261,15 +268,16 @@ export function PanelCuoiKhoa({ classId, onClose, onDone }: { classId: number; o
     ? [`${students.length} em`, tuanFinal ? `Final ${tuanLich(tuanFinal, homNay)}` : null, laQl ? (buoc === 1 ? '1 Soạn' : '2 Xác nhận') : null]
     : [data.from.code, `${students.length} em`, tuanFinal ? `Final ${tuanLich(tuanFinal, homNay)}` : null];
   const btn = 'btn min-h-[44px] sm:min-h-0';
+  const daSuaGi = Object.keys(dongs).length > 0 || Object.values(nhomLop).some(Boolean) || !!tuanChung;
 
   const chan = !students.length || (!laQl && !laGv) ? undefined
     : laGv ? {
-      huy: null, daSua: luuDuoc.length > 0,
-      phu: <button type="button" className={`${btn} max-sm:hidden`} onClick={onClose} disabled={busy}>Đóng</button>,
+      huy: null,
+      phu: <button type="button" className={`${btn} max-sm:hidden`} onClick={onClose} disabled={busy}>{luuDuoc.length ? 'Huỷ thay đổi' : 'Đóng'}</button>,
       chinh: <button type="button" className={`${btn} btn-primary`} onClick={luu} disabled={busy || !luuDuoc.length}>{busy ? 'Đang lưu…' : luuDuoc.length ? `Lưu ${luuDuoc.length} em` : 'Lưu'}</button>,
     }
     : buoc === 1 ? {
-      huy: null, daSua: Object.keys(dongs).length > 0,
+      huy: null,
       dongTren: (
         <div className="flex flex-wrap gap-x-3 gap-y-1 px-4 pt-2 text-xs tabular-nums text-slate-400">
           <span>{demChan.map(([k, n], i) => <span key={k}>{i > 0 && ' · '}{k} <b className="text-slate-100">{n}</b></span>)}</span>
@@ -278,7 +286,8 @@ export function PanelCuoiKhoa({ classId, onClose, onDone }: { classId: number; o
       ),
       phu: (
         <>
-          <button type="button" className={`${btn} max-sm:hidden`} onClick={onClose} disabled={busy}>Đóng</button>
+          {/* Luật S3 (KhungPanel): đã sửa → "Huỷ thay đổi", chưa → "Đóng". Tự vẽ để ba nút cùng phía phải như mockup. */}
+          <button type="button" className={`${btn} max-sm:hidden`} onClick={onClose} disabled={busy}>{daSuaGi ? 'Huỷ thay đổi' : 'Đóng'}</button>
           <button type="button" className={btn} onClick={luu} disabled={busy || !luuDuoc.length}>{busy ? 'Đang lưu…' : 'Lưu hướng'}</button>
         </>
       ),
@@ -326,11 +335,11 @@ export function PanelCuoiKhoa({ classId, onClose, onDone }: { classId: number; o
                               </div>
                             ) : (
                               <ChonNguoi value={null} nhom="nhan_vien" choToi={false} choNgoai={false} ds={dsLop(h)} placeholder="Gõ tên lớp…"
-                                ariaLabel={`Lớp chuyển đến cho nhóm ${TEN[h]}`} invalid={lf.daBam && thieu > 0}
+                                ariaLabel={`Lớp chuyển đến cho nhóm ${TEN[h]}`} invalid={(lf.daBam || !canGui.length) && thieu > 0}
                                 khongKhop={(go) => `Không có lớp khớp “${go}”`}
                                 onChange={(v) => v?.kieu === 'tai_khoan' && setNhomLop((m) => ({ ...m, [h]: v.id }))} />
                             )}
-                            {lf.daBam && thieu > 0 && <span role="alert" className="mt-1 block text-[12px] text-late">Chọn lớp cho {thieu} em {TEN[h]}</span>}
+                            {(lf.daBam || !canGui.length) && thieu > 0 && <span role="alert" className="mt-1 block text-[12px] text-late">Chọn lớp cho {thieu} em {TEN[h]}</span>}
                           </div>
                           {data.canEdit && <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0 sm:mt-1" onClick={() => setTaoLop(h)}>+ Mở lớp mới…</button>}
                         </div>
@@ -379,7 +388,7 @@ export function PanelCuoiKhoa({ classId, onClose, onDone }: { classId: number; o
                   {rows.map(({ s, d, loi }) => {
                     const p: HangProps = {
                       s, d, laQl, laGv, dt, cacHuong, nhanH, homNay, tuanCh, tuanFinal, maTu, tuanChon: data.tuanChon, oTarget: oTarget(s, d), targetCo: targetCo(s),
-                      loi: lf.daBam || daSua.has(s.id) ? (laLenh(d.huong) ? loi : null) : null, loiMayChu: loiDong[s.id] ?? null,
+                      loi: laQl && (lf.daBam || daSua.has(s.id)) && laLenh(d.huong) ? loi : null, loiMayChu: loiDong[s.id] ?? null,
                       maLop: maLop(s, d), lopRieng: d.lop || '', nhomCo: !!nhomLop[d.huong as Huong], ds: CAN_LOP.includes(d.huong as Huong) ? dsLop(d.huong as Huong) : [],
                       chon: chon.has(s.id), onChon: (v) => setChon((x) => { const nn = new Set(x); if (v) nn.add(s.id); else nn.delete(s.id); return nn; }),
                       sua: (pp) => sua(s.id, pp), busy,
@@ -445,7 +454,7 @@ function HangEm(p: HangProps) {
   const coTarget = d.mucTieu === 'KCK' || (d.mucTieu.trim() !== '' && !Number.isNaN(Number(d.mucTieu)));
   const nhan = (t: string) => <span className="mb-0.5 block text-xs text-slate-500">{t}</span>;
   const nhanTb = (t: string) => (dt ? nhan(t) : null);
-  const loiHang = p.loi ?? p.loiMayChu ?? (s.lenh?.loi ? `Chưa chuyển được: ${s.lenh.loi.replace(/\.$/, '')} — chọn tuần hoặc lớp mới rồi Xác nhận, hoặc huỷ quyết định.` : null);
+  const loiHang = p.loi ?? p.loiMayChu ?? (s.lenh?.loi ? `Chưa chuyển được: ${s.lenh.loi.replace(/\.$/, '')}${laQl ? ' — chọn tuần hoặc lớp mới rồi Xác nhận, hoặc huỷ quyết định.' : ''}` : null);
 
   const oGoiY = !goiY ? <span className="text-slate-500">—</span>
     : goiY.canQuanLy ? <Nhan tone="soon" title={goiY.nhan}>Quản lý cân nhắc</Nhan>
@@ -502,7 +511,7 @@ function HangEm(p: HangProps) {
     <span className="block">
       <span className="tabular-nums text-slate-200">{tuanLich(d.tuan || tuanCh, homNay)}</span>
       {tuanRieng && <span className="text-xs text-slate-500"> riêng</span>}
-      {sua && !doiTuan && !tuanRieng && <button type="button" className="link ml-2 border-0 bg-transparent p-0 text-xs" onClick={() => setDoiTuan(true)}>Đổi</button>}
+      {sua && !doiTuan && !tuanRieng && <button type="button" className="link ml-2 border-0 bg-transparent p-0 text-xs" onClick={() => setDoiTuan(true)} aria-label={`Đổi tuần của ${s.fullName}`}>Đổi</button>}
       {sua && (doiTuan || tuanRieng) && (
         <span className="mt-1 block max-w-[9.5rem]">
           <OTuan tuanChon={p.tuanChon} value={d.tuan || tuanCh} onChange={(v) => sua({ tuan: v === tuanCh ? '' : v })} ariaLabel={`Tuần bắt đầu của ${s.fullName}`} />
@@ -535,11 +544,11 @@ function HangEm(p: HangProps) {
       {laQl && s.lenh && (
         <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
           <span>{CHU_CHUYEN_LOP.sapChuyen(tuanLich(s.lenh.tuan, homNay))}</span>
-          {!p.huy && <button type="button" className="link border-0 bg-transparent p-0 text-xs" onClick={p.moHuy}>{CHU_CHUYEN_LOP.huy}</button>}
+          {!p.huy && <button type="button" className="link border-0 bg-transparent p-0 text-xs" onClick={p.moHuy} aria-label={`${CHU_CHUYEN_LOP.huy} của ${s.fullName}`}>{CHU_CHUYEN_LOP.huy}</button>}
           {p.huy && (
             <span className="flex flex-wrap items-center gap-1.5">
               <input className="field w-56" placeholder="Lý do huỷ" aria-label={`Lý do huỷ quyết định của ${s.fullName}`} value={p.huy.lyDo} onChange={(e) => p.doiLyDoHuy(e.target.value)} />
-              <button type="button" className="btn btn-sm btn-danger" disabled={!p.huy.lyDo.trim()} onClick={p.xacNhanHuy}>{CHU_CHUYEN_LOP.huy}</button>
+              <button type="button" className="btn btn-sm btn-danger" disabled={p.busy || !p.huy.lyDo.trim()} onClick={p.xacNhanHuy}>{CHU_CHUYEN_LOP.huy}</button>
               <button type="button" className="btn btn-sm" onClick={p.dongHuy}>{CHU_CHUYEN_LOP.giu}</button>
             </span>
           )}
@@ -577,7 +586,7 @@ function HangEm(p: HangProps) {
           </>
         )}
         <span role="cell" className="block">{nhan('Ghi chú')}{oGhiChu}</span>
-        {duoi}
+        <div role="cell" className="space-y-1">{duoi}</div>
       </div>
     );
   }
@@ -594,7 +603,7 @@ function HangEm(p: HangProps) {
       {laQl && <span role="cell" className="min-w-0">{oLop}</span>}
       {laQl && <span role="cell" className="min-w-0">{oTuan}</span>}
       <span role="cell" className="min-w-0">{oGhiChu}</span>
-      {(loiHang || (laQl && s.lenh)) && <div className="col-start-2 col-end-[-1] space-y-1">{duoi}</div>}
+      {(loiHang || (laQl && s.lenh)) && <div role="cell" className="col-start-2 col-end-[-1] space-y-1">{duoi}</div>}
     </div>
   );
 }

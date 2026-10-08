@@ -277,8 +277,8 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     /* PR-LUI-a1: cột violations.ten (chỉ thêm cột, dòng cũ tự tách khi đọc). */ migratePrLuiA1(conn, applied);
     /* PR-LUI-a2: Người phụ trách của lần ghi kết quả PA (chỉ thêm cột). */ migratePrLuiA2(conn, applied);
     /* PR-TK: bản chụp lộ trình lúc đóng + cột thi thật + điền ngược (chỉ thêm, chạy lặp được). */ migratePrTk(conn, applied);
+    /* PR-LCb (TRƯỚC PR-LC — phán quyết R-B1): cột lo_trinh_tiep_theo.huong_gvcn + điền bù từ Hướng GVCN trước khi PR-LC đồng bộ Hướng theo lệnh. */ migratePrLcb(conn, applied);
     /* PR-LC: quyết định Cuối khoá đang chờ → Lộ trình tiếp theo + MT0 theo quyết định (đổi dữ liệu, chạy lặp được). */ migratePrLc(conn, applied);
-    /* PR-LCb: cột lo_trinh_tiep_theo.huong_gvcn (đề xuất GVCN) + điền bù dòng GVCN ghi (chỉ thêm cột, chạy lặp được). */ migratePrLcb(conn, applied);
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());

@@ -175,6 +175,7 @@ export async function runPrLcbTests(t: YThucTestKit) {
   const transition: any = await import('../classes/transition.ts');
   const yeuCau: any = await import('../duyet/yeuCau.ts');
   const migLcb: any = await import('../migrate/prLcb.ts');
+  const fs = await import('node:fs');
   const { getConfig, setConfig } = await import('../demoConfig.ts');
   const lopMB = (code: string, kind: string, ft = false, branchId = MB) => (intake.createClass(P.admin, {
     code, branchId, kind, isFastTrack: ft, route: ft ? 'LT1' : null, startDate: thu2(1), startPeriodId: week.ensurePeriod(thu2(1)).id,
@@ -296,27 +297,63 @@ export async function runPrLcbTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ (l) migrate prLcb: thêm cột + điền bù dòng GVCN ghi; chạy lặp được
-  check('LCb-l · migrate prLcb: thêm cột huong_gvcn; dòng GVCN đang hiệu lực ghi được điền; dòng QL ghi để trống; chạy lần hai không đổi gì', () => {
+  /* Phán quyết R-B1: migratePrLcb chạy TRƯỚC migratePrLc; điền bù huong_gvcn = huong cho dòng LTT của em KHÔNG có lệnh cuối khoá đang chờ
+     (dòng đó là của GVCN — kể cả GVCN đã đổi người); em có lệnh chờ để trống (hướng có thể đã là của Quản lý). */
+  check('LCb-l · migrate prLcb (chạy trước prLc): thêm cột huong_gvcn; dòng em không có lệnh chờ được điền (cả khi GVCN đã đổi); em có lệnh chờ để trống; chạy lần hai không đổi gì', () => {
+    const mg = fs.readFileSync(new URL('../../../../server/src/migrate.ts', import.meta.url), 'utf8');
+    assert(mg.indexOf('migratePrLcb(conn, applied)') > 0 && mg.indexOf('migratePrLcb(conn, applied)') < mg.indexOf('migratePrLc(conn, applied)'), 'migratePrLcb phải chạy trước migratePrLc');
     const l = taoLop('FOU', 8, 2);
     const [a, b] = l.sids;
     const gvcn = ganGv(l.classId, 13, null, true);
     loTrinh.ghiLoTrinhTiep(gvcn, a, { huong: 'hoc_lai' });
-    loTrinh.ghiLoTrinhTiep(QL, b, { huong: 'len_lop' });
+    loTrinh.ghiLoTrinhTiep(gvcn, b, { huong: 'hoc_lai' });
+    conn.prepare(`UPDATE teacher_assignments SET status = 'ended' WHERE class_id = ? AND user_id = ?`).run(l.classId, gvcn.userId);   // GVCN đã đổi người
+    const r0 = lenh.raLenh(QL, { lopNguonId: l.classId, boiCanh: 'cuoi-khoa', tuanChung: THU_HAI, dongs: [{ studentId: b, huong: 'len_lop', toClassId: BE_DICH }] });
+    assert(!r0.failed.length, `tiền đề lệnh: ${JSON.stringify(r0.failed)}`);
     conn.exec('ALTER TABLE lo_trinh_tiep_theo DROP COLUMN huong_gvcn');   // DB trước PR-LCb
     const cot = () => (conn.prepare('SELECT name FROM pragma_table_info(?)').all('lo_trinh_tiep_theo') as any[]).some((x) => x.name === 'huong_gvcn');
     assert(!cot(), 'tiền đề: chưa có cột');
     const lan1: string[] = [];
     migLcb.migratePrLcb(conn, lan1);
     assert(cot() && lan1.length > 0, `lần 1: ${JSON.stringify(lan1)}`);
-    assert(ltt(a, l.classId)?.huong_gvcn === 'hoc_lai' && ltt(b, l.classId)?.huong_gvcn == null, `điền bù: ${ltt(a, l.classId)?.huong_gvcn} · ${ltt(b, l.classId)?.huong_gvcn}`);
+    assert(ltt(a, l.classId)?.huong_gvcn === 'hoc_lai' && ltt(b, l.classId)?.huong_gvcn == null, `điền bù (a không lệnh, b có lệnh chờ): ${ltt(a, l.classId)?.huong_gvcn} · ${ltt(b, l.classId)?.huong_gvcn}`);
     const truoc = JSON.stringify(conn.prepare('SELECT id, huong_gvcn FROM lo_trinh_tiep_theo ORDER BY id').all());
     const lan2: string[] = [];
     migLcb.migratePrLcb(conn, lan2);
     assert(!lan2.length && JSON.stringify(conn.prepare('SELECT id, huong_gvcn FROM lo_trinh_tiep_theo ORDER BY id').all()) === truoc, `lần 2: ${JSON.stringify(lan2)}`);
   });
 
+  // ------------------------------------------------------------------ (n) classProgressMany theo lô (Turso ≤ 900 tham số) — R-B2
+  check('LCb-n · classProgressMany 1000 id: không câu nào quá 900 tham số; lớp thật vẫn có tiến độ', () => {
+    const l = taoLop('FOU', 3, 1);
+    const ids = [l.classId, ...Array.from({ length: 999 }, (_, i) => 9_000_000 + i)];
+    let maxTs = 0; const goc = conn.prepare.bind(conn);
+    (conn as any).prepare = (sql: string) => { maxTs = Math.max(maxTs, (sql.match(/\?/g) ?? []).length); return goc(sql); };
+    let m: Map<number, any>;
+    try { m = schedule.classProgressMany(ids); } finally { (conn as any).prepare = goc; }
+    assert(maxTs <= 900, `câu có ${maxTs} tham số`);
+    assert(m!.get(l.classId)?.currentWeek === 3 && m!.size === 1, `tiến độ: ${m!.size} lớp`);
+  });
+
+  // ------------------------------------------------------------------ (o) panel FT giữ lớp chuyển đến CÙNG chi nhánh — R-B3
+  check('LCb-o · transitionPlan lớp FT: ứng viên chỉ cùng chi nhánh (như cũ); lớp thường: mọi chi nhánh', () => {
+    const cn = chiNhanh('LCBO');
+    const ftNguon = lopMB('LCBO FT 01', 'FT', true, cn);
+    const ftCung = lopMB('LCBO FT 02', 'FT', true, cn);
+    const c = transition.transitionPlan(P.admin, ftNguon).candidates as any[];
+    assert(c.some((x) => x.id === ftCung) && c.every((x) => x.branchCode === 'LCBO'), `FT: ${c.map((x) => x.code).join()}`);
+    const thuong = taoLop('FOU', 8, 1, cn);
+    assert((transition.transitionPlan(P.admin, thuong.classId).candidates as any[]).some((x) => x.id === FT_DICH), 'lớp thường thấy lớp FT chi nhánh khác');
+  });
+
+  // ------------------------------------------------------------------ (p) lớp cũ programme_code NULL (chương trình theo kind) vẫn có "Chốt lộ trình"
+  check('LCb-p · lớp FOU programme_code NULL (cũ, theo kind) tuần 6 → vẫn có việc "Chốt lộ trình" như việc placement cũ', () => {
+    const l = taoLop('FOU', 6, 1);
+    conn.prepare('UPDATE classes SET programme_code = NULL WHERE id = ?').run(l.classId);
+    assert(viecChot(QL, l.classId).length === 1, 'thiếu việc cho lớp programme_code NULL');
+  });
+
   // ------------------------------------------------------------------ (w) web: panel Lộ trình tiếp theo (lớp thường) + lối vào — đọc nguồn
-  const fs = await import('node:fs');
   const web = (f: string) => fs.readFileSync(new URL(`../../../../web/src/${f}`, import.meta.url), 'utf8');
   const coTep = (f: string) => fs.existsSync(new URL(`../../../../web/src/${f}`, import.meta.url));
   check('LCb-w · lớp thường: chuyen-tiep + lo-trinh-ca-lop mở PanelCuoiKhoa, FT chuyen-tiep mở TransitionPanel; ⋮ một mục "Lộ trình tiếp theo…"; panel cũ đã xoá; PanelCuoiKhoa dùng ChonNguoi ds, OTuan, hanChotLenFt, không placeholder 6.0', () => {

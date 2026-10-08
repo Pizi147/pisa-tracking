@@ -394,21 +394,19 @@ export function classProgressMany(classIds: number[]): Map<number, ClassProgress
   const out = new Map<number, ClassProgress>();
   if (!classIds.length) return out;
   const conn = db();
-  const ph = classIds.map(() => '?').join(',');
-
-  const classes = conn.prepare(`SELECT * FROM classes WHERE id IN (${ph})`).all(...classIds) as any[];
+  /* PR-LCb (R-B2): theo lô — Turso nhận tối đa ~900 tham số một câu (ứng viên lớp chuyển đến mọi chi nhánh có thể vượt). */
+  const classes: any[] = [];
+  theoLo(classIds, (lo, ph) => { classes.push(...(conn.prepare(`SELECT * FROM classes WHERE id IN (${ph})`).all(...lo) as any[])); });
   const periodIds = [...new Set(classes.map((c) => c.start_period_id).filter(Boolean))];
   const periods = new Map<number, any>();
-  if (periodIds.length) {
-    for (const r of conn
-      .prepare(`SELECT * FROM report_periods WHERE id IN (${periodIds.map(() => '?').join(',')})`)
-      .all(...periodIds) as any[]) {
+  theoLo(periodIds, (lo, ph) => {
+    for (const r of conn.prepare(`SELECT * FROM report_periods WHERE id IN (${ph})`).all(...lo) as any[]) {
       periods.set(r.id, { id: r.id, ...weekInfo(r.week_start) });
     }
-  }
+  });
   const counts = new Map<number, number>();
   const canXepByClass = new Map<number, number>();
-  for (const r of conn
+  theoLo(classes.map((c) => c.id as number), (lo, ph) => { for (const r of conn
     .prepare(
       `SELECT e.class_id, COUNT(*) n,
               SUM(CASE WHEN EXISTS (
@@ -424,10 +422,10 @@ export function classProgressMany(classIds: number[]): Map<number, ClassProgress
           AND ${HV_DANG_HOC_SQL('s')}
         GROUP BY e.class_id`,
     )
-    .all(demoToday(), ...classIds) as any[]) {
+    .all(demoToday(), ...lo) as any[]) {
     counts.set(r.class_id, r.n);
     canXepByClass.set(r.class_id, r.can_xep_lop ?? 0);
-  }
+  } }, THAM_SO_TOI_DA - 1);
 
   const progs = allProgrammes();   // nhớ trong request (`nho`) — PR-Dọn Q22: bỏ tham số truyền tay
   for (const c of classes) {
