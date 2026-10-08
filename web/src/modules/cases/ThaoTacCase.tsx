@@ -12,12 +12,12 @@ import {
   CASE_OUTCOMES, CASE_OUTCOME_LABEL, HAN_DUYET_NGAY,
   componentsAreCounts, componentsFor, interventionKindsFor, isProposalKind,
   dsLoi, kiemGhiRoKhac, KHAC_TOI_THIEU, moiKhoaGui, tuanLich,
-  loiFormPa, nguoiCuaPa, paMoi, paPayload, thanSuaPa, type GiaTriPa,
+  loiFormPa, nguoiCuaPa, paMoi, paPayload, thanSuaPa, type GiaTriPa, type KetQuaNhatKy,
   URGENCY_LEVELS, URGENCY_LABEL, caseTopicsFor, issuesForTopic, laKhac, tenMon, tenMonNgan,
 } from '@shared/domain/index.ts';
 import { ComponentsField, componentsPayload } from './ChiTietKyNang.tsx';
-import { FormPa, NgayKhoa } from './FormPa.tsx';
-import { LichSuDieuChinh, type BanDieuChinh } from './CapNhatTuan.tsx';
+import { FormPa, NgayKhoa, NhatKyPa } from './FormPa.tsx';
+import type { BanDieuChinh } from './CapNhatTuan.tsx';
 
 /**
  * BA THAO TÁC CỦA NGĂN CASE (PR-UX3, N-4): Thêm PA · Hoàn thành Case · Trả lời đề xuất — trước đây là hộp thoại giữa màn đè lên
@@ -123,15 +123,18 @@ export type PaDeSua = {
   id: number; kind: string; description: string | null; soBuoi: number | null; daDay: number;
   performer: string | null; performerUserId: number | null; startedDate: string | null;
   preset: boolean; recordedBy: string | null; createdAt?: string | null; mocChu: string | null;
+  /** Máy chủ: 'ky_vong' (Tutor Kỳ vọng đầu ra) · 'he_thong' (quy chế, Bổ trợ, không người ghi) · null (tạo tay). */
+  nguonTao?: 'ky_vong' | 'he_thong' | null;
   revisions: BanDieuChinh[];
 };
 
 /** Nguồn của PA web tạo (dòng đầu Sửa PA): `null` = PA người tạo tay; '' = web tạo, không rõ nguồn. */
 function nguonWebTao(pa: PaDeSua): string | null {
+  if (pa.nguonTao === 'ky_vong') return 'theo Kỳ vọng đầu ra';
+  if (!pa.nguonTao) return null;
   if (pa.kind === 'bo_tro') return 'theo Progress Test';
   if (pa.kind === 'bo_tro_mien_phi') return 'theo Final Test';
-  if (pa.preset) return 'theo quy chế SOS';
-  return pa.recordedBy ? null : '';
+  return pa.preset ? 'theo quy chế SOS' : '';
 }
 
 /**
@@ -140,9 +143,13 @@ function nguonWebTao(pa: PaDeSua): string | null {
  * được ô khác); đổi người thì gửi đủ ba khoá người (cả ba trống = xoá người). Mỗi lần lưu máy chủ ghi một dòng Nhật ký PA (cũ → mới).
  * Chân: Huỷ thay đổi / Lưu (`daSua`, luật S3).
  */
-export function SuaPaPanel({ pa, coKetQua, studentId, hocVien, lop, quayLai, onClose, onSaved }: ChungPanel & {
-  pa: PaDeSua; coKetQua: boolean; studentId?: number | null;
+export function SuaPaPanel({ pa, ketQua, studentId, hocVien, lop, quayLai, onClose, onSaved }: ChungPanel & {
+  pa: PaDeSua;
+  /** `CaseDetail.followups` — Nhật ký PA và khoá Ngày bắt đầu khi PA đã có Kết quả. */
+  ketQua: readonly KetQuaNhatKy[];
+  studentId?: number | null;
 }) {
+  const coKetQua = ketQua.some((f) => f.interventionId === pa.id);
   const toast = useToast();
   const { homNay, ngan } = useNgayNghiepVu();
   const goc: GiaTriPa = {
@@ -193,9 +200,7 @@ export function SuaPaPanel({ pa, coKetQua, studentId, hocVien, lop, quayLai, onC
               <ChonNgayGan value={startedDate} onChange={setStartedDate} soNgay={14} chuaChon="Chọn ngày" />
             </Truong>
           )} />
-      {pa.revisions.length > 0 && (
-        <Khoi tieuDe="Nhật ký PA"><LichSuDieuChinh revisions={pa.revisions} /></Khoi>
-      )}
+      <Khoi tieuDe="Nhật ký PA"><NhatKyPa pa={pa} ketQua={ketQua} /></Khoi>
     </KhungPanel>
   );
 }

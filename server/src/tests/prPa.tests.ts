@@ -519,4 +519,45 @@ export async function runPrPaTests(t: YThucTestKit) {
     assert(pl.soBuoi === 10 && !('performerSelf' in pl), 'Tự học: có Số buổi, không người');
     assert(d.paPayload({ ...tutor, kind: 'teaching_adjust' }).soBuoi === null, 'loại không Số buổi → null');
   });
+  check('PA15 · Xác nhận PA: gửi khoá người = đặt lại (cả ba trống → xoá người); không gửi khoá nào → giữ người máy gán', () => {
+    const c = caseThu('XN2');
+    const [a, b] = taoPa.chenPa(conn, ['A', 'B'].map((x) => ({
+      caseId: c, kind: 'tutor', description: `Tutor theo quy chế ${x}`, status: 'planned', preset: true, mocQuyChe: 'one_month', performerName: 'Cô cũ đã nghỉ',
+    })));
+    const MO_TA = 'Tutor Listening hai buổi mỗi tuần, chữa bài nghe Section 3.';
+    sosAuto.xacNhanPaQuyChe(P.lrTeacher, a, { description: MO_TA, performerSelf: false, performerUserId: null, performerName: null });
+    sosAuto.xacNhanPaQuyChe(P.lrTeacher, b, { description: MO_TA });
+    const ra = get('SELECT performer_user_id u, performer_name n, status FROM case_interventions WHERE id = ?', a);
+    const rb = get('SELECT performer_user_id u, performer_name n FROM case_interventions WHERE id = ?', b);
+    assert(ra.u === null && ra.n === null && ra.status === 'started', `xoá người: ${JSON.stringify(ra)}`);
+    assert(rb.u === null && rb.n === 'Cô cũ đã nghỉ', `giữ người: ${JSON.stringify(rb)}`);
+  });
+
+  check('PA16 · caseDetail.nguonTao (ky_vong · he_thong · null) + Nhật ký PA: Tạo · Kết quả · Sửa PA, mới nhất lên trên', () => {
+    const kv = caseThu('KV');
+    conn.prepare("UPDATE sos_cases SET origin_kind = 'chuyen_cap', title = 'Kỳ vọng đầu ra chưa đạt · Listening' WHERE id = ?").run(kv);
+    const [t1, t2] = taoPa.chenPa(conn, [1, 2].map((n) => ({
+      caseId: kv, kind: 'tutor', description: `Tutor 10 buổi thử ${n}`, status: 'started', soBuoi: 10, recordedBy: P.admin.userId, startedDate: TODAY,
+    })));
+    const [q] = taoPa.chenPa(conn, [{ caseId: kv, kind: 'self_study', description: 'Tự học theo quy chế', status: 'planned', preset: true, mocQuyChe: 'one_month' }]);
+    const nguon = (iv: number) => paDto(kv, iv).nguonTao;
+    assert(nguon(t1) === 'ky_vong' && nguon(t2) === null && nguon(q) === 'he_thong', `nguonTao: ${nguon(t1)} ${nguon(t2)} ${nguon(q)}`);
+
+    const pa = { id: 1, kind: 'tutor', soBuoi: 8, performer: 'Phạm Thu Trang', createdAt: '2026-09-29T02:00:00.000Z', recordedBy: 'Quản lý', nguonTao: 'ky_vong',
+      revisions: [{ id: 5, on: '2026-10-08', source: 'sua_pa', by: 'Ngô Bảo Nam', reason: 'Sửa PA',
+        before: { description: 'a', performer: 'Phạm Thu Trang', soBuoi: 10, startedDate: '2026-09-29' },
+        after: { description: 'b', performer: 'Phạm Thu Trang', soBuoi: 8, startedDate: '2026-09-29' } }] };
+    const kq = [{ id: 3, interventionId: 1, observedOn: '2026-10-06', observerName: 'Phạm Thu Trang', cycleDue: '2026-10-05', soBuoi: 3 },
+      { id: 4, interventionId: 2, observedOn: '2026-10-07', observerName: 'X', soBuoi: 1 }];
+    const nk = d.nhatKyPa(pa, kq, TODAY);
+    const tuan = d.tuanLich(d.tuanKetQuaCuaHan('2026-10-05'), TODAY);
+    assert(nk.map((x: any) => `${x.ngay}|${x.ai}|${x.chu}`).join('\n') === [
+      '2026-10-08|Ngô Bảo Nam|Sửa PA · Số buổi 10 → 8 · Nội dung đổi',
+      `2026-10-06|Phạm Thu Trang|Kết quả ${tuan} · dạy 3 buổi`,
+      '2026-09-29|Web|Tạo "Học Tutor" · 10 buổi · dạy Phạm Thu Trang',
+    ].join('\n'), `nhật ký: ${JSON.stringify(nk)}`);
+    assert(d.soDongNhatKyPa(pa, kq) === 3, 'đếm nhật ký');
+    const tayKhongNguoi = d.nhatKyPa({ id: 9, kind: 'tutor', performer: null, recordedBy: 'Lê Minh Khoa', createdAt: '2026-10-01T03:00:00Z' }, [], TODAY);
+    assert(tayKhongNguoi.length === 1 && tayKhongNguoi[0].ai === 'Lê Minh Khoa' && tayKhongNguoi[0].chu === 'Tạo "Học Tutor" · người dạy trống', JSON.stringify(tayKhongNguoi));
+  });
 }

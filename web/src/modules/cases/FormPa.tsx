@@ -1,12 +1,13 @@
 import type { ReactNode } from 'react';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
-import { Hang2, Khoi, Truong } from '../../ui/KhungPanel.tsx';
+import { Khoi, Truong } from '../../ui/KhungPanel.tsx';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import type { useLoiForm } from '../../ui/loiForm.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
 import {
   GOI_Y_MO_TA_PA, INTERVENTION_KIND_LABEL,
-  coNguoiDay, coSoBuoi, interventionKindsFor, khacNguoi, kiemGhiRoKhac, nguoiMacDinh, nhanNguoiDay,
-  type GiaTriPa, type LoiTruong,
+  coNguoiDay, coSoBuoi, interventionKindsFor, khacNguoi, kiemGhiRoKhac, nguoiMacDinh, nhanNguoiDay, nhatKyPa,
+  type GiaTriPa, type KetQuaNhatKy, type LoiTruong, type PaNhatKy,
 } from '@shared/domain/index.ts';
 
 /**
@@ -18,7 +19,7 @@ import {
 
 const tenLoai = (k: string) => INTERVENTION_KIND_LABEL[k as keyof typeof INTERVENTION_KIND_LABEL] ?? k;
 
-export function FormPa({ v, dat, lf, loi, chonLoai, quyChe, toiThieu = 8, daDay = 0, ngay, luat, cuoi, phang, studentId }: {
+export function FormPa({ v, dat, lf, loi, chonLoai, quyChe, toiThieu = 8, daDay = 0, ngay, luat, cuoi, phang, studentId, tienTo = '' }: {
   v: GiaTriPa; dat: (p: Partial<GiaTriPa>) => void;
   lf: ReturnType<typeof useLoiForm>; loi: readonly LoiTruong[];
   /** Thêm PA / Thay PA: chọn Loại. Không có = Loại khoá (Sửa PA, Xác nhận PA). */
@@ -35,7 +36,10 @@ export function FormPa({ v, dat, lf, loi, chonLoai, quyChe, toiThieu = 8, daDay 
   /** Trong khối con (Thay PA): không chia khối. */
   phang?: boolean;
   studentId?: number | null;
+  /** Khoá ô lỗi riêng (cùng `tienTo` của `loiFormPa`) khi form nằm trong panel khác — Thay PA trong Kết quả: 'moi-'. */
+  tienTo?: string;
 }) {
+  const k = (x: string) => tienTo + x;
   const kinds = interventionKindsFor();
   const nhanNguoi = nhanNguoiDay(v.kind);
   /* Đổi Loại: Nội dung giữ; người còn là mặc định của loại cũ thì đổi theo mặc định của loại mới. */
@@ -55,7 +59,7 @@ export function FormPa({ v, dat, lf, loi, chonLoai, quyChe, toiThieu = 8, daDay 
       </Truong>
       {/* PA đề xuất "Khác" (T13): ô Tên đề xuất ngay dưới; máy chủ ghép "{tên} — {mô tả}" (Q9). */}
       <OKhac hien={v.kind === 'other_proposal'} value={v.ghiRo} onChange={(x) => dat({ ghiRo: x })} nhan="Tên đề xuất" goiY="Ví dụ: Học kèm 1-1 với Tutor"
-        id={lf.oId('ghi-ro')} onBlur={lf.roi('ghi-ro')} loi={lf.hien('ghi-ro') ? kiemGhiRoKhac(v.ghiRo) : null} />
+        id={lf.oId(k('ghi-ro'))} onBlur={lf.roi(k('ghi-ro'))} loi={lf.hien(k('ghi-ro')) ? kiemGhiRoKhac(v.ghiRo) : null} />
     </div>
   ) : (
     <Truong nhan="Loại PA" as="div"
@@ -69,28 +73,30 @@ export function FormPa({ v, dat, lf, loi, chonLoai, quyChe, toiThieu = 8, daDay 
 
   const phuongAn = <>
     {loai}
-    <Truong nhan="Nội dung" batBuoc loi={lf.loiCua(loi, 'noi-dung')} dem={{ co: v.description.trim().length, can: toiThieu }}>
-      <textarea className="field w-full" rows={2} maxLength={2000} {...lf.o(loi, 'noi-dung')} value={v.description}
+    <Truong nhan="Nội dung" batBuoc loi={lf.loiCua(loi, k('noi-dung'))} dem={{ co: v.description.trim().length, can: toiThieu }}>
+      <textarea className="field w-full" rows={2} maxLength={2000} {...lf.o(loi, k('noi-dung'))} value={v.description}
         onChange={(e) => dat({ description: e.target.value })} placeholder={GOI_Y_MO_TA_PA} />
     </Truong>
     {coSoBuoi(v.kind) && (
-      <Truong nhan="Số buổi" tuyChon loi={lf.loiCua(loi, 'so-buoi')}
+      <Truong nhan="Số buổi" tuyChon loi={lf.loiCua(loi, k('so-buoi'))}
         phu={daDay > 0 ? `Đã dạy ${daDay} buổi — không nhỏ hơn ${daDay}` : 'Có số buổi thì web đếm sau mỗi tuần Kết quả'}>
-        <input className="field w-24 tabular-nums" inputMode="numeric" maxLength={2} {...lf.o(loi, 'so-buoi')} value={v.soBuoi}
-          onChange={(e) => dat({ soBuoi: e.target.value })} />
+        <input className="field w-24 tabular-nums" inputMode="numeric" maxLength={2} {...lf.o(loi, k('so-buoi'))} value={v.soBuoi}
+          onChange={(e) => dat({ soBuoi: e.target.value })} placeholder="—" />
       </Truong>
     )}
   </>;
 
   const nguoi = coNguoiDay(v.kind) ? (
-    <Truong nhan={nhanNguoi} tuyChon as="div" loi={lf.loiCua(loi, 'nguoi')}>
+    <Truong nhan={nhanNguoi} tuyChon as="div" loi={lf.loiCua(loi, k('nguoi'))}
+      phu={nhanNguoi === 'Người dạy' && !v.nguoi ? 'Chưa biết ai dạy thì để trống — ghi ở Kết quả từng tuần' : undefined}>
       {/* key: đổi nhãn (Người dạy ↔ Người thực hiện) thì ô vẽ lại đúng trạng thái trống / có tên. */}
       <ChonNguoi key={nhanNguoi} nhom="giao_vien" studentId={studentId} value={v.nguoi} onChange={(x) => dat({ nguoi: x })}
         choTrong="Để trống" placeholder="Chưa chọn · gõ tên để tìm" ariaLabel={nhanNguoi}
-        id={lf.oId('nguoi')} onBlur={lf.roi('nguoi')} invalid={!!lf.loiCua(loi, 'nguoi')} />
+        id={lf.oId(k('nguoi'))} onBlur={lf.roi(k('nguoi'))} invalid={!!lf.loiCua(loi, k('nguoi'))} />
     </Truong>
   ) : null;
-  const nguoiVaNgay = nguoi && ngay ? <Hang2>{nguoi}{ngay}</Hang2> : nguoi ?? ngay;
+  /* Ô người và Ngày bắt đầu mỗi ô một hàng: chữ phụ dưới Người dạy (mockup a1440) không bị cắt ở nửa cột. */
+  const nguoiVaNgay = nguoi || ngay ? <>{nguoi}{ngay}</> : null;
 
   if (phang) return <div className="space-y-3">{phuongAn}{nguoiVaNgay}{cuoi}</div>;
   return <>
@@ -118,5 +124,20 @@ export function KhoaNho() {
       <rect x="2.25" y="5.25" width="7.5" height="5.5" rx="1" fill="none" stroke="currentColor" strokeWidth="1.5" />
       <path d="M4 5.25V3.75a2 2 0 0 1 4 0v1.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
     </svg>
+  );
+}
+
+/**
+ * NHẬT KÝ PA (mockup §6) — MỘT khối dùng chung: Sửa PA, và dòng PA ở panel Case ("Nhật ký PA (n)", `soDongNhatKyPa`).
+ * Mới nhất lên trên: "<b>06/10 · Phạm Thu Trang</b> · Kết quả W1 OCT · dạy 3 buổi". Luật dựng dòng ở `nhatKyPa` (shared).
+ */
+export function NhatKyPa({ pa, ketQua }: { pa: PaNhatKy; ketQua: readonly KetQuaNhatKy[] }) {
+  const { homNay, ngan } = useNgayNghiepVu();
+  return (
+    <ol className="m-0 flex list-none flex-col gap-0.5 p-0 text-xs text-slate-500">
+      {nhatKyPa(pa, ketQua, homNay).map((d) => (
+        <li key={d.khoa} className="break-words"><b className="font-semibold text-slate-300 tabular-nums">{d.ngay ? ngan(d.ngay) : '—'} · {d.ai}</b> · {d.chu}</li>
+      ))}
+    </ol>
   );
 }

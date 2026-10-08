@@ -5,6 +5,10 @@
 import { dsLoi, type LoiTruong } from './loiForm.ts';
 import { nguoiThanhPayload, nguoiThieu, type NguoiChon } from './nguoiThucHien.ts';
 import { KHAC_TOI_THIEU } from './khac.ts';
+import { INTERVENTION_KIND_LABEL } from './cases.ts';
+import { ngayTheoGioVN } from './display.ts';
+import { tuanLich } from './hienThiNgay.ts';
+import { tuanKetQuaCuaHan } from './week.ts';
 
 export const LOAI_CO_SO_BUOI = ['tutor', 'self_study', 'bo_tro', 'bo_tro_mien_phi'] as const;
 const LOAI_NGUOI_DAY = new Set(['tutor', 'bo_tro', 'bo_tro_mien_phi']);
@@ -46,8 +50,8 @@ export function demBuoi(daDay: number, tong: number): { da: number; tong: number
 /** Giá trị form PA. Số buổi giữ dạng chữ người gõ; Tên đề xuất chỉ với PA "Khác". */
 export type GiaTriPa = { kind: string; description: string; soBuoi: string; nguoi: NguoiChon | null; ghiRo: string };
 
-/** Người mặc định theo Loại: Người dạy → trống; Người thực hiện → "Tôi". */
-export const nguoiMacDinh = (kind: string): NguoiChon | null => (nhanNguoiDay(kind) === 'Người dạy' ? null : { kieu: 'toi' });
+/** Người mặc định theo Loại: Người dạy → trống; Người thực hiện → "Tôi"; Tự học không có người. */
+export const nguoiMacDinh = (kind: string): NguoiChon | null => (!coNguoiDay(kind) || nhanNguoiDay(kind) === 'Người dạy' ? null : { kieu: 'toi' });
 export const paMoi = (kind: string): GiaTriPa => ({ kind, description: '', soBuoi: '', nguoi: nguoiMacDinh(kind), ghiRo: '' });
 
 /** Người hiện tại của PA thành giá trị ô chọn người: tài khoản nếu có, người ngoài nếu chỉ có tên, không có → `null`. */
@@ -62,18 +66,19 @@ export function khacNguoi(a: NguoiChon | null, b: NguoiChon | null): boolean {
   return a.kieu === 'tai_khoan' ? a.id !== (b as typeof a).id : a.kieu === 'ngoai' ? a.ten.trim() !== (b as typeof a).ten.trim() : false;
 }
 
-/** Lỗi của form PA. `goc` (Sửa PA): ô KHÔNG đổi thì không kiểm — PA vượt buổi (Số buổi < đã dạy), mô tả cũ ngắn vẫn sửa được ô khác. */
-export function loiFormPa(v: GiaTriPa, o: { toiThieu?: number; daDay?: number; goc?: GiaTriPa } = {}): LoiTruong[] {
+/** Lỗi của form PA. `tienTo`: khoá ô riêng khi form nằm trong panel khác (Thay PA trong Kết quả: 'moi-'). `goc` (Sửa PA): ô KHÔNG đổi thì không kiểm — PA vượt buổi (Số buổi < đã dạy), mô tả cũ ngắn vẫn sửa được ô khác. */
+export function loiFormPa(v: GiaTriPa, o: { toiThieu?: number; daDay?: number; goc?: GiaTriPa; tienTo?: string } = {}): LoiTruong[] {
   const { goc } = o;
+  const t = o.tienTo ?? '';
   const doi = (k: 'description' | 'soBuoi') => !goc || v[k].trim() !== goc[k].trim();
   const loi = dsLoi([
-    ...(v.kind === 'other_proposal' && !goc ? [{ khoa: 'ghi-ro', nhan: 'Tên đề xuất', toiThieu: KHAC_TOI_THIEU }] : []),
-    ...(doi('description') ? [{ khoa: 'noi-dung', nhan: 'Nội dung', toiThieu: o.toiThieu ?? 8 }] : []),
-  ], { 'ghi-ro': v.ghiRo, 'noi-dung': v.description });
+    ...(v.kind === 'other_proposal' && !goc ? [{ khoa: `${t}ghi-ro`, nhan: 'Tên đề xuất', toiThieu: KHAC_TOI_THIEU }] : []),
+    ...(doi('description') ? [{ khoa: `${t}noi-dung`, nhan: 'Nội dung', toiThieu: o.toiThieu ?? 8 }] : []),
+  ], { [`${t}ghi-ro`]: v.ghiRo, [`${t}noi-dung`]: v.description });
   const sb = coSoBuoi(v.kind) && doi('soBuoi') ? kiemSoBuoiPa(v.soBuoi, o.daDay ?? 0) : null;
-  if (sb) loi.push({ khoa: 'so-buoi', nhan: 'Số buổi', lyDo: sb });
+  if (sb) loi.push({ khoa: `${t}so-buoi`, nhan: 'Số buổi', lyDo: sb });
   const ng = coNguoiDay(v.kind) ? nguoiThieu(v.nguoi, false) : null;
-  if (ng) loi.push({ khoa: 'nguoi', nhan: nhanNguoiDay(v.kind), lyDo: ng });
+  if (ng) loi.push({ khoa: `${t}nguoi`, nhan: nhanNguoiDay(v.kind), lyDo: ng });
   return loi;
 }
 
@@ -86,6 +91,9 @@ export function paPayload(v: GiaTriPa) {
   };
 }
 
+/** Đặt lại người của PA (Sửa PA, Xác nhận PA): đủ ba khoá — máy chủ thấy khoá là đặt lại, cả ba trống = xoá người. */
+export const datLaiNguoi = (v: NguoiChon | null) => ({ performerSelf: false, performerUserId: null, performerName: null, ...nguoiThanhPayload(v) });
+
 /**
  * Thân `PATCH /interventions/:id` (Sửa PA): CHỈ ô đã đổi — ô không đổi không gửi, nên máy chủ không kiểm lại (người cũ đã nghỉ, PA vượt
  * buổi). Đổi người → gửi đủ ba khoá người (cả ba trống = xoá người). Số buổi xoá trắng → `null`. `{}` = chưa sửa gì.
@@ -94,7 +102,69 @@ export function thanSuaPa(v: GiaTriPa, goc: GiaTriPa, ngay: { moi: string; cu: s
   const body: Record<string, unknown> = {};
   if (v.description.trim() !== goc.description.trim()) body.description = v.description.trim();
   if (v.soBuoi.trim() !== goc.soBuoi.trim()) body.soBuoi = soBuoiTu(v.soBuoi);
-  if (khacNguoi(v.nguoi, goc.nguoi)) Object.assign(body, { performerSelf: false, performerUserId: null, performerName: null }, nguoiThanhPayload(v.nguoi));
+  if (khacNguoi(v.nguoi, goc.nguoi)) Object.assign(body, datLaiNguoi(v.nguoi));
   if (ngay.moi && ngay.moi !== (ngay.cu ?? '')) body.startedDate = ngay.moi;
   return body;
 }
+
+// ------------------------------------------------------------------ Nhật ký PA (Sửa PA; dòng PA — "Nhật ký PA (n)")
+
+type MatNhatKy = { description: string | null; performer: string | null; soBuoi?: number | null; startedDate?: string | null };
+export type PaNhatKy = {
+  id: number; kind: string; soBuoi?: number | null; performer: string | null; startedDate?: string | null;
+  createdAt?: string | null; recordedBy?: string | null; nguonTao?: string | null;
+  revisions?: readonly { id: number; on: string; source: string; by: string | null; reason: string; before: MatNhatKy; after: MatNhatKy }[];
+};
+export type KetQuaNhatKy = {
+  id: number; interventionId: number; observedOn: string; observerName?: string | null; cycleDue?: string | null;
+  soBuoi?: number | null; nguoiDay?: string | null;
+};
+/** Một dòng: `ngay` ISO, `ai` (đậm cùng ngày), `chu` phần sau. */
+export type DongNhatKyPa = { khoa: string; ngay: string; ai: string; chu: string };
+
+const NGUON_SUA_PA: Record<string, string> = { adjust: 'Điều chỉnh', confirm_edit: 'Sửa khi xác nhận PA', sua_pa: 'Sửa PA' };
+
+/**
+ * NHẬT KÝ PA (mockup pa-dong-bo §6), mới nhất lên trên: dòng Tạo (giá trị LÚC TẠO = bản cũ của lần sửa đầu) · mỗi tuần Kết quả
+ * ("Kết quả W1 OCT · dạy 3 buổi") · mỗi lần Sửa PA / Điều chỉnh (cũ → mới, chỉ ô đổi).
+ */
+export function nhatKyPa(pa: PaNhatKy, ketQua: readonly KetQuaNhatKy[], homNay: string): DongNhatKyPa[] {
+  const revs = pa.revisions ?? [];
+  const nhanNguoi = nhanNguoiDay(pa.kind);
+  const tuan = (d: string | null | undefined) => (d ? tuanLich(d, homNay) : 'chưa đặt');
+  const dau = revs[0]?.before ?? { performer: pa.performer, soBuoi: pa.soBuoi ?? null };
+  const nguoiTao = !coNguoiDay(pa.kind) ? null
+    : nhanNguoi === 'Người dạy' ? (dau.performer ? `dạy ${dau.performer}` : 'người dạy trống') : dau.performer ? `thực hiện ${dau.performer}` : null;
+  const dong: (DongNhatKyPa & { hang: number; id: number })[] = [{
+    khoa: `tao-${pa.id}`, ngay: ngayTheoGioVN(pa.createdAt) ?? pa.startedDate ?? '', ai: pa.nguonTao || !pa.recordedBy ? 'Web' : pa.recordedBy,
+    chu: [`Tạo "${INTERVENTION_KIND_LABEL[pa.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? pa.kind}"`,
+      dau.soBuoi != null ? `${dau.soBuoi} buổi` : null, nguoiTao].filter(Boolean).join(' · '),
+    hang: 0, id: pa.id,
+  }];
+  for (const f of ketQua) {
+    if (f.interventionId !== pa.id) continue;
+    dong.push({
+      khoa: `kq-${f.id}`, ngay: f.observedOn, ai: f.observerName ?? '—',
+      chu: [`Kết quả ${f.cycleDue ? tuan(tuanKetQuaCuaHan(f.cycleDue)) : tuan(f.observedOn)}`, f.soBuoi != null ? `dạy ${f.soBuoi} buổi` : null,
+        f.nguoiDay && f.nguoiDay !== f.observerName ? `người dạy ${f.nguoiDay}` : null].filter(Boolean).join(' · '),
+      hang: 1, id: f.id,
+    });
+  }
+  for (const r of revs) {
+    const a = r.before; const b = r.after;
+    const doi = [
+      (a.soBuoi ?? null) !== (b.soBuoi ?? null) ? `Số buổi ${a.soBuoi ?? 'trống'} → ${b.soBuoi ?? 'trống'}` : null,
+      a.description !== b.description ? 'Nội dung đổi' : null,
+      a.performer !== b.performer ? `${nhanNguoi} ${a.performer ?? 'trống'} → ${b.performer ?? 'trống'}` : null,
+      (a.startedDate ?? null) !== (b.startedDate ?? null) ? `Bắt đầu ${tuan(a.startedDate)} → ${tuan(b.startedDate)}` : null,
+      r.source !== 'sua_pa' && r.reason ? `Lý do: ${r.reason}` : null,
+    ];
+    dong.push({ khoa: `sua-${r.id}`, ngay: r.on, ai: r.by ?? 'Web', chu: [NGUON_SUA_PA[r.source] ?? 'Điều chỉnh', ...doi].filter(Boolean).join(' · '), hang: 2, id: r.id });
+  }
+  /* Cùng ngày: Tạo trước Kết quả trước lần sửa (Điều chỉnh ghi cùng lúc Kết quả). */
+  dong.sort((x, y) => (x.ngay !== y.ngay ? (x.ngay < y.ngay ? 1 : -1) : x.hang !== y.hang ? y.hang - x.hang : y.id - x.id));
+  return dong.map(({ khoa, ngay, ai, chu }) => ({ khoa, ngay, ai, chu }));
+}
+/** Số dòng Nhật ký PA — "Nhật ký PA (n)" ở dòng PA (Task 6), cùng danh sách `nhatKyPa` vẽ. */
+export const soDongNhatKyPa = (pa: PaNhatKy, ketQua: readonly KetQuaNhatKy[]): number =>
+  1 + ketQua.filter((f) => f.interventionId === pa.id).length + (pa.revisions?.length ?? 0);

@@ -1671,6 +1671,13 @@ export function caseDetail(p: Principal, caseId: number) {
   /* PR-DUYET (Task 5, 9): thẻ hộp Chờ duyệt của mọi PA trong Case — một câu cho cả Case. */
   const theCuaPa = theCuaDoiTuong('intervention', ivCuaCase.map((r) => r.id as number));
   const mtKeCua = mtKeTheoPa(caseId);
+  /* PR-PA (§8): PA web tạo — 'ky_vong' = PA Tutor đầu tiên của Case "Kỳ vọng đầu ra…" (Chuyển cấp; `preset 0`, người ghi là Quản lý bấm Lưu);
+     'he_thong' = PA quy chế / Bổ trợ / không người ghi; null = PA người tạo tay. */
+  const kyVong = c.origin_kind === 'chuyen_cap' && String(c.title ?? '').startsWith('Kỳ vọng đầu ra');
+  const paDau = Math.min(...ivCuaCase.map((r) => r.id as number));
+  const nguonTaoPa = (iv: any): 'ky_vong' | 'he_thong' | null =>
+    kyVong && iv.kind === 'tutor' && iv.id === paDau ? 'ky_vong'
+      : iv.preset === 1 || iv.kind === 'bo_tro' || iv.kind === 'bo_tro_mien_phi' || !iv.recorded_by ? 'he_thong' : null;
   /* PR-PA (§8): Đã dạy của mọi PA trong Case — một câu. */
   const daDayTheoPa = new Map((conn.prepare('SELECT intervention_id i, COALESCE(SUM(so_buoi), 0) n FROM case_followups WHERE case_id = ? GROUP BY intervention_id')
     .all(caseId) as any[]).map((r) => [r.i as number, Number(r.n)]));
@@ -1698,9 +1705,10 @@ export function caseDetail(p: Principal, caseId: number) {
       performerUserId: iv.performer_user_id ?? null,
       // Người ghi khác người làm thì nói rõ, để không đọc nhầm ai đã làm việc đó.
       recordedBy: iv.recorder_name ?? null,
-      /** PR-PA (§8): ngày tạo — dòng "Web tạo … · 06/10" của Sửa PA. */
+      /** PR-PA (§8): ngày tạo + nguồn PA web tạo — dòng "Web tạo … · 06/10" của Sửa PA, dòng "Tạo" của Nhật ký PA. */
       createdAt: (iv.created_at ?? null) as string | null,
-      byProxy:!iv.performer_user_id && !!iv.performer_name,
+      nguonTao: nguonTaoPa(iv),
+      byProxy: !iv.performer_user_id && !!iv.performer_name,
       plannedDate: iv.planned_date, startedDate: iv.started_date, completedDate: iv.completed_date,
       /** NGÀY DỰ KIẾN KẾT THÚC phương án (mục 8.2) — khác hạn cập nhật hằng tuần ở dưới. */
       followupDue: iv.followup_due,

@@ -125,8 +125,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
   if (view.loai === 'sua-pa') {
     const iv = (data.interventions ?? []).find((x: any) => x.id === view.paId);
     if (iv) {
-      return <SuaPaPanel key={iv.id} {...chung} pa={iv} studentId={data.student?.id} onSaved={xong}
-        coKetQua={(data.followups ?? []).some((f: any) => f.interventionId === iv.id)} />;
+      return <SuaPaPanel key={iv.id} {...chung} pa={iv} ketQua={data.followups ?? []} studentId={data.student?.id} onSaved={xong} />;
     }
   }
   if (view.loai === 'them-pa') {

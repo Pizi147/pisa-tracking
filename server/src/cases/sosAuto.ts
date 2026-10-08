@@ -381,10 +381,12 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
   const description = input.description.trim();
   if (description.length < 15) throw badRequest('Mô tả PA cần ít nhất 15 ký tự — nêu hướng dẫn, trọng tâm và ai thực hiện.');
   if (description.length > 2000) throw badRequest('Mô tả PA tối đa 2000 ký tự.');
-  /* PR-PA (§8): Tự học không có ô người — người gửi kèm bị bỏ qua. */
-  const nguoi = coNguoiDay(iv.kind) ? chuanHoaNguoiThucHien(p, input, { nhom: 'giao_vien', batBuoc: false }) : null;
-  const performerUserId = nguoi ? nguoi.userId : iv.performer_user_id ?? null;
-  const performerName = nguoi ? nguoi.name : iv.performer_name ?? null;
+  /* PR-PA (§8): như Sửa PA — gửi BẤT KỲ khoá người nào = đặt lại (cả ba trống = xoá người); không gửi khoá nào = giữ người máy gán.
+     Tự học không có ô người — người gửi kèm bị bỏ qua. */
+  const guiNguoi = coNguoiDay(iv.kind) && ['performerSelf', 'performerUserId', 'performerName'].some((k) => k in input);
+  const nguoi = guiNguoi ? chuanHoaNguoiThucHien(p, input, { nhom: 'giao_vien', batBuoc: false }) : null;
+  const performerUserId = guiNguoi ? nguoi?.userId ?? null : iv.performer_user_id ?? null;
+  const performerName = guiNguoi ? nguoi?.name ?? null : iv.performer_name ?? null;
   const soBuoi = soBuoiMoi(iv, input.soBuoi, 0);
   const today = demoToday();
   const luot = luotSinhPa(iv);

@@ -11,7 +11,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
   CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, INTERVENTION_KIND_LABEL, URGENCY_LABEL, URGENCY_LEVELS,
   dsLoi, issuesForTopic, kiemGhiRoKhac, laKhac, tuanLich, reasonNeedsText,
-  loiFormPa, nguoiCuaPa, nguoiMacDinh, paMoi, paPayload, type GiaTriPa,
+  datLaiNguoi, khacNguoi, loiFormPa, nguoiCuaPa, nguoiMacDinh, paMoi, paPayload, type GiaTriPa,
   type CaseDismissReason,
 } from '@shared/domain/index.ts';
 
@@ -198,7 +198,9 @@ export function XacNhanPaPanel({ pa, studentId, onXong, ...chung }: ChungPanel &
     if (loi.length > 0) return;
     setBusy(true);
     try {
-      await api.post(`/interventions/${pa.id}/xac-nhan-pa`, paPayload(v));   // máy chủ chỉ đọc Nội dung · Số buổi · người
+      const { description, soBuoi } = paPayload(v);
+      /* Người: chỉ gửi khi đổi (người máy gán đã nghỉ mà không đụng thì không bị 400); đổi thì đủ ba khoá — trống = xoá người. */
+      await api.post(`/interventions/${pa.id}/xac-nhan-pa`, { description, soBuoi, ...(khacNguoi(v.nguoi, nguoiCuaPa(pa)) ? datLaiNguoi(v.nguoi) : {}) });
       invalidateCases();
       toast.push('ok', 'Đã xác nhận PA — PA bắt đầu từ hôm nay');
       onXong();
