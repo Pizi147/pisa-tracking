@@ -108,7 +108,7 @@ export async function runPrMt0Tests(t: YThucTestKit) {
 
   // ------------------------------------------------------------------ MT0-1 · luật thuần
   check('MT0-1 · hạn chấm, hạn chốt, tuần muộn nhất, kiểm tuần, SOS hiển thị, trạng thái, nhãn', () => {
-    assert(dm.hanChamMt0('2026-10-19') === '2026-10-28', dm.hanChamMt0('2026-10-19'));
+    assert(dm.hanChamMt0('2026-10-19') === '2026-11-01', dm.hanChamMt0('2026-10-19'));
     assert(dm.hanChotLenFt('2026-10-19') === '2026-10-18', dm.hanChotLenFt('2026-10-19'));
     assert(dm.tuanMuonNhatMt0({ tuanBatDauFt: '2026-10-26', tuanCuoiKhoa: '2026-10-19' }) === '2026-11-02', 'có FT');
     assert(dm.tuanMuonNhatMt0({ tuanBatDauFt: null, tuanCuoiKhoa: '2026-10-19' }) === '2026-11-02', 'chưa FT');
@@ -128,7 +128,7 @@ export async function runPrMt0Tests(t: YThucTestKit) {
     assert(dm.ATTEMPT_KIND_SHORT.mt0 === 'MT0' && dm.BASELINE_SOURCE_LABEL.mt0 === 'MT0', 'nhãn kind / nguồn đầu vào');
   });
 
-  // ------------------------------------------------------------------ MT0-2 · chấm band, hạn thứ Tư tuần sau (PR-CT2), không tín hiệu
+  // ------------------------------------------------------------------ MT0-2 · chấm band, hạn Chủ nhật tuần sau, không tín hiệu
   const skillSch: any = await import('../fasttrack/skillSchedule.ts');
   const canCham: any = await import('../cham/canCham.ts');
   const { loadPrincipal } = await import('../permissions.ts');
@@ -142,12 +142,12 @@ export async function runPrMt0Tests(t: YThucTestKit) {
   /** Một GV (vai `teacher`, MB) thứ `n` — chỉ cần id; quyền ở lớp mới do `ganGv` cấp. */
   const gvKhac = (n: number) => get(
     `SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'teacher' AND ur.branch_id = ? ORDER BY ur.user_id LIMIT 1 OFFSET ?`, MB, n).id as number;
-  check('MT0-2 · scoringModeOf band, bộ môn 4 kỹ năng IELTS, hạn = thứ Tư tuần sau', () => {
+  check('MT0-2 · scoringModeOf band, bộ môn 4 kỹ năng IELTS, hạn = Chủ nhật tuần sau', () => {
     const l = taoLop('BE', 9, 1);
     assert(skillSch.scoringModeOf({ class_id: l.classId, kind: 'mt0' }) === 'band', 'band');
     assert(skillSch.scoringModeOf({ class_id: l.classId, kind: 'final', scoring_mode: 'ratio' }) === 'ratio', 'Final vẫn ratio');
     assert(skillSch.scoringModeOf({ class_id: l.classId, kind: 'mt0', scoring_mode: 'ratio' }) === 'band', 'MT0 thắng scoring_mode JOIN sẵn');
-    assert(week.effectiveSkillDeadline({ mode: 'band', weekStart: '2026-10-19', mt0: true }).date === '2026-10-28', 'hạn MT0 (PR-CT2: thứ Tư)');
+    assert(week.effectiveSkillDeadline({ mode: 'band', weekStart: '2026-10-19', mt0: true }).date === '2026-11-01', 'hạn MT0');
     assert(week.effectiveSkillDeadline({ mode: 'band', weekStart: '2026-10-19' }).date === '2026-10-28', 'hạn Mock giữ thứ Tư');
     const tuanFinal = schedule.classProgress(l.classId).finalWeekStart as string;
     const aid = chenMt0Tho({ sid: l.sids[0], classId: l.classId, tuan: tuanFinal, band: {} });
@@ -273,7 +273,7 @@ export async function runPrMt0Tests(t: YThucTestKit) {
     const tuanFinal = schedule.classProgress(l.classId).finalWeekStart as string;
     return { ...l, sid: l.sids[0], aid: mt0Cua(l.sids[0])[0].id as number, tuanFinal };
   };
-  check('MT0-4a · QL dời MT0 (chưa nối FT): Final + 3 tuần → 400 "muộn nhất"; + 1 tuần → lưu, hạn = thứ Tư tuần sau tuần mới', () => {
+  check('MT0-4a · QL dời MT0 (chưa nối FT): Final + 3 tuần → 400 "muộn nhất"; + 1 tuần → lưu, hạn = Chủ nhật tuần sau tuần mới', () => {
     const e = lenFt('BE', 9);
     const x = loi(() => attempts.setPlanningWeek(QL, e.aid, tuanSo(e.tuanFinal, 3)));
     assert(x?.status === 400 && /muộn nhất/.test(x.message), `+3: ${x?.status} ${x?.message}`);

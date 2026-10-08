@@ -20,6 +20,7 @@ import * as accessSvc from '../yThuc/access.ts';
 import * as xuLySvc from '../yThuc/xuLy.ts';
 import * as phoiHopSvc from '../yThuc/phoiHop.ts';
 import * as sosAutoSvc from '../cases/sosAuto.ts';
+import * as boTroSvc from '../cases/boTro.ts';
 import { bangYThucLop } from '../yThuc/board.ts';
 import { maybeSimulateReadError, maybeSimulateSaveFailure, pInt, qInt, qStr, wrap } from './helpers.ts';
 
@@ -1656,6 +1657,11 @@ api.post('/cases/:id/xac-nhan', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return sosAutoSvc.xacNhanCase(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
 }));
+/** PR-LT2a (N2, T54): nộp kế hoạch bổ trợ cho CẢ NHÓM của PA — người dạy bổ trợ / GVCN / Quản lý (BE/ELE: GVBM). Tạo thẻ Chờ duyệt · Học thuật. */
+api.post('/bo-tro/:ivId/ke-hoach', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return boTroSvc.nopKeHoachBoTro(principalOf(req), pInt(req, 'ivId'), (req.body ?? {}) as any);
+}));
 api.post('/interventions/:id/xac-nhan-pa', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return sosAutoSvc.xacNhanPaQuyChe(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
@@ -1752,7 +1758,7 @@ api.post('/yeu-cau/:id/tra-loi', requireAuth, wrap((req) => {
  */
 api.post('/interventions/:id/result', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return caseSvc.updateResult(principalOf(req), pInt(req, 'id'), req.body ?? {});   // PR-CT2: Người dạy tuần này không bắt buộc; dịch vụ chỉ kiểm định dạng khi có
+  return caseSvc.updateResult(principalOf(req), pInt(req, 'id'), req.body ?? {});   // PR-PA: Người dạy tuần này bắt ở dịch vụ (PA có Số buổi, ≥ 1)
 }));
 
 /** PR-PA (§8): SỬA PA — cùng form Thêm PA; Loại khoá; quyền như Kết quả. */

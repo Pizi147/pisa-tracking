@@ -230,11 +230,11 @@ export async function runPrUxfBTests(t: YThucTestKit) {
     for (const tt of ['cho-duyet', 'dang-lam']) assert(dung(tt).t === tt, `${tt}: ${dung(tt).t}`);
     assert(d.oHocThuat(hang('can-lam')).dong[0].t === 'can-lam', 'không Tạm dừng → Cần làm');
   });
-  check('UXF-b (6) · quét chữ: DongXinYKien dùng ở Ngăn Case, hàng PA (bảng kỹ năng) và thẻ PA; không còn chữ "Quản lý hạn" (PR-CT2 bỏ hạn duyệt kế hoạch)', () => {
+  check('UXF-b (6) · quét chữ: DongXinYKien dùng ở Ngăn Case, hàng PA (bảng kỹ năng) và thẻ PA; hạn duyệt kế hoạch nói "Quản lý duyệt · hạn"', () => {
     assert(/<DongXinYKien/.test(doc('web/src/modules/cases/CasePanel.tsx')), 'CasePanel');
     assert(/<DongXinYKien/.test(doc('web/src/modules/cases/SkillBoard.tsx')), 'HangPA');
     assert(/<DongXinYKien/.test(doc('web/src/modules/cases/TheKyNang.tsx')), 'KhoiPa');
-    assert(!/Quản lý hạn /.test(doc('web/src/modules/cases/SkillBoard.tsx')), 'R5-3');
+    assert(/Quản lý duyệt · hạn/.test(doc('web/src/modules/cases/SkillBoard.tsx')) && !/Quản lý hạn /.test(doc('web/src/modules/cases/SkillBoard.tsx')), 'R5-3');
   });
 
   // ------------------------------------------------------------------ Task 7 · panel Tạm dừng đếm vi phạm (O2) + em sau khi Quản lý từ chối (VN26)

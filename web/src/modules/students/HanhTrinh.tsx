@@ -38,7 +38,7 @@ type Pa = {
 };
 type VanDe = {
   caseId: number; ten: string; sos: number | null; attemptNo: number | null; mo: string; dong: string | null; soPa: number; pa: Pa[];
-  cho?: 'nguyen-nhan' | null; nguoi?: string | null;
+  cho?: 'nguyen-nhan' | 'ke-hoach' | null; nguoi?: string | null;
 };
 type Hop = {
   kyNang: CaseCategory; nhan: string; cheDo: 'ielts' | 'ratio';
@@ -517,7 +517,7 @@ function VanDeHang({ v, vi, cuoi, truc, boCuc, rongTuan, homNay, onOpenCase }: {
   );
 }
 
-/** Khối CHỜ (Q18): viền đứt tím — "Chờ nguyên nhân" · "Chưa có PA" (một mục chú giải "chờ"). */
+/** Khối CHỜ (Q18): viền đứt tím — "Chờ nguyên nhân" · "Chờ duyệt kế hoạch" · "Chưa có PA" (một mục chú giải "chờ"). */
 function KhoiCho({ chu, tu, homNay, truc, hang, rongTuan }: { chu: string; tu: string; homNay: string; truc: Truc; hang: number; rongTuan: number }) {
   const a = cotCua(tu, truc);
   const b = Math.max(a, cotCua(homNay, truc));

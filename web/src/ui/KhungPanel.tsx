@@ -146,7 +146,7 @@ export function Truong({ nhan, batBuoc, tuyChon, phu, loi, dem, as = 'label', ch
       {nhan}{batBuoc && <><span aria-hidden className="text-bad"> *</span><span className="sr-only"> (bắt buộc)</span></>}
       {tuyChon && <span className="font-normal text-slate-500"> (không bắt buộc)</span>}
     </span>
-    {dem && dem.co < dem.can && <span className="text-xs font-normal tabular-nums text-slate-500">{dem.co}/{dem.can}</span>}
+    {dem && <span className={`text-xs font-normal tabular-nums ${dem.co < dem.can ? 'text-slate-500' : 'text-slate-400'}`}>{dem.co}/{dem.can}</span>}
   </>;
   const lopNhan = 'mb-1 flex items-baseline gap-2 text-[11.5px] font-bold text-slate-200';
   const noi = useNoiLoi(loi);

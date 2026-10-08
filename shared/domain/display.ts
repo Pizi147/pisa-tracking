@@ -245,7 +245,7 @@ export const DEADLINE_KINDS = [
   'xac-minh-sos', 'lap-pa', 'cap-nhat-pa', 'nhap-diem',
   'du-kien-ket-thuc', 'viec-van-hanh',
   /* PR-NEN Q16 (K1-56 + T66): bốn loại hạn mới — chưa chỗ nào gắn, PR sau gắn khi có hạn thật. */
-  'duyet', 'xu-ly-vi-pham', 'mini-test',   // PR-CT2: bỏ 'ke-hoach-bo-tro' (không còn nộp kế hoạch)
+  'duyet', 'xu-ly-vi-pham', 'ke-hoach-bo-tro', 'mini-test',
   /* PR-MT0 → PR-LCb: việc Quản lý "Chốt lộ trình" (mã giữ tên cũ) — hạn là Chủ nhật trước tuần Cuối khoá. */
   'chot-len-ft',
 ] as const;
@@ -270,6 +270,7 @@ const DEADLINE_VIEC: Record<DeadlineKind, { viec: string; tien: 'hạn' | 'hạn
   'viec-van-hanh': { viec: 'Việc', tien: 'hạn' },
   duyet: { viec: 'Duyệt', tien: 'hạn' },
   'xu-ly-vi-pham': { viec: 'Xử lý vi phạm', tien: 'hạn' },
+  'ke-hoach-bo-tro': { viec: 'Nộp kế hoạch bổ trợ', tien: 'hạn' },
   'mini-test': { viec: 'Mini Test', tien: 'hạn' },
   'chot-len-ft': { viec: 'Chốt lộ trình', tien: 'hạn hết CN' },
 };

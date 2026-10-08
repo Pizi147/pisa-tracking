@@ -14,7 +14,7 @@ import { expectationFor, failingEntrySkills } from '../fasttrack/scoring.ts';
 import { allProgrammes, type ProgrammeInfo } from '../normal/regular.ts';
 import { evaluateAttemptRow, luotKck } from '../worklist/danhGia.ts';
 import { rowsFor, type MetricRow } from '../worklist/metrics.ts';
-import { CO_THE_KHONG_THEO_DOI, LA_CASE_SOS, UNCONFIRMED_PRESET } from '../cases/sosState.ts';
+import { CO_THE_KHONG_THEO_DOI, LA_CASE_SOS, UNCONFIRMED_PRESET, YC_KE_HOACH } from '../cases/sosState.ts';
 
 /**
  * TỔNG HỢP TEST + SOS (P10, §3.3) — góc nhìn mặc định của Phân tích. Đi đúng đường `nguon` như bảng chi nhánh của
@@ -234,6 +234,8 @@ function tinh(p: Principal, f: FilterTongHop) {
                 ${LA_CASE_SOS('sc')} AS from_sos,
                 EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary') AS has_cause,
                 EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sc.id AND ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND iv.kind != 'bo_tro') AS pa_cho,
+                EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sc.id AND iv.kind = 'bo_tro' AND iv.status = 'planned' AND ${YC_KE_HOACH('iv', "'cho'")}) AS bt_cho_duyet,
+                EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sc.id AND iv.kind = 'bo_tro' AND iv.status = 'planned' AND NOT ${YC_KE_HOACH('iv', "'cho','duyet'")}) AS bt_cho_nop,
                 ${CO_THE_KHONG_THEO_DOI('sc')} AS co_the
            FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id
           WHERE a.id IN (${chunk.map(() => '?').join(',')}) AND COALESCE(sc.sos_level, 1) > 0`,
@@ -246,6 +248,7 @@ function tinh(p: Principal, f: FilterTongHop) {
       const tt = trangThaiCaseV4({
         status: r.status, fromSos: !!r.from_sos, hasCause: !!r.has_cause, dismissed: !!r.dismiss_reason_code, systemClosed: !!r.system_close_reason,
         choDuyetKhongTheoDoi: !!r.co_the && r.status !== 'done', coPaChoXacNhan: !!r.pa_cho, hanXacNhan: r.han_xac_nhan ?? null,
+        boTro: r.status !== 'done' && (r.bt_cho_duyet || r.bt_cho_nop) ? { choNop: !!r.bt_cho_nop, choDuyet: !!r.bt_cho_duyet, hanKeHoach: null } : null,
       }, today);
       const cot = COT_XU_LY_V4[tt.k];
       for (const tap of [cha.tap, con.tap, tongTap]) {

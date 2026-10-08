@@ -495,11 +495,11 @@ Dựng bằng hàm nghiệp vụ (`server/src/seed/lt2aSeed.ts`), sau ngày demo
 
 | Kịch bản | Học viên | Bạn sẽ thấy |
 |---|---|---|
-| G1 (D9) · trượt G+V, P | **Lê Hoàng Anh** (MB FOU 15) | Hồ sơ › Học thuật: hai hàng `[Progress Test] G+V không đạt` (Đang làm — PA bổ trợ chạy ngay sau Xác nhận Case) và `[Progress Test] P không đạt` (Cần làm · Xác nhận nguyên nhân; PA P `Chưa bắt đầu`); PA thụt vào `Bổ trợ 2 buổi/tuần · chung các môn trượt…` + `PA chung · G+V, P`. Phối hợp: `Báo phụ huynh qua TVV` chưa làm |
+| G1 (D9) · trượt G+V, P | **Lê Hoàng Anh** (MB FOU 15) | Hồ sơ › Học thuật: hai hàng `[Progress Test] G+V không đạt` (Chờ Quản lý duyệt · kế hoạch bổ trợ, viền tím) và `[Progress Test] P không đạt` (Cần làm · Xác nhận nguyên nhân); PA thụt vào `Bổ trợ 2 buổi/tuần · chung các môn trượt…` + `PA chung · G+V, P`. Vy có thẻ **Kế hoạch bổ trợ** ở Chờ duyệt; Phối hợp: `Báo phụ huynh qua TVV` chưa làm |
 | G2 · trượt R | **Bùi Minh Châu** (MB FOU 15) | Case Đang làm, PA bổ trợ chạy, một lần ghi kết quả; Báo PH `Đã làm` |
-| G3 (D10) · trượt W | **Hoàng Quốc Bình** (MB BE 03) | PA `Bổ trợ 1 buổi/tuần · W` đang chạy ngay sau Xác nhận Case |
-| G4 · trượt S | **Mai Hải Long** (MB BE 03) | Case S chờ nguyên nhân; Việc cần làm của Trang: `Xác nhận nguyên nhân` |
-| G6 · Khoa xác nhận, Hà dạy | **Trương Gia Bảo** (MB FOU 15) | Khoa xác nhận nguyên nhân → PA bổ trợ chung chạy, người dạy GVCN Hà ghi Kết quả |
+| G3 (D10) · trượt W | **Hoàng Quốc Bình** (MB BE 03) | PA `Bổ trợ 1 buổi/tuần · W` đang chạy sau khi Vy duyệt |
+| G4 · trượt S | **Mai Hải Long** (MB BE 03) | Kế hoạch bị từ chối (lý do trong khung vàng); Việc cần làm của Trang: `Nộp kế hoạch bổ trợ` hạn 3 ngày |
+| G6 · Hà chưa nộp kế hoạch | **Trương Gia Bảo** (MB FOU 15) | Việc cần làm của Hà: `Nộp kế hoạch bổ trợ · Progress Test · G+V · Trương Gia Bảo` hạn 3 ngày (Khoa đã xác nhận nguyên nhân) |
 | G5 · Báo lên / Không cần theo dõi | **Phan Khánh Linh**, **Ngô Gia Hân** (MB FOU 15) | Case L chờ nguyên nhân quá hạn → thẻ Báo lên; Case P `Không cần theo dõi` chờ Quản lý duyệt |
 
 Bài Progress Test đã qua tuần nên `commitIntake` không tự dựng (M1b bỏ mốc đã qua) — seed xếp bằng `planRegularTests` (Quản lý được xếp tuần đã qua).

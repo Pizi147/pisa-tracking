@@ -37,7 +37,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'regular.no_show': 'Báo vắng', 'regular.no_show_cleared': 'Bỏ báo vắng', 'regular.plan': 'Xếp lịch bài lớp thường',
   'request.approve': 'Duyệt yêu cầu', 'request.decline': 'Từ chối yêu cầu', 'request.answer': 'Trả lời Xin ý kiến', 'request.undo': 'Huỷ quyết định duyệt',
   'request.create': 'Gửi yêu cầu duyệt',
-  'cuoi_khoa.quyet': 'Quản lý quyết hướng Final Test', 'cuoi_khoa.bo_tro_tao': 'Tạo bổ trợ miễn phí sau Final Test', 'cuoi_khoa.bo_tro_huy': 'Huỷ bổ trợ miễn phí (đổi quyết định)',
+  'cuoi_khoa.quyet': 'Quản lý quyết hướng Final Test', 'cuoi_khoa.bo_tro_tao': 'Tạo bổ trợ miễn phí sau Final Test',
   'cuoi_khoa.mini_test': 'Ghi Mini Test', 'cuoi_khoa.ket_luan_ft': 'Kết luận kỳ vọng đầu ra lên FT',
   'regular.score': 'Nhập điểm lớp thường', 'regular.score.override': 'Sửa điểm lớp thường',
   'score.lich_su': 'Nhập điểm MT cũ',

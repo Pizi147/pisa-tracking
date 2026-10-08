@@ -276,8 +276,8 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
         soNgayQuaHan: iv.status !== 'completed' && iv.action_due && iv.action_due < homNay
           ? Math.max(1, Math.round((Date.parse(homNay) - Date.parse(iv.action_due)) / 86_400_000)) : null,
         supersededBy: iv.superseded_by ?? null, noiTiepTu: noiTiepTuOf.get(iv.id) ?? null,
-        /* PR-VAI-b (Q18, R5-2): PA chưa chạy vì chờ Quản lý duyệt PA — vẽ khối "chờ", không phải "Chưa có PA" (PR-CT2: bỏ chờ duyệt kế hoạch bổ trợ). */
-        cho: (iv.approval_state ?? '') === 'pending' ? 'duyet' as const : null,
+        /* PR-VAI-b (Q18, R5-2): PA chưa chạy vì chờ — Quản lý duyệt kế hoạch / chờ duyệt PA — vẽ khối "chờ", không phải "Chưa có PA". */
+        cho: (iv.approval_state ?? '') === 'pending' || (iv.kind === 'bo_tro' && iv.status === 'planned') ? 'duyet' as const : null,
       }));
       return {
         caseId: c.id, ten: tenCaseCua(c), sos: ratio ? null : c.sos_level ?? null, attemptNo: c.attempt_no ?? null,
@@ -285,8 +285,9 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
         soPa: ivs.length, pa,
         /* Cột tên hàng PA: "2 phương án · {người}" (mockup 26 bản 1) — người ghi PA mới nhất. */
         nguoi: (ivs.at(-1)?.performer_user_name ?? ivs.at(-1)?.performer_name ?? null) as string | null,
-        /* Q18: Case chờ nguyên nhân — khối chờ (viền đứt tím) với chữ đúng. PR-CT2: PA Bổ trợ chạy ngay khi có nguyên nhân. */
-        cho: c.status !== 'done' && choNguyenNhan.has(c.id) ? 'nguyen-nhan' as const : null,
+        /* Q18: Case chờ nguyên nhân / có PA Bổ trợ chờ kế hoạch — khối chờ (viền đứt tím) với chữ đúng. */
+        cho: c.status !== 'done' && choNguyenNhan.has(c.id) ? 'nguyen-nhan' as const
+          : c.status !== 'done' && ivs.some((iv) => iv.kind === 'bo_tro' && iv.status === 'planned') ? 'ke-hoach' as const : null,
       };
     });
     return {

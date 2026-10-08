@@ -258,26 +258,26 @@ export async function runPrPaTests(t: YThucTestKit) {
   const fuCua = (iv: number) => all('SELECT * FROM case_followups WHERE intervention_id = ? ORDER BY id', iv);
   const revCua = (iv: number) => all('SELECT * FROM case_intervention_revisions WHERE intervention_id = ? ORDER BY id', iv);
 
-  check('PA4 · Kết quả: PA có Số buổi → "Số buổi tuần này" bắt buộc 0–60; Người dạy tuần này không bắt buộc (PR-CT2); đếm 3 + 3 + 2 + 0 = 8/10 qua 4 tuần', () => {
+  check('PA4 · Kết quả: PA có Số buổi → "Số buổi tuần này" bắt buộc 0–60; Người dạy tuần này bắt buộc khi ≥ 1 (không khi 0); đếm 3 + 2 + 0 = 5/10 qua 3 tuần', () => {
     const { c, iv } = tutor10('KQ');
     const thieu = maLoi(() => cases.updateResult(P.lrTeacher, iv, { ...KQ, nguoiDay: { performerUserId: GV_L } }));
     assert(thieu.status === 400 && thieu.msg.includes('Số buổi tuần này'), `thiếu số buổi: ${JSON.stringify(thieu)}`);
     const vuot = maLoi(() => cases.updateResult(P.lrTeacher, iv, { ...KQ, soBuoi: 61, nguoiDay: { performerUserId: GV_L } }));
     assert(vuot.status === 400 && vuot.msg.includes('Từ 0 đến 60 buổi'), `61: ${JSON.stringify(vuot)}`);
+    const khongNguoi = maLoi(() => cases.updateResult(P.lrTeacher, iv, { ...KQ, soBuoi: 3, observedOn: t.addDays(TODAY, -14) }));
+    assert(khongNguoi.status === 400 && khongNguoi.msg.includes('Người dạy tuần này'), `thiếu người dạy: ${JSON.stringify(khongNguoi)}`);
     assert(fuCua(iv).length === 0, 'lỗi mà vẫn ghi');
-    cases.updateResult(P.lrTeacher, iv, { ...KQ, soBuoi: 3, observedOn: t.addDays(TODAY, -21) });   // PR-CT2: 3 buổi không người dạy → lưu
-    assert(fuCua(iv)[0].so_buoi === 3 && fuCua(iv)[0].phu_trach_user_id === null && fuCua(iv)[0].phu_trach_ten === null, 'không người dạy');
     cases.updateResult(P.lrTeacher, iv, { ...KQ, soBuoi: 3, nguoiDay: { performerUserId: GV_L }, observedOn: t.addDays(TODAY, -14) });
     cases.updateResult(P.lrTeacher, iv, { ...KQ, soBuoi: '2', nguoiDay: { performerName: 'Tutor ngoài Hà' }, observedOn: t.addDays(TODAY, -7) });
     cases.updateResult(P.lrTeacher, iv, { ...KQ, soBuoi: 0, nguoiDay: null });   // 0 = em nghỉ: không cần người dạy
     const f = fuCua(iv);
-    assert(f.map((x) => x.so_buoi).join() === '3,3,2,0', `so_buoi: ${f.map((x) => x.so_buoi)}`);
-    assert(f[1].phu_trach_user_id === GV_L && f[2].phu_trach_ten === 'Tutor ngoài Hà' && f[3].phu_trach_user_id === null && f[3].phu_trach_ten === null, JSON.stringify(f));
+    assert(f.map((x) => x.so_buoi).join() === '3,2,0', `so_buoi: ${f.map((x) => x.so_buoi)}`);
+    assert(f[0].phu_trach_user_id === GV_L && f[1].phu_trach_ten === 'Tutor ngoài Hà' && f[2].phu_trach_user_id === null && f[2].phu_trach_ten === null, JSON.stringify(f));
     const pa = paDto(c, iv);
-    assert(pa.soBuoi === 10 && pa.daDay === 8, `DTO: soBuoi ${pa.soBuoi} daDay ${pa.daDay}`);
+    assert(pa.soBuoi === 10 && pa.daDay === 5, `DTO: soBuoi ${pa.soBuoi} daDay ${pa.daDay}`);
     const ten = get('SELECT full_name FROM users WHERE id = ?', GV_L).full_name;
     const fd = (cases.caseDetail(P.lrTeacher, c) as any).followups.filter((x: any) => x.interventionId === iv);
-    assert(fd.length === 4 && fd.every((x: any) => 'soBuoi' in x && 'nguoiDay' in x && !('phuTrach' in x)), JSON.stringify(fd));
+    assert(fd.length === 3 && fd.every((x: any) => 'soBuoi' in x && 'nguoiDay' in x && !('phuTrach' in x)), JSON.stringify(fd));
     assert(fd.find((x: any) => x.soBuoi === 3).nguoiDay === ten && fd.find((x: any) => x.soBuoi === 2).nguoiDay === 'Tutor ngoài Hà', JSON.stringify(fd));
     /* PA không có Số buổi: không bắt; Tự học (có Số buổi) không có người dạy — gửi kèm bị bỏ qua, không bắt người. */
     const thuong = cases.recordIntervention(P.lrTeacher, c, { kind: 'teaching_adjust', description: 'Đổi cách chữa bài nghe', status: 'started', startedDate: TODAY }) as any;
@@ -588,24 +588,25 @@ export async function runPrPaTests(t: YThucTestKit) {
     assert(tayKhongNguoi.length === 1 && tayKhongNguoi[0].ai === 'Lê Minh Khoa' && tayKhongNguoi[0].chu === 'Tạo "Học Tutor" · người dạy trống', JSON.stringify(tayKhongNguoi));
   });
 
-  check('PA17 · Kết quả (luật thuần web): đếm sau khi lưu còn / đủ / vượt; lỗi + thân khối đếm; không người dạy lưu được (PR-CT2); Điều chỉnh xoá Người dạy', () => {
+  check('PA17 · Kết quả (luật thuần web): đếm sau khi lưu còn / đủ / vượt; lỗi + thân khối đếm; Số buổi 0 không người dạy lưu được; Điều chỉnh xoá Người dạy', () => {
     const k = (a: number, b: number, tuan: string) => { const x = d.demSauKetQua(a, b, tuan); return `${x.truoc}>${x.da}/${x.tong}·${x.con}·${x.tt}·${x.vuot}`; };
     assert(k(3, 10, '2') === '3>5/10·5·chua·0' && k(8, 10, '2') === '8>10/10·0·du·0' && k(10, 10, '1') === '10>11/10·0·vuot·1'
       && k(3, 10, '') === '3>3/10·7·chua·0' && k(3, 10, 'x') === '3>3/10·7·chua·0', 'demSauKetQua');
     const tutor = { kind: 'tutor', soBuoi: 10 };
     const khoa = (pa: any, tuan: string, ng: any) => d.loiKetQuaTuan(pa, tuan, ng).map((l: any) => `${l.khoa}:${l.lyDo}`).join('|');
-    assert(khoa(tutor, '2', null) === '' && khoa(tutor, '0', null) === '' && khoa(tutor, '', null) === 'so-buoi-tuan:Từ 0 đến 60 buổi'
+    assert(khoa(tutor, '2', null) === 'nguoi-day:Dạy 2 buổi — ghi ai dạy' && khoa(tutor, '0', null) === '' && khoa(tutor, '', null) === 'so-buoi-tuan:Từ 0 đến 60 buổi'
       && khoa(tutor, '1', { kieu: 'ngoai', ten: 'A' }).startsWith('nguoi-day:Gõ tên') && khoa({ kind: 'tutor', soBuoi: null }, '', null) === ''
       && khoa({ kind: 'self_study', soBuoi: 8 }, '2', null) === '', `loiKetQuaTuan: ${khoa(tutor, '2', null)}`);
     assert(JSON.stringify(d.thanKetQuaTuan(tutor, '0', null)) === '{"soBuoi":0,"nguoiDay":{}}'
       && JSON.stringify(d.thanKetQuaTuan({ kind: 'self_study', soBuoi: 8 }, '2', { kieu: 'tai_khoan', id: 5, ten: 'X' })) === '{"soBuoi":2}'
       && JSON.stringify(d.thanKetQuaTuan({ kind: 'teaching_adjust', soBuoi: null }, '1', null)) === '{"nguoiDay":{}}', 'thanKetQuaTuan');
-    /* Máy chủ nhận đúng thân web gửi: 0 buổi hay 2 buổi không người dạy → đều lưu (PR-CT2). */
+    /* Máy chủ nhận đúng thân web gửi: 0 buổi không người dạy → lưu; 2 buổi không người → 400. */
     const { c, iv } = tutor10('KQ0');
-    cases.updateResult(P.lrTeacher, iv, { ...KQ, ...d.thanKetQuaTuan(tutor, '2', null), observedOn: t.addDays(TODAY, -7) });
+    const thieu = maLoi(() => cases.updateResult(P.lrTeacher, iv, { ...KQ, ...d.thanKetQuaTuan(tutor, '2', null) }));
+    assert(thieu.status === 400 && thieu.msg.includes('Người dạy tuần này'), JSON.stringify(thieu));
     cases.updateResult(P.lrTeacher, iv, { ...KQ, ...d.thanKetQuaTuan(tutor, '0', null) });
     const f = fuCua(iv);
-    assert(f.length === 2 && f.map((x) => x.so_buoi).join() === '2,0' && f.every((x) => x.phu_trach_user_id === null && x.phu_trach_ten === null), JSON.stringify(f));
+    assert(f.length === 1 && f[0].so_buoi === 0 && f[0].phu_trach_user_id === null && f[0].phu_trach_ten === null, JSON.stringify(f));
     /* Điều chỉnh (thân = thanSuaPa như Sửa PA): đổi người → đặt lại; xoá người (cả ba khoá trống) → PA không còn người dạy. */
     const goc = { kind: 'tutor', description: 'Tutor nghe chép 10 buổi', soBuoi: '10', nguoi: { kieu: 'tai_khoan', id: GV_L, ten: 'GV' }, ghiRo: '' };
     const dc = (nguoi: any) => d.thanSuaPa({ ...goc, nguoi }, goc, { moi: '', cu: null });

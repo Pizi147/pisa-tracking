@@ -235,10 +235,12 @@ export function dongPhuVanDe(v: { mo: string; dong: string | null; soPa: number 
 
 /**
  * KHỐI "CHỜ" trên hàng PA của một Case (Q18, sửa R5-2) — một kiểu khối viền đứt tím, chữ nói rõ chờ gì:
- * Case chờ nguyên nhân → "Chờ nguyên nhân" · Case chưa có PA nào → "Chưa có PA". Có PA đang vẽ được → null (khối PA tự nói).
+ * Case chờ nguyên nhân → "Chờ nguyên nhân" · Case có PA Bổ trợ chờ kế hoạch → "Chờ duyệt kế hoạch" (không còn "Chưa có PA") · Case chưa có PA
+ * nào → "Chưa có PA". Có PA đang vẽ được → null (khối PA tự nói).
  */
-export function khoiCho(v: { cho?: 'nguyen-nhan' | null; soPa: number; pa: readonly unknown[] }): string | null {
+export function khoiCho(v: { cho?: 'nguyen-nhan' | 'ke-hoach' | null; soPa: number; pa: readonly unknown[] }): string | null {
   if (v.cho === 'nguyen-nhan') return 'Chờ nguyên nhân';
+  if (v.cho === 'ke-hoach') return 'Chờ duyệt kế hoạch';
   if (v.soPa === 0) return 'Chưa có PA';
   return v.pa.length ? null : 'Chờ xác nhận PA';
 }

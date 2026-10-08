@@ -33,7 +33,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
 import { DaiHocVienChuyen } from '../classes/DaiChuyenLop.tsx';
 
-type OpenCase = { caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'them-pa' | 'xac-nhan' | 'xac-nhan-pa' } | null;
+type OpenCase = { caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'them-pa' | 'xac-nhan' | 'xac-nhan-pa' | 'ke-hoach' } | null;
 
 type Profile = any;
 

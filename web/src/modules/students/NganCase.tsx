@@ -13,6 +13,7 @@ import { ThanCase, tenNganCase, type CaseDetail, type ViewCase } from '../cases/
 import { GhiKetQuaPanel } from '../cases/CapNhatTuan.tsx';
 import { HoanThanhCasePanel, SuaCasePanel, SuaPaPanel, ThemPaPanel } from '../cases/ThaoTacCase.tsx';
 import { XacNhanCasePanel, XacNhanPaPanel, type PaQuyChe } from '../yThuc/CaseSosControls.tsx';
+import { NopKeHoachPanel } from '../cases/NopKeHoachPanel.tsx';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
 import { NhanTamDung } from '../cases/SkillBoard.tsx';
 import { KhoaNho } from '../cases/FormPa.tsx';
@@ -30,7 +31,7 @@ export type { ViewCase };
 export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose, onChanged }: {
   caseId: number; paId?: number | null;
   /** `tra-loi` cũ trên URL (trước PR-DUYET) → mở Ngăn Case thường: trả lời đề xuất nay là thẻ ngay dưới PA. */
-  viec?: 'ghi-ket-qua' | 'them-pa' | 'hoan-thanh' | 'tra-loi' | 'xac-nhan' | 'xac-nhan-pa';
+  viec?: 'ghi-ket-qua' | 'them-pa' | 'hoan-thanh' | 'tra-loi' | 'xac-nhan' | 'xac-nhan-pa' | 'ke-hoach';
   viecBanDau?: ViewCase;
   hocVien?: string | null; lop?: string | null;
   onClose: () => void; onChanged?: () => void;
@@ -104,7 +105,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
   if (view.loai === 'xac-nhan') {
     return (
       <XacNhanCasePanel {...chung} caseId={caseId} topic={data.topic ?? data.category} kyNang={data.categoryLabel ?? data.category ?? 'Kỹ năng'}
-        ct={data.chuongTrinh ?? null} tenSos={data.tenSos ?? null} paQuyChe={paCho} boTro={data.boTro ?? null}
+        ct={data.chuongTrinh ?? null} tenSos={data.tenSos ?? null} paQuyChe={paCho} boTro={data.boTro ?? null} studentId={data.student?.id}
         onXong={() => { reload(); onChanged?.(); setView(paCho[0] ? { loai: 'xac-nhan-pa', paId: paCho[0].id } : { loai: 'case' }); }} />
     );
   }
@@ -117,6 +118,10 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
           onXong={() => { reload(); onChanged?.(); setView(tiep ? { loai: 'xac-nhan-pa', paId: tiep.id } : { loai: 'case' }); }} />
       );
     }
+  }
+  if (view.loai === 'ke-hoach' && data.boTro) {
+    const ivId = view.paId ?? (data.interventions ?? []).find((x: any) => x.kind === 'bo_tro')?.id;
+    if (ivId) return <NopKeHoachPanel {...chung} ivId={ivId} boTro={data.boTro} studentId={data.student?.id} onXong={xong} />;
   }
   if (view.loai === 'sua-pa') {
     const iv = (data.interventions ?? []).find((x: any) => x.id === view.paId);
@@ -175,6 +180,10 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
     if (!data.viewer.canEdit || !canDong) return undefined;
     const nut = (chu: string, lam: () => void, title?: string) => <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" title={title} onClick={lam}>{chu}</button>;
     if (v?.chu === 'Xác nhận nguyên nhân') return nut('Xác nhận nguyên nhân', () => setView({ loai: 'xac-nhan' }));
+    if (v?.chu === 'Nộp kế hoạch bổ trợ' && data.boTro?.coTheNop) {
+      const pa = (data.interventions ?? []).find((x: any) => x.kind === 'bo_tro' && x.chuaChay);
+      if (pa) return nut('Nộp kế hoạch bổ trợ', () => setView({ loai: 'ke-hoach', paId: pa.id }));
+    }
     if (v?.chu.startsWith('Xác nhận PA') && v.paId) return nut('Xác nhận PA', () => setView({ loai: 'xac-nhan-pa', paId: v.paId! }));
     if (v?.loaiHan === 'cap-nhat-pa' && v.paId) return nut(v.chu.startsWith('Kết quả cuối') ? 'Kết quả cuối' : 'Kết quả', () => setView({ loai: 'ghi-ket-qua', paId: v.paId! }), v.chu);  /* tên PA là chữ người dạy gõ (có thể dài) — chỉ để ở tooltip; nút nào cũng đã có "Kết quả" riêng ở thẻ PA */
     if (ht?.an || !data.viewer.canClose) return undefined;
@@ -238,5 +247,6 @@ function tuViec(viec: string | undefined, paId: number | null | undefined): View
   if (viec === 'hoan-thanh') return { loai: 'hoan-thanh' };
   if (viec === 'xac-nhan') return { loai: 'xac-nhan' };
   if (viec === 'xac-nhan-pa' && paId) return { loai: 'xac-nhan-pa', paId };
+  if (viec === 'ke-hoach') return { loai: 'ke-hoach', paId: paId ?? undefined };
   return null;
 }

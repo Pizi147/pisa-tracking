@@ -162,9 +162,10 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved, on
       <input className="field w-24 tabular-nums" inputMode="numeric" maxLength={2} {...o('so-buoi-tuan')} value={tuan} onChange={(e) => setTuan(e.target.value)} />
     </Truong>
   );
-  /* PR-CT2: không bắt buộc ở mọi trường hợp (cùng `loiKetQuaTuan` và máy chủ). */
+  /* Bắt buộc chỉ khi Số buổi tuần này ≥ 1 (cùng `loiKetQuaTuan` và máy chủ). */
+  const canNguoi = coDem && Number(tuan.trim()) >= 1;
   const oNguoi = coNguoiDay(pa.kind) && (
-    <Truong nhan="Người dạy tuần này" tuyChon as="div" loi={loiCua('nguoi-day')}>
+    <Truong nhan="Người dạy tuần này" batBuoc={canNguoi} tuyChon={!canNguoi} as="div" loi={loiCua('nguoi-day')}>
       <ChonNguoi nhom="nhan_vien" value={nguoiDay} onChange={setNguoiDay} choTrong="Để trống" placeholder="Chưa chọn · gõ tên để tìm"
         ariaLabel="Người dạy tuần này" id={lf.oId('nguoi-day')} onBlur={lf.roi('nguoi-day')} invalid={!!loiCua('nguoi-day')} />
     </Truong>

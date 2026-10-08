@@ -133,8 +133,8 @@ export async function runPrVaiBTests(t: YThucTestKit) {
   const { loadPrincipal } = await import('../permissions.ts');
   const viecCua = (p: any, sid: number) => (studentProfile(p, sid) as any).dauHoSo.viec as { cuaBan: any[]; nguoiKhac: any[] };
   const emLop = (ma: string) => all(`SELECT e.student_id id ${SACH} ORDER BY e.student_id`, classId(ma), seedMax.students).map((r) => r.id as number);
-  const NHOM_HOC_VIEN = new Set(['cause', 'xac_nhan_pa', 'ghi_ket_qua_pa', 'phoi_hop', 'mini_test', 'yt_xu_ly']);
-  const LOAI_HOC_VIEN = new Set(['nguyen-nhan', 'xac-nhan-pa', 'ghi-ket-qua', 'bao-ph', 'mini-test', 'y-thuc']);
+  const NHOM_HOC_VIEN = new Set(['cause', 'xac_nhan_pa', 'ghi_ket_qua_pa', 'ke_hoach_bo_tro', 'phoi_hop', 'mini_test', 'yt_xu_ly']);
+  const LOAI_HOC_VIEN = new Set(['nguyen-nhan', 'xac-nhan-pa', 'ghi-ket-qua', 'ke-hoach', 'bao-ph', 'mini-test', 'y-thuc']);
 
   check('VAI-b (2) · nguoiLam của Case (Q3): chờ nguyên nhân → người phụ trách; PA chạy chờ ghi kết quả → người thực hiện PA (thiếu thì người phụ trách Case — PR-Dọn Task 6); không ai phụ trách → null; có tên', () => {
     let chu = 0, ghi = 0, rong = 0;
@@ -248,9 +248,9 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     const r = cau({
       ketQua: { dau: 'Progress Test', ratio: true, sos: 2, dat: false, overall: null, kck: false, soDat: 2, soMon: 4, monTruot: ['G+V', 'P'], phanTram: null },
       hoTro: ['Grammar + Vocabulary', 'Pronunciation'],
-      viec: [{ loai: 'cho-duyet', chu: 'PA Tutor chờ Quản lý duyệt', kyNangTen: null, quaHanNgay: null }],
+      viec: [{ loai: 'cho-duyet', chu: 'PA Bổ trợ chung chờ Quản lý duyệt kế hoạch', kyNangTen: null, quaHanNgay: null }],
     });
-    assert(chu(r).join(' · ') === 'Progress Test 2/4 môn đạt: không đạt G+V và P · PA Tutor chờ Quản lý duyệt', JSON.stringify(r));
+    assert(chu(r).join(' · ') === 'Progress Test 2/4 môn đạt: không đạt G+V và P · PA Bổ trợ chung chờ Quản lý duyệt kế hoạch', JSON.stringify(r));
     assert(r[1].tone === 'wait' && !JSON.stringify(r).includes('SOS'), JSON.stringify(r));
     const dat = cau({ ketQua: { ...KQ_FT, dau: 'MT2', sos: 0, dat: true } });
     assert(chu(dat).join(' · ') === 'MT2 đạt kỳ vọng · không có việc đang mở', JSON.stringify(dat));
@@ -265,6 +265,9 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     ]);
     assert(h.so === 2 && h.dong[0].kn === 'W2' && h.dong[0].nhan === 'Quá hạn' && h.dong[0].viec === 'kết quả'
       && h.dong[1].kn === 'S' && h.dong[1].nhan === 'Cần làm' && h.dong[1].viec === 'nguyên nhân', JSON.stringify(h));
+    const bt = d.oHocThuat([{ short: 'G+V', label: 'G+V', category: 'grammar_vocab', missed: true, cases: [c({ trangThaiV4: { t: 'cho-duyet' },
+      boTro: { nhom: 'n1', chung: true, buoiMoiTuan: 2, keHoach: { trangThai: 'cho' } } })] }]);
+    assert(bt.phu === 'PA Bổ trợ chung · 2 buổi/tuần · kế hoạch chờ Quản lý' && bt.dong[0].nhan === 'Chờ duyệt', JSON.stringify(bt));
     assert(d.oHocThuat([{ short: 'L', label: 'L', category: 'listening', missed: false, cases: [] }]).phu === 'mọi kỹ năng đạt', 'không Case');
     const y = d.oYThuc({ bacTen: 'Report 1', nhom: 'bat_buoc', soBatBuoc: 3, keTiep: 'Report 2', han: '2026-10-04', quaHanNgay: null, deXuat: null, soMo: 3, tamDung: false }, '2026-09-14');
     assert(y.gt === 'Report 1' && y.tren === 'bậc đã xử lý' && y.phu === '3 vi phạm / 2 tuần → bắt buộc Report 2 · hạn hết 04/10' && y.tone === 'warn', JSON.stringify(y));
@@ -296,7 +299,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
         assert(cauTruoc === null || cauTruoc === cauNay, `em ${sid}: câu tóm tắt khác theo người xem`);
         cauTruoc = cauNay;
         const tatCa = [...pr.dauHoSo.viec.cuaBan, ...pr.dauHoSo.viec.nguoiKhac];
-        if (tatCa.some((v: any) => v.quaHanNgay !== null && ['ghi-ket-qua', 'nguyen-nhan', 'xac-nhan-pa', 'mini-test'].includes(v.loai))) {
+        if (tatCa.some((v: any) => v.quaHanNgay !== null && ['ghi-ket-qua', 'nguyen-nhan', 'xac-nhan-pa', 'ke-hoach', 'mini-test'].includes(v.loai))) {
           assert(pr.dauHoSo.tomTat.some((m: any) => m.tone === 'danger' && /quá hạn/.test(m.chu)),`em ${sid}: có việc quá hạn mà câu không nêu: ${cauNay}`);
           coQuaHan++;
         }
@@ -414,7 +417,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     const dong11 = web.split('\n').filter((l) => l.includes('text-[11px]'));
     assert(dong11.every((l) => /rounded/.test(l)), `còn chữ 11 px không phải nhãn: ${dong11.map((l) => l.trim().slice(0, 90)).join(' | ')}`);
     assert(/loai === 'Case' \? 'border-current/.test(web) && /bg-\[color:var\(--line-strong\)\]/.test(web), 'Case khung rỗng / PA khối đặc');
-    assert(/<NhanLoai loai="Case" \/>/.test(web) && /<NhanLoai loai="PA" \/>/.test(web), 'hàng Case / hàng PA dùng NhanLoai');
+    assert(/<NhanLoai loai="Case" \/>/.test(web) && /<NhanLoai loai="PA" cho=\{choDuyetKh\} \/>/.test(web), 'hàng Case / hàng PA dùng NhanLoai');
     assert(!/ngan\(p\.startedOn\)|ngan\(p\.lastOutcomeOn\)/.test(web), 'khoảng PA / kết quả còn dd/mm');
   });
 
@@ -580,8 +583,9 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     assert(pa.day.endsWith(`từ ${d.tuanLich('2026-09-07', h)}`) && !/\d\d\/\d\d/.test(pa.day), pa.day);
   });
 
-  check('VAI-b (11) · khoiCho (R5-2): chờ nguyên nhân / chưa có PA / chờ xác nhận PA / có PA → null (PR-CT2: bỏ "Chờ duyệt kế hoạch")', () => {
+  check('VAI-b (11) · khoiCho (R5-2): chờ nguyên nhân / chờ duyệt kế hoạch (không còn "Chưa có PA") / chưa có PA / chờ xác nhận PA / có PA → null', () => {
     assert(d.khoiCho({ cho: 'nguyen-nhan', soPa: 0, pa: [] }) === 'Chờ nguyên nhân', 'nguyên nhân');
+    assert(d.khoiCho({ cho: 'ke-hoach', soPa: 0, pa: [] }) === 'Chờ duyệt kế hoạch', 'Bổ trợ chờ kế hoạch');
     assert(d.khoiCho({ cho: null, soPa: 0, pa: [] }) === 'Chưa có PA', 'chưa PA');
     assert(d.khoiCho({ soPa: 1, pa: [] }) === 'Chờ xác nhận PA', 'PA chưa vẽ được');
     assert(d.khoiCho({ soPa: 1, pa: [{}] }) === null, 'có khối PA');

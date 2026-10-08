@@ -56,14 +56,15 @@ export function demSauKetQua(daDay: number, tong: number, tuan: string) {
   return { ...sau, truoc: daDay, vuot: Math.max(0, sau.da - tong) };
 }
 
-/** Lỗi khối đếm: Số buổi tuần này (PA có Số buổi, 0–60) · Người dạy tuần này (Tự học không có; PR-CT2: không bắt buộc, chỉ kiểm tên ngoài). */
+/** Lỗi khối đếm: Số buổi tuần này (PA có Số buổi, 0–60) · Người dạy tuần này (Tự học không có; bắt buộc khi PA có Số buổi và ≥ 1). */
 export function loiKetQuaTuan(pa: { kind: string; soBuoi?: number | null }, tuan: string, nguoi: NguoiChon | null): LoiTruong[] {
   const coDem = pa.soBuoi != null;
   const loi: LoiTruong[] = [];
   const sb = coDem ? kiemSoBuoiTuan(tuan) : null;
   if (sb) loi.push({ khoa: 'so-buoi-tuan', nhan: 'Số buổi tuần này', lyDo: sb });
-  const ng = coNguoiDay(pa.kind) ? nguoiThieu(nguoi, false) : null;
-  if (ng) loi.push({ khoa: 'nguoi-day', nhan: 'Người dạy tuần này', lyDo: ng });
+  const n = coDem ? soTuan(tuan) : 0;
+  const ng = coNguoiDay(pa.kind) ? nguoiThieu(nguoi, n >= 1) : null;
+  if (ng) loi.push({ khoa: 'nguoi-day', nhan: 'Người dạy tuần này', lyDo: nguoi ? ng : `Dạy ${n} buổi — ghi ai dạy` });
   return loi;
 }
 

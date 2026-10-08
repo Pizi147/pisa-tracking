@@ -140,7 +140,7 @@ export async function runPrNvTests(t: YThucTestKit) {
   });
 
   check('NV-2 · myWork(người, { chiNhom: G }) = đúng các dòng của myWork(người) có nhóm ∈ G (mọi GV/QL seed, từng nhóm + tập gộp)', () => {
-    const NHOM = ['cause', 'xac_nhan_pa', 'phoi_hop', 'phoi_hop_sos', 'mini_test', 'score', 'no_plan', 'ghi_ket_qua_pa',
+    const NHOM = ['cause', 'xac_nhan_pa', 'ke_hoach_bo_tro', 'phoi_hop', 'phoi_hop_sos', 'mini_test', 'score', 'no_plan', 'ghi_ket_qua_pa',
       'yt_xu_ly', 'yt_xem', 'yt_thuc_hien', 'khai_bac', 'chot_len_ft', 'ky_vong_dau_ra', 'ban_giao', 'no_owner', 'mgmt', 'missing_data'];
     const tap = [...NHOM.map((g) => [g]), ['cause', 'score', 'yt_xem', 'ban_giao', 'missing_data', 'no_plan', 'mgmt']];
     const nguoi = conn.prepare(

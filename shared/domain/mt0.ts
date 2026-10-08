@@ -21,8 +21,8 @@ export const laMt0 = (a: { kind?: string | null }): boolean => a.kind === 'mt0';
 export const coMt0 = (ma: ProgrammeCode | string | null, huong: Huong | string): boolean =>
   huong === 'fast_track' && !!ma && (MT0_CHUONG_TRINH as readonly string[]).includes(ma);
 
-/** Hạn chấm MT0 = thứ Tư tuần sau tuần thi (= luật lớp thường, đặc tả §1; PR-CT2). Tính khi đọc nên không migrate. */
-export const hanChamMt0 = (tuanThi: string): string => addDaysIso(mondayOfDate(tuanThi.slice(0, 10)), 9);
+/** Hạn chấm MT0 = Chủ nhật TUẦN SAU tuần thi (thứ Hai + 13 ngày). */
+export const hanChamMt0 = (tuanThi: string): string => addDaysIso(mondayOfDate(tuanThi.slice(0, 10)), 13);
 
 /** Hạn Chốt lộ trình (PR-LCb; trước là "Chốt lên FT") = Chủ nhật trước tuần Cuối khoá (FOU hết tuần 7, BE/ELE hết tuần 9, Pre FOU hết tuần 4). */
 export const hanChotLenFt = (tuanCuoiKhoa: string): string => addDaysIso(mondayOfDate(tuanCuoiKhoa.slice(0, 10)), -1);
