@@ -895,7 +895,8 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
   if (vuot.chan) throw badRequest(vuot.chan);
   kiemXacNhanVuot(vuot.biVuot, { xacNhan: opts.huyLichVuot, lyDo: opts.reason });
 
-  const check = checkSkillWeekMove({ attemptId, skill: row.skill, newWeekStart: period.week_start, boQua: [...vuot.biVuot.map((x) => x.attemptId), ...(opts.hoaVaoFinal ? [opts.hoaVaoFinal] : [])] });
+  const boQua = [...vuot.biVuot.map((x) => x.attemptId), ...(opts.hoaVaoFinal ? [opts.hoaVaoFinal] : [])];
+  const check = checkSkillWeekMove({ attemptId, skill: row.skill, newWeekStart: period.week_start, boQua });
   if (check.blockers.length) throw badRequest(check.blockers.join(' '));
   if (check.warnings.length && !opts.force) {
     throw badRequest(`${check.warnings.join(' ')} Xác nhận lại nếu vẫn muốn xếp vào tuần này.`);

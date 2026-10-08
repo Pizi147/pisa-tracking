@@ -565,34 +565,47 @@ export const XONG_MT_CUOI_SQL = (cy: string) => `EXISTS (SELECT 1 FROM assessmen
 
 /**
  * PR-LTGON (luật 6): đổi mốc Progress/Final của lớp → bài chưa có điểm của các em đang học dời theo, không hỏi. Chỉ kỹ năng đang ở ĐÚNG tuần mốc cũ
- * (đã dời tay / dời do vắng thì giữ), của bài chưa có điểm nào; bài đã có điểm giữ nguyên. Số câu SQL không phụ thuộc số em. Final: MT0 chưa thi đi theo.
+ * (đã dời tay / dời do vắng thì giữ), của bài chưa có điểm và chưa kỹ năng nào đã thi; bài đó giữ nguyên cả bài. Ghi `attempt_schedule_history` một câu cho cả lớp. Số câu SQL không phụ thuộc số em. Final: MT0 chưa thi đi theo.
  */
 function doiBaiTheoMoc(p: Principal, classId: number, kind: 'progress' | 'final', tuCu: string, sangMoi: string) {
   const conn = db();
   const cu = ensurePeriods([tuCu]).get(tuCu)!, moi = ensurePeriods([sangMoi]).get(sangMoi)!;
   const now = nowIso();
+  /* Bài của các em ĐANG học lớp, chưa có điểm và chưa kỹ năng nào "đã thi" (đã thi = chờ chấm, coi như có điểm) → cả bài giữ nguyên nếu không thoả. */
   const cua = `SELECT a.id FROM assessment_attempts a JOIN enrollments e ON e.student_id = a.student_id AND e.class_id = a.class_id AND e.status = 'active'
-                WHERE a.class_id = ? AND a.kind = ? AND a.status != 'cancelled'`;
-  /* Em đã có điểm ở bài này → cả bài giữ nguyên (không tách một bài ra hai tuần). */
-  const chuaDiem = `NOT EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = k.attempt_id AND (s.band IS NOT NULL OR s.raw_score IS NOT NULL))`;
-  const soKn = (conn.prepare(
-    `UPDATE attempt_skills AS k SET planned_period_id = ?, plan_source = 'auto', updated_at = ?
-      WHERE k.attempt_id IN (${cua}) AND k.planned_period_id = ? AND k.sit_status != 'cancelled' AND ${chuaDiem}`,
-  ).run(moi.id, now, classId, kind, cu.id) as any).changes ?? 0;
-  /* Lượt: đặt theo tuần muộn nhất của kỹ năng bắt buộc (như `recomputeCompletionWeek`), một câu cho cả lớp. */
+                WHERE a.class_id = ? AND a.kind = ? AND a.status != 'cancelled'
+                  AND NOT EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND (s.band IS NOT NULL OR s.raw_score IS NOT NULL))
+                  AND NOT EXISTS (SELECT 1 FROM attempt_skills s2 WHERE s2.attempt_id = a.id AND s2.sit_status = 'sat')`;
+  const dangOCu = `EXISTS (SELECT 1 FROM attempt_skills k0 WHERE k0.attempt_id = a.id AND k0.planned_period_id = ? AND k0.sit_status != 'cancelled')`;
   conn.prepare(
-    `UPDATE assessment_attempts SET updated_at = ?, planned_period_id = (
+    `INSERT INTO attempt_schedule_history (attempt_id, action, field, old_value, new_value, reason, actor_user_id, created_at)
+     SELECT a.id, 'week_set', 'planned_period', ?, ?, 'Đổi mốc ' || ? || ' của lớp', ?, ?
+       FROM assessment_attempts a WHERE a.id IN (${cua}) AND ${dangOCu}`,
+  ).run(cu.code, moi.code, kind === 'final' ? 'Final' : 'Progress', p.userId, now, classId, kind, cu.id);
+  const soKn = (conn.prepare(
+    `UPDATE attempt_skills SET planned_period_id = ?, plan_source = 'auto', updated_at = ?
+      WHERE attempt_id IN (${cua}) AND planned_period_id = ? AND sit_status != 'cancelled'`,
+  ).run(moi.id, now, classId, kind, cu.id) as any).changes ?? 0;
+  /* Tuần của bài = tuần muộn nhất của kỹ năng bắt buộc (như `recomputeCompletionWeek`) — tính lại cho MỌI bài trong `cua`, kể cả bài có kỹ năng đã dời do vắng. */
+  conn.prepare(
+    `UPDATE assessment_attempts SET updated_at = ?, planned_period_id = COALESCE((
        SELECT k.planned_period_id FROM attempt_skills k JOIN report_periods pr ON pr.id = k.planned_period_id
-        WHERE k.attempt_id = assessment_attempts.id AND k.required = 1 AND k.sit_status != 'cancelled' ORDER BY pr.week_start DESC LIMIT 1)
-      WHERE id IN (${cua}) AND planned_period_id = ?`,
-  ).run(now, classId, kind, cu.id);
+        WHERE k.attempt_id = assessment_attempts.id AND k.required = 1 AND k.sit_status != 'cancelled' ORDER BY pr.week_start DESC LIMIT 1), planned_period_id)
+      WHERE id IN (${cua})`,
+  ).run(now, classId, kind);
   if (kind === 'final') {
-    const mt0 = `SELECT m.id FROM assessment_attempts m JOIN assessment_attempts f ON f.cycle_id = m.cycle_id AND f.kind = 'final' AND f.class_id = ? AND f.status != 'cancelled' AND f.planned_period_id = ?
-                  WHERE m.kind = 'mt0' AND m.status = 'planned'
+    /* MT0 chưa thi, chưa ai dời tay → tuần ĐẦU của Final cùng khoá (như `mt0TheoFinal`). */
+    const dich = (cy: string) => `(SELECT k.planned_period_id FROM assessment_attempts f JOIN attempt_skills k ON k.attempt_id = f.id AND k.required = 1 AND k.sit_status != 'cancelled'
+                                     JOIN report_periods pr ON pr.id = k.planned_period_id
+                                    WHERE f.cycle_id = ${cy} AND f.kind = 'final' AND f.class_id = ? AND f.status != 'cancelled' ORDER BY pr.week_start LIMIT 1)`;
+    const mt0 = `SELECT m.id FROM assessment_attempts m
+                  WHERE m.kind = 'mt0' AND m.status = 'planned' AND m.cycle_id IN (SELECT cycle_id FROM assessment_attempts WHERE class_id = ? AND kind = 'final' AND status != 'cancelled')
                     AND NOT EXISTS (SELECT 1 FROM attempt_skills k WHERE k.attempt_id = m.id AND k.plan_source != 'auto')
                     AND NOT EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = m.id AND (s.band IS NOT NULL OR s.raw_score IS NOT NULL))`;
-    conn.prepare(`UPDATE attempt_skills SET planned_period_id = ?, updated_at = ? WHERE attempt_id IN (${mt0})`).run(moi.id, now, classId, moi.id);
-    conn.prepare(`UPDATE assessment_attempts SET planned_period_id = ?, updated_at = ? WHERE id IN (${mt0})`).run(moi.id, now, classId, moi.id);
+    conn.prepare(`UPDATE attempt_skills SET planned_period_id = COALESCE(${dich('(SELECT cycle_id FROM assessment_attempts WHERE id = attempt_skills.attempt_id)')}, planned_period_id), updated_at = ? WHERE attempt_id IN (${mt0})`)
+      .run(classId, now, classId);
+    conn.prepare(`UPDATE assessment_attempts SET planned_period_id = COALESCE(${dich('assessment_attempts.cycle_id')}, planned_period_id), updated_at = ? WHERE id IN (${mt0})`)
+      .run(classId, now, classId);
   }
   writeAudit({ actorUserId: p.userId, action: 'class.progress.doi_bai', entityType: 'class', entityId: classId, entityLabel: kind,
     before: { week: cu.code }, after: { week: moi.code, kyNang: soKn } });
@@ -641,6 +654,9 @@ export function setClassProgress(p: Principal, classId: number, input: {
   tx(() => {
     conn.prepare(`UPDATE classes SET ${sets.join(', ')} WHERE id = ?`).run(...params);
     const moi = classProgress(classId);
+    if (moi.progressWeekStart && moi.finalWeekStart && moi.progressWeekStart >= moi.finalWeekStart) {
+      throw badRequest('Progress Test phải ở trước Final Test.');   // tx cuộn lại, không dời gì
+    }
     for (const [kind, tuCu, sangMoi] of [['progress', cu.progressWeekStart, moi.progressWeekStart], ['final', cu.finalWeekStart, moi.finalWeekStart]] as const) {
       if (tuCu && sangMoi && tuCu !== sangMoi) doiBaiTheoMoc(p, classId, kind, tuCu, sangMoi);
     }
