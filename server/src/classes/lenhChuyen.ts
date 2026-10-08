@@ -201,8 +201,9 @@ export function raLenh(p: Principal, v: {
           cuLaQl: daCo.get(h[0])?.lop_nguon_id === v.lopNguonId && daCo.get(h[0])?.huong === ltt.get(h[0])?.huong,
         })));
       }
-      /* PR-CT2 (§8): quyết định Cuối khoá lớp thường (ra / sửa) → bổ trợ Final sinh ngay nếu đã đủ điểm, đổi hướng thì huỷ phần chưa ai đụng. Cùng giao dịch. */
-      if (v.boiCanh === 'cuoi-khoa' && !nguonFt) dongBoCheTaiFinal(p, v.lopNguonId, hang.map((h) => h[0] as number));
+      /* PR-CT2 (§8): quyết định Cuối khoá lớp thường (ra / sửa) → bổ trợ Final sinh ngay nếu đã đủ điểm, đổi hướng thì huỷ phần chưa ai đụng. Cùng giao dịch.
+         Mọi bối cảnh: lệnh Giữa khoá ghi đè lệnh Cuối khoá đang chờ cũng phải huỷ bộ sinh sớm (hàm tự lọc lệnh `cuoi-khoa`). */
+      if (!nguonFt) dongBoCheTaiFinal(p, v.lopNguonId, hang.map((h) => h[0] as number));
     }
     return { ok: hang.map((h) => h[0] as number), failed };
   });

@@ -1,4 +1,4 @@
-import { db } from '../db.ts';
+import { db, theoLo } from '../db.ts';
 import { CASE_DISMISS_REASON_LABEL, type CaseDismissReason } from '../../../shared/domain/index.ts';
 
 /**
@@ -46,6 +46,19 @@ export function dongBoTrangThaiCase(caseId: number): void {
     FROM sos_cases sc WHERE sc.id = ?`).get(caseId) as any;
   if (!r || r.status === 'done' || r.status === r.moi) return;
   conn.prepare('UPDATE sos_cases SET status = ?, updated_at = ? WHERE id = ?').run(r.moi, new Date().toISOString(), caseId);
+}
+
+/** `dongBoTrangThaiCase` cho NHIỀU Case theo lô (PR-CT2, Turso): một câu đọc + tối đa hai câu ghi mỗi lô, không theo số Case. Cùng điều kiện. */
+export function dongBoTrangThaiCaseLo(caseIds: readonly number[]): void {
+  const conn = db(), luc = new Date().toISOString();
+  theoLo([...new Set(caseIds)], (lo, ph) => {
+    const doi = conn.prepare(`SELECT sc.id, CASE WHEN NOT ${LA_CASE_SOS()} OR ${CASE_SOS_DANG_XU_LY()} THEN 'in_progress' ELSE 'open' END AS moi
+      FROM sos_cases sc WHERE sc.id IN (${ph}) AND sc.status != 'done'`).all(...lo) as { id: number; moi: string }[];
+    for (const st of ['in_progress', 'open']) {
+      const ids = doi.filter((r) => r.moi === st).map((r) => r.id);
+      if (ids.length) conn.prepare(`UPDATE sos_cases SET status = ?, updated_at = ? WHERE status NOT IN ('done', ?) AND id IN (${ids.map(() => '?').join(',')})`).run(st, luc, st, ...ids);
+    }
+  }, 900 - 3);
 }
 
 export type SosCaseState = {

@@ -71,13 +71,14 @@ function chayBoTroChoKeHoach(conn: any, applied: string[]) {
 
 function sinhBoTroFinalChoLenh(conn: any, applied: string[]) {
   if (!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = 'mini_test'").get()) return;   // DB thử thiếu bảng
-  /* Ứng viên rộng (bài Final `done` chưa có Mini Test); `dongBoCheTaiFinal` tự xét dải điểm / hướng / lớp đích như mọi đường khác. */
+  /* Ứng viên: lệnh lên lớp thường (FT không sinh sớm — Quyết định 1) + bài Final MỚI NHẤT `done` chưa có Mini Test; `dongBoCheTaiFinal` tự xét dải điểm / lớp đích. */
   const ds = conn.prepare(
     `SELECT DISTINCT l.lop_nguon_id AS lop, l.nguoi_ra_lenh AS nguoi, l.student_id AS sid
        FROM lenh_chuyen_lop l JOIN classes c ON c.id = l.lop_nguon_id AND c.is_fast_track = 0
-      WHERE l.trang_thai = 'cho' AND l.boi_canh = 'cuoi-khoa' AND l.huong IN ('len_lop', 'fast_track')
-        AND EXISTS (SELECT 1 FROM assessment_attempts a WHERE a.student_id = l.student_id AND a.class_id = l.lop_nguon_id AND a.kind = 'final' AND a.status = 'done'
-                      AND NOT EXISTS (SELECT 1 FROM mini_test m WHERE m.tu_attempt_id = a.id))`,
+      WHERE l.trang_thai = 'cho' AND l.boi_canh = 'cuoi-khoa' AND l.huong = 'len_lop'
+        AND EXISTS (SELECT 1 FROM assessment_attempts a WHERE a.id = (SELECT MAX(a2.id) FROM assessment_attempts a2
+                        WHERE a2.student_id = l.student_id AND a2.class_id = l.lop_nguon_id AND a2.kind = 'final' AND a2.status != 'cancelled')
+                      AND a.status = 'done' AND NOT EXISTS (SELECT 1 FROM mini_test m WHERE m.tu_attempt_id = a.id))`,
   ).all() as { lop: number; nguoi: number; sid: number }[];
   if (!ds.length) return;
   const dem = () => (conn.prepare('SELECT COUNT(*) AS n FROM mini_test').get() as any).n as number;

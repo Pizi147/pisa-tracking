@@ -11,7 +11,7 @@ import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { mondayOf } from '../platform/week.ts';
 import { addMilestone } from '../cases/sos.ts';
-import { dongBoTrangThaiCase } from '../cases/sosState.ts';
+import { dongBoTrangThaiCase, dongBoTrangThaiCaseLo } from '../cases/sosState.ts';
 import { chuyenCaseSangLoTrinh, dongCaseHeThongLo } from '../cases/systemClose.ts';
 import { suggestCaseOwner } from '../cases/owner.ts';
 import { chenPa, type DongPa } from '../cases/taoPa.ts';
@@ -463,7 +463,7 @@ function taoBoTroFinal(p: Principal, dongs: readonly DongBoTroFinal[]): void {
       cycleStartedOn: y.batDau, actionDue: weeklyUpdateDue(y.batDau), followupDue: y.lich.ngayMiniTest, mocQuyChe: 'mini_test', nhomBoTro: `mt:${y.x.luot.id}`,
     });
   }
-  for (const id of canDongBo) dongBoTrangThaiCase(id);   // Case cũ đi theo em (Progress Test) nhận PA mới — có thể đổi trạng thái
+  dongBoTrangThaiCaseLo(canDongBo);   // Case cũ đi theo em (Giữa khoá / Progress Test) nhận PA mới — có thể đổi trạng thái; theo lô (Turso)
 
   /* Pha 3 — ghi theo lô. */
   chenNhieuDong('INSERT OR IGNORE INTO case_milestones (case_id, kind, attempt_id, attempt_no, occurred_on, note, created_by, created_at, dedup_key)', mocRows);
@@ -510,14 +510,14 @@ export function dongBoCheTaiFinal(p: Principal, classId: number, sids?: readonly
         WHERE l.trang_thai = 'cho' AND l.boi_canh = 'cuoi-khoa' AND l.lop_nguon_id = ? AND l.student_id IN (${ph})`,
     ).all(classId, ...lo) as any[]) lenh.set(r.student_id, r);
   }, THAM_SO_TOI_DA - 1);
-  /* "Đã ai đụng": PA của nhóm có Kết quả, hoặc không còn `started` (trừ PA hệ thống huỷ ở lần đổi quyết định trước). Mini Test đã ghi xét ở dưới. */
+  /* "Đã ai đụng": PA của nhóm có Kết quả, hoặc không còn `started` (PA huỷ ở lần đổi quyết định trước đã rời nhóm). Mini Test đã ghi xét ở dưới. */
   const mt = new Map<number, any>();
   theoLo(luot, (lo, ph) => {
     for (const r of conn.prepare(
       `SELECT m.id, m.student_id, m.tu_attempt_id, m.nhom_bo_tro, m.ty_le,
               EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.nhom_bo_tro = m.nhom_bo_tro
                         AND (EXISTS (SELECT 1 FROM case_followups f WHERE f.intervention_id = iv.id)
-                             OR (iv.status != 'started' AND NOT (iv.status = 'cancelled' AND iv.closed_reason = 'system_closed')))) AS dung
+                             OR iv.status != 'started')) AS dung
          FROM mini_test m WHERE m.tu_attempt_id IN (${ph})`,
     ).all(...lo) as any[]) mt.set(r.student_id, r);
   });
@@ -561,14 +561,15 @@ function huyBoTroFinal(p: Principal, classId: number, mts: readonly { id: number
   });
   const dong = dongCaseHeThongLo({ actorUserId: p.userId, reason: 'doi_quyet_dinh', on: homNay, caseIds: cs.filter((c) => c.mo && !c.khac).map((c) => c.id) });
   theoLo(nhom, (lo, ph) => {
-    conn.prepare(`UPDATE case_interventions SET status = 'cancelled', closed_reason = 'system_closed', updated_at = ? WHERE nhom_bo_tro IN (${ph}) AND status = 'started'`)
+    /* Mọi PA của nhóm (kể cả PA vừa huỷ theo Case đóng ở trên) rời nhóm: sinh lại dùng lại khoá `mt:{lượt}`, việc / thẻ Mini Test lấy MIN Case trên nhóm. */
+    conn.prepare(`UPDATE case_interventions SET status = 'cancelled', closed_reason = 'system_closed', nhom_bo_tro = NULL, updated_at = ? WHERE nhom_bo_tro IN (${ph})`)
       .run(nowIso(), ...lo);
     conn.prepare(`DELETE FROM notifications WHERE kind = 'bo_tro_mien_phi' AND (${lo.map(() => 'dedup_key LIKE ?').join(' OR ')})`)
       .run(...lo.map((n) => `bo-tro-mien-phi:${n.slice(3)}:%`));
   }, 900 - 1);
   const giu = cs.filter((c) => !c.mo);   // Case Giữa khoá nhận PA: mốc `repeat` của lần sinh
   theoLo(giu.map((c) => `cuoi-khoa:${c.nhom.slice(3)}:${c.id}`), (lo, ph) => { conn.prepare(`DELETE FROM case_milestones WHERE dedup_key IN (${ph})`).run(...lo); });
-  for (const id of new Set(cs.filter((c) => !dong.includes(c.id)).map((c) => c.id))) dongBoTrangThaiCase(id);   // ponytail: từng Case còn mở (hiếm — Case Giữa khoá / có PA khác); theo lô nếu đo thấy nặng
+  dongBoTrangThaiCaseLo(cs.filter((c) => !dong.includes(c.id)).map((c) => c.id));   // Case còn mở (Case Giữa khoá / có PA khác) — theo lô
   theoLo(mts.map((m) => m.id), (lo, ph) => { conn.prepare(`DELETE FROM mini_test WHERE id IN (${ph})`).run(...lo); });
   theoLo(mts.map((m) => `bo-tro-final:${m.student_id}:${m.tu_attempt_id}`), (lo, ph) => { conn.prepare(`DELETE FROM journey_events WHERE dedup_key IN (${ph})`).run(...lo); });
   writeAudit({

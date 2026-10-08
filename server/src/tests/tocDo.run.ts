@@ -1007,13 +1007,13 @@ await checkAsync(`PR-LT2a (M1b) · Thêm 30 em lớp thường (POST /intake/com
   assert(r.n <= TRAN_GHI_LO.themHocVien30Thuong, `${r.n} câu > trần ${TRAN_GHI_LO.themHocVien30Thuong}`);
 });
 
-await checkAsync(`PR-CT2 · Ra lệnh cả lớp thường 10 em Final đủ điểm (sinh bổ trợ sớm) ≤ ${TRAN_GHI_LO.raLenhSinhBoTro} · đổi 10 em lên → học lại (huỷ bổ trợ) ≤ ${TRAN_GHI_LO.doiLenhHuyBoTro} câu SQL`, async () => {
+await checkAsync(`PR-CT2 · Ra lệnh cả lớp thường 10 em Final đủ điểm, có Case Giữa khoá (sinh bổ trợ sớm) ≤ ${TRAN_GHI_LO.raLenhSinhBoTro} · đổi 10 em lên → học lại (huỷ bổ trợ) ≤ ${TRAN_GHI_LO.doiLenhHuyBoTro} câu SQL`, async () => {
   const { createClass } = await import('../classes/intake.ts');
   const { ensurePeriod } = await import('../platform/week.ts');
   const { planRegularTests } = await import('../normal/regular.ts');
   const { addDays } = await import('../util.ts');
   const { demoToday } = await import('../demoConfig.ts');
-  const { tuanChonDuoc, mondayOfDate } = await import('../../../shared/domain/index.ts');
+  const { tuanChonDuoc, mondayOfDate, caseDedupKey } = await import('../../../shared/domain/index.ts');
   const admin = loadPrincipal(USER.QT);
   const homNay = demoToday(), now = new Date().toISOString();
   const lop = (code: string, kind: string, tuan: number) => {
@@ -1026,7 +1026,10 @@ await checkAsync(`PR-CT2 · Ra lệnh cả lớp thường 10 em Final đủ đi
     const sid = Number(conn.prepare(`INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`)
       .run(`PISA-TDCT${i}`, `Toc Do CT2 ${i}`, `toc do ct2 ${i}`, CN, now).lastInsertRowid);
     conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`).run(sid, nguon, homNay, now);
-    conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, programme_code, started_at, status, created_at) VALUES (?, 1, NULL, 'FOU', ?, 'active', ?)`).run(sid, homNay, now);
+    const cyc = conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, programme_code, started_at, status, created_at) VALUES (?, 1, NULL, 'FOU', ?, 'active', ?)`).run(sid, homNay, now).lastInsertRowid;
+    /* Case Giữa khoá G+V còn mở (thường gặp ở em 50–69%) → nhận PA Final, `dongBoTrangThaiCase` từng Case ở cả sinh lẫn huỷ. */
+    conn.prepare(`INSERT INTO sos_cases (student_id, cycle_id, category, topic, origin_kind, status, owner_user_id, detected_at, dedup_key, created_at)
+      VALUES (?,?, 'writing', 'writing', 'teacher_report', 'in_progress', ?, ?, ?, ?)`).run(sid, cyc, USER.QL, homNay, caseDedupKey({ category: 'writing', studentId: sid, cycleId: Number(cyc) }), now);
     sids.push(sid);
   }
   planRegularTests(admin, nguon, { studentIds: sids, kinds: ['final'] });

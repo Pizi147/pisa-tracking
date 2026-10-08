@@ -341,7 +341,9 @@ export async function runPrCt2Tests(t: YThucTestKit) {
     assert(d.SYSTEM_CLOSE_REASON_LABEL.doi_quyet_dinh === 'Đổi quyết định lộ trình', 'nhãn lý do');
     assert(get('SELECT status FROM sos_cases WHERE id = ?', gk).status !== 'done', 'Case Giữa khoá phải còn mở');
     assert(!get('SELECT 1 FROM case_milestones WHERE dedup_key = ?', `cuoi-khoa:${f.a}:${gk}`), 'mốc Final ở Case Giữa khoá phải xoá');
-    assert(get(`SELECT closed_reason FROM case_interventions WHERE case_id = ? AND nhom_bo_tro = ?`, gk, `mt:${f.a}`).closed_reason === 'system_closed', 'PA ở Case Giữa khoá huỷ');
+    /* PA huỷ rời nhóm `mt:{lượt}` (nhom_bo_tro NULL) — để lần ra lại, việc Mini Test chỉ thấy PA / Case của bộ mới. */
+    assert(get(`SELECT closed_reason FROM case_interventions WHERE case_id = ? AND kind = 'bo_tro_mien_phi' AND status = 'cancelled' AND nhom_bo_tro IS NULL`, gk)?.closed_reason === 'system_closed', 'PA ở Case Giữa khoá huỷ, rời nhóm');
+    assert(!get(`SELECT 1 FROM case_interventions WHERE nhom_bo_tro = ?`, `mt:${f.a}`), 'còn PA huỷ trong nhóm');
     lenh.suaLenh(P.mbManager, lenhCua(f.sid).id, { huong: 'len_lop', toClassId: f.dich });
     const lai = paMt(f.a);
     assert(lai.length === 2 && mts(f.sid).length === 1, `ra lại: ${chuKy(lai)} · ${mts(f.sid).length}`);
@@ -352,6 +354,24 @@ export async function runPrCt2Tests(t: YThucTestKit) {
     cases.updateResult(loadPrincipal(iv.performer_user_id), iv.id, { ...KQ, ...d.thanKetQuaTuan({ kind: 'bo_tro_mien_phi', soBuoi: 4 }, '1', null) });
     lenh.huyLenh(P.mbManager, lenhCua(f.sid).id, 'Đổi ý');
     assert(paMt(f.a).length === 2 && mts(f.sid).length === 1, `đã có Kết quả mà vẫn huỷ: ${chuKy(paMt(f.a))} · ${mts(f.sid).length}`);
+
+    /* Pre FOU (không Case Giữa khoá): ra → học lại → ra lại → việc Ghi Mini Test / thẻ Báo QL (MIN case trên nhóm) trỏ Case MỚI đang mở. */
+    {
+      const pre = lop('PREFOU', 6), fou = lop('FOU');
+      const e = hocVien(pre, 'PREFOU');
+      ra(pre, e.sid, 'len_lop', fou);
+      nhap(e.a, { tong_hop: 26 }, 40);   // 65%
+      const caseA = paMt(e.a)[0]?.case_id;
+      lenh.suaLenh(P.mbManager, lenhCua(e.sid).id, { huong: 'hoc_lai', toClassId: lop('PREFOU'), lyDo: 'Đổi ý' });
+      assert(mts(e.sid).length === 0 && get('SELECT status FROM sos_cases WHERE id = ?', caseA).status === 'done', 'Pre FOU học lại: phải huỷ');
+      lenh.suaLenh(P.mbManager, lenhCua(e.sid).id, { huong: 'len_lop', toClassId: fou });
+      const caseB = paMt(e.a)[0]?.case_id;
+      assert(caseB && caseB !== caseA && get('SELECT status FROM sos_cases WHERE id = ?', caseB).status !== 'done', `ra lại: Case ${caseA} → ${caseB}`);
+      const nhomCase = all('SELECT DISTINCT case_id FROM case_interventions WHERE nhom_bo_tro = ?', `mt:${e.a}`).map((r) => r.case_id);
+      assert(nhomCase.length === 1 && nhomCase[0] === caseB, `nhóm còn Case cũ: ${nhomCase}`);
+      const mt = ck.emConMiniTest([e.sid]).get(e.sid);
+      assert(mt?.caseId === caseB && mt?.paId === paMt(e.a)[0].id, `Ghi Mini Test trỏ: ${JSON.stringify(mt)} · Case mới ${caseB}`);
+    }
 
     /* Sửa điểm thành Pass sau khi sinh (chưa ai đụng) → tự huỷ. */
     const g = dungFou();

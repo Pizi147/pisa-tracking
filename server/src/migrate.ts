@@ -282,7 +282,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     /* PR-LCb (TRƯỚC PR-LC — phán quyết R-B1): cột lo_trinh_tiep_theo.huong_gvcn + điền bù từ Hướng GVCN trước khi PR-LC đồng bộ Hướng theo lệnh. */ migratePrLcb(conn, applied);
     /* PR-LC: quyết định Cuối khoá đang chờ → Lộ trình tiếp theo + MT0 theo quyết định (đổi dữ liệu, chạy lặp được). */ migratePrLc(conn, applied);
     /* PR-PA (§8): Số buổi PA / Kết quả + nhật ký Sửa PA (chỉ thêm cột) + điền bù Bổ trợ miễn phí, Tutor kỳ vọng. */ migratePrPa(conn, applied);
-    /* PR-CT2: điền bù Số buổi tuần này cho Kết quả cũ của PA Tutor kỳ vọng (một lần, khoá demo_config; SAU PR-PA). */ migratePrCt2(conn, applied);
+    /* PR-CT2 (SAU PR-PA): A điền bù Số buổi tuần này cho Kết quả cũ PA Tutor kỳ vọng (một lần, khoá demo_config) · B chạy PA bổ trợ còn chờ kế hoạch + đóng thẻ kế hoạch · C sinh bổ trợ Final cho lệnh lên đang chờ đã đủ điểm. */ migratePrCt2(conn, applied);
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());
