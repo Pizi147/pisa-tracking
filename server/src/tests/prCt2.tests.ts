@@ -389,4 +389,29 @@ export async function runPrCt2Tests(t: YThucTestKit) {
     assert(pa.some((x) => x.topic === 'writing2' && x.performer_user_id === GV[1]), `Writing 2 giữ GV cũ: ${chuKy(pa)}`);
     assert(mts(e.sid).length === 1 && mts(e.sid)[0].cycle_id === moi.id, JSON.stringify(mts(e.sid)));
   });
+  check('CT2-10 · migrate C: em đủ điểm Final + lệnh chờ lên, chưa Mini Test (dữ liệu trước PR-CT2) → đủ bộ, người ra lệnh ghi; lần hai applied rỗng; em đã chuyển có bổ trợ → không đổi', () => {
+    /* Em đã chuyển (bổ trợ sinh sẵn) — ảnh chụp trước migrate. */
+    const g = dungFou();
+    ra(g.nguon, g.sid, 'len_lop', g.dich);
+    nhap(g.a, { listening: 18, reading: 18, writing: 10, speaking: 9 });
+    chay(g.sid);
+    const anh = () => JSON.stringify([paMt(g.a).map((x) => [x.id, x.case_id, x.cycle_id, x.so_buoi, x.performer_user_id, x.status]), mts(g.sid)]);
+    const truocG = anh();
+    /* Dữ liệu cũ: lệnh học lại (không sinh) → nhập đủ điểm → đổi hướng thẳng bằng SQL như lệnh ra trước PR-CT2. */
+    const f = dungFou();
+    ra(f.nguon, f.sid, 'hoc_lai', lop('FOU'));
+    nhap(f.a, { listening: 18, reading: 18, writing: 10, speaking: 9 });
+    conn.prepare('UPDATE lenh_chuyen_lop SET huong = ?, lop_dich_id = ? WHERE id = ?').run('len_lop', f.dich, lenhCua(f.sid).id);
+    assert(mts(f.sid).length === 0 && paMt(f.a).length === 0, 'dựng sai: đã có bổ trợ trước migrate');
+    const x: string[] = [];
+    migratePrCt2(conn, x);
+    const pa = paMt(f.a);
+    assert(chuKy(pa) === `speaking:4:${GV[2]} writing:4:${GV[1]}` && pa.every((y) => y.cycle_id === f.cyc && y.recorded_by === lenhCua(f.sid).nguoi_ra_lenh), `PA: ${chuKy(pa)}`);
+    assert(mts(f.sid).length === 1 && mts(f.sid)[0].so_buoi === 4, JSON.stringify(mts(f.sid)));
+    assert(x.some((s) => /PR-CT2/.test(s) && /bổ trợ Final/.test(s)), `applied: ${JSON.stringify(x)}`);
+    assert(anh() === truocG, `em đã chuyển bị đổi: ${anh()} ≠ ${truocG}`);
+    const y: string[] = [];
+    migratePrCt2(conn, y);
+    assert(y.length === 0 && paMt(f.a).length === 2 && mts(f.sid).length === 1, `lần hai: ${JSON.stringify(y)}`);
+  });
 }

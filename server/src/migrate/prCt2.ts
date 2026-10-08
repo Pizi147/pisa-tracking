@@ -5,17 +5,23 @@
  * Không đụng Bổ trợ miễn phí. Deploy: chạy SAU `migratePrPa` (điền Số buổi 10 cho PA) — thứ tự trong `migrate.ts` đảm bảo.
  * Phần B: bỏ nộp / duyệt kế hoạch bổ trợ — nhóm PA Bổ trợ Giữa khoá còn chờ kế hoạch (Case chưa đóng, đã có nguyên nhân) chạy ngay; thẻ
  * `ke_hoach_bo_tro` đang chờ tự đóng. Chạy lặp được: lần sau không còn nhóm / thẻ nào → không ghi gì.
+ * Phần C: lệnh Cuối khoá `cho` (lớp thường) ra TRƯỚC PR-CT2 mà em đã đủ điểm Final, chưa có Mini Test → sinh sớm bằng ĐÚNG `dongBoCheTaiFinal`
+ * (khuôn `prLc.ts`: mỗi lớp một savepoint, theo người ra lệnh). Em đã chuyển (lệnh hết `cho`): không đụng. Lần hai đã có Mini Test → không ghi gì.
  */
 import { nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { chayPaBoTro } from '../cases/boTro.ts';
 import { chotYeuCau } from '../duyet/yeuCau.ts';
+import { tx } from '../db.ts';
+import { dongBoCheTaiFinal } from '../normal/cuoiKhoa.ts';
+import type { Principal } from '../permissions.ts';
 
 export const KHOA_PR_CT2_DIEN_BUOI = 'pr_ct2_dien_buoi';
 
 export function migratePrCt2(conn: any, applied: string[]) {
   dienBuoiTutor(conn, applied);
   chayBoTroChoKeHoach(conn, applied);
+  sinhBoTroFinalChoLenh(conn, applied);
 }
 
 function dienBuoiTutor(conn: any, applied: string[]) {
@@ -61,4 +67,30 @@ function chayBoTroChoKeHoach(conn: any, applied: string[]) {
       { lyDo: 'Bỏ bước duyệt kế hoạch — PA bổ trợ đã chạy' });
   }
   if (soPa || soThe) applied.push(`PR-CT2: bỏ duyệt kế hoạch bổ trợ — chạy ${soPa} PA bổ trợ còn chờ, tự đóng ${soThe} thẻ kế hoạch đang chờ.`);
+}
+
+function sinhBoTroFinalChoLenh(conn: any, applied: string[]) {
+  if (!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = 'mini_test'").get()) return;   // DB thử thiếu bảng
+  /* Ứng viên rộng (bài Final `done` chưa có Mini Test); `dongBoCheTaiFinal` tự xét dải điểm / hướng / lớp đích như mọi đường khác. */
+  const ds = conn.prepare(
+    `SELECT DISTINCT l.lop_nguon_id AS lop, l.nguoi_ra_lenh AS nguoi, l.student_id AS sid
+       FROM lenh_chuyen_lop l JOIN classes c ON c.id = l.lop_nguon_id AND c.is_fast_track = 0
+      WHERE l.trang_thai = 'cho' AND l.boi_canh = 'cuoi-khoa' AND l.huong IN ('len_lop', 'fast_track')
+        AND EXISTS (SELECT 1 FROM assessment_attempts a WHERE a.student_id = l.student_id AND a.class_id = l.lop_nguon_id AND a.kind = 'final' AND a.status = 'done'
+                      AND NOT EXISTS (SELECT 1 FROM mini_test m WHERE m.tu_attempt_id = a.id))`,
+  ).all() as { lop: number; nguoi: number; sid: number }[];
+  if (!ds.length) return;
+  const dem = () => (conn.prepare('SELECT COUNT(*) AS n FROM mini_test').get() as any).n as number;
+  const truoc = dem();
+  const theoLop = new Map<number, Map<number, number[]>>();
+  for (const r of ds) {
+    const lop = theoLop.get(r.lop) ?? new Map<number, number[]>();
+    lop.set(r.nguoi, [...(lop.get(r.nguoi) ?? []), r.sid]);
+    theoLop.set(r.lop, lop);
+  }
+  for (const [classId, theoNguoi] of theoLop) {
+    tx(() => { for (const [userId, sids] of theoNguoi) dongBoCheTaiFinal({ userId } as Principal, classId, sids); });
+  }
+  const n = dem() - truoc;
+  if (n) applied.push(`PR-CT2: sinh bổ trợ Final cho ${n} học viên đã đủ điểm + có quyết định lên lớp đang chờ.`);
 }
