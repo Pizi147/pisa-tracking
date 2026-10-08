@@ -576,7 +576,7 @@ export async function runLenLopTests(t: YThucTestKit) {
     assert(r.endKind === 'sang_ft', `endKind: ${r.endKind}`);
   });
 
-  check('PR-LT (4) · Fast Track → lớp thường (Q10): Case FT đóng moved_to_normal, khoá FT cũ completed', () => {
+  check('PR-LT (4) · Fast Track → lớp thường (Q10): Case FT đóng moved_to_normal, khoá FT cũ completed; PR-CL: Target FT giữ (Mock chưa điểm huỷ: CL-a/b — không thêm lượt ở đây để id lượt ảnh chụp DL-2 không dời)', () => {
     const from = taoLop4({ branchId: MB3, kind: 'FT', ft: true });
     const to = taoLop4({ branchId: MB3, kind: 'BE', ft: false, tuanHienTai: 2 });
     const { sid, cycleId } = taoHV4({ clsId: from, ma: 'FT', ft: true, target: 6.0 });
@@ -584,6 +584,8 @@ export async function runLenLopTests(t: YThucTestKit) {
     const gvcn = ganGVCN3(from, P.normalCoreTeacher.userId);
     const r = studentsSvc4.transferStudent(P.admin, sid, to, TODAY3, 'Xếp lại trình độ', { noNote: false, note: 'Chuyển sang lớp thường' });
     assert(cycleStatus(cycleId) === 'completed', 'Khoá FT cũ phải đóng completed');
+    const moi = conn.prepare(`SELECT target_score FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(sid) as any;
+    assert(moi?.target_score === 6, `PR-CL (§7): khoá thường mới giữ Target FT: ${moi?.target_score}`);
     assert(caseStatus(caseId).status === 'done' && caseStatus(caseId).system_close_reason === 'moved_to_normal',
       `Case FT phải đóng moved_to_normal: ${JSON.stringify(caseStatus(caseId))}`);
     assert(r.endKind === 'chuyen_lop', `FT→thường Progress Test: endKind chuyen_lop, được ${r.endKind}`);

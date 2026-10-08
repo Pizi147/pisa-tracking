@@ -12,6 +12,7 @@ import type { Huong } from './lenLop.ts';
 import type { ProgrammeCode } from './normal.ts';
 import { tuanLich } from './hienThiNgay.ts';
 import { mondayOfDate } from './week.ts';
+import { kyHieuLop } from './tenLop.ts';
 
 /**
  * PR-S3 (chủ sản phẩm 02/10): bộ chữ chuyển lớp — MỘT nơi. Quyết định của Quản lý (6 hướng) gọi là "Quyết định chuyển lớp"; chữ "lệnh"
@@ -310,4 +311,109 @@ export function sauGhiPanel<T extends { ghiChu?: string }>(
     if (Object.keys(giu).length) con[id] = giu;
   }
   return { dongs: con, daSua: new Set([...daSua].filter((id) => !xong.has(id))), dong: !kq.failed.length && !luu.loi && !Object.keys(con).length };
+}
+
+// ---------------------------------------------------------------- PR-CL: Chuyển lớp một em (ô gõ tên lớp + "Khi chuyển, web sẽ")
+
+/**
+ * PR-CL (B1): hướng của Chuyển lớp MỘT em — một luật cho `/transfer`, duyệt Đề xuất chuyển lớp, xem trước và lọc lớp chuyển đến.
+ * Nguồn thường → đích FT = Lên FT; giữa khoá (hoặc nguồn FT) = Chuyển lớp; lớp thường đã tới Cuối khoá: cùng chương trình = Học lại, khác = Lên lớp.
+ */
+export function huongMotEm(
+  nguon: { ft: boolean; ma: string | null }, dich: { ft: boolean; ma: string | null } | null, tuCuoiKhoa: boolean,
+): 'fast_track' | 'chuyen_lop' | 'hoc_lai' | 'len_lop' {
+  if (dich?.ft && !nguon.ft) return 'fast_track';
+  if (!tuCuoiKhoa) return 'chuyen_lop';
+  return dich?.ma === nguon.ma ? 'hoc_lai' : 'len_lop';
+}
+
+/** PR-CL (C1): dòng phụ của một lớp chuyển đến trong ô gõ tên lớp — "FT LT1 · CP · 9 em" / "ELE · CP" (GVCN không thấy sĩ số lớp khác). */
+export function phuLopDich(
+  c: { ft: boolean; route?: string | null; ma: string | null; branchCode?: string | null; siSo?: number | null }, coSiSo: boolean,
+): string {
+  return [c.ft ? `FT ${c.route ?? ''}`.trim() : kyHieuLop(c.ma, null), c.branchCode, coSiSo && typeof c.siSo === 'number' ? `${c.siSo} em` : null]
+    .filter(Boolean).join(' · ');
+}
+
+export type DuLieuKhiChuyen = {
+  nguonFt: boolean; dichFt: boolean;
+  /** `luatDoiLop(...).khoa` — giữ lộ trình/khoá đang chạy hay đóng rồi mở mới. */
+  khoa: 'giu' | 'dong-mo';
+  routeNguon: string | null; routeDich: string | null; maNguon: string | null;
+  /** Thường → FT: MT0 sẽ là đầu vào; `tuXep` = mã tuần MT0 tự xếp (chưa có MT0), null = MT0 đã có. */
+  mt0: { tuXep: string | null } | null;
+  /** Thường → FT: Target đã có (§7 giữ như cũ) — null thì web hỏi. */
+  target: { giaTri: MucTieuLenh; nguon: 'gvcn' | 'khoa' | 'quyet-dinh' } | null;
+  /** FT → thường (B4): đúng việc `veLopThuong` sẽ làm. */
+  veThuong: { mt0: { coDiem: boolean; kyNang: string[] } | null; mockHuy: string[]; giuDiem: string[] } | null;
+  soCase: number; dongCase: 'ft' | 'normal' | null; goiYNhan: string | null;
+  doiChiNhanh: boolean;
+};
+
+/**
+ * PR-CL (B3): khối "Khi chuyển, web sẽ" — một nơi tính, web chỉ vẽ. Dòng rỗng bỏ. `canhBao` (viền vàng) khi FT → thường (học lại sau khi đã lên).
+ * Chữ khớp mockup phần 2 + §7; Case theo đúng `dongCase` của `luatDoiLop`.
+ */
+export function dongKhiChuyen(x: DuLieuKhiChuyen): { khiChuyen: string[]; canhBao: boolean } {
+  const ct = kyHieuLop(x.maNguon, null) ?? 'lớp thường';
+  const dong: string[] = [];
+  if (!x.nguonFt && x.dichFt) {
+    dong.push(`Đóng lộ trình ${ct}, mở lộ trình FT ${x.routeDich ?? 'LT1'}`);
+    if (x.mt0) dong.push(x.mt0.tuXep ? `MT0 làm đầu vào, tự xếp ${x.mt0.tuXep}` : 'MT0 làm đầu vào');
+    if (x.target) dong.push(`Target ${x.target.giaTri === 'KCK' ? 'KCK' : x.target.giaTri.toFixed(1)} (${x.target.nguon === 'gvcn' ? 'GVCN ghi' : x.target.nguon === 'quyet-dinh' ? 'đã quyết' : 'khoá'})`);
+  } else if (x.nguonFt && !x.dichFt) {
+    dong.push(`Đóng lộ trình FT ${x.routeNguon ?? ''}`.trim());
+    const v = x.veThuong;
+    if (v?.mt0) dong.push(v.mt0.coDiem ? 'MT0 → “MT0 · không dùng”' : 'Huỷ MT0 chưa có điểm');
+    if (v?.mockHuy.length) dong.push(`Huỷ ${v.mockHuy.length} bài Mock chưa có điểm (${v.mockHuy.join(', ')})`);
+    if (v?.giuDiem.length) {
+      const theoBai = new Map<string, string[]>();
+      for (const s of v.giuDiem) { const [bai, ky] = s.split(' '); theoBai.set(bai, [...(theoBai.get(bai) ?? []), ky]); }
+      dong.push(`Giữ điểm đã có (${[...theoBai].map(([bai, ky]) => `${bai} ${ky.join(', ')}`).join('; ')})`);
+    }
+  } else if (x.khoa === 'giu') {
+    dong.push(x.nguonFt ? `Giữ lộ trình FT ${x.routeNguon ?? ''}`.trim() : `Giữ khoá ${ct}`);
+    dong.push(x.nguonFt ? 'MT chưa thi chuyển sang lớp mới' : 'Bài chưa làm chuyển sang lớp mới');
+  } else {
+    dong.push('Đóng lộ trình cũ và mở lộ trình mới theo lớp chuyển đến', 'Bài chưa làm ở lại lớp cũ');
+  }
+  if (x.soCase) {
+    dong.push(x.dongCase === 'ft' ? `${x.soCase} Case đang mở tự đóng “Lên FT”`
+      : x.dongCase === 'normal' ? `${x.soCase} Case FT tự đóng`
+        : `${x.soCase} Case đang mở đi theo em${x.goiYNhan ? `, người nhận gợi ý: ${x.goiYNhan}` : ''}`);
+  }
+  if (x.doiChiNhanh) dong.push('Quản lý chi nhánh mới và GVCN lớp mới được báo “Sắp nhận”');
+  return { khiChuyen: dong, canhBao: x.nguonFt && !x.dichFt };
+}
+
+// ---------------------------------------------------------------- Chuyển lớp nhiều em (PR-CL C1, mở từ "Xét lại lộ trình")
+
+/** Tối đa em một lần ở panel nhiều em (mỗi em một lời gọi `/transfer`). */
+export const TOI_DA_NHIEU_EM = 50;
+
+/** Một dòng khối "Khi chuyển, web sẽ" nhiều em: "{Tên} · FT → Thường: đóng lộ trình FT LT1 · …" — dòng `dongKhiChuyen` nối " · ", chữ thường đầu (trừ chữ viết tắt MT0, FT…). */
+export function tomTatChuyenEm(ten: string, nguonFt: boolean, dichFt: boolean, khiChuyen: readonly string[]): string {
+  const thuong = (s: string) => (/^\p{Lu}\p{Ll}/u.test(s) ? s[0].toLowerCase() + s.slice(1) : s);
+  return `${ten} · ${nguonFt ? 'FT' : 'Thường'} → ${dichFt ? 'FT' : 'Thường'}: ${khiChuyen.map(thuong).join(' · ')}`;
+}
+
+/** Em sẽ gửi = đánh dấu, đã chọn lớp, chưa chuyển xong; bỏ qua = đánh dấu mà chưa chọn lớp (chân "Chuyển n · Bỏ qua k (chưa chọn lớp)"). */
+export function chonGuiNhieuEm<T extends { chon: boolean; lop: number | null; xong?: boolean }>(rows: readonly T[]): { gui: T[]; boQua: number } {
+  const conLai = rows.filter((r) => r.chon && !r.xong);
+  return { gui: conLai.filter((r) => r.lop !== null), boQua: conLai.filter((r) => r.lop === null).length };
+}
+
+/** "46%" cho Xét lại — làm tròn XUỐNG (tỷ lệ chưa làm tròn 0.4996 vẫn là "dưới 50%" đúng luật `khongPhuHopLoTrinh`). */
+export const chuTyLeXetLai = (tyLe: number): string => `${Math.floor(tyLe * 100 + 1e-9)}%`;
+
+/** §7: hỏi Target CHỈ khi Lên FT từ lớp thường mà em chưa có Target nào (`targetSan` của xem trước = null). Dùng cho panel một em và nhiều em. */
+export const canHoiTarget = (nguonFt: boolean, dichFt: boolean, targetSan: MucTieuLenh | null | undefined): boolean =>
+  !nguonFt && dichFt && targetSan === null;
+
+/** Ô Target ở Chuyển lớp (một em + nhiều em): "6,5" / "6.5" / "kck" → giá trị; trống → "Chưa điền"; sai → lỗi tại ô (cùng luật `kiemDongLenh` của máy chủ). */
+export function docOTarget(v: string): { giaTri: MucTieuLenh | undefined; loi: string | null } {
+  const s = v.trim().replace(',', '.');
+  if (!s) return { giaTri: undefined, loi: 'Chưa điền' };
+  const g: MucTieuLenh = s.toUpperCase() === 'KCK' ? 'KCK' : Number(s);
+  return mucTieuHopLe(g) ? { giaTri: g, loi: null } : { giaTri: undefined, loi: 'Gõ band 0–9, bước 0,5 (ví dụ 6.5) hoặc KCK' };
 }
