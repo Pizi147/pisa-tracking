@@ -27,6 +27,15 @@ export function daiCuoiKhoa(tyLe: number): DaiCuoiKhoa {
   return tyLe >= NGUONG_HOC_LAI ? '50_59' : 'duoi_50';
 }
 
+/**
+ * PR-CL (B5, §7): "Kết quả không phù hợp lộ trình" — đã chốt lên (lên lớp / Lên FT) mà Final < 50%, hoặc học lại mà Final ≥ 70%.
+ * Tỷ lệ CHƯA làm tròn; `null` (chưa đủ môn) hoặc hướng khác → false.
+ */
+export function khongPhuHopLoTrinh(huong: string, tyLe: number | null): boolean {
+  if (tyLe === null) return false;
+  return ((huong === 'len_lop' || huong === 'fast_track') && tyLe < NGUONG_HOC_LAI) || (huong === 'hoc_lai' && tyLe >= RATIO_PASS_THRESHOLD);
+}
+
 export type BoTroMienPhi = { soBuoi: number; soTuan: 1 | 2; theoMon: boolean; mon: string[] /* ô chuẩn của lớp CŨ */ };
 /** 'len' = lên bậc kế hoặc sang FT; null = 50–59, Quản lý cân nhắc. */
 export type HuongGoiY = 'hoc_lai' | 'len' | null;

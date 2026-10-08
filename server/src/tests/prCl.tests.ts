@@ -402,4 +402,130 @@ export async function runPrClTests(t: YThucTestKit) {
       assert(qt.status === 200 && lenhCua(x.sid)?.trang_thai === 'cho', `QT: ${qt.status}`);
     });
   });
+  // ================================================================== T2 · Xét lại lộ trình (B5, B6)
+  const ck: any = await import('../normal/cuoiKhoa.ts');
+  const mywork: any = await import('../worklist/mywork.ts');
+  const permissions: any = await import('../permissions.ts');
+  check('CL-h · khongPhuHopLoTrinh: Lên lớp / Lên FT < 0.5 → true, 0.5 → false; Học lại 0.6999 → false, 0.7 → true; hướng khác / null → false', () => {
+    const k = d.khongPhuHopLoTrinh;
+    const ca: [string, number | null, boolean][] = [
+      ['len_lop', 0.4999, true], ['fast_track', 0.4999, true], ['len_lop', 0.5, false], ['fast_track', 0.5, false],
+      ['hoc_lai', 0.6999, false], ['hoc_lai', 0.7, true], ['hoc_lai', 0.95, true], ['bao_luu', 0.1, false], ['chuyen_lop', 0.1, false],
+      ['len_lop', null, false], ['hoc_lai', null, false],
+    ];
+    for (const [h, t, mong] of ca) assert(k(h, t) === mong, `${h} ${t} → ${k(h, t)}`);
+  });
+
+  /** Ghi Final lớp FOU: mọi môn `pct`/100; `null` = chỉ một môn (thiếu môn). */
+  const tyLeFou = (attemptId: number, pct: number | null) => {
+    const skills: string[] = regular.allProgrammes().get('FOU').skills;
+    conn.prepare('DELETE FROM assessment_scores WHERE attempt_id = ?').run(attemptId);
+    skills.forEach((sk, i) => {
+      if (pct === null && i > 0) return;
+      conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total, entered_at) VALUES (?,?,?,?,?)').run(attemptId, sk, pct ?? 80, 100, NOW);
+    });
+  };
+  /** Lớp FOU tuần 8: 4 em có Final (46% Lên BE · 72% Học lại · 55% Lên FT · thiếu môn Lên BE) → quyết định cuối khoá → thi hành. */
+  const dungXetLai = () => {
+    const fou = lop('FOU', 8);
+    const ds = [1, 2, 3, 4].map(() => em(fou.id, { ma: 'FOU' }));
+    regular.planRegularTests(P.admin, fou.id);
+    const fin = ds.map((x) => get(`SELECT id FROM assessment_attempts WHERE student_id = ? AND class_id = ? AND kind = 'final' AND status != 'cancelled' ORDER BY id DESC LIMIT 1`, x.sid, fou.id).id as number);
+    [46, 72, 55, null].forEach((pct, i) => tyLeFou(fin[i], pct));
+    const r = lenh.raLenh(QL, { lopNguonId: fou.id, boiCanh: 'cuoi-khoa', tuanChung: THU_HAI, dongs: [
+      { studentId: ds[0].sid, huong: 'len_lop', toClassId: BE2.id, lyDo: 'CL-i' },
+      { studentId: ds[1].sid, huong: 'hoc_lai', toClassId: FOU2.id, lyDo: 'CL-i' },
+      { studentId: ds[2].sid, huong: 'fast_track', toClassId: FT_C.id, lyDo: 'CL-i' },
+      { studentId: ds[3].sid, huong: 'len_lop', toClassId: BE2.id, lyDo: 'CL-i' },
+    ] });
+    assert(!r.failed.length, `raLenh: ${JSON.stringify(r.failed)}`);
+    thiHanh(fou.id);
+    for (const x of ds) assert(lenhCua(x.sid).trang_thai === 'da_chuyen', `thi hành ${x.sid}: ${lenhCua(x.sid).trang_thai} ${lenhCua(x.sid).loi ?? ''}`);
+    return { fou, ds, fin };
+  };
+  const XL = dungXetLai();
+  const viecXetLai = (p: any, branchId: number | null = MB) =>
+    (mywork.myWork(p, branchId ? { branchId } : {}).groups.flatMap((g: any) => g.items) as any[]).filter((it) => it.group === 'xet_lai_lo_trinh');
+  const emCua = (homNay = TODAY, p: any = QL) => ((ck.emXetLaiLoTrinh(p, null, homNay) as any[]).find((g) => g.lopNguonId === XL.fou.id)?.em ?? []).map((e: any) => e.studentId).sort();
+
+  check('CL-i · Xét lại: MỘT việc "Xét lại lộ trình · {nguồn} · 2 em" (46% Lên BE, 72% Học lại; 55% Lên FT và thiếu môn không); +13 còn, +14 mất; lệnh mới → 1 em, huỷ → 2; thôi học → mất; sửa Final 55% → mất; QL CP / GVCN / GVBM không có', () => {
+    const [a, b, c] = XL.ds;
+    const v = viecXetLai(QL).filter((it) => it.key === `xetlai:${XL.fou.id}`);
+    assert(v.length === 1, `số việc: ${v.length}`);
+    const it = v[0];
+    assert(it.tieuDe === `Xét lại lộ trình · ${XL.fou.code} · 2 em` && it.reason === 'Kết quả không phù hợp lộ trình' && it.due === null && it.urgency === 'normal'
+      && it.count === 2 && it.actionLabel === 'Chuyển lớp…' && it.href === `/hoc-vien/lop/${XL.fou.id}?viec=xet-lai` && it.ownerId === null, JSON.stringify(it));
+    assert(/46%/.test(it.contextLabel) && /72%/.test(it.contextLabel), `contextLabel: ${it.contextLabel}`);
+    assert(JSON.stringify(emCua()) === JSON.stringify([a.sid, b.sid].sort()), `em: ${JSON.stringify(emCua())}`);
+    assert(d.nhomViecCua('xet_lai_lo_trinh') === 'van-hanh', 'nhóm Vận hành');
+    /* Hết Chủ nhật tuần 2 ở lớp mới. */
+    assert(emCua(addDays(THU_HAI, 13)).length === 2 && emCua(addDays(THU_HAI, 14)).length === 0, `+13 / +14: ${emCua(addDays(THU_HAI, 13))} / ${emCua(addDays(THU_HAI, 14))}`);
+    /* Em có quyết định mới → bỏ; huỷ quyết định mới → lại có. */
+    const r = lenh.raLenh(QL, { lopNguonId: BE2.id, boiCanh: 'giua-khoa', tuanChung: THU_HAI, dongs: [{ studentId: a.sid, huong: 'chuyen_lop', toClassId: FOU2.id, lyDo: 'Xét lại' }] });
+    assert(!r.failed.length, JSON.stringify(r.failed));
+    assert(JSON.stringify(emCua()) === JSON.stringify([b.sid]), `lệnh mới: ${JSON.stringify(emCua())}`);
+    lenh.huyLenh(QL, lenhCua(a.sid).id, 'Giữ BE');
+    assert(emCua().length === 2, `huỷ lệnh mới: ${JSON.stringify(emCua())}`);
+    /* Thôi học → mất (khôi phục lại cho các phép kiểm sau). */
+    const st = get('SELECT status FROM students WHERE id = ?', b.sid).status;
+    conn.prepare(`UPDATE students SET status = 'inactive' WHERE id = ?`).run(b.sid);
+    assert(JSON.stringify(emCua()) === JSON.stringify([a.sid]), `thôi học: ${JSON.stringify(emCua())}`);
+    conn.prepare('UPDATE students SET status = ? WHERE id = ?').run(st, b.sid);
+    /* Sửa Final thành 55% → hết lệch. */
+    tyLeFou(XL.fin[1], 55);
+    assert(JSON.stringify(emCua()) === JSON.stringify([a.sid]), `sửa Final: ${JSON.stringify(emCua())}`);
+    assert(viecXetLai(QL).find((x) => x.key === `xetlai:${XL.fou.id}`)?.tieuDe === `Xét lại lộ trình · ${XL.fou.code} · 1 em`, 'việc còn 1 em');
+    tyLeFou(XL.fin[1], 72);
+    assert(c && !emCua().includes(c.sid), 'Lên FT 55% không');
+    /* Người khác không có. */
+    assert(!viecXetLai(P.cpManager, CP).length && !viecXetLai(P.cpManager, null).some((x) => x.key === `xetlai:${XL.fou.id}`), 'QL CP không có');
+    assert(!emCua(TODAY, P.cpManager).length, 'QL CP: hàm không trả em');
+    const gvcn = ganGv(BE2.id, 6, null, true);
+    const gvbm = ganGv(BE2.id, 7, 'reading');
+    assert(!viecXetLai(gvcn, null).length && !viecXetLai(gvbm, null).length, 'GVCN / GVBM không có');
+    assert(viecXetLai(P.admin, null).some((x) => x.key === `xetlai:${XL.fou.id}`), 'QT có');
+  });
+
+  await checkAsync('CL-j · GET /classes/:id/xet-lai-lo-trinh: cùng em với việc + huong, tyLe, lopHienTai; lớp nguồn finished vẫn trả; GVCN → em: []', async () => {
+    const [a, b] = XL.ds;
+    conn.prepare(`UPDATE classes SET status = 'finished' WHERE id = ?`).run(XL.fou.id);
+    const gvcn = ganGv(BE2.id, 8, null, true);
+    try {
+      await voiMayChu(async (goi) => {
+        const r = await goi(QL.userId, `/classes/${XL.fou.id}/xet-lai-lo-trinh`);
+        const j: any = await thuong(r);
+        assert(r.status === 200 && j.lop?.id === XL.fou.id && j.lop?.code === XL.fou.code, `${r.status} ${JSON.stringify(j)}`);
+        const ea = j.em.find((e: any) => e.studentId === a.sid), eb = j.em.find((e: any) => e.studentId === b.sid);
+        assert(j.em.length === 2 && ea && eb, JSON.stringify(j.em));
+        assert(ea.huong === 'len_lop' && Math.abs(ea.tyLe - 0.46) < 1e-9 && ea.lopHienTai?.id === BE2.id && ea.lopHienTai?.code === BE2.code && typeof ea.ten === 'string', JSON.stringify(ea));
+        assert(eb.huong === 'hoc_lai' && Math.abs(eb.tyLe - 0.72) < 1e-9 && eb.lopHienTai?.id === FOU2.id, JSON.stringify(eb));
+        const viec = viecXetLai(QL).find((x) => x.key === `xetlai:${XL.fou.id}`);
+        assert(viec?.count === j.em.length, `việc ${viec?.count} ≠ GET ${j.em.length}`);
+        const g = await goi(gvcn.userId, `/classes/${XL.fou.id}/xet-lai-lo-trinh`);
+        const jg: any = await thuong(g);
+        assert(g.status === 200 && Array.isArray(jg.em) && jg.em.length === 0, `GVCN: ${g.status} ${JSON.stringify(jg)}`);
+      });
+    } finally { conn.prepare(`UPDATE classes SET status = 'active' WHERE id = ?`).run(XL.fou.id); }
+  });
+
+  check('CL-k · emXetLaiLoTrinh: 3 lớp nguồn và 12 lớp nguồn — cùng số câu SQL (≤ 4)', () => {
+    /* Thêm lớp nguồn có em lệch: chèn thẳng lệnh đã thi hành + Final (đủ để đếm câu, không lặp lại cả luồng thi hành). */
+    const them = () => {
+      const nguon = lop('FOU', 8);
+      const { sid, cyc } = em(BE2.id, { ma: 'BE' });
+      conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'transferred', ?, ?)`).run(sid, nguon.id, nguon.start, NOW);
+      conn.prepare(`INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, lop_dich_id, huong, boi_canh, tuan_bat_dau, nguoi_ra_lenh, ngay_ra_lenh, trang_thai, tao_luc)
+        VALUES (?,?,?, 'len_lop', 'cuoi-khoa', ?, ?, ?, 'da_chuyen', ?)`).run(sid, nguon.id, BE2.id, THU_HAI, QL.userId, TODAY, NOW);
+      const fid = Number(conn.prepare(`INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, status, created_at) VALUES (?,?, 1, 'final', ?, 'planned', ?)`).run(cyc, sid, nguon.id, NOW).lastInsertRowid);
+      tyLeFou(fid, 40);
+    };
+    /* Bảng chương trình + bảng lớp là bảng chung đã nhớ trong request (myWork nạp sẵn) — nạp trước, đếm phần riêng của hàm. */
+    const dem = () => trongBoNho(() => { regular.allProgrammes(); permissions.bangLop(); return demCau(() => ck.emXetLaiLoTrinh(QL, null, TODAY)); });
+    for (let i = 0; i < 3; i++) them();
+    const n3 = dem();
+    assert((ck.emXetLaiLoTrinh(QL, null, TODAY) as any[]).length >= 4, 'tiền đề: ≥ 4 lớp nguồn');
+    for (let i = 0; i < 9; i++) them();
+    const n12 = dem();
+    assert(n3 === n12 && n12 <= 4, `3 lớp: ${n3} câu · 12 lớp: ${n12} câu`);
+  });
 }
