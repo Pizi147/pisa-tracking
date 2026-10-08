@@ -565,7 +565,7 @@ export const XONG_MT_CUOI_SQL = (cy: string) => `EXISTS (SELECT 1 FROM assessmen
 
 /**
  * PR-LTGON (luật 6): đổi mốc Progress/Final của lớp → bài chưa có điểm của các em đang học dời theo, không hỏi. Chỉ kỹ năng đang ở ĐÚNG tuần mốc cũ
- * (đã dời tay / dời do vắng thì giữ), chưa có điểm; bài đã có điểm giữ nguyên. Số câu SQL không phụ thuộc số em. Final: MT0 chưa thi đi theo.
+ * (đã dời tay / dời do vắng thì giữ), của bài chưa có điểm nào; bài đã có điểm giữ nguyên. Số câu SQL không phụ thuộc số em. Final: MT0 chưa thi đi theo.
  */
 function doiBaiTheoMoc(p: Principal, classId: number, kind: 'progress' | 'final', tuCu: string, sangMoi: string) {
   const conn = db();
@@ -573,7 +573,8 @@ function doiBaiTheoMoc(p: Principal, classId: number, kind: 'progress' | 'final'
   const now = nowIso();
   const cua = `SELECT a.id FROM assessment_attempts a JOIN enrollments e ON e.student_id = a.student_id AND e.class_id = a.class_id AND e.status = 'active'
                 WHERE a.class_id = ? AND a.kind = ? AND a.status != 'cancelled'`;
-  const chuaDiem = `NOT EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = k.attempt_id AND s.skill = k.skill AND (s.band IS NOT NULL OR s.raw_score IS NOT NULL))`;
+  /* Em đã có điểm ở bài này → cả bài giữ nguyên (không tách một bài ra hai tuần). */
+  const chuaDiem = `NOT EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = k.attempt_id AND (s.band IS NOT NULL OR s.raw_score IS NOT NULL))`;
   const soKn = (conn.prepare(
     `UPDATE attempt_skills AS k SET planned_period_id = ?, plan_source = 'auto', updated_at = ?
       WHERE k.attempt_id IN (${cua}) AND k.planned_period_id = ? AND k.sit_status != 'cancelled' AND ${chuaDiem}`,
