@@ -89,6 +89,7 @@ let sqlGanNhat = '';
      * đang mở (các câu sau ghi lẻ ngoài giao dịch, `RELEASE sp_1` báo "no such savepoint"). File cục bộ không bị nên `npm run check` không thấy.
      * Trong giao dịch không bao giờ dùng lại câu đã prepare ngoài giao dịch (và ngược lại).
      */
+    sqlGanNhat = sql;
     const khoa = ((this as { inTransaction?: boolean }).inTransaction ? 'T|' : 'A|') + sql;
     const cu = theoCau.get(khoa);
     if (cu) {
@@ -103,7 +104,6 @@ let sqlGanNhat = '';
       try { moi.safeIntegers(false); } catch { /* không trả dữ liệu */ }
       return moi;
     }
-    sqlGanNhat = sql;
     const st = prepareGoc.call(this, sql) as unknown as Bao;
     st.daLuu = true;
     theoCau.set(khoa, st);

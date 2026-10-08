@@ -24,6 +24,20 @@ function timSqld(): string | null {
   return dong || null;
 }
 
+/* Seed demo dựng lịch theo ngày giả (`demo_date`), nhưng khi có TURSO_DATABASE_URL thì `laBanChinh()` bỏ qua `demo_date` và seed hỏng. Nên seed
+   trên FILE trong một tiến trình con (không có biến Turso), rồi chép file đó vào thư mục dữ liệu của sqld. Không đổi `laBanChinh()`. */
+const FILE_SEED = process.env.PISA_SQLD_FILE_SEED;
+if (FILE_SEED) {
+  process.env.PISA_DB = FILE_SEED;
+  for (const k of ['TURSO_DATABASE_URL', 'TURSO_AUTH_TOKEN', 'BAN_CHINH', 'PISA_CHO_PHEP_SEED_TURSO']) delete process.env[k];
+  const { runSeed } = await import('../seed/seed.ts');
+  const { db, closeDb } = await import('../db.ts');
+  runSeed();
+  db().pragma('wal_checkpoint(TRUNCATE)');   // dữ liệu còn nằm trong file -wal; không gộp thì chép mỗi file chính sẽ mất hết
+  closeDb();
+  process.exit(0);
+}
+
 const sqld = CHE_DO_FILE ? null : timSqld();
 if (!CHE_DO_FILE && (!sqld || process.platform === 'win32')) {
   console.log('SQLD: BỎ QUA — không có sqld trên máy này (đặt SQLD_BIN, hoặc `npm i --no-save @sqld/linux-x64` trên Linux). Các ca Hrana chưa được chạy.');
@@ -39,6 +53,12 @@ if (CHE_DO_FILE) {
   process.env.PISA_DB = path.join(thuMuc, 'thu.sqlite');
   for (const k of ['TURSO_DATABASE_URL', 'TURSO_AUTH_TOKEN', 'BAN_CHINH', 'PISA_CHO_PHEP_SEED_TURSO']) delete process.env[k];
 } else {
+  const fileSeed = path.join(thuMuc, 'seed.sqlite');
+  const con = spawnSync(process.execPath, [fileURLToPath(import.meta.url)], { env: { ...process.env, PISA_SQLD_FILE_SEED: fileSeed }, stdio: 'inherit' });
+  if (con.status !== 0) { console.log('SQLD: seed trên file hỏng'); process.exit(1); }
+  const thuMucDb = path.join(thuMuc, 'data.sqld', 'dbs', 'default');
+  fs.mkdirSync(thuMucDb, { recursive: true });
+  fs.copyFileSync(fileSeed, path.join(thuMucDb, 'data'));
   const cong = await new Promise<number>((ok) => { const s = net.createServer().listen(0, '127.0.0.1', () => { const p = (s.address() as net.AddressInfo).port; s.close(() => ok(p)); }); });
   tienTrinh = spawn(sqld!, ['--db-path', path.join(thuMuc, 'data.sqld'), '--http-listen-addr', `127.0.0.1:${cong}`], { stdio: 'ignore' });
   let san = false;
@@ -54,7 +74,6 @@ if (CHE_DO_FILE) {
 
 const dbMod = await import('../db.ts');
 const { db, tx, closeDb } = dbMod;
-const { runSeed } = await import('../seed/seed.ts');
 const { createApp } = await import('../app.ts');
 const { createSession } = await import('../auth.ts');
 const { writeAudit } = await import('../platform/audit.ts');
@@ -62,7 +81,7 @@ const { loadPrincipal } = await import('../permissions.ts');
 const week = await import('../platform/week.ts');
 const intake = await import('../classes/intake.ts');
 
-runSeed();
+if (CHE_DO_FILE) (await import('../seed/seed.ts')).runSeed();
 const conn = db();
 
 let passed = 0;
@@ -115,9 +134,10 @@ await check('(b2) giao dịch bị mất giữa chừng (fn tự COMMIT) → tx(
 const may = createApp().listen(0);
 const cong = (may.address() as net.AddressInfo).port;
 const idQuanLy = (conn.prepare(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'manager' ORDER BY ur.user_id LIMIT 1`).get() as any).id as number;
+let cookieSan = '';   // (d) lấy phiên TRƯỚC khi chờ: createSession chạy trong tiến trình thử, không phải trong request, nên không được đụng luồng đã hết hạn
 const goi = async (method: string, url: string, body?: unknown) => {
   const res = await fetch(`http://127.0.0.1:${cong}/api${url}`, {
-    method, headers: { 'content-type': 'application/json', cookie: `pisa_demo_session=${createSession(idQuanLy)}` },
+    method, headers: { 'content-type': 'application/json', cookie: cookieSan || `pisa_demo_session=${createSession(idQuanLy)}` },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   let json: any = null; try { json = await res.json(); } catch { /* không có thân */ }
@@ -140,6 +160,7 @@ await check('(c) writeAudit lẻ rồi POST /ke-hoach-test/xep-moi (MT mới, 4 
 });
 
 await check('(d) kết nối bỏ không > 10 giây rồi gọi lại → không 500 vĩnh viễn (luồng hết hạn được mở lại)', async () => {
+  cookieSan = `pisa_demo_session=${createSession(idQuanLy)}`;
   ngu(11_000);
   const r1 = await goi('GET', '/ref/branches');
   const r2 = await goi('GET', '/ref/branches');
