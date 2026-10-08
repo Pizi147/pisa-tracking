@@ -409,3 +409,11 @@ export const chuTyLeXetLai = (tyLe: number): string => `${Math.floor(tyLe * 100 
 /** §7: hỏi Target CHỈ khi Lên FT từ lớp thường mà em chưa có Target nào (`targetSan` của xem trước = null). Dùng cho panel một em và nhiều em. */
 export const canHoiTarget = (nguonFt: boolean, dichFt: boolean, targetSan: MucTieuLenh | null | undefined): boolean =>
   !nguonFt && dichFt && targetSan === null;
+
+/** Ô Target ở Chuyển lớp (một em + nhiều em): "6,5" / "6.5" / "kck" → giá trị; trống → "Chưa điền"; sai → lỗi tại ô (cùng luật `kiemDongLenh` của máy chủ). */
+export function docOTarget(v: string): { giaTri: MucTieuLenh | undefined; loi: string | null } {
+  const s = v.trim().replace(',', '.');
+  if (!s) return { giaTri: undefined, loi: 'Chưa điền' };
+  const g: MucTieuLenh = s.toUpperCase() === 'KCK' ? 'KCK' : Number(s);
+  return mucTieuHopLe(g) ? { giaTri: g, loi: null } : { giaTri: undefined, loi: 'Gõ band 0–9, bước 0,5 (ví dụ 6.5) hoặc KCK' };
+}

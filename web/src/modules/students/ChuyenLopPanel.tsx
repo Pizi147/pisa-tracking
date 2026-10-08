@@ -10,7 +10,7 @@ import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { OTuan } from '../classes/TransitionPanel.tsx';
 import {
-  CHU_CHUYEN_LOP, TOI_DA_NHIEU_EM, canHoiTarget, chonGuiNhieuEm, chuTuanHoc, chuTyLeXetLai, dsLoi, hanBanGiao, kyHieuLop, ngay, phuLopDich, tomTatChuyenEm,
+  CHU_CHUYEN_LOP, TOI_DA_NHIEU_EM, canHoiTarget, chonGuiNhieuEm, docOTarget, chuTuanHoc, chuTyLeXetLai, dsLoi, hanBanGiao, kyHieuLop, ngay, phuLopDich, tomTatChuyenEm,
   tuanChonDuoc, tuanLich, type LoiTruong, type LuatTruong,
 } from '@shared/domain/index.ts';
 
@@ -32,8 +32,9 @@ export type DuyetDeXuat = { id: number; lopDichId: number | null; tuan: string |
 
 /** Ô gõ tên lớp: gợi ý "mã lớp · FT LT1 · CP · 9 em" (GVCN đề xuất: không sĩ số — máy chủ không trả `siSo`). */
 const dsLopDich = (lop: readonly LopDich[]): NguoiTrongDs[] => lop.map((l) => ({ id: l.id, ten: l.code, phu: phuLopDich(l, 'siSo' in l) }));
-/** Mockup phần 2: "Còn thiếu: Lý do" ở chân (lý do từng ô vẫn nằm dưới ô). */
-const conThieuChu = (daBam: boolean, loi: readonly LoiTruong[]) => (daBam && loi.length ? [{ nhan: 'Còn thiếu', lyDo: `Còn thiếu: ${loi.map((l) => l.nhan).join(', ')}` }] : undefined);
+/** Mockup phần 2: "Còn thiếu: Lý do" ở chân (lý do từng ô vẫn nằm dưới ô); có ô ghi sai (Target 12) → "Cần sửa: …". */
+const conThieuChu = (daBam: boolean, loi: readonly LoiTruong[]) => (daBam && loi.length
+  ? [{ nhan: 'Còn thiếu', lyDo: `${loi.every((l) => l.lyDo.startsWith('Chưa')) ? 'Còn thiếu' : 'Cần sửa'}: ${loi.map((l) => l.nhan).join(', ')}` }] : undefined);
 const loiMayChu = (e: any) => e?.message ?? 'Không lưu được — thử lại.';
 const khoiVang = { borderColor: 'rgb(var(--soon-line-rgb))', background: 'rgb(var(--soon-bg-rgb))' };
 
@@ -72,7 +73,6 @@ function OTarget({ value, onChange, ariaLabel, oProps, disabled }: {
     </span>
   );
 }
-const mucTieuTuO = (v: string): number | 'KCK' | undefined => (v.trim().toUpperCase() === 'KCK' ? 'KCK' : v.trim() ? Number(v) : undefined);
 
 /** "Tuần bắt đầu": 3 mã tuần + "Chọn tuần" → ô tuần (`OTuan`). */
 function OTuanBatDau({ tuanChon, tuan, setTuan, homNay, oProps }: {
@@ -178,11 +178,12 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
       { khoa: 'lop', nhan: 'Lớp chuyển đến', chon: true },
       { khoa: 'tuan', nhan: 'Tuần bắt đầu', chon: true },
       { khoa: 'ly-do', nhan: 'Lý do', toiThieu: 1 },
-      ...(oTarget ? [{ khoa: 'muc-tieu', nhan: 'Target', chon: true }] : []),
     ];
-  const loi = dsLoi(LUAT, { lop: toClassId, tuan, 'ly-do': lyDo, 'muc-tieu': mucTieu });
+  /* Target: trống "Chưa điền", sai "Gõ band 0–9…" ngay tại ô (cùng luật máy chủ; "6,5" đọc là 6.5). */
+  const oT = docOTarget(mucTieu);
+  const loi = [...dsLoi(LUAT, { lop: toClassId, tuan, 'ly-do': lyDo }), ...(oTarget && oT.loi ? [{ khoa: 'muc-tieu', nhan: 'Target', lyDo: oT.loi }] : [])];
   /* Không hỏi Target → không gửi: máy chủ lấy Target LTT / khoá; sửa lệnh thì giữ Target + Dự kiến thi của lệnh (R-C3). */
-  const mucTieuGui = oTarget ? mucTieuTuO(mucTieu) : undefined;
+  const mucTieuGui = oTarget ? oT.giaTri : undefined;
   const xong = (chu: string) => { xongChuyen(); toast.push('ok', chu); onDone?.(); onClose(); };
 
   const gui = async () => {
@@ -266,7 +267,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
                 placeholder={dx ? 'Ví dụ: Phụ huynh xin chuyển sang lớp khác giờ học' : 'Ghi lý do'} />
             </Truong>
             {oTarget && (
-              <Truong nhan="Target" batBuoc as="div" loi={lf.loiCua(loi, 'muc-tieu')} phu="Em chưa có Target — số band 0–9 hoặc KCK (không cam kết)">
+              <Truong nhan="Target" batBuoc as="div" loi={lf.loiCua(loi, 'muc-tieu')} phu="Em chưa có Target · band 0–9 hoặc KCK">
                 <OTarget value={mucTieu} onChange={setMucTieu} ariaLabel="Target" oProps={lf.o(loi, 'muc-tieu')} />
               </Truong>
             )}
@@ -331,8 +332,8 @@ export function ChuyenLopNhieuEm({ classId, onClose, onDone }: { classId: number
   /* I1 (§7): em Lên FT từ lớp thường mà chưa có Target nào → ô Target ở hàng em; thiếu thì "Còn thiếu: Target · {tên}". */
   const hoiTarget = (sid: number) => { const x = xem[sid]; return !!x && 'hoiTarget' in x && x.hoiTarget; };
   const loi: LoiTruong[] = [...dsLoi(LUAT, { tuan, 'ly-do': lyDo }),
-    ...canGui.filter((r) => hoiTarget(r.e.studentId) && !mucTieu[r.e.studentId]?.trim())
-      .map((r) => ({ khoa: `muc-tieu-${r.e.studentId}`, nhan: `Target · ${r.e.ten}`, lyDo: 'Chưa ghi' }))];
+    ...canGui.flatMap((r) => { const l = hoiTarget(r.e.studentId) ? docOTarget(mucTieu[r.e.studentId] ?? '').loi : null;
+      return l ? [{ khoa: `muc-tieu-${r.e.studentId}`, nhan: `Target · ${r.e.ten}`, lyDo: l }] : []; })];
   /* M1: còn em đang xem trước → chưa biết có cần Target → chưa cho gửi. */
   const choXem = canGui.some((r) => { const x = xem[r.e.studentId]; return !x || 'nap' in x; });
   const daSua = Object.values(lop).some((v) => v !== null) || !!lyDo.trim();
@@ -357,7 +358,7 @@ export function ChuyenLopNhieuEm({ classId, onClose, onDone }: { classId: number
     for (const r of canGui) {
       try {
         await api.post(`/students/${r.e.studentId}/transfer`, {
-          toClassId: r.lop, tuan, lyDo: lyDo.trim(), mucTieu: hoiTarget(r.e.studentId) ? mucTieuTuO(mucTieu[r.e.studentId] ?? '') : undefined,
+          toClassId: r.lop, tuan, lyDo: lyDo.trim(), mucTieu: hoiTarget(r.e.studentId) ? docOTarget(mucTieu[r.e.studentId] ?? '').giaTri : undefined,
         });
         ok.push(r.e.studentId);
       } catch (e: any) { hong[r.e.studentId] = loiMayChu(e); }
@@ -416,7 +417,7 @@ export function ChuyenLopNhieuEm({ classId, onClose, onDone }: { classId: number
           {rows.map((r) => (
             <HangNhieuEm key={r.e.studentId} e={r.e} dt={dt} chon={r.chon} xong={r.xong} lop={r.lop} loi={loiEm[r.e.studentId] ?? null} busy={busy}
               hoiTarget={hoiTarget(r.e.studentId)} mucTieu={mucTieu[r.e.studentId] ?? ''} onMucTieu={(v) => setMucTieu((m) => ({ ...m, [r.e.studentId]: v }))}
-              loiTarget={lf.daBam && loi.some((l) => l.khoa === `muc-tieu-${r.e.studentId}`)}
+              loiTarget={lf.daBam ? loi.find((l) => l.khoa === `muc-tieu-${r.e.studentId}`)?.lyDo ?? null : null}
               onChon={(v) => setBoChon((s) => { const n = new Set(s); if (v) n.delete(r.e.studentId); else n.add(r.e.studentId); return n; })}
               onLop={(id, ft) => chonLop(r.e.studentId, id, ft)} />
           ))}
@@ -449,7 +450,7 @@ export function ChuyenLopNhieuEm({ classId, onClose, onDone }: { classId: number
 /** Một em ở panel nhiều em — 1440 một hàng bảng, 375 một thẻ. Danh sách lớp của TỪNG em (`lop-dich?studentId=`: lọc hợp lệ theo lớp em đang học). */
 function HangNhieuEm({ e, dt, chon, xong, lop, loi, busy, onChon, onLop, hoiTarget, mucTieu, onMucTieu, loiTarget }: {
   e: EmXetLai; dt: boolean; chon: boolean; xong: boolean; lop: number | null; loi: string | null; busy: boolean;
-  hoiTarget: boolean; mucTieu: string; onMucTieu: (v: string) => void; loiTarget: boolean;
+  hoiTarget: boolean; mucTieu: string; onMucTieu: (v: string) => void; loiTarget: string | null;
   onChon: (v: boolean) => void; onLop: (id: number | null, dichFt: boolean) => void;
 }) {
   const lopDich = useApi<LopDichData>(`/chuyen-lop/lop-dich?studentId=${e.studentId}`, [e.studentId]);
@@ -466,8 +467,8 @@ function HangNhieuEm({ e, dt, chon, xong, lop, loi, busy, onChon, onLop, hoiTarg
   const oTarget = hoiTarget && !xong && (
     <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
       <span className="text-xs font-bold text-slate-200">Target <span aria-hidden className="text-bad">*</span></span>
-      <OTarget value={mucTieu} onChange={onMucTieu} ariaLabel={`Target của ${e.ten}`} disabled={khoa} oProps={{ id: `o-muc-tieu-${e.studentId}`, 'aria-invalid': loiTarget }} />
-      {loiTarget && <span className="text-xs text-late">Em chưa có Target — ghi số band hoặc KCK</span>}
+      <OTarget value={mucTieu} onChange={onMucTieu} ariaLabel={`Target của ${e.ten}`} disabled={khoa} oProps={{ id: `o-muc-tieu-${e.studentId}`, 'aria-invalid': !!loiTarget }} />
+      {loiTarget && <span className="text-xs text-late">{loiTarget === 'Chưa điền' ? 'Em chưa có Target — ghi band hoặc KCK' : loiTarget}</span>}
     </span>
   );
   const chuLoi = loi && <span role="alert" className="mt-1 block text-xs text-late">{loi}</span>;

@@ -461,7 +461,7 @@ export async function runPrClTests(t: YThucTestKit) {
     (mywork.myWork(p, branchId ? { branchId } : {}).groups.flatMap((g: any) => g.items) as any[]).filter((it) => it.group === 'xet_lai_lo_trinh');
   const emCua = (homNay = TODAY, p: any = QL) => ((ck.emXetLaiLoTrinh(p, null, homNay) as any[]).find((g) => g.lopNguonId === XL.fou.id)?.em ?? []).map((e: any) => e.studentId).sort();
 
-  check('CL-i · Xét lại: MỘT việc "Xét lại lộ trình · {nguồn} · 2 em" (46% Lên BE, 72% Học lại; 55% Lên FT và thiếu môn không); +13 còn, +14 mất; lệnh mới → 1 em, huỷ → 2; thôi học → mất; sửa Final 55% → mất; QL CP / GVCN / GVBM không có', () => {
+  check('CL-i · Xét lại: MỘT việc "Xét lại lộ trình · {nguồn} · 2 em" (46% Lên BE, 72% Học lại; 55% Lên FT và thiếu môn không); +13 còn, +14 mất; lệnh mới → 1 em, huỷ → 2; thôi học / rời lớp mới / lệnh giữa khoá mới hơn / nguồn FT → mất; sửa Final 55% → mất; QL CP / GVCN / GVBM không có', () => {
     const [a, b, c] = XL.ds;
     const v = viecXetLai(QL).filter((it) => it.key === `xetlai:${XL.fou.id}`);
     assert(v.length === 1, `số việc: ${v.length}`);
@@ -479,11 +479,25 @@ export async function runPrClTests(t: YThucTestKit) {
     assert(JSON.stringify(emCua()) === JSON.stringify([b.sid]), `lệnh mới: ${JSON.stringify(emCua())}`);
     lenh.huyLenh(QL, lenhCua(a.sid).id, 'Giữ BE');
     assert(emCua().length === 2, `huỷ lệnh mới: ${JSON.stringify(emCua())}`);
-    /* Thôi học → mất (khôi phục lại cho các phép kiểm sau). */
+    /* Thôi học (`finished` — `inactive` là Tạm dừng) → mất (khôi phục lại cho các phép kiểm sau). */
     const st = get('SELECT status FROM students WHERE id = ?', b.sid).status;
-    conn.prepare(`UPDATE students SET status = 'inactive' WHERE id = ?`).run(b.sid);
+    conn.prepare(`UPDATE students SET status = 'finished' WHERE id = ?`).run(b.sid);
     assert(JSON.stringify(emCua()) === JSON.stringify([a.sid]), `thôi học: ${JSON.stringify(emCua())}`);
     conn.prepare('UPDATE students SET status = ? WHERE id = ?').run(st, b.sid);
+    /* T5 (rà T2): em rời lớp mới (ghi danh không còn active) → mất. */
+    conn.prepare(`UPDATE enrollments SET status = 'completed' WHERE student_id = ? AND class_id = ? AND status = 'active'`).run(b.sid, FOU2.id);
+    assert(JSON.stringify(emCua()) === JSON.stringify([a.sid]), `rời lớp mới: ${JSON.stringify(emCua())}`);
+    conn.prepare(`UPDATE enrollments SET status = 'active' WHERE student_id = ? AND class_id = ? AND status = 'completed'`).run(b.sid, FOU2.id);
+    /* T5: lệnh giữa khoá MỚI HƠN đã thi hành → mất (B5.1: mọi lệnh id lớn hơn chưa huỷ). */
+    const moi = Number(conn.prepare(`INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, lop_dich_id, huong, boi_canh, tuan_bat_dau, nguoi_ra_lenh, ngay_ra_lenh, trang_thai, tao_luc)
+      VALUES (?,?,?, 'chuyen_lop', 'giua-khoa', ?, ?, ?, 'da_chuyen', ?)`).run(a.sid, BE2.id, BE2.id, THU_HAI, QL.userId, TODAY, NOW).lastInsertRowid);
+    assert(JSON.stringify(emCua()) === JSON.stringify([b.sid]), `lệnh giữa khoá mới: ${JSON.stringify(emCua())}`);
+    conn.prepare('DELETE FROM lenh_chuyen_lop WHERE id = ?').run(moi);
+    /* T5: lớp nguồn FT → không phải Xét lại (FT → FT không ra dòng). */
+    conn.prepare('UPDATE classes SET is_fast_track = 1 WHERE id = ?').run(XL.fou.id);
+    assert(emCua().length === 0, `nguồn FT: ${JSON.stringify(emCua())}`);
+    conn.prepare('UPDATE classes SET is_fast_track = 0 WHERE id = ?').run(XL.fou.id);
+    assert(emCua().length === 2, `khôi phục: ${JSON.stringify(emCua())}`);
     /* Sửa Final thành 55% → hết lệch. */
     tyLeFou(XL.fin[1], 55);
     assert(JSON.stringify(emCua()) === JSON.stringify([a.sid]), `sửa Final: ${JSON.stringify(emCua())}`);
@@ -561,6 +575,14 @@ export async function runPrClTests(t: YThucTestKit) {
     }
     for (const [t, mong] of [[0.4996, '49%'], [0.46, '46%'], [0.57, '57%'], [0.7, '70%'], [0.72, '72%'], [1, '100%']] as const) {
       assert(d.chuTyLeXetLai(t) === mong, `${t} → ${d.chuTyLeXetLai(t)}`);
+    }
+  });
+
+  check('CL-w3 · ô Target (audit T5): "6,5" = 6.5, kck = KCK; trống "Chưa điền"; ngoài 0–9 / lẻ bước 0,5 / chữ → lỗi (cùng luật máy chủ)', () => {
+    for (const [v, gt, loi] of [['6,5', 6.5, null], ['6.0', 6, null], [' kck ', 'KCK', null], ['0', 0, null], ['9', 9, null],
+      ['', undefined, 'Chưa điền'], ['  ', undefined, 'Chưa điền'], ['12', undefined, 'band'], ['6.3', undefined, 'band'], ['abc', undefined, 'band'], ['-1', undefined, 'band']] as const) {
+      const r = d.docOTarget(v);
+      assert(r.giaTri === gt && (loi === null ? r.loi === null : !!r.loi?.includes(loi)), `"${v}" → ${JSON.stringify(r)}`);
     }
   });
 

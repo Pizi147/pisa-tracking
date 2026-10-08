@@ -571,3 +571,7 @@ Lớp thường **không có chữ SOS ở bất kỳ đâu** (chủ sản phẩ
 | Hàng có quyết định | `Sắp chuyển · từ W4 SEP` · `Huỷ quyết định` | "Sẽ chuyển" |
 | Target khi Lên FT chưa có Target nào | ô viền đỏ + `Ghi Target` + `KCK`; còn lại chỉ chữ `6.5` / `KCK` | ô mờ "6.0" |
 | Việc em đã chuyển mà Final lệch (PR-CL) | `Xét lại lộ trình · {lớp} · n em` · `Kết quả không phù hợp lộ trình` | "Xem lại hướng", "Final lệch hướng đã chốt" |
+| Chuyển lớp một em (PR-CL) | `Lớp chuyển đến` · `Gõ tên lớp…` · `Tuần bắt đầu` · `Lý do` (`Ghi lý do`) · khối `Khi chuyển, web sẽ` · chân `Còn thiếu: Lý do` / `Cần sửa: Target` · nút `Quyết định chuyển lớp` | hai ô Chi nhánh + Lớp, "Dự kiến thi", placeholder "Ví dụ: 6.0" |
+| Ô Target khi Lên FT chưa có Target (PR-CL) | `Em chưa có Target · band 0–9 hoặc KCK` · lỗi `Gõ band 0–9, bước 0,5 (ví dụ 6.5) hoặc KCK` | — |
+| FT → Thường (PR-CL, khối viền vàng) | `Đóng lộ trình FT LT1` · `MT0 → “MT0 · không dùng”` · `Huỷ 2 bài Mock chưa có điểm (MT1, MT2)` · `Giữ điểm đã có (MT0 L, R)` · lý do huỷ bài `Học lại lớp thường` | "Đưa về học lại" |
+| Chuyển lớp nhiều em (PR-CL) | `Chuyển lớp · MB FOU 12 · 2 em` · `Kết quả không phù hợp lộ trình — xét lại, không bắt buộc đổi.` · `Đã chốt: Lên FT` · `Chuyển 1 · Bỏ qua 1 (chưa chọn lớp)` · `Quyết định chuyển lớp · 1 em` · `Đã quyết định chuyển lớp 2 em` · `1 em chưa chuyển được — xem lỗi ở từng hàng` · `Không còn em cần xét lại.` | "Xem lại hướng sau Final" điền sẵn |
