@@ -2807,6 +2807,9 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>, bo
       mocChu: iv.preset === 1 ? mocChuPa({ span: iv.moc_quy_che ?? null, followupDue: iv.followup_due ?? null, mtKe: mtKe(iv), daXacNhan: !!iv.confirmed_at }, today) : null,
       lanCuoi: iv.status === 'started' && laLanGhiCuoi({ preset: iv.preset === 1, followupDue: iv.followup_due ?? null, actionDue: iv.action_due ?? null }, today),
       performer: iv.performer_user_name ?? iv.performer_name ?? null,
+      /** PR-PA (§8): Số buổi + Đã dạy (tổng Số buổi tuần này, từ `follows` đã nạp) — dòng phụ "3/10 buổi" ở bảng kỹ năng. */
+      soBuoi: (iv.so_buoi ?? null) as number | null,
+      daDay: follows.reduce((n, f) => n + (f.intervention_id === iv.id ? Number(f.so_buoi ?? 0) : 0), 0),
       /** PR-VAI-b (Q2) → PR-Dọn: người ghi kết quả PA — người thực hiện, không có thì người phụ trách Case (cùng Công việc 2b và chỉ số pa-can-cap-nhat). */
       nguoiId: (iv.performer_user_id ?? c.owner_user_id ?? null) as number | null,
       nguoiTen: (iv.performer_user_id ? iv.performer_user_name : c.owner_name) ?? null as string | null,
@@ -2860,7 +2863,8 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>, bo
           decision: (f.next_step as string | null) ?? null,
           remainingIssue: (f.remaining_issue as string | null) ?? null,
           decisionNote: (f.decision_note as string | null) ?? null,
-          phuTrach: (f.phu_trach_account ?? f.phu_trach_ten ?? null) as string | null,
+          /* PR-PA (§8): Người dạy tuần này (cột cũ `phu_trach_*`). */
+          nguoiDay: (f.phu_trach_account ?? f.phu_trach_ten ?? null) as string | null,
         }))
         .sort((a, b) => a.on.localeCompare(b.on)),
     };

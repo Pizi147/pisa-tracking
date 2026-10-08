@@ -591,4 +591,32 @@ export async function runPrPaTests(t: YThucTestKit) {
     assert(sau.performer_user_id === null && sau.performer_name === null, `xoá người: ${JSON.stringify(sau)}`);
     assert(revCua(iv).length === 2, 'mỗi lần Điều chỉnh một nhật ký');
   });
+  check('PA18 · dòng PA (Task 6): nút Kết quả + ⋯ Sửa PA chỉ khi ghi được và PA đang chạy (cùng chặn máy chủ); Xoá PA cho QL, không PA hệ thống', () => {
+    const chay = { kind: 'tutor', status: 'started', preset: false, confirmedAt: null, approvalState: null, ghiDuoc: true };
+    const xem = { canApprove: false, caseXong: false };
+    const n = (o: Record<string, unknown>, x: Record<string, unknown> = {}) => d.nutDongPa({ ...chay, ...o }, { ...xem, ...x });
+    assert(JSON.stringify(n({})) === '{"ketQua":true,"sua":true,"xoa":false}', JSON.stringify(n({})));
+    assert(!n({ ghiDuoc: false }).sua && !n({ ghiDuoc: false }).ketQua, 'không ghi được → không Sửa PA / Kết quả');
+    for (const o of [{ status: 'completed' }, { status: 'cancelled' }, { approvalState: 'pending' }, { preset: true, confirmedAt: null, status: 'planned' }])
+      assert(!n(o).sua && !n(o).ketQua, `PA chưa chạy / đã khép: ${JSON.stringify(o)}`);
+    assert(n({ preset: true, confirmedAt: '2026-10-01', status: 'planned' }).sua, 'PA quy chế đã xác nhận → Sửa PA');
+    assert(n({}, { canApprove: true }).xoa && !n({}, { canApprove: true, caseXong: true }).xoa, 'Xoá PA: QL, Case chưa xong');
+    for (const o of [{ preset: true, confirmedAt: '2026-10-01' }, { kind: 'bo_tro' }, { kind: 'bo_tro_mien_phi' }])
+      assert(!n(o, { canApprove: true }).xoa, `PA hệ thống sinh không xoá: ${JSON.stringify(o)}`);
+    /* Máy chủ chặn đúng những PA web ẩn nút: PA kết thúc → Sửa PA 400. */
+    const { c, iv } = tutor10('DONG');
+    cases.updateResult(P.lrTeacher, iv, { ...KQ, soBuoi: 3, nguoiDay: { performerUserId: GV_L } });
+    const dto = paDto(c, iv);
+    assert(d.nutDongPa(dto, xem).sua === true, JSON.stringify({ ghiDuoc: dto.ghiDuoc, status: dto.status }));
+  });
+
+  check('PA19 · bảng kỹ năng: PA có Số buổi mang soBuoi + daDay (dòng phụ "3/10 buổi"); kết quả tuần nói nguoiDay (không còn phuTrach)', () => {
+    const { c, iv } = tutor10('BANG');
+    cases.updateResult(P.lrTeacher, iv, { ...KQ, soBuoi: 3, nguoiDay: { performerUserId: GV_L } });
+    const sid = get('SELECT student_id FROM sos_cases WHERE id = ?', c).student_id;
+    const card = (cases.skillSupportBoard(P.lrTeacher, sid) as any).rows.flatMap((r: any) => r.cases).find((x: any) => x.id === c);
+    const pl = card?.plans.find((x: any) => x.id === iv);
+    assert(pl && pl.soBuoi === 10 && pl.daDay === 3, JSON.stringify(pl && { soBuoi: pl.soBuoi, daDay: pl.daDay }));
+    assert(pl.updates.length === 1 && pl.updates[0].nguoiDay && !('phuTrach' in pl.updates[0]), JSON.stringify(pl.updates));
+  });
 }

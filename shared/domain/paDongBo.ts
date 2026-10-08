@@ -202,3 +202,20 @@ export function nhatKyPa(pa: PaNhatKy, ketQua: readonly KetQuaNhatKy[], homNay: 
 /** Số dòng Nhật ký PA — "Nhật ký PA (n)" ở dòng PA (Task 6), cùng danh sách `nhatKyPa` vẽ. */
 export const soDongNhatKyPa = (pa: PaNhatKy, ketQua: readonly KetQuaNhatKy[]): number =>
   1 + ketQua.filter((f) => f.interventionId === pa.id).length + (pa.revisions?.length ?? 0);
+
+// ------------------------------------------------------------------ dòng PA ở panel Case (Task 6): nút Kết quả · ⋯ Sửa PA · Xoá PA
+
+type PaDong = { kind: string; status: string; preset?: boolean; confirmedAt?: string | null; approvalState?: string | null; ghiDuoc?: boolean };
+
+/** PA đang chạy — cùng chặn với máy chủ (`chanPaChuaChay`): chưa khép, không chờ Quản lý duyệt, PA quy chế đã xác nhận. */
+export const paDangChay = (pa: PaDong): boolean =>
+  (pa.status === 'planned' || pa.status === 'started') && pa.approvalState !== 'pending' && !(pa.preset && !pa.confirmedAt);
+
+/**
+ * Nút trên dòng PA: `ketQua` (nút Kết quả) và `sua` (⋯ Sửa PA) cùng luật — người xem ghi được Kết quả của PA (`ghiDuoc`) và PA đang chạy.
+ * `xoa` (⋯ Xoá PA): Quản lý / Quản trị, Case chưa xong, không phải PA hệ thống sinh (quy chế, Bổ trợ) — luật PR-LUI-a2 cũ.
+ */
+export function nutDongPa(pa: PaDong, xem: { canApprove: boolean; caseXong: boolean }): { ketQua: boolean; sua: boolean; xoa: boolean } {
+  const ghi = !!pa.ghiDuoc && paDangChay(pa);
+  return { ketQua: ghi, sua: ghi, xoa: xem.canApprove && !xem.caseXong && !pa.preset && pa.kind !== 'bo_tro' && pa.kind !== 'bo_tro_mien_phi' };
+}

@@ -12,8 +12,8 @@ import { FormPa, VachBuoi } from './FormPa.tsx';
 import {
   FOLLOWUP_OUTCOMES, INTERVENTION_KIND_LABEL,
   GOI_Y_KET_QUA_PA, NUT_LUU_KET_QUA, PLAN_DECISION_HINT, PLAN_DECISION_NGAN, PLAN_DECISION_NGHIA, quyetDinhChoPa,
-  decisionBlockedReason, decisionNeedsReason, deadlineView, interventionKindsFor, ngay, nhanTuanGhiKetQua, outcomeLabelFor,
-  type NguoiChon, type PlanDecision, dsLoi, type LuatTruong, tuanLich,
+  decisionBlockedReason, decisionNeedsReason, deadlineView, interventionKindsFor, nhanTuanGhiKetQua, outcomeLabelFor,
+  type NguoiChon, type PlanDecision, dsLoi, type LuatTruong,
   coNguoiDay, coSoBuoi, demSauKetQua, giaTriCuaPa, loiFormPa, loiKetQuaTuan, paMoi, paPayload, thanKetQuaTuan, thanSuaPa,
   type GiaTriPa,
 } from '@shared/domain/index.ts';
@@ -348,39 +348,3 @@ export type BanDieuChinh = {
   id: number; on: string; source: 'adjust' | 'confirm_edit' | 'sua_pa'; by: string | null; reason: string;
   before: MatPa; after: MatPa;
 };
-const NGUON_SUA: Record<BanDieuChinh['source'], string> = { adjust: 'Điều chỉnh', confirm_edit: 'Điều chỉnh khi xác nhận PA', sua_pa: 'Sửa PA' };
-
-/**
- * LỊCH SỬ ĐIỀU CHỈNH của một PA, mới nhất lên trên. Chỉ hiện trường ĐÃ ĐỔI. Dùng trong thẻ PA ở ngăn Case
- * (G-3: thẻ PA chỉ có một dòng phụ, chi tiết để ở đây).
- */
-export function LichSuDieuChinh({ revisions }: { revisions: BanDieuChinh[] }) {
-  const { homNay } = useNgayNghiepVu();
-  if (!revisions.length) return null;
-  const d = (x: string | null) => (x ? ngay(x, homNay) : 'chưa đặt');
-  return (
-    <ol className="list-none p-0 m-0 space-y-1.5">
-      {[...revisions].reverse().map((r) => (
-        <li key={r.id} className="text-xs">
-          <span className="block text-xs text-slate-500 tabular-nums">
-            {d(r.on)} · {NGUON_SUA[r.source] ?? 'Điều chỉnh'}{r.by ? ` · ${r.by}` : ''}
-          </span>
-          {/* Sửa PA không có lý do (máy chủ ghi sẵn chữ "Sửa PA"). */}
-          {r.source !== 'sua_pa' && <span className="block text-slate-300">Lý do: {r.reason}</span>}
-          {r.before.description !== r.after.description && (
-            <span className="block text-slate-400 break-words">Trước: “{r.before.description ?? ''}”</span>
-          )}
-          {r.before.performer !== r.after.performer && (
-            <span className="block text-slate-400">Người: {r.before.performer ?? 'chưa có'} → {r.after.performer ?? 'chưa có'}</span>
-          )}
-          {(r.before.soBuoi ?? null) !== (r.after.soBuoi ?? null) && (
-            <span className="block text-slate-400 tabular-nums">Số buổi: {r.before.soBuoi ?? 'trống'} → {r.after.soBuoi ?? 'trống'}</span>
-          )}
-          {(r.before.startedDate ?? null) !== (r.after.startedDate ?? null) && (
-            <span className="block text-slate-400 tabular-nums">Ngày bắt đầu: {r.before.startedDate ? tuanLich(r.before.startedDate, homNay) : 'chưa đặt'} → {r.after.startedDate ? tuanLich(r.after.startedDate, homNay) : 'chưa đặt'}</span>
-          )}
-        </li>
-      ))}
-    </ol>
-  );
-}

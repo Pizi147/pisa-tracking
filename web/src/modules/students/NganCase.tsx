@@ -16,6 +16,7 @@ import { XacNhanCasePanel, XacNhanPaPanel, type PaQuyChe } from '../yThuc/CaseSo
 import { NopKeHoachPanel } from '../cases/NopKeHoachPanel.tsx';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
 import { NhanTamDung } from '../cases/SkillBoard.tsx';
+import { KhoaNho } from '../cases/FormPa.tsx';
 
 export type { ViewCase };
 
@@ -193,24 +194,10 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
       </button>
     );
   })();
+  /* Điều kiện hoàn thành (PA quy chế chưa khép) một dòng có ổ khoá: "Hoàn thành được sau khi PA theo quy chế kết thúc · **mốc**". */
+  const dk = canDong && ht?.an && ht.dong ? /^(.*?) \((.*)\)$/.exec(ht.dong) : null;
   return (
     <KhungPanel tieuDe={ten} hocVien={hv} lop={lop} onDong={onClose}
-      ngCanh={(
-        <span className="flex items-center gap-1.5">
-          {data.systemCloseLabel
-            ? <Nhan tone="muted" title={data.systemCloseLabel}>Hệ thống đóng · {data.systemCloseLabel}</Nhan>
-            : data.trangThaiV4
-              ? <>{data.tamDungTu && data.trangThaiV4.t === 'qua-han'
-                  ? <NhanTamDung tu={data.tamDungTu} />
-                  : <NhanTrangThai t={data.trangThaiV4.t} title={data.trangThaiV4.chu} />}<span className="truncate text-slate-300">{data.trangThaiV4.chu}</span></>
-              : <Nhan tone={data.status === 'done' ? 'done' : data.status === 'open' ? 'muted' : 'doing'}>{caseStatusLabel(data.status)}</Nhan>}
-          <span className="truncate text-slate-400">
-            · mở {tuanLich(data.detectedAt, homNay)}{data.reportedBy ? ` · ${data.reportedBy} báo` : ''}
-            {/* Hạn báo kết quả cả Case chỉ khi KHÔNG có PA chạy — có PA chạy thì hạn của PA đã nói (B-5, Q2). */}
-            {!data.tamDungTu && canDong && !conPaChay && data.followUntil ? ` · hạn báo kết quả ${ngan(data.followUntil)}` : ''}
-          </span>
-        </span>
-      )}
       chan={{
         huy: { nhan: 'Đóng', onClick: onClose },
         phu: data.viewer.canEdit && canDong && !(data.sos?.awaitingCause || data.sos?.choDuyetKhongTheoDoi)
@@ -220,12 +207,35 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
         conThieu: lf.daBam && chanHoanThanh.length > 0 ? [{ nhan: 'Hoàn thành Case', lyDo: chanHoanThanh[0] }] : undefined,
       }}>
       <div ref={boxRef}>
-        {nutDau && <div className="flex justify-end pt-3">{nutDau}</div>}
+        {/* PR-PA (§8, mockup pa-dong-bo §9): dải đầu panel — trạng thái MỘT lần (chip) · "mở W2 OCT · X báo" · Sửa / Mở lại cùng hàng. */}
+        <div className="-mx-4 flex flex-col gap-1.5 border-b px-4 pb-3 pt-2.5" style={{ borderColor: 'var(--line)', background: 'rgb(var(--phu-rgb) / 0.035)' }}>
+          <div className="flex flex-wrap items-center gap-2">
+            {data.systemCloseLabel
+              ? <Nhan tone="muted" title={data.systemCloseLabel}>Hệ thống đóng · {data.systemCloseLabel}</Nhan>
+              : data.trangThaiV4
+                ? (data.tamDungTu && data.trangThaiV4.t === 'qua-han'
+                  ? <><NhanTamDung tu={data.tamDungTu} /><span className="text-[12.5px] text-slate-300">{data.trangThaiV4.chu}</span></>
+                  : <NhanTrangThai t={data.trangThaiV4.t} chu={data.trangThaiV4.chu} />)
+                : <Nhan tone={data.status === 'done' ? 'done' : data.status === 'open' ? 'muted' : 'doing'}>{caseStatusLabel(data.status)}</Nhan>}
+            <span className="min-w-0 text-[12.5px] text-slate-400">
+              mở {tuanLich(data.detectedAt, homNay)}{data.reportedBy ? ` · ${data.reportedBy} báo` : ''}
+              {/* Hạn báo kết quả cả Case chỉ khi KHÔNG có PA chạy — có PA chạy thì hạn của PA đã nói (B-5, Q2). */}
+              {!data.tamDungTu && canDong && !conPaChay && data.followUntil ? ` · hạn báo kết quả ${ngan(data.followUntil)}` : ''}
+            </span>
+            <span className="flex-1" />
+            {nutDau}
+          </div>
+          {canDong && ht?.an && ht.dong && (
+            <p className="m-0 flex items-center gap-1.5 text-[12.5px] text-slate-300">
+              <span className="text-slate-400"><KhoaNho /></span>
+              <span>{dk ? <>{dk[1]} · <b className="font-semibold text-slate-100">{dk[2]}</b></> : ht.dong}</span>
+            </p>
+          )}
+        </div>
         {/* S4-5: Quản lý mở Case đang chờ "Không cần theo dõi" thấy thẻ ngay dưới tiêu đề — duyệt / từ chối tại chỗ. */}
         {data.yeuCauCase && data.viewer.canApprove && (
           <div className="pt-3"><TheYeuCau gon yc={data.yeuCauCase} onXong={() => { reload(); onChanged?.(); }} /></div>
         )}
-        {canDong && ht?.an && ht.dong && <p className="m-0 pt-3 text-xs text-slate-500">{ht.dong}</p>}
         <ThanCase data={data} onViec={setView} />
       </div>
     </KhungPanel>

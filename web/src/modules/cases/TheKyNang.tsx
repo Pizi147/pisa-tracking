@@ -8,7 +8,7 @@ import {
   CHUA_CO_HAN, OUTCOME_MARK, OUTCOME_TONE, chuKetQuaPa, chuKhoangPa, dangChay, deadlineView, tienDoCase, xepTheKyNang,
 } from '@shared/domain/index.ts';
 import {
-  DongMt, NhanLoai, NhanTamDung, SCORE_CHIP_ROW, TamDungCtx, TenCase, gapText,
+  DongMt, NhanLoai, NhanTamDung, SCORE_CHIP_ROW, TamDungCtx, TenCase, chuBuoi, gapText,
   type CaseCard, type MoCase, type Plan, type SkillBoardRow,
 } from './SkillBoard.tsx';
 
@@ -79,7 +79,7 @@ function TheKyNang({ row, onMoCase, onGap }: { row: SkillBoardRow; onMoCase: (ca
 
 /** Nút động từ của việc tiếp (clarify: không "Xác nhận" trơn). */
 const NUT_VIEC: Record<NonNullable<MoCase['viec']>, string> = {
-  'xac-nhan': 'Xác nhận nguyên nhân', 'xac-nhan-pa': 'Xác nhận PA', 'ghi-ket-qua': 'Ghi kết quả', 'ke-hoach': 'Nộp kế hoạch', 'them-pa': 'Thêm PA',
+  'xac-nhan': 'Xác nhận nguyên nhân', 'xac-nhan-pa': 'Xác nhận PA', 'ghi-ket-qua': 'Kết quả', 'ke-hoach': 'Nộp kế hoạch', 'them-pa': 'Thêm PA',
 };
 
 function KhoiCase({ c, onMoCase }: { c: CaseCard; onMoCase: (caseId: number, o?: MoCase) => void }) {
@@ -116,7 +116,7 @@ function KhoiCase({ c, onMoCase }: { c: CaseCard; onMoCase: (caseId: number, o?:
             </>}
           </span>
           {c.canEdit && viecMo
-            ? <button type="button" className="btn btn-primary min-h-[44px] w-full" onClick={() => onMoCase(c.id, viecMo)}>{v.chu.startsWith('Ghi kết quả cuối') ? 'Ghi kết quả cuối' : NUT_VIEC[viecMo.viec!]}</button>
+            ? <button type="button" className="btn btn-primary min-h-[44px] w-full" onClick={() => onMoCase(c.id, viecMo)}>{v.chu.startsWith('Ghi kết quả cuối') ? 'Kết quả cuối' : NUT_VIEC[viecMo.viec!]}</button>
             : (
               <span className="flex items-center justify-between gap-2 text-[12px] text-slate-400">
                 <span className="min-w-0 truncate">{c.nguoiLam?.ten ? `Việc của ${c.nguoiLam.ten}` : 'Việc của người khác'}</span>
@@ -140,7 +140,7 @@ function KhoiPa({ p, c, onMoCase }: { p: Plan; c: CaseCard; onMoCase: (caseId: n
       <button type="button" onClick={() => onMoCase(c.id, { paId: p.id })} className="flex w-full min-w-0 items-center gap-1.5 border-0 bg-transparent p-0 text-left text-[12.5px] font-semibold text-slate-100">
         <NhanLoai loai="PA" cho={choKh} /><span className="min-w-0 truncate max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words">{p.name}</span>
       </button>
-      <div className="mt-0.5 truncate text-[12px] text-slate-400">{[p.performer ?? 'chưa có người thực hiện', khoang].filter(Boolean).join(' · ')}</div>
+      <div className="mt-0.5 truncate text-[12px] text-slate-400">{[p.performer ?? 'chưa có người thực hiện', khoang, chuBuoi(p)].filter(Boolean).join(' · ')}</div>
       <DongXinYKien x={p.xinYKien} ngan={ngan} />
       {p.lastOutcomeLabel && (
         <div className="mt-1">
