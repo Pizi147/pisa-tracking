@@ -1416,15 +1416,15 @@ api.get('/classes/:id/transition', requireAuth, wrap((req) => {
 }));
 
 /**
- * PR-CL (B6): em của việc "Xét lại lộ trình" ở lớp nguồn `:id` — CÙNG hàm với dòng Công việc (cùng tập em). Không 403: lớp nguồn có thể đã kết thúc
- * hoặc khác chi nhánh người xem; quyền lọc theo lớp em đang học (GVCN/GVBM → `em: []`). Ghi: web gọi `POST /students/:id/transfer` từng em.
+ * PR-CL (B6): em của việc "Xét lại lộ trình" ở lớp HIỆN TẠI `:id` (lớp em đang học) — CÙNG hàm với dòng Công việc (cùng tập em). Không 403:
+ * quyền lọc theo `class.edit` lớp đó (GVCN/GVBM → `em: []`). Ghi: web gọi `POST /students/:id/transfer` từng em.
  */
 api.get('/classes/:id/xet-lai-lo-trinh', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   lenhSvc.quetLenhDenHan();
   const lop = db().prepare('SELECT id, code FROM classes WHERE id = ?').get(pInt(req, 'id')) as { id: number; code: string } | undefined;
   if (!lop) throw notFound('Không tìm thấy lớp');
-  const em = cuoiKhoaSvc.emXetLaiLoTrinh(principalOf(req), null, demoToday()).find((x) => x.lopNguonId === lop.id)?.em ?? [];
+  const em = cuoiKhoaSvc.emXetLaiLoTrinh(principalOf(req), null, demoToday()).find((x) => x.lopId === lop.id)?.em ?? [];
   return { lop: { id: lop.id, code: lop.code }, em };
 }));
 

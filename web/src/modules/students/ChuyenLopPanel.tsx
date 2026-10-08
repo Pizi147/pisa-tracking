@@ -301,7 +301,7 @@ const DA_CHOT: Record<EmXetLai['huong'], string> = { len_lop: 'Lên lớp', fast
 const LUOI_NHIEU = 'grid grid-cols-[28px_minmax(11rem,1.2fr)_5.5rem_8rem_minmax(16rem,1.6fr)] items-start gap-x-3';
 
 /**
- * CHUYỂN LỚP NHIỀU EM — mở từ Công việc QL "Xét lại lộ trình · {lớp} · n em" (`?viec=xet-lai` ở hồ sơ lớp nguồn), đã chọn sẵn các em
+ * CHUYỂN LỚP NHIỀU EM — mở từ Công việc QL "Xét lại lộ trình · {lớp} · n em" (`?viec=xet-lai` ở hồ sơ lớp HIỆN TẠI của em), đã chọn sẵn các em
  * (`GET /classes/:id/xet-lai-lo-trinh`, cùng tập em với dòng việc). Tuần + Lý do chung, mỗi em một ô lớp; em chưa chọn lớp = bỏ qua.
  * Gửi tuần tự từng em `POST /students/:id/transfer` — em lỗi giữ hàng đỏ + chữ lỗi, em đã chuyển không gửi lại.
  * ponytail: mỗi em một lời gọi (≤ TOI_DA_NHIEU_EM em/lần); cần một lời gọi gộp khi Xét lại > 50 em.

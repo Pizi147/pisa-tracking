@@ -578,17 +578,17 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     });
   }
 
-  // ------------------------------------------------- 2d'. PR-CL (B5): Xét lại lộ trình — một việc mỗi lớp nguồn, không hạn, tự mất (cùng hàm với GET /classes/:id/xet-lai-lo-trinh)
+  // ------------------------------------------------- 2d'. PR-CL (B5): Xét lại lộ trình — một việc mỗi lớp HIỆN TẠI của em (QL chi nhánh lớp đó), không hạn, tự mất (cùng hàm với GET /classes/:id/xet-lai-lo-trinh)
   for (const x of co('xet_lai_lo_trinh') ? emXetLaiLoTrinh(p, f.branchId ?? null, today) : []) {
     const ten = x.em.map((e) => `${e.ten} ${chuTyLeXetLai(e.tyLe)}`);
     items.push({
-      key: `xetlai:${x.lopNguonId}`, group: 'xet_lai_lo_trinh', urgency: 'normal',
-      studentId: null, studentName: `Lớp ${x.code}`, classId: x.lopNguonId, classCode: x.code,
+      key: `xetlai:${x.lopId}`, group: 'xet_lai_lo_trinh', urgency: 'normal',
+      studentId: null, studentName: `Lớp ${x.code}`, classId: x.lopId, classCode: x.code,
       attemptId: null, attemptNo: null, caseId: null, level: null,
       contextLabel: ten.length > 3 ? `${ten.slice(0, 3).join(' · ')} · +${ten.length - 3}` : ten.join(' · '), count: x.em.length,
       reason: 'Kết quả không phù hợp lộ trình',
       tieuDe: `Xét lại lộ trình · ${x.code} · ${x.em.length} em`, actionLabel: 'Chuyển lớp…',
-      href: `/hoc-vien/lop/${x.lopNguonId}?viec=xet-lai`,
+      href: `/hoc-vien/lop/${x.lopId}?viec=xet-lai`,
       ownerId: null, owner: null, mine: false, due: null, statusLabel: 'Chưa có hạn',
     });
   }

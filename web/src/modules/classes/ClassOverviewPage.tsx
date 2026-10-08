@@ -84,8 +84,8 @@ export default function ClassOverviewPage() {
       setViec(v);
       doiThamSo({ viec: null });
     } else if (data && v === 'xet-lai') {
-      /* PR-CL: việc QL "Xét lại lộ trình · {lớp} · n em" → Chuyển lớp NHIỀU em, chọn sẵn các em. Không chặn theo quyền lớp nguồn (lớp có thể đã kết thúc /
-         khác chi nhánh — D11): máy chủ lọc em theo quyền ở lớp em đang học, người không có quyền thấy "Không còn em cần xét lại." */
+      /* PR-CL: việc QL "Xét lại lộ trình · {lớp} · n em" → Chuyển lớp NHIỀU em, chọn sẵn các em. Trang này là lớp HIỆN TẠI của em
+         (QL chi nhánh lớp này); máy chủ lọc theo quyền sửa lớp, người không có quyền thấy "Không còn em cần xét lại." */
       setXetLai(true);
       doiThamSo({ viec: null });
     } else if (data && v === 'ban-giao') {

@@ -459,16 +459,21 @@ export async function runPrClTests(t: YThucTestKit) {
   const XL = dungXetLai();
   const viecXetLai = (p: any, branchId: number | null = MB) =>
     (mywork.myWork(p, branchId ? { branchId } : {}).groups.flatMap((g: any) => g.items) as any[]).filter((it) => it.group === 'xet_lai_lo_trinh');
-  const emCua = (homNay = TODAY, p: any = QL) => ((ck.emXetLaiLoTrinh(p, null, homNay) as any[]).find((g) => g.lopNguonId === XL.fou.id)?.em ?? []).map((e: any) => e.studentId).sort();
+  /* Em của lớp nguồn XL.fou trong mọi nhóm (gom theo lớp HIỆN TẠI: a → BE2, b → FOU2). */
+  const XL_SID = new Set(XL.ds.map((x) => x.sid));
+  const emCua = (homNay = TODAY, p: any = QL) => (ck.emXetLaiLoTrinh(p, null, homNay) as any[]).flatMap((g) => g.em).map((e: any) => e.studentId).filter((id: number) => XL_SID.has(id)).sort();
 
-  check('CL-i · Xét lại: MỘT việc "Xét lại lộ trình · {nguồn} · 2 em" (46% Lên BE, 72% Học lại; 55% Lên FT và thiếu môn không); +13 còn, +14 mất; lệnh mới → 1 em, huỷ → 2; thôi học / rời lớp mới / lệnh giữa khoá mới hơn / nguồn FT → mất; sửa Final 55% → mất; QL CP / GVCN / GVBM không có', () => {
+  check('CL-i · Xét lại: một việc mỗi lớp HIỆN TẠI "Xét lại lộ trình · {lớp hiện tại} · n em" (46% Lên BE → BE2, 72% Học lại → FOU2; 55% Lên FT và thiếu môn không); +13 còn, +14 mất; lệnh mới → 1 em, huỷ → 2; thôi học / rời lớp mới / lệnh giữa khoá mới hơn / nguồn FT → mất; sửa Final 55% → mất; QL CP / GVCN / GVBM không có', () => {
     const [a, b, c] = XL.ds;
-    const v = viecXetLai(QL).filter((it) => it.key === `xetlai:${XL.fou.id}`);
-    assert(v.length === 1, `số việc: ${v.length}`);
-    const it = v[0];
-    assert(it.tieuDe === `Xét lại lộ trình · ${XL.fou.code} · 2 em` && it.reason === 'Kết quả không phù hợp lộ trình' && it.due === null && it.urgency === 'normal'
-      && it.count === 2 && it.actionLabel === 'Chuyển lớp…' && it.href === `/hoc-vien/lop/${XL.fou.id}?viec=xet-lai` && it.ownerId === null, JSON.stringify(it));
-    assert(/46%/.test(it.contextLabel) && /72%/.test(it.contextLabel), `contextLabel: ${it.contextLabel}`);
+    const v = viecXetLai(QL);
+    assert(!v.some((it) => it.key === `xetlai:${XL.fou.id}`), 'không còn dòng theo lớp nguồn');
+    for (const [lopHt, pct] of [[BE2, '46%'], [FOU2, '72%']] as const) {
+      const it = v.find((x) => x.key === `xetlai:${lopHt.id}`);
+      assert(it && it.tieuDe === `Xét lại lộ trình · ${lopHt.code} · ${it.count} em` && it.reason === 'Kết quả không phù hợp lộ trình' && it.due === null && it.urgency === 'normal'
+        && it.classId === lopHt.id && it.actionLabel === 'Chuyển lớp…' && it.href === `/hoc-vien/lop/${lopHt.id}?viec=xet-lai` && it.ownerId === null, JSON.stringify(it));
+      assert(it.contextLabel.includes(pct), `contextLabel: ${it.contextLabel}`);
+    }
+    assert(v.filter((x) => x.key === `xetlai:${FOU2.id}`).length === 1, 'một việc mỗi lớp hiện tại');
     assert(JSON.stringify(emCua()) === JSON.stringify([a.sid, b.sid].sort()), `em: ${JSON.stringify(emCua())}`);
     assert(d.nhomViecCua('xet_lai_lo_trinh') === 'van-hanh', 'nhóm Vận hành');
     /* Hết Chủ nhật tuần 2 ở lớp mới. */
@@ -501,48 +506,53 @@ export async function runPrClTests(t: YThucTestKit) {
     /* Sửa Final thành 55% → hết lệch. */
     tyLeFou(XL.fin[1], 55);
     assert(JSON.stringify(emCua()) === JSON.stringify([a.sid]), `sửa Final: ${JSON.stringify(emCua())}`);
-    assert(viecXetLai(QL).find((x) => x.key === `xetlai:${XL.fou.id}`)?.tieuDe === `Xét lại lộ trình · ${XL.fou.code} · 1 em`, 'việc còn 1 em');
+    assert(!viecXetLai(QL).some((x) => x.key === `xetlai:${FOU2.id}` && /72%/.test(x.contextLabel)), 'việc FOU2 không còn em 72%');
     tyLeFou(XL.fin[1], 72);
     assert(c && !emCua().includes(c.sid), 'Lên FT 55% không');
     /* Người khác không có. */
-    assert(!viecXetLai(P.cpManager, CP).length && !viecXetLai(P.cpManager, null).some((x) => x.key === `xetlai:${XL.fou.id}`), 'QL CP không có');
+    assert(!viecXetLai(P.cpManager, CP).length && !viecXetLai(P.cpManager, null).some((x) => x.key === `xetlai:${BE2.id}` || x.key === `xetlai:${FOU2.id}`), 'QL CP không có');
     assert(!emCua(TODAY, P.cpManager).length, 'QL CP: hàm không trả em');
     const gvcn = ganGv(BE2.id, 6, null, true);
     const gvbm = ganGv(BE2.id, 7, 'reading');
     assert(!viecXetLai(gvcn, null).length && !viecXetLai(gvbm, null).length, 'GVCN / GVBM không có');
-    assert(viecXetLai(P.admin, null).some((x) => x.key === `xetlai:${XL.fou.id}`), 'QT có');
+    assert(viecXetLai(P.admin, null).some((x) => x.key === `xetlai:${BE2.id}`), 'QT có');
   });
 
-  await checkAsync('CL-j · GET /classes/:id/xet-lai-lo-trinh: cùng em với việc + huong, tyLe, lopHienTai; lớp nguồn finished vẫn trả; GVCN → em: []', async () => {
+  await checkAsync('CL-j · GET /classes/:id/xet-lai-lo-trinh (lớp HIỆN TẠI): cùng em với việc + huong, tyLe, lopHienTai; lớp nguồn finished vẫn trả; lớp nguồn → em: []; GVCN → em: []', async () => {
     const [a, b] = XL.ds;
     conn.prepare(`UPDATE classes SET status = 'finished' WHERE id = ?`).run(XL.fou.id);
     const gvcn = ganGv(BE2.id, 8, null, true);
     try {
       await voiMayChu(async (goi) => {
-        const r = await goi(QL.userId, `/classes/${XL.fou.id}/xet-lai-lo-trinh`);
+        const r = await goi(QL.userId, `/classes/${BE2.id}/xet-lai-lo-trinh`);
         const j: any = await thuong(r);
-        assert(r.status === 200 && j.lop?.id === XL.fou.id && j.lop?.code === XL.fou.code, `${r.status} ${JSON.stringify(j)}`);
-        const ea = j.em.find((e: any) => e.studentId === a.sid), eb = j.em.find((e: any) => e.studentId === b.sid);
-        assert(j.em.length === 2 && ea && eb, JSON.stringify(j.em));
+        assert(r.status === 200 && j.lop?.id === BE2.id && j.lop?.code === BE2.code, `${r.status} ${JSON.stringify(j)}`);
+        const ea = j.em.find((e: any) => e.studentId === a.sid);
+        assert(ea && !j.em.some((e: any) => e.studentId === b.sid), JSON.stringify(j.em));
         assert(ea.huong === 'len_lop' && Math.abs(ea.tyLe - 0.46) < 1e-9 && ea.lopHienTai?.id === BE2.id && ea.lopHienTai?.code === BE2.code && typeof ea.ten === 'string', JSON.stringify(ea));
-        assert(eb.huong === 'hoc_lai' && Math.abs(eb.tyLe - 0.72) < 1e-9 && eb.lopHienTai?.id === FOU2.id, JSON.stringify(eb));
-        const viec = viecXetLai(QL).find((x) => x.key === `xetlai:${XL.fou.id}`);
+        const jb: any = await thuong(await goi(QL.userId, `/classes/${FOU2.id}/xet-lai-lo-trinh`));
+        const eb = jb.em.find((e: any) => e.studentId === b.sid);
+        assert(eb && eb.huong === 'hoc_lai' && Math.abs(eb.tyLe - 0.72) < 1e-9 && eb.lopHienTai?.id === FOU2.id, JSON.stringify(jb));
+        const jn: any = await thuong(await goi(QL.userId, `/classes/${XL.fou.id}/xet-lai-lo-trinh`));
+        assert(jn.em.length === 0, `lớp nguồn: ${JSON.stringify(jn)}`);
+        const viec = viecXetLai(QL).find((x) => x.key === `xetlai:${BE2.id}`);
         assert(viec?.count === j.em.length, `việc ${viec?.count} ≠ GET ${j.em.length}`);
-        const g = await goi(gvcn.userId, `/classes/${XL.fou.id}/xet-lai-lo-trinh`);
+        const g = await goi(gvcn.userId, `/classes/${BE2.id}/xet-lai-lo-trinh`);
         const jg: any = await thuong(g);
         assert(g.status === 200 && Array.isArray(jg.em) && jg.em.length === 0, `GVCN: ${g.status} ${JSON.stringify(jg)}`);
       });
     } finally { conn.prepare(`UPDATE classes SET status = 'active' WHERE id = ?`).run(XL.fou.id); }
   });
 
-  check('CL-k · emXetLaiLoTrinh: 3 lớp nguồn và 12 lớp nguồn — cùng số câu SQL (≤ 4)', () => {
+  check('CL-k · emXetLaiLoTrinh: 3 và 12 lớp (nguồn + hiện tại) — cùng số câu SQL (≤ 4)', () => {
     /* Thêm lớp nguồn có em lệch: chèn thẳng lệnh đã thi hành + Final (đủ để đếm câu, không lặp lại cả luồng thi hành). */
     const them = () => {
       const nguon = lop('FOU', 8);
-      const { sid, cyc } = em(BE2.id, { ma: 'BE' });
+      const dich = lop('BE', 1);
+      const { sid, cyc } = em(dich.id, { ma: 'BE' });
       conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'transferred', ?, ?)`).run(sid, nguon.id, nguon.start, NOW);
       conn.prepare(`INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, lop_dich_id, huong, boi_canh, tuan_bat_dau, nguoi_ra_lenh, ngay_ra_lenh, trang_thai, tao_luc)
-        VALUES (?,?,?, 'len_lop', 'cuoi-khoa', ?, ?, ?, 'da_chuyen', ?)`).run(sid, nguon.id, BE2.id, THU_HAI, QL.userId, TODAY, NOW);
+        VALUES (?,?,?, 'len_lop', 'cuoi-khoa', ?, ?, ?, 'da_chuyen', ?)`).run(sid, nguon.id, dich.id, THU_HAI, QL.userId, TODAY, NOW);
       const fid = Number(conn.prepare(`INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, status, created_at) VALUES (?,?, 1, 'final', ?, 'planned', ?)`).run(cyc, sid, nguon.id, NOW).lastInsertRowid);
       tyLeFou(fid, 40);
     };
@@ -550,7 +560,7 @@ export async function runPrClTests(t: YThucTestKit) {
     const dem = () => trongBoNho(() => { regular.allProgrammes(); permissions.bangLop(); return demCau(() => ck.emXetLaiLoTrinh(QL, null, TODAY)); });
     for (let i = 0; i < 3; i++) them();
     const n3 = dem();
-    assert((ck.emXetLaiLoTrinh(QL, null, TODAY) as any[]).length >= 4, 'tiền đề: ≥ 4 lớp nguồn');
+    assert((ck.emXetLaiLoTrinh(QL, null, TODAY) as any[]).length >= 5, 'tiền đề: ≥ 5 lớp hiện tại');
     for (let i = 0; i < 9; i++) them();
     const n12 = dem();
     assert(n3 === n12 && n12 <= 4, `3 lớp: ${n3} câu · 12 lớp: ${n12} câu`);
@@ -627,7 +637,7 @@ export async function runPrClTests(t: YThucTestKit) {
     });
   });
 
-  check('CL-o · R-C4: việc "Xét lại lộ trình" chỉ cho người XEM được lớp nguồn — QL CP quản lớp em đang học (CP) mà không xem được lớp nguồn MB → không có; QT có', () => {
+  await checkAsync('CL-o · lớp hiện tại: em chuyển từ lớp nguồn MB sang lớp CP → QL CP có việc "Xét lại lộ trình · {lớp CP}" + GET trả em; QL MB không', async () => {
     const nguon = lop('FOU', 8);
     const dichCp = lop('BE', 1, CP);
     const { sid, cyc } = em(dichCp.id, { ma: 'BE' });
@@ -636,10 +646,19 @@ export async function runPrClTests(t: YThucTestKit) {
       VALUES (?,?,?, 'len_lop', 'cuoi-khoa', ?, ?, ?, 'da_chuyen', ?)`).run(sid, nguon.id, dichCp.id, THU_HAI, QL.userId, TODAY, NOW);
     const fid = Number(conn.prepare(`INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, status, created_at) VALUES (?,?, 1, 'final', ?, 'planned', ?)`).run(cyc, sid, nguon.id, NOW).lastInsertRowid);
     tyLeFou(fid, 40);
-    const coNguon = (p: any) => (ck.emXetLaiLoTrinh(p, null, TODAY) as any[]).some((g) => g.lopNguonId === nguon.id);
-    assert(coNguon(P.admin), 'QT phải có (tiền đề)');
-    assert(!coNguon(P.cpManager), 'QL CP không xem được lớp nguồn MB → không có việc (href sẽ 403)');
-    assert(!viecXetLai(P.cpManager, null).some((x) => x.key === `xetlai:${nguon.id}`), 'QL CP: không dòng việc');
+    const co = (p: any) => (ck.emXetLaiLoTrinh(p, null, TODAY) as any[]).some((g) => g.lopId === dichCp.id && g.em.some((e: any) => e.studentId === sid));
+    assert(co(P.cpManager) && co(P.admin), 'QL CP (lớp hiện tại) / QT phải có');
+    assert(!co(QL), 'QL MB (lớp nguồn) không có');
+    const it = viecXetLai(P.cpManager, null).find((x) => x.key === `xetlai:${dichCp.id}`);
+    assert(it?.tieuDe === `Xét lại lộ trình · ${dichCp.code} · 1 em` && it.href === `/hoc-vien/lop/${dichCp.id}?viec=xet-lai`, JSON.stringify(it));
+    assert(!viecXetLai(QL, null).some((x) => x.key === `xetlai:${dichCp.id}`), 'QL MB: không dòng việc');
+    await voiMayChu(async (goi) => {
+      const r = await goi(P.cpManager.userId, `/classes/${dichCp.id}/xet-lai-lo-trinh`);
+      const j: any = await thuong(r);
+      assert(r.status === 200 && j.lop?.id === dichCp.id && j.em.some((e: any) => e.studentId === sid), `QL CP GET: ${r.status} ${JSON.stringify(j)}`);
+      const m: any = await thuong(await goi(QL.userId, `/classes/${dichCp.id}/xet-lai-lo-trinh`));
+      assert(!(m.em ?? []).some((e: any) => e.studentId === sid), `QL MB GET: ${JSON.stringify(m)}`);
+    });
   });
 
   // ---------------------------------------------------------------- Rà cuối (M1 / R-C6, M2, M3)
@@ -661,10 +680,10 @@ export async function runPrClTests(t: YThucTestKit) {
     const [a] = XL.ds;
     conn.prepare('UPDATE assessment_scores SET raw_score = 49.96 WHERE attempt_id = ?').run(XL.fin[0]);
     try {
-      const e = ((ck.emXetLaiLoTrinh(QL, null, TODAY) as any[]).find((g) => g.lopNguonId === XL.fou.id)?.em ?? []).find((z: any) => z.studentId === a.sid);
+      const e = ((ck.emXetLaiLoTrinh(QL, null, TODAY) as any[]).find((g) => g.lopId === BE2.id)?.em ?? []).find((z: any) => z.studentId === a.sid);
       const chu = d.chuTyLeXetLai(e.tyLe);
       assert(chu === '49%', `panel: ${chu} (${e.tyLe})`);
-      const it = viecXetLai(QL).find((z) => z.key === `xetlai:${XL.fou.id}`);
+      const it = viecXetLai(QL).find((z) => z.key === `xetlai:${BE2.id}`);
       assert(it.contextLabel.includes(chu) && !it.contextLabel.includes('50%'), `việc: ${it.contextLabel}`);
     } finally { tyLeFou(XL.fin[0], 46); }
   });
