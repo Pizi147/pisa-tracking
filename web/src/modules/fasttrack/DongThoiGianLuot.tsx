@@ -17,7 +17,7 @@ const NHAN_VIEC: Record<string, { chu: string; loai: Loai }> = {
   skill_skipped: { chu: CHU_THAO_TAC['bo-ky-nang'], loai: 'huy' }, skill_restored: { chu: CHU_THAO_TAC['dua-lai'], loai: 'lich' },
   skill_no_show_settled: { chu: `${CHU_THAO_TAC['bao-vang']} / không dự thi`, loai: 'vang' },
   skill_week_moved_absence: { chu: 'Dời do vắng', loai: 'vang' }, skill_unscheduled: { chu: 'Huỷ lịch (về Chưa xếp lịch)', loai: 'huy' },
-  cancelled: { chu: 'Huỷ cả lượt', loai: 'huy' }, skill_part_cancelled: { chu: 'Huỷ phần còn lại', loai: 'huy' },
+  cancelled: { chu: 'Huỷ lượt', loai: 'huy' }, skill_part_cancelled: { chu: 'Huỷ phần còn lại', loai: 'huy' },
   skill_cancelled_absence: { chu: 'Huỷ do vắng 2 lần', loai: 'huy' }, skill_part_restored: { chu: CHU_THAO_TAC['khoi-phuc'], loai: 'lich' }, reopened: { chu: 'Mở lại', loai: 'lich' },
   skill_absence_undone: { chu: 'Gỡ vắng', loai: 'vang' },   // PR-BV: xoá "-" đã chốt
   skill_sit_status: { chu: 'Trạng thái thi', loai: 'lich' }, completion_week: { chu: 'Tuần dự kiến hoàn tất', loai: 'lich' },
