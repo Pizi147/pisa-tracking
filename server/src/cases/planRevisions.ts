@@ -47,7 +47,8 @@ export const daDayCua = (ivId: number): number =>
   Number((db().prepare('SELECT COALESCE(SUM(so_buoi), 0) n FROM case_followups WHERE intervention_id = ?').get(ivId) as any).n);
 
 /**
- * Chuẩn hoá nội dung mới của một lần Điều chỉnh. Trường KHÔNG gửi (hoặc rỗng) = giữ nguyên bản hiện tại.
+ * Chuẩn hoá nội dung mới của một lần Điều chỉnh. Trường KHÔNG gửi (hoặc rỗng) = giữ nguyên bản hiện tại —
+ * trừ khoá người (`performerSelf/UserId/Name`): gửi bất kỳ khoá nào = đặt lại (cả ba trống = xoá người).
  * Ném lỗi khi mô tả quá ngắn, ngày sai, người không tồn tại, hoặc KHÔNG ĐỔI GÌ (không đổi gì thì là Giữ nguyên).
  */
 export function chuanHoaDieuChinh(p: Principal, iv: any, input: DieuChinhVao | null | undefined, observedOn: string, daDay = 0): DieuChinhPA {

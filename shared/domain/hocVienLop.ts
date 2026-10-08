@@ -45,7 +45,7 @@ export type LocHocVien = (typeof LOC_HOC_VIEN)[number];
 export const LOC_HOC_VIEN_NHAN: Record<LocHocVien, { nhan: string; goiY: string; can: string | null }> = {
   'tat-ca': { nhan: 'Tất cả', goiY: 'Mọi học viên đang học trong các lớp đang hiện.', can: null },
   'can-lam': { nhan: NHAN_TRANG_THAI['can-lam'], goiY: 'Có việc quá hạn hoặc việc hạn ngắn (xác nhận, xử lý vi phạm).', can: null },
-  'qua-han': { nhan: NHAN_TRANG_THAI['qua-han'], goiY: 'Có việc đã quá hạn (xác nhận, ghi kết quả, xử lý vi phạm) — cùng số với badge "HV quá hạn việc".', can: null },
+  'qua-han': { nhan: NHAN_TRANG_THAI['qua-han'], goiY: 'Có việc đã quá hạn (xác nhận, kết quả, xử lý vi phạm) — cùng số với badge "HV quá hạn việc".', can: null },
   'cho-duyet': { nhan: NHAN_TRANG_THAI['cho-duyet'], goiY: 'Có yêu cầu đang chờ Quản lý duyệt.', can: null },
   sos: { nhan: 'Đang SOS', goiY: 'Chỉ Fast Track: Mock gần nhất ở mức SOS 1–3.', can: 'case.view' },
   thieu_tt: { nhan: 'Thiếu thông tin', goiY: 'Hồ sơ còn thiếu thông tin cần để xếp lịch và theo dõi.', can: null },
@@ -236,7 +236,7 @@ export function badgeLop(c: {
   if (CHANG_THI.includes(c.phase)) co.chang = { key: 'chang', nhan: CLASS_PHASE_LABEL[c.phase as ClassPhase], tone: 'info' };
   if (c.missingCount > 0) co['thieu-tt'] = { key: 'thieu-tt', nhan: `Thiếu ${c.missingCount} thông tin`, tone: 'warn' };
   if (c.soChoDuyet) co['cho-duyet'] = { key: 'cho-duyet', nhan: `${c.soChoDuyet} chờ duyệt`, tone: TONE_BADGE_TRANG_THAI['cho-duyet'], title: 'Yêu cầu đang chờ Quản lý duyệt' };
-  if (c.soEmQuaHan) co['qua-han'] = { key: 'qua-han', nhan: `${c.soEmQuaHan} HV quá hạn việc`, tone: 'danger', title: 'Học viên có việc đã quá hạn (xác nhận, ghi kết quả, xử lý vi phạm)' };
+  if (c.soEmQuaHan) co['qua-han'] = { key: 'qua-han', nhan: `${c.soEmQuaHan} HV quá hạn việc`, tone: 'danger', title: 'Học viên có việc đã quá hạn (xác nhận, kết quả, xử lý vi phạm)' };
   const all = THU_TU_BADGE[c.vai].flatMap((k) => (co[k] ? [co[k]!] : []));
   return { hien: all.slice(0, 2), an: all.slice(2) };
 }
@@ -337,7 +337,7 @@ export type DichViec = { loai: 'nhap-diem' } | { loai: 'y-thuc' } | { loai: 'cas
 export type CaseViec = { caseId: number; topic: string | null; viecTiep: ViecTiepCase | null };
 
 /** Bỏ tên PA dài, giữ động từ: "Xác nhận PA Ôn lại bài" → "Xác nhận PA L". */
-const RUT_GON = ['Xác nhận PA', 'Ghi kết quả cuối', 'Ghi kết quả PA'];
+const RUT_GON = ['Xác nhận PA', 'Kết quả cuối', 'Kết quả PA'];
 const HANG_TONE = { danger: 0, warn: 1, info: 2 } as const;
 
 /**
@@ -390,7 +390,7 @@ export function viecTiepCuaEm(i: {
     const dongTu = RUT_GON.find((x) => v.chu.startsWith(x)) ?? v.chu;
     const kn = c.topic ? tenMonNgan(ct, c.topic) : 'Case';
     const viec = kn === 'Case' && dongTu.endsWith('Case') ? dongTu : `${dongTu} ${kn}`;
-    const dich: DichViec = { loai: 'case', caseId: c.caseId, paId: v.paId, ghiKetQua: dongTu.startsWith('Ghi kết quả') };
+    const dich: DichViec = { loai: 'case', caseId: c.caseId, paId: v.paId, ghiKetQua: v.loaiHan === 'cap-nhat-pa' };
     const goc = `${v.chu} · ${c.topic ? tenMon(ct, c.topic) : 'Case'}`;
     if (v.chu.startsWith('Chờ Quản lý duyệt')) {
       out.push({ viec: `Chờ Quản lý duyệt ${kn}`, han: null, quaHanNgay: null, tone: 'info', dich, title: goc });
@@ -398,7 +398,7 @@ export function viecTiepCuaEm(i: {
       const d = deadlineView({ kind: v.loaiHan, due: v.han, today: i.homNay });
       const tone = d.tone === 'overdue' ? 'danger' : v.loaiHan === 'xac-minh-sos' || v.loaiHan === 'ke-hoach-bo-tro' ? 'warn' : 'info';
       /* PR-S5F-b (mockup 21): ghi kết quả PA nói TUẦN của kết quả (`Ghi kết quả PA W1 · tuần W4 SEP`) — hạn Thứ Hai là của tuần trước nó. */
-      const tuan = v.loaiHan === 'cap-nhat-pa' ? d.viec.replace(/^Ghi kết quả /, '') : null;
+      const tuan = v.loaiHan === 'cap-nhat-pa' ? d.viec.replace(/^Kết quả /, '') : null;
       out.push({ viec: tuan ? `${viec} · ${tuan}` : viec, han: d.han, quaHanNgay: d.daysOverdue, tone, dich, title: `${goc}${tuan ? ` · ${tuan}` : ''} · ${d.han}${d.quaHan ? ` · ${d.quaHan}` : ''}` });
     } else {
       /* Chưa có hạn: Thêm PA (Case tay chưa có PA) vẫn là việc phải làm; "Hoàn thành Case" chỉ nhắc. */

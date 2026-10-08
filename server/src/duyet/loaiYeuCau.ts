@@ -154,7 +154,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         tieuDe: `Đề xuất PA${x?.topic ? ` · ${caseTopicLabel(x.topic)}` : ''}`,
         phu: x ? nhanDotNgan(x.attempt_kind, x.attempt_no) : null,
         dong: [`${nguoiXin(yc, ngu)} đề xuất ${ngay(yc.tao_luc, ngu)}: “${moTa}”`, ...(x ? [] : ['PA đã xoá'])],
-        neuDuyet: 'PA bắt đầu hôm nay, ghi kết quả hằng tuần hạn hết T2.',
+        neuDuyet: 'PA bắt đầu hôm nay, Kết quả hằng tuần hạn hết T2.',
         /* Rà #229: PA / Case đã xoá (PR-LUI-a2) — không có nút Mở trỏ vào chỗ không còn. */
         mo: yc.hoc_vien_id && x ? duongHoSoHocVien(yc.hoc_vien_id, { caseId: x.case_id }) : x ? undefined : '',
       };
@@ -600,7 +600,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
           `Nội dung yếu: ${d.noiDungYeu ?? ''}`,
           `Kế hoạch: ${d.keHoach ?? ''}`,
         ],
-        neuDuyet: 'PA bổ trợ bắt đầu hôm nay, ghi kết quả hằng tuần hạn hết T2.',
+        neuDuyet: 'PA bổ trợ bắt đầu hôm nay, Kết quả hằng tuần hạn hết T2.',
         mo: yc.hoc_vien_id && x ? duongHoSoHocVien(yc.hoc_vien_id, { caseId: x.case_id }) : undefined,
       };
     },

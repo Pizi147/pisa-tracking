@@ -200,8 +200,8 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
     hint: 'Vấn đề đã mở nhưng chưa ai ghi sẽ làm gì cho em.',
   },
   ghi_ket_qua_pa: {
-    label: 'Ghi kết quả PA',
-    hint: 'Kết quả tuần Thứ Hai → Chủ nhật ghi xong trước hết Thứ Hai tuần sau. Tuần chạm ngày dự kiến kết thúc thì ghi kết quả và kết luận PA.',
+    label: 'Kết quả PA',
+    hint: 'Kết quả tuần Thứ Hai → Chủ nhật ghi xong trước hết Thứ Hai tuần sau. Tuần chạm ngày dự kiến kết thúc là Kết quả cuối: kết luận PA.',
   },
 
   /* --------------------------------------------- những nghĩa vụ khác, vẫn phải thấy được */
@@ -546,15 +546,15 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       reason: [tenPa, iv.kind === 'bo_tro' && iv.nhom_bo_tro && (monCuaNhom.get(iv.nhom_bo_tro)?.length ?? 0) > 1
         ? `PA chung · ${tenNhomMon(ctCua(iv.eff_class_id), REGULAR_SKILLS.filter((k) => monCuaNhom.get(iv.nhom_bo_tro)!.includes(k)))}` : null,
         mine ? null : 'chưa ghi'].filter(Boolean).join(' — '),
-      tieuDe: tuanCuoi ? `Ghi kết quả cuối · ${tenPa}` : `Ghi kết quả PA${duoiKyNang(iv.topic, ctCua(iv.eff_class_id))}`,
-      actionLabel: tuanCuoi ? 'Ghi kết quả cuối' : 'Ghi kết quả',
+      tieuDe: tuanCuoi ? `Kết quả cuối · ${tenPa}` : `Kết quả PA${duoiKyNang(iv.topic, ctCua(iv.eff_class_id))}`,
+      actionLabel: tuanCuoi ? 'Kết quả cuối' : 'Kết quả',
       /* PR-PA (§8): người giữ việc không xem được hồ sơ HV (vd. chủ Case, lớp mới chưa phân công môn) → Ngăn Case đứng riêng. */
       href: mine && !can(p, PERMISSIONS.STUDENT_VIEW, { studentId: iv.eff_student_id })
         ? duongCaseRieng(iv.case_id, { paId: iv.id, viec: 'ghi-ket-qua' })
         : duongHoSoHocVien(iv.eff_student_id, { caseId: iv.case_id, paId: iv.id, viec: 'ghi-ket-qua' }),
       ownerId: iv.owner_id ?? null,
       owner: iv.owner_id ? null : ((iv.performer_name ?? '').trim() || null),
-      mine, due: iv.action_due, statusLabel: 'Chờ ghi kết quả',
+      mine, due: iv.action_due, statusLabel: 'Chờ kết quả',
     });
   }
 

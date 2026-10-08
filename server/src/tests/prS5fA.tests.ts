@@ -168,7 +168,7 @@ export async function runPrS5fATests(t: YThucTestKit) {
     lenh.raLenh(P.mbManager, { lopNguonId: nguon, boiCanh: 'cuoi-khoa', tuanChung: null, dongs: [dongCua(e, 'len_lop', dich)] });
     const td = bg.phieuBanGiao(P.mbManager, { lopNguonId: nguon }).ds[0].tuDien;
     assert(/^Final Test 63%/.test(td.ketQua) && !/SOS/.test(td.ketQua), td.ketQua);
-    assert(/PA bổ trợ Progress Test .* chờ ghi kết quả cuối/.test(td.viecConDo), td.viecConDo);
+    assert(/PA bổ trợ Progress Test .* chờ Kết quả cuối/.test(td.viecConDo), td.viecConDo);
     daChuyen(e, THU_HAI);
     const c = get('SELECT owner_user_id, cycle_id FROM sos_cases WHERE id = ?', caseId);
     assert(c.owner_user_id === GV[2] && c.cycle_id !== cyc, `chủ Case: ${JSON.stringify(c)}`);

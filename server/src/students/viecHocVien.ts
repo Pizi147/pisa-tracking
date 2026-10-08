@@ -84,9 +84,9 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
       if (chayDuoc(pl) && !(pl.kind === 'bo_tro' && pl.nhom && minGhi.get(pl.nhom) !== pl.id)) {
         const cuoi = !!pl.lanCuoi;
         ds.push({ key: `action:${pl.id}`, loai: 'ghi-ket-qua',
-          chu: cuoi ? `Ghi kết quả cuối · PA ${pl.name}` : `Ghi kết quả tuần ${tuanLich(addDays(pl.actionDue, -7), today)} · PA ${pl.name}`,
+          chu: cuoi ? `Kết quả cuối · PA ${pl.name}` : `Kết quả tuần ${tuanLich(addDays(pl.actionDue, -7), today)} · PA ${pl.name}`,
           kyNang: r.category, caseId: c.id, paId: pl.id, han: pl.actionDue, tone: 'info', nguoiId: pl.nguoiId ?? null,
-          nut: cuoi ? 'Ghi kết quả cuối' : 'Ghi kết quả', mo: { loai: 'case', caseId: c.id, paId: pl.id, viec: 'ghi-ket-qua' } });
+          nut: cuoi ? 'Kết quả cuối' : 'Kết quả', mo: { loai: 'case', caseId: c.id, paId: pl.id, viec: 'ghi-ket-qua' } });
       }
       if (pl.pendingApproval) {
         ds.push({ key: `cho-duyet:pa:${pl.id}`, loai: 'cho-duyet', chu: `PA ${pl.name} chờ Quản lý duyệt`, kyNang: r.category, caseId: c.id, paId: pl.id,

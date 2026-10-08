@@ -92,7 +92,7 @@ function KhoiCase({ c, onMoCase }: { c: CaseCard; onMoCase: (caseId: number, o?:
   const viecMo: MoCase | undefined = !v ? undefined
     : v.chu === 'Xác nhận nguyên nhân' ? { viec: 'xac-nhan' }
     : v.chu.startsWith('Xác nhận PA') ? { viec: 'xac-nhan-pa', paId: v.paId }
-    : v.chu.startsWith('Ghi kết quả') ? { viec: 'ghi-ket-qua', paId: v.paId }
+    : v.loaiHan === 'cap-nhat-pa' ? { viec: 'ghi-ket-qua', paId: v.paId }
     : v.chu === 'Nộp kế hoạch bổ trợ' ? { viec: 'ke-hoach' } : undefined;
   return (
     <div className="mt-2 border-t pt-2" style={{ borderColor: 'var(--line)' }}>
@@ -116,7 +116,7 @@ function KhoiCase({ c, onMoCase }: { c: CaseCard; onMoCase: (caseId: number, o?:
             </>}
           </span>
           {c.canEdit && viecMo
-            ? <button type="button" className="btn btn-primary min-h-[44px] w-full" onClick={() => onMoCase(c.id, viecMo)}>{v.chu.startsWith('Ghi kết quả cuối') ? 'Kết quả cuối' : NUT_VIEC[viecMo.viec!]}</button>
+            ? <button type="button" className="btn btn-primary min-h-[44px] w-full" onClick={() => onMoCase(c.id, viecMo)}>{v.chu.startsWith('Kết quả cuối') ? 'Kết quả cuối' : NUT_VIEC[viecMo.viec!]}</button>
             : (
               <span className="flex items-center justify-between gap-2 text-[12px] text-slate-400">
                 <span className="min-w-0 truncate">{c.nguoiLam?.ten ? `Việc của ${c.nguoiLam.ten}` : 'Việc của người khác'}</span>

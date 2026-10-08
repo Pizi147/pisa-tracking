@@ -185,7 +185,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
       if (pa) return nut('Nộp kế hoạch bổ trợ', () => setView({ loai: 'ke-hoach', paId: pa.id }));
     }
     if (v?.chu.startsWith('Xác nhận PA') && v.paId) return nut('Xác nhận PA', () => setView({ loai: 'xac-nhan-pa', paId: v.paId! }));
-    if (v?.chu.startsWith('Ghi kết quả') && v.paId) return nut(v.chu.startsWith('Ghi kết quả cuối') ? 'Kết quả cuối' : 'Kết quả', () => setView({ loai: 'ghi-ket-qua', paId: v.paId! }), v.chu);  /* tên PA là chữ người dạy gõ (có thể dài) — chỉ để ở tooltip; nút nào cũng đã có "Kết quả" riêng ở thẻ PA */
+    if (v?.loaiHan === 'cap-nhat-pa' && v.paId) return nut(v.chu.startsWith('Kết quả cuối') ? 'Kết quả cuối' : 'Kết quả', () => setView({ loai: 'ghi-ket-qua', paId: v.paId! }), v.chu);  /* tên PA là chữ người dạy gõ (có thể dài) — chỉ để ở tooltip; nút nào cũng đã có "Kết quả" riêng ở thẻ PA */
     if (ht?.an || !data.viewer.canClose) return undefined;
     return (
       <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0"

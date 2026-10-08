@@ -2915,7 +2915,7 @@ check('Kết quả sau hỗ trợ là việc của NGƯỜI THỰC HIỆN; quá 
   const gvItems = reviewOf(gv);
   const mgrItems = reviewOf(mgr);
   assert(gvItems.length > 0, 'Người ghi phương án không thấy việc cập nhật kết quả của mình');
-  assert(gvItems.every((i: any) => i.actionLabel === 'Ghi kết quả'), 'Nhãn hành động không đúng');
+  assert(gvItems.every((i: any) => i.actionLabel === 'Kết quả'), 'Nhãn hành động không đúng');
   const overdueForManager = mgrItems.filter((i: any) => i.urgency === 'overdue');
   assert(overdueForManager.length === mgrItems.length,
     'Quản lý đang thấy cả việc CHƯA quá hạn của người khác — chỉ quá hạn mới đến tay Quản lý');
@@ -7639,7 +7639,7 @@ check('PR-E · <Han>: sáu loại hạn có sáu nhãn khác nhau, đúng bảng
   const t = (loai: any, han = '2026-09-23') => domain.deadlineView({ kind: loai, due: han, today: '2026-09-14' }).text;
   assert(t('xac-minh-sos') === 'Xác nhận nguyên nhân · hạn 23/09', `xac-minh-sos: "${t('xac-minh-sos')}"`);
   assert(t('lap-pa') === 'Thêm PA · hạn 23/09', `lap-pa: "${t('lap-pa')}"`);
-  assert(t('cap-nhat-pa') === 'Ghi kết quả tuần W3 SEP · hạn hết T2 23/09', `cap-nhat-pa: "${t('cap-nhat-pa')}"`);
+  assert(t('cap-nhat-pa') === 'Kết quả tuần W3 SEP · hạn hết T2 23/09', `cap-nhat-pa: "${t('cap-nhat-pa')}"`);
   /* PR-YT4 (K5-24): `thuc-hien-y-thuc`, `hoan-thanh-y-thuc` bỏ — Ý thức dùng `xu-ly-vi-pham`. */
   assert(t('xu-ly-vi-pham') === 'Xử lý vi phạm · hạn 23/09', `xu-ly-vi-pham: "${t('xu-ly-vi-pham')}"`);
   assert(!(domain.DEADLINE_KINDS as readonly string[]).includes('thuc-hien-y-thuc') && !(domain.DEADLINE_KINDS as readonly string[]).includes('hoan-thanh-y-thuc'), 'hai loại cũ còn');

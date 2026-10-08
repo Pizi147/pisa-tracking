@@ -223,15 +223,15 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     const r = cau({
       hoTro: ['Writing Task 2', 'Speaking'],
       viec: [{ loai: 'nguyen-nhan', chu: 'Xác nhận nguyên nhân Speaking', kyNangTen: 'Speaking', quaHanNgay: null },
-        { loai: 'ghi-ket-qua', chu: 'Ghi kết quả tuần W4 SEP · PA …', kyNangTen: 'Writing Task 2', quaHanNgay: 3 }],
+        { loai: 'ghi-ket-qua', chu: 'Kết quả tuần W4 SEP · PA …', kyNangTen: 'Writing Task 2', quaHanNgay: 3 }],
       yThuc: { nhom: 'bat_buoc', keTiep: 'Report 2', han: '2026-10-04', quaHanNgay: null, deXuat: null },
     });
-    assert(JSON.stringify(chu(r)) === JSON.stringify(['MT1 SOS 2: đang hỗ trợ Writing Task 2 và Speaking', 'PA Writing Task 2 quá hạn ghi kết quả 3 ngày', 'Ý thức: bắt buộc Report 2, hạn hết 04/10']), JSON.stringify(r));
+    assert(JSON.stringify(chu(r)) === JSON.stringify(['MT1 SOS 2: đang hỗ trợ Writing Task 2 và Speaking', 'PA Writing Task 2 quá hạn Kết quả 3 ngày', 'Ý thức: bắt buộc Report 2, hạn hết 04/10']), JSON.stringify(r));
     assert(r.map((m) => m.tone).join() === 'sos2,danger,warn', `màu: ${r.map((m) => m.tone)}`);
   });
 
   check('VAI-b (3) · cauTomTat: Tạm dừng / KCK / Sắp chuyển / Đã kết thúc đứng đầu, bỏ mệnh đề cuối; không bao giờ quá 3 mảnh', () => {
-    const day = { hoTro: ['Reading'], viec: [{ loai: 'ghi-ket-qua', chu: 'Ghi kết quả', kyNangTen: 'Reading', quaHanNgay: 2 }],
+    const day = { hoTro: ['Reading'], viec: [{ loai: 'ghi-ket-qua', chu: 'Kết quả', kyNangTen: 'Reading', quaHanNgay: 2 }],
       yThuc: { nhom: 'bat_buoc', keTiep: 'Report 1', han: '2026-10-04', quaHanNgay: null, deXuat: null } };
     const td = cau({ ...day, dacBiet: { loai: 'tam-dung', tu: '2026-09-07' } });
     assert(td[0].chu === 'Tạm dừng từ 07/09' && td[0].tone === 'warn' && td.length === 3 && !td.some((m) => m.chu.startsWith('Ý thức')), JSON.stringify(td));
@@ -260,10 +260,10 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     const c = (o: Record<string, unknown>) => ({ status: 'in_progress', trangThaiV4: { t: 'dang-lam' }, viecTiep: null, plans: [], boTro: null, ...o });
     const h = d.oHocThuat([
       { short: 'L', label: 'Listening', category: 'listening', missed: false, cases: [] },
-      { short: 'W2', label: 'Writing Task 2', category: 'writing2', missed: true, cases: [c({ viecTiep: { chu: 'Ghi kết quả PA x' }, plans: [{ actionOverdue: true }] }), c({ status: 'done' })] },
+      { short: 'W2', label: 'Writing Task 2', category: 'writing2', missed: true, cases: [c({ viecTiep: { chu: 'Kết quả PA x' }, plans: [{ actionOverdue: true }] }), c({ status: 'done' })] },
       { short: 'S', label: 'Speaking', category: 'speaking', missed: true, cases: [c({ trangThaiV4: { t: 'can-lam' }, viecTiep: { chu: 'Xác nhận nguyên nhân' } })] },
     ]);
-    assert(h.so === 2 && h.dong[0].kn === 'W2' && h.dong[0].nhan === 'Quá hạn' && h.dong[0].viec === 'ghi kết quả'
+    assert(h.so === 2 && h.dong[0].kn === 'W2' && h.dong[0].nhan === 'Quá hạn' && h.dong[0].viec === 'kết quả'
       && h.dong[1].kn === 'S' && h.dong[1].nhan === 'Cần làm' && h.dong[1].viec === 'nguyên nhân', JSON.stringify(h));
     const bt = d.oHocThuat([{ short: 'G+V', label: 'G+V', category: 'grammar_vocab', missed: true, cases: [c({ trangThaiV4: { t: 'cho-duyet' },
       boTro: { nhom: 'n1', chung: true, buoiMoiTuan: 2, keHoach: { trangThai: 'cho' } } })] }]);
@@ -398,12 +398,12 @@ export async function runPrVaiBTests(t: YThucTestKit) {
   // ------------------------------------------------------------------ khối 6 · bảng kỹ năng: Case khung rỗng / PA khối đặc, người làm, 12 px, mã tuần
   check('VAI-b (6) · viecTiepHang: việc + "hạn … · người" (chữ hạn theo deadlineView); quá hạn nói "quá hạn n ngày"; chữ PA nói mã tuần (từ W3 SEP · đến MT2 · W4 OCT; Tiến bộ một phần · W3 SEP)', () => {
     const v = d.viecTiepHang([
-      { status: 'in_progress', viecTiep: { chu: 'Ghi kết quả PA x', loaiHan: 'cap-nhat-pa', han: '2026-10-05' }, nguoiLam: { id: 1, ten: 'Phạm Quốc Bảo' } },
+      { status: 'in_progress', viecTiep: { chu: 'Kết quả PA x', loaiHan: 'cap-nhat-pa', han: '2026-10-05' }, nguoiLam: { id: 1, ten: 'Phạm Quốc Bảo' } },
       { status: 'open', viecTiep: { chu: 'Xác nhận nguyên nhân', loaiHan: 'xac-minh-sos', han: '2026-10-02' }, nguoiLam: { id: 2, ten: 'Đỗ Thanh Tùng' } },
       { status: 'done', viecTiep: null, nguoiLam: null },
     ], '2026-10-01');
     assert(v.viec === 'Xác nhận nguyên nhân' && v.han === 'hạn 02/10' && v.nguoi === 'Đỗ Thanh Tùng' && !v.quaHan, JSON.stringify(v));
-    const q = d.viecTiepHang([{ status: 'open', viecTiep: { chu: 'Ghi kết quả PA x', loaiHan: 'cap-nhat-pa', han: '2026-09-28' }, nguoiLam: { id: 1, ten: 'A' } }], '2026-10-01');
+    const q = d.viecTiepHang([{ status: 'open', viecTiep: { chu: 'Kết quả PA x', loaiHan: 'cap-nhat-pa', han: '2026-09-28' }, nguoiLam: { id: 1, ten: 'A' } }], '2026-10-01');
     assert(q.quaHan === 'quá hạn 3 ngày' && q.nguoi === 'A', JSON.stringify(q));
     assert(d.viecTiepHang([{ status: 'done', viecTiep: null }], '2026-10-01') === null, 'không việc → null');
     const k = d.chuKhoangPa({ startedOn: '2026-09-16', completedOn: null, mocChu: 'đến MT2 · W4 OCT' }, '2026-10-01');

@@ -97,7 +97,7 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
       nhapDiem: { kyNang: ['listening', 'reading'], dot: 'Progress Test', quaHan: false },
       cases: [
         { caseId: 1, topic: 'writing2', viecTiep: { chu: 'Thêm PA', loaiHan: 'lap-pa', han: null } },
-        { caseId: 2, topic: 'listening', viecTiep: { chu: 'Ghi kết quả PA Nghe podcast', loaiHan: 'cap-nhat-pa', han: '2026-09-13', paId: 9 } },
+        { caseId: 2, topic: 'listening', viecTiep: { chu: 'Kết quả PA Nghe podcast', loaiHan: 'cap-nhat-pa', han: '2026-09-13', paId: 9 } },
       ],
       yThuc: null,
       homNay: '2026-09-16',
@@ -106,9 +106,9 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     assert(nd && nd.viec === 'Nhập điểm L, R · Progress Test' && nd.han === null, JSON.stringify(nd));
     const dp = v.find((x: any) => /^Thêm PA/.test(x.viec));
     assert(dp && dp.viec === 'Thêm PA W2' && dp.quaHanNgay === null, JSON.stringify(dp));
-    const gk = v.find((x: any) => /^Ghi kết quả/.test(x.viec));
-    assert(gk && gk.viec === 'Ghi kết quả PA L · tuần W1 SEP' && gk.han === 'hạn hết T2 13/09' && gk.quaHanNgay === 3 && gk.tone === 'danger'
-      && gk.title === 'Ghi kết quả PA Nghe podcast · Listening · tuần W1 SEP · hạn hết T2 13/09 · quá hạn 3 ngày', JSON.stringify(gk));
+    const gk = v.find((x: any) => /^Kết quả/.test(x.viec));
+    assert(gk && gk.viec === 'Kết quả PA L · tuần W1 SEP' && gk.han === 'hạn hết T2 13/09' && gk.quaHanNgay === 3 && gk.tone === 'danger'
+      && gk.title === 'Kết quả PA Nghe podcast · Listening · tuần W1 SEP · hạn hết T2 13/09 · quá hạn 3 ngày', JSON.stringify(gk));
     assert(!/Cập nhật|Xác định nguyên nhân/.test(JSON.stringify(v)), JSON.stringify(v));
   });
 
@@ -147,7 +147,7 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     assert(f([PA()], C).text === '1 PA · chưa có kết quả', 'chưa có kết quả');
     assert(f([PA({ lastOutcome: 'improved' }), PA()], C).text === '2 PA · 1 có kết quả', 'một phần');
     assert(f([PA({ lastOutcome: 'improved' }), PA({ lastOutcome: 'partial' })], C).text === '2 PA · đủ kết quả', 'đủ');
-    assert(f([], C).tiep?.text === 'Ghi kết quả', 'việc tiếp');
+    assert(f([], C).tiep?.text === 'Kết quả', 'việc tiếp');
   });
 
   // ==================================================================== 2. Máy chủ: chữ việc, đường dẫn mở ngăn Case, người làm PA
@@ -162,7 +162,7 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     for (const who of nguoiXem) {
       const nhom = (myworkSvc.myWork(who, {}).groups as any[]).find((g) => g.key === 'ghi_ket_qua_pa');
       if (!nhom) continue;
-      assert(nhom.label === 'Ghi kết quả PA', `nhãn nhóm: ${nhom.label}`);
+      assert(nhom.label === 'Kết quả PA', `nhãn nhóm: ${nhom.label}`);
       for (const it of nhom.items) {
         assert(!/Cập nhật/.test(`${it.tieuDe} ${it.actionLabel} ${it.statusLabel}`), `${it.key}: còn chữ "Cập nhật"`);
         if (!it.studentId) continue;
@@ -322,15 +322,15 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
       cases: [
         { caseId: 1, topic: 'reading', viecTiep: null },
         { caseId: 2, topic: 'speaking', viecTiep: null },
-        { caseId: 3, topic: 'listening', viecTiep: { chu: 'Ghi kết quả PA A', loaiHan: 'cap-nhat-pa', han: '2026-09-20', paId: 1 } },
+        { caseId: 3, topic: 'listening', viecTiep: { chu: 'Kết quả PA A', loaiHan: 'cap-nhat-pa', han: '2026-09-20', paId: 1 } },
         { caseId: 4, topic: 'writing2', viecTiep: { chu: 'Thêm PA', loaiHan: 'lap-pa', han: null } },
-        { caseId: 5, topic: 'reading', viecTiep: { chu: 'Ghi kết quả PA B', loaiHan: 'cap-nhat-pa', han: '2026-09-10', paId: 2 } },
+        { caseId: 5, topic: 'reading', viecTiep: { chu: 'Kết quả PA B', loaiHan: 'cap-nhat-pa', han: '2026-09-10', paId: 2 } },
       ],
       yThuc: null,
       homNay: '2026-09-16',
     });
     assert(v.map((x: any) => x.tone).join() === 'danger,warn,info', v.map((x: any) => x.tone).join());
-    assert(v.length === 3 && v[0].viec === 'Ghi kết quả PA R · tuần W1 SEP' && v[0].quaHanNgay === 6, JSON.stringify(v));
+    assert(v.length === 3 && v[0].viec === 'Kết quả PA R · tuần W1 SEP' && v[0].quaHanNgay === 6, JSON.stringify(v));
   });
 
   check('UX3 (1) · tienDoCase: PA đã xong không tính là việc tiếp; Case đã xong không có việc tiếp', () => {

@@ -3201,7 +3201,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
   /* PR-LT2b: lần ghi cuối của PA Bổ trợ miễn phí = ghi Mini Test (một lần cho cả nhóm). Kiểm TRƯỚC khi ghi gì. */
   const mtDong = iv.kind === 'bo_tro_mien_phi' && lanCuoi
     ? conn.prepare('SELECT * FROM mini_test WHERE nhom_bo_tro = ? AND ty_le IS NULL').get(iv.nhom_bo_tro) as any : null;
-  if (mtDong && !input.miniTest) throw badRequest('Ghi kết quả cuối của bổ trợ miễn phí thì nhập Mini Test (% và ngày làm).');
+  if (mtDong && !input.miniTest) throw badRequest('Kết quả cuối của bổ trợ miễn phí thì nhập Mini Test (% và ngày làm).');
   const mtGhi = mtDong ? kiemMiniTest(mtDong, input.miniTest!) : null;
   const remainingIssue = String(input.remainingIssue ?? '').trim() || null;
   if (remainingIssue && remainingIssue.length > 300) throw badRequest('Vấn đề còn tồn / Ghi chú tối đa 300 ký tự.');

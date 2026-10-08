@@ -58,9 +58,9 @@ export async function runPrSosTests(t: YThucTestKit) {
     const xn = d.viecTiepCuaCase({ ...c, hasCause: true }, [pa({ choXacNhan: true })], hom);
     assert(xn?.chu === 'Xác nhận PA Tutor' && xn.han === '2026-09-16' && xn.loaiHan === 'xac-minh-sos' && xn.paId === 1, JSON.stringify(xn));
     const chay = { ...c, hasCause: true, coPaChoXacNhan: false, status: 'in_progress' as const };
-    assert(d.viecTiepCuaCase(chay, [pa({ followupDue: '2026-09-27' })], hom)?.chu === 'Ghi kết quả cuối Tutor', 'lần cuối');
+    assert(d.viecTiepCuaCase(chay, [pa({ followupDue: '2026-09-27' })], hom)?.chu === 'Kết quả cuối Tutor', 'lần cuối');
     const g = d.viecTiepCuaCase(chay, [pa({ id: 2, ten: 'A', batBuoc: false, followupDue: null, actionDue: '2026-09-21' }), pa({})], hom);
-    assert(g?.chu === 'Ghi kết quả PA A' && g.loaiHan === 'cap-nhat-pa' && g.han === '2026-09-21', JSON.stringify(g));
+    assert(g?.chu === 'Kết quả PA A' && g.loaiHan === 'cap-nhat-pa' && g.han === '2026-09-21', JSON.stringify(g));
     assert(d.viecTiepCuaCase(chay, [pa({ xong: true })], hom)?.chu === 'Hoàn thành Case', 'hoàn thành');
     assert(d.viecTiepCuaCase({ ...chay, fromSos: false }, [], hom)?.loaiHan === 'lap-pa', 'Thêm PA');
     assert(d.viecTiepCuaCase({ ...chay, status: 'done' }, [], hom) === null, 'xong → không việc');
@@ -482,7 +482,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     assert(h?.chu === 'Cần làm · chờ nguyên nhân', JSON.stringify(h));
     const pa = { status: 'planned', lastOutcome: null, preset: true, confirmedAt: null, pendingApproval: false, approvalDue: null, actionDue: null, actionOverdue: false, completedOn: null };
     assert(d.viecTiepPhuongAn({ ...pa, choXacNhan: true }).loai === 'cho-xac-nhan', 'chờ xác nhận');
-    assert(d.viecTiepPhuongAn({ ...pa, status: 'started', lanCuoi: true, actionDue: '2026-09-28' }).text === 'Ghi kết quả cuối', 'ghi cuối');
+    assert(d.viecTiepPhuongAn({ ...pa, status: 'started', lanCuoi: true, actionDue: '2026-09-28' }).text === 'Kết quả cuối', 'ghi cuối');
   });
   check('SOS (8) · Hành trình: PA quy chế chờ xác nhận (chưa ngày bắt đầu) không thành khối PA có `tu` null (bấm thử: tab trắng); tên Case dạng T21', () => {
     const { st } = mt1Sos3('T8hj');

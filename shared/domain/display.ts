@@ -263,7 +263,7 @@ const DEADLINE_VIEC: Record<DeadlineKind, { viec: string; tien: 'hạn' | 'hạn
   /* PR-NEN Q16: giữ khoá `xac-minh-sos`, chữ đổi theo thuật ngữ chốt (như N1 Q4). */
   'xac-minh-sos': { viec: 'Xác nhận nguyên nhân', tien: 'hạn' },
   'lap-pa': { viec: CHU_THEM_PA, tien: 'hạn' },
-  'cap-nhat-pa': { viec: 'Ghi kết quả PA', tien: 'hạn hết T2' },
+  'cap-nhat-pa': { viec: 'Kết quả PA', tien: 'hạn hết T2' },
   'nhap-diem': { viec: 'Nhập điểm', tien: 'hạn' },
   'du-kien-ket-thuc': { viec: 'Dự kiến kết thúc', tien: 'dự kiến kết thúc' },
   /* PR-Ra Q9: quá hạn tính theo hạn HIỆN TẠI — hạn gốc/lý do dời hiện ở dòng phụ riêng (`dongHanDaDoi`), không qua `originalDue` ở đây. */
@@ -359,7 +359,7 @@ export function deadlineView(i: DeadlineInput): DeadlineView {
   const ngayVn = (s: string) => ngayTheoGioVN(s)!;   // đã qua validIso
   const han = `${tien} ${shortDate(ngayVn(i.due), i.today)}`;
   /* PR-N1 (R-PA3): hạn Thứ Hai là hạn của kết quả TUẦN TRƯỚC nó — "Ghi kết quả tuần W4 SEP · hạn hết T2 28/09". */
-  const viecHien = i.kind === 'cap-nhat-pa' ? `Ghi kết quả tuần ${maTuan(congNgay(i.due, -7), i.today)}` : viec;
+  const viecHien = i.kind === 'cap-nhat-pa' ? `Kết quả tuần ${maTuan(congNgay(i.due, -7), i.today)}` : viec;
   const base = ngayVn(validIso(i.originalDue) ? i.originalDue : i.due);
   const duKien = i.kind === 'du-kien-ket-thuc';
   let daysOverdue: number | null = null;
