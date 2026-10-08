@@ -15,7 +15,7 @@ import { applyTransition } from './transition.ts';
 import { apDungMotDong, dongLopNeuHet, lopDichHopLe, nguoiNhanGoiY } from './luatLoTrinh.ts';
 import { coTheRaLenh } from './quyenChuyenLop.ts';
 import { classProgressMany, mocKetKhoa } from './schedule.ts';
-import { cuoiKhoaTheoHocVien } from '../normal/cuoiKhoa.ts';
+import { cuoiKhoaTheoHocVien, dongBoCheTaiFinal } from '../normal/cuoiKhoa.ts';
 import { dongBoTuLenh } from './loTrinhTiep.ts';
 
 /**
@@ -201,6 +201,8 @@ export function raLenh(p: Principal, v: {
           cuLaQl: daCo.get(h[0])?.lop_nguon_id === v.lopNguonId && daCo.get(h[0])?.huong === ltt.get(h[0])?.huong,
         })));
       }
+      /* PR-CT2 (§8): quyết định Cuối khoá lớp thường (ra / sửa) → bổ trợ Final sinh ngay nếu đã đủ điểm, đổi hướng thì huỷ phần chưa ai đụng. Cùng giao dịch. */
+      if (v.boiCanh === 'cuoi-khoa' && !nguonFt) dongBoCheTaiFinal(p, v.lopNguonId, hang.map((h) => h[0] as number));
     }
     return { ok: hang.map((h) => h[0] as number), failed };
   });
@@ -268,6 +270,7 @@ function huyMotLenh(p: Principal, l: any, why: string): void {
     `UPDATE lenh_chuyen_lop SET trang_thai = 'huy', huy_boi = ?, huy_luc = ?, ly_do_huy = ?, sua_luc = ? WHERE id = ? AND trang_thai = 'cho'`,
   ).run(p.userId, nowIso(), why, nowIso(), l.id);
   if (!r.changes) throw conflict('Quyết định chuyển lớp vừa được thi hành hoặc đã huỷ.');
+  if (l.boi_canh === 'cuoi-khoa') dongBoCheTaiFinal(p, l.lop_nguon_id, [l.student_id]);   // PR-CT2 (§8): không còn quyết định → huỷ bổ trợ Final chưa ai đụng
   const hv = conn.prepare('SELECT full_name FROM students WHERE id = ?').get(l.student_id) as any;
   writeAudit({ actorUserId: p.userId, action: 'lenh_chuyen.huy', entityType: 'student', entityId: l.student_id, entityLabel: hv?.full_name ?? null, before: { huong: l.huong, tuan: l.tuan_bat_dau }, after: { lyDo: why } });
 }
@@ -401,6 +404,7 @@ export function khoiPhucLenh(p: Principal, ids: unknown): KetQuaLenhNhieu {
             lopDuKienId: l.lop_dich_id ?? null, mucTieu: l.khong_cam_ket ? null : l.muc_tieu ?? null, ngayXemLai: l.ngay_xem_lai ?? null,
             huongCu: (nguonThuong.huong ?? null) as Huong | null, cuLaQl: false,
           }]);
+          dongBoCheTaiFinal(p, l.lop_nguon_id, [l.student_id]);   // PR-CT2 (§8): quyết định chờ lại → bổ trợ Final như lúc ra lệnh
         }
         writeAudit({ actorUserId: p.userId, action: 'lenh_chuyen.khoi_phuc', entityType: 'student', entityId: l.student_id, before: { trangThai: 'huy' }, after: { huong: l.huong, tuan: l.tuan_bat_dau } });
       });

@@ -257,8 +257,10 @@ console.log('\n0. Bộ demo vừa dựng có nhất quán không');
 check('[12.1-16] Bộ demo nhất quán: không có sự kiện "đã xong" nào nằm ở tương lai', () => {
   const t = demoToday();
   const bad: string[] = [];
+  /* PR-CT2 (§8): PA Bổ trợ miễn phí sinh sớm (Final đủ điểm + quyết định) có ngày bắt đầu = thứ Hai sắp tới — lịch đã định, không phải sự kiện đã xảy ra. */
+  const loaiTru = (table: string, col: string) => (table === 'case_interventions' && col === 'started_date' ? ` AND NOT (kind = 'bo_tro_mien_phi' AND status = 'started')` : '');
   const later = (table: string, col: string) => (conn
-    .prepare(`SELECT COUNT(*) n FROM ${table} WHERE ${col} IS NOT NULL AND ${col} > ?`)
+    .prepare(`SELECT COUNT(*) n FROM ${table} WHERE ${col} IS NOT NULL AND ${col} > ?${loaiTru(table, col)}`)
     .get(t) as any).n;
 
   for (const [table, col] of [

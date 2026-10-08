@@ -18,7 +18,7 @@ import { lopChoChotLoTrinh } from '../classes/lenhChuyen.ts';
 import { myMgmtTasks } from './mgmttasks.ts';
 import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, UNCONFIRMED_PRESET, awaitingCauseCaseIds } from '../cases/sosState.ts';
 import { quyenBoTro } from '../cases/boTro.ts';
-import { tyLeTongLo } from '../normal/cuoiKhoa.ts';
+import { nguoiGiuMiniTest, tyLeTongLo } from '../normal/cuoiKhoa.ts';
 import { myCoordinationLines } from '../yThuc/phoiHop.ts';
 import { hvLenFtChuaKyVong } from './metrics.ts';
 import { phanCongDangHieuLuc } from './scoreDebt.ts';
@@ -795,11 +795,14 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       ownerId: p.userId, owner: null, mine: true, due: null, statusLabel: 'Chưa xong',
     });
   }
-  /* PR-LT2b (K5 §3 #10): Ghi Mini Test — người làm = người dạy bổ trợ (có tài khoản), không có thì GVCN lớp em ĐANG học. Hết khi đã ghi; em Tạm dừng ẩn (T65). */
+  /*
+   * PR-LT2b (K5 §3 #10): Ghi Mini Test — hết khi đã ghi; em Tạm dừng ẩn (T65). PR-CT2 (§8): người làm = người giữ việc của nhóm (`nguoiGiuMiniTest` — GVCN lớp em
+   * ĐANG học; không có → chủ Case), không còn là Người dạy (GV cũ ở lớp của bài Final). Không ai giữ → GVCN lớp đang học.
+   */
   const miniTest = !co('mini_test') ? [] : conn
     .prepare(
-      `SELECT m.id, m.student_id, m.han, s.full_name, cur.class_id AS cur_class_id, c.code AS class_code, c.branch_id,
-              (SELECT iv.performer_user_id FROM case_interventions iv WHERE iv.nhom_bo_tro = m.nhom_bo_tro AND iv.performer_user_id IS NOT NULL ORDER BY iv.id LIMIT 1) AS gv,
+      `SELECT m.id, m.student_id, m.han, m.nhom_bo_tro, s.full_name, cur.class_id AS cur_class_id, c.code AS class_code, c.branch_id,
+              (SELECT MIN(sc.owner_user_id) FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE iv.nhom_bo_tro = m.nhom_bo_tro) AS owner,
               (SELECT MIN(iv.case_id) FROM case_interventions iv WHERE iv.nhom_bo_tro = m.nhom_bo_tro) AS case_id,
               (SELECT MIN(iv.id) FROM case_interventions iv WHERE iv.nhom_bo_tro = m.nhom_bo_tro AND iv.status IN ('planned', 'started')) AS pa_id
          FROM mini_test m JOIN students s ON s.id = m.student_id AND ${HV_DANG_HOC_SQL('s')}
@@ -808,6 +811,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     )
     .all() as any[];
   napTruocPhamVi(miniTest.map((r) => r.student_id));
+  const giuMt = nguoiGiuMiniTest(miniTest.map((m) => ({ id: m.id, nhom: m.nhom_bo_tro, lop: m.cur_class_id, owner: m.owner ?? null })));
+  for (const m of miniTest) m.gv = giuMt.get(m.id) ?? null;
   for (const m of miniTest) {
     if (f.branchId && m.branch_id !== f.branchId) continue;
     const mine = m.gv ? m.gv === p.userId : isCoreTeacherOf(p, m.cur_class_id, today);

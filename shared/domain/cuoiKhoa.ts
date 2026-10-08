@@ -146,6 +146,6 @@ export function chuHopKetLuan(x: HopKetLuanVao): HopKetLuan {
   if (g.dai === 'duoi_50') return { chinh, phu, nhan: `${g.nhan} · Quản lý báo phụ huynh qua TVV`, tone: 'bad', kyVong };
   /* 50–59%: chưa quyết → Quản lý cân nhắc; đã chuyển thì hiện điều Quản lý đã quyết (Q30-3, không còn thẻ). */
   if (!x.quyetDinh) return { chinh, phu, nhan: 'Quản lý cân nhắc: học lại hoặc lên (chọn khi chuyển lớp)', tone: 'warn', kyVong };
-  const dich = x.quyetDinh.huong === 'hoc_lai' ? `Học lại ${tenBac(ct)}` : `Lên ${tenBacKe(ct)}${g.boTroNeuLen ? ' + bổ trợ' : ''}`;   // PR-CT2: ELE không bổ trợ
+  const dich = x.quyetDinh.huong === 'hoc_lai' ? `Học lại ${tenBac(ct)}` : `Lên ${tenBacKe(ct)}${g.boTroNeuLen && coBoTroFinal(ct, x.quyetDinh.huong === 'fast_track') ? ' + bổ trợ' : ''}`;   // PR-CT2: ELE / BE → FT không bổ trợ
   return { chinh, phu, nhan: `QL đã quyết: ${dich} · ${ngay(x.quyetDinh.luc.slice(0, 10), x.homNay)}`, tone: 'warn', kyVong };
 }

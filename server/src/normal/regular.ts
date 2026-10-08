@@ -19,7 +19,7 @@ import { checkSkillWeekMove, ensureSkillRows, kiemDaToiTuanThi, loadSkillRows, s
 import { dotHoanTat, dotHoanTatMany, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
 import { canRequest, duocGoDau } from '../fasttrack/absence.ts';
 import { classProgress, classProgressMany } from '../classes/schedule.ts';
-import { baoLenCuoiKhoaDoiQuaHan, capNhatCuoiKhoaSauChuyen } from './cuoiKhoa.ts';
+import { baoLenCuoiKhoaDoiQuaHan, capNhatCuoiKhoaSauChuyen, dongBoCheTaiFinal } from './cuoiKhoa.ts';
 import { lamMoiDiemBanChup } from '../loTrinh/banChup.ts';
 
 /**
@@ -784,8 +784,14 @@ export function refreshRegularOutcome(p: Principal, attemptId: number) {
   // Case mở ngay khi kết luận được, không chờ đủ điểm.
   if (r.sosLevel !== null) taoCaseGiuaKhoa(p, a, r);
   if (a.kind === 'progress') dongBoBaoPh(a, monBaoPh(a.id, r.skills.filter((x) => x.outcome === 'fail').map((x) => x.skill)));   // PR-UXF-b (R5-4): theo Case, bỏ môn "Không cần theo dõi"
-  /* PR-LT2b (Q30-4): Cuối khoá ĐỦ điểm mà em đã chuyển đi → luật Cuối khoá áp ở lộ trình mới. Không sinh tín hiệu / Case ở lớp cũ (T70). */
-  if (a.kind === 'final' && r.complete) capNhatCuoiKhoaSauChuyen(p, a);
+  /*
+   * PR-LT2b (Q30-4): Cuối khoá ĐỦ điểm mà em đã chuyển đi → luật Cuối khoá áp ở lộ trình mới. Không sinh tín hiệu / Case ở lớp cũ (T70).
+   * PR-CT2 (§8): em CÒN học lớp đó → đồng bộ bổ trợ Final theo điểm + quyết định đang chờ (sinh sớm / huỷ phần chưa ai đụng).
+   */
+  if (a.kind === 'final' && a.class_id) {
+    dongBoCheTaiFinal(p, a.class_id, [a.student_id]);
+    if (r.complete) capNhatCuoiKhoaSauChuyen(p, a);
+  }
   return r;
 }
 

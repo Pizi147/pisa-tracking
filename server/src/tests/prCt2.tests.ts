@@ -182,4 +182,182 @@ export async function runPrCt2Tests(t: YThucTestKit) {
     const b: string[] = []; migratePrCt2(conn, b);
     assert(b.length === 0, `lần hai: ${b.join('; ')}`);
   });
+
+  // ------------------------------------------------------------------ Task 4 · chế tài Final sinh khi đủ điểm + có quyết định
+  const lenh: any = await import('../classes/lenhChuyen.ts');
+  const week: any = await import('../platform/week.ts');
+  const ck: any = await import('../normal/cuoiKhoa.ts');
+  const { nguoiGiuKetQua } = await import('../cases/giuKetQua.ts');
+  const { getConfig, setConfig } = await import('../demoConfig.ts');
+  console.log('PR-CT2 · Task 4 — chế tài Final sinh khi đủ điểm');
+  const MB = get(`SELECT id FROM branches WHERE code = 'MB'`).id as number;
+  const THU_HAI = d.tuanChonDuoc(TODAY)[0] as string;
+  const GV = all(`SELECT DISTINCT ur.user_id u FROM user_roles ur JOIN roles r ON r.id = ur.role_id
+     WHERE r.key = 'teacher' AND ur.status = 'active' AND ur.branch_id = ? ORDER BY ur.user_id LIMIT 4`, MB).map((r) => r.u as number);
+  assert(GV.length === 4, `cần 4 giáo viên MB, có ${GV.length}`);
+  let seq = 0;
+  const lop = (kind: string, tuanHienTai = 1, ft = false) => {
+    seq += 1;
+    const bat = d.mondayOfDate(t.addDays(TODAY, -7 * (tuanHienTai - 1)));
+    return (intake.createClass(P.admin, {
+      code: `MB-QCT${seq}`, branchId: MB, kind, isFastTrack: ft, route: ft ? 'LT1' : null, startDate: bat, startPeriodId: week.ensurePeriod(bat).id,
+    }) as any).id as number;
+  };
+  const ganGv = (l: number, userId: number, skill: string | null) => conn.prepare(
+    `INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at) VALUES (?,?,?,?, '2026-01-01', 'active', ?)`,
+  ).run(userId, l, skill, skill ? 0 : 1, new Date().toISOString());
+  const hocVien = (l: number, ma: string) => {
+    seq += 1;
+    const now = new Date().toISOString();
+    const sid = Number(conn.prepare(`INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`)
+      .run(`PISA-CT2-${seq}`, `Hoc vien CT2 ${seq}`, `hoc vien ct2 ${seq}`, MB, now).lastInsertRowid);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`).run(sid, l, TODAY, now);
+    const cyc = Number(conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, started_at, status, created_at) VALUES (?, 1, NULL, ?, NULL, ?, 'active', ?)`)
+      .run(sid, ma, TODAY, now).lastInsertRowid);
+    regular.planRegularTests(P.admin, l, { studentIds: [sid], kinds: ['final'] });
+    const a = get(`SELECT id FROM assessment_attempts WHERE student_id = ? AND class_id = ? AND kind = 'final' ORDER BY id DESC LIMIT 1`, sid, l).id as number;
+    return { sid, cyc, a };
+  };
+  /** Nhập / sửa / xoá (null) điểm Final Test qua đường thật `saveRegularScore` → `refreshRegularOutcome`. */
+  const nhap = (a: number, diem: Record<string, number | null>, tong = 25) => {
+    for (const [k, v] of Object.entries(diem)) regular.saveRegularScore(P.admin, a, k, { score: v, total: v === null ? null : tong, lyDo: 'Phép kiểm CT2' });
+  };
+  const ra = (nguon: number, sid: number, huong: string, dich: number, o: Record<string, unknown> = {}) =>
+    lenh.raLenh(P.mbManager, { lopNguonId: nguon, boiCanh: 'cuoi-khoa', tuanChung: null, dongs: [{ studentId: sid, huong, toClassId: dich, tuan: THU_HAI, ...o }] });
+  const lenhCua = (sid: number) => get('SELECT * FROM lenh_chuyen_lop WHERE student_id = ? ORDER BY id DESC LIMIT 1', sid);
+  const chay = (sid: number) => {
+    const cu = getConfig('demo_date');
+    setConfig('demo_date', THU_HAI);
+    try { lenh.thiHanhLenhDenHan(THU_HAI); } finally { setConfig('demo_date', cu); }
+    assert(lenhCua(sid).trang_thai === 'da_chuyen', `chưa chuyển: ${JSON.stringify(lenhCua(sid))}`);
+  };
+  const mts = (sid: number) => all('SELECT * FROM mini_test WHERE student_id = ?', sid);
+  /** PA Bổ trợ miễn phí còn sống của nhóm `mt:{lượt}` + Case. */
+  const paMt = (a: number) => all(
+    `SELECT iv.*, sc.cycle_id, sc.owner_user_id, sc.topic, sc.status AS case_status, sc.system_close_reason FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
+      WHERE iv.nhom_bo_tro = ? AND iv.status != 'cancelled' ORDER BY sc.topic`, `mt:${a}`);
+  const chuKy = (ds: any[]) => ds.map((x) => `${x.topic}:${x.so_buoi}:${x.performer_user_id}`).join(' ');
+  /** FOU 9 tuần, GV cũ: G+V = GV[1], P = GV[2]; lớp BE đích: GVCN GV[3], G+V/P GV[0]. */
+  const dungFou = () => {
+    const nguon = lop('FOU', 9), dich = lop('BE');
+    ganGv(nguon, GV[0], null); ganGv(nguon, GV[1], 'writing'); ganGv(nguon, GV[2], 'speaking');
+    ganGv(dich, GV[3], null); ganGv(dich, GV[0], 'writing'); ganGv(dich, GV[0], 'speaking');
+    return { nguon, dich, ...hocVien(nguon, 'FOU') };
+  };
+
+  check('CT2-5 · Final đủ điểm + lệnh lên → sinh ngay, trước thứ Hai: FOU 55% 2 môn → 4 buổi, Người dạy GV cũ, lộ trình FOU, 1 Mini Test; Pre FOU 65% → tong_hop 2 buổi; BE 62% → ELE 1 buổi/môn', () => {
+    const f = dungFou();
+    nhap(f.a, { listening: 18, reading: 18, writing: 10 });
+    ra(f.nguon, f.sid, 'len_lop', f.dich);
+    assert(mts(f.sid).length === 0 && paMt(f.a).length === 0, 'chưa đủ điểm mà đã sinh');
+    nhap(f.a, { speaking: 9 });   // 55/100, trượt G+V và P
+    assert(lenhCua(f.sid).trang_thai === 'cho', 'lệnh phải còn chờ');
+    const pa = paMt(f.a);
+    assert(chuKy(pa) === `speaking:4:${GV[2]} writing:4:${GV[1]}`, `PA: ${chuKy(pa)}`);
+    assert(pa.every((x) => x.cycle_id === f.cyc && x.status === 'started' && x.kind === 'bo_tro_mien_phi'), JSON.stringify(pa.map((x) => [x.cycle_id, x.status])));
+    const m = mts(f.sid);
+    assert(m.length === 1 && m[0].cycle_id === f.cyc && m[0].so_buoi === 4 && m[0].tu_attempt_id === f.a, JSON.stringify(m));
+
+    const pre = lop('PREFOU', 6), fou = lop('FOU');
+    const p = hocVien(pre, 'PREFOU');
+    ra(pre, p.sid, 'len_lop', fou);
+    nhap(p.a, { tong_hop: 26 }, 40);   // 65%
+    const pp = paMt(p.a);
+    assert(pp.length === 1 && pp[0].topic === 'tong_hop' && pp[0].so_buoi === 2, `Pre FOU: ${chuKy(pp)}`);
+
+    const be = lop('BE', 11), ele = lop('ELE');
+    const b = hocVien(be, 'BE');
+    ra(be, b.sid, 'len_lop', ele);
+    nhap(b.a, { listening: 18, reading: 18, writing: 13, speaking: 13 });   // 62%
+    const bp = paMt(b.a);
+    assert(bp.length === 2 && bp.every((x) => x.so_buoi === 2) && mts(b.sid).length === 1, `BE → ELE: ${chuKy(bp)}`);
+  });
+
+  check('CT2-6 · một lần: sửa ô Final không đổi số; xoá rồi nhập lại không nhân đôi; thi hành thứ Hai không thêm PA, Case + Mini Test sang lộ trình mới, chủ Case GV lớp mới, Người dạy giữ GV cũ, Kết quả về GVCN lớp mới', () => {
+    const f = dungFou();
+    ra(f.nguon, f.sid, 'len_lop', f.dich);
+    nhap(f.a, { listening: 18, reading: 18, writing: 10, speaking: 9 });
+    const truoc = chuKy(paMt(f.a));
+    nhap(f.a, { writing: 11 });   // 56%, vẫn trượt hai môn
+    assert(chuKy(paMt(f.a)) === truoc && mts(f.sid).length === 1, `sửa ô: ${chuKy(paMt(f.a))}`);
+    nhap(f.a, { speaking: null });
+    assert(chuKy(paMt(f.a)) === truoc && mts(f.sid).length === 1, `xoá ô: ${chuKy(paMt(f.a))}`);
+    nhap(f.a, { speaking: 9 });
+    assert(chuKy(paMt(f.a)) === truoc && mts(f.sid).length === 1, `nhập lại: ${chuKy(paMt(f.a))}`);
+    chay(f.sid);
+    const moi = get(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`, f.sid).id as number;
+    const pa = paMt(f.a);
+    assert(chuKy(pa) === truoc, `thi hành thêm / đổi PA: ${chuKy(pa)}`);
+    assert(pa.every((x) => x.cycle_id === moi && x.owner_user_id === GV[0]), `Case sau thi hành: ${JSON.stringify(pa.map((x) => [x.cycle_id, x.owner_user_id]))} · mới ${moi}`);
+    const m = mts(f.sid);
+    assert(m.length === 1 && m[0].cycle_id === moi, `Mini Test: ${JSON.stringify(m)}`);
+    const giu = nguoiGiuKetQua(pa.map((x) => ({ id: x.id, topic: x.topic, nhomBoTro: x.nhom_bo_tro, classId: f.dich, ownerUserId: x.owner_user_id })), THU_HAI);
+    assert(pa.every((x) => giu.get(x.id) === GV[3]), `người giữ Kết quả: ${JSON.stringify([...giu])}`);
+    assert(ck.emConMiniTest([f.sid]).get(f.sid)?.gv === GV[3], `người giữ Ghi Mini Test: ${JSON.stringify(ck.emConMiniTest([f.sid]).get(f.sid))}`);
+  });
+
+  check('CT2-7 · BE/ELE → FT: không Case / PA / Mini Test theo Final, cả lúc đủ điểm lẫn lúc thi hành; BE 60% lên ELE → có', () => {
+    for (const [kind, ma] of [['BE', 'BE'], ['ELE', 'ELE']]) {
+      const nguon = lop(kind, 11), ft = lop('FT', 1, true);
+      const e = hocVien(nguon, ma);
+      ra(nguon, e.sid, 'fast_track', ft, { mucTieu: 6 });
+      nhap(e.a, { listening: 18, reading: 18, writing: 13, speaking: 13 });
+      assert(mts(e.sid).length === 0 && paMt(e.a).length === 0, `${kind} đủ điểm: ${mts(e.sid).length}`);
+      chay(e.sid);
+      assert(mts(e.sid).length === 0 && paMt(e.a).length === 0, `${kind} thi hành: ${mts(e.sid).length}`);
+    }
+    const be = lop('BE', 11), ele = lop('ELE');
+    const b = hocVien(be, 'BE');
+    ra(be, b.sid, 'len_lop', ele);
+    nhap(b.a, { listening: 15, reading: 15, writing: 15, speaking: 15 });
+    assert(mts(b.sid).length === 1 && paMt(b.a).length === 4, `BE 60% lên ELE: ${mts(b.sid).length} · ${paMt(b.a).length}`);
+  });
+
+  check('CT2-8 · quyết định: đủ điểm chưa lệnh → không gì; ra lệnh → sinh; đổi học lại → huỷ (Case mở bởi lần sinh đóng "Đổi quyết định lộ trình", Case Giữa khoá giữ, chỉ huỷ PA + mốc); ra lại → đúng một bộ; đã có Kết quả → huỷ lệnh không huỷ gì', () => {
+    const f = dungFou();
+    /* Case Giữa khoá G+V còn mở (đúng khoá chống trùng) → nhận PA. */
+    const gk = Number(conn.prepare(
+      `INSERT INTO sos_cases (student_id, cycle_id, category, topic, origin_kind, status, owner_user_id, detected_at, dedup_key, created_at)
+       VALUES (?,?, 'writing', 'writing', 'teacher_report', 'in_progress', ?, ?, ?, ?)`,
+    ).run(f.sid, f.cyc, GV[1], TODAY, d.caseDedupKey({ category: 'writing', studentId: f.sid, cycleId: f.cyc }), new Date().toISOString()).lastInsertRowid);
+    nhap(f.a, { listening: 18, reading: 18, writing: 10, speaking: 9 });
+    assert(mts(f.sid).length === 0 && paMt(f.a).length === 0, 'chưa có quyết định mà đã sinh');
+    ra(f.nguon, f.sid, 'len_lop', f.dich);
+    const pa = paMt(f.a);
+    assert(pa.length === 2 && mts(f.sid).length === 1 && pa.some((x) => x.case_id === gk), `ra lệnh: ${chuKy(pa)}`);
+    const caseMoi = pa.find((x) => x.case_id !== gk).case_id as number;
+    assert(get('SELECT 1 FROM case_milestones WHERE dedup_key = ?', `cuoi-khoa:${f.a}:${gk}`), 'mốc Final ở Case Giữa khoá');
+    const fou = lop('FOU');
+    lenh.suaLenh(P.mbManager, lenhCua(f.sid).id, { huong: 'hoc_lai', toClassId: fou });
+    assert(mts(f.sid).length === 0 && paMt(f.a).length === 0, `đổi học lại: ${mts(f.sid).length} · ${chuKy(paMt(f.a))}`);
+    const cm = get('SELECT status, system_close_reason FROM sos_cases WHERE id = ?', caseMoi);
+    assert(cm.status === 'done' && cm.system_close_reason === 'doi_quyet_dinh', `Case mở bởi lần sinh: ${JSON.stringify(cm)}`);
+    assert(d.SYSTEM_CLOSE_REASON_LABEL.doi_quyet_dinh === 'Đổi quyết định lộ trình', 'nhãn lý do');
+    assert(get('SELECT status FROM sos_cases WHERE id = ?', gk).status !== 'done', 'Case Giữa khoá phải còn mở');
+    assert(!get('SELECT 1 FROM case_milestones WHERE dedup_key = ?', `cuoi-khoa:${f.a}:${gk}`), 'mốc Final ở Case Giữa khoá phải xoá');
+    assert(get(`SELECT closed_reason FROM case_interventions WHERE case_id = ? AND nhom_bo_tro = ?`, gk, `mt:${f.a}`).closed_reason === 'system_closed', 'PA ở Case Giữa khoá huỷ');
+    lenh.suaLenh(P.mbManager, lenhCua(f.sid).id, { huong: 'len_lop', toClassId: f.dich });
+    const lai = paMt(f.a);
+    assert(lai.length === 2 && mts(f.sid).length === 1, `ra lại: ${chuKy(lai)} · ${mts(f.sid).length}`);
+    /* Đã có Kết quả → huỷ quyết định không huỷ gì. */
+    const iv = lai[0];
+    cases.updateResult(loadPrincipal(iv.performer_user_id), iv.id, { ...KQ, ...d.thanKetQuaTuan({ kind: 'bo_tro_mien_phi', soBuoi: 4 }, '1', null) });
+    lenh.huyLenh(P.mbManager, lenhCua(f.sid).id, 'Đổi ý');
+    assert(paMt(f.a).length === 2 && mts(f.sid).length === 1, `đã có Kết quả mà vẫn huỷ: ${chuKy(paMt(f.a))} · ${mts(f.sid).length}`);
+  });
+
+  check('CT2-9 · FOU 55% lên FT: không sinh sớm; thi hành → bổ trợ ở lộ trình FT như cũ', () => {
+    const nguon = lop('FOU', 9), ft = lop('FT', 1, true);
+    ganGv(nguon, GV[1], 'writing');
+    const e = hocVien(nguon, 'FOU');
+    ra(nguon, e.sid, 'fast_track', ft, { mucTieu: 6 });
+    nhap(e.a, { listening: 18, reading: 18, writing: 10, speaking: 9 });
+    assert(mts(e.sid).length === 0 && paMt(e.a).length === 0, 'FOU → FT sinh sớm');
+    chay(e.sid);
+    const moi = get(`SELECT id, route FROM learning_cycles WHERE student_id = ? AND status = 'active'`, e.sid);
+    const pa = paMt(e.a);
+    assert(moi.route && pa.length === 2 && pa.every((x) => x.cycle_id === moi.id && x.so_buoi === 4), `FT: ${chuKy(pa)} · ${JSON.stringify(moi)}`);
+    assert(pa.some((x) => x.topic === 'writing2' && x.performer_user_id === GV[1]), `Writing 2 giữ GV cũ: ${chuKy(pa)}`);
+    assert(mts(e.sid).length === 1 && mts(e.sid)[0].cycle_id === moi.id, JSON.stringify(mts(e.sid)));
+  });
 }
