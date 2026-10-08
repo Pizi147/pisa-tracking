@@ -6,7 +6,7 @@ import {
   SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, cycleDeadline,
   duongCaseRieng, duongHoSoHocVien, duongLichTest, nhanDotNgan, planDueDate, urgencyFromSos,
   khungCua, laLanGhiCuoi, tenMon, tenMonNgan, tenNhomMon, REGULAR_SKILLS, nhanLoaiXuLy, soSanhLop,
-  type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong } from '../../../shared/domain/index.ts';
+  type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, forbidden } from '../util.ts';
 import { activeAt, bangLop, can, isCoreTeacherOf, loadPrincipal, napTruocPhamVi, scopeFor, teachesClass, type Principal } from '../permissions.ts';
@@ -18,7 +18,7 @@ import { lopChoChotLoTrinh } from '../classes/lenhChuyen.ts';
 import { myMgmtTasks } from './mgmttasks.ts';
 import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, UNCONFIRMED_PRESET, awaitingCauseCaseIds } from '../cases/sosState.ts';
 import { quyenBoTro } from '../cases/boTro.ts';
-import { nguoiGiuMiniTest, tyLeTongLo } from '../normal/cuoiKhoa.ts';
+import { emXetLaiLoTrinh, nguoiGiuMiniTest, tyLeTongLo } from '../normal/cuoiKhoa.ts';
 import { myCoordinationLines } from '../yThuc/phoiHop.ts';
 import { hvLenFtChuaKyVong } from './metrics.ts';
 import { phanCongDangHieuLuc } from './scoreDebt.ts';
@@ -125,7 +125,9 @@ export type WorkGroupKey =
   /* PR-CT (Q30-2): bàn giao khi có quyết định chuyển lớp — một việc mỗi lớp (GVCN), mỗi (lớp, môn) (GVBM). */
   | 'ban_giao'
   /* PR-MT0 (T5b) → PR-LCb: "Chốt lộ trình" — Quản lý xác nhận hướng + lớp chuyển đến cho mọi em lớp thường (khoá giữ tên cũ `chot_len_ft`). */
-  | 'chot_len_ft';
+  | 'chot_len_ft'
+  /* PR-CL (B5): "Xét lại lộ trình" — em đã chuyển lớp cuối khoá mà Final không phù hợp lộ trình đã chốt (một việc mỗi lớp nguồn, Quản lý). */
+  | 'xet_lai_lo_trinh';
 
 /**
  * Mỗi nhóm có MỘT DÒNG nói rõ nhóm đó nghĩa là gì.
@@ -207,6 +209,10 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   chot_len_ft: {
     label: 'Chốt lộ trình',
     hint: 'Quản lý xác nhận hướng và lớp chuyển đến cho mọi em, hạn Chủ nhật trước tuần Final Test. Quá hạn vẫn làm được.',
+  },
+  xet_lai_lo_trinh: {
+    label: 'Xét lại lộ trình',
+    hint: 'Em đã chuyển lớp mà Final Test không phù hợp lộ trình đã chốt (lên mà dưới 50%, học lại mà từ 70%). Chỉ gợi ý xét lại, không bắt buộc đổi.',
   },
   missing_data: {
     label: 'Thiếu dữ liệu đánh giá',
@@ -564,6 +570,21 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       tieuDe: `Chốt lộ trình · ${x.code}`, actionLabel: 'Lộ trình tiếp theo',
       href: `/hoc-vien/lop/${x.classId}?viec=lo-trinh-ca-lop`,
       ownerId: null, owner: null, mine: false, due: x.han, statusLabel: 'Chưa chốt',
+    });
+  }
+
+  // ------------------------------------------------- 2d'. PR-CL (B5): Xét lại lộ trình — một việc mỗi lớp HIỆN TẠI của em (QL chi nhánh lớp đó), không hạn, tự mất (cùng hàm với GET /classes/:id/xet-lai-lo-trinh)
+  for (const x of co('xet_lai_lo_trinh') ? emXetLaiLoTrinh(p, f.branchId ?? null, today) : []) {
+    const ten = x.em.map((e) => `${e.ten} ${chuTyLeXetLai(e.tyLe)}`);
+    items.push({
+      key: `xetlai:${x.lopId}`, group: 'xet_lai_lo_trinh', urgency: 'normal',
+      studentId: null, studentName: `Lớp ${x.code}`, classId: x.lopId, classCode: x.code,
+      attemptId: null, attemptNo: null, caseId: null, level: null,
+      contextLabel: ten.length > 3 ? `${ten.slice(0, 3).join(' · ')} · +${ten.length - 3}` : ten.join(' · '), count: x.em.length,
+      reason: 'Kết quả không phù hợp lộ trình',
+      tieuDe: `Xét lại lộ trình · ${x.code} · ${x.em.length} em`, actionLabel: 'Chuyển lớp…',
+      href: `/hoc-vien/lop/${x.lopId}?viec=xet-lai`,
+      ownerId: null, owner: null, mine: false, due: null, statusLabel: 'Chưa có hạn',
     });
   }
 
@@ -1130,7 +1151,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   if (f.chiNhom) for (let i = items.length - 1; i >= 0; i--) if (!f.chiNhom.has(items[i].group)) items.splice(i, 1);
   const order: WorkGroupKey[] = [
     'cause', 'xac_nhan_pa', 'phoi_hop', 'phoi_hop_sos', 'mini_test', 'score', 'no_plan', 'ghi_ket_qua_pa', 'yt_xu_ly', 'yt_xem', 'yt_thuc_hien', 'khai_bac',
-    'chot_len_ft', 'ky_vong_dau_ra', 'thi_that', 'ban_giao', 'no_owner', 'mgmt', 'missing_data',
+    'chot_len_ft', 'xet_lai_lo_trinh', 'ky_vong_dau_ra', 'thi_that', 'ban_giao', 'no_owner', 'mgmt', 'missing_data',
   ];
   const weight = (u: WorkUrgency) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
 

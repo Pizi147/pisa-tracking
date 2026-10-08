@@ -220,8 +220,11 @@ export async function runPrS5fATests(t: YThucTestKit) {
   });
 
   check('S5F-a (8) · panel Chuyển lớp đọc kỳ vọng đầu ra bằng chuHopKetLuan (không trường ketLuanFt.nhan không tồn tại)', () => {
-    const src = fs.readFileSync(new URL('../../../../web/src/modules/classes/TransitionPanel.tsx', import.meta.url), 'utf8');
-    assert(!/ketLuanFt\.nhan/.test(src) && /chuHopKetLuan\(/.test(src), 'TransitionPanel');
+    /* PR-CL C3: kỳ vọng đầu ra chỉ lớp thường → không còn ở TransitionPanel (lớp FT); hộp Kết luận khoá ở hồ sơ HV vẫn đọc bằng chuHopKetLuan. */
+    const doc = (f: string) => fs.readFileSync(new URL(`../../../../web/src/modules/${f}`, import.meta.url), 'utf8');
+    assert(!/ketLuanFt\.nhan/.test(doc('classes/TransitionPanel.tsx')), 'TransitionPanel');
+    const kl = doc('students/KetLuanKhoa.tsx');
+    assert(!/ketLuanFt\.nhan/.test(kl) && /chuHopKetLuan\(/.test(kl), 'KetLuanKhoa');
   });
 
   check('S5F-a (9) · Quản lý dời Final Test sớm (tuần 6/8): tuần 8 (chặng "running") vẫn có dải Kết thúc khoá + việc QL (PR-LCb: "Chốt lộ trình", quá hạn)', () => {

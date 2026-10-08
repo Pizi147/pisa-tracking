@@ -574,7 +574,9 @@ export async function runPrHvlTests(t: YThucTestKit) {
     const lt = web('modules/students/LoTrinhTiepPanel.tsx');
     assert(/Kết quả gần nhất/.test(lt) && /ketQuaGanNhat\(/.test(lt) && !/luat="Chỉ là dự định/.test(lt) && /Chỉ là dự định, chưa đổi lớp/.test(lt), 'LoTrinhTiepPanel');
     const tp = web('modules/classes/TransitionPanel.tsx');
-    assert(/useLoiForm\(\)/.test(tp) && /lf\.bam\(\)/.test(tp) && /daSua/.test(tp) && /Final Test/.test(tp) && /Kết quả gần nhất/.test(tp) && /ketQuaGanNhat\(/.test(tp), 'TransitionPanel (PR-CT: cột Final Test / Kết quả gần nhất dùng ketQuaGanNhat)');
+    assert(/useLoiForm\(\)/.test(tp) && /lf\.bam\(\)/.test(tp) && /daSua/.test(tp) && /Kết quả gần nhất/.test(tp) && /ketQuaGanNhat\(/.test(tp), 'TransitionPanel (PR-CT: lớp FT cột Kết quả gần nhất dùng ketQuaGanNhat)');
+    /* PR-CL C3: cột Final Test của lớp thường nay ở PanelCuoiKhoa. */
+    assert(/role="columnheader">Final Test</.test(web('modules/classes/PanelCuoiKhoa.tsx')), 'PanelCuoiKhoa: cột Final Test');
     assert(!/disabled=\{coLoi \|\| !data\?\.canEdit\}/.test(tp), 'nút Tiếp tục không được khoá vì lỗi (phải bấm được để hiện lỗi)');
   });
 

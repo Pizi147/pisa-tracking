@@ -1415,6 +1415,19 @@ api.get('/classes/:id/transition', requireAuth, wrap((req) => {
 }));
 
 /**
+ * PR-CL (B6): em của việc "Xét lại lộ trình" ở lớp HIỆN TẠI `:id` (lớp em đang học) — CÙNG hàm với dòng Công việc (cùng tập em). Không 403:
+ * quyền lọc theo `class.edit` lớp đó (GVCN/GVBM → `em: []`). Ghi: web gọi `POST /students/:id/transfer` từng em.
+ */
+api.get('/classes/:id/xet-lai-lo-trinh', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  lenhSvc.quetLenhDenHan();
+  const lop = db().prepare('SELECT id, code FROM classes WHERE id = ?').get(pInt(req, 'id')) as { id: number; code: string } | undefined;
+  if (!lop) throw notFound('Không tìm thấy lớp');
+  const em = cuoiKhoaSvc.emXetLaiLoTrinh(principalOf(req), null, demoToday()).find((x) => x.lopId === lop.id)?.em ?? [];
+  return { lop: { id: lop.id, code: lop.code }, em };
+}));
+
+/**
  * PR-CT (Q30-1): RA LỆNH chuyển lớp (không chuyển ngay) — Quản lý lớp nguồn quyết em nào · lớp chuyển đến · tuần bắt đầu; tới Thứ Hai đó web tự thi hành
  * (`thiHanhLenhDenHan`). GVCN, GVBM → 403.
  */
@@ -1866,7 +1879,7 @@ api.post('/students/:id/transfer', requireAuth, wrap((req) => {
   if (!toClassId) throw badRequest('Cần chọn lớp chuyển đến.');
   /* PR-CT: panel mới gửi thẳng `lyDo` (một ô chữ, không trống — T7); đường lý do chọn nhanh cũ giữ cho phép kiểm và client cũ. */
   const lyDoTuDo = typeof req.body?.lyDo === 'string' ? chuTuDo(req.body.lyDo, 'Lý do chuyển lớp', 2000) ?? '' : '';   // PR-Dọn (Q4, quét #24)
-  if (req.body?.lyDo !== undefined && !lyDoTuDo) throw badRequest('Ghi lý do chuyển lớp.');
+  if (req.body?.lyDo !== undefined && !lyDoTuDo) throw badRequest('Ghi lý do ngắn');   // PR-CL: cùng chữ `kiemDongLenh`
   /* RB-3: lý do chọn nhanh BẮT BUỘC; "Khác" phải ghi rõ ≥ 3 ký tự (T13). */
   if (!lyDoTuDo && laKhac(reasonCode)) {
     const loi = kiemGhiRoKhac(reasonNote);
@@ -1874,16 +1887,26 @@ api.post('/students/:id/transfer', requireAuth, wrap((req) => {
   }
   const reason = lyDoTuDo || transferReasonText(reasonCode, reasonNote);
   if (!reason) throw badRequest('Chọn lý do chuyển lớp (chọn "Khác" thì ghi rõ).');
-  /* PR-CT: em đang học một lớp → RA LỆNH (Quản lý); chỉ em CHƯA TỪNG xếp lớp (xếp lần đầu) mới đi đường cũ. */
+  /*
+   * PR-CT: em đang học một lớp → RA LỆNH (Quản lý); chỉ em CHƯA TỪNG xếp lớp (xếp lần đầu) mới đi đường cũ.
+   * PR-CL (B1): bối cảnh + hướng do máy chủ tính (`huongChuyenMotEm`) — lớp thường đã tới Cuối khoá đi luật Cuối khoá. Lệnh `cho` của em được
+   * SỬA (upsert theo học viên) — panel gọi đường này cả khi sửa lệnh.
+   */
   const sid = pInt(req, 'id');
   const enr = luatLoTrinhSvc.lopHienTaiCua(sid);
   if (enr) {
     const dich = luatLoTrinhSvc.lopDichHopLe(Number(toClassId), enr.class_id);
+    const { boiCanh, huong } = luatLoTrinhSvc.huongChuyenMotEm(enr, dich);
+    /* R-C3 (M3: Target / KCK chỉ khi lệnh cũ và hướng mới đều Lên FT): sửa lệnh `cho` mà không gửi Target / Dự kiến thi → giữ giá trị của lệnh (không ghi đè lặng lẽ bằng Target khoá / trống). */
+    const cu = db().prepare(`SELECT huong, muc_tieu, khong_cam_ket, ngay_thi FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho'`).get(sid) as any;
+    const vang = (v: unknown) => v === undefined || v === null || v === '';
+    const mucTieuGui = vang(mucTieu) && cu?.huong === 'fast_track' && huong === 'fast_track' ? (cu.khong_cam_ket ? 'KCK' : cu.muc_tieu ?? undefined) : mucTieu;
+    const ngayThiGui = vang(req.body?.ngayThi ?? thangThi) && cu ? cu.ngay_thi ?? undefined : req.body?.ngayThi ?? thangThi;
     const r = lenhSvc.raLenh(principalOf(req), {
-      lopNguonId: enr.class_id, boiCanh: 'giua-khoa', tuanChung: req.body?.tuan ?? effectiveDate ?? null,
+      lopNguonId: enr.class_id, boiCanh, tuanChung: req.body?.tuan ?? effectiveDate ?? null,
       dongs: [lenhSvc.dongTuBody({
-        studentId: sid, huong: dich?.is_fast_track && !enr.is_fast_track ? 'fast_track' : 'chuyen_lop', toClassId, lyDo: reason,
-        mucTieu, ngayThi: req.body?.ngayThi ?? thangThi,
+        studentId: sid, huong, toClassId, lyDo: reason,
+        mucTieu: mucTieuGui, ngayThi: ngayThiGui,
       })],
     });
     if (r.failed.length) throw badRequest(r.failed[0].message);

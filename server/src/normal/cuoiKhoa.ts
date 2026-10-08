@@ -1,11 +1,13 @@
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
-  NGUONG_MINI_TEST, PERMISSIONS, REGULAR_SKILLS, caseDedupKey, categoryOf, chuHopKetLuan, coBoTroFinal, chuMonTruot, goiYCuoiKhoa, kyHieuLop, kyNangLopDich, lichBoTro, ngay, tenMon, weeklyUpdateDue,
+  NGUONG_MINI_TEST, PERMISSIONS, REGULAR_SKILLS, caseDedupKey, categoryOf, chuHopKetLuan, coBoTroFinal, khongPhuHopLoTrinh, chuMonTruot, goiYCuoiKhoa, kyHieuLop, kyNangLopDich, lichBoTro, ngay, tenMon, weeklyUpdateDue,
   type BoTroMienPhi, type GoiYCuoiKhoa,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, isCoreTeacherOf, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
+import { nho } from '../platform/nguCanhRequest.ts';
+import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { mondayOf } from '../platform/week.ts';
 import { addMilestone } from '../cases/sos.ts';
@@ -83,6 +85,56 @@ export function chuCuoiKhoaLo(classId: number, sids: readonly number[]): Map<num
     });
     out.set(sid, h.phu ? `${h.chinh} (${h.phu})` : h.chinh);
   }
+  return out;
+}
+
+export type EmXetLai = { studentId: number; ten: string; huong: string; tyLe: number; lopHienTai: { id: number; code: string } };
+/** Gom theo lớp HIỆN TẠI của em (`lopId` = lớp em đang học). */
+export type LopXetLai = { lopId: number; code: string; em: EmXetLai[] };
+
+/**
+ * PR-CL (B5): việc QL "Xét lại lộ trình" — em đã thi hành quyết định CUỐI KHOÁ từ lớp thường (lên lớp / Lên FT / học lại) mà Final mới nhất ở lớp nguồn
+ * "không phù hợp lộ trình" (`khongPhuHopLoTrinh`). Tự hết: em có quyết định mới (chưa huỷ), thôi học, rời lớp chuyển đến, điểm hết lệch, hoặc qua Chủ nhật
+ * tuần 2 ở lớp mới. Việc của QL chi nhánh lớp em ĐANG học (chủ sản phẩm 08/10): quyền `class.edit` ở lớp đó; `branchId` = chi nhánh lớp đó. Gom theo lớp hiện tại. 4 câu cho cả phạm vi (lệnh · Final · 2 câu %),
+ * nhớ trong request (việc + GET panel cùng một tập).
+ */
+export function emXetLaiLoTrinh(p: Principal, branchId: number | null, today: string): LopXetLai[] {
+  return nho(`xet-lai-lo-trinh:${p.userId}:${branchId ?? ''}:${today}`, () => tinhEmXetLai(p, branchId, today));
+}
+
+function tinhEmXetLai(p: Principal, branchId: number | null, today: string): LopXetLai[] {
+  const conn = db();
+  const lenh = (conn.prepare(
+    `SELECT l.student_id, l.huong, l.lop_nguon_id, l.lop_dich_id, cd.code AS dich_code, s.full_name
+       FROM lenh_chuyen_lop l
+       JOIN classes cn ON cn.id = l.lop_nguon_id AND cn.is_fast_track = 0
+       JOIN classes cd ON cd.id = l.lop_dich_id
+       JOIN students s ON s.id = l.student_id AND ${HV_DANG_HOC_SQL('s')}
+       JOIN enrollments e ON e.student_id = l.student_id AND e.class_id = l.lop_dich_id AND e.status = 'active'
+      WHERE l.boi_canh = 'cuoi-khoa' AND l.trang_thai = 'da_chuyen' AND l.huong IN ('len_lop', 'fast_track', 'hoc_lai')
+        AND ? <= date(l.tuan_bat_dau, '+13 day')${branchId ? ' AND cd.branch_id = ?' : ''}
+        AND NOT EXISTS (SELECT 1 FROM lenh_chuyen_lop k WHERE k.student_id = l.student_id AND k.id > l.id AND k.trang_thai != 'huy')`,
+  ).all(today, ...(branchId ? [branchId] : [])) as any[]).filter((l) => can(p, PERMISSIONS.CLASS_EDIT, { classId: l.lop_dich_id }));
+  if (!lenh.length) return [];
+  /* Final mới nhất của em ở LỚP NGUỒN (id lớn nhất). */
+  const nguonCua = new Map(lenh.map((l) => [l.student_id as number, l.lop_nguon_id as number]));
+  const finalCua = new Map<number, number>();
+  theoLo([...nguonCua.keys()], (lo, ph) => {
+    for (const r of conn.prepare(
+      `SELECT student_id, class_id, MAX(id) AS id FROM assessment_attempts
+        WHERE kind = 'final' AND status != 'cancelled' AND student_id IN (${ph}) GROUP BY student_id, class_id`,
+    ).all(...lo) as any[]) if (nguonCua.get(r.student_id) === r.class_id) finalCua.set(r.student_id, r.id);
+  });
+  const tyLe = tyLeTongLo([...finalCua.values()]);
+  const theoLop = new Map<number, LopXetLai>();
+  for (const l of lenh) {
+    const t = tyLe.get(finalCua.get(l.student_id) ?? -1);
+    if (!t?.du || t.tyLe === null || !khongPhuHopLoTrinh(l.huong, t.tyLe)) continue;
+    if (!theoLop.has(l.lop_dich_id)) theoLop.set(l.lop_dich_id, { lopId: l.lop_dich_id, code: l.dich_code, em: [] });
+    theoLop.get(l.lop_dich_id)!.em.push({ studentId: l.student_id, ten: l.full_name, huong: l.huong, tyLe: t.tyLe, lopHienTai: { id: l.lop_dich_id, code: l.dich_code } });
+  }
+  const out = [...theoLop.values()].sort((a, b) => a.code.localeCompare(b.code, 'vi'));
+  for (const g of out) g.em.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
   return out;
 }
 

@@ -168,7 +168,8 @@ export async function runPrK26Tests(t: YThucTestKit) {
       assert(src.includes(chu), `thiếu ${chu}`);
     }
     assert(!/Chưa rõ|Xếp sau/.test(src), 'còn chữ cũ');
-    assert(/s\.loTrinhTiep/.test(nguon('modules/classes/TransitionPanel.tsx')), 'Chuyển tiếp lớp đọc Lộ trình tiếp theo để điền sẵn');
+    /* PR-CL C3: lớp thường chuyển tiếp ở PanelCuoiKhoa (TransitionPanel chỉ lớp FT — FT không có Lộ trình tiếp theo). */
+    assert(/s\.loTrinhTiep/.test(nguon('modules/classes/PanelCuoiKhoa.tsx')), 'Chuyển tiếp lớp đọc Lộ trình tiếp theo để điền sẵn');
   });
 
   // ------------------------------------------------------------------ K26-4 · ghi lộ trình tiếp theo cả lớp
@@ -233,7 +234,7 @@ export async function runPrK26Tests(t: YThucTestKit) {
     assert(dau.includes("nhan: 'Lộ trình tiếp theo…'") && /data\.viewer\.canAddStudents\) \? \[\{ key: 'lo-trinh-ca-lop'/.test(dau) && /<PanelCuoiKhoa/.test(dau), 'mục menu + panel');
     const pn = nguon('modules/classes/PanelCuoiKhoa.tsx');
     assert(pn.includes('details?.studentId') && pn.includes('rong="toan"') && /Lưu \$\{/.test(pn), 'lỗi theo dòng, panel toàn màn, nút Lưu n em');
-    assert(nguon('modules/classes/TransitionPanel.tsx').includes('GVCN đề xuất:'), 'Chuyển tiếp: dòng không điền sẵn được vẫn hiện đề xuất GVCN');
+    assert(pn.includes("`GVCN: ${nhanH(huongGvcn)}`") && pn.includes("'GVCN: chưa đề xuất'"), 'Chuyển tiếp (PanelCuoiKhoa, PR-CL C3): dòng em vẫn hiện đề xuất GVCN');
   });
   /* Sau rà mã: Turso tính mỗi câu một lượt mạng — ghi cả lớp phải đọc + ghi theo lô, không N câu cho N em trong một giao dịch. */
   check('K26-4d · PUT cả lớp: số câu SQL như nhau với 3 em và 32 em; ngày xem lại đã qua, ghi chú quá dài → 400 có studentId', () => {

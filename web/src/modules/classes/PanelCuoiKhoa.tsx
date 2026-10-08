@@ -10,7 +10,7 @@ import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { chayHangLoat, hoanTacHangLoat } from '../students/hangLoatEm.ts';
 import {
-  CHU_CHUYEN_LOP, NORMAL_LADDER, RATIO_PASS_THRESHOLD, chonChuaGui, chonDongGui, chonDongLuu, chonLuuSauXacNhan, coMt0, hanChotLenFt, huongTiepKhaDung, khacGoiY, kiemDongLenh, kyHieuLop, maHocVienNgan,
+  CHU_CHUYEN_LOP, NORMAL_LADDER, RATIO_PASS_THRESHOLD, chonChuaGui, chonDongGui, chonDongLuu, chonLuuSauXacNhan, coMt0, hanChotLenFt, huongTiepKhaDung, khacGoiY, kiemDongLenh, kyHieuLop, maHocVienNgan, phuLopDich,
   ngay, nhanHuongNgan, sauGhiPanel, targetLenFt, tuanLich, xepHuongTheoGoiY,
   type DongLuuCk, type GoiYCuoiKhoa, type Huong, type HuongLenh, type MucTieuLenh, type ProgrammeCode,
 } from '@shared/domain/index.ts';
@@ -114,7 +114,7 @@ export function PanelCuoiKhoa({ classId, onClose, onDone }: { classId: number; o
   const lopHopLe = (h: Huong | ''): Lop[] => candidates.filter((c) =>
     h === 'fast_track' ? c.ft : h === 'len_lop' ? !c.ft && c.programmeCode === maKe : h === 'hoc_lai' ? !c.ft && c.programmeCode === maTu : false);
   const lopTheoId = (id: number | '' | undefined) => (id ? candidates.find((c) => c.id === id) ?? null : null);
-  const phuLop = (c: Lop) => [c.ft ? `FT ${c.route ?? ''}`.trim() : kyHieuLop(c.programmeCode, null), c.branchCode, `${c.studentCount} em`].filter(Boolean).join(' · ');
+  const phuLop = (c: Lop) => phuLopDich({ ft: c.ft, route: c.route, ma: c.programmeCode, branchCode: c.branchCode, siSo: c.studentCount }, true);
   const dsLop = (h: Huong): NguoiTrongDs[] => lopHopLe(h).map((c) => ({ id: c.id, ten: c.code, phu: phuLop(c) }));
   /** Lớp thật của dòng: lớp riêng, không thì lớp hàng nhóm. Lệnh đã có giữ mã lớp máy chủ trả (GVCN không có `candidates`). */
   const lopCua = (d: Dong) => (CAN_LOP.includes(d.huong as Huong) ? (d.lop || nhomLop[d.huong as Huong] || '') : '');

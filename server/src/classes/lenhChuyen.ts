@@ -12,7 +12,7 @@ import { demoToday } from '../demoConfig.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { taoYeuCau } from '../duyet/yeuCau.ts';
 import { applyTransition } from './transition.ts';
-import { apDungMotDong, dongLopNeuHet, lopDichHopLe, nguoiNhanGoiY } from './luatLoTrinh.ts';
+import { apDungMotDong, dongLopNeuHet, huongChuyenMotEm, lopDichHopLe, nguoiNhanGoiY } from './luatLoTrinh.ts';
 import { coTheRaLenh } from './quyenChuyenLop.ts';
 import { classProgressMany, mocKetKhoa } from './schedule.ts';
 import { cuoiKhoaTheoHocVien, dongBoCheTaiFinal } from '../normal/cuoiKhoa.ts';
@@ -786,13 +786,11 @@ export function apDungDeXuatChuyenLop(p: Principal, yc: { id: number; hoc_vien_i
   /*
    * PR-S5F-a (planning chốt): lớp thường đã tới Cuối khoá → hướng CUỐI KHOÁ (lên lớp / học lại / FT) như panel cả lớp, cùng luật lớp chuyển đến.
    * PR-LCa (planning 08/10): từ tuần Final (cùng mốc `tuCuoiKhoa` của raLenh / Chuyển tiếp lớp), không đợi hết khoá — Lên FT duyệt lúc này
-   * đi đường cuối khoá (đồng bộ Lộ trình tiếp theo + MT0).
+   * đi đường cuối khoá (đồng bộ Lộ trình tiếp theo + MT0). PR-CL (B1): MỘT luật với `/transfer` (`huongChuyenMotEm`).
    */
-  const tuCuoiKhoa = !enr.is_fast_track && mocKetKhoa(classProgressMany([enr.class_id]).get(enr.class_id), demoToday()).tuCuoiKhoa;
-  const huong: HuongLenh = dich.is_fast_track && !enr.is_fast_track ? 'fast_track'
-    : !tuCuoiKhoa ? 'chuyen_lop' : dich.programme_code === enr.programme_code ? 'hoc_lai' : 'len_lop';
+  const { boiCanh, huong } = huongChuyenMotEm(enr, dich);
   const r = raLenh(p, {
-    lopNguonId: enr.class_id, boiCanh: tuCuoiKhoa ? 'cuoi-khoa' : 'giua-khoa', tuanChung: null, tuYeuCauId: yc.id,
+    lopNguonId: enr.class_id, boiCanh, tuanChung: null, tuYeuCauId: yc.id,
     dongs: [{
       studentId: yc.hoc_vien_id, huong, toClassId: lopDich,
       tuan: typeof d.tuan === 'string' ? d.tuan : null, mucTieu: soHoacKck(d.mucTieu), ngayThi: typeof d.ngayThi === 'string' ? d.ngayThi : null,
