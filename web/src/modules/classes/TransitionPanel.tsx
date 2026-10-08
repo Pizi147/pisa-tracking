@@ -9,33 +9,30 @@ import { Nhan } from '../../ui/Nhan.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { chayHangLoat, hoanTacHangLoat } from '../students/hangLoatEm.ts';
 import {
-  CHU_CHUYEN_LOP, NORMAL_LADDER, chipSosMt0, chuHopKetLuan, nhanHuongNgan, chuTuanHoc, hanBanGiao, khacGoiY, kiemDongLenh, ketQuaGanNhat, maHocVienNgan, ngay, tomTatLenh, tuanLich,
-  type AssessedSkill, type DongTomTatLenh, type GoiYCuoiKhoa, type HopKetLuanVao, type HuongLenh, type KetQuaVao, type MucTieuLenh, type ProgrammeCode, ATTEMPT_KIND_SHORT } from '@shared/domain/index.ts';
+  CHU_CHUYEN_LOP, chipSosMt0, chuTuanHoc, hanBanGiao, kiemDongLenh, ketQuaGanNhat, maHocVienNgan, ngay, tomTatLenh, tuanLich,
+  type AssessedSkill, type DongTomTatLenh, type HuongLenh, type KetQuaVao, type MucTieuLenh } from '@shared/domain/index.ts';
 import { ClassCreatePanel } from './ClassCreatePanel.tsx';
 
-/** Cách Quản lý chọn trên hàng (mockup 20 — B, I). `doi` = Đổi lộ trình (FT): lớp chuyển đến khác lộ trình, vẫn là `chuyen_lop` (Q3). */
-type Kieu = 'len' | 'ft' | 'lai' | 'bao-luu' | 'dung' | 'chuyen' | 'doi';
+/** Cách Quản lý chọn trên hàng (mockup 20 — I). `doi` = Đổi lộ trình: lớp chuyển đến khác lộ trình, vẫn là `chuyen_lop` (Q3). */
+type Kieu = 'bao-luu' | 'dung' | 'chuyen' | 'doi';
 type Dong = { kieu: Kieu | ''; toClassId: number | 'new' | ''; tuan: string; mucTieu: string; ngayThi: string; lyDo: string; ngayXemLai: string };
 const DONG_TRONG: Dong = { kieu: '', toClassId: '', tuan: '', mucTieu: '', ngayThi: '', lyDo: '', ngayXemLai: '' };
-const HUONG_CUA: Record<Kieu, HuongLenh> = { len: 'len_lop', ft: 'fast_track', lai: 'hoc_lai', 'bao-luu': 'bao_luu', dung: 'dung_hoc', chuyen: 'chuyen_lop', doi: 'chuyen_lop' };
-const canLop = (k: Kieu | '') => k !== '' && k !== 'bao-luu' && k !== 'dung';
-/** Phần Cuối khoá của một em máy chủ trả (`cuoiKhoaTheoHocVien`) — khai chặt để typecheck bắt tên trường sai (PR-S5F-a). */
-type CuoiKhoaEm = { goiY: GoiYCuoiKhoa | null; ketLuanFt: HopKetLuanVao['ketLuanFt'] };
+const HUONG_CUA: Record<Kieu, HuongLenh> = { 'bao-luu': 'bao_luu', dung: 'dung_hoc', chuyen: 'chuyen_lop', doi: 'chuyen_lop' };
+const NHAN_KIEU: Record<Kieu, string> = { chuyen: 'Chuyển lớp FT', doi: 'Đổi lộ trình', 'bao-luu': 'Tạm dừng học (bảo lưu)', dung: 'Dừng học hẳn' };
+const canLop = (k: Kieu | '') => k === 'chuyen' || k === 'doi';
 
-/** Cột lưới: thường 7 cột (có Hệ thống gợi ý), FT 6 cột. Dưới sm mỗi em là một khối xếp dọc (375 px, không cuộn ngang). */
-const LUOI_THUONG = 'lg:grid-cols-[28px_minmax(140px,1.15fr)_minmax(120px,.9fr)_minmax(90px,.7fr)_minmax(330px,2.1fr)_minmax(170px,1.1fr)_minmax(140px,.8fr)]';
-const LUOI_FT = 'lg:grid-cols-[28px_minmax(140px,1.15fr)_minmax(150px,1.1fr)_minmax(330px,2.1fr)_minmax(170px,1.1fr)_minmax(140px,.8fr)]';
+/** Cột lưới 6 cột. Dưới sm mỗi em là một khối xếp dọc (375 px, không cuộn ngang). */
+const LUOI = 'lg:grid-cols-[28px_minmax(140px,1.15fr)_minmax(150px,1.1fr)_minmax(330px,2.1fr)_minmax(170px,1.1fr)_minmax(140px,.8fr)]';
 
-/** Chữ hướng của quyết định chuyển lớp (ô "Huỷ quyết định n em": `Lên FT 2 · Học lại 3`). */
-const TEN_HUONG: Record<string, string> = { len_lop: 'Lên', fast_track: 'Lên FT', hoc_lai: 'Học lại', bao_luu: 'Tạm dừng học (bảo lưu)', dung_hoc: 'Dừng học hẳn', chuyen_lop: 'Chuyển lớp FT' };
+/** Chữ hướng của quyết định chuyển lớp (ô "Huỷ quyết định n em": `Chuyển lớp FT 2 · Dừng học hẳn 1`). */
+const TEN_HUONG: Record<string, string> = { bao_luu: NHAN_KIEU['bao-luu'], dung_hoc: NHAN_KIEU.dung, chuyen_lop: NHAN_KIEU.chuyen };
 
 /**
- * CHUYỂN LỚP CẢ LỚP (PR-CT, §3.1f Q30-1, mockup 20 màn B · C · I) — Quản lý RA LỆNH: em nào · lớp chuyển đến · tuần bắt đầu. Web tự chuyển vào Thứ Hai
- * của tuần đó; tới lúc đó Quản lý sửa / huỷ quyết định được. Lớp thường (hết khoá) và lớp FT (gộp / tách lớp, đổi lộ trình) dùng CHUNG panel (`cheDo`).
+ * CHUYỂN LỚP CẢ LỚP FT (PR-CT, §3.1f Q30-1, mockup 20 màn I) — Quản lý RA LỆNH: em nào · lớp chuyển đến · tuần bắt đầu. Web tự chuyển vào Thứ Hai
+ * của tuần đó; tới lúc đó Quản lý sửa / huỷ quyết định được. Chỉ lớp FT (gộp / tách lớp, đổi lộ trình); lớp thường dùng `PanelCuoiKhoa` (PR-LCb, PR-CL C3).
  *
  * Hai bước: 1 Soạn (mỗi em một hàng với đúng ba quyết định — hướng, lớp chuyển đến, tuần) rồi 2 Xác nhận (tóm tắt bằng câu). "Gửi phần đã quyết
- * trước, quyết nốt sau": em chưa chọn KHÔNG có lệnh. Em thiếu điểm Cuối khoá KHÔNG bị khoá dòng (Q30-4). Lối vào: Hồ sơ lớp → dải "Kết thúc khoá" →
- * `Chuyển tiếp lớp…` (lớp thường) · ⋮ `Chuyển tiếp lớp…` (lớp FT).
+ * trước, quyết nốt sau": em chưa chọn KHÔNG có lệnh. Lối vào: hồ sơ lớp FT → ⋮ `Chuyển tiếp lớp…`.
  */
 export function TransitionPanel({ classId, open, onClose, onDone }: {
   classId: number; open: boolean; onClose: () => void; onDone: () => void;
@@ -62,19 +59,13 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
   const [huyNhieu, setHuyNhieu] = useState<{ lyDo: string } | null>(null);
   const [dangHuy, setDangHuy] = useState(false);
 
-  const ft = data?.cheDo === 'ft';
   const homNay: string = data?.today ?? '';
   const tuanCh = tuanChung || data?.tuanChon?.[0] || '';
   const students: any[] = data?.students ?? [];
-  const maTu = (data?.from?.programmeCode ?? null) as ProgrammeCode | null;
-  const maKe = maTu ? NORMAL_LADDER[maTu] ?? null : null;
   const routeTu: string | null = data?.from?.route ?? null;
 
   const kieuTuLenh = (l: any): Kieu | '' => {
     if (!l) return '';
-    if (l.huong === 'len_lop') return 'len';
-    if (l.huong === 'fast_track') return 'ft';
-    if (l.huong === 'hoc_lai') return 'lai';
     if (l.huong === 'bao_luu') return 'bao-luu';
     if (l.huong === 'dung_hoc') return 'dung';
     const dich = (data?.candidates ?? []).find((c: any) => c.id === l.lopDichId);
@@ -82,23 +73,12 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
   };
   const macDinh = (s: any): Dong => {
     const l = s.lenh;
-    if (!l) return deXuatGvcn(s) ?? DONG_TRONG;
+    if (!l) return DONG_TRONG;
     return {
       /* Tuần đã qua (lệnh chưa chuyển được, PR-S5F-a) → về tuần chung để Quản lý chọn tuần mới. */
       kieu: kieuTuLenh(l), toClassId: l.lopDichId ?? '', tuan: l.tuan === tuanCh || (!!homNay && l.tuan <= homNay) ? '' : l.tuan, mucTieu: l.mucTieu == null ? '' : String(l.mucTieu),
       ngayThi: l.ngayThi ?? '', lyDo: l.lyDo ?? '', ngayXemLai: l.ngayXemLai ?? '',
     };
-  };
-  /**
-   * PR-K26: em chưa có lệnh mà GVCN đã ghi Lộ trình tiếp theo Lên/Học lại/Lên FT (gồm đề xuất của em 50–59%) → điền sẵn hướng + lớp dự kiến.
-   * CHỈ điền khi dòng hợp lệ ngay (đủ lớp chuyển đến, Target…) — dòng thiếu để trống như cũ, không chặn nút gửi.
-   */
-  const deXuatGvcn = (s: any): Dong | null => {
-    const lt = s.loTrinhTiep;
-    const kieu: Kieu | '' = ft || !lt ? '' : lt.huong === 'len_lop' ? 'len' : lt.huong === 'hoc_lai' ? 'lai' : lt.huong === 'fast_track' ? 'ft' : '';
-    if (!kieu || !lt.lopDuKienId) return null;
-    const d: Dong = { ...DONG_TRONG, kieu, toClassId: lt.lopDuKienId, mucTieu: lt.mucTieu == null ? '' : String(lt.mucTieu), ngayThi: lt.thangThi ?? '' };
-    return lopHopLe(kieu).some((c: any) => c.id === lt.lopDuKienId) && !kiemTra(s, d) ? d : null;
   };
   const dongCua = (s: any): Dong => ({ ...macDinh(s), ...(dongs[s.id] ?? {}) });
   const sua = (sid: number, p: Partial<Dong>) => {
@@ -110,9 +90,6 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
 
   /** Lớp chuyển đến hợp lệ theo cách chọn — cùng luật máy chủ (`kiemDongChuyenTiep`), máy chủ vẫn kiểm lại. */
   const lopHopLe = (k: Kieu | ''): any[] => (data?.candidates ?? []).filter((c: any) => {
-    if (k === 'len') return !c.ft && c.programmeCode === maKe;
-    if (k === 'lai') return !c.ft && c.programmeCode === maTu;
-    if (k === 'ft') return c.ft;
     if (k === 'chuyen') return c.ft;
     if (k === 'doi') return c.ft && (!routeTu || c.route !== routeTu);
     return false;
@@ -121,16 +98,17 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
 
   const dichCua = (d: Dong) => (typeof d.toClassId === 'number' ? (data?.candidates ?? []).find((c: any) => c.id === d.toClassId) ?? null : null);
   const mucTieuCua = (d: Dong): MucTieuLenh | null => (d.mucTieu.trim().toUpperCase() === 'KCK' ? 'KCK' : d.mucTieu.trim() === '' ? null : Number(d.mucTieu));
-  const kiemTra = (s: any, d: Dong): string | null => {
+  /* Lớp FT không có Final Test → không có gợi ý Cuối khoá (`khacGoiY` false); máy chủ vẫn kiểm lại. */
+  const kiemTra = (d: Dong): string | null => {
     if (!d.kieu) return null;
     const dich = dichCua(d);
     return kiemDongLenh({
-      huong: HUONG_CUA[d.kieu], lopDichId: dich?.id ?? null, lopDichFt: !!dich?.ft, nguonFt: ft, tuan: d.tuan || tuanCh, homNay,
-      lyDo: d.lyDo || null, khacGoiY: khacGoiY(HUONG_CUA[d.kieu], (s.cuoiKhoa as CuoiKhoaEm | null)?.goiY), mucTieu: mucTieuCua(d), ngayXemLai: d.ngayXemLai || null,
+      huong: HUONG_CUA[d.kieu], lopDichId: dich?.id ?? null, lopDichFt: !!dich?.ft, nguonFt: true, tuan: d.tuan || tuanCh, homNay,
+      lyDo: d.lyDo || null, khacGoiY: false, mucTieu: mucTieuCua(d), ngayXemLai: d.ngayXemLai || null,
     });
   };
 
-  const rows = students.map((s) => { const d = dongCua(s); return { s, d, loi: kiemTra(s, d), coLenh: !!s.lenh }; });
+  const rows = students.map((s) => { const d = dongCua(s); return { s, d, loi: kiemTra(d), coLenh: !!s.lenh }; });
   const quyet = rows.filter((r) => r.d.kieu);
   const chua = rows.length - quyet.length;
   const coLoi = quyet.some((r) => r.loi);
@@ -222,7 +200,7 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
     const m = new Map<string, number>();
     for (const r of quyet) {
       const c = dichCua(r.d);
-      const t = ({ len: 'Lên', ft: 'Lên FT', lai: 'Học lại', 'bao-luu': 'Tạm dừng học (bảo lưu)', dung: 'Dừng học hẳn', chuyen: 'Chuyển lớp FT', doi: 'Đổi lộ trình' } as const)[r.d.kieu as Kieu];
+      const t = NHAN_KIEU[r.d.kieu as Kieu];
       const k = c ? `${t} · ${c.code}` : t;
       m.set(k, (m.get(k) ?? 0) + 1);
     }
@@ -231,7 +209,6 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
   }, [dongs, data]);
 
   const tieuDe = data ? `Chuyển lớp · ${data.from.code} · ${students.length} em` : 'Chuyển lớp';
-  const luoi = ft ? LUOI_FT : LUOI_THUONG;
   const cotTieuDe = 'hidden gap-3 border-b px-3 py-2 text-[11px] font-extrabold uppercase tracking-[.06em] text-slate-500 lg:grid';
 
   return (
@@ -290,11 +267,8 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
               <div className="surface-2 flex flex-wrap items-center gap-2 rounded-lg px-3 py-2" role="group" aria-label="Chọn nhiều em">
                 <span className="text-xs font-semibold text-slate-200 tabular-nums">{chon.size} em đang chọn</span>
                 <div className="flex flex-wrap gap-1.5">
-                  {(ft
-                    ? [['chuyen', 'Chuyển lớp FT'], ['doi', 'Đổi lộ trình'], ['bao-luu', 'Tạm dừng học (bảo lưu)'], ['dung', 'Dừng học hẳn']]
-                    : [...(maKe ? [['len', `Lên ${maKe}`]] : []), ['ft', 'Lên FT'], ['lai', 'Học lại'], ['bao-luu', 'Tạm dừng học (bảo lưu)'], ['dung', 'Dừng học hẳn']]
-                  ).map(([k, nhan]) => (
-                    <NutChon key={k} nho chon={bulk.kieu === k} onClick={() => setBulk({ kieu: k as Kieu, toClassId: '' })}>{nhan}</NutChon>
+                  {(Object.entries(NHAN_KIEU) as [Kieu, string][]).map(([k, nhan]) => (
+                    <NutChon key={k} nho chon={bulk.kieu === k} onClick={() => setBulk({ kieu: k, toClassId: '' })}>{nhan}</NutChon>
                   ))}
                 </div>
                 {canLop(bulk.kieu) && (
@@ -326,20 +300,19 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
             )}
 
             <div className="surface-2 rounded-lg" role="table" aria-label="Học viên của lớp">
-              <div role="row" className={`${cotTieuDe} ${luoi}`}>
+              <div role="row" className={`${cotTieuDe} ${LUOI}`}>
                 <span role="columnheader"><input type="checkbox" aria-label="Chọn cả lớp" disabled={!data.canEdit}
                   checked={chon.size > 0 && chon.size === students.length}
                   onChange={(e) => setChon(e.target.checked ? new Set(students.map((s) => s.id)) : new Set())} /></span>
                 <span role="columnheader">Học viên</span>
-                <span role="columnheader">{ft ? 'Kết quả gần nhất' : ATTEMPT_KIND_SHORT.final}</span>
-                {!ft && <span role="columnheader">Hệ thống gợi ý</span>}
+                <span role="columnheader">Kết quả gần nhất</span>
                 <span role="columnheader">Quản lý quyết định</span>
                 <span role="columnheader">Lớp chuyển đến</span>
                 <span role="columnheader">Tuần bắt đầu</span>
               </div>
               <div className="divide-y" style={{ borderColor: 'var(--line)' }}>
                 {rows.map(({ s, d, loi }) => (
-                  <HangEm key={s.id} s={s} d={d} ft={ft} tuDeXuat={!s.lenh && !dongs[s.id] && !!d.kieu} luoi={luoi} maKe={maKe} routeTu={routeTu} tuanCh={tuanCh} homNay={homNay}
+                  <HangEm key={s.id} s={s} d={d} tuanCh={tuanCh} homNay={homNay}
                     loi={hienLoi(s.id) ? loi : null} loiMayChu={loiMayChu[s.id] ?? null} oId={lf.oId(`dong-${s.id}`)} khoa={!data.canEdit}
                     chon={chon.has(s.id)} onChon={(v) => setChon((x) => { const n = new Set(x); if (v) n.add(s.id); else n.delete(s.id); return n; })}
                     sua={(p) => sua(s.id, p)} lopHopLe={lopHopLe} nhanLop={nhanLop} data={data}
@@ -376,27 +349,18 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
   );
 }
 
-function HangEm({ s, d, ft, tuDeXuat, luoi, maKe, routeTu, tuanCh, homNay, loi, loiMayChu, oId, khoa, chon, onChon, sua, lopHopLe, nhanLop, data, huy, moHuy, doiLyDoHuy, dongHuy, xacNhanHuy }: {
-  s: any; d: Dong; ft: boolean; tuDeXuat: boolean; luoi: string; maKe: ProgrammeCode | null; routeTu: string | null; tuanCh: string; homNay: string;
+function HangEm({ s, d, tuanCh, homNay, loi, loiMayChu, oId, khoa, chon, onChon, sua, lopHopLe, nhanLop, data, huy, moHuy, doiLyDoHuy, dongHuy, xacNhanHuy }: {
+  s: any; d: Dong; tuanCh: string; homNay: string;
   loi: string | null; loiMayChu: string | null; oId: string; khoa: boolean; chon: boolean; onChon: (v: boolean) => void;
   sua: (p: Partial<Dong>) => void; lopHopLe: (k: Kieu | '') => any[]; nhanLop: (c: any) => string; data: any;
   huy: { sid: number; lyDo: string } | null; moHuy: () => void; doiLyDoHuy: (v: string) => void; dongHuy: () => void; xacNhanHuy: () => void;
 }) {
   const k = ketQuaGanNhat(s.ketQua as KetQuaVao | null);
-  const ck = (s.cuoiKhoa ?? null) as CuoiKhoaEm | null;
-  /* Kỳ vọng đầu ra BE/ELE: CÙNG hàm chữ với hộp Kết luận khoá ở hồ sơ HV. */
-  const kyVong = ck?.ketLuanFt ? chuHopKetLuan({ ct: data?.from?.programmeCode ?? null, tyLe: null, scored: 0, required: 0, mon: [], goiY: null, quyetDinh: null, ketLuanFt: ck.ketLuanFt }).kyVong : null;
-  const ketQua = s.ketQua as KetQuaVao | null;
-  const thieuDiem = !ft && !!ketQua && ketQua.mode === 'ratio' && ketQua.scored < ketQua.required;
   const lenh = s.lenh;
   const loiHang = loi ?? loiMayChu ?? (lenh?.loi ? `Chưa chuyển được: ${String(lenh.loi).replace(/\.$/, '')} — chọn tuần/lớp chuyển đến mới rồi gửi, hoặc huỷ quyết định.` : null);
   const chonKieu = (kieu: Kieu | '') => sua({ kieu, toClassId: kieu === d.kieu ? d.toClassId : '' });
-  const nutKieu: [Kieu, string][] = ft
-    ? [['chuyen', 'Chuyển lớp FT'], ['doi', 'Đổi lộ trình']]
-    : [...(maKe ? [['len', `Lên ${maKe}`] as [Kieu, string]] : []), ['ft', 'Lên FT'], ['lai', 'Học lại']];
+  const nutKieu: Kieu[] = ['chuyen', 'doi'];
   const khac = d.kieu === 'bao-luu' || d.kieu === 'dung';
-  /* PR-UXF-a (K2-25): chọn khác Hệ thống gợi ý → bắt ghi lý do (máy chủ cũng tự kiểm). */
-  const lechGoiY = khacGoiY(d.kieu ? HUONG_CUA[d.kieu] : null, ck?.goiY);
   const nhan = 'text-xs text-slate-500 lg:hidden';
   const dsLop = lopHopLe(d.kieu);
   const tuanRieng = d.tuan && d.tuan !== tuanCh;
@@ -404,7 +368,7 @@ function HangEm({ s, d, ft, tuDeXuat, luoi, maKe, routeTu, tuanCh, homNay, loi, 
   const [doiTuan, setDoiTuan] = useState(false);
 
   return (
-    <div role="row" className={`grid gap-x-3 gap-y-2 px-3 py-2.5 text-sm ${luoi} ${chon ? 'bg-ink-800/60' : ''}`}>
+    <div role="row" className={`grid gap-x-3 gap-y-2 px-3 py-2.5 text-sm ${LUOI} ${chon ? 'bg-ink-800/60' : ''}`}>
       <span role="cell" className="flex items-start pt-1">
         <input type="checkbox" aria-label={`Chọn ${s.fullName}`} checked={chon} disabled={khoa} onChange={(e) => onChon(e.target.checked)} />
       </span>
@@ -412,31 +376,20 @@ function HangEm({ s, d, ft, tuDeXuat, luoi, maKe, routeTu, tuanCh, homNay, loi, 
         <span className="block truncate text-slate-100" title={s.fullName}>{s.fullName}</span>
         <span className="block text-[11px] tabular-nums text-slate-500">{maHocVienNgan(s.studentCode)}</span>
         {/* PR-UXF-a (mockup 20 màn I): em FT "LT1 · tuần học 9" — không mẫu số (FT không giới hạn tuần). */}
-        {ft && s.tuanHoc && <span className="block text-xs text-slate-500">{[s.route, chuTuanHoc(s.tuanHoc.tuan, s.tuanHoc.tong, s.tuanHoc.dangDung)].filter(Boolean).join(' · ')}</span>}
+        {s.tuanHoc && <span className="block text-xs text-slate-500">{[s.route, chuTuanHoc(s.tuanHoc.tuan, s.tuanHoc.tong, s.tuanHoc.dangDung)].filter(Boolean).join(' · ')}</span>}
       </span>
       <span role="cell" className="min-w-0">
-        <span className={nhan}>{ft ? 'Kết quả gần nhất' : ATTEMPT_KIND_SHORT.final}</span>
+        <span className={nhan}>Kết quả gần nhất</span>
         <span className="block" title={k.dong1 ?? undefined}>
-          {thieuDiem ? <span className="text-slate-500">—</span> : <span className="font-bold tabular-nums text-slate-100">{k.chinh}</span>}
-          {!thieuDiem && k.lech && <span className="ml-1.5 text-xs font-semibold tabular-nums text-bad">{k.lech}</span>}
-          {!thieuDiem && k.dong2 && <span className="block text-[12px] leading-4 text-slate-500">{k.dong2}</span>}
-          {thieuDiem && <span className="block text-[12px] leading-4 text-slate-500">Chưa đủ điểm · cập nhật sau</span>}
+          <span className="font-bold tabular-nums text-slate-100">{k.chinh}</span>
+          {k.lech && <span className="ml-1.5 text-xs font-semibold tabular-nums text-bad">{k.lech}</span>}
+          {k.dong2 && <span className="block text-[12px] leading-4 text-slate-500">{k.dong2}</span>}
         </span>
-        <OMt0 mt0={s.mt0} />
       </span>
-      {!ft && (
-        <span role="cell" className="min-w-0">
-          <span className={nhan}>Hệ thống gợi ý</span>
-          {/* PR-S5F-a (mockup 20): ghi HƯỚNG ("Lên BE", "Học lại FOU"); 50–59% chỉ chip "Quản lý cân nhắc" — không "→ Pass". */}
-          {!ck?.goiY ? <span className="text-slate-500" title="Gợi ý theo luật Final Test sẽ hiện khi có điểm">—</span>
-            : ck.goiY.canQuanLy ? <Nhan tone="soon" title={ck.goiY.nhan}>Quản lý cân nhắc</Nhan>
-            : <span className="block text-xs text-slate-300" title={ck.goiY.nhan}>{ck.goiY.nhanHuong}</span>}
-        </span>
-      )}
       <span role="cell" className="min-w-0">
         <span className={nhan}>Quản lý quyết định</span>
         <span id={oId} tabIndex={-1} aria-invalid={!!loi} className="flex flex-wrap items-center gap-1 outline-none">
-          {nutKieu.map(([kk, nh]) => <NutChon key={kk} nho chon={d.kieu === kk} disabled={khoa} onClick={() => chonKieu(d.kieu === kk ? '' : kk)}>{nh}</NutChon>)}
+          {nutKieu.map((kk) => <NutChon key={kk} nho chon={d.kieu === kk} disabled={khoa} onClick={() => chonKieu(d.kieu === kk ? '' : kk)}>{NHAN_KIEU[kk]}</NutChon>)}
           <select className={`field !h-8 !w-auto !py-0 text-xs ${khac ? '!border-teal-600' : ''}`} aria-label={`Khác cho ${s.fullName}`} disabled={khoa}
             value={khac ? d.kieu : ''} onChange={(e) => chonKieu((e.target.value || '') as Kieu | '')}>
             <option value="">Khác ▾</option>
@@ -444,11 +397,7 @@ function HangEm({ s, d, ft, tuDeXuat, luoi, maKe, routeTu, tuanCh, homNay, loi, 
             <option value="dung">Dừng học hẳn</option>
           </select>
         </span>
-        {/* PR-K26: dòng chưa điền sẵn được (thiếu lớp dự kiến…) vẫn cho Quản lý thấy GVCN đề xuất gì — chỉ chữ, không chọn hộ. */}
-        {!d.kieu && (s.loTrinhTiep
-          ? <span className="mt-1 block text-xs text-slate-400">Chưa chọn · GVCN đề xuất: {nhanHuongNgan(s.loTrinhTiep.huong, { ma: data?.from?.programmeCode ?? null, maKe, ngayXemLai: s.loTrinhTiep.ngayXemLai })}</span>
-          : <span className="mt-1 block text-xs text-slate-500">Chưa chọn</span>)}
-        {tuDeXuat && <span className="mt-1 block text-xs text-slate-400">Điền sẵn theo Lộ trình tiếp theo GVCN ghi</span>}
+        {!d.kieu && <span className="mt-1 block text-xs text-slate-500">Chưa chọn</span>}
       </span>
       <span role="cell" className="min-w-0">
         <span className={nhan}>Lớp chuyển đến</span>
@@ -477,29 +426,11 @@ function HangEm({ s, d, ft, tuDeXuat, luoi, maKe, routeTu, tuanCh, homNay, loi, 
         ) : <span className="text-slate-500">—</span>}
       </span>
 
-      {d.kieu === 'ft' && (
-        <div className="flex flex-wrap items-end gap-3 lg:col-start-2 lg:col-end-[-1]">
-          <label className="block">
-            <span className="mb-0.5 block text-xs text-slate-500">Target</span>
-            <span className="flex items-center gap-1">
-              <input className="field w-20 tabular-nums" inputMode="decimal" placeholder="6.0" aria-label={`Target của ${s.fullName}`} value={d.mucTieu === 'KCK' ? '' : d.mucTieu}
-                disabled={khoa || d.mucTieu === 'KCK'} onChange={(e) => sua({ mucTieu: e.target.value })} />
-              <NutChon nho chon={d.mucTieu === 'KCK'} disabled={khoa} title="Không cam kết — không tính SOS" onClick={() => sua({ mucTieu: d.mucTieu === 'KCK' ? '' : 'KCK' })}>KCK</NutChon>
-            </span>
-          </label>
-          <span className="block w-36">
-            <span className="mb-0.5 block text-xs text-slate-500">Dự kiến thi</span>
-            <ONgay kieu="thang" value={d.ngayThi} onChange={(v) => sua({ ngayThi: v })} ariaLabel={`Dự kiến thi của ${s.fullName}`} />
-          </span>
-          <span className="pb-1 text-xs text-slate-500">Lộ trình theo lớp chuyển đến</span>
-        </div>
-      )}
-      {(d.kieu === 'bao-luu' || d.kieu === 'dung' || d.kieu === 'chuyen' || d.kieu === 'doi' || lechGoiY) && (
+      {d.kieu && (
         <div className="flex flex-wrap items-end gap-3 lg:col-start-2 lg:col-end-[-1]">
           <label className="block min-w-[14rem] flex-1">
             <span className="mb-0.5 block text-xs text-slate-500">
               Lý do <span className="text-bad">*</span>
-              {lechGoiY && <span className="ml-1.5 text-[12px] text-slate-400">khác Hệ thống gợi ý</span>}
             </span>
             <input className="field w-full" aria-label={`Lý do của ${s.fullName}`} value={d.lyDo} disabled={khoa} onChange={(e) => sua({ lyDo: e.target.value })} />
           </label>
@@ -511,14 +442,6 @@ function HangEm({ s, d, ft, tuDeXuat, luoi, maKe, routeTu, tuanCh, homNay, loi, 
           )}
           {d.kieu === 'doi' && <span className="pb-1 text-xs text-slate-400">LT ↔ RF = mở lộ trình mới, MT đánh lại từ MT1</span>}
         </div>
-      )}
-      {thieuDiem && d.kieu && (
-        <p className="m-0 text-[12px] text-slate-400 lg:col-start-2 lg:col-end-[-1]">Vẫn chuyển đúng tuần. Khi có điểm, web áp luật Final Test ở lớp mới (bổ trợ, Mini Test nếu cần).</p>
-      )}
-      {!ft && d.kieu === 'ft' && kyVong && (
-        <p className="m-0 text-[12px] text-slate-400 lg:col-start-2 lg:col-end-[-1]">
-          Kỳ vọng đầu ra: {kyVong.trangThai} · <a className="link" href={`/hoc-vien/${s.id}`}>Mở hồ sơ</a>
-        </p>
       )}
       {loiHang && <p role="alert" className="m-0 text-[12px] text-late lg:col-start-2 lg:col-end-[-1]">{loiHang}</p>}
       {lenh && !khoa && (

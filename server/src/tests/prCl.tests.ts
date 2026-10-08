@@ -575,5 +575,9 @@ export async function runPrClTests(t: YThucTestKit) {
     assert(/viec === 'xet-lai'|'xet-lai'/.test(doc('web/src/modules/classes/ClassOverviewPage.tsx')), 'ClassOverviewPage chưa mở ?viec=xet-lai');
     const ck = doc('web/src/modules/classes/PanelCuoiKhoa.tsx');
     assert(/phuLopDich\(/.test(ck), 'PanelCuoiKhoa chưa dùng phuLopDich');
+    /* C3 (T4): lớp thường dùng PanelCuoiKhoa — TransitionPanel chỉ còn lớp FT; OTuan, OMt0 vẫn export cho PanelCuoiKhoa / ChuyenLopPanel. */
+    const tp = doc('web/src/modules/classes/TransitionPanel.tsx');
+    assert(!/cheDo|LUOI_THUONG|NORMAL_LADDER|deXuatGvcn|loTrinhTiep|Hệ thống gợi ý|Dự kiến thi|kieu="thang"|chuHopKetLuan|'Lên FT'|ATTEMPT_KIND_SHORT|[^.\w]ft \?|!ft\b/.test(tp), 'TransitionPanel còn nhánh lớp thường');
+    assert(/export function OTuan/.test(tp) && /export function OMt0/.test(tp) && /'Chuyển lớp FT'/.test(tp) && /'Đổi lộ trình'/.test(tp), 'TransitionPanel FT: thiếu OTuan / OMt0 / hai hướng FT');
   });
 }
