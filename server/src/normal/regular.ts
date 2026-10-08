@@ -789,7 +789,7 @@ export function refreshRegularOutcome(p: Principal, attemptId: number) {
    * PR-CT2 (§8): em CÒN học lớp đó → đồng bộ bổ trợ Final theo điểm + quyết định đang chờ (sinh sớm / huỷ phần chưa ai đụng).
    */
   if (a.kind === 'final' && a.class_id) {
-    dongBoCheTaiFinal(p, a.class_id, [a.student_id]);
+    if (r.complete || conn.prepare('SELECT 1 FROM mini_test WHERE tu_attempt_id = ?').get(a.id)) dongBoCheTaiFinal(p, a.class_id, [a.student_id]);
     if (r.complete) capNhatCuoiKhoaSauChuyen(p, a);
   }
   return r;

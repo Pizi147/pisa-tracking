@@ -10,7 +10,7 @@ import { writeAudit } from '../platform/audit.ts';
 import { mondayOf } from '../platform/week.ts';
 import { addMilestone } from '../cases/sos.ts';
 import { dongBoTrangThaiCase } from '../cases/sosState.ts';
-import { chuyenCaseSangLoTrinh, closeCasesBySystem } from '../cases/systemClose.ts';
+import { chuyenCaseSangLoTrinh, dongCaseHeThongLo } from '../cases/systemClose.ts';
 import { suggestCaseOwner } from '../cases/owner.ts';
 import { chenPa, type DongPa } from '../cases/taoPa.ts';
 import { nguoiGiuKetQua } from '../cases/giuKetQua.ts';
@@ -361,7 +361,7 @@ function taoBoTroFinal(p: Principal, dongs: readonly DongBoTroFinal[]): void {
       o.push({ x, mon, skill, category: categoryOf(skill) ?? skill, batDau, lich, phanTram });
     }
     mtRows.push([x.sid, x.cycleId, x.luot.id, `mt:${x.luot.id}`, b.soBuoi, lich.ngayMiniTest, lich.hanMiniTest]);
-    nhatKy.push([x.sid, x.cycleId, 'intervention', x.ngay, `Final Test ${phanTram}% — bổ trợ miễn phí ${b.soBuoi} buổi · Mini Test hạn ${ngay(lich.hanMiniTest, x.ngay)}`, p.userId, nowIso()]);
+    nhatKy.push([x.sid, x.cycleId, 'intervention', x.ngay, `Final Test ${phanTram}% — bổ trợ miễn phí ${b.soBuoi} buổi · Mini Test hạn ${ngay(lich.hanMiniTest, x.ngay)}`, p.userId, nowIso(), `bo-tro-final:${x.sid}:${x.luot.id}`]);
     for (const g of chuNhiem.get(x.toClassId) ?? []) {
       thongBao.push([g, 'bo_tro_mien_phi', 'Mang theo PA Bổ trợ miễn phí', `Final Test ${phanTram}% — Mini Test hạn ${ngay(lich.hanMiniTest, x.ngay)}.`, 'student', x.sid, `bo-tro-mien-phi:${x.luot.id}:${g}`, nowIso(), null]);
     }
@@ -419,7 +419,9 @@ function taoBoTroFinal(p: Principal, dongs: readonly DongBoTroFinal[]): void {
   chenNhieuDong('INSERT OR IGNORE INTO mini_test (student_id, cycle_id, tu_attempt_id, nhom_bo_tro, so_buoi, ngay_du_kien, han)', mtRows);
   chenNhieuDong('INSERT INTO notifications (user_id, kind, title, body, entity_type, entity_id, dedup_key, created_at, duong)', thongBao,
     ' ON CONFLICT(user_id, dedup_key) DO UPDATE SET title = excluded.title, body = excluded.body');
-  chenNhieuDong('INSERT INTO journey_events (student_id, cycle_id, event_type, event_date, title, created_by, created_at)', nhatKy);
+  /* PR-CT2: khoá (em, lượt) — huỷ thì xoá, sinh lại thì một dòng với nội dung mới. */
+  chenNhieuDong('INSERT INTO journey_events (student_id, cycle_id, event_type, event_date, title, created_by, created_at, dedup_key)', nhatKy,
+    ' ON CONFLICT(dedup_key) WHERE dedup_key IS NOT NULL DO NOTHING');
   writeAudit({ actorUserId: p.userId, action: 'cuoi_khoa.bo_tro_tao', entityType: 'class', entityId: dongs[0].fromClassId, after: { hocVien: emCoBoTro, soPa: paRows.length, soCaseMoi: caseMoi.length } });
 }
 
@@ -434,14 +436,14 @@ function taoBoTroFinal(p: Principal, dongs: readonly DongBoTroFinal[]): void {
 export function dongBoCheTaiFinal(p: Principal, classId: number, sids?: readonly number[]): void {
   if (sids && !sids.length) return;
   const conn = db();
-  /* Em đang học lớp × bài Final mới nhất, lộ trình của bài còn chạy. */
+  /* Em đang học lớp × bài Final mới nhất ĐÃ ĐỦ điểm (`done`) hoặc đã có Mini Test, lộ trình của bài còn chạy — không ai thì dừng sau một câu. */
   const em = new Map<number, { a: number; attemptNo: number; cyc: number }>();
   const doc = (loc: string, args: readonly unknown[]) => {
     for (const r of conn.prepare(
       `SELECT a.id, a.student_id, a.attempt_no, a.cycle_id FROM assessment_attempts a
          JOIN enrollments e ON e.student_id = a.student_id AND e.class_id = a.class_id AND e.status = 'active'
          JOIN learning_cycles lc ON lc.id = a.cycle_id AND lc.status = 'active'
-        WHERE a.class_id = ? AND a.kind = 'final' AND a.status != 'cancelled'${loc} ORDER BY a.id`,
+        WHERE a.class_id = ? AND a.kind = 'final' AND a.status != 'cancelled' AND (a.status = 'done' OR EXISTS (SELECT 1 FROM mini_test m WHERE m.tu_attempt_id = a.id))${loc} ORDER BY a.id`,
     ).all(classId, ...args) as any[]) em.set(r.student_id, { a: r.id, attemptNo: r.attempt_no, cyc: r.cycle_id });
   };
   if (sids) theoLo([...new Set(sids)], (lo, ph) => doc(` AND a.student_id IN (${ph})`, lo), THAM_SO_TOI_DA - 1);
@@ -482,35 +484,45 @@ export function dongBoCheTaiFinal(p: Principal, classId: number, sids?: readonly
     } else if (!can && m && m.ty_le === null && !m.dung && (du || !l)) huy.push(m);
   }
   taoBoTroFinal(p, sinh);
-  huyBoTroFinal(p, huy, homNay);
+  huyBoTroFinal(p, classId, huy, homNay);
 }
 
 /**
- * PR-CT2 (§8, Quyết định 4): huỷ bổ trợ Final CHƯA AI ĐỤNG (nơi gọi đã lọc). Case do lần sinh này mở (mốc `opened`) và không còn PA sống khác → hệ thống
- * đóng ("Đổi quyết định lộ trình"); Case khác nhận PA (Giữa khoá) → chỉ huỷ PA nhóm + xoá mốc Final. Xoá Mini Test + chuông "Mang theo". Trong tx nơi gọi.
+ * PR-CT2 (§8, Quyết định 4): huỷ bổ trợ Final CHƯA AI ĐỤNG (nơi gọi đã lọc) — THEO LÔ, số câu cố định mỗi lô (Turso ≤ 200 câu mỗi lần ghi).
+ * Case do lần sinh này mở (mốc `opened`) và không còn PA sống khác → hệ thống đóng ("Đổi quyết định lộ trình", `dongCaseHeThongLo`); Case khác nhận PA
+ * (Giữa khoá) → chỉ huỷ PA nhóm + xoá mốc Final `repeat`; Case do lần sinh mở mà còn PA sống khác → huỷ PA nhóm, GIỮ mốc `opened`.
+ * Xoá Mini Test, chuông "Mang theo", dòng Hành trình của lần sinh. Trong tx nơi gọi.
  */
-function huyBoTroFinal(p: Principal, mts: readonly { id: number; student_id: number; tu_attempt_id: number; nhom_bo_tro: string }[], homNay: string): void {
+function huyBoTroFinal(p: Principal, classId: number, mts: readonly { id: number; student_id: number; tu_attempt_id: number; nhom_bo_tro: string }[], homNay: string): void {
+  if (!mts.length) return;
   const conn = db();
-  for (const m of mts) {   // ponytail: từng em — chỉ chạy khi Quản lý đổi / huỷ quyết định hoặc sửa điểm hết bổ trợ (vài em mỗi lần); theo lô nếu có đường hàng loạt
-    const cs = conn.prepare(
-      `SELECT DISTINCT iv.case_id AS id,
-              EXISTS (SELECT 1 FROM case_milestones mm WHERE mm.case_id = iv.case_id AND mm.kind = 'opened' AND mm.dedup_key = 'cuoi-khoa:' || ? || ':' || iv.case_id) AS mo,
-              EXISTS (SELECT 1 FROM case_interventions k WHERE k.case_id = iv.case_id AND k.status IN ('planned', 'started') AND COALESCE(k.nhom_bo_tro, '') != ?) AS khac
-         FROM case_interventions iv WHERE iv.nhom_bo_tro = ? AND iv.status = 'started'`,
-    ).all(String(m.tu_attempt_id), m.nhom_bo_tro, m.nhom_bo_tro) as any[];   // chuỗi: số JS ghép vào khoá mốc thành '12.0'
-    const dong = cs.filter((c) => c.mo && !c.khac).map((c) => c.id as number);
-    if (dong.length) closeCasesBySystem({ actorUserId: p.userId, studentId: m.student_id, reason: 'doi_quyet_dinh', on: homNay, caseIds: dong });
-    conn.prepare(`UPDATE case_interventions SET status = 'cancelled', closed_reason = 'system_closed', updated_at = ? WHERE nhom_bo_tro = ? AND status = 'started'`)
-      .run(nowIso(), m.nhom_bo_tro);
-    for (const c of cs) {
-      if (dong.includes(c.id)) continue;
-      conn.prepare('DELETE FROM case_milestones WHERE dedup_key = ?').run(`cuoi-khoa:${m.tu_attempt_id}:${c.id}`);
-      dongBoTrangThaiCase(c.id);
-    }
-    conn.prepare('DELETE FROM mini_test WHERE id = ?').run(m.id);
-    conn.prepare(`DELETE FROM notifications WHERE kind = 'bo_tro_mien_phi' AND dedup_key LIKE ?`).run(`bo-tro-mien-phi:${m.tu_attempt_id}:%`);
-    writeAudit({ actorUserId: p.userId, action: 'cuoi_khoa.bo_tro_huy', entityType: 'student', entityId: m.student_id, after: { miniTestId: m.id, nhom: m.nhom_bo_tro, caseDong: dong } });
-  }
+  const nhom = mts.map((m) => m.nhom_bo_tro);
+  const cs: { id: number; nhom: string; mo: number; khac: number }[] = [];
+  theoLo(nhom, (lo, ph) => {
+    cs.push(...conn.prepare(
+      `SELECT DISTINCT iv.case_id AS id, iv.nhom_bo_tro AS nhom,
+              EXISTS (SELECT 1 FROM case_milestones mm WHERE mm.case_id = iv.case_id AND mm.kind = 'opened'
+                        AND mm.dedup_key = 'cuoi-khoa:' || substr(iv.nhom_bo_tro, 4) || ':' || iv.case_id) AS mo,
+              EXISTS (SELECT 1 FROM case_interventions k WHERE k.case_id = iv.case_id AND k.status IN ('planned', 'started') AND COALESCE(k.nhom_bo_tro, '') != iv.nhom_bo_tro) AS khac
+         FROM case_interventions iv WHERE iv.nhom_bo_tro IN (${ph}) AND iv.status = 'started'`,
+    ).all(...lo) as any[]);
+  });
+  const dong = dongCaseHeThongLo({ actorUserId: p.userId, reason: 'doi_quyet_dinh', on: homNay, caseIds: cs.filter((c) => c.mo && !c.khac).map((c) => c.id) });
+  theoLo(nhom, (lo, ph) => {
+    conn.prepare(`UPDATE case_interventions SET status = 'cancelled', closed_reason = 'system_closed', updated_at = ? WHERE nhom_bo_tro IN (${ph}) AND status = 'started'`)
+      .run(nowIso(), ...lo);
+    conn.prepare(`DELETE FROM notifications WHERE kind = 'bo_tro_mien_phi' AND (${lo.map(() => 'dedup_key LIKE ?').join(' OR ')})`)
+      .run(...lo.map((n) => `bo-tro-mien-phi:${n.slice(3)}:%`));
+  }, 900 - 1);
+  const giu = cs.filter((c) => !c.mo);   // Case Giữa khoá nhận PA: mốc `repeat` của lần sinh
+  theoLo(giu.map((c) => `cuoi-khoa:${c.nhom.slice(3)}:${c.id}`), (lo, ph) => { conn.prepare(`DELETE FROM case_milestones WHERE dedup_key IN (${ph})`).run(...lo); });
+  for (const id of new Set(cs.filter((c) => !dong.includes(c.id)).map((c) => c.id))) dongBoTrangThaiCase(id);   // ponytail: từng Case còn mở (hiếm — Case Giữa khoá / có PA khác); theo lô nếu đo thấy nặng
+  theoLo(mts.map((m) => m.id), (lo, ph) => { conn.prepare(`DELETE FROM mini_test WHERE id IN (${ph})`).run(...lo); });
+  theoLo(mts.map((m) => `bo-tro-final:${m.student_id}:${m.tu_attempt_id}`), (lo, ph) => { conn.prepare(`DELETE FROM journey_events WHERE dedup_key IN (${ph})`).run(...lo); });
+  writeAudit({
+    actorUserId: p.userId, action: 'cuoi_khoa.bo_tro_huy', entityType: 'class', entityId: classId,
+    after: { hocVien: mts.map((m) => m.student_id), miniTest: mts.map((m) => m.id), caseDong: dong },
+  });
 }
 
 /**
@@ -575,14 +587,14 @@ export function ghiMiniTestTrongTx(conn: any, p: Principal, mt: any, x: { tyLe: 
     for (const id of cases) hoanThanhCaseMiniTest(conn, id, p, `Mini Test ${phanTram}% ≥ 70%`, x.ngay);
     chotYeuCau(conn, { loai: 'bao_len_mini_test', doiTuongLoai: 'mini_test', doiTuongId: mt.id }, 'tu_dong', { lyDo: 'Mini Test đã đạt' });
   } else if (cases.length) {
-    const chu = conn.prepare(
-      `SELECT iv.performer_user_id p FROM case_interventions iv WHERE iv.nhom_bo_tro = ? AND iv.performer_user_id IS NOT NULL ORDER BY iv.id LIMIT 1`,
-    ).get(mt.nhom_bo_tro) as any;
     const lopId = (conn.prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1`).get(mt.student_id) as any)?.class_id ?? null;
+    /* PR-CT2 (§8): thẻ về người giữ việc Ghi Mini Test (GVCN lớp đang học; không có → chủ Case), không về Người dạy (GV cũ). */
+    const owner = (conn.prepare(`SELECT MIN(sc.owner_user_id) AS o FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE iv.nhom_bo_tro = ?`).get(mt.nhom_bo_tro) as any)?.o ?? null;
+    const chu = nguoiGiuMiniTest([{ id: mt.id, nhom: mt.nhom_bo_tro, lop: lopId, owner }]).get(mt.id) ?? null;
     const lyDo = `Mini Test ${phanTram}% chưa đạt (cần từ 70%) — Quản lý xử lý từng trường hợp`;
     taoYeuCau(conn, {
       loai: 'bao_len_mini_test', doiTuongLoai: 'mini_test', doiTuongId: mt.id, hocVienId: mt.student_id, lopId, nguoiXin: null, hanDuyet: null, lyDo,
-      duLieu: { viecKey: `minitest:${mt.id}`, ownerId: chu?.p ?? null, lyDo, tyLe: x.tyLe },
+      duLieu: { viecKey: `minitest:${mt.id}`, ownerId: chu, lyDo, tyLe: x.tyLe },
     });
   }
   writeAudit({ actorUserId: p.userId, action: 'cuoi_khoa.mini_test', entityType: 'student', entityId: mt.student_id, after: { miniTestId: mt.id, tyLe: x.tyLe, ngay: x.ngay, dat } });

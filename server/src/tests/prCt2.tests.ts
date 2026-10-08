@@ -294,6 +294,12 @@ export async function runPrCt2Tests(t: YThucTestKit) {
     const giu = nguoiGiuKetQua(pa.map((x) => ({ id: x.id, topic: x.topic, nhomBoTro: x.nhom_bo_tro, classId: f.dich, ownerUserId: x.owner_user_id })), THU_HAI);
     assert(pa.every((x) => giu.get(x.id) === GV[3]), `người giữ Kết quả: ${JSON.stringify([...giu])}`);
     assert(ck.emConMiniTest([f.sid]).get(f.sid)?.gv === GV[3], `người giữ Ghi Mini Test: ${JSON.stringify(ck.emConMiniTest([f.sid]).get(f.sid))}`);
+    /* Mini Test 58% → thẻ Báo QL về người giữ việc (GVCN lớp mới), không về Người dạy (GV cũ). */
+    const cu = getConfig('demo_date');
+    setConfig('demo_date', m[0].ngay_du_kien);
+    try { ck.ghiMiniTest(loadPrincipal(GV[3]), m[0].id, { tyLe: 58, ngay: m[0].ngay_du_kien }); } finally { setConfig('demo_date', cu); }
+    const the = get(`SELECT du_lieu FROM yeu_cau_duyet WHERE loai = 'bao_len_mini_test' AND doi_tuong_id = ?`, m[0].id);
+    assert(the && JSON.parse(the.du_lieu).ownerId === GV[3], `thẻ Báo QL: ${the?.du_lieu}`);
   });
 
   check('CT2-7 · BE/ELE → FT: không Case / PA / Mini Test theo Final, cả lúc đủ điểm lẫn lúc thi hành; BE 60% lên ELE → có', () => {
@@ -339,11 +345,34 @@ export async function runPrCt2Tests(t: YThucTestKit) {
     lenh.suaLenh(P.mbManager, lenhCua(f.sid).id, { huong: 'len_lop', toClassId: f.dich });
     const lai = paMt(f.a);
     assert(lai.length === 2 && mts(f.sid).length === 1, `ra lại: ${chuKy(lai)} · ${mts(f.sid).length}`);
+    const hanh = all(`SELECT title FROM journey_events WHERE student_id = ? AND title LIKE 'Final Test%bổ trợ miễn phí%'`, f.sid);
+    assert(hanh.length === 1 && hanh[0].title.includes(d.ngay(mts(f.sid)[0].han, TODAY)), `Hành trình sau ra lại: ${JSON.stringify(hanh)}`);
     /* Đã có Kết quả → huỷ quyết định không huỷ gì. */
     const iv = lai[0];
     cases.updateResult(loadPrincipal(iv.performer_user_id), iv.id, { ...KQ, ...d.thanKetQuaTuan({ kind: 'bo_tro_mien_phi', soBuoi: 4 }, '1', null) });
     lenh.huyLenh(P.mbManager, lenhCua(f.sid).id, 'Đổi ý');
     assert(paMt(f.a).length === 2 && mts(f.sid).length === 1, `đã có Kết quả mà vẫn huỷ: ${chuKy(paMt(f.a))} · ${mts(f.sid).length}`);
+
+    /* Sửa điểm thành Pass sau khi sinh (chưa ai đụng) → tự huỷ. */
+    const g = dungFou();
+    ra(g.nguon, g.sid, 'len_lop', g.dich);
+    nhap(g.a, { listening: 18, reading: 18, writing: 10, speaking: 9 });
+    assert(mts(g.sid).length === 1, 'sinh trước khi sửa');
+    nhap(g.a, { writing: 18, speaking: 18 });   // 72% Pass
+    assert(mts(g.sid).length === 0 && paMt(g.a).length === 0, `sửa thành Pass: ${mts(g.sid).length} · ${chuKy(paMt(g.a))}`);
+
+    /* Huỷ quyết định → huỷ; khôi phục → sinh lại; Mini Test đã ghi → huỷ quyết định không huỷ gì. */
+    const h = dungFou();
+    ra(h.nguon, h.sid, 'len_lop', h.dich);
+    nhap(h.a, { listening: 18, reading: 18, writing: 10, speaking: 9 });
+    const idL = lenhCua(h.sid).id;
+    lenh.huyLenh(P.mbManager, idL, 'Đổi ý');
+    assert(mts(h.sid).length === 0 && paMt(h.a).length === 0, 'huỷ quyết định');
+    const kp = lenh.khoiPhucLenh(P.mbManager, [idL]);
+    assert(kp.ok.length === 1 && mts(h.sid).length === 1 && paMt(h.a).length === 2, `khôi phục: ${JSON.stringify(kp)} · ${mts(h.sid).length}`);
+    conn.prepare('UPDATE mini_test SET ty_le = 0.8, ngay_lam = ? WHERE student_id = ?').run(TODAY, h.sid);   // Mini Test đã ghi
+    lenh.huyLenh(P.mbManager, idL, 'Đổi ý lần hai');
+    assert(mts(h.sid).length === 1 && paMt(h.a).length === 2, `Mini Test đã ghi mà vẫn huỷ: ${mts(h.sid).length} · ${chuKy(paMt(h.a))}`);
   });
 
   check('CT2-9 · FOU 55% lên FT: không sinh sớm; thi hành → bổ trợ ở lộ trình FT như cũ', () => {

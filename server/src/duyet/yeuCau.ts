@@ -598,14 +598,18 @@ export function nhacNhieu(p: Principal, ids: unknown) {
 
 /**
  * PR-NV: thẻ Báo QL KHÔNG có dòng ở `myWork` của người nhận — Cuối khoá dời quá hạn (`cuoi_khoa:{bài}`), Mini Test chưa đạt
- * (đã ghi điểm nên dòng "Ghi Mini Test" đã hết). Người nhận phải CÒN phụ trách: GVCN đang hiệu lực của lớp thẻ / người dạy bổ
- * trợ của nhóm Mini Test. Một câu mỗi loại, theo lô.
+ * (đã ghi điểm nên dòng "Ghi Mini Test" đã hết). Người nhận phải CÒN phụ trách: GVCN đang hiệu lực của lớp thẻ / người giữ việc Ghi Mini Test
+ * (PR-CT2: GVCN lớp em đang học hoặc chủ Case của nhóm). Một câu mỗi loại, theo lô.
  */
 const KIEM_NGUOI_NGOAI: Record<string, string> = {
   bao_len_cuoi_khoa: `SELECT y.id FROM yeu_cau_duyet y WHERE y.id IN (?) AND EXISTS (SELECT 1 FROM teacher_assignments ta
       WHERE ta.class_id = y.lop_id AND ta.user_id = CAST(json_extract(y.du_lieu, '$.ownerId') AS INTEGER) AND ta.is_core = 1 AND ta.status = 'active')`,
-  bao_len_mini_test: `SELECT y.id FROM yeu_cau_duyet y WHERE y.id IN (?) AND EXISTS (SELECT 1 FROM mini_test m JOIN case_interventions iv ON iv.nhom_bo_tro = m.nhom_bo_tro
-      WHERE m.id = y.doi_tuong_id AND iv.performer_user_id = CAST(json_extract(y.du_lieu, '$.ownerId') AS INTEGER))`,
+  /* PR-CT2 (§8): người nhận = người giữ việc Ghi Mini Test (`nguoiGiuMiniTest`) — GVCN đang hiệu lực của lớp em ĐANG học, hoặc chủ Case của nhóm. */
+  bao_len_mini_test: `SELECT y.id FROM yeu_cau_duyet y JOIN mini_test m ON m.id = y.doi_tuong_id WHERE y.id IN (?) AND (
+      EXISTS (SELECT 1 FROM enrollments e JOIN teacher_assignments ta ON ta.class_id = e.class_id WHERE e.student_id = m.student_id AND e.status = 'active'
+                AND ta.user_id = CAST(json_extract(y.du_lieu, '$.ownerId') AS INTEGER) AND ta.is_core = 1 AND ta.status = 'active')
+      OR EXISTS (SELECT 1 FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
+                  WHERE iv.nhom_bo_tro = m.nhom_bo_tro AND sc.owner_user_id = CAST(json_extract(y.du_lieu, '$.ownerId') AS INTEGER)))`,
 };
 function napDongNgoai(conn: any, p: Principal, rows: YeuCauRow[], homNay: string): Map<number, DongNhac | HttpError> {
   const con = new Set<number>();
