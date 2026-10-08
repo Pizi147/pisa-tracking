@@ -523,7 +523,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     const cnt = doc('web/src/modules/cases/CapNhatTuan.tsx');
     /* PR-PA (§8): Thêm PA / Thay PA dùng một form PA — gợi ý mô tả ở FormPa. */
     assert(/<FormPa/.test(doc(f4[0])) && /<FormPa/.test(cnt) && /GOI_Y_MO_TA_PA/.test(doc(f4[4])) && /GOI_Y_MO_TA_PA/.test(doc(f4[2])), 'thiếu gợi ý mô tả PA');
-    assert(/GOI_Y_KET_QUA_PA/.test(cnt) && /quyetDinhChoPa/.test(cnt) && /Ghi kết quả cuối/.test(cnt) && !/ChonTuan/.test(cnt), 'Ghi kết quả chưa theo v4');
+    assert(/GOI_Y_KET_QUA_PA/.test(cnt) && /quyetDinhChoPa/.test(cnt) && /'Kết quả cuối'/.test(cnt) && !/ChonTuan/.test(cnt), 'Ghi kết quả chưa theo v4');
     assert(!/useState<string>\('improved'\)/.test(doc(f4[0])), 'Hoàn thành còn chọn sẵn');
     assert(/Ghi một PA đã làm trước đây/.test(doc(f4[0])) && /PA theo quy chế vẫn chạy — PA này là hỗ trợ thêm\./.test(doc(f4[0])), 'Thêm PA thiếu chữ K3-18');
     const qr = doc(f4[2]);

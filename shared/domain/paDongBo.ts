@@ -45,6 +45,37 @@ export function demBuoi(daDay: number, tong: number): { da: number; tong: number
   return { da: daDay, tong, con: Math.max(0, tong - daDay), tt: daDay < tong ? 'chua' : daDay === tong ? 'du' : 'vuot' };
 }
 
+// ------------------------------------------------------------------ Kết quả tuần (web: GhiKetQuaPanel — khối đếm buổi, mockup §7)
+
+/** Số buổi tuần này đã gõ: hợp lệ → số; trống / sai → 0 (khối đếm vẫn vẽ, lỗi nói riêng). */
+const soTuan = (tuan: string): number => (kiemSoBuoiTuan(tuan) ? 0 : soBuoiTu(tuan)!);
+
+/** "Đã dạy 3/10 → sau khi lưu 5/10 · còn 5 | đủ buổi | vượt n buổi": `truoc` = đã dạy, phần còn lại = `demBuoi` SAU khi lưu. */
+export function demSauKetQua(daDay: number, tong: number, tuan: string) {
+  const sau = demBuoi(daDay + soTuan(tuan), tong);
+  return { ...sau, truoc: daDay, vuot: Math.max(0, sau.da - tong) };
+}
+
+/** Lỗi khối đếm: Số buổi tuần này (PA có Số buổi, 0–60) · Người dạy tuần này (Tự học không có; bắt buộc khi PA có Số buổi và ≥ 1). */
+export function loiKetQuaTuan(pa: { kind: string; soBuoi?: number | null }, tuan: string, nguoi: NguoiChon | null): LoiTruong[] {
+  const coDem = pa.soBuoi != null;
+  const loi: LoiTruong[] = [];
+  const sb = coDem ? kiemSoBuoiTuan(tuan) : null;
+  if (sb) loi.push({ khoa: 'so-buoi-tuan', nhan: 'Số buổi tuần này', lyDo: sb });
+  const n = coDem ? soTuan(tuan) : 0;
+  const ng = coNguoiDay(pa.kind) ? nguoiThieu(nguoi, n >= 1) : null;
+  if (ng) loi.push({ khoa: 'nguoi-day', nhan: 'Người dạy tuần này', lyDo: nguoi ? ng : `Dạy ${n} buổi — ghi ai dạy` });
+  return loi;
+}
+
+/** Phần thân `POST /interventions/:id/result` của khối đếm: `soBuoi` chỉ khi PA có Số buổi; `nguoiDay` chỉ khi loại có người. */
+export function thanKetQuaTuan(pa: { kind: string; soBuoi?: number | null }, tuan: string, nguoi: NguoiChon | null) {
+  return {
+    ...(pa.soBuoi != null ? { soBuoi: soBuoiTu(tuan) } : {}),
+    ...(coNguoiDay(pa.kind) ? { nguoiDay: nguoiThanhPayload(nguoi) } : {}),
+  };
+}
+
 // ------------------------------------------------------------------ form PA (web: FormPa — Thêm · Sửa · Thay · Xác nhận PA)
 
 /** Giá trị form PA. Số buổi giữ dạng chữ người gõ; Tên đề xuất chỉ với PA "Khác". */
@@ -60,6 +91,9 @@ export function nguoiCuaPa(pa: { performerUserId?: number | null; performer?: st
   if (pa.performer) return { kieu: 'ngoai', ten: pa.performer };
   return null;
 }
+/** Giá trị form của PA hiện có (Sửa PA, Điều chỉnh trong Kết quả). */
+export const giaTriCuaPa = (pa: { kind: string; description?: string | null; soBuoi?: number | null; performerUserId?: number | null; performer?: string | null }): GiaTriPa =>
+  ({ kind: pa.kind, description: pa.description ?? '', soBuoi: pa.soBuoi == null ? '' : String(pa.soBuoi), nguoi: nguoiCuaPa(pa), ghiRo: '' });
 export function khacNguoi(a: NguoiChon | null, b: NguoiChon | null): boolean {
   if (!a || !b) return a !== b;
   if (a.kieu !== b.kieu) return true;

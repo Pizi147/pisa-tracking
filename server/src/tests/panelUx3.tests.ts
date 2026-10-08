@@ -89,7 +89,7 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
       assert(d.PLAN_DECISION_NGHIA[k].length <= 45, `nghĩa ${k} dài ${d.PLAN_DECISION_NGHIA[k].length}`);
       assert(!/^Hãy/.test(d.PLAN_DECISION_NGHIA[k]), `nghĩa ${k} mở bằng "Hãy"`);
     }
-    assert(d.PLAN_DECISION_NGAN.ask_manager === 'Xin hỗ trợ QL' && d.NUT_LUU_KET_QUA.keep === 'Ghi kết quả', 'chữ chốt');
+    assert(d.PLAN_DECISION_NGAN.ask_manager === 'Xin hỗ trợ QL' && d.NUT_LUU_KET_QUA.keep === 'Lưu kết quả', 'chữ chốt');
   });
 
   check('UX3 (1) · viecTiepCuaEm: động từ + đối tượng, hạn tách riêng; không còn "Cập nhật"/"Xác định nguyên nhân"', () => {
@@ -284,7 +284,8 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     const sai: string[] = [];
     for (const f of PANEL_UX3) {
       for (const m of docSach(f).matchAll(/placeholder="([^"]*)"/g)) {
-        if (!/^(Ví dụ: .{1,45}|Gõ .*|Chọn .*|Tìm .*|Chi tiết nếu cần)$/.test(m[1])) sai.push(`${f}: "${m[1]}"`);
+        /* PR-PA (§8): ô người của mẫu PA (FormPa, Người dạy tuần này) — chữ mockup pa-dong-bo. */
+        if (!/^(Ví dụ: .{1,45}|Gõ .*|Chọn .*|Tìm .*|Chi tiết nếu cần|Chưa chọn · gõ tên để tìm)$/.test(m[1])) sai.push(`${f}: "${m[1]}"`);
       }
     }
     assert(sai.length === 0, `Placeholder sai luật:\n    ${sai.join('\n    ')}`);
@@ -388,11 +389,11 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     assert(/viecTiep/.test(m![0]), 'viecTiepHang phải dùng việc tiếp v4 (hạn từ actionDue ở máy chủ)');
   });
 
-  check('UX3 (4) · Ghi kết quả: không gửi người thực hiện khi không đổi (payload adjust chỉ có trường đã đổi)', () => {
+  check('UX3 (4) · Kết quả: Điều chỉnh chỉ gửi ô đã đổi (thanSuaPa — cùng luật Sửa PA, kiểm hành vi ở PA14 / PA17); không còn ô ngày', () => {
     const src = docSach('web/src/modules/cases/CapNhatTuan.tsx');
-    assert(/nguoiDoi \? nguoiThanhPayload\(nguoi\) : \{\}/.test(src), 'adjust phải chỉ gửi người khi đổi');
-    /* PR-SOS (Q28-4): Điều chỉnh không còn ô ngày — chỉ mô tả + người. */
-    assert(/description: descChanged \? desc : undefined/.test(src) && !/followupDue/.test(src), 'adjust gửi cả trường không đổi / còn ngày kết thúc');
+    assert(/thanSuaPa\(dc, gocDc/.test(src) && /body\.adjust = thanDc/.test(src), 'adjust phải gửi thanSuaPa (chỉ ô đã đổi)');
+    /* PR-SOS (Q28-4): Điều chỉnh không còn ô ngày. */
+    assert(!/followupDue/.test(src), 'adjust còn ngày kết thúc');
   });
 
   check('UX3 (7) · Ý thức: câu nhắc dùng CÙNG MỘT hàm ở ba nơi (không câu viết tay có ⚠ ở web)', () => {

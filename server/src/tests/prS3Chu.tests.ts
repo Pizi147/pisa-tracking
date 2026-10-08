@@ -176,7 +176,8 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
     ['+ Công việc', /\+ Công việc(?! con)/],
     ['Dời lịch / Lùi lịch', /Lùi lịch thi|Dời lịch một kỹ năng|Đổi tuần thi kỹ năng|Ghi vắng thi|Huỷ lượt (MT|Test)|Bỏ khỏi đợt/],
     ['Tiếp tục theo dõi / Hoàn thành case', /Tiếp tục theo dõi|Hoàn thành case/],
-    ['Chọn tuần…', /Chọn tuần…|Tuần khác…|xoá điểm|Lưu kết quả/],
+    /* PR-PA (§8, mockup pa-dong-bo §7): nút lưu panel Kết quả là "Lưu kết quả" — bỏ khỏi danh sách cấm (D-047 cũ). */
+    ['Chọn tuần…', /Chọn tuần…|Tuần khác…|xoá điểm/],
   ], KY_THUAT);
   check('S3 (4) · "Thêm PA" so khớp theo hằng CHU_THEM_PA (không so chuỗi hiển thị); KhungPanel / ConfirmDialog mặc định "Đóng"', () => {
     assert(/CHU_THEM_PA/.test(docNguon('server/src/students/viecHocVien.ts')) && /CHU_THEM_PA/.test(docNguon('web/src/modules/cases/QuickReport.tsx')) && /CHU_THEM_PA/.test(docNguon('shared/domain/sosV4.ts')), 'hằng CHU_THEM_PA');

@@ -11,7 +11,7 @@ import {
 } from '@shared/domain/index.ts';
 
 /**
- * MỘT FORM PA (PR-PA §8, mockup pa-dong-bo mục 3–6) — Thêm PA · Sửa PA · Thay PA · Xác nhận PA dùng chung khối này:
+ * MỘT FORM PA (PR-PA §8, mockup pa-dong-bo mục 3–7) — Thêm PA · Sửa PA · Thay PA · Xác nhận PA · Điều chỉnh dùng chung khối này:
  * "Phương án" (Loại · Nội dung · Số buổi) + "Người và thời gian" (Người dạy / Người thực hiện · Ngày bắt đầu do nơi gọi đưa vào).
  * Ô hiện theo Loại (`coSoBuoi`, `coNguoiDay`, `nhanNguoiDay`); đổi Loại giữ chữ Nội dung. Không có ô Người theo dõi.
  * Luật thuần (giá trị, lỗi, thân gửi) ở `shared/domain/paDongBo.ts`: `paMoi`, `loiFormPa`, `paPayload`, `thanSuaPa`.
@@ -22,7 +22,7 @@ const tenLoai = (k: string) => INTERVENTION_KIND_LABEL[k as keyof typeof INTERVE
 export function FormPa({ v, dat, lf, loi, chonLoai, quyChe, toiThieu = 8, daDay = 0, ngay, luat, cuoi, phang, studentId, tienTo = '' }: {
   v: GiaTriPa; dat: (p: Partial<GiaTriPa>) => void;
   lf: ReturnType<typeof useLoiForm>; loi: readonly LoiTruong[];
-  /** Thêm PA / Thay PA: chọn Loại. Không có = Loại khoá (Sửa PA, Xác nhận PA). */
+  /** Thêm PA / Thay PA: chọn Loại. Không có = Loại khoá (Sửa PA, Xác nhận PA); `phang` mà không chọn Loại (Điều chỉnh) = không có ô Loại. */
   chonLoai?: boolean;
   /** PA theo quy chế (khoá có chữ "theo quy chế"; không có Thay PA nên phụ nói mốc). */
   quyChe?: { mocChu: string | null } | null;
@@ -33,7 +33,7 @@ export function FormPa({ v, dat, lf, loi, chonLoai, quyChe, toiThieu = 8, daDay 
   ngay?: ReactNode;
   /** ⓘ của khối Phương án · dòng cuối khối Người và thời gian. */
   luat?: ReactNode; cuoi?: ReactNode;
-  /** Trong khối con (Thay PA): không chia khối. */
+  /** Trong khối con (Thay PA, Điều chỉnh): không chia khối. */
   phang?: boolean;
   studentId?: number | null;
   /** Khoá ô lỗi riêng (cùng `tienTo` của `loiFormPa`) khi form nằm trong panel khác — Thay PA trong Kết quả: 'moi-'. */
@@ -61,7 +61,7 @@ export function FormPa({ v, dat, lf, loi, chonLoai, quyChe, toiThieu = 8, daDay 
       <OKhac hien={v.kind === 'other_proposal'} value={v.ghiRo} onChange={(x) => dat({ ghiRo: x })} nhan="Tên đề xuất" goiY="Ví dụ: Học kèm 1-1 với Tutor"
         id={lf.oId(k('ghi-ro'))} onBlur={lf.roi(k('ghi-ro'))} loi={lf.hien(k('ghi-ro')) ? kiemGhiRoKhac(v.ghiRo) : null} />
     </div>
-  ) : (
+  ) : phang ? null : (
     <Truong nhan="Loại PA" as="div"
       phu={quyChe ? (quyChe.mocChu ? `Kết thúc theo quy chế: ${quyChe.mocChu}` : undefined) : 'Đổi loại: Kết quả › Thay PA'}>
       <div className="field flex w-full cursor-not-allowed items-center gap-2" aria-disabled>
@@ -114,6 +114,16 @@ export function NgayKhoa({ chu, phu }: { chu: string; phu?: string }) {
         <span className="ml-auto inline-flex shrink-0 text-slate-500"><KhoaNho /></span>
       </div>
     </Truong>
+  );
+}
+
+/** Vạch buổi 120 × 6 (mockup `.vach`): chưa đủ màu nhấn · đủ xanh · vượt cam. Chữ bên cạnh đã nói số, nên vạch ẩn với trình đọc. */
+export function VachBuoi({ da, tong, tt }: { da: number; tong: number; tt: 'chua' | 'du' | 'vuot' }) {
+  const mau = tt === 'du' ? 'bg-ok' : tt === 'vuot' ? 'bg-late' : 'bg-[color:var(--accent)]';
+  return (
+    <span aria-hidden className="relative block h-1.5 w-[120px] shrink-0 overflow-hidden rounded-full" style={{ background: 'var(--line-strong)' }}>
+      <i className={`absolute inset-y-0 left-0 rounded-full ${mau}`} style={{ width: `${Math.min(100, Math.round((da / tong) * 100))}%` }} />
+    </span>
   );
 }
 

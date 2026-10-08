@@ -560,4 +560,35 @@ export async function runPrPaTests(t: YThucTestKit) {
     const tayKhongNguoi = d.nhatKyPa({ id: 9, kind: 'tutor', performer: null, recordedBy: 'Lê Minh Khoa', createdAt: '2026-10-01T03:00:00Z' }, [], TODAY);
     assert(tayKhongNguoi.length === 1 && tayKhongNguoi[0].ai === 'Lê Minh Khoa' && tayKhongNguoi[0].chu === 'Tạo "Học Tutor" · người dạy trống', JSON.stringify(tayKhongNguoi));
   });
+
+  check('PA17 · Kết quả (luật thuần web): đếm sau khi lưu còn / đủ / vượt; lỗi + thân khối đếm; Số buổi 0 không người dạy lưu được; Điều chỉnh xoá Người dạy', () => {
+    const k = (a: number, b: number, tuan: string) => { const x = d.demSauKetQua(a, b, tuan); return `${x.truoc}>${x.da}/${x.tong}·${x.con}·${x.tt}·${x.vuot}`; };
+    assert(k(3, 10, '2') === '3>5/10·5·chua·0' && k(8, 10, '2') === '8>10/10·0·du·0' && k(10, 10, '1') === '10>11/10·0·vuot·1'
+      && k(3, 10, '') === '3>3/10·7·chua·0' && k(3, 10, 'x') === '3>3/10·7·chua·0', 'demSauKetQua');
+    const tutor = { kind: 'tutor', soBuoi: 10 };
+    const khoa = (pa: any, tuan: string, ng: any) => d.loiKetQuaTuan(pa, tuan, ng).map((l: any) => `${l.khoa}:${l.lyDo}`).join('|');
+    assert(khoa(tutor, '2', null) === 'nguoi-day:Dạy 2 buổi — ghi ai dạy' && khoa(tutor, '0', null) === '' && khoa(tutor, '', null) === 'so-buoi-tuan:Từ 0 đến 60 buổi'
+      && khoa(tutor, '1', { kieu: 'ngoai', ten: 'A' }).startsWith('nguoi-day:Gõ tên') && khoa({ kind: 'tutor', soBuoi: null }, '', null) === ''
+      && khoa({ kind: 'self_study', soBuoi: 8 }, '2', null) === '', `loiKetQuaTuan: ${khoa(tutor, '2', null)}`);
+    assert(JSON.stringify(d.thanKetQuaTuan(tutor, '0', null)) === '{"soBuoi":0,"nguoiDay":{}}'
+      && JSON.stringify(d.thanKetQuaTuan({ kind: 'self_study', soBuoi: 8 }, '2', { kieu: 'tai_khoan', id: 5, ten: 'X' })) === '{"soBuoi":2}'
+      && JSON.stringify(d.thanKetQuaTuan({ kind: 'teaching_adjust', soBuoi: null }, '1', null)) === '{"nguoiDay":{}}', 'thanKetQuaTuan');
+    /* Máy chủ nhận đúng thân web gửi: 0 buổi không người dạy → lưu; 2 buổi không người → 400. */
+    const { c, iv } = tutor10('KQ0');
+    const thieu = maLoi(() => cases.updateResult(P.lrTeacher, iv, { ...KQ, ...d.thanKetQuaTuan(tutor, '2', null) }));
+    assert(thieu.status === 400 && thieu.msg.includes('Người dạy tuần này'), JSON.stringify(thieu));
+    cases.updateResult(P.lrTeacher, iv, { ...KQ, ...d.thanKetQuaTuan(tutor, '0', null) });
+    const f = fuCua(iv);
+    assert(f.length === 1 && f[0].so_buoi === 0 && f[0].phu_trach_user_id === null && f[0].phu_trach_ten === null, JSON.stringify(f));
+    /* Điều chỉnh (thân = thanSuaPa như Sửa PA): đổi người → đặt lại; xoá người (cả ba khoá trống) → PA không còn người dạy. */
+    const goc = { kind: 'tutor', description: 'Tutor nghe chép 10 buổi', soBuoi: '10', nguoi: { kieu: 'tai_khoan', id: GV_L, ten: 'GV' }, ghiRo: '' };
+    const dc = (nguoi: any) => d.thanSuaPa({ ...goc, nguoi }, goc, { moi: '', cu: null });
+    assert(JSON.stringify(dc(null)) === '{"performerSelf":false,"performerUserId":null,"performerName":null}', JSON.stringify(dc(null)));
+    cases.updateResult(P.lrTeacher, iv, { ...KQ, decision: 'adjust', decisionNote: 'Đổi tutor', ...d.thanKetQuaTuan(tutor, '0', null), adjust: dc({ kieu: 'ngoai', ten: 'Tutor Hà' }) });
+    assert(paDto(c, iv).performer === 'Tutor Hà', `đổi người: ${paDto(c, iv).performer}`);
+    cases.updateResult(P.lrTeacher, iv, { ...KQ, decision: 'adjust', decisionNote: 'Chưa có tutor', ...d.thanKetQuaTuan(tutor, '0', null), adjust: dc(null) });
+    const sau = get('SELECT performer_user_id, performer_name FROM case_interventions WHERE id = ?', iv);
+    assert(sau.performer_user_id === null && sau.performer_name === null, `xoá người: ${JSON.stringify(sau)}`);
+    assert(revCua(iv).length === 2, 'mỗi lần Điều chỉnh một nhật ký');
+  });
 }

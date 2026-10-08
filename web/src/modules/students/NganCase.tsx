@@ -21,7 +21,7 @@ export type { ViewCase };
 
 /**
  * NGĂN CASE dùng chung cho mọi lối vào (PR-UX3, N-4, G-8): Hồ sơ HV › Học thuật, Hành trình, thông báo (`?case=&pa=`), Việc cần làm
- * (`?viec=ghi-ket-qua`), bảng Case, Phân tích. MỘT panel — không chồng: view `case` (thân Case) và các view làm việc (Ghi kết quả ·
+ * (`?viec=ghi-ket-qua`), bảng Case, Phân tích. MỘT panel — không chồng: view `case` (thân Case) và các view làm việc (Kết quả ·
  * Thêm PA · Hoàn thành; PR-DUYET bỏ Trả lời đề xuất — thẻ Chờ duyệt nhúng dưới PA) THAY nội dung cho nhau, có dòng "← Case Listening" để về. Tải `/cases/{id}` MỘT lần.
  *
  * Có `paId` (view `case`) thì sau khi tải xong dò `[data-pa-id="{paId}"]` (giao kèo với Hành trình) để cuộn tới và viền sáng 2 giây.
@@ -94,7 +94,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
             id: iv.id, kind: iv.kind, description: iv.description ?? null, performer: iv.performer ?? null,
             performerUserId: iv.performerUserId ?? null,
             actionDue: iv.actionDue ?? null, cycleNo: iv.cycleNo ?? null,
-            batBuoc: !!iv.batBuoc, lanCuoi: !!iv.lanCuoi, mocChu: iv.mocChu ?? null,
+            batBuoc: !!iv.batBuoc, lanCuoi: !!iv.lanCuoi, mocChu: iv.mocChu ?? null, soBuoi: iv.soBuoi ?? null, daDay: iv.daDay ?? 0,
           }} />
       );
     }
@@ -184,7 +184,7 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
       if (pa) return nut('Nộp kế hoạch bổ trợ', () => setView({ loai: 'ke-hoach', paId: pa.id }));
     }
     if (v?.chu.startsWith('Xác nhận PA') && v.paId) return nut('Xác nhận PA', () => setView({ loai: 'xac-nhan-pa', paId: v.paId! }));
-    if (v?.chu.startsWith('Ghi kết quả') && v.paId) return nut(v.chu.startsWith('Ghi kết quả cuối') ? 'Ghi kết quả cuối' : 'Ghi kết quả', () => setView({ loai: 'ghi-ket-qua', paId: v.paId! }), v.chu);  /* tên PA là chữ người dạy gõ (có thể dài) — chỉ để ở tooltip; nút nào cũng đã có "Ghi kết quả" riêng ở thẻ PA */
+    if (v?.chu.startsWith('Ghi kết quả') && v.paId) return nut(v.chu.startsWith('Ghi kết quả cuối') ? 'Kết quả cuối' : 'Kết quả', () => setView({ loai: 'ghi-ket-qua', paId: v.paId! }), v.chu);  /* tên PA là chữ người dạy gõ (có thể dài) — chỉ để ở tooltip; nút nào cũng đã có "Kết quả" riêng ở thẻ PA */
     if (ht?.an || !data.viewer.canClose) return undefined;
     return (
       <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0"

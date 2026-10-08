@@ -12,7 +12,7 @@ import {
   CASE_OUTCOMES, CASE_OUTCOME_LABEL, HAN_DUYET_NGAY,
   componentsAreCounts, componentsFor, interventionKindsFor, isProposalKind,
   dsLoi, kiemGhiRoKhac, KHAC_TOI_THIEU, moiKhoaGui, tuanLich,
-  loiFormPa, nguoiCuaPa, paMoi, paPayload, thanSuaPa, type GiaTriPa, type KetQuaNhatKy,
+  giaTriCuaPa, loiFormPa, paMoi, paPayload, thanSuaPa, type GiaTriPa, type KetQuaNhatKy,
   URGENCY_LEVELS, URGENCY_LABEL, caseTopicsFor, issuesForTopic, laKhac, tenMon, tenMonNgan,
 } from '@shared/domain/index.ts';
 import { ComponentsField, componentsPayload } from './ChiTietKyNang.tsx';
@@ -152,10 +152,7 @@ export function SuaPaPanel({ pa, ketQua, studentId, hocVien, lop, quayLai, onClo
   const coKetQua = ketQua.some((f) => f.interventionId === pa.id);
   const toast = useToast();
   const { homNay, ngan } = useNgayNghiepVu();
-  const goc: GiaTriPa = {
-    kind: pa.kind, description: pa.description ?? '', soBuoi: pa.soBuoi == null ? '' : String(pa.soBuoi), nguoi: nguoiCuaPa(pa),
-    ghiRo: '',
-  };
+  const goc = giaTriCuaPa(pa);
   const [v, setV] = useState<GiaTriPa>(goc);
   const [startedDate, setStartedDate] = useState(pa.startedDate ?? '');
   const lf = useLoiForm();

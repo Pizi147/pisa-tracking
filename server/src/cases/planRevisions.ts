@@ -58,12 +58,12 @@ export function chuanHoaDieuChinh(p: Principal, iv: any, input: DieuChinhVao | n
     description = a.description.trim();
     if (description.length < 8) throw badRequest('Mô tả ngắn phải nói rõ làm gì cho em, ít nhất 8 ký tự.');
   }
-  /* Người thực hiện đi qua luật chung (PR-Form F-2) — không gửi gì thì giữ đúng người cũ (`batBuoc: false`). PR-PA: Tự học không có ô người — bỏ qua. */
-  const nguoiMoi = coNguoiDay(iv.kind) && (a.performerSelf || a.performerUserId != null || (a.performerName ?? '').trim())
-    ? chuanHoaNguoiThucHien(p, a, { nhom: 'giao_vien', batBuoc: false })
-    : null;
-  const performerUserId = nguoiMoi ? nguoiMoi.userId : (iv.performer_user_id ?? null);
-  const performerName = nguoiMoi ? nguoiMoi.name : (iv.performer_name ?? null);
+  /* Người thực hiện đi qua luật chung (PR-Form F-2). PR-PA (§8): như Sửa PA — gửi BẤT KỲ khoá người nào = đặt lại (cả ba trống = xoá
+     người); không gửi khoá nào = giữ người cũ. Tự học không có ô người — bỏ qua. */
+  const guiNguoi = coNguoiDay(iv.kind) && ['performerSelf', 'performerUserId', 'performerName'].some((k) => k in a);
+  const nguoiMoi = guiNguoi ? chuanHoaNguoiThucHien(p, a, { nhom: 'giao_vien', batBuoc: false }) : null;
+  const performerUserId = guiNguoi ? nguoiMoi?.userId ?? null : (iv.performer_user_id ?? null);
+  const performerName = guiNguoi ? nguoiMoi?.name ?? null : (iv.performer_name ?? null);
   /* PR-SOS (Q28-4): bỏ "Dự kiến kết thúc" — Điều chỉnh không nhận `followupDue`; mốc giữ nguyên (PA quy chế: mốc quy chế; PA thường: NULL). */
   const followupDue: string | null = iv.followup_due ?? null;
   const soBuoi = soBuoiMoi(iv, a.soBuoi, daDay);
