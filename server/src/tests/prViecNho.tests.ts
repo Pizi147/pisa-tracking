@@ -52,18 +52,19 @@ export async function runPrViecNhoTests(t: YThucTestKit) {
   const thu2 = (n: number) => addDays(week.mondayOf(TODAY), -7 * (n - 1));
   let seq = 0;
   /** Lớp FOU đang ở tuần 8 (cửa sổ Chốt lên FT), `soEm` em chưa có hướng — như `fixChotLenFt.tests.ts`. */
+  /* PR-LCa (R1): FOU tuần 7 — "Chốt lên FT" chỉ còn trước tuần Final (tuần 8 đã sang "Chuyển tiếp lớp"). */
   const taoLop = (soEm: number) => {
     seq += 1;
-    const lop = intake.createClass(P.admin, { code: `MB VN5-${seq}`, branchId: MB, kind: 'FOU', isFastTrack: false, startDate: thu2(8), startPeriodId: week.ensurePeriod(thu2(8)).id });
+    const lop = intake.createClass(P.admin, { code: `MB VN5-${seq}`, branchId: MB, kind: 'FOU', isFastTrack: false, startDate: thu2(7), startPeriodId: week.ensurePeriod(thu2(7)).id });
     const now = new Date().toISOString();
     const sids: number[] = [];
     for (let i = 0; i < soEm; i++) {
       const tag = `VN5-${seq}-${i}`;
       const sid = Number(conn.prepare(`INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`)
         .run(`PISA-${tag}`, `Học viên ${tag}`, `hoc vien ${tag.toLowerCase()}`, MB, now).lastInsertRowid);
-      conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`).run(sid, lop.id, thu2(8), now);
+      conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`).run(sid, lop.id, thu2(7), now);
       conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, started_at, status, created_at) VALUES (?, 1, NULL, 'FOU', 6, ?, 'active', ?)`)
-        .run(sid, thu2(8), now);
+        .run(sid, thu2(7), now);
       sids.push(sid);
     }
     regular.planRegularTests(P.admin, lop.id);

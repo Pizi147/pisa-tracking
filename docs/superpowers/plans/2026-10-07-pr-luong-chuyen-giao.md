@@ -96,7 +96,7 @@ em có lệnh = đã có hướng; lớp có lệnh Cuối khoá = xong). PR-LC 
 ## 4. Thay đổi — chia 2 PR
 
 ### PR-LCa · máy chủ (M) — chạy sau `fix-chot-len-ft-2` merge. Không giao diện.
-- [ ] **LCa-0 (đỏ trước)** `server/src/tests/prLc.tests.ts` (`runPrLcTests`, gọi cuối `run.ts`): dựng lớp FOU tuần Final 4 em, Target khoá 6.0.
+- [x] **LCa-0 (đỏ trước)** `server/src/tests/prLc.tests.ts` (`runPrLcTests`, gọi cuối `run.ts`): dựng lớp FOU tuần Final 4 em, Target khoá 6.0.
   - (a) QL `raLenh` Lên FT cho em **không** có LTT → có MT0 `planned` tuần Final, `lo_trinh_tiep_theo.huong = 'fast_track'`. (đỏ: L1)
   - (b) `raLenh` Lên FT không `mucTieu`, khoá có Target 6.0 → ok, lệnh `muc_tieu = 6.0`; khoá KCK → `khong_cam_ket = 1`; không Target nào → lỗi "Ghi Target (hoặc KCK)". (đỏ: T2)
   - (c) LTT Target 6.5 (một em) → lệnh không gửi Target → 6.5. (đỏ)
@@ -108,25 +108,25 @@ em có lệnh = đã có hướng; lớp có lệnh Cuối khoá = xong). PR-LC 
   - (i) Số câu SQL `raLenh` 30 em không tăng theo số em (trần `tocDoDuong.ts`).
   - (j) GVCN `GET /classes/:id/transition` lớp thường → 200, `coTheGhiHuong` true, `coTheRaLenh` false, không `candidates`. (đỏ)
   - (k) GVCN ghi LTT cho em đã có lệnh `cho` → 409; QL → được, lệnh và LTT cùng hướng. (đỏ)
-- [ ] **LCa-1** `lenhChuyen.ts` `raLenh` (bối cảnh `cuoi-khoa`, lớp nguồn thường): sau `chenNhieuDong` lệnh, trong cùng `tx`, gọi một hàm mới
+- [x] **LCa-1** `lenhChuyen.ts` `raLenh` (bối cảnh `cuoi-khoa`, lớp nguồn thường): sau `chenNhieuDong` lệnh, trong cùng `tx`, gọi một hàm mới
   (cả `suaLenh` khi đổi hướng/Target) `dongBoTuLenh(p, hang)` ở `loTrinhTiep.ts`: upsert `lo_trinh_tiep_theo` (huong, `lop_du_kien_id = lop_dich_id`, `muc_tieu`; **giữ** `ghi_chu`, `thang_thi`
   khi không gửi — `COALESCE(excluded.x, lo_trinh_tiep_theo.x)`), nhật ký Hành trình "QL quyết: …" chỉ khi hướng đổi, rồi `dongBoMt0`. Dùng lại `ghiCacDong`
   nếu được (một luật, theo lô) — không viết câu thứ hai. Huỷ lệnh (`huyLenh`, `huyNhieuLenh`): **không** đổi LTT (dự định GVCN vẫn đúng).
-- [ ] **LCa-2** Target: hàm thuần `targetLenFt({ lt, khoa })` ở `shared/domain/chuyenLop.ts` (LTT → khoá → null, giữ KCK); `raLenh` dùng khi `mucTieu` trống
+- [x] **LCa-2** Target: hàm thuần `targetLenFt({ lt, khoa })` ở `shared/domain/chuyenLop.ts` (LTT → khoá → null, giữ KCK); `raLenh` dùng khi `mucTieu` trống
   và hướng Lên FT từ lớp thường, TRƯỚC `kiemDongLenh`. `kiemDongLenh` giữ nguyên (vẫn báo khi không có Target nào).
-- [ ] **LCa-3** `transition.ts:337-359`: thôi ghi đè `ghi_chu`, `ly_do`, `ngay_xem_lai`, `muc_tieu` bằng null (`COALESCE`), chỉ đặt `huong`,
+- [x] **LCa-3** `transition.ts:337-359`: thôi ghi đè `ghi_chu`, `ly_do`, `ngay_xem_lai`, `muc_tieu` bằng null (`COALESCE`), chỉ đặt `huong`,
   `da_ap_dung_luc`, Target thật. Sau `noiMt0VaoFt`, `UPDATE assessment_attempts SET target_at_attempt = <target lộ trình FT>` cho MT0 vừa nối **chưa điểm** (một câu theo lô, `mt0.ts`).
-- [ ] **LCa-4** `transitionPlan`: thêm `dienSan` mỗi em (hàm thuần `dienSanChuyenTiep(lt, khoa, candidates)`): hướng từ LTT, Target theo LCa-2,
+- [x] **LCa-4** `transitionPlan`: thêm `dienSan` mỗi em (hàm thuần `dienSanChuyenTiep(lt, khoa, candidates)`): hướng từ LTT, Target theo LCa-2,
   lớp chuyển đến = lớp dự kiến nếu hợp lệ, hoặc **lớp duy nhất** hợp lệ của hướng đó, còn lại null. Web cũ không đọc → vô hại.
-- [ ] **LCa-5** `mt0.ts` `lopChoChotLenFt` (sau khi gộp `fix-chot-len-ft-2`): bỏ lớp đã tới tuần Final (`today >= finalWeekStart`) khỏi tập — từ tuần
+- [x] **LCa-5** `mt0.ts` `lopChoChotLenFt` (sau khi gộp `fix-chot-len-ft-2`): bỏ lớp đã tới tuần Final (`today >= finalWeekStart`) khỏi tập — từ tuần
   Final lớp chỉ có việc Chuyển tiếp lớp. Sửa `hint` `chot_len_ft` (`mywork.ts:211`) và mô tả chỉ số `lop-chua-chot-len-ft` (`shared/domain/metrics.ts:280`).
   **Hỏi planning nếu nhánh fix đã làm khác.**
-- [ ] **LCa-6** Rulebook §20.6/§20.7 + `CODE_MAP.md` (dòng Lộ trình tiếp theo, Chuyển tiếp, MT0): "hướng một nguồn; Target lên FT giữ; Chốt lên FT trước tuần Final".
-- [ ] **LCa-7 (cho panel gộp)** `transitionPlan` (`GET /classes/:id/transition`) thành nguồn dữ liệu DUY NHẤT của panel gộp ở lớp thường: thêm cờ
+- [x] **LCa-6** Rulebook §20.6/§20.7 + `CODE_MAP.md` (dòng Lộ trình tiếp theo, Chuyển tiếp, MT0): "hướng một nguồn; Target lên FT giữ; Chốt lên FT trước tuần Final".
+- [x] **LCa-7 (cho panel gộp)** `transitionPlan` (`GET /classes/:id/transition`) thành nguồn dữ liệu DUY NHẤT của panel gộp ở lớp thường: thêm cờ
   `coTheGhiHuong` (`STUDENT_EDIT` lớp — GVCN) và `coTheRaLenh` (`quyenChuyenLop.ts` — QL/QT); GVCN không nhận `candidates`, `goiYLopMoi`, `tuanChon`.
   `PUT /classes/:id/lo-trinh-tiep` nhận thêm `mucTieu` mỗi dòng (chỉ người có `cycle.edit`) để nút "Lưu hướng" của QL ghi Target mà không ra lệnh.
   Em có lệnh `cho`: GVCN ghi hướng → 409 "Quản lý đã quyết" (QL sửa qua lệnh). Phép kiểm LCa-0 (j)(k).
-- [ ] Migrate `server/src/migrate/prLc.ts` (chạy lặp được, gọi cuối dãy): lệnh `cuoi-khoa` còn `cho` → đồng bộ LTT + `dongBoMt0` (xem mục 6).
+- [x] Migrate `server/src/migrate/prLc.ts` (chạy lặp được, gọi cuối dãy): lệnh `cuoi-khoa` còn `cho` → đồng bộ LTT + `dongBoMt0` (xem mục 6).
 
 ### PR-LCb · giao diện (M) — panel gộp lớp thường · **cần mockup** `thiet-ke/mockup-panel-cuoi-khoa-2026-10-07.html` (đã soạn 07/10, chờ duyệt). Sau LCa.
 **Một panel** `PanelCuoiKhoa.tsx` (lớp thường), tên "Lộ trình tiếp theo · {lớp} · n em" (QM1). Một bảng, mỗi em một dòng:

@@ -9202,6 +9202,9 @@ await runPrHanTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 // ==================================================================== VIEC-NHO-2 (Nhắc tất cả ở Của GV, lọc Chờ duyệt, GV chấm S)
 const { runPrViecNho2Tests } = await import('./prViecNho2.tests.ts');
 await runPrViecNho2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-LCa (luồng cuối khoá → lộ trình tiếp: mỗi quyết định nhập một lần)
+const { runPrLcTests } = await import('./prLc.tests.ts');
+await runPrLcTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-PA (PA đồng bộ một mẫu §8)
 const { runPrPaTests } = await import('./prPa.tests.ts');
 await runPrPaTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);

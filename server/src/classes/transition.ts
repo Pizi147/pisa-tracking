@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  PERMISSIONS, PROGRAMME_TEMPLATES, chuanHoaHuong, kiemDongChuyenTiep, tuanChonDuoc, kyHieuLop, soSanhLop, tachSoLop, luatDoiLop, nextStepsAfter, programmeOf, tuanHocTai, tuanKhoa,
+  PERMISSIONS, PROGRAMME_TEMPLATES, chuanHoaHuong, dienSanChuyenTiep, kiemDongChuyenTiep, tuanChonDuoc, kyHieuLop, soSanhLop, tachSoLop, luatDoiLop, nextStepsAfter, programmeOf, tuanHocTai, tuanKhoa,
   type DongChuyenTiep, type Huong, type LoaiLop, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, isIsoDate, notFound } from '../util.ts';
@@ -12,6 +12,7 @@ import { classProgress, classProgressMany } from './schedule.ts';
 import { setStudentStatus } from '../students/students.ts';
 import { apDungBaoLuuCaLop, apDungCaLop, dongLopNeuHet, type DongCaLop } from './luatLoTrinh.ts';
 import { tiepTheoTheoHocVien } from './loTrinhTiep.ts';
+import { coTheRaLenh } from './quyenChuyenLop.ts';
 import { standingFor } from '../students/standing.ts';
 import { cuoiKhoaTheoHocVien } from '../normal/cuoiKhoa.ts';
 import { HV_DANG_HOC_SQL, khoangTamDung } from '../students/tamDung.ts';
@@ -57,11 +58,13 @@ export function transitionPlan(p: Principal, classId: number) {
   /* PR-CT (màn I): lớp FT chuyển giữa lộ trình — lớp chuyển đến là mọi lớp FT còn chạy (mọi lộ trình), không lọc "quá nửa". */
   const ft = !!cls.is_fast_track;
   const optionCodes = ft ? ['FT'] : [...new Set(options.map((o) => o.code))];
+  /* PR-LCa (LCa-7): panel gộp — GVCN (không ra lệnh) không nhận ứng viên / lớp mới / tuần, và không tính chúng (`goiYLopMoi` ghi kỳ). */
+  const raLenhDuoc = coTheRaLenh(p, classId);
 
   const students = conn
     .prepare(
       `SELECT s.id, s.student_code, s.full_name, s.status,
-              cy.id AS cycle_id, cy.target_score, cy.route, sp.week_start AS start_week
+              cy.id AS cycle_id, cy.target_score, cy.khong_cam_ket, cy.route, sp.week_start AS start_week
          FROM enrollments e
          JOIN students s ON s.id = e.student_id
          LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
@@ -115,7 +118,7 @@ export function transitionPlan(p: Principal, classId: number) {
    * FT, hoặc cùng chương trình để học lại), còn đang chạy và chưa học quá nửa chương trình.
    * `classProgressMany` MỘT LẦN cho cả danh sách ứng viên — không classProgress trong vòng lặp (N+1).
    */
-  const candidateRows = optionCodes.length
+  const candidateRows = raLenhDuoc && optionCodes.length
     ? (conn
       .prepare(
         `SELECT c.id, c.code, c.programme_code, c.is_fast_track, c.route,
@@ -147,7 +150,7 @@ export function transitionPlan(p: Principal, classId: number) {
 
   /* "+ Mở lớp mới" (K2-16) mở panel Tạo lớp điền sẵn các giá trị này; panel tự nạp giáo viên. Tuần khai giảng = tuần sau ngày chuyển. */
   const loTrinhGoiY = defaultProgramme === 'FT' ? 'LT1' : null;
-  const goiYLopMoi = defaultProgramme ? {
+  const goiYLopMoi = raLenhDuoc && defaultProgramme ? {
     branchId: cls.branch_id as number, chuongTrinh: defaultProgramme, loTrinh: loTrinhGoiY,
     so: soGoiY(cls.branch_code, defaultProgramme, loTrinhGoiY),
     startPeriodId: ensurePeriod(addDays(mondayOf(demoToday()), 7)).id,
@@ -172,7 +175,7 @@ export function transitionPlan(p: Principal, classId: number) {
     cheDo: (ft ? 'ft' : 'thuong') as 'ft' | 'thuong',
     /** GVCN của lớp nguồn — câu "Sau khi gửi: GVCN … có việc Bàn giao" ở bước Xác nhận. */
     gvcn: ((conn.prepare(`SELECT u.full_name FROM teacher_assignments ta JOIN users u ON u.id = ta.user_id WHERE ta.class_id = ? AND ta.is_core = 1 AND ta.status = 'active' LIMIT 1`).get(classId) as any)?.full_name ?? null) as string | null,
-    tuanChon: tuanChonDuoc(demoToday()),
+    tuanChon: raLenhDuoc ? tuanChonDuoc(demoToday()) : [],
     students: students.map((s) => ({
       id: s.id, studentCode: s.student_code, fullName: s.full_name,
       cycleId: s.cycle_id ?? null, target: s.target_score ?? null,
@@ -180,6 +183,9 @@ export function transitionPlan(p: Principal, classId: number) {
       route: (s.route ?? null) as string | null,
       tuanHoc: ft && s.start_week ? (() => { const th = tuanHocTai(s.start_week, tuanNay, dungCua[s.id] ?? []); return th ? { tuan: th.tuan, tong: null, dangDung: th.dangDung } : null; })() : null,
       loTrinhTiep: loTrinhTiepMap.get(s.id) ?? null,
+      /** PR-LCa (LCa-4): dòng điền sẵn từ Lộ trình tiếp theo (Hướng, Target Lên FT, lớp chuyển đến) — lớp thường; lớp FT null. */
+      dienSan: ft ? null : dienSanChuyenTiep(loTrinhTiepMap.get(s.id) ?? null,
+        { target: s.target_score ?? null, kck: !!s.khong_cam_ket }, candidates, { maTu: from }),
       ketQua: ketQua.get(s.id) ?? null,
       cuoiKhoa: cuoiKhoa.get(s.id) ?? null,
       caseMo: { tong: caseByStudent.get(s.id) ?? 0, seDongNeuSangFt: caseByStudent.get(s.id) ?? 0 },
@@ -193,6 +199,9 @@ export function transitionPlan(p: Principal, classId: number) {
       .prepare('SELECT id, code FROM classes WHERE previous_class_id = ? ORDER BY id')
       .all(classId) as any[]).map((c) => ({ id: c.id, code: c.code })),
     canEdit: can(p, PERMISSIONS.CLASS_EDIT, { classId }),
+    /** PR-LCa (LCa-7): GVCN ghi Hướng (STUDENT_EDIT); Quản lý ra quyết định (`coTheRaLenh`). */
+    coTheGhiHuong: can(p, PERMISSIONS.STUDENT_EDIT, { classId }),
+    coTheRaLenh: raLenhDuoc,
     today: demoToday(),
   };
 }
@@ -329,7 +338,10 @@ export function applyTransition(p: Principal, input: TransitionInput, o?: { daDu
     /* Dừng học hẳn = Kết thúc học — ngoại lệ đi từng em (hiếm, thường 0-1 em mỗi đợt), tái dùng đúng một luật S16. */
     for (const d of okDungHoc) setStudentStatus(p, d.sid, 'finished', input.effectiveDate, d.lyDo, 'dung_hoc');
 
-    /* Lộ trình tiếp theo: ghi/cập nhật dự định cho MỌI dòng hợp lệ — một INSERT nhiều dòng, ON CONFLICT cập nhật. */
+    /*
+     * Lộ trình tiếp theo: ghi/cập nhật dự định cho MỌI dòng hợp lệ — một INSERT nhiều dòng, ON CONFLICT cập nhật. PR-LCa (LCa-3): dòng đã có
+     * chỉ đổi hướng, mốc áp dụng và Target thật; ghi chú, lý do, ngày xem lại, tháng thi trống thì GIỮ cái đã lưu (lệnh không mang chúng).
+     */
     const okAll = [...okChuyenLop.map((d) => ({ sid: d.sid, huong: d.huong as Huong, applied: true })),
       ...okBaoLuu.map((d) => ({ sid: d.sid, huong: 'bao_luu' as Huong, applied: false })),
       ...okDungHoc.map((d) => ({ sid: d.sid, huong: 'dung_hoc' as Huong, applied: true })),
@@ -351,8 +363,9 @@ export function applyTransition(p: Principal, input: TransitionInput, o?: { daDu
              (student_id, class_id, huong, muc_tieu, thang_thi, ghi_chu, ly_do, ngay_xem_lai, da_ap_dung_luc, created_at, updated_at)
            VALUES ${rows}
            ON CONFLICT(student_id, class_id) DO UPDATE SET
-             huong = excluded.huong, muc_tieu = excluded.muc_tieu, thang_thi = excluded.thang_thi,
-             ghi_chu = excluded.ghi_chu, ly_do = excluded.ly_do, ngay_xem_lai = excluded.ngay_xem_lai,
+             huong = excluded.huong, muc_tieu = COALESCE(excluded.muc_tieu, lo_trinh_tiep_theo.muc_tieu),
+             thang_thi = COALESCE(excluded.thang_thi, lo_trinh_tiep_theo.thang_thi), ghi_chu = COALESCE(excluded.ghi_chu, lo_trinh_tiep_theo.ghi_chu),
+             ly_do = COALESCE(excluded.ly_do, lo_trinh_tiep_theo.ly_do), ngay_xem_lai = COALESCE(excluded.ngay_xem_lai, lo_trinh_tiep_theo.ngay_xem_lai),
              da_ap_dung_luc = excluded.da_ap_dung_luc, updated_at = excluded.updated_at`,
         )
         .run(...params);
