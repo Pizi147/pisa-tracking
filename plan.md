@@ -88,6 +88,7 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 7. `npm run check` chạy chồng làm treo hàng giờ → mỗi session một lần một lúc, quét tiến trình trước khi kết thúc.
 8. Chủ sản phẩm có thể merge trước khi rà → nhắc "chờ planning nói merge được"; lỡ merge thì rà sau merge.
 9. Tên skill đúng là `superpowers:<tên>` (một số kế hoạch cũ ghi nhầm `anthropic-skills:`).
+10. Merge nhầm rồi revert (#271, 08/10) → merge lại nhánh cũ KHÔNG đưa code vào. Phải tạo nhánh mới từ main, `git revert <commit revert>`, mở PR mới (đã làm #272).
 
 ## 2. Đã làm (đã merge vào `main`, kiểm bằng `gh pr list` 04/10)
 
@@ -223,6 +224,17 @@ Công việc của tôi, chuông, câu báo lỗi máy chủ trên các đườn
 - **Chờ duyệt › lọc "Nhắc việc"**: bấm vào thì các bộ lọc khác biến mất → hẫng. Làm cho đỡ hẫng (vd giữ hàng lọc, mờ đi + một dòng "Đang xem Nhắc việc · Quay lại"); cần mockup.
 - `db.ts` `laLoiMatKetNoiTurso`: "fetch failed" khớp cả lỗi kho tệp (Netlify Blobs) → GET tải tệp thử lại thừa một lần (Minor, rà #236). ✅ `pr-viec-nho-1008` 08/10.
 - **PR-TD2 · Tốc độ chuyển trang** (chủ sản phẩm 07/10 "chuyển trang khá chậm") — kế hoạch `docs/superpowers/plans/2026-10-07-pr-toc-do-chuyen-trang.md`: đo log + cục bộ, gốc = `loadBundle` đọc rộng/lặp (0,4–0,9 MB ×2–3 mỗi request), Trước/Sau tải cả danh sách, waterfall hồ sơ lớp/HV, phiên 6 câu. Thứ tự TD2-a(+0) → b+c → d; e/f sau log. Chưa làm.
+
+### SAU PR-CT2 (#271 → đưa lại #272, merge 08/10) — chờ chủ sản phẩm góp ý / sửa sau
+- **Chủ sản phẩm xác nhận 2 mục tự quyết:** (1) FOU → FT vẫn có bổ trợ Final nhưng sinh lúc thi hành thứ Hai, không sinh ngay khi đủ điểm (đặc tả không nói, hơi lệch câu "không chờ thi hành"); (8) lệnh giữa khoá đè lệnh cuối khoá đang chờ cũng huỷ bộ bổ trợ chưa ai đụng (mục mới, kế hoạch chưa ghi). 6 mục còn lại khớp kế hoạch.
+- **Đo tốc độ còn thiếu:** `huyNhieuLenh` / khôi phục nhiều lệnh (`server/src/classes/lenhChuyen.ts:274`, `:408`) mỗi em gọi `dongBoCheTaiFinal`, ước ~25 câu/em × 8 em ≈ sát 200 câu/lần ghi. Thêm phép đo `tocDo` cho 8 em có bộ sinh sớm; vượt thì gom lô.
+- **"Chưa ai đụng" bỏ qua Sửa PA** (`server/src/normal/cuoiKhoa.ts:520`): QL đã sửa người dạy / số buổi nhưng chưa có Kết quả → đổi quyết định vẫn huỷ bộ. Hỏi chủ sản phẩm có tính Sửa PA là "đã đụng" không.
+- **Bộ đã có Kết quả rồi đổi quyết định sang FT** (FOU/BE → FT): Case lớp thường đóng khi đổi chương trình, dòng `mini_test` chưa ghi còn lại → việc "Ghi Mini Test" treo. Hiện QL xử lý tay; cân nhắc tự đóng hoặc báo QL.
+- **Nút ghi Mini Test ở hồ sơ hiện nhưng lưu 403** (`profile.ts` `coTheGhi`): lớp không có GVCN → người giữ là chủ Case, nhưng `quyenBoTro` từ chối nếu người đó không phải người dạy/GVCN. Cho hai bên dùng cùng một điều kiện.
+- **Final bị huỷ lượt sau khi đã sinh sớm:** `dongBoCheTaiFinal` bỏ qua bài `cancelled` → bộ bổ trợ không tự huỷ (hiếm).
+- **Giới hạn PR tự ghi:** đổi lớp đích / tuần mà giữ quyết định thì không sinh lại; Pre FOU Người dạy trống; sinh từ ô điểm cuối thì người xác nhận = người nhập điểm; thẻ chờ duyệt kế hoạch cũ hiện nút (409) tới khi migrate chạy; PA nhóm bị hệ thống huỷ vì lý do khác coi là "đã đụng"; `ponytail:` ở `server/src/migrate/prCt2.ts` (phần B ~6 câu/PA, gom lô nếu nhiều).
+- **Sổ tay:** ảnh màn "Nộp kế hoạch bổ trợ" đã lỗi thời → PR-SOTAY cập nhật.
+- **Trước deploy:** đếm (chỉ đọc) số nhóm `bo_tro` còn `planned` trên DB thật để biết migrate `prCt2` phần B xử lý bao nhiêu PA. Thứ tự migrate: `prPa` → `prCt2`.
 
 ### PR-SOTAY · Sổ tay mới theo web mới nhất (M) — chủ sản phẩm 06/10, **làm cuối cùng, sau PR-EN**
 Sáu file PDF, viết lại theo `main` cuối cùng (ảnh thật chụp app chạy cục bộ, 07/10), tận dụng bộ dựng sẵn `docs/so-tay/` (thay bản 02/10):
