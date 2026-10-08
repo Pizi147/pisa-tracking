@@ -1758,7 +1758,13 @@ api.post('/yeu-cau/:id/tra-loi', requireAuth, wrap((req) => {
  */
 api.post('/interventions/:id/result', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return caseSvc.updateResult(principalOf(req), pInt(req, 'id'), req.body ?? {}, { batBuocPhuTrach: true });   // PR-LUI-a2: web luôn gửi Người phụ trách
+  return caseSvc.updateResult(principalOf(req), pInt(req, 'id'), req.body ?? {});   // PR-PA: Người dạy tuần này bắt ở dịch vụ (PA có Số buổi, ≥ 1)
+}));
+
+/** PR-PA (§8): SỬA PA — cùng form Thêm PA; Loại khoá; quyền như Kết quả. */
+api.patch('/interventions/:id', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSvc.suaPa(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 
 /**

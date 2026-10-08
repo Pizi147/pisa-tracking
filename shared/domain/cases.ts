@@ -986,10 +986,10 @@ export const PLAN_DECISION_LABEL: Record<PlanDecision, string> = {
 };
 export const PLAN_DECISION_HINT: Record<PlanDecision, string> = {
   keep: 'Phương án chạy tiếp như cũ. Kết quả tuần sau ghi trước hết Thứ Hai kế tiếp.',
-  adjust: 'Cùng phương án, sửa mô tả, người thực hiện hoặc ngày dự kiến kết thúc. Bản cũ giữ trong lịch sử.',
+  adjust: 'Cùng phương án, sửa nội dung, số buổi hoặc người. Bản cũ giữ trong lịch sử.',
   replace: 'Khép phương án này (Được thay thế) và mở phương án mới. Đổi loại phương án thì chọn ở đây.',
   end: 'Khép phương án này. Case chỉ hoàn thành được khi mọi phương án đã khép.',
-  ask_manager: 'Ghi kết quả tuần như Giữ nguyên và gửi câu hỏi cho Quản lý. PA vẫn chạy.',
+  ask_manager: 'Kết quả tuần tính như Giữ nguyên và gửi câu hỏi cho Quản lý. PA vẫn chạy.',
 };
 
 /** Bản NGẮN cho danh sách dọc trong panel Ghi kết quả (PR-UX3, mockup 15 §4): tên một dòng + `PLAN_DECISION_NGHIA` một dòng nghĩa. */
@@ -997,15 +997,15 @@ export const PLAN_DECISION_NGAN: Record<PlanDecision, string> = {
   keep: 'Giữ nguyên', adjust: 'Điều chỉnh', replace: 'Thay PA', end: 'Kết thúc PA', ask_manager: 'Xin hỗ trợ QL',
 };
 export const PLAN_DECISION_NGHIA: Record<PlanDecision, string> = {
-  keep: 'Tiếp tục PA này, hẹn ghi kết quả tuần sau',
-  adjust: 'Cùng PA, sửa nội dung, người làm hoặc hạn',
+  keep: 'Tiếp tục PA này, hẹn kết quả tuần sau',
+  adjust: 'Cùng PA, sửa nội dung, số buổi hoặc người',
   replace: 'Khép PA này, mở PA khác thay vào',
   end: 'Khép PA này; Case chỉ xong khi mọi PA đã khép',
   ask_manager: 'Lưu như Giữ nguyên, gửi câu hỏi cho Quản lý',
 };
 /** Nút chính ở chân panel theo quyết định đang chọn. */
 export const NUT_LUU_KET_QUA: Record<PlanDecision, string> = {
-  keep: 'Ghi kết quả', adjust: 'Lưu điều chỉnh', replace: 'Thay PA', end: 'Kết thúc PA', ask_manager: 'Gửi Quản lý',
+  keep: 'Lưu kết quả', adjust: 'Lưu điều chỉnh', replace: 'Thay PA', end: 'Kết thúc PA', ask_manager: 'Gửi Quản lý',
 };
 
 export function decisionToStep(d: PlanDecision): { mode: ResultMode; nextStep: NextStep } {

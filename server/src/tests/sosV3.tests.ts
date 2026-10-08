@@ -349,8 +349,9 @@ export async function runSosV3Tests(t: YThucTestKit) {
       assert(iv.followup_due === null && iv.moc_quy_che === 'one_month', `Mốc tính lúc Xác nhận PA: ${iv.followup_due} · ${iv.moc_quy_che}`);
       assert(iv.action_due === null && iv.cycle_started_on === null && iv.started_date === null,
         `PA chờ xác nhận chưa chạy — không hạn ghi kết quả, không ngày bắt đầu (Q28-3): ${JSON.stringify(iv)}`);
-      assert(iv.performer_user_id === teacherOf(c.category) && c.owner_user_id === teacherOf(c.category),
-        `Người thực hiện/phụ trách phải là GVBM đúng kỹ năng ${c.category}`);
+      /* PR-PA (§8): Tự học không có người — chủ Case vẫn là GVBM đúng kỹ năng. */
+      assert(iv.performer_user_id === null && iv.performer_name === null && c.owner_user_id === teacherOf(c.category),
+        `Tự học không người; chủ Case phải là GVBM đúng kỹ năng ${c.category}`);
       assert(milestonesOf(c.id).map((m) => m.kind).join() === 'opened' && milestonesOf(c.id)[0].attempt_id === a.id, 'Case có đúng một mốc "Mở case" từ chính lượt này');
     }
     assert(!casesOf(st.id).some((c) => ['writing1', 'writing'].includes(c.category)), 'Không có case W1 hay Writing tổng');

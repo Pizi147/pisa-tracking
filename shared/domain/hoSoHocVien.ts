@@ -82,10 +82,10 @@ export function tienDoCase(plans: readonly PhuongAnTomTat[], c: { status: string
     const choDuyet = chay.find((p) => p.pendingApproval);
     const coHan = chay.filter((p) => p.actionDue).sort((a, b) => a.actionDue!.localeCompare(b.actionDue!))[0];
     const quaHanRoi = chay.filter((p) => p.actionDue && p.actionOverdue).sort((a, b) => a.actionDue!.localeCompare(b.actionDue!))[0];
-    if (quaHanRoi) tiep = { text: 'Ghi kết quả', due: quaHanRoi.actionDue, overdue: true };
+    if (quaHanRoi) tiep = { text: 'Kết quả', due: quaHanRoi.actionDue, overdue: true };
     else if (choDuyet) tiep = { text: 'Chờ Quản lý trả lời', due: choDuyet.approvalDue, overdue: false };
-    else if (coHan) tiep = { text: 'Ghi kết quả', due: coHan.actionDue, overdue: coHan.actionOverdue };
-    else if (c.followUntil) tiep = { text: 'Ghi kết quả', due: c.followUntil, overdue: c.followOverdue };
+    else if (coHan) tiep = { text: 'Kết quả', due: coHan.actionDue, overdue: coHan.actionOverdue };
+    else if (c.followUntil) tiep = { text: 'Kết quả', due: c.followUntil, overdue: c.followOverdue };
   }
   return { coKetQua, tong, text, tiep };
 }
@@ -97,8 +97,8 @@ export function viecTiepPhuongAn(p: PhuongAnTomTat): {
   if (p.pendingApproval) return { loai: 'cho-duyet', text: 'Chờ Quản lý trả lời', due: p.approvalDue, overdue: false };
   /* PR-SOS: PA quy chế chờ xác nhận chưa chạy — việc là Xác nhận PA (hạn ở Case). Tuần chạm mốc → Ghi kết quả cuối. */
   if (p.choXacNhan) return { loai: 'cho-xac-nhan', text: 'Chờ xác nhận', due: null, overdue: false };
-  if (p.lanCuoi && dangChay(p)) return { loai: 'ghi-cuoi', text: 'Ghi kết quả cuối', due: p.actionDue, overdue: p.actionOverdue };
-  if (dangChay(p)) return { loai: 'ghi-ket-qua', text: 'Ghi kết quả', due: p.actionDue, overdue: p.actionOverdue };
+  if (p.lanCuoi && dangChay(p)) return { loai: 'ghi-cuoi', text: 'Kết quả cuối', due: p.actionDue, overdue: p.actionOverdue };
+  if (dangChay(p)) return { loai: 'ghi-ket-qua', text: 'Kết quả', due: p.actionDue, overdue: p.actionOverdue };
   return { loai: 'da-xong', text: p.closedReason === 'superseded' ? 'Được thay thế' : 'Đã kết thúc', due: p.completedOn, overdue: false };
 }
 
@@ -223,7 +223,7 @@ export function cauTomTat(i: DauVaoCau): ManhCau[] {
   const kn = (v: { kyNangTen: string | null }) => (v.kyNangTen ? `${v.kyNangTen} ` : '');
   const m2: ManhCau | null = quaHan
     ? {
-      chu: quaHan.loai === 'ghi-ket-qua' ? `PA ${kn(quaHan)}quá hạn ghi kết quả ${quaHan.quaHanNgay} ngày`
+      chu: quaHan.loai === 'ghi-ket-qua' ? `PA ${kn(quaHan)}quá hạn Kết quả ${quaHan.quaHanNgay} ngày`
         : quaHan.loai === 'nguyen-nhan' ? `${kn(quaHan)}quá hạn xác nhận nguyên nhân ${quaHan.quaHanNgay} ngày`
         : quaHan.loai === 'xac-nhan-pa' ? `${kn(quaHan)}quá hạn xác nhận PA ${quaHan.quaHanNgay} ngày`
         : quaHan.loai === 'ke-hoach' ? `Kế hoạch bổ trợ quá hạn ${quaHan.quaHanNgay} ngày`
@@ -263,7 +263,7 @@ export function oHocThuat(rows: readonly {
       const quaHanGhi = (c.plans ?? []).some((p) => p.actionOverdue);
       const t = quaHanGhi ? 'qua-han' : c.trangThaiV4?.t ?? 'dang-lam';
       const v = c.viecTiep?.chu ?? '';
-      const viec = quaHanGhi || /^Ghi kết quả/.test(v) ? 'ghi kết quả'
+      const viec = quaHanGhi || /^Kết quả/.test(v) ? 'kết quả'
         : v === 'Xác nhận nguyên nhân' ? 'nguyên nhân'
         : /^Xác nhận PA/.test(v) ? 'xác nhận PA'
         : /kế hoạch/.test(v) ? 'kế hoạch bổ trợ' : null;

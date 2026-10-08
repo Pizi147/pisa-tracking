@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, CONFIRM_EDIT_REASON, URGENCY_LEVELS, academicSupportFor, caseTopicLabel, issueBranchOf, tenMonNgan,
+  CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, CONFIRM_EDIT_REASON, URGENCY_LEVELS, academicSupportFor, caseTopicLabel, coNguoiDay, issueBranchOf, tenMonNgan,
   hanXacNhan, issuesForTopic, kiemGhiRoKhac, laKhac, mocQuyChe, ngay, reasonNeedsText, tenCaseSos, weeklyUpdateDue,
   type AcademicSupportPreset, type CaseDismissReason, type MilestoneKind, nhanBaiThuong } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -11,13 +11,13 @@ import { suggestCaseOwner } from './owner.ts';
 import { examPlanOf } from '../fasttrack/cycles.ts';
 import { routeCuaLuot } from '../fasttrack/attempts.ts';
 import { addIssues, caseAccess, caseDetail, caseTitleOf } from './cases.ts';
-import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
+import { chenPa } from './taoPa.ts';
 import { followUntilAfter } from './sos.ts';
 import { mondayOf } from '../platform/week.ts';
 import { taoYeuCau } from '../duyet/yeuCau.ts';
 import { dongBoBaoPhCuaBai } from '../yThuc/phoiHop.ts';
 import { PA_QUY_CHE_CHUA_GHI, UNCONFIRMED_PRESET, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
-import { ghiBanDieuChinh } from './planRevisions.ts';
+import { ghiBanDieuChinh, nguoiSauSua, soBuoiMoi } from './planRevisions.ts';
 import { chayNeuKeHoachDaDuyet, kiemKeHoach, mocCuoiKhoa, nopKeHoachBoTro, phaiGuiKemKeHoach } from './boTro.ts';
 
 export { UNCONFIRMED_PRESET, NOT_UNCONFIRMED_PRESET, PA_QUY_CHE_CHUA_GHI } from './sosState.ts';
@@ -79,14 +79,7 @@ export function createPresetPlan(input: {
   if (!p) return null;
   const performer = suggestCaseOwner({ classId: input.attempt.class_id ?? null, category: input.category });
   // Q28-3: PA quy chế KHÔNG tự chạy. Chờ xác nhận = preset=1, planned, confirmed_at NULL (UNCONFIRMED_PRESET). Mốc tính lúc Xác nhận PA.
-  const info = db()
-    .prepare(
-      `INSERT INTO case_interventions (case_id, kind, description, performer_user_id, recorded_by, status, needs_approval, preset,
-                                       moc_quy_che, created_at)
-       VALUES (?,?,?,?, NULL, 'planned', 0, 1, ?, ?)`,
-    )
-    .run(input.caseId, p.kind, p.description, performer, p.span, nowIso());
-  return Number(info.lastInsertRowid);
+  return chenPa(db(), [{ caseId: input.caseId, kind: p.kind, description: p.description, performerUserId: performer, status: 'planned', preset: true, mocQuyChe: p.span }])[0];
 }
 
 /**
@@ -106,19 +99,23 @@ export function resyncUnconfirmedPresets(
   /* PR-SOS: chỉ PA CHỜ XÁC NHẬN (PA đã xác nhận là việc thật — không đụng); `followup_due` luôn NULL tới lúc xác nhận. */
   const rows = db()
     .prepare(
-      `SELECT iv.id, iv.kind, iv.description, iv.moc_quy_che
+      `SELECT iv.id, iv.kind, iv.description, iv.moc_quy_che, iv.performer_user_id, iv.performer_name, sc.category
          FROM case_interventions iv
          JOIN sos_cases sc ON sc.id = iv.case_id
         WHERE ${PA_QUY_CHE_CHUA_GHI('iv')} AND ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND sc.status != 'done'
           AND EXISTS (SELECT 1 FROM case_milestones m WHERE m.case_id = sc.id AND m.kind IN ('opened', 'repeat') AND m.attempt_id = ?)`,
     )
     .all(attempt.id) as any[];
+  const lop = rows.length ? (db().prepare('SELECT class_id FROM assessment_attempts WHERE id = ?').get(attempt.id) as any)?.class_id ?? null : null;
   for (const iv of rows) {
     const p = presetFor(attempt, sosLevel)!;
-    if (iv.kind === p.kind && iv.description === p.description && iv.moc_quy_che === p.span) continue;
+    /* PR-PA (§8): đổi loại thì người theo loại mới — Tự học không người; Tutor chưa có người → GVBM đúng kỹ năng (như lúc dựng). */
+    const nguoi = coNguoiDay(p.kind) ? iv.performer_user_id ?? (iv.performer_name ? null : suggestCaseOwner({ classId: lop, category: iv.category })) : null;
+    const ten = coNguoiDay(p.kind) ? iv.performer_name : null;
+    if (iv.kind === p.kind && iv.description === p.description && iv.moc_quy_che === p.span && nguoi === iv.performer_user_id && ten === iv.performer_name) continue;
     db()
-      .prepare('UPDATE case_interventions SET kind = ?, description = ?, moc_quy_che = ?, updated_at = ? WHERE id = ?')
-      .run(p.kind, p.description, p.span, nowIso(), iv.id);
+      .prepare('UPDATE case_interventions SET kind = ?, description = ?, moc_quy_che = ?, performer_user_id = ?, performer_name = ?, updated_at = ? WHERE id = ?')
+      .run(p.kind, p.description, p.span, nguoi, ten, nowIso(), iv.id);
   }
 }
 
@@ -316,7 +313,8 @@ export function banGiaoPaQuyChe(studentId: number, toClassId: number, actorUserI
   const lop = (conn.prepare('SELECT code FROM classes WHERE id = ?').get(toClassId) as any)?.code ?? '';
   const rows = conn.prepare(`SELECT iv.id, iv.case_id, iv.performer_user_id, iv.performer_name, sc.category, sc.topic, u.full_name AS ten_cu
       FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id LEFT JOIN users u ON u.id = iv.performer_user_id
-     WHERE sc.student_id = ? AND sc.status != 'done' AND iv.preset = 1 AND iv.status IN ('planned', 'started')`).all(studentId) as any[];
+     WHERE sc.student_id = ? AND sc.status != 'done' AND iv.preset = 1 AND iv.status IN ('planned', 'started')
+       AND iv.kind != 'self_study'`).all(studentId) as any[];   // PR-PA (§8): Tự học không có người
   for (const r of rows) {
     const moi = suggestCaseOwner({ classId: toClassId, category: r.category });
     if (!moi || moi === r.performer_user_id) continue;
@@ -362,6 +360,8 @@ function luotSinhPa(iv: any): any | null {
  */
 export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
   performerSelf?: boolean; performerUserId?: number | null; performerName?: string | null; description?: string | null;
+  /** PR-PA (§8): Số buổi — cùng luật Thêm PA (loại có Số buổi, 1–60; không gửi = giữ). */
+  soBuoi?: unknown;
 }) {
   const conn = db();
   const iv = conn.prepare(`SELECT iv.*, sc.status AS case_status, sc.cycle_id AS case_cycle_id FROM case_interventions iv
@@ -380,23 +380,25 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
   const description = input.description.trim();
   if (description.length < 15) throw badRequest('Mô tả PA cần ít nhất 15 ký tự — nêu hướng dẫn, trọng tâm và ai thực hiện.');
   if (description.length > 2000) throw badRequest('Mô tả PA tối đa 2000 ký tự.');
-  const nguoi = chuanHoaNguoiThucHien(p, input, { nhom: 'giao_vien', batBuoc: false });
-  const performerUserId = nguoi ? nguoi.userId : iv.performer_user_id ?? null;
-  const performerName = nguoi ? nguoi.name : iv.performer_name ?? null;
+  /* PR-PA (§8): như Sửa PA — không gửi khoá người = giữ người máy gán. */
+  const { performerUserId, performerName } = nguoiSauSua(p, iv, input);
+  const soBuoi = soBuoiMoi(iv, input.soBuoi, 0);
   const today = demoToday();
   const luot = luotSinhPa(iv);
   const moc = iv.moc_quy_che
     ? mocQuyChe(iv.moc_quy_che, { ngayXacNhan: today, nextMtSunday: luot ? followUntilAfter(luot) : null, examDate: examDateOf(iv.case_cycle_id) })
     : null;
   return tx(() => {
-    conn.prepare(`UPDATE case_interventions SET description = ?, performer_user_id = ?, performer_name = ?, status = 'started', started_date = ?,
+    conn.prepare(`UPDATE case_interventions SET description = ?, performer_user_id = ?, performer_name = ?, so_buoi = ?, status = 'started', started_date = ?,
         cycle_no = 1, cycle_started_on = ?, action_due = ?, followup_due = ?, confirmed_by = ?, confirmed_at = ?, updated_at = ? WHERE id = ?`)
-      .run(description, performerUserId, performerName, today, today, weeklyUpdateDue(today), moc, p.userId, nowIso(), nowIso(), interventionId);
+      .run(description, performerUserId, performerName, soBuoi, today, today, weeklyUpdateDue(today), moc, p.userId, nowIso(), nowIso(), interventionId);
     /* Sửa bản máy gán lúc xác nhận thì giữ bản gợi ý trong lịch sử (PR-S2 S2, Q7). */
-    if (description !== iv.description || performerUserId !== (iv.performer_user_id ?? null) || performerName !== (iv.performer_name ?? null)) {
+    if (description !== iv.description || performerUserId !== (iv.performer_user_id ?? null) || performerName !== (iv.performer_name ?? null)
+        || soBuoi !== (iv.so_buoi ?? null)) {
       ghiBanDieuChinh({
         iv, source: 'confirm_edit', on: today, actorUserId: p.userId, followupId: null, reason: CONFIRM_EDIT_REASON,
-        after: { description, performerUserId, performerName, followupDue: iv.followup_due ?? null },   // mốc quy chế không phải "điều chỉnh"
+        /* Mốc quy chế, ngày bắt đầu không phải "điều chỉnh". */
+        after: { description, performerUserId, performerName, followupDue: iv.followup_due ?? null, soBuoi, startedDate: iv.started_date ?? null },
       });
     }
     dongBoTrangThaiCase(iv.case_id);

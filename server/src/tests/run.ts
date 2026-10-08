@@ -2248,12 +2248,12 @@ check('"Đã xong" phải có ngày thực tế; người nhập không mặc đ
     }),
     /ngày thực hiện/, 'Ghi "đã xong" mà không có ngày',
   );
-  assertThrows(
-    () => cases.recordIntervention(P.coreTeacher, c.id, {
-      kind: 'tutor', description: 'Học tutor', status: 'started', startedDate: TODAY,
-    }),
-    /người thực hiện/, 'Không ghi ai làm mà vẫn lưu được',
-  );
+  /* PR-PA (§8): người KHÔNG còn bắt buộc — không ghi ai thì lưu trống, hệ thống vẫn KHÔNG tự lấy người nhập làm người làm. */
+  const khongNguoi = cases.recordIntervention(P.coreTeacher, c.id, {
+    kind: 'tutor', description: 'Học tutor', status: 'started', startedDate: TODAY,
+  }) as any;
+  const ivTrong = khongNguoi.interventions.find((i: any) => i.description === 'Học tutor');
+  assert(ivTrong && !ivTrong.performer, 'Không ghi ai làm mà hệ thống tự điền người');
   /*
    * Nhưng KHAI TƯỜNG MINH "chính tôi làm" thì hợp lệ. Đây là điều khác hẳn việc hệ thống
    * âm thầm lấy người nhập làm người thực hiện: một bên là lời khai, một bên là suy đoán.
@@ -2915,7 +2915,7 @@ check('Kết quả sau hỗ trợ là việc của NGƯỜI THỰC HIỆN; quá 
   const gvItems = reviewOf(gv);
   const mgrItems = reviewOf(mgr);
   assert(gvItems.length > 0, 'Người ghi phương án không thấy việc cập nhật kết quả của mình');
-  assert(gvItems.every((i: any) => i.actionLabel === 'Ghi kết quả'), 'Nhãn hành động không đúng');
+  assert(gvItems.every((i: any) => i.actionLabel === 'Kết quả'), 'Nhãn hành động không đúng');
   const overdueForManager = mgrItems.filter((i: any) => i.urgency === 'overdue');
   assert(overdueForManager.length === mgrItems.length,
     'Quản lý đang thấy cả việc CHƯA quá hạn của người khác — chỉ quá hạn mới đến tay Quản lý');
@@ -6854,9 +6854,9 @@ check('[18.2-8] Có case SOS 2 mở từ điểm, chưa có phương án tự si
       WHERE sc.sos_level >= 2 AND sc.origin_kind = 'mock'`,
   );
   assert(sos2.length > 0, 'Bộ demo không có case nào ở mức SOS 2 trở lên sinh từ điểm');
-  /* Không có phương án nào được máy tự sinh: mọi phương án đều có người ghi. */
+  /* Không có phương án nào được máy tự sinh: mọi phương án đều có người ghi. PR-PA (§8): Tự học không có người — PA quy chế Tự học chờ GVBM xác nhận. */
   const ghost = one(
-    `SELECT COUNT(*) n FROM case_interventions WHERE recorded_by IS NULL AND performer_user_id IS NULL`,
+    `SELECT COUNT(*) n FROM case_interventions WHERE recorded_by IS NULL AND performer_user_id IS NULL AND kind != 'self_study'`,
   ).n;
   assert(ghost === 0, `${ghost} phương án không có ai đứng sau — dấu vết của phương án tự sinh`);
 });
@@ -7639,7 +7639,7 @@ check('PR-E · <Han>: sáu loại hạn có sáu nhãn khác nhau, đúng bảng
   const t = (loai: any, han = '2026-09-23') => domain.deadlineView({ kind: loai, due: han, today: '2026-09-14' }).text;
   assert(t('xac-minh-sos') === 'Xác nhận nguyên nhân · hạn 23/09', `xac-minh-sos: "${t('xac-minh-sos')}"`);
   assert(t('lap-pa') === 'Thêm PA · hạn 23/09', `lap-pa: "${t('lap-pa')}"`);
-  assert(t('cap-nhat-pa') === 'Ghi kết quả tuần W3 SEP · hạn hết T2 23/09', `cap-nhat-pa: "${t('cap-nhat-pa')}"`);
+  assert(t('cap-nhat-pa') === 'Kết quả tuần W3 SEP · hạn hết T2 23/09', `cap-nhat-pa: "${t('cap-nhat-pa')}"`);
   /* PR-YT4 (K5-24): `thuc-hien-y-thuc`, `hoan-thanh-y-thuc` bỏ — Ý thức dùng `xu-ly-vi-pham`. */
   assert(t('xu-ly-vi-pham') === 'Xử lý vi phạm · hạn 23/09', `xu-ly-vi-pham: "${t('xu-ly-vi-pham')}"`);
   assert(!(domain.DEADLINE_KINDS as readonly string[]).includes('thuc-hien-y-thuc') && !(domain.DEADLINE_KINDS as readonly string[]).includes('hoan-thanh-y-thuc'), 'hai loại cũ còn');
@@ -9209,6 +9209,9 @@ await runPrLcTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, ad
 // ==================================================================== PR-LCb (Chốt lộ trình · panel Lộ trình tiếp theo)
 const { runPrLcbTests } = await import('./prLcb.tests.ts');
 await runPrLcbTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-PA (PA đồng bộ một mẫu §8)
+const { runPrPaTests } = await import('./prPa.tests.ts');
+await runPrPaTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-CL (Chuyển lớp làm lại: FT → Thường, Cuối khoá, lớp chuyển đến)
 const { runPrClTests } = await import('./prCl.tests.ts');
 await runPrClTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);

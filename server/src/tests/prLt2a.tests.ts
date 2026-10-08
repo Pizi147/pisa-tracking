@@ -326,7 +326,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     const dt0 = chiTiet(ha, cGv.id);
     assert(dt0.hoanThanh?.an === true && /Hoàn thành được sau khi PA theo quy chế kết thúc \(đến Final Test/.test(dt0.hoanThanh.dong), JSON.stringify(dt0.hoanThanh));
     conn.prepare(`UPDATE case_interventions SET followup_due = ? WHERE nhom_bo_tro = ?`).run(d.addDaysIso(TODAY, -1), paBt(cGv.id).nhom_bo_tro);
-    assert(/^Ghi kết quả cuối/.test(chiTiet(ha, cGv.id).viecTiep.chu), `việc tiếp: ${chiTiet(ha, cGv.id).viecTiep.chu}`);
+    assert(/^Kết quả cuối/.test(chiTiet(ha, cGv.id).viecTiep.chu), `việc tiếp: ${chiTiet(ha, cGv.id).viecTiep.chu}`);
     cases.updateResult(ha, paBt(cGv.id).id, { outcome: 'improved', note: 'Đã đạt yêu cầu về thì và cách đặt câu cơ bản.' });
     for (const c of [cGv, cP]) {
       const pa = paBt(c.id);

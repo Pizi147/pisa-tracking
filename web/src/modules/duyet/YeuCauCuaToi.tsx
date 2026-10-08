@@ -16,7 +16,7 @@ export function YeuCauCuaToi() {
   const ds = data?.the ?? [];
   if (!ds.length) {
     return <Card><Empty title="Bạn chưa gửi yêu cầu nào cho Quản lý"
-      hint="Đề xuất PA cần duyệt, Xin hỗ trợ QL khi ghi kết quả tuần, hoặc Đề xuất sửa ở ⋯ hồ sơ học viên — mọi yêu cầu đều hiện ở đây." /></Card>;
+      hint="Đề xuất PA cần duyệt, Xin hỗ trợ QL ở Kết quả tuần, hoặc Đề xuất sửa ở ⋯ hồ sơ học viên — mọi yêu cầu đều hiện ở đây." /></Card>;
   }
   const cho = ds.filter((x) => x.trangThai === 'cho').length;
   return (

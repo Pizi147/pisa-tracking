@@ -42,7 +42,7 @@ export function MetricTiles({ branchId, ct }: { branchId: number | null; ct: Chu
       <O id="case-cho-xac-dinh-nguyen-nhan" branchId={branchId} ct={ct} nhan="Case chờ xác nhận nguyên nhân"
         phu={() => <SoPhu id="case-xac-dinh-nguyen-nhan-qua-han" branchId={branchId} ct={ct}
           sau={(n) => (n ? <span className="font-semibold text-late"> quá hạn<span className="font-normal text-slate-500"> · đã thành thẻ Báo QL</span></span> : 'không có Case quá hạn')} />} />
-      <O id="pa-can-cap-nhat" branchId={branchId} ct={ct} nhan="PA quá hạn ghi kết quả"
+      <O id="pa-can-cap-nhat" branchId={branchId} ct={ct} nhan="PA quá hạn Kết quả"
         phu={(d) => (d.hanCu ? tuanCuaHanGhiKetQua(d.hanCu, homNay) : null)} />
     </div>
   );

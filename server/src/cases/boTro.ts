@@ -9,6 +9,7 @@ import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { taoYeuCau } from '../duyet/yeuCau.ts';
 import { caseAccess, caseDetail } from './cases.ts';
 import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
+import { chenPa } from './taoPa.ts';
 import { dongBoTrangThaiCase } from './sosState.ts';
 import { ghiMoc } from './sosAuto.ts';
 
@@ -49,18 +50,16 @@ export function taoPaBoTro(conn: any, x: { caseId: number; attempt: any; skill: 
   const gvcn = () => (conn.prepare(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active' LIMIT 1`)
     .get(x.attempt.class_id ?? 0) as any)?.user_id ?? null;
   const nguoiDay = truoc ?? (b?.chung ? gvcn() : suggestCaseOwner({ classId: x.attempt.class_id ?? null, category: x.category }));
-  const info = conn.prepare(
-    `INSERT INTO case_interventions (case_id, kind, description, performer_user_id, recorded_by, status, needs_approval, preset, moc_quy_che,
-                                     nhom_bo_tro, han_ke_hoach, followup_due, created_at)
-     VALUES (?, 'bo_tro', ?, ?, NULL, 'planned', 0, 1, 'den_cuoi_khoa', ?, ?, ?, ?)`,
-  ).run(x.caseId, moTaBoTro(x.ct, x.skill), nguoiDay, nhom, x.han, mocCuoiKhoa(x.attempt.cycle_id ?? null, x.attempt.class_id ?? null), nowIso());
-  return Number(info.lastInsertRowid);
+  return chenPa(conn, [{
+    caseId: x.caseId, kind: 'bo_tro', description: moTaBoTro(x.ct, x.skill), performerUserId: nguoiDay, status: 'planned', preset: true,
+    mocQuyChe: 'den_cuoi_khoa', nhomBoTro: nhom, hanKeHoach: x.han, followupDue: mocCuoiKhoa(x.attempt.cycle_id ?? null, x.attempt.class_id ?? null),
+  }])[0];
 }
 
 // ==================================================================== Xác nhận Case + Nộp kế hoạch + thẻ `ke_hoach_bo_tro`
 
 const CO_NGUYEN_NHAN = `EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary')`;
-const nhomChung = (nhom: string) => nhom.split(':').length === 2;   // `gk:{lượt}` = FOU chung · `gk:{lượt}:{môn}` = BE/ELE
+export const nhomChung = (nhom: string) => nhom.split(':').length === 2;   // `gk:{lượt}` = FOU chung · `gk:{lượt}:{môn}` = BE/ELE
 
 /** Các dòng PA bổ trợ CÒN SỐNG của một nhóm (kèm Case) — cũ trước mới sau. */
 function dongNhom(conn: any, nhom: string): any[] {
@@ -206,6 +205,15 @@ export function chayNeuKeHoachDaDuyet(conn: any, caseId: number, homNay: string,
   return the?.trang_thai === 'duyet' ? chayPaBoTro(conn, pa.nhom_bo_tro, the.nguoi_xin ?? nguoiLam, homNay) : 0;
 }
 
+/** Các dòng KHÁC cùng nhóm bổ trợ đang chạy, Case chưa đóng — Kết quả / Điều chỉnh / Sửa PA (PR-PA) áp cả nhóm. */
+export function anhEmNhom(conn: any, iv: { id: number; nhom_bo_tro: string | null }): any[] {
+  if (!iv.nhom_bo_tro) return [];
+  return conn.prepare(
+    `SELECT iv.* FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
+      WHERE iv.nhom_bo_tro = ? AND iv.kind IN ('bo_tro', 'bo_tro_mien_phi') AND iv.id != ? AND iv.status = 'started' AND sc.status != 'done' ORDER BY iv.id`,
+  ).all(iv.nhom_bo_tro, iv.id) as any[];
+}
+
 /**
  * GHI KẾT QUẢ CHÉP CẢ NHÓM (M-03, Q10): PA chung (FOU) ghi MỘT lần — các dòng KHÁC cùng nhóm đang chạy, Case chưa đóng, nhận một bản
  * `case_followups` GIỐNG HỆT (đổi case_id / intervention_id) rồi áp CÙNG cập nhật trạng thái đã áp cho dòng chính (chu kỳ mới + hạn mới, hoặc
@@ -217,17 +225,14 @@ export function chepKetQuaNhom(conn: any, iv: any, followupId: number, x: {
 }): number {
   if (!iv.nhom_bo_tro) return 0;
   const f = conn.prepare('SELECT * FROM case_followups WHERE id = ?').get(followupId) as any;
-  const anhEm = conn.prepare(
-    `SELECT iv.* FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
-      WHERE iv.nhom_bo_tro = ? AND iv.kind IN ('bo_tro', 'bo_tro_mien_phi') AND iv.id != ? AND iv.status = 'started' AND sc.status != 'done' ORDER BY iv.id`,
-  ).all(iv.nhom_bo_tro, iv.id) as any[];
+  const anhEm = anhEmNhom(conn, iv);
   for (const s of anhEm) {
     const info = conn.prepare(
       `INSERT INTO case_followups (case_id, intervention_id, observed_on, observer_user_id, outcome, note, evidence_attempt_id, next_step, cycle_no, cycle_due,
-                                   late, metrics, remaining_issue, decision_note, created_at, phu_trach_user_id, phu_trach_ten)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+                                   late, metrics, remaining_issue, decision_note, created_at, phu_trach_user_id, phu_trach_ten, so_buoi)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     ).run(s.case_id, s.id, f.observed_on, f.observer_user_id, f.outcome, f.note, f.evidence_attempt_id, f.next_step, f.cycle_no, f.cycle_due,
-          f.late, f.metrics, f.remaining_issue, f.decision_note, nowIso(), f.phu_trach_user_id, f.phu_trach_ten);
+          f.late, f.metrics, f.remaining_issue, f.decision_note, nowIso(), f.phu_trach_user_id, f.phu_trach_ten, f.so_buoi);   // PR-PA: Số buổi + Người dạy tuần này
     if (x.nextStep === 'complete') {
       conn.prepare(`UPDATE case_interventions SET status = 'completed', completed_date = ?, closed_reason = ?, started_date = COALESCE(started_date, cycle_started_on, ?), updated_at = ? WHERE id = ?`)
         .run(x.completedOn, x.lanCuoi ? 'het_moc' : 'done', x.completedOn, nowIso(), s.id);

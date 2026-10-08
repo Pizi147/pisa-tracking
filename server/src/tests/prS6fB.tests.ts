@@ -557,7 +557,9 @@ async function runTask6(t: YThucTestKit, d: any) {
     const sb = doc('web/src/modules/cases/SkillBoard.tsx');
     assert(/tt\.han && !daXong && \(tamDung/.test(sb), 'hàng Case: mọi hạn → Tạm dừng');
     assert(/phu=\{tamDung && han \? <NhanTamDung/.test(sb), 'hàng PA: mọi hạn → Tạm dừng');
-    assert(/hanGhi && !choDuyet && \(data\.tamDungTu \? <NhanTamDung/.test(doc('web/src/modules/cases/CasePanel.tsx')), 'thẻ PA Ngăn Case: mọi hạn → Tạm dừng');
+    /* PR-PA Task 6: chân dòng PA tính cờ `hienHan` một lần. */
+    const cpPa = doc('web/src/modules/cases/CasePanel.tsx');
+    assert(/const hienHan = !!hanGhi && !choDuyet;/.test(cpPa) && /hienHan && hanGhi && \(data\.tamDungTu \? <NhanTamDung/.test(cpPa), 'thẻ PA Ngăn Case: mọi hạn → Tạm dừng');
   });
 
   check('S6F-b (6) · ngày Tạm dừng trước lần Quay lại gần nhất → 400 (khoangTamDung không ghép sai cặp)', () => {

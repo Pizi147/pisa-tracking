@@ -197,8 +197,8 @@ export async function runHocVienLopTests(t: YThucTestKit) {
       nhapDiem: { kyNang: ['listening', 'writing'], dot: 'Progress Test', quaHan: false },
       cases: [
         { caseId: 1, topic: 'writing2', viecTiep: { chu: 'Thêm PA', loaiHan: 'lap-pa', han: null } },
-        { caseId: 2, topic: 'listening', viecTiep: { chu: 'Ghi kết quả PA Nghe podcast', loaiHan: 'cap-nhat-pa', han: '2026-09-13', paId: 9 } },
-        { caseId: 3, topic: 'reading', viecTiep: { chu: 'Ghi kết quả PA Đọc báo', loaiHan: 'cap-nhat-pa', han: '2026-09-20', paId: 10 } },
+        { caseId: 2, topic: 'listening', viecTiep: { chu: 'Kết quả PA Nghe podcast', loaiHan: 'cap-nhat-pa', han: '2026-09-13', paId: 9 } },
+        { caseId: 3, topic: 'reading', viecTiep: { chu: 'Kết quả PA Đọc báo', loaiHan: 'cap-nhat-pa', han: '2026-09-20', paId: 10 } },
         { caseId: 4, topic: 'speaking', viecTiep: null },
       ],
       yThuc: null,
@@ -206,10 +206,10 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     });
     eq(v.map((x: any) => [x.viec, x.han, x.quaHanNgay, x.tone, x.title]), [
       /* PR-S5F-b (mockup 21): việc ghi kết quả PA nói tuần của kết quả. */
-      ['Ghi kết quả PA L · tuần W1 SEP', 'hạn hết T2 13/09', 1, 'danger', 'Ghi kết quả PA Nghe podcast · Listening · tuần W1 SEP · hạn hết T2 13/09 · quá hạn 1 ngày'],
+      ['Kết quả PA L · tuần W1 SEP', 'hạn hết T2 13/09', 1, 'danger', 'Kết quả PA Nghe podcast · Listening · tuần W1 SEP · hạn hết T2 13/09 · quá hạn 1 ngày'],
       ['Nhập điểm L, W · Progress Test', null, null, 'warn', 'Nhập điểm L, W · Progress Test'],
       ['Thêm PA W2', null, null, 'warn', 'Thêm PA · Writing Task 2'],
-      ['Ghi kết quả PA R · tuần W2 SEP', 'hạn hết T2 20/09', null, 'info', 'Ghi kết quả PA Đọc báo · Reading · tuần W2 SEP · hạn hết T2 20/09'],
+      ['Kết quả PA R · tuần W2 SEP', 'hạn hết T2 20/09', null, 'info', 'Kết quả PA Đọc báo · Reading · tuần W2 SEP · hạn hết T2 20/09'],
     ], 'Thứ tự và chữ (Case không việc bị bỏ)');
     /* Ý kiểm cũ "Case nói trước" (chonCaseChinh) nay là thứ tự hàng của `hangCanHoTro` — kiểm ở prHvl.tests.ts (T19). */
   });

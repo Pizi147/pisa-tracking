@@ -58,9 +58,9 @@ export async function runPrSosTests(t: YThucTestKit) {
     const xn = d.viecTiepCuaCase({ ...c, hasCause: true }, [pa({ choXacNhan: true })], hom);
     assert(xn?.chu === 'Xác nhận PA Tutor' && xn.han === '2026-09-16' && xn.loaiHan === 'xac-minh-sos' && xn.paId === 1, JSON.stringify(xn));
     const chay = { ...c, hasCause: true, coPaChoXacNhan: false, status: 'in_progress' as const };
-    assert(d.viecTiepCuaCase(chay, [pa({ followupDue: '2026-09-27' })], hom)?.chu === 'Ghi kết quả cuối Tutor', 'lần cuối');
+    assert(d.viecTiepCuaCase(chay, [pa({ followupDue: '2026-09-27' })], hom)?.chu === 'Kết quả cuối Tutor', 'lần cuối');
     const g = d.viecTiepCuaCase(chay, [pa({ id: 2, ten: 'A', batBuoc: false, followupDue: null, actionDue: '2026-09-21' }), pa({})], hom);
-    assert(g?.chu === 'Ghi kết quả PA A' && g.loaiHan === 'cap-nhat-pa' && g.han === '2026-09-21', JSON.stringify(g));
+    assert(g?.chu === 'Kết quả PA A' && g.loaiHan === 'cap-nhat-pa' && g.han === '2026-09-21', JSON.stringify(g));
     assert(d.viecTiepCuaCase(chay, [pa({ xong: true })], hom)?.chu === 'Hoàn thành Case', 'hoàn thành');
     assert(d.viecTiepCuaCase({ ...chay, fromSos: false }, [], hom)?.loaiHan === 'lap-pa', 'Thêm PA');
     assert(d.viecTiepCuaCase({ ...chay, status: 'done' }, [], hom) === null, 'xong → không việc');
@@ -396,8 +396,10 @@ export async function runPrSosTests(t: YThucTestKit) {
   check('SOS (6) · Chuyển lớp FT → FT: PA quy chế chưa khép đổi người sang GVBM đúng kỹ năng lớp mới, ghi lịch sử (K3-44)', () => {
     const { st, c, iv } = w2DangChay('T6e');
     const lopMoi = get(`SELECT c.id, ta.user_id FROM classes c JOIN teacher_assignments ta ON ta.class_id = c.id AND ta.skill = 'writing2' AND ta.status = 'active'
-      WHERE c.is_fast_track = 1 AND c.status = 'active' AND c.id != ? AND ta.user_id != ? LIMIT 1`, CLASS, iv.performer_user_id);
+      WHERE c.is_fast_track = 1 AND c.status = 'active' AND c.id != ? AND ta.user_id != COALESCE(?, 0) LIMIT 1`, CLASS, iv.performer_user_id);   // PR-PA: PA Tự học không người
     assert(lopMoi, 'Bộ thử thiếu lớp FT khác có GV W2 khác');
+    /* PR-PA (§8): Tự học không có người — bàn giao bỏ qua (prPa PA8); PA Tutor thì đổi người. */
+    conn.prepare(`UPDATE case_interventions SET kind = 'tutor' WHERE id = ?`).run(iv.id);
     sosAuto.banGiaoPaQuyChe(st.id, lopMoi.id, P.admin.userId);
     assert(get('SELECT performer_user_id u FROM case_interventions WHERE id = ?', iv.id).u === lopMoi.user_id, 'chưa đổi người');
     assert(get(`SELECT new_value v FROM sos_case_history WHERE case_id = ? AND field = 'pa_performer'`, c.id)?.v.includes(' → '), 'thiếu lịch sử bàn giao');
@@ -480,7 +482,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     assert(h?.chu === 'Cần làm · chờ nguyên nhân', JSON.stringify(h));
     const pa = { status: 'planned', lastOutcome: null, preset: true, confirmedAt: null, pendingApproval: false, approvalDue: null, actionDue: null, actionOverdue: false, completedOn: null };
     assert(d.viecTiepPhuongAn({ ...pa, choXacNhan: true }).loai === 'cho-xac-nhan', 'chờ xác nhận');
-    assert(d.viecTiepPhuongAn({ ...pa, status: 'started', lanCuoi: true, actionDue: '2026-09-28' }).text === 'Ghi kết quả cuối', 'ghi cuối');
+    assert(d.viecTiepPhuongAn({ ...pa, status: 'started', lanCuoi: true, actionDue: '2026-09-28' }).text === 'Kết quả cuối', 'ghi cuối');
   });
   check('SOS (8) · Hành trình: PA quy chế chờ xác nhận (chưa ngày bắt đầu) không thành khối PA có `tu` null (bấm thử: tab trắng); tên Case dạng T21', () => {
     const { st } = mt1Sos3('T8hj');
@@ -496,7 +498,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     const f = doc('web/src/modules/yThuc/CaseSosControls.tsx');
     for (const ten of ['XacNhanCasePanel', 'XacNhanPaPanel', 'KhongTheoDoiForm']) assert(new RegExp(`export function ${ten}\\b`).test(f), ten);
     assert(!/PresetPlanActions|CauseDeterminationPanel|\/confirm|\/replace|Dự kiến kết thúc|Bằng chứng/.test(f), 'còn thứ cũ');
-    assert(/\/xac-nhan`/.test(f) && /\/xac-nhan-pa`/.test(f) && /useLoiForm\(/.test(f) && /<OKhac/.test(f) && /GOI_Y_MO_TA_PA/.test(f), 'thiếu đường / thành phần');
+    assert(/\/xac-nhan`/.test(f) && /\/xac-nhan-pa`/.test(f) && /useLoiForm\(/.test(f) && /<OKhac/.test(f) && /<FormPa/.test(f), 'thiếu đường / thành phần');   // PR-PA: gợi ý mô tả PA ở FormPa
   });
   check('SOS (9) · MILESTONE_TITLE có nhãn cho MỌI kind mốc máy chủ ghi (K3-21); NganCase nút chính theo việc tiếp, ẩn Hoàn thành khi PA quy chế chưa khép', () => {
     const cp = doc('web/src/modules/cases/CasePanel.tsx');
@@ -516,11 +518,12 @@ export async function runPrSosTests(t: YThucTestKit) {
 
   // ------------------------------------------------------------------ Task 10 · form PA
   check('SOS (10) · 4 form không còn "Dự kiến kết thúc" / followupDue; gợi ý mô tả + kết quả PA; Điều chỉnh không có ChonTuan; Hoàn thành không chọn sẵn', () => {
-    const f4 = ['web/src/modules/cases/ThaoTacCase.tsx', 'web/src/modules/cases/CapNhatTuan.tsx', 'web/src/modules/cases/QuickReport.tsx', 'web/src/modules/yThuc/CaseSosControls.tsx'];
+    const f4 = ['web/src/modules/cases/ThaoTacCase.tsx', 'web/src/modules/cases/CapNhatTuan.tsx', 'web/src/modules/cases/QuickReport.tsx', 'web/src/modules/yThuc/CaseSosControls.tsx', 'web/src/modules/cases/FormPa.tsx'];
     for (const f of f4) assert(!/Dự kiến kết thúc|followupDue/.test(doc(f)), `${f} còn dự kiến kết thúc`);
     const cnt = doc('web/src/modules/cases/CapNhatTuan.tsx');
-    assert(/GOI_Y_MO_TA_PA/.test(doc(f4[0])) && /GOI_Y_MO_TA_PA/.test(cnt) && /GOI_Y_MO_TA_PA/.test(doc(f4[2])), 'thiếu gợi ý mô tả PA');
-    assert(/GOI_Y_KET_QUA_PA/.test(cnt) && /quyetDinhChoPa/.test(cnt) && /Ghi kết quả cuối/.test(cnt) && !/ChonTuan/.test(cnt), 'Ghi kết quả chưa theo v4');
+    /* PR-PA (§8): Thêm PA / Thay PA dùng một form PA — gợi ý mô tả ở FormPa. */
+    assert(/<FormPa/.test(doc(f4[0])) && /<FormPa/.test(cnt) && /GOI_Y_MO_TA_PA/.test(doc(f4[4])) && /GOI_Y_MO_TA_PA/.test(doc(f4[2])), 'thiếu gợi ý mô tả PA');
+    assert(/GOI_Y_KET_QUA_PA/.test(cnt) && /quyetDinhChoPa/.test(cnt) && /'Kết quả cuối'/.test(cnt) && !/ChonTuan/.test(cnt), 'Ghi kết quả chưa theo v4');
     assert(!/useState<string>\('improved'\)/.test(doc(f4[0])), 'Hoàn thành còn chọn sẵn');
     assert(/Ghi một PA đã làm trước đây/.test(doc(f4[0])) && /PA theo quy chế vẫn chạy — PA này là hỗ trợ thêm\./.test(doc(f4[0])), 'Thêm PA thiếu chữ K3-18');
     const qr = doc(f4[2]);
