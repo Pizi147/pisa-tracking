@@ -71,4 +71,26 @@ export async function runPrCt2Tests(t: YThucTestKit) {
     const khung = fs.readFileSync(path.join(REPO, 'web/src/ui/KhungPanel.tsx'), 'utf8');
     assert(/\{dem && dem\.co < dem\.can && <span/.test(khung), 'Truong còn hiện bộ đếm khi đã đạt');
   });
+
+  check('CT2-1 · số buổi bổ trợ theo dải × chương trình; ELE không bổ trợ; coBoTroFinal', () => {
+    const bo = (ct: string, tyLe: number, monTruot: string[]) => d.goiYCuoiKhoa({ ct, tyLe, monTruot })?.boTroNeuLen ?? null;
+    const s = (b: any) => b && `${b.soBuoi}·${b.soTuan}`;
+    assert(s(bo('PREFOU', 0.55, [])) === '4·2' && s(bo('PREFOU', 0.65, [])) === '2·1', `Pre FOU ${s(bo('PREFOU', 0.55, []))} ${s(bo('PREFOU', 0.65, []))}`);
+    assert(s(bo('FOU', 0.55, ['listening', 'writing'])) === '4·2', `FOU 55% ${s(bo('FOU', 0.55, ['listening', 'writing']))}`);
+    assert(s(bo('FOU', 0.65, ['listening', 'writing'])) === '2·1', `FOU 65% ${s(bo('FOU', 0.65, ['listening', 'writing']))}`);
+    assert(s(bo('BE', 0.55, ['reading'])) === '2·2', `BE 55% ${s(bo('BE', 0.55, ['reading']))}`);
+    assert(bo('ELE', 0.55, ['reading']) === null && bo('ELE', 0.65, ['reading']) === null, 'ELE phải không bổ trợ');
+    assert(!d.goiYCuoiKhoa({ ct: 'ELE', tyLe: 0.65, monTruot: ['reading'] }).nhan.includes('bổ trợ'), 'nhãn ELE còn "bổ trợ"');
+    for (const ct of ['PREFOU', 'FOU', 'BE', 'ELE']) {
+      assert(bo(ct, 0.45, ['reading']) === null && bo(ct, 0.72, []) === null, `${ct} < 50 / ≥ 70`);
+    }
+    const hop = d.chuHopKetLuan({ ct: 'ELE', tyLe: 0.55, scored: 4, required: 4, mon: [], goiY: d.goiYCuoiKhoa({ ct: 'ELE', tyLe: 0.55, monTruot: ['reading'] }), quyetDinh: { huong: 'len_lop', luc: '2026-10-05' }, ketLuanFt: null });
+    assert(!hop.nhan.includes('bổ trợ'), `hộp Kết luận ELE: ${hop.nhan}`);
+    assert(d.coBoTroFinal('BE', true) === false && d.coBoTroFinal('ELE', true) === false, 'BE/ELE → FT');
+    assert(d.coBoTroFinal('BE', false) === true && d.coBoTroFinal('FOU', true) === true && d.coBoTroFinal('PREFOU', false) === true, 'còn lại');
+  });
+
+  check('CT2-2 · hạn chấm MT0 = thứ Tư tuần sau tuần thi', () => {
+    assert(d.hanChamMt0('2026-10-19') === '2026-10-28' && d.hanChamMt0('2026-10-22') === '2026-10-28', d.hanChamMt0('2026-10-19'));
+  });
 }

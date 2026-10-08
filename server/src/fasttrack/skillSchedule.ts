@@ -296,7 +296,7 @@ export function viewSkill(input: {
   pendingMove?: { id: number; decideBy: string; toWeek: string | null; moveNo: number } | null;
   /** PR-MT (T34, M3): lượt MT lịch sử — không nợ, không hạn, không quá hạn. Chốt MỘT chỗ; mọi nơi đếm nợ đọc `progress` này. */
   lichSu?: boolean;
-  /** PR-MT0: hạn chấm MT0 = Chủ nhật tuần sau. */
+  /** PR-MT0: hạn chấm MT0 = thứ Tư tuần sau (PR-CT2). */
   mt0?: boolean;
 }): SkillScheduleView {
   const { row, mode, scored } = input;
