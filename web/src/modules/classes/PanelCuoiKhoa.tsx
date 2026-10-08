@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
@@ -61,6 +61,7 @@ export function PanelCuoiKhoa({ classId, onClose, onDone }: { classId: number; o
   const [busy, setBusy] = useState(false);
   const [tuanChung, setTuanChung] = useState('');
   const [dongs, setDongs] = useState<Record<number, Partial<Dong>>>({});
+  const dongsMoi = useRef(dongs); dongsMoi.current = dongs;
   /** Em đã sửa phần QUYẾT ĐỊNH (không tính ghi chú) — lệnh cũ chỉ gửi lại khi có trong tập này. */
   const [daSua, setDaSua] = useState<ReadonlySet<number>>(new Set());
   const [nhomLop, setNhomLop] = useState<Partial<Record<Huong, number>>>({});
@@ -151,6 +152,9 @@ export function PanelCuoiKhoa({ classId, onClose, onDone }: { classId: number; o
   const itemLuu = ({ r: { s, d }, huong, target }: DongLuuCk<(typeof rows)[number]>) => ({
     studentId: s.id, huong, ghiChu: d.ghiChu.trim() || null, ...(target ? { mucTieu: mucTieuO(d) } : {}),
   });
+  /* Sau await: dòng chưa đổi từ lúc gửi (`snap`) lấy bản đã trừ phần đã ghi (`sau`); dòng gõ thêm trong lúc chờ giữ nguyên. */
+  const apSau = (snap: Record<number, Partial<Dong>>, sau: Record<number, Partial<Dong>>) => (cur: Record<number, Partial<Dong>>) =>
+    Object.fromEntries(Object.entries(cur).flatMap(([k, x]) => { const g = x === snap[Number(k)] ? sau[Number(k)] : x; return g ? [[k, g]] : []; }));
   const lamMoi = () => { for (const k of ['/classes', '/students', '/hoc-vien-lop', '/my-work', '/lenh-chuyen', '/yeu-cau']) invalidate(k); };
 
   const luu = async () => {
@@ -161,7 +165,7 @@ export function PanelCuoiKhoa({ classId, onClose, onDone }: { classId: number; o
       lamMoi();
       toast.push('ok', laQl ? `Đã lưu hướng ${luuDuoc.length} em` : `Đã lưu ${luuDuoc.length} em`);
       /* QL: chỉ bỏ ghi chú của dòng ĐÃ lưu (rà cuối I1). GVCN: mọi dòng sửa được đều vào lô (chưa Hướng + ghi chú → Chưa quyết) nên đóng. */
-      if (laQl) { setDongs(sauGhiPanel(dongs, daSua, { ok: [], failed: [] }, { ids: luuDuoc.map((x) => x.r.id), loi: false }).dongs); reload(); }
+      if (laQl) { setDongs(apSau(dongs, sauGhiPanel(dongs, daSua, { ok: [], failed: [] }, { ids: luuDuoc.map((x) => x.r.id), loi: false }).dongs)); reload(); }
       else { onDone(); onClose(); }
     } catch (e: any) {
       const sid = Number(e?.details?.studentId);
@@ -196,16 +200,18 @@ export function PanelCuoiKhoa({ classId, onClose, onDone }: { classId: number; o
       lamMoi();
       /* Em đã xác nhận rời panel; em lỗi + sửa chưa gửi được (lớp, tuần của em "Chưa gửi") ở lại — chỉ đóng khi không còn gì. */
       const sau = sauGhiPanel(dongs, daSua, r, { ids: luuSau.map((x) => x.r.id), loi: loiGc });
-      if (sau.dong) {
+      /* Có chữ gõ thêm trong lúc chờ → không đóng, giữ lại cho em. */
+      const coGoThem = Object.entries(dongsMoi.current).some(([k, x]) => x !== dongs[Number(k)]);
+      if (sau.dong && !coGoThem) {
         toast.push('ok', `Đã xác nhận ${r.ok.length} em`);
         onDone(); onClose();
         return;
       }
-      setDaSua(sau.daSua);
-      setDongs(sau.dongs);
+      setDaSua((cur) => new Set([...cur].filter((id) => !r.ok.includes(id))));
+      setDongs(apSau(dongs, sau.dongs));
       setLoiDong(Object.fromEntries(r.failed.map((f) => [f.studentId, f.message])));
       setBuoc(1);
-      const con = Object.keys(sau.dongs).length;
+      const con = Object.keys(apSau(dongs, sau.dongs)(dongsMoi.current)).length;
       if (r.failed.length) toast.push('error', `${r.failed.length} em chưa xác nhận được — xem lỗi ở từng hàng`);
       else toast.push('ok', `Đã xác nhận ${r.ok.length} em${!loiGc && con ? ` · ${con} em chưa gửi` : ''}`);
       reload();
