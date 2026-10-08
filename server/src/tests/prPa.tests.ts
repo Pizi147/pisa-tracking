@@ -608,6 +608,11 @@ export async function runPrPaTests(t: YThucTestKit) {
     cases.updateResult(P.lrTeacher, iv, { ...KQ, soBuoi: 3, nguoiDay: { performerUserId: GV_L } });
     const dto = paDto(c, iv);
     assert(d.nutDongPa(dto, xem).sua === true, JSON.stringify({ ghiDuoc: dto.ghiDuoc, status: dto.status }));
+    cases.updateResult(P.lrTeacher, iv, { ...KQ, decision: 'end', soBuoi: 1, nguoiDay: { performerUserId: GV_L } });
+    const xong = paDto(c, iv);
+    assert(xong.status === 'completed' && !d.nutDongPa(xong, xem).sua, JSON.stringify({ status: xong.status }));
+    const loi = maLoi(() => cases.suaPa(P.lrTeacher, iv, { description: 'Tutor nghe chép 12 buổi' }));
+    assert(loi.status === 400, JSON.stringify(loi));
   });
 
   check('PA19 · bảng kỹ năng: PA có Số buổi mang soBuoi + daDay (dòng phụ "3/10 buổi"); kết quả tuần nói nguoiDay (không còn phuTrach)', () => {

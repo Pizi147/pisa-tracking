@@ -14,7 +14,7 @@ import { caseStatusLabel, fmtBand, skillLabel, sosLabel, sosTone } from '../../l
 import {
   INTERVENTION_KIND_LABEL, INTERVENTION_STATUS_LABEL,
   NEXT_STEP_LABEL, OUTCOME_MARK, OUTCOME_TONE,
-  chuKhoangPa, coNguoiDay, deadlineView, demBuoi, nhanNguoiDay, nutDongPa, outcomeLabelFor, tenMon, tuanLich, type TrangThai,
+  chuKhoangPa, coNguoiDay, deadlineView, demBuoi, nhanNguoiDay, nutDongPa, outcomeLabelFor, soDongNhatKyPa, tenMon, tuanLich, type TrangThai,
 } from '@shared/domain/index.ts';
 import { DongXinYKien } from './DongXinYKien.tsx';
 import { NganCase } from '../students/NganCase.tsx';
@@ -263,7 +263,6 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
   const chuaChay = !!iv.chuaChay;
   const choKeHoachDuyet = chuaChay && bt?.keHoach?.trangThai === 'cho';
   const hanGhi = iv.actionDue && dangChay ? deadlineView({ kind: 'cap-nhat-pa', due: iv.actionDue, today: homNay }) : null;
-  const revisions: unknown[] = iv.revisions ?? [];
   const all: any[] = data.interventions ?? [];
   const tenPA = (x: any) => x.description || INTERVENTION_KIND_LABEL[x.kind as keyof typeof INTERVENTION_KIND_LABEL] || x.kind;
   const thayBang = iv.supersededBy ? all.find((x) => x.id === iv.supersededBy) ?? null : null;
@@ -277,8 +276,15 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
   const nut = nutDongPa(iv, { canApprove: data.viewer.canApprove, caseXong: data.status === 'done' });
   const dem = iv.soBuoi != null ? demBuoi(iv.daDay ?? 0, iv.soBuoi) : null;
   const quaHan = hanGhi?.tone === 'overdue';
-  const coChan = (hanGhi && !choDuyet) || (data.viewer.canEdit && iv.awaitingConfirmation && data.sos?.hasCause)
-    || (bt?.coTheNop && chuaChay && !choKeHoachDuyet) || (nut.ketQua && !iv.awaitingConfirmation && !chuaChay) || (choDuyet && !(data.viewer.canApprove && iv.yeuCau));
+  /* Chân dòng PA: mỗi phần một cờ, tính một lần; không phần nào thì không vẽ chân. */
+  const hienHan = !!hanGhi && !choDuyet;
+  const hienChoQl = choDuyet && !(data.viewer.canApprove && iv.yeuCau);
+  const nutXacNhan = !!(data.viewer.canEdit && iv.awaitingConfirmation && data.sos?.hasCause);
+  const nutKeHoach = !!(bt?.coTheNop && chuaChay && !choKeHoachDuyet);
+  const nutKetQua = nut.ketQua && !iv.awaitingConfirmation && !chuaChay;
+  const coChan = hienHan || hienChoQl || nutXacNhan || nutKeHoach || nutKetQua;
+  /* Nhật ký PA (mockup §8): Tạo · Kết quả từng tuần · Sửa PA / Điều chỉnh — luôn có ít nhất dòng Tạo. */
+  const ketQuaPa = data.followups ?? [];
   return (
     <li className="flex flex-col gap-[5px] rounded-lg border px-3 py-2.5 surface-2" style={{ borderColor: 'var(--line)', opacity: dangChay || choDuyet ? undefined : 0.75 }} data-pa-id={iv.id}>
       <div className="flex flex-wrap items-center gap-1.5">
@@ -331,21 +337,21 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
       {coChan && (
         <div className="flex flex-wrap items-center gap-2 border-t border-dashed pt-1" style={{ borderColor: 'var(--line)' }}>
           {/* Hạn Kết quả: "Kết quả · hạn T2 13/10"; quá hạn → "Kết quả · quá hạn n ngày" cam đậm; em Tạm dừng → nhãn Tạm dừng. */}
-          {hanGhi && !choDuyet && (data.tamDungTu ? <NhanTamDung tu={data.tamDungTu} />
+          {hienHan && hanGhi && (data.tamDungTu ? <NhanTamDung tu={data.tamDungTu} />
             : <span className={`text-[12.5px] tabular-nums ${quaHan ? 'font-semibold text-late' : 'text-slate-500'}`}>Kết quả · {hanGhi.quaHan ?? hanGhi.han}</span>)}
-          {choDuyet && !(data.viewer.canApprove && iv.yeuCau) && (
+          {hienChoQl && (
             <span className="text-xs text-slate-500 tabular-nums">
               Đang chờ Quản lý trả lời{iv.approvalDue ? ` · hạn ${ngan(iv.approvalDue)}` : ''} — thời gian chờ tính cho Quản lý.
             </span>
           )}
           <span className="flex-1" />
-          {data.viewer.canEdit && iv.awaitingConfirmation && data.sos?.hasCause && (
+          {nutXacNhan && (
             <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => onViec({ loai: 'xac-nhan-pa', paId: iv.id })}>Xác nhận PA</button>
           )}
-          {bt?.coTheNop && chuaChay && !choKeHoachDuyet && (
+          {nutKeHoach && (
             <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => onViec({ loai: 'ke-hoach', paId: iv.id })}>Nộp kế hoạch</button>
           )}
-          {nut.ketQua && !iv.awaitingConfirmation && !chuaChay && (
+          {nutKetQua && (
             <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => onViec({ loai: 'ghi-ket-qua', paId: iv.id })}
               title={`Kết quả tuần, tiến triển, và quyết định ${iv.preset ? 'Giữ nguyên / Điều chỉnh / Xin ý kiến' : 'Giữ nguyên / Điều chỉnh / Thay / Kết thúc'}`}>
               {iv.lanCuoi ? 'Kết quả cuối' : 'Kết quả'}
@@ -353,14 +359,11 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
           )}
         </div>
       )}
-      {/* "Đã điều chỉnh n lần" gộp vào Nhật ký PA (mockup §8): n = số lần Sửa PA + Điều chỉnh; mở ra thấy dòng Tạo và các lần sửa, cũ → mới.
-          Kết quả từng tuần đã ở "Lịch sử kết quả" cuối thẻ, nên không lặp ở đây. */}
-      {revisions.length > 0 && (
-        <details>
-          <summary className="cursor-pointer text-xs text-slate-400">Nhật ký PA ({revisions.length})</summary>
-          <div className="mt-1"><NhatKyPa pa={iv} ketQua={[]} /></div>
-        </details>
-      )}
+      {/* "Đã điều chỉnh n lần" gộp vào Nhật ký PA (mockup §8): n = số dòng nhật ký (`soDongNhatKyPa`, cùng danh sách `NhatKyPa` vẽ). */}
+      <details>
+        <summary className="cursor-pointer text-xs text-slate-400">Nhật ký PA ({soDongNhatKyPa(iv, ketQuaPa)})</summary>
+        <div className="mt-1"><NhatKyPa pa={iv} ketQua={ketQuaPa} /></div>
+      </details>
       {/* PR-DUYET (K3-20): người duyệt được quyết NGAY dưới PA — cùng thẻ với hộp Chờ duyệt, không còn panel "Trả lời đề xuất". */}
       {data.viewer.canApprove && iv.yeuCau && iv.yeuCau.loai === 'de_xuat_pa' && (
         <div className="mt-1"><TheYeuCau gon yc={iv.yeuCau} onXong={() => onViec({ loai: 'case' })} /></div>
