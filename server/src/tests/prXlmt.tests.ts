@@ -34,8 +34,8 @@ export async function runPrXlmtTests(t: YThucTestKit) {
     const v3 = d.viecXepMt([...truoc, { no: 3, huy: false, lichSu: false, kn: kn({}) }], 3, so3);
     assert(v3.loai === 'doi' && v3.no === 3, JSON.stringify(v3));
     const v4 = d.viecXepMt([...truoc, { no: 3, huy: false, lichSu: true, kn: kn({}) }], 3, so3);
-    // PR-MTb T13b thay K4-17 "lịch sử → bỏ qua": MT cũ chặn "nhập điểm bù", không tự sang MT4.
-    assert(v4.loai === 'chan' && v4.no === 3 && v4.cau === 'MT3 là MT cũ — nhập điểm bù.', `MT cũ → chặn: ${JSON.stringify(v4)}`);
+    // PR-MTGON (luật 5) thay PR-MTb T13b: MT cũ xếp đè được như lượt thường, không tự sang MT4.
+    assert(v4.loai === 'doi' && v4.no === 3, `MT cũ → dời: ${JSON.stringify(v4)}`);
     const choS = kn({ listening: { coDiem: true }, reading: { coDiem: true }, writing: { coDiem: true }, speaking: { choDuyet: true } });
     const v5 = d.viecXepMt([...truoc, { no: 3, huy: false, lichSu: false, kn: choS }], 3, so3);
     assert(v5.loai === 'chan' && /chờ Quản lý duyệt/.test(v5.cau), JSON.stringify(v5));
@@ -44,7 +44,7 @@ export async function runPrXlmtTests(t: YThucTestKit) {
     const v7 = d.viecXepMt([{ no: 1, huy: false, lichSu: false, kn: du }], 3, [L(1, 'completed', true)]);
     assert(v7.loai === 'chan' && v7.cau === d.kiemSoMtMoi([L(1, 'completed', true)], 3), JSON.stringify(v7));
     const v8 = d.viecXepMt([...truoc, { no: 3, huy: false, lichSu: true, kn: kn({}) }], 3, so3, true);
-    assert(v8.loai === 'chan' && /nhập điểm bù/.test(v8.cau), `ép MT lịch sử → chặn: ${JSON.stringify(v8)}`);   // PR-MTb: câu mới "nhập điểm bù"
+    assert(v8.loai === 'doi', `ép MT cũ → dời (PR-MTGON): ${JSON.stringify(v8)}`);
   });
 
   // PR-MTa T1/T4 thay K2-33, Q8: kiemTuanDaQua → kiemTuanXep — Quản lý xếp được tuần đã qua (kể cả trộn), không xét ngày vào web.
@@ -58,14 +58,15 @@ export async function runPrXlmtTests(t: YThucTestKit) {
     assert(ok.cau === null && ok.mtCu, JSON.stringify(ok));
   });
 
-  check('PR-XLMT (1) · thaoTacKyNang: mọi trạng thái × 2⁵ quyền → ≤ 1 nút chính, ≤ 3 mục menu, không trùng, Bỏ kỹ năng chỉ FT (K4-27)', () => {
+  /* PR-MTGON (luật 3) nới K4-27: Quản lý FT "Huỷ kỹ năng" ở mọi trạng thái — đang thi có 4 mục (Báo vắng, Dời hạn, Dời lịch, Huỷ kỹ năng). */
+  check('PR-XLMT (1) · thaoTacKyNang: mọi trạng thái × 2⁵ quyền → ≤ 1 nút chính, ≤ 4 mục menu, không trùng, Huỷ kỹ năng chỉ FT', () => {
     const tts = ['khong-yeu-cau', 'chua-xep', 'chua-toi-tuan', 'dang-thi', 'co-diem', 'vang', 'cho-duyet', 'da-huy', 'lich-su', 'huy-vang'] as const;
     for (const tt of tts) {
       for (let m = 0; m < 32; m++) {
         const q = { nhapDiem: !!(m & 1), quanLy: !!(m & 2), gvcn: !!(m & 4), laFt: !!(m & 8), dotHoanTat: !!(m & 16) };
         const r = d.thaoTacKyNang(tt, q);
         const tat = [...(r.chinh ? [r.chinh] : []), ...r.menu];
-        assert(r.menu.length <= 3, `${tt} ${m}: menu ${r.menu.length}`);
+        assert(r.menu.length <= 4, `${tt} ${m}: menu ${r.menu.length}`);
         assert(new Set(tat).size === tat.length, `${tt} ${m}: trùng ${tat}`);
         assert(!tat.includes('bo-ky-nang') || q.laFt, `${tt} ${m}: bỏ kỹ năng ở lớp thường`);
         assert(tat.every((x) => !!d.CHU_THAO_TAC[x]), `${tt} ${m}: thiếu chữ`);
@@ -161,10 +162,14 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
     skillSch.setSkillDeadline(P.mbManager, m1.id, 'reading', null, null);   // gỡ hạn không cần lý do
   });
 
-  check('PR-XLMT (2) · Bỏ kỹ năng: đã có điểm → "Huỷ điểm"; đã tới tuần thi → "Báo vắng"; tương lai + lý do → được (K4-13)', () => {
-    assertThrows(() => attemptsSvc.setSkillSkip(P.mbManager, m1.id, 'reading', true, 'Không thi R đợt này'), /đã tới tuần thi.*Báo vắng/, 'tới tuần');
+  // PR-MTGON (luật 3) thay K4-13: Quản lý huỷ kỹ năng lúc nào cũng được; có điểm → 409 "Xoá điểm và huỷ kỹ năng?" (MTG-2a…2c).
+  check('PR-XLMT (2) · Huỷ kỹ năng: đã tới tuần thi → được; đã có điểm → 409 hỏi Xoá điểm; tương lai → được, đưa lại được', () => {
+    attemptsSvc.setSkillSkip(P.mbManager, m1.id, 'reading', true, 'Không thi R đợt này');
+    assert(lich(m1.id, 'reading').required === 0, 'tới tuần: chưa huỷ');
+    attemptsSvc.setSkillSkip(P.mbManager, m1.id, 'reading', false);
     diem(m2.id, 'listening');
-    assertThrows(() => attemptsSvc.setSkillSkip(P.mbManager, m2.id, 'listening', true, 'Không thi L đợt này'), /đã có điểm.*Huỷ điểm/, 'có điểm');
+    const e = (() => { try { attemptsSvc.setSkillSkip(P.mbManager, m2.id, 'listening', true, 'Không thi L đợt này'); } catch (x) { return x as any; } return null; })();
+    assert(e?.status === 409 && /Xoá điểm và huỷ kỹ năng/.test(e.message), `có điểm: ${e?.status} ${e?.message}`);
     attemptsSvc.setSkillSkip(P.mbManager, m2.id, 'reading', true);   // PR-MTa T7: bỏ kỹ năng — lý do tuỳ chọn
     assert(lich(m2.id, 'reading').required === 0, 'đã bỏ');
     attemptsSvc.setSkillSkip(P.mbManager, m2.id, 'reading', false);
