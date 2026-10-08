@@ -286,7 +286,7 @@ export async function runPrS5fATests(t: YThucTestKit) {
     conn.prepare(`UPDATE lenh_chuyen_lop SET trang_thai = 'huy' WHERE lop_nguon_id = ?`).run(nguon);
   });
 
-  check('S5F-a (13) · Final Test sau chuyển: hồ sơ vẫn thấy %, thẻ Test gần nhất ghi %, tên Case giữ môn gốc, việc tiếp không nhồi mô tả PA, kết luận FT cần bài Final Test, Trung tâm thiếu điểm → Case Tutor khi điểm về, Báo PH có GVCN', () => {
+  check('S5F-a (13) · Final Test sau chuyển: hồ sơ vẫn thấy %, thẻ Test gần nhất ghi %, tên Case giữ môn gốc, việc tiếp không nhồi mô tả PA, kết luận FT cần bài Final Test, Trung tâm thiếu điểm Final → Case Tutor ngay khi chuyển (PR-KV), Báo PH có GVCN', () => {
     /* Hồ sơ HV sau chuyển FOU → BE: vẫn thấy % Cuối khoá của lớp vừa rời. */
     const fou = lopMoi({ kind: 'FOU', tuanHienTai: 9 });
     const be = lopMoi({ kind: 'BE', tuanHienTai: 1 });
@@ -320,7 +320,7 @@ export async function runPrS5fATests(t: YThucTestKit) {
     const be2 = lopMoi({ kind: 'BE', tuanHienTai: 11 });
     const chua = hocVien(be2, 'BE', false).sid;
     assert(maLoi(() => ck.ghiKetLuanFt(P.mbManager, chua, { dat: true })) === 400 && !get('SELECT 1 FROM lo_trinh_tiep_theo WHERE student_id = ?', chua), 'chưa có bài Final Test');
-    /* Trung tâm + thiếu điểm lúc chuyển → Case Tutor tạo khi điểm về. */
+    /* PR-KV (§3): kỳ vọng đầu ra theo MT0, không chờ Final — Trung tâm + thiếu điểm Final lúc chuyển → Case Tutor ngay khi chuyển; điểm về không tạo thêm. */
     const ft = lopMoi({ kind: 'FT', ft: true, route: 'LT1', tuanHienTai: 1 });
     const f = hocVien(be2, 'BE', false).sid;
     const af = cuoiKhoa(be2, f, [20, 12, 20, null]);
@@ -328,9 +328,9 @@ export async function runPrS5fATests(t: YThucTestKit) {
     lenh.raLenh(P.mbManager, { lopNguonId: be2, boiCanh: 'cuoi-khoa', tuanChung: null, dongs: [dongCua(f, 'fast_track', ft, { mucTieu: 6, lyDo: 'Phụ huynh xin lên FT' })] });
     daChuyen(f, THU_HAI);
     const tutor = () => get(`SELECT COUNT(*) n FROM sos_cases WHERE student_id = ? AND title LIKE 'Kỳ vọng đầu ra%'`, f).n as number;
-    assert(tutor() === 0, 'chưa đủ điểm: chưa có Case Tutor');
+    assert(tutor() === 1, `chuyển (chưa đủ điểm Final) → Case Tutor ngay: ${tutor()}`);
     vaoNgay(t.addDays(THU_HAI, 7), () => reg.saveRegularScore(P.admin, af.id, 'speaking', { score: 20, total: 25 }));
-    assert(tutor() === 1, `điểm về → Case Tutor: ${tutor()}`);
+    assert(tutor() === 1, `điểm về → không thêm Case Tutor: ${tutor()}`);
 
     /* Báo PH Giữa khoá: Quản lý xem "Tất cả" thấy GVCN lớp em đang học, không "chưa ai phụ trách". */
     reg.planRegularTests(P.admin, be, { studentIds: [e], kinds: ['progress'] });

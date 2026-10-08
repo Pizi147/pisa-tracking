@@ -20,7 +20,7 @@ import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, UNCONFIRMED_PRESET, awaitingCauseC
 import { quyenBoTro } from '../cases/boTro.ts';
 import { emXetLaiLoTrinh, nguoiGiuMiniTest, tyLeTongLo } from '../normal/cuoiKhoa.ts';
 import { myCoordinationLines } from '../yThuc/phoiHop.ts';
-import { hvLenFtChuaKyVong } from './metrics.ts';
+import { lopKyVong } from '../normal/kyVong.ts';
 import { phanCongDangHieuLuc } from './scoreDebt.ts';
 import { nguoiGiuKetQua } from '../cases/giuKetQua.ts';
 import { dienMocQuyChe } from '../cases/sosAuto.ts';
@@ -171,8 +171,8 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   },
   /* PR-VAI-a (K5-11): em BE/ELE lên Fast Track — Quản lý đánh dấu Đạt / Không đạt kỳ vọng đầu ra. */
   ky_vong_dau_ra: {
-    label: 'Đánh dấu kỳ vọng đầu ra',
-    hint: 'Em có quyết định lên FT từ BE/ELE và đã có bài Final Test — đánh dấu Đạt hoặc Không đạt kỳ vọng đầu ra ở Kết luận khoá.',
+    label: 'Kỳ vọng đầu ra',
+    hint: 'Lớp BE/ELE có em lên FT đã đủ điểm MT0 — Đạt khi Overall MT0 ≥ 4.0 (BE) / 4.5 (ELE). Một lần lưu cho cả lớp.',
   },
 
   /* PR-TK (TK-K): kết quả thi thật do GVCN lớp cuối nhập — hạn = thứ Hai sau kỳ thi + 4 tuần, đỏ không chặn. */
@@ -1084,27 +1084,19 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     }
   }
 
-  // ------------------------------------------------- 5c. kỳ vọng đầu ra (PR-VAI-a, K5-11) — việc của Quản lý, một dòng mỗi em
-  /* CÙNG hàm `hvLenFtChuaKyVong` với chỉ số `hv-len-ft-chua-ky-vong` ở Cần xử lý — số việc = số của chỉ số (hai đường). */
-  if (co('ky_vong_dau_ra')) {
-    const sc = scopeFor(p, PERMISSIONS.REQUEST_APPROVE);
-    const ds = sc.none ? [] : hvLenFtChuaKyVong(sc, f.branchId ?? null).sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
-    /* PR-Dọn: lớp ghi trên dòng = LỚP NGUỒN của lệnh (nơi có bài Cuối khoá), một dòng mỗi em. */
-    /* PR-UXF-b (Q10): lộ trình có bài Cuối khoá của em (một câu cho cả tập) — hồ sơ mở đúng lộ trình đó rồi cuộn tới hộp Kết luận khoá. */
-    const cuoiKhoaCua = new Map<number, number>();
-    theoLo(ds.map((r) => r.id), (lo, ph) => {
-      for (const r of conn.prepare(`SELECT a.student_id AS sid, a.cycle_id AS cid FROM assessment_attempts a WHERE a.student_id IN (${ph}) AND a.kind = 'final' AND a.status != 'cancelled' AND a.cycle_id IS NOT NULL ORDER BY a.id`).all(...lo) as any[]) cuoiKhoaCua.set(r.sid, r.cid);
+  // ------------------------------------------------- 5c. kỳ vọng đầu ra (PR-KV, §3) — việc của Quản lý, MỘT dòng mỗi lớp BE/ELE nguồn
+  /* CÙNG hàm `lopKyVong` với chỉ số `hv-len-ft-chua-ky-vong` (tập em chưa kết luận) — Σ `count` = số của chỉ số. Mở panel ở trang lớp. */
+  for (const x of co('ky_vong_dau_ra') ? lopKyVong(p, f.branchId ?? null) : []) {
+    const n = x.chua.length;
+    const chu = x.choMt0 === n ? `Chờ MT0 ${n} em` : `MT0 đủ ${n - x.choMt0}/${n}`;
+    items.push({
+      key: `kyvong:${x.classId}`, group: 'ky_vong_dau_ra', urgency: 'normal',
+      studentId: null, studentName: `Lớp ${x.code}`, classId: x.classId, classCode: x.code,
+      attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: chu, count: n,
+      reason: chu,
+      tieuDe: `Kỳ vọng đầu ra · ${x.code} · ${n} em`, actionLabel: 'Mở',
+      href: `/hoc-vien/lop/${x.classId}?viec=ky-vong`, ownerId: null, owner: null, mine: false, due: null, statusLabel: 'Chưa có hạn',
     });
-    for (const r of ds) {
-      items.push({
-        key: `ky_vong:${r.id}`, group: 'ky_vong_dau_ra', urgency: 'normal',
-        studentId: r.id, studentName: r.ten, classId: r.lopNguonId, classCode: r.lopNguon,
-        attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: 'Lên FT', count: null,
-        reason: 'Em BE/ELE lên FT đã có bài Final Test — đánh dấu Đạt hoặc Không đạt kỳ vọng đầu ra',
-        tieuDe: `Đánh dấu kỳ vọng đầu ra · ${r.ten}`, actionLabel: 'Mở hồ sơ',
-        href: duongHoSoHocVien(r.id, { loTrinh: cuoiKhoaCua.get(r.id), muc: 'ket-luan-khoa' }), ownerId: p.userId, owner: null, mine: true, due: null, statusLabel: 'Chưa đánh dấu',
-      });
-    }
   }
 
   // ------------------------------------------------- 5d. cập nhật kết quả thi thật (PR-TK, TK-K)

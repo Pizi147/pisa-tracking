@@ -80,7 +80,7 @@ export function KetLuanKhoa({ studentId, studentName, lop, ct, cuoiKhoa, coTheKe
   );
 }
 
-/** Ô "Không đạt kỳ vọng đầu ra": nguyên nhân Trung tâm / Học sinh · môn (Trung tâm) · ghi chú case-by-case (Học sinh). */
+/** Ô "Không đạt kỳ vọng đầu ra": nguyên nhân Trung tâm / Học viên · kỹ năng · lý do (Học viên, bắt buộc) — cùng luật panel cả lớp (PR-KV). */
 function PanelKhongDat({ studentId, studentName, lop, ct, monTruot, ban, onDong, onXong }: {
   studentId: number; studentName: string; lop: string | null; ct: string | null; monTruot: string[];
   ban: CuoiKhoaEm['ketLuanFt']; onDong: () => void; onXong: () => void;
@@ -93,7 +93,7 @@ function PanelKhongDat({ studentId, studentName, lop, ct, monTruot, ban, onDong,
   const [busy, setBusy] = useState(false);
   const loi = dsLoi([
     { khoa: 'nguyen-nhan', nhan: 'Nguyên nhân', chon: true },
-    ...(nn === 'hoc_sinh' ? [{ khoa: 'ghi-chu', nhan: 'Phương án', toiThieu: 15 }] : []),
+    ...(nn === 'hoc_sinh' ? [{ khoa: 'ghi-chu', nhan: 'Lý do' }] : []),
   ], { 'nguyen-nhan': nn, 'ghi-chu': ghiChu });
   if (nn === 'trung_tam' && mon.length === 0) loi.push({ khoa: 'mon', nhan: 'Kỹ năng', lyDo: 'Chọn ít nhất một kỹ năng chưa đạt' });
   const luu = async () => {
@@ -102,10 +102,10 @@ function PanelKhongDat({ studentId, studentName, lop, ct, monTruot, ban, onDong,
     setBusy(true);
     try {
       const r: any = await api.put(`/students/${studentId}/ket-luan-ft`, {
-        dat: false, nguyenNhan: nn, ...(nn === 'trung_tam' ? { mon } : { ghiChu: ghiChu.trim() }),
+        dat: false, nguyenNhan: nn, mon, ...(nn === 'hoc_sinh' ? { ghiChu: ghiChu.trim() } : {}),
       });
       invalidate('/students'); invalidate('/cases'); invalidate('/my-work');
-      toast.push('ok', r?.taoCaseTutor ? `Đã ghi — tạo ${r.taoCaseTutor} Case Tutor` : 'Đã ghi kết luận kỳ vọng đầu ra');
+      toast.push('ok', r?.taoCaseTutor ? `Đã ghi — tạo ${r.taoCaseTutor} Case` : 'Đã ghi kết luận kỳ vọng đầu ra');
       if (r?.luuY) toast.push('info', r.luuY);
       onXong();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
@@ -121,10 +121,10 @@ function PanelKhongDat({ studentId, studentName, lop, ct, monTruot, ban, onDong,
         {lf.loiCua(loi, 'nguyen-nhan') && <span className="mt-1 block text-xs text-late">{lf.loiCua(loi, 'nguyen-nhan')}</span>}
         <p className="m-0 mt-1 text-xs text-slate-500">
           {nn === 'trung_tam' ? 'Sau khi em sang Fast Track: mỗi kỹ năng một Case + PA Tutor 10 buổi.'
-            : nn === 'hoc_sinh' ? 'Không tạo Case — ghi cách xử lý từng trường hợp.' : 'Trung tâm chưa dạy đủ hay học viên chưa theo kịp?'}
+            : nn === 'hoc_sinh' ? 'Sau khi em sang Fast Track: 1 Case, chưa có PA.' : 'Trung tâm chưa dạy đủ hay học viên chưa theo kịp?'}
         </p>
       </Khoi>
-      {nn === 'trung_tam' && (
+      {nn !== '' && (
         <Khoi tieuDe="Kỹ năng chưa đạt">
           <div {...lf.o(loi, 'mon')} tabIndex={-1} className="flex flex-wrap gap-2 outline-none">
             {REGULAR_SKILLS.map((k) => (
@@ -137,10 +137,10 @@ function PanelKhongDat({ studentId, studentName, lop, ct, monTruot, ban, onDong,
         </Khoi>
       )}
       {nn === 'hoc_sinh' && (
-        <Khoi tieuDe="Phương án">
-          <Truong nhan="Phương án case-by-case" batBuoc loi={lf.loiCua(loi, 'ghi-chu')} dem={{ co: ghiChu.trim().length, can: 15 }}>
+        <Khoi tieuDe="Lý do">
+          <Truong nhan="Lý do" batBuoc loi={lf.loiCua(loi, 'ghi-chu')}>
             <textarea className="field w-full" rows={3} {...lf.o(loi, 'ghi-chu')} value={ghiChu} maxLength={500} onChange={(e) => setGhiChu(e.target.value)}
-              placeholder="Ví dụ: em nghỉ nhiều — hẹn phụ huynh, tăng tự học 2 buổi/tuần" />
+              placeholder="Ví dụ: Nghỉ 5 buổi trước Final Test" />
           </Truong>
         </Khoi>
       )}

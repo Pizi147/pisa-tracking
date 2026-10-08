@@ -338,12 +338,12 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     const mt = conn.prepare('SELECT * FROM mini_test WHERE student_id = ?').get(s) as any;   // PR-CT2: 4 môn × 2 buổi
     assert(mt.so_buoi === 8 && mt.ngay_du_kien === d.lichBoTro({ batDau: NGAY_CHUYEN, soTuan: 2 }).ngayMiniTest, JSON.stringify(mt));
   });
-  check('LT2b (5) · BE 72% sang FT + kết luận Trung tâm {R, W} → 2 Case FT (Reading, Writing 2) + PA tutor preset 0; Học sinh → không Case; đánh dấu sau khi đã sang FT tạo ngay', () => {
+  check('LT2b (5) · BE 72% sang FT + kết luận Trung tâm {R, W} → 2 Case FT (Reading, Writing 2) + PA tutor preset 0; Học viên không kỹ năng (đường cũ hồ sơ) → không Case — Học viên có kỹ năng → Case không PA ở prKv KV6/KV7; đánh dấu sau khi đã sang FT tạo ngay', () => {
     const l = taoLop('BE', 3);
     const [a, b, c2] = l.sids;
     for (const s of l.sids) ghiDiem(l.luot.get(s)!, { [L]: 30, [R]: 30, [W]: 30, [S]: 30 });   // 75%
     cuoiSvc.ghiKetLuanFt(P.mbManager, a, { dat: false, nguyenNhan: 'trung_tam', mon: ['reading', 'writing'] });
-    cuoiSvc.ghiKetLuanFt(P.mbManager, b, { dat: false, nguyenNhan: 'hoc_sinh', ghiChu: 'Em nghỉ nhiều — phương án case-by-case với phụ huynh' });
+    cuoiSvc.ghiKetLuanFt(P.mbManager, b, { dat: false, nguyenNhan: 'hoc_sinh', mon: [], ghiChu: 'Em nghỉ nhiều — phương án case-by-case với phụ huynh' });
     const ft = classId('MB FT 101');
     chuyen(l.classId, [a, b, c2].map((studentId) => ({ studentId, huong: 'fast_track', toClassId: ft, mucTieu: 6.5 })));
     const cs = caseCuaEm(a, cycleMoi(a));
@@ -351,7 +351,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     assert(cs.every((c) => c.origin_kind === 'chuyen_cap' && /^Kỳ vọng đầu ra chưa đạt · /.test(c.title)), JSON.stringify(cs.map((c) => c.title)));
     const tutor = conn.prepare(`SELECT * FROM case_interventions WHERE case_id = ?`).all(cs[0].id) as any[];
     assert(tutor.length === 1 && tutor[0].kind === 'tutor' && tutor[0].preset === 0 && /Tutor 10 buổi/.test(tutor[0].description), JSON.stringify(tutor));
-    assert(caseCuaEm(b, cycleMoi(b)).length === 0, 'Học sinh → không Case');
+    assert(caseCuaEm(b, cycleMoi(b)).length === 0, 'Học viên không kỹ năng → không Case');
     assert(caseCuaEm(c2, cycleMoi(c2)).length === 0, 'chưa đánh dấu → không Case');
     const r = cuoiSvc.ghiKetLuanFt(P.mbManager, c2, { dat: false, nguyenNhan: 'trung_tam', mon: ['listening'] });   // sau khi đã sang FT
     assert(r.taoCaseTutor === 1 && caseCuaEm(c2, cycleMoi(c2)).length === 1, 'đánh dấu sau khi sang FT phải tạo Case ngay');
@@ -475,7 +475,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     ghiDiem(be.luot.get(s)!, { [L]: 30, [R]: 30, [W]: 30, [S]: 30 });
     assertThrows(() => cuoiSvc.ghiKetLuanFt(gvcnDich(), s, { dat: true }), /Quản lý/, 'GVCN');
     assertThrows(() => cuoiSvc.ghiKetLuanFt(P.cpManager, s, { dat: true }), /Quản lý|phạm vi/, 'QL chi nhánh khác');
-    assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, s, { dat: false, nguyenNhan: 'hoc_sinh', ghiChu: 'ngắn' }), /15 ký tự/, 'Học sinh thiếu ghi chú');
+    assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, s, { dat: false, nguyenNhan: 'hoc_sinh', ghiChu: '  ' }), /lý do/, 'Học viên thiếu lý do (PR-KV: bắt buộc, không còn tối thiểu 15 ký tự)');
     assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, s, { dat: false, nguyenNhan: 'trung_tam' }), /ít nhất một kỹ năng/, 'Trung tâm không có môn trượt');
     assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, s, { dat: 'x' }), /Đạt hoặc Không đạt/, 'dat sai kiểu');
     const fou = taoLop('FOU', 1);

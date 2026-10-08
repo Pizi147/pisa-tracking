@@ -1,7 +1,7 @@
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
-  NGUONG_MINI_TEST, PERMISSIONS, REGULAR_SKILLS, caseDedupKey, categoryOf, chuHopKetLuan, coBoTroFinal, khongPhuHopLoTrinh, chuMonTruot, goiYCuoiKhoa, kyHieuLop, kyNangLopDich, lichBoTro, ngay, tenMon, weeklyUpdateDue,
-  type BoTroMienPhi, type GoiYCuoiKhoa,
+  NGUONG_MINI_TEST, PERMISSIONS, caseDedupKey, categoryOf, chuHopKetLuan, coBoTroFinal, khongPhuHopLoTrinh, chuMonTruot, goiYCuoiKhoa, kyHieuLop, kyNangLopDich, lichBoTro, ngay, tenMon, weeklyUpdateDue,
+  type BoTroMienPhi, type GoiYCuoiKhoa, type RegularSkill,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, isCoreTeacherOf, type Principal } from '../permissions.ts';
@@ -11,7 +11,7 @@ import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { mondayOf } from '../platform/week.ts';
 import { addMilestone } from '../cases/sos.ts';
-import { dongBoTrangThaiCase, dongBoTrangThaiCaseLo } from '../cases/sosState.ts';
+import { dongBoTrangThaiCaseLo } from '../cases/sosState.ts';
 import { chuyenCaseSangLoTrinh, dongCaseHeThongLo } from '../cases/systemClose.ts';
 import { suggestCaseOwner } from '../cases/owner.ts';
 import { chenPa, type DongPa } from '../cases/taoPa.ts';
@@ -19,6 +19,7 @@ import { nguoiGiuKetQua } from '../cases/giuKetQua.ts';
 import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
 import { chotYeuCau, taoYeuCau } from '../duyet/yeuCau.ts';
 import { allProgrammes, evaluateRegular } from './regular.ts';
+import { emDaSangFt, kiemDongKyVong, taoCaseKyVong, type DongCaseKyVong } from './kyVong.ts';
 
 /**
  * CUỐI KHOÁ LỚP THƯỜNG — MỘT CỬA phía máy chủ (T47, T49, §6.3). Luật thuần ở `shared/domain/cuoiKhoa.ts`; file này chỉ đọc dữ liệu
@@ -203,57 +204,6 @@ export type DongSauChuyen = {
 
 const CHU_BO_TRO = (n: number, tuan: number, ten: string | null) =>
   `${n} buổi miễn phí${ten ? ` (${ten})` : ''} · ${tuan} tuần · Mini Test sau buổi cuối · không tính phí học viên, không tính lương giáo viên`;
-const MO_TA_TUTOR = 'Tutor 10 buổi/kỹ năng · tính vào buổi Free, có lương GV';
-
-/** Case `chuyen_cap` mở ở lộ trình mới cho (em, hạng mục) — dùng Case đang mở nếu có (khoá chống trùng, M-01). Trả id + `moi`. */
-function moCaseChuyenCap(conn: any, x: {
-  sid: number; cycleId: number; category: string; topic: string; attemptId: number | null; ngay: string; title: string; ownerId: number | null;
-}): { id: number; moi: boolean } {
-  const khoa = caseDedupKey({ category: x.category as any, studentId: x.sid, cycleId: x.cycleId })!;
-  const co = conn.prepare('SELECT id, status FROM sos_cases WHERE dedup_key = ?').get(khoa) as any;
-  if (co && co.status !== 'done') return { id: co.id, moi: false };
-  if (co) conn.prepare('UPDATE sos_cases SET dedup_key = NULL, updated_at = ? WHERE id = ?').run(nowIso(), co.id);
-  const info = conn.prepare(
-    `INSERT INTO sos_cases (attempt_id, student_id, cycle_id, topic, category, origin_kind, detected_at, sos_level, status, dedup_key, title, previous_case_id, owner_user_id, created_at)
-     VALUES (?,?,?,?,?, 'chuyen_cap', ?, NULL, 'in_progress', ?, ?, ?, ?, ?)`,
-  ).run(x.attemptId, x.sid, x.cycleId, x.topic, x.category, x.ngay, khoa, x.title, co?.id ?? null, x.ownerId, nowIso());
-  return { id: Number(info.lastInsertRowid), moi: true };
-}
-
-/**
- * T49: Case FT "Kỳ vọng đầu ra chưa đạt · {kỹ năng}" + PA Tutor 10 buổi (`preset 0` — GV kết thúc khi xong, Q8). Trả số Case mới.
- * PR-S5F-a: MỘT lần cho mỗi (lộ trình, kỹ năng) — đã có Case "Kỳ vọng đầu ra…" ở BẤT KỲ trạng thái (kể cả đã Hoàn thành) thì không tạo lại
- * (sửa điểm Cuối khoá sau khi em đã sang FT chạy lại bước này).
- * PR-PA (X1): Số buổi 10; Người dạy = GV cũ dạy kỹ năng đó ở lớp BE/ELE cũ (phân công đang hiệu lực ngày chuyển; không còn → NULL).
- */
-function taoCaseTutorFt(conn: any, p: Principal, x: { sid: number; ftCycleId: number; ftClassId: number; fromClassId: number; mon: readonly string[]; ngay: string }): number {
-  let moi = 0;
-  const gvCu = phanCongDangHieuLuc([x.fromClassId], x.ngay);
-  const daCo = new Set((conn.prepare(
-    `SELECT DISTINCT category FROM sos_cases WHERE student_id = ? AND cycle_id = ? AND origin_kind = 'chuyen_cap' AND title LIKE 'Kỳ vọng đầu ra%'`,
-  ).all(x.sid, x.ftCycleId) as any[]).map((r) => r.category as string));
-  for (const m of x.mon) {
-    const skill = kyNangLopDich(m, true);
-    const category = categoryOf(skill) ?? skill;
-    if (daCo.has(category)) continue;
-    const ownerId = suggestCaseOwner({ classId: x.ftClassId, category });
-    const c = moCaseChuyenCap(conn, {
-      sid: x.sid, cycleId: x.ftCycleId, category, topic: skill, attemptId: null, ngay: x.ngay,
-      title: `Kỳ vọng đầu ra chưa đạt · ${tenMon(null, skill)}`, ownerId,
-    });
-    if (!c.moi) continue;
-    moi += 1;
-    chenPa(conn, [{
-      caseId: c.id, kind: 'tutor', description: MO_TA_TUTOR, soBuoi: 10, performerUserId: gvCu.get(`${x.fromClassId}|${m}`)?.userId ?? null,
-      recordedBy: p.userId, status: 'started', startedDate: x.ngay, confirmedBy: p.userId, confirmedAt: nowIso(),
-      cycleStartedOn: x.ngay, actionDue: weeklyUpdateDue(x.ngay),
-    }]);
-    addMilestone({ caseId: c.id, kind: 'opened', occurredOn: x.ngay, note: 'Kỳ vọng đầu ra chưa đạt (Trung tâm) — Tutor 10 buổi', createdBy: p.userId, dedupKey: `ky-vong:${c.id}` });
-    dongBoTrangThaiCase(c.id);
-  }
-  return moi;
-}
-
 /**
  * CHẠY TRONG tx của nơi chuyển, SAU khi mở lộ trình mới (và sau `closeCasesOnProgrammeSwitch` nếu sang FT).
  * Thứ tự (Hướng dẫn 1b): (1) lớp thường → lớp thường: Case đang mở (kể cả Case bổ trợ Final đã sinh sớm — PR-CT2) + Mini Test chưa ghi đi theo em sang
@@ -326,7 +276,7 @@ export function sauChuyenCuoiKhoa(p: Principal, dongs: readonly DongSauChuyen[])
   }
   const tyLe = tyLeTongLo([...luotCua.values()].map((l) => l.id));
 
-  const boTro: DongBoTroFinal[] = [], baoPh = new Map<number, number>();
+  const boTro: DongBoTroFinal[] = [], baoPh = new Map<number, number>(), kyVongCase: DongCaseKyVong[] = [];
   for (const d of dongs) {
     const luot = luotCua.get(d.sid), t = luot ? tyLe.get(luot.id) : undefined, toCycle = moi.get(d.sid);
     if (!luot || !t || t.tyLe === null || !toCycle) continue;   // chưa đủ điểm (Q30-4) hoặc không thuộc lớp thường — điểm nhập sau áp ở `capNhatCuoiKhoaSauChuyen`
@@ -341,12 +291,15 @@ export function sauChuyenCuoiKhoa(p: Principal, dongs: readonly DongSauChuyen[])
     }
     /* (3) học lại → Quản lý báo PH qua TVV (< 50%, hoặc 50–59% Quản lý quyết học lại — Q6). */
     if (d.huong === 'hoc_lai' && (goiY.baoPhTvv || goiY.dai === '50_59')) baoPh.set(luot.id, d.sid);
-    /* (4) sang FT có kết luận "Trung tâm" (hiếm — đi từng em). */
-    const kv = kyVong.get(d.sid);
-    if (d.toFt && kv?.ky_vong_dat === 0 && kv.ky_vong_nguyen_nhan === 'trung_tam') {
-      taoCaseTutorFt(conn, p, { sid: d.sid, ftCycleId: toCycle, ftClassId: d.toClassId, fromClassId: d.fromClassId, mon: jsonMang(kv.ky_vong_mon), ngay: d.ngay });
-    }
   }
+  /* (4) sang FT có kết luận Không đạt kỳ vọng (PR-KV): Trung tâm → Case + Tutor, Học viên → Case không PA. Không cần điểm Final — theo lô. */
+  for (const d of dongs) {
+    const kv = kyVong.get(d.sid), toCycle = moi.get(d.sid);
+    if (!d.toFt || !toCycle || kv?.ky_vong_dat !== 0 || !kv.ky_vong_nguyen_nhan) continue;
+    kyVongCase.push({ sid: d.sid, dat: false, nguyenNhan: kv.ky_vong_nguyen_nhan, mon: jsonMang(kv.ky_vong_mon) as RegularSkill[], lyDo: kv.ky_vong_ghi_chu ?? null,
+      fromClassId: d.fromClassId, ftClassId: d.toClassId, ftCycleId: toCycle, ngay: d.ngay });
+  }
+  taoCaseKyVong(p, kyVongCase);
   taoBoTroFinal(p, boTro);
   if (baoPh.size) {
     const co = new Set<number>();
@@ -729,23 +682,14 @@ export function ghiKetLuanFt(p: Principal, sid: number, input: { dat?: unknown; 
     throw badRequest('Em chưa có bài Final Test ở lớp này — chưa đánh dấu kỳ vọng đầu ra được.');
   }
   if (typeof input.dat !== 'boolean') throw badRequest('Chọn Đạt hoặc Không đạt kỳ vọng đầu ra.');
-  const dat = input.dat;
-  let nguyenNhan: string | null = null, mon: string[] = [], ghiChu: string | null = null;
-  if (!dat) {
-    if (input.nguyenNhan !== 'trung_tam' && input.nguyenNhan !== 'hoc_sinh') throw badRequest('Chọn nguyên nhân: Trung tâm hoặc Học viên.');
-    nguyenNhan = input.nguyenNhan;
-    ghiChu = String(input.ghiChu ?? '').trim() || null;
-    if (nguyenNhan === 'hoc_sinh' && (ghiChu ?? '').length < 15) throw badRequest('Nguyên nhân Học viên thì ghi phương án case-by-case, ít nhất 15 ký tự.');
-    if (nguyenNhan === 'trung_tam') {
-      const cuoi = conn.prepare(`SELECT id FROM assessment_attempts WHERE student_id = ? AND class_id = ? AND kind = 'final' AND status != 'cancelled' ORDER BY id DESC LIMIT 1`).get(sid, lopBeEle) as any;
-      const t = cuoi ? tyLeTongLo([cuoi.id]).get(cuoi.id) : undefined;
-      const chuan = REGULAR_SKILLS as readonly string[];
-      const chon = Array.isArray(input.mon) ? (input.mon as unknown[]).map(String) : (t?.monTruot ?? []);
-      if (chon.some((m) => !chuan.includes(m))) throw badRequest('Kỹ năng không hợp lệ.');
-      mon = [...new Set(chon)];
-      if (!mon.length) throw badRequest('Nguyên nhân Trung tâm thì chọn ít nhất một kỹ năng chưa đạt.');
-    }
+  /* PR-KV: cùng luật dòng với panel cả lớp (`kiemDongKyVong`); không gửi kỹ năng → kỹ năng Final chưa đạt. Học viên: lý do bắt buộc, vẫn có Case. */
+  let monMacDinh: string[] = [];
+  if (!input.dat && !Array.isArray(input.mon)) {
+    const cuoi = conn.prepare(`SELECT id FROM assessment_attempts WHERE student_id = ? AND class_id = ? AND kind = 'final' AND status != 'cancelled' ORDER BY id DESC LIMIT 1`).get(sid, lopBeEle) as any;
+    monMacDinh = (cuoi ? tyLeTongLo([cuoi.id]).get(cuoi.id)?.monTruot : null) ?? [];
   }
+  const dong = kiemDongKyVong({ sid, dat: input.dat, nguyenNhan: input.nguyenNhan, mon: Array.isArray(input.mon) ? input.mon : monMacDinh, lyDo: input.ghiChu }, 'Kỳ vọng đầu ra');
+  const { dat, nguyenNhan, mon } = dong, ghiChu = dong.lyDo;
   return tx(() => {
     const now = nowIso();
     conn.prepare(
@@ -754,13 +698,12 @@ export function ghiKetLuanFt(p: Principal, sid: number, input: { dat?: unknown; 
        ON CONFLICT(student_id, class_id) DO UPDATE SET ky_vong_dat = excluded.ky_vong_dat, ky_vong_nguyen_nhan = excluded.ky_vong_nguyen_nhan,
          ky_vong_mon = excluded.ky_vong_mon, ky_vong_ghi_chu = excluded.ky_vong_ghi_chu, updated_by = excluded.updated_by, updated_at = excluded.updated_at`,
     ).run(sid, lopBeEle, dat ? 1 : 0, nguyenNhan, mon.length ? JSON.stringify(mon) : null, ghiChu, p.userId, now, now);
-    let taoMoi = 0;
-    if (!dat && nguyenNhan === 'trung_tam' && ftCycle && ftClass) taoMoi = taoCaseTutorFt(conn, p, { sid, ftCycleId: ftCycle, ftClassId: ftClass, fromClassId: lopBeEle, mon, ngay: demoToday() });
+    const taoMoi = !dat && ftCycle && ftClass ? taoCaseKyVong(p, emDaSangFt([{ ...dong, fromClassId: lopBeEle!, ftClassId: ftClass }])) : 0;
     const daCo = ftCycle ? (conn.prepare(`SELECT COUNT(*) n FROM sos_cases WHERE student_id = ? AND cycle_id = ? AND origin_kind = 'chuyen_cap' AND title LIKE 'Kỳ vọng đầu ra%'`).get(sid, ftCycle) as any).n as number : 0;
     writeAudit({ actorUserId: p.userId, action: 'cuoi_khoa.ket_luan_ft', entityType: 'student', entityId: sid, after: { dat, nguyenNhan, mon, taoMoi } });
     return {
       dat, nguyenNhan, mon, ghiChu, taoCaseTutor: taoMoi,
-      luuY: (dat || nguyenNhan !== 'trung_tam') && daCo ? 'Case Tutor đã tạo trước đó được giữ nguyên — giáo viên tự xử lý.' : null,
+      luuY: !taoMoi && daCo ? 'Case kỳ vọng đầu ra đã tạo trước đó được giữ nguyên — giáo viên tự xử lý.' : null,
     };
   });
 }

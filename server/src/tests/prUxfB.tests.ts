@@ -174,11 +174,9 @@ export async function runPrUxfBTests(t: YThucTestKit) {
     assert(d.docThamSoHoSo((k: string) => q.get(k)).muc === 'ket-luan-khoa', 'đọc lại');
     assert(d.docThamSoHoSo((k: string) => (k === 'muc' ? 'xyz' : null)).muc === undefined, 'muc lạ');
   });
-  check('UXF-b (5) · việc "Đánh dấu kỳ vọng đầu ra" (QL): href mở hồ sơ cuộn tới hộp Kết luận khoá (muc=ket-luan-khoa) — kèm lo-trinh của lộ trình có bài Final Test', () => {
-    const src = doc('server/src/worklist/mywork.ts');
-    assert(/muc: 'ket-luan-khoa'/.test(src), 'mywork.ts chưa gắn muc');
+  check('UXF-b (5) → PR-KV · việc "Kỳ vọng đầu ra · lớp" (QL): href mở panel ở trang lớp nguồn (?viec=ky-vong) — không còn mở hồ sơ từng em', () => {
     const items = (myworkSvc.myWork(t.P.mbManager, {}) as any).items.filter((x: any) => x.group === 'ky_vong_dau_ra');
-    for (const x of items) assert(/muc=ket-luan-khoa/.test(x.href) && /lo-trinh=\d+/.test(x.href), x.href);
+    for (const x of items) assert(x.href === `/hoc-vien/lop/${x.classId}?viec=ky-vong`, x.href);
   });
   check('UXF-b (5) · mốc MT trong lịch sử Case: có đường tới đợt qua duongDotTest', () => {
     const m = t.conn.prepare('SELECT case_id FROM case_milestones WHERE attempt_id IS NOT NULL LIMIT 1').get() as any;

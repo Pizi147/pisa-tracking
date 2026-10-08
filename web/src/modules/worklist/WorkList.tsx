@@ -41,8 +41,8 @@ export function DongViec({ it, onOpen, nutPhu }: {
 }) {
   const loaiHan = LOAI_HAN_CUA_VIEC[it.group];
   /* Lớp chỉ hiện khi dòng đang nói về MỘT EM — dòng gom đã lấy chính tên lớp làm tiêu đề phụ. */
-  /* PR-LCb: "Chốt lộ trình · lớp" là việc cả lớp (thay "Chuyển tiếp lớp" + "Chốt lên FT"): tiêu đề đã có lớp, chữ việc đã có số em — dòng phụ không nhắc lại. PR-CL: "Xét lại lộ trình · lớp · n em" cũng vậy. */
-  const gomLop = it.group === 'chot_len_ft' || it.group === 'xet_lai_lo_trinh';
+  /* PR-LCb: "Chốt lộ trình · lớp" là việc cả lớp (thay "Chuyển tiếp lớp" + "Chốt lên FT"): tiêu đề đã có lớp, chữ việc đã có số em — dòng phụ không nhắc lại. PR-CL: "Xét lại lộ trình · lớp · n em" cũng vậy; PR-KV: "Kỳ vọng đầu ra · lớp · n em". */
+  const gomLop = it.group === 'chot_len_ft' || it.group === 'xet_lai_lo_trinh' || it.group === 'ky_vong_dau_ra';
   const dongPhu = [
     gomLop ? null : it.studentName,
     it.classCode && it.studentName !== `Lớp ${it.classCode}` ? it.classCode : null,

@@ -8,7 +8,8 @@
  * Dải xét trên tỷ lệ CHƯA làm tròn: 0.595 là 50–59, 0.6 là 60–69, 0.6999 là 60–69, 0.7 là Pass. Làm tròn chỉ để hiện.
  * Hướng gợi ý KHÔNG lưu (sửa điểm thì gợi ý đổi theo); Quản lý quyết ở màn Chuyển lớp (Q30-3: không còn thẻ duyệt).
  */
-import { CHUONG_TRINH_KHONG_CHIA_MON, RATIO_PASS_THRESHOLD, programmeOf, tenMonNgan } from './normal.ts';
+import { CHUONG_TRINH_KHONG_CHIA_MON, RATIO_PASS_THRESHOLD, REGULAR_SKILLS, programmeOf, tenMonNgan, type RegularSkill } from './normal.ts';
+import { roundToHalf } from './tongKetLoTrinh.ts';
 import { NORMAL_LADDER } from './fasttrack.ts';
 import type { ProgrammeCode } from './normal.ts';
 import { kyHieuLop } from './tenLop.ts';
@@ -107,6 +108,18 @@ export function lichBoTro(x: { batDau: string; soTuan: 1 | 2 }): { ngayMiniTest:
 
 /** M-21: lên FT thì Writing của lớp thường → Writing 2 (FT tách W1/W2); các ô khác giữ, `tong_hop` giữ. */
 export const kyNangLopDich = (mon: string, denFt: boolean): string => (denFt && mon === 'writing' ? 'writing2' : mon);
+
+/** PR-KV (đặc tả 08/10 §3): Đạt kỳ vọng đầu ra = Overall MT0 ≥ ngưỡng của chương trình lớp nguồn. */
+export const NGUONG_KY_VONG: Readonly<Record<string, number>> = { BE: 4, ELE: 4.5 };
+export type GoiYKyVong = { overall: number; dat: boolean; monTruot: RegularSkill[] };
+/** Gợi ý điền sẵn từ band MT0 (L R W S): Overall = trung bình làm tròn 0.5; kỹ năng dưới ngưỡng. Thiếu band / không BE-ELE → null. */
+export function goiYKyVong(ct: string | null | undefined, bands: Partial<Record<RegularSkill, number | null>>): GoiYKyVong | null {
+  const nguong = NGUONG_KY_VONG[programmeOf(ct) ?? ''];
+  const b = REGULAR_SKILLS.map((k) => bands[k]);
+  if (nguong === undefined || b.some((x) => x === null || x === undefined)) return null;
+  const overall = roundToHalf((b as number[]).reduce((a, x) => a + x, 0) / 4);
+  return { overall, dat: overall >= nguong, monTruot: REGULAR_SKILLS.filter((k) => (bands[k] as number) < nguong) };
+}
 
 /** BE IELTS 4.0 · ELE IELTS 4.5–5.0 (§6.4) — chỉ nhắc chữ, không lưu Placement. */
 const KY_VONG_DAU_RA: Record<string, string> = { BE: 'BE IELTS 4.0', ELE: 'ELE IELTS 4.5–5.0' };

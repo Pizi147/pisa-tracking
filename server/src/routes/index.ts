@@ -52,6 +52,7 @@ import * as lenhSvc from '../classes/lenhChuyen.ts';
 import * as banGiaoSvc from '../classes/banGiao.ts';
 import * as loTrinhTiepSvc from '../classes/loTrinhTiep.ts';
 import * as cuoiKhoaSvc from '../normal/cuoiKhoa.ts';
+import * as kyVongSvc from '../normal/kyVong.ts';
 import * as luatLoTrinhSvc from '../classes/luatLoTrinh.ts';
 import * as hocVienLopSvc from '../classes/hocVienLop.ts';
 import * as luuTruSvc from '../classes/luuTru.ts';
@@ -1954,6 +1955,16 @@ api.get('/classes/:id/lo-trinh-tiep', requireAuth, wrap((req) => {
 api.put('/classes/:id/lo-trinh-tiep', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return loTrinhTiepSvc.ghiLoTrinhTiepCaLop(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
+/** PR-KV (§3): panel "Kỳ vọng đầu ra · lớp" — em Lên FT của lớp BE/ELE + MT0 + gợi ý; Lưu một lần cả lớp (một tx). Chỉ Quản lý (`request.approve`). */
+api.get('/classes/:id/ky-vong', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return kyVongSvc.panelKyVong(principalOf(req), pInt(req, 'id'));
+}));
+api.put('/classes/:id/ky-vong', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return kyVongSvc.luuKyVong(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 
 /** PR-LT2b (T49): Quản lý đánh dấu Đạt / Không đạt kỳ vọng đầu ra của em BE/ELE lên FT. Chỉ `request.approve` (máy chủ kiểm lại). */
