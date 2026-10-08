@@ -564,6 +564,40 @@ export const XONG_MT_CUOI_SQL = (cy: string) => `EXISTS (SELECT 1 FROM assessmen
   AND a2.attempt_no >= (CASE WHEN ${cy}.route = 'RF' THEN ${lichMtMacDinh('RF').length} ELSE ${lichMtMacDinh('LT1').length} END) AND ${CO_DIEM_SQL('a2')})`;
 
 /**
+ * PR-LTGON (luật 6): đổi mốc Progress/Final của lớp → bài chưa có điểm của các em đang học dời theo, không hỏi. Chỉ kỹ năng đang ở ĐÚNG tuần mốc cũ
+ * (đã dời tay / dời do vắng thì giữ), chưa có điểm; bài đã có điểm giữ nguyên. Số câu SQL không phụ thuộc số em. Final: MT0 chưa thi đi theo.
+ */
+function doiBaiTheoMoc(p: Principal, classId: number, kind: 'progress' | 'final', tuCu: string, sangMoi: string) {
+  const conn = db();
+  const cu = ensurePeriods([tuCu]).get(tuCu)!, moi = ensurePeriods([sangMoi]).get(sangMoi)!;
+  const now = nowIso();
+  const cua = `SELECT a.id FROM assessment_attempts a JOIN enrollments e ON e.student_id = a.student_id AND e.class_id = a.class_id AND e.status = 'active'
+                WHERE a.class_id = ? AND a.kind = ? AND a.status != 'cancelled'`;
+  const chuaDiem = `NOT EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = k.attempt_id AND s.skill = k.skill AND (s.band IS NOT NULL OR s.raw_score IS NOT NULL))`;
+  const soKn = (conn.prepare(
+    `UPDATE attempt_skills AS k SET planned_period_id = ?, plan_source = 'auto', updated_at = ?
+      WHERE k.attempt_id IN (${cua}) AND k.planned_period_id = ? AND k.sit_status != 'cancelled' AND ${chuaDiem}`,
+  ).run(moi.id, now, classId, kind, cu.id) as any).changes ?? 0;
+  /* Lượt: đặt theo tuần muộn nhất của kỹ năng bắt buộc (như `recomputeCompletionWeek`), một câu cho cả lớp. */
+  conn.prepare(
+    `UPDATE assessment_attempts SET updated_at = ?, planned_period_id = (
+       SELECT k.planned_period_id FROM attempt_skills k JOIN report_periods pr ON pr.id = k.planned_period_id
+        WHERE k.attempt_id = assessment_attempts.id AND k.required = 1 AND k.sit_status != 'cancelled' ORDER BY pr.week_start DESC LIMIT 1)
+      WHERE id IN (${cua}) AND planned_period_id = ?`,
+  ).run(now, classId, kind, cu.id);
+  if (kind === 'final') {
+    const mt0 = `SELECT m.id FROM assessment_attempts m JOIN assessment_attempts f ON f.cycle_id = m.cycle_id AND f.kind = 'final' AND f.class_id = ? AND f.status != 'cancelled' AND f.planned_period_id = ?
+                  WHERE m.kind = 'mt0' AND m.status = 'planned'
+                    AND NOT EXISTS (SELECT 1 FROM attempt_skills k WHERE k.attempt_id = m.id AND k.plan_source != 'auto')
+                    AND NOT EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = m.id AND (s.band IS NOT NULL OR s.raw_score IS NOT NULL))`;
+    conn.prepare(`UPDATE attempt_skills SET planned_period_id = ?, updated_at = ? WHERE attempt_id IN (${mt0})`).run(moi.id, now, classId, moi.id);
+    conn.prepare(`UPDATE assessment_attempts SET planned_period_id = ?, updated_at = ? WHERE id IN (${mt0})`).run(moi.id, now, classId, moi.id);
+  }
+  writeAudit({ actorUserId: p.userId, action: 'class.progress.doi_bai', entityType: 'class', entityId: classId, entityLabel: kind,
+    before: { week: cu.code }, after: { week: moi.code, kyNang: soKn } });
+}
+
+/**
  * Đổi tuần bắt đầu và mốc kiểm tra của lớp. Quyền: Admin CN và Quản lý CN (mục 7.6).
  *
  * Đặt mốc về TRỐNG là quay lại mốc mặc định của chương trình — không phải xoá mốc. Cần có
@@ -602,7 +636,14 @@ export function setClassProgress(p: Principal, classId: number, input: {
   if (!sets.length) return classProgress(classId);
 
   params.push(classId);
-  conn.prepare(`UPDATE classes SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+  const cu = classProgress(classId);
+  tx(() => {
+    conn.prepare(`UPDATE classes SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+    const moi = classProgress(classId);
+    for (const [kind, tuCu, sangMoi] of [['progress', cu.progressWeekStart, moi.progressWeekStart], ['final', cu.finalWeekStart, moi.finalWeekStart]] as const) {
+      if (tuCu && sangMoi && tuCu !== sangMoi) doiBaiTheoMoc(p, classId, kind, tuCu, sangMoi);
+    }
+  });
   writeAudit({ actorUserId: p.userId, action: 'class.progress', entityType: 'class', entityId: classId,
     entityLabel: c.code, before: {
       startPeriodId: c.start_period_id, progressWeek: c.progress_week_override, finalWeek: c.final_week_override,

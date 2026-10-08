@@ -849,6 +849,8 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
   huyLichVuot?: boolean;
   /** T11 (PR-MTa): xếp hàng loạt lớp thường tự báo GVCN một chuông cả lớp — không báo từng em. */
   khongBaoGvcn?: boolean;
+  /** PR-LTGON: Giữa khoá lớp thường dời tới ĐÚNG tuần Final (dấu "-") → hoà vào tuần Final, không chặn "trùng tuần". Id lượt Final của em. */
+  hoaVaoFinal?: number;
   today?: string;
 } = {}) {
   const { attempt, row } = loadOne(attemptId, skill);
@@ -893,7 +895,7 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
   if (vuot.chan) throw badRequest(vuot.chan);
   kiemXacNhanVuot(vuot.biVuot, { xacNhan: opts.huyLichVuot, lyDo: opts.reason });
 
-  const check = checkSkillWeekMove({ attemptId, skill: row.skill, newWeekStart: period.week_start, boQua: vuot.biVuot.map((x) => x.attemptId) });
+  const check = checkSkillWeekMove({ attemptId, skill: row.skill, newWeekStart: period.week_start, boQua: [...vuot.biVuot.map((x) => x.attemptId), ...(opts.hoaVaoFinal ? [opts.hoaVaoFinal] : [])] });
   if (check.blockers.length) throw badRequest(check.blockers.join(' '));
   if (check.warnings.length && !opts.force) {
     throw badRequest(`${check.warnings.join(' ')} Xác nhận lại nếu vẫn muốn xếp vào tuần này.`);

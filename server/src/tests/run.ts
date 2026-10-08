@@ -9227,6 +9227,9 @@ await runPrKvTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, ad
 // ==================================================================== PR-GOP (gộp việc theo lớp × loại việc)
 const { runPrGopTests } = await import('./prGop.tests.ts');
 await runPrGopTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-LTGON (lớp thường: đổi mốc dời bài theo; "-" trùng Final hoà vào)
+const { runPrLtGonTests } = await import('./prLtGon.tests.ts');
+await runPrLtGonTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
