@@ -9,6 +9,11 @@ Tệp này tự nạp vào mọi session của repo (planning, code, worktree), 
 3. Skill (impeccable, ponytail, superpowers). Skill gợi ý trái với mục 1–2 thì không tự làm: ghi vào báo cáo để
    chủ sản phẩm quyết.
 
+## Luật cứng của chủ sản phẩm (08/10)
+- Nghĩ tới **đầu ra** trước (em có lịch, có điểm…). Việc không ảnh hưởng đầu ra thì KHÔNG thêm bước, câu hỏi, trạng thái hay điều kiện chặn.
+- Workflow đơn giản, ít thao tác, không để người dùng kẹt; sửa trên nền có sẵn, không làm lại.
+- Mặc định làm điều hiển nhiên (vd đổi mốc lớp thì bài dời theo) — không hỏi lại.
+
 ## Giao diện và UX: dùng `impeccable`
 - PISA là công cụ làm việc cho giáo viên (chế độ Operate): dễ hiểu, dễ dùng, nhất quán trước; trang trí sau.
 - Không dùng taste-skill (đã tắt; không dành cho dashboard, bảng dữ liệu).

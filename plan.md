@@ -243,6 +243,20 @@ Công việc của tôi, chuông, câu báo lỗi máy chủ trên các đườn
 - **Sổ tay:** ảnh màn "Nộp kế hoạch bổ trợ" đã lỗi thời → PR-SOTAY cập nhật.
 - **Trước deploy:** đếm (chỉ đọc) số nhóm `bo_tro` còn `planned` trên DB thật để biết migrate `prCt2` phần B xử lý bao nhiêu PA. Thứ tự migrate: `prPa` → `prCt2`.
 
+### ƯU TIÊN TRƯỚC DEPLOY (chủ SP 08/10, hết ngân sách cloud — làm cái chống kẹt trước)
+Kế hoạch: `docs/superpowers/plans/2026-10-09-pr-mt-gon-chong-ket.md`. Luật đơn giản chủ SP chốt 08/10 (thay đề xuất 5 thao tác / đánh số lại trong trang rà soát):
+dời hợp lệ thì giữ điểm, vượt/trùng thì báo, không tự huỷ gì (bỏ T2) · xoá điểm là xoá · QL huỷ kỹ năng lúc nào cũng được, "Đưa lại vào đợt" · QL huỷ MT bất kỳ, xếp lại vẫn MT đó · xếp đè thoải mái · lớp thường: đổi mốc lớp thì bài chưa điểm dời theo; "-" trùng Final thì hoà vào.
+1. **PR-MTGON** (Task 1–4, nhánh `pr-mt-gon`) ‖ **PR-LTGON** (Task 5, nhánh `pr-lt-gon`) — song song.
+2. Merge cả hai → deploy theo `DEPLOY_2026-10.md` (migrate `prPa` → `prCt2`; tập dượt bước C). Bản chính đang chạy ≈ `09223024` (deploy 20:06 07/10, có #245, chưa có #256/#277).
+
+### SAU DEPLOY / tuần 12/10 (đã chốt hướng, chưa làm)
+- **PR-MTUI**: Kế hoạch Test thu gọn mặc định (trừ `?classId=` / một lớp); nút "Xếp nhiều MT…", panel bắt "Chọn lớp…"; tên HV ở Kế hoạch Test → Hồ sơ HV (lưới chấm giữ Hồ sơ MT); tiêu đề Lịch Test "bài thi W1 OCT" + một chip hạn (xám/vàng hôm nay/đỏ quá hạn), khối 3 thêm tuần; Điểm theo lớp bỏ tuần khỏi tab (chỉ "n/N đủ điểm"), thêm "Thi W1 OCT" dưới mã HV, không tô đậm/màu.
+- **PR-HOP1** (phương án A): mọi chỗ sửa lịch một MT mở cùng `HopKyNang`, một đường lưu `/ke-hoach-test/dot`; bỏ `WeekModal` Hồ sơ MT.
+- **PR-XTHV**: tab "Xếp theo học viên" trong panel (P1 danh sách–chi tiết, ≤ 3 em, "Điền gợi ý" theo lịch 6/12/16), chỉ QL/Quản trị, FT.
+- **Chỉ QL lo Test**: bỏ GVCN "Xin dời", bỏ "Đề xuất sửa › Lịch MT"; GV chấm vẫn nhập điểm + "-". Admin CN sau này = quyền QL.
+- Đưa lại #247 (bị lọt). Kiểm chỉ đọc DB thật sau deploy (lượt mọi kỹ năng đã huỷ, lượt sau trước lượt trước, `ket_qua_huy` mồ côi, `score.huy_vuot` không có `ket_qua_huy`).
+- PR-CHENMT (nhánh `ke-hoach-chen-mt`): xem lại có cần không — chủ SP 08/10 không muốn đánh số lại.
+
 ### RÀ SOÁT MOCK TEST + TEST LỚP THƯỜNG (08/10, chờ chủ sản phẩm duyệt — CHƯA code)
 Báo cáo + mockup: `thiet-ke/mockup-mt-quy-trinh-2026-10-08.html` (artifact https://claude.ai/artifact/W9VJ7ZePuYAFnLwhAVrpZz). 9 vấn đề chủ SP nêu 08/10.
 - **Ngõ cụt huỷ (còn ở main):** NC1 MT cũ có kỹ năng đã huỷ → ẩn Khôi phục (`shared/domain/thaoTacMt.ts:29-32` xét "cũ" trước "đã huỷ"); NC2 Khôi phục chặn cứng theo thứ tự lượt (`absence.ts:660`), không có "Không mock lại"; NC3 lượt mọi kỹ năng đã huỷ ("Huỷ phần còn lại" ở MT không phải cuối) → Dời cả đợt 400, Huỷ cả lượt 400, hàng loạt báo sai "đã xong" (`shared/domain/keHoachTest.ts:258`).
