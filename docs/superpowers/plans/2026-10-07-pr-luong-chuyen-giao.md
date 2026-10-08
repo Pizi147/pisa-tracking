@@ -131,16 +131,16 @@ em có lệnh = đã có hướng; lớp có lệnh Cuối khoá = xong). PR-LC 
 ### PR-LCb · giao diện (M) — panel gộp lớp thường · **cần mockup** `thiet-ke/mockup-panel-cuoi-khoa-2026-10-07.html` (đã soạn 07/10, chờ duyệt). Sau LCa.
 **Một panel** `PanelCuoiKhoa.tsx` (lớp thường), tên "Lộ trình tiếp theo · {lớp} · n em" (QM1). Một bảng, mỗi em một dòng:
 Học viên · Final Test · Hệ thống gợi ý · **Hướng** (một ô, nguồn `lo_trinh_tiep_theo`) · Target (điền sẵn theo Q2) · Lớp chuyển đến · Tuần · Ghi chú (Lý do khi hướng cần).
-- [ ] **LCb-1 GVCN** (`coTheGhiHuong && !coTheRaLenh`): ghi Hướng + Ghi chú; Target chỉ xem; cột "Quản lý quyết" chỉ xem (lớp · tuần khi đã có lệnh,
+- [x] **LCb-1 GVCN** (`coTheGhiHuong && !coTheRaLenh`): ghi Hướng + Ghi chú; Target chỉ xem; cột "Quản lý quyết" chỉ xem (lớp · tuần khi đã có lệnh,
   lúc đó Hướng khoá — QM2); không chọn nhiều em, không tuần; chân "Lưu n em" → `PUT /classes/:id/lo-trinh-tiep`. Em 50–59%: chip "QL quyết" (K26).
-- [ ] **LCb-2 QL/QT** (`coTheRaLenh`): thêm Target (sửa được; đỏ "Ghi Target" chỉ khi không có Target nào; bỏ placeholder "6.0" `TransitionPanel.tsx:485`),
+- [x] **LCb-2 QL/QT** (`coTheRaLenh`): thêm Target (sửa được; đỏ "Ghi Target" chỉ khi không có Target nào; bỏ placeholder "6.0" `TransitionPanel.tsx:485`),
   Lớp chuyển đến, Tuần bắt đầu chung/riêng (`OTuan`), chọn nhiều em + "Áp cho n em", hàng **nhóm hướng** ("Lên FT · 4 em [lớp ▾]") áp lớp một lần,
   "+ Mở lớp mới…" giữ. Chân: đếm theo hướng · "Đóng" · "Lưu hướng" (ghi LTT, không ra lệnh) · "Tiếp tục · n em" → **2 Xác nhận** (tóm tắt theo hướng,
   "Gửi quyết định · n em" → `POST /classes/:id/transition`). Lên FT hiện `MT0 · W4 SEP` (+ chip SOS MT0) dưới ô Hướng ngay sau khi lưu.
-- [ ] **LCb-3 Lối vào — mọi lối mở panel này** (`?viec=lo-trinh-ca-lop` và `?viec=chuyen-tiep` cùng mở `PanelCuoiKhoa` ở lớp thường):
+- [x] **LCb-3 Lối vào — mọi lối mở panel này** (`?viec=lo-trinh-ca-lop` và `?viec=chuyen-tiep` cùng mở `PanelCuoiKhoa` ở lớp thường):
   nút chính hồ sơ lớp (`DauTrangLop.tsx:125`, `ClassProgressPanel.tsx:174`, `DaiChuyenLop.tsx:42`) đổi chữ "Lộ trình tiếp theo…"; ⋮ (`DauTrangLop.tsx:127`)
   còn MỘT mục; việc "Chốt lên FT" (`mywork.ts:593`, `tongQuan.ts:149`) và "Chuyển tiếp lớp" (`mywork.ts:578-579`) nút "Lộ trình tiếp theo". GVCN cũng thấy nút.
-- [ ] **LCb-4 Gỡ / giữ:**
+- [x] **LCb-4 Gỡ / giữ:**
 
   | Thành phần | Lớp thường | Lớp FT |
   |---|---|---|
@@ -152,7 +152,10 @@ Học viên · Final Test · Hệ thống gợi ý · **Hướng** (một ô, ng
 
   Câu dài bỏ: "Chỉ là dự định, chưa đổi lớp. Hướng Hệ thống gợi ý…" (`LoTrinhTiepCaLopPanel.tsx:105`), "Chỉ chọn từ tuần sau trở đi; web chuyển em…",
   "Gửi phần đã quyết trước, quyết nốt sau. Tới hết tuần kết thúc lớp…" (chân `TransitionPanel`). Chữ theo mockup, `TU_DIEN_VA_CHU.md`.
-- [ ] **LCb-5** Hành trình: "QL quyết: Lên FT (GVCN: Học lại)" khi QL đổi hướng GVCN ghi.
+- [x] **LCb-5** Hành trình: "QL quyết: Lên FT (GVCN: Học lại)" khi QL đổi hướng GVCN ghi. — đã làm ở PR-LCa (`dongBoTuLenh`).
+- [x] **PR-LCb xong 08/10** (`pr-lcb-lo-trinh-tiep`, kế hoạch `.superpowers/sdd/lcb/plan.md`): theo mockup 08/10 1b/1c — "Xác nhận · n em" thay "Gửi quyết định", cột "Gợi ý · GVCN"
+  (`huong_gvcn`), Hướng khoá gộp vào ô Hướng thay cột "Quản lý quyết", Target chỉ chữ (§7); việc QL MỘT dòng "Chốt lộ trình · {lớp}" thay "Chốt lên FT" + "Chuyển tiếp lớp".
+  **"Xét lại lộ trình"** (em đã chuyển mà Final không phù hợp) **dời sang PR-CL** (planning 08/10). Ảnh `thiet-ke/anh/pr-lcb/`.
 - Lệnh impeccable: `layout` (bảng hai vai, nhóm hướng), `clarify` (chữ ngắn), `harden` (thiếu Target, lớp đầy, lỗi một dòng giữ dòng khác), `adapt` (375 thẻ),
   `audit` trước PR. `/ponytail lite`.
 

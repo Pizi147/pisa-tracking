@@ -513,6 +513,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 08/10/2026 | PR-LCb · `pr-lcb-lo-trinh-tiep` · Opus 5.5 | Lớp thường một panel "Lộ trình tiếp theo" (GVCN đề xuất, QL Soạn › Xác nhận = ra lệnh, `huong_gvcn` giữ đề xuất, Target chỉ chữ); việc QL một dòng "Chốt lộ trình · {lớp}" hạn CN trước tuần Final thay "Chốt lên FT" + "Chuyển tiếp lớp"; "Xét lại lộ trình" dời PR-CL; phép kiểm `prLcb.tests.ts`, ảnh `thiet-ke/anh/pr-lcb/` |
 | 08/10/2026 | PR-LCa · `pr-lca-luong-chuyen` · Opus 5.5 | Máy chủ: quyết định Cuối khoá ghi ngược Lộ trình tiếp theo + MT0 ngay (Hành trình "QL quyết"), Target Lên FT tự lấy LTT → khoá → hỏi, GVCN/QL không đổi Hướng/Target em đã quyết ở LTT (409), thi hành giữ ghi chú/lớp dự kiến, `dienSan` + cờ panel gộp, "Chốt lên FT" chỉ trước tuần Final, migrate `prLc`; phép kiểm `prLc.tests.ts` LC-a…p |
 | 08/10/2026 | `pr-han-xac-nhan` · Opus 5.5 | Hạn xác nhận nguyên nhân / PA = 5 ngày, Gấp hoặc SOS 3 = 3 ngày qua một hàm `soNgayHanXacNhan`; Case đang mở giữ hạn cũ (không migrate); phép kiểm `prHan.tests.ts` |
 | 08/10/2026 | `pr-viec-nho-2` · Opus 5.5 | Mockup 08/10 phần 1, 2, 4: "Nhắc tất cả (n)" ở Công việc › Của GV (`POST /my-work/nhac-nhieu`, lõi PR-NV, ≤ 50, hỏi lại); Chờ duyệt: Trạng thái đứng đầu, Loại mờ ở Nhắc việc; "GV chấm S" thành hàng có viền ở điện thoại + có ở Điểm theo lớp (nhớ lớp × MT); phép kiểm `prViecNho2.tests.ts` |

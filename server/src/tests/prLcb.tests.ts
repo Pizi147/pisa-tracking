@@ -367,9 +367,13 @@ export async function runPrLcbTests(t: YThucTestKit) {
     assert(web('modules/classes/DaiChuyenLop.tsx').includes('(v.laGvcn || v.coTheRaLenh)') && web('modules/classes/DaiChuyenLop.tsx').includes('Lộ trình tiếp theo…'), 'dải Kết thúc khoá');
     assert(web('modules/classes/ClassProgressPanel.tsx').includes('Lộ trình tiếp theo…'), 'Lịch Test');
     const pn = web('modules/classes/PanelCuoiKhoa.tsx');
-    for (const chu of ['<ChonNguoi', 'ds={', '<OTuan', 'hanChotLenFt(', 'Lộ trình tiếp theo · ', '1 Soạn › 2 Xác nhận', 'Lưu hướng', 'Tiếp tục · ', 'Xác nhận · ', 'Gõ tên lớp…', 'Chọn ở hàng nhóm', 'Không có lớp khớp', 'Quản lý đã xác nhận', 'Hướng khoá', 'Bạn đề xuất: ', 'GVCN: chưa đề xuất', 'Quản lý đã quyết', 'Lớp chưa có học viên đang học.', 'không chờ điểm Final']) {
+    for (const chu of ['<ChonNguoi', 'ds={', '<OTuan', 'hanChotLenFt(', 'Lộ trình tiếp theo · ', '>1 Soạn</BuocSo> › <BuocSo', '>2 Xác nhận<', 'aria-current="step"', 'Lưu hướng', 'Tiếp tục · ', 'Xác nhận · ', 'Gõ tên lớp…', 'Chọn ở hàng nhóm', 'Không có lớp khớp', 'Quản lý đã xác nhận', 'Hướng khoá', 'Bạn đề xuất: ', 'GVCN: chưa đề xuất', 'Quản lý đã quyết', 'Lớp chưa có học viên đang học.', 'không chờ điểm Final']) {
       assert(pn.includes(chu), `PanelCuoiKhoa thiếu: ${chu}`);
     }
+    /* T5 (rà T4 m1, m2 + audit): nút gửi khoá tới khi nạp lại xong; thẻ 375 không ô trống; link chữ 44px ở điện thoại; hàng nhóm xong thì ẩn. */
+    assert(pn.includes('const khoaGui = busy || refreshing;') && (pn.match(/disabled=\{khoaGui/g) ?? []).length === 4, 'nút gửi khoá khi nạp lại');
+    assert(pn.includes('{(loiHang || (laQl && s.lenh)) && <div role="cell" className="space-y-1">{duoi}</div>}'), 'thẻ 375: ô dưới chỉ khi có nội dung');
+    assert((pn.match(/\$\{CHAM_375\}/g) ?? []).length === 2 && pn.includes('.filter((x) => x.n > 0 && !x.xong)'), 'link 44px · ẩn hàng nhóm đã xong');
     assert(!pn.includes('placeholder="6.0"') && !/Dự kiến thi/.test(pn), 'không ô Target mờ 6.0, không ô Dự kiến thi');
   });
   check('LCb-w2 · transitionPlan: em có cờ kck (Target khoá KCK) — panel biết em đã có Target, không hỏi lại', () => {

@@ -30,6 +30,8 @@ type Em = {
   lenh: Lenh | null; mt0: Parameters<typeof OMt0>[0]['mt0'];
 };
 
+/** Link chữ trong hàng (Đổi tuần, Huỷ quyết định): vùng bấm 44px ở điện thoại (audit T5). */
+const CHAM_375 = 'max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center';
 const CAN_LOP: readonly Huong[] = ['len_lop', 'fast_track', 'hoc_lai'];
 const laLenh = (h: Huong | ''): h is Exclude<Huong, 'chua_quyet'> => h !== '' && h !== 'chua_quyet';
 const SAU_LENH: readonly string[] = ['len_lop', 'fast_track', 'hoc_lai', 'bao_luu', 'dung_hoc'];
@@ -54,7 +56,7 @@ export function PanelCuoiKhoa({ classId, onClose, onDone }: { classId: number; o
   const toast = useToast();
   const dt = useDienThoai();
   const lf = useLoiForm();
-  const { data, loading, error, reload } = useApi<any>(`/classes/${classId}/transition`, [classId]);
+  const { data, loading, error, reload, refreshing } = useApi<any>(`/classes/${classId}/transition`, [classId]);
   const [buoc, setBuoc] = useState<1 | 2>(1);
   const [busy, setBusy] = useState(false);
   const [tuanChung, setTuanChung] = useState('');
@@ -253,8 +255,10 @@ export function PanelCuoiKhoa({ classId, onClose, onDone }: { classId: number; o
   const nhom = CAN_LOP.filter((h) => cacHuong.includes(h)).map((h) => {
     const em = rows.filter((r) => r.d.huong === h);
     const thieu = em.filter((r) => !lopCua(r.d)).length;
-    return { h, n: em.length, thieu };
-  }).filter((x) => x.n > 0);
+    /* Mọi em của nhóm đã có quyết định kèm lớp → không còn gì để chọn ở hàng nhóm (ô trống trông như việc còn dở — audit T5). */
+    const xong = thieu === 0 && !nhomLop[h] && em.every((r) => r.s.lenh);
+    return { h, n: em.length, thieu, xong };
+  }).filter((x) => x.n > 0 && !x.xong);
 
   const demChan = (() => {
     const m = new Map<string, number>();
@@ -268,13 +272,15 @@ export function PanelCuoiKhoa({ classId, onClose, onDone }: { classId: number; o
     ? [`${students.length} em`, tuanFinal ? `Final ${tuanLich(tuanFinal, homNay)}` : null, laQl ? (buoc === 1 ? '1 Soạn' : '2 Xác nhận') : null]
     : [data.from.code, `${students.length} em`, tuanFinal ? `Final ${tuanLich(tuanFinal, homNay)}` : null];
   const btn = 'btn min-h-[44px] sm:min-h-0';
+  /* Sau Lưu / Xác nhận, `reload` chạy nền: khoá nút gửi tới khi nạp xong — không để em vừa xác nhận lọt lại vào "Tiếp tục" (rà T4 m1). */
+  const khoaGui = busy || refreshing;
   const daSuaGi = Object.keys(dongs).length > 0 || Object.values(nhomLop).some(Boolean) || !!tuanChung;
 
   const chan = !students.length || (!laQl && !laGv) ? undefined
     : laGv ? {
       huy: null,
       phu: <button type="button" className={`${btn} max-sm:hidden`} onClick={onClose} disabled={busy}>{luuDuoc.length ? 'Huỷ thay đổi' : 'Đóng'}</button>,
-      chinh: <button type="button" className={`${btn} btn-primary`} onClick={luu} disabled={busy || !luuDuoc.length}>{busy ? 'Đang lưu…' : luuDuoc.length ? `Lưu ${luuDuoc.length} em` : 'Lưu'}</button>,
+      chinh: <button type="button" className={`${btn} btn-primary`} onClick={luu} disabled={khoaGui || !luuDuoc.length}>{busy ? 'Đang lưu…' : luuDuoc.length ? `Lưu ${luuDuoc.length} em` : 'Lưu'}</button>,
     }
     : buoc === 1 ? {
       huy: null,
@@ -288,20 +294,20 @@ export function PanelCuoiKhoa({ classId, onClose, onDone }: { classId: number; o
         <>
           {/* Luật S3 (KhungPanel): đã sửa → "Huỷ thay đổi", chưa → "Đóng". Tự vẽ để ba nút cùng phía phải như mockup. */}
           <button type="button" className={`${btn} max-sm:hidden`} onClick={onClose} disabled={busy}>{daSuaGi ? 'Huỷ thay đổi' : 'Đóng'}</button>
-          <button type="button" className={btn} onClick={luu} disabled={busy || !luuDuoc.length}>{busy ? 'Đang lưu…' : 'Lưu hướng'}</button>
+          <button type="button" className={btn} onClick={luu} disabled={khoaGui || !luuDuoc.length}>{busy ? 'Đang lưu…' : 'Lưu hướng'}</button>
         </>
       ),
-      chinh: <button type="button" className={`${btn} btn-primary`} onClick={tiepTuc} disabled={busy || !canGui.length}>Tiếp tục · {canGui.length} em</button>,
+      chinh: <button type="button" className={`${btn} btn-primary`} onClick={tiepTuc} disabled={khoaGui || !canGui.length}>Tiếp tục · {canGui.length} em</button>,
     }
     : {
       huy: { nhan: '← Quay lại', onClick: () => setBuoc(1), disabled: busy },
-      chinh: <button type="button" className={`${btn} btn-primary`} onClick={gui} disabled={busy}>{busy ? 'Đang xác nhận…' : `Xác nhận · ${canGui.length} em`}</button>,
+      chinh: <button type="button" className={`${btn} btn-primary`} onClick={gui} disabled={khoaGui}>{busy ? 'Đang xác nhận…' : `Xác nhận · ${canGui.length} em`}</button>,
     };
 
   return (
     <>
       <KhungPanel longTrong rong="toan" onDong={taoLop ? () => {} : onClose} tieuDe={tieuDe}
-        ngCanh={laQl && !dt ? <span>1 Soạn › 2 Xác nhận</span> : undefined} chan={chan}>
+        ngCanh={laQl && !dt ? <span><BuocSo so={1} hien={buoc}>1 Soạn</BuocSo> › <BuocSo so={2} hien={buoc}>2 Xác nhận</BuocSo></span> : undefined} chan={chan}>
         <p className="m-0 mt-3 text-[13px] font-semibold tabular-nums text-slate-200">{thanhDau.filter(Boolean).join(' · ')}</p>
         {dai && <div className="mt-2">{dai}</div>}
         {!laQl && !laGv && <p className="mt-3 text-sm text-slate-400">Bạn chỉ xem được.</p>}
@@ -417,6 +423,11 @@ export function PanelCuoiKhoa({ classId, onClose, onDone }: { classId: number; o
   );
 }
 
+/** Bước của "1 Soạn › 2 Xác nhận": bước đang ở đậm + `aria-current` (audit T5 — trước đây hai bước như nhau). */
+function BuocSo({ so, hien, children }: { so: 1 | 2; hien: 1 | 2; children: ReactNode }) {
+  return so === hien ? <b className="text-slate-100" aria-current="step">{children}</b> : <span>{children}</span>;
+}
+
 function Dai({ nhan, do: doHan, children }: { nhan: string; do?: boolean; children: ReactNode }) {
   return (
     <div role="status" className={`flex flex-wrap items-center gap-x-3 gap-y-0.5 rounded-lg border px-3 py-2 text-sm ${doHan ? 'border-late-line bg-late-bg' : ''}`}
@@ -442,7 +453,7 @@ function HangEm(p: HangProps) {
   const ck = s.cuoiKhoa;
   const du = !!ck && ck.tyLe !== null && ck.scored >= ck.required;
   const pct = du ? `${Math.round(ck!.tyLe! * 100)}%` : null;
-  const monDat = du ? `${ck!.mon.filter((m) => m.ratio !== null && m.ratio >= RATIO_PASS_THRESHOLD).length}/${ck!.required} môn đạt` : null;
+  const monDat = du && ck!.required > 1 ? `${ck!.mon.filter((m) => m.ratio !== null && m.ratio >= RATIO_PASS_THRESHOLD).length}/${ck!.required} môn đạt` : null;
   const goiY = ck?.goiY;
   const huongGvcn = s.loTrinhTiep?.huongGvcn ?? null;
   const khoaHuong = !laQl && !!s.lenh;   // QM2: GVCN không đổi Hướng em Quản lý đã xác nhận
@@ -454,7 +465,8 @@ function HangEm(p: HangProps) {
   const coTarget = d.mucTieu === 'KCK' || (d.mucTieu.trim() !== '' && !Number.isNaN(Number(d.mucTieu)));
   const nhan = (t: string) => <span className="mb-0.5 block text-xs text-slate-500">{t}</span>;
   const nhanTb = (t: string) => (dt ? nhan(t) : null);
-  const loiHang = p.loi ?? p.loiMayChu ?? (s.lenh?.loi ? `Chưa chuyển được: ${s.lenh.loi.replace(/\.$/, '')}${laQl ? ' — chọn tuần hoặc lớp mới rồi Xác nhận, hoặc huỷ quyết định.' : ''}` : null);
+  /* Thiếu Target đã có chữ "Ghi Target" đỏ ngay dưới ô — không nhắc lần hai dưới hàng. */
+  const loiHang = (p.oTarget && p.loi === 'Ghi Target (hoặc KCK)' ? null : p.loi) ?? p.loiMayChu ?? (s.lenh?.loi ? `Chưa chuyển được: ${s.lenh.loi.replace(/\.$/, '')}${laQl ? ' — chọn tuần hoặc lớp mới rồi Xác nhận, hoặc huỷ quyết định.' : ''}` : null);
 
   const oGoiY = !goiY ? <span className="text-slate-500">—</span>
     : goiY.canQuanLy ? <Nhan tone="soon" title={goiY.nhan}>Quản lý cân nhắc</Nhan>
@@ -511,7 +523,7 @@ function HangEm(p: HangProps) {
     <span className="block">
       <span className="tabular-nums text-slate-200">{tuanLich(d.tuan || tuanCh, homNay)}</span>
       {tuanRieng && <span className="text-xs text-slate-500"> riêng</span>}
-      {sua && !doiTuan && !tuanRieng && <button type="button" className="link ml-2 border-0 bg-transparent p-0 text-xs" onClick={() => setDoiTuan(true)} aria-label={`Đổi tuần của ${s.fullName}`}>Đổi</button>}
+      {sua && !doiTuan && !tuanRieng && <button type="button" className={`link ml-2 border-0 bg-transparent p-0 text-xs ${CHAM_375}`} onClick={() => setDoiTuan(true)} aria-label={`Đổi tuần của ${s.fullName}`}>Đổi</button>}
       {sua && (doiTuan || tuanRieng) && (
         <span className="mt-1 block max-w-[9.5rem]">
           <OTuan tuanChon={p.tuanChon} value={d.tuan || tuanCh} onChange={(v) => sua({ tuan: v === tuanCh ? '' : v })} ariaLabel={`Tuần bắt đầu của ${s.fullName}`} />
@@ -544,12 +556,12 @@ function HangEm(p: HangProps) {
       {laQl && s.lenh && (
         <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
           <span>{CHU_CHUYEN_LOP.sapChuyen(tuanLich(s.lenh.tuan, homNay))}</span>
-          {!p.huy && <button type="button" className="link border-0 bg-transparent p-0 text-xs" onClick={p.moHuy} aria-label={`${CHU_CHUYEN_LOP.huy} của ${s.fullName}`}>{CHU_CHUYEN_LOP.huy}</button>}
+          {!p.huy && <button type="button" className={`link border-0 bg-transparent p-0 text-xs ${CHAM_375}`} onClick={p.moHuy} aria-label={`${CHU_CHUYEN_LOP.huy} của ${s.fullName}`}>{CHU_CHUYEN_LOP.huy}</button>}
           {p.huy && (
             <span className="flex flex-wrap items-center gap-1.5">
               <input className="field w-56" placeholder="Lý do huỷ" aria-label={`Lý do huỷ quyết định của ${s.fullName}`} value={p.huy.lyDo} onChange={(e) => p.doiLyDoHuy(e.target.value)} />
-              <button type="button" className="btn btn-sm btn-danger" disabled={p.busy || !p.huy.lyDo.trim()} onClick={p.xacNhanHuy}>{CHU_CHUYEN_LOP.huy}</button>
-              <button type="button" className="btn btn-sm" onClick={p.dongHuy}>{CHU_CHUYEN_LOP.giu}</button>
+              <button type="button" className="btn btn-sm btn-danger min-h-[44px] sm:min-h-0" disabled={p.busy || !p.huy.lyDo.trim()} onClick={p.xacNhanHuy}>{CHU_CHUYEN_LOP.huy}</button>
+              <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={p.dongHuy}>{CHU_CHUYEN_LOP.giu}</button>
             </span>
           )}
         </div>
@@ -586,7 +598,7 @@ function HangEm(p: HangProps) {
           </>
         )}
         <span role="cell" className="block">{nhan('Ghi chú')}{oGhiChu}</span>
-        <div role="cell" className="space-y-1">{duoi}</div>
+        {(loiHang || (laQl && s.lenh)) && <div role="cell" className="space-y-1">{duoi}</div>}
       </div>
     );
   }
