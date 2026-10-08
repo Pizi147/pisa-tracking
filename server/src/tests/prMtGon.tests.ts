@@ -155,7 +155,10 @@ export async function runPrMtGonTests(t: YThucTestKit) {
     conn.prepare(`UPDATE attempt_skills SET sit_status = 'cancelled' WHERE attempt_id = ? AND skill IN ('speaking', 'reading')`).run(a.m1);
     conn.prepare(`UPDATE attempt_skills SET planned_period_id = ? WHERE attempt_id = ? AND skill = 'speaking'`).run(tuan(5).id, a.m1);
     conn.prepare('UPDATE assessment_attempts SET lich_su = 1 WHERE id = ?').run(a.m1);
+    conn.prepare(`INSERT INTO skill_move_requests (attempt_id, skill, move_no, from_period_id, to_period_id, requested_on, decide_by, status, created_at)
+      VALUES (?, 'speaking', 2, ?, ?, ?, ?, 'pending', ?)`).run(a.m1, tuan(5).id, tuan(6).id, TODAY, t.addDays(TODAY, 6), TODAY);
     attemptsSvc.setSkillSkip(QL, a.m1, 'speaking', false, null);
+    assert(!conn.prepare(`SELECT 1 FROM skill_move_requests WHERE attempt_id = ? AND status = 'pending'`).get(a.m1), 'đưa lại phải rút đề nghị dời đang chờ');
     attemptsSvc.setSkillSkip(QL, a.m1, 'reading', false, null);
     const s = kn(a.m1, 'speaking'), r = kn(a.m1, 'reading');
     assert(s.sit_status === 'scheduled' && s.required === 1 && s.planned_period_id === null, `speaking vượt MT2 phải về Chưa xếp: ${JSON.stringify(s)}`);

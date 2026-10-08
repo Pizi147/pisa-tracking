@@ -603,9 +603,9 @@ export function checkSkillWeekMove(input: {
 export type KiemVuot = { chan: string | null };
 
 /**
- * Q-0310-1, D1, T2 (PR-MTa): lượt `attemptId` sau khi dời có tuần cuối `tuanCuoiMoi` → các lượt SAU bị vượt, kèm số kỹ năng có điểm
- * (`soDiem`, W1/W2 tính một) và số Case sinh riêng (`soCase`) sẽ đóng. `chan` chỉ còn khi lượt bị vượt đang có đề nghị dời chờ duyệt.
- * Chỉ lượt MT: Giữa khoá / Cuối khoá của lớp thường giữ luật chặn cũ (`checkWeekVsNeighbours`). Không ghi.
+ * Q-0310-1, D1 + PR-MTGON (luật 1): lượt `attemptId` sau khi dời có tuần cuối `tuanCuoiMoi` mà vượt (hoặc trùng tuần đầu của) một lượt SAU
+ * → `chan` = câu "MT{n} thi … Chọn tuần trước …, hoặc dời MT{n} trước.". Chỉ lượt MT: Giữa khoá / Cuối khoá của lớp thường giữ luật chặn
+ * cũ (`checkWeekVsNeighbours`). Không ghi.
  */
 export function kiemVuot(attemptId: number, tuanCuoiMoi: string, tuanMoi: string = tuanCuoiMoi): KiemVuot {
   const conn = db();
@@ -617,10 +617,7 @@ export function kiemVuot(attemptId: number, tuanCuoiMoi: string, tuanMoi: string
   const rows = conn.prepare(
     `SELECT a.id, a.attempt_no, a.kind, a.status,
             (SELECT MIN(pr.week_start) FROM attempt_skills k JOIN report_periods pr ON pr.id = k.planned_period_id
-              WHERE k.attempt_id = a.id AND k.required = 1 AND k.sit_status != 'cancelled') AS tuan_dau,
-            (SELECT COUNT(DISTINCT CASE WHEN sx.skill IN ('writing1', 'writing2') THEN 'writing' ELSE sx.skill END) FROM assessment_scores sx
-              WHERE sx.attempt_id = a.id AND (sx.band IS NOT NULL OR sx.raw_score IS NOT NULL)) AS so_diem,
-            EXISTS (SELECT 1 FROM skill_move_requests r WHERE r.attempt_id = a.id AND r.status = 'pending') AS cho_duyet
+              WHERE k.attempt_id = a.id AND k.required = 1 AND k.sit_status != 'cancelled') AS tuan_dau
        FROM assessment_attempts a
       WHERE a.cycle_id = ? AND a.attempt_no > ? AND a.status != 'cancelled'`,
   ).all(a.cycle_id, a.attempt_no) as any[];
@@ -662,7 +659,7 @@ export function kiemTuanMt0Cho(attemptId: number, tuanMoi: string, tuanCuoiMoi: 
 }
 
 /** Một lượt SAU cùng lộ trình, đã đọc sẵn (xếp hàng loạt đọc theo lô — `docFtTheoLo`, không N+1). */
-export type LuotSauDoc = { id: number; attempt_no: number; kind: string; status: string; tuan_dau: string | null; so_diem: number; cho_duyet: boolean | number };
+export type LuotSauDoc = { id: number; attempt_no: number; kind: string; status: string; tuan_dau: string | null };
 
 /**
  * Lõi thuần của `kiemVuot` trên dữ liệu đã đọc. PR-MTGON (luật 1, chủ sản phẩm 08/10): vượt qua lượt sau (kể cả trùng tuần đầu của nó)
@@ -671,7 +668,7 @@ export type LuotSauDoc = { id: number; attempt_no: number; kind: string; status:
 export function kiemVuotTu(a: { attempt_no: number; kind: string }, rows: readonly LuotSauDoc[], tuanCuoiMoi: string): KiemVuot {
   if (a.kind !== 'mock') return { chan: null };
   const ds: LuotLanCan[] = rows.filter((r) => r.attempt_no > a.attempt_no && r.status !== 'cancelled').map((r) => ({
-    attemptId: r.id, attemptNo: r.attempt_no, kind: r.kind, tuanDau: r.tuan_dau ?? null, coDiem: r.so_diem > 0, daThi: false, huy: false,
+    attemptId: r.id, attemptNo: r.attempt_no, kind: r.kind, tuanDau: r.tuan_dau ?? null, coDiem: false, daThi: false, huy: false,
   }));
   const x = luotBiVuot(ds, { attemptNo: a.attempt_no, tuanCuoiMoi }).biVuot[0];
   if (!x) return { chan: null };
@@ -1009,8 +1006,9 @@ export function setSkillScope(
       db()
         .prepare('INSERT OR IGNORE INTO attempt_skill_skips (attempt_id, skill, reason, created_by, created_at) VALUES (?,?,?,?,?)')
         .run(attemptId, skill, reason ?? null, p.userId, nowIso());
-      rutDeNghiDoi(attemptId, row.skill);   // đề nghị dời của kỹ năng vừa huỷ hết nghĩa
     }
+    /* Đề nghị dời đang chờ hết nghĩa cả hai chiều — đưa lại mà không rút thì hết hạn quét huỷ lại kỹ năng vừa đưa lại. */
+    rutDeNghiDoi(attemptId, row.skill);
     logSchedule(attemptId, {
       action: required ? 'skill_restored' : 'skill_skipped', field: skill,
       oldValue: row.required ? (row.sit_status === 'cancelled' ? 'cancelled' : 'required') : 'skipped',

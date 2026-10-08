@@ -1011,9 +1011,7 @@ function xetMotEmFT(i: {
   /* T2: lượt sau cùng lộ trình dựng từ dữ liệu đã đọc theo lô — kiểm dời vượt không thêm câu SQL mỗi em. */
   const luotSau: LuotSauDoc[] = cuaEm.filter((x) => x.kind === 'mock' && x.attempt_no > a.attempt_no).map((x) => {
     const tuan = rowsCua(x).filter((r) => r.required && r.sit_status !== 'cancelled' && r.week_start).map((r) => String(r.week_start)).sort();
-    const daCo = new Set(diemCua(x).filter((d: any) => d.band != null || d.raw_score != null).map((d: any) => String(d.skill).replace(/^writing[12]$/, 'writing')));
-    return { id: x.id, attempt_no: x.attempt_no, kind: x.kind, status: x.status, tuan_dau: tuan[0] ?? null, so_diem: daCo.size,
-      cho_duyet: [...i.lo.choDuyet.keys()].some((k) => k.startsWith(`${x.id}:`)) };
+    return { id: x.id, attempt_no: x.attempt_no, kind: x.kind, status: x.status, tuan_dau: tuan[0] ?? null };
   });
   const kiem = kiemDotNoi(a, ks.map((k) => ({ skill: k, periodId: i.tuan[k]! })), new Set(),
     {

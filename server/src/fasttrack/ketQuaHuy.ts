@@ -14,9 +14,8 @@ import { badRequest, notFound, nowIso } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { writeAudit } from '../platform/audit.ts';
-import { closeCasesBySystem } from '../cases/systemClose.ts';
 import { assessedSkillOf } from './scoring.ts';
-import { caseSinhRieng, refreshOutcome } from './attempts.ts';
+import { refreshOutcome } from './attempts.ts';
 import { checkSkillWeekMove, ensureSkillRows, logSchedule, recomputeCompletionWeek, tinhLaiMtCu } from './skillSchedule.ts';
 
 const CO_DIEM = (s: any) => (s.band ?? null) !== null || (s.raw_score ?? null) !== null;
