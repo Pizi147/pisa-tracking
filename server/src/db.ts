@@ -7,6 +7,9 @@ import { chanGiaoDichNeuSapHetGio, conLaiMs, KHONG_MO_GIAO_DICH_KHI_CON_MS } fro
 import { demCau, demDong, xoaNho } from './platform/nguCanhRequest.ts';
 import { HttpError } from './util.ts';
 
+/** Câu SQL vừa prepare gần nhất — chỉ để ghi log khi giao dịch hỏng (gán trong khối vá `prepare` bên dưới). */
+let sqlGanNhat = '';
+
 /*
  * libsql gắn thêm `_metadata: { duration }` vào MỖI dòng `.get()` trả về (better-sqlite3 thì không). Khoá này lọt
  * ra JSON của API và làm hỏng mọi phép so dòng. Vá một lần ở đây thay vì sửa 686 chỗ gọi.
@@ -81,10 +84,16 @@ import { HttpError } from './util.ts';
   Database.prototype.prepare = function (this: object, sql: string) {
     let theoCau = boNho.get(this);
     if (!theoCau) boNho.set(this, theoCau = new Map());
-    const cu = theoCau.get(sql);
+    /*
+     * Khoá thêm TRẠNG THÁI GIAO DỊCH. Trên libsql nối mạng (Hrana), câu GHI prepare NGOÀI giao dịch rồi chạy lại TRONG tx() phá giao dịch
+     * đang mở (các câu sau ghi lẻ ngoài giao dịch, `RELEASE sp_1` báo "no such savepoint"). File cục bộ không bị nên `npm run check` không thấy.
+     * Trong giao dịch không bao giờ dùng lại câu đã prepare ngoài giao dịch (và ngược lại).
+     */
+    const khoa = ((this as { inTransaction?: boolean }).inTransaction ? 'T|' : 'A|') + sql;
+    const cu = theoCau.get(khoa);
     if (cu) {
-      theoCau.delete(sql);
-      theoCau.set(sql, cu);
+      theoCau.delete(khoa);
+      theoCau.set(khoa, cu);
       const moi = Object.create(Object.getPrototypeOf(cu)) as Bao;
       moi.stmt = cu.stmt;
       moi.pluckMode = false;
@@ -94,9 +103,10 @@ import { HttpError } from './util.ts';
       try { moi.safeIntegers(false); } catch { /* không trả dữ liệu */ }
       return moi;
     }
+    sqlGanNhat = sql;
     const st = prepareGoc.call(this, sql) as unknown as Bao;
     st.daLuu = true;
-    theoCau.set(sql, st);
+    theoCau.set(khoa, st);
     if (theoCau.size > TOI_DA_CAU) theoCau.delete(theoCau.keys().next().value as string);
     return st;
   } as unknown as typeof Database.prototype.prepare;
@@ -167,14 +177,14 @@ export function closeDb() {
 }
 
 /*
- * MẤT KẾT NỐI TURSO (PR-Z2c-b; mở rộng 07/10). Kết nối Turso giữ ở cấp module; phía Turso có lúc đã bỏ nó — câu kế tiếp hỏng với
+ * MẤT KẾT NỐI TURSO (PR-Z2c-b; mở rộng 07/10; thêm STREAM_EXPIRED 08/10: luồng Hrana bỏ không quá ~10 s). Kết nối Turso giữ ở cấp module; phía Turso có lúc đã bỏ nó — câu kế tiếp hỏng với
  *   · `Hrana(Api("status=404 … stream not found: …"))` (bản nháp 23/09, log `mã 17476fd8`, 1/~900 lời gọi), hoặc
  *   · `Hrana(Http("connection closed before message completed"))` (bản chính 07/10, `mã fa58786a`, `fbb92cd0`: câu đầu tiên của
  *     request sau lúc rảnh), `fetch failed`, `ECONNRESET`.
  * Kết nối đó coi như chết: bỏ nó, lần gọi db() sau mở kết nối mới. Khi nào được chạy lại: xem thuLaiKhiMatKetNoi (app.ts).
  * migrate/run.ts dùng chung hàm này.
  */
-const LOI_MAT_KET_NOI = /stream not found|connection closed|Hrana\(Http|fetch failed|ECONNRESET/i;
+const LOI_MAT_KET_NOI = /stream not found|STREAM_EXPIRED|stream has expired|connection closed|Hrana\(Http|fetch failed|ECONNRESET/i;
 /*
  * CHỈ lỗi do libsql ném: `SqliteError` (lỗi SQLite/Hrana đã đổi kiểu) hoặc `Error` thường (lỗi gốc của lớp native). `fetch failed` của
  * fetch Node — kho tệp Netlify Blobs (platform/khoTep.ts) — là `TypeError`: không phải Turso, không bỏ kết nối còn tốt, không thử lại (VIEC-NHO 6).
@@ -302,6 +312,21 @@ function choKhoaGhi<T>(lam: () => T): T {
  * thật, vòng trong là savepoint — lỗi ở vòng trong chỉ cuộn lại phần của nó rồi ném tiếp lên.
  */
 let savepointDepth = 0;
+
+/**
+ * Sau fn() mà kết nối không còn trong giao dịch = giao dịch đã MẤT giữa chừng (phần ghi trước bị bỏ, phần sau có thể đã ghi lẻ).
+ * Không được chạy tiếp như đã ghi thành công: ghi log rõ rồi ném — tx() cuộn lại phần còn được và báo lỗi.
+ */
+function giaoDichConKhong(conn: Database.Database, ten: string): void {
+  if (conn.inTransaction) return;
+  const cau = sqlGanNhat;
+  console.error(`[tx] ${ten}: giao dịch đã mất giữa chừng (kết nối không còn trong giao dịch) — câu prepare gần nhất: ${cau.slice(0, 200)}`);
+  throw new Error(`Giao dịch bị mất giữa chừng (${ten}), dữ liệu có thể chưa lưu đủ.`);
+}
+
+function logRollbackHong(ten: string, e: unknown): void {
+  console.error(`[tx] ${ten}: cuộn lại/giải phóng hỏng: ${String((e as Error)?.message ?? e)} — câu prepare gần nhất: ${sqlGanNhat.slice(0, 200)}`);
+}
 /** Chạy fn trong một transaction; mọi mutation nhiều bảng phải đi qua đây. */
 export function tx<T>(fn: () => T): T {
   const conn = db();
@@ -317,11 +342,12 @@ export function tx<T>(fn: () => T): T {
     }
     try {
       const out = fn();
+      giaoDichConKhong(conn, 'giao dịch ngoài');
       conn.exec('COMMIT');
       return out;
     } catch (e) {
-      /* Cuộn lại hỏng (mạng Turso đứt…) thì vẫn ném LỖI GỐC. */
-      try { if (conn.inTransaction) conn.exec('ROLLBACK'); } catch { /* giữ lỗi gốc */ }
+      /* Cuộn lại hỏng (mạng Turso đứt…) thì vẫn ném LỖI GỐC — nhưng không im lặng: ghi log. */
+      try { if (conn.inTransaction) conn.exec('ROLLBACK'); } catch (e2) { logRollbackHong('giao dịch ngoài', e2); }
       xoaNho();   // PR-Dọn (Q7, quét #27): giá trị đã nhớ trong giao dịch có thể là dữ liệu vừa bị cuộn lại
       if (typeof e === 'object' && e !== null) loiTuGiaoDich.add(e);   // PR-Z2c-b: không thử lại
       throw e;
@@ -331,11 +357,12 @@ export function tx<T>(fn: () => T): T {
   conn.exec(`SAVEPOINT ${name}`);
   try {
     const out = fn();
+    giaoDichConKhong(conn, name);
     conn.exec(`RELEASE ${name}`);
     return out;
   } catch (e) {
     /* Cuộn lại hỏng (mạng Turso đứt, savepoint đã mất…) thì vẫn ném LỖI GỐC — vòng ngoài sẽ cuộn lại cả giao dịch. */
-    try { conn.exec(`ROLLBACK TO ${name}`); conn.exec(`RELEASE ${name}`); } catch { /* giữ lỗi gốc */ }
+    try { conn.exec(`ROLLBACK TO ${name}`); conn.exec(`RELEASE ${name}`); } catch (e2) { logRollbackHong(name, e2); }
     xoaNho();   // PR-Dọn (Q7, quét #27)
     if (typeof e === 'object' && e !== null) loiTuGiaoDich.add(e);
     throw e;

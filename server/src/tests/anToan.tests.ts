@@ -595,6 +595,8 @@ export async function runAnToanTests(t: AnToanTestKit) {
     'Hrana(Http("connection closed before message completed"))',
     'fetch failed',
     'read ECONNRESET',
+    'Hrana(Api("status=400, body={\\"error\\":\\"STREAM_EXPIRED: stream has expired\\"}"))',
+    'stream has expired',
   ];
   await checkAsync('Mất kết nối Turso (connection closed / fetch failed / ECONNRESET) ở GET → mở lại kết nối, thử lại một lần → 200; log ghi rõ kiểu lỗi', async () => {
     const mau = await goi('GET', '/ref/branches', { cookie: cookieLuong });
@@ -605,6 +607,18 @@ export async function runAnToanTests(t: AnToanTestKit) {
       const { kq: r, moLai } = await giaLoi(/FROM branches WHERE status='active'/, loi, () => goi('GET', '/ref/branches', { cookie: cookieLuong }));
       assert(r.status === 200 && JSON.stringify(r.json) === JSON.stringify(mau.json) && moLai, `/ref/branches với "${loi}": ${r.status} moLai=${moLai}`);
     }
+  });
+
+  await checkAsync('Bộ nhớ câu lệnh khoá theo trạng thái giao dịch: câu prepare NGOÀI giao dịch không được dùng lại TRONG tx() (lỗi no such savepoint trên Hrana)', async () => {
+    const sql = 'SELECT 7 AS tx_khoa_thu';
+    const ngoai1: any = dbMod.db().prepare(sql), ngoai2: any = dbMod.db().prepare(sql);
+    assert(ngoai1.stmt === ngoai2.stmt, 'Ngoài giao dịch vẫn phải dùng lại câu đã nhớ (luật rò bộ nhớ PR-BN)');
+    let trong1: any, trong2: any;
+    dbMod.tx(() => { trong1 = dbMod.db().prepare(sql); dbMod.tx(() => { trong2 = dbMod.db().prepare(sql); }); });
+    assert(trong1.stmt !== ngoai1.stmt, 'Trong tx() đã dùng lại câu prepare ngoài giao dịch');
+    assert(trong1.stmt === trong2.stmt, 'Trong giao dịch (kể cả savepoint lồng) vẫn dùng lại câu đã nhớ');
+    const lai: any = dbMod.db().prepare(sql);
+    assert(lai.stmt === ngoai1.stmt && (lai.get() as any).tx_khoa_thu === 7, 'Ra khỏi giao dịch phải về câu nhớ ngoài giao dịch');
   });
 
   await checkAsync('Mất kết nối Turso ở POST → KHÔNG thử lại (tránh ghi hai lần): 500 có mã, vẫn bỏ kết nối chết', async () => {
