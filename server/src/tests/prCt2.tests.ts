@@ -134,14 +134,16 @@ export async function runPrCt2Tests(t: YThucTestKit) {
     assert(dt.boTro && !('phaiGuiKem' in dt.boTro) && !('keHoach' in dt.boTro) && !('coTheNop' in dt.boTro), JSON.stringify(dt.boTro));
   });
 
-  await t.checkAsync('CT2-3b · FOU nhóm chung: xác nhận G+V → chỉ PA G+V chạy; xác nhận P sau → PA P chạy; route nộp kế hoạch → 404', async () => {
+  await t.checkAsync('CT2-3b · FOU nhóm chung: xác nhận G+V → chỉ PA G+V chạy; Sửa PA đổi người dạy; xác nhận P sau → PA P chạy với người dạy đó; route nộp kế hoạch → 404', async () => {
     const sid = emTruot('CT2 FOU GP', 'MB FOU 12', { writing: 11, speaking: 12 });
     const cGv = caseMon(sid, 'writing'), cP = caseMon(sid, 'speaking');
     const khoa = gvOf('MB FOU 12', 'writing'), trang = gvOf('MB FOU 12', 'speaking');
     sosAuto.xacNhanCase(khoa, cGv.id, XN('writing', 'FOU'));
     assert(paBt(cGv.id).status === 'started' && paBt(cP.id).status === 'planned', `G+V ${paBt(cGv.id).status} · P ${paBt(cP.id).status}`);
+    cases.suaPa(P.normalCoreTeacher, paBt(cGv.id).id, { performerUserId: trang.userId });   // GVCN đổi người dạy nhóm (cùng chi nhánh)
+    assert(paBt(cGv.id).performer_user_id === trang.userId, 'Sửa PA đổi người dạy');
     sosAuto.xacNhanCase(trang, cP.id, XN('speaking', 'FOU'));
-    assert(paBt(cP.id).status === 'started' && paBt(cP.id).confirmed_by === trang.userId, JSON.stringify(paBt(cP.id)));
+    assert(paBt(cP.id).status === 'started' && paBt(cP.id).confirmed_by === trang.userId && paBt(cP.id).performer_user_id === trang.userId, JSON.stringify(paBt(cP.id)));
     const may = createApp().listen(0);
     try {
       const cong = (may.address() as any).port as number;

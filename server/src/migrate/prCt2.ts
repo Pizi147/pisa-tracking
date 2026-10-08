@@ -53,7 +53,7 @@ function chayBoTroChoKeHoach(conn: any, applied: string[]) {
       `SELECT ci.created_by u FROM case_issues ci JOIN case_interventions iv ON iv.case_id = ci.case_id
         WHERE iv.nhom_bo_tro = ? AND ci.role = 'primary' AND ci.created_by IS NOT NULL ORDER BY ci.id LIMIT 1`,
     ).get(n) as any)?.u ?? null;
-    soPa += chayPaBoTro(conn, n, nguoi, homNay);   // ponytail: ~6 câu mỗi PA, chạy một lần; số nhóm chờ kế hoạch nhỏ (vài chục) — quá ~30 nhóm thì chia lô cho giới hạn 200 câu Turso
+    soPa += chayPaBoTro(conn, n, nguoi, homNay);   // ponytail: ~6 câu mỗi PA, theo từng nhóm; migrate chạy từ CLI trong MỘT tx nên số câu không bị chặn bởi tx — trần 200 câu là trần của MỘT lời gọi HTTP. Số nhóm chờ kế hoạch nhỏ (vài chục); lớn thì gom câu
   }
   let soThe = 0;
   for (const y of the) {

@@ -599,7 +599,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
           `Nội dung yếu: ${d.noiDungYeu ?? ''}`,
           `Kế hoạch: ${d.keHoach ?? ''}`,
         ],
-        neuDuyet: 'PA bổ trợ bắt đầu hôm nay, Kết quả hằng tuần hạn hết T2.',
+        neuDuyet: 'Đã bỏ bước duyệt kế hoạch (PR-CT2) — PA bổ trợ chạy từ lúc Xác nhận Case. Thẻ chỉ để xem lại.',
         mo: yc.hoc_vien_id && x ? duongHoSoHocVien(yc.hoc_vien_id, { caseId: x.case_id }) : undefined,
       };
     },

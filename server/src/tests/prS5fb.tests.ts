@@ -64,15 +64,23 @@ export async function runPrS5fbTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ 4 · Người dạy bổ trợ phải là GV cùng chi nhánh của lớp
-  /* PR-CT2: bỏ Nộp kế hoạch bổ trợ (đường đổi người dạy kèm kiểm chi nhánh) — còn phần ô chọn người lọc theo chi nhánh. */
-  check('S5F-b (4) · Ô chọn người dạy bổ trợ lọc theo chi nhánh của lớp', () => {
-    const { hv, ha } = emFou('S5F-b FOU CN');
+  /* PR-CT2: Nộp kế hoạch đã gỡ — luật cùng chi nhánh chuyển sang Sửa PA / Điều chỉnh (`nguoiSauSua`). */
+  check('S5F-b (4) · Sửa PA Bổ trợ: người dạy là GV chi nhánh khác → 400, không ghi gì; GV cùng chi nhánh → được; ô chọn người lọc theo chi nhánh', () => {
+    const { hv, cGv, ha } = emFou('S5F-b FOU CN');
     const mb = get(`SELECT branch_id b FROM classes WHERE code = 'MB FOU 12'`).b;
     const khac = get(
       `SELECT u.id, u.full_name FROM users u JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active' JOIN roles r ON r.id = ur.role_id AND r.key = 'teacher'
         WHERE u.status = 'active' AND ur.branch_id != ?
           AND NOT EXISTS (SELECT 1 FROM user_roles x WHERE x.user_id = u.id AND x.status = 'active' AND x.branch_id = ?) LIMIT 1`, mb, mb);
     assert(khac, 'dữ liệu demo: cần một GV chỉ thuộc chi nhánh khác MB');
+    const pa = paBt(cGv.id);
+    const soBan = () => get('SELECT COUNT(*) n FROM case_intervention_revisions WHERE intervention_id = ?', pa.id).n;
+    const truoc = soBan();
+    assert(maLoi(() => cases.suaPa(ha, pa.id, { performerUserId: khac.id })) === 400, 'GV chi nhánh khác làm người dạy phải 400');
+    assert(paBt(cGv.id).performer_user_id === pa.performer_user_id && soBan() === truoc, 'bị từ chối thì không đổi người, không ghi nhật ký');
+    const cungCn = gvOf('MB FOU 12', 'speaking');
+    cases.suaPa(ha, pa.id, { performerUserId: cungCn.userId });
+    assert(paBt(cGv.id).performer_user_id === cungCn.userId, 'GV cùng chi nhánh làm người dạy được');
     const q = khac.full_name as string;
     /* PR-Dọn Q2: /ref/nguoi LUÔN theo phạm vi người xem — GVCN MB không còn thấy GV chỉ thuộc chi nhánh khác, kể cả khi không gửi `cungChiNhanh`. */
     assert(!timNguoi(ha, { q, nhom: 'giao_vien', studentId: hv }).some((r) => r.id === khac.id), 'không lọc cungChiNhanh: vẫn không thấy GV chi nhánh khác (Q2)');

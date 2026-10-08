@@ -86,7 +86,12 @@ export function chayPaBoTro(conn: any, nhom: string, nguoiNop: number | null, ho
        FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
       WHERE iv.nhom_bo_tro = ? AND iv.kind = 'bo_tro' AND iv.status = 'planned' AND sc.status != 'done' AND ${CO_NGUYEN_NHAN}`,
   ).all(nhom) as any[];
+  /* Nhóm chung đã có dòng chạy (môn xác nhận trước) → môn sau nhận đúng người dạy hiện tại của nhóm (có thể đã đổi qua Sửa PA). */
+  const anh = dong.length
+    ? conn.prepare(`SELECT performer_user_id, performer_name FROM case_interventions WHERE nhom_bo_tro = ? AND kind = 'bo_tro' AND status = 'started' ORDER BY id LIMIT 1`).get(nhom) as any
+    : null;
   for (const r of dong) {
+    if (anh) conn.prepare('UPDATE case_interventions SET performer_user_id = ?, performer_name = ? WHERE id = ?').run(anh.performer_user_id ?? null, anh.performer_name ?? null, r.id);
     conn.prepare(
       `UPDATE case_interventions SET status = 'started', started_date = ?, cycle_no = 1, cycle_started_on = ?, action_due = ?, followup_due = ?,
               confirmed_by = ?, confirmed_at = ?, updated_at = ? WHERE id = ?`,
