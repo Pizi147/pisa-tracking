@@ -8,6 +8,8 @@ export async function runPrVaiATests(t: YThucTestKit) {
   const { check, assert, assertThrows, conn, P, classId } = t;
   const d: any = await import('../../../shared/domain/index.ts');
   const metricsSvc: any = await import('../worklist/metrics.ts');
+  const { nguoiGiuKetQua } = await import('../cases/giuKetQua.ts');
+  const { demoToday } = await import('../demoConfig.ts');
   const tq: any = await import('../worklist/tongQuan.ts');
   const classes: any = await import('../classes/classes.ts');
   const chuongTrinh: any = await import('../worklist/chuongTrinh.ts');
@@ -281,19 +283,22 @@ export async function runPrVaiATests(t: YThucTestKit) {
     for (const u of dong.nguoi.ids) assert(nhac.has(u), `GV ${u} có tên ở Cần xử lý mà không có dòng Nhắc ở Công việc`);
   });
 
-  check('VAI-a (3c) · dòng PA: người thực hiện (không có thì người phụ trách Case), hạn = hạn cũ nhất = hanCu; panel Case/PA có người + hạn, mở hồ sơ HV ở Ngăn Case', () => {
+  check('VAI-a (3c) · dòng PA: người giữ việc Kết quả (PR-PA §8: GVBM môn / GVCN lớp hiện tại, không có thì chủ Case), hạn = hạn cũ nhất = hanCu; panel Case/PA có người + hạn, mở hồ sơ HV ở Ngăn Case', () => {
     const m = metricsSvc.metricSet(P.admin, 'pa-can-cap-nhat', {});
     assert(m.n > 0, 'bộ demo phải có PA quá hạn ghi kết quả');
     const ph = m.ids.map(() => '?').join(',');
-    const goc = conn.prepare(`SELECT iv.action_due, COALESCE(iv.performer_user_id, sc.owner_user_id) AS u FROM case_interventions iv
-      JOIN sos_cases sc ON sc.id = iv.case_id WHERE iv.id IN (${ph})`).all(...m.ids) as any[];
+    const goc = conn.prepare(`SELECT iv.id, iv.action_due, iv.nhom_bo_tro, sc.topic, sc.owner_user_id,
+        COALESCE((SELECT e.class_id FROM enrollments e WHERE e.student_id = COALESCE(sc.student_id, a.student_id) AND e.status = 'active' ORDER BY e.id DESC LIMIT 1), a.class_id) AS lop
+      FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE iv.id IN (${ph})`).all(...m.ids) as any[];
+    const giu = nguoiGiuKetQua(goc.map((x) => ({ id: x.id, topic: x.topic, nhomBoTro: x.nhom_bo_tro, classId: x.lop, ownerUserId: x.owner_user_id })), demoToday());
+    for (const x of goc) x.u = giu.get(x.id);
     const cu = goc.map((x) => x.action_due).sort()[0];
     eq(m.hanCu, cu, 'hanCu = MIN(action_due) của tập');
     eq(metricsSvc.metricResponse(m, false).hanCu, cu, 'lean /metrics có hanCu (Q25)');
     const dong = tq.tongQuanQuanLy(P.admin, {}).canXuLy.find((x: any) => x.metricId === 'pa-can-cap-nhat');
-    eq(sx(dong.nguoi.ids), sx([...new Set(goc.map((x) => x.u).filter(Boolean))]), 'tập người = người thực hiện / phụ trách');
+    eq(sx(dong.nguoi.ids), sx([...new Set(goc.map((x) => x.u).filter(Boolean))]), 'tập người = người giữ việc');
     eq(dong.han, { ngay: cu, loai: 'cap-nhat-pa' }, 'hạn cũ nhất');
-    assert(/^PA chưa ghi kết quả tuần W/.test(dong.nhan), `nhãn có mã tuần: ${dong.nhan}`);
+    assert(/^PA chưa có Kết quả tuần W/.test(dong.nhan), `nhãn có mã tuần: ${dong.nhan}`);
     const dongPa = metricsSvc.rowsFor('phuong-an', m.ids.slice(0, 3));
     assert(dongPa.every((x: any) => /^\/hoc-vien\/\d+\?case=\d+$/.test(x.href) && 'nguoi' in x && x.han), `panel PA: ${JSON.stringify(dongPa[0])}`);
     const c = metricsSvc.metricSet(P.admin, 'case-mo', {}).ids.slice(0, 3);

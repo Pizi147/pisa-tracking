@@ -1,17 +1,18 @@
 import { useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { KhoiKeHoach, bodyKeHoach, invalidateKeHoach, luatKeHoach, nguoiDayMacDinh, type BoTro, type KeHoachForm } from '../cases/NopKeHoachPanel.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
+import { FormPa, NgayKhoa } from '../cases/FormPa.tsx';
 import { NutChon } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
-  CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, GOI_Y_MO_TA_PA, INTERVENTION_KIND_LABEL, URGENCY_LABEL, URGENCY_LEVELS,
-  dsLoi, issuesForTopic, kiemGhiRoKhac, laKhac, nguoiThanhPayload, tuanLich, reasonNeedsText,
-  type CaseDismissReason, type NguoiChon,
+  CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, INTERVENTION_KIND_LABEL, URGENCY_LABEL, URGENCY_LEVELS,
+  dsLoi, issuesForTopic, kiemGhiRoKhac, laKhac, tuanLich, reasonNeedsText,
+  datLaiNguoi, khacNguoi, loiFormPa, nguoiCuaPa, nguoiMacDinh, paMoi, paPayload, type GiaTriPa,
+  type CaseDismissReason,
 } from '@shared/domain/index.ts';
 
 /**
@@ -32,6 +33,8 @@ type ChungPanel = {
 /** PA theo quy chế như `caseDetail` trả — chỉ các trường panel cần. */
 export type PaQuyChe = {
   id: number; kind: string; description: string | null; performer: string | null; performerUserId: number | null;
+  /** PR-PA (§8): Số buổi máy gán (sửa được khi xác nhận). */
+  soBuoi?: number | null;
   mocChu: string | null; awaitingConfirmation: boolean;
 };
 
@@ -172,8 +175,9 @@ export function XacNhanCasePanel({ caseId, topic, kyNang, ct, tenSos, paQuyChe, 
 }
 
 /**
- * XÁC NHẬN PA THEO QUY CHẾ (Q28-3, khuôn giống Thêm PA): Phân loại · Bắt đầu hôm nay · Kết thúc theo quy chế (chỉ đọc) · Người thực hiện
- * (đổi được) · Mô tả * (≥ 15, điền sẵn mô tả máy). Không Tình trạng, không Ngày bắt đầu, không tệp đính kèm. Lưu → PA chạy từ hôm nay.
+ * XÁC NHẬN PA THEO QUY CHẾ (Q28-3) — PR-PA (§8): cùng một form PA (`FormPa`): Loại khoá "theo quy chế" (phụ: mốc kết thúc) · Nội dung * (≥ 15,
+ * không điền sẵn mô tả máy — Q28-5) · Số buổi (loại có số buổi) · Người dạy / Người thực hiện (Tự học không có) · Ngày bắt đầu khoá tuần này.
+ * Lưu → PA chạy từ hôm nay.
  */
 export function XacNhanPaPanel({ pa, studentId, onXong, ...chung }: ChungPanel & {
   pa: PaQuyChe; studentId?: number | null;
@@ -181,22 +185,22 @@ export function XacNhanPaPanel({ pa, studentId, onXong, ...chung }: ChungPanel &
 }) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
-  /* PR-S3F #9 (Q28-5): KHÔNG điền sẵn mô tả máy gán ("Tutor · đến lúc thi") — người xác nhận tự viết đủ ≥ 15 ký tự; gợi ý mờ ở placeholder (Q28-1). */
-  const [moTa, setMoTa] = useState('');
-  const [nguoi, setNguoi] = useState<NguoiChon | null>(
-    pa.performerUserId ? { kieu: 'tai_khoan', id: pa.performerUserId, ten: pa.performer ?? '' } : pa.performer ? { kieu: 'ngoai', ten: pa.performer } : { kieu: 'toi' },
-  );
+  const [v, setV] = useState<GiaTriPa>(() => ({
+    ...paMoi(pa.kind), soBuoi: pa.soBuoi == null ? '' : String(pa.soBuoi),
+    nguoi: nguoiCuaPa(pa) ?? nguoiMacDinh(pa.kind),
+  }));
   const [busy, setBusy] = useState(false);
   const lf = useLoiForm();
-  const loaiPa = INTERVENTION_KIND_LABEL[pa.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? 'PA theo quy chế';
-  const loi = dsLoi([{ khoa: 'mo-ta', nhan: 'Mô tả', toiThieu: 15 }], { 'mo-ta': moTa });
+  const loi = loiFormPa(v, { toiThieu: 15 });
 
   const luu = async () => {
     lf.bam();
     if (loi.length > 0) return;
     setBusy(true);
     try {
-      await api.post(`/interventions/${pa.id}/xac-nhan-pa`, { description: moTa.trim(), ...nguoiThanhPayload(nguoi) });
+      const { description, soBuoi } = paPayload(v);
+      /* Người: chỉ gửi khi đổi (người máy gán đã nghỉ mà không đụng thì không bị 400); đổi thì đủ ba khoá — trống = xoá người. */
+      await api.post(`/interventions/${pa.id}/xac-nhan-pa`, { description, soBuoi, ...(khacNguoi(v.nguoi, nguoiCuaPa(pa)) ? datLaiNguoi(v.nguoi) : {}) });
       invalidateCases();
       toast.push('ok', 'Đã xác nhận PA — PA bắt đầu từ hôm nay');
       onXong();
@@ -209,19 +213,8 @@ export function XacNhanPaPanel({ pa, studentId, onXong, ...chung }: ChungPanel &
         conThieu: lf.conThieu(loi),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>Xác nhận PA</button>,
       }}>
-      <Khoi tieuDe="Phương án">
-        <p className="m-0 text-xs text-slate-300">
-          Phân loại: <b className="text-slate-100">{loaiPa}</b> · Bắt đầu: tuần này ({tuanLich(homNay, homNay)})
-          {pa.mocChu ? <> · Kết thúc theo quy chế: <b className="text-slate-100">{pa.mocChu}</b></> : null}
-        </p>
-        <Truong nhan="Người thực hiện" as="div">
-          <ChonNguoi nhom="giao_vien" studentId={studentId} value={nguoi} onChange={setNguoi} />
-        </Truong>
-        <Truong nhan="Mô tả" batBuoc loi={lf.loiCua(loi, 'mo-ta')} dem={{ co: moTa.trim().length, can: 15 }}>
-          <textarea className="field w-full" rows={3} {...lf.o(loi, 'mo-ta')} value={moTa} onChange={(e) => setMoTa(e.target.value)}
-            placeholder={GOI_Y_MO_TA_PA} />
-        </Truong>
-      </Khoi>
+      <FormPa v={v} dat={(p) => setV((x) => ({ ...x, ...p }))} lf={lf} loi={loi} toiThieu={15} studentId={studentId}
+        quyChe={{ mocChu: pa.mocChu }} ngay={<NgayKhoa chu={`Tuần này · ${tuanLich(homNay, homNay)}`} />} />
     </KhungPanel>
   );
 }

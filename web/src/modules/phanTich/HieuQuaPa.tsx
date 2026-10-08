@@ -92,7 +92,7 @@ export function HieuQuaPa(props: PhamViPhanTich) {
           <Th align="right" hint="PA đã kết thúc có kết quả xác định">Số PA</Th>
           <Th align="right" hint="Học viên khác nhau của các PA trong dòng — một em nhiều PA chỉ tính một lần">Học viên</Th>
           <Th className="pl-5" hint="Tiến bộ rõ + Tiến bộ một phần, trên số PA của dòng">Có cải thiện</Th>
-          <Th align="right" className="pr-4" hint={`Trung vị số tuần từ ngày bắt đầu đến ngày ghi kết quả, chỉ PA có cải thiện; hiện khi từ ${NGUONG_IT_DU_LIEU} PA`}>Thời gian thường mất</Th>
+          <Th align="right" className="pr-4" hint={`Trung vị số tuần từ ngày bắt đầu đến ngày có kết quả, chỉ PA có cải thiện; hiện khi từ ${NGUONG_IT_DU_LIEU} PA`}>Thời gian thường mất</Th>
           {coNenDung && <Th>{' '}</Th>}
         </tr>
       </thead>
@@ -138,7 +138,7 @@ export function HieuQuaPa(props: PhamViPhanTich) {
               luat={(
                 <NutLuat label="Cách đọc">
                   <p className="m-0">"Có cải thiện" = Tiến bộ rõ + Tiến bộ một phần, trên PA đã kết thúc có kết quả xác định. PA huỷ vì "không cần theo dõi" không tính.</p>
-                  <p className="m-0">Dưới {NGUONG_IT_DU_LIEU} PA ghi "Ít dữ liệu". "Thời gian thường mất" = trung vị từ ngày bắt đầu đến ngày ghi kết quả của PA có cải thiện, chỉ hiện khi từ {NGUONG_IT_DU_LIEU} PA.</p>
+                  <p className="m-0">Dưới {NGUONG_IT_DU_LIEU} PA ghi "Ít dữ liệu". "Thời gian thường mất" = trung vị từ ngày bắt đầu đến ngày có kết quả của PA có cải thiện, chỉ hiện khi từ {NGUONG_IT_DU_LIEU} PA.</p>
                   <p className="m-0">Tính theo nơi em học lúc làm PA. "Nên dùng" = từ {NGUONG_IT_DU_LIEU} PA, cải thiện từ 70% và cao nhất trong vấn đề.</p>
                 </NutLuat>
               )} />
@@ -189,7 +189,7 @@ export function HieuQuaPa(props: PhamViPhanTich) {
 
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t px-4 py-2.5 text-xs text-slate-400" style={{ borderColor: 'var(--line)' }}>
               <span>Để số liệu đủ tin:</span>
-              <span><b className="font-semibold text-slate-100"><SoLieuO giaTri={data.chuaGhiKetQua} nguon={nguon('chua-ghi-ket-qua', 'pa')} tieuDe="PA chờ ghi kết quả" /></b> PA chờ ghi kết quả</span>
+              <span><b className="font-semibold text-slate-100"><SoLieuO giaTri={data.chuaGhiKetQua} nguon={nguon('chua-ghi-ket-qua', 'pa')} tieuDe="PA chờ kết quả" /></b> PA chờ kết quả</span>
               <span><b className="font-semibold text-slate-100"><SoLieuO giaTri={data.caseChuaPhanLoai} nguon={nguon('case-chua-phan-loai', 'case')} tieuDe="Case chưa chọn nhóm nguyên nhân" /></b> Case chưa chọn nhóm nguyên nhân</span>
               <span title="PA có kết quả nhưng chưa có lần ghi danh nào cho biết em học ở đâu lúc làm PA — không tính vào bảng nào">
                 <b className="font-semibold text-slate-100"><SoLieuO giaTri={data.chuaRoNguon} nguon={nguon('chua-ro-nguon', 'pa')} tieuDe="PA chưa rõ nơi học lúc làm PA" /></b> PA chưa rõ nơi học lúc làm PA

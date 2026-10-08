@@ -145,7 +145,7 @@ const LOAI_MAT: { khoa: string; nhan: string; sql: string }[] = [
   { khoa: 'diem', nhan: 'Điểm đã nhập', sql: `SELECT COUNT(*) FROM assessment_scores WHERE attempt_id IN (${A})` },
   { khoa: 'caseHocThuat', nhan: 'Case học thuật', sql: `SELECT COUNT(*) FROM (${C})` },
   { khoa: 'paHocThuat', nhan: 'PA học thuật', sql: `SELECT COUNT(*) FROM (${I})` },
-  { khoa: 'ghiKetQua', nhan: 'Ghi kết quả PA', sql: `SELECT COUNT(*) FROM (${F})` },
+  { khoa: 'ghiKetQua', nhan: 'Kết quả PA', sql: `SELECT COUNT(*) FROM (${F})` },
   { khoa: 'tinHieu', nhan: 'Case chờ xác nhận nguyên nhân', sql: `SELECT COUNT(*) FROM (${G})` },
   { khoa: 'viPham', nhan: 'Vi phạm', sql: `SELECT COUNT(*) FROM (${V})` },
   { khoa: 'paXuLy', nhan: 'Lần xử lý', sql: `SELECT COUNT(*) FROM (${M})` },

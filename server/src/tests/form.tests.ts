@@ -240,12 +240,13 @@ export async function runFormTests(t: YThucTestKit) {
 
     check('PR-Form · performerUserId (GV) + performerName cùng lúc → chỉ lưu performer_user_id, performer_name NULL', () => {
       const { caseId } = taoCase();
+      /* PR-PA (§8): Tự học không có người — thử bằng Tutor. */
       const d = cases.recordIntervention(P.lrTeacher, caseId, {
-        kind: 'self_study', description: 'Tự học Listening mỗi ngày',
+        kind: 'tutor', description: 'Tutor Listening mỗi ngày',
         performerUserId: P.w1Teacher.userId, performerName: 'Tên tự do bị bỏ qua',
         status: 'started', startedDate: TODAY,
       }) as any;
-      const iv = d.interventions.find((i: any) => i.kind === 'self_study');
+      const iv = d.interventions.find((i: any) => i.kind === 'tutor');
       const row = ivRow(iv.id);
       assert(row.performer_user_id === P.w1Teacher.userId, `performer_user_id đúng: ${row.performer_user_id}`);
       assert(row.performer_name === null, `performer_name phải NULL: ${row.performer_name}`);
@@ -282,17 +283,16 @@ export async function runFormTests(t: YThucTestKit) {
       assert(ivs[1].performer_user_id === P.lrTeacher.userId && ivs[1].performer_name === null, 'dòng 2 (Tôi) lưu ID người ghi');
       assert(ivs[2].performer_user_id === null && ivs[2].performer_name === 'Tutor ngoài Lan', 'dòng 3 lưu tên ngoài');
 
-      assertThrows(
-        () => cases.backfillCase(P.lrTeacher, {
-          studentId: makeFtStudent(`F3-BF-${++soThuTu}`), topic: 'listening', primaryCode: domain.issuesForTopic('listening')[0].code,
-          title: 'Nhập bù thiếu người', summary: 'Một dòng không ghi ai làm.',
-          fromDate: '2026-08-01', toDate: '2026-08-05',
-          actions: [{ ketQua: 'improved', description: 'Buổi không ai nhận làm', fromDate: '2026-08-01', toDate: '2026-08-05' }],
-          outcome: 'improved', note: 'Phải bị từ chối vì thiếu người thực hiện.',
-        }),
-        /Cần ghi ai là người thực hiện/,
-        'dòng không có ai → 400 câu cũ',
-      );
+      /* PR-PA (§8): Người dạy không bắt buộc — dòng không có ai vẫn lưu, người NULL. */
+      const khongNguoi = cases.backfillCase(P.lrTeacher, {
+        studentId: makeFtStudent(`F3-BF-${++soThuTu}`), topic: 'listening', primaryCode: domain.issuesForTopic('listening')[0].code,
+        title: 'Nhập bù thiếu người', summary: 'Một dòng không ghi ai làm.',
+        fromDate: '2026-08-01', toDate: '2026-08-05',
+        actions: [{ ketQua: 'improved', description: 'Buổi không ai nhận làm', fromDate: '2026-08-01', toDate: '2026-08-05' }],
+        outcome: 'improved', note: 'Nhập bù không cần người thực hiện (PR-PA).',
+      }) as any;
+      const kn = conn.prepare('SELECT performer_user_id u, performer_name n FROM case_interventions WHERE case_id = ?').get(khongNguoi.id) as any;
+      assert(kn && kn.u === null && kn.n === null, `dòng không có ai: ${JSON.stringify(kn)}`);
     });
 
     check('PR-Form · Nợ S2 → PR-SOS (Q28-4): Điều chỉnh chỉ đổi mô tả trên PA followup_due NULL → GIỮ NULL (không còn ngày mặc định), lịch sử NULL → NULL', () => {
@@ -341,10 +341,10 @@ export async function runFormTests(t: YThucTestKit) {
     check('PR-Form · adjust.performerUserId là QL thuần → 400; là GV → lịch sử new_performer_user_id đúng', () => {
       const { caseId } = taoCase();
       const d = cases.recordIntervention(P.lrTeacher, caseId, {
-        kind: 'self_study', description: 'Tự học Listening mỗi ngày', performerSelf: true,
+        kind: 'tutor', description: 'Tutor Listening mỗi tuần', performerSelf: true,   // PR-PA (§8): Tự học không có ô người
         status: 'started', startedDate: TODAY,
       }) as any;
-      const iv = d.interventions.find((i: any) => i.kind === 'self_study');
+      const iv = d.interventions.find((i: any) => i.kind === 'tutor');
 
       assertThrows(
         () => cases.updateResult(P.lrTeacher, iv.id, {

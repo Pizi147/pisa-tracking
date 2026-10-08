@@ -48,8 +48,10 @@ export async function runPrLuiA2Tests(t: YThucTestKit) {
     return Math.max(...r.interventions.map((i: any) => i.id)) as number;
   };
   const deXuat = (caseId: number) => themPa(caseId, { kind: 'extra_support', description: 'Học kèm 1-1 với Tutor 2 buổi/tuần', status: 'planned', startedDate: undefined });
-  const ketQua = (ivId: number, o: Record<string, unknown> = {}, opts?: Record<string, unknown>) =>
-    cases.updateResult(P.lrTeacher, ivId, { decision: 'keep', outcome: 'partial', note: 'Đúng 15/20 câu điền số tuần này', ...o }, opts);
+  const ketQua = (ivId: number, o: Record<string, unknown> = {}) =>
+    cases.updateResult(P.lrTeacher, ivId, { decision: 'keep', outcome: 'partial', note: 'Đúng 15/20 câu điền số tuần này', ...o });
+  /* PR-PA (§8): Người phụ trách → Người dạy tuần này (body `nguoiDay`); Tự học không có ô người → PA Tutor (không Số buổi: không bắt người). */
+  const TUTOR = { kind: 'tutor', description: 'Tutor Listening — nghe chép hai buổi mỗi tuần' };
   const dongCase = (caseId: number, ivId: number) => {
     ketQua(ivId, { decision: 'end', outcome: 'improved', note: 'Em nghe số và tên riêng đúng hết' });
     cases.closeCaseOutcome(P.mbManager, caseId, { outcome: 'much_better', note: 'MT3 Listening lên 6.0, không còn sai dạng điền số' });
@@ -58,28 +60,27 @@ export async function runPrLuiA2Tests(t: YThucTestKit) {
   const fu = (ivId: number) => mot('SELECT * FROM case_followups WHERE intervention_id = ? ORDER BY id DESC LIMIT 1', ivId);
 
   // ---------------------------------------------------------------- a2-1 · Người phụ trách
-  check('LUIa2-1 · updateResult: Người phụ trách tài khoản / tên ngoài; route bắt buộc; lời gọi cũ vẫn lưu (NULL); tài khoản nghỉ → 400', () => thu(() => {
-    const ivId = themPa(taoCase(moiEm()));
-    ketQua(ivId, { phuTrach: { performerUserId: P.coreTeacher.userId } }, { batBuocPhuTrach: true });
+  check('LUIa2-1 · updateResult: Người dạy tuần này tài khoản / tên ngoài; PA không Số buổi không bắt (NULL); tài khoản nghỉ → 400 (PR-PA: bắt ở PA có Số buổi — prPa PA4)', () => thu(() => {
+    const ivId = themPa(taoCase(moiEm()), TUTOR);
+    ketQua(ivId, { nguoiDay: { performerUserId: P.coreTeacher.userId } });
     assert(fu(ivId).phu_trach_user_id === P.coreTeacher.userId && fu(ivId).phu_trach_ten === null, JSON.stringify(fu(ivId)));
-    ketQua(ivId, { phuTrach: { performerName: 'Tutor Minh' } }, { batBuocPhuTrach: true });
+    ketQua(ivId, { nguoiDay: { performerName: 'Tutor Minh' } });
     assert(fu(ivId).phu_trach_ten === 'Tutor Minh' && fu(ivId).phu_trach_user_id === null, 'tên ngoài');
-    const n = hang('SELECT id FROM case_followups WHERE intervention_id = ?', ivId).length;
-    assertThrows(() => ketQua(ivId, {}, { batBuocPhuTrach: true }), /^Ghi Người phụ trách\.$/, 'thiếu người khi route bắt');
-    assert(hang('SELECT id FROM case_followups WHERE intervention_id = ?', ivId).length === n, 'lỗi mà vẫn ghi');
     ketQua(ivId);
-    assert(fu(ivId).phu_trach_user_id === null && fu(ivId).phu_trach_ten === null, 'lời gọi cũ');
+    assert(fu(ivId).phu_trach_user_id === null && fu(ivId).phu_trach_ten === null, 'không gửi');
+    const n = hang('SELECT id FROM case_followups WHERE intervention_id = ?', ivId).length;
     conn.prepare(`UPDATE users SET status = 'inactive' WHERE id = ?`).run(P.sTeacher.userId);
-    assertThrows(() => ketQua(ivId, { phuTrach: { performerUserId: P.sTeacher.userId } }, { batBuocPhuTrach: true }), /^Người phụ trách phải là nhân viên đang làm việc/, 'tài khoản nghỉ');
+    assertThrows(() => ketQua(ivId, { nguoiDay: { performerUserId: P.sTeacher.userId } }), /^Người dạy tuần này phải là nhân viên đang làm việc/, 'tài khoản nghỉ');
+    assert(hang('SELECT id FROM case_followups WHERE intervention_id = ?', ivId).length === n, 'lỗi mà vẫn ghi');
   }));
 
-  check('LUIa2-2 · caseDetail trả phuTrach ở lịch sử + dòng PA; Vấn đề còn tồn / Ghi chú 301 ký tự → 400', () => thu(() => {
+  check('LUIa2-2 · caseDetail trả nguoiDay ở lịch sử + dòng PA; Vấn đề còn tồn / Ghi chú 301 ký tự → 400', () => thu(() => {
     const caseId = taoCase(moiEm());
-    const ivId = themPa(caseId);
-    ketQua(ivId, { phuTrach: { performerUserId: P.coreTeacher.userId } });
+    const ivId = themPa(caseId, TUTOR);
+    ketQua(ivId, { nguoiDay: { performerUserId: P.coreTeacher.userId } });
     const ten = mot('SELECT full_name FROM users WHERE id = ?', P.coreTeacher.userId).full_name;
     const ct = cases.caseDetail(QL, caseId);
-    assert(ct.followups[0].phuTrach === ten, JSON.stringify(ct.followups[0]));
+    assert(ct.followups[0].nguoiDay === ten, JSON.stringify(ct.followups[0]));
     assertThrows(() => ketQua(ivId, { remainingIssue: 'x'.repeat(301) }), /^Vấn đề còn tồn \/ Ghi chú tối đa 300 ký tự\.$/, '301 ký tự');
     assert(d.GOI_Y_KET_QUA_PA === 'Đã cải thiện ở phần nào, như thế nào, kết quả cụ thể', d.GOI_Y_KET_QUA_PA);
   }));

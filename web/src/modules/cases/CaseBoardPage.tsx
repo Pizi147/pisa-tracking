@@ -1,15 +1,22 @@
-import { Navigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
-import { duongHoSoHocVien } from '@shared/domain/index.ts';
+import { docThamSoHoSo, duongHoSoHocVien } from '@shared/domain/index.ts';
+import { NganCase } from '../students/NganCase.tsx';
 
 /**
  * `/hoc-thuat/Case/:id` — link sâu cũ (thông báo, email, link đã lưu). PR-Pb2-a (Q5) → PR-Dọn: mọi Case đều có học viên, nên chỉ còn
  * chuyển về hồ sơ HV mở sẵn Ngăn Case. Route giữ ở `App.tsx` để link cũ vẫn mở được.
+ * PR-PA (§8): `?pa=&viec=ghi-ket-qua` (`duongCaseRieng`) → mở thẳng Ngăn Case, không qua hồ sơ — người giữ việc Kết quả có thể không xem được hồ sơ HV.
  */
 export function CaseRoutePage() {
   const { id } = useParams();
-  const ca = useApi<{ student: { id: number } | null }>(id ? `/cases/${id}` : null);
+  const [sp] = useSearchParams();
+  const nav = useNavigate();
+  const { paId, viec } = docThamSoHoSo((k) => sp.get(k));
+  const rieng = viec === 'ghi-ket-qua' && !!id;
+  const ca = useApi<{ student: { id: number } | null }>(id && !rieng ? `/cases/${id}` : null);
+  if (rieng) return <NganCase caseId={Number(id)} paId={paId ?? null} viec="ghi-ket-qua" onClose={() => nav('/cong-viec')} />;
   if (ca.data?.student) return <Navigate replace to={duongHoSoHocVien(ca.data.student.id, { caseId: Number(id) })} />;
   if (ca.error) return <ErrorState message={ca.error.message} onRetry={ca.reload} />;
   if (ca.data) return <ErrorState message="Case này không gắn học viên nào." />;

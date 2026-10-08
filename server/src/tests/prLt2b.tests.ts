@@ -322,7 +322,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     assert(pa.length === 1 && /4 buổi miễn phí · 2 tuần/.test(pa[0].description), pa[0]?.description);
     const mt = conn.prepare('SELECT * FROM mini_test WHERE student_id = ?').get(l.sids[0]) as any;
     assert(mt.so_buoi === 4 && mt.ngay_du_kien === d.lichBoTro({ batDau: NGAY_CHUYEN, soTuan: 2 }).ngayMiniTest, JSON.stringify(mt));
-    const ghi = (who: any) => casesMod.updateResult(who, pa[0].id, { outcome: 'improved', note: 'Em làm bài tốt hơn hẳn', observedOn: TODAY, miniTest: { tyLe: 80, ngay: TODAY } });
+    const ghi = (who: any) => casesMod.updateResult(who, pa[0].id, { outcome: 'improved', note: 'Em làm bài tốt hơn hẳn', observedOn: TODAY, miniTest: { tyLe: 80, ngay: TODAY }, soBuoi: 0 });   // PR-PA: PA có Số buổi
     assertThrows(() => ghi(permMod.loadPrincipal(gvbmKhac)), /quyền|phạm vi/, 'GVBM Listening của lớp FOU không được ghi Case Tổng hợp');
     ghi(permMod.loadPrincipal(P.normalCoreTeacher.userId));
     assert((conn.prepare('SELECT ty_le FROM mini_test WHERE id = ?').get(mt.id) as any).ty_le === 0.8, 'GVCN phải ghi được Mini Test');
@@ -410,7 +410,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     const mt = conn.prepare('SELECT * FROM mini_test WHERE student_id = ?').get(s) as any;
     return { l, s, be, cases, pa, mt };
   };
-  const ghiCuoi = (who: any, paId: number, mini: any) => casesMod.updateResult(who, paId, { outcome: 'improved', note: 'Em làm bài Mini Test khá hơn hẳn', observedOn: TODAY, miniTest: mini });
+  const ghiCuoi = (who: any, paId: number, mini: any) => casesMod.updateResult(who, paId, { outcome: 'improved', note: 'Em làm bài Mini Test khá hơn hẳn', observedOn: TODAY, miniTest: mini, soBuoi: 0 });   // PR-PA: PA có Số buổi
 
   check('LT2b (6) · Mini Test 72%: ghi ở MỘT PA → cả nhóm khép, một dòng mini_test, mọi Case tự Hoàn thành, không thẻ Báo QL', () => {
     const x = dungMiniTest();

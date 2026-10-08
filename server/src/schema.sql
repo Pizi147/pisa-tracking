@@ -1116,7 +1116,8 @@ CREATE TABLE case_interventions (
   /* PR-LT2a (M-03, M-05): nhóm PA bổ trợ Giữa khoá (`gk:{lượt}` FOU · `gk:{lượt}:{môn}` BE/ELE) + hạn nộp kế hoạch. NULL với PA khác. */
   nhom_bo_tro TEXT,
   han_ke_hoach TEXT,
-  idempotency_key TEXT                -- PR-GVa: một mã cho mỗi lần mở form (gửi lại cùng mã → trả dòng đã có)
+  idempotency_key TEXT,               -- PR-GVa: một mã cho mỗi lần mở form (gửi lại cùng mã → trả dòng đã có)
+  so_buoi INTEGER                     -- PR-PA (§8): Số buổi (1–60) — chỉ Tutor, Tự học, Bổ trợ, Bổ trợ miễn phí; NULL = không đếm
 );
 CREATE UNIQUE INDEX ux_case_interventions_khoa_gui ON case_interventions(recorded_by, idempotency_key) WHERE idempotency_key IS NOT NULL;
 -- Việc đang chờ duyệt là thứ Quản lý phải tìm nhanh, nên có chỉ số riêng.
@@ -1182,7 +1183,8 @@ CREATE TABLE case_followups (
   idempotency_key TEXT,               -- PR-GVa: một mã cho mỗi lần mở form (gửi lại cùng mã → trả dòng đã có)
   /* PR-LUI-a2: Người phụ trách của lần ghi kết quả — tài khoản HOẶC tên ngoài hệ thống (không cả hai). Dòng cũ NULL. */
   phu_trach_user_id INTEGER REFERENCES users(id),
-  phu_trach_ten TEXT
+  phu_trach_ten TEXT,
+  so_buoi INTEGER                     -- PR-PA (§8): Số buổi tuần này (0–60) của PA có Số buổi; Đã dạy = tổng cột này. Dòng cũ NULL.
 );
 CREATE UNIQUE INDEX ux_case_followups_khoa_gui ON case_followups(observer_user_id, idempotency_key) WHERE idempotency_key IS NOT NULL;
 CREATE INDEX idx_followup_case ON case_followups(case_id);
@@ -1196,6 +1198,7 @@ CREATE INDEX idx_followup_case ON case_followups(case_id);
  *
  *   source  adjust        Điều chỉnh trong một lần Ghi kết quả (có `followup_id`)
  *           confirm_edit  Sửa gợi ý tự động từ SOS ngay lúc xác nhận (không có `followup_id`)
+ *           sua_pa        Sửa PA (PR-PA §8) — cũ → mới gồm Số buổi, Ngày bắt đầu (không có `followup_id`)
  *
  * Loại PA (`kind`) không đổi qua điều chỉnh. Đổi loại là Thay.
  */
@@ -1216,7 +1219,12 @@ CREATE TABLE case_intervention_revisions (
   reason TEXT NOT NULL,
   effective_on TEXT NOT NULL,
   actor_user_id INTEGER REFERENCES users(id),
-  created_at TEXT NOT NULL
+  created_at TEXT NOT NULL,
+  /* PR-PA (§8): Sửa PA (`source = 'sua_pa'`) ghi cả Số buổi và Ngày bắt đầu cũ → mới. Dòng cũ NULL. */
+  old_so_buoi INTEGER,
+  new_so_buoi INTEGER,
+  old_started_date TEXT,
+  new_started_date TEXT
 );
 CREATE INDEX idx_iv_revision_iv ON case_intervention_revisions(intervention_id, id);
 CREATE INDEX idx_iv_revision_case ON case_intervention_revisions(case_id);

@@ -284,7 +284,7 @@ export async function runPrUxfBTests(t: YThucTestKit) {
   check('UXF-b (8) · VN28: ô Việc tiếp theo giữ đủ tiền tố "hạn" — PA hạn Thứ Hai 14/09 → "hạn hết T2 14/09"; boTienTo đã xoá', () => {
     const v = d.viecTiepCuaEm({
       nhapDiem: null,
-      cases: [{ caseId: 2, topic: 'listening', viecTiep: { chu: 'Ghi kết quả PA Nghe podcast', loaiHan: 'cap-nhat-pa', han: '2026-09-14', paId: 9 } }],
+      cases: [{ caseId: 2, topic: 'listening', viecTiep: { chu: 'Kết quả PA Nghe podcast', loaiHan: 'cap-nhat-pa', han: '2026-09-14', paId: 9 } }],
       yThuc: null, homNay: '2026-09-14',
     });
     assert(v[0]?.han === 'hạn hết T2 14/09', JSON.stringify(v[0]));

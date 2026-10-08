@@ -113,9 +113,9 @@ export function viecTiepCuaCase(c: CaseV4Input, pas: PaViecTiep[], homNay: strin
   const chay = chayTatCa.some((p) => !p.lopCu) ? chayTatCa.filter((p) => !p.lopCu) : chayTatCa;
   const cu = (p: PaViecTiep) => (p.lopCu ? ' (lớp cũ)' : '');
   const cuoi = chay.find((p) => laLanGhiCuoi({ preset: p.batBuoc, followupDue: p.followupDue, actionDue: p.actionDue }, homNay));
-  if (cuoi) return { chu: `Ghi kết quả cuối ${tenPaGon(cuoi.ten)}${cu(cuoi)}`, loaiHan: 'cap-nhat-pa', han: cuoi.actionDue, paId: cuoi.id };
+  if (cuoi) return { chu: `Kết quả cuối ${tenPaGon(cuoi.ten)}${cu(cuoi)}`, loaiHan: 'cap-nhat-pa', han: cuoi.actionDue, paId: cuoi.id };
   const ganNhat = [...chay].sort((a, b) => (a.actionDue ?? '9999').localeCompare(b.actionDue ?? '9999'))[0];
-  if (ganNhat) return { chu: `Ghi kết quả PA ${tenPaGon(ganNhat.ten)}${cu(ganNhat)}`, loaiHan: 'cap-nhat-pa', han: ganNhat.actionDue, paId: ganNhat.id };
+  if (ganNhat) return { chu: `Kết quả PA ${tenPaGon(ganNhat.ten)}${cu(ganNhat)}`, loaiHan: 'cap-nhat-pa', han: ganNhat.actionDue, paId: ganNhat.id };
   if (!pas.length) return { chu: CHU_THEM_PA, loaiHan: 'lap-pa', han: hanLapPa };
   if (pas.every((p) => p.xong)) return { chu: 'Hoàn thành Case', loaiHan: null, han: null };
   return null;   // chỉ còn PA chờ Quản lý duyệt — việc của Quản lý

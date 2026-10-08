@@ -186,7 +186,7 @@ export function nhanKhoiPa(
     if (ketQua) {
       return { ten, dau: ketQua.dau, tone: ketQua.tone, day: ghep(ten, `${ketQua.dau} ${outcomeLabelFor(pa.lastOutcome!)}`, khoang) };
     }
-    return { ten, dau: '■', tone: 'done', day: ghep(ten, '■ Chờ ghi kết quả', khoang) };
+    return { ten, dau: '■', tone: 'done', day: ghep(ten, '■ Chờ kết quả', khoang) };
   }
   if (pa.followupOverdue) {
     const quaHan = `Quá hạn${pa.soNgayQuaHan ? ` · ${pa.soNgayQuaHan} ngày` : ''}`;

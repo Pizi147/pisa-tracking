@@ -33,7 +33,7 @@ type Nguon = {
 
 /**
  * VIỆC CỦA MỘT EM THEO NGƯỜI (PR-VAI-b Task 2, K3-01) — mọi việc đang mở của em, MỖI VIỆC CÓ NGƯỜI LÀM, cùng luật người làm với Công việc (Q2):
- *   Xác nhận nguyên nhân / Thêm PA / Xác nhận PA → người phụ trách Case · Ghi kết quả PA → `performer_user_id ?? recorded_by` · Nộp kế hoạch → người dạy
+ *   Xác nhận nguyên nhân / Thêm PA / Xác nhận PA → người phụ trách Case · Ghi kết quả PA → người giữ việc (`nguoiGiuKetQua`, đọc từ `plan.nguoiId` của bảng) · Nộp kế hoạch → người dạy
  *   bổ trợ · Báo PH qua TVV, Xử lý vi phạm, Ghi nhận vi phạm mới, Ghi "Đã thực hiện" → GVCN (Báo PH Cuối khoá → Quản lý) · Mini Test → người dạy bổ trợ, không có thì GVCN · Bàn giao → người xem
  *   theo `dai.nut` · "Chờ Quản lý duyệt…" → "Quản lý" (không ai trong số giáo viên, không vào thanh việc).
  * KHÔNG chạy `myWork` (quét cả phạm vi): Case/PA đọc từ `board` đã dựng, Ý thức / Mini Test / dải chuyển lớp do hồ sơ nạp sẵn.
@@ -84,9 +84,9 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
       if (chayDuoc(pl) && !(pl.kind === 'bo_tro' && pl.nhom && minGhi.get(pl.nhom) !== pl.id)) {
         const cuoi = !!pl.lanCuoi;
         ds.push({ key: `action:${pl.id}`, loai: 'ghi-ket-qua',
-          chu: cuoi ? `Ghi kết quả cuối · PA ${pl.name}` : `Ghi kết quả tuần ${tuanLich(addDays(pl.actionDue, -7), today)} · PA ${pl.name}`,
+          chu: cuoi ? `Kết quả cuối · PA ${pl.name}` : `Kết quả tuần ${tuanLich(addDays(pl.actionDue, -7), today)} · PA ${pl.name}`,
           kyNang: r.category, caseId: c.id, paId: pl.id, han: pl.actionDue, tone: 'info', nguoiId: pl.nguoiId ?? null,
-          nut: cuoi ? 'Ghi kết quả cuối' : 'Ghi kết quả', mo: { loai: 'case', caseId: c.id, paId: pl.id, viec: 'ghi-ket-qua' } });
+          nut: cuoi ? 'Kết quả cuối' : 'Kết quả', mo: { loai: 'case', caseId: c.id, paId: pl.id, viec: 'ghi-ket-qua' } });
       }
       if (pl.pendingApproval) {
         ds.push({ key: `cho-duyet:pa:${pl.id}`, loai: 'cho-duyet', chu: `PA ${pl.name} chờ Quản lý duyệt`, kyNang: r.category, caseId: c.id, paId: pl.id,

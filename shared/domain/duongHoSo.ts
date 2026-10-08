@@ -57,6 +57,18 @@ export function duongHoSoHocVien(studentId: number, o: ThamSoHoSo = {}): string 
   return `/hoc-vien/${studentId}${s ? `?${s}` : ''}`;
 }
 
+/**
+ * PR-PA (§8): Ngăn Case đứng riêng `/hoc-thuat/case/{id}?pa=&viec=ghi-ket-qua` — cho người giữ việc Kết quả không xem được hồ sơ HV.
+ * Cùng tên tham số với hồ sơ (`docThamSoHoSo` đọc được). Không có `viec` thì route cũ chuyển về hồ sơ như trước.
+ */
+export function duongCaseRieng(caseId: number, o: Pick<ThamSoHoSo, 'paId' | 'viec'> = {}): string {
+  const q = new URLSearchParams();
+  if (o.paId != null) q.set('pa', String(o.paId));
+  if (o.viec) q.set('viec', o.viec);
+  const s = q.toString();
+  return `/hoc-thuat/case/${caseId}${s ? `?${s}` : ''}`;
+}
+
 /** PR-Pb2-a (Q5) → PR-Dọn: link một Case luôn là hồ sơ HV mở Ngăn Case — mọi Case đều có học viên (khoá ở Dọn-a 8b). */
 export const duongCase = (studentId: number, caseId: number): string => duongHoSoHocVien(studentId, { caseId });
 

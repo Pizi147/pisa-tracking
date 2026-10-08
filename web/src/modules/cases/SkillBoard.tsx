@@ -14,7 +14,7 @@ import { DongXinYKien, type XinYKien } from './DongXinYKien.tsx';
 import { KhongTheoDoiForm } from '../yThuc/CaseSosControls.tsx';
 import type { BoTro } from './NopKeHoachPanel.tsx';
 import {
-  ATTEMPT_KIND_SHORT, OUTCOME_MARK, OUTCOME_TONE, chuKetQuaPa, chuTamDung, duongDotTest, chuKhoangPa, dangChay, deadlineView, tienDoCase, tuanLich, viecTiepHang, viecTiepPhuongAn,
+  ATTEMPT_KIND_SHORT, OUTCOME_MARK, OUTCOME_TONE, chuKetQuaPa, chuTamDung, coNguoiDay, nhanNguoiDay, duongDotTest, chuKhoangPa, dangChay, deadlineView, tienDoCase, tuanLich, viecTiepHang, viecTiepPhuongAn,
   type AttemptKind, type DeadlineKind, type DeadlineView, type TrangThai, type TrangThaiCaseV4,
 } from '@shared/domain/index.ts';
 
@@ -39,6 +39,10 @@ type Plan = {
   /** PR-SOS: bắt buộc · chờ xác nhận (Q28-3) · chữ mốc (`đến MT2 · W2 OCT`) · lần ghi tới là "Ghi kết quả cuối" (T22). */
   batBuoc: boolean; choXacNhan: boolean; mocChu: string | null; lanCuoi: boolean;
   performer: string | null; status: string; statusLabel: string;
+  /** PR-PA (§8): Số buổi (null = không đếm) và Đã dạy — dòng phụ "3/10 buổi". */
+  soBuoi?: number | null; daDay?: number;
+  /** PR-PA: người xem ghi được Kết quả PA này (người giữ việc hoặc quyền theo vai trò) — chặn nút Kết quả, như máy chủ. */
+  ghiDuoc?: boolean;
   /** PR-LT2a: PA Bổ trợ chưa chạy — chờ kế hoạch được Quản lý duyệt (không phải "Chờ xác nhận"). */
   chuaChay?: boolean;
   startedOn: string | null; completedOn: string | null;
@@ -488,6 +492,12 @@ function HangCase({ c, ngan, onChanged, onMoCase }: {
   );
 }
 
+/** PR-PA (§8): "3/10 buổi" ở dòng phụ của PA có Số buổi (bảng kỹ năng, thẻ 375). */
+export const chuBuoi = (p: { soBuoi?: number | null; daDay?: number }) => (p.soBuoi != null ? `${p.daDay ?? 0}/${p.soBuoi} buổi` : null);
+/** PR-PA (§8): người ở dòng phụ PA — theo Loại như panel Case: Tự học không có người; Tutor/Bổ trợ "chưa có người dạy". */
+export const chuNguoi = (p: { kind: string; performer?: string | null }) =>
+  coNguoiDay(p.kind) ? p.performer ?? (nhanNguoiDay(p.kind) === 'Người dạy' ? 'chưa có người dạy' : 'chưa có người thực hiện') : null;
+
 /**
  * HÀNG PA (M7, T20): thụt vào, nền nhạt hơn một bậc, nhãn nhỏ `PA`, khoá + `theo quy chế` khi bắt buộc. Khoảng ngày CHỈ `từ dd/mm`
  * (xong: `từ dd/mm → dd/mm`, ngày xong thật) — không còn "dự kiến kết thúc" (Q28-4). PA quy chế có chữ mốc (`đến MT2 · W2 OCT`,
@@ -510,7 +520,7 @@ function HangPA({ p, c, ngan, onMoCase }: {
   const chuaChay = !!p.chuaChay;
   const choDuyetKh = chuaChay && c.boTro?.keHoach?.trangThai === 'cho';
   const chung = c.boTro?.chung && c.boTro.mon.length > 1 ? `PA chung · ${c.boTro.mon.map((m) => m.tenMon).join(', ')}` : null;
-  const dongPhu = [p.performer ?? 'chưa có người thực hiện', khoang, chung,
+  const dongPhu = [chuNguoi(p), khoang, chuBuoi(p), chung,
     p.closedReason === 'superseded' ? 'được thay' : p.revisions.length > 0 ? `điều chỉnh ${p.revisions.length} lần` : null].filter(Boolean).join(' · ');
   return (
     <HangCon className="hang-pa">
@@ -560,10 +570,10 @@ function HangPA({ p, c, ngan, onMoCase }: {
             phu={<>Chờ xác nhận{c.sos.dueOn ? ` · hạn ${ngan(c.sos.dueOn)}` : ''}</>} />
         ) : v.loai === 'ghi-ket-qua' || v.loai === 'ghi-cuoi' ? (
           <CotPhai
-            nut={c.canEdit ? (
+            nut={p.ghiDuoc ? (
               <button type="button" className="btn btn-sm" onClick={() => onMoCase(c.id, { viec: 'ghi-ket-qua', paId: p.id })}
                 title={v.loai === 'ghi-cuoi' ? 'Tuần này chạm mốc quy chế — lưu là PA kết thúc' : 'Kết quả tuần, tiến triển, và quyết định cho PA'}>
-                {v.loai === 'ghi-cuoi' ? 'Ghi kết quả cuối' : 'Ghi kết quả'}
+                {v.loai === 'ghi-cuoi' ? 'Kết quả cuối' : 'Kết quả'}
               </button>
             ) : undefined}
             phu={tamDung && han ? <NhanTamDung tu={tamDung} />

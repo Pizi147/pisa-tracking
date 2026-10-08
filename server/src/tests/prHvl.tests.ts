@@ -85,8 +85,8 @@ export async function runPrHvlTests(t: YThucTestKit) {
       cases: [
         viecCase(11, 'listening', { chu: 'Xác nhận nguyên nhân', loaiHan: 'xac-minh-sos', han: '2026-09-16' }),
         viecCase(12, 'reading', { chu: 'Xác nhận PA Ôn lại dạng bài True/False/NG', loaiHan: 'xac-minh-sos', han: '2026-09-14', paId: 90 }),
-        viecCase(13, 'speaking', { chu: 'Ghi kết quả PA Luyện nói', loaiHan: 'cap-nhat-pa', han: '2026-09-21', paId: 91 }),
-        viecCase(14, 'writing1', { chu: 'Ghi kết quả cuối Viết lại', loaiHan: 'cap-nhat-pa', han: '2026-09-14', paId: 92 }),
+        viecCase(13, 'speaking', { chu: 'Kết quả PA Luyện nói', loaiHan: 'cap-nhat-pa', han: '2026-09-21', paId: 91 }),
+        viecCase(14, 'writing1', { chu: 'Kết quả cuối Viết lại', loaiHan: 'cap-nhat-pa', han: '2026-09-14', paId: 92 }),
         viecCase(15, 'writing2', { chu: 'Thêm PA', loaiHan: 'lap-pa', han: null }),
         viecCase(16, null, { chu: 'Chờ Quản lý duyệt · không theo dõi', loaiHan: null, han: null }),
         viecCase(17, 'listening', null),
@@ -100,10 +100,10 @@ export async function runPrHvlTests(t: YThucTestKit) {
     const pa = theoViec(/^Xác nhận PA/);
     eq([pa.viec, pa.tone, pa.quaHanNgay, pa.dich.paId], ['Xác nhận PA R', 'danger', 2, 90], 'Xác nhận PA quá hạn');
     assert(!/True|Ôn lại/.test(pa.viec) && /Ôn lại/.test(pa.title), `Tên PA dài phải bỏ khỏi viec, còn ở title: ${JSON.stringify(pa)}`);
-    const gk = theoViec(/^Ghi kết quả PA/);
-    eq([gk.viec, gk.han, gk.tone, gk.dich.ghiKetQua], ['Ghi kết quả PA S · tuần W3 SEP', 'hạn hết T2 21/09', 'info', true], 'Ghi kết quả');
-    const cuoi = theoViec(/^Ghi kết quả cuối/);
-    eq([cuoi.viec, cuoi.tone, cuoi.quaHanNgay], ['Ghi kết quả cuối W1 · tuần W2 SEP', 'danger', 2], 'Ghi kết quả cuối');
+    const gk = theoViec(/^Kết quả PA/);
+    eq([gk.viec, gk.han, gk.tone, gk.dich.ghiKetQua], ['Kết quả PA S · tuần W3 SEP', 'hạn hết T2 21/09', 'info', true], 'Kết quả');
+    const cuoi = theoViec(/^Kết quả cuối/);
+    eq([cuoi.viec, cuoi.tone, cuoi.quaHanNgay], ['Kết quả cuối W1 · tuần W2 SEP', 'danger', 2], 'Kết quả cuối');
     assert(/hạn hết T2 14\/09 · quá hạn 2 ngày/.test(cuoi.title), cuoi.title);
     eq(theoViec(/^Thêm PA/).tone, 'warn', 'Thêm PA chưa hạn');
     eq([theoViec(/^Chờ Quản lý/).viec, theoViec(/^Chờ Quản lý/).tone], ['Chờ Quản lý duyệt Case', 'info'], 'Chờ QL duyệt');
@@ -397,7 +397,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
     const hang = d.hangCanHoTro({ ct: fou.ct, cases: [] });
     eq(hang.map((h: any) => h.nhan), ['Không có Case: L · R · G+V · P'], 'FOU không Case: một dòng gộp');
     const ft = canHoTro.canHoTroLop(P.admin, LOP_FT);
-    const ghi = ft.em.flatMap((e: any) => e.cases).map((c: any) => c.viecTiep).filter((v: any) => v?.chu.startsWith('Ghi kết quả') && v.han);
+    const ghi = ft.em.flatMap((e: any) => e.cases).map((c: any) => c.viecTiep).filter((v: any) => v?.chu.startsWith('Kết quả') && v.han);
     assert(ghi.length > 0, 'Bộ demo phải có Case đang chờ ghi kết quả');
     for (const v of ghi) {
       const [x] = d.viecTiepCuaEm({ nhapDiem: null, cases: [{ caseId: 1, topic: 'reading', viecTiep: v }], yThuc: null, homNay: TODAY });

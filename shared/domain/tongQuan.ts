@@ -101,7 +101,7 @@ export const CAN_XU_LY: readonly {
   canQuyenDuyet?: true;
 }[] = [
   { metricId: 'bai-qua-han-nhap-diem', nhan: 'bài quá hạn chưa nhập điểm', nut: 'Xem và nhắc', cuaNguoiXem: false, quaHan: true },
-  { metricId: 'pa-can-cap-nhat', nhan: 'PA chưa ghi kết quả', nut: 'Xem và nhắc', cuaNguoiXem: false, quaHan: true },
+  { metricId: 'pa-can-cap-nhat', nhan: 'PA chưa có Kết quả', nut: 'Xem và nhắc', cuaNguoiXem: false, quaHan: true },
   /* PR-VAI-a Q8: bốn việc "của Bạn" — mỗi dòng một chỉ số gọi đúng hàm màn khác đang dùng. */
   { metricId: 'van-hanh-can-quyet-dinh', nhan: 'việc Vận hành cần quyết định', nut: 'Mở Vận hành', cuaNguoiXem: true },
   /* PR-LCb: MỘT dòng "lớp cần Chốt lộ trình" (thay "em chưa có quyết định chuyển lớp" + "lớp cần Chốt lên FT") — cùng hàm với việc "Chốt lộ trình · lớp". */

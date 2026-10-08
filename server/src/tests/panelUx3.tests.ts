@@ -89,7 +89,7 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
       assert(d.PLAN_DECISION_NGHIA[k].length <= 45, `nghĩa ${k} dài ${d.PLAN_DECISION_NGHIA[k].length}`);
       assert(!/^Hãy/.test(d.PLAN_DECISION_NGHIA[k]), `nghĩa ${k} mở bằng "Hãy"`);
     }
-    assert(d.PLAN_DECISION_NGAN.ask_manager === 'Xin hỗ trợ QL' && d.NUT_LUU_KET_QUA.keep === 'Ghi kết quả', 'chữ chốt');
+    assert(d.PLAN_DECISION_NGAN.ask_manager === 'Xin hỗ trợ QL' && d.NUT_LUU_KET_QUA.keep === 'Lưu kết quả', 'chữ chốt');
   });
 
   check('UX3 (1) · viecTiepCuaEm: động từ + đối tượng, hạn tách riêng; không còn "Cập nhật"/"Xác định nguyên nhân"', () => {
@@ -97,7 +97,7 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
       nhapDiem: { kyNang: ['listening', 'reading'], dot: 'Progress Test', quaHan: false },
       cases: [
         { caseId: 1, topic: 'writing2', viecTiep: { chu: 'Thêm PA', loaiHan: 'lap-pa', han: null } },
-        { caseId: 2, topic: 'listening', viecTiep: { chu: 'Ghi kết quả PA Nghe podcast', loaiHan: 'cap-nhat-pa', han: '2026-09-13', paId: 9 } },
+        { caseId: 2, topic: 'listening', viecTiep: { chu: 'Kết quả PA Nghe podcast', loaiHan: 'cap-nhat-pa', han: '2026-09-13', paId: 9 } },
       ],
       yThuc: null,
       homNay: '2026-09-16',
@@ -106,9 +106,9 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     assert(nd && nd.viec === 'Nhập điểm L, R · Progress Test' && nd.han === null, JSON.stringify(nd));
     const dp = v.find((x: any) => /^Thêm PA/.test(x.viec));
     assert(dp && dp.viec === 'Thêm PA W2' && dp.quaHanNgay === null, JSON.stringify(dp));
-    const gk = v.find((x: any) => /^Ghi kết quả/.test(x.viec));
-    assert(gk && gk.viec === 'Ghi kết quả PA L · tuần W1 SEP' && gk.han === 'hạn hết T2 13/09' && gk.quaHanNgay === 3 && gk.tone === 'danger'
-      && gk.title === 'Ghi kết quả PA Nghe podcast · Listening · tuần W1 SEP · hạn hết T2 13/09 · quá hạn 3 ngày', JSON.stringify(gk));
+    const gk = v.find((x: any) => /^Kết quả/.test(x.viec));
+    assert(gk && gk.viec === 'Kết quả PA L · tuần W1 SEP' && gk.han === 'hạn hết T2 13/09' && gk.quaHanNgay === 3 && gk.tone === 'danger'
+      && gk.title === 'Kết quả PA Nghe podcast · Listening · tuần W1 SEP · hạn hết T2 13/09 · quá hạn 3 ngày', JSON.stringify(gk));
     assert(!/Cập nhật|Xác định nguyên nhân/.test(JSON.stringify(v)), JSON.stringify(v));
   });
 
@@ -147,7 +147,7 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     assert(f([PA()], C).text === '1 PA · chưa có kết quả', 'chưa có kết quả');
     assert(f([PA({ lastOutcome: 'improved' }), PA()], C).text === '2 PA · 1 có kết quả', 'một phần');
     assert(f([PA({ lastOutcome: 'improved' }), PA({ lastOutcome: 'partial' })], C).text === '2 PA · đủ kết quả', 'đủ');
-    assert(f([], C).tiep?.text === 'Ghi kết quả', 'việc tiếp');
+    assert(f([], C).tiep?.text === 'Kết quả', 'việc tiếp');
   });
 
   // ==================================================================== 2. Máy chủ: chữ việc, đường dẫn mở ngăn Case, người làm PA
@@ -162,7 +162,7 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     for (const who of nguoiXem) {
       const nhom = (myworkSvc.myWork(who, {}).groups as any[]).find((g) => g.key === 'ghi_ket_qua_pa');
       if (!nhom) continue;
-      assert(nhom.label === 'Ghi kết quả PA', `nhãn nhóm: ${nhom.label}`);
+      assert(nhom.label === 'Kết quả PA', `nhãn nhóm: ${nhom.label}`);
       for (const it of nhom.items) {
         assert(!/Cập nhật/.test(`${it.tieuDe} ${it.actionLabel} ${it.statusLabel}`), `${it.key}: còn chữ "Cập nhật"`);
         if (!it.studentId) continue;
@@ -284,7 +284,8 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     const sai: string[] = [];
     for (const f of PANEL_UX3) {
       for (const m of docSach(f).matchAll(/placeholder="([^"]*)"/g)) {
-        if (!/^(Ví dụ: .{1,45}|Gõ .*|Chọn .*|Tìm .*|Chi tiết nếu cần)$/.test(m[1])) sai.push(`${f}: "${m[1]}"`);
+        /* PR-PA (§8): ô người của mẫu PA (FormPa, Người dạy tuần này) — chữ mockup pa-dong-bo. */
+        if (!/^(Ví dụ: .{1,45}|Gõ .*|Chọn .*|Tìm .*|Chi tiết nếu cần|Chưa chọn · gõ tên để tìm)$/.test(m[1])) sai.push(`${f}: "${m[1]}"`);
       }
     }
     assert(sai.length === 0, `Placeholder sai luật:\n    ${sai.join('\n    ')}`);
@@ -321,15 +322,15 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
       cases: [
         { caseId: 1, topic: 'reading', viecTiep: null },
         { caseId: 2, topic: 'speaking', viecTiep: null },
-        { caseId: 3, topic: 'listening', viecTiep: { chu: 'Ghi kết quả PA A', loaiHan: 'cap-nhat-pa', han: '2026-09-20', paId: 1 } },
+        { caseId: 3, topic: 'listening', viecTiep: { chu: 'Kết quả PA A', loaiHan: 'cap-nhat-pa', han: '2026-09-20', paId: 1 } },
         { caseId: 4, topic: 'writing2', viecTiep: { chu: 'Thêm PA', loaiHan: 'lap-pa', han: null } },
-        { caseId: 5, topic: 'reading', viecTiep: { chu: 'Ghi kết quả PA B', loaiHan: 'cap-nhat-pa', han: '2026-09-10', paId: 2 } },
+        { caseId: 5, topic: 'reading', viecTiep: { chu: 'Kết quả PA B', loaiHan: 'cap-nhat-pa', han: '2026-09-10', paId: 2 } },
       ],
       yThuc: null,
       homNay: '2026-09-16',
     });
     assert(v.map((x: any) => x.tone).join() === 'danger,warn,info', v.map((x: any) => x.tone).join());
-    assert(v.length === 3 && v[0].viec === 'Ghi kết quả PA R · tuần W1 SEP' && v[0].quaHanNgay === 6, JSON.stringify(v));
+    assert(v.length === 3 && v[0].viec === 'Kết quả PA R · tuần W1 SEP' && v[0].quaHanNgay === 6, JSON.stringify(v));
   });
 
   check('UX3 (1) · tienDoCase: PA đã xong không tính là việc tiếp; Case đã xong không có việc tiếp', () => {
@@ -388,11 +389,11 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     assert(/viecTiep/.test(m![0]), 'viecTiepHang phải dùng việc tiếp v4 (hạn từ actionDue ở máy chủ)');
   });
 
-  check('UX3 (4) · Ghi kết quả: không gửi người thực hiện khi không đổi (payload adjust chỉ có trường đã đổi)', () => {
+  check('UX3 (4) · Kết quả: Điều chỉnh chỉ gửi ô đã đổi (thanSuaPa — cùng luật Sửa PA, kiểm hành vi ở PA14 / PA17); không còn ô ngày', () => {
     const src = docSach('web/src/modules/cases/CapNhatTuan.tsx');
-    assert(/nguoiDoi \? nguoiThanhPayload\(nguoi\) : \{\}/.test(src), 'adjust phải chỉ gửi người khi đổi');
-    /* PR-SOS (Q28-4): Điều chỉnh không còn ô ngày — chỉ mô tả + người. */
-    assert(/description: descChanged \? desc : undefined/.test(src) && !/followupDue/.test(src), 'adjust gửi cả trường không đổi / còn ngày kết thúc');
+    assert(/thanSuaPa\(dc, gocDc/.test(src) && /body\.adjust = thanDc/.test(src), 'adjust phải gửi thanSuaPa (chỉ ô đã đổi)');
+    /* PR-SOS (Q28-4): Điều chỉnh không còn ô ngày. */
+    assert(!/followupDue/.test(src), 'adjust còn ngày kết thúc');
   });
 
   check('UX3 (7) · Ý thức: câu nhắc dùng CÙNG MỘT hàm ở ba nơi (không câu viết tay có ⚠ ở web)', () => {

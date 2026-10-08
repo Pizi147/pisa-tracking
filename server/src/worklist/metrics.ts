@@ -12,6 +12,7 @@ import { isYThucMetric, yThucMetric, YTHUC_METRIC_IDS } from '../yThuc/thongKe.t
 import { PHOI_HOP_METRIC_IDS, isPhoiHopMetric, phoiHopMetric } from '../yThuc/phoiHop.ts';
 import { locTheoChuongTrinh } from './chuongTrinh.ts';
 import { scoreDebtCells } from './scoreDebt.ts';
+import { nguoiGiuKetQua } from '../cases/giuKetQua.ts';
 import { assessedSkillOf } from '../fasttrack/scoring.ts';
 import { CO_MOC_KE_TIEP_SQL, XONG_MT_CUOI_SQL, missingForClasses } from '../classes/schedule.ts';
 import { lopChoChotLoTrinh } from '../classes/lenhChuyen.ts';
@@ -388,13 +389,15 @@ function overdueUpdatePlans(caseIds: number[], today: string): { ids: number[]; 
   for (let i = 0; i < caseIds.length; i += 400) {
     const chunk = caseIds.slice(i, i + 400);
     /*
-     * PR-VAI-a (Q24–Q25): hạn + người thực hiện (không có thì người phụ trách Case) trong CÙNG câu. PR-Dọn: CÙNG tập với việc
+     * PR-VAI-a (Q24–Q25): hạn trong CÙNG câu; người giữ việc = `nguoiGiuKetQua` (PR-PA, lớp hiện tại trước). PR-Dọn: CÙNG tập với việc
      * "Ghi kết quả PA" ở Công việc — em đang học (Tạm dừng dừng hạn, K3-41). PR-SO (D2): PA bổ trợ chung chọn đại diện nhóm
      * bằng `daiDienNhomBoTro` SAU khi gom mọi lô (nhóm có thể trải hai lô) — cùng hàm với Công việc.
      */
     rows.push(...db()
       .prepare(
-        `SELECT iv.id, iv.kind, iv.nhom_bo_tro, iv.action_due, COALESCE(iv.performer_user_id, sc.owner_user_id) AS nguoi FROM case_interventions iv
+        `SELECT iv.id, iv.kind, iv.nhom_bo_tro, iv.action_due, sc.topic, sc.owner_user_id,
+                COALESCE((SELECT e.class_id FROM enrollments e WHERE e.student_id = s.id AND e.status = 'active' ORDER BY e.id DESC LIMIT 1), a.class_id) AS class_id
+           FROM case_interventions iv
            JOIN sos_cases sc ON sc.id = iv.case_id
            LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
            JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id) AND ${HV_DANG_HOC_SQL('s')}
@@ -406,11 +409,15 @@ function overdueUpdatePlans(caseIds: number[], today: string): { ids: number[]; 
       )
       .all(...chunk, today) as any[]);
   }
+  /* PR-PA (§8): người giữ việc — cùng hàm với Công việc (2b) và quyền ghi Kết quả. */
+  const daiDien = daiDienNhomBoTro(rows).sort((a, b) => a.id - b.id);
+  const giu = nguoiGiuKetQua(daiDien.map((r) => ({ id: r.id, topic: r.topic ?? null, nhomBoTro: r.nhom_bo_tro ?? null, classId: r.class_id ?? null, ownerUserId: r.owner_user_id ?? null })), today);
   const ids: number[] = [];
   const chiTiet: NonNullable<MetricResult['chiTiet']> = new Map();
-  for (const r of daiDienNhomBoTro(rows).sort((a, b) => a.id - b.id)) {
+  for (const r of daiDien) {
     ids.push(r.id);
-    chiTiet.set(r.id, { nguoi: r.nguoi ? [r.nguoi] : [], han: [r.action_due] });
+    const nguoi = giu.get(r.id) ?? null;
+    chiTiet.set(r.id, { nguoi: nguoi ? [nguoi] : [], han: [r.action_due] });
   }
   return { ids, chiTiet };
 }

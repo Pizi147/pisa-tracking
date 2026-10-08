@@ -43,7 +43,7 @@ const KICH_BAN = [
   ['panel-pa', 7, '/hoc-thuat/case/5', async (p) => {
     // 375: Ngăn Case tự mở đè trang — bấm "Ghi kết quả" trong ngăn.
     const ngan = p.locator('[role=dialog]');
-    await ((await ngan.count()) ? ngan : p).getByRole('button', { name: /Ghi kết quả/ }).first().click(); await p.waitForTimeout(500); await p.getByRole('button', { name: /Tiến bộ một phần/ }).first().click().catch(() => {}); }],
+    await ((await ngan.count()) ? ngan : p).getByRole('button', { name: /Kết quả/ }).first().click(); await p.waitForTimeout(500); await p.getByRole('button', { name: /Tiến bộ một phần/ }).first().click().catch(() => {}); }],
   ['panel-tao-case', 7, '/hoc-vien/3', nut(/^\+ Case$/)],
   ['panel-vi-pham', 7, '/hoc-vien/3?tab=y-thuc', async (p) => { await nut(/Ghi vi phạm/)(p); await p.evaluate(() => { const t = document.querySelector('[role=dialog] .overflow-y-auto'); if (t) t.scrollTop = 120; }); await p.waitForTimeout(200); }],
   ['panel-sua-tt', 2, '/hoc-vien/lop/3?tab=hoc-vien', nut(/^Sửa thông tin$/)],
