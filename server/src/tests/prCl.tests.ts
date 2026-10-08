@@ -541,4 +541,39 @@ export async function runPrClTests(t: YThucTestKit) {
     const n12 = dem();
     assert(n3 === n12 && n12 <= 4, `3 lớp: ${n3} câu · 12 lớp: ${n12} câu`);
   });
+
+  // ---------------------------------------------------------------- T3 · web (C1, C2)
+  check('CL-w1 · nhiều em (bảng thuần): tomTatChuyenEm chữ thường đầu, giữ MT0; chonGuiNhieuEm đếm Chuyển / Bỏ qua; chuTyLeXetLai làm tròn xuống', () => {
+    const cases: [string, boolean, boolean, string[], string][] = [
+      ['Trần Gia Huy', true, false, ['Đóng lộ trình FT LT1', 'MT0 → “MT0 · không dùng”', 'Huỷ 2 bài Mock chưa có điểm (MT1, MT2)', 'Giữ điểm đã có (MT0 L, R)'],
+        'Trần Gia Huy · FT → Thường: đóng lộ trình FT LT1 · MT0 → “MT0 · không dùng” · huỷ 2 bài Mock chưa có điểm (MT1, MT2) · giữ điểm đã có (MT0 L, R)'],
+      ['Vũ Thu Hà', false, true, ['Đóng lộ trình ELE, mở lộ trình FT LT1', 'Target 6.0 (GVCN ghi)'], 'Vũ Thu Hà · Thường → FT: đóng lộ trình ELE, mở lộ trình FT LT1 · target 6.0 (GVCN ghi)'],
+      ['A', true, true, ['Giữ lộ trình FT LT1', '2 Case FT tự đóng'], 'A · FT → FT: giữ lộ trình FT LT1 · 2 Case FT tự đóng'],
+      ['B', false, false, [], 'B · Thường → Thường: '],
+    ];
+    for (const [ten, nf, df, kc, mong] of cases) { const r = d.tomTatChuyenEm(ten, nf, df, kc); assert(r === mong, `${ten}: ${r}`); }
+    const rows = [{ chon: true, lop: 5 }, { chon: true, lop: null }, { chon: false, lop: 7 }, { chon: true, lop: 9, xong: true }, { chon: false, lop: null }];
+    const k = d.chonGuiNhieuEm(rows);
+    assert(k.gui.length === 1 && k.gui[0] === rows[0] && k.boQua === 1, JSON.stringify(k));
+    assert(d.chonGuiNhieuEm([]).gui.length === 0 && d.TOI_DA_NHIEU_EM === 50, 'rỗng / trần');
+    for (const [t, mong] of [[0.4996, '49%'], [0.46, '46%'], [0.57, '57%'], [0.7, '70%'], [0.72, '72%'], [1, '100%']] as const) {
+      assert(d.chuTyLeXetLai(t) === mong, `${t} → ${d.chuTyLeXetLai(t)}`);
+    }
+  });
+
+  await checkAsync('CL-w2 · web: ChuyenLopPanel một ô gõ tên lớp (ChonNguoi ds + phuLopDich), không <select / ChonThang / PATCH, khối Khi chuyển từ máy chủ; nhiều em qua /transfer; ClassOverviewPage ?viec=xet-lai; PanelCuoiKhoa dùng phuLopDich', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const { fileURLToPath } = await import('node:url');
+    const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..');
+    const doc = (f: string) => fs.readFileSync(path.join(ROOT, f), 'utf8');
+    const s = doc('web/src/modules/students/ChuyenLopPanel.tsx');
+    assert(!/<select/.test(s) && !/ChonThang/.test(s) && !/api\.patch\(`\/lenh-chuyen/.test(s) && !/ngayThi/.test(s), 'còn select / ChonThang / PATCH / ngayThi');
+    assert(/<ChonNguoi[\s\S]{0,200}ds=\{/.test(s) && /phuLopDich\(/.test(s) && /\.khiChuyen/.test(s) && /canhBao/.test(s), 'thiếu ô gõ tên lớp / khối Khi chuyển máy chủ');
+    assert(/export function ChuyenLopNhieuEm/.test(s) && /xet-lai-lo-trinh/.test(s) && /chonGuiNhieuEm\(/.test(s) && /TOI_DA_NHIEU_EM/.test(s), 'thiếu panel nhiều em');
+    assert(/ponytail:/.test(s), 'nhiều em: chú thích ponytail (mỗi em một lời gọi)');
+    assert(/viec === 'xet-lai'|'xet-lai'/.test(doc('web/src/modules/classes/ClassOverviewPage.tsx')), 'ClassOverviewPage chưa mở ?viec=xet-lai');
+    const ck = doc('web/src/modules/classes/PanelCuoiKhoa.tsx');
+    assert(/phuLopDich\(/.test(ck), 'PanelCuoiKhoa chưa dùng phuLopDich');
+  });
 }

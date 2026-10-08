@@ -16,6 +16,7 @@ import { ClassProgressPanel } from './ClassProgressPanel.tsx';
 import { TransitionPanel } from './TransitionPanel.tsx';
 import { PanelCuoiKhoa } from './PanelCuoiKhoa.tsx';
 import { BanGiaoPanel } from './BanGiaoPanel.tsx';
+import { ChuyenLopNhieuEm } from '../students/ChuyenLopPanel.tsx';
 import { DauTrangLop, type HoSoLop, type ViecDauTrang } from './DauTrangLop.tsx';
 import { SuaThongTinLopPanel } from './SuaThongTinLopPanel.tsx';
 import { NganXuatMt } from '../test/NganXuatMt.tsx';
@@ -41,6 +42,7 @@ export default function ClassOverviewPage() {
   const periods = usePeriods();
   const [periodId, setPeriodId] = useState<number | null>(null);
   const [viec, setViec] = useState<ViecDauTrang | null>(null);
+  const [xetLai, setXetLai] = useState(false);
   /** PR-DL: khối "Điểm Mock Test của lớp" cuối trang — mặc định thu gọn, ⋮ "Điểm MT cả lớp" mở và cuộn tới. */
   const [moDiem, setMoDiem] = useState(false);
   /** PR-CT: panel Bàn giao mở kèm môn (GVBM) và/hoặc đúng một lệnh (từ hồ sơ HV). */
@@ -80,6 +82,11 @@ export default function ClassOverviewPage() {
     const moLtt = !!data && thuongV && (v === 'chuyen-tiep' || v === 'lo-trinh-ca-lop') && (data.viewer.coTheChuyenTiep || data.viewer.canAddStudents);
     if (data && (moLtt || (v === 'chuyen-tiep' && !thuongV && data.viewer.coTheChuyenTiep) || (v === 'phan-cong' && (data.viewer.canAssign || data.viewer.canAssignSubject)))) {
       setViec(v);
+      doiThamSo({ viec: null });
+    } else if (data && v === 'xet-lai') {
+      /* PR-CL: việc QL "Xét lại lộ trình · {lớp} · n em" → Chuyển lớp NHIỀU em, chọn sẵn các em. Không chặn theo quyền lớp nguồn (lớp có thể đã kết thúc /
+         khác chi nhánh — D11): máy chủ lọc em theo quyền ở lớp em đang học, người không có quyền thấy "Không còn em cần xét lại." */
+      setXetLai(true);
       doiThamSo({ viec: null });
     } else if (data && v === 'ban-giao') {
       /* PR-CT: việc Bàn giao (Công việc) và nút ở hồ sơ HV — `?viec=ban-giao[&mon=][&lenh=]`. Máy chủ chặn người không có quyền đọc phiếu. */
@@ -142,6 +149,7 @@ export default function ClassOverviewPage() {
       )}
       <TransitionPanel classId={data.id} open={viec === 'chuyen-tiep' && !thuong} onClose={dong} onDone={xong} />
       {(viec === 'lo-trinh-ca-lop' || (viec === 'chuyen-tiep' && thuong)) && <PanelCuoiKhoa classId={data.id} onClose={dong} onDone={xong} />}
+      {xetLai && <ChuyenLopNhieuEm classId={data.id} onClose={() => setXetLai(false)} onDone={xong} />}
       {viec === 'ban-giao' && <BanGiaoPanel classId={bg.lop ?? data.id} mon={bg.mon} lenhId={bg.lenhId} onClose={dong} onDone={xong} />}
       <TeacherAssignPanel open={viec === 'phan-cong'} onClose={dong} classId={data.id} classCode={data.code} onDone={xong} />
       {viec === 'thong-tin' && (
