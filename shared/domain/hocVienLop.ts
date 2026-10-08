@@ -226,9 +226,9 @@ export function badgeLop(c: {
   const co: Partial<Record<BadgeLop['key'], BadgeLop>> = {};
   if (nXep > 0) {
     co['xep-lop'] = {
-      /* PR-Dọn (Câu 2 = B): lớp chưa hết khoá → em chưa có quyết định chuyển lớp (cùng tập dòng Cần xử lý). */
+      /* PR-Dọn (Câu 2 = B): lớp chưa hết khoá → em chưa có quyết định chuyển lớp. PR-LCb: Quản lý quyết ở panel "Lộ trình tiếp theo". */
       key: 'xep-lop', nhan: c.needsPlacement ? `${nXep} HV cần xếp lớp tiếp` : `${nXep} HV ${CHU_CHUYEN_LOP.chua.toLowerCase()}`, tone: 'warn',
-      title: c.needsPlacement ? 'Lớp đã hết khoá: những học viên này chưa được xếp lớp tiếp' : 'Quản lý quyết định ở ⋯ Chuyển tiếp lớp',
+      title: c.needsPlacement ? 'Lớp đã hết khoá: những học viên này chưa được xếp lớp tiếp' : 'Quản lý quyết định ở Lộ trình tiếp theo',
     };
   }
   if (c.missingSkills.length) co['thieu-gv'] = { key: 'thieu-gv', nhan: `Thiếu GV ${c.missingSkills.map((k) => tenMonNgan(c.chuongTrinh, k)).join(', ')}`, tone: 'warn' };

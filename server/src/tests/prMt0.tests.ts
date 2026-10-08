@@ -402,29 +402,39 @@ export async function runPrMt0Tests(t: YThucTestKit) {
     assert(get('SELECT cycle_id FROM assessment_attempts WHERE id = ?', m2).cycle_id === ft2 && c2.baseline_attempt_id === null && c2.baseline_source === 'external', JSON.stringify(c2));
   });
 
-  // ------------------------------------------------------------------ MT0-6 · việc Quản lý "Chốt lên FT · {lớp}" (Q1: tự xong khi mọi em có hướng)
+  // ------------------------------------------------------------------ MT0-6 · việc Quản lý "Chốt lên FT · {lớp}" → PR-LCb "Chốt lộ trình · {lớp}" (xong khi mọi em có quyết định)
   const mywork: any = await import('../worklist/mywork.ts');
   const viecChot = (p: any) => mywork.myWork(p, { branchId: MB }).groups.flatMap((g: any) => g.items).filter((i: any) => i.group === 'chot_len_ft');
-  check('MT0-6a/c · QL: lớp BE tuần 8 → "Chốt lên FT · {lớp}", hạn = CN trước tuần Final; Chưa quyết vẫn còn; mọi em có hướng → tự hết', () => {
+  /* PR-LCb: quyết định chuyển lớp đang chờ (dữ liệu dựng thẳng như FCF) — việc chỉ xong khi mọi em có. */
+  const lenhCho = (sid: number, lop: number, huong: string) => conn.prepare(
+    `INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, huong, boi_canh, tuan_bat_dau, nguoi_ra_lenh, ngay_ra_lenh, trang_thai, tao_luc)
+     VALUES (?, ?, ?, 'cuoi-khoa', ?, ?, ?, 'cho', ?)`).run(sid, lop, huong, addDays(week.mondayOf(TODAY), 7), QL.userId, TODAY, new Date().toISOString());
+  check('MT0-6a/c · QL: lớp BE tuần 8 → "Chốt lộ trình · {lớp}", hạn = CN trước tuần Final; Chưa quyết vẫn còn; mọi em có hướng → "đủ hướng, chưa xác nhận"; đủ quyết định → tự hết', () => {
     const l = taoLop('BE', 8, 2);
     const tuanFinal = schedule.classProgress(l.classId).finalWeekStart as string;
     const code = get('SELECT code FROM classes WHERE id = ?', l.classId).code;
     let v = viecChot(QL).filter((i: any) => i.classId === l.classId);
-    assert(v.length === 1 && v[0].tieuDe === `Chốt lên FT · ${code}` && v[0].due === addDays(tuanFinal, -1) && v[0].urgency !== 'overdue', JSON.stringify(v));
+    assert(v.length === 1 && v[0].tieuDe === `Chốt lộ trình · ${code}` && v[0].due === addDays(tuanFinal, -1) && v[0].urgency !== 'overdue', JSON.stringify(v));
     loTrinh.ghiLoTrinhTiep(QL, l.sids[0], { huong: 'fast_track' });
     loTrinh.ghiLoTrinhTiep(QL, l.sids[1], { huong: 'chua_quyet' });
     assert(viecChot(QL).some((i: any) => i.classId === l.classId), 'còn em Chưa quyết → chưa xong');
     loTrinh.ghiLoTrinhTiep(QL, l.sids[1], { huong: 'len_lop' });
-    assert(!viecChot(QL).some((i: any) => i.classId === l.classId), 'mọi em có hướng → tự hết');
+    v = viecChot(QL).filter((i: any) => i.classId === l.classId);
+    assert(v.length === 1 && v[0].reason === '2 em · đủ hướng, chưa xác nhận', `mọi em có hướng, chưa quyết định → còn: ${JSON.stringify(v.map((i: any) => i.reason))}`);
+    lenhCho(l.sids[0], l.classId, 'fast_track');
+    lenhCho(l.sids[1], l.classId, 'len_lop');
+    assert(!viecChot(QL).some((i: any) => i.classId === l.classId), 'mọi em có quyết định → tự hết');
   });
-  check('MT0-6a · qua hạn (lớp ở tuần Final) → không còn "Chốt lên FT", có "Chuyển tiếp lớp" (PR-LCa R1); ghi Lên FT sau hạn vẫn được', () => {
+  /* PR-LCb (thay ý LCa R1): qua hạn việc VẪN CÒN, đỏ — không sang "Chuyển tiếp lớp" (đã bỏ). */
+  check('MT0-6a · qua hạn (lớp ở tuần Final) → vẫn "Chốt lộ trình", quá hạn; không "Chuyển tiếp lớp"; ghi Lên FT sau hạn vẫn được', () => {
     const l = taoLop('ELE', 10, 1);
     const items = mywork.myWork(QL, { branchId: MB }).groups.flatMap((g: any) => g.items).filter((i: any) => i.classId === l.classId);
-    assert(!items.some((i: any) => i.group === 'chot_len_ft') && items.some((i: any) => i.group === 'placement'), items.map((i: any) => i.group).join());
+    const chot = items.filter((i: any) => i.group === 'chot_len_ft');
+    assert(chot.length === 1 && chot[0].urgency === 'overdue' && !items.some((i: any) => i.group === 'placement'), items.map((i: any) => `${i.group}:${i.urgency}`).join());
     loTrinh.ghiLoTrinhTiep(QL, l.sids[0], { huong: 'fast_track' });
     assert(mt0Cua(l.sids[0]).length === 1, 'ghi sau hạn vẫn tạo MT0');
   });
-  check('MT0-6b/d/f · GVCN, GVBM không có; Pre FOU và lớp còn xa hạn không có; chỉ số Tổng quan = số lớp của việc', () => {
+  check('MT0-6b/d/f · GVCN, GVBM không có; lớp còn xa hạn không có; PR-LCb: Pre FOU (đã qua hạn) GIỜ CÓ; chỉ số Tổng quan = số lớp của việc', () => {
     const l = taoLop('FOU', 6, 1);   // FOU 8 tuần: Final tuần 8, hạn CN tuần 7 — tuần 6 trong 13 ngày
     const xa = taoLop('BE', 3, 1);
     const pf = taoLop('PREFOU', 9, 1);
@@ -432,7 +442,7 @@ export async function runPrMt0Tests(t: YThucTestKit) {
     const gvbm = ganGv(l.classId, gvKhac(8), 'reading');
     assert(viecChot(gvcn).length === 0 && viecChot(gvbm).length === 0, 'GV không có');
     const ds = viecChot(QL);
-    assert(ds.some((i: any) => i.classId === l.classId) && !ds.some((i: any) => i.classId === xa.classId || i.classId === pf.classId), JSON.stringify(ds.map((i: any) => i.tieuDe)));
+    assert(ds.some((i: any) => i.classId === l.classId) && ds.some((i: any) => i.classId === pf.classId) && !ds.some((i: any) => i.classId === xa.classId), JSON.stringify(ds.map((i: any) => i.tieuDe)));
     const n = metrics.metricSet(QL, 'lop-chua-chot-len-ft', { branchId: MB }).n;
     assert(n === ds.length, `chỉ số ${n} · việc ${ds.length}`);
     const tq = tongQuan.tongQuanQuanLy(QL, { branchId: MB }).canXuLy.find((x: any) => x.metricId === 'lop-chua-chot-len-ft');
@@ -578,7 +588,7 @@ export async function runPrMt0Tests(t: YThucTestKit) {
     assert(nhan.includes('"nhanNgan":"MT0 · không dùng"') && nhan.includes('"nhanNgan":"MT0"'), nhan.join());
   });
 
-  check('Rà #226 (4b) · hạn việc "Chốt lên FT" (Công việc, Tổng quan) = "hạn hết CN dd/mm"', () => {
+  check('Rà #226 (4b) · hạn việc "Chốt lộ trình" (trước: Chốt lên FT; Công việc, Tổng quan) = "hạn hết CN dd/mm"', () => {
     assert(dm.LOAI_HAN_CUA_VIEC.chot_len_ft === 'chot-len-ft', 'loại hạn của việc');
     const v = dm.deadlineView({ kind: 'chot-len-ft', due: '2026-10-04', today: '2026-09-28' });
     assert(v.text.includes('hạn hết CN 04/10'), v.text);

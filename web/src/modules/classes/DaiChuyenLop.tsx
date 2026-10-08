@@ -39,7 +39,7 @@ export function DaiLopChuyen({ dai, homNay, onChuyenTiep, onBanGiao }: {
       )}
       {kt && (
         <Dai nhan="Kết thúc khoá" do={kt.do}
-          nut={v.coTheRaLenh ? <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={onChuyenTiep}>Chuyển tiếp lớp…</button> : undefined}>
+          nut={(v.laGvcn || v.coTheRaLenh) ? <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={onChuyenTiep}>Lộ trình tiếp theo…</button> : undefined}>
           {v.coTheRaLenh ? (
             <>
               {kt.tuanCuoiKhoa ? `Final Test xong tuần ${tuanLich(kt.tuanCuoiKhoa, h)} · ` : ''}

@@ -86,12 +86,17 @@ export function transitionPlan(p: Principal, classId: number) {
   /* PR-LT2b: % Cuối khoá + hướng gợi ý của cả lớp — MỘT lần (PR-CT dựng cột "Hệ thống gợi ý" từ đây). */
   const cuoiKhoa = sids.length ? cuoiKhoaTheoHocVien(classId, sids) : new Map();
 
-  /* PR-CT: quyết định chuyển lớp đang chờ của cả lớp — MỘT câu (chỉ mục duy nhất một phần: mỗi em tối đa một lệnh `cho`). */
+  /*
+   * PR-CT: quyết định chuyển lớp đang chờ của cả lớp — MỘT câu (chỉ mục duy nhất một phần: mỗi em tối đa một lệnh `cho`).
+   * PR-LCb: + mã lớp chuyển đến và ngày ra lệnh — GVCN (không có `candidates`) vẫn đọc được "Lên FT · CP FT 12" và "Quản lý đã xác nhận …".
+   */
   const lenhCho = new Map((conn.prepare(
-    `SELECT id, student_id, huong, lop_dich_id, tuan_bat_dau, muc_tieu, khong_cam_ket, ngay_thi, ngay_xem_lai, ly_do, khac_goi_y, loi
-       FROM lenh_chuyen_lop WHERE lop_nguon_id = ? AND trang_thai = 'cho'`,
+    `SELECT l.id, l.student_id, l.huong, l.lop_dich_id, d.code AS lop_dich_ma, l.ngay_ra_lenh, l.tuan_bat_dau, l.muc_tieu, l.khong_cam_ket,
+            l.ngay_thi, l.ngay_xem_lai, l.ly_do, l.khac_goi_y, l.loi
+       FROM lenh_chuyen_lop l LEFT JOIN classes d ON d.id = l.lop_dich_id WHERE l.lop_nguon_id = ? AND l.trang_thai = 'cho'`,
   ).all(classId) as any[]).map((l) => [l.student_id as number, {
-    id: l.id as number, huong: l.huong as string, lopDichId: (l.lop_dich_id ?? null) as number | null, tuan: l.tuan_bat_dau as string,
+    id: l.id as number, huong: l.huong as string, lopDichId: (l.lop_dich_id ?? null) as number | null,
+    lopDichMa: (l.lop_dich_ma ?? null) as string | null, ngayRaLenh: (l.ngay_ra_lenh ?? null) as string | null, tuan: l.tuan_bat_dau as string,
     mucTieu: l.khong_cam_ket ? 'KCK' : (l.muc_tieu ?? null) as number | 'KCK' | null, ngayThi: (l.ngay_thi ?? null) as string | null,
     ngayXemLai: (l.ngay_xem_lai ?? null) as string | null, lyDo: (l.ly_do ?? null) as string | null, khacGoiY: !!l.khac_goi_y,
     loi: (l.loi ?? null) as string | null,
@@ -114,21 +119,22 @@ export function transitionPlan(p: Principal, classId: number) {
   const baiChuaLamByCycle = new Map(baiChuaLamRows.map((r) => [r.cycle_id, r.n as number]));
 
   /*
-   * LỚP ĐÍCH GỢI Ý: lớp CÙNG CHI NHÁNH, đúng MỘT TRONG các chương trình ở `options` (bậc kế,
+   * LỚP ĐÍCH GỢI Ý: lớp thường → lớp MỌI CHI NHÁNH (PR-LCb — `raLenh` nhận lớp chi nhánh khác, báo "Sắp nhận" QL chi nhánh đích); lớp FT (panel
+   * Chuyển lớp cũ) giữ CÙNG chi nhánh (R-B3), đúng MỘT TRONG các chương trình ở `options` (bậc kế,
    * FT, hoặc cùng chương trình để học lại), còn đang chạy và chưa học quá nửa chương trình.
    * `classProgressMany` MỘT LẦN cho cả danh sách ứng viên — không classProgress trong vòng lặp (N+1).
    */
   const candidateRows = raLenhDuoc && optionCodes.length
     ? (conn
       .prepare(
-        `SELECT c.id, c.code, c.programme_code, c.is_fast_track, c.route,
+        `SELECT c.id, c.code, c.programme_code, c.is_fast_track, c.route, c.branch_id, b.code AS branch_code,
                 (SELECT COUNT(*) FROM enrollments e WHERE e.class_id = c.id AND e.status='active') AS n
-           FROM classes c
-          WHERE c.branch_id = ? AND c.status = 'active' AND c.id != ?
+           FROM classes c JOIN branches b ON b.id = c.branch_id
+          WHERE c.status = 'active' AND c.id != ?${ft ? ' AND c.branch_id = ?' : ''}
             AND c.programme_code IN (${optionCodes.map(() => '?').join(',')})
           ORDER BY c.code`,
       )
-      .all(cls.branch_id, classId, ...optionCodes) as any[])
+      .all(classId, ...(ft ? [cls.branch_id] : []), ...optionCodes) as any[])
       .sort((a, b) => soSanhLop({ code: a.code }, { code: b.code }))
     : [];
   const candidateProgress = classProgressMany(candidateRows.map((c) => c.id));
@@ -143,6 +149,7 @@ export function transitionPlan(p: Principal, classId: number) {
         id: c.id, code: c.code, programmeCode: c.programme_code as ProgrammeCode | null,
         programmeName: c.programme_code ? PROGRAMME_TEMPLATES[c.programme_code as ProgrammeCode]?.name ?? null : null,
         ft: !!c.is_fast_track, route: (c.route ?? null) as string | null,
+        branchId: c.branch_id as number, branchCode: c.branch_code as string,
         tuan: pr?.currentWeek && pr.totalWeeks && pr.currentWeek >= 1 ? tuanKhoa(pr.currentWeek, pr.totalWeeks) : null,
         studentCount: c.n as number,
       };
@@ -179,13 +186,15 @@ export function transitionPlan(p: Principal, classId: number) {
     students: students.map((s) => ({
       id: s.id, studentCode: s.student_code, fullName: s.full_name,
       cycleId: s.cycle_id ?? null, target: s.target_score ?? null,
+      /** PR-LCb: Target khoá là KCK — panel Lộ trình tiếp theo coi như đã có Target (không hỏi lại, §7). */
+      kck: !!s.khong_cam_ket,
       /** PR-UXF-a (mockup 20 màn I): FT `{ tuan, tong: null }` — "LT1 · tuần học 9"; lớp thường null (cột Khoá đã có tuần của lớp). */
       route: (s.route ?? null) as string | null,
       tuanHoc: ft && s.start_week ? (() => { const th = tuanHocTai(s.start_week, tuanNay, dungCua[s.id] ?? []); return th ? { tuan: th.tuan, tong: null, dangDung: th.dangDung } : null; })() : null,
       loTrinhTiep: loTrinhTiepMap.get(s.id) ?? null,
       /** PR-LCa (LCa-4): dòng điền sẵn từ Lộ trình tiếp theo (Hướng, Target Lên FT, lớp chuyển đến) — lớp thường; lớp FT null. */
       dienSan: ft ? null : dienSanChuyenTiep(loTrinhTiepMap.get(s.id) ?? null,
-        { target: s.target_score ?? null, kck: !!s.khong_cam_ket }, candidates, { maTu: from }),
+        { target: s.target_score ?? null, kck: !!s.khong_cam_ket }, candidates, { maTu: from, branchId: cls.branch_id }),
       ketQua: ketQua.get(s.id) ?? null,
       cuoiKhoa: cuoiKhoa.get(s.id) ?? null,
       caseMo: { tong: caseByStudent.get(s.id) ?? 0, seDongNeuSangFt: caseByStudent.get(s.id) ?? 0 },

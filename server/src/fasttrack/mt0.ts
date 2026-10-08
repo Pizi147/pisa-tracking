@@ -5,17 +5,14 @@
  */
 import { chenNhieuDong, db, theoLo } from '../db.ts';
 import {
-  ASSESSED_SKILLS, MT0_CHUONG_TRINH, PERMISSIONS, addDaysIso, coMt0, hanChamMt0, hanChotLenFt, kyNangSosMt0, trangThaiMt0, tuanLich,
+  ASSESSED_SKILLS, coMt0, hanChamMt0, kyNangSosMt0, trangThaiMt0, tuanLich,
   type AssessedSkill, type Huong, type ProgrammeCode, type TrangThaiMt0,
 } from '../../../shared/domain/index.ts';
 import { nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { ensurePeriods } from '../platform/week.ts';
-import { classProgressMany, mocKetKhoa } from '../classes/schedule.ts';
+import { classProgressMany } from '../classes/schedule.ts';
 import { assessedBands } from './scoring.ts';
-import { can, type Principal } from '../permissions.ts';
-import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
-import { nho } from '../platform/nguCanhRequest.ts';
 
 
 export type DongMt0 = { studentId: number; classId: number; ma: ProgrammeCode | null; huong: Huong; mucTieu: number | null };
@@ -237,53 +234,4 @@ export function mt0TheoHocVien(sids: readonly number[]): Map<number, Mt0View> {
 }
 
 
-/**
- * VIỆC QUẢN LÝ "Chốt lên FT · {lớp}" (T5b; chủ sản phẩm chốt Q1 05/10: TỰ XONG khi mọi em đang học đã có hướng — khác trống / Chưa quyết;
- * không nút, không cột mới). Lớp thường FOU/BE/ELE đang mở, người xem có `CLASS_EDIT`; hạn = Chủ nhật trước tuần Cuối khoá (`hanChotLenFt`);
- * hiện từ 13 ngày trước hạn tới hết hạn. PR-LCa (LCa-5): từ tuần Cuối khoá lớp sang "Chuyển tiếp lớp" (`mocKetKhoa(...).tuCuoiKhoa`, cùng điều kiện
- * `lopChoLenhChuyen`) — mỗi lớp một việc mỗi lúc. Không chặn gì: ghi Lên FT sau hạn vẫn được. Một câu lớp + một câu em cho cả phạm vi.
- */
-/** `soEm`: em đang học chưa có hướng (gồm em chờ duyệt); `soChoDuyet`: trong số đó, em đã có đề xuất chuyển lớp của GVCN chờ Quản lý duyệt. */
-export type ChotLenFt = { classId: number; code: string; han: string; soEm: number; soChoDuyet: number };
-
-export function lopChoChotLenFt(p: Principal, branchId: number | null, today: string): ChotLenFt[] {
-  /* Tổng quan gọi hai lần (chỉ số + dòng Cần xử lý) — nhớ trong request. */
-  return nho(`chot-len-ft:${p.userId}:${branchId ?? ''}:${today}`, () => tinhLopChoChotLenFt(p, branchId, today));
-}
-
-function tinhLopChoChotLenFt(p: Principal, branchId: number | null, today: string): ChotLenFt[] {
-  const conn = db();
-  const lop = conn.prepare(
-    `SELECT c.id, c.code FROM classes c
-      WHERE c.status = 'active' AND c.is_fast_track = 0 AND c.programme_code IN (${MT0_CHUONG_TRINH.map(() => '?').join(',')})${branchId ? ' AND c.branch_id = ?' : ''}`,
-  ).all(...MT0_CHUONG_TRINH, ...(branchId ? [branchId] : [])) as any[];
-  const tienDo = classProgressMany(lop.map((c) => c.id as number));
-  const toi = lop.flatMap((c) => {
-    const pr = tienDo.get(c.id);
-    if (!pr?.finalWeekStart) return [];
-    const han = hanChotLenFt(pr.finalWeekStart);
-    return today >= addDaysIso(han, -13) && !mocKetKhoa(pr, today).tuCuoiKhoa && can(p, PERMISSIONS.CLASS_EDIT, { classId: c.id })
-      ? [{ classId: c.id as number, code: c.code as string, han }] : [];
-  });
-  if (!toi.length) return [];
-  /*
-   * FIX-CHOT-LEN-FT: Lộ trình tiếp theo (K26) ghi thẳng `lo_trinh_tiep_theo`; Quyết định chuyển lớp (PR-CT) ghi ở `lenh_chuyen_lop`.
-   * Em đã có hướng khi một trong hai có hướng ≠ Chưa quyết (lệnh chưa huỷ, mọi bối cảnh). Việc xong khi MỌI em đang học đã có hướng (T5b).
-   */
-  /* VIEC-NHO 5: em chỉ có ĐỀ XUẤT chuyển lớp của GVCN (chờ Quản lý duyệt, `emChoDuyetChuyenLop`) vẫn chưa có hướng — đếm riêng để chữ việc tách. */
-  const soEm = new Map<number, { n: number; cho: number }>();
-  theoLo(toi.map((x) => x.classId), (lo, ph) => {
-    for (const r of conn.prepare(
-      `SELECT e.class_id AS class_id, COUNT(*) AS n,
-              SUM(EXISTS (SELECT 1 FROM yeu_cau_duyet y WHERE y.trang_thai = 'cho' AND y.loai = 'de_xuat_chuyen_lop'
-                            AND y.doi_tuong_loai = 'student:chuyen-lop' AND y.doi_tuong_id = e.student_id)) AS cho
-         FROM enrollments e JOIN students s ON s.id = e.student_id
-         LEFT JOIN lo_trinh_tiep_theo lt ON lt.student_id = e.student_id AND lt.class_id = e.class_id
-        WHERE e.status = 'active' AND e.class_id IN (${ph}) AND ${HV_DANG_HOC_SQL('s')} AND (lt.huong IS NULL OR lt.huong = 'chua_quyet')
-          AND NOT EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.student_id = e.student_id AND l.lop_nguon_id = e.class_id
-                            AND l.trang_thai != 'huy' AND l.huong != 'chua_quyet')
-        GROUP BY e.class_id`,
-    ).all(...lo) as any[]) soEm.set(r.class_id, { n: r.n, cho: r.cho });
-  });
-  return toi.flatMap((x) => { const d = soEm.get(x.classId); return d?.n ? [{ ...x, soEm: d.n, soChoDuyet: d.cho }] : []; });
-}
+/* PR-LCb: việc Quản lý "Chốt lên FT" đã gộp vào "Chốt lộ trình" — `lopChoChotLoTrinh` (classes/lenhChuyen.ts). */

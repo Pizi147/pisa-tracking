@@ -78,7 +78,7 @@ export async function runTongQuanTests(t: YThucTestKit) {
     /* PR-DUYET: `decide`, `decide_move` không còn là loại việc (thẻ ở hộp Chờ duyệt). */
     const cham = ['score'];
     const kase = ['cause', 'no_plan', 'ghi_ket_qua_pa', 'do_plan', 'no_owner', 'phoi_hop_sos'];   // PR-VAI-a: result → ghi_ket_qua_pa (V3), Phối hợp SOS thành việc
-    const van = ['placement', 'mgmt', 'missing_data'];
+    const van = ['chot_len_ft', 'mgmt', 'missing_data'];   // PR-LCb: placement → chot_len_ft (Chốt lộ trình)
     for (const g of cham) eq(d.nhomViecCua(g), 'cham-diem', g);
     for (const g of kase) eq(d.nhomViecCua(g), 'case-hoc-thuat', g);
     for (const g of van) eq(d.nhomViecCua(g), 'van-hanh', g);

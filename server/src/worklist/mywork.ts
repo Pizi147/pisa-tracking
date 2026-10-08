@@ -1,7 +1,7 @@
 import { db, theoLo } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
-  ATTEMPT_KIND_SHORT, CHAM_CHEO, CHU_CHUYEN_LOP, daiDienNhomBoTro, laChamCheo,
+  ATTEMPT_KIND_SHORT, CHAM_CHEO, chuViecChotLoTrinh, daiDienNhomBoTro, laChamCheo,
   INTERVENTION_KIND_LABEL, PERMISSIONS,
   SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, cycleDeadline,
   duongCaseRieng, duongHoSoHocVien, duongLichTest, nhanDotNgan, planDueDate, urgencyFromSos,
@@ -14,8 +14,7 @@ import { phamViHoSoGv } from '../giaoVien/phamVi.ts';
 import { allProgrammes } from '../normal/regular.ts';
 import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
 import { viecBanGiao } from '../classes/banGiao.ts';
-import { lopChoLenhChuyen } from '../classes/lenhChuyen.ts';
-import { lopChoChotLenFt } from '../fasttrack/mt0.ts';
+import { lopChoChotLoTrinh } from '../classes/lenhChuyen.ts';
 import { myMgmtTasks } from './mgmttasks.ts';
 import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, UNCONFIRMED_PRESET, YC_KE_HOACH, awaitingCauseCaseIds } from '../cases/sosState.ts';
 import { quyenBoTro } from '../cases/boTro.ts';
@@ -116,7 +115,7 @@ export type WorkItem = {
  */
 export type WorkGroupKey =
   | 'cause' | 'xac_nhan_pa' | 'ke_hoach_bo_tro' | 'phoi_hop' | 'mini_test' | 'score' | 'no_plan' | 'ghi_ket_qua_pa'
-  | 'no_owner' | 'placement' | 'missing_data' | 'mgmt'
+  | 'no_owner' | 'missing_data' | 'mgmt'
   /* PR-VAI-a: Phối hợp SOS là việc thật (K5-10); khai bậc Ý thức HS cũ (K1-15); kỳ vọng đầu ra (K5-11). */
   | 'phoi_hop_sos' | 'khai_bac' | 'ky_vong_dau_ra'
   /* PR-TK (TK-K): GVCN cập nhật kết quả thi thật (L R W S) của em FT đã qua mốc thi. */
@@ -125,7 +124,7 @@ export type WorkGroupKey =
   | 'yt_xu_ly' | 'yt_xem' | 'yt_thuc_hien'
   /* PR-CT (Q30-2): bàn giao khi có quyết định chuyển lớp — một việc mỗi lớp (GVCN), mỗi (lớp, môn) (GVBM). */
   | 'ban_giao'
-  /* PR-MT0 (T5b): Quản lý chốt em lên FT của lớp FOU/BE/ELE trước tuần Cuối khoá — tự xong khi mọi em đã có hướng. */
+  /* PR-MT0 (T5b) → PR-LCb: "Chốt lộ trình" — Quản lý xác nhận hướng + lớp chuyển đến cho mọi em lớp thường (khoá giữ tên cũ `chot_len_ft`). */
   | 'chot_len_ft';
 
 /**
@@ -209,13 +208,10 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
     label: 'Chưa có người phụ trách',
     hint: 'Case đang mở mà chưa ai nhận điều phối. Chọn người phụ trách trước, vì mọi việc sau đó đều treo vào chỗ này.',
   },
+  /* PR-LCb: khoá `chot_len_ft` = "Chốt lộ trình" (giữ tên để không chạm drilldown, nhắc việc, phép kiểm cũ). */
   chot_len_ft: {
-    label: 'Chốt lên FT',
-    hint: 'Ghi hướng cho mọi em của lớp, hạn Chủ nhật trước tuần Final Test — em Lên FT có MT0 ở tuần Final. Từ tuần Final Test lớp sang việc Chuyển tiếp lớp.',
-  },
-  placement: {
-    label: 'Chuyển tiếp lớp',
-    hint: 'Lớp tới tuần Final Test mà còn em chưa có quyết định chuyển lớp. Quản lý quyết định (lên lớp, học lại, tạm dừng học (bảo lưu), dừng học hẳn) trước hết tuần kết thúc — việc này không tự xảy ra.',
+    label: 'Chốt lộ trình',
+    hint: 'Quản lý xác nhận hướng và lớp chuyển đến cho mọi em, hạn Chủ nhật trước tuần Final Test. Quá hạn vẫn làm được.',
   },
   missing_data: {
     label: 'Thiếu dữ liệu đánh giá',
@@ -558,50 +554,19 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     });
   }
 
-  // ------------------------------------------------- 2c. lớp đã hết chương trình
+  // ------------------------------------------------- 2d. PR-LCb: Chốt lộ trình (một việc mỗi lớp thường, Quản lý) — cùng hàm với chỉ số `lop-chua-chot-len-ft`
   /*
-   * CHỈ GIỮ LẠI MỘT VIỆC: lớp đã học hết chương trình mà học viên chưa được xếp lớp tiếp.
-   *
-   * "Sắp tới tuần Progress Test", "sắp tới tuần Final Test" KHÔNG còn nằm ở đây — chúng là
-   * SỰ KIỆN sắp đến, không phải việc đang nợ, và một sự kiện chưa đến mà nằm trong danh sách
-   * việc thì người đọc học cách bỏ qua cả danh sách (mục 3.5). Chúng chuyển sang khối "Sự
-   * kiện nổi bật" ở đầu màn.
-   *
-   * Lớp đã hết chương trình thì khác: mỗi ngày trôi qua là mỗi ngày học viên không được học,
-   * và việc đó không tự xảy ra.
+   * Thay hai việc "Chốt lên FT" (trước tuần Final) và "Chuyển tiếp lớp" (từ tuần Final): MỘT việc từ 13 ngày trước hạn tới khi mọi em đang học
+   * có quyết định chuyển lớp; qua hạn vẫn còn, đỏ. Việc của cả lớp, không của riêng ai — không gán người phụ trách.
    */
-  /* PR-CT (Q30-4, Q13): từ tuần Cuối khoá, mỗi lớp thường còn em CHƯA CÓ LỆNH chuyển → một việc của Quản lý (chưa quyết = chưa có lệnh). */
-  /* PR-S5F-a: từ tuần Cuối khoá theo HÔM NAY (Quản lý dời Cuối khoá sớm thì các tuần sau đó vẫn cần lệnh), không theo chặng lớp.
-     PR-VAI-a: cùng hàm `lopChoLenhChuyen` với chỉ số `hv-chua-co-lenh-chuyen` ở Cần xử lý. */
-  for (const { classId, code, pr, emIds } of co('placement') ? lopChoLenhChuyen(p, f.branchId ?? null, today) : []) {
-    const nChua = emIds.length;
-    items.push({
-      key: `class:${classId}`, group: 'placement', urgency: 'normal',
-      studentId: null, studentName: `Lớp ${code}`,
-      classId, classCode: code,
-      attemptId: null, attemptNo: null, caseId: null, level: null,
-      contextLabel: pr.phase === 'finished' ? `Hết ${pr.totalWeeks} tuần` : `Tuần Final Test`, count: nChua,
-      reason: `${nChua} em chưa có quyết định chuyển lớp`,
-      tieuDe: `Chuyển tiếp lớp · ${code} · ${nChua} HV`,   // mockup 20 (PR-S5F-a): lớp · số em chưa có lệnh
-      actionLabel: 'Chuyển tiếp lớp',
-      href: `/hoc-vien/lop/${classId}?viec=chuyen-tiep`,
-      /* Việc của cả lớp, không của riêng ai — nên không gán người phụ trách. */
-      ownerId: null, owner: null, mine: false,
-      due: null, statusLabel: CHU_CHUYEN_LOP.chua,
-    });
-  }
-
-  // ------------------------------------------------- 2d. PR-MT0: Chốt lên FT (một việc mỗi lớp, Quản lý) — cùng hàm với chỉ số `lop-chua-chot-len-ft`
-  for (const x of co('chot_len_ft') ? lopChoChotLenFt(p, f.branchId ?? null, today) : []) {
-    /* VIEC-NHO 5: em chỉ có đề xuất GVCN chờ duyệt tách riêng — việc của Quản lý ở Chờ duyệt, không phải "chưa có hướng". Hiện ở dòng phụ. */
-    const chu = [x.soEm > x.soChoDuyet ? `${x.soEm - x.soChoDuyet} em chưa có hướng` : null, x.soChoDuyet ? `${x.soChoDuyet} em chờ duyệt đề xuất` : null]
-      .filter(Boolean).join(' · ');
+  for (const x of co('chot_len_ft') ? lopChoChotLoTrinh(p, f.branchId ?? null, today) : []) {
+    const chu = chuViecChotLoTrinh(x);
     items.push({
       key: `chotft:${x.classId}`, group: 'chot_len_ft', urgency: urgencyOf(x.han, today),
       studentId: null, studentName: `Lớp ${x.code}`, classId: x.classId, classCode: x.code,
-      attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: chu, count: x.soEm,
+      attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: chu, count: x.chuaLenh,
       reason: chu,
-      tieuDe: `Chốt lên FT · ${x.code}`, actionLabel: 'Ghi lộ trình',
+      tieuDe: `Chốt lộ trình · ${x.code}`, actionLabel: 'Lộ trình tiếp theo',
       href: `/hoc-vien/lop/${x.classId}?viec=lo-trinh-ca-lop`,
       ownerId: null, owner: null, mine: false, due: x.han, statusLabel: 'Chưa chốt',
     });
@@ -1210,7 +1175,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   if (f.chiNhom) for (let i = items.length - 1; i >= 0; i--) if (!f.chiNhom.has(items[i].group)) items.splice(i, 1);
   const order: WorkGroupKey[] = [
     'cause', 'xac_nhan_pa', 'ke_hoach_bo_tro', 'phoi_hop', 'phoi_hop_sos', 'mini_test', 'score', 'no_plan', 'ghi_ket_qua_pa', 'yt_xu_ly', 'yt_xem', 'yt_thuc_hien', 'khai_bac',
-    'chot_len_ft', 'placement', 'ky_vong_dau_ra', 'thi_that', 'ban_giao', 'no_owner', 'mgmt', 'missing_data',
+    'chot_len_ft', 'ky_vong_dau_ra', 'thi_that', 'ban_giao', 'no_owner', 'mgmt', 'missing_data',
   ];
   const weight = (u: WorkUrgency) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
 

@@ -162,7 +162,7 @@ export async function runLenLopTests(t: YThucTestKit) {
     assert(het.an[0].nhan === '3 HV cần xếp lớp tiếp' && /hết khoá/.test(het.an[0].title ?? ''), 'Hết khoá: số em cần xếp lớp');
     const chua = d.badgeLop({ ...goc, needsPlacement: false, canXepLop: 0 });
     /* PR-Dọn (Câu 2 = B): lớp chưa hết khoá → em chưa có quyết định chuyển lớp (cùng tập dòng Cần xử lý). */
-    assert(chua.an[0].nhan === '5 HV chưa có quyết định chuyển lớp' && /Chuyển tiếp lớp/.test(chua.an[0].title ?? '') && chua.an[0].tone === 'warn', JSON.stringify(chua.an[0]));
+    assert(chua.an[0].nhan === '5 HV chưa có quyết định chuyển lớp' && /Lộ trình tiếp theo/.test(chua.an[0].title ?? '') && chua.an[0].tone === 'warn', JSON.stringify(chua.an[0]));
   });
 
   // ==================================================================== trongHaiTuanCuoi
@@ -205,6 +205,7 @@ export async function runLenLopTests(t: YThucTestKit) {
   const { default: SqliteDb } = await import('libsql');
   const migrateMod: any = await import('../migrate.ts');
   const migLt2b: any = await import('../migrate/prLt2b.ts');
+  const migLcb: any = await import('../migrate/prLcb.ts');
   const REPO = pathMod.resolve(fileURLToPath(new URL('../../../../', import.meta.url)));
   const SCHEMA = fsMod.readFileSync(pathMod.join(REPO, 'server/src/schema.sql'), 'utf8');
   const colsOf = (db: any, table: string): string[] =>
@@ -237,6 +238,7 @@ export async function runLenLopTests(t: YThucTestKit) {
     const applied: string[] = [];
     migrateMod.migrateLenLop(m, applied);
     migLt2b.migratePrLt2b(m, []);   // PR-LT2b thêm 6 cột vào cùng bảng
+    migLcb.migratePrLcb(m, []);     // PR-LCb thêm cột huong_gvcn vào cùng bảng
     assert(applied.length === 1 && /PR-LT/.test(applied[0]), `Phải báo đúng một dòng PR-LT: ${applied.join(' | ')}`);
     const fresh = new SqliteDb(':memory:');
     fresh.exec(SCHEMA);

@@ -160,7 +160,8 @@ export async function runPrVaiATests(t: YThucTestKit) {
     assert(metricsSvc.rowsFor('viec-van-hanh', [goc.id])[0].href === `/cong-viec?mo-viec=${goc.id}`, 'dòng mở đúng việc');
   });
 
-  check('VAI-a (2b) · hv-chua-co-lenh-chuyen: Σ theo lớp = count việc "Chuyển tiếp lớp" của myWork(QL); ra quyết định cho một em → −1', () => {
+  /* PR-LCb: `hv-chua-co-lenh-chuyen` đã bỏ — cùng ý (hai đường một tập, ra quyết định một em → −1) viết lại trên `lop-chua-chot-len-ft`. */
+  check('VAI-a (2b) · lop-chua-chot-len-ft: tập lớp = lớp của việc "Chốt lộ trình" myWork(QL); ra quyết định cho một em → count −1', () => {
     const cid = classId('MB FOU 12');
     const pr = schedule.classProgress(cid);
     const cu = conn.prepare('SELECT final_week_override, progress_week_override FROM classes WHERE id = ?').get(cid) as any;
@@ -170,18 +171,20 @@ export async function runPrVaiATests(t: YThucTestKit) {
     let lenh: number | null = null;
     try {
       const hai = () => {
-        const r = metricsSvc.metricSet(P.mbManager, 'hv-chua-co-lenh-chuyen', { branchId: MB });
-        const viec = (mywork.myWork(P.mbManager, { branchId: MB }).items as any[]).filter((i) => i.group === 'placement');
-        eq(r.n, viec.reduce((s, i) => s + i.count, 0), 'Σ count việc placement = số chỉ số');
-        return r;
+        const r = metricsSvc.metricSet(P.mbManager, 'lop-chua-chot-len-ft', { branchId: MB });
+        const viec = (mywork.myWork(P.mbManager, { branchId: MB }).items as any[]).filter((i) => i.group === 'chot_len_ft');
+        eq(r.ids, [...new Set(viec.map((i) => i.classId as number))].sort((a, b) => a - b), 'tập lớp chỉ số = lớp của việc');
+        return viec.find((i) => i.classId === cid);
       };
-      const r0 = hai();
-      assert(r0.n > 0, 'phải có em chưa có lệnh ở MB FOU 12');
-      const sid = r0.ids.find((id: number) => (conn.prepare(`SELECT 1 FROM enrollments WHERE student_id = ? AND class_id = ? AND status = 'active'`).get(id, cid)));
+      const v0 = hai();
+      assert(v0 && v0.count > 0, 'phải có em chưa có quyết định ở MB FOU 12');
+      const sid = (conn.prepare(`SELECT e.student_id id FROM enrollments e JOIN students s ON s.id = e.student_id WHERE e.class_id = ? AND e.status = 'active'
+        AND s.status = 'active' AND s.archived_at IS NULL AND NOT EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.student_id = e.student_id AND l.trang_thai = 'cho')
+        AND NOT EXISTS (SELECT 1 FROM yeu_cau_duyet y WHERE y.trang_thai = 'cho' AND y.loai = 'de_xuat_chuyen_lop' AND y.doi_tuong_id = e.student_id) LIMIT 1`).get(cid) as any).id;
       lenh = Number(conn.prepare(`INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, huong, boi_canh, tuan_bat_dau, nguoi_ra_lenh, ngay_ra_lenh, tao_luc)
         VALUES (?, ?, 'bao_luu', 'cuoi_khoa', ?, ?, ?, ?)`).run(sid, cid, t.addDays(week.mondayOf(TODAY), 7), P.mbManager.userId, TODAY, NOW).lastInsertRowid);
-      eq(hai().n, r0.n - 1, 'ra quyết định cho một em → −1');
-      eq(metricsSvc.metricSet(P.cpManager, 'hv-chua-co-lenh-chuyen', {}).ids.filter((id: number) => r0.ids.includes(id)), [], 'phủ định: QL CP không thấy em MB');
+      eq(hai()?.count ?? 0, v0.count - 1, 'ra quyết định cho một em → −1');
+      assert(!metricsSvc.metricSet(P.cpManager, 'lop-chua-chot-len-ft', {}).ids.includes(cid), 'phủ định: QL CP không thấy lớp MB');
     } finally {
       if (lenh) conn.prepare('DELETE FROM lenh_chuyen_lop WHERE id = ?').run(lenh);
       conn.prepare('UPDATE classes SET final_week_override = ?, progress_week_override = ? WHERE id = ?').run(cu.final_week_override, cu.progress_week_override, cid);
@@ -231,7 +234,8 @@ export async function runPrVaiATests(t: YThucTestKit) {
   });
 
   check('VAI-a (2e) · khung n = ids.length = rows.length phủ bốn chỉ số mới; Cần xử lý có đủ dòng khi n > 0, số = metricSet', () => {
-    for (const id of ['van-hanh-can-quyet-dinh', 'hv-chua-co-lenh-chuyen', 'hv-ft-xong-mt-cuoi-chua-mt-ke', 'hv-len-ft-chua-ky-vong']) {
+    /* PR-LCb: hv-chua-co-lenh-chuyen đã bỏ → lop-chua-chot-len-ft. */
+    for (const id of ['van-hanh-can-quyet-dinh', 'lop-chua-chot-len-ft', 'hv-ft-xong-mt-cuoi-chua-mt-ke', 'hv-len-ft-chua-ky-vong']) {
       const r = metricsSvc.metricSet(P.admin, id, {});
       const full = metricsSvc.metricResponse(r, true);
       eq([r.n, full.rows.length], [r.ids.length, r.ids.length], `${id}: n = ids = rows`);

@@ -210,9 +210,12 @@ export function moLoTrinhMoi(p: Principal, o: {
   const seq = ((conn.prepare('SELECT MAX(seq) n FROM learning_cycles WHERE student_id = ?').get(o.sid) as any)?.n ?? 0) + 1;
   const route = o.denLop.ft ? (o.toClass.route ?? o.cuCycle?.route ?? 'LT1') : null;   // lộ trình mới = lộ trình lớp chuyển đến (M-20)
   const startPeriodId = o.denLop.ft ? ensurePeriod(mondayOf(o.ngay)).id : (o.toClass.start_period_id ?? null);
-  /* Q7: FT → FT giữ target cũ. Chủ sản phẩm 04/10 (PR-NT): lớp thường → lớp thường giữ cả Target lẫn Dự kiến thi. */
+  /*
+   * Q7: FT → FT giữ target cũ. Chủ sản phẩm 04/10 (PR-NT): lớp thường → lớp thường giữ cả Target lẫn Dự kiến thi.
+   * PR-LCb (§7 "Dự kiến thi giữ như cũ"): Dự kiến thi giữ ở MỌI chiều khi không gửi tháng thi mới.
+   */
   const giuTarget = (o.tuLop.ft && o.denLop.ft) || (!o.tuLop.ft && !o.denLop.ft);
-  const giuThi = !o.tuLop.ft && !o.denLop.ft && !o.thangThi;
+  const giuThi = !o.thangThi;
   const cu = o.cuCycle;
   const moiId = Number(conn
     .prepare(
@@ -535,12 +538,14 @@ export function apDungCaLop(p: Principal, o: {
     /* FT→FT cũng nhận target: chỉ QL/QT gọi được (CYCLE_EDIT), vô hại — rà #117 (PR-Dọn VN03). */
     const params = o.dongs.map((d) => {
       const mucTieu = d.toClass.ft || coSuaTarget ? d.mucTieu ?? null : null;
-      const cu = d.toClass.ft ? null : khoaCu.get(d.sid);   // lớp nguồn luôn là lớp thường → sang lớp thường thì giữ
-      const giuThi = !!cu && !d.thangThi;
+      const cu = d.toClass.ft ? null : khoaCu.get(d.sid);   // lớp nguồn luôn là lớp thường → sang lớp thường thì giữ Target
+      /* PR-LCb (§7): Dự kiến thi giữ ở mọi chiều (cả Lên FT) khi lệnh không mang tháng thi. */
+      const thiCu = khoaCu.get(d.sid);
+      const giuThi = !!thiCu && !d.thangThi;
       return [
         d.sid, (seqOf.get(d.sid) ?? 0) + 1, d.toClass.ft ? (d.toClass.route ?? 'LT1') : null, d.toClass.ma,
         mucTieu ?? cu?.target_score ?? null, mucTieu == null && cu?.khong_cam_ket ? 1 : 0,
-        giuThi ? cu.exam_month ?? null : d.thangThi ?? null, giuThi ? cu.exam_date ?? null : null, giuThi ? cu.exam_period_id ?? null : null,
+        giuThi ? thiCu.exam_month ?? null : d.thangThi ?? null, giuThi ? thiCu.exam_date ?? null : null, giuThi ? thiCu.exam_period_id ?? null : null,
         d.toClass.ft ? ftPeriodId : (startPeriodOf.get(d.toClassId) ?? null), o.ngay, 'active', now,
       ];
     });

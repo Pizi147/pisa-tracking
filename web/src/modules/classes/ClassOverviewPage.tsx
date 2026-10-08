@@ -14,7 +14,7 @@ import { TeacherAssignPanel } from './TeacherAssignPanel.tsx';
 import { KetThucLopPanel, MoLaiLopPanel, XoaLopPanel } from './XoaKetThucLopPanel.tsx';
 import { ClassProgressPanel } from './ClassProgressPanel.tsx';
 import { TransitionPanel } from './TransitionPanel.tsx';
-import { LoTrinhTiepCaLopPanel } from './LoTrinhTiepCaLopPanel.tsx';
+import { PanelCuoiKhoa } from './PanelCuoiKhoa.tsx';
 import { BanGiaoPanel } from './BanGiaoPanel.tsx';
 import { DauTrangLop, type HoSoLop, type ViecDauTrang } from './DauTrangLop.tsx';
 import { SuaThongTinLopPanel } from './SuaThongTinLopPanel.tsx';
@@ -74,8 +74,11 @@ export default function ClassOverviewPage() {
    */
   useEffect(() => {
     const v = params.get('viec');
-    /* PR-MT0: việc QL "Chốt lên FT · lớp" mở thẳng bảng Ghi lộ trình tiếp theo cả lớp (`?viec=lo-trinh-ca-lop`). */
-    if (data && ((v === 'chuyen-tiep' && data.viewer.coTheChuyenTiep) || v === 'lo-trinh-ca-lop' || (v === 'phan-cong' && (data.viewer.canAssign || data.viewer.canAssignSubject)))) {
+    /* PR-LCb: lớp thường — `?viec=lo-trinh-ca-lop` (việc QL "Chốt lộ trình · lớp") và `?viec=chuyen-tiep` (badge, Lịch Test, thẻ duyệt) cùng mở
+       panel "Lộ trình tiếp theo" cho Quản lý và GVCN; lớp FT `chuyen-tiep` vẫn panel Chuyển lớp (chỉ Quản lý). */
+    const thuongV = data?.programme?.scoringMode === 'ratio';
+    const moLtt = !!data && thuongV && (v === 'chuyen-tiep' || v === 'lo-trinh-ca-lop') && (data.viewer.coTheChuyenTiep || data.viewer.canAddStudents);
+    if (data && (moLtt || (v === 'chuyen-tiep' && !thuongV && data.viewer.coTheChuyenTiep) || (v === 'phan-cong' && (data.viewer.canAssign || data.viewer.canAssignSubject)))) {
       setViec(v);
       doiThamSo({ viec: null });
     } else if (data && v === 'ban-giao') {
@@ -137,8 +140,8 @@ export default function ClassOverviewPage() {
         <ClassProgressPanel classId={data.id} classCode={data.code} tieuDe={thuong ? 'Lịch Test của lớp' : 'Tuần khai giảng'}
           onClose={dong} onDone={xong} onChuyenTiep={data.viewer.coTheChuyenTiep ? () => setViec('chuyen-tiep') : undefined} />
       )}
-      <TransitionPanel classId={data.id} open={viec === 'chuyen-tiep'} onClose={dong} onDone={xong} />
-      {viec === 'lo-trinh-ca-lop' && <LoTrinhTiepCaLopPanel classId={data.id} onClose={dong} onDone={xong} />}
+      <TransitionPanel classId={data.id} open={viec === 'chuyen-tiep' && !thuong} onClose={dong} onDone={xong} />
+      {(viec === 'lo-trinh-ca-lop' || (viec === 'chuyen-tiep' && thuong)) && <PanelCuoiKhoa classId={data.id} onClose={dong} onDone={xong} />}
       {viec === 'ban-giao' && <BanGiaoPanel classId={bg.lop ?? data.id} mon={bg.mon} lenhId={bg.lenhId} onClose={dong} onDone={xong} />}
       <TeacherAssignPanel open={viec === 'phan-cong'} onClose={dong} classId={data.id} classCode={data.code} onDone={xong} />
       {viec === 'thong-tin' && (

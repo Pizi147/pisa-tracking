@@ -23,6 +23,8 @@ type BanGhiLoTrinh = {
   huong: Huong; lopDuKienId: number | null; mucTieu: number | null; thangThi: string | null; ghiChu: string | null;
   /** PR-K26: hẹn xem lại của "Chưa quyết" — tuỳ chọn ở bước này, bắt buộc ở Chuyển tiếp lớp. */
   ngayXemLai: string | null;
+  /** PR-LCb: Hướng GVCN đề xuất (cột "Gợi ý · GVCN") — quyết định của Quản lý không ghi đè; null = GVCN chưa ghi. */
+  huongGvcn: Huong | null;
 };
 
 function enrollmentDangHoc(studentId: number): any {
@@ -40,6 +42,7 @@ function banGhiRowToView(row: any): BanGhiLoTrinh | null {
   return {
     huong: row.huong as Huong, lopDuKienId: row.lop_du_kien_id ?? null,
     mucTieu: row.muc_tieu ?? null, thangThi: row.thang_thi ?? null, ghiChu: row.ghi_chu ?? null, ngayXemLai: row.ngay_xem_lai ?? null,
+    huongGvcn: (row.huong_gvcn ?? null) as Huong | null,
   };
 }
 
@@ -109,8 +112,9 @@ function docLopDuKien(ids: readonly (number | null | undefined)[]): Map<number, 
 /**
  * KIỂM một dòng (PR-K26) — không đọc DB: lớp dự kiến đã đọc sẵn (`lopDuKien`). `ngayCu`: ngày xem lại đang lưu — giữ nguyên thì được
  * dù đã qua (dữ liệu cũ), đổi sang ngày mới thì phải từ hôm nay trở đi. Ghi một em và ghi cả lớp dùng chung.
+ * PR-LCb: `lopCu` = lớp dự kiến đang lưu — giữ nguyên thì không kiểm "cùng chi nhánh" (quyết định của QL có thể chuyển sang lớp chi nhánh khác).
  */
-function kiemDong(studentId: number, enr: LopNguon, input: GhiVao, lopDuKien: Map<number, any>, ngayCu: string | null): DongGhi {
+function kiemDong(studentId: number, enr: LopNguon, input: GhiVao, lopDuKien: Map<number, any>, ngayCu: string | null, lopCu: number | null = null): DongGhi {
   /* Form cũ đang mở còn gửi `chua_ro`/`xep_sau` → `chua_quyet`, không báo lỗi. */
   const huong = chuanHoaHuong(String(input.huong ?? ''));
   if (!huong) throw badRequest('Hướng không hợp lệ.');
@@ -127,7 +131,7 @@ function kiemDong(studentId: number, enr: LopNguon, input: GhiVao, lopDuKien: Ma
   const lopDuKienId = input.lopDuKienId || null;
   if (lopDuKienId) {
     const lop = lopDuKien.get(lopDuKienId);
-    if (!lop || lop.branch_id !== enr.branch_id) throw badRequest('Không tìm thấy lớp dự kiến.');
+    if (!lop || (lop.branch_id !== enr.branch_id && lopDuKienId !== lopCu)) throw badRequest('Không tìm thấy lớp dự kiến.');
     const maKe = NORMAL_LADDER[(enr.programme_code ?? null) as ProgrammeCode] ?? null;
     if (huong === 'len_lop' && (lop.is_fast_track || lop.programme_code !== maKe)) throw badRequest('Lớp dự kiến phải là chương trình kế tiếp.');
     if (huong === 'hoc_lai' && (lop.is_fast_track || lop.programme_code !== enr.programme_code)) {
@@ -147,19 +151,31 @@ function kiemDong(studentId: number, enr: LopNguon, input: GhiVao, lopDuKien: Ma
  * phải của GVCN không (R9: đã là quyết định `cho` của QL thì không). Khi đó Target, ghi chú, tháng thi, ngày xem lại trống thì GIỮ cái đã
  * lưu (chủ sản phẩm 08/10: lệnh hướng khác không xoá Target GVCN ghi; thay R7), và chỉ em ĐỔI hướng mới có dòng Hành trình "QL quyết: …"
  * (ra lệnh lại / migrate không nhân đôi).
+ * PR-LCb: `daQuyet` = em đã có quyết định `cho` (từ `chanQlDaQuyet`). Đường KHÔNG từ lệnh, người ghi KHÔNG ra lệnh được (GVCN) → `huong_gvcn`
+ * = Hướng ghi, trừ em đã có quyết định (GVCN chỉ sửa ghi chú). Đường từ lệnh không có cột này (migrate PR-LC chạy trước khi cột có) và
+ * "Lưu hướng" của Quản lý giữ nguyên `huong_gvcn`. Rà cuối m1: GVCN gửi lại ĐÚNG Hướng đang lưu (vd của QL, chỉ sửa ghi chú) → giữ `huong_gvcn`
+ * cũ (vế SET đọc dòng cũ), không biến Hướng của QL thành đề xuất GVCN.
  */
-function ghiCacDong(p: Principal, dongs: readonly DongGhi[], tuLenh?: ReadonlyMap<number, { huong: Huong; cuaGvcn: boolean }>): void {
+function ghiCacDong(p: Principal, dongs: readonly DongGhi[], tuLenh?: ReadonlyMap<number, { huong: Huong; cuaGvcn: boolean }>, daQuyet?: ReadonlySet<number>): void {
   const now = nowIso();
   const homNay = demoToday();
   const giu = (cot: string) => tuLenh ? `COALESCE(excluded.${cot}, lo_trinh_tiep_theo.${cot})` : `excluded.${cot}`;
+  const raLenhDuoc = new Map<number, boolean>();
+  const laGvcn = (classId: number) => {
+    if (!raLenhDuoc.has(classId)) raLenhDuoc.set(classId, coTheRaLenh(p, classId));
+    return !raLenhDuoc.get(classId);
+  };
+  const gvcn = (d: DongGhi) => (laGvcn(d.classId) && !daQuyet?.has(d.studentId) ? d.huong : null);
   chenNhieuDong(
     `INSERT INTO lo_trinh_tiep_theo
-       (student_id, class_id, huong, lop_du_kien_id, muc_tieu, thang_thi, ghi_chu, ngay_xem_lai, updated_by, created_at, updated_at)`,
-    dongs.map((d) => [d.studentId, d.classId, d.huong, d.lopDuKienId, d.mucTieu, d.thangThi, d.ghiChu, d.ngayXemLai, p.userId, now, now]),
+       (student_id, class_id, huong, lop_du_kien_id, muc_tieu, thang_thi, ghi_chu, ngay_xem_lai, updated_by, created_at, updated_at${tuLenh ? '' : ', huong_gvcn'})`,
+    dongs.map((d) => [d.studentId, d.classId, d.huong, d.lopDuKienId, d.mucTieu, d.thangThi, d.ghiChu, d.ngayXemLai, p.userId, now, now,
+      ...(tuLenh ? [] : [gvcn(d)])]),
     ` ON CONFLICT(student_id, class_id) DO UPDATE SET
        huong = excluded.huong, lop_du_kien_id = excluded.lop_du_kien_id, muc_tieu = ${giu('muc_tieu')},
        thang_thi = ${giu('thang_thi')}, ghi_chu = ${giu('ghi_chu')}, ngay_xem_lai = ${giu('ngay_xem_lai')}, da_ap_dung_luc = NULL,
-       updated_by = excluded.updated_by, updated_at = excluded.updated_at`,
+       ${tuLenh ? '' : `huong_gvcn = CASE WHEN excluded.huong = lo_trinh_tiep_theo.huong THEN lo_trinh_tiep_theo.huong_gvcn
+         ELSE COALESCE(excluded.huong_gvcn, lo_trinh_tiep_theo.huong_gvcn) END, `}updated_by = excluded.updated_by, updated_at = excluded.updated_at`,
   );
   const nhan = (d: DongGhi, h: Huong) => nhanHuong(h, { ma: d.ma, maKe: NORMAL_LADDER[d.ma as ProgrammeCode] ?? null });
   const nhatKy = tuLenh ? dongs.filter((d) => tuLenh.get(d.studentId)?.huong !== d.huong) : dongs;
@@ -202,7 +218,7 @@ export function dongBoTuLenh(p: Principal, hang: readonly {
  * cùng Hướng (sửa ghi chú) được. R8 + R11: không ai (GVCN hay Quản lý) đổi Target khác Target của quyết định Lên FT (KCK = trống); gửi lại
  * đúng Target đó được. Quản lý đổi Hướng / Target bằng cách sửa quyết định. MỘT câu cho cả lô. `ten`: có → lỗi nêu tên em (ghi cả lớp).
  */
-function chanQlDaQuyet(classId: number, dongs: readonly DongGhi[], ten?: (sid: number) => string): void {
+function chanQlDaQuyet(classId: number, dongs: readonly DongGhi[], ten?: (sid: number) => string): Set<number> {
   const lenh = new Map((db().prepare(
     `SELECT l.student_id, l.huong, l.muc_tieu, l.khong_cam_ket, t.muc_tieu AS muc_tieu_ltt FROM lenh_chuyen_lop l
        LEFT JOIN lo_trinh_tiep_theo t ON t.student_id = l.student_id AND t.class_id = l.lop_nguon_id
@@ -219,6 +235,8 @@ function chanQlDaQuyet(classId: number, dongs: readonly DongGhi[], ten?: (sid: n
       throw conflict(`${ten ? `${ten(d.studentId)}: ` : ''}Quản lý đã quyết.`, { studentId: d.studentId });
     }
   }
+  /* PR-LCb: em đã có quyết định → `ghiCacDong` giữ `huong_gvcn` cũ. */
+  return new Set(lenh.keys());
 }
 
 /** PUT /students/:id/lo-trinh-tiep (STUDENT_EDIT ở lớp đang học). */
@@ -230,9 +248,9 @@ export function ghiLoTrinhTiep(p: Principal, studentId: number, input: GhiVao) {
   if (!enr) throw badRequest('Học viên không đang học lớp nào.');
   require_(p, PERMISSIONS.STUDENT_EDIT, { classId: enr.class_id }, 'Bạn không có quyền ghi lộ trình tiếp theo cho học viên này.');
   if (enr.is_fast_track) throw badRequest('Lộ trình tiếp theo chỉ áp dụng cho lớp thường.');
-  const cu = conn.prepare('SELECT ngay_xem_lai FROM lo_trinh_tiep_theo WHERE student_id = ? AND class_id = ?').get(studentId, enr.class_id) as any;
-  const dong = kiemDong(studentId, enr, input, docLopDuKien([input.lopDuKienId]), cu?.ngay_xem_lai ?? null);
-  tx(() => { chanQlDaQuyet(enr.class_id, [dong]); ghiCacDong(p, [dong]); });
+  const cu = conn.prepare('SELECT ngay_xem_lai, lop_du_kien_id FROM lo_trinh_tiep_theo WHERE student_id = ? AND class_id = ?').get(studentId, enr.class_id) as any;
+  const dong = kiemDong(studentId, enr, input, docLopDuKien([input.lopDuKienId]), cu?.ngay_xem_lai ?? null, cu?.lop_du_kien_id ?? null);
+  tx(() => ghiCacDong(p, [dong], undefined, chanQlDaQuyet(enr.class_id, [dong])));
   return layLoTrinhTiep(p, studentId);
 }
 
@@ -318,10 +336,10 @@ export function ghiLoTrinhTiepCaLop(p: Principal, classId: number, body: { items
   const lopDuKien = docLopDuKien(vao.map((v) => v.input.lopDuKienId));
   /* Kiểm HẾT trước khi ghi: một dòng sai → 400 có tên em + `studentId`, không câu ghi nào chạy. */
   const dongs = vao.map(({ sid, cu, input }) => {
-    try { return kiemDong(sid, em.get(sid), input, lopDuKien, cu?.ngayXemLai ?? null); }
+    try { return kiemDong(sid, em.get(sid), input, lopDuKien, cu?.ngayXemLai ?? null, cu?.lopDuKienId ?? null); }
     catch (e: any) { throw badRequest(`${em.get(sid).full_name}: ${e.message}`, { studentId: sid }); }
   });
-  tx(() => { chanQlDaQuyet(classId, dongs, (sid) => em.get(sid).full_name); ghiCacDong(p, dongs); });
+  tx(() => ghiCacDong(p, dongs, undefined, chanQlDaQuyet(classId, dongs, (sid) => em.get(sid).full_name)));
   return { daLuu: items.length };
 }
 
