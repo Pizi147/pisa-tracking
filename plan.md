@@ -236,6 +236,16 @@ Công việc của tôi, chuông, câu báo lỗi máy chủ trên các đườn
 - **Sổ tay:** ảnh màn "Nộp kế hoạch bổ trợ" đã lỗi thời → PR-SOTAY cập nhật.
 - **Trước deploy:** đếm (chỉ đọc) số nhóm `bo_tro` còn `planned` trên DB thật để biết migrate `prCt2` phần B xử lý bao nhiêu PA. Thứ tự migrate: `prPa` → `prCt2`.
 
+### SAU PR-KV (#274, rà 08/10) — ghi chú không chặn, chờ góp ý / sửa sau
+- **Case không PA → "Nhắc" báo 404:** chủ Case = GVCN dự phòng (lớp FT chưa phân công GVBM kỹ năng) không thấy dòng "Thêm PA", Quản trị gán cho GVCN → Nhắc 404. Có từ trước, PR-KV làm dễ gặp hơn (Case Học viên). PR nhỏ: `no_plan` gán người làm theo cùng luật quyền (hoặc chủ Case Học viên = QL); có thể gộp PR-GOP.
+- **Chủ Case khi Lưu** lấy lớp FT từ `lenh.lop_dich_id`; em đã chuyển FT → FT (PR-CL) thì gợi ý theo lớp cũ. Nên lấy lớp đang học.
+- **Case kỳ vọng bị bỏ qua không báo** khi em đang có Case mở cùng khoá kỹ năng (vd Case Mock FT). Trả số em bị bỏ qua để toast nói rõ.
+- **Lô lớn:** `suggestCaseOwner` chạy theo từng (lớp FT, kỹ năng), UPDATE nhả khoá từng câu → lô 500 em nhiều lớp FT có thể vượt 200 câu (một lớp ≤ 40 em thì ổn).
+- **Trần tốc độ** `GET /classes/:id/ky-vong` chưa đặt trong `tocDoDuong.ts` → đặt sau lần đo đầu.
+- `lopNguon` trả 404 trước 403 → người không quyền biết lớp có tồn tại (nhỏ).
+- **Học viên: một Case mang kỹ năng đầu tiên** (tự quyết 2) — đặc tả không nói; chủ sản phẩm xem.
+- **Sổ tay:** màn "Đánh dấu kỳ vọng đầu ra · {em}" lỗi thời → PR-SOTAY.
+
 ### PR-SOTAY · Sổ tay mới theo web mới nhất (M) — chủ sản phẩm 06/10, **làm cuối cùng, sau PR-EN**
 Sáu file PDF, viết lại theo `main` cuối cùng (ảnh thật chụp app chạy cục bộ, 07/10), tận dụng bộ dựng sẵn `docs/so-tay/` (thay bản 02/10):
 `PTA - TEACHER MANUAL - MINI` / `- FULL` (GV Việt Nam, tiếng Việt) · `PTA - FOREIGN TEACHER MANUAL - MINI` / `- FULL` (GVNN, tiếng Anh, ảnh màn EN) ·
