@@ -396,7 +396,7 @@ export function viecTiepCuaEm(i: {
       out.push({ viec: `Chờ Quản lý duyệt ${kn}`, han: null, quaHanNgay: null, tone: 'info', dich, title: goc });
     } else if (v.loaiHan && v.han) {
       const d = deadlineView({ kind: v.loaiHan, due: v.han, today: i.homNay });
-      const tone = d.tone === 'overdue' ? 'danger' : v.loaiHan === 'xac-minh-sos' || v.loaiHan === 'ke-hoach-bo-tro' ? 'warn' : 'info';
+      const tone = d.tone === 'overdue' ? 'danger' : v.loaiHan === 'xac-minh-sos' ? 'warn' : 'info';
       /* PR-S5F-b (mockup 21): ghi kết quả PA nói TUẦN của kết quả (`Ghi kết quả PA W1 · tuần W4 SEP`) — hạn Thứ Hai là của tuần trước nó. */
       const tuan = v.loaiHan === 'cap-nhat-pa' ? d.viec.replace(/^Kết quả /, '') : null;
       out.push({ viec: tuan ? `${viec} · ${tuan}` : viec, han: d.han, quaHanNgay: d.daysOverdue, tone, dich, title: `${goc}${tuan ? ` · ${tuan}` : ''} · ${d.han}${d.quaHan ? ` · ${d.quaHan}` : ''}` });

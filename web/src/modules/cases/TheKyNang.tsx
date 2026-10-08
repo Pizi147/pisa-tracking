@@ -79,7 +79,7 @@ function TheKyNang({ row, onMoCase, onGap }: { row: SkillBoardRow; onMoCase: (ca
 
 /** Nút động từ của việc tiếp (clarify: không "Xác nhận" trơn). */
 const NUT_VIEC: Record<NonNullable<MoCase['viec']>, string> = {
-  'xac-nhan': 'Xác nhận nguyên nhân', 'xac-nhan-pa': 'Xác nhận PA', 'ghi-ket-qua': 'Kết quả', 'ke-hoach': 'Nộp kế hoạch', 'them-pa': 'Thêm PA',
+  'xac-nhan': 'Xác nhận nguyên nhân', 'xac-nhan-pa': 'Xác nhận PA', 'ghi-ket-qua': 'Kết quả', 'them-pa': 'Thêm PA',
 };
 
 function KhoiCase({ c, onMoCase }: { c: CaseCard; onMoCase: (caseId: number, o?: MoCase) => void }) {
@@ -92,8 +92,7 @@ function KhoiCase({ c, onMoCase }: { c: CaseCard; onMoCase: (caseId: number, o?:
   const viecMo: MoCase | undefined = !v ? undefined
     : v.chu === 'Xác nhận nguyên nhân' ? { viec: 'xac-nhan' }
     : v.chu.startsWith('Xác nhận PA') ? { viec: 'xac-nhan-pa', paId: v.paId }
-    : v.loaiHan === 'cap-nhat-pa' ? { viec: 'ghi-ket-qua', paId: v.paId }
-    : v.chu === 'Nộp kế hoạch bổ trợ' ? { viec: 'ke-hoach' } : undefined;
+    : v.loaiHan === 'cap-nhat-pa' ? { viec: 'ghi-ket-qua', paId: v.paId } : undefined;
   return (
     <div className="mt-2 border-t pt-2" style={{ borderColor: 'var(--line)' }}>
       <div className="flex min-w-0 items-center gap-1.5 text-[12.5px] font-bold text-slate-100">
@@ -132,13 +131,12 @@ function KhoiCase({ c, onMoCase }: { c: CaseCard; onMoCase: (caseId: number, o?:
 /** Khối PA: thụt vào, nền `surface-2`, đường nối từ Case (khối đặc), `người · đến MT2 · W4 OCT`, kết quả gần nhất. */
 function KhoiPa({ p, c, onMoCase }: { p: Plan; c: CaseCard; onMoCase: (caseId: number, o?: MoCase) => void }) {
   const { homNay, ngan } = useNgayNghiepVu();
-  const choKh = !!p.chuaChay && c.boTro?.keHoach?.trangThai === 'cho';
   const khoang = chuKhoangPa({ startedOn: null, completedOn: null, mocChu: p.mocChu }, homNay);
   return (
     <div className="relative ml-3 mt-2 rounded-lg bg-[color:var(--surface-2)] px-2.5 py-2 pl-3">
       <span aria-hidden className="absolute -left-3 top-0 h-4 w-3 rounded-bl-md border-b-[1.5px] border-l-[1.5px]" style={{ borderColor: 'var(--line-strong)' }} />
       <button type="button" onClick={() => onMoCase(c.id, { paId: p.id })} className="flex w-full min-w-0 items-center gap-1.5 border-0 bg-transparent p-0 text-left text-[12.5px] font-semibold text-slate-100">
-        <NhanLoai loai="PA" cho={choKh} /><span className="min-w-0 truncate max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words">{p.name}</span>
+        <NhanLoai loai="PA" /><span className="min-w-0 truncate max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words">{p.name}</span>
       </button>
       <div className="mt-0.5 truncate text-[12px] text-slate-400 max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words">{[chuNguoi(p), khoang, chuBuoi(p)].filter(Boolean).join(' · ')}</div>
       <DongXinYKien x={p.xinYKien} ngan={ngan} />

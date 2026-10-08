@@ -550,7 +550,7 @@ export function taoCaseTuDong(p: Principal, x: {
     occurredOn: x.detectedAt, note: boTro ? 'Progress Test tự tạo Case' : 'SOS tự tạo Case từ kết quả Mock Test', createdBy: p.userId,
     dedupKey: `mt:${attempt.id}:${up.id}:opened`,
   });
-  if (boTro) taoPaBoTro(conn, { caseId: up.id, attempt, skill: x.skill, category: x.category, ct, han });
+  if (boTro) taoPaBoTro(conn, { caseId: up.id, attempt, skill: x.skill, category: x.category, ct });
   else createPresetPlan({ caseId: up.id, attempt, category: x.category, sosLevel: x.sosLevel });
   /* Dây nối SOS ↔ Case (Q-V3-2): tín hiệu `linked` — thu hồi khi sửa điểm (S08) dùng lại nguyên vẹn. Hạn xác nhận ở `sos_cases.han_xac_nhan`. */
   conn

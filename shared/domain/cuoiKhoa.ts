@@ -65,12 +65,13 @@ export const chuMonTruot = (ct: string, mon: readonly string[]): string => mon.m
 
 /**
  * PF3 / §6.3 / V: Pre FOU không chia môn — 4 buổi (50–59) hoặc 2 buổi (60–69) một ô Tổng hợp.
- * FOU/BE/ELE: 1 buổi cho MỖI môn trượt (< 70%); 50–59 → 2 tuần, 60–69 → 1 tuần.
+ * FOU/BE: PR-CT2 (§8) — mỗi môn trượt (< 70%) 1 buổi/tuần: 50–59 → 2 buổi/môn · 2 tuần, 60–69 → 1 buổi/môn · 1 tuần.
+ * ELE không bổ trợ ("lên" = FT; `goiYCuoiKhoa` trả null).
  */
 function boTro(ct: ProgrammeCode, dai: '50_59' | '60_69', monTruot: readonly string[]): BoTroMienPhi | null {
   const soTuan = dai === '50_59' ? 2 : 1;
   if (CHUONG_TRINH_KHONG_CHIA_MON.includes(ct)) return { soBuoi: dai === '50_59' ? 4 : 2, soTuan, theoMon: false, mon: ['tong_hop'] };
-  return monTruot.length ? { soBuoi: monTruot.length, soTuan, theoMon: true, mon: [...monTruot] } : null;
+  return monTruot.length ? { soBuoi: monTruot.length * soTuan, soTuan, theoMon: true, mon: [...monTruot] } : null;
 }
 
 /** `null` khi chưa đủ điểm (không gợi ý, không đoán) hoặc không phải lớp thường. `monTruot` = ô chuẩn của lớp cũ có % < 70. */
@@ -86,13 +87,16 @@ export function goiYCuoiKhoa(x: { ct: string | null; tyLe: number | null; monTru
   });
   if (dai === 'dat') return dong('len', false, null, false, 'Pass', '→ Pass', 'Pass');
   if (dai === 'duoi_50') return dong('hoc_lai', false, null, true, `Học lại ${tenBac(ct)}`, '→ học lại', `Học lại ${tenBac(ct)}`);
-  const bo = boTro(ct, dai, x.monTruot);
+  const bo = ct === 'ELE' ? null : boTro(ct, dai, x.monTruot);   // PR-CT2 (§8): ELE lên = FT, không bổ trợ
   const chuBo = bo ? ` + bổ trợ miễn phí ${bo.soBuoi} buổi${bo.theoMon ? ` (${chuMonTruot(ct, bo.mon)})` : ''} · ${bo.soTuan} tuần · Mini Test sau buổi cuối` : '';
   if (dai === '50_59') {
     return dong(null, true, bo, false, `Quản lý cân nhắc: học lại ${tenBac(ct)} hoặc lên ${ke}${chuBo}`, '→ QL cân nhắc', 'QL cân nhắc');
   }
   return dong('len', false, bo, false, `Lên ${ke}${chuBo}`, bo ? '→ lên + bổ trợ' : '→ lên', bo ? `Lên ${ke} + bổ trợ` : `Lên ${ke}`);
 }
+
+/** PR-CT2 (§8): BE/ELE sang FT thì không bổ trợ Final (FT có lộ trình riêng); còn lại theo `goiYCuoiKhoa`. */
+export const coBoTroFinal = (ct: string | null, toFt: boolean): boolean => !(toFt && (ct === 'BE' || ct === 'ELE'));
 
 /** M-05, Q4: buổi cuối = Chủ nhật của tuần cuối PA (`batDau` là thứ Hai); Mini Test hạn +2 ngày LỊCH (không phải `hanTheoNgay`). */
 export function lichBoTro(x: { batDau: string; soTuan: 1 | 2 }): { ngayMiniTest: string; hanMiniTest: string } {
@@ -151,6 +155,6 @@ export function chuHopKetLuan(x: HopKetLuanVao): HopKetLuan {
   if (g.dai === 'duoi_50') return { chinh, phu, nhan: `${g.nhan} · Quản lý báo phụ huynh qua TVV`, tone: 'bad', kyVong };
   /* 50–59%: chưa quyết → Quản lý cân nhắc; đã chuyển thì hiện điều Quản lý đã quyết (Q30-3, không còn thẻ). */
   if (!x.quyetDinh) return { chinh, phu, nhan: 'Quản lý cân nhắc: học lại hoặc lên (chọn khi chuyển lớp)', tone: 'warn', kyVong };
-  const dich = x.quyetDinh.huong === 'hoc_lai' ? `Học lại ${tenBac(ct)}` : `Lên ${tenBacKe(ct)} + bổ trợ`;
+  const dich = x.quyetDinh.huong === 'hoc_lai' ? `Học lại ${tenBac(ct)}` : `Lên ${tenBacKe(ct)}${g.boTroNeuLen && coBoTroFinal(ct, x.quyetDinh.huong === 'fast_track') ? ' + bổ trợ' : ''}`;   // PR-CT2: ELE / BE → FT không bổ trợ
   return { chinh, phu, nhan: `QL đã quyết: ${dich} · ${ngay(x.quyetDinh.luc.slice(0, 10), x.homNay)}`, tone: 'warn', kyVong };
 }

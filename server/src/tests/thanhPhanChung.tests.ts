@@ -203,8 +203,9 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(khong.ghiRo === '' && khong.moTa === 'Không nộp bài ba buổi liền', j(khong));
   });
 
-  check('NEN (7) · K1-56: 4 loại hạn mới có việc + tiền tố; Xác nhận nguyên nhân thay "Xác minh"', () => {
-    for (const k of ['duyet', 'xu-ly-vi-pham', 'ke-hoach-bo-tro', 'mini-test']) assert(d.DEADLINE_KINDS.includes(k as any), `thiếu loại ${k}`);
+  check('NEN (7) · K1-56: loại hạn mới có việc + tiền tố (PR-CT2 bỏ ke-hoach-bo-tro); Xác nhận nguyên nhân thay "Xác minh"', () => {
+    for (const k of ['duyet', 'xu-ly-vi-pham', 'mini-test']) assert(d.DEADLINE_KINDS.includes(k as any), `thiếu loại ${k}`);
+    assert(!d.DEADLINE_KINDS.includes('ke-hoach-bo-tro' as any), 'PR-CT2: không còn hạn Nộp kế hoạch bổ trợ');
     const v = d.deadlineView({ kind: 'duyet', due: '2026-10-02', today: '2026-09-28' });
     assert(/^Duyệt · hạn 02\/10/.test(v.text), v.text);
     assert(d.deadlineView({ kind: 'xac-minh-sos', due: '2026-09-30', today: '2026-09-28' }).text.startsWith('Xác nhận nguyên nhân'), 'xac-minh-sos');
