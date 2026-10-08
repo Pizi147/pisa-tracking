@@ -1745,7 +1745,7 @@ api.post('/yeu-cau/:id/tra-loi', requireAuth, wrap((req) => {
  */
 api.post('/interventions/:id/result', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return caseSvc.updateResult(principalOf(req), pInt(req, 'id'), req.body ?? {});   // PR-PA: Người dạy tuần này bắt ở dịch vụ (PA có Số buổi, ≥ 1)
+  return caseSvc.updateResult(principalOf(req), pInt(req, 'id'), req.body ?? {});   // PR-CT2: Người dạy tuần này không bắt buộc; dịch vụ chỉ kiểm định dạng khi có
 }));
 
 /** PR-PA (§8): SỬA PA — cùng form Thêm PA; Loại khoá; quyền như Kết quả. */

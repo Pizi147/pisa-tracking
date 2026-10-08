@@ -3228,14 +3228,14 @@ export function updateResult(p: Principal, interventionId: number, input: {
   const mtGhi = mtDong ? kiemMiniTest(mtDong, input.miniTest!) : null;
   const remainingIssue = String(input.remainingIssue ?? '').trim() || null;
   if (remainingIssue && remainingIssue.length > 300) throw badRequest('Vấn đề còn tồn / Ghi chú tối đa 300 ký tự.');
-  /* PR-PA (§8): PA có Số buổi → Số buổi tuần này bắt buộc (0–60); Người dạy tuần này bắt buộc khi ≥ 1. PA không Số buổi: không lưu số. */
+  /* PR-PA (§8): PA có Số buổi → Số buổi tuần này bắt buộc (0–60). PA không Số buổi: không lưu số.
+     PR-CT2: Người dạy tuần này KHÔNG bắt buộc; có thì vẫn kiểm (tài khoản đang làm việc / tên ngoài). */
   const coDem = iv.so_buoi != null;
   const loiTuan = coDem ? kiemSoBuoiTuan(input.soBuoi) : null;
   if (loiTuan) throw badRequest(`Số buổi tuần này: ${loiTuan}.`);
   const soBuoiTuan = coDem ? soBuoiTu(input.soBuoi) : null;
   const nguoiDay = coNguoiDay(iv.kind)
     ? chuanHoaNguoiThucHien(p, input.nguoiDay ?? {}, { nhom: 'nhan_vien', batBuoc: false, nhan: 'Người dạy tuần này' }) : null;
-  if (!nguoiDay && coNguoiDay(iv.kind) && (soBuoiTuan ?? 0) >= 1) throw badRequest('Ghi Người dạy tuần này.');
   /* Điều chỉnh: chuẩn hoá TRƯỚC giao dịch; sai thì không ghi gì. Số buổi mới ≥ đã dạy SAU tuần này. */
   const adjustPatch = nextStep === 'adjust'
     ? chuanHoaDieuChinh(p, iv, input.adjust, observedOn, daDayCua(interventionId) + (soBuoiTuan ?? 0)) : null;

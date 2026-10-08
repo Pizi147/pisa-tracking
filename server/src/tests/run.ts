@@ -9212,6 +9212,9 @@ await runPrLcbTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 // ==================================================================== PR-PA (PA đồng bộ một mẫu §8)
 const { runPrPaTests } = await import('./prPa.tests.ts');
 await runPrPaTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-CT2 (chế tài cuối khoá)
+const { runPrCt2Tests } = await import('./prCt2.tests.ts');
+await runPrCt2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
