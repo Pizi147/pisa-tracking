@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { Khoi, Truong } from '../../ui/KhungPanel.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -62,13 +62,8 @@ export function FormPa({ v, dat, lf, loi, chonLoai, quyChe, toiThieu = 8, daDay 
         id={lf.oId(k('ghi-ro'))} onBlur={lf.roi(k('ghi-ro'))} loi={lf.hien(k('ghi-ro')) ? kiemGhiRoKhac(v.ghiRo) : null} />
     </div>
   ) : phang ? null : (
-    <Truong nhan="Loại PA" as="div"
-      phu={quyChe ? (quyChe.mocChu ? `Kết thúc theo quy chế: ${quyChe.mocChu}` : undefined) : 'Đổi loại: Kết quả › Thay PA'}>
-      <div className="field flex w-full cursor-not-allowed items-center gap-2" aria-disabled>
-        <span className="min-w-0 truncate text-slate-300">{tenLoai(v.kind)}</span>
-        <span className="ml-auto inline-flex shrink-0 items-center gap-1 text-xs text-slate-500"><KhoaNho />{quyChe ? 'theo quy chế' : null}</span>
-      </div>
-    </Truong>
+    <OKhoa nhan="Loại PA" chu={tenLoai(v.kind)} sau={quyChe ? 'theo quy chế' : undefined}
+      phu={quyChe ? (quyChe.mocChu ? `Kết thúc theo quy chế: ${quyChe.mocChu}` : undefined) : 'Đổi loại: Kết quả › Thay PA'} />
   );
 
   const phuongAn = <>
@@ -107,13 +102,26 @@ export function FormPa({ v, dat, lf, loi, chonLoai, quyChe, toiThieu = 8, daDay 
 
 /** Ngày bắt đầu KHOÁ (Xác nhận PA; Sửa PA đã có Kết quả): chữ mã tuần · ngày + phụ. Còn đổi được thì nơi gọi dùng `ChonNgayGan`. */
 export function NgayKhoa({ chu, phu }: { chu: string; phu?: string }) {
+  return <OKhoa nhan="Ngày bắt đầu" chu={chu} phu={phu} />;
+}
+
+/**
+ * Ô KHOÁ (Loại PA, Ngày bắt đầu): ô `readOnly` vào được vòng Tab, nhãn bọc ô (trình đọc nghe "Loại PA, Tutor, chỉ đọc"),
+ * chữ phụ nối qua `aria-describedby`. Phụ vẽ ngoài `Truong` (cùng lớp chữ phụ của `Truong`) để không lẫn vào tên ô.
+ */
+function OKhoa({ nhan, chu, phu, sau }: { nhan: string; chu: string; phu?: string; sau?: string }) {
+  const idPhu = useId();
   return (
-    <Truong nhan="Ngày bắt đầu" as="div" phu={phu}>
-      <div className="field flex w-full cursor-not-allowed items-center gap-2 tabular-nums" aria-disabled>
-        <span className="min-w-0 truncate text-slate-300">{chu}</span>
-        <span className="ml-auto inline-flex shrink-0 text-slate-500"><KhoaNho /></span>
-      </div>
-    </Truong>
+    <div>
+      <Truong nhan={nhan}>
+        <span className="relative block">
+          <input readOnly aria-readonly className={`field w-full cursor-not-allowed truncate tabular-nums text-slate-300 ${sau ? 'pr-28' : 'pr-8'}`}
+            value={chu} aria-describedby={phu ? idPhu : undefined} />
+          <span className="pointer-events-none absolute inset-y-0 right-3 inline-flex items-center gap-1 text-xs text-slate-500"><KhoaNho />{sau}</span>
+        </span>
+      </Truong>
+      {phu && <span id={idPhu} className="mt-1 block truncate text-xs text-slate-500">{phu}</span>}
+    </div>
   );
 }
 

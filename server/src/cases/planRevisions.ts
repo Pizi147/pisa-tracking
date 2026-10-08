@@ -47,6 +47,17 @@ export const daDayCua = (ivId: number): number =>
   Number((db().prepare('SELECT COALESCE(SUM(so_buoi), 0) n FROM case_followups WHERE intervention_id = ?').get(ivId) as any).n);
 
 /**
+ * PR-PA (§8): người của PA sau Sửa PA / Điều chỉnh / Xác nhận PA — gửi BẤT KỲ khoá người nào = đặt lại (cả ba trống = xoá người);
+ * không gửi khoá nào = giữ người cũ. Tự học không có ô người — người gửi kèm bị bỏ qua.
+ */
+export function nguoiSauSua(p: Principal, iv: any, input: Parameters<typeof chuanHoaNguoiThucHien>[1]): { performerUserId: number | null; performerName: string | null } {
+  const gui = coNguoiDay(iv.kind) && ['performerSelf', 'performerUserId', 'performerName'].some((k) => k in input);
+  if (!gui) return { performerUserId: iv.performer_user_id ?? null, performerName: iv.performer_name ?? null };
+  const n = chuanHoaNguoiThucHien(p, input, { nhom: 'giao_vien', batBuoc: false });
+  return { performerUserId: n?.userId ?? null, performerName: n?.name ?? null };
+}
+
+/**
  * Chuẩn hoá nội dung mới của một lần Điều chỉnh. Trường KHÔNG gửi (hoặc rỗng) = giữ nguyên bản hiện tại —
  * trừ khoá người (`performerSelf/UserId/Name`): gửi bất kỳ khoá nào = đặt lại (cả ba trống = xoá người).
  * Ném lỗi khi mô tả quá ngắn, ngày sai, người không tồn tại, hoặc KHÔNG ĐỔI GÌ (không đổi gì thì là Giữ nguyên).
@@ -61,10 +72,7 @@ export function chuanHoaDieuChinh(p: Principal, iv: any, input: DieuChinhVao | n
   }
   /* Người thực hiện đi qua luật chung (PR-Form F-2). PR-PA (§8): như Sửa PA — gửi BẤT KỲ khoá người nào = đặt lại (cả ba trống = xoá
      người); không gửi khoá nào = giữ người cũ. Tự học không có ô người — bỏ qua. */
-  const guiNguoi = coNguoiDay(iv.kind) && ['performerSelf', 'performerUserId', 'performerName'].some((k) => k in a);
-  const nguoiMoi = guiNguoi ? chuanHoaNguoiThucHien(p, a, { nhom: 'giao_vien', batBuoc: false }) : null;
-  const performerUserId = guiNguoi ? nguoiMoi?.userId ?? null : (iv.performer_user_id ?? null);
-  const performerName = guiNguoi ? nguoiMoi?.name ?? null : (iv.performer_name ?? null);
+  const { performerUserId, performerName } = nguoiSauSua(p, iv, a);
   /* PR-SOS (Q28-4): bỏ "Dự kiến kết thúc" — Điều chỉnh không nhận `followupDue`; mốc giữ nguyên (PA quy chế: mốc quy chế; PA thường: NULL). */
   const followupDue: string | null = iv.followup_due ?? null;
   const soBuoi = soBuoiMoi(iv, a.soBuoi, daDay);

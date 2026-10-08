@@ -37,7 +37,7 @@ import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangT
 import { PLAN_DECISIONS, coNguoiDay, decisionToStep, duongDotTest, kiemSoBuoiTuan, soBuoiTu, tuanLich, type PlanDecision } from '../../../shared/domain/index.ts';
 import { chenPa } from './taoPa.ts';
 import { nguoiGiuKetQua } from './giuKetQua.ts';
-import { apDungDieuChinh, chuanHoaDieuChinh, daDayCua, ghiBanDieuChinh, lichSuDieuChinhCuaCase, soBuoiMoi } from './planRevisions.ts';
+import { apDungDieuChinh, chuanHoaDieuChinh, daDayCua, ghiBanDieuChinh, lichSuDieuChinhCuaCase, nguoiSauSua, soBuoiMoi } from './planRevisions.ts';
 import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
 import { dienMocQuyChe, kiemNoiDungCase, tenGiuaCua } from './sosAuto.ts';
 import { xoaTepSauGiaoDich } from '../platform/attachments.ts';
@@ -3441,10 +3441,7 @@ export function suaPa(p: Principal, interventionId: number, input: {
     if (description.length < 8) throw badRequest('Mô tả ngắn phải nói rõ làm gì cho em — ít nhất 8 ký tự.');
   }
   const soBuoi = soBuoiMoi(iv, input.soBuoi, daDayCua(interventionId));
-  const guiNguoi = coNguoiDay(iv.kind) && ['performerSelf', 'performerUserId', 'performerName'].some((k) => k in input);
-  const nguoi = guiNguoi ? chuanHoaNguoiThucHien(p, input, { nhom: 'giao_vien', batBuoc: false }) : null;
-  const performerUserId = guiNguoi ? nguoi?.userId ?? null : (iv.performer_user_id ?? null) as number | null;
-  const performerName = guiNguoi ? nguoi?.name ?? null : (iv.performer_name ?? null) as string | null;
+  const { performerUserId, performerName } = nguoiSauSua(p, iv, input);
   const coKetQua = (id: number) => !!conn.prepare('SELECT 1 FROM case_followups WHERE intervention_id = ? LIMIT 1').get(id);
   let startedDate = (iv.started_date ?? null) as string | null;
   if (input.startedDate && input.startedDate !== startedDate) {
@@ -3459,7 +3456,8 @@ export function suaPa(p: Principal, interventionId: number, input: {
   });
   type Mat = ReturnType<typeof mat>;
   const sau: Mat = { description, soBuoi, performerUserId, performerName, startedDate };
-  const doi = (Object.keys(sau) as (keyof Mat)[]).filter((k) => sau[k] !== mat(iv)[k]);
+  const truoc = mat(iv);
+  const doi = (Object.keys(sau) as (keyof Mat)[]).filter((k) => sau[k] !== truoc[k]);
   if (!doi.length) return caseDetail(p, iv.case_id);
   /* Dòng anh em nhận ĐÚNG các ô vừa đổi; kiểm lại theo dòng đó (đã dạy, đã có Kết quả) — một dòng sai thì không dòng nào đổi. */
   const dong: { row: any; sau: Mat }[] = [{ row: iv, sau }];

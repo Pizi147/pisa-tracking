@@ -263,10 +263,11 @@ export function GhiKetQuaPanel({ pa, hocVien, lop, quayLai, onClose, onSaved, on
             {dem && (
               <div className="flex flex-wrap items-center gap-2.5 text-[13px] text-slate-300">
                 <VachBuoi da={dem.da} tong={dem.tong} tt={dem.tt} />
-                <span>Đã dạy <b className="font-semibold text-slate-100 tabular-nums">{dem.truoc}/{dem.tong}</b> → sau khi lưu <b className="font-semibold text-slate-100 tabular-nums">{dem.da}/{dem.tong}</b></span>
-                {dem.tt === 'du' ? <span className="font-semibold text-ok">· đủ buổi</span>
-                  : dem.tt === 'vuot' ? <span className="font-semibold text-late">· vượt {dem.vuot} buổi</span>
-                  : <span>· còn <b className="font-semibold text-slate-100 tabular-nums">{dem.con}</b></span>}
+                {/* Đuôi "· còn n" đi cùng "sau khi lưu x/y" (không rớt dòng một mình ở 375). */}
+                <span>Đã dạy <b className="font-semibold text-slate-100 tabular-nums">{dem.truoc}/{dem.tong}</b> → <span className="whitespace-nowrap">sau khi lưu <b className="font-semibold text-slate-100 tabular-nums">{dem.da}/{dem.tong}</b>{' '}
+                  {dem.tt === 'du' ? <span className="font-semibold text-ok">· đủ buổi</span>
+                    : dem.tt === 'vuot' ? <span className="font-semibold text-late">· vượt {dem.vuot} buổi</span>
+                    : <span>· còn <b className="font-semibold text-slate-100 tabular-nums">{dem.con}</b></span>}</span></span>
               </div>
             )}
             {/* Đủ buổi: chỉ gợi ý — không tự kết thúc; PA không có "Kết thúc PA" (quy chế, Kết quả cuối) thì không gợi ý. */}

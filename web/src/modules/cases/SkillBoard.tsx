@@ -14,7 +14,7 @@ import { DongXinYKien, type XinYKien } from './DongXinYKien.tsx';
 import { KhongTheoDoiForm } from '../yThuc/CaseSosControls.tsx';
 import type { BoTro } from './NopKeHoachPanel.tsx';
 import {
-  ATTEMPT_KIND_SHORT, OUTCOME_MARK, OUTCOME_TONE, chuKetQuaPa, chuTamDung, duongDotTest, chuKhoangPa, dangChay, deadlineView, tienDoCase, tuanLich, viecTiepHang, viecTiepPhuongAn,
+  ATTEMPT_KIND_SHORT, OUTCOME_MARK, OUTCOME_TONE, chuKetQuaPa, chuTamDung, coNguoiDay, nhanNguoiDay, duongDotTest, chuKhoangPa, dangChay, deadlineView, tienDoCase, tuanLich, viecTiepHang, viecTiepPhuongAn,
   type AttemptKind, type DeadlineKind, type DeadlineView, type TrangThai, type TrangThaiCaseV4,
 } from '@shared/domain/index.ts';
 
@@ -494,6 +494,9 @@ function HangCase({ c, ngan, onChanged, onMoCase }: {
 
 /** PR-PA (§8): "3/10 buổi" ở dòng phụ của PA có Số buổi (bảng kỹ năng, thẻ 375). */
 export const chuBuoi = (p: { soBuoi?: number | null; daDay?: number }) => (p.soBuoi != null ? `${p.daDay ?? 0}/${p.soBuoi} buổi` : null);
+/** PR-PA (§8): người ở dòng phụ PA — theo Loại như panel Case: Tự học không có người; Tutor/Bổ trợ "chưa có người dạy". */
+export const chuNguoi = (p: { kind: string; performer?: string | null }) =>
+  coNguoiDay(p.kind) ? p.performer ?? (nhanNguoiDay(p.kind) === 'Người dạy' ? 'chưa có người dạy' : 'chưa có người thực hiện') : null;
 
 /**
  * HÀNG PA (M7, T20): thụt vào, nền nhạt hơn một bậc, nhãn nhỏ `PA`, khoá + `theo quy chế` khi bắt buộc. Khoảng ngày CHỈ `từ dd/mm`
@@ -517,7 +520,7 @@ function HangPA({ p, c, ngan, onMoCase }: {
   const chuaChay = !!p.chuaChay;
   const choDuyetKh = chuaChay && c.boTro?.keHoach?.trangThai === 'cho';
   const chung = c.boTro?.chung && c.boTro.mon.length > 1 ? `PA chung · ${c.boTro.mon.map((m) => m.tenMon).join(', ')}` : null;
-  const dongPhu = [p.performer ?? 'chưa có người thực hiện', khoang, chuBuoi(p), chung,
+  const dongPhu = [chuNguoi(p), khoang, chuBuoi(p), chung,
     p.closedReason === 'superseded' ? 'được thay' : p.revisions.length > 0 ? `điều chỉnh ${p.revisions.length} lần` : null].filter(Boolean).join(' · ');
   return (
     <HangCon className="hang-pa">

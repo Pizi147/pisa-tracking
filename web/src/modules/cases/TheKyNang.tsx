@@ -8,7 +8,7 @@ import {
   CHUA_CO_HAN, OUTCOME_MARK, OUTCOME_TONE, chuKetQuaPa, chuKhoangPa, dangChay, deadlineView, tienDoCase, xepTheKyNang,
 } from '@shared/domain/index.ts';
 import {
-  DongMt, NhanLoai, NhanTamDung, SCORE_CHIP_ROW, TamDungCtx, TenCase, chuBuoi, gapText,
+  DongMt, NhanLoai, NhanTamDung, SCORE_CHIP_ROW, TamDungCtx, TenCase, chuBuoi, chuNguoi, gapText,
   type CaseCard, type MoCase, type Plan, type SkillBoardRow,
 } from './SkillBoard.tsx';
 
@@ -140,7 +140,7 @@ function KhoiPa({ p, c, onMoCase }: { p: Plan; c: CaseCard; onMoCase: (caseId: n
       <button type="button" onClick={() => onMoCase(c.id, { paId: p.id })} className="flex w-full min-w-0 items-center gap-1.5 border-0 bg-transparent p-0 text-left text-[12.5px] font-semibold text-slate-100">
         <NhanLoai loai="PA" cho={choKh} /><span className="min-w-0 truncate max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words">{p.name}</span>
       </button>
-      <div className="mt-0.5 truncate text-[12px] text-slate-400">{[p.performer ?? 'chưa có người thực hiện', khoang, chuBuoi(p)].filter(Boolean).join(' · ')}</div>
+      <div className="mt-0.5 truncate text-[12px] text-slate-400 max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words">{[chuNguoi(p), khoang, chuBuoi(p)].filter(Boolean).join(' · ')}</div>
       <DongXinYKien x={p.xinYKien} ngan={ngan} />
       {p.lastOutcomeLabel && (
         <div className="mt-1">

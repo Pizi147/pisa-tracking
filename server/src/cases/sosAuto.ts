@@ -11,14 +11,13 @@ import { suggestCaseOwner } from './owner.ts';
 import { examPlanOf } from '../fasttrack/cycles.ts';
 import { routeCuaLuot } from '../fasttrack/attempts.ts';
 import { addIssues, caseAccess, caseDetail, caseTitleOf } from './cases.ts';
-import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
 import { chenPa } from './taoPa.ts';
 import { followUntilAfter } from './sos.ts';
 import { mondayOf } from '../platform/week.ts';
 import { taoYeuCau } from '../duyet/yeuCau.ts';
 import { dongBoBaoPhCuaBai } from '../yThuc/phoiHop.ts';
 import { PA_QUY_CHE_CHUA_GHI, UNCONFIRMED_PRESET, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
-import { ghiBanDieuChinh, soBuoiMoi } from './planRevisions.ts';
+import { ghiBanDieuChinh, nguoiSauSua, soBuoiMoi } from './planRevisions.ts';
 import { chayNeuKeHoachDaDuyet, kiemKeHoach, mocCuoiKhoa, nopKeHoachBoTro, phaiGuiKemKeHoach } from './boTro.ts';
 
 export { UNCONFIRMED_PRESET, NOT_UNCONFIRMED_PRESET, PA_QUY_CHE_CHUA_GHI } from './sosState.ts';
@@ -381,12 +380,8 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
   const description = input.description.trim();
   if (description.length < 15) throw badRequest('Mô tả PA cần ít nhất 15 ký tự — nêu hướng dẫn, trọng tâm và ai thực hiện.');
   if (description.length > 2000) throw badRequest('Mô tả PA tối đa 2000 ký tự.');
-  /* PR-PA (§8): như Sửa PA — gửi BẤT KỲ khoá người nào = đặt lại (cả ba trống = xoá người); không gửi khoá nào = giữ người máy gán.
-     Tự học không có ô người — người gửi kèm bị bỏ qua. */
-  const guiNguoi = coNguoiDay(iv.kind) && ['performerSelf', 'performerUserId', 'performerName'].some((k) => k in input);
-  const nguoi = guiNguoi ? chuanHoaNguoiThucHien(p, input, { nhom: 'giao_vien', batBuoc: false }) : null;
-  const performerUserId = guiNguoi ? nguoi?.userId ?? null : iv.performer_user_id ?? null;
-  const performerName = guiNguoi ? nguoi?.name ?? null : iv.performer_name ?? null;
+  /* PR-PA (§8): như Sửa PA — không gửi khoá người = giữ người máy gán. */
+  const { performerUserId, performerName } = nguoiSauSua(p, iv, input);
   const soBuoi = soBuoiMoi(iv, input.soBuoi, 0);
   const today = demoToday();
   const luot = luotSinhPa(iv);

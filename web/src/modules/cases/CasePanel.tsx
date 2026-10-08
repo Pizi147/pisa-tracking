@@ -361,7 +361,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
       )}
       {/* "Đã điều chỉnh n lần" gộp vào Nhật ký PA (mockup §8): n = số dòng nhật ký (`soDongNhatKyPa`, cùng danh sách `NhatKyPa` vẽ). */}
       <details>
-        <summary className="cursor-pointer text-xs text-slate-400">Nhật ký PA ({soDongNhatKyPa(iv, ketQuaPa)})</summary>
+        <summary className="cursor-pointer text-xs text-slate-400 max-sm:flex max-sm:min-h-[44px] max-sm:items-center">Nhật ký PA ({soDongNhatKyPa(iv, ketQuaPa)})</summary>
         <div className="mt-1"><NhatKyPa pa={iv} ketQua={ketQuaPa} /></div>
       </details>
       {/* PR-DUYET (K3-20): người duyệt được quyết NGAY dưới PA — cùng thẻ với hộp Chờ duyệt, không còn panel "Trả lời đề xuất". */}
