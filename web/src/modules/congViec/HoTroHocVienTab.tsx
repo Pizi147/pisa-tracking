@@ -21,7 +21,8 @@ import {
 
 type Work = {
   summary: { total: number; overdue: number; today: number; mine: number };
-  items: WorkItem[]; groups: WorkGroup[]; scopeEmpty: boolean; xemNguoiKhac?: boolean;
+  /** PR-GOP (§5): `dong` = dòng hiển thị (một lớp × một loại việc); `items` = từng việc. Mọi số trên màn đếm DÒNG. */
+  items: WorkItem[]; dong: WorkItem[]; groups: WorkGroup[]; scopeEmpty: boolean; xemNguoiKhac?: boolean;
 };
 
 const thamSoNguoi = (s: string | null): NguoiPhuTrach => {
@@ -73,7 +74,7 @@ export function HoTroHocVienTab() {
    */
   const khungUrl = params.get('khung');
   const khungChon: KhungLoc = khungUrl === 'ft' || khungUrl === 'thuong' || khungUrl === 'tat-ca' ? khungUrl : khungDaNho('cong-viec') ?? 'tat-ca';
-  const tatCaViec = data?.items ?? [];
+  const tatCaViec = data?.dong ?? [];
   const demKhung = useMemo(() => ({
     'tat-ca': tatCaViec.length,
     ft: tatCaViec.filter((it) => it.khung === 'ft').length,
@@ -101,7 +102,7 @@ export function HoTroHocVienTab() {
     try {
       const r = await api.post<{ daNhacLuc: string }>('/my-work/nhac', { key: it.key, ownerId: it.nhac.ownerId });
       setData((prev) => (prev
-        ? { ...prev, items: prev.items.map((x) => (x.key === it.key ? { ...x, nhac: { ...x.nhac!, daNhacLuc: r.daNhacLuc } } : x)) }
+        ? { ...prev, dong: prev.dong.map((x) => (x.key === it.key ? { ...x, nhac: { ...x.nhac!, daNhacLuc: r.daNhacLuc } } : x)) }
         : prev) as Work);
     } catch (e: any) { toast.push('error', e.message); } finally { setDangNhac((s) => ({ ...s, [it.key]: false })); }
   };
@@ -132,7 +133,7 @@ export function HoTroHocVienTab() {
       const luc = new Map(r.ok.map((x) => [khoaNhac(x.key, x.ownerId), x.daNhacLuc]));
       setData((prev) => (prev ? {
         ...prev,
-        items: prev.items.map((x) => {
+        dong: prev.dong.map((x) => {
           const l = x.nhac ? luc.get(khoaNhac(x.key, x.nhac.ownerId)) : undefined;
           return l ? { ...x, nhac: { ...x.nhac!, daNhacLuc: l } } : x;
         }),

@@ -261,6 +261,13 @@ Báo cáo + mockup: `thiet-ke/mockup-mt-quy-trinh-2026-10-08.html` (artifact htt
 - **Học viên: một Case mang kỹ năng đầu tiên** (tự quyết 2) — đặc tả không nói; chủ sản phẩm xem.
 - **Sổ tay:** màn "Đánh dấu kỳ vọng đầu ra · {em}" lỗi thời → PR-SOTAY.
 
+### SAU PR-GOP (#278, rà 08/10) — ghi chú không chặn, chờ góp ý / sửa sau
+- **`/my-work` nặng hơn khoảng gấp 3:** trả cả `items`, `groups` và `dong`. Web chỉ đọc `dong` (+ `summary`). Nếu cần: bỏ `items`/`groups` khỏi route, giữ trong hàm (Nhắc, hồ sơ GV dùng `myWork().items`).
+- **Hồ sơ GV › Việc đang có** vẫn đếm từng việc (`items`), nên lệch với badge Công việc (đếm dòng).
+- **Một việc có thể bị nhắc 2 lần trong ngày:** một lần qua khoá từng việc (dòng lẻ, hoặc khi dòng gộp chỉ còn 1 việc), một lần qua khoá `gop:`.
+- **`phanRieng` cắt tiêu đề bằng chuỗi** để lấy dòng phụ của từng em. Đổi chữ tiêu đề có thể làm dòng phụ dài ra. Nhãn nhóm "Thiếu PA học thuật" khác tiêu đề "Thêm PA học thuật …", nên dòng phụ của em vẫn còn cả chữ "Thêm PA học thuật Speaking".
+- **Chưa chạy `/impeccable audit` và `/ponytail-review`** (phiên cloud không có hai skill này).
+
 ### PR-SOTAY · Sổ tay mới theo web mới nhất (M) — chủ sản phẩm 06/10, **làm cuối cùng, sau PR-EN**
 Sáu file PDF, viết lại theo `main` cuối cùng (ảnh thật chụp app chạy cục bộ, 07/10), tận dụng bộ dựng sẵn `docs/so-tay/` (thay bản 02/10):
 `PTA - TEACHER MANUAL - MINI` / `- FULL` (GV Việt Nam, tiếng Việt) · `PTA - FOREIGN TEACHER MANUAL - MINI` / `- FULL` (GVNN, tiếng Anh, ảnh màn EN) ·
@@ -550,6 +557,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 08/10/2026 | PR-GOP · `claude/lucid-babbage-68b9xo` · Opus 5.5 | Công việc / Việc của tôi / badge: một dòng = một lớp × một loại việc × một người (`gopViecTheoLop`, `myWork().dong`), mở "n em ▾" thấy từng em; hạn sớm nhất, em quá hạn → dòng đỏ; giữ từng dòng Case SOS FT; summary/badge đếm dòng; Nhắc dòng gộp = một chuông; phép kiểm `prGop.tests.ts` GOP-1…4, ảnh `thiet-ke/anh/pr-gop/` |
 | 08/10/2026 | PR-KV · `pr-kv-ky-vong` · Opus 5.5 | Panel "Kỳ vọng đầu ra · lớp" (`PanelKyVong`, `GET/PUT /classes/:id/ky-vong`): Đạt = Overall MT0 ≥ 4.0 BE / 4.5 ELE, điền sẵn, Lưu một lần (một tx, theo lô); Trung tâm → Case + Tutor 10 buổi (GV cũ), Học viên → lý do bắt buộc, Case không PA; một việc QL mỗi lớp (bỏ việc mỗi em); phép kiểm `prKv.tests.ts` KV1–KV8, ảnh `thiet-ke/anh/pr-kv/` |
 | 08/10/2026 | PR-CT2 · `pr-ct2-che-tai` · Opus 5.5 | Bổ trợ Final sinh ngay khi Final đủ điểm + QL đã quyết lên (`dongBoCheTaiFinal`; FOU/BE 50–59 = 2 buổi/kỹ năng, BE/ELE→FT không, Người dạy GV cũ; đổi quyết định chưa ai đụng → huỷ); bỏ nộp / duyệt kế hoạch bổ trợ (PA chạy sau Xác nhận Case); MT0 hạn thứ Tư; Người dạy tuần này không bắt buộc; migrate `prCt2` (A/B/C); phép kiểm `prCt2.tests.ts` CT2-0–CT2-10 |
 | 08/10/2026 | PR-CL · `pr-cl-chuyen-lop` · Opus 5.5 | Chuyển lớp một ô gõ tên lớp + khối "Khi chuyển" máy chủ, Target chỉ khi thiếu, `/transfer` Cuối khoá đúng luật; FT → Thường (MT0 không dùng/huỷ, huỷ Mock chưa điểm, giữ điểm + Target); việc QL "Xét lại lộ trình" → Chuyển lớp nhiều em; TransitionPanel chỉ FT; `prCl.tests.ts`, ảnh `thiet-ke/anh/pr-cl/` |

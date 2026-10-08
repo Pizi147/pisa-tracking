@@ -9224,6 +9224,9 @@ await runPrCt2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 const { runPrKvTests } = await import('./prKv.tests.ts');
 await runPrKvTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 
+// ==================================================================== PR-GOP (gộp việc theo lớp × loại việc)
+const { runPrGopTests } = await import('./prGop.tests.ts');
+await runPrGopTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

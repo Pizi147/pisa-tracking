@@ -6,7 +6,7 @@ import {
   SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, cycleDeadline,
   duongCaseRieng, duongHoSoHocVien, duongLichTest, nhanDotNgan, planDueDate, urgencyFromSos,
   khungCua, laLanGhiCuoi, tenMon, tenMonNgan, tenNhomMon, REGULAR_SKILLS, nhanLoaiXuLy, soSanhLop,
-  type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai } from '../../../shared/domain/index.ts';
+  type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, type ConGop } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, forbidden } from '../util.ts';
 import { activeAt, bangLop, can, isCoreTeacherOf, loadPrincipal, napTruocPhamVi, scopeFor, teachesClass, type Principal } from '../permissions.ts';
@@ -103,6 +103,10 @@ export type WorkItem = {
   count: number | null;
   /** PR-Ra Q5: chỉ dòng có người phụ trách là TÀI KHOẢN KHÁC người xem, và người xem là QL/QT. */
   nhac?: { ownerId: number; daNhacLuc: string | null } | null;
+  /** PR-GOP: Case sinh từ SOS — ở lớp FT giữ từng dòng; Case GV/QL tự tạo thì gộp theo lớp (chủ sản phẩm 08/10). */
+  caseSos?: boolean;
+  /** PR-GOP (§5): dòng gộp "Loại việc · lớp · n em" — các việc thật của dòng (khoá, nút, hạn riêng). Chỉ có ở `dong`. */
+  con?: ConGop<WorkItem>[];
 };
 
 /**
@@ -687,6 +691,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       /* PR-Dọn (Q10): người làm = người phụ trách Case (cùng `support:{caseId}` ở hồ sơ em); Case chưa ai phụ trách thì để trống. */
       ownerId: c.owner_user_id ?? null, owner: null, mine: c.owner_user_id != null && c.owner_user_id === p.userId,
       due: deadline, statusLabel: 'Chưa có PA học thuật',
+      caseSos: c.origin_kind === 'mock',   // Case từ kết quả Test (cùng luật `cases.ts`); GV/QL tạo tay, chuyển cấp, khai bù → gộp
     });
   }
 
@@ -759,6 +764,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       href: duongHoSoHocVien(c.eff_student_id, { caseId: c.id }),
       ownerId: c.owner_user_id ?? null, owner: null, mine,
       due: c.due ?? null, statusLabel: nguyenNhan ? 'Chờ xác nhận nguyên nhân' : 'Chờ xác nhận PA',
+      caseSos: true,   // LA_CASE_SOS / PA quy chế — luôn là Case sinh từ SOS
     });
   };
   for (const c of causeCandidates) if (waiting.has(c.id)) dongCase(c, 'cause');
@@ -1171,14 +1177,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * TÀI KHOẢN KHÁC người xem. "Một lần/dòng/ngày": đọc lại đã nhắc lúc nào bằng MỘT câu, không
    * hỏi từng dòng — cùng lý do với khối tên người ở trên.
    */
-  if (xemNguoiKhac) {
-    const nhacToday = new Map<string, string>();
-    for (const r of conn
-      .prepare(`SELECT dedup_key, created_at FROM notifications WHERE kind = 'nhac_viec' AND dedup_key LIKE ?`)
-      .all(`nhac:%:${today}`) as any[]) {
-      const m = /^nhac:(.+):[^:]+$/.exec(r.dedup_key);
-      if (m) nhacToday.set(m[1], r.created_at);
-    }
+  const nhacToday = xemNguoiKhac ? nhacHomNay(today) : null;
+  if (nhacToday) {
     for (const it of items) {
       if (it.ownerId === null || it.ownerId === p.userId) continue;
       it.nhac = { ownerId: it.ownerId, daNhacLuc: nhacToday.get(it.key) ?? null };
@@ -1222,19 +1222,49 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     return 0;
   });
 
+  /* PR-GOP (§5): dòng hiển thị — một lớp × một loại việc; badge và summary đếm DÒNG (X10), `items` giữ từng việc (Nhắc, hồ sơ GV). */
+  const dong = dungDong(flat, p.userId, nhacToday);
   return {
-    summary: {
-      total: items.length,
-      overdue: items.filter((i) => i.urgency === 'overdue').length,
-      today: items.filter((i) => i.urgency === 'today').length,
-      mine: items.filter((i) => i.mine).length,
-    },
+    summary: demDong(dong),
     items: flat,
+    dong,
     groups,
     scopeEmpty: false,
     xemNguoiKhac,
   };
 }
+
+/** Giờ đã nhắc hôm nay theo khoá dòng (`nhac:{khoá}:{ngày}`) — một câu cho cả danh sách. */
+function nhacHomNay(today: string): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const r of db()
+    .prepare(`SELECT dedup_key, created_at FROM notifications WHERE kind = 'nhac_viec' AND dedup_key LIKE ?`)
+    .all(`nhac:%:${today}`) as any[]) {
+    const m = /^nhac:(.+):[^:]+$/.exec(r.dedup_key);
+    if (m) out.set(m[1], r.created_at);
+  }
+  return out;
+}
+
+const nhanNhomViec = (g: string) => GROUP_META[g as WorkGroupKey]?.label ?? g;
+
+/** PR-GOP: gộp dòng (hàm chung `gopViecTheoLop`); dòng gộp của người khác có nút Nhắc riêng (một chuông cho cả dòng). */
+function dungDong(items: WorkItem[], nguoiXem: number, nhacToday: Map<string, string> | null): WorkItem[] {
+  const dong = gopViecTheoLop(items, nhanNhomViec) as WorkItem[];
+  if (nhacToday) {
+    for (const d of dong) {
+      if (d.con && d.ownerId !== null && d.ownerId !== nguoiXem) d.nhac = { ownerId: d.ownerId, daNhacLuc: nhacToday.get(d.key) ?? null };
+    }
+  }
+  return dong;
+}
+
+const demDong = (dong: WorkItem[]) => ({
+  total: dong.length,
+  overdue: dong.filter((i) => i.urgency === 'overdue').length,
+  today: dong.filter((i) => i.urgency === 'today').length,
+  mine: dong.filter((i) => i.mine).length,
+});
 
 /** MH4: gán khung cho mọi dòng việc từ bảng tra lớp đã nạp (không thêm câu SQL). Dòng không gắn lớp → `null`. */
 function ganKhung(items: WorkItem[], lopCua: (classId: number | null | undefined) => { mode: string | null } | null) {
@@ -1264,15 +1294,8 @@ export function viecCuaNguoi(p: Principal, nguoi: number, branchId?: number | nu
       owner: it.ownerId === x.userId ? x.fullName : it.owner,
       mine: false,
     }));
-  if (items.length) {
-    const today = demoToday();
-    const nhacToday = new Map<string, string>();
-    for (const r of db()
-      .prepare(`SELECT dedup_key, created_at FROM notifications WHERE kind = 'nhac_viec' AND dedup_key LIKE ?`)
-      .all(`nhac:%:${today}`) as any[]) {
-      const m = /^nhac:(.+):[^:]+$/.exec(r.dedup_key);
-      if (m) nhacToday.set(m[1], r.created_at);
-    }
+  const nhacToday = items.length ? nhacHomNay(demoToday()) : null;
+  if (nhacToday) {
     for (const it of items) {
       if (it.ownerId === null) continue;
       it.nhac = { ownerId: it.ownerId, daNhacLuc: nhacToday.get(it.key) ?? null };
@@ -1288,13 +1311,6 @@ export function viecCuaNguoi(p: Principal, nguoi: number, branchId?: number | nu
       overdue: g.items.filter((i: any) => i.urgency === 'overdue').length,
       today: g.items.filter((i: any) => i.urgency === 'today').length,
     }));
-  return {
-    summary: {
-      total: items.length,
-      overdue: items.filter((i: any) => i.urgency === 'overdue').length,
-      today: items.filter((i: any) => i.urgency === 'today').length,
-      mine: 0,
-    },
-    items, groups, scopeEmpty: false, xemNguoiKhac: true,
-  };
+  const dong = dungDong(items, p.userId, nhacToday);
+  return { summary: { ...demDong(dong), mine: 0 }, items, dong, groups, scopeEmpty: false, xemNguoiKhac: true };
 }
