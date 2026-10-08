@@ -423,6 +423,7 @@ CREATE TABLE lo_trinh_tiep_theo (
   ky_vong_nguyen_nhan TEXT,                           -- 'trung_tam' | 'hoc_sinh'
   ky_vong_mon TEXT,                                   -- JSON ô chuẩn lớp cũ Quản lý chọn
   ky_vong_ghi_chu TEXT,                               -- Học sinh: phương án case-by-case
+  huong_gvcn TEXT,                                    -- PR-LCb: Hướng GVCN đề xuất (cột "Gợi ý · GVCN"); quyết định của QL không ghi đè
   UNIQUE (student_id, class_id)
 );
 CREATE INDEX idx_ltt_class ON lo_trinh_tiep_theo(class_id);

@@ -227,11 +227,12 @@ export async function runPrK26Tests(t: YThucTestKit) {
     /* PR-MT0: +MT0 cả lớp (một câu) + tuần Final ở thanh đầu (`classProgress`) — trần 15 → 20, vẫn không tăng theo số em. */
     assert(a === b && b <= 20, `3 em ${a} câu · 30 em ${b} câu`);
   });
-  check('K26-4c · hồ sơ lớp: mục ⋮ "Ghi lộ trình tiếp theo cả lớp" chỉ hiện khi có quyền ghi; panel cả lớp lỗi theo dòng', () => {
+  /* PR-LCb: bảng cả lớp gộp vào panel "Lộ trình tiếp theo" (PanelCuoiKhoa) — GVCN ghi trên cùng panel với Quản lý. */
+  check('K26-4c · hồ sơ lớp: mục ⋮ "Lộ trình tiếp theo…" chỉ hiện khi có quyền ghi; panel cả lớp (PanelCuoiKhoa) lỗi theo dòng', () => {
     const dau = nguon('modules/classes/DauTrangLop.tsx') + nguon('modules/classes/ClassOverviewPage.tsx');
-    assert(dau.includes('Ghi lộ trình tiếp theo cả lớp') && /LoTrinhTiepCaLopPanel/.test(dau), 'mục menu + panel');
-    const pn = nguon('modules/classes/LoTrinhTiepCaLopPanel.tsx');
-    assert(pn.includes('aria-describedby') && pn.includes("rong=\"toan\"") && /Lưu \$\{/.test(pn), 'lỗi theo dòng, panel toàn màn, nút Lưu n em');
+    assert(dau.includes("nhan: 'Lộ trình tiếp theo…'") && /data\.viewer\.canAddStudents\) \? \[\{ key: 'lo-trinh-ca-lop'/.test(dau) && /<PanelCuoiKhoa/.test(dau), 'mục menu + panel');
+    const pn = nguon('modules/classes/PanelCuoiKhoa.tsx');
+    assert(pn.includes('details?.studentId') && pn.includes('rong="toan"') && /Lưu \$\{/.test(pn), 'lỗi theo dòng, panel toàn màn, nút Lưu n em');
     assert(nguon('modules/classes/TransitionPanel.tsx').includes('GVCN đề xuất:'), 'Chuyển tiếp: dòng không điền sẵn được vẫn hiện đề xuất GVCN');
   });
   /* Sau rà mã: Turso tính mỗi câu một lượt mạng — ghi cả lớp phải đọc + ghi theo lô, không N câu cho N em trong một giao dịch. */

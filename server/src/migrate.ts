@@ -31,6 +31,7 @@ import { migratePrMta } from './migrate/prMta.ts';
 import { migratePrLuiA1 } from './migrate/prLuiA1.ts';
 import { migratePrLuiA2 } from './migrate/prLuiA2.ts';
 import { migratePrLc } from './migrate/prLc.ts';
+import { migratePrLcb } from './migrate/prLcb.ts';
 
 /**
  * Nâng cấp database ĐANG CÓ lên schema mới, không xoá dữ liệu. PR-SO (DEP-gỡ): nhánh nâng cấp từ mô hình `mock_attempts` (trước overhaul)
@@ -276,6 +277,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     /* PR-LUI-a1: cột violations.ten (chỉ thêm cột, dòng cũ tự tách khi đọc). */ migratePrLuiA1(conn, applied);
     /* PR-LUI-a2: Người phụ trách của lần ghi kết quả PA (chỉ thêm cột). */ migratePrLuiA2(conn, applied);
     /* PR-TK: bản chụp lộ trình lúc đóng + cột thi thật + điền ngược (chỉ thêm, chạy lặp được). */ migratePrTk(conn, applied);
+    /* PR-LCb (TRƯỚC PR-LC — phán quyết R-B1): cột lo_trinh_tiep_theo.huong_gvcn + điền bù từ Hướng GVCN trước khi PR-LC đồng bộ Hướng theo lệnh. */ migratePrLcb(conn, applied);
     /* PR-LC: quyết định Cuối khoá đang chờ → Lộ trình tiếp theo + MT0 theo quyết định (đổi dữ liệu, chạy lặp được). */ migratePrLc(conn, applied);
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")

@@ -217,11 +217,12 @@ export async function runPrLcTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ (h) một việc QL mỗi lớp mỗi lúc (T3)
-  check('LC-h · tuần Final, em chưa quyết: Công việc QL có "Chuyển tiếp lớp" và KHÔNG có "Chốt lên FT" cùng lớp', () => {
+  /* PR-LCb (đảo): hai việc gộp thành MỘT "Chốt lộ trình" — vẫn một việc QL mỗi lớp mỗi lúc. */
+  check('LC-h · tuần Final, em chưa quyết: Công việc QL có đúng MỘT việc "Chốt lộ trình" cùng lớp, KHÔNG có "Chuyển tiếp lớp"', () => {
     const l = taoLop(2);
     const items = mywork.myWork(QL, { branchId: MB }).groups.flatMap((g: any) => g.items).filter((i: any) => i.classId === l.classId);
-    assert(items.some((i: any) => i.group === 'placement'), `có Chuyển tiếp lớp: ${items.map((i: any) => i.group).join()}`);
-    assert(!items.some((i: any) => i.group === 'chot_len_ft'), `không Chốt lên FT: ${items.map((i: any) => i.group).join()}`);
+    assert(items.filter((i: any) => i.group === 'chot_len_ft').length === 1, `một Chốt lộ trình: ${items.map((i: any) => i.group).join()}`);
+    assert(!items.some((i: any) => i.group === 'placement'), `không Chuyển tiếp lớp: ${items.map((i: any) => i.group).join()}`);
   });
 
   // ------------------------------------------------------------------ (i) số câu SQL ra lệnh không tăng theo số em

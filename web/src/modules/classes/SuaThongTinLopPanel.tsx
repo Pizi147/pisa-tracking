@@ -64,7 +64,7 @@ export function SuaThongTinLopPanel({ lop, onClose, onDone }: {
         conThieu: lf.conThieu(loi),
       }}>
       <Khoi tieuDe="Thông tin lớp"
-        luat={doiDuoc ? undefined : 'Lớp đã có học viên nên không đổi được chương trình. Lớp thường học tiếp khoá sau thì dùng Chuyển tiếp lớp.'}>
+        luat={doiDuoc ? undefined : 'Lớp đã có học viên nên không đổi được chương trình. Lớp thường học tiếp khoá sau thì dùng Lộ trình tiếp theo.'}>
         {soCu === null ? (
           <Truong nhan="Tên lớp" phu="Tên lớp cũ chưa theo mẫu — Quản trị đổi lúc nâng cấp">
             <input className="field w-full" value={lop.code} readOnly />

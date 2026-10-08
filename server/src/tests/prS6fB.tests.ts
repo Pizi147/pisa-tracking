@@ -175,7 +175,7 @@ async function runTask9(t: YThucTestKit, d: any) {
   const hoSoGv: any = await import('../giaoVien/hoSo.ts');
   const metricsSvc: any = await import('../worklist/metrics.ts');
   const { scoreDebtCells } = await import('../worklist/scoreDebt.ts');
-  const { lopChoLenhChuyen } = await import('../classes/lenhChuyen.ts');
+  const { lopChoChotLoTrinh } = await import('../classes/lenhChuyen.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
@@ -234,14 +234,14 @@ async function runTask9(t: YThucTestKit, d: any) {
     assert(!doc('server/src/worklist/tongQuan.ts').includes('chờ hàng "Chưa phân công"'), 'chú thích ponytail cũ');
   });
 
-  check('S6F-b (9) · "em chưa có quyết định chuyển lớp": hạn (tuần sau tuần kết thúc) đã qua → Quá hạn, chữ "quá hạn n ngày" (HK2 J3)', () => {
-    const lop = lopChoLenhChuyen(P.mbManager, null, TODAY) as any[];
-    const ketThuc = lop.map((l) => l.moc.tuanKetThuc).filter(Boolean).sort()[0] as string | undefined;
-    const dong = (tq.tongQuanQuanLy(P.mbManager, {}).canXuLy as any[]).find((x) => x.metricId === 'hv-chua-co-lenh-chuyen');
-    assert(dong && ketThuc, 'bộ demo phải có lớp hết khoá còn em chưa có lệnh');
-    const qua = addDays(ketThuc!, 7) <= TODAY;
-    assert(qua, `bộ demo: hạn ${addDays(ketThuc!, 7)} phải đã qua`);
-    assert(dong.trangThai === 'qua-han' && dong.han.chu === `quá hạn ${Math.max(1, Math.round((Date.parse(TODAY) - Date.parse(addDays(ketThuc!, 7))) / 86400000))} ngày` && dong.han.quaHan === true, JSON.stringify({ t: dong.trangThai, han: dong.han }));
+  /* PR-LCb: dòng "em chưa có quyết định chuyển lớp" gộp vào "lớp cần Chốt lộ trình" — cùng ý: hạn đã qua → Quá hạn (HK2 J3). */
+  check('S6F-b (9) · "lớp cần Chốt lộ trình": có lớp đã qua hạn (CN trước tuần Final) → Quá hạn; hạn = hạn sớm nhất (HK2 J3)', () => {
+    const lop = lopChoChotLoTrinh(P.mbManager, null, TODAY) as any[];
+    const han = lop.map((l) => l.han).filter(Boolean).sort()[0] as string | undefined;
+    const dong = (tq.tongQuanQuanLy(P.mbManager, {}).canXuLy as any[]).find((x) => x.metricId === 'lop-chua-chot-len-ft');
+    assert(dong && han, 'bộ demo phải có lớp thường tới hạn Chốt lộ trình còn em chưa có quyết định');
+    assert(han! < TODAY, `bộ demo: hạn ${han} phải đã qua`);
+    assert(dong.trangThai === 'qua-han' && dong.han?.ngay === han && dong.han?.loai === 'chot-len-ft', JSON.stringify({ t: dong.trangThai, han: dong.han }));
   });
 
   check('S6F-b (9) · bảng GV chi nhánh: không hàng GV nhưng có "Chưa phân công" → không Empty (Σ = ô)', () => {

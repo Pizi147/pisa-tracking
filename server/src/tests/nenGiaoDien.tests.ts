@@ -88,14 +88,15 @@ export async function runNenGiaoDienTests(t: YThucTestKit) {
   const myworkSvc: any = await import('../worklist/mywork.ts');
   const nguoiXem = Object.entries(t.P).filter(([k]) => /manager|teacher/i.test(k)).map(([, v]) => v);
 
-  check('UX0 · N-3: "Xếp lớp tiếp" và "Ghi lộ trình tiếp theo" không bao giờ quá hạn', () => {
+  /* PR-LCb: "Xếp lớp tiếp" (placement) gộp vào "Chốt lộ trình" có hạn thật (CN trước tuần Final) — giữ ý: không hạn thì không bao giờ quá hạn. */
+  check('UX0 · N-3: "Chốt lộ trình" chỉ quá hạn khi hạn đã qua (không hạn → không bao giờ quá hạn); chữ việc không tự ghi "quá hạn"', () => {
     let thay = 0;
     for (const who of nguoiXem) {
       for (const g of myworkSvc.myWork(who, {}).groups as any[]) {
-        if (g.key !== 'placement') continue;   // PR-VAI-a (Q27): việc next_step đã bỏ
+        if (g.key !== 'chot_len_ft') continue;   // PR-VAI-a (Q27): việc next_step đã bỏ
         for (const it of g.items) {
           thay++;
-          assert(it.urgency !== 'overdue', `${g.key} ${it.key} đang quá hạn dù không có hạn`);
+          assert((it.urgency === 'overdue') === (!!it.due && it.due < t.TODAY), `${g.key} ${it.key}: quá hạn ${it.urgency} · hạn ${it.due}`);
           assert(!/quá hạn/i.test(`${it.reason} ${it.statusLabel} ${it.tieuDe}`), `${it.key}: còn chữ "quá hạn"`);
         }
       }

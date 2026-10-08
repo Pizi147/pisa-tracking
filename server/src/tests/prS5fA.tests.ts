@@ -224,7 +224,7 @@ export async function runPrS5fATests(t: YThucTestKit) {
     assert(!/ketLuanFt\.nhan/.test(src) && /chuHopKetLuan\(/.test(src), 'TransitionPanel');
   });
 
-  check('S5F-a (9) · Quản lý dời Final Test sớm (tuần 6/8): tuần 8 (chặng "running") vẫn có dải Kết thúc khoá + việc "Chuyển tiếp lớp"', () => {
+  check('S5F-a (9) · Quản lý dời Final Test sớm (tuần 6/8): tuần 8 (chặng "running") vẫn có dải Kết thúc khoá + việc QL (PR-LCb: "Chốt lộ trình", quá hạn)', () => {
     const lop = lopMoi({ kind: 'FOU', tuanHienTai: 8 });
     conn.prepare('UPDATE classes SET final_week_override = 6 WHERE id = ?').run(lop);
     hocVien(lop, 'FOU', false);
@@ -232,8 +232,8 @@ export async function runPrS5fATests(t: YThucTestKit) {
     assert(pr.phase === 'running', `chặng ${pr.phase}`);
     const x = dai.daiLop(P.mbManager, lop, { pr, ft: false, ct: 'FOU' });
     assert(x.ketThucKhoa?.soChuaLenh === 1 && x.ketThucKhoa.do === true, JSON.stringify(x.ketThucKhoa));
-    const viec = (myWork(P.mbManager, { nguoi: 'tat-ca' }) as any).items.find((i: any) => i.key === `class:${lop}`);
-    assert(viec?.group === 'placement', `việc: ${JSON.stringify(viec ?? null)}`);
+    const viec = (myWork(P.mbManager, { nguoi: 'tat-ca' }) as any).items.find((i: any) => i.key === `chotft:${lop}`);
+    assert(viec?.group === 'chot_len_ft' && viec.urgency === 'overdue', `việc: ${JSON.stringify(viec ?? null)}`);
   });
 
   check('S5F-a (10) · GVCN đề xuất chuyển em lớp thường ĐÃ HẾT KHOÁ → duyệt ra quyết định hướng Final Test (lên lớp), không "Progress Test / chuyển lớp"', () => {

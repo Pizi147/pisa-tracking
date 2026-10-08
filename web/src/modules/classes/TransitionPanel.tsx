@@ -550,7 +550,7 @@ export function OTuan({ tuanChon, value, onChange, ariaLabel, chuaChon, rong }: 
  * PR-MT0 (mockup ⑥, chủ sản phẩm Q3): MT0 của em ngay dưới Cuối khoá — `MT0` + chip đỏ `W 4.0 SOS` mỗi kỹ năng ≤ Target − 2.0 (chỉ để nhìn);
  * có điểm, không SOS → `MT0 ✓`; chưa điểm → `MT0 · W4 OCT` mờ. Em không có MT0 → không vẽ. Cùng ô, nên 375 không thêm cột.
  */
-function OMt0({ mt0 }: { mt0: { maTuan: string | null; coDiem: boolean; sos: { skill: AssessedSkill; band: number }[] } | null | undefined }) {
+export function OMt0({ mt0 }: { mt0: { maTuan: string | null; coDiem: boolean; sos: { skill: AssessedSkill; band: number }[] } | null | undefined }) {
   if (!mt0) return null;
   return (
     <span className="mt-1 flex flex-wrap items-center gap-1 text-[12px] font-semibold tabular-nums">

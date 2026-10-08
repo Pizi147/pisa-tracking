@@ -553,5 +553,21 @@ Lớp thường **không có chữ SOS ở bất kỳ đâu** (chủ sản phẩ
 | MT0 có điểm mà em không lên FT | `MT0 · không dùng` | "MT0 huỷ" (MT0 có điểm không bao giờ huỷ) |
 | Dòng phụ Lộ trình tiếp theo / bảng cả lớp | `MT0 · W4 OCT` · thanh đầu `BE 04 · 12 em · Final W4 OCT` | ngày cụ thể của tuần |
 | Chip SOS hiển thị (band ≤ Target − 2.0) | `W 4.0 SOS` · không SOS mà có điểm: `MT0 ✓` | `SOS 1/2/3` cho MT0 |
-| Việc Quản lý | `Chốt lên FT · BE 04` · Tổng quan `lớp cần Chốt lên FT` | nút "Chốt lên FT" (không có — tự xong khi mọi em có hướng) |
+| Việc Quản lý | ~~`Chốt lên FT · BE 04`~~ → `Chốt lộ trình · BE 04` (PR-LCb, mục 17) | nút "Chốt lên FT" |
 | Điểm đầu vào lộ trình FT | nguồn `MT0` | — |
+
+## 17. Lộ trình tiếp theo cuối khoá — 08/10/2026 (PR-LCb)
+
+| Chỗ | Chữ | Không viết |
+|---|---|---|
+| Panel lớp thường (thay "Ghi lộ trình tiếp theo cả lớp" + "Chuyển lớp · {lớp}") | tiêu đề `Lộ trình tiếp theo · MB FOU 12 · 7 em` (375: bỏ số em) · lối vào `Lộ trình tiếp theo…` | "Chuyển tiếp lớp" cho lớp thường (lớp FT giữ) |
+| Bước của Quản lý | `1 Soạn › 2 Xác nhận` · nút `Tiếp tục · 4 em` → `Xác nhận · 4 em` · `← Quay lại` · `Lưu hướng` | "Gửi quyết định" |
+| Việc Quản lý (một dòng mỗi lớp) | `Chốt lộ trình · MB FOU 12` · `7 em · 5 em chưa có hướng · GVCN đã đề xuất 2` · `6 em · đủ hướng, chưa xác nhận` · `2 em chưa xác nhận` · `1 em chờ duyệt đề xuất` · hạn `hết CN 13/09` · Tổng quan `lớp cần Chốt lộ trình` | "Chốt lên FT", "Chuyển tiếp lớp · 6 HV" |
+| Dải quá hạn (Quản lý) | `Quá hạn 1 ngày` · `Hạn chốt hết CN 13/09` | — |
+| Cột đề xuất | `Gợi ý · GVCN` · `GVCN: Học lại FOU` · `GVCN: chưa đề xuất` · GVCN thấy `Bạn đề xuất: Học lại FOU` | "GVCN đề xuất:" dưới ô Hướng, "Hệ thống gợi ý" làm tiêu đề cột |
+| GVCN sau khi Quản lý xác nhận | dải `Quản lý đã xác nhận 14/09` · `6 em · Hướng khoá` (375: `Hướng khoá`) · Hướng chữ `Lên FT · MB FT 101` + `W4 SEP · MT0 W3 SEP` | — |
+| Hàng nhóm, ô gõ tên lớp | `Lên FT · 3 em` · `Gõ tên lớp…` · dòng gợi ý `MB FT 101 · FT LT1 · MB · 32 em` · `Không có lớp khớp “ELE 9”` · lỗi `Chọn lớp cho 1 em Học lại` · ô hàng `Chọn ở hàng nhóm` · `+ Mở lớp mới…` | ô thả xuống danh sách lớp |
+| Bước 2 | `Lên FT · MB FT 101 — tên, tên · MT0 tự xếp` · `Chưa gửi — tên (thiếu Target) · tên (chưa quyết)` · `Chuyển vào thứ Hai W4 SEP, không chờ điểm Final.` | — |
+| Hàng có quyết định | `Sắp chuyển · từ W4 SEP` · `Huỷ quyết định` | "Sẽ chuyển" |
+| Target khi Lên FT chưa có Target nào | ô viền đỏ + `Ghi Target` + `KCK`; còn lại chỉ chữ `6.5` / `KCK` | ô mờ "6.0" |
+| Việc em đã chuyển mà Final lệch (PR-CL) | `Xét lại lộ trình · {lớp} · n em` · `Kết quả không phù hợp lộ trình` | "Xem lại hướng", "Final lệch hướng đã chốt" |

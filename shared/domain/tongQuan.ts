@@ -41,10 +41,10 @@ const NHOM_CUA_LOAI: Record<string, NhomViec> = {
   score: 'cham-diem',
   cause: 'case-hoc-thuat', xac_nhan_pa: 'case-hoc-thuat', ke_hoach_bo_tro: 'case-hoc-thuat', phoi_hop: 'case-hoc-thuat', mini_test: 'case-hoc-thuat', no_plan: 'case-hoc-thuat', ghi_ket_qua_pa: 'case-hoc-thuat',
   do_plan: 'case-hoc-thuat', no_owner: 'case-hoc-thuat', phoi_hop_sos: 'case-hoc-thuat',
-  placement: 'van-hanh', mgmt: 'van-hanh', missing_data: 'van-hanh', ky_vong_dau_ra: 'van-hanh', thi_that: 'van-hanh',
+  mgmt: 'van-hanh', missing_data: 'van-hanh', ky_vong_dau_ra: 'van-hanh', thi_that: 'van-hanh',
   yt_xu_ly: 'y-thuc', yt_xem: 'y-thuc', yt_thuc_hien: 'y-thuc', khai_bac: 'y-thuc',
   ban_giao: 'van-hanh',   // PR-CT (Q19): thuộc nhóm hiển thị Vận hành có sẵn
-  chot_len_ft: 'van-hanh',   // PR-MT0
+  chot_len_ft: 'van-hanh',   // PR-MT0 → PR-LCb: Chốt lộ trình
 };
 export function nhomViecCua(loai: string): NhomViec { return NHOM_CUA_LOAI[loai] ?? 'van-hanh'; }
 
@@ -81,7 +81,7 @@ export function gomNhomViec<T extends ViecGom>(items: T[]): NhomViecXem<T>[] {
 // ------------------------------------------------------------------ Cần xử lý (Quản lý)
 export type MaCanXuLy =
   | 'bai-qua-han-nhap-diem' | 'pa-can-cap-nhat'
-  | 'van-hanh-can-quyet-dinh' | 'hv-chua-co-lenh-chuyen' | 'lop-thieu-gv-mon' | 'hv-ft-xong-mt-cuoi-chua-mt-ke' | 'hv-len-ft-chua-ky-vong'
+  | 'van-hanh-can-quyet-dinh' | 'lop-thieu-gv-mon' | 'hv-ft-xong-mt-cuoi-chua-mt-ke' | 'hv-len-ft-chua-ky-vong'
   | 'lop-chua-chot-len-ft';
 /** Nhãn trạng thái một dòng Cần xử lý (§7.3) — chữ, không chấm màu. */
 export type TrangThaiCanXuLy = 'qua-han' | 'can-lam';
@@ -104,9 +104,8 @@ export const CAN_XU_LY: readonly {
   { metricId: 'pa-can-cap-nhat', nhan: 'PA chưa ghi kết quả', nut: 'Xem và nhắc', cuaNguoiXem: false, quaHan: true },
   /* PR-VAI-a Q8: bốn việc "của Bạn" — mỗi dòng một chỉ số gọi đúng hàm màn khác đang dùng. */
   { metricId: 'van-hanh-can-quyet-dinh', nhan: 'việc Vận hành cần quyết định', nut: 'Mở Vận hành', cuaNguoiXem: true },
-  { metricId: 'hv-chua-co-lenh-chuyen', nhan: 'em chưa có quyết định chuyển lớp', nut: 'Mở chuyển lớp', cuaNguoiXem: true },
-  /* PR-MT0 (T5b, mockup ③): lớp FOU/BE/ELE chưa chốt em lên FT — cùng hàm với việc "Chốt lên FT · lớp". */
-  { metricId: 'lop-chua-chot-len-ft', nhan: 'lớp cần Chốt lên FT', nut: 'Ghi lộ trình', cuaNguoiXem: true },
+  /* PR-LCb: MỘT dòng "lớp cần Chốt lộ trình" (thay "em chưa có quyết định chuyển lớp" + "lớp cần Chốt lên FT") — cùng hàm với việc "Chốt lộ trình · lớp". */
+  { metricId: 'lop-chua-chot-len-ft', nhan: 'lớp cần Chốt lộ trình', nut: 'Lộ trình tiếp theo', cuaNguoiXem: true },
   { metricId: 'lop-thieu-gv-mon', nhan: 'lớp thiếu GV môn', nut: 'Sửa phân công', cuaNguoiXem: true },
   { metricId: 'hv-ft-xong-mt-cuoi-chua-mt-ke', nhan: 'học viên FT xong MT3, chưa có MT kế tiếp', nut: 'Kế hoạch Test', cuaNguoiXem: true },
   { metricId: 'hv-len-ft-chua-ky-vong', nhan: 'học viên lên FT chưa đánh dấu kỳ vọng đầu ra', nut: 'Mở hồ sơ', cuaNguoiXem: true },
