@@ -13,7 +13,7 @@ import { DongViec, type WorkGroup, type WorkItem } from './WorkList.tsx';
  * · hạn · nút). Phần còn lại ở Công việc. Điện thoại (Q2): 3 việc đầu của CÙNG danh sách, không chia nhóm, cả dòng là nút.
  */
 /** `/my-work` khi GV chưa có phạm vi trả `{ summary, groups: [], scopeEmpty: true }` — KHÔNG có `items` (mywork.ts). */
-export type Work = { summary: { total: number; overdue: number }; items?: WorkItem[]; groups: WorkGroup[]; scopeEmpty: boolean };
+export type Work = { summary: { total: number; overdue: number }; items?: WorkItem[]; dong?: WorkItem[]; groups: WorkGroup[]; scopeEmpty: boolean };
 
 const DAY = 86_400_000;
 /** Một mốc hạn ngắn cho dòng điện thoại: "quá hạn 3 ngày" · "hạn hôm nay" · "hạn 03/10". */
@@ -30,7 +30,8 @@ export function ViecCuaToi() {
   const dienThoai = useDienThoai();
   const { homNay, ngan } = useNgayNghiepVu();
   const { data, loading, error, reload } = useApi<Work>('/my-work');
-  const tatCa = data?.items ?? [];
+  /* PR-GOP (§5): dòng đã gộp theo lớp × loại việc — mọi số ở khối này đếm dòng, cùng badge. */
+  const tatCa = data?.dong ?? [];
   const khoi = useMemo(() => tatCa.filter((it) => trongKhoiHomNay(it, homNay)), [tatCa, homNay]);
   const nhom = useMemo(() => gomNhomViec(khoi), [khoi]);
   const quaHan = khoi.filter((it) => it.urgency === 'overdue').length;

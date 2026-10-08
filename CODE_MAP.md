@@ -365,6 +365,7 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | Muốn sửa | Mở file |
 |---|---|
 | Danh sách việc của người đang xem | `server/src/worklist/mywork.ts` |
+| **Gộp việc theo lớp** (PR-GOP, §5): một dòng = lớp × loại việc × người giữ việc, `con` = từng em; badge/summary đếm dòng; giữ từng dòng Case SOS FT; Nhắc khoá `gop:{nhóm}:{lớp}:u{người}` | luật thuần `shared/domain/gopViec.ts` (`gopViecTheoLop`, `khoaDongGop`, `nhomCuaKhoaGop`) · `server/src/worklist/mywork.ts` (`dong`, `dungDong`, `demDong`) · `nhacViec.ts` (tra dòng gộp) · web `worklist/WorkList.tsx` (`DongViec` mở n em, `DongCon`) · phép kiểm `server/src/tests/prGop.tests.ts` |
 | Màn Tổng quan (PR-VAI-a: QL ba tầng — Chờ duyệt + Cần xử lý trên, Số liệu theo khung dưới; GV: Việc của tôi · hôm nay · Yêu cầu của tôi · Lớp tôi dạy) | `web/src/modules/worklist/OverviewPage.tsx` · `server/src/worklist/tongQuan.ts` · `metrics.ts` (metricSet + chương trình) |
 | Dòng tín hiệu SOS lớp thường (Tạo Case / Bỏ qua) | `web/src/modules/worklist/DongTinHieu.tsx` → `QuickReport.tsx` · `/signals/pending/:id/dismiss` · `/cases/report` |
 | Lọc chương trình Lớp thường / FT cho mọi chỉ số | `shared/domain/tongQuan.ts` · `server/src/worklist/chuongTrinh.ts` |
