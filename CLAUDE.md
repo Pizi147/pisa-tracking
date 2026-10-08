@@ -18,8 +18,9 @@ Tệp này tự nạp vào mọi session của repo (planning, code, worktree), 
 - Ô nhập ngày ở MỌI nơi: ô gõ được + nút lịch (`ONgay`), KHÔNG làm hàng nút "Hôm nay · Hôm qua · 2 ngày trước" (chủ sản phẩm 06/10).
 - Lệnh dùng: `critique` ở session planning để tìm vấn đề · `polish`, `clarify`, `layout`, `harden`, `adapt` ở
   session code, chỉ trong phạm vi PR · `audit` trước khi mở PR có sửa giao diện.
-- Session code không chạy `init`, `document`, `hooks on`, `npx impeccable install|update`. PRODUCT.md / DESIGN.md
-  chỉ do session planning tạo, khớp Rulebook, sau khi chủ sản phẩm đồng ý.
+- Session code chỉ được chạy `npx impeccable skills install|update` (cài/cập nhật skill, do Setup script của môi trường
+  cloud chạy). Không chạy `init`, `document`, `hooks on`. PRODUCT.md / DESIGN.md chỉ do session planning tạo, khớp
+  Rulebook, sau khi chủ sản phẩm đồng ý.
 - `.impeccable/` đã gitignore; không commit gì trong đó.
 
 ## Model
