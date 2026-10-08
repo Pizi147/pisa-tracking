@@ -21,6 +21,7 @@ import { missingForStudent, suggestedMockWeeks } from '../classes/schedule.ts';
 import { lopHocCua } from '../classes/loTrinhTiep.ts';
 import { daiHocVien } from '../classes/daiChuyenLop.ts';
 import { cuoiKhoaTheoHocVien, emConMiniTest, miniTestCuaHocVien, type EmCuoiKhoa } from '../normal/cuoiKhoa.ts';
+import { mt0TheoLop } from '../normal/kyVong.ts';
 import { quyenBoTro } from '../cases/boTro.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { activeClassOf, canManageDiscipline } from '../yThuc/access.ts';
@@ -789,7 +790,11 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     ).all(studentId) as any[];
     const dangHoc = ds.find((r) => r.status === 'active');
     if (!dangHoc) return null;
-    const kem = (r: any, x: EmCuoiKhoa | null, daChuyen: boolean) => (x ? { ...x, ct: r.programme_code ?? null, lop: r.code ?? null, daChuyen } : null);
+    /* PR-KV: BE/ELE — gợi ý kỳ vọng đầu ra theo MT0 (điền sẵn kỹ năng ở "Không đạt"), cùng hàm với panel cả lớp. */
+    const kem = (r: any, x: EmCuoiKhoa | null, daChuyen: boolean) => (x ? {
+      ...x, ct: r.programme_code ?? null, lop: r.code ?? null, daChuyen,
+      kyVongMt0: ['BE', 'ELE'].includes(r.programme_code) ? mt0TheoLop([{ sid: studentId, lop: r.class_id, ct: r.programme_code }]).get(studentId)?.goiY ?? null : null,
+    } : null);
     const dang = !dangHoc.is_fast_track && isRatioClass(dangHoc.class_id) ? cuoiKhoaTheoHocVien(dangHoc.class_id, [studentId]).get(studentId) ?? null : null;
     if (dang && dang.scored > 0) return kem(dangHoc, dang, false);   // bài Final Test của lớp đang học đã có điểm
     const cu = ds.find((r) => r.status === 'transferred');

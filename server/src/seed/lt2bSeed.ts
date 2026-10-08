@@ -14,7 +14,6 @@ import { loadPrincipal } from '../permissions.ts';
 import { commitIntake } from '../classes/intake.ts';
 import { applyTransition } from '../classes/transition.ts';
 import { planRegularTests, saveRegularScore } from '../normal/regular.ts';
-import { ghiKetLuanFt } from '../normal/cuoiKhoa.ts';
 import { updateResult } from '../cases/cases.ts';
 import type { BuildCtx } from './build.ts';
 
@@ -50,8 +49,16 @@ export function buildLt2bDemo(ctx: BuildCtx): { em: number } {
   // D13 · hai em BE 75% lên FT — kết luận kỳ vọng đầu ra TRƯỚC khi chuyển
   const minh = dung(be04, 'Chu Nhật Minh', { ...dat, reading: 13 });                                             // trượt R (13/20 = 65%)
   const nhi = dung(be04, 'Kiều Thảo Nhi', dat);
-  ghiKetLuanFt(ql, minh, { dat: false, nguyenNhan: 'trung_tam', mon: ['reading'] });
-  ghiKetLuanFt(ql, nhi, { dat: false, nguyenNhan: 'hoc_sinh', ghiChu: 'Em nghỉ nhiều — hẹn phụ huynh, tăng tự học 2 buổi mỗi tuần.' });
+  /*
+   * PR-KV (§3): kết luận kỳ vọng đầu ra nay xét theo MT0 (`ghiKetLuanFt` đòi MT0 đủ điểm). Bộ demo không dựng MT0 cho hai em này (MT0 chèn tay
+   * làm lệch lịch kỹ năng / nợ điểm của các bộ kiểm demo) → ghi thẳng kết luận như Quản lý đã lưu; thi hành chuyển lớp tạo Case như thật.
+   */
+  const ketLuan = conn.prepare(`INSERT INTO lo_trinh_tiep_theo (student_id, class_id, huong, ky_vong_dat, ky_vong_nguyen_nhan, ky_vong_mon, ky_vong_ghi_chu, updated_by, created_at, updated_at)
+    VALUES (?,?, 'chua_quyet', 0, ?,?,?,?, '2026-09-04T09:00:00.000Z', '2026-09-04T09:00:00.000Z')
+    ON CONFLICT(student_id, class_id) DO UPDATE SET ky_vong_dat = 0, ky_vong_nguyen_nhan = excluded.ky_vong_nguyen_nhan, ky_vong_mon = excluded.ky_vong_mon,
+      ky_vong_ghi_chu = excluded.ky_vong_ghi_chu, updated_by = excluded.updated_by, updated_at = excluded.updated_at`);
+  ketLuan.run(minh, be04, 'trung_tam', '["reading"]', null, ql.userId);
+  ketLuan.run(nhi, be04, 'hoc_sinh', '["speaking"]', 'Em nghỉ nhiều — hẹn phụ huynh, tăng tự học 2 buổi mỗi tuần.', ql.userId);
 
   chuyen(be04, '2026-09-07', [
     { studentId: trang, huong: 'hoc_lai', toClassId: be03 },

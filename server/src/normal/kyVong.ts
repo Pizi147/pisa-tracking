@@ -45,23 +45,9 @@ function emKyVong(o: { sc?: Scope; branchId?: number | null; classId?: number })
         AND ${cs.sql}${o.branchId ? ' AND c.branch_id = ?' : ''}${o.classId ? ' AND l.lop_nguon_id = ?' : ''}
       GROUP BY l.student_id`,
   ).all(...cs.params, ...(o.branchId ? [o.branchId] : []), ...(o.classId ? [o.classId] : [])) as any[];
-  /* MT0 chưa huỷ ở lớp nguồn (MT0 giữ `class_id` lớp thường khi nối vào lộ trình FT) + điểm — 2 câu mỗi lô. */
-  const nguonCua = new Map(rows.map((r) => [r.student_id as number, r.lop_nguon_id as number]));
-  const mt0Cua = new Map<number, number>();
-  theoLo([...nguonCua.keys()], (lo, ph) => {
-    for (const a of conn.prepare(`SELECT id, student_id, class_id FROM assessment_attempts WHERE kind = 'mt0' AND status != 'cancelled' AND student_id IN (${ph}) ORDER BY id`)
-      .all(...lo) as any[]) if (nguonCua.get(a.student_id) === a.class_id) mt0Cua.set(a.student_id, a.id);
-  });
-  const diem = new Map<number, Record<string, number | null>>();
-  theoLo([...mt0Cua.values()], (lo, ph) => {
-    for (const s of conn.prepare(`SELECT attempt_id, skill, band FROM assessment_scores WHERE attempt_id IN (${ph})`).all(...lo) as any[]) {
-      diem.set(s.attempt_id, { ...diem.get(s.attempt_id), [s.skill]: s.band });
-    }
-  });
+  const mt0 = mt0TheoLop(rows.map((r) => ({ sid: r.student_id, lop: r.lop_nguon_id, ct: r.programme_code })));
   return rows.map((r) => {
-    const m = mt0Cua.get(r.student_id);
-    const bands = assessedBands((m ? diem.get(m) : null) ?? {}) as Record<RegularSkill, number | null>;
-    const goiY = goiYKyVong(r.programme_code, bands);
+    const { bands, goiY } = mt0.get(r.student_id)!;
     return {
       id: r.student_id, ma: r.student_code, ten: r.full_name, lopId: r.lop_nguon_id, lopCode: r.code, ct: r.programme_code,
       daChuyen: r.trang_thai === 'da_chuyen', lopFtId: r.lop_dich_id, lopFt: r.dich_code,
@@ -70,6 +56,31 @@ function emKyVong(o: { sc?: Scope; branchId?: number | null; classId?: number })
         : { dat: !!r.ky_vong_dat, nguyenNhan: r.ky_vong_nguyen_nhan ?? null, mon: jsonMang(r.ky_vong_mon), ghiChu: r.ky_vong_ghi_chu ?? null },
     };
   }).sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
+}
+
+/**
+ * MT0 chưa huỷ của em ở LỚP NGUỒN BE/ELE (MT0 giữ `class_id` lớp thường khi nối vào lộ trình FT) + band + gợi ý — 2 câu mỗi lô.
+ * Dùng chung cho panel, việc QL và hồ sơ HV (`ghiKetLuanFt`, hộp Kết luận khoá).
+ */
+export function mt0TheoLop(ds: readonly { sid: number; lop: number; ct: string | null }[]): Map<number, { bands: Record<RegularSkill, number | null>; goiY: GoiYKyVong | null }> {
+  const conn = db();
+  const nguonCua = new Map(ds.map((x) => [x.sid, x]));
+  const mt0Cua = new Map<number, number>();
+  theoLo([...nguonCua.keys()], (lo, ph) => {
+    for (const a of conn.prepare(`SELECT id, student_id, class_id FROM assessment_attempts WHERE kind = 'mt0' AND status != 'cancelled' AND student_id IN (${ph}) ORDER BY id`)
+      .all(...lo) as any[]) if (nguonCua.get(a.student_id)?.lop === a.class_id) mt0Cua.set(a.student_id, a.id);
+  });
+  const diem = new Map<number, Record<string, number | null>>();
+  theoLo([...mt0Cua.values()], (lo, ph) => {
+    for (const s of conn.prepare(`SELECT attempt_id, skill, band FROM assessment_scores WHERE attempt_id IN (${ph})`).all(...lo) as any[]) {
+      diem.set(s.attempt_id, { ...diem.get(s.attempt_id), [s.skill]: s.band });
+    }
+  });
+  return new Map(ds.map((x) => {
+    const m = mt0Cua.get(x.sid);
+    const bands = assessedBands((m ? diem.get(m) : null) ?? {}) as Record<RegularSkill, number | null>;
+    return [x.sid, { bands, goiY: goiYKyVong(x.ct, bands) }];
+  }));
 }
 
 type LopKyVong = { classId: number; code: string; chua: number[]; choMt0: number };
@@ -124,7 +135,7 @@ export function kiemDongKyVong(x: any, ten: string): DongKyVong {
   if (x.nguyenNhan !== 'trung_tam' && x.nguyenNhan !== 'hoc_sinh') throw badRequest(`${ten}: chọn Trung tâm hoặc Học viên.`);
   const mon = Array.isArray(x.mon) ? [...new Set((x.mon as unknown[]).map(String))] : [];
   if (mon.some((m) => !(REGULAR_SKILLS as readonly string[]).includes(m))) throw badRequest(`${ten}: kỹ năng không hợp lệ.`);
-  if (!mon.length && x.nguyenNhan === 'trung_tam') throw badRequest(`${ten}: chọn ít nhất một kỹ năng chưa đạt.`);
+  if (!mon.length) throw badRequest(`${ten}: chọn kỹ năng chưa đạt.`);
   const lyDo = chuTuDo(x.lyDo ?? null, `${ten} · Lý do`, 2000);
   if (x.nguyenNhan === 'hoc_sinh' && !lyDo) throw badRequest(`${ten}: ghi lý do.`);
   return { sid: Number(x.sid), dat: false, nguyenNhan: x.nguyenNhan, mon: mon as RegularSkill[], lyDo: x.nguyenNhan === 'hoc_sinh' ? lyDo : null };
@@ -144,9 +155,9 @@ export function luuKyVong(p: Principal, classId: number, body: any): { luu: numb
     const e = em.get(Number(x?.sid));
     if (!e) throw badRequest('Học viên không có quyết định Lên FT ở lớp này.');
     if (!e.mt0) throw badRequest(`${e.ten}: chờ MT0 đủ điểm.`);
-    /* Học viên không chọn kỹ năng → kỹ năng MT0 dưới ngưỡng (Case Học viên mang kỹ năng đầu tiên). */
-    const d = kiemDongKyVong(x, e.ten);
-    return [e.id, d.nguyenNhan === 'hoc_sinh' && !d.mon.length ? { ...d, mon: e.goiY!.monTruot } : d] as const;
+    /* Học viên không gửi kỹ năng → kỹ năng MT0 dưới ngưỡng; vẫn rỗng (MT0 không kỹ năng nào dưới ngưỡng) → 400 "chọn kỹ năng". */
+    const thieu = x?.nguyenNhan === 'hoc_sinh' && !(Array.isArray(x.mon) && x.mon.length);
+    return [e.id, kiemDongKyVong(thieu ? { ...x, mon: e.goiY!.monTruot } : x, e.ten)] as const;
   })).values()];
   return tx(() => {
     const now = nowIso();
@@ -193,7 +204,7 @@ export function taoCaseKyVong(p: Principal, ds: readonly DongCaseKyVong[]): numb
   });
   type O = { d: DongCaseKyVong; mon: RegularSkill; skill: string; category: string; khoa: string; title: string };
   const o: O[] = ds.flatMap((d) => {
-    /* ponytail: Học viên không có kỹ năng nào (chỉ dữ liệu cũ từ hồ sơ HV) → không Case; panel luôn gửi kỹ năng MT0 dưới ngưỡng. */
+    /* Mọi đường ghi đều bắt ít nhất một kỹ năng (`kiemDongKyVong`); dòng ghi trước PR-KV có thể rỗng → không có kỹ năng để mở Case. */
     const mon = d.nguyenNhan === 'hoc_sinh' ? d.mon.slice(0, 1) : d.mon;
     if (d.nguyenNhan === 'hoc_sinh' && emDaCo.has(`${d.sid}:${d.ftCycleId}`)) return [];
     return mon.flatMap((m) => {

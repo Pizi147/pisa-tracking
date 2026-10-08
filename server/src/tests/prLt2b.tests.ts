@@ -254,6 +254,15 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     return lop.id as number;
   };
   const cycleMoi = (sid: number) => (conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(sid) as any).id as number;
+  /* PR-KV (§3): kỳ vọng đầu ra xét theo MT0 — tạo MT0 Lên FT của em ở lớp BE (`dongBoMt0`) và ghi band (W1 = W2). */
+  const mt0Mod: any = await import('../fasttrack/mt0.ts');
+  const mt0Kv = (lop: number, sid: number, b: number[]) => {
+    mt0Mod.dongBoMt0(P.mbManager.userId, [{ studentId: sid, classId: lop, ma: 'BE', huong: 'fast_track', mucTieu: 6.5 }]);
+    const a = (conn.prepare(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'mt0' AND status != 'cancelled'`).get(sid) as any).id;
+    for (const [k, v] of [['listening', b[0]], ['reading', b[1]], ['writing1', b[2]], ['writing2', b[2]], ['speaking', b[3]]] as const) {
+      conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, band) VALUES (?,?,?)').run(a, k, v);
+    }
+  };
   const chuyen = (fromClassId: number, dongs: any[]) => {
     const r = transitionMod.applyTransition(P.mbManager, { fromClassId, effectiveDate: NGAY_CHUYEN, dongs });
     assert(r.failed.length === 0, `dòng lỗi: ${JSON.stringify(r.failed)}`);
@@ -338,12 +347,14 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     const mt = conn.prepare('SELECT * FROM mini_test WHERE student_id = ?').get(s) as any;   // PR-CT2: 4 môn × 2 buổi
     assert(mt.so_buoi === 8 && mt.ngay_du_kien === d.lichBoTro({ batDau: NGAY_CHUYEN, soTuan: 2 }).ngayMiniTest, JSON.stringify(mt));
   });
-  check('LT2b (5) · BE 72% sang FT + kết luận Trung tâm {R, W} → 2 Case FT (Reading, Writing 2) + PA tutor preset 0; Học viên không kỹ năng (đường cũ hồ sơ) → không Case — Học viên có kỹ năng → Case không PA ở prKv KV6/KV7; đánh dấu sau khi đã sang FT tạo ngay', () => {
+  check('LT2b (5) · BE 72% sang FT + kết luận Trung tâm {R, W} → 2 Case FT (Reading, Writing 2) + PA tutor preset 0; Học viên mà MT0 không kỹ năng nào dưới ngưỡng, không chọn kỹ năng → 400, không Case (PR-KV); đánh dấu sau khi đã sang FT tạo ngay', () => {
     const l = taoLop('BE', 3);
     const [a, b, c2] = l.sids;
     for (const s of l.sids) ghiDiem(l.luot.get(s)!, { [L]: 30, [R]: 30, [W]: 30, [S]: 30 });   // 75%
+    mt0Kv(l.classId, a, [4, 3.5, 3.5, 4]); mt0Kv(l.classId, b, [4, 4, 4, 4]); mt0Kv(l.classId, c2, [3.5, 4, 4, 4]);
     cuoiSvc.ghiKetLuanFt(P.mbManager, a, { dat: false, nguyenNhan: 'trung_tam', mon: ['reading', 'writing'] });
-    cuoiSvc.ghiKetLuanFt(P.mbManager, b, { dat: false, nguyenNhan: 'hoc_sinh', mon: [], ghiChu: 'Em nghỉ nhiều — phương án case-by-case với phụ huynh' });
+    assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, b, { dat: false, nguyenNhan: 'hoc_sinh', mon: [], ghiChu: 'Em nghỉ nhiều — phương án case-by-case với phụ huynh' }),
+      /kỹ năng/, 'Học viên: MT0 không kỹ năng dưới ngưỡng, không chọn kỹ năng → 400');
     const ft = classId('MB FT 101');
     chuyen(l.classId, [a, b, c2].map((studentId) => ({ studentId, huong: 'fast_track', toClassId: ft, mucTieu: 6.5 })));
     const cs = caseCuaEm(a, cycleMoi(a));
@@ -351,7 +362,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     assert(cs.every((c) => c.origin_kind === 'chuyen_cap' && /^Kỳ vọng đầu ra chưa đạt · /.test(c.title)), JSON.stringify(cs.map((c) => c.title)));
     const tutor = conn.prepare(`SELECT * FROM case_interventions WHERE case_id = ?`).all(cs[0].id) as any[];
     assert(tutor.length === 1 && tutor[0].kind === 'tutor' && tutor[0].preset === 0 && /Tutor 10 buổi/.test(tutor[0].description), JSON.stringify(tutor));
-    assert(caseCuaEm(b, cycleMoi(b)).length === 0, 'Học viên không kỹ năng → không Case');
+    assert(caseCuaEm(b, cycleMoi(b)).length === 0, 'kết luận bị từ chối → không Case');
     assert(caseCuaEm(c2, cycleMoi(c2)).length === 0, 'chưa đánh dấu → không Case');
     const r = cuoiSvc.ghiKetLuanFt(P.mbManager, c2, { dat: false, nguyenNhan: 'trung_tam', mon: ['listening'] });   // sau khi đã sang FT
     assert(r.taoCaseTutor === 1 && caseCuaEm(c2, cycleMoi(c2)).length === 1, 'đánh dấu sau khi sang FT phải tạo Case ngay');
@@ -469,14 +480,16 @@ export async function runPrLt2bTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ Task 7 · Kết luận lên FT (phủ định) + Cuối khoá dời quá hạn
-  check('LT2b (7) · Kết luận lên FT — PHỦ ĐỊNH: GVCN 403 · QL chi nhánh khác 403 · em FOU 400 · Học sinh không ghi chú 400 · Trung tâm không chọn môn (đủ điểm) 400', () => {
+  check('LT2b (7) · Kết luận lên FT — PHỦ ĐỊNH: GVCN 403 · QL chi nhánh khác 403 · chưa đủ MT0 400 · em FOU 400 · Học viên không lý do 400 · Trung tâm không chọn kỹ năng (MT0 đạt hết) 400', () => {
     const be = taoLop('BE', 1);
     const s = be.sids[0];
     ghiDiem(be.luot.get(s)!, { [L]: 30, [R]: 30, [W]: 30, [S]: 30 });
+    assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, s, { dat: true }), /MT0/, 'chưa đủ MT0 (PR-KV)');
+    mt0Kv(be.classId, s, [4, 4, 4, 4]);
     assertThrows(() => cuoiSvc.ghiKetLuanFt(gvcnDich(), s, { dat: true }), /Quản lý/, 'GVCN');
     assertThrows(() => cuoiSvc.ghiKetLuanFt(P.cpManager, s, { dat: true }), /Quản lý|phạm vi/, 'QL chi nhánh khác');
-    assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, s, { dat: false, nguyenNhan: 'hoc_sinh', ghiChu: '  ' }), /lý do/, 'Học viên thiếu lý do (PR-KV: bắt buộc, không còn tối thiểu 15 ký tự)');
-    assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, s, { dat: false, nguyenNhan: 'trung_tam' }), /ít nhất một kỹ năng/, 'Trung tâm không có môn trượt');
+    assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, s, { dat: false, nguyenNhan: 'hoc_sinh', mon: ['reading'], ghiChu: '  ' }), /lý do/, 'Học viên thiếu lý do (PR-KV: bắt buộc, không còn tối thiểu 15 ký tự)');
+    assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, s, { dat: false, nguyenNhan: 'trung_tam' }), /kỹ năng/, 'Trung tâm, MT0 không kỹ năng dưới ngưỡng');
     assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, s, { dat: 'x' }), /Đạt hoặc Không đạt/, 'dat sai kiểu');
     const fou = taoLop('FOU', 1);
     assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, fou.sids[0], { dat: true }), /BE\/ELE/, 'em FOU');
@@ -568,7 +581,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     assert(conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_mini_test' AND doi_tuong_id = ? AND trang_thai = 'cho'`).get(mtVy.id), 'thẻ Báo QL Mini Test');
     assert(JSON.stringify(duyetMod.hopChoDuyet(ql, { xem: 'de-biet' })).includes('Mini Test chưa đạt'), 'hộp Chờ duyệt của QL có thẻ Mini Test');   // PR-GVb (J5b): Báo QL tách khỏi tab Chờ duyệt → tab Để QL biết
   });
-  check('LT2b (10) · demo D12–D13: Pre FOU 52% lên FOU; Trung tâm → Case FT + Tutor; Học sinh → không Case, có ghi chú', () => {
+  check('LT2b (10) · demo D12–D13: Pre FOU 52% lên FOU; Trung tâm → Case FT + Tutor; Học viên → một Case không PA, có lý do (PR-KV)', () => {
     const bao = hv('Ninh Gia Bảo');
     const c = caseChuyenCap(bao);
     assert(lopHienTai(bao).code === 'MB FOU 15' && c.length === 1 && c[0].title === 'Final Test Pre FOU · Tổng hợp không đạt', JSON.stringify(c.map((x) => x.title)));
@@ -577,7 +590,8 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     const cm = caseChuyenCap(minh);
     assert(lopHienTai(minh).code === 'MB FT 101' && cm.length === 1 && cm[0].title === 'Kỳ vọng đầu ra chưa đạt · Reading', JSON.stringify(cm.map((x) => x.title)));
     assert((conn.prepare(`SELECT kind, preset FROM case_interventions WHERE case_id = ?`).get(cm[0].id) as any).kind === 'tutor', 'PA Tutor');
-    assert(caseChuyenCap(nhi).length === 0, 'Học sinh: không Case');
+    const cn = caseChuyenCap(nhi);
+    assert(cn.length === 1 && /^Kỳ vọng đầu ra chưa đạt · Học viên/.test(cn[0].title) && !conn.prepare('SELECT 1 FROM case_interventions WHERE case_id = ?').get(cn[0].id), JSON.stringify(cn.map((x) => x.title)));
     const lt = conn.prepare(`SELECT ky_vong_nguyen_nhan, ky_vong_ghi_chu FROM lo_trinh_tiep_theo WHERE student_id = ? AND ky_vong_dat = 0`).get(nhi) as any;
     assert(lt.ky_vong_nguyen_nhan === 'hoc_sinh' && lt.ky_vong_ghi_chu.length >= 15, 'ghi chú case-by-case');
   });

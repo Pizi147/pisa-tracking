@@ -12,6 +12,7 @@ export async function runPrKvTests(t: YThucTestKit) {
   const week: any = await import('../platform/week.ts');
   const lenh: any = await import('../classes/lenhChuyen.ts');
   const kv: any = await import('../normal/kyVong.ts');
+  const ck: any = await import('../normal/cuoiKhoa.ts');
   const mywork: any = await import('../worklist/mywork.ts');
   const metrics: any = await import('../worklist/metrics.ts');
   const nguCanh: any = await import('../platform/nguCanhRequest.ts');
@@ -184,5 +185,34 @@ export async function runPrKvTests(t: YThucTestKit) {
     const n = nguCanh.soCauSql() - truoc;
     assert(r.taoCase === 80 && n <= 200, `câu SQL ${n}, Case ${r.taoCase}`);
     assert(all(`SELECT iv.id FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE sc.student_id IN (${ds.join(',')}) AND iv.kind = 'tutor' AND iv.so_buoi = 10`).length === 80, 'PA');
+  });
+
+  check('KV9 · panel · Học viên khi MT0 không có kỹ năng nào dưới ngưỡng: không gửi kỹ năng → 400 "chọn kỹ năng", không ghi gì; có kỹ năng → đúng 1 Case không PA', () => {
+    const ele3 = lopMoi('ELE', false, 11), ft4 = lopMoi('FT', true, 1);
+    const D = hocVien(ele3, 'ELE');
+    lenFt(ele3, [D], ft4, true);
+    diemMt0(D, { L: 5, R: 5, W: 5, S: 5 });
+    const e = maLoi(() => kv.luuKyVong(P.mbManager, ele3, { dong: [{ sid: D, dat: false, nguyenNhan: 'hoc_sinh', lyDo: 'Phụ huynh xin học chậm' }] }));
+    assert(e?.status === 400 && /kỹ năng/.test(e.msg), JSON.stringify(e));
+    assert(!get('SELECT 1 FROM lo_trinh_tiep_theo WHERE student_id = ? AND ky_vong_dat IS NOT NULL', D) && caseKv(D).length === 0, 'lỗi mà vẫn ghi');
+    kv.luuKyVong(P.mbManager, ele3, { dong: [{ sid: D, dat: false, nguyenNhan: 'hoc_sinh', mon: ['reading'], lyDo: 'Phụ huynh xin học chậm' }] });
+    const cs = caseKv(D);
+    assert(cs.length === 1 && paCua(cs[0].id).length === 0 && cs[0].category === 'reading', JSON.stringify(cs));
+  });
+
+  check('KV10 · hồ sơ HV (ghiKetLuanFt) xét theo MT0, không đòi bài Final: Học viên không gửi kỹ năng → kỹ năng MT0 dưới ngưỡng → 1 Case; MT0 không kỹ năng dưới ngưỡng → 400; chưa đủ MT0 → 400', () => {
+    const ele4 = lopMoi('ELE', false, 11), ft5 = lopMoi('FT', true, 1);
+    const [E, F, G] = [hocVien(ele4, 'ELE'), hocVien(ele4, 'ELE'), hocVien(ele4, 'ELE')];
+    lenFt(ele4, [E, F, G], ft5, true);
+    assert(!get(`SELECT 1 FROM assessment_attempts WHERE student_id = ? AND kind = 'final'`, E), 'tiền đề: em chưa có bài Final');
+    diemMt0(E, { L: 4.5, R: 4.5, W: 3.5, S: 4.5 });
+    diemMt0(F, { L: 5, R: 5, W: 5, S: 5 });
+    const r = ck.ghiKetLuanFt(P.mbManager, E, { dat: false, nguyenNhan: 'hoc_sinh', ghiChu: 'Nghỉ nhiều buổi', mon: [] });
+    const cs = caseKv(E);
+    assert(r.taoCaseTutor === 1 && cs.length === 1 && cs[0].category === 'writing2' && paCua(cs[0].id).length === 0, `${JSON.stringify(r)} · ${JSON.stringify(cs)}`);
+    const e1 = maLoi(() => ck.ghiKetLuanFt(P.mbManager, F, { dat: false, nguyenNhan: 'hoc_sinh', ghiChu: 'Nghỉ nhiều buổi' }));
+    assert(e1?.status === 400 && /kỹ năng/.test(e1.msg) && caseKv(F).length === 0, JSON.stringify(e1));
+    const e2 = maLoi(() => ck.ghiKetLuanFt(P.mbManager, G, { dat: true }));
+    assert(e2?.status === 400 && /MT0/.test(e2.msg), JSON.stringify(e2));
   });
 }

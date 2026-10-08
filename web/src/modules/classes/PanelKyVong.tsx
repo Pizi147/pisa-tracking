@@ -54,7 +54,7 @@ export function PanelKyVong({ classId, onClose, onDone }: { classId: number; onC
   const loiCua = (e: Em): string | null => {
     const d = dongCua(e);
     if (d.dat) return null;
-    if (d.nn === 'trung_tam' && !d.mon.length) return 'Chọn kỹ năng';
+    if (!d.mon.length) return 'Chọn kỹ năng';
     if (d.nn === 'hoc_sinh' && !d.lyDo.trim()) return 'Ghi lý do';
     return null;
   };

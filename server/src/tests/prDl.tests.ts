@@ -101,9 +101,10 @@ export async function runPrDlTests(t: YThucTestKit) {
    * Chụp lại 06/10 (PR-LT3 T18): ô Speaking của Mock không còn `mine`/`viec` của ai (bảng chấm vẫn sửa được — `canEdit` giữ).
    * Chụp lại 08/10 (PR-LCa LCa-1): quyết định Lên FT ở các bộ kiểm chạy trước nay tạo MT0 → id lượt (`attemptId` của Ánh/Bình) dời; MB FT 101 không thêm lượt MT0 nào.
    * Chụp lại 08/10 (PR-LCa migrate prLc): `migrate()` ở bộ kiểm trước đồng bộ lệnh Lên FT ghi thẳng (MB BE 04) → thêm một MT0, id dời; MB FT 101 vẫn 0 MT0.
-   * Chụp lại 08/10 (PR-KV): prVaiA (2d)(7b) và prDonA (6b) chạy trước nay dựng MT0 cho em BE (kỳ vọng đầu ra theo MT0) → id lượt dời; MB FT 101 vẫn 0 MT0.
+   * Chụp lại 08/10 (PR-KV): prVaiA (2d)(7b), prDonA (6b), prLt2b (5)(7), prS5fA, prPa dựng MT0 cho em BE (kỳ vọng đầu ra theo MT0) → id lượt dời;
+   * bộ demo: Kiều Thảo Nhi (MB FT 101, kết luận Học viên) nay có Case "Kỳ vọng đầu ra chưa đạt · Học viên · S" (§3 "vẫn tạo Case").
    */
-  const ANH_CHUP = { tuan: '0e69cbd8bf0b4a0c', moi: '64bac9a3c3e3ef6b' };
+  const ANH_CHUP = { tuan: 'c87a03a1c4497362', moi: 'ff2a516d0843646c' };
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id

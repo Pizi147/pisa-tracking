@@ -15,6 +15,8 @@ export type CuoiKhoaEm = {
   mon: { skill: string; ratio: number | null }[]; goiY: GoiYCuoiKhoa | null;
   quyetDinh: { huong: string; luc: string } | null;
   ketLuanFt: { dat: boolean | null; nguyenNhan: 'trung_tam' | 'hoc_sinh' | null; mon: string[]; ghiChu: string | null } | null;
+  /** PR-KV: gợi ý kỳ vọng đầu ra theo MT0 (BE/ELE) — kỹ năng điền sẵn ở "Không đạt". */
+  kyVongMt0?: { monTruot: string[] } | null;
   /** PR-S5F-a: lớp của bài Cuối khoá (có thể là lớp em VỪA RỜI — `daChuyen`). */
   ct?: string | null; lop?: string | null; daChuyen?: boolean;
 };
@@ -73,7 +75,7 @@ export function KetLuanKhoa({ studentId, studentName, lop, ct, cuoiKhoa, coTheKe
       )}
       <LoTrinhTiepPanel open={moLoTrinh} onClose={() => setMoLoTrinh(false)} studentId={studentId} studentName={studentName} lop={lop} onDone={onDoi} />
       {moKhongDat && (
-        <PanelKhongDat studentId={studentId} studentName={studentName} lop={lop} ct={ct} monTruot={cuoiKhoa.monTruot}
+        <PanelKhongDat studentId={studentId} studentName={studentName} lop={lop} ct={ct} monTruot={cuoiKhoa.kyVongMt0?.monTruot ?? []}
           ban={cuoiKhoa.ketLuanFt} onDong={() => setMoKhongDat(false)} onXong={() => { setMoKhongDat(false); onDoi(); }} />
       )}
     </section>
@@ -95,7 +97,7 @@ function PanelKhongDat({ studentId, studentName, lop, ct, monTruot, ban, onDong,
     { khoa: 'nguyen-nhan', nhan: 'Nguyên nhân', chon: true },
     ...(nn === 'hoc_sinh' ? [{ khoa: 'ghi-chu', nhan: 'Lý do' }] : []),
   ], { 'nguyen-nhan': nn, 'ghi-chu': ghiChu });
-  if (nn === 'trung_tam' && mon.length === 0) loi.push({ khoa: 'mon', nhan: 'Kỹ năng', lyDo: 'Chọn ít nhất một kỹ năng chưa đạt' });
+  if (nn !== '' && mon.length === 0) loi.push({ khoa: 'mon', nhan: 'Kỹ năng', lyDo: 'Chọn ít nhất một kỹ năng chưa đạt' });
   const luu = async () => {
     lf.bam();
     if (loi.length) return;
