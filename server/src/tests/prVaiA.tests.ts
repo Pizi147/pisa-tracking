@@ -217,7 +217,14 @@ export async function runPrVaiATests(t: YThucTestKit) {
     } finally { don(hv.sid); }
   });
 
-  check('VAI-a (2d) · hv-len-ft-chua-ky-vong: em BE có lệnh lên FT + bài Final Test → có; ghiKetLuanFt(Đạt) → ra; QL CP không thấy', () => {
+  /* PR-KV: MT0 đủ 4 kỹ năng của em ở lớp `cid` (kỳ vọng đầu ra xét theo Overall MT0). */
+  const mt0Du = (hv: { sid: number; cy: number; cid: number }, band = 4) => {
+    const a = Number(conn.prepare(`INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, status, created_at) VALUES (?,?,0,'mt0',?, 'planned', ?)`)
+      .run(hv.cy, hv.sid, hv.cid, NOW).lastInsertRowid);
+    for (const k of ['listening', 'reading', 'writing1', 'writing2', 'speaking']) conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, band) VALUES (?,?,?)').run(a, k, band);
+  };
+
+  check('VAI-a (2d) · hv-len-ft-chua-ky-vong (PR-KV): em BE có lệnh lên FT + MT0 đủ điểm → có; ghiKetLuanFt(Đạt) → ra; QL CP không thấy', () => {
     const hv = taoHv('MB BE 04', null);
     try {
       const pr = week.ensurePeriod(week.mondayOf(TODAY)).id;
@@ -225,8 +232,9 @@ export async function runPrVaiATests(t: YThucTestKit) {
         VALUES (?,?,2,'final',?,?, 'planned', ?)`).run(hv.cy, hv.sid, hv.cid, pr, NOW);
       conn.prepare(`INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, huong, boi_canh, tuan_bat_dau, nguoi_ra_lenh, ngay_ra_lenh, tao_luc)
         VALUES (?, ?, 'fast_track', 'cuoi_khoa', ?, ?, ?, ?)`).run(hv.sid, hv.cid, t.addDays(week.mondayOf(TODAY), 7), P.mbManager.userId, TODAY, NOW);
+      mt0Du(hv);
       const co = (who = P.mbManager) => metricsSvc.metricSet(who, 'hv-len-ft-chua-ky-vong', {}).ids.includes(hv.sid);
-      assert(co(), 'lệnh lên FT, có Final Test, chưa đánh dấu → có');
+      assert(co(), 'lệnh lên FT, MT0 đủ điểm, chưa đánh dấu → có');
       assert(!co(P.cpManager), 'phủ định: QL CP không thấy em MB');
       cuoiKhoa.ghiKetLuanFt(P.mbManager, hv.sid, { dat: true });
       assert(!co(), 'đánh dấu Đạt → ra');
@@ -453,19 +461,21 @@ export async function runPrVaiATests(t: YThucTestKit) {
     } finally { for (const x of [a, b, cu]) { conn.prepare('DELETE FROM y_thuc_khai_bac WHERE student_id = ?').run(x.sid); don(x.sid); } }
   });
 
-  check('VAI-a (7b) · Kỳ vọng đầu ra: số việc của QL MB = metricSet("hv-len-ft-chua-ky-vong", { branchId: MB }).n (hai đường); nhóm Vận hành; QL CP không thấy', () => {
+  check('VAI-a (7b) · Kỳ vọng đầu ra (PR-KV): Σ số em trên dòng việc của QL MB = metricSet("hv-len-ft-chua-ky-vong", { branchId: MB }).n (hai đường); một dòng mỗi lớp; nhóm Vận hành; QL CP không thấy', () => {
     const hv = taoHv('MB BE 04', null);
     try {
       conn.prepare(`INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id, status, created_at)
         VALUES (?,?,2,'final',?,?, 'planned', ?)`).run(hv.cy, hv.sid, hv.cid, week.ensurePeriod(week.mondayOf(TODAY)).id, NOW);
       conn.prepare(`INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, huong, boi_canh, tuan_bat_dau, nguoi_ra_lenh, ngay_ra_lenh, tao_luc)
         VALUES (?, ?, 'fast_track', 'cuoi_khoa', ?, ?, ?, ?)`).run(hv.sid, hv.cid, t.addDays(week.mondayOf(TODAY), 7), P.mbManager.userId, TODAY, NOW);
+      mt0Du(hv);
       const viec = (who: any, f: any = {}) => (mywork.myWork(who, f).items as any[]).filter((i) => i.group === 'ky_vong_dau_ra');
       const n = metricsSvc.metricSet(P.mbManager, 'hv-len-ft-chua-ky-vong', { branchId: MB }).n;
       assert(n >= 1, 'em vừa dựng phải vào tập');
-      eq(viec(P.mbManager, { branchId: MB }).length, n, 'số việc = số chỉ số');
-      assert(viec(P.mbManager).some((i) => i.studentId === hv.sid && d.nhomViecCua(i.group) === 'van-hanh'), 'nhóm Vận hành');
-      assert(!viec(P.cpManager).some((i) => i.studentId === hv.sid), 'QL CP không thấy em MB');
+      eq(viec(P.mbManager, { branchId: MB }).reduce((a, i) => a + i.count, 0), n, 'Σ em trên dòng việc = số chỉ số');
+      assert(viec(P.mbManager).filter((i) => i.classId === hv.cid).length === 1, 'một dòng cho lớp');
+      assert(viec(P.mbManager).some((i) => i.classId === hv.cid && d.nhomViecCua(i.group) === 'van-hanh'), 'nhóm Vận hành');
+      assert(!viec(P.cpManager).some((i) => i.classId === hv.cid), 'QL CP không thấy lớp MB');
       assert(!viec(P.coreTeacher).length, 'GV không có việc này');
     } finally { don(hv.sid); }
   });

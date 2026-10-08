@@ -16,6 +16,7 @@ import { nguoiGiuKetQua } from '../cases/giuKetQua.ts';
 import { assessedSkillOf } from '../fasttrack/scoring.ts';
 import { CO_MOC_KE_TIEP_SQL, XONG_MT_CUOI_SQL, missingForClasses } from '../classes/schedule.ts';
 import { lopChoChotLoTrinh } from '../classes/lenhChuyen.ts';
+import { lopKyVong } from '../normal/kyVong.ts';
 import { listMgmtTasks } from './mgmttasks.ts';
 import { mondayOf } from '../platform/week.ts';
 
@@ -564,27 +565,6 @@ export function lopThieuGvMon(sc: Scope, branchId: number | null): number[] {
 }
 
 /**
- * K5-11: em lên FT từ BE/ELE chưa được đánh dấu kỳ vọng đầu ra — một câu; phạm vi theo LỚP NGUỒN (nơi có bài Cuối khoá).
- * PR-Dọn: MỘT dòng mỗi em, kèm lớp nguồn của lệnh mới nhất — dòng việc Công việc đọc lớp từ đây (không JOIN ghi danh: em có hai
- * ghi danh đang học từng ra hai dòng cùng khoá).
- */
-export function hvLenFtChuaKyVong(sc: Scope, branchId: number | null): { id: number; ten: string; lopNguonId: number; lopNguon: string }[] {
-  const cs = classScopeSql(sc);
-  return (db().prepare(
-    `SELECT l.student_id AS id, s.full_name AS ten, l.lop_nguon_id AS lopNguonId, c.code AS lopNguon, MAX(l.id) AS lenh FROM lenh_chuyen_lop l
-       JOIN classes c ON c.id = l.lop_nguon_id JOIN students s ON s.id = l.student_id
-      WHERE l.huong = 'fast_track' AND l.trang_thai IN ('cho', 'da_chuyen') AND c.programme_code IN ('BE', 'ELE')
-        AND ${HV_DANG_HOC_SQL('s')}
-        AND ${cs.sql}${branchId ? ' AND c.branch_id = ?' : ''}
-        AND EXISTS (SELECT 1 FROM assessment_attempts a WHERE a.student_id = l.student_id AND a.class_id = l.lop_nguon_id
-                      AND a.kind = 'final' AND a.status != 'cancelled')
-        AND NOT EXISTS (SELECT 1 FROM lo_trinh_tiep_theo lt WHERE lt.student_id = l.student_id AND lt.class_id = l.lop_nguon_id
-                          AND lt.ky_vong_dat IS NOT NULL)
-      GROUP BY l.student_id ORDER BY l.student_id`,
-  ).all(...cs.params, ...(branchId ? [branchId] : [])) as any[]).map(({ lenh: _, ...r }) => r);
-}
-
-/**
  * LÕI CHƯA LỌC CHƯƠNG TRÌNH của `metricSet`: một chỉ số → một tập ID đã áp quyền của người gọi. Chỉ `metricSet` gọi hàm này;
  * mọi nơi khác đi qua `metricSet` để bộ lọc chương trình chỉ có một chỗ.
  */
@@ -704,12 +684,10 @@ function metricSetGoc(
           ORDER BY s.id`,
       ).all(...cs.params, ...(scope.branchId ? [scope.branchId] : []), mondayOf(today)) as any[]).map((r) => r.id as number));
     }
-    case 'hv-len-ft-chua-ky-vong': {
-      /* (d) K5-11: em có lệnh lên Fast Track từ BE/ELE, đã có bài Cuối khoá ở lớp nguồn, Quản lý chưa đánh dấu kỳ vọng đầu ra (`ghiKetLuanFt`). */
-      const sc = scopeFor(p, PERMISSIONS.REQUEST_APPROVE);
-      if (sc.none) return { ...done([]), empty: true, note: EMPTY_NOTE };
-      return done(hvLenFtChuaKyVong(sc, scope.branchId).map((r) => r.id));
-    }
+    case 'hv-len-ft-chua-ky-vong':
+      /* (d) PR-KV: em chưa kết luận kỳ vọng đầu ra ở lớp BE/ELE đã có em đủ điểm MT0 — cùng `lopKyVong` của việc QL (một dòng mỗi lớp). */
+      if (scopeFor(p, PERMISSIONS.REQUEST_APPROVE).none) return { ...done([]), empty: true, note: EMPTY_NOTE };
+      return done(lopKyVong(p, scope.branchId).flatMap((x) => x.chua).sort((a, b) => a - b));
     case 'lop-chua-chot-len-ft':
       /* PR-LCb: cùng `lopChoChotLoTrinh` của việc "Chốt lộ trình" (`myWork`); PR-LCb bỏ `hv-chua-co-lenh-chuyen` (gộp vào đây). */
       return done(lopChoChotLoTrinh(p, scope.branchId, today).map((x) => x.classId).sort((a, b) => a - b));

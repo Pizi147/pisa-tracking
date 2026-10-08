@@ -12,6 +12,13 @@ export async function runPrS5fATests(t: YThucTestKit) {
   console.log('\nPR-S5F-a · Sửa sau rà cuối đợt 5 — chuyển lớp, bàn giao, Final Test');
 
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
+  /* PR-KV (§3): kỳ vọng đầu ra xét theo MT0 — điểm band MT0 (W ghi W1 = W2) của em ở lớp `lop`; MT0 tạo khi ra lệnh Lên FT. */
+  const diemMt0Kv = (sid: number, b: number[] = [4, 3.5, 4, 4]) => {
+    const a = (conn.prepare(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'mt0' AND status != 'cancelled' ORDER BY id DESC LIMIT 1`).get(sid) as any).id;
+    for (const [k, v] of [['listening', b[0]], ['reading', b[1]], ['writing1', b[2]], ['writing2', b[2]], ['speaking', b[3]]] as const) {
+      conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, band) VALUES (?,?,?)').run(a, k, v);
+    }
+  };
   const MB = get(`SELECT id FROM branches WHERE code = 'MB'`).id as number;
   const TUAN = d.tuanChonDuoc(TODAY) as string[];
   const THU_HAI = TUAN[0];
@@ -200,8 +207,9 @@ export async function runPrS5fATests(t: YThucTestKit) {
     const ft = lopMoi({ kind: 'FT', ft: true, route: 'LT1', tuanHienTai: 1 });
     const f = hocVien(be, 'BE', false).sid;
     const af = cuoiKhoa(be, f, [20, 20, 20, 20]);
-    ck.ghiKetLuanFt(P.mbManager, f, { dat: false, nguyenNhan: 'trung_tam', mon: ['reading'] });
     lenh.raLenh(P.mbManager, { lopNguonId: be, boiCanh: 'cuoi-khoa', tuanChung: null, dongs: [dongCua(f, 'fast_track', ft, { mucTieu: 6 })] });
+    diemMt0Kv(f);
+    ck.ghiKetLuanFt(P.mbManager, f, { dat: false, nguyenNhan: 'trung_tam', mon: ['reading'] });
     daChuyen(f, THU_HAI);
     const dem = () => get(`SELECT COUNT(*) n FROM sos_cases WHERE student_id = ? AND title LIKE 'Kỳ vọng đầu ra%'`, f).n as number;
     assert(dem() === 1, `Case Tutor: ${dem()}`);
@@ -286,7 +294,7 @@ export async function runPrS5fATests(t: YThucTestKit) {
     conn.prepare(`UPDATE lenh_chuyen_lop SET trang_thai = 'huy' WHERE lop_nguon_id = ?`).run(nguon);
   });
 
-  check('S5F-a (13) · Final Test sau chuyển: hồ sơ vẫn thấy %, thẻ Test gần nhất ghi %, tên Case giữ môn gốc, việc tiếp không nhồi mô tả PA, kết luận FT cần bài Final Test, Trung tâm thiếu điểm → Case Tutor khi điểm về, Báo PH có GVCN', () => {
+  check('S5F-a (13) · Final Test sau chuyển: hồ sơ vẫn thấy %, thẻ Test gần nhất ghi %, tên Case giữ môn gốc, việc tiếp không nhồi mô tả PA, kết luận FT cần bài Final Test, Trung tâm thiếu điểm Final → Case Tutor ngay khi chuyển (PR-KV), Báo PH có GVCN', () => {
     /* Hồ sơ HV sau chuyển FOU → BE: vẫn thấy % Cuối khoá của lớp vừa rời. */
     const fou = lopMoi({ kind: 'FOU', tuanHienTai: 9 });
     const be = lopMoi({ kind: 'BE', tuanHienTai: 1 });
@@ -316,21 +324,22 @@ export async function runPrS5fATests(t: YThucTestKit) {
       && d.tenPaViecTiep('tutor', 'Kèm 1-1 Reading') === 'Kèm 1-1 Reading', 'tenPaViecTiep');
     assert(/homNay >= mt\.ngayDuKien/.test(src('web/src/modules/students/KetLuanKhoa.tsx')), 'nút Ghi Mini Test chỉ từ ngày buổi cuối');
 
-    /* ket-luan-ft: em BE chưa có bài Cuối khoá → 400, không chèn dòng Lộ trình tiếp theo. */
+    /* ket-luan-ft (PR-KV): em BE chưa đủ điểm MT0 → 400, không chèn dòng Lộ trình tiếp theo. */
     const be2 = lopMoi({ kind: 'BE', tuanHienTai: 11 });
     const chua = hocVien(be2, 'BE', false).sid;
-    assert(maLoi(() => ck.ghiKetLuanFt(P.mbManager, chua, { dat: true })) === 400 && !get('SELECT 1 FROM lo_trinh_tiep_theo WHERE student_id = ?', chua), 'chưa có bài Final Test');
-    /* Trung tâm + thiếu điểm lúc chuyển → Case Tutor tạo khi điểm về. */
+    assert(maLoi(() => ck.ghiKetLuanFt(P.mbManager, chua, { dat: true })) === 400 && !get('SELECT 1 FROM lo_trinh_tiep_theo WHERE student_id = ?', chua), 'chưa đủ MT0');
+    /* PR-KV (§3): kỳ vọng đầu ra theo MT0, không chờ Final — Trung tâm + thiếu điểm Final lúc chuyển → Case Tutor ngay khi chuyển; điểm về không tạo thêm. */
     const ft = lopMoi({ kind: 'FT', ft: true, route: 'LT1', tuanHienTai: 1 });
     const f = hocVien(be2, 'BE', false).sid;
     const af = cuoiKhoa(be2, f, [20, 12, 20, null]);
-    ck.ghiKetLuanFt(P.mbManager, f, { dat: false, nguyenNhan: 'trung_tam', mon: ['reading'] });
     lenh.raLenh(P.mbManager, { lopNguonId: be2, boiCanh: 'cuoi-khoa', tuanChung: null, dongs: [dongCua(f, 'fast_track', ft, { mucTieu: 6, lyDo: 'Phụ huynh xin lên FT' })] });
+    diemMt0Kv(f);
+    ck.ghiKetLuanFt(P.mbManager, f, { dat: false, nguyenNhan: 'trung_tam', mon: ['reading'] });
     daChuyen(f, THU_HAI);
     const tutor = () => get(`SELECT COUNT(*) n FROM sos_cases WHERE student_id = ? AND title LIKE 'Kỳ vọng đầu ra%'`, f).n as number;
-    assert(tutor() === 0, 'chưa đủ điểm: chưa có Case Tutor');
+    assert(tutor() === 1, `chuyển (chưa đủ điểm Final) → Case Tutor ngay: ${tutor()}`);
     vaoNgay(t.addDays(THU_HAI, 7), () => reg.saveRegularScore(P.admin, af.id, 'speaking', { score: 20, total: 25 }));
-    assert(tutor() === 1, `điểm về → Case Tutor: ${tutor()}`);
+    assert(tutor() === 1, `điểm về → không thêm Case Tutor: ${tutor()}`);
 
     /* Báo PH Giữa khoá: Quản lý xem "Tất cả" thấy GVCN lớp em đang học, không "chưa ai phụ trách". */
     reg.planRegularTests(P.admin, be, { studentIds: [e], kinds: ['progress'] });

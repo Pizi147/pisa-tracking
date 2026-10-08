@@ -506,6 +506,7 @@ export async function runPrDonATests(t: YThucTestKit) {
   // ------------------------------------------------------------------ khối 6 · việc và người làm: mỗi cặp một nguồn
   console.log('\nPR-Dọn-a · (6) Việc và người làm — mỗi cặp một nguồn');
   const metrics: any = await import('../worklist/metrics.ts');
+  const kyVong: any = await import('../normal/kyVong.ts');
   const studentsSvc: any = await import('../students/students.ts');
   const xuLy: any = await import('../yThuc/xuLy.ts');
   const thongBao: any = await import('../platform/thongBao.ts');
@@ -529,27 +530,27 @@ export async function runPrDonATests(t: YThucTestKit) {
     assert(hs && (hs.nguoi?.id ?? hs.nguoiId) === A.userId, `hồ sơ: ${JSON.stringify(hs)}`);
   });
 
-  check('Dọn-a (6b) · kỳ vọng đầu ra: em có HAI ghi danh đang học → đúng MỘT dòng ky_vong:{id}; số dòng = chỉ số; lớp trên dòng = lớp nguồn của lệnh', () => {
-    /* Dựng tay: em lớp BE (có bài Cuối khoá tự tạo) có lệnh lên Fast Track đang chờ. */
+  check('Dọn-a (6b) → PR-KV · kỳ vọng đầu ra: em có HAI ghi danh đang học → lớp nguồn có đúng MỘT dòng kyvong:{lớp}, em đếm một lần; Σ em = chỉ số', () => {
+    /* Dựng tay: em lớp BE có lệnh lên Fast Track đang chờ + MT0 đủ điểm ở lớp BE. */
     const lopBe = 'MB BE 04';
     const { sid, cy } = emMoi(lopBe);
-    if (!get(`SELECT 1 FROM assessment_attempts WHERE student_id = ? AND kind = 'final'`, sid)) {
-      conn.prepare(`INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, status, created_at) VALUES (?, ?, 99, 'final', ?, 'planned', ?)`)
-        .run(cy, sid, classId(lopBe), new Date().toISOString());
-    }
     conn.prepare(`INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, lop_dich_id, huong, boi_canh, tuan_bat_dau, nguoi_ra_lenh, ngay_ra_lenh, trang_thai, tao_luc)
       VALUES (?, ?, ?, 'fast_track', 'cuoi-khoa', ?, ?, ?, 'cho', ?)`).run(sid, classId(lopBe), classId('MB FT 101'), t.addDays(tuanNay, 7), P.mbManager.userId, TODAY, new Date().toISOString());
-    const ds = metrics.hvLenFtChuaKyVong({ all: true, branchIds: [], classIds: [], none: false }, null) as any[];
-    const em = ds.find((r) => r.id === sid);
-    assert(em && em.lopNguonId === classId(lopBe), `hvLenFtChuaKyVong: ${JSON.stringify(em)}`);
-    const lopKhac = get(`SELECT id FROM classes WHERE status = 'active' AND id != ? AND branch_id = (SELECT branch_id FROM classes WHERE id = ?) LIMIT 1`, em.lopNguonId, em.lopNguonId).id;
-    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`).run(em.id, lopKhac, TODAY, new Date().toISOString());
+    const a = Number(conn.prepare(`INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, status, created_at) VALUES (?, ?, 0, 'mt0', ?, 'planned', ?)`)
+      .run(cy, sid, classId(lopBe), new Date().toISOString()).lastInsertRowid);
+    for (const k of ['listening', 'reading', 'writing1', 'writing2', 'speaking']) conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, band) VALUES (?,?,?)').run(a, k, 4);
+    const lopKhac = get(`SELECT id FROM classes WHERE status = 'active' AND id != ? AND branch_id = (SELECT branch_id FROM classes WHERE id = ?) LIMIT 1`, classId(lopBe), classId(lopBe)).id;
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`).run(sid, lopKhac, TODAY, new Date().toISOString());
     const ql = loadPrincipal(get(`SELECT ur.user_id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'manager' AND ur.status = 'active'
-      AND ur.branch_id = (SELECT branch_id FROM classes WHERE id = ?) LIMIT 1`, em.lopNguonId).user_id);
+      AND ur.branch_id = (SELECT branch_id FROM classes WHERE id = ?) LIMIT 1`, classId(lopBe)).user_id);
+    const lop = (kyVong.lopKyVong(ql, null) as any[]).filter((x) => x.classId === classId(lopBe));
+    assert(lop.length === 1 && lop[0].chua.filter((x: number) => x === sid).length === 1, `lopKyVong: ${JSON.stringify(lop)}`);
     const dong = itemsCua(ql).filter((i: any) => i.group === 'ky_vong_dau_ra');
-    const cuaEm = dong.filter((i: any) => i.key === `ky_vong:${em.id}`);
-    assert(cuaEm.length === 1 && cuaEm[0].classId === em.lopNguonId, `dòng của em: ${JSON.stringify(cuaEm.map((i: any) => i.classId))} · lớp nguồn ${em.lopNguonId}`);
-    assert(dong.length === metrics.metricSet(ql, 'hv-len-ft-chua-ky-vong', {}).n, `số dòng ${dong.length} ≠ chỉ số`);
+    assert(dong.filter((i: any) => i.key === `kyvong:${classId(lopBe)}`).length === 1, `dòng lớp: ${JSON.stringify(dong.map((i: any) => i.key))}`);
+    assert(dong.reduce((n: number, i: any) => n + i.count, 0) === metrics.metricSet(ql, 'hv-len-ft-chua-ky-vong', {}).n, 'Σ em ≠ chỉ số');
+    /* Dọn MT0 dựng tay (không lịch kỹ năng) — phép kiểm sau chụp bảng điểm lớp này. */
+    conn.prepare('DELETE FROM assessment_scores WHERE attempt_id = ?').run(a);
+    conn.prepare('DELETE FROM assessment_attempts WHERE id = ?').run(a);
   });
 
   check('Dọn-a (6c) · pa-can-cap-nhat = Ghi kết quả PA: nhóm 3 PA bổ trợ chung quá hạn → 1; cùng người giữ việc; em Tạm dừng → không có ở cả hai', () => {

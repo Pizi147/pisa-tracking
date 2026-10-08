@@ -15,6 +15,7 @@ import { KetThucLopPanel, MoLaiLopPanel, XoaLopPanel } from './XoaKetThucLopPane
 import { ClassProgressPanel } from './ClassProgressPanel.tsx';
 import { TransitionPanel } from './TransitionPanel.tsx';
 import { PanelCuoiKhoa } from './PanelCuoiKhoa.tsx';
+import { PanelKyVong } from './PanelKyVong.tsx';
 import { BanGiaoPanel } from './BanGiaoPanel.tsx';
 import { ChuyenLopNhieuEm } from '../students/ChuyenLopPanel.tsx';
 import { DauTrangLop, type HoSoLop, type ViecDauTrang } from './DauTrangLop.tsx';
@@ -80,7 +81,8 @@ export default function ClassOverviewPage() {
        panel "Lộ trình tiếp theo" cho Quản lý và GVCN; lớp FT `chuyen-tiep` vẫn panel Chuyển lớp (chỉ Quản lý). */
     const thuongV = data?.programme?.scoringMode === 'ratio';
     const moLtt = !!data && thuongV && (v === 'chuyen-tiep' || v === 'lo-trinh-ca-lop') && (data.viewer.coTheChuyenTiep || data.viewer.canAddStudents);
-    if (data && (moLtt || (v === 'chuyen-tiep' && !thuongV && data.viewer.coTheChuyenTiep) || (v === 'phan-cong' && (data.viewer.canAssign || data.viewer.canAssignSubject)))) {
+    /* PR-KV: việc QL "Kỳ vọng đầu ra · lớp" → `?viec=ky-vong` (máy chủ trả 403 cho người không phải Quản lý). */
+    if (data && (moLtt || v === 'ky-vong' || (v === 'chuyen-tiep' && !thuongV && data.viewer.coTheChuyenTiep) || (v === 'phan-cong' && (data.viewer.canAssign || data.viewer.canAssignSubject)))) {
       setViec(v);
       doiThamSo({ viec: null });
     } else if (data && v === 'xet-lai') {
@@ -149,6 +151,7 @@ export default function ClassOverviewPage() {
       )}
       <TransitionPanel classId={data.id} open={viec === 'chuyen-tiep' && !thuong} onClose={dong} onDone={xong} />
       {(viec === 'lo-trinh-ca-lop' || (viec === 'chuyen-tiep' && thuong)) && <PanelCuoiKhoa classId={data.id} onClose={dong} onDone={xong} />}
+      {viec === 'ky-vong' && <PanelKyVong classId={data.id} onClose={dong} onDone={xong} />}
       {xetLai && <ChuyenLopNhieuEm classId={data.id} onClose={() => setXetLai(false)} onDone={xong} />}
       {viec === 'ban-giao' && <BanGiaoPanel classId={bg.lop ?? data.id} mon={bg.mon} lenhId={bg.lenhId} onClose={dong} onDone={xong} />}
       <TeacherAssignPanel open={viec === 'phan-cong'} onClose={dong} classId={data.id} classCode={data.code} onDone={xong} />

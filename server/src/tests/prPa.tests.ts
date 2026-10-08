@@ -22,6 +22,13 @@ export async function runPrPaTests(t: YThucTestKit) {
   console.log('\nPR-PA · PA đồng bộ một mẫu — Task 1 (migrate, luật thuần, chenPa)');
 
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
+  /* PR-KV (§3): kỳ vọng đầu ra xét theo MT0 — điểm band MT0 (W ghi W1 = W2) của em ở lớp `lop`; MT0 tạo khi ra lệnh Lên FT. */
+  const diemMt0Kv = (sid: number, b: number[] = [4, 3.5, 4, 4]) => {
+    const a = (conn.prepare(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'mt0' AND status != 'cancelled' ORDER BY id DESC LIMIT 1`).get(sid) as any).id;
+    for (const [k, v] of [['listening', b[0]], ['reading', b[1]], ['writing1', b[2]], ['writing2', b[2]], ['speaking', b[3]]] as const) {
+      conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, band) VALUES (?,?,?)').run(a, k, v);
+    }
+  };
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
   const maLoi = (fn: () => unknown): { status: number | null; msg: string } => {
     try { fn(); return { status: null, msg: 'không ném' }; } catch (e: any) { return { status: e?.status ?? null, msg: String(e?.message ?? e) }; }
@@ -180,8 +187,10 @@ export async function runPrPaTests(t: YThucTestKit) {
       if (!conPhanCong) conn.prepare(`UPDATE teacher_assignments SET status = 'ended', effective_to = ? WHERE id = ?`).run(t.addDays(TODAY, -30), pc);
       const sid = hocVien(be, 'BE');
       cuoiKhoa(be, sid, [20, 20, 20, 20]);
-      ck.ghiKetLuanFt(P.mbManager, sid, { dat: false, nguyenNhan: 'trung_tam', mon: ['reading'] });
+      /* PR-KV: kết luận theo MT0 (MT0 tạo khi ra lệnh) — em đã sang FT → Case Tutor ngay khi kết luận. */
       chuyen(be, sid, 'fast_track', ft, { mucTieu: 6 });
+      diemMt0Kv(sid);
+      ck.ghiKetLuanFt(P.mbManager, sid, { dat: false, nguyenNhan: 'trung_tam', mon: ['reading'] });
       return paCuaEm(sid, 'tutor');
     };
     const co = chay(true);

@@ -53,7 +53,7 @@ export type HoSoLop = {
     coTheXemDiem?: boolean;
   };
 };
-export type ViecDauTrang = 'tien-do' | 'chuyen-tiep' | 'lo-trinh-ca-lop' | 'ban-giao' | 'phan-cong' | 'thong-tin' | 'case' | 'hoc-vien' | 'xoa-lop' | 'ket-thuc-lop' | 'xuat-mt' | 'sua-hoc-vien' | 'diem-lop' | 'mo-lai-lop';
+export type ViecDauTrang = 'tien-do' | 'chuyen-tiep' | 'lo-trinh-ca-lop' | 'ban-giao' | 'phan-cong' | 'thong-tin' | 'case' | 'hoc-vien' | 'xoa-lop' | 'ket-thuc-lop' | 'xuat-mt' | 'sua-hoc-vien' | 'diem-lop' | 'mo-lai-lop' | 'ky-vong';
 
 /**
  * ĐẦU TRANG HỒ SƠ LỚP (đặc tả §3.7, mockup 06c §1; PR-HVL K2-14, B4, E7, K2-13). Nằm ở: Học viên & Lớp → Hồ sơ lớp → đầu trang.
@@ -124,6 +124,8 @@ export function DauTrangLop({ data, periodId, onViec, onBanGiao }: {
     /* PR-LCb: lớp thường MỘT mục "Lộ trình tiếp theo…" — Quản lý xác nhận, GVCN (STUDENT_EDIT ở lớp, cờ `canAddStudents`) đề xuất, cùng panel.
        Lớp FT (gộp / tách lớp, đổi lộ trình): "Chuyển tiếp lớp…" (chỉ Quản lý). */
     ...(thuong && (data.viewer.coTheChuyenTiep || data.viewer.canAddStudents) ? [{ key: 'lo-trinh-ca-lop', nhan: 'Lộ trình tiếp theo…', onChon: () => onViec('lo-trinh-ca-lop') }] : []),
+    /* PR-KV (§3): lớp BE/ELE — Quản lý kết luận kỳ vọng đầu ra cả lớp (em Lên FT, theo MT0). Máy chủ kiểm lại `request.approve`. */
+    ...(thuong && data.viewer.coTheChuyenTiep && ['BE', 'ELE'].includes(data.programme?.code ?? '') ? [{ key: 'ky-vong', nhan: 'Kỳ vọng đầu ra…', onChon: () => onViec('ky-vong') }] : []),
     ...(!thuong && data.dai?.viewer.coTheChuyenNhieuEm ? [{ key: 'chuyen-tiep', nhan: 'Chuyển tiếp lớp…', onChon: () => onViec('chuyen-tiep') }] : []),
     ...phu.slice(2).map((x) => ({ key: x.key, nhan: x.nhan, onChon: x.lam })),
     /* PR-QU (A): GVCN lớp này cũng thấy — đổi được GV bộ môn, ô GVCN chỉ đọc. */

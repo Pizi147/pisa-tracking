@@ -9220,6 +9220,9 @@ await runPrClTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, ad
 // ==================================================================== PR-CT2 (chế tài cuối khoá)
 const { runPrCt2Tests } = await import('./prCt2.tests.ts');
 await runPrCt2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-KV (Kỳ vọng đầu ra cả lớp)
+const { runPrKvTests } = await import('./prKv.tests.ts');
+await runPrKvTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
