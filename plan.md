@@ -243,6 +243,14 @@ Công việc của tôi, chuông, câu báo lỗi máy chủ trên các đườn
 - **Sổ tay:** ảnh màn "Nộp kế hoạch bổ trợ" đã lỗi thời → PR-SOTAY cập nhật.
 - **Trước deploy:** đếm (chỉ đọc) số nhóm `bo_tro` còn `planned` trên DB thật để biết migrate `prCt2` phần B xử lý bao nhiêu PA. Thứ tự migrate: `prPa` → `prCt2`.
 
+### RÀ SOÁT MOCK TEST + TEST LỚP THƯỜNG (08/10, chờ chủ sản phẩm duyệt — CHƯA code)
+Báo cáo + mockup: `thiet-ke/mockup-mt-quy-trinh-2026-10-08.html` (artifact https://claude.ai/artifact/W9VJ7ZePuYAFnLwhAVrpZz). 9 vấn đề chủ SP nêu 08/10.
+- **Ngõ cụt huỷ (còn ở main):** NC1 MT cũ có kỹ năng đã huỷ → ẩn Khôi phục (`shared/domain/thaoTacMt.ts:29-32` xét "cũ" trước "đã huỷ"); NC2 Khôi phục chặn cứng theo thứ tự lượt (`absence.ts:660`), không có "Không mock lại"; NC3 lượt mọi kỹ năng đã huỷ ("Huỷ phần còn lại" ở MT không phải cuối) → Dời cả đợt 400, Huỷ cả lượt 400, hàng loạt báo sai "đã xong" (`shared/domain/keHoachTest.ts:258`).
+- **Lỗi logic còn:** Mở lại lượt không kiểm thứ tự (`attempts.ts:1388`); hồi sinh lượt kéo theo `ket_qua_huy` mồ côi; dời vượt âm thầm bỏ lịch lượt sau; `setSkillWeek` không chặn kỹ năng đã huỷ; Dời cả đợt ≠ hộp một đợt với kỹ năng có điểm.
+- **Đã sửa ở main, chờ deploy:** hồ sơ MT 500 (#256), ghi nửa vời Turso (#277). Sau deploy: kiểm chỉ đọc DB thật (lượt xác sống, lượt sau trước lượt trước, `ket_qua_huy` mồ côi, `score.huy_vuot` không có `ket_qua_huy`).
+- **Đề xuất PR (thứ tự):** 0 deploy + kiểm DB · 1 PR-MTKET (5 thao tác: Huỷ điểm / Huỷ lịch kỹ năng / Bỏ kỹ năng / Huỷ MT mọi vị trí / Khôi phục) · 2 PR-CHENMT mở rộng (đánh số lại 2 chiều thay chặn + thay T2) sau khi đưa lại #247 · 3 PR-MTUI (mục 5–8: thu gọn Kế hoạch Test, "Xếp nhiều MT" + panel "Chọn lớp…", tên → Hồ sơ HV chỉ ở Kế hoạch Test, tiêu đề Lịch Test "bài thi W1 OCT" + chip hạn, Điểm theo lớp bỏ tuần khỏi tab → "Thi W1 OCT" dưới mã HV) · 4 PR-HOP1 (một hộp một đường lưu + GVCN đề xuất dời có cấu trúc) · 5 PR-XTHV (tab Xếp theo học viên, ≤3 em) · 6 PR-LT4 lớp thường (đổi mốc hỏi dời bài, "-" tự dời thứ Hai, vướng Final vẫn lưu "-", QL Huỷ kết quả môn, sửa Rulebook §20.6 hạn chấm).
+- **9 câu chờ chủ SP** (trong trang): commit đang deploy (ảnh 1 có chip #245); huỷ MT giữa (giữ số / đánh số lại); đánh số lại thay chặn + kỳ vọng theo số mới; bỏ kỹ năng MT cũ/tuần thi; tên nút; tab theo HV (≤3 em, gợi ý 6/12/16); em lệch tuần (chữ đậm); quy trình A/B/C; lớp thường 3 việc.
+
 ### SAU PR-KV (#274, rà 08/10) — ghi chú không chặn, chờ góp ý / sửa sau
 - **Case không PA → "Nhắc" báo 404:** chủ Case = GVCN dự phòng (lớp FT chưa phân công GVBM kỹ năng) không thấy dòng "Thêm PA", Quản trị gán cho GVCN → Nhắc 404. Có từ trước, PR-KV làm dễ gặp hơn (Case Học viên). PR nhỏ: `no_plan` gán người làm theo cùng luật quyền (hoặc chủ Case Học viên = QL); có thể gộp PR-GOP.
 - **Chủ Case khi Lưu** lấy lớp FT từ `lenh.lop_dich_id`; em đã chuyển FT → FT (PR-CL) thì gợi ý theo lớp cũ. Nên lấy lớp đang học.

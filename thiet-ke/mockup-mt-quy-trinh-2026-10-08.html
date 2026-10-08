@@ -1,0 +1,518 @@
+<title>Rà soát Mock Test</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Bố cục: một cột đọc (báo cáo) xen các "khung màn" mô phỏng app PISA ở 1440 và 375. Token lấy theo web/src/index.css. */
+:root{
+  --bg:#f5f7fa; --surface:#ffffff; --surface-2:#eef1f5; --line:rgba(15,23,42,.12); --line-strong:rgba(15,23,42,.22);
+  --accent:#1d5fbf; --accent-strong:#174e9e; --accent-soft:rgba(29,95,191,.08); --accent-line:rgba(29,95,191,.35); --accent-ink:#fff;
+  --text:#0f172a; --text-dim:#475569; --text-faint:#64748b;
+  --ok:rgb(21 122 66); --ok-bg:rgb(220 243 229); --ok-line:rgb(143 209 171);
+  --bad:rgb(180 35 35); --bad-bg:rgb(253 226 226); --bad-line:rgb(240 163 163);
+  --late:rgb(180 64 15); --late-bg:rgb(253 230 216); --late-line:rgb(241 174 138);
+  --soon:rgb(138 90 0); --soon-bg:rgb(253 241 207); --soon-line:rgb(230 196 107);
+  --doing:rgb(29 95 191); --doing-bg:rgb(227 237 251); --doing-line:rgb(157 187 232);
+  --wait:rgb(91 63 184); --wait-bg:rgb(236 230 253); --wait-line:rgb(189 174 240);
+  --muted:rgb(51 65 85); --muted-bg:rgb(238 241 245); --muted-line:rgb(207 213 221);
+  --page:#e9edf3;
+  --f-ui:'Be Vietnam Pro',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-num:'Inter','Be Vietnam Pro',system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0c1220; --surface:#141d2f; --surface-2:#1a2437; --line:rgba(160,178,214,.14); --line-strong:rgba(160,178,214,.26);
+  --accent:#7db3f0; --accent-strong:#a9cdf7; --accent-soft:rgba(125,179,240,.14); --accent-line:rgba(125,179,240,.4); --accent-ink:#0c1220;
+  --text:#dde5f2; --text-dim:#a3b1c8; --text-faint:#7d8ba3;
+  --ok:rgb(111 220 159); --ok-bg:rgb(18 53 38); --ok-line:rgb(43 112 80);
+  --bad:rgb(255 154 162); --bad-bg:rgb(60 29 36); --bad-line:rgb(136 64 74);
+  --late:rgb(255 145 102); --late-bg:rgb(62 31 19); --late-line:rgb(154 74 42);
+  --soon:rgb(242 196 80); --soon-bg:rgb(53 43 16); --soon-line:rgb(122 98 34);
+  --doing:rgb(128 184 255); --doing-bg:rgb(19 44 77); --doing-line:rgb(47 93 149);
+  --wait:rgb(196 169 255); --wait-bg:rgb(39 32 67); --wait-line:rgb(87 74 138);
+  --muted:rgb(201 212 230); --muted-bg:rgb(29 42 64); --muted-line:rgb(52 68 95);
+  --page:#080d18; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#0c1220; --surface:#141d2f; --surface-2:#1a2437; --line:rgba(160,178,214,.14); --line-strong:rgba(160,178,214,.26);
+  --accent:#7db3f0; --accent-strong:#a9cdf7; --accent-soft:rgba(125,179,240,.14); --accent-line:rgba(125,179,240,.4); --accent-ink:#0c1220;
+  --text:#dde5f2; --text-dim:#a3b1c8; --text-faint:#7d8ba3;
+  --ok:rgb(111 220 159); --ok-bg:rgb(18 53 38); --ok-line:rgb(43 112 80);
+  --bad:rgb(255 154 162); --bad-bg:rgb(60 29 36); --bad-line:rgb(136 64 74);
+  --late:rgb(255 145 102); --late-bg:rgb(62 31 19); --late-line:rgb(154 74 42);
+  --soon:rgb(242 196 80); --soon-bg:rgb(53 43 16); --soon-line:rgb(122 98 34);
+  --doing:rgb(128 184 255); --doing-bg:rgb(19 44 77); --doing-line:rgb(47 93 149);
+  --wait:rgb(196 169 255); --wait-bg:rgb(39 32 67); --wait-line:rgb(87 74 138);
+  --muted:rgb(201 212 230); --muted-bg:rgb(29 42 64); --muted-line:rgb(52 68 95);
+  --page:#080d18; color-scheme:dark;}
+*{box-sizing:border-box}
+body{background:var(--page);color:var(--text);font-family:var(--f-ui);font-size:15px;line-height:1.6;margin:0;padding-inline:16px;padding-block:24px 64px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+h1{font-size:28px;line-height:1.25;margin:0;text-wrap:balance;font-weight:700}
+h2{font-size:21px;margin:0;text-wrap:balance;font-weight:700}
+h3{font-size:16.5px;margin:0;font-weight:600}
+p{margin:0;max-width:72ch}
+.num,td.n,.tn{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.lead{color:var(--text-dim);max-width:72ch}
+.top{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:flex-start}
+.theme{display:flex;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden;background:var(--surface)}
+.theme button{font:inherit;font-size:13px;border:0;background:transparent;color:var(--text-dim);padding:6px 12px;cursor:pointer}
+.theme button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+section.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.toc{display:flex;flex-wrap:wrap;gap:8px}
+.toc a{font-size:13px;color:var(--accent-strong);text-decoration:none;border:1px solid var(--accent-line);background:var(--accent-soft);padding:3px 10px;border-radius:999px}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{text-align:left;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);font-weight:600;padding:9px 12px;background:var(--surface-2);border-bottom:1px solid var(--line)}
+td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;line-height:1;padding:5px 8px;border-radius:6px;border:1px solid var(--muted-line);background:var(--muted-bg);color:var(--muted);white-space:nowrap}
+.chip.r{border-radius:999px}
+.ok{color:var(--ok);background:var(--ok-bg);border-color:var(--ok-line)}
+.bad{color:var(--bad);background:var(--bad-bg);border-color:var(--bad-line)}
+.late{color:var(--late);background:var(--late-bg);border-color:var(--late-line)}
+.soon{color:var(--soon);background:var(--soon-bg);border-color:var(--soon-line)}
+.doing{color:var(--doing);background:var(--doing-bg);border-color:var(--doing-line)}
+.wait{color:var(--wait);background:var(--wait-bg);border-color:var(--wait-line)}
+.done{color:var(--text-dim)}
+ul.plain{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;max-width:76ch}
+.qa{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.q{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--bg);display:flex;flex-direction:column;gap:6px}
+.q b{font-size:14px}
+.q .rec{font-size:13px;color:var(--ok)}
+.note{font-size:13px;color:var(--text-faint)}
+/* ===== Khung màn mô phỏng app ===== */
+.mock{display:flex;flex-direction:column;gap:10px;min-width:0}
+.mock-h{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.mock-h .lbl{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-faint);font-weight:600}
+.scr{overflow-x:auto;padding-bottom:4px}
+.dev{background:var(--bg);border:1px solid var(--line-strong);border-radius:12px;color:var(--text);font-size:13.5px;line-height:1.45}
+.dev.w{width:1180px}
+.dev.p{width:375px;max-width:100%}
+.pair{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+.appbar{display:flex;align-items:center;gap:18px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--surface)}
+.appbar .logo{font-weight:700}
+.appbar .nav{display:flex;gap:4px}
+.appbar .nav span{padding:5px 10px;border-radius:8px;color:var(--text-dim)}
+.appbar .nav span.on{background:var(--accent-soft);color:var(--accent-strong);border:1px solid var(--accent-line)}
+.pad{padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{font:inherit;font-size:13px;font-weight:600;border:1px solid var(--line-strong);background:var(--surface);color:var(--text);border-radius:8px;padding:7px 12px;white-space:nowrap}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:transparent}
+.btn.dis{opacity:.45}
+.btn.dng{color:var(--bad);border-color:var(--bad-line)}
+.inp{border:1px solid var(--line-strong);background:var(--surface);border-radius:8px;padding:7px 10px;color:var(--text-dim);min-width:0}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line)}
+.tabs span{padding:8px 12px;color:var(--text-dim);border-bottom:2px solid transparent}
+.tabs span.on{color:var(--text);font-weight:600;border-bottom-color:var(--accent)}
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden}
+.seg span{padding:6px 12px;color:var(--text-dim)}
+.seg span.on{background:var(--accent-soft);color:var(--accent-strong);font-weight:600}
+.grp{border:1px solid var(--line);border-radius:10px;background:var(--surface);overflow:hidden}
+.grp-h{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface-2)}
+.grp-h .car{color:var(--text-faint);width:12px}
+.cnt{font-family:var(--f-num);font-size:12px;font-weight:600;padding:2px 7px;border-radius:999px;background:var(--surface);border:1px solid var(--line)}
+.sub{color:var(--text-faint);font-size:12.5px}
+.mt{display:inline-flex;gap:6px;align-items:center;justify-content:space-between;font-size:12px;font-weight:600;border:1px solid var(--doing-line);border-radius:6px;padding:4px 8px;min-width:150px;color:var(--text)}
+.mt.muted{border-color:var(--muted-line);background:var(--muted-bg);color:var(--muted);min-width:0}
+.mt.ok{border-color:var(--ok-line);background:var(--ok-bg);color:var(--ok)}
+.mt.sel{background:var(--text);color:var(--bg);border-color:var(--text)}
+.dt{width:100%;border-collapse:collapse;font-size:13px}
+.dt th{font-size:11px;padding:7px 10px;background:transparent}
+.dt td{padding:8px 10px}
+.menu{border:1px solid var(--line-strong);background:var(--surface);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:6px;display:flex;flex-direction:column;min-width:240px}
+.menu .it{padding:8px 10px;border-radius:6px;display:flex;flex-direction:column;gap:2px}
+.menu .it:hover{background:var(--surface-2)}
+.menu .it small{color:var(--text-faint);font-size:12px}
+.menu .it.off{opacity:.45}
+.menu .sep{height:1px;background:var(--line);margin:4px 0}
+.modal{border:1px solid var(--line-strong);background:var(--surface);border-radius:12px;display:flex;flex-direction:column;max-width:560px}
+.modal .mh{padding:12px 16px;border-bottom:1px solid var(--line);font-weight:600}
+.modal .mb{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.modal .mf{padding:10px 16px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.opt{border:1px solid var(--line-strong);border-radius:10px;padding:10px 12px;display:flex;gap:10px;align-items:flex-start}
+.opt.on{border-color:var(--accent);background:var(--accent-soft)}
+.radio{width:16px;height:16px;border-radius:50%;border:2px solid var(--line-strong);flex:none;margin-top:3px}
+.opt.on .radio{border-color:var(--accent);box-shadow:inset 0 0 0 3px var(--surface);background:var(--accent)}
+.banner{border:1px solid var(--soon-line);background:var(--soon-bg);color:var(--text);border-radius:10px;padding:10px 12px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.split{display:grid;grid-template-columns:330px 1fr;min-height:420px}
+.split>aside{border-right:1px solid var(--line);padding:12px;display:flex;flex-direction:column;gap:8px;background:var(--surface)}
+.split>main{padding:12px 16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.st{display:flex;gap:8px;align-items:flex-start;padding:8px;border-radius:8px;border:1px solid transparent}
+.st.on{border-color:var(--accent-line);background:var(--accent-soft)}
+.box{width:16px;height:16px;border:2px solid var(--line-strong);border-radius:4px;flex:none;margin-top:2px}
+.box.on{background:var(--accent);border-color:var(--accent)}
+.foot{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-top:1px solid var(--line);background:var(--surface);gap:8px;flex-wrap:wrap}
+.cell-ch{background:var(--text);color:var(--bg);border-radius:6px;padding:3px 7px;font-weight:600;font-size:12px}
+.err{color:var(--bad);font-size:12.5px}
+.warn{color:var(--soon);font-size:12.5px}
+.empty{border:1px dashed var(--line-strong);border-radius:10px;padding:28px;text-align:center;color:var(--text-faint);display:flex;flex-direction:column;gap:8px;align-items:center}
+.lane{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:720px){.lane{grid-template-columns:1fr} h1{font-size:23px}}
+.kicker{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-strong);font-weight:700}
+.prog{display:flex;flex-direction:column;gap:8px}
+.step{display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:start}
+.step .d{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-family:var(--f-num);font-weight:600;font-size:13px;background:var(--accent-soft);color:var(--accent-strong);border:1px solid var(--accent-line)}
+</style>
+
+<div class="wrap">
+
+<header class="top">
+  <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
+    <span class="kicker">PISA Tracking · Planning · 08/10/2026</span>
+    <h1>Rà soát Mock Test và Test lớp thường</h1>
+    <p class="lead">Đối chiếu 9 vấn đề chủ sản phẩm nêu với code mới nhất trên <span class="tn">main</span> (đã có #256 sửa hồ sơ MT và #277 sửa lỗi lưu Turso, cả hai CHƯA deploy). Chưa sửa code. Phần cuối là mockup để duyệt.</p>
+  </div>
+  <div class="theme" role="group" aria-label="Giao diện">
+    <button id="t-auto" type="button" aria-pressed="true">Theo máy</button>
+    <button id="t-light" type="button" aria-pressed="false">Sáng</button>
+    <button id="t-dark" type="button" aria-pressed="false">Tối</button>
+  </div>
+</header>
+
+<nav class="toc" aria-label="Mục lục">
+  <a href="#tomtat">Tóm tắt</a><a href="#v1">1 · Huỷ bị kẹt</a><a href="#v2">2 · Xếp hàng loạt</a><a href="#v3">3 · Lịch lộn xộn</a><a href="#v4">4 · Xếp theo học viên</a><a href="#v5">5–8 · Giao diện</a><a href="#v9">9 · Quy trình</a><a href="#hoi">Câu cần bạn chọn</a><a href="#lo">Thứ tự làm</a>
+</nav>
+
+<section class="card" id="tomtat">
+  <h2>Tóm tắt 9 vấn đề</h2>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>#</th><th>Vấn đề</th><th>Tình trạng trong code</th><th>Mức</th></tr></thead>
+    <tbody>
+      <tr><td class="n">1</td><td>Huỷ MT xong bị khoá cứng</td><td><span class="chip bad">Còn</span> 3 "ngõ cụt" có thật, đã chạy lại được trên máy</td><td><span class="chip late">Cao</span></td></tr>
+      <tr><td class="n">2</td><td>Xếp lịch hàng loạt quá hạn chế</td><td><span class="chip bad">Còn</span> 6 điều kiện chặn không cần thiết</td><td><span class="chip soon">Vừa</span></td></tr>
+      <tr><td class="n">3</td><td>Lịch lộn xộn, MT3/MT4 không hiện ở Hồ sơ MT</td><td><span class="chip ok">Đã sửa</span> lỗi không hiện (#256) và lỗi ghi nửa vời (#277), chờ deploy · <span class="chip bad">Còn</span> 3 lỗi logic</td><td><span class="chip late">Cao</span></td></tr>
+      <tr><td class="n">4</td><td>Tab "Xếp theo học viên"</td><td><span class="chip">Mới</span> chưa có, có mockup bên dưới</td><td><span class="chip soon">Vừa</span></td></tr>
+      <tr><td class="n">5</td><td>Tự mở lớp đầu, đổi tên nút</td><td><span class="chip bad">Còn</span> sửa nhỏ, 2 chỗ</td><td><span class="chip">Thấp</span></td></tr>
+      <tr><td class="n">6</td><td>Bấm tên học viên ở Kế hoạch Test</td><td><span class="chip bad">Còn</span> tên trong lưới hiện không bấm được</td><td><span class="chip">Thấp</span></td></tr>
+      <tr><td class="n">7</td><td>Tuần và hạn ở tiêu đề Lịch Test</td><td><span class="chip bad">Còn</span> tiêu đề không nói tuần thi, không nói hạn</td><td><span class="chip soon">Vừa</span></td></tr>
+      <tr><td class="n">8</td><td>Tuần MT ở Điểm theo lớp</td><td><span class="chip bad">Sai</span> tab lấy tuần sớm nhất, kể cả MT cũ</td><td><span class="chip soon">Vừa</span></td></tr>
+      <tr><td class="n">9</td><td>Quy trình tổng thể</td><td>Một việc "dời MT" có 5 lối vào, 3 kiểu hộp; lớp thường còn 4 chỗ kẹt</td><td><span class="chip soon">Vừa</span></td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">Một điều cần bạn xác nhận: ảnh 1 có kiểu chip "L R W · W1 OCT" của PR-OMT #245. Bản 07/10 (sau #237) không có kiểu chip này, nên web chính có thể đang chạy bản mới hơn. Nếu vậy, bản sửa hồ sơ MT (#256) có thể đã lên web hoặc chưa, tuỳ commit thật đang chạy.</p>
+</section>
+
+<section class="card" id="v1">
+  <span class="kicker">Vấn đề 1</span>
+  <h2>Huỷ MT xong bị khoá cứng</h2>
+  <p>Hiện có <b>bốn kiểu "huỷ" khác nhau</b> nhưng giao diện gọi gần giống nhau, nên dễ bấm nhầm cái gây kẹt.</p>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Nút</th><th>Thật sự làm gì</th><th>Lượt MT còn không</th><th>Quay lại được không</th></tr></thead>
+    <tbody>
+      <tr><td><b>Huỷ điểm</b></td><td>Xoá điểm một kỹ năng, giữ lịch. Điểm cũ còn trong nhật ký.</td><td>Còn</td><td>Nhập lại điểm</td></tr>
+      <tr><td><b>Huỷ phần còn lại</b></td><td>Đánh dấu mọi kỹ năng chưa thi là "đã huỷ phần thi". Đây là nút bạn đã bấm ở MT1.</td><td><b>Còn, giữ số MT</b></td><td>Chỉ "Khôi phục và đặt tuần" từng kỹ năng, và hay bị chặn</td></tr>
+      <tr><td><b>Huỷ cả lượt</b></td><td>Huỷ hẳn lượt. <b>Chỉ cho MT cuối cùng</b>, chưa có điểm.</td><td>Không</td><td>"Mở lại lượt"</td></tr>
+      <tr><td><b>Huỷ lịch</b></td><td>Bỏ tuần, lượt về "Chưa có tuần". Chỉ có ở Hồ sơ HV › Lộ trình.</td><td>Còn</td><td>Xếp lịch lại</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Vì sao MT1 của Nguyễn Trâm Anh (ảnh 2) bị kẹt</h3>
+  <div class="prog">
+    <div class="step"><span class="d">1</span><p>MT1 không phải MT cuối, nên menu không có "Huỷ cả lượt", chỉ có "Huỷ phần còn lại". Bấm xong, 4 kỹ năng thành "đã huỷ phần thi", <b>lượt vẫn còn</b>.</p></div>
+    <div class="step"><span class="d">2</span><p>"Dời lịch thi cả đợt" tự bỏ qua kỹ năng đã huỷ. Cả 4 đã huỷ nên không còn gì để dời, ra câu đỏ trong ảnh. Menu vẫn hiện nút này dù bấm chắc chắn lỗi.</p></div>
+    <div class="step"><span class="d">3</span><p>Các lối khác cũng đóng: "Huỷ cả lượt" bị từ chối (không phải MT cuối); xếp hàng loạt báo sai "MT1 đã xong"; "Huỷ lịch" báo "không có gì để huỷ".</p></div>
+    <div class="step"><span class="d">4</span><p>Lối duy nhất là "Khôi phục và đặt tuần" <b>từng kỹ năng</b>, nhưng chỉ nhận tuần nằm trước MT2. MT2 đã có lịch thì gần như không có tuần nào hợp lệ. Nếu lượt là "MT cũ" thì nút Khôi phục còn bị ẩn hẳn.</p></div>
+  </div>
+  <h3>Ba ngõ cụt có thật trong code main</h3>
+  <ul class="plain">
+    <li><b>Ngõ cụt 1, MT cũ có kỹ năng đã huỷ:</b> màn hình xét "MT cũ" trước "đã huỷ", nên ẩn nút Khôi phục. Máy chủ thì vẫn cho khôi phục; chỉ giao diện chặn.</li>
+    <li><b>Ngõ cụt 2, khôi phục vướng thứ tự lượt:</b> khôi phục chặn cứng nếu tuần không nằm gọn giữa hai lượt, và không có nút "Không mock lại" thay thế.</li>
+    <li><b>Ngõ cụt 3, lượt "xác sống":</b> mọi kỹ năng đã huỷ nhưng lượt vẫn giữ số và tuần, không nút nào xử lý được cả lượt.</li>
+  </ul>
+  <h3>MT chưa thi và MT cũ khác nhau thế nào</h3>
+  <p>MT cũ (nhãn "cũ", "nhập bù") là lượt xếp vào tuần đã qua từ 2 tuần trở lên. Với MT cũ: <b>không bỏ được kỹ năng</b>, <b>không báo vắng được</b>, <b>không xếp hàng loạt được</b>, nút Khôi phục bị ẩn. Cách duy nhất để nói "em không thi kỹ năng này" là gõ "-" vào từng ô. Vì vậy MT cũ hay bị kẹt hơn MT chưa thi.</p>
+  <h3>Đề xuất: tách rõ 5 thao tác, không còn ngõ cụt</h3>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Thao tác (tên mới)</th><th>Dùng khi</th><th>Kết quả</th><th>Lối ra</th></tr></thead>
+    <tbody>
+      <tr><td><b>Huỷ điểm</b></td><td>Nhập sai điểm</td><td>Giữ như hiện nay</td><td>Nhập lại</td></tr>
+      <tr><td><b>Huỷ lịch kỹ năng</b> (thay "Huỷ phần còn lại")</td><td>Chưa chốt được tuần</td><td>Kỹ năng về "Chưa xếp", không bị đánh dấu "đã huỷ"</td><td>Xếp lịch / Bỏ kỹ năng</td></tr>
+      <tr><td><b>Bỏ kỹ năng khỏi lượt</b></td><td>Em chỉ thi 1–2 kỹ năng</td><td>Kết quả tính trên kỹ năng còn lại. QL làm được cả khi đã tới tuần thi và với MT cũ, miễn kỹ năng chưa có điểm.</td><td>"Đưa lại vào đợt"</td></tr>
+      <tr><td><b>Huỷ MT</b></td><td>Bỏ cả lượt</td><td>Làm được với <b>mọi</b> MT chưa có điểm. Hỏi: giữ số MT (về Chưa xếp) hay bỏ hẳn và đánh số lại các MT sau.</td><td>Mở lại / Xếp lại</td></tr>
+      <tr><td><b>Khôi phục</b></td><td>Đổi ý</td><td>Hiện ở mọi trạng thái đã huỷ, kể cả MT cũ. Vướng thứ tự thì gợi ý đánh số lại thay vì chặn. Lượt đã huỷ hết kỹ năng có nút "Khôi phục cả 4 kỹ năng".</td><td>—</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">"Đã huỷ phần thi" chỉ còn dùng cho việc hệ thống tự làm (vắng 2 lần, đề nghị dời bị từ chối hoặc hết hạn). Khi đó luôn có cặp nút "Khôi phục" và "Không mock lại".</p>
+</section>
+
+<section class="card" id="v2">
+  <span class="kicker">Vấn đề 2</span>
+  <h2>Xếp lịch hàng loạt quá hạn chế</h2>
+  <p>Tôi chia các điều kiện chặn hiện có thành hai nhóm.</p>
+  <div class="lane">
+    <div class="q"><b>Giữ lại: bảo vệ dữ liệu</b>
+      <ul class="plain">
+        <li>Hai MT không trùng một tuần</li>
+        <li>GV/GVCN không xếp vào tuần đã qua (QL được)</li>
+        <li>Kỹ năng đã thi mà chưa chấm thì không huỷ</li>
+        <li>Đang có đề nghị dời chờ duyệt thì không dời lần nữa</li>
+        <li>Tối đa MT8; MT mới phải sau MT trước</li>
+      </ul></div>
+    <div class="q"><b>Bỏ hoặc nới: chặn không cần thiết</b>
+      <ul class="plain">
+        <li><b>Chặn cứng thứ tự lượt với QL</b> → cho dời, tự đánh số lại theo thời gian</li>
+        <li><b>Dời vượt MT sau thì xoá điểm MT sau</b> (giấu vào "kết quả đã huỷ") → thay bằng đánh số lại, không mất điểm</li>
+        <li>"Dời cả đợt" bỏ qua kỹ năng có điểm, trong khi hộp một đợt lại cho dời → một luật chung</li>
+        <li>Đã tới tuần thi thì không bỏ kỹ năng → QL được bỏ nếu chưa có điểm</li>
+        <li>"Huỷ cả lượt" chỉ cho MT cuối → cho mọi MT chưa có điểm</li>
+        <li>Xếp hàng loạt không đụng MT cũ, báo sai "đã xong" → cho chọn MT cũ để dời hoặc xoá lịch</li>
+      </ul></div>
+  </div>
+  <p>Ví dụ của bạn, "chuyển MT1 sang tuần khác": hiện phải vào Kế hoạch Test, tìm em, mở ô MT1, rồi dời từng kỹ năng. Nếu MT1 nằm sau MT2 về thời gian thì bị chặn. Với đề xuất trên, panel cho chọn "MT1" ở mọi trạng thái chưa có điểm, kể cả MT cũ, và dời luôn. Nếu MT1 vượt qua MT2, panel hỏi "Đánh số lại?" thay vì chặn.</p>
+  <p class="note">"Đánh số lại theo thời gian" mở rộng kế hoạch PR-CHENMT đã soạn (chèn MT về trước), áp cho cả chiều dời về sau. Cần bạn chọn ở câu 3: khi số MT đổi thì kỳ vọng có đổi theo không.</p>
+</section>
+
+<section class="card" id="v3">
+  <span class="kicker">Vấn đề 3</span>
+  <h2>Lịch lộn xộn sau nhiều lần chỉnh</h2>
+  <ul class="plain">
+    <li><b>MT3/MT4 không hiện ở Hồ sơ MT: đã sửa ở main</b> (#256). Lượt có lịch sử điểm hoặc dời bị lỗi khi mở trên Turso; MT1/MT2 cũ chưa có lịch sử nên vẫn mở được. Hết lỗi khi deploy.</li>
+    <li><b>Lỗi lưu nửa vời: đã sửa ở main</b> (#277). Trước đây một lần lưu có thể ghi một nửa rồi báo lỗi; bấm lại thì càng rối. Đây rất có thể là một nguyên nhân chính làm lịch lộn xộn. <b>Dữ liệu đã ghi dở trước đó không tự sửa</b>, nên sau deploy cần chạy một lượt kiểm chỉ đọc trên DB thật.</li>
+    <li><b>Còn 3 lỗi logic</b> (đã chạy lại được trên máy):
+      <ul class="plain">
+        <li>"Mở lại lượt" không kiểm thứ tự: MT3 mở lại có thể nằm trước MT2.</li>
+        <li>Dời một MT vượt qua MT sau thì <b>âm thầm bỏ lịch</b> MT sau (chỉ có chip vàng, không hỏi). Đây là nguồn của "MT4 · Chưa có tuần" trong ảnh 3.</li>
+        <li>Huỷ rồi xếp MT mới thì máy dùng lại đúng dòng cũ, kéo theo "kết quả đã huỷ" cũ không khôi phục được.</li>
+      </ul></li>
+  </ul>
+  <p><b>Cách đọc ảnh 3:</b> rất có thể điểm 4.5 / 5.0 / 5.0 của MT4 (ảnh 1) đã bị giấu vào "kết quả đã huỷ" khi MT3 được dời sang W1 OCT, nên MT4 về "Chưa có tuần". Nếu đúng, Hồ sơ MT4 có mục "Khôi phục kết quả". Cần kiểm trên DB thật sau deploy.</p>
+  <p><b>Ba màn hiển thị khác nhau:</b> lưới Kế hoạch Test ẩn lượt đã huỷ; bảng MT ở hồ sơ HV hiện lượt đã huỷ với tuần "muộn nhất"; Hồ sơ MT hiện tuần từng kỹ năng. Cùng dữ liệu nhưng mỗi màn suy ra một kiểu. Đề xuất: cả ba cùng dùng một cách ghi tuần ("W1 OCT", lệch thì "W1 OCT · S W2 OCT").</p>
+</section>
+
+<section class="card" id="v4">
+  <span class="kicker">Vấn đề 4 · Mockup</span>
+  <h2>Tab "Xếp theo học viên"</h2>
+  <p>Panel hiện chỉ có <b>một tuần chung cho mọi em</b> và tự đóng sau khi lưu, nên xếp mỗi em một tuần phải mở đi mở lại. Tab mới: cột trái chọn 1–3 em; bên phải mỗi em một bảng MT × kỹ năng, sửa được nhiều MT cùng lúc. Dùng lại đúng luật kiểm của hộp hiện có, không thêm điều kiện chặn mới.</p>
+
+  <div class="mock">
+    <div class="mock-h"><span class="lbl">Màn rộng · 1440 · đang xếp, có 1 lỗi</span><span class="note">Cuộn ngang trong khung nếu màn hẹp</span></div>
+    <div class="scr"><div class="dev w">
+      <div class="appbar"><span class="logo">Xếp nhiều MT</span><div class="tabs" style="border:0"><span>Xếp theo tuần</span><span class="on">Xếp theo học viên</span></div><span style="margin-left:auto" class="btn ghost">✕</span></div>
+      <div class="split">
+        <aside>
+          <div class="row"><span class="chip">CP FT 130 ✕</span><span class="chip">+ lớp</span></div>
+          <div class="inp">Tìm học viên · Tên hoặc mã</div>
+          <div class="row"><span class="chip r doing">Tất cả 13</span><span class="chip r">Chưa có MT tiếp 5</span><span class="chip r">Cần xếp lại 1</span></div>
+          <div class="st on"><span class="box on"></span><div><b>Nguyễn Nam Cường</b> <span class="sub">000043</span><div class="row" style="margin-top:4px"><span class="chip ok">MT3 · W4 AUG</span><span class="chip soon">MT4 · cần xếp lại</span></div></div></div>
+          <div class="st on"><span class="box on"></span><div><b>Tô Xuân Tùng</b> <span class="sub">000051</span><div class="row" style="margin-top:4px"><span class="chip ok">MT3 · W1 OCT</span><span class="chip">MT4 · chưa xếp</span></div></div></div>
+          <div class="st"><span class="box"></span><div><b>Lê Thảo Nhi</b> <span class="sub">000106</span><div class="row" style="margin-top:4px"><span class="chip doing">MT4 · W2 NOV</span></div></div></div>
+          <p class="note">Chọn tối đa 3 em một lần.</p>
+        </aside>
+        <main>
+          <div class="grp">
+            <div class="grp-h"><b>Nguyễn Nam Cường</b><span class="sub">CP FT 130 · Target 6.5 · Lộ trình ›</span></div>
+            <table class="dt"><thead><tr><th>Lượt</th><th>Tuần chung</th><th>L</th><th>R</th><th>W</th><th>S</th><th>Sẽ đổi</th><th></th></tr></thead>
+              <tbody>
+                <tr><td><b>MT4</b><div class="sub">kỳ vọng 6.0</div></td><td><span class="inp tn">W1 OCT ▾</span></td><td class="tn">W1 OCT · 4.5</td><td class="tn">W1 OCT · 5.0</td><td class="tn">W1 OCT · 5.0</td><td><span class="cell-ch tn">W3 OCT ✓</span><div class="sub">từ "đã huỷ"</div></td><td class="sub">S: Khôi phục → W3 OCT</td><td>⋯</td></tr>
+                <tr><td><b>MT5</b><div class="sub">kỳ vọng 6.5</div></td><td><span class="cell-ch tn">W1 DEC ✓</span></td><td class="tn">W1 DEC</td><td class="tn">W1 DEC</td><td class="tn">W1 DEC</td><td class="tn">W1 DEC</td><td class="sub">Tạo mới</td><td>⋯</td></tr>
+              </tbody></table>
+            <div class="row" style="padding:8px 12px"><span class="btn ghost">+ MT6</span><span class="btn ghost">Điền gợi ý</span></div>
+          </div>
+          <div class="grp">
+            <div class="grp-h"><b>Tô Xuân Tùng</b><span class="sub">CP FT 131 · Target 6.5 · Lộ trình ›</span></div>
+            <table class="dt"><thead><tr><th>Lượt</th><th>Tuần chung</th><th>L</th><th>R</th><th>W</th><th>S</th><th>Sẽ đổi</th><th></th></tr></thead>
+              <tbody>
+                <tr><td><b>MT4</b><div class="sub">kỳ vọng 6.0</div></td><td><span class="cell-ch tn" style="outline:2px solid var(--bad)">W4 SEP ✓</span></td><td class="tn">W4 SEP</td><td class="tn">W4 SEP</td><td class="tn">W4 SEP</td><td class="tn">W4 SEP</td><td class="sub">Xếp W4 SEP</td><td>⋯</td></tr>
+              </tbody></table>
+            <p class="err" style="padding:0 12px 10px">MT3 thi W1 OCT. MT4 phải sau MT3: chọn từ W2 OCT, hoặc "Đánh số lại" để MT4 thành MT3.</p>
+          </div>
+        </main>
+      </div>
+      <div class="foot"><span class="btn">Huỷ thay đổi</span><span class="row"><span class="sub">1 em còn lỗi</span><span class="btn pri">Lưu 1 em · 2 thay đổi</span></span></div>
+    </div></div>
+  </div>
+
+  <div class="pair">
+    <div class="mock"><div class="mock-h"><span class="lbl">375 · chưa chọn em</span></div>
+      <div class="dev p">
+        <div class="appbar" style="gap:8px"><span class="logo">Xếp nhiều MT</span><span style="margin-left:auto">✕</span></div>
+        <div class="tabs" style="padding:0 8px"><span>Theo tuần</span><span class="on">Theo học viên</span></div>
+        <div class="pad">
+          <div class="inp">Chọn lớp…</div>
+          <div class="empty"><b style="color:var(--text)">Chọn lớp để xếp lịch</b><span>Sau đó tick 1–3 học viên.</span></div>
+        </div>
+        <div class="foot"><span class="btn">Đóng</span><span class="btn pri dis">Xếp 0 em ›</span></div>
+      </div></div>
+    <div class="mock"><div class="mock-h"><span class="lbl">375 · đang xếp 1 em</span></div>
+      <div class="dev p">
+        <div class="appbar" style="gap:8px"><span>‹ Danh sách</span><span style="margin-left:auto" class="sub">1/2 em</span></div>
+        <div class="pad">
+          <b>Nguyễn Nam Cường <span class="sub">· CP FT 130</span></b>
+          <div class="grp"><div class="grp-h"><b>MT4</b><span class="sub">kỳ vọng 6.0</span><span style="margin-left:auto" class="inp tn">W1 OCT ▾</span></div>
+            <div class="pad" style="gap:6px">
+              <div class="row" style="justify-content:space-between"><span>☑ L Listening</span><span class="tn sub">W1 OCT · 4.5</span></div>
+              <div class="row" style="justify-content:space-between"><span>☑ R Reading</span><span class="tn sub">W1 OCT · 5.0</span></div>
+              <div class="row" style="justify-content:space-between"><span>☑ W Writing</span><span class="tn sub">W1 OCT · 5.0</span></div>
+              <div class="row" style="justify-content:space-between"><span>☑ S Speaking</span><span class="cell-ch tn">W3 OCT ✓</span></div>
+            </div></div>
+          <div class="grp"><div class="grp-h"><b>MT5</b><span class="sub">Tạo mới</span><span style="margin-left:auto" class="cell-ch tn">W1 DEC ✓</span></div></div>
+          <span class="btn ghost">+ MT6</span>
+        </div>
+        <div class="foot"><span class="btn">Huỷ thay đổi</span><span class="btn pri">Lưu · 2 thay đổi</span></div>
+      </div></div>
+  </div>
+  <p class="note">Sau khi lưu: toast "Đã lưu lịch 2 em.", panel <b>không đóng</b>, thẻ em hiện chip "Đã lưu". Em lỗi giữ nguyên bản nháp và câu lỗi. Tab này chỉ cho QL và Quản trị, chỉ ở Fast Track.</p>
+</section>
+
+<section class="card" id="v5">
+  <span class="kicker">Vấn đề 5–8 · Mockup</span>
+  <h2>Kế hoạch Test, tên học viên, Lịch Test, Điểm theo lớp</h2>
+
+  <h3>5 + 6 · Kế hoạch Test: thu gọn mặc định, nút "Xếp nhiều MT", tên → Hồ sơ HV</h3>
+  <ul class="plain">
+    <li>Trang mở ra <b>thu gọn hết</b>. Chỉ mở sẵn khi đi từ một link chỉ đúng một lớp (Tổng quan, Hồ sơ lớp), hoặc khung chỉ có một lớp.</li>
+    <li>Nút đổi tên. Panel mở ra ở trạng thái <b>"Chọn lớp…"</b>, không tự chọn lớp đầu.</li>
+    <li>Ở Kế hoạch Test, tên học viên trong lưới (hiện không bấm được) thành link sang <b>Hồ sơ HV</b>. Bấm ô MT vẫn mở hộp xếp lịch; trong hộp, chữ "MT4" dẫn sang Hồ sơ MT.</li>
+    <li>Ở Lịch Test và Điểm theo lớp, tên học viên vẫn dẫn sang <b>Hồ sơ MT</b>, vì GV Speaking chấm chéo không được xem Hồ sơ HV.</li>
+  </ul>
+  <div class="scr"><div class="dev w">
+    <div class="appbar"><span class="logo">PISA Tracking</span><div class="nav"><span>Tổng quan</span><span>Học viên &amp; Lớp</span><span class="on">Test</span><span>Công việc</span></div></div>
+    <div class="pad">
+      <div class="tabs"><span>Lịch Test</span><span>Điểm theo lớp</span><span class="on">Kế hoạch Test</span></div>
+      <div class="row"><span class="seg"><span class="on">Fast Track · 11 lớp</span><span>Lớp thường · 8 lớp</span></span><span class="chip r">Cần xếp lại (1)</span><span class="inp">Cẩm Phả ▾</span><span class="inp" style="min-width:220px">⌕ Tìm lớp…</span><span style="margin-left:auto" class="btn pri">Xếp nhiều MT…</span></div>
+      <div class="grp"><div class="grp-h"><span class="car">›</span><b>CP FT 130</b><span class="sub">Cẩm Phả · 13 HV</span><span style="margin-left:auto" class="sub">MT1 đang thi · 1 em cần xếp lại</span></div></div>
+      <div class="grp"><div class="grp-h"><span class="car">›</span><b>CP FT 131</b><span class="sub">Cẩm Phả · 10 HV</span><span style="margin-left:auto" class="sub">2 em chưa có MT tiếp</span></div></div>
+      <div class="grp"><div class="grp-h"><span class="car">⌄</span><b>CP FT 137</b><span class="sub">Cẩm Phả · 7 HV · mở vì bạn vừa bấm</span></div>
+        <table class="dt"><thead><tr><th>Học viên</th><th>MT1</th><th>MT2</th><th>MT3</th><th>MT4</th></tr></thead>
+          <tbody><tr><td><a href="#v5" style="color:var(--accent-strong);font-weight:600">Nguyễn Nam Cường</a><div class="sub tn">000043 · Hồ sơ HV ↗</div></td><td><span class="mt ok">LRWS · W3 JUN</span></td><td><span class="mt ok">LRWS · W4 JUL</span></td><td><span class="mt ok">LRWS · W4 AUG</span></td><td><span class="mt">L R W · W1 OCT</span></td></tr></tbody></table></div>
+    </div>
+  </div></div>
+
+  <h3>7 · Lịch Test: ghi rõ "bài thi tuần nào" và hạn</h3>
+  <p>Đặt chip "W1 OCT" trần cạnh "Test chấm tuần này" dễ bị đọc nhầm thành "tuần này là W1 OCT", trong khi tuần này là W2 OCT. Đề xuất ghi rõ <b>"bài thi W1 OCT"</b> bằng chữ phụ, và <b>một chip hạn</b> đổi màu theo ngày: xám trước thứ Tư, vàng "hạn hôm nay" đúng thứ Tư, đỏ "Quá hạn" từ thứ Năm.</p>
+  <div class="pair">
+    <div class="scr" style="flex:1 1 680px;min-width:0"><div class="dev" style="min-width:640px">
+      <div class="pad">
+        <div class="grp"><div class="grp-h"><span class="car">›</span><b>Test quá hạn chấm</b><span class="cnt late">0</span></div></div>
+        <div class="grp"><div class="grp-h"><span class="car">›</span><b>Test chấm tuần này</b><span class="cnt">37</span><span class="sub">5 lớp · bài thi <b class="tn" style="color:var(--text)">W1 OCT</b></span><span class="chip late">Quá hạn · T4 07/10</span></div></div>
+        <div class="grp"><div class="grp-h"><span class="car">›</span><b>Lịch Test tuần này</b><span class="cnt">47</span><span class="sub">5 lớp · <b class="tn" style="color:var(--text)">W2 OCT</b></span></div></div>
+      </div>
+    </div></div>
+    <div class="q" style="flex:1 1 260px"><b>Chip hạn theo ngày (tuần thi W1 OCT)</b>
+      <div class="row"><span class="chip">hạn T4 07/10</span><span class="sub">thứ Hai, Ba</span></div>
+      <div class="row"><span class="chip soon">hạn hôm nay</span><span class="sub">thứ Tư</span></div>
+      <div class="row"><span class="chip late">Quá hạn · T4 07/10</span><span class="sub">thứ Năm – CN</span></div>
+      <span class="note">Hôm nay thứ Năm 08/10 nên ảnh trên hiện đỏ. Từ thứ Hai, bài chưa chấm sang khối "quá hạn".</span></div>
+  </div>
+
+  <h3>8 · Điểm theo lớp: tuần đi theo từng em, không ở tab</h3>
+  <p>Dòng "W3 JUN" dưới tab MT1 hiện là <b>tuần sớm nhất</b> của cả lớp, tính cả MT cũ của em chuyển vào. Một em lệch là cả tab hiện sai. Đề xuất: tab chỉ ghi "MT1 · 6/7 đủ điểm"; dưới mã từng em thêm dòng "Thi W1 OCT". Em thi khác tuần với số đông thì <b>chữ đậm</b> (không tô màu, vì lệch tuần không phải lỗi).</p>
+  <div class="scr"><div class="dev w">
+    <div class="pad">
+      <div class="row"><span class="mt sel" style="min-width:120px;flex-direction:column;align-items:flex-start">MT1<span style="font-weight:400" class="tn">6/7 đủ điểm</span></span><span class="mt muted" style="min-width:120px;flex-direction:column;align-items:flex-start">MT2<span style="font-weight:400" class="tn">6/7 đủ điểm</span></span><span class="mt muted" style="min-width:120px;flex-direction:column;align-items:flex-start">MT3<span style="font-weight:400" class="tn">1/7 đủ điểm</span></span><span class="mt muted" style="min-width:120px;flex-direction:column;align-items:flex-start">MT4<span style="font-weight:400" class="tn">1/2 đủ điểm</span></span></div>
+      <table class="dt"><thead><tr><th style="width:220px">Học viên</th><th>L (số câu)</th><th>R (số câu)</th><th>W1</th><th>W2</th><th>W</th><th>S</th><th>Kỳ vọng</th><th>OVR</th><th>Kết quả</th></tr></thead>
+        <tbody>
+          <tr><td><a href="#v5" style="color:var(--accent-strong);font-weight:600">Hà Trần Phúc</a><div class="sub tn">000102 · cũ</div><div class="sub tn">Thi W3 JUN</div></td><td class="tn">31 · 7.0</td><td class="tn">33 · 7.5</td><td class="tn">6.5</td><td class="tn">6.5</td><td class="tn">6.5</td><td class="tn">6.0</td><td class="tn">7.0</td><td class="tn">7.0</td><td><span class="chip late">SOS 2</span></td></tr>
+          <tr><td><a href="#v5" style="color:var(--accent-strong);font-weight:600">Lê Châu Anh</a><div class="sub tn">000100</div><div class="tn" style="font-size:12.5px;font-weight:700">Thi W2 SEP · S W3 SEP</div></td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td class="tn">6.5</td><td>—</td><td class="sub">Chờ 4 kỹ năng</td></tr>
+          <tr><td><a href="#v5" style="color:var(--accent-strong);font-weight:600">Lê Thảo Nhi</a><div class="sub tn">000106 · cũ</div><div class="sub tn">Thi W3 JUN</div></td><td class="tn">28 · 6.5</td><td class="tn">28 · 6.5</td><td class="tn">5.5</td><td class="tn">6.0</td><td class="tn">6.0</td><td class="tn">6.5</td><td class="tn">6.5</td><td class="tn">6.5</td><td><span class="chip soon">SOS 1</span></td></tr>
+        </tbody></table>
+    </div>
+  </div></div>
+</section>
+
+<section class="card" id="v9">
+  <span class="kicker">Vấn đề 9</span>
+  <h2>Quy trình tổng thể</h2>
+  <h3>Mock Test: một việc, quá nhiều lối</h3>
+  <p>"Dời một MT" hiện có <b>5 lối vào, 3 kiểu hộp, 2 đường lưu</b>: hộp ở Kế hoạch Test / Lộ trình; "Dời lịch thi cả đợt" ở Hồ sơ MT (luật khác); ⋯ "Dời lịch thi" từng kỹ năng; panel hàng loạt; và Xin dời. Luật máy chủ phần lớn giống nhau nhưng mỗi cửa chặn một kiểu, nên người dùng không đoán được chỗ nào làm được việc gì. "Huỷ lịch" và "Áp lịch đề xuất" chỉ có ở Hồ sơ HV; "Thi lại" chỉ có trong panel.</p>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Phương án</th><th>Làm gì</th><th>Công</th></tr></thead>
+    <tbody>
+      <tr><td><b>A · Một hộp, một đường lưu</b></td><td>Mọi chỗ sửa lịch một MT đều mở cùng một hộp (hộp ở Kế hoạch Test). Bỏ hộp "Dời cả đợt" riêng của Hồ sơ MT. ⋯ của hộp có đủ: Huỷ lịch · Theo tuần đề xuất · Huỷ MT · Khôi phục · Nhật ký · Mở Hồ sơ MT.</td><td>Nhỏ–vừa</td></tr>
+      <tr><td><b>B · A + tab Xếp theo học viên + GVCN đề xuất dời có cấu trúc</b> <span class="chip ok">Khuyến nghị</span></td><td>GVCN chọn tuần ngay trong cùng hộp rồi bấm "Gửi Quản lý". QL bấm Duyệt là áp luôn, không phải sang màn khác làm lại. Bỏ ô chữ tự do "Lịch MT" ở Đề xuất sửa.</td><td>Vừa</td></tr>
+      <tr><td><b>C · Lấy học viên làm trung tâm</b></td><td>Bỏ lưới ở Kế hoạch Test, mọi việc xếp lịch đi qua Hồ sơ HV. Đụng bố cục đã khoá.</td><td>Lớn · không khuyến nghị</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Test lớp thường: 4 chỗ kẹt (làm song song được)</h3>
+  <ul class="plain">
+    <li><b>Đổi mốc lớp không dời bài đã có.</b> Đề xuất: lưu mốc xong hỏi một lần "Dời Final của 18 em W2 DEC → W3 DEC?" [Dời 18 em] [Chỉ đổi mốc].</li>
+    <li><b>Dấu "-" mỗi lần chỉ dời 1 tuần</b>, tuần sau GV phải gõ lại. Đề xuất: thứ Hai máy tự dời như Fast Track (luật đã chốt 02/10).</li>
+    <li><b>Vướng Final thì "-" không lưu được</b>, GV kẹt. Đề xuất: vẫn lưu, gửi thẻ báo QL.</li>
+    <li><b>QL chưa có "Huỷ kết quả môn"</b> (Rulebook ghi CHƯA CÓ). Thêm vào ⋯, lý do bắt buộc.</li>
+  </ul>
+  <p class="note">Rulebook tự mâu thuẫn về hạn chấm lớp thường: §20.2 ghi thứ Tư tuần sau (đúng với code), §20.6 vẫn ghi "Chủ nhật tuần thi". Cần sửa dòng §20.6.</p>
+</section>
+
+<section class="card" id="m1">
+  <span class="kicker">Mockup · Vấn đề 1</span>
+  <h2>Menu kỹ năng và hộp "Huỷ MT" mới</h2>
+  <div class="pair">
+    <div class="mock"><div class="mock-h"><span class="lbl">⋯ của một kỹ năng chưa có điểm</span></div>
+      <div class="menu">
+        <div class="it">Đổi tuần</div>
+        <div class="it">Huỷ lịch kỹ năng<small>Về "Chưa xếp". Xếp lại lúc nào cũng được.</small></div>
+        <div class="it">Bỏ kỹ năng khỏi MT4<small>Kết quả tính trên kỹ năng còn lại</small></div>
+        <div class="it off">Báo vắng<small>Chưa tới tuần thi</small></div>
+        <div class="sep"></div>
+        <div class="it">Nhật ký</div>
+      </div></div>
+    <div class="mock"><div class="mock-h"><span class="lbl">⋯ của kỹ năng hệ thống đã huỷ (vắng 2 lần)</span></div>
+      <div class="menu">
+        <div class="it">Khôi phục và đặt tuần</div>
+        <div class="it">Không mock lại kỹ năng này<small>Bỏ khỏi MT4, không mất gì</small></div>
+        <div class="sep"></div>
+        <div class="it">Nhật ký</div>
+      </div></div>
+    <div class="mock"><div class="mock-h"><span class="lbl">Hộp "Huỷ MT2" (MT2 không phải MT cuối)</span></div>
+      <div class="modal">
+        <div class="mh">Huỷ MT2 · Nguyễn Trâm Anh</div>
+        <div class="mb">
+          <p>MT2 chưa có điểm. Chọn cách huỷ:</p>
+          <div class="opt on"><span class="radio"></span><div><b>Giữ số MT2, bỏ lịch</b><div class="sub">MT2 về "Chưa xếp". MT3, MT4 không đổi.</div></div></div>
+          <div class="opt"><span class="radio"></span><div><b>Bỏ hẳn MT2, đánh số lại</b><div class="sub">MT3 → MT2, MT4 → MT3. Kỳ vọng các lượt sau đổi theo số mới.</div></div></div>
+          <div class="inp">Lý do (không bắt buộc)</div>
+        </div>
+        <div class="mf"><span class="btn">Không huỷ</span><span class="btn dng">Huỷ MT2</span></div>
+      </div></div>
+  </div>
+  <div class="mock"><div class="mock-h"><span class="lbl">Hồ sơ MT khi cả 4 kỹ năng đã huỷ (thay cho ngõ cụt ở ảnh 2)</span></div>
+    <div class="dev" style="max-width:860px">
+      <div class="pad">
+        <div class="row"><b style="font-size:17px">Hồ sơ Mock Test · Nguyễn Trâm Anh</b><span class="chip soon">MT1 · W1 OCT · đã huỷ cả 4 kỹ năng</span></div>
+        <div class="banner"><span>MT1 không còn kỹ năng nào để thi. Bạn muốn làm gì?</span><span class="row"><span class="btn">Khôi phục cả 4 và đặt tuần…</span><span class="btn dng">Huỷ MT1…</span></span></div>
+        <p class="note">Nút "Dời lịch thi cả đợt" ẩn khi không còn gì để dời. "Huỷ MT1…" mở hộp hai lựa chọn như trên.</p>
+      </div>
+    </div></div>
+</section>
+
+<section class="card" id="hoi">
+  <h2>Câu cần bạn chọn</h2>
+  <div class="qa">
+    <div class="q"><b>1 · Web chính đang chạy bản nào?</b><span>Ảnh 1 có chip của PR-OMT (#245), bản sau #237 không có. Bạn deploy lại lúc nào sau 07/10 không?</span></div>
+    <div class="q"><b>2 · Huỷ một MT không phải MT cuối</b><span>Mặc định "Giữ số, bỏ lịch" hay "Bỏ hẳn, đánh số lại"?</span><span class="rec">Đề xuất: mặc định giữ số; đánh số lại là lựa chọn thứ hai.</span></div>
+    <div class="q"><b>3 · Đánh số lại thay cho chặn và thay cho xoá điểm lượt sau</b><span>QL dời MT vượt lượt khác thì máy hỏi "Đánh số lại?" thay vì chặn hoặc giấu điểm. Kỳ vọng có đổi theo số mới không (câu 1 của PR-CHENMT)?</span><span class="rec">Đề xuất: có đánh số lại. Kỳ vọng theo số mới cho lần chấm sau; SOS/Case đã có giữ nguyên.</span></div>
+    <div class="q"><b>4 · Bỏ kỹ năng ở MT cũ và khi đã tới tuần thi</b><span>Cho QL bỏ kỹ năng chưa có điểm ở mọi lúc?</span><span class="rec">Đề xuất: có. Kỹ năng đang vắng vẫn đi luồng vắng.</span></div>
+    <div class="q"><b>5 · Tên nút</b><span>"Xếp nhiều MT" có thể bị hiểu là "nhiều lượt cho một em". Phương án khác: "Xếp MT nhiều em".</span><span class="rec">Có tab "Xếp theo học viên" thì "Xếp nhiều MT" hợp, vì panel làm được cả hai.</span></div>
+    <div class="q"><b>6 · Tab Xếp theo học viên</b><span>Mỗi lần 1 em hay tối đa 3 em? "Điền gợi ý" cách đều 4 tuần hay theo lịch đề xuất 6/12/16?</span><span class="rec">Đề xuất: tối đa 3 em; gợi ý theo lịch đề xuất.</span></div>
+    <div class="q"><b>7 · Em lệch tuần ở Điểm theo lớp</b><span>Chữ đậm (không màu), hay chip vàng "cần chú ý"?</span><span class="rec">Đề xuất: chữ đậm.</span></div>
+    <div class="q"><b>8 · Quy trình MT</b><span>Chọn A, B hay C ở mục 9? B có thêm: GVCN đề xuất dời ngay trong hộp, QL bấm Duyệt là áp luôn.</span><span class="rec">Đề xuất: B.</span></div>
+    <div class="q"><b>9 · Lớp thường</b><span>Đổi mốc lớp thì hỏi dời bài luôn? "-" tự dời mỗi thứ Hai? Thêm "Huỷ kết quả môn"?</span><span class="rec">Đề xuất: có cả ba.</span></div>
+  </div>
+</section>
+
+<section class="card" id="lo">
+  <h2>Thứ tự làm đề xuất</h2>
+  <div class="prog">
+    <div class="step"><span class="d">0</span><p><b>Deploy main</b> (đã có #256, #277). Sau đó chạy một lượt kiểm <b>chỉ đọc</b> trên DB thật: lượt đã huỷ hết kỹ năng, MT sau nằm trước MT trước, điểm bị giấu vào "kết quả đã huỷ", điểm có thể mất do lưu nửa vời. Kết quả kiểm cho biết em nào cần sửa tay.</p></div>
+    <div class="step"><span class="d">1</span><p><b>PR-MTKET · gỡ ngõ cụt</b> (vừa, cần mockup ở trên được duyệt): 5 thao tác mới ở vấn đề 1; hiện Khôi phục với MT cũ; "Khôi phục cả 4" và "Không mock lại"; Mở lại lượt kiểm thứ tự; dùng lại số MT thì không kéo theo kết quả cũ; sửa câu báo sai "đã xong"; nút "Không dự thi cả lượt" cho MT cũ.</p></div>
+    <div class="step"><span class="d">2</span><p><b>PR-CHENMT mở rộng</b>: đánh số lại theo thời gian cả hai chiều, thay cho chặn thứ tự và thay cho việc giấu điểm lượt sau. Đưa lại #247 (bị lọt) trước.</p></div>
+    <div class="step"><span class="d">3</span><p><b>PR-MTUI</b> (nhỏ): mục 5, 6, 7, 8. Làm song song với bước 1 được.</p></div>
+    <div class="step"><span class="d">4</span><p><b>PR-HOP1</b>: một hộp, một đường lưu (phương án A), kèm GVCN đề xuất dời có cấu trúc (B).</p></div>
+    <div class="step"><span class="d">5</span><p><b>PR-XTHV</b>: tab "Xếp theo học viên". Làm sau bước 2 để dùng chung phần đánh số lại.</p></div>
+    <div class="step"><span class="d">6</span><p><b>PR-LT4</b> (lớp thường): 4 chỗ kẹt ở mục 9 và sửa Rulebook §20.6. Độc lập, làm song song được.</p></div>
+  </div>
+  <p class="note">Chưa sửa code nào. Bạn trả lời các câu trên, kể cả "theo đề xuất", thì tôi soạn kế hoạch và prompt cho từng PR.</p>
+</section>
+
+</div>
+
+<script>
+(function(){
+  var r=document.documentElement, b={auto:document.getElementById('t-auto'),light:document.getElementById('t-light'),dark:document.getElementById('t-dark')};
+  function set(m){ if(m==='auto') r.removeAttribute('data-theme'); else r.setAttribute('data-theme',m);
+    Object.keys(b).forEach(function(k){ b[k].setAttribute('aria-pressed', String(k===m)); });
+    try{ localStorage.setItem('mt-theme',m);}catch(e){} }
+  Object.keys(b).forEach(function(k){ b[k].addEventListener('click',function(){ set(k); }); });
+  try{ var s=localStorage.getItem('mt-theme'); if(s) set(s);}catch(e){}
+})();
+</script>
