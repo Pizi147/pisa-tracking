@@ -18,7 +18,7 @@ import { taoYeuCau } from '../duyet/yeuCau.ts';
 import { dongBoBaoPhCuaBai } from '../yThuc/phoiHop.ts';
 import { PA_QUY_CHE_CHUA_GHI, UNCONFIRMED_PRESET, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
 import { ghiBanDieuChinh, nguoiSauSua, soBuoiMoi } from './planRevisions.ts';
-import { chayNeuKeHoachDaDuyet, kiemKeHoach, mocCuoiKhoa, nopKeHoachBoTro, phaiGuiKemKeHoach } from './boTro.ts';
+import { chayPaBoTro, mocCuoiKhoa } from './boTro.ts';
 
 export { UNCONFIRMED_PRESET, NOT_UNCONFIRMED_PRESET, PA_QUY_CHE_CHUA_GHI } from './sosState.ts';
 
@@ -207,8 +207,6 @@ export function kiemNoiDungCase(topic: string | null, ct: string | null, input: 
  */
 export function xacNhanCase(p: Principal, caseId: number, input: {
   primaryCode?: string | null; observation?: string | null; urgency?: string | null; moTa?: string | null; tenGiua?: string | null;
-  /** PR-LT2a (N2, Q8): Case Giữa khoá có PA Bổ trợ — người xác nhận là người dạy / GVCN / Quản lý (BE/ELE: GVBM) PHẢI gửi kèm kế hoạch bài giảng. */
-  keHoach?: { noiDungYeu?: string; keHoach?: string; performerSelf?: boolean; performerUserId?: number | null; performerName?: string | null } | null;
 }) {
   const conn = db();
   const c = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(caseId) as any;
@@ -223,18 +221,15 @@ export function xacNhanCase(p: Principal, caseId: number, input: {
   const { primaryCode, observation, urgency, moTa, tenGiua } = kiemNoiDungCase(c.topic, ct, {
     ...input, tenGiua: input.tenGiua === undefined || input.tenGiua === null ? tenGiuaCua(c) : input.tenGiua,
   });
-  /* PR-LT2a: kiểm kế hoạch TRƯỚC khi ghi nguyên nhân — thiếu thì 400, không ghi nửa chừng. */
-  const keHoach = phaiGuiKemKeHoach(p, caseId) ? (kiemKeHoach(input.keHoach), input.keHoach!) : null;
   const today = demoToday();
   return tx(() => {
     addIssues(caseId, p.userId, { primaryCode, observation, topic: c.topic });
     conn.prepare('UPDATE sos_cases SET urgency = ?, summary = ?, title = ?, updated_at = ? WHERE id = ?').run(urgency, moTa, tenGiua, nowIso(), caseId);
     ghiMoc(caseId, 'xac_nhan_case', today, moTa, p.userId, `xac_nhan_case:${caseId}`);
     dongBoTrangThaiCase(caseId);
-    if (keHoach) {
-      const pa = conn.prepare(`SELECT id FROM case_interventions WHERE case_id = ? AND kind = 'bo_tro' AND status = 'planned' ORDER BY id LIMIT 1`).get(caseId) as any;
-      nopKeHoachBoTro(p, pa.id, keHoach);
-    } else chayNeuKeHoachDaDuyet(conn, caseId, today, p.userId);
+    /* PR-CT2 (§8): bỏ nộp / duyệt kế hoạch — PA Bổ trợ Giữa khoá chạy ngay (FOU nhóm chung: chỉ môn đã có nguyên nhân). */
+    const bt = conn.prepare(`SELECT nhom_bo_tro FROM case_interventions WHERE case_id = ? AND kind = 'bo_tro' AND status = 'planned' AND nhom_bo_tro IS NOT NULL LIMIT 1`).get(caseId) as any;
+    if (bt) chayPaBoTro(conn, bt.nhom_bo_tro, p.userId, today);
     const ten = caseTitleOf({ ...c, title: tenGiua });
     addJourney({
       studentId: c.student_id, cycleId: c.cycle_id ?? null, eventType: 'intervention', eventDate: today,
@@ -338,10 +333,6 @@ export function datLaiHanCase(studentId: number, homNay: string) {
     .all(studentId) as any[]) {
     conn.prepare('UPDATE sos_cases SET han_xac_nhan = ?, updated_at = ? WHERE id = ?').run(hanXacNhan(homNay, { sosLevel: c.sos_level, urgency: c.urgency }), nowIso(), c.id);
   }
-  /* PR-LT2a: kế hoạch bổ trợ đang chờ nộp cũng nhận hạn mới từ ngày quay lại. */
-  conn.prepare(`UPDATE case_interventions SET han_ke_hoach = ?, updated_at = ? WHERE kind = 'bo_tro' AND status = 'planned' AND han_ke_hoach IS NOT NULL
-      AND case_id IN (SELECT id FROM sos_cases WHERE student_id = ? AND status != 'done')`)
-    .run(hanXacNhan(homNay), nowIso(), studentId);
   conn.prepare(`UPDATE case_interventions SET action_due = ?, updated_at = ? WHERE status = 'started' AND action_due IS NOT NULL
       AND COALESCE(approval_state, '') != 'pending' AND case_id IN (SELECT id FROM sos_cases WHERE student_id = ? AND status != 'done')`)
     .run(weeklyUpdateDue(homNay), nowIso(), studentId);
@@ -369,7 +360,7 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
   if (!iv) throw notFound('Không tìm thấy phương án.');
   caseAccess(iv.case_id).requireEdit(p, EDIT_MESSAGE);
   if (!iv.preset) throw badRequest('Phương án này không phải PA theo quy chế — không cần xác nhận.');
-  if (iv.kind === 'bo_tro') throw badRequest('PA bổ trợ chạy khi Quản lý duyệt kế hoạch — không xác nhận riêng.');
+  if (iv.kind === 'bo_tro') throw badRequest('PA bổ trợ chạy khi Xác nhận Case — không xác nhận riêng.');
   if (iv.case_status === 'done') throw badRequest('Case đã đóng — không còn xác nhận PA được.');
   if (iv.confirmed_at || iv.status !== 'planned') throw badRequest('PA này đã được xác nhận rồi.');
   if (!sosCaseState(iv.case_id).hasCause) throw badRequest('Xác nhận nguyên nhân (Xác nhận Case) trước, rồi mới xác nhận PA.');

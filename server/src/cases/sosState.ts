@@ -1,4 +1,4 @@
-import { db } from '../db.ts';
+import { THAM_SO_TOI_DA, db, theoLo } from '../db.ts';
 import { CASE_DISMISS_REASON_LABEL, type CaseDismissReason } from '../../../shared/domain/index.ts';
 
 /**
@@ -48,14 +48,18 @@ export function dongBoTrangThaiCase(caseId: number): void {
   conn.prepare('UPDATE sos_cases SET status = ?, updated_at = ? WHERE id = ?').run(r.moi, new Date().toISOString(), caseId);
 }
 
-/**
- * PR-LT2a (T54, M-05): điều kiện SQL "NHÓM PA bổ trợ của `iv` có thẻ kế hoạch ở trạng thái `tt`" — `tt` là chuỗi SQL đã có nháy (`'cho'`,
- * `'cho','duyet'`). Thẻ gắn `doi_tuong_id` = id PA nhỏ nhất của nhóm. Không có thẻ cho/duyet = chờ nộp. MỘT nơi cho trạng thái Case,
- * việc cần làm, bảng kỹ năng — không nơi nào tự viết lại.
- */
-export const YC_KE_HOACH = (iv: string, tt: string) => `EXISTS (SELECT 1 FROM yeu_cau_duyet y_b WHERE y_b.loai = 'ke_hoach_bo_tro'
-  AND y_b.trang_thai IN (${tt}) AND y_b.doi_tuong_loai = 'nhom_bo_tro'
-  AND y_b.doi_tuong_id = (SELECT MIN(i2.id) FROM case_interventions i2 WHERE i2.nhom_bo_tro = ${iv}.nhom_bo_tro))`;
+/** `dongBoTrangThaiCase` cho NHIỀU Case theo lô (PR-CT2, Turso): một câu đọc + tối đa hai câu ghi mỗi lô, không theo số Case. Cùng điều kiện. */
+export function dongBoTrangThaiCaseLo(caseIds: readonly number[]): void {
+  const conn = db(), luc = new Date().toISOString();
+  theoLo([...new Set(caseIds)], (lo, ph) => {
+    const doi = conn.prepare(`SELECT sc.id, CASE WHEN NOT ${LA_CASE_SOS()} OR ${CASE_SOS_DANG_XU_LY()} THEN 'in_progress' ELSE 'open' END AS moi
+      FROM sos_cases sc WHERE sc.id IN (${ph}) AND sc.status != 'done'`).all(...lo) as { id: number; moi: string }[];
+    for (const st of ['in_progress', 'open']) {
+      const ids = doi.filter((r) => r.moi === st).map((r) => r.id);
+      if (ids.length) conn.prepare(`UPDATE sos_cases SET status = ?, updated_at = ? WHERE status NOT IN ('done', ?) AND id IN (${ids.map(() => '?').join(',')})`).run(st, luc, st, ...ids);
+    }
+  }, THAM_SO_TOI_DA - 3);
+}
 
 export type SosCaseState = {
   /** Case do SOS tự tạo: có (hoặc từng có) phương án điền sẵn. Case tạo tay và Case Normal thì không. */
@@ -73,17 +77,15 @@ export type SosCaseState = {
   dismissed: { code: string; label: string; text: string | null } | null;
   /** Thẻ "Không cần theo dõi" đang chờ Quản lý duyệt (S4-5) — `hanDuyet` là hạn của thẻ. */
   choDuyetKhongTheoDoi: { hanDuyet: string | null } | null;
-  /** Còn PA quy chế chờ xác nhận (Q28-3). PR-LT2a: PA Bổ trợ KHÔNG tính (nó chờ kế hoạch, không chờ "Xác nhận PA"). */
+  /** Còn PA quy chế chờ xác nhận (Q28-3). PR-LT2a: PA Bổ trợ KHÔNG tính (nó chạy khi Xác nhận Case, không có "Xác nhận PA"). */
   coPaChoXacNhan: boolean;
-  /** PR-LT2a: Case Giữa khoá lớp thường có PA Bổ trợ CHƯA chạy — kế hoạch đang chờ nộp / chờ Quản lý duyệt. `null` = không. */
-  boTro: { choNop: boolean; choDuyet: boolean; hanKeHoach: string | null } | null;
 };
 
 /** Điều kiện SQL "case `sc` đang có thẻ Không cần theo dõi chờ duyệt" — MỘT chỗ cho `awaitingCauseCaseIds` và thẻ Báo QL. */
 export const CO_THE_KHONG_THEO_DOI = (sc = 'sc') => `EXISTS (SELECT 1 FROM yeu_cau_duyet y_k WHERE y_k.loai = 'khong_theo_doi'
   AND y_k.doi_tuong_loai = 'sos_case' AND y_k.doi_tuong_id = ${sc}.id AND y_k.trang_thai = 'cho')`;
 
-const SOS_STATE_RONG: SosCaseState = { fromSos: false, hasCause: false, awaitingCause: false, dueOn: null, dismissed: null, choDuyetKhongTheoDoi: null, coPaChoXacNhan: false, boTro: null };
+const SOS_STATE_RONG: SosCaseState = { fromSos: false, hasCause: false, awaitingCause: false, dueOn: null, dismissed: null, choDuyetKhongTheoDoi: null, coPaChoXacNhan: false };
 
 /** Trạng thái SOS của NHIỀU Case một lượt (PR-HVL): một câu SELECT cho mỗi lô 400, không hỏi từng Case. Case không tồn tại → trạng thái rỗng. */
 export function sosCaseStateMany(caseIds: readonly number[]): Map<number, SosCaseState> {
@@ -95,9 +97,6 @@ export function sosCaseStateMany(caseIds: readonly number[]): Map<number, SosCas
       ${LA_CASE_SOS('sc')} AS from_sos,
       EXISTS (SELECT 1 FROM case_issues WHERE case_id = sc.id AND role = 'primary') AS has_cause,
       EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sc.id AND ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND iv.kind != 'bo_tro') AS pa_cho,
-      EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sc.id AND iv.kind = 'bo_tro' AND iv.status = 'planned' AND ${YC_KE_HOACH('iv', "'cho'")}) AS bt_cho_duyet,
-      EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sc.id AND iv.kind = 'bo_tro' AND iv.status = 'planned' AND NOT ${YC_KE_HOACH('iv', "'cho','duyet'")}) AS bt_cho_nop,
-      (SELECT MIN(iv.han_ke_hoach) FROM case_interventions iv WHERE iv.case_id = sc.id AND iv.kind = 'bo_tro' AND iv.status = 'planned') AS bt_han,
       (SELECT y.han_duyet FROM yeu_cau_duyet y WHERE y.loai = 'khong_theo_doi' AND y.doi_tuong_loai = 'sos_case' AND y.doi_tuong_id = sc.id
           AND y.trang_thai = 'cho' ORDER BY y.id DESC LIMIT 1) AS han_the,
       ${CO_THE_KHONG_THEO_DOI('sc')} AS co_the
@@ -115,7 +114,6 @@ export function sosCaseStateMany(caseIds: readonly number[]): Map<number, SosCas
           : null,
         choDuyetKhongTheoDoi: coThe ? { hanDuyet: c.han_the ?? null } : null,
         coPaChoXacNhan: !!c.pa_cho && c.status !== 'done',
-        boTro: c.status !== 'done' && (c.bt_cho_duyet || c.bt_cho_nop) ? { choNop: !!c.bt_cho_nop, choDuyet: !!c.bt_cho_duyet, hanKeHoach: c.bt_han ?? null } : null,
       });
     }
   }

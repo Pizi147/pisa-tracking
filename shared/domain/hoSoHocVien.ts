@@ -169,7 +169,7 @@ export type ManhCau = { chu: string; tone: ToneManh };
 export const noiVa = (ds: readonly string[]): string => (ds.length < 2 ? ds.join('') : `${ds.slice(0, -1).join(', ')} và ${ds[ds.length - 1]}`);
 const toneSos = (n: number): ToneManh => (n >= 3 ? 'sos3' : n === 2 ? 'sos2' : 'sos1');
 /** Việc học thuật (mệnh đề 2) — Ý thức, Báo PH, Bàn giao không tính ở đây. */
-const VIEC_HOC_THUAT = new Set(['nguyen-nhan', 'de-ra-pa', 'xac-nhan-pa', 'ghi-ket-qua', 'ke-hoach', 'cho-duyet', 'mini-test']);
+const VIEC_HOC_THUAT = new Set(['nguyen-nhan', 'de-ra-pa', 'xac-nhan-pa', 'ghi-ket-qua', 'cho-duyet', 'mini-test']);
 
 export type DauVaoCau = {
   /** Mệnh đề 0 — một trạng thái đặc biệt (máy chủ chọn theo thứ tự đã kết thúc › tạm dừng › sắp chuyển › KCK). */
@@ -226,7 +226,6 @@ export function cauTomTat(i: DauVaoCau): ManhCau[] {
       chu: quaHan.loai === 'ghi-ket-qua' ? `PA ${kn(quaHan)}quá hạn Kết quả ${quaHan.quaHanNgay} ngày`
         : quaHan.loai === 'nguyen-nhan' ? `${kn(quaHan)}quá hạn xác nhận nguyên nhân ${quaHan.quaHanNgay} ngày`
         : quaHan.loai === 'xac-nhan-pa' ? `${kn(quaHan)}quá hạn xác nhận PA ${quaHan.quaHanNgay} ngày`
-        : quaHan.loai === 'ke-hoach' ? `Kế hoạch bổ trợ quá hạn ${quaHan.quaHanNgay} ngày`
         : `${quaHan.chu.split(' · ')[0]} quá hạn ${quaHan.quaHanNgay} ngày`,
       tone: 'danger',
     }
@@ -252,11 +251,9 @@ export function oHocThuat(rows: readonly {
   cases: readonly {
     status: string; trangThaiV4?: { t: string } | null; viecTiep?: { chu: string } | null;
     plans?: readonly { actionOverdue?: boolean }[];
-    boTro?: { nhom: string; chung: boolean; buoiMoiTuan: number; keHoach: { trangThai: string } | null } | null;
   }[];
 }[], tamDungTu: string | null = null, homNay: string | null = null): { so: number; dong: { kn: string; nhan: string; t: string; viec: string | null; category: string }[]; phu: string | null } {
   const dong: { kn: string; nhan: string; t: string; viec: string | null; category: string }[] = [];
-  const nhom = new Set<string>();
   let phu: string | null = null;
   for (const r of rows) {
     for (const c of r.cases.filter((x) => x.status !== 'done')) {
@@ -265,16 +262,10 @@ export function oHocThuat(rows: readonly {
       const v = c.viecTiep?.chu ?? '';
       const viec = quaHanGhi || /^Kết quả/.test(v) ? 'kết quả'
         : v === 'Xác nhận nguyên nhân' ? 'nguyên nhân'
-        : /^Xác nhận PA/.test(v) ? 'xác nhận PA'
-        : /kế hoạch/.test(v) ? 'kế hoạch bổ trợ' : null;
+        : /^Xác nhận PA/.test(v) ? 'xác nhận PA' : null;
       /* T65 + Q13 (UXF-b): em Tạm dừng — MỌI hạn dừng: "Quá hạn" và "Cần làm" đổi thành nhãn vàng "Tạm dừng từ dd/mm" (chỉ đổi chữ). */
       if (tamDungTu && (t === 'qua-han' || t === 'can-lam')) dong.push({ kn: r.short ?? r.label, nhan: chuTamDung(ngay(tamDungTu, homNay), true), t: 'tam-dung', viec: null, category: r.category });
       else dong.push({ kn: r.short ?? r.label, nhan: NHAN_TRANG_THAI[t] ?? NHAN_TRANG_THAI['dang-lam'], t, viec, category: r.category });
-      const b = c.boTro;
-      if (b && b.keHoach?.trangThai === 'cho' && !nhom.has(b.nhom)) {
-        nhom.add(b.nhom);
-        phu = `PA Bổ trợ${b.chung ? ' chung' : ''} · ${b.buoiMoiTuan} buổi/tuần · kế hoạch chờ Quản lý`;
-      }
     }
   }
   /* Gấp lên trước: Quá hạn › Cần làm › Chờ duyệt › Đang làm (trong nhóm giữ thứ tự bảng). */

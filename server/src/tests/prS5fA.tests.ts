@@ -177,7 +177,7 @@ export async function runPrS5fATests(t: YThucTestKit) {
     assert(iv.performer_user_id === GV[1] && iv.status === 'started' && quyenBoTro(loadPrincipal(GV[1]), { performer_user_id: GV[1], case_id: caseId, nhom_bo_tro: null }), `PA cũ: ${JSON.stringify(iv)}`);
     /* Việc tiếp của Case: ưu tiên PA ở lớp mới; PA lớp cũ ghi rõ "(lớp cũ)". */
     const pa = (o: Record<string, unknown>) => ({ id: 1, ten: 'Bổ trợ', batBuoc: false, choXacNhan: false, xong: false, actionDue: '2026-10-05', followupDue: null, ...o });
-    const v4 = { status: 'in_progress', fromSos: false, hasCause: true, dismissed: false, systemClosed: false, choDuyetKhongTheoDoi: false, coPaChoXacNhan: false, hanXacNhan: null, boTro: null };
+    const v4 = { status: 'in_progress', fromSos: false, hasCause: true, dismissed: false, systemClosed: false, choDuyetKhongTheoDoi: false, coPaChoXacNhan: false, hanXacNhan: null };
     const hai = d.viecTiepCuaCase(v4, [pa({ id: 1, lopCu: true, actionDue: '2026-09-01' }), pa({ id: 2, ten: 'Bổ trợ miễn phí' })], TODAY);
     const mot = d.viecTiepCuaCase(v4, [pa({ id: 1, lopCu: true })], TODAY);
     assert(hai?.paId === 2 && / \(lớp cũ\)$/.test(mot?.chu ?? ''), `${JSON.stringify(hai)} ${JSON.stringify(mot)}`);

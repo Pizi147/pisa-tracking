@@ -2,6 +2,7 @@ import { db } from '../db.ts';
 import { badRequest, chuTuDo, nowIso } from '../util.ts';
 import type { Principal } from '../permissions.ts';
 import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
+import { caseAccess } from './cases.ts';
 import { coNguoiDay, coSoBuoi, kiemSoBuoiPa, soBuoiTu } from '../../../shared/domain/index.ts';
 
 /**
@@ -49,11 +50,14 @@ export const daDayCua = (ivId: number): number =>
 /**
  * PR-PA (§8): người của PA sau Sửa PA / Điều chỉnh / Xác nhận PA — gửi BẤT KỲ khoá người nào = đặt lại (cả ba trống = xoá người);
  * không gửi khoá nào = giữ người cũ. Tự học không có ô người — người gửi kèm bị bỏ qua.
+ * PA Bổ trợ (PR-S5F-b → PR-CT2): người dạy có tài khoản phải cùng chi nhánh với lớp của Case — một chỗ cho Sửa PA, Điều chỉnh, Xác nhận PA.
  */
 export function nguoiSauSua(p: Principal, iv: any, input: Parameters<typeof chuanHoaNguoiThucHien>[1]): { performerUserId: number | null; performerName: string | null } {
   const gui = coNguoiDay(iv.kind) && ['performerSelf', 'performerUserId', 'performerName'].some((k) => k in input);
   if (!gui) return { performerUserId: iv.performer_user_id ?? null, performerName: iv.performer_name ?? null };
-  const n = chuanHoaNguoiThucHien(p, input, { nhom: 'giao_vien', batBuoc: false });
+  const lop = iv.kind === 'bo_tro' ? caseAccess(iv.case_id).ctx.classId : null;
+  const branchId = lop ? (db().prepare('SELECT branch_id FROM classes WHERE id = ?').get(lop) as any)?.branch_id ?? null : null;
+  const n = chuanHoaNguoiThucHien(p, input, { nhom: 'giao_vien', batBuoc: false, branchId });
   return { performerUserId: n?.userId ?? null, performerName: n?.name ?? null };
 }
 

@@ -1007,6 +1007,50 @@ await checkAsync(`PR-LT2a (M1b) · Thêm 30 em lớp thường (POST /intake/com
   assert(r.n <= TRAN_GHI_LO.themHocVien30Thuong, `${r.n} câu > trần ${TRAN_GHI_LO.themHocVien30Thuong}`);
 });
 
+await checkAsync(`PR-CT2 · Ra lệnh cả lớp thường 10 em Final đủ điểm, có Case Giữa khoá (sinh bổ trợ sớm) ≤ ${TRAN_GHI_LO.raLenhSinhBoTro} · đổi 10 em lên → học lại (huỷ bổ trợ) ≤ ${TRAN_GHI_LO.doiLenhHuyBoTro} câu SQL`, async () => {
+  const { createClass } = await import('../classes/intake.ts');
+  const { ensurePeriod } = await import('../platform/week.ts');
+  const { planRegularTests } = await import('../normal/regular.ts');
+  const { addDays } = await import('../util.ts');
+  const { demoToday } = await import('../demoConfig.ts');
+  const { tuanChonDuoc, mondayOfDate, caseDedupKey } = await import('../../../shared/domain/index.ts');
+  const admin = loadPrincipal(USER.QT);
+  const homNay = demoToday(), now = new Date().toISOString();
+  const lop = (code: string, kind: string, tuan: number) => {
+    const bat = mondayOfDate(addDays(homNay, -7 * (tuan - 1)));
+    return (createClass(admin, { code, branchId: CN, kind, startDate: bat, startPeriodId: ensurePeriod(bat).id }) as any).id as number;
+  };
+  const nguon = lop('MB-TDCT1', 'FOU', 9), dich = lop('MB-TDCT2', 'BE', 1), hocLai = lop('MB-TDCT3', 'FOU', 1);
+  const sids: number[] = [];
+  for (let i = 0; i < 10; i++) {
+    const sid = Number(conn.prepare(`INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`)
+      .run(`PISA-TDCT${i}`, `Toc Do CT2 ${i}`, `toc do ct2 ${i}`, CN, now).lastInsertRowid);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`).run(sid, nguon, homNay, now);
+    const cyc = conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, programme_code, started_at, status, created_at) VALUES (?, 1, NULL, 'FOU', ?, 'active', ?)`).run(sid, homNay, now).lastInsertRowid;
+    /* Case Giữa khoá G+V còn mở (thường gặp ở em 50–69%) → nhận PA Final, `dongBoTrangThaiCase` từng Case ở cả sinh lẫn huỷ. */
+    conn.prepare(`INSERT INTO sos_cases (student_id, cycle_id, category, topic, origin_kind, status, owner_user_id, detected_at, dedup_key, created_at)
+      VALUES (?,?, 'writing', 'writing', 'teacher_report', 'in_progress', ?, ?, ?, ?)`).run(sid, cyc, USER.QL, homNay, caseDedupKey({ category: 'writing', studentId: sid, cycleId: Number(cyc) }), now);
+    sids.push(sid);
+  }
+  planRegularTests(admin, nguon, { studentIds: sids, kinds: ['final'] });
+  /* Điểm Final đủ (55%, trượt G+V và P) ghi thẳng — phép đo chỉ đo đường ra lệnh. */
+  for (const r of conn.prepare(`SELECT id FROM assessment_attempts WHERE class_id = ? AND kind = 'final'`).all(nguon) as any[]) {
+    for (const [k, v] of [['listening', 18], ['reading', 18], ['writing', 10], ['speaking', 9]] as const) {
+      conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total) VALUES (?,?,?,25)').run(r.id, k, v);
+    }
+    conn.prepare(`UPDATE assessment_attempts SET status = 'done' WHERE id = ?`).run(r.id);
+  }
+  const tuanChung = tuanChonDuoc(homNay)[0];
+  const soMt = () => (conn.prepare(`SELECT COUNT(*) n FROM mini_test WHERE student_id IN (${sids.join(',')})`).get() as any).n as number;
+  const sinh = await doGhi('QL', `/classes/${nguon}/transition`, { tuanChung, dongs: sids.map((studentId) => ({ studentId, huong: 'len_lop', toClassId: dich })) });
+  assert(sinh.status === 200 && sinh.json.ok?.length === 10 && soMt() === 10, `Ra lệnh phải sinh 10 Mini Test: ${sinh.status} ${soMt()} ${JSON.stringify(sinh.json).slice(0, 300)}`);
+  const huy = await doGhi('QL', `/classes/${nguon}/transition`, { tuanChung, dongs: sids.map((studentId) => ({ studentId, huong: 'hoc_lai', toClassId: hocLai })) });
+  assert(huy.status === 200 && huy.json.ok?.length === 10 && soMt() === 0, `Đổi học lại phải huỷ hết: ${huy.status} ${soMt()} ${JSON.stringify(huy.json).slice(0, 300)}`);
+  console.log(`      (đo: 10 em, sinh ${sinh.n} câu · huỷ ${huy.n} câu)`);
+  assert(sinh.n <= TRAN_GHI_LO.raLenhSinhBoTro, `sinh ${sinh.n} câu > trần ${TRAN_GHI_LO.raLenhSinhBoTro}`);
+  assert(huy.n <= TRAN_GHI_LO.doiLenhHuyBoTro, `huỷ ${huy.n} câu > trần ${TRAN_GHI_LO.doiLenhHuyBoTro}`);
+});
+
 check('PR-DEPLOY (3b) · Giới hạn Turso trên mọi (đường × vai) sau nhân dữ liệu ×3 + mọi đường ghi lô: mỗi câu ≤ 900 tham số, ≤ 20 vế UNION, 0 tham số đặt tên', () => {
   doTurso.bat = false;
   const dong = (c: CauDo) => `${c.nhan} · ${c.thamSo} tham số · ${c.ve} vế · ${c.sql}`;

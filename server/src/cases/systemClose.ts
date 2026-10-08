@@ -1,4 +1,4 @@
-import { db, theoLo, tx } from '../db.ts';
+import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import { SYSTEM_CLOSE_REASON_LABEL, caseDedupKey, categoryOf, type SystemCloseReason } from '../../../shared/domain/index.ts';
 import { nowIso } from '../util.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
@@ -139,6 +139,44 @@ export function closeCasesBySystem(input: {
     }
     return { closedCaseIds: closed, withdrawnSignalIds: pendingSignals.map((s) => s.id as number), chup };
   });
+}
+
+/**
+ * PR-CT2 (§8): như `closeCasesBySystem({ caseIds })` nhưng THEO LÔ cho nhiều em — số câu cố định mỗi lô, không theo số Case (Turso ≤ 200 câu mỗi lần ghi).
+ * Cùng hiệu ứng mỗi Case: PA mở → `cancelled`/`system_closed`, Case `done` + lý do, lịch sử, mốc "đóng", Hành trình, nhật ký. Không thu hồi tín hiệu
+ * (như nhánh `caseIds`), không chụp để mở lại. Gọi trong giao dịch của nơi gọi.
+ */
+export function dongCaseHeThongLo(input: { actorUserId: number | null; reason: SystemCloseReason; on: string; caseIds: readonly number[] }): number[] {
+  if (!input.caseIds.length) return [];
+  const conn = db();
+  const label = SYSTEM_CLOSE_REASON_LABEL[input.reason];
+  const open: any[] = [];
+  theoLo([...new Set(input.caseIds)], (lo, ph) => {
+    open.push(...conn.prepare(
+      `SELECT sc.id, sc.status, COALESCE(sc.student_id, a.student_id) AS sid, COALESCE(sc.cycle_id, a.cycle_id) AS eff_cycle_id
+         FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE sc.id IN (${ph}) AND sc.status != 'done'`,
+    ).all(...lo) as any[]);
+  });
+  if (!open.length) return [];
+  const ids = open.map((c) => c.id as number), luc = nowIso();
+  theoLo(ids, (lo, ph) => {
+    conn.prepare(`UPDATE case_interventions SET status = 'cancelled', closed_reason = 'system_closed', updated_at = ? WHERE case_id IN (${ph}) AND status IN ('planned', 'started')`)
+      .run(luc, ...lo);
+    conn.prepare(
+      `UPDATE sos_cases SET status = 'done', closed_at = ?, closed_by = NULL, system_close_reason = ?, disposition = COALESCE(disposition, 'other'),
+              disposition_note = COALESCE(disposition_note, ?), outcome_note = ?, dedup_key = NULL, updated_at = ? WHERE id IN (${ph}) AND status != 'done'`,
+    ).run(input.on, input.reason, label, `Hệ thống đóng · ${label}`, luc, ...lo);
+  }, THAM_SO_TOI_DA - 5);
+  chenNhieuDong('INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at)',
+    open.map((c) => [c.id, 'status', c.status, 'done', input.actorUserId, luc]));
+  chenNhieuDong('INSERT INTO case_milestones (case_id, kind, occurred_on, note, created_by, created_at, dedup_key)',
+    open.map((c) => [c.id, 'closed', input.on, `Hệ thống đóng · ${label}`, input.actorUserId, luc, `system_close:${c.id}`]), ' ON CONFLICT(dedup_key) DO NOTHING');
+  chenNhieuDong('INSERT INTO journey_events (student_id, cycle_id, event_type, event_date, title, detail, ref_table, ref_id, dedup_key, created_by, created_at)',
+    open.map((c) => [c.sid, c.eff_cycle_id ?? null, 'case_closed', input.on, `Hệ thống đóng Case · ${label}`, null, 'sos_cases', c.id, `case_system_close:${c.id}`, input.actorUserId, luc]),
+    ' ON CONFLICT(dedup_key) WHERE dedup_key IS NOT NULL DO NOTHING');
+  chenNhieuDong('INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, entity_label, before_json, after_json, created_at)',
+    open.map((c) => [input.actorUserId, 'case.system_close', 'sos_case', c.id, label, JSON.stringify({ status: c.status }), JSON.stringify({ status: 'done', reason: input.reason }), luc]));
+  return ids;
 }
 
 /** Trạng thái của MỘT Case trước khi hệ thống đóng (đủ để mở lại đúng như cũ). */
