@@ -1698,7 +1698,9 @@ export function caseDetail(p: Principal, caseId: number) {
       performerUserId: iv.performer_user_id ?? null,
       // Người ghi khác người làm thì nói rõ, để không đọc nhầm ai đã làm việc đó.
       recordedBy: iv.recorder_name ?? null,
-      byProxy: !iv.performer_user_id && !!iv.performer_name,
+      /** PR-PA (§8): ngày tạo — dòng "Web tạo … · 06/10" của Sửa PA. */
+      createdAt: (iv.created_at ?? null) as string | null,
+      byProxy:!iv.performer_user_id && !!iv.performer_name,
       plannedDate: iv.planned_date, startedDate: iv.started_date, completedDate: iv.completed_date,
       /** NGÀY DỰ KIẾN KẾT THÚC phương án (mục 8.2) — khác hạn cập nhật hằng tuần ở dưới. */
       followupDue: iv.followup_due,

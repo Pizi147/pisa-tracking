@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { MenuXoaPa } from './MenuXoaPa.tsx';
+import { KhoaNho } from './FormPa.tsx';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Card, Empty, ErrorState, Level, NhanTrangThai, Outcome, Skeleton } from '../../ui/ui.tsx';
@@ -91,7 +92,9 @@ export type ViewCase = { loai: 'case' } | { loai: 'ghi-ket-qua'; paId: number } 
   /* PR-LT2a: nộp kế hoạch bài giảng bổ trợ cho cả nhóm (paId = một PA bổ trợ của nhóm). */
   | { loai: 'ke-hoach'; paId?: number }
   /* PR-LUI-a2: Sửa Case (+ Xoá Case ở chân). */
-  | { loai: 'sua' };
+  | { loai: 'sua' }
+  /* PR-PA (§8): Sửa PA — cùng form Thêm PA; mở từ ⋯ của dòng PA. */
+  | { loai: 'sua-pa'; paId: number };
 
 /** "Case Listening" — tên ngắn của Case cho tiêu đề ngăn và dòng "← Case Listening". */
 export function tenNganCase(d: { categoryLabel: string | null; category: string | null; chuongTrinh?: string | null }): string {
@@ -309,16 +312,6 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
         <div className="mt-2"><TheYeuCau gon yc={iv.yeuCau} onXong={() => onViec({ loai: 'case' })} /></div>
       )}
     </li>
-  );
-}
-
-/** Ổ khoá 12px nét 1.5 — PA theo quy chế (thay emoji: ký tự nhỏ không đồng nét với bộ biểu tượng). */
-function KhoaNho() {
-  return (
-    <svg aria-hidden viewBox="0 0 12 12" width="12" height="12" className="shrink-0">
-      <rect x="2.25" y="5.25" width="7.5" height="5.5" rx="1" fill="none" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M4 5.25V3.75a2 2 0 0 1 4 0v1.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
-    </svg>
   );
 }
 

@@ -498,7 +498,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     const f = doc('web/src/modules/yThuc/CaseSosControls.tsx');
     for (const ten of ['XacNhanCasePanel', 'XacNhanPaPanel', 'KhongTheoDoiForm']) assert(new RegExp(`export function ${ten}\\b`).test(f), ten);
     assert(!/PresetPlanActions|CauseDeterminationPanel|\/confirm|\/replace|Dự kiến kết thúc|Bằng chứng/.test(f), 'còn thứ cũ');
-    assert(/\/xac-nhan`/.test(f) && /\/xac-nhan-pa`/.test(f) && /useLoiForm\(/.test(f) && /<OKhac/.test(f) && /GOI_Y_MO_TA_PA/.test(f), 'thiếu đường / thành phần');
+    assert(/\/xac-nhan`/.test(f) && /\/xac-nhan-pa`/.test(f) && /useLoiForm\(/.test(f) && /<OKhac/.test(f) && /<FormPa/.test(f), 'thiếu đường / thành phần');   // PR-PA: gợi ý mô tả PA ở FormPa
   });
   check('SOS (9) · MILESTONE_TITLE có nhãn cho MỌI kind mốc máy chủ ghi (K3-21); NganCase nút chính theo việc tiếp, ẩn Hoàn thành khi PA quy chế chưa khép', () => {
     const cp = doc('web/src/modules/cases/CasePanel.tsx');
@@ -518,10 +518,11 @@ export async function runPrSosTests(t: YThucTestKit) {
 
   // ------------------------------------------------------------------ Task 10 · form PA
   check('SOS (10) · 4 form không còn "Dự kiến kết thúc" / followupDue; gợi ý mô tả + kết quả PA; Điều chỉnh không có ChonTuan; Hoàn thành không chọn sẵn', () => {
-    const f4 = ['web/src/modules/cases/ThaoTacCase.tsx', 'web/src/modules/cases/CapNhatTuan.tsx', 'web/src/modules/cases/QuickReport.tsx', 'web/src/modules/yThuc/CaseSosControls.tsx'];
+    const f4 = ['web/src/modules/cases/ThaoTacCase.tsx', 'web/src/modules/cases/CapNhatTuan.tsx', 'web/src/modules/cases/QuickReport.tsx', 'web/src/modules/yThuc/CaseSosControls.tsx', 'web/src/modules/cases/FormPa.tsx'];
     for (const f of f4) assert(!/Dự kiến kết thúc|followupDue/.test(doc(f)), `${f} còn dự kiến kết thúc`);
     const cnt = doc('web/src/modules/cases/CapNhatTuan.tsx');
-    assert(/GOI_Y_MO_TA_PA/.test(doc(f4[0])) && /GOI_Y_MO_TA_PA/.test(cnt) && /GOI_Y_MO_TA_PA/.test(doc(f4[2])), 'thiếu gợi ý mô tả PA');
+    /* PR-PA (§8): Thêm PA / Thay PA dùng một form PA — gợi ý mô tả ở FormPa. */
+    assert(/<FormPa/.test(doc(f4[0])) && /<FormPa/.test(cnt) && /GOI_Y_MO_TA_PA/.test(doc(f4[4])) && /GOI_Y_MO_TA_PA/.test(doc(f4[2])), 'thiếu gợi ý mô tả PA');
     assert(/GOI_Y_KET_QUA_PA/.test(cnt) && /quyetDinhChoPa/.test(cnt) && /Ghi kết quả cuối/.test(cnt) && !/ChonTuan/.test(cnt), 'Ghi kết quả chưa theo v4');
     assert(!/useState<string>\('improved'\)/.test(doc(f4[0])), 'Hoàn thành còn chọn sẵn');
     assert(/Ghi một PA đã làm trước đây/.test(doc(f4[0])) && /PA theo quy chế vẫn chạy — PA này là hỗ trợ thêm\./.test(doc(f4[0])), 'Thêm PA thiếu chữ K3-18');

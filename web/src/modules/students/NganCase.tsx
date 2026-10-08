@@ -11,7 +11,7 @@ import { caseStatusLabel } from '../../lib/format.ts';
 import { outcomeLabelFor, tuanLich } from '@shared/domain/index.ts';
 import { ThanCase, tenNganCase, type CaseDetail, type ViewCase } from '../cases/CasePanel.tsx';
 import { GhiKetQuaPanel } from '../cases/CapNhatTuan.tsx';
-import { HoanThanhCasePanel, SuaCasePanel, ThemPaPanel } from '../cases/ThaoTacCase.tsx';
+import { HoanThanhCasePanel, SuaCasePanel, SuaPaPanel, ThemPaPanel } from '../cases/ThaoTacCase.tsx';
 import { XacNhanCasePanel, XacNhanPaPanel, type PaQuyChe } from '../yThuc/CaseSosControls.tsx';
 import { NopKeHoachPanel } from '../cases/NopKeHoachPanel.tsx';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
@@ -121,6 +121,13 @@ export function NganCase({ caseId, paId, viec, viecBanDau, hocVien, lop, onClose
   if (view.loai === 'ke-hoach' && data.boTro) {
     const ivId = view.paId ?? (data.interventions ?? []).find((x: any) => x.kind === 'bo_tro')?.id;
     if (ivId) return <NopKeHoachPanel {...chung} ivId={ivId} boTro={data.boTro} studentId={data.student?.id} onXong={xong} />;
+  }
+  if (view.loai === 'sua-pa') {
+    const iv = (data.interventions ?? []).find((x: any) => x.id === view.paId);
+    if (iv) {
+      return <SuaPaPanel key={iv.id} {...chung} pa={iv} studentId={data.student?.id} onSaved={xong}
+        coKetQua={(data.followups ?? []).some((f: any) => f.interventionId === iv.id)} />;
+    }
   }
   if (view.loai === 'them-pa') {
     return <ThemPaPanel {...chung} caseId={caseId} studentId={data.student?.id} onSaved={xong}

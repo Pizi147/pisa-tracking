@@ -1,8 +1,7 @@
 import { useRef, useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
-import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
@@ -10,12 +9,15 @@ import { OKhac } from '../../ui/OKhac.tsx';
 import { NutChon } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
-  CASE_OUTCOMES, CASE_OUTCOME_LABEL, HAN_DUYET_NGAY, INTERVENTION_KIND_LABEL, RESCHEDULE_TARGETS, RESCHEDULE_TARGET_LABEL,
+  CASE_OUTCOMES, CASE_OUTCOME_LABEL, HAN_DUYET_NGAY,
   componentsAreCounts, componentsFor, interventionKindsFor, isProposalKind,
-  GOI_Y_MO_TA_PA, nguoiThanhPayload, type NguoiChon, dsLoi, kiemGhiRoKhac, KHAC_TOI_THIEU, moiKhoaGui,
+  dsLoi, kiemGhiRoKhac, KHAC_TOI_THIEU, moiKhoaGui, tuanLich,
+  loiFormPa, nguoiCuaPa, paMoi, paPayload, thanSuaPa, type GiaTriPa,
   URGENCY_LEVELS, URGENCY_LABEL, caseTopicsFor, issuesForTopic, laKhac, tenMon, tenMonNgan,
 } from '@shared/domain/index.ts';
 import { ComponentsField, componentsPayload } from './ChiTietKyNang.tsx';
+import { FormPa, NgayKhoa } from './FormPa.tsx';
+import { LichSuDieuChinh, type BanDieuChinh } from './CapNhatTuan.tsx';
 
 /**
  * BA THAO TÁC CỦA NGĂN CASE (PR-UX3, N-4): Thêm PA · Hoàn thành Case · Trả lời đề xuất — trước đây là hộp thoại giữa màn đè lên
@@ -33,8 +35,8 @@ type ChungPanel = {
 // ==================================================================== Thêm PA
 
 /**
- * THÊM PHƯƠNG ÁN (mục 8.2). Danh mục theo nhóm Case; người làm chọn từ tài khoản (PR-Form F-2). PR-SOS: bỏ ô ngày kết thúc (Q28-4);
- * Mô tả gợi ý "hướng dẫn, trọng tâm, ai thực hiện" (Q28-1); PA đã làm trước đây là liên kết phụ cuối form (K3-18).
+ * THÊM PHƯƠNG ÁN (mục 8.2) — PR-PA (§8): một form PA (`FormPa`): Loại · Nội dung · Số buổi · Người dạy / Người thực hiện (không bắt buộc)
+ * · Ngày bắt đầu. PA đã làm trước đây là liên kết phụ cuối form (K3-18).
  */
 export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quayLai, onClose, onSaved }: ChungPanel & {
   caseId: number; studentId?: number | null;
@@ -42,45 +44,34 @@ export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quay
   coPaBatBuoc?: boolean;
 }) {
   const toast = useToast();
-  const catalogue = interventionKindsFor();
-  const [kind, setKind] = useState<string>(catalogue.selfServe[0]);
-  const [description, setDescription] = useState('');
-  /* PA đề xuất "Khác" (T13): ô Tên đề xuất ngay dưới; máy chủ ghép "{tên} — {mô tả}" (Q9). Đổi loại vẫn giữ chữ đã gõ. */
-  const [ghiRo, setGhiRo] = useState('');
-  const laKhacPa = kind === 'other_proposal';
+  const { homNay } = useNgayNghiepVu();
+  const [v, setV] = useState<GiaTriPa>(() => paMoi(interventionKindsFor().selfServe[0]));
   /* Mặc định ĐANG THEO DÕI: PA vừa lập thì đang chạy, không phải đã xong. */
   const [status, setStatus] = useState<'started' | 'completed'>('started');
-  const [nguoi, setNguoi] = useState<NguoiChon | null>({ kieu: 'toi' });
   const [completedDate, setCompletedDate] = useState('');
-  const [startedDate, setStartedDate] = useState('');
-  const [rescheduleTarget, setRescheduleTarget] = useState<string>(RESCHEDULE_TARGETS[0]);
+  const [startedDate, setStartedDate] = useState(homNay);
   const lf = useLoiForm();
   const [busy, setBusy] = useState(false);
   /* PR-GVa (F01 = D13): một khoá gửi cho một lần mở panel — thử lại sau lỗi mạng không ghi PA thứ hai. */
   const khoa = useRef(moiKhoaGui('pa'));
   /* Nhóm Đề xuất luôn phải có Quản lý trả lời. */
-  const deXuat = isProposalKind(kind);
+  const deXuat = isProposalKind(v.kind);
 
-  const loi = dsLoi([
-    ...(laKhacPa ? [{ khoa: 'ghi-ro', nhan: 'Tên đề xuất', toiThieu: KHAC_TOI_THIEU }] : []),
-    { khoa: 'mo-ta', nhan: 'Mô tả', toiThieu: 8 },
-    ...(status === 'completed' ? [{ khoa: 'ngay-lam', nhan: 'Ngày đã làm', chon: true }] : []),
-  ], { 'ghi-ro': ghiRo, 'mo-ta': description, 'ngay-lam': completedDate });
-  const thieu = loi.map((l) => l.nhan);
+  const loi = [
+    ...loiFormPa(v),
+    ...dsLoi(status === 'completed' ? [{ khoa: 'ngay-lam', nhan: 'Ngày đã làm', chon: true }] : [], { 'ngay-lam': completedDate }),
+  ];
 
   const luu = async () => {
     lf.bam();
-    if (thieu.length > 0) return;
+    if (loi.length > 0) return;
     setBusy(true);
     try {
       await api.post(`/cases/${caseId}/interventions`, {
-        kind, description, status,
-        ...nguoiThanhPayload(nguoi),
+        ...paPayload(v), status,
         completedDate: status === 'completed' ? completedDate || undefined : undefined,
-        startedDate: startedDate || undefined,
-        rescheduleTarget: kind === 'reschedule_mt' ? rescheduleTarget : undefined,
+        startedDate: status === 'started' ? startedDate || undefined : undefined,
         needsApproval: deXuat,
-        ...(laKhacPa ? { ghiRoKhac: ghiRo.trim() } : {}),
         idempotencyKey: khoa.current,
       });
       invalidate('/cases'); invalidate('/students'); invalidate('/tong-quan');
@@ -100,66 +91,111 @@ export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quay
         ),
       }}>
       {coPaBatBuoc && <p className="m-0 pt-3 text-xs text-slate-400">PA theo quy chế vẫn chạy — PA này là hỗ trợ thêm.</p>}
-      <Khoi tieuDe="Phương án"
+      <FormPa v={v} dat={(p) => setV((x) => ({ ...x, ...p }))} lf={lf} loi={loi} chonLoai studentId={studentId}
         luat={deXuat
           ? `Đây là một ĐỀ XUẤT nên Quản lý phải trả lời trong ${HAN_DUYET_NGAY} ngày, tính cả hôm gửi. Trong lúc chờ thì chưa ghi kết quả được.`
-          : 'Chọn một mục trong "Cần Quản lý duyệt" tức là đang xin ý kiến Quản lý.'}>
-        <div>
-          <Truong nhan="Loại PA" batBuoc>
-            <select className="field w-full" value={kind} onChange={(e) => setKind(e.target.value)}>
-              <optgroup label="Bạn tự làm được">
-                {catalogue.selfServe.map((k: string) => (
-                  <option key={k} value={k}>{INTERVENTION_KIND_LABEL[k as keyof typeof INTERVENTION_KIND_LABEL]}</option>
-                ))}
-              </optgroup>
-              <optgroup label="Cần Quản lý duyệt">
-                {catalogue.proposals.map((k: string) => (
-                  <option key={k} value={k}>{INTERVENTION_KIND_LABEL[k as keyof typeof INTERVENTION_KIND_LABEL]} · cần Quản lý duyệt</option>
-                ))}
-              </optgroup>
-            </select>
+          : 'Chọn một mục trong "Cần Quản lý duyệt" tức là đang xin ý kiến Quản lý.'}
+        ngay={status === 'completed' ? (
+          <Truong nhan="Ngày đã làm" batBuoc loi={lf.loiCua(loi, 'ngay-lam')}>
+            <ChonNgayGan value={completedDate} onChange={setCompletedDate} soNgay={30} chuaChon="Chọn ngày" ariaLabel="Ngày đã làm"
+              id={lf.oId('ngay-lam')} onBlur={lf.roi('ngay-lam')} invalid={!!lf.loiCua(loi, 'ngay-lam')} />
           </Truong>
-          <OKhac hien={laKhacPa} value={ghiRo} onChange={setGhiRo} nhan="Tên đề xuất" goiY="Ví dụ: Học kèm 1-1 với Tutor"
-            id={lf.oId('ghi-ro')} onBlur={lf.roi('ghi-ro')} loi={lf.hien('ghi-ro') ? kiemGhiRoKhac(ghiRo) : null} />
-        </div>
-        {kind === 'reschedule_mt' && (
-          <Truong nhan="Lùi cái gì" batBuoc as="div">
-            <div className="grid grid-cols-2 gap-2">
-              {RESCHEDULE_TARGETS.map((t) => (
-                <NutChon key={t} chon={rescheduleTarget === t} className="justify-center" onClick={() => setRescheduleTarget(t)}>
-                  {RESCHEDULE_TARGET_LABEL[t]}
-                </NutChon>
-              ))}
-            </div>
+        ) : (
+          <Truong nhan="Ngày bắt đầu">
+            <ChonNgayGan value={startedDate} onChange={setStartedDate} soNgay={14} chuaChon="Mặc định: hôm nay" />
           </Truong>
         )}
-        <Truong nhan="Mô tả" batBuoc loi={lf.loiCua(loi, 'mo-ta')}>
-          <textarea className="field w-full" rows={2} {...lf.o(loi, 'mo-ta')} value={description} onChange={(e) => setDescription(e.target.value)}
-            placeholder={GOI_Y_MO_TA_PA} />
-        </Truong>
-      </Khoi>
-      <Khoi tieuDe="Người thực hiện và thời gian">
-        <Hang2>
-          <Truong nhan="Người thực hiện" as="div">
-            <ChonNguoi nhom="giao_vien" studentId={studentId} value={nguoi} onChange={setNguoi} />
-          </Truong>
-          {status === 'completed' ? (
-            <Truong nhan="Ngày đã làm" batBuoc loi={lf.loiCua(loi, 'ngay-lam')}>
-              <ChonNgayGan value={completedDate} onChange={setCompletedDate} soNgay={30} chuaChon="Chọn ngày" ariaLabel="Ngày đã làm"
-                id={lf.oId('ngay-lam')} onBlur={lf.roi('ngay-lam')} invalid={!!lf.loiCua(loi, 'ngay-lam')} />
-            </Truong>
-          ) : (
+        cuoi={(
+          /* K3-18: PA đã làm trước đây là trường hợp hiếm — liên kết phụ, không phải công tắc đầu form. */
+          <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-left text-xs"
+            aria-pressed={status === 'completed'} onClick={() => setStatus(status === 'completed' ? 'started' : 'completed')}>
+            {status === 'completed' ? 'Ghi PA đang theo dõi (bỏ chế độ đã làm trước đây)' : 'Ghi một PA đã làm trước đây'}
+          </button>
+        )} />
+    </KhungPanel>
+  );
+}
+
+// ==================================================================== Sửa PA
+
+/** Phần PA trong `CaseDetail.interventions` mà Sửa PA cần. */
+export type PaDeSua = {
+  id: number; kind: string; description: string | null; soBuoi: number | null; daDay: number;
+  performer: string | null; performerUserId: number | null; startedDate: string | null;
+  preset: boolean; recordedBy: string | null; createdAt?: string | null; mocChu: string | null;
+  revisions: BanDieuChinh[];
+};
+
+/** Nguồn của PA web tạo (dòng đầu Sửa PA): `null` = PA người tạo tay; '' = web tạo, không rõ nguồn. */
+function nguonWebTao(pa: PaDeSua): string | null {
+  if (pa.kind === 'bo_tro') return 'theo Progress Test';
+  if (pa.kind === 'bo_tro_mien_phi') return 'theo Final Test';
+  if (pa.preset) return 'theo quy chế SOS';
+  return pa.recordedBy ? null : '';
+}
+
+/**
+ * SỬA PA (PR-PA §8, mockup mục 5–6) — cùng form Thêm PA; Loại khoá (đổi loại = Kết quả › Thay PA); Số buổi ≥ đã dạy; Ngày bắt đầu khoá khi
+ * PA đã có Kết quả. Chỉ gửi ô ĐÃ ĐỔI (`PATCH /interventions/:id`): ô không đổi không bị kiểm lại (PA vượt buổi, người cũ đã nghỉ vẫn sửa
+ * được ô khác); đổi người thì gửi đủ ba khoá người (cả ba trống = xoá người). Mỗi lần lưu máy chủ ghi một dòng Nhật ký PA (cũ → mới).
+ * Chân: Huỷ thay đổi / Lưu (`daSua`, luật S3).
+ */
+export function SuaPaPanel({ pa, coKetQua, studentId, hocVien, lop, quayLai, onClose, onSaved }: ChungPanel & {
+  pa: PaDeSua; coKetQua: boolean; studentId?: number | null;
+}) {
+  const toast = useToast();
+  const { homNay, ngan } = useNgayNghiepVu();
+  const goc: GiaTriPa = {
+    kind: pa.kind, description: pa.description ?? '', soBuoi: pa.soBuoi == null ? '' : String(pa.soBuoi), nguoi: nguoiCuaPa(pa),
+    ghiRo: '',
+  };
+  const [v, setV] = useState<GiaTriPa>(goc);
+  const [startedDate, setStartedDate] = useState(pa.startedDate ?? '');
+  const lf = useLoiForm();
+  const [busy, setBusy] = useState(false);
+  const loi = loiFormPa(v, { daDay: pa.daDay, goc });
+
+  const body = thanSuaPa(v, goc, { moi: startedDate, cu: pa.startedDate });
+  const daSua = Object.keys(body).length > 0;
+
+  const luu = async () => {
+    lf.bam();
+    if (loi.length > 0) return;
+    if (!daSua) { onSaved(); return; }
+    setBusy(true);
+    try {
+      await api.patch(`/interventions/${pa.id}`, body);
+      invalidate('/cases'); invalidate('/students'); invalidate('/my-work'); invalidate('/tong-quan');
+      toast.push('ok', 'Đã lưu PA');
+      onSaved();
+    } catch (e: any) { toast.push('error', e?.message ?? 'Không lưu được'); } finally { setBusy(false); }
+  };
+
+  const nguon = nguonWebTao(pa);
+  return (
+    <KhungPanel tieuDe="Sửa PA" hocVien={hocVien} lop={lop} quayLai={quayLai} onDong={onClose}
+      chan={{
+        daSua,
+        conThieu: lf.conThieu(loi),
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>{busy ? 'Đang lưu…' : 'Lưu'}</button>,
+      }}>
+      {nguon !== null && (
+        <p className="m-0 pt-3 text-xs text-slate-300">
+          Web tạo{nguon ? ` ${nguon}` : ''}{pa.createdAt ? ` · ${ngan(pa.createdAt)}` : ''}.<span className="max-sm:hidden"> Sửa được mọi ô trừ Loại.</span>
+        </p>
+      )}
+      <FormPa v={v} dat={(p) => setV((x) => ({ ...x, ...p }))} lf={lf} loi={loi} daDay={pa.daDay} studentId={studentId}
+        quyChe={pa.preset ? { mocChu: pa.mocChu } : null}
+        ngay={coKetQua
+          ? <NgayKhoa chu={pa.startedDate ? `${tuanLich(pa.startedDate, homNay)} · ${ngan(pa.startedDate)}` : '—'} phu="Đã có kết quả tuần — không đổi" />
+          : (
             <Truong nhan="Ngày bắt đầu">
-              <ChonNgayGan value={startedDate} onChange={setStartedDate} soNgay={14} chuaChon="Mặc định: hôm nay" />
+              <ChonNgayGan value={startedDate} onChange={setStartedDate} soNgay={14} chuaChon="Chọn ngày" />
             </Truong>
-          )}
-        </Hang2>
-        {/* K3-18: PA đã làm trước đây là trường hợp hiếm — liên kết phụ, không phải công tắc đầu form. */}
-        <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-left text-xs"
-          aria-pressed={status === 'completed'} onClick={() => setStatus(status === 'completed' ? 'started' : 'completed')}>
-          {status === 'completed' ? 'Ghi PA đang theo dõi (bỏ chế độ đã làm trước đây)' : 'Ghi một PA đã làm trước đây'}
-        </button>
-      </Khoi>
+          )} />
+      {pa.revisions.length > 0 && (
+        <Khoi tieuDe="Nhật ký PA"><LichSuDieuChinh revisions={pa.revisions} /></Khoi>
+      )}
     </KhungPanel>
   );
 }

@@ -213,8 +213,10 @@ export async function runPrS3fTests(t: YThucTestKit) {
   const web = (f: string) => fs.readFileSync(path.join(REPO, 'web/src/modules', f), 'utf8');
   check('S3F (9) · Panel Xác nhận PA không điền sẵn mô tả máy gán (ô trống, gợi ý mờ), vẫn ≥ 15 ký tự; (10) đầu hồ sơ tách "chờ xác nhận" khỏi "đang theo dõi"', () => {
     const c = web('yThuc/CaseSosControls.tsx');
-    assert(!/useState\(pa\.description/.test(c) && /const \[moTa, setMoTa\] = useState\(''\)/.test(c.slice(c.indexOf('export function XacNhanPaPanel'))), 'Xác nhận PA còn điền sẵn mô tả');
-    assert(/toiThieu: 15/.test(c.slice(c.indexOf('export function XacNhanPaPanel'))) && /placeholder=\{GOI_Y_MO_TA_PA\}/.test(c.slice(c.indexOf('export function XacNhanPaPanel'))), 'mất ràng buộc 15 ký tự / gợi ý');
+    /* PR-PA (§8): Xác nhận PA dùng một form PA (`FormPa`) — Nội dung bắt đầu trống (`paMoi`), gợi ý mờ nằm ở FormPa. */
+    const xn = c.slice(c.indexOf('export function XacNhanPaPanel'), c.indexOf('export function KhongTheoDoiForm'));
+    assert(!/pa\.description/.test(xn) && /\.\.\.paMoi\(pa\.kind\)/.test(xn), 'Xác nhận PA còn điền sẵn mô tả');
+    assert(/toiThieu: 15/.test(xn) && /<FormPa/.test(xn) && /placeholder=\{GOI_Y_MO_TA_PA\}/.test(web('cases/FormPa.tsx')), 'mất ràng buộc 15 ký tự / gợi ý');
     /* PR-VAI-b (Task 3): ô "Case đang mở" cũ → ô Học thuật, mỗi Case một dòng — Case có PA chờ xác nhận nói "xác nhận PA", tách khỏi Case đang theo dõi. */
     const o = d.oHocThuat([{ short: 'L', label: 'Listening', category: 'listening', missed: true, cases: [
       { status: 'open', trangThaiV4: { t: 'can-lam' }, viecTiep: { chu: 'Xác nhận PA Tutor' } },

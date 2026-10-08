@@ -497,4 +497,26 @@ export async function runPrPaTests(t: YThucTestKit) {
       assert(fuCua(iv).length === 1, `${ten}: GVCN chưa ghi được`);
     }
   });
+  check('PA14 · form PA (luật thuần web): lỗi theo Loại; Sửa PA chỉ kiểm + gửi ô đã đổi; đổi người gửi đủ ba khoá; xoá Số buổi → null', () => {
+    const tutor = { ...d.paMoi('tutor'), description: 'Tutor 1-1 Writing Task 2', soBuoi: '10' };
+    assert(d.paMoi('tutor').nguoi === null && d.paMoi('teaching_adjust').nguoi?.kieu === 'toi', 'người mặc định theo loại');
+    assert(d.loiFormPa(tutor).length === 0, 'PA đủ ô');
+    const khoa = (v: any, o?: any) => d.loiFormPa(v, o).map((l: any) => l.khoa).join();
+    assert(khoa({ ...tutor, soBuoi: '0', description: 'ngắn' }) === 'noi-dung,so-buoi', 'nội dung < 8 + Số buổi 0');
+    assert(khoa({ ...tutor, kind: 'teaching_adjust', soBuoi: 'abc' }) === '', 'loại không Số buổi: bỏ qua ô Số buổi');
+    assert(khoa({ ...tutor, description: 'Mười bốn ký tự' }, { toiThieu: 15 }) === 'noi-dung', 'Xác nhận PA ≥ 15');
+    assert(khoa({ ...tutor, kind: 'other_proposal' }) === 'ghi-ro', 'PA Khác cần Tên đề xuất');
+    /* Sửa PA: PA vượt buổi (10 < đã dạy 12), mô tả cũ ngắn — sửa ô khác vẫn được; đổi Số buổi xuống dưới đã dạy → lỗi. */
+    const goc = { ...tutor, description: 'ngắn', nguoi: { kieu: 'tai_khoan', id: 7, ten: 'GV cũ' } };
+    assert(khoa({ ...goc, nguoi: null }, { daDay: 12, goc }) === '', 'ô không đổi không kiểm');
+    assert(khoa({ ...goc, soBuoi: '11' }, { daDay: 12, goc }) === 'so-buoi', 'Số buổi mới < đã dạy');
+    assert(JSON.stringify(d.thanSuaPa(goc, goc, { moi: '2026-10-01', cu: '2026-10-01' })) === '{}', 'không đổi → thân rỗng');
+    const b = d.thanSuaPa({ ...goc, soBuoi: ' ', nguoi: null }, goc, { moi: '2026-10-02', cu: '2026-10-01' });
+    assert(b.soBuoi === null && b.performerSelf === false && b.performerUserId === null && b.performerName === null && b.startedDate === '2026-10-02'
+      && !('description' in b), `thân Sửa PA: ${JSON.stringify(b)}`);
+    assert(d.thanSuaPa({ ...goc, nguoi: { kieu: 'ngoai', ten: 'Cô Lan' } }, goc, { moi: '', cu: null }).performerName === 'Cô Lan', 'người ngoài');
+    const pl = d.paPayload({ ...tutor, kind: 'self_study', nguoi: { kieu: 'toi' } });
+    assert(pl.soBuoi === 10 && !('performerSelf' in pl), 'Tự học: có Số buổi, không người');
+    assert(d.paPayload({ ...tutor, kind: 'teaching_adjust' }).soBuoi === null, 'loại không Số buổi → null');
+  });
 }
