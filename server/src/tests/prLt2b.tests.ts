@@ -29,7 +29,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
   check('LT2b (1) · BE 55% → Quản lý cân nhắc (canQuanLy), 2 tuần, chưa có hướng; không báo PH', () => {
     const g = d.goiYCuoiKhoa({ ct: 'BE', tyLe: 0.55, monTruot: ['reading', 'writing', 'speaking'] })!;
     assert(g.dai === '50_59' && g.huong === null && g.canQuanLy, 'canQuanLy');
-    assert(g.boTroNeuLen!.soTuan === 2 && g.boTroNeuLen!.soBuoi === 3 && !g.baoPhTvv, 'bổ trợ nếu lên');
+    assert(g.boTroNeuLen!.soTuan === 2 && g.boTroNeuLen!.soBuoi === 6 && !g.baoPhTvv, 'bổ trợ nếu lên');
     assert(g.nhan.startsWith('Quản lý cân nhắc') && g.nhanNgan === '→ QL cân nhắc', g.nhan);
   });
   check('LT2b (1) · Pre FOU 52% → 4 buổi, 64% → 2 buổi, không theo môn (PF3)', () => {
@@ -335,8 +335,8 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     luatMod.apDungMotDong(P.admin, { sid: s, toClassId: ele, ngay: NGAY_CHUYEN, boiCanh: 'cuoi-khoa' });
     const cs = caseCuaEm(s, cycleMoi(s));
     assert(cs.length === 4 && cs.every((c) => c.origin_kind === 'chuyen_cap'), `4 Case (mỗi môn trượt): ${cs.length}`);
-    const mt = conn.prepare('SELECT * FROM mini_test WHERE student_id = ?').get(s) as any;
-    assert(mt.so_buoi === 4 && mt.ngay_du_kien === d.lichBoTro({ batDau: NGAY_CHUYEN, soTuan: 2 }).ngayMiniTest, JSON.stringify(mt));
+    const mt = conn.prepare('SELECT * FROM mini_test WHERE student_id = ?').get(s) as any;   // PR-CT2: 4 môn × 2 buổi
+    assert(mt.so_buoi === 8 && mt.ngay_du_kien === d.lichBoTro({ batDau: NGAY_CHUYEN, soTuan: 2 }).ngayMiniTest, JSON.stringify(mt));
   });
   check('LT2b (5) · BE 72% sang FT + kết luận Trung tâm {R, W} → 2 Case FT (Reading, Writing 2) + PA tutor preset 0; Học sinh → không Case; đánh dấu sau khi đã sang FT tạo ngay', () => {
     const l = taoLop('BE', 3);

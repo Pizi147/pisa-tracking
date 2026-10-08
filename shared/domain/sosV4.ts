@@ -55,7 +55,7 @@ export function tenCaseSos(x: { mt: number | null; giua: string; sos: number | n
   return [x.mt ? `[MT${x.mt}]` : '', x.giua, x.sos ? `[SOS ${x.sos}]` : ''].filter(Boolean).join(' ');
 }
 
-export type TrangThaiCaseV4 = 'cho-nguyen-nhan' | 'cho-ke-hoach' | 'cho-duyet-ke-hoach' | 'cho-duyet-khong-theo-doi' | 'cho-xac-nhan-pa' | 'dang-lam' | 'xong' | 'huy-khong-theo-doi' | 'he-thong-dong' | 'rut-sua-diem';
+export type TrangThaiCaseV4 = 'cho-nguyen-nhan' | 'cho-duyet-khong-theo-doi' | 'cho-xac-nhan-pa' | 'dang-lam' | 'xong' | 'huy-khong-theo-doi' | 'he-thong-dong' | 'rut-sua-diem';
 
 export type CaseV4Input = {
   status: 'open' | 'in_progress' | 'done'; fromSos: boolean; hasCause: boolean; dismissed: boolean; systemClosed: boolean;
@@ -64,8 +64,6 @@ export type CaseV4Input = {
   lyDoHeThong?: string | null;
   /** PR-S5F-b: Case rút khỏi danh sách vì điểm nguồn được sửa/huỷ (`retireCaseForCorrectedScore`) — không phải "Xong". */
   rutSuaDiem?: boolean;
-  /** PR-LT2a: Case Giữa khoá có PA bổ trợ chưa chạy — kế hoạch đang chờ nộp / chờ Quản lý duyệt. */
-  boTro?: { choNop: boolean; choDuyet: boolean; hanKeHoach: string | null } | null;
 };
 
 /** MỘT nhãn trạng thái cho một Case (§7.3) — xét từ trên xuống. */
@@ -77,8 +75,6 @@ export function trangThaiCaseV4(c: CaseV4Input, homNay: string): { k: TrangThaiC
   if (c.choDuyetKhongTheoDoi) return { k: 'cho-duyet-khong-theo-doi', t: 'cho-duyet', chu: 'Chờ Quản lý duyệt · không theo dõi', han: null };
   const t: TrangThai = c.hanXacNhan && c.hanXacNhan < homNay ? 'qua-han' : 'can-lam';
   if (c.fromSos && !c.hasCause) return { k: 'cho-nguyen-nhan', t, chu: 'Chờ xác nhận nguyên nhân', han: c.hanXacNhan };
-  if (c.boTro?.choDuyet) return { k: 'cho-duyet-ke-hoach', t: 'cho-duyet', chu: 'Chờ Quản lý duyệt · kế hoạch bổ trợ', han: null };
-  if (c.boTro?.choNop) return { k: 'cho-ke-hoach', t: c.boTro.hanKeHoach && c.boTro.hanKeHoach < homNay ? 'qua-han' : 'can-lam', chu: 'Chờ nộp kế hoạch bổ trợ', han: c.boTro.hanKeHoach };
   if (c.fromSos && c.coPaChoXacNhan) return { k: 'cho-xac-nhan-pa', t, chu: 'Chờ xác nhận PA', han: c.hanXacNhan };
   return { k: 'dang-lam', t: 'dang-lam', chu: 'Đang làm', han: null };
 }
@@ -104,8 +100,6 @@ export function viecTiepCuaCase(c: CaseV4Input, pas: PaViecTiep[], homNay: strin
   if (s.k === 'xong' || s.k === 'huy-khong-theo-doi' || s.k === 'he-thong-dong' || s.k === 'rut-sua-diem') return null;
   if (s.k === 'cho-nguyen-nhan') return { chu: 'Xác nhận nguyên nhân', loaiHan: 'xac-minh-sos', han: c.hanXacNhan };
   if (s.k === 'cho-duyet-khong-theo-doi') return { chu: 'Chờ Quản lý duyệt · không theo dõi', loaiHan: null, han: null };
-  if (s.k === 'cho-ke-hoach') return { chu: 'Nộp kế hoạch bổ trợ', loaiHan: 'ke-hoach-bo-tro', han: s.han };
-  if (s.k === 'cho-duyet-ke-hoach') return { chu: 'Chờ Quản lý duyệt kế hoạch', loaiHan: null, han: null };
   const choXn = pas.find((p) => p.choXacNhan && !p.xong);
   if (choXn) return { chu: `Xác nhận PA ${tenPaGon(choXn.ten)}`, loaiHan: 'xac-minh-sos', han: c.hanXacNhan, paId: choXn.id };
   const chayTatCa = pas.filter((p) => !p.xong && !p.choXacNhan && !p.choDuyet);

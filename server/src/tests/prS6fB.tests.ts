@@ -271,6 +271,7 @@ async function runTask8(t: YThucTestKit, d: any) {
   const { check, assert, conn, TODAY, P, addDays, classId, seedMax } = t;
   const { studentProfile } = await import('../students/profile.ts');
   const { myWork } = await import('../worklist/mywork.ts');
+  const { emConMiniTest } = await import('../normal/cuoiKhoa.ts');
   const { reportIssue, skillSupportBoard } = await import('../cases/cases.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
@@ -319,25 +320,17 @@ async function runTask8(t: YThucTestKit, d: any) {
     assert(so > 0, 'bộ demo phải có việc yt_xem / yt_thuc_hien của GVCN');
   });
 
-  check('S6F-b (8) · Mini Test: nhóm PA có người dạy KHÔNG tài khoản đứng đầu + người có tài khoản sau → người làm ở hồ sơ = Công việc (performer_user_id đầu tiên)', () => {
+  check('S6F-b (8) · Mini Test: người làm ở hồ sơ = Công việc (PR-CT2: người giữ việc `nguoiGiuMiniTest` — GVCN lớp đang học / chủ Case, không còn Người dạy)', () => {
     let so = 0;
-    for (const m of all(`SELECT id, student_id, nhom_bo_tro nhom FROM mini_test WHERE ty_le IS NULL`)) {
-      const ivs = all('SELECT id, performer_user_id u, performer_name n FROM case_interventions WHERE nhom_bo_tro = ? ORDER BY id', m.nhom);
-      const coTk = ivs.find((iv) => iv.u);
-      if (!coTk || ivs.length < 2) continue;
-      const dau = ivs[0];
-      const sua = dau.id !== coTk.id;
-      if (!sua) conn.prepare(`UPDATE case_interventions SET performer_user_id = NULL, performer_name = 'Cô Lan (ngoài)' WHERE id = ?`).run(dau.id);
-      try {
-        const gv = all('SELECT performer_user_id u FROM case_interventions WHERE nhom_bo_tro = ? AND performer_user_id IS NOT NULL ORDER BY id', m.nhom)[0]?.u;
-        if (!gv) continue;
-        const x = viecCua(P.admin, m.student_id);
-        const v = [...x.cuaBan, ...x.nguoiKhac].find((y) => y.key === `minitest:${m.id}`);
-        assert(v && v.nguoi.id === gv, `minitest:${m.id} người làm ${v?.nguoi.id} ≠ ${gv}`);
-        so++;
-      } finally { if (!sua) conn.prepare('UPDATE case_interventions SET performer_user_id = ?, performer_name = ? WHERE id = ?').run(dau.u, dau.n, dau.id); }
+    for (const m of all(`SELECT id, student_id FROM mini_test WHERE ty_le IS NULL`)) {
+      const gv = emConMiniTest([m.student_id]).get(m.student_id)?.gv;
+      if (!gv) continue;
+      const x = viecCua(P.admin, m.student_id);
+      const v = [...x.cuaBan, ...x.nguoiKhac].find((y) => y.key === `minitest:${m.id}`);
+      assert(v && v.nguoi.id === gv, `minitest:${m.id} người làm ${v?.nguoi.id} ≠ ${gv}`);
+      so++;
     }
-    assert(so > 0, 'bộ demo phải có Mini Test chờ ghi của nhóm PA ≥ 2 PA');
+    assert(so > 0, 'bộ demo phải có Mini Test chờ ghi có người giữ việc');
   });
 
   check('S6F-b (8) · ô Kết quả gần nhất: mỗi kỹ năng dưới kỳ vọng mang attemptId của CHÍNH hàng kỹ năng (bandAttemptId); web liên kết theo attemptId của hàng', () => {

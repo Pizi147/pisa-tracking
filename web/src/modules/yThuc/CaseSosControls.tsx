@@ -3,7 +3,7 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
-import { KhoiKeHoach, bodyKeHoach, invalidateKeHoach, luatKeHoach, nguoiDayMacDinh, type BoTro, type KeHoachForm } from '../cases/NopKeHoachPanel.tsx';
+import type { BoTro } from '../cases/CasePanel.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
 import { FormPa, NgayKhoa } from '../cases/FormPa.tsx';
 import { NutChon } from '../../ui/ui.tsx';
@@ -50,12 +50,12 @@ function Chip({ children, sos }: { children: string; sos?: number | null }) {
  * · Mô tả * (≥ 15) · Bắt đầu theo dõi: hôm nay (khoá) · khối chỉ đọc PA theo quy chế. Không tab "Đã xong từ trước", không tệp đính kèm,
  * không "+ Thêm phương án" ở bước này (Q7).
  */
-export function XacNhanCasePanel({ caseId, topic, kyNang, ct, tenSos, paQuyChe, boTro = null, studentId, onXong, ...chung }: ChungPanel & {
+export function XacNhanCasePanel({ caseId, topic, kyNang, ct, tenSos, paQuyChe, boTro = null, onXong, ...chung }: ChungPanel & {
   caseId: number; topic: string | null; kyNang: string; ct?: string | null;
   tenSos: { mt: number | null; giua: string; sos: number | null } | null;
   paQuyChe: PaQuyChe[];
-  /** Case Giữa khoá lớp thường (PR-LT2a): khối kế hoạch bài giảng nếu người xem phải nộp, hoặc dòng nói ai nộp (FOU). */
-  boTro?: BoTro | null; studentId?: number | null;
+  /** Case Giữa khoá lớp thường (PR-LT2a): tên môn ngắn cho Tên Case. PR-CT2: xác nhận xong PA Bổ trợ chạy ngay (bỏ kế hoạch bài giảng). */
+  boTro?: BoTro | null;
   /** Lưu xong: nơi gọi mở tiếp Xác nhận PA (Planning tự quyết (1)). */
   onXong: () => void;
 }) {
@@ -70,10 +70,6 @@ export function XacNhanCasePanel({ caseId, topic, kyNang, ct, tenSos, paQuyChe, 
   const [busy, setBusy] = useState(false);
   const lf = useLoiForm();
   const causes = topic ? issuesForTopic(topic, ct ?? null) : [];
-  /* Kế hoạch bài giảng: Nội dung yếu điền sẵn từ Mô tả (sửa được — gõ vào là tách khỏi Mô tả). */
-  const kem = !!boTro?.phaiGuiKem;
-  const [kh, setKh] = useState<{ noiDungYeu: string | null; keHoach: string; nguoi: KeHoachForm['nguoi'] }>({ noiDungYeu: null, keHoach: '', nguoi: nguoiDayMacDinh(boTro) });
-  const fKh: KeHoachForm = { noiDungYeu: kh.noiDungYeu ?? moTa, keHoach: kh.keHoach, nguoi: kh.nguoi };
 
   const loi = dsLoi([
     { khoa: 'ten', nhan: 'Tên Case', toiThieu: 3 },
@@ -82,22 +78,17 @@ export function XacNhanCasePanel({ caseId, topic, kyNang, ct, tenSos, paQuyChe, 
     { khoa: 'muc-do', nhan: 'Mức độ gấp', chon: true },
     { khoa: 'mo-ta', nhan: 'Mô tả', toiThieu: 15 },
   ], { ten: giua, 'nguyen-nhan': code, 'ghi-ro': ghiRo, 'muc-do': urgency, 'mo-ta': moTa });
-  const loiKh = kem ? luatKeHoach(fKh) : [];
-  const tatCaLoi = [...loi, ...loiKh];
 
   const luu = async () => {
     lf.bam();
-    if (tatCaLoi.length > 0) return;
+    if (loi.length > 0) return;
     setBusy(true);
     try {
       await api.post(`/cases/${caseId}/xac-nhan`, {
         primaryCode: code, observation: laKhac(code) ? ghiRo.trim() : undefined, urgency, moTa: moTa.trim(), tenGiua: giua.trim(),
-        ...(kem ? { keHoach: bodyKeHoach(fKh) } : {}),
       });
       invalidateCases();
-      if (kem) invalidateKeHoach();
-      toast.push('ok', kem ? 'Đã xác nhận Case và gửi Quản lý duyệt — xem ở Yêu cầu của tôi'
-        : boTro ? 'Đã xác nhận Case' : 'Đã xác nhận Case — còn xác nhận PA theo quy chế');
+      toast.push('ok', boTro ? 'Đã xác nhận Case' : 'Đã xác nhận Case — còn xác nhận PA theo quy chế');
       onXong();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
@@ -105,8 +96,8 @@ export function XacNhanCasePanel({ caseId, topic, kyNang, ct, tenSos, paQuyChe, 
   return (
     <KhungPanel tieuDe="Xác nhận Case" {...chung} onDong={chung.onClose}
       chan={{
-        conThieu: lf.conThieu(tatCaLoi),
-        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>{kem ? 'Xác nhận Case và gửi kế hoạch' : 'Xác nhận Case'}</button>,
+        conThieu: lf.conThieu(loi),
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>Xác nhận Case</button>,
       }}>
       <Khoi tieuDe="Nguyên nhân">
         <Truong nhan="Kỹ năng" as="div">
@@ -145,17 +136,6 @@ export function XacNhanCasePanel({ caseId, topic, kyNang, ct, tenSos, paQuyChe, 
           <span className="field flex items-center text-slate-300" aria-readonly>Tuần này · {tuanLich(homNay, homNay)}</span>
         </Truong>
       </Khoi>
-      {kem && boTro && (
-        <KhoiKeHoach boTro={boTro} f={fKh} dat={(p) => setKh((x) => ({ ...x, ...p }))} lf={lf} loi={loiKh} studentId={studentId} />
-      )}
-      {boTro && !kem && boTro.chung && (
-        <Khoi tieuDe="Kế hoạch bài giảng">
-          <p className="m-0 text-xs text-slate-300">
-            Kế hoạch chung do {boTro.nguoiDay?.ten ?? 'giáo viên chủ nhiệm'}{' '}
-            {boTro.keHoach?.trangThai === 'cho' ? 'đã nộp — đang chờ Quản lý duyệt.' : boTro.keHoach?.trangThai === 'duyet' ? 'đã nộp và được duyệt.' : 'nộp sau khi có nguyên nhân.'}
-          </p>
-        </Khoi>
-      )}
       {paQuyChe.length > 0 && (
         <Khoi tieuDe="Phương án theo quy chế SOS — bắt buộc"
           luat="PA theo quy chế không thay, không kết thúc sớm. Sau khi xác nhận Case, bạn xác nhận PA để PA bắt đầu từ hôm đó.">

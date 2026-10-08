@@ -87,7 +87,7 @@ export type ScoringMode = 'band' | 'ratio';
  * một ngày, nhưng nơi gọi phải kiểm "đã đến tuần chưa" trước khi gọi một môn là quá hạn.
  */
 export function skillScoreDeadline(_mode: ScoringMode, weekStart: string, mt0 = false): string {
-  if (mt0) return hanChamMt0(weekStart);   // PR-MT0: Chủ nhật tuần sau tuần thi
+  if (mt0) return hanChamMt0(weekStart);   // PR-MT0, PR-CT2: thứ Tư tuần sau tuần thi (như lớp thường)
   /* T19 (PR-MTa, chủ sản phẩm 06/10): lớp thường cũng hết THỨ TƯ tuần kế tiếp như Fast Track (trước đây Chủ nhật tuần thi). */
   return addDays(mondayOf(weekStart), 7 + 2);
 }
