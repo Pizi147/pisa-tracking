@@ -253,6 +253,13 @@ Công việc của tôi, chuông, câu báo lỗi máy chủ trên các đườn
 - **Học viên: một Case mang kỹ năng đầu tiên** (tự quyết 2) — đặc tả không nói; chủ sản phẩm xem.
 - **Sổ tay:** màn "Đánh dấu kỳ vọng đầu ra · {em}" lỗi thời → PR-SOTAY.
 
+### SAU PR-GOP (#278, rà 08/10) — ghi chú không chặn, chờ góp ý / sửa sau
+- **`/my-work` nặng hơn khoảng gấp 3:** trả cả `items`, `groups` và `dong`. Web chỉ đọc `dong` (+ `summary`). Nếu cần: bỏ `items`/`groups` khỏi route, giữ trong hàm (Nhắc, hồ sơ GV dùng `myWork().items`).
+- **Hồ sơ GV › Việc đang có** vẫn đếm từng việc (`items`), nên lệch với badge Công việc (đếm dòng).
+- **Một việc có thể bị nhắc 2 lần trong ngày:** một lần qua khoá từng việc (dòng lẻ, hoặc khi dòng gộp chỉ còn 1 việc), một lần qua khoá `gop:`.
+- **`phanRieng` cắt tiêu đề bằng chuỗi** để lấy dòng phụ của từng em. Đổi chữ tiêu đề có thể làm dòng phụ dài ra. Nhãn nhóm "Thiếu PA học thuật" khác tiêu đề "Thêm PA học thuật …", nên dòng phụ của em vẫn còn cả chữ "Thêm PA học thuật Speaking".
+- **Chưa chạy `/impeccable audit` và `/ponytail-review`** (phiên cloud không có hai skill này).
+
 ### PR-SOTAY · Sổ tay mới theo web mới nhất (M) — chủ sản phẩm 06/10, **làm cuối cùng, sau PR-EN**
 Sáu file PDF, viết lại theo `main` cuối cùng (ảnh thật chụp app chạy cục bộ, 07/10), tận dụng bộ dựng sẵn `docs/so-tay/` (thay bản 02/10):
 `PTA - TEACHER MANUAL - MINI` / `- FULL` (GV Việt Nam, tiếng Việt) · `PTA - FOREIGN TEACHER MANUAL - MINI` / `- FULL` (GVNN, tiếng Anh, ảnh màn EN) ·

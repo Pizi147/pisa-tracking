@@ -103,6 +103,8 @@ export type WorkItem = {
   count: number | null;
   /** PR-Ra Q5: chỉ dòng có người phụ trách là TÀI KHOẢN KHÁC người xem, và người xem là QL/QT. */
   nhac?: { ownerId: number; daNhacLuc: string | null } | null;
+  /** PR-GOP: Case sinh từ SOS — ở lớp FT giữ từng dòng; Case GV/QL tự tạo thì gộp theo lớp (chủ sản phẩm 08/10). */
+  caseSos?: boolean;
   /** PR-GOP (§5): dòng gộp "Loại việc · lớp · n em" — các việc thật của dòng (khoá, nút, hạn riêng). Chỉ có ở `dong`. */
   con?: ConGop<WorkItem>[];
 };
@@ -689,6 +691,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       /* PR-Dọn (Q10): người làm = người phụ trách Case (cùng `support:{caseId}` ở hồ sơ em); Case chưa ai phụ trách thì để trống. */
       ownerId: c.owner_user_id ?? null, owner: null, mine: c.owner_user_id != null && c.owner_user_id === p.userId,
       due: deadline, statusLabel: 'Chưa có PA học thuật',
+      caseSos: c.origin_kind === 'mock',   // Case từ kết quả Test (cùng luật `cases.ts`); GV/QL tạo tay, chuyển cấp, khai bù → gộp
     });
   }
 
@@ -761,6 +764,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       href: duongHoSoHocVien(c.eff_student_id, { caseId: c.id }),
       ownerId: c.owner_user_id ?? null, owner: null, mine,
       due: c.due ?? null, statusLabel: nguyenNhan ? 'Chờ xác nhận nguyên nhân' : 'Chờ xác nhận PA',
+      caseSos: true,   // LA_CASE_SOS / PA quy chế — luôn là Case sinh từ SOS
     });
   };
   for (const c of causeCandidates) if (waiting.has(c.id)) dongCase(c, 'cause');

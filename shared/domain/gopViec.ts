@@ -14,19 +14,23 @@ export type ViecGopDuoc = {
   studentId: number | null; studentName: string; classId: number | null; classCode: string | null;
   khung?: 'ft' | 'thuong' | null; ownerId: number | null;
   tieuDe: string; contextLabel: string | null; count: number | null; href: string; actionLabel: string;
+  /** Case sinh từ SOS (`origin_kind = 'mock'`, Case từ kết quả Test) — khác Case GV / QL tự tạo, chuyển cấp, khai bù. */
+  caseSos?: boolean;
 };
 /** Một em (một việc) trong dòng gộp: `conTen` đậm, `conPhu` mờ — mockup phần 4 ("Lý Minh Châu" / "Reading · MT2"). */
 export type ConGop<T> = T & { conTen: string; conPhu: string };
 export type DongGop<T> = T & { con: ConGop<T>[] };
 
-/** Case SOS Fast Track: mỗi Case giữ một dòng (§7 Q1). */
+/** Case SOS Fast Track: mỗi Case giữ một dòng (§7 Q1) — chỉ Case sinh từ SOS; Case GV tự tạo gộp như việc khác (chủ sản phẩm 08/10). */
 const GIU_TUNG_DONG_FT = new Set(['cause', 'xac_nhan_pa', 'no_plan']);
 
 export const khoaDongGop = (group: string, classId: number, ownerId: number | null) => `gop:${group}:${classId}:u${ownerId ?? 0}`;
 /** Nhóm của khoá dòng gộp (`gop:{nhóm}:{lớp}:u{người}`); khoá khác → null. */
 export const nhomCuaKhoaGop = (key: string): string | null => (key.startsWith('gop:') ? key.split(':')[1] ?? null : null);
 
-const gopDuoc = (it: ViecGopDuoc) => it.classId !== null && !(it.khung === 'ft' && GIU_TUNG_DONG_FT.has(it.group));
+const gopDuoc = (it: ViecGopDuoc) => it.classId !== null && !(it.khung === 'ft' && it.caseSos && GIU_TUNG_DONG_FT.has(it.group));
+/** Khoá dòng gộp mà việc này thuộc về; việc giữ từng dòng → null. Nhắc dùng để tìm lại việc khi dòng gộp chỉ còn một việc. */
+export const khoaGopCua = (it: ViecGopDuoc): string | null => (gopDuoc(it) ? khoaDongGop(it.group, it.classId!, it.ownerId) : null);
 const nang = (u: ViecGopDuoc['urgency']) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
 const sapViec = (a: ViecGopDuoc, b: ViecGopDuoc) =>
   nang(a.urgency) - nang(b.urgency) || (a.due ?? '9999').localeCompare(b.due ?? '9999') || a.studentName.localeCompare(b.studentName, 'vi');
@@ -57,14 +61,14 @@ function conCua<T extends ViecGopDuoc>(it: T, nhanLoai: string): ConGop<T> {
 export function gopViecTheoLop<T extends ViecGopDuoc>(items: readonly T[], nhan: (group: string) => string): (T | DongGop<T>)[] {
   const theoKhoa = new Map<string, T[]>();
   for (const it of items) {
-    if (!gopDuoc(it)) continue;
-    const k = khoaDongGop(it.group, it.classId!, it.ownerId);
+    const k = khoaGopCua(it);
+    if (!k) continue;
     (theoKhoa.get(k) ?? theoKhoa.set(k, []).get(k)!).push(it);
   }
   const daDat = new Set<string>();
   const out: (T | DongGop<T>)[] = [];
   for (const it of items) {
-    const k = gopDuoc(it) ? khoaDongGop(it.group, it.classId!, it.ownerId) : null;
+    const k = khoaGopCua(it);
     const nhom = k ? theoKhoa.get(k)! : null;
     if (!k || !nhom || nhom.length < 2) { out.push(it); continue; }
     if (daDat.has(k)) continue;

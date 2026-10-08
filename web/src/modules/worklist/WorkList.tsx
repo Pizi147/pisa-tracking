@@ -66,7 +66,7 @@ export function DongViec({ it, onOpen, nutPhu }: {
       con && it.urgency === 'overdue' ? 'bg-late-bg/60' : 'hover:bg-white/5'}`} title={con ? undefined : it.reason}>
       <span className="pt-0.5 sm:pt-0"><NhanTrangThai t={it.urgency === 'overdue' ? 'qua-han' : 'can-lam'} /></span>
       <button type="button" className="min-w-0 appearance-none border-0 bg-transparent p-0 text-left cursor-pointer" onClick={bam}
-        aria-expanded={con ? mo : undefined} aria-controls={con ? maDs : undefined}>
+        aria-expanded={con ? mo : undefined} aria-controls={con && mo ? maDs : undefined}>
         <span className="flex min-w-0 items-center gap-2">
           <span className="truncate text-[13px] font-semibold text-slate-100 max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words">{it.tieuDe}</span>
           {it.level && <Level tone={toneTheoNhan(it.level.text, it.level.tone)}>{it.level.text}</Level>}
@@ -82,7 +82,7 @@ export function DongViec({ it, onOpen, nutPhu }: {
         {nutPhu}
         {con ? (
           <button type="button" className="btn btn-sm inline-flex min-h-[44px] items-center gap-1.5 sm:min-h-[32px]" onClick={bam}
-            aria-expanded={mo} aria-controls={maDs}>
+            aria-expanded={mo} aria-controls={mo ? maDs : undefined}>
             {it.actionLabel}
             <svg aria-hidden viewBox="0 0 8 8" width="8" height="8" className={`transition-transform ${mo ? '-rotate-90' : 'rotate-90'}`}>
               <path d="M2.5 1 6 4 2.5 7" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />

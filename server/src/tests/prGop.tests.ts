@@ -53,15 +53,19 @@ export async function runPrGopTests(t: YThucTestKit) {
     assert(g.con[0].conPhu === 'Reading · MT2', `phụ của em: ${g.con[0].conPhu}`);
   });
 
-  check('GOP-1c · khác người giữ việc / không gắn lớp / Case SOS FT → KHÔNG gộp; Xác nhận nguyên nhân lớp thường → gộp', () => {
+  check('GOP-1c · khác người giữ việc / không gắn lớp / Case SOS FT → KHÔNG gộp; Case FT GV tạo tay, Xác nhận nguyên nhân lớp thường → gộp', () => {
     const khacNguoi = d.gopViecTheoLop([v({ key: 'a', ownerId: 7 }), v({ key: 'b', ownerId: 9, studentId: 2 })], nhan);
     assert(khacNguoi.length === 2, 'khác người: hai dòng');
     const khongLop = d.gopViecTheoLop([v({ key: 'a', classId: null, group: 'mgmt' }), v({ key: 'b', classId: null, group: 'mgmt', studentId: 2 })], nhan);
     assert(khongLop.length === 2, 'không lớp: hai dòng');
     for (const group of ['cause', 'xac_nhan_pa', 'no_plan']) {
-      const ft = d.gopViecTheoLop([v({ key: 'a', group, khung: 'ft' }), v({ key: 'b', group, khung: 'ft', studentId: 2 })], nhan);
-      assert(ft.length === 2, `${group} FT: giữ từng dòng`);
+      const ft = d.gopViecTheoLop([v({ key: 'a', group, khung: 'ft', caseSos: true }), v({ key: 'b', group, khung: 'ft', caseSos: true, studentId: 2 })], nhan);
+      assert(ft.length === 2, `${group} FT Case SOS: giữ từng dòng`);
     }
+    /* Chủ sản phẩm 08/10: Case GV tự tạo (Bình thường / Gấp) ở lớp FT gộp theo lớp như việc khác. */
+    const tay = d.gopViecTheoLop([v({ key: 'a', group: 'no_plan', khung: 'ft', caseSos: false }), v({ key: 'b', group: 'no_plan', khung: 'ft', caseSos: false, studentId: 2 })], nhan);
+    assert(tay.length === 1 && tay[0].con.length === 2, 'Thêm PA lớp FT, Case GV tạo tay: gộp');
+    assert(d.khoaGopCua(v({ group: 'no_plan', khung: 'ft', caseSos: true })) === null && d.khoaGopCua(v({})) === 'gop:phoi_hop:10:u7', 'khoaGopCua');
     const thuong = d.gopViecTheoLop([v({ key: 'a', group: 'cause' }), v({ key: 'b', group: 'cause', studentId: 2 })], nhan);
     assert(thuong.length === 1 && thuong[0].con.length === 2, 'Xác nhận nguyên nhân lớp thường: gộp');
   });
@@ -139,6 +143,28 @@ export async function runPrGopTests(t: YThucTestKit) {
     assert(lai?.nhac?.daNhacLuc, 'dòng gộp hiện đã nhắc hôm nay');
     const lo = d.lapNhacTatCa((mywork.myWork(ql, { nguoi: 'tat-ca' }).dong as any[]));
     assert(!lo.gui.some((x: any) => x.key === g.key), 'Nhắc tất cả bỏ dòng đã nhắc');
+    conn.prepare(`DELETE FROM notifications WHERE kind = 'nhac_viec' AND dedup_key LIKE ?`).run(homNay);
+  });
+
+  check('GOP-4c · dòng gộp chỉ còn 1 việc (trang QL chưa tải lại) → Nhắc khoá gop: vẫn gửi một chuông cho việc còn lại; khoá gop: không còn việc nào → 404', () => {
+    const homNay = `nhac:%:${TODAY}`;
+    conn.prepare(`DELETE FROM notifications WHERE kind = 'nhac_viec' AND dedup_key LIKE ?`).run(homNay);
+    const ql = P.mbManager;
+    /* Việc lẻ của GV khác: khoá gộp của nó KHÔNG có trong `dong` của chính GV đó (chỉ còn 1 việc) — đúng tình huống "đã làm xong 1 em". */
+    const viec = ((mywork.myWork(ql, { nguoi: 'tat-ca' }).items as any[])).find((it) => {
+      const k = d.khoaGopCua(it);
+      if (!it.nhac || !k) return false;
+      const cua = mywork.myWork(loadPrincipal(it.nhac.ownerId)) as any;
+      return !(cua.dong as any[]).some((x) => x.key === k) && (cua.items as any[]).some((x) => x.key === it.key);
+    });
+    assert(!!viec, 'seed có việc lẻ để thử');
+    const k = d.khoaGopCua(viec);
+    const r = nv.nhacViecNhieu(ql, [{ the: null, key: k, ownerId: viec.nhac.ownerId }], { boQuaDaNhacTruoc: false });
+    assert(r.loi.length === 0 && r.ok.length === 1 && r.ok[0].moi, `gửi được: ${JSON.stringify(r.loi)}`);
+    const bao = conn.prepare(`SELECT duong FROM notifications WHERE dedup_key = ?`).get(`nhac:${k}:${TODAY}`) as any;
+    assert(bao && bao.duong === viec.href, `chuông về chỗ làm của việc còn lại: ${bao?.duong}`);
+    const gia = nv.nhacViecNhieu(ql, [{ the: null, key: `gop:${viec.group}:999999:u${viec.nhac.ownerId}`, ownerId: viec.nhac.ownerId }], { boQuaDaNhacTruoc: false });
+    assert(gia.loi.length === 1 && gia.loi[0].ma === 404, `khoá gộp không còn việc: ${JSON.stringify(gia.loi)}`);
     conn.prepare(`DELETE FROM notifications WHERE kind = 'nhac_viec' AND dedup_key LIKE ?`).run(homNay);
   });
 }

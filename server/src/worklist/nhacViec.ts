@@ -15,7 +15,7 @@ import { HttpError, badRequest, forbidden, nowIso } from '../util.ts';
 import { can, loadPrincipal, scopeFor, type Principal } from '../permissions.ts';
 import { trongBoNho } from '../platform/nguCanhRequest.ts';
 import { conLaiMs } from '../platform/hanGio.ts';
-import { PERMISSIONS, TRAN_HANG_LOAT, nhomCuaKhoaGop } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, TRAN_HANG_LOAT, khoaGopCua, nhomCuaKhoaGop } from '../../../shared/domain/index.ts';
 import { myWork, type WorkGroupKey } from './mywork.ts';
 
 const THAN_BAO_TOI_DA = 200;
@@ -134,6 +134,14 @@ export function nhacViecNhieu(p: Principal, ds: readonly ViecCanNhac[], o: { boQ
           const w = myWork(target, { chiNhom }) as any;
           /* PR-GOP: tra cả dòng gộp (`dong` có `con`) — Nhắc một dòng gộp = một chuông cho cả lớp × loại việc. */
           dong = new Map([...(w.items ?? []), ...((w.dong ?? []) as any[]).filter((x) => x.con)].map((it: any) => [it.key, it]));
+          /*
+           * Dòng gộp chỉ còn MỘT việc (GV vừa làm xong các em khác, trang QL chưa tải lại) thì `dong` không còn khoá `gop:` — tra việc còn lại
+           * theo khoá gộp của nó; còn việc thì vẫn nhắc (chuông về chỗ làm của việc đó), hết việc mới 404.
+           */
+          for (const it of (w.items ?? []) as any[]) {
+            const k = khoaGopCua(it);
+            if (k && !dong.has(k)) dong.set(k, it);
+          }
         } catch (e) { loiNguoi = e; }
       }
       for (const v of cua) {
