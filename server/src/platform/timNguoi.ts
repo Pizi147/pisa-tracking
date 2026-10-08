@@ -109,7 +109,7 @@ export function timNguoi(
   const bang = bangLop();
   const cnPhamVi = [...new Set([...scope.branchIds,
     ...scope.classIds.map((id) => bang.get(id)?.branchId).filter((b): b is number => b != null)])];
-  /* PR-S5F-b: `cungChiNhanh` — chỉ GV ở chi nhánh của lớp em đang học (người dạy bổ trợ; máy chủ kiểm lại ở `nopKeHoachBoTro`). */
+  /* PR-S5F-b: `cungChiNhanh` — chỉ GV ở chi nhánh của lớp em đang học (người dạy bổ trợ; máy chủ kiểm lại ở `chuanHoaNguoiThucHien`). */
   const cnLop = opts.cungChiNhanh && classId ? bang.get(classId)?.branchId ?? undefined : undefined;
   const branchIds = cnLop ? [cnLop] : scope.all ? null : cnPhamVi;
   if (branchIds && !branchIds.length) return [];

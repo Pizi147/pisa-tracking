@@ -1,5 +1,6 @@
 /**
  * PR-CT2 (§8, chủ sản phẩm 08/10) — chế tài cuối khoá. Task 1: Người dạy tuần này không bắt buộc · điền bù buổi đã dạy Tutor kỳ vọng · bộ đếm ký tự ẩn khi đạt.
+ * Task 3: bỏ nộp / duyệt kế hoạch bổ trợ — PA Bổ trợ Giữa khoá chạy ngay sau Xác nhận Case.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -92,5 +93,91 @@ export async function runPrCt2Tests(t: YThucTestKit) {
 
   check('CT2-2 · hạn chấm MT0 = thứ Tư tuần sau tuần thi', () => {
     assert(d.hanChamMt0('2026-10-19') === '2026-10-28' && d.hanChamMt0('2026-10-22') === '2026-10-28', d.hanChamMt0('2026-10-19'));
+  });
+
+  // ------------------------------------------------------------------ Task 3 · bỏ nộp / duyệt kế hoạch bổ trợ
+  const regular: any = await import('../normal/regular.ts');
+  const sosAuto: any = await import('../cases/sosAuto.ts');
+  const mywork: any = await import('../worklist/mywork.ts');
+  const yc: any = await import('../duyet/yeuCau.ts');
+  const { loadPrincipal } = await import('../permissions.ts');
+  const { createApp } = await import('../app.ts');
+  /** Thêm em vào lớp thường, xếp bài, nhập điểm Progress Test /20 → id em. */
+  const emTruot = (ten: string, lop: string, diem: Record<string, number>) => {
+    const cid = classId(lop);
+    intake.commitIntake(P.admin, { classId: cid, rows: [{ fullName: ten, email: 'hv@demo.test' }], idempotencyKey: `ct2-${ten}` });
+    regular.planRegularTests(P.admin, cid);
+    const sid = get('SELECT id FROM students WHERE full_name = ?', ten).id as number;
+    const pt = get(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'progress'`, sid).id as number;
+    for (const [k, v] of Object.entries({ listening: 18, reading: 18, writing: 18, speaking: 18, ...diem })) {
+      regular.saveRegularScore(P.admin, pt, k, { score: v, total: 20, lyDo: 'Phép kiểm CT2' });
+    }
+    return sid;
+  };
+  const gvOf = (lop: string, skill: string) => loadPrincipal(get(`SELECT ta.user_id u FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id WHERE c.code = ? AND ta.skill = ? AND ta.status = 'active'`, lop, skill).u);
+  const caseMon = (sid: number, topic: string) => get('SELECT * FROM sos_cases WHERE student_id = ? AND topic = ? ORDER BY id DESC', sid, topic);
+  const paBt = (caseId: number) => get(`SELECT * FROM case_interventions WHERE case_id = ? AND kind = 'bo_tro' AND status != 'cancelled' ORDER BY id LIMIT 1`, caseId);
+  const XN = (topic: string, ct: string) => ({ primaryCode: d.issuesForTopic(topic, ct)[0].code, urgency: 'attention', moTa: 'Em mất điểm ở phần này, thiếu nền tảng cơ bản.' });
+
+  check('CT2-3 · BE trượt S → Xác nhận Case (không kế hoạch) → PA chạy ngay, hạn T2 tuần sau; không thẻ kế hoạch; Công việc không có nhóm đó; việc tiếp Kết quả', () => {
+    const sid = emTruot('CT2 BE S', 'MB BE 08', { speaking: 10 });
+    const c = caseMon(sid, 'speaking'), gv = gvOf('MB BE 08', 'speaking');
+    sosAuto.xacNhanCase(gv, c.id, XN('speaking', 'BE'));
+    const pa = paBt(c.id);
+    assert(pa.status === 'started' && pa.action_due === d.weeklyUpdateDue(TODAY) && pa.started_date === TODAY && pa.confirmed_by === gv.userId, JSON.stringify(pa));
+    assert(!get(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'ke_hoach_bo_tro' AND hoc_vien_id = ?`, sid), 'không còn thẻ kế hoạch');
+    for (const who of [gv, P.normalCoreTeacher, P.mbManager]) {
+      assert(!((mywork.myWork(who) as any).items as any[]).some((x) => x.group === 'ke_hoach_bo_tro'), 'Công việc còn nhóm Nộp kế hoạch');
+    }
+    const dt = cases.caseDetail(gv, c.id) as any;
+    assert(/^Kết quả/.test(dt.viecTiep?.chu ?? '') && dt.trangThaiV4.k === 'dang-lam', JSON.stringify([dt.viecTiep, dt.trangThaiV4]));
+    assert(dt.boTro && !('phaiGuiKem' in dt.boTro) && !('keHoach' in dt.boTro) && !('coTheNop' in dt.boTro), JSON.stringify(dt.boTro));
+  });
+
+  await t.checkAsync('CT2-3b · FOU nhóm chung: xác nhận G+V → chỉ PA G+V chạy; xác nhận P sau → PA P chạy; route nộp kế hoạch → 404', async () => {
+    const sid = emTruot('CT2 FOU GP', 'MB FOU 12', { writing: 11, speaking: 12 });
+    const cGv = caseMon(sid, 'writing'), cP = caseMon(sid, 'speaking');
+    const khoa = gvOf('MB FOU 12', 'writing'), trang = gvOf('MB FOU 12', 'speaking');
+    sosAuto.xacNhanCase(khoa, cGv.id, XN('writing', 'FOU'));
+    assert(paBt(cGv.id).status === 'started' && paBt(cP.id).status === 'planned', `G+V ${paBt(cGv.id).status} · P ${paBt(cP.id).status}`);
+    sosAuto.xacNhanCase(trang, cP.id, XN('speaking', 'FOU'));
+    assert(paBt(cP.id).status === 'started' && paBt(cP.id).confirmed_by === trang.userId, JSON.stringify(paBt(cP.id)));
+    const may = createApp().listen(0);
+    try {
+      const cong = (may.address() as any).port as number;
+      const ss = await fetch(`http://127.0.0.1:${cong}/api/demo/session`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ userId: P.normalCoreTeacher.userId }) });
+      const ck = (ss.headers.get('set-cookie') ?? '').split(';')[0];
+      const r = await fetch(`http://127.0.0.1:${cong}/api/bo-tro/${paBt(cGv.id).id}/ke-hoach`, {
+        method: 'POST', headers: { 'content-type': 'application/json', cookie: ck }, body: JSON.stringify({ noiDungYeu: 'x'.repeat(20), keHoach: 'y'.repeat(20) }),
+      });
+      assert(r.status === 404, `route nộp kế hoạch: ${r.status}`);
+    } finally { may.close(); }
+  });
+
+  check('CT2-4 · migrate B: nhóm có thẻ chờ + nhóm "chờ nộp" → PA chạy, thẻ tu_dong; duyệt thẻ cũ → 409; chạy lần hai không ghi gì', () => {
+    /* Dựng trạng thái CŨ: Case đã có nguyên nhân, PA bổ trợ còn planned (đường cũ chờ kế hoạch). */
+    const veCu = (caseId: number) => conn.prepare(`UPDATE case_interventions SET status = 'planned', started_date = NULL, cycle_started_on = NULL, action_due = NULL,
+      confirmed_at = NULL, confirmed_by = NULL WHERE case_id = ? AND kind = 'bo_tro'`).run(caseId);
+    const s1 = emTruot('CT2 MIG A', 'MB FOU 12', { writing: 11 }), s2 = emTruot('CT2 MIG B', 'MB BE 08', { writing: 10 });
+    const c1 = caseMon(s1, 'writing'), c2 = caseMon(s2, 'writing');
+    const khoaFou = gvOf('MB FOU 12', 'writing'), khoaBe = gvOf('MB BE 08', 'writing');
+    sosAuto.xacNhanCase(khoaFou, c1.id, XN('writing', 'FOU'));
+    sosAuto.xacNhanCase(khoaBe, c2.id, XN('writing', 'BE'));
+    veCu(c1.id); veCu(c2.id);
+    const ha = P.normalCoreTeacher;
+    const minId = get('SELECT MIN(id) m FROM case_interventions WHERE nhom_bo_tro = ?', paBt(c1.id).nhom_bo_tro).m;
+    const theId = yc.taoYeuCau(conn, { loai: 'ke_hoach_bo_tro', doiTuongLoai: 'nhom_bo_tro', doiTuongId: minId, hocVienId: s1, nguoiXin: ha.userId,
+      lyDo: 'Kế hoạch cũ', duLieu: { nhom: paBt(c1.id).nhom_bo_tro, noiDungYeu: 'a', keHoach: 'b' } });
+    let ma = 0; try { yc.duyetYeuCau(P.mbManager, theId); } catch (e: any) { ma = e.status; }
+    assert(ma === 409 && get('SELECT trang_thai FROM yeu_cau_duyet WHERE id = ?', theId).trang_thai === 'cho', `duyệt thẻ cũ: ${ma}`);
+    const a: string[] = []; migratePrCt2(conn, a);
+    const p1 = paBt(c1.id), p2 = paBt(c2.id);
+    assert(p1.status === 'started' && p1.confirmed_by === ha.userId && p1.action_due === d.weeklyUpdateDue(TODAY), `nhóm có thẻ: ${JSON.stringify(p1)}`);
+    assert(p2.status === 'started' && p2.confirmed_by === khoaBe.userId, `nhóm chờ nộp: ${JSON.stringify(p2)}`);
+    const the = get('SELECT * FROM yeu_cau_duyet WHERE id = ?', theId);
+    assert(the.trang_thai === 'tu_dong' && /Bỏ bước duyệt kế hoạch/.test(the.ly_do_dong ?? ''), JSON.stringify(the));
+    assert(a.length >= 1, `applied: ${a.join('; ')}`);
+    const b: string[] = []; migratePrCt2(conn, b);
+    assert(b.length === 0, `lần hai: ${b.join('; ')}`);
   });
 }

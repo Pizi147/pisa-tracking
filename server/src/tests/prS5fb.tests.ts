@@ -9,7 +9,6 @@ export async function runPrS5fbTests(t: YThucTestKit) {
   const cases: any = await import('../cases/cases.ts');
   const sosAuto: any = await import('../cases/sosAuto.ts');
   const boTro: any = await import('../cases/boTro.ts');
-  const yc: any = await import('../duyet/yeuCau.ts');
   const { timNguoi } = await import('../platform/timNguoi.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   const phoiHop: any = await import('../yThuc/phoiHop.ts');
@@ -28,7 +27,6 @@ export async function runPrS5fbTests(t: YThucTestKit) {
   const paBt = (caseId: number) => get(`SELECT * FROM case_interventions WHERE case_id = ? AND kind = 'bo_tro' AND status != 'cancelled' ORDER BY id LIMIT 1`, caseId);
   const caseTheoMon = (hv: number, topic: string) => get('SELECT * FROM sos_cases WHERE student_id = ? AND topic = ? ORDER BY id DESC', hv, topic);
   const XN = (topic: string) => ({ primaryCode: d.issuesForTopic(topic, 'FOU')[0].code, urgency: 'attention', moTa: 'Em mất điểm ở phần này, thiếu nền tảng ngữ pháp cơ bản.' });
-  const KH = { noiDungYeu: 'Thì hiện tại đơn và quá khứ đơn còn nhầm lẫn khi viết câu.', keHoach: 'Buổi 1: ôn thì; buổi 2: luyện viết đoạn ngắn; trọng tâm: chia động từ; bài tập về nhà 10 câu.' };
   const KQ = { outcome: 'improved', note: 'Em viết đúng thì ở phần đặt câu, còn nhầm thì quá khứ.', decision: 'keep' };
 
   /** Em MB FOU 12 trượt Giữa khoá G+V và P → hai Case cùng nhóm PA bổ trợ chung; G+V đã xác nhận nguyên nhân. */
@@ -49,9 +47,7 @@ export async function runPrS5fbTests(t: YThucTestKit) {
 
   // ------------------------------------------------------------------ 3 · M-03: PA chung FOU — GVBM một môn không ghi thay cả nhóm
   check('S5F-b (3) · M-03: PA bổ trợ CHUNG (FOU) — GVBM một môn ghi kết quả → 403; GVCN / Quản lý được; nhóm một môn (BE) GVBM đúng môn vẫn được', () => {
-    const { cGv, khoa, ha } = emFou('S5F-b FOU M03');
-    boTro.nopKeHoachBoTro(ha, paBt(cGv.id).id, KH);
-    yc.duyetYeuCau(P.mbManager, get(`SELECT id FROM yeu_cau_duyet WHERE loai = 'ke_hoach_bo_tro' ORDER BY id DESC LIMIT 1`).id);
+    const { cGv, khoa, ha } = emFou('S5F-b FOU M03');   // PR-CT2: Xác nhận Case → PA bổ trợ chạy ngay
     const iv = paBt(cGv.id);
     assert(iv.status === 'started' && d.nhomBoTro('FOU', 1, 'writing').split(':').length === 2, `PA chạy, nhóm chung: ${iv.status} ${iv.nhom_bo_tro}`);
     assert(!boTro.quyenBoTro(khoa, iv), 'GVBM G+V (không phải người dạy, không GVCN) KHÔNG có quyền ghi PA chung');
@@ -68,20 +64,15 @@ export async function runPrS5fbTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ 4 · Người dạy bổ trợ phải là GV cùng chi nhánh của lớp
-  check('S5F-b (4) · Nộp kế hoạch bổ trợ: người dạy là GV chi nhánh khác → 400 (PA không treo người không ghi được); GV cùng chi nhánh → được; ô chọn người lọc theo chi nhánh', () => {
-    const { hv, cGv, ha } = emFou('S5F-b FOU CN');
+  /* PR-CT2: bỏ Nộp kế hoạch bổ trợ (đường đổi người dạy kèm kiểm chi nhánh) — còn phần ô chọn người lọc theo chi nhánh. */
+  check('S5F-b (4) · Ô chọn người dạy bổ trợ lọc theo chi nhánh của lớp', () => {
+    const { hv, ha } = emFou('S5F-b FOU CN');
     const mb = get(`SELECT branch_id b FROM classes WHERE code = 'MB FOU 12'`).b;
     const khac = get(
       `SELECT u.id, u.full_name FROM users u JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active' JOIN roles r ON r.id = ur.role_id AND r.key = 'teacher'
         WHERE u.status = 'active' AND ur.branch_id != ?
           AND NOT EXISTS (SELECT 1 FROM user_roles x WHERE x.user_id = u.id AND x.status = 'active' AND x.branch_id = ?) LIMIT 1`, mb, mb);
     assert(khac, 'dữ liệu demo: cần một GV chỉ thuộc chi nhánh khác MB');
-    const pa = paBt(cGv.id);
-    assert(maLoi(() => boTro.nopKeHoachBoTro(ha, pa.id, { ...KH, performerUserId: khac.id })) === 400, 'GV chi nhánh khác làm người dạy phải 400');
-    assert(paBt(cGv.id).performer_user_id === pa.performer_user_id && !get(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'ke_hoach_bo_tro' AND hoc_vien_id = ?`, hv), 'bị từ chối thì không đổi người, không tạo thẻ');
-    const cungCn = gvOf('MB FOU 12', 'speaking');
-    boTro.nopKeHoachBoTro(ha, pa.id, { ...KH, performerUserId: cungCn.userId });
-    assert(paBt(cGv.id).performer_user_id === cungCn.userId, 'GV cùng chi nhánh làm người dạy được');
     const q = khac.full_name as string;
     /* PR-Dọn Q2: /ref/nguoi LUÔN theo phạm vi người xem — GVCN MB không còn thấy GV chỉ thuộc chi nhánh khác, kể cả khi không gửi `cungChiNhanh`. */
     assert(!timNguoi(ha, { q, nhom: 'giao_vien', studentId: hv }).some((r) => r.id === khac.id), 'không lọc cungChiNhanh: vẫn không thấy GV chi nhánh khác (Q2)');
@@ -102,25 +93,22 @@ export async function runPrS5fbTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ 6 · Ô tóm tắt hồ sơ HV
-  check('S5F-b (6) · Hồ sơ HV: "Việc cần làm tiếp" Chờ Quản lý duyệt kế hoạch có hạn = hạn duyệt thật của thẻ; ô Case tách "chờ nguyên nhân" khỏi "chờ kế hoạch"', () => {
-    const { hv, ha } = emFou('S5F-b FOU HAN');
+  check('S5F-b (6) · Hồ sơ HV (PR-CT2): xác nhận đủ hai môn → không còn việc "chờ Quản lý duyệt kế hoạch"; ô Học thuật tách "chờ nguyên nhân" khỏi "đang làm"', () => {
+    const { hv } = emFou('S5F-b FOU HAN');
     const cP = caseTheoMon(hv, 'speaking');
     sosAuto.xacNhanCase(gvOf('MB FOU 12', 'speaking'), cP.id, XN('speaking'));
-    boTro.nopKeHoachBoTro(ha, paBt(cP.id).id, KH);
-    const the = get(`SELECT han_duyet FROM yeu_cau_duyet WHERE loai = 'ke_hoach_bo_tro' AND hoc_vien_id = ? ORDER BY id DESC`, hv);
-    /* PR-VAI-b (Q5): `headline.next` → `dauHoSo.viec` — việc chờ Quản lý duyệt kế hoạch nằm ở "việc của người khác", người làm "Quản lý". */
-    const next = profile.studentProfile(P.mbManager, hv).dauHoSo.viec.nguoiKhac.find((x: any) => x.loai === 'cho-duyet' && /kế hoạch/.test(x.chu));
-    assert(next && /chờ Quản lý duyệt kế hoạch$/.test(next.chu) && next.han === the.han_duyet && !!the.han_duyet && next.nguoi.ten === 'Quản lý', `việc tiếp: ${JSON.stringify(next)} · hạn thẻ ${the?.han_duyet}`);
-    /* PR-VAI-b (K3-03): ô "Case" cũ thay bằng ô Học thuật — mỗi Case một dòng, Case chờ nguyên nhân tách khỏi Case chờ kế hoạch. */
+    const viec = profile.studentProfile(P.mbManager, hv).dauHoSo.viec;
+    assert(![...viec.cuaBan, ...viec.nguoiKhac].some((x: any) => /kế hoạch/.test(x.chu)), `còn việc kế hoạch: ${JSON.stringify(viec)}`);
+    /* PR-VAI-b (K3-03): ô "Case" cũ thay bằng ô Học thuật — mỗi Case một dòng, Case chờ nguyên nhân tách khỏi Case đang làm. */
     const o = d.oHocThuat([{ short: 'P', label: 'P', category: 'speaking', missed: true, cases: [
       { status: 'open', trangThaiV4: { t: 'can-lam' }, viecTiep: { chu: 'Xác nhận nguyên nhân' } },
-      { status: 'open', trangThaiV4: { t: 'cho-duyet' }, viecTiep: { chu: 'Chờ Quản lý duyệt kế hoạch' } },
+      { status: 'open', trangThaiV4: { t: 'dang-lam' }, viecTiep: { chu: 'Kết quả PA Bổ trợ' } },
     ] }]);
-    assert(o.dong.map((x: any) => `${x.nhan}|${x.viec}`).join() === 'Cần làm|nguyên nhân,Chờ duyệt|kế hoạch bổ trợ', `ô Học thuật tách chờ nguyên nhân / chờ kế hoạch: ${JSON.stringify(o.dong)}`);
+    assert(o.dong.map((x: any) => `${x.nhan}|${x.viec}`).join() === 'Cần làm|nguyên nhân,Đang làm|kết quả', `ô Học thuật tách chờ nguyên nhân / đang làm: ${JSON.stringify(o.dong)}`);
   });
 
   // ------------------------------------------------------------------ 7 · Dòng PA Bổ trợ có mã tuần
-  check('S5F-b (7) · PA Bổ trợ CHƯA chạy (BE chờ kế hoạch) vẫn có mã tuần "đến Final Test · W.. OCT"; hàng PA ghi "từ W.." và giữ "trừ buổi Free"', () => {
+  check('S5F-b (7) · PA Bổ trợ CHƯA chạy (chờ Xác nhận Case) vẫn có mã tuần "đến Final Test · W.. OCT"; hàng PA ghi "từ W.." và giữ "trừ buổi Free"', () => {
     const moc = d.mocChuPa({ span: 'den_cuoi_khoa', followupDue: '2026-10-18', mtKe: null, daXacNhan: false }, '2026-09-14');
     assert(moc === d.mocChuBoTro('2026-10-18', '2026-09-14') && /^đến Final Test · W\d [A-Z]{3}$/.test(moc), moc);
     assert(d.mocChuPa({ span: 'den_cuoi_khoa', followupDue: null, mtKe: null, daXacNhan: false }, '2026-09-14') === 'đến Final Test', 'không có mốc thì không bịa tuần');

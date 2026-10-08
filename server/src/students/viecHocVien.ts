@@ -8,7 +8,7 @@ import type { EmYThuc } from '../yThuc/trangThai.ts';
 export type ViecHocVien = {
   /** Đúng khoá của `myWork` (Q2) — phép kiểm so hai đường theo khoá. Việc "chờ Quản lý duyệt" không có ở Công việc → khoá `cho-duyet:…`. */
   key: string;
-  loai: 'nguyen-nhan' | 'de-ra-pa' | 'xac-nhan-pa' | 'ghi-ket-qua' | 'ke-hoach' | 'cho-duyet' | 'bao-ph' | 'mini-test' | 'y-thuc' | 'yt-xem' | 'yt-thuc-hien'
+  loai: 'nguyen-nhan' | 'de-ra-pa' | 'xac-nhan-pa' | 'ghi-ket-qua' | 'cho-duyet' | 'bao-ph' | 'mini-test' | 'y-thuc' | 'yt-xem' | 'yt-thuc-hien'
     | 'ban-giao' | 'ban-giao-mon';
   /** "Ghi kết quả tuần W4 SEP · PA Tăng cường bài tập Writing Task 2" — động từ đầu câu. */
   chu: string;
@@ -19,7 +19,7 @@ export type ViecHocVien = {
   cuaBan: boolean;
   /** Nút động từ + chỗ mở (Ngăn Case / tab Ý thức / trang bàn giao). */
   nut: string;
-  mo: { loai: 'case'; caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'xac-nhan' | 'xac-nhan-pa' | 'ke-hoach' | 'them-pa' }
+  mo: { loai: 'case'; caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'xac-nhan' | 'xac-nhan-pa' | 'them-pa' }
     | { loai: 'tab'; tab: 'y-thuc'; sub?: 'phoi-hop' } | { loai: 'duong'; href: string } | null;
 };
 
@@ -33,8 +33,8 @@ type Nguon = {
 
 /**
  * VIỆC CỦA MỘT EM THEO NGƯỜI (PR-VAI-b Task 2, K3-01) — mọi việc đang mở của em, MỖI VIỆC CÓ NGƯỜI LÀM, cùng luật người làm với Công việc (Q2):
- *   Xác nhận nguyên nhân / Thêm PA / Xác nhận PA → người phụ trách Case · Ghi kết quả PA → người giữ việc (`nguoiGiuKetQua`, đọc từ `plan.nguoiId` của bảng) · Nộp kế hoạch → người dạy
- *   bổ trợ · Báo PH qua TVV, Xử lý vi phạm, Ghi nhận vi phạm mới, Ghi "Đã thực hiện" → GVCN (Báo PH Cuối khoá → Quản lý) · Mini Test → người dạy bổ trợ, không có thì GVCN · Bàn giao → người xem
+ *   Xác nhận nguyên nhân / Thêm PA / Xác nhận PA → người phụ trách Case · Ghi kết quả PA → người giữ việc (`nguoiGiuKetQua`, đọc từ `plan.nguoiId` của bảng)
+ *   · Báo PH qua TVV, Xử lý vi phạm, Ghi nhận vi phạm mới, Ghi "Đã thực hiện" → GVCN (Báo PH Cuối khoá → Quản lý) · Mini Test → người dạy bổ trợ, không có thì GVCN · Bàn giao → người xem
  *   theo `dai.nut` · "Chờ Quản lý duyệt…" → "Quản lý" (không ai trong số giáo viên, không vào thanh việc).
  * KHÔNG chạy `myWork` (quét cả phạm vi): Case/PA đọc từ `board` đã dựng, Ý thức / Mini Test / dải chuyển lớp do hồ sơ nạp sẵn.
  * Thêm hai câu: Báo PH của em · tên + vai người làm. Em Tạm dừng / đã kết thúc → rỗng (mọi hạn dừng, T65).
@@ -55,10 +55,6 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
   };
   const chayDuoc = (pl: any) => (pl.status === 'planned' || pl.status === 'started') && !!pl.actionDue && !pl.pendingApproval && !(pl.preset && !pl.confirmedAt);
   const minGhi = minNhom(chayDuoc);
-  const khongTheKh = (c: any) => c.boTro?.keHoach?.trangThai === 'cho' || c.boTro?.keHoach?.trangThai === 'duyet';
-  const minKh = minNhom((pl) => pl.status === 'planned');
-  const daKh = new Set<string>();
-  const daChoKh = new Set<string>();
 
   for (const { r, c } of cases) {
     const kn: string = r.label;
@@ -92,21 +88,6 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
         ds.push({ key: `cho-duyet:pa:${pl.id}`, loai: 'cho-duyet', chu: `PA ${pl.name} chờ Quản lý duyệt`, kyNang: r.category, caseId: c.id, paId: pl.id,
           han: pl.approvalDue ?? null, tone: 'wait', nguoiId: null, vaiChu: 'Quản lý', nut: 'Mở Case', mo: { loai: 'case', caseId: c.id, paId: pl.id } });
       }
-    }
-    /* Kế hoạch bổ trợ: nhóm còn PA chờ, chưa có thẻ chờ/đã duyệt, ít nhất một môn đã có nguyên nhân (`mywork.ts` 3c). */
-    const b = c.boTro;
-    if (b?.nhom && !daKh.has(b.nhom) && minKh.has(b.nhom) && !khongTheKh(c)
-      && cases.some((x) => x.c.boTro?.nhom === b.nhom && x.c.sos?.hasCause)) {
-      daKh.add(b.nhom);
-      /* Tên môn đầy đủ (mục 3, 22/09): "Grammar + Vocabulary và Pronunciation", không "G+V, P". */
-      const mon = b.mon.filter((m: any) => cases.some((x) => x.c.id === m.caseId)).map((m: any) => tenMon(n.chuongTrinh, m.mon)).join(' và ');
-      ds.push({ key: `kehoach:${minKh.get(b.nhom)}`, loai: 'ke-hoach', chu: `Nộp kế hoạch bổ trợ · ${mon}`, kyNang: r.category, caseId: c.id, paId: null,
-        han: b.hanKeHoach, tone: 'info', nguoiId: b.nguoiDay?.userId ?? null, nut: 'Nộp kế hoạch', mo: { loai: 'case', caseId: c.id, viec: 'ke-hoach' } });
-    }
-    if (b?.nhom && b.keHoach?.trangThai === 'cho' && !daChoKh.has(b.nhom)) {
-      daChoKh.add(b.nhom);
-      ds.push({ key: `cho-duyet:kh:${b.nhom}`, loai: 'cho-duyet', chu: `PA Bổ trợ${b.chung ? ' chung' : ''} chờ Quản lý duyệt kế hoạch`, kyNang: r.category,
-        caseId: c.id, paId: null, han: b.keHoach.hanDuyet ?? null, tone: 'wait', nguoiId: null, vaiChu: 'Quản lý', nut: 'Mở Case', mo: { loai: 'case', caseId: c.id } });
     }
   }
 

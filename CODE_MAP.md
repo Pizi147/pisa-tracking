@@ -292,11 +292,10 @@ loại dữ liệu mới** vào kịch bản thì thêm trường ở `server/sr
 | Cuối khoá — một cửa máy chủ: % theo lô (`tyLeTongLo`, `cuoiKhoaTheoHocVien`), sau chuyển (`sauChuyenCuoiKhoa`, `capNhatCuoiKhoaSauChuyen`), Mini Test (`ghiMiniTestTrongTx`, `ghiMiniTest`), kết luận lên FT (`ghiKetLuanFt`) | `server/src/normal/cuoiKhoa.ts` |
 | Case `chuyen_cap` không phải Case SOS — MỘT định nghĩa `LA_CASE_SOS` | `server/src/cases/sosState.ts` |
 | Hộp Kết luận khoá + ô Mini Test (hồ sơ HV); ô Mini Test ở form Ghi kết quả cuối | `web/src/modules/students/KetLuanKhoa.tsx` · `web/src/modules/cases/CapNhatTuan.tsx` |
-| PA Bổ trợ: tạo (`taoCaseTuDong({ pa: 'bo_tro' })`), nộp kế hoạch (`nopKeHoachBoTro`), chạy khi duyệt (`chayPaBoTro`, `khiDuyetKeHoach`), quyền (`quyenBoTro`, `coQuyenNop`), khối `boTro` cho Ngăn Case (`boTroCuaCase`) | `server/src/cases/boTro.ts` |
+| PA Bổ trợ: tạo (`taoCaseTuDong({ pa: 'bo_tro' })`), chạy ngay khi Xác nhận Case (`chayPaBoTro` — PR-CT2 bỏ nộp / duyệt kế hoạch), quyền (`quyenBoTro`), khối `boTro` cho Ngăn Case (`boTroCuaCase`) | `server/src/cases/boTro.ts` · `server/src/cases/sosAuto.ts` (`xacNhanCase`) |
 | Điểm lớp thường → Case Giữa khoá + PA + Báo PH (`refreshRegularOutcome` → `taoCaseGiuaKhoa`); em vào lớp thường tự có bài Giữa/Cuối khoá (`taoBaiThuongMacDinh`, M1b) | `server/src/normal/regular.ts` |
-| Thẻ Chờ duyệt `ke_hoach_bo_tro` (`doi_tuong_loai = 'nhom_bo_tro'`); trạng thái kế hoạch đọc từ thẻ (`YC_KE_HOACH`) | `server/src/duyet/loaiYeuCau.ts` · `server/src/cases/sosState.ts` |
-| Cột `nhom_bo_tro`, `han_ke_hoach` (migrate một lần) | `server/src/migrate/prLt2a.ts` |
-| Panel Nộp kế hoạch + khối Kế hoạch dùng chung với Xác nhận Case | `web/src/modules/cases/NopKeHoachPanel.tsx` · `web/src/modules/yThuc/CaseSosControls.tsx` |
+| Thẻ Chờ duyệt `ke_hoach_bo_tro` (`doi_tuong_loai = 'nhom_bo_tro'`) — PR-CT2: chỉ đọc lịch sử, duyệt / từ chối → 409; migrate B chạy PA còn chờ + tự đóng thẻ | `server/src/duyet/loaiYeuCau.ts` · `server/src/migrate/prCt2.ts` |
+| Cột `nhom_bo_tro`, `han_ke_hoach` (migrate một lần; `han_ke_hoach` không ghi nữa từ PR-CT2) | `server/src/migrate/prLt2a.ts` |
 | Hạn xác minh tín hiệu (3 ngày, tính cả ngày đầu) | `shared/domain/cases.ts` → `signalVerifyDue` |
 | Thu hồi tín hiệu và case khi sửa điểm (mục 9.4) | `server/src/cases/signals.ts` → `withdrawSignalsNoLongerValid` · `caseHasIndependentBasis` |
 | Đối soát sau sửa điểm — MỘT hàm cho FT và lớp thường (RB-8) | `server/src/cases/signals.ts` → `reconcileCorrectedSignals` |

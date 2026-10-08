@@ -12,7 +12,7 @@ import { TheKyNangDs } from './TheKyNang.tsx';
 import { type BanDieuChinh } from './CapNhatTuan.tsx';
 import { DongXinYKien, type XinYKien } from './DongXinYKien.tsx';
 import { KhongTheoDoiForm } from '../yThuc/CaseSosControls.tsx';
-import type { BoTro } from './NopKeHoachPanel.tsx';
+import type { BoTro } from './CasePanel.tsx';
 import {
   ATTEMPT_KIND_SHORT, OUTCOME_MARK, OUTCOME_TONE, chuKetQuaPa, chuTamDung, coNguoiDay, nhanNguoiDay, duongDotTest, chuKhoangPa, dangChay, deadlineView, tienDoCase, tuanLich, viecTiepHang, viecTiepPhuongAn,
   type AttemptKind, type DeadlineKind, type DeadlineView, type TrangThai, type TrangThaiCaseV4,
@@ -164,7 +164,7 @@ export function NhanTamDung({ tu }: { tu: string }) {
 export const TamDungCtx = createContext<string | null>(null);
 
 /** Việc mở ngăn Case từ bảng này (Q3): không còn form trải trong trang. `viec` không có = mở view Case. PR-SOS: + Xác nhận Case / PA. */
-export type MoCase = { viec?: 'ghi-ket-qua' | 'them-pa' | 'xac-nhan' | 'xac-nhan-pa' | 'ke-hoach'; paId?: number };
+export type MoCase = { viec?: 'ghi-ket-qua' | 'them-pa' | 'xac-nhan' | 'xac-nhan-pa'; paId?: number };
 
 /** Khoá hàng: nhóm "Case bàn giao" cùng `category` với hàng chuẩn của chương trình mới (G+V ↔ Writing) nên cần khoá riêng. */
 export const khoaHang = (r: { category: string; tuLopTruoc?: string | null }) => (r.tuLopTruoc ? `${r.category}@truoc` : r.category);
@@ -367,7 +367,7 @@ export function KhoaQuyChe() {
 
 /**
  * NHÃN LOẠI (Q13, luật chung cả hồ sơ — mockup 24, 26): `Case` = khung RỖNG (viền chữ chính, không nền) · `PA` = khối ĐẶC (nền `line-strong`);
- * PA chờ Quản lý duyệt kế hoạch: nền tím nhạt.
+ * PA đang chờ (Hành trình: chờ Quản lý duyệt PA / khối chờ): nền tím nhạt.
  */
 export function NhanLoai({ loai, cho }: { loai: 'Case' | 'PA'; cho?: boolean }) {
   const lop = loai === 'Case' ? 'border-current text-slate-100'
@@ -434,8 +434,7 @@ function HangCase({ c, ngan, onChanged, onMoCase }: {
           {/* Em Tạm dừng: MỌI hạn dừng (T65, như `DongHan`) — Quá hạn đã thành nhãn Tạm dừng ở trên, hạn chưa tới cũng thay bằng nhãn. */}
           {tt.han && !daXong && (tamDung
             ? tt.t !== 'qua-han' && <span className="mt-0.5 block"><NhanTamDung tu={tamDung} /></span>
-            : <span className="mt-0.5 block"><Han loai={tt.k === 'cho-ke-hoach' ? 'ke-hoach-bo-tro' : 'xac-minh-sos'} han={tt.han} /></span>)}
-          {tt.k === 'cho-duyet-ke-hoach' && c.boTro?.keHoach?.hanDuyet && <span className="mt-0.5 block text-[12px] text-wait tabular-nums">Quản lý duyệt · hạn {ngan(c.boTro.keHoach.hanDuyet)}</span>}
+            : <span className="mt-0.5 block"><Han loai="xac-minh-sos" han={tt.han} /></span>)}
           {daXong && c.outcomeLabel && <span className="mt-0.5 block text-[12px] text-slate-500">Kết luận: {c.outcomeLabel}</span>}
         </td>
         <td className="td">
@@ -451,9 +450,6 @@ function HangCase({ c, ngan, onChanged, onMoCase }: {
           ) : (
             <CotPhai nut={(
               <>
-                {tt.k === 'cho-ke-hoach' && c.boTro?.coTheNop && (
-                  <button type="button" className="btn btn-sm btn-primary" onClick={() => onMoCase(c.id, { viec: 'ke-hoach', paId: c.plans.find((p) => p.chuaChay)?.id })}>Nộp kế hoạch</button>
-                )}
                 <button type="button" className="btn btn-sm" onClick={() => onMoCase(c.id)}>Mở Case</button>
                 {c.canEdit && !daXong && !chanNut && c.plans.length === 0 && (
                   <button type="button" className="btn btn-sm" onClick={() => onMoCase(c.id, { viec: 'them-pa' })}>+ Thêm PA</button>
@@ -518,7 +514,6 @@ function HangPA({ p, c, ngan, onMoCase }: {
   /* PR-S5F-b (mockup LT2a): tên PA Bổ trợ = `Bổ trợ 2 buổi/tuần · đến Cuối khoá · W4 OCT · trừ buổi Free` — mốc nằm trong tên, không lặp ở dòng phụ. */
   const ten = boTro ? `Bổ trợ ${c.boTro!.buoiMoiTuan} buổi/tuần · ${p.mocChu ?? 'đến Final Test'} · trừ buổi Free` : p.name;
   const chuaChay = !!p.chuaChay;
-  const choDuyetKh = chuaChay && c.boTro?.keHoach?.trangThai === 'cho';
   const chung = c.boTro?.chung && c.boTro.mon.length > 1 ? `PA chung · ${c.boTro.mon.map((m) => m.tenMon).join(', ')}` : null;
   const dongPhu = [chuNguoi(p), khoang, chuBuoi(p), chung,
     p.closedReason === 'superseded' ? 'được thay' : p.revisions.length > 0 ? `điều chỉnh ${p.revisions.length} lần` : null].filter(Boolean).join(' · ');
@@ -528,7 +523,7 @@ function HangPA({ p, c, ngan, onMoCase }: {
         {/* Đường nối nhỏ từ Case xuống (mockup 24 `.kb tr.hp td:first-child::before`) — PA này thuộc Case trên. */}
         <span aria-hidden className="absolute left-[22px] top-0 h-4 w-[11px] rounded-bl-md border-b-[1.5px] border-l-[1.5px]" style={{ borderColor: 'var(--line-strong)' }} />
         <div className="flex min-w-0 items-center gap-1.5 pl-[30px]">
-          <NhanLoai loai="PA" cho={choDuyetKh} />
+          <NhanLoai loai="PA" />
           <button type="button" onClick={() => onMoCase(c.id, { paId: p.id })} title="Mở PA trong ngăn Case"
             className={`min-w-0 appearance-none border-0 bg-transparent p-0 text-left text-xs text-slate-100 hover:underline ${boTro ? '' : 'truncate'}`}>
             {ten}
@@ -553,13 +548,8 @@ function HangPA({ p, c, ngan, onMoCase }: {
       </td>
       <td className="td">
         {chuaChay ? (
-          <CotPhai
-            nut={c.boTro?.coTheNop && !choDuyetKh ? (
-              <button type="button" className="btn btn-sm btn-primary" onClick={() => onMoCase(c.id, { viec: 'ke-hoach', paId: p.id })}>Nộp kế hoạch</button>
-            ) : undefined}
-            phu={choDuyetKh
-              ? <><span className="text-wait">Chờ Quản lý duyệt kế hoạch</span>{c.boTro?.keHoach?.hanDuyet ? ` · hạn ${ngan(c.boTro.keHoach.hanDuyet)}` : null}</>
-              : <>Chờ kế hoạch{c.boTro?.hanKeHoach ? ` · hạn ${ngan(c.boTro.hanKeHoach)}` : ''}</>} />
+          /* PR-CT2: PA Bổ trợ chờ Xác nhận Case — không còn nộp / duyệt kế hoạch. */
+          <CotPhai phu="Chưa bắt đầu" />
         ) : v.loai === 'cho-duyet' ? (
           <CotPhai phu={<><span className="text-wait">{v.text}</span>{v.due ? ` · hạn ${ngan(v.due)}` : null}</>} />
         ) : v.loai === 'cho-xac-nhan' ? (

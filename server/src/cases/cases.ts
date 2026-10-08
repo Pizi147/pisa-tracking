@@ -1744,7 +1744,7 @@ export function caseDetail(p: Principal, caseId: number) {
       /** PA theo quy chế SOS. `awaitingConfirmation` = "Chờ xác nhận" (Q28-3, Q3): chạy khi GVBM bấm Xác nhận PA. */
       preset: iv.preset === 1,
       confirmedAt: (iv.confirmed_at ?? null) as string | null,
-      /* PR-LT2a: PA Bổ trợ KHÔNG có bước Xác nhận PA — chờ kế hoạch được duyệt (`chuaChay`), không phải "Chờ xác nhận". */
+      /* PR-LT2a → PR-CT2: PA Bổ trợ KHÔNG có bước Xác nhận PA — chờ Xác nhận Case (`chuaChay`), không phải "Chờ xác nhận". */
       awaitingConfirmation: iv.kind !== 'bo_tro' && iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned',
       chuaChay: iv.kind === 'bo_tro' && iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned',
       /** PR-SOS (T22, T63): PA bắt buộc — không thay, không kết thúc sớm; `mocChu` chữ mốc; `lanCuoi` = lần ghi tới là "Ghi kết quả cuối". */
@@ -1891,7 +1891,7 @@ export function caseDetail(p: Principal, caseId: number) {
     /** PR-SOS (S4-5): thẻ ĐANG CHỜ ở mức Case ("Không cần theo dõi") — Ngăn Case nhúng `TheYeuCau gon` cho Quản lý. */
     yeuCauCase: theCuaDoiTuong('sos_case', [caseId]).find((y) => y.trangThai === 'cho' && y.loai === 'khong_theo_doi') ?? null,
     /** PR-LT2a (N1, N2): khối PA Bổ trợ Giữa khoá — nhóm, môn, người dạy, kế hoạch (thẻ), hạn nộp, người xem nộp được không. `null` = Case không có PA bổ trợ. */
-    boTro: boTroCuaCase(p, [caseId]).get(caseId) ?? null,
+    boTro: boTroCuaCase([caseId]).get(caseId) ?? null,
     /** PR-SOS (T21, §7.3, K3-07): tên Case SOS ba phần · MỘT nhãn trạng thái · MỘT việc tiếp — Ngăn Case chọn nút chính theo đây. */
     tenSos: c.origin_kind === 'mock' && (c.attempt_kind ?? 'mock') === 'mock'
       ? { mt: (conn.prepare('SELECT MAX(attempt_no) n FROM case_milestones WHERE case_id = ?').get(caseId) as any)?.n ?? c.attempt_no ?? null,
@@ -1901,7 +1901,7 @@ export function caseDetail(p: Principal, caseId: number) {
       const st = sosSt;
       const v4 = {
         status: c.status, fromSos: st.fromSos, hasCause: st.hasCause, dismissed: !!st.dismissed, systemClosed: !!c.system_close_reason,
-        choDuyetKhongTheoDoi: !!st.choDuyetKhongTheoDoi, coPaChoXacNhan: st.coPaChoXacNhan, hanXacNhan: st.dueOn, boTro: st.boTro,
+        choDuyetKhongTheoDoi: !!st.choDuyetKhongTheoDoi, coPaChoXacNhan: st.coPaChoXacNhan, hanXacNhan: st.dueOn,
         lyDoHeThong: c.system_close_reason ? SYSTEM_CLOSE_REASON_LABEL[c.system_close_reason as keyof typeof SYSTEM_CLOSE_REASON_LABEL] ?? null : null,
         rutSuaDiem: laRutSuaDiem(c),
       };
@@ -2488,7 +2488,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
     .all(cycle?.id ?? 0, studentId, cycle?.id ?? 0) as any[];
   /* AN-8: số bằng chứng của MỌI Case trên bảng — một câu hỏi, không phải một câu cho mỗi thẻ. */
   const soBangChung = demBangChungCase(caseRows.map((c) => c.id as number));
-  const boTroMap = boTroCuaCase(p, caseRows.map((c) => c.id as number));   // PR-LT2a: theo TẬP, không hỏi từng Case
+  const boTroMap = boTroCuaCase(caseRows.map((c) => c.id as number));   // PR-LT2a: theo TẬP, không hỏi từng Case
   /* PR-UXF-b (O1): thẻ Xin ý kiến của MỌI PA trên bảng — một câu tìm PA có thẻ, rồi MỘT lần `theCuaDoiTuong` (rỗng thì không câu nào). Cùng luật chọn với Ngăn Case. */
   const xinYKienCua = new Map<number, any>();
   {
@@ -2896,7 +2896,7 @@ function caseCardOf(p: Principal, caseId: number, c: any, soBangChung: Map<numbe
   const sos = sosCaseState(caseId);
   const v4 = {
     status: c.status, fromSos: sos.fromSos, hasCause: sos.hasCause, dismissed: !!sos.dismissed, systemClosed: !!c.system_close_reason,
-    choDuyetKhongTheoDoi: !!sos.choDuyetKhongTheoDoi, coPaChoXacNhan: sos.coPaChoXacNhan, hanXacNhan: sos.dueOn, boTro: sos.boTro,
+    choDuyetKhongTheoDoi: !!sos.choDuyetKhongTheoDoi, coPaChoXacNhan: sos.coPaChoXacNhan, hanXacNhan: sos.dueOn,
     lyDoHeThong: c.system_close_reason ? SYSTEM_CLOSE_REASON_LABEL[c.system_close_reason as keyof typeof SYSTEM_CLOSE_REASON_LABEL] ?? null : null,
     rutSuaDiem: laRutSuaDiem(c),
   };
@@ -2931,7 +2931,7 @@ function caseCardOf(p: Principal, caseId: number, c: any, soBangChung: Map<numbe
     /** PR-SOS (§7.3, K3-07): MỘT nhãn trạng thái + MỘT việc tiếp của Case — bảng kỹ năng, Ngăn Case, đầu hồ sơ đọc chung. */
     trangThaiV4: trangThaiCaseV4(v4, today),
     viecTiep,
-    nguoiLam: nguoiLamCua(viecTiep, c, plans, boTro),
+    nguoiLam: nguoiLamCua(viecTiep, c, plans),
     /** Người phụ trách Case (`owner_user_id`) — việc Xác nhận nguyên nhân / Xác nhận PA của Công việc (Q2). */
     ownerId: (c.owner_user_id ?? null) as number | null,
     plans,
@@ -2959,16 +2959,14 @@ function caseCardOf(p: Principal, caseId: number, c: any, soBangChung: Map<numbe
 
 /**
  * NGƯỜI LÀM VIỆC TIẾP của một Case (PR-VAI-b Q3) — tính MỘT chỗ; cột Việc tiếp, thẻ điện thoại và thanh việc cùng đọc. Cùng luật người làm
- * với Công việc (Q2): Xác nhận nguyên nhân / Xác nhận PA / Thêm PA → người phụ trách Case · Ghi kết quả → người ghi PA · Nộp kế hoạch →
- * người dạy bổ trợ · Chờ Quản lý duyệt → "Quản lý" (vai, không tên). Tên đọc sẵn trong câu Case / câu PA (JOIN) — không câu thêm.
+ * với Công việc (Q2): Xác nhận nguyên nhân / Xác nhận PA / Thêm PA → người phụ trách Case · Ghi kết quả → người ghi PA ·
+ * Chờ Quản lý duyệt → "Quản lý" (vai, không tên). Tên đọc sẵn trong câu Case / câu PA (JOIN) — không câu thêm.
  */
-function nguoiLamCua(v: { chu: string; paId?: number } | null, c: any, plans: { id: number; nguoiId: number | null; nguoiTen: string | null }[], boTro: BoTroDto | null): { id: number | null; ten: string | null } | null {
+function nguoiLamCua(v: { chu: string; paId?: number } | null, c: any, plans: { id: number; nguoiId: number | null; nguoiTen: string | null }[]): { id: number | null; ten: string | null } | null {
   if (!v) return null;
   if (v.chu.startsWith('Chờ Quản lý')) return { id: null, ten: 'Quản lý' };
   const pa = v.paId ? plans.find((pl) => pl.id === v.paId) : null;
-  const [id, ten] = pa ? [pa.nguoiId, pa.nguoiTen]
-    : v.chu === 'Nộp kế hoạch bổ trợ' ? [boTro?.nguoiDay?.userId ?? null, boTro?.nguoiDay?.ten ?? null]
-    : [c.owner_user_id ?? null, c.owner_name ?? null];
+  const [id, ten] = pa ? [pa.nguoiId, pa.nguoiTen] : [c.owner_user_id ?? null, c.owner_name ?? null];
   return id ? { id, ten } : null;
 }
 

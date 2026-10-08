@@ -19,7 +19,6 @@ import {
 import { DongXinYKien } from './DongXinYKien.tsx';
 import { NganCase } from '../students/NganCase.tsx';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
-import type { BoTro } from './NopKeHoachPanel.tsx';
 
 /**
  * MỘT VẤN ĐỀ HỌC VỤ (PR-UX3, N-4, mockup 15 §3) — kể theo hai câu người đọc cần: VẤN ĐỀ gì, và ĐÃ LÀM GÌ (các PA, mỗi PA một
@@ -29,6 +28,14 @@ import type { BoTro } from './NopKeHoachPanel.tsx';
  * `/hoc-thuat/Case/:id` (`CasePanel`, có hàng nút mở ngăn Case). Các thao tác (Ghi kết quả · Thêm PA · Hoàn thành · Trả lời)
  * KHÔNG còn hộp thoại đè lên ngăn — ngăn Case đổi nội dung và có dòng "← Case Listening" để về.
  */
+
+/** Khối `boTro` như `GET /cases/:id` trả (xem `BoTroDto` ở máy chủ) — chỉ các trường giao diện cần. */
+export type BoTro = {
+  nhom: string; buoiMoiTuan: 1 | 2; chung: boolean;
+  mon: { caseId: number; mon: string; tenMon: string; coNguyenNhan: boolean; moTa: string | null }[];
+  nguoiDay: { userId: number | null; ten: string | null } | null;
+  denKhi: string | null;
+};
 
 export type CaseDetail = {
   id: number; originKind: string;
@@ -40,7 +47,7 @@ export type CaseDetail = {
   sos?: { fromSos: boolean; hasCause: boolean; awaitingCause: boolean; dueOn: string | null;
     choDuyetKhongTheoDoi: { hanDuyet: string | null } | null; coPaChoXacNhan: boolean } | null;
   tenSos?: { mt: number | null; giua: string; sos: number | null } | null;
-  /** PR-LT2a: khối PA Bổ trợ Giữa khoá (nhóm, môn, người dạy, kế hoạch) — null nếu Case không có PA bổ trợ. */
+  /** PR-LT2a: khối PA Bổ trợ Giữa khoá (nhóm, môn, người dạy) — null nếu Case không có PA bổ trợ. */
   boTro?: BoTro | null;
   trangThaiV4?: { k: string; t: TrangThai; chu: string; han: string | null };
   /** PR-VAI-b (T65): em đang Tạm dừng → ngày dừng; "quá hạn" thành nhãn vàng. */
@@ -88,8 +95,6 @@ export type CaseDetail = {
 export type ViewCase = { loai: 'case' } | { loai: 'ghi-ket-qua'; paId: number } | { loai: 'them-pa' } | { loai: 'hoan-thanh' }
   /* PR-SOS (Q28-3): Xác nhận Case → Xác nhận PA theo quy chế. */
   | { loai: 'xac-nhan' } | { loai: 'xac-nhan-pa'; paId: number }
-  /* PR-LT2a: nộp kế hoạch bài giảng bổ trợ cho cả nhóm (paId = một PA bổ trợ của nhóm). */
-  | { loai: 'ke-hoach'; paId?: number }
   /* PR-LUI-a2: Sửa Case (+ Xoá Case ở chân). */
   | { loai: 'sua' }
   /* PR-PA (§8): Sửa PA — cùng form Thêm PA; mở từ ⋯ của dòng PA. */
@@ -258,10 +263,9 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
 }) {
   const dangChay = daBatDau(iv);
   const choDuyet = iv.approvalState === 'pending';
-  /* PR-LT2a: PA Bổ trợ chưa chạy — chờ kế hoạch được Quản lý duyệt (không có "Xác nhận PA", không có "Kết quả"). */
+  /* PR-LT2a → PR-CT2: PA Bổ trợ chưa chạy = chờ Xác nhận Case (không có "Xác nhận PA", không có "Kết quả"). */
   const bt = data.boTro ?? null;
   const chuaChay = !!iv.chuaChay;
-  const choKeHoachDuyet = chuaChay && bt?.keHoach?.trangThai === 'cho';
   const hanGhi = iv.actionDue && dangChay ? deadlineView({ kind: 'cap-nhat-pa', due: iv.actionDue, today: homNay }) : null;
   const all: any[] = data.interventions ?? [];
   const tenPA = (x: any) => x.description || INTERVENTION_KIND_LABEL[x.kind as keyof typeof INTERVENTION_KIND_LABEL] || x.kind;
@@ -280,9 +284,8 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
   const hienHan = !!hanGhi && !choDuyet;
   const hienChoQl = choDuyet && !(data.viewer.canApprove && iv.yeuCau);
   const nutXacNhan = !!(data.viewer.canEdit && iv.awaitingConfirmation && data.sos?.hasCause);
-  const nutKeHoach = !!(bt?.coTheNop && chuaChay && !choKeHoachDuyet);
   const nutKetQua = nut.ketQua && !iv.awaitingConfirmation && !chuaChay;
-  const coChan = hienHan || hienChoQl || nutXacNhan || nutKeHoach || nutKetQua;
+  const coChan = hienHan || hienChoQl || nutXacNhan || nutKetQua;
   /* Nhật ký PA (mockup §8): Tạo · Kết quả từng tuần · Sửa PA / Điều chỉnh — luôn có ít nhất dòng Tạo. */
   const ketQuaPa = data.followups ?? [];
   return (
@@ -293,7 +296,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
         {iv.preset && <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-slate-400" title={iv.kind === 'bo_tro' ? 'PA Bổ trợ bắt buộc đến Final Test — không thay, không kết thúc sớm' : 'PA theo quy chế SOS — không thay, không kết thúc sớm'}><KhoaNho />theo quy chế</span>}
         {/* Trạng thái CÔNG VIỆC, không phải kết quả (mục 2.2): "Đã xong" chỉ nghĩa việc đã làm xong. */}
         {/* PR-SOS: PA quy chế chưa xác nhận = "Chờ xác nhận" (cùng chữ với hàng PA ở bảng kỹ năng), không phải "Đã lên kế hoạch". */}
-        <Nhan tone={toneTrangThaiPa(iv.status)}>{chuaChay ? (choKeHoachDuyet ? 'Chờ Quản lý duyệt' : 'Chờ kế hoạch') : iv.awaitingConfirmation ? 'Chờ xác nhận' : INTERVENTION_STATUS_LABEL[iv.status as keyof typeof INTERVENTION_STATUS_LABEL] ?? iv.status}</Nhan>
+        <Nhan tone={toneTrangThaiPa(iv.status)}>{chuaChay ? 'Chưa bắt đầu' : iv.awaitingConfirmation ? 'Chờ xác nhận' : INTERVENTION_STATUS_LABEL[iv.status as keyof typeof INTERVENTION_STATUS_LABEL] ?? iv.status}</Nhan>
         {choDuyet && <Nhan tone="wait" title={iv.approvalDue ? `Hạn Quản lý trả lời ${ngan(iv.approvalDue)}` : undefined}>Chờ Quản lý duyệt</Nhan>}
         {iv.approvalState === 'approved' && <Nhan tone="done">Đã duyệt</Nhan>}
         {iv.approvalState === 'declined' && <NhanTrangThai t="can-lam" chu="Bị từ chối" />}
@@ -348,9 +351,6 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec }: {
           {nutXacNhan && (
             <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => onViec({ loai: 'xac-nhan-pa', paId: iv.id })}>Xác nhận PA</button>
           )}
-          {nutKeHoach && (
-            <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => onViec({ loai: 'ke-hoach', paId: iv.id })}>Nộp kế hoạch</button>
-          )}
           {nutKetQua && (
             <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => onViec({ loai: 'ghi-ket-qua', paId: iv.id })}
               title={`Kết quả tuần, tiến triển, và quyết định ${iv.preset ? 'Giữ nguyên / Điều chỉnh / Xin ý kiến' : 'Giữ nguyên / Điều chỉnh / Thay / Kết thúc'}`}>
@@ -388,7 +388,7 @@ const MILESTONE_TITLE: Record<string, string> = {
   xin_khong_theo_doi: 'Xin không theo dõi',
   ql_duyet_khong_theo_doi: 'Quản lý duyệt không theo dõi',
   ql_tu_choi_khong_theo_doi: 'Quản lý từ chối không theo dõi',
-  /* PR-LT2a (K3-21): kế hoạch bổ trợ lớp thường. */
+  /* PR-LT2a (K3-21): kế hoạch bổ trợ lớp thường — PR-CT2 bỏ bước này, nhãn giữ để đọc lịch sử Case cũ. */
   nop_ke_hoach: 'Nộp kế hoạch bổ trợ',
   ke_hoach_duyet: 'Quản lý duyệt kế hoạch',
   ke_hoach_tu_choi: 'Quản lý từ chối kế hoạch',

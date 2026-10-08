@@ -22,11 +22,10 @@ import { addJourney } from '../platform/audit.ts';
 import { db, tx } from '../db.ts';
 import { chotHanXuLy } from '../yThuc/trangThai.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest } from '../util.ts';
+import { badRequest, conflict } from '../util.ts';
 import { reviseTarget, updateCycle } from '../fasttrack/cycles.ts';
 import { NHAN_TRUONG_DE_XUAT, TRUONG_TU_AP, hienTaiCua } from './deXuatSua.ts';
 import { CO_THE_KHONG_THEO_DOI, awaitingCauseCaseIds } from '../cases/sosState.ts';
-import { khiDuyetKeHoach, khiTuChoiKeHoach } from '../cases/boTro.ts';
 import { chotYeuCau, taoYeuCau } from './yeuCau.ts';
 import { trangThaiYThuc, ungVienVaThe, type EmYThuc } from '../yThuc/trangThai.ts';
 import { classProgressMany } from '../classes/schedule.ts';
@@ -566,12 +565,12 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       };
     },
   },
-  /* ------------------------------------------------------------ PR-LT2a · Kế hoạch bổ trợ lớp thường Giữa khoá (T54, M-05, M-03) — một thẻ mỗi NHÓM PA */
+  /* ------------------------------------------------------------ PR-LT2a · Kế hoạch bổ trợ lớp thường Giữa khoá — PR-CT2: CHỈ ĐỌC LỊCH SỬ (bỏ nộp / duyệt) */
   {
     loai: 'ke_hoach_bo_tro',
-    /* Duyệt → PA của các Case ĐÃ có nguyên nhân chạy từ hôm nay; Từ chối → giữ nguyên nhân, nộp lại (hạn mới 3 ngày). Cả hai TRONG tx của hộp. */
-    khiDuyet: (p, yc) => khiDuyetKeHoach(p, yc),
-    khiTuChoi: (p, yc, lyDo) => khiTuChoiKeHoach(p, yc, lyDo),
+    /* PR-CT2 (§8): PA bổ trợ chạy ngay khi Xác nhận Case — thẻ cũ không còn duyệt / từ chối (migrate B đóng `tu_dong`). */
+    khiDuyet: () => { throw conflict('Đã bỏ bước duyệt kế hoạch bổ trợ.'); },
+    khiTuChoi: () => { throw conflict('Đã bỏ bước duyệt kế hoạch bổ trợ.'); },
     chet: {
       sql: `NOT EXISTS (SELECT 1 FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
              WHERE iv.nhom_bo_tro = (SELECT nhom_bo_tro FROM case_interventions WHERE id = y.doi_tuong_id)

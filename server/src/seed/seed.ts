@@ -248,7 +248,7 @@ export function runSeed() {
     buildKckDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
     /* BỘ DEMO PR-HSM (H1–H2): nhận xét W/S + GV chấm Speaking (tài khoản và người ngoài) — qua `saveScore`. */
     buildHsmDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
-    /* BỘ DEMO PR-LT2a (G1–G5): Giữa khoá lớp thường — Case tự tạo, kế hoạch bổ trợ chờ / từ chối / đã duyệt, Báo PH qua TVV. TRƯỚC `buildDuyetDemo` (quét Báo lên). */
+    /* BỘ DEMO PR-LT2a (G1–G6): Giữa khoá lớp thường — Case tự tạo, PA bổ trợ chạy ngay khi Xác nhận Case (PR-CT2), Báo PH qua TVV. TRƯỚC `buildDuyetDemo` (quét Báo lên). */
     buildLt2aDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
     /* BỘ DEMO PR-LT2b (D10–D13): Cuối khoá lớp thường — bốn dải, Mini Test, Pre FOU → FOU, kỳ vọng đầu ra lên FT. SAU bộ LT2a, TRƯỚC `buildDuyetDemo` (quét Báo lên). */
     buildLt2bDemo({ conn, adminId, branchId, classId, userId, classBranch, nextStudentCode, studentIdByCode });
