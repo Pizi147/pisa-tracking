@@ -225,6 +225,13 @@ Công việc của tôi, chuông, câu báo lỗi máy chủ trên các đườn
 - `db.ts` `laLoiMatKetNoiTurso`: "fetch failed" khớp cả lỗi kho tệp (Netlify Blobs) → GET tải tệp thử lại thừa một lần (Minor, rà #236). ✅ `pr-viec-nho-1008` 08/10.
 - **PR-TD2 · Tốc độ chuyển trang** (chủ sản phẩm 07/10 "chuyển trang khá chậm") — kế hoạch `docs/superpowers/plans/2026-10-07-pr-toc-do-chuyen-trang.md`: đo log + cục bộ, gốc = `loadBundle` đọc rộng/lặp (0,4–0,9 MB ×2–3 mỗi request), Trước/Sau tải cả danh sách, waterfall hồ sơ lớp/HV, phiên 6 câu. Thứ tự TD2-a(+0) → b+c → d; e/f sau log. Chưa làm.
 
+### LỖI BẢN CHÍNH 08/10 — Mock Test (chủ sản phẩm báo, log Netlify)
+- **`no such savepoint: sp_1`** (POST `/ke-hoach-test/xep-moi`, mã 7a701197, chập chờn): bộ nhớ câu lệnh PR-BN (`server/src/db.ts`) dùng lại câu GHI đã prepare ngoài giao dịch bên trong `tx()` → trên Turso phá giao dịch (có thể ghi nửa vời), `tx()` nuốt lỗi RELEASE/ROLLBACK. Tái hiện trên sqld cục bộ. **Main CHƯA sửa.** Prompt session code (nhánh `fix-tx-turso-savepoint`) đã đưa chủ sản phẩm 08/10: khoá bộ nhớ theo trạng thái giao dịch, `tx()` báo lỗi rõ, thêm `STREAM_EXPIRED` vào lỗi mất kết nối, phép kiểm trên sqld. Chủ sản phẩm: chưa vá nóng, vào đợt deploy sau (sau bước C).
+- **Hồ sơ MT 500** (`reading 'startsWith'`, `scoreHistoryOf`, mã 6d7cbf6a — bài có nhiều sửa/đổi lịch): đã sửa ở main #256, chưa deploy. Ý thức cùng kiểu: #260.
+- **Bị lọt:** #247 (PR-OMT rà lại: `shared/domain/oMt.ts`, `ChipKyNang.tsx`) merge vào nhánh `pr-omt-gon` sau khi nhánh đó đã vào main → chưa bao giờ vào main. Cần đưa lại.
+- `docFtTheoLo` (`keHoachTest.ts:918`) `IN (...)` không chia lô — chỉ vượt 900 tham số khi hàng trăm em một lần (thấp).
+- Dòng "PR-OMT … chờ merge" ở mục SAU DEPLOY đã cũ: OMT merge #245.
+
 ### SAU PR-CT2 (#271 → đưa lại #272, merge 08/10) — chờ chủ sản phẩm góp ý / sửa sau
 - **Chủ sản phẩm xác nhận 2 mục tự quyết:** (1) FOU → FT vẫn có bổ trợ Final nhưng sinh lúc thi hành thứ Hai, không sinh ngay khi đủ điểm (đặc tả không nói, hơi lệch câu "không chờ thi hành"); (8) lệnh giữa khoá đè lệnh cuối khoá đang chờ cũng huỷ bộ bổ trợ chưa ai đụng (mục mới, kế hoạch chưa ghi). 6 mục còn lại khớp kế hoạch.
 - **Đo tốc độ còn thiếu:** `huyNhieuLenh` / khôi phục nhiều lệnh (`server/src/classes/lenhChuyen.ts:274`, `:408`) mỗi em gọi `dongBoCheTaiFinal`, ước ~25 câu/em × 8 em ≈ sát 200 câu/lần ghi. Thêm phép đo `tocDo` cho 8 em có bộ sinh sớm; vượt thì gom lô.
