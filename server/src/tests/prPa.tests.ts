@@ -202,17 +202,17 @@ export async function runPrPaTests(t: YThucTestKit) {
       CREATE TABLE mini_test (id INTEGER PRIMARY KEY, nhom_bo_tro TEXT, so_buoi INTEGER);
       INSERT INTO sos_cases VALUES (1, 'chuyen_cap', 'Kỳ vọng đầu ra chưa đạt · Reading'), (2, 'chuyen_cap', 'Final Test BE · W không đạt'), (3, 'mock', 'Kỳ vọng đầu ra x');
       INSERT INTO mini_test VALUES (1, 'mt:7', 4);
-      INSERT INTO case_interventions VALUES (1, 1, 'tutor', NULL), (2, 2, 'tutor', NULL), (3, 3, 'tutor', NULL), (4, 2, 'bo_tro_mien_phi', 'mt:7'), (5, 2, 'bo_tro_mien_phi', 'mt:9');`);
+      INSERT INTO case_interventions VALUES (1, 1, 'tutor', NULL), (2, 2, 'tutor', NULL), (3, 3, 'tutor', NULL), (4, 2, 'bo_tro_mien_phi', 'mt:7'), (5, 2, 'bo_tro_mien_phi', 'mt:9'), (6, 1, 'tutor', NULL);`);
     const a: string[] = []; migratePrPa(tam, a);
     const cot: [string, string][] = [['case_interventions', 'so_buoi'], ['case_followups', 'so_buoi'], ['case_intervention_revisions', 'old_so_buoi'],
       ['case_intervention_revisions', 'new_so_buoi'], ['case_intervention_revisions', 'old_started_date'], ['case_intervention_revisions', 'new_started_date']];
     assert(cot.every(([b, c]) => coCot(tam, b, c)), `thiếu cột: ${a.join('; ')}`);
     const so = () => (tam.prepare('SELECT id, so_buoi FROM case_interventions ORDER BY id').all() as any[]).map((r) => r.so_buoi).join();
-    assert(so() === '10,,,4,', `điền bù: ${so()}`);
+    assert(so() === '10,,,4,,', `điền bù (chỉ PA Tutor đầu tiên của Case kỳ vọng = nguonTao ky_vong): ${so()}`);
     /* Lần 2 (cột đã có): người dùng xoá Số buổi (Sửa PA "để trống") → migrate KHÔNG điền lại. */
     tam.prepare('UPDATE case_interventions SET so_buoi = NULL WHERE id IN (1, 4)').run();
     const b: string[] = []; migratePrPa(tam, b);
-    assert(b.length === 0 && so() === ',,,,', `lần 2: ${b.join('; ')} · ${so()}`);
+    assert(b.length === 0 && so() === ',,,,,', `lần 2: ${b.join('; ')} · ${so()}`);
     tam.close();
     /* DB thật (schema.sql đã có cột): xoá số buổi của PA vừa tạo ở PA1e/PA1f → migrate không đổi gì, vẫn trống. */
     assert(cot.every(([bg, c]) => coCot(conn, bg, c)), 'schema.sql thiếu cột PR-PA');
@@ -419,12 +419,25 @@ export async function runPrPaTests(t: YThucTestKit) {
     assert(r.every((x) => x.so_buoi === 9 && x.description === 'Bổ trợ miễn phí nhóm, thêm ba buổi'), `cả nhóm: ${JSON.stringify(r)}`);
     assert(ids.every((id) => revCua(id).length === 1 && revCua(id)[0].source === 'sua_pa' && revCua(id)[0].old_so_buoi === 6 && revCua(id)[0].new_so_buoi === 9),
       `nhật ký từng dòng: ${JSON.stringify(ids.map(revCua))}`);
+    /* Rà cuối #2: dòng chính tài khoản, dòng anh em chỉ tên → đổi sang tài khoản khác: anh em nhận CẢ HAI ô (không còn tên cũ). */
+    conn.prepare('UPDATE case_interventions SET performer_user_id = ?, performer_name = NULL WHERE id = ?').run(GV_L, ids[0]);
+    conn.prepare(`UPDATE case_interventions SET performer_user_id = NULL, performer_name = 'Cô Hà ngoài' WHERE id = ?`).run(ids[1]);
+    const gvMoi = GV.find((u) => u !== GV_L)!;
+    cases.suaPa(P.admin, ids[0], { performerUserId: gvMoi });
+    const ng = ids.map((id) => get('SELECT performer_user_id u, performer_name n FROM case_interventions WHERE id = ?', id));
+    assert(ng.every((x) => x.u === gvMoi && x.n === null), `người cả nhóm: ${JSON.stringify(ng)}`);
+    /* Rà cuối M4: Mô tả ngắn tối đa 2000 ký tự — Sửa PA và Thêm PA cùng giới hạn. */
+    const dai = 'x'.repeat(2001);
+    const e1 = maLoi(() => cases.suaPa(P.admin, ids[0], { description: dai }));
+    const e2 = maLoi(() => cases.recordIntervention(P.lrTeacher, caseThu('N10C'), { kind: 'tutor', description: dai, status: 'started', startedDate: TODAY }));
+    assert(e1.status === 400 && e1.msg.includes('2000') && e2.status === 400 && e2.msg.includes('2000'), `2000: ${JSON.stringify([e1, e2])}`);
   });
   // ------------------------------------------------------------------ Task 3 · người giữ việc Kết quả (không mồ côi)
   console.log('\nPR-PA · Task 3 (người giữ việc Kết quả)');
   const { loadPrincipal } = await import('../permissions.ts');
   const mw: any = await import('../worklist/mywork.ts');
   const metrics: any = await import('../worklist/metrics.ts');
+  const { viecCuaHocVien } = await import('../students/viecHocVien.ts');
   const GV4 = (conn.prepare(`SELECT DISTINCT ur.user_id FROM user_roles ur JOIN roles r ON r.id = ur.role_id
      WHERE r.key = 'teacher' AND ur.status = 'active' AND ur.branch_id = ? ORDER BY ur.user_id LIMIT 4`).all(MB) as any[]).map((r) => r.user_id as number);
   const ganGvcn = (lop: number, userId: number) => conn.prepare(
@@ -455,8 +468,8 @@ export async function runPrPaTests(t: YThucTestKit) {
   const nguoiChiSo = (iv: number) => metrics.metricSet(P.admin, 'pa-can-cap-nhat', {}).chiTiet?.get(iv)?.nguoi?.[0] ?? null;
   const KQ1 = { ...KQ, soBuoi: 1, nguoiDay: { performerName: 'Tutor ngoài' } };
 
-  check('PA11 · em chuyển lớp → việc Kết quả về GVBM môn đó ở lớp MỚI: thấy ở Công việc (của mình), chỉ số cùng người, ghi được; GV lớp cũ không còn giữ', () => {
-    const { c, iv } = emChuyenLop('MOI', { chu: GV4[0], sauChuyen: (b) => { ganGv(b, GV4[1], 'listening'); ganGv(b, GV4[2], 'reading'); } });
+  check('PA11 · em chuyển lớp → việc Kết quả về GVBM môn đó ở lớp MỚI: thấy ở Công việc (của mình), chỉ số cùng người, ghi được; GV lớp cũ không còn giữ; bảng kỹ năng + tab Việc cùng người', () => {
+    const { c, iv, b } = emChuyenLop('MOI', { chu: GV4[0], sauChuyen: (b) => { ganGv(b, GV4[1], 'listening'); ganGv(b, GV4[2], 'reading'); } });
     const dong = dongKq(GV4[1], iv);
     assert(dong && dong.mine && dong.ownerId === GV4[1], `GVBM lớp mới: ${JSON.stringify(dong && { mine: dong.mine, ownerId: dong.ownerId })}`);
     assert(dong.href.startsWith('/hoc-vien/') && dong.reason === 'Tutor nghe chép 10 buổi', `GVBM xem được hồ sơ → href hồ sơ: ${dong.href} · ${dong.reason}`);
@@ -465,6 +478,16 @@ export async function runPrPaTests(t: YThucTestKit) {
     const pa = (p: number) => (cases.caseDetail(loadPrincipal(p), c) as any).interventions.find((x: any) => x.id === iv);
     assert(pa(GV4[1]).ghiDuoc === true && pa(GV4[2]).ghiDuoc === false && (cases.caseDetail(P.admin, c) as any).interventions.find((x: any) => x.id === iv).ghiDuoc === true,
       `ghiDuoc: GVBM ${pa(GV4[1]).ghiDuoc} · GV môn khác ${pa(GV4[2]).ghiDuoc}`);
+    /* Rà cuối #1: bảng kỹ năng + tab Việc của hồ sơ cùng người giữ việc (không còn "người dạy ?? chủ Case"); nút Kết quả theo ghiDuoc từng PA. */
+    const sid = get('SELECT student_id FROM sos_cases WHERE id = ?', c).student_id;
+    const theCua = (u: number) => (cases.skillSupportBoard(loadPrincipal(u), sid) as any);
+    const plBang = (u: number) => theCua(u).rows.flatMap((r: any) => r.cases).find((x: any) => x.id === c)?.plans.find((x: any) => x.id === iv);
+    const pl1 = plBang(GV4[1]);
+    assert(pl1?.nguoiId === GV4[1] && !!pl1.nguoiTen && pl1.ghiDuoc === true && plBang(GV4[2])?.ghiDuoc === false,
+      `bảng kỹ năng: ${JSON.stringify(pl1 && { nguoiId: pl1.nguoiId, ghiDuoc: pl1.ghiDuoc })} · môn khác ${plBang(GV4[2])?.ghiDuoc}`);
+    const viec = viecCuaHocVien(loadPrincipal(GV4[1]), sid, theCua(GV4[1]), { trangThaiEm: 'active', lopId: b, chuongTrinh: null, yThuc: null, miniTest: null, dai: null });
+    const vk = viec.cuaBan.find((x) => x.key === `action:${iv}`);
+    assert(vk?.nguoi.id === GV4[1], `tab Việc: ${JSON.stringify(vk ?? viec.nguoiKhac.find((x) => x.key === `action:${iv}`)?.nguoi)}`);
     cases.updateResult(loadPrincipal(GV4[1]), iv, KQ1);
     assert(fuCua(iv).length === 1, 'GVBM lớp mới chưa ghi được');
   });
@@ -485,6 +508,10 @@ export async function runPrPaTests(t: YThucTestKit) {
     assert(fuCua(iv).length === 1 && get('SELECT so_buoi FROM case_interventions WHERE id = ?', iv).so_buoi === 12, 'chủ Case chưa ghi / sửa được');
     const e = maLoi(() => cases.updateResult(loadPrincipal(GV4[1]), iv, KQ1));
     assert(e.status === 403, `người ngoài: ${JSON.stringify(e)}`);
+    /* Rà cuối M1: PA đã khép → chủ Case (chỉ là người giữ dự phòng) không còn quyền xem Case qua đường người giữ việc. */
+    conn.prepare(`UPDATE case_interventions SET status = 'completed' WHERE id = ?`).run(iv);
+    const xem = maLoi(() => cases.caseDetail(chu, c));
+    assert(xem.status === 403, `PA đã khép vẫn mở quyền xem: ${JSON.stringify(xem)}`);
   });
 
   check('PA13 · PA Bổ trợ nhóm chung (gk:{lượt}), Bổ trợ miễn phí (mt:{lượt}) và Case tong_hop → GVCN lớp hiện tại giữ việc (không phải GVBM môn)', () => {

@@ -838,7 +838,7 @@ export function recordIntervention(p: Principal, caseId: number, input: {
    * tutor dạy gì, bao nhiêu buổi, đến khi nào. Đó chính là thứ mà một lần cập nhật kết quả
    * cần để so.
    */
-  const moTa = (input.description ?? '').trim();
+  const moTa = chuTuDo(input.description, 'Mô tả ngắn', 2000) ?? '';   // PR-PA: cùng giới hạn với Sửa PA và ô nhập (2000)
   if (moTa.length < 8) {
     throw badRequest('Mô tả ngắn phải nói rõ làm gì cho em — ít nhất 8 ký tự.');
   }
@@ -1638,9 +1638,10 @@ export function caseDetail(p: Principal, caseId: number) {
   const conn = db();
   const c = loadCase(caseId);
   /* PR-PA (§8): người giữ việc Kết quả của một PA trong Case xem được Case (vd. chủ Case khi lớp mới chưa phân công môn). */
-  const ivCuaCase = conn.prepare('SELECT id, nhom_bo_tro FROM case_interventions WHERE case_id = ?').all(caseId) as any[];
+  const ivCuaCase = conn.prepare('SELECT id, nhom_bo_tro, status FROM case_interventions WHERE case_id = ?').all(caseId) as any[];
   const giu = giuCuaCase(c, ivCuaCase);
-  if (![...giu.values()].includes(p.userId)) {
+  /* Chỉ PA đang chạy mở quyền xem — PA đã khép / huỷ thì người giữ việc (vd. chủ Case dự phòng) không còn việc ở đây. */
+  if (!ivCuaCase.some((iv) => (iv.status === 'planned' || iv.status === 'started') && giu.get(iv.id) === p.userId)) {
     require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId: c.class_id, studentId: c.eff_student_id }, 'Case này nằm ngoài phạm vi bạn được xem.');
   }
   dienMocQuyChe({ caseIds: [caseId] });   // PR-SOS K3-14: mốc quy chế còn trống — có lịch rồi thì điền
@@ -2478,6 +2479,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
       `SELECT *, (COALESCE(cycle_id, 0) != ?) AS carried_over, (SELECT cy.started_at FROM learning_cycles cy WHERE cy.id = sos_cases.cycle_id) AS lo_trinh_bat_dau,
               goc_programme_code AS ct_attempt,
               (SELECT cl.code FROM classes cl WHERE cl.id = sos_cases.goc_class_id) AS lop_attempt,
+              (SELECT a.class_id FROM assessment_attempts a WHERE a.id = sos_cases.attempt_id) AS attempt_class_id,
               (SELECT u.full_name FROM users u WHERE u.id = sos_cases.owner_user_id) AS owner_name FROM sos_cases
         WHERE student_id = ?
           AND (COALESCE(cycle_id, 0) = ? OR status != 'done')
@@ -2499,6 +2501,24 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
       if (y.loai === 'xin_y_kien' && y.trangThai !== 'tu_dong' && !xinYKienCua.has(y.doiTuongId)) xinYKienCua.set(y.doiTuongId, y);
     }
   }
+
+  /* PR-PA (§8): người giữ việc Kết quả của MỌI PA trên bảng — cùng `nguoiGiuKetQua` với Công việc / chỉ số / quyền ghi. Lớp như `loadCase`
+     (lớp hiện tại trước, lớp của lượt sau). Một câu PA + `nguoiGiuKetQua` theo lô + một câu tên — không câu mỗi thẻ. */
+  const caseTheoId = new Map(caseRows.map((c) => [c.id as number, c]));
+  const lopCase = (c: any) => (lopDangHoc ?? c.attempt_class_id ?? null) as number | null;
+  const paBang: any[] = [];
+  theoLo([...caseTheoId.keys()], (lo, ph) => {
+    paBang.push(...conn.prepare(`SELECT id, case_id, nhom_bo_tro FROM case_interventions WHERE case_id IN (${ph})`).all(...lo) as any[]);
+  });
+  const giuId = nguoiGiuKetQua(paBang.map((iv) => {
+    const c = caseTheoId.get(iv.case_id);
+    return { id: iv.id, topic: c.topic ?? null, nhomBoTro: iv.nhom_bo_tro ?? null, classId: lopCase(c), ownerUserId: c.owner_user_id ?? null };
+  }), demoToday());
+  const tenGiu = new Map<number, string>();
+  theoLo([...new Set([...giuId.values()].filter((x): x is number => x != null))], (lo, ph) => {
+    for (const u of conn.prepare(`SELECT id, full_name FROM users WHERE id IN (${ph})`).all(...lo) as any[]) tenGiu.set(u.id, u.full_name);
+  });
+  const giuKq = new Map([...giuId].map(([iv, id]) => [iv, { id, ten: id == null ? null : tenGiu.get(id) ?? null }]));
 
   /*
    * BỘ HẠNG MỤC THEO ĐÚNG CHƯƠNG TRÌNH EM ĐANG HỌC.
@@ -2701,7 +2721,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
           canClose: canCloseCase(p, { class_id: lopDangHoc, student_id: studentId, topic: c.topic }),
           closeBlockers: c.status === 'done' ? [] : closeBlockers(c.id),
           /* Đủ thứ để vẽ MỘT THẺ CASE mà không phải gọi thêm một đường nữa (mục 1 · 2). */
-          ...caseCardOf(c.id, c, soBangChung, boTroMap.get(c.id) ?? null, xinYKienCua),
+          ...caseCardOf(p, c.id, { ...c, class_id: lopCase(c), eff_student_id: studentId }, soBangChung, boTroMap.get(c.id) ?? null, xinYKienCua, giuKq),
         }))
         .sort((a, b) => {
           const open = (x: typeof a) => (x.status === 'done' ? 1 : 0);
@@ -2755,7 +2775,8 @@ export function demBangChungCase(caseIds: number[]): Map<number, number> {
  *
  * (Trước 21/09/2026 thẻ này còn trả "báo cáo nguồn" của Case Ý thức; Ý thức nay là vi phạm và biện pháp xử lý ở một bảng riêng.)
  */
-function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>, boTro: BoTroDto | null = null, xinYKienCua: ReadonlyMap<number, unknown> = new Map()) {
+function caseCardOf(p: Principal, caseId: number, c: any, soBangChung: Map<number, number>, boTro: BoTroDto | null,
+  xinYKienCua: ReadonlyMap<number, unknown>, giuKq: ReadonlyMap<number, { id: number | null; ten: string | null }>) {
   const conn = db();
   const today = demoToday();
 
@@ -2810,9 +2831,11 @@ function caseCardOf(caseId: number, c: any, soBangChung: Map<number, number>, bo
       /** PR-PA (§8): Số buổi + Đã dạy (tổng Số buổi tuần này, từ `follows` đã nạp) — dòng phụ "3/10 buổi" ở bảng kỹ năng. */
       soBuoi: (iv.so_buoi ?? null) as number | null,
       daDay: follows.reduce((n, f) => n + (f.intervention_id === iv.id ? Number(f.so_buoi ?? 0) : 0), 0),
-      /** PR-VAI-b (Q2) → PR-Dọn: người ghi kết quả PA — người thực hiện, không có thì người phụ trách Case (cùng Công việc 2b và chỉ số pa-can-cap-nhat). */
-      nguoiId: (iv.performer_user_id ?? c.owner_user_id ?? null) as number | null,
-      nguoiTen: (iv.performer_user_id ? iv.performer_user_name : c.owner_name) ?? null as string | null,
+      /** PR-PA (§8): người giữ việc Kết quả (`nguoiGiuKetQua`, bên gọi tính theo lô) — cùng Công việc 2b, chỉ số pa-can-cap-nhat và quyền ghi. */
+      nguoiId: giuKq.get(iv.id)?.id ?? null,
+      nguoiTen: giuKq.get(iv.id)?.ten ?? null,
+      /** PR-PA: người xem ghi được Kết quả PA này không — cùng luật `kiemQuyenPa` (người giữ việc hoặc quyền theo vai trò). */
+      ghiDuoc: giuKq.get(iv.id)?.id === p.userId || quyenPaTheoVaiTro(p, iv, c),
       nhom: (iv.nhom_bo_tro ?? null) as string | null,
       status: iv.status as string,
       statusLabel: INTERVENTION_STATUS_LABEL[iv.status as keyof typeof INTERVENTION_STATUS_LABEL] ?? iv.status,
@@ -3414,7 +3437,7 @@ export function suaPa(p: Principal, interventionId: number, input: {
   const oldDesc = (iv.description ?? null) as string | null;
   let description = oldDesc;
   if (typeof input.description === 'string' && input.description.trim() !== (oldDesc ?? '').trim()) {
-    description = input.description.trim();
+    description = chuTuDo(input.description, 'Mô tả ngắn', 2000) ?? '';
     if (description.length < 8) throw badRequest('Mô tả ngắn phải nói rõ làm gì cho em — ít nhất 8 ký tự.');
   }
   const soBuoi = soBuoiMoi(iv, input.soBuoi, daDayCua(interventionId));
@@ -3441,7 +3464,10 @@ export function suaPa(p: Principal, interventionId: number, input: {
   /* Dòng anh em nhận ĐÚNG các ô vừa đổi; kiểm lại theo dòng đó (đã dạy, đã có Kết quả) — một dòng sai thì không dòng nào đổi. */
   const dong: { row: any; sau: Mat }[] = [{ row: iv, sau }];
   for (const s of anhEmNhom(conn, iv)) {
-    const moi = { ...mat(s), ...Object.fromEntries(doi.map((k) => [k, sau[k]])) } as Mat;
+    /* Đổi người → chép CẢ HAI ô người (tài khoản XOR tên): dòng anh em có thể đang mang ô kia (vd. `nguoiGuiLen`, bàn giao chỉ đổi một dòng). */
+    const chep = doi.some((k) => k === 'performerUserId' || k === 'performerName')
+      ? [...new Set([...doi, 'performerUserId', 'performerName'] as (keyof Mat)[])] : doi;
+    const moi = { ...mat(s), ...Object.fromEntries(chep.map((k) => [k, sau[k]])) } as Mat;
     if (doi.includes('soBuoi')) soBuoiMoi(s, moi.soBuoi, daDayCua(s.id));
     if (doi.includes('startedDate') && moi.startedDate !== mat(s).startedDate && coKetQua(s.id)) {
       throw badRequest('Một dòng của nhóm đã có Kết quả — không đổi Ngày bắt đầu được.');

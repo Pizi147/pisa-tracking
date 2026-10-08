@@ -1,6 +1,6 @@
 /**
  * PR-PA (§8): Số buổi của PA + Số buổi tuần này của Kết quả + nhật ký Sửa PA (số buổi, ngày bắt đầu cũ → mới). CHỈ THÊM CỘT.
- * Điền bù CHỈ ở lần vừa thêm `case_interventions.so_buoi` (Bổ trợ miễn phí ← `mini_test.so_buoi` cùng nhóm · Tutor kỳ vọng đầu ra ← 10) — lần sau
+ * Điền bù CHỈ ở lần vừa thêm `case_interventions.so_buoi` (Bổ trợ miễn phí ← `mini_test.so_buoi` cùng nhóm · Tutor kỳ vọng đầu ra ← 10, CHỈ PA đầu tiên của Case như `nguonTao: 'ky_vong'`) — lần sau
  * không điền lại, để Số buổi người dùng đã xoá (Sửa PA "hoặc để trống") giữ trống. Cả migrate chạy trong một giao dịch nên thử lại an toàn.
  */
 const coCot = (conn: any, bang: string, cot: string) =>
@@ -32,6 +32,7 @@ export function migratePrPa(conn: any, applied: string[]) {
   const tutor = conn.prepare(
     `UPDATE case_interventions SET so_buoi = 10
       WHERE kind = 'tutor' AND so_buoi IS NULL
+        AND id = (SELECT MIN(x.id) FROM case_interventions x WHERE x.case_id = case_interventions.case_id)
         AND case_id IN (SELECT id FROM sos_cases WHERE origin_kind = 'chuyen_cap' AND title LIKE 'Kỳ vọng đầu ra%')`,
   ).run().changes;
   if (tutor) applied.push(`PA đồng bộ: điền Số buổi 10 cho ${tutor} PA Tutor kỳ vọng đầu ra`);

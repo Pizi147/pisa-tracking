@@ -41,6 +41,8 @@ type Plan = {
   performer: string | null; status: string; statusLabel: string;
   /** PR-PA (§8): Số buổi (null = không đếm) và Đã dạy — dòng phụ "3/10 buổi". */
   soBuoi?: number | null; daDay?: number;
+  /** PR-PA: người xem ghi được Kết quả PA này (người giữ việc hoặc quyền theo vai trò) — chặn nút Kết quả, như máy chủ. */
+  ghiDuoc?: boolean;
   /** PR-LT2a: PA Bổ trợ chưa chạy — chờ kế hoạch được Quản lý duyệt (không phải "Chờ xác nhận"). */
   chuaChay?: boolean;
   startedOn: string | null; completedOn: string | null;
@@ -565,7 +567,7 @@ function HangPA({ p, c, ngan, onMoCase }: {
             phu={<>Chờ xác nhận{c.sos.dueOn ? ` · hạn ${ngan(c.sos.dueOn)}` : ''}</>} />
         ) : v.loai === 'ghi-ket-qua' || v.loai === 'ghi-cuoi' ? (
           <CotPhai
-            nut={c.canEdit ? (
+            nut={p.ghiDuoc ? (
               <button type="button" className="btn btn-sm" onClick={() => onMoCase(c.id, { viec: 'ghi-ket-qua', paId: p.id })}
                 title={v.loai === 'ghi-cuoi' ? 'Tuần này chạm mốc quy chế — lưu là PA kết thúc' : 'Kết quả tuần, tiến triển, và quyết định cho PA'}>
                 {v.loai === 'ghi-cuoi' ? 'Kết quả cuối' : 'Kết quả'}

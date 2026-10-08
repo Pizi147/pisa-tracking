@@ -1,5 +1,5 @@
 import { db } from '../db.ts';
-import { badRequest, nowIso } from '../util.ts';
+import { badRequest, chuTuDo, nowIso } from '../util.ts';
 import type { Principal } from '../permissions.ts';
 import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
 import { coNguoiDay, coSoBuoi, kiemSoBuoiPa, soBuoiTu } from '../../../shared/domain/index.ts';
@@ -56,7 +56,7 @@ export function chuanHoaDieuChinh(p: Principal, iv: any, input: DieuChinhVao | n
   const oldDesc = String(iv.description ?? '').trim();
   let description = oldDesc;
   if (typeof a.description === 'string' && a.description.trim() !== oldDesc) {
-    description = a.description.trim();
+    description = chuTuDo(a.description, 'Mô tả ngắn', 2000) ?? '';
     if (description.length < 8) throw badRequest('Mô tả ngắn phải nói rõ làm gì cho em, ít nhất 8 ký tự.');
   }
   /* Người thực hiện đi qua luật chung (PR-Form F-2). PR-PA (§8): như Sửa PA — gửi BẤT KỲ khoá người nào = đặt lại (cả ba trống = xoá
