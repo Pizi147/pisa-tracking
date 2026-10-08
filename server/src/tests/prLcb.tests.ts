@@ -1,5 +1,5 @@
 /**
- * PHÉP KIỂM PR-LCb — panel "Lộ trình tiếp theo" (lớp thường) + việc "Chốt lộ trình" + "Xét lại lộ trình" (kế hoạch .superpowers/sdd/lcb/plan.md, B5).
+ * PHÉP KIỂM PR-LCb — panel "Lộ trình tiếp theo" (lớp thường) + việc "Chốt lộ trình" (kế hoạch .superpowers/sdd/lcb/plan.md, B5).
  * T1: MỘT việc Quản lý "Chốt lộ trình · {lớp}" cho MỌI lớp thường đang mở (thay "Chốt lên FT" + "Chuyển tiếp lớp"), hạn Chủ nhật trước tuần Final,
  * không hết hạn — xong khi mọi em đang học có quyết định chuyển lớp đang chờ. Theo hành vi trên DB kiểm, không khớp chuỗi nguồn.
  */
@@ -7,12 +7,13 @@ import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runPrLcbTests(t: YThucTestKit) {
   const { check, assert, conn, P, TODAY, addDays } = t;
-  console.log('\nPR-LCb · Chốt lộ trình (một việc mỗi lớp thường) · Xét lại lộ trình · panel Lộ trình tiếp theo');
+  console.log('\nPR-LCb · Chốt lộ trình (một việc mỗi lớp thường) · panel Lộ trình tiếp theo');
   const week: any = await import('../platform/week.ts');
   const intake: any = await import('../classes/intake.ts');
   const regular: any = await import('../normal/regular.ts');
   const schedule: any = await import('../classes/schedule.ts');
   const lenh: any = await import('../classes/lenhChuyen.ts');
+  const luatLoTrinh: any = await import('../classes/luatLoTrinh.ts');
   const loTrinh: any = await import('../classes/loTrinhTiep.ts');
   const mywork: any = await import('../worklist/mywork.ts');
   const metrics: any = await import('../worklist/metrics.ts');
@@ -132,8 +133,59 @@ export async function runPrLcbTests(t: YThucTestKit) {
       [c(3, 3, 2, 0, 1), '3 em · 2 em chưa có hướng · 1 em chờ duyệt đề xuất'],
       [c(5, 3, 0, 2, 1), '2 em chưa xác nhận · 1 em chờ duyệt đề xuất'],
       [c(6, 6, 0, 5, 1), '6 em · đủ hướng, chưa xác nhận · 1 em chờ duyệt đề xuất'],
+      /* R-B4: đã có em xác nhận → bỏ tiền tố tổng ("7 em ·" dễ đọc nhầm là 7 em còn dở). */
+      [c(7, 1, 1, 0, 0), '1 em chưa có hướng'],
+      [c(7, 3, 2, 1, 0), '2 em chưa có hướng · GVCN đã đề xuất 1'],
     ];
     for (const [co, can] of bang) assert(co === can, `"${co}" ≠ "${can}"`);
+  });
+
+  // ------------------------------------------------------------------ (x) panel: chọn dòng gửi / lưu (hàm thuần, rà cuối I1–I3)
+  check('LCb-x · chonDongGui / chonChuaGui / chonDongLuu / chonLuuSauXacNhan / sauGhiPanel: bảng ca — không mất ghi chú đã gõ', () => {
+    type R = { id: number; loi: string | null; huong: string; lenh: { huong: string; loi: boolean } | null; daSua: boolean; huongLtt: string | null; doiGhiChu: boolean; targetMoi: boolean };
+    const r = (id: number, x: Partial<R>): R => ({ id, loi: null, huong: 'len_lop', lenh: null, daSua: false, huongLtt: null, doiGhiChu: false, targetMoi: false, ...x });
+    const rows: R[] = [
+      r(1, {}),                                                                              // chưa lệnh, chọn hướng → gửi + lưu
+      r(2, { lenh: { huong: 'len_lop', loi: false }, doiGhiChu: true }),                     // có lệnh, chỉ ghi chú → không gửi, lưu (hướng lệnh)
+      r(3, { lenh: { huong: 'len_lop', loi: false }, daSua: true, huong: 'hoc_lai' }),       // có lệnh, QL sửa → gửi
+      r(4, { lenh: { huong: 'hoc_lai', loi: true }, huong: 'hoc_lai', huongLtt: 'hoc_lai' }), // lệnh lỗi thi hành → gửi lại
+      r(5, { huong: '', loi: 'Chọn hướng cho em', doiGhiChu: true }),                        // chưa Hướng + ghi chú → chưa gửi, lưu "chua_quyet"
+      r(6, { huong: 'fast_track', loi: 'Ghi Target (hoặc KCK)', huongLtt: 'len_lop' }),      // đổi hướng, thiếu Target → chưa gửi, lưu hướng
+      r(7, { lenh: { huong: 'len_lop', loi: false }, daSua: true, huong: 'fast_track', loi: 'Chọn lớp chuyển đến', doiGhiChu: true }), // có lệnh, QL sửa sai + ghi chú
+      r(8, { huong: 'len_lop', huongLtt: 'len_lop' }),                                       // chưa lệnh, không đổi gì → gửi, không lưu
+      r(9, { huong: 'fast_track', huongLtt: 'fast_track', targetMoi: true }),               // QL gõ Target ở ô
+    ];
+    const ids = (xs: { id: number }[]) => xs.map((x) => x.id).join(',');
+    const luu = (xs: any[]) => xs.map((x: any) => `${x.r.id}:${x.huong}${x.target ? '+T' : ''}`).join(',');
+    const bang: [string, string, string][] = [
+      ['gửi', ids(d.chonDongGui(rows)), '1,3,4,8,9'],
+      ['chưa gửi', ids(d.chonChuaGui(rows)), '5,6,7'],
+      ['lưu QL', luu(d.chonDongLuu(rows, true)), '1:len_lop,2:len_lop,5:chua_quyet,6:fast_track,7:len_lop,9:fast_track+T'],
+      ['lưu GVCN', luu(d.chonDongLuu(rows, false)), '1:len_lop,2:len_lop,5:chua_quyet,6:fast_track,7:len_lop'],
+      /* Xác nhận: 1, 3, 8, 9 ok; 4 lỗi. Lưu sau lệnh: ghi chú của em vừa ok (không có) + dòng lưu được ngoài lô gửi (2, 5, 6, 7). */
+      ['sau xác nhận', luu(d.chonLuuSauXacNhan(rows, [1, 3, 8, 9], true)), '2:len_lop,5:chua_quyet,6:fast_track,7:len_lop'],
+      ['sau xác nhận (ghi chú em ok, không gửi Target)', luu(d.chonLuuSauXacNhan([r(1, { doiGhiChu: true, targetMoi: true, huong: 'fast_track' })], [1], true)), '1:fast_track'],
+    ];
+    for (const [ten, co, can] of bang) assert(co === can, `${ten}: "${co}" ≠ "${can}"`);
+
+    const dongs = { 1: { huong: 'len_lop', ghiChu: 'a' }, 2: { ghiChu: 'b' }, 5: { ghiChu: 'c' }, 6: { huong: 'fast_track' }, 7: { huong: 'fast_track', ghiChu: 'e' } };
+    const daSua = new Set([1, 6, 7]);
+    const j = (x: any) => JSON.stringify({ dongs: x.dongs, daSua: [...x.daSua].sort(), dong: x.dong });
+    const caSau: [string, any, any][] = [
+      /* I1: Lưu hướng chỉ bỏ ghi chú của dòng đã lưu (2, 5) — 7 (không lưu) giữ ghi chú. */
+      ['Lưu hướng', d.sauGhiPanel(dongs, daSua, { ok: [], failed: [] }, { ids: [2, 5], loi: false }),
+        { dongs: { 1: { huong: 'len_lop', ghiChu: 'a' }, 6: { huong: 'fast_track' }, 7: { huong: 'fast_track', ghiChu: 'e' } }, daSua: [1, 6, 7], dong: false }],
+      /* I2: Xác nhận 1 ok, lưu 2,5,6,7: 6, 7 còn sửa chưa gửi → panel mở, giữ. */
+      ['Xác nhận, còn chưa gửi', d.sauGhiPanel(dongs, daSua, { ok: [1], failed: [] }, { ids: [2, 5, 6, 7], loi: false }),
+        { dongs: { 6: { huong: 'fast_track' }, 7: { huong: 'fast_track' } }, daSua: [6, 7], dong: false }],
+      ['Xác nhận hết, mọi ghi chú đã lưu → đóng', d.sauGhiPanel({ 1: { huong: 'len_lop', ghiChu: 'a' }, 2: { ghiChu: 'b' } }, new Set([1]), { ok: [1], failed: [] }, { ids: [1, 2], loi: false }),
+        { dongs: {}, daSua: [], dong: true }],
+      ['Lưu sau lệnh lỗi → giữ ghi chú cả em vừa ok', d.sauGhiPanel({ 1: { huong: 'len_lop', ghiChu: 'a' }, 2: { ghiChu: 'b' } }, new Set([1]), { ok: [1], failed: [] }, { ids: [1, 2], loi: true }),
+        { dongs: { 1: { ghiChu: 'a' }, 2: { ghiChu: 'b' } }, daSua: [], dong: false }],
+      ['Một em lỗi lệnh → giữ em lỗi, mở', d.sauGhiPanel({ 1: { huong: 'len_lop' }, 3: { huong: 'hoc_lai' } }, new Set([1, 3]), { ok: [1], failed: [3] }, { ids: [], loi: false }),
+        { dongs: { 3: { huong: 'hoc_lai' } }, daSua: [3], dong: false }],
+    ];
+    for (const [ten, co, can] of caSau) assert(j(co) === j(can), `${ten}: ${j(co)} ≠ ${j(can)}`);
   });
 
   // ------------------------------------------------------------------ (e) hai đường: chỉ số + Tổng quan = Công việc
@@ -248,6 +300,11 @@ export async function runPrLcbTests(t: YThucTestKit) {
     const v = (sid: number) => plan.students.find((x: any) => x.id === sid)?.loTrinhTiep?.huongGvcn ?? null;
     assert(v(a) === 'hoc_lai' && v(b) === 'len_lop' && v(c) === null, `API huongGvcn: ${v(a)} · ${v(b)} · ${v(c)}`);
     assert(loTrinh.layLoTrinhTiep(QL, a).banGhi?.huongGvcn === 'hoc_lai', 'layLoTrinhTiep.banGhi.huongGvcn');
+    /* Rà cuối m1: GVCN gửi lại đúng Hướng đang lưu (của QL) kèm ghi chú → huong_gvcn không thành Hướng của QL; đổi Hướng thật thì ghi. */
+    loTrinh.ghiLoTrinhTiepCaLop(gvcn, l.classId, { items: [{ studentId: c, huong: 'len_lop', ghiChu: 'Ghi chú GVCN' }] });
+    assert(ltt(c, l.classId)?.ghi_chu === 'Ghi chú GVCN' && ltt(c, l.classId)?.huong_gvcn == null, `GVCN gửi lại hướng QL: ${JSON.stringify(ltt(c, l.classId))}`);
+    loTrinh.ghiLoTrinhTiepCaLop(gvcn, l.classId, { items: [{ studentId: c, huong: 'hoc_lai', ghiChu: 'Ghi chú GVCN' }] });
+    assert(ltt(c, l.classId)?.huong_gvcn === 'hoc_lai', `GVCN đổi hướng: ${ltt(c, l.classId)?.huong_gvcn}`);
   });
 
   // ------------------------------------------------------------------ (j) Minor (b): đề xuất GVCN duyệt trong tuần Final dời sớm sang lớp thường
@@ -294,6 +351,11 @@ export async function runPrLcbTests(t: YThucTestKit) {
     const ft = (sid: number) => get(`SELECT route, exam_month FROM learning_cycles WHERE student_id = ? AND status = 'active'`, sid);
     assert(ft(a)?.route && ft(a).exam_month === '2027-03', `em a: ${JSON.stringify(ft(a))}`);
     assert(ft(b)?.route && ft(b).exam_month === '2027-05', `em b: ${JSON.stringify(ft(b))}`);
+    /* Rà T3 M1: Chuyển lớp MỘT em thường → FT không gửi tháng thi → giữ exam_month (`moLoTrinhMoi` mọi chiều). */
+    const m = taoLop('FOU', 8, 1);
+    conn.prepare(`UPDATE learning_cycles SET exam_month = '2027-04' WHERE status = 'active' AND student_id = ?`).run(m.sids[0]);
+    luatLoTrinh.apDungMotDong(QL, { sid: m.sids[0], toClassId: FT_DICH, ngay: TODAY, mucTieu: 6.5, boiCanh: 'giua-khoa' });
+    assert(ft(m.sids[0])?.route && ft(m.sids[0]).exam_month === '2027-04', `một em thường→FT: ${JSON.stringify(ft(m.sids[0]))}`);
   });
 
   // ------------------------------------------------------------------ (l) migrate prLcb: thêm cột + điền bù dòng GVCN ghi; chạy lặp được
@@ -374,6 +436,8 @@ export async function runPrLcbTests(t: YThucTestKit) {
     assert(pn.includes('const khoaGui = busy || refreshing;') && (pn.match(/disabled=\{khoaGui/g) ?? []).length === 4, 'nút gửi khoá khi nạp lại');
     assert(pn.includes('{(loiHang || (laQl && s.lenh)) && <div role="cell" className="space-y-1">{duoi}</div>}'), 'thẻ 375: ô dưới chỉ khi có nội dung');
     assert((pn.match(/\$\{CHAM_375\}/g) ?? []).length === 2 && pn.includes('.filter((x) => x.n > 0 && !x.xong)'), 'link 44px · ẩn hàng nhóm đã xong');
+    /* Rà cuối I3: chọn dòng gửi / lưu đi qua hàm thuần (hành vi kiểm ở LCb-x). */
+    for (const f of ['chonDongGui(rows)', 'chonChuaGui(rows)', 'chonDongLuu(rows, laQl)', 'chonLuuSauXacNhan(rows, r.ok, laQl)', 'sauGhiPanel(']) assert(pn.includes(f), `PanelCuoiKhoa không dùng ${f}`);
     assert(!pn.includes('placeholder="6.0"') && !/Dự kiến thi/.test(pn), 'không ô Target mờ 6.0, không ô Dự kiến thi');
   });
   check('LCb-w2 · transitionPlan: em có cờ kck (Target khoá KCK) — panel biết em đã có Target, không hỏi lại', () => {

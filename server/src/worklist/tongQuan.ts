@@ -32,7 +32,7 @@ const laQuanLy = (p: Principal) => {
  */
 /** Một dòng Cần xử lý đã dựng đủ bốn cột (K1-06, Q4, Q24): nhãn trạng thái · việc · Người giữ việc · Hạn · nút đúng việc. */
 export type DongCanXuLy = DongCanXuLyGoc & {
-  /** Chữ đứng TRƯỚC con số ("Chuyển tiếp lớp · MB FOU 12 ·"). */
+  /** Chữ đứng TRƯỚC con số ("Chốt lộ trình · MB FOU 12 ·"). */
   truoc?: string;
   phu: string;
   /** Vế nối sau nhãn ("3 Case chưa có người nhận"). */

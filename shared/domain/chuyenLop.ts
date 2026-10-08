@@ -174,12 +174,13 @@ export type DemChotLoTrinh = { tong: number; chuaLenh: number; chuaHuong: number
 
 /**
  * Chữ dòng việc "Chốt lộ trình" (mockup cuối khoá 2 phần 1a + 4): "8 em · 2 em chưa có hướng · GVCN đã đề xuất 6" · "6 em · đủ hướng, chưa
- * xác nhận" · "1 em chưa xác nhận" · "1 em chờ duyệt đề xuất". Mọi em đều chưa có hướng → bỏ "{tong} em ·" (mockup "7 em chưa có hướng").
+ * xác nhận" · "1 em chưa xác nhận" · "1 em chờ duyệt đề xuất". Mọi em đều chưa có hướng → bỏ "{tong} em ·" (mockup "7 em chưa có hướng");
+ * đã có em xác nhận cũng bỏ (R-B4: "7 em · 1 em chưa có hướng" dễ đọc nhầm là 7 em còn dở).
  */
 export function chuViecChotLoTrinh(x: DemChotLoTrinh): string {
   const conLai = x.chuaLenh - x.choDuyet;
   const chu = x.chuaHuong > 0
-    ? `${x.chuaHuong === x.tong ? '' : `${x.tong} em · `}${x.chuaHuong} em chưa có hướng${x.deXuat > 0 ? ` · GVCN đã đề xuất ${x.deXuat}` : ''}`
+    ? `${x.chuaHuong === x.tong || x.chuaLenh < x.tong ? '' : `${x.tong} em · `}${x.chuaHuong} em chưa có hướng${x.deXuat > 0 ? ` · GVCN đã đề xuất ${x.deXuat}` : ''}`
     : conLai <= 0 ? ''
     : x.deXuat === conLai && x.chuaLenh === x.tong ? `${x.tong} em · đủ hướng, chưa xác nhận`
     : `${conLai} em chưa xác nhận`;
@@ -252,3 +253,61 @@ export type PhieuBanGiaoDto = {
   ds: PhieuEm[];
 };
 
+/**
+ * PANEL "LỘ TRÌNH TIẾP THEO" (PR-LCb, rà cuối I1–I3): chọn dòng gửi / lưu — hàm thuần, kiểm bằng bảng ca (LCb-x). Một dòng panel đã tính sẵn:
+ * `loi` lỗi `kiemDongLenh` (null = gửi được) · `lenh` quyết định đang chờ (Hướng LTT theo lệnh + lỗi thi hành) · `daSua` QL sửa phần quyết
+ * định (không tính ghi chú) · `huongLtt` Hướng Lộ trình tiếp theo đang lưu · `targetMoi` QL gõ Target hợp lệ ở ô (em Lên FT chưa có Target).
+ */
+export type DongPanelCk = {
+  id: number; loi: string | null; huong: Huong | ''; lenh: { huong: Huong; loi: boolean } | null; daSua: boolean;
+  huongLtt: Huong | null; doiGhiChu: boolean; targetMoi: boolean;
+};
+export type DongLuuCk<T> = { r: T; huong: Huong; target: boolean };
+const giuLenh = (r: DongPanelCk) => !!r.lenh && !r.daSua && !r.lenh.loi;
+/** Dòng gửi ở "Xác nhận": hợp lệ, và chưa có lệnh / QL đã sửa / lệnh lỗi thi hành. */
+export const chonDongGui = <T extends DongPanelCk>(rows: readonly T[]): T[] => rows.filter((r) => !r.loi && !giuLenh(r));
+/** "Chưa gửi — …" ở bước 2: chưa hợp lệ, trừ em giữ nguyên quyết định đang có. */
+export const chonChuaGui = <T extends DongPanelCk>(rows: readonly T[]): T[] => rows.filter((r) => !!r.loi && !giuLenh(r));
+
+/**
+ * "Lưu hướng" (QL) / "Lưu n em" (GVCN) qua Lộ trình tiếp theo. Em có lệnh: chỉ ghi chú, Hướng = Hướng lệnh (không 409, kể cả khi QL đang sửa
+ * quyết định — phần sửa đó đi "Xác nhận"). Em chưa có Hướng mà gõ ghi chú → "Chưa quyết" (không bỏ ghi chú). `target`: gửi Target ở ô (chỉ QL).
+ */
+export function chonDongLuu<T extends DongPanelCk>(rows: readonly T[], laQl: boolean): DongLuuCk<T>[] {
+  return rows.flatMap((r): DongLuuCk<T>[] => {
+    if (r.lenh) return r.doiGhiChu ? [{ r, huong: r.lenh.huong, target: false }] : [];
+    if (!r.huong) return r.doiGhiChu ? [{ r, huong: 'chua_quyet', target: false }] : [];
+    const target = laQl && r.targetMoi;
+    return r.huong !== r.huongLtt || r.doiGhiChu || target ? [{ r, huong: r.huong, target }] : [];
+  });
+}
+
+/** Sau "Xác nhận": ghi chú của em vừa xác nhận (Hướng vừa quyết; Target đã theo lệnh) + mọi dòng lưu được NGOÀI lô gửi. Em lệnh lỗi ở lại panel. */
+export function chonLuuSauXacNhan<T extends DongPanelCk>(rows: readonly T[], ok: readonly number[], laQl: boolean): DongLuuCk<T>[] {
+  const gui = new Set(chonDongGui(rows).map((r) => r.id));
+  const xong = new Set(ok);
+  return [
+    ...rows.filter((r) => gui.has(r.id) && xong.has(r.id) && r.doiGhiChu).map((r) => ({ r, huong: r.huong as Huong, target: false })),
+    ...chonDongLuu(rows, laQl).filter((x) => !gui.has(x.r.id)),
+  ];
+}
+
+/**
+ * Bản sửa còn lại sau một lần ghi (Lưu hướng / Xác nhận). `kq`: lệnh vừa gửi — em ok rời panel, em lỗi giữ. `luu`: dòng vừa PUT Lộ trình tiếp
+ * theo — thành công thì bỏ ghi chú đã lưu; lỗi thì GIỮ mọi ghi chú (cả em vừa xác nhận). `dong`: đóng panel được — không lỗi, không còn sửa nào chưa ghi.
+ */
+export function sauGhiPanel<T extends { ghiChu?: string }>(
+  dongs: Readonly<Record<number, T>>, daSua: ReadonlySet<number>,
+  kq: { ok: readonly number[]; failed: readonly unknown[] }, luu: { ids: readonly number[]; loi: boolean },
+): { dongs: Record<number, Partial<T>>; daSua: Set<number>; dong: boolean } {
+  const xong = new Set(kq.ok);
+  const daLuu = new Set(luu.loi ? [] : luu.ids);
+  const con: Record<number, Partial<T>> = {};
+  for (const [k, x] of Object.entries(dongs) as [string, T][]) {
+    const id = Number(k);
+    const { ghiChu, ...khac } = x;
+    const giu: Partial<T> = xong.has(id) ? (luu.loi && ghiChu !== undefined ? { ghiChu } as Partial<T> : {}) : daLuu.has(id) ? khac as Partial<T> : x;
+    if (Object.keys(giu).length) con[id] = giu;
+  }
+  return { dongs: con, daSua: new Set([...daSua].filter((id) => !xong.has(id))), dong: !kq.failed.length && !luu.loi && !Object.keys(con).length };
+}

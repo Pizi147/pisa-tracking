@@ -153,7 +153,8 @@ function kiemDong(studentId: number, enr: LopNguon, input: GhiVao, lopDuKien: Ma
  * (ra lệnh lại / migrate không nhân đôi).
  * PR-LCb: `daQuyet` = em đã có quyết định `cho` (từ `chanQlDaQuyet`). Đường KHÔNG từ lệnh, người ghi KHÔNG ra lệnh được (GVCN) → `huong_gvcn`
  * = Hướng ghi, trừ em đã có quyết định (GVCN chỉ sửa ghi chú). Đường từ lệnh không có cột này (migrate PR-LC chạy trước khi cột có) và
- * "Lưu hướng" của Quản lý giữ nguyên `huong_gvcn`.
+ * "Lưu hướng" của Quản lý giữ nguyên `huong_gvcn`. Rà cuối m1: GVCN gửi lại ĐÚNG Hướng đang lưu (vd của QL, chỉ sửa ghi chú) → giữ `huong_gvcn`
+ * cũ (vế SET đọc dòng cũ), không biến Hướng của QL thành đề xuất GVCN.
  */
 function ghiCacDong(p: Principal, dongs: readonly DongGhi[], tuLenh?: ReadonlyMap<number, { huong: Huong; cuaGvcn: boolean }>, daQuyet?: ReadonlySet<number>): void {
   const now = nowIso();
@@ -173,7 +174,8 @@ function ghiCacDong(p: Principal, dongs: readonly DongGhi[], tuLenh?: ReadonlyMa
     ` ON CONFLICT(student_id, class_id) DO UPDATE SET
        huong = excluded.huong, lop_du_kien_id = excluded.lop_du_kien_id, muc_tieu = ${giu('muc_tieu')},
        thang_thi = ${giu('thang_thi')}, ghi_chu = ${giu('ghi_chu')}, ngay_xem_lai = ${giu('ngay_xem_lai')}, da_ap_dung_luc = NULL,
-       ${tuLenh ? '' : 'huong_gvcn = COALESCE(excluded.huong_gvcn, lo_trinh_tiep_theo.huong_gvcn), '}updated_by = excluded.updated_by, updated_at = excluded.updated_at`,
+       ${tuLenh ? '' : `huong_gvcn = CASE WHEN excluded.huong = lo_trinh_tiep_theo.huong THEN lo_trinh_tiep_theo.huong_gvcn
+         ELSE COALESCE(excluded.huong_gvcn, lo_trinh_tiep_theo.huong_gvcn) END, `}updated_by = excluded.updated_by, updated_at = excluded.updated_at`,
   );
   const nhan = (d: DongGhi, h: Huong) => nhanHuong(h, { ma: d.ma, maKe: NORMAL_LADDER[d.ma as ProgrammeCode] ?? null });
   const nhatKy = tuLenh ? dongs.filter((d) => tuLenh.get(d.studentId)?.huong !== d.huong) : dongs;

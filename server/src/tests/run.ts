@@ -9206,7 +9206,7 @@ await runPrViecNho2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY,
 // ==================================================================== PR-LCa (luồng cuối khoá → lộ trình tiếp: mỗi quyết định nhập một lần)
 const { runPrLcTests } = await import('./prLc.tests.ts');
 await runPrLcTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
-// ==================================================================== PR-LCb (Chốt lộ trình · Xét lại lộ trình · panel Lộ trình tiếp theo)
+// ==================================================================== PR-LCb (Chốt lộ trình · panel Lộ trình tiếp theo)
 const { runPrLcbTests } = await import('./prLcb.tests.ts');
 await runPrLcbTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 

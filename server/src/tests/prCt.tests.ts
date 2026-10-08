@@ -815,7 +815,7 @@ export async function runPrCtTests(t: YThucTestKit) {
     const pl = () => (myWork(P.mbManager) as any).items.find((i: any) => i.group === 'chot_len_ft' && i.classId === cuoi);
     assert(pl().reason === '3 em chưa có hướng' && /^Chốt lộ trình · \S/.test(pl().tieuDe) && pl().count === 3 && pl().href === `/hoc-vien/lop/${cuoi}?viec=lo-trinh-ca-lop`, JSON.stringify(pl()));
     ra(P.mbManager, cuoi, 'cuoi-khoa', [dongCua(ds[0], 'len_lop', d6)]);
-    assert(pl().reason === '3 em · 2 em chưa có hướng', pl().reason);
+    assert(pl().reason === '2 em chưa có hướng', pl().reason);   // R-B4: đã có em xác nhận → bỏ tiền tố tổng
     /* PR-VAI-a (Q27): GVCN không còn việc "Ghi lộ trình tiếp theo" — việc của Quản lý ("Chốt lộ trình", PR-LCb) đã phủ. */
     assert(!(myWork(loadPrincipal(GV[3].userId)) as any).items.some((i: any) => i.group === 'next_step'), 'GVCN không còn việc next_step');
     assert(pl() && pl().count === 2, 'việc của Quản lý còn, đúng 2 em');

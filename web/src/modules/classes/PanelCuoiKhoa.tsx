@@ -10,9 +10,9 @@ import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { chayHangLoat, hoanTacHangLoat } from '../students/hangLoatEm.ts';
 import {
-  CHU_CHUYEN_LOP, NORMAL_LADDER, RATIO_PASS_THRESHOLD, coMt0, hanChotLenFt, huongTiepKhaDung, khacGoiY, kiemDongLenh, kyHieuLop, maHocVienNgan,
-  ngay, nhanHuongNgan, targetLenFt, tuanLich, xepHuongTheoGoiY,
-  type GoiYCuoiKhoa, type Huong, type HuongLenh, type MucTieuLenh, type ProgrammeCode,
+  CHU_CHUYEN_LOP, NORMAL_LADDER, RATIO_PASS_THRESHOLD, chonChuaGui, chonDongGui, chonDongLuu, chonLuuSauXacNhan, coMt0, hanChotLenFt, huongTiepKhaDung, khacGoiY, kiemDongLenh, kyHieuLop, maHocVienNgan,
+  ngay, nhanHuongNgan, sauGhiPanel, targetLenFt, tuanLich, xepHuongTheoGoiY,
+  type DongLuuCk, type GoiYCuoiKhoa, type Huong, type HuongLenh, type MucTieuLenh, type ProgrammeCode,
 } from '@shared/domain/index.ts';
 import { ClassCreatePanel } from './ClassCreatePanel.tsx';
 import { OMt0, OTuan } from './TransitionPanel.tsx';
@@ -133,21 +133,23 @@ export function PanelCuoiKhoa({ classId, onClose, onDone }: { classId: number; o
     });
   };
 
-  const rows = students.map((s) => { const d = dongCua(s); return { s, d, loi: kiemTra(s, d) }; });
-  const canGui = rows.filter((r) => !r.loi && (!r.s.lenh || daSua.has(r.s.id) || !!r.s.lenh.loi));
-  const chuaGui = rows.filter((r) => r.loi && !(r.s.lenh && !daSua.has(r.s.id) && !r.s.lenh.loi));
-  const thieuTarget = rows.filter((r) => oTarget(r.s, r.d) && mucTieuO(r.d) === null).length;
   /** Ghi chú đổi so với Lộ trình tiếp theo đã lưu. */
   const doiGhiChu = (s: Em, d: Dong) => d.ghiChu.trim() !== (s.loTrinhTiep?.ghiChu ?? '');
-  /** Dòng "Lưu hướng" / "Lưu n em": em chưa lệnh đổi Hướng / Ghi chú / Target (ô); em có lệnh chỉ ghi chú, hướng giữ. */
-  const luuDuoc = rows.filter(({ s, d }) => {
-    if (s.lenh) return doiGhiChu(s, d) && (!laQl || !daSua.has(s.id) || d.huong === huongLenhGv(s));
-    if (!d.huong) return false;
-    return d.huong !== s.loTrinhTiep?.huong || doiGhiChu(s, d) || (laQl && oTarget(s, d) && typeof mucTieuO(d) === 'number');
+  /* Chọn dòng gửi / lưu: hàm thuần `shared/domain/chuyenLop.ts` (kiểm LCb-x) — panel chỉ tính sẵn từng dòng. */
+  const rows = students.map((s) => {
+    const d = dongCua(s);
+    return {
+      s, d, id: s.id, loi: kiemTra(s, d), huong: d.huong, lenh: s.lenh ? { huong: huongLenhGv(s), loi: !!s.lenh.loi } : null, daSua: daSua.has(s.id),
+      huongLtt: s.loTrinhTiep?.huong ?? null, doiGhiChu: doiGhiChu(s, d), targetMoi: !s.lenh && oTarget(s, d) && typeof mucTieuO(d) === 'number',
+    };
   });
-  const itemLuu = ({ s, d }: (typeof rows)[number]) => ({
-    studentId: s.id, huong: s.lenh ? huongLenhGv(s) : d.huong, ghiChu: d.ghiChu.trim() || null,
-    ...(laQl && !s.lenh && oTarget(s, d) && typeof mucTieuO(d) === 'number' ? { mucTieu: mucTieuO(d) } : {}),
+  const canGui = chonDongGui(rows);
+  const chuaGui = chonChuaGui(rows);
+  const thieuTarget = rows.filter((r) => oTarget(r.s, r.d) && mucTieuO(r.d) === null).length;
+  /** Dòng "Lưu hướng" / "Lưu n em". */
+  const luuDuoc = chonDongLuu(rows, laQl);
+  const itemLuu = ({ r: { s, d }, huong, target }: DongLuuCk<(typeof rows)[number]>) => ({
+    studentId: s.id, huong, ghiChu: d.ghiChu.trim() || null, ...(target ? { mucTieu: mucTieuO(d) } : {}),
   });
   const lamMoi = () => { for (const k of ['/classes', '/students', '/hoc-vien-lop', '/my-work', '/lenh-chuyen', '/yeu-cau']) invalidate(k); };
 
@@ -158,7 +160,8 @@ export function PanelCuoiKhoa({ classId, onClose, onDone }: { classId: number; o
       await api.put(`/classes/${classId}/lo-trinh-tiep`, { items: luuDuoc.map(itemLuu) });
       lamMoi();
       toast.push('ok', laQl ? `Đã lưu hướng ${luuDuoc.length} em` : `Đã lưu ${luuDuoc.length} em`);
-      if (laQl) { setDongs((m) => Object.fromEntries(Object.entries(m).map(([k, { ghiChu: _, ...x }]) => [k, x]))); reload(); }
+      /* QL: chỉ bỏ ghi chú của dòng ĐÃ lưu (rà cuối I1). GVCN: mọi dòng sửa được đều vào lô (chưa Hướng + ghi chú → Chưa quyết) nên đóng. */
+      if (laQl) { setDongs(sauGhiPanel(dongs, daSua, { ok: [], failed: [] }, { ids: luuDuoc.map((x) => x.r.id), loi: false }).dongs); reload(); }
       else { onDone(); onClose(); }
     } catch (e: any) {
       const sid = Number(e?.details?.studentId);
@@ -180,30 +183,32 @@ export function PanelCuoiKhoa({ classId, onClose, onDone }: { classId: number; o
           ngayXemLai: d.huong === 'bao_luu' ? d.ngayXemLai || undefined : undefined,
         })),
       });
-      /* Ghi chú đi đường Lộ trình tiếp theo (lệnh không mang ghi chú) — sau lệnh, Hướng LTT = hướng vừa xác nhận. */
-      const gc = canGui.filter(({ s, d }) => r.ok.includes(s.id) && doiGhiChu(s, d));
+      /*
+       * Ghi chú đi đường Lộ trình tiếp theo (lệnh không mang ghi chú): em vừa xác nhận + mọi dòng lưu được ngoài lô gửi (ghi chú em đã có lệnh,
+       * Hướng / ghi chú em "Chưa gửi") — một PUT (rà cuối I2). Lỗi → giữ hết ghi chú để Lưu hướng.
+       */
+      const luuSau = chonLuuSauXacNhan(rows, r.ok, laQl);
       let loiGc = false;
-      if (gc.length) {
-        try {
-          await api.put(`/classes/${classId}/lo-trinh-tiep`, { items: gc.map(({ s, d }) => ({ studentId: s.id, huong: d.huong, ghiChu: d.ghiChu.trim() || null })) });
-        } catch (e: any) { loiGc = true; toast.push('error', `Chưa lưu ghi chú — bấm Lưu hướng để lưu lại. ${e.message}`); }
+      if (luuSau.length) {
+        try { await api.put(`/classes/${classId}/lo-trinh-tiep`, { items: luuSau.map(itemLuu) }); }
+        catch (e: any) { loiGc = true; toast.push('error', `Chưa lưu ghi chú — bấm Lưu hướng để lưu lại. ${e.message}`); }
       }
       lamMoi();
-      if (r.failed.length || loiGc) {
-        /* Em đã xác nhận xong rời tập "đã sửa" (không gửi lại lệnh); ghi chú chưa lưu được thì GIỮ để Lưu hướng. Em lỗi giữ nguyên + lỗi từng hàng. */
-        const xong = new Set(r.ok);
-        setDaSua((x) => new Set([...x].filter((id) => !xong.has(id))));
-        setDongs((m) => Object.fromEntries(Object.entries(m).flatMap(([k, x]) => (!xong.has(Number(k)) ? [[k, x]]
-          : loiGc && x.ghiChu !== undefined ? [[k, { ghiChu: x.ghiChu }]] : []))));
-        setLoiDong(Object.fromEntries(r.failed.map((f) => [f.studentId, f.message])));
-        setBuoc(1);
-        if (r.failed.length) toast.push('error', `${r.failed.length} em chưa xác nhận được — xem lỗi ở từng hàng`);
-        else toast.push('ok', `Đã xác nhận ${r.ok.length} em`);
-        if (r.ok.length) reload();
-      } else {
+      /* Em đã xác nhận rời panel; em lỗi + sửa chưa gửi được (lớp, tuần của em "Chưa gửi") ở lại — chỉ đóng khi không còn gì. */
+      const sau = sauGhiPanel(dongs, daSua, r, { ids: luuSau.map((x) => x.r.id), loi: loiGc });
+      if (sau.dong) {
         toast.push('ok', `Đã xác nhận ${r.ok.length} em`);
         onDone(); onClose();
+        return;
       }
+      setDaSua(sau.daSua);
+      setDongs(sau.dongs);
+      setLoiDong(Object.fromEntries(r.failed.map((f) => [f.studentId, f.message])));
+      setBuoc(1);
+      const con = Object.keys(sau.dongs).length;
+      if (r.failed.length) toast.push('error', `${r.failed.length} em chưa xác nhận được — xem lỗi ở từng hàng`);
+      else toast.push('ok', `Đã xác nhận ${r.ok.length} em${!loiGc && con ? ` · ${con} em chưa gửi` : ''}`);
+      reload();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
 
@@ -279,7 +284,7 @@ export function PanelCuoiKhoa({ classId, onClose, onDone }: { classId: number; o
   const chan = !students.length || (!laQl && !laGv) ? undefined
     : laGv ? {
       huy: null,
-      phu: <button type="button" className={`${btn} max-sm:hidden`} onClick={onClose} disabled={busy}>{luuDuoc.length ? 'Huỷ thay đổi' : 'Đóng'}</button>,
+      phu: <button type="button" className={`${btn} max-sm:hidden`} onClick={onClose} disabled={busy}>{Object.keys(dongs).length > 0 ? 'Huỷ thay đổi' : 'Đóng'}</button>,
       chinh: <button type="button" className={`${btn} btn-primary`} onClick={luu} disabled={khoaGui || !luuDuoc.length}>{busy ? 'Đang lưu…' : luuDuoc.length ? `Lưu ${luuDuoc.length} em` : 'Lưu'}</button>,
     }
     : buoc === 1 ? {
@@ -580,12 +585,12 @@ function HangEm(p: HangProps) {
     return (
       <div role="row" className={`surface-2 space-y-2 rounded-lg px-3 py-2.5 text-sm ${loiHang ? 'ring-1 ring-late' : ''}`}>
         <div className="flex items-start gap-2">
-          {oChon && <span className="flex min-h-[44px] items-center">{oChon}</span>}
+          {oChon && <span role="cell" className="flex min-h-[44px] items-center">{oChon}</span>}
           <span role="cell" className="min-w-0 flex-1">{oTen}</span>
           <span role="cell" className="shrink-0 text-right">{pct ? <b className="tabular-nums text-slate-100">{pct}</b> : <span className="text-xs text-slate-500">Chưa đủ điểm</span>}</span>
         </div>
-        {!khoaHuong && <div className="text-xs text-slate-400">Gợi ý: {oGoiY}{dongGvcn}</div>}
-        {khoaHuong ? oHuong : (
+        {!khoaHuong && <div role="cell" className="text-xs text-slate-400">Gợi ý: {oGoiY}{dongGvcn}</div>}
+        {khoaHuong ? <span role="cell" className="block">{oHuong}</span> : (
           <div className="grid grid-cols-2 gap-2">
             <span role="cell" className="min-w-0">{nhan('Hướng')}{oHuong}</span>
             <span role="cell" className="min-w-0">{nhan('Target')}{oTarget}</span>
