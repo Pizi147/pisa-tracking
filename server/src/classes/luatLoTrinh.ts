@@ -440,7 +440,7 @@ export function xemChuyenLop(p: Principal, sid: number, toClassId?: number | nul
   const seDong = new Set<number>();
   let huong: { boiCanh: 'cuoi-khoa' | 'giua-khoa'; huong: HuongLenh } | null = null;
   let targetSan: MucTieuLenh | null = null;
-  let nguonTarget: 'gvcn' | 'khoa' | null = null;
+  let nguonTarget: 'gvcn' | 'khoa' | 'quyet-dinh' | null = null;
   let mt0: { tuXep: string | null } | null = null;
   let veThuong: { route: string | null; mt0: { coDiem: boolean; kyNang: string[] } | null; mockHuy: string[]; giuDiem: string[] } | null = null;
   let khoi: { khiChuyen: string[]; canhBao: boolean } = { khiChuyen: [], canhBao: false };
@@ -459,6 +459,9 @@ export function xemChuyenLop(p: Principal, sid: number, toClassId?: number | nul
       const khoa = cyc && !cyc.route ? { target: cyc.target_score ?? null, kck: !!cyc.khong_cam_ket } : null;
       targetSan = targetLenFt({ lt: lt ? { mucTieu: lt.muc_tieu ?? null } : null, khoa });
       nguonTarget = targetSan === null ? null : typeof lt?.muc_tieu === 'number' ? 'gvcn' : 'khoa';
+      /* R-C6: lệnh `cho` mang Target → giữ Target đó (như R-C3), chữ "(đã quyết)". */
+      const lc = conn.prepare(`SELECT muc_tieu, khong_cam_ket FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho'`).get(sid) as any;
+      if (lc && (lc.khong_cam_ket || typeof lc.muc_tieu === 'number')) { targetSan = lc.khong_cam_ket ? 'KCK' : lc.muc_tieu; nguonTarget = 'quyet-dinh'; }
       /* MT0 thành đầu vào: MT0 đang có (giữa khoá `noiMt0VaoFt` mang theo); Cuối khoá thì `dongBoMt0` mở lại / tự xếp ở tuần Final. */
       const m = cyc && !cyc.route ? conn.prepare(`SELECT status FROM assessment_attempts WHERE cycle_id = ? AND kind = 'mt0' ORDER BY id DESC LIMIT 1`).get(cyc.id) as any : null;
       const cuoiKhoaCoMt0 = tuCuoiKhoa && coMt0(tuLop.ma, 'fast_track');

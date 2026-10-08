@@ -6,7 +6,7 @@ import {
   SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, cycleDeadline,
   duongCaseRieng, duongHoSoHocVien, duongLichTest, nhanDotNgan, planDueDate, urgencyFromSos,
   khungCua, laLanGhiCuoi, tenMon, tenMonNgan, tenNhomMon, REGULAR_SKILLS, nhanLoaiXuLy, soSanhLop,
-  type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong } from '../../../shared/domain/index.ts';
+  type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, forbidden } from '../util.ts';
 import { activeAt, bangLop, can, isCoreTeacherOf, loadPrincipal, napTruocPhamVi, scopeFor, teachesClass, type Principal } from '../permissions.ts';
@@ -580,7 +580,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
 
   // ------------------------------------------------- 2d'. PR-CL (B5): Xét lại lộ trình — một việc mỗi lớp nguồn, không hạn, tự mất (cùng hàm với GET /classes/:id/xet-lai-lo-trinh)
   for (const x of co('xet_lai_lo_trinh') ? emXetLaiLoTrinh(p, f.branchId ?? null, today) : []) {
-    const ten = x.em.map((e) => `${e.ten} ${Math.round(e.tyLe * 100)}%`);
+    const ten = x.em.map((e) => `${e.ten} ${chuTyLeXetLai(e.tyLe)}`);
     items.push({
       key: `xetlai:${x.lopNguonId}`, group: 'xet_lai_lo_trinh', urgency: 'normal',
       studentId: null, studentName: `Lớp ${x.code}`, classId: x.lopNguonId, classCode: x.code,

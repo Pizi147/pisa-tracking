@@ -343,7 +343,7 @@ export type DuLieuKhiChuyen = {
   /** Thường → FT: MT0 sẽ là đầu vào; `tuXep` = mã tuần MT0 tự xếp (chưa có MT0), null = MT0 đã có. */
   mt0: { tuXep: string | null } | null;
   /** Thường → FT: Target đã có (§7 giữ như cũ) — null thì web hỏi. */
-  target: { giaTri: MucTieuLenh; nguon: 'gvcn' | 'khoa' } | null;
+  target: { giaTri: MucTieuLenh; nguon: 'gvcn' | 'khoa' | 'quyet-dinh' } | null;
   /** FT → thường (B4): đúng việc `veLopThuong` sẽ làm. */
   veThuong: { mt0: { coDiem: boolean; kyNang: string[] } | null; mockHuy: string[]; giuDiem: string[] } | null;
   soCase: number; dongCase: 'ft' | 'normal' | null; goiYNhan: string | null;
@@ -360,7 +360,7 @@ export function dongKhiChuyen(x: DuLieuKhiChuyen): { khiChuyen: string[]; canhBa
   if (!x.nguonFt && x.dichFt) {
     dong.push(`Đóng lộ trình ${ct}, mở lộ trình FT ${x.routeDich ?? 'LT1'}`);
     if (x.mt0) dong.push(x.mt0.tuXep ? `MT0 làm đầu vào, tự xếp ${x.mt0.tuXep}` : 'MT0 làm đầu vào');
-    if (x.target) dong.push(`Target ${x.target.giaTri === 'KCK' ? 'KCK' : x.target.giaTri.toFixed(1)} (${x.target.nguon === 'gvcn' ? 'GVCN ghi' : 'khoá'})`);
+    if (x.target) dong.push(`Target ${x.target.giaTri === 'KCK' ? 'KCK' : x.target.giaTri.toFixed(1)} (${x.target.nguon === 'gvcn' ? 'GVCN ghi' : x.target.nguon === 'quyet-dinh' ? 'đã quyết' : 'khoá'})`);
   } else if (x.nguonFt && !x.dichFt) {
     dong.push(`Đóng lộ trình FT ${x.routeNguon ?? ''}`.trim());
     const v = x.veThuong;

@@ -373,7 +373,7 @@ export function ChuyenLopNhieuEm({ classId, onClose, onDone }: { classId: number
 
   const tieuDe = data ? `Chuyển lớp · ${data.lop.code} · ${ds.length} em` : 'Chuyển lớp';
   const dong = () => { if (!busy) onClose(); };
-  if (error) return <KhungPanel tieuDe={tieuDe} onDong={onClose}><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></KhungPanel>;
+  if (error) return <KhungPanel tieuDe={tieuDe} rong="toan" onDong={onClose}><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></KhungPanel>;
   if (loading || !data) return <KhungPanel tieuDe={tieuDe} rong="toan" onDong={onClose}><div className="mt-3"><Skeleton rows={6} /></div></KhungPanel>;
   if (!ds.length) {
     return <KhungPanel tieuDe={tieuDe} onDong={onClose} chan={{}}><p className="mt-3 text-sm text-slate-400">Không còn em cần xét lại.</p></KhungPanel>;

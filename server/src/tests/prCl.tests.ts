@@ -641,4 +641,45 @@ export async function runPrClTests(t: YThucTestKit) {
     assert(!coNguon(P.cpManager), 'QL CP không xem được lớp nguồn MB → không có việc (href sẽ 403)');
     assert(!viecXetLai(P.cpManager, null).some((x) => x.key === `xetlai:${nguon.id}`), 'QL CP: không dòng việc');
   });
+
+  // ---------------------------------------------------------------- Rà cuối (M1 / R-C6, M2, M3)
+  check('CL-p · R-C6: em có lệnh `cho` Lên FT → xem trước dùng Target của lệnh "(đã quyết)"; chỉ LTT có Target (chưa lệnh) → "(GVCN ghi)"', () => {
+    const ele = lop('ELE', 3);
+    const ft = lop('FT', 2);
+    const x = em(ele.id, { ma: 'ELE' });
+    const r = lenh.raLenh(QL, { lopNguonId: ele.id, boiCanh: 'giua-khoa', tuanChung: THU_HAI, dongs: [{ studentId: x.sid, huong: 'fast_track', toClassId: ft.id, lyDo: 'R-C6', mucTieu: 7 }] });
+    assert(!r.failed.length, JSON.stringify(r.failed));
+    const v = luatLoTrinh.xemChuyenLop(QL, x.sid, ft.id);
+    assert(v.targetSan === 7 && v.khiChuyen.includes('Target 7.0 (đã quyết)'), `lệnh: ${v.targetSan} ${JSON.stringify(v.khiChuyen)}`);
+    const y = em(ele.id, { ma: 'ELE' });
+    conn.prepare(`INSERT INTO lo_trinh_tiep_theo (student_id, class_id, huong, muc_tieu, created_at, updated_at) VALUES (?,?, 'fast_track', 6.5, ?, ?)`).run(y.sid, ele.id, NOW, NOW);
+    const vy = luatLoTrinh.xemChuyenLop(QL, y.sid, ft.id);
+    assert(vy.khiChuyen.includes('Target 6.5 (GVCN ghi)'), `LTT: ${JSON.stringify(vy.khiChuyen)}`);
+  });
+
+  check('CL-q · M2: tỷ lệ 0.4996 → dòng việc "Xét lại" và panel cùng chữ (chuTyLeXetLai, 49%)', () => {
+    const [a] = XL.ds;
+    conn.prepare('UPDATE assessment_scores SET raw_score = 49.96 WHERE attempt_id = ?').run(XL.fin[0]);
+    try {
+      const e = ((ck.emXetLaiLoTrinh(QL, null, TODAY) as any[]).find((g) => g.lopNguonId === XL.fou.id)?.em ?? []).find((z: any) => z.studentId === a.sid);
+      const chu = d.chuTyLeXetLai(e.tyLe);
+      assert(chu === '49%', `panel: ${chu} (${e.tyLe})`);
+      const it = viecXetLai(QL).find((z) => z.key === `xetlai:${XL.fou.id}`);
+      assert(it.contextLabel.includes(chu) && !it.contextLabel.includes('50%'), `việc: ${it.contextLabel}`);
+    } finally { tyLeFou(XL.fin[0], 46); }
+  });
+
+  await checkAsync('CL-r · M3: sửa lệnh Lên FT (KCK) → lớp thường không gửi Target → KHÔNG mang Target / KCK; ngày thi vẫn giữ', async () => {
+    const ele = lop('ELE', 3);
+    const ft = lop('FT', 2);
+    const ele2 = lop('ELE', 3);
+    const x = em(ele.id, { ma: 'ELE' });
+    await voiMayChu(async (goi) => {
+      const r1 = await post(goi, QL.userId, `/students/${x.sid}/transfer`, { toClassId: ft.id, tuan: THU_HAI, lyDo: 'M3', mucTieu: 'KCK', ngayThi: '2027-03' });
+      assert(r1.status === 200 && lenhCua(x.sid).khong_cam_ket === 1, `tạo: ${r1.status} ${JSON.stringify(lenhCua(x.sid))}`);
+      const r2 = await post(goi, QL.userId, `/students/${x.sid}/transfer`, { toClassId: ele2.id, tuan: THU_HAI, lyDo: 'M3 về thường' });
+      const l = lenhCua(x.sid);
+      assert(r2.status === 200 && l.lop_dich_id === ele2.id && l.huong !== 'fast_track' && !l.khong_cam_ket && l.muc_tieu == null && l.ngay_thi === '2027-03', `sửa: ${r2.status} ${JSON.stringify(l)}`);
+    });
+  });
 }
