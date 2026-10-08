@@ -9209,6 +9209,9 @@ await runPrLcTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, ad
 // ==================================================================== PR-LCb (Chốt lộ trình · panel Lộ trình tiếp theo)
 const { runPrLcbTests } = await import('./prLcb.tests.ts');
 await runPrLcbTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-CL (Chuyển lớp làm lại: FT → Thường, Cuối khoá, lớp chuyển đến)
+const { runPrClTests } = await import('./prCl.tests.ts');
+await runPrClTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0

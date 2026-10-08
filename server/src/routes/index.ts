@@ -1866,7 +1866,7 @@ api.post('/students/:id/transfer', requireAuth, wrap((req) => {
   if (!toClassId) throw badRequest('Cần chọn lớp chuyển đến.');
   /* PR-CT: panel mới gửi thẳng `lyDo` (một ô chữ, không trống — T7); đường lý do chọn nhanh cũ giữ cho phép kiểm và client cũ. */
   const lyDoTuDo = typeof req.body?.lyDo === 'string' ? chuTuDo(req.body.lyDo, 'Lý do chuyển lớp', 2000) ?? '' : '';   // PR-Dọn (Q4, quét #24)
-  if (req.body?.lyDo !== undefined && !lyDoTuDo) throw badRequest('Ghi lý do chuyển lớp.');
+  if (req.body?.lyDo !== undefined && !lyDoTuDo) throw badRequest('Ghi lý do ngắn');   // PR-CL: cùng chữ `kiemDongLenh`
   /* RB-3: lý do chọn nhanh BẮT BUỘC; "Khác" phải ghi rõ ≥ 3 ký tự (T13). */
   if (!lyDoTuDo && laKhac(reasonCode)) {
     const loi = kiemGhiRoKhac(reasonNote);
@@ -1874,15 +1874,20 @@ api.post('/students/:id/transfer', requireAuth, wrap((req) => {
   }
   const reason = lyDoTuDo || transferReasonText(reasonCode, reasonNote);
   if (!reason) throw badRequest('Chọn lý do chuyển lớp (chọn "Khác" thì ghi rõ).');
-  /* PR-CT: em đang học một lớp → RA LỆNH (Quản lý); chỉ em CHƯA TỪNG xếp lớp (xếp lần đầu) mới đi đường cũ. */
+  /*
+   * PR-CT: em đang học một lớp → RA LỆNH (Quản lý); chỉ em CHƯA TỪNG xếp lớp (xếp lần đầu) mới đi đường cũ.
+   * PR-CL (B1): bối cảnh + hướng do máy chủ tính (`huongChuyenMotEm`) — lớp thường đã tới Cuối khoá đi luật Cuối khoá. Lệnh `cho` của em được
+   * SỬA (upsert theo học viên) — panel gọi đường này cả khi sửa lệnh.
+   */
   const sid = pInt(req, 'id');
   const enr = luatLoTrinhSvc.lopHienTaiCua(sid);
   if (enr) {
     const dich = luatLoTrinhSvc.lopDichHopLe(Number(toClassId), enr.class_id);
+    const { boiCanh, huong } = luatLoTrinhSvc.huongChuyenMotEm(enr, dich);
     const r = lenhSvc.raLenh(principalOf(req), {
-      lopNguonId: enr.class_id, boiCanh: 'giua-khoa', tuanChung: req.body?.tuan ?? effectiveDate ?? null,
+      lopNguonId: enr.class_id, boiCanh, tuanChung: req.body?.tuan ?? effectiveDate ?? null,
       dongs: [lenhSvc.dongTuBody({
-        studentId: sid, huong: dich?.is_fast_track && !enr.is_fast_track ? 'fast_track' : 'chuyen_lop', toClassId, lyDo: reason,
+        studentId: sid, huong, toClassId, lyDo: reason,
         mucTieu, ngayThi: req.body?.ngayThi ?? thangThi,
       })],
     });

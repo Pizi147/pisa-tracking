@@ -1,0 +1,405 @@
+/**
+ * PHÉP KIỂM PR-CL — Chuyển lớp làm lại (kế hoạch .superpowers/sdd/cl/plan.md, B9). T1 (máy chủ): FT → Thường khi thi hành (B4), một luật
+ * hướng + bối cảnh cho Chuyển lớp một em (B1), danh sách lớp chuyển đến (B2), xem trước "Khi chuyển, web sẽ" (B3), migrate prLcb cuộn lại (B7).
+ * Theo hành vi trên DB kiểm và qua HTTP thật, không khớp chuỗi nguồn.
+ */
+import type { YThucTestKit } from './yThuc.tests.ts';
+
+export async function runPrClTests(t: YThucTestKit) {
+  const { check, checkAsync, assert, conn, P, TODAY, addDays } = t;
+  console.log('\nPR-CL · Chuyển lớp làm lại (FT → Thường, Cuối khoá, lớp chuyển đến, Khi chuyển)');
+  const week: any = await import('../platform/week.ts');
+  const intake: any = await import('../classes/intake.ts');
+  const regular: any = await import('../normal/regular.ts');
+  const lenh: any = await import('../classes/lenhChuyen.ts');
+  const luatLoTrinh: any = await import('../classes/luatLoTrinh.ts');
+  const mt0: any = await import('../fasttrack/mt0.ts');
+  const hanhTrinh: any = await import('../students/hanhTrinh.ts');
+  const migLcb: any = await import('../migrate/prLcb.ts');
+  const d: any = await import('../../../shared/domain/index.ts');
+  const { loadPrincipal } = await import('../permissions.ts');
+  const { createApp } = await import('../app.ts');
+  const { getConfig, setConfig } = await import('../demoConfig.ts');
+  const { trongBoNho } = await import('../platform/nguCanhRequest.ts');
+  const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
+  const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
+  const QL = P.mbManager;
+  const MB = get(`SELECT id FROM branches WHERE code = 'MB'`).id as number;
+  const CP = get(`SELECT id FROM branches WHERE code = 'CP'`).id as number;
+  const thu2 = (n: number) => addDays(week.mondayOf(TODAY), -7 * (n - 1));
+  const THU_HAI = (d.tuanChonDuoc(TODAY) as string[])[0];
+  const NOW = new Date().toISOString();
+
+  let seq = 0;
+  /** Lớp đang ở tuần `tuan` (FT: lộ trình LT1). */
+  const lop = (kind: 'FOU' | 'BE' | 'ELE' | 'PREFOU' | 'FT', tuan = 1, branchId = MB, route: string | null = kind === 'FT' ? 'LT1' : null) => {
+    seq += 1;
+    const ft = kind === 'FT';
+    const start = thu2(tuan);
+    const c = intake.createClass(P.admin, {
+      code: `${get('SELECT code FROM branches WHERE id = ?', branchId).code} CL-${seq} ${kind}`, branchId, kind, isFastTrack: ft, route, startDate: start, startPeriodId: week.ensurePeriod(start).id,
+    });
+    return { id: c.id as number, code: c.code as string, start };
+  };
+  /** Em ghi danh `active` ở lớp `classId` + một khoá / lộ trình đang chạy. */
+  const em = (classId: number, o: { ft?: boolean; ma?: string | null; target?: number | null; route?: string | null; batDau?: string; seqKhoa?: number } = {}) => {
+    seq += 1;
+    const cn = get('SELECT branch_id FROM classes WHERE id = ?', classId).branch_id;
+    const sid = Number(conn.prepare(`INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`)
+      .run(`PISA-CL${seq}`, `Học viên CL${seq}`, `hoc vien cl${seq}`, cn, NOW).lastInsertRowid);
+    const bd = o.batDau ?? thu2(1);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`).run(sid, classId, bd, NOW);
+    const cyc = Number(conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, start_period_id, started_at, status, created_at) VALUES (?,?,?,?,?,?,?, 'active', ?)`)
+      .run(sid, o.seqKhoa ?? 1, o.ft ? (o.route ?? 'LT1') : null, o.ft ? null : (o.ma ?? null), o.target === undefined ? 6 : o.target, week.ensurePeriod(week.mondayOf(bd)).id, bd, NOW).lastInsertRowid);
+    return { sid, cyc };
+  };
+  const ganGv = (classId: number, n: number, skill: string | null, core = false) => {
+    const uid = get(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'teacher' AND ur.branch_id = ? ORDER BY ur.user_id LIMIT 1 OFFSET ?`, MB, n).id as number;
+    conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at) VALUES (?,?,?,?, '2026-01-01', 'active', ?)`)
+      .run(uid, classId, skill, core ? 1 : 0, NOW);
+    return loadPrincipal(uid);
+  };
+  const diem = (attemptId: number, skill: string, band = 6) =>
+    conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, band, entered_at) VALUES (?,?,?,?)`).run(attemptId, skill, band, NOW);
+  const taoMt0 = (cycleId: number, sid: number, classId: number) => Number(conn.prepare(
+    `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, status, plan_source, created_at) VALUES (?,?,0,'mt0',?, 'planned', 'auto', ?)`,
+  ).run(cycleId, sid, classId, NOW).lastInsertRowid);
+  const taoMock = (cycleId: number, sid: number, classId: number, no: number) => Number(conn.prepare(
+    `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, status, created_at) VALUES (?,?,?,'mock',?, 'planned', ?)`,
+  ).run(cycleId, sid, no, classId, NOW).lastInsertRowid);
+  const taoCase = (sid: number, cycleId: number) => Number(conn.prepare(
+    `INSERT INTO sos_cases (student_id, cycle_id, category, topic, origin_kind, status, sos_level, detected_at, created_at) VALUES (?,?, 'listening', 'listening', 'teacher_report', 'open', 1, ?, ?)`,
+  ).run(sid, cycleId, TODAY, NOW).lastInsertRowid);
+  const lenhCua = (sid: number) => get('SELECT * FROM lenh_chuyen_lop WHERE student_id = ? ORDER BY id DESC LIMIT 1', sid);
+  const khoaChay = (sid: number) => get(`SELECT * FROM learning_cycles WHERE student_id = ? AND status = 'active'`, sid);
+  const loi = (fn: () => unknown): any => { try { fn(); } catch (e) { return e; } return null; };
+  const demCau = (fn: () => void): number => {
+    let n = 0; const goc = conn.prepare.bind(conn);
+    (conn as any).prepare = (sql: string) => { n += 1; return goc(sql); };
+    try { fn(); } finally { (conn as any).prepare = goc; }
+    return n;
+  };
+  /** Thi hành lệnh lớp nguồn `nguon` ở thứ Hai tuần sau: lệnh lớp khác tạm đặt `thu_ngay` để lượt quét bỏ qua, xong trả lại (mẫu prLcb). */
+  const thiHanh = (nguon: number) => {
+    const khac = all(`SELECT id, thu_ngay FROM lenh_chuyen_lop WHERE trang_thai = 'cho' AND lop_nguon_id != ?`, nguon);
+    const dat = conn.prepare('UPDATE lenh_chuyen_lop SET thu_ngay = ? WHERE id = ?');
+    for (const x of khac) dat.run(THU_HAI, x.id);
+    const cu = getConfig('demo_date');
+    setConfig('demo_date', THU_HAI);
+    try { lenh.thiHanhLenhDenHan(THU_HAI); } finally {
+      setConfig('demo_date', cu);
+      for (const x of khac) dat.run(x.thu_ngay ?? null, x.id);
+    }
+  };
+  /** Máy chủ thật + phiên demo theo người dùng (mẫu prCt). */
+  async function voiMayChu(fn: (goi: (userId: number, url: string, init?: RequestInit) => Promise<Response>) => Promise<void>) {
+    const may = createApp().listen(0);
+    const cong = (may.address() as any).port as number;
+    const phien = new Map<number, string>();
+    const goi = async (userId: number, url: string, init: RequestInit = {}) => {
+      if (!phien.has(userId)) {
+        const s = await fetch(`http://127.0.0.1:${cong}/api/demo/session`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ userId }) });
+        phien.set(userId, (s.headers.get('set-cookie') ?? '').split(';')[0]);
+      }
+      return fetch(`http://127.0.0.1:${cong}/api${url}`, { ...init, headers: { 'content-type': 'application/json', cookie: phien.get(userId)!, ...(init.headers ?? {}) } });
+    };
+    try { await fn(goi); } finally { may.close(); }
+  }
+  const post = (goi: any, uid: number, url: string, body: unknown) => goi(uid, url, { method: 'POST', body: JSON.stringify(body) });
+  const thuong = (r: Response) => r.json().catch(() => ({}));
+
+  /** Em lớp ELE đã Lên FT (MT0 có điểm L, R): MT0 thành đầu vào lộ trình FT, lộ trình FT có Mock mặc định. */
+  const emDaLenFt = (ftLop: number, o: { mt0Diem?: boolean; ngay?: string } = {}) => {
+    const ele = lop('ELE', 10);
+    const { sid, cyc } = em(ele.id, { ma: 'ELE' });
+    conn.prepare(`UPDATE learning_cycles SET exam_month = '2027-03' WHERE id = ?`).run(cyc);
+    const mt0Id = taoMt0(cyc, sid, ele.id);
+    luatLoTrinh.apDungMotDong(QL, { sid, toClassId: ftLop, ngay: o.ngay ?? week.mondayOf(TODAY), mucTieu: 6.5, boiCanh: 'cuoi-khoa' });
+    const ft = khoaChay(sid);
+    if (o.mt0Diem !== false) { diem(mt0Id, 'listening'); diem(mt0Id, 'reading'); }
+    return { sid, khoaEle: cyc, ft, mt0Id, ele };
+  };
+
+  // ------------------------------------------------------------------ (a) FT → Thường khi thi hành (B4)
+  const FT_A = lop('FT', 3);
+  const ELE_DICH = lop('ELE', 2);
+  await checkAsync('CL-a · FT → Thường thi hành: lộ trình FT đóng; khoá ELE mới giữ Target FT + Dự kiến thi; MT0 có điểm → khoá ELE cũ ("không dùng", Hành trình); baseline trống; Mock chưa điểm huỷ + lịch sử; MT3 điểm một phần giữ; số điểm không đổi; Case FT đóng', async () => {
+    const x = emDaLenFt(FT_A.id);
+    assert(get('SELECT cycle_id FROM assessment_attempts WHERE id = ?', x.mt0Id).cycle_id === x.ft.id && x.ft.baseline_attempt_id === x.mt0Id, 'tiền đề: MT0 là đầu vào lộ trình FT');
+    assert(x.ft.target_score === 6.5 && x.ft.exam_month === '2027-03', `tiền đề lộ trình FT: ${JSON.stringify([x.ft.target_score, x.ft.exam_month])}`);
+    const mock = all(`SELECT id, attempt_no FROM assessment_attempts WHERE cycle_id = ? AND kind != 'mt0' AND status = 'planned' ORDER BY attempt_no`, x.ft.id);
+    assert(mock.length >= 3, `tiền đề: ≥ 3 Mock mặc định, có ${mock.length}`);
+    const mt3 = mock.find((m) => m.attempt_no === 3)!;
+    diem(mt3.id, 'listening');
+    const huyDuKien = mock.filter((m) => m.id !== mt3.id).map((m) => m.id as number);
+    const caseId = taoCase(x.sid, x.ft.id);
+    const soDiem = () => get('SELECT COUNT(*) n FROM assessment_scores s JOIN assessment_attempts a ON a.id = s.attempt_id WHERE a.student_id = ?', x.sid).n;
+    const diemTruoc = soDiem();
+    /* Xem trước = việc làm (B3 ↔ B4). */
+    const xem = luatLoTrinh.xemChuyenLop(QL, x.sid, ELE_DICH.id);
+    assert(xem.canhBao === true && xem.veThuong?.mockHuy?.length === huyDuKien.length && xem.veThuong?.mt0?.coDiem === true, `xem trước: ${JSON.stringify(xem.veThuong)}`);
+    await voiMayChu(async (goi) => {
+      const r = await post(goi, QL.userId, `/students/${x.sid}/transfer`, { toClassId: ELE_DICH.id, tuan: THU_HAI, lyDo: 'Học lại ELE' });
+      assert(r.status === 200, `transfer: ${r.status} ${JSON.stringify(await thuong(r))}`);
+    });
+    const l = lenhCua(x.sid);
+    assert(l?.trang_thai === 'cho' && l.boi_canh === 'giua-khoa' && l.huong === 'chuyen_lop' && l.muc_tieu == null, `lệnh: ${JSON.stringify(l)}`);
+    thiHanh(FT_A.id);
+    assert(lenhCua(x.sid).trang_thai === 'da_chuyen', `thi hành: ${lenhCua(x.sid).trang_thai} ${lenhCua(x.sid).loi ?? ''}`);
+    assert(get('SELECT status FROM learning_cycles WHERE id = ?', x.ft.id).status === 'completed', 'lộ trình FT completed');
+    const moi = khoaChay(x.sid);
+    assert(moi && moi.route == null && moi.programme_code === 'ELE' && moi.target_score === 6.5 && moi.exam_month === '2027-03', `khoá ELE mới: ${JSON.stringify(moi)}`);
+    assert(get('SELECT cycle_id FROM assessment_attempts WHERE id = ?', x.mt0Id).cycle_id === x.khoaEle, 'MT0 về khoá ELE cũ');
+    assert(mt0.mt0TheoHocVien([x.sid]).get(x.sid)?.trangThai === 'khong_dung', `MT0: ${JSON.stringify(mt0.mt0TheoHocVien([x.sid]).get(x.sid))}`);
+    assert(JSON.stringify(hanhTrinh.hanhTrinhHocVien(QL, x.sid, null)).includes('"nhanNgan":"MT0 · không dùng"'), 'Hành trình: MT0 · không dùng');
+    const ftSau = get('SELECT baseline_attempt_id, baseline_source FROM learning_cycles WHERE id = ?', x.ft.id);
+    assert(ftSau.baseline_attempt_id == null && ftSau.baseline_source == null, `baseline: ${JSON.stringify(ftSau)}`);
+    for (const id of huyDuKien) {
+      const a = get('SELECT status, cancel_reason FROM assessment_attempts WHERE id = ?', id);
+      assert(a.status === 'cancelled' && a.cancel_reason === 'Học lại lớp thường', `Mock ${id}: ${JSON.stringify(a)}`);
+    }
+    const ls = get(`SELECT COUNT(*) n FROM attempt_schedule_history WHERE action = 'cancelled' AND reason = 'Học lại lớp thường' AND attempt_id IN (${huyDuKien.join(',')})`).n;
+    assert(ls === huyDuKien.length, `lịch sử huỷ: ${ls}/${huyDuKien.length}`);
+    assert(get('SELECT status FROM assessment_attempts WHERE id = ?', mt3.id).status === 'planned', 'MT3 (điểm một phần) giữ trạng thái');
+    assert(soDiem() === diemTruoc, `số điểm: ${soDiem()} ≠ ${diemTruoc}`);
+    const c = get('SELECT status, system_close_reason FROM sos_cases WHERE id = ?', caseId);
+    assert(c.status === 'done' && c.system_close_reason === 'moved_to_normal', `Case FT: ${JSON.stringify(c)}`);
+  });
+
+  // ------------------------------------------------------------------ (b) biến thể: MT0 chưa điểm; vào thẳng FT; không giới hạn thời gian
+  check('CL-b · MT0 chưa điểm → huỷ "Học lại lớp thường"; em vào thẳng FT 20 tuần trước (không khoá thường) → không lỗi, Mock chưa điểm vẫn huỷ', () => {
+    const x = emDaLenFt(FT_A.id, { mt0Diem: false });
+    luatLoTrinh.apDungMotDong(QL, { sid: x.sid, toClassId: ELE_DICH.id, ngay: THU_HAI, lyDo: 'CL-b', boiCanh: 'giua-khoa' });
+    const a = get('SELECT status, cancel_reason, cycle_id FROM assessment_attempts WHERE id = ?', x.mt0Id);
+    assert(a.status === 'cancelled' && a.cancel_reason === 'Học lại lớp thường', `MT0 chưa điểm: ${JSON.stringify(a)}`);
+    assert(get('SELECT baseline_attempt_id FROM learning_cycles WHERE id = ?', x.ft.id).baseline_attempt_id == null, 'baseline trống');
+
+    const ftLop = lop('FT', 21);
+    const y = em(ftLop.id, { ft: true, batDau: thu2(21) });
+    const m1 = taoMock(y.cyc, y.sid, ftLop.id, 7);
+    const m2 = taoMock(y.cyc, y.sid, ftLop.id, 8);
+    diem(m2, 'reading');
+    const e = loi(() => luatLoTrinh.apDungMotDong(QL, { sid: y.sid, toClassId: ELE_DICH.id, ngay: THU_HAI, lyDo: 'CL-b thẳng FT', boiCanh: 'giua-khoa' }));
+    assert(!e, `vào thẳng FT: ${e?.message}`);
+    assert(get('SELECT status FROM assessment_attempts WHERE id = ?', m1).status === 'cancelled', 'Mock chưa điểm huỷ (20 tuần sau vẫn áp)');
+    assert(get('SELECT status FROM assessment_attempts WHERE id = ?', m2).status === 'planned', 'Mock có điểm giữ');
+    assert(khoaChay(y.sid)?.target_score === 6, `Target FT giữ: ${khoaChay(y.sid)?.target_score}`);
+  });
+
+  // ------------------------------------------------------------------ (c) Thường → FT giữa khoá: Target từ LTT → khoá → hỏi
+  const FT_C = lop('FT', 2);
+  await checkAsync('CL-c · Thường → FT giữa khoá không gửi Target: khoá Target → lệnh muc_tieu = khoá; LTT có Target → LTT; không Target nào → 400 "Ghi Target (hoặc KCK)"; targetSan / nguonTarget khớp', async () => {
+    const fou = lop('FOU', 3);
+    const a = em(fou.id, { ma: 'FOU', target: 6 });
+    const b = em(fou.id, { ma: 'FOU', target: 6 });
+    const c = em(fou.id, { ma: 'FOU', target: null });
+    conn.prepare(`INSERT INTO lo_trinh_tiep_theo (student_id, class_id, huong, muc_tieu, created_at, updated_at) VALUES (?,?, 'fast_track', 7, ?, ?)`).run(b.sid, fou.id, NOW, NOW);
+    const xa = luatLoTrinh.xemChuyenLop(QL, a.sid, FT_C.id);
+    const xb = luatLoTrinh.xemChuyenLop(QL, b.sid, FT_C.id);
+    const xc = luatLoTrinh.xemChuyenLop(QL, c.sid, FT_C.id);
+    assert(xa.targetSan === 6 && xa.nguonTarget === 'khoa', `a: ${xa.targetSan} ${xa.nguonTarget}`);
+    assert(xb.targetSan === 7 && xb.nguonTarget === 'gvcn', `b: ${xb.targetSan} ${xb.nguonTarget}`);
+    assert(xc.targetSan === null && xc.nguonTarget === null, `c: ${xc.targetSan} ${xc.nguonTarget}`);
+    assert(xa.huong === 'fast_track' && xa.boiCanh === 'giua-khoa', `hướng: ${xa.huong} ${xa.boiCanh}`);
+    await voiMayChu(async (goi) => {
+      for (const [x, mong] of [[a, 6], [b, 7]] as const) {
+        const r = await post(goi, QL.userId, `/students/${x.sid}/transfer`, { toClassId: FT_C.id, tuan: THU_HAI, lyDo: 'Lên FT giữa khoá' });
+        assert(r.status === 200 && lenhCua(x.sid)?.muc_tieu === mong && lenhCua(x.sid)?.huong === 'fast_track', `${x.sid}: ${r.status} ${JSON.stringify(lenhCua(x.sid))}`);
+      }
+      const r = await post(goi, QL.userId, `/students/${c.sid}/transfer`, { toClassId: FT_C.id, tuan: THU_HAI, lyDo: 'Lên FT giữa khoá' });
+      const j: any = await thuong(r);
+      assert(r.status === 400 && /Ghi Target \(hoặc KCK\)/.test(String(j?.error ?? j?.message ?? '')) && !lenhCua(c.sid), `c: ${r.status} ${JSON.stringify(j)}`);
+    });
+  });
+
+  // ------------------------------------------------------------------ (d) FT → FT: chỉ Lý do
+  await checkAsync('CL-d · FT → FT: chỉ Lý do (không Target) → lệnh; thiếu Lý do → 400 "Ghi lý do ngắn"', async () => {
+    const ft2 = lop('FT', 2);
+    const x = em(FT_C.id, { ft: true });
+    await voiMayChu(async (goi) => {
+      const r0 = await post(goi, QL.userId, `/students/${x.sid}/transfer`, { toClassId: ft2.id, tuan: THU_HAI, lyDo: '' });
+      const j: any = await thuong(r0);
+      assert(r0.status === 400 && /Ghi lý do ngắn/.test(String(j?.error ?? j?.message ?? '')) && !lenhCua(x.sid), `thiếu lý do: ${r0.status} ${JSON.stringify(j)}`);
+      const r = await post(goi, QL.userId, `/students/${x.sid}/transfer`, { toClassId: ft2.id, tuan: THU_HAI, lyDo: 'Gộp lớp' });
+      assert(r.status === 200 && lenhCua(x.sid)?.huong === 'chuyen_lop' && lenhCua(x.sid)?.boi_canh === 'giua-khoa', `${r.status} ${JSON.stringify(lenhCua(x.sid))}`);
+    });
+  });
+
+  // ------------------------------------------------------------------ (e) /transfer ở Cuối khoá (B1)
+  const FOU2 = lop('FOU', 1);
+  const BE2 = lop('BE', 1);
+  const ELE2 = lop('ELE', 1);
+  const PF2 = lop('PREFOU', 1);
+  await checkAsync('CL-e · /transfer lớp FOU tuần 8/8: → FT cuoi-khoa fast_track (LTT + MT0); → FOU khác hoc_lai, thi hành mở khoá mới; → BE len_lop; → ELE 400 "chương trình kế tiếp"; tuần 5 → giua-khoa chuyen_lop; lệnh cuối khoá chờ → sửa đúng lệnh đó', async () => {
+    const fou = lop('FOU', 8);
+    const [a, b, c, e, f] = [1, 2, 3, 4, 5].map(() => em(fou.id, { ma: 'FOU' }));
+    regular.planRegularTests(P.admin, fou.id);
+    const fou5 = lop('FOU', 5);
+    const g = em(fou5.id, { ma: 'FOU' });
+    await voiMayChu(async (goi) => {
+      const tf = (sid: number, toClassId: number) => post(goi, QL.userId, `/students/${sid}/transfer`, { toClassId, tuan: THU_HAI, lyDo: 'CL-e' });
+      assert((await tf(a.sid, FT_C.id)).status === 200, 'a → FT');
+      const la = lenhCua(a.sid);
+      assert(la.boi_canh === 'cuoi-khoa' && la.huong === 'fast_track' && la.muc_tieu === 6, `a: ${JSON.stringify([la.boi_canh, la.huong, la.muc_tieu])}`);
+      assert(get('SELECT huong FROM lo_trinh_tiep_theo WHERE student_id = ? AND class_id = ?', a.sid, fou.id)?.huong === 'fast_track', 'a: LTT fast_track');
+      assert(get(`SELECT 1 FROM assessment_attempts WHERE student_id = ? AND kind = 'mt0' AND status != 'cancelled'`, a.sid), 'a: MT0 đã tạo');
+      assert((await tf(b.sid, FOU2.id)).status === 200 && lenhCua(b.sid).boi_canh === 'cuoi-khoa' && lenhCua(b.sid).huong === 'hoc_lai', `b: ${JSON.stringify(lenhCua(b.sid))}`);
+      assert((await tf(c.sid, BE2.id)).status === 200 && lenhCua(c.sid).huong === 'len_lop', `c: ${JSON.stringify(lenhCua(c.sid))}`);
+      const re = await tf(e.sid, ELE2.id);
+      const je: any = await thuong(re);
+      assert(re.status === 400 && /chương trình kế tiếp/.test(JSON.stringify(je)) && !lenhCua(e.sid), `e → ELE: ${re.status} ${JSON.stringify(je)}`);
+      assert((await tf(g.sid, BE2.id)).status === 200 && lenhCua(g.sid).boi_canh === 'giua-khoa' && lenhCua(g.sid).huong === 'chuyen_lop', `g tuần 5: ${JSON.stringify(lenhCua(g.sid))}`);
+      /* Lệnh cuối khoá đang chờ → /transfer sửa CHÍNH lệnh đó. */
+      const r0 = lenh.raLenh(QL, { lopNguonId: fou.id, boiCanh: 'cuoi-khoa', tuanChung: THU_HAI, dongs: [{ studentId: f.sid, huong: 'len_lop', toClassId: BE2.id }] });
+      assert(!r0.failed.length, JSON.stringify(r0.failed));
+      const id0 = lenhCua(f.sid).id;
+      assert((await tf(f.sid, FOU2.id)).status === 200, 'f sửa');
+      const ds = all('SELECT id, huong, lop_dich_id FROM lenh_chuyen_lop WHERE student_id = ?', f.sid);
+      assert(ds.length === 1 && ds[0].id === id0 && ds[0].huong === 'hoc_lai' && ds[0].lop_dich_id === FOU2.id, `f: ${JSON.stringify(ds)}`);
+    });
+    const khoaB = khoaChay(b.sid).id;
+    thiHanh(fou.id);
+    assert(lenhCua(b.sid).trang_thai === 'da_chuyen', `b thi hành: ${lenhCua(b.sid).trang_thai} ${lenhCua(b.sid).loi ?? ''}`);
+    const mb = khoaChay(b.sid);
+    assert(mb.id !== khoaB && mb.programme_code === 'FOU' && get('SELECT status FROM learning_cycles WHERE id = ?', khoaB).status === 'completed', `b học lại mở khoá mới: ${JSON.stringify(mb)}`);
+    assert(get(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active'`, b.sid).class_id === FOU2.id, 'b sang FOU khác');
+  });
+
+  // ------------------------------------------------------------------ (f) lớp chuyển đến (B2)
+  check('CL-f · lop-dich: QL thấy lớp chi nhánh khác + branchCode + siSo; GVCN không siSo; nguồn Cuối khoá FOU: không ELE / Pre FOU, có FT + FOU + BE; lớp nguồn và lớp finished không có', () => {
+    const cpLop = lop('BE', 1, CP);
+    const xong = lop('BE', 1);
+    conn.prepare(`UPDATE classes SET status = 'finished' WHERE id = ?`).run(xong.id);
+    const giua = lop('FOU', 3);
+    const x = em(giua.id, { ma: 'FOU' });
+    em(cpLop.id, { ma: 'BE' });
+    const r = luatLoTrinh.lopDichChoChuyen(QL, x.sid);
+    const c = r.lop.find((l: any) => l.id === cpLop.id);
+    assert(c && c.branchCode === 'CP' && c.siSo === 1, `lớp CP: ${JSON.stringify(c)}`);
+    assert(!r.lop.some((l: any) => l.id === giua.id || l.id === xong.id), 'không lớp nguồn / finished');
+    assert(r.lop.some((l: any) => l.id === ELE2.id) && r.nguon?.ft === false && r.nguon?.tuCuoiKhoa === false, `giữa khoá: mọi lớp active — ${JSON.stringify(r.nguon)}`);
+    const gvcn = ganGv(giua.id, 3, null, true);
+    const rg = luatLoTrinh.lopDichChoChuyen(gvcn, x.sid);
+    assert(rg.lop.length && rg.lop.every((l: any) => !('siSo' in l)) && rg.lop.find((l: any) => l.id === cpLop.id)?.branchCode === 'CP', 'GVCN: không siSo');
+    const ck = lop('FOU', 8);
+    const y = em(ck.id, { ma: 'FOU' });
+    const rc = luatLoTrinh.lopDichChoChuyen(QL, y.sid);
+    const co = (id: number) => rc.lop.some((l: any) => l.id === id);
+    assert(rc.nguon?.tuCuoiKhoa === true, `nguồn: ${JSON.stringify(rc.nguon)}`);
+    assert(!co(ELE2.id) && !co(PF2.id) && co(FT_C.id) && co(FOU2.id) && co(BE2.id) && co(cpLop.id), `cuối khoá: ${JSON.stringify(rc.lop.map((l: any) => l.code))}`);
+  });
+
+  // ------------------------------------------------------------------ (g) xem trước "Khi chuyển, web sẽ" + bảng thuần dongKhiChuyen
+  check('CL-g · xemChuyenLop: FT → thường canhBao + dòng Mock / MT0 / điểm; thường → FT dòng MT0 + Target nguồn; FT → FT cùng LT "Giữ lộ trình FT LT1"; đổi chi nhánh "Sắp nhận"; tuLopThuong', () => {
+    const x = emDaLenFt(FT_A.id);
+    const mock = all(`SELECT id, attempt_no FROM assessment_attempts WHERE cycle_id = ? AND kind != 'mt0' AND status = 'planned' ORDER BY attempt_no`, x.ft.id);
+    diem(mock[0].id, 'listening');
+    const v = luatLoTrinh.xemChuyenLop(QL, x.sid, ELE_DICH.id);
+    const n = mock.length - 1;
+    const ten = mock.slice(1).map((m) => `MT${m.attempt_no}`).join(', ');
+    assert(v.canhBao === true, 'canhBao');
+    assert(v.khiChuyen[0] === 'Đóng lộ trình FT LT1', `dòng 1: ${v.khiChuyen[0]}`);
+    assert(v.khiChuyen.includes('MT0 → “MT0 · không dùng”'), `MT0: ${JSON.stringify(v.khiChuyen)}`);
+    assert(v.khiChuyen.includes(`Huỷ ${n} bài Mock chưa có điểm (${ten})`), `Mock: ${JSON.stringify(v.khiChuyen)}`);
+    assert(v.khiChuyen.includes(`Giữ điểm đã có (MT0 L, R; MT${mock[0].attempt_no} L)`), `điểm: ${JSON.stringify(v.khiChuyen)}`);
+    assert(JSON.stringify(v.veThuong.mt0) === JSON.stringify({ coDiem: true, kyNang: ['L', 'R'] }) && v.veThuong.mockHuy.length === n, JSON.stringify(v.veThuong));
+    assert(v.tuLopThuong === x.ele.code, `tuLopThuong: ${v.tuLopThuong}`);
+    assert(v.huong === 'chuyen_lop' && v.luat?.dongCase === 'normal', `hướng: ${v.huong} ${JSON.stringify(v.luat)}`);
+
+    const ftLt1 = lop('FT', 2);
+    const z = em(FT_C.id, { ft: true });
+    const vz = luatLoTrinh.xemChuyenLop(QL, z.sid, ftLt1.id);
+    assert(vz.canhBao === false && vz.khiChuyen[0] === 'Giữ lộ trình FT LT1' && vz.khiChuyen.includes('MT chưa thi chuyển sang lớp mới'), JSON.stringify(vz.khiChuyen));
+    assert(vz.tuLopThuong === null, 'vào thẳng FT: không tuLopThuong');
+
+    const ck = lop('FOU', 8);
+    const y = em(ck.id, { ma: 'FOU', target: 6.5 });
+    const cpFt = lop('FT', 2, CP);
+    const vy = luatLoTrinh.xemChuyenLop(QL, y.sid, cpFt.id);
+    const fw = vy.mt0?.tuXep;
+    assert(vy.boiCanh === 'cuoi-khoa' && vy.huong === 'fast_track' && fw, `cuối khoá: ${vy.boiCanh} ${vy.huong} ${JSON.stringify(vy.mt0)}`);
+    assert(vy.khiChuyen[0] === 'Đóng lộ trình FOU, mở lộ trình FT LT1', `dòng 1: ${vy.khiChuyen[0]}`);
+    assert(vy.khiChuyen.includes(`MT0 làm đầu vào, tự xếp ${fw}`) && vy.khiChuyen.includes('Target 6.5 (khoá)'), JSON.stringify(vy.khiChuyen));
+    assert(vy.khiChuyen.includes('Quản lý chi nhánh mới và GVCN lớp mới được báo “Sắp nhận”') && vy.canhBao === false, JSON.stringify(vy.khiChuyen));
+  });
+
+  check('CL-g2 · dongKhiChuyen (bảng thuần): mọi nhánh, dòng rỗng bỏ; phuLopDich', () => {
+    const goc = { nguonFt: false, dichFt: false, khoa: 'dong-mo', routeNguon: null, routeDich: null, maNguon: 'FOU', mt0: null, target: null, veThuong: null, soCase: 0, dongCase: null, goiYNhan: null, doiChiNhanh: false };
+    const k = (o: any) => d.dongKhiChuyen({ ...goc, ...o });
+    const ca: [any, string[], boolean][] = [
+      [{ dichFt: true, routeDich: 'LT1', mt0: { tuXep: 'W4 SEP' }, target: { giaTri: 6, nguon: 'gvcn' }, soCase: 2, dongCase: 'ft' },
+        ['Đóng lộ trình FOU, mở lộ trình FT LT1', 'MT0 làm đầu vào, tự xếp W4 SEP', 'Target 6.0 (GVCN ghi)', '2 Case đang mở tự đóng “Lên FT”'], false],
+      [{ dichFt: true, routeDich: 'LT2', mt0: { tuXep: null }, target: { giaTri: 'KCK', nguon: 'khoa' } }, ['Đóng lộ trình FOU, mở lộ trình FT LT2', 'MT0 làm đầu vào', 'Target KCK (khoá)'], false],
+      [{ dichFt: true, routeDich: 'LT1' }, ['Đóng lộ trình FOU, mở lộ trình FT LT1'], false],
+      [{ nguonFt: true, dichFt: true, khoa: 'giu', routeNguon: 'LT1', routeDich: 'LT1', soCase: 1, goiYNhan: 'Trần Ngọc Hà' },
+        ['Giữ lộ trình FT LT1', 'MT chưa thi chuyển sang lớp mới', '1 Case đang mở đi theo em, người nhận gợi ý: Trần Ngọc Hà'], false],
+      [{ nguonFt: true, dichFt: true, routeNguon: 'LT1', routeDich: 'LT2', doiChiNhanh: true },
+        ['Đóng lộ trình cũ và mở lộ trình mới theo lớp chuyển đến', 'Bài chưa làm ở lại lớp cũ', 'Quản lý chi nhánh mới và GVCN lớp mới được báo “Sắp nhận”'], false],
+      [{}, ['Đóng lộ trình cũ và mở lộ trình mới theo lớp chuyển đến', 'Bài chưa làm ở lại lớp cũ'], false],
+      [{ khoa: 'giu' }, ['Giữ khoá FOU', 'Bài chưa làm chuyển sang lớp mới'], false],
+      [{ nguonFt: true, routeNguon: 'LT1', soCase: 3, dongCase: 'normal', veThuong: { mt0: { coDiem: true, kyNang: ['L', 'R'] }, mockHuy: ['MT1', 'MT2'], giuDiem: ['MT0 L', 'MT0 R'] } },
+        ['Đóng lộ trình FT LT1', 'MT0 → “MT0 · không dùng”', 'Huỷ 2 bài Mock chưa có điểm (MT1, MT2)', 'Giữ điểm đã có (MT0 L, R)', '3 Case FT tự đóng'], true],
+      [{ nguonFt: true, routeNguon: 'LT1', veThuong: { mt0: { coDiem: false, kyNang: [] }, mockHuy: [], giuDiem: [] } }, ['Đóng lộ trình FT LT1', 'Huỷ MT0 chưa có điểm'], true],
+      [{ nguonFt: true, routeNguon: 'LT1', veThuong: { mt0: null, mockHuy: [], giuDiem: [] } }, ['Đóng lộ trình FT LT1'], true],
+    ];
+    for (const [o, mong, cb] of ca) {
+      const r = k(o);
+      assert(JSON.stringify(r.khiChuyen) === JSON.stringify(mong) && r.canhBao === cb, `${JSON.stringify(o)} → ${JSON.stringify(r)}`);
+    }
+    assert(d.phuLopDich({ ft: true, route: 'LT1', ma: null, branchCode: 'CP', siSo: 9 }, true) === 'FT LT1 · CP · 9 em', 'FT có sĩ số');
+    assert(d.phuLopDich({ ft: false, route: null, ma: 'ELE', branchCode: 'CP', siSo: 4 }, false) === 'ELE · CP', 'GVCN không sĩ số');
+    assert(d.huongMotEm({ ft: false, ma: 'FOU' }, { ft: true, ma: null }, false) === 'fast_track' && d.huongMotEm({ ft: true, ma: null }, { ft: false, ma: 'FOU' }, false) === 'chuyen_lop'
+      && d.huongMotEm({ ft: false, ma: 'FOU' }, { ft: false, ma: 'FOU' }, true) === 'hoc_lai' && d.huongMotEm({ ft: false, ma: 'FOU' }, { ft: false, ma: 'BE' }, true) === 'len_lop', 'huongMotEm');
+  });
+
+  // ------------------------------------------------------------------ (k) số câu SQL lop-dich không theo số lớp
+  check('CL-k · /chuyen-lop/lop-dich: 3 lớp và 12 lớp thêm — cùng số câu SQL (nguồn Cuối khoá có lọc)', () => {
+    const ck = lop('FOU', 8);
+    const y = em(ck.id, { ma: 'FOU' });
+    const dem = () => trongBoNho(() => demCau(() => luatLoTrinh.lopDichChoChuyen(QL, y.sid)));
+    for (let i = 0; i < 3; i++) lop('BE', 1);
+    const n3 = dem();
+    for (let i = 0; i < 9; i++) lop(i % 2 ? 'FT' : 'BE', 1);
+    const n12 = dem();
+    assert(n3 === n12, `3 lớp: ${n3} câu · 12 lớp: ${n12} câu`);
+  });
+
+  // ------------------------------------------------------------------ (l) migrate prLcb cuộn lại khi điền bù lỗi (B7)
+  check('CL-l · migratePrLcb: điền bù lỗi → ném lỗi VÀ cột không có (cuộn lại); chạy lại → cột có + điền bù; lần ba không đổi gì', () => {
+    const cot = () => (conn.prepare('SELECT name FROM pragma_table_info(?)').all('lo_trinh_tiep_theo') as any[]).some((x) => x.name === 'huong_gvcn');
+    const fou = lop('FOU', 8);
+    const x = em(fou.id, { ma: 'FOU' });
+    conn.prepare(`INSERT INTO lo_trinh_tiep_theo (student_id, class_id, huong, created_at, updated_at) VALUES (?,?, 'hoc_lai', ?, ?)`).run(x.sid, fou.id, NOW, NOW);
+    conn.exec('ALTER TABLE lo_trinh_tiep_theo DROP COLUMN huong_gvcn');
+    let nem: any = null;
+    conn.exec('ALTER TABLE lenh_chuyen_lop RENAME TO lenh_chuyen_lop_tam');
+    try { nem = loi(() => migLcb.migratePrLcb(conn, [])); } finally { conn.exec('ALTER TABLE lenh_chuyen_lop_tam RENAME TO lenh_chuyen_lop'); }
+    assert(nem && !cot(), `lần lỗi: ${nem?.message ?? 'không ném'} · cột ${cot()}`);
+    const lan2: string[] = [];
+    migLcb.migratePrLcb(conn, lan2);
+    assert(cot() && lan2.length && get('SELECT huong_gvcn FROM lo_trinh_tiep_theo WHERE student_id = ?', x.sid)?.huong_gvcn === 'hoc_lai', `lần 2: ${JSON.stringify(lan2)}`);
+    const truoc = JSON.stringify(all('SELECT id, huong_gvcn FROM lo_trinh_tiep_theo ORDER BY id'));
+    const lan3: string[] = [];
+    migLcb.migratePrLcb(conn, lan3);
+    assert(!lan3.length && JSON.stringify(all('SELECT id, huong_gvcn FROM lo_trinh_tiep_theo ORDER BY id')) === truoc, `lần 3: ${JSON.stringify(lan3)}`);
+  });
+
+  // ------------------------------------------------------------------ (m) quyền qua HTTP
+  await checkAsync('CL-m · HTTP: GVCN / GVBM POST /students/:id/transfer → 403; QT → 200; GVCN GET lop-dich 200 không siSo', async () => {
+    const fou = lop('FOU', 3);
+    const x = em(fou.id, { ma: 'FOU' });
+    const gvcn = ganGv(fou.id, 4, null, true);
+    const gvbm = ganGv(fou.id, 5, 'reading');
+    await voiMayChu(async (goi) => {
+      for (const uid of [gvcn.userId, gvbm.userId]) {
+        const r = await post(goi, uid, `/students/${x.sid}/transfer`, { toClassId: FOU2.id, tuan: THU_HAI, lyDo: 'CL-m' });
+        assert(r.status === 403 && !lenhCua(x.sid), `user ${uid}: ${r.status}`);
+      }
+      const ld = await goi(gvcn.userId, `/chuyen-lop/lop-dich?studentId=${x.sid}`);
+      const j: any = await thuong(ld);
+      assert(ld.status === 200 && j.lop?.length && j.lop.every((l: any) => !('siSo' in l)), `GVCN lop-dich: ${ld.status}`);
+      const qt = await post(goi, P.admin.userId, `/students/${x.sid}/transfer`, { toClassId: FOU2.id, tuan: THU_HAI, lyDo: 'CL-m QT' });
+      assert(qt.status === 200 && lenhCua(x.sid)?.trang_thai === 'cho', `QT: ${qt.status}`);
+    });
+  });
+}

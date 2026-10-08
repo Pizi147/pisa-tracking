@@ -5,7 +5,7 @@
  */
 import { chenNhieuDong, db, theoLo } from '../db.ts';
 import {
-  ASSESSED_SKILLS, coMt0, hanChamMt0, kyNangSosMt0, trangThaiMt0, tuanLich,
+  ASSESSED_SKILLS, coMt0, skillShort, hanChamMt0, kyNangSosMt0, trangThaiMt0, tuanLich,
   type AssessedSkill, type Huong, type ProgrammeCode, type TrangThaiMt0,
 } from '../../../shared/domain/index.ts';
 import { nowIso } from '../util.ts';
@@ -65,7 +65,7 @@ export function dongBoMt0(actorUserId: number, dongs: readonly DongMt0[]): void 
     }
   }
 
-  if (huy.length) huyMt0(actorUserId, huy, 'Bỏ hướng Lên FT');
+  if (huy.length) huyLuot(actorUserId, huy, 'Bỏ hướng Lên FT');
   if (moLai.length) {
     theoLo(moLai, (lo, ph) => {
       conn.prepare(`UPDATE assessment_attempts SET status = 'planned', cancel_reason = NULL, cancelled_at = NULL, updated_at = ? WHERE id IN (${ph})`).run(now, ...lo);
@@ -122,8 +122,8 @@ export function dongBoMt0(actorUserId: number, dongs: readonly DongMt0[]): void 
   );
 }
 
-/** Huỷ các MT0 (chưa điểm — nơi gọi đã lọc) với lý do; ghi lịch sử. Trong `tx`. Không xoá gì. */
-export function huyMt0(actorUserId: number, ids: readonly number[], lyDo: string): void {
+/** Huỷ các lượt (MT0, Mock — chưa điểm, nơi gọi đã lọc) với lý do; ghi lịch sử. Trong `tx`. Không xoá gì. */
+export function huyLuot(actorUserId: number, ids: readonly number[], lyDo: string): void {
   if (!ids.length) return;
   const now = nowIso();
   theoLo(ids, (lo, ph) => {
@@ -161,7 +161,7 @@ export function noiMt0VaoFt(
     const m = mt0.get(x.cuCycleId!);
     return m && x.ftCycleId ? [{ ...x, ftCycleId: x.ftCycleId, mt0Id: m.id }] : [];
   });
-  huyMt0(actorUserId, co.flatMap((x) => {
+  huyLuot(actorUserId, co.flatMap((x) => {
     const m = mt0.get(x.cuCycleId!);
     return m && !x.ftCycleId && !m.coDiem ? [m.id] : [];
   }), lyDoHuy);
@@ -185,6 +185,55 @@ export function noiMt0VaoFt(
     noi.map((x) => [x.sid, x.ftCycleId, 'mock_scheduled', x.ngay, 'MT0 · mốc đầu vào', 'assessment_attempts', x.mt0Id, `mt0:${x.mt0Id}:noi`, actorUserId, now]),
     ' ON CONFLICT DO NOTHING',
   );
+}
+
+/** Lượt của lộ trình FT khi em về lớp thường (PR-CL B4) — MỘT kế hoạch cho xem trước (`xemChuyenLop.veThuong`) và thi hành (`veLopThuong`). */
+export type KeHoachVeThuong = {
+  /** MT0 sẽ xử lý: có điểm → về khoá thường trước ("MT0 · không dùng"); chưa điểm → huỷ. null: không có MT0, hoặc có điểm mà em vào thẳng FT (để nguyên). */
+  mt0: { id: number; coDiem: boolean; kyNang: string[] } | null;
+  khoaTruocId: number | null;
+  mockHuy: { id: number; ten: string }[];
+  /** "MT0 L", "MT3 L"… — điểm đã có, giữ nguyên. */
+  giuDiem: string[];
+};
+
+const THU_TU_KY = ['listening', 'reading', 'writing1', 'writing2', 'writing', 'speaking'];
+
+/**
+ * MỘT câu cho một lộ trình FT: lượt chưa huỷ + kỹ năng đã có điểm + khoá lớp thường ngay trước (`seq` nhỏ hơn, `route IS NULL`). Mock "chưa có điểm"
+ * = `planned` và không kỹ năng nào có điểm; lượt có điểm (kể cả một phần) giữ nguyên.
+ */
+export function keHoachVeThuong(ft: { id: number; student_id: number; seq: number }): KeHoachVeThuong {
+  const rows = db().prepare(
+    `SELECT a.id, a.kind, a.attempt_no, a.status,
+            (SELECT group_concat(s.skill) FROM assessment_scores s WHERE s.attempt_id = a.id AND (s.band IS NOT NULL OR s.raw_score IS NOT NULL)) AS ky,
+            (SELECT k.id FROM learning_cycles k WHERE k.student_id = ? AND k.route IS NULL AND k.seq < ? ORDER BY k.seq DESC LIMIT 1) AS khoa_truoc
+       FROM assessment_attempts a WHERE a.cycle_id = ? AND a.status != 'cancelled' ORDER BY a.attempt_no, a.id`,
+  ).all(ft.student_id, ft.seq, ft.id) as any[];
+  const khoaTruocId = (rows[0]?.khoa_truoc ?? null) as number | null;
+  const kyCua = (r: any) => String(r.ky ?? '').split(',').filter(Boolean).sort((a, b) => THU_TU_KY.indexOf(a) - THU_TU_KY.indexOf(b));
+  const tenCua = (r: any) => (r.kind === 'mt0' ? 'MT0' : `MT${r.attempt_no}`);
+  const coDiem = (r: any) => !!r.ky;
+  const m = rows.find((r) => r.kind === 'mt0');
+  const mt0 = m && (!coDiem(m) || khoaTruocId) ? { id: m.id as number, coDiem: coDiem(m), kyNang: kyCua(m).map(skillShort) } : null;
+  return {
+    mt0, khoaTruocId,
+    mockHuy: rows.filter((r) => r.kind !== 'mt0' && r.status === 'planned' && !coDiem(r)).map((r) => ({ id: r.id as number, ten: tenCua(r) })),
+    giuDiem: rows.flatMap((r) => kyCua(r).map((k) => `${tenCua(r)} ${skillShort(k)}`)),
+  };
+}
+
+/**
+ * FT → LỚP THƯỜNG khi thi hành (PR-CL B4, đặc tả 08/10 §1): gọi TRONG tx của `apDungMotDong`, TRƯỚC bản chụp lộ trình FT. MT0 có điểm → về khoá
+ * thường trước (khoá đã đóng → "MT0 · không dùng"); MT0 chưa điểm + Mock chưa điểm → huỷ "Học lại lớp thường"; lộ trình FT bỏ đầu vào MT0.
+ * Không xoá dòng hay điểm nào. Không giới hạn thời gian (D3). ≤ 4 câu ghi, không tham số đặt tên.
+ */
+export function veLopThuong(actorUserId: number, ft: { id: number; student_id: number; seq: number }): void {
+  const conn = db();
+  const k = keHoachVeThuong(ft);
+  if (k.mt0?.coDiem) conn.prepare('UPDATE assessment_attempts SET cycle_id = ?, updated_at = ? WHERE id = ?').run(k.khoaTruocId, nowIso(), k.mt0.id);
+  huyLuot(actorUserId, [...(k.mt0 && !k.mt0.coDiem ? [k.mt0.id] : []), ...k.mockHuy.map((x) => x.id)], 'Học lại lớp thường');
+  if (k.mt0) conn.prepare('UPDATE learning_cycles SET baseline_attempt_id = NULL, baseline_source = NULL WHERE id = ? AND baseline_attempt_id = ?').run(ft.id, k.mt0.id);
 }
 
 export type Mt0View = {
