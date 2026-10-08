@@ -1897,11 +1897,16 @@ api.post('/students/:id/transfer', requireAuth, wrap((req) => {
   if (enr) {
     const dich = luatLoTrinhSvc.lopDichHopLe(Number(toClassId), enr.class_id);
     const { boiCanh, huong } = luatLoTrinhSvc.huongChuyenMotEm(enr, dich);
+    /* R-C3: sửa lệnh `cho` mà không gửi Target / Dự kiến thi → giữ giá trị của lệnh (không ghi đè lặng lẽ bằng Target khoá / trống). */
+    const cu = db().prepare(`SELECT muc_tieu, khong_cam_ket, ngay_thi FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho'`).get(sid) as any;
+    const vang = (v: unknown) => v === undefined || v === null || v === '';
+    const mucTieuGui = vang(mucTieu) && cu ? (cu.khong_cam_ket ? 'KCK' : cu.muc_tieu ?? undefined) : mucTieu;
+    const ngayThiGui = vang(req.body?.ngayThi ?? thangThi) && cu ? cu.ngay_thi ?? undefined : req.body?.ngayThi ?? thangThi;
     const r = lenhSvc.raLenh(principalOf(req), {
       lopNguonId: enr.class_id, boiCanh, tuanChung: req.body?.tuan ?? effectiveDate ?? null,
       dongs: [lenhSvc.dongTuBody({
         studentId: sid, huong, toClassId, lyDo: reason,
-        mucTieu, ngayThi: req.body?.ngayThi ?? thangThi,
+        mucTieu: mucTieuGui, ngayThi: ngayThiGui,
       })],
     });
     if (r.failed.length) throw badRequest(r.failed[0].message);

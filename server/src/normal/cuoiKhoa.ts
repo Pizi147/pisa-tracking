@@ -110,7 +110,9 @@ function tinhEmXetLai(p: Principal, branchId: number | null, today: string): Lop
       WHERE l.boi_canh = 'cuoi-khoa' AND l.trang_thai = 'da_chuyen' AND l.huong IN ('len_lop', 'fast_track', 'hoc_lai')
         AND ? <= date(l.tuan_bat_dau, '+13 day')${branchId ? ' AND cd.branch_id = ?' : ''}
         AND NOT EXISTS (SELECT 1 FROM lenh_chuyen_lop k WHERE k.student_id = l.student_id AND k.id > l.id AND k.trang_thai != 'huy')`,
-  ).all(today, ...(branchId ? [branchId] : [])) as any[]).filter((l) => can(p, PERMISSIONS.CLASS_EDIT, { classId: l.lop_dich_id }));
+  ).all(today, ...(branchId ? [branchId] : [])) as any[]).filter((l) => can(p, PERMISSIONS.CLASS_EDIT, { classId: l.lop_dich_id })
+    /* R-C4: dòng việc mở hồ sơ lớp NGUỒN (`?viec=xet-lai`) — trang đó đòi `attempt.view`; không xem được thì không hiện (không để href 403). */
+    && can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: l.lop_nguon_id }));
   if (!lenh.length) return [];
   /* Final mới nhất của em ở LỚP NGUỒN (id lớn nhất). */
   const nguonCua = new Map(lenh.map((l) => [l.student_id as number, l.lop_nguon_id as number]));

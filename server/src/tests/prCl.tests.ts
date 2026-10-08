@@ -556,6 +556,9 @@ export async function runPrClTests(t: YThucTestKit) {
     const k = d.chonGuiNhieuEm(rows);
     assert(k.gui.length === 1 && k.gui[0] === rows[0] && k.boQua === 1, JSON.stringify(k));
     assert(d.chonGuiNhieuEm([]).gui.length === 0 && d.TOI_DA_NHIEU_EM === 50, 'rỗng / trần');
+    for (const [nf, df, t, mong] of [[false, true, null, true], [false, true, 6, false], [false, true, 'KCK', false], [true, true, null, false], [false, false, null, false], [false, true, undefined, false]] as const) {
+      assert(d.canHoiTarget(nf, df, t) === mong, `canHoiTarget(${nf}, ${df}, ${t})`);
+    }
     for (const [t, mong] of [[0.4996, '49%'], [0.46, '46%'], [0.57, '57%'], [0.7, '70%'], [0.72, '72%'], [1, '100%']] as const) {
       assert(d.chuTyLeXetLai(t) === mong, `${t} → ${d.chuTyLeXetLai(t)}`);
     }
@@ -572,12 +575,48 @@ export async function runPrClTests(t: YThucTestKit) {
     assert(/<ChonNguoi[\s\S]{0,200}ds=\{/.test(s) && /phuLopDich\(/.test(s) && /\.khiChuyen/.test(s) && /canhBao/.test(s), 'thiếu ô gõ tên lớp / khối Khi chuyển máy chủ');
     assert(/export function ChuyenLopNhieuEm/.test(s) && /xet-lai-lo-trinh/.test(s) && /chonGuiNhieuEm\(/.test(s) && /TOI_DA_NHIEU_EM/.test(s), 'thiếu panel nhiều em');
     assert(/ponytail:/.test(s), 'nhiều em: chú thích ponytail (mỗi em một lời gọi)');
-    assert(/viec === 'xet-lai'|'xet-lai'/.test(doc('web/src/modules/classes/ClassOverviewPage.tsx')), 'ClassOverviewPage chưa mở ?viec=xet-lai');
+    assert(/v === 'xet-lai'/.test(doc('web/src/modules/classes/ClassOverviewPage.tsx')), 'ClassOverviewPage chưa mở ?viec=xet-lai');
     const ck = doc('web/src/modules/classes/PanelCuoiKhoa.tsx');
     assert(/phuLopDich\(/.test(ck), 'PanelCuoiKhoa chưa dùng phuLopDich');
     /* C3 (T4): lớp thường dùng PanelCuoiKhoa — TransitionPanel chỉ còn lớp FT; OTuan, OMt0 vẫn export cho PanelCuoiKhoa / ChuyenLopPanel. */
     const tp = doc('web/src/modules/classes/TransitionPanel.tsx');
     assert(!/cheDo|LUOI_THUONG|NORMAL_LADDER|deXuatGvcn|loTrinhTiep|Hệ thống gợi ý|Dự kiến thi|kieu="thang"|chuHopKetLuan|'Lên FT'|ATTEMPT_KIND_SHORT|[^.\w]ft \?|!ft\b/.test(tp), 'TransitionPanel còn nhánh lớp thường');
     assert(/export function OTuan/.test(tp) && /export function OMt0/.test(tp) && /'Chuyển lớp FT'/.test(tp) && /'Đổi lộ trình'/.test(tp), 'TransitionPanel FT: thiếu OTuan / OMt0 / hai hướng FT');
+  });
+
+  // ---------------------------------------------------------------- T3 vòng sửa 1 (R-C3, R-C4)
+  await checkAsync('CL-n · R-C3: sửa lệnh `cho` qua /transfer KHÔNG gửi mucTieu / ngayThi → giữ muc_tieu, khong_cam_ket, ngay_thi của lệnh; gửi thì ghi giá trị mới', async () => {
+    const ele = lop('ELE', 3);
+    const ft2 = lop('FT', 2);
+    const ft3 = lop('FT', 2);
+    const x = em(ele.id, { ma: 'ELE' });
+    const y = em(ele.id, { ma: 'ELE' });
+    await voiMayChu(async (goi) => {
+      const r1 = await post(goi, QL.userId, `/students/${x.sid}/transfer`, { toClassId: ft2.id, tuan: THU_HAI, lyDo: 'R-C3', mucTieu: 6.5, ngayThi: '2027-03' });
+      assert(r1.status === 200 && lenhCua(x.sid)?.muc_tieu === 6.5 && lenhCua(x.sid)?.ngay_thi === '2027-03', `tạo: ${r1.status} ${JSON.stringify(lenhCua(x.sid))}`);
+      const r2 = await post(goi, QL.userId, `/students/${x.sid}/transfer`, { toClassId: ft3.id, tuan: THU_HAI, lyDo: 'R-C3 sửa lớp' });
+      const l = lenhCua(x.sid);
+      assert(r2.status === 200 && l.lop_dich_id === ft3.id && l.muc_tieu === 6.5 && !l.khong_cam_ket && l.ngay_thi === '2027-03', `sửa không gửi: ${r2.status} ${JSON.stringify(l)}`);
+      await post(goi, QL.userId, `/students/${y.sid}/transfer`, { toClassId: ft2.id, tuan: THU_HAI, lyDo: 'R-C3', mucTieu: 'KCK' });
+      await post(goi, QL.userId, `/students/${y.sid}/transfer`, { toClassId: ft3.id, tuan: THU_HAI, lyDo: 'R-C3 sửa' });
+      assert(lenhCua(y.sid).khong_cam_ket === 1 && lenhCua(y.sid).muc_tieu == null, `KCK giữ: ${JSON.stringify(lenhCua(y.sid))}`);
+      const r3 = await post(goi, QL.userId, `/students/${x.sid}/transfer`, { toClassId: ft3.id, tuan: THU_HAI, lyDo: 'R-C3 đổi', mucTieu: 7, ngayThi: '2027-05' });
+      assert(r3.status === 200 && lenhCua(x.sid).muc_tieu === 7 && lenhCua(x.sid).ngay_thi === '2027-05', `gửi mới: ${JSON.stringify(lenhCua(x.sid))}`);
+    });
+  });
+
+  check('CL-o · R-C4: việc "Xét lại lộ trình" chỉ cho người XEM được lớp nguồn — QL CP quản lớp em đang học (CP) mà không xem được lớp nguồn MB → không có; QT có', () => {
+    const nguon = lop('FOU', 8);
+    const dichCp = lop('BE', 1, CP);
+    const { sid, cyc } = em(dichCp.id, { ma: 'BE' });
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'transferred', ?, ?)`).run(sid, nguon.id, nguon.start, NOW);
+    conn.prepare(`INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, lop_dich_id, huong, boi_canh, tuan_bat_dau, nguoi_ra_lenh, ngay_ra_lenh, trang_thai, tao_luc)
+      VALUES (?,?,?, 'len_lop', 'cuoi-khoa', ?, ?, ?, 'da_chuyen', ?)`).run(sid, nguon.id, dichCp.id, THU_HAI, QL.userId, TODAY, NOW);
+    const fid = Number(conn.prepare(`INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, status, created_at) VALUES (?,?, 1, 'final', ?, 'planned', ?)`).run(cyc, sid, nguon.id, NOW).lastInsertRowid);
+    tyLeFou(fid, 40);
+    const coNguon = (p: any) => (ck.emXetLaiLoTrinh(p, null, TODAY) as any[]).some((g) => g.lopNguonId === nguon.id);
+    assert(coNguon(P.admin), 'QT phải có (tiền đề)');
+    assert(!coNguon(P.cpManager), 'QL CP không xem được lớp nguồn MB → không có việc (href sẽ 403)');
+    assert(!viecXetLai(P.cpManager, null).some((x) => x.key === `xetlai:${nguon.id}`), 'QL CP: không dòng việc');
   });
 }

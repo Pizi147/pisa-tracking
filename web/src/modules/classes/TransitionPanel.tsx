@@ -224,7 +224,8 @@ function NoiDung({ classId, onClose, onDone }: { classId: number; onClose: () =>
                 <span>Chưa quyết <b className="text-slate-100">{chua}</b></span>
               </div>
               <p className="m-0">
-                Gửi phần đã quyết trước, quyết nốt sau. Tới hết tuần kết thúc lớp{data.tuanKetThuc ? ` (${tuanLich(data.tuanKetThuc, homNay)})` : ''} mà còn em chưa có quyết định chuyển lớp thì Quản lý nhận thẻ Báo QL.
+                {/* R-C5: câu "Tới hết tuần kết thúc lớp … Báo QL" là luật lớp thường — panel này chỉ còn lớp FT. */}
+                Gửi phần đã quyết trước, quyết nốt sau.
               </p>
             </div>
           ) : undefined,
