@@ -267,6 +267,12 @@ Báo cáo + mockup: `thiet-ke/mockup-mt-quy-trinh-2026-10-08.html` (artifact htt
 - **Đề xuất PR (thứ tự):** 0 deploy + kiểm DB · 1 PR-MTKET (5 thao tác: Huỷ điểm / Huỷ lịch kỹ năng / Bỏ kỹ năng / Huỷ MT mọi vị trí / Khôi phục) · 2 PR-CHENMT mở rộng (đánh số lại 2 chiều thay chặn + thay T2) sau khi đưa lại #247 · 3 PR-MTUI (mục 5–8: thu gọn Kế hoạch Test, "Xếp nhiều MT" + panel "Chọn lớp…", tên → Hồ sơ HV chỉ ở Kế hoạch Test, tiêu đề Lịch Test "bài thi W1 OCT" + chip hạn, Điểm theo lớp bỏ tuần khỏi tab → "Thi W1 OCT" dưới mã HV) · 4 PR-HOP1 (một hộp một đường lưu + GVCN đề xuất dời có cấu trúc) · 5 PR-XTHV (tab Xếp theo học viên, ≤3 em) · 6 PR-LT4 lớp thường (đổi mốc hỏi dời bài, "-" tự dời thứ Hai, vướng Final vẫn lưu "-", QL Huỷ kết quả môn, sửa Rulebook §20.6 hạn chấm).
 - **9 câu chờ chủ SP** (trong trang): commit đang deploy (ảnh 1 có chip #245); huỷ MT giữa (giữ số / đánh số lại); đánh số lại thay chặn + kỳ vọng theo số mới; bỏ kỹ năng MT cũ/tuần thi; tên nút; tab theo HV (≤3 em, gợi ý 6/12/16); em lệch tuần (chữ đậm); quy trình A/B/C; lớp thường 3 việc.
 
+### SAU PR-HOP1 (#293, rà 09/10) — ghi chú không chặn
+- Hồ sơ MT: dời lịch qua `HopKyNang` không còn ô **Lý do** (tuỳ chọn) như `WeekModal` cũ — nhật ký ghi không lý do. Chủ SP thấy cần thì thêm lại.
+- Lượt không có `classId`: "Dời lịch thi cả đợt" bấm không mở gì (hiếm; một kỹ năng vẫn đi `HopThaoTacMt`).
+- Phép kiểm HOP1-d kiểm web bằng quét nguồn (regex dòng `theoChungDau`) — dễ vỡ khi đổi tên.
+- Chưa chạy `/impeccable audit`, `/ponytail-review`; không có mockup riêng (theo `mockup-mt-quy-trinh-2026-10-08.html` phương án A, ⋯ 3 mục).
+
 ### SAU PR-KV (#274, rà 08/10) — ghi chú không chặn, chờ góp ý / sửa sau
 - **Case không PA → "Nhắc" báo 404:** chủ Case = GVCN dự phòng (lớp FT chưa phân công GVBM kỹ năng) không thấy dòng "Thêm PA", Quản trị gán cho GVCN → Nhắc 404. Có từ trước, PR-KV làm dễ gặp hơn (Case Học viên). PR nhỏ: `no_plan` gán người làm theo cùng luật quyền (hoặc chủ Case Học viên = QL); có thể gộp PR-GOP.
 - **Chủ Case khi Lưu** lấy lớp FT từ `lenh.lop_dich_id`; em đã chuyển FT → FT (PR-CL) thì gợi ý theo lớp cũ. Nên lấy lớp đang học.
