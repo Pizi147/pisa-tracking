@@ -875,8 +875,8 @@ export function scoreSummaryText(row: Partial<ScoreRow> | null | undefined): str
  * bảng lịch sử riêng như lịch. Ô điểm chỉ giữ NGƯỜI NHẬP hiện tại; câu "ai đã sửa gì" nằm ở đây.
  */
 export function scoreHistoryOf(attemptId: number) {
-  /* FIX-DTL2: HAI câu riêng thay cho UNION ALL — Turso vẫn trả sai tên cột của câu gộp trên dữ liệu thật dù vế đầu đã có AS (hồ sơ MT 500,
-   * `l.action` undefined). Câu đơn, mọi cột có AS, không còn phụ thuộc cách đặt tên của câu gộp. */
+  /* FIX-DTL3: đọc cột theo VỊ TRÍ (`raw`), không theo tên. Trên Turso thật `l.action` vẫn undefined dù đã đặt AS và tách hết UNION
+   * (hồ sơ MT 500, 09/10) — tên khoá dòng không đáng tin ở đường này; vị trí cột thì cố định theo câu SELECT. */
   const cot = `l.id AS id, l.action AS action, l.entity_label AS entity_label, l.before_json AS before_json, l.after_json AS after_json,
               l.created_at AS created_at, u.full_name AS actor_name`;
   /* PR-XOA: xoá hẳn học viên thì SQLite có thể cấp lại id lượt Test cũ cho lượt mới, còn nhật ký (Q1) vẫn giữ — chỉ lấy dòng nhật ký
@@ -890,7 +890,7 @@ export function scoreHistoryOf(attemptId: number) {
           AND l.action IN ('score.edit', 'score.lich_su', 'score.override', 'score.no_show', 'score.no_show_cleared', 'score.nhan_xet',
                            'score.huy_vuot', 'score.khoi_phuc', 'regular.no_show', 'regular.no_show_cleared')`,
     )
-    .all(attemptId) as any[];
+    .raw(true).all(attemptId) as unknown[][];
   /* PR-BV: lớp thường ghi điểm vào nhật ký theo DÒNG ĐIỂM (`assessment_score`, `regular.score*`) và dấu "-" là `regular.no_show*`. */
   const dongDiem = db()
     .prepare(
@@ -900,8 +900,12 @@ export function scoreHistoryOf(attemptId: number) {
          LEFT JOIN users u ON u.id = l.actor_user_id
         WHERE s.attempt_id = ? AND l.created_at >= a.created_at AND l.action IN ('regular.score', 'regular.score.override')`,
     )
-    .all(attemptId) as any[];
-  const rows = [...dongLuot, ...dongDiem].sort((x, y) => y.id - x.id);
+    .raw(true).all(attemptId) as unknown[][];
+  const rows = [...dongLuot, ...dongDiem].map((r) => {
+    if (!Array.isArray(r) || r.length < 7) throw new Error(`scoreHistoryOf: dòng nhật ký sai hình dạng: ${JSON.stringify(r)?.slice(0, 300)}`);
+    const [id, action, entity_label, before_json, after_json, created_at, actor_name] = r;
+    return { id, action, entity_label, before_json, after_json, created_at, actor_name } as any;
+  }).sort((x, y) => y.id - x.id);
   /* Điểm lớp thường là "đạt / tổng" (16/20); nhãn nhật ký lớp thường là "FOU · listening". */
   const diemThuong = (r: any) => (!r ? 'Chưa có' : r.raw_score !== null && r.raw_score !== undefined ? `${r.raw_score}/${r.raw_total ?? '?'}` : 'Trống');
   /* Dn7: nhận xét W/S — trước → sau rút gọn 80 ký tự; lần chỉ đổi GV chấm (nhận xét giữ nguyên) không thành dòng. */
