@@ -77,7 +77,7 @@ export const ANH_Q2 = [
     marks: [
       { n: 1, loc: (p) => p.locator('[aria-label="Khung lớp"]'), ghi: 'Công tắc khung: Fast Track hoặc Lớp thường.' },
       { n: 2, loc: (p) => p.getByRole('button', { name: /^Cần xếp lại/ }), ghi: '"Cần xếp lại (n)": học viên có kỹ năng vắng hoặc phần thi đã huỷ.' },
-      { n: 3, loc: (p) => p.getByRole('button', { name: /Xếp lịch MT/ }), ghi: '"Xếp lịch MT…" xếp nhiều em một lần.' },
+      { n: 3, loc: (p) => p.getByRole('button', { name: /Xếp nhiều MT/ }), ghi: '"Xếp nhiều MT…" xếp nhiều em một lần.' },
       { n: 4, loc: (p) => p.getByText('MT1', { exact: true }).first(), pad: 6, ghi: 'Mỗi cột là một đợt Mock Test, ghi tuần thi.' },
       { n: 5, loc: (p) => p.getByText(/W1 JUL/).first().locator('xpath=ancestor::button[1]'), ghi: 'Chip kỹ năng: màu xanh dương = đã xếp, xám = đã thi, vàng = dời vì vắng, tím = chờ duyệt, gạch ngang = đã huỷ phần thi. Bấm chip để sửa.' },
     ],
@@ -103,7 +103,7 @@ export const ANH_Q2 = [
   {
     id: 'q-23-xep-lich-mt', tieu_de: 'Panel "Xếp lịch Mock Test"', user: QL, url: '/test/ke-hoach', w: 1400, panel: true,
     buoc: async (p) => {
-      await p.getByRole('button', { name: /Xếp lịch MT/ }).click();
+      await p.getByRole('button', { name: /Xếp nhiều MT/ }).click();
       await DLG(p).waitFor();
       await p.setViewportSize({ width: 1400, height: 900 });
       await p.waitForTimeout(600);

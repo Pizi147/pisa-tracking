@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useApi, useGopTaiLai } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
+import { Nhan } from '../../ui/Nhan.tsx';
 import { BranchFilter, WeekPicker, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { IconGap } from '../../ui/BieuTuong.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
@@ -11,7 +12,7 @@ import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { KhoiNhom } from '../../ui/HangNhom.tsx';
 import { useManHinhHep } from '../cham/LuoiChamLop.tsx';
-import { addDaysIso, chuOChuaLuu, tenMon, tuanDauThangCua, tuanLich } from '@shared/domain/index.ts';
+import { addDaysIso, chuOChuaLuu, mondayOfDate, ngay, tenMon, tuanDauThangCua, tuanLich } from '@shared/domain/index.ts';
 import { khoaHang, type DongNo, type LichTest, type LopLichTest } from './lichTest/kieu.ts';
 import { DaiSo, type OSo } from './lichTest/DaiSo.tsx';
 import { KhoiNo } from './lichTest/KhoiNo.tsx';
@@ -221,14 +222,23 @@ export function LichTestTab() {
       conTro={conTro} onDaLuu={baoDaLuu} chuaLuu={chuaLuu} baoChuaLuu={baoChuaLuu} />
   );
   /* Khối 2 / khối 3 (hàng lớp): khối rỗng vẫn hiện tiêu đề + 0, không mở được (D1). */
-  const khoiLop = (id: string, k: 'k2' | 'k3', tieuDe: string, ds: LopLichTest[]) => (
+  const khoiLop = (id: string, k: 'k2' | 'k3', tieuDe: string, ds: LopLichTest[], phuThem?: ReactNode) => (
     <div id={id} className="card overflow-clip p-0">
       <KhoiNhom id={`${id}-than`} phang rong={!ds.length} mo={moKhoi[k] && ds.length > 0} onMo={() => thuKhoi(k)} nhan={tieuDe} tieuDe={tieuDe}
-        dem={conBai(ds)} phu={ds.length ? soLop(ds) : undefined}>
+        dem={conBai(ds)} phu={ds.length ? <>{soLop(ds)}{phuThem}</> : undefined}>
         {hangLop(ds, k === 'k2')}
       </KhoiNhom>
     </div>
   );
+
+  /* Khối "Test chấm tuần này": hạn chấm mặc định = thứ Tư tuần này (xám trước · vàng đúng hôm đó · đỏ từ thứ Năm). */
+  const hanT4 = homNay ? addDaysIso(mondayOfDate(homNay), 2) : null;
+  const chipHan = hanT4 && homNay && (
+    homNay < hanT4 ? <Nhan tone="muted">hạn T4 {ngay(hanT4, homNay)}</Nhan>
+      : homNay === hanT4 ? <Nhan tone="soon">hạn hôm nay</Nhan>
+        : <Nhan tone="late">Quá hạn · T4 {ngay(hanT4, homNay)}</Nhan>
+  );
+  const phuK2 = <> · bài thi {tuanLich(addDaysIso(tuanXem, -7), homNay)} {chipHan}</>;
 
   /* Các phần của hàng lọc — máy tính xếp một hàng, điện thoại gom vào khối "Lọc". */
   const tuanPicker = (
@@ -335,8 +345,8 @@ export function LichTestTab() {
               setDongMo(d ? { d, viTri, conTro: true } : null);
             }}
             hep={hep} homNay={homNay} onDaLuu={baoDaLuu} knUrl={dongMo?.d.classId === urlClassId ? urlKn : null} />
-          {data.laTuanNay && khoiLop('lich-test-k2', 'k2', 'Test chấm tuần này', k2Tab)}
-          {khoiLop('lich-test-k3', 'k3', data.laTuanNay ? 'Lịch Test tuần này' : `Lịch Test ${maTuan}`, lopTab)}
+          {data.laTuanNay && khoiLop('lich-test-k2', 'k2', 'Test chấm tuần này', k2Tab, phuK2)}
+          {khoiLop('lich-test-k3', 'k3', data.laTuanNay ? 'Lịch Test tuần này' : `Lịch Test ${maTuan}`, lopTab, data.laTuanNay ? <> · {maTuan}</> : undefined)}
         </>
       )}
       {moXuat && data.tuan && (

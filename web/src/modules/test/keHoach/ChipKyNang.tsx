@@ -127,7 +127,7 @@ export function ChipDotFT({ so, kn, cu, homNay, ct = null, chon, onMo }: {
       {nhom.map((g) => (
         <button key={g.ten} type="button" onClick={(e) => onMo(e.currentTarget)} title={g.title}
           aria-label={`MT${so}, ${g.doc}`}
-          className={`flex min-h-5 w-full flex-wrap items-center justify-between gap-x-1 rounded-md border px-1.5 text-left text-[11.5px] font-semibold leading-[18px] ${MAU_O_MT[g.kieu]} ${chon ? 'ring-2 ring-[var(--text)]' : ''}`}>
+          className={`flex min-h-5 max-sm:min-h-[32px] w-full flex-wrap items-center justify-between gap-x-1 rounded-md border px-1.5 text-left text-[11.5px] font-semibold leading-[18px] ${MAU_O_MT[g.kieu]} ${chon ? 'ring-2 ring-[var(--text)]' : ''}`}>
           {/* Không cắt chữ (FIX-DTL): tuần dài (`W4 MAR 2026`) xuống dòng trong chip, cột giữ hẹp (C6). */}
           <span className="font-bold">
             {g.ten}{g.viec && <span className="font-medium"> · {g.viec}</span>}

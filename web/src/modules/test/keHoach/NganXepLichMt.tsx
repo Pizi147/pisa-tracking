@@ -34,7 +34,7 @@ const DAU: Record<ToneSeXep, string> = { ok: '✓', soon: '!', bad: '✕' };
 const MAU_DAU: Record<ToneSeXep, string> = { ok: 'text-ok', soon: 'text-soon', bad: 'text-bad' };
 
 /**
- * XẾP LỊCH MOCK TEST NHIỀU LỚP (mockup MT bản 4 phần 1 · M9 · T13b · T37 · K4-17/18/19 · C4) — Test › Kế hoạch Test › nút "Xếp lịch MT…",
+ * XẾP LỊCH MOCK TEST NHIỀU LỚP (mockup MT bản 4 phần 1 · M9 · T13b · T37 · K4-17/18/19 · C4) — Test › Kế hoạch Test › nút "Xếp nhiều MT…",
  * ngăn rộng bên phải (điện thoại: toàn màn, chân dính). Từ trên xuống: Lọc (chi nhánh · lớp nhiều lựa chọn · tìm em) → 1 Đợt ("MT mới"
  * mặc định = mỗi em đợt kế của riêng em; hoặc MT1…) → 2 Tuần và kỹ năng (tuần chung · tick L R W S · "Lịch riêng" từng kỹ năng) → 3 Học viên
  * (chip đếm ✓ ! ✕ cũng là bộ lọc · MỘT bảng cuộn ngang, cột chọn + tên đứng yên) → chân "Đóng" / "Xếp lịch n em · m bài".
@@ -55,7 +55,8 @@ export function NganXepLichMt({ chiNhanhDau, lopDs, lopMoSan, coThuong, onDoiKhu
   const lopFT = useMemo(() => lopDs.filter((l) => l.loai === 'ft'), [lopDs]);
   const lopTheoChiNhanh = useMemo(() => (branchId ? (dsLop.data?.lop ?? []).filter((l) => l.loai === 'ft') : lopFT), [lopFT, branchId, dsLop.data]);
   const [lopChon, setLopChon] = useState<number[]>(() => {
-    const dau = lopMoSan ?? lopFT.find((l) => l.canXepLai > 0 || l.chuaCoLichTiep > 0)?.id ?? lopFT[0]?.id;
+    /* Mở ra với 0 lớp; chỉ chọn sẵn khi trang đang mở một lớp (`?classId=`) hoặc khung chỉ có 1 lớp. */
+    const dau = lopMoSan ?? (lopFT.length === 1 ? lopFT[0].id : undefined);
     return dau ? [dau] : [];
   });
   const [themLop, setThemLop] = useState('');
@@ -219,14 +220,14 @@ export function NganXepLichMt({ chiNhanhDau, lopDs, lopMoSan, coThuong, onDoiKhu
                   <span key={id} className="inline-flex h-7 items-center gap-1 rounded border px-2 text-xs text-slate-200" style={{ borderColor: 'var(--line-strong)' }}>
                     {l?.code ?? id}
                     <button type="button" className="btn btn-sm btn-ghost relative -mr-1 min-h-[28px] min-w-[28px] justify-center px-0 max-sm:after:absolute max-sm:after:-inset-2 max-sm:after:content-['']" aria-label={`Bỏ lớp ${l?.code ?? id}`}
-                      disabled={lopChon.length === 1} onClick={() => { setLopChon((s) => s.filter((x) => x !== id)); setGiuLoi(null); }}>✕</button>
+                      onClick={() => { setLopChon((s) => s.filter((x) => x !== id)); setGiuLoi(null); }}>✕</button>
                   </span>
                 );
               })}
               {lopConLai.length > 0 && (
                 <select className="field h-7 w-auto min-w-28 py-0 text-xs" value={themLop} aria-label="Thêm lớp"
                   onChange={(e) => { const id = Number(e.target.value); if (id) { setLopChon((s) => [...s, id]); setGiuLoi(null); } setThemLop(''); }}>
-                  <option value="">+ lớp</option>
+                  <option value="">{lopChon.length ? '+ lớp' : 'Chọn lớp…'}</option>
                   {lopConLai.map((l) => <option key={l.id} value={l.id}>{l.code}</option>)}
                 </select>
               )}
@@ -294,7 +295,7 @@ export function NganXepLichMt({ chiNhanhDau, lopDs, lopMoSan, coThuong, onDoiKhu
       </Khoi>
 
       <Khoi so={3} tieuDe="Học viên">
-        {!luoi.size ? <div className="text-xs text-slate-500">Đang tải lớp…</div> : (
+        {!lopChon.length ? <div className="text-xs text-slate-500">Chọn lớp để xếp lịch.</div> : !luoi.size ? <div className="text-xs text-slate-500">Đang tải lớp…</div> : (
           <>
             <div className="flex flex-wrap items-center gap-1.5">
               <ChipDem tone="ok" n={dem.ok} loc={loc} onLoc={setLoc}>✓ Sẽ xếp {dem.ok}</ChipDem>
