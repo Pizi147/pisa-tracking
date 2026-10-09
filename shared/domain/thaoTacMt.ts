@@ -11,7 +11,7 @@ export type ThaoTac = 'nhap-diem' | 'sua-diem' | 'dat-lich' | 'doi-lich' | 'doi-
 
 export const CHU_THAO_TAC: Record<ThaoTac, string> = {
   'nhap-diem': 'Nhập điểm', 'sua-diem': 'Sửa điểm', 'dat-lich': 'Xếp lịch', 'doi-lich': 'Dời lịch thi', 'doi-han': 'Dời hạn chấm',
-  'bo-ky-nang': 'Bỏ kỹ năng khỏi đợt', 'dua-lai': 'Đưa lại vào đợt', 'bao-vang': 'Báo vắng', 'huy-diem': 'Huỷ điểm',
+  'bo-ky-nang': 'Huỷ kỹ năng', 'dua-lai': 'Đưa lại vào đợt', 'bao-vang': 'Báo vắng', 'huy-diem': 'Huỷ điểm',
   'xep-lai': 'Xếp lại bài vắng', 'tra-loi-de-nghi': 'Trả lời đề nghị dời', 'khoi-phuc': 'Khôi phục và đặt tuần',
   'xin-doi': 'Xin dời', 'khong-mock-lai': 'Không mock lại',
 };
@@ -26,10 +26,11 @@ export function trangThaiTT(o: {
 }): TrangThaiTT {
   if (!o.batBuoc) return 'khong-yeu-cau';
   if (o.coDiem) return 'co-diem';
-  if (o.lichSu) return 'lich-su';          // MT cũ chưa điểm: chỉ nhập bù — không dời, không vắng, không hạn
+  /* PR-MTGON: đã huỷ xét TRƯỚC MT cũ — kỹ năng huỷ của MT cũ vẫn có "Đưa lại vào đợt". */
   /* PR-MTb sau rà (I1): huỷ vì vắng mà đang có đề nghị dời chờ → "chờ duyệt" (Quản lý trả lời đề nghị, không Khôi phục / Không mock lại song song). */
   if (o.huyVang && o.sit === 'cancelled') return o.choDuyet ? 'cho-duyet' : 'huy-vang';
   if (o.sit === 'cancelled') return 'da-huy';
+  if (o.lichSu) return 'lich-su';          // MT cũ chưa điểm: chỉ nhập bù — không dời, không vắng, không hạn
   if (o.choDuyet) return 'cho-duyet';
   if (o.sit === 'absent') return 'vang';
   if (!o.tuanBatDau) return 'chua-xep';
@@ -42,19 +43,22 @@ export type QuyenTT = { nhapDiem: boolean; quanLy: boolean; gvcn: boolean; laFt:
 /** ≤ 1 nút chính + ≤ 3 mục menu (K4-27). "Lịch sử" KHÔNG nằm trong menu dòng — ở dòng thời gian của đợt (YC-13.6). */
 export function thaoTacKyNang(tt: TrangThaiTT, q: QuyenTT): { chinh: ThaoTac | null; menu: ThaoTac[] } {
   const ql = q.quanLy, ftQl = q.laFt && q.quanLy;
+  /* PR-MTGON (luật 3): Quản lý FT "Huỷ kỹ năng" ở MỌI trạng thái còn kỹ năng trong đợt (có điểm thì web hỏi "Xoá điểm và huỷ kỹ năng?"). */
+  const huy: ThaoTac[] = ftQl ? ['bo-ky-nang'] : [];
   switch (tt) {
     case 'khong-yeu-cau': return { chinh: ftQl ? 'dua-lai' : null, menu: [] };
-    case 'chua-xep': return { chinh: ql ? 'dat-lich' : null, menu: ftQl ? ['bo-ky-nang'] : [] };
-    case 'chua-toi-tuan': return { chinh: q.nhapDiem ? 'nhap-diem' : null, menu: [...(ql ? ['doi-lich'] : []), ...(ftQl ? ['bo-ky-nang'] : [])] as ThaoTac[] };
+    case 'chua-xep': return { chinh: ql ? 'dat-lich' : null, menu: huy };
+    case 'chua-toi-tuan': return { chinh: q.nhapDiem ? 'nhap-diem' : null, menu: [...(ql ? ['doi-lich'] : []), ...huy] as ThaoTac[] };
     case 'dang-thi': return { chinh: q.nhapDiem ? 'nhap-diem' : null,
-      menu: [...(q.gvcn || ql ? ['bao-vang'] : []), ...(ql ? ['doi-han', 'doi-lich'] : [])] as ThaoTac[] };
+      menu: [...(q.gvcn || ql ? ['bao-vang'] : []), ...(ql ? ['doi-han', 'doi-lich'] : []), ...huy] as ThaoTac[] };
     /* PR-MTb T20: Quản lý / Quản trị dời được kỹ năng đã có điểm (điểm đi theo; máy chủ `setSkillWeek` `quanLy`). */
     case 'co-diem': return { chinh: q.nhapDiem ? 'sua-diem' : null,
-      menu: [...(ql ? ['doi-lich'] : []), ...((q.dotHoanTat ? ql : q.nhapDiem || ql) ? ['huy-diem'] : [])] as ThaoTac[] };
-    case 'vang': return { chinh: q.gvcn || ql ? 'xep-lai' : null, menu: [] };
+      menu: [...(ql ? ['doi-lich'] : []), ...((q.dotHoanTat ? ql : q.nhapDiem || ql) ? ['huy-diem'] : []), ...huy] as ThaoTac[] };
+    case 'vang': return { chinh: q.gvcn || ql ? 'xep-lai' : null, menu: huy };
     case 'cho-duyet': return { chinh: ql ? 'tra-loi-de-nghi' : null, menu: [] };
-    case 'da-huy': return { chinh: ql ? 'khoi-phuc' : null, menu: [] };
-    case 'lich-su': return { chinh: q.nhapDiem ? 'nhap-diem' : null, menu: [] };
+    /* PR-MTGON: kỹ năng đã huỷ (dữ liệu cũ, kể cả MT cũ) → "Đưa lại vào đợt" (Quản lý FT); lớp thường giữ Khôi phục. */
+    case 'da-huy': return { chinh: ftQl ? 'dua-lai' : ql ? 'khoi-phuc' : null, menu: [] };
+    case 'lich-su': return { chinh: q.nhapDiem ? 'nhap-diem' : null, menu: huy };
     /* T3 (PR-MTa): Quản lý khôi phục và đặt tuần / không mock lại; GVCN xin dời; GVBM không có thao tác. */
     case 'huy-vang': return { chinh: q.quanLy ? 'khoi-phuc' : q.gvcn ? 'xin-doi' : null, menu: q.quanLy ? ['khong-mock-lai'] : [] };
   }
@@ -86,7 +90,8 @@ function viSaoMo(muc: MucHop, tt: TrangThaiTT, moi: boolean): string {
 export function menuHopKyNang(tt: TrangThaiTT, q: QuyenTT, moi: boolean):
   Array<{ muc: MucHop; duoc: boolean; thay?: 'xep-lai' | 'khoi-phuc'; viSao: string | null }> {
   const t = thaoTacKyNang(tt, q);
-  const thay = t.chinh === 'xep-lai' ? 'xep-lai' as const : t.chinh === 'khoi-phuc' ? 'khoi-phuc' as const : undefined;
+  /* PR-MTGON: kỹ năng đã huỷ — nút chính là "Đưa lại vào đợt"; "Đổi tuần" trong hộp vẫn là đưa lại + đặt tuần (đường Khôi phục). */
+  const thay = t.chinh === 'xep-lai' ? 'xep-lai' as const : t.chinh === 'khoi-phuc' || (tt === 'da-huy' && q.quanLy) ? 'khoi-phuc' as const : undefined;
   /* MT cũ chưa điểm: `thaoTacKyNang` không cho dời, nhưng Quản lý vẫn sửa tuần hồ sơ (PR-LM D3, T20 — máy chủ `setSkillWeek` cho). */
   const doiTuan = moi ? q.quanLy : t.chinh === 'dat-lich' || t.menu.includes('doi-lich') || !!thay || (tt === 'lich-su' && q.quanLy);
   const duoc: Record<MucHop, boolean> = {
@@ -108,9 +113,9 @@ export const CHU_LY_DO: Record<ThaoTacLyDo, string> = {
   ...CHU_THAO_TAC, 'huy-luot': 'Huỷ lượt', 'huy-ket-qua': 'Huỷ kết quả', 'tu-choi': 'Từ chối', 'thi-lai': 'Thi lại', 'huy-lich': 'Huỷ lịch',
 };
 
-/** T7 (PR-MTa, 05/10): lý do BẮT BUỘC chỉ khi huỷ lượt, huỷ kết quả do dời vượt, Quản lý từ chối. Huỷ điểm một kỹ năng: tuỳ chọn,
- *  như xoá trắng ô (T22; chủ sản phẩm 06/10). */
-export const LY_DO_BAT_BUOC: readonly ThaoTacLyDo[] = ['huy-luot', 'huy-ket-qua', 'tu-choi'];
+/** T7 (PR-MTa, 05/10): lý do BẮT BUỘC chỉ khi huỷ kết quả (dữ liệu cũ), Quản lý từ chối. Huỷ điểm một kỹ năng: tuỳ chọn, như xoá
+ *  trắng ô (T22; chủ sản phẩm 06/10). Huỷ MT{n}: tuỳ chọn (PR-MTGON, rà #282 — bảng chữ đã duyệt không có ô lý do bắt buộc). */
+export const LY_DO_BAT_BUOC: readonly ThaoTacLyDo[] = ['huy-ket-qua', 'tu-choi'];
 
 export function canLyDo(t: ThaoTacLyDo): boolean {
   return LY_DO_BAT_BUOC.includes(t);

@@ -476,7 +476,6 @@ api.post('/ke-hoach-test/dot', requireAuth, wrap((req) => {
   }));
   return keHoachSvc.luuDot(principalOf(req), {
     attemptId, kyNang, lyDoBo: req.body.lyDoBo ?? null, force: !!req.body.force, reason: req.body.reason ?? null,
-    xacNhanHuyLich: req.body.xacNhanHuyLich === true,
   });
 }));
 
@@ -512,7 +511,6 @@ api.post('/ke-hoach-test/hang-loat', requireAuth, wrap((req) => {
     dotTheoEm: req.body?.dotTheoEm && typeof req.body.dotTheoEm === 'object' ? req.body.dotTheoEm : undefined,
     thiLai: req.body?.thiLai && typeof req.body.thiLai === 'object' ? req.body.thiLai : undefined,
     lyDo: typeof req.body?.lyDo === 'string' ? req.body.lyDo : null,
-    xacNhanHuyLich: req.body?.xacNhanHuyLich === true,   // T2 (PR-MTa): popup gộp dời vượt đã xác nhận
   });
 }));
 
@@ -631,7 +629,7 @@ api.post('/attempts/:id/week', requireAuth, wrap((req) => {
   const periodId = toInt(req.body?.periodId);
   if (!periodId) throw badRequest('Cần chọn tuần.');
   return attemptSvc.setPlanningWeek(principalOf(req), pInt(req, 'id'), periodId, req.body?.reason,
-    { force: req.body?.force === true, huyLichVuot: req.body?.xacNhanHuyLich === true });
+    { force: req.body?.force === true });
 }));
 
 /** PR-LM (Q-0310-1): "Huỷ lịch" một lượt = bỏ tuần, giữ lượt — các kỹ năng chưa thi về "Chưa xếp lịch". Lý do tuỳ chọn (T7). */
@@ -650,7 +648,13 @@ api.post('/attempts/:id/khoi-phuc-ket-qua', requireAuth, wrap((req) => {
 api.post('/attempts/:id/skills/:skill/skip', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return attemptSvc.setSkillSkip(principalOf(req), pInt(req, 'id'), String(req.params.skill),
-    req.body?.skipped !== false, req.body?.reason);
+    req.body?.skipped !== false, req.body?.reason, { xoaDiem: req.body?.xoaDiem === true });
+}));
+
+/** PR-MTGON: "Đưa lại cả 4 kỹ năng" — mọi kỹ năng đã huỷ của lượt về đợt, một lần. */
+api.post('/attempts/:id/dua-lai-ca-luot', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return attemptSvc.duaLaiCaLuot(principalOf(req), pInt(req, 'id'));
 }));
 
 /*
@@ -672,7 +676,6 @@ api.post('/attempts/:id/skills/:skill/week', requireAuth, wrap((req) => {
     reason: req.body?.reason ?? null,
     /* Chỉ vượt được CẢNH BÁO (hai đợt cách nhau một tuần), không vượt được ràng buộc thứ tự. */
     force: req.body?.force === true,
-    huyLichVuot: req.body?.xacNhanHuyLich === true,
   });
 }));
 
@@ -758,8 +761,7 @@ api.post('/attempts/:id/deadline', requireAuth, wrap((req) => {
 
 api.post('/attempts/:id/cancel', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  const cach = req.body?.cach === 'ca-luot' || req.body?.cach === 'phan-con-lai' ? req.body.cach : null;
-  return attemptSvc.huyLuot(principalOf(req), pInt(req, 'id'), { lyDo: String(req.body?.reason ?? ''), cach });
+  return attemptSvc.huyLuot(principalOf(req), pInt(req, 'id'), { lyDo: typeof req.body?.reason === 'string' ? req.body.reason : null });
 }));
 
 api.post('/attempts/:id/reopen', requireAuth, wrap((req) => {

@@ -103,8 +103,10 @@ export async function runPrDlTests(t: YThucTestKit) {
    * Chụp lại 08/10 (PR-LCa migrate prLc): `migrate()` ở bộ kiểm trước đồng bộ lệnh Lên FT ghi thẳng (MB BE 04) → thêm một MT0, id dời; MB FT 101 vẫn 0 MT0.
    * Chụp lại 08/10 (PR-KV): prVaiA (2d)(7b), prDonA (6b), prLt2b (5)(7), prS5fA, prPa dựng MT0 cho em BE (kỳ vọng đầu ra theo MT0) → id lượt dời;
    * bộ demo: Kiều Thảo Nhi (MB FT 101, kết luận Học viên) nay có Case "Kỳ vọng đầu ra chưa đạt · Học viên · S" (§3 "vẫn tạo Case").
+   * Chụp lại 08/10 (PR-MTGON): các bộ kiểm chạy trước (PR-MT, PR-XLMT, PR-LM, keHoachTest) đổi theo luật mới — Huỷ MT xoá điểm, Huỷ kỹ năng
+   * lúc nào cũng được, dời vượt bị chặn (không còn bỏ lịch lượt sau) → dữ liệu MB FT 101 khác; `idsTuan` bên dưới vẫn đối chiếu độc lập.
    */
-  const ANH_CHUP = { tuan: 'c87a03a1c4497362', moi: 'ff2a516d0843646c' };
+  const ANH_CHUP = { tuan: 'ba3d46b8d1bc0d2f', moi: '540d059331b881c2' };
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id

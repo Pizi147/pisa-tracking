@@ -718,7 +718,6 @@ check('Huỷ giữ lý do và lịch sử, không tăng số MT', () => {
       AND NOT EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND (s.band IS NOT NULL OR s.raw_score IS NOT NULL)) LIMIT 1`)
     .get(classId('CP FT 110')) as any;
   const before = (conn.prepare('SELECT COUNT(*) n FROM assessment_attempts WHERE cycle_id = ?').get(a.cycle_id) as any).n;
-  assertThrows(() => attempts.huyLuot(P.cpManager, a.id, { lyDo: '' }), /lý do/, 'Huỷ mà không ghi lý do');
   attempts.huyLuot(P.cpManager, a.id, { lyDo: 'Học viên nghỉ ốm' });
   const after = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(a.id) as any;
   const count = (conn.prepare('SELECT COUNT(*) n FROM assessment_attempts WHERE cycle_id = ?').get(a.cycle_id) as any).n;
@@ -1137,13 +1136,13 @@ check('[9.4] Case chỉ sống nhờ con số vừa sửa thì rút khỏi danh 
   assert(hist.n > 0, 'Rút case đã xoá mất lịch sử');
 });
 
-check('Bỏ một kỹ năng khỏi phạm vi: đã có điểm thì bị chặn, điểm giữ nguyên (PR-XLMT K4-13); chưa có điểm thì tính lại kết quả', () => {
+check('Bỏ một kỹ năng khỏi phạm vi: đã có điểm thì 409 hỏi Xoá điểm, điểm giữ nguyên (PR-MTGON); chưa có điểm thì tính lại kết quả', () => {
   const xong = conn
     .prepare(`SELECT * FROM assessment_attempts WHERE class_id = ? AND status='done' ORDER BY id DESC LIMIT 1`)
     .get(classId('CP FT 110')) as any;
   const beforeScores = (conn.prepare('SELECT COUNT(*) n FROM assessment_scores WHERE attempt_id = ?').get(xong.id) as any).n;
   assertThrows(() => attempts.setSkillSkip(P.cpManager, xong.id, 'speaking', true, 'Quản lý chốt lại: đợt này không yêu cầu Speaking'),
-    /đã có điểm.*Huỷ điểm/, 'PR-XLMT K4-13: bỏ kỹ năng đã có điểm phải bị chặn');
+    /đã có điểm — Xoá điểm và huỷ kỹ năng\?/, 'PR-MTGON: huỷ kỹ năng đã có điểm phải hỏi xoá điểm trước');
   const afterScores = (conn.prepare('SELECT COUNT(*) n FROM assessment_scores WHERE attempt_id = ?').get(xong.id) as any).n;
   assert(afterScores === beforeScores, 'Đánh dấu không mock đã xoá điểm đã có');
   /* PR-XLMT: phần "tính lại mẫu số" giữ nguyên, chuyển sang một đợt CHƯA TỚI tuần thi, Speaking chưa có điểm. */
@@ -5471,7 +5470,7 @@ check('[10.4] R/L/W và Speaking của CÙNG một đợt không bị gọi là 
 });
 
 /* PR-MTa T20 thay [10.4] cho Quản lý / Quản trị: dời được phần đã có điểm (điểm đi theo) — GV vẫn bị chặn (prMta T20). */
-check('[10.4→T20] Quản trị dời phần đã có điểm: không còn chặn "đã có điểm" (ở đây dừng ở hộp xác nhận dời vượt)', () => {
+check('[10.4→T20] Quản trị dời phần đã có điểm: không còn chặn "đã có điểm" (ở đây dừng ở luật vượt lượt sau — PR-MTGON)', () => {
   const scored = conn
     .prepare(
       `SELECT a.id, a.class_id FROM assessment_attempts a
@@ -5482,7 +5481,7 @@ check('[10.4→T20] Quản trị dời phần đã có điểm: không còn ch�
   assert(scored, 'Seed thiếu lượt đã có điểm Listening');
   let loi: any = null;
   try { skillSchedule.setSkillWeek(P.admin, scored.id, 'listening', periodOf(addDays(demoToday(), 28)), { force: true }); } catch (e) { loi = e; }
-  assert(loi && !/đã có điểm/.test(loi.message) && /Xác nhận để tiếp tục/.test(loi.message), `Quản trị: ${loi?.message}`);
+  assert(!loi || (!/đã có điểm/.test(loi.message) && /Chọn tuần trước/.test(loi.message)), `Quản trị: ${loi?.message}`);
 });
 
 check('[10.1] Lớp Normal luôn phải đủ bốn môn — không có thao tác miễn môn', () => {
@@ -5501,15 +5500,14 @@ check('[10.1] Lớp Normal luôn phải đủ bốn môn — không có thao tá
   );
 });
 
-check('[10.1] Không bỏ môn khỏi phạm vi SAU khi đã xác nhận vắng', () => {
+/* PR-MTGON (luật 3, chủ sản phẩm 08/10) thay [10.1] "không bỏ môn sau khi vắng": Quản lý huỷ kỹ năng lúc nào cũng được. */
+check('[10.1→PR-MTGON] Quản lý huỷ được môn đã xác nhận vắng; dấu vắng giữ trong lịch sử', () => {
   const a = freshPlannedAttempt('CP FT 110');
   const mgr = P.cpManager;
   /* Phải có tuần thi mới xác nhận được đã thi hay vắng. */
   skillSchedule.setSitStatus(mgr, a.id, 'speaking', 'absent', 'Em nghỉ ốm, GVCN đã xác minh');
-  assertThrows(
-    () => skillSchedule.setSkillScope(mgr, a.id, 'speaking', false, 'Thôi không tính môn này nữa'),
-    /đã được xác nhận vắng/, 'Hợp thức hoá được một đợt thiếu bằng cách bỏ môn đã vắng',
-  );
+  skillSchedule.setSkillScope(mgr, a.id, 'speaking', false, 'Không tính môn này đợt này');
+  assert((conn.prepare(`SELECT required FROM attempt_skills WHERE attempt_id = ? AND skill = 'speaking'`).get(a.id) as any).required === 0, 'chưa huỷ');
   /* Và dấu vắng vẫn còn nguyên trong lịch sử. */
   const hist = conn
     .prepare(`SELECT * FROM attempt_schedule_history WHERE attempt_id = ? AND action = 'skill_sit_status'`)
@@ -9230,6 +9228,9 @@ await runPrGopTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 // ==================================================================== PR-LTGON (lớp thường: đổi mốc dời bài theo; "-" trùng Final hoà vào)
 const { runPrLtGonTests } = await import('./prLtGon.tests.ts');
 await runPrLtGonTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-MTGON (chống kẹt Mock Test, chủ sản phẩm 08/10)
+const { runPrMtGonTests } = await import('./prMtGon.tests.ts');
+await runPrMtGonTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

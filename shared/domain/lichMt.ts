@@ -90,12 +90,11 @@ export function mtDaThiChuaQua(route: string | null, tuanBatDau: string, daThiTo
     .filter((n) => !laLichSu(addDaysIso(tuanBatDau.slice(0, 10), (tuanHocCuaMt(route, n) - 1) * 7 + 6), homNay));
 }
 
-export type CachHuy = 'ca-luot' | 'phan-con-lai' | null;
+export type CachHuy = 'ca-luot' | null;
 
-/** Q-B, M-12: "Huỷ cả lượt" chỉ với lượt LỚN NHẤT còn hiệu lực, chưa có điểm và chưa thi kỹ năng nào; còn lại "Huỷ phần còn lại". */
-export function cachHuyLuot(l: LuotSo, ds: LuotSo[]): CachHuy {
-  if (l.status === 'cancelled') return null;
-  return !l.coDiem && !l.daThi && l.attempt_no === Math.max(...ds.filter((x) => x.status !== 'cancelled').map((x) => x.attempt_no)) ? 'ca-luot' : 'phan-con-lai';
+/** PR-MTGON (luật 4, chủ sản phẩm 08/10): Quản lý "Huỷ MT{n}" mọi lượt còn hiệu lực, mọi lúc — điểm của lượt xoá theo. Đã huỷ → null. */
+export function cachHuyLuot(l: LuotSo, _ds?: LuotSo[]): CachHuy {
+  return l.status === 'cancelled' ? null : 'ca-luot';
 }
 
 /** T42, K4-04: hạn duyệt đề nghị dời lần 2 = Chủ nhật của TUẦN CHỨA NGÀY GỬI (không phải tuần đích). */
@@ -148,8 +147,8 @@ export function coMocTiepTheo(o: { coMoc: boolean; route: string | null; mtCuoi:
 export type LuotLanCan = { attemptId: number; attemptNo: number; kind: string; tuanDau: string | null; coDiem: boolean; daThi: boolean; huy: boolean };
 
 /**
- * Q-0310-1 + D1 + T2 (PR-MTa): dời lượt `attemptNo` tới tuần cuối `tuanCuoiMoi` thì mọi lượt SAU có tuần sớm nhất ≤ tuần đó là "bị vượt"
- * — bỏ lịch; có điểm thì kết quả bị huỷ (lưu ở `ket_qua_huy`, khôi phục được), không còn chặn.
+ * Q-0310-1 + D1: dời lượt `attemptNo` tới tuần cuối `tuanCuoiMoi` thì mọi lượt SAU có tuần sớm nhất ≤ tuần đó là "bị vượt".
+ * PR-MTGON (luật 1): bị vượt = tuần mới KHÔNG HỢP LỆ — máy chủ chặn (`kiemVuotTu`), không còn bỏ lịch / huỷ kết quả lượt bị vượt.
  * Bỏ qua lượt trước, lượt đã huỷ, lượt chưa xếp tuần (`tuanDau` null — không có gì để vượt).
  */
 export function luotBiVuot(ds: readonly LuotLanCan[], o: { attemptNo: number; tuanCuoiMoi: string }): { biVuot: LuotLanCan[] } {
@@ -160,78 +159,8 @@ export function luotBiVuot(ds: readonly LuotLanCan[], o: { attemptNo: number; tu
   };
 }
 
-/** Một lượt sẽ bị vượt — popup dời vượt (mockup phần 4). `soDiem` = số KỸ NĂNG có điểm (W1/W2 tính một). */
-export type LuotSeHuyLich = { attemptId: number; nhan: string; tuan: string; soDiem: number; soCase: number };
-
-/** 'MT2: huỷ 4 điểm, đóng 1 Case' · 'MT2: huỷ 1 điểm' · 'MT3: bỏ lịch'. */
-export function dongHeQuaVuot(x: LuotSeHuyLich): string {
-  if (!x.soDiem) return `${x.nhan}: bỏ lịch`;
-  return `${x.nhan}: huỷ ${x.soDiem} điểm${x.soCase ? `, đóng ${x.soCase} Case` : ''}`;
-}
-
-/** Popup + lý do chỉ khi có lượt bị vượt đã có điểm (T2 — chưa điểm thì chỉ dòng vàng). */
-export function canLyDoVuot(ds: readonly LuotSeHuyLich[]): boolean {
-  return ds.some((x) => x.soDiem > 0);
-}
-
-/** Nhãn "MT2, MT3" của các lượt (ghép bằng dấu phẩy). */
-const ghepNhan = (ds: readonly { nhan: string }[]) => ds.map((x) => x.nhan).join(', ');
-
-/** Chip vàng: không popup → "Bỏ lịch MT2, MT3"; có popup → "Huỷ điểm MT2" (chỉ lượt có điểm); rỗng → ''. */
-export function chipVuot(ds: readonly LuotSeHuyLich[]): string {
-  if (!ds.length) return '';
-  return canLyDoVuot(ds) ? `Huỷ điểm ${ghepNhan(ds.filter((x) => x.soDiem > 0))}` : `Bỏ lịch ${ghepNhan(ds)}`;
-}
-
-/**
- * Chữ popup dời vượt (PR-MTb T6, mockup phần 4). `canPopup = canLyDoVuot(ds)` — lượt bị vượt chưa có điểm thì KHÔNG popup, chỉ chip vàng.
- * `chip`: không popup → "Bỏ lịch MT2, MT3" (các lượt bị bỏ lịch); có popup → "Huỷ điểm MT2" (chỉ các lượt có điểm; hộp đã nói đủ, chip là chữ ngắn
- * dự phòng cạnh nút Lưu). `ds` rỗng → chip ''.
- */
-export function chuDoiVuot(i: { nhan: string; tuanMoi: string; ds: readonly LuotSeHuyLich[] }, homNay?: string | null):
-  { canPopup: boolean; tieuDe: string; cau: string; dong: string[]; chip: string } {
-  return {
-    canPopup: canLyDoVuot(i.ds),
-    tieuDe: i.tuanMoi ? `Dời ${i.nhan} sang ${tuanLich(i.tuanMoi, homNay)}?` : `Dời ${i.nhan}?`,   // chưa biết tuần mới (kiểm trước lỗi, 409 lúc lưu)
-    cau: `${i.nhan} muộn hơn ${ghepNhan(i.ds)}.`,
-    dong: i.ds.map(dongHeQuaVuot),
-    chip: chipVuot(i.ds),
-  };
-}
-
-/** Toast sau khi lưu dời vượt: "Đã lưu lịch · huỷ kết quả MT2 · bỏ lịch MT3" (lượt có điểm → huỷ kết quả; còn lại → bỏ lịch). Không vượt gì → chỉ `dau` ("Đã lưu lịch" hoặc câu của hộp mẹ). */
-export function chuLuuVuot(ds: readonly LuotSeHuyLich[], dau = 'Đã lưu lịch'): string {
-  const co = ds.filter((x) => x.soDiem > 0);
-  const khong = ds.filter((x) => !x.soDiem);
-  return [dau, ...(co.length ? [`huỷ kết quả ${ghepNhan(co)}`] : []), ...(khong.length ? [`bỏ lịch ${ghepNhan(khong)}`] : [])].join(' · ');
-}
-
-/**
- * Popup GỘP của panel "Xếp lịch Mock Test" (Q2, T6): mỗi em có lượt bị vượt CÓ ĐIỂM một dòng "Tú · MT2: huỷ 4 điểm, đóng 1 Case";
- * em chỉ bỏ lịch không điểm không vào popup (cột "Sẽ xếp" ghi "· bỏ lịch MT2"). `soEm` = số em đang xếp (tiêu đề).
- */
-export function chuXepVuotGop(dong: readonly { ten: string; seHuyLich?: readonly LuotSeHuyLich[] }[], soEm: number):
-  { canPopup: boolean; tieuDe: string; cau: string; dong: string[] } {
-  const co = dong.filter((x) => canLyDoVuot(x.seHuyLich ?? []));
-  return {
-    canPopup: co.length > 0,
-    tieuDe: `Xếp lịch ${soEm} em?`,
-    cau: '',
-    dong: co.map((x) => `${x.ten} · ${(x.seHuyLich ?? []).map(dongHeQuaVuot).join('; ')}`),
-  };
-}
-
 /** Kết quả đã huỷ (chưa khôi phục) của một lượt (T2). `vuotBoi` = nhãn lượt đã vượt ("MT1"). */
 export type KetQuaHuy = { id: number; attemptId: number; luc: string; lyDo: string; nguoi: string | null; soDiem: number; vuotBoi: string | null };
-
-/** Dòng đỏ trên hộp xếp lịch (PR-LM): "Lưu sẽ huỷ lịch MT2 (W3 JUL) và MT3 (W1 SEP) — hai lượt này về Chưa xếp lịch." */
-export function cauSeHuyLich(ds: readonly { nhan: string; tuan: string }[], homNay?: string | null): string {
-  if (!ds.length) return '';
-  const ten = ds.map((x) => `${x.nhan} (${tuanLich(x.tuan, homNay)})`);
-  const ghep = ten.length === 1 ? ten[0] : `${ten.slice(0, -1).join(', ')} và ${ten[ten.length - 1]}`;
-  const so = ds.length === 1 ? 'lượt này' : ds.length === 2 ? 'hai lượt này' : `${ds.length} lượt này`;
-  return `Lưu sẽ huỷ lịch ${ghep} — ${so} về Chưa xếp lịch.`;
-}
 
 /**
  * Dòng phụ ô điểm của kỹ năng ĐÃ DỜI DO VẮNG (hồ sơ MT, I5 — PR-LM LM-6): tuần thi bù là tuần đang xem → "Thi bù tuần này (lần N)";

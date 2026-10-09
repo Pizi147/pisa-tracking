@@ -10,7 +10,7 @@ import { Truong } from '../../ui/KhungPanel.tsx';
 import { Skeleton, Status } from '../../ui/ui.tsx';
 import { OMt } from '../../ui/OMt.tsx';
 import { HopKyNang } from '../test/keHoach/HopKyNang.tsx';
-import { HopKhoiPhucKetQua } from '../test/keHoach/HopXacNhanHuyLich.tsx';
+import { HopKhoiPhucKetQua } from '../test/keHoach/HopKhoiPhucKetQua.tsx';
 import { DaiODiemLon, type KyNangLon, type LichKn } from '../fasttrack/ODiemLon.tsx';
 import { useSaveScore } from '../fasttrack/ScoreEntry.tsx';
 import { duongDotTest, ngay, tuanLich, type KetQuaHuy, type KyNangKH, type OKyNang } from '@shared/domain/index.ts';

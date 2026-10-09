@@ -8,9 +8,8 @@ import { BoLocDoan, NutChon } from '../../../ui/ui.tsx';
 import { BranchFilter } from '../../../ui/Filters.tsx';
 import { Nhan } from '../../../ui/Nhan.tsx';
 import { OMt } from '../../../ui/OMt.tsx';
-import { HopXacNhanHuyLich } from './HopXacNhanHuyLich.tsx';
 import {
-  CAU_TUAN_DA_QUA, KY_NANG_KE_HOACH, MT_TOI_DA, chuXepVuotGop, demSeXep, mondayOfDate, nhanSeXep, tenMon, tenMonNgan, tomTatXepMt, tuanLich, tuanMacDinhDotMoi,
+  CAU_TUAN_DA_QUA, KY_NANG_KE_HOACH, MT_TOI_DA, demSeXep, mondayOfDate, nhanSeXep, tenMon, tenMonNgan, tomTatXepMt, tuanLich, tuanMacDinhDotMoi,
   type DongHangLoat, type KyNangKH, type ToneSeXep,
 } from '@shared/domain/index.ts';
 import type { DanhSachLop, HangFT, LopKH, LuoiFTData } from './kieu.ts';
@@ -158,11 +157,6 @@ export function NganXepLichMt({ chiNhanhDau, lopDs, lopMoSan, coThuong, onDoiKhu
   const dongChon = daChonThay.map((h) => dong.get(h.studentId)).filter((d): d is DongHangLoat => !!d);
   const tt = tomTatXepMt(dongChon);
   const [busy, setBusy] = useState(false);
-  /* Q2 (PR-MTb T6): MỘT popup gộp cho mọi em có lượt bị vượt CÓ ĐIỂM. Lý do giữ ở đây — mở lại (em lỗi / số điểm đổi) không mất chữ. */
-  const [moGop, setMoGop] = useState(false);
-  const [lyDoGop, setLyDoGop] = useState('');
-  const [loiMayGop, setLoiMayGop] = useState<string | null>(null);
-  const gop = chuXepVuotGop(dongChon.map((d) => ({ ten: d.ten, seHuyLich: d.seHuyLich })), tt.soEm);
 
   const doiTick = (id: number, v: boolean) => setTicked((s) => { const n = new Set(s); if (v) n.add(id); else n.delete(id); return n; });
   const doiTatCa = (v: boolean) => setTicked((s) => { const n = new Set(s); for (const h of tickDuoc) { if (v) n.add(h.studentId); else n.delete(h.studentId); } return n; });
@@ -172,13 +166,10 @@ export function NganXepLichMt({ chiNhanhDau, lopDs, lopMoSan, coThuong, onDoiKhu
     setThiLai((s) => { const n = { ...s }; delete n[id]; return n; });
   };
 
-  const luu = async (daXacNhan = false, lyDoVuot?: string) => {
+  const luu = async () => {
     if (busy || !tt.soEm || !kyChon.length) return;
-    if (gop.canPopup && !daXacNhan) { setLoiMayGop(null); setMoGop(true); return; }
-    if (lyDoVuot !== undefined) setLyDoGop(lyDoVuot);
-    setBusy(true); setLoiMayGop(null);
+    setBusy(true);
     let daLuu = 0;
-    let loiMay: string | null = null;
     const loi: DongHangLoat[] = [];
     try {
       for (const id of lopChon) {
@@ -187,20 +178,14 @@ export function NganXepLichMt({ chiNhanhDau, lopDs, lopMoSan, coThuong, onDoiKhu
         try {
           const r = await api.post<{ dong: DongHangLoat[]; daLuu: number }>('/ke-hoach-test/hang-loat', {
             classId: id, studentIds: ids, force: true, xemTruoc: false, ...thanChung,
-            /* Có điểm → đã qua popup (lý do ở popup); chưa điểm → lưu thẳng (dữ liệu vừa đổi có điểm → dòng lỗi, bấm lại sẽ thấy popup). */
-            xacNhanHuyLich: daXacNhan, ...(lyDoVuot ? { lyDo: lyDoVuot } : {}),
           });
           daLuu += r.daLuu;
           loi.push(...r.dong.filter((d) => d.hanhDong === 'loi'));
         } catch (e: any) {
-          loiMay = e.message ?? 'Không lưu được.';
           toast.push('error', `${luoi.get(id)?.classCode ?? 'Lớp'}: ${e.message ?? 'không lưu được'}`);
           loi.push(...ids.map((sid) => ({ studentId: sid, ten: '', hanhDong: 'loi' as const, bai: [], loi: e.message ?? 'Không lưu được.' })));
         }
       }
-      /* Lỗi máy mà chưa lớp nào lưu được: popup vẫn mở, hiện lỗi, giữ chữ Lý do (chống mất dữ liệu). */
-      if (daXacNhan && loiMay && daLuu === 0) { setLoiMayGop(loiMay); return; }
-      setMoGop(false);
       invalidate('/ke-hoach-test'); invalidate('/attempts'); invalidate('/cham');
       toast.push(daLuu > 0 ? 'ok' : 'error', `Đã xếp ${daLuu} em${loi.length ? `, còn ${loi.length} em lỗi` : ''}.`);
       onDone();
@@ -350,11 +335,6 @@ export function NganXepLichMt({ chiNhanhDau, lopDs, lopMoSan, coThuong, onDoiKhu
           </>
         )}
       </Khoi>
-
-      {moGop && (
-        <HopXacNhanHuyLich tieuDe={gop.tieuDe} cau={gop.cau} dong={gop.dong} busy={busy} loiMay={loiMayGop} lyDoDau={lyDoGop}
-          onDong={() => { setMoGop(false); setLoiMayGop(null); }} onXacNhan={(ly) => void luu(true, ly)} />
-      )}
     </KhungPanel>
   );
 }
