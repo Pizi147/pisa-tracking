@@ -251,6 +251,7 @@ dời hợp lệ thì giữ điểm, vượt/trùng thì báo, không tự huỷ
 
 ### SAU DEPLOY / tuần 12/10 (đã chốt hướng, chưa làm)
 - **PR-MTUI**: Kế hoạch Test thu gọn mặc định (trừ `?classId=` / một lớp); nút "Xếp nhiều MT…", panel bắt "Chọn lớp…"; tên HV ở Kế hoạch Test → Hồ sơ HV (lưới chấm giữ Hồ sơ MT); tiêu đề Lịch Test "bài thi W1 OCT" + một chip hạn (xám/vàng hôm nay/đỏ quá hạn), khối 3 thêm tuần; Điểm theo lớp bỏ tuần khỏi tab (chỉ "n/N đủ điểm"), thêm "Thi W1 OCT" dưới mã HV, không tô đậm/màu.
+- **PR-MTUI thêm (chủ SP 09/10):** Test › Điểm theo lớp có bộ lọc **Chi nhánh** + **Fast Track | Lớp thường** cho cột danh sách lớp (giống hàng lọc Kế hoạch Test: ô Chi nhánh + công tắc FT/Lớp thường).
 - **PR-HOP1** (phương án A): mọi chỗ sửa lịch một MT mở cùng `HopKyNang`, một đường lưu `/ke-hoach-test/dot`; bỏ `WeekModal` Hồ sơ MT.
 - **PR-XTHV**: tab "Xếp theo học viên" trong panel (P1 danh sách–chi tiết, ≤ 3 em, "Điền gợi ý" theo lịch 6/12/16), chỉ QL/Quản trị, FT.
 - **Chỉ QL lo Test**: bỏ GVCN "Xin dời", bỏ "Đề xuất sửa › Lịch MT"; GV chấm vẫn nhập điểm + "-". Admin CN sau này = quyền QL.
