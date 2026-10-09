@@ -15,7 +15,7 @@ import type { DanhSachLop, LopKH } from './keHoach/kieu.ts';
 
 /**
  * TEST › KẾ HOẠCH TEST (mockup 14, PR-UX2) — CHỈ Quản lý. Một hàng điều khiển: Chi nhánh · ô tìm lớp · tab nhỏ
- * `Fast Track · Lớp thường` · ⓘ luật · nút `Xếp lịch MT…` / `Xếp lịch Test…` (PR-XLMT: ngăn `NganXepLichMt` nhiều lớp · `NganXepHangLoat` một lớp thường); dưới là danh sách lớp (`LopKeHoach`), mỗi lớp một hàng
+ * `Fast Track · Lớp thường` · ⓘ luật · nút `Xếp nhiều MT…` / `Xếp lịch Test…` (PR-XLMT: ngăn `NganXepLichMt` nhiều lớp · `NganXepHangLoat` một lớp thường); dưới là danh sách lớp (`LopKeHoach`), mỗi lớp một hàng
  * lớn mở ra lưới học viên × đợt — lớp thường làm y như Fast Track. Hộp kỹ năng (neo cạnh chip) và ngăn hàng loạt không
  * bao giờ mở chồng nhau (G-8): hộp mở thì nút hàng loạt tắt.
  */
@@ -49,13 +49,12 @@ export function KeHoachTestTab() {
       : loaiTheoLop ?? (daNho === 'ft' || daNho === 'thuong' ? daNho : 'ft'))
     : (lopFT.length ? 'ft' : 'thuong');
 
-  /* Q9: mở sẵn `?classId=` nếu có; không thì lớp đầu tiên có việc (FT chưa có lịch tiếp · thường có em chưa có bài). */
-  const viecCua = (l: LopKH) => (l.loai === 'ft' ? l.chuaCoLichTiep > 0 : l.hvChuaCoLich > 0);
+  /* Mặc định THU GỌN mọi lớp; chỉ tự mở `?classId=` hoặc khung chỉ có một lớp. */
   useEffect(() => {
     if (!data || daMoSan || !data.lop.length) return;
     const theoUrl = classIdParam ? data.lop.find((l) => l.id === classIdParam) : undefined;
     const trongLoai = loai === 'ft' ? lopFT : lopThuong;
-    const chon = theoUrl ?? trongLoai.find(viecCua) ?? trongLoai[0];
+    const chon = theoUrl ?? (trongLoai.length === 1 ? trongLoai[0] : undefined);
     if (chon) setMoList([chon.id]);
     setDaMoSan(true);
   }, [data, daMoSan]);   // eslint-disable-line react-hooks/exhaustive-deps
@@ -66,8 +65,8 @@ export function KeHoachTestTab() {
     next.set('loai', k); next.delete('classId');
     setParams(next, { replace: true });
     const trongLoai = k === 'ft' ? lopFT : lopThuong;
-    if (!trongLoai.some((l) => moList.includes(l.id)) && trongLoai.length) {
-      setMoList((m) => [...m, (trongLoai.find(viecCua) ?? trongLoai[0]).id]);
+    if (trongLoai.length === 1 && !moList.includes(trongLoai[0].id)) {
+      setMoList((m) => [...m, trongLoai[0].id]);
     }
   };
 
@@ -167,7 +166,7 @@ export function KeHoachTestTab() {
         <span className="flex-1" />
         <button type="button" className="btn btn-primary btn-sm min-h-[44px] sm:min-h-0" disabled={!!lyDoTat} title={lyDoTat}
           onClick={() => setXep(loai)}>
-          {loai === 'ft' ? 'Xếp lịch MT…' : 'Xếp lịch Test…'}
+          {loai === 'ft' ? 'Xếp nhiều MT…' : 'Xếp lịch Test…'}
         </button>
       </div>
 

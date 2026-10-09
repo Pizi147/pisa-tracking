@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Empty, Th } from '../../../ui/ui.tsx';
-import { duongDotTest, type KyNangKH } from '@shared/domain/index.ts';
+import { duongDotTest, duongHoSoHocVien, type KyNangKH } from '@shared/domain/index.ts';
 import { OMt } from '../../../ui/OMt.tsx';
 import { useNgayNghiepVu } from '../../../ui/ngayNghiepVu.ts';
 import { ChipDotFT, ChipKyNang } from './ChipKyNang.tsx';
@@ -87,7 +88,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
           {hangs.map((h) => (
             <tr key={h.studentId} className="row-hover">
               <td className="td sticky-col py-1.5 align-middle">
-                <div className="truncate text-slate-100" title={h.ten}>{h.ten}</div>
+                <Link to={duongHoSoHocVien(h.studentId)} className="link block truncate text-slate-100" title={h.ten}>{h.ten}</Link>
                 <div className="text-xs text-slate-500">
                   {h.ma}{'vaoMuon' in h && h.vaoMuon && <span> · vào muộn</span>}
                 </div>
