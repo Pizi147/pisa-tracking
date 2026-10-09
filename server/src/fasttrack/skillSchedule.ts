@@ -510,6 +510,8 @@ export function checkWeekVsNeighbours(input: {
   newWeekStart: string;
   /** PR-MT0: loại lượt đang dời — MT0 ở khoá lớp thường không là lân cận của Giữa / Cuối khoá (cùng tuần Final là đúng luật). */
   kind?: string | null;
+  /** PR-LTGON: lượt bỏ qua khi so lân cận (Final mà dấu "-" của Giữa khoá được hoà vào). */
+  boQua?: readonly number[];
 }): ScheduleCheck {
   const conn = db();
   const blockers: string[] = [];
@@ -532,6 +534,7 @@ export function checkWeekVsNeighbours(input: {
     attempt_no: number; kind: string; route: string | null; first_week: string; last_week: string; rows: Array<{ skill: string; week: string }>;
   }>();
   for (const r of skillRows) {
+    if (input.boQua?.includes(r.id)) continue;
     if (!r.route && (r.kind === 'mt0') !== (input.kind === 'mt0')) continue;   // PR-MT0: khoá lớp thường — MT0 có luật tuần riêng
     const g = byAttempt.get(r.id);
     if (!g) byAttempt.set(r.id, { attempt_no: r.attempt_no, kind: r.kind, route: r.route ?? null, first_week: r.week_start, last_week: r.week_start, rows: [{ skill: r.skill, week: r.week_start }] });
@@ -588,13 +591,14 @@ export function checkSkillWeekMove(input: {
   attemptId: number;
   skill: string;
   newWeekStart: string;
+  boQua?: readonly number[];
 }): ScheduleCheck {
   const conn = db();
   const a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(input.attemptId) as any;
   if (!a) return { blockers: ['Không tìm thấy lượt kiểm tra'], warnings: [] };
   return checkWeekVsNeighbours({
     cycleId: a.cycle_id, attemptNo: a.attempt_no, excludeAttemptId: input.attemptId,
-    newWeekStart: input.newWeekStart, kind: a.kind,
+    newWeekStart: input.newWeekStart, kind: a.kind, boQua: input.boQua,
   });
 }
 
