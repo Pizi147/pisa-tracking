@@ -215,4 +215,30 @@ export async function runPrKvTests(t: YThucTestKit) {
     const e2 = maLoi(() => ck.ghiKetLuanFt(P.mbManager, G, { dat: true }));
     assert(e2?.status === 400 && /MT0/.test(e2.msg), JSON.stringify(e2));
   });
+  check('KV11 · em đã chuyển FT → FT: chủ Case Kỳ vọng theo lớp FT em ĐANG học, không theo lenh.lop_dich_id', () => {
+    const ele5 = lopMoi('ELE', false, 11), ftA = lopMoi('FT', true, 1), ftB = lopMoi('FT', true, 1);
+    ganGv(ele5, GV[0], 'writing'); ganGv(ftA, GV[2], 'writing2'); ganGv(ftB, GV[3], 'writing2');
+    const H = hocVien(ele5, 'ELE');
+    lenFt(ele5, [H], ftA, true);
+    diemMt0(H, { L: 4, R: 4, W: 3, S: 4 });
+    conn.prepare(`UPDATE enrollments SET status = 'transferred' WHERE student_id = ? AND class_id = ?`).run(H, ftA);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`).run(H, ftB, TODAY, new Date().toISOString());
+    kv.luuKyVong(P.mbManager, ele5, { dong: [{ sid: H, dat: false, nguyenNhan: 'trung_tam', mon: ['writing'] }] });
+    const cs = caseKv(H);
+    assert(cs.length === 1 && cs[0].owner_user_id === GV[3], `chủ Case ${cs[0]?.owner_user_id}, cần GVBM lớp FT đang học ${GV[3]} (lớp cũ ${GV[2]})`);
+  });
+
+  check('KV12 · em đang có Case mở cùng kỹ năng: Case kỳ vọng bị bỏ qua và luuKyVong trả boQua = số em', () => {
+    const ele6 = lopMoi('ELE', false, 11), ft6 = lopMoi('FT', true, 1);
+    ganGv(ft6, GV[2], 'writing2'); ganGv(ft6, GV[3], 'speaking');
+    const [J, K] = [hocVien(ele6, 'ELE'), hocVien(ele6, 'ELE')];
+    lenFt(ele6, [J, K], ft6, true);
+    diemMt0(J, { L: 4, R: 4, W: 3, S: 3 });
+    diemMt0(K, { L: 4, R: 4, W: 3, S: 3 });
+    const cyc = get(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active' AND route IS NOT NULL`, J).id as number;
+    conn.prepare(`INSERT INTO sos_cases (student_id, cycle_id, topic, category, origin_kind, detected_at, status, dedup_key, title, created_at) VALUES (?,?,?,?,?,?,?,?,?,?)`)
+      .run(J, cyc, 'speaking', 'speaking', 'mock', TODAY, 'in_progress', d.caseDedupKey({ category: 'speaking', studentId: J, cycleId: cyc }), 'Case Mock đang mở', new Date().toISOString());
+    const r = kv.luuKyVong(P.mbManager, ele6, { dong: [J, K].map((sid) => ({ sid, dat: false, nguyenNhan: 'trung_tam', mon: ['writing', 'speaking'] })) });
+    assert(r.taoCase === 3 && r.boQua === 1, `taoCase/boQua: ${JSON.stringify(r)}`);
+  });
 }

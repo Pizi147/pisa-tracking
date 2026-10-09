@@ -698,7 +698,7 @@ export function ghiKetLuanFt(p: Principal, sid: number, input: { dat?: unknown; 
        ON CONFLICT(student_id, class_id) DO UPDATE SET ky_vong_dat = excluded.ky_vong_dat, ky_vong_nguyen_nhan = excluded.ky_vong_nguyen_nhan,
          ky_vong_mon = excluded.ky_vong_mon, ky_vong_ghi_chu = excluded.ky_vong_ghi_chu, updated_by = excluded.updated_by, updated_at = excluded.updated_at`,
     ).run(sid, lopBeEle, dat ? 1 : 0, nguyenNhan, mon.length ? JSON.stringify(mon) : null, ghiChu, p.userId, now, now);
-    const taoMoi = !dat && ftClass ? taoCaseKyVong(p, emDaSangFt([{ ...dong, fromClassId: lopBeEle, ftClassId: ftClass }])) : 0;
+    const taoMoi = !dat && ftClass ? taoCaseKyVong(p, emDaSangFt([{ ...dong, fromClassId: lopBeEle, ftClassId: ftClass }])).tao : 0;
     const ftCycle = ftClass ? (conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active' AND route IS NOT NULL ORDER BY id DESC LIMIT 1`).get(sid) as any)?.id ?? null : null;
     const daCo = ftCycle ? (conn.prepare(`SELECT COUNT(*) n FROM sos_cases WHERE student_id = ? AND cycle_id = ? AND origin_kind = 'chuyen_cap' AND title LIKE 'Kỳ vọng đầu ra%'`).get(sid, ftCycle) as any).n as number : 0;
     writeAudit({ actorUserId: p.userId, action: 'cuoi_khoa.ket_luan_ft', entityType: 'student', entityId: sid, after: { dat, nguyenNhan, mon, taoMoi } });
@@ -731,6 +731,16 @@ export function nguoiGiuMiniTest(rows: readonly { id: number; nhom: string; lop:
 function nguoiGiuMotMiniTest(conn: any, mt: { id: number; nhom_bo_tro: string }, lop: number | null): number | null {
   const owner = (conn.prepare(`SELECT MIN(sc.owner_user_id) AS o FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE iv.nhom_bo_tro = ?`).get(mt.nhom_bo_tro) as any)?.o ?? null;
   return nguoiGiuMiniTest([{ id: mt.id, nhom: mt.nhom_bo_tro, lop, owner }]).get(mt.id) ?? null;
+}
+
+/** Người giữ việc Ghi Mini Test của nhóm `mt:{lượt}` (cùng `emConMiniTest().gv`: GVCN lớp em ĐANG học, không có thì chủ Case) — để `updateResult` cho đúng người có nút ở hồ sơ HV lưu được. */
+export function laNguoiGiuMiniTestCuaPa(p: Principal, iv: { nhom_bo_tro?: string | null }): boolean {
+  if (!iv.nhom_bo_tro?.startsWith('mt:')) return false;
+  const conn = db();
+  const mt = conn.prepare('SELECT id, student_id, nhom_bo_tro FROM mini_test WHERE nhom_bo_tro = ? AND ty_le IS NULL').get(iv.nhom_bo_tro) as any;
+  if (!mt) return false;
+  const lop = (conn.prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1`).get(mt.student_id) as any)?.class_id ?? null;
+  return nguoiGiuMotMiniTest(conn, mt, lop) === p.userId;
 }
 
 /** Em còn Mini Test CHƯA ghi (MỘT câu + người giữ theo lô): hạn, Case + PA để mở form, người giữ việc (`nguoiGiuMiniTest`). */

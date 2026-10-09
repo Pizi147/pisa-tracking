@@ -450,4 +450,26 @@ export async function runPrCt2Tests(t: YThucTestKit) {
     migratePrCt2(conn, y);
     assert(y.length === 0 && paMt(f.a).length === 2 && mts(f.sid).length === 1, `lần hai: ${JSON.stringify(y)}`);
   });
+  check('CT2-11 · lớp mới không GVCN, hai Case khác chủ: người giữ Ghi Mini Test (chủ Case, hồ sơ HV) có nút thì lưu không 403 — cùng một điều kiện', () => {
+    const nguon = lop('FOU', 9), dich = lop('BE');
+    ganGv(nguon, GV[0], null); ganGv(nguon, GV[1], 'writing'); ganGv(nguon, GV[2], 'speaking');
+    ganGv(dich, GV[0], 'writing'); ganGv(dich, GV[0], 'speaking'); ganGv(dich, GV[3], 'reading');   // lớp đích KHÔNG có GVCN; GV[3] dạy Reading → xem được hồ sơ
+    const f = { nguon, dich, ...hocVien(nguon, 'FOU') };
+    ra(f.nguon, f.sid, 'len_lop', f.dich);
+    nhap(f.a, { listening: 18, reading: 18, writing: 10, speaking: 9 });
+    chay(f.sid);
+    const pa = paMt(f.a);
+    assert(pa.length === 2, `PA: ${chuKy(pa)}`);
+    /* PA đầu của nhóm (nút hồ sơ mở PA này) thuộc Case không chủ; Case kia có chủ GV[3] (không phải người dạy, không GVCN) → MIN chủ Case = GV[3]. */
+    const dau = pa.reduce((m, x) => (x.id < m.id ? x : m)), kia = pa.find((x) => x.id !== dau.id)!;
+    conn.prepare('UPDATE sos_cases SET owner_user_id = NULL WHERE id = ?').run(dau.case_id);
+    conn.prepare('UPDATE sos_cases SET owner_user_id = ? WHERE id = ?').run(GV[3], kia.case_id);
+    const nguoi = loadPrincipal(GV[3]);
+    const mt = profile.studentProfile(nguoi, f.sid).miniTest;
+    assert(mt?.gv === GV[3] && mt.paId === dau.id, `hồ sơ: ${JSON.stringify(mt)}`);
+    let loi: any = null;
+    try { cases.updateResult(nguoi, mt.paId, {}); } catch (e: any) { loi = e; }
+    assert(!mt.coTheGhi || loi?.status !== 403, `nút hiện (coTheGhi ${mt.coTheGhi}) nhưng lưu ${loi?.status}: ${loi?.message}`);
+    assert(mt.coTheGhi === true, 'người giữ việc phải có nút');
+  });
 }

@@ -1,6 +1,6 @@
 import { db, laTrungKhoa, theoKhoaGui, theoLo, tx } from '../db.ts';
 import { anhEmNhom, boTroCuaCase, chepKetQuaNhom, quyenBoTro, type BoTroDto } from './boTro.ts';
-import { ghiMiniTestTrongTx, kiemMiniTest } from '../normal/cuoiKhoa.ts';
+import { ghiMiniTestTrongTx, kiemMiniTest, laNguoiGiuMiniTestCuaPa } from '../normal/cuoiKhoa.ts';
 import {
   DISPOSITIONS, INTERVENTION_KINDS, SYSTEM_KINDS, INTERVENTION_KIND_LABEL, INTERVENTION_STATUSES, tenPaViecTiep,
   INTERVENTION_STATUS_LABEL,
@@ -3397,7 +3397,7 @@ const giuCuaCase = (c: any, ivs: readonly any[]) => nguoiGiuKetQua(ivs.map((iv) 
 const laBoTro = (iv: any) => iv.kind === 'bo_tro' || iv.kind === 'bo_tro_mien_phi';
 /** PR-LT2a (Q9): PA Bổ trợ do người dạy (mặc định GVCN cho FOU) ghi — `quyenBoTro`; PA khác theo kỹ năng (C02). */
 const quyenPaTheoVaiTro = (p: Principal, iv: any, c: any) => laBoTro(iv)
-  ? quyenBoTro(p, { ...iv, ctx: { classId: c.class_id ?? null, studentId: c.eff_student_id ?? null, topic: c.topic ?? null } })
+  ? quyenBoTro(p, { ...iv, ctx: { classId: c.class_id ?? null, studentId: c.eff_student_id ?? null, topic: c.topic ?? null } }) || laNguoiGiuMiniTestCuaPa(p, iv)
   : can(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c));
 
 /** PR-PA: quyền ghi Kết quả / Sửa PA của MỘT PA — một chỗ. Người giữ việc (§8) luôn ghi được, dù không qua quyền theo vai trò. */
