@@ -24,7 +24,7 @@ type Dong = { tick: boolean; periodId: number | null; weekStart: string | null }
 /**
  * HỘP MỘT ĐỢT (mockup test-MT 05/10 phần 2; trước là "hộp kỹ năng" mockup 14 (1), Q19) — hộp nhỏ NEO CẠNH chip vừa bấm (portal,
  * `position: fixed`, kẹp trong màn); 375px thì là tấm dưới đáy rộng hết màn. Dùng ở Kế hoạch Test và hồ sơ HV › Lộ trình.
- *   · đầu `{tên em} · MT{n}` + ✕ · hàng "Tuần chung" (đổi một lần cho mọi dòng chưa có điểm, trừ dòng đã "Đổi tuần" riêng) ·
+ *   · đầu `{tên em} · MT{n}` + ✕ · hàng "Tuần chung" (đổi một lần cho mọi dòng còn hiệu lực — kể cả có điểm / đã thi, điểm giữ (luật 1, PR-HOP1) — trừ dòng đã "Đổi tuần" riêng, đã huỷ, vắng, chờ duyệt) ·
  *     bốn dòng `ô tích · L Listening · trạng thái · ⋯`:
  *       - có điểm → `W3 SEP · 6.5`; chưa điểm → chip tuần + chip trạng thái (`trễ chấm` · `chờ chấm` · `vắng` · `huỷ`, luật `oMt`);
  *       - ⋯ LUÔN hiện, năm mục cố định `menuHopKyNang` (một nguồn `thaoTacKyNang`); mục chưa làm được mờ, tooltip nói vì sao;
@@ -71,8 +71,8 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
     return trangThaiTT({ batBuoc: o.batBuoc, tuanBatDau: o.tuan, coDiem: o.khoa === 'đã có điểm', sit: o.sit, choDuyet: o.choDuyet, lichSu, homNay: ngayNghiepVu, huyVang: o.huyVang });
   };
   const menuCua = (k: KyNangKH) => menuHopKyNang(ttCua(k), quyen, moi);
-  /** Dòng đổi tuần thường (không qua Xếp lại / Khôi phục) và chưa có điểm / chưa thi — theo "Tuần chung". */
-  const theoChungDau = (k: KyNangKH) => !laKhoa(k) && (moi || kn[k]?.khoa == null) && menuCua(k)[0].duoc && !menuCua(k)[0].thay;
+  /** Dòng đổi tuần thường (không qua Xếp lại / Khôi phục; không đã huỷ / vắng / chờ duyệt) — theo "Tuần chung", kể cả có điểm (điểm giữ, luật 1). */
+  const theoChungDau = (k: KyNangKH) => !laKhoa(k) && menuCua(k)[0].duoc && !menuCua(k)[0].thay;
 
   const khoiTao = (): Record<KyNangKH, Dong> => {
     const o = {} as Record<KyNangKH, Dong>;
@@ -384,8 +384,8 @@ function DongKyNangHop({ k, o, khoa, moi, loai, d, noiBat, khaiGiang, tongTuan, 
         ) : riengTuan ? (
           /* Rà #212 (T4/T20): hộp chỉ mở cho Quản lý / Quản trị (PLAN_WEEK) — chọn được cả tuần đã qua, máy chủ đã cho. */
           <TuanNho d={d} goc={goc} onTuan={onTuan} nhanKhoa={nhanTuan} />
-        ) : coDiem && o?.tuan ? (
-          <span className="text-slate-400">{chuTuan(o.tuan)} · <b className="tabular-nums text-slate-100">{o.diem ?? 'có điểm'}</b></span>
+        ) : coDiem && (d.weekStart ?? o?.tuan) ? (
+          <span className="text-slate-400">{chuTuan((d.weekStart ?? o!.tuan)!)} · <b className="tabular-nums text-slate-100">{o.diem ?? 'có điểm'}</b></span>
         ) : (
           <span className="flex flex-wrap items-center gap-1">
             {d.weekStart && <Nhan tone="doing">{chuTuan(d.weekStart)}</Nhan>}

@@ -58,6 +58,18 @@ export async function runPrHop1Tests(t: YThucTestKit) {
     assert(tuanKn(a.m2, 'reading') === t.addDays(tuanNay, 28), 'kỹ năng khác bị dời theo');
   });
 
+  check('HOP1-d · Tuần chung (Dời lịch thi cả đợt) dời cả kỹ năng có điểm: L có điểm + R chưa điểm → cả hai sang tuần mới, điểm L giữ', () => {
+    const hop = nguon('web/src/modules/test/keHoach/HopKyNang.tsx');
+    const dong = hop.slice(hop.indexOf('const theoChungDau'), hop.indexOf('\n', hop.indexOf('const theoChungDau')));
+    assert(dong.length > 0 && !/khoa/.test(dong), `Tuần chung còn khoá dòng có điểm: ${dong}`);
+    const a = em();
+    conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, band, raw_score) VALUES (?,?,?,?)').run(a.m2, 'listening', 6, 30);
+    /* Payload hộp khi đổi Tuần chung: mọi dòng theo chung có tuần mới. */
+    keHoach.luuDot(QL, { attemptId: a.m2, kyNang: [{ skill: 'listening', periodId: tuan(6).id }, { skill: 'reading', periodId: tuan(6).id }], lyDoBo: null, reason: null, force: false });
+    for (const k of ['listening', 'reading']) assert(tuanKn(a.m2, k) === t.addDays(tuanNay, 42), `${k}: ${tuanKn(a.m2, k)}`);
+    assert(band(a.m2, 'listening') === 6, 'mất điểm L');
+  });
+
   check('HOP1-c · dời vượt MT sau từ hộp: kiem trả dòng chặn (câu đỏ #282), lưu 400 cùng câu, không đổi gì', () => {
     const a = em();
     const tw = d.tuanLich(t.addDays(tuanNay, 56));
