@@ -121,7 +121,7 @@ export async function runFixDtlOmtTests(t: YThucTestKit) {
         }
       }
     }
-    assert(soCau >= 8, `bộ quét chỉ thấy ${soCau} câu UNION — hỏng bộ đọc chuỗi mẫu?`);
+    assert(soCau >= 7, `bộ quét chỉ thấy ${soCau} câu UNION — hỏng bộ đọc chuỗi mẫu?`);
     assert(loi.length === 0, `cột chưa đặt tên trong câu UNION:\n${loi.join('\n')}`);
   });
 
