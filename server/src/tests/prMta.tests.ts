@@ -401,18 +401,20 @@ export async function runPrMtaTests(t: YThucTestKit) {
     assert(d.trangThaiTT({ batBuoc: true, tuanBatDau: '2026-09-07', coDiem: false, sit: 'cancelled', choDuyet: false, lichSu: false, homNay: '2026-09-16' }) === 'da-huy', 'không cờ → da-huy');
   });
 
-  check('MTa T3 (H2) · gõ "-" lần 2 + chốt (cũng là cron): S huỷ vắng, không đề nghị, không thẻ; GVCN 1 chuông; chốt lại không đổi', () => {
+  check('MTa T3 (H2) · gõ "-" lần 2 + chốt (cũng là cron): S huỷ vắng, không đề nghị, không thẻ; QL 1 chuông, GVCN không; chốt lại không đổi', () => {
     const a = emVangMot(-1);
     const theTruoc = (conn.prepare('SELECT COUNT(*) n FROM yeu_cau_duyet').get() as any).n;
-    const chTruoc = chuong('huy_vang', GVCN.userId, a.m1);
+    const chTruoc = chuong('huy_vang', QL.userId, a.m1);
+    const gvTruoc = chuong('huy_vang', GVCN.userId, a.m1);
     attemptsSvc.saveScore(P.sTeacher, a.m1, 'speaking', { noShow: true });
     absence.settleNoShows(TODAY);
     const k = kyNang(a.m1, 'speaking');
     assert(k.sit_status === 'cancelled' && k.huy_vang === 1, JSON.stringify(k));
     assert(soDeNghi(a.m1) === 0 && (conn.prepare('SELECT COUNT(*) n FROM yeu_cau_duyet').get() as any).n === theTruoc, 'có đề nghị / thẻ');
-    assert(chuong('huy_vang', GVCN.userId, a.m1) === chTruoc + 1, 'chuông GVCN');
+    assert(chuong('huy_vang', QL.userId, a.m1) === chTruoc + 1, 'chuông QL');
+    assert(chuong('huy_vang', GVCN.userId, a.m1) === gvTruoc, 'GVCN không có chuông (09/10)');
     absence.settleNoShows(TODAY);
-    assert(chuong('huy_vang', GVCN.userId, a.m1) === chTruoc + 1 && kyNang(a.m1, 'speaking').huy_vang === 1, 'chốt lại đổi');
+    assert(chuong('huy_vang', QL.userId, a.m1) === chTruoc + 1 && kyNang(a.m1, 'speaking').huy_vang === 1, 'chốt lại đổi');
   });
 
   check('MTa T3 (H3) · Báo vắng lần 2 (không lý do) → như H2', () => {

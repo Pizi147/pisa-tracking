@@ -12,7 +12,7 @@ import { nho } from '../platform/nguCanhRequest.ts';
 import { chotYeuCau, taoYeuCau } from '../duyet/yeuCau.ts';
 import { ensurePeriod, mondayOf, skillScoreDeadline } from '../platform/week.ts';
 import {
-  boMonCuaLuot, checkSkillWeekMove, ensureSkillRows, gvcnCua, logSchedule, recomputeCompletionWeek, scoringModeOf, tinhLaiMtCu,
+  boMonCuaLuot, checkSkillWeekMove, ensureSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf, tinhLaiMtCu,
 } from './skillSchedule.ts';
 import { refreshOutcome, resultOf, setSkillSkip } from './attempts.ts';
 
@@ -316,7 +316,7 @@ function xuLyVangMotKyNang(conn: any, actor: number | null, attempt: any, row: a
 
 /**
  * T3 (PR-MTa, G11): huỷ một kỹ năng vì vắng lần `moveNo` (≥ 2) — `sit_status = 'cancelled'` + `huy_vang = 1`, giữ tuần cũ để tra lại.
- * Mọi luật "phần thi đã huỷ" (không nợ, không quá hạn, Khôi phục và đặt tuần) dùng lại nguyên. Một chuông "để biết" cho mỗi GVCN.
+ * Mọi luật "phần thi đã huỷ" (không nợ, không quá hạn, Khôi phục và đặt tuần) dùng lại nguyên. Một chuông "để biết" cho mỗi Quản lý của chi nhánh (luật 09/10: chỉ Quản lý xử lý lịch Test).
  * Gọi trong tx của nơi gọi.
  */
 function huyVangNoi(conn: any, actor: number | null, attempt: any, row: any, moveNo: number): MoveOutcome {
@@ -330,7 +330,7 @@ function huyVangNoi(conn: any, actor: number | null, attempt: any, row: any, mov
   });
   const ai = conn.prepare(`SELECT s.full_name AS em, c.programme_code AS ct FROM students s LEFT JOIN classes c ON c.id = ? WHERE s.id = ?`)
     .get(attempt.class_id ?? null, attempt.student_id) as any;
-  for (const userId of gvcnCua(attempt.class_id)) {
+  for (const userId of quanLyCuaLop(attempt.class_id)) {
     notify({
       userId, kind: 'huy_vang', title: `Huỷ ${tenMonNgan(ai?.ct ?? null, skill)} · MT${attempt.attempt_no} · ${ai?.em ?? 'học viên'} (vắng ${moveNo} lần)`,
       entityType: 'assessment_attempt', entityId: attempt.id, dedupKey: `huy_vang:${attempt.id}:${skill}:${moveNo}`,
@@ -686,6 +686,21 @@ export function restoreCancelledSkill(p: Principal, attemptId: number, skill: st
   });
 }
 
+/** Quản lý của CHÍNH chi nhánh của lớp, cộng người có phạm vi toàn hệ thống. */
+function quanLyCuaLop(classId: number | null): number[] {
+  const conn = db();
+  const cls = classId ? (conn.prepare('SELECT branch_id FROM classes WHERE id = ?').get(classId) as any) : null;
+  return (conn
+    .prepare(
+      `SELECT DISTINCT ur.user_id FROM user_roles ur
+         JOIN roles r ON r.id = ur.role_id
+        WHERE r.key IN ('manager', 'system_admin')
+          AND ur.status = 'active'
+          AND (ur.branch_id IS NULL OR ur.branch_id = ?)`,
+    )
+    .all(cls?.branch_id ?? -1) as any[]).map((m) => m.user_id).filter(Boolean);
+}
+
 /** Báo cho những người xếp lịch của chi nhánh — không gửi cho cả trường. */
 function notifyPlanners(
   attempt: any, message: string, refId: number, actor: number | null,
@@ -697,19 +712,7 @@ function notifyPlanners(
   const ai = conn.prepare('SELECT s.full_name AS hv, (SELECT code FROM classes WHERE id = ?) AS lop FROM students s WHERE s.id = ?')
     .get(attempt.class_id ?? null, attempt.student_id) as any;
   const tieuDe = [viec, [ai?.hv, ai?.lop].filter(Boolean).join(' · ')].filter(Boolean).join(' · ');
-  const cls = attempt.class_id
-    ? (conn.prepare('SELECT branch_id FROM classes WHERE id = ?').get(attempt.class_id) as any)
-    : null;
-  /* Quản lý của CHÍNH chi nhánh đó, cộng người có phạm vi toàn hệ thống. */
-  const managers = conn
-    .prepare(
-      `SELECT DISTINCT ur.user_id FROM user_roles ur
-         JOIN roles r ON r.id = ur.role_id
-        WHERE r.key IN ('manager', 'system_admin')
-          AND ur.status = 'active'
-          AND (ur.branch_id IS NULL OR ur.branch_id = ?)`,
-    )
-    .all(cls?.branch_id ?? -1) as any[];
+  const managers = quanLyCuaLop(attempt.class_id).map((user_id) => ({ user_id }));
   for (const m of managers) {
     if (!m.user_id || m.user_id === actor) continue;
     notify({
