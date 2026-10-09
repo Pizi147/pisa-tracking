@@ -27,7 +27,7 @@ import {
   addDaysStr, attemptHref, attemptStatusLabel, fmtBand, fmtDate, progressLabel, skillLabel,
 } from '../../lib/format.ts';
 import {
-  ATTEMPT_KIND_SHORT, CAU_TUAN_DA_QUA, maHocVienNgan, CHU_THAO_TAC, chipSosMt0, kiemLyDoThaoTac, kiemTuanXep, mondayOfDate, nhanLuot, thaoTacKyNang, trangThaiTT, tuanLich,
+  ATTEMPT_KIND_SHORT, CAU_TUAN_DA_QUA, maHocVienNgan, CHU_THAO_TAC, chipSosMt0, kiemTuanXep, mondayOfDate, nhanLuot, thaoTacKyNang, trangThaiTT, tuanLich,
   type AssessedSkill, type AttemptKind, type LoiTruong, type TheYeuCauDto, type ThaoTac,
   docKnMock, KY_NANG_KE_HOACH, khongDuThiTuO, oKyNangTuLich, type KetQuaHuy, type OMtVao,
 } from '@shared/domain/index.ts';
@@ -778,33 +778,31 @@ function DeadlineModal({ onClose, detail, onDone }: {
 
 type HeQuaHuy = { cachDuoc: 'ca-luot' | null; case: number; pa: number; phoiHop: number };
 
-/** HỘP HUỶ MT{n} (PR-MTGON luật 4, T67): một câu nói hệ quả, kèm Case / Phối hợp sẽ đóng. Lý do bắt buộc (T7). */
+/** HỘP HUỶ MT{n} (PR-MTGON luật 4, T67): một câu nói hệ quả, kèm Case / Phối hợp sẽ đóng. Lý do tuỳ chọn (rà #282) — trống thì nhật ký ghi "Huỷ MT{n}". */
 function CancelDialog({ open, onClose, attemptId, attemptNo, heQua, onDone }: {
   open: boolean; onClose: () => void; attemptId: number; attemptNo: number; heQua: HeQuaHuy; onDone: () => void;
 }) {
   const toast = useToast();
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
-  const loiLyDo = kiemLyDoThaoTac('huy-luot', reason);   // T7: một trong 3 chỗ bắt buộc lý do — máy chủ gọi lại đúng hàm này
   const dong = [heQua.case ? `${heQua.case} Case` : null, heQua.phoiHop ? `${heQua.phoiHop} việc Phối hợp` : null].filter(Boolean);
   return (
     <ConfirmDialog
-      open={open} onClose={onClose} danger busy={busy} confirmDisabled={!!loiLyDo} confirmTitle={loiLyDo ?? undefined}
+      open={open} onClose={onClose} danger busy={busy}
       title={`Huỷ MT${attemptNo}?`} closeLabel="Không huỷ" confirmLabel={`Huỷ MT${attemptNo}`}
       body={
         <div className="space-y-2">
           <p>Lịch và điểm của lượt này sẽ bỏ. Xếp lại thì vẫn là MT{attemptNo}.</p>
           {dong.length > 0 && <p>Đóng {dong.join(', ')} sinh từ lượt này.</p>}
-          <Truong nhan="Lý do" batBuoc>
+          <Truong nhan="Lý do" tuyChon>
             <input className="field" value={reason} maxLength={300} onChange={(e) => setReason(e.target.value)} placeholder="Ví dụ: em nghỉ học" />
           </Truong>
         </div>
       }
       onConfirm={async () => {
-        if (loiLyDo) return;
         setBusy(true);
         try {
-          await api.post(`/attempts/${attemptId}/cancel`, { reason: reason.trim() });
+          await api.post(`/attempts/${attemptId}/cancel`, { reason: reason.trim() || null });
           invalidate('/attempts'); invalidate('/tong-quan');
           onDone(); onClose(); toast.push('ok', `Đã huỷ MT${attemptNo}`);
         } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }

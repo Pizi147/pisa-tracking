@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, duongDotTest, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, ENTRY_SKILLS, ENTRY_SKILL_LABEL, MOCK_FT_STUDY_WEEK, NO_SHOW_OVERRIDDEN_NOTE,
-  BAI_CO_NHAN_XET, CHAM_CHEO, PERMISSIONS, awaitingScore, laChamCheo, cachHuyLuot, kiemBand, kiemLyDoThaoTac, kiemNhanXet, kiemSoMtMoi, kyNangSosMt0, laMt0, laMtCu, ngay, noShowStateOf, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanLich,
+  BAI_CO_NHAN_XET, CHAM_CHEO, PERMISSIONS, awaitingScore, laChamCheo, cachHuyLuot, kiemBand, kiemNhanXet, kiemSoMtMoi, kyNangSosMt0, laMt0, laMtCu, ngay, noShowStateOf, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanLich,
   type CachHuy,
   type AssessedSkill, type EntrySkill, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
 } from '../../../shared/domain/index.ts';
@@ -1359,12 +1359,10 @@ export function caseSinhRieng(attemptId: number): number[] {
  * (nhật ký giữ từng ô) để số MT dùng lại được khi xếp lại; đóng những thứ sinh riêng từ lượt (Case chưa có kết quả PA, Phối hợp còn chờ).
  * Không còn "Huỷ phần còn lại" — bỏ từng kỹ năng là "Huỷ kỹ năng" (`setSkillSkip`).
  */
-export function huyLuot(p: Principal, attemptId: number, input: { lyDo: string }) {
+export function huyLuot(p: Principal, attemptId: number, input: { lyDo?: string | null }) {
   const a = loadAttempt(attemptId);
   require_(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id, studentId: a.student_id }, 'Bạn không có quyền huỷ lượt Mock.');
-  const loiLyDo = kiemLyDoThaoTac('huy-luot', input.lyDo);
-  if (loiLyDo) throw badRequest(loiLyDo);
-  const lyDo = String(input.lyDo).trim();
+  const lyDo = String(input.lyDo ?? '').trim() || `Huỷ MT${a.attempt_no}`;   // rà #282: lý do tuỳ chọn
   const hq = heQuaHuyLuot(attemptId);
   if (!hq.cachDuoc) throw badRequest('Lượt này đã huỷ.');
   const conn = db();

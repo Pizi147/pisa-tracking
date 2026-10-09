@@ -761,7 +761,7 @@ api.post('/attempts/:id/deadline', requireAuth, wrap((req) => {
 
 api.post('/attempts/:id/cancel', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return attemptSvc.huyLuot(principalOf(req), pInt(req, 'id'), { lyDo: String(req.body?.reason ?? '') });
+  return attemptSvc.huyLuot(principalOf(req), pInt(req, 'id'), { lyDo: typeof req.body?.reason === 'string' ? req.body.reason : null });
 }));
 
 api.post('/attempts/:id/reopen', requireAuth, wrap((req) => {

@@ -260,4 +260,28 @@ export async function runPrMtGonTests(t: YThucTestKit) {
     assert(e.status === 400 && /Đưa lại vào đợt/.test(e.message), `${e.status} ${e.message}`);
     assert(kn(a.m2, 'speaking').planned_period_id === tuan(4).id, 'tuần đổi lặng lẽ');
   });
+
+  // ---------------------------------------------------------------- Rà planning PR #282
+  check('MTG-5a · cả 4 kỹ năng "Huỷ kỹ năng" (required=0, đường thật) → hàng loạt không báo "đã xong", lưu được: 4 kỹ năng về đợt, đặt tuần', () => {
+    const a = emMoi();
+    for (const k of KN) attemptsSvc.setSkillSkip(QL, a.m2, k, true, null);
+    assert(d.dotMtMoi([{ no: 2, huy: false, lichSu: false, kn: KN.map((k) => ({ skill: k, batBuoc: false, coDiem: false, daThi: false, huyPhan: false, choDuyet: false, coTuan: true })) }] as any,
+      [{ attempt_no: 1, status: 'planned', coDiem: false }, { attempt_no: 2, status: 'planned', coDiem: false }]) === 3, 'dotMtMoi phải bỏ qua lượt không còn kỹ năng bắt buộc');
+    const xem = keHoach.xepHangLoat(QL, { classId: LOP, attemptNo: 2, studentIds: [a.sid], tuan: bonTuan(5), xemTruoc: true });
+    assert(xem.dong[0].hanhDong === 'doi', JSON.stringify(xem.dong[0]));
+    const h = keHoach.xepHangLoat(QL, { classId: LOP, attemptNo: 2, studentIds: [a.sid], tuan: bonTuan(5) });
+    assert(h.daLuu === 1, JSON.stringify(h.dong[0]));
+    assert(KN.every((k) => kn(a.m2, k).required === 1 && kn(a.m2, k).planned_period_id === tuan(5).id), tuanCua(a.m2));
+  });
+
+  check('MTG-5b · Huỷ MT{n} không bắt buộc lý do — trống thì nhật ký ghi "Huỷ MT{n}"', () => {
+    const a = emMoi();
+    attemptsSvc.huyLuot(QL, a.m3, { lyDo: '  ' });
+    const l = luot(a.m3);
+    assert(l.status === 'cancelled' && l.cancel_reason === 'Huỷ MT3', JSON.stringify({ s: l.status, r: l.cancel_reason }));
+    assert(!d.canLyDo('huy-luot') && d.kiemLyDoThaoTac('huy-luot', '') === null, 'luật chung');
+    const m = nguon('web/src/modules/fasttrack/MockDetailPage.tsx');
+    const hop = m.slice(m.indexOf('function CancelDialog'), m.indexOf('function AbsenceMoveModal'));
+    assert(hop.length > 100 && !/kiemLyDoThaoTac/.test(hop) && /tuyChon/.test(hop), 'hộp Huỷ MT còn bắt lý do');
+  });
 }

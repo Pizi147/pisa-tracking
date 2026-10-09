@@ -113,9 +113,9 @@ export const CHU_LY_DO: Record<ThaoTacLyDo, string> = {
   ...CHU_THAO_TAC, 'huy-luot': 'Huỷ lượt', 'huy-ket-qua': 'Huỷ kết quả', 'tu-choi': 'Từ chối', 'thi-lai': 'Thi lại', 'huy-lich': 'Huỷ lịch',
 };
 
-/** T7 (PR-MTa, 05/10): lý do BẮT BUỘC chỉ khi huỷ lượt, huỷ kết quả do dời vượt, Quản lý từ chối. Huỷ điểm một kỹ năng: tuỳ chọn,
- *  như xoá trắng ô (T22; chủ sản phẩm 06/10). */
-export const LY_DO_BAT_BUOC: readonly ThaoTacLyDo[] = ['huy-luot', 'huy-ket-qua', 'tu-choi'];
+/** T7 (PR-MTa, 05/10): lý do BẮT BUỘC chỉ khi huỷ kết quả (dữ liệu cũ), Quản lý từ chối. Huỷ điểm một kỹ năng: tuỳ chọn, như xoá
+ *  trắng ô (T22; chủ sản phẩm 06/10). Huỷ MT{n}: tuỳ chọn (PR-MTGON, rà #282 — bảng chữ đã duyệt không có ô lý do bắt buộc). */
+export const LY_DO_BAT_BUOC: readonly ThaoTacLyDo[] = ['huy-ket-qua', 'tu-choi'];
 
 export function canLyDo(t: ThaoTacLyDo): boolean {
   return LY_DO_BAT_BUOC.includes(t);

@@ -252,6 +252,8 @@ export function viecXepMt(ds: LuotXep[], chon: number, so: LuotSo[], ep = false)
   if (n > MT_TOI_DA) return { loai: 'chan', no: MT_TOI_DA, cau: `Đã đủ MT${MT_TOI_DA} — tối đa của một lộ trình.` };
   const a = ds.find((x) => x.no === n && !x.huy);
   if (!a) { const loi = kiemSoMtMoi(so, n); return loi ? { loai: 'chan', no: n, cau: loi } : { loai: 'tao', no: n }; }
+  /* PR-MTGON (rà #282): mọi kỹ năng đã "Huỷ kỹ năng" (required=0) → xếp hàng loạt đưa lại cả lượt rồi đặt tuần (luật 5), không "đã xong". */
+  if (a.kn.length && !a.kn.some((k) => k.batBuoc)) return { loai: 'doi', no: n };
   const can = a.kn.filter((k) => k.batBuoc);
   const conThi = can.filter((k) => !k.coDiem && !k.daThi && !k.choDuyet);
   if (!conThi.length) {
@@ -266,11 +268,11 @@ export function viecXepMt(ds: LuotXep[], chon: number, so: LuotSo[], ep = false)
 
 /**
  * "MT mới" (T13b, PR-MTb): đợt nhỏ nhất còn hiệu lực mà mọi kỹ năng bắt buộc CHƯA có tuần (lượt đã huỷ lịch); không có → số kế
- * tiếp của lộ trình. MT cũ bị bỏ qua (chỉ nhập điểm bù — không xếp được).
+ * tiếp của lộ trình. Lượt không còn kỹ năng bắt buộc nào (đã huỷ hết) bị bỏ qua — chọn đúng số MT đó thì vẫn xếp đè được. MT cũ bị bỏ qua (chỉ nhập điểm bù — không xếp được).
  */
 export function dotMtMoi(ds: LuotXep[], so: LuotSo[]): number {
   const chuaCoLich = ds
-    .filter((x) => !x.huy && !x.lichSu && x.kn.every((k) => !k.batBuoc || !k.coTuan))
+    .filter((x) => !x.huy && !x.lichSu && x.kn.some((k) => k.batBuoc) && x.kn.every((k) => !k.batBuoc || !k.coTuan))
     .map((x) => x.no);
   return chuaCoLich.length ? Math.min(...chuaCoLich) : soMtKeTiep(so);
 }

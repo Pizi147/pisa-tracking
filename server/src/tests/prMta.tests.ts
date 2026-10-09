@@ -82,12 +82,13 @@ export async function runPrMtaTests(t: YThucTestKit) {
   console.log('\nPR-MTa · T7 lý do chỉ bắt buộc khi mất kết quả / từ chối');
 
   /* Rà #212 (chủ sản phẩm 06/10) thay "Huỷ điểm bắt lý do": còn 3 thao tác bắt buộc. */
-  check('MTa T7 (L1) · chỉ 3 thao tác bắt buộc lý do (huỷ lượt, huỷ kết quả, từ chối), không tối thiểu ký tự', () => {
-    for (const x of ['huy-luot', 'huy-ket-qua', 'tu-choi'] as const) {
+  /* PR-MTGON (rà #282): Huỷ MT{n} lý do tuỳ chọn — còn 2 thao tác bắt buộc. */
+  check('MTa T7 (L1) · chỉ 2 thao tác bắt buộc lý do (huỷ kết quả, từ chối), không tối thiểu ký tự', () => {
+    for (const x of ['huy-ket-qua', 'tu-choi'] as const) {
       assert(d.canLyDo(x) && d.kiemLyDoThaoTac(x, '  ') === `${d.CHU_LY_DO[x]}: cần ghi lý do.`, x);
       assert(d.kiemLyDoThaoTac(x, 'x') === null, `${x}: 1 ký tự phải hợp lệ`);
     }
-    for (const x of ['huy-diem', 'doi-lich', 'doi-han', 'bo-ky-nang', 'bao-vang', 'thi-lai', 'sua-diem', 'huy-lich', 'xin-doi', 'khong-mock-lai'] as const) {
+    for (const x of ['huy-luot', 'huy-diem', 'doi-lich', 'doi-han', 'bo-ky-nang', 'bao-vang', 'thi-lai', 'sua-diem', 'huy-lich', 'xin-doi', 'khong-mock-lai'] as const) {
       assert(!d.canLyDo(x) && d.kiemLyDoThaoTac(x, '') === null, x);
     }
     assert(!('LY_DO_TOI_THIEU' in d) && !('kiemLyDo' in d), 'còn hằng/hàm cũ');
@@ -135,12 +136,13 @@ export async function runPrMtaTests(t: YThucTestKit) {
   });
 
   /* Rà #212 (chủ sản phẩm 06/10) thay "huyDiem lý do trắng → 400". */
-  check('MTa T7 (L6) · huyDiem lý do trắng → huỷ được; huyLuot lý do trống → 400', () => {
+  check('MTa T7 (L6) · huyDiem lý do trắng → huỷ được; huyLuot lý do trống → huỷ được (PR-MTGON, rà #282)', () => {
     const a = emMoi([0, 4, 8]);
     diem(a.m1, 'listening');
     keHoach.huyDiem(QL, { attemptId: a.m1, skill: 'listening', lyDo: '  ' });
     assert(soDiem(a.m1) === 0, 'chưa huỷ');
-    assertThrows(() => attemptsSvc.huyLuot(QL, a.m3, { lyDo: '' }), /Huỷ lượt: cần ghi lý do/, 'huỷ lượt');
+    attemptsSvc.huyLuot(QL, a.m3, { lyDo: '' });
+    assert(luot(a.m3).status === 'cancelled', 'huỷ lượt');
   });
 
   check('MTa T7 (L7) · từ chối đề nghị dời với lý do 1 ký tự → được', () => {
@@ -744,9 +746,9 @@ export async function runPrMtaTests(t: YThucTestKit) {
     assert(diemCua(cu.id, 'speaking').no_show_period_id === null, 'gỡ dấu');
   });
 
-  check('Rà #212 (3) · menu Huỷ điểm không bắt lý do (chủ sản phẩm 06/10); huỷ lượt, huỷ kết quả, từ chối vẫn bắt', () => {
+  check('Rà #212 (3) · menu Huỷ điểm không bắt lý do (chủ sản phẩm 06/10); huỷ kết quả, từ chối vẫn bắt (huỷ lượt: tuỳ chọn, PR-MTGON)', () => {
     assert(!d.canLyDo('huy-diem') && d.kiemLyDoThaoTac('huy-diem', '') === null, 'huy-diem');
-    for (const x of ['huy-luot', 'huy-ket-qua', 'tu-choi'] as const) assert(d.canLyDo(x), x);
+    for (const x of ['huy-ket-qua', 'tu-choi'] as const) assert(d.canLyDo(x), x);
     const a = emMoi([0, 4, 8]);
     diem(a.m1, 'listening');
     keHoach.huyDiem(QL, { attemptId: a.m1, skill: 'listening', lyDo: '' });

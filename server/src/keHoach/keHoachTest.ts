@@ -485,7 +485,7 @@ function kiemDotNoi(a: any, kyNang: YeuCauKyNang[], duaLai: Set<KyNangKH> = new 
     }
     const khoa = khoaCua(cheDo, row, scores);
     if (khoa && khoa !== 'đã huỷ phần thi' && !pre.choHuyLich) { bai.push({ skill: k.skill, tu, den: tu, ghiChu: 'giu', cau: khoa }); continue; }
-    if (row.planned_period_id === k.periodId && row.sit_status !== 'cancelled') { bai.push({ skill: k.skill, tu, den: tu, ghiChu: 'giu', cau: null }); continue; }
+    if (row.planned_period_id === k.periodId && row.sit_status !== 'cancelled' && row.required) { bai.push({ skill: k.skill, tu, den: tu, ghiChu: 'giu', cau: null }); continue; }
     doi.push({ i: bai.length, k, row, pr });
     bai.push({ skill: k.skill, tu, den: pr.week_start, ghiChu: 'doi', cau: null });
   }
@@ -559,9 +559,10 @@ export function luuDot(p: Principal, i: {
     const doi = kiem.bai.filter((b) => b.ghiChu === 'doi' || b.ghiChu === 'canh-bao');
     for (const b of doi) {
       const periodId = datTuan.find((k) => k.skill === b.skill)!.periodId;
-      /* PR-MTGON (luật 5): kỹ năng đã huỷ phần thi → đưa lại vào đợt rồi đặt tuần (đè). */
-      if (rows.find((r) => r.skill === b.skill)?.sit_status === 'cancelled') {
-        setSkillSkip(p, i.attemptId, b.skill, false);
+      /* PR-MTGON (luật 5): kỹ năng đã huỷ phần thi / đã bỏ khỏi đợt (vòng `bo` ở trên đã đưa lại) → đưa lại rồi đặt tuần (đè). */
+      const r0 = rows.find((r) => r.skill === b.skill);
+      if (r0?.sit_status === 'cancelled' || !r0?.required) {
+        if (r0?.sit_status === 'cancelled') setSkillSkip(p, i.attemptId, b.skill, false);
         if (loadSkillRows([i.attemptId]).get(i.attemptId)!.find((r: any) => r.skill === b.skill)?.planned_period_id === periodId) continue;
       }
       setSkillWeek(p, i.attemptId, b.skill, periodId, { reason: i.reason ?? null, force: true, khiTao: i.khiTao, khongBaoGvcn: i.khongBaoGvcn });
@@ -1013,7 +1014,9 @@ function xetMotEmFT(i: {
     const tuan = rowsCua(x).filter((r) => r.required && r.sit_status !== 'cancelled' && r.week_start).map((r) => String(r.week_start)).sort();
     return { id: x.id, attempt_no: x.attempt_no, kind: x.kind, status: x.status, tuan_dau: tuan[0] ?? null };
   });
-  const kiem = kiemDotNoi(a, ks.map((k) => ({ skill: k, periodId: i.tuan[k]! })), new Set(),
+  /* Rà #282: lượt không còn kỹ năng bắt buộc nào (mọi kỹ năng đã "Huỷ kỹ năng") → các kỹ năng đã chọn được đưa lại (luật 5). */
+  const duaLai = new Set<KyNangKH>(rowsCua(a).some((r) => r.required && (KY_NANG_KE_HOACH as readonly string[]).includes(r.skill)) ? [] : ks);
+  const kiem = kiemDotNoi(a, ks.map((k) => ({ skill: k, periodId: i.tuan[k]! })), duaLai,
     {
       rows: rowsCua(a), scores: diemCua(a), periods: i.periods, homNay: i.homNay, luotSau,
       tuanMt0: cuaEm.filter((x) => x.kind === 'mt0' && x.status !== 'cancelled')
@@ -1105,7 +1108,9 @@ export function xepHangLoat(p: Principal, i: {
       } else {
         luuDot(p, {
           attemptId: attemptId!, force: true, reason: i.lyDo?.trim() || null, khongBaoGvcn: laThuong,
-          kyNang: doi.map((b) => ({ skill: b.skill, periodId: tuan[b.skill]! })),
+          /* Kỹ năng đang bỏ khỏi đợt mà vẫn có bài dời (rà #282: lượt đã huỷ hết kỹ năng) → `bo: false` = đưa lại rồi đặt tuần. */
+          kyNang: doi.map((b) => ({ skill: b.skill, periodId: tuan[b.skill]!,
+            ...(lo?.rows.get(attemptId!)?.some((r: any) => r.skill === b.skill && !r.required) ? { bo: false } : {}) })),
         });
         if (laThuong) soEmDoi += 1;
       }

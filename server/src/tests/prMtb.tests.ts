@@ -524,14 +524,13 @@ export async function runPrMtbTests(t: YThucTestKit) {
   // ------------------------------------------------------------------ Task 7 — lý do tuỳ chọn + tuần đã qua cho Quản lý (web)
   console.log('\nPR-MTb · T7 lý do tuỳ chọn trừ 3 chỗ bắt buộc; Quản lý xếp tuần đã qua');
 
-  check('MTb (T7) · khoá phép máy chủ: GVCN dời tuần đã qua → chặn; QL dời MT chưa thi về tuần cũ → lưu; huỷ lượt / từ chối bắt lý do, huỷ điểm không', () => {
+  check('MTb (T7) · khoá phép máy chủ: GVCN dời tuần đã qua → chặn; QL dời MT chưa thi về tuần cũ → lưu; từ chối bắt lý do, huỷ lượt / huỷ điểm không (PR-MTGON)', () => {
     const a = emMoi([0, 4, 8]);
     const e = loiCua(() => skillSch.setSkillWeek(P.coreTeacher, a.m1, 'listening', tuan(-1).id, {}));
     assert(e.status === 400 || e.status === 403, `GVCN: ${e.status} ${e.message}`);
     skillSch.setSkillWeek(QL, a.m1, 'listening', tuan(-1).id, {});
     assert((conn.prepare(`SELECT planned_period_id p FROM attempt_skills WHERE attempt_id = ? AND skill = 'listening'`).get(a.m1) as any).p === tuan(-1).id, 'QL chưa dời');
-    assert(loiCua(() => attemptsSvc.huyLuot(QL, a.m3, { lyDo: '  ' })).status === 400, 'huỷ lượt không lý do');
-    assert(d.kiemLyDoThaoTac('tu-choi', '') && d.kiemLyDoThaoTac('huy-luot', '') && !d.kiemLyDoThaoTac('huy-diem', ''), 'luật chung');
+    assert(d.kiemLyDoThaoTac('tu-choi', '') && !d.kiemLyDoThaoTac('huy-luot', '') && !d.kiemLyDoThaoTac('huy-diem', ''), 'luật chung (huỷ lượt tuỳ chọn — PR-MTGON)');
   });
 
   check('MTb (T7) · quét nguồn: web/src không còn LY_DO_TOI_THIEU / kiemLyDo( (trừ DeXuatSuaPanel) / bộ đếm ở ô lý do tuỳ chọn', () => {
@@ -559,7 +558,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
 
   check('MTb (T7) · quét nguồn: hồ sơ Mock — huỷ lượt bắt lý do bằng hàm chung; dời / hạn / vắng tuỳ chọn, câu giải thích chuyển vào title; từ chối bắt lý do', () => {
     const m = nguon('web/src/modules/fasttrack/MockDetailPage.tsx');
-    assert(/kiemLyDoThaoTac\('huy-luot'/.test(m) && !/Lý do huỷ \(bắt buộc\)/.test(m), 'CancelDialog');
+    assert(!/kiemLyDoThaoTac\('huy-luot'/.test(m) && !/Lý do huỷ \(bắt buộc\)/.test(m), 'CancelDialog: lý do tuỳ chọn (PR-MTGON)');
     const tuan = m.slice(m.indexOf('function WeekModal'), m.indexOf('function DeadlineModal'));
     assert(!/<SectionNote>/.test(tuan) && /toiThieu=\{quanLy \? undefined/.test(tuan) && /Tuần đã qua<\/Nhan>/.test(tuan), 'WeekModal');
     const han = m.slice(m.indexOf('function DeadlineModal'), m.indexOf('function CancelDialog'));

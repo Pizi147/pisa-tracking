@@ -74,7 +74,7 @@ export async function runPrXlmtTests(t: YThucTestKit) {
     }
     // PR-MTa T7 thay K4-15: dời lịch / báo vắng — lý do tuỳ chọn; huỷ điểm cũng tuỳ chọn (rà #212), không tối thiểu ký tự.
     assert(d.canLyDo('doi-lich') === false && d.canLyDo('bao-vang') === false && !d.canLyDo('huy-diem'), 'canLyDo');   // rà #212: Huỷ điểm lý do tuỳ chọn
-    assert(d.kiemLyDoThaoTac('bao-vang', '') === null && d.kiemLyDoThaoTac('huy-diem', ' ') === null && d.kiemLyDoThaoTac('huy-luot', ' ') === 'Huỷ lượt: cần ghi lý do.', 'kiemLyDoThaoTac');
+    assert(d.kiemLyDoThaoTac('bao-vang', '') === null && d.kiemLyDoThaoTac('huy-diem', ' ') === null && d.kiemLyDoThaoTac('tu-choi', ' ') === 'Từ chối: cần ghi lý do.', 'kiemLyDoThaoTac');
     assert(d.tuanMacDinhDotMoi('2026-09-16') === '2026-09-21', d.tuanMacDinhDotMoi('2026-09-16'));
   });
 
