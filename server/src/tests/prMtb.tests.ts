@@ -628,14 +628,15 @@ export async function runPrMtbTests(t: YThucTestKit) {
   };
   const soDeNghi = (aid: number) => (conn.prepare(`SELECT COUNT(*) n FROM skill_move_requests WHERE attempt_id = ? AND status = 'pending'`).get(aid) as any).n as number;
 
-  check('MTb (T3, A6) · máy chủ: kỹ năng huyVang — GVBM xin-doi → 403; GVCN xin-doi → một đề nghị pending; nút theo vai', () => {
+  check('MTb (T3, A6) · máy chủ: kỹ năng huyVang — GVBM / GVCN xin-doi → 403; QL xin-doi → một đề nghị pending; nút theo vai', () => {
     const a = emHuyVang();
     assert((conn.prepare(`SELECT huy_vang FROM attempt_skills WHERE attempt_id = ? AND skill = 'speaking'`).get(a.m1) as any)?.huy_vang === 1, 'chưa huyVang');
     assert(loiCua(() => absence.xinDoi(P.subjectTeacher, a.m1, 'speaking')).status === 403, 'GVBM');
-    absence.xinDoi(P.coreTeacher, a.m1, 'speaking', { lyDo: '' });
+    assert(loiCua(() => absence.xinDoi(P.coreTeacher, a.m1, 'speaking')).status === 403, 'GVCN');
+    absence.xinDoi(P.mbManager, a.m1, 'speaking', { lyDo: '' });
     assert(soDeNghi(a.m1) === 1, 'đề nghị');
     const gvcn = { nhapDiem: false, quanLy: false, gvcn: true, laFt: true, dotHoanTat: false };
-    assert(d.thaoTacKyNang('huy-vang', gvcn).chinh === 'xin-doi', 'GVCN thấy Xin dời');
+    assert(d.thaoTacKyNang('huy-vang', gvcn).chinh === null, 'GVCN không còn Xin dời');
     assert(d.thaoTacKyNang('huy-vang', { ...gvcn, quanLy: true, gvcn: false }).menu.includes('khong-mock-lai'), 'QL có Không mock lại');
     assert(!d.thaoTacKyNang('huy-vang', { ...gvcn, gvcn: false }).chinh, 'GVBM không có nút chính');
   });
@@ -663,9 +664,10 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert(/export function rawPatchFrom/.test(cd) && /export function criteriaPatchFrom/.test(cd) && /docONhapLR\(/.test(cd), 'chamDiem.ts');
   });
 
-  check('MTb (T3, T2) · quét nguồn: HopThaoTacMt có xin-doi / khong-mock-lai, bỏ vế "từ lần 2 Quản lý duyệt"; hồ sơ Mock + hàng Lộ trình có "Khôi phục kết quả"', () => {
+  check('MTb (T3, T2) · quét nguồn: HopThaoTacMt có khong-mock-lai (không còn xin-doi), bỏ vế "từ lần 2 Quản lý duyệt"; hồ sơ Mock + hàng Lộ trình có "Khôi phục kết quả"', () => {
     const h = nguon('web/src/modules/fasttrack/HopThaoTacMt.tsx');
-    for (const c of ["'xin-doi'", "'khong-mock-lai'", '/xin-doi', '/khong-mock-lai', 'huyVang']) assert(h.includes(c), `HopThaoTacMt thiếu ${c}`);
+    assert(!h.includes("'xin-doi'"), 'còn nút xin-doi');
+    for (const c of ["'khong-mock-lai'", '/khong-mock-lai', 'huyVang']) assert(h.includes(c), `HopThaoTacMt thiếu ${c}`);
     const m = nguon('web/src/modules/fasttrack/MockDetailPage.tsx');
     assert(m.includes('Khôi phục kết quả') && m.includes('HopKhoiPhucKetQua') && m.includes('ketQuaHuy'), 'MockDetailPage');
     assert(/khoi-phuc-ket-qua/.test(nguon('web/src/modules/test/keHoach/HopKhoiPhucKetQua.tsx')), 'hộp khôi phục gọi đường A6b');
@@ -702,7 +704,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
 
   check('MTb sau rà (I1) · Khôi phục kỹ năng huỷ vắng RÚT đề nghị dời đang chờ — quá hạn quét không huỷ lại', () => {
     const a = emHuyVang();
-    const r = absence.xinDoi(P.coreTeacher, a.m1, 'speaking', { lyDo: '' });
+    const r = absence.xinDoi(P.mbManager, a.m1, 'speaking', { lyDo: '' });
     assert(soDeNghi(a.m1) === 1, 'tiền đề: có đề nghị chờ');
     conn.prepare('UPDATE skill_move_requests SET decide_by = ? WHERE id = ?').run(t.addDays(TODAY, -1), r.requestId);
     absence.restoreCancelledSkill(QL, a.m1, 'speaking', tuan(2).id);

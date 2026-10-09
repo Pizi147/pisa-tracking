@@ -273,7 +273,7 @@ function xuLyVangMotKyNang(conn: any, actor: number | null, attempt: any, row: a
    * bắt đầu. Với lần dời ĐẦU của bài đã chốt, chỉ cần tuần đích CHƯA KẾT THÚC (còn thi được). Tuần đích đã qua hẳn thì vẫn chuyển
    * Quản lý, để xử lý muộn không âm thầm thành thêm tuần. Mọi trường hợp vắng khác giữ nguyên.
    */
-  /* T3 (PR-MTa): vắng LẦN 2 trở đi ở Mock → kỹ năng HUỶ (vắng 2 lần), chuông GVCN; KHÔNG tự tạo đề nghị — GVCN bấm "Xin dời". */
+  /* T3 (PR-MTa): vắng LẦN 2 trở đi ở Mock → kỹ năng HUỶ (vắng 2 lần), chuông GVCN; KHÔNG tự tạo đề nghị — Quản lý xử lý. */
   if (moveNo >= 2 && attempt.kind === 'mock' && !isRatio(attempt)) return huyVangNoi(conn, actor, attempt, row, moveNo);
 
   const fromNoShow = row.absent_from_no_show === 1;
@@ -338,17 +338,17 @@ function huyVangNoi(conn: any, actor: number | null, attempt: any, row: any, mov
   }
   return {
     skill, result: 'huy-vang', toWeek: null, moveNo, requestId: null,
-    message: `${skillName(skill)}: vắng lần ${moveNo} — đã huỷ. GVCN có thể xin dời.`,
+    message: `${skillName(skill)}: vắng lần ${moveNo} — đã huỷ. Quản lý xử lý.`,
   };
 }
 
 /**
- * T3 (PR-MTa): GVCN / Quản lý "Xin dời" kỹ năng đã huỷ vì vắng 2 lần → MỘT đề nghị (thẻ Lịch thi ở Chờ duyệt, như hiện nay). Quản lý
- * duyệt = kỹ năng về lịch mới (`applyMove`, bộ đếm +1); từ chối = không mock lại (Q3). GVBM → 403.
+ * T3 (PR-MTa): Quản lý "Xin dời" kỹ năng đã huỷ vì vắng 2 lần → MỘT đề nghị (thẻ Lịch thi ở Chờ duyệt, như hiện nay). Quản lý
+ * duyệt = kỹ năng về lịch mới (`applyMove`, bộ đếm +1); từ chối = không mock lại (Q3). Vai khác → 403 (luật 09/10: GVCN không xử lý lịch Test).
  */
 export function xinDoi(p: Principal, attemptId: number, skill: string, o: { lyDo?: string | null; idempotencyKey?: string | null; today?: string } = {}): MoveOutcome {
   const attempt = loadAttempt(attemptId);
-  if (!canRequest(p, attempt)) throw forbidden('Chỉ giáo viên chủ nhiệm của lớp và Quản lý xin dời được.');
+  if (!canDecide(p, attempt)) throw forbidden('Chỉ Quản lý xử lý lịch Test.');
   if (attempt.status === 'cancelled') throw badRequest('Đợt này đã huỷ.');
   if (attempt.lich_su) throw badRequest('MT cũ không vào luồng vắng — nhập bù điểm, không dời lịch.');
   const row = ensureSkillRows(attemptId).find((r) => r.skill === skill);

@@ -262,7 +262,7 @@ export type SkillScheduleView = {
   absenceMoveCount: number;
   /** Đề nghị dời do vắng đang chờ Quản lý trả lời (mục 10.6), nếu có. */
   pendingMove: { id: number; decideBy: string; toWeek: string | null; moveNo: number } | null;
-  /** T3 (PR-MTa): huỷ vì vắng 2 lần — GVCN "Xin dời", Quản lý "Không mock lại". */
+  /** T3 (PR-MTa): huỷ vì vắng 2 lần — Quản lý "Không mock lại". */
   huyVang: boolean;
 };
 

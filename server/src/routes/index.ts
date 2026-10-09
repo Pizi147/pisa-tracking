@@ -711,7 +711,7 @@ api.post('/attempts/:id/skills/:skill/restore', requireAuth, wrap((req) => {
   });
 }));
 
-/** PR-MTa (T3): GVCN / Quản lý "Xin dời" kỹ năng đã huỷ vì vắng 2 lần → thẻ Lịch thi ở Chờ duyệt `{ reason?, idempotencyKey? }`. */
+/** PR-MTa (T3): Quản lý "Xin dời" (vai khác 403) kỹ năng đã huỷ vì vắng 2 lần → thẻ Lịch thi ở Chờ duyệt `{ reason?, idempotencyKey? }`. */
 api.post('/attempts/:id/skills/:skill/xin-doi', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return absenceSvc.xinDoi(principalOf(req), pInt(req, 'id'), String(req.params.skill), {

@@ -88,7 +88,7 @@ export async function runPrMtaTests(t: YThucTestKit) {
       assert(d.canLyDo(x) && d.kiemLyDoThaoTac(x, '  ') === `${d.CHU_LY_DO[x]}: cần ghi lý do.`, x);
       assert(d.kiemLyDoThaoTac(x, 'x') === null, `${x}: 1 ký tự phải hợp lệ`);
     }
-    for (const x of ['huy-luot', 'huy-diem', 'doi-lich', 'doi-han', 'bo-ky-nang', 'bao-vang', 'thi-lai', 'sua-diem', 'huy-lich', 'xin-doi', 'khong-mock-lai'] as const) {
+    for (const x of ['huy-luot', 'huy-diem', 'doi-lich', 'doi-han', 'bo-ky-nang', 'bao-vang', 'thi-lai', 'sua-diem', 'huy-lich', 'khong-mock-lai'] as const) {
       assert(!d.canLyDo(x) && d.kiemLyDoThaoTac(x, '') === null, x);
     }
     assert(!('LY_DO_TOI_THIEU' in d) && !('kiemLyDo' in d), 'còn hằng/hàm cũ');
@@ -395,7 +395,7 @@ export async function runPrMtaTests(t: YThucTestKit) {
     const tt = d.trangThaiTT({ batBuoc: true, tuanBatDau: '2026-09-07', coDiem: false, sit: 'cancelled', choDuyet: false, lichSu: false, homNay: '2026-09-16', huyVang: true });
     assert(tt === 'huy-vang', tt);
     const q = { nhapDiem: false, quanLy: false, gvcn: true, laFt: true, dotHoanTat: false };
-    assert(JSON.stringify(d.thaoTacKyNang('huy-vang', q)) === JSON.stringify({ chinh: 'xin-doi', menu: [] }), 'GVCN');
+    assert(JSON.stringify(d.thaoTacKyNang('huy-vang', q)) === JSON.stringify({ chinh: null, menu: [] }), 'GVCN không còn nút (09/10)');
     assert(JSON.stringify(d.thaoTacKyNang('huy-vang', { ...q, quanLy: true })) === JSON.stringify({ chinh: 'khoi-phuc', menu: ['khong-mock-lai'] }), 'QL');
     assert(d.thaoTacKyNang('huy-vang', { ...q, gvcn: false }).chinh === null, 'GVBM');
     assert(d.trangThaiTT({ batBuoc: true, tuanBatDau: '2026-09-07', coDiem: false, sit: 'cancelled', choDuyet: false, lichSu: false, homNay: '2026-09-16' }) === 'da-huy', 'không cờ → da-huy');
@@ -425,10 +425,11 @@ export async function runPrMtaTests(t: YThucTestKit) {
     const a = emVangMot(0);
     absence.baoVang(GVCN, a.m1, 'speaking', '');
     assert(loiCua(() => absence.xinDoi(P.subjectTeacher, a.m1, 'speaking')).status === 403, 'GVBM');
-    assert(loiCua(() => absence.xinDoi(GVCN, a.m1, 'listening')).status === 400, 'kỹ năng chưa huỷ');
-    const r = absence.xinDoi(GVCN, a.m1, 'speaking', { lyDo: 'Em ốm' });
+    assert(loiCua(() => absence.xinDoi(GVCN, a.m1, 'speaking')).status === 403, 'GVCN 09/10');
+    assert(loiCua(() => absence.xinDoi(P.mbManager, a.m1, 'listening')).status === 400, 'kỹ năng chưa huỷ');
+    const r = absence.xinDoi(P.mbManager, a.m1, 'speaking', { lyDo: 'Em ốm' });
     assert(r.result === 'pending' && r.requestId && theCua(r.requestId), JSON.stringify(r));
-    assert(loiCua(() => absence.xinDoi(GVCN, a.m1, 'speaking')).status === 400, 'gọi lại');
+    assert(loiCua(() => absence.xinDoi(P.mbManager, a.m1, 'speaking')).status === 400, 'gọi lại');
     yeuCau.duyetYeuCau(QL, theCua(r.requestId));
     const k = kyNang(a.m1, 'speaking');
     assert(k.sit_status === 'scheduled' && k.huy_vang === 0 && k.absence_move_count === 2 && k.planned_period_id, JSON.stringify(k));
@@ -441,7 +442,7 @@ export async function runPrMtaTests(t: YThucTestKit) {
     const a = emVangMot(0);
     for (const [k, b, r] of [['listening', 6, 30], ['reading', 6, 30], ['writing1', 6, null], ['writing2', 6, null]] as const) diem(a.m1, k, b, r);
     absence.baoVang(GVCN, a.m1, 'speaking', '');
-    const r = absence.xinDoi(GVCN, a.m1, 'speaking');
+    const r = absence.xinDoi(P.mbManager, a.m1, 'speaking');
     yeuCau.tuChoiYeuCau(QL, theCua(r.requestId), 'x');
     const k = kyNang(a.m1, 'speaking');
     assert(k.required === 0 && k.scope_reason === 'x' && luot(a.m1).status === 'done', `${JSON.stringify(k)} ${luot(a.m1).status}`);
@@ -463,7 +464,7 @@ export async function runPrMtaTests(t: YThucTestKit) {
   check('MTa T3 (H6) · Không mock lại: QL không lý do → bỏ kỹ năng, đề nghị chờ rút; GVCN 403; kỹ năng chưa huỷ 400', () => {
     const a = emVangMot(0);
     absence.baoVang(GVCN, a.m1, 'speaking', '');
-    const r = absence.xinDoi(GVCN, a.m1, 'speaking');
+    const r = absence.xinDoi(P.mbManager, a.m1, 'speaking');
     assert(loiCua(() => absence.khongMockLai(GVCN, a.m1, 'speaking')).status === 403, 'GVCN');
     assert(loiCua(() => absence.khongMockLai(QL, a.m1, 'listening')).status === 400, 'chưa huỷ');
     absence.khongMockLai(QL, a.m1, 'speaking');
@@ -474,7 +475,7 @@ export async function runPrMtaTests(t: YThucTestKit) {
   check('MTa T3 (H7) · thẻ Xin dời hết hạn → expired, S vẫn huỷ vắng, không chuông schedule_move cho QL', () => {
     const a = emVangMot(0);
     absence.baoVang(GVCN, a.m1, 'speaking', '');
-    const r = absence.xinDoi(GVCN, a.m1, 'speaking');
+    const r = absence.xinDoi(P.mbManager, a.m1, 'speaking');
     conn.prepare('UPDATE skill_move_requests SET decide_by = ? WHERE id = ?').run(t.addDays(TODAY, -1), r.requestId);
     const truoc = chuong('schedule_move', QL.userId);
     absence.sweepExpiredMoves();

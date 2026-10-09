@@ -461,14 +461,14 @@ export async function runPrMtTests(t: YThucTestKit) {
     assert(conn.prepare(`SELECT 1 FROM audit_logs WHERE action = 'attempt.absence_auto_move' AND entity_id = ?`).get(a8.id), 'thiếu nhật ký máy tự dời');
   });
   // PR-MTa T3 thay K4-28 lần 2: vắng lần 2 → kỹ năng huỷ (vắng 2 lần), không tự tạo đề nghị; GVCN "Xin dời" mới tạo đề nghị chờ QL.
-  check('PR-MT (8) · Lần 2 → huỷ (vắng 2 lần); GVCN Xin dời → đề nghị chờ QL: hạn hết CN tuần gửi, tuần đích = tuần chưa bắt đầu gần nhất (PR-MTa T3, T42)', () => {
+  check('PR-MT (8) · Lần 2 → huỷ (vắng 2 lần); QL Xin dời → đề nghị chờ QL: hạn hết CN tuần gửi, tuần đích = tuần chưa bắt đầu gần nhất (PR-MTa T3, T42)', () => {
     attemptsSvc.saveScore(P.lrTeacher, a8.id, 'listening', { noShow: true }, '2026-09-16');
     absence.settleNoShows('2026-09-21');
     assert(lich('listening').sit_status === 'cancelled', 'vắng lần 2 phải huỷ kỹ năng');
-    absence.xinDoi(P.coreTeacher, a8.id, 'listening', { today: '2026-09-21' });
+    absence.xinDoi(P.mbManager, a8.id, 'listening', { today: '2026-09-21' });
     const r = conn.prepare(`SELECT r.*, p.week_start AS dich FROM skill_move_requests r JOIN report_periods p ON p.id = r.to_period_id
       WHERE r.attempt_id = ? AND r.skill = 'listening' AND r.status = 'pending'`).get(a8.id) as any;
-    assert(r && r.move_no === 2 && r.requested_by === P.coreTeacher.userId && r.decide_by === '2026-09-27' && r.dich === '2026-09-28', JSON.stringify(r));
+    assert(r && r.move_no === 2 && r.requested_by === P.mbManager.userId && r.decide_by === '2026-09-27' && r.dich === '2026-09-28', JSON.stringify(r));
     assert(lich('listening').sit_status === 'cancelled', 'lịch giữ nguyên tới khi QL duyệt');
     /* PR-Dọn (Q14): `moTaDoiLan2` (chỉ phép kiểm gọi) đã xoá — gọi thẳng `chuTheDoiLan2`, như thẻ Chờ duyệt. */
     const mo = absence.chuTheDoiLan2({ skill: r.skill, attemptNo: 1, moveNo: r.move_no, tuanDich: r.dich, homNay: TODAY });

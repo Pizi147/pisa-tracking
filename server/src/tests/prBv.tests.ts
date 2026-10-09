@@ -281,7 +281,7 @@ export async function runPrBvTests(t: YThucTestKit) {
   check('BV V4 · huỷ vắng 2 lần + thẻ Xin dời đang chờ → xoá "-" → về tuần gốc, huy_vang 0, thẻ rút, lần vắng giữ 1', () => {
     const a = vangL(-1, 1);
     assert(kyNang(a.m1, 'listening').huy_vang === 1, 'chưa huỷ vắng');
-    const x = absence.xinDoi(GVCN, a.m1, 'listening');
+    const x = absence.xinDoi(P.mbManager, a.m1, 'listening');
     go(QL, a.m1, 'listening');
     const k = kyNang(a.m1, 'listening');
     assert(k.sit_status === 'scheduled' && k.huy_vang === 0 && k.planned_period_id === tuan(-1).id && k.absence_move_count === 1, JSON.stringify(k));

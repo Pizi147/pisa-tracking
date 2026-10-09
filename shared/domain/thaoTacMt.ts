@@ -7,13 +7,13 @@
 import { mondayOfDate } from './week.ts';
 
 export type ThaoTac = 'nhap-diem' | 'sua-diem' | 'dat-lich' | 'doi-lich' | 'doi-han' | 'bo-ky-nang' | 'dua-lai' | 'bao-vang' | 'huy-diem'
-  | 'xep-lai' | 'tra-loi-de-nghi' | 'khoi-phuc' | 'xin-doi' | 'khong-mock-lai';
+  | 'xep-lai' | 'tra-loi-de-nghi' | 'khoi-phuc' | 'khong-mock-lai';
 
 export const CHU_THAO_TAC: Record<ThaoTac, string> = {
   'nhap-diem': 'Nhập điểm', 'sua-diem': 'Sửa điểm', 'dat-lich': 'Xếp lịch', 'doi-lich': 'Dời lịch thi', 'doi-han': 'Dời hạn chấm',
   'bo-ky-nang': 'Huỷ kỹ năng', 'dua-lai': 'Đưa lại vào đợt', 'bao-vang': 'Báo vắng', 'huy-diem': 'Huỷ điểm',
   'xep-lai': 'Xếp lại bài vắng', 'tra-loi-de-nghi': 'Trả lời đề nghị dời', 'khoi-phuc': 'Khôi phục và đặt tuần',
-  'xin-doi': 'Xin dời', 'khong-mock-lai': 'Không mock lại',
+  'khong-mock-lai': 'Không mock lại',
 };
 
 export type TrangThaiTT = 'khong-yeu-cau' | 'chua-xep' | 'chua-toi-tuan' | 'dang-thi' | 'co-diem' | 'vang' | 'cho-duyet' | 'da-huy' | 'lich-su'
@@ -59,15 +59,15 @@ export function thaoTacKyNang(tt: TrangThaiTT, q: QuyenTT): { chinh: ThaoTac | n
     /* PR-MTGON: kỹ năng đã huỷ (dữ liệu cũ, kể cả MT cũ) → "Đưa lại vào đợt" (Quản lý FT); lớp thường giữ Khôi phục. */
     case 'da-huy': return { chinh: ftQl ? 'dua-lai' : ql ? 'khoi-phuc' : null, menu: [] };
     case 'lich-su': return { chinh: q.nhapDiem ? 'nhap-diem' : null, menu: huy };
-    /* T3 (PR-MTa): Quản lý khôi phục và đặt tuần / không mock lại; GVCN xin dời; GVBM không có thao tác. */
-    case 'huy-vang': return { chinh: q.quanLy ? 'khoi-phuc' : q.gvcn ? 'xin-doi' : null, menu: q.quanLy ? ['khong-mock-lai'] : [] };
+    /* T3 (PR-MTa): Chỉ Quản lý khôi phục và đặt tuần / không mock lại (luật 09/10: GVCN không xử lý lịch Test). */
+    case 'huy-vang': return { chinh: q.quanLy ? 'khoi-phuc' : null, menu: q.quanLy ? ['khong-mock-lai'] : [] };
   }
 }
 
 /**
  * MENU ⋯ CỦA HỘP MỘT ĐỢT (PR-MTb Task 5, mockup phần 2): NĂM mục cố định, thứ tự cố định — mục chưa làm được vẫn hiện, mờ, `viSao` là tooltip.
  * `duoc` lấy từ `thaoTacKyNang` (một nguồn). `thay` = thao tác thật khi bấm "Đổi tuần" ở dòng vắng / đã huỷ (đường cũ: Xếp lại bài vắng /
- * Khôi phục và đặt tuần). "Xin dời", "Không mock lại", "Khôi phục kết quả" không nằm ở đây (hồ sơ Mock / ⋯ hàng Lộ trình).
+ * Khôi phục và đặt tuần). "Không mock lại", "Khôi phục kết quả" không nằm ở đây (hồ sơ Mock / ⋯ hàng Lộ trình).
  */
 export type MucHop = 'doi-tuan' | 'doi-han' | 'bao-vang' | 'huy-diem' | 'nhat-ky';
 export const CHU_MUC_HOP: Record<MucHop, string> = { 'doi-tuan': 'Đổi tuần', 'doi-han': 'Dời hạn chấm', 'bao-vang': 'Báo vắng', 'huy-diem': 'Huỷ điểm', 'nhat-ky': 'Nhật ký' };
