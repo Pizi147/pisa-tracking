@@ -23,7 +23,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'class.assign': 'Phân công giáo viên', 'class.create': 'Tạo lớp', 'class.bulk_create': 'Tạo nhiều lớp', 'class.delete': 'Xoá lớp', 'class.finished': 'Kết thúc lớp', 'class.reopened': 'Mở lại lớp',
   'lenh_chuyen.tao': 'Quyết định chuyển lớp', 'lenh_chuyen.sua': 'Sửa quyết định chuyển lớp', 'lenh_chuyen.huy': 'Huỷ quyết định chuyển lớp', 'lenh_chuyen.khoi_phuc': 'Khôi phục quyết định chuyển lớp',
   'lenh_chuyen.thi_hanh': 'Thi hành quyết định chuyển lớp', 'ban_giao.ghi_mon': 'Ghi bàn giao môn', 'ban_giao.xac_nhan': 'GVCN xác nhận bàn giao',
-  'class.info': 'Sửa thông tin lớp', 'class.progress': 'Đổi tiến độ lớp', 'class.transition': 'Chuyển tiếp lớp',
+  'class.info': 'Sửa thông tin lớp', 'class.progress': 'Đổi tiến độ lớp', 'class.progress.doi_bai': 'Dời bài theo mốc lớp', 'class.transition': 'Chuyển tiếp lớp',
   'cycle.baseline.clear': 'Xoá điểm đầu vào', 'cycle.baseline.set': 'Ghi điểm đầu vào', 'cycle.create': 'Mở lộ trình',
   'cycle.outcome': 'Kết luận lộ trình', 'cycle.thi_that': 'Kết quả thi thật', 'cycle.target.revise': 'Đổi Target', 'cycle.update': 'Sửa lộ trình',
   'discipline.acknowledge': 'Ghi nhận vi phạm (đã xem)', 'discipline.handle': 'Xác nhận xử lý vi phạm', 'discipline.edit': 'Sửa vi phạm của lần xử lý', 'discipline.delete': 'Xoá lần xử lý',

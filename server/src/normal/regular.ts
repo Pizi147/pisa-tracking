@@ -678,7 +678,13 @@ export function reportRegularNoShow(
        * (test PR-Rc1 C08 còn kiểm đúng chữ "vượt qua đợt kế tiếp") — chỉ nối thêm một câu chỉ đường: GV không
        * sửa được lịch ở đây, chỉ Quản lý mới xếp lại được, và chỗ xếp lại là Kế hoạch Test.
        */
-      const check = checkSkillWeekMove({ attemptId, skill: skill as AssessedSkill, newWeekStart: moi.weekStart });
+      /* PR-LTGON (luật 7): Giữa khoá dời tới đúng tuần Final của em → hoà vào tuần Final (lưu, không chặn). Trùng/vượt chỗ khác vẫn theo luật cũ. */
+      const final = a.kind === 'progress' ? conn.prepare(
+        `SELECT x.id, MIN(pr.week_start) AS tuan FROM assessment_attempts x JOIN attempt_skills k ON k.attempt_id = x.id AND k.required = 1 AND k.sit_status != 'cancelled'
+           JOIN report_periods pr ON pr.id = k.planned_period_id WHERE x.cycle_id = ? AND x.kind = 'final' AND x.status != 'cancelled'`,
+      ).get(a.cycle_id) as any : null;
+      const hoaVaoFinal = final?.id && final.tuan === moi.weekStart ? final.id as number : undefined;
+      const check = checkSkillWeekMove({ attemptId, skill: skill as AssessedSkill, newWeekStart: moi.weekStart, boQua: hoaVaoFinal ? [hoaVaoFinal] : undefined });
       if (check.blockers.length) {
         throw badRequest(`${check.blockers.join(' ')} Nhờ Quản lý dời lịch ở Kế hoạch Test.`);
       }
@@ -696,7 +702,7 @@ export function reportRegularNoShow(
       /* Dời bằng ĐÚNG hàm dời lịch chung — `force` chỉ vượt được cảnh báo, không bao giờ vượt được chặn. */
       setSkillWeek(p, attemptId, skill, moi.id, {
         reason: lyDo !== undefined ? (lyDo.trim() ? `Báo vắng: ${lyDo.trim()}` : 'Báo vắng') : `Báo "-": em không làm bài tuần ${tuanLich(cu.weekStart, today)} — môn này dời sang tuần sau (C08).`,
-        force: true, today, ghiBuDau: true,
+        force: true, today, ghiBuDau: true, hoaVaoFinal,
       });
       writeAudit({
         actorUserId: p.userId, action: 'regular.no_show', entityType: 'assessment_attempt', entityId: attemptId,
