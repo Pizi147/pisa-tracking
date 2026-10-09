@@ -172,3 +172,18 @@ export function chuDoiVang(l: { weekStart: string | null; doiTu: string | null; 
   if (l.weekStart && homNay && mondayOfDate(l.weekStart) === mondayOfDate(homNay)) return { chu: `Thi bù tuần này (lần ${l.absenceMoveCount})`, title };
   return { chu: `vắng · dời sang ${tuan} · lần ${l.absenceMoveCount}`, title };
 }
+
+/** Một lượt cần lưu ở tab "Xếp theo học viên" (PR-XTHV): tuần sớm nhất trước / sau khi sửa; `taoMoi` = lượt chưa có (đi `/xep-moi`). */
+export type BuocLuuLuot = { attemptNo: number; cu: string | null; moi: string; taoMoi: boolean };
+
+/**
+ * PR-XTHV: thứ tự lưu an toàn nhiều lượt của MỘT em — mỗi lần lưu đều qua kiểm "MT(n) sau MT(n−1)" của máy chủ, nên lượt dời lùi (sang
+ * tuần sau) đi từ MT lớn xuống, rồi lượt dời tiến (sang tuần trước, hoặc chưa có tuần) từ MT nhỏ lên, cuối cùng tạo lượt mới từ nhỏ lên.
+ * Trạng thái đầu và cuối hợp lệ thì mọi bước giữa cũng hợp lệ.
+ */
+export function thuTuLuuLuot<T extends BuocLuuLuot>(ds: readonly T[]): T[] {
+  const lui = ds.filter((x) => !x.taoMoi && x.cu !== null && x.moi.slice(0, 10) > x.cu.slice(0, 10)).sort((a, b) => b.attemptNo - a.attemptNo);
+  const tien = ds.filter((x) => !x.taoMoi && !lui.includes(x)).sort((a, b) => a.attemptNo - b.attemptNo);
+  const moi = ds.filter((x) => x.taoMoi).sort((a, b) => a.attemptNo - b.attemptNo);
+  return [...lui, ...tien, ...moi];
+}

@@ -266,7 +266,8 @@ export function luoiFT(p: Principal, classId: number, today: string = demoToday(
 
   const students = conn
     .prepare(
-      `SELECT s.id, s.full_name, s.student_code, s.status, e.started_at
+      `SELECT s.id, s.full_name, s.student_code, s.status, e.started_at,
+              (SELECT cy.id FROM learning_cycles cy WHERE cy.student_id = s.id AND cy.status = 'active' ORDER BY cy.id DESC LIMIT 1) AS cycle_id
          FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
         WHERE e.class_id = ? AND ${HV_DANG_HOC_SQL('s')}
         ORDER BY s.full_name`,
@@ -352,6 +353,8 @@ export function luoiFT(p: Principal, classId: number, today: string = demoToday(
     }
     return {
       studentId: s.id as number, ten: s.full_name as string, ma: s.student_code as string,
+      /* PR-XTHV: lộ trình đang chạy — tab "Xếp theo học viên" đọc `/cycles/:id/suggested-mocks` (lịch gợi ý, kỳ vọng). */
+      cycleId: (s.cycle_id ?? null) as number | null,
       vaoMuon: laVaoMuon(s.started_at ?? null, cls.start_date ?? null), dot,
       /* K4-08: chỉ ô MT kế tiếp có "+ xếp" (Q11) — tính trên cả lộ trình của em (Q12). */
       soKeTiep: soKeTiepCua.get(s.id)!,
