@@ -77,7 +77,7 @@ export function PanelKyVong({ classId, onClose, onDone }: { classId: number; onC
         dong: gui.map((e) => { const d = dongCua(e); return d.dat ? { sid: e.id, dat: true } : { sid: e.id, dat: false, nguyenNhan: d.nn, mon: d.mon, lyDo: d.nn === 'hoc_sinh' ? d.lyDo.trim() : null }; }),
       });
       invalidate('/my-work'); invalidate('/cases'); invalidate('/students');
-      toast.push('ok', `Đã lưu ${r.luu} em${r.taoCase ? ` · tạo ${r.taoCase} Case` : ''}`);
+      toast.push('ok', `Đã lưu ${r.luu} em${r.taoCase ? ` · tạo ${r.taoCase} Case` : ''}${r.boQua ? ` · ${r.boQua} em đã có Case cùng kỹ năng` : ''}`);
       setSua({}); lf.datLai();
       onDone(); reload();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }

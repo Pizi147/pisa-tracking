@@ -36,10 +36,13 @@ function emKyVong(o: { sc?: Scope; branchId?: number | null; classId?: number })
   const conn = db();
   const cs = o.sc ? classScopeSql(o.sc) : { sql: '1=1', params: [] };
   const rows = conn.prepare(
-    `SELECT l.student_id, s.full_name, s.student_code, l.lop_nguon_id, c.code, c.programme_code, l.lop_dich_id, cd.code AS dich_code, l.trang_thai,
+    `SELECT l.student_id, s.full_name, s.student_code, l.lop_nguon_id, c.code, c.programme_code, cd.id AS dich_id, cd.code AS dich_code, l.trang_thai,
             lt.ky_vong_dat, lt.ky_vong_nguyen_nhan, lt.ky_vong_mon, lt.ky_vong_ghi_chu, MAX(l.id) AS lenh
        FROM lenh_chuyen_lop l
-       JOIN classes c ON c.id = l.lop_nguon_id LEFT JOIN classes cd ON cd.id = l.lop_dich_id JOIN students s ON s.id = l.student_id
+       JOIN classes c ON c.id = l.lop_nguon_id JOIN students s ON s.id = l.student_id
+       LEFT JOIN classes cd ON cd.id = COALESCE(
+              CASE WHEN l.trang_thai = 'da_chuyen' THEN (SELECT e.class_id FROM enrollments e JOIN classes cf ON cf.id = e.class_id
+                WHERE e.student_id = l.student_id AND e.status = 'active' AND cf.is_fast_track = 1 ORDER BY e.id DESC LIMIT 1) END, l.lop_dich_id)
        LEFT JOIN lo_trinh_tiep_theo lt ON lt.student_id = l.student_id AND lt.class_id = l.lop_nguon_id
       WHERE l.huong = 'fast_track' AND l.trang_thai IN ('cho', 'da_chuyen') AND c.programme_code IN ('BE', 'ELE') AND ${HV_DANG_HOC_SQL('s')}
         AND ${cs.sql}${o.branchId ? ' AND c.branch_id = ?' : ''}${o.classId ? ' AND l.lop_nguon_id = ?' : ''}
@@ -50,7 +53,7 @@ function emKyVong(o: { sc?: Scope; branchId?: number | null; classId?: number })
     const { bands, goiY } = mt0.get(r.student_id)!;
     return {
       id: r.student_id, ma: r.student_code, ten: r.full_name, lopId: r.lop_nguon_id, lopCode: r.code, ct: r.programme_code,
-      daChuyen: r.trang_thai === 'da_chuyen', lopFtId: r.lop_dich_id, lopFt: r.dich_code,
+      daChuyen: r.trang_thai === 'da_chuyen', lopFtId: r.dich_id, lopFt: r.dich_code,
       mt0: goiY ? { ...(bands as Record<RegularSkill, number>), overall: goiY.overall } : null, goiY,
       ketLuan: r.ky_vong_dat === null ? null
         : { dat: !!r.ky_vong_dat, nguyenNhan: r.ky_vong_nguyen_nhan ?? null, mon: jsonMang(r.ky_vong_mon), ghiChu: r.ky_vong_ghi_chu ?? null },
@@ -145,7 +148,7 @@ export function kiemDongKyVong(x: any, ten: string): DongKyVong {
  * PUT "Lưu · n em" — MỘT tx: ghi kết luận cả lô (`lo_trinh_tiep_theo`) rồi tạo Case cho em đã sang FT. Em phải thuộc lớp và đủ điểm MT0.
  * Đổi kết luận sau khi đã tạo Case → Case cũ GIỮ (người phụ trách tự xử lý), không tạo trùng.
  */
-export function luuKyVong(p: Principal, classId: number, body: any): { luu: number; taoCase: number } {
+export function luuKyVong(p: Principal, classId: number, body: any): { luu: number; taoCase: number; boQua: number } {
   const lop = lopNguon(p, classId);
   const vao: any[] = Array.isArray(body?.dong) ? body.dong : [];
   if (!vao.length) throw badRequest('Chưa có em nào để lưu.');
@@ -167,10 +170,10 @@ export function luuKyVong(p: Principal, classId: number, body: any): { luu: numb
       ` ON CONFLICT(student_id, class_id) DO UPDATE SET ky_vong_dat = excluded.ky_vong_dat, ky_vong_nguyen_nhan = excluded.ky_vong_nguyen_nhan,
          ky_vong_mon = excluded.ky_vong_mon, ky_vong_ghi_chu = excluded.ky_vong_ghi_chu, updated_by = excluded.updated_by, updated_at = excluded.updated_at`,
     );
-    const taoCase = taoCaseKyVong(p, emDaSangFt(dong.filter((d) => !d.dat && em.get(d.sid)!.daChuyen && em.get(d.sid)!.lopFtId).map((d) => ({ ...d, fromClassId: classId, ftClassId: em.get(d.sid)!.lopFtId! }))));
+    const { tao: taoCase, boQua } = taoCaseKyVong(p, emDaSangFt(dong.filter((d) => !d.dat && em.get(d.sid)!.daChuyen && em.get(d.sid)!.lopFtId).map((d) => ({ ...d, fromClassId: classId, ftClassId: em.get(d.sid)!.lopFtId! }))));
     writeAudit({ actorUserId: p.userId, action: 'cuoi_khoa.ky_vong_lop', entityType: 'class', entityId: classId, entityLabel: lop.code,
-      after: { dat: dong.filter((d) => d.dat).length, khongDat: dong.filter((d) => !d.dat).length, taoCase } });
-    return { luu: dong.length, taoCase };
+      after: { dat: dong.filter((d) => d.dat).length, khongDat: dong.filter((d) => !d.dat).length, taoCase, boQua } });
+    return { luu: dong.length, taoCase, boQua };
   });
 }
 
@@ -192,10 +195,10 @@ const MO_TA_TUTOR = 'Tutor 10 buổi/kỹ năng · tính vào buổi Free, có l
  * Case "Kỳ vọng đầu ra chưa đạt…" ở lộ trình FT (T49, §3) — THEO LÔ, trong tx nơi gọi. Trung tâm: mỗi kỹ năng một Case + PA Tutor 10 buổi
  * (`chenPa`; Người dạy = GV cũ dạy kỹ năng đó ở lớp BE/ELE, hết phân công → trống; việc Kết quả theo `nguoiGiuKetQua` = GVBM Case). Học viên: MỘT Case,
  * không PA (Quản lý thêm sau). Chủ Case = GVBM kỹ năng đó ở lớp FT (`suggestCaseOwner`). Một lần cho mỗi (lộ trình, kỹ năng) — đã có Case "Kỳ vọng
- * đầu ra…" bất kỳ trạng thái thì không tạo lại; Case đang mở cùng khoá (vd Case Mock) thì giữ, không gắn PA. Trả số Case mới.
+ * đầu ra…" bất kỳ trạng thái thì không tạo lại; Case đang mở cùng khoá (vd Case Mock) thì giữ, không gắn PA. Trả số Case mới + số em bị bỏ qua vì vậy (`boQua`).
  */
-export function taoCaseKyVong(p: Principal, ds: readonly DongCaseKyVong[]): number {
-  if (!ds.length) return 0;
+export function taoCaseKyVong(p: Principal, ds: readonly DongCaseKyVong[]): { tao: number; boQua: number } {
+  if (!ds.length) return { tao: 0, boQua: 0 };
   const conn = db();
   const daCo = new Set<string>(), emDaCo = new Set<string>();
   theoLo([...new Set(ds.map((d) => d.sid))], (lo, ph) => {
@@ -216,15 +219,16 @@ export function taoCaseKyVong(p: Principal, ds: readonly DongCaseKyVong[]): numb
       return [{ d, mon: m, skill, category, khoa: caseDedupKey({ category: category as any, studentId: d.sid, cycleId: d.ftCycleId })!, title }];
     });
   });
-  if (!o.length) return 0;
+  if (!o.length) return { tao: 0, boQua: 0 };
   /* Khoá chống trùng: Case đang mở → giữ (bỏ qua); Case đã đóng → nhả khoá, Case mới nối `previous_case_id` (hiếm — từng câu). */
   const coSan = new Map<string, { id: number; status: string }>();
   theoLo(o.map((y) => y.khoa), (lo, ph) => {
     for (const r of conn.prepare(`SELECT id, status, dedup_key FROM sos_cases WHERE dedup_key IN (${ph})`).all(...lo) as any[]) coSan.set(r.dedup_key, { id: r.id, status: r.status });
   });
   const moi = o.filter((y) => !coSan.has(y.khoa) || coSan.get(y.khoa)!.status === 'done');
+  const boQua = new Set(o.filter((y) => !moi.includes(y)).map((y) => y.d.sid)).size;
   for (const y of moi) if (coSan.has(y.khoa)) conn.prepare('UPDATE sos_cases SET dedup_key = NULL, updated_at = ? WHERE id = ?').run(nowIso(), coSan.get(y.khoa)!.id);
-  if (!moi.length) return 0;
+  if (!moi.length) return { tao: 0, boQua };
   const chu = new Map<string, number | null>();
   const chuCase = (classId: number, category: string) => {
     const k = `${classId}:${category}`;
@@ -259,5 +263,5 @@ export function taoCaseKyVong(p: Principal, ds: readonly DongCaseKyVong[]): numb
   chenPa(conn, pa);
   chenNhieuDong('INSERT OR IGNORE INTO case_milestones (case_id, kind, occurred_on, note, created_by, created_at, dedup_key)', moc);
   dongBoTrangThaiCaseLo([...caseCua.values()]);
-  return moi.length;
+  return { tao: moi.length, boQua };
 }
