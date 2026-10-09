@@ -9,6 +9,7 @@ import {
   fmtBand, skillLabel, skillShort, sosLabel, sosTone,
 } from '../../lib/format.ts';
 import { ENTRY_SKILLS, chipSosMt0, chuOChuaLuu, dotGvCham, duongDotTest, maHocVienNgan, ngay, nhanLuot, tuanLich, type AssessedSkill, type NguoiChon, type TrangThaiLuuO } from '@shared/domain/index.ts';
+import { DongThi } from './DongThi.tsx';
 import { GOI_Y_COT_MT, NutGvCham, useGvChamCot } from './GvCham.tsx';
 
 /** Dữ liệu lưới FT — chính là `cham.ft` (`classScoreSheet` ở máy chủ). */
@@ -272,6 +273,8 @@ function SheetRow({ row, rowIndex, active, cot, tuanDangXem, onReload, gvMacDinh
           {row.lichSu && <NhanCu />}
           <DauLuu status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />
         </div>
+        <DongThi muc={row.cells.filter((c) => c.required && c.progress !== 'cancelled')
+          .map((c) => ({ nhan: c.skill.startsWith('writing') ? 'W' : skillShort(c.skill), weekStart: c.weekStart ?? null }))} />
       </td>
       {cot.mt && <td className="td py-1.5 whitespace-nowrap" title={`Mock Test lượt ${row.attemptNo}`}>MT{row.attemptNo}</td>}
       {cot.trangThai && (

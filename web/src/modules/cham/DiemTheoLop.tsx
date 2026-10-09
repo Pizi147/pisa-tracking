@@ -15,13 +15,14 @@ import { useApi } from '../../lib/useApi.ts';
 import { BaoDangLuuContext } from '../../ui/SaveState.tsx';
 import { Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import {
-  HOI_DOI_LUOT_RONG, buocHoiDoiLuot, cauChanDoiLuot, dongPhuLuot, duongHoSoHocVien, hangThuongConTrong, maHocVienNgan, oTrongLuotFt, tuanLich,
+  HOI_DOI_LUOT_RONG, buocHoiDoiLuot, cauChanDoiLuot, dongPhuLuot, duongHoSoHocVien, hangThuongConTrong, maHocVienNgan, oTrongLuotFt,
   yeuCauDoiLuot, type HoiDoiLuot, type TomTatLuot,
 } from '@shared/domain/index.ts';
 import {
   LuoiChamLop, duongDiemTheoLuot, useManHinhHep, type BangTheoLuot, type DanhSachLuot,
 } from './LuoiChamLop.tsx';
 import type { HangMo } from './LuoiFT.tsx';
+import { DongThiContext } from './DongThi.tsx';
 
 const KHOA_CHI_O_TRONG = 'pisa.diem-theo-lop.chi-o-trong';
 function docChiOTrong(): boolean {
@@ -153,7 +154,7 @@ export function DiemTheoLop({ classId, luotBanDau, gon = false, congRoi, onDaLuu
             <NutBen luot={truoc} huong="truoc" onChon={doiLuot} />
             <div className="flex-1 min-w-0 text-center" aria-live="polite">
               <div className="font-semibold truncate">
-                {dangXem?.nhan}{dangXem?.tuanStart ? <span className="tabular-nums"> · {tuanLich(dangXem.tuanStart)}</span> : null}
+                {dangXem?.nhan}
               </div>
             </div>
             <NutBen luot={sau} huong="sau" onChon={doiLuot} />
@@ -220,8 +221,10 @@ export function DiemTheoLop({ classId, luotBanDau, gon = false, congRoi, onDaLuu
                 : (
                   <div className="rounded-lg border overflow-clip" style={{ borderColor: 'var(--line)' }}>
                     <BaoDangLuuContext.Provider value={baoLuu}>
-                      <LuoiChamLop data={b} kind={null} onReload={daLuuO} gon datConTro={false}
-                        chiAttempt={chiAttempt} hangMo={hangMo} anNutTao />
+                      <DongThiContext.Provider value>
+                        <LuoiChamLop data={b} kind={null} onReload={daLuuO} gon datConTro={false}
+                          chiAttempt={chiAttempt} hangMo={hangMo} anNutTao />
+                      </DongThiContext.Provider>
                     </BaoDangLuuContext.Provider>
                   </div>
                 )}

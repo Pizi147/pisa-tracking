@@ -39,15 +39,15 @@ export async function runPrDlTests(t: YThucTestKit) {
     const l = (ma: string, tuanStart: string | null, oTrong: number) =>
       ({ ma, nhan: ma, tuanStart, lichSu: false, duDiem: 0, coLich: 3, oTrong });
     const m = (ds: object[], homNay = '2026-09-16') => d.luotMacDinh(ds, homNay);
-    assert(m([l('thuong:progress', '2026-08-24', 1), l('thuong:final', '2026-10-12', 20)]) === 'thuong:progress', '(a) đã qua còn trống thắng tương lai');
-    assert(m([l('mt:1', '2026-08-24', 0), l('mt:4', '2026-10-12', 5), l('mt:3', '2026-09-28', 5)]) === 'mt:3', '(b) chỉ tương lai → gần nhất');
+    assert(m([l('thuong:progress', '2026-08-24', 1), l('thuong:final', '2026-10-05', 20)]) === 'thuong:progress', '(a) đã qua còn trống thắng tương lai');
+    assert(m([l('mt:1', '2026-08-24', 0), l('mt:4', '2026-10-05', 5), l('mt:3', '2026-09-28', 5)]) === 'mt:3', '(b) chỉ tương lai → gần nhất');
     assert(m([l('mt:2', '2026-09-14', 2), l('mt:3', '2026-09-21', 3)]) === 'mt:2', '(c) tuần này thắng tuần sau');
     assert(m([l('mt:2', '2026-09-14', 2), l('mt:3', '2026-09-21', 3)], '2026-09-20') === 'mt:2', '(c) Chủ nhật vẫn thuộc tuần 14/09');
     assert(m([l('mt:2', '2026-09-14', 2), l('mt:3', '2026-09-21', 3)], '2026-09-21') === 'mt:3', '(c) sang Thứ Hai 21/09 → tuần mới');
-    assert(m([l('mt:3', null, 2), l('mt:2', '2026-10-12', 3)]) === 'mt:2', '(d) tương lai thắng NULL');
-    assert(m([l('mt:3', null, 2), l('mt:1', '2026-09-07', 1), l('mt:2', '2026-10-12', 3)]) === 'mt:1', 'đã qua thắng tương lai và NULL');
-    assert(m([l('mt:1', '2026-08-24', 0), l('mt:2', '2026-10-12', 0), l('mt:3', null, 0)]) === 'mt:3', '(e) tất cả đủ → cuối (NULL)');
-    assert(m([l('mt:2', '2026-10-12', 0), l('mt:1', '2026-08-24', 0)]) === 'mt:2', '(e) tất cả đủ → cuối theo tuần');
+    assert(m([l('mt:3', null, 2), l('mt:2', '2026-10-05', 3)]) === 'mt:2', '(d) tương lai thắng NULL');
+    assert(m([l('mt:3', null, 2), l('mt:1', '2026-09-07', 1), l('mt:2', '2026-10-05', 3)]) === 'mt:1', 'đã qua thắng tương lai và NULL');
+    assert(m([l('mt:1', '2026-08-24', 0), l('mt:2', '2026-10-05', 0), l('mt:3', null, 0)]) === 'mt:3', '(e) tất cả đủ → cuối (NULL)');
+    assert(m([l('mt:2', '2026-10-05', 0), l('mt:1', '2026-08-24', 0)]) === 'mt:2', '(e) tất cả đủ → cuối theo tuần');
     assert(m([]) === null, 'rỗng');
   });
 
@@ -438,12 +438,16 @@ export async function runPrDlTests(t: YThucTestKit) {
     });
   } finally { may.close(); }
 
-  check('DL-5 dòng phụ nút lượt: "W3 JUL · 5/8 đủ điểm"; không ai có lịch → "chưa ai có lịch"; chưa xếp tuần → chỉ số đủ', () => {
+  check('DL-5 dòng phụ nút lượt: "5/8 đủ điểm" (không tuần); không ai có lịch → "chưa ai có lịch"', () => {
     const l = (tuanStart: string | null, duDiem: number, coLich: number) =>
       ({ ma: 'mt:2', nhan: 'MT2', tuanStart, lichSu: false, duDiem, coLich, oTrong: 0 });
-    assert(d.dongPhuLuot(l('2026-07-13', 5, 8)) === 'W3 JUL · 5/8 đủ điểm', d.dongPhuLuot(l('2026-07-13', 5, 8)));
+    assert(d.dongPhuLuot(l('2026-07-13', 5, 8)) === '5/8 đủ điểm', d.dongPhuLuot(l('2026-07-13', 5, 8)));
     assert(d.dongPhuLuot(l('2026-07-13', 0, 0)) === 'chưa ai có lịch', 'không ai có lịch');
     assert(d.dongPhuLuot(l(null, 2, 3)) === '2/3 đủ điểm', 'tuần NULL');
+    const m = (nhan: string, weekStart: string | null) => ({ nhan, weekStart });
+    assert(d.dongThiHocVien([m('L', '2026-09-28'), m('R', '2026-09-28'), m('S', '2026-09-28')]) === 'Thi W1 OCT', 'cùng tuần');
+    assert(d.dongThiHocVien([m('L', '2026-09-28'), m('R', '2026-09-28'), m('S', '2026-10-05')]) === 'Thi W1 OCT · S W2 OCT', 'lệch kỹ năng');
+    assert(d.dongThiHocVien([m('L', null), m('R', null)]) === 'Chưa xếp tuần', 'chưa xếp');
   });
 
   check('DL-5 "Chỉ ô còn trống" (G6): ô bắt buộc chưa huỷ, chưa điểm, không "-" — FT và lớp thường', () => {
@@ -594,7 +598,7 @@ export async function runPrDlTests(t: YThucTestKit) {
   check('DL-6 fix: đổi lớp đi CÙNG đường chặn với đổi lượt (CongRoi); danh sách + ô chọn lớp giữ hộp lý do; số ô trống tải lại sau khi lưu', () => {
     const f = doc('web/src/modules/test/TabDiemLop.tsx');
     assert(/congRoi=\{cong\}/.test(f) && /cong\.current\.roi\(sang\)/.test(f), 'đổi lớp gọi CongRoi.roi');
-    assert((f.match(/onMouseDown=\{giu\}/g) ?? []).length === 2 && f.includes('cong.current?.giu(e)'), 'danh sách lớp và ô chọn 375 chặn mousedown');
+    assert((f.match(/onMouseDown=\{giu\}/g) ?? []).length === 3 && f.includes('cong.current?.giu(e)'), 'hàng lọc, danh sách lớp và ô chọn 375 chặn mousedown');
     const dt = doc('web/src/modules/cham/DiemTheoLop.tsx');
     assert(/roi: \(lam\) => \{ dichNgoai\.current = lam; doiLuot\(DICH_NGOAI\); \}, giu: giuHopLyDo/.test(dt), 'roi đi qua doiLuot (blur + yeuCauDoiLuot)');
     assert(/if \(ma === DICH_NGOAI\) \{ dichNgoai\.current\?\.\(\); return; \}/.test(dt), 'sang đích ngoài chạy hành động đổi lớp');
