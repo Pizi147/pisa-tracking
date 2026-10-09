@@ -22,6 +22,7 @@ import { MenuDong } from '../../ui/MenuDong.tsx';
 import { HopThaoTacMt, THAO_TAC_CO_HOP } from '../fasttrack/HopThaoTacMt.tsx';
 import { NganLichSuBai } from './NganLichSuBai.tsx';
 import { DauLuu, DauO, VIEN_LOI } from './LuoiFT.tsx';
+import { DongThi } from './DongThi.tsx';
 
 type SkillResult = {
   skill: string; label: string;
@@ -439,6 +440,8 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
           <span className="shrink-0">{maHocVienNgan(row.studentCode)}</span>
           <DauLuu status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />
         </div>
+        <DongThi muc={row.skillSchedule.filter((s) => s.progress !== 'cancelled' && s.progress !== 'skipped')
+          .map((s) => ({ nhan: tenMonNgan(sheet.programme.code, s.skill), weekStart: s.weekStart }))} />
       </td>
       {sheet.programme.skills.map((k, ci) => {
         const { s, canEdit, trong, dung, chuDung, quaHan, cell } = oThuong(row, k, homNay);

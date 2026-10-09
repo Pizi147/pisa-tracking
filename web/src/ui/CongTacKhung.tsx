@@ -7,7 +7,7 @@ import { BoLocDoan } from './ui.tsx';
  * Chỉ một khung có dữ liệu → không vẽ gì.
  */
 export type KhungLoc = 'ft' | 'thuong' | 'tat-ca';
-type Trang = 'lich-test' | 'ke-hoach-test' | 'cong-viec' | 'hoc-vien-lop' | 'tong-quan' | 'phan-tich-gv';
+type Trang = 'lich-test' | 'ke-hoach-test' | 'diem-theo-lop' | 'cong-viec' | 'hoc-vien-lop' | 'tong-quan' | 'phan-tich-gv';
 
 /** Người đang đăng nhập — `SessionProvider` đặt mỗi khi phiên đổi; một chỗ cho mọi trang dùng công tắc. */
 let nguoiDung: number | null = null;

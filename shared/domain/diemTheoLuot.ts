@@ -45,11 +45,25 @@ export function luotMacDinh(ds: TomTatLuot[], homNay: string): string | null {
   return (daToi ?? tuongLai ?? conTrong.at(-1) ?? xep.at(-1))?.ma ?? null;
 }
 
-/** Dòng nhỏ dưới nút lượt (DL-5): "W3 JUL · 5/8 đủ điểm"; lượt chưa xếp tuần → chỉ số đủ; không ai có lịch → "chưa ai có lịch". */
+/** Dòng nhỏ dưới nút lượt: "6/7 đủ điểm" (tuần thi nằm dưới mã từng em — `dongThiHocVien`); không ai có lịch → "chưa ai có lịch". */
 export function dongPhuLuot(l: TomTatLuot): string {
-  if (!l.coLich) return 'chưa ai có lịch';
-  const dem = `${l.duDiem}/${l.coLich} đủ điểm`;
-  return l.tuanStart ? `${tuanLich(l.tuanStart)} · ${dem}` : dem;
+  return l.coLich ? `${l.duDiem}/${l.coLich} đủ điểm` : 'chưa ai có lịch';
+}
+
+/**
+ * Dòng nhỏ dưới mã học viên ở Điểm theo lớp: tuần thi chung ("W1 OCT"); kỹ năng lệch tuần ghi thêm ("W1 OCT · S W2 OCT");
+ * chưa kỹ năng nào có tuần → "Chưa xếp tuần". `muc` = các kỹ năng còn thi của em (nhãn ngắn + đầu tuần thi).
+ */
+export function dongThiHocVien(muc: { nhan: string; weekStart: string | null }[]): string {
+  const dem = new Map<string, number>();
+  for (const m of muc) if (m.weekStart) dem.set(m.weekStart, (dem.get(m.weekStart) ?? 0) + 1);
+  if (!dem.size) return 'Chưa xếp tuần';
+  const chung = [...dem].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))[0][0];
+  const lech = new Map<string | null, string[]>();
+  for (const m of muc) if (m.weekStart !== chung) lech.set(m.weekStart, [...(lech.get(m.weekStart) ?? []), m.nhan]);
+  const nhom = [...lech].sort((a, b) => (a[0] ?? '9') < (b[0] ?? '9') ? -1 : 1)
+    .map(([w, ds]) => `${[...new Set(ds)].join(' ')} ${w ? tuanLich(w) : 'chưa xếp'}`);
+  return [tuanLich(chung), ...nhom].join(' · ');
 }
 
 /**

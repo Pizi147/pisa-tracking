@@ -139,15 +139,15 @@ export function bangTheoLuot(p: Principal, classId: number, ma: string, today: s
  * `classScopeSql` (GV/GVCN: lớp được phân công; QL: lớp chi nhánh) + lớp FT GV Speaking chấm S chéo (`lopFtChoGvSpeaking`)
  * — như Lịch Test.
  */
-export function lopCuaToi(p: Principal): { classId: number; classCode: string; mode: CheDo; oTrong: number }[] {
+export function lopCuaToi(p: Principal): { classId: number; classCode: string; mode: CheDo; branchId: number; oTrong: number }[] {
   const scope = scopeXemLuotCham(p);
   if (scope.none) return [];
   const cs = classScopeSql(scope);
-  const lop = (db().prepare(`SELECT c.id, c.code, c.programme_code FROM classes c WHERE ${cs.sql} AND c.status = 'active'`)
+  const lop = (db().prepare(`SELECT c.id, c.code, c.programme_code, c.branch_id FROM classes c WHERE ${cs.sql} AND c.status = 'active'`)
     .all(...cs.params) as any[]).sort((a, b) => soSanhLop({ code: a.code }, { code: b.code }));
   const tt = tomTatLop(lop.map((c) => c.id as number));
   return lop.map((c) => ({
-    classId: c.id as number, classCode: c.code as string, mode: cheDoCua(c.programme_code),
+    classId: c.id as number, classCode: c.code as string, mode: cheDoCua(c.programme_code), branchId: c.branch_id as number,
     oTrong: tt.get(c.id)!.reduce((n, l) => n + l.oTrong, 0),
   }));
 }
