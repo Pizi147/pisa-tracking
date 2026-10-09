@@ -13,7 +13,7 @@ import { GIAI_THICH_KCK, KCK, dsLoi, type LuatTruong, type TruongDeXuat } from '
  */
 const TRUONG: { key: TruongDeXuat; nhan: string }[] = [
   { key: 'target', nhan: 'Target' }, { key: 'lo-trinh', nhan: 'Lộ trình' },
-  { key: 'lich-mt', nhan: 'Lịch MT' }, { key: 'khac', nhan: 'Thông tin khác' },
+  { key: 'khac', nhan: 'Thông tin khác' },
 ];
 
 export function DeXuatSuaPanel({ studentId, studentName, lop, truongDau, hienTai, onClose, onDone }: {
@@ -93,7 +93,7 @@ export function DeXuatSuaPanel({ studentId, studentName, lop, truongDau, hienTai
               </div>
             ) : (
               <input className="field w-full" maxLength={200} {...lf.o(loi, 'moi')} value={moi} onChange={(e) => setMoi(e.target.value)}
-                placeholder={truong === 'lich-mt' ? 'Ví dụ: MT3 dời sang W2 OCT' : 'Ghi rõ cần sửa gì'} />
+                placeholder="Ghi rõ cần sửa gì" />
             )}
           </Truong>
         )}

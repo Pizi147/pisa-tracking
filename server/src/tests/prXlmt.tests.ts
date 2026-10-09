@@ -185,7 +185,7 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
     assert(/Báo vắng: Em ốm cả tuần/.test(h?.reason ?? ''), JSON.stringify(h));
     const r2 = absence.baoVang(P.coreTeacher, m1.id, 'speaking', 'Em vẫn còn ốm', t.addDays(tuanNay, 8));
     assert(!r2.daDoi && !r2.choDuyet && r2.huyVang, JSON.stringify(r2));
-    absence.xinDoi(P.coreTeacher, m1.id, 'speaking', { lyDo: 'Em vẫn còn ốm', today: t.addDays(tuanNay, 8) });
+    absence.xinDoi(P.mbManager, m1.id, 'speaking', { lyDo: 'Em vẫn còn ốm', today: t.addDays(tuanNay, 8) });
     const yc = conn.prepare(`SELECT 1 FROM yeu_cau_duyet y JOIN skill_move_requests r ON r.id = y.doi_tuong_id
       WHERE r.attempt_id = ? AND r.skill = 'speaking' AND r.status = 'pending'`).get(m1.id);
     assert(yc, 'thiếu thẻ Lịch thi cho đề nghị lần 2');

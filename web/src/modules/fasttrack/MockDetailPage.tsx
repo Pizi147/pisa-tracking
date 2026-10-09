@@ -480,9 +480,7 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory }: {
     const laDiem = (x: ThaoTac | null) => x === 'nhap-diem' || x === 'sua-diem';
     const chinh0 = ownsSchedule || laDiem(tat.chinh) ? tat.chinh : null;
     /* Nhập/Sửa điểm chỉ khi ô thật sự mở (không bị dấu "-" khoá, không vắng/huỷ). */
-    /* Đã gửi "Xin dời" (đề nghị chờ Quản lý) → GVCN hết nút; dòng trạng thái đã nói đang chờ ai. */
-    const daXinDoi = chinh0 === 'xin-doi' && !!r.pendingMove;
-    const chinh = (laDiem(chinh0) && !canScore) || daXinDoi ? null : chinh0;
+    const chinh = laDiem(chinh0) && !canScore ? null : chinh0;
     const menu = ownsSchedule ? tat.menu : tat.menu.filter((x) => x === 'huy-diem');
     const chay = (t: ThaoTac) => {
       if (laDiem(t)) onMoDiem(c.assessedSkill as KyNangLon);
@@ -551,7 +549,7 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory }: {
           {!chinh && !ownsSchedule && r.required && !canScore && r.sitStatus === 'absent' && (
             <span className="text-xs text-slate-500">Xử lý ở dòng W1</span>
           )}
-          {!chinh && !daXinDoi && c.required && !c.canEdit && !cancelled && (
+          {!chinh && c.required && !c.canEdit && !cancelled && (
             <span className="text-xs text-slate-500" title={c.khoa ? KHOA_HOAN_TAT_HINT : 'Bạn không được phân công kỹ năng này'}>Chỉ xem</span>
           )}
           {/* Không có mục thì giữ chỗ cùng rộng nút ⋯ (w-7) — nút chính các dòng thẳng cột (rà #126). */}

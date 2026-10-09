@@ -1,8 +1,8 @@
 /**
  * ĐỀ XUẤT SỬA THÔNG TIN HV (PR-DUYET, T44, K3-40, M-18) — GV của lớp gửi, Quản lý duyệt ở hộp Chờ duyệt.
  *
- * Câu 1 = B (chủ sản phẩm 29/09): GVCN VẪN tự chuyển lớp; chỉ target và lộ trình phải qua đề xuất. "Lớp", "Lịch MT", "Khác" vẫn gửi
- * được (Q6) nhưng Duyệt không tự áp — Quản lý làm ở màn gốc rồi Duyệt, ghi đã làm gì.
+ * Câu 1 = B (chủ sản phẩm 29/09): GVCN VẪN tự chuyển lớp; chỉ target và lộ trình phải qua đề xuất. "Khác" vẫn gửi
+ * được (Q6; "Lớp" có luồng riêng, "Lịch MT" bỏ từ 09/10 — thẻ cũ vẫn hiện để Quản lý đóng) nhưng Duyệt không tự áp — Quản lý làm ở màn gốc rồi Duyệt, ghi đã làm gì.
  */
 import { db, tx } from '../db.ts';
 import { badRequest, notFound } from '../util.ts';
@@ -35,6 +35,7 @@ export function guiDeXuatSua(p: Principal, studentId: number, body: { truong?: u
   if (hv.status !== 'active' || hv.archived_at) throw badRequest('Học viên không còn đang học — không gửi đề xuất sửa được.');
   if (body.truong === 'lop') throw badRequest('Dùng Đề xuất chuyển lớp.');   // PR-CT (Q30-1)
   const truong = body.truong as TruongDeXuat;
+  if (truong === 'lich-mt') throw badRequest('Lịch Test do Quản lý xử lý — không gửi đề xuất.');   // luật 09/10; thẻ cũ vẫn hiện để đóng
   if (!(TRUONG_DE_XUAT as readonly string[]).includes(String(truong))) throw badRequest('Chọn thông tin cần sửa.');
   const lyDo = typeof body.lyDo === 'string' ? body.lyDo.trim() : '';
   if (!lyDo) throw badRequest('Ghi lý do để Quản lý có căn cứ duyệt.');   // T7 (PR-MTa): không tối thiểu ký tự

@@ -13,7 +13,7 @@ import {
 } from '@shared/domain/index.ts';
 
 /** Thao tác một kỹ năng mở bằng hộp này — Nhập/Sửa điểm làm tại chỗ, Xếp lại bài vắng / Trả lời đề nghị có hộp riêng. */
-export const THAO_TAC_CO_HOP: readonly ThaoTac[] = ['dat-lich', 'xep-lai', 'doi-lich', 'doi-han', 'bo-ky-nang', 'dua-lai', 'bao-vang', 'huy-diem', 'khoi-phuc', 'xin-doi', 'khong-mock-lai'];
+export const THAO_TAC_CO_HOP: readonly ThaoTac[] = ['dat-lich', 'xep-lai', 'doi-lich', 'doi-han', 'bo-ky-nang', 'dua-lai', 'bao-vang', 'huy-diem', 'khoi-phuc', 'khong-mock-lai'];
 
 /** Một câu nói hệ quả của thao tác — người bấm biết trước điều gì xảy ra (T38, clarify). */
 function cauHeQua(t: ThaoTac, mon: string, laThuong: boolean): string {
@@ -28,7 +28,6 @@ function cauHeQua(t: ThaoTac, mon: string, laThuong: boolean): string {
       ? `Ghi "-" cho ${mon}: môn này dời sang tuần sau ngay.`
       : `Ghi "-" cho ${mon} và chốt ngay. Lần vắng đầu máy tự dời sang tuần kế tiếp; lần 2 huỷ phần thi này.`;
     case 'huy-diem': return 'Ô điểm trở về trống. Điểm cũ vẫn nằm trong Lịch sử cùng lý do.';
-    case 'xin-doi': return `Gửi Quản lý duyệt xếp lại ${mon} đã huỷ vì vắng 2 lần.`;
     case 'khong-mock-lai': return `${mon} đã huỷ vì vắng 2 lần sẽ không thi lại; đợt tính trên các kỹ năng còn lại.`;
     case 'khoi-phuc': return `Mở lại phần thi ${mon} đã huỷ và đặt tuần thi mới trong cùng một lần.`;
     default: return '';
@@ -120,9 +119,6 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
         if (r.huyVang) return `${mon} huỷ`;   // PR-MTa T3: vắng lần 2 → huỷ (ô MT "S huỷ")
         return r.choDuyet ? `Đã gửi Quản lý duyệt dời ${mon} (vắng lần 2)` : `Đã báo vắng ${mon}`;
       }
-      case 'xin-doi':
-        await api.post(`${goc}/xin-doi`, { reason: lyDoGui ?? null });
-        return `Đã gửi Quản lý xin dời ${mon}`;
       case 'khong-mock-lai':
         await api.post(`${goc}/khong-mock-lai`, { lyDo: lyDoGui ?? null });
         return `${mon}: không mock lại`;
@@ -204,7 +200,7 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
         {t !== 'dua-lai' && (
           <Truong nhan="Lý do" batBuoc={batBuoc} tuyChon={!batBuoc} loi={lf.loiCua(loi, 'ly-do')}>
             <textarea className="field w-full" rows={2} maxLength={300} {...lf.o(loi, 'ly-do')} value={lyDo} onChange={(e) => setLyDo(e.target.value)}
-              placeholder={t === 'bao-vang' || t === 'xin-doi' || t === 'khong-mock-lai' ? 'Ví dụ: em ốm, phụ huynh đã báo' : t === 'huy-diem' ? 'Ví dụ: nhập nhầm bài của em khác' : 'Ví dụ: trùng lịch phòng thi'} />
+              placeholder={t === 'bao-vang' || t === 'khong-mock-lai' ? 'Ví dụ: em ốm, phụ huynh đã báo' : t === 'huy-diem' ? 'Ví dụ: nhập nhầm bài của em khác' : 'Ví dụ: trùng lịch phòng thi'} />
           </Truong>
         )}
         {canhBao && <p className="m-0 text-xs text-amber-200" role="status">{canhBao}</p>}

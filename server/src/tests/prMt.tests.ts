@@ -465,7 +465,7 @@ export async function runPrMtTests(t: YThucTestKit) {
     attemptsSvc.saveScore(P.lrTeacher, a8.id, 'listening', { noShow: true }, '2026-09-16');
     absence.settleNoShows('2026-09-21');
     assert(lich('listening').sit_status === 'cancelled', 'vắng lần 2 phải huỷ kỹ năng');
-    absence.xinDoi(P.coreTeacher, a8.id, 'listening', { today: '2026-09-21' });
+    absence.xinDoi(P.mbManager, a8.id, 'listening', { today: '2026-09-21' });
     const r = conn.prepare(`SELECT r.*, p.week_start AS dich FROM skill_move_requests r JOIN report_periods p ON p.id = r.to_period_id
       WHERE r.attempt_id = ? AND r.skill = 'listening' AND r.status = 'pending'`).get(a8.id) as any;
     assert(r && r.move_no === 2 && r.requested_by === P.coreTeacher.userId && r.decide_by === '2026-09-27' && r.dich === '2026-09-28', JSON.stringify(r));
