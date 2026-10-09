@@ -445,8 +445,8 @@ export async function runPrDlTests(t: YThucTestKit) {
     assert(d.dongPhuLuot(l('2026-07-13', 0, 0)) === 'chưa ai có lịch', 'không ai có lịch');
     assert(d.dongPhuLuot(l(null, 2, 3)) === '2/3 đủ điểm', 'tuần NULL');
     const m = (nhan: string, weekStart: string | null) => ({ nhan, weekStart });
-    assert(d.dongThiHocVien([m('L', '2026-09-28'), m('R', '2026-09-28'), m('S', '2026-09-28')]) === 'Thi W1 OCT', 'cùng tuần');
-    assert(d.dongThiHocVien([m('L', '2026-09-28'), m('R', '2026-09-28'), m('S', '2026-10-05')]) === 'Thi W1 OCT · S W2 OCT', 'lệch kỹ năng');
+    assert(d.dongThiHocVien([m('L', '2026-09-28'), m('R', '2026-09-28'), m('S', '2026-09-28')]) === 'W1 OCT', 'cùng tuần');
+    assert(d.dongThiHocVien([m('L', '2026-09-28'), m('R', '2026-09-28'), m('S', '2026-10-05')]) === 'W1 OCT · S W2 OCT', 'lệch kỹ năng');
     assert(d.dongThiHocVien([m('L', null), m('R', null)]) === 'Chưa xếp tuần', 'chưa xếp');
   });
 

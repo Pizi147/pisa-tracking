@@ -51,7 +51,7 @@ export function dongPhuLuot(l: TomTatLuot): string {
 }
 
 /**
- * Dòng nhỏ dưới mã học viên ở Điểm theo lớp: tuần thi chung ("Thi W1 OCT"); kỹ năng lệch tuần ghi thêm ("Thi W1 OCT · S W2 OCT");
+ * Dòng nhỏ dưới mã học viên ở Điểm theo lớp: tuần thi chung ("W1 OCT"); kỹ năng lệch tuần ghi thêm ("W1 OCT · S W2 OCT");
  * chưa kỹ năng nào có tuần → "Chưa xếp tuần". `muc` = các kỹ năng còn thi của em (nhãn ngắn + đầu tuần thi).
  */
 export function dongThiHocVien(muc: { nhan: string; weekStart: string | null }[]): string {
@@ -63,7 +63,7 @@ export function dongThiHocVien(muc: { nhan: string; weekStart: string | null }[]
   for (const m of muc) if (m.weekStart !== chung) lech.set(m.weekStart, [...(lech.get(m.weekStart) ?? []), m.nhan]);
   const nhom = [...lech].sort((a, b) => (a[0] ?? '9') < (b[0] ?? '9') ? -1 : 1)
     .map(([w, ds]) => `${[...new Set(ds)].join(' ')} ${w ? tuanLich(w) : 'chưa xếp'}`);
-  return [`Thi ${tuanLich(chung)}`, ...nhom].join(' · ');
+  return [tuanLich(chung), ...nhom].join(' · ');
 }
 
 /**
