@@ -9231,6 +9231,9 @@ await runPrLtGonTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== PR-MTGON (chống kẹt Mock Test, chủ sản phẩm 08/10)
 const { runPrMtGonTests } = await import('./prMtGon.tests.ts');
 await runPrMtGonTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-KIEM-DU-LIEU-MT (lệnh kiểm chỉ đọc dữ liệu MT)
+const { runPrKiemDuLieuMtTests } = await import('./prKiemDuLieuMt.tests.ts');
+await runPrKiemDuLieuMtTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

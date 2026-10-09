@@ -20,6 +20,7 @@
     "sao-luu": "npm run build:server && node dist-server/server/src/ops/runSaoLuu.js",
     "khoi-phuc": "npm run build:server && node dist-server/server/src/ops/runKhoiPhuc.js",
     "kiem-sau-init": "npm run build:server && node dist-server/server/src/ops/kiemSauInit.js",
+    "kiem-du-lieu-mt": "npm run build:server && node dist-server/server/src/ops/kiemDuLieuMt.js",
     "xoa-kho-tep": "npm run build:server && node dist-server/server/src/ops/xoaKhoTep.js",
     "build": "node scripts/goi-libsql-linux.mjs && tsc -p tsconfig.web.json --noEmit && npm run build:server && vite build",
     "typecheck": "tsc -p tsconfig.web.json --noEmit && tsc -p tsconfig.build.json --noEmit",
