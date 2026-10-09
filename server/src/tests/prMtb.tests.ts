@@ -559,9 +559,9 @@ export async function runPrMtbTests(t: YThucTestKit) {
   check('MTb (T7) · quét nguồn: hồ sơ Mock — huỷ lượt bắt lý do bằng hàm chung; dời / hạn / vắng tuỳ chọn, câu giải thích chuyển vào title; từ chối bắt lý do', () => {
     const m = nguon('web/src/modules/fasttrack/MockDetailPage.tsx');
     assert(!/kiemLyDoThaoTac\('huy-luot'/.test(m) && !/Lý do huỷ \(bắt buộc\)/.test(m), 'CancelDialog: lý do tuỳ chọn (PR-MTGON)');
-    const tuan = m.slice(m.indexOf('function WeekModal'), m.indexOf('function DeadlineModal'));
-    assert(!/<SectionNote>/.test(tuan) && /toiThieu=\{quanLy \? undefined/.test(tuan) && /Tuần đã qua<\/Nhan>/.test(tuan), 'WeekModal');
-    const han = m.slice(m.indexOf('function DeadlineModal'), m.indexOf('function CancelDialog'));
+    /* PR-HOP1: WeekModal bỏ — dời cả đợt đi hộp một đợt `HopKyNang` (chip "Tuần đã qua", Quản lý chọn tuần đã qua). */
+    assert(!/WeekModal/.test(m) && /Tuần đã qua<\/Nhan>/.test(nguon('web/src/modules/test/keHoach/HopKyNang.tsx')), 'WeekModal');
+    const han = m.slice(m.indexOf('function DeadlineModal'), m.indexOf('function AbsenceMoveModal'));
     assert(!/<SectionNote>/.test(han), 'DeadlineModal: câu giải thích chuyển vào title');
     const vang = m.slice(m.indexOf('function AbsenceMoveModal'), m.indexOf('function TraLoiDeNghiModal'));
     assert(/<Truong nhan="Lý do" tuyChon>/.test(vang), 'AbsenceMoveModal: lý do tuỳ chọn');
@@ -794,7 +794,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
   // ------------------------------------------------------------------ sau rà độc lập — đợt 2 (giao diện)
   check('MTb sau rà đợt 2 (1) · đầu hộp một đợt: tên là Link tới `duongDotTest` khi đã có đợt (đóng hộp khi bấm), đợt mới là chữ', () => {
     const h = nguon('web/src/modules/test/keHoach/HopKyNang.tsx');
-    assert(/import \{ Link \} from 'react-router-dom'/.test(h) && /duongDotTest/.test(h), 'thiếu Link / duongDotTest');
+    assert(/import \{ Link\b[^}]*\} from 'react-router-dom'/.test(h) && /duongDotTest/.test(h), 'thiếu Link / duongDotTest');
     assert(/attemptId !== null\s*\?\s*<Link to=\{duongDotTest\(\{ id: attemptId,[^}]*classId \}, null\)\} onClick=\{onClose\}/.test(h), 'tên chưa là Link đóng hộp');
     const tieuDe = h.slice(h.indexOf('<Link to={duongDotTest'), h.indexOf('</Link>') + 120);
     assert(/className="link flex min-h-\[44px\] items-center sm:min-h-0"/.test(tieuDe), 'Link chưa 44px ở 375');

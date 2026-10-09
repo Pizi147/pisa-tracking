@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { api, invalidate } from '../../../lib/api.ts';
 import { useNgayNghiepVu } from '../../../ui/ngayNghiepVu.ts';
 import { addDaysStr } from '../../../lib/format.ts';
@@ -16,6 +16,7 @@ import { TuanNho, resolveTuan, type Tuan } from './TuanNho.tsx';
 import { MenuDong } from '../../../ui/MenuDong.tsx';
 import { useGiuFocus } from '../../../ui/giuFocus.ts';
 import { HopThaoTacMt } from '../../fasttrack/HopThaoTacMt.tsx';
+import { HopHuyMt } from '../../fasttrack/HopHuyMt.tsx';
 import { NganLichSuBai } from '../../cham/NganLichSuBai.tsx';
 
 type Dong = { tick: boolean; periodId: number | null; weekStart: string | null };
@@ -32,15 +33,18 @@ type Dong = { tick: boolean; periodId: number | null; weekStart: string | null }
  *   · mỗi lần đổi tuần gọi `/ke-hoach-test/dot/kiem` (đợt đã có) hoặc xem trước hàng loạt một em (đợt chưa có) → CHỈ dòng đỏ
  *     `Chặn: …` (Lưu tắt; PR-MTGON: dời vượt lượt sau cũng chặn ở đây) và dòng vàng (cảnh báo → nút đổi thành `Vẫn xếp vào tuần này`;
  *     chip "Tuần đã qua"). Hộp chỉ dành cho Quản lý / Quản trị: chọn được tuần đã qua ở mọi lượt (T4, T20 — rà #212).
+ * PR-HOP1: một việc dời lịch một MT chỉ có hộp này và một đường lưu `/ke-hoach-test/dot` (Hồ sơ MT cũng mở nó). FT đợt đã có: ⋯ đầu
+ *   hộp `Huỷ MT{n} · Nhật ký · Mở hồ sơ MT`. `doiTuanDau`: dòng `kyNangDau` mở sẵn bộ chọn tuần (⋯ "Dời lịch thi" một kỹ năng).
  * Bộ chọn tuần KHỞI TẠO bằng TUẦN HIỆN CÓ (Bổ sung sau rà #87): không để bộ chọn tự phát "tuần này" làm nút Lưu mở ngay.
  */
-export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attemptId, kn, kyNangDau, deXuat, khaiGiang, tongTuan, onClose, onSaved, onHienDien, ky = KY, ct = null, lichSu = false }: {
+export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attemptId, kn, kyNangDau, deXuat, khaiGiang, tongTuan, onClose, onSaved, onHienDien, ky = KY, ct = null, lichSu = false, doiTuanDau = false }: {
   anchor: HTMLElement; tieuDe: string; loai: 'ft' | 'thuong'; classId: number; studentId: number; dot: DotChon;
   /** Lớp thường: bộ môn của chương trình (Pre FOU một dòng Tổng hợp — PF6); FT: 4 kỹ năng. `ct` = mã chương trình (tên FOU G+V/P). */
   ky?: readonly KyNangKH[]; ct?: string | null;
   attemptId: number | null; kn: KnO; kyNangDau: KyNangKH | null;
   /** PR-XLMT: MT lịch sử — menu thao tác theo trạng thái `lich-su`. */
   lichSu?: boolean;
+  doiTuanDau?: boolean;
   deXuat?: string | null; khaiGiang?: string | null; tongTuan?: number | null;
   onClose: () => void; onSaved: () => void; onHienDien: (open: boolean) => void;
 }) {
@@ -50,7 +54,11 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
   const homNay = nghiepVu ? mondayOfDate(nghiepVu) : null;
   const ngayNghiepVu = nghiepVu || null;
   const [thaoTac, setThaoTac] = useState<{ t: ThaoTac; k: KyNangKH } | null>(null);
-  const [nhatKy, setNhatKy] = useState<KyNangKH | null>(null);
+  /** `ca-luot` = nhật ký cả lượt (⋯ đầu hộp). */
+  const [nhatKy, setNhatKy] = useState<KyNangKH | 'ca-luot' | null>(null);
+  const [huyMt, setHuyMt] = useState(false);
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
 
   /* PR-MTa T20: Quản lý dời được kỹ năng đã có điểm / đã thi (điểm đi theo) — chỉ phần đã huỷ là chỉ đọc. */
   const laKhoa = (k: KyNangKH) => !moi && kn[k]?.khoa === 'đã huỷ phần thi';
@@ -83,7 +91,7 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
   const [rows, setRows] = useState<Record<KyNangKH, Dong>>(khoiTao);
   const [chung, setChung] = useState<Tuan | null>(chungKhoiTao);
   /** Dòng đã bấm "Đổi tuần" riêng: bộ chọn tuần hiện ngay trên dòng và không theo "Tuần chung" nữa. */
-  const [rieng, setRieng] = useState<Partial<Record<KyNangKH, boolean>>>({});
+  const [rieng, setRieng] = useState<Partial<Record<KyNangKH, boolean>>>(() => (doiTuanDau && kyNangDau ? { [kyNangDau]: true } : {}));
   const [daChinh, setDaChinh] = useState(false);
   const macDinhMoi = useRef<{ rows: Record<KyNangKH, Dong>; chung: Tuan } | null>(null);
   const [force, setForce] = useState(false);
@@ -256,6 +264,13 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
     return () => { document.removeEventListener('mousedown', away); document.removeEventListener('keydown', esc); window.removeEventListener('resize', dat); };
   }, []);   // eslint-disable-line react-hooks/exhaustive-deps
 
+  /* ⋯ đầu hộp (PR-HOP1): chữ y như nơi khác — "Huỷ MT{n}" (Hồ sơ MT), "Nhật ký" (⋯ dòng), "Mở hồ sơ MT" (Lộ trình). */
+  const hoSo = attemptId !== null && dot.loai === 'ft' ? duongDotTest({ id: attemptId, kind: 'mock', classId }, null) : null;
+  const mucDau = attemptId === null || dot.loai !== 'ft' ? [] : [
+    { key: 'huy-mt', nhan: `Huỷ MT${dot.attemptNo}`, nguyHiem: true, onChon: () => setHuyMt(true) },
+    { key: 'nhat-ky', nhan: CHU_MUC_HOP['nhat-ky'], onChon: () => setNhatKy('ca-luot') },
+    ...(hoSo && hoSo !== pathname ? [{ key: 'ho-so', nhan: 'Mở hồ sơ MT', onChon: () => { onClose(); navigate(hoSo); } }] : []),
+  ];
   const nutLuu = canhBao.length && !force ? 'Vẫn xếp vào tuần này' : 'Lưu';
   const nhanChung = loai === 'thuong' && chung?.weekStart ? nhanTuanKhoa(chung.weekStart, khaiGiang ?? null, tongTuan ?? null) : null;
   const coDongDuoi = !!cauChan || !!cauCanhBao || quaTuan;
@@ -272,6 +287,7 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
                 className="link flex min-h-[44px] items-center sm:min-h-0"><span className="truncate">{tieuDe}</span></Link>
             : <span className="block truncate">{tieuDe}</span>}
         </div>
+        {mucDau.length > 0 && <MenuDong nhan={`Thao tác khác · ${tieuDe}`} muc={mucDau} />}
         <button type="button" className="btn btn-sm btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-[28px] sm:min-w-[28px]" onClick={onClose} aria-label="Đóng">✕</button>
       </div>
       <div className="max-h-[70vh] space-y-2 overflow-y-auto px-3 py-2.5">
@@ -317,7 +333,10 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
           onClose={() => setThaoTac(null)} onDone={() => { onSaved(); onClose(); }} />
       )}
       {nhatKy && attemptId !== null && (
-        <NganLichSuBai attemptId={attemptId} skill={nhatKy} ct={ct} tenHv={tieuDe} trongHop onClose={() => setNhatKy(null)} />
+        <NganLichSuBai attemptId={attemptId} skill={nhatKy === 'ca-luot' ? null : nhatKy} ct={ct} tenHv={tieuDe} trongHop onClose={() => setNhatKy(null)} />
+      )}
+      {huyMt && attemptId !== null && dot.loai === 'ft' && (
+        <HopHuyMt open attemptId={attemptId} attemptNo={dot.attemptNo} trongHop onClose={() => setHuyMt(false)} onDone={() => { onSaved(); onClose(); }} />
       )}
     </div>,
     document.body,

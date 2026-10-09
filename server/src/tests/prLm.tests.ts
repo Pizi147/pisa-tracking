@@ -60,11 +60,11 @@ export async function runPrLmTests(t: YThucTestKit) {
     assert(!/seHuyLich|xacNhanHuyLich|HopXacNhanHuyLich/.test(hop), 'còn xác nhận huỷ lịch (PR-MTGON bỏ)');
   });
 
-  check('PR-LM (4) · Dời lịch thi cả đợt: WeekPicker có toiThieu, không <select>, không force: true cố định, kiểm trước', () => {
+  /* PR-HOP1: WeekModal bỏ — "Dời lịch thi cả đợt" mở hộp một đợt `HopKyNang` (kiểm trước `/dot/kiem`, lưu `/dot`). */
+  check('PR-LM (4) · Dời lịch thi cả đợt: mở HopKyNang (kiểm trước /dot/kiem), không còn WeekModal', () => {
     const s = nguon('web/src/modules/fasttrack/MockDetailPage.tsx');
-    const wm = s.slice(s.indexOf('function WeekModal('), s.indexOf('/** Dời hạn chấm CẢ ĐỢT'));
-    assert(wm.length > 100 && !/<select/.test(wm) && !/force: true/.test(wm), 'WeekModal còn <select> hoặc force: true');
-    assert(/<WeekPicker[^>]*toiThieu=/.test(wm) && /\/ke-hoach-test\/dot\/kiem/.test(wm) && /Vẫn dời vào tuần này/.test(wm), 'thiếu WeekPicker toiThieu / kiểm trước');
+    assert(!/WeekModal/.test(s) && /<HopKyNang\b/.test(s), 'Hồ sơ MT còn WeekModal / chưa mở HopKyNang');
+    assert(/\/ke-hoach-test\/dot\/kiem/.test(nguon('web/src/modules/test/keHoach/HopKyNang.tsx')), 'HopKyNang thiếu kiểm trước');
   });
 
   check('PR-LM (6) · chuDoiVang: thi bù đúng tuần đang xem → "Thi bù tuần này (lần 1)"; tuần khác → mã tuần, không ngày; chữ mẫu nhận xét "Ví dụ:"', () => {
@@ -80,9 +80,11 @@ export async function runPrLmTests(t: YThucTestKit) {
   check('PR-LM (7) · hồ sơ MT + HopThaoTacMt: Modal → KhungPanel (chỉ còn ConfirmDialog), chân luật S3, không nút "Huỷ" trần', () => {
     const md = nguon('web/src/modules/fasttrack/MockDetailPage.tsx');
     const tt = nguon('web/src/modules/fasttrack/HopThaoTacMt.tsx');
-    assert(/import \{ ConfirmDialog \} from '..\/..\/ui\/Drawer.tsx'/.test(md) && !/<Modal\b/.test(md), 'MockDetailPage còn Modal');
+    /* PR-HOP1: hộp Huỷ MT{n} (ConfirmDialog) tách ra `HopHuyMt.tsx` để ⋯ đầu `HopKyNang` dùng chung. */
+    assert(/import \{ ConfirmDialog \} from '..\/..\/ui\/Drawer.tsx'/.test(nguon('web/src/modules/fasttrack/HopHuyMt.tsx')) && !/<Modal\b/.test(md), 'MockDetailPage còn Modal');
     assert(!/from '..\/..\/ui\/Drawer.tsx'/.test(tt) && !/<Modal\b/.test(tt), 'HopThaoTacMt còn Modal');
-    assert((md.match(/<KhungPanel\b/g) ?? []).length >= 4 && /<KhungPanel\b/.test(tt), 'thiếu KhungPanel');
+    /* PR-HOP1: WeekModal (một KhungPanel) bỏ → còn 3: hạn chấm, vắng, trả lời đề nghị. */
+    assert((md.match(/<KhungPanel\b/g) ?? []).length >= 3 && /<KhungPanel\b/.test(tt), 'thiếu KhungPanel');
     for (const [ten, src] of [['MockDetailPage', md], ['HopThaoTacMt', tt]]) {
       assert(!/>Huỷ</.test(src), `${ten}: nút "Huỷ" trần`);
       assert(/\bdaSua: daSua\b/.test(src), `${ten}: chân S3 Đóng / Huỷ thay đổi (chan.daSua, PR-SL I1)`);
