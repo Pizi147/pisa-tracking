@@ -16,10 +16,12 @@ export const resolveTuan = (weekStart: string) => api.post<{ id: number; weekSta
  * tác hay gặp nhất. Bấm giữa mở POPOVER lịch tháng (`LichNho`: gõ tuần/ngày, lịch, "Tuần này" trong "Gần đây"); chọn xong popover
  * đóng (PR-LM, ảnh 4: bỏ thanh `WeekPicker` thứ hai chèn bên dưới). Mã tuần không bao giờ bị cắt; khoảng ngày xuống dòng khi chật.
  */
-export function TuanNho({ d, goc, onTuan, nhanKhoa = null, toiThieu = null }: {
+export function TuanNho({ d, goc, onTuan, nhanKhoa = null, toiThieu = null, gon = false }: {
   d: { periodId: number | null; weekStart: string | null }; goc: string | null; onTuan: (t: Tuan) => void; nhanKhoa?: string | null;
   /** PR-XLMT (K2-33): thứ Hai sớm nhất được chọn — nút ‹ và ngày trong lịch trước tuần này bị khoá (MT đang chạy không dời vào tuần đã qua). */
   toiThieu?: string | null;
+  /** PR-XTHV: ô trong bảng — chỉ mã tuần, khoảng ngày nằm ở `title`. */
+  gon?: boolean;
 }) {
   const { homNay } = useNgayNghiepVu();
   const [busy, setBusy] = useState(false);
@@ -42,7 +44,7 @@ export function TuanNho({ d, goc, onTuan, nhanKhoa = null, toiThieu = null }: {
           aria-haspopup="dialog" aria-expanded={mo} onClick={() => setMo((v) => !v)}
           title={d.weekStart ? `${khoang(d.weekStart)} · bấm để chọn tuần khác` : 'Chọn tuần khác'}>
           <span className="whitespace-nowrap text-slate-100">{d.weekStart ? tuanLich(d.weekStart, homNay) : 'Chọn tuần'}</span>
-          {d.weekStart && <span className="text-xs tabular-nums text-slate-500">{khoang(d.weekStart)}</span>}
+          {d.weekStart && !gon && <span className="text-xs tabular-nums text-slate-500">{khoang(d.weekStart)}</span>}
         </button>
         <button type="button" className={nut} disabled={busy || !co} onClick={() => co && chon(addDaysStr(co, 7))} aria-label="Tuần sau">›</button>
       </div>

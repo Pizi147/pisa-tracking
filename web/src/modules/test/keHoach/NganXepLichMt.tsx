@@ -9,11 +9,13 @@ import { BranchFilter } from '../../../ui/Filters.tsx';
 import { Nhan } from '../../../ui/Nhan.tsx';
 import { OMt } from '../../../ui/OMt.tsx';
 import {
-  CAU_TUAN_DA_QUA, KY_NANG_KE_HOACH, MT_TOI_DA, demSeXep, mondayOfDate, nhanSeXep, tenMon, tenMonNgan, tomTatXepMt, tuanLich, tuanMacDinhDotMoi,
+  PERMISSIONS, CAU_TUAN_DA_QUA, KY_NANG_KE_HOACH, MT_TOI_DA, demSeXep, mondayOfDate, nhanSeXep, tenMon, tenMonNgan, tomTatXepMt, tuanLich, tuanMacDinhDotMoi,
   type DongHangLoat, type KyNangKH, type ToneSeXep,
 } from '@shared/domain/index.ts';
 import type { DanhSachLop, HangFT, LopKH, LuoiFTData } from './kieu.ts';
 import { TuanNho, resolveTuan, type Tuan } from './TuanNho.tsx';
+import { XepTheoHocVien } from './XepTheoHocVien.tsx';
+import { useSession } from '../../../lib/session.tsx';
 
 /** Công tắc khung ĐẦU NGĂN (M9): đổi khung = đổi thân ngăn (FT ↔ Lớp thường). Không nhớ theo máy — khung trang Kế hoạch Test giữ nguyên. */
 export function KhungXepLich({ value, onChange, coFt, coThuong }: {
@@ -42,11 +44,34 @@ const MAU_DAU: Record<ToneSeXep, string> = { ok: 'text-ok', soon: 'text-soon', b
  * (xem trước song song, lưu tuần tự); lưu luôn `force: true` (dòng vàng vẫn lưu); R9b: sau lưu chỉ còn em lỗi. Em dời vượt MT có điểm →
  * MỘT popup gộp (Q2). Panel này chỉ của Quản lý nên `TuanNho` không khoá tuần đã qua — chỉ báo chip vàng "Tuần đã qua".
  */
-export function NganXepLichMt({ chiNhanhDau, lopDs, lopMoSan, coThuong, onDoiKhung, onClose, onDone }: {
+type NganProps = {
   /** PR-NV (T9): chi nhánh trang đang lọc — giá trị đầu của ô chi nhánh trong panel. */
   chiNhanhDau: number | null; lopDs: LopKH[]; lopMoSan: number | null; coThuong: boolean; onDoiKhung: (k: 'ft' | 'thuong') => void;
   onClose: () => void; onDone: () => void;
-}) {
+};
+
+/** PR-XTHV: hai tab "Xếp theo tuần" (ngăn cũ) | "Xếp theo học viên" — tab sau chỉ Quản lý / Quản trị (quyền `plan.week`, giáo viên không được cấp). */
+export function NganXepLichMt(props: NganProps) {
+  const { can } = useSession();
+  const [tab, setTab] = useState<'tuan' | 'hv'>('tuan');
+  const coHv = can(PERMISSIONS.PLAN_WEEK);
+  const tabs = (
+    <div className="flex flex-wrap items-center gap-x-3">
+      <KhungXepLich value="ft" onChange={props.onDoiKhung} coFt coThuong={props.coThuong} />
+      {coHv && (
+        <div className="py-2">
+          <BoLocDoan<'tuan' | 'hv'> ariaLabel="Cách xếp" value={tab} onChange={setTab}
+            muc={[{ key: 'tuan', nhan: 'Xếp theo tuần', so: null }, { key: 'hv', nhan: 'Xếp theo học viên', so: null }]} />
+        </div>
+      )}
+    </div>
+  );
+  return tab === 'hv' && coHv
+    ? <XepTheoHocVien lopDs={props.lopDs} lopMoSan={props.lopMoSan} tabs={tabs} onClose={props.onClose} onDone={props.onDone} />
+    : <XepTheoTuan {...props} tabs={tabs} />;
+}
+
+function XepTheoTuan({ chiNhanhDau, lopDs, lopMoSan, onClose, onDone, tabs }: NganProps & { tabs: ReactNode }) {
   const toast = useToast();
   const homNay = useNgayNghiepVu().homNay || null;
   /* Chi nhánh (QL một chi nhánh thì `BranchFilter` tự ẩn): danh sách lớp để "+ lớp" tải lại theo chi nhánh; lớp đã chọn giữ nguyên. */
@@ -206,7 +231,7 @@ export function NganXepLichMt({ chiNhanhDau, lopDs, lopMoSan, coThuong, onDoiKhu
 
   return (
     <KhungPanel tieuDe="Xếp lịch Mock Test" rong="toan" onDong={onClose}
-      tabs={<KhungXepLich value="ft" onChange={onDoiKhung} coFt coThuong={coThuong} />}
+      tabs={tabs}
       chan={{ huy: { nhan: 'Đóng', onClick: onClose }, chinh: nutChinh }}>
       <Khoi tieuDe="Lọc">
         <div className="flex flex-wrap items-end gap-2">

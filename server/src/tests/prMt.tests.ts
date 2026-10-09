@@ -42,6 +42,35 @@ export async function runPrMtTests(t: YThucTestKit) {
     assert(d.cachHuyLuot(ds2[1], ds2) === 'ca-luot', 'lớn nhất có điểm');
     assert(d.cachHuyLuot(L(2, 'cancelled'), ds) === null, 'đã huỷ');
   });
+  check('PR-XTHV · thuTuLuuLuot: dời lùi từ MT lớn xuống, dời tiến từ nhỏ lên, tạo mới cuối — mọi bước giữa vẫn MT(n) < MT(n+1)', () => {
+    const so = (ds: { attemptNo: number }[]) => ds.map((x) => x.attemptNo).join(',');
+    /* Mô phỏng: áp từng bước theo thứ tự hàm trả, sau mỗi bước tuần các lượt đã có phải tăng dần theo số MT. */
+    const hopLe = (dau: Record<number, string>, buoc: { attemptNo: number; moi: string }[]) => {
+      const t = { ...dau };
+      return buoc.every((b) => {
+        t[b.attemptNo] = b.moi;
+        const ns = Object.keys(t).map(Number).sort((x, y) => x - y);
+        return ns.every((n, i) => i === 0 || t[ns[i - 1]] < t[n]);
+      });
+    };
+    const ca = [
+      { dau: { 1: '2026-09-07', 2: '2026-10-05', 3: '2026-11-02' }, sua: { 2: '2026-10-26', 3: '2026-11-23' } },          // cùng lùi
+      { dau: { 1: '2026-09-07', 2: '2026-10-05', 3: '2026-11-02' }, sua: { 2: '2026-09-14', 3: '2026-09-21' } },          // cùng tiến
+      { dau: { 1: '2026-09-07', 2: '2026-10-05', 3: '2026-11-02' }, sua: { 2: '2026-09-21', 3: '2026-11-30' } },          // trộn
+      { dau: { 1: '2026-09-07', 2: '2026-10-05', 3: '2026-11-02' }, sua: { 1: '2026-09-28', 2: '2026-10-19', 3: '2026-10-26' } },
+    ];
+    for (const c of ca) {
+      const ds = Object.entries(c.sua).map(([n, moi]) => ({ attemptNo: Number(n), cu: (c.dau as any)[n] as string, moi, taoMoi: false }));
+      for (const thu of [ds, [...ds].reverse()]) assert(hopLe(c.dau, d.thuTuLuuLuot(thu)), `thứ tự an toàn ${JSON.stringify(c.sua)}`);
+    }
+    const r = d.thuTuLuuLuot([
+      { attemptNo: 5, cu: null, moi: '2026-12-07', taoMoi: true }, { attemptNo: 2, cu: '2026-10-05', moi: '2026-09-21', taoMoi: false },
+      { attemptNo: 3, cu: '2026-11-02', moi: '2026-11-30', taoMoi: false }, { attemptNo: 4, cu: null, moi: '2026-12-01', taoMoi: false },
+      { attemptNo: 6, cu: null, moi: '2026-12-28', taoMoi: true }, { attemptNo: 1, cu: '2026-09-07', moi: '2026-09-14', taoMoi: false },
+    ]);
+    assert(so(r) === '3,1,2,4,5,6', `thứ tự ${so(r)}`);
+  });
+
   check('PR-MT (1) · hanDuyetDoiLan2 = CN tuần chứa ngày gửi (T42, K4-04)', () => {
     assert(d.hanDuyetDoiLan2('2026-09-28') === '2026-10-04', d.hanDuyetDoiLan2('2026-09-28'));
     assert(d.hanDuyetDoiLan2('2026-10-04') === '2026-10-04', 'CN → chính nó');
