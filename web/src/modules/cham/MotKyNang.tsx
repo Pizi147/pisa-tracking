@@ -24,6 +24,7 @@ import {
 } from '../fasttrack/ScoreEntry.tsx';
 import { HopNhanXet } from '../fasttrack/NhanXet.tsx';
 import { GOI_Y_COT_MT, NutGvCham, useGvChamCot } from './GvCham.tsx';
+import { DongThi, nhanKyNangFt } from './DongThi.tsx';
 import { DauLuu, DauO, LuoiFT, VIEN_LOI, khopKn, oTrongFt, type FtSheet, type HangMo } from './LuoiFT.tsx';
 import {
   LuoiThuong, ketQuaCua, lichCua, oThuong, tongPhoBien, useLuuThuong, type ThuongSheet,
@@ -101,11 +102,13 @@ function useDiChuyen() {
 }
 
 /** Một dòng học viên: tên + TỐI ĐA một dòng phụ ngắn bên trái (G-3), một ô to bên phải. */
-function DongHv({ studentId, active, ten, href, phu, phuTitle, phuDo = false, luu, children, nhan }: {
+function DongHv({ studentId, active, ten, href, phu, phuTitle, phuDo = false, luu, children, nhan, thi }: {
   studentId: number; active: boolean; ten: string; href: string;
   phu: string; phuTitle?: string; phuDo?: boolean; luu: React.ReactNode; children: React.ReactNode;
   /** R11: nhãn "Đã hoàn tất" cạnh tên khi đợt/bài của dòng này đã hoàn tất. */
   nhan?: React.ReactNode;
+  /** Dòng "Thi W1 OCT" — chỉ hiện ở Điểm theo lớp (`DongThiContext`). */
+  thi?: React.ComponentProps<typeof DongThi>['muc'];
 }) {
   return (
     <li data-hv={studentId}
@@ -120,6 +123,7 @@ function DongHv({ studentId, active, ten, href, phu, phuTitle, phuDo = false, lu
           <span className={`truncate ${phuDo ? 'text-rose-300' : ''}`} title={phuTitle}>{phu}</span>
           {luu}
         </div>
+        {thi && <DongThi muc={thi} />}
       </div>
       {children}
     </li>
@@ -202,7 +206,9 @@ function DongFt({ row, k, nhieuMt, active, onReload, gvMacDinh, inputRef, onKeyD
     <DongHv studentId={row.studentId} active={active} ten={row.studentName} href={duongDotTest({ id: row.attemptId }, k)}
       phu={phu} phuTitle={kv !== null ? `Kỳ vọng (KV) của lượt này: ${fmtBand(kv)} · ${maHocVienNgan(row.studentCode)}` : undefined}
       luu={<>{row.lichSu && <NhanCu />}<DauLuu lon status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} /></>}
-      nhan={<NhanHoanTat hoanTat={row.hoanTat} chuNhatCuoi={row.chuNhatCuoi} />}>
+      nhan={<NhanHoanTat hoanTat={row.hoanTat} chuNhatCuoi={row.chuNhatCuoi} />}
+      thi={row.cells.filter((x) => x.required && x.progress !== 'cancelled')
+        .map((x) => ({ nhan: nhanKyNangFt(x.skill), weekStart: x.weekStart ?? null }))}>
       <div className={`shrink-0 flex items-center justify-end gap-1 rounded-md ${o[k] === 'loi' ? VIEN_LOI : ''}`} data-kn={k}
         data-trong={c && oTrongFt(c) ? '1' : undefined} data-luu={o[k]}>
         <DauO lon tt={o[k]} loi={loi[k]} onLuuLai={() => luuLai(k)} />
@@ -311,7 +317,9 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
     <DongHv studentId={row.studentId} active={active} ten={row.studentName} href={`/hoc-vien/${row.studentId}`}
       phu={phu} phuTitle={`${tenMonO} · ${maHocVienNgan(row.studentCode)}`} phuDo={phu === ketQua && cell.ketQua === 'fail'}
       luu={<DauLuu lon status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />}
-      nhan={<NhanHoanTat hoanTat={row.hoanTat} chuNhatCuoi={row.chuNhatCuoi} />}>
+      nhan={<NhanHoanTat hoanTat={row.hoanTat} chuNhatCuoi={row.chuNhatCuoi} />}
+      thi={row.skillSchedule.filter((x) => x.progress !== 'cancelled' && x.progress !== 'skipped')
+        .map((x) => ({ nhan: tenMonNgan(sheet.programme.code, x.skill), weekStart: x.weekStart }))}>
       <div className={`shrink-0 flex items-center justify-end gap-1 rounded-md ${o[k] === 'loi' ? VIEN_LOI : ''}`} data-kn={k}
         data-trong={trong ? '1' : undefined} data-luu={o[k]}>
         <DauO lon tt={o[k]} loi={loi[k]} onLuuLai={() => luuLai(k)} />
