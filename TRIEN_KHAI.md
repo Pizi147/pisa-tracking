@@ -646,6 +646,12 @@ Bạn **không cần làm gì**. Mỗi sáng thứ Hai lúc 00:05 và 06:05, má
 
 Cùng lượt sáng thứ Hai này, web **tự chuyển lớp** cho các lệnh chuyển lớp của Quản lý có tuần bắt đầu là hôm đó (trường `daChuyen` trong dòng log). Lượt nào lỡ thì lần mở web đầu tiên trong tuần cũng chuyển nốt, với ngày hiệu lực vẫn là thứ Hai.
 
+### 11.4. Kiểm dữ liệu Mock Test (CHỈ ĐỌC)
+
+Nạp `TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN` như mục 7.2 (database cần xem), rồi chạy `npm run kiem-du-lieu-mt`. Lệnh chỉ đọc, không sửa gì.
+Nó in 5 bảng (lượt "xác sống", tuần ngược / trùng, kết quả huỷ mồ côi, điểm huỷ mất dấu, tuần lượt lệch kỹ năng); dòng cuối `Không thấy vấn đề.` là sạch.
+Có dòng nào → chụp cả cửa sổ gửi session code, đừng tự sửa.
+
 ---
 
 ## 12. Bảng tra — mọi tên biến dùng trong file này
