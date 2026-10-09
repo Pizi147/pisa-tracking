@@ -8,7 +8,7 @@
 
 import { studyWeekOf } from './fasttrack.ts';
 import { tuanKhoa, tuanLich } from './hienThiNgay.ts';
-import { MT_TOI_DA, canLyDoVuot, chipVuot, dongHeQuaVuot, kiemSoMtMoi, soMtKeTiep, type LuotSeHuyLich, type LuotSo } from './lichMt.ts';
+import { MT_TOI_DA, kiemSoMtMoi, soMtKeTiep, type LuotSo } from './lichMt.ts';
 import { tenMonNgan } from './normal.ts';
 import { addDaysIso } from './sos.ts';
 import { mondayOfDate } from './week.ts';
@@ -177,8 +177,6 @@ export type DongHangLoat = {
   studentId: number; ten: string; hanhDong: 'tao' | 'doi' | 'giu' | 'loi'; bai: BaiXemTruoc[]; loi: string | null;
   /** PR-XLMT (khung FT): việc máy chọn cho em, số MT, MT lịch sử, cần lý do, kỹ năng đã có điểm (web hỏi thi lại). */
   viec?: ViecXep['loai'] | 'thi-lai'; attemptNo?: number; lichSu?: boolean; canLyDo?: boolean; coDiem?: KyNangKH[];
-  /** T2 (PR-MTa): lượt sau bị vượt — bỏ lịch; `soDiem > 0` thì lưu cần xác nhận + lý do (popup gộp, PR-MTb). */
-  seHuyLich?: LuotSeHuyLich[];
 };
 
 /**
@@ -246,16 +244,17 @@ export type ViecXep =
 
 /**
  * K4-17 · T37 · M9 · T13b (PR-MTb): việc đúng cho ĐÚNG đợt `chon` — KHÔNG tự sang đợt khác. Đợt đã đủ → `da-du` nếu `ep` (Quản lý
- * bấm chip CHÍNH đợt đó cho riêng em: web hỏi thi lại), không thì chặn "MT{n} đã xong."; MT cũ → chặn (nhập điểm bù), không xét `ep`.
- * Thứ tự kiểm cố định — không đảo: huỷ → MT cũ → còn kỹ năng phải thi.
+ * bấm chip CHÍNH đợt đó cho riêng em: web hỏi thi lại), không thì chặn "MT{n} đã xong.". PR-MTGON (luật 5): MT cũ và kỹ năng đã huỷ
+ * phần thi xếp đè được như lượt thường — kỹ năng đã huỷ tính là còn phải thi (đưa lại + đặt tuần).
  */
 export function viecXepMt(ds: LuotXep[], chon: number, so: LuotSo[], ep = false): ViecXep {
   const n = chon;
   if (n > MT_TOI_DA) return { loai: 'chan', no: MT_TOI_DA, cau: `Đã đủ MT${MT_TOI_DA} — tối đa của một lộ trình.` };
   const a = ds.find((x) => x.no === n && !x.huy);
   if (!a) { const loi = kiemSoMtMoi(so, n); return loi ? { loai: 'chan', no: n, cau: loi } : { loai: 'tao', no: n }; }
-  if (a.lichSu) return { loai: 'chan', no: n, cau: `MT${n} là MT cũ — nhập điểm bù.` };
-  const can = a.kn.filter((k) => k.batBuoc && !k.huyPhan);
+  /* PR-MTGON (rà #282): mọi kỹ năng đã "Huỷ kỹ năng" (required=0) → xếp hàng loạt đưa lại cả lượt rồi đặt tuần (luật 5), không "đã xong". */
+  if (a.kn.length && !a.kn.some((k) => k.batBuoc)) return { loai: 'doi', no: n };
+  const can = a.kn.filter((k) => k.batBuoc);
   const conThi = can.filter((k) => !k.coDiem && !k.daThi && !k.choDuyet);
   if (!conThi.length) {
     if (can.some((k) => k.choDuyet)) return { loai: 'chan', no: n, cau: `MT${n} còn kỹ năng chờ Quản lý duyệt dời — trả lời đề nghị trước.` };
@@ -269,11 +268,11 @@ export function viecXepMt(ds: LuotXep[], chon: number, so: LuotSo[], ep = false)
 
 /**
  * "MT mới" (T13b, PR-MTb): đợt nhỏ nhất còn hiệu lực mà mọi kỹ năng bắt buộc CHƯA có tuần (lượt đã huỷ lịch); không có → số kế
- * tiếp của lộ trình. MT cũ bị bỏ qua (chỉ nhập điểm bù — không xếp được).
+ * tiếp của lộ trình. Lượt không còn kỹ năng bắt buộc nào (đã huỷ hết) bị bỏ qua — chọn đúng số MT đó thì vẫn xếp đè được. MT cũ bị bỏ qua (chỉ nhập điểm bù — không xếp được).
  */
 export function dotMtMoi(ds: LuotXep[], so: LuotSo[]): number {
   const chuaCoLich = ds
-    .filter((x) => !x.huy && !x.lichSu && x.kn.every((k) => !k.batBuoc || !k.coTuan))
+    .filter((x) => !x.huy && !x.lichSu && x.kn.some((k) => k.batBuoc) && x.kn.every((k) => !k.batBuoc || !k.coTuan))
     .map((x) => x.no);
   return chuaCoLich.length ? Math.min(...chuaCoLich) : soMtKeTiep(so);
 }
@@ -283,7 +282,6 @@ const dsMon = (ct: string | null, ks: readonly KyNangKH[]) => ks.map((k) => tenM
 /**
  * Cột "Sẽ xếp" của ngăn Xếp lịch MT (M9): `Dời MT3 · W3 OCT → W2 OCT` · `Xếp nốt W S · MT3` · `Tạo MT4 · W2 OCT` ·
  * `Tạo MT4 · W3 AUG · MT cũ` · `Thi lại L · MT3` · câu chặn. Tuần khác nhau giữa các kỹ năng → ghi theo từng nhóm.
- * Dòng có lượt bị vượt (T2) thêm hệ quả: `… · MT2: huỷ 4 điểm` / `… · MT3: bỏ lịch`.
  */
 export function chuSeXep(d: DongHangLoat, ct: string | null): string {
   if (d.hanhDong === 'loi') return d.loi ?? 'Không xếp được.';
@@ -299,7 +297,7 @@ export function chuSeXep(d: DongHangLoat, ct: string | null): string {
   const doi = nhom.length === 1
     ? `${tuanLich(nhom[0].tu)} → ${tuanLich(nhom[0].den)}`
     : nhom.map((g) => `${dsMon(ct, g.kyNang)} ${tuanLich(g.tu)} → ${tuanLich(g.den)}`).join(' · ');
-  return `Dời ${mt} · ${doi}${d.seHuyLich?.length ? ` · ${d.seHuyLich.map(dongHeQuaVuot).join(' · ')}` : ''}`;
+  return `Dời ${mt} · ${doi}`;
 }
 
 /** Dòng xem trước chân ngăn (C4): đếm EM theo việc; `soEm`/`soBai` = em/bài sẽ lưu (em chặn không lưu, bài `giu` không tính). */
@@ -344,10 +342,8 @@ export function nhanSeXep(d: DongHangLoat, ct: string | null): { tone: ToneSeXep
   const phanMon = d.viec === 'xep-not' || d.viec === 'thi-lai';   // chỉ một vài kỹ năng: ghi rõ kỹ năng nào
   const chu = phanMon && nhom.length === 1 ? `${mt} · ${dsMon(ct, bai.map((b) => b.skill))} · ${tuanChung}` : `${mt} · ${tuanChung}`;
   const trung = canhBao.map((c) => /^Trùng tuần .* với (MT\d+)/.exec(c)?.[1]).find(Boolean);
-  /* Vượt lượt sau CHƯA có điểm: chữ phụ "· bỏ lịch MT2" (có điểm thì popup nói — không ghi thêm). */
-  const boLich = d.seHuyLich?.length && !canLyDoVuot(d.seHuyLich) ? `· ${chipVuot(d.seHuyLich).replace(/^B/, 'b')}` : null;
-  const phu = trung ? `· trùng ${trung}` : boLich ?? (d.hanhDong === 'tao' && d.lichSu ? '· cũ' : null);
-  const soon = phanMon || !!canhBao.length || !!d.seHuyLich?.length || (d.hanhDong === 'tao' && !!d.lichSu);
+  const phu = trung ? `· trùng ${trung}` : d.hanhDong === 'tao' && d.lichSu ? '· cũ' : null;
+  const soon = phanMon || !!canhBao.length || (d.hanhDong === 'tao' && !!d.lichSu);
   return { tone: soon ? 'soon' : 'ok', chu, phu, title };
 }
 

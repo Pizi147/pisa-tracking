@@ -42,6 +42,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'regular.score': 'Nhập điểm lớp thường', 'regular.score.override': 'Sửa điểm lớp thường',
   'score.lich_su': 'Nhập điểm MT cũ',
   'score.huy_vuot': 'Huỷ điểm do dời vượt',
+  'ket_qua_huy.bo': 'Bỏ kết quả đã huỷ khi xếp lại lượt',
   'score.khoi_phuc': 'Khôi phục điểm',
   'report.unlock': 'Mở khoá báo cáo', 'report.relock': 'Khoá lại báo cáo',
   'role.permission.grant': 'Cấp quyền cho vai', 'role.permission.revoke': 'Bỏ quyền của vai', 'role.retired': 'Bỏ vai cũ', 'rule.changed': 'Đổi luật',

@@ -4,6 +4,9 @@
  * Dời MT1 muộn hơn MT2 đã có điểm: điểm MT2 không bị xoá mà CHUYỂN NGUYÊN DÒNG sang `ket_qua_huy` (kèm lịch kỹ năng cũ). Mọi màn đọc
  * `assessment_scores` (SOS, báo cáo, Phân tích, Xuất Excel, Điểm theo lớp) vì thế tự không tính MT2 mà không phải sửa; nhật ký giữ
  * từng ô (`score.huy_vuot`). Quản lý khôi phục = chép ngược, chặn khi ô đã có điểm mới hoặc khi lượt vượt vẫn đứng sau tuần cũ (Q2).
+ *
+ * PR-MTGON (luật 1, 08/10): dời vượt nay bị CHẶN — không còn sinh `ket_qua_huy` mới. Bảng chỉ còn giữ dữ liệu cũ để Khôi phục;
+ * xếp lại một lượt đã huỷ (`hoiSinhLuot`) bỏ bản chưa khôi phục.
  */
 import { db, theoLo, tx } from '../db.ts';
 import { PERMISSIONS, nhanDot, tenMon, type KetQuaHuy } from '../../../shared/domain/index.ts';
@@ -11,57 +14,11 @@ import { badRequest, notFound, nowIso } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { writeAudit } from '../platform/audit.ts';
-import { closeCasesBySystem } from '../cases/systemClose.ts';
 import { assessedSkillOf } from './scoring.ts';
-import { caseSinhRieng, refreshOutcome } from './attempts.ts';
+import { refreshOutcome } from './attempts.ts';
 import { checkSkillWeekMove, ensureSkillRows, logSchedule, recomputeCompletionWeek, tinhLaiMtCu } from './skillSchedule.ts';
 
 const CO_DIEM = (s: any) => (s.band ?? null) !== null || (s.raw_score ?? null) !== null;
-
-/**
- * Huỷ kết quả MỘT lượt bị vượt — gọi TRONG tx của nơi dời. Thứ tự là luật chống mất điểm: (1) đọc ô có điểm → (2) lưu `ket_qua_huy`
- * → (3) mới xoá đúng các ô đó (ô chỉ có "-" / nhận xét giữ tại chỗ) → (4) kỹ năng `sat` về `scheduled` → (5) nhật ký từng ô →
- * (6) đóng Case sinh riêng + Phối hợp còn chờ → (7) tính lại kết luận lượt. Lượt không điểm chỉ làm (4).
- */
-export function huyKetQuaLuot(p: Principal, attemptId: number, o: { lyDo: string; vuotBoi: number }): { soDiem: number; soCase: number } {
-  const conn = db();
-  const a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
-  if (!a) throw notFound('Không tìm thấy lượt kiểm tra');
-  const rows = ensureSkillRows(attemptId);
-  const diem = (conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? ORDER BY id').all(attemptId) as any[]).filter(CO_DIEM);
-  const now = nowIso();
-  let soDiem = 0;
-  let soCase = 0;
-  if (diem.length) {
-    soDiem = new Set(diem.map((s) => assessedSkillOf(s.skill))).size;
-    const lich = rows.filter((r) => r.required).map((r) => ({ skill: r.skill, planned_period_id: r.planned_period_id, sit_status: r.sit_status, plan_source: r.plan_source }));
-    conn.prepare(
-      `INSERT INTO ket_qua_huy (attempt_id, vuot_boi_attempt_id, diem_json, lich_json, so_diem, ly_do, huy_boi, huy_luc) VALUES (?,?,?,?,?,?,?,?)`,
-    ).run(attemptId, o.vuotBoi, JSON.stringify(diem), JSON.stringify(lich), soDiem, o.lyDo, p.userId, now);
-    conn.prepare(`DELETE FROM assessment_scores WHERE id IN (${diem.map(() => '?').join(',')})`).run(...diem.map((s) => s.id));
-    for (const s of diem) {
-      writeAudit({
-        actorUserId: p.userId, action: 'score.huy_vuot', entityType: 'assessment_attempt', entityId: attemptId, entityLabel: s.skill,
-        before: s, after: { lyDo: o.lyDo, vuotBoi: o.vuotBoi },
-      });
-    }
-  }
-  for (const r of rows.filter((x) => x.required && x.sit_status === 'sat')) {
-    conn.prepare(`UPDATE attempt_skills SET sit_status = 'scheduled', updated_at = ? WHERE id = ?`).run(now, r.id);
-    logSchedule(attemptId, { action: 'skill_sit_status', field: r.skill, oldValue: 'sat', newValue: 'scheduled', reason: o.lyDo, actor: p.userId });
-  }
-  if (diem.length) {
-    const caseIds = caseSinhRieng(attemptId);
-    soCase = caseIds.length
-      ? closeCasesBySystem({ actorUserId: p.userId, studentId: a.student_id, reason: 'ket_qua_huy', on: demoToday(), caseIds }).closedCaseIds.length
-      : 0;
-    conn.prepare(
-      `UPDATE sos_coordination_actions SET status = 'removed', remove_reason_code = 'system_ket_qua_huy', removed_by = NULL,
-              removed_at = ?, updated_at = ? WHERE attempt_id = ? AND status = 'pending'`).run(now, now, attemptId);
-    refreshOutcome(p, attemptId);
-  }
-  return { soDiem, soCase };
-}
 
 /**
  * Quản lý KHÔI PHỤC kết quả đã huỷ của một lượt (T2, Q2 = chặn). Lý do tuỳ chọn (T7). Chặn khi: không có kết quả đã huỷ · lượt đã huỷ ·

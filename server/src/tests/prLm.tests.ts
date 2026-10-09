@@ -46,13 +46,9 @@ export async function runPrLmTests(t: YThucTestKit) {
     assert(!/examPeriodId/.test(s) && !/hienTuanThi/.test(s), 'bỏ examPeriodId và hienTuanThi');
   });
 
-  check('PR-LM (3) · cauSeHuyLich: một / hai lượt, mã tuần không ngày', () => {
-    assert(d.cauSeHuyLich([{ nhan: 'MT2', tuan: '2026-07-13' }], '2026-07-01') === 'Lưu sẽ huỷ lịch MT2 (W3 JUL) — lượt này về Chưa xếp lịch.', d.cauSeHuyLich([{ nhan: 'MT2', tuan: '2026-07-13' }], '2026-07-01'));
-    const c = d.cauSeHuyLich([{ nhan: 'MT2', tuan: '2026-07-13' }, { nhan: 'MT3', tuan: '2026-08-31' }], '2026-07-01');
-    assert(c === 'Lưu sẽ huỷ lịch MT2 (W3 JUL) và MT3 (W1 SEP) — hai lượt này về Chưa xếp lịch.', c);
-  });
+  // PR-MTGON bỏ PR-LM (3) cauSeHuyLich: dời vượt bị chặn, không còn câu "Lưu sẽ huỷ lịch …".
 
-  check('PR-LM (3) · hộp xếp lịch rộng hơn, một thanh chọn tuần (popover lịch), tuần tối thiểu, xác nhận huỷ lịch', () => {
+  check('PR-LM (3) · hộp xếp lịch rộng hơn, một thanh chọn tuần (popover lịch), tuần tối thiểu; PR-MTGON: không còn xác nhận huỷ lịch', () => {
     const hop = nguon('web/src/modules/test/keHoach/HopKyNang.tsx');
     const tn = nguon('web/src/modules/test/keHoach/TuanNho.tsx');
     const wp = nguon('web/src/ui/Filters.tsx');
@@ -61,16 +57,14 @@ export async function runPrLmTests(t: YThucTestKit) {
     assert(!/<TuanNho[^>]*toiThieu=/.test(hop), 'TuanNho trong HopKyNang còn chặn tuần đã qua');
     assert(!/<WeekPicker/.test(tn) && /<LichNho/.test(tn), 'TuanNho còn render WeekPicker thứ hai');
     assert(/toiThieu\?: string/.test(wp), 'WeekPicker thiếu toiThieu');
-    assert(/seHuyLich/.test(hop) && /xacNhanHuyLich: daXacNhan/.test(hop) && /<HopXacNhanHuyLich/.test(hop), 'thiếu xác nhận huỷ lịch');
-    const xn = nguon('web/src/modules/test/keHoach/HopXacNhanHuyLich.tsx');
-    assert(/Dời và huỷ/.test(xn) && /closeLabel="Đóng"/.test(xn) && /danger/.test(xn), 'hộp xác nhận: Đóng / Dời và huỷ (đỏ) — PR-MTa T2, mockup 05/10 phần 4');
+    assert(!/seHuyLich|xacNhanHuyLich|HopXacNhanHuyLich/.test(hop), 'còn xác nhận huỷ lịch (PR-MTGON bỏ)');
   });
 
-  check('PR-LM (4) · Dời lịch thi cả đợt: WeekPicker có toiThieu, không <select>, không force: true cố định, kiểm trước + xác nhận huỷ lịch', () => {
+  check('PR-LM (4) · Dời lịch thi cả đợt: WeekPicker có toiThieu, không <select>, không force: true cố định, kiểm trước', () => {
     const s = nguon('web/src/modules/fasttrack/MockDetailPage.tsx');
     const wm = s.slice(s.indexOf('function WeekModal('), s.indexOf('/** Dời hạn chấm CẢ ĐỢT'));
     assert(wm.length > 100 && !/<select/.test(wm) && !/force: true/.test(wm), 'WeekModal còn <select> hoặc force: true');
-    assert(/<WeekPicker[^>]*toiThieu=/.test(wm) && /\/ke-hoach-test\/dot\/kiem/.test(wm) && /<HopXacNhanHuyLich/.test(wm) && /Vẫn dời vào tuần này/.test(wm), 'thiếu WeekPicker toiThieu / kiểm trước / xác nhận');
+    assert(/<WeekPicker[^>]*toiThieu=/.test(wm) && /\/ke-hoach-test\/dot\/kiem/.test(wm) && /Vẫn dời vào tuần này/.test(wm), 'thiếu WeekPicker toiThieu / kiểm trước');
   });
 
   check('PR-LM (6) · chuDoiVang: thi bù đúng tuần đang xem → "Thi bù tuần này (lần 1)"; tuần khác → mã tuần, không ngày; chữ mẫu nhận xét "Ví dụ:"', () => {
@@ -138,74 +132,15 @@ export async function runPrLmMayChu(t: YThucTestKit) {
     assert(false, 'mong có lỗi mà không có');
   };
 
-  const a = emMoi();
-  check('PR-LM (2.1) · kiểm trước: dời cả 4 kỹ năng MT1 sang T+5 → seHuyLich = [MT2], không chặn "vượt qua lượt kế tiếp"', () => {
+  /* PR-MTGON (luật 1, 08/10) thay PR-LM 2.1–2.6b: dời vượt lượt sau bị CHẶN ở mọi cổng, không bỏ lịch / huỷ kết quả lượt bị vượt
+   * (MTG-1a, MTG-1b trong prMtGon.tests.ts). Một phép đại diện ở đây. */
+  check('PR-LM (2.1) · dời cả 4 kỹ năng MT1 sang T+5 (vượt MT2 ở T+4) → kiểm trước chặn, lưu 400, MT2 giữ lịch', () => {
+    const a = emMoi();
     const k = keHoach.kiemDot(QL, { attemptId: a.m1, kyNang: bonKyNang(5) });
-    assert(k.seHuyLich?.length === 1 && k.seHuyLich[0].nhan === 'MT2' && k.seHuyLich[0].attemptId === a.m2, JSON.stringify(k.seHuyLich));
-    assert(k.seHuyLich[0].tuan === t.addDays(tuanNay, 28), JSON.stringify(k.seHuyLich[0]));
-    assert(!k.bai.some((b: any) => b.ghiChu === 'chan'), JSON.stringify(k.bai));
-  });
-
-  // PR-MTa T2 thay PR-LM 2.2: 409 chỉ khi lượt bị vượt ĐÃ CÓ ĐIỂM (chưa điểm thì lưu luôn — MTa V4).
-  check('PR-LM (2.2) · lưu đợt không xác nhận, MT2 có điểm → 409 nêu MT2, không đổi gì', () => {
-    const b = emMoi();
-    diem(b.m2, 'listening');
-    const truoc = [tuanCua(b.m1), tuanCua(b.m2), tuanCua(b.m3)].join('|');
-    const e = loiCua(() => keHoach.luuDot(QL, { attemptId: b.m1, kyNang: bonKyNang(5) }));
-    assert(e.status === 409 && e.details?.seHuyLich?.[0]?.nhan === 'MT2' && /MT2: huỷ 1 điểm/.test(e.message), `${e.status} ${e.message} ${JSON.stringify(e.details)}`);
-    assert([tuanCua(b.m1), tuanCua(b.m2), tuanCua(b.m3)].join('|') === truoc, 'DB đã đổi');
-  });
-
-  check('PR-LM (2.3) · lưu đợt có xác nhận → MT1 ở T+5, MT2 bỏ tuần (giữ lượt, giữ số), MT3 không đổi, có nhật ký', () => {
-    const t3 = tuanCua(a.m3);
-    keHoach.luuDot(QL, { attemptId: a.m1, kyNang: bonKyNang(5), xacNhanHuyLich: true });
-    assert(tuanCua(a.m1).split(',').every((x) => x === t.addDays(tuanNay, 35)), tuanCua(a.m1));
-    const ks = conn.prepare('SELECT planned_period_id AS p, plan_source AS s FROM attempt_skills WHERE attempt_id = ? AND required = 1').all(a.m2) as any[];
-    assert(ks.length === 4 && ks.every((k) => k.p === null && k.s === 'manual'), JSON.stringify(ks));
-    const l2 = luot(a.m2);
-    assert(l2.planned_period_id === null && l2.status === 'planned' && l2.attempt_no === 2 && l2.plan_source === 'manual', JSON.stringify(l2));
-    assert(tuanCua(a.m3) === t3, 'MT3 đổi');
-    const au = conn.prepare(`SELECT after_json FROM audit_logs WHERE action = 'attempt.unschedule' AND entity_id = ? ORDER BY id DESC`).get(a.m2) as any;
-    assert(au && JSON.parse(au.after_json).doVuotBoi === a.m1, JSON.stringify(au));
-  });
-
-  check('PR-LM (2.4) · dời MT1 sang T+9 có xác nhận → MT2 và MT3 đều bỏ tuần', () => {
-    const b = emMoi();
-    keHoach.luuDot(QL, { attemptId: b.m1, kyNang: bonKyNang(9), xacNhanHuyLich: true });
-    assert(luot(b.m2).planned_period_id === null && luot(b.m3).planned_period_id === null, `${tuanCua(b.m2)} | ${tuanCua(b.m3)}`);
-    assert(tuanCua(b.m2) === '-,-,-,-' && tuanCua(b.m3) === '-,-,-,-', `${tuanCua(b.m2)} | ${tuanCua(b.m3)}`);
-  });
-
-  // PR-MTa T2 thay Q-0310-2: MT2 có điểm KHÔNG còn chặn — xác nhận + lý do thì huỷ kết quả (lưu ket_qua_huy).
-  check('PR-LM (2.5) · MT2 có điểm L → kiểm trước nêu "huỷ 1 điểm" (không chặn); xác nhận mà thiếu lý do → 400, không đổi', () => {
-    const b = emMoi();
-    diem(b.m2, 'listening');
-    const k = keHoach.kiemDot(QL, { attemptId: b.m1, kyNang: bonKyNang(5) });
-    assert(!k.bai.some((x: any) => x.ghiChu === 'chan') && k.seHuyLich[0]?.soDiem === 1, JSON.stringify(k));
-    const truoc = tuanCua(b.m1) + tuanCua(b.m2);
-    const e = loiCua(() => keHoach.luuDot(QL, { attemptId: b.m1, kyNang: bonKyNang(5), xacNhanHuyLich: true }));
-    assert(e.status === 400 && /Huỷ kết quả: cần ghi lý do/.test(e.message), `${e.status} ${e.message}`);
-    assert(tuanCua(b.m1) + tuanCua(b.m2) === truoc, 'DB đã đổi');
-  });
-
-  // PR-MTa T2: 409 chỉ khi lượt bị vượt có điểm — dựng MT2 có điểm để giữ ý của phép kiểm.
-  check('PR-LM (2.6) · Dời lịch cả đợt (/attempts/:id/week): MT2 có điểm, không xác nhận → 409; xác nhận + lý do → MT2 bỏ tuần', () => {
-    const b = emMoi();
-    diem(b.m2, 'listening');
-    const e = loiCua(() => attemptsSvc.setPlanningWeek(QL, b.m1, tuan(5).id, undefined, {}));
-    assert(e.status === 409 && e.details?.seHuyLich?.[0]?.nhan === 'MT2', `${e.status} ${e.message}`);
-    assert(luot(b.m2).planned_period_id === tuan(4).id, 'MT2 đã đổi khi chưa xác nhận');
-    attemptsSvc.setPlanningWeek(QL, b.m1, tuan(5).id, 'Lịch học đổi', { huyLichVuot: true });
-    assert(luot(b.m2).planned_period_id === null && tuanCua(b.m1).split(',').every((x) => x === t.addDays(tuanNay, 35)), tuanCua(b.m1));
-  });
-
-  check('PR-LM (2.6b) · Dời một kỹ năng vượt lượt sau đi cùng luật: MT2 có điểm, không xác nhận → 409; xác nhận + lý do → 200', () => {
-    const b = emMoi();
-    diem(b.m2, 'listening');
-    const e = loiCua(() => skillSch.setSkillWeek(QL, b.m1, 'speaking', tuan(5).id, {}));
-    assert(e.status === 409 && e.details?.seHuyLich?.[0]?.nhan === 'MT2', `${e.status} ${e.message}`);
-    skillSch.setSkillWeek(QL, b.m1, 'speaking', tuan(5).id, { huyLichVuot: true, reason: 'Lịch học đổi' });
-    assert(luot(b.m2).planned_period_id === null, 'MT2 chưa bỏ tuần');
+    assert(k.bai.every((b: any) => b.ghiChu === 'chan' && /^MT2 thi /.test(b.cau)) && !('seHuyLich' in k), JSON.stringify(k));
+    const t2 = tuanCua(a.m2);
+    const e = loiCua(() => keHoach.luuDot(QL, { attemptId: a.m1, kyNang: bonKyNang(5) }));
+    assert(e.status === 400 && /Chọn tuần trước/.test(e.message) && tuanCua(a.m2) === t2, `${e.status} ${e.message}`);
   });
 
   check('PR-LM (2.7) · D2: dời MT2 về trước MT1 vẫn 400 như cũ', () => {
@@ -252,7 +187,7 @@ export async function runPrLmMayChu(t: YThucTestKit) {
     const eDiem = loiCua(() => skillSch.boTuanLuot(QL, b.m3, { lyDo: 'Em xin lùi lịch' }));
     assert(eDiem.status === 400 && /MT3 đã có điểm/.test(eDiem.message), eDiem.message);
     const src = nguon('server/src/routes/index.ts');
-    assert(/api\.post\('\/attempts\/:id\/bo-tuan'/.test(src) && /xacNhanHuyLich/.test(src), 'route bo-tuan / xacNhanHuyLich');
+    assert(/api\.post\('\/attempts\/:id\/bo-tuan'/.test(src) && !/xacNhanHuyLich/.test(src), 'route bo-tuan; không còn xacNhanHuyLich (PR-MTGON)');
   });
 
   check('PR-LM (2.11) · MT2 đã bỏ tuần: "Sắp tới" không lấy MT2, lưới Kế hoạch Test hiện MT2 "chua-xep", không lỗi', () => {

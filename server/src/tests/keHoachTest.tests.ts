@@ -349,27 +349,24 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     assert(sAfter.planned_period_id === sBefore.planned_period_id, 'luuDot L R W không được đụng Speaking');
   });
 
-  /* PR-MTa T2 thay Q-0310-2: trùng tuần đầu MT3 = vượt MT3 — không chặn; MT3 có điểm → lưu cần xác nhận + lý do (409), không đổi gì. */
-  check('PR-Rc2 · Task4(c) kiemDot trùng tuần đợt sau → vượt (seHuyLich, PR-MTa T2); luuDot chưa xác nhận ném 409, không đổi gì', () => {
+  /* PR-MTGON (luật 1) thay PR-MTa T2: trùng tuần đầu MT3 = vượt MT3 = KHÔNG HỢP LỆ — kiểm trước chặn, lưu 400, không đổi gì. */
+  check('PR-Rc2 · Task4(c) kiemDot trùng tuần đợt sau → chặn "MT3 thi …" (PR-MTGON); luuDot ném 400, không đổi gì', () => {
     const [mt1, mt2, mt3] = threeConsecutiveMocks();
     /* Seed MT2 có thể đã có điểm — kiemDot coi "đã có điểm" là giu, bỏ qua T15. Xoá điểm để kiểm ĐÚNG nhánh T15. */
     conn.prepare(`DELETE FROM assessment_scores WHERE attempt_id=? AND skill IN ('listening','reading','writing1','writing2')`)
       .run(mt2.attemptId);
     conn.prepare(`UPDATE attempt_skills SET sit_status='scheduled' WHERE attempt_id=? AND skill='listening'`)
       .run(mt2.attemptId);
-    /* PR-MTa T2: phép kiểm cần MT3 CÓ điểm (lưu chưa xác nhận → 409) — seed có thể chưa có, dựng một ô. */
-    conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, band) VALUES (?, 'speaking', 6)
-      ON CONFLICT(attempt_id, skill) DO UPDATE SET band = 6`).run(mt3.attemptId);
     const mt3Week = week.periodById(mt3.planned_period_id)!.week_start;
     const per = week.ensurePeriod(mt3Week);
     const kiem = keHoachMod.kiemDot(P.mbManager, { attemptId: mt2.attemptId, kyNang: [{ skill: 'listening', periodId: per.id }] });
-    assert(kiem.bai.length === 1 && kiem.bai[0].ghiChu !== 'chan' && kiem.seHuyLich.some((x: any) => x.attemptId === mt3.attemptId),
-      `Trùng tuần đầu MT3 phải là vượt MT3, đang ra ${JSON.stringify(kiem)}`);
+    assert(kiem.bai.length === 1 && kiem.bai[0].ghiChu === 'chan' && /^MT3 thi .*Chọn tuần trước/.test(kiem.bai[0].cau ?? ''),
+      `Trùng tuần đầu MT3 phải bị chặn, đang ra ${JSON.stringify(kiem)}`);
     const before = conn.prepare(`SELECT planned_period_id FROM attempt_skills WHERE attempt_id=? AND skill='listening'`)
       .get(mt2.attemptId) as any;
     assertThrows(
       () => keHoachMod.luuDot(P.mbManager, { attemptId: mt2.attemptId, kyNang: [{ skill: 'listening', periodId: per.id }], force: true }),
-      /Xác nhận để tiếp tục|Trùng tuần/, 'luuDot phải ném khi chưa xác nhận',   // PR-MTa T2: MT3 có điểm → 409 cần xác nhận + lý do
+      /MT3 thi .*Chọn tuần trước/, 'luuDot phải ném 400',
     );
     const after = conn.prepare(`SELECT planned_period_id FROM attempt_skills WHERE attempt_id=? AND skill='listening'`)
       .get(mt2.attemptId) as any;
@@ -928,18 +925,18 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
   });
 
   /* PR-MTa T2 thay Q-0310-1 (409 mọi lượt bị vượt): MT2 bị vượt CHƯA có điểm → lưu luôn, MT2 bỏ lịch; L và S đổi trong một tx. */
-  check('UX2 · T15 từng kỹ năng trong luuDot: S trùng tuần đầu đợt sau (chưa điểm) → lưu, MT2 bỏ lịch, L và S cùng đổi (PR-MTa T2)', () => {
+  check('UX2 · T15 từng kỹ năng trong luuDot: S trùng tuần đầu đợt sau (chưa điểm) → chặn cả lần lưu, không đổi gì (PR-MTGON)', () => {
     const em = hvFT(2);
     const x = week.ensurePeriod('2027-11-01');
     const y = week.ensurePeriod('2027-11-22');
     const truocX = week.ensurePeriod('2027-10-25');
     const mt85 = keHoachMod.xepMoi(P.mbManager, { studentId: em, attemptNo: 1, tuan: t4(x.id), force: true });
     const mt2 = keHoachMod.xepMoi(P.mbManager, { studentId: em, attemptNo: 2, tuan: t4(y.id), force: true });
-    keHoachMod.luuDot(P.mbManager, {
+    assertThrows(() => keHoachMod.luuDot(P.mbManager, {
       attemptId: mt85.id, force: true, kyNang: [{ skill: 'listening', periodId: truocX.id }, { skill: 'speaking', periodId: y.id }],
-    });
-    assert(tuanCua(mt85.id, 'listening').w === truocX.weekStart && tuanCua(mt85.id, 'speaking').w === y.weekStart, 'L, S chưa đổi');
-    assert((conn.prepare('SELECT planned_period_id p FROM assessment_attempts WHERE id = ?').get(mt2.id) as any).p === null, 'MT2 chưa bỏ lịch');
+    }), /MT2 thi .*Chọn tuần trước/, 'vượt MT2 phải chặn');
+    assert(tuanCua(mt85.id, 'listening').w === x.weekStart && tuanCua(mt85.id, 'speaking').w === x.weekStart, 'L, S đã đổi khi bị chặn');
+    assert((conn.prepare('SELECT planned_period_id p FROM assessment_attempts WHERE id = ?').get(mt2.id) as any).p === y.id, 'MT2 mất lịch');
   });
 
   /* PR-MTa T7: bỏ kỹ năng — lý do tuỳ chọn. */

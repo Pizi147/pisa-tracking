@@ -1,23 +1,22 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { ApiError, api, invalidate } from '../../../lib/api.ts';
+import { api, invalidate } from '../../../lib/api.ts';
 import { useNgayNghiepVu } from '../../../ui/ngayNghiepVu.ts';
 import { addDaysStr } from '../../../lib/format.ts';
 import { useToast } from '../../../ui/Toast.tsx';
 import {
-  CAU_TUAN_DA_QUA, CHU_MUC_HOP, cauSeHuyLich, chipDongKyNang, chuDoiVuot, chuLuuVuot, duongDotTest, kiemTuanXep, menuHopKyNang, mondayOfDate,
+  CAU_TUAN_DA_QUA, CHU_MUC_HOP, chipDongKyNang, duongDotTest, kiemTuanXep, menuHopKyNang, mondayOfDate,
   nhanTuanKhoa, tenMon, tenMonNgan, thaoTacKyNang, trangThaiTT, tuanDaSo, tuanLich, tuanMacDinhDotMoi,
   type BaiXemTruoc, type DongHangLoat, type KyNangKH, type MucHop, type OKyNang, type ThaoTac, type TrangThaiTT,
 } from '@shared/domain/index.ts';
-import { KY, nhanDot, thanDot, type DotChon, type KnO } from './kieu.ts';
+import { KY, thanDot, type DotChon, type KnO } from './kieu.ts';
 import { Nhan } from '../../../ui/Nhan.tsx';
 import { TuanNho, resolveTuan, type Tuan } from './TuanNho.tsx';
 import { MenuDong } from '../../../ui/MenuDong.tsx';
 import { useGiuFocus } from '../../../ui/giuFocus.ts';
 import { HopThaoTacMt } from '../../fasttrack/HopThaoTacMt.tsx';
 import { NganLichSuBai } from '../../cham/NganLichSuBai.tsx';
-import { HopXacNhanHuyLich, type LuotSeHuyLich } from './HopXacNhanHuyLich.tsx';
 
 type Dong = { tick: boolean; periodId: number | null; weekStart: string | null };
 
@@ -31,9 +30,8 @@ type Dong = { tick: boolean; periodId: number | null; weekStart: string | null }
  *       - "Đổi tuần": dòng thường → bộ chọn tuần riêng ngay trên dòng; dòng vắng → Xếp lại bài vắng; dòng đã huỷ → Khôi phục và đặt tuần;
  *       - FT: bỏ tích = bỏ kỹ năng khỏi đợt; dòng đã tới tuần thi / đã có điểm tích sẵn, khoá; lớp thường không có ô tích (luôn đủ bộ môn).
  *   · mỗi lần đổi tuần gọi `/ke-hoach-test/dot/kiem` (đợt đã có) hoặc xem trước hàng loạt một em (đợt chưa có) → CHỈ dòng đỏ
- *     `Chặn: …` (Lưu tắt) và dòng vàng (cảnh báo → nút đổi thành `Vẫn xếp vào tuần này`; chip "Bỏ lịch MT2" / "Huỷ điểm MT2"; chip "Tuần đã qua").
- *   · PR-LM (Q-0310-1), PR-MTb T6: dời vượt lượt sau → lượt bị vượt có điểm: Lưu mở `HopXacNhanHuyLich` (MỘT ô Lý do — hộp này không có ô lý do);
- *     chưa điểm → lưu thẳng. Hộp chỉ dành cho Quản lý / Quản trị: chọn được tuần đã qua ở mọi lượt (T4, T20 — rà #212).
+ *     `Chặn: …` (Lưu tắt; PR-MTGON: dời vượt lượt sau cũng chặn ở đây) và dòng vàng (cảnh báo → nút đổi thành `Vẫn xếp vào tuần này`;
+ *     chip "Tuần đã qua"). Hộp chỉ dành cho Quản lý / Quản trị: chọn được tuần đã qua ở mọi lượt (T4, T20 — rà #212).
  * Bộ chọn tuần KHỞI TẠO bằng TUẦN HIỆN CÓ (Bổ sung sau rà #87): không để bộ chọn tự phát "tuần này" làm nút Lưu mở ngay.
  */
 export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attemptId, kn, kyNangDau, deXuat, khaiGiang, tongTuan, onClose, onSaved, onHienDien, ky = KY, ct = null, lichSu = false }: {
@@ -91,11 +89,6 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
   const [force, setForce] = useState(false);
   const [busy, setBusy] = useState(false);
   const [bai, setBai] = useState<BaiXemTruoc[] | null>(null);
-  const [seHuyLich, setSeHuyLich] = useState<LuotSeHuyLich[]>([]);
-  /** Hộp "Dời MT1 sang …?" đang mở với danh sách nào (kiểm trước, hoặc 409 khi dữ liệu đổi giữa chừng). */
-  const [xacNhan, setXacNhan] = useState<LuotSeHuyLich[] | null>(null);
-  /** Lỗi máy chủ lúc lưu từ hộp xác nhận — hộp vẫn mở, hiện dưới ô Lý do (chữ đã gõ còn). */
-  const [loiMay, setLoiMay] = useState<string | null>(null);
   const seq = useRef(0);
 
   useEffect(() => { onHienDien(true); return () => onHienDien(false); }, []);   // eslint-disable-line react-hooks/exhaustive-deps
@@ -157,11 +150,11 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
       return () => clearTimeout(t);
     }
     const doi = coTuan.filter(daDoi);
-    if (!doi.length) { setBai([]); setSeHuyLich([]); return; }
-    api.post<{ bai: BaiXemTruoc[]; seHuyLich?: LuotSeHuyLich[] }>('/ke-hoach-test/dot/kiem', {
+    if (!doi.length) { setBai([]); return; }
+    api.post<{ bai: BaiXemTruoc[] }>('/ke-hoach-test/dot/kiem', {
       attemptId, kyNang: doi.map((k) => ({ skill: k, periodId: rows[k].periodId })),
-    }).then((r) => { if (mySeq === seq.current) { setBai(r.bai); setSeHuyLich(r.seHuyLich ?? []); } })
-      .catch(() => { if (mySeq === seq.current) { setBai(null); setSeHuyLich([]); } });
+    }).then((r) => { if (mySeq === seq.current) setBai(r.bai); })
+      .catch(() => { if (mySeq === seq.current) setBai(null); });
   }, [khoaKiem, moi]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   const chan = (bai ?? []).filter((b) => b.ghiChu === 'chan');
@@ -170,20 +163,13 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
   const cauCanhBao = canhBao.length ? [...new Set(canhBao.map((b) => b.cau))].join(' ') : '';
 
   const luuDuoc = !busy && !chan.length && (moi ? !thieuTuan && dungKy.length > 0 && !!bai : coDoi);
-  /* Popup / chip dời vượt: tuần mới = tuần muộn nhất trong các kỹ năng vừa đổi (như máy chủ tính `tuanCuoi`) (`chuDoiVuot`, mockup phần 4). */
-  const nhanMt = nhanDot(dot);
-  const tuanMoiDot = coTuan.filter(daDoi).map((k) => rows[k].weekStart).filter((x): x is string => !!x).sort().pop() ?? '';
-  const vuot = chuDoiVuot({ nhan: nhanMt, tuanMoi: tuanMoiDot, ds: moi ? [] : seHuyLich }, nghiepVu);
-  const vuotXacNhan = xacNhan ? chuDoiVuot({ nhan: nhanMt, tuanMoi: tuanMoiDot, ds: xacNhan }, nghiepVu) : null;
   /* T4: Quản lý chọn tuần đã qua cho kỹ năng chưa thi → chip vàng (không chặn). Chỉ tính dòng vừa đổi — tuần cũ giữ nguyên không phải "chọn". */
   const quaTuan = !!nghiepVu && coTuan.some((k) => daDoi(k) && !!rows[k].weekStart && (moi || kn[k]?.khoa == null)
     && kiemTuanXep({ ketThuc: [addDaysStr(rows[k].weekStart.slice(0, 10), 6)], homNay: nghiepVu, quanLy: true }).quaTuan);
 
-  /** `lyDoVuot` = lý do ở hộp dời vượt (T2) — chỉ có khi đã xác nhận huỷ kết quả. Hộp này không có ô lý do riêng (tự quyết 3). */
-  const luu = async (daXacNhan = false, lyDoVuot?: string) => {
+  const luu = async () => {
     if (!luuDuoc) return;
-    if (!moi && vuot.canPopup && !daXacNhan) { setXacNhan(seHuyLich); return; }
-    setBusy(true); setLoiMay(null);
+    setBusy(true);
     const dungForce = force || canhBao.length > 0;
     try {
       if (moi) {
@@ -198,19 +184,13 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
             : !(kn[k]?.batBuoc ?? false) ? { skill: k, bo: false, periodId: rows[k].periodId }
               : { skill: k, periodId: rows[k].periodId }
         ));
-        await api.post('/ke-hoach-test/dot', {
-          attemptId, kyNang, lyDoBo: null, reason: lyDoVuot || null, force: dungForce,
-          xacNhanHuyLich: daXacNhan,   // chỉ khi đã qua hộp xác nhận; chưa điểm (chip vàng) → lưu thẳng, nếu dữ liệu vừa đổi có điểm → 409 mở hộp
-        });
+        await api.post('/ke-hoach-test/dot', { attemptId, kyNang, lyDoBo: null, reason: null, force: dungForce });
       }
-      toast.push('ok', moi ? 'Đã lưu lịch.' : chuLuuVuot(xacNhan ?? seHuyLich));
+      toast.push('ok', 'Đã lưu lịch.');
       invalidate('/ke-hoach-test'); invalidate('/attempts'); invalidate('/cham');
       onSaved(); onClose();
     } catch (e: any) {
-      /* Dữ liệu đổi giữa lúc kiểm và lúc lưu: máy chủ trả 409 kèm danh sách mới → mở lại hộp xác nhận với danh sách đó. */
-      if (e instanceof ApiError && e.status === 409 && e.details?.seHuyLich?.length) { setSeHuyLich(e.details.seHuyLich); setXacNhan(e.details.seHuyLich); }
-      else if (daXacNhan) setLoiMay(e.message ?? 'Không lưu được — thử lại.');   // hộp xác nhận vẫn mở, giữ chữ Lý do
-      else toast.push('error', e.message ?? 'Không lưu được — thử lại.');
+      toast.push('error', e.message ?? 'Không lưu được — thử lại.');
     } finally {
       setBusy(false);
     }
@@ -278,7 +258,7 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
 
   const nutLuu = canhBao.length && !force ? 'Vẫn xếp vào tuần này' : 'Lưu';
   const nhanChung = loai === 'thuong' && chung?.weekStart ? nhanTuanKhoa(chung.weekStart, khaiGiang ?? null, tongTuan ?? null) : null;
-  const coDongDuoi = !!cauChan || !!cauCanhBao || (!chan.length && !!vuot.chip) || quaTuan;
+  const coDongDuoi = !!cauChan || !!cauCanhBao || quaTuan;
   /* Chưa có vị trí: opacity 0 (không dùng visibility:hidden — phần tử ẩn không nhận focus của `useGiuFocus` lúc mở). */
   return createPortal(
     <div ref={box} role="dialog" aria-label={`Lịch ${tieuDe}`} tabIndex={-1}
@@ -315,10 +295,9 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
           <div className="space-y-1.5" role="status">
             {cauChan && <div className="text-xs leading-relaxed text-bad">{cauChan}</div>}
             {cauCanhBao && <div className="text-xs leading-relaxed text-soon">{cauCanhBao}</div>}
-            {((!chan.length && vuot.chip) || quaTuan) && (
+            {quaTuan && (
               <div className="flex flex-wrap gap-1.5">
-                {!chan.length && vuot.chip && <Nhan tone="soon" title={cauSeHuyLich(seHuyLich, nghiepVu)}>{vuot.chip}</Nhan>}
-                {quaTuan && <Nhan tone="soon" title={CAU_TUAN_DA_QUA}>Tuần đã qua</Nhan>}
+                <Nhan tone="soon" title={CAU_TUAN_DA_QUA}>Tuần đã qua</Nhan>
               </div>
             )}
           </div>
@@ -330,12 +309,8 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
           {busy ? 'Đang lưu…' : nutLuu}
         </button>
       </div>
-      {vuotXacNhan && (
-        <HopXacNhanHuyLich tieuDe={vuotXacNhan.tieuDe} cau={vuotXacNhan.cau} dong={vuotXacNhan.dong} busy={busy} loiMay={loiMay}
-          onDong={() => { setXacNhan(null); setLoiMay(null); }} onXacNhan={(ly) => { void luu(true, ly); }} />
-      )}
       {thaoTac && attemptId !== null && (
-        <HopThaoTacMt key={`${thaoTac.t}:${thaoTac.k}`} thaoTac={thaoTac.t} attemptId={attemptId} skill={thaoTac.k} ct={ct} laThuong={loai === 'thuong'} nhanMt={nhanMt}
+        <HopThaoTacMt key={`${thaoTac.t}:${thaoTac.k}`} thaoTac={thaoTac.t} attemptId={attemptId} skill={thaoTac.k} ct={ct} laThuong={loai === 'thuong'}
           quanLy row={{ periodId: kn[thaoTac.k]?.periodId ?? null, weekStart: kn[thaoTac.k]?.tuan ?? null }}
           oCoDiem={thaoTac.k === 'writing' && loai === 'ft' ? ['writing1', 'writing2'] : [thaoTac.k]}
           trongHop hocVien={tieuDe}

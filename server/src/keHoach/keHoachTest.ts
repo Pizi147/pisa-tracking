@@ -21,8 +21,8 @@ import { entrySkillsOf, expectationFor } from '../fasttrack/scoring.ts';
 import { createAttempt, loadBundle, saveScore, scoresOf, setSkillSkip } from '../fasttrack/attempts.ts';
 import { currentCycle, nextAttemptNo } from '../fasttrack/cycles.ts';
 import {
-  baoGvcnDoiLichThuongLop, boLichLuotBiVuot, checkWeekVsNeighbours, kiemVuot, kiemVuotTu, kiemXacNhanVuot, loadSkillRows, setSitStatus, setSkillWeek, tinhLaiMtCu, tuanCuoiSauKhiDoi,
-  type LuotSauDoc, type LuotSeHuyLich,
+  baoGvcnDoiLichThuongLop, checkWeekVsNeighbours, kiemVuot, kiemVuotTu, loadSkillRows, setSitStatus, setSkillWeek, tinhLaiMtCu, tuanCuoiSauKhiDoi,
+  type LuotSauDoc,
 } from '../fasttrack/skillSchedule.ts';
 import { mt0TheoHocVien } from '../fasttrack/mt0.ts';
 import { pendingMovesFor } from '../fasttrack/absence.ts';
@@ -451,7 +451,7 @@ type YeuCauKyNang = { skill: KyNangKH; periodId: number };
  * Kiểm từng kỹ năng của một đợt đã có — KHÔNG ghi. `duaLai` = kỹ năng đang bị bỏ mà lần lưu này đưa lại (bỏ qua "không thi").
  * `pre` (PR-XLMT): dữ liệu đã đọc theo lô (hàng loạt nhiều em) — không đọc lại. `canLyDo` luôn false (G17, T7 — giữ trường cho web cũ).
  * Tuần đích đã qua không chặn: mọi nơi gọi đều đã đòi PLAN_WEEK (T4 — Quản lý xếp được tuần đã qua).
- * Lượt sau bị vượt thành `seHuyLich` (kèm `soDiem`, `soCase`) thay vì chặn — mọi cổng, kể cả xếp hàng loạt (T2, chốt 05/10).
+ * Dời vượt lượt sau → chặn mọi kỹ năng dời (PR-MTGON luật 1). Kỹ năng đã huỷ phần thi được chọn tuần = "đưa lại" + đặt tuần (luật 5).
  * `pre.choHuyLich` (chỉ hộp một đợt): đổi tuần được kể cả kỹ năng đã có điểm / đã thi — điểm đi theo (D3 MT cũ, PR-MTa T20 mọi lượt).
  */
 function kiemDotNoi(a: any, kyNang: YeuCauKyNang[], duaLai: Set<KyNangKH> = new Set(),
@@ -460,7 +460,7 @@ function kiemDotNoi(a: any, kyNang: YeuCauKyNang[], duaLai: Set<KyNangKH> = new 
     /** PR-MT0: tuần muộn nhất của MT0 cùng lộ trình (đã đọc theo lô cùng `luotSau`) — MT1 phải sau tuần này. */
     tuanMt0?: string | null;
   } = {},
-): { bai: BaiXemTruoc[]; canLyDo: boolean; seHuyLich: LuotSeHuyLich[] } {
+): { bai: BaiXemTruoc[]; canLyDo: boolean } {
   const conn = db();
   const cheDo: CheDo = a.kind === 'mock' ? 'ft' : 'thuong';
   const rows = pre.rows ?? (loadSkillRows([a.id]).get(a.id) ?? []) as any[];
@@ -484,8 +484,8 @@ function kiemDotNoi(a: any, kyNang: YeuCauKyNang[], duaLai: Set<KyNangKH> = new 
       continue;
     }
     const khoa = khoaCua(cheDo, row, scores);
-    if (khoa && !(pre.choHuyLich && khoa !== 'đã huỷ phần thi')) { bai.push({ skill: k.skill, tu, den: tu, ghiChu: 'giu', cau: khoa }); continue; }
-    if (row.planned_period_id === k.periodId) { bai.push({ skill: k.skill, tu, den: tu, ghiChu: 'giu', cau: null }); continue; }
+    if (khoa && khoa !== 'đã huỷ phần thi' && !pre.choHuyLich) { bai.push({ skill: k.skill, tu, den: tu, ghiChu: 'giu', cau: khoa }); continue; }
+    if (row.planned_period_id === k.periodId && row.sit_status !== 'cancelled' && row.required) { bai.push({ skill: k.skill, tu, den: tu, ghiChu: 'giu', cau: null }); continue; }
     doi.push({ i: bai.length, k, row, pr });
     bai.push({ skill: k.skill, tu, den: pr.week_start, ghiChu: 'doi', cau: null });
   }
@@ -495,23 +495,22 @@ function kiemDotNoi(a: any, kyNang: YeuCauKyNang[], duaLai: Set<KyNangKH> = new 
   /* PR-MT0: đường theo lô kiểm "MT1 sau MT0" trên dữ liệu đã đọc; đường lẻ để `kiemVuot` tự đọc. */
   const chanMt0 = doi.length && pre.luotSau && a.kind === 'mock' && a.attempt_no === 1 && pre.tuanMt0
     ? kiemTuanMt0({ tuanMoi: pre.tuanMt0, tuanMuonNhat: null, tuanMt1: tuanDau }) : null;
-  const vuot = !doi.length ? { biVuot: [], chan: null }
-    : chanMt0 ? { biVuot: [], chan: chanMt0 }
+  const vuot = !doi.length ? { chan: null }
+    : chanMt0 ? { chan: chanMt0 }
     : pre.luotSau ? kiemVuotTu(a, pre.luotSau, tuanCuoi) : kiemVuot(a.id, tuanCuoi, tuanDau);
-  const boQua = vuot.biVuot.map((x) => x.attemptId);
   const checks = new Map<string, { blockers: string[]; warnings: string[] }>();
   for (const d of doi) {
     const b = bai[d.i];
     if (vuot.chan) { b.ghiChu = 'chan'; b.cau = vuot.chan; continue; }
     let c = checks.get(d.pr.week_start);
     if (!c) {
-      c = checkWeekVsNeighbours({ cycleId: a.cycle_id, attemptNo: a.attempt_no, excludeAttemptId: a.id, newWeekStart: d.pr.week_start, boQua, kind: a.kind });
+      c = checkWeekVsNeighbours({ cycleId: a.cycle_id, attemptNo: a.attempt_no, excludeAttemptId: a.id, newWeekStart: d.pr.week_start, kind: a.kind });
       checks.set(d.pr.week_start, c);
     }
     if (c.blockers.length) { b.ghiChu = 'chan'; b.cau = c.blockers.join(' '); }
     else if (c.warnings.length) { b.ghiChu = 'canh-bao'; b.cau = c.warnings.join(' '); }
   }
-  return { bai, canLyDo, seHuyLich: vuot.chan ? [] : vuot.biVuot };
+  return { bai, canLyDo };
 }
 
 function docDot(attemptId: number) {
@@ -535,9 +534,7 @@ export function luuDot(p: Principal, i: {
   khiTao?: boolean;
   /** T11: xếp hàng loạt lớp thường báo GVCN một chuông cả lớp, không từng em. */
   khongBaoGvcn?: boolean;
-  /** PR-LM + T2 (PR-MTa): người dùng đã xác nhận huỷ kết quả các lượt bị vượt có điểm. Thiếu → 409; thiếu `reason` → 400. */
-  xacNhanHuyLich?: boolean;
-}): { ok: true; doi: KyNangKH[]; daHuyLich: LuotSeHuyLich[] } {
+}): { ok: true; doi: KyNangKH[] } {
   const a = docDot(i.attemptId);
   require_(p, PERMISSIONS.PLAN_WEEK, { classId: a.class_id }, PLAN_MSG);
   for (const k of i.kyNang) chonKyNang(k.skill);
@@ -552,21 +549,25 @@ export function luuDot(p: Principal, i: {
   }
   const cb = kiem.bai.filter((b) => b.ghiChu === 'canh-bao');
   if (cb.length && !i.force) throw badRequest(`${[...new Set(cb.map((b) => b.cau))].join(' ')} ${CAU_XAC_NHAN}`);
-  kiemXacNhanVuot(kiem.seHuyLich, { xacNhan: i.xacNhanHuyLich, lyDo: i.reason });
 
   const rows = (loadSkillRows([i.attemptId]).get(i.attemptId) ?? []) as any[];
-  const tuanCuoi = kiem.bai.filter((b) => b.ghiChu === 'doi' || b.ghiChu === 'canh-bao').map((b) => b.den!).sort().pop() ?? '';
   return tx(() => {
-    boLichLuotBiVuot(p, kiem.seHuyLich, a, tuanCuoi, i.reason);
     for (const k of i.kyNang) {            // bo=true: đang bắt buộc → bỏ; bo=false: đang bỏ → đưa lại
       const r = rows.find((x) => x.skill === k.skill);
       if (k.bo !== undefined && r && !!r.required === k.bo) setSkillSkip(p, i.attemptId, k.skill, k.bo, i.lyDoBo ?? undefined);
     }
     const doi = kiem.bai.filter((b) => b.ghiChu === 'doi' || b.ghiChu === 'canh-bao');
     for (const b of doi) {
-      setSkillWeek(p, i.attemptId, b.skill, datTuan.find((k) => k.skill === b.skill)!.periodId, { reason: i.reason ?? null, force: true, khiTao: i.khiTao, khongBaoGvcn: i.khongBaoGvcn });
+      const periodId = datTuan.find((k) => k.skill === b.skill)!.periodId;
+      /* PR-MTGON (luật 5): kỹ năng đã huỷ phần thi / đã bỏ khỏi đợt (vòng `bo` ở trên đã đưa lại) → đưa lại rồi đặt tuần (đè). */
+      const r0 = rows.find((r) => r.skill === b.skill);
+      if (r0?.sit_status === 'cancelled' || !r0?.required) {
+        if (r0?.sit_status === 'cancelled') setSkillSkip(p, i.attemptId, b.skill, false);
+        if (loadSkillRows([i.attemptId]).get(i.attemptId)!.find((r: any) => r.skill === b.skill)?.planned_period_id === periodId) continue;
+      }
+      setSkillWeek(p, i.attemptId, b.skill, periodId, { reason: i.reason ?? null, force: true, khiTao: i.khiTao, khongBaoGvcn: i.khongBaoGvcn });
     }
-    return { ok: true as const, doi: doi.map((b) => b.skill), daHuyLich: kiem.seHuyLich };
+    return { ok: true as const, doi: doi.map((b) => b.skill) };
   });
 }
 
@@ -1011,19 +1012,18 @@ function xetMotEmFT(i: {
   /* T2: lượt sau cùng lộ trình dựng từ dữ liệu đã đọc theo lô — kiểm dời vượt không thêm câu SQL mỗi em. */
   const luotSau: LuotSauDoc[] = cuaEm.filter((x) => x.kind === 'mock' && x.attempt_no > a.attempt_no).map((x) => {
     const tuan = rowsCua(x).filter((r) => r.required && r.sit_status !== 'cancelled' && r.week_start).map((r) => String(r.week_start)).sort();
-    const daCo = new Set(diemCua(x).filter((d: any) => d.band != null || d.raw_score != null).map((d: any) => String(d.skill).replace(/^writing[12]$/, 'writing')));
-    return { id: x.id, attempt_no: x.attempt_no, kind: x.kind, status: x.status, tuan_dau: tuan[0] ?? null, so_diem: daCo.size,
-      cho_duyet: [...i.lo.choDuyet.keys()].some((k) => k.startsWith(`${x.id}:`)) };
+    return { id: x.id, attempt_no: x.attempt_no, kind: x.kind, status: x.status, tuan_dau: tuan[0] ?? null };
   });
-  const kiem = kiemDotNoi(a, ks.map((k) => ({ skill: k, periodId: i.tuan[k]! })), new Set(),
+  /* Rà #282: lượt không còn kỹ năng bắt buộc nào (mọi kỹ năng đã "Huỷ kỹ năng") → các kỹ năng đã chọn được đưa lại (luật 5). */
+  const duaLai = new Set<KyNangKH>(rowsCua(a).some((r) => r.required && (KY_NANG_KE_HOACH as readonly string[]).includes(r.skill)) ? [] : ks);
+  const kiem = kiemDotNoi(a, ks.map((k) => ({ skill: k, periodId: i.tuan[k]! })), duaLai,
     {
       rows: rowsCua(a), scores: diemCua(a), periods: i.periods, homNay: i.homNay, luotSau,
       tuanMt0: cuaEm.filter((x) => x.kind === 'mt0' && x.status !== 'cancelled')
         .flatMap((x) => rowsCua(x).filter((r) => r.required && r.sit_status !== 'cancelled' && r.week_start).map((r) => String(r.week_start))).sort().pop() ?? null,
     });
   const chan = kiem.bai.filter((b) => b.ghiChu === 'chan');
-  /* T2 (PR-MTa, chốt 05/10): dời vượt KHÔNG chặn ở hàng loạt — dòng mang hệ quả `seHuyLich` để web hiện một popup gộp. */
-  const chung = { bai: kiem.bai, viec: viec.loai, attemptNo, canLyDo: kiem.canLyDo, ...(kiem.seHuyLich.length ? { seHuyLich: kiem.seHuyLich } : {}) };
+  const chung = { bai: kiem.bai, viec: viec.loai, attemptNo, canLyDo: kiem.canLyDo };
   if (chan.length) return { dong: dong({ ...chung, loi: [...new Set(chan.map((b) => b.cau))].join(' ') }), attemptId: a.id };
   return { dong: dong({ ...chung, hanhDong: kiem.bai.some((b) => b.ghiChu !== 'giu') ? 'doi' : 'giu' }), attemptId: a.id };
 }
@@ -1036,8 +1036,6 @@ export function xepHangLoat(p: Principal, i: {
   kyNang?: KyNangKH[];
   /** PR-XLMT (khung FT): Quản lý bấm chip đợt riêng cho em (`ep`) · kỹ năng cho thi lại · lý do (dời bài tuần đã bắt đầu, thi lại). */
   dotTheoEm?: Record<string, number>; thiLai?: Record<string, KyNangKH[]>; lyDo?: string | null;
-  /** T2 (PR-MTa, chốt 05/10): đã xác nhận popup gộp — huỷ kết quả các lượt bị vượt có điểm (`dong.seHuyLich`); cần `lyDo`. */
-  xacNhanHuyLich?: boolean;
 }, today: string = demoToday()): { dong: DongHangLoat[]; daLuu: number } {
   const conn = db();
   require_(p, PERMISSIONS.PLAN_WEEK, { classId: i.classId }, PLAN_MSG);
@@ -1109,8 +1107,10 @@ export function xepHangLoat(p: Principal, i: {
         tx(() => { for (const [periodId, skills] of theoTuan) thiLai(p, { attemptId: attemptId!, skills, periodId, lyDo: i.lyDo ?? '', force: true }); });
       } else {
         luuDot(p, {
-          attemptId: attemptId!, force: true, reason: i.lyDo?.trim() || null, xacNhanHuyLich: !!i.xacNhanHuyLich, khongBaoGvcn: laThuong,
-          kyNang: doi.map((b) => ({ skill: b.skill, periodId: tuan[b.skill]! })),
+          attemptId: attemptId!, force: true, reason: i.lyDo?.trim() || null, khongBaoGvcn: laThuong,
+          /* Kỹ năng đang bỏ khỏi đợt mà vẫn có bài dời (rà #282: lượt đã huỷ hết kỹ năng) → `bo: false` = đưa lại rồi đặt tuần. */
+          kyNang: doi.map((b) => ({ skill: b.skill, periodId: tuan[b.skill]!,
+            ...(lo?.rows.get(attemptId!)?.some((r: any) => r.skill === b.skill && !r.required) ? { bo: false } : {}) })),
         });
         if (laThuong) soEmDoi += 1;
       }

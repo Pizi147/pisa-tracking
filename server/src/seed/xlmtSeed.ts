@@ -3,7 +3,7 @@ import { addDays } from '../util.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { LISTENING_BY_RAW, READING_BY_RAW } from '../fasttrack/scoring.ts';
 import { commitIntake } from '../classes/intake.ts';
-import { huyLuot, saveScore } from '../fasttrack/attempts.ts';
+import { saveScore, setSkillSkip } from '../fasttrack/attempts.ts';
 import { baoVang } from '../fasttrack/absence.ts';
 import { setSkillWeek } from '../fasttrack/skillSchedule.ts';
 import { planRegularTests, reportRegularNoShow } from '../normal/regular.ts';
@@ -71,7 +71,7 @@ export function buildXlmtDemo(ctx: BuildCtx): { students: number } {
   luotThuong(long.cycleId);
   const longA = luot(long.cycleId, 1);
   nhap(longA, ['l', 'r']);
-  huyLuot(ql, longA.id, { lyDo: 'Em nghỉ dài ngày, xếp lại W S sau', cach: 'phan-con-lai' });
+  for (const k of ['writing', 'speaking']) setSkillSkip(ql, longA.id, k, true, 'Em nghỉ dài ngày, xếp lại W S sau');   // PR-MTGON: Huỷ kỹ năng
 
   // ---------------------------------------------------------------- X3 · HS mới, đã thi ngoài web MT1–MT4
   const chi = them(ft101, 'Đoàn Khánh Chi', tuan(-20));                 // MT1 −15 · MT2 −9 · MT3 −5 tuần — MT lịch sử; MT4 (−3) chưa có lượt

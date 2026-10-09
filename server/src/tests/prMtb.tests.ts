@@ -86,10 +86,10 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert(v3.loai === 'doi' && v3.no === 2, JSON.stringify(v3));
     const v4 = d.viecXepMt([ds[0], { no: 2, huy: false, lichSu: false, kn: kn({}).map((k, i) => (i < 2 ? k : { ...k, coDiem: false, daThi: false })) }], 2, so) as any;
     assert(v4.loai === 'xep-not' && v4.kyNang.join() === 'writing,speaking', JSON.stringify(v4));
-    // MT cũ: chặn dù có hay không có `ep`, không tự sang MT kế.
+    // PR-MTGON (luật 5) thay "MT cũ chặn": MT cũ xếp đè được như lượt thường, không tự sang MT kế.
     for (const ep of [false, true]) {
       const v5 = d.viecXepMt([{ no: 1, huy: false, lichSu: true, kn: chua() }, { no: 2, huy: false, lichSu: false, kn: chua() }], 1, [L(1), L(2)], ep) as any;
-      assert(v5.loai === 'chan' && v5.no === 1 && v5.cau === 'MT1 là MT cũ — nhập điểm bù.', `ep=${ep}: ${JSON.stringify(v5)}`);
+      assert(v5.loai === 'doi' && v5.no === 1, `ep=${ep}: ${JSON.stringify(v5)}`);
     }
     // MT chưa có: tạo (số kế tiếp) — vẫn đúng như cũ; chưa có MT1 mà chọn MT3 → câu của kiemSoMtMoi.
     const v6 = d.viecXepMt([ds[0]], 2, [L(1, 'completed', true)]) as any;
@@ -139,15 +139,11 @@ export async function runPrMtbTests(t: YThucTestKit) {
     const loi: any = { studentId: 4, ten: 'D', hanhDong: 'loi', viec: 'chan', attemptNo: 1, loi: 'MT1 đã xong.', bai: [] };
     const e = d.nhanSeXep(loi, null);
     assert(e.tone === 'bad' && e.chu === 'Không xếp được' && e.phu === null && e.title === 'MT1 đã xong.', JSON.stringify(e));
-    // Dời vượt: tone vàng, tooltip có hệ quả.
-    const vuot: any = { studentId: 5, ten: 'E', hanhDong: 'doi', viec: 'doi', attemptNo: 1, loi: null,
-      bai: KN.map((k) => ({ skill: k, tu: '2026-10-05', den: '2026-11-09', ghiChu: 'doi', cau: null })),
-      seHuyLich: [{ attemptId: 9, nhan: 'MT2', tuan: '2026-10-19', soDiem: 4, soCase: 1 }] };
-    const v = d.nhanSeXep(vuot, null);
-    assert(v.tone === 'soon' && v.chu === 'MT1 · W2 NOV' && /MT2: huỷ 4 điểm/.test(v.title), JSON.stringify(v));
-    // Dời thường (không cảnh báo, không vượt): xanh.
-    const doi: any = { ...vuot, seHuyLich: undefined };
-    assert(d.nhanSeXep(doi, null).tone === 'ok', 'dời thường');
+    // Dời thường (không cảnh báo): xanh. PR-MTGON: dời vượt bị chặn ở máy chủ — không còn dòng "vượt" vàng.
+    const doi: any = { studentId: 5, ten: 'E', hanhDong: 'doi', viec: 'doi', attemptNo: 1, loi: null,
+      bai: KN.map((k) => ({ skill: k, tu: '2026-10-05', den: '2026-11-09', ghiChu: 'doi', cau: null })) };
+    const v = d.nhanSeXep(doi, null);
+    assert(v.tone === 'ok' && v.chu === 'MT1 · W2 NOV', JSON.stringify(v));
     // MT cũ tạo mới: vàng, chữ phụ "cũ".
     const cu: any = { ...tao, lichSu: true };
     const cc = d.nhanSeXep(cu, null);
@@ -156,8 +152,8 @@ export async function runPrMtbTests(t: YThucTestKit) {
     const giu: any = { studentId: 6, ten: 'F', hanhDong: 'giu', viec: 'da-du', attemptNo: 1, loi: null, coDiem: ['listening'], bai: [] };
     const gg = d.nhanSeXep(giu, null);
     assert(gg.tone === 'soon' && gg.chu.length > 0 && /thi lại/.test(gg.title), JSON.stringify(gg));
-    const n = d.demSeXep([tao, xepNot, trung, loi, loi, vuot]);
-    assert(n.ok === 1 && n.soon === 3 && n.bad === 2, JSON.stringify(n));
+    const n = d.demSeXep([tao, xepNot, trung, loi, loi, doi]);
+    assert(n.ok === 2 && n.soon === 2 && n.bad === 2, JSON.stringify(n));
     assert(JSON.stringify(d.demSeXep([])) === JSON.stringify({ ok: 0, soon: 0, bad: 0 }), 'rỗng');
   });
 
@@ -412,122 +408,14 @@ export async function runPrMtbTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ Task 6 — popup dời vượt (mockup phần 4)
-  console.log('\nPR-MTb · Popup dời vượt ở mọi cổng dời');
+  /* PR-MTGON (luật 1, 08/10) bỏ Task 6: dời vượt nay bị CHẶN ở mọi cổng, không còn popup / chip huỷ kết quả — xem MTG-1b, MTG-1d. */
   const attemptsSvc: any = await import('../fasttrack/attempts.ts');
-  const x2 = { attemptId: 2, nhan: 'MT2', tuan: '2026-07-13', soDiem: 4, soCase: 1 };
-  const x3 = { attemptId: 3, nhan: 'MT3', tuan: '2026-08-10', soDiem: 0, soCase: 0 };
-
-  check('MTb (T6) · chuDoiVuot: ví dụ mockup phần 4 → popup; chỉ MT3 → chip vàng "Bỏ lịch MT3", không popup', () => {
-    const r = d.chuDoiVuot({ nhan: 'MT1', tuanMoi: '2026-11-09', ds: [x2, x3] }, '2026-10-05');
-    assert(r.canPopup === true, 'canPopup');
-    assert(r.tieuDe === 'Dời MT1 sang W2 NOV?', r.tieuDe);
-    assert(r.cau === 'MT1 muộn hơn MT2, MT3.', r.cau);
-    assert(JSON.stringify(r.dong) === JSON.stringify(['MT2: huỷ 4 điểm, đóng 1 Case', 'MT3: bỏ lịch']), JSON.stringify(r.dong));
-    assert(r.chip === 'Huỷ điểm MT2', r.chip);
-    const q = d.chuDoiVuot({ nhan: 'MT1', tuanMoi: '2026-11-09', ds: [x3] }, '2026-10-05');
-    assert(q.canPopup === false && q.chip === 'Bỏ lịch MT3' && q.cau === 'MT1 muộn hơn MT3.', JSON.stringify(q));
-    const hai = d.chuDoiVuot({ nhan: 'MT1', tuanMoi: '2026-11-09', ds: [{ ...x3, attemptId: 4, nhan: 'MT2' }, x3] }, '2026-10-05');
-    assert(hai.chip === 'Bỏ lịch MT2, MT3', hai.chip);
-    assert(d.chuDoiVuot({ nhan: 'MT1', tuanMoi: '2026-11-09', ds: [] }).chip === '', 'rỗng');
-    assert(d.chuDoiVuot({ nhan: 'MT1', tuanMoi: '', ds: [x2] }).tieuDe === 'Dời MT1?', 'thiếu tuần mới');
-  });
-
-  check('MTb (T6) · nhanSeXep: vượt lượt chưa điểm → phụ "· bỏ lịch MT3"; vượt có điểm → không thêm phụ (popup nói)', () => {
-    const dg: any = { studentId: 1, ten: 'Tú', hanhDong: 'doi', attemptNo: 1, viec: 'doi', bai: [{ skill: 'listening', tu: '2026-10-05', den: '2026-11-09', ghiChu: 'doi', cau: null }] };
-    assert(d.nhanSeXep({ ...dg, seHuyLich: [x3] }, null).phu === '· bỏ lịch MT3', JSON.stringify(d.nhanSeXep({ ...dg, seHuyLich: [x3] }, null)));
-    assert(d.nhanSeXep({ ...dg, seHuyLich: [x2] }, null).phu === null, 'có điểm');
-    assert(d.nhanSeXep({ ...dg, seHuyLich: [x2] }, null).tone === 'soon', 'tone');
-  });
-
-  check('MTb (T6) · chuLuuVuot: toast sau lưu', () => {
-    assert(d.chuLuuVuot([]) === 'Đã lưu lịch', 'không vượt');
-    assert(d.chuLuuVuot([x2]) === 'Đã lưu lịch · huỷ kết quả MT2', d.chuLuuVuot([x2]));
-    assert(d.chuLuuVuot([x3]) === 'Đã lưu lịch · bỏ lịch MT3', d.chuLuuVuot([x3]));
-    assert(d.chuLuuVuot([x2, x3]) === 'Đã lưu lịch · huỷ kết quả MT2 · bỏ lịch MT3', d.chuLuuVuot([x2, x3]));
-  });
-
-  check('MTb (T6) · chuXepVuotGop (popup gộp panel hàng loạt, Q2): chỉ em có lượt vượt CÓ ĐIỂM; mỗi em một dòng "{tên} · {hệ quả}"', () => {
-    const r = d.chuXepVuotGop([
-      { ten: 'Tú', seHuyLich: [x2, x3] }, { ten: 'Lan', seHuyLich: [x3] }, { ten: 'Mai' },
-    ], 3);
-    assert(r.canPopup && r.tieuDe === 'Xếp lịch 3 em?' && r.cau === '', JSON.stringify(r));
-    assert(JSON.stringify(r.dong) === JSON.stringify(['Tú · MT2: huỷ 4 điểm, đóng 1 Case; MT3: bỏ lịch']), JSON.stringify(r.dong));
-    assert(!d.chuXepVuotGop([{ ten: 'Lan', seHuyLich: [x3] }], 1).canPopup, 'chỉ bỏ lịch không điểm → không popup');
-  });
-
-  /** Em có MT2 đã chấm đủ 4 điểm (L, R, W, S) — dời MT1 tới T+7 thì vượt MT2 (T+6). */
-  const emCo4DiemMt2 = () => {
-    const a = emMoi();
-    for (const s of ['listening', 'reading', 'writing1', 'speaking']) {
-      conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, band, raw_score, nhap_dau_ngay) VALUES (?,?,?,?,?)`).run(a.m2, s, 6, 30, TODAY);
-    }
-    conn.prepare(`UPDATE attempt_skills SET sit_status = 'sat' WHERE attempt_id = ? AND required = 1`).run(a.m2);
-    return a;
-  };
-  const soKqHuy = (aid: number) => (conn.prepare('SELECT COUNT(*) n FROM ket_qua_huy WHERE attempt_id = ?').get(aid) as any).n as number;
-  const soDiemDb = (aid: number) => (conn.prepare('SELECT COUNT(*) n FROM assessment_scores WHERE attempt_id = ?').get(aid) as any).n as number;
-  const bonKyNang = (n: number) => KN.map((skill) => ({ skill, periodId: tuan(n).id }));
-  const loi409 = (e: any) => { assert(e.status === 409 && e.details?.seHuyLich?.[0]?.soDiem === 4 && e.details.seHuyLich[0].nhan === 'MT2', `${e.status} ${e.message} ${JSON.stringify(e.details)}`); };
-  const loi400 = (e: any) => assert(e.status === 400 && /Huỷ kết quả: cần ghi lý do/.test(e.message), `${e.status} ${e.message}`);
-
-  check('MTb (T6) · khoá tên trường — POST /ke-hoach-test/dot (luuDot): không xác nhận → 409 details.seHuyLich[0].soDiem 4 · thiếu lý do → 400 · đủ → lưu', () => {
-    const a = emCo4DiemMt2();
-    loi409(loiCua(() => keHoach.luuDot(QL, { attemptId: a.m1, kyNang: bonKyNang(7) })));
-    loi400(loiCua(() => keHoach.luuDot(QL, { attemptId: a.m1, kyNang: bonKyNang(7), xacNhanHuyLich: true, reason: '  ' })));
-    assert(soDiemDb(a.m2) === 4 && soKqHuy(a.m2) === 0, 'DB đổi khi chưa đủ');
-    keHoach.luuDot(QL, { attemptId: a.m1, kyNang: bonKyNang(7), xacNhanHuyLich: true, reason: 'x' });
-    assert(soKqHuy(a.m2) === 1 && soDiemDb(a.m2) === 0, 'chưa huỷ');
-  });
-
-  check('MTb (T6) · khoá tên trường — POST /attempts/:id/week (setPlanningWeek): 409 · 400 · lưu', () => {
-    const a = emCo4DiemMt2();
-    loi409(loiCua(() => attemptsSvc.setPlanningWeek(QL, a.m1, tuan(7).id, undefined, { huyLichVuot: false })));
-    loi400(loiCua(() => attemptsSvc.setPlanningWeek(QL, a.m1, tuan(7).id, '  ', { huyLichVuot: true })));
-    attemptsSvc.setPlanningWeek(QL, a.m1, tuan(7).id, 'x', { huyLichVuot: true });
-    assert(soKqHuy(a.m2) === 1, 'chưa huỷ');
-  });
-
-  check('MTb (T6) · khoá tên trường — POST /attempts/:id/skills/:skill/week (setSkillWeek): 409 · 400 · lưu', () => {
-    const a = emCo4DiemMt2();
-    loi409(loiCua(() => skillSch.setSkillWeek(QL, a.m1, 'speaking', tuan(7).id, {})));
-    loi400(loiCua(() => skillSch.setSkillWeek(QL, a.m1, 'speaking', tuan(7).id, { huyLichVuot: true, reason: '' })));
-    skillSch.setSkillWeek(QL, a.m1, 'speaking', tuan(7).id, { huyLichVuot: true, reason: 'x' });
-    assert(soKqHuy(a.m2) === 1, 'chưa huỷ');
-  });
-
-  check('MTb (T6) · khoá tên trường — POST /ke-hoach-test/hang-loat: dòng mang seHuyLich soDiem 4; không xác nhận / thiếu lý do → dòng lỗi; đủ → lưu', () => {
-    const a = emCo4DiemMt2();
-    const xem = keHoach.xepHangLoat(QL, { classId: LOP, attemptNo: 1, studentIds: [a.sid], tuan: bon(7), xemTruoc: true }, TODAY);
-    assert(dongCua(xem, a.sid).seHuyLich?.[0]?.soDiem === 4, JSON.stringify(dongCua(xem, a.sid)));
-    const r1 = keHoach.xepHangLoat(QL, { classId: LOP, attemptNo: 1, studentIds: [a.sid], tuan: bon(7) }, TODAY);
-    assert(r1.daLuu === 0 && dongCua(r1, a.sid).hanhDong === 'loi' && soKqHuy(a.m2) === 0, JSON.stringify(dongCua(r1, a.sid)));
-    const r2 = keHoach.xepHangLoat(QL, { classId: LOP, attemptNo: 1, studentIds: [a.sid], tuan: bon(7), xacNhanHuyLich: true, lyDo: ' ' }, TODAY);
-    assert(r2.daLuu === 0 && /Huỷ kết quả: cần ghi lý do/.test(dongCua(r2, a.sid).loi ?? ''), JSON.stringify(dongCua(r2, a.sid)));
-    const r3 = keHoach.xepHangLoat(QL, { classId: LOP, attemptNo: 1, studentIds: [a.sid], tuan: bon(7), xacNhanHuyLich: true, lyDo: 'x' }, TODAY);
-    assert(r3.daLuu === 1 && soKqHuy(a.m2) === 1, JSON.stringify(dongCua(r3, a.sid)));
-  });
-
-  check('MTb (T6) · quét nguồn: HopXacNhanHuyLich vẽ lại; 4 cổng dời nối chuDoiVuot; route nhận xacNhanHuyLich', () => {
-    const h = nguon('web/src/modules/test/keHoach/HopXacNhanHuyLich.tsx');
-    for (const c of ['Dời và huỷ', 'Lý do', 'Đóng', 'kiemLyDoThaoTac', 'loiMay', 'lyDoDau']) assert(h.includes(c), `HopXacNhanHuyLich thiếu ${c}`);
-    for (const c of ['Huỷ lịch và lưu', 'Quay lại', 'onQuayLai']) assert(!h.includes(c), `HopXacNhanHuyLich còn ${c}`);
-    for (const f of ['web/src/modules/test/keHoach/HopKyNang.tsx', 'web/src/modules/fasttrack/HopThaoTacMt.tsx', 'web/src/modules/fasttrack/MockDetailPage.tsx']) {
-      const s = nguon(f);
-      assert(/\bchuDoiVuot\b/.test(s), `${f} chưa dùng chuDoiVuot`);
-      assert(/\bxacNhanHuyLich\b/.test(s) && /\bseHuyLich\b/.test(s), `${f} chưa gửi xacNhanHuyLich`);
-      assert(/<HopXacNhanHuyLich\b/.test(s), `${f} chưa mở HopXacNhanHuyLich`);
-    }
-    const p = nguon('web/src/modules/test/keHoach/NganXepLichMt.tsx');
-    assert(/\bchuXepVuotGop\b/.test(p) && /<HopXacNhanHuyLich\b/.test(p) && /xacNhanHuyLich: daXacNhan/.test(p), 'NganXepLichMt chưa nối popup gộp');
-    const r = nguon('server/src/routes/index.ts');
-    assert((r.match(/xacNhanHuyLich === true/g) ?? []).length >= 4, 'route thiếu xacNhanHuyLich');
-  });
 
   check('MTb (T3) · quét nguồn: panel Xếp lịch Mock Test vẽ theo mockup phần 1, không còn giao diện cũ', () => {
     const p = nguon('web/src/modules/test/keHoach/NganXepLichMt.tsx');
     for (const c of ['MT mới', 'Lịch riêng ▸', 'Tuần và kỹ năng', 'Sẽ xếp ', 'Cần xem ', 'Không xếp được ', '⇆ cuộn ngang', 'Chọn tất cả',
       'kyNang', 'attemptNo: dot', '<OMt', 'nhanSeXep(', 'demSeXep(', 'aria-pressed', 'min-w-[960px]', 'indeterminate', 'Tuần đã qua',
-      'xacNhanHuyLich: daXacNhan', 'force: true']) {
+      'force: true']) {
       assert(p.includes(c), `NganXepLichMt thiếu ${c}`);
     }
     for (const c of ['Xem trước: ', 'luôn ở trên', 'Vẫn xếp bài có cảnh báo', 'LY_DO_TOI_THIEU', 'DauMt', 'innerWidth < 640', 'chuSeXep(', 'Học viên ·']) {
@@ -617,10 +505,10 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert(kn.listening.khoa === 'đã có điểm', 'khoa');
   });
 
-  check('MTb (T5) · quét nguồn: HopKyNang vẽ theo mockup phần 2 (Tuần chung, ⋯ luôn hiện, Nhật ký, popup dời vượt); bỏ ô lý do + câu trung tính', () => {
+  check('MTb (T5) · quét nguồn: HopKyNang vẽ theo mockup phần 2 (Tuần chung, ⋯ luôn hiện, Nhật ký; PR-MTGON bỏ popup dời vượt); bỏ ô lý do + câu trung tính', () => {
     const h = nguon('web/src/modules/test/keHoach/HopKyNang.tsx');
-    for (const c of ['Tuần chung', 'luonHien', 'menuHopKyNang', 'NganLichSuBai', 'chuDoiVuot', 'chipDongKyNang', 'CHU_MUC_HOP', 'Huỷ thay đổi', 'Vẫn xếp vào tuần này',
-      'Tuần đã qua', 'tuanDaSo', '<HopXacNhanHuyLich', 'tat: !m.duoc', 'Chặn: ']) {
+    for (const c of ['Tuần chung', 'luonHien', 'menuHopKyNang', 'NganLichSuBai', 'chipDongKyNang', 'CHU_MUC_HOP', 'Huỷ thay đổi', 'Vẫn xếp vào tuần này',
+      'Tuần đã qua', 'tuanDaSo', 'tat: !m.duoc', 'Chặn: ']) {
       assert(h.includes(c), `HopKyNang thiếu ${c}`);
     }
     for (const c of ['LY_DO_TOI_THIEU', 'Lý do bỏ', 'Lý do dời', 'Lý do sửa tuần', 'không trùng đợt khác', 'Chưa đổi gì', 'lyDoBo: bo.length', 'setLyDo']) {
@@ -636,14 +524,13 @@ export async function runPrMtbTests(t: YThucTestKit) {
   // ------------------------------------------------------------------ Task 7 — lý do tuỳ chọn + tuần đã qua cho Quản lý (web)
   console.log('\nPR-MTb · T7 lý do tuỳ chọn trừ 3 chỗ bắt buộc; Quản lý xếp tuần đã qua');
 
-  check('MTb (T7) · khoá phép máy chủ: GVCN dời tuần đã qua → chặn; QL dời MT chưa thi về tuần cũ → lưu; huỷ lượt / từ chối bắt lý do, huỷ điểm không', () => {
+  check('MTb (T7) · khoá phép máy chủ: GVCN dời tuần đã qua → chặn; QL dời MT chưa thi về tuần cũ → lưu; từ chối bắt lý do, huỷ lượt / huỷ điểm không (PR-MTGON)', () => {
     const a = emMoi([0, 4, 8]);
     const e = loiCua(() => skillSch.setSkillWeek(P.coreTeacher, a.m1, 'listening', tuan(-1).id, {}));
     assert(e.status === 400 || e.status === 403, `GVCN: ${e.status} ${e.message}`);
     skillSch.setSkillWeek(QL, a.m1, 'listening', tuan(-1).id, {});
     assert((conn.prepare(`SELECT planned_period_id p FROM attempt_skills WHERE attempt_id = ? AND skill = 'listening'`).get(a.m1) as any).p === tuan(-1).id, 'QL chưa dời');
-    assert(loiCua(() => attemptsSvc.huyLuot(QL, a.m3, { lyDo: '  ' })).status === 400, 'huỷ lượt không lý do');
-    assert(d.kiemLyDoThaoTac('tu-choi', '') && d.kiemLyDoThaoTac('huy-luot', '') && !d.kiemLyDoThaoTac('huy-diem', ''), 'luật chung');
+    assert(d.kiemLyDoThaoTac('tu-choi', '') && !d.kiemLyDoThaoTac('huy-luot', '') && !d.kiemLyDoThaoTac('huy-diem', ''), 'luật chung (huỷ lượt tuỳ chọn — PR-MTGON)');
   });
 
   check('MTb (T7) · quét nguồn: web/src không còn LY_DO_TOI_THIEU / kiemLyDo( (trừ DeXuatSuaPanel) / bộ đếm ở ô lý do tuỳ chọn', () => {
@@ -671,7 +558,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
 
   check('MTb (T7) · quét nguồn: hồ sơ Mock — huỷ lượt bắt lý do bằng hàm chung; dời / hạn / vắng tuỳ chọn, câu giải thích chuyển vào title; từ chối bắt lý do', () => {
     const m = nguon('web/src/modules/fasttrack/MockDetailPage.tsx');
-    assert(/kiemLyDoThaoTac\('huy-luot'/.test(m) && !/Lý do huỷ \(bắt buộc\)/.test(m), 'CancelDialog');
+    assert(!/kiemLyDoThaoTac\('huy-luot'/.test(m) && !/Lý do huỷ \(bắt buộc\)/.test(m), 'CancelDialog: lý do tuỳ chọn (PR-MTGON)');
     const tuan = m.slice(m.indexOf('function WeekModal'), m.indexOf('function DeadlineModal'));
     assert(!/<SectionNote>/.test(tuan) && /toiThieu=\{quanLy \? undefined/.test(tuan) && /Tuần đã qua<\/Nhan>/.test(tuan), 'WeekModal');
     const han = m.slice(m.indexOf('function DeadlineModal'), m.indexOf('function CancelDialog'));
@@ -753,10 +640,11 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert(!d.thaoTacKyNang('huy-vang', { ...gvcn, gvcn: false }).chinh, 'GVBM không có nút chính');
   });
 
-  check('MTb (T2, A6b) · máy chủ: lượt bị vượt có ketQuaHuy (soDiem), GVCN khôi phục → 403', () => {
+  // PR-MTGON: dời vượt không còn tạo ket_qua_huy — dựng dữ liệu cũ thẳng vào bảng.
+  check('MTb (T2, A6b) · máy chủ: lượt có kết quả đã huỷ (dữ liệu cũ) có ketQuaHuy (soDiem), GVCN khôi phục → 403', () => {
     const a = emMoi();
-    diemDu(a.m2);
-    keHoach.luuDot(QL, { attemptId: a.m1, kyNang: KN.map((skill) => ({ skill, periodId: tuan(7).id })), xacNhanHuyLich: true, reason: 'x' });
+    conn.prepare(`INSERT INTO ket_qua_huy (attempt_id, vuot_boi_attempt_id, diem_json, lich_json, so_diem, ly_do, huy_boi, huy_luc)
+      VALUES (?, ?, '[]', '[]', 4, 'x', ?, ?)`).run(a.m2, a.m1, QL.userId, `${TODAY}T08:00:00.000Z`);
     const kq = attemptsSvc.attemptDetail(QL, a.m2).ketQuaHuy;
     assert(kq && kq.soDiem > 0, JSON.stringify(kq));
     assert(loiCua(() => ketQuaHuy.khoiPhucKetQua(P.coreTeacher, a.m2)).status === 403, 'GVCN');
@@ -780,7 +668,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
     for (const c of ["'xin-doi'", "'khong-mock-lai'", '/xin-doi', '/khong-mock-lai', 'huyVang']) assert(h.includes(c), `HopThaoTacMt thiếu ${c}`);
     const m = nguon('web/src/modules/fasttrack/MockDetailPage.tsx');
     assert(m.includes('Khôi phục kết quả') && m.includes('HopKhoiPhucKetQua') && m.includes('ketQuaHuy'), 'MockDetailPage');
-    assert(/khoi-phuc-ket-qua/.test(nguon('web/src/modules/test/keHoach/HopXacNhanHuyLich.tsx')), 'hộp khôi phục gọi đường A6b');
+    assert(/khoi-phuc-ket-qua/.test(nguon('web/src/modules/test/keHoach/HopKhoiPhucKetQua.tsx')), 'hộp khôi phục gọi đường A6b');
     const hl = nguon('web/src/modules/students/HangLichMt.tsx');
     assert(/HopKhoiPhucKetQua/.test(hl) && /Khôi phục kết quả/.test(hl), 'HangLichMt');
     const duyet = (dir: string): string[] => fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true })

@@ -32,13 +32,14 @@ export async function runPrMtTests(t: YThucTestKit) {
     assert(/đã có MT1/.test(d.kiemSoMtMoi([L(1)], 1) ?? ''), 'trùng');
     assert(d.kiemSoMtMoi([], 0) === 'Số MT không hợp lệ.', 'số 0');
   });
-  check('PR-MT (1) · cachHuyLuot: lớn nhất chưa điểm → cả lượt; có điểm / ở giữa → phần còn lại (M-12)', () => {
+  // PR-MTGON (luật 4) thay M-12: Quản lý huỷ MT{n} mọi lượt — giữa / có điểm cũng "ca-luot".
+  check('PR-MT (1) · cachHuyLuot: mọi lượt còn hiệu lực → cả lượt (PR-MTGON); đã huỷ → null', () => {
     const L = (attempt_no: number, status = 'planned', coDiem = false) => ({ attempt_no, status, coDiem });
     const ds = [L(1, 'completed', true), L(2), L(3)];
     assert(d.cachHuyLuot(ds[2], ds) === 'ca-luot', 'MT3 lớn nhất chưa điểm');
-    assert(d.cachHuyLuot(ds[1], ds) === 'phan-con-lai', 'MT2 ở giữa');
+    assert(d.cachHuyLuot(ds[1], ds) === 'ca-luot', 'MT2 ở giữa');
     const ds2 = [L(1), L(2, 'planned', true)];
-    assert(d.cachHuyLuot(ds2[1], ds2) === 'phan-con-lai', 'lớn nhất có điểm');
+    assert(d.cachHuyLuot(ds2[1], ds2) === 'ca-luot', 'lớn nhất có điểm');
     assert(d.cachHuyLuot(L(2, 'cancelled'), ds) === null, 'đã huỷ');
   });
   check('PR-MT (1) · hanDuyetDoiLan2 = CN tuần chứa ngày gửi (T42, K4-04)', () => {
@@ -371,8 +372,8 @@ export async function runPrMtTests(t: YThucTestKit) {
   const tuanXa = (n: number) => week.ensurePeriod(addDays(tuanNay, 7 * n)).id;
   const s7 = them('MB FT 101', 'PRMT Em Đánh Số', tuanNay);
   const [m1, m2, m3] = luotCua(s7);
-  check('PR-MT (7) · Huỷ cả lượt chỉ với lượt lớn nhất chưa điểm; MT3 huỷ rồi tạo lại → CÙNG id, số MT3 (Q-B, M-12)', () => {
-    assertThrows(() => attemptsSvc.huyLuot(QL, m2.id, { lyDo: 'Thử huỷ ở giữa', cach: 'ca-luot' }), /Chỉ huỷ cả lượt được với MT cuối cùng/, 'MT2 khi còn MT3');
+  // PR-MTGON (luật 4) thay M-12: Quản lý huỷ MT{n} mọi lượt (MTG-3a); ở đây giữ phần "huỷ rồi tạo lại cùng id".
+  check('PR-MT (7) · MT3 huỷ rồi tạo lại → CÙNG id, số MT3 (Q-B)', () => {
     const kq = attemptsSvc.huyLuot(QL, m3.id, { lyDo: 'Em xin hoãn MT3' });
     assert(kq.cach === 'ca-luot', JSON.stringify(kq));
     const lai = attemptsSvc.createAttempt(QL, { studentId: s7, periodId: tuanXa(20) });
@@ -391,7 +392,8 @@ export async function runPrMtTests(t: YThucTestKit) {
     assert(luu.daLuu === 0 && luotCua(s7).length === 1, 'hàng loạt đã tạo MT3');
     assert(keHoach.luoiFT(QL, MB101).hang.find((h: any) => h.studentId === s7).soKeTiep === 2, 'lưới: "+ xếp" chỉ ở MT2');
   });
-  check('PR-MT (7) · Huỷ phần còn lại MT2 có L R → W S huỷ, số và trạng thái giữ; Case có điểm thật KHÔNG đóng (Q12, Q13)', () => {
+  // PR-MTGON (luật 4) thay Q12: không còn "Huỷ phần còn lại" — Huỷ MT2 (ở giữa, có điểm) bỏ lịch và điểm, Case sinh riêng từ MT2 đóng.
+  check('PR-MT (7) · Huỷ MT2 có L R (ở giữa) → MT2 huỷ, điểm xoá, Case chỉ sinh từ MT2 đóng (PR-MTGON)', () => {
     const sid = them('MB FT 101', 'PRMT Em Huỷ Phần', tuanNay);
     const mt2 = luotCua(sid)[1];
     /* PR-MTa T19 thay "nhập điểm bất kỳ lúc nào": MT2 ở tuần tới — nhập với `today` là Chủ nhật tuần thi. */
@@ -403,12 +405,14 @@ export async function runPrMtTests(t: YThucTestKit) {
       .run(sid, mt2.cycle_id, TODAY).lastInsertRowid);
     conn.prepare(`INSERT INTO case_milestones (case_id, kind, attempt_id, attempt_no, occurred_on, created_at) VALUES (?, 'opened', ?, 2, ?, ?)`)
       .run(cid, mt2.id, TODAY, TODAY);
-    assert(attemptsSvc.attemptDetail(QL, mt2.id).viewer.huyLuot.cachDuoc === 'phan-con-lai', 'MT2 ở giữa, có điểm');
-    const kq = attemptsSvc.huyLuot(QL, mt2.id, { lyDo: 'Em nghỉ phần còn lại' });
-    assert(kq.cach === 'phan-con-lai' && kq.kyNangHuy.sort().join() === 'speaking,writing', JSON.stringify(kq));
+    assert(attemptsSvc.attemptDetail(QL, mt2.id).viewer.huyLuot.cachDuoc === 'ca-luot', 'MT2 ở giữa, có điểm');
+    const kq = attemptsSvc.huyLuot(QL, mt2.id, { lyDo: 'Em nghỉ đợt này' });
+    assert(kq.cach === 'ca-luot', JSON.stringify(kq));
     const sau = conn.prepare('SELECT attempt_no, status FROM assessment_attempts WHERE id = ?').get(mt2.id) as any;
-    assert(sau.attempt_no === 2 && sau.status === 'planned', JSON.stringify(sau));
-    assert((conn.prepare('SELECT status FROM sos_cases WHERE id = ?').get(cid) as any).status === 'open', 'Case có điểm thật bị đóng');
+    assert(sau.attempt_no === 2 && sau.status === 'cancelled', JSON.stringify(sau));
+    const con = (conn.prepare('SELECT COUNT(*) n FROM assessment_scores WHERE attempt_id = ? AND (band IS NOT NULL OR raw_score IS NOT NULL)').get(mt2.id) as any).n;
+    assert(con === 0, `còn ${con} điểm`);
+    assert((conn.prepare('SELECT status FROM sos_cases WHERE id = ?').get(cid) as any).status === 'done', 'Case sinh riêng từ MT2 chưa đóng');
   });
   check('PR-MT (7) · Huỷ cả lượt: Phối hợp mở + Case chỉ sinh từ lượt đó → đóng "Lượt đã huỷ"; hộp nói trước đúng số (T67, K4-10)', () => {
     const sid = them('MB FT 101', 'PRMT Em Huỷ Cả Lượt', tuanNay);
@@ -539,12 +543,14 @@ export async function runPrMtTests(t: YThucTestKit) {
     const xt = (lop: number) => intake.previewIntake(P.admin, { classId: lop, rows: [{ fullName: 'PRMT Xem Trước' }] }).canPlanWeeks;
     assert(xt(MB101) === true && xt(classId('MB FOU 12')) === false, `FT ${xt(MB101)} · thường ${xt(classId('MB FOU 12'))}`);
   });
-  check('PR-MT (10) · Rà #119 mục 7: MT cuối có kỹ năng đã thi chưa chấm → chỉ "Huỷ phần còn lại"', () => {
+  // PR-MTGON (luật 4) thay Rà #119 mục 7: đã thi chưa chấm vẫn "Huỷ MT3" được.
+  check('PR-MT (10) · MT cuối có kỹ năng đã thi chưa chấm → vẫn huỷ cả lượt (PR-MTGON)', () => {
     const sid = them('MB FT 101', 'PRMT Em Rà Đã Thi', tuanNay);
     const m3 = luotCua(sid)[2];
     conn.prepare(`UPDATE attempt_skills SET sit_status = 'sat' WHERE attempt_id = ? AND skill = 'listening'`).run(m3.id);
-    assert(attemptsSvc.attemptDetail(QL, m3.id).viewer.huyLuot.cachDuoc === 'phan-con-lai', 'hộp huỷ vẫn cho huỷ cả lượt');
-    assertThrows(() => attemptsSvc.huyLuot(QL, m3.id, { lyDo: 'Thử huỷ', cach: 'ca-luot' }), /chưa thi kỹ năng nào/, 'huỷ cả lượt khi đã thi');
+    assert(attemptsSvc.attemptDetail(QL, m3.id).viewer.huyLuot.cachDuoc === 'ca-luot', 'hộp huỷ');
+    attemptsSvc.huyLuot(QL, m3.id, { lyDo: 'Thử huỷ' });
+    assert((conn.prepare('SELECT status FROM assessment_attempts WHERE id = ?').get(m3.id) as any).status === 'cancelled', 'chưa huỷ');
   });
   check('PR-MT (10) · Rà #119 mục 2, 8: huỷ cả lượt rút đề nghị dời; lượt huỷ không lên Việc cần làm / không duyệt được; xếp lại cùng id không bị quét hết hạn huỷ phần thi; created_at = lúc xếp lại', () => {
     const sid = them('MB FT 101', 'PRMT Em Rà Huỷ Đề Nghị', tuanNay);

@@ -103,11 +103,12 @@ export async function runChamDiemTests(t: YThucTestKit) {
 
   // PR-MTa T7 thay RB-5 (LY_DO_TOI_THIEU, kiemLyDo): sửa điểm — lý do tuỳ chọn; huỷ điểm — bắt buộc, không tối thiểu ký tự.
   /* Rà #212 (chủ sản phẩm 06/10) thay "lý do huỷ điểm bắt buộc": huỷ điểm tuỳ chọn; huỷ lượt vẫn bắt, không tối thiểu ký tự. */
-  check('PR-Rc1 · RB-5 lý do: huỷ điểm tuỳ chọn; huỷ lượt bắt buộc, không nhận khoảng trắng, không tối thiểu ký tự (PR-MTa T7, rà #212)', () => {
-    assert(d.kiemLyDoThaoTac('huy-diem', null) === null && d.kiemLyDoThaoTac('sua-diem', null) === null, 'Huỷ điểm, sửa điểm tuỳ chọn');
-    assert(d.kiemLyDoThaoTac('huy-luot', null) !== null && d.kiemLyDoThaoTac('huy-luot', '   ') !== null, 'Huỷ lượt trống thì phải báo lỗi');
-    assert(d.kiemLyDoThaoTac('huy-luot', 'sai') === null, 'Ngắn vẫn hợp lệ');
-    assert(!/Hãy/.test(String(d.kiemLyDoThaoTac('huy-luot', null))), 'Câu lỗi không mở đầu bằng "Hãy"');
+  /* PR-MTGON (rà #282): huỷ lượt nay tuỳ chọn — giữ ý "bắt buộc, không nhận khoảng trắng" bằng Từ chối. */
+  check('PR-Rc1 · RB-5 lý do: huỷ điểm, huỷ lượt tuỳ chọn; từ chối bắt buộc, không nhận khoảng trắng, không tối thiểu ký tự (PR-MTa T7, rà #212)', () => {
+    assert(d.kiemLyDoThaoTac('huy-diem', null) === null && d.kiemLyDoThaoTac('sua-diem', null) === null && d.kiemLyDoThaoTac('huy-luot', null) === null, 'Huỷ điểm, sửa điểm, huỷ lượt tuỳ chọn');
+    assert(d.kiemLyDoThaoTac('tu-choi', null) !== null && d.kiemLyDoThaoTac('tu-choi', '   ') !== null, 'Từ chối trống thì phải báo lỗi');
+    assert(d.kiemLyDoThaoTac('tu-choi', 'sai') === null, 'Ngắn vẫn hợp lệ');
+    assert(!/Hãy/.test(String(d.kiemLyDoThaoTac('tu-choi', null))), 'Câu lỗi không mở đầu bằng "Hãy"');
   });
 
   check('PR-Rc1 · Câu trạng thái chấm dùng chung cho Lịch Test', () => {
