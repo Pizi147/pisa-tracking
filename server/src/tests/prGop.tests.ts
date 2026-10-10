@@ -43,8 +43,8 @@ export async function runPrGopTests(t: YThucTestKit) {
 
   check('GOP-1b · hạn = sớm nhất; có em quá hạn → dòng quá hạn, dòng phụ "n em quá hạn"; em quá hạn đứng đầu danh sách', () => {
     const ds = [
-      v({ key: 'action:2', group: 'ghi_ket_qua_pa', studentId: 2, studentName: 'Minh', due: TODAY, urgency: 'today', tieuDe: 'Kết quả PA Reading', contextLabel: 'Case' }),
-      v({ key: 'action:1', group: 'ghi_ket_qua_pa', studentId: 1, studentName: 'Châu', due: '2026-09-07', urgency: 'overdue', tieuDe: 'Kết quả PA Reading', contextLabel: 'MT2' }),
+      v({ key: 'action:2', group: 'ghi_ket_qua_pa', studentId: 2, studentName: 'Minh', due: TODAY, urgency: 'today', tieuDe: 'Kết quả PA Reading', phu: 'Reading', contextLabel: 'Case' }),
+      v({ key: 'action:1', group: 'ghi_ket_qua_pa', studentId: 1, studentName: 'Châu', due: '2026-09-07', urgency: 'overdue', tieuDe: 'Kết quả PA Reading', phu: 'Reading', contextLabel: 'MT2' }),
     ];
     const [g] = d.gopViecTheoLop(ds, nhan);
     assert(g.urgency === 'overdue' && g.due === '2026-09-07', `${g.urgency} ${g.due}`);
@@ -72,8 +72,8 @@ export async function runPrGopTests(t: YThucTestKit) {
 
   check('GOP-1d · dòng đã gom sẵn (Nhập điểm theo bài) cùng lớp → một dòng "n việc", con tên theo việc', () => {
     const ds = [
-      v({ key: 'score:1', group: 'score', studentId: null, studentName: 'Lớp MB FT 101', count: 6, tieuDe: 'Nhập điểm L, R', contextLabel: 'MT2' }),
-      v({ key: 'score:2', group: 'score', studentId: null, studentName: 'Lớp MB FT 101', count: 3, tieuDe: 'Nhập điểm W', contextLabel: 'MT3' }),
+      v({ key: 'score:1', group: 'score', studentId: null, studentName: 'Lớp MB FT 101', count: 6, tieuDe: 'Nhập điểm L, R', phu: 'L, R', contextLabel: 'MT2' }),
+      v({ key: 'score:2', group: 'score', studentId: null, studentName: 'Lớp MB FT 101', count: 3, tieuDe: 'Nhập điểm W', phu: 'W', contextLabel: 'MT3' }),
     ];
     const [g] = d.gopViecTheoLop(ds, nhan);
     assert(g.tieuDe === 'Nhập điểm · MB FOU 15 · 2 việc', `tiêu đề: ${g.tieuDe}`);
@@ -83,8 +83,8 @@ export async function runPrGopTests(t: YThucTestKit) {
 
   check('GOP-1e · hai việc của CÙNG một em (hai PA) → "2 việc", không "2 em"', () => {
     const ds = [
-      v({ key: 'action:1', group: 'ghi_ket_qua_pa', studentId: 5, studentName: 'Ngọc', tieuDe: 'Kết quả PA Writing' }),
-      v({ key: 'action:2', group: 'ghi_ket_qua_pa', studentId: 5, studentName: 'Ngọc', tieuDe: 'Kết quả PA Speaking' }),
+      v({ key: 'action:1', group: 'ghi_ket_qua_pa', studentId: 5, studentName: 'Ngọc', tieuDe: 'Kết quả PA Writing', phu: 'Writing' }),
+      v({ key: 'action:2', group: 'ghi_ket_qua_pa', studentId: 5, studentName: 'Ngọc', tieuDe: 'Kết quả PA Speaking', phu: 'Speaking' }),
     ];
     const [g] = d.gopViecTheoLop(ds, nhan);
     assert(g.tieuDe === 'Kết quả PA · MB FOU 15 · 2 việc' && g.actionLabel === '2 việc', `${g.tieuDe} / ${g.actionLabel}`);

@@ -73,6 +73,8 @@ export type WorkItem = {
    * tiêu đề, không nằm trong badge. Quá hạn KHÔNG có nhãn riêng: `urgency` + `due` đủ để giao diện nối "⚠ quá hạn n ngày" sau hạn.
    */
   tieuDe: string;
+  /** PR-DON: phần riêng của việc trong dòng gộp (`ViecGopDuoc.phu`) — dòng phụ của em, không cắt từ tiêu đề. */
+  phu?: string | null;
   href: string;
   /*
    * NĂM Ô CỦA MỘT DÒNG VIỆC (mục 5.3): học viên/lớp · việc cần làm · người phụ trách · hạn ·
@@ -420,7 +422,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         contextLabel: first.testLabel,
         count: students.size,
         reason: skills,
-        tieuDe: `Nhập điểm ${skills}`,
+        tieuDe: `Nhập điểm ${skills}`, phu: skills,
         actionLabel: 'Nhập điểm',
         href: first.href,
         ownerId: first.ownerId, owner: null, mine: first.ownerId === p.userId,
@@ -548,6 +550,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         ? `PA chung · ${tenNhomMon(ctCua(iv.eff_class_id), REGULAR_SKILLS.filter((k) => monCuaNhom.get(iv.nhom_bo_tro)!.includes(k)))}` : null,
         mine ? null : 'chưa ghi'].filter(Boolean).join(' — '),
       tieuDe: tuanCuoi ? `Kết quả cuối · ${tenPa}` : `Kết quả PA${duoiKyNang(iv.topic, ctCua(iv.eff_class_id))}`,
+      phu: tuanCuoi ? `Kết quả cuối · ${tenPa}` : duoiKyNang(iv.topic, ctCua(iv.eff_class_id)).trim(),
       actionLabel: tuanCuoi ? 'Kết quả cuối' : 'Kết quả',
       /* PR-PA (§8): người giữ việc không xem được hồ sơ HV (vd. chủ Case, lớp mới chưa phân công môn) → Ngăn Case đứng riêng. */
       href: mine && !can(p, PERMISSIONS.STUDENT_VIEW, { studentId: iv.eff_student_id })
@@ -701,7 +704,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       reason: head,
       contextLabel: nhanDot(c.attempt_kind, c.attempt_no),
       count: null,
-      tieuDe: `Thêm PA học thuật${duoiKyNang(c.topic, ctCua(c.eff_class_id))}`,
+      tieuDe: `Thêm PA học thuật${duoiKyNang(c.topic, ctCua(c.eff_class_id))}`, phu: duoiKyNang(c.topic, ctCua(c.eff_class_id)).trim(),
       actionLabel: 'Thêm PA',
       href: `/hoc-vien/${c.eff_student_id}`,
       /* PR-Dọn (Q10): người làm = người phụ trách Case (cùng `support:{caseId}` ở hồ sơ em); Case chưa ai phụ trách thì để trống. */
@@ -774,7 +777,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         nguyenNhan ? `${skillLabel} ${laThuong ? 'chưa đạt' : 'dưới kỳ vọng'} — chưa xác nhận nguyên nhân` : `${skillLabel} — PA theo quy chế chưa bắt đầu`,
         mine ? null : 'người phụ trách chưa làm',
       ].filter(Boolean).join(' — '),
-      tieuDe: nguyenNhan ? `Xác nhận nguyên nhân ${skillLabel} · ${hv}` : `Xác nhận PA · ${skillLabel} · ${hv}`,
+      tieuDe: nguyenNhan ? `Xác nhận nguyên nhân ${skillLabel} · ${hv}` : `Xác nhận PA · ${skillLabel} · ${hv}`, phu: skillLabel,
       actionLabel: nguyenNhan ? 'Xác nhận nguyên nhân' : 'Xác nhận PA',
       /* PR-DUYET (K5-12): mở thẳng Ngăn Case — Nhắc lưu đường này vào thông báo, chuông về đúng chỗ. */
       href: duongHoSoHocVien(c.eff_student_id, { caseId: c.id }),
@@ -815,6 +818,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       attemptId: r.attempt_id, attemptNo: r.attempt_no ?? null, caseId: null, level: null,
       contextLabel: nhanDot(r.attempt_kind, r.attempt_no), count: null,
       reason: 'Nhờ TVV báo phụ huynh (4 nội dung), xong thì đánh dấu đã làm: kết quả, môn khó khăn, nguyên nhân, phương án hỗ trợ và khả năng học lại.',
+      phu: laCuoiKhoa ? `${nhanBaiThuong('final')}${phanTramCuoi.get(r.attempt_id) ?? ''}` : nhanBaiThuong('progress'),
       tieuDe: `Báo phụ huynh qua TVV · ${r.full_name ?? 'Học viên'} · ${laCuoiKhoa ? `${nhanBaiThuong('final')}${phanTramCuoi.get(r.attempt_id) ?? ''}` : nhanBaiThuong('progress')}`,
       actionLabel: 'Mở Phối hợp SOS',
       href: duongHoSoHocVien(r.student_id, { tab: 'y-thuc', sub: 'phoi-hop' }),
@@ -886,7 +890,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       attemptId: a.id, attemptNo: a.attemptNo, caseId: null, level: null,
       contextLabel: nhanDot(a.kind, a.attemptNo), count: null,
       reason: 'Bài chưa được xếp vào tuần nào nên chưa tính được hạn nhập điểm',
-      tieuDe: 'Chốt tuần MT',
+      tieuDe: 'Chốt tuần MT', phu: 'Chốt tuần MT',
       actionLabel: 'Chốt tuần MT', href: attemptHref(a),
       ownerId: p.userId, owner: null, mine: true,
       due: null, statusLabel: 'Chưa có tuần',
@@ -915,7 +919,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
           studentId: h.id, studentName: h.full_name, classId: h.class_id, classCode: h.class_code,
           attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: null, count: null,
           reason: 'Chưa có Target nên chưa tính được kỳ vọng từng MT',
-          tieuDe: 'Điền Target', actionLabel: 'Điền Target', href: `/hoc-vien/${h.id}`,
+          tieuDe: 'Điền Target', phu: 'Điền Target', actionLabel: 'Điền Target', href: `/hoc-vien/${h.id}`,
           ownerId: p.userId, owner: null, mine: true, due: null, statusLabel: 'Chưa có Target',
         });
       }
@@ -965,6 +969,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
           attemptId: null, attemptNo: r.attempt_no ?? null, caseId: r.case_id, level: null, contextLabel: null, count: null,
           reason: `PA theo quy chế ${thi ? 'đến lúc thi' : `đến MT${(r.attempt_no ?? 0) + 1}`} đang chạy nhưng chưa có ${thi ? 'ngày thi' : 'lịch'}`,
           tieuDe: thi ? `Nhập dự kiến thi · ${r.full_name ?? 'Học viên'}` : `Xếp lịch MT${(r.attempt_no ?? 0) + 1} cho ${r.full_name ?? 'Học viên'}`,
+          phu: thi ? 'Nhập dự kiến thi' : `Xếp lịch MT${(r.attempt_no ?? 0) + 1}`,
           actionLabel: thi ? 'Nhập ngày thi' : 'Xếp lịch', href: r.sid ? `/hoc-vien/${r.sid}` : '/hoc-vien',
           ownerId: p.userId, owner: null, mine: true, due: null, statusLabel: 'Chưa có lịch',
         });
@@ -1087,20 +1092,20 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         const ke = nhanLoaiXuLy(em.keTiep.kind);
         items.push({ ...chung, key: `yt_xu_ly:${r.id}`, group: 'yt_xu_ly', urgency: urgencyOf(em.han, today),
           reason: `${em.soBatBuoc} vi phạm trong 2 tuần — bắt buộc xử lý`,
-          tieuDe: `Xử lý vi phạm · ${r.ten} (${em.soBatBuoc}) · bậc kế tiếp: ${ke}`, actionLabel: 'Xác nhận xử lý',
+          tieuDe: `Xử lý vi phạm · ${r.ten} (${em.soBatBuoc}) · bậc kế tiếp: ${ke}`, phu: `${em.soBatBuoc} vi phạm · bậc kế tiếp: ${ke}`, actionLabel: 'Xác nhận xử lý',
           href: duongLop(em.lopId, r.id, '&mo=xu-ly'), due: em.han,
           statusLabel: quaHan.some((x) => x.lyDoQuaHan === 'xu-ly') ? 'Quá hạn' : 'Bắt buộc xử lý' });
       }
       if (em.soMoi > 0) {
         items.push({ ...chung, key: `yt_xem:${r.id}`, group: 'yt_xem', urgency: urgencyOf(em.hanXem, today),
-          reason: `${em.soMoi} vi phạm chưa xem`, tieuDe: `Ghi nhận ${em.soMoi} vi phạm mới · ${r.ten}`, actionLabel: 'Ghi nhận',
+          reason: `${em.soMoi} vi phạm chưa xem`, tieuDe: `Ghi nhận ${em.soMoi} vi phạm mới · ${r.ten}`, phu: `${em.soMoi} vi phạm mới`, actionLabel: 'Ghi nhận',
           href: duongLop(em.lopId, r.id, '&loc=moi'), due: em.hanXem, statusLabel: 'Mới' });
       }
       /* PR-S3F #7: MỘT việc cho MỖI lần xử lý đã duyệt (khoá theo id lần xử lý) — hai đề xuất cùng lúc không che nhau. */
       for (const x of em.daDuyet) {
         const nhan = nhanLoaiXuLy(x.kind, x.customName);
         items.push({ ...chung, key: `yt_thuc_hien:${x.id}`, group: 'yt_thuc_hien', urgency: urgencyOf(x.han, today),
-          reason: `QL đã duyệt ${nhan}`, tieuDe: `Ghi "Đã thực hiện" ${nhan} · ${r.ten}`, actionLabel: 'Đã thực hiện',
+          reason: `QL đã duyệt ${nhan}`, tieuDe: `Ghi "Đã thực hiện" ${nhan} · ${r.ten}`, phu: nhan, actionLabel: 'Đã thực hiện',
           href: duongLop(em.lopId, r.id, `&mo=da-thuc-hien&xl=${x.id}`), due: x.han, statusLabel: 'Đã duyệt · chờ thực hiện' });
       }
     }

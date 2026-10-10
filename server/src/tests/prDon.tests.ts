@@ -42,4 +42,18 @@ export async function runPrDonTests(t: YThucTestKit) {
     }
     xoaNhac();
   });
+
+  check('DON-2 · dòng gộp: dòng phụ của từng em lấy từ `phu` của việc, không cắt tiêu đề — "Thêm PA học thuật Speaking" → "Speaking"; đổi chữ tiêu đề không đổi dòng phụ', () => {
+    const v = (o: Record<string, unknown>) => ({
+      key: 'k', group: 'no_plan', urgency: 'normal', due: null, studentId: 1, studentName: 'An', classId: 10, classCode: 'MB FOU 15', khung: 'thuong', ownerId: 7,
+      tieuDe: 'Thêm PA học thuật Speaking', phu: 'Speaking', contextLabel: null, count: null, href: '/hoc-vien/1', actionLabel: 'Thêm PA', ...o,
+    });
+    const nhan = (g: string) => ({ no_plan: 'Thiếu PA học thuật', baoph: 'Báo phụ huynh qua TVV' } as any)[g] ?? g;
+    const [g] = d.gopViecTheoLop([v({ key: 'support:1' }), v({ key: 'support:2', studentId: 2, studentName: 'Bình', tieuDe: 'Thêm PA học thuật Reading', phu: 'Reading' })], nhan) as any[];
+    assert(g.con?.length === 2, 'phải gộp');
+    const phu = Object.fromEntries(g.con.map((c: any) => [c.conTen, c.conPhu]));
+    assert(phu.An === 'Speaking' && phu['Bình'] === 'Reading', `dòng phụ: ${JSON.stringify(phu)}`);
+    const [h] = d.gopViecTheoLop([v({ key: 'a', tieuDe: 'Chữ mới hoàn toàn · An · Speaking' }), v({ key: 'b', studentId: 2, studentName: 'Bình', tieuDe: 'Chữ mới hoàn toàn · Bình · Speaking' })], nhan) as any[];
+    assert(h.con.every((c: any) => c.conPhu === 'Speaking'), `đổi chữ tiêu đề: ${h.con.map((c: any) => c.conPhu)}`);
+  });
 }

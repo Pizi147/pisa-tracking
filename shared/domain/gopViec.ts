@@ -14,6 +14,8 @@ export type ViecGopDuoc = {
   studentId: number | null; studentName: string; classId: number | null; classCode: string | null;
   khung?: 'ft' | 'thuong' | null; ownerId: number | null;
   tieuDe: string; contextLabel: string | null; count: number | null; href: string; actionLabel: string;
+  /** PR-DON: phần riêng của việc khi nằm trong dòng gộp (kỹ năng, bài, việc cụ thể) — dòng phụ của em; dòng đã gom sẵn: tên việc. Không có → dòng phụ chỉ là `contextLabel`. */
+  phu?: string | null;
   /** Case sinh từ SOS (`origin_kind = 'mock'`, Case từ kết quả Test) — khác Case GV / QL tự tạo, chuyển cấp, khai bù. */
   caseSos?: boolean;
 };
@@ -40,17 +42,8 @@ const nang = (u: ViecGopDuoc['urgency']) => (u === 'overdue' ? 0 : u === 'today'
 const sapViec = (a: ViecGopDuoc, b: ViecGopDuoc) =>
   nang(a.urgency) - nang(b.urgency) || (a.due ?? '9999').localeCompare(b.due ?? '9999') || a.studentName.localeCompare(b.studentName, 'vi');
 
-/** Bỏ nhãn loại việc đứng đầu và tên em khỏi tiêu đề → phần riêng của em ("Kết quả PA Reading" → "Reading"). */
-function phanRieng(it: ViecGopDuoc, nhanLoai: string): string {
-  const s = it.tieuDe.startsWith(nhanLoai) ? it.tieuDe.slice(nhanLoai.length) : it.tieuDe;
-  const ten = it.studentId !== null ? it.studentName : null;
-  return s.split('·').map((x) => x.trim())
-    .map((x) => (ten && x.startsWith(`${ten} `) ? x.slice(ten.length).trim() : x))
-    .filter((x) => x && x !== ten).join(' · ');
-}
-
-function conCua<T extends ViecGopDuoc>(it: T, nhanLoai: string): ConGop<T> {
-  const rieng = phanRieng(it, nhanLoai);
+function conCua<T extends ViecGopDuoc>(it: T): ConGop<T> {
+  const rieng = it.phu ?? '';
   if (it.studentId !== null) {
     const phu = [...new Set([rieng, it.contextLabel].filter((x): x is string => !!x))];
     return { ...it, conTen: it.studentName, conPhu: phu.join(' · ') };
@@ -79,7 +72,7 @@ export function gopViecTheoLop<T extends ViecGopDuoc>(items: readonly T[], nhan:
     if (daDat.has(k)) continue;
     daDat.add(k);
     const nhanLoai = nhan(it.group);
-    const con = [...nhom].sort(sapViec).map((x) => conCua(x, nhanLoai));
+    const con = [...nhom].sort(sapViec).map((x) => conCua(x));
     const dau = con[0];
     /* "n em" chỉ khi mỗi việc là một em khác nhau; một em hai PA, hay dòng đã gom sẵn → "n việc". */
     const theoEm = nhom.every((x) => x.studentId !== null) && new Set(nhom.map((x) => x.studentId)).size === nhom.length;
