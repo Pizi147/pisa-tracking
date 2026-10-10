@@ -289,6 +289,25 @@ Báo cáo + mockup: `thiet-ke/mockup-mt-quy-trinh-2026-10-08.html` (artifact htt
 - **`GET /metrics/vi-pham-theo-nhom` vai Quản trị trả 500** trên main (TypeError `push` of undefined, PR-TD3 thấy ở DB cuối `run.ts`). Tìm gốc, sửa, thêm phép kiểm.
 - Ghi chú TD3: `/hoc-vien-lop` còn 78 % dòng (huy hiệu `standingFor`); chờ log bản chính sau deploy rồi mới quyết.
 
+### RÀ NGOÀI SAU #308 (10/10, file review chủ SP gửi) — planning kiểm lại trên main a4ddd93
+| Mã | Kết luận planning | Ghi chú |
+|---|---|---|
+| F01 cache tài khoản cũ | **Còn** (`web/src/lib/useApi.ts` `getChung`/`.then` ghi `nhoBanXem` không xét lần xoá) | Chỉ trình duyệt dùng chung, máy chủ vẫn chặn quyền. Sửa ở PR-CACHE |
+| F04 tải trước làm sống lại bản cũ | **Còn** (`taiTruoc` chỉ xét epoch tài khoản) | Cùng gốc F01 → PR-CACHE |
+| F02 sửa Final sau khi sang FT sinh lại Mini Test + PA | **Còn** (`dongMiniTestSangFt` DELETE xoá dấu chống trùng `taoBoTroFinal`) | PR-VN6 |
+| F03 MT0 ở lớp thường không bao giờ "hoàn tất" → GV sửa được điểm sau khoá | **Còn** (`hoanTat.ts` lấy `scoring_mode` theo lớp, bỏ `kind = 'mt0'`) | PR-VN6 |
+| F05 nhắc nhóm + con cùng lô → 2 chuông | Có trong hàm, **web hiện không gửi nhóm và con cùng lô** ("Nhắc tất cả" gửi `dong`) | Vá rẻ trong PR-VN6 |
+| UX U1–U6, phụ thuộc, CI | **Không làm bây giờ**: U2/U3/U5 là luồng mới (cần mockup), U1/U6 phần lớn đã có (`href` chuông, `SaveState`); xlsx chỉ xuất file | Xem lại sau deploy theo phản hồi người dùng |
+
+### PR-CACHE (S, web) — F01 + F04
+- Một bộ đếm "lần xoá" theo đường: `onInvalidate` tăng thế hệ mọi đường trúng tiền tố (null = tất cả). `getChung`/`taiTruoc`/hook ghi nhớ thế hệ lúc BẮT ĐẦU gọi; phản hồi về mà thế hệ đã đổi → không ghi `daXem`, không `setData` (hook tự tải lại như cũ). Giữ dùng chung lời gọi, hiện ngay bản cũ, không mất nháp.
+- Phép kiểm (điều khiển thứ tự Promise): A→đổi tài khoản→B; tải trước→lưu→invalidate→phản hồi cũ; hai hook cùng đường; đường không liên quan không bị ảnh hưởng; path đổi / null.
+
+### PR-VN6 (S, máy chủ) — F03 + F02 + F05
+- F03: `hoanTat.ts` đọc `a.kind`; MT0 = chấm band (cùng `scoringModeOf`). Phép kiểm: MT0 lớp FOU đủ band, qua tuần → hoàn tất; GV không sửa được (403), QL sửa được có lý do. MT FT, Progress/Final không đổi.
+- F02: không thêm cột. `taoBoTroFinal` coi bài đã có bộ khi còn Mini Test **hoặc** còn PA mang `nhom_bo_tro` của bài đó (PA đã có kết quả giữ lại khi đóng Mini Test). Phép kiểm: chuỗi của review (sang FT → sửa Final W 10→11) không sinh Mini Test/PA mới; lưu lại cùng điểm; FOU→FT lần đầu / điểm về muộn VẪN sinh bình thường. Kèm truy vấn CHỈ ĐỌC đếm em có >1 bộ PA bổ trợ cùng bài (chủ SP chạy trên Turso).
+- F05: lọc trong lô bằng `khoaCungViec` (nhóm + con cùng người, cùng ngày → một chuông). Phép kiểm [nhóm, con], [con, nhóm].
+
 ### SAU PR-VN4 (#304, rà 10/10) — ghi chú · ✅ cả hai sửa ở PR-VN5
 - **Huỷ bài lớp thường có ô `writing` / `tong_hop` báo "Kỹ năng không hợp lệ"** (có từ trước, `xoaDiemLuot` / `ENTRY_SKILLS` chỉ nhận kỹ năng FT) → QL kẹt, không huỷ được. Sửa ở PR-VN5.
 - `ban_chup_luot.trang_thai` trễ một nhịp: `refreshOutcome` làm bản chụp trước khi lượt đổi `cancelled`. Nhỏ, sửa cùng PR-VN5.
