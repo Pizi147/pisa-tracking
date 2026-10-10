@@ -1331,13 +1331,17 @@ function xoaDiemLuot(p: Principal, a: ReturnType<typeof loadAttempt>, lyDo: stri
   const today = demoToday();
   settleNoShows(today);
   const hoanTat = dotHoanTat(a.id, today);
+  /* R11 như `saveScore`: đợt đã hoàn tất thì chỉ người sửa được sau hoàn tất mới xoá điểm — kiểm một lần cho cả lượt, trước khi ghi. */
+  if (hoanTat.hoanTat && (!a.class_id || !quyenSuaSauHoanTat(p, a.class_id, !!a.lich_su))) {
+    throw forbidden(`Đợt này đã hoàn tất (hết Chủ nhật ${ngay(hoanTat.chuNhatCuoi)}). Chỉ Quản lý xoá được điểm — nhờ Quản lý huỷ lượt.`);
+  }
   db().prepare(
     `UPDATE assessment_scores SET raw_score = NULL, c1 = NULL, c2 = NULL, c3 = NULL, c4 = NULL, band = NULL, entered_by = NULL, entered_at = NULL,
             comment = NULL, examiner_user_id = NULL, examiner_name = NULL, nhap_dau_ngay = NULL
       WHERE attempt_id = ? AND (band IS NOT NULL OR raw_score IS NOT NULL)`).run(a.id);
   for (const s of o) {
     const path = hoanTat.hoanTat
-      ? (a.class_id && quyenSuaSauHoanTat(p, a.class_id) ? 'override' : 'lich_su')
+      ? (quyenSuaSauHoanTat(p, a.class_id) ? 'override' : 'lich_su')
       : a.class_id ? scoreEditPath(p, a.class_id, s.skill, { lich_su: a.lich_su ?? 0 }) : null;
     writeAudit({
       actorUserId: p.userId, action: path === 'override' ? 'score.override' : path === 'lich_su' ? 'score.lich_su' : 'score.edit',
