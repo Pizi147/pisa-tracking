@@ -7,7 +7,7 @@ import { api } from './routes/index.ts';
 import { HttpError } from './util.ts';
 import { taoSuKhoe } from './platform/suKhoe.ts';
 import { HAN_HAM_NETLIFY_MS, LOG_CHAM_MS, chayVoiHan } from './platform/hanGio.ts';
-import { chayTrongRequest, demHienTai } from './platform/nguCanhRequest.ts';
+import { chayTrongRequest, demHienTai, topLog, type Dem } from './platform/nguCanhRequest.ts';
 import { donGiaoDichTreo, laLoiMatKetNoiTurso, loiTrongGiaoDich, moLaiKetNoi } from './db.ts';
 import { laBanChinh } from './moiTruong.ts';
 
@@ -63,8 +63,8 @@ export function demGio(req: Request, res: Response, next: NextFunction): void {
   if (donGiaoDichTreo()) console.error('[api] đã cuộn lại một giao dịch bỏ dở từ lần gọi trước');
   res.on('finish', () => {
     const ms = Date.now() - batDau;
-    const dem = res.locals?.dem as { n: number; dong: number } | undefined;
-    if (ms >= LOG_CHAM_MS) console.warn(`[cham] ${req.method} ${req.path} ${ms} ms · ${dem?.n ?? 0} câu, ${dem?.dong ?? 0} dòng`);
+    const dem = res.locals?.dem as Dem | undefined;
+    if (ms >= LOG_CHAM_MS) console.warn(`[cham] ${req.method} ${req.path} ${ms} ms · ${dem?.n ?? 0} câu, ${dem?.dong ?? 0} dòng${topLog(dem)}`);
   });
   if (!laBanChinh()) { next(); return; }
   chayVoiHan(batDau + HAN_HAM_NETLIFY_MS, next);
@@ -81,7 +81,7 @@ function moNguCanhRequest(req: Request, res: Response, next: NextFunction): void
     res.locals.dem = demHienTai();
     if (process.env.PISA_DEM_SQL === '1') {
       const dem = demHienTai();
-      res.on('finish', () => console.log(`[sql] ${req.method} ${req.originalUrl} ${dem?.n ?? 0} câu, ${dem?.dong ?? 0} dòng`));
+      res.on('finish', () => console.log(`[sql] ${req.method} ${req.originalUrl} ${dem?.n ?? 0} câu, ${dem?.dong ?? 0} dòng${topLog(dem ?? undefined)}`));
     }
     next();
   });

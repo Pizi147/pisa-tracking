@@ -178,13 +178,16 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
   const cph = cycleIds.map(() => '?').join(',');
   const attempts = conn
     .prepare(
-      `SELECT a.*, pr.code AS period_code, pr.week_start AS weekStart, pr.week_end AS period_end FROM assessment_attempts a
+      `SELECT a.*, pr.code AS period_code, pr.week_start AS weekStart, pr.week_end AS period_end,
+              EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id) AS _co_diem
+         FROM assessment_attempts a
          LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
         WHERE a.cycle_id IN (${cph}) AND a.status != 'cancelled' AND a.kind != 'mt0'   /* PR-MT0: MT0 không vào nhãn / kết quả gần nhất */
         ORDER BY a.attempt_no`,
     )
     .all(...cycleIds) as any[];
-  const bundle = loadBundle(attempts.map((a) => a.id));
+  /* TD3-b: chỉ lượt có dòng điểm mới được đọc bundle (vòng dưới bỏ qua lượt `!scores.length`) — không nạp lịch + điểm lượt chưa thi. */
+  const bundle = loadBundle(attempts.filter((a) => a._co_diem).map((a) => a.id));
 
   const byStudent = new Map<number, any[]>();
   for (const a of attempts) {

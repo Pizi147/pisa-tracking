@@ -16,9 +16,16 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 type Kho = {
   /** null = không mở bộ nhớ cho request này (không phải GET). */
   nho: Map<string, unknown> | null;
-  /** n = số câu SQL, dong = số dòng các câu trả về (TD2-0: `[cham]` in cả hai). */
-  dem: { n: number; dong: number };
+  /** n = số câu SQL, dong = số dòng các câu trả về (TD2-0: `[cham]` in cả hai); top = 3 câu đọc nhiều dòng nhất (TD3-0). */
+  dem: Dem;
 };
+
+/**
+ * TD3-0: `top` gộp theo câu (`sql` = 80 ký tự đầu, gộp khoảng trắng; không lưu tham số) — câu chạy nhiều lần (theo lô, theo em) cộng dồn,
+ * vì câu đọc nhiều dòng thường là câu lặp. `theoCau` chỉ giữ số dòng theo câu của MỘT request.
+ */
+export type Dem = { n: number; dong: number; top: Array<{ sql: string; dong: number }>; theoCau: Map<string, number> };
+const demMoi = (): Dem => ({ n: 0, dong: 0, top: [], theoCau: new Map() });
 
 const kho = new AsyncLocalStorage<Kho>();
 
@@ -28,7 +35,7 @@ let tongCau = 0;
 let tongDong = 0;
 
 export function chayTrongRequest<T>(method: string, fn: () => T): T {
-  return kho.run({ nho: method === 'GET' ? new Map() : null, dem: { n: 0, dong: 0 } }, fn);
+  return kho.run({ nho: method === 'GET' ? new Map() : null, dem: demMoi() }, fn);
 }
 
 /**
@@ -117,7 +124,7 @@ export function xoaNho(): void {
 export function trongBoNho<T>(fn: () => T): T {
   const s = kho.getStore();
   if (s && s.nho !== null) return fn();
-  return kho.run({ nho: new Map(), dem: s?.dem ?? { n: 0, dong: 0 } }, fn);
+  return kho.run({ nho: new Map(), dem: s?.dem ?? demMoi() }, fn);
 }
 
 /** Gọi mỗi lần chạy một câu SQL thật (`get`/`run`/`iterate` — KHÔNG gọi cho `all`, xem chú thích ở db.ts). */
@@ -127,11 +134,26 @@ export function demCau(): void {
   tongCau++;
 }
 
-/** Gọi với số dòng một câu SQL trả về (`all` → length, `get` → 0/1; chỉ cộng, không JSON hoá — TD2-0). */
-export function demDong(k: number): void {
-  const s = kho.getStore();
-  if (s) s.dem.dong += k;
+/** Gọi với số dòng một câu SQL trả về (`all` → length, `get` → 0/1; chỉ cộng, không JSON hoá — TD2-0) và câu đó (TD3-0, top 3). */
+export function demDong(k: number, sql: string): void {
   tongDong += k;
+  const s = kho.getStore();
+  if (!s) return;
+  const d = s.dem;
+  d.dong += k;
+  if (!k) return;
+  const cau = sql.replace(/\s+/g, ' ').trim().slice(0, 80);
+  const tong = (d.theoCau.get(cau) ?? 0) + k;
+  d.theoCau.set(cau, tong);
+  const cu = d.top.find((c) => c.sql === cau);
+  if (cu) cu.dong = tong;
+  else if (d.top.length < 3 || tong > d.top[2].dong) d.top.splice(2, 1, { sql: cau, dong: tong });
+  d.top.sort((a, b) => b.dong - a.dong);
+}
+
+/** `top` dạng một dòng cho log `[cham]`/`[sql]`: ` · top: <dòng> <sql> | …` (rỗng nếu không có). */
+export function topLog(dem: Dem | undefined): string {
+  return dem?.top.length ? ` · top: ${dem.top.map((c) => `${c.dong} ${c.sql}`).join(' | ')}` : '';
 }
 
 /** Tổng dòng SQL trả về từ lúc tiến trình khởi động — phép kiểm ĐO tự trừ trước/sau. */
@@ -145,6 +167,6 @@ export function soCauSql(): number {
 }
 
 /** Bộ đếm của request đang chạy (tham chiếu sống — đọc `.n` sau khi request xong), hoặc null nếu không trong request. */
-export function demHienTai(): { n: number; dong: number } | null {
+export function demHienTai(): Dem | null {
   return kho.getStore()?.dem ?? null;
 }
