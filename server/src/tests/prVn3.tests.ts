@@ -2,7 +2,7 @@
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runPrVn3Tests(t: YThucTestKit) {
-  const { check, assert, conn, P, TODAY } = t;
+  const { check, assert, conn, P, TODAY, classId } = t;
   const d: any = await import('../../../shared/domain/index.ts');
   const cases: any = await import('../cases/cases.ts');
   const intake: any = await import('../classes/intake.ts');
