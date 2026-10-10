@@ -18,7 +18,8 @@ Tệp này tự nạp vào mọi session của repo (planning, code, worktree), 
 - PISA là công cụ làm việc cho giáo viên (chế độ Operate): dễ hiểu, dễ dùng, nhất quán trước; trang trí sau.
 - Không dùng taste-skill (đã tắt; không dành cho dashboard, bảng dữ liệu).
 - Tinh chỉnh, không làm lại: phông Be Vietnam Pro (PR-SANG; chữ số lấy từ Inter), bảng màu, bố cục đã khoá — giữ, trừ khi kế hoạch PR ghi rõ là đổi.
-- PR có giao diện/UX: phải có mockup HTML trong `thiet-ke/` đã được chủ sản phẩm duyệt trước khi code (đủ trạng thái, 375/1440, sáng/tối); chưa có thì dừng và soạn mockup, không tự chế.
+- Màn / luồng MỚI hoặc đổi bố cục: phải có mockup HTML trong `thiet-ke/` chủ sản phẩm đã duyệt trước khi code (1440 + 375, tối, đủ trạng thái khác nhau); chưa có thì dừng, soạn mockup. Đổi chữ, thêm nút/ô theo mẫu sẵn có: không cần mockup (plan.md 1.3b). Chuẩn giao diện: `DESIGN.md`.
+- Tiết kiệm token: làm theo plan.md 1.2 + 1.3b (Task trong session, check + bấm thử một lần ở session code, planning rà diff + ảnh).
 - Thời gian trên màn: ưu tiên **mã tuần** `W2 OCT`; ngày chỉ cho hạn cụ thể, ngày thi, ngày sinh, nhật ký (chủ sản phẩm 30/09).
 - Ô nhập ngày ở MỌI nơi: ô gõ được + nút lịch (`ONgay`), KHÔNG làm hàng nút "Hôm nay · Hôm qua · 2 ngày trước" (chủ sản phẩm 06/10).
 - Lệnh dùng: `critique` ở session planning để tìm vấn đề · `polish`, `clarify`, `layout`, `harden`, `adapt` ở
