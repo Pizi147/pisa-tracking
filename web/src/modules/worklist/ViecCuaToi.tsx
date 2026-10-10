@@ -5,15 +5,15 @@ import { Empty, ErrorState, NhanTrangThai, Skeleton } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { baViecDau, duongThe, gomNhomViec, trongKhoiHomNay, tuanLich, type DemYeuCau, type TheYeuCauDto } from '@shared/domain/index.ts';
-import { DongViec, type WorkGroup, type WorkItem } from './WorkList.tsx';
+import { DongViec, type WorkItem } from './WorkList.tsx';
 
 /**
  * VIỆC CỦA TÔI · HÔM NAY — tầng 1 của Tổng quan giáo viên (PR-VAI-a Q1, mockup 23 màn A). Chỉ việc QUÁ HẠN + việc hạn đến hết Chủ nhật tuần
  * này (`trongKhoiHomNay`, cùng luật chip "Đến hết tuần" ở Công việc); 4 nhóm cố định, nhóm trống ẩn; bốn cột thẳng qua mọi nhóm (nhãn · việc
  * · hạn · nút). Phần còn lại ở Công việc. Điện thoại (Q2): 3 việc đầu của CÙNG danh sách, không chia nhóm, cả dòng là nút.
  */
-/** `/my-work` khi GV chưa có phạm vi trả `{ summary, groups: [], scopeEmpty: true }` — KHÔNG có `items` (mywork.ts). */
-export type Work = { summary: { total: number; overdue: number }; items?: WorkItem[]; dong?: WorkItem[]; groups: WorkGroup[]; scopeEmpty: boolean };
+/** `/my-work` chỉ trả `summary` + `dong` (PR-VN3: bỏ `items`, `groups`); GV chưa có phạm vi: `scopeEmpty` và không có `dong`. */
+export type Work = { summary: { total: number; overdue: number }; dong?: WorkItem[]; scopeEmpty: boolean };
 
 const DAY = 86_400_000;
 /** Một mốc hạn ngắn cho dòng điện thoại: "quá hạn 3 ngày" · "hạn hôm nay" · "hạn 03/10". */

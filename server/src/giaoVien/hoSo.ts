@@ -30,11 +30,12 @@ const theoLo = <T>(ds: readonly T[]) => Array.from({ length: Math.ceil(ds.length
 
 /**
  * Khối "Việc đang có": chính mình → `myWork(p)` (không `tatCa`: đúng "việc của tôi"); người khác → `viecCuaNguoi` (đã kiểm quyền xem).
- * Cùng nguồn với Công việc nên số ở ô = số dòng khi bấm.
+ * Cùng nguồn (`dong`) với Công việc nên số ở ô = số dòng khi bấm.
  */
 export function viecCuaGv(p: Principal, gvId: number): { nhom: NhomViec; n: number; quaHan: number }[] {
-  const items = p.userId === gvId ? myWork(p).items : viecCuaNguoi(p, gvId).items;
-  return demViecTheoNhom(items);
+  /* PR-VN3 (GOP): đếm DÒNG (`dong`) như badge Công việc — trước đây đếm từng việc nên lệch. */
+  const dong = p.userId === gvId ? myWork(p).dong : viecCuaNguoi(p, gvId).dong;
+  return demViecTheoNhom(dong ?? []);
 }
 
 // ------------------------------------------------------------------ các hàm tập — MỘT nguồn cho số ở ô và danh sách khi bấm

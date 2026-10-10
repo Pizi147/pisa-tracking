@@ -382,6 +382,8 @@ api.get('/ref/units', requireAuth, wrap((req) => {
  * một ID giáo viên cụ thể (Q2, "Chọn giáo viên…"). Chuỗi lạ bị `thamSoNguoi` bỏ qua, coi như
  * không gửi — không báo lỗi cho một tham số hỏng, giữ đúng quy ước "phạm vi trên đường dẫn".
  */
+/* PR-VN3 (GOP): web chỉ đọc `dong` + `summary` — bỏ `items` / `groups` khỏi JSON (nặng ~3 lần); hàm giữ nguyên cho Nhắc và hồ sơ GV. */
+const nheMyWork = ({ items: _items, groups: _groups, ...con }: any) => con;
 api.get('/my-work', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   lenhSvc.quetLenhDenHan();   // PR-CT: quyết định chuyển lớp tới Thứ Hai thì thi hành (chạy lặp an toàn)
@@ -391,11 +393,11 @@ api.get('/my-work', requireAuth, wrap((req) => {
 
   if (nguoi === 'tat-ca') {
     if (!can(p, PERMISSIONS.CASE_APPROVE, { anyScope: true })) throw forbidden('Bạn chỉ xem được việc của mình.');
-    return myWork(p, { branchId, nguoi: 'tat-ca' });
+    return nheMyWork(myWork(p, { branchId, nguoi: 'tat-ca' }));
   }
-  if (typeof nguoi === 'number') return viecCuaNguoi(p, nguoi, branchId);
+  if (typeof nguoi === 'number') return nheMyWork(viecCuaNguoi(p, nguoi, branchId));
 
-  return myWork(p, { branchId });
+  return nheMyWork(myWork(p, { branchId }));
 }));
 
 /* PR-S6F-b (D14): `/my-work/dem` đã bỏ — badge GV đọc `summary.overdue` của chính `/my-work` (web gộp GET đang bay, không tính `myWork` hai lần). */
