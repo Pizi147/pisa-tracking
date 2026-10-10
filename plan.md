@@ -43,24 +43,37 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 1. Nhánh mới **từ `origin/main` mới nhất**, một PR một session. PR có migrate dùng file riêng `server/src/migrate/<tênPR>.ts`.
 2. Chưa có kế hoạch chi tiết → `superpowers:writing-plans` viết `docs/superpowers/plans/<ngày>-pr-<mã>-<tên>.md`; điểm cần
    chủ sản phẩm quyết → `superpowers:brainstorming` hỏi trước, không tự chọn.
-3. Làm từng Task bằng `superpowers:subagent-driven-development`; mỗi Task `superpowers:test-driven-development`
+3. Làm từng Task **ngay trong session** (`superpowers:executing-plans`, KHÔNG `subagent-driven-development` — tốn gấp nhiều lần); mỗi Task `superpowers:test-driven-development`
    (phép kiểm **đỏ trên DB test trước**, sửa theo nguyên nhân; không khớp chuỗi nguồn cho xanh khi kiểm được hành vi);
    gặp lỗi lạ → `superpowers:systematic-debugging`.
-4. `npm run check` xanh (**một lần một lúc, foreground**). Bấm thử bằng ẢNH THẬT: **375 và 1440, sáng và tối, ≥ 3 vai**
-   (toàn hệ thống, quản lý chi nhánh, GV; thêm GVCN khi PR chạm lớp).
-5. PR có giao diện: `/impeccable audit`. Mọi PR: `/ponytail-review`, `superpowers:verification-before-completion`,
-   `superpowers:requesting-code-review`, `superpowers:finishing-a-development-branch` (mở PR, **không merge**).
-6. Mô tả PR báo **từng ID**: tái hiện / bác bỏ (lý do), file sửa, phép kiểm bảo vệ, ảnh, giới hạn còn lại; liệt kê mọi chú
-   thích `ponytail:`; ảnh sổ tay `docs/so-tay/` bị lệch.
-7. Merge sau người khác → `git merge origin/main` vào nhánh, chạy lại `npm run check` trước khi báo xong.
+4. `npm run check` xanh **một lần** cuối PR (một lần một lúc, foreground); giữa các Task chỉ chạy phép kiểm của Task đó.
+   **Bấm thử chỉ ở session code, MỘT lần, chỉ màn PR chạm**, đính ảnh vào PR: 1440 tối + 375 sáng (đủ 4 tổ hợp chỉ khi PR đổi
+   bố cục/màu), vai = những vai PR chạm (thường QL + một GV). PR chỉ máy chủ: không ảnh — phép kiểm + số đo là đủ.
+5. PR có giao diện: `/impeccable audit` (một lần, cuối). Mọi PR: `/ponytail-review`, rồi mở PR (**không merge**). Không chạy
+   thêm `requesting-code-review` / `verification-before-completion` / `finishing-a-development-branch` (planning đã rà).
+6. Mô tả PR **≤ 30 dòng**: làm gì (theo Task), phép kiểm, ảnh, giới hạn còn lại, chú thích `ponytail:`, ảnh sổ tay bị lệch.
+7. Merge sau người khác → `git merge origin/main`; chạy lại `npm run check` **chỉ khi có xung đột mã** (xung đột chỉ plan/CODE_MAP thì không).
    Xung đột ở `run.ts`, `schema.sql`, `routes/index.ts`, `CODE_MAP.md`, mục 11 file này: **giữ cả hai** (chỉ thêm dòng).
 8. Xong: `[x]` trong kế hoạch chi tiết, một dòng mục 11, cập nhật `CODE_MAP.md` nếu thêm/xoá file.
 
 ### 1.3. Rà PR
-- Người rà **luôn Opus 5.5** ở session/agent **khác** người code; kiểm model thật qua dòng `Co-Authored-By`.
-- Rà trong worktree tách rời, `npm run check` một lần, bấm thử bằng ảnh thật, không chạm DB bản chính. Mẫu ở mục 10.
+- Người rà là session planning (Opus 5.5); kiểm model thật qua dòng `Co-Authored-By`.
+- **Mặc định planning tự đọc diff + xem ảnh trong PR** — không agent, không `npm run check`, không bấm thử, khi session code báo
+  check xanh và GitHub báo mergeable clean.
+- **Rà sâu** (agent mẫu 10B: worktree, `npm run check`, gọi API bằng vai khác, bấm thử) CHỈ khi PR: đổi quyền · có thể mất dữ
+  liệu / migrate · sửa luồng chính (xếp lịch, nhập điểm, huỷ, chuyển lớp) · ảnh thiếu hoặc đáng ngờ · logic máy chủ lớn.
 - Rà xong: planning soạn **tin nhắn sửa** (file:dòng) để chủ sản phẩm dán vào session code; sửa xong rà lại phần đã sửa.
   Việc nhỏ còn lại → ghi vào mục 4 file này (không để mất).
+
+### 1.3b. Tiết kiệm token (chủ SP 10/10) — giao diện PISA căn bản, dồn sức vào đúng chỗ
+- **Tập trung:** đúng luật nghiệp vụ (Rulebook) · quyền · không mất dữ liệu · tốc độ / Turso · luồng gọn ít bước. Giao diện:
+  chỉ `clarify` (chữ), `harden` (lỗi, rỗng, chữ dài), `adapt` (375), `audit` cuối; KHÔNG `polish`, `animate`, `colorize`,
+  `bolder`, `delight`, `overdrive`. Chuẩn giao diện = `DESIGN.md`; không bàn lại phông/màu.
+- **Mockup** chỉ cho màn / luồng MỚI hoặc đổi bố cục. Đổi chữ, thêm một nút / một ô theo mẫu sẵn có, dời vị trí nhỏ: mô tả bằng
+  chữ trong kế hoạch, không mockup. Mockup: 1440 + 375, chế độ tối, chỉ những trạng thái khác nhau thật.
+- **Kế hoạch PR ≤ 200 dòng** (chữ ký + phép kiểm, không chép thân hàm). Việc nhỏ (< 3 file): không cần file kế hoạch, prompt đủ.
+- **Agent:** planning tự viết kế hoạch PR nhỏ/vừa (không agent soạn); rà theo 1.3 (agent chỉ khi rà sâu).
+- **Báo cáo** session code ≤ 15 dòng; planning trả lời chủ SP ngắn, không chép lại diff.
 
 ### 1.4. Kỹ thuật dễ vấp
 | Chuyện | Làm thế nào |
@@ -332,9 +345,12 @@ Việc đầu tiên: giao agent soạn kế hoạch theo mẫu A mục 10 (Opus 
 
 ### PR-K26 — ✅ xong 05/10 (#196, #197).
 
-### PR-TEN · Đổi tên bài lớp thường (S, sau đợt 3, trước HK2)
-- Chủ sản phẩm 04/10 (lúc làm PR-DL): "Giữa khoá" → **Progress Test**, "Cuối khoá" → **Final Test**, **cả nhãn dài** ("Bài kiểm tra
-  giữa/cuối khoá") — thay ở mọi nơi (web, thông báo, báo cáo, sổ tay; ~940 chỗ / ~130 file). Làm sau khi U12, DL, K26, SL merge để tránh xung đột.
+### PR-TEN · Đổi tên bài lớp thường (S) — chủ SP 10/10: LÀM NGAY (sau TD3, VN3 hoặc song song nếu không chung file)
+- Chủ SP 04/10: tên BÀI "Giữa khoá" → **Progress Test**, "Cuối khoá" → **Final Test**, cả nhãn dài ("Bài kiểm tra giữa/cuối khoá"). Rà 10/10: `shared/domain/cases.ts`, `cuoiKhoa.ts` đã có Progress/Final Test một phần; còn ~100 chuỗi chứa "Giữa/Cuối khoá" (nhiều cái là chú thích).
+- **Chỉ đổi khi chữ chỉ TÊN BÀI** (chip lượt, tiêu đề cột/lưới, tên Case `[Giữa khoá] …`, toast, thông báo, Excel, chọn loại bài). **Giữ** khi chữ chỉ THỜI ĐIỂM khoá học: "đến Cuối khoá" (mốc PA bổ trợ), "Kết quả Cuối khoá"/quyết định lên lớp, "Kỳ vọng cuối khoá", tên việc QL. Phân vân → giữ, liệt kê trong mô tả PR.
+- Một nguồn: nhãn bài lấy qua hàm/hằng sẵn có ở `shared/domain` (`normal.ts`, `lopThuong.ts`, `hoSoHocVien.ts`, `cases.ts`) — sửa ở đó, không rải chuỗi. Không đổi mã (`progress`/`final`), cột DB, URL.
+- Dữ liệu cũ: tên Case đã lưu trong DB dạng `[Giữa khoá] …` — KHÔNG migrate; hiện bằng hàm tên nếu tên được dựng lúc đọc, nếu tên lưu cứng thì để nguyên (ghi trong PR).
+- Kiểm: phép kiểm `prTen.tests.ts` quét `web/src` + `shared` không còn chuỗi hiển thị "Giữa khoá"/"Bài kiểm tra giữa khoá"; "Cuối khoá" chỉ còn trong danh sách được phép (ghi rõ trong test). Phép kiểm cũ so chữ thì sửa theo tên mới.
 
 ### PR-HK2 · Badge & chữ (L, cuối cùng) — kế hoạch bổ sung `2026-10-07-pr-hk2-badge-chu.md` + mockup `mockup-hk2-2026-10-07.html` **DUYỆT 07/10** (Q1–Q4 đã trả lời); chạy sau KHUNG, LUI-a2
 - `2026-10-02-ux-sau-critique.md`: **H1/H2** ba họ chip · **K1** còn lại (nếu DH chưa làm hết) · **K2** Phân tích › Tổng hợp ·
@@ -427,13 +443,11 @@ Chọn model ở ô chọn model **trước khi dán prompt**. Subagent cùng mo
 ```
 Đọc trước: CLAUDE.md, plan.md (mục 1 Luật làm việc, mục 3 Quyết định, mục 4 dòng của PR này).
 Đầu phiên: nói rõ mình đang chạy model nào. Model ghi trên prompt (khuyến nghị) HOẶC phương án B đều được chạy tiếp — ghi model thật vào mô tả PR. Chỉ DỪNG báo chủ sản phẩm khi là model khác cả hai (vd Haiku) hoặc Fable (cấm, 06/10).
-Nhánh mới từ origin/main mới nhất. Skill: superpowers:subagent-driven-development (mỗi Task một subagent cùng model),
-superpowers:test-driven-development (đỏ trên DB test trước), superpowers:systematic-debugging khi lỗi lạ,
-superpowers:brainstorming nếu cần chủ sản phẩm quyết (dừng, hỏi), superpowers:verification-before-completion,
-superpowers:requesting-code-review, superpowers:finishing-a-development-branch (mở PR vào main, KHÔNG merge).
-npm run check xanh (một lần một lúc) → bấm thử 375/1440 sáng/tối, ≥ 3 vai, ảnh thật → /impeccable audit (nếu có giao diện)
-→ /ponytail-review. Xong: [x] kế hoạch chi tiết, một dòng mục 11 plan.md, CODE_MAP.md nếu thêm/xoá file. Mô tả PR: từng ID
-(tái hiện/bác bỏ, file, phép kiểm, ảnh), chú thích ponytail:, ảnh sổ tay lệch. Cổng PORT/WEB_PORT riêng, không 4000/5173.
+Nhánh mới từ origin/main mới nhất. Làm theo plan.md mục 1.2 + 1.3b: Task ngay trong session (executing-plans, KHÔNG subagent),
+test-driven-development (đỏ trước), systematic-debugging khi lỗi lạ, brainstorming chỉ khi cần chủ SP quyết (dừng, hỏi).
+npm run check MỘT lần cuối → bấm thử MỘT lần chỉ màn PR chạm (1440 tối + 375 sáng, vai PR chạm), ảnh đính PR; PR chỉ máy chủ
+không cần ảnh → /impeccable audit (nếu có giao diện) → /ponytail-review → mở PR vào main, KHÔNG merge. Mô tả PR ≤ 30 dòng.
+Xong: [x] kế hoạch, một dòng mục 11, CODE_MAP.md nếu thêm/xoá file. Cổng PORT/WEB_PORT riêng, không 4000/5173.
 ```
 
 ### 9.1. Đợt 2 — ✅ xong 04/10 (PHH #191, SO #190, DH #192)

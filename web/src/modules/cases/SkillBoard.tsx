@@ -512,7 +512,7 @@ function HangPA({ p, c, ngan, onMoCase }: {
   /* Q19: khoảng PA nói MÃ TUẦN (`từ W3 SEP · đến MT2 · W4 OCT`), không dd/mm. PA Bổ trợ: mốc đã nằm trong tên. */
   const khoang = chuKhoangPa({ startedOn: p.startedOn, completedOn: p.completedOn, mocChu: boTro ? null : p.mocChu }, homNay);
   /* PR-S5F-b (mockup LT2a): tên PA Bổ trợ = `Bổ trợ 2 buổi/tuần · đến Cuối khoá · W4 OCT · trừ buổi Free` — mốc nằm trong tên, không lặp ở dòng phụ. */
-  const ten = boTro ? `Bổ trợ ${c.boTro!.buoiMoiTuan} buổi/tuần · ${p.mocChu ?? 'đến Final Test'} · trừ buổi Free` : p.name;
+  const ten = boTro ? `Bổ trợ ${c.boTro!.buoiMoiTuan} buổi/tuần · ${p.mocChu ?? 'đến Cuối khoá'} · trừ buổi Free` : p.name;
   const chuaChay = !!p.chuaChay;
   const chung = c.boTro?.chung && c.boTro.mon.length > 1 ? `PA chung · ${c.boTro.mon.map((m) => m.tenMon).join(', ')}` : null;
   const dongPhu = [chuNguoi(p), khoang, chuBuoi(p), chung,
@@ -529,7 +529,7 @@ function HangPA({ p, c, ngan, onMoCase }: {
             {ten}
           </button>
           {p.batBuoc && (
-            <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-[12px] text-slate-400" title={p.kind === 'bo_tro' ? 'PA Bổ trợ bắt buộc đến Final Test — không thay, không kết thúc sớm' : 'PA theo quy chế SOS — không thay, không kết thúc sớm'}>
+            <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-[12px] text-slate-400" title={p.kind === 'bo_tro' ? 'PA Bổ trợ bắt buộc đến Cuối khoá — không thay, không kết thúc sớm' : 'PA theo quy chế SOS — không thay, không kết thúc sớm'}>
               <KhoaQuyChe />theo quy chế
             </span>
           )}
