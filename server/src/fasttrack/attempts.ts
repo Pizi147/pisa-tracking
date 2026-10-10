@@ -1318,6 +1318,44 @@ function xoaDiemCua(p: Principal, attemptId: number, o: readonly string[], lyDo:
   }
 }
 
+/**
+ * PR-VN4 (chủ SP 10/10 chọn (a)): Huỷ cả lượt xoá mọi ô có điểm THEO LÔ — cùng cột và nhật ký từng ô như `saveScore` xoá ô
+ * (`score.edit` / `override` / `lich_su`, lý do), nhưng một câu UPDATE và `refreshOutcome` MỘT lần: không tín hiệu / Case / chuông
+ * trung gian theo từng ô. Quyền đã kiểm một lần ở `huyLuot` (ATTEMPT_CANCEL). Gọi trong tx, TRƯỚC khi lượt thành `cancelled`.
+ */
+function xoaDiemLuot(p: Principal, a: ReturnType<typeof loadAttempt>, lyDo: string) {
+  const o = db().prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND (band IS NOT NULL OR raw_score IS NOT NULL) ORDER BY id')
+    .all(a.id) as ScoreRow[];   // dòng gốc như `saveScore` ghi vào nhật ký (không cột nối của `scoresOf`)
+  if (!o.length) return;
+  if (o.some((s) => !(ENTRY_SKILLS as readonly string[]).includes(s.skill))) throw badRequest('Kỹ năng không hợp lệ.');
+  const today = demoToday();
+  settleNoShows(today);
+  const hoanTat = dotHoanTat(a.id, today);
+  /* R11 như `saveScore`: đợt đã hoàn tất thì chỉ người sửa được sau hoàn tất mới xoá điểm — kiểm một lần cho cả lượt, trước khi ghi. */
+  if (hoanTat.hoanTat && (!a.class_id || !quyenSuaSauHoanTat(p, a.class_id, !!a.lich_su))) {
+    throw forbidden(`Đợt này đã hoàn tất (hết Chủ nhật ${ngay(hoanTat.chuNhatCuoi)}). Chỉ Quản lý xoá được điểm — nhờ Quản lý huỷ lượt.`);
+  }
+  db().prepare(
+    `UPDATE assessment_scores SET raw_score = NULL, c1 = NULL, c2 = NULL, c3 = NULL, c4 = NULL, band = NULL, entered_by = NULL, entered_at = NULL,
+            comment = NULL, examiner_user_id = NULL, examiner_name = NULL, nhap_dau_ngay = NULL
+      WHERE attempt_id = ? AND (band IS NOT NULL OR raw_score IS NOT NULL)`).run(a.id);
+  for (const s of o) {
+    const path = hoanTat.hoanTat
+      ? (quyenSuaSauHoanTat(p, a.class_id) ? 'override' : 'lich_su')
+      : a.class_id ? scoreEditPath(p, a.class_id, s.skill, { lich_su: a.lich_su ?? 0 }) : null;
+    writeAudit({
+      actorUserId: p.userId, action: path === 'override' ? 'score.override' : path === 'lich_su' ? 'score.lich_su' : 'score.edit',
+      entityType: 'assessment_attempt', entityId: a.id, entityLabel: s.skill, before: s,
+      after: {
+        ...s, raw_score: null, c1: null, c2: null, c3: null, c4: null, band: null, entered_by: null, entered_at: null,
+        comment: null, examiner_user_id: null, examiner_name: null, nhap_dau_ngay: null,
+        lyDo, ...(hoanTat.hoanTat ? { sauHoanTat: true } : {}),
+      },
+    });
+  }
+  refreshOutcome(p, a.id);
+}
+
 /** PR-MTGON (Hồ sơ MT khi mọi kỹ năng đã huỷ): "Đưa lại cả 4 kỹ năng" — mọi kỹ năng đã huỷ / không yêu cầu về đợt, MỘT tx. */
 export function duaLaiCaLuot(p: Principal, attemptId: number) {
   const a = loadAttempt(attemptId);
@@ -1385,8 +1423,8 @@ export function caseSinhRieng(attemptId: number): number[] {
 }
 
 /**
- * HUỶ MT{n} (T36, T67; PR-MTGON luật 4 — chủ sản phẩm 08/10): Quản lý huỷ MỌI lượt, mọi lúc. Điểm của lượt xoá qua đường Huỷ điểm
- * (nhật ký giữ từng ô) để số MT dùng lại được khi xếp lại; đóng những thứ sinh riêng từ lượt (Case chưa có kết quả PA, Phối hợp còn chờ).
+ * HUỶ MT{n} (T36, T67; PR-MTGON luật 4 — chủ sản phẩm 08/10): Quản lý huỷ MỌI lượt, mọi lúc. Điểm của lượt xoá theo lô (`xoaDiemLuot`,
+ * PR-VN4 — nhật ký giữ từng ô) để số MT dùng lại được khi xếp lại; đóng những thứ sinh riêng từ lượt (Case chưa có kết quả PA, Phối hợp còn chờ).
  * Không còn "Huỷ phần còn lại" — bỏ từng kỹ năng là "Huỷ kỹ năng" (`setSkillSkip`).
  */
 export function huyLuot(p: Principal, attemptId: number, input: { lyDo?: string | null }) {
@@ -1397,7 +1435,7 @@ export function huyLuot(p: Principal, attemptId: number, input: { lyDo?: string 
   if (!hq.cachDuoc) throw badRequest('Lượt này đã huỷ.');
   const conn = db();
   return tx(() => {
-    xoaDiemCua(p, attemptId, scoresOf(attemptId).map((x) => x.skill), lyDo);
+    xoaDiemLuot(p, a, lyDo);
     conn.prepare(`UPDATE assessment_attempts SET status='cancelled', cancel_reason=?, cancelled_at=?, updated_at=? WHERE id=?`)
       .run(lyDo, nowIso(), nowIso(), attemptId);
     logSchedule(attemptId, { action: 'cancelled', reason: lyDo, actor: p.userId });
