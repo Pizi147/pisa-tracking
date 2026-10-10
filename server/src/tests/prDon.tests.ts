@@ -11,6 +11,7 @@ export async function runPrDonTests(t: YThucTestKit) {
   const mywork: any = await import('../worklist/mywork.ts');
   const nv: any = await import('../worklist/nhacViec.ts');
   const { loadPrincipal } = await import('../permissions.ts');
+  const require_kv: any = await import('../normal/kyVong.ts');
   console.log('\nPR-DON · dọn ghi chú cũ');
 
   const homNay = `nhac:%:${TODAY}`;
@@ -55,5 +56,15 @@ export async function runPrDonTests(t: YThucTestKit) {
     assert(phu.An === 'Speaking' && phu['Bình'] === 'Reading', `dòng phụ: ${JSON.stringify(phu)}`);
     const [h] = d.gopViecTheoLop([v({ key: 'a', tieuDe: 'Chữ mới hoàn toàn · An · Speaking' }), v({ key: 'b', studentId: 2, studentName: 'Bình', tieuDe: 'Chữ mới hoàn toàn · Bình · Speaking' })], nhan) as any[];
     assert(h.con.every((c: any) => c.conPhu === 'Speaking'), `đổi chữ tiêu đề: ${h.con.map((c: any) => c.conPhu)}`);
+  });
+
+  check('DON-3 · Kỳ vọng đầu ra: người không quyền → 403 cho cả lớp có thật lẫn id không tồn tại (không lộ lớp có hay không); Quản trị id lạ → 404', () => {
+    const kv = require_kv;
+    const be = (conn.prepare(`SELECT id FROM classes WHERE programme_code = 'BE' AND status = 'active' ORDER BY id LIMIT 1`).get() as any).id as number;
+    const ma = (f: () => unknown) => { try { f(); return 200; } catch (e: any) { return e.status; } };
+    const gv = P.coreTeacher;
+    assert(ma(() => kv.panelKyVong(gv, be)) === 403, `lớp có thật: ${ma(() => kv.panelKyVong(gv, be))}`);
+    assert(ma(() => kv.panelKyVong(gv, 9_999_999)) === 403, `id không tồn tại: ${ma(() => kv.panelKyVong(gv, 9_999_999))}`);
+    assert(ma(() => kv.panelKyVong(P.admin, 9_999_999)) === 404, `Quản trị id lạ: ${ma(() => kv.panelKyVong(P.admin, 9_999_999))}`);
   });
 }
