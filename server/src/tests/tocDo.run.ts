@@ -822,6 +822,27 @@ check('TD2-a · sau khi nhân dữ liệu ×3, mọi (đường × vai) trong TR
   assert(!sai.length, sai.join('\n'));
 });
 
+/* TD3-a: `chiConO` (tập cha) — sau lọc `conBaiCanCham` trùng JSON với cách cũ trên dữ liệu ×3, mọi vai đo. */
+await checkAsync('TD3-a-1 (×3) · listAttempts chiConO trùng JSON sau conBaiCanCham — mọi vai đo', async () => {
+  const { listAttempts, conBaiCanCham } = await import('../fasttrack/attempts.ts');
+  const sai: string[] = [];
+  for (const vai of Object.keys(USER) as Vai[]) {
+    const p = PRINCIPAL_CUA.get(USER[vai]) ?? loadPrincipal(USER[vai]);
+    const f = { scope: 'managed' as const, chiDangHoc: true, phamViCham: true };
+    const a = JSON.stringify(listAttempts(p, f).rows.filter(conBaiCanCham));
+    const b = JSON.stringify(listAttempts(p, { ...f, chiConO: true }).rows.filter(conBaiCanCham));
+    if (a !== b) sai.push(vai);
+  }
+  assert(!sai.length, `lệch: ${sai.join(', ')}`);
+});
+
+/* TD3-a-2: Lịch Test QL ×3 — trước TD3-a đo 5 177 dòng (top: lịch kỹ năng 2 451, điểm 993, lượt 624); trần 40 %. */
+check('TD3-a-2 · GET /cham/lich-test (QL, ×3) ≤ 40 % số dòng trước TD3-a (5 177)', () => {
+  const d = dongSauNhan.get('QL /cham/lich-test') ?? Infinity;
+  console.log(`      (đo: ${d} dòng)`);
+  assert(d <= Math.floor(5177 * 0.4), `${d} dòng > ${Math.floor(5177 * 0.4)}`);
+});
+
 await checkAsync('PR-TD Task5(3) · sau khi nhân dữ liệu, listCases vẫn ra ĐÚNG tập id như tham chiếu — 3 vai chính', async () => {
   const sai: string[] = [];
   for (const vai of ['QL', 'GVCN', 'QT'] as const) {

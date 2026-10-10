@@ -240,7 +240,7 @@ export function noQuaHan(
   const motLop = f.classIds && f.classIds.size === 1 ? [...f.classIds][0] : undefined;
   /* PR-UXF-a T65: em Tạm dừng không sinh nợ điểm (Lịch Test + khối Nợ). */
   /* Rà #218 I2: cùng phạm vi khối 2/3 (`scopeXemLuotCham`) — GV Speaking chấm chéo thấy S Mock quá hạn của lớp FT cùng chi nhánh. */
-  const { rows } = listAttempts(p, { branchId: f.branchId ?? undefined, classId: motLop, scope: 'managed', chiDangHoc: true, phamViCham: true });
+  const { rows } = listAttempts(p, { branchId: f.branchId ?? undefined, classId: motLop, scope: 'managed', chiDangHoc: true, phamViCham: true, chiConO: true });
   /* Một câu mỗi LỚP (như `isRatioClass` trước đây), không mỗi dòng: cách chấm + mã chương trình. */
   const lopInfo = new Map<number, { mode: CheDo; ct: string | null }>();
   const lopOf = (classId: number) => {
