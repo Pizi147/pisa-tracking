@@ -9,7 +9,7 @@ import { db } from '../db.ts';
 import { dotDaHoanTat, mondayOfDate, PERMISSIONS } from '../../../shared/domain/index.ts';
 import { can, isCoreTeacherOf, type Principal } from '../permissions.ts';
 import { addDays } from '../util.ts';
-import { loadSkillRows } from './skillSchedule.ts';
+import { loadSkillRows, scoringModeOf } from './skillSchedule.ts';
 
 export type HoanTatInfo = { hoanTat: boolean; chuNhatCuoi: string | null };
 
@@ -36,7 +36,7 @@ export function dotHoanTatMany(attemptIds: number[], today: string): Map<number,
   const nhapCuoiLichSu = new Map<number, string | null>();
   for (const r of conn
     .prepare(
-      `SELECT a.id, p.scoring_mode AS mode, a.lich_su,
+      `SELECT a.id, a.kind, p.scoring_mode AS mode, a.lich_su,
               (SELECT COALESCE(MAX(sx.nhap_dau_ngay), substr(MAX(sx.entered_at), 1, 10))
                  FROM assessment_scores sx WHERE sx.attempt_id = a.id) AS nhap_cuoi
          FROM assessment_attempts a
@@ -45,7 +45,7 @@ export function dotHoanTatMany(attemptIds: number[], today: string): Map<number,
         WHERE a.id IN (${ph})`,
     )
     .all(...attemptIds) as any[]) {
-    modeOf.set(r.id, r.mode === 'ratio' ? 'ratio' : 'ielts_band');
+    modeOf.set(r.id, scoringModeOf({ kind: r.kind, scoring_mode: r.mode ?? 'band' }) === 'ratio' ? 'ratio' : 'ielts_band');   // F03: MT0 lớp thường chấm band
     if (r.lich_su) nhapCuoiLichSu.set(r.id, r.nhap_cuoi ? addDays(mondayOfDate(addDays(String(r.nhap_cuoi), 7)), 6) : null);
   }
 

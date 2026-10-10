@@ -345,7 +345,7 @@ export type DongBoTroFinal = {
 
 /**
  * PR-CT2 (§8): SINH bổ trợ Final — MỘT hàm cho lúc đủ điểm + có quyết định (sinh sớm, `dongBoCheTaiFinal`) và lúc thi hành / điểm về muộn (`sauChuyenCuoiKhoa`).
- * Một lần: em × bài đã có Mini Test thì bỏ qua. Người dạy PA = GV cũ dạy môn đó ở lớp của bài Final (phân công hiệu lực ngày `ngay`; không có → NULL).
+ * Một lần: em × bài đã có Mini Test hoặc PA còn mang nhóm `mt:{bài}` thì bỏ qua. Người dạy PA = GV cũ dạy môn đó ở lớp của bài Final (phân công hiệu lực ngày `ngay`; không có → NULL).
  * Bắt đầu = thứ Hai muộn nhất trong {thứ Hai sau `ngay` (là thứ Hai thì chính nó), tuần khai giảng lớp đích, `tuanBatDau`}. Trong tx nơi gọi.
  */
 function taoBoTroFinal(p: Principal, dongs: readonly DongBoTroFinal[]): void {
@@ -355,6 +355,12 @@ function taoBoTroFinal(p: Principal, dongs: readonly DongBoTroFinal[]): void {
   const daCoMt = new Set<string>();
   theoLo([...new Set(dongs.map((x) => x.luot.id))], (lo, ph) => {
     for (const r of conn.prepare(`SELECT student_id, tu_attempt_id FROM mini_test WHERE tu_attempt_id IN (${ph})`).all(...lo) as any[]) daCoMt.add(`${r.student_id}:${r.tu_attempt_id}`);
+  });
+  /* F02: Mini Test đã đóng khi sang FT (`dongMiniTestSangFt`) nhưng PA của bộ còn giữ nhóm `mt:{bài}` → bộ vẫn có (huỷ bộ thì PA rời nhóm). */
+  theoLo([...new Set(dongs.map((x) => `mt:${x.luot.id}`))], (lo, ph) => {
+    for (const r of conn.prepare(
+      `SELECT DISTINCT sc.student_id, iv.nhom_bo_tro AS nhom FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE iv.nhom_bo_tro IN (${ph})`,
+    ).all(...lo) as any[]) daCoMt.add(`${r.student_id}:${String(r.nhom).slice(3)}`);
   });
   const lopDich = [...new Set(dongs.map((x) => x.toClassId))];
   const khaiGiang = new Map<number, string | null>();
