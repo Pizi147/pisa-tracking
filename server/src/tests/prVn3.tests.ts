@@ -135,7 +135,7 @@ export async function runPrVn3Tests(t: YThucTestKit) {
         };
         await goi();   // lần đầu có thể ghi (quét lệnh / vắng / hết hạn) — so ở trạng thái đã ổn định
         const { st, j } = await goi();
-        const w: any = JSON.parse(JSON.stringify(myWork(pr, q ? { nguoi: 'tat-ca' } : {})));
+        const w: any = JSON.parse(JSON.stringify(myWork(loadPrincipal(pr.userId), q ? { nguoi: 'tat-ca' } : {})));
         assert(st === 200 && !('items' in j) && !('groups' in j), `${st} · ${Object.keys(j)}`);
         const lech = (j.dong as any[]).findIndex((x, i) => JSON.stringify(x) !== JSON.stringify(w.dong[i]));
         assert(j.dong.length === w.dong.length && lech < 0 && JSON.stringify(j.summary) === JSON.stringify(w.summary),
@@ -154,7 +154,7 @@ export async function runPrVn3Tests(t: YThucTestKit) {
     skillSch.ensureSkillRows(a);
     conn.prepare(`UPDATE attempt_skills SET planned_period_id = ?, plan_source = 'manual' WHERE attempt_id = ?`).run(tuan(4).id, a);
     const tuanCua = () => get(`SELECT p.week_start w FROM attempt_skills s JOIN report_periods p ON p.id = s.planned_period_id WHERE s.attempt_id = ? AND s.skill = 'listening'`, a).w as string;
-    const lyDoCua = () => all(`SELECT reason FROM attempt_schedule_history WHERE attempt_id = ? AND action = 'week_set' AND reason IS NOT NULL`, a).map((x) => x.reason);
+    const lyDoCua = () => all(`SELECT reason FROM attempt_schedule_history WHERE attempt_id = ? AND action = 'skill_week_set' AND reason IS NOT NULL`, a).map((x) => x.reason);
     keHoach.luuDot(P.mbManager, { attemptId: a, kyNang: [{ skill: 'listening', periodId: tuan(6).id }], lyDoBo: null, reason: 'Trùng lịch phòng thi', force: true });
     assert(tuanCua() === t.addDays(tuanNay, 42) && lyDoCua().includes('Trùng lịch phòng thi'), `có lý do: ${tuanCua()} · ${lyDoCua()}`);
     keHoach.luuDot(P.mbManager, { attemptId: a, kyNang: [{ skill: 'listening', periodId: tuan(7).id }], lyDoBo: null, reason: null, force: true });
