@@ -59,13 +59,16 @@ export async function runPrHop1Tests(t: YThucTestKit) {
   });
 
   check('HOP1-d · Tuần chung (Dời lịch thi cả đợt) dời cả kỹ năng có điểm: L có điểm + R chưa điểm → cả hai sang tuần mới, điểm L giữ', () => {
-    const hop = nguon('web/src/modules/test/keHoach/HopKyNang.tsx');
-    const dong = hop.slice(hop.indexOf('const theoChungDau'), hop.indexOf('\n', hop.indexOf('const theoChungDau')));
-    assert(dong.length > 0 && !/khoa/.test(dong), `Tuần chung còn khoá dòng có điểm: ${dong}`);
     const a = em();
     conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, band, raw_score) VALUES (?,?,?,?)').run(a.m2, 'listening', 6, 30);
+    /* PR-DON: kiểm hành vi thay quét nguồn — hộp chọn dòng theo "Tuần chung" bằng đúng `theoTuanChung` (trạng thái như `ttCua` của hộp). */
+    const quyen = { nhapDiem: true, quanLy: true, gvcn: false, laFt: true, dotHoanTat: false };
+    const tt = (coDiem: boolean, sit: string | null = null) => d.trangThaiTT({ batBuoc: true, tuanBatDau: t.addDays(tuanNay, 28), coDiem, sit, choDuyet: false, lichSu: false, homNay: TODAY });
+    const dong = { listening: tt(true), reading: tt(false), writing: tt(false, 'cancelled') } as const;
+    const chung = (Object.keys(dong) as (keyof typeof dong)[]).filter((k) => d.theoTuanChung(dong[k], quyen, false));
+    assert(chung.join() === 'listening,reading', `dòng theo Tuần chung: ${chung} (${JSON.stringify(dong)})`);
     /* Payload hộp khi đổi Tuần chung: mọi dòng theo chung có tuần mới. */
-    keHoach.luuDot(QL, { attemptId: a.m2, kyNang: [{ skill: 'listening', periodId: tuan(6).id }, { skill: 'reading', periodId: tuan(6).id }], lyDoBo: null, reason: null, force: false });
+    keHoach.luuDot(QL, { attemptId: a.m2, kyNang: chung.map((skill) => ({ skill, periodId: tuan(6).id })), lyDoBo: null, reason: null, force: false });
     for (const k of ['listening', 'reading']) assert(tuanKn(a.m2, k) === t.addDays(tuanNay, 42), `${k}: ${tuanKn(a.m2, k)}`);
     assert(band(a.m2, 'listening') === 6, 'mất điểm L');
   });

@@ -919,24 +919,26 @@ function baiMoi(co: readonly KyNangKH[], tuan: Partial<Record<KyNangKH, number>>
 }
 
 /** Dữ liệu FT của cả danh sách em, đọc MỘT LẦN (không mỗi em một lượt câu): lộ trình hiện tại, lượt, lịch kỹ năng, điểm, đề nghị chờ. */
-function docFtTheoLo(studentIds: number[]) {
+export function docFtTheoLo(studentIds: number[]) {
   const conn = db();
+  /* PR-DON: mọi `IN (…)` chia lô ≤ 900 tham số (Turso) — 500 em × nhiều lượt vượt trần. Lô theo em / lộ trình nên thứ tự trong từng em giữ nguyên. */
   const cycleCua = new Map<number, any>();
-  for (const c of conn
-    .prepare(`SELECT * FROM learning_cycles WHERE student_id IN (${phOf(studentIds.length)}) ORDER BY (status = 'active') DESC, seq DESC`)
-    .all(...studentIds) as any[]) if (!cycleCua.has(c.student_id)) cycleCua.set(c.student_id, c);   // cùng cách chọn với `currentCycle`
+  theoLo(studentIds, (lo, ph) => {
+    for (const c of conn
+      .prepare(`SELECT * FROM learning_cycles WHERE student_id IN (${ph}) ORDER BY (status = 'active') DESC, seq DESC`)
+      .all(...lo) as any[]) if (!cycleCua.has(c.student_id)) cycleCua.set(c.student_id, c);   // cùng cách chọn với `currentCycle`
+  });
   const cycleIds = [...cycleCua.values()].map((c) => c.id as number);
-  const luot = cycleIds.length
-    ? conn.prepare(`SELECT * FROM assessment_attempts WHERE cycle_id IN (${phOf(cycleIds.length)}) ORDER BY attempt_no`).all(...cycleIds) as any[]
-    : [];
+  const luot: any[] = [];
+  theoLo(cycleIds, (lo, ph) => { luot.push(...conn.prepare(`SELECT * FROM assessment_attempts WHERE cycle_id IN (${ph}) ORDER BY attempt_no`).all(...lo) as any[]); });
   const ids = luot.map((a) => a.id as number);
   const rows = loadSkillRows(ids);
   const diem = new Map<number, any[]>();
-  if (ids.length) {
-    for (const s of conn.prepare(`SELECT * FROM assessment_scores WHERE attempt_id IN (${phOf(ids.length)})`).all(...ids) as any[]) {
+  theoLo(ids, (lo, ph) => {
+    for (const s of conn.prepare(`SELECT * FROM assessment_scores WHERE attempt_id IN (${ph})`).all(...lo) as any[]) {
       diem.set(s.attempt_id, [...(diem.get(s.attempt_id) ?? []), s]);
     }
-  }
+  });
   return { cycleCua, luot, rows, diem, choDuyet: pendingMovesFor(ids) };
 }
 

@@ -472,4 +472,49 @@ export async function runPrCt2Tests(t: YThucTestKit) {
     assert(!mt.coTheGhi || loi?.status !== 403, `nút hiện (coTheGhi ${mt.coTheGhi}) nhưng lưu ${loi?.status}: ${loi?.message}`);
     assert(mt.coTheGhi === true, 'người giữ việc phải có nút');
   });
+
+  /* ------------------------------------------------------------------ PR-DON (ghi chú SAU PR-CT2) — dùng chung bộ dựng ở trên */
+  check('DON-6 · Final bị huỷ lượt sau khi đã sinh sớm bộ bổ trợ: bộ chưa ai đụng → huỷ (Case đóng "Đổi quyết định lộ trình", Mini Test xoá); bộ đã có Kết quả → giữ', () => {
+    /* Huỷ lượt lớp thường qua `huyLuot` còn vướng "Kỹ năng không hợp lệ" (PR-VN5) — dựng trạng thái sau huỷ như `huyLuot` ghi, rồi gọi đúng hàm đồng bộ của nó. */
+    const huy = (a: number) => {
+      conn.prepare(`UPDATE assessment_attempts SET status = 'cancelled', cancel_reason = 'Phép kiểm', cancelled_at = ?, updated_at = ? WHERE id = ?`).run(TODAY, TODAY, a);
+      ck.dongBoCheTaiFinal(P.mbManager, get('SELECT class_id FROM assessment_attempts WHERE id = ?', a).class_id, [get('SELECT student_id FROM assessment_attempts WHERE id = ?', a).student_id]);
+    };
+    const f = dungFou();
+    ra(f.nguon, f.sid, 'len_lop', f.dich);
+    nhap(f.a, { listening: 18, reading: 18, writing: 10, speaking: 9 });
+    const caseId = paMt(f.a)[0]?.case_id;
+    assert(mts(f.sid).length === 1 && caseId, 'phải sinh sớm');
+    huy(f.a);
+    assert(mts(f.sid).length === 0 && paMt(f.a).length === 0, `chưa ai đụng mà còn: ${mts(f.sid).length} · ${chuKy(paMt(f.a))}`);
+    assert(get('SELECT system_close_reason r FROM sos_cases WHERE id = ?', caseId).r === 'doi_quyet_dinh', 'Case của lần sinh phải đóng');
+
+    const g = dungFou();
+    ra(g.nguon, g.sid, 'len_lop', g.dich);
+    nhap(g.a, { listening: 18, reading: 18, writing: 10, speaking: 9 });
+    const iv = paMt(g.a)[0];
+    cases.updateResult(loadPrincipal(iv.performer_user_id), iv.id, { ...KQ, ...d.thanKetQuaTuan({ kind: 'bo_tro_mien_phi', soBuoi: 4 }, '1', null) });
+    huy(g.a);
+    assert(mts(g.sid).length === 1 && paMt(g.a).length === 2, `đã có Kết quả mà vẫn huỷ: ${mts(g.sid).length} · ${chuKy(paMt(g.a))}`);
+  });
+
+  check('DON-7 · bộ bổ trợ đã có Kết quả rồi đổi quyết định sang FT → thi hành: Mini Test chưa ghi + việc "Ghi Mini Test" tự đóng, lịch sử Case một dòng "Đóng Mini Test: em chuyển Fast Track"; không sinh bộ mới', () => {
+    /* FOU → FT: đường khó hơn (thi hành FOU → FT vốn sinh bộ ở lộ trình FT — bộ cũ phải chặn sinh trùng). */
+    for (const ma of ['FOU']) {
+      const f = dungFou();
+      ra(f.nguon, f.sid, 'len_lop', f.dich);
+      nhap(f.a, { listening: 18, reading: 18, writing: 10, speaking: 9 });
+      const iv = paMt(f.a)[0];
+      assert(iv && mts(f.sid).length === 1, `${ma}: phải sinh sớm`);
+      cases.updateResult(loadPrincipal(iv.performer_user_id ?? P.admin.userId), iv.id, { ...KQ, ...d.thanKetQuaTuan({ kind: 'bo_tro_mien_phi', soBuoi: iv.so_buoi }, '1', null) });
+      lenh.suaLenh(P.mbManager, lenhCua(f.sid).id, { huong: 'fast_track', toClassId: lop('FT', 1, true), mucTieu: 6 });
+      assert(mts(f.sid).length === 1, `${ma}: đã có Kết quả mà đổi quyết định đã huỷ`);
+      chay(f.sid);
+      assert(all('SELECT * FROM mini_test WHERE student_id = ? AND ty_le IS NULL', f.sid).length === 0, `${ma}: còn Mini Test chưa ghi ${JSON.stringify(mts(f.sid))}`);
+      assert(!ck.emConMiniTest([f.sid]).get(f.sid), `${ma}: việc Ghi Mini Test còn treo`);
+      const ls = all(`SELECT new_value v FROM sos_case_history WHERE field = 'dong_mini_test' AND old_value = ? AND case_id IN (SELECT case_id FROM case_interventions WHERE nhom_bo_tro = ?)`, `mt:${f.a}`, `mt:${f.a}`);
+      assert(ls.length === 1 && ls[0].v === 'Đóng Mini Test: em chuyển Fast Track', `${ma}: lịch sử ${JSON.stringify(ls)}`);
+      assert(mts(f.sid).length === 0 && paMt(f.a).every((x) => x.cycle_id === f.cyc), `${ma}: sinh bộ mới ở FT: ${JSON.stringify(mts(f.sid))} · ${chuKy(paMt(f.a))}`);
+    }
+  });
 }

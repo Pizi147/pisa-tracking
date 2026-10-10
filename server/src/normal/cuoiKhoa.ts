@@ -301,6 +301,8 @@ export function sauChuyenCuoiKhoa(p: Principal, dongs: readonly DongSauChuyen[])
   }
   taoCaseKyVong(p, kyVongCase);
   taoBoTroFinal(p, boTro);
+  /* PR-DON (CT2, chủ SP 10/10): SAU `taoBoTroFinal` (bộ cũ còn chặn sinh trùng) — em sang FT còn Mini Test chưa ghi ở lộ trình cũ → tự đóng. */
+  dongMiniTestSangFt(p, dongs.filter((d) => d.toFt && cu.has(d.sid)).map((d) => [d.sid, cu.get(d.sid)!]));
   if (baoPh.size) {
     const co = new Set<number>();
     theoLo([...baoPh.keys()], (lo, ph) => {
@@ -309,6 +311,28 @@ export function sauChuyenCuoiKhoa(p: Principal, dongs: readonly DongSauChuyen[])
     chenNhieuDong('INSERT INTO sos_coordination_actions (attempt_id, student_id, kind, custom_name, preset, status, created_at)',
       [...baoPh].filter(([attemptId]) => !co.has(attemptId)).map(([attemptId, sid]) => [attemptId, sid, 'bao_ph_tvv', null, 1, 'pending', nowIso()]));
   }
+}
+
+/**
+ * PR-DON (CT2, chủ SP 10/10: TỰ ĐÓNG): bộ bổ trợ Final đã có Kết quả nên không huỷ khi đổi quyết định sang FT; thi hành đóng Case lớp thường
+ * (đổi chương trình) → Mini Test chưa ghi ở lộ trình cũ và việc "Ghi Mini Test" tự đóng (xoá dòng chưa ghi — không có điểm nào mất), một dòng
+ * lịch sử ở Case của nhóm. `cap` = (em, lộ trình cũ). Theo lô; trong tx nơi gọi.
+ */
+function dongMiniTestSangFt(p: Principal, cap: readonly [number, number][]): void {
+  if (!cap.length) return;
+  const conn = db();
+  const mts: { id: number; student_id: number; nhom_bo_tro: string; case_id: number | null }[] = [];
+  theoLo(cap, (lo) => {
+    mts.push(...conn.prepare(
+      `SELECT m.id, m.student_id, m.nhom_bo_tro, (SELECT MIN(iv.case_id) FROM case_interventions iv WHERE iv.nhom_bo_tro = m.nhom_bo_tro) AS case_id
+         FROM mini_test m WHERE m.ty_le IS NULL AND (m.student_id, m.cycle_id) IN (VALUES ${lo.map(() => '(?,?)').join(',')})`,
+    ).all(...lo.flat()) as any[]);
+  }, Math.floor(THAM_SO_TOI_DA / 2));
+  if (!mts.length) return;
+  theoLo(mts.map((m) => m.id), (lo, ph) => { conn.prepare(`DELETE FROM mini_test WHERE id IN (${ph})`).run(...lo); });
+  chenNhieuDong('INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at)',
+    mts.filter((m) => m.case_id !== null).map((m) => [m.case_id, 'dong_mini_test', m.nhom_bo_tro, 'Đóng Mini Test: em chuyển Fast Track', p.userId, nowIso()]));
+  writeAudit({ actorUserId: p.userId, action: 'cuoi_khoa.mini_test_dong', entityType: 'mini_test', entityId: null, after: { miniTest: mts.map((m) => m.id), hocVien: mts.map((m) => m.student_id) } });
 }
 
 /** Một em cần bổ trợ Final: Case + PA Bổ trợ miễn phí (mỗi môn trượt) + một Mini Test. `cycleId` = lộ trình gắn Case; `ownerClassId` = lớp chọn chủ Case. */
@@ -442,14 +466,16 @@ export function dongBoCheTaiFinal(p: Principal, classId: number, sids?: readonly
   if (sids && !sids.length) return;
   const conn = db();
   /* Em đang học lớp × bài Final mới nhất ĐÃ ĐỦ điểm (`done`) hoặc đã có Mini Test, lộ trình của bài còn chạy — không ai thì dừng sau một câu. */
-  const em = new Map<number, { a: number; attemptNo: number; cyc: number }>();
+  /* PR-DON: bài đã HUỶ mà còn Mini Test (huỷ lượt sau khi sinh sớm) cũng vào — đứng trước bài còn hiệu lực cùng em (bài sau ghi đè). */
+  const em = new Map<number, { a: number; attemptNo: number; cyc: number; huy: boolean }>();
   const doc = (loc: string, args: readonly unknown[]) => {
     for (const r of conn.prepare(
-      `SELECT a.id, a.student_id, a.attempt_no, a.cycle_id FROM assessment_attempts a
+      `SELECT a.id, a.student_id, a.attempt_no, a.cycle_id, a.status FROM assessment_attempts a
          JOIN enrollments e ON e.student_id = a.student_id AND e.class_id = a.class_id AND e.status = 'active'
          JOIN learning_cycles lc ON lc.id = a.cycle_id AND lc.status = 'active'
-        WHERE a.class_id = ? AND a.kind = 'final' AND a.status != 'cancelled' AND (a.status = 'done' OR EXISTS (SELECT 1 FROM mini_test m WHERE m.tu_attempt_id = a.id))${loc} ORDER BY a.id`,
-    ).all(classId, ...args) as any[]) em.set(r.student_id, { a: r.id, attemptNo: r.attempt_no, cyc: r.cycle_id });
+        WHERE a.class_id = ? AND a.kind = 'final' AND ((a.status = 'done') OR EXISTS (SELECT 1 FROM mini_test m WHERE m.tu_attempt_id = a.id))${loc}
+        ORDER BY a.status != 'cancelled', a.id`,
+    ).all(classId, ...args) as any[]) em.set(r.student_id, { a: r.id, attemptNo: r.attempt_no, cyc: r.cycle_id, huy: r.status === 'cancelled' });
   };
   if (sids) theoLo([...new Set(sids)], (lo, ph) => doc(` AND a.student_id IN (${ph})`, lo), THAM_SO_TOI_DA - 1);
   else doc('', []);
@@ -484,13 +510,13 @@ export function dongBoCheTaiFinal(p: Principal, classId: number, sids?: readonly
     const t = tyLe.get(x.a), l = lenh.get(sid), m = mt.get(sid);
     const du = !!t && t.tyLe !== null;
     const b = du ? goiYCuoiKhoa({ ct: t!.ct, tyLe: t!.tyLe, monTruot: t!.monTruot })?.boTroNeuLen ?? null : null;
-    const can = !!b && !!l && (l.huong === 'len_lop' || l.huong === 'fast_track') && !l.is_fast_track;
+    const can = !x.huy && !!b && !!l && (l.huong === 'len_lop' || l.huong === 'fast_track') && !l.is_fast_track;
     if (can && !m) {
       sinh.push({
         sid, luot: { id: x.a, attemptNo: x.attemptNo }, ct: t!.ct!, tyLe: t!.tyLe!, b: b!, fromClassId: classId, toClassId: l.lop_dich_id, toFt: false,
         cycleId: x.cyc, ownerClassId: classId, ngay: homNay, tuanBatDau: l.tuan_bat_dau,
       });
-    } else if (!can && m && m.ty_le === null && !m.dung && (du || !l)) (m.sua ? giu : huy).push(m);
+    } else if (!can && m && m.ty_le === null && !m.dung && (du || !l || x.huy)) (m.sua ? giu : huy).push(m);
   }
   taoBoTroFinal(p, sinh);
   huyBoTroFinal(p, classId, huy, homNay);

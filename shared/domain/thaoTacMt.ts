@@ -106,6 +106,15 @@ export function menuHopKyNang(tt: TrangThaiTT, q: QuyenTT, moi: boolean):
   }));
 }
 
+/**
+ * PR-HOP1 (luật 1) · PR-DON: dòng của hộp một đợt đổi theo "Tuần chung" — "Đổi tuần" làm thẳng (không qua Xếp lại / Khôi phục), kể cả đã có
+ * điểm / đã thi (điểm giữ). Dòng đã huỷ, vắng, chờ duyệt thì không. Hộp (`HopKyNang`) và phép kiểm dùng chung hàm này.
+ */
+export function theoTuanChung(tt: TrangThaiTT, q: QuyenTT, moi: boolean): boolean {
+  const doiTuan = menuHopKyNang(tt, q, moi)[0];
+  return doiTuan.duoc && !doiTuan.thay;
+}
+
 /** Thao tác có ô lý do (T7) — các nút của `ThaoTac` cộng những thao tác không nằm trong menu kỹ năng. */
 export type ThaoTacLyDo = ThaoTac | 'huy-luot' | 'huy-ket-qua' | 'tu-choi' | 'thi-lai' | 'huy-lich';
 
