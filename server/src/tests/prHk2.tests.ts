@@ -566,7 +566,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     assert(d.ATTEMPT_KIND_LABEL.progress === 'Progress Test' && d.ATTEMPT_KIND_LABEL.final === 'Final Test', JSON.stringify(d.ATTEMPT_KIND_LABEL));
     assert(d.ATTEMPT_KIND_SHORT.progress === 'Progress Test' && d.ATTEMPT_KIND_SHORT.final === 'Final Test', JSON.stringify(d.ATTEMPT_KIND_SHORT));
     assert(d.ATTEMPT_KIND_LABEL.mock === 'Mock Test' && d.ATTEMPT_KIND_SHORT.mock === 'MT' && d.ATTEMPT_KIND_SHORT.mt0 === 'MT0', 'mock / mt0 giữ nguyên');
-    const CHO_PHEP_WEB: readonly string[] = [];   // chỗ cho phép ở web: chưa có
+    const CHO_PHEP_WEB: readonly string[] = ['đến Cuối khoá'];   // mốc PA bổ trợ (PR-TEN): chữ thời điểm khoá, không phải tên bài
     const sai = dongCu(['web/src'], CHO_PHEP_WEB);
     assert(sai.length === 0, `${sai.length} chỗ web còn chữ cũ:\n${sai.slice(0, 40).join('\n')}`);
   });
@@ -607,7 +607,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
   });
 
   check('C39 · shared + server/src (chữ hiện ra, trừ tests) không còn Giữa khoá / Cuối khoá', () => {
-    const CHO_PHEP_MAY: readonly string[] = [];   // chỗ cho phép ở shared / máy chủ: chưa có
+    const CHO_PHEP_MAY: readonly string[] = ['đến Cuối khoá'];   // như trên (PR-TEN)
     const sai = dongCu(['shared', 'server/src'], CHO_PHEP_MAY);
     assert(sai.length === 0, `${sai.length} chỗ còn chữ cũ:\n${sai.slice(0, 80).join('\n')}`);
   });
