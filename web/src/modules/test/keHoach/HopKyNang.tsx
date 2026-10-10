@@ -7,7 +7,7 @@ import { addDaysStr } from '../../../lib/format.ts';
 import { useToast } from '../../../ui/Toast.tsx';
 import {
   CAU_TUAN_DA_QUA, CHU_MUC_HOP, chipDongKyNang, duongDotTest, kiemTuanXep, menuHopKyNang, mondayOfDate,
-  nhanTuanKhoa, tenMon, tenMonNgan, thaoTacKyNang, trangThaiTT, tuanDaSo, tuanLich, tuanMacDinhDotMoi,
+  nhanTuanKhoa, tenMon, tenMonNgan, thaoTacKyNang, theoTuanChung, trangThaiTT, tuanDaSo, tuanLich, tuanMacDinhDotMoi,
   type BaiXemTruoc, type DongHangLoat, type KyNangKH, type MucHop, type OKyNang, type ThaoTac, type TrangThaiTT,
 } from '@shared/domain/index.ts';
 import { KY, thanDot, type DotChon, type KnO } from './kieu.ts';
@@ -73,7 +73,7 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
   };
   const menuCua = (k: KyNangKH) => menuHopKyNang(ttCua(k), quyen, moi);
   /** Dòng đổi tuần thường (không qua Xếp lại / Khôi phục; không đã huỷ / vắng / chờ duyệt) — theo "Tuần chung", kể cả có điểm (điểm giữ, luật 1). */
-  const theoChungDau = (k: KyNangKH) => !laKhoa(k) && menuCua(k)[0].duoc && !menuCua(k)[0].thay;
+  const theoChungDau = (k: KyNangKH) => !laKhoa(k) && theoTuanChung(ttCua(k), quyen, moi);
 
   const khoiTao = (): Record<KyNangKH, Dong> => {
     const o = {} as Record<KyNangKH, Dong>;
