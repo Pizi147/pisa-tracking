@@ -12,6 +12,7 @@ export async function runPrDonTests(t: YThucTestKit) {
   const nv: any = await import('../worklist/nhacViec.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   const require_kv: any = await import('../normal/kyVong.ts');
+  const require_kh: any = await import('../keHoach/keHoachTest.ts');
   console.log('\nPR-DON · dọn ghi chú cũ');
 
   const homNay = `nhac:%:${TODAY}`;
@@ -66,5 +67,19 @@ export async function runPrDonTests(t: YThucTestKit) {
     assert(ma(() => kv.panelKyVong(gv, be)) === 403, `lớp có thật: ${ma(() => kv.panelKyVong(gv, be))}`);
     assert(ma(() => kv.panelKyVong(gv, 9_999_999)) === 403, `id không tồn tại: ${ma(() => kv.panelKyVong(gv, 9_999_999))}`);
     assert(ma(() => kv.panelKyVong(P.admin, 9_999_999)) === 404, `Quản trị id lạ: ${ma(() => kv.panelKyVong(P.admin, 9_999_999))}`);
+  });
+
+  check('DON-5 · docFtTheoLo (xếp MT hàng loạt): mọi câu ≤ 900 tham số khi danh sách em / lượt lớn (Turso); kết quả như đọc một lần', () => {
+    const kh: any = require_kh;
+    const that = (conn.prepare('SELECT id FROM students ORDER BY id').all() as any[]).map((r) => r.id as number);
+    const ids = [...that, ...Array.from({ length: Math.max(0, 1000 - that.length) }, (_, i) => 9_000_000 + i)];
+    const goc = conn.prepare;
+    let maxTs = 0;
+    (conn as any).prepare = function (sql: string) { maxTs = Math.max(maxTs, (sql.match(/\?/g) ?? []).length); return goc.call(this, sql); };
+    let lo: any;
+    try { lo = kh.docFtTheoLo(ids); } finally { delete (conn as any).prepare; }
+    assert(maxTs <= 900, `câu có ${maxTs} tham số`);
+    const mot = kh.docFtTheoLo(that.slice(0, 50));
+    assert(lo.cycleCua.size >= mot.cycleCua.size && [...mot.cycleCua].every(([sid, c]: any) => lo.cycleCua.get(sid)?.id === c.id), 'lộ trình hiện tại khác khi đọc theo lô');
   });
 }
