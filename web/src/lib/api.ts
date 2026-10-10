@@ -9,15 +9,25 @@ export class ApiError extends Error {
   }
 }
 
-let cacheEpoch = 0;
-const cache = new Map<string, { epoch: number; data: unknown }>();
+const cache = new Map<string, unknown>();
+/*
+ * PR-CACHE (F01, F04): số lần xoá theo tiền tố ('' = đổi tài khoản, trúng mọi đường). Lời gọi ghi nhớ `theHe(path)` lúc BẮT ĐẦU;
+ * phản hồi về mà thế hệ đã đổi thì là dữ liệu trước lần xoá (tài khoản cũ / trước khi ghi) — không được lưu lại.
+ */
+const lanXoa = new Map<string, number>();
+const demXoa = (prefix: string) => lanXoa.set(prefix, (lanXoa.get(prefix) ?? 0) + 1);
+export function theHe(path: string): number {
+  let n = 0;
+  for (const [p, c] of lanXoa) if (path.startsWith(p)) n += c;
+  return n;
+}
 /** `null` = vô hiệu toàn bộ; chuỗi = chỉ vô hiệu các đường dẫn bắt đầu bằng tiền tố đó. */
 type InvalidateListener = (prefix: string | null) => void;
 const listeners = new Set<InvalidateListener>();
 
 /** Gọi khi đổi tài khoản: mọi dữ liệu của tài khoản cũ bị vô hiệu. */
 export function invalidateAll() {
-  cacheEpoch += 1;
+  demXoa('');
   cache.clear();
   listeners.forEach((l) => l(null));
 }
@@ -28,6 +38,7 @@ export function invalidateAll() {
  * sẽ khiến bảng đang nhập tải lại và làm mất bản nháp người dùng đang gõ ở ô khác.
  */
 export function invalidate(prefix: string) {
+  demXoa(prefix);
   for (const key of [...cache.keys()]) {
     if (key.startsWith(prefix)) cache.delete(key);
   }
@@ -37,10 +48,6 @@ export function invalidate(prefix: string) {
 export function onInvalidate(fn: InvalidateListener) {
   listeners.add(fn);
   return () => { listeners.delete(fn); };
-}
-
-export function currentEpoch() {
-  return cacheEpoch;
 }
 
 async function request<T>(method: string, path: string, body?: unknown, isForm = false): Promise<T> {
@@ -78,11 +85,10 @@ export const api = {
 };
 
 export async function cachedGet<T>(path: string): Promise<T> {
-  const hit = cache.get(path);
-  if (hit && hit.epoch === cacheEpoch) return hit.data as T;
-  /* Đổi tài khoản lúc đang chờ → không lưu dữ liệu tài khoản cũ vào kho của tài khoản mới (rà #254). */
-  const e = cacheEpoch;
+  if (cache.has(path)) return cache.get(path) as T;
+  /* Đổi tài khoản / ghi trúng tiền tố lúc đang chờ → không lưu bản cũ (rà #254, PR-CACHE). */
+  const g = theHe(path);
   const data = await api.get<T>(path);
-  if (cacheEpoch === e) cache.set(path, { epoch: e, data });
+  if (theHe(path) === g) cache.set(path, data);
   return data;
 }

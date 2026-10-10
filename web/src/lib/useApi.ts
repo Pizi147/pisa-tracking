@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ApiError, api, cachedGet, currentEpoch, onInvalidate } from './api.ts';
+import { ApiError, api, cachedGet, onInvalidate, theHe } from './api.ts';
 
 /*
  * PR-S6F-b (D14): GET ĐANG BAY cùng đường dẫn dùng chung MỘT lời gọi — Tổng quan có nhiều khối cùng đọc `/my-work`, `/tong-quan/quan-ly`.
@@ -47,8 +47,20 @@ function getChung<T>(path: string): Promise<T> {
 /** PR-TD2-c: bắt đầu tải một đường trước khi khối cần nó gắn (song song với đường khác); khối gắn sau dùng lại qua `dangBay`/bản vừa xem. */
 export function taiTruoc(path: string): void {
   if (conMoi(path)) return;
-  const e = currentEpoch();   // đổi tài khoản lúc đang tải → bỏ kết quả, không để hook của tài khoản mới dùng (rà #254)
-  getChung(path).then((d) => { if (currentEpoch() === e) nhoBanXem(path, d); }, () => { /* lỗi để khối gắn sau tự gọi lại và báo */ });
+  taiVaNho(path).catch(() => { /* lỗi để khối gắn sau tự gọi lại và báo */ });
+}
+
+/**
+ * Tải (dùng chung lời gọi đang bay) rồi nhớ bản vừa xem. `null` = có lần xoá trúng đường này sau khi bắt đầu (đổi tài khoản / ghi):
+ * bỏ phản hồi, không ghi `daXem` — hook đang gắn đã được `onInvalidate` cho tải lại (PR-CACHE F01, F04).
+ */
+export function taiVaNho<T>(path: string): Promise<{ d: T } | null> {
+  const g = theHe(path);
+  return getChung<T>(path).then((d) => {
+    if (theHe(path) !== g) return null;
+    nhoBanXem(path, d);
+    return { d };
+  });
 }
 
 /** Gộp tải lại sau lần lưu cuối (PR-UX1 Q14) — tải lại sau mỗi ô làm nặng Turso. */
@@ -115,11 +127,10 @@ export function useApi<T>(path: string | null, deps: unknown[] = []): ApiState<T
     const seq = ++latest.current;
     setFetching(true);
     setError(null);
-    getChung<T>(path)
-      .then((d) => {
-        if (seq !== latest.current) return;   // bỏ qua phản hồi cũ
-        nhoBanXem(path, d);
-        setDataState(d);
+    taiVaNho<T>(path)
+      .then((kq) => {
+        if (seq !== latest.current || !kq) return;   // bỏ qua phản hồi cũ
+        setDataState(kq.d);
         setFetching(false);
       })
       .catch((e) => {
