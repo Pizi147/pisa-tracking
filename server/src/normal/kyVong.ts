@@ -17,15 +17,15 @@ import { assessedBands } from '../fasttrack/scoring.ts';
 
 /**
  * KỲ VỌNG ĐẦU RA CẢ LỚP (PR-KV, đặc tả 08/10 §3, mockup cuối khoá 2 phần 3) — em BE/ELE có quyết định Lên FT. Đạt = Overall MT0 ≥ ngưỡng
- * (`goiYKyVong`). MỘT việc Quản lý mỗi lớp nguồn khi lớp có em đủ điểm MT0; kết luận ghi ở `lo_trinh_tiep_theo` (em × lớp nguồn).
+ * (`goiYKyVong`). MỘT việc Quản lý mỗi lớp nguồn khi lớp có em có điểm MT0 (ít nhất 3 kỹ năng); kết luận ghi ở `lo_trinh_tiep_theo` (em × lớp nguồn).
  * Em đã sang FT → Case ngay (`taoCaseKyVong`); chưa sang → lúc thi hành (`sauChuyenCuoiKhoa`). Mọi đọc / ghi theo lô (Turso).
  */
 
 type KetLuan = { dat: boolean; nguyenNhan: 'trung_tam' | 'hoc_sinh' | null; mon: string[]; ghiChu: string | null };
 type EmKyVong = {
   id: number; ma: string; ten: string; lopId: number; lopCode: string; ct: string; daChuyen: boolean; lopFtId: number | null; lopFt: string | null;
-  /** Band MT0 + Overall; null = MT0 chưa đủ 4 kỹ năng ("Chờ MT0"). */
-  mt0: (Record<RegularSkill, number> & { overall: number }) | null;
+  /** Band MT0 (kỹ năng chưa thi = null) + Overall; null = MT0 chưa đủ 3 kỹ năng có band ("Chờ MT0"). */
+  mt0: (Record<RegularSkill, number | null> & { overall: number }) | null;
   goiY: GoiYKyVong | null; ketLuan: KetLuan | null;
 };
 
@@ -54,7 +54,7 @@ function emKyVong(o: { sc?: Scope; branchId?: number | null; classId?: number })
     return {
       id: r.student_id, ma: r.student_code, ten: r.full_name, lopId: r.lop_nguon_id, lopCode: r.code, ct: r.programme_code,
       daChuyen: r.trang_thai === 'da_chuyen', lopFtId: r.dich_id, lopFt: r.dich_code,
-      mt0: goiY ? { ...(bands as Record<RegularSkill, number>), overall: goiY.overall } : null, goiY,
+      mt0: goiY ? { ...bands, overall: goiY.overall } : null, goiY,
       ketLuan: r.ky_vong_dat === null ? null
         : { dat: !!r.ky_vong_dat, nguyenNhan: r.ky_vong_nguyen_nhan ?? null, mon: jsonMang(r.ky_vong_mon), ghiChu: r.ky_vong_ghi_chu ?? null },
     };
@@ -89,7 +89,7 @@ export function mt0TheoLop(ds: readonly { sid: number; lop: number; ct: string |
 type LopKyVong = { classId: number; code: string; chua: number[]; choMt0: number };
 
 /**
- * Việc QL "Kỳ vọng đầu ra · lớp · n em" (`myWork`) và chỉ số `hv-len-ft-chua-ky-vong` — CÙNG một tập: lớp có ít nhất một em đủ điểm MT0 và còn em
+ * Việc QL "Kỳ vọng đầu ra · lớp · n em" (`myWork`) và chỉ số `hv-len-ft-chua-ky-vong` — CÙNG một tập: lớp có ít nhất một em có điểm MT0 và còn em
  * chưa kết luận (`chua`, kể cả em "Chờ MT0" — dòng còn tới khi hết em). Phạm vi `request.approve`. Nhớ trong request.
  */
 export function lopKyVong(p: Principal, branchId: number | null): LopKyVong[] {
@@ -146,7 +146,7 @@ export function kiemDongKyVong(x: any, ten: string): DongKyVong {
 }
 
 /**
- * PUT "Lưu · n em" — MỘT tx: ghi kết luận cả lô (`lo_trinh_tiep_theo`) rồi tạo Case cho em đã sang FT. Em phải thuộc lớp và đủ điểm MT0.
+ * PUT "Lưu · n em" — MỘT tx: ghi kết luận cả lô (`lo_trinh_tiep_theo`) rồi tạo Case cho em đã sang FT. Em phải thuộc lớp và có điểm MT0.
  * Đổi kết luận sau khi đã tạo Case → Case cũ GIỮ (người phụ trách tự xử lý), không tạo trùng.
  */
 export function luuKyVong(p: Principal, classId: number, body: any): { luu: number; taoCase: number; boQua: number } {
@@ -158,8 +158,8 @@ export function luuKyVong(p: Principal, classId: number, body: any): { luu: numb
   const dong = [...new Map(vao.map((x) => {
     const e = em.get(Number(x?.sid));
     if (!e) throw badRequest('Học viên không có quyết định Lên FT ở lớp này.');
-    if (!e.mt0) throw badRequest(`${e.ten}: chờ MT0 đủ điểm.`);
-    /* Học viên không gửi kỹ năng → kỹ năng MT0 dưới ngưỡng; vẫn rỗng (MT0 không kỹ năng nào dưới ngưỡng) → 400 "chọn kỹ năng". */
+    if (!e.mt0) throw badRequest(`${e.ten}: MT0 cần ít nhất 3 kỹ năng có điểm.`);
+    /* Học viên không gửi kỹ năng → kỹ năng CÓ band MT0 dưới ngưỡng (kỹ năng chưa thi không tính); vẫn rỗng → 400 "chọn kỹ năng". */
     const thieu = x?.nguyenNhan === 'hoc_sinh' && !(Array.isArray(x.mon) && x.mon.length);
     return [e.id, kiemDongKyVong(thieu ? { ...x, mon: e.goiY!.monTruot } : x, e.ten)] as const;
   })).values()];

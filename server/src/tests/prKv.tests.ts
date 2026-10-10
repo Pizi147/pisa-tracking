@@ -72,14 +72,16 @@ export async function runPrKvTests(t: YThucTestKit) {
   const caseKv = (sid: number) => all(`SELECT * FROM sos_cases WHERE student_id = ? AND title LIKE 'Kỳ vọng đầu ra%' ORDER BY id`, sid);
   const paCua = (caseId: number) => all('SELECT * FROM case_interventions WHERE case_id = ?', caseId);
 
-  check('KV1 · goiYKyVong: Overall = trung bình 4 kỹ năng làm tròn 0.5; ELE ≥ 4.5, BE ≥ 4.0; kỹ năng dưới ngưỡng; thiếu kỹ năng → null', () => {
+  check('KV1 · goiYKyVong: Overall = trung bình 4 kỹ năng làm tròn 0.5; ELE ≥ 4.5, BE ≥ 4.0; kỹ năng dưới ngưỡng; thiếu một kỹ năng → Overall trên kỹ năng có band; dưới 3 kỹ năng → null', () => {
     const a = d.goiYKyVong('ELE', { listening: 5, reading: 4.5, writing: 4.5, speaking: 5.5 });
     assert(a && a.overall === 5 && a.dat === true && a.monTruot.length === 0, JSON.stringify(a));
     const b = d.goiYKyVong('ELE', { listening: 4.5, reading: 4.5, writing: 3.5, speaking: 4 });
     assert(b && b.overall === 4 && b.dat === false && b.monTruot.join() === 'writing,speaking', JSON.stringify(b));
     const c = d.goiYKyVong('BE', { listening: 4, reading: 4, writing: 3.5, speaking: 4.5 });
     assert(c && c.overall === 4 && c.dat === true && c.monTruot.join() === 'writing', JSON.stringify(c));
-    assert(d.goiYKyVong('ELE', { listening: 5, reading: 5, writing: null, speaking: 5 }) === null, 'thiếu W phải null');
+    assert(d.goiYKyVong('ELE', { listening: 5, reading: 5, writing: null, speaking: 5 })?.overall === 5, 'thiếu W: Overall trên 3 kỹ năng có band');
+    assert(d.goiYKyVong('ELE', { listening: 5, reading: 5, writing: null, speaking: null }) === null, '2 kỹ năng → null');
+    assert(d.goiYKyVong('ELE', { writing: null }) === null, 'không band nào → null');
     assert(d.goiYKyVong('FOU', { listening: 5, reading: 5, writing: 5, speaking: 5 }) === null, 'FOU không có kỳ vọng');
   });
 
@@ -240,5 +242,34 @@ export async function runPrKvTests(t: YThucTestKit) {
       .run(J, cyc, 'speaking', 'speaking', 'mock', TODAY, 'in_progress', d.caseDedupKey({ category: 'speaking', studentId: J, cycleId: cyc }), 'Case Mock đang mở', new Date().toISOString());
     const r = kv.luuKyVong(P.mbManager, ele6, { dong: [J, K].map((sid) => ({ sid, dat: false, nguyenNhan: 'trung_tam', mon: ['writing', 'speaking'] })) });
     assert(r.taoCase === 3 && r.boQua === 1, `taoCase/boQua: ${JSON.stringify(r)}`);
+  });
+  check('KV13 · MT0 thiếu kỹ năng (em không thi W): Overall trên kỹ năng có band, kỹ năng thiếu không vào "trượt"; chỉ W1 = W chưa thi; < 3 kỹ năng → Chờ MT0; BE 4.0 / ELE 4.5', () => {
+    const ele7 = lopMoi('ELE', false, 11), ft7 = lopMoi('FT', true, 1);
+    const [M, N, Q, R, T] = [hocVien(ele7, 'ELE'), hocVien(ele7, 'ELE'), hocVien(ele7, 'ELE'), hocVien(ele7, 'ELE'), hocVien(ele7, 'ELE')];
+    lenFt(ele7, [M, N, Q, R, T], ft7, true);
+    const diemMot = (sid: number, b: Record<string, number>) => {
+      const a = get(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'mt0' AND status != 'cancelled'`, sid);
+      for (const [k, v] of Object.entries(b)) conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, band, entered_at) VALUES (?,?,?,?)').run(a.id, k, v, new Date().toISOString());
+    };
+    diemMot(M, { listening: 5, reading: 4.5, speaking: 5 });              // (a) 14.5/3 → 5.0 ≥ 4.5
+    diemMot(N, { listening: 4, reading: 4.5, speaking: 4 });              // (b) 12.5/3 → 4.0 < 4.5
+    diemMot(Q, { listening: 4.5, reading: 4.5, speaking: 4.5, writing1: 5 });   // (c) chỉ W1 → W chưa thi, 3 band
+    diemMot(T, { listening: 5, speaking: 5, writing1: 5 });                     // (c') 2 band + W1 lẻ → Chờ MT0
+    const em = (sid: number) => kv.panelKyVong(P.mbManager, ele7).em.find((x: any) => x.id === sid);
+    assert(em(M).goiY?.dat === true && em(M).mt0.overall === 5 && em(M).mt0.writing === null && em(M).goiY.monTruot.length === 0, `(a) ${JSON.stringify(em(M))}`);
+    assert(em(N).goiY?.dat === false && em(N).mt0.overall === 4 && em(N).goiY.monTruot.join() === 'listening,speaking', `(b) ${JSON.stringify(em(N))}`);
+    assert(em(Q).mt0?.overall === 4.5 && em(Q).mt0.writing === null && em(Q).goiY.dat === true, `(c) ${JSON.stringify(em(Q))}`);
+    assert(em(T).mt0 === null && em(T).goiY === null, `(c') 2 kỹ năng: ${JSON.stringify(em(T))}`);
+    assert(em(R).mt0 === null && em(R).goiY === null, `(d) ${JSON.stringify(em(R))}`);
+    const r = kv.luuKyVong(P.mbManager, ele7, { dong: [
+      { sid: M, dat: true }, { sid: N, dat: false, nguyenNhan: 'hoc_sinh', lyDo: 'Không thi Writing' }, { sid: Q, dat: true }] });
+    assert(r.luu === 3, JSON.stringify(r));
+    assert(get('SELECT ky_vong_mon FROM lo_trinh_tiep_theo WHERE student_id = ? AND class_id = ?', N, ele7).ky_vong_mon === '["listening","speaking"]', '(b) kỹ năng trượt chỉ gồm môn có band');
+    const e = maLoi(() => kv.luuKyVong(P.mbManager, ele7, { dong: [{ sid: R, dat: true }] }));
+    assert(e?.status === 400 && /ít nhất 3 kỹ năng/.test(e.msg), `(d) ${JSON.stringify(e)}`);
+    assert(maLoi(() => kv.luuKyVong(P.mbManager, ele7, { dong: [{ sid: T, dat: true }] }))?.status === 400, `(c') 2 kỹ năng không lưu được`);
+    /* (e) cùng band, khác ngưỡng: 11.5/3 → 4.0 */
+    const b3 = { listening: 4, reading: 4, writing: null, speaking: 3.5 };
+    assert(d.goiYKyVong('BE', b3)?.dat === true && d.goiYKyVong('ELE', b3)?.dat === false && d.goiYKyVong('ELE', b3)?.monTruot.join() === 'listening,reading,speaking', '(e)');
   });
 }

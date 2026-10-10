@@ -194,6 +194,7 @@ Chủ sản phẩm 05/10 đã chốt (mockup `thiet-ke/mockup-test-mt-2026-10-05
 | 07/10 chiều | **Đổi lại: deploy NGAY sau HK2 + #236** (sửa lỗi Turso), theo `DEPLOY_2026-10.md`; **PR-EN + PR-SOTAY deploy lần 2**. Thay dòng dưới | deploy |
 | 07/10 | ~~**Deploy MỘT lần sau khi xong HẾT** (… → KHUNG → HK2 → PR-EN → PR-SOTAY → deploy), thay "deploy sau HK2". Sổ tay viết theo `main` cuối cùng (ảnh chụp app chạy cục bộ), không chờ bản chính~~ (bỏ, xem dòng trên) | EN, SOTAY, deploy |
 | 07/10 | PR-EN: nút **"VI \| EN"** chữ nhỏ cạnh nút Sáng/Tối; màn đăng nhập **hai nút to "Tiếng Việt \| English" ngay trên khung**; **bảng thuật ngữ EN planning tự chọn** (tiếng Anh tự nhiên của trung tâm IELTS), chủ sản phẩm xem trước khi merge; **lần này planning được tự duyệt mockup EN** (chỉ đổi chữ + nút đổi ngôn ngữ, giữ giao diện) **và dàn ý sổ tay**, chủ sản phẩm xem ảnh trước khi merge | EN, SOTAY |
+| 10/10 | **Kỳ vọng đầu ra (luật A):** Overall MT0 cần **≥ 3/4 kỹ năng có band**; W có band chỉ khi đủ W1 + W2; < 3 → "Chờ MT0"; kỹ năng thiếu = "chưa thi", không vào kỹ năng trượt; Đạt/Không đạt vẫn do QL chọn | KV #312 |
 | 06/10 | **Không dùng Fable** ở mọi session, kể cả subagent | mọi PR |
 
 ## 4. Việc chưa làm (đợt 3 còn DL, SL; đợt 4–6 ở mục 2c + kế hoạch 2026-10-05-*)
@@ -634,6 +635,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 10/10/2026 | PR-KV-thiếu · `pr-kv-thieu-ky-nang` · Opus 5.5 | Kỳ vọng đầu ra khi MT0 thiếu kỹ năng (luật A): Overall = TB kỹ năng có band, cần ≥ 3/4 (W đủ W1 + W2), < 3 → Chờ MT0; kỹ năng thiếu "chưa thi", không vào `monTruot`; W MT0 lớp thường lưu `writing1`/`writing2` (không lỗi khoá); `prKv.tests.ts` KV13 |
 | 10/10/2026 | PR-VN6 · `pr-vn6` · Opus 5.5 | F03 MT0 lớp thường hoàn tất theo band (`hoanTat.ts` qua `scoringModeOf`) · F02 `taoBoTroFinal` coi PA còn nhóm `mt:{bài}` là đã có bộ + `ops/demBoTroTrung.ts` (chỉ đọc, `npm run dem-bo-tro-trung`) · F05 nhắc nhóm + con cùng lô một chuông; `prVn6.tests.ts`, VN6-2 ở `prCt2.tests.ts` |
 | 10/10 | PR-CACHE `pr-cache` · Opus 5.5 | F01+F04: `theHe` đếm lần xoá theo tiền tố; phản hồi bắt đầu trước lần xoá không vào bản vừa xem / `cachedGet`. 5 phép kiểm hành vi `prCache.tests.ts` |
 | 10/10/2026 | PR-DON · `pr-don` · Opus 5.5 | 8 ghi chú cũ: nhắc 1 lần/ngày (khoá việc + `gop:` chung) · dòng phụ gộp từ `phu` · kỳ vọng 403 trước 404 · trần `/classes/:id/ky-vong` · `docFtTheoLo` chia lô · Final huỷ → huỷ bộ chưa đụng · CT2 tự đóng Mini Test khi sang FT · HOP1-d kiểm hành vi; `prDon.tests.ts`, DON-6/7 ở `prCt2.tests.ts` |

@@ -711,7 +711,7 @@ export function ghiKetLuanFt(p: Principal, sid: number, input: { dat?: unknown; 
   if (!conn.prepare('SELECT 1 FROM students WHERE id = ?').get(sid)) throw notFound('Không tìm thấy học viên.');
   if (!can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: sid })) throw forbidden('Chỉ Quản lý mới đánh dấu được kỳ vọng đầu ra.');
   /*
-   * PR-KV (§3): cùng điều kiện với panel cả lớp — em đủ điểm MT0 ở lớp BE/ELE, và có lệnh Lên FT (chờ / đã chuyển) từ lớp đó hoặc đã lên FT
+   * PR-KV (§3): cùng điều kiện với panel cả lớp — em có điểm MT0 ở lớp BE/ELE, và có lệnh Lên FT (chờ / đã chuyển) từ lớp đó hoặc đã lên FT
    * từ lớp đó (Lộ trình tiếp theo đã áp). Không còn đòi bài Final Test. Lớp BE/ELE = lớp nguồn của lệnh Lên FT mới nhất, không có thì lớp đang học
    * (BE/ELE) hoặc lớp BE/ELE của Lộ trình tiếp theo đã áp (em đang ở FT).
    */
@@ -733,7 +733,7 @@ export function ghiKetLuanFt(p: Principal, sid: number, input: { dat?: unknown; 
   if (!nguon) throw badRequest('Chỉ em lên FT từ lớp BE/ELE mới có kỳ vọng đầu ra.');
   const lopBeEle = nguon.class_id as number, ftClass = (nguon.ft_class ?? null) as number | null;
   const goiY = mt0TheoLop([{ sid, lop: lopBeEle, ct: nguon.programme_code }]).get(sid)?.goiY ?? null;
-  if (!goiY) throw badRequest('Em chưa đủ điểm MT0 — chưa kết luận kỳ vọng đầu ra được.');
+  if (!goiY) throw badRequest('MT0 của em cần ít nhất 3 kỹ năng có điểm — chưa kết luận kỳ vọng đầu ra được.');
   if (typeof input.dat !== 'boolean') throw badRequest('Chọn Đạt hoặc Không đạt kỳ vọng đầu ra.');
   /* Cùng luật dòng với panel (`kiemDongKyVong`): không gửi kỹ năng → kỹ năng MT0 dưới ngưỡng; vẫn rỗng → 400. Học viên: lý do bắt buộc, vẫn có Case. */
   const coMon = Array.isArray(input.mon) && input.mon.length > 0;

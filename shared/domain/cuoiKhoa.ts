@@ -112,13 +112,16 @@ export const kyNangLopDich = (mon: string, denFt: boolean): string => (denFt && 
 /** PR-KV (đặc tả 08/10 §3): Đạt kỳ vọng đầu ra = Overall MT0 ≥ ngưỡng của chương trình lớp nguồn. */
 export const NGUONG_KY_VONG: Readonly<Record<string, number>> = { BE: 4, ELE: 4.5 };
 export type GoiYKyVong = { overall: number; dat: boolean; monTruot: RegularSkill[] };
-/** Gợi ý điền sẵn từ band MT0 (L R W S): Overall = trung bình làm tròn 0.5; kỹ năng dưới ngưỡng. Thiếu band / không BE-ELE → null. */
+/**
+ * Gợi ý điền sẵn từ band MT0 (L R W S): Overall = trung bình các kỹ năng CÓ band, làm tròn 0.5 (cần ≥ 3/4 kỹ năng có band — chủ SP 10/10; W có band khi đủ W1 + W2);
+ * `monTruot` chỉ gồm kỹ năng có band dưới ngưỡng — kỹ năng thiếu là "chưa thi", không tự thành trượt. Dưới 3 band / không BE-ELE → null.
+ */
 export function goiYKyVong(ct: string | null | undefined, bands: Partial<Record<RegularSkill, number | null>>): GoiYKyVong | null {
   const nguong = NGUONG_KY_VONG[programmeOf(ct) ?? ''];
-  const b = REGULAR_SKILLS.map((k) => bands[k]);
-  if (nguong === undefined || b.some((x) => x === null || x === undefined)) return null;
-  const overall = roundToHalf((b as number[]).reduce((a, x) => a + x, 0) / 4);
-  return { overall, dat: overall >= nguong, monTruot: REGULAR_SKILLS.filter((k) => (bands[k] as number) < nguong) };
+  const co = REGULAR_SKILLS.filter((k) => typeof bands[k] === 'number');
+  if (nguong === undefined || co.length < 3) return null;
+  const overall = roundToHalf(co.reduce((a, k) => a + bands[k]!, 0) / co.length);
+  return { overall, dat: overall >= nguong, monTruot: co.filter((k) => bands[k]! < nguong) };
 }
 
 /** BE IELTS 4.0 · ELE IELTS 4.5–5.0 (§6.4) — chỉ nhắc chữ, không lưu Placement. */

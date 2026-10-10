@@ -11,7 +11,7 @@ import { REGULAR_SKILLS, tenMonNgan, type GoiYKyVong, type RegularSkill } from '
 
 type Em = {
   id: number; ma: string; ten: string; lopFt: string | null;
-  mt0: (Record<RegularSkill, number> & { overall: number }) | null;
+  mt0: (Record<RegularSkill, number | null> & { overall: number }) | null;
   goiY: GoiYKyVong | null;
   ketLuan: { dat: boolean; nguyenNhan: 'trung_tam' | 'hoc_sinh' | null; mon: string[]; ghiChu: string | null } | null;
 };
@@ -29,7 +29,7 @@ const NGAN: Record<RegularSkill, string> = { listening: 'L', reading: 'R', writi
 /**
  * KỲ VỌNG ĐẦU RA · {lớp} (PR-KV, đặc tả 08/10 §3, mockup `mockup-cuoi-khoa-2-2026-10-08.html` phần 3) — em BE/ELE Lên FT. Điền sẵn theo MT0
  * (Đạt khi Overall ≥ ngưỡng); Không đạt → Trung tâm (mỗi kỹ năng một Case + Tutor 10 buổi) hoặc Học viên (Lý do bắt buộc, Case không PA).
- * Lưu một lần (`PUT /classes/:id/ky-vong`): em chưa kết luận + em đã sửa. Em thiếu MT0: "Chờ MT0", không sửa được. 1440 bảng, 375 thẻ.
+ * Lưu một lần (`PUT /classes/:id/ky-vong`): em chưa kết luận + em đã sửa. Em chưa có ít nhất 3 kỹ năng MT0 có điểm (W cần đủ W1 + W2): "Chờ MT0", không sửa được; kỹ năng thiếu band ghi "chưa thi". 1440 bảng, 375 thẻ.
  */
 export function PanelKyVong({ classId, onClose, onDone }: { classId: number; onClose: () => void; onDone: () => void }) {
   const toast = useToast();
@@ -102,10 +102,11 @@ export function PanelKyVong({ classId, onClose, onDone }: { classId: number; onC
     <span className="tabular-nums">
       {coOverall && <><b className={`text-[15px] ${e.mt0.overall < data.nguong ? 'text-late' : 'text-slate-100'}`}>{b1(e.mt0.overall)}</b>{' '}</>}
       <span className="text-xs text-slate-400">{REGULAR_SKILLS.map((k, i) => (
-        <span key={k}>{i > 0 && ' · '}<span className={e.mt0![k] < data.nguong ? 'text-late' : ''}>{NGAN[k]} {b1(e.mt0![k])}</span></span>
+        <span key={k}>{i > 0 && ' · '}{e.mt0![k] === null ? `${NGAN[k]} chưa thi`   /* thiếu band: không đỏ, không tính trượt */
+          : <span className={e.mt0![k]! < data.nguong ? 'text-late' : ''}>{NGAN[k]} {b1(e.mt0![k]!)}</span>}</span>
       ))}</span>
     </span>
-  ) : <Nhan tone="muted">Chờ MT0</Nhan>);
+  ) : <span title="MT0 cần ít nhất 3 kỹ năng có điểm"><Nhan tone="muted">Chờ MT0</Nhan></span>);
 
   const oKetQua = (e: Em) => {
     const d = dongCua(e);
