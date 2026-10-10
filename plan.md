@@ -332,9 +332,12 @@ Việc đầu tiên: giao agent soạn kế hoạch theo mẫu A mục 10 (Opus 
 
 ### PR-K26 — ✅ xong 05/10 (#196, #197).
 
-### PR-TEN · Đổi tên bài lớp thường (S, sau đợt 3, trước HK2)
-- Chủ sản phẩm 04/10 (lúc làm PR-DL): "Giữa khoá" → **Progress Test**, "Cuối khoá" → **Final Test**, **cả nhãn dài** ("Bài kiểm tra
-  giữa/cuối khoá") — thay ở mọi nơi (web, thông báo, báo cáo, sổ tay; ~940 chỗ / ~130 file). Làm sau khi U12, DL, K26, SL merge để tránh xung đột.
+### PR-TEN · Đổi tên bài lớp thường (S) — chủ SP 10/10: LÀM NGAY (sau TD3, VN3 hoặc song song nếu không chung file)
+- Chủ SP 04/10: tên BÀI "Giữa khoá" → **Progress Test**, "Cuối khoá" → **Final Test**, cả nhãn dài ("Bài kiểm tra giữa/cuối khoá"). Rà 10/10: `shared/domain/cases.ts`, `cuoiKhoa.ts` đã có Progress/Final Test một phần; còn ~100 chuỗi chứa "Giữa/Cuối khoá" (nhiều cái là chú thích).
+- **Chỉ đổi khi chữ chỉ TÊN BÀI** (chip lượt, tiêu đề cột/lưới, tên Case `[Giữa khoá] …`, toast, thông báo, Excel, chọn loại bài). **Giữ** khi chữ chỉ THỜI ĐIỂM khoá học: "đến Cuối khoá" (mốc PA bổ trợ), "Kết quả Cuối khoá"/quyết định lên lớp, "Kỳ vọng cuối khoá", tên việc QL. Phân vân → giữ, liệt kê trong mô tả PR.
+- Một nguồn: nhãn bài lấy qua hàm/hằng sẵn có ở `shared/domain` (`normal.ts`, `lopThuong.ts`, `hoSoHocVien.ts`, `cases.ts`) — sửa ở đó, không rải chuỗi. Không đổi mã (`progress`/`final`), cột DB, URL.
+- Dữ liệu cũ: tên Case đã lưu trong DB dạng `[Giữa khoá] …` — KHÔNG migrate; hiện bằng hàm tên nếu tên được dựng lúc đọc, nếu tên lưu cứng thì để nguyên (ghi trong PR).
+- Kiểm: phép kiểm `prTen.tests.ts` quét `web/src` + `shared` không còn chuỗi hiển thị "Giữa khoá"/"Bài kiểm tra giữa khoá"; "Cuối khoá" chỉ còn trong danh sách được phép (ghi rõ trong test). Phép kiểm cũ so chữ thì sửa theo tên mới.
 
 ### PR-HK2 · Badge & chữ (L, cuối cùng) — kế hoạch bổ sung `2026-10-07-pr-hk2-badge-chu.md` + mockup `mockup-hk2-2026-10-07.html` **DUYỆT 07/10** (Q1–Q4 đã trả lời); chạy sau KHUNG, LUI-a2
 - `2026-10-02-ux-sau-critique.md`: **H1/H2** ba họ chip · **K1** còn lại (nếu DH chưa làm hết) · **K2** Phân tích › Tổng hợp ·
