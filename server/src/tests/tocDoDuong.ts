@@ -314,6 +314,10 @@ export const TRAN: Record<string, number> = {
   'QL /metrics/do-phu-danh-gia': 23,
   'QT /metrics/do-phu-danh-gia': 23,
   // PR-YT2 (8), 23/09/2026 — mốc chốt ngay sau khi thêm đường, đo được 11/12 câu: max(sau+10, ⌈sau×1.3⌉).
+  /* PR-DON (ghi chú SAU PR-KV): panel Kỳ vọng đầu ra — trần = max(đo+10, ⌈đo×1,3⌉), đo 10/10: QL 8, QT 7, GVCN_THUONG 403 3. */
+  'QL /classes/2/ky-vong': 18,
+  'QT /classes/2/ky-vong': 17,
+  'GVCN_THUONG /classes/2/ky-vong': 13,
   'QL /metrics/vi-pham-theo-nhom': 18,
   'QT /metrics/vi-pham-theo-nhom': 18,
   'QL /metrics/vi-pham-tong?classId=3': 16,
