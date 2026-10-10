@@ -289,6 +289,19 @@ Báo cáo + mockup: `thiet-ke/mockup-mt-quy-trinh-2026-10-08.html` (artifact htt
 - **`GET /metrics/vi-pham-theo-nhom` vai Quản trị trả 500** trên main (TypeError `push` of undefined, PR-TD3 thấy ở DB cuối `run.ts`). Tìm gốc, sửa, thêm phép kiểm.
 - Ghi chú TD3: `/hoc-vien-lop` còn 78 % dòng (huy hiệu `standingFor`); chờ log bản chính sau deploy rồi mới quyết.
 
+### SAU PR-VN4 (#304, rà 10/10) — ghi chú
+- **Huỷ bài lớp thường có ô `writing` / `tong_hop` báo "Kỹ năng không hợp lệ"** (có từ trước, `xoaDiemLuot` / `ENTRY_SKILLS` chỉ nhận kỹ năng FT) → QL kẹt, không huỷ được. Sửa ở PR-VN5.
+- `ban_chup_luot.trang_thai` trễ một nhịp: `refreshOutcome` làm bản chụp trước khi lượt đổi `cancelled`. Nhỏ, sửa cùng PR-VN5.
+
+### BẢN TIẾP THEO — ứng viên (planning đề xuất 10/10, chờ chủ SP chọn)
+1. **PR-VN5 (S)** — hai ghi chú SAU PR-VN4 ở trên. Nên làm trước deploy (QL kẹt).
+2. **PR-TD4 (M, sau deploy + log)** — chỉ khi log `[cham]` mới còn đường > 1,5 s: `/hoc-vien-lop` (`standingFor` nạp từ lượt mới nhất mỗi em), đường top khác theo log.
+3. **Dọn ghi chú cũ (S)** — gom một PR: "Một việc bị nhắc 2 lần/ngày" (GOP), `phanRieng` cắt tiêu đề bằng chuỗi (GOP), `lopNguon` 404 trước 403 (KV),
+   trần tốc độ `GET /classes/:id/ky-vong` (KV), `docFtTheoLo` chia lô 900 tham số, Final huỷ lượt sau khi sinh sớm bộ bổ trợ (CT2), phép kiểm HOP1-d quét nguồn → kiểm hành vi.
+4. **Câu hỏi CT2 còn treo:** bộ đã có Kết quả rồi đổi sang FT → việc "Ghi Mini Test" treo: tự đóng (đề xuất) hay báo QL.
+5. **PR-EN** (bản tiếng Anh) rồi **PR-SOTAY** — như kế hoạch cũ, sau cùng.
+6. **PR-NC** — xem lại tháng 12 (cần 2–3 tháng dữ liệu).
+
 ### SAU PR-HOP1 (#293, rà 09/10) — ghi chú không chặn
 - Hồ sơ MT: dời lịch qua `HopKyNang` không còn ô **Lý do** (tuỳ chọn) như `WeekModal` cũ — nhật ký ghi không lý do. Chủ SP thấy cần thì thêm lại.
 - Lượt không có `classId`: "Dời lịch thi cả đợt" bấm không mở gì (hiếm; một kỹ năng vẫn đi `HopThaoTacMt`).
