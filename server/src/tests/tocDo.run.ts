@@ -843,6 +843,30 @@ check('TD3-a-2 · GET /cham/lich-test (QL, ×3) ≤ 40 % số dòng trước TD3
   assert(d <= Math.floor(5177 * 0.4), `${d} dòng > ${Math.floor(5177 * 0.4)}`);
 });
 
+/* TD3-b-1: hồ sơ lớp đọc `listClassSummaries(p, { classId })` — phải trùng dòng của lớp đó trong danh sách đủ (cách cũ), mọi vai × lớp. */
+await checkAsync('TD3-b-1 (×3) · listClassSummaries { classId } trùng dòng của lớp trong danh sách đủ — mọi vai đo', async () => {
+  const { listClassSummaries } = await import('../classes/classes.ts');
+  const sai: string[] = [];
+  for (const vai of Object.keys(USER) as Vai[]) {
+    const p = PRINCIPAL_CUA.get(USER[vai]) ?? loadPrincipal(USER[vai]);
+    for (const r of listClassSummaries(p, {}).rows) {
+      const mot = listClassSummaries(p, { classId: r.id }).rows;
+      if (mot.length !== 1 || JSON.stringify(mot[0]) !== JSON.stringify(r)) sai.push(`${vai} lớp ${r.id}`);
+    }
+  }
+  assert(!sai.length, `lệch: ${sai.join(', ')}`);
+});
+
+/*
+ * TD3-b-2: trước TD3-b (×3) QL hồ sơ lớp FT 5 829 dòng, Học viên & Lớp 8 417. Hồ sơ lớp ≤ 50 %. Học viên & Lớp KHÔNG đạt 50 % mà không đổi luật
+ * (còn lại: kết quả gần nhất từng em — `standingFor`, Case, Ý thức, lộ trình); giữ mức đạt được ≤ 80 % (mô tả PR).
+ */
+check('TD3-b-2 · QL ×3: /classes/{lopFT}/overview ≤ 50 % (5 829), /hoc-vien-lop ≤ 80 % (8 417)', () => {
+  const ov = dongSauNhan.get(`QL /classes/${LOP_FT}/overview`) ?? Infinity, hvl = dongSauNhan.get('QL /hoc-vien-lop') ?? Infinity;
+  console.log(`      (đo: overview ${ov}, hoc-vien-lop ${hvl} dòng)`);
+  assert(ov <= Math.floor(5829 * 0.5) && hvl <= Math.floor(8417 * 0.8), `overview ${ov} / hoc-vien-lop ${hvl}`);
+});
+
 await checkAsync('PR-TD Task5(3) · sau khi nhân dữ liệu, listCases vẫn ra ĐÚNG tập id như tham chiếu — 3 vai chính', async () => {
   const sai: string[] = [];
   for (const vai of ['QL', 'GVCN', 'QT'] as const) {

@@ -68,7 +68,7 @@ export function nhapDiemTheoEm(p: Principal, classIds: readonly number[], homNay
   const lop = [...new Set(classIds)].filter((id) => day.has(id) || can(p, PERMISSIONS.SCORE_EDIT, { classId: id }));
   const out = new Map<number, NhapDiemViec & { thuTu: { kind: string; attempt_no: number } | null; hanQua?: string | null }>();
   if (!lop.length) return out;
-  for (const a of listAttempts(p, { classIds: lop, chiDangHoc: true }).rows as any[]) {
+  for (const a of listAttempts(p, { classIds: lop, chiDangHoc: true, chiConO: true }).rows as any[]) {
     const cho = (a.myPendingDetail ?? []) as { skill: string; deadline: string | null; overdue: boolean }[];
     if (a.status === 'cancelled' || !cho.length || lopCua(a.studentId) !== a.classId) continue;
     const x = out.get(a.studentId) ?? { kyNang: [], dot: null, quaHan: false, han: null, thuTu: null, hanQua: null };

@@ -697,11 +697,6 @@ export const TRAN: Record<string, number> = {
  * Trần = max(đo + 50, ⌈đo × 1,3⌉), đo NGAY SAU TD2-a trên bộ demo gốc. Sau nhân dữ liệu ×3: ≤ 3 × trần.
  */
 export const TRAN_DONG: Record<string, number> = {
-  'QL /hoc-vien-lop': 4220,   // đo 3246
-  'GVCN /hoc-vien-lop': 3443,   // đo 2648
-  'GVBM /hoc-vien-lop': 4023,   // đo 3094
-  'GVCN_THUONG /hoc-vien-lop': 3443,   // đo 2648
-  'QT /hoc-vien-lop': 4116,   // đo 3166
   'QL /my-work': 2975,   // đo 2288
   'GVCN /my-work': 2498,   // đo 1921
   'GVBM /my-work': 2823,   // đo 2171
@@ -709,11 +704,6 @@ export const TRAN_DONG: Record<string, number> = {
   'QT /my-work': 3932,   // đo 3024
   'QL /my-work?nguoi=tat-ca': 3497,   // đo 2690
   'QT /my-work?nguoi=tat-ca': 4669,   // đo 3591
-  'QL /classes/3/overview': 3024,   // đo 2326
-  'GVCN /classes/3/overview': 2573,   // đo 1979
-  'GVBM /classes/3/overview': 2936,   // đo 2258
-  'GVCN_THUONG /classes/3/overview': 2573,   // đo 1979
-  'QT /classes/3/overview': 3964,   // đo 3049
   'QL /classes/3/roster': 2226,   // đo 1712
   'GVCN /classes/3/roster': 2447,   // đo 1882
   'GVBM /classes/3/roster': 2463,   // đo 1894
@@ -742,6 +732,19 @@ export const TRAN_DONG: Record<string, number> = {
   'GVCN_THUONG /tong-quan/lop-toi-day?ct=ft': 2703,   // đo 2079
   'QL /metrics/hv-duoi-ky-vong-mon': 2093,   // đo 1610
   'QT /metrics/hv-duoi-ky-vong-mon': 3040,   // đo 2338
+  'QL /hoc-vien-lop': 3416,   // TD3-b: đo 2627 (68 câu)
+  'GVCN /hoc-vien-lop': 2602,   // TD3-b: đo 2001 (72 câu)
+  'GVBM /hoc-vien-lop': 2975,   // TD3-b: đo 2288 (72 câu)
+  'GVCN_THUONG /hoc-vien-lop': 2602,   // TD3-b: đo 2001 (72 câu)
+  'QT /hoc-vien-lop': 3305,   // TD3-b: đo 2542 (67 câu)
+  'QL /classes/3/overview': 1152,   // TD3-b: đo 886 (56 câu)
+  'GVCN /classes/3/overview': 1211,   // TD3-b: đo 931 (60 câu)
+  'GVBM /classes/3/overview': 1208,   // TD3-b: đo 929 (60 câu)
+  'GVCN_THUONG /classes/3/overview': 1211,   // TD3-b: đo 931 (60 câu)
+  'QT /classes/3/overview': 1076,   // TD3-b: đo 827 (53 câu)
+  'QL /classes/6/overview': 801,   // TD3-b: đo 616 (68 câu)
+  'QT /classes/6/overview': 756,   // TD3-b: đo 581 (65 câu)
+  'GVCN_THUONG /classes/6/overview': 819,   // TD3-b: đo 630 (72 câu)
 };
 
 export const TRAN_GHI_LO = {
