@@ -463,19 +463,23 @@ export function dongBoCheTaiFinal(p: Principal, classId: number, sids?: readonly
         WHERE l.trang_thai = 'cho' AND l.boi_canh = 'cuoi-khoa' AND l.lop_nguon_id = ? AND l.student_id IN (${ph})`,
     ).all(classId, ...lo) as any[]) lenh.set(r.student_id, r);
   }, THAM_SO_TOI_DA - 1);
-  /* "Đã ai đụng": PA của nhóm có Kết quả, hoặc không còn `started` (PA huỷ ở lần đổi quyết định trước đã rời nhóm). Mini Test đã ghi xét ở dưới. */
+  /* "Đã ai đụng": PA của nhóm có Kết quả, hoặc không còn `started` (PA huỷ ở lần đổi quyết định trước đã rời nhóm). Mini Test đã ghi xét ở dưới.
+     PR-VN3 (chủ SP 10/10): Sửa PA (bản sửa nguồn `sua_pa`) cũng là "đã đụng" — cột `sua`, cùng một câu. */
   const mt = new Map<number, any>();
   theoLo(luot, (lo, ph) => {
     for (const r of conn.prepare(
       `SELECT m.id, m.student_id, m.tu_attempt_id, m.nhom_bo_tro, m.ty_le,
               EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.nhom_bo_tro = m.nhom_bo_tro
                         AND (EXISTS (SELECT 1 FROM case_followups f WHERE f.intervention_id = iv.id)
-                             OR iv.status != 'started')) AS dung
+                             OR iv.status != 'started')) AS dung,
+              EXISTS (SELECT 1 FROM case_interventions iv JOIN case_intervention_revisions r ON r.intervention_id = iv.id AND r.source = 'sua_pa'
+                       WHERE iv.nhom_bo_tro = m.nhom_bo_tro) AS sua,
+              (SELECT MIN(iv.case_id) FROM case_interventions iv WHERE iv.nhom_bo_tro = m.nhom_bo_tro) AS case_id
          FROM mini_test m WHERE m.tu_attempt_id IN (${ph})`,
     ).all(...lo) as any[]) mt.set(r.student_id, r);
   });
   const homNay = demoToday();
-  const sinh: DongBoTroFinal[] = [], huy: any[] = [];
+  const sinh: DongBoTroFinal[] = [], huy: any[] = [], giu: any[] = [];
   for (const [sid, x] of em) {
     const t = tyLe.get(x.a), l = lenh.get(sid), m = mt.get(sid);
     const du = !!t && t.tyLe !== null;
@@ -486,10 +490,23 @@ export function dongBoCheTaiFinal(p: Principal, classId: number, sids?: readonly
         sid, luot: { id: x.a, attemptNo: x.attemptNo }, ct: t!.ct!, tyLe: t!.tyLe!, b: b!, fromClassId: classId, toClassId: l.lop_dich_id, toFt: false,
         cycleId: x.cyc, ownerClassId: classId, ngay: homNay, tuanBatDau: l.tuan_bat_dau,
       });
-    } else if (!can && m && m.ty_le === null && !m.dung && (du || !l)) huy.push(m);
+    } else if (!can && m && m.ty_le === null && !m.dung && (du || !l)) (m.sua ? giu : huy).push(m);
   }
   taoBoTroFinal(p, sinh);
   huyBoTroFinal(p, classId, huy, homNay);
+  ghiGiuBoTro(p, giu);
+}
+
+/** PR-VN3: bộ bổ trợ được giữ vì QL đã Sửa PA — MỘT dòng lịch sử Case mỗi bộ (khoá `old_value` = nhóm; gọi lặp không ghi thêm). */
+function ghiGiuBoTro(p: Principal, mts: readonly { nhom_bo_tro: string; case_id: number }[]): void {
+  if (!mts.length) return;
+  const conn = db();
+  const co = new Set<string>();
+  theoLo(mts.map((m) => m.nhom_bo_tro), (lo, ph) => {
+    for (const r of conn.prepare(`SELECT old_value FROM sos_case_history WHERE field = 'giu_bo_tro' AND old_value IN (${ph})`).all(...lo) as any[]) co.add(r.old_value);
+  });
+  chenNhieuDong('INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at)',
+    mts.filter((m) => !co.has(m.nhom_bo_tro)).map((m) => [m.case_id, 'giu_bo_tro', m.nhom_bo_tro, 'Giữ bổ trợ: PA đã được sửa', p.userId, nowIso()]));
 }
 
 /**

@@ -12,6 +12,7 @@ import {
 } from '@shared/domain/index.ts';
 import { KY, thanDot, type DotChon, type KnO } from './kieu.ts';
 import { Nhan } from '../../../ui/Nhan.tsx';
+import { Truong } from '../../../ui/KhungPanel.tsx';
 import { TuanNho, resolveTuan, type Tuan } from './TuanNho.tsx';
 import { MenuDong } from '../../../ui/MenuDong.tsx';
 import { useGiuFocus } from '../../../ui/giuFocus.ts';
@@ -96,6 +97,7 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
   const macDinhMoi = useRef<{ rows: Record<KyNangKH, Dong>; chung: Tuan } | null>(null);
   const [force, setForce] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [lyDo, setLyDo] = useState('');
   const [bai, setBai] = useState<BaiXemTruoc[] | null>(null);
   const seq = useRef(0);
 
@@ -192,7 +194,7 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
             : !(kn[k]?.batBuoc ?? false) ? { skill: k, bo: false, periodId: rows[k].periodId }
               : { skill: k, periodId: rows[k].periodId }
         ));
-        await api.post('/ke-hoach-test/dot', { attemptId, kyNang, lyDoBo: null, reason: null, force: dungForce });
+        await api.post('/ke-hoach-test/dot', { attemptId, kyNang, lyDoBo: null, reason: lyDo.trim() || null, force: dungForce });
       }
       toast.push('ok', 'Đã lưu lịch.');
       invalidate('/ke-hoach-test'); invalidate('/attempts'); invalidate('/cham');
@@ -220,7 +222,7 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
   const huyDoi = () => {
     setRows(moi ? (macDinhMoi.current?.rows ?? khoiTao()) : khoiTao());
     setChung(moi ? (macDinhMoi.current?.chung ?? null) : chungKhoiTao());
-    setRieng({}); setDaChinh(false); setForce(false);
+    setRieng({}); setDaChinh(false); setForce(false); setLyDo('');
   };
   const chonMuc = (k: KyNangKH, muc: MucHop, thay?: 'xep-lai' | 'khoi-phuc') => {
     if (muc === 'doi-tuan') { if (thay) setThaoTac({ t: thay, k }); else setRieng((s) => ({ ...s, [k]: true })); }
@@ -307,6 +309,11 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
               onTick={(v) => datTick(k, v)} onTuan={(t) => datTuanDong(k, t)} onMuc={(muc, thay) => chonMuc(k, muc, thay)} goc={homNay} />
           ))}
         </div>
+        {!moi && coDoi && (
+          <Truong nhan="Lý do" tuyChon>
+            <input className="field w-full" maxLength={300} value={lyDo} onChange={(e) => setLyDo(e.target.value)} placeholder="Ví dụ: trùng lịch phòng thi" />
+          </Truong>
+        )}
         {coDongDuoi && (
           <div className="space-y-1.5" role="status">
             {cauChan && <div className="text-xs leading-relaxed text-bad">{cauChan}</div>}

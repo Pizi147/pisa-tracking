@@ -505,14 +505,16 @@ export async function runCongViecTests(t: YThucTestKit) {
     try { json = await res.json(); } catch { /* không có thân JSON */ }
     return { status: res.status, json };
   };
+  /* PR-VN3 (GOP): route không còn trả `items` — từng việc = dòng lẻ của `dong` + các em (`con`) của dòng gộp (cùng khoá, cùng `nhac`). */
+  const viecLe = (json: any): any[] => ((json?.dong ?? []) as any[]).flatMap((d) => d.con ?? [d]);
 
   await checkAsync('PR-Ra Q2 · /my-work?nguoi={X} (qua HTTP, QL): mọi khoá score/cause của X nằm trong khoá của "tat-ca"', async () => {
     const tatCaRes = await goiHttp(P.mbManager.userId, 'GET', '/my-work?nguoi=tat-ca');
     assert(tatCaRes.status === 200, `tat-ca: ${tatCaRes.status}`);
-    const tatCaKeys = new Set(tatCaRes.json.items.filter((i: any) => i.group === 'score' || i.group === 'cause').map((i: any) => i.key));
+    const tatCaKeys = new Set(viecLe(tatCaRes.json).filter((i: any) => i.group === 'score' || i.group === 'cause').map((i: any) => i.key));
     const xRes = await goiHttp(P.mbManager.userId, 'GET', `/my-work?nguoi=${gvMB.userId}`);
     assert(xRes.status === 200, `nguoi=X: ${xRes.status}`);
-    const xItems = xRes.json.items.filter((i: any) => i.group === 'score' || i.group === 'cause');
+    const xItems = viecLe(xRes.json).filter((i: any) => i.group === 'score' || i.group === 'cause');
     assert(xItems.length > 0, 'GV X phải có ít nhất một dòng score/cause');
     for (const it of xItems) assert(tatCaKeys.has(it.key), `Khoá ${it.key} của X không nằm trong "tat-ca"`);
   });
@@ -526,7 +528,7 @@ export async function runCongViecTests(t: YThucTestKit) {
 
   await checkAsync('PR-Ra Q5 · POST /my-work/nhac: 200 + đúng một thông báo; lần hai cùng ngày → daNhacLuc cũ, không gửi thêm; GV gọi → 403; khoá bịa → 404; "tat-ca" sau đó có nhac.daNhacLuc', async () => {
     const xItemsRes = await goiHttp(P.mbManager.userId, 'GET', `/my-work?nguoi=${gvMB.userId}`);
-    const scoreItem = xItemsRes.json.items.find((i: any) => i.group === 'score');
+    const scoreItem = viecLe(xItemsRes.json).find((i: any) => i.group === 'score');
     assert(scoreItem, 'Cần một dòng chấm điểm của X để thử Nhắc');
     const dem = () => (conn.prepare(`SELECT COUNT(*) n FROM notifications WHERE kind = 'nhac_viec' AND user_id = ?`).get(gvMB.userId) as any).n as number;
     const before = dem();
@@ -541,7 +543,7 @@ export async function runCongViecTests(t: YThucTestKit) {
     const rFake = await goiHttp(P.mbManager.userId, 'POST', '/my-work/nhac', { key: 'score:bia-khong-ton-tai', ownerId: gvMB.userId });
     assert(rFake.status === 404, `Khoá bịa phải 404: ${rFake.status}`);
     const tatCaAfter = await goiHttp(P.mbManager.userId, 'GET', '/my-work?nguoi=tat-ca');
-    const same = tatCaAfter.json.items.find((i: any) => i.key === scoreItem.key);
+    const same = viecLe(tatCaAfter.json).find((i: any) => i.key === scoreItem.key);
     assert(same && same.nhac && same.nhac.daNhacLuc, `Dòng đã nhắc phải có nhac.daNhacLuc ở "tat-ca": ${JSON.stringify(same)}`);
   });
 
@@ -564,12 +566,12 @@ export async function runCongViecTests(t: YThucTestKit) {
       conn.prepare(`INSERT INTO case_interventions (case_id, kind, description, status, needs_approval, preset, created_at) VALUES (?, 'tutor', 'PA chờ', 'planned', 0, 1, ?)`).run(caseBc, nowBc);
     }
     const bcItemsRes = await goiHttp(gvMbBc.principal.userId, 'GET', '/my-work');
-    const bcItem = (bcItemsRes.json.items as any[]).find((i: any) => {
+    const bcItem = (viecLe(bcItemsRes.json) as any[]).find((i: any) => {
       if (i.classId == null) return false;
       const cl = conn.prepare('SELECT branch_id FROM classes WHERE id = ?').get(i.classId) as any;
       return cl?.branch_id === bcBranchId;
     });
-    assert(bcItem, `Cần một dòng việc của lớp Bãi Cháy trong myWork của giáo viên (uid=${gvMbBc.principal.userId}) để thử: ${JSON.stringify(bcItemsRes.json.items?.map((i: any) => ({ key: i.key, classId: i.classId })))}`);
+    assert(bcItem, `Cần một dòng việc của lớp Bãi Cháy trong myWork của giáo viên (uid=${gvMbBc.principal.userId}) để thử: ${JSON.stringify(viecLe(bcItemsRes.json).slice().map((i: any) => ({ key: i.key, classId: i.classId })))}`);
     const r = await goiHttp(P.mbManager.userId, 'POST', '/my-work/nhac', { key: bcItem.key, ownerId: gvMbBc.principal.userId });
     assert(r.status === 403, `QL Monbay nhắc dòng lớp Bãi Cháy (giáo viên có dạy cả Monbay) phải 403: ${r.status} ${JSON.stringify(r.json)}`);
   });

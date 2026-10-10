@@ -94,13 +94,13 @@ export async function runPrGvTests(t: YThucTestKit) {
     try { assertThrows(() => viecCuaNguoi(P.cpManager, chiMb), /chi nhánh bạn quản lý/, 'QL CP xem GV chỉ ở MB → 403'); } finally { don(chiMb); }
   });
 
-  check('PR-GV (2) · số = số dòng: tổng 4 nhóm của viecCuaGv = items của /my-work?nguoi=, chính mình = myWork', () => {
+  check('PR-GV (2) · số = số dòng: tổng 4 nhóm của viecCuaGv = dong của /my-work?nguoi=, chính mình = myWork', () => {
     const gv = gvcn('MB FT 101');
     const ql = viecCuaGv(P.mbManager, gv);
-    const dong = (viecCuaNguoi(P.mbManager, gv) as any).items.length;
+    const dong = (viecCuaNguoi(P.mbManager, gv) as any).dong.length;
     assert(ql.length === 4 && ql.reduce((a, x) => a + x.n, 0) === dong, `tổng nhóm ${ql.reduce((a, x) => a + x.n, 0)} = ${dong} dòng`);
     const tuMinh = viecCuaGv(P.coreTeacher, gv);
-    assert(tuMinh.reduce((a, x) => a + x.n, 0) === (myWork(P.coreTeacher) as any).items.length, 'GV tự xem = myWork(p)');
+    assert(tuMinh.reduce((a, x) => a + x.n, 0) === (myWork(P.coreTeacher) as any).dong.length, 'GV tự xem = myWork(p)');
   });
 
   // ------------------------------------------------------------------ Task 3 · hồ sơ GV + ô danh sách

@@ -10,7 +10,7 @@ import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { fmtTime } from '../../lib/format.ts';
 import { NhomViec } from '../worklist/NhomViec.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import type { WorkGroup, WorkItem } from '../worklist/WorkList.tsx';
+import type { WorkItem } from '../worklist/WorkList.tsx';
 import { NganViecVanHanh } from '../worklist/MgmtTasksPage.tsx';
 import { ChonPhuTrach, type NguoiPhuTrach } from './ChonPhuTrach.tsx';
 import { CongTacKhung, khungDaNho, type KhungLoc } from '../../ui/CongTacKhung.tsx';
@@ -21,8 +21,8 @@ import {
 
 type Work = {
   summary: { total: number; overdue: number; today: number; mine: number };
-  /** PR-GOP (§5): `dong` = dòng hiển thị (một lớp × một loại việc); `items` = từng việc. Mọi số trên màn đếm DÒNG. */
-  items: WorkItem[]; dong: WorkItem[]; groups: WorkGroup[]; scopeEmpty: boolean; xemNguoiKhac?: boolean;
+  /** PR-GOP (§5): `dong` = dòng hiển thị (một lớp × một loại việc). Mọi số trên màn đếm DÒNG. PR-VN3: route không còn trả `items`, `groups`. */
+  dong: WorkItem[]; scopeEmpty: boolean; xemNguoiKhac?: boolean;
 };
 
 const thamSoNguoi = (s: string | null): NguoiPhuTrach => {

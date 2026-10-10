@@ -641,23 +641,39 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     .all() as any[];
 
   napTruocPhamVi(caseRows.map((r) => r.eff_student_id));
+  /*
+   * ĐỀ XUẤT PHƯƠNG ÁN là việc của người DẠY em, hoặc của Quản lý. Admin chi nhánh ghi hộ
+   * được việc CS gọi phụ huynh nên vẫn có `sos.edit`, nhưng giao cho văn phòng năm dòng
+   * "đề xuất phương án hỗ trợ" là giao một việc họ không có căn cứ chuyên môn để làm —
+   * đúng kiểu danh sách việc mà người nhận chỉ biết bỏ qua.
+   */
+  const coTheThemPa = (u: Principal, c: any) => can(u, PERMISSIONS.SOS_EDIT, {
+    classId: c.eff_class_id, studentId: c.eff_student_id, skill: c.topic ?? undefined,
+  }) && (teachesClass(u, c.eff_class_id) || can(u, PERMISSIONS.CASE_APPROVE, { classId: c.eff_class_id, studentId: c.eff_student_id }));
+  /* PR-VN3 (KV): người làm = chủ Case nếu chính họ thêm được PA (cùng `coTheThemPa`); không thì Quản lý của chi nhánh — chủ Case là GVCN dự phòng (lớp FT chưa
+     phân công GVBM kỹ năng) không thấy dòng "Thêm PA" nên Nhắc 404. */
+  const nguoiCoQuyen = new Map<number, Principal | null>(), qlChiNhanh = new Map<number, number | null>();
+  const nguoiLamThemPa = (c: any): number | null => {
+    const o = (c.owner_user_id ?? null) as number | null;
+    if (o === null || o === p.userId) return o;
+    if (!nguoiCoQuyen.has(o)) nguoiCoQuyen.set(o, loadPrincipal(o));
+    if (coTheThemPa(nguoiCoQuyen.get(o)!, c)) return o;
+    const b = c.eff_branch_id as number | null;
+    if (b === null) return o;
+    if (!qlChiNhanh.has(b)) {
+      qlChiNhanh.set(b, (conn.prepare(
+        `SELECT ur.user_id FROM user_roles ur JOIN roles r ON r.id = ur.role_id JOIN users u ON u.id = ur.user_id
+          WHERE r.key = 'manager' AND ur.status = 'active' AND u.status = 'active' AND u.deleted_at IS NULL AND ur.branch_id = ? ORDER BY ur.user_id LIMIT 1`,
+      ).get(b) as any)?.user_id ?? null);
+    }
+    const ql = qlChiNhanh.get(b) ?? null;
+    return ql !== null && coTheThemPa(loadPrincipal(ql), c) ? ql : o;   // QL không đủ quyền ở lớp này thì giữ chủ Case, không giao vào ngõ cụt
+  };
   for (const c of caseRows) {
     if (f.branchId && c.eff_branch_id !== f.branchId) continue;
     if (c.iv_count > 0 || reviewedCases.has(c.id)) continue;
-    // Quyền GHI NHẬN xử lý, không phải quyền xem — việc chỉ hiện với người làm được.
-    if (!can(p, PERMISSIONS.SOS_EDIT, {
-      classId: c.eff_class_id, studentId: c.eff_student_id,
-      skill: c.topic ?? undefined,
-    })) continue;
-    /*
-     * ĐỀ XUẤT PHƯƠNG ÁN là việc của người DẠY em, hoặc của Quản lý. Admin chi nhánh ghi hộ
-     * được việc CS gọi phụ huynh nên vẫn có `sos.edit`, nhưng giao cho văn phòng năm dòng
-     * "đề xuất phương án hỗ trợ" là giao một việc họ không có căn cứ chuyên môn để làm —
-     * đúng kiểu danh sách việc mà người nhận chỉ biết bỏ qua.
-     */
-    const mayDecide = teachesClass(p, c.eff_class_id)
-      || can(p, PERMISSIONS.CASE_APPROVE, { classId: c.eff_class_id, studentId: c.eff_student_id });
-    if (!mayDecide) continue;
+    // Quyền GHI NHẬN xử lý, không phải quyền xem — việc chỉ hiện với người làm được. ĐỀ XUẤT PHƯƠNG ÁN: xem `coTheThemPa`.
+    if (!coTheThemPa(p, c)) continue;
 
     /*
      * HẠN PHẢI CÓ PHƯƠNG ÁN THEO MỨC ĐỘ (`soNgayHanXacNhan`): Gấp / SOS 3 3 ngày, còn lại 5 ngày, tính cả
@@ -689,7 +705,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       actionLabel: 'Thêm PA',
       href: `/hoc-vien/${c.eff_student_id}`,
       /* PR-Dọn (Q10): người làm = người phụ trách Case (cùng `support:{caseId}` ở hồ sơ em); Case chưa ai phụ trách thì để trống. */
-      ownerId: c.owner_user_id ?? null, owner: null, mine: c.owner_user_id != null && c.owner_user_id === p.userId,
+      ownerId: nguoiLamThemPa(c), owner: null, mine: c.owner_user_id != null && c.owner_user_id === p.userId,
       due: deadline, statusLabel: 'Chưa có PA học thuật',
       caseSos: c.origin_kind === 'mock',   // Case từ kết quả Test (cùng luật `cases.ts`); GV/QL tạo tay, chuyển cấp, khai bù → gộp
     });
