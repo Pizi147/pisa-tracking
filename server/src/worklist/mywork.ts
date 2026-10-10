@@ -6,7 +6,7 @@ import {
   SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, cycleDeadline,
   duongCaseRieng, duongHoSoHocVien, duongLichTest, nhanDotNgan, planDueDate, urgencyFromSos,
   khungCua, laLanGhiCuoi, tenMon, tenMonNgan, tenNhomMon, REGULAR_SKILLS, nhanLoaiXuLy, soSanhLop,
-  type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, type ConGop } from '../../../shared/domain/index.ts';
+  type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, khoaCungViec, type ConGop } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, forbidden } from '../util.ts';
 import { activeAt, bangLop, can, isCoreTeacherOf, loadPrincipal, napTruocPhamVi, scopeFor, teachesClass, type Principal } from '../permissions.ts';
@@ -1197,7 +1197,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   if (nhacToday) {
     for (const it of items) {
       if (it.ownerId === null || it.ownerId === p.userId) continue;
-      it.nhac = { ownerId: it.ownerId, daNhacLuc: nhacToday.get(it.key) ?? null };
+      it.nhac = { ownerId: it.ownerId, daNhacLuc: daNhacHomNay(nhacToday, it) };
     }
   }
 
@@ -1262,6 +1262,10 @@ function nhacHomNay(today: string): Map<string, string> {
   return out;
 }
 
+/** PR-DON: một (nhóm) việc một lần nhắc/ngày — đã nhắc qua khoá riêng hay khoá `gop:` đều tính (cùng `khoaCungViec` của Nhắc). */
+const daNhacHomNay = (nhacToday: Map<string, string>, it: WorkItem): string | null =>
+  khoaCungViec(it as any, it.key).map((k) => nhacToday.get(k)).find(Boolean) ?? null;
+
 const nhanNhomViec = (g: string) => GROUP_META[g as WorkGroupKey]?.label ?? g;
 
 /** PR-GOP: gộp dòng (hàm chung `gopViecTheoLop`); dòng gộp của người khác có nút Nhắc riêng (một chuông cho cả dòng). */
@@ -1269,7 +1273,7 @@ function dungDong(items: WorkItem[], nguoiXem: number, nhacToday: Map<string, st
   const dong = gopViecTheoLop(items, nhanNhomViec) as WorkItem[];
   if (nhacToday) {
     for (const d of dong) {
-      if (d.con && d.ownerId !== null && d.ownerId !== nguoiXem) d.nhac = { ownerId: d.ownerId, daNhacLuc: nhacToday.get(d.key) ?? null };
+      if (d.con && d.ownerId !== null && d.ownerId !== nguoiXem) d.nhac = { ownerId: d.ownerId, daNhacLuc: daNhacHomNay(nhacToday, d) };
     }
   }
   return dong;
@@ -1314,7 +1318,7 @@ export function viecCuaNguoi(p: Principal, nguoi: number, branchId?: number | nu
   if (nhacToday) {
     for (const it of items) {
       if (it.ownerId === null) continue;
-      it.nhac = { ownerId: it.ownerId, daNhacLuc: nhacToday.get(it.key) ?? null };
+      it.nhac = { ownerId: it.ownerId, daNhacLuc: daNhacHomNay(nhacToday, it) };
     }
   }
   const groupsByKey = new Map<string, any[]>();

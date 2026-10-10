@@ -9249,6 +9249,9 @@ await runPrTenTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 // ==================================================================== PR-VN4 (huỷ lượt theo lô + vi-pham-theo-nhom)
 const { runPrVn4Tests } = await import('./prVn4.tests.ts');
 await runPrVn4Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-DON (dọn ghi chú cũ)
+const { runPrDonTests } = await import('./prDon.tests.ts');
+await runPrDonTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

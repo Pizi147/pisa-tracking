@@ -15,7 +15,7 @@ import { HttpError, badRequest, forbidden, nowIso } from '../util.ts';
 import { can, loadPrincipal, scopeFor, type Principal } from '../permissions.ts';
 import { trongBoNho } from '../platform/nguCanhRequest.ts';
 import { conLaiMs } from '../platform/hanGio.ts';
-import { PERMISSIONS, TRAN_HANG_LOAT, khoaGopCua, nhomCuaKhoaGop } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, TRAN_HANG_LOAT, khoaCungViec, khoaGopCua, nhomCuaKhoaGop } from '../../../shared/domain/index.ts';
 import { myWork, type WorkGroupKey } from './mywork.ts';
 
 const THAN_BAO_TOI_DA = 200;
@@ -167,8 +167,9 @@ export function nhacViecNhieu(p: Principal, ds: readonly ViecCanNhac[], o: { boQ
             duong: row.href ?? null,
           };
         }
-        /* Nút một dòng (khoá do web gửi): kiểm dòng xong mới trả "đã nhắc" — không cho dò khoá ngoài phạm vi qua giờ đã nhắc. */
-        const luc = nhacLuc(v);
+        /* Nút một dòng (khoá do web gửi): kiểm dòng xong mới trả "đã nhắc" — không cho dò khoá ngoài phạm vi qua giờ đã nhắc.
+           PR-DON: khoá từng việc và khoá `gop:` của nó dùng chung MỘT lần nhắc/ngày (`khoaCungViec`). */
+        const luc = v.ngoaiMyWork ? nhacLuc(v) : khoaCungViec(dong!.get(v.key), v.key).map((k) => daNhac.get(`${v.ownerId}|nhac:${k}:${today}`)).find(Boolean);
         if (luc) { kq.ok.push({ the: v.the, key: v.key, daNhacLuc: luc, moi: false }); continue; }
         gui.push({ ...v, ...d });
       }
