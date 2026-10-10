@@ -505,13 +505,13 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert(kn.listening.khoa === 'đã có điểm', 'khoa');
   });
 
-  check('MTb (T5) · quét nguồn: HopKyNang vẽ theo mockup phần 2 (Tuần chung, ⋯ luôn hiện, Nhật ký; PR-MTGON bỏ popup dời vượt); bỏ ô lý do + câu trung tính', () => {
+  check('MTb (T5) · quét nguồn: HopKyNang vẽ theo mockup phần 2 (Tuần chung, ⋯ luôn hiện, Nhật ký; PR-MTGON bỏ popup dời vượt); không còn ô lý do BẮT BUỘC (PR-VN3: chỉ còn ô Lý do tuỳ chọn) + câu trung tính', () => {
     const h = nguon('web/src/modules/test/keHoach/HopKyNang.tsx');
     for (const c of ['Tuần chung', 'luonHien', 'menuHopKyNang', 'NganLichSuBai', 'chipDongKyNang', 'CHU_MUC_HOP', 'Huỷ thay đổi', 'Vẫn xếp vào tuần này',
       'Tuần đã qua', 'tuanDaSo', 'tat: !m.duoc', 'Chặn: ']) {
       assert(h.includes(c), `HopKyNang thiếu ${c}`);
     }
-    for (const c of ['LY_DO_TOI_THIEU', 'Lý do bỏ', 'Lý do dời', 'Lý do sửa tuần', 'không trùng đợt khác', 'Chưa đổi gì', 'lyDoBo: bo.length', 'setLyDo']) {
+    for (const c of ['LY_DO_TOI_THIEU', 'Lý do bỏ', 'Lý do dời', 'Lý do sửa tuần', 'không trùng đợt khác', 'Chưa đổi gì', 'lyDoBo: bo.length']) {
       assert(!h.includes(c), `HopKyNang còn ${c}`);
     }
     assert(/toiThieu/.test(h) === false, 'hộp chỉ Quản lý dùng: không khoá tuần đã qua');
