@@ -517,4 +517,40 @@ export async function runPrCt2Tests(t: YThucTestKit) {
       assert(mts(f.sid).length === 0 && paMt(f.a).every((x) => x.cycle_id === f.cyc), `${ma}: sinh bộ mới ở FT: ${JSON.stringify(mts(f.sid))} · ${chuKy(paMt(f.a))}`);
     }
   });
+  await t.checkAsync('VN6-2 · F02: sang FT (bộ có Kết quả, Mini Test đã đóng) → sửa Final W 10→11, lưu lại cùng điểm: không sinh Mini Test / PA mới; FOU→FT lần đầu, điểm về muộn vẫn sinh một bộ', async () => {
+    const f = dungFou();
+    ra(f.nguon, f.sid, 'len_lop', f.dich);
+    nhap(f.a, { listening: 18, reading: 18, writing: 10, speaking: 9 });
+    const iv = paMt(f.a)[0];
+    cases.updateResult(loadPrincipal(iv.performer_user_id ?? P.admin.userId), iv.id, { ...KQ, ...d.thanKetQuaTuan({ kind: 'bo_tro_mien_phi', soBuoi: iv.so_buoi }, '1', null) });
+    lenh.suaLenh(P.mbManager, lenhCua(f.sid).id, { huong: 'fast_track', toClassId: lop('FT', 1, true), mucTieu: 6 });
+    chay(f.sid);
+    const truoc = chuKy(paMt(f.a));
+    for (const w of [11, 11]) {
+      nhap(f.a, { writing: w });
+      assert(mts(f.sid).length === 0 && chuKy(paMt(f.a)) === truoc, `W ${w}: Mini Test ${JSON.stringify(mts(f.sid))} · PA ${chuKy(paMt(f.a))} (trước ${truoc})`);
+    }
+    /* Điểm về muộn: FOU → FT thi hành trước khi đủ điểm → nhập ô cuối mới sinh, sửa ô sau đó không sinh thêm. */
+    const nguon = lop('FOU', 9), ft = lop('FT', 1, true);
+    ganGv(nguon, GV[1], 'writing');
+    const e = hocVien(nguon, 'FOU');
+    ra(nguon, e.sid, 'fast_track', ft, { mucTieu: 6 });
+    nhap(e.a, { listening: 18, reading: 18, writing: 10 });
+    chay(e.sid);
+    assert(mts(e.sid).length === 0 && paMt(e.a).length === 0, 'chưa đủ điểm mà đã sinh');
+    nhap(e.a, { speaking: 9 });
+    assert(mts(e.sid).length === 1 && paMt(e.a).length === 2, `điểm về muộn: ${JSON.stringify(mts(e.sid))} · ${chuKy(paMt(e.a))}`);
+    nhap(e.a, { writing: 11 });
+    assert(mts(e.sid).length === 1 && paMt(e.a).length === 2, `sửa sau khi sinh: ${chuKy(paMt(e.a))}`);
+    /* Truy vấn chỉ đọc cho bản chính: không thấy em nào sau khi sửa; dựng dấu vết lỗi cũ (một PA của bộ ở lộ trình FT) thì thấy đúng em đó. */
+    const { demBoTroTrung } = await import('../ops/demBoTroTrung.ts');
+    assert(!demBoTroTrung(conn).some((x: any) => x.sid === f.sid || x.sid === e.sid), 'sửa rồi mà còn bộ trùng');
+    const ftCyc = get(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`, f.sid).id;
+    conn.exec('BEGIN IMMEDIATE');
+    try {
+      conn.prepare('UPDATE sos_cases SET cycle_id = ? WHERE id = ?').run(ftCyc, get('SELECT MIN(case_id) c FROM case_interventions WHERE nhom_bo_tro = ?', `mt:${f.a}`).c);
+      const r = demBoTroTrung(conn).filter((x: any) => x.sid === f.sid);
+      assert(r.length === 1 && r[0].nhom === `mt:${f.a}` && r[0].soLoTrinh === 2, JSON.stringify(r));
+    } finally { conn.exec('ROLLBACK'); }
+  });
 }
