@@ -442,14 +442,16 @@ export function dongBoCheTaiFinal(p: Principal, classId: number, sids?: readonly
   if (sids && !sids.length) return;
   const conn = db();
   /* Em đang học lớp × bài Final mới nhất ĐÃ ĐỦ điểm (`done`) hoặc đã có Mini Test, lộ trình của bài còn chạy — không ai thì dừng sau một câu. */
-  const em = new Map<number, { a: number; attemptNo: number; cyc: number }>();
+  /* PR-DON: bài đã HUỶ mà còn Mini Test (huỷ lượt sau khi sinh sớm) cũng vào — đứng trước bài còn hiệu lực cùng em (bài sau ghi đè). */
+  const em = new Map<number, { a: number; attemptNo: number; cyc: number; huy: boolean }>();
   const doc = (loc: string, args: readonly unknown[]) => {
     for (const r of conn.prepare(
-      `SELECT a.id, a.student_id, a.attempt_no, a.cycle_id FROM assessment_attempts a
+      `SELECT a.id, a.student_id, a.attempt_no, a.cycle_id, a.status FROM assessment_attempts a
          JOIN enrollments e ON e.student_id = a.student_id AND e.class_id = a.class_id AND e.status = 'active'
          JOIN learning_cycles lc ON lc.id = a.cycle_id AND lc.status = 'active'
-        WHERE a.class_id = ? AND a.kind = 'final' AND a.status != 'cancelled' AND (a.status = 'done' OR EXISTS (SELECT 1 FROM mini_test m WHERE m.tu_attempt_id = a.id))${loc} ORDER BY a.id`,
-    ).all(classId, ...args) as any[]) em.set(r.student_id, { a: r.id, attemptNo: r.attempt_no, cyc: r.cycle_id });
+        WHERE a.class_id = ? AND a.kind = 'final' AND ((a.status = 'done') OR EXISTS (SELECT 1 FROM mini_test m WHERE m.tu_attempt_id = a.id))${loc}
+        ORDER BY a.status != 'cancelled', a.id`,
+    ).all(classId, ...args) as any[]) em.set(r.student_id, { a: r.id, attemptNo: r.attempt_no, cyc: r.cycle_id, huy: r.status === 'cancelled' });
   };
   if (sids) theoLo([...new Set(sids)], (lo, ph) => doc(` AND a.student_id IN (${ph})`, lo), THAM_SO_TOI_DA - 1);
   else doc('', []);
@@ -484,13 +486,13 @@ export function dongBoCheTaiFinal(p: Principal, classId: number, sids?: readonly
     const t = tyLe.get(x.a), l = lenh.get(sid), m = mt.get(sid);
     const du = !!t && t.tyLe !== null;
     const b = du ? goiYCuoiKhoa({ ct: t!.ct, tyLe: t!.tyLe, monTruot: t!.monTruot })?.boTroNeuLen ?? null : null;
-    const can = !!b && !!l && (l.huong === 'len_lop' || l.huong === 'fast_track') && !l.is_fast_track;
+    const can = !x.huy && !!b && !!l && (l.huong === 'len_lop' || l.huong === 'fast_track') && !l.is_fast_track;
     if (can && !m) {
       sinh.push({
         sid, luot: { id: x.a, attemptNo: x.attemptNo }, ct: t!.ct!, tyLe: t!.tyLe!, b: b!, fromClassId: classId, toClassId: l.lop_dich_id, toFt: false,
         cycleId: x.cyc, ownerClassId: classId, ngay: homNay, tuanBatDau: l.tuan_bat_dau,
       });
-    } else if (!can && m && m.ty_le === null && !m.dung && (du || !l)) (m.sua ? giu : huy).push(m);
+    } else if (!can && m && m.ty_le === null && !m.dung && (du || !l || x.huy)) (m.sua ? giu : huy).push(m);
   }
   taoBoTroFinal(p, sinh);
   huyBoTroFinal(p, classId, huy, homNay);

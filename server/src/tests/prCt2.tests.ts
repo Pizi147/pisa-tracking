@@ -472,4 +472,29 @@ export async function runPrCt2Tests(t: YThucTestKit) {
     assert(!mt.coTheGhi || loi?.status !== 403, `nút hiện (coTheGhi ${mt.coTheGhi}) nhưng lưu ${loi?.status}: ${loi?.message}`);
     assert(mt.coTheGhi === true, 'người giữ việc phải có nút');
   });
+
+  /* ------------------------------------------------------------------ PR-DON (ghi chú SAU PR-CT2) — dùng chung bộ dựng ở trên */
+  check('DON-6 · Final bị huỷ lượt sau khi đã sinh sớm bộ bổ trợ: bộ chưa ai đụng → huỷ (Case đóng "Đổi quyết định lộ trình", Mini Test xoá); bộ đã có Kết quả → giữ', () => {
+    /* Huỷ lượt lớp thường qua `huyLuot` còn vướng "Kỹ năng không hợp lệ" (PR-VN5) — dựng trạng thái sau huỷ như `huyLuot` ghi, rồi gọi đúng hàm đồng bộ của nó. */
+    const huy = (a: number) => {
+      conn.prepare(`UPDATE assessment_attempts SET status = 'cancelled', cancel_reason = 'Phép kiểm', cancelled_at = ?, updated_at = ? WHERE id = ?`).run(TODAY, TODAY, a);
+      ck.dongBoCheTaiFinal(P.mbManager, get('SELECT class_id FROM assessment_attempts WHERE id = ?', a).class_id, [get('SELECT student_id FROM assessment_attempts WHERE id = ?', a).student_id]);
+    };
+    const f = dungFou();
+    ra(f.nguon, f.sid, 'len_lop', f.dich);
+    nhap(f.a, { listening: 18, reading: 18, writing: 10, speaking: 9 });
+    const caseId = paMt(f.a)[0]?.case_id;
+    assert(mts(f.sid).length === 1 && caseId, 'phải sinh sớm');
+    huy(f.a);
+    assert(mts(f.sid).length === 0 && paMt(f.a).length === 0, `chưa ai đụng mà còn: ${mts(f.sid).length} · ${chuKy(paMt(f.a))}`);
+    assert(get('SELECT system_close_reason r FROM sos_cases WHERE id = ?', caseId).r === 'doi_quyet_dinh', 'Case của lần sinh phải đóng');
+
+    const g = dungFou();
+    ra(g.nguon, g.sid, 'len_lop', g.dich);
+    nhap(g.a, { listening: 18, reading: 18, writing: 10, speaking: 9 });
+    const iv = paMt(g.a)[0];
+    cases.updateResult(loadPrincipal(iv.performer_user_id), iv.id, { ...KQ, ...d.thanKetQuaTuan({ kind: 'bo_tro_mien_phi', soBuoi: 4 }, '1', null) });
+    huy(g.a);
+    assert(mts(g.sid).length === 1 && paMt(g.a).length === 2, `đã có Kết quả mà vẫn huỷ: ${mts(g.sid).length} · ${chuKy(paMt(g.a))}`);
+  });
 }

@@ -37,6 +37,7 @@ import { chuanHoaNguoiThucHien } from '../cases/nguoiThucHien.ts';
 import { allProgrammes, evaluateRegular, isRatioClass, regularDeadline } from '../normal/regular.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { lamMoiDiemBanChup } from '../loTrinh/banChup.ts';
+import { dongBoCheTaiFinal } from '../normal/cuoiKhoa.ts';
 
 export type ScoreRow = {
   id: number; skill: EntrySkill;
@@ -1441,6 +1442,8 @@ export function huyLuot(p: Principal, attemptId: number, input: { lyDo?: string 
     logSchedule(attemptId, { action: 'cancelled', reason: lyDo, actor: p.userId });
     /* Đề nghị dời đang chờ của lượt này hết nghĩa — không rút thì hết hạn sẽ huỷ phần thi của lượt xếp lại sau (cùng id). */
     rutDeNghiDoi(attemptId);
+    /* PR-DON (ghi chú CT2): Final lớp thường đã sinh sớm bổ trợ → huỷ bộ chưa ai đụng (cùng luật "đã đụng"). */
+    if (a.kind === 'final' && a.class_id && isRatioClass(a.class_id)) dongBoCheTaiFinal(p, a.class_id, [a.student_id]);
     addJourney({ studentId: a.student_id, eventType: 'mock_cancelled', eventDate: demoToday(),
       title: `Huỷ MT${a.attempt_no}`, detail: lyDo, refTable: 'assessment_attempts', refId: attemptId, createdBy: p.userId });
     writeAudit({ actorUserId: p.userId, action: 'attempt.cancel', entityType: 'assessment_attempt', entityId: attemptId,
