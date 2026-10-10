@@ -29,7 +29,7 @@ const NGAN: Record<RegularSkill, string> = { listening: 'L', reading: 'R', writi
 /**
  * KỲ VỌNG ĐẦU RA · {lớp} (PR-KV, đặc tả 08/10 §3, mockup `mockup-cuoi-khoa-2-2026-10-08.html` phần 3) — em BE/ELE Lên FT. Điền sẵn theo MT0
  * (Đạt khi Overall ≥ ngưỡng); Không đạt → Trung tâm (mỗi kỹ năng một Case + Tutor 10 buổi) hoặc Học viên (Lý do bắt buộc, Case không PA).
- * Lưu một lần (`PUT /classes/:id/ky-vong`): em chưa kết luận + em đã sửa. Em chưa có band MT0 nào: "Chờ MT0", không sửa được; kỹ năng thiếu band ghi "chưa thi". 1440 bảng, 375 thẻ.
+ * Lưu một lần (`PUT /classes/:id/ky-vong`): em chưa kết luận + em đã sửa. Em chưa có ít nhất 3 kỹ năng MT0 có điểm (W cần đủ W1 + W2): "Chờ MT0", không sửa được; kỹ năng thiếu band ghi "chưa thi". 1440 bảng, 375 thẻ.
  */
 export function PanelKyVong({ classId, onClose, onDone }: { classId: number; onClose: () => void; onDone: () => void }) {
   const toast = useToast();
@@ -106,7 +106,7 @@ export function PanelKyVong({ classId, onClose, onDone }: { classId: number; onC
           : <span className={e.mt0![k]! < data.nguong ? 'text-late' : ''}>{NGAN[k]} {b1(e.mt0![k]!)}</span>}</span>
       ))}</span>
     </span>
-  ) : <Nhan tone="muted">Chờ MT0</Nhan>);
+  ) : <span title="MT0 cần ít nhất 3 kỹ năng có điểm"><Nhan tone="muted">Chờ MT0</Nhan></span>);
 
   const oKetQua = (e: Em) => {
     const d = dongCua(e);

@@ -178,7 +178,7 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   /* PR-VAI-a (K5-11): em BE/ELE lên Fast Track — Quản lý đánh dấu Đạt / Không đạt kỳ vọng đầu ra. */
   ky_vong_dau_ra: {
     label: 'Kỳ vọng đầu ra',
-    hint: 'Lớp BE/ELE có em lên FT đã có điểm MT0 — Đạt khi Overall MT0 ≥ 4.0 (BE) / 4.5 (ELE). Một lần lưu cho cả lớp.',
+    hint: 'Lớp BE/ELE có em lên FT có MT0 đủ 3 kỹ năng có điểm — Đạt khi Overall MT0 ≥ 4.0 (BE) / 4.5 (ELE). Một lần lưu cho cả lớp.',
   },
 
   /* PR-TK (TK-K): kết quả thi thật do GVCN lớp cuối nhập — hạn = thứ Hai sau kỳ thi + 4 tuần, đỏ không chặn. */

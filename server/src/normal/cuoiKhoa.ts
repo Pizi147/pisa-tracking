@@ -727,7 +727,7 @@ export function ghiKetLuanFt(p: Principal, sid: number, input: { dat?: unknown; 
   if (!nguon) throw badRequest('Chỉ em lên FT từ lớp BE/ELE mới có kỳ vọng đầu ra.');
   const lopBeEle = nguon.class_id as number, ftClass = (nguon.ft_class ?? null) as number | null;
   const goiY = mt0TheoLop([{ sid, lop: lopBeEle, ct: nguon.programme_code }]).get(sid)?.goiY ?? null;
-  if (!goiY) throw badRequest('Em chưa có điểm MT0 — chưa kết luận kỳ vọng đầu ra được.');
+  if (!goiY) throw badRequest('MT0 của em cần ít nhất 3 kỹ năng có điểm — chưa kết luận kỳ vọng đầu ra được.');
   if (typeof input.dat !== 'boolean') throw badRequest('Chọn Đạt hoặc Không đạt kỳ vọng đầu ra.');
   /* Cùng luật dòng với panel (`kiemDongKyVong`): không gửi kỹ năng → kỹ năng MT0 dưới ngưỡng; vẫn rỗng → 400. Học viên: lý do bắt buộc, vẫn có Case. */
   const coMon = Array.isArray(input.mon) && input.mon.length > 0;

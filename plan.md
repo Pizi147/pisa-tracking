@@ -194,6 +194,7 @@ Chủ sản phẩm 05/10 đã chốt (mockup `thiet-ke/mockup-test-mt-2026-10-05
 | 07/10 chiều | **Đổi lại: deploy NGAY sau HK2 + #236** (sửa lỗi Turso), theo `DEPLOY_2026-10.md`; **PR-EN + PR-SOTAY deploy lần 2**. Thay dòng dưới | deploy |
 | 07/10 | ~~**Deploy MỘT lần sau khi xong HẾT** (… → KHUNG → HK2 → PR-EN → PR-SOTAY → deploy), thay "deploy sau HK2". Sổ tay viết theo `main` cuối cùng (ảnh chụp app chạy cục bộ), không chờ bản chính~~ (bỏ, xem dòng trên) | EN, SOTAY, deploy |
 | 07/10 | PR-EN: nút **"VI \| EN"** chữ nhỏ cạnh nút Sáng/Tối; màn đăng nhập **hai nút to "Tiếng Việt \| English" ngay trên khung**; **bảng thuật ngữ EN planning tự chọn** (tiếng Anh tự nhiên của trung tâm IELTS), chủ sản phẩm xem trước khi merge; **lần này planning được tự duyệt mockup EN** (chỉ đổi chữ + nút đổi ngôn ngữ, giữ giao diện) **và dàn ý sổ tay**, chủ sản phẩm xem ảnh trước khi merge | EN, SOTAY |
+| 10/10 | **Kỳ vọng đầu ra (luật A):** Overall MT0 cần **≥ 3/4 kỹ năng có band**; W có band chỉ khi đủ W1 + W2; < 3 → "Chờ MT0"; kỹ năng thiếu = "chưa thi", không vào kỹ năng trượt; Đạt/Không đạt vẫn do QL chọn | KV #312 |
 | 06/10 | **Không dùng Fable** ở mọi session, kể cả subagent | mọi PR |
 
 ## 4. Việc chưa làm (đợt 3 còn DL, SL; đợt 4–6 ở mục 2c + kế hoạch 2026-10-05-*)

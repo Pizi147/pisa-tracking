@@ -17,14 +17,14 @@ import { assessedBands } from '../fasttrack/scoring.ts';
 
 /**
  * KỲ VỌNG ĐẦU RA CẢ LỚP (PR-KV, đặc tả 08/10 §3, mockup cuối khoá 2 phần 3) — em BE/ELE có quyết định Lên FT. Đạt = Overall MT0 ≥ ngưỡng
- * (`goiYKyVong`). MỘT việc Quản lý mỗi lớp nguồn khi lớp có em có điểm MT0 (ít nhất một kỹ năng); kết luận ghi ở `lo_trinh_tiep_theo` (em × lớp nguồn).
+ * (`goiYKyVong`). MỘT việc Quản lý mỗi lớp nguồn khi lớp có em có điểm MT0 (ít nhất 3 kỹ năng); kết luận ghi ở `lo_trinh_tiep_theo` (em × lớp nguồn).
  * Em đã sang FT → Case ngay (`taoCaseKyVong`); chưa sang → lúc thi hành (`sauChuyenCuoiKhoa`). Mọi đọc / ghi theo lô (Turso).
  */
 
 type KetLuan = { dat: boolean; nguyenNhan: 'trung_tam' | 'hoc_sinh' | null; mon: string[]; ghiChu: string | null };
 type EmKyVong = {
   id: number; ma: string; ten: string; lopId: number; lopCode: string; ct: string; daChuyen: boolean; lopFtId: number | null; lopFt: string | null;
-  /** Band MT0 (kỹ năng chưa thi = null) + Overall; null = MT0 chưa có band nào ("Chờ MT0"). */
+  /** Band MT0 (kỹ năng chưa thi = null) + Overall; null = MT0 chưa đủ 3 kỹ năng có band ("Chờ MT0"). */
   mt0: (Record<RegularSkill, number | null> & { overall: number }) | null;
   goiY: GoiYKyVong | null; ketLuan: KetLuan | null;
 };
@@ -158,7 +158,7 @@ export function luuKyVong(p: Principal, classId: number, body: any): { luu: numb
   const dong = [...new Map(vao.map((x) => {
     const e = em.get(Number(x?.sid));
     if (!e) throw badRequest('Học viên không có quyết định Lên FT ở lớp này.');
-    if (!e.mt0) throw badRequest(`${e.ten}: chờ MT0 có điểm.`);
+    if (!e.mt0) throw badRequest(`${e.ten}: MT0 cần ít nhất 3 kỹ năng có điểm.`);
     /* Học viên không gửi kỹ năng → kỹ năng CÓ band MT0 dưới ngưỡng (kỹ năng chưa thi không tính); vẫn rỗng → 400 "chọn kỹ năng". */
     const thieu = x?.nguyenNhan === 'hoc_sinh' && !(Array.isArray(x.mon) && x.mon.length);
     return [e.id, kiemDongKyVong(thieu ? { ...x, mon: e.goiY!.monTruot } : x, e.ten)] as const;
