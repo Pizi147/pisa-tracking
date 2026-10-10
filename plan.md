@@ -282,6 +282,13 @@ Báo cáo + mockup: `thiet-ke/mockup-mt-quy-trinh-2026-10-08.html` (artifact htt
 
 ### PR-VN3 · Việc nhỏ dồn lại (10/10) — kế hoạch `docs/superpowers/plans/2026-10-10-pr-vn3-viec-nho.md`. Chủ SP 10/10: Sửa PA = "đã đụng", ghi một dòng ngắn vào lịch sử. **Không làm PR-MTKET, PR-CHENMT.**
 
+### PR-VN4 · Huỷ lượt ≤ 200 câu + lỗi 500 vi-pham-theo-nhom (S, chủ SP 10/10 chọn (a)) — chưa làm
+- **Huỷ cả lượt** (`huyLuot`, `server/src/fasttrack/attempts.ts`): đo 223–341 câu (bản chính 329). Chủ SP chọn (a): kiểm quyền MỘT lần cho lượt,
+  xoá mọi ô điểm theo lô, ghi nhật ký một lần, `refreshOutcome` MỘT lần ở cuối; KHÔNG sinh thông báo / mốc trung gian theo từng ô.
+  Kết quả cuối (lượt huỷ, Case/PA/Phối hợp đóng, SOS, kết quả hiện hành) phải trùng cách cũ. Trần ≤ 120 câu, thêm vào `TRAN_GHI_LO`.
+- **`GET /metrics/vi-pham-theo-nhom` vai Quản trị trả 500** trên main (TypeError `push` of undefined, PR-TD3 thấy ở DB cuối `run.ts`). Tìm gốc, sửa, thêm phép kiểm.
+- Ghi chú TD3: `/hoc-vien-lop` còn 78 % dòng (huy hiệu `standingFor`); chờ log bản chính sau deploy rồi mới quyết.
+
 ### SAU PR-HOP1 (#293, rà 09/10) — ghi chú không chặn
 - Hồ sơ MT: dời lịch qua `HopKyNang` không còn ô **Lý do** (tuỳ chọn) như `WeekModal` cũ — nhật ký ghi không lý do. Chủ SP thấy cần thì thêm lại.
 - Lượt không có `classId`: "Dời lịch thi cả đợt" bấm không mở gì (hiếm; một kỹ năng vẫn đi `HopThaoTacMt`).
