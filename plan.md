@@ -635,6 +635,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
 | 10/10/2026 | PR-VN6 · `pr-vn6` · Opus 5.5 | F03 MT0 lớp thường hoàn tất theo band (`hoanTat.ts` qua `scoringModeOf`) · F02 `taoBoTroFinal` coi PA còn nhóm `mt:{bài}` là đã có bộ + `ops/demBoTroTrung.ts` (chỉ đọc, `npm run dem-bo-tro-trung`) · F05 nhắc nhóm + con cùng lô một chuông; `prVn6.tests.ts`, VN6-2 ở `prCt2.tests.ts` |
+| 10/10 | PR-CACHE `pr-cache` · Opus 5.5 | F01+F04: `theHe` đếm lần xoá theo tiền tố; phản hồi bắt đầu trước lần xoá không vào bản vừa xem / `cachedGet`. 5 phép kiểm hành vi `prCache.tests.ts` |
 | 10/10/2026 | PR-DON · `pr-don` · Opus 5.5 | 8 ghi chú cũ: nhắc 1 lần/ngày (khoá việc + `gop:` chung) · dòng phụ gộp từ `phu` · kỳ vọng 403 trước 404 · trần `/classes/:id/ky-vong` · `docFtTheoLo` chia lô · Final huỷ → huỷ bộ chưa đụng · CT2 tự đóng Mini Test khi sang FT · HOP1-d kiểm hành vi; `prDon.tests.ts`, DON-6/7 ở `prCt2.tests.ts` |
 | 10/10/2026 | PR-VN5 · `pr-vn5` · Opus 5.5 | Huỷ bài lớp thường nhận môn chương trình (`xoaDiemLuot` nhánh `saveRegularScore`, MT0 vẫn band), nặng nhất 99 câu; `ban_chup_luot.trang_thai` = cancelled ngay sau huỷ; `prVn5.tests.ts` VN5-1…2 |
 | 10/10/2026 | PR-VN4 · `pr-vn4` · Opus 5.5 | Huỷ cả lượt xoá điểm theo lô (`xoaDiemLuot`, nhật ký từng ô, `refreshOutcome` một lần): lượt nặng nhất 99 câu (trần `huyCaLuot` 120); 500 `vi-pham-theo-nhom` = dữ liệu phép kiểm `xoaDuLieu` nhóm `late` → `attendance`; `prVn4.tests.ts` VN4-1…3 |

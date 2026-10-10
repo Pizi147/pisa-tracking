@@ -9258,11 +9258,13 @@ await runPrVn5Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 // ==================================================================== PR-VN6 (MT0 hoàn tất, bổ trợ Final sau FT, nhắc một chuông)
 const { runPrVn6Tests } = await import('./prVn6.tests.ts');
 await runPrVn6Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+
+const { runPrCacheTests } = await import('./prCache.tests.ts');
+await runPrCacheTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
   : `${passed} đạt, ${failures.length} KHÔNG ĐẠT:\n` + failures.map((f) => '  - ' + f).join('\n'));
 console.log('='.repeat(60));
 process.exit(failures.length === 0 ? 0 : 1);
-
 
