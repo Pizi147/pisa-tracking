@@ -285,7 +285,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     const g1 = ins(`INSERT INTO case_signals (student_id, case_id, attempt_id, cycle_id, detected_on, raised_on, verify_due, created_at)
                     VALUES (?,?,?,?,?,?,?,?)`, sid, c1, a1, y1, TODAY, TODAY, TODAY, now);
     const v1 = ins(`INSERT INTO violations (student_id, cycle_id, category, occurred_on, reported_on, reported_by, description, created_at)
-                    VALUES (?,?, 'late', ?, ?, ?, 'Đi muộn', ?)`, sid, y1, TODAY, TODAY, U, now);
+                    VALUES (?,?, 'attendance', ?, ?, ?, 'Đi muộn', ?)`, sid, y1, TODAY, TODAY, U, now);
     ins(`INSERT INTO violation_history (violation_id, field, created_at) VALUES (?, 'status', ?)`, v1, now);
     const m1 = ins(`INSERT INTO discipline_measures (student_id, cycle_id, kind, created_at, created_by) VALUES (?,?, 'warning', ?, ?)`, sid, y1, now, U);
     conn.prepare('INSERT INTO measure_violations (measure_id, violation_id, added_at) VALUES (?,?,?)').run(m1, v1, now);

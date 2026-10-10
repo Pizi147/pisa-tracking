@@ -282,7 +282,7 @@ Báo cáo + mockup: `thiet-ke/mockup-mt-quy-trinh-2026-10-08.html` (artifact htt
 
 ### PR-VN3 · Việc nhỏ dồn lại (10/10) — kế hoạch `docs/superpowers/plans/2026-10-10-pr-vn3-viec-nho.md`. Chủ SP 10/10: Sửa PA = "đã đụng", ghi một dòng ngắn vào lịch sử. **Không làm PR-MTKET, PR-CHENMT.**
 
-### PR-VN4 · Huỷ lượt ≤ 200 câu + lỗi 500 vi-pham-theo-nhom (S, chủ SP 10/10 chọn (a)) — chưa làm
+### PR-VN4 · Huỷ lượt ≤ 200 câu + lỗi 500 vi-pham-theo-nhom (S, chủ SP 10/10 chọn (a)) — ✅ PR mở 10/10, chờ rà
 - **Huỷ cả lượt** (`huyLuot`, `server/src/fasttrack/attempts.ts`): đo 223–341 câu (bản chính 329). Chủ SP chọn (a): kiểm quyền MỘT lần cho lượt,
   xoá mọi ô điểm theo lô, ghi nhật ký một lần, `refreshOutcome` MỘT lần ở cuối; KHÔNG sinh thông báo / mốc trung gian theo từng ô.
   Kết quả cuối (lượt huỷ, Case/PA/Phối hợp đóng, SOS, kết quả hiện hành) phải trùng cách cũ. Trần ≤ 120 câu, thêm vào `TRAN_GHI_LO`.
@@ -602,6 +602,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 10/10/2026 | PR-VN4 · `pr-vn4` · Opus 5.5 | Huỷ cả lượt xoá điểm theo lô (`xoaDiemLuot`, nhật ký từng ô, `refreshOutcome` một lần): lượt nặng nhất 99 câu (trần `huyCaLuot` 120); 500 `vi-pham-theo-nhom` = dữ liệu phép kiểm `xoaDuLieu` nhóm `late` → `attendance`; `prVn4.tests.ts` VN4-1…3 |
 | 08/10/2026 | PR-GOP · `claude/lucid-babbage-68b9xo` · Opus 5.5 | Công việc / Việc của tôi / badge: một dòng = một lớp × một loại việc × một người (`gopViecTheoLop`, `myWork().dong`), mở "n em ▾" thấy từng em; hạn sớm nhất, em quá hạn → dòng đỏ; giữ từng dòng Case SOS FT; summary/badge đếm dòng; Nhắc dòng gộp = một chuông; phép kiểm `prGop.tests.ts` GOP-1…4, ảnh `thiet-ke/anh/pr-gop/` |
 | 08/10/2026 | PR-KV · `pr-kv-ky-vong` · Opus 5.5 | Panel "Kỳ vọng đầu ra · lớp" (`PanelKyVong`, `GET/PUT /classes/:id/ky-vong`): Đạt = Overall MT0 ≥ 4.0 BE / 4.5 ELE, điền sẵn, Lưu một lần (một tx, theo lô); Trung tâm → Case + Tutor 10 buổi (GV cũ), Học viên → lý do bắt buộc, Case không PA; một việc QL mỗi lớp (bỏ việc mỗi em); phép kiểm `prKv.tests.ts` KV1–KV8, ảnh `thiet-ke/anh/pr-kv/` |
 | 08/10/2026 | PR-CT2 · `pr-ct2-che-tai` · Opus 5.5 | Bổ trợ Final sinh ngay khi Final đủ điểm + QL đã quyết lên (`dongBoCheTaiFinal`; FOU/BE 50–59 = 2 buổi/kỹ năng, BE/ELE→FT không, Người dạy GV cũ; đổi quyết định chưa ai đụng → huỷ); bỏ nộp / duyệt kế hoạch bổ trợ (PA chạy sau Xác nhận Case); MT0 hạn thứ Tư; Người dạy tuần này không bắt buộc; migrate `prCt2` (A/B/C); phép kiểm `prCt2.tests.ts` CT2-0–CT2-10 |
