@@ -129,11 +129,17 @@ export async function runPrVn3Tests(t: YThucTestKit) {
     try {
       const cong = (may.address() as any).port as number;
       for (const [pr, q] of [[P.coreTeacher, ''], [P.mbManager, '?nguoi=tat-ca']] as const) {
-        const r = await fetch(`http://127.0.0.1:${cong}/api/my-work${q}`, { headers: { cookie: `pisa_demo_session=${createSession(pr.userId)}` } });
-        const j: any = await r.json();
-        const w: any = myWork(pr, q ? { nguoi: 'tat-ca' } : {});
-        assert(r.status === 200 && !('items' in j) && !('groups' in j), `${r.status} · ${Object.keys(j)}`);
-        assert(JSON.stringify(j.dong) === JSON.stringify(w.dong) && JSON.stringify(j.summary) === JSON.stringify(w.summary), 'dong / summary lệch');
+        const goi = async () => {
+          const r = await fetch(`http://127.0.0.1:${cong}/api/my-work${q}`, { headers: { cookie: `pisa_demo_session=${createSession(pr.userId)}` } });
+          return { st: r.status, j: await r.json() as any };
+        };
+        await goi();   // lần đầu có thể ghi (quét lệnh / vắng / hết hạn) — so ở trạng thái đã ổn định
+        const { st, j } = await goi();
+        const w: any = JSON.parse(JSON.stringify(myWork(pr, q ? { nguoi: 'tat-ca' } : {})));
+        assert(st === 200 && !('items' in j) && !('groups' in j), `${st} · ${Object.keys(j)}`);
+        const lech = (j.dong as any[]).findIndex((x, i) => JSON.stringify(x) !== JSON.stringify(w.dong[i]));
+        assert(j.dong.length === w.dong.length && lech < 0 && JSON.stringify(j.summary) === JSON.stringify(w.summary),
+          `dong / summary lệch: ${j.dong.length} vs ${w.dong.length}, dòng ${lech} ${lech >= 0 ? JSON.stringify(j.dong[lech]).slice(0, 300) + ' ≠ ' + JSON.stringify(w.dong[lech]).slice(0, 300) : ''}`);
       }
     } finally { may.close(); }
   });
@@ -149,9 +155,9 @@ export async function runPrVn3Tests(t: YThucTestKit) {
     conn.prepare(`UPDATE attempt_skills SET planned_period_id = ?, plan_source = 'manual' WHERE attempt_id = ?`).run(tuan(4).id, a);
     const tuanCua = () => get(`SELECT p.week_start w FROM attempt_skills s JOIN report_periods p ON p.id = s.planned_period_id WHERE s.attempt_id = ? AND s.skill = 'listening'`, a).w as string;
     const lyDoCua = () => all(`SELECT reason FROM attempt_schedule_history WHERE attempt_id = ? AND action = 'week_set' AND reason IS NOT NULL`, a).map((x) => x.reason);
-    keHoach.luuDot(P.mbManager, { attemptId: a, kyNang: [{ skill: 'listening', periodId: tuan(6).id }], lyDoBo: null, reason: 'Trùng lịch phòng thi', force: false });
+    keHoach.luuDot(P.mbManager, { attemptId: a, kyNang: [{ skill: 'listening', periodId: tuan(6).id }], lyDoBo: null, reason: 'Trùng lịch phòng thi', force: true });
     assert(tuanCua() === t.addDays(tuanNay, 42) && lyDoCua().includes('Trùng lịch phòng thi'), `có lý do: ${tuanCua()} · ${lyDoCua()}`);
-    keHoach.luuDot(P.mbManager, { attemptId: a, kyNang: [{ skill: 'listening', periodId: tuan(7).id }], lyDoBo: null, reason: null, force: false });
+    keHoach.luuDot(P.mbManager, { attemptId: a, kyNang: [{ skill: 'listening', periodId: tuan(7).id }], lyDoBo: null, reason: null, force: true });
     assert(tuanCua() === t.addDays(tuanNay, 49) && lyDoCua().length === 1, `không lý do: ${tuanCua()} · ${lyDoCua()}`);
     const web = fs.readFileSync(path.join(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..'), 'web/src/modules/test/keHoach/HopKyNang.tsx'), 'utf8');
     assert(/reason: lyDo\.trim\(\) \|\| null/.test(web) && /nhan="Lý do" tuyChon/.test(web), 'HopKyNang thiếu ô Lý do tuỳ chọn gửi reason');
