@@ -97,7 +97,7 @@ export function nhacViecNhieu(p: Principal, ds: readonly ViecCanNhac[], o: { boQ
     }
 
     const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
-    const gui: (ViecCanNhac & DongNhac)[] = [];
+    const gui: (ViecCanNhac & DongNhac & { rieng: string[]; cung: string[] })[] = [];
     let hetGio = false;
     for (const [ownerId, cua] of theoNguoi) {
       const con = conLaiMs();
@@ -169,18 +169,29 @@ export function nhacViecNhieu(p: Principal, ds: readonly ViecCanNhac[], o: { boQ
         }
         /* Nút một dòng (khoá do web gửi): kiểm dòng xong mới trả "đã nhắc" — không cho dò khoá ngoài phạm vi qua giờ đã nhắc.
            PR-DON: khoá từng việc và khoá `gop:` của nó dùng chung MỘT lần nhắc/ngày (`khoaCungViec`). */
-        const luc = v.ngoaiMyWork ? nhacLuc(v) : khoaCungViec(dong!.get(v.key), v.key).map((k) => daNhac.get(`${v.ownerId}|nhac:${k}:${today}`)).find(Boolean);
+        const cung = v.ngoaiMyWork ? [v.key] : khoaCungViec(dong!.get(v.key), v.key);
+        const rieng = [v.key, ...(v.ngoaiMyWork ? [] : [dong!.get(v.key)!.key])];
+        const luc = v.ngoaiMyWork ? nhacLuc(v) : cung.map((k) => daNhac.get(`${v.ownerId}|nhac:${k}:${today}`)).find(Boolean);
         if (luc) { kq.ok.push({ the: v.the, key: v.key, daNhacLuc: luc, moi: false }); continue; }
-        gui.push({ ...v, ...d });
+        gui.push({ ...v, ...d, rieng, cung });
       }
     }
     if (!gui.length) return kq;
 
     /* ponytail: hai QL nhắc cùng việc cùng giây → daNhacLuc trả về lệch vài ms so với dòng đã có; đọc lại bằng RETURNING nếu cần chính xác */
     const now = nowIso();
-    /* Hai thẻ cùng (người, việc) → một chuông; thẻ sau `moi: false`. */
-    const daGui = new Set<string>();
-    const dau = gui.map((g) => { const k = `${g.ownerId}|${khoaBao(g)}`; const lan1 = !daGui.has(k); daGui.add(k); return lan1; });
+    /*
+     * Hai thẻ cùng (người, việc) → một chuông; thẻ sau `moi: false`. F05: dòng gộp + một em của nó cùng lô cũng là cùng việc — khoá riêng của
+     * thẻ này nằm trong `khoaCungViec` của thẻ đã gửi, hoặc ngược lại. Hai việc lẻ chung khoá `gop:` vẫn là hai việc (so khoá riêng, không so `gop:` với nhau).
+     */
+    const riengDaGui = new Set<string>(), cungDaGui = new Set<string>();
+    const dau = gui.map((g) => {
+      const k = (x: string) => `${g.ownerId}|${x}`;
+      if (g.rieng.some((x) => cungDaGui.has(k(x))) || g.cung.some((x) => riengDaGui.has(k(x)))) return false;
+      for (const x of g.rieng) riengDaGui.add(k(x));
+      for (const x of g.cung) cungDaGui.add(k(x));
+      return true;
+    });
     const moi = gui.filter((_, i) => dau[i]);
     try {
       tx(() => {
