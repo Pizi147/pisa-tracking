@@ -296,9 +296,9 @@ Báo cáo + mockup: `thiet-ke/mockup-mt-quy-trinh-2026-10-08.html` (artifact htt
 ### BẢN TIẾP THEO — ứng viên (planning đề xuất 10/10, chờ chủ SP chọn)
 1. **PR-VN5 (S)** — hai ghi chú SAU PR-VN4 ở trên. Nên làm trước deploy (QL kẹt).
 2. **PR-TD4 (M, sau deploy + log)** — chỉ khi log `[cham]` mới còn đường > 1,5 s: `/hoc-vien-lop` (`standingFor` nạp từ lượt mới nhất mỗi em), đường top khác theo log.
-3. **PR-DON · Dọn ghi chú cũ (S)** — gom một PR (cả mục 4): "Một việc bị nhắc 2 lần/ngày" (GOP), `phanRieng` cắt tiêu đề bằng chuỗi (GOP), `lopNguon` 404 trước 403 (KV),
+3. ✅ **PR-DON · Dọn ghi chú cũ (S)** (PR mở 10/10, chờ rà) — gom một PR (cả mục 4): "Một việc bị nhắc 2 lần/ngày" (GOP), `phanRieng` cắt tiêu đề bằng chuỗi (GOP), `lopNguon` 404 trước 403 (KV),
    trần tốc độ `GET /classes/:id/ky-vong` (KV), `docFtTheoLo` chia lô 900 tham số, Final huỷ lượt sau khi sinh sớm bộ bổ trợ (CT2), phép kiểm HOP1-d quét nguồn → kiểm hành vi.
-4. **CT2 — chủ SP 10/10: TỰ ĐÓNG.** Bộ bổ trợ đã có Kết quả rồi đổi sang FT → dòng `mini_test` chưa ghi + việc "Ghi Mini Test" tự đóng (ghi một dòng lịch sử ngắn). Làm trong PR-DON.
+4. ✅ **CT2 — chủ SP 10/10: TỰ ĐÓNG.** Bộ bổ trợ đã có Kết quả rồi đổi sang FT → dòng `mini_test` chưa ghi + việc "Ghi Mini Test" tự đóng (ghi một dòng lịch sử ngắn). Làm trong PR-DON.
 5. **PR-EN** (bản tiếng Anh) rồi **PR-SOTAY** — như kế hoạch cũ, sau cùng.
 6. **PR-NC** — xem lại tháng 12 (cần 2–3 tháng dữ liệu).
 
@@ -615,6 +615,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 10/10/2026 | PR-DON · `pr-don` · Opus 5.5 | 8 ghi chú cũ: nhắc 1 lần/ngày (khoá việc + `gop:` chung) · dòng phụ gộp từ `phu` · kỳ vọng 403 trước 404 · trần `/classes/:id/ky-vong` · `docFtTheoLo` chia lô · Final huỷ → huỷ bộ chưa đụng · CT2 tự đóng Mini Test khi sang FT · HOP1-d kiểm hành vi; `prDon.tests.ts`, DON-6/7 ở `prCt2.tests.ts` |
 | 10/10/2026 | PR-VN4 · `pr-vn4` · Opus 5.5 | Huỷ cả lượt xoá điểm theo lô (`xoaDiemLuot`, nhật ký từng ô, `refreshOutcome` một lần): lượt nặng nhất 99 câu (trần `huyCaLuot` 120); 500 `vi-pham-theo-nhom` = dữ liệu phép kiểm `xoaDuLieu` nhóm `late` → `attendance`; `prVn4.tests.ts` VN4-1…3 |
 | 08/10/2026 | PR-GOP · `claude/lucid-babbage-68b9xo` · Opus 5.5 | Công việc / Việc của tôi / badge: một dòng = một lớp × một loại việc × một người (`gopViecTheoLop`, `myWork().dong`), mở "n em ▾" thấy từng em; hạn sớm nhất, em quá hạn → dòng đỏ; giữ từng dòng Case SOS FT; summary/badge đếm dòng; Nhắc dòng gộp = một chuông; phép kiểm `prGop.tests.ts` GOP-1…4, ảnh `thiet-ke/anh/pr-gop/` |
 | 08/10/2026 | PR-KV · `pr-kv-ky-vong` · Opus 5.5 | Panel "Kỳ vọng đầu ra · lớp" (`PanelKyVong`, `GET/PUT /classes/:id/ky-vong`): Đạt = Overall MT0 ≥ 4.0 BE / 4.5 ELE, điền sẵn, Lưu một lần (một tx, theo lô); Trung tâm → Case + Tutor 10 buổi (GV cũ), Học viên → lý do bắt buộc, Case không PA; một việc QL mỗi lớp (bỏ việc mỗi em); phép kiểm `prKv.tests.ts` KV1–KV8, ảnh `thiet-ke/anh/pr-kv/` |
