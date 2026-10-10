@@ -267,6 +267,8 @@ Báo cáo + mockup: `thiet-ke/mockup-mt-quy-trinh-2026-10-08.html` (artifact htt
 - **Đề xuất PR (thứ tự):** 0 deploy + kiểm DB · 1 PR-MTKET (5 thao tác: Huỷ điểm / Huỷ lịch kỹ năng / Bỏ kỹ năng / Huỷ MT mọi vị trí / Khôi phục) · 2 PR-CHENMT mở rộng (đánh số lại 2 chiều thay chặn + thay T2) sau khi đưa lại #247 · 3 PR-MTUI (mục 5–8: thu gọn Kế hoạch Test, "Xếp nhiều MT" + panel "Chọn lớp…", tên → Hồ sơ HV chỉ ở Kế hoạch Test, tiêu đề Lịch Test "bài thi W1 OCT" + chip hạn, Điểm theo lớp bỏ tuần khỏi tab → "Thi W1 OCT" dưới mã HV) · 4 PR-HOP1 (một hộp một đường lưu + GVCN đề xuất dời có cấu trúc) · 5 PR-XTHV (tab Xếp theo học viên, ≤3 em) · 6 PR-LT4 lớp thường (đổi mốc hỏi dời bài, "-" tự dời thứ Hai, vướng Final vẫn lưu "-", QL Huỷ kết quả môn, sửa Rulebook §20.6 hạn chấm).
 - **9 câu chờ chủ SP** (trong trang): commit đang deploy (ảnh 1 có chip #245); huỷ MT giữa (giữ số / đánh số lại); đánh số lại thay chặn + kỳ vọng theo số mới; bỏ kỹ năng MT cũ/tuần thi; tên nút; tab theo HV (≤3 em, gợi ý 6/12/16); em lệch tuần (chữ đậm); quy trình A/B/C; lớp thường 3 việc.
 
+### PR-VN3 · Việc nhỏ dồn lại (10/10) — kế hoạch `docs/superpowers/plans/2026-10-10-pr-vn3-viec-nho.md`. Chủ SP 10/10: Sửa PA = "đã đụng", ghi một dòng ngắn vào lịch sử. **Không làm PR-MTKET, PR-CHENMT.**
+
 ### SAU PR-HOP1 (#293, rà 09/10) — ghi chú không chặn
 - Hồ sơ MT: dời lịch qua `HopKyNang` không còn ô **Lý do** (tuỳ chọn) như `WeekModal` cũ — nhật ký ghi không lý do. Chủ SP thấy cần thì thêm lại.
 - Lượt không có `classId`: "Dời lịch thi cả đợt" bấm không mở gì (hiếm; một kỹ năng vẫn đi `HopThaoTacMt`).
