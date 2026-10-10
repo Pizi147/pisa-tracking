@@ -685,7 +685,7 @@ function metricSetGoc(
       ).all(...cs.params, ...(scope.branchId ? [scope.branchId] : []), mondayOf(today)) as any[]).map((r) => r.id as number));
     }
     case 'hv-len-ft-chua-ky-vong':
-      /* (d) PR-KV: em chưa kết luận kỳ vọng đầu ra ở lớp BE/ELE đã có em đủ điểm MT0 — cùng `lopKyVong` của việc QL (một dòng mỗi lớp). */
+      /* (d) PR-KV: em chưa kết luận kỳ vọng đầu ra ở lớp BE/ELE đã có em có điểm MT0 — cùng `lopKyVong` của việc QL (một dòng mỗi lớp). */
       if (scopeFor(p, PERMISSIONS.REQUEST_APPROVE).none) return { ...done([]), empty: true, note: EMPTY_NOTE };
       return done(lopKyVong(p, scope.branchId).flatMap((x) => x.chua).sort((a, b) => a - b));
     case 'lop-chua-chot-len-ft':
