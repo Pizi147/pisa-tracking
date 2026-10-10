@@ -13,7 +13,7 @@ import {
   type Principal,
 } from '../permissions.ts';
 import { notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
-import { loadBundle, pendingInputOf, regularSkillViews, resultOf, skillCells } from '../fasttrack/attempts.ts';
+import { CON_O_SQL, loadBundle, pendingInputOf, regularSkillViews, resultOf, skillCells } from '../fasttrack/attempts.ts';
 import { examPlanOf } from '../fasttrack/cycles.ts';
 import { dotHoanTatMany, type HoanTatInfo } from '../fasttrack/hoanTat.ts';
 import { standingFor, standingLine } from '../students/standing.ts';
@@ -134,13 +134,14 @@ function progressMapOf(classIds: number[]) {
  * Lớp đang hoạt động trong phạm vi xem, đúng thứ tự của `listClassSummaries` — KHÔNG nạp lượt (PR-TD2-b: danh sách Trước/Sau).
  * `null` = người xem không có phạm vi nào.
  */
-export function lopTrongPhamVi(p: Principal, branchId?: number): any[] | null {
+export function lopTrongPhamVi(p: Principal, branchId?: number, classId?: number): any[] | null {
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   if (scope.none) return null;
   const cs = classScopeSql(scope);
   const where: string[] = [cs.sql, "c.status = 'active'"];
   const params: unknown[] = [...cs.params];
   if (branchId) { where.push('c.branch_id = ?'); params.push(branchId); }
+  if (classId) { where.push('c.id = ?'); params.push(classId); }
   const classes = db()
     .prepare(
       `SELECT c.id, c.code, c.kind, c.programme_code, c.route, c.branch_id, c.start_date,
@@ -162,11 +163,12 @@ export function lopTrongPhamVi(p: Principal, branchId?: number): any[] | null {
  * PR-DUYET (K5-28): sổ đề nghị dời đang chờ (`pendingMove`, gọi ở từng ô lịch) nay nhớ THEO REQUEST. Hai trang đọc nặng dưới
  * đây tự mở bộ nhớ tạm (`trongBoNho`, như `listCases`) để gọi ngoài request GET (phép kiểm, lệnh ops) vẫn nạp sổ một lần.
  */
-export function listClassSummaries(p: Principal, f: { branchId?: number; q?: string; scope?: WorkScope } = {}) {
+/** `classId` (TD3-b): chỉ dòng của một lớp — hồ sơ lớp không tính tóm tắt mọi lớp rồi lấy một. */
+export function listClassSummaries(p: Principal, f: { branchId?: number; classId?: number; q?: string; scope?: WorkScope } = {}) {
   return trongBoNho(() => listClassSummariesThat(p, f));
 }
-function listClassSummariesThat(p: Principal, f: { branchId?: number; q?: string; scope?: WorkScope }) {
-  const classes = lopTrongPhamVi(p, f.branchId);
+function listClassSummariesThat(p: Principal, f: { branchId?: number; classId?: number; q?: string; scope?: WorkScope }) {
+  const classes = lopTrongPhamVi(p, f.branchId, f.classId);
   if (!classes) return { rows: [] as ClassSummary[], scopeEmpty: true };
   const workScope: WorkScope = f.scope ?? defaultWorkScope(p);
   const conn = db();
@@ -174,23 +176,36 @@ function listClassSummariesThat(p: Principal, f: { branchId?: number; q?: string
 
   const ids = classes.map((c) => c.id);
   const ph = ids.map(() => '?').join(',');
+  const today = demoToday();
+  /*
+   * TD3-b: số đếm không nạp cả bundle — Case mở (luật huy hiệu của `loadBundle`: mức cao nhất > 0, còn Case chưa xong) đếm bằng SQL;
+   * lượt + lịch kỹ năng + điểm chỉ đọc cho lượt `CON_O_SQL` (tập cha của ô cần chấm). Lượt khác không thể có ô cần chấm.
+   */
+  const openCases = new Map<number, number>();
+  for (const r of conn.prepare(
+    `SELECT a.class_id, COUNT(*) AS n FROM assessment_attempts a
+       JOIN students s ON s.id = a.student_id AND ${HV_DANG_HOC_SQL('s')}
+      WHERE a.class_id IN (${ph}) AND a.status != 'cancelled'
+        AND EXISTS (SELECT 1 FROM sos_cases x WHERE x.attempt_id = a.id AND x.status IN ('open', 'in_progress'))
+        AND (SELECT MAX(x.sos_level) FROM sos_cases x WHERE x.attempt_id = a.id) > 0
+      GROUP BY a.class_id`,
+  ).all(...ids) as any[]) openCases.set(r.class_id, r.n);
   const attempts = conn
     .prepare(
       `SELECT a.id, a.class_id, a.status, a.planned_period_id, a.kind,   -- PR-LT3 T18: \`skillCells\` đọc loại lượt (Speaking Mock chấm chéo)
               a.deadline_override, a.target_at_attempt, a.attempt_no, a.lich_su,
               (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route,
-              rp.week_start AS period_start, rp.week_end AS period_end
+              pr.week_start AS period_start, pr.week_end AS period_end
          FROM assessment_attempts a
          JOIN students s ON s.id = a.student_id AND ${HV_DANG_HOC_SQL('s')}   -- PR-S6F-a Q2: badge cùng tập Nợ điểm
-         LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
-        WHERE a.class_id IN (${ph}) AND a.status != 'cancelled'`,
+         JOIN classes c ON c.id = a.class_id
+         LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
+        WHERE a.class_id IN (${ph}) AND a.status != 'cancelled' AND ${CON_O_SQL}`,
     )
-    .all(...ids) as any[];
+    .all(...ids, today, today, today, today) as any[];
   const bundle = loadBundle(attempts.map((a) => a.id));
-  const today = demoToday();
 
   const needScores = new Map<number, number>();
-  const openCases = new Map<number, number>();
   /*
    * Lớp FT và lớp thường có bộ kỹ năng khác nhau, nên phải hỏi quyền theo đúng bộ của lớp
    * đó — hỏi bằng bộ kỹ năng IELTS cho một lớp Foundation thì luôn ra rỗng.
@@ -211,8 +226,6 @@ function listClassSummariesThat(p: Principal, f: { branchId?: number; q?: string
 
   const bump = (m: Map<number, number>, k: number, by = 1) => m.set(k, (m.get(k) ?? 0) + by);
   for (const a of attempts) {
-    const c = bundle.cases.get(a.id);
-    if (c && c.sos_level > 0 && c.status !== 'done') bump(openCases, a.class_id);
 
     if (ratioClasses.has(a.class_id)) {
       /*
@@ -722,7 +735,7 @@ function classOverviewThat(p: Principal, classId: number) {
         canXepLop: 0, soChuaLoTrinhTiep: 0,
       };
     })()
-    : listClassSummaries(p, {}).rows.find((r) => r.id === classId) ?? null;
+    : listClassSummaries(p, { classId }).rows.find((r) => r.id === classId) ?? null;
   const assignments = conn
     .prepare(
       `SELECT ta.skill, ta.is_core, u.id AS user_id, u.full_name FROM teacher_assignments ta

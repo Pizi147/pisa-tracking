@@ -697,11 +697,6 @@ export const TRAN: Record<string, number> = {
  * Trần = max(đo + 50, ⌈đo × 1,3⌉), đo NGAY SAU TD2-a trên bộ demo gốc. Sau nhân dữ liệu ×3: ≤ 3 × trần.
  */
 export const TRAN_DONG: Record<string, number> = {
-  'QL /hoc-vien-lop': 4220,   // đo 3246
-  'GVCN /hoc-vien-lop': 3443,   // đo 2648
-  'GVBM /hoc-vien-lop': 4023,   // đo 3094
-  'GVCN_THUONG /hoc-vien-lop': 3443,   // đo 2648
-  'QT /hoc-vien-lop': 4116,   // đo 3166
   'QL /my-work': 2975,   // đo 2288
   'GVCN /my-work': 2498,   // đo 1921
   'GVBM /my-work': 2823,   // đo 2171
@@ -709,21 +704,25 @@ export const TRAN_DONG: Record<string, number> = {
   'QT /my-work': 3932,   // đo 3024
   'QL /my-work?nguoi=tat-ca': 3497,   // đo 2690
   'QT /my-work?nguoi=tat-ca': 4669,   // đo 3591
-  'QL /classes/3/overview': 3024,   // đo 2326
-  'GVCN /classes/3/overview': 2573,   // đo 1979
-  'GVBM /classes/3/overview': 2936,   // đo 2258
-  'GVCN_THUONG /classes/3/overview': 2573,   // đo 1979
-  'QT /classes/3/overview': 3964,   // đo 3049
   'QL /classes/3/roster': 2226,   // đo 1712
   'GVCN /classes/3/roster': 2447,   // đo 1882
   'GVBM /classes/3/roster': 2463,   // đo 1894
   'GVCN_THUONG /classes/3/roster': 2447,   // đo 1882
   'QT /classes/3/roster': 2153,   // đo 1656
-  'QL /cham/lich-test': 2448,   // đo 1883
-  'GVCN /cham/lich-test': 1822,   // đo 1401
-  'GVBM /cham/lich-test': 2175,   // đo 1673
-  'GVCN_THUONG /cham/lich-test': 1822,   // đo 1401
-  'QT /cham/lich-test': 3427,   // đo 2636
+  'QL /cham/lich-test': 917,   // TD3-a: đo 705 (27 câu)
+  'GVCN /cham/lich-test': 705,   // TD3-a: đo 542 (25 câu)
+  'GVBM /cham/lich-test': 774,   // TD3-a: đo 595 (26 câu)
+  'GVCN_THUONG /cham/lich-test': 705,   // TD3-a: đo 542 (25 câu)
+  'QT /cham/lich-test': 1111,   // TD3-a: đo 854 (28 câu)
+  'QL /cham/lich-test?phamVi=tat-ca': 917,   // TD3-a: đo 705 (27 câu)
+  'GVCN /cham/lich-test?phamVi=tat-ca': 705,   // TD3-a: đo 542 (25 câu)
+  'GVBM /cham/lich-test?phamVi=tat-ca': 774,   // TD3-a: đo 595 (26 câu)
+  'GVCN_THUONG /cham/lich-test?phamVi=tat-ca': 705,   // TD3-a: đo 542 (25 câu)
+  'QT /cham/lich-test?phamVi=tat-ca': 1111,   // TD3-a: đo 854 (28 câu)
+  'QL /cham/lich-test?classId=3': 709,   // TD3-a: đo 545 (25 câu)
+  'QT /cham/lich-test?classId=3': 735,   // TD3-a: đo 565 (24 câu)
+  'GVCN /cham/lich-test?classId=3': 611,   // TD3-a: đo 470 (25 câu)
+  'GVBM /cham/lich-test?classId=3': 647,   // TD3-a: đo 497 (25 câu)
   'QL /tong-quan/chi-nhanh': 3336,   // đo 2566
   'QT /tong-quan/chi-nhanh': 4397,   // đo 3382
   'QL /tong-quan/diem-chu-y?ct=ft': 3260,   // đo 2507
@@ -733,6 +732,19 @@ export const TRAN_DONG: Record<string, number> = {
   'GVCN_THUONG /tong-quan/lop-toi-day?ct=ft': 2703,   // đo 2079
   'QL /metrics/hv-duoi-ky-vong-mon': 2093,   // đo 1610
   'QT /metrics/hv-duoi-ky-vong-mon': 3040,   // đo 2338
+  'QL /hoc-vien-lop': 3416,   // TD3-b: đo 2627 (68 câu)
+  'GVCN /hoc-vien-lop': 2602,   // TD3-b: đo 2001 (72 câu)
+  'GVBM /hoc-vien-lop': 2975,   // TD3-b: đo 2288 (72 câu)
+  'GVCN_THUONG /hoc-vien-lop': 2602,   // TD3-b: đo 2001 (72 câu)
+  'QT /hoc-vien-lop': 3305,   // TD3-b: đo 2542 (67 câu)
+  'QL /classes/3/overview': 1152,   // TD3-b: đo 886 (56 câu)
+  'GVCN /classes/3/overview': 1211,   // TD3-b: đo 931 (60 câu)
+  'GVBM /classes/3/overview': 1208,   // TD3-b: đo 929 (60 câu)
+  'GVCN_THUONG /classes/3/overview': 1211,   // TD3-b: đo 931 (60 câu)
+  'QT /classes/3/overview': 1076,   // TD3-b: đo 827 (53 câu)
+  'QL /classes/6/overview': 801,   // TD3-b: đo 616 (68 câu)
+  'QT /classes/6/overview': 756,   // TD3-b: đo 581 (65 câu)
+  'GVCN_THUONG /classes/6/overview': 819,   // TD3-b: đo 630 (72 câu)
 };
 
 export const TRAN_GHI_LO = {
