@@ -68,7 +68,7 @@ export async function runPrVn4Tests(t: YThucTestKit) {
   const ds = all(`SELECT a.id, a.student_id FROM assessment_attempts a WHERE a.status != 'cancelled'
       AND EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND (s.band IS NOT NULL OR s.raw_score IS NOT NULL))
       AND NOT EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND s.skill NOT IN ('listening', 'reading', 'writing1', 'writing2', 'speaking'))
-      /* PR-VN5: bài lớp thường (chấm tỉ lệ, trừ MT0) xoá ô qua `saveRegularScore` — kiểm ở prVn5 VN5-1. */
+      /* PR-VN5: bài lớp thường (chấm tỉ lệ, trừ MT0) xoá ô qua saveRegularScore — kiểm ở prVn5 VN5-1. */
       AND NOT (a.kind != 'mt0' AND EXISTS (SELECT 1 FROM classes c JOIN programmes pg ON pg.code = c.programme_code WHERE c.id = a.class_id AND pg.scoring_mode = 'ratio'))
     ORDER BY a.id`);
   const QL = P.admin;
