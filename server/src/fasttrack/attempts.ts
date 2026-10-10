@@ -1327,9 +1327,9 @@ function xoaDiemLuot(p: Principal, a: ReturnType<typeof loadAttempt>, lyDo: stri
   const o = db().prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND (band IS NOT NULL OR raw_score IS NOT NULL) ORDER BY id')
     .all(a.id) as ScoreRow[];   // dòng gốc như `saveScore` ghi vào nhật ký (không cột nối của `scoresOf`)
   if (!o.length) return;
-  /* PR-VN5: bài lớp thường nhận môn của chương trình (`writing`, `tong_hop`…) — cùng nguồn `saveRegularScore`. */
-  const ct = a.class_id ? programmeOfClass(a.class_id) : null;
-  const thuong = ct?.scoringMode === 'ratio';
+  /* PR-VN5: bài lớp thường nhận môn của chương trình (`writing`, `tong_hop`…) — cùng nguồn `saveRegularScore`; MT0 ở lớp thường vẫn chấm band. */
+  const ct = a.class_id && scoringModeOf(a) === 'ratio' ? programmeOfClass(a.class_id) : null;
+  const thuong = !!ct;
   if (o.some((s) => !(thuong ? ct!.skills : ENTRY_SKILLS as readonly string[]).includes(s.skill))) throw badRequest('Kỹ năng không hợp lệ.');
   const today = demoToday();
   settleNoShows(today);

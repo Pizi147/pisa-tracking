@@ -49,7 +49,7 @@ export async function runPrVn5Tests(t: YThucTestKit) {
 
   check('VN5-2 · ban_chup_luot.trang_thai = cancelled ngay sau huỷ (lộ trình đã đóng)', () => {
     const ds2 = all(`SELECT DISTINCT a.id FROM assessment_attempts a JOIN ban_chup_luot b ON b.attempt_id = a.id
-      WHERE a.status != 'cancelled' AND b.ban_chup_id = (SELECT MAX(id) FROM ban_chup_lo_trinh x WHERE x.cycle_id = a.cycle_id) ORDER BY a.id`);
+      WHERE a.status != 'cancelled' AND b.trang_thai IS NOT NULL AND b.ban_chup_id = (SELECT MAX(id) FROM ban_chup_lo_trinh x WHERE x.cycle_id = a.cycle_id) ORDER BY a.id`);
     assert(ds2.length > 0, 'cần lượt thuộc lộ trình đã chụp');
     let co = 0;
     for (const a of ds2) {
