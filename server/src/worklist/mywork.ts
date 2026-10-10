@@ -666,7 +666,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
           WHERE r.key = 'manager' AND ur.status = 'active' AND u.status = 'active' AND u.deleted_at IS NULL AND ur.branch_id = ? ORDER BY ur.user_id LIMIT 1`,
       ).get(b) as any)?.user_id ?? null);
     }
-    return qlChiNhanh.get(b) ?? o;
+    const ql = qlChiNhanh.get(b) ?? null;
+    return ql !== null && coTheThemPa(loadPrincipal(ql), c) ? ql : o;   // QL không đủ quyền ở lớp này thì giữ chủ Case, không giao vào ngõ cụt
   };
   for (const c of caseRows) {
     if (f.branchId && c.eff_branch_id !== f.branchId) continue;

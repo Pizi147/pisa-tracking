@@ -377,13 +377,13 @@ api.get('/ref/units', requireAuth, wrap((req) => {
  * VIỆC CỦA CHÍNH NGƯỜI ĐANG XEM — thay bảng số theo tuần ở màn chính.
  * Chỉ trả về việc người này thực sự làm được; quyền kiểm ở tầng dịch vụ, không phải ẩn nút.
  */
+/* PR-VN3 (GOP): web chỉ đọc `dong` + `summary` — bỏ `items` / `groups` khỏi JSON (nặng ~3 lần); hàm giữ nguyên cho Nhắc và hồ sơ GV. */
+const nheMyWork = ({ items: _items, groups: _groups, ...con }: any) => con;
 /**
  * PR-Ra Q1–Q2: `?nguoi=` chọn góc nhìn — `toi` (mặc định) · `tat-ca` (Quản lý/Quản trị, Q1) ·
  * một ID giáo viên cụ thể (Q2, "Chọn giáo viên…"). Chuỗi lạ bị `thamSoNguoi` bỏ qua, coi như
  * không gửi — không báo lỗi cho một tham số hỏng, giữ đúng quy ước "phạm vi trên đường dẫn".
  */
-/* PR-VN3 (GOP): web chỉ đọc `dong` + `summary` — bỏ `items` / `groups` khỏi JSON (nặng ~3 lần); hàm giữ nguyên cho Nhắc và hồ sơ GV. */
-const nheMyWork = ({ items: _items, groups: _groups, ...con }: any) => con;
 api.get('/my-work', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   lenhSvc.quetLenhDenHan();   // PR-CT: quyết định chuyển lớp tới Thứ Hai thì thi hành (chạy lặp an toàn)
