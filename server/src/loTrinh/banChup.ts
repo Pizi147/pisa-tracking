@@ -256,7 +256,7 @@ export function lamMoiDiemBanChup(conn: any, attemptIds: number[]): void {
     const bc = conn.prepare('SELECT * FROM ban_chup_lo_trinh WHERE cycle_id = ? ORDER BY lan DESC LIMIT 1').get(a.cycle_id) as any;
     if (!bc) continue;
     const cu = conn.prepare('SELECT * FROM ban_chup_luot WHERE ban_chup_id = ? AND attempt_id = ?').all(bc.id, a.id) as any[];
-    if (!cu.length || cu[0].trang_thai === 'cancelled' || a.status === 'cancelled') continue;
+    if (!cu.length || cu[0].trang_thai === 'cancelled') continue;   // PR-VN5: lượt vừa huỷ vẫn ghi một lần để bản chụp thành `cancelled`
     const nc: NguCanhLuot = { laFt: !!bc.route, route: bc.route ?? null, mon: JSON.parse(bc.mon_json ?? '[]'), maCt: bc.programme_code ?? null };
     const rows = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ?').all(a.id) as any[];
     const boQua = cu.filter((r) => r.bo_qua === 1 && (ASSESSED_SKILLS as readonly string[]).includes(r.ky_nang)).map((r) => r.ky_nang as string);

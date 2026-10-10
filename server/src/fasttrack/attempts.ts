@@ -34,7 +34,7 @@ import { currentCycle, cycleById, examPlanOf, luotSoCuaLoTrinh } from './cycles.
 import { closeCasesBySystem } from '../cases/systemClose.ts';
 import { ketQuaHuyCua } from './ketQuaHuy.ts';
 import { chuanHoaNguoiThucHien } from '../cases/nguoiThucHien.ts';
-import { allProgrammes, evaluateRegular, isRatioClass, regularDeadline } from '../normal/regular.ts';
+import { allProgrammes, evaluateRegular, isRatioClass, programmeOfClass, refreshRegularOutcome, regularDeadline } from '../normal/regular.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { lamMoiDiemBanChup } from '../loTrinh/banChup.ts';
 import { dongBoCheTaiFinal } from '../normal/cuoiKhoa.ts';
@@ -1328,7 +1328,10 @@ function xoaDiemLuot(p: Principal, a: ReturnType<typeof loadAttempt>, lyDo: stri
   const o = db().prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND (band IS NOT NULL OR raw_score IS NOT NULL) ORDER BY id')
     .all(a.id) as ScoreRow[];   // dòng gốc như `saveScore` ghi vào nhật ký (không cột nối của `scoresOf`)
   if (!o.length) return;
-  if (o.some((s) => !(ENTRY_SKILLS as readonly string[]).includes(s.skill))) throw badRequest('Kỹ năng không hợp lệ.');
+  /* PR-VN5: bài lớp thường nhận môn của chương trình (`writing`, `tong_hop`…) — cùng nguồn `saveRegularScore`; MT0 ở lớp thường vẫn chấm band. */
+  const ct = a.class_id && scoringModeOf(a) === 'ratio' ? programmeOfClass(a.class_id) : null;
+  const thuong = !!ct;
+  if (o.some((s) => !(thuong ? ct!.skills : ENTRY_SKILLS as readonly string[]).includes(s.skill))) throw badRequest('Kỹ năng không hợp lệ.');
   const today = demoToday();
   settleNoShows(today);
   const hoanTat = dotHoanTat(a.id, today);
@@ -1336,6 +1339,7 @@ function xoaDiemLuot(p: Principal, a: ReturnType<typeof loadAttempt>, lyDo: stri
   if (hoanTat.hoanTat && (!a.class_id || !quyenSuaSauHoanTat(p, a.class_id, !!a.lich_su))) {
     throw forbidden(`Đợt này đã hoàn tất (hết Chủ nhật ${ngay(hoanTat.chuNhatCuoi)}). Chỉ Quản lý xoá được điểm — nhờ Quản lý huỷ lượt.`);
   }
+  if (thuong) return xoaDiemBaiThuong(p, a, o, lyDo, hoanTat.hoanTat, ct!.code);
   db().prepare(
     `UPDATE assessment_scores SET raw_score = NULL, c1 = NULL, c2 = NULL, c3 = NULL, c4 = NULL, band = NULL, entered_by = NULL, entered_at = NULL,
             comment = NULL, examiner_user_id = NULL, examiner_name = NULL, nhap_dau_ngay = NULL
@@ -1355,6 +1359,22 @@ function xoaDiemLuot(p: Principal, a: ReturnType<typeof loadAttempt>, lyDo: stri
     });
   }
   refreshOutcome(p, a.id);
+}
+
+/** PR-VN5: phần lô của `xoaDiemLuot` cho bài lớp thường — cột, đường ghi và nhật ký như `saveRegularScore` xoá một ô. */
+function xoaDiemBaiThuong(p: Principal, a: ReturnType<typeof loadAttempt>, o: ScoreRow[], lyDo: string, hoanTat: boolean, maCt: string) {
+  const luc = nowIso();
+  db().prepare(`UPDATE assessment_scores SET raw_score = NULL, entered_by = ?, entered_at = ?, nhap_dau_ngay = NULL
+      WHERE attempt_id = ? AND (band IS NOT NULL OR raw_score IS NOT NULL)`).run(p.userId, luc, a.id);
+  for (const s of o) {
+    const path = hoanTat ? 'override' : scoreEditPath(p, a.class_id!, s.skill);
+    writeAudit({
+      actorUserId: p.userId, action: path === 'override' ? 'regular.score.override' : 'regular.score',
+      entityType: 'assessment_score', entityId: s.id, entityLabel: `${maCt} · ${s.skill}`, before: s,
+      after: { ...s, raw_score: null, entered_by: p.userId, entered_at: luc, nhap_dau_ngay: null, lyDo, ...(hoanTat ? { sauHoanTat: true } : {}) },
+    });
+  }
+  refreshRegularOutcome(p, a.id);
 }
 
 /** PR-MTGON (Hồ sơ MT khi mọi kỹ năng đã huỷ): "Đưa lại cả 4 kỹ năng" — mọi kỹ năng đã huỷ / không yêu cầu về đợt, MỘT tx. */
@@ -1440,6 +1460,7 @@ export function huyLuot(p: Principal, attemptId: number, input: { lyDo?: string 
     conn.prepare(`UPDATE assessment_attempts SET status='cancelled', cancel_reason=?, cancelled_at=?, updated_at=? WHERE id=?`)
       .run(lyDo, nowIso(), nowIso(), attemptId);
     logSchedule(attemptId, { action: 'cancelled', reason: lyDo, actor: p.userId });
+    lamMoiDiemBanChup(conn, [attemptId]);   // PR-VN5: bản chụp (lộ trình đã đóng) thấy `cancelled` ngay, không trễ một nhịp
     /* Đề nghị dời đang chờ của lượt này hết nghĩa — không rút thì hết hạn sẽ huỷ phần thi của lượt xếp lại sau (cùng id). */
     rutDeNghiDoi(attemptId);
     /* PR-DON (ghi chú CT2): Final lớp thường đã sinh sớm bổ trợ → huỷ bộ chưa ai đụng (cùng luật "đã đụng"). */
