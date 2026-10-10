@@ -9237,6 +9237,9 @@ await runPrKiemDuLieuMtTests({ check, checkAsync, assert, assertThrows, conn, TO
 // ==================================================================== PR-HOP1 (một hộp, một đường lưu dời lịch MT)
 const { runPrHop1Tests } = await import('./prHop1.tests.ts');
 await runPrHop1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-TD3 (tốc độ đợt 2: đọc ít dòng)
+const { runPrTd3Tests } = await import('./prTd3.tests.ts');
+await runPrTd3Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

@@ -215,6 +215,7 @@ async function callHttp(vai: Vai, method: string, url: string, body?: unknown) {
 /** Đếm câu SQL của MỘT lượt gọi HTTP — gọi TUẦN TỰ (không song song, để số không lẫn giữa các lượt gọi). */
 async function doSql(vai: Vai, method: string, url: string): Promise<{ n: number; dong: number; status: number }> {
   const truoc = soCauSql(), dongTruoc = soDongSql();
+  if (process.env.PISA_DEM_SQL === '1') console.log(`[vai] ${vai}`);   // TD3-0: dòng `[sql]` ngay sau là của vai này
   const { status } = await callHttp(vai, method, url);
   const sau = soCauSql();
   return { n: sau - truoc, dong: soDongSql() - dongTruoc, status };

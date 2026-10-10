@@ -44,9 +44,9 @@ let sqlGanNhat = '';
     const goc = proto[ten];
     if (ten === 'all') {
       /* TD2-0: đếm dòng ở `all` (mọi `get` của câu dùng lại cũng đi qua đây) — chỉ cộng length. */
-      proto[ten] = function (this: unknown, ...args: unknown[]) {
+      proto[ten] = function (this: { sql?: string }, ...args: unknown[]) {
         const out = goc.apply(this, motNull(args));
-        if (Array.isArray(out)) demDong(out.length);
+        if (Array.isArray(out)) demDong(out.length, this.sql ?? '');
         return out;
       };
       continue;
@@ -62,10 +62,10 @@ let sqlGanNhat = '';
     };
   }
   const getGoc = proto.get;
-  proto.get = function (this: { daLuu?: boolean; all(...a: unknown[]): unknown[] }, ...args: unknown[]) {
+  proto.get = function (this: { daLuu?: boolean; sql?: string; all(...a: unknown[]): unknown[] }, ...args: unknown[]) {
     /* PR-BN: `get()` của libsql trên statement DÙNG LẠI trả dòng của lần gọi TRƯỚC (tham số mới bị bỏ qua) — `all()` thì đúng. */
     const row = this.daLuu ? this.all(...args)[0] : getGoc.apply(this, motNull(args));
-    if (!this.daLuu) { demCau(); demDong(row ? 1 : 0); }   // đường `all` đã đếm qua `iterate` / `all`
+    if (!this.daLuu) { demCau(); demDong(row ? 1 : 0, this.sql ?? ''); }   // đường `all` đã đếm qua `iterate` / `all`
     if (row && typeof row === 'object' && '_metadata' in row) delete (row as Record<string, unknown>)._metadata;
     return row;
   };
@@ -78,7 +78,7 @@ let sqlGanNhat = '';
    * Tối đa TOI_DA_CAU câu mỗi kết nối, bỏ câu lâu chưa dùng nhất (SQL ghép động như INSERT nhiều dòng có thể muôn hình).
    */
   const TOI_DA_CAU = 1000;
-  type Bao = { stmt: unknown; pluckMode: boolean; daLuu?: boolean; raw(b: boolean): void; safeIntegers(b: boolean): void };
+  type Bao = { stmt: unknown; pluckMode: boolean; daLuu?: boolean; sql?: string; raw(b: boolean): void; safeIntegers(b: boolean): void };
   const boNho = new WeakMap<object, Map<string, Bao>>();
   const prepareGoc = Database.prototype.prepare;
   Database.prototype.prepare = function (this: object, sql: string) {
@@ -99,6 +99,7 @@ let sqlGanNhat = '';
       moi.stmt = cu.stmt;
       moi.pluckMode = false;
       moi.daLuu = true;
+      moi.sql = sql;   // TD3-0: câu cho `top` của bộ đếm dòng
       /* libsql ném lỗi khi đặt chế độ trên câu không trả dữ liệu (PRAGMA, DDL) — câu như vậy cũng không thể đã bị đặt chế độ. */
       try { moi.raw(false); } catch { /* không trả dữ liệu */ }
       try { moi.safeIntegers(false); } catch { /* không trả dữ liệu */ }
@@ -106,6 +107,7 @@ let sqlGanNhat = '';
     }
     const st = prepareGoc.call(this, sql) as unknown as Bao;
     st.daLuu = true;
+    st.sql = sql;
     theoCau.set(khoa, st);
     if (theoCau.size > TOI_DA_CAU) theoCau.delete(theoCau.keys().next().value as string);
     return st;
