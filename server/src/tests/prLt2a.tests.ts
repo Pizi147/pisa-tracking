@@ -47,8 +47,8 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     assert(be.includes('1 buổi/tuần') && be.includes('W') && be.includes('trừ buổi Free'), be);
     const ten = d.tenCaseThuong({ dot: 'progress', giua: 'G+V không đạt' });
     assert(ten === '[Progress Test] G+V không đạt' && !/SOS/.test(ten), ten);
-    assert(d.mocChuBoTro(null, t.TODAY) === 'đến Final Test · chưa có lịch', 'chưa có lịch');
-    assert(/^đến Final Test · W\d /.test(d.mocChuBoTro(t.addDays(t.TODAY, 20), t.TODAY)), 'mã tuần');
+    assert(d.mocChuBoTro(null, t.TODAY) === 'đến Cuối khoá · chưa có lịch', 'chưa có lịch');
+    assert(/^đến Cuối khoá · W\d /.test(d.mocChuBoTro(t.addDays(t.TODAY, 20), t.TODAY)), 'mã tuần');
   });
 
   check('LT2a (1) · nhanKetQuaThuong: 6 ca, KHÔNG ca nào có chữ SOS', () => {
@@ -68,12 +68,12 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     for (const x of [du, thieu, dat, preFou, cuoi, chua]) assert(!/SOS/.test(JSON.stringify(x)), 'không SOS');
   });
 
-  check('LT2a (1) · trangThaiCaseV4 (PR-CT2): Case có nguyên nhân → Đang làm (không còn trạng thái kế hoạch); chờ nguyên nhân giữ; PA chưa chạy nói "đến Final Test"', () => {
+  check('LT2a (1) · trangThaiCaseV4 (PR-CT2): Case có nguyên nhân → Đang làm (không còn trạng thái kế hoạch); chờ nguyên nhân giữ; PA chưa chạy nói "đến Cuối khoá"', () => {
     const c = { status: 'open' as const, fromSos: true, hasCause: true, dismissed: false, systemClosed: false, choDuyetKhongTheoDoi: false,
       coPaChoXacNhan: false, hanXacNhan: null };
     assert(d.trangThaiCaseV4(c, '2026-09-19').k === 'dang-lam', 'có nguyên nhân → Đang làm');
     assert(d.trangThaiCaseV4({ ...c, hasCause: false }, '2026-09-19').k === 'cho-nguyen-nhan', 'chờ nguyên nhân');
-    assert(d.mocChuPa({ span: 'den_cuoi_khoa', followupDue: null, mtKe: null, daXacNhan: false }, '2026-09-19') === 'đến Final Test', 'PA chưa chạy');
+    assert(d.mocChuPa({ span: 'den_cuoi_khoa', followupDue: null, mtKe: null, daXacNhan: false }, '2026-09-19') === 'đến Cuối khoá', 'PA chưa chạy');
   });
 
   check('LT2a (1) · noiDungBaoPh đúng 4 phần tử; nguyên nhân trống → "GVBM chưa xác nhận"; loại thẻ ke_hoach_bo_tro giữ để đọc lịch sử', () => {
@@ -281,10 +281,10 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     assert(the.length === 1 && the[0].doi_tuong_id === ivGv.id, 'chỉ một thẻ Xin ý kiến');
   });
 
-  check('LT2a (5) · Tuần Final Test: Hoàn thành ẩn tới khi PA khép (dòng "Hoàn thành được sau khi PA theo quy chế kết thúc (đến Final Test · …)"); ghi kết quả cuối → CẢ HAI PA completed het_moc; rồi việc tiếp "Hoàn thành Case"', () => {
+  check('LT2a (5) · Tuần Final Test: Hoàn thành ẩn tới khi PA khép (dòng "Hoàn thành được sau khi PA theo quy chế kết thúc (đến Cuối khoá · …)"); ghi kết quả cuối → CẢ HAI PA completed het_moc; rồi việc tiếp "Hoàn thành Case"', () => {
     const { cGv, cP, ha } = dungFouChay('LT2a FOU CUOI');
     const dt0 = chiTiet(ha, cGv.id);
-    assert(dt0.hoanThanh?.an === true && /Hoàn thành được sau khi PA theo quy chế kết thúc \(đến Final Test/.test(dt0.hoanThanh.dong), JSON.stringify(dt0.hoanThanh));
+    assert(dt0.hoanThanh?.an === true && /Hoàn thành được sau khi PA theo quy chế kết thúc \(đến Cuối khoá/.test(dt0.hoanThanh.dong), JSON.stringify(dt0.hoanThanh));
     conn.prepare(`UPDATE case_interventions SET followup_due = ? WHERE nhom_bo_tro = ?`).run(d.addDaysIso(TODAY, -1), paBt(cGv.id).nhom_bo_tro);
     assert(/^Kết quả cuối/.test(chiTiet(ha, cGv.id).viecTiep.chu), `việc tiếp: ${chiTiet(ha, cGv.id).viecTiep.chu}`);
     cases.updateResult(ha, paBt(cGv.id).id, { outcome: 'improved', note: 'Đã đạt yêu cầu về thì và cách đặt câu cơ bản.' });
