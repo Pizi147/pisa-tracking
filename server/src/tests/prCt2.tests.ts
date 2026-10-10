@@ -497,4 +497,24 @@ export async function runPrCt2Tests(t: YThucTestKit) {
     huy(g.a);
     assert(mts(g.sid).length === 1 && paMt(g.a).length === 2, `đã có Kết quả mà vẫn huỷ: ${mts(g.sid).length} · ${chuKy(paMt(g.a))}`);
   });
+
+  check('DON-7 · bộ bổ trợ đã có Kết quả rồi đổi quyết định sang FT → thi hành: Mini Test chưa ghi + việc "Ghi Mini Test" tự đóng, lịch sử Case một dòng "Đóng Mini Test: em chuyển Fast Track"; không sinh bộ mới', () => {
+    /* FOU → FT: đường khó hơn (thi hành FOU → FT vốn sinh bộ ở lộ trình FT — bộ cũ phải chặn sinh trùng). */
+    for (const ma of ['FOU']) {
+      const f = dungFou();
+      ra(f.nguon, f.sid, 'len_lop', f.dich);
+      nhap(f.a, { listening: 18, reading: 18, writing: 10, speaking: 9 });
+      const iv = paMt(f.a)[0];
+      assert(iv && mts(f.sid).length === 1, `${ma}: phải sinh sớm`);
+      cases.updateResult(loadPrincipal(iv.performer_user_id ?? P.admin.userId), iv.id, { ...KQ, ...d.thanKetQuaTuan({ kind: 'bo_tro_mien_phi', soBuoi: iv.so_buoi }, '1', null) });
+      lenh.suaLenh(P.mbManager, lenhCua(f.sid).id, { huong: 'fast_track', toClassId: lop('FT', 1, true), mucTieu: 6 });
+      assert(mts(f.sid).length === 1, `${ma}: đã có Kết quả mà đổi quyết định đã huỷ`);
+      chay(f.sid);
+      assert(all('SELECT * FROM mini_test WHERE student_id = ? AND ty_le IS NULL', f.sid).length === 0, `${ma}: còn Mini Test chưa ghi ${JSON.stringify(mts(f.sid))}`);
+      assert(!ck.emConMiniTest([f.sid]).get(f.sid), `${ma}: việc Ghi Mini Test còn treo`);
+      const ls = all(`SELECT new_value v FROM sos_case_history WHERE field = 'dong_mini_test' AND old_value = ? AND case_id IN (SELECT case_id FROM case_interventions WHERE nhom_bo_tro = ?)`, `mt:${f.a}`, `mt:${f.a}`);
+      assert(ls.length === 1 && ls[0].v === 'Đóng Mini Test: em chuyển Fast Track', `${ma}: lịch sử ${JSON.stringify(ls)}`);
+      assert(mts(f.sid).length === 0 && paMt(f.a).every((x) => x.cycle_id === f.cyc), `${ma}: sinh bộ mới ở FT: ${JSON.stringify(mts(f.sid))} · ${chuKy(paMt(f.a))}`);
+    }
+  });
 }

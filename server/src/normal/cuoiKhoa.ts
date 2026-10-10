@@ -301,6 +301,8 @@ export function sauChuyenCuoiKhoa(p: Principal, dongs: readonly DongSauChuyen[])
   }
   taoCaseKyVong(p, kyVongCase);
   taoBoTroFinal(p, boTro);
+  /* PR-DON (CT2, chủ SP 10/10): SAU `taoBoTroFinal` (bộ cũ còn chặn sinh trùng) — em sang FT còn Mini Test chưa ghi ở lộ trình cũ → tự đóng. */
+  dongMiniTestSangFt(p, dongs.filter((d) => d.toFt && cu.has(d.sid)).map((d) => [d.sid, cu.get(d.sid)!]));
   if (baoPh.size) {
     const co = new Set<number>();
     theoLo([...baoPh.keys()], (lo, ph) => {
@@ -309,6 +311,28 @@ export function sauChuyenCuoiKhoa(p: Principal, dongs: readonly DongSauChuyen[])
     chenNhieuDong('INSERT INTO sos_coordination_actions (attempt_id, student_id, kind, custom_name, preset, status, created_at)',
       [...baoPh].filter(([attemptId]) => !co.has(attemptId)).map(([attemptId, sid]) => [attemptId, sid, 'bao_ph_tvv', null, 1, 'pending', nowIso()]));
   }
+}
+
+/**
+ * PR-DON (CT2, chủ SP 10/10: TỰ ĐÓNG): bộ bổ trợ Final đã có Kết quả nên không huỷ khi đổi quyết định sang FT; thi hành đóng Case lớp thường
+ * (đổi chương trình) → Mini Test chưa ghi ở lộ trình cũ và việc "Ghi Mini Test" tự đóng (xoá dòng chưa ghi — không có điểm nào mất), một dòng
+ * lịch sử ở Case của nhóm. `cap` = (em, lộ trình cũ). Theo lô; trong tx nơi gọi.
+ */
+function dongMiniTestSangFt(p: Principal, cap: readonly [number, number][]): void {
+  if (!cap.length) return;
+  const conn = db();
+  const mts: { id: number; student_id: number; nhom_bo_tro: string; case_id: number | null }[] = [];
+  theoLo(cap, (lo) => {
+    mts.push(...conn.prepare(
+      `SELECT m.id, m.student_id, m.nhom_bo_tro, (SELECT MIN(iv.case_id) FROM case_interventions iv WHERE iv.nhom_bo_tro = m.nhom_bo_tro) AS case_id
+         FROM mini_test m WHERE m.ty_le IS NULL AND (m.student_id, m.cycle_id) IN (VALUES ${lo.map(() => '(?,?)').join(',')})`,
+    ).all(...lo.flat()) as any[]);
+  }, Math.floor(THAM_SO_TOI_DA / 2));
+  if (!mts.length) return;
+  theoLo(mts.map((m) => m.id), (lo, ph) => { conn.prepare(`DELETE FROM mini_test WHERE id IN (${ph})`).run(...lo); });
+  chenNhieuDong('INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at)',
+    mts.filter((m) => m.case_id !== null).map((m) => [m.case_id, 'dong_mini_test', m.nhom_bo_tro, 'Đóng Mini Test: em chuyển Fast Track', p.userId, nowIso()]));
+  writeAudit({ actorUserId: p.userId, action: 'cuoi_khoa.mini_test_dong', entityType: 'mini_test', entityId: null, after: { miniTest: mts.map((m) => m.id), hocVien: mts.map((m) => m.student_id) } });
 }
 
 /** Một em cần bổ trợ Final: Case + PA Bổ trợ miễn phí (mỗi môn trượt) + một Mini Test. `cycleId` = lộ trình gắn Case; `ownerClassId` = lớp chọn chủ Case. */
