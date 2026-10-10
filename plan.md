@@ -296,9 +296,9 @@ Báo cáo + mockup: `thiet-ke/mockup-mt-quy-trinh-2026-10-08.html` (artifact htt
 ### BẢN TIẾP THEO — ứng viên (planning đề xuất 10/10, chờ chủ SP chọn)
 1. **PR-VN5 (S)** — hai ghi chú SAU PR-VN4 ở trên. Nên làm trước deploy (QL kẹt).
 2. **PR-TD4 (M, sau deploy + log)** — chỉ khi log `[cham]` mới còn đường > 1,5 s: `/hoc-vien-lop` (`standingFor` nạp từ lượt mới nhất mỗi em), đường top khác theo log.
-3. **Dọn ghi chú cũ (S)** — gom một PR: "Một việc bị nhắc 2 lần/ngày" (GOP), `phanRieng` cắt tiêu đề bằng chuỗi (GOP), `lopNguon` 404 trước 403 (KV),
+3. **PR-DON · Dọn ghi chú cũ (S)** — gom một PR (cả mục 4): "Một việc bị nhắc 2 lần/ngày" (GOP), `phanRieng` cắt tiêu đề bằng chuỗi (GOP), `lopNguon` 404 trước 403 (KV),
    trần tốc độ `GET /classes/:id/ky-vong` (KV), `docFtTheoLo` chia lô 900 tham số, Final huỷ lượt sau khi sinh sớm bộ bổ trợ (CT2), phép kiểm HOP1-d quét nguồn → kiểm hành vi.
-4. **Câu hỏi CT2 còn treo:** bộ đã có Kết quả rồi đổi sang FT → việc "Ghi Mini Test" treo: tự đóng (đề xuất) hay báo QL.
+4. **CT2 — chủ SP 10/10: TỰ ĐÓNG.** Bộ bổ trợ đã có Kết quả rồi đổi sang FT → dòng `mini_test` chưa ghi + việc "Ghi Mini Test" tự đóng (ghi một dòng lịch sử ngắn). Làm trong PR-DON.
 5. **PR-EN** (bản tiếng Anh) rồi **PR-SOTAY** — như kế hoạch cũ, sau cùng.
 6. **PR-NC** — xem lại tháng 12 (cần 2–3 tháng dữ liệu).
 
