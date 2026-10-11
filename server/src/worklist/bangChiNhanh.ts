@@ -42,7 +42,7 @@ const NHAN_COT: Record<CotBang, string> = {
 };
 
 function tinh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh }) {
-  const scope = scopeFor(p, PERMISSIONS.MEETING_VIEW);
+  const scope = scopeFor(p, PERMISSIONS.ANALYSIS_VIEW);
   if (scope.none) throw forbidden('Bảng này dành cho Quản lý.');
   const conn = db();
   /* Một chi nhánh: đã chọn, hoặc phạm vi chỉ có một chi nhánh (P5 "1 CN thì ưu tiên bảng lớp"). */

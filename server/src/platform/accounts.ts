@@ -251,13 +251,15 @@ export function decline(p: Principal, userId: number, reason: string) {
 /* ------------------------------------------------------------------ tạo và cấp vai */
 
 function grantRole(conn: any, userId: number, roleKey: string, branchCodes: string[]) {
-  const role = conn.prepare('SELECT id FROM roles WHERE key = ?').get(roleKey) as any;
+  /* PR-OV2a: vai đã bỏ (`branch_admin`) chỉ để đọc lịch sử — không giao mới. */
+  const role = conn.prepare("SELECT id FROM roles WHERE key = ? AND status = 'active'").get(roleKey) as any;
   if (!role) throw badRequest(`Không có vai trò "${roleKey}".`);
   /*
    * Vai TOÀN HỆ THỐNG mang `branch_id` để trống, đúng quy ước của `user_roles`. Quản trị hệ
    * thống là vai duy nhất như vậy: gắn nó vào một chi nhánh thì nó không còn là toàn quyền.
    */
-  if (roleKey === 'system_admin') {
+  /* PR-OV2a: CX không chọn chi nhánh = toàn hệ thống (mặc định của vai này); chọn chi nhánh thì theo chi nhánh như vai khác. */
+  if (roleKey === 'system_admin' || (roleKey === 'cx' && !branchCodes.length)) {
     if (!conn.prepare("SELECT 1 FROM user_roles WHERE user_id=? AND role_id=? AND branch_id IS NULL AND status='active'")
       .get(userId, role.id)) {
       conn.prepare("INSERT INTO user_roles (user_id, role_id, branch_id, status, created_at) VALUES (?,?,NULL,'active',?)")

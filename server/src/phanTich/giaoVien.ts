@@ -51,7 +51,7 @@ export type NguCanhPtGv = {
 };
 
 export function nguCanhPtGv(p: Principal, f: LocPtGv): NguCanhPtGv {
-  const scope = scopeFor(p, PERMISSIONS.MEETING_VIEW);
+  const scope = scopeFor(p, PERMISSIONS.ANALYSIS_VIEW_TEACHER);
   if (scope.none) throw forbidden('Phân tích giáo viên dành cho Quản lý và Quản trị hệ thống.');
   const cn = f.cn ?? (!scope.all && scope.branchIds.length === 1 ? scope.branchIds[0] : null);
   if (cn == null) throw badRequest('Chọn một chi nhánh.');

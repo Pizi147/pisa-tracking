@@ -278,9 +278,11 @@ CREATE TABLE students (
   consultant_name TEXT,               -- metadata hồ sơ, KHÔNG phải một vai trò tài khoản
   note TEXT,
   email TEXT,                         -- T8: bắt buộc khi thêm mới, HS cũ có thể trống — không vào badge Thiếu thông tin
-  created_at TEXT NOT NULL
+  created_at TEXT NOT NULL,
+  consultant_user_id INTEGER REFERENCES users(id)   -- PR-OV2a: TVV là NGƯỜI (vai consultant); consultant_name giữ để đọc
 );
 CREATE INDEX idx_student_name ON students(normalized_name);
+CREATE INDEX idx_student_consultant ON students(consultant_user_id);
 
 -- Lộ trình học. Mỗi lộ trình có TARGET và ngày thi IELTS riêng.
 -- Học tiếp/học lại trong cùng lộ trình: số MT tăng tiếp, target giữ nguyên.
@@ -1596,7 +1598,8 @@ CREATE TABLE demo_sessions (
   token TEXT PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id),
   created_at TEXT NOT NULL,
-  last_seen_at TEXT
+  last_seen_at TEXT,
+  goc_nhin TEXT                       -- PR-OV2a: vai đang chọn khi đổi góc nhìn (NULL = mọi vai)
 );
 
 /*

@@ -15,6 +15,10 @@ export type NavQuyen = {
   overview: boolean; students: boolean; admin: boolean;
   /** Tab Phân tích của Tổng quan. */
   analysis: boolean;
+  /** PR-OV2a: phần giáo viên (Phân tích › Theo giáo viên, hồ sơ GV khác) — CX, TVV không có. */
+  phanTichGv: boolean;
+  /** PR-OV2a: Tổng quan "Học viên của tôi" (vai TVV). */
+  hvCuaToi: boolean;
   test: boolean; testGrade: boolean; testSchedule: boolean; testPlan: boolean;
   work: boolean; workSupport: boolean; workOps: boolean; workReports: boolean;
   /** PR-DUYET: hộp Chờ duyệt (`request.approve` — QL, Quản trị) · Yêu cầu của tôi (mọi người có việc học viên). */
@@ -24,7 +28,7 @@ export type NavQuyen = {
 };
 
 export const NAV_RONG: NavQuyen = {
-  overview: true, students: false, admin: false, analysis: false,
+  overview: true, students: false, admin: false, analysis: false, phanTichGv: false, hvCuaToi: false,
   test: false, testGrade: false, testSchedule: false, testPlan: false,
   work: false, workSupport: false, workOps: false, workReports: false, workApprove: false, workRequests: false,
   xuatMt: false,

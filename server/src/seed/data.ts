@@ -26,6 +26,9 @@ export const ROLES = [
   { key: 'system_admin', name: 'Quản trị hệ thống' },
   { key: 'manager', name: 'Quản lý' },
   { key: 'teacher', name: 'Giáo viên' },
+  { key: 'office_admin', name: 'Admin' },
+  { key: 'consultant', name: 'Tư vấn viên' },
+  { key: 'cx', name: 'CX' },
 ] as const;
 
 /**
@@ -51,6 +54,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'violation.record', 'discipline.manage', 'discipline.stats',
     'class.assign', 'class.edit', 'class.create', 'student.view', 'student.edit',
     'meeting.view', 'meeting.edit', 'admin.config', 'request.approve', 'cycle.edit',
+    'student.edit_info', 'test.view', 'work.view', 'analysis.view', 'analysis.view_teacher',
   ],
   // Quản lý: chốt TUẦN của mọi lượt MT trong chi nhánh mình.
   manager: [
@@ -60,6 +64,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'case.view', 'sos.report', 'sos.edit', 'case.close', 'case.approve', 'class.assign', 'class.edit', 'class.create',
     'violation.record', 'discipline.manage', 'discipline.stats',
     'student.view', 'student.edit', 'meeting.view', 'meeting.edit', 'request.approve', 'cycle.edit',
+    'student.edit_info', 'test.view', 'work.view', 'analysis.view', 'analysis.view_teacher',
   ],
   /*
    * Giáo viên: nhập điểm và đánh giá ĐÚNG kỹ năng được phân công.
@@ -81,7 +86,18 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
    */
   teacher: ['attempt.view', 'score.edit', 'estimate.edit', 'schedule.move',
     'case.view', 'sos.report', 'sos.edit', 'case.close', 'student.view', 'student.edit',
-    'violation.record', 'discipline.manage'],
+    'violation.record', 'discipline.manage', 'student.edit_info', 'test.view', 'work.view'],
+  /*
+   * PR-OV2a (đặc tả OV mục 2). Admin lo Mock Test của chi nhánh: Test đủ ba tab, xếp/dời lịch (`plan.week`), sửa điểm có lý do
+   * (`score.override`), Công việc chỉ nhóm Chấm điểm + Nhắc (`phamViXemViec`). KHÔNG `attempt.cancel` (huỷ / khôi phục lượt, khôi phục
+   * kết quả), không `cycle.edit` / `student.edit` (Target, lộ trình, học lại, lưu trữ), không xử lý Case / Ý thức (chỉ xem).
+   */
+  office_admin: ['attempt.view', 'test.view', 'work.view', 'plan.week', 'schedule.move', 'score.override', 'case.view',
+    'student.view', 'student.edit_info', 'analysis.view', 'analysis.view_teacher'],
+  /* TVV: xem HV chi nhánh (mặc định "HV của tôi"), điểm, Case, PA, Ý thức, nhận xét; sửa thông tin HV. Không Test, không Công việc. */
+  consultant: ['attempt.view', 'case.view', 'student.view', 'student.edit_info', 'analysis.view'],
+  /* CX: như TVV, grant toàn hệ thống; Tổng quan · Phân tích trừ phần giáo viên (không `analysis.view_teacher`). */
+  cx: ['attempt.view', 'case.view', 'student.view', 'student.edit_info', 'analysis.view'],
 };
 
 /*

@@ -35,6 +35,7 @@ export const DUONG_DO: MucDo[] = [
     maChuDich: { GVCN: 403, GVBM: 403 },
   },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/highlights' },
+  { trang: 'Tổng quan TVV', vai: ['QL'], url: '/tong-quan/hv-cua-toi' },   // PR-OV2a: QL không có em nào → trả rỗng, vẫn đo câu SQL
   {
     trang: 'Tổng quan QL', vai: ['QL', 'QT', 'GVCN'], url: '/tong-quan/diem-chu-y?ct=ft',   // PR-VAI-a: tách khỏi /tong-quan/quan-ly
     maChuDich: { GVCN: 403 },

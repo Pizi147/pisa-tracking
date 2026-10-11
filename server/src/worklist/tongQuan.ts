@@ -23,7 +23,7 @@ import { noDiemCuaGv } from '../giaoVien/hoSo.ts';
  */
 
 const laQuanLy = (p: Principal) => {
-  if (scopeFor(p, PERMISSIONS.MEETING_VIEW).none) throw forbidden('Khối này dành cho Quản lý.');
+  if (scopeFor(p, PERMISSIONS.ANALYSIS_VIEW).none) throw forbidden('Khối này dành cho Quản lý.');
 };
 
 /**

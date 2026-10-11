@@ -79,13 +79,17 @@ export function demLoc(hocVien: readonly { loc: readonly string[]; khung: 'ft' |
 
 // ---------------------------------------------------------------- phạm vi (§3.6, Q3)
 
-export const PHAM_VI = ['toi', 'chi-nhanh', 'tat-ca'] as const;
+export const PHAM_VI = ['cua-toi', 'toi', 'chi-nhanh', 'tat-ca'] as const;
 export type PhamVi = (typeof PHAM_VI)[number];
-export const PHAM_VI_NHAN: Record<PhamVi, string> = { toi: 'Lớp tôi dạy', 'chi-nhanh': 'Chi nhánh', 'tat-ca': 'Tất cả' };
+export const PHAM_VI_NHAN: Record<PhamVi, string> = { 'cua-toi': 'HV của tôi', toi: 'Lớp tôi dạy', 'chi-nhanh': 'Chi nhánh', 'tat-ca': 'Tất cả' };
 
-/** Chỉ lựa chọn có nghĩa: QL một chi nhánh thì "Tất cả" trùng "Chi nhánh" nên không có. */
-export function phamViCoThe(i: { dayLop: boolean; capChiNhanh: boolean; toanHeThong: boolean; soChiNhanh: number }): PhamVi[] {
+/**
+ * Chỉ lựa chọn có nghĩa: QL một chi nhánh thì "Tất cả" trùng "Chi nhánh" nên không có. PR-OV2a: "HV của tôi" (TVV) chỉ có khi đã được gán
+ * ít nhất một em (`students.consultant_user_id`) — chưa gán em nào thì mở thẳng Chi nhánh, không để danh sách trống.
+ */
+export function phamViCoThe(i: { dayLop: boolean; capChiNhanh: boolean; toanHeThong: boolean; soChiNhanh: number; cuaToi?: boolean }): PhamVi[] {
   const out: PhamVi[] = [];
+  if (i.cuaToi) out.push('cua-toi');
   if (i.dayLop) out.push('toi');
   if (i.capChiNhanh || i.toanHeThong) out.push('chi-nhanh');
   if (i.toanHeThong || i.soChiNhanh > 1) out.push('tat-ca');
@@ -94,6 +98,7 @@ export function phamViCoThe(i: { dayLop: boolean; capChiNhanh: boolean; toanHeTh
 /** T6: QL/Quản trị mở ở Chi nhánh kể cả khi có dạy lớp; GV thuần giữ "Lớp tôi dạy". */
 export function phamViMacDinh(coThe: readonly PhamVi[], laQuanLy = false): PhamVi {
   if (laQuanLy && coThe.includes('chi-nhanh')) return 'chi-nhanh';
+  if (coThe.includes('cua-toi')) return 'cua-toi';
   if (coThe.includes('toi')) return 'toi';
   if (coThe.includes('tat-ca')) return 'tat-ca';
   return coThe[0] ?? 'tat-ca';

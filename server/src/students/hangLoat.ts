@@ -13,7 +13,7 @@ import { archiveStudent, hoanTacHocLai, hoanTacKetThuc, hocLai, setStudentStatus
 
 /**
  * LÀM NHIỀU HỌC VIÊN MỘT LẦN (PR-LUI-b, chủ sản phẩm 06/10) — Kết thúc học · Lưu trữ · Bỏ lưu trữ · Học lại · Huỷ chuyển lớp · Khôi phục chuyển lớp. CHỈ Quản lý /
- * Quản trị (`plan.week` của TỪNG học viên). Không có luật riêng: mỗi học viên đi qua đúng hàm một em (`setStudentStatus`, `archiveStudent`, `unarchiveStudent`,
+ * Quản trị (`cycle.edit` của TỪNG học viên — PR-OV2a: không còn `plan.week`, vai Admin có quyền đó). Không có luật riêng: mỗi học viên đi qua đúng hàm một em (`setStudentStatus`, `archiveStudent`, `unarchiveStudent`,
  * `hocLai`, `huyNhieuLenh`, `khoiPhucLenh`). MỖI HỌC VIÊN MỘT GIAO DỊCH — lỗi một em (ngoài quyền, sai trạng thái, máy chủ sắp hết giờ) không cuộn lại các em đã xong; kết quả
  * trả `ok` + `failed` để web nói "Đã lưu n học viên · m học viên chưa lưu".
  * ponytail: không có "một giao dịch cho cả lô" — cố ý (lỗi giữa chừng phải giữ phần đã lưu); thêm khoá chống gửi trùng nếu cần: các việc đều lặp lại an toàn.
@@ -37,7 +37,7 @@ type Em = { s: any; lopCuoi: any | null; lenhCho: any | null; lenhHuy: any | nul
 /** Em này có làm được `viec` không? Chữ = KHÔNG (lý do ngắn hiện ở màn xem trước và ở "chưa lưu"); `null` = làm được. */
 function lyDoBo(p: Principal, viec: ViecHangLoat, e: Em): string | null {
   const { s, lopCuoi } = e;
-  if (!can(p, PERMISSIONS.PLAN_WEEK, { studentId: s.id })) return 'Ngoài phạm vi của bạn.';
+  if (!can(p, PERMISSIONS.CYCLE_EDIT, { studentId: s.id })) return 'Ngoài phạm vi của bạn.';
   switch (viec) {
     case 'ket-thuc': return s.status === 'finished' ? 'Đã kết thúc học' : null;
     case 'luu-tru': return s.status !== 'finished' ? 'Chưa kết thúc học' : s.archived_at ? 'Đã lưu trữ' : null;
@@ -80,7 +80,7 @@ export function xemTruoc(p: Principal, input: { viec?: unknown; studentIds?: unk
   napTruocPhamVi(ids);
   const em = docEm(ids);
   /* Chỉ người có quyền ở ÍT NHẤT một học viên mới được xem trước (GVCN / GVBM → 403 cả lô, như `chay`); em ngoài phạm vi chỉ hiện "#id" — không lộ tên, mã, lớp. */
-  const trongPhamVi = (id: number) => em.has(id) && can(p, PERMISSIONS.PLAN_WEEK, { studentId: id });
+  const trongPhamVi = (id: number) => em.has(id) && can(p, PERMISSIONS.CYCLE_EDIT, { studentId: id });
   if (!ids.some(trongPhamVi)) throw forbidden(CHI_QL);
   const rows: DongXemTruoc[] = ids.map((id) => {
     const e = em.get(id);
@@ -137,7 +137,7 @@ export function chay(p: Principal, input: {
   napTruocPhamVi(ids);
   const em = docEm(ids);
   /* Không học viên nào trong phạm vi người gọi → 403 cả lô (GVCN gọi thẳng API). */
-  if (!ids.some((id) => em.has(id) && can(p, PERMISSIONS.PLAN_WEEK, { studentId: id }))) throw forbidden(CHI_QL);
+  if (!ids.some((id) => em.has(id) && can(p, PERMISSIONS.CYCLE_EDIT, { studentId: id }))) throw forbidden(CHI_QL);
 
   const kq: KetQuaHangLoat = { ok: [], failed: [] };
   const lyDoCua = (id: number): string | null => { const e = em.get(id); return e ? lyDoBo(p, viec, e) : 'Không tìm thấy học viên.'; };
