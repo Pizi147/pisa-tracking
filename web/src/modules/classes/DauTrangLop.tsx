@@ -12,7 +12,7 @@ import { TenGiaoVien } from './TenGiaoVien.tsx';
 import { DaiLopChuyen } from './DaiChuyenLop.tsx';
 import type { TinhTrangXoaKetThuc } from './XoaKetThucLopPanel.tsx';
 import {
-  ROUTE_NAME, badgeLop, khungCua, duongLichTest, laVaiQuanLy, needScoresText, nhomGiaoVienBoMon, nutChinhDauTrang, tuanKhoa, tuanLich, type BadgeLop, type DaiLop, type NhomGiaoVien, type WorkScope,
+  DUONG_TAB_TEST, ROUTE_NAME, badgeLop, khungCua, duongLichTest, laVaiQuanLy, needScoresText, nhomGiaoVienBoMon, nutChinhDauTrang, tuanKhoa, tuanLich, type BadgeLop, type DaiLop, type NhomGiaoVien, type WorkScope,
 } from '@shared/domain/index.ts';
 
 /** `GET /classes/:id/overview` (server/src/classes/classes.ts → classOverview). */
@@ -66,8 +66,8 @@ export type ViecDauTrang = 'tien-do' | 'chuyen-tiep' | 'lo-trinh-ca-lop' | 'ban-
  *   dòng 4  tối đa 2 badge theo vai, phần còn lại "+n" (menu)
  * Mỗi nút chỉ hiện khi người xem làm được (Q9).
  */
-export function DauTrangLop({ data, periodId, onViec, onBanGiao }: {
-  data: HoSoLop; periodId: number | null; onViec: (v: ViecDauTrang) => void;
+export function DauTrangLop({ data, onViec, onBanGiao }: {
+  data: HoSoLop; onViec: (v: ViecDauTrang) => void;
   /** PR-CT: mở panel Bàn giao từ dải (lớp NGUỒN mặc định là lớp đang xem; `mon` = bảng GVBM). */
   onBanGiao: (o: { lop?: number; mon?: string }) => void;
 }) {
@@ -106,7 +106,8 @@ export function DauTrangLop({ data, periodId, onViec, onBanGiao }: {
   /* Quản trị hoặc Quản lý của lớp gọi được đường này (403 với người khác) — nên chỉ hỏi khi có cờ. `coTheXoa` do máy chủ trả: chỉ Quản trị. */
   const hoiXk = !!data.viewer.coTheXoaKetThuc || !!data.viewer.coTheKetThucLop;
   const xk = useApi<TinhTrangXoaKetThuc>(hoiXk ? `/classes/${data.id}/xoa-ket-thuc` : null, [data.id, hoiXk]);
-  const nhapDiem = thuong ? `/bang-diem-thuong/${data.id}` : `/nhap-diem/${data.id}${periodId ? `?periodId=${periodId}` : ''}`;
+  /* PR-OV1a (3.2): cả lớp thường và FT mở Test › Điểm theo lớp đúng lớp (lớp thường có lượt MT0 bảng band). */
+  const nhapDiem = `${DUONG_TAB_TEST['diem-lop']}?lop=${data.id}`;
   /* K2-14: MỘT nút chính theo chặng; nút phụ tối đa 2, thừa vào ⋮. "Nhập điểm" là chính khi còn bài chờ nhập của người xem. */
   const chinh = nutChinhDauTrang({
     thuong, phase: s?.phase ?? 'running', needsPlacement: !!s?.needsPlacement, soHocVien: s?.studentCount ?? 0,
