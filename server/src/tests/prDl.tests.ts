@@ -579,7 +579,7 @@ export async function runPrDlTests(t: YThucTestKit) {
   /* PR-OV3a (M2 §1): bỏ mục ⋯ "Điểm Test cả lớp / Điểm MT cả lớp" — khối cuối trang mở sẵn (vẫn thu gọn được). */
   check('DL-6 lối vào ở hồ sơ lớp: khối cuối trang MỞ SẴN theo cờ coTheXemDiem, aria-expanded, chip từ danhSachLuot; ⋯ không còn mục Điểm cả lớp', () => {
     const dt = doc('web/src/modules/classes/DauTrangLop.tsx');
-    assert(!dt.includes("key: 'diem-lop'") && !dt.includes('Điểm MT cả lớp'), 'mục ⋯ Điểm cả lớp còn sót');
+    assert(!dt.includes("key: 'diem-lop'") && !/'Điểm (MT|Test) cả lớp'/.test(dt), 'mục ⋯ Điểm cả lớp còn sót');
     const ov = doc('web/src/modules/classes/ClassOverviewPage.tsx');
     for (const chu of ['aria-expanded', 'Điểm Mock Test của lớp', 'còn ${', 'gon', 'duongDiemTheoLuot(', 'data.viewer.coTheXemDiem && <KhoiDiemLop']) assert(ov.includes(chu), `ClassOverviewPage thiếu: ${chu}`);
     assert(/useState\(true\)/.test(ov.slice(ov.indexOf('const [moDiem'), ov.indexOf('const [moDiem') + 60)), 'khối điểm phải mở sẵn');

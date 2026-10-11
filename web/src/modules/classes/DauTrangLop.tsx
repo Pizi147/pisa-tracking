@@ -49,7 +49,7 @@ export type HoSoLop = {
     coTheXoaKetThuc?: boolean;
     /** PR-LUI-b (06/10): Quản lý của lớp cũng ⋮ Kết thúc lớp (lớp còn hoạt động) và ⋮ Mở lại lớp (lớp đã kết thúc). */
     coTheKetThucLop?: boolean; coTheMoLaiLop?: boolean;
-    /** PR-DL: ⋮ "Điểm MT cả lớp" + khối cuối trang — cùng luật `requireXemLuotCham`. */
+    /** PR-DL: khối điểm cuối trang (PR-OV3a: mở sẵn, bỏ mục ⋯) — cùng luật `requireXemLuotCham`. */
     coTheXemDiem?: boolean;
   };
 };
