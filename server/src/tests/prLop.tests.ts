@@ -167,11 +167,12 @@ export async function runPrLopTests(t: YThucTestKit) {
     const lopDir = 'web/src/modules/classes/';
     const tap = docSach(lopDir + 'TeacherAssignPanel.tsx');
     assert(!/\+ Thêm giáo viên|HAI người/.test(tap) && /* PR-Pb2-b: ô theo chương trình qua useTachFou (bọc oPhanCong, FOU gộp L · R · G+V) */ /oPhanCong\(|useTachFou\(/.test(tap) && /kiemPhanCong\(/.test(tap), 'Sửa phân công');
-    const ttlSrc = docSach(lopDir + 'SuaThongTinLopPanel.tsx');
-    assert(!/MB-FT|setCode\(/.test(ttlSrc) && /locSoLop\(/.test(ttlSrc) && /ghepMaLop\(/.test(ttlSrc), 'Sửa thông tin lớp');
+    /* PR-OV3a: "Sửa thông tin lớp" thành phần Lớp của panel Thông tin lớp (`ThongTinLopPanel.tsx`), không ô Ghi chú. */
+    const ttlSrc = docSach(lopDir + 'ThongTinLopPanel.tsx');
+    assert(!/MB-FT|setCode\(|Ghi chú|note:/.test(ttlSrc) && /locSoLop\(/.test(ttlSrc) && /ghepMaLop\(/.test(ttlSrc), 'Phần Lớp của Thông tin lớp');
     const tp = docSach(lopDir + 'TransitionPanel.tsx');
     assert(!/newCode|suggestedCode|gvcnUserId|newClass:/.test(tp) && /<ClassCreatePanel/.test(tp), 'Chuyển tiếp');
-    for (const f of ['TeacherAssignPanel', 'SuaThongTinLopPanel', 'ClassCreatePanel']) {
+    for (const f of ['TeacherAssignPanel', 'ThongTinLopPanel', 'ClassCreatePanel']) {
       assert(/useLoiForm\(/.test(docSach(`${lopDir}${f}.tsx`)), `${f} chưa báo lỗi theo PR-N1 (useLoiForm)`);
     }
     /* Chuyển tiếp (KhungPanel longTrong) báo lỗi theo từng dòng HV (không phải form ô bắt buộc) — giữ lỗi tại dòng. */

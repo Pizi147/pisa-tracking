@@ -576,15 +576,15 @@ export async function runPrDlTests(t: YThucTestKit) {
     });
   }
 
-  check('DL-6 lối vào ở hồ sơ lớp: mục ⋮ trước "Xuất Excel" theo cờ coTheXemDiem; khối cuối trang thu gọn, aria-expanded, chip từ danhSachLuot', () => {
+  /* PR-OV3a (M2 §1): bỏ mục ⋯ "Điểm Test cả lớp / Điểm MT cả lớp" — khối cuối trang mở sẵn (vẫn thu gọn được). */
+  check('DL-6 lối vào ở hồ sơ lớp: khối cuối trang MỞ SẴN theo cờ coTheXemDiem, aria-expanded, chip từ danhSachLuot; ⋯ không còn mục Điểm cả lớp', () => {
     const dt = doc('web/src/modules/classes/DauTrangLop.tsx');
-    const muc = dt.indexOf("key: 'diem-lop'");
-    assert(muc > 0 && muc < dt.indexOf("key: 'xuat-mt'"), 'mục ⋮ đứng ngay trước Xuất Excel');
-    assert(dt.includes("'Điểm Test cả lớp' : 'Điểm MT cả lớp'") && /data\.viewer\.coTheXemDiem \? \[\{ key: 'diem-lop'/.test(dt), 'chữ theo loại lớp, chỉ khi có cờ');
+    assert(!dt.includes("key: 'diem-lop'") && !dt.includes('Điểm MT cả lớp'), 'mục ⋯ Điểm cả lớp còn sót');
     const ov = doc('web/src/modules/classes/ClassOverviewPage.tsx');
-    for (const chu of ['aria-expanded', 'Điểm Mock Test của lớp', 'còn ${', 'gon', 'scrollIntoView', 'duongDiemTheoLuot(']) assert(ov.includes(chu), `ClassOverviewPage thiếu: ${chu}`);
+    for (const chu of ['aria-expanded', 'Điểm Mock Test của lớp', 'còn ${', 'gon', 'duongDiemTheoLuot(', 'data.viewer.coTheXemDiem && <KhoiDiemLop']) assert(ov.includes(chu), `ClassOverviewPage thiếu: ${chu}`);
+    assert(/useState\(true\)/.test(ov.slice(ov.indexOf('const [moDiem'), ov.indexOf('const [moDiem') + 60)), 'khối điểm phải mở sẵn');
     assert(/daMo && <DiemTheoLop/.test(ov) && /if \(mo && !daMo\) setDaMo\(true\)/.test(ov) && ov.includes('hidden={!mo}'),
-      'mở lần đầu mới dựng bảng; thu gọn chỉ ẩn, không gỡ (giữ ô đang gõ)');
+      'thu gọn chỉ ẩn, không gỡ (giữ ô đang gõ)');
   });
 
   check('DL-6 TabDiemLop: danh sách lopCuaToi, lớp chọn ở ?lop=, 375 thành ô chọn; TestPage gắn tab', () => {

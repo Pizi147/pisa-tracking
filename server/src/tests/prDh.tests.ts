@@ -109,11 +109,12 @@ export async function runPrDhTests(t: YThucTestKit) {
     assert((bg.match(/<ExamPlanText plan=\{s\.examPlan\}/g) ?? []).length === 2 && /chuSapToi\(/.test(bg), 'ExamPlanText ở bảng + thẻ, Sắp tới qua chuSapToi');
   });
 
-  check('PR-DH (6) · bảng điểm lớp thường: cột Target + Dự kiến thi ở bảng và thẻ điện thoại, không so điểm', () => {
+  /* PR-OV3a (M2 §3): Tổng hợp lớp thường bỏ cột Dự kiến thi (bàn + điện thoại); Target giữ. */
+  check('PR-DH (6) · bảng điểm lớp thường: cột Target ở bảng và thẻ điện thoại, không Dự kiến thi, không so điểm', () => {
     const b = doc('web/src/modules/classes/BangDiemLopThuong.tsx');
-    assert(/TargetText/.test(b) && /ExamPlanText/.test(b), 'dùng TargetText + ExamPlanText');
-    assert(/>Target<\/th>/.test(b) && />Dự kiến thi<\/th>/.test(b), 'tiêu đề cột bảng');
-    assert(/nhan: 'Target'/.test(b) && /nhan: 'Dự kiến thi'/.test(b), 'dòng thẻ điện thoại');
+    assert(/TargetText/.test(b) && !/ExamPlanText|Dự kiến thi/.test(b), 'TargetText, không Dự kiến thi');
+    assert(/>Target<\/th>/.test(b), 'tiêu đề cột bảng');
+    assert(/nhan: 'Target'/.test(b), 'dòng thẻ điện thoại');
     assert(!/fmtBand|kyVong/.test(b), 'lớp thường chỉ theo dõi Target, không so với điểm');
   });
 

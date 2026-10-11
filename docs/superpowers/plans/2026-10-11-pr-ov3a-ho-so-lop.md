@@ -4,7 +4,7 @@ Nguồn: đặc tả OV mục 4 "Hồ sơ lớp", "Hồ sơ lớp FT" (phần Đ
 `thiet-ke/mockup-overhaul-2-ho-so-lop-lo-trinh-2026-10-11.html` §1, §2, §3, §5 (chỉ phần "Điểm đầu vào ở ô MT0"). Chạy sau OV-1a (đã đổi
 nút Nhập điểm → `/test/diem-lop?lop=`). Song song với **OV-2a**.
 
-## Đầu ra
+## Đầu ra — [x] xong (PR OV-3a, 11/10)
 1. **Đầu trang** (M2 §1): nút cố định **Nhập điểm** (giữ đường OV-1a) · **+ Case** · **⋯** — không đổi chỗ theo giai đoạn.
    ⋯ cùng thứ tự lớp thường và FT, có tiêu đề nhóm: **Lớp** (Thông tin lớp · Sửa thông tin học viên · + Học viên) → **Lộ trình**
    (thường: Lộ trình tiếp theo [bỏ "…"] · Kỳ vọng đầu ra — giữ tới OV-3b; FT: Chuyển tiếp lớp) → **Công cụ** (Xuất Excel) → kẻ →

@@ -3,7 +3,7 @@ import {
   ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS, awaitingScore, chuanHoaMaLop, soSanhLop, kiemPhanCong, moRongPhanCong, nhanKetThucVi, nhanTiepTheo,
   oPhanCong, pendingSkillsOf, tenMonNgan, viecTiepCuaEm,
   type AssessedSkill, type SlotPhanCong, type AttemptKind, type PendingCell, type ProgrammeCode, type WorkScope,
-  coMocTiepTheo, coMocTiepTheoThuong, mocKeTiep,
+  coMocTiepTheo, coMocTiepTheoThuong, mocKeTiep, NORMAL_LADDER, chuMonTruot, coBoTroFinal, nhanHuongNgan, type Huong,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { mondayOf } from '../platform/week.ts';
@@ -18,7 +18,7 @@ import { examPlanOf } from '../fasttrack/cycles.ts';
 import { dotHoanTatMany, type HoanTatInfo } from '../fasttrack/hoanTat.ts';
 import { standingFor, standingLine } from '../students/standing.ts';
 import { allProgrammes, evaluateRegular, programmeOfClass } from '../normal/regular.ts';
-import { cuoiKhoaTheoHocVien, emConMiniTest, nguoiGhiMiniTest } from '../normal/cuoiKhoa.ts';
+import { cuoiKhoaTheoHocVien, emConMiniTest, nguoiGhiMiniTest, type EmCuoiKhoa } from '../normal/cuoiKhoa.ts';
 import { classProgressMany, missingForClasses, missingForStudent, mocKetKhoa, type TienDoMoc } from './schedule.ts';
 import { canhBaoTheoHocVien, caseViecTheoHocVien, nhapDiemTheoEm, soEmCanXuLyYThuc, viecHocVienTheoLop } from './dongHocVien.ts';
 import { tiepTheoTheoHocVien } from './loTrinhTiep.ts';
@@ -334,7 +334,7 @@ function hocVienCuaLop(p: Principal, classId: number, q?: string) {
    */
   let sql = `SELECT s.*, e.status AS enrollment_status, e.end_kind AS enrollment_end_kind, e.started_at AS enrollment_started_at,
                     cy.id AS cycle_id, cy.seq AS cycle_seq, cy.route, cy.target_score, cy.khong_cam_ket,
-                    cy.baseline_attempt_id, cy.baseline_score,
+                    cy.baseline_attempt_id, cy.baseline_score, cy.baseline_listening, cy.baseline_reading, cy.baseline_writing, cy.baseline_speaking,
                     cy.start_period_id, cy.exam_month, cy.exam_period_id, cy.exam_date, sp.week_start AS start_week,
                     ep.code AS exam_week_code, ep.week_start AS exam_week_start
                FROM enrollments e
@@ -452,6 +452,8 @@ export function classRoster(p: Principal, classId: number, q?: string) {
   const maChuongTrinhHienTai = (prog?.code ?? null) as ProgrammeCode | null;
   /* PR-UXF-a K2-12: % tổng + Hướng gợi ý Cuối khoá — CÙNG hàm panel Chuyển lớp đọc, một lần cho cả lớp. */
   const cuoiKhoaLop = isRatio ? cuoiKhoaTheoHocVien(classId, undefined, { daRoi: finished }) : null;
+  /* PR-OV3a: cột "Lộ trình tiếp theo" của Tổng hợp — chỉ hướng Quản lý ĐÃ CHỐT (lệnh chuyển lớp từ lớp này; hoặc quyết khi chuyển tiếp). */
+  const loTrinhChot = isRatio ? loTrinhDaChot(classId, maChuongTrinhHienTai, cuoiKhoaLop!) : null;
   /* PR-UXF-a VN29: nhập điểm của người xem — CÙNG hàm với chip Cần làm / badge quá hạn (Học viên & Lớp, đầu hồ sơ lớp). */
   const nhapDiemEm = nhapDiemTheoEm(p, [classId], today, () => classId);
 
@@ -698,9 +700,49 @@ export function classRoster(p: Principal, classId: number, q?: string) {
       tiepTheo: isRatio ? nhanTiepTheo(tiepTheoLop.get(s.id) ?? null, maChuongTrinhHienTai) : null,
       chuaLoTrinh: isRatio && chuaCoLenh.has(s.id),
       choDuyetChuyen: choDuyetChuyen.has(s.id),
-      cuoiKhoa: (() => { const e = cuoiKhoaLop?.get(s.id); return e ? { tyLe: e.tyLe, goiY: e.goiY } : null; })(),
+      /* PR-OV3a: chỉ % tổng — hướng gợi ý tự tính không còn ở bảng Tổng hợp (Excel, hồ sơ HV, panel Lộ trình tiếp theo vẫn đọc `cuoiKhoaTheoHocVien`). */
+      cuoiKhoa: (() => { const e = cuoiKhoaLop?.get(s.id); return e ? { tyLe: e.tyLe } : null; })(),
+      loTrinhChot: loTrinhChot?.get(s.id) ?? null,
+      /* PR-OV3a (M2 §5): FT chưa có MT0 → dòng "Đầu vào" từ điểm đầu vào của lộ trình — chỉ để nhìn, không vào SOS / Overall / Phân tích. */
+      dauVao: isRatio || timeline.some((t) => t.kind === 'mt0' && t.status !== 'cancelled') ? null : dauVaoCua(s),
     };
   });
+}
+
+export type DauVaoFt = { overall: number | null; listening: number | null; reading: number | null; writing: number | null; speaking: number | null };
+function dauVaoCua(s: any): DauVaoFt | null {
+  const d: DauVaoFt = {
+    overall: s.baseline_score ?? null, listening: s.baseline_listening ?? null, reading: s.baseline_reading ?? null,
+    writing: s.baseline_writing ?? null, speaking: s.baseline_speaking ?? null,
+  };
+  return Object.values(d).some((v) => v !== null) ? d : null;
+}
+
+export type LoTrinhChot = { nhan: string; boTro: string | null; lopDich: string | null; tuan: string | null };
+/**
+ * Hướng Quản lý đã chốt của mỗi em lớp thường `classId` — lệnh Cuối khoá đang chờ / đã thi hành từ lớp này (Xác nhận = ra lệnh; chuyển lớp giữa khoá không phải lộ trình tiếp theo),
+ * không có lệnh thì quyết định ghi lúc chuyển tiếp (`lo_trinh_tiep_theo.quyet_*`). Hướng GVCN ghi / gợi ý tự tính KHÔNG tính. Một câu.
+ */
+function loTrinhDaChot(classId: number, ma: ProgrammeCode | null, ck: Map<number, EmCuoiKhoa>): Map<number, LoTrinhChot> {
+  const lenh = new Map<number, any>();
+  for (const r of db().prepare(
+    `SELECT l.student_id, l.huong, l.tuan_bat_dau, c.code AS dich, c.is_fast_track FROM lenh_chuyen_lop l LEFT JOIN classes c ON c.id = l.lop_dich_id
+      WHERE l.lop_nguon_id = ? AND l.boi_canh = 'cuoi-khoa' AND l.trang_thai IN ('cho', 'da_chuyen') ORDER BY l.id`,
+  ).all(classId) as any[]) lenh.set(r.student_id, r);   // nhiều lệnh → lệnh mới nhất
+  const out = new Map<number, LoTrinhChot>();
+  const sids = new Set([...lenh.keys(), ...[...ck].filter(([, e]) => e.quyetDinh).map(([sid]) => sid)]);
+  for (const sid of sids) {
+    const l = lenh.get(sid);
+    const huong = (l?.huong ?? ck.get(sid)?.quyetDinh?.huong) as Huong;
+    const len = huong === 'len_lop' || huong === 'fast_track';
+    const b = len && coBoTroFinal(ma, huong === 'fast_track' || !!l?.is_fast_track) ? ck.get(sid)?.goiY?.boTroNeuLen ?? null : null;
+    out.set(sid, {
+      nhan: `${nhanHuongNgan(huong, { ma, maKe: NORMAL_LADDER[ma as ProgrammeCode] ?? null })}${b ? ' + bổ trợ' : ''}`,
+      boTro: b ? `${b.soBuoi} buổi${b.theoMon && ma ? ` · ${chuMonTruot(ma, b.mon)}` : ''}` : null,
+      lopDich: l?.dich ?? null, tuan: l?.tuan_bat_dau ?? null,
+    });
+  }
+  return out;
 }
 
 /** Trang tổng quan một lớp: thông tin lớp, phân công, và những việc cần chú ý. */

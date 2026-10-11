@@ -1,15 +1,15 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
-import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { WeekPicker } from '../../ui/Filters.tsx';
 import { useToast } from '../../ui/Toast.tsx';
-import { Field, SectionNote, Skeleton, Status } from '../../ui/ui.tsx';
+import { Field, SectionNote, Skeleton } from '../../ui/ui.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { MOC_KIEM_TRA_NORMAL } from '../../ui/chu.ts';
 import { kyHieuLop, lichMtMacDinh, tuanLich, type LoiTruong } from '@shared/domain/index.ts';
+import { DongXem, PhanThongTin } from './ThongTinLopPanel.tsx';
 
 type Progress = {
   programmeCode: string | null; programmeName: string | null;
@@ -30,33 +30,32 @@ type Progress = {
 };
 
 /**
- * TIẾN ĐỘ CỦA MỘT LỚP — mục 7.6, quyền của Admin CN và Quản lý CN.
- *
- * Nằm ở: Học viên & Lớp → Hồ sơ lớp → ⋮ → Tuần khai giảng (lớp FT) / Lịch kiểm tra (lớp thường) (E7, K2-22, K2-23).
+ * PHẦN "LỊCH TEST CỦA LỚP" / "TUẦN KHAI GIẢNG" (FT) của panel Thông tin lớp (PR-OV3a; trước là panel riêng — mục 7.6, E7, K2-22, K2-23).
+ * Sửa: Admin CN / Quản lý CN (`canEditProgress`); máy chủ kiểm lại.
  * FT: chỉ tuần khai giảng — là tuần bắt đầu MẶC ĐỊNH khi thêm học viên; lịch MT do từng em (Test › Kế hoạch Test). Lớp thường: tuần khai giảng +
  * hai mốc kiểm tra (ô Giữa khoá chỉ khi chương trình có mốc đó).
  *
- * Ba ô: tuần khai giảng, tuần thi Giữa khoá, tuần thi Cuối khoá. Hai ô sau tính sẵn theo
- * chương trình, nên phần lớn lớp không ai phải đụng vào — chỉ lớp nghỉ lễ hoặc học bù mới
+ * Hai ô mốc tính sẵn theo chương trình, nên phần lớn lớp không ai phải đụng vào — chỉ lớp nghỉ lễ hoặc học bù mới
  * cần xê dịch. Đặt ô về trống là QUAY LẠI mốc mặc định, không phải xoá mốc: cần có đường
  * quay lại, nếu không thì một lần gõ nhầm là lớp đó vĩnh viễn lệch chuẩn.
  *
- * Phần dưới cùng là thứ owner yêu cầu thêm ngày 13/09/2026: khi lớp đã hết chương trình,
- * panel nói thẳng còn bao nhiêu em cần xếp lớp và hai đường đi tiếp của các em.
+ * Lớp đã hết chương trình (owner 13/09/2026): phần nói thẳng còn bao nhiêu em cần xếp lớp và hai đường đi tiếp của các em.
  */
-export function ClassProgressPanel({ classId, classCode, tieuDe, onClose, onDone, onChuyenTiep }: {
-  classId: number; classCode: string; tieuDe: string; onClose: () => void; onDone?: () => void;
-  /** Lớp hết khoá: nút "Lộ trình tiếp theo…" ngay trong khung (chỉ khi người xem chuyển tiếp được). */
+export function PhanLichTest({ classId, tieuDe, suaDuoc, onDone, onChuyenTiep }: {
+  classId: number; tieuDe: string; suaDuoc: boolean; onDone?: () => void;
+  /** Lớp hết khoá: nút "Lộ trình tiếp theo" ngay trong phần (chỉ khi người xem chuyển tiếp được). */
   onChuyenTiep?: () => void;
 }) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
-  const { data, loading, reload } = useApi<Progress>(`/classes/${classId}/progress`, [classId]);
+  const { data, loading, error, reload } = useApi<Progress>(`/classes/${classId}/progress`, [classId]);
+  const [dangSua, setDangSua] = useState(false);
   const [startPeriodId, setStartPeriodId] = useState<number | null>(null);
   const [progressWeek, setProgressWeek] = useState<string>('');
   const [finalWeek, setFinalWeek] = useState<string>('');
   const [touched, setTouched] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [loiLuu, setLoiLuu] = useState<string | null>(null);
   const lf = useLoiForm();
 
   /* Nạp giá trị hiện tại MỘT LẦN — nếu không thì mỗi lần tải lại sẽ xoá cái người đang gõ. */
@@ -75,15 +74,16 @@ export function ClassProgressPanel({ classId, classCode, tieuDe, onClose, onDone
     ...(laLopThuong && ngoaiKhoa(finalWeek) ? [{ khoa: 'cuoi-khoa', nhan: 'Tuần thi Final Test', lyDo: `Từ 1 đến ${data.totalWeeks}` }] : []),
   ];
 
-  /* Luật I1: đã sửa ô nào so với giá trị đã lưu → chân ghi "Huỷ thay đổi". */
-  const daSua = !!data && (startPeriodId !== (data.startPeriodId ?? null)
-    || progressWeek !== (data.progressOverridden && data.progressWeek ? String(data.progressWeek) : '')
-    || finalWeek !== (data.finalOverridden && data.finalWeek ? String(data.finalWeek) : ''));
+  /* Huỷ: về giá trị đã lưu (nạp lại một lần ở lượt vẽ sau). */
+  const huy = () => {
+    setDangSua(false); setLoiLuu(null); setTouched(false);
+    setStartPeriodId(null); setProgressWeek(''); setFinalWeek('');
+  };
 
   const save = async () => {
     lf.bam();
     if (loi.length > 0 || busy) return;
-    setBusy(true);
+    setBusy(true); setLoiLuu(null);
     try {
       await api.patch(`/classes/${classId}/progress`, {
         startPeriodId: startPeriodId ?? null,
@@ -91,27 +91,56 @@ export function ClassProgressPanel({ classId, classCode, tieuDe, onClose, onDone
         finalWeek: finalWeek.trim() === '' ? null : Number(finalWeek),
       });
       invalidate('/classes');
-      toast.push('ok', 'Đã lưu tiến độ lớp');
+      toast.push('ok', `Đã lưu ${tieuDe.toLowerCase()}`);
+      setDangSua(false); setTouched(false);
       reload(); onDone?.();
-    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+    } catch (e: any) { setLoiLuu(e.message); toast.push('error', e.message); } finally { setBusy(false); }
   };
 
-  return (
-    <KhungPanel tieuDe={tieuDe} lop={classCode} onDong={onClose}
-      chan={{
-        daSua, huy: { onClick: onClose, disabled: busy },
-        conThieu: lf.conThieu(loi),
-        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={save} disabled={busy}>Lưu</button>,
-      }}>
-      {loading || !data ? <div className="pt-3"><Skeleton rows={5} /></div> : (
-        <div className="space-y-4 pt-3">
-          <div className="rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>
-            <p className="text-sm text-slate-100 m-0">{data.label ?? 'Chưa tính được tiến độ'}</p>
-            {data.startWeekStart && (
-              <p className="text-xs text-slate-500 mt-1 mb-0">Tuần khai giảng {tuanLich(data.startWeekStart, homNay)}</p>
-            )}
-          </div>
+  const hetKhoa = data?.needsPlacement && (
+    /* LỚP ĐÃ HỌC XONG → MỖI EM PHẢI ĐƯỢC XẾP LỚP TIẾP. Hệ thống KHÔNG tự chuyển ai: chỉ nói "đến lúc rồi" và bày sẵn hai đường. */
+    <div className="mt-3 rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>
+      <p className="text-sm text-slate-100 m-0">
+        Lớp đã học hết {data.totalWeeks} tuần. <strong>{data.activeStudents} học viên</strong> cần
+        được xếp lớp tiếp theo.
+      </p>
+      <p className="text-xs text-slate-300 mt-1.5 mb-0">
+        Hai đường đi:
+        {' '}{data.placementOptions.map((o) => `${o.name} (${o.code})`).join(' — hoặc — ')}
+      </p>
+      <p className="m-0 mt-1.5 text-xs text-slate-500">Hệ thống không tự chuyển em nào.</p>
+      {onChuyenTiep && (
+        <button type="button" className="btn btn-sm btn-primary mt-2 min-h-[44px] sm:min-h-0" onClick={onChuyenTiep}>Lộ trình tiếp theo</button>
+      )}
+    </div>
+  );
+  const tuanMoc = (tuan: number | null, ws: string | null, xepLai: boolean) => (
+    <span className="tabular-nums">{tuan ? `tuần ${tuan}` : '—'}{ws ? ` · ${tuanLich(ws, homNay)}` : ''}{xepLai ? ' · đã xếp lại' : ''}</span>
+  );
 
+  return (
+    <PhanThongTin tieuDe={tieuDe} suaDuoc={suaDuoc && !!data} dangSua={dangSua} busy={busy} loi={loiLuu}
+      onSua={() => setDangSua(true)} onHuy={huy} onLuu={save}>
+      {error ? <p className="m-0 text-xs text-rose-200">{error.message}</p> : loading || !data ? <Skeleton rows={3} /> : !dangSua ? (
+        <>
+          <DongXem dong={[
+            ['Khai giảng', data.startWeekStart ? <span className="tabular-nums">{tuanLich(data.startWeekStart, homNay)}</span> : <span className="text-amber-200">Chưa chọn</span>],
+            ...(laLopThuong ? [
+              ...(data.coGiuaKhoa ? [['Progress Test', tuanMoc(data.progressWeek, data.progressWeekStart, data.progressOverridden)] as [string, ReactNode]] : []),
+              ['Final Test', tuanMoc(data.finalWeek, data.finalWeekStart, data.finalOverridden)] as [string, ReactNode],
+            ] : []),
+          ]} />
+          {!laLopThuong && data.tomTatMt && (
+            <p className="m-0 mt-2 text-sm tabular-nums text-slate-200">
+              {data.tomTatMt.soEm} em · {data.tomTatMt.coMocSapToi} em có MT sắp tới · {data.tomTatMt.daXongMtCuoi} em đã xong MT cuối
+              {' '}<Link to={`/test/ke-hoach?loai=ft&classId=${classId}`} className="link">Xem ở Kế hoạch Test →</Link>
+            </p>
+          )}
+          {laLopThuong && hetKhoa}
+        </>
+      ) : (
+        <div className="space-y-4">
+          <p className="m-0 text-xs text-slate-400">{data.label ?? 'Chưa tính được tiến độ'}</p>
           <Field as="div" label="Tuần khai giảng" required={laLopThuong} loi={lf.loiCua(loi, 'khai-giang')}
             hint={laLopThuong ? `Tuần này là tuần học 1 của lớp. ${MOC_KIEM_TRA_NORMAL}` : 'Tuần bắt đầu mặc định khi thêm học viên vào lớp.'}>
             <div {...lf.o(loi, 'khai-giang')}>
@@ -121,78 +150,32 @@ export function ClassProgressPanel({ classId, classCode, tieuDe, onClose, onDone
           </Field>
 
           {laLopThuong ? (
-            <>
-              <div className={`grid gap-3 ${data.coGiuaKhoa ? 'sm:grid-cols-2' : ''}`}>
-                {/* K2-23: Pre FOU chỉ có Cuối khoá — không vẽ ô Giữa khoá. */}
-                {data.coGiuaKhoa && (
-                  <Field label="Tuần thi Progress Test (tuần học)" loi={lf.loiCua(loi, 'giua-khoa')}
-                    hint={`Mặc định của ${kyHieuLop(data.programmeCode, null) ?? data.programmeCode}: tuần ${data.progressOverridden ? '—' : data.progressWeek ?? '—'}. Để trống là dùng mặc định.`}>
-                    <input type="number" min={1} max={data.totalWeeks ?? undefined} className="field w-full"
-                      {...lf.o(loi, 'giua-khoa')} value={progressWeek} placeholder={String(data.progressWeek ?? '')}
-                      onChange={(e) => { setTouched(true); setProgressWeek(e.target.value); }} />
-                  </Field>
-                )}
-                <Field label="Tuần thi Final Test (tuần học)" loi={lf.loiCua(loi, 'cuoi-khoa')}
-                  hint="Để trống là dùng mốc mặc định của chương trình.">
+            <div className={`grid gap-3 ${data.coGiuaKhoa ? 'sm:grid-cols-2' : ''}`}>
+              {/* K2-23: Pre FOU chỉ có Cuối khoá — không vẽ ô Giữa khoá. */}
+              {data.coGiuaKhoa && (
+                <Field label="Tuần thi Progress Test (tuần học)" loi={lf.loiCua(loi, 'giua-khoa')}
+                  hint={`Mặc định của ${kyHieuLop(data.programmeCode, null) ?? data.programmeCode}: tuần ${data.progressOverridden ? '—' : data.progressWeek ?? '—'}. Để trống là dùng mặc định.`}>
                   <input type="number" min={1} max={data.totalWeeks ?? undefined} className="field w-full"
-                    {...lf.o(loi, 'cuoi-khoa')} value={finalWeek} placeholder={String(data.finalWeek ?? '')}
-                    onChange={(e) => { setTouched(true); setFinalWeek(e.target.value); }} />
+                    {...lf.o(loi, 'giua-khoa')} value={progressWeek} placeholder={String(data.progressWeek ?? '')}
+                    onChange={(e) => { setTouched(true); setProgressWeek(e.target.value); }} />
                 </Field>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {data.coGiuaKhoa && data.progressWeekStart && (
-                  <Status kind={data.phase === 'progress_week' ? 'doing' : 'idle'}>
-                    Progress Test: {tuanLich(data.progressWeekStart, homNay)} (tuần học {data.progressWeek})
-                    {data.progressOverridden ? ' · đã xếp lại' : ''}
-                  </Status>
-                )}
-                {data.finalWeekStart && (
-                  <Status kind={data.phase === 'final_week' ? 'doing' : 'idle'}>
-                    Final Test: {tuanLich(data.finalWeekStart, homNay)} (tuần học {data.finalWeek})
-                    {data.finalOverridden ? ' · đã xếp lại' : ''}
-                  </Status>
-                )}
-              </div>
-
-              {/*
-                LỚP ĐÃ HỌC XONG → MỖI EM PHẢI ĐƯỢC XẾP LỚP TIẾP.
-                Hệ thống KHÔNG tự chuyển ai: nó chỉ nói "đến lúc rồi" và bày sẵn hai đường.
-              */}
-              {data.needsPlacement && (
-                <div className="rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>
-                  <p className="text-sm text-slate-100 m-0">
-                    Lớp đã học hết {data.totalWeeks} tuần. <strong>{data.activeStudents} học viên</strong> cần
-                    được xếp lớp tiếp theo.
-                  </p>
-                  <p className="text-xs text-slate-300 mt-1.5 mb-0">
-                    Hai đường đi:
-                    {' '}{data.placementOptions.map((o) => `${o.name} (${o.code})`).join(' — hoặc — ')}
-                  </p>
-                  <p className="m-0 mt-1.5 text-xs text-slate-500">Hệ thống không tự chuyển em nào.</p>
-                  {onChuyenTiep && (
-                    <button type="button" className="btn btn-sm btn-primary mt-2 min-h-[44px] sm:min-h-0" onClick={onChuyenTiep}>Lộ trình tiếp theo…</button>
-                  )}
-                </div>
               )}
-            </>
-          ) : (
-            <div className="space-y-2">
-              {data.tomTatMt && (
-                <p className="m-0 text-sm tabular-nums text-slate-200">
-                  {data.tomTatMt.soEm} em · {data.tomTatMt.coMocSapToi} em có MT sắp tới · {data.tomTatMt.daXongMtCuoi} em đã xong MT cuối
-                  {' '}<Link to={`/test/ke-hoach?loai=ft&classId=${classId}`} className="link">Xem ở Kế hoạch Test →</Link>
-                </p>
-              )}
-              <SectionNote>
-                Tuần khai giảng là tuần bắt đầu mặc định khi thêm học viên. Lịch MT của từng em tính từ tuần bắt đầu của em
-                (FT: tuần {lichMtMacDinh('LT1').join(' · ')}; RF: {lichMtMacDinh('RF').join(' · ')}) — xem ở Test › Kế hoạch Test.
-                Đổi tuần khai giảng không dời lịch MT của em đã có.
-              </SectionNote>
+              <Field label="Tuần thi Final Test (tuần học)" loi={lf.loiCua(loi, 'cuoi-khoa')}
+                hint="Để trống là dùng mốc mặc định của chương trình.">
+                <input type="number" min={1} max={data.totalWeeks ?? undefined} className="field w-full"
+                  {...lf.o(loi, 'cuoi-khoa')} value={finalWeek} placeholder={String(data.finalWeek ?? '')}
+                  onChange={(e) => { setTouched(true); setFinalWeek(e.target.value); }} />
+              </Field>
             </div>
+          ) : (
+            <SectionNote>
+              Tuần khai giảng là tuần bắt đầu mặc định khi thêm học viên. Lịch MT của từng em tính từ tuần bắt đầu của em
+              (FT: tuần {lichMtMacDinh('LT1').join(' · ')}; RF: {lichMtMacDinh('RF').join(' · ')}) — xem ở Test › Kế hoạch Test.
+              Đổi tuần khai giảng không dời lịch MT của em đã có.
+            </SectionNote>
           )}
         </div>
       )}
-    </KhungPanel>
+    </PhanThongTin>
   );
 }
