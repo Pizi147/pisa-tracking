@@ -51,14 +51,14 @@ export function PhanThongTin({ tieuDe, suaDuoc, dangSua, busy, nhanLuu = 'Lưu',
         <span className="flex-1" />
         {dangSua ? (
           <>
-            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onHuy} disabled={busy}>Huỷ</button>
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onHuy} disabled={busy}>Huỷ thay đổi</button>
             <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={onLuu} disabled={busy}>{busy ? 'Đang lưu…' : nhanLuu}</button>
           </>
         ) : suaDuoc && (
           <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={onSua} aria-label={`Sửa ${tieuDe.toLowerCase()}`}>Sửa</button>
         )}
       </div>
-      {loi && <p role="alert" className="m-0 mb-2.5 rounded-md border px-3 py-2 text-xs text-rose-200" style={{ borderColor: 'var(--line)' }}>Chưa lưu được: {loi}</p>}
+      {loi && <p role="alert" className="m-0 mb-2.5 rounded-md border px-3 py-2 text-xs text-rose-200" style={{ borderColor: 'var(--line)' }}>Không lưu được: {loi}</p>}
       {children}
     </section>
   );
