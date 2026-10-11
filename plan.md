@@ -209,12 +209,12 @@ Chủ sản phẩm 05/10 đã chốt (mockup `thiet-ke/mockup-test-mt-2026-10-05
 
 Đợt 2 (PHH, SO, DH) và U12 đã xong, xem mục 2.
 
-### OVERHAUL 11/10 (OV) — ĐANG BRAINSTORM, chưa code · ưu tiên trên PR-EN / PR-SOTAY
-- Nguồn: prompt chủ SP 11/10 "PISA Prompt Overhaul UX/UI Workflow" (mục 1–7 + góp ý D1–D11); quyết định đã chốt ở mục 3 (dòng 11/10).
-- Mockup (chờ duyệt): `thiet-ke/mockup-overhaul-1-cong-viec-diem-mt-2026-10-11.html` (Công việc tại chỗ, hộp nhập điểm, Lịch Test "phần của bạn", huỷ/khôi phục MT, quay lại) · `…-2-ho-so-lop-lo-trinh-…` (hồ sơ lớp, Thông tin lớp, Lộ trình tiếp theo + KQ đầu ra + bàn giao, KQ lớp trước ở FT, hồ sơ HV) · `…-3-tong-quan-vai-chuong-trinh-…` (Lịch sắp tới, đổi góc nhìn, TVV/CX/Admin, ma trận vai, Chương trình + PET/KET).
-- Lỗi đã kiểm chứng: **3.3** `ChamDiemPage` chọn sẵn bài MT0 (`kindMacDinh`) nhưng gọi `/classes/:id/cham` không `kind` → máy chủ trả bảng tỷ lệ có hàng MT0; đường `/regular/attempts/:id/scores/:skill` **nhận** điểm MT0 (lưu đúng/tổng, không band, lượt thành "done"). Sửa: gửi đúng `kind`, máy chủ từ chối ghi tỷ lệ lên MT0, `regularSheet` bỏ hàng MT0; Điểm theo lớp thêm lượt MT0 cho lớp thường; thêm nhóm kiểm "MT0 có điểm đúng/tổng không band" vào `kiem-du-lieu-mt`.
-- **5.2** (ảnh chủ SP 11/10, CP FT RF 01): '-' ra 3 kết quả (dời tuần / Không dự thi / ô trống); Đặng Thị Thảo đủ '-' vẫn "quá hạn"; Nguyễn Trâm Anh "Đã huỷ phần thi" mà "Đã lên lịch"; dòng lớp "Quá hạn" khi ô đếm 0. Chưa tái hiện → PR sửa thêm lệnh **chỉ đọc** in trạng thái từng ô của một lớp, chủ SP chạy trên bản chính rồi sửa theo nguyên nhân.
-- Thứ tự dự kiến (chờ duyệt): OV-1 đúng (3.3, 3.2, 5.2, '-', SOS MT, 5.1, 7.2) → OV-2 vai + hồ sơ HV → OV-3 hồ sơ lớp + Lộ trình/KQĐR/bàn giao → OV-4 hộp điểm + hộp MT → OV-5 Công việc tại chỗ + Quay lại → OV-6 Tổng quan, Chương trình, PET/KET. PR-EN dời sau OV (tránh dịch hai lần).
+### OVERHAUL 11/10 (OV) — đặc tả chờ chủ SP duyệt, chưa code · ưu tiên trên PR-EN / PR-SOTAY
+- **Đặc tả (nguồn chi tiết duy nhất):** `docs/superpowers/specs/2026-10-11-overhaul-ux-workflow-design.md` — đối chiếu hiện trạng, ma trận vai,
+  quy trình (lộ trình → bàn giao → KQĐR, SOS MT, dấu "-", huỷ/khôi phục), giao diện, **12 PR OV-1a … OV-6b** + phụ thuộc, tiêu chí nghiệm thu.
+- Mockup bản 2 (góp ý 11/10 đã áp): `thiet-ke/mockup-overhaul-{1,2,3}-*-2026-10-11.html`.
+- Quyết định: mục 3 (các dòng 11/10). Mục "[tự quyết]" trong đặc tả chờ chủ SP gạch khi duyệt.
+- Việc gấp: **OV-1a** (lỗi MT0 đang ghi sai dữ liệu) → nên deploy sớm; 5.2 cần chủ SP chạy lệnh chỉ đọc `kiem-o-lop` (thêm ở OV-1a) cho CP FT RF 01.
 
 ### PR-BV · Xoá "-" trả lại như cũ + đường lui điểm (M) — chủ sản phẩm chốt 06/10 **bản 2** (bản 1 không duyệt: quá phức tạp). Kế hoạch `docs/superpowers/plans/2026-10-06-pr-bv-bo-vang-xoa-diem.md` + mockup `thiet-ke/mockup-bo-vang-xoa-diem-2026-10-06.html` **mockup đã duyệt 06/10** (Q1 đã trả lời: A — Lịch sử FT giữ ở hồ sơ Mock)
 Nguồn: `docs/superpowers/specs/2026-10-06-ra-soat-duong-lui.md`. Chạy **sau MTa (#212) và MTb** (chung `attempts.ts`, `regular.ts`, `absence.ts`, `ScoreEntry.tsx`…), mockup duyệt trước.
