@@ -14,6 +14,26 @@ Tệp này tự nạp vào mọi session của repo (planning, code, worktree), 
 - Workflow đơn giản, ít thao tác, không để người dùng kẹt; sửa trên nền có sẵn, không làm lại.
 - Mặc định làm điều hiển nhiên (vd đổi mốc lớp thì bài dời theo) — không hỏi lại.
 
+## Nguyên tắc workflow + UX (chủ SP 11/10, gốc: prompt Overhaul mục A)
+- Trước mỗi quyết định ảnh hưởng workflow, trả lời: việc phát sinh từ đâu · ai làm / ai chốt / ai cần biết · cần thông tin gì để làm ngay ·
+  đầu ra và thế nào là xong · bước nào bắt buộc, bước nào gộp/bỏ được · làm sai thì sửa / huỷ / khôi phục đường nào. Không thêm bước cho "đủ quy trình".
+- Xử lý tại chỗ: thao tác mở panel / hộp ngay trang đang làm; tách nút **làm việc** với link **xem hồ sơ**; chỉ chuyển trang khi cần không gian lớn;
+  Quay lại về đúng nguồn (bộ lọc, tab, vị trí cuộn); không panel lồng panel.
+- Thông tin vừa đủ, đúng vai: cái quan trọng trước, chi tiết mở khi cần; cùng một số liệu ở nhiều nơi phải cùng nguồn, cùng hàm tính
+  (việc đã xong không được nơi nào còn báo chờ / quá hạn). Giao diện theo vai đi cùng quyền máy chủ.
+- Nhất quán: một khái niệm một tên; cùng loại thao tác cùng vị trí, thứ tự, phản hồi; dùng lại component sẵn có; việc ngắn → hộp nhỏ, việc nhiều thông tin → panel.
+  Đọc bảng, gõ phím và màn 375 đều phải tốt; trạng thái không chỉ phân biệt bằng màu.
+- Trạng thái rõ + đường sửa sai: phân biệt đang lưu / đã lưu / lỗi / nháp / đã chốt; không báo xong khi chưa lưu; không mất chữ đang gõ;
+  xác nhận chỉ khi hậu quả lớn (nêu đúng đối tượng bị ảnh hưởng); bị chặn thì nói lý do + bước tiếp theo.
+- Đánh giá phương án bằng tình huống thật (số bước, số lần chuyển trang, nhập lại, sửa sai; thiếu dữ liệu, nhiều vai, đổi lịch, lô lỗi một phần);
+  đưa một khuyến nghị kèm lý do, không bày nhiều lựa chọn.
+- Với chủ SP: phân biệt hiện trạng đã kiểm / lỗi chủ SP báo / yêu cầu đã chốt / đề xuất / câu hỏi. "Đề xuất", "cân nhắc" ≠ đã duyệt. Luật nghiệp vụ không tự đổi.
+
+## Skill `karpathy-guidelines` (chủ SP cài 11/10)
+- Dùng ở mọi session có viết / sửa / rà code hoặc viết kế hoạch PR: nghĩ trước khi làm, nêu giả định, chọn cách đơn giản nhất, sửa đúng chỗ cần sửa,
+  có tiêu chí kiểm được. Đi cùng `ponytail` (không thay); mâu thuẫn thì theo thứ tự mục "Khi các nguồn mâu thuẫn" ở trên.
+- Câu hỏi đơn giản, đọc log, trả lời chủ SP: không cần gọi.
+
 ## Giao diện và UX: dùng `impeccable`
 - PISA là công cụ làm việc cho giáo viên (chế độ Operate): dễ hiểu, dễ dùng, nhất quán trước; trang trí sau.
 - Không dùng taste-skill (đã tắt; không dành cho dashboard, bảng dữ liệu).
