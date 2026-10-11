@@ -15,6 +15,8 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 | `docs/superpowers/specs/2026-10-11-overhaul-ux-workflow-design.md` | **Đặc tả Overhaul (OV)** — duyệt 11/10; nguồn chi tiết cho 12 PR OV-1a … OV-6b |
 | `docs/superpowers/plans/2026-10-11-pr-ov1a-dung-mt0-nhap-diem.md` | PR **OV-1a** (kế hoạch + prompt) |
 | `docs/superpowers/plans/2026-10-11-pr-ov6a-lich-sap-toi-gon.md` | PR **OV-6a** (kế hoạch + prompt, song song OV-1a) |
+| `docs/superpowers/plans/2026-10-11-pr-ov2a-vai-quyen-goc-nhin.md` | PR **OV-2a** (kế hoạch + prompt, song song OV-3a) |
+| `docs/superpowers/plans/2026-10-11-pr-ov3a-ho-so-lop.md` | PR **OV-3a** (kế hoạch + prompt, song song OV-2a) |
 | `docs/superpowers/plans/2026-10-07-pr-en-tieng-anh.md` | PR-EN (sau toàn bộ OV — đếm lại chữ trước khi chạy) |
 | `docs/superpowers/plans/2026-10-07-pr-sotay-so-tay-moi.md` | PR-SOTAY (cuối cùng) |
 
@@ -251,9 +253,14 @@ không cần ảnh → /impeccable audit (nếu có giao diện) → /ponytail-r
 Xong: [x] kế hoạch, một dòng mục 11, CODE_MAP.md nếu thêm/xoá file. Cổng PORT/WEB_PORT riêng, không 4000/5173.
 ```
 
-### 9.1. OV-1a — chạy ngay (đặc tả duyệt 11/10)
+### 9.1. Đợt 1 — OV-1a (#316) + OV-6a (#315, đã merge 11/10)
 
-**OV-1a** — Opus 5.5 · High (B: Sonnet 5.5 · High). Dùng khối **Prompt** cuối `docs/superpowers/plans/2026-10-11-pr-ov1a-dung-mt0-nhap-diem.md`.
+### 9.2. Đợt 2 — chạy SAU khi OV-1a merge, hai session song song
+- **OV-2a** — Opus 5.5 · XHigh (B: Opus 5.5 · High). Prompt cuối `docs/superpowers/plans/2026-10-11-pr-ov2a-vai-quyen-goc-nhin.md`. Cổng 4070/5243.
+- **OV-3a** — Opus 5.5 · High (B: Sonnet 5.5 · High). Prompt cuối `docs/superpowers/plans/2026-10-11-pr-ov3a-ho-so-lop.md`. Cổng 4080/5253.
+- Không chung file trừ `server/src/tests/run.ts` + `plan.md` (gộp dòng). PR nào xong trước merge trước; PR sau gộp main vào nhánh, chạy lại `npm run check` rồi mới merge.
+- `students.consultant_user_id` (migrate) chuyển sang OV-2a vì Tổng quan TVV cần; OV-2b chỉ làm ô chọn + "Ghi cũ".
+- Song song đợt 2: chủ SP chạy hai lệnh chỉ đọc (khối OVERHAUL mục 4) → planning viết **OV-1b**; OV-1b chạy sau khi OV-2a hoặc OV-3a xong (tối đa 2 session code cùng lúc).
 
 Các PR OV sau: planning viết kế hoạch + prompt khi tới lượt (mục 5), ghi vào mục này.
 
