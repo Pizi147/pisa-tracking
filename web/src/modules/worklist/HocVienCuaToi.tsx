@@ -15,7 +15,7 @@ const TONE: Record<DongChuY['loai'], ToneNhan> = { sos: 'bad', case: 'wait', 'y-
 function O({ nhan, so, donVi, phu }: { nhan: string; so: number; donVi: ReactNode; phu: string }) {
   return (
     <div className="card p-4 h-full">
-      <div className="text-[11px] uppercase tracking-wide text-slate-400 font-semibold">{nhan}</div>
+      <div className="text-xs uppercase tracking-wide text-slate-400 font-semibold">{nhan}</div>
       <div className="mt-2 flex items-baseline gap-1.5">
         <span className={`text-2xl font-semibold tabular-nums ${so ? 'text-slate-100' : 'text-slate-500'}`}>{so}</span>
         <span className="text-xs text-slate-400">{donVi}</span>

@@ -4,6 +4,8 @@ Nguồn: đặc tả OV mục 2 (bảng quyền), 6.1 (nghiệm thu "Vai") — `
 mockup đã duyệt `thiet-ke/mockup-overhaul-3-tong-quan-vai-chuong-trinh-2026-10-11.html` §2 (đổi góc nhìn), §3 (TVV), §4 (CX · Admin), §5 (ma trận).
 Rà: **sâu** + `/security-review` (quyền). Chạy song song với **OV-3a** (xem "Ranh giới").
 
+**Trạng thái: [x] xong — nhánh `claude/pr-ov2a-vai-quyen-oqmdnt` (11/10).**
+
 ## Đầu ra
 1. Ba vai mới giao được ở Quản trị › Tài khoản (theo chi nhánh như vai cũ; CX mặc định toàn hệ thống):
    `consultant` = "Tư vấn viên" (TVV), `cx` = "CX", `office_admin` = "Admin". KHÔNG dùng lại mã `branch_admin` (đã bỏ, giữ để đọc lịch sử).

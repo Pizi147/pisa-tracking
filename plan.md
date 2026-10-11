@@ -308,6 +308,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 11/10/2026 | OV-2a (Opus 5.5) · `claude/pr-ov2a-vai-quyen-oqmdnt` | Vai Admin / TVV / CX + 5 quyền (`student.edit_info`, `test.view`, `work.view`, `analysis.view`, `analysis.view_teacher`), migrate `prOv2`; Test/Công việc chặn theo đường; Admin chỉ Chấm điểm + Nhắc; góc nhìn lưu ở phiên + dải; Tổng quan TVV, "HV của tôi" |
 | 11/10/2026 | OV-1a (Opus 5.5) · `pr-ov1a-mt0-nhap-diem` | MT0 lớp thường: máy chủ chặn ghi đúng/tổng, bảng tỷ lệ bỏ MT0; Điểm theo lớp có lượt MT0 (`?lop=&luot=`), Nhập điểm hồ sơ lớp mở đó; tab Lịch Test / Chấm Test; Phân tích mở tuần trước; `kiem-o-lop` + nhóm 6 `kiem-du-lieu-mt` (chỉ đọc) |
 | 11/10/2026 | Planning (Opus 5.5) · `claude/epic-lovelace-jq3mig` | Overhaul: 5 đợt hỏi + 3 mockup (2 bản) + đặc tả OV (12 PR) duyệt; tái hiện lỗi MT0 3.3 (bảng tỷ lệ nhận điểm MT0); rà soát + dọn plan.md (xoá 24 kế hoạch đã merge); kế hoạch OV-1a |
 | 09–10/10/2026 | #286–#302 (không ghi dòng riêng) | Điểm theo lớp lọc CN/khung (#286) · MTUI (#287) · KIEM-DU-LIEU-MT (#288) · QL-TEST (#289) · NO-CT2-KV (#290) · XTHV (#291) · NO-NHO (#292) · HOP1 (#293) · TEN (#298) · TD3 (#301) · VN3 (#302) — xem mô tả PR trên GitHub |

@@ -6,6 +6,7 @@
 import crypto from 'node:crypto';
 import { DEFAULT_ADMIN_PASSWORD, EMAIL_SUFFIX } from '../platform/accounts.ts';
 import { padCode } from '../util.ts';
+import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { DEMO_DATE } from './data.ts';
 
 export function buildOv2aDemo(conn: any): { tvv: number; soHv: number } {
@@ -28,7 +29,7 @@ export function buildOv2aDemo(conn: any): { tvv: number; soHv: number } {
   /* Bốn trong năm em đang học ở Cẩm Phả (bộ demo chỉ có CP FT 110) — để "HV của tôi" và "Chi nhánh" khác nhau. */
   const em = (conn.prepare(
     `SELECT DISTINCT s.id FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'active' JOIN classes c ON c.id = e.class_id
-      WHERE c.branch_id = ? AND s.status = 'active' AND s.archived_at IS NULL ORDER BY c.is_fast_track DESC, s.id`,
+      WHERE c.branch_id = ? AND ${HV_DANG_HOC_SQL('s')} ORDER BY c.is_fast_track DESC, s.id`,
   ).all(cp) as any[]).slice(0, 4);
   for (const r of em) conn.prepare('UPDATE students SET consultant_user_id = ? WHERE id = ?').run(tvv, r.id);
   return { tvv, soHv: em.length };

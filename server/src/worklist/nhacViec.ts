@@ -78,8 +78,9 @@ export function nhacViecNhieu(p: Principal, ds: readonly ViecCanNhac[], o: { boQ
   for (const v of ds) {
     if (v.ownerId === p.userId) loi(v, 403, 'Không tự nhắc chính mình.');
     /* PR-OV2a: Admin chỉ nhắc việc Chấm điểm. */
-    else if (xemViec === 'cham-diem' && (v.ngoaiMyWork || nhomCuaKhoa([khoaChuan(v.key)])?.has('score') !== true
-      || nhomCuaKhoa([khoaChuan(v.key)])!.size !== 1)) loi(v, 403, 'Bạn chỉ nhắc được việc chấm điểm.');
+    else if (xemViec === 'cham-diem' && (v.ngoaiMyWork || [...nhomCuaKhoa([khoaChuan(v.key)]) ?? []].join() !== 'score')) {
+      loi(v, 403, 'Bạn chỉ nhắc được việc chấm điểm.');
+    }
     else conLai.push({ ...v, key: khoaChuan(v.key) });
   }
   if (!conLai.length) return kq;

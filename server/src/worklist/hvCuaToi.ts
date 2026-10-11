@@ -1,6 +1,6 @@
 /**
  * TỔNG QUAN TVV — "Học viên của tôi" (PR-OV2a, mockup overhaul-3 §3). HV của tôi = `students.consultant_user_id` = người xem, còn trong
- * phạm vi xem (`student.view`). Chỉ đọc: 4 số + danh sách "Cần chú ý" để báo phụ huynh; mọi dòng bấm ra hồ sơ.
+ * phạm vi xem (`student.view`). Chỉ đọc: 4 số + danh sách em cần để ý (khối dưới của mockup) để báo phụ huynh; mọi dòng bấm ra hồ sơ.
  * Một câu học viên + `standingFor` (dùng chung với Học viên & Lớp) + một câu Case + một câu Ý thức — không tăng theo số em.
  */
 import { db } from '../db.ts';
@@ -51,8 +51,13 @@ export function hvCuaToi(p: Principal): HvCuaToi {
       WHERE student_id IN (${ph}) AND occurred_on >= ? ORDER BY occurred_on DESC`,
   ).all(...ids, addDays(homNay, -MOI_NGAY)) as any[];
 
-  const ngayThi = (r: any): string | null => r.exam_date ?? r.tuan_thi ?? null;
-  const sapThi = (r: any) => { const d = ngayThi(r); return !!d && d >= dauTuan && d <= addDays(dauTuan, SAP_THI_TUAN * 7 - 1); };
+  const ngayThi = (r: any): string | null => r.exam_date ?? r.tuan_thi ?? (r.exam_month ? `${r.exam_month}-01` : null);
+  const cuoiKhoang = addDays(dauTuan, SAP_THI_TUAN * 7 - 1);
+  /* Chỉ ghi tháng thi → sắp thi khi tháng đó chạm khoảng 6 tuần. */
+  const sapThi = (r: any) => {
+    if (!r.exam_date && !r.tuan_thi && r.exam_month) return `${r.exam_month}-01` <= cuoiKhoang && `${r.exam_month}-31` >= dauTuan;
+    const d = ngayThi(r); return !!d && d >= dauTuan && d <= cuoiKhoang;
+  };
   const moi = (d: string | null) => !!d && d.slice(0, 10) >= addDays(homNay, -MOI_NGAY);
 
   const canChuY: DongChuY[] = [];

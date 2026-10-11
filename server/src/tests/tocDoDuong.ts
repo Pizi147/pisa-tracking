@@ -799,6 +799,11 @@ export const TAI_TRANG: Record<string, { vai: Vai; urls: string[]; tran: number 
     vai: 'GVCN', tran: 205,   // đo 157 (trước PR ≈ 157 + 2 × 66 = 289)
     urls: ['/demo/session', '/my-work', '/notifications', '/ref/classes', '/tong-quan/lop-toi-day?ct=ft', '/yeu-cau/dem'],
   },
+  /* PR-OV2a: Tổng quan TVV — đo bằng QL (bộ đo chưa có vai TVV); QL không có em nào nên đo phần khung + câu học viên. */
+  'TVV trang Tổng quan': {
+    vai: 'QL', tran: 120,
+    urls: ['/demo/session', '/notifications', '/ref/classes', '/tong-quan/hv-cua-toi'],
+  },
   'QL trang Tổng quan': {
     vai: 'QL', tran: 450,   // PR-Dọn (9e): đủ 15 GET lúc mở trang → đo 346 câu (trước chỉ 6 GET, đo 126) — max(346 + 10, ⌈346 × 1,3⌉)
     /* PR-Dọn (9e): đủ MỌI GET lúc mở trang (phép quét `prDonA.tests.ts` 9e bắt route mới): thêm badge Chờ duyệt (App), Điểm đáng chú ý,

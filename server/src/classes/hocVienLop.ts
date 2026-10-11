@@ -51,8 +51,8 @@ function phamViTrang(p: Principal, f: { branchId?: number | null; phamVi?: strin
   const conn = db();
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   const phanCong = p.assignments.filter((a) => a.effectiveFrom <= today && (!a.effectiveTo || a.effectiveTo >= today));
-  /* PR-OV2a: lớp có em mình phụ trách tư vấn (TVV) — rỗng thì không có lựa chọn "HV của tôi". */
-  const lopCuaToi = new Set((conn.prepare(
+  /* PR-OV2a: lớp có em mình phụ trách tư vấn (chỉ vai TVV được gán em) — rỗng thì không có lựa chọn "HV của tôi". */
+  const lopCuaToi = new Set(!p.roleKeys.includes('consultant') ? [] : (conn.prepare(
     `SELECT DISTINCT e.class_id FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
       WHERE s.consultant_user_id = ? AND s.archived_at IS NULL`,
   ).all(p.userId) as any[]).map((r) => r.class_id as number));

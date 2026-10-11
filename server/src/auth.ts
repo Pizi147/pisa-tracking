@@ -78,7 +78,8 @@ export function resolveSession(token: string | undefined): Principal | null {
  */
 export function apGocNhin(p: Principal, gocNhin: string | null): Principal {
   const vaiGoc = p.roleKeys;
-  if (!gocNhin || !coTheDoiGocNhin(vaiGoc) || !vaiGoc.includes(gocNhin)) return { ...p, gocNhin: null, vaiGoc };
+  /* Không ở góc nhìn nào → trả nguyên principal (không thêm trường): mọi chỗ đọc `p.vaiGoc ?? p.roleKeys`. */
+  if (!gocNhin || !coTheDoiGocNhin(vaiGoc) || !vaiGoc.includes(gocNhin)) return p;
   return {
     ...p, gocNhin, vaiGoc, roleKeys: [gocNhin],
     grants: p.grants.filter((g) => g.roleKey === gocNhin),

@@ -6,6 +6,7 @@ import { DemoBar } from './modules/platform/DemoBar.tsx';
 import { LA_BAN_CHINH } from './lib/banChinh.ts';
 import { Header } from './modules/platform/Header.tsx';
 import { Skeleton } from './ui/ui.tsx';
+import { useToast } from './ui/Toast.tsx';
 import { CHIP_TRON } from './ui/Nhan.tsx';
 import WelcomePage from './modules/platform/WelcomePage.tsx';
 import { NAV_RONG, duongMoi, khuVucCuaDuong, khuVucHienThi, type DemYeuCau, type KhuVuc, type KhuVucMuc } from '@shared/domain/index.ts';
@@ -92,6 +93,7 @@ function NutDay({ muc, active, so }: { muc: KhuVucMuc; active: boolean; so: SoBa
 }
 export default function App() {
   const { session, loading, reload, doiGocNhin } = useSession();
+  const toast = useToast();
   const location = useLocation();
   /* PR-PH / HK2: bấm "Thử lại" ở dải Mất kết nối → nút khoá, chữ "Đang thử…" tới khi tải xong. */
   const [dangThu, setDangThu] = useState(false);
@@ -175,7 +177,7 @@ export default function App() {
             {vai?.phamVi && <span className="hidden sm:inline min-w-0 truncate" title={vai.phamVi}>· {vai.phamVi}</span>}
             <span className="flex-1" />
             <button type="button" className="shrink-0 min-h-[32px] max-sm:min-h-[44px] border-0 bg-transparent p-0 text-[12.5px] cursor-pointer text-[color:var(--accent)] hover:underline"
-              onClick={() => { void doiGocNhin(null); }}>Về {goc?.nhan ?? 'vai gốc'}</button>
+              onClick={() => { doiGocNhin(null).catch((e) => toast.push('error', e instanceof Error ? e.message : 'Không đổi được góc nhìn.')); }}>Về {goc?.nhan ?? 'vai gốc'}</button>
           </div>
         );
       })()}

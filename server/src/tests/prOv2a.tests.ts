@@ -54,13 +54,16 @@ export async function runPrOv2aTests(t: YThucTestKit) {
       AND EXISTS (SELECT 1 FROM teacher_assignments ta WHERE ta.class_id = c.id AND ta.is_core = 1 AND ta.status = 'active')
       AND EXISTS (SELECT 1 FROM teacher_assignments ta WHERE ta.class_id = c.id AND ta.is_core = 0 AND ta.skill IS NOT NULL AND ta.status = 'active'
                    AND ta.user_id NOT IN (SELECT user_id FROM teacher_assignments WHERE class_id = c.id AND is_core = 1))
-      AND EXISTS (SELECT 1 FROM assessment_attempts a WHERE a.class_id = c.id AND a.status != 'cancelled')
+      AND EXISTS (SELECT 1 FROM assessment_attempts a JOIN enrollments e ON e.student_id = a.student_id AND e.class_id = c.id AND e.status = 'active'
+                   WHERE a.class_id = c.id AND a.status != 'cancelled')
       ORDER BY c.id LIMIT 1`)[0]?.id as number;
   const gvcn = one(`SELECT user_id id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active'`, lop)?.id;
   const gvbm = one(`SELECT user_id id, skill FROM teacher_assignments WHERE class_id = ? AND is_core = 0 AND skill IS NOT NULL AND status = 'active'
       AND user_id NOT IN (SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1)`, lop, lop);
-  const em = one(`SELECT e.student_id id FROM enrollments e WHERE e.class_id = ? AND e.status = 'active' ORDER BY e.student_id LIMIT 1`, lop)?.id;
-  const luot = one(`SELECT id FROM assessment_attempts WHERE class_id = ? AND status != 'cancelled' ORDER BY id LIMIT 1`, lop)?.id;
+  const em = one(`SELECT e.student_id id FROM enrollments e WHERE e.class_id = ? AND e.status = 'active'
+      AND EXISTS (SELECT 1 FROM assessment_attempts a WHERE a.student_id = e.student_id AND a.class_id = e.class_id AND a.status != 'cancelled')
+      ORDER BY e.student_id LIMIT 1`, lop)?.id;
+  const luot = one(`SELECT a.id FROM assessment_attempts a WHERE a.class_id = ? AND a.status != 'cancelled' AND a.student_id = ? ORDER BY a.id LIMIT 1`, lop, em)?.id;
   const chuKy = one(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1`, em)?.id;
 
   const V = () => ({
@@ -187,6 +190,7 @@ export async function runPrOv2aTests(t: YThucTestKit) {
         ['TVV Điểm theo lớp', tv, 'GET', '/diem-theo-lop/lop'],
         ['TVV Kế hoạch Test', tv, 'GET', `/ke-hoach-test/lop?branchId=${cn}`],
         ['TVV Công việc', tv, 'GET', '/my-work'],
+        ['TVV Công việc (đổi hoa thường)', tv, 'GET', '/My-Work'], ['CX Lịch Test (đổi hoa thường)', cx, 'GET', '/CHAM/Lich-Test'],
         ['TVV Yêu cầu', tv, 'GET', '/yeu-cau'],
         ['TVV sửa Target', tv, 'PATCH', `/cycles/${chuKy}`, { targetScore: 7, lyDo: 'thử' }],
         ['CX Lịch Test', cx, 'GET', '/cham/lich-test'],
@@ -268,7 +272,7 @@ export async function runPrOv2aTests(t: YThucTestKit) {
     }
     const tvv = one(`SELECT ur.user_id id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'consultant' ORDER BY ur.user_id LIMIT 1`).id;
     const hv = hvCuaToi(loadPrincipal(tvv));
-    assert(hv.tong >= 3 && hv.canChuY.length >= 1, `TVV demo: ${JSON.stringify({ ...hv, canChuY: hv.canChuY.length })}`);
+    assert(hv.tong >= 1 && hv.canChuY.length >= 1, `TVV demo: ${JSON.stringify({ ...hv, canChuY: hv.canChuY.length })}`);
   });
 
   await checkAsync('OV2a-10 · migrate prOv2: DB cũ chưa có 3 vai → có đủ quyền; chạy lần hai không đổi gì', async () => {

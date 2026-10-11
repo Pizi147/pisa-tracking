@@ -109,8 +109,10 @@ const KHU_VIEC = [/^\/my-work(\/|$)/, /^\/mgmt-tasks(\/|$)/, /^\/meeting(\/|$)/,
 api.use((req, _res, next) => {
   const p = req.principal;
   if (!p) { next(); return; }
-  const laViec = KHU_VIEC.some((r) => r.test(req.path)) || (/^\/yeu-cau\/?$/.test(req.path) && req.method === 'GET' && !req.query.studentId);
-  const quyen = KHU_TEST.some((r) => r.test(req.path)) ? PERMISSIONS.TEST_VIEW : laViec ? PERMISSIONS.WORK_VIEW : null;
+  /* Express so đường KHÔNG phân biệt hoa thường (`/MY-WORK` vẫn tới `/my-work`) — so bản chữ thường, không thì đổi chữ là lọt chặn. */
+  const duong = req.path.toLowerCase();
+  const laViec = KHU_VIEC.some((r) => r.test(duong)) || (/^\/yeu-cau\/?$/.test(duong) && req.method === 'GET' && !req.query.studentId);
+  const quyen = KHU_TEST.some((r) => r.test(duong)) ? PERMISSIONS.TEST_VIEW : laViec ? PERMISSIONS.WORK_VIEW : null;
   if (quyen && !can(p, quyen, { anyScope: true })) {
     next(forbidden(quyen === PERMISSIONS.TEST_VIEW ? 'Vai trò của bạn không có khu Test.' : 'Vai trò của bạn không có khu Công việc.'));
     return;
