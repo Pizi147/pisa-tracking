@@ -471,6 +471,8 @@ export function saveRegularScore(
   const a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
   if (!a) throw notFound('Không tìm thấy lượt đánh giá');
   if (a.status === 'cancelled') throw badRequest('Lượt này đã huỷ, không nhập điểm được.');
+  /* PR-OV1a (lỗi 3.3): MT0 ở lớp thường chấm band — đúng/tổng hay dấu "-" tỷ lệ ghi vào đây làm hỏng lượt. */
+  if (a.kind === 'mt0') throw badRequest('MT0 chấm band — nhập ở Test › Điểm theo lớp › MT0.');
 
   const prog = a.class_id ? programmeOfClass(a.class_id) : null;
   if (!prog || prog.scoringMode !== 'ratio') throw badRequest('Lượt này không thuộc lớp thường.');
@@ -889,7 +891,8 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
   }
 
   const params: unknown[] = [classId];
-  let where = `a.class_id = ? AND a.status != 'cancelled'`;
+  /* PR-OV1a: MT0 chấm band — chỉ ở `chamSheet(kind: 'mt0')`, không bao giờ thành hàng của bảng tỷ lệ. */
+  let where = `a.class_id = ? AND a.status != 'cancelled' AND a.kind != 'mt0'`;
   if (kind) { where += ' AND a.kind = ?'; params.push(kind); }
 
   const attempts = conn

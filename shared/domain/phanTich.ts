@@ -395,6 +395,8 @@ export type DongTongHop = {
   con?: DongTongHop[];
   /** PR-Pb2-a (lớp thường): dòng có bài Giữa khoá / Cuối khoá không — ô không áp dụng hiện "—". */
   coDot?: { giua: boolean; cuoi: boolean };
+  /** PR-OV1a (7.2): chỉ hàng lớn khi xếp theo tuần — tuần chứa hôm nay nghiệp vụ (web mở sẵn tuần TRƯỚC, tuần này còn đang chấm). */
+  tuanNay?: boolean;
 };
 export type TongHopKetQua = {
   theo: TheoDong; ct: ChuongTrinh; cot: string[];

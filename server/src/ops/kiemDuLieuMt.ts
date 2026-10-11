@@ -2,12 +2,13 @@
  * KIỂM DỮ LIỆU MOCK TEST (PR-KIEM-DU-LIEU-MT) — CHỈ ĐỌC: chỉ `prepare(...).all()`, không ghi câu nào. Chủ sản phẩm chạy với database bản chính
  * trước khi dọn dữ liệu MT; script chỉ liệt kê, KHÔNG sửa.
  *
- * In bảng (HV · Mã · Lớp · Lượt · Vấn đề) theo 5 nhóm:
+ * In bảng (HV · Mã · Lớp · Lượt · Vấn đề) theo 6 nhóm:
  *  1. Lượt MT 'planned' mà mọi kỹ năng bắt buộc đều đã huỷ phần thi hoặc không yêu cầu (lượt "xác sống").
  *  2. Hai lượt cùng lộ trình: tuần sớm nhất của MT(n+1) sớm hơn hoặc trùng tuần muộn nhất của MT(n).
  *  3. Kết quả huỷ (`ket_qua_huy`) chưa khôi phục mà lượt đã huỷ, hoặc lượt tạo SAU lúc huỷ (mồ côi).
  *  4. Nhật ký `score.huy_vuot` không còn dòng `ket_qua_huy` (điểm có thể đã mất do ghi dở).
  *  5. `assessment_attempts.planned_period_id` khác tuần muộn nhất của kỹ năng bắt buộc còn hiệu lực.
+ *  6. (PR-OV1a) MT0 chưa huỷ có ô nhập kiểu đúng/tổng (không band) — nhập nhầm ở bảng lớp thường trước khi máy chủ chặn (lỗi 3.3).
  *
  * Chạy: nạp TURSO_DATABASE_URL + TURSO_AUTH_TOKEN (TRIEN_KHAI.md §7.2) rồi `npm run kiem-du-lieu-mt`. Không có biến Turso → DB cục bộ.
  * Không có câu `IN (…)` nên không cần chia lô (Turso: ≤ 900 tham số); mọi tham số là số vị trí, không có tham số đặt tên.
@@ -16,7 +17,7 @@ import { DB_PATH, closeDb, db } from '../db.ts';
 import { moTaDichDb } from '../moiTruong.ts';
 import { nhanDot } from '../../../shared/domain/index.ts';
 
-export type DongKiem = { nhom: 1 | 2 | 3 | 4 | 5; luotId: number; hocVien: string; ma: string; lop: string; mt: string; vanDe: string };
+export type DongKiem = { nhom: 1 | 2 | 3 | 4 | 5 | 6; luotId: number; hocVien: string; ma: string; lop: string; mt: string; vanDe: string };
 
 export const TIEU_DE_NHOM: Record<DongKiem['nhom'], string> = {
   1: '1. Lượt MT "xác sống" (đang xếp lịch nhưng không còn kỹ năng bắt buộc nào hiệu lực)',
@@ -24,6 +25,7 @@ export const TIEU_DE_NHOM: Record<DongKiem['nhom'], string> = {
   3: '3. Kết quả MT đã huỷ chưa khôi phục mà lượt đã huỷ hoặc lượt tạo sau lúc huỷ (mồ côi)',
   4: '4. Nhật ký huỷ điểm do dời vượt nhưng không còn kết quả đã huỷ (điểm có thể đã mất)',
   5: '5. Tuần của lượt khác tuần muộn nhất của kỹ năng bắt buộc còn hiệu lực',
+  6: '6. MT0 có điểm nhập kiểu đúng/tổng (không band) — nhập nhầm ở bảng lớp thường',
 };
 
 type Luot = { id: number; cycle_id: number; attempt_no: number | null; kind: string; status: string; planned_period_id: number | null; week_start: string | null;
@@ -104,6 +106,14 @@ export function kiemDuLieuMt(conn: any): DongKiem[] {
       GROUP BY l.entity_id ORDER BY l.entity_id`).all() as (Luot & { n: number; ky_nang: string; luc: string })[];
   for (const l of thieu) ra.push(dong(4, l, `${l.n} ô điểm bị huỷ do dời vượt (${l.ky_nang}) lúc ${l.luc.slice(0, 10)} mà không có kết quả huỷ để khôi phục`));
 
+  /* (6) MT0 chấm band: ô có số câu đúng kèm tổng, hoặc ô `writing` một ô của bảng tỷ lệ (MT0 nhập W1/W2) = nhập nhầm kiểu đúng/tổng. */
+  const mt0 = conn.prepare(
+    `SELECT ${COT_LUOT}, GROUP_CONCAT(sc.skill || ' ' || sc.raw_score || '/' || COALESCE(sc.raw_total, '?') || COALESCE(' band ' || sc.band, ''), ', ') AS o
+       FROM ${TU_LUOT} JOIN assessment_scores sc ON sc.attempt_id = a.id
+      WHERE a.kind = 'mt0' AND a.status != 'cancelled' AND sc.raw_score IS NOT NULL AND (sc.raw_total IS NOT NULL OR sc.skill = 'writing')
+      GROUP BY a.id ORDER BY a.id`).all() as (Luot & { o: string })[];
+  for (const l of mt0) ra.push(dong(6, l, `Ô kiểu đúng/tổng: ${l.o}`));
+
   return ra;
 }
 
@@ -120,7 +130,7 @@ if (process.argv[1] && /kiemDuLieuMt\.[jt]s$/.test(process.argv[1])) {
   console.log(`[kiem-du-lieu-mt] Đích: ${moTaDichDb(DB_PATH)} — CHỈ ĐỌC, không sửa gì`);
   const ra = kiemDuLieuMt(db());
   closeDb();
-  for (const n of [1, 2, 3, 4, 5] as const) {
+  for (const n of [1, 2, 3, 4, 5, 6] as const) {
     const ds = ra.filter((d) => d.nhom === n);
     console.log(`\n${TIEU_DE_NHOM[n]} — ${ds.length ? `${ds.length} dòng` : 'không có'}`);
     if (ds.length) for (const l of inBang(ds)) console.log(l);

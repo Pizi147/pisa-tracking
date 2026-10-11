@@ -323,7 +323,7 @@ function PanelChamDiem({ kq, h, onDong }: { kq: PhanTichGvKq; h: HangPtGv; onDon
             Không tính: {data?.khongTinhVang ? <><span className="tabular-nums">{data.khongTinhVang}</span> ô vắng đã xác nhận · </> : null}ô chưa tới hạn và chưa nhập.
           </span>
         ),
-        chinh: <Link to="/test/lich" className="link text-xs">Mở Lịch Test ›</Link>,
+        chinh: <Link to="/test/lich" className="link text-xs">Mở Lịch Test / Chấm Test ›</Link>,
       }}>
       {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
         : loading || !data ? <div className="pt-3"><Skeleton rows={6} /></div>

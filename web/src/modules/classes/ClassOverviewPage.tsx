@@ -127,7 +127,7 @@ export default function ClassOverviewPage() {
 
   return (
     <div className="page space-y-4">
-      <DauTrangLop data={data} periodId={periodId} onViec={(v) => (v === 'diem-lop' ? moVaCuonDiem() : setViec(v))}
+      <DauTrangLop data={data} onViec={(v) => (v === 'diem-lop' ? moVaCuonDiem() : setViec(v))}
         onBanGiao={(o) => { setBg({ mon: o.mon ?? null, lenhId: null, lop: o.lop ?? null }); setViec('ban-giao'); }} />
 
       <HangTab ariaLabel="Hồ sơ lớp" value={tab}

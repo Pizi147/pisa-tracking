@@ -462,6 +462,7 @@ Hướng dẫn cho chủ sản phẩm: `TRIEN_KHAI.md`. Kế hoạch cũ: `git s
 | `npm run sao-luu` — chép database + tải kho tệp, giữ 14 bản | `server/src/ops/saoLuu.ts` (luật) · `server/src/ops/runSaoLuu.ts` (điểm chạy) |
 | `npm run khoi-phuc` — chép một bản sao lưu vào database rỗng | `server/src/ops/khoiPhuc.ts` (luật) · `server/src/ops/runKhoiPhuc.ts` (điểm chạy) |
 | `npm run dem-bo-tro-trung` — CHỈ ĐỌC: đếm em có hơn một bộ PA bổ trợ cùng bài Final (F02, PR-VN6) | `server/src/ops/demBoTroTrung.ts` |
+| `npm run kiem-o-lop -- "CP FT RF 01"` — CHỈ ĐỌC: trạng thái từng ô nhập (W = W1 + W2) mọi lượt của em đang học một lớp + ≤ 5 dòng lịch sử lịch mỗi lượt (PR-OV1a) | `server/src/ops/kiemOLop.ts` |
 | `npm run thu-turso` — thử đường mạng tới database THỬ | `server/src/ops/thuTurso.ts` |
 | `npm run kiem-sau-init` — CHỈ ĐỌC: bảng nền (`BANG_NEN_INIT`), bảng lạ có dòng, chi nhánh, khoá `demo_config`, tài khoản mang mật khẩu demo, `foreign_key_check`; `Đạt.` / `CÓ VẤN ĐỀ` (PR-DEPLOY, thay `kiem-sau-xoa`) | `server/src/ops/kiemSauInit.ts` · danh sách bảng `BANG_NEN_INIT` ở `server/src/ops/initBanChinh.ts` |
 | `npm run xoa-kho-tep` — xoá sạch kho tệp (Netlify Blobs) của database đang trỏ tới, gõ lại tên kho; từ chối kho `demo` (reset tại chỗ, PR-DEPLOY 5b) | `server/src/ops/xoaKhoTep.ts` (`xoaSachKho`, `demTepKho` — `runInit.ts` cảnh báo kho còn tệp) |
