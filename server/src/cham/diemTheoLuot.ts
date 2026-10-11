@@ -1,7 +1,7 @@
 /*
  * ĐIỂM THEO LƯỢT CHO CẢ LỚP (PR-DL). Cách nhận diện một lượt — DL-0, chủ sản phẩm chốt 04/10:
  * - FT: lượt = `assessment_attempts.attempt_no` (kind 'mock'); MT lịch sử cũng có số lượt; lượt chưa xếp lịch có tuần NULL.
- * - Lớp thường: bài = `kind` ('progress' | 'final'). Mỗi lộ trình có đúng MỘT attempt không huỷ cho mỗi kind
+ * - Lớp thường: bài = `kind` ('progress' | 'final' | 'mt0' — PR-OV1a; MT0 chấm band). Mỗi lộ trình có đúng MỘT attempt không huỷ cho mỗi kind
  *   (`normal/regular.ts` tạo bài kiểm `cycle_id + kind`). `attempt_no` đánh số theo lộ trình TỪNG EM (em vào sau Giữa khoá có
  *   Cuối khoá số 1, bạn khác số 2) nên KHÔNG là khoá chung của lớp. Không có "bài thêm"/"lần 2": thi lại = dời tuần trên
  *   cùng attempt.
@@ -52,19 +52,20 @@ function tomTatLop(classIds: number[]): Map<number, TomTatLuot[]> {
       const ft = cheDoCua(a.programme_code) === 'ielts_band';
       let m: MaLuot;
       if (ft && a.kind === 'mock' && a.attempt_no) m = { loai: 'mt', so: a.attempt_no };
-      else if (!ft && (a.kind === 'progress' || a.kind === 'final') && a.archived_at === null) m = { loai: 'thuong', kind: a.kind };
+      /* PR-OV1a: MT0 của lớp thường là lượt `thuong:mt0` (bảng band, ô nhập W1 + W2). */
+      else if (!ft && (a.kind === 'progress' || a.kind === 'final' || a.kind === 'mt0') && a.archived_at === null) m = { loai: 'thuong', kind: a.kind };
       else continue;
       const ma = vietMaLuot(m);
       const khoa = `${a.class_id}|${ma}`;
       const g = gom.get(khoa) ?? gom.set(khoa, {
         classId: a.class_id, ma, nhan: nhanMaLuot(m), tuanStart: null, lichSu: m.loai === 'mt', duDiem: 0, coLich: 0, oTrong: 0,
-        thuTu: m.loai === 'mt' ? m.so : m.kind === 'progress' ? 1 : 2,
+        thuTu: m.loai === 'mt' ? m.so : m.kind === 'progress' ? 1 : m.kind === 'final' ? 2 : 3,
       }).get(khoa)!;
       g.coLich += 1;
       /* Lượt "lịch sử" chỉ khi MỌI attempt không huỷ của lượt là lịch sử (chủ sản phẩm 05/10); lượt lẫn đánh dấu theo từng em. */
       if (!a.lich_su) g.lichSu = false;
       if (a.week_start && (g.tuanStart === null || a.week_start < g.tuanStart)) g.tuanStart = a.week_start;
-      luotCua.set(a.id, { g, ft, n: 0 });
+      luotCua.set(a.id, { g, ft: ft || a.kind === 'mt0', n: 0 });
     }
     const diem = new Map<string, any>();
     for (const sc of conn.prepare(

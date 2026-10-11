@@ -1,6 +1,6 @@
 /**
  * ĐIỂM THEO LỚP (PR-DL) — luật thuần cho mã lượt ở tham số `luot`.
- * FT: `mt:<n>` (attempt_no). Lớp thường: `thuong:progress` | `thuong:final` — chỉ theo `kind`, không số lượt
+ * FT: `mt:<n>` (attempt_no). Lớp thường: `thuong:progress` | `thuong:final` | `thuong:mt0` (PR-OV1a) — chỉ theo `kind`, không số lượt
  * (DL-0, chủ sản phẩm 04/10: attempt_no lớp thường đánh theo lộ trình từng em, không dùng chung cả lớp).
  */
 import { ATTEMPT_KIND_SHORT } from './normal.ts';
@@ -8,13 +8,13 @@ import { chuOChuaLuu } from './chamDiem.ts';
 import { tuanLich } from './hienThiNgay.ts';
 import { mondayOfDate } from './week.ts';
 
-export type MaLuot = { loai: 'mt'; so: number } | { loai: 'thuong'; kind: 'progress' | 'final' };
+export type MaLuot = { loai: 'mt'; so: number } | { loai: 'thuong'; kind: 'progress' | 'final' | 'mt0' };
 
 /** Sai dạng → null (máy chủ trả 400). Số MT dương, không số 0 đầu. */
 export function docMaLuot(s: string): MaLuot | null {
   const mt = /^mt:([1-9]\d{0,5})$/.exec(s);
   if (mt) return { loai: 'mt', so: Number(mt[1]) };
-  if (s === 'thuong:progress' || s === 'thuong:final') return { loai: 'thuong', kind: s.slice(7) as 'progress' | 'final' };
+  if (s === 'thuong:progress' || s === 'thuong:final' || s === 'thuong:mt0') return { loai: 'thuong', kind: s.slice(7) as 'progress' | 'final' | 'mt0' };
   return null;
 }
 

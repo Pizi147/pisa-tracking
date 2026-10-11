@@ -14,7 +14,7 @@ const conTrong = (l: LopCuaToi) => (l.oTrong ? `${l.oTrong} trống` : 'đủ');
 /**
  * TEST › ĐIỂM THEO LỚP (PR-DL, mockup `mockup-diem-theo-lop-2026-10-04.html` #v-test). Trái: lớp người xem được xem (GV lớp mình dạy,
  * GVCN lớp chủ nhiệm, QL lớp chi nhánh) kèm số ô trống; phải: bảng điểm theo lượt `DiemTheoLop`. Lớp đang chọn nằm ở `?lop=`
- * (không có thì lớp đầu danh sách). Màn hẹp (< md): danh sách thành ô chọn lớp phía trên.
+ * (không có thì lớp đầu danh sách), lượt mở đầu ở `?luot=`. Màn hẹp (< md): danh sách thành ô chọn lớp phía trên.
  * Trên danh sách: ô Chi nhánh + công tắc `Fast Track · Lớp thường` — cùng thành phần và URL (`cn`, `loai`) với hàng lọc Kế hoạch Test;
  * lọc chỉ đổi danh sách, lớp đang xem giữ nguyên (lớp chưa chọn thì lấy lớp đầu danh sách đã lọc).
  * Đổi lớp đi CÙNG đường chặn với đổi lượt (`CongRoi` của `DiemTheoLop`): còn ô đang lưu thì hỏi, còn ô chưa lưu thì chặn.
@@ -88,8 +88,9 @@ export function TabDiemLop() {
         })}
       </nav>
       </div>
-      {/* `key`: đổi lớp thì lượt và trạng thái lưu bắt đầu lại từ lượt mở sẵn của lớp mới. */}
-      <DiemTheoLop key={chon.classId} classId={chon.classId} congRoi={cong} onDaLuu={daLuu} />
+      {/* `key`: đổi lớp thì lượt và trạng thái lưu bắt đầu lại từ lượt mở sẵn của lớp mới. `?luot=` (PR-OV1a, vd `thuong:mt0`): lượt mở
+          đầu khi vào từ link ngoài — sai / không có thì lượt mặc định. */}
+      <DiemTheoLop key={chon.classId} classId={chon.classId} luotBanDau={sp.get('luot') ?? undefined} congRoi={cong} onDaLuu={daLuu} />
     </div>
   );
 }

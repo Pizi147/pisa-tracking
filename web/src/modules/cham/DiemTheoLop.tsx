@@ -1,6 +1,6 @@
 /**
  * BẢNG ĐIỂM THEO LƯỢT CỦA CẢ LỚP (PR-DL, mockup `thiet-ke/mockup-diem-theo-lop-2026-10-04.html`) — dùng chung cho hồ sơ lớp
- * (khối thu gọn, `gon`) và trang Test › Điểm theo lớp. Mỗi lượt một bảng: FT `mt:N`, lớp thường `thuong:progress|final`.
+ * (khối thu gọn, `gon`) và trang Test › Điểm theo lớp. Mỗi lượt một bảng: FT `mt:N`, lớp thường `thuong:progress|final|mt0`.
  *
  * KHÔNG CÓ ĐƯỜNG GHI MỚI: bảng là `LuoiChamLop` (LuoiFT / LuoiThuong, màn hẹp MotKyNang) với dữ liệu `bangTheoLuot` — ô, bàn
  * phím, lưu từng ô, sửa ô có điểm hỏi lý do (override) y như lưới Nhập điểm. Không tự tạo lịch: em chưa có lịch lượt này là

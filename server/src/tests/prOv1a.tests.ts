@@ -7,6 +7,8 @@ export async function runPrOv1aTests(t: YThucTestKit) {
   const canCham: any = await import('../cham/canCham.ts');
   const loTrinh: any = await import('../classes/loTrinhTiep.ts');
   const attempts: any = await import('../fasttrack/attempts.ts');
+  const dl: any = await import('../cham/diemTheoLuot.ts');
+  const dm: any = await import('../../../shared/domain/index.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   console.log('\nPR-OV1a · MT0 nhập đúng bảng, Điểm theo lớp, lệnh kiểm chỉ đọc');
 
@@ -21,7 +23,7 @@ export async function runPrOv1aTests(t: YThucTestKit) {
   /* Một em lớp thường BE/FOU/ELE đang học, khoá đang chạy — QL ghi Lên FT tạo MT0 (như prMt0). */
   const em = all(`SELECT s.id sid, c.id classId FROM students s JOIN learning_cycles lc ON lc.student_id = s.id AND lc.status = 'active'
       JOIN enrollments e ON e.student_id = s.id AND e.status = 'active' JOIN classes c ON c.id = e.class_id WHERE c.programme_code IN ('BE', 'FOU', 'ELE') AND s.archived_at IS NULL AND s.status = 'active'
-        AND NOT EXISTS (SELECT 1 FROM assessment_attempts x WHERE x.student_id = s.id AND x.kind = 'mt0') ORDER BY s.id LIMIT 1`)[0];
+        AND NOT EXISTS (SELECT 1 FROM assessment_attempts x WHERE x.class_id = c.id AND x.kind = 'mt0') ORDER BY s.id LIMIT 1`)[0];
   const taoMt0 = () => {
     loTrinh.ghiLoTrinhTiep(QL, em.sid, { huong: 'fast_track', mucTieu: 6.5 });
     const a = all(`SELECT a.id, p.week_start FROM assessment_attempts a JOIN attempt_skills k ON k.attempt_id = a.id
@@ -61,6 +63,31 @@ export async function runPrOv1aTests(t: YThucTestKit) {
       conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, band, nhap_dau_ngay) VALUES (?,?,?,?)').run(m.id, 'listening', 4, t.TODAY);
       attempts.huyLuot(QL, m.id, { lyDo: 'Em nghỉ' });
       assert(all('SELECT status FROM assessment_attempts WHERE id = ?', m.id)[0].status === 'cancelled', 'chưa huỷ');
+    });
+  });
+
+  check('OV1a-3 · mã thuong:mt0; Điểm theo lớp lớp thường có lượt MT0 sau Final (bảng band); lớp chưa có MT0 thì không', () => {
+    assert(JSON.stringify(dm.docMaLuot('thuong:mt0')) === '{"loai":"thuong","kind":"mt0"}', 'docMaLuot thuong:mt0');
+    assert(dm.docMaLuot('thuong:abc') === null, 'thuong:abc phải null');
+    assert(dm.nhanMaLuot({ loai: 'thuong', kind: 'mt0' }) === 'MT0', 'nhãn MT0');
+    assert(!dl.danhSachLuot(QL, em.classId).luot.some((l: any) => l.ma === 'thuong:mt0'), 'lớp chưa có MT0 không có lượt MT0');
+    thu(() => {
+      taoMt0();
+      const ma = dl.danhSachLuot(QL, em.classId).luot.map((l: any) => l.ma);
+      const i = ma.indexOf('thuong:mt0');
+      assert(i >= 0 && i > ma.indexOf('thuong:final') && dl.danhSachLuot(QL, em.classId).luot[i].nhan === 'MT0', `thứ tự lượt: ${ma}`);
+      const b = dl.bangTheoLuot(QL, em.classId, 'thuong:mt0');
+      assert(b.mode === 'ielts_band' && b.ft.rows.length >= 1, `bảng MT0: ${b.mode}`);
+      const e = loi(() => dl.bangTheoLuot(QL, em.classId, 'thuong:abc'));
+      assert(e?.status === 400, `thuong:abc: ${e?.status}`);
+    });
+  });
+
+  check('OV1a-4 · lượt MT0 chưa điểm, 4 kỹ năng bắt buộc → 5 ô trống (L, R, W1, W2, S)', () => {
+    thu(() => {
+      taoMt0();
+      const l = dl.danhSachLuot(QL, em.classId).luot.find((x: any) => x.ma === 'thuong:mt0');
+      assert(l?.oTrong === 5 && l.coLich === 1, `oTrong ${l?.oTrong} coLich ${l?.coLich}`);
     });
   });
 }
