@@ -270,6 +270,7 @@ textarea.field{display:block;width:100%;min-height:56px;padding:8px 10px;font:13
 .ot i{font-style:normal;color:var(--faint)}
 .pct{font-family:var(--so);font-weight:700}.pct.ok{color:var(--ok)}.pct.bad{color:var(--bad)}
 .frm .seg{width:fit-content}
+.q.xong{border-color:var(--ok-line);background:var(--ok-bg)}.q.xong b{color:var(--ok)}
 .ro{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;color:var(--faint)}
 </style>
 </head>
@@ -479,8 +480,7 @@ textarea.field{display:block;width:100%;min-height:56px;padding:8px 10px;font:13
     </tbody>
   </table>
   </div>
-  <div class="q"><b>Cần chốt (Q-VAI1):</b> Admin có thấy <b>Case · PA · Ý thức</b> (chỉ xem) và Phân tích không? Khuyến nghị: <b>chỉ xem</b> — Admin trả lời phụ huynh về lịch / điểm MT cần thấy tình hình em.</div>
-  <div class="q"><b>Cần chốt (Q-VAI2):</b> TVV / CX có xem <b>nhận xét W/S, R/L</b> của GV không? Khuyến nghị: <b>có</b> (đọc) — TVV dùng để nói chuyện với phụ huynh.</div>
+  <div class="q xong"><b>Đã chốt 11/10 (VAI1, VAI2):</b> Admin xem (chỉ đọc) Case · PA · Ý thức và Phân tích · TVV / CX đọc được nhận xét của GV.</div>
 </section>
 
 <!-- ======================================================  6. CHƯƠNG TRÌNH · PET/KET -->
@@ -489,7 +489,7 @@ textarea.field{display:block;width:100%;min-height:56px;padding:8px 10px;font:13
   <span class="where">Quản trị › Chương trình — chỉ Quản trị hệ thống · áp cho lớp mở sau</span>
   <ul class="note">
     <li>Mỗi chương trình: <b>môn</b>, <b>cách chấm</b> (đúng/tổng như lớp thường · band IELTS như FT), <b>độ dài</b> (số tuần · hoặc <b>liên tục</b>), <b>mốc Test</b> (theo tuần cố định · hoặc <b>lặp mỗi n tuần</b>).</li>
-    <li><b>PET / KET</b> (chủ SP 11/10): hai môn <b>L+S</b> và <b>R+W</b>, checkpoint <b>mỗi 6 tuần</b>, liên tục; chấm số câu đúng / tổng như lớp thường (đạt ≥ 70%, checkpoint xử lý như Progress Test). QL dời checkpoint của lớp ở Lịch Test của lớp như mốc lớp thường.</li>
+    <li><b>PET / KET</b> (chủ SP 11/10): hai môn <b>L+S</b> và <b>R+W</b>, checkpoint <b>mỗi 6 tuần</b>, liên tục; chấm số câu đúng / tổng như lớp thường (đạt ≥ 70%); môn chưa đạt chỉ hiện <b>chip SOS nhỏ</b> — không tự tạo Case / PA (GV làm gì thì quyết sau). QL dời checkpoint của lớp ở Lịch Test của lớp như mốc lớp thường.</li>
     <li>Sửa chương trình: <b>lớp đang chạy giữ lịch cũ</b>; lớp mở sau dùng bản mới.</li>
   </ul>
   <div class="row2">
@@ -530,7 +530,7 @@ textarea.field{display:block;width:100%;min-height:56px;padding:8px 10px;font:13
         <div class="cp">
           <div class="dau">Học viên</div><div class="dau">L+S · tổng <span class="ot"><span style="min-width:40px;height:26px">60</span></span></div><div class="dau">R+W · tổng <span class="ot"><span style="min-width:40px;height:26px">80</span></span></div><div class="dau">% tổng</div><div class="dau">Kết quả</div>
           <div><span class="lk">Đinh Gia Hân</span></div><div><span class="ot"><span>48</span><i>/ 60</i></span></div><div><span class="ot"><span>61</span><i>/ 80</i></span></div><div class="pct ok">78%</div><div><span class="chip ok">Đạt</span></div>
-          <div><span class="lk">Mai Anh Thư</span></div><div><span class="ot"><span>35</span><i>/ 60</i></span></div><div><span class="ot"><span>58</span><i>/ 80</i></span></div><div class="pct bad">66%</div><div><span class="chip bad">L+S chưa đạt</span></div>
+          <div><span class="lk">Mai Anh Thư</span></div><div><span class="ot"><span>35</span><i>/ 60</i></span></div><div><span class="ot"><span>58</span><i>/ 80</i></span></div><div class="pct bad">66%</div><div><span class="chip soon" style="height:18px">SOS · L+S</span></div>
         </div>
       </div>
     </div>
@@ -549,9 +549,7 @@ textarea.field{display:block;width:100%;min-height:56px;padding:8px 10px;font:13
     </div>
   </div>
   </div>
-  <div class="q"><b>Cần chốt (Q-CT1):</b> checkpoint PET/KET <b>chưa đạt</b> thì tự tạo Case + PA Bổ trợ như Progress Test (đúng luật lớp thường), hay chỉ hiện chip để GV tự quyết? Khuyến nghị: <b>như Progress Test</b>.</div>
-  <div class="q"><b>Cần chốt (Q-CT2):</b> lớp PET/KET “liên tục” không có Final → <b>không</b> có Lộ trình tiếp theo / Kết quả đầu ra / thanh nhắc; em rời lớp bằng Chuyển lớp / Thôi học như thường. PET/KET có <b>Target</b> không? Khuyến nghị: không Target, không SOS kỳ vọng (như lớp thường).</div>
-  <div class="q"><b>Cần chốt (Q-CT3):</b> tên lớp PET/KET theo mẫu <span class="so">{CN} PET {số}</span> / <span class="so">{CN} KET {số}</span> như các lớp thường? Khuyến nghị: có.</div>
+  <div class="q xong"><b>Đã chốt 11/10 (CT1–CT3):</b> checkpoint chưa đạt → chỉ chip SOS nhỏ, không tự tạo Case / PA (bàn sau) · PET/KET không Final, không Lộ trình tiếp theo / Kết quả đầu ra, không Target · tên lớp <span class="so">{CN} PET {số}</span> / <span class="so">{CN} KET {số}</span>.</div>
 </section>
 
 </div>

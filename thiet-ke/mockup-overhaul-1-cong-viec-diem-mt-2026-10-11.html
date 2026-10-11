@@ -201,6 +201,16 @@ textarea.field{display:block;width:100%;min-height:56px;padding:8px 10px;font:13
 .omt.chon{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .hq{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--c3)}
 .hq b{color:var(--c1)}
+/* khối PA trong panel */
+.khoi-pa{border:1px solid var(--line-strong);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.khoi-pa .hh{display:flex;align-items:center;gap:8px}
+.khoi-pa .hh b{font-size:13.5px;color:var(--c1)}
+.frm2{display:grid;grid-template-columns:130px minmax(0,1fr);gap:8px 12px;align-items:center;font-size:13px}
+.w375 .frm2{grid-template-columns:1fr}
+.okhoa{display:flex;flex-direction:column;gap:2px;padding:7px 10px;border-radius:.5rem;background:var(--surface-2);border:1px solid var(--line)}
+.okhoa b{color:var(--c1);font-size:13px}
+.bb::after{content:" *";color:var(--bad)}
+.q.xong{border-color:var(--ok-line);background:var(--ok-bg)}.q.xong b{color:var(--ok)}
 /* quay lại */
 .duong-ve{display:flex;align-items:center;gap:8px;font-size:13px}
 .duong-ve .lui2{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 10px;border-radius:.4rem;border:1px solid var(--line-strong);color:var(--c2);background:var(--surface-2)}
@@ -292,7 +302,20 @@ textarea.field{display:block;width:100%;min-height:56px;padding:8px 10px;font:13
               <div class="lb" style="margin-bottom:6px">Mô tả</div>
               <textarea class="field" aria-label="Mô tả">Sai nhiều dạng True / False / Not Given, chưa phân biệt False với Not Given.</textarea>
             </div>
-            <div class="goi"><span class="chip xam">PA</span><span>Tự học · 2 tuần (theo quy chế MT2)</span><span class="sp"></span><span class="m">xác nhận luôn</span><span class="cb on">✓</span></div>
+            <div class="khoi-pa">
+              <div class="hh"><b>Phương án</b><span class="m">theo quy chế MT2 · SOS 1–2</span><span class="sp"></span><span class="m">xác nhận cùng lúc</span><span class="cb on">✓</span></div>
+              <div class="frm2">
+                <span class="lb">Loại PA</span><span class="okhoa"><b>Tự học</b><span class="m">theo quy chế · kết thúc theo quy chế: <span class="so">CN 15/11</span></span></span>
+                <span class="lb bb">Nội dung</span><textarea class="field" aria-label="Nội dung PA">Mỗi tuần 2 đề Reading dạng True / False / Not Given, tự chấm rồi nộp GV chữa câu sai.</textarea>
+                <span class="lb">Số buổi</span><span class="field so" style="width:80px;color:var(--faint)">—</span>
+              </div>
+              <div class="hh"><b>Người và thời gian</b></div>
+              <div class="frm2">
+                <span class="lb">Người thực hiện</span><span class="field" style="width:280px">Trần Ngọc Hà<span class="v"></span></span>
+                <span class="lb">Ngày bắt đầu</span><span class="field so" style="width:200px">12/10/2026<span style="margin-left:auto">📅</span></span>
+              </div>
+              <div class="m">Áp chung cho 3 em đã chọn; sửa riêng từng em sau trong Ngăn Case.</div>
+            </div>
           </div>
           <div class="pn-f">
             <span class="btn btn-sm btn-ghost">Không cần theo dõi…</span>
@@ -319,7 +342,13 @@ textarea.field{display:block;width:100%;min-height:56px;padding:8px 10px;font:13
       <div class="lb">Nguyên nhân chính · 3 em</div>
       <div class="nhom-nc"><span class="nc">Từ vựng / ngữ pháp</span><span class="nc on">Kỹ năng làm bài</span><span class="nc">Tư duy logic</span><span class="nc">Quản lý thời gian</span><span class="nc">Khác</span></div>
       <textarea class="field" aria-label="Mô tả">Sai nhiều dạng True / False / Not Given.</textarea>
-      <div class="goi"><span class="chip xam">PA</span><span>Tự học · 2 tuần</span><span class="sp"></span><span class="cb on">✓</span></div>
+      <div class="khoi-pa">
+        <div class="hh"><b>Phương án</b><span class="sp"></span><span class="cb on">✓</span></div>
+        <div class="okhoa"><b>Tự học</b><span class="m">theo quy chế · kết thúc <span class="so">CN 15/11</span></span></div>
+        <span class="lb bb">Nội dung</span><textarea class="field" aria-label="Nội dung PA">Mỗi tuần 2 đề T/F/NG, nộp GV chữa.</textarea>
+        <span class="lb">Người thực hiện</span><span class="field">Trần Ngọc Hà<span class="v"></span></span>
+        <span class="lb">Ngày bắt đầu</span><span class="field so">12/10/2026<span style="margin-left:auto">📅</span></span>
+      </div>
       <div style="display:flex;flex-direction:column;gap:8px">
         <span class="btn btn-primary">Xác nhận · việc tiếp ›</span>
         <span class="btn">Xác nhận 3 em</span>
@@ -341,9 +370,9 @@ textarea.field{display:block;width:100%;min-height:56px;padding:8px 10px;font:13
         <div class="card pn">
           <div class="pn-h"><div class="sp"><div class="tt1">Xác nhận nguyên nhân · Reading</div><div class="tt2">CP FT 131 · MT2 · còn 1 em</div></div><span class="x">×</span></div>
           <div class="pn-b">
-            <span class="toast">✓ Đã xác nhận 3 em · PA Tự học đã chạy</span>
+            <span class="toast">✓ Đã xác nhận 3 em · PA Tự học chạy từ 12/10</span>
             <table class="t"><tbody><tr><td style="width:34px"><span class="cb on">✓</span></td><td><span class="ten">Phạm Quỳnh Chi</span><span class="ra">↗</span></td><td class="so duoi">3.5</td><td class="so">5.5</td><td><span class="chip bad">SOS 3</span></td></tr></tbody></table>
-            <div class="m">Nguyên nhân và PA của em này chọn riêng (SOS 3 → PA quy chế: Tutor 1–1).</div>
+            <div class="m">Em này SOS 3 → PA quy chế khác (Tutor · đến MT3) nên làm riêng.</div>
           </div>
           <div class="pn-f"><span class="btn btn-sm btn-ghost">Không cần theo dõi…</span><span class="sp"></span><span class="btn btn-sm btn-primary">Xác nhận · việc tiếp ›</span></div>
         </div>
@@ -369,8 +398,8 @@ textarea.field{display:block;width:100%;min-height:56px;padding:8px 10px;font:13
     </div>
   </div></div>
 
-  <div class="q"><b>Cần chốt (Q-CV1):</b> panel “Xác nhận nguyên nhân” có ô <b>“xác nhận luôn PA điền sẵn”</b> (mặc định bật) để làm xong <b>hai bước</b> (nguyên nhân + PA quy chế) trong một lần bấm. Hiện tại là hai bước riêng. Khuyến nghị: bật — PA quy chế vẫn sửa được sau trong Ngăn Case.</div>
-  <div class="q"><b>Cần chốt (Q-CV2):</b> trên điện thoại, bấm một việc mở <b>màn đầy đủ</b> có “‹ Công việc” (như ảnh 375) — không mở panel nhỏ chồng lên danh sách. Khuyến nghị: đồng ý.</div>
+  <div class="q xong"><b>Đã chốt 11/10 (CV1):</b> panel mở rộng chứa đủ <b>Phương án</b> (Loại PA theo quy chế, Nội dung, Số buổi) + <b>Người và thời gian</b>; ô “xác nhận cùng lúc” mặc định bật → một lần bấm xong cả nguyên nhân và PA. Em khác mức quy chế (vd SOS 3) tự tách ra làm riêng.</div>
+  <div class="q xong"><b>Đã chốt 11/10 (CV2):</b> điện thoại bấm một việc → màn đầy đủ có “‹ Công việc”.</div>
 </section>
 
 <!-- ======================================================================  2. VIỆC NÀO MỞ GÌ -->
@@ -396,7 +425,7 @@ textarea.field{display:block;width:100%;min-height:56px;padding:8px 10px;font:13
   <ul class="note">
     <li><b>Ô điểm là nút</b> cho cả L, R, W, S (như W/S hiện nay). L/R ghi <b>số câu + band</b> (“14 · 4.5”). Bấm → hộp nhỏ neo ngay ô (điện thoại: tấm trượt từ dưới). Không còn panel trượt bên phải.</li>
     <li>Hộp luôn ghi <b>em · lớp · lượt · kỹ năng</b>; con trỏ đứng sẵn ở ô điểm; <b>Enter</b> = “Lưu · em tiếp ›” (đi xuống em sau, hộp giữ mở); <b>Esc</b> đóng. Lỗi lưu: hộp giữ nguyên chữ đã gõ, chỉ rõ ô sai.</li>
-    <li><b>Nhận xét</b> có ở cả 4 kỹ năng, <b>không bắt buộc</b>. Speaking có thêm <b>Người chấm</b>.</li>
+    <li><b>Nhận xét</b> có ở cả 4 kỹ năng, <b>không bắt buộc</b>. Speaking có thêm <b>Người chấm</b>. <b>Writing: W1 và W2 là hai hộp riêng</b> (thường hai GV khác nhau), mỗi hộp nhận xét riêng; lưu một task vẫn được, W tính khi đủ hai task.</li><li>Dưới tên em ghi <b>lượt · tuần thi</b> (“MT2 · W2 OCT”) để không nhầm lượt.</li>
     <li><b>Dấu “-” = Vắng</b> (chủ sản phẩm 11/10): gõ “-” hoặc bấm <b>Vắng</b> là chốt ngay — lần 1 dời tuần sau, lần 2 huỷ phần thi. Đường lui: <b>Bỏ vắng</b> trong hộp, hoặc nhập điểm thẳng.</li>
   </ul>
 
@@ -411,10 +440,10 @@ textarea.field{display:block;width:100%;min-height:56px;padding:8px 10px;font:13
       <table class="luoi">
         <thead><tr><th>Học viên</th><th>L (số câu)</th><th>R (số câu)</th><th>W1</th><th>W2</th><th>W</th><th>S</th><th>Kỳ vọng</th><th>Overall</th><th>Kết quả</th></tr></thead>
         <tbody>
-          <tr><td><span class="lk">Vương Thành Bắc</span></td><td><span class="od">8 <small>3.5</small></span></td><td><span class="od">15 <small>5.0</small></span></td><td><span class="od">5.0</span></td><td><span class="od">5.0</span></td><td class="so">5.0</td><td><span class="od">4.5</span></td><td class="so">5.5</td><td class="so">4.5</td><td><span class="chip bad">SOS 3</span></td></tr>
-          <tr><td><span class="lk">Vũ Bảo Ngọc</span></td><td><span class="od">14 <small>4.5</small></span></td><td><span class="od mo">16 <small>5.0</small></span></td><td><span class="od trong">Nhập</span></td><td><span class="od trong">Nhập</span></td><td class="m">—</td><td><span class="od trong">Nhập</span></td><td class="so">5.5</td><td class="m">—</td><td><span class="chip soon" title="SOS tạm thời: mới có 2/4 kỹ năng">SOS tạm · 2/4</span></td></tr>
-          <tr><td><span class="lk">Trần Gia Khánh</span></td><td><span class="od vang">Vắng → W3 OCT</span></td><td><span class="od vang">Vắng → W3 OCT</span></td><td><span class="od trong">Nhập</span></td><td><span class="od trong">Nhập</span></td><td class="m">—</td><td><span class="od trong">Nhập</span></td><td class="so">5.5</td><td class="m">—</td><td class="m">Chờ 4 kỹ năng</td></tr>
-          <tr><td><span class="lk">Nguyễn Trâm Anh</span></td><td><span class="od huy">Đã huỷ phần thi</span></td><td><span class="od huy">Đã huỷ phần thi</span></td><td><span class="od huy">Đã huỷ</span></td><td><span class="od huy">Đã huỷ</span></td><td class="m">—</td><td><span class="od huy">Đã huỷ</span></td><td class="so">6.5</td><td class="m">—</td><td class="m">Đã huỷ cả lượt</td></tr>
+          <tr><td><span class="lk">Vương Thành Bắc</span><div class="m so">MT2 · W2 OCT</div></td><td><span class="od">8 <small>3.5</small></span></td><td><span class="od">15 <small>5.0</small></span></td><td><span class="od">5.0</span></td><td><span class="od">5.0</span></td><td class="so">5.0</td><td><span class="od">4.5</span></td><td class="so">5.5</td><td class="so">4.5</td><td><span class="chip bad">SOS 3</span></td></tr>
+          <tr><td><span class="lk">Vũ Bảo Ngọc</span><div class="m so">MT2 · W2 OCT</div></td><td><span class="od">14 <small>4.5</small></span></td><td><span class="od mo">16 <small>5.0</small></span></td><td><span class="od trong">Nhập</span></td><td><span class="od trong">Nhập</span></td><td class="m">—</td><td><span class="od trong">Nhập</span></td><td class="so">5.5</td><td class="m">—</td><td><span class="chip soon" title="SOS tạm thời: mới có 2/4 kỹ năng">SOS tạm · 2/4</span></td></tr>
+          <tr><td><span class="lk">Trần Gia Khánh</span><div class="m so">MT2 · W2 OCT</div></td><td><span class="od vang">Vắng → W3 OCT</span></td><td><span class="od vang">Vắng → W3 OCT</span></td><td><span class="od trong">Nhập</span></td><td><span class="od trong">Nhập</span></td><td class="m">—</td><td><span class="od trong">Nhập</span></td><td class="so">5.5</td><td class="m">—</td><td class="m">Chờ 4 kỹ năng</td></tr>
+          <tr><td><span class="lk">Nguyễn Trâm Anh</span><div class="m so">MT2 · W1 OCT</div></td><td><span class="od huy">Đã huỷ phần thi</span></td><td><span class="od huy">Đã huỷ phần thi</span></td><td><span class="od huy">Đã huỷ</span></td><td><span class="od huy">Đã huỷ</span></td><td class="m">—</td><td><span class="od huy">Đã huỷ</span></td><td class="so">6.5</td><td class="m">—</td><td class="m">Đã huỷ cả lượt</td></tr>
         </tbody>
       </table>
       </div>
@@ -452,18 +481,14 @@ textarea.field{display:block;width:100%;min-height:56px;padding:8px 10px;font:13
 
   <span class="nhan-khoi moi">Bốn kiểu hộp (cùng khung, khác phần giữa)</span>
   <div class="cards3">
-    <div><div class="cap">Writing · hai task, mỗi task 4 tiêu chí</div>
-    <div class="hop tinh" style="width:430px">
-      <div class="hop-h"><div class="k">Writing · MT2</div><div class="s">Vũ Bảo Ngọc · CP FT RF 01 · <span class="so">W2 OCT</span></div></div>
+    <div><div class="cap">Writing Task 1 (ô W1) — hộp riêng; W2 cùng kiểu (TR CC LR GRA)</div>
+    <div class="hop tinh" style="width:400px">
+      <div class="hop-h"><div class="k">Writing Task 1 · MT2</div><div class="s">Vũ Bảo Ngọc · CP FT RF 01 · <span class="so">W2 OCT</span></div></div>
       <div class="hop-b">
-        <div><div class="lb" style="margin-bottom:6px">Task 1</div>
-          <div class="tc"><span class="lbn">TA</span><span class="lbn">CC</span><span class="lbn">LR</span><span class="lbn">GRA</span><span class="lbn">Band</span>
-          <span class="o-nhap nho f">5.0</span><span class="o-nhap nho">5.5</span><span class="o-nhap nho">5.0</span><span class="o-nhap nho">5.0</span><span class="kq" style="text-align:center"><b>5.0</b></span></div></div>
-        <div><div class="lb" style="margin-bottom:6px">Task 2</div>
-          <div class="tc"><span class="lbn">TR</span><span class="lbn">CC</span><span class="lbn">LR</span><span class="lbn">GRA</span><span class="lbn">Band</span>
-          <span class="o-nhap nho">5.5</span><span class="o-nhap nho">5.5</span><span class="o-nhap nho">5.0</span><span class="o-nhap nho">5.5</span><span class="kq" style="text-align:center"><b>5.5</b></span></div></div>
-        <div class="m so">Writing = (Task 1 + Task 2 × 2) / 3 = <b style="color:var(--c1)">5.5</b> · kỳ vọng 5.5 ✓</div>
-        <textarea class="field" aria-label="Nhận xét">Task 2 thiếu ví dụ cụ thể ở thân bài 2.</textarea>
+        <div class="tc"><span class="lbn">TA</span><span class="lbn">CC</span><span class="lbn">LR</span><span class="lbn">GRA</span><span class="lbn">Band</span>
+        <span class="o-nhap nho f">5.0</span><span class="o-nhap nho">5.5</span><span class="o-nhap nho">5.0</span><span class="o-nhap nho">5.0</span><span class="kq" style="text-align:center"><b>5.0</b></span></div>
+        <div class="m so">Task 2 chưa có · Writing = (Task 1 + Task 2 × 2) / 3 khi đủ hai task</div>
+        <div><div class="lb" style="margin-bottom:6px">Nhận xét Task 1</div><textarea class="field" aria-label="Nhận xét Task 1">Mô tả số liệu đủ, thiếu câu overview.</textarea></div>
       </div>
       <div class="hop-f"><span class="btn btn-sm btn-ghost">Vắng</span><span class="sp"></span><span class="btn btn-sm">Lưu</span><span class="btn btn-sm btn-primary">Lưu · em tiếp ›</span></div>
     </div></div>
@@ -500,8 +525,8 @@ textarea.field{display:block;width:100%;min-height:56px;padding:8px 10px;font:13
       <div class="hop-f"><span class="sp"></span><span class="btn btn-sm">Lưu</span><span class="btn btn-sm btn-primary">Lưu · em tiếp ›</span></div>
     </div></div>
   </div>
-  <div class="q"><b>Cần chốt (Q-HD1):</b> “Bỏ vắng” cho phép ai, đến khi nào? Khuyến nghị: GV đúng kỹ năng + GVCN + QL, <b>khi ô ở tuần mới chưa có điểm</b>; vắng lần 2 (đã huỷ phần thi) thì chỉ QL “Khôi phục phần thi” (đã có sẵn).</div>
-  <div class="q"><b>Cần chốt (Q-HD2):</b> lớp thường (đúng/tổng) cũng dùng hộp nhỏ, hay giữ ô gõ thẳng trong lưới vì phải gõ cả “tổng”? Khuyến nghị: <b>giữ ô gõ thẳng</b> cho lớp thường (cột “tổng” điền một lần cho cả cột đã nhanh), chỉ thêm nút nhỏ “Nhận xét” — mục 5.3 nói về MT.</div>
+  <div class="q xong"><b>Đã chốt 11/10 (HD1):</b> “Bỏ vắng”: GV đúng kỹ năng + GVCN + QL, khi ô ở tuần mới chưa có điểm; vắng lần 2 (đã huỷ phần thi) chỉ QL “Khôi phục phần thi”.</div>
+  <div class="q xong"><b>Đã chốt 11/10 (HD2):</b> lớp thường giữ ô gõ thẳng đúng/tổng, thêm nút nhỏ “Nhận xét”; hộp nhỏ dùng cho MT (gồm MT0).</div>
 </section>
 
 <!-- ======================================================================  4. DÒNG LỚP Ở LỊCH TEST -->
@@ -575,6 +600,8 @@ textarea.field{display:block;width:100%;min-height:56px;padding:8px 10px;font:13
             <li>Lịch <b>4 kỹ năng</b> tuần <span class="so">W2 OCT</span> bỏ khỏi Lịch Test và việc chấm.</li>
             <li><b>2 điểm đã nhập</b> (L 14 · R 16) ẩn đi, không tính Overall, SOS, Phân tích.</li>
             <li><b>1 Case Reading</b> chờ xác nhận đóng (“lượt đã huỷ”).</li>
+            <li><b>PA Tự học Writing</b> kết quả gần nhất “Chưa đủ dữ liệu” — đóng cùng lượt.</li>
+            <li><b>PA Tutor Speaking</b> đang chạy có kết quả — giữ nguyên.</li>
             <li>Khôi phục được: lịch, điểm và Case trở lại như trước.</li>
           </ul>
           <div><div class="lb" style="margin-bottom:6px">Lý do <span class="m" style="font-weight:400">(không bắt buộc)</span></div><textarea class="field" aria-label="Lý do">Em ốm cả tuần, thi lại MT2 tuần sau.</textarea></div>
@@ -590,7 +617,7 @@ textarea.field{display:block;width:100%;min-height:56px;padding:8px 10px;font:13
     <div class="sheet">
       <div class="grip"></div>
       <div class="hop-h"><div class="k">MT2 · Đã huỷ</div><div class="s">Lê Thu Hà · CP FT RF 01 · huỷ 10/10 bởi Nguyễn Khánh Vy</div></div>
-      <div class="hop-b"><ul class="hq"><li>Khôi phục: lịch <span class="so">W2 OCT</span>, <b>4 điểm</b>, <b>1 Case</b> trở lại.</li></ul></div>
+      <div class="hop-b"><ul class="hq"><li>Khôi phục: lịch <span class="so">W2 OCT</span>, <b>4 điểm</b>, <b>1 Case</b>, <b>1 PA</b> trở lại.</li></ul></div>
       <div class="hop-f"><span class="sp"></span><span class="btn btn-sm">Đóng</span><span class="btn btn-sm btn-primary">Khôi phục MT2</span></div>
     </div>
   </div>
@@ -609,7 +636,7 @@ textarea.field{display:block;width:100%;min-height:56px;padding:8px 10px;font:13
       <div class="hop-f"><span class="sp"></span><span class="btn btn-sm">Đóng</span></div>
     </div></div>
   </div>
-  <div class="q"><b>Cần chốt (Q-MT1):</b> PA đang chạy (GV đã xác nhận) của lượt bị huỷ: hiện quy tắc là <b>giữ</b> (chỉ đóng Case chưa có kết quả PA). Khôi phục thì mọi thứ đã đóng vì huỷ mở lại. Khuyến nghị: giữ quy tắc hiện tại.</div>
+  <div class="q xong"><b>Đã chốt 11/10 (MT1):</b> huỷ lượt giữ PA đang chạy, <b>trừ PA có kết quả gần nhất “Chưa đủ dữ liệu”</b> (hoặc chưa có kết quả) — đóng cùng lượt. Khôi phục mở lại đúng những gì lần huỷ đã đóng.</div>
 </section>
 
 <!-- ======================================================================  6. QUAY LẠI -->

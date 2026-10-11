@@ -285,6 +285,9 @@ textarea.field{display:block;width:100%;min-height:56px;padding:8px 10px;font:13
 .chon-nguoi .o small{color:var(--faint);font-size:11.5px}
 .chon-nguoi .o.on{background:var(--accent-soft)}
 .cu{font-size:11.5px;color:var(--faint)}
+.q.xong{border-color:var(--ok-line);background:var(--ok-bg)}.q.xong b{color:var(--ok)}
+.bang-con+.bang-con{margin-top:0}
+.ro2 td{background:color-mix(in srgb,var(--accent-soft) 60%,transparent)}
 .err{color:var(--bad);font-size:12.5px}
 </style>
 </head>
@@ -377,7 +380,7 @@ textarea.field{display:block;width:100%;min-height:56px;padding:8px 10px;font:13
   </div>
   <div class="note" style="max-width:60ch;align-self:center">Lớp FT giữ “Chuyển tiếp lớp” như cũ (chủ SP 11/10: luồng mới chỉ lớp thường; bàn giao FT đổi hạn thành <b>5 ngày</b>). GV không quản lý chỉ thấy mục mình làm được.</div>
   </div>
-  <div class="q"><b>Cần chốt (Q-HL1):</b> có cần nút “Lộ trình” riêng hai tab (Lộ trình tiếp theo · Kết quả đầu ra) như mục 3.1c gợi ý không? Khuyến nghị: <b>không</b> — mục 4.3/4.4 đã đặt cả hai vào <b>một bảng</b> ở tab Học viên (phần 4). Nút “Mở Lộ trình” / mục ⋯ “Lộ trình tiếp theo” chỉ mở đúng bảng đó. Một nơi, không hai bản.</div>
+  <div class="q xong"><b>Đã chốt 11/10 (HL1):</b> không làm nút “Lộ trình” hai tab; “Mở Lộ trình” / ⋯ “Lộ trình tiếp theo” mở đúng bảng ở tab Học viên (phần 4).</div>
 </section>
 
 <!-- ======================================================  2. THÔNG TIN LỚP -->
@@ -447,10 +450,10 @@ textarea.field{display:block;width:100%;min-height:56px;padding:8px 10px;font:13
   <h2>4 · Tab Học viên › “Lộ trình tiếp theo”: một bảng cho Lộ trình + Kết quả đầu ra + Bàn giao (mục 4.1–4.4, D5)</h2>
   <span class="where">Hồ sơ lớp thường › Học viên › Lộ trình tiếp theo — QL soạn/chốt, GVCN đề xuất Kết quả đầu ra, GV nhập điểm</span>
   <ul class="note">
-    <li><b>Hai bảng nhỏ mở sẵn</b>, thu gọn được: <b>Lên FT</b> · <b>Các em còn lại</b>. Lọc nhanh: Tất cả · Chưa chốt · Còn bàn giao.</li>
+    <li><b>Mỗi hướng một bảng nhỏ, mở sẵn</b>, thu gọn được: <b>Chưa chọn</b> (chỉ khi còn em) · <b>Lên FT</b> · <b>Lên {lớp kế}</b> (BE → ELE; FOU → BE; ELE chỉ có Lên FT) · <b>Học lại</b> (học lại cùng trình độ hoặc xuống lộ trình dưới) · <b>Tạm dừng · Dừng học</b>. Đổi lộ trình của em → em <b>chuyển sang bảng tương ứng</b> ngay khi lưu (nháp hoặc chốt). Lọc nhanh: Tất cả · Chưa chốt · Còn bàn giao.</li>
     <li><b>Cột Lộ trình</b> (chỉ QL sửa): bấm ô → hộp nhỏ: hướng, lớp đích, tuần, Target (Lên FT), ghi chú → <b>Lưu nháp</b> (chỉ QL thấy, chưa ảnh hưởng gì) hoặc <b>Chốt</b> (ra quyết định chuyển lớp, tạo MT0 nếu Lên FT, mở việc bàn giao cho GV). Chọn nhiều em → thanh dưới cùng: áp một hướng · Lưu nháp · Chốt n em.</li>
     <li><b>Cột Kết quả đầu ra</b> (em Lên FT, theo MT0; FOU đạt khi Overall &gt; 3.5): GVCN <b>Đề xuất</b> (chip tím “GVCN đề xuất”), QL <b>Chốt</b> (chip xanh / đỏ “QL chốt”). Em chưa đủ 3/4 kỹ năng MT0: “Chờ MT0”.</li>
-    <li><b>Em không lên FT:</b> ô Progress / Final bấm được để GV nhập điểm ngay đây (hộp 4 môn đúng/tổng).</li>
+    <li><b>Mọi bảng</b> đều có ô <b>Lộ trình</b> ngay cạnh điểm Progress / Final; ô điểm bấm được để GV nhập ngay đây (4 môn đúng/tổng).</li>
     <li><b>Bàn giao:</b> GVCN + từng môn GVBM, ✓ đã xong, ⚠ quá hạn. Hạn = hết tuần Final, ít nhất 2 ngày sau khi QL chốt.</li>
   </ul>
 
@@ -463,36 +466,67 @@ textarea.field{display:block;width:100%;min-height:56px;padding:8px 10px;font:13
       <div class="loc"><div class="seg"><button>Tổng hợp</button><button aria-pressed="true">Lộ trình tiếp theo</button><button>Cần hỗ trợ</button></div><span class="sp"></span><div class="seg"><button aria-pressed="true">Tất cả<span class="n">14</span></button><button>Chưa chốt<span class="n">6</span></button><button>Còn bàn giao<span class="n">5</span></button></div></div>
 
       <div class="bang-con">
-        <div class="hh"><span class="v"></span><b>Lên FT</b><span class="so m">6 em</span><span class="m">· MT0 tuần <span class="so">W2 NOV</span></span></div>
+        <div class="hh"><span class="v"></span><b>Chưa chọn lộ trình</b><span class="so m">2 em</span></div>
         <table class="bd">
-          <thead><tr><th style="width:34px"><span class="cb"></span></th><th>Học viên</th><th class="so">Final</th><th>MT0 · L R W S · Overall</th><th>Lộ trình</th><th>Kết quả đầu ra</th><th>Bàn giao</th></tr></thead>
+          <thead><tr><th style="width:34px"><span class="cb"></span></th><th style="width:210px">Học viên</th><th>Progress</th><th>Final</th><th>Lộ trình</th><th>Bàn giao</th></tr></thead>
           <tbody>
-            <tr><td><span class="cb"></span></td><td><span class="lk">Bùi Hải Nam</span></td><td class="so"><span class="pct ok">80%</span></td><td><span class="mt0">5.0 · 5.5 · 5.0 · 5.0 · <b>5.0</b></span></td><td><span class="nut-o"><span class="lt"><span class="a">CP FT 141 · W3 NOV</span><span class="b">Target 6.5</span></span><span class="tt chot">Đã chốt</span></span></td><td><span class="nut-o"><span class="tt chot">Đạt</span><span class="m">QL chốt</span></span></td><td><span class="bg"><span class="xg">CN</span><span class="xg">L</span><span class="xg">R</span><span>W</span><span>S</span></span></td></tr>
-            <tr><td><span class="cb"></span></td><td><span class="lk">Chu Thảo Nguyên</span></td><td class="so"><span class="pct soon">66%</span></td><td><span class="mt0">3.5 · 5.0 · 4.5 · 4.5 · <b>4.5</b></span></td><td><span class="nut-o"><span class="lt"><span class="a">CP FT 141 · W3 NOV</span><span class="b">Target 6.0</span></span><span class="tt chot">Đã chốt</span></span></td><td><span class="nut-o"><span class="tt dx">GVCN đề xuất</span><span class="lt"><span class="a">Không đạt · Trung tâm</span><span class="b">L</span></span></span></td><td><span class="bg"><span class="xg">CN</span><span>L</span><span>R</span><span>W</span><span>S</span></span></td></tr>
-            <tr><td><span class="cb on">✓</span></td><td><span class="lk">Lý Minh Anh</span></td><td class="so"><span class="pct ok">74%</span></td><td><span class="m">Chờ MT0 · 1/4 kỹ năng</span></td><td><span class="nut-o" style="border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)"><span class="lt"><span class="a">CP FT 141 · W3 NOV</span><span class="b">Target 6.0</span></span><span class="tt nhap">Nháp</span></span></td><td><span class="m">Chờ MT0</span></td><td><span class="m">sau khi chốt</span></td></tr>
-            <tr><td><span class="cb on">✓</span></td><td><span class="lk">Nguyễn Anh Khôi</span></td><td class="so"><span class="pct bad">58%</span></td><td><span class="m">Chờ MT0</span></td><td><span class="nut-o trong">Chọn lộ trình</span></td><td><span class="m">—</span></td><td><span class="m">—</span></td></tr>
+            <tr><td><span class="cb on">✓</span></td><td><span class="lk">Nguyễn Anh Khôi</span></td><td><span class="nut-o"><span class="pct bad">55%</span></span></td><td><span class="nut-o"><span class="pct bad">58%</span></span></td><td><span class="nut-o trong">Chọn lộ trình</span></td><td><span class="m">—</span></td></tr>
+            <tr><td><span class="cb on">✓</span></td><td><span class="lk">Đặng Thu Hà</span></td><td><span class="nut-o"><span class="pct ok">72%</span></span></td><td><span class="nut-o trong">Nhập Final</span></td><td><span class="nut-o trong">Chọn lộ trình</span></td><td><span class="m">—</span></td></tr>
           </tbody>
         </table>
       </div>
 
       <div class="bang-con">
-        <div class="hh"><span class="v"></span><b>Các em còn lại</b><span class="so m">8 em</span></div>
+        <div class="hh"><span class="v"></span><b>Lên FT</b><span class="so m">4 em</span><span class="m">· MT0 tuần <span class="so">W2 NOV</span></span></div>
         <table class="bd">
-          <thead><tr><th style="width:34px"><span class="cb"></span></th><th>Học viên</th><th>Progress</th><th>Final</th><th>Lộ trình</th><th>Bàn giao</th></tr></thead>
+          <thead><tr><th style="width:34px"><span class="cb"></span></th><th style="width:210px">Học viên</th><th>Progress</th><th>Final</th><th>MT0 · L R W S · Overall</th><th>Lộ trình</th><th>Kết quả đầu ra</th><th>Bàn giao</th></tr></thead>
           <tbody>
-            <tr><td><span class="cb"></span></td><td><span class="lk">Phạm Bảo Ngọc</span></td><td><span class="nut-o"><span class="pct ok">75%</span></span></td><td><span class="nut-o"><span class="pct soon">66%</span><span class="m">W 12/20</span></span></td><td><span class="nut-o"><span class="lt"><span class="a">Lên ELE + bổ trợ 2 buổi · W</span><span class="b">CP ELE 31 · W3 NOV</span></span><span class="tt chot">Đã chốt</span></span></td><td><span class="bg"><span class="qh" title="quá hạn">CN</span><span class="xg">L</span><span class="xg">R</span><span class="xg">W</span><span class="xg">S</span></span></td></tr>
-            <tr><td><span class="cb"></span></td><td><span class="lk">Vũ Thị Thu Trang</span></td><td><span class="nut-o"><span class="pct ok">78%</span></span></td><td><span class="nut-o trong">Nhập Final</span></td><td><span class="nut-o"><span class="lt"><span class="a">Học lại BE</span><span class="b">CP BE 72 · W3 NOV</span></span><span class="tt nhap">Nháp</span></span></td><td><span class="m">sau khi chốt</span></td></tr>
-            <tr><td><span class="cb"></span></td><td><span class="lk">Nguyễn Trọng Hoàng Việt</span></td><td><span class="nut-o"><span class="pct bad">48%</span></span></td><td><span class="nut-o trong">Nhập Final</span></td><td><span class="nut-o"><span class="lt"><span class="a">Tạm dừng học (bảo lưu)</span><span class="b">xem lại W2 DEC</span></span><span class="tt chot">Đã chốt</span></span></td><td><span class="bg"><span>CN</span><span>L</span><span>R</span><span>W</span><span>S</span></span></td></tr>
+            <tr><td><span class="cb"></span></td><td><span class="lk">Bùi Hải Nam</span></td><td><span class="nut-o"><span class="pct ok">78%</span></span></td><td><span class="nut-o"><span class="pct ok">80%</span></span></td><td><span class="mt0">5.0 · 5.5 · 5.0 · 5.0 · <b>5.0</b></span></td><td><span class="nut-o"><span class="lt"><span class="a">Lên FT · CP FT 141</span><span class="b so">W3 NOV · Target 6.5</span></span><span class="tt chot">Đã chốt</span></span></td><td><span class="nut-o"><span class="tt chot">Đạt</span><span class="m">QL chốt</span></span></td><td><span class="bg"><span class="xg">CN</span><span class="xg">L</span><span class="xg">R</span><span>W</span><span>S</span></span></td></tr>
+            <tr><td><span class="cb"></span></td><td><span class="lk">Chu Thảo Nguyên</span></td><td><span class="nut-o"><span class="pct soon">65%</span></span></td><td><span class="nut-o"><span class="pct soon">66%</span></span></td><td><span class="mt0">3.5 · 5.0 · 4.5 · 4.5 · <b>4.5</b></span></td><td><span class="nut-o"><span class="lt"><span class="a">Lên FT · CP FT 141</span><span class="b so">W3 NOV · Target 6.0</span></span><span class="tt chot">Đã chốt</span></span></td><td><span class="nut-o"><span class="tt dx">GVCN đề xuất</span><span class="lt"><span class="a">Không đạt · Trung tâm</span><span class="b">L</span></span></span></td><td><span class="bg"><span class="xg">CN</span><span>L</span><span>R</span><span>W</span><span>S</span></span></td></tr>
+            <tr class="ro2"><td><span class="cb"></span></td><td><span class="lk">Lý Minh Anh</span></td><td><span class="nut-o"><span class="pct ok">76%</span></span></td><td><span class="nut-o"><span class="pct ok">74%</span></span></td><td><span class="m">Chờ MT0 · 1/4 kỹ năng</span></td><td><span class="nut-o" style="border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)"><span class="lt"><span class="a">Lên FT · CP FT 141</span><span class="b so">W3 NOV · Target 6.0</span></span><span class="tt nhap">Nháp</span></span></td><td><span class="m">Chờ MT0</span></td><td><span class="m">sau khi chốt</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="bang-con">
+        <div class="hh"><span class="v"></span><b>Lên ELE</b><span class="so m">3 em</span></div>
+        <table class="bd">
+          <thead><tr><th style="width:34px"><span class="cb"></span></th><th style="width:210px">Học viên</th><th>Progress</th><th>Final</th><th>Lộ trình</th><th>Bàn giao</th></tr></thead>
+          <tbody>
+            <tr><td><span class="cb"></span></td><td><span class="lk">Phạm Bảo Ngọc</span></td><td><span class="nut-o"><span class="pct ok">75%</span></span></td><td><span class="nut-o"><span class="pct soon">66%</span><span class="m">W 12/20</span></span></td><td><span class="nut-o"><span class="lt"><span class="a">Lên ELE + bổ trợ 2 buổi · W</span><span class="b so">CP ELE 31 · W3 NOV</span></span><span class="tt chot">Đã chốt</span></span></td><td><span class="bg"><span class="qh" title="quá hạn">CN</span><span class="xg">L</span><span class="xg">R</span><span class="xg">W</span><span class="xg">S</span></span></td></tr>
+            <tr><td><span class="cb"></span></td><td><span class="lk">Ngô Gia Bảo</span></td><td><span class="nut-o"><span class="pct ok">81%</span></span></td><td><span class="nut-o"><span class="pct ok">84%</span></span></td><td><span class="nut-o"><span class="lt"><span class="a">Lên ELE · CP ELE 31</span><span class="b so">W3 NOV</span></span><span class="tt chot">Đã chốt</span></span></td><td><span class="bg"><span class="xg">CN</span><span class="xg">L</span><span class="xg">R</span><span class="xg">W</span><span class="xg">S</span></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="bang-con">
+        <div class="hh"><span class="v"></span><b>Học lại</b><span class="so m">2 em</span><span class="m">· học lại BE hoặc xuống FOU</span></div>
+        <table class="bd">
+          <thead><tr><th style="width:34px"><span class="cb"></span></th><th style="width:210px">Học viên</th><th>Progress</th><th>Final</th><th>Lộ trình</th><th>Bàn giao</th></tr></thead>
+          <tbody>
+            <tr><td><span class="cb"></span></td><td><span class="lk">Vũ Thị Thu Trang</span></td><td><span class="nut-o"><span class="pct bad">52%</span></span></td><td><span class="nut-o"><span class="pct bad">49%</span></span></td><td><span class="nut-o"><span class="lt"><span class="a">Học lại BE · CP BE 72</span><span class="b so">W3 NOV</span></span><span class="tt nhap">Nháp</span></span></td><td><span class="m">sau khi chốt</span></td></tr>
+            <tr><td><span class="cb"></span></td><td><span class="lk">Trịnh Văn Hùng</span></td><td><span class="nut-o"><span class="pct bad">41%</span></span></td><td><span class="nut-o"><span class="pct bad">38%</span></span></td><td><span class="nut-o"><span class="lt"><span class="a">Xuống FOU · CP FOU 40</span><span class="b so">W3 NOV</span></span><span class="tt chot">Đã chốt</span></span></td><td><span class="bg"><span class="xg">CN</span><span>L</span><span>R</span><span>W</span><span>S</span></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="bang-con">
+        <div class="hh"><span class="v"></span><b>Tạm dừng · Dừng học</b><span class="so m">1 em</span></div>
+        <table class="bd">
+          <thead><tr><th style="width:34px"><span class="cb"></span></th><th style="width:210px">Học viên</th><th>Progress</th><th>Final</th><th>Lộ trình</th><th>Bàn giao</th></tr></thead>
+          <tbody>
+            <tr><td><span class="cb"></span></td><td><span class="lk">Nguyễn Trọng Hoàng Việt</span></td><td><span class="nut-o"><span class="pct bad">48%</span></span></td><td><span class="nut-o trong">Nhập Final</span></td><td><span class="nut-o"><span class="lt"><span class="a">Tạm dừng học (bảo lưu)</span><span class="b so">xem lại W2 DEC</span></span><span class="tt chot">Đã chốt</span></span></td><td><span class="bg"><span>CN</span><span>L</span><span>R</span><span>W</span><span>S</span></span></td></tr>
           </tbody>
         </table>
       </div>
 
       <div class="bulk"><b>2 em đã chọn</b><span class="field" style="width:180px">Lên FT<span class="v"></span></span><span class="field" style="width:180px">CP FT 141<span class="v"></span></span><span class="field" style="width:120px">W3 NOV<span class="v"></span></span><span class="sp"></span><span class="btn btn-sm btn-ghost">Bỏ chọn</span><span class="btn btn-sm">Lưu nháp</span><span class="btn btn-sm btn-primary">Chốt 2 em</span></div>
 
-      <div class="hop" style="left:560px;top:290px;width:420px">
+      <div class="hop" style="left:626px;top:548px;width:420px">
         <div class="hop-h"><div class="k">Lộ trình · Lý Minh Anh</div><div class="s">CP BE 69 · Final 74% · <span class="tt nhap" style="height:18px">Nháp — chỉ QL thấy</span></div></div>
         <div class="hop-b">
           <div class="nhom-nc"><span class="nc on">Lên FT</span><span class="nc">Lên ELE</span><span class="nc">Học lại</span><span class="nc">Tạm dừng học</span><span class="nc">Dừng học hẳn</span></div>
+          <div class="m">Học lại: chọn lớp BE (học lại) hoặc lớp FOU (xuống lộ trình dưới).</div>
           <div class="frm" style="grid-template-columns:110px 1fr"><span class="lb2">Lớp chuyển đến</span><span class="field">CP FT 141 · 12 HV<span class="v"></span></span><span class="lb2">Tuần bắt đầu</span><span class="field so">W3 NOV<span class="v"></span></span><span class="lb2">Target</span><span class="field so" style="width:90px">6.0</span><span class="lb2">Ghi chú</span><span class="field" style="color:var(--faint)">Ghi chú cho GV lớp mới</span></div>
         </div>
         <div class="hop-f"><span class="btn btn-sm btn-ghost">Xoá nháp</span><span class="sp"></span><span class="btn btn-sm">Lưu nháp</span><span class="btn btn-sm btn-primary">Chốt</span></div>
@@ -507,7 +541,7 @@ textarea.field{display:block;width:100%;min-height:56px;padding:8px 10px;font:13
       <div class="seg-k"><div class="seg"><button>Tổng hợp</button><button aria-pressed="true">Lộ trình tiếp theo</button><button>Cần hỗ trợ</button></div></div>
       <div class="seg-k"><div class="seg"><button aria-pressed="true">Tất cả<span class="n">14</span></button><button>Chưa chốt<span class="n">6</span></button><button>Còn bàn giao<span class="n">5</span></button></div></div>
       <div class="bang-con">
-        <div class="hh"><span class="v"></span><b>Lên FT</b><span class="so m">6 em</span></div>
+        <div class="hh"><span class="v"></span><b>Lên FT</b><span class="so m">4 em</span></div>
         <div class="dv" style="grid-template-columns:minmax(0,1fr)"><div><div class="t1">Bùi Hải Nam <span class="pct ok" style="font-size:12px">· 80%</span></div><div class="t2 so">MT0 5.0 · 5.5 · 5.0 · 5.0 · <b style="color:var(--c1)">5.0</b></div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><span class="tt chot">Đã chốt</span><span class="m">CP FT 141 · W3 NOV</span><span class="tt chot">Đạt</span></div><div class="bg" style="margin-top:6px"><span class="xg">CN</span><span class="xg">L</span><span class="xg">R</span><span>W</span><span>S</span></div></div></div>
         <div class="dv" style="grid-template-columns:minmax(0,1fr)"><div><div class="t1">Chu Thảo Nguyên <span class="pct soon" style="font-size:12px">· 66%</span></div><div class="t2 so">MT0 3.5 · 5.0 · 4.5 · 4.5 · <b style="color:var(--c1)">4.5</b></div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><span class="tt chot">Đã chốt</span><span class="tt dx">GVCN đề xuất</span><span class="m">Không đạt · L</span></div></div></div>
         <div class="dv" style="grid-template-columns:minmax(0,1fr)"><div><div class="t1">Lý Minh Anh <span class="pct ok" style="font-size:12px">· 74%</span></div><div class="t2">Chờ MT0 · 1/4 kỹ năng</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><span class="tt nhap">Nháp</span><span class="m">CP FT 141 · W3 NOV</span></div></div></div>
@@ -542,8 +576,7 @@ textarea.field{display:block;width:100%;min-height:56px;padding:8px 10px;font:13
     <div><div class="cap">GVCN xem ô Lộ trình đang là nháp của QL</div>
     <div class="card" style="padding:12px 14px;width:300px;font-size:13px"><span class="m">Chưa chốt</span><div class="cu" style="margin-top:6px">Nháp của QL không hiện cho GV.</div></div></div>
   </div>
-  <div class="q"><b>Cần chốt (Q-LT1):</b> QL <b>chốt Kết quả đầu ra</b> thì hệ quả “Không đạt · Trung tâm → Case + Tutor 10 buổi” chạy ngay (như panel Kỳ vọng đầu ra hiện tại). GVCN đề xuất thì <b>chưa</b> chạy gì. Khuyến nghị: giữ đúng như vậy.</div>
-  <div class="q"><b>Cần chốt (Q-LT2):</b> QL sửa <b>Lộ trình đã chốt</b> (đổi hướng / lớp đích) → phiếu bàn giao cũ đóng, GV làm phiếu mới (nội dung cũ điền sẵn) — như đã chốt 11/10. Có cần <b>chuông báo GV</b> “Lộ trình của {em} đã đổi — bàn giao lại” không? Khuyến nghị: có (một chuông “Cần làm”).</div>
+  <div class="q xong"><b>Đã chốt 11/10 (LT1, LT2):</b> QL chốt Kết quả đầu ra thì hệ quả (Case + Tutor 10 buổi) chạy ngay; GVCN đề xuất chưa chạy gì. Lộ trình đã chốt bị đổi hướng / lớp đích → một chuông “Cần làm” cho GV bàn giao lại.</div>
 </section>
 
 <!-- ======================================================  5. LỚP FT: KQ LỚP TRƯỚC + ĐIỂM ĐẦU VÀO -->
@@ -552,7 +585,7 @@ textarea.field{display:block;width:100%;min-height:56px;padding:8px 10px;font:13
   <span class="where">Hồ sơ lớp FT › Học viên — cách xem mới cuối hàng, bên phải “Cần hỗ trợ”</span>
   <ul class="note">
     <li>Cách xem <b>“Kết quả đầu ra”</b> chỉ có khi lớp còn đợt chuyển trong 4 tuần. Mỗi <b>chương trình nguồn</b> một bảng; cùng chương trình nhiều lớp cũ thì gộp một bảng, nhóm con theo <b>đợt chuyển</b> (mỗi đợt một hạn hiện). Hết 4 tuần: bảng tự ẩn; tra lại ở Hồ sơ HV › Hành trình (không xoá dữ liệu).</li>
-    <li><b>Ô MT0 ở bảng Điểm</b>: em chưa có MT0 (vào thẳng FT) hiện <b>điểm đầu vào</b> kèm nhãn “Đầu vào” — không tính là MT0, không vào SOS / Overall / Phân tích. Chỉ có Overall thì ghi “chỉ Overall”.</li>
+    <li><b>Bảng “Điểm” của hồ sơ lớp FT</b> (bảng 2 mốc gần nhất mỗi em): em <b>chưa có MT0</b> (vào thẳng FT) có một dòng mốc <b>“Đầu vào”</b> ngay chỗ MT0 — điểm đầu vào từng kỹ năng + OVR; chỉ có Overall thì chỉ điền cột OVR. Không tính là MT0, không vào SOS / Overall / Phân tích. Em đã có MT0 (từ lớp thường lên) giữ dòng MT0 như cũ.</li>
   </ul>
   <div class="row2">
   <div class="win w1440">
@@ -579,17 +612,6 @@ textarea.field{display:block;width:100%;min-height:56px;padding:8px 10px;font:13
         </tbody></table>
       </div>
 
-      <span class="nhan-khoi moi" style="margin-top:8px">Cách xem “Điểm” — ô MT0 của em vào thẳng FT</span>
-      <div class="card" style="overflow:hidden">
-        <table class="bd">
-          <thead><tr><th>Học viên</th><th class="so">Target</th><th>MT0</th><th>MT1</th><th>MT2</th><th>Kỳ vọng MT1</th></tr></thead>
-          <tbody>
-            <tr><td><span class="lk">Trịnh Khánh Linh</span><div class="m">vào thẳng FT</div></td><td class="so">6.5</td><td><span class="dauvao"><span class="a">5.0 · 5.5 · 4.5 · 5.0 · 5.0</span><span class="b">Đầu vào</span></span></td><td class="m">Đã lên lịch</td><td class="m">—</td><td class="so">5.5</td></tr>
-            <tr><td><span class="lk">Mai Quốc Huy</span><div class="m">vào thẳng FT</div></td><td class="so">6.0</td><td><span class="dauvao"><span class="a">Overall 4.5</span><span class="b">Đầu vào · chỉ Overall</span></span></td><td class="m">Đã lên lịch</td><td class="m">—</td><td class="so">5.0</td></tr>
-            <tr><td><span class="lk">Bùi Hải Nam</span><div class="m">từ CP BE 69</div></td><td class="so">6.5</td><td><span class="mt0">5.0 · 5.5 · 5.0 · 5.0 · <b>5.0</b></span></td><td class="m">Đã lên lịch</td><td class="m">—</td><td class="so">5.5</td></tr>
-          </tbody>
-        </table>
-      </div>
     </div>
   </div>
   <div class="win w375">
@@ -605,7 +627,36 @@ textarea.field{display:block;width:100%;min-height:56px;padding:8px 10px;font:13
     </div>
   </div>
   </div>
-  <div class="q"><b>Cần chốt (Q-FT1):</b> điểm đầu vào hiện ở ô MT0 <b>chỉ để nhìn</b> — không tính kỳ vọng, SOS, Overall, Phân tích (theo D7). Khuyến nghị: đồng ý; muốn dùng trong phép tính nào thì quyết riêng sau.</div>
+  <span class="nhan-khoi moi">Hồ sơ lớp FT › Học viên › Điểm — dòng “Đầu vào” ở chỗ MT0 (ảnh chủ SP 11/10)</span>
+  <div class="row2">
+  <div class="win w1440"><div class="trang">
+    <div class="loc"><div class="seg"><button aria-pressed="true">Điểm</button><button>Cần hỗ trợ</button><button>Kết quả đầu ra<span class="n">2 đợt</span></button></div><span class="sp"></span><span class="btn btn-sm btn-ghost">Sửa thông tin</span><span class="btn btn-sm btn-ghost">Chọn nhiều học viên</span></div>
+    <div class="card" style="overflow-x:auto">
+      <div class="m" style="padding:10px 14px;border-bottom:1px solid var(--line)">Điểm của 2 mốc gần nhất, mốc mới nhất ở trên.</div>
+      <table class="bd">
+        <thead><tr><th>Học viên</th><th class="so">Target</th><th>Dự kiến thi</th><th>Mốc</th><th class="so">OVR</th><th class="so">L</th><th class="so">R</th><th class="so">W1</th><th class="so">W2</th><th class="so">W</th><th class="so">S</th><th>Theo dõi</th></tr></thead>
+        <tbody>
+          <tr><td rowspan="2" style="vertical-align:top"><span class="lk">Trịnh Khánh Linh</span> <span class="m so">000231</span><div style="margin-top:4px"><span class="chip soon" style="height:18px">SOS 1 tạm thời</span></div></td><td rowspan="2" class="so" style="vertical-align:top">6.5</td><td rowspan="2" style="vertical-align:top" class="so">12/2026</td>
+            <td>MT1 <span class="lk so">2/4</span></td><td class="so m">—</td><td class="so" style="color:var(--bad)">▾ 5.0</td><td class="so">5.5</td><td class="so m">—</td><td class="so m">—</td><td class="so m">—</td><td class="so m">—</td><td rowspan="2" style="vertical-align:top" class="m">—</td></tr>
+          <tr><td><span class="dauvao"><span class="b">Đầu vào</span></span></td><td class="so" style="color:var(--c2)">5.0</td><td class="so" style="color:var(--c2)">5.0</td><td class="so" style="color:var(--c2)">5.5</td><td class="so m">—</td><td class="so m">—</td><td class="so" style="color:var(--c2)">4.5</td><td class="so" style="color:var(--c2)">5.0</td></tr>
+          <tr><td><span class="lk">Mai Quốc Huy</span> <span class="m so">000232</span></td><td class="so">6.0</td><td class="so">—</td>
+            <td><span class="dauvao"><span class="b">Đầu vào · chỉ Overall</span></span></td><td class="so" style="color:var(--c2)">4.5</td><td class="so m">—</td><td class="so m">—</td><td class="so m">—</td><td class="so m">—</td><td class="so m">—</td><td class="so m">—</td><td class="m">—</td></tr>
+          <tr><td rowspan="2" style="vertical-align:top"><span class="lk">Bùi Hải Nam</span> <span class="m so">000061</span><div class="m">từ CP BE 69</div></td><td rowspan="2" class="so" style="vertical-align:top">6.5</td><td rowspan="2" class="so" style="vertical-align:top">11/2026</td>
+            <td>MT1 <span class="lk so">1/4</span></td><td class="so m">—</td><td class="so">5.5</td><td class="so m">—</td><td class="so m">—</td><td class="so m">—</td><td class="so m">—</td><td class="so m">—</td><td rowspan="2" style="vertical-align:top" class="m">—</td></tr>
+          <tr><td>MT0</td><td class="so">5.0</td><td class="so">5.0</td><td class="so">5.5</td><td class="so">5.0</td><td class="so">5.0</td><td class="so">5.0</td><td class="so">5.0</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div></div>
+  <div class="win w375"><div class="trang">
+    <div class="seg-k"><div class="seg"><button aria-pressed="true">Điểm</button><button>Cần hỗ trợ</button><button>Kết quả đầu ra</button></div></div>
+    <div class="card">
+      <div class="dv" style="grid-template-columns:minmax(0,1fr)"><div><div class="t1">Trịnh Khánh Linh <span class="m so">· Target 6.5</span></div><div class="t2 so">MT1 2/4 · L ▾5.0 · R 5.5</div><div class="t2 so"><span class="dauvao" style="display:inline-flex"><span class="b">Đầu vào</span></span> OVR 5.0 · L 5.0 · R 5.5 · W 4.5 · S 5.0</div></div></div>
+      <div class="dv" style="grid-template-columns:minmax(0,1fr)"><div><div class="t1">Mai Quốc Huy <span class="m so">· Target 6.0</span></div><div class="t2 so"><span class="dauvao" style="display:inline-flex"><span class="b">Đầu vào · chỉ Overall</span></span> OVR 4.5</div></div></div>
+    </div>
+  </div></div>
+  </div>
+  <div class="q xong"><b>Đã chốt 11/10 (FT1):</b> điểm đầu vào ở chỗ MT0 chỉ để nhìn — không tính kỳ vọng, SOS, Overall, Phân tích.</div>
 </section>
 
 <!-- ======================================================  6. HỒ SƠ HV -->
@@ -639,6 +690,7 @@ textarea.field{display:block;width:100%;min-height:56px;padding:8px 10px;font:13
           <span class="lb2 bb">Email</span><span class="field">minh.tran@gmail.com</span>
           <span class="lb2">TVV</span><span><span class="field" style="width:280px;border-color:var(--accent)">Chọn tư vấn viên<span class="v"></span></span><div class="cu">Ghi cũ: “Hương TVV”</div></span>
           <span class="lb2">Dự kiến thi</span><span class="field so" style="width:200px">12/2026<span class="v"></span></span>
+          <span class="lb2">Target</span><span class="field so" style="width:90px">6.5</span>
           <span class="lb2">Điểm đầu vào</span><span class="kn4"><span class="lbn">L</span><span class="o-nhap nho">5.0</span><span class="lbn">R</span><span class="o-nhap nho">5.5</span><span class="lbn">W</span><span class="o-nhap nho">4.5</span><span class="lbn">S</span><span class="o-nhap nho">5.0</span><span class="kq">Overall <b>5.0</b></span></span>
         </div>
         <div class="err" role="alert">Ngày sinh: bắt buộc.</div>
@@ -662,7 +714,7 @@ textarea.field{display:block;width:100%;min-height:56px;padding:8px 10px;font:13
       </tbody>
     </table>
   </div></div></div>
-  <div class="q"><b>Đề xuất gộp thêm (mục 2.3) — cần chốt (Q-HV1):</b> (a) “Lộ trình tiếp theo” của một em (hồ sơ HV) mở <b>đúng hộp Lộ trình</b> ở phần 4 thay panel riêng — một nơi sửa. (b) “Sửa Target / lộ trình” (đề xuất sửa của GVCN) gộp vào “Sửa thông tin” thành một panel có phần Target. Khuyến nghị: làm (a); (b) để sau vì Target có luồng duyệt riêng.</div>
+  <div class="q xong"><b>Đã chốt 11/10 (HV1 — làm cả a + b):</b> (a) “Lộ trình tiếp theo” ở hồ sơ một em mở <b>đúng hộp Lộ trình</b> của bảng lớp. (b) “Sửa Target / lộ trình” gộp vào <b>Sửa thông tin</b>: QL sửa Target thẳng (kèm lý do như nay); GVCN thấy cùng ô, lưu thành <b>Đề xuất sửa</b> gửi QL duyệt (luồng duyệt giữ nguyên).</div>
 </section>
 
 </div>
