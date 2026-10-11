@@ -9264,6 +9264,9 @@ await runPrCacheTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== PR-OV1a (MT0 nhập đúng bảng, Điểm theo lớp, lệnh kiểm chỉ đọc)
 const { runPrOv1aTests } = await import('./prOv1a.tests.ts');
 await runPrOv1aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-OV3a (hồ sơ lớp: ⋯, Thông tin lớp, Tổng hợp, Đầu vào FT)
+const { runPrOv3aTests } = await import('./prOv3a.tests.ts');
+await runPrOv3aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

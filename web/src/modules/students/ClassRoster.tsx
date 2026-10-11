@@ -59,7 +59,20 @@ type RosterRow = {
   canhBaoYThuc: NhanYThucEm | null;
   /** Việc tiếp theo của em (`viecTiepCuaEm`): cột Theo dõi hiện việc đầu tiên. */
   viecTiepTheo: ViecTiepTheo[];
+  /** PR-OV3a (M2 §5): điểm đầu vào của lộ trình khi em CHƯA có MT0 — dòng "Đầu vào" chỉ để nhìn (không SOS, không so kỳ vọng). */
+  dauVao?: DauVao | null;
 };
+type DauVao = { overall: number | null; listening: number | null; reading: number | null; writing: number | null; speaking: number | null };
+/** Dòng "Đầu vào" chiếm chỗ MT0 trong 2 mốc gần nhất — em đã có 2 mốc MT thì không còn chỗ. */
+const dauVaoHien = (s: RosterRow, soMoc: number): DauVao | null => (s.dauVao && soMoc < 2 ? s.dauVao : null);
+const chiOverall = (d: DauVao) => d.listening === null && d.reading === null && d.writing === null && d.speaking === null;
+const nhanDauVao = (d: DauVao) => (chiOverall(d) ? 'Đầu vào · chỉ Overall' : 'Đầu vào');
+function SoDauVao({ v }: { v: number | null }) {
+  return v === null ? <Dash /> : <span className="tabular-nums text-xs text-slate-300">{fmtBand(v)}</span>;
+}
+function NhanDauVao({ d }: { d: DauVao }) {
+  return <span className="whitespace-nowrap text-xs text-slate-400" title="Điểm đầu vào khi nhập học — chỉ để nhìn, không tính SOS / Overall / Phân tích">{nhanDauVao(d)}</span>;
+}
 
 /** Bộ cột điểm của lớp Fast Track — mục 5.2: Target · Dự kiến thi · Mốc · OVR · L · R · W1 · W2 · W · S (W = Writing tổng, PR-N1 K2-10). */
 const FT_SKILLS = ['listening', 'reading', 'writing1', 'writing2', 'writing', 'speaking'] as const;
@@ -119,6 +132,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
         <p className="m-0 border-b px-3 py-2 text-xs text-slate-500" style={{ borderColor: 'var(--line)' }}>Mốc gần nhất của từng em (điểm 2 mốc gần nhất ở bảng trên máy tính).</p>
         {data.map((s) => {
           const h = s.history[0];
+          const dv = dauVaoHien(s, s.history.length);
           return (
             <TheDong key={s.id} className={`${s.status !== 'active' ? 'row-muted' : ''} ${chon?.chon.has(s.id) ? 'bg-[color:var(--accent-soft)]' : ''}`}
               dau={(
@@ -137,7 +151,15 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
               dong={[
                 { nhan: 'Target', noiDung: <TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /> },
                 { nhan: 'Dự kiến thi', noiDung: <ExamPlanText plan={s.examPlan} /> },
-                { nhan: 'Mốc', noiDung: !h ? <span className="text-slate-500">chưa có điểm</span> : (
+                ...(dv ? [{ nhan: nhanDauVao(dv), noiDung: (
+                  <span className="tabular-nums">
+                    {'OVR '}<SoDauVao v={dv.overall} />
+                    {!chiOverall(dv) && (['listening', 'reading', 'writing', 'speaking'] as const).map((k) => (
+                      <span key={k}>{` · ${skillLabel(k)} `}<SoDauVao v={dv[k]} /></span>
+                    ))}
+                  </span>
+                ) }] : []),
+                ...(!h && dv ? [] : [{ nhan: 'Mốc', noiDung: !h ? <span className="text-slate-500">chưa có điểm</span> : (
                   <>
                     <Link className="no-underline" to={duongHoSoHocVien(s.id, { dot: h.id })} title={`Mở hồ sơ ${s.fullName} ở ${h.label}`}>
                       <span className="text-slate-200">{h.label}</span>
@@ -152,7 +174,7 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
                       ))}
                     </span>
                   </>
-                ) },
+                ) }]),
                 { nhan: 'Theo dõi', noiDung: <FollowCell row={s} classId={classId} /> },
               ]} />
           );
@@ -205,7 +227,8 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
           <tbody>
             {data.map((s) => {
               const rows = s.history.slice(0, depth);
-              const span = Math.max(rows.length, 1);
+              const dv = dauVaoHien(s, rows.length);
+              const span = Math.max(rows.length + (dv ? 1 : 0), 1);
               return (
                 <tr key={s.id} className={`row-hover align-top ${s.status !== 'active' ? 'row-muted' : ''} ${chon?.chon.has(s.id) ? 'bg-[color:var(--accent-soft)]' : ''}`}>
                   {/* 640–1023 px: bảng cuộn ngang TRONG vùng bảng, cột tên dính (mỗi lớp một bảng nên không bám cả trang). */}
@@ -230,9 +253,9 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
                   {/* ─── các cột điểm: mỗi mốc một hàng con, thẳng cột với nhau ─── */}
                   <td className="td p-0">
                     <Stack n={span}>
-                      {rows.length === 0
+                      {rows.length === 0 && !dv
                         ? [<span key="none" className="text-xs text-slate-500">chưa có điểm</span>]
-                        : rows.map((h, i) => (
+                        : [...rows.map((h, i) => (
                           <Link key={h.id} className="no-underline"
                             to={duongHoSoHocVien(s.id, { dot: h.id })} title={`Mở hồ sơ ${s.fullName} ở ${h.label}`}>
                             <span className={`text-xs whitespace-nowrap ${i === 0 ? 'text-slate-200' : 'text-slate-500'}`}>
@@ -244,27 +267,27 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
                               )}
                             </span>
                           </Link>
-                        ))}
+                        )), ...(dv ? [<NhanDauVao key="dv" d={dv} />] : [])]}
                     </Stack>
                   </td>
 
                   <td className="td p-0 text-right">
                     <Stack n={span} align="right">
-                      {rows.length === 0 ? [<Dash key="none" />]
-                        : rows.map((h, i) => (
+                      {rows.length === 0 && !dv ? [<Dash key="none" />]
+                        : [...rows.map((h, i) => (
                           <Band key={h.id} v={h.overall} kyVong={h.expectation ?? null} faded={i > 0} lichSu={h.lichSu} />
-                        ))}
+                        )), ...(dv ? [<SoDauVao key="dv" v={dv.overall} />] : [])]}
                     </Stack>
                   </td>
 
                   {skills.map((k) => (
                     <td key={k} className="td p-0 text-right">
                       <Stack n={span} align="right">
-                        {rows.length === 0 ? [<Dash key="none" />]
-                          : rows.map((h, i) => (
+                        {rows.length === 0 && !dv ? [<Dash key="none" />]
+                          : [...rows.map((h, i) => (
                             <Band key={h.id} v={k === 'writing' ? h.writing ?? null : h.bands?.[k] ?? null} kyVong={h.expectation ?? null}
                               soSanh={k !== 'writing1' && k !== 'writing2'} faded={i > 0} lichSu={h.lichSu} />
-                          ))}
+                          )), ...(dv ? [<SoDauVao key="dv" v={k === 'writing1' || k === 'writing2' ? null : dv[k]} />] : [])]}
                       </Stack>
                     </td>
                   ))}

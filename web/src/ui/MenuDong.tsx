@@ -37,7 +37,7 @@ export function MenuDong({ muc, nhan = 'Thao tác khác', bieuTuong = '⋯', luo
   const [mo, setMo] = useState(false);
   const nut = useRef<HTMLButtonElement>(null);
   const hop = useRef<HTMLDivElement>(null);
-  const [viTri, setViTri] = useState<{ top: number; left: number } | null>(null);
+  const [viTri, setViTri] = useState<{ top: number; left: number; cao: number } | null>(null);
   const [dang, setDang] = useState(0);
   const mucDom = () => [...(hop.current?.querySelectorAll<HTMLElement>('[role^="menuitem"]') ?? [])];
   const bam = muc.filter((m) => !m.tieuDe);   // vòng ↑/↓ chỉ qua mục bấm được; `chiSo` = vị trí trong vòng đó
@@ -50,12 +50,14 @@ export function MenuDong({ muc, nhan = 'Thao tác khác', bieuTuong = '⋯', luo
     const r = nut.current.getBoundingClientRect();
     const rong = 216;
     /* Mục cao 44px trên điện thoại (ô bấm), ~36px từ sm. */
-    const cao = Math.min(muc.length * (window.innerWidth < 640 ? 46 : 38) + 8, 320);
+    /* Menu dài (⋯ hồ sơ lớp có tiêu đề nhóm, PR-OV3a): không cao quá màn — phần thừa cuộn trong menu. */
+    const cao = Math.min(muc.length * (window.innerWidth < 640 ? 46 : 38) + 8, window.innerHeight - 80);
     /* Chừa 64px dưới đáy cho thanh 4 nút trên điện thoại. */
     const moXuong = r.bottom + 4 + cao <= window.innerHeight - 64;
     setViTri({
       top: moXuong ? r.bottom + 4 : Math.max(8, r.top - 4 - cao),
       left: Math.max(8, Math.min(r.right - rong, window.innerWidth - rong - 8)),
+      cao,
     });
   }, [mo, muc.length]);
 
@@ -73,14 +75,16 @@ export function MenuDong({ muc, nhan = 'Thao tác khác', bieuTuong = '⋯', luo
       nut.current?.focus();
     };
     const dong = () => setMo(false);
+    /* Cuộn TRONG menu (menu dài) không đóng menu. */
+    const cuon = (e: Event) => { if (!(e.target instanceof Node && hop.current?.contains(e.target))) setMo(false); };
     document.addEventListener('mousedown', bamNgoai);
     document.addEventListener('keydown', phim, true);
-    window.addEventListener('scroll', dong, true);
+    window.addEventListener('scroll', cuon, true);
     window.addEventListener('resize', dong);
     return () => {
       document.removeEventListener('mousedown', bamNgoai);
       document.removeEventListener('keydown', phim, true);
-      window.removeEventListener('scroll', dong, true);
+      window.removeEventListener('scroll', cuon, true);
       window.removeEventListener('resize', dong);
     };
   }, [mo]);
@@ -109,8 +113,8 @@ export function MenuDong({ muc, nhan = 'Thao tác khác', bieuTuong = '⋯', luo
             if (k !== null) { e.preventDefault(); tro(k); }
             else if (e.key === 'Tab') { e.preventDefault(); dongVeNut(); }
           }}
-          className="fixed z-[60] w-[216px] rounded-lg border p-1 shadow-xl surface-2"
-          style={{ borderColor: 'var(--line-strong)', top: viTri?.top ?? 0, left: viTri?.left ?? 0, visibility: viTri ? 'visible' : 'hidden' }}>
+          className="fixed z-[60] w-[216px] overflow-y-auto overscroll-contain rounded-lg border p-1 shadow-xl surface-2"
+          style={{ borderColor: 'var(--line-strong)', top: viTri?.top ?? 0, left: viTri?.left ?? 0, maxHeight: viTri?.cao, visibility: viTri ? 'visible' : 'hidden' }}>
           {muc.map((m) => m.tieuDe ? (
             <div key={m.key} role="presentation" className="px-3 pb-1 pt-2 text-xs text-slate-400">{m.nhan}</div>
           ) : (

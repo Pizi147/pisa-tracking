@@ -81,7 +81,8 @@ export async function runPrUxfATests(t: YThucTestKit) {
     assert(!/\d%/.test(k({ tyLeTong: 0.45 }).dong1), 'hậu tố không dính số %');
   });
 
-  check('UXF-a (2) · hai đường MB BE 04: roster.cuoiKhoa.tyLe = cuoiKhoaTheoHocVien; hậu tố Kết quả gần nhất = goiY.nhanNgan; cột Hướng gợi ý = chữ panel Chuyển lớp', () => {
+  /* PR-OV3a: roster (bảng Tổng hợp) chỉ còn `cuoiKhoa.tyLe` — gợi ý tự tính không gửi; hậu tố Kết quả gần nhất + panel Chuyển lớp vẫn cùng gợi ý. */
+  check('UXF-a (2) · hai đường MB BE 04: roster.cuoiKhoa.tyLe = cuoiKhoaTheoHocVien, không goiY; hậu tố Kết quả gần nhất = goiY.nhanNgan; panel Chuyển lớp cùng gợi ý', () => {
     const be04 = lopId('MB BE 04');
     const roster = classes.classRoster(P.mbManager, be04) as any[];
     const ck = cuoiKhoaMod.cuoiKhoaTheoHocVien(be04);
@@ -90,8 +91,8 @@ export async function runPrUxfATests(t: YThucTestKit) {
     assert(roster.length > 0, 'lớp có em');
     for (const r of roster) {
       const e = ck.get(r.id);
-      assert(r.cuoiKhoa && e && r.cuoiKhoa.tyLe === e.tyLe, `tyLe ${r.fullName}`);
-      const g = r.cuoiKhoa.goiY;
+      assert(r.cuoiKhoa && e && r.cuoiKhoa.tyLe === e.tyLe && !('goiY' in r.cuoiKhoa), `tyLe ${r.fullName}`);
+      const g = e.goiY;
       const dong1 = d.ketQuaGanNhat(r.standing).dong1 as string;
       if (!g) { assert(!/→/.test(dong1 ?? ''), `không gợi ý thì không hậu tố: ${dong1}`); continue; }
       coGoiY += 1;

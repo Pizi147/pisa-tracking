@@ -385,8 +385,10 @@ async function mayChu(t: YThucTestKit) {
     const lich = web('modules/test/LichTestTab.tsx');
     assert(lich.includes('nav?.xuatMt') && lich.includes('<NganXuatMt'), 'Lịch Test');
     const dau = web('modules/classes/DauTrangLop.tsx');
-    assert(dau.includes("'xuat-mt'") && dau.includes('nav?.xuatMt'), 'hồ sơ lớp ⋮');
-    assert(dau.indexOf("key: 'thong-tin'") < dau.indexOf("key: 'xuat-mt'") && dau.indexOf("key: 'xuat-mt'") < dau.indexOf("key: 'xoa-lop'"), 'mục ⋮ sau "Sửa thông tin lớp", trước đường kẻ Xoá');
+    assert(dau.includes('coTheXuatExcel') && dau.includes('nav?.xuatMt'), 'hồ sơ lớp ⋯');
+    /* PR-OV3a: thứ tự ⋯ ở `menuHoSoLop` — Xuất Excel (nhóm Công cụ) sau Thông tin lớp, trước đường kẻ Xoá. */
+    const mn = fs.readFileSync(pathMod.join(REPO, 'shared/domain/hocVienLop.ts'), 'utf8');
+    assert(mn.indexOf("m('thong-tin'") < mn.indexOf("m('xuat-mt'") && mn.indexOf("m('xuat-mt'") < mn.indexOf("m('xoa-lop'"), 'mục ⋯ sau "Thông tin lớp", trước đường kẻ Xoá');
     assert(web('modules/classes/ClassOverviewPage.tsx').includes("viec === 'xuat-mt'"), 'trang hồ sơ lớp mở ngăn');
     const th = web('modules/phanTich/TongHopTestSos.tsx');
     assert(th.includes('⤓ Xuất bảng này') && th.includes('Xuất kết quả từng lượt') && th.includes('nav?.xuatMt') && !th.includes('⤓ Xuất Excel'), 'Tổng hợp Test (Q9)');
