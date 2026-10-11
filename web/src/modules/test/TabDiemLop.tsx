@@ -57,6 +57,7 @@ export function TabDiemLop() {
     const sang = () => {
       const q = new URLSearchParams(sp);
       q.set('lop', String(id));
+      q.delete('luot');   // lượt của link vào chỉ dành cho lớp đó
       setSp(q, { replace: true });
     };
     if (cong.current) cong.current.roi(sang); else sang();
