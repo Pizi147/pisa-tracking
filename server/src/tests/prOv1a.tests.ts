@@ -23,16 +23,25 @@ export async function runPrOv1aTests(t: YThucTestKit) {
   const loi = (fn: () => unknown): any => { try { fn(); } catch (e) { return e; } return null; };
   const QL = P.admin;
 
-  /* Một em lớp thường BE/FOU/ELE đang học, khoá đang chạy — QL ghi Lên FT tạo MT0 (như prMt0). */
-  const em = all(`SELECT s.id sid, c.id classId FROM students s JOIN learning_cycles lc ON lc.student_id = s.id AND lc.status = 'active'
-      JOIN enrollments e ON e.student_id = s.id AND e.status = 'active' JOIN classes c ON c.id = e.class_id WHERE c.programme_code IN ('BE', 'FOU', 'ELE') AND s.archived_at IS NULL AND s.status = 'active'
-        AND NOT EXISTS (SELECT 1 FROM assessment_attempts x WHERE x.class_id = c.id AND x.kind = 'mt0') ORDER BY s.id LIMIT 1`)[0];
-  const taoMt0 = () => {
-    loTrinh.ghiLoTrinhTiep(QL, em.sid, { huong: 'fast_track', mucTieu: 6.5 });
+  /*
+   * Một em lớp thường BE/FOU/ELE đang học ĐÚNG MỘT lớp, lớp chưa có MT0 — QL ghi Lên FT tạo MT0 (như prMt0). Phép kiểm trước trong
+   * `run.ts` đổi dữ liệu demo, nên thử ghi trong giao dịch (huỷ ngay) và lấy em đầu tiên ghi được.
+   */
+  let em: { sid: number; classId: number } = null as any;
+  const taoMt0 = (x = em) => {
+    loTrinh.ghiLoTrinhTiep(QL, x.sid, { huong: 'fast_track', mucTieu: 6.5 });
     const a = all(`SELECT a.id, p.week_start FROM assessment_attempts a JOIN attempt_skills k ON k.attempt_id = a.id
-        JOIN report_periods p ON p.id = k.planned_period_id WHERE a.student_id = ? AND a.kind = 'mt0' LIMIT 1`, em.sid)[0];
+        JOIN report_periods p ON p.id = k.planned_period_id WHERE a.student_id = ? AND a.kind = 'mt0' AND a.status != 'cancelled' LIMIT 1`, x.sid)[0];
     return { id: a.id as number, sau: addDays(a.week_start, 8) as string };
   };
+  for (const x of all(`SELECT s.id sid, c.id classId FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
+      JOIN classes c ON c.id = e.class_id
+      WHERE c.programme_code IN ('BE', 'FOU', 'ELE') AND c.is_fast_track = 0 AND s.archived_at IS NULL AND s.status = 'active'
+        AND (SELECT COUNT(*) FROM enrollments e2 WHERE e2.student_id = s.id AND e2.status = 'active') = 1
+        AND EXISTS (SELECT 1 FROM learning_cycles lc WHERE lc.student_id = s.id AND lc.status = 'active')
+        AND NOT EXISTS (SELECT 1 FROM assessment_attempts x WHERE x.class_id = c.id AND x.kind = 'mt0') ORDER BY s.id LIMIT 30`)) {
+    if (thu(() => { try { taoMt0(x); return true; } catch { return false; } })) { em = x; break; }
+  }
   const diem = (id: number) => JSON.stringify(all(`SELECT skill, raw_score, raw_total, band, no_show_at FROM assessment_scores WHERE attempt_id = ? ORDER BY skill`, id));
 
   check('OV1a-1 · saveRegularScore vào lượt MT0 (đúng/tổng hoặc "-") → 400 chữ MT0, điểm không đổi', () => {
