@@ -38,8 +38,10 @@ export function TabDiemLop() {
   const lopThuong = theoCn.filter((l) => l.mode !== 'ielts_band');
   const daNho = khungDaNho('diem-theo-lop');
   const loaiUrl = sp.get('loai');
+  /* PR-OV1a: vào từ link có `?lop=` (Nhập điểm ở hồ sơ lớp) mà chưa có `?loai=` → công tắc theo loại của chính lớp đó. */
+  const lopUrl = data.find((l) => String(l.classId) === sp.get('lop'));
   const loai: 'ft' | 'thuong' = lopFT.length && lopThuong.length
-    ? (loaiUrl === 'ft' || loaiUrl === 'thuong' ? loaiUrl : daNho === 'thuong' ? 'thuong' : 'ft')
+    ? (loaiUrl === 'ft' || loaiUrl === 'thuong' ? loaiUrl : lopUrl ? (lopUrl.mode === 'ielts_band' ? 'ft' : 'thuong') : daNho === 'thuong' ? 'thuong' : 'ft')
     : lopThuong.length ? 'thuong' : 'ft';
   const loc = loai === 'ft' ? lopFT : lopThuong;
   const chon = data.find((l) => String(l.classId) === sp.get('lop')) ?? loc[0] ?? theoCn[0] ?? data[0];
