@@ -10,6 +10,8 @@ export async function runPrOv1aTests(t: YThucTestKit) {
   const dl: any = await import('../cham/diemTheoLuot.ts');
   const dm: any = await import('../../../shared/domain/index.ts');
   const tongHop: any = await import('../phanTich/tongHop.ts');
+  const { kiemDuLieuMt } = await import('../ops/kiemDuLieuMt.ts');
+  const { kiemOLop } = await import('../ops/kiemOLop.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   console.log('\nPR-OV1a · MT0 nhập đúng bảng, Điểm theo lớp, lệnh kiểm chỉ đọc');
 
@@ -106,5 +108,37 @@ export async function runPrOv1aTests(t: YThucTestKit) {
     assert(coTuanNay >= 1, 'demo cần ít nhất một hàng tuần này');
     const lop = tongHop.tongHop(QL, { ct: 'ft', soTuan: 12, theo: 'lop' });
     assert(lop.hang.every((h: any) => h.tuanNay === undefined), 'theo lớp không có tuanNay');
+  });
+
+  check('OV1a-6 · kiem-du-lieu-mt nhóm 6: MT0 có ô đúng/tổng (không band) bị bắt; MT0 band thường thì không', () => {
+    thu(() => {
+      const m = taoMt0();
+      const ins = conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total, band) VALUES (?,?,?,?,?)');
+      ins.run(m.id, 'listening', null, null, 5);
+      assert(!kiemDuLieuMt(conn).some((d) => d.nhom === 6 && d.luotId === m.id), 'MT0 band bị báo nhầm');
+      ins.run(m.id, 'reading', 6, 9, null);
+      const d = kiemDuLieuMt(conn).find((x) => x.nhom === 6 && x.luotId === m.id);
+      assert(d && /reading/.test(d.vanDe) && /6\/9/.test(d.vanDe), `nhóm 6: ${JSON.stringify(d)}`);
+    });
+  });
+
+  check('OV1a-7 · kiem-o-lop: một dòng mỗi ô (W = W1 + W2), không ghi DB; mã lớp lạ → lỗi "Không thấy lớp"', () => {
+    const n0 = (conn.prepare('SELECT total_changes() n').get() as any).n;
+    const ds = kiemOLop(conn, 'MB FT 101');
+    assert(ds.length >= 1, 'không có dòng');
+    const nhom = new Map<string, { kn: Set<string>; o: Set<string> }>();
+    for (const d of ds) {
+      const g = nhom.get(`${d.ma}|${d.luot}`) ?? nhom.set(`${d.ma}|${d.luot}`, { kn: new Set(), o: new Set() }).get(`${d.ma}|${d.luot}`)!;
+      g.kn.add(d.kyNang); g.o.add(d.o);
+    }
+    const du = [...nhom.entries()].filter(([k, g]) => /\|MT\d/.test(k) && g.kn.size === 4 && g.kn.has('writing'));
+    /* Lớp thường (Progress / Final) một ô Writing; MT chấm band hai ô W1, W2. */
+    assert(ds.some((d) => /^(Progress|Final) Test/.test(d.luot) && d.o === 'writing'), 'lượt lớp thường phải một ô writing');
+    const sai = du.filter(([, g]) => !(g.o.size === 5 && g.o.has('writing1') && g.o.has('writing2')));
+    assert(du.length >= 1 && !sai.length, `ô của lượt FT sai: ${JSON.stringify(sai.slice(0, 3).map(([k, g]) => [k, [...g.kn], [...g.o]]))}`);
+    assert(ds.some((d) => d.tru), 'có lịch sử lượt');
+    assert((conn.prepare('SELECT total_changes() n').get() as any).n === n0, 'kiem-o-lop đã ghi DB');
+    const e = loi(() => kiemOLop(conn, 'KHONG CO LOP'));
+    assert(e && /Không thấy lớp "KHONG CO LOP"/.test(e.message), `mã lạ: ${e?.message}`);
   });
 }
