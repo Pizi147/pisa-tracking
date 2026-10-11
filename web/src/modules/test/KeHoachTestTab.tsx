@@ -9,7 +9,8 @@ import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { NganXepHangLoat } from './keHoach/NganXepHangLoat.tsx';
 import { NganXepLichMt } from './keHoach/NganXepLichMt.tsx';
 import { LopKeHoach } from './keHoach/LopKeHoach.tsx';
-import { boMonLich, chuanHoaMaLop, kyHieuLop, tenMon, tenMonNgan } from '@shared/domain/index.ts';
+import { boMonLich, chuanHoaMaLop, kyHieuLop, tenMon, tenMonNgan, tuanLich } from '@shared/domain/index.ts';
+import type { Data as LichSapToiData } from '../worklist/Highlights.tsx';
 import { TimLop } from './keHoach/TimLop.tsx';
 import type { DanhSachLop, LopKH } from './keHoach/kieu.ts';
 
@@ -49,6 +50,10 @@ export function KeHoachTestTab() {
       : loaiTheoLop ?? (daNho === 'ft' || daNho === 'thuong' ? daNho : 'ft'))
     : (lopFT.length ? 'ft' : 'thuong');
 
+  /* OV-6a: `?tuan=` (Tổng quan › Lịch sắp tới › Xem toàn bộ lịch) — chỉ lớp có đợt Test trong tuần đó; cùng `/highlights`. */
+  const tuan = params.get('tuan');
+  const hl = useApi<LichSapToiData>(tuan ? `/highlights?${branchId ? `branchId=${branchId}&` : ''}ct=${loai}` : null, [tuan, branchId, loai]);
+
   /* Mặc định THU GỌN mọi lớp; chỉ tự mở `?classId=` hoặc khung chỉ có một lớp. */
   useEffect(() => {
     if (!data || daMoSan || !data.lop.length) return;
@@ -76,11 +81,17 @@ export function KeHoachTestTab() {
       const ngan = tenMonNgan(ct, k), dai = tenMon(ct, k);
       return ngan === dai ? ngan : `${ngan} (${dai})`;
     }).join(', ')] as const), [lopThuong]);
+  const tuanXem = tuan ? hl.data?.weeks.find((w) => w.weekStart === tuan) ?? null : null;
+  const lopTrongTuan = tuanXem ? new Set<number | null>(loai === 'ft'
+    ? tuanXem.ft.mockClasses.map((m) => m.id)
+    : [...tuanXem.normal.progressClasses, ...tuanXem.normal.finalClasses].map((r) => r.id)) : null;
+  const boTuan = () => { const next = new URLSearchParams(params); next.delete('tuan'); setParams(next, { replace: true }); };
   const soCanXepLai = lopFT.reduce((n, l) => n + (l.canXepLai ?? 0), 0);
   const locXepLai = loai === 'ft' && chiXepLai && soCanXepLai > 0;
   const danhSach = (loai === 'ft' ? lopFT : lopThuong)
     .filter((l) => !chu.trim() || chuanHoaMaLop(l.code).includes(chuanHoaMaLop(chu)))
-    .filter((l) => !locXepLai || l.canXepLai > 0);
+    .filter((l) => !locXepLai || l.canXepLai > 0)
+    .filter((l) => !lopTrongTuan || lopTrongTuan.has(l.id));
   const toggle = (id: number) => setMoList((m) => (m.includes(id) ? m.filter((x) => x !== id) : [...m, id]));
   const chonLop = (l: LopKH) => {
     setChu(l.code);
@@ -94,7 +105,7 @@ export function KeHoachTestTab() {
   const lyDoTat = hopMo ? 'Đóng hộp kỹ năng trước' : undefined;
 
   if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
-  if (loading || !data) return <div className="space-y-3"><Skeleton rows={8} /></div>;
+  if (loading || !data || (tuan && hl.loading && !hl.data)) return <div className="space-y-3"><Skeleton rows={8} /></div>;
   if (!data.lop.length) return <div className="card"><Empty title="Bạn không có lớp nào được xếp lịch Test" /></div>;
 
   return (
@@ -103,6 +114,13 @@ export function KeHoachTestTab() {
         {/* MH4: công tắc khung đứng ĐẦU hàng lọc (chỉ hiện khi có cả hai khung). */}
         <CongTacKhung trang="ke-hoach-test" value={loai} dem={{ ft: lopFT.length, thuong: lopThuong.length }} donVi="lớp"
           onChange={(k) => { if (k !== 'tat-ca') setLoai(k); }} />
+        {tuanXem && (
+          <span className="pb-1">
+            <NutChon nho chon onClick={boTuan} title="Bỏ lọc tuần — xem mọi lớp">
+              Tuần <span className="tabular-nums">{tuanLich(tuanXem.weekStart)}</span> · <span className="tabular-nums">{lopTrongTuan!.size}</span> lớp
+            </NutChon>
+          </span>
+        )}
         {loai === 'ft' && soCanXepLai > 0 && (
           <span className="pb-1">
             <NutChon nho chon={locXepLai} onClick={() => {
@@ -171,7 +189,7 @@ export function KeHoachTestTab() {
       </div>
 
       {danhSach.length === 0 ? (
-        <div className="card"><Empty title={`Không có lớp nào khớp "${chu}"`} /></div>
+        <div className="card"><Empty title={chu ? `Không có lớp nào khớp "${chu}"` : 'Không có lớp nào có đợt Test trong tuần này'} /></div>
       ) : (
         <div className="space-y-3">
           {danhSach.map((l) => (

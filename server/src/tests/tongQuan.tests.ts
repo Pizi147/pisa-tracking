@@ -388,6 +388,9 @@ export async function runTongQuanTests(t: YThucTestKit) {
     assert(ft.weeks.every((w: any) => !w.normal.progressClasses.length && !w.normal.finalClasses.length && !w.normal.endingClasses.length), 'FT lẫn lớp thường');
     const th = hl.highlights(P.admin, { program: 'thuong' });
     assert(th.weeks.every((w: any) => !w.ft.mockClasses.length && w.ft.examStudents === 0) && th.examMonthOnly.students === 0, 'Lớp thường lẫn FT');
+    /* OV-6a: dòng lớp thường mang mã chương trình để Tổng quan hiện đúng bộ môn. */
+    const dong = th.weeks.flatMap((w: any) => [...w.normal.progressClasses, ...w.normal.finalClasses, ...w.normal.endingClasses]);
+    assert(dong.length > 0 && dong.every((r: any) => typeof r.programme === 'string'), 'Dòng lớp thường thiếu programme');
   });
 
   // ================================================================== 8. Nợ S1 (2)

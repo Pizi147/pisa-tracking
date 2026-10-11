@@ -3,6 +3,8 @@
 Nguồn: đặc tả OV mục 7.1 / D1 (`docs/superpowers/specs/2026-10-11-overhaul-ux-workflow-design.md`), mockup đã duyệt
 `thiet-ke/mockup-overhaul-3-tong-quan-vai-chuong-trinh-2026-10-11.html` §1 (1440 + 375).
 
+Trạng thái: [x] xong (11/10, nhánh `claude/gallant-cray-7igmoe`).
+
 ## Phạm vi
 - `web/src/modules/worklist/Highlights.tsx` (`LichSapToi`), chỗ đặt khối trong `OverviewPage.tsx` nếu cần cho chiều cao.
 - `server/src/worklist/highlights.ts` CHỈ khi thiếu dữ liệu (ưu tiên dùng nguyên `/highlights`, không đếm thêm).
