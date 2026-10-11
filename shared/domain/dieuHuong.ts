@@ -23,6 +23,8 @@ export type NavQuyen = {
   work: boolean; workSupport: boolean; workOps: boolean; workReports: boolean;
   /** PR-DUYET: hộp Chờ duyệt (`request.approve` — QL, Quản trị) · Yêu cầu của tôi (mọi người có việc học viên). */
   workApprove: boolean; workRequests: boolean;
+  /** PR-OV2a: Công việc chỉ nhóm Chấm điểm + Nhắc (vai Admin). */
+  workChamDiem: boolean;
   /** PR-XUAT: nút Xuất Excel kết quả Test — Quản lý/Quản trị theo phạm vi, GVCN lớp mình (không phải GVBM). */
   xuatMt: boolean;
 };
@@ -30,7 +32,7 @@ export type NavQuyen = {
 export const NAV_RONG: NavQuyen = {
   overview: true, students: false, admin: false, analysis: false, phanTichGv: false, hvCuaToi: false,
   test: false, testGrade: false, testSchedule: false, testPlan: false,
-  work: false, workSupport: false, workOps: false, workReports: false, workApprove: false, workRequests: false,
+  work: false, workSupport: false, workOps: false, workReports: false, workApprove: false, workRequests: false, workChamDiem: false,
   xuatMt: false,
 };
 

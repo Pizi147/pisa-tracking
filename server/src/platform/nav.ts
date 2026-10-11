@@ -20,6 +20,7 @@ export function navOf(p: Principal): NavQuyen {
   const test = attempt && coPhamVi(PERMISSIONS.TEST_VIEW);
   const viec = coPhamVi(PERMISSIONS.WORK_VIEW);
   const support = viec && attempt;
+  const chamDiem = phamViXemViec(p) === 'cham-diem';
   return {
     overview: true,
     students: coPhamVi(PERMISSIONS.STUDENT_VIEW),
@@ -31,7 +32,8 @@ export function navOf(p: Principal): NavQuyen {
     work: viec && (attempt || board || meeting),
     workSupport: support, workOps: viec && board, workReports: viec && meeting,
     /* Admin (chỉ nhóm Chấm điểm, `phamViXemViec`) không có Yêu cầu của tôi — không gửi yêu cầu nào. */
-    workApprove: viec && can(p, PERMISSIONS.REQUEST_APPROVE, { anyScope: true }), workRequests: support && phamViXemViec(p) !== 'cham-diem',
+    workApprove: viec && can(p, PERMISSIONS.REQUEST_APPROVE, { anyScope: true }), workRequests: support && !chamDiem,
+    workChamDiem: support && chamDiem,
     xuatMt: coPhamViXuat(phamViXuatMt(p)),
   };
 }

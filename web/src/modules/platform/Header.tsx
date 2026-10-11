@@ -17,7 +17,7 @@ type LopRef = { id: number; code: string; student_count: number };
 
 /** Thanh phải: tìm học viên + lớp (K1-43), thông báo, tài khoản. Không lặp lại điều hướng chính. */
 export function Header() {
-  const { session, signOut } = useSession();
+  const { session, signOut, doiGocNhin } = useSession();
   const toast = useToast();
   const navigate = useNavigate();
   const [q, setQ] = useState('');
@@ -275,6 +275,27 @@ export function Header() {
           <div className="absolute right-0 mt-1 w-[min(20rem,calc(100vw-2rem))] card p-3 z-40 shadow-2xl">
             <div className="text-sm font-medium text-slate-100">{session?.user?.fullName}</div>
             <div className="text-xs text-slate-500 mb-3">{session?.user?.title}</div>
+
+            {/* PR-OV2a (mockup overhaul-3 §2): đổi góc nhìn — chỉ vai tài khoản đang nắm; chọn vai gốc = về làm việc bằng mọi vai. */}
+            {session?.gocNhin && (
+              <div role="group" aria-label="Góc nhìn" className="mb-3 space-y-1">
+                <div className="label">Góc nhìn</div>
+                {session.gocNhin.coThe.map((v) => {
+                  const g = session.gocNhin!;
+                  const dangO = (g.dangChon ?? g.vaiGoc) === v.role;
+                  return (
+                    <button key={v.role} type="button" aria-pressed={dangO}
+                      onClick={() => { setOpenMenu(null); if (!dangO) void doiGocNhin(v.role === g.vaiGoc ? null : v.role).catch((e) => toast.push('error', e instanceof Error ? e.message : 'Không đổi được góc nhìn.')); }}
+                      className={`flex w-full min-h-[40px] max-sm:min-h-[44px] items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-left text-sm ${dangO
+                        ? 'border-[color:var(--accent-line)] bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)] font-medium'
+                        : 'border-transparent text-slate-200 hover:bg-white/5'}`}>
+                      <span className="shrink-0">{v.nhan}</span>
+                      <span className="min-w-0 truncate text-xs font-normal text-slate-500" title={v.phamVi}>· {v.phamVi}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             <div className="label">Phạm vi được cấp</div>
             <ul className="space-y-1 mb-3 list-none p-0">

@@ -22,12 +22,16 @@ import {
  * (chương trình · khoảng thời gian · lớp) — mọi góc nhìn đọc CÙNG bộ lọc này.
  */
 export function PhanTich() {
-  const { branchCount } = useSession();
+  const { branchCount, session } = useSession();
+  /* PR-OV2a: CX, TVV không có phần giáo viên (`nav.phanTichGv`); link cũ `?goc=giao-vien` về góc đầu. */
+  const gocCo = GOC_NHIN.filter((k) => k !== 'giao-vien' || !!session?.nav?.phanTichGv);
   const [params, setParams] = useSearchParams();
   /* PR-NV (T9): cùng mặc định với Tổng quan (tab Phân tích nằm trong Tổng quan). */
   const macDinh = useChiNhanhMacDinh();
   const branchId = params.get('cn') ? Number(params.get('cn')) : macDinh;
-  const { goc, ct: ctTuLoaiLop, boThamSo, gocMoi } = gocNhinTuThamSo(params);
+  const doc = gocNhinTuThamSo(params);
+  const { ct: ctTuLoaiLop, boThamSo, gocMoi } = doc;
+  const goc = gocCo.includes(doc.goc) ? doc.goc : gocCo[0];
   const ct = chuongTrinhTuThamSo(params.get('ct'));
   const tg = khoangTuThamSo(params.get('tg'));
   const classId = params.get('lop') ? Number(params.get('lop')) : null;
@@ -112,7 +116,7 @@ export function PhanTich() {
         <div ref={hangGoc} className="relative inline-flex max-w-full overflow-x-auto max-sm:[scrollbar-width:none] max-sm:pr-8 max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)]">
         <div role="radiogroup" aria-label="Góc nhìn" className="inline-flex shrink-0 rounded-lg border"
           style={{ borderColor: 'var(--line)' }}>
-          {GOC_NHIN.map((k) => (
+          {gocCo.map((k) => (
             <button key={k} type="button" role="radio" aria-checked={goc === k} onClick={() => setGoc(k)}
               className={`px-3 py-1.5 text-sm border-0 cursor-pointer whitespace-nowrap max-sm:min-h-10 ${
                 goc === k

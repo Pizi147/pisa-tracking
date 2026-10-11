@@ -107,8 +107,8 @@ export async function runPrOv2aTests(t: YThucTestKit) {
       assert(!(n as any).phanTichGv, `${k} còn Phân tích theo GV`);
     }
     const a = navOf(v.Admin);
-    assert(a.test && a.testPlan && a.work && a.workSupport && !a.workReports && !a.workOps && !a.workApprove && (a as any).phanTichGv, `Admin: ${JSON.stringify(a)}`);
     const ql = navOf(v.QL);
+    assert(a.test && a.testPlan && a.work && a.workSupport && a.workChamDiem && !ql.workChamDiem && !a.workReports && !a.workOps && !a.workApprove && (a as any).phanTichGv, `Admin: ${JSON.stringify(a)}`);
     assert(ql.test && ql.work && ql.workReports && ql.analysis && (ql as any).phanTichGv, `QL đổi: ${JSON.stringify(ql)}`);
     const gv = navOf(v.GVBM);
     assert(gv.test && gv.work && !gv.analysis, `GV đổi: ${JSON.stringify(gv)}`);

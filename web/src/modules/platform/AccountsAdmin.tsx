@@ -491,8 +491,15 @@ function AccountDialog({ account, branches, onClose, onDone }: {
                 </select>
                 {g.role === 'system_admin' ? (
                   <span className="text-xs text-slate-400">Toàn hệ thống — không gắn chi nhánh</span>
-                ) : (
-                  branches.map((b) => (
+                ) : (<>
+                  {/* PR-OV2a: CX mặc định toàn hệ thống (không chọn chi nhánh nào); chọn chi nhánh thì theo chi nhánh như vai khác. */}
+                  {g.role === 'cx' && (
+                    <NutChon nho chon={g.branches.size === 0}
+                      onClick={() => setGrants(grants.map((x, j) => (j === i ? { ...x, branches: new Set<string>() } : x)))}>
+                      Toàn hệ thống
+                    </NutChon>
+                  )}
+                  {branches.map((b) => (
                     <NutChon key={b.code} nho chon={g.branches.has(b.code)}
                       onClick={() => setGrants(grants.map((x, j) => {
                         if (j !== i) return x;
@@ -502,8 +509,8 @@ function AccountDialog({ account, branches, onClose, onDone }: {
                       }))}>
                       {b.code}
                     </NutChon>
-                  ))
-                )}
+                  ))}
+                </>)}
                 <button className="btn btn-sm btn-ghost ml-auto" type="button"
                   onClick={() => setGrants(grants.filter((_, j) => j !== i))}>Gỡ</button>
               </div>
