@@ -3,12 +3,13 @@
 Nguồn: prompt chủ sản phẩm 11/10 “PISA Prompt Overhaul UX/UI Workflow” (mục 1–7, góp ý D1–D11) + 5 đợt hỏi đáp + góp ý mockup
 bản 1 (11/10). Căn cứ mã: `main` = `0ac4c41` (#312). Quyết định gốc ghi ở `plan.md` mục 3 (các dòng 11/10) — file này là bản đầy đủ.
 
-Mockup (đã duyệt bản 2, 11/10 — chờ chủ SP xem lại lần cuối):
+Mockup (đã duyệt bản 2, 11/10):
 - M1 `thiet-ke/mockup-overhaul-1-cong-viec-diem-mt-2026-10-11.html` — Công việc tại chỗ · hộp nhập điểm · Lịch Test “phần của bạn” · huỷ / khôi phục MT · Quay lại
 - M2 `thiet-ke/mockup-overhaul-2-ho-so-lop-lo-trinh-2026-10-11.html` — đầu hồ sơ lớp + ⋯ · Thông tin lớp · Tổng hợp · Lộ trình tiếp theo · KQ lớp trước ở FT · dòng “Đầu vào” · hồ sơ HV
 - M3 `thiet-ke/mockup-overhaul-3-tong-quan-vai-chuong-trinh-2026-10-11.html` — Lịch sắp tới · đổi góc nhìn · TVV / CX / Admin · ma trận vai · Chương trình + PET/KET
 
-Ký hiệu: **[chốt]** = chủ SP đã quyết · **[tự quyết]** = planning chọn, chủ SP gạch được khi duyệt đặc tả.
+Ký hiệu: **[chốt]** = chủ SP đã quyết · **[tự quyết]** = planning chọn, chủ SP đã đồng ý khi duyệt đặc tả 11/10.
+**Trạng thái: chủ SP DUYỆT 11/10** (bỏ đề xuất “-” nhập bù dời tuần → “Không dự thi”). **Deploy MỘT lần sau khi xong toàn bộ OV.**
 
 ## 1. Đối chiếu hiện trạng (kiểm trên mã, không theo tài liệu cũ)
 
@@ -96,7 +97,7 @@ Thêm 3 vai vào `ROLES` (`shared/domain/people.ts`) + `ROLE_PERMISSIONS` (`serv
 
 ### 3.2 SOS Mock Test [chốt]
 1. Có điểm kỹ năng đầu tiên → **SOS tạm thời** (chip như hiện nay), **không** tạo Case / PA / việc / hạn.
-2. **Chốt** khi: mọi kỹ năng bắt buộc có điểm, **hoặc** mọi kỹ năng còn thiếu đã dời tuần (vắng) / huỷ phần thi. Lúc chốt:
+2. **Chốt** khi: mọi kỹ năng bắt buộc có điểm, **hoặc** mọi kỹ năng còn thiếu đã dời tuần (vắng) / huỷ phần thi / “Không dự thi”. Lúc chốt:
    Overall tính được (đủ 4 kỹ năng) **và ≥ kỳ vọng** → **không SOS**; ngược lại SOS theo số kỹ năng dưới kỳ vọng như cũ → Case + PA quy chế
    + hạn xác nhận 3 ngày **tính từ ngày chốt**.
 3. Sau chốt, kỹ năng dời có điểm và Overall thành ≥ kỳ vọng → **xoá SOS**: Case tự tạo còn “Chờ xác nhận” đóng hệ thống (“Overall đạt”);
@@ -104,8 +105,9 @@ Thêm 3 vai vào `ROLES` (`shared/domain/people.ts`) + `ROLE_PERMISSIONS` (`serv
 4. Chỉ MT1+; không đổi lớp thường, không đổi chip MT0 (≤ Target − 2.0, chỉ để nhìn). KCK như cũ (không SOS).
 
 ### 3.3 Dấu “-” = Vắng (MT) [chốt]
-- Gõ “-” hoặc bấm **Vắng** trong hộp: chốt ngay. Lần 1 → kỹ năng dời tuần sau tuần thi; nếu tuần đó đã qua (nhập bù) → **tuần sau của
-  tuần hiện tại** [tự quyết]. Lần 2 → huỷ phần thi. MT cũ (`lich_su`) → “Không dự thi”, không dời.
+- Gõ “-” hoặc bấm **Vắng** trong hộp **khi tuần thi chưa hết**: chốt ngay. Lần 1 → kỹ năng dời tuần sau tuần thi; lần 2 → huỷ phần thi.
+- Gõ “-” **sau khi tuần thi đã hết (nhập bù)** hoặc ở **MT cũ** (`lich_su`) → **“Không dự thi”**: không dời, không tính lần vắng,
+  không Case (chủ SP 11/10 — thay đề xuất “dời sang tuần sau của tuần hiện tại”).
 - Đường lui: **Bỏ vắng** (GV đúng kỹ năng, GVCN, QL; khi ô ở tuần mới chưa có điểm) → về tuần cũ, bộ đếm −1; hoặc nhập điểm thẳng.
   Đã huỷ phần thi → chỉ QL “Khôi phục phần thi” (đã có).
 - Bỏ đường “chờ hết Chủ nhật” (`settleNoShows`) cho dấu mới; dữ liệu “-” cũ chưa chốt được chốt một lần theo luật cũ khi migrate.
@@ -165,7 +167,8 @@ Thêm 3 vai vào `ROLES` (`shared/domain/people.ts`) + `ROLE_PERMISSIONS` (`serv
 | **OV-6b** (L) | Quản trị › Chương trình (mốc lặp, liên tục, tuần MT FT cấu hình, chép mốc vào lớp) + PET/KET | OV-3b | **sâu** (migrate lịch) |
 
 - Mỗi PR có kế hoạch ≤ 200 dòng ở `docs/superpowers/plans/` (planning viết trước khi giao). Giao diện: `/ponytail lite`, `clarify`,
-  `harden`, `adapt`, `audit` cuối. Sau OV-1a nên **deploy sớm** (lỗi MT0 đang ghi sai dữ liệu). PR-EN làm sau toàn bộ OV; PR-SOTAY cuối cùng.
+  `harden`, `adapt`, `audit` cuối. **Deploy một lần sau khi xong toàn bộ OV** (chủ SP 11/10); lệnh chỉ đọc (`kiem-du-lieu-mt`,
+  `kiem-o-lop`) chạy được trên bản chính từ máy chủ SP mà không cần deploy. PR-EN làm sau toàn bộ OV; PR-SOTAY cuối cùng.
 
 ## 6. Tiêu chí nghiệm thu (đối chiếu mục 1–7)
 1. **Vai**: TVV / CX / Admin đăng nhập thấy đúng thanh trên và phạm vi ở bảng mục 2; gọi API ngoài quyền → 403 (phép kiểm theo từng vai).
@@ -179,7 +182,7 @@ Thêm 3 vai vào `ROLES` (`shared/domain/people.ts`) + `ROLE_PERMISSIONS` (`serv
    (nhắc từ tuần 8, chốt trước hết tuần 8, bàn giao trước hết tuần 10, ≥ 2 ngày sau chốt); đổi lớp đích sau chốt → phiếu cũ đóng + chuông;
    FT bàn giao 5 ngày. KQĐR: GVCN đề xuất không tạo Case; QL chốt Không đạt · Trung tâm tạo Case + Tutor; FOU Overall 4.0 đạt, 3.5 không.
    Bảng KQ lớp trước ở FT hiện đúng 4 tuần theo từng đợt, hai chương trình hai bảng.
-5. **Test**: “-” lần 1 dời ngay, lần 2 huỷ phần thi, nhập bù không dời vào tuần đã qua; Bỏ vắng trả về như trước; không còn ô “-” bị trống
+5. **Test**: “-” trong tuần thi: lần 1 dời ngay, lần 2 huỷ phần thi; “-” nhập bù sau tuần thi / MT cũ = “Không dự thi”, không dời; Bỏ vắng trả về như trước; không còn ô “-” bị trống
    sau Enter; em đủ “-” không còn báo quá hạn. Dòng lớp và ô đếm cùng số. SOS MT: điểm đầu tiên không tạo Case; chốt đúng 3 trường hợp; Overall
    đạt → không SOS; xoá SOS khi kỹ năng dời có điểm. Huỷ lượt giữ điểm ẩn; khôi phục ra đúng trạng thái trước; bị chặn có câu rõ.
    Hộp nhập điểm: W1 / W2 lưu riêng, nhận xét 4 kỹ năng, R/L hiện số câu.
