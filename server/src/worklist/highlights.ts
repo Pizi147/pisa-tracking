@@ -35,10 +35,11 @@ export type HighlightWeek = {
   /** 0 = tuần này, 1 = tuần tới, 2 = tuần nữa. */
   offset: number;
   normal: {
-    progressClasses: { id: number; code: string; students: number }[];
-    finalClasses: { id: number; code: string; students: number }[];
+    /** `programme`: mã chương trình của lớp — Tổng quan hiện đúng bộ môn (OV-6a). */
+    progressClasses: { id: number; code: string; students: number; programme: string | null }[];
+    finalClasses: { id: number; code: string; students: number; programme: string | null }[];
     /** Lớp kết thúc chương trình trong tuần này — để chuẩn bị kế hoạch chuyển tiếp trước. */
-    endingClasses: { id: number; code: string; students: number }[];
+    endingClasses: { id: number; code: string; students: number; programme: string | null }[];
   };
   ft: {
     /** Học viên có MT rơi vào tuần này, gom theo lớp để mở đúng bảng điểm. */
@@ -73,7 +74,7 @@ export function visibleClasses(p: Principal, branchId: number | null, program: C
   where.push(ps.sql);
   args.push(...ps.params);
   return conn
-    .prepare(`SELECT c.id, c.code, c.is_fast_track, c.branch_id FROM classes c WHERE ${where.join(' AND ')}`)
+    .prepare(`SELECT c.id, c.code, c.is_fast_track, c.branch_id, c.programme_code FROM classes c WHERE ${where.join(' AND ')}`)
     .all(...args) as any[];
 }
 
@@ -118,7 +119,7 @@ export function highlights(p: Principal, f: { branchId?: number | null; program?
       if (c.is_fast_track) continue;
       const pr = progress.get(c.id);
       if (!pr) continue;
-      const row = { id: c.id, code: c.code, students: size.get(c.id) ?? 0 };
+      const row = { id: c.id, code: c.code, students: size.get(c.id) ?? 0, programme: c.programme_code ?? null };
       if (pr.progressWeekStart === weekStart) w.normal.progressClasses.push(row);
       if (pr.finalWeekStart === weekStart) w.normal.finalClasses.push(row);
       /*

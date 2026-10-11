@@ -102,6 +102,7 @@ Kế hoạch các PR OV khác: planning viết **ngay trước khi giao** (theo 
 
 | Giai đoạn | PR (số GitHub) | Nội dung chính |
 |---|---|---|
+| 11/10/2026 | OV-6a (Opus 5.5) · `claude/gallant-cray-7igmoe` | Lịch sắp tới gọn: 3 tab tuần, mỗi lớp một dòng (chip lượt, cột môn), tối đa 5 lớp + “+ n lớp”; “Xem toàn bộ lịch” → Kế hoạch Test lọc `?tuan=`; `/highlights` thêm `programme` |
 | Demo đầu tiên (08–17/09) | #1–#17 | Bản demo chạy trên máy |
 | Sau PR18 (18–20/09) | #18–#30 | PR1 số khớp danh sách, PR-A Case Ý thức, PR2 bộ chọn tuần + Kế hoạch Test, PR-C form Case, PR-D khung Case, PR-E…I (nền giao diện, hợp đồng số liệu, dấu "-", hồ sơ Test, biên tập chữ) |
 | Lộ trình 8 PR + v3 (21–22/09) | #31–#66 | PR-N bằng chứng, PR-J Ý thức vi phạm/biện pháp, PR-T máy chủ v3, PR-K/K2/K3 giao diện Ý thức, PR-Z2a/b/b2 hạ tầng Netlify + Turso, PR-HV hồ sơ HV, PR-S1, PR-O 4 khu vực, PR-AN an toàn, PR-S2 |
