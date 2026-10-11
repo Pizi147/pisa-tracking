@@ -89,7 +89,7 @@ function cmpKey(a: readonly unknown[], b: readonly unknown[]): number {
 }
 
 type CoDot = { giua: boolean; cuoi: boolean };
-type DongRaw = { khoa: string; nhan: string; phu?: string; tap: Tap; sortKey: readonly unknown[]; con: Map<string, DongRaw>; coDot: CoDot };
+type DongRaw = { khoa: string; nhan: string; phu?: string; tuanNay?: boolean; tap: Tap; sortKey: readonly unknown[]; con: Map<string, DongRaw>; coDot: CoDot };
 const coDotMoi = (): CoDot => ({ giua: false, cuoi: false });
 
 export type FilterTongHop = { branchId?: number | null; ct: ChuongTrinh; soTuan: number; classId?: number | null; theo: TheoDong };
@@ -146,12 +146,13 @@ function tinh(p: Principal, f: FilterTongHop) {
   const hangMap = new Map<string, DongRaw>();
   const dongCua = new Map<number, { cha: string; con: string }>();
 
-  const chaCua = (a: any): { khoa: string; nhan: string; phu?: string; sortKey: readonly unknown[] } => {
+  const chaCua = (a: any): { khoa: string; nhan: string; phu?: string; tuanNay?: boolean; sortKey: readonly unknown[] } => {
     if (f.theo === 'tuan') {
       const trongTuanNay = a.week_start <= today && a.week_end >= today;
       return {
         khoa: `tuan:${a.period_id}`, nhan: tuanLich(a.week_start, today),
         phu: `${ngay(a.week_start, today)}–${ngay(a.week_end, today)}${trongTuanNay ? ' · tuần này' : ''}`,
+        tuanNay: trongTuanNay,
         sortKey: [a.week_start],
       };
     }
@@ -180,7 +181,7 @@ function tinh(p: Principal, f: FilterTongHop) {
   const dongOf = (a: any): { cha: DongRaw; con: DongRaw } => {
     const par = chaCua(a);
     let cha = hangMap.get(par.khoa);
-    if (!cha) { cha = { khoa: par.khoa, nhan: par.nhan, phu: par.phu, tap: new Map(), sortKey: par.sortKey, con: new Map(), coDot: coDotMoi() }; hangMap.set(par.khoa, cha); }
+    if (!cha) { cha = { khoa: par.khoa, nhan: par.nhan, phu: par.phu, tuanNay: par.tuanNay, tap: new Map(), sortKey: par.sortKey, con: new Map(), coDot: coDotMoi() }; hangMap.set(par.khoa, cha); }
     const chi = conCua(a);
     const khoaChi = `${par.khoa}|${chi.khoa}`;
     let con = cha.con.get(khoaChi);
@@ -291,7 +292,7 @@ export function tongHop(p: Principal, f: FilterTongHop): TongHopKetQua {
   const cols = cotTongHopFor(r.ct).map((c) => c.khoa);
   const oCols = [...cotSoLieu(r.ct).map((c) => c.khoa), 'choNguyenNhanQuaHan'];   // cột ghép "HV - Case" mang hai số: hvCoCase và case
   const gon = (d: DongRaw): DongTongHop => ({
-    khoa: d.khoa, nhan: d.nhan, phu: d.phu, o: soCuaTap(d.tap, oCols), ...(r.ct === 'thuong' ? { coDot: d.coDot } : {}),
+    khoa: d.khoa, nhan: d.nhan, phu: d.phu, ...(d.tuanNay !== undefined ? { tuanNay: d.tuanNay } : {}), o: soCuaTap(d.tap, oCols), ...(r.ct === 'thuong' ? { coDot: d.coDot } : {}),
     con: (d as any).conSorted?.length ? (d as any).conSorted.map(gon) : undefined,
   });
   return { theo: r.theo, ct: r.ct, cot: cols, hang: r.hang.map(gon), tong: soCuaTap(r.tongTap, oCols), tongCoDot: r.tongCoDot, scopeEmpty: r.scopeEmpty };

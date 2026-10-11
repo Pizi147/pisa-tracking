@@ -9,6 +9,7 @@ export async function runPrOv1aTests(t: YThucTestKit) {
   const attempts: any = await import('../fasttrack/attempts.ts');
   const dl: any = await import('../cham/diemTheoLuot.ts');
   const dm: any = await import('../../../shared/domain/index.ts');
+  const tongHop: any = await import('../phanTich/tongHop.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   console.log('\nPR-OV1a · MT0 nhập đúng bảng, Điểm theo lớp, lệnh kiểm chỉ đọc');
 
@@ -89,5 +90,21 @@ export async function runPrOv1aTests(t: YThucTestKit) {
       const l = dl.danhSachLuot(QL, em.classId).luot.find((x: any) => x.ma === 'thuong:mt0');
       assert(l?.oTrong === 5 && l.coLich === 1, `oTrong ${l?.oTrong} coLich ${l?.coLich}`);
     });
+  });
+
+  check('OV1a-5 · tên tab "Lịch Test / Chấm Test"; Tổng hợp theo tuần: đúng một hàng tuanNay (hàng "tuần này")', () => {
+    assert(dm.TAB_TEST_LABEL.lich === 'Lịch Test / Chấm Test', `nhãn: ${dm.TAB_TEST_LABEL.lich}`);
+    let coTuanNay = 0;
+    for (const ct of ['ft', 'thuong']) {
+      const r = tongHop.tongHop(QL, { ct, soTuan: 12, theo: 'tuan' });
+      const nay = r.hang.filter((h: any) => h.tuanNay === true);
+      assert(r.hang.every((h: any) => typeof h.tuanNay === 'boolean'), `${ct}: hàng thiếu tuanNay`);
+      assert(nay.length <= 1 && nay.every((h: any) => h.phu?.includes('tuần này'))
+        && r.hang.filter((h: any) => h.phu?.includes('tuần này')).length === nay.length, `${ct}: ${JSON.stringify(r.hang.map((h: any) => [h.nhan, h.tuanNay]))}`);
+      coTuanNay += nay.length;
+    }
+    assert(coTuanNay >= 1, 'demo cần ít nhất một hàng tuần này');
+    const lop = tongHop.tongHop(QL, { ct: 'ft', soTuan: 12, theo: 'lop' });
+    assert(lop.hang.every((h: any) => h.tuanNay === undefined), 'theo lớp không có tuanNay');
   });
 }

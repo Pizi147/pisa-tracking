@@ -165,7 +165,7 @@ export function noiDenThongBao(n: ThongBaoRow): string | null {
   if (path.startsWith('/cong-viec/cho-duyet')) return 'Công việc › Chờ duyệt';
   if (path.startsWith('/cong-viec')) return 'Công việc';
   if (path.startsWith('/mock-test/')) return `Test › Lượt thi${n.ten_hv ? ` của ${n.ten_hv}` : ''}`;
-  if (path.startsWith('/test')) return 'Test › Lịch Test';
+  if (path.startsWith('/test')) return 'Test › Lịch Test / Chấm Test';
   if (path.startsWith('/quan-tri')) return 'Quản trị › Tài khoản';
   return null;
 }

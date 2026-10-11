@@ -66,7 +66,7 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
   const [open, setOpen] = useState<Set<string>>(new Set());
   const [cotHien, setCotHien] = useState<Set<NhomCot>>(() => docCotHien());
   const [moXuat, setMoXuat] = useState(false);
-  /* Mặc định thu gọn; hàng lớn ĐẦU TIÊN (tuần mới nhất) mở sẵn, một lần cho mỗi cách xếp dòng. */
+  /* Mặc định thu gọn; hàng lớn đầu tiên (theo tuần: tuần trước) mở sẵn, một lần cho mỗi cách xếp dòng. */
   const daMoSan = useRef<string | null>(null);
   useEffect(() => { setOpen(new Set()); daMoSan.current = null; }, [theo]);
 
@@ -86,7 +86,8 @@ export function TongHopTestSos({ branchId, ct, tg, classId }: {
   useEffect(() => {
     if (!data || data.theo !== theo || daMoSan.current === theo) return;
     daMoSan.current = theo;
-    const dau = data.hang[0];
+    /* PR-OV1a (7.2): theo tuần mở sẵn tuần TRƯỚC (tuần này còn đang chấm) — hàng có dòng con mới nhất không phải tuần này. */
+    const dau = data.theo === 'tuan' ? data.hang.find((h) => h.con?.length && !h.tuanNay) ?? data.hang[0] : data.hang[0];
     if (dau?.con?.length) setOpen(new Set([dau.khoa]));
   }, [data, theo]);
 
