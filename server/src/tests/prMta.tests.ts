@@ -799,7 +799,7 @@ export async function runPrMtaTests(t: YThucTestKit) {
   check('Rà #212 (I1, 5) · web: xoá trắng ô có điểm không khoá Lưu, nhãn "Lý do (tuỳ chọn)"; hộp kỹ năng không chặn tuần đã qua', () => {
     const se = nguon('web/src/modules/fasttrack/ScoreEntry.tsx');
     assert(!/Lý do huỷ/.test(se) && !/kiemLyDoThaoTac\('huy-diem'/.test(se), 'ScoreEntry còn bắt lý do khi xoá');
-    assert(/Lý do \(tuỳ chọn\)/.test(se), 'nhãn');
+    assert(/Lý do sửa \(tuỳ chọn\)/.test(nguon('web/src/modules/fasttrack/HopNhapDiem.tsx')), 'nhãn (OV-4b: hộp nhập điểm)');
     const hk = nguon('web/src/modules/test/keHoach/HopKyNang.tsx');
     assert(!/toiThieu=\{!moi && !lichSu \? homNay/.test(hk), 'HopKyNang còn chặn tuần đã qua');
   });

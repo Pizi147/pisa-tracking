@@ -327,14 +327,11 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     assert(chu('Kèm 1-1 · Reading') === 'Xác nhận PA Kèm 1-1 · Reading', 'tên tự viết bị cắt');
   });
 
-  check('C23 · J9: ô FT chưa có điểm ghi "Nhập" (không "— sửa"); ô có điểm giữ "6.5 sửa"; đầu cột S ghi "GV chấm: tên thật" + title có tên', () => {
-    const s = doc('web/src/modules/fasttrack/ScoreEntry.tsx');
-    const i = s.indexOf("title={hieuChinh ? 'Sửa bốn tiêu chí đã chấm.'");
-    assert(i >= 0, 'không thấy nút bốn tiêu chí');
-    const nut = s.slice(i, s.indexOf('</button>', i));
-    assert(/'Nhập'/.test(nut) && /cell\.band === null/.test(nut), 'ô trống chưa ghi "Nhập"');
-    assert(!/lon && cell\.band === null && nhanDau \? ''/.test(nut), 'ô trống còn chữ rỗng + "sửa"');
-    assert(/>sửa</.test(nut) && /fmtBand\(cell\.band\)/.test(nut), 'ô có điểm phải giữ "6.5 sửa"');
+  /* OV-4b (mockup overhaul-1 §3): ô có điểm ghi band ("5.0"; L/R "14 · 4.5"), bỏ chữ "sửa". */
+  check('C23 · J9: ô FT chưa có điểm ghi "Nhập" (không "— sửa"); ô có điểm ghi band; đầu cột S ghi "GV chấm: tên thật" + title có tên', () => {
+    const s = doc('web/src/modules/fasttrack/HopNhapDiem.tsx');
+    assert(/\{chu \?\? 'Nhập'\}/.test(s), 'ô trống chưa ghi "Nhập"');
+    assert(/if \(c\.band !== null\) return fmtBand\(c\.band\);/.test(s), 'ô có điểm phải ghi band');
     assert(/<NutGvCham nhan="GV chấm S" value=/.test(doc('web/src/modules/cham/LuoiFT.tsx')) && /<NutGvCham hang nhan="GV chấm S" value=/.test(doc('web/src/modules/cham/MotKyNang.tsx')), 'đầu cột S dùng NutGvCham (luôn ghi "GV chấm: tên thật")');
     assert(/title=\{`GV chấm Speaking: \$\{ten/.test(doc('web/src/modules/cham/GvCham.tsx')), 'GvCham: title phải ghi tên (phòng khi tên dài)');
   });
@@ -465,7 +462,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
   });
 
   check('C41 · điện thoại: dòng "Còn n ngày để sửa" dưới ô "-" (DongDau) xuống dòng, không cắt "…" (máy tính giữ truncate + title)', () => {
-    const se2 = doc('web/src/modules/fasttrack/ScoreEntry.tsx'), i = se2.indexOf('function DongDau(');
+    const se2 = doc('web/src/modules/fasttrack/HopNhapDiem.tsx'), i = se2.indexOf('function DongDau(');
     assert(i >= 0, 'không thấy DongDau');
     const dd = se2.slice(i, i + 700);   // thân hàm ngắn; không dò dấu } vì tệp có thể CRLF
     assert(/truncate[^"]*max-sm:max-w-none[^"]*max-sm:whitespace-normal/.test(dd), 'DongDau: thiếu max-sm:max-w-none + max-sm:whitespace-normal');
@@ -495,13 +492,12 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     }
   });
 
-  check('C30 · CriteriaModal (hộp bốn tiêu chí): đã gõ thì Esc / bấm nền / ✕ hỏi trước khi bỏ; nút "Huỷ thay đổi" ở chân bỏ thẳng', () => {
-    const s = doc('web/src/modules/fasttrack/ScoreEntry.tsx');
-    const m = s.slice(s.indexOf('export function CriteriaModal'));
-    const kp = m.slice(m.indexOf('<KhungPanel'), m.indexOf('<KhungPanel') + 700);
-    assert(/const daSua =/.test(m), 'CriteriaModal chưa tách daSua');
-    assert(/onDong=\{\(\) => \{ if \(busy\) return; if \(daSua && !window\.confirm\(/.test(kp), `onDong chưa hỏi khi daSua: ${kp}`);
-    assert(/chan=\{\{\s*daSua,/.test(kp) && /huy: \{ onClick: onClose,/.test(kp), 'chân phải truyền daSua và Huỷ thay đổi gọi onClose thẳng');
+  /* OV-4b: hộp nhập điểm thay CriteriaModal — cùng luật không mất chữ đang gõ. */
+  check('C30 · Hộp nhập điểm (thay CriteriaModal): đã gõ thì Esc hỏi trước khi bỏ; bấm ra ngoài giữ hộp', () => {
+    const s = doc('web/src/modules/fasttrack/HopNhapDiem.tsx');
+    const dong = s.slice(s.indexOf('  const dong = () => {'), s.indexOf('  const dong = () => {') + 200);
+    assert(/if \(daGo && !window\.confirm\('Bỏ các giá trị đã gõ\?'\)\) return;/.test(dong), `dong chưa hỏi khi đã gõ: ${dong}`);
+    assert(/if \(!moi\.current\.daGo\) moi\.current\.onDong\(\);/.test(s), 'bấm ra ngoài khi đã gõ phải giữ hộp');
   });
 
   check('C31 · App: dải Mất kết nối role="status"; "Thử lại" khoá khi đang thử, chữ "Đang thử…"', () => {

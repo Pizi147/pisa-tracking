@@ -839,7 +839,10 @@ api.post('/attempts/:id/cancel', requireAuth, wrap((req) => {
 
 api.post('/attempts/:id/reopen', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return attemptSvc.reopenAttempt(principalOf(req), pInt(req, 'id'));
+  /* PR-OV4a: Khôi phục lượt — `banId` chọn bản huỷ khi có > 1 (mặc định mới nhất). */
+  const banId = req.body?.banId;
+  if (banId != null && !Number.isInteger(banId)) throw badRequest('Bản huỷ không hợp lệ.');
+  return attemptSvc.reopenAttempt(principalOf(req), pInt(req, 'id'), { banId: banId ?? null });
 }));
 
 /**
@@ -1355,7 +1358,7 @@ api.put('/regular/attempts/:id/scores/:skill', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   const b = req.body ?? {};
   return regularSvc.saveRegularScore(principalOf(req), pInt(req, 'id'), req.params.skill, {
-    score: b.score, total: b.total, note: b.note, lyDo: b.lyDo,
+    score: b.score, total: b.total, note: b.note, lyDo: b.lyDo, nhanXet: b.nhanXet,
     noShow: b.noShow === true ? true : b.noShow === false ? false : undefined,
   });
 }));

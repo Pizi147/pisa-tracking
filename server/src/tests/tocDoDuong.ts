@@ -755,6 +755,8 @@ export const TRAN_DONG: Record<string, number> = {
 export const TRAN_GHI_LO = {
   /** PR-VN4: Huỷ cả lượt (`huyLuot`) lượt nặng nhất trên dữ liệu cuối run.ts — trước 223–341 câu (bản chính 329): Huỷ điểm từng ô qua `saveScore`. */
   huyCaLuot: 120,
+  /** PR-OV4a: Khôi phục lượt (`reopenAttempt` đưa bản cất về: lượt, lịch, điểm, Case / PA / Phối hợp / tín hiệu) — lượt nặng nhất trên dữ liệu cuối run.ts. */
+  khoiPhucLuot: 106,   // đo 81 câu (272 lượt) → max(81 + 10, ⌈81 × 1,3⌉)
   /** POST /my-work/nhac-nhieu — VIEC-NHO-2: "Nhắc tất cả" ở Công việc › Của GV, lô 50 việc (trần 10 s Netlify ≈ 200 câu ở 35 ms/câu). */
   nhacTatCaCuaGv: 200,
   /** POST /notifications/doc-het — một câu UPDATE (S6F-a 10e) + phiên/quyền. PR-Dọn (9d): trần đặt sau khi đo. */

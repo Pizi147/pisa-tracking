@@ -186,12 +186,14 @@ export type ChupCaseDong = {
 };
 
 /**
- * MỞ LẠI ĐÚNG CÁC CASE / PA / TÍN HIỆU mà MỘT lần hệ thống đóng (PR-LUI-b, chủ sản phẩm 06/10 — Hoàn tác Kết thúc học). `chup` + `tinHieu` là kết quả của
+ * MỞ LẠI ĐÚNG CÁC CASE / PA / TÍN HIỆU mà MỘT lần hệ thống đóng (PR-LUI-b, chủ sản phẩm 06/10 — Hoàn tác Kết thúc học; PR-OV4a — Khôi phục lượt MT). `chup` + `tinHieu` là kết quả của
  * `closeCasesBySystem` lần đó. Case đóng từ trước (không nằm trong `chup`) giữ đóng. Case đã bị người sửa / đóng lại theo cách khác (không còn
  * `system_close_reason = reason`), hoặc đã có Case MỚI cùng khoá chống trùng thì bỏ qua và báo `boQua`. Gọi trong giao dịch của nơi gọi.
  */
 export function moLaiCaseHeThongDong(input: {
   actorUserId: number | null; studentId: number; reason: SystemCloseReason; chup: ChupCaseDong[]; tinHieu: number[];
+  /** Lý do trong nhật ký `case.system_reopen` (PR-OV4a: "Khôi phục MT2"). Mặc định "Hoàn tác Kết thúc học". */
+  lyDo?: string;
 }): { moLai: number[]; boQua: number[] } {
   const conn = db();
   const moLai: number[] = [];
@@ -214,7 +216,7 @@ export function moLaiCaseHeThongDong(input: {
     conn.prepare('DELETE FROM journey_events WHERE dedup_key = ?').run(`case_system_close:${c.id}`);
     writeAudit({
       actorUserId: input.actorUserId, action: 'case.system_reopen', entityType: 'sos_case', entityId: c.id, entityLabel: SYSTEM_CLOSE_REASON_LABEL[input.reason],
-      before: { status: 'done' }, after: { status: c.status, lyDo: 'Hoàn tác Kết thúc học' },
+      before: { status: 'done' }, after: { status: c.status, lyDo: input.lyDo ?? 'Hoàn tác Kết thúc học' },
     });
     moLai.push(c.id);
   }

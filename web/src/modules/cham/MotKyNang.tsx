@@ -4,25 +4,25 @@
  * Đúng cách giáo viên chấm thật: xong cả lớp một kỹ năng rồi mới sang kỹ năng khác. Không có bảng năm cột, không cuộn
  * ngang. Trên cùng là hàng chip chọn kỹ năng kèm "{đã nhập}/{tổng}"; dưới là danh sách học viên, mỗi em MỘT ô to.
  *
- * KHÔNG CÓ LUẬT THỨ HAI: ô điểm là chính các ô của lưới (`RawScoreInput`, `CriteriaButton`, `ODiemThuong`) ở cỡ `lon`,
- * lưu bằng chính `useSaveScore` / `useLuuThuong`. Nên gõ "-" (FT: đếm ngược DS02; lớp thường: môn dời sang tuần sau),
- * ô đã có điểm sửa qua hộp tại ô, lý do tuỳ chọn (RB-5, T7), Enter/↓ xuống em kế tiếp, Esc huỷ — y hệt trên máy tính.
+ * KHÔNG CÓ LUẬT THỨ HAI: ô điểm là chính các ô của lưới (`ODiemMt` → hộp nhập điểm, tấm trượt từ dưới; `ODiemThuong`) ở cỡ `lon`,
+ * lưu bằng chính `useSaveScore` / `useLuuThuong`. Nên "-" = Vắng, ô đã có điểm thêm lý do tuỳ chọn (RB-5, T7), "Lưu · em tiếp ›"
+ * (FT) / Enter↓ (lớp thường) xuống em kế tiếp, Esc huỷ — y hệt trên máy tính.
  *
  * Kỹ năng mình được phân công đứng trước; kỹ năng khác vẫn chọn được để đối chiếu, nhưng ô chỉ đọc.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ATTEMPT_KIND_SHORT, BAI_CO_NHAN_XET, ENTRY_SKILLS, maHocVienNgan, ngay, tenMon, tenMonNgan, type AttemptKind, type NguoiChon,
+  ATTEMPT_KIND_SHORT, ENTRY_SKILLS, maHocVienNgan, ngay, tenMon, tenMonNgan, tuanLich, type AttemptKind, type NguoiChon,
 } from '@shared/domain/index.ts';
 import { dotGvCham, duongDotTest } from '@shared/domain/index.ts';
 import { fmtBand } from '../../lib/format.ts';
 import { Info } from '../../ui/ui.tsx';
 import { NhanCu } from '../../ui/OMt.tsx';
 import {
-  ChoNutDau, CriteriaButton, KHOA_HOAN_TAT_HINT, ODiemThuong, RawScoreInput, datPhanTram, lockedByNoShow, useSaveScore, type Cell,
+  ChoNutDau, KHOA_HOAN_TAT_HINT, ODiemThuong, datPhanTram, suaDuoc, useSaveScore, type Cell,
 } from '../fasttrack/ScoreEntry.tsx';
-import { HopNhanXet } from '../fasttrack/NhanXet.tsx';
+import { NutNhanXet, ODiemMt } from '../fasttrack/HopNhapDiem.tsx';
 import { GOI_Y_COT_MT, NutGvCham, useGvChamCot } from './GvCham.tsx';
 import { DongThi, nhanKyNangFt } from './DongThi.tsx';
 import { DauLuu, DauO, LuoiFT, VIEN_LOI, khopKn, oTrongFt, type FtSheet, type HangMo } from './LuoiFT.tsx';
@@ -152,7 +152,9 @@ function MotKyNangFt({ data, onReload, kn, hv, hangMo }: {
   );
   const conTrong = (k: string) => data.rows.some((r) => { const c = oCua(r, k); return !!c && oTrongFt(c); });
   const [chon, setChon] = useKyNangChon(dsKn, (k) => minh.has(k), conTrong, kn);
-  const { phim, dangKy } = useDiChuyen();
+  /* Hộp đang mở (lượt) — "Lưu · em tiếp ›" sang em kế có ô mở được của kỹ năng đang chọn. */
+  const [mo, setMo] = useState<number | null>(null);
+  const [moChon, setMoChon] = useState<string | null>(null);
   /* K4-24: GV chấm chọn một lần cho cả lớp × tuần — cùng ô nhớ với tiêu đề cột S của lưới máy tính. */
   const dot = dotGvCham(data.period?.id, data.rows.map((r) => r.attemptNo));
   const [gvCot, setGvCot] = useGvChamCot(data.classId, dot);
@@ -174,9 +176,13 @@ function MotKyNangFt({ data, onReload, kn, hv, hangMo }: {
       )}
       <ul className="m-0 p-0 list-none">
         {data.rows.map((r, i) => (
-          <DongFt key={r.attemptId} row={r} k={chon} nhieuMt={nhieuMt}
+          <DongFt key={r.attemptId} row={r} k={chon} nhieuMt={nhieuMt} lop={data.classCode}
             active={hv !== null && r.studentId === hv} onReload={onReload} gvMacDinh={gvCot}
-            inputRef={dangKy(i)} onKeyDown={phim(i)} />
+            mo={mo === r.attemptId && moChon === chon} onMo={(m) => { setMo(m ? r.attemptId : null); setMoChon(chon); }}
+            onTiep={() => {
+              const ke = data.rows.slice(i + 1).find((x) => { const c = oCua(x, chon); return !!c && suaDuoc(c); });
+              setMo(ke?.attemptId ?? null);
+            }} />
         ))}
         {/* PR-DL: em chưa có lịch lượt này — hàng mờ cuối danh sách, không có ô. */}
         {hangMo.map((h) => (
@@ -191,17 +197,16 @@ function MotKyNangFt({ data, onReload, kn, hv, hangMo }: {
   );
 }
 
-function DongFt({ row, k, nhieuMt, active, onReload, gvMacDinh, inputRef, onKeyDown }: {
-  row: FtSheet['rows'][number]; k: string; nhieuMt: boolean; active: boolean; onReload: () => void;
+function DongFt({ row, k, nhieuMt, lop, active, onReload, gvMacDinh, mo, onMo, onTiep }: {
+  row: FtSheet['rows'][number]; k: string; nhieuMt: boolean; lop: string; active: boolean; onReload: () => void;
   gvMacDinh: NguoiChon | null;
-  inputRef: (el: HTMLInputElement | null) => void; onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  mo: boolean; onMo: (mo: boolean) => void; onTiep: () => void;
 }) {
-  const { save, status, lastError, retry, o, loi, luuLai, soLoi, loiNhap, coGuiLai } = useSaveScore(row.attemptId, onReload, row.studentName);
+  const { save, status, lastError, retry, o, loi, luuLai, soLoi, coGuiLai } = useSaveScore(row.attemptId, onReload, row.studentName);
   const c = oCua(row, k);
   const kv = row.result?.expectation ?? null;
   const phu = [nhieuMt ? `MT${row.attemptNo}` : null, kv !== null ? `KV ${fmtBand(kv)}` : maHocVienNgan(row.studentCode)]
     .filter(Boolean).join(' · ');
-  const laSoCau = k === 'listening' || k === 'reading';
   return (
     <DongHv studentId={row.studentId} active={active} ten={row.studentName} href={duongDotTest({ id: row.attemptId }, k)}
       phu={phu} phuTitle={kv !== null ? `Kỳ vọng (KV) của lượt này: ${fmtBand(kv)} · ${maHocVienNgan(row.studentCode)}` : undefined}
@@ -212,17 +217,12 @@ function DongFt({ row, k, nhieuMt, active, onReload, gvMacDinh, inputRef, onKeyD
       <div className={`shrink-0 flex items-center justify-end gap-1 rounded-md ${o[k] === 'loi' ? VIEN_LOI : ''}`} data-kn={k}
         data-trong={c && oTrongFt(c) ? '1' : undefined} data-luu={o[k]}>
         <DauO lon tt={o[k]} loi={loi[k]} onLuuLai={() => luuLai(k)} />
-        {!c ? <span className="inline-flex items-center gap-1.5"><span className="text-slate-600">—</span><ChoNutDau /></span>
-          : laSoCau
-            ? <RawScoreInput lon cell={c} onSave={(p, o) => save(k, p, o)} inputRef={inputRef} onKeyDown={onKeyDown}
-                tenHv={row.studentName} onLoiNhap={(x) => loiNhap(k, x)} />
-            : <CriteriaButton lon cell={c} onSave={(p, o) => save(k, p, o)} tenHv={row.studentName}
-                gvMacDinh={k === 'speaking' ? gvMacDinh : null} />}
-        {/* Nhận xét W1/W2/S (YC-13.5): ✎ cạnh ô — chỉ khi sửa được ô đó. */}
-        {(BAI_CO_NHAN_XET as readonly string[]).includes(k) && (c && c.canEdit && !lockedByNoShow(c) ? (
-          <HopNhanXet tieuDe={`${tenMon(null, k)} · ${row.studentName}`} giaTri={c.nhanXet ?? null}
-            onLuu={(v) => save(k, { nhanXet: v })} />
-        ) : <span aria-hidden className="inline-block w-11 shrink-0" />)}
+        {!c ? <span className="text-slate-600">—</span> : (
+          <ODiemMt lon cell={c} mo={mo} onMo={onMo} onTiep={onTiep} onSave={(p, x) => save(k, p, x)}
+            gvMacDinh={k === 'speaking' ? gvMacDinh : null}
+            ctx={{ tenHv: row.studentName, lop, luot: `MT${row.attemptNo}`, kyVong: kv, mt0: !!row.mt0Sos,
+              bandTaskKia: k === 'writing1' ? oCua(row, 'writing2')?.band ?? null : k === 'writing2' ? oCua(row, 'writing1')?.band ?? null : undefined }} />
+        )}
       </div>
     </DongHv>
   );
@@ -299,7 +299,7 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
   row: DongThuongRow; k: string; sheet: ThuongSheet; tongCot: number | null; active: boolean; onReload: () => void; tuanDangXem: string | null;
   inputRef: (el: HTMLInputElement | null) => void; onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
 }) {
-  const { luu, dau, status, lastError, retry, o, loi, luuLai, soLoi, loiNhap, coGuiLai } = useLuuThuong(row.attemptId, onReload, sheet.programme.code, row.studentName);
+  const { luu, dau, nhanXet, status, lastError, retry, o, loi, luuLai, soLoi, loiNhap, coGuiLai } = useLuuThuong(row.attemptId, onReload, sheet.programme.code, row.studentName);
   const { s, canEdit, trong, dung, chuDung, quaHan, cell } = oThuong(row, k, sheet.today);
   const tenMonO = tenMon(sheet.programme.code, k);
   /*
@@ -335,6 +335,11 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
           <ODiemThuong lon tongLaySan cell={{ ...cell, oTuanCu: !!tuanDangXem && s?.movedFromStart === tuanDangXem }} tongCot={tongCot} canEdit={canEdit} tenMon={tenMonO} tenHv={row.studentName}
             onSave={(p, o) => luu(k, p, o)} onDau={(bat) => dau(k, bat)} onLoiNhap={(x) => loiNhap(k, x)}
             inputRef={inputRef} onKeyDown={onKeyDown} />
+        )}
+        {s && canEdit && !dung && (
+          <NutNhanXet lon tenMon={tenMonO} giaTri={s.nhanXet ?? null}
+            phu={[row.studentName, sheet.class.code, s.weekStart ? tuanLich(s.weekStart) : null].filter(Boolean).join(' · ')}
+            onLuu={(v) => nhanXet(k, v)} />
         )}
       </div>
     </DongHv>

@@ -1,73 +1,16 @@
 /**
- * NHẬN XÉT W1/W2/S (PR-HSM, YC-13.5). Không bắt buộc, ≤ 1000 ký tự; không phải điểm — lưu không hỏi lý do, không đổi "Nhập
- * bởi". Lưu qua đúng đường ghi điểm (`save(k, { nhanXet })` → `PUT /attempts/:id/scores/:skill`).
+ * NHẬN XÉT (PR-HSM, YC-13.5; OV-4b: cả L/R). Không bắt buộc, ≤ 1000 ký tự; không phải điểm — lưu không hỏi lý do, không đổi "Nhập
+ * bởi". Lưu qua đúng đường ghi điểm (`save(k, { nhanXet })` → `PUT /attempts/:id/scores/:skill`). Nhập cùng điểm: hộp nhập điểm.
  *
- *   HopNhanXet  Nằm ở: Test › Lịch Test / Nhập điểm cả lớp ở < 640 px → chip W1/W2/S → nút ✎ cạnh ô điểm của từng em.
- *   ONhanXet    Nằm ở: Test › một lượt MT (hồ sơ Mock) → khối "Nhận xét Writing" (Task 1 · Task 2) / "Nhận xét Speaking".
+ *   ONhanXet    Nằm ở: Test › một lượt MT (hồ sơ Mock) → khối "Nhận xét" (Listening · Reading · Writing Task 1 · Task 2 · Speaking).
  */
 import { useEffect, useRef, useState } from 'react';
 import { NHAN_XET_TOI_DA } from '@shared/domain/index.ts';
-import { KhungPanel } from '../../ui/KhungPanel.tsx';
 
 /** Đếm ký tự chỉ hiện khi đã gần trần (> 800) — không làm rối lúc gõ vài câu. */
 function Dem({ n }: { n: number }) {
   if (n <= 800) return null;
   return <span className={`tabular-nums ${n >= NHAN_XET_TOI_DA ? 'text-bad' : 'text-slate-500'}`}>{n}/{NHAN_XET_TOI_DA}</span>;
-}
-
-/** Bút chì 12 px nét 1.5 (không dùng ký tự ✎ — Inter cỡ nhỏ vẽ nhoè). */
-function ButChi() {
-  return (
-    <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" className="inline-block shrink-0"
-      fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M8.2 1.8 10.2 3.8 4 10H2V8z" />
-    </svg>
-  );
-}
-
-/** Nút ✎ (vùng bấm 44 px) + hộp nhận xét của một em. Đã có nhận xét thì bút đậm màu `accent`. */
-export function HopNhanXet({ tieuDe, giaTri, onLuu }: {
-  tieuDe: string; giaTri: string | null; onLuu: (v: string | null) => Promise<boolean>;
-}) {
-  const [mo, setMo] = useState(false);
-  const [nhap, setNhap] = useState(giaTri ?? '');
-  const [busy, setBusy] = useState(false);
-  const moHop = () => { setNhap(giaTri ?? ''); setMo(true); };
-  const luu = async () => {
-    setBusy(true);
-    const ok = await onLuu(nhap.trim() || null);
-    setBusy(false);
-    if (ok) setMo(false);          // lỗi: giữ nguyên chữ đã gõ trong hộp (toast đã báo)
-  };
-  return (
-    <>
-      <button type="button" onClick={moHop} aria-label={`${giaTri ? 'Sửa' : 'Thêm'} nhận xét — ${tieuDe}`}
-        title={giaTri ?? 'Thêm nhận xét'}
-        className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md ${giaTri ? 'text-[color:var(--accent-strong)]' : 'text-slate-500'}`}>
-        <ButChi />
-      </button>
-      {/* I4 (PR-SL): khung panel chung, chân luật S3. Mở từ lưới / hồ sơ Mock, có thể trong panel khác → `longTrong`. */}
-      {mo && (
-        <KhungPanel tieuDe="Nhận xét" hocVien={tieuDe} longTrong z="z-[60]" onDong={() => !busy && setMo(false)}
-          chan={{
-            daSua: nhap.trim() !== (giaTri ?? ''), huy: { onClick: () => setMo(false), disabled: busy },
-            chinh: (
-              <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => void luu()} disabled={busy || nhap.trim() === (giaTri ?? '')}>
-                {busy ? 'Đang lưu…' : 'Lưu'}
-              </button>
-            ),
-          }}>
-        <label className="block pt-3">
-          <span className="flex items-baseline justify-between text-xs text-slate-400">
-            <span>Nhận xét (không bắt buộc)</span><Dem n={nhap.length} />
-          </span>
-          <textarea className="field mt-1 w-full text-sm" rows={5} maxLength={NHAN_XET_TOI_DA} value={nhap}
-            onChange={(e) => setNhap(e.target.value)} />
-        </label>
-        </KhungPanel>
-      )}
-    </>
-  );
 }
 
 /**

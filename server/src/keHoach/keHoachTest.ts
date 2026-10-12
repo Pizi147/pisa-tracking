@@ -256,6 +256,8 @@ function oKyNangCua(cheDo: CheDo, row: any, scores: any[], daDoi: boolean, doiTu
 export type DotFT = {
   attemptId: number | null; trangThaiDot: string | null; kn: Partial<Record<KyNangKH, OKyNang>>; lichSu?: boolean;
   do?: boolean; huyPhan?: boolean;
+  /** PR-OV4a: số MT này chỉ có lượt ĐÃ HUỶ (id) — ô "MT2 · Đã huỷ", bấm mở hộp Khôi phục. `attemptId` vẫn null (ô chưa có đợt). */
+  huy?: number;
 };
 
 export function luoiFT(p: Principal, classId: number, today: string = demoToday()) {
@@ -303,7 +305,7 @@ export function luoiFT(p: Principal, classId: number, today: string = demoToday(
       .all(...attemptIds) as any[]) dichuyenGanNhat.set(`${r.attempt_id}:${r.field}`, r.old_value ?? null);
   }
 
-  /* Lượt huỷ chỉ để tính "MT kế tiếp" (số huỷ còn điểm giữ số — T36); lưới không vẽ lượt huỷ. */
+  /* Lượt huỷ: tính "MT kế tiếp" (số huỷ còn điểm giữ số — T36) và ô "Đã huỷ" khi số đó không có lượt đang chạy (PR-OV4a). */
   const tatCaCua = new Map<number, any[]>();
   for (const a of attempts) tatCaCua.set(a.student_id, [...(tatCaCua.get(a.student_id) ?? []), a]);
   const attemptsByStudent = new Map<number, any[]>();
@@ -341,7 +343,11 @@ export function luoiFT(p: Principal, classId: number, today: string = demoToday(
     const mine = attemptsByStudent.get(s.id) ?? [];
     for (const n of cot) {
       const a = mine.find((x) => x.attempt_no === n);
-      if (!a) { dot[n] = { attemptId: null, trangThaiDot: null, kn: {} }; continue; }
+      if (!a) {
+        const huy = (tatCaCua.get(s.id) ?? []).find((x) => x.attempt_no === n && x.status === 'cancelled');
+        dot[n] = { attemptId: null, trangThaiDot: null, kn: {}, ...(huy ? { huy: huy.id as number } : {}) };
+        continue;
+      }
       const kn = knCua(a);
       const batBuoc = Object.values(kn).filter((o) => o && o.trangThai !== 'khong-yeu-cau') as OKyNang[];
       const xongCa = batBuoc.length > 0 && batBuoc.every((o) => o.trangThai === 'xong');
@@ -382,6 +388,8 @@ export type LuotLichMt = {
 export type HangLichMt = Omit<SuggestedMock, 'studyWeek' | 'periodId' | 'weekStart' | 'code'> & {
   studyWeek: number | null; periodId: number | null; weekStart: string | null; code: string | null;
   luot: LuotLichMt | null;
+  /** PR-OV4a: số MT này chỉ có lượt ĐÃ HUỶ — hàng "MT2 · Đã huỷ", Quản lý bấm Khôi phục. */
+  huy: { attemptId: number } | null;
 };
 
 /**
@@ -427,15 +435,20 @@ export function lichMtLoTrinh(cycleId: number, today: string = demoToday()): {
     };
   };
 
-  const so = [...new Set([...goiY.map((g) => g.attemptNo), ...con.map((a) => a.attempt_no as number)])].sort((x, y) => x - y);
+  /* PR-OV4a: số MT chỉ có lượt đã huỷ → hàng "Đã huỷ" (`huy`; `luot` vẫn null — Áp lịch / Xếp theo học viên không coi là lượt có sẵn). */
+  const huyCua = (n: number) => tatCa.find((x) => x.attempt_no === n && x.status === 'cancelled' && x.kind === 'mock') ?? null;
+  const so = [...new Set([...goiY.map((g) => g.attemptNo), ...tatCa.filter((a) => a.status !== 'cancelled' || a.kind === 'mock').map((a) => a.attempt_no as number)])]
+    .sort((x, y) => x - y);
   const hang: HangLichMt[] = so.map((n) => {
     const g = goiY.find((x) => x.attemptNo === n);
     const a = con.find((x) => x.attempt_no === n) ?? null;
+    const huy = a ? null : huyCua(n);
     return {
       attemptNo: n, studyWeek: g?.studyWeek ?? null, periodId: g?.periodId ?? null, weekStart: g?.weekStart ?? null, code: g?.code ?? null,
       existingAttemptId: a?.id ?? null, existingPeriodId: a?.planned_period_id ?? null, existingSource: (a?.plan_source ?? null) as any,
       locked: n === 0 || (g?.locked ?? (!!a && a.status === 'done')),
       luot: a ? luotCua(a) : null,
+      huy: huy ? { attemptId: huy.id as number } : null,
     };
   });
   const soKeTiep = soMtKeTiep(tatCa.filter((a) => a.kind === 'mock').map((a) => ({

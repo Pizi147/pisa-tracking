@@ -6,6 +6,7 @@ import { OMt } from '../../../ui/OMt.tsx';
 import { useNgayNghiepVu } from '../../../ui/ngayNghiepVu.ts';
 import { ChipDotFT, ChipKyNang } from './ChipKyNang.tsx';
 import { HopKyNang } from './HopKyNang.tsx';
+import { HopKhoiPhucMt } from './HopKhoiPhucKetQua.tsx';
 import {
   dotCuaEm, emXongDot, nhanDot,
   type DotChon, type HangFT, type HangThuong, type KnO, type LuoiFTData, type LuoiThuongData,
@@ -28,6 +29,8 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
   chiCanXepLai?: boolean;
 }) {
   const [hop, setHop] = useState<Hop | null>(null);
+  /** PR-OV4a: ô "Đã huỷ" đang mở hộp Khôi phục (`anchor` giữ để "Xếp MT{n} mới" mở hộp xếp đúng ô). */
+  const [huy, setHuy] = useState<{ attemptId: number; anchor: HTMLElement; hang: HangFT; cot: Cot } | null>(null);
   const homNay = useNgayNghiepVu().homNay;
   const cuon = useRef<HTMLDivElement>(null);
 
@@ -62,7 +65,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
   const canXepLai = (h: HangFT | HangThuong) => Object.values((h as HangFT).dot ?? {}).some((d) => !d.lichSu
     && Object.values(d.kn).some((o) => o?.trangThai === 'vang' || o?.trangThai === 'da-huy'));
   const hangs = (data.hang as Array<HangFT | HangThuong>).filter((h) => !chiCanXepLai || canXepLai(h));
-  const o = (h: HangFT | HangThuong, c: Cot): { attemptId: number | null; kn: KnO; lichSu?: boolean; do?: boolean } => dotCuaEm(
+  const o = (h: HangFT | HangThuong, c: Cot): { attemptId: number | null; kn: KnO; lichSu?: boolean; do?: boolean; huy?: number } => dotCuaEm(
     loai === 'ft' ? { loai: 'ft', luoi: data as LuoiFTData, hang: h as HangFT } : { loai: 'thuong', luoi: data as LuoiThuongData, hang: h as HangThuong }, c.dot,
   );
 
@@ -104,6 +107,11 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
                         <ChipDotFT so={c.dot.attemptNo} kn={dot.kn} cu={!!dot.lichSu} homNay={homNay} onMo={moHop}
                           /* "Đang chọn" = ô của em đang mở hộp. */
                           chon={hop?.hang.studentId === h.studentId && hop.cot.key === c.key} />
+                      ) : dot.huy ? (
+                        /* PR-OV4a: số MT chỉ có lượt đã huỷ — chữ "Đã huỷ" (không chỉ màu), viền đứt; bấm mở hộp Khôi phục. */
+                        <OMt v={{ so: c.dot.attemptNo, attemptId: null, kn: {}, cu: false }} homNay={homNay} huy
+                          chon={huy?.hang.studentId === h.studentId && huy.cot.key === c.key} ghiChu="Bấm để xem / khôi phục"
+                          onClick={(el) => setHuy({ attemptId: dot.huy!, anchor: el, hang: h as HangFT, cot: c })} />
                       ) : (
                         <OMt v={{ so: c.dot.attemptNo, attemptId: null, kn: {}, cu: false }} homNay={homNay}
                           chon={hop?.hang.studentId === h.studentId && hop.cot.key === c.key}
@@ -132,6 +140,13 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
         </tbody>
       </table>
 
+      {huy && huy.cot.dot.loai === 'ft' && (() => {
+        const n = huy.cot.dot.attemptNo;
+        return (
+          <HopKhoiPhucMt attemptId={huy.attemptId} attemptNo={n} z="z-50" onDong={() => setHuy(null)} onXong={onReload}
+            onXepMoi={n === huy.hang.soKeTiep ? () => { setHop({ anchor: huy.anchor, hang: huy.hang, cot: huy.cot, kyNangDau: null }); setHuy(null); } : undefined} />
+        );
+      })()}
       {hop && (() => {
         const dot = o(hop.hang, hop.cot);
         return (

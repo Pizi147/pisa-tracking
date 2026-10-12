@@ -39,10 +39,11 @@ export const BaoDangLuuContext = createContext<((khoa: string, dangLuu: boolean,
 /**
  * HỘP LÝ DO SỬA ĐIỂM ĐANG MỞ = MỘT Ô CHƯA LƯU (PR-DL fix 2): báo CHỈ qua `BaoDangLuuContext` (bảng điểm theo lượt chặn đổi lượt),
  * không qua `BaoLuuContext` — lưới cũ không hiện thêm "n ô chưa lưu". Gọi trong hộp (chỉ gắn khi hộp mở). `dangGui`: hộp đang gửi
- * lệnh sửa → báo "đang lưu" (bấm đổi lượt ra câu "Còn ô đang lưu…"), không phải "chưa lưu".
+ * lệnh sửa → báo "đang lưu" (bấm đổi lượt ra câu "Còn ô đang lưu…"), không phải "chưa lưu". `chuaLuu` (OV-4b hộp nhập điểm): chỉ
+ * báo "chưa lưu" khi hộp có chữ đã gõ.
  */
-export function useBaoHopLyDoMo(dangGui: boolean) {
-  useBaoDangLuu(`hop-ly-do:${useId()}`, dangGui, dangGui ? 0 : 1);
+export function useBaoHopLyDoMo(dangGui: boolean, chuaLuu = true) {
+  useBaoDangLuu(`hop-ly-do:${useId()}`, dangGui, dangGui || !chuaLuu ? 0 : 1);
 }
 
 /** Báo một khoá lên `BaoDangLuuContext`; gỡ thì báo hết. */
