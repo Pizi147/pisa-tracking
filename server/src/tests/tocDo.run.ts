@@ -989,7 +989,8 @@ await checkAsync(`PR-S3F · Công việc QL (nguoi=tat-ca) với 30 PA "đến l
 /* PR-SL: Sửa cả lớp — xem trước kiểm cả lớp một lần; LƯU theo lô `LO_LUU_SUA_CA_LOP` em (web chia lô), mỗi lô gọi lần lượt hàm ghi một em trong MỘT giao dịch. Trần chốt mốc một lô. */
 await checkAsync(`PR-SL · Sửa cả lớp MB FT 101: xem trước 30 em + lưu một lô ${LO_LUU_SUA_CA_LOP} em đổi họ tên (POST /classes/:id/sua-ca-lop) ≤ ${TRAN_GHI_LO.xemTruocSuaCaLop30} / ${TRAN_GHI_LO.luuSuaCaLopMotLo} câu SQL`, async () => {
   const sids = (conn.prepare(`SELECT student_id AS id FROM enrollments WHERE class_id = ? AND status = 'active' ORDER BY student_id LIMIT 30`).all(LOP_FT) as any[]).map((x) => x.id);
-  const rows = sids.map((studentId, i) => ({ studentId, fullName: `Tốc Độ Sửa ${i + 1}` }));
+  /* PR-OV2b: dòng có sửa phải đủ email + ngày sinh — em demo có ngày sinh, thiếu email. */
+  const rows = sids.map((studentId, i) => ({ studentId, fullName: `Tốc Độ Sửa ${i + 1}`, email: `tocdo${i + 1}@demo.test` }));
   const xem = await doGhi('QL', `/classes/${LOP_FT}/sua-ca-lop/xem-truoc`, { rows });
   const co = LO_LUU_SUA_CA_LOP;
   const luu = await doGhi('QL', `/classes/${LOP_FT}/sua-ca-lop`, { rows: rows.slice(0, co), idempotencyKey: 'pr-sl-lo' });
