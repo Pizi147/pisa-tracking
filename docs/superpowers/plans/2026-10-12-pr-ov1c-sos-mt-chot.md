@@ -22,7 +22,7 @@ Nguồn: đặc tả OV mục 3.2, 6.5 (câu "SOS MT: …"); plan.md mục 3 dò
 2. **Trước chốt = SOS tạm thời**: chip như nay ("SOS n tạm thời · a/4"), **không** Case, PA, Phối hợp, việc, hạn, chuông.
 3. **Lúc chốt** (lần đầu lượt đạt điều kiện 1): Overall tính được (đủ 4 kỹ năng) **và ≥ kỳ vọng** → **không SOS** (chip "Đạt", kể cả có kỹ năng dưới kỳ vọng);
    ngược lại SOS theo số kỹ năng dưới kỳ vọng **như cũ** → Case + PA quy chế + Phối hợp + chuông, **hạn xác nhận tính từ ngày chốt**
-   (số ngày: theo câu trả lời chủ SP 12/10 — khuyến nghị giữ `soNgayHanXacNhan`: 5 ngày, SOS 3 = 3 ngày).
+   (số ngày: giữ `soNgayHanXacNhan` — 5 ngày, SOS 3 = 3 ngày; chủ SP chốt 12/10).
 4. **Sau chốt, xoá SOS**: kỹ năng dời có điểm và Overall thành ≥ kỳ vọng → Case tự tạo còn "Chờ xác nhận" và PA quy chế chưa ai sửa → đóng hệ thống, lý do mới
    `overall_dat` = **"Overall đạt"** (`SYSTEM_CLOSE_REASONS`, `shared/domain/cases.ts:567`); Case GV đã xác nhận / PA đang chạy → **giữ**, thêm mốc
    "Overall đã đạt" để GV tự đóng. Phối hợp còn chờ của lượt bỏ (như `system_sos_changed`).
