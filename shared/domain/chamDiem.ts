@@ -140,6 +140,26 @@ export function tomTatLuuDong(cacO: readonly (TrangThaiLuuO | null | undefined)[
 }
 export const chuOChuaLuu = (n: number) => `${n} ô chưa lưu`;
 
+/*
+ * Bảng quy đổi số câu đúng → band của trung tâm (sheet 'Bang quy doi'), index = số câu 0–40. Hộp nhập điểm xem trước band khi gõ.
+ * shortcut: bản sao của `LISTENING_BY_RAW` / `READING_BY_RAW` ở server/src/fasttrack/scoring.ts (OV-4b không sửa scoring.ts — vùng OV-1c);
+ * phép kiểm OV4b-0 so từng số. Gộp về một chỗ khi có PR được sửa scoring.ts.
+ */
+const L_THEO_CAU = [
+  0, 0, 1, 2.5, 2.5, 3, 3, 3.5, 3.5, 3.5, 4, 4, 4, 4.5, 4.5, 4.5, 5, 5, 5, 5,
+  5.5, 5.5, 5.5, 6, 6, 6, 6, 6.5, 6.5, 6.5, 7, 7, 7, 7.5, 7.5, 8, 8, 8.5, 8.5, 9, 9,
+];
+const R_THEO_CAU = [
+  0, 0, 1, 1.5, 2.5, 2.5, 3, 3, 3.5, 3.5, 4, 4, 4, 4.5, 4.5, 5, 5, 5, 5, 5.5,
+  5.5, 5.5, 5.5, 6, 6, 6, 6, 6.5, 6.5, 6.5, 7, 7, 7, 7.5, 7.5, 8, 8, 8.5, 8.5, 9, 9,
+];
+/** Band của `n` câu đúng (L/R). Ngoài 0–40 hoặc không nguyên → null. */
+export function bandTuSoCau(skill: 'listening' | 'reading', n: number): number | null {
+  return Number.isInteger(n) && n >= 0 && n <= 40 ? (skill === 'listening' ? L_THEO_CAU : R_THEO_CAU)[n] : null;
+}
+/** Câu lỗi số câu ngoài 0–40 (hộp nhập điểm, chủ SP mockup §3). */
+export const LOI_SO_CAU_KHOANG = 'số câu đúng từ 0 đến 40.';
+
 /** T10 (PR-MTa): band nhập tay — số hữu hạn 0..9, bậc 0.5. `null` = hợp lệ. */
 export function kiemBand(v: unknown): string | null {
   return typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 9 && Number.isInteger(v * 2)

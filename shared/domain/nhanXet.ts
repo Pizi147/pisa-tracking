@@ -1,6 +1,5 @@
-/** Nhận xét W/S + GV chấm Speaking (YC-13.5, T39) — luật một chỗ cho máy chủ, lưới, hồ sơ Mock và xuất Excel (PR-XUAT). */
+/** Nhận xét (OV-4b: mọi bài nhập L/R/W1/W2/S, không bắt buộc) + GV chấm Speaking (YC-13.5, T39) — luật một chỗ cho máy chủ, lưới, hồ sơ Mock và xuất Excel (PR-XUAT). */
 export const NHAN_XET_TOI_DA = 1000;
-export const BAI_CO_NHAN_XET = ['writing1', 'writing2', 'speaking'] as const;
 
 /** `null` = xoá. Trả chuỗi đã cắt (rỗng → null) hoặc câu lỗi. */
 export function kiemNhanXet(s: unknown): { gt: string | null } | { loi: string } {

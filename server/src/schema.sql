@@ -723,7 +723,7 @@ CREATE TABLE assessment_scores (
   no_show_late INTEGER NOT NULL DEFAULT 0,
   no_show_settled_at TEXT,
   no_show_cu INTEGER NOT NULL DEFAULT 0,
-  -- PR-HSM (YC-13.5, T39): nhận xét của MỘT BÀI NHẬP (writing1 | writing2 | speaking; L/R luôn NULL), 1–1000 ký tự.
+  -- PR-HSM (YC-13.5, T39), OV-4b: nhận xét của MỘT BÀI NHẬP (L/R/W1/W2/S Mock; lớp thường: từng môn), 1–1000 ký tự.
   -- GV chấm chỉ dòng speaking: tài khoản HOẶC tên người ngoài (tối đa một trong hai khác NULL).
   -- Ô mất hết điểm (Huỷ điểm, Thi lại) thì cả ba về NULL; bản cũ nằm trong nhật ký `score.nhan_xet`.
   comment TEXT,
