@@ -15,7 +15,8 @@ export async function runPrOv4aTests(t: YThucTestKit) {
   const { loadPrincipal } = await import('../permissions.ts');
   const { kiemDuLieuMt } = await import('../ops/kiemDuLieuMt.ts');
   const { migratePrOv4 } = await import('../migrate/prOv4.ts');
-  const { xoaNho } = await import('../platform/nguCanhRequest.ts');
+  const { soCauSql, xoaNho } = await import('../platform/nguCanhRequest.ts');
+  const { TRAN_GHI_LO } = await import('./tocDoDuong.ts');
   const d: any = await import('../../../shared/domain/index.ts');
   console.log('\nPR-OV4a · Huỷ cả lượt giữ điểm ẩn, Khôi phục lượt');
 
@@ -226,4 +227,30 @@ export async function runPrOv4aTests(t: YThucTestKit) {
     assert(a1.length === 1 && a2.length === 0, JSON.stringify({ a1, a2 }));
     assert(all(`SELECT loai, dong_json FROM ket_qua_huy`).every((r) => r.loai === 'doi_vuot' && r.dong_json === null), 'dòng cũ phải là doi_vuot');
   }));
+  /*
+   * Mọi lượt Mock còn hiệu lực CÓ điểm trên dữ liệu cuối run.ts (thay VN4-2 "trùng cách cũ"): huỷ rồi khôi phục → mọi thứ huỷ chạm trở lại đúng như trước
+   * (lượt, lịch, điểm, Case, PA, Phối hợp, tín hiệu, mốc); số câu SQL của Khôi phục ≤ trần (Turso).
+   */
+  check(`OV4a-10 · Huỷ rồi Khôi phục mọi lượt Mock có điểm: trở lại đúng như trước; Khôi phục ≤ ${TRAN_GHI_LO.khoiPhucLuot} câu SQL`, () => {
+    const ds = all(`SELECT a.id, a.student_id FROM assessment_attempts a WHERE a.status != 'cancelled' AND a.kind = 'mock'
+      AND EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND (s.band IS NOT NULL OR s.raw_score IS NOT NULL)) ORDER BY a.id`);
+    assert(ds.length >= 20, `cần nhiều lượt có điểm: ${ds.length}`);
+    const sai: string[] = [];
+    let nang = { id: 0, n: 0 };
+    for (const a of ds) {
+      thu(() => {
+        const truoc = chup(a.student_id, a.id);
+        attempts.huyLuot(P.admin, a.id, { lyDo: 'Thử OV4a' });
+        const s0 = soCauSql();
+        const r = attempts.reopenAttempt(P.admin, a.id);
+        const n = soCauSql() - s0;
+        if (n > nang.n) nang = { id: a.id, n };
+        const l = r.chuaXep ? null : lech(truoc, chup(a.student_id, a.id));
+        if (l) sai.push(`lượt ${a.id}: ${l}`);
+      });
+    }
+    console.log('OV4a-10', JSON.stringify({ luot: ds.length, nangNhat: nang }));
+    assert(!sai.length, `${sai.length}/${ds.length} lượt khác trước huỷ:\n${sai.slice(0, 3).join('\n')}`);
+    assert(nang.n <= TRAN_GHI_LO.khoiPhucLuot, `lượt ${nang.id}: ${nang.n} câu > trần ${TRAN_GHI_LO.khoiPhucLuot}`);
+  });
 }

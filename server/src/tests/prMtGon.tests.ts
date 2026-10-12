@@ -172,7 +172,7 @@ export async function runPrMtGonTests(t: YThucTestKit) {
   });
 
   // ---------------------------------------------------------------- Task 3: Huỷ MT bất kỳ + xếp lại dùng lại số
-  check('MTG-3a · QL huỷ MT2 (có điểm) khi có MT3 → MT2 huỷ, điểm xoá (nhật ký giữ), MT3 giữ nguyên', () => {
+  check('MTG-3a · QL huỷ MT2 (có điểm) khi có MT3 → MT2 huỷ, điểm ẩn (cất vào bản huỷ — PR-OV4a), MT3 giữ nguyên', () => {
     const a = emMoi();
     diem(a.m2, 'listening');
     diem(a.m3, 'reading');
@@ -181,14 +181,15 @@ export async function runPrMtGonTests(t: YThucTestKit) {
       [{ attempt_no: 2, status: 'planned', coDiem: true }, { attempt_no: 3, status: 'planned', coDiem: true }]) === 'ca-luot', 'cachHuyLuot');
     attemptsSvc.huyLuot(QL, a.m2, { lyDo: 'Em nghỉ đợt này' });
     assert(luot(a.m2).status === 'cancelled' && band(a.m2, 'listening') === null, JSON.stringify(luot(a.m2)));
-    const au = conn.prepare(`SELECT COUNT(*) n FROM audit_logs WHERE entity_id = ? AND action LIKE 'score.%' AND entity_label = 'listening'`).get(a.m2) as any;
-    assert(au.n >= 1, 'thiếu nhật ký xoá điểm');
+    /* PR-OV4a: điểm không xoá mà cất (Khôi phục đưa về) — không còn nhật ký xoá từng ô. */
+    const cat = conn.prepare(`SELECT diem_json FROM ket_qua_huy WHERE attempt_id = ? AND loai = 'huy_luot'`).get(a.m2) as any;
+    assert(JSON.parse(cat?.diem_json ?? '[]').some((x: any) => x.skill === 'listening' && x.band === 6), 'điểm chưa cất vào bản huỷ');
     assert(luot(a.m3).status === 'planned' && tuanCua(a.m3) === t3 && band(a.m3, 'reading') === 6, 'MT3 đổi');
     const e = loiCua(() => attemptsSvc.huyLuot(P.coreTeacher, a.m3, { lyDo: 'x' }));
     assert(e.status === 403, `GV: ${e.status}`);
   });
 
-  check('MTG-3b · xếp lại MT2 → hồi sinh đúng dòng MT2, không mang điểm / ket_qua_huy cũ; tuần phải hợp lệ', () => {
+  check('MTG-3b · xếp lại MT2 → hồi sinh đúng dòng MT2, không mang điểm; bản cất giữ (PR-OV4a); tuần phải hợp lệ', () => {
     const a = emMoi();
     diem(a.m2, 'listening');
     attemptsSvc.huyLuot(QL, a.m2, { lyDo: 'Em nghỉ đợt này' });
@@ -200,7 +201,7 @@ export async function runPrMtGonTests(t: YThucTestKit) {
     assert(mt.id === a.m2 && mt.status === 'planned', JSON.stringify(mt));
     assert(band(a.m2, 'listening') === null, 'mang điểm cũ');
     const kq = conn.prepare('SELECT COUNT(*) n FROM ket_qua_huy WHERE attempt_id = ? AND khoi_phuc_luc IS NULL').get(a.m2) as any;
-    assert(kq.n === 0, 'ket_qua_huy cũ còn');
+    assert(kq.n === 2, `bản cất (huỷ lượt + dời vượt) phải còn để Khôi phục: ${kq.n}`);   // PR-OV4a: không bỏ khi xếp lại
   });
 
   check('MTG-3c · "Mở lại lượt" vào tuần vượt MT sau → mở lại ở Chưa xếp', () => {
@@ -223,7 +224,8 @@ export async function runPrMtGonTests(t: YThucTestKit) {
 
   check('MTG-3e · web: "Huỷ MT{n}" một câu xác nhận; mọi kỹ năng huỷ → "Đưa lại cả 4 kỹ năng", ẩn "Dời lịch thi cả đợt"', () => {
     const s = nguon('web/src/modules/fasttrack/MockDetailPage.tsx') + nguon('web/src/modules/fasttrack/HopThaoTacMt.tsx') + nguon('web/src/modules/fasttrack/HopHuyMt.tsx');   // PR-HOP1: hộp Huỷ MT tách file
-    assert(/Lịch và điểm của lượt này sẽ bỏ\. Xếp lại thì vẫn là MT/.test(s) && /Không huỷ/.test(s), 'câu xác nhận');
+    /* PR-OV4a (mockup §5): hộp nêu hệ quả từng dòng, điểm ẩn + Khôi phục được; thoát hộp "Đóng". */
+    assert(/Khôi phục được: lịch, điểm và Case trở lại như trước\./.test(s) && /closeLabel="Đóng"/.test(nguon('web/src/modules/fasttrack/HopHuyMt.tsx')), 'câu xác nhận');
     assert(/Đưa lại cả 4 kỹ năng/.test(s) && /dua-lai-ca-luot/.test(s), 'Đưa lại cả 4 kỹ năng');
     assert(!/Huỷ phần còn lại/.test(s) && !/Huỷ cả lượt/.test(s), 'chữ cũ');
   });

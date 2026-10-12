@@ -1419,7 +1419,7 @@ export function heQuaHuyLuot(attemptId: number): HeQuaHuyLuot {
     ? (conn.prepare(`SELECT COUNT(*) n FROM case_interventions WHERE status IN ('planned', 'started') AND case_id IN (${caseIds.map(() => '?').join(',')})`)
       .get(...caseIds) as any).n as number
     : 0;
-  const pa = paGanLuot(attemptId, caseIds);
+  const pa = xoaDiem ? { dong: [], giu: [] } : paGanLuot(attemptId, caseIds);   // lớp thường: luồng cũ, không đóng PA theo kết quả
   const phoiHop = (conn.prepare(`SELECT COUNT(*) n FROM sos_coordination_actions WHERE attempt_id = ? AND status = 'pending'`).get(attemptId) as any).n as number;
   const kn = conn.prepare(
     `SELECT p.week_start FROM attempt_skills k JOIN report_periods p ON p.id = k.planned_period_id
@@ -1476,6 +1476,8 @@ export function huyLuot(p: Principal, attemptId: number, input: { lyDo?: string 
   if (!hq.cachDuoc) throw badRequest('Lượt này đã huỷ.');
   const conn = db();
   return tx(() => {
+    /* Hai người huỷ cùng lúc: kiểm lại TRONG giao dịch — lần sau không được cất một bản rỗng đè lên bản có điểm. */
+    if (loadAttempt(attemptId).status === 'cancelled') throw badRequest('Lượt này đã huỷ.');
     if (hq.xoaDiem) xoaDiemLuot(p, a, lyDo);
     else {
       /* R11 như `saveScore`: đợt đã hoàn tất có điểm thì chỉ người sửa được sau hoàn tất mới ẩn được điểm (huỷ lượt) — kiểm trước khi ghi. */
@@ -1538,12 +1540,13 @@ export function khoiPhucCua(a: any): { ban: BanHuyLuot[]; chan: string | null } 
  * Tuần cũ nay vướng thứ tự đợt → lượt về "Chưa xếp lịch" (MTG-3c), điểm vẫn về. Số MT đã xếp lại (lượt đang chạy, còn bản cất) → 400 câu chặn.
  */
 export function reopenAttempt(p: Principal, attemptId: number, o: { banId?: number | null } = {}) {
-  const a = loadAttempt(attemptId);
-  require_(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id, studentId: a.student_id }, 'Chỉ Quản lý khôi phục được lượt đã huỷ.');
-  const nhan = `MT${a.attempt_no}`;
+  const truoc = loadAttempt(attemptId);
+  require_(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: truoc.class_id, studentId: truoc.student_id }, 'Chỉ Quản lý khôi phục được lượt đã huỷ.');
+  const nhan = `MT${truoc.attempt_no}`;
   const lyDo = `Khôi phục ${nhan}`;
   return tx(() => {
     const conn = db();
+    const a = loadAttempt(attemptId);   // đọc lại trong giao dịch: hai người khôi phục cùng lúc thì lần sau thấy đã khôi phục
     if (a.status !== 'cancelled') {
       const { chan } = khoiPhucCua(a);
       if (chan) throw badRequest(chan);

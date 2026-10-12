@@ -9232,6 +9232,9 @@ await runPrOv3bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 // ==================================================================== PR-OV1b (dấu "-" = Vắng, Không dự thi, Bỏ vắng, dòng lớp phần của bạn)
 const { runPrOv1bTests } = await import('./prOv1b.tests.ts');
 await runPrOv1bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-OV4a (Huỷ cả lượt giữ điểm ẩn + Khôi phục lượt)
+const { runPrOv4aTests } = await import('./prOv4a.tests.ts');
+await runPrOv4aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

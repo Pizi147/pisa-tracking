@@ -15,7 +15,8 @@ export type LopKH = {
 export type DanhSachLop = { tieuDe: string; lop: LopKH[] };
 
 /** `do`: có kỹ năng xong và còn kỹ năng phải thi (◐) · `huyPhan`: có phần thi đã huỷ (PR-XLMT). */
-export type DotFT = { attemptId: number | null; trangThaiDot: string | null; kn: KnO; lichSu?: boolean; do?: boolean; huyPhan?: boolean };
+/** `huy` (PR-OV4a): số MT chỉ có lượt đã huỷ (id) — ô "MT2 · Đã huỷ"; `attemptId` vẫn null. */
+export type DotFT = { attemptId: number | null; trangThaiDot: string | null; kn: KnO; lichSu?: boolean; do?: boolean; huyPhan?: boolean; huy?: number };
 /** `soKeTiep` (PR-MT, K4-08): chỉ ô MT này có "+ xếp" — số MT liền mạch. */
 export type HangFT = { studentId: number; ten: string; ma: string; cycleId?: number | null; vaoMuon: boolean; dot: Record<number, DotFT>; soKeTiep: number };
 export type LuoiFTData = { classId: number; classCode: string; cot: number[]; hang: HangFT[] };
