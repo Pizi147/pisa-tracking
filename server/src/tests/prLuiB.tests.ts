@@ -300,7 +300,8 @@ export async function runPrLuiBTests(t: YThucTestKit) {
     assert(p.includes('export function MoLaiLopPanel') && p.includes('/mo-lai`') && p.includes('/ket-thuc`'), 'panel + Hoàn tác');
     assert(/<Truong nhan="Lý do" tuyChon/.test(p.slice(p.indexOf('MoLaiLopPanel'))), 'Lý do tuỳ chọn');
     const dt = doc('web/src/modules/classes/DauTrangLop.tsx');
-    assert(dt.includes("nhan: 'Mở lại lớp'") && dt.includes('coTheMoLaiLop') && dt.includes('coTheKetThucLop'), 'mục ⋮ Mở lại lớp + Quản lý kết thúc lớp');
+    /* PR-OV3a: nhãn mục ⋯ ở `menuHoSoLop` (shared). */
+    assert(doc('shared/domain/hocVienLop.ts').includes("'Mở lại lớp'") && dt.includes('coTheMoLaiLop') && dt.includes('coTheKetThucLop'), 'mục ⋯ Mở lại lớp + Quản lý kết thúc lớp');
     assert(doc('web/src/modules/classes/ClassOverviewPage.tsx').includes('<MoLaiLopPanel'), 'trang hồ sơ lớp vẽ panel');
     const lt = doc('web/src/modules/students/LuuTruPage.tsx');
     assert(lt.includes('coTheMoLai') && lt.includes('>Mở lại</button>') && lt.includes('<MoLaiLopPanel'), 'nút Mở lại ở Lưu trữ');

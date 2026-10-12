@@ -423,11 +423,12 @@ export async function runPrLcbTests(t: YThucTestKit) {
     assert(/viec === 'lo-trinh-ca-lop' \|\| \(viec === 'chuyen-tiep' && thuong\)\) && <PanelCuoiKhoa/.test(ov), 'lớp thường: hai lối cùng PanelCuoiKhoa');
     assert(/open=\{viec === 'chuyen-tiep' && !thuong\}/.test(ov), 'lớp FT: TransitionPanel');
     assert(!/LoTrinhTiepCaLopPanel/.test(ov) && !coTep('modules/classes/LoTrinhTiepCaLopPanel.tsx'), 'panel cả lớp cũ đã gỡ');
-    const dt = web('modules/classes/DauTrangLop.tsx');
-    assert((dt.match(/nhan: 'Lộ trình tiếp theo…'/g) ?? []).length === 1 && !dt.includes('Ghi lộ trình tiếp theo cả lớp'), '⋮ lớp thường đúng một mục');
-    assert(/!thuong && data\.dai\?\.viewer\.coTheChuyenNhieuEm \? \[\{ key: 'chuyen-tiep', nhan: 'Chuyển tiếp lớp…'/.test(dt), 'FT giữ Chuyển tiếp lớp…');
+    /* PR-OV3a: menu ⋯ ở `menuHoSoLop` (shared/domain/hocVienLop.ts), bỏ dấu "…". */
+    const mn = fs.readFileSync(new URL('../../../../shared/domain/hocVienLop.ts', import.meta.url), 'utf8');
+    assert((mn.match(/'Lộ trình tiếp theo', 'Lộ trình'/g) ?? []).length === 1 && !mn.includes('Ghi lộ trình tiếp theo cả lớp'), '⋯ lớp thường đúng một mục');
+    assert(mn.includes("m('chuyen-tiep', 'Chuyển tiếp lớp', 'Lộ trình', !i.thuong && i.coTheChuyenNhieuEm)"), 'FT giữ Chuyển tiếp lớp');
     assert(web('modules/classes/DaiChuyenLop.tsx').includes('(v.laGvcn || v.coTheRaLenh)') && web('modules/classes/DaiChuyenLop.tsx').includes('Lộ trình tiếp theo…'), 'dải Kết thúc khoá');
-    assert(web('modules/classes/ClassProgressPanel.tsx').includes('Lộ trình tiếp theo…'), 'Lịch Test');
+    assert(web('modules/classes/ClassProgressPanel.tsx').includes('>Lộ trình tiếp theo</button>'), 'Lịch Test');
     const pn = web('modules/classes/PanelCuoiKhoa.tsx');
     for (const chu of ['<ChonNguoi', 'ds={', '<OTuan', 'hanChotLenFt(', 'Lộ trình tiếp theo · ', '>1 Soạn</BuocSo> › <BuocSo', '>2 Xác nhận<', 'aria-current="step"', 'Lưu hướng', 'Tiếp tục · ', 'Xác nhận · ', 'Gõ tên lớp…', 'Chọn ở hàng nhóm', 'Không có lớp khớp', 'Quản lý đã xác nhận', 'Hướng khoá', 'Bạn đề xuất: ', 'GVCN: chưa đề xuất', 'Quản lý đã quyết', 'Lớp chưa có học viên đang học.', 'không chờ điểm Final']) {
       assert(pn.includes(chu), `PanelCuoiKhoa thiếu: ${chu}`);

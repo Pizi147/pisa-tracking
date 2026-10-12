@@ -12,7 +12,7 @@ import { TenGiaoVien } from './TenGiaoVien.tsx';
 import { DaiLopChuyen } from './DaiChuyenLop.tsx';
 import type { TinhTrangXoaKetThuc } from './XoaKetThucLopPanel.tsx';
 import {
-  DUONG_TAB_TEST, ROUTE_NAME, badgeLop, khungCua, duongLichTest, laVaiQuanLy, needScoresText, nhomGiaoVienBoMon, nutChinhDauTrang, tuanKhoa, tuanLich, type BadgeLop, type DaiLop, type NhomGiaoVien, type WorkScope,
+  DUONG_TAB_TEST, ROUTE_NAME, badgeLop, khungCua, duongLichTest, laVaiQuanLy, needScoresText, menuHoSoLop, nhomGiaoVienBoMon, tuanKhoa, type ViecMenuLop, tuanLich, type BadgeLop, type DaiLop, type NhomGiaoVien, type WorkScope,
 } from '@shared/domain/index.ts';
 
 /** `GET /classes/:id/overview` (server/src/classes/classes.ts → classOverview). */
@@ -49,18 +49,18 @@ export type HoSoLop = {
     coTheXoaKetThuc?: boolean;
     /** PR-LUI-b (06/10): Quản lý của lớp cũng ⋮ Kết thúc lớp (lớp còn hoạt động) và ⋮ Mở lại lớp (lớp đã kết thúc). */
     coTheKetThucLop?: boolean; coTheMoLaiLop?: boolean;
-    /** PR-DL: ⋮ "Điểm MT cả lớp" + khối cuối trang — cùng luật `requireXemLuotCham`. */
+    /** PR-DL: khối điểm cuối trang (PR-OV3a: mở sẵn, bỏ mục ⋯) — cùng luật `requireXemLuotCham`. */
     coTheXemDiem?: boolean;
   };
 };
-export type ViecDauTrang = 'tien-do' | 'chuyen-tiep' | 'lo-trinh-ca-lop' | 'ban-giao' | 'phan-cong' | 'thong-tin' | 'case' | 'hoc-vien' | 'xoa-lop' | 'ket-thuc-lop' | 'xuat-mt' | 'sua-hoc-vien' | 'diem-lop' | 'mo-lai-lop' | 'ky-vong';
+/** `phan-cong`: panel Thông tin lớp mở sẵn phần Phân công (badge "Thiếu GV", `?viec=phan-cong`). */
+export type ViecDauTrang = ViecMenuLop | 'ban-giao' | 'phan-cong' | 'case';
 
 /**
  * ĐẦU TRANG HỒ SƠ LỚP (đặc tả §3.7, mockup 06c §1; PR-HVL K2-14, B4, E7, K2-13). Nằm ở: Học viên & Lớp → Hồ sơ lớp → đầu trang.
- *   dòng 1  "Hồ sơ lớp" · mã · chương trình | MỘT nút chính theo chặng (`nutChinhDauTrang`: + Học viên khi lớp rỗng · Chuyển tiếp lớp · n em khi lớp thường
- *           cuối khoá · Nhập điểm khi còn bài chờ nhập) · tối đa 2 nút phụ (Nhập điểm · + Học viên · + Case; thừa vào ⋮) · ⋮
- *   ⋮       Tuần khai giảng (FT) / Lịch kiểm tra (lớp thường) · Chuyển tiếp lớp (khi không phải nút chính) · nút phụ thừa · Sửa phân công ·
- *           Sửa thông tin lớp · (đường kẻ) Xoá / Kết thúc lớp
+ *   dòng 1  "Hồ sơ lớp" · mã · chương trình | nút CỐ ĐỊNH Nhập điểm · + Case · ⋯ (PR-OV3a, M2 §1 — không đổi theo chặng; 375: một hàng đủ rộng)
+ *   ⋯       `menuHoSoLop`: Lớp (Thông tin lớp · Sửa thông tin học viên · + Học viên) → Lộ trình (thường: Lộ trình tiếp theo · Kỳ vọng đầu ra;
+ *           FT: Chuyển tiếp lớp) → Công cụ (Xuất Excel) → (đường kẻ) Mở lại / Xoá / Kết thúc lớp
  *   dòng 2  chi nhánh · LT (bọc `<abbr>` "Lộ trình 1") · n học viên · W{n}/{tổng} · khai giảng — hộp nhỏ "GVCN tên"; lớp thường cuối khoá: "Cuối khoá: 6/8 em có đủ điểm"
  *   dòng 3  GV bộ môn một dòng không xuống hàng, gom theo người; hẹp thì "+k" (bấm ra đủ danh sách)
  *   dòng 4  tối đa 2 badge theo vai, phần còn lại "+n" (menu)
@@ -108,42 +108,20 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
   const xk = useApi<TinhTrangXoaKetThuc>(hoiXk ? `/classes/${data.id}/xoa-ket-thuc` : null, [data.id, hoiXk]);
   /* PR-OV1a (3.2): cả lớp thường và FT mở Test › Điểm theo lớp đúng lớp (lớp thường có lượt MT0 bảng band). */
   const nhapDiem = `${DUONG_TAB_TEST['diem-lop']}?lop=${data.id}`;
-  /* K2-14: MỘT nút chính theo chặng; nút phụ tối đa 2, thừa vào ⋮. "Nhập điểm" là chính khi còn bài chờ nhập của người xem. */
-  const chinh = nutChinhDauTrang({
-    thuong, phase: s?.phase ?? 'running', needsPlacement: !!s?.needsPlacement, soHocVien: s?.studentCount ?? 0,
-    coTheThemHv: data.viewer.canAddStudents, coTheNhapDiem: data.viewer.canEnterScores && (s?.needScores ?? 0) > 0,
-    coTheChuyenTiep: data.viewer.coTheChuyenTiep, soEmChuyen: s?.canXepLop ?? 0,
-  });
-  const phu: { key: string; nhan: string; lam: () => void }[] = [
-    ...(data.viewer.canEnterScores && chinh.loai !== 'nhap-diem' ? [{ key: 'nhap-diem', nhan: 'Nhập điểm', lam: () => navigate(nhapDiem) }] : []),
-    ...(data.viewer.canAddStudents && chinh.loai !== 'them-hv' ? [{ key: 'hoc-vien', nhan: '+ Học viên', lam: () => onViec('hoc-vien') }] : []),
-    ...(data.viewer.canReportCase ? [{ key: 'case', nhan: '+ Case', lam: () => onViec('case') }] : []),
-  ];
-  const menu: MucMenu[] = [
-    /* E7: panel FT tên "Tuần khai giảng", lớp thường "Lịch kiểm tra". Xuất Excel (PR-XUAT) chép vào mảng này, sau "Sửa thông tin lớp". */
-    ...(data.viewer.canEditProgress ? [{ key: 'tien-do', nhan: thuong ? 'Lịch Test của lớp' : 'Tuần khai giảng', onChon: () => onViec('tien-do') }] : []),
-    /* PR-LCb: lớp thường MỘT mục "Lộ trình tiếp theo…" — Quản lý xác nhận, GVCN (STUDENT_EDIT ở lớp, cờ `canAddStudents`) đề xuất, cùng panel.
-       Lớp FT (gộp / tách lớp, đổi lộ trình): "Chuyển tiếp lớp…" (chỉ Quản lý). */
-    ...(thuong && (data.viewer.coTheChuyenTiep || data.viewer.canAddStudents) ? [{ key: 'lo-trinh-ca-lop', nhan: 'Lộ trình tiếp theo…', onChon: () => onViec('lo-trinh-ca-lop') }] : []),
-    /* PR-KV (§3): lớp BE/ELE — Quản lý kết luận kỳ vọng đầu ra cả lớp (em Lên FT, theo MT0). Máy chủ kiểm lại `request.approve`. */
-    ...(thuong && data.viewer.coTheChuyenTiep && ['BE', 'ELE'].includes(data.programme?.code ?? '') ? [{ key: 'ky-vong', nhan: 'Kỳ vọng đầu ra…', onChon: () => onViec('ky-vong') }] : []),
-    ...(!thuong && data.dai?.viewer.coTheChuyenNhieuEm ? [{ key: 'chuyen-tiep', nhan: 'Chuyển tiếp lớp…', onChon: () => onViec('chuyen-tiep') }] : []),
-    ...phu.slice(2).map((x) => ({ key: x.key, nhan: x.nhan, onChon: x.lam })),
-    /* PR-QU (A): GVCN lớp này cũng thấy — đổi được GV bộ môn, ô GVCN chỉ đọc. */
-    ...(data.viewer.canAssign || data.viewer.canAssignSubject ? [{ key: 'phan-cong', nhan: 'Sửa phân công', onChon: () => onViec('phan-cong') }] : []),
-    ...(data.viewer.canEditProgress ? [{ key: 'thong-tin', nhan: 'Sửa thông tin lớp', onChon: () => onViec('thong-tin') }] : []),
-    /* PR-SL (Q-0310-3): sửa họ tên, ngày sinh, email, tuần, dự kiến thi, Target, điểm đầu vào của cả lớp trên một panel. */
-    ...(data.viewer.canAddStudents && (s?.studentCount ?? 0) > 0 ? [{ key: 'sua-hoc-vien', nhan: 'Sửa thông tin học viên', onChon: () => onViec('sua-hoc-vien') }] : []),
-    ...(data.viewer.coTheXemDiem ? [{ key: 'diem-lop', nhan: thuong ? 'Điểm Test cả lớp' : 'Điểm MT cả lớp', onChon: () => onViec('diem-lop') }] : []),
+  /* PR-OV3a (M2 §1): nút cố định Nhập điểm · + Case · ⋯ — không đổi chỗ theo chặng. ⋯ gom Lớp → Lộ trình → Công cụ → (kẻ) kết thúc, cùng thứ tự hai loại lớp. */
+  const mucLop = menuHoSoLop({
+    thuong, chuongTrinh: data.programme?.code ?? null, soHocVien: s?.studentCount ?? 0,
+    canEditProgress: data.viewer.canEditProgress, canAssign: data.viewer.canAssign, canAssignSubject: !!data.viewer.canAssignSubject,
+    canAddStudents: data.viewer.canAddStudents, coTheChuyenTiep: data.viewer.coTheChuyenTiep, coTheChuyenNhieuEm: !!data.dai?.viewer.coTheChuyenNhieuEm,
     /* PR-XUAT (Q8): GVCN của lớp hoặc người xếp lịch (Quản lý) — máy chủ xuất vẫn kiểm lại phạm vi. */
-    ...(session?.nav?.xuatMt && (data.viewer.isCoreTeacher || data.viewer.canPlanWeek) ? [{ key: 'xuat-mt', nhan: 'Xuất Excel', onChon: () => onViec('xuat-mt') }] : []),
-    /* PR-LUI-b: lớp đã kết thúc → Mở lại lớp (Quản lý của lớp / Quản trị). */
-    ...(data.viewer.coTheMoLaiLop ? [{ key: 'mo-lai-lop', nhan: 'Mở lại lớp', onChon: () => onViec('mo-lai-lop') }] : []),
-    /* Cuối menu, sau đường kẻ: Xoá lớp (lớp còn trống, Quản trị) · Kết thúc lớp (lớp đã có dữ liệu, còn hoạt động; Quản lý hoặc Quản trị). */
-    ...(xk.data?.coTheXoa ? [{ key: 'xoa-lop', nhan: 'Xoá lớp', keTruoc: true, onChon: () => onViec('xoa-lop') }] : []),
-    ...(xk.data && xk.data.coDuLieu && !xk.data.daKetThuc
-      ? [{ key: 'ket-thuc-lop', nhan: 'Kết thúc lớp', keTruoc: !xk.data.coTheXoa, onChon: () => onViec('ket-thuc-lop') }] : []),
-  ];
+    coTheXuatExcel: !!session?.nav?.xuatMt && (data.viewer.isCoreTeacher || data.viewer.canPlanWeek),
+    coTheMoLaiLop: !!data.viewer.coTheMoLaiLop, coTheXoa: !!xk.data?.coTheXoa, coTheKetThuc: !!xk.data && xk.data.coDuLieu && !xk.data.daKetThuc,
+  });
+  const menu: MucMenu[] = mucLop.flatMap((m, i) => {
+    const truoc = mucLop[i - 1];
+    const dau = m.nhom && m.nhom !== truoc?.nhom ? [{ key: `nhom-${m.nhom}`, nhan: m.nhom, tieuDe: true, keTruoc: false, onChon: () => undefined }] : [];
+    return [...dau, { key: m.key, nhan: m.nhan, keTruoc: !m.nhom && !!truoc?.nhom, nguyHiem: m.key === 'xoa-lop', onChon: () => onViec(m.key) }];
+  });
   const tuan = thuong && s?.currentWeek && s.totalWeeks && s.currentWeek >= 1
     ? tuanKhoa(Math.min(s.currentWeek, s.totalWeeks), s.totalWeeks) : null;
   /* K2-13: giữ ký hiệu LT1 · LT2 · RF, tên đủ ở tooltip. */
@@ -172,12 +150,9 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
           <h1 className="m-0 text-lg font-semibold text-slate-100">{data.code} · {data.programme?.name ?? data.kind}</h1>
         </div>
         <div className="flex-1" />
-        <div className="flex flex-wrap items-center gap-1.5">
-          {phu.slice(0, 2).map((x) => <button key={x.key} type="button" className="btn btn-sm" onClick={x.lam}>{x.nhan}</button>)}
-          {chinh.loai === 'nhap-diem' ? <Link className="btn btn-sm btn-primary no-underline" to={nhapDiem}>{chinh.nhan}</Link>
-            : chinh.loai ? (
-              <button type="button" className="btn btn-sm btn-primary" onClick={() => onViec(chinh.loai === 'them-hv' ? 'hoc-vien' : 'chuyen-tiep')}>{chinh.nhan}</button>
-            ) : null}
+        <div className="flex flex-wrap items-center gap-1.5 max-sm:w-full">
+          {data.viewer.canEnterScores && <Link className="btn btn-sm no-underline max-sm:min-h-[44px] max-sm:flex-1" to={nhapDiem}>Nhập điểm</Link>}
+          {data.viewer.canReportCase && <button type="button" className="btn btn-sm max-sm:min-h-[44px] max-sm:flex-1" onClick={() => onViec('case')}>+ Case</button>}
           <MenuDong muc={menu} nhan="Thao tác khác" />
         </div>
       </div>

@@ -509,7 +509,8 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     assert(/disabled=\{busy \|\| !khop \|\| !!chan\}/.test(pn) && /btn btn-danger/.test(pn), 'nút Xoá lớp phải mờ tới khi gõ đúng mã');
     assert(!/<Modal\b|type="date"/.test(pn), 'panel xoá/kết thúc phải là KhungPanel');
     const dt = docSach('web/src/modules/classes/DauTrangLop.tsx');
-    assert(/keTruoc: true/.test(dt) && /coTheXoaKetThuc/.test(dt), 'menu ⋮ hồ sơ lớp thiếu mục Xoá/Kết thúc sau đường kẻ');
+    /* PR-OV3a: đường kẻ trước nhóm kết thúc (mục `nhom` null của menuHoSoLop). */
+    assert(/keTruoc: !m\.nhom && !!truoc\?\.nhom/.test(dt) && /coTheXoaKetThuc/.test(dt), 'menu ⋯ hồ sơ lớp thiếu mục Xoá/Kết thúc sau đường kẻ');
   });
 
   void docSach;

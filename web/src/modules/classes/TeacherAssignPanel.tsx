@@ -1,17 +1,21 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Khoi, KhungPanel } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
+import { NutLuat } from '../../ui/NutLuat.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { Empty, Skeleton } from '../../ui/ui.tsx';
-import { chonKhiDoiTach, kiemPhanCong, nenTachFou, slotsTuO, tenMon, tuanLich } from '@shared/domain/index.ts';
+import { chonKhiDoiTach, kiemPhanCong, nenTachFou, nhomGiaoVienBoMon, slotsTuO, tenMon, tuanLich } from '@shared/domain/index.ts';
 import { LuoiPhanCong, NutTachFou, loiTaiO, useTachFou } from './ClassCreatePanel.tsx';
+import { DongXem, PhanThongTin } from './ThongTinLopPanel.tsx';
+import { TenGiaoVien } from './TenGiaoVien.tsx';
+import type { HoSoLop } from './DauTrangLop.tsx';
 
 /**
- * SỬA PHÂN CÔNG GIÁO VIÊN CỦA LỚP (PR-LOP, YC-4, mockup 21 mục 4) — MỘT panel `KhungPanel`, mỗi ô MỘT người.
+ * PHẦN "PHÂN CÔNG" của panel Thông tin lớp (PR-OV3a; trước là panel "Sửa phân công" — PR-LOP, YC-4, mockup 21 mục 4), mỗi ô MỘT người.
+ * Xem: GVCN + GV bộ môn gom theo người (đọc từ hồ sơ lớp, không tải thêm). Sửa: tải `/teachers` khi bấm Sửa.
  *
  * Ô theo chương trình (`oPhanCong`), lỗi luật (`kiemPhanCong`) hiện ngay tại ô và khoá Lưu — cùng hàm máy chủ kiểm; chân
  * `n ô cần sửa ↑` của PR-N1 (`useLoiForm`) tính ngay (mọi lỗi ở đây là lỗi luật), bấm → tới ô lỗi đầu.
@@ -31,16 +35,18 @@ type Teachers = {
   viewer: { canAssign: boolean; canAssignSubject?: boolean };
 };
 
-export function TeacherAssignPanel({ open, onClose, classId, classCode, onDone }: {
-  open: boolean; onClose: () => void; classId: number; classCode: string; onDone: () => void;
+export function PhanPhanCong({ lop, suaDuoc, moSua = false, onDone }: {
+  lop: HoSoLop; suaDuoc: boolean; moSua?: boolean; onDone: () => void;
 }) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
-  const { data, loading, error } = useApi<Teachers>(open ? `/classes/${classId}/teachers` : null, [open]);
+  const [dangSua, setDangSua] = useState(moSua && suaDuoc);
+  const { data, loading, error } = useApi<Teachers>(dangSua ? `/classes/${lop.id}/teachers` : null, [dangSua]);
   const [chon, setChon] = useState<Record<string, number | ''>>({});
   /** Ô dữ liệu cũ đang có từ 2 người: khoá ô → tên. */
   const [nhieuNguoi, setNhieuNguoi] = useState<Record<string, string[]>>({});
   const [busy, setBusy] = useState(false);
+  const [loiLuu, setLoiLuu] = useState<string | null>(null);
   const [moDaDay, setMoDaDay] = useState(false);
   const lf = useLoiForm();
   const fou = useTachFou(data?.programmeCode ?? null, data?.skills ?? [], chon, setChon);
@@ -61,11 +67,9 @@ export function TeacherAssignPanel({ open, onClose, classId, classCode, onDone }
     setNhieuNguoi(Object.fromEntries(ds.filter(([, a]) => a.length > 1).map(([k, a]) => [k, a.map((x) => x.name)])));
   }, [data]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!open) return null;
-
   const oList = data ? fou.oList : [];
   const slots = slotsTuO(oList, chon);
-  const suaDuoc = !!data && (data.viewer.canAssign || !!data.viewer.canAssignSubject);
+  const suaMay = !!data && (data.viewer.canAssign || !!data.viewer.canAssignSubject);
   /* GVCN (không phải Quản lý): ô GVCN tách ra hàng chỉ đọc; lưới chỉ còn ô bộ môn. Lớp Pre FOU chỉ có ô GVCN → chỉ xem. */
   const chiBoMon = !!data && !data.viewer.canAssign && !!data.viewer.canAssignSubject;
   const oSua = chiBoMon ? oList.filter((o) => !o.laGvcn) : oList;
@@ -84,58 +88,56 @@ export function TeacherAssignPanel({ open, onClose, classId, classCode, onDone }
   ];
 
   const luu = async () => {
-    setBusy(true);
+    if (!data || oLoi.length) { lf.bam(); setLoiLuu(oLoi[0] ? `${oLoi[0].nhan}: ${loiO(oLoi[0].khoa)}` : null); return; }
+    setBusy(true); setLoiLuu(null);
     try {
-      await api.put(`/classes/${classId}/teachers`, { slots });
+      await api.put(`/classes/${lop.id}/teachers`, { slots });
       invalidate('/classes'); invalidate('/my-work');
       toast.push('ok', 'Đã lưu phân công');
-      onDone(); onClose();
-    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+      setDangSua(false);
+      onDone();
+    } catch (e: any) { setLoiLuu(e.message); toast.push('error', e.message); } finally { setBusy(false); }
   };
+  const gvcn = lop.coreTeachers[0] ?? null;
+  const nhom = nhomGiaoVienBoMon(lop.skills.map((x) => x.skill), lop.skillTeachers, lop.programme?.code ?? null);
 
   return (
-    <KhungPanel tieuDe="Sửa phân công" lop={classCode} onDong={onClose}
-      ngCanh={data && !suaDuoc ? <span className="text-slate-400">Chỉ xem: đổi phân công là việc của Quản lý chi nhánh.</span> : undefined}
-      chan={{
-        conThieu: suaDuoc ? oLoi.map((o) => ({ nhan: o.nhan, oId: lf.oId(o.khoa) })) : undefined,
-        chinh: suaDuoc
-          ? (
-            <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !data || oLoi.length > 0}
-              title={oLoi[0] ? `${oLoi[0].nhan}: ${loiO(oLoi[0].khoa)}` : undefined} onClick={luu}>Lưu</button>
-          )
-          : undefined,
-      }}>
-      {loading && <div className="pt-3"><Skeleton rows={5} /></div>}
-      {error && <div className="pt-3"><Empty title="Không đọc được phân công" hint={error.message} /></div>}
-      {data && (
-        <>
-          <Khoi tieuDe="Phân công"
-            luat="Chỉ nhập được điểm môn mình được phân công. Bỏ phân công KHÔNG xoá lịch sử: dòng cũ được đóng lại theo ngày, nên báo cáo cũ đọc lại vẫn thấy đúng ai dạy lúc đó; điểm đã nhập giữ nguyên tên người nhập.">
-            {chiBoMon && (
-              <div className="mb-1.5 grid grid-cols-[6rem_1fr] items-center gap-x-2.5" id={lf.oId('gvcn')}>
-                <span className="text-xs font-bold text-slate-200">GVCN</span>
-                <span className="text-sm text-slate-300">
-                  {data.core.map((c) => c.name).join(' · ') || 'Chưa có'}
-                  <span className="block text-xs text-slate-500">Đổi GVCN: nhờ Quản lý chi nhánh.</span>
-                  {loiO('gvcn') && <span className="block text-xs text-late">{loiO('gvcn')}</span>}
-                </span>
-              </div>
-            )}
-            {oSua.length > 0 && (
-              <LuoiPhanCong oList={oSua} chon={chon} nguoi={nguoi} loi={loiO} oId={lf.oId} chiXem={!suaDuoc} chuongTrinh={data.programmeCode}
-                nhanTrong={(k) => nhieuNguoi[k]?.join(' · ')}
-                onChon={(khoa, v) => setChon((c) => ({ ...c, [khoa]: v }))} />
-            )}
-            <NutTachFou fou={fou} chiXem={!suaDuoc} />
-            <p className="m-0 text-xs text-slate-500">
-              {oList.length === 1 ? 'Lớp Pre FOU không chia môn — GVCN dạy luôn.' : 'Mỗi ô một người. Một người nhận nhiều ô được.'}
-            </p>
-          </Khoi>
-          {slots.length === 0 && !Object.keys(nhieuNguoi).length && (
-            <p className="mt-3.5"><Nhan tone="soon">Lớp đang không có giáo viên nào</Nhan></p>
+    <PhanThongTin tieuDe="Phân công" suaDuoc={suaDuoc} dangSua={dangSua} busy={busy} nhanLuu="Lưu phân công" loi={loiLuu}
+      cuonToi={moSua} onSua={() => setDangSua(true)} onHuy={() => { setDangSua(false); setLoiLuu(null); }} onLuu={luu}>
+      {!dangSua && (
+        <DongXem dong={[
+          ['GVCN', gvcn ? <TenGiaoVien id={gvcn.id} ten={gvcn.name} /> : <span className="text-amber-200">Chưa có GVCN</span>],
+          ...nhom.map((g): [string, ReactNode] => [g.nhan, g.id !== null ? <TenGiaoVien id={g.id} ten={g.ten} /> : <span className="text-amber-200">{g.ten}</span>]),
+        ]} />
+      )}
+      {dangSua && loading && <Skeleton rows={5} />}
+      {dangSua && error && <Empty title="Không đọc được phân công" hint={error.message} />}
+      {dangSua && data && (
+        <div className="space-y-3">
+          {!suaMay && <p className="m-0 text-xs text-slate-400">Chỉ xem: đổi phân công là việc của Quản lý chi nhánh.</p>}
+          {chiBoMon && (
+            <div className="grid grid-cols-[6rem_1fr] items-center gap-x-2.5" id={lf.oId('gvcn')}>
+              <span className="text-xs font-bold text-slate-200">GVCN</span>
+              <span className="text-sm text-slate-300">
+                {data.core.map((c) => c.name).join(' · ') || 'Chưa có'}
+                <span className="block text-xs text-slate-500">Đổi GVCN: nhờ Quản lý chi nhánh.</span>
+                {loiO('gvcn') && <span className="block text-xs text-late">{loiO('gvcn')}</span>}
+              </span>
+            </div>
           )}
+          {oSua.length > 0 && (
+            <LuoiPhanCong oList={oSua} chon={chon} nguoi={nguoi} loi={loiO} oId={lf.oId} chiXem={!suaMay} chuongTrinh={data.programmeCode}
+              nhanTrong={(k) => nhieuNguoi[k]?.join(' · ')}
+              onChon={(khoa, v) => setChon((c) => ({ ...c, [khoa]: v }))} />
+          )}
+          <NutTachFou fou={fou} chiXem={!suaMay} />
+          <p className="m-0 flex items-center gap-1 text-xs text-slate-500">
+            {oList.length === 1 ? 'Lớp Pre FOU không chia môn — GVCN dạy luôn.' : 'Mỗi ô một người. Một người nhận nhiều ô được.'}
+            <NutLuat>Chỉ nhập được điểm môn mình được phân công. Bỏ phân công KHÔNG xoá lịch sử: dòng cũ được đóng lại theo ngày, nên báo cáo cũ đọc lại vẫn thấy đúng ai dạy lúc đó; điểm đã nhập giữ nguyên tên người nhập.</NutLuat>
+          </p>
+          {slots.length === 0 && !Object.keys(nhieuNguoi).length && <p className="m-0"><Nhan tone="soon">Lớp đang không có giáo viên nào</Nhan></p>}
           {data.past.length > 0 && (
-            <div className="mt-3.5">
+            <div>
               <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-xs" aria-expanded={moDaDay}
                 onClick={() => setMoDaDay((v) => !v)}>
                 {moDaDay ? '▾' : '▸'} Đã từng dạy lớp này ({data.past.length})
@@ -151,8 +153,8 @@ export function TeacherAssignPanel({ open, onClose, classId, classCode, onDone }
               )}
             </div>
           )}
-        </>
+        </div>
       )}
-    </KhungPanel>
+    </PhanThongTin>
   );
 }

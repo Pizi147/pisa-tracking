@@ -79,7 +79,7 @@ export async function runPrSlTests(t: YThucTestKit) {
     assert(!/<textarea/.test(pn) && !pn.includes('/intake/parse'), 'không được có ô dán Excel');
     assert(pn.includes('/sua-ca-lop/xem-truoc') && pn.includes('daSua: soEm > 0') && pn.includes('Bỏ những gì vừa sửa?'), 'xem trước + luật S3 + hỏi khi đóng');
     assert(pn.includes('if (busy) return;'), 'đang lưu thì Esc / nền / ✕ không đóng panel (chống mất lưới khi lưu lỗi)');
-    assert(doc('web/src/modules/classes/DauTrangLop.tsx').includes("nhan: 'Sửa thông tin học viên'"), 'mục ⋮');
+    assert(doc('shared/domain/hocVienLop.ts').includes("'Sửa thông tin học viên'"), 'mục ⋯ (PR-OV3a: menuHoSoLop)');
     assert(doc('web/src/modules/classes/TabHocVienLop.tsx').includes('>Sửa thông tin</button>'), 'nút ở tab Học viên');
   });
   check('SL-4 · D11: Truong và Field nối dòng lỗi vào ô bằng aria-describedby (một hook useNoiLoi)', () => {

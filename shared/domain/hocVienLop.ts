@@ -523,18 +523,32 @@ export function sapEmCanHoTro<T extends { ten: string; cases: readonly { quaHan:
   return [...em].sort((a, b) => qua(a) - qua(b) || a.ten.localeCompare(b.ten, 'vi'));
 }
 
-// ---------------------------------------------------------------- nút chính đầu hồ sơ lớp (K2-14)
+// ---------------------------------------------------------------- menu ⋯ đầu hồ sơ lớp (PR-OV3a, M2 §1)
 
-export type NutChinh = { loai: 'them-hv' | 'chuyen-tiep' | 'nhap-diem' | null; nhan: string };
-/** MỘT nút chính theo chặng của lớp: lớp rỗng → thêm học viên · lớp thường cuối khoá → chuyển tiếp · còn điểm cần nhập → Nhập điểm. */
-export function nutChinhDauTrang(i: {
-  thuong: boolean; phase: string; needsPlacement: boolean; soHocVien: number;
-  coTheThemHv: boolean; coTheNhapDiem: boolean; coTheChuyenTiep: boolean; soEmChuyen: number;
-}): NutChinh {
-  if (i.soHocVien === 0 && i.coTheThemHv) return { loai: 'them-hv', nhan: '+ Học viên' };
-  /* PR-CT: "Chuyển tiếp lớp…" nằm ở dải Kết thúc khoá ngay dưới tên lớp (mockup 20 — A), không còn là nút chính đầu trang. */
-  if (i.coTheNhapDiem) return { loai: 'nhap-diem', nhan: 'Nhập điểm' };
-  return { loai: null, nhan: '' };
+export type ViecMenuLop = 'thong-tin' | 'sua-hoc-vien' | 'hoc-vien' | 'lo-trinh-ca-lop' | 'ky-vong' | 'chuyen-tiep' | 'xuat-mt' | 'mo-lai-lop' | 'xoa-lop' | 'ket-thuc-lop';
+export type MucMenuLop = { key: ViecMenuLop; nhan: string; nhom: 'Lớp' | 'Lộ trình' | 'Công cụ' | null };
+/**
+ * Menu ⋯ hồ sơ lớp — CÙNG thứ tự lớp thường và FT: Lớp → Lộ trình → Công cụ → (kẻ) Mở lại / Xoá / Kết thúc (`nhom` null). Mỗi mục giữ
+ * điều kiện quyền cũ; nhóm không còn mục thì không có tiêu đề. Nút cố định Nhập điểm · + Case nằm ngoài menu.
+ */
+export function menuHoSoLop(i: {
+  thuong: boolean; chuongTrinh: string | null; soHocVien: number;
+  canEditProgress: boolean; canAssign: boolean; canAssignSubject: boolean; canAddStudents: boolean; coTheChuyenTiep: boolean;
+  coTheChuyenNhieuEm: boolean; coTheXuatExcel: boolean; coTheMoLaiLop: boolean; coTheXoa: boolean; coTheKetThuc: boolean;
+}): MucMenuLop[] {
+  const m = (key: ViecMenuLop, nhan: string, nhom: MucMenuLop['nhom'], co: boolean): MucMenuLop[] => (co ? [{ key, nhan, nhom }] : []);
+  return [
+    ...m('thong-tin', 'Thông tin lớp', 'Lớp', i.canEditProgress || i.canAssign || i.canAssignSubject),
+    ...m('sua-hoc-vien', 'Sửa thông tin học viên', 'Lớp', i.canAddStudents && i.soHocVien > 0),
+    ...m('hoc-vien', '+ Học viên', 'Lớp', i.canAddStudents),
+    ...m('lo-trinh-ca-lop', 'Lộ trình tiếp theo', 'Lộ trình', i.thuong && (i.coTheChuyenTiep || i.canAddStudents)),
+    ...m('ky-vong', 'Kỳ vọng đầu ra', 'Lộ trình', i.thuong && i.coTheChuyenTiep && ['BE', 'ELE'].includes(i.chuongTrinh ?? '')),
+    ...m('chuyen-tiep', 'Chuyển tiếp lớp', 'Lộ trình', !i.thuong && i.coTheChuyenNhieuEm),
+    ...m('xuat-mt', 'Xuất Excel', 'Công cụ', i.coTheXuatExcel),
+    ...m('mo-lai-lop', 'Mở lại lớp', null, i.coTheMoLaiLop),
+    ...m('xoa-lop', 'Xoá lớp', null, i.coTheXoa),
+    ...m('ket-thuc-lop', 'Kết thúc lớp', null, i.coTheKetThuc),
+  ];
 }
 
 // ---------------------------------------------------------------- hồ sơ giáo viên (§3.12, Q2)

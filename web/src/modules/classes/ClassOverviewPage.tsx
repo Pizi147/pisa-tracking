@@ -10,16 +10,14 @@ import { ClassYThucCard } from '../yThuc/ClassYThucCard.tsx';
 import { QuickReport } from '../cases/QuickReport.tsx';
 import { IntakePanel } from '../students/IntakePanel.tsx';
 import { SuaCaLopPanel } from '../students/SuaCaLopPanel.tsx';
-import { TeacherAssignPanel } from './TeacherAssignPanel.tsx';
 import { KetThucLopPanel, MoLaiLopPanel, XoaLopPanel } from './XoaKetThucLopPanel.tsx';
-import { ClassProgressPanel } from './ClassProgressPanel.tsx';
 import { TransitionPanel } from './TransitionPanel.tsx';
 import { PanelCuoiKhoa } from './PanelCuoiKhoa.tsx';
 import { PanelKyVong } from './PanelKyVong.tsx';
 import { BanGiaoPanel } from './BanGiaoPanel.tsx';
 import { ChuyenLopNhieuEm } from '../students/ChuyenLopPanel.tsx';
 import { DauTrangLop, type HoSoLop, type ViecDauTrang } from './DauTrangLop.tsx';
-import { SuaThongTinLopPanel } from './SuaThongTinLopPanel.tsx';
+import { ThongTinLopPanel } from './ThongTinLopPanel.tsx';
 import { NganXuatMt } from '../test/NganXuatMt.tsx';
 import { TabHocVienLop } from './TabHocVienLop.tsx';
 import { DiemTheoLop } from '../cham/DiemTheoLop.tsx';
@@ -31,8 +29,8 @@ import { DOT_XUAT_FT, DOT_XUAT_THUONG, TAB_HO_SO_LOP_NHAN, ngay, tabHienCuaLop, 
 import { TabTongKetLop } from './TabTongKetLop.tsx';
 
 /**
- * HỒ SƠ LỚP (đặc tả §3.7; mockup 06 menu dòng A, 06c §1, 10b) — đầu trang có sẵn các nút hành động, ba tab
- * Học viên · Ý thức & Phối hợp · Phân tích lớp (bỏ tab Giáo viên: phân công ở ⋮ › Sửa phân công).
+ * HỒ SƠ LỚP (đặc tả §3.7; mockup 06 menu dòng A, 06c §1, 10b; OV M2 §1–3) — đầu trang nút cố định + ⋯, ba tab
+ * Học viên · Ý thức & Phối hợp · Phân tích lớp (bỏ tab Giáo viên: phân công ở ⋯ › Thông tin lớp), bảng điểm cả lớp cuối trang mở sẵn.
  * Tab và chế độ xem nằm trên URL (`?tab=`, `?che-do=`). Một panel một lúc (G-8): `viec` giữ đúng MỘT việc đang mở.
  */
 export default function ClassOverviewPage() {
@@ -44,8 +42,8 @@ export default function ClassOverviewPage() {
   const [periodId, setPeriodId] = useState<number | null>(null);
   const [viec, setViec] = useState<ViecDauTrang | null>(null);
   const [xetLai, setXetLai] = useState(false);
-  /** PR-DL: khối "Điểm Mock Test của lớp" cuối trang — mặc định thu gọn, ⋮ "Điểm MT cả lớp" mở và cuộn tới. */
-  const [moDiem, setMoDiem] = useState(false);
+  /** PR-DL → PR-OV3a: khối "Điểm Test của lớp" cuối trang — mở sẵn, vẫn thu gọn được. */
+  const [moDiem, setMoDiem] = useState(true);
   /** PR-CT: panel Bàn giao mở kèm môn (GVBM) và/hoặc đúng một lệnh (từ hồ sơ HV). */
   const [bg, setBg] = useState<{ mon: string | null; lenhId: number | null; lop: number | null }>({ mon: null, lenhId: null, lop: null });
   const [caseFor, setCaseFor] = useState(0);
@@ -73,7 +71,7 @@ export default function ClassOverviewPage() {
   /*
    * LỐI VÀO TỪ VIỆC ĐỎ / BADGE "Hết khoá" (PR-LT): `?viec=chuyen-tiep` mở panel Chuyển tiếp
    * lớp MỘT LẦN rồi xoá tham số khỏi URL — không mở lại nếu người dùng tự đóng rồi tải lại.
-   * `?viec=phan-cong` (PR-LOP, K1-05): việc "lớp thiếu GV môn" mở thẳng Sửa phân công.
+   * `?viec=phan-cong` (PR-LOP, K1-05): việc "lớp thiếu GV môn" mở Thông tin lớp, phần Phân công đang sửa (PR-OV3a).
    */
   useEffect(() => {
     const v = params.get('viec');
@@ -116,18 +114,10 @@ export default function ClassOverviewPage() {
   const thuong = data.programme?.scoringMode === 'ratio';
   const dong = () => setViec(null);
   const xong = () => { invalidate('/classes'); invalidate('/hoc-vien-lop'); reload(); };
-  const moVaCuonDiem = () => {
-    setMoDiem(true);
-    requestAnimationFrame(() => {
-      const nut = document.getElementById('khoi-diem-lop-nut');
-      nut?.focus({ preventScroll: true });
-      nut?.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
-    });
-  };
 
   return (
     <div className="page space-y-4">
-      <DauTrangLop data={data} onViec={(v) => (v === 'diem-lop' ? moVaCuonDiem() : setViec(v))}
+      <DauTrangLop data={data} onViec={setViec}
         onBanGiao={(o) => { setBg({ mon: o.mon ?? null, lenhId: null, lop: o.lop ?? null }); setViec('ban-giao'); }} />
 
       <HangTab ariaLabel="Hồ sơ lớp" value={tab}
@@ -145,20 +135,14 @@ export default function ClassOverviewPage() {
 
       {data.viewer.coTheXemDiem && <KhoiDiemLop key={data.id} classId={data.id} thuong={thuong} mo={moDiem} onDoi={() => setMoDiem((m) => !m)} />}
 
-      {viec === 'tien-do' && (
-        <ClassProgressPanel classId={data.id} classCode={data.code} tieuDe={thuong ? 'Lịch Test của lớp' : 'Tuần khai giảng'}
-          onClose={dong} onDone={xong} onChuyenTiep={data.viewer.coTheChuyenTiep ? () => setViec('chuyen-tiep') : undefined} />
-      )}
       <TransitionPanel classId={data.id} open={viec === 'chuyen-tiep' && !thuong} onClose={dong} onDone={xong} />
       {(viec === 'lo-trinh-ca-lop' || (viec === 'chuyen-tiep' && thuong)) && <PanelCuoiKhoa classId={data.id} onClose={dong} onDone={xong} />}
       {viec === 'ky-vong' && <PanelKyVong classId={data.id} onClose={dong} onDone={xong} />}
       {xetLai && <ChuyenLopNhieuEm classId={data.id} onClose={() => setXetLai(false)} onDone={xong} />}
       {viec === 'ban-giao' && <BanGiaoPanel classId={bg.lop ?? data.id} mon={bg.mon} lenhId={bg.lenhId} onClose={dong} onDone={xong} />}
-      <TeacherAssignPanel open={viec === 'phan-cong'} onClose={dong} classId={data.id} classCode={data.code} onDone={xong} />
-      {viec === 'thong-tin' && (
-        <SuaThongTinLopPanel onClose={dong} onDone={xong}
-          lop={{ id: data.id, code: data.code, branchCode: data.branchCode, route: data.route, note: data.note,
-            programmeCode: data.programme?.code ?? null, soHocVien: data.summary?.studentCount ?? 0 }} />
+      {(viec === 'thong-tin' || viec === 'phan-cong') && (
+        <ThongTinLopPanel lop={data} phan={viec === 'phan-cong' ? 'phan-cong' : null} onClose={dong} onDone={xong}
+          onChuyenTiep={data.viewer.coTheChuyenTiep ? () => setViec('chuyen-tiep') : undefined} />
       )}
       {viec === 'xuat-mt' && (
         <NganXuatMt khung={thuong ? 'thuong' : 'ft'} lop={{ id: data.id, ma: data.code }} chiNhanh={data.branchId}
@@ -181,8 +165,8 @@ export default function ClassOverviewPage() {
 }
 
 /**
- * KHỐI "ĐIỂM MOCK TEST CỦA LỚP" (PR-DL, mockup `mockup-diem-theo-lop-2026-10-04.html` #v-lop) — lối vào kín đáo ở cuối hồ sơ lớp:
- * một hàng thu gọn + MỘT chip "MT2 còn 3 ô trống" (lượt mở sẵn của `danhSachLuot`). Chỉ khi mở lần đầu mới tải bảng (`DiemTheoLop gon`).
+ * KHỐI "ĐIỂM MOCK TEST CỦA LỚP" (PR-DL, mockup `mockup-diem-theo-lop-2026-10-04.html` #v-lop) — cuối hồ sơ lớp, MỞ SẴN (PR-OV3a, M2 §1):
+ * hàng tiêu đề + MỘT chip "MT2 còn 3 ô trống" (lượt mở sẵn của `danhSachLuot`), bấm để thu gọn. Bảng `DiemTheoLop gon` tải khi khối mở.
  */
 function KhoiDiemLop({ classId, thuong, mo, onDoi }: { classId: number; thuong: boolean; mo: boolean; onDoi: () => void }) {
   const ds = useApi<DanhSachLuot>(duongDiemTheoLuot(classId), [classId]);
