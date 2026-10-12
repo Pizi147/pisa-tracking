@@ -535,7 +535,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
     const weekMod: any = await import('../platform/week.ts');
     const batDau = addDays(TODAY, -49);
     const lop = (intakeMod.createClass(P.admin, { code: 'MB FOU HVL7', branchId: MB, kind: 'FOU', isFastTrack: false, startDate: batDau, startPeriodId: weekMod.ensurePeriod(batDau).id }) as any).id as number;
-    for (const ten of ['HVL7 An', 'HVL7 Binh']) intakeMod.commitIntake(P.admin, { classId: lop, rows: [{ fullName: ten, email: 'hv@demo.test' }], idempotencyKey: `hvl7-${ten}` });
+    for (const ten of ['HVL7 An', 'HVL7 Binh']) intakeMod.commitIntake(P.admin, { classId: lop, rows: [{ fullName: ten, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `hvl7-${ten}` });
     const ov = classesMod.classOverview(P.admin, lop);
     assert(['final_week', 'finished'].includes(ov.summary.phase), `Lớp khai giảng 7 tuần trước phải ở tuần Final Test: ${ov.summary.phase}`);
     eq(ov.cuoiKhoa, { du: 0, tong: 2, canQl: 0 }, 'chưa em nào có điểm Final Test');

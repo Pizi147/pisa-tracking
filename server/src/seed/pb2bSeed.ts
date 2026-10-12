@@ -106,7 +106,7 @@ export function buildPb2bDemo(ctx: BuildCtx): { gv: number; lop: number } {
     return r.id as number;
   };
   const hv = (classId: number, ten: string, target: number) => {
-    commitIntake(admin, { classId, rows: [{ fullName: ten, target, email: 'hv@demo.test' }], idempotencyKey: `pb2b-demo-${ten}` } as any);
+    commitIntake(admin, { classId, rows: [{ fullName: ten, target, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `pb2b-demo-${ten}` } as any);
     const st = conn.prepare('SELECT id FROM students WHERE full_name = ?').get(ten) as any;
     const cy = conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(st.id) as any;
     return { id: st.id as number, cycleId: cy?.id as number };

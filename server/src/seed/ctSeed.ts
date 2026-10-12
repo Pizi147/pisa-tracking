@@ -48,7 +48,7 @@ export function buildCtDemo(ctx: BuildCtx): { lenh: number; lop: number } {
     return r.id as number;
   };
   const hv = (classId: number, ten: string, target: number | string, startWeek?: string) => {
-    commitIntake(admin, { classId, rows: [{ fullName: ten, target, ...(startWeek ? { startWeek } : {}), email: 'hv@demo.test' }], idempotencyKey: `ct-demo-${ten}` } as any);
+    commitIntake(admin, { classId, rows: [{ fullName: ten, target, ...(startWeek ? { startWeek } : {}), email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `ct-demo-${ten}` } as any);
     const st = conn.prepare('SELECT id FROM students WHERE full_name = ?').get(ten) as any;
     const cy = conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(st.id) as any;
     return { id: st.id as number, cycleId: cy.id as number };

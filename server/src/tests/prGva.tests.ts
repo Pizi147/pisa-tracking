@@ -96,7 +96,7 @@ export async function runPrGvaTests(t: AnToanTestKit) {
   let seq = 0;
   const caseMoi = () => {
     const ten = `GVA HV ${++seq}`;
-    intake.commitIntake(P.admin, { classId: lopMb, rows: [{ fullName: ten, target: 6.5, email: 'hv@demo.test' }], idempotencyKey: `gva-hv-${seq}` });
+    intake.commitIntake(P.admin, { classId: lopMb, rows: [{ fullName: ten, target: 6.5, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `gva-hv-${seq}` });
     const sid = (conn.prepare('SELECT id FROM students WHERE full_name = ?').get(ten) as any).id;
     return caseSvc.reportIssue(P.lrTeacher, { studentId: sid, topic: 'listening', title: 'Case GVa', summary: 'Case dùng cho phép kiểm khoá gửi.',
       primaryCode: d.issuesForTopic('listening')[0].code, idempotencyKey: `gva-case-${seq}` }).id as number;

@@ -136,7 +136,7 @@ export async function runPrMtTests(t: YThucTestKit) {
        JOIN report_periods p ON p.id = a.planned_period_id
       WHERE a.student_id = ? AND a.status != 'cancelled' ORDER BY a.attempt_no`).all(sid) as any[];
   const them = (lop: string, ten: string, startWeek: string) => {
-    const r = intake.commitIntake(P.admin, { classId: classId(lop), rows: [{ fullName: ten, target: 6.5, startWeek, email: 'hv@demo.test' }] });
+    const r = intake.commitIntake(P.admin, { classId: classId(lop), rows: [{ fullName: ten, target: 6.5, startWeek, email: 'hv@demo.test', dob: '2010-01-01' }] });
     assert(r.added === 1, `thêm ${ten}: ${JSON.stringify(r.failed)}`);
     return r.studentIds[0] as number;
   };
@@ -279,7 +279,7 @@ export async function runPrMtTests(t: YThucTestKit) {
   });
   const truoc = chup();
   const r5 = intake.commitIntake(P.admin, { classId: MB101,
-    rows: [{ fullName: 'PRMT Em Cũ H1b', target: 6.5, startWeek: H1_BAT_DAU, email: 'hv@demo.test' }] });
+    rows: [{ fullName: 'PRMT Em Cũ H1b', target: 6.5, startWeek: H1_BAT_DAU, email: 'hv@demo.test', dob: '2010-01-01' }] });
   const sH1b = r5.studentIds[0] as number;
   conn.prepare("UPDATE learning_cycles SET exam_month = '2027-03' WHERE student_id = ?").run(sH1b);   // Thêm HV không nhận tháng thi từ file
   check('PR-MT (5) · H1: thêm em đã học 22 tuần (MT1–MT3 lịch sử chưa điểm) → Lịch Test, Nợ, Việc cần làm, badge, chỉ số, Theo giáo viên KHÔNG đổi (M3, K4-01)', () => {
@@ -297,7 +297,7 @@ export async function runPrMtTests(t: YThucTestKit) {
     assert(r?.next?.attemptNo === 1 && !r.missing.some((m: any) => m.key === 'next_milestone'), JSON.stringify(r?.next));
   });
   check('PR-MT (5) · Em FT chưa có target → việc "Điền target" nhóm Thiếu dữ liệu cho GVCN, không hạn (K5-09)', () => {
-    const r = intake.commitIntake(P.admin, { classId: MB101, rows: [{ fullName: 'PRMT Em Thiếu Target', startWeek: tuanNay, email: 'hv@demo.test' }] });
+    const r = intake.commitIntake(P.admin, { classId: MB101, rows: [{ fullName: 'PRMT Em Thiếu Target', startWeek: tuanNay, email: 'hv@demo.test', dob: '2010-01-01' }] });
     const sid = r.studentIds[0];
     const g = mywork.myWork(P.coreTeacher).groups.find((x: any) => x.key === 'missing_data');
     const it = g?.items.find((x: any) => x.key === `target:${sid}`);

@@ -14,7 +14,7 @@ import { BonO, CauTomTat, DaiChoDuyet, DaiTamDung, DongThongTin, ThanhViec, type
 import { NganCase } from './NganCase.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
 import { StudentPlanPanel } from './StudentPlanPanel.tsx';
-import { StudentManagePanel, mucQuanLyHocVien, type ViecQuanLy } from './StudentManagePanel.tsx';
+import { StudentManagePanel, mucQuanLyHocVien, thongTinEmCua, type ViecQuanLy } from './StudentManagePanel.tsx';
 import { Menu } from '../../ui/Menu.tsx';
 import { QuickReport } from '../cases/QuickReport.tsx';
 import { StudentYThucSection } from '../yThuc/StudentYThucSection.tsx';
@@ -23,7 +23,7 @@ import {
   attemptStatusLabel, fmtBand, skillLabel, sosTone, studentStatusLabel,
 } from '../../lib/format.ts';
 import {
-  HO_SO_TAB_LABEL, NHAN_NHOM_VIEC_QUAN_LY, duongDotTest, caseCategoriesFor, tenMon, tenMonNgan, docThamSoHoSo, duongHoSoHocVien,
+  HO_SO_TAB_LABEL, duongDotTest, caseCategoriesFor, tenMon, tenMonNgan, docThamSoHoSo, duongHoSoHocVien,
   nhanKetQuaThuong, tenBaiThuong, CHUONG_TRINH_KHONG_CHIA_MON, ngay, tuanLich, maHocVienNgan, type HoSoTab,
 } from '@shared/domain/index.ts';
 import { HangTab } from '../../ui/HangTab.tsx';
@@ -214,10 +214,10 @@ export default function StudentDetailPage() {
               )}
               {/* ⋮ = MENU THẢ; mỗi mục mở THẲNG panel của việc đó (Q10). Không có quyền nào → Menu không vẽ gì. */}
               <Menu label="⋯" className="btn min-h-[44px] sm:min-h-0" items={mucQuanLyHocVien({
-                canEdit: data.viewer.canEdit, lopHoc: data.lopHoc ?? null, cycle: cy, status: data.status, coTheXoa: !!data.viewer.coTheXoa,
+                canEdit: data.viewer.canEdit, suaThongTin: !!data.viewer.coTheSuaThongTin, lopHoc: data.lopHoc ?? null, cycle: cy, status: data.status, coTheXoa: !!data.viewer.coTheXoa,
                 deXuatSua: !!data.viewer.coTheDeXuatSua,
               }).map((m) => ({
-                label: m.nhan, danger: m.nguyHiem, keTruoc: m.keTruoc, hint: m.phu, nhom: NHAN_NHOM_VIEC_QUAN_LY[m.nhom],
+                label: m.nhan, danger: m.nguyHiem, keTruoc: m.keTruoc, hint: m.phu,
                 onClick: () => (m.key === 'lo-trinh' ? setPlanOpen(true) : setViecQuanLy(m.key)),
               }))} />
             </div>
@@ -385,13 +385,9 @@ export default function StudentDetailPage() {
 
       <StudentManagePanel
         viec={viecQuanLy ?? (p.viec === 'thi-that' && cy?.route ? 'outcome' : null)} onClose={() => { setViecQuanLy(null); if (p.viec === 'thi-that') xoaThamSo('viec'); }} lop={data.currentClass?.code}
-        student={{
-          id: data.id, name: data.fullName, classId: data.currentClass?.id ?? null,
-          dob: data.dob ?? null, email: data.email ?? null, consultantName: data.consultantName ?? null, note: data.note ?? null,
-          status: data.status,
-        }}
+        student={thongTinEmCua(data)} quyen={data.viewer} lopHoc={data.lopHoc ?? null}
         cycle={cy} attempts={data.attempts} onDone={reload} soViPhamMo={data.dauHoSo?.soViPhamMo}
-        canEditCycle={!!data.viewer.canEditCycle} onDeXuatSua={() => setViecQuanLy('de-xuat-sua')}
+        onDeXuatSua={() => setViecQuanLy('de-xuat-sua')}
       />
     </div>
   );

@@ -22,7 +22,7 @@ export async function runPrHop1Tests(t: YThucTestKit) {
 
   /** Em mới: MT1 (T+1), MT2 (T+4), MT3 (T+8), lịch Quản lý chốt. */
   const em = () => {
-    const r = intake.commitIntake(P.admin, { classId: LOP, rows: [{ fullName: `PRHOP1 Em ${Math.random().toString(36).slice(2, 7)}`, target: 6.5, startWeek: tuanNay, email: 'hv@demo.test' }] });
+    const r = intake.commitIntake(P.admin, { classId: LOP, rows: [{ fullName: `PRHOP1 Em ${Math.random().toString(36).slice(2, 7)}`, target: 6.5, startWeek: tuanNay, email: 'hv@demo.test', dob: '2010-01-01' }] });
     assert(r.added === 1, JSON.stringify(r.failed));
     const ds = conn.prepare(`SELECT id FROM assessment_attempts WHERE student_id = ? AND status != 'cancelled' ORDER BY attempt_no`).all(r.studentIds[0]) as any[];
     [1, 4, 8].forEach((w, i) => {

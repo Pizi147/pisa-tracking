@@ -35,7 +35,7 @@ export function buildHvlDemo(ctx: BuildCtx): { students: number } {
     return r ? loadPrincipal((r as any).id) : admin;
   };
   const them = (classId: number, ten: string, startWeek: string | null, target: number | string = 6.5) => {
-    commitIntake(admin, { classId, rows: [{ fullName: ten, target, ...(startWeek ? { startWeek } : {}), email: 'hv@demo.test' }], idempotencyKey: `hvl-demo-${ten}` } as any);
+    commitIntake(admin, { classId, rows: [{ fullName: ten, target, ...(startWeek ? { startWeek } : {}), email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `hvl-demo-${ten}` } as any);
     const st = conn.prepare('SELECT id FROM students WHERE full_name = ?').get(ten) as any;
     const cy = conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(st.id) as any;
     return { id: st.id as number, cycleId: cy.id as number };

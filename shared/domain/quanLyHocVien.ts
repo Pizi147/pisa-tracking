@@ -2,19 +2,18 @@
  * MENU ⋮ Ở HỒ SƠ HỌC VIÊN (PR-UX3, Q10) — luật thuần: mục nào hiện, theo quyền và tình trạng. Web (`StudentManagePanel.tsx`) chỉ vẽ menu thả
  * và mở THẲNG panel của mục được chọn. Ẩn một mục không phải là chặn nó: máy chủ vẫn kiểm quyền.
  */
-export type ViecQuanLy = 'info' | 'lo-trinh-tiep' | 'lo-trinh' | 'chuyen-lop' | 'outcome' | 'tam-dung' | 'quay-lai' | 'ket-thuc' | 'hoc-lai' | 'luu-tru' | 'bo-luu-tru'
+export type ViecQuanLy = 'info' | 'lo-trinh-tiep' | 'lo-trinh' | 'chuyen-lop' | 'outcome' | 'tam-dung-thoi-hoc' | 'quay-lai' | 'hoc-lai' | 'luu-tru' | 'bo-luu-tru'
   | 'xoa-hoc-vien' | 'de-xuat-sua' | 'de-xuat-chuyen-lop';
 
 export const NHAN_VIEC_QUAN_LY: Record<ViecQuanLy, string> = {
-  info: 'Thông tin học viên',
+  info: 'Sửa thông tin',
   'lo-trinh-tiep': 'Lộ trình tiếp theo',
   'lo-trinh': 'Lộ trình',
   'chuyen-lop': 'Chuyển lớp…',
   'de-xuat-chuyen-lop': 'Đề xuất chuyển lớp…',
   outcome: 'Kết quả thi thật',
-  'tam-dung': 'Tạm dừng học',
+  'tam-dung-thoi-hoc': 'Tạm dừng / Thôi học',
   'quay-lai': 'Quay lại học',
-  'ket-thuc': 'Kết thúc học',
   'hoc-lai': 'Học lại',
   'luu-tru': 'Lưu trữ',
   'bo-luu-tru': 'Bỏ lưu trữ',
@@ -29,13 +28,25 @@ export type LopHocQuyen = {
   hocLai?: boolean;
 };
 
+/** PR-OV2b: hai tab của panel "Tạm dừng / Thôi học" — Tạm dừng khi em đang học; Thôi học (= Kết thúc học) khi chưa thôi. Rỗng → không có mục. */
+export type TabTrangThai = 'tam-dung' | 'thoi-hoc';
+export function cacTabTrangThai(quyen: Pick<LopHocQuyen, 'tamDung' | 'ketThuc'> | null | undefined, status?: string): TabTrangThai[] {
+  return [
+    ...(quyen?.tamDung && status === 'active' ? ['tam-dung' as const] : []),
+    ...(quyen?.ketThuc && status !== 'finished' ? ['thoi-hoc' as const] : []),
+  ];
+}
+
 /**
- * Các mục của menu ⋮, đúng thứ tự PR-LT: Thông tin · Lộ trình tiếp theo (lớp thường) · Lộ trình (FT) · Chuyển lớp · Kết luận lộ trình (CHỈ FT,
- * Q15/Q18) · Tạm dừng/Quay lại/Kết thúc học · Lưu trữ/Bỏ lưu trữ · (PR-XOA) Xoá học viên — CUỐI CÙNG, sau đường kẻ, chữ đỏ, chỉ Quản trị
- * hệ thống (`coTheXoa` = `viewer.coTheXoa`). Không có mục nào → nơi gọi không vẽ ⋮ (GVBM không có mục nào).
+ * Các mục của menu ⋯ hồ sơ HV (PR-OV2b, mockup overhaul-2 §6): Sửa thông tin · Chuyển lớp · Tạm dừng / Thôi học · Lưu trữ trước; các mục
+ * khác giữ điều kiện cũ, xếp sau một vạch (Lộ trình tiếp theo, Lộ trình FT, Đề xuất…, Kết quả thi thật, Quay lại học, Học lại, Bỏ lưu trữ);
+ * Xoá học viên CUỐI, vạch đỏ, chỉ Quản trị hệ thống. `suaThongTin`: Admin / TVV / CX (`student.edit_info`) — chỉ mục Sửa thông tin.
+ * Không có mục nào → nơi gọi không vẽ ⋯. Ẩn một mục không phải là chặn nó: máy chủ vẫn kiểm quyền.
  */
-export function mucQuanLyHocVien({ canEdit, lopHoc, cycle, status, coTheXoa, deXuatSua }: {
+export function mucQuanLyHocVien({ canEdit, suaThongTin, lopHoc, cycle, status, coTheXoa, deXuatSua }: {
   canEdit: boolean;
+  /** PR-OV2b: có `student.edit_info` (không cần `student.edit`). */
+  suaThongTin?: boolean;
   lopHoc?: { quyen: LopHocQuyen } | null;
   cycle: { ratio?: boolean } | null;
   status?: string;
@@ -43,54 +54,40 @@ export function mucQuanLyHocVien({ canEdit, lopHoc, cycle, status, coTheXoa, deX
   coTheXoa?: boolean;
   /** PR-DUYET (T44): GV của lớp KHÔNG có `cycle.edit` (`viewer.coTheDeXuatSua`) — GVBM nay có ⋮ với đúng mục này. */
   deXuatSua?: boolean;
-}): { key: ViecQuanLy; nhan: string; nhom: NhomViecQuanLy; phu?: string; nguyHiem?: boolean; keTruoc?: boolean | 'dam' | 'do' }[] {
+}): { key: ViecQuanLy; nhan: string; phu?: string; nguyHiem?: boolean; keTruoc?: boolean | 'dam' | 'do' }[] {
   const quyen = lopHoc?.quyen;
   const ratio = !!cycle?.ratio;
   const dangHoc = status === 'active';
-  const ds: ViecQuanLy[] = [];
-  if (canEdit) ds.push('info');
-  if (quyen?.ghiLoTrinhTiep) ds.push('lo-trinh-tiep');
-  if (canEdit && cycle && !ratio) ds.push('lo-trinh');
-  if (deXuatSua && dangHoc) ds.push('de-xuat-sua');
-  if (quyen?.chuyenLop) ds.push('chuyen-lop');
-  if (quyen?.deXuatChuyenLop && dangHoc) ds.push('de-xuat-chuyen-lop');
-  if (canEdit && cycle && !ratio) ds.push('outcome');
-  if (quyen?.tamDung && dangHoc) ds.push('tam-dung');
-  if (quyen?.quayLai && !dangHoc && status === 'inactive') ds.push('quay-lai');
-  if (quyen?.ketThuc && status !== 'finished') ds.push('ket-thuc');
-  if (quyen?.luuTru) ds.push('luu-tru');
-  if (quyen?.hocLai) ds.push('hoc-lai');
-  if (quyen?.boLuuTru) ds.push('bo-luu-tru');
-  if (coTheXoa) ds.push('xoa-hoc-vien');
-  /* PR-VAI-b (K3-48): chia nhóm Thông tin · Lộ trình · Lớp (giữ thứ tự trong nhóm, TẬP MỤC THEO QUYỀN KHÔNG ĐỔI); vạch đậm trước Tạm dừng /
-     Quay lại / Kết thúc, vạch đỏ trước Xoá; mục có hệ quả thêm một dòng phụ. */
-  const xep = [...ds].sort((a, b) => THU_TU_NHOM.indexOf(NHOM_VIEC[a]) - THU_TU_NHOM.indexOf(NHOM_VIEC[b]));
-  const dauNang = xep.find((k) => k === 'tam-dung' || k === 'quay-lai' || k === 'ket-thuc');
-  return xep.map((key) => ({
-    key, nhan: NHAN_VIEC_QUAN_LY[key], nhom: NHOM_VIEC[key],
+  const dau: ViecQuanLy[] = [];
+  const sau: ViecQuanLy[] = [];
+  if (canEdit || suaThongTin) dau.push('info');
+  if (quyen?.chuyenLop) dau.push('chuyen-lop');
+  if (cacTabTrangThai(quyen, status).length) dau.push('tam-dung-thoi-hoc');
+  if (quyen?.luuTru) dau.push('luu-tru');
+  if (quyen?.ghiLoTrinhTiep) sau.push('lo-trinh-tiep');
+  if (canEdit && cycle && !ratio) sau.push('lo-trinh');
+  if (deXuatSua && dangHoc) sau.push('de-xuat-sua');
+  if (quyen?.deXuatChuyenLop && dangHoc) sau.push('de-xuat-chuyen-lop');
+  if (canEdit && cycle && !ratio) sau.push('outcome');
+  if (quyen?.quayLai && status === 'inactive') sau.push('quay-lai');
+  if (quyen?.hocLai) sau.push('hoc-lai');
+  if (quyen?.boLuuTru) sau.push('bo-luu-tru');
+  if (coTheXoa) sau.push('xoa-hoc-vien');
+  return [...dau, ...sau].map((key, i) => ({
+    key, nhan: NHAN_VIEC_QUAN_LY[key],
     ...(PHU_VIEC[key] ? { phu: PHU_VIEC[key] } : {}),
-    ...(key === 'xoa-hoc-vien' ? { nguyHiem: true, keTruoc: 'do' as const } : key === dauNang ? { keTruoc: 'dam' as const } : {}),
+    ...(key === 'xoa-hoc-vien' ? { nguyHiem: true, keTruoc: 'do' as const } : i === dau.length && i > 0 ? { keTruoc: 'dam' as const } : {}),
   }));
 }
 
-export type NhomViecQuanLy = 'thong-tin' | 'lo-trinh' | 'lop';
-export const NHAN_NHOM_VIEC_QUAN_LY: Record<NhomViecQuanLy, string> = { 'thong-tin': 'Thông tin', 'lo-trinh': 'Lộ trình', lop: 'Lớp' };
-const THU_TU_NHOM: readonly NhomViecQuanLy[] = ['thong-tin', 'lo-trinh', 'lop'];
-const NHOM_VIEC: Record<ViecQuanLy, NhomViecQuanLy> = {
-  info: 'thong-tin', 'de-xuat-sua': 'thong-tin',
-  'lo-trinh-tiep': 'lo-trinh', 'lo-trinh': 'lo-trinh', outcome: 'lo-trinh',
-  'chuyen-lop': 'lop', 'de-xuat-chuyen-lop': 'lop', 'tam-dung': 'lop', 'quay-lai': 'lop', 'ket-thuc': 'lop', 'hoc-lai': 'lop', 'luu-tru': 'lop', 'bo-luu-tru': 'lop',
-  'xoa-hoc-vien': 'lop',
-};
 /** Một dòng hệ quả (mockup 24 B) — chỉ mục có hệ quả mới có. */
 const PHU_VIEC: Partial<Record<ViecQuanLy, string>> = {
   'lo-trinh': 'Target, dự kiến thi, lịch MT',
   'de-xuat-sua': 'Quản lý duyệt rồi mới đổi',
   'chuyen-lop': 'chọn lớp chuyển đến và tuần bắt đầu',
   'de-xuat-chuyen-lop': 'Quản lý duyệt rồi quyết định',
-  'tam-dung': 'mọi hạn của em dừng · giữ lớp, lộ trình',
+  'tam-dung-thoi-hoc': 'tạm dừng giữ lớp · thôi học đóng lộ trình',
   'quay-lai': 'hạn tính lại từ ngày quay lại',
-  'ket-thuc': 'đóng lộ trình · hồ sơ chỉ xem',
   'hoc-lai': 'về lớp cũ · lộ trình chạy tiếp',
   'xoa-hoc-vien': 'chỉ Quản trị hệ thống thấy dòng này',
 };

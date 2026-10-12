@@ -56,7 +56,7 @@ export async function runPrPaTests(t: YThucTestKit) {
   // ------------------------------------------------------------------ PA1 · chenPa + mọi đường cùng dạng
   const caseThu = (ten: string) => {
     const cid = classId('MB FT 101');
-    intake.commitIntake(P.admin, { classId: cid, rows: [{ fullName: `PA ${ten}`, target: 7, email: 'hv@demo.test' }], idempotencyKey: `pa-${ten}` });
+    intake.commitIntake(P.admin, { classId: cid, rows: [{ fullName: `PA ${ten}`, target: 7, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `pa-${ten}` });
     const sid = get('SELECT id FROM students WHERE full_name = ?', `PA ${ten}`).id;
     const c = cases.reportIssue(P.lrTeacher, {
       title: `PA thử ${ten}`, primaryCode: 'student.listening.technique', studentId: sid, topic: 'listening',
@@ -100,7 +100,7 @@ export async function runPrPaTests(t: YThucTestKit) {
 
   check('PA1c · quy chế SOS (Mock FT): PA điền sẵn cùng dạng — Tự học không người, không số buổi', () => {
     const cid = classId('MB FT 101');
-    intake.commitIntake(P.admin, { classId: cid, rows: [{ fullName: 'PA SOS', target: 7, email: 'hv@demo.test' }], idempotencyKey: 'pa-sos' });
+    intake.commitIntake(P.admin, { classId: cid, rows: [{ fullName: 'PA SOS', target: 7, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: 'pa-sos' });
     const sid = get('SELECT id FROM students WHERE full_name = ?', 'PA SOS').id;
     const cy = get("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'", sid).id;
     boLichTuTao(conn, cy);
@@ -117,7 +117,7 @@ export async function runPrPaTests(t: YThucTestKit) {
 
   check('PA1d · bổ trợ Giữa khoá (BE Progress Test trượt W): PA bo_tro cùng dạng, người dạy là tài khoản', () => {
     const cid = classId('MB BE 08');
-    intake.commitIntake(P.admin, { classId: cid, rows: [{ fullName: 'PA BE GK', email: 'hv@demo.test' }], idempotencyKey: 'pa-be-gk' });
+    intake.commitIntake(P.admin, { classId: cid, rows: [{ fullName: 'PA BE GK', email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: 'pa-be-gk' });
     regular.planRegularTests(P.admin, cid);
     const sid = get('SELECT id FROM students WHERE full_name = ?', 'PA BE GK').id;
     const pt = get(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'progress'`, sid).id;

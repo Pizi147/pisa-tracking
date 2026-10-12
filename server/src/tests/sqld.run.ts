@@ -148,7 +148,7 @@ await check('(c) writeAudit lẻ rồi POST /ke-hoach-test/xep-moi (MT mới, 4 
   const p = loadPrincipal(idQuanLy);
   const lop = (conn.prepare(`SELECT id FROM classes WHERE code = 'MB FT 101'`).get() as any).id as number;
   const hv = intake.commitIntake(loadPrincipal((conn.prepare(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'system_admin' LIMIT 1`).get() as any).id),
-    { classId: lop, rows: [{ fullName: 'SQLD Em Mới', target: 6.5, startWeek: week.mondayOf(new Date().toISOString().slice(0, 10)), email: 'sqld@demo.test' }] });
+    { classId: lop, rows: [{ fullName: 'SQLD Em Mới', target: 6.5, startWeek: week.mondayOf(new Date().toISOString().slice(0, 10)), email: 'sqld@demo.test', dob: '2010-01-01' }] });
   const sid = hv.studentIds[0] as number;
   const truoc = so('SELECT COUNT(*) AS n FROM assessment_attempts WHERE student_id = ?', sid);
   const tuan = week.ensurePeriod(week.mondayOf(new Date(Date.now() + 210 * 864e5).toISOString().slice(0, 10))).id;

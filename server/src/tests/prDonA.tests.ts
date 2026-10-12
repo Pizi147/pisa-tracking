@@ -30,7 +30,7 @@ export async function runPrDonATests(t: YThucTestKit) {
   /** Em mới vào lớp `lop` qua đường Thêm HV thật; trả id em + lộ trình đang chạy. */
   const emMoi = (lop: string) => {
     const ten = `DONA HV ${++seq}`;
-    intake.commitIntake(P.admin, { classId: classId(lop), rows: [{ fullName: ten, target: 6.5, email: 'hv@demo.test' }], idempotencyKey: `dona-${seq}` });
+    intake.commitIntake(P.admin, { classId: classId(lop), rows: [{ fullName: ten, target: 6.5, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `dona-${seq}` });
     const st = get('SELECT id FROM students WHERE full_name = ?', ten);
     const cy = get("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'", st.id);
     return { sid: st.id as number, cy: cy?.id as number };

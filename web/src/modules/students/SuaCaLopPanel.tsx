@@ -8,22 +8,25 @@ import { ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { KCK, LO_LUU_SUA_CA_LOP, chiaLo, laKck, type VanDeNhap } from '@shared/domain/index.ts';
+import { ChonNguoi, type NguoiTrongDs } from '../../ui/PeoplePicker.tsx';
 
-type Cot = 'fullName' | 'dob' | 'email' | 'startWeek' | 'examDate' | 'target' | 'baseline';
+type Cot = 'fullName' | 'dob' | 'email' | 'consultantUserId' | 'startWeek' | 'examDate' | 'target' | 'baseline';
 type DongGoc = {
   studentId: number; fullName: string; dob: string | null; email: string | null; coLoTrinh: boolean;
+  /** PR-OV2b: TVV = người; `consultantName` = chữ cũ, chỉ để đọc. */
+  consultantUserId: number | null; consultantName: string | null;
   startWeek: string | null; examDate: string | null; target: number | string | null; baseline: number | null;
 };
-type DuLieu = { lop: { id: number; code: string }; lopThuong: boolean; coTheSuaTarget: boolean; rows: DongGoc[] };
+type DuLieu = { lop: { id: number; code: string }; lopThuong: boolean; coTheSuaTarget: boolean; rows: DongGoc[]; tvv: NguoiTrongDs[] };
 type XemTruoc = { rows: { studentId: number; issues: VanDeNhap[] }[]; canhBaoMt: { studentId: number; cau: string }[] };
 
 const COT: { key: Cot; nhan: string; rong: number; so?: boolean }[] = [
-  { key: 'fullName', nhan: 'Họ và tên', rong: 210 }, { key: 'dob', nhan: 'Ngày sinh', rong: 190 },
-  { key: 'email', nhan: 'Email', rong: 250 }, { key: 'startWeek', nhan: 'Tuần bắt đầu học', rong: 172 },
+  { key: 'fullName', nhan: 'Họ và tên', rong: 210 }, { key: 'dob', nhan: 'Ngày sinh *', rong: 190 },
+  { key: 'email', nhan: 'Email *', rong: 250 }, { key: 'consultantUserId', nhan: 'TVV', rong: 210 }, { key: 'startWeek', nhan: 'Tuần bắt đầu học', rong: 172 },
   { key: 'examDate', nhan: 'Dự kiến thi', rong: 190 }, { key: 'target', nhan: 'Target', rong: 100, so: true },
   { key: 'baseline', nhan: 'Điểm đầu vào', rong: 112, so: true },
 ];
-/* Mockup 05/10: cột đủ cho ô đã sửa có ↺ (không cắt chữ); tổng 1374 px vừa panel 1440 không cuộn ngang. */
+/* Mockup 05/10: cột đủ cho ô đã sửa có ↺ (không cắt chữ). PR-OV2b thêm cột TVV → bảng rộng hơn panel 1440 thì cuộn ngang trong khung bảng. */
 const RONG_LUU_Y = 150;
 /* Ô lộ trình (tuần, dự kiến thi, Target, điểm đầu vào): em chưa có lộ trình thì không sửa được ở đây. */
 const O_LO_TRINH = new Set<Cot>(['startWeek', 'examDate', 'target', 'baseline']);
@@ -39,7 +42,7 @@ const chuan = (k: Cot, v: string) => {
 
 /**
  * PR-SL (Q-0310-3): SỬA THÔNG TIN CẢ LỚP trên một panel — lưới giống Thêm học viên, KHÔNG dán Excel. Một hàng một em đang học (A→Z),
- * bảy ô: Họ tên · Ngày sinh · Email · Tuần bắt đầu · Dự kiến thi · Target · Điểm đầu vào (lớp thường không có điểm đầu vào — `lopThuong`).
+ * tám ô: Họ tên · Ngày sinh * · Email * · TVV (chọn người, PR-OV2b) · Tuần bắt đầu · Dự kiến thi · Target · Điểm đầu vào (lớp thường không có điểm đầu vào — `lopThuong`).
  * Ô đã đổi tô nhấn + chấm, mỗi ô có Hoàn tác về giá trị gốc. Xem trước tự động (400 ms) → lỗi đỏ dưới ô, cảnh báo MT dời vàng cuối hàng.
  * Một nút Lưu, gửi THEO LÔ `LO_LUU_SUA_CA_LOP` em (mỗi lô một request, một giao dịch, một khoá chống gửi trùng — 10 s của Netlify).
  * Lô lỗi thì dừng: chân panel "Đã lưu n em · m em chưa lưu"; em đã lưu thôi tô nhấn, em chưa lưu giữ nguyên để bấm Lưu lại.
@@ -204,7 +207,9 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                         {cot.map((c) => {
                           const v = sua[r.studentId]?.[c.key] ?? nen(r, c.key);
                           const daSuaO = doi[c.key] !== undefined;
-                          const loi = daSuaO ? vanDe(r.studentId, c.key).find((i) => i.muc === 'loi')?.message ?? null : null;
+                          /* PR-OV2b: dòng có sửa mà em cũ thiếu email / ngày sinh → lỗi ở đúng ô đó dù ô chưa đụng tới. */
+                          const loi = daSuaO || ((c.key === 'dob' || c.key === 'email') && Object.keys(doi).length)
+                            ? vanDe(r.studentId, c.key).find((i) => i.muc === 'loi')?.message ?? null : null;
                           const khoaO = (O_LO_TRINH.has(c.key) && !r.coLoTrinh) || (c.key === 'target' && !d.coTheSuaTarget);
                           const nhan = `${c.nhan} · ${r.fullName}`;
                           const idLoi = `loi-${r.studentId}-${c.key}`;
@@ -213,7 +218,15 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                               style={daSuaO ? { background: 'rgb(var(--chon-bg-rgb))' } : undefined}>
                               <div className="flex items-center gap-1">
                                 <span className="min-w-0 flex-1">
-                                  {c.key === 'dob' || c.key === 'startWeek' || c.key === 'examDate' ? (
+                                  {c.key === 'consultantUserId' ? (
+                                    <>
+                                      <ChonNguoi nhom="nhan_vien" choToi={false} choNgoai={false} ds={d.tvv} choTrong="— Chưa chọn —" placeholder="Chọn"
+                                        ariaLabel={nhan} invalid={!!loi}
+                                        value={v ? { kieu: 'tai_khoan', id: Number(v), ten: d.tvv.find((t) => t.id === Number(v))?.ten ?? `#${v}` } : null}
+                                        onChange={(x) => datO(r.studentId, c.key, x?.kieu === 'tai_khoan' ? String(x.id) : '')} />
+                                      {!v && r.consultantName && <span className="mt-0.5 block truncate text-xs text-slate-500" title={r.consultantName}>cũ: “{r.consultantName}”</span>}
+                                    </>
+                                  ) : c.key === 'dob' || c.key === 'startWeek' || c.key === 'examDate' ? (
                                     <ONgay gon kieu={c.key === 'dob' ? 'ngay' : c.key === 'startWeek' ? 'tuan' : 'ngay-hoac-thang'}
                                       value={v} ariaLabel={nhan} invalid={!!loi} moTa={loi ? idLoi : undefined} disabled={khoaO}
                                       onChange={(x) => datO(r.studentId, c.key, x)} />

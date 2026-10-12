@@ -14,8 +14,9 @@ import { closeCasesBySystem, moLaiCaseHeThongDong, type ChupCaseDong } from '../
 import { datLaiHanCase } from '../cases/sosAuto.ts';
 import { chotHanXuLy } from '../yThuc/trangThai.ts';
 import { entryBandsOf, scoresOf, skipsOf } from '../fasttrack/attempts.ts';
-import { evaluateAttempt } from '../fasttrack/scoring.ts';
+import { evaluateAttempt, roundToHalf } from '../fasttrack/scoring.ts';
 import { currentCycle, cyclesOf, docDuKienThi, docTarget, examPlanOf } from '../fasttrack/cycles.ts';
+import { isRatioCycle } from '../normal/regular.ts';
 import {
   apDungMotDong, danhSachLopDich, dongLopNeuHet, lopDichHopLe, lopHienTaiCua, moLoTrinhMoi, thongBaoChuyenVao,
 } from '../classes/luatLoTrinh.ts';
@@ -627,8 +628,8 @@ export function unarchiveStudent(p: Principal, studentId: number) {
  */
 export function chuanHoaSuaHoSo(patch: any) {
   patch = { ...patch };
-  kiemKieuO(patch, ['fullName', 'dob', 'email', 'consultantName', 'note'], [],
-    (k) => ({ fullName: 'Họ tên', dob: 'Ngày sinh', email: 'Email', consultantName: 'Tư vấn viên', note: 'Ghi chú' })[k] ?? k);
+  kiemKieuO(patch, ['fullName', 'dob', 'email', 'consultantName', 'note'], ['consultantUserId'],
+    (k) => ({ fullName: 'Họ tên', dob: 'Ngày sinh', email: 'Email', consultantName: 'Tư vấn viên', note: 'Ghi chú', consultantUserId: 'TVV' })[k] ?? k);
   if (patch.fullName !== undefined) {
     patch.fullName = String(patch.fullName ?? '').trim();
     if (!patch.fullName) throw badRequest('Họ tên không được trống.');
@@ -636,18 +637,71 @@ export function chuanHoaSuaHoSo(patch: any) {
   if (patch.dob !== undefined) {
     const d = docNgayNhap(patch.dob, demoToday(), { toiThieu: NGAY_SINH_TOI_THIEU, toiDa: demoToday() });
     if (d.loi) throw badRequest('Ngày sinh: ' + d.loi);
+    if (!d.iso) throw badRequest('Ngày sinh: bắt buộc.');   // PR-OV2b: sửa không được xoá trống (em cũ thiếu vẫn làm việc khác)
     patch.dob = d.iso;
   }
   if (patch.email !== undefined) {
     const e = docEmail(patch.email);
     if (e.loi) throw badRequest('Email: ' + e.loi);
+    if (!e.email) throw badRequest('Email: bắt buộc.');
     patch.email = e.email;
+  }
+  if (patch.consultantUserId !== undefined && patch.consultantUserId !== null) {
+    const id = Number(patch.consultantUserId);
+    if (!Number.isInteger(id) || !laTvvHoatDong(id)) throw badRequest('TVV: chọn một tài khoản Tư vấn viên đang hoạt động.');
+    patch.consultantUserId = id;
   }
   return patch;
 }
 
+/** PR-OV2b: tài khoản vai TVV còn hoạt động (đã duyệt, chưa xoá, vai chưa gỡ). */
+const TVV_SQL = `SELECT u.id, u.full_name, ur.branch_id, b.name AS cn FROM users u
+  JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active' JOIN roles r ON r.id = ur.role_id AND r.key = 'consultant'
+  LEFT JOIN branches b ON b.id = ur.branch_id
+  WHERE u.status = 'active' AND u.approval_state = 'approved'`;
+const laTvvHoatDong = (id: number) => !!db().prepare(`${TVV_SQL} AND u.id = ?`).get(id);
+
+/**
+ * Ô chọn TVV (PR-OV2b): mọi TVV đang hoạt động, TVV cùng chi nhánh lớp đang học của em (hoặc `branchId`) lên trước, rồi A→Z.
+ * Dòng phụ "TVV · {chi nhánh}" (CX toàn hệ thống không phải TVV — không lọt).
+ */
+export function dsTvv(studentId: number | null, branchId?: number | null): { id: number; ten: string; phu: string }[] {
+  const conn = db();
+  const cn = branchId ?? (studentId == null ? null : (conn.prepare(`SELECT c.branch_id b FROM enrollments e JOIN classes c ON c.id = e.class_id
+    WHERE e.student_id = ? AND e.status = 'active' ORDER BY e.id DESC LIMIT 1`).get(studentId) as any)?.b ?? null);
+  const nguoi = new Map<number, { id: number; ten: string; cns: string[]; cung: boolean }>();
+  for (const r of conn.prepare(TVV_SQL).all() as any[]) {
+    const x = nguoi.get(r.id) ?? { id: r.id, ten: r.full_name, cns: [] as string[], cung: false };
+    if (r.cn && !x.cns.includes(r.cn)) x.cns.push(r.cn);
+    if (cn != null && r.branch_id === cn) x.cung = true;
+    nguoi.set(r.id, x);
+  }
+  return [...nguoi.values()].sort((a, b) => Number(b.cung) - Number(a.cung) || a.ten.localeCompare(b.ten, 'vi'))
+    .map((x) => ({ id: x.id, ten: x.ten, phu: ['TVV', ...(x.cns.length ? x.cns : ['toàn hệ thống'])].join(' · ') }));
+}
+
+/**
+ * ĐIỂM ĐẦU VÀO ở Sửa thông tin (PR-OV2b): đủ 4 kỹ năng → Overall tự tính (TB, làm tròn 0.5 như IELTS); thiếu kỹ năng → phải có Overall
+ * (kỹ năng có gõ thì vẫn lưu); `null` → xoá. Ghi vào `learning_cycles.baseline_*` của lộ trình hiện tại (cùng chỗ dòng "Đầu vào" FT đọc).
+ */
+function docDauVao(v: any): { overall: number; bands: (number | null)[] } | null {
+  if (v === null) return null;
+  if (typeof v !== 'object' || Array.isArray(v)) throw badRequest('Điểm đầu vào không hợp lệ.');
+  const band = (x: unknown, ten: string): number | null => {
+    if (x === undefined || x === null || x === '') return null;
+    const n = Number(x);
+    if (!Number.isFinite(n) || n < 0 || n > 9 || n * 2 !== Math.round(n * 2)) throw badRequest(`Điểm đầu vào ${ten}: band 0–9, bước 0.5.`);
+    return n;
+  };
+  const bands = [band(v.listening, 'L'), band(v.reading, 'R'), band(v.writing, 'W'), band(v.speaking, 'S')];
+  const du = bands.every((b) => b !== null);
+  const overall = du ? roundToHalf((bands as number[]).reduce((a, b) => a + b, 0) / 4) : band(v.overall, 'Overall');
+  if (overall === null) throw badRequest('Điểm đầu vào: nhập đủ L R W S hoặc nhập Overall.');
+  return { overall, bands };
+}
+
 /** PR-OV2a: trường `student.edit_info` (Admin, TVV, CX) sửa được ở hồ sơ — gửi trường khác (ghi chú…) thì 403. */
-const TRUONG_THONG_TIN = new Set(['fullName', 'dob', 'email', 'consultantName']);
+const TRUONG_THONG_TIN = new Set(['fullName', 'dob', 'email', 'consultantName', 'consultantUserId', 'dauVao']);
 
 export function updateStudent(p: Principal, studentId: number, patch: any) {
   if (!can(p, PERMISSIONS.STUDENT_EDIT, { studentId })) {
@@ -659,9 +713,23 @@ export function updateStudent(p: Principal, studentId: number, patch: any) {
   if (!s) throw notFound();
   // Target và ngày thi IELTS nằm ở LỘ TRÌNH, sửa qua updateCycle chứ không qua hồ sơ.
   const map: Record<string, string> = {
-    fullName: 'full_name', note: 'note', dob: 'dob', consultantName: 'consultant_name', email: 'email',
+    fullName: 'full_name', note: 'note', dob: 'dob', consultantName: 'consultant_name', email: 'email', consultantUserId: 'consultant_user_id',
   };
-  patch = chuanHoaSuaHoSo(patch);
+  const { dauVao: dauVaoGui, ...hoSo } = patch ?? {};
+  patch = chuanHoaSuaHoSo(hoSo);
+  if (dauVaoGui !== undefined) {
+    const dv = docDauVao(dauVaoGui);
+    const c = currentCycle(studentId);
+    if (!c) throw badRequest('Em chưa có lộ trình — chưa ghi được điểm đầu vào.');
+    if (isRatioCycle(c)) throw badRequest('Lớp thường không có điểm đầu vào.');
+    tx(() => {
+      conn.prepare(`UPDATE learning_cycles SET baseline_attempt_id = NULL, baseline_score = ?, baseline_source = ?, baseline_note = NULL,
+          baseline_listening = ?, baseline_reading = ?, baseline_writing = ?, baseline_speaking = ? WHERE id = ?`)
+        .run(dv?.overall ?? null, dv ? 'manual' : null, ...(dv?.bands ?? [null, null, null, null]), c.id);
+      writeAudit({ actorUserId: p.userId, action: dv ? 'cycle.baseline.set' : 'cycle.baseline.clear', entityType: 'learning_cycle', entityId: c.id,
+        before: c, after: dv ?? undefined });
+    });
+  }
   const sets: string[] = []; const params: unknown[] = [];
   for (const [k, v] of Object.entries(patch)) {
     if (!map[k]) continue;

@@ -84,7 +84,7 @@ export async function runPrS4fTests(t: YThucTestKit) {
   await checkAsync('S4F (3) · Lớp thường: xoá điểm R trượt (API) → Case chỉ dựng trên điểm đó đóng, không mốc "đã đạt"; sửa lên đạt cũng không mốc; lượt sau đạt → có mốc (Case Progress Test tự tạo — PR-LT2a)', async () => {
     const fou = classId('MB FOU 12');
     const taoEm = (ten: string) => {
-      intake.commitIntake(P.admin, { classId: fou, rows: [{ fullName: ten, email: 'hv@demo.test' }], idempotencyKey: `s4f-${ten}` });
+      intake.commitIntake(P.admin, { classId: fou, rows: [{ fullName: ten, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `s4f-${ten}` });
       regular.planRegularTests(P.admin, fou);
       const st = get('SELECT id FROM students WHERE full_name = ?', ten);
       const cy = get(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`, st.id);
@@ -209,7 +209,7 @@ export async function runPrS4fTests(t: YThucTestKit) {
   const maLoi = (fn: () => unknown): number | string => { try { fn(); return 'không ném'; } catch (e: any) { return e?.status ?? String(e?.message ?? e); } };
   const FT = classId('MB FT 101');
   const emFt = (ten: string) => {
-    intake.commitIntake(P.admin, { classId: FT, rows: [{ fullName: `S4F ${ten}`, target: 7, email: 'hv@demo.test' }], idempotencyKey: `s4f-ft-${ten}` });
+    intake.commitIntake(P.admin, { classId: FT, rows: [{ fullName: `S4F ${ten}`, target: 7, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `s4f-ft-${ten}` });
     const st = get('SELECT id FROM students WHERE full_name = ?', `S4F ${ten}`);
     const cy = get(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`, st.id);
     boLichTuTao(conn, cy.id);

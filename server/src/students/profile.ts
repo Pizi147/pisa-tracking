@@ -27,6 +27,7 @@ import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { activeClassOf, canManageDiscipline } from '../yThuc/access.ts';
 import { dongHocVien, khoangTamDung } from './tamDung.ts';
 import { viecCuaHocVien } from './viecHocVien.ts';
+import { dsTvv } from './students.ts';
 import { trangThaiYThuc } from '../yThuc/trangThai.ts';
 
 /**
@@ -640,7 +641,11 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
         source: selected.baseline_source,
         sourceLabel: BASELINE_SOURCE_LABEL[selected.baseline_source as keyof typeof BASELINE_SOURCE_LABEL]
           ?? selected.baseline_source,
-        score: selected.baseline_score, bands: null, attemptId: null, attemptNo: null,
+        score: selected.baseline_score, attemptId: null, attemptNo: null,
+        /* PR-OV2b: band từng kỹ năng gõ tay (Sửa thông tin / Thêm học viên) — ô Điểm đầu vào điền sẵn. */
+        bands: [selected.baseline_listening, selected.baseline_reading, selected.baseline_writing, selected.baseline_speaking].some((x: any) => x != null)
+          ? { listening: selected.baseline_listening ?? null, reading: selected.baseline_reading ?? null, writing: selected.baseline_writing ?? null, speaking: selected.baseline_speaking ?? null }
+          : null,
         note: selected.baseline_note,
       };
     }
@@ -809,6 +814,10 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     id: s.id, studentCode: s.student_code, fullName: s.full_name, dob: s.dob, email: s.email ?? null,
     status: s.status, finishedAt: s.finished_at, archivedAt: s.archived_at,
     consultantName: s.consultant_name, note: s.note,
+    /** PR-OV2b: TVV = người (`consultant_user_id`); `consultantName` là chữ cũ, chỉ để đọc ("Ghi cũ: …"). */
+    tvv: s.consultant_user_id ? (conn.prepare('SELECT id, full_name AS ten FROM users WHERE id = ?').get(s.consultant_user_id) as any) ?? null : null,
+    /** Ô chọn TVV — chỉ khi người xem sửa được thông tin. */
+    tvvChon: can(p, PERMISSIONS.STUDENT_EDIT, { studentId }) || can(p, PERMISSIONS.STUDENT_EDIT_INFO, { studentId }) ? dsTvv(studentId) : null,
     currentClass: current
       ? {
         id: current.class_id, code: current.class_code, kind: current.class_kind,
@@ -971,6 +980,8 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       const lopDangHoc = activeClassOf(studentId);
       return {
         canEdit: can(p, PERMISSIONS.STUDENT_EDIT, { studentId }),
+        /** PR-OV2b: Admin / TVV / CX (`student.edit_info`) — ⋯ Sửa thông tin, chỉ các ô thông tin. */
+        coTheSuaThongTin: can(p, PERMISSIONS.STUDENT_EDIT, { studentId }) || can(p, PERMISSIONS.STUDENT_EDIT_INFO, { studentId }),
         /* PR-DUYET (T44): target / lộ trình — Quản lý. GV của lớp không có quyền này thì gửi "Đề xuất sửa". */
         canEditCycle: can(p, PERMISSIONS.CYCLE_EDIT, { studentId }),
         coTheDeXuatSua: !can(p, PERMISSIONS.CYCLE_EDIT, { studentId }) && can(p, PERMISSIONS.STUDENT_VIEW, { classId: lopDangHoc, studentId }),

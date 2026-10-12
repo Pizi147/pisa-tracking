@@ -54,7 +54,7 @@ export async function runPrPb2bTests(t: YThucTestKit) {
   let seq = 0;
   const emMoi = (lop: string) => {
     const ten = `PB2B HV ${++seq}`;
-    intake.commitIntake(P.admin, { classId: classId(lop), rows: [{ fullName: ten, target: 6.5, email: 'hv@demo.test' }], idempotencyKey: `pb2b-${seq}` });
+    intake.commitIntake(P.admin, { classId: classId(lop), rows: [{ fullName: ten, target: 6.5, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `pb2b-${seq}` });
     const st = get('SELECT id FROM students WHERE full_name = ?', ten);
     const cy = get("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'", st.id);
     return { sid: st.id as number, cy: cy?.id as number };

@@ -38,7 +38,7 @@ export async function runPrMtaTests(t: YThucTestKit) {
   let dem = 0;
   /** Em mới ở MB FT 101: MT1, MT2, MT3 ở tuần `w` (mặc định T+1, T+4, T+8), chưa điểm, lịch Quản lý chốt. */
   const emMoi = (w: [number, number, number] = [1, 4, 8]) => {
-    const r = intake.commitIntake(P.admin, { classId: LOP, rows: [{ fullName: `PRMTA Em ${++dem}`, target: 6.5, startWeek: tuanNay, email: 'hv@demo.test' }] });
+    const r = intake.commitIntake(P.admin, { classId: LOP, rows: [{ fullName: `PRMTA Em ${++dem}`, target: 6.5, startWeek: tuanNay, email: 'hv@demo.test', dob: '2010-01-01' }] });
     assert(r.added === 1, `thêm em: ${JSON.stringify(r.failed)}`);
     const sid = r.studentIds[0] as number;
     const ds = conn.prepare(`SELECT a.id FROM assessment_attempts a WHERE a.student_id = ? AND a.status != 'cancelled' ORDER BY a.attempt_no`).all(sid) as any[];
@@ -251,7 +251,7 @@ export async function runPrMtaTests(t: YThucTestKit) {
 
   check('MTa T1 (C7) · Thêm HV: học từ 6 tuần trước → MT1 (tuần trước) là MT thường; từ 13 tuần trước → MT1, MT2 là MT cũ', () => {
     const them = (lui: number) => {
-      const r = intake.commitIntake(P.admin, { classId: LOP, rows: [{ fullName: `PRMTA Lùi ${++dem}`, target: 6.5, startWeek: t.addDays(tuanNay, -7 * lui), email: 'hv@demo.test' }] });
+      const r = intake.commitIntake(P.admin, { classId: LOP, rows: [{ fullName: `PRMTA Lùi ${++dem}`, target: 6.5, startWeek: t.addDays(tuanNay, -7 * lui), email: 'hv@demo.test', dob: '2010-01-01' }] });
       return conn.prepare(`SELECT attempt_no, lich_su FROM assessment_attempts WHERE student_id = ? ORDER BY attempt_no`).all(r.studentIds[0]) as any[];
     };
     const a = them(6);

@@ -275,13 +275,13 @@ export function nhomGiaoVienBoMon(
 // ---------------------------------------------------------------- menu ⋯ dòng học viên (§3.7, §4, Q1)
 
 /* PR-YT4 (K2-30 phần chữ): bỏ mục `Hồ sơ` (tên em đã là liên kết); "+ Ghi vi phạm" (T31 — "Ghi nhận" chỉ nghĩa đã xem). */
-export type MucMenuDong = 'vi-pham' | 'case' | 'nhap-diem' | 'lo-trinh-tiep' | 'chuyen-lop' | 'de-xuat-chuyen-lop';
+export type MucMenuDong = 'vi-pham' | 'case' | 'nhap-diem' | 'sua-thong-tin' | 'lo-trinh-tiep' | 'chuyen-lop' | 'de-xuat-chuyen-lop';
 export const MUC_MENU_DONG_NHAN: Record<MucMenuDong, string> = {
-  'vi-pham': '+ Ghi vi phạm', case: '+ Case', 'nhap-diem': 'Nhập điểm',
+  'vi-pham': '+ Ghi vi phạm', case: '+ Case', 'nhap-diem': 'Nhập điểm', 'sua-thong-tin': 'Sửa thông tin',
   'lo-trinh-tiep': 'Lộ trình tiếp theo', 'chuyen-lop': 'Chuyển lớp…', 'de-xuat-chuyen-lop': 'Đề xuất chuyển lớp…',
 };
 /** Việc HIẾM của dòng (K2-30): kẻ vạch trước mục hiếm đầu tiên — tách khỏi việc hằng ngày (Ghi vi phạm · Case · Nhập điểm). */
-export const MUC_MENU_DONG_HIEM: readonly MucMenuDong[] = ['lo-trinh-tiep', 'chuyen-lop', 'de-xuat-chuyen-lop'];
+export const MUC_MENU_DONG_HIEM: readonly MucMenuDong[] = ['sua-thong-tin', 'lo-trinh-tiep', 'chuyen-lop', 'de-xuat-chuyen-lop'];
 /**
  * Hai mục thuộc PR-LT (đợt 5). Đã có màn làm việc đúng luật §3.9 (`LoTrinhTiepPanel.tsx`,
  * `ChuyenLopPanel.tsx`) — panel gắn ở `web/src/modules/classes/thaoTacDongHocVien.tsx`.
@@ -299,6 +299,8 @@ export function mucMenuDongHocVien(i: {
   if (i.coTheGhiViPham) out.push('vi-pham');
   if (i.coTheBaoCase) out.push('case');
   if (i.coTheNhapDiem) out.push('nhap-diem');
+  /* PR-OV2b: Sửa thông tin một em ngay tại dòng (panel như ⋯ hồ sơ HV). */
+  if (i.coTheSuaHocVien) out.push('sua-thong-tin');
   if (bat.loTrinhTiepTheo && i.laLopThuong && i.coTheSuaHocVien) out.push('lo-trinh-tiep');
   if (bat.chuyenLop && i.coTheChuyenLop) out.push('chuyen-lop');
   else if (bat.chuyenLop && i.coTheDeXuatChuyenLop) out.push('de-xuat-chuyen-lop');

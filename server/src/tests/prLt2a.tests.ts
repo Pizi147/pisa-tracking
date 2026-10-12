@@ -102,7 +102,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
   /** Thêm một em vào lớp thường + xếp bài Giữa/Cuối khoá (đường QL) → id các lượt. */
   const taoEm = (ten: string, lop: string) => {
     const cid = classId(lop);
-    intake.commitIntake(P.admin, { classId: cid, rows: [{ fullName: ten, email: 'hv@demo.test' }], idempotencyKey: `lt2a-${ten}` });
+    intake.commitIntake(P.admin, { classId: cid, rows: [{ fullName: ten, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `lt2a-${ten}` });
     regular.planRegularTests(P.admin, cid);
     const st = get('SELECT id FROM students WHERE full_name = ?', ten);
     const luot = (kind: string) => get('SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = ?', st.id, kind)?.id as number | undefined;
@@ -388,7 +388,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     return lop;
   };
   const themEm = (lop: number, ten: string[]) => {
-    intake.commitIntake(P.admin, { classId: lop, rows: ten.map((n) => ({ fullName: n, email: 'hv@demo.test' })), idempotencyKey: `lt2a-m1b-${lop}-${ten.join()}` });
+    intake.commitIntake(P.admin, { classId: lop, rows: ten.map((n) => ({ fullName: n, email: 'hv@demo.test', dob: '2010-01-01' })), idempotencyKey: `lt2a-m1b-${lop}-${ten.join()}` });
     return ten.map((n) => get('SELECT id FROM students WHERE full_name = ?', n).id as number);
   };
   const baiCua = (sid: number) => all(`SELECT a.id, a.kind, a.status, a.class_id, (SELECT COUNT(*) FROM attempt_skills k WHERE k.attempt_id = a.id AND k.required = 1) AS mon FROM assessment_attempts a WHERE a.student_id = ? ORDER BY a.attempt_no`, sid);

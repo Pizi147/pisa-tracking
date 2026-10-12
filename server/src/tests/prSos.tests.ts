@@ -126,7 +126,7 @@ export async function runPrSosTests(t: YThucTestKit) {
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const makeStudent = (name: string): { id: number; cycleId: number; name: string } => {
-    intake.commitIntake(P.admin, { classId: CLASS, rows: [{ fullName: `SOS4 ${name}`, target: 7, email: 'hv@demo.test' }], idempotencyKey: `sos4-${name}` });
+    intake.commitIntake(P.admin, { classId: CLASS, rows: [{ fullName: `SOS4 ${name}`, target: 7, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `sos4-${name}` });
     const st = get('SELECT id FROM students WHERE full_name = ?', `SOS4 ${name}`);
     const cy = get("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'", st.id);
     boLichTuTao(conn, cy.id);

@@ -92,9 +92,9 @@ export async function runPrNhapTests(t: YThucTestKit) {
     const pv = intake.previewIntake(P.admin, { classId: ft, rows: [
       { fullName: 'A', dob: '31/02/2010', email: 'a@b.vn' },
       { fullName: 'B' },
-      { fullName: 'C', email: 'c@d.vn', examDate: '05/2027' },
-      { fullName: 'D', email: 'd@e.vn', route: 'LT2' },
-      { fullName: 'E', email: 'e@f.vn', examDate: '13/2027' },
+      { fullName: 'C', dob: '2010-01-01', email: 'c@d.vn', examDate: '05/2027' },
+      { fullName: 'D', dob: '2010-01-01', email: 'd@e.vn', route: 'LT2' },
+      { fullName: 'E', dob: '2010-01-01', email: 'e@f.vn', examDate: '13/2027' },
     ] });
     const [a, b, c, dd, e] = pv.rows;
     assert(a.issues.some((i: any) => i.field === 'dob' && i.muc === 'loi' && i.message === 'Ngày không có thật'), JSON.stringify(a.issues));
@@ -106,7 +106,7 @@ export async function runPrNhapTests(t: YThucTestKit) {
   });
 
   check('NHAP (3) · lớp thường: cột FT dán vào chỉ là lưu ý, không lỗi (Q4); Target/Dự kiến thi nay được nhận (PR-NT 04/10)', () => {
-    const pv = intake.previewIntake(P.admin, { classId: thuong, rows: [{ fullName: 'E', email: 'e@f.vn', target: '6.5', baselineScore: '5', examDate: '05/2027' }] });
+    const pv = intake.previewIntake(P.admin, { classId: thuong, rows: [{ fullName: 'E', dob: '2010-01-01', email: 'e@f.vn', target: '6.5', baselineScore: '5', examDate: '05/2027' }] });
     const is = pv.rows[0].issues;
     assert(is.some((i: any) => i.field === 'baselineScore') && is.every((i: any) => i.muc === 'luu_y'), JSON.stringify(is));
     assert(pv.rows[0].baselineScore === null && pv.rows[0].target === 6.5 && pv.rows[0].examDate === '2027-05', 'OVR bỏ qua, target/thi nhận');
@@ -121,7 +121,7 @@ export async function runPrNhapTests(t: YThucTestKit) {
 
   check('NHAP (3) · ghi: email, ngày thi (ngày → tháng + tuần), lộ trình theo lớp, hangDaThem', () => {
     const r = intake.commitIntake(P.admin, { classId: ft, idempotencyKey: 'nhap-3-ghi', rows: [
-      { fullName: 'Nhập Có Email', email: 'X@Y.vn', examDate: '15/01/2027', route: 'LT2' },
+      { fullName: 'Nhập Có Email', dob: '2010-01-01', email: 'X@Y.vn', examDate: '15/01/2027', route: 'LT2' },
       { fullName: 'Nhập Thiếu Email' },
     ] });
     assert(r.added === 1 && JSON.stringify(r.hangDaThem) === '[1]', JSON.stringify(r));
@@ -139,9 +139,9 @@ export async function runPrNhapTests(t: YThucTestKit) {
       .get(t.addDays(h, -21)) as any;
     assert(lop, 'demo thiếu lớp FT đã khai giảng ≥ 3 tuần');
     const kg = (conn.prepare('SELECT start_date FROM classes WHERE id = ?').get(lop.id) as any).start_date;
-    const pv = intake.previewIntake(P.admin, { classId: lop.id, rows: [{ fullName: 'F', email: 'f@g.vn' }] });
+    const pv = intake.previewIntake(P.admin, { classId: lop.id, rows: [{ fullName: 'F', dob: '2010-01-01', email: 'f@g.vn' }] });
     assert(pv.defaultStartWeek === d.mondayOfDate(kg), `${pv.defaultStartWeek} ≠ tuần khai giảng ${kg}`);
-    const sai = intake.previewIntake(P.admin, { classId: lop.id, defaultStartWeek: '31/02/2026', rows: [{ fullName: 'F', email: 'f@g.vn' }] });
+    const sai = intake.previewIntake(P.admin, { classId: lop.id, defaultStartWeek: '31/02/2026', rows: [{ fullName: 'F', dob: '2010-01-01', email: 'f@g.vn' }] });
     assert(sai.issues.some((i: any) => i.row === 0 && i.field === 'startWeek' && i.muc === 'loi'), 'tuần cả lô sai không báo');
     assert(sai.rows[0].issues.some((i: any) => i.field === 'startWeek' && i.muc === 'loi'), 'dòng theo tuần cả lô sai vẫn thêm được');
   });
@@ -157,9 +157,11 @@ export async function runPrNhapTests(t: YThucTestKit) {
     t.assertThrows(() => students.updateStudent(P.coreTeacher, sid, { dob: '31/02/2010' }), /Ngày không có thật/, 'ngày sinh 31/02');
     t.assertThrows(() => students.updateStudent(P.coreTeacher, sid, { email: 'abc' }), /Email/, 'email sai dạng');
     t.assertThrows(() => students.updateStudent(P.coreTeacher, sid, { fullName: '  ' }), /Họ tên/, 'họ tên trống');
-    students.updateStudent(P.coreTeacher, sid, { email: '', dob: '12/05/2010' });
+    /* PR-OV2b: email + ngày sinh bắt buộc khi sửa — xoá trống email là lỗi, không ghi gì (trước đây: trống → NULL). */
+    t.assertThrows(() => students.updateStudent(P.coreTeacher, sid, { email: '', dob: '12/05/2010' }), /Email: bắt buộc/, 'xoá trống email');
+    students.updateStudent(P.coreTeacher, sid, { dob: '12/05/2010' });
     const s = conn.prepare('SELECT email, dob FROM students WHERE id = ?').get(sid) as any;
-    assert(s.email === null && s.dob === '2010-05-12', JSON.stringify(s));
+    assert(s.email === 'moi.email@gmail.com' && s.dob === '2010-05-12', JSON.stringify(s));
 
     const cy = () => conn.prepare(`SELECT lc.*, sp.week_start AS sw FROM learning_cycles lc
                                      LEFT JOIN report_periods sp ON sp.id = lc.start_period_id WHERE lc.student_id = ?`).get(sid) as any;
@@ -189,7 +191,7 @@ export async function runPrNhapTests(t: YThucTestKit) {
   check('NHAP (7) · Đã thi tới MT + báo trước MT lịch sử: em cũ học 22 tuần, đã thi tới MT4 → 4 lượt lịch sử; khối kết quả đếm đúng', () => {
     const h = demoToday();
     const tuan22 = t.addDays(d.mondayOfDate(h), -7 * 22);
-    const dong = { fullName: 'Nhập Em Cũ MT4', email: 'cu@demo.test', startWeek: tuan22, daThiToiMt: '4' };
+    const dong = { fullName: 'Nhập Em Cũ MT4', dob: '2010-01-01', email: 'cu@demo.test', startWeek: tuan22, daThiToiMt: '4' };
     const pv = intake.previewIntake(P.admin, { classId: ft, rows: [dong] });
     const ly = pv.rows[0].issues.find((i: any) => i.field === 'startWeek');
     assert(ly && ly.muc === 'luu_y' && /4 MT sẽ là MT cũ \(MT1, MT2, MT3, MT4\)/.test(ly.message), JSON.stringify(pv.rows[0].issues));
@@ -201,14 +203,14 @@ export async function runPrNhapTests(t: YThucTestKit) {
 
   check('NHAP (7) · em FT bắt đầu tuần này → 3 lượt thường, không lưu ý; "Đã thi tới MT" 9 → lỗi; lớp thường → lưu ý, không lượt', () => {
     const tuanNay = d.mondayOfDate(demoToday());
-    const moi = { fullName: 'Nhập Em Mới Tuần Này', email: 'moi@demo.test', startWeek: tuanNay };
-    const pv = intake.previewIntake(P.admin, { classId: ft, rows: [moi, { fullName: 'Nhập Sai MT', email: 'x@demo.test', daThiToiMt: '9' }] });
+    const moi = { fullName: 'Nhập Em Mới Tuần Này', dob: '2010-01-01', email: 'moi@demo.test', startWeek: tuanNay };
+    const pv = intake.previewIntake(P.admin, { classId: ft, rows: [moi, { fullName: 'Nhập Sai MT', dob: '2010-01-01', email: 'x@demo.test', daThiToiMt: '9' }] });
     assert(!pv.rows[0].issues.some((i: any) => i.field === 'startWeek'), JSON.stringify(pv.rows[0].issues));
     assert(pv.rows[1].issues.some((i: any) => i.field === 'daThiToiMt' && i.muc === 'loi'), 'Đã thi tới MT 9 phải lỗi');
     const r = intake.commitIntake(P.admin, { classId: ft, rows: [moi], idempotencyKey: 'nhap-7-moi' });
     const ls = luotCua('Nhập Em Mới Tuần Này');
     assert(ls.length === 3 && ls.every((a) => a.lich_su === 0) && r.mt.soLuotLichSu === 0, JSON.stringify(ls));
-    const th = { fullName: 'Nhập Lớp Thường MT', email: 'th@demo.test', daThiToiMt: '3' };
+    const th = { fullName: 'Nhập Lớp Thường MT', dob: '2010-01-01', email: 'th@demo.test', daThiToiMt: '3' };
     const pvt = intake.previewIntake(P.admin, { classId: thuong, rows: [th] });
     assert(pvt.rows[0].issues.every((i: any) => i.muc === 'luu_y') && pvt.rows[0].issues.some((i: any) => i.field === 'daThiToiMt'),
       JSON.stringify(pvt.rows[0].issues));
@@ -218,7 +220,7 @@ export async function runPrNhapTests(t: YThucTestKit) {
 
   check('NHAP (7) · bỏ trống tuần → tuần khai giảng; lớp đã học lâu thì xem trước báo MT lịch sử (planning chốt 29/09)', () => {
     const kg = (conn.prepare('SELECT start_date FROM classes WHERE id = ?').get(ft) as any).start_date as string;
-    const pv = intake.previewIntake(P.admin, { classId: ft, rows: [{ fullName: 'Nhập Theo Khai Giảng', email: 'kg@demo.test' }] });
+    const pv = intake.previewIntake(P.admin, { classId: ft, rows: [{ fullName: 'Nhập Theo Khai Giảng', dob: '2010-01-01', email: 'kg@demo.test' }] });
     const kgT2 = d.mondayOfDate(kg);
     assert(pv.defaultStartWeek === kgT2, `${pv.defaultStartWeek} ≠ ${kgT2}`);
     const mt1LichSu = d.laMtCu(t.addDays(kgT2, 5 * 7 + 6), demoToday());   // PR-MTa T1: MT cũ = cách ≥ 2 tuần (laMtCu)
@@ -228,7 +230,7 @@ export async function runPrNhapTests(t: YThucTestKit) {
 
   check('NHAP (7) · PR-DUYET: GVCN vẫn đặt target + dự kiến thi lúc THÊM MỚI (cycle.edit chỉ chặn SỬA)', () => {
     const r = intake.commitIntake(P.coreTeacher, { classId: ft, idempotencyKey: 'nhap-7-gvcn',
-      rows: [{ fullName: 'Nhập GVCN Đặt Target', email: 'gv@demo.test', target: '6.5', examDate: '05/2027' }] });
+      rows: [{ fullName: 'Nhập GVCN Đặt Target', dob: '2010-01-01', email: 'gv@demo.test', target: '6.5', examDate: '05/2027' }] });
     assert(r.added === 1, JSON.stringify(r.failed));
     const cy = conn.prepare(`SELECT lc.target_score, lc.exam_month, lc.route FROM learning_cycles lc JOIN students s ON s.id = lc.student_id
                               WHERE s.full_name = 'Nhập GVCN Đặt Target'`).get() as any;

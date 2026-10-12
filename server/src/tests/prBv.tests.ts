@@ -31,7 +31,7 @@ export async function runPrBvTests(t: YThucTestKit) {
   let dem = 0;
   /** Em mới ở MB FT 101: MT1, MT2, MT3 ở tuần `w` (so với tuần này), chưa điểm, lịch Quản lý chốt. */
   const emMoi = (w: [number, number, number] = [0, 4, 8], target = 7) => {
-    const r = intake.commitIntake(P.admin, { classId: LOP, rows: [{ fullName: `PRBV Em ${++dem}`, target, startWeek: tuanNay, email: 'hv@demo.test' }] });
+    const r = intake.commitIntake(P.admin, { classId: LOP, rows: [{ fullName: `PRBV Em ${++dem}`, target, startWeek: tuanNay, email: 'hv@demo.test', dob: '2010-01-01' }] });
     assert(r.added === 1, `thêm em: ${JSON.stringify(r.failed)}`);
     const sid = r.studentIds[0] as number;
     const ds = all(`SELECT id FROM assessment_attempts WHERE student_id = ? AND status != 'cancelled' ORDER BY attempt_no`, sid);
