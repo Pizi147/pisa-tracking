@@ -132,7 +132,8 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
     const ll = docNguon('shared/domain/lenLop.ts');
     assert(ll.includes("'Tạm dừng học (bảo lưu)'") && ll.includes("'Dừng học hẳn'") && ll.includes("'Lên FT'"), 'nhãn hướng (lenLop)');
     assert(docNguon('web/src/modules/students/StudentPlanPanel.tsx').includes('label="Điểm đầu vào"'), 'Điểm đầu vào');
-    assert(/>OVR<\/Th>/.test(docNguon('web/src/modules/cham/LuoiFT.tsx')), 'LuoiFT OVR (cột hẹp)');
+    /* OV-4b: mockup overhaul-1 §3 (duyệt 11/10) ghi "Overall" — cột nới 84 px. */
+    assert(/>Overall<\/Th>/.test(docNguon('web/src/modules/cham/LuoiFT.tsx')), 'LuoiFT Overall (mockup §3)');
   });
   // ------------------------------------------------------------------ Task 3 · trạng thái & chip (nhóm C)
   khongCon('S3 (3) · Một nghĩa một chữ: Quá hạn · n ngày, Hạn hôm nay, Chưa có hạn, Xong, Dưới kỳ vọng, Không lưu được, Đã nhắc, Hệ thống đóng, Bị từ chối, Chờ duyệt, Case đang mở…', [

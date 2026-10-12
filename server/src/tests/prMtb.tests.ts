@@ -651,14 +651,10 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert(loiCua(() => ketQuaHuy.khoiPhucKetQua(P.coreTeacher, a.m2)).status === 403, 'GVCN');
   });
 
-  check('MTb (T10) · quét nguồn: ScoreEntry có ô "Band" ở 3 hộp tiêu chí (sửa tiêu chí, CriteriaModal, InlineScoreEditor); rawPatchFrom / criteriaPatchFrom ở shared', () => {
+  check('MTb (T10) · quét nguồn: hộp nhập điểm (OV-4b, một hộp thay 3 hộp tiêu chí) có ô "Band"; rawPatchFrom / criteriaPatchFrom ở shared', () => {
     const se = nguon('web/src/modules/fasttrack/ScoreEntry.tsx');
-    const ba = [
-      se.slice(se.indexOf('function SuaTieuChi'), se.indexOf('export function CriteriaModal')),
-      se.slice(se.indexOf('export function CriteriaModal'), se.indexOf('export function InlineScoreEditor')),
-      se.slice(se.indexOf('export function InlineScoreEditor'), se.indexOf('export function DeadlinePill')),
-    ];
-    ba.forEach((x, i) => assert(/>Band<\/span>/.test(x) && /inputMode="decimal"/.test(x) && /bandText/.test(x), `hộp tiêu chí ${i + 1} thiếu ô Band`));
+    const hop = nguon('web/src/modules/fasttrack/HopNhapDiem.tsx');
+    assert(/>Band<\/span>/.test(hop) && /inputMode="decimal"/.test(hop) && /bandText/.test(hop) && /criteriaPatchFrom\(vals, cell, bandText\)/.test(hop), 'hộp nhập điểm thiếu ô Band');
     assert(/band\?: number \| null/.test(se) && !/export function rawPatchFrom/.test(se), 'SavePatch.band / chuyển rawPatchFrom');
     const cd = nguon('shared/domain/chamDiem.ts');
     assert(/export function rawPatchFrom/.test(cd) && /export function criteriaPatchFrom/.test(cd) && /docONhapLR\(/.test(cd), 'chamDiem.ts');
@@ -690,9 +686,8 @@ export async function runPrMtbTests(t: YThucTestKit) {
   });
 
   /* Rà code #MTb: ô L/R chỉ có band — mở "Sửa điểm" rồi Lưu không được đổi thành xoá điểm (giá trị đầu giữ band, như RawScoreInput). */
-  check('MTb (T10) · InlineScoreEditor L/R: giá trị đầu của ô band-only là band (6.5), Lưu giữ nguyên band — không thành rawScore null', () => {
-    const se = nguon('web/src/modules/fasttrack/ScoreEntry.tsx');
-    const ed = se.slice(se.indexOf('export function InlineScoreEditor'), se.indexOf('export function DeadlinePill'));
+  check('MTb (T10) · hộp nhập điểm L/R: giá trị đầu của ô band-only là band (6.5), Lưu giữ nguyên band — không thành rawScore null', () => {
+    const ed = nguon('web/src/modules/fasttrack/HopNhapDiem.tsx');
     assert(/cell\.rawScore !== null \? String\(cell\.rawScore\) : cell\.band !== null \? fmtBand\(cell\.band\)/.test(ed), 'giá trị đầu thiếu band');
     const cell: any = { skill: 'listening', rawScore: null, band: 6.5, criteria: [null, null, null, null], noShow: false };
     assert(JSON.stringify(d.rawPatchFrom('6.5', cell)) === JSON.stringify({ band: 6.5 }), 'đọc lại "6.5" phải là band 6.5');
@@ -824,12 +819,11 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert(/xếp nốt.*giữ chữ trạng thái/.test(n), 'ghi chú xếp nốt');
   });
 
-  check('MTb sau rà đợt 2 (5) · ODiemLon: editor KHÔNG remount theo band nền; chỉ remount khi mở lại / lưu xong rồi band mới về (Task 8: ô Band không trống)', () => {
+  /* OV-4b: dải ô lớn mở hộp nhập điểm — hộp dựng mới mỗi lần mở (key theo bài), giá trị đầu đọc lúc mở; lưu xong hộp đóng. */
+  check('MTb sau rà đợt 2 (5) · ODiemLon: hộp KHÔNG remount theo band nền (key theo bài nhập, không theo band)', () => {
     const o = nguon('web/src/modules/fasttrack/ODiemLon.tsx');
-    assert(!/key=\{`\$\{lan\}:\$\{c\.band\}`\}/.test(o), 'key còn theo band');
-    assert(/<InlineScoreEditor key=\{lan\}/.test(o), 'key chỉ theo lan');
-    assert(/useEffect\(\(\) => \{ if \(daLuu\) \{ setLan\(\(n\) => n \+ 1\); setDaLuu\(false\); \} \}, \[c\.band\]\)/.test(o), 'thiếu dựng lại khi band về sau lưu');
-    assert(/if \(ok\) setDaLuu\(true\)/.test(o), 'cờ daLuu chỉ đặt khi lưu thành công');
+    assert(!/key=\{`[^`]*band/.test(o), 'key còn theo band');
+    assert(/<HopNhapDiem key=\{oMo\.skill\}/.test(o), 'key chỉ theo bài nhập');
   });
 
   check('MTb sau rà đợt 2 (7) · chip dòng của hộp một đợt: MT cũ chưa điểm = "chờ chấm" TÍM như MT thường (FIX-DTL, C2); hộp truyền `lichSu`', () => {

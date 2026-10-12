@@ -107,8 +107,12 @@ export async function runPrHsmTests(t: YThucTestKit) {
     assert(dong(e1.aid, 'speaking').examiner_user_id === null, 'tài khoản phải về NULL khi chọn người ngoài');
   });
 
-  check('HSM (2c) · luật máy chủ: nhận xét L → 400 · GV chấm W1 → 400 · 1001 ký tự → 400 · tên ngoài 1 ký tự → 400', () => {
-    assert(maLoi(() => svc.saveScore(QL, e1.aid, 'listening', { nhanXet: 'x' }, TODAY)) === 400, 'L');
+  /* OV-4b: nhận xét mở cho cả L/R (trước đây L → 400). */
+  check('HSM (2c) · luật máy chủ: nhận xét L lưu được (OV-4b) · GV chấm W1 → 400 · 1001 ký tự → 400 · tên ngoài 1 ký tự → 400', () => {
+    /* Không ghi gì (lớp MB FT 101 còn được DL-2 chụp ảnh): L chỉ còn bị chặn theo độ dài, không theo kỹ năng. */
+    let cauL = '';
+    try { svc.saveScore(QL, e1.aid, 'listening', { nhanXet: 'a'.repeat(1001) }, TODAY); } catch (e: any) { cauL = String(e?.message); }
+    assert(/1000/.test(cauL) && !/Chỉ Writing/.test(cauL), `L (OV-4b: có nhận xét): ${cauL}`);
     assert(maLoi(() => svc.saveScore(QL, e1.aid, 'writing1', { gvCham: { performerSelf: true } }, TODAY)) === 400, 'W1');
     assert(maLoi(() => svc.saveScore(QL, e1.aid, 'writing1', { nhanXet: 'a'.repeat(1001) }, TODAY)) === 400, '1001');
     assert(maLoi(() => svc.saveScore(QL, e1.aid, 'speaking', { gvCham: { performerName: 'L' } }, TODAY)) === 400, 'tên 1 ký tự');
@@ -194,13 +198,14 @@ export async function runPrHsmTests(t: YThucTestKit) {
   const { docSach } = await import('./panelUx3.tests.ts');
   check('HSM (3) · ScoreEntry: tiêu chí qua tieuChiCua, không "— (—)", lỗi dưới ô có aria, nút Vắng + thông báo ngắn (không Hoàn tác), nhận xét ≤ 1000', () => {
     const se = docSach('web/src/modules/fasttrack/ScoreEntry.tsx');
-    assert(!/CRITERIA\[|criteriaSetFor\(/.test(se) && /tieuChiCua\(/.test(se), 'còn CRITERIA / criteriaSetFor');
+    const hop = docSach('web/src/modules/fasttrack/HopNhapDiem.tsx');
+    assert(!/CRITERIA\[|criteriaSetFor\(/.test(se + hop) && /tieuChiNganCua\(/.test(hop), 'còn CRITERIA / criteriaSetFor');
     assert(!se.includes("'—'} ({"), 'còn kiểu "— (—)"');
     assert(/aria-invalid/.test(se) && /aria-describedby/.test(se) && /role="alert"/.test(se), 'lỗi dưới ô thiếu aria');
     const nut = se.slice(se.indexOf('function NutDau'), se.indexOf('function NutDau') + 900);
     assert(/Vắng/.test(nut) && /thongBaoVang\(/.test(se) && !/hoanTac\(/.test(se), 'nút Vắng / thông báo ngắn, không Hoàn tác (PR-HK2 Q4 = B)');
-    const modal = se.slice(se.indexOf('export function CriteriaModal'), se.indexOf('export function InlineScoreEditor'));
-    assert(/NHAN_XET_TOI_DA/.test(modal) && /\+ Nhận xét/.test(modal) && /key === 'Enter'/.test(modal), 'hộp tiêu chí thiếu nhận xét / Enter');
+    /* OV-4b: hộp nhập điểm (thay hộp tiêu chí) có nhận xét ≤ 1000 + Enter lưu. */
+    assert(/maxLength=\{NHAN_XET_TOI_DA\}/.test(hop) && /Nhận xét/.test(hop) && /key !== 'Enter'/.test(hop), 'hộp nhập điểm thiếu nhận xét / Enter');
     assert(/progress === 'lich_su'\) return <Info pending>Nhập bù, không tính hạn<\/Info>/.test(se), 'mất nhánh Nhập bù (PR-MT)');
     const gv = docSach('web/src/modules/cham/GvCham.tsx');
     assert(gv.includes('pisa:gv-cham:') && /try \{/.test(gv), 'GvCham thiếu khoá nhớ / try');
@@ -213,19 +218,19 @@ export async function runPrHsmTests(t: YThucTestKit) {
     const th = docSach('web/src/modules/cham/LuoiThuong.tsx');
     assert(th.includes('Điền cả cột') && !/>\s*↓\s*</.test(th) && /tongLaySan=\{/.test(th), 'LuoiThuong');
     assert(/COT_DAU_LICH_TEST/.test(docSach('web/src/modules/test/lichTest/KhoiNo.tsx')), 'KhoiNo không dùng COT_DAU_LICH_TEST');
-    assert(/<HopNhanXet/.test(docSach('web/src/modules/cham/MotKyNang.tsx')), 'MotKyNang thiếu HopNhanXet');
+    assert(/<ODiemMt/.test(docSach('web/src/modules/cham/MotKyNang.tsx')), 'MotKyNang thiếu ODiemMt (nhận xét trong hộp nhập điểm, OV-4b)');
     assert(d.nhanLuot('planned', 2, 4) === 'Đang chấm · 2/4' && d.nhanLuot('planned', 0, 4) === 'Đã lên lịch', 'nhanLuot planned');
     assert(d.nhanLuot('cancelled', 2, 4) === 'Đã huỷ' && d.nhanLuot('done', 4, 4) === 'Xong', 'nhanLuot huỷ / xong');
   });
 
   // ------------------------------------------------------------------ khối 5: hồ sơ Mock M10 (đọc nguồn)
-  check('HSM (5) · hồ sơ Mock: dải ODiemLon, sosLevel (không failedCount), bỏ "Writing (tổng)"; ODiemLon dùng InlineScoreEditor + tabular-nums', () => {
+  check('HSM (5) · hồ sơ Mock: dải ODiemLon, sosLevel (không failedCount), bỏ "Writing (tổng)"; ODiemLon dùng HopNhapDiem (OV-4b) + tabular-nums', () => {
     const mock = docSach('web/src/modules/fasttrack/MockDetailPage.tsx');
     assert(/<DaiODiemLon/.test(mock) && /sosLevel/.test(mock) && !/failedCount/.test(mock), 'MockDetailPage: dải ô lớn / sosLevel');
     assert(!mock.includes('Writing (tổng)') && !/<InlineScoreEditor/.test(mock), 'bảng dưới còn dòng Writing (tổng) / trình sửa trong dòng');
     assert(/<ONhanXet/.test(mock) && /nhanLuot\(/.test(mock), 'khối nhận xét / nhanLuot');
     const lon = docSach('web/src/modules/fasttrack/ODiemLon.tsx');
-    assert(/<InlineScoreEditor/.test(lon) && /tabular-nums/.test(lon) && /text-\[28px\] font-bold/.test(lon), 'ODiemLon');
+    assert(/<HopNhapDiem/.test(lon) && /tabular-nums/.test(lon) && /text-\[28px\] font-bold/.test(lon), 'ODiemLon');
   });
 
   // ------------------------------------------------------------------ khối 6: hồ sơ HV › bảng Mock Test (đọc nguồn)

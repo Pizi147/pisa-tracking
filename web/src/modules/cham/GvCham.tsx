@@ -126,14 +126,3 @@ export function NutGvCham({ value, onChange, lon = false, hang = false, goiY = G
   );
 }
 
-/** Dòng "GV chấm: {tên} · Đổi" trong hộp 4 tiêu chí / hồ sơ Mock — `ChonNguoi` có sẵn nút "Đổi". */
-export function DongGvCham({ value, onChange, disabled }: { value: NguoiChon | null; onChange: (v: NguoiChon | null) => void; disabled?: boolean }) {
-  return (
-    <div className="flex items-center gap-3">
-      <span className="w-20 shrink-0 text-xs text-slate-400">GV chấm</span>
-      <div className="min-w-0 flex-1">
-        <ChonNguoi value={value} onChange={onChange} nhom="nhan_vien" choNgoai macDinhTrong="Chưa chọn" ariaLabel="GV chấm Speaking" disabled={disabled} />
-      </div>
-    </div>
-  );
-}

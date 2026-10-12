@@ -15,7 +15,7 @@ Song song được với **OV-4a**, **OV-6b1**. **OV-5** (Công việc › Nhậ
   lưu một task đã được; W = (W1 + 2×W2)/3 khi đủ (`scoring.ts:46,56`). Nhận xét `assessment_scores.comment` nhưng **chỉ W1/W2/S**
   (`shared/domain/nhanXet.ts:3` `BAI_CO_NHAN_XET`; máy chủ chặn `attempts.ts:1689`). Lớp thường **chưa có đường nhận xét** (`normal/regular.ts`, `routes:1354`).
 
-## Đầu ra
+## Đầu ra  [x] xong (PR OV-4b, 12/10)
 1. **Một hộp nhập điểm MT dùng chung** (component mới, vd `web/src/modules/fasttrack/HopNhapDiem.tsx`) cho **mọi chỗ nhập điểm MT, gồm MT0**:
    lưới lớp (Điểm theo lớp, hồ sơ lớp, Lịch Test nhúng, `/nhap-diem`), hồ sơ lượt MT, Lộ trình (`HangLichMt`). Thay `CriteriaModal`, `InlineScoreEditor`,
    ô gõ thẳng L/R của MT → **xoá** phần không còn dùng. Hộp neo ngay ô (1440); điện thoại: tấm trượt từ dưới. Không còn panel trượt phải.

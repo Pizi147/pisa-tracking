@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_LABEL, MOCK_FT_STUDY_WEEK, NO_SHOW_OVERRIDDEN_NOTE,
-  BAI_CO_NHAN_XET, CHAM_CHEO, PERMISSIONS, awaitingScore, laChamCheo, cachHuyLuot, kiemBand, kiemNhanXet, kiemSoMtMoi, kyNangSosMt0, laMt0, laMtCu, ngay, dauTruCuaO, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanLich,
+  CHAM_CHEO, PERMISSIONS, awaitingScore, laChamCheo, cachHuyLuot, kiemBand, kiemNhanXet, kiemSoMtMoi, kyNangSosMt0, laMt0, laMtCu, ngay, dauTruCuaO, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanLich,
   type CachHuy, CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, categoryOf, type CaseCategory, type InterventionKind,
   type AssessedSkill, type EntrySkill, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
 } from '../../../shared/domain/index.ts';
@@ -51,6 +51,8 @@ export type ScoreRow = {
   no_show_late?: number | null; no_show_settled_at?: string | null; no_show_cu?: number | null;
   /** PR-BV: thứ Hai của tuần có dấu "-" (JOIN sẵn — ô `daChot` không hỏi lẻ từng ô). */
   no_show_week_start?: string | null;
+  /** OV-4b: tên người ghi "-" (JOIN sẵn — hộp ô Vắng "Ghi 11/10 bởi …"). */
+  no_show_by_name?: string | null;
   /** PR-HSM (T39): nhận xét của bài nhập (W1/W2/S) + GV chấm Speaking (tài khoản hoặc tên ngoài; tên tài khoản join sẵn). */
   comment?: string | null; examiner_user_id?: number | null; examiner_name?: string | null; examiner_user_name?: string | null;
   /** PR-Pb2-b (Q13): ngày nghiệp vụ lần đầu ô có điểm. */
@@ -61,8 +63,9 @@ export type ScoreRow = {
 export function scoresOf(attemptId: number): ScoreRow[] {
   return nho(`diem:${attemptId}`, () => db()
     .prepare(
-      `SELECT s.*, u.full_name AS entered_by_name, g.full_name AS examiner_user_name, ns.week_start AS no_show_week_start FROM assessment_scores s
-         LEFT JOIN users u ON u.id = s.entered_by LEFT JOIN users g ON g.id = s.examiner_user_id
+      `SELECT s.*, u.full_name AS entered_by_name, g.full_name AS examiner_user_name, ns.week_start AS no_show_week_start,
+              nb.full_name AS no_show_by_name FROM assessment_scores s
+         LEFT JOIN users u ON u.id = s.entered_by LEFT JOIN users g ON g.id = s.examiner_user_id LEFT JOIN users nb ON nb.id = s.no_show_by
          LEFT JOIN report_periods ns ON ns.id = s.no_show_period_id WHERE s.attempt_id = ?`,
     )
     .all(attemptId) as ScoreRow[]);
@@ -80,8 +83,9 @@ export function diemCuaLuot(attemptIds: number[]): Map<number, ScoreRow[]> {
       const chunk = ids.slice(i, i + 900);
       for (const r of conn
         .prepare(
-          `SELECT s.*, u.full_name AS entered_by_name, g.full_name AS examiner_user_name, ns.week_start AS no_show_week_start FROM assessment_scores s
-             LEFT JOIN users u ON u.id = s.entered_by LEFT JOIN users g ON g.id = s.examiner_user_id
+          `SELECT s.*, u.full_name AS entered_by_name, g.full_name AS examiner_user_name, ns.week_start AS no_show_week_start,
+                  nb.full_name AS no_show_by_name FROM assessment_scores s
+             LEFT JOIN users u ON u.id = s.entered_by LEFT JOIN users g ON g.id = s.examiner_user_id LEFT JOIN users nb ON nb.id = s.no_show_by
              LEFT JOIN report_periods ns ON ns.id = s.no_show_period_id WHERE s.attempt_id IN (${chunk.map(() => '?').join(',')})`,
         )
         .all(...chunk) as (ScoreRow & { attempt_id: number })[]) {
@@ -283,8 +287,12 @@ export type SkillCell = {
    * Không đổi việc / nợ của ô (`noShow` giữ nguyên nghĩa). `doiSang` = mã tuần hiện tại khi đã dời; `hanGo` = hạn gỡ của người xem (null:
    * Quản lý, mọi lúc); `goDuoc` = người xem gỡ được lúc này.
    */
-  daChot: { doiSang: string | null; hanGo: string | null; goDuoc: boolean } | null;
-  /** PR-HSM (YC-13.5): nhận xét của bài nhập này — chỉ W1/W2/S, không bắt buộc. */
+  daChot: {
+    doiSang: string | null; hanGo: string | null; goDuoc: boolean;
+    /** OV-4b (hộp "Vắng lần n · đã dời sang …"): lần vắng của kỹ năng · lúc ghi "-" · người ghi. */
+    lan: number; ghiLuc: string | null; ghiBoi: string | null;
+  } | null;
+  /** PR-HSM (YC-13.5), OV-4b: nhận xét của bài nhập này (L/R/W1/W2/S), không bắt buộc. */
   nhanXet: string | null;
   /** PR-HSM (T39): GV chấm Speaking — tài khoản (`userId`) hoặc người ngoài (`userId: null`). Chỉ ô `speaking`. */
   gvCham: { userId: number | null; ten: string } | null;
@@ -397,6 +405,7 @@ export function skillCells(
             hanGo: boVang || can(p, PERMISSIONS.PLAN_WEEK, { classId: attempt.class_id }) || (loi && loi !== CAU_QUA_HAN_GO)
               ? null : skillScoreDeadline(mode, tuanGoc),
             goDuoc: loi === null,
+            lan: view.absenceMoveCount, ghiLuc: row.no_show_at ?? null, ghiBoi: row.no_show_by_name ?? null,
           };
         })()
       : null;
@@ -1629,7 +1638,7 @@ export type ScorePatch = {
    * Lý do đi vào nhật ký `score.edit`/`score.override` — chỗ `scoreHistoryOf` đang đọc — nên không cần bảng mới.
    */
   lyDo?: string | null;
-  /** PR-HSM (YC-13.5): nhận xét W1/W2/S — `null`/rỗng = xoá. Không phải điểm: không lý do, không đổi "Nhập bởi", không tính lại SOS. */
+  /** PR-HSM (YC-13.5), OV-4b: nhận xét L/R/W1/W2/S — `null`/rỗng = xoá. Không phải điểm: không lý do, không đổi "Nhập bởi", không tính lại SOS. */
   nhanXet?: string | null;
   /** PR-HSM (T39): GV chấm Speaking, dạng `nguoiThanhPayload` — `null` = xoá. */
   gvCham?: { performerSelf?: boolean; performerUserId?: number | null; performerName?: string | null } | null;
@@ -1807,7 +1816,6 @@ export function saveScore(
    * Chỉ gửi hai trường đó → nhánh riêng, TRƯỚC nhánh "-" và nhánh điểm (không ghi đè `entered_by`, không `refreshOutcome`).
    */
   const coNhanXet = patch.nhanXet !== undefined, coGvCham = patch.gvCham !== undefined;
-  if (coNhanXet && !(BAI_CO_NHAN_XET as readonly string[]).includes(skill)) throw badRequest('Chỉ Writing Task 1, Writing Task 2 và Speaking có nhận xét.');
   if (coGvCham && skill !== 'speaking') throw badRequest('Chỉ Speaking có GV chấm.');
   const nx = coNhanXet ? kiemNhanXet(patch.nhanXet) : null;
   if (nx && 'loi' in nx) throw badRequest(nx.loi);

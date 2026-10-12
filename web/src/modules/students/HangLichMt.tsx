@@ -11,7 +11,8 @@ import { Skeleton, Status } from '../../ui/ui.tsx';
 import { OMt } from '../../ui/OMt.tsx';
 import { HopKyNang } from '../test/keHoach/HopKyNang.tsx';
 import { HopKhoiPhucKetQua, HopKhoiPhucMt } from '../test/keHoach/HopKhoiPhucKetQua.tsx';
-import { DaiODiemLon, type KyNangLon, type LichKn } from '../fasttrack/ODiemLon.tsx';
+import { DaiODiemLon, type LichKn } from '../fasttrack/ODiemLon.tsx';
+import { nguCanhChiTiet } from '../fasttrack/HopNhapDiem.tsx';
 import { useSaveScore } from '../fasttrack/ScoreEntry.tsx';
 import { duongDotTest, ngay, tuanLich, type KetQuaHuy, type KyNangKH, type OKyNang } from '@shared/domain/index.ts';
 
@@ -189,12 +190,12 @@ function HopHuyLich({ attemptId, nhan, tuan, onDong, onDoi }: {
 function DaiDiemMt({ attemptId, homNay, onDoi, onDong }: { attemptId: number; homNay: string; onDoi: () => void; onDong: () => void }) {
   const ct = useApi<any>(`/attempts/${attemptId}`, [attemptId]);
   const { save } = useSaveScore(attemptId, () => { ct.reload(); onDoi(); });
-  const [mo, setMo] = useState<KyNangLon | null>(null);
+  const [mo, setMo] = useState<string | null>(null);
   if (!ct.data) return <Skeleton rows={2} />;
   return (
     <div className="space-y-2">
       <DaiODiemLon cells={ct.data.cells} lich={ct.data.skillSchedule as LichKn[]} result={ct.data.result} lichSu={ct.data.lichSu} homNay={homNay}
-        mo={mo} onMo={setMo} save={save} />
+        mo={mo} onMo={setMo} save={save} nguCanh={nguCanhChiTiet(ct.data)} />
       <div className="flex justify-end">
         <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={onDong}>Đóng dải điểm</button>
       </div>

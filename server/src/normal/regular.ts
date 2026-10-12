@@ -5,7 +5,7 @@ import { dongBoBaoPh, monBaoPh } from '../yThuc/phoiHop.ts';
 import { raiseSignal, reconcileCorrectedSignals } from '../cases/signals.ts';
 import {
   ATTEMPT_KIND_LABEL, ATTEMPT_KIND_SHORT, PERMISSIONS, RATIO_PASS_THRESHOLD, boMonLich, boTroGiuaKhoa,
-  caseCategoriesFor, categoryOf, goiYCuoiKhoa, ngay, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanKeTiep, tuanLich,
+  caseCategoriesFor, categoryOf, goiYCuoiKhoa, kiemNhanXet, ngay, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanKeTiep, tuanLich,
   type AssessedSkill, type AttemptKind, type CaseCategory, type RatioOutcome, type SosLevel,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -464,7 +464,11 @@ export function taoBaiThuongMacDinh(cycleIds: readonly number[], actorUserId: nu
  */
 export function saveRegularScore(
   p: Principal, attemptId: number, skill: string,
-  patch: { score?: number | null; total?: number | null; note?: string | null; noShow?: boolean; lyDo?: string | null },
+  patch: {
+    score?: number | null; total?: number | null; note?: string | null; noShow?: boolean; lyDo?: string | null;
+    /** OV-4b: nhận xét của môn (`null`/rỗng = xoá) — lưu riêng, không phải điểm: không đổi điểm, "Nhập bởi", kết quả. */
+    nhanXet?: string | null;
+  },
   today: string = demoToday(),
 ) {
   const conn = db();
@@ -507,6 +511,22 @@ export function saveRegularScore(
   } else if (!path) {
     require_(p, PERMISSIONS.SCORE_EDIT, { classId: a.class_id, studentId: a.student_id, skill },
       'Bạn chỉ nhập được điểm của kỹ năng mình được phân công.');
+  }
+
+  /* OV-4b: chỉ nhận xét — cùng quyền nhập điểm môn đó (đã kiểm ở trên), cùng luật ≤ 1000 ký tự với Mock; một lệnh một việc. */
+  if (patch.nhanXet !== undefined) {
+    if (patch.score !== undefined || patch.total !== undefined) throw badRequest('Một lần gửi chỉ làm một việc: nhập điểm, hoặc lưu nhận xét.');
+    const nx = kiemNhanXet(patch.nhanXet);
+    if ('loi' in nx) throw badRequest(nx.loi);
+    return tx(() => {
+      const cu = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, skill) as any;
+      if (cu) conn.prepare('UPDATE assessment_scores SET comment = ? WHERE id = ?').run(nx.gt, cu.id);
+      else conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, comment) VALUES (?,?,?)').run(attemptId, skill, nx.gt);
+      writeAudit({ actorUserId: p.userId, action: 'score.nhan_xet', entityType: 'assessment_attempt', entityId: attemptId,
+        entityLabel: skill, before: cu ? { comment: cu.comment ?? null } : null, after: { comment: nx.gt } });
+      return { score: conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, skill),
+        result: regularResultOf(attemptId) };
+    });
   }
 
   /* T19 (PR-MTa): ghi một điểm (không phải xoá) → môn phải tới tuần thi — cùng chốt với Mock. */
@@ -1036,6 +1056,8 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
             overdue: !scored && v.overdue,
             /** C08: ô mang dấu "-" — môn đã tự dời khỏi tuần `movedFrom`. Dấu "-" không phải điểm 0. */
             noShow: !!row?.no_show_period_id,
+            /** OV-4b: nhận xét của môn (nút "Nhận xét" cạnh ô). */
+            nhanXet: (row?.comment ?? null) as string | null,
             movedFrom: row?.no_show_period_id ? periodCode.get(row.no_show_period_id) ?? null : null,
             /** Thứ Hai của tuần `movedFrom` — để lưới viết "trả lịch về W3 SEP" bằng `tuanLich`. */
             movedFromStart: row?.no_show_period_id ? periodStart.get(row.no_show_period_id) ?? null : null,

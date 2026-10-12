@@ -4,17 +4,17 @@
  * Nằm ở: Test › một lượt MT (`/mock-test/:id` — mở từ Lịch Test, hồ sơ HV › bảng Mock Test, tên em ở lưới chấm) → ngay dưới
  * đầu trang. Tầng 1 của màn: 4 điểm kỹ năng + Overall.
  *
- * L · R · W · S · Overall cùng cỡ: nhãn 12 px · số 28 px / 700 · MỘT dòng phụ 12 px (câu dài vào tooltip). Ô có ít nhất một
- * bài nhập sửa được (`cell.canEdit` của máy chủ — web không tự suy quyền) là nút; bấm → khung sửa NGAY DƯỚI DẢI (một ô một
- * lúc, Esc đóng), dùng `InlineScoreEditor` có sẵn (RB-5 lý do khi sửa điểm đã có). W có HAI hàng W1 (TA CC LR GRA) · W2 (TR CC
- * LR GRA), mỗi hàng lưu riêng — hai task có thể hai GV (K4-31).
+ * L · R · W · S · Overall cùng cỡ: nhãn 12 px · số 28 px / 700 · MỘT dòng phụ 12 px (câu dài vào tooltip). Ô mở được hộp
+ * (`suaDuoc` — từ `cell.canEdit` / `daChot.goDuoc` của máy chủ, web không tự suy quyền) là nút; bấm → hộp nhập điểm (OV-4b,
+ * `HopNhapDiem`) neo ngay ô, chỉ "Lưu" (trang một em). W: dòng phụ là HAI nút W1 · W2 — hai hộp riêng, mỗi task lưu riêng (K4-31).
  */
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
 import { chuDoiVang, ngay, skillShort, tuanLich } from '@shared/domain/index.ts';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
 import { Han } from '../../ui/Han.tsx';
-import { InlineScoreEditor, lockedByNoShow, type Cell, type SavePatch } from './ScoreEntry.tsx';
+import { suaDuoc, type Cell, type SaveOpts, type SavePatch } from './ScoreEntry.tsx';
+import { HopNhapDiem, type NguCanhHop } from './HopNhapDiem.tsx';
 
 export type KyNangLon = 'listening' | 'reading' | 'writing' | 'speaking';
 export const KY_NANG_LON: KyNangLon[] = ['listening', 'reading', 'writing', 'speaking'];
@@ -28,7 +28,6 @@ export type LichKn = {
   pendingMove: { decideBy: string; toWeek: string | null; moveNo: number } | null;
 };
 
-const suaDuoc = (c: Cell) => c.canEdit && !lockedByNoShow(c);
 const coDiem = (c: Cell | undefined) => !!c && (c.band !== null || c.rawScore !== null);
 
 /** Dấu đạt / dưới kỳ vọng 12 px, vẽ SVG (ký tự nhỏ của Inter nhoè thành chấm). */
@@ -62,25 +61,20 @@ function trangThaiO(l: LichKn | undefined, c: Cell | undefined, lichSu: boolean,
   return { chu: 'Chưa có điểm' };
 }
 
-export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo, save, ketLuanOverall }: {
+export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo, save, ketLuanOverall, nguCanh }: {
   cells: Cell[]; lich: LichKn[]; result: any; lichSu: boolean; homNay: string;
   /** PR-MT0: thay dòng kết luận dưới Overall (MT0 không có kỳ vọng — `MT0 ✓` / chip SOS). */
   ketLuanOverall?: ReactNode;
-  /** Ô đang mở khung sửa (lifted — nút chính "Nhập điểm" của bảng dưới cũng mở ô lớn). */
-  mo: KyNangLon | null; onMo: (k: KyNangLon | null) => void;
-  save: (skill: string, patch: SavePatch) => Promise<boolean>;
+  /** Bài nhập đang mở hộp (lifted — nút chính "Nhập điểm" của bảng dưới cũng mở đúng bài). */
+  mo: string | null; onMo: (k: string | null) => void;
+  save: (skill: string, patch: SavePatch, opts?: SaveOpts) => Promise<boolean>;
+  /** Đầu hộp: em · lớp · lượt; kỳ vọng; MT0. */
+  nguCanh: Omit<NguCanhHop, 'bandTaskKia'>;
 }) {
   const oCua = (k: string) => cells.find((c) => c.skill === k);
   const baiCua = (k: KyNangLon) => (k === 'writing' ? [oCua('writing1'), oCua('writing2')] : [oCua(k)]).filter((c): c is Cell => !!c);
-  const dai = useRef<HTMLDivElement>(null);
-  /* Esc đóng khung sửa (không nằm trong ô đang gõ lý do của hộp khác — `InlineScoreEditor` tự bắt Esc của nó trước). */
-  useEffect(() => {
-    if (!mo) return;
-    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape' && !e.defaultPrevented) onMo(null); };
-    document.addEventListener('keydown', esc);
-    return () => document.removeEventListener('keydown', esc);
-  }, [mo, onMo]);
-  useEffect(() => { if (mo) dai.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, [mo]);
+  /* Nút neo của từng bài nhập — hộp mở ngay dưới ô (L/R/S: cả ô; W1/W2: nút nhỏ ở dòng phụ). */
+  const neo = useRef<Record<string, HTMLElement | null>>({});
 
   const ketLuan = result.evaluable ? result.sosLevel === 0 : null;
 
@@ -89,9 +83,24 @@ export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo, sav
     const band: number | null = result.bands?.[k] ?? null;
     const v = result.verdicts?.find((x: any) => x.skill === k);
     const l = lich.find((x) => x.skill === k);
-    const sua = bai.some(suaDuoc);
+    const laW = k === 'writing';
+    const sua = !laW && bai.some(suaDuoc);
     let phu: { chu: React.ReactNode; mau?: string; title?: string };
-    if (k === 'writing' && bai.some(coDiem)) {
+    if (laW && bai.some(suaDuoc)) {
+      /* W1 · W2 hai nút — mỗi task một hộp. */
+      phu = { chu: bai.map((c, i) => (
+        <span key={c.skill}>
+          {i > 0 && <span className="text-slate-600"> · </span>}
+          {suaDuoc(c) ? (
+            <button type="button" ref={(el) => { neo.current[c.skill] = el; }} aria-expanded={mo === c.skill}
+              className="link appearance-none border-0 bg-transparent p-0 tabular-nums max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center"
+              onClick={() => onMo(mo === c.skill ? null : c.skill)}>
+              {c.skill === 'writing1' ? 'W1' : 'W2'} {c.band !== null ? fmtBand(c.band) : 'Nhập'}
+            </button>
+          ) : <span className="tabular-nums">{c.skill === 'writing1' ? 'W1' : 'W2'} {fmtBand(c.band)}</span>}
+        </span>
+      )), title: CONG_THUC_W };
+    } else if (k === 'writing' && bai.some(coDiem)) {
       const w = (s: string) => fmtBand(oCua(s)?.band ?? null);
       phu = { chu: `W1 ${w('writing1')} · W2 ${w('writing2')}`, title: CONG_THUC_W };
     } else if ((k === 'listening' || k === 'reading') && bai[0]?.rawScore != null) {
@@ -118,17 +127,18 @@ export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo, sav
             </span>
           )}
         </span>
-        <span className={`mt-1 block min-h-[1rem] truncate text-xs ${phu.mau ?? 'text-slate-500'}`} title={phu.title}>{phu.chu}</span>
+        <span className={`mt-1 block min-h-[1rem] truncate text-xs ${phu.mau ?? 'text-slate-500'}`} title={laW ? undefined : phu.title}>{phu.chu}</span>
       </>
     );
     /* PR-S4F #10: flex-col cho cả nút và ô chỉ đọc — nút căn giữa nội dung theo chiều dọc nên lệch ~3 px so với ô bên cạnh. */
-    const vo = `flex min-w-0 flex-col rounded-lg border px-3 py-2.5 text-left ${mo === k ? 'border-[color:var(--accent-strong)] bg-white/[0.04]' : ''}`;
+    const dangMo = mo !== null && bai.some((c) => c.skill === mo);
+    const vo = `flex min-w-0 flex-col rounded-lg border px-3 py-2.5 text-left ${dangMo ? 'border-[color:var(--accent-strong)] bg-white/[0.04]' : ''}`;
     return sua ? (
-      <button key={k} type="button" aria-expanded={mo === k} aria-controls="khung-sua-diem"
+      <button key={k} type="button" aria-expanded={dangMo} aria-haspopup="dialog" ref={(el) => { neo.current[bai[0].skill] = el; }}
         title={[nhapBoi, 'Bấm để nhập / sửa điểm tại chỗ.'].filter(Boolean).join('\n')}
         className={`${vo} hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-strong)]`}
-        style={mo === k ? undefined : { borderColor: 'var(--line)' }}
-        onClick={() => onMo(mo === k ? null : k)}>
+        style={dangMo ? undefined : { borderColor: 'var(--line)' }}
+        onClick={() => onMo(dangMo ? null : bai[0].skill)}>
         {noiDung}
       </button>
     ) : (
@@ -136,9 +146,10 @@ export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo, sav
     );
   };
 
-  const baiMo = mo ? baiCua(mo) : [];
+  const oMo = mo ? oCua(mo) : undefined;
+  const neoMo = mo ? neo.current[mo] : null;
   return (
-    <div ref={dai} className="space-y-2">
+    <div className="space-y-2">
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
         {KY_NANG_LON.map(oKyNang)}
         <div className="col-span-2 flex min-w-0 flex-col rounded-lg border px-3 py-2.5 sm:col-span-1" style={{ borderColor: 'var(--line)' }}>
@@ -154,49 +165,9 @@ export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo, sav
         </div>
       </div>
 
-      {mo && (
-        <div id="khung-sua-diem" role="region" aria-label={`Nhập điểm ${NHAN[mo]}`}
-          className="rounded-lg border px-3 py-3" style={{ borderColor: 'var(--line-strong)' }}>
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <span className="text-sm font-medium text-slate-100">{NHAN[mo]}</span>
-            <button type="button" className="btn btn-sm" onClick={() => onMo(null)}>Đóng</button>
-          </div>
-          <div className="space-y-3">
-            {baiMo.map((c) => <HangSua key={c.skill} c={c} laW={mo === 'writing'} save={save} onXong={mo === 'writing' ? null : () => onMo(null)} />)}
-          </div>
-          {mo === 'writing' && <p className="m-0 mt-2 text-xs text-slate-500">{CONG_THUC_W} Mỗi task lưu riêng.</p>}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/**
- * MỘT HÀNG SỬA của khung dưới dải: `InlineScoreEditor` có sẵn. W: hàng lưu xong thì dựng lại hàng đó (khung vẫn mở để sửa
- * task kia); L/R/S: lưu xong đóng khung. Bài không sửa được (task của GV khác, đã chốt…) chỉ hiện số.
- */
-function HangSua({ c, laW, save, onXong }: {
-  c: Cell; laW: boolean; save: (skill: string, patch: SavePatch) => Promise<boolean>; onXong: (() => void) | null;
-}) {
-  const [lan, setLan] = useState(0);
-  /* Vừa lưu xong: `save` trả về TRƯỚC khi dữ liệu tải lại, nên editor dựng lại lúc đó còn band cũ. Dựng lại MỘT lần nữa khi band mới về;
-     tải nền (band không đổi vì mình lưu) thì không đụng vào chữ đang gõ. ponytail: lưu mà band không đổi → cờ chờ band đổi lần sau (một lần dựng lại). */
-  const [daLuu, setDaLuu] = useState(false);
-  useEffect(() => { if (daLuu) { setLan((n) => n + 1); setDaLuu(false); } }, [c.band]);   // eslint-disable-line react-hooks/exhaustive-deps
-  const nhan = laW ? (c.skill === 'writing1' ? 'Task 1' : 'Task 2') : null;
-  return (
-    <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:gap-3">
-      {nhan && <span className="w-16 shrink-0 pt-1 text-xs font-medium text-slate-400">{nhan}</span>}
-      {suaDuoc(c) ? (
-        <div className="min-w-0 flex-1">
-          {/* T10 (PR-MTb): ô Band lấy giá trị đầu từ ô — sau khi lưu phải dựng lại với band mới (`daLuu`), không dựng lại theo mỗi lần tải nền. */}
-          <InlineScoreEditor key={lan} cell={c} onSave={async (p) => { const ok = await save(c.skill, p); if (ok) setDaLuu(true); return ok; }}
-            onClose={() => (onXong ? onXong() : setLan((n) => n + 1))} />
-        </div>
-      ) : (
-        <span className="pt-1 text-sm tabular-nums text-slate-300" title={c.khoa ? 'Đợt đã hoàn tất — chỉ Quản lý sửa.' : 'Chỉ xem'}>
-          {c.noShow ? '-' : fmtBand(c.band)} <span className="text-xs text-slate-500">· chỉ xem</span>
-        </span>
+      {oMo && neoMo && (
+        <HopNhapDiem key={oMo.skill} cell={oMo} anchor={neoMo} onDong={() => onMo(null)} onSave={(p, x) => save(oMo.skill, p, x)}
+          ctx={{ ...nguCanh, bandTaskKia: oMo.skill === 'writing1' ? oCua('writing2')?.band ?? null : oMo.skill === 'writing2' ? oCua('writing1')?.band ?? null : undefined }} />
       )}
     </div>
   );
