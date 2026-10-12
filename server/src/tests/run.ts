@@ -9241,6 +9241,9 @@ await runPrOv4bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 // ==================================================================== PR-OV6b1 (Quản trị › Chương trình: cấu hình, bản chụp lớp, tuần MT FT, ngưỡng đạt)
 const { runPrOv6b1Tests } = await import('./prOv6b1.tests.ts');
 await runPrOv6b1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-OV3c (Kết quả đầu ra lớp trước ở hồ sơ lớp FT, 4 tuần theo đợt)
+const { runPrOv3cTests } = await import('./prOv3c.tests.ts');
+await runPrOv3cTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

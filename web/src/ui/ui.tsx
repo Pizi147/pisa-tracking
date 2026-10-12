@@ -495,7 +495,7 @@ export function NutChon({ chon, onClick, children, nho, className = '', disabled
 
 /** BỘ LỌC NÚT ĐOẠN (UX-E E6): một kiểu cho mọi bộ lọc; tab trang vẫn là `HangTab` gạch chân. */
 type BoLocDoanProps<K extends string> = {
-  muc: { key: K; nhan: string; so?: number | null; title?: string }[]; value: K; onChange: (k: K) => void; ariaLabel: string;
+  muc: { key: K; nhan: string; so?: number | string | null; title?: string }[]; value: K; onChange: (k: K) => void; ariaLabel: string;
   /** VIEC-NHO-2: nhóm giữ chỗ nhưng tắt (mờ 40 %, không bấm, không nút nào chọn) — chữ là lý do khi rê chuột. */
   tat?: string;
 };

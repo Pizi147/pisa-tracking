@@ -3,7 +3,7 @@ import {
   NGUONG_KY_VONG, PERMISSIONS, REGULAR_SKILLS, caseDedupKey, categoryOf, goiYKyVong, kyNangLopDich, programmeOf, tenMon, tenMonNgan, weeklyUpdateDue,
   type GoiYKyVong, type RegularSkill,
 } from '../../../shared/domain/index.ts';
-import { badRequest, chuTuDo, forbidden, notFound, nowIso } from '../util.ts';
+import { addDays, badRequest, chuTuDo, forbidden, notFound, nowIso } from '../util.ts';
 import { can, classScopeSql, scopeFor, type Principal, type Scope } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
@@ -14,6 +14,7 @@ import { suggestCaseOwner } from '../cases/owner.ts';
 import { chenPa, type DongPa } from '../cases/taoPa.ts';
 import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
 import { assessedBands } from '../fasttrack/scoring.ts';
+import { tyLeTongLo } from './cuoiKhoa.ts';
 
 /**
  * KỲ VỌNG ĐẦU RA CẢ LỚP (PR-KV, đặc tả 08/10 §3, mockup cuối khoá 2 phần 3) — em BE/ELE có quyết định Lên FT. Đạt = Overall MT0 ≥ ngưỡng
@@ -265,4 +266,74 @@ export function taoCaseKyVong(p: Principal, ds: readonly DongCaseKyVong[]): { ta
   chenNhieuDong('INSERT OR IGNORE INTO case_milestones (case_id, kind, occurred_on, note, created_by, created_at, dedup_key)', moc);
   dongBoTrangThaiCaseLo([...caseCua.values()]);
   return { tao: moi.length, boQua };
+}
+
+// ------------------------------------------------------------------ OV-3c: Kết quả đầu ra lớp trước ở hồ sơ lớp FT (đặc tả OV 3.1, 4; mockup M2 §5)
+
+/** Số ngày một đợt còn hiện: vào lớp FT thứ Hai tuần T → hiện tới hết Chủ nhật tuần T + 3 (4 tuần). */
+export const KQDR_HIEN_NGAY = 27;
+const CT_NGUON = ['FOU', 'BE', 'ELE'];
+
+/**
+ * Em ĐANG HỌC lớp FT (tham số 1) vào lớp từ ngày (tham số 2) trở đi, lượt ghi danh LIỀN TRƯỚC là lớp FOU/BE/ELE đã chuyển đi — đọc theo ghi danh
+ * (em chuyển bằng `applyTransition` không có lệnh vẫn có). CÙNG nguồn cho bảng (`kqdrLopFt`) và số đợt ở đầu trang (`daiLop`).
+ */
+export const EM_KQDR_FT_SQL = `FROM enrollments e
+  JOIN classes f ON f.id = e.class_id AND f.is_fast_track = 1
+  JOIN students s ON s.id = e.student_id
+  JOIN enrollments n ON n.id = (SELECT MAX(x.id) FROM enrollments x WHERE x.student_id = e.student_id AND x.id < e.id)
+  JOIN classes c ON c.id = n.class_id
+  LEFT JOIN lo_trinh_tiep_theo lt ON lt.student_id = e.student_id AND lt.class_id = c.id
+ WHERE e.class_id = ? AND e.status = 'active' AND substr(e.started_at, 1, 10) >= ? AND n.status = 'transferred'
+   AND c.programme_code IN (${CT_NGUON.map((x) => `'${x}'`).join(', ')}) AND ${HV_DANG_HOC_SQL('s')}`;
+
+/** Bảng vai đặc tả OV mục 2: Kết quả đầu ra — Admin "—". Người xem được lớp (`attempt.view`) trừ tài khoản chỉ có vai Admin. */
+export const laChiAdmin = (p: Principal) => !p.roleKeys.some((k) => k !== 'office_admin');
+const xemKqdrLopFt = (p: Principal, classId: number) => !laChiAdmin(p) && can(p, PERMISSIONS.ATTEMPT_VIEW, { classId });
+
+/**
+ * GET `/classes/:id/ket-qua-dau-ra` — mỗi chương trình nguồn một bảng (FOU · BE · ELE), nhóm con theo đợt (= ngày vào lớp FT). Chỉ ĐỌC; chỉ giá trị
+ * QL đã chốt (`ky_vong_*`) — đề xuất GVCN (`kq_de_xuat_*`) không ra khỏi máy chủ. Theo lô: em · MT0 (2) · Final (2) · Case — không N+1.
+ */
+export function kqdrLopFt(p: Principal, classId: number) {
+  if (!xemKqdrLopFt(p, classId)) throw forbidden('Lớp này nằm ngoài phạm vi bạn được xem.');
+  const conn = db();
+  const homNay = demoToday();
+  const rows = conn.prepare(
+    `SELECT e.student_id, s.full_name, substr(e.started_at, 1, 10) AS vao, c.id AS lop_id, c.code, c.programme_code,
+            lt.ky_vong_dat, lt.ky_vong_nguyen_nhan, lt.ky_vong_mon,
+            (SELECT l.nhan_xet_chung FROM lenh_chuyen_lop l WHERE l.student_id = e.student_id AND l.lop_nguon_id = c.id AND l.trang_thai != 'huy'
+              ORDER BY l.id DESC LIMIT 1) AS ban_giao,
+            (SELECT MAX(a.id) FROM assessment_attempts a WHERE a.student_id = e.student_id AND a.class_id = c.id AND a.kind = 'final' AND a.status != 'cancelled') AS final_id
+       ${EM_KQDR_FT_SQL}`,
+  ).all(classId, addDays(homNay, -KQDR_HIEN_NGAY)) as any[];
+  if (!rows.length) return { bang: [] };
+  const mt0 = mt0TheoLop(rows.map((r) => ({ sid: r.student_id, lop: r.lop_id, ct: r.programme_code })));
+  const final = tyLeTongLo(rows.flatMap((r) => (r.final_id ? [r.final_id] : [])));
+  const caseCua = new Map<number, { id: number; mon: string }[]>();
+  theoLo(rows.map((r) => r.student_id), (lo, ph) => {
+    for (const c of conn.prepare(`SELECT id, student_id, category FROM sos_cases WHERE origin_kind = 'chuyen_cap' AND title LIKE 'Kỳ vọng đầu ra%' AND student_id IN (${ph}) ORDER BY id`)
+      .all(...lo) as any[]) caseCua.set(c.student_id, [...(caseCua.get(c.student_id) ?? []), { id: c.id, mon: c.category }]);
+  });
+  const bang = new Map<string, { ct: string; lop: Map<number, string>; dot: Map<string, unknown[]> }>();
+  for (const r of [...rows].sort((a, b) => a.vao.localeCompare(b.vao) || a.full_name.localeCompare(b.full_name, 'vi'))) {
+    const b = bang.get(r.programme_code) ?? { ct: r.programme_code, lop: new Map(), dot: new Map() };
+    bang.set(r.programme_code, b);
+    b.lop.set(r.lop_id, r.code);
+    const { bands, goiY } = mt0.get(r.student_id)!;
+    const f = r.final_id ? final.get(r.final_id) : undefined;
+    b.dot.set(r.vao, [...(b.dot.get(r.vao) ?? []), {
+      id: r.student_id, ten: r.full_name, lopCu: { id: r.lop_id, code: r.code },
+      final: f?.tyLe ?? null, finalDat: f?.tyLe == null ? null : f.tyLe >= f.nguong,
+      mt0: goiY ? { ...bands, overall: goiY.overall, dat: goiY.dat, monTruot: goiY.monTruot } : null,
+      kqdr: r.ky_vong_dat === null ? null : { dat: !!r.ky_vong_dat, nguyenNhan: r.ky_vong_nguyen_nhan ?? null, mon: jsonMang(r.ky_vong_mon) },
+      case: caseCua.get(r.student_id) ?? [], banGiao: r.ban_giao ?? null,
+    }]);
+  }
+  return {
+    bang: [...bang.values()].sort((a, b) => CT_NGUON.indexOf(a.ct) - CT_NGUON.indexOf(b.ct)).map((b) => ({
+      ct: b.ct, lop: [...b.lop].map(([id, code]) => ({ id, code })).sort((x, y) => x.code.localeCompare(y.code, 'vi')),
+      dot: [...b.dot].map(([vao, em]) => ({ vao, hienToi: addDays(vao, KQDR_HIEN_NGAY), em })),
+    })),
+  };
 }
