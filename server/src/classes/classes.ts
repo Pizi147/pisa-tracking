@@ -505,6 +505,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
           ratios: Object.fromEntries(r.skills.map((x: any) => [
             x.skill, { score: x.score, total: x.total, outcome: x.outcome },
           ])),
+          nguong: r.passThreshold,   // OV-6b1: ngưỡng đạt của lớp lượt này
           bands: null,
           caseStatus: c?.status ?? null,
           myPending: myRegularSkills.filter((k) => {

@@ -124,6 +124,8 @@ export type KetQuaVao = {
   /** MH7: Pre FOU — kết quả chỉ là % tổng (`tyLeTong` có khi đủ điểm). */
   khongChiaMon?: boolean;
   tyLeTong?: number | null;
+  /** OV-6b1: ngưỡng đạt của lớp (lớp thường) — gợi ý Cuối khoá đọc cùng ngưỡng. */
+  nguong?: number;
 };
 /**
  * Cột Kết quả gần nhất (T18, K2-01, E7): tầng 1 `chinh` (+ `lech` FT) + tối đa HAI dòng chữ 12 px, không "…" (đủ chữ, không cắt).
@@ -154,7 +156,7 @@ export function ketQuaGanNhat(k: KetQuaVao | null): KetQuaHien {
     const dat = k.khongChiaMon ? k.sosLevel === 0 : k.sosLevel === 0 && !k.provisional && !thieuDiem;
     /* PR-UXF-a K2-01 (Q3): Cuối khoá đủ điểm → hậu tố hướng ở dòng 1 ("Cuối khoá → học lại"), cùng luật `goiYCuoiKhoa`; không dính vào số %. */
     const huong = k.attemptKind === 'final' && !thieuDiem && k.tyLeTong != null
-      ? goiYCuoiKhoa({ ct, tyLe: k.tyLeTong, monTruot: k.failedSkills.map((f) => f.skill) })?.nhanNgan ?? null : null;
+      ? goiYCuoiKhoa({ ct, tyLe: k.tyLeTong, monTruot: k.failedSkills.map((f) => f.skill), nguong: k.nguong })?.nhanNgan ?? null : null;
     return {
       chinh, lech: null, dat, sos: null,
       dong1: huong ? `${k.attemptLabel} ${huong}` : k.khongChiaMon || !thieuDiem ? k.attemptLabel : `${k.attemptLabel} · ${k.scored}/${k.required} môn có điểm`,

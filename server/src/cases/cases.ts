@@ -30,7 +30,7 @@ import { currentCycle, cyclesOf } from '../fasttrack/cycles.ts';
 import { expectationFor } from '../fasttrack/scoring.ts';
 import { dongHocVien, khoangTamDung } from '../students/tamDung.ts';
 import { activeClassOf } from '../yThuc/access.ts';
-import { isRatioCycle, programmeCodeOfCycle } from '../normal/regular.ts';
+import { isRatioCycle, nguongDatLop, programmeCodeOfCycle } from '../normal/regular.ts';
 import { suggestCaseOwner } from './owner.ts';
 import { caseKhacChuongTrinh, chuongTrinhCuaLop } from './sos.ts';
 import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
@@ -2421,7 +2421,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
    */
   const scoreRows = conn
     .prepare(
-      `SELECT a.attempt_no, a.id AS attempt_id, a.kind, rp.code AS period_code, a.target_at_attempt,
+      `SELECT a.attempt_no, a.id AS attempt_id, a.kind, rp.code AS period_code, a.target_at_attempt, a.class_id,
               (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route,
               sc.skill, sc.band, sc.raw_score, sc.raw_total
          FROM assessment_attempts a
@@ -2447,7 +2447,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
     if (!cat) continue;
     if (ratio && (r.raw_score === null || r.raw_total === null)) continue;
     if (!ratio && r.band === null) continue;
-    const rr = ratio ? ratioResult(r.raw_score, r.raw_total) : null;
+    const rr = ratio ? ratioResult(r.raw_score, r.raw_total, nguongDatLop(r.class_id)) : null;
     const list = byCategory.get(cat) ?? [];
     list.push({
       attemptNo: r.attempt_no, attemptId: r.attempt_id,

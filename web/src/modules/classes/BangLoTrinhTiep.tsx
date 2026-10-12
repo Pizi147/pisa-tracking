@@ -40,7 +40,7 @@ type KeHoach = {
   coTheRaLenh: boolean; laGvcn: boolean; coTheChotKq: boolean;
 };
 type ODiem = { score: number | null; total: number | null };
-type DongRoster = { id: number; timeline: { kind: string; kindLabel: string; myPending: string[]; ratios: Record<string, ODiem> | null }[]; cuoiKhoa?: { tyLe: number | null } | null };
+type DongRoster = { id: number; timeline: { kind: string; kindLabel: string; myPending: string[]; ratios: Record<string, ODiem> | null; nguong?: number }[]; cuoiKhoa?: { tyLe: number | null } | null };
 /** Lộ trình hiện của một em: lệnh đã chốt, không thì nháp (chỉ QL nhận được nháp từ máy chủ). */
 type Lt = { huong: HuongLenh; lopDichId: number | null; lopDichMa: string | null; tuan: string | null; mucTieu: number | 'KCK' | null; ngayXemLai: string | null;
   ghiChu: string | null; chot: boolean };
@@ -151,8 +151,9 @@ export function BangLoTrinhTiep({ classId, quyen, onDoi, emMo, onDaMoEm }: {
     const co = o.filter((x) => x.score !== null && x.total);
     const tyLe = kind === 'final' && e.cuoiKhoa?.tyLe != null ? e.cuoiKhoa.tyLe
       : co.length && co.length === o.length ? co.reduce((a, x) => a + x.score!, 0) / co.reduce((a, x) => a + x.total!, 0) : null;
+    const duoi = tyLe !== null && tyLe < (t?.nguong ?? RATIO_PASS_THRESHOLD);   // OV-6b1: ngưỡng của lớp
     const chu = tyLe !== null ? (
-      <span className={`tabular-nums ${tyLe < RATIO_PASS_THRESHOLD ? 'font-semibold text-late' : 'text-slate-100'}`}>{tyLe < RATIO_PASS_THRESHOLD && <DauDuoi />}{Math.round(tyLe * 100)}%</span>
+      <span className={`tabular-nums ${duoi ? 'font-semibold text-late' : 'text-slate-100'}`}>{duoi && <DauDuoi />}{Math.round(tyLe * 100)}%</span>
     ) : co.length ? <span className="text-xs tabular-nums text-slate-400">{co.length}/{o.length} môn</span> : null;
     const nhap = quyen.coTheNhapDiem && t ? nhapDiemCua(classId, true, [t]) : null;
     if (nhap) return <Link to={nhap.den} className="link inline-flex min-h-[44px] items-center whitespace-nowrap sm:min-h-0" title={nhap.nhan}>{chu ?? (kind === 'final' ? 'Nhập Final' : 'Nhập Progress')}</Link>;

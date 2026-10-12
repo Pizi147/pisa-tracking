@@ -1,5 +1,7 @@
 # PR OV-6b1 — Quản trị › Chương trình: sửa cấu hình, chép vào lớp lúc tạo, tuần MT FT đọc từ cấu hình
 
+**[x] Đã làm 12/10** — nhánh `claude/pensive-knuth-qt9uk0` (session code OV-6b1).
+
 Nguồn: đặc tả OV mục 1 dòng 7.3, mục 4 "Chương trình + PET/KET", 6.7; plan.md mục 3 dòng 11/10 "Lộ trình tự cấu hình: Quản trị tạo/sửa, áp cho lớp mở sau";
 mockup đã duyệt `thiet-ke/mockup-overhaul-3-tong-quan-vai-chuong-trinh-2026-10-11.html` **§6** (dòng ~486–553). OV-6b của đặc tả tách hai PR:
 **OV-6b1** (này — cấu hình chương trình đang có) và **OV-6b2** (chương trình mới: Liên tục, Lặp mỗi n tuần, môn gộp, PET/KET). Rà: **sâu** (migrate lịch).

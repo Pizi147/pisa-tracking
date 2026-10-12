@@ -89,7 +89,7 @@ export function listProgrammes(p: Principal) {
     checkpoints: (conn.prepare('SELECT kind, study_week FROM programme_checkpoints WHERE programme_code = ? ORDER BY study_week')
       .all(r.code) as any[]).map((x) => ({ kind: x.kind, studyWeek: x.study_week })),
     /* OV-6b1: đạt từ (%) — chỉ chương trình đúng/tổng. */
-    nguongDat: r.scoring_mode === 'ratio' ? Math.round((r.nguong_dat ?? RATIO_PASS_THRESHOLD) * 100) : null,
+    nguongDat: r.scoring_mode === 'ratio' ? Math.round((r.nguong_dat ?? RATIO_PASS_THRESHOLD) * 1000) / 10 : null,   // 0.725 → 72.5
     /* Chỉ lớp ĐANG CHẠY — lớp đã kết thúc không còn chịu ảnh hưởng gì của cấu hình. */
     lopDangChay: (conn.prepare("SELECT COUNT(*) n FROM classes WHERE programme_code = ? AND status = 'active'").get(r.code) as any).n,
   }));

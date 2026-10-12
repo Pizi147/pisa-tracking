@@ -73,6 +73,8 @@ export type Standing = {
   /** MH7: Pre FOU không chia môn — kết quả là % tổng (đủ điểm mới có), không phải SOS. */
   khongChiaMon: boolean;
   tyLeTong: number | null;
+  /** OV-6b1: ngưỡng đạt của lớp của lượt đó (lớp thường). */
+  nguong?: number;
 
   /** Lượt kế tiếp đã lên kế hoạch mà chưa có điểm — để nói "đang chờ kết quả MT3". */
   nextAttemptNo: number | null;
@@ -276,6 +278,7 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
         s.required = r.required;
         s.failed = r.failedCount;
         s.tyLeTong = r.tyLeTong;
+        s.nguong = r.passThreshold;
         s.khongChiaMon = CHUONG_TRINH_KHONG_CHIA_MON.includes(cycle.programme_code ?? '');
         s.failedSkills = r.skills
           .filter((x) => x.outcome === 'fail' && x.score !== null && x.total !== null)

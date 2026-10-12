@@ -570,6 +570,8 @@ export function createClass(p: Principal, input: {
   if (input.startDate && !isIsoDate(input.startDate)) throw badRequest('Ngày khai giảng không hợp lệ.');
   const ct = programmeOf(input.kind ?? 'FT');
 
+  const chup = mocChupVaoLop(ct, input.route);   // PF1 + OV-6b1: lớp giữ cấu hình lúc tạo — Quản trị sửa sau chỉ áp lớp mở sau
+
   return tx(() => {
     const info = conn
       .prepare(
@@ -589,7 +591,7 @@ export function createClass(p: Principal, input: {
            input.isFastTrack ? 1 : 0, input.startDate ?? null, input.startPeriodId ?? null,
            input.previousClassId ?? null,
            input.note ?? null, nowIso(),
-           ...Object.values(mocChupVaoLop(ct, input.route)));   // PF1 + OV-6b1: lớp giữ cấu hình lúc tạo — Quản trị sửa sau chỉ áp lớp mở sau
+           chup.so_tuan, chup.tuan_giua_khoa, chup.tuan_cuoi_khoa, chup.lich_mt, chup.nguong_dat);
     const id = Number(info.lastInsertRowid);
     /* Không khai kỹ năng thì lấy ĐÚNG bộ môn của chương trình lớp đó (bảng `programmes`, K5-45), không mặc định bộ FT. */
     const fallback = allProgrammes().get(ct ?? '')?.skills
