@@ -16,14 +16,14 @@ import { kyHieuLop } from './tenLop.ts';
 import { ngay } from './hienThiNgay.ts';
 
 export type DaiCuoiKhoa = 'duoi_50' | '50_59' | '60_69' | 'dat';
-/** Ngưỡng dưới của hai dải giữa; ngưỡng Pass là `RATIO_PASS_THRESHOLD`. */
+/** Ngưỡng dưới của hai dải giữa; ngưỡng Pass là ngưỡng đạt của LỚP (OV-6b1, mặc định `RATIO_PASS_THRESHOLD`). */
 const NGUONG_HOC_LAI = 0.5;
 const NGUONG_LEN = 0.6;
 /** Mini Test ≥ 70 % là đạt (= `RATIO_PASS_THRESHOLD`). PR-Pb2-a: chuyển lên shared — ghi Mini Test, Hiệu quả PA và Tổng hợp Test đọc chung. */
 export const NGUONG_MINI_TEST = RATIO_PASS_THRESHOLD;
 
-export function daiCuoiKhoa(tyLe: number): DaiCuoiKhoa {
-  if (tyLe >= RATIO_PASS_THRESHOLD) return 'dat';
+export function daiCuoiKhoa(tyLe: number, nguong: number = RATIO_PASS_THRESHOLD): DaiCuoiKhoa {
+  if (tyLe >= nguong) return 'dat';
   if (tyLe >= NGUONG_LEN) return '60_69';
   return tyLe >= NGUONG_HOC_LAI ? '50_59' : 'duoi_50';
 }
@@ -32,9 +32,9 @@ export function daiCuoiKhoa(tyLe: number): DaiCuoiKhoa {
  * PR-CL (B5, §7): "Kết quả không phù hợp lộ trình" — đã chốt lên (lên lớp / Lên FT) mà Final < 50%, hoặc học lại mà Final ≥ 70%.
  * Tỷ lệ CHƯA làm tròn; `null` (chưa đủ môn) hoặc hướng khác → false.
  */
-export function khongPhuHopLoTrinh(huong: string, tyLe: number | null): boolean {
+export function khongPhuHopLoTrinh(huong: string, tyLe: number | null, nguong: number = RATIO_PASS_THRESHOLD): boolean {
   if (tyLe === null) return false;
-  return ((huong === 'len_lop' || huong === 'fast_track') && tyLe < NGUONG_HOC_LAI) || (huong === 'hoc_lai' && tyLe >= RATIO_PASS_THRESHOLD);
+  return ((huong === 'len_lop' || huong === 'fast_track') && tyLe < NGUONG_HOC_LAI) || (huong === 'hoc_lai' && tyLe >= nguong);
 }
 
 export type BoTroMienPhi = { soBuoi: number; soTuan: 1 | 2; theoMon: boolean; mon: string[] /* ô chuẩn của lớp CŨ */ };
@@ -75,11 +75,11 @@ function boTro(ct: ProgrammeCode, dai: '50_59' | '60_69', monTruot: readonly str
   return monTruot.length ? { soBuoi: monTruot.length * soTuan, soTuan, theoMon: true, mon: [...monTruot] } : null;
 }
 
-/** `null` khi chưa đủ điểm (không gợi ý, không đoán) hoặc không phải lớp thường. `monTruot` = ô chuẩn của lớp cũ có % < 70. */
-export function goiYCuoiKhoa(x: { ct: string | null; tyLe: number | null; monTruot: readonly string[] }): GoiYCuoiKhoa | null {
+/** `null` khi chưa đủ điểm (không gợi ý, không đoán) hoặc không phải lớp thường. `monTruot` = ô chuẩn của lớp cũ dưới ngưỡng; `nguong` = ngưỡng đạt của lớp. */
+export function goiYCuoiKhoa(x: { ct: string | null; tyLe: number | null; monTruot: readonly string[]; nguong?: number }): GoiYCuoiKhoa | null {
   const ct = programmeOf(x.ct);
   if (!ct || ct === 'FT' || x.tyLe === null || !Number.isFinite(x.tyLe)) return null;
-  const dai = daiCuoiKhoa(x.tyLe);
+  const dai = daiCuoiKhoa(x.tyLe, x.nguong);
   const ke = tenBacKe(ct);
   const chung = { dai, tyLe: x.tyLe };
   const dong = (huong: HuongGoiY, canQuanLy: boolean, bo: BoTroMienPhi | null, baoPhTvv: boolean, nhan: string, nhanNgan: string, nhanExcel: string): GoiYCuoiKhoa => ({

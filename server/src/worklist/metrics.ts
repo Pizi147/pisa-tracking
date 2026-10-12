@@ -680,7 +680,7 @@ function metricSetGoc(
           WHERE e.status = 'active' AND c.status = 'active' AND c.is_fast_track = 1 AND ${HV_DANG_HOC_SQL('s')}
             AND ${cs.sql}${scope.branchId ? ' AND c.branch_id = ?' : ''}
             AND cy.exam_month IS NULL AND cy.exam_period_id IS NULL AND cy.exam_date IS NULL
-            AND ${XONG_MT_CUOI_SQL('cy')} AND NOT ${CO_MOC_KE_TIEP_SQL('cy')}
+            AND ${XONG_MT_CUOI_SQL('cy', 'c')} AND NOT ${CO_MOC_KE_TIEP_SQL('cy')}
           ORDER BY s.id`,
       ).all(...cs.params, ...(scope.branchId ? [scope.branchId] : []), mondayOf(today)) as any[]).map((r) => r.id as number));
     }

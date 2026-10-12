@@ -403,8 +403,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
     else if (!duKn && dv.o === '' && kn.some((x) => x !== '')) loi.push({ khoa: 'dau-vao', nhan: 'Điểm đầu vào', lyDo: 'Nhập đủ L R W S hoặc nhập Overall' });
   }
   if (loiMay) loi.push(loiMay);
-  const route: string | null = cycle?.route ?? null;
-  const cauDoi = tuan !== tuanCu ? cauMtSeDoi(route, attempts, tuan, homNay) : undefined;
+  const cauDoi = tuan !== tuanCu ? cauMtSeDoi(cycle?.lichMt ?? [], attempts, tuan, homNay) : undefined;   // OV-6b1: lịch MT của lớp (API)
 
   const luu = async () => {
     lf.bam();

@@ -43,9 +43,9 @@ export function phanLoaiLuot(ev: { sosLevel: number | null; complete: boolean })
  * luật chấm đã sinh Case); Cuối khoá theo dải % tổng (`daiCuoiKhoa` — một nơi ra 50/60/70).
  */
 const DAI_COT: Record<string, string> = { duoi_50: 'ck-duoi50', '50_59': 'ck-50', '60_69': 'ck-60', dat: 'ck-dat' };
-export function phanLoaiBaiThuong(kind: string, ev: { complete: boolean; skills: Record<string, { under: boolean }>; tyLeTong?: number | null }): string {
+export function phanLoaiBaiThuong(kind: string, ev: { complete: boolean; skills: Record<string, { under: boolean }>; tyLeTong?: number | null; nguong?: number }): string {
   if (!ev.complete) return 'chuaDu';
-  if (kind === 'final') return ev.tyLeTong == null ? 'chuaDu' : DAI_COT[daiCuoiKhoa(ev.tyLeTong)];
+  if (kind === 'final') return ev.tyLeTong == null ? 'chuaDu' : DAI_COT[daiCuoiKhoa(ev.tyLeTong, ev.nguong)];
   const truot = Object.values(ev.skills).filter((s) => s.under).length;
   return truot === 0 ? 'gk-dat' : truot === 1 ? 'gk-1' : 'gk-2';
 }

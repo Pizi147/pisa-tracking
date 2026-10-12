@@ -283,6 +283,8 @@ export function nhanDotTest(d: DotRef): string {
 /** Một mốc điểm máy chủ gửi — trường mới tuỳ chọn để phép kiểm cũ vẫn gọi được. */
 export type DiemMoc = {
   gt: number; tong?: number | null; chuaDat: boolean;
+  /** OV-6b1: ngưỡng đạt của lớp (lớp thường) — chữ "ngưỡng n%" của tooltip. */
+  nguong?: number;
   attemptNo?: number; kind?: string; maLop?: string | null; kyVong?: number | null;
   /** PR-VAI-b (G5): lượt của mốc — mốc điểm mở hồ sơ Mock cuộn tới kỹ năng. */
   attemptId?: number;
@@ -319,7 +321,6 @@ export function chuoiDiem(
 ): MocDiem[] {
   const soDiem = Math.max(0, (o.toiDa ?? 5) - (conCho ? 1 : 0));
   const lay = diem.slice(Math.max(0, diem.length - soDiem));
-  const nguong = Math.round(RATIO_PASS_THRESHOLD * 100);
   let giaTriTruoc: number | null = null;
   const moc: MocDiem[] = lay.map((d) => {
     const phanTram = cheDo === 'ratio' && d.tong ? Math.round((d.gt / d.tong) * 100) : null;
@@ -331,7 +332,7 @@ export function chuoiDiem(
     let phan: (string | null)[];
     if (cheDo === 'ratio') {
       const cauDung = d.tong ? ` (${d.gt}/${d.tong})` : '';
-      phan = [nhan, `${chu}${cauDung}`, d.chuaDat ? `Chưa đạt — ngưỡng ${nguong}%` : 'Đạt'];
+      phan = [nhan, `${chu}${cauDung}`, d.chuaDat ? `Chưa đạt — ngưỡng ${Math.round((d.nguong ?? RATIO_PASS_THRESHOLD) * 100)}%` : 'Đạt'];
     } else {
       const ky = d.kyVong != null ? (d.chuaDat ? `dưới kỳ vọng ${d.kyVong.toFixed(1)}` : `kỳ vọng ${d.kyVong.toFixed(1)}`) : null;
       phan = [nhan, chu, ky];

@@ -32,6 +32,7 @@ CREATE TABLE programmes (
   name TEXT NOT NULL,
   weeks INTEGER,                      -- số tuần của khoá; NULL với FT vì không cố định
   scoring_mode TEXT NOT NULL,         -- ielts_band | ratio
+  nguong_dat REAL,                    -- OV-6b1: đạt từ (0.7 = 70 %), chỉ chương trình đúng/tổng; chép vào lớp lúc tạo
   status TEXT NOT NULL DEFAULT 'active',
   created_at TEXT NOT NULL
 );
@@ -92,6 +93,9 @@ CREATE TABLE classes (
   so_tuan INTEGER,
   tuan_giua_khoa INTEGER,
   tuan_cuoi_khoa INTEGER,
+  -- OV-6b1: chụp lúc tạo / đổi chương trình — FT: tuần học của từng MT ("[6,12,16]"), lớp thường: ngưỡng đạt. Quản trị sửa sau chỉ áp lớp mở sau.
+  lich_mt TEXT,
+  nguong_dat REAL,
 
   /*
    * LỚP NÀY HỌC TIẾP TỪ LỚP NÀO — chuỗi chuyển tiếp FOU → BE → FT.
@@ -207,7 +211,8 @@ CREATE TABLE routes (
   note TEXT,
   seq INTEGER NOT NULL DEFAULT 0,
   status TEXT NOT NULL DEFAULT 'active',
-  created_at TEXT NOT NULL
+  created_at TEXT NOT NULL,
+  lich_mt TEXT                        -- OV-6b1: tuần học của từng MT ("[6,12,16]"), chép vào lớp FT lúc tạo
 );
 
 CREATE TABLE roles (

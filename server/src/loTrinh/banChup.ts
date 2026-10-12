@@ -10,7 +10,7 @@ import {
   ASSESSED_SKILLS, daiCuoiKhoa, huongTiep, ketQuaThiThat, type AssessedSkill, type LyDoDong,
 } from '../../../shared/domain/index.ts';
 import { assessedBands, evaluateAttempt } from '../fasttrack/scoring.ts';
-import { evaluateRegular, programmeByCode } from '../normal/regular.ts';
+import { evaluateRegular, nguongDatKhacMacDinh, nguongDatLop, programmeByCode } from '../normal/regular.ts';
 import { examPlanOf } from '../fasttrack/cycles.ts';
 import { nowIso } from '../util.ts';
 
@@ -23,7 +23,8 @@ const gocKyNang = (s: string | null | undefined) => (s ?? '').replace(/[12]$/, '
 const bangMot = (b: boolean | null | undefined) => (b === null || b === undefined ? null : b ? 1 : 0);
 
 /** Ngữ cảnh ĐÃ ĐÓNG BĂNG của lộ trình — đủ để tính lại điểm một lượt mà không đọc hồ sơ hiện tại (TK-5). */
-export type NguCanhLuot = { laFt: boolean; route: string | null; mon: string[]; maCt: string | null };
+/** `nguong` = ngưỡng đạt của lớp (OV-6b1, `nguongDatLop`); thiếu → 70 %. */
+export type NguCanhLuot = { laFt: boolean; route: string | null; mon: string[]; maCt: string | null; nguong?: number };
 
 export type DongLuotTinh = {
   kyNang: string; batBuoc: number | null; boQua: number | null; diem: number | null; diemTho: number | null; diemTong: number | null; dat: number | null;
@@ -44,7 +45,7 @@ export function tinhLuot(
 ): LuotTinh {
   const diemRows = huy ? [] : rows;
   if (!nc.laFt) {
-    const r = evaluateRegular(nc.mon, diemRows, nc.maCt);
+    const r = evaluateRegular(nc.mon, diemRows, nc.maCt, nc.nguong);
     const dong = r.skills.map((s) => ({
       kyNang: s.skill, batBuoc: 1, boQua: 0, diem: s.score, diemTho: null, diemTong: s.total,
       dat: s.outcome === 'missing' ? null : s.outcome === 'pass' ? 1 : 0,
@@ -145,6 +146,7 @@ function ghiMotLo(conn: any, ids: number[], o: BanChupVao): number[] {
   for (const e of hoi<any>((ph) => `SELECT student_id, class_id, started_at FROM enrollments WHERE student_id IN (${ph}) ORDER BY id`, sids)) {
     if (e.started_at < o.ngay || !lopCuoiCua.has(e.student_id)) lopCuoiCua.set(e.student_id, e.class_id);
   }
+  const nguongKhac = nguongDatKhacMacDinh();
   const lopCuoi = (c: any): number | null => o.lopId ?? (luotCua.get(c.id) ?? []).filter((a) => a.class_id).at(-1)?.class_id ?? lopCuoiCua.get(c.student_id) ?? null;
   const idLop = [...new Set([...attempts.map((a) => a.class_id), ...cycles.map(lopCuoi)].filter((x): x is number => !!x))];
   const lopTheoId = new Map<number, any>();
@@ -177,7 +179,7 @@ function ghiMotLo(conn: any, ids: number[], o: BanChupVao): number[] {
     const maCt = c.programme_code ?? (laFt ? null : luot.map((a) => lopTheoId.get(a.class_id)?.programme_code).find(Boolean) ?? null);
     const ct = ctCua(maCt);
     const mon: string[] = laFt ? [...ASSESSED_SKILLS] : [...(ct?.skills ?? [])];
-    const nc: NguCanhLuot = { laFt, route: c.route ?? null, mon, maCt: ct?.code ?? maCt };
+    const nc: NguCanhLuot = { laFt, route: c.route ?? null, mon, maCt: ct?.code ?? maCt, nguong: nguongDatLop(lopId, nguongKhac) };
     const gvcn = gvcnCua(lopId, o.ngay);
 
     // điểm đầu vào: nhập tay, hoặc bài đánh giá làm căn cứ
@@ -195,7 +197,7 @@ function ghiMotLo(conn: any, ids: number[], o: BanChupVao): number[] {
     });
     const plan = laFt ? examPlanOf(c) : null;
     const luotCuoiKhoa = luot.filter((a) => a.kind === 'final' && a.status !== 'cancelled').at(-1);
-    const tyLe = !laFt && luotCuoiKhoa ? evaluateRegular(mon, diemCua.get(luotCuoiKhoa.id) ?? [], nc.maCt).tyLeTong : null;
+    const tyLe = !laFt && luotCuoiKhoa ? evaluateRegular(mon, diemCua.get(luotCuoiKhoa.id) ?? [], nc.maCt, nc.nguong).tyLeTong : null;
     const routeMoi = o.routeMoi !== undefined ? o.routeMoi : (cungEm.get(c.student_id) ?? []).find((x) => x.seq > c.seq)?.route ?? null;
     const lan = (lanCuoi.get(c.id) ?? 0) + 1;
 
@@ -208,7 +210,7 @@ function ghiMotLo(conn: any, ids: number[], o: BanChupVao): number[] {
       c.thi_that_ngay ?? null, c.thi_that_l ?? null, c.thi_that_r ?? null, c.thi_that_w ?? null, c.thi_that_s ?? null, thi.ovr, c.thi_that_khong_thi ? 1 : 0,
       c.thi_that_nhap_boi ?? null, c.thi_that_nhap_luc ?? null,
       laFt ? thi.ketLuan : null, huongTiep(o.lyDo, routeMoi),
-      !laFt && lopId ? kyVongDat.get(`${c.student_id}:${lopId}`)?.ky_vong_dat ?? null : null, tyLe, tyLe === null ? null : daiCuoiKhoa(tyLe),
+      !laFt && lopId ? kyVongDat.get(`${c.student_id}:${lopId}`)?.ky_vong_dat ?? null : null, tyLe, tyLe === null ? null : daiCuoiKhoa(tyLe, nc.nguong),
       luot.length, null, ngayGhi];
     const dongLuot: unknown[][] = [];
     for (const a of luot) {
@@ -257,7 +259,7 @@ export function lamMoiDiemBanChup(conn: any, attemptIds: number[]): void {
     if (!bc) continue;
     const cu = conn.prepare('SELECT * FROM ban_chup_luot WHERE ban_chup_id = ? AND attempt_id = ?').all(bc.id, a.id) as any[];
     if (!cu.length || cu[0].trang_thai === 'cancelled') continue;   // PR-VN5: lượt vừa huỷ vẫn ghi một lần để bản chụp thành `cancelled`
-    const nc: NguCanhLuot = { laFt: !!bc.route, route: bc.route ?? null, mon: JSON.parse(bc.mon_json ?? '[]'), maCt: bc.programme_code ?? null };
+    const nc: NguCanhLuot = { laFt: !!bc.route, route: bc.route ?? null, mon: JSON.parse(bc.mon_json ?? '[]'), maCt: bc.programme_code ?? null, nguong: nguongDatLop(bc.class_id) };
     const rows = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ?').all(a.id) as any[];
     const boQua = cu.filter((r) => r.bo_qua === 1 && (ASSESSED_SKILLS as readonly string[]).includes(r.ky_nang)).map((r) => r.ky_nang as string);
     const t = tinhLuot(nc, a, cu[0].target_luc_thi ?? null, rows, boQua, false);
@@ -272,6 +274,6 @@ export function lamMoiDiemBanChup(conn: any, attemptIds: number[]): void {
     let tyLe: number | null = bc.ty_le_cuoi_khoa;
     if (!nc.laFt && a.kind === 'final') tyLe = t.tyLeTong;
     conn.prepare('UPDATE ban_chup_lo_trinh SET lam_moi_luc = ?, ty_le_cuoi_khoa = ?, dai_cuoi_khoa = ? WHERE id = ?')
-      .run(ngay, tyLe, tyLe === null ? null : daiCuoiKhoa(tyLe), bc.id);
+      .run(ngay, tyLe, tyLe === null ? null : daiCuoiKhoa(tyLe, nc.nguong), bc.id);
   }
 }

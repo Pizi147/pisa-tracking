@@ -4,7 +4,7 @@ import {
   ASSESSED_SKILLS, CHUONG_TRINH_KHONG_CHIA_MON, PROGRAMME_TEMPLATES, REGULAR_SKILLS, SOS_LABEL, boMonLich, mocKeTiep, LUOT_HUY_HET_SQL, moiNhatTruoc, nhanBaiThuong } from '../../../shared/domain/index.ts';
 import { entryBandsOf, loadBundle } from '../fasttrack/attempts.ts';
 import { evaluateAttempt, expectationFor } from '../fasttrack/scoring.ts';
-import { allProgrammes, evaluateRegular } from '../normal/regular.ts';
+import { allProgrammes, evaluateRegular, nguongDatLop } from '../normal/regular.ts';
 import { luotSinhViecRow } from '../worklist/danhGia.ts';
 
 /**
@@ -73,6 +73,8 @@ export type Standing = {
   /** MH7: Pre FOU không chia môn — kết quả là % tổng (đủ điểm mới có), không phải SOS. */
   khongChiaMon: boolean;
   tyLeTong: number | null;
+  /** OV-6b1: ngưỡng đạt của lớp của lượt đó (lớp thường). */
+  nguong?: number;
 
   /** Lượt kế tiếp đã lên kế hoạch mà chưa có điểm — để nói "đang chờ kết quả MT3". */
   nextAttemptNo: number | null;
@@ -250,7 +252,7 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
       const scores = bundle.scores.get(a.id) ?? [];
       if (!scores.length) continue;   /* chưa có điểm: đi tiếp xuống lượt cũ hơn */
       /* Một nguồn bộ môn: bảng `programme_skills` (qua `allProgrammes`, nhớ trong request), hằng số chỉ dự phòng (K5-45). */
-      const rr = ratio ? evaluateRegular(boMonCua(cycle.programme_code), scores as any, cycle.programme_code) : null;
+      const rr = ratio ? evaluateRegular(boMonCua(cycle.programme_code), scores as any, cycle.programme_code, nguongDatLop(a.class_id)) : null;
       const skips = ratio ? [] : bundle.skips.get(a.id) ?? [];
       const ri = ratio ? null : evaluateAttempt(
         /* T9 (23/09): kết quả gần nhất dùng Target TẠI THỜI ĐIỂM THI, không phải Target hiện tại của lộ
@@ -276,6 +278,7 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
         s.required = r.required;
         s.failed = r.failedCount;
         s.tyLeTong = r.tyLeTong;
+        s.nguong = r.passThreshold;
         s.khongChiaMon = CHUONG_TRINH_KHONG_CHIA_MON.includes(cycle.programme_code ?? '');
         s.failedSkills = r.skills
           .filter((x) => x.outcome === 'fail' && x.score !== null && x.total !== null)

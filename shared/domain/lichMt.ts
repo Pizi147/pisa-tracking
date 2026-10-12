@@ -1,12 +1,12 @@
 /**
  * LỊCH MT FAST TRACK — một nguồn cho web, máy chủ và lệnh ops (PR-MT, đặc tả 27/09 §5.2 M1–M8, T33–T36, T42, Q-B).
  *
- *   lịch mặc định   LT1/LT2: MT1/MT2/MT3 ở tuần học 6/12/16 · RF: MT1/MT2 ở tuần học 4/8 · lớp thường: không có
+ *   lịch mặc định   OV-6b1: Quản trị cấu hình theo lộ trình (`routes.lich_mt`), chép vào lớp lúc tạo (`classes.lich_mt`) — mọi hàm nhận
+ *                   DANH SÁCH TUẦN của lớp, không tự đoán theo mã lộ trình. Gốc (nạp lần đầu): LT 6/12/16 · RF 4/8 · lớp thường: không có
  *   MT cũ           (PR-MTa T1) lượt XẾP vào tuần thi cách tuần hiện tại ≥ 2 tuần — cờ `lich_su` tính lúc xếp/dời, không suy lại khi đọc
  *   cửa sổ Case     chỉ lượt lịch sử có tuần thi trong 4 tuần trước ngày tạo mới sinh Case/PA quy chế/Phối hợp (M4)
  *   đánh số         liền mạch: MT(n) chỉ tạo khi đã có MT(n−1); số huỷ KHÔNG điểm được dùng lại (Q-B)
  */
-import { MOCK_FT_STUDY_WEEK } from './fasttrack.ts';
 import { addDaysIso } from './sos.ts';
 import { mondayOfDate } from './week.ts';
 import { tuanLich } from './hienThiNgay.ts';
@@ -15,18 +15,25 @@ export const CUA_SO_CASE_LICH_SU_NGAY = 28;
 /** T37: một lộ trình tối đa MT8. */
 export const MT_TOI_DA = 8;
 
-/** Tuần HỌC của từng MT mặc định theo lộ trình. `null` = lớp thường (không có MT). */
-export function lichMtMacDinh(route: string | null): number[] {
+/** Lịch MT GỐC (luật viết cứng trước OV-6b1) — CHỈ để nạp cấu hình lần đầu (seed, migrate). `null` = lớp thường (không có MT). */
+export function lichMtGoc(route: string | null): number[] {
   if (!route) return [];
   return route === 'RF' ? [4, 8] : [6, 12, 16];
 }
 
-/** Tuần học của MT(n) — ngoài lịch mặc định (QL tự xếp, "đã thi tới MT") thì RF cách 4 tuần, LT theo bảng rồi cách 4 tuần (Q1). */
-export function tuanHocCuaMt(route: string | null, n: number): number {
-  const md = lichMtMacDinh(route);
-  if (n >= 1 && n <= md.length) return md[n - 1];
-  if (route === 'RF') return 8 + 4 * (n - 2);
-  return MOCK_FT_STUDY_WEEK[n] ?? 16 + 4 * (n - 3);
+/** `classes.lich_mt` / `routes.lich_mt` ("[6,12,16]") → danh sách tuần học; trống hoặc hỏng → null. */
+export function docLichMt(s: string | null | undefined): number[] | null {
+  if (!s) return null;
+  try {
+    const v = JSON.parse(s);
+    return Array.isArray(v) && v.length > 0 && v.every((x) => Number.isInteger(x) && x > 0) ? v : null;
+  } catch { return null; }
+}
+
+/** Tuần học của MT(n) theo lịch của lớp — ngoài lịch (QL tự xếp, "đã thi tới MT") thì cách 4 tuần sau MT cuối của lịch (Q1). */
+export function tuanHocCuaMt(lich: readonly number[], n: number): number {
+  if (n >= 1 && n <= lich.length) return lich[n - 1];
+  return (lich.at(-1) ?? 0) + 4 * (n - lich.length);
 }
 
 /** Tuần (Chủ nhật `tuanKetThucMuonNhat`) đã kết thúc trước ngày `ngayTao`. So NGÀY KẾT THÚC tuần. Không phân loại MT — dùng `laMtCu`. */
@@ -85,9 +92,9 @@ export function kiemTuanXep(o: { ketThuc: string[]; homNay: string; quanLy: bool
 export const CAU_TUAN_DA_QUA = 'MT chưa thi xếp về tuần đã qua — tuần cách ≥ 2 tuần thì là MT cũ.';
 
 /** Rà #120: "Đã thi tới MT" = d mà MT1…MT(d) có MT rơi vào tuần chưa qua → số các MT đó (để nhắc lùi Tuần bắt đầu). */
-export function mtDaThiChuaQua(route: string | null, tuanBatDau: string, daThiToiMt: number, homNay: string): number[] {
+export function mtDaThiChuaQua(lich: readonly number[], tuanBatDau: string, daThiToiMt: number, homNay: string): number[] {
   return Array.from({ length: daThiToiMt }, (_, i) => i + 1)
-    .filter((n) => !laLichSu(addDaysIso(tuanBatDau.slice(0, 10), (tuanHocCuaMt(route, n) - 1) * 7 + 6), homNay));
+    .filter((n) => !laLichSu(addDaysIso(tuanBatDau.slice(0, 10), (tuanHocCuaMt(lich, n) - 1) * 7 + 6), homNay));
 }
 
 export type CachHuy = 'ca-luot' | null;
@@ -113,15 +120,15 @@ export const CO_DIEM_SQL = (a: string) =>
 /**
  * M6, K2-33(2): câu "MT2, MT3 sẽ dời sang W2 OCT, W2 NOV" khi đổi tuần bắt đầu lộ trình FT — lượt hệ thống tự xếp (`auto`), chưa làm, chưa
  * có điểm dời theo tuần học `tuanHocCuaMt`; lượt QL chốt tay / đã có điểm đứng yên. Một nguồn cho Thông tin HV và Sửa cả lớp (PR-SL).
- * `undefined` = không lượt nào dời (lớp thường, chưa chọn tuần).
+ * `lich` = tuần MT của lớp (rỗng = lớp thường). `undefined` = không lượt nào dời (lớp thường, chưa chọn tuần).
  */
-export function cauMtSeDoi(route: string | null, luot: readonly { attemptNo: number; status: string; planSource: string | null; scored: boolean }[],
+export function cauMtSeDoi(lich: readonly number[], luot: readonly { attemptNo: number; status: string; planSource: string | null; scored: boolean }[],
   tuanMoi: string, homNay: string): string | undefined {
-  if (!route || !tuanMoi) return undefined;
+  if (!lich.length || !tuanMoi) return undefined;
   const seDoi = luot.filter((a) => a.status === 'planned' && a.planSource === 'auto' && !a.scored).sort((a, b) => a.attemptNo - b.attemptNo);
   return seDoi.length
     ? `${seDoi.map((a) => `MT${a.attemptNo}`).join(', ')} sẽ dời sang `
-      + seDoi.map((a) => tuanLich(addDaysIso(tuanMoi, (tuanHocCuaMt(route, a.attemptNo) - 1) * 7), homNay)).join(', ')
+      + seDoi.map((a) => tuanLich(addDaysIso(tuanMoi, (tuanHocCuaMt(lich, a.attemptNo) - 1) * 7), homNay)).join(', ')
     : undefined;
 }
 
@@ -143,9 +150,9 @@ export const LUOT_HUY_HET_SQL = (a: string) => `(EXISTS (SELECT 1 FROM attempt_s
 export const MOC_KE_TIEP_SQL = (a: string, rp: string) =>
   `${a}.status = 'planned' AND ${a}.lich_su = 0 AND NOT ${LUOT_HUY_HET_SQL(a)} AND ${rp}.week_start >= ?`;
 
-/** K2-05: em FT "có mốc đánh giá tiếp theo" = có mốc kế tiếp, HOẶC đã qua MT cuối của lịch mặc định và đã có ngày/tháng thi. */
-export function coMocTiepTheo(o: { coMoc: boolean; route: string | null; mtCuoi: number; coNgayThi: boolean }): boolean {
-  return o.coMoc || (lichMtMacDinh(o.route).length > 0 && o.mtCuoi >= lichMtMacDinh(o.route).length && o.coNgayThi);
+/** K2-05: em FT "có mốc đánh giá tiếp theo" = có mốc kế tiếp, HOẶC đã qua MT cuối của lịch lớp (`soMt` = số MT của lịch) và đã có ngày/tháng thi. */
+export function coMocTiepTheo(o: { coMoc: boolean; soMt: number; mtCuoi: number; coNgayThi: boolean }): boolean {
+  return o.coMoc || (o.soMt > 0 && o.mtCuoi >= o.soMt && o.coNgayThi);
 }
 
 /** Một lượt khác trong cùng lộ trình, đủ để biết lượt đang dời có VƯỢT nó không (PR-LM, chủ sản phẩm 03/10). */

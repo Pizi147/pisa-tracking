@@ -1,7 +1,7 @@
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
-  CHUONG_TRINH_KHONG_CHIA_MON, boMonLich, CLASS_PHASE_LABEL, CO_DIEM_SQL, MOC_KE_TIEP_SQL, PERMISSIONS, kiemSoMtMoi, laMtCu, lichMtMacDinh, tuanHocCuaMt, tuanLich,
+  CHUONG_TRINH_KHONG_CHIA_MON, boMonLich, CLASS_PHASE_LABEL, CO_DIEM_SQL, MOC_KE_TIEP_SQL, PERMISSIONS, docLichMt, kiemSoMtMoi, laMtCu, lichMtGoc, tuanHocCuaMt, tuanLich,
   PROGRAMME_TEMPLATES, kyHieuLop, nextStepsAfter, programmeOf, studyWeekOf,
   type ClassPhase, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
@@ -12,6 +12,7 @@ import { writeAudit } from '../platform/audit.ts';
 import { ensurePeriods, mondayOf, periodById, weekInfo } from '../platform/week.ts';
 import { recomputeCompletionWeek, tinhLaiMtCu } from '../fasttrack/skillSchedule.ts';
 import { allProgrammes, programmeByCode, type ProgrammeInfo } from '../normal/regular.ts';
+import { nho } from '../platform/nguCanhRequest.ts';
 
 /**
  * TUẦN BẮT ĐẦU HỌC → LỊCH MT MẶC ĐỊNH, VÀ TIẾN ĐỘ LỚP.
@@ -28,6 +29,20 @@ import { allProgrammes, programmeByCode, type ProgrammeInfo } from '../normal/re
 
 // ==================================================================== lớp FT
 
+/** Cấu hình tuần MT đang dùng của từng lộ trình (`routes.lich_mt`, Quản trị sửa) — nhớ trong request GET. */
+const lichMtTheoRoute = () => nho('lich-mt-route', () => new Map(
+  (db().prepare('SELECT code, lich_mt FROM routes').all() as any[]).map((r) => [r.code as string, docLichMt(r.lich_mt)] as const)));
+
+/**
+ * TUẦN MT CỦA MỘT LỘ TRÌNH FT (OV-6b1) — bản chụp của lớp em đang học (`classes.lich_mt`, chép lúc tạo lớp: Quản trị sửa sau không đổi
+ * lịch lớp đang chạy). Bản chụp là của LỘ TRÌNH LỚP: em khác lộ trình lớp (em RF trong lớp LT), hoặc chưa ở lớp FT nào → cấu hình đang
+ * dùng của lộ trình em (như luật cũ theo lộ trình). Không lộ trình (lớp thường) → rỗng.
+ */
+export function lichMtCua(lop: { lich_mt?: string | null; route?: string | null } | null | undefined, route: string | null | undefined): number[] {
+  if (!route) return [];
+  return (lop?.route === route ? docLichMt(lop.lich_mt) : null) ?? lichMtTheoRoute().get(route) ?? lichMtGoc(route);
+}
+
 export type SuggestedMock = {
   attemptNo: number;
   studyWeek: number;
@@ -43,7 +58,7 @@ export type SuggestedMock = {
 };
 
 /**
- * LỊCH MT ĐỀ XUẤT cho một lộ trình FT, tính từ tuần bắt đầu học — theo LỘ TRÌNH (`lichMtMacDinh`: LT 6/12/16, RF 4/8).
+ * LỊCH MT ĐỀ XUẤT cho một lộ trình FT, tính từ tuần bắt đầu học — theo tuần MT của LỚP em đang học (`lichMtCua`, OV-6b1).
  *
  * Chỉ đề xuất lịch mặc định (T33: không tự tạo MT4+); `daThiToiMt` (PR-NHAP, K2-33) kéo dài tới số đó. Lớp thường (không route)
  * và lộ trình chưa khai tuần bắt đầu học → mảng RỖNG — không đoán, vì đoán sai thì cả khoá lệch và không ai biết con số ấy từ đâu ra.
@@ -57,10 +72,10 @@ export type YeuCauLichMt = { cycleId: number; daThiToiMt?: number };
 
 /**
  * `suggestedMockWeeks` cho NHIỀU lộ trình (PR-TOC) — số câu SQL không phụ thuộc số lộ trình. Lộ trình không đề xuất được (không route,
- * chưa có tuần bắt đầu) không có trong Map. Kèm dòng `learning_cycles` để `apLichMacDinhLo` khỏi đọc lại.
+ * chưa có tuần bắt đầu) không có trong Map. Kèm dòng `learning_cycles` + lớp đang học (`lopId`) để `apLichMacDinhLo` khỏi đọc lại.
  */
-function goiYLo(yc: readonly YeuCauLichMt[]): Map<number, { cy: any; goiY: SuggestedMock[] }> {
-  const out = new Map<number, { cy: any; goiY: SuggestedMock[] }>();
+function goiYLo(yc: readonly YeuCauLichMt[]): Map<number, { cy: any; lopId: number | null; goiY: SuggestedMock[] }> {
+  const out = new Map<number, { cy: any; lopId: number | null; goiY: SuggestedMock[] }>();
   if (!yc.length) return out;
   const conn = db();
   const cyOf = new Map<number, any>();
@@ -75,14 +90,23 @@ function goiYLo(yc: readonly YeuCauLichMt[]): Map<number, { cy: any; goiY: Sugge
       startOf.set(r.id, weekInfo(r.week_start).weekStart);
     }
   });
+  /* Lớp đang học (ghi danh active mới nhất) + bản chụp tuần MT của lớp đó. */
+  const lopOf = new Map<number, { id: number; lich_mt: string | null; route: string | null }>();
+  theoLo([...new Set(co.map((y) => cyOf.get(y.cycleId).student_id as number))], (lo, ph) => {
+    for (const r of conn.prepare(`SELECT e.student_id, e.class_id, c.lich_mt, c.route FROM enrollments e JOIN classes c ON c.id = e.class_id
+        WHERE e.student_id IN (${ph}) AND e.status = 'active' ORDER BY e.id DESC`).all(...lo) as any[]) {
+      if (!lopOf.has(r.student_id)) lopOf.set(r.student_id, { id: r.class_id, lich_mt: r.lich_mt, route: r.route });
+    }
+  });
 
   /* Tuần học thứ 1 là chính tuần bắt đầu, nên lượt ở tuần thứ N cách đó N−1 tuần. */
   const lich = co.filter((y) => startOf.has(cyOf.get(y.cycleId).start_period_id)).map((y) => {
     const cy = cyOf.get(y.cycleId);
     const start = startOf.get(cy.start_period_id)!;
-    const soLuot = Math.max(lichMtMacDinh(cy.route).length, y.daThiToiMt ?? 0);
+    const lich = lichMtCua(lopOf.get(cy.student_id), cy.route);
+    const soLuot = Math.max(lich.length, y.daThiToiMt ?? 0);
     return { cy, luot: Array.from({ length: soLuot }, (_, i) => {
-      const week = tuanHocCuaMt(cy.route, i + 1);
+      const week = tuanHocCuaMt(lich, i + 1);
       return { no: i + 1, week, monday: addDays(start, 7 * (week - 1)) };
     }) };
   });
@@ -95,7 +119,7 @@ function goiYLo(yc: readonly YeuCauLichMt[]): Map<number, { cy: any; goiY: Sugge
     }
   });
   for (const { cy, luot } of lich) {
-    out.set(cy.id, { cy, goiY: luot.map(({ no, week, monday }) => {
+    out.set(cy.id, { cy, lopId: lopOf.get(cy.student_id)?.id ?? null, goiY: luot.map(({ no, week, monday }) => {
       const period = periods.get(monday)!;
       const had = existing.get(cy.id)?.find((a) => a.attempt_no === no) ?? null;
       return {
@@ -154,11 +178,7 @@ export function apLichMacDinhLo(yc: readonly YeuCauLichMt[], actorUserId: number
   const ngayTao = (o.ngayTao ?? demoToday()).slice(0, 10);
   const cycleIds = [...goi.keys()];
   const lopOf = new Map<number, number>();
-  theoLo([...new Set([...goi.values()].map((g) => g.cy.student_id as number))], (lo, ph) => {
-    const rows = conn.prepare(
-      `SELECT student_id, class_id FROM enrollments WHERE student_id IN (${ph}) AND status='active' ORDER BY id DESC`).all(...lo) as any[];
-    for (const r of rows) if (!lopOf.has(r.student_id)) lopOf.set(r.student_id, r.class_id);
-  });
+  for (const g of goi.values()) if (g.lopId !== null) lopOf.set(g.cy.student_id, g.lopId);
 
   return tx(() => {
     const dsOf = new Map<number, any[]>(cycleIds.map((id) => [id, []]));
@@ -333,6 +353,8 @@ export type ClassProgress = {
   label: string | null;
   /** K2-23: chương trình CÓ mốc Giữa khoá — Pre FOU chỉ Cuối khoá nên ô Giữa khoá ở panel Lịch kiểm tra ẩn. */
   coGiuaKhoa: boolean;
+  /** OV-6b1: tuần học của từng MT (bản chụp của lớp FT); lớp thường rỗng. */
+  lichMt: number[];
 };
 
 /**
@@ -530,21 +552,23 @@ function computeProgress(
     weeksLeft, needsPlacement, placementOptions, activeStudents, canXepLop,
     label,
     coGiuaKhoa: defProgress !== null || c.progress_week_override !== null && c.progress_week_override !== undefined,
+    lichMt: code === 'FT' ? lichMtCua(c, c.route ?? 'LT1') : [],
   };
 }
 
 /**
  * TÓM TẮT MT CỦA MỘT LỚP FT (PR-HVL, K2-22) — dòng `8 em · 6 em có MT sắp tới · 2 em đã xong MT cuối` ở panel Tuần khai giảng. MỘT câu SQL:
  * "MT sắp tới" cùng luật `MOC_KE_TIEP_SQL` (mốc kế tiếp, không lịch sử, từ tuần này); "đã xong MT cuối" = đã có lượt MT có điểm ở số thứ tự
- * ≥ số MT của lịch mặc định của lộ trình (LT: 3, RF: 2 — `lichMtMacDinh`), tính cả MT lịch sử.
+ * ≥ số MT trong lịch của lớp (`classes.lich_mt`, OV-6b1), tính cả MT lịch sử.
  */
 export function tomTatMt(classId: number): { soEm: number; coMocSapToi: number; daXongMtCuoi: number } {
   const r = db().prepare(
     `SELECT COUNT(*) AS n, SUM(co_moc) AS co_moc, SUM(xong) AS xong FROM (
        SELECT s.id,
               MAX(CASE WHEN ${CO_MOC_KE_TIEP_SQL('cy')} THEN 1 ELSE 0 END) AS co_moc,
-              MAX(CASE WHEN ${XONG_MT_CUOI_SQL('cy')} THEN 1 ELSE 0 END) AS xong
+              MAX(CASE WHEN ${XONG_MT_CUOI_SQL('cy', 'c')} THEN 1 ELSE 0 END) AS xong
          FROM enrollments e
+         JOIN classes c ON c.id = e.class_id
          JOIN students s ON s.id = e.student_id
          LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
         WHERE e.class_id = ? AND e.status = 'active' AND ${HV_DANG_HOC_SQL('s')}
@@ -556,12 +580,13 @@ export function tomTatMt(classId: number): { soEm: number; coMocSapToi: number; 
 /**
  * HAI ĐIỀU KIỆN CỦA `tomTatMt`, tách thành hằng SQL để chỉ số `hv-ft-xong-mt-cuoi-chua-mt-ke` (PR-VAI-a Q8c) dùng ĐÚNG luật này.
  *   CO_MOC_KE_TIEP  — lộ trình có lượt mốc kế tiếp (`MOC_KE_TIEP_SQL`), MỘT tham số `?` = thứ Hai tuần này.
- *   XONG_MT_CUOI    — đã có lượt MT có điểm ở số thứ tự ≥ số MT của lịch mặc định (LT: 3, RF: 2), tính cả MT lịch sử. Không tham số.
+ *   XONG_MT_CUOI    — đã có lượt MT có điểm ở số thứ tự ≥ số MT trong lịch của lớp `c` (bản chụp, cùng lộ trình) / của lộ trình em, tính cả MT lịch sử. Không tham số.
  */
 export const CO_MOC_KE_TIEP_SQL = (cy: string) => `EXISTS (SELECT 1 FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id
   WHERE a.cycle_id = ${cy}.id AND ${MOC_KE_TIEP_SQL('a', 'rp')})`;
-export const XONG_MT_CUOI_SQL = (cy: string) => `EXISTS (SELECT 1 FROM assessment_attempts a2 WHERE a2.cycle_id = ${cy}.id AND a2.kind = 'mock'
-  AND a2.attempt_no >= (CASE WHEN ${cy}.route = 'RF' THEN ${lichMtMacDinh('RF').length} ELSE ${lichMtMacDinh('LT1').length} END) AND ${CO_DIEM_SQL('a2')})`;
+export const XONG_MT_CUOI_SQL = (cy: string, c: string) => `EXISTS (SELECT 1 FROM assessment_attempts a2 WHERE a2.cycle_id = ${cy}.id AND a2.kind = 'mock'
+  AND a2.attempt_no >= (CASE WHEN ${c}.route = ${cy}.route THEN json_array_length(${c}.lich_mt)
+    ELSE (SELECT json_array_length(r.lich_mt) FROM routes r WHERE r.code = ${cy}.route) END) AND ${CO_DIEM_SQL('a2')})`;
 
 /**
  * PR-LTGON (luật 6): đổi mốc Progress/Final của lớp → bài chưa có điểm của các em đang học dời theo, không hỏi. Chỉ kỹ năng đang ở ĐÚNG tuần mốc cũ

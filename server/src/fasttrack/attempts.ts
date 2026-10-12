@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
-  ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_LABEL, MOCK_FT_STUDY_WEEK, NO_SHOW_OVERRIDDEN_NOTE,
-  CHAM_CHEO, PERMISSIONS, awaitingScore, laChamCheo, cachHuyLuot, kiemBand, kiemNhanXet, kiemSoMtMoi, kyNangSosMt0, laMt0, laMtCu, ngay, dauTruCuaO, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanLich,
+  ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_LABEL, NO_SHOW_OVERRIDDEN_NOTE,
+  CHAM_CHEO, PERMISSIONS, awaitingScore, laChamCheo, cachHuyLuot, kiemBand, kiemNhanXet, kiemSoMtMoi, kyNangSosMt0, laMt0, laMtCu, ngay, dauTruCuaO, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich,
   type CachHuy, CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, categoryOf, type CaseCategory, type InterventionKind,
   type AssessedSkill, type EntrySkill, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
 } from '../../../shared/domain/index.ts';
@@ -34,10 +34,11 @@ import { currentCycle, cycleById, examPlanOf, luotSoCuaLoTrinh } from './cycles.
 import { closeCasesBySystem, moLaiCaseHeThongDong } from '../cases/systemClose.ts';
 import { banHuyLuotCua, catHuyLuot, ketQuaHuyCua, traBanDoiVuot, traBanHuyLuot, type BanHuyLuot } from './ketQuaHuy.ts';
 import { chuanHoaNguoiThucHien } from '../cases/nguoiThucHien.ts';
-import { allProgrammes, evaluateRegular, isRatioClass, programmeOfClass, refreshRegularOutcome, regularDeadline } from '../normal/regular.ts';
+import { allProgrammes, evaluateRegular, isRatioClass, nguongDatLop, programmeOfClass, refreshRegularOutcome, regularDeadline } from '../normal/regular.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { lamMoiDiemBanChup } from '../loTrinh/banChup.ts';
 import { dongBoCheTaiFinal } from '../normal/cuoiKhoa.ts';
+import { lichMtCua } from '../classes/schedule.ts';
 
 export type ScoreRow = {
   id: number; skill: EntrySkill;
@@ -597,7 +598,7 @@ function ownersByClass(classIds: number[]): Map<number, Record<string, string>> 
 const ATTEMPT_SELECT = `
   SELECT a.*, s.full_name, s.student_code,
          cy.route, cy.target_score, cy.khong_cam_ket, cy.exam_month, cy.exam_period_id, cy.exam_date, cy.seq AS cycle_seq,
-         c.code AS class_code, c.programme_code, c.branch_id, b.name AS branch_name, b.code AS branch_code,
+         c.code AS class_code, c.programme_code, c.lich_mt AS lop_lich_mt, c.route AS lop_route, c.branch_id, b.name AS branch_name, b.code AS branch_code,
          pr.code AS period_code, pr.week_start AS period_start, pr.week_end AS period_end
     FROM assessment_attempts a
     JOIN students s ON s.id = a.student_id
@@ -675,7 +676,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
     const regularSkills = skillsOfClass(a.class_id);
 
     if (regularSkills) {
-      const r = evaluateRegular(regularSkills, scores);
+      const r = evaluateRegular(regularSkills, scores, null, nguongDatLop(a.class_id));
       const editable = a.class_id ? editableSkills(p, a.class_id, regularSkills) : [];
       /* Việc của CHÍNH người này = kỹ năng được phân công, không tính quyền sửa hộ (mục 3.3). */
       const mineSkills = a.class_id ? mySkills(p, a.class_id, regularSkills) : [];
@@ -1030,7 +1031,7 @@ export function attemptDetail(p: Principal, attemptId: number) {
     classId: a.class_id, classCode: a.class_code, branchId: a.branch_id, branchName: a.branch_name,
     attemptNo: a.attempt_no,
     targetAtAttempt: a.target_at_attempt,
-    studyWeekHint: MOCK_FT_STUDY_WEEK[a.attempt_no] ?? null,
+    studyWeekHint: a.route ? tuanHocCuaMt(lichMtCua({ lich_mt: a.lop_lich_mt, route: a.lop_route }, a.route), a.attempt_no) : null,   // OV-6b1: theo lịch của lớp
     /** PR-MT (T34): MT lịch sử — nhập bù, không hạn, không luồng vắng. */
     lichSu: !!a.lich_su,
     /*

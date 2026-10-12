@@ -23,14 +23,14 @@ type AdminData = {
  * QUẢN TRỊ HỆ THỐNG — ba việc khác hẳn nhau, nên ba tab thay vì một trang dài.
  *
  *   TÀI KHOẢN  duyệt đăng ký, tạo tài khoản, cấp vai và quyền riêng (mục 7.1, 7.3).
- *   DANH MỤC   lộ trình và chương trình — sửa tên, số tuần, mốc; không thêm mã mới (K1-48).
+ *   CHƯƠNG TRÌNH  chương trình + FT theo lộ trình — tên, đạt từ, số tuần, mốc Test; áp cho lớp mở sau (OV-6b1); không thêm mã mới (K1-48).
  *   CẤU HÌNH   ma trận quyền theo vai (`/admin/permissions/matrix`), đơn vị báo cáo, nhật ký thay đổi (`/admin/overview`).
  *
  * Đây là quản trị PHẦN MỀM — khác với Admin chi nhánh là nhân sự văn phòng.
  */
 const TABS = [
   { key: 'accounts', label: 'Tài khoản' },
-  { key: 'catalog', label: 'Lộ trình & chương trình' },
+  { key: 'catalog', label: 'Chương trình' },
   { key: 'config', label: 'Quyền & nhật ký' },
 ] as const;
 

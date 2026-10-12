@@ -8,7 +8,7 @@ import { Field, SectionNote, Skeleton } from '../../ui/ui.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { MOC_KIEM_TRA_NORMAL } from '../../ui/chu.ts';
-import { kyHieuLop, lichMtMacDinh, tuanLich, type LoiTruong } from '@shared/domain/index.ts';
+import { kyHieuLop, tuanLich, type LoiTruong } from '@shared/domain/index.ts';
 import { DongXem, PhanThongTin } from './ThongTinLopPanel.tsx';
 
 type Progress = {
@@ -25,6 +25,7 @@ type Progress = {
   label: string | null;
   /** K2-23: chương trình có mốc Giữa khoá (Pre FOU không có). */
   coGiuaKhoa: boolean;
+  lichMt: number[];
   /** K2-22: tóm tắt MT của lớp FT (null với lớp thường / người không xem được lớp). */
   tomTatMt: { soEm: number; coMocSapToi: number; daXongMtCuoi: number } | null;
 };
@@ -170,7 +171,7 @@ export function PhanLichTest({ classId, tieuDe, suaDuoc, onDone, onChuyenTiep }:
           ) : (
             <SectionNote>
               Tuần khai giảng là tuần bắt đầu mặc định khi thêm học viên. Lịch MT của từng em tính từ tuần bắt đầu của em
-              (FT: tuần {lichMtMacDinh('LT1').join(' · ')}; RF: {lichMtMacDinh('RF').join(' · ')}) — xem ở Test › Kế hoạch Test.
+              (MT ở tuần học {data.lichMt.join(' · ')}) — xem ở Test › Kế hoạch Test.
               Đổi tuần khai giảng không dời lịch MT của em đã có.
             </SectionNote>
           )}

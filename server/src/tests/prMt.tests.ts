@@ -6,12 +6,11 @@ export async function runPrMtTests(t: YThucTestKit) {
   const d = await import('../../../shared/domain/index.ts');
   console.log('\nPR-MT · Lịch MT tự tạo, MT lịch sử, đánh số, RF, dời do vắng');
 
-  check('PR-MT (1) · lichMtMacDinh LT1/LT2/RF/null + tuanHocCuaMt ngoài lịch (M1, Q1)', () => {
+  check('PR-MT (1) · lichMtGoc LT1/LT2/RF/null + tuanHocCuaMt ngoài lịch (M1, Q1; OV-6b1: theo danh sách tuần của lớp)', () => {
     const j = (x: unknown) => JSON.stringify(x);
-    assert(j(d.lichMtMacDinh('LT1')) === '[6,12,16]' && j(d.lichMtMacDinh('LT2')) === '[6,12,16]', 'LT');
-    assert(j(d.lichMtMacDinh('RF')) === '[4,8]' && j(d.lichMtMacDinh(null)) === '[]', 'RF / lớp thường');
-    assert(d.tuanHocCuaMt('RF', 3) === 12 && d.tuanHocCuaMt('LT1', 4) === 20 && d.tuanHocCuaMt('LT1', 6) === 28, 'ngoài lịch mặc định');
-    assert(d.LUAT_LO_TRINH_HIEN.RF.lichMt === 'Tuần 4 · 8' && d.LUAT_LO_TRINH_HIEN.LT1.lichMt === 'Tuần 6 · 12 · 16', 'một nguồn (K1-49)');
+    assert(j(d.lichMtGoc('LT1')) === '[6,12,16]' && j(d.lichMtGoc('LT2')) === '[6,12,16]', 'LT');
+    assert(j(d.lichMtGoc('RF')) === '[4,8]' && j(d.lichMtGoc(null)) === '[]', 'RF / lớp thường');
+    assert(d.tuanHocCuaMt(d.lichMtGoc('RF'), 3) === 12 && d.tuanHocCuaMt(d.lichMtGoc('LT1'), 4) === 20 && d.tuanHocCuaMt(d.lichMtGoc('LT1'), 6) === 28, 'ngoài lịch mặc định');
   });
   check('PR-MT (1) · laLichSu so CN tuần thi với ngày tạo; trongCuaSoCase biên đúng 28 ngày (T34, M4)', () => {
     assert(d.laLichSu('2026-09-20', '2026-09-21') === true, 'CN 20/09 < 21/09');
@@ -216,7 +215,7 @@ export async function runPrMtTests(t: YThucTestKit) {
   const tongHopSvc: any = await import('../phanTich/tongHop.ts');
   /** Em mới có MT1 ĐÚNG tuần này (lượt thường) — chọn tuần bắt đầu lùi (tuần học của MT1 − 1) tuần. */
   const emMt1TuanNay = (lop: string, ten: string, route: string) => {
-    const sid = them(lop, ten, addDays(tuanNay, -7 * (d.tuanHocCuaMt(route, 1) - 1)));
+    const sid = them(lop, ten, addDays(tuanNay, -7 * (d.tuanHocCuaMt(d.lichMtGoc(route), 1) - 1)));
     return { sid, a: luotCua(sid)[0] };
   };
   const nhap = (a: any, b: { l: number; r: number; w: number; s: number }) => {
