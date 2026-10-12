@@ -839,7 +839,10 @@ api.post('/attempts/:id/cancel', requireAuth, wrap((req) => {
 
 api.post('/attempts/:id/reopen', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return attemptSvc.reopenAttempt(principalOf(req), pInt(req, 'id'));
+  /* PR-OV4a: Khôi phục lượt — `banId` chọn bản huỷ khi có > 1 (mặc định mới nhất). */
+  const banId = req.body?.banId;
+  if (banId != null && !Number.isInteger(banId)) throw badRequest('Bản huỷ không hợp lệ.');
+  return attemptSvc.reopenAttempt(principalOf(req), pInt(req, 'id'), { banId: banId ?? null });
 }));
 
 /**

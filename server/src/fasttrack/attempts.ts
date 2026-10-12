@@ -2,7 +2,7 @@ import { db, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_LABEL, MOCK_FT_STUDY_WEEK, NO_SHOW_OVERRIDDEN_NOTE,
   CHAM_CHEO, PERMISSIONS, awaitingScore, laChamCheo, cachHuyLuot, kiemBand, kiemNhanXet, kiemSoMtMoi, kyNangSosMt0, laMt0, laMtCu, ngay, dauTruCuaO, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanLich,
-  type CachHuy,
+  type CachHuy, CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, categoryOf, type CaseCategory, type InterventionKind,
   type AssessedSkill, type EntrySkill, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -21,7 +21,7 @@ import {
 import { mondayOf, quaHanNhapDiem, skillScoreDeadline, weekInfo } from '../platform/week.ts';
 import { nho, nhoTheoId } from '../platform/nguCanhRequest.ts';
 import {
-  checkWeekVsNeighbours, completionWeekOf, ensureSkillRows, kiemDaToiTuanThi, kiemVuot, tuanCuoiSauKhiDoi, loadSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf,
+  checkWeekVsNeighbours, completionWeekOf, ensureSkillRows, kiemDaToiTuanThi, kiemVuot, tuanCuoiSauKhiDoi, loadSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf, tinhLaiMtCu,
   setSkillScope, setSkillWeek, skillScheduleOf, skippedSkillsOf, viewSkill,
   type SkillRow, type SkillScheduleView,
 } from './skillSchedule.ts';
@@ -31,8 +31,8 @@ import {
 import { raiseSignalsForResult, stepsFor } from '../cases/sos.ts';
 import { reconcileCorrectedSignals } from '../cases/signals.ts';
 import { currentCycle, cycleById, examPlanOf, luotSoCuaLoTrinh } from './cycles.ts';
-import { closeCasesBySystem } from '../cases/systemClose.ts';
-import { ketQuaHuyCua } from './ketQuaHuy.ts';
+import { closeCasesBySystem, moLaiCaseHeThongDong } from '../cases/systemClose.ts';
+import { banHuyLuotCua, catHuyLuot, ketQuaHuyCua, traBanDoiVuot, traBanHuyLuot, type BanHuyLuot } from './ketQuaHuy.ts';
 import { chuanHoaNguoiThucHien } from '../cases/nguoiThucHien.ts';
 import { allProgrammes, evaluateRegular, isRatioClass, programmeOfClass, refreshRegularOutcome, regularDeadline } from '../normal/regular.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
@@ -1055,6 +1055,8 @@ export function attemptDetail(p: Principal, attemptId: number) {
     ketQuaHuy: ketQuaHuyCua([a.id]).get(a.id) ?? null,
     /** PR-HSM (K4 §4h): lượt đã huỷ — lý do, ai, khi (dòng `cancelled` mới nhất của lịch sử). */
     huy: huyDong ? { lyDo: huyDong.reason ?? null, ai: huyDong.actor_name ?? null, khi: huyDong.created_at } : null,
+    /** PR-OV4a: bản Huỷ cả lượt còn khôi phục được (hộp Khôi phục) + câu chặn khi số MT đã được xếp lại. */
+    khoiPhuc: khoiPhucCua(a),
     /** Đợt này có tách tuần không — nhiều hơn một tuần trong các kỹ năng bắt buộc. */
     splitWeeks: [...new Set(scheduleRows.filter((r) => r.required && r.periodCode).map((r) => r.periodCode))].length > 1,
     scoringMode: mode,
@@ -1197,13 +1199,7 @@ function hoiSinhLuot(p: Principal, cu: any, o: { classId: number | null; period:
   ).run(o.classId, o.period.id, o.targetScore, o.note, laMtCu(o.period.week_end, demoToday()) ? 1 : 0, nowIso(), nowIso(), cu.id);
   rutDeNghiDoi(cu.id);   // phòng dữ liệu cũ: đề nghị của lượt đã huỷ không được sống lại cùng lượt
   conn.prepare('DELETE FROM assessment_scores WHERE attempt_id = ? AND band IS NULL AND raw_score IS NULL').run(cu.id);
-  /* PR-MTGON (MTG-3b): kết quả đã huỷ do dời vượt (dữ liệu cũ) không theo lượt xếp lại — bỏ, nhật ký giữ nguyên dòng. */
-  const kqCu = conn.prepare('SELECT * FROM ket_qua_huy WHERE attempt_id = ? AND khoi_phuc_luc IS NULL').all(cu.id) as any[];
-  if (kqCu.length) {
-    conn.prepare('DELETE FROM ket_qua_huy WHERE attempt_id = ? AND khoi_phuc_luc IS NULL').run(cu.id);
-    writeAudit({ actorUserId: p.userId, action: 'ket_qua_huy.bo', entityType: 'assessment_attempt', entityId: cu.id,
-      entityLabel: `${o.studentCode} MT${cu.attempt_no}`, before: kqCu, after: null });
-  }
+  /* PR-OV4a: bản cất (`ket_qua_huy`, cả huỷ lượt lẫn dời vượt) GIỮ khi xếp lại — huỷ lượt mới này rồi Khôi phục lượt cũ vẫn đưa điểm về. */
   conn.prepare('DELETE FROM attempt_skills WHERE attempt_id = ?').run(cu.id);
   ensureSkillRows(cu.id);
   logSchedule(cu.id, { action: 'recreated', field: 'planned_period', newValue: o.period.code, reason: `Tạo lại MT${cu.attempt_no} (số dùng lại)`, actor: p.userId });
@@ -1397,24 +1393,69 @@ export function setDeadlineOverride(p: Principal, attemptId: number, date: strin
   return db().prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId);
 }
 
+/** Hộp "Huỷ MT{n}?" (PR-OV4a, mockup §5): hệ quả thật, đúng số — lịch, điểm sẽ ẩn, Case / PA đóng, PA giữ, Phối hợp. */
+export type HeQuaHuyLuot = {
+  cachDuoc: CachHuy; case: number; pa: number; phoiHop: number; caseIds: number[];
+  /** Kỹ năng bắt buộc còn hiệu lực có tuần + các tuần (thứ Hai) — "Lịch 4 kỹ năng tuần W2 OCT bỏ khỏi Lịch Test". */
+  lich: { soKyNang: number; tuan: string[] };
+  /** Ô có điểm (L · R · W1 · W2 · S) — "2 điểm đã nhập (L 6.5 · R 7) ẩn đi". */
+  diem: { skill: string; band: number | null; raw: number | null }[];
+  caseDong: { id: number; ten: string }[]; paDong: { id: number; ten: string }[]; paGiu: { id: number; ten: string }[];
+  /** Lớp thường: điểm bài XOÁ như cũ (không cất, Khôi phục ra lượt trống). */
+  xoaDiem: boolean;
+};
+
 /**
- * HỆ QUẢ HUỶ LƯỢT — nói trước trong hộp huỷ (K4-10). "Huỷ cả lượt" chỉ với lượt LỚN NHẤT chưa có điểm nào (M-12, Q-B); còn lại
- * "Huỷ phần còn lại". Huỷ cả lượt đóng những thứ SINH RIÊNG từ lượt đó (T67): Case mà mọi mốc đến từ lượt này và chưa PA nào có kết
- * quả (Q13), việc Phối hợp còn mở. Huỷ phần còn lại không đóng gì — phần đã có điểm là thật.
+ * HỆ QUẢ HUỶ LƯỢT — nói trước trong hộp huỷ (K4-10, PR-OV4a). Huỷ cả lượt đóng (T67, đặc tả OV 3.4): Case SINH RIÊNG từ lượt (mọi mốc từ lượt
+ * này, chưa PA nào có kết quả — kèm PA của nó) · PA của Case khác gắn lượt có kết quả gần nhất "Chưa đủ dữ liệu" · Phối hợp còn chờ. PA có kết
+ * quả khác giữ nguyên (`paGiu`, hộp nói rõ).
  */
-export function heQuaHuyLuot(attemptId: number): { cachDuoc: CachHuy; case: number; pa: number; phoiHop: number; caseIds: number[] } {
+export function heQuaHuyLuot(attemptId: number): HeQuaHuyLuot {
   const conn = db();
   const a = loadAttempt(attemptId);
   const ds = luotSoCuaLoTrinh(a.cycle_id);
   const cachDuoc = cachHuyLuot(ds.find((x) => x.attempt_no === a.attempt_no)!, ds);
-  if (cachDuoc !== 'ca-luot') return { cachDuoc, case: 0, pa: 0, phoiHop: 0, caseIds: [] };
+  const xoaDiem = !!a.class_id && scoringModeOf(a) === 'ratio';
+  const rong: HeQuaHuyLuot = { cachDuoc, case: 0, pa: 0, phoiHop: 0, caseIds: [], lich: { soKyNang: 0, tuan: [] }, diem: [], caseDong: [], paDong: [], paGiu: [], xoaDiem };
+  if (cachDuoc !== 'ca-luot') return rong;
   const caseIds = caseSinhRieng(attemptId);
-  const pa = caseIds.length
+  const tenCase = (r: any) => `Case ${CASE_CATEGORY_LABEL[(r.category ?? categoryOf(r.topic)) as CaseCategory] ?? tenMon(null, r.topic ?? '')}`;
+  const caseDong = caseIds.length
+    ? (conn.prepare(`SELECT id, category, topic FROM sos_cases WHERE id IN (${caseIds.map(() => '?').join(',')}) ORDER BY id`).all(...caseIds) as any[])
+      .map((r) => ({ id: r.id as number, ten: tenCase(r) }))
+    : [];
+  const paCase = caseIds.length
     ? (conn.prepare(`SELECT COUNT(*) n FROM case_interventions WHERE status IN ('planned', 'started') AND case_id IN (${caseIds.map(() => '?').join(',')})`)
       .get(...caseIds) as any).n as number
     : 0;
+  const pa = xoaDiem ? { dong: [], giu: [] } : paGanLuot(attemptId, caseIds);   // lớp thường: luồng cũ, không đóng PA theo kết quả
   const phoiHop = (conn.prepare(`SELECT COUNT(*) n FROM sos_coordination_actions WHERE attempt_id = ? AND status = 'pending'`).get(attemptId) as any).n as number;
-  return { cachDuoc, case: caseIds.length, pa, phoiHop, caseIds };
+  const kn = conn.prepare(
+    `SELECT p.week_start FROM attempt_skills k JOIN report_periods p ON p.id = k.planned_period_id
+      WHERE k.attempt_id = ? AND k.required = 1 AND k.sit_status != 'cancelled'`).all(attemptId) as any[];
+  const diem = (conn.prepare(`SELECT skill, band, raw_score FROM assessment_scores WHERE attempt_id = ? AND (band IS NOT NULL OR raw_score IS NOT NULL) ORDER BY id`)
+    .all(attemptId) as any[]).map((r) => ({ skill: r.skill as string, band: r.band ?? null, raw: r.raw_score ?? null }));
+  return {
+    ...rong, case: caseIds.length, pa: paCase + pa.dong.length, phoiHop, caseIds,
+    lich: { soKyNang: kn.length, tuan: [...new Set(kn.map((r) => String(r.week_start).slice(0, 10)))].sort() }, diem, caseDong, paDong: pa.dong, paGiu: pa.giu,
+  };
+}
+
+/** PA đang chạy của Case gắn lượt (có mốc từ lượt) NGOÀI Case sinh riêng, theo kết quả gần nhất: "Chưa đủ dữ liệu" → đóng cùng lượt · kết quả khác → giữ. */
+function paGanLuot(attemptId: number, boCase: number[]): { dong: { id: number; ten: string }[]; giu: { id: number; ten: string }[] } {
+  const ds = (db().prepare(
+    `SELECT iv.id, iv.kind, iv.description, sc.id AS case_id, sc.category, sc.topic,
+            (SELECT f.outcome FROM case_followups f WHERE f.intervention_id = iv.id AND f.outcome IS NOT NULL ORDER BY f.observed_on DESC, f.id DESC LIMIT 1) AS kq
+       FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
+      WHERE iv.status IN ('planned', 'started') AND sc.status != 'done'
+        AND EXISTS (SELECT 1 FROM case_milestones m WHERE m.case_id = sc.id AND m.attempt_id = ?)
+      ORDER BY iv.id`).all(attemptId) as any[]).filter((r) => !boCase.includes(r.case_id) && r.kq);
+  const ten = (r: any) => `PA ${(r.description ?? '').trim() || INTERVENTION_KIND_LABEL[r.kind as InterventionKind] || r.kind} ${
+    CASE_CATEGORY_LABEL[(r.category ?? categoryOf(r.topic)) as CaseCategory] ?? ''}`.trim();
+  return {
+    dong: ds.filter((r) => r.kq === 'insufficient').map((r) => ({ id: r.id as number, ten: ten(r) })),
+    giu: ds.filter((r) => r.kq !== 'insufficient').map((r) => ({ id: r.id as number, ten: ten(r) })),
+  };
 }
 
 /**
@@ -1431,9 +1472,10 @@ export function caseSinhRieng(attemptId: number): number[] {
 }
 
 /**
- * HUỶ MT{n} (T36, T67; PR-MTGON luật 4 — chủ sản phẩm 08/10): Quản lý huỷ MỌI lượt, mọi lúc. Điểm của lượt xoá theo lô (`xoaDiemLuot`,
- * PR-VN4 — nhật ký giữ từng ô) để số MT dùng lại được khi xếp lại; đóng những thứ sinh riêng từ lượt (Case chưa có kết quả PA, Phối hợp còn chờ).
- * Không còn "Huỷ phần còn lại" — bỏ từng kỹ năng là "Huỷ kỹ năng" (`setSkillSkip`).
+ * HUỶ MT{n} (T36, T67; PR-MTGON luật 4; PR-OV4a — đặc tả OV 3.4): Quản lý / Quản trị huỷ MỌI lượt, mọi lúc. Lượt Mock / MT0: điểm KHÔNG xoá
+ * mà CẤT (`catHuyLuot`) — mọi chỗ đọc `assessment_scores` tự không thấy, số MT dùng lại được; đóng Case sinh riêng, PA "Chưa đủ dữ liệu", Phối hợp
+ * còn chờ, tín hiệu còn chờ của lượt và ghi danh sách đóng vào bản cất để Khôi phục mở lại đúng. MỘT giao dịch. Bài lớp thường: điểm xoá theo
+ * lô như cũ (`xoaDiemLuot`, PR-VN5) — không cất.
  */
 export function huyLuot(p: Principal, attemptId: number, input: { lyDo?: string | null }) {
   const a = loadAttempt(attemptId);
@@ -1443,43 +1485,117 @@ export function huyLuot(p: Principal, attemptId: number, input: { lyDo?: string 
   if (!hq.cachDuoc) throw badRequest('Lượt này đã huỷ.');
   const conn = db();
   return tx(() => {
-    xoaDiemLuot(p, a, lyDo);
+    /* Hai người huỷ cùng lúc: kiểm lại TRONG giao dịch — lần sau không được cất một bản rỗng đè lên bản có điểm. */
+    if (loadAttempt(attemptId).status === 'cancelled') throw badRequest('Lượt này đã huỷ.');
+    if (hq.xoaDiem) xoaDiemLuot(p, a, lyDo);
+    else {
+      /* R11 như `saveScore`: đợt đã hoàn tất có điểm thì chỉ người sửa được sau hoàn tất mới ẩn được điểm (huỷ lượt) — kiểm trước khi ghi. */
+      const hoanTat = dotHoanTat(a.id, demoToday());
+      if (hq.diem.length && hoanTat.hoanTat && (!a.class_id || !quyenSuaSauHoanTat(p, a.class_id, !!a.lich_su))) {
+        throw forbidden(`Đợt này đã hoàn tất (hết Chủ nhật ${ngay(hoanTat.chuNhatCuoi)}). Chỉ Quản lý huỷ được lượt đã có điểm.`);
+      }
+    }
     conn.prepare(`UPDATE assessment_attempts SET status='cancelled', cancel_reason=?, cancelled_at=?, updated_at=? WHERE id=?`)
       .run(lyDo, nowIso(), nowIso(), attemptId);
     logSchedule(attemptId, { action: 'cancelled', reason: lyDo, actor: p.userId });
-    lamMoiDiemBanChup(conn, [attemptId]);   // PR-VN5: bản chụp (lộ trình đã đóng) thấy `cancelled` ngay, không trễ một nhịp
     /* Đề nghị dời đang chờ của lượt này hết nghĩa — không rút thì hết hạn sẽ huỷ phần thi của lượt xếp lại sau (cùng id). */
     rutDeNghiDoi(attemptId);
     /* PR-DON (ghi chú CT2): Final lớp thường đã sinh sớm bổ trợ → huỷ bộ chưa ai đụng (cùng luật "đã đụng"). */
     if (a.kind === 'final' && a.class_id && isRatioClass(a.class_id)) dongBoCheTaiFinal(p, a.class_id, [a.student_id]);
     addJourney({ studentId: a.student_id, eventType: 'mock_cancelled', eventDate: demoToday(),
       title: `Huỷ MT${a.attempt_no}`, detail: lyDo, refTable: 'assessment_attempts', refId: attemptId, createdBy: p.userId });
-    writeAudit({ actorUserId: p.userId, action: 'attempt.cancel', entityType: 'assessment_attempt', entityId: attemptId,
-      before: { status: a.status }, after: { status: 'cancelled', reason: lyDo } });
-    const phoiHop = conn.prepare(
+    const phoiHopIds = (conn.prepare(`SELECT id FROM sos_coordination_actions WHERE attempt_id = ? AND status = 'pending' ORDER BY id`).all(attemptId) as any[])
+      .map((r) => r.id as number);
+    if (phoiHopIds.length) conn.prepare(
       `UPDATE sos_coordination_actions SET status = 'removed', remove_reason_code = 'system_luot_huy', removed_by = NULL,
-              removed_at = ?, updated_at = ? WHERE attempt_id = ? AND status = 'pending'`).run(nowIso(), nowIso(), attemptId).changes;
-    const caseIds = caseSinhRieng(attemptId);   // đọc lại SAU khi xoá điểm: Case sinh từ điểm vừa xoá cũng đóng
-    const dong = caseIds.length
-      ? closeCasesBySystem({ actorUserId: p.userId, studentId: a.student_id, reason: 'luot_da_huy', on: demoToday(), caseIds }).closedCaseIds.length
-      : 0;
-    return { cach: 'ca-luot' as const, kyNangHuy: [] as string[], dong: { case: dong, pa: hq.pa, phoiHop } };
+              removed_at = ?, updated_at = ? WHERE attempt_id = ? AND status = 'pending'`).run(nowIso(), nowIso(), attemptId);
+    const caseIds = caseSinhRieng(attemptId);   // lớp thường: đọc lại SAU khi xoá điểm — Case sinh từ điểm vừa xoá cũng đóng
+    const chup = caseIds.length
+      ? closeCasesBySystem({ actorUserId: p.userId, studentId: a.student_id, reason: 'luot_da_huy', on: demoToday(), caseIds }).chup
+      : [];
+    let soDiem = 0, paDong: { id: number; status: string }[] = [], tinHieu: number[] = [];
+    if (!hq.xoaDiem) {
+      paDong = paGanLuot(attemptId, caseIds).dong.map((x) => ({ id: x.id, status: (conn.prepare('SELECT status FROM case_interventions WHERE id = ?').get(x.id) as any).status }));
+      if (paDong.length) conn.prepare(`UPDATE case_interventions SET status = 'cancelled', closed_reason = 'system_closed', updated_at = ?
+          WHERE id IN (${paDong.map(() => '?').join(',')}) AND status IN ('planned', 'started')`).run(nowIso(), ...paDong.map((x) => x.id));
+      /* Tín hiệu còn chờ dựng trên điểm của lượt — điểm ẩn thì hết căn cứ; Khôi phục đưa lại (`moLaiCaseHeThongDong`). */
+      tinHieu = (conn.prepare(`SELECT id FROM case_signals WHERE attempt_id = ? AND status = 'pending' ORDER BY id`).all(attemptId) as any[]).map((r) => r.id as number);
+      if (tinHieu.length) conn.prepare(`UPDATE case_signals SET status = 'withdrawn', withdrawn_reason = ?, updated_at = ? WHERE attempt_id = ? AND status = 'pending'`)
+        .run(SYSTEM_CLOSE_REASON_LABEL.luot_da_huy, nowIso(), attemptId);
+      soDiem = catHuyLuot(p, attemptId, lyDo, { luot: a, case: chup, pa: paDong, phoiHop: phoiHopIds, tinHieu });
+    }
+    lamMoiDiemBanChup(conn, [attemptId]);   // PR-VN5: bản chụp (lộ trình đã đóng) thấy `cancelled` + điểm ẩn ngay, không trễ một nhịp
+    writeAudit({ actorUserId: p.userId, action: 'attempt.cancel', entityType: 'assessment_attempt', entityId: attemptId,
+      before: { status: a.status }, after: { status: 'cancelled', reason: lyDo, ...(hq.xoaDiem ? {} : { diemAn: soDiem }) } });
+    return { cach: 'ca-luot' as const, kyNangHuy: [] as string[], dong: { case: chup.length, pa: hq.pa, phoiHop: phoiHopIds.length } };
   });
 }
 
+/** Lượt đã huỷ ở hộp Khôi phục (PR-OV4a): bản cất còn khôi phục được, hoặc câu chặn khi số MT đã được xếp lại. */
+export function khoiPhucCua(a: any): { ban: BanHuyLuot[]; chan: string | null } {
+  const ban = banHuyLuotCua(a.id);
+  if (a.status === 'cancelled' || !ban.length) return { ban: a.status === 'cancelled' ? ban : [], chan: null };
+  const nhan = `MT${a.attempt_no}`;
+  const ws = a.planned_period_id ? (db().prepare('SELECT week_start FROM report_periods WHERE id = ?').get(a.planned_period_id) as any)?.week_start : null;
+  return { ban, chan: `Chưa khôi phục được: đã xếp ${nhan} mới${ws ? ` tuần ${tuanLich(ws, demoToday())}` : ''}. Huỷ ${nhan} mới trước, rồi khôi phục ${nhan} cũ.` };
+}
+
 /**
- * MỞ LẠI LƯỢT. PR-MTGON (MTG-3c): tuần cũ nay vướng thứ tự đợt (trùng / vượt lượt khác) → mở lại ở "Chưa xếp lịch" thay vì nằm sai
- * thứ tự; Quản lý xếp lại sau.
+ * KHÔI PHỤC LƯỢT (PR-OV4a, đặc tả OV 3.4; thay "Mở lại lượt"). Chỉ QL + Quản trị (`ATTEMPT_CANCEL`). MỘT giao dịch:
+ *  · bản `huy_luot` (`banId`, mặc định mới nhất): lượt, lịch, điểm như lúc huỷ; đúng Case / PA / Phối hợp / tín hiệu lần huỷ đã đóng mở lại — Case
+ *    đã có Case mới cùng kỹ năng (hoặc đã bị đổi) thì giữ đóng, câu nói rõ;
+ *  · lượt huỷ TRƯỚC PR này (không bản cất): về 'planned', điểm trống như "Mở lại lượt" cũ;
+ *  · bản `doi_vuot` còn treo (ca MT4 Nguyễn Minh Ngọc) đi cùng: điểm vào ô còn trống.
+ * Tuần cũ nay vướng thứ tự đợt → lượt về "Chưa xếp lịch" (MTG-3c), điểm vẫn về. Số MT đã xếp lại (lượt đang chạy, còn bản cất) → 400 câu chặn.
  */
-export function reopenAttempt(p: Principal, attemptId: number) {
-  const a = loadAttempt(attemptId);
-  require_(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id, studentId: a.student_id });
+export function reopenAttempt(p: Principal, attemptId: number, o: { banId?: number | null } = {}) {
+  const truoc = loadAttempt(attemptId);
+  require_(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: truoc.class_id, studentId: truoc.student_id }, 'Chỉ Quản lý khôi phục được lượt đã huỷ.');
+  const nhan = `MT${truoc.attempt_no}`;
+  const lyDo = `Khôi phục ${nhan}`;
   return tx(() => {
     const conn = db();
-    conn.prepare(`UPDATE assessment_attempts SET status='planned', cancel_reason=NULL, cancelled_at=NULL, updated_at=? WHERE id=?`)
-      .run(nowIso(), attemptId);
-    logSchedule(attemptId, { action: 'reopened', actor: p.userId });
-    const tuan = ensureSkillRows(attemptId).filter((r) => r.required && r.sit_status !== 'cancelled' && r.week_start)
+    const a = loadAttempt(attemptId);   // đọc lại trong giao dịch: hai người khôi phục cùng lúc thì lần sau thấy đã khôi phục
+    if (a.status !== 'cancelled') {
+      const { chan } = khoiPhucCua(a);
+      if (chan) throw badRequest(chan);
+      throw badRequest(conn.prepare(`SELECT 1 FROM ket_qua_huy WHERE attempt_id = ? AND loai = 'huy_luot' AND khoi_phuc_luc IS NOT NULL`).get(attemptId)
+        ? `${nhan} đã khôi phục.` : `${nhan} chưa huỷ.`);
+    }
+    const banId = o.banId ?? banHuyLuotCua(attemptId)[0]?.id ?? null;
+    const cau: string[] = [];
+    let soDiem = 0, soCase = 0, soPa = 0, soPhoiHop = 0;
+    if (banId !== null) {
+      const tra = traBanHuyLuot(p, attemptId, banId, lyDo);
+      soDiem = tra.soDiem;
+      const cs = moLaiCaseHeThongDong({ actorUserId: p.userId, studentId: a.student_id, reason: 'luot_da_huy', chup: tra.dong.case, tinHieu: tra.dong.tinHieu, lyDo });
+      soCase = cs.moLai.length;
+      soPa = tra.dong.case.filter((c) => cs.moLai.includes(c.id)).reduce((n, c) => n + c.pa.length, 0);
+      for (const id of cs.boQua) {
+        const c = conn.prepare('SELECT category, topic, dedup_key FROM sos_cases WHERE id = ?').get(id) as any;
+        const trung = tra.dong.case.find((x) => x.id === id)?.dedup_key;
+        const ten = CASE_CATEGORY_LABEL[(c?.category ?? categoryOf(c?.topic)) as CaseCategory] ?? '';
+        cau.push(trung && conn.prepare('SELECT 1 FROM sos_cases WHERE dedup_key = ? AND id != ?').get(trung, id)
+          ? `1 Case không mở lại: đã có Case ${ten} mới.` : `1 Case ${ten} không mở lại: đã được xử lý sau khi huỷ.`);
+      }
+      for (const pa of tra.dong.pa) {
+        soPa += conn.prepare(`UPDATE case_interventions SET status = ?, closed_reason = NULL, updated_at = ? WHERE id = ? AND status = 'cancelled' AND closed_reason = 'system_closed'`)
+          .run(pa.status, nowIso(), pa.id).changes;
+      }
+      if (tra.dong.phoiHop.length) soPhoiHop = conn.prepare(
+        `UPDATE sos_coordination_actions SET status = 'pending', remove_reason_code = NULL, removed_by = NULL, removed_at = NULL, updated_at = ?
+          WHERE id IN (${tra.dong.phoiHop.map(() => '?').join(',')}) AND status = 'removed' AND remove_reason_code = 'system_luot_huy'`)
+        .run(nowIso(), ...tra.dong.phoiHop).changes;
+    } else {
+      conn.prepare(`UPDATE assessment_attempts SET status='planned', cancel_reason=NULL, cancelled_at=NULL, updated_at=? WHERE id=?`).run(nowIso(), attemptId);
+    }
+    const doiVuot = traBanDoiVuot(p, attemptId, lyDo);
+    soDiem += doiVuot;
+    if (banId === null && !doiVuot && a.kind === 'mock') cau.push('Lượt huỷ trước 10/2026: không còn điểm để khôi phục.');
+    logSchedule(attemptId, { action: 'reopened', reason: lyDo, actor: p.userId });
+    /* Đọc thẳng (không `ensureSkillRows`): lượt cũ thiếu dòng kỹ năng thì khôi phục không tự đẻ thêm dòng — trở lại đúng như trước. */
+    const tuan = (conn.prepare(`SELECT p.week_start FROM attempt_skills k JOIN report_periods p ON p.id = k.planned_period_id
+        WHERE k.attempt_id = ? AND k.required = 1 AND k.sit_status != 'cancelled'`).all(attemptId) as any[])
       .map((r) => String(r.week_start).slice(0, 10)).sort();
     const sai = tuan.length > 0 && (!!kiemVuot(attemptId, tuan[tuan.length - 1], tuan[0]).chan || [...new Set(tuan)].some((w) => checkWeekVsNeighbours({
       cycleId: a.cycle_id, attemptNo: a.attempt_no, excludeAttemptId: attemptId, newWeekStart: w, kind: a.kind,
@@ -1488,11 +1604,16 @@ export function reopenAttempt(p: Principal, attemptId: number) {
       conn.prepare(`UPDATE attempt_skills SET planned_period_id = NULL, plan_source = 'manual', updated_at = ? WHERE attempt_id = ? AND required = 1 AND sit_status != 'cancelled'`)
         .run(nowIso(), attemptId);
       conn.prepare(`UPDATE assessment_attempts SET plan_source = 'manual' WHERE id = ?`).run(attemptId);
-      logSchedule(attemptId, { action: 'skill_unscheduled', reason: 'Mở lại lượt: tuần cũ vướng thứ tự đợt — về Chưa xếp lịch', actor: p.userId });
-      recomputeCompletionWeek(attemptId, p.userId);
+      logSchedule(attemptId, { action: 'skill_unscheduled', reason: `${lyDo}: tuần cũ vướng thứ tự đợt — về Chưa xếp lịch`, actor: p.userId });
+      cau.push(`Tuần cũ vướng thứ tự đợt — ${nhan} về "Chưa xếp lịch", điểm vẫn giữ. Xếp lại tuần cho ${nhan}.`);
     }
-    refreshOutcome(p, attemptId);
-    return conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId);
+    if (sai || doiVuot) { recomputeCompletionWeek(attemptId, p.userId); tinhLaiMtCu(attemptId, demoToday()); }
+    /* Bản cất đưa về NGUYÊN trạng (điểm, Case, tín hiệu, Phối hợp) — không tính lại; còn lại (lượt cũ / dời vượt / đổi tuần) tính lại như mọi lần sửa. */
+    if (banId === null || sai || doiVuot) refreshOutcome(p, attemptId);
+    else lamMoiDiemBanChup(conn, [attemptId]);
+    writeAudit({ actorUserId: p.userId, action: 'attempt.khoi_phuc', entityType: 'assessment_attempt', entityId: attemptId, entityLabel: lyDo,
+      before: { status: 'cancelled' }, after: { banId, soDiem, soCase, soPa, soPhoiHop, chuaXep: sai } });
+    return { ok: true as const, soDiem, soCase, soPa, soPhoiHop, chuaXep: sai, cau };
   });
 }
 

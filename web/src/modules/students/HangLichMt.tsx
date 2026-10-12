@@ -10,7 +10,7 @@ import { Truong } from '../../ui/KhungPanel.tsx';
 import { Skeleton, Status } from '../../ui/ui.tsx';
 import { OMt } from '../../ui/OMt.tsx';
 import { HopKyNang } from '../test/keHoach/HopKyNang.tsx';
-import { HopKhoiPhucKetQua } from '../test/keHoach/HopKhoiPhucKetQua.tsx';
+import { HopKhoiPhucKetQua, HopKhoiPhucMt } from '../test/keHoach/HopKhoiPhucKetQua.tsx';
 import { DaiODiemLon, type LichKn } from '../fasttrack/ODiemLon.tsx';
 import { nguCanhChiTiet } from '../fasttrack/HopNhapDiem.tsx';
 import { useSaveScore } from '../fasttrack/ScoreEntry.tsx';
@@ -27,6 +27,8 @@ export type HangMt = {
     /** T2 (PR-MTa): kết quả đã huỷ do dời vượt, còn khôi phục được — `null` khi không có. */
     ketQuaHuy?: KetQuaHuy | null;
   } | null;
+  /** PR-OV4a: số MT này chỉ có lượt đã huỷ — hàng "Đã huỷ", Quản lý Khôi phục. */
+  huy?: { attemptId: number } | null;
 };
 export type BangLichMt = { hang: HangMt[]; soKeTiep: number; classId: number | null; studentId: number; coTheXep: boolean; coTheKhoiPhuc?: boolean };
 
@@ -55,12 +57,14 @@ export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienD
   const [hop, setHop] = useState<HTMLElement | null>(null);
   const [huyLich, setHuyLich] = useState(false);
   const [khoiPhuc, setKhoiPhuc] = useState(false);
+  const [khoiPhucLuot, setKhoiPhucLuot] = useState(false);
   const l = h.luot;
   const coDeXuat = h.studyWeek !== null;
   const that = l ? tuanThat(l, homNay) : null;
 
   const moHop = (el: HTMLElement) => setHop(el);
-  const moHoSo = l ? () => navigate(duongDotTest({ id: l.attemptId, kind: 'mock' })) : null;
+  const idHoSo = l?.attemptId ?? h.huy?.attemptId ?? null;
+  const moHoSo = idHoSo !== null ? () => navigate(duongDotTest({ id: idHoSo, kind: 'mock' })) : null;
   const muc: MucMenu[] = [];
   let chinh: { nhan: string; lam: (el: HTMLElement) => void } | null = null;
   if (l && bang.coTheXep) {
@@ -74,6 +78,8 @@ export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienD
       muc.push({ key: 'doi-lich', nhan: 'Dời lịch', onChon: () => { const el = document.getElementById(`mt-${l.attemptId}`); if (el) moHop(el); } });
     }
   }
+  /* PR-OV4a: lượt đã huỷ — Quản lý / Quản trị Khôi phục ngay ở hàng (Admin, GV: không nút, chỉ Mở hồ sơ MT). */
+  if (!l && h.huy && bang.coTheKhoiPhuc) chinh = { nhan: `Khôi phục MT${h.attemptNo}`, lam: () => setKhoiPhucLuot(true) };
   /* T2: lượt bị vượt có kết quả đã huỷ → Quản lý khôi phục được (⋯ chỉ có mục này khi có `ketQuaHuy`). */
   if (l?.ketQuaHuy && bang.coTheKhoiPhuc) muc.push({ key: 'khoi-phuc-ket-qua', nhan: 'Khôi phục kết quả', onChon: () => setKhoiPhuc(true) });
   if (moHoSo) muc.push({ key: 'ho-so', nhan: 'Mở hồ sơ MT', onChon: moHoSo, keTruoc: muc.length > 0 });
@@ -84,7 +90,7 @@ export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienD
     <>
       <tr className="row-hover">
         <td className="td whitespace-nowrap">
-          <OMt v={{ so: h.attemptNo, attemptId: l?.attemptId ?? null, kn: l?.kn ?? {}, cu: !!l?.lichSu }} homNay={homNay} />
+          <OMt v={{ so: h.attemptNo, attemptId: l?.attemptId ?? null, kn: l?.kn ?? {}, cu: !!l?.lichSu }} homNay={homNay} huy={!l && !!h.huy} />
           {l?.kyVong != null && <span className="block text-xs tabular-nums text-slate-500">kỳ vọng {fmtBand(l.kyVong)}</span>}
         </td>
         <td className="td text-slate-400 whitespace-nowrap tabular-nums">{h.studyWeek !== null ? `tuần ${h.studyWeek}` : '—'}</td>
@@ -101,7 +107,8 @@ export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienD
             Hai điều trong một ô: lượt đang ở tuần nào THẬT, và bấm Áp lịch thì lượt này ra sao. Lời hứa "hệ thống không ghi đè
             cái Quản lý đã xếp" phải thấy TRƯỚC khi bấm.
           */}
-          {l?.trangThai === 'chua-xep' ? <Status kind="waiting">Chưa xếp lịch</Status>
+          {!l && h.huy ? <Status kind="idle">Đã huỷ</Status>
+            : l?.trangThai === 'chua-xep' ? <Status kind="waiting">Chưa xếp lịch</Status>
             : !l ? <Status kind="waiting">Chưa có, sẽ tạo</Status>
             : !coDeXuat ? <Status kind="done">Quản lý đã xếp</Status>
             : h.locked ? <Status kind="done">Đã làm xong, giữ nguyên</Status>
@@ -116,7 +123,8 @@ export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienD
               <button id={l ? `mt-${l.attemptId}` : undefined} type="button" className="btn btn-sm min-h-[44px] sm:min-h-0"
                 aria-expanded={chinh.nhan === 'Nhập điểm' ? moDiem : undefined}
                 onClick={(e) => chinh!.lam(e.currentTarget)}>{chinh.nhan}</button>
-            ) : !l ? <span className="text-xs text-slate-500">Áp lịch để tạo</span> : null}
+            ) : !l && h.huy ? <span className="text-xs text-slate-500">Chỉ Quản lý khôi phục được</span>
+            : !l ? <span className="text-xs text-slate-500">Áp lịch để tạo</span> : null}
             {muc.length > 0 && <MenuDong nhan={`Thao tác khác · MT${h.attemptNo}`} muc={muc} />}
           </span>
         </td>
@@ -132,6 +140,9 @@ export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienD
         <HopKyNang anchor={hop} tieuDe={`${hocVien} · MT${h.attemptNo}`} loai="ft" classId={bang.classId} studentId={bang.studentId}
           dot={{ loai: 'ft', attemptNo: h.attemptNo }} attemptId={l.attemptId} kn={l.kn} kyNangDau={null} lichSu={l.lichSu}
           onClose={() => setHop(null)} onSaved={onDoi} onHienDien={onHienDien} />
+      )}
+      {khoiPhucLuot && h.huy && (
+        <HopKhoiPhucMt attemptId={h.huy.attemptId} attemptNo={h.attemptNo} onDong={() => setKhoiPhucLuot(false)} onXong={onDoi} />
       )}
       {khoiPhuc && l?.ketQuaHuy && (
         <HopKhoiPhucKetQua attemptId={l.attemptId} nhan={`MT${h.attemptNo}`} ketQua={l.ketQuaHuy} onDong={() => setKhoiPhuc(false)} onXong={onDoi} />

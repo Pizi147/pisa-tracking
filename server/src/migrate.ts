@@ -37,6 +37,7 @@ import { migratePrLcb } from './migrate/prLcb.ts';
 import { migratePrPa } from './migrate/prPa.ts';
 import { migratePrCt2 } from './migrate/prCt2.ts';
 import { migratePrOv3b } from './migrate/prOv3b.ts';
+import { migratePrOv4 } from './migrate/prOv4.ts';
 
 /**
  * Nâng cấp database ĐANG CÓ lên schema mới, không xoá dữ liệu. PR-SO (DEP-gỡ): nhánh nâng cấp từ mô hình `mock_attempts` (trước overhaul)
@@ -289,6 +290,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     /* PR-OV2a: vai Admin / TVV / CX + students.consultant_user_id + demo_sessions.goc_nhin (chỉ thêm, chạy lặp được). */ migratePrOv2(conn, applied);
     /* OV-3b: bảng nháp lộ trình + cột đề xuất Kết quả đầu ra + ban_giao_mon.lam_lai; vừa tạo bảng thì chép Hướng GVCN chưa có quyết định thành nháp. */ migratePrOv3b(conn, applied);
     /* PR-OV1b: dấu "-" cũ theo luật mới — nhập bù / MT cũ = Không dự thi, "-" trong tuần chưa chốt = vắng chốt ngay (đổi dữ liệu, chạy lặp được). */ migratePrOv1b(conn, applied);
+    /* PR-OV4a: ket_qua_huy.loai (doi_vuot | huy_luot) + dong_json — Huỷ cả lượt giữ điểm ẩn, Khôi phục lượt (chỉ thêm cột). */ migratePrOv4(conn, applied);
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());

@@ -38,19 +38,21 @@ const MAU_CHON = 'border-[var(--text)] bg-[var(--text)] font-bold text-[var(--bg
  * (điện thoại: vùng bấm 44px bằng `after:`) · còn lại là chữ. `chon` = đang được chọn (màu đảo, ✓ cuối); `chuChon` thay chữ sau `MT2 ·` bằng
  * chữ mới (vd tuần sắp xếp).
  */
-export function OMt({ v, homNay, ct = null, chon, chuChon, ghiChu, onClick, href, id }: {
+export function OMt({ v, homNay, ct = null, chon, chuChon, ghiChu, onClick, href, id, huy }: {
   v: OMtVao; homNay: string; ct?: string | null; chon?: boolean; chuChon?: string; /** Câu thêm cuối tooltip (vd "bấm để chọn đợt này cho riêng em"). */ ghiChu?: string;
   onClick?: (el: HTMLElement) => void; href?: string; id?: string;
+  /** PR-OV4a: số MT chỉ có lượt đã huỷ — `MT2 · Đã huỷ` (chữ, không chỉ màu), viền đứt, số gạch ngang. */
+  huy?: boolean;
 }) {
-  const r = oMt(v, homNay, ct);
+  const r = huy ? { ...oMt(v, homNay, ct), tuan: null, viec: 'Đã huỷ', doc: `MT${v.so}, đã huỷ`, title: `MT${v.so} đã huỷ` } : oMt(v, homNay, ct);
   const phan = chon && chuChon !== undefined ? [chuChon] : [r.tuan, r.viec].filter(Boolean);
   const tuongTac = !!(onClick || href);
   const cls = `relative inline-flex h-5 items-center gap-1 whitespace-nowrap rounded-md border px-1.5 text-[11.5px] font-semibold leading-[18px] no-underline ${
-    chon ? MAU_CHON : MAU_O_MT[r.kieu]} ${v.khongDung ? 'opacity-60' : ''} ${tuongTac ? "max-sm:after:absolute max-sm:after:-inset-y-3 max-sm:after:inset-x-0 max-sm:after:content-['']" : ''}`;
+    chon ? MAU_CHON : huy ? 'border-dashed border-muted-line bg-transparent text-muted' : MAU_O_MT[r.kieu]} ${v.khongDung ? 'opacity-60' : ''} ${tuongTac ? "max-sm:after:absolute max-sm:after:-inset-y-3 max-sm:after:inset-x-0 max-sm:after:content-['']" : ''}`;
   const ruot = (
     <>
       {!chon && r.kieu === 'dang-thi' && <span aria-hidden className="h-1.5 w-1.5 flex-none rounded-full bg-current" />}
-      <span className="font-bold tabular-nums">MT{v.so}</span>
+      <span className={`font-bold tabular-nums ${huy ? 'line-through' : ''}`}>MT{v.so}</span>
       {phan.map((x, i) => <span key={i} className="inline-flex items-center gap-1 tabular-nums"><span aria-hidden className="font-medium opacity-60">·</span>{x}</span>)}
       {chon && <span aria-hidden>✓</span>}
     </>
