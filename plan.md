@@ -172,6 +172,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 | 11/10 (mockup bản 1) | **Công việc**: panel Xác nhận nguyên nhân gom theo lớp + kỹ năng + lượt, mở rộng chứa đủ **PA** (Loại theo quy chế · Nội dung · Số buổi · Người · Ngày bắt đầu), "xác nhận cùng lúc" mặc định bật; điện thoại mở màn đầy đủ · **Hộp nhập điểm** MT: dưới tên em ghi "MT · tuần"; **W1, W2 hai hộp riêng**, nhận xét riêng, lưu một task vẫn được; "Bỏ vắng" = GV đúng kỹ năng + GVCN + QL khi tuần mới chưa có điểm; lớp thường giữ ô gõ thẳng + nút Nhận xét · **Huỷ lượt MT**: giữ PA đang chạy, **trừ PA có kết quả gần nhất "Chưa đủ dữ liệu"** (đóng cùng lượt) | OV |
 | 11/10 (mockup bản 1) | **Bảng Lộ trình tiếp theo** chia theo hướng: Chưa chọn · Lên FT · Lên {lớp kế} · **Học lại** (gồm học lại cùng trình độ và xuống lộ trình dưới) · Tạm dừng · Dừng học; **mọi bảng có ô chọn lộ trình cạnh điểm**, đổi lộ trình → em sang bảng tương ứng · không làm nút "Lộ trình" hai tab · QL chốt KQĐR → hệ quả chạy ngay; đổi lộ trình đã chốt → chuông "Cần làm" bàn giao lại · **Điểm đầu vào** hiện thành dòng mốc "Đầu vào" ở chỗ MT0 trong **bảng Điểm hồ sơ lớp FT** (chỉ để nhìn) · Hồ sơ HV: làm cả (a) lộ trình một em mở hộp Lộ trình của bảng lớp, (b) Target gộp vào Sửa thông tin (GVCN → Đề xuất sửa) · Admin xem Case/PA/Ý thức/Phân tích; TVV/CX đọc nhận xét GV · **PET/KET chưa đạt: chỉ chip SOS nhỏ**, không tự tạo Case/PA (bàn sau); không Target, không lộ trình tiếp theo; tên `{CN} PET {số}` | OV |
 | 11/10 (duyệt đặc tả) | **Deploy MỘT lần sau khi xong toàn bộ OV** (không deploy sớm sau OV-1a); lệnh chỉ đọc chạy từ máy chủ SP trên bản chính không cần deploy · 3 mục [tự quyết] của đặc tả được đồng ý (CX trừ phần GV; MT0 tạo lúc chốt; xoá SOS: Case chưa ai làm đóng, đã làm giữ + ghi "Overall đã đạt") | OV |
+| 12/10 | SOS MT chốt: hạn xác nhận **giữ `soNgayHanXacNhan`** (5 ngày, SOS 3 = 3 ngày) **tính từ ngày chốt** · **Không làm** ô "Dự kiến quay lại" ở tab Tạm dừng (mockup M2 §6) | OV-1c / — |
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
@@ -182,8 +183,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - Quyết định: mục 3 (các dòng 11/10). Thứ tự, model, prompt: mục 5, 6, 9.
 - **Tình trạng 12/10:** đã merge OV-1a, 1b, 2a, 2b, 3a, 3b, 6a. Còn: OV-4a, OV-4b, OV-6b1, OV-3c, OV-1c, OV-6b2 (kế hoạch sẵn), OV-5 (viết khi OV-4b merge).
   OV-4 và OV-6b của đặc tả **tách đôi** (mỗi nửa một vùng mã, rà riêng). Thứ tự + song song: mục 5; prompt: mục 9.3.
-- **Chờ chủ SP (hỏi 12/10):** (1) hạn xác nhận khi SOS MT chốt — giữ luật 5 ngày / SOS 3 = 3 ngày tính từ ngày chốt (khuyến nghị) hay 3 ngày mọi mức (OV-1c);
-  (2) ô "Dự kiến quay lại" ở tab Tạm dừng (mockup M2 §6, OV-2b chưa làm) — không làm (khuyến nghị) hay làm kèm nhắc QL.
+- **Chủ SP trả lời 12/10:** (1) hạn khi SOS MT chốt = luật hiện có (5 ngày, SOS 3 = 3 ngày), tính từ ngày chốt; (2) **không làm** ô "Dự kiến quay lại" (mục 3).
 
 ### Sau deploy (chờ số liệu bản chính)
 - **PR-TD4** (M): chỉ khi log `[cham]` 1–2 ngày sau deploy còn đường > 1,5 s — `/hoc-vien-lop` (`standingFor` nạp từ lượt mới nhất mỗi em, còn 78 % dòng), đường top khác theo log.
@@ -273,7 +273,7 @@ Xong: [x] kế hoạch, một dòng mục 11, CODE_MAP.md nếu thêm/xoá file.
 | **OV-4b** | `docs/superpowers/plans/2026-10-12-pr-ov4b-hop-nhap-diem.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4130/5303 | ngay |
 | **OV-6b1** | `docs/superpowers/plans/2026-10-12-pr-ov6b1-chuong-trinh-cau-hinh.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4140/5313 | ngay |
 | **OV-3c** | `docs/superpowers/plans/2026-10-12-pr-ov3c-kqdr-lop-truoc-ft.md` | Opus 5.5 · High (Sonnet 5.5 · High) | 4150/5323 | slot trống đầu tiên |
-| **OV-1c** | `docs/superpowers/plans/2026-10-12-pr-ov1c-sos-mt-chot.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4160/5333 | sau OV-4a merge + chủ SP trả lời câu hạn |
+| **OV-1c** | `docs/superpowers/plans/2026-10-12-pr-ov1c-sos-mt-chot.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4160/5333 | sau OV-4a merge |
 | **OV-6b2** | `docs/superpowers/plans/2026-10-12-pr-ov6b2-pet-ket.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4170/5343 | sau OV-6b1 merge |
 - OV-4a + OV-4b chung `MockDetailPage.tsx`, `HangLichMt.tsx`; OV-4a + OV-6b1 chung một dòng `keHoachTest.ts` → PR sau gộp main trước khi mở PR.
 - Rà sâu (mục 1.3): OV-4a, OV-4b, OV-1c, OV-6b1, OV-6b2. OV-3c rà mặc định.
