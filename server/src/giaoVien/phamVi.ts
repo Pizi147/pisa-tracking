@@ -7,7 +7,7 @@ import { forbidden, notFound } from '../util.ts';
 /**
  * Ai xem được hồ sơ GV (PR-GV Q9). Trả phạm vi chi nhánh của SỐ LIỆU: null = mọi chi nhánh. Ném 404 / 403.
  * Tệp riêng (không nằm trong hoSo.ts) để `mywork.ts` dùng được mà không vòng import.
- * GV thuần không có `meeting.view` (seed/data.ts) nên `scopeFor` trả `none` → chỉ xem được chính mình.
+ * GV thuần (và CX, TVV — PR-OV2a) không có `analysis.view_teacher` (seed/data.ts) nên `scopeFor` trả `none` → chỉ xem được chính mình.
  */
 export function phamViHoSoGv(p: Principal, gvId: number): { branchIds: number[] | null; laChinhMinh: boolean } {
   const conn = db();
@@ -17,7 +17,7 @@ export function phamViHoSoGv(p: Principal, gvId: number): { branchIds: number[] 
   if (!conn.prepare(
     `SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = ? AND ur.status = 'active' AND r.key = 'teacher' LIMIT 1`,
   ).get(gvId)) throw notFound('Không tìm thấy giáo viên này.');
-  const scope = scopeFor(p, PERMISSIONS.MEETING_VIEW);
+  const scope = scopeFor(p, PERMISSIONS.ANALYSIS_VIEW_TEACHER);
   if (scope.none) throw forbidden('Bạn chỉ xem được hồ sơ giáo viên của chính mình.');
   if (scope.all) return { branchIds: null, laChinhMinh: false };
   if (!scope.branchIds.length) throw forbidden('Giáo viên này không thuộc chi nhánh bạn quản lý.');

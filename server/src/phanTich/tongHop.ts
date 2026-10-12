@@ -95,7 +95,7 @@ const coDotMoi = (): CoDot => ({ giua: false, cuoi: false });
 export type FilterTongHop = { branchId?: number | null; ct: ChuongTrinh; soTuan: number; classId?: number | null; theo: TheoDong };
 
 function tinh(p: Principal, f: FilterTongHop) {
-  const scope = scopeFor(p, PERMISSIONS.MEETING_VIEW);
+  const scope = scopeFor(p, PERMISSIONS.ANALYSIS_VIEW);
   if (scope.none) throw forbidden('Phân tích dành cho Quản lý.');
   const conn = db();
   const today = demoToday();

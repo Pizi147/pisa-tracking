@@ -1,3 +1,4 @@
+import { buildOv2aDemo } from './ov2aSeed.ts';
 import crypto from 'node:crypto';
 import { db, recreateSchema, tx } from '../db.ts';
 import {
@@ -280,6 +281,8 @@ export function runSeed() {
     dienNguocBanChup(conn);
     /* PR-Pb2-b: bù ngày nhập đầu ô điểm + hạn xử lý chốt / ngày phản hồi vi phạm cho dữ liệu dựng bằng SQL. LUÔN CUỐI. */
     buNgayPb2b(conn);
+    /* PR-OV2a: tài khoản Admin · TVV · CX + em của TVV — CUỐI CÙNG để id người dùng cũ không đổi. */
+    const ov2a = buildOv2aDemo(conn);
 
     return {
       'Chi nhánh': BRANCHES.length,
@@ -288,6 +291,7 @@ export function runSeed() {
       'Lớp': CLASSES.length,
       'Người dùng': userSeq,
       'Giáo viên': TEACHERS.length,
+      'Học viên của TVV demo (PR-OV2a)': ov2a.soHv,
       'Học viên': counts.students,
       'Lộ trình': counts.cycles,
       'Lượt đánh giá': counts.attempts,

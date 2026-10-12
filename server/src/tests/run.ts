@@ -9267,6 +9267,9 @@ await runPrOv1aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 // ==================================================================== PR-OV3a (hồ sơ lớp: ⋯, Thông tin lớp, Tổng hợp, Đầu vào FT)
 const { runPrOv3aTests } = await import('./prOv3a.tests.ts');
 await runPrOv3aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-OV2a (vai TVV / CX / Admin, quyền, đổi góc nhìn)
+const { runPrOv2aTests } = await import('./prOv2a.tests.ts');
+await runPrOv2aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV3b (Lộ trình nháp / chốt, hạn, bàn giao làm lại, Kết quả đầu ra)
 const { runPrOv3bTests } = await import('./prOv3b.tests.ts');
 await runPrOv3bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);

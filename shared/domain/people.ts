@@ -3,21 +3,29 @@
 // ---------------------------------------------------------------- Quyền
 
 /*
- * BA nhóm tài khoản giao được.
+ * SÁU nhóm tài khoản giao được.
  *
  * `system_admin` là người quản trị PHẦN MỀM (tài khoản, vai trò, cấu hình) — giữ nguyên.
  * `manager` điều hành chuyên môn của chi nhánh. `teacher` là GVCN và/hoặc GVBM.
+ * PR-OV2a (đặc tả OV mục 2): `office_admin` = "Admin" lo Mock Test của chi nhánh (xếp/dời lịch, sửa điểm có lý do; KHÔNG huỷ /
+ * khôi phục lượt, không Target, không lộ trình) · `consultant` = Tư vấn viên (xem HV chi nhánh, mặc định "HV của tôi") · `cx` = CX
+ * (như TVV nhưng mọi chi nhánh, không phần giáo viên). TVV, CX, Admin chỉ sửa được THÔNG TIN HV (`student.edit_info`).
  *
- * ADMIN CHI NHÁNH ĐÃ BỎ (owner chốt sau PR15). Nhân sự văn phòng từng giữ vai này làm
- * những việc mà người quyết định thật sự là Quản lý hoặc GVCN — huỷ lượt MT, bỏ một kỹ
- * năng, đặt hạn nhập điểm riêng — nên một vai trung gian chỉ làm chậm việc và làm mờ
- * trách nhiệm. Nhiệm vụ đã chuyển về Quản lý và GVCN theo ma trận nghiệp vụ.
+ * Vai "Admin" mới KHÁC vai `branch_admin` cũ (Admin chi nhánh, đã bỏ sau PR15 — từng huỷ lượt MT, bỏ kỹ năng, đặt hạn nhập điểm):
+ * mã cũ giữ để đọc lịch sử, không dùng lại.
  */
-export const ROLES = ['system_admin', 'manager', 'teacher'] as const;
+export const ROLES = ['system_admin', 'manager', 'teacher', 'office_admin', 'consultant', 'cx'] as const;
 export type Role = (typeof ROLES)[number];
 export const ROLE_LABEL: Record<Role, string> = {
   system_admin: 'Quản trị hệ thống', manager: 'Quản lý', teacher: 'Giáo viên',
+  office_admin: 'Admin', consultant: 'Tư vấn viên', cx: 'CX',
 };
+/** PR-OV2a: câu 403 khi Admin / TVV / CX gửi trường ngoài "thông tin HV". */
+export const CHI_SUA_THONG_TIN = 'Bạn chỉ sửa được thông tin học viên: họ tên, ngày sinh, email, TVV, dự kiến thi, điểm đầu vào.';
+/** Vai đổi được góc nhìn (đặc tả OV mục 2): QL hoặc Quản trị nắm từ hai vai trở lên. */
+export function coTheDoiGocNhin(roleKeys: readonly string[]): boolean {
+  return roleKeys.length >= 2 && roleKeys.some((k) => k === 'manager' || k === 'system_admin');
+}
 
 /**
  * VAI TRÒ ĐÃ BỎ — chỉ để ĐỌC lịch sử, không bao giờ để giao mới.
@@ -131,6 +139,16 @@ export const PERMISSIONS = {
   // --- Hồ sơ và vận hành ---
   STUDENT_VIEW: 'student.view',
   STUDENT_EDIT: 'student.edit',
+  /** PR-OV2a: sửa THÔNG TIN HV — họ tên, ngày sinh, email, TVV, dự kiến thi, điểm đầu vào. Không ghi chú, không lộ trình, không chuyển lớp. */
+  STUDENT_EDIT_INFO: 'student.edit_info',
+  /** PR-OV2a: vào Test (Lịch Test, Điểm theo lớp, Kế hoạch Test). Xem điểm trong hồ sơ vẫn là `attempt.view`. */
+  TEST_VIEW: 'test.view',
+  /** PR-OV2a: vào Công việc. */
+  WORK_VIEW: 'work.view',
+  /** PR-OV2a: Tổng quan số liệu + Phân tích (trước đây đi chung `meeting.view`). */
+  ANALYSIS_VIEW: 'analysis.view',
+  /** PR-OV2a: phần giáo viên — Phân tích › Theo giáo viên, hồ sơ giáo viên của người khác. CX không có. */
+  ANALYSIS_VIEW_TEACHER: 'analysis.view_teacher',
   MEETING_VIEW: 'meeting.view',
   MEETING_EDIT: 'meeting.edit',
   ADMIN_CONFIG: 'admin.config',
@@ -167,6 +185,11 @@ export const PERMISSION_LABEL: Record<string, string> = {
   'discipline.stats': 'Xem thống kê Ý thức cả chi nhánh',
   'student.view': 'Xem hồ sơ học viên',
   'student.edit': 'Sửa hồ sơ học viên',
+  'student.edit_info': 'Sửa thông tin học viên',
+  'test.view': 'Vào Test',
+  'work.view': 'Vào Công việc',
+  'analysis.view': 'Xem Tổng quan số liệu và Phân tích',
+  'analysis.view_teacher': 'Xem phần giáo viên (Phân tích theo GV, hồ sơ GV)',
   'meeting.view': 'Xem tiến trình công việc',
   'meeting.edit': 'Cập nhật báo cáo và ghi chú',
   'admin.config': 'Quản trị hệ thống',

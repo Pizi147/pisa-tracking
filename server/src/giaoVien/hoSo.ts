@@ -318,7 +318,7 @@ export type BangGv = { cn: number; tenChiNhanh: string; ct: ChuongTrinh; hang: H
  * của hồ sơ người đó (`/giao-vien/:id/o?cot=…&cn=&ct=` cho ra đúng danh sách) — cùng `caseGvTuRows`, cùng khung lớp.
  */
 export function bangGvChiNhanh(p: Principal, q: { cn?: number | null; ct?: string | null }): BangGv {
-  const scope = scopeFor(p, PERMISSIONS.MEETING_VIEW);
+  const scope = scopeFor(p, PERMISSIONS.ANALYSIS_VIEW_TEACHER);
   if (scope.none) throw forbidden('Chỉ Quản lý và Quản trị hệ thống xem được bảng này.');
   const cn = q.cn ?? (!scope.all && scope.branchIds.length === 1 ? scope.branchIds[0] : null);
   if (cn === null) throw badRequest('Chọn một chi nhánh.');

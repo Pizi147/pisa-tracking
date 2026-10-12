@@ -35,6 +35,7 @@ export const DUONG_DO: MucDo[] = [
     maChuDich: { GVCN: 403, GVBM: 403 },
   },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/highlights' },
+  { trang: 'Tổng quan TVV', vai: ['QL'], url: '/tong-quan/hv-cua-toi' },   // PR-OV2a: QL không có em nào → trả rỗng, vẫn đo câu SQL
   {
     trang: 'Tổng quan QL', vai: ['QL', 'QT', 'GVCN'], url: '/tong-quan/diem-chu-y?ct=ft',   // PR-VAI-a: tách khỏi /tong-quan/quan-ly
     maChuDich: { GVCN: 403 },
@@ -799,6 +800,11 @@ export const TAI_TRANG: Record<string, { vai: Vai; urls: string[]; tran: number 
   'GV trang Tổng quan': {
     vai: 'GVCN', tran: 205,   // đo 157 (trước PR ≈ 157 + 2 × 66 = 289)
     urls: ['/demo/session', '/my-work', '/notifications', '/ref/classes', '/tong-quan/lop-toi-day?ct=ft', '/yeu-cau/dem'],
+  },
+  /* PR-OV2a: Tổng quan TVV — đo bằng QL (bộ đo chưa có vai TVV); QL không có em nào nên đo phần khung + câu học viên. */
+  'TVV trang Tổng quan': {
+    vai: 'QL', tran: 120,
+    urls: ['/demo/session', '/notifications', '/ref/classes', '/tong-quan/hv-cua-toi'],
   },
   'QL trang Tổng quan': {
     vai: 'QL', tran: 450,   // PR-Dọn (9e): đủ 15 GET lúc mở trang → đo 346 câu (trước chỉ 6 GET, đo 126) — max(346 + 10, ⌈346 × 1,3⌉)

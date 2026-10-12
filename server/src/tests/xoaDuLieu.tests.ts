@@ -600,12 +600,12 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     return { id: userId, email, ten: `Thu Xoa ${ten} ${tkSeq}` };
   };
 
-  check('PR-XOA T1 · COT_TRO_TAI_KHOAN (85 — OV-3b thêm 2, PR-YT4 thêm 3, PR-HSM thêm 1, PR-LT2b thêm 2, PR-CT thêm 4, PR-MTa thêm 2, PR-LUI-a2 thêm 1) BẰNG ĐÚNG tập cột FK trỏ users; đúng 9 cột thiết lập', () => {
+  check('PR-XOA T1 · COT_TRO_TAI_KHOAN (86 — OV-3b thêm 2, PR-YT4 thêm 3, PR-HSM thêm 1, PR-LT2b thêm 2, PR-CT thêm 4, PR-MTa thêm 2, PR-LUI-a2 thêm 1, PR-OV2a thêm 1) BẰNG ĐÚNG tập cột FK trỏ users; đúng 9 cột thiết lập', () => {
     const coDinh = xoaTK.COT_TRO_TAI_KHOAN.map((x) => `${x.bang}.${x.cot}`);
     const thieu = COT_USERS.filter((k) => !coDinh.includes(k));
     const thua = coDinh.filter((k) => !COT_USERS.includes(k));
     assert(!thieu.length, thieu.map((k) => `Phân loại cột ${k} (dấu vết hay thiết lập)`).join('; '));
-    assert(!thua.length && coDinh.length === 85 && new Set(coDinh).size === 85, `thừa/trùng: ${thua.join(', ')} · ${coDinh.length}`);
+    assert(!thua.length && coDinh.length === 86 && new Set(coDinh).size === 86, `thừa/trùng: ${thua.join(', ')} · ${coDinh.length}`);
     const tl = xoaTK.COT_TRO_TAI_KHOAN.filter((x) => x.loai === 'thiet_lap').map((x) => `${x.bang}.${x.cot}`).sort();
     assert(JSON.stringify(tl) === JSON.stringify(['demo_sessions.user_id', 'notifications.user_id', 'task_followers.user_id', 'teacher_assignments.user_id',
       'user_emails.user_id', 'user_permissions.user_id', 'user_prefs.user_id', 'user_roles.user_id', 'user_skills.user_id']), tl.join());

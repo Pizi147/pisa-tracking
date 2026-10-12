@@ -9,6 +9,7 @@
  * `myWork` MỘT lần mỗi người được nhắc (trong `trongBoNho`), ghi chuông + nhật ký bằng một câu nhiều dòng trong một `tx`,
  * và dừng trước khi Netlify cắt hàm (10 s): người chưa kịp xử lý → lỗi riêng 503, phần đã xử lý vẫn ghi.
  */
+import { phamViXemViec } from './xemViec.ts';
 import { chenNhieuDong, db, tx } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import { HttpError, badRequest, forbidden, nowIso } from '../util.ts';
@@ -66,7 +67,8 @@ export type KetQuaNhac = {
 };
 
 export function nhacViecNhieu(p: Principal, ds: readonly ViecCanNhac[], o: { boQuaDaNhacTruoc: boolean }): KetQuaNhac {
-  if (!can(p, PERMISSIONS.CASE_APPROVE, { anyScope: true })) throw forbidden('Bạn chỉ xem được việc của mình.');
+  const xemViec = phamViXemViec(p);
+  if (!xemViec) throw forbidden('Bạn chỉ xem được việc của mình.');
   const kq: KetQuaNhac = { ok: [], loi: [] };
   const loi = (v: ViecCanNhac, ma: number, chu: string) => kq.loi.push({ the: v.the, key: v.key, loi: chu, ma });
   /* Lỗi nghiệp vụ (HttpError) → lỗi riêng việc đó; lỗi lạ → ném cả lô (chưa ghi gì: ghi chỉ ở cuối, trong một `tx`). */
@@ -75,6 +77,10 @@ export function nhacViecNhieu(p: Principal, ds: readonly ViecCanNhac[], o: { boQ
   const conLai: ViecCanNhac[] = [];
   for (const v of ds) {
     if (v.ownerId === p.userId) loi(v, 403, 'Không tự nhắc chính mình.');
+    /* PR-OV2a: Admin chỉ nhắc việc Chấm điểm. */
+    else if (xemViec === 'cham-diem' && (v.ngoaiMyWork || [...nhomCuaKhoa([khoaChuan(v.key)]) ?? []].join() !== 'score')) {
+      loi(v, 403, 'Bạn chỉ nhắc được việc chấm điểm.');
+    }
     else conLai.push({ ...v, key: khoaChuan(v.key) });
   }
   if (!conLai.length) return kq;

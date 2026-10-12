@@ -51,9 +51,14 @@ function phamViTrang(p: Principal, f: { branchId?: number | null; phamVi?: strin
   const conn = db();
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   const phanCong = p.assignments.filter((a) => a.effectiveFrom <= today && (!a.effectiveTo || a.effectiveTo >= today));
+  /* PR-OV2a: lớp có em mình phụ trách tư vấn (chỉ vai TVV được gán em) — rỗng thì không có lựa chọn "HV của tôi". */
+  const lopCuaToi = new Set(!p.roleKeys.includes('consultant') ? [] : (conn.prepare(
+    `SELECT DISTINCT e.class_id FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
+      WHERE s.consultant_user_id = ? AND s.archived_at IS NULL`,
+  ).all(p.userId) as any[]).map((r) => r.class_id as number));
   const coThe = phamViCoThe({
     dayLop: phanCong.length > 0, capChiNhanh: scope.branchIds.length > 0,
-    toanHeThong: scope.all, soChiNhanh: scope.branchIds.length,
+    toanHeThong: scope.all, soChiNhanh: scope.branchIds.length, cuaToi: lopCuaToi.size > 0,
   });
   /* Chi nhánh người xem CÓ THỂ THẤY — dùng lại cho cả "chọn chi nhánh đang xem" (dưới) lẫn "+ Lớp mới" (điểm a rà soát cuối). */
   const duocXemChiNhanh = scope.all
@@ -70,7 +75,7 @@ function phamViTrang(p: Principal, f: { branchId?: number | null; phamVi?: strin
     const goiY = goiYChiNhanh(p, today);
     chiNhanh = hopLe(f.branchId) ? f.branchId : hopLe(f.cnNho) ? f.cnNho : hopLe(goiY) ? goiY : duocXemChiNhanh[0] ?? null;
   }
-  return { coThe, dangDung, chiNhanh, phanCong };
+  return { coThe, dangDung, chiNhanh, phanCong, lopCuaToi };
 }
 
 /**
@@ -89,7 +94,7 @@ export function danhSachHocVienLop(
 ): TrangHocVienLop {
   const today = demoToday();
   const conn = db();
-  const { coThe, dangDung, chiNhanh, phanCong } = phamViTrang(p, f, today);
+  const { coThe, dangDung, chiNhanh, phanCong, lopCuaToi } = phamViTrang(p, f, today);
   /*
    * "+ LỚP MỚI" đầu trang: không gắn với lớp nào — PR-QU (B) kiểm `CLASS_CREATE` theo TỪNG chi nhánh đang hoạt động (không chỉ chi nhánh
    * người xem thấy được: GV được cấp riêng `class.create` ở một chi nhánh vẫn chỉ "thấy" lớp mình dạy).
@@ -107,7 +112,8 @@ export function danhSachHocVienLop(
   });
   if (base.scopeEmpty) return { rows: [], scopeEmpty: true, phamVi, dem: demRong(), hocVien: [], coTheTaoLop, demLuuTru };
   const lopToi = new Set(phanCong.map((a) => a.classId));
-  const lops = dangDung === 'toi' ? base.rows.filter((r) => lopToi.has(r.id)) : base.rows;
+  const lops = dangDung === 'toi' ? base.rows.filter((r) => lopToi.has(r.id))
+    : dangDung === 'cua-toi' ? base.rows.filter((r) => lopCuaToi.has(r.id)) : base.rows;
   if (!lops.length) return { rows: [], scopeEmpty: false, phamVi, dem: demRong(), hocVien: [], coTheTaoLop, demLuuTru };
 
   const ids = lops.map((r) => r.id);
@@ -140,8 +146,8 @@ export function danhSachHocVienLop(
        FROM enrollments e
        JOIN students s ON s.id = e.student_id
        LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
-      WHERE e.class_id IN (${ph}) AND e.status = 'active' AND s.archived_at IS NULL`,
-  ).all(mondayOfDate(demoToday()), ...ids) as any[];
+      WHERE e.class_id IN (${ph}) AND e.status = 'active' AND s.archived_at IS NULL${dangDung === 'cua-toi' ? ' AND s.consultant_user_id = ?' : ''}`,
+  ).all(mondayOfDate(demoToday()), ...ids, ...(dangDung === 'cua-toi' ? [p.userId] : [])) as any[];
   const lopCuaHv = new Map<number, number>(hv.map((h) => [h.id as number, h.class_id as number]));
 
   /*

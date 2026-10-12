@@ -103,7 +103,9 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     eq(d.phamViMacDinh(['toi', 'chi-nhanh']), 'toi', 'Có dạy → Lớp tôi dạy');
     eq(d.phamViMacDinh(['chi-nhanh', 'tat-ca']), 'tat-ca', 'Quản trị → Tất cả');
     eq(d.phamViMacDinh(['chi-nhanh']), 'chi-nhanh', 'QL một chi nhánh');
-    eq(d.PHAM_VI_NHAN, { toi: 'Lớp tôi dạy', 'chi-nhanh': 'Chi nhánh', 'tat-ca': 'Tất cả' }, 'Nhãn');
+    eq(d.phamViCoThe({ dayLop: false, capChiNhanh: true, toanHeThong: false, soChiNhanh: 1, cuaToi: true }), ['cua-toi', 'chi-nhanh'], 'TVV có em (PR-OV2a)');
+    eq(d.phamViMacDinh(['cua-toi', 'chi-nhanh']), 'cua-toi', 'TVV → HV của tôi');
+    eq(d.PHAM_VI_NHAN, { 'cua-toi': 'HV của tôi', toi: 'Lớp tôi dạy', 'chi-nhanh': 'Chi nhánh', 'tat-ca': 'Tất cả' }, 'Nhãn');
   });
 
   check('PR-Qa · §3.6 Kết quả gần nhất FT: Overall to + "Thiếu x" + chip SOS; dòng phụ đợt · kỳ vọng · kỹ năng thiếu', () => {

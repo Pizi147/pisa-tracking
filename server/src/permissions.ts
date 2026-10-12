@@ -37,6 +37,10 @@ export type Principal = {
   grants: Grant[];
   roleKeys: string[];
   assignments: Assignment[];
+  /** PR-OV2a: vai đang chọn khi đổi góc nhìn (null/không có = làm việc bằng mọi vai). */
+  gocNhin?: string | null;
+  /** PR-OV2a: mọi vai tài khoản đang nắm — khác `roleKeys` khi đang ở một góc nhìn. */
+  vaiGoc?: string[];
 };
 
 export type Ctx = {
@@ -398,6 +402,7 @@ function teacherAllows(p: Principal, permission: string, ctx: Ctx): boolean {
      * riêng và vẫn theo phân công kỹ năng / vai Quản lý như cũ.
      */
     case PERMISSIONS.STUDENT_EDIT:
+    case PERMISSIONS.STUDENT_EDIT_INFO:
       return ctx.anyScope === true || coreDangHoc(p, ctx);
 
     /*

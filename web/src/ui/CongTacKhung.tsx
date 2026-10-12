@@ -11,8 +11,11 @@ type Trang = 'lich-test' | 'ke-hoach-test' | 'diem-theo-lop' | 'cong-viec' | 'ho
 
 /** Người đang đăng nhập — `SessionProvider` đặt mỗi khi phiên đổi; một chỗ cho mọi trang dùng công tắc. */
 let nguoiDung: number | null = null;
-export const datNguoiDungKhung = (id: number | null) => { nguoiDung = id; };
-const khoa = (trang: Trang) => `pisa.khung.${trang}${nguoiDung ? `.u${nguoiDung}` : ''}`;
+/** PR-OV2a: bộ lọc nhớ THEO TỪNG VAI khi đổi góc nhìn — hậu tố `.v{vai}` cho mọi khoá nhớ theo người (khung, chi nhánh, Lịch Test). */
+let hauToVai = '';
+export const datNguoiDungKhung = (id: number | null, gocNhin: string | null = null) => { nguoiDung = id; hauToVai = gocNhin ? `.v${gocNhin}` : ''; };
+export const hauToGocNhin = () => hauToVai;
+const khoa = (trang: Trang) => `pisa.khung.${trang}${nguoiDung ? `.u${nguoiDung}` : ''}${hauToVai}`;
 const hopLe = (v: unknown): v is KhungLoc => v === 'ft' || v === 'thuong' || v === 'tat-ca';
 
 export function khungDaNho(trang: Trang): KhungLoc | null {
