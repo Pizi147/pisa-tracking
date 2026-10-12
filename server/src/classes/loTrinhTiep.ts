@@ -1,10 +1,11 @@
 import { chenNhieuDong, db, tx } from '../db.ts';
 import { HV_DANG_HOC_SQL, dongHocVien } from '../students/tamDung.ts';
 import {
-  NORMAL_LADDER, PERMISSIONS, chuanHoaHuong, nhanHuong, nhanTiepTheo, soSanhLop, trongHaiTuanCuoi,
-  type Huong, type ProgrammeCode,
+  NORMAL_LADDER, PERMISSIONS, canLopDich, maHocLai, chuanHoaHuong, kiemDongChuyenTiep, nhanHuong, nhanTiepTheo, soSanhLop, tuanHopLe,
+  type Huong, type HuongLenh, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { badRequest, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
+import { writeAudit } from '../platform/audit.ts';
 import { demoToday } from '../demoConfig.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { classProgress } from './schedule.ts';
@@ -26,6 +27,7 @@ type BanGhiLoTrinh = {
   /** PR-LCb: Hướng GVCN đề xuất (cột "Gợi ý · GVCN") — quyết định của Quản lý không ghi đè; null = GVCN chưa ghi. */
   huongGvcn: Huong | null;
 };
+const CHI_QL = 'Chỉ Quản lý ghi lộ trình tiếp theo.';
 
 function enrollmentDangHoc(studentId: number): any {
   return db()
@@ -62,7 +64,8 @@ export function layLoTrinhTiep(p: Principal, studentId: number) {
   const banGhi = banGhiRowToView(
     conn.prepare('SELECT * FROM lo_trinh_tiep_theo WHERE student_id = ? AND class_id = ?').get(studentId, enr.class_id),
   );
-  const coTheGhi = laLopThuong && can(p, PERMISSIONS.STUDENT_EDIT, { classId: enr.class_id });
+  /* OV-3b: GVCN thôi ghi Hướng — chỉ Quản lý (`coTheRaLenh`). */
+  const coTheGhi = laLopThuong && coTheRaLenh(p, enr.class_id);
 
   const lopDuKien: LopDuKien[] = laLopThuong
     ? (conn
@@ -134,8 +137,8 @@ function kiemDong(studentId: number, enr: LopNguon, input: GhiVao, lopDuKien: Ma
     if (!lop || (lop.branch_id !== enr.branch_id && lopDuKienId !== lopCu)) throw badRequest('Không tìm thấy lớp dự kiến.');
     const maKe = NORMAL_LADDER[(enr.programme_code ?? null) as ProgrammeCode] ?? null;
     if (huong === 'len_lop' && (lop.is_fast_track || lop.programme_code !== maKe)) throw badRequest('Lớp dự kiến phải là chương trình kế tiếp.');
-    if (huong === 'hoc_lai' && (lop.is_fast_track || lop.programme_code !== enr.programme_code)) {
-      throw badRequest('Lớp dự kiến phải cùng chương trình để học lại.');
+    if (huong === 'hoc_lai' && (lop.is_fast_track || !maHocLai(enr.programme_code as ProgrammeCode).includes(lop.programme_code))) {
+      throw badRequest('Lớp dự kiến phải cùng hoặc thấp hơn chương trình đang học để học lại.');
     }
     if (huong === 'fast_track' && !lop.is_fast_track) throw badRequest('Lớp dự kiến phải là Fast Track.');
   }
@@ -150,32 +153,20 @@ function kiemDong(studentId: number, enr: LopNguon, input: GhiVao, lopDuKien: Ma
  * `tuLenh` (PR-LCa, LCa-1): ghi theo quyết định của Quản lý — map em → Hướng LTT trước đó (không có dòng → không có khoá) + hướng đó có
  * phải của GVCN không (R9: đã là quyết định `cho` của QL thì không). Khi đó Target, ghi chú, tháng thi, ngày xem lại trống thì GIỮ cái đã
  * lưu (chủ sản phẩm 08/10: lệnh hướng khác không xoá Target GVCN ghi; thay R7), và chỉ em ĐỔI hướng mới có dòng Hành trình "QL quyết: …"
- * (ra lệnh lại / migrate không nhân đôi).
- * PR-LCb: `daQuyet` = em đã có quyết định `cho` (từ `chanQlDaQuyet`). Đường KHÔNG từ lệnh, người ghi KHÔNG ra lệnh được (GVCN) → `huong_gvcn`
- * = Hướng ghi, trừ em đã có quyết định (GVCN chỉ sửa ghi chú). Đường từ lệnh không có cột này (migrate PR-LC chạy trước khi cột có) và
- * "Lưu hướng" của Quản lý giữ nguyên `huong_gvcn`. Rà cuối m1: GVCN gửi lại ĐÚNG Hướng đang lưu (vd của QL, chỉ sửa ghi chú) → giữ `huong_gvcn`
- * cũ (vế SET đọc dòng cũ), không biến Hướng của QL thành đề xuất GVCN.
+ * (ra lệnh lại / migrate không nhân đôi). OV-3b: chỉ Quản lý ghi — `huong_gvcn` giữ để đọc lịch sử, không ghi nữa.
  */
-function ghiCacDong(p: Principal, dongs: readonly DongGhi[], tuLenh?: ReadonlyMap<number, { huong: Huong; cuaGvcn: boolean }>, daQuyet?: ReadonlySet<number>): void {
+function ghiCacDong(p: Principal, dongs: readonly DongGhi[], tuLenh?: ReadonlyMap<number, { huong: Huong; cuaGvcn: boolean }>): void {
   const now = nowIso();
   const homNay = demoToday();
   const giu = (cot: string) => tuLenh ? `COALESCE(excluded.${cot}, lo_trinh_tiep_theo.${cot})` : `excluded.${cot}`;
-  const raLenhDuoc = new Map<number, boolean>();
-  const laGvcn = (classId: number) => {
-    if (!raLenhDuoc.has(classId)) raLenhDuoc.set(classId, coTheRaLenh(p, classId));
-    return !raLenhDuoc.get(classId);
-  };
-  const gvcn = (d: DongGhi) => (laGvcn(d.classId) && !daQuyet?.has(d.studentId) ? d.huong : null);
   chenNhieuDong(
     `INSERT INTO lo_trinh_tiep_theo
-       (student_id, class_id, huong, lop_du_kien_id, muc_tieu, thang_thi, ghi_chu, ngay_xem_lai, updated_by, created_at, updated_at${tuLenh ? '' : ', huong_gvcn'})`,
-    dongs.map((d) => [d.studentId, d.classId, d.huong, d.lopDuKienId, d.mucTieu, d.thangThi, d.ghiChu, d.ngayXemLai, p.userId, now, now,
-      ...(tuLenh ? [] : [gvcn(d)])]),
+       (student_id, class_id, huong, lop_du_kien_id, muc_tieu, thang_thi, ghi_chu, ngay_xem_lai, updated_by, created_at, updated_at)`,
+    dongs.map((d) => [d.studentId, d.classId, d.huong, d.lopDuKienId, d.mucTieu, d.thangThi, d.ghiChu, d.ngayXemLai, p.userId, now, now]),
     ` ON CONFLICT(student_id, class_id) DO UPDATE SET
        huong = excluded.huong, lop_du_kien_id = excluded.lop_du_kien_id, muc_tieu = ${giu('muc_tieu')},
        thang_thi = ${giu('thang_thi')}, ghi_chu = ${giu('ghi_chu')}, ngay_xem_lai = ${giu('ngay_xem_lai')}, da_ap_dung_luc = NULL,
-       ${tuLenh ? '' : `huong_gvcn = CASE WHEN excluded.huong = lo_trinh_tiep_theo.huong THEN lo_trinh_tiep_theo.huong_gvcn
-         ELSE COALESCE(excluded.huong_gvcn, lo_trinh_tiep_theo.huong_gvcn) END, `}updated_by = excluded.updated_by, updated_at = excluded.updated_at`,
+       updated_by = excluded.updated_by, updated_at = excluded.updated_at`,
   );
   const nhan = (d: DongGhi, h: Huong) => nhanHuong(h, { ma: d.ma, maKe: NORMAL_LADDER[d.ma as ProgrammeCode] ?? null });
   const nhatKy = tuLenh ? dongs.filter((d) => tuLenh.get(d.studentId)?.huong !== d.huong) : dongs;
@@ -218,7 +209,7 @@ export function dongBoTuLenh(p: Principal, hang: readonly {
  * cùng Hướng (sửa ghi chú) được. R8 + R11: không ai (GVCN hay Quản lý) đổi Target khác Target của quyết định Lên FT (KCK = trống); gửi lại
  * đúng Target đó được. Quản lý đổi Hướng / Target bằng cách sửa quyết định. MỘT câu cho cả lô. `ten`: có → lỗi nêu tên em (ghi cả lớp).
  */
-function chanQlDaQuyet(classId: number, dongs: readonly DongGhi[], ten?: (sid: number) => string): Set<number> {
+function chanQlDaQuyet(classId: number, dongs: readonly DongGhi[], ten?: (sid: number) => string): void {
   const lenh = new Map((db().prepare(
     `SELECT l.student_id, l.huong, l.muc_tieu, l.khong_cam_ket, t.muc_tieu AS muc_tieu_ltt FROM lenh_chuyen_lop l
        LEFT JOIN lo_trinh_tiep_theo t ON t.student_id = l.student_id AND t.class_id = l.lop_nguon_id
@@ -235,8 +226,6 @@ function chanQlDaQuyet(classId: number, dongs: readonly DongGhi[], ten?: (sid: n
       throw conflict(`${ten ? `${ten(d.studentId)}: ` : ''}Quản lý đã quyết.`, { studentId: d.studentId });
     }
   }
-  /* PR-LCb: em đã có quyết định → `ghiCacDong` giữ `huong_gvcn` cũ. */
-  return new Set(lenh.keys());
 }
 
 /** PUT /students/:id/lo-trinh-tiep (STUDENT_EDIT ở lớp đang học). */
@@ -246,11 +235,11 @@ export function ghiLoTrinhTiep(p: Principal, studentId: number, input: GhiVao) {
   if (!s) throw notFound('Không tìm thấy học viên');
   const enr = enrollmentDangHoc(studentId);
   if (!enr) throw badRequest('Học viên không đang học lớp nào.');
-  require_(p, PERMISSIONS.STUDENT_EDIT, { classId: enr.class_id }, 'Bạn không có quyền ghi lộ trình tiếp theo cho học viên này.');
+  if (!coTheRaLenh(p, enr.class_id)) throw forbidden(CHI_QL);
   if (enr.is_fast_track) throw badRequest('Lộ trình tiếp theo chỉ áp dụng cho lớp thường.');
   const cu = conn.prepare('SELECT ngay_xem_lai, lop_du_kien_id FROM lo_trinh_tiep_theo WHERE student_id = ? AND class_id = ?').get(studentId, enr.class_id) as any;
   const dong = kiemDong(studentId, enr, input, docLopDuKien([input.lopDuKienId]), cu?.ngay_xem_lai ?? null, cu?.lop_du_kien_id ?? null);
-  tx(() => ghiCacDong(p, [dong], undefined, chanQlDaQuyet(enr.class_id, [dong])));
+  tx(() => { chanQlDaQuyet(enr.class_id, [dong]); ghiCacDong(p, [dong]); });
   return layLoTrinhTiep(p, studentId);
 }
 
@@ -286,7 +275,7 @@ export function layLoTrinhTiepCaLop(p: Principal, classId: number) {
   return {
     /** PR-MT0: `tuanFinal` cho thanh đầu `{lớp} · {n} em · Final W4 OCT`. */
     lop: { id: classId, code: cls.code as string, ma, maKe, tuanFinal: classProgress(classId).finalWeekStart ?? null },
-    coTheGhi: can(p, PERMISSIONS.STUDENT_EDIT, { classId }),
+    coTheGhi: coTheRaLenh(p, classId),
     toiDa: GHI_CA_LOP_TOI_DA,
     hocVien: em.map((r) => ({
       id: r.id as number, ten: r.full_name as string, ma: r.student_code as string,
@@ -303,7 +292,7 @@ export function layLoTrinhTiepCaLop(p: Principal, classId: number) {
 export function ghiLoTrinhTiepCaLop(p: Principal, classId: number, body: { items?: unknown }): { daLuu: number } {
   const conn = db();
   lopThuongCua(classId);
-  require_(p, PERMISSIONS.STUDENT_EDIT, { classId }, 'Bạn không có quyền ghi lộ trình tiếp theo cho lớp này.');
+  if (!coTheRaLenh(p, classId)) throw forbidden(CHI_QL);
   const items = body?.items;
   if (!Array.isArray(items) || !items.length) throw badRequest('Chưa có em nào để lưu.');
   if (items.length > GHI_CA_LOP_TOI_DA) throw badRequest(`Mỗi lần lưu tối đa ${GHI_CA_LOP_TOI_DA} em.`);
@@ -339,7 +328,7 @@ export function ghiLoTrinhTiepCaLop(p: Principal, classId: number, body: { items
     try { return kiemDong(sid, em.get(sid), input, lopDuKien, cu?.ngayXemLai ?? null, cu?.lopDuKienId ?? null); }
     catch (e: any) { throw badRequest(`${em.get(sid).full_name}: ${e.message}`, { studentId: sid }); }
   });
-  tx(() => ghiCacDong(p, dongs, undefined, chanQlDaQuyet(classId, dongs, (sid) => em.get(sid).full_name)));
+  tx(() => { chanQlDaQuyet(classId, dongs, (sid) => em.get(sid).full_name); ghiCacDong(p, dongs); });
   return { daLuu: items.length };
 }
 
@@ -362,7 +351,7 @@ export function tiepTheoTheoHocVien(classIds: number[]): Map<number, BanGhiLoTri
  * lộ trình, và cờ quyền của mọi nút ⋮ Hồ sơ HV liên quan tới lớp học (Q2, Q22).
  */
 export function lopHocCua(p: Principal, studentId: number, current: any): {
-  tiepTheo: string | null; nhacLoTrinh: boolean; chiXem: boolean;
+  tiepTheo: string | null; chiXem: boolean;
   quyen: {
     ghiLoTrinhTiep: boolean; chuyenLop: boolean; deXuatChuyenLop: boolean; tamDung: boolean; quayLai: boolean;
     ketThuc: boolean; luuTru: boolean; boLuuTru: boolean; hocLai: boolean;
@@ -373,7 +362,7 @@ export function lopHocCua(p: Principal, studentId: number, current: any): {
   const chiXem = !!s?.archived_at;
   if (chiXem) {
     return {
-      tiepTheo: null, nhacLoTrinh: false, chiXem: true,
+      tiepTheo: null, chiXem: true,
       quyen: {
         ghiLoTrinhTiep: false, chuyenLop: false, deXuatChuyenLop: false, tamDung: false, quayLai: false, ketThuc: false, luuTru: false,
         boLuuTru: can(p, PERMISSIONS.CYCLE_EDIT, { studentId }),
@@ -383,27 +372,24 @@ export function lopHocCua(p: Principal, studentId: number, current: any): {
   }
 
   let tiepTheo: string | null = null;
-  let nhacLoTrinh = false;
   let laLopThuong = false;
   if (current) {
     const cls = conn.prepare('SELECT programme_code, is_fast_track FROM classes WHERE id = ?').get(current.class_id) as any;
     laLopThuong = !cls?.is_fast_track;
     if (laLopThuong) {
       const banGhi = conn
-        .prepare('SELECT huong, ngay_xem_lai FROM lo_trinh_tiep_theo WHERE student_id = ? AND class_id = ?')
+        .prepare('SELECT huong FROM lo_trinh_tiep_theo WHERE student_id = ? AND class_id = ?')
         .get(studentId, current.class_id) as any;
       tiepTheo = nhanTiepTheo(banGhi ? { huong: banGhi.huong as Huong } : null, (cls?.programme_code ?? null) as ProgrammeCode | null);
-      const pr = classProgress(current.class_id);
-      /* PR-K26: "Chưa quyết" KHÔNG hẹn ngày vẫn được nhắc (như `chua_ro` cũ); có hẹn ngày thì không (như `xep_sau` cũ). */
-      nhacLoTrinh = trongHaiTuanCuoi(pr.currentWeek, pr.totalWeeks, pr.phase) && (!banGhi || (banGhi.huong === 'chua_quyet' && !banGhi.ngay_xem_lai));
     }
   }
 
   const coTheChuyenLop = !!current && can(p, PERMISSIONS.STUDENT_EDIT, { classId: current.class_id });
   return {
-    tiepTheo, nhacLoTrinh, chiXem: false,
+    tiepTheo, chiXem: false,
     quyen: {
-      ghiLoTrinhTiep: laLopThuong && coTheChuyenLop,
+      /* OV-3b: mở hộp Lộ trình của em ở bảng lớp — chỉ Quản lý (`coTheRaLenh`). */
+      ghiLoTrinhTiep: laLopThuong && coTheRaLenh(p, current.class_id),
       /* PR-CT: Quản lý ra lệnh (`Chuyển lớp…`); GVCN đề xuất (`Đề xuất chuyển lớp…`). */
       chuyenLop: !!current && coTheRaLenh(p, current.class_id),
       deXuatChuyenLop: coTheChuyenLop && !coTheRaLenh(p, current.class_id),
@@ -415,4 +401,93 @@ export function lopHocCua(p: Principal, studentId: number, current: any): {
       hocLai: can(p, PERMISSIONS.CYCLE_EDIT, { studentId }) && s?.status === 'finished',   // PR-LUI-b
     },
   };
+}
+
+// ==================================================================== OV-3b: NHÁP lộ trình (chỉ Quản lý)
+
+/** Hướng của nháp = hướng của quyết định Cuối khoá (không có "Chưa quyết"). */
+const HUONG_NHAP: readonly HuongLenh[] = ['len_lop', 'hoc_lai', 'fast_track', 'bao_luu', 'dung_hoc'];
+export type NhapLoTrinh = {
+  huong: HuongLenh; lopDichId: number | null; tuan: string | null; mucTieu: number | 'KCK' | null; ngayXemLai: string | null; ghiChu: string | null;
+};
+export const nhapRowToView = (r: any): NhapLoTrinh => ({
+  huong: r.huong, lopDichId: r.lop_dich_id ?? null, tuan: r.tuan ?? null, mucTieu: r.khong_cam_ket ? 'KCK' : r.muc_tieu ?? null,
+  ngayXemLai: r.ngay_xem_lai ?? null, ghiChu: r.ghi_chu ?? null,
+});
+const CHI_QL_NHAP = 'Chỉ Quản lý lưu nháp lộ trình.';
+
+/**
+ * PUT /classes/:id/lo-trinh-nhap — QL / Quản trị (`coTheRaLenh`) lưu nháp nhiều em (≤ 60). Nháp KHÔNG ghi `lo_trinh_tiep_theo`, không lệnh, không MT0,
+ * không việc, không chuông; chỉ người ra lệnh được đọc (`transitionPlan`). Lô lỗi một phần: dòng sai vào `failed` kèm lý do, dòng đúng vẫn lưu.
+ * Nháp được thiếu (hướng chưa có lớp / tuần) — đủ hay chưa do lúc Chốt (`raLenh`) kiểm. Một câu em + một câu lệnh + một câu lớp đích + một câu ghi.
+ */
+export function luuNhap(p: Principal, classId: number, body: { items?: unknown }): { ok: number[]; failed: { studentId: number; message: string }[] } {
+  const conn = db();
+  const cls = lopThuongCua(classId);
+  if (!coTheRaLenh(p, classId)) throw forbidden(CHI_QL_NHAP);
+  const items = body?.items;
+  if (!Array.isArray(items) || !items.length) throw badRequest('Chưa có em nào để lưu.');
+  if (items.length > GHI_CA_LOP_TOI_DA) throw badRequest(`Mỗi lần lưu tối đa ${GHI_CA_LOP_TOI_DA} em.`);
+  const em = new Set((conn.prepare(
+    `SELECT s.id FROM enrollments e JOIN students s ON s.id = e.student_id WHERE e.class_id = ? AND e.status = 'active' AND ${HV_DANG_HOC_SQL('s')}`,
+  ).all(classId) as any[]).map((r) => r.id as number));
+  const daChot = new Set((conn.prepare(`SELECT student_id FROM lenh_chuyen_lop WHERE lop_nguon_id = ? AND trang_thai = 'cho'`).all(classId) as any[])
+    .map((r) => r.student_id as number));
+  const ids = [...new Set((items as any[]).map((it) => Number(it?.toClassId)).filter((x) => Number.isInteger(x) && x > 0 && x !== classId))];
+  const dich = new Map(ids.length ? (conn.prepare(
+    `SELECT id, programme_code, is_fast_track FROM classes WHERE status = 'active' AND id IN (${ids.map(() => '?').join(',')})`,
+  ).all(...ids) as any[]).map((r) => [r.id as number, r]) : []);
+  const homNay = demoToday();
+  const maTu = (cls.programme_code ?? null) as ProgrammeCode | null;
+  const failed: { studentId: number; message: string }[] = [];
+  const hang: unknown[][] = [];
+  const thay = new Set<number>();
+  for (const it of items as any[]) {
+    const sid = Number(it?.studentId);
+    const loi = (message: string) => { failed.push({ studentId: Number.isInteger(sid) ? sid : 0, message }); };
+    if (!Number.isInteger(sid) || !em.has(sid)) { loi('Học viên không thuộc lớp này.'); continue; }
+    if (thay.has(sid)) { loi('Trùng dòng.'); continue; }
+    thay.add(sid);
+    if (daChot.has(sid)) { loi('Đã chốt — sửa ở ô Lộ trình.'); continue; }
+    const huong = String(it?.huong ?? '') as HuongLenh;
+    if (!HUONG_NHAP.includes(huong)) { loi('Chọn hướng cho em.'); continue; }
+    const toId = canLopDich(huong) && it?.toClassId ? Number(it.toClassId) : null;
+    const lop = toId ? dich.get(toId) : null;
+    if (toId && !lop) { loi('Lớp chuyển đến không hợp lệ.'); continue; }
+    if (lop) {
+      const lech = kiemDongChuyenTiep({ huong: huong as Huong, toClassId: toId, toClass: { ma: lop.programme_code ?? null, ft: !!lop.is_fast_track }, mucTieu: 5 }, { maTu });
+      if (lech) { loi(`${lech}.`); continue; }
+    }
+    const tuan = it?.tuan || null;
+    if (tuan && !tuanHopLe(tuan, homNay)) { loi('Tuần bắt đầu phải từ tuần sau trở đi.'); continue; }
+    const kck = huong === 'fast_track' && it?.mucTieu === 'KCK';
+    const mucTieu = huong === 'fast_track' && !kck && it?.mucTieu !== null && it?.mucTieu !== undefined && it?.mucTieu !== '' ? Number(it.mucTieu) : null;
+    if (mucTieu !== null && (!Number.isFinite(mucTieu) || mucTieu < 0 || mucTieu > 9 || Math.round(mucTieu * 2) !== mucTieu * 2)) { loi('Target phải từ 0 đến 9, bước 0,5.'); continue; }
+    const ngayXemLai = huong === 'bao_luu' ? it?.ngayXemLai || null : null;
+    if (ngayXemLai && !isIsoDate(ngayXemLai)) { loi('Tuần xem lại không hợp lệ.'); continue; }
+    const ghiChu = typeof it?.ghiChu === 'string' ? it.ghiChu.trim() || null : null;
+    if (ghiChu && ghiChu.length > GHI_CHU_TOI_DA) { loi(`Ghi chú tối đa ${GHI_CHU_TOI_DA} ký tự.`); continue; }
+    hang.push([sid, classId, huong, toId, tuan, mucTieu, kck ? 1 : 0, ngayXemLai, ghiChu, p.userId, nowIso()]);
+  }
+  if (hang.length) {
+    tx(() => {
+      chenNhieuDong(
+        'INSERT INTO lo_trinh_nhap (student_id, class_id, huong, lop_dich_id, tuan, muc_tieu, khong_cam_ket, ngay_xem_lai, ghi_chu, sua_boi, sua_luc)',
+        hang,
+        ` ON CONFLICT(student_id, class_id) DO UPDATE SET huong = excluded.huong, lop_dich_id = excluded.lop_dich_id, tuan = excluded.tuan,
+           muc_tieu = excluded.muc_tieu, khong_cam_ket = excluded.khong_cam_ket, ngay_xem_lai = excluded.ngay_xem_lai, ghi_chu = excluded.ghi_chu,
+           sua_boi = excluded.sua_boi, sua_luc = excluded.sua_luc`,
+      );
+      writeAudit({ actorUserId: p.userId, action: 'lo_trinh.nhap', entityType: 'class', entityId: classId, entityLabel: cls.code, after: { soEm: hang.length } });
+    });
+  }
+  return { ok: hang.map((h) => h[0] as number), failed };
+}
+
+/** DELETE /classes/:id/lo-trinh-nhap/:studentId — Xoá nháp của một em (chỉ Quản lý). Không có nháp → vẫn ok (bấm hai lần không lỗi). */
+export function xoaNhap(p: Principal, classId: number, studentId: number): { ok: true } {
+  lopThuongCua(classId);
+  if (!coTheRaLenh(p, classId)) throw forbidden(CHI_QL_NHAP);
+  db().prepare('DELETE FROM lo_trinh_nhap WHERE class_id = ? AND student_id = ?').run(classId, studentId);
+  return { ok: true };
 }

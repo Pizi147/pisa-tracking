@@ -1,7 +1,7 @@
 import { chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
-  KHOI_PHUC_LENH_GIO, LO_HANG_LOAT_EM, NHAN_XET_TOI_THIEU, PERMISSIONS, addDaysIso, coPhieu, canLopDich, hanBanGiao, hanChotLenFt, khacGoiY, kiemDongChuyenTiep, kiemDongLenh, targetLenFt, tuanHopLe, tuanLich,
+  KHOI_PHUC_LENH_GIO, LO_HANG_LOAT_EM, NHAN_XET_TOI_THIEU, PERMISSIONS, coPhieu, canLopDich, hanBanGiaoLenh, khacGoiY, mocLoTrinh, kiemDongChuyenTiep, kiemDongLenh, targetLenFt, tuanHopLe, tuanLich,
   type DemChotLoTrinh, type Huong, type HuongLenh, type MucTieuLenh, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { HttpError, badRequest, chuTuDo, conflict, forbidden, notFound, nowIso } from '../util.ts';
@@ -90,7 +90,7 @@ export function raLenh(p: Principal, v: {
     const daCo = new Map<number, any>();
     theoLo(dongs.map((d) => d.studentId), (lo, ph) => {
       for (const r of conn.prepare(
-        `SELECT student_id, lop_nguon_id, tuan_bat_dau, huong FROM lenh_chuyen_lop WHERE trang_thai = 'cho' AND student_id IN (${ph})`,
+        `SELECT student_id, lop_nguon_id, lop_dich_id, tuan_bat_dau, huong FROM lenh_chuyen_lop WHERE trang_thai = 'cho' AND student_id IN (${ph})`,
       ).all(...lo) as any[]) daCo.set(r.student_id, r);
     });
     /* Lớp chuyển đến đọc THEO LÔ: đang hoạt động, khác lớp nguồn. */
@@ -106,8 +106,10 @@ export function raLenh(p: Principal, v: {
      * PR-S6F-a Q23: cả bối cảnh "giữa khoá" (panel một em) khi lớp nguồn là lớp thường đã tới Cuối khoá — em hết khoá vẫn có gợi ý.
      * Chỉ em hợp lệ của lớp nguồn vào `IN (…)` (thân yêu cầu có thể dài hơn 900 dòng).
      */
-    const tuCuoiKhoa = v.boiCanh === 'cuoi-khoa'
-      || (!nguonFt && mocKetKhoa(classProgressMany([v.lopNguonId]).get(v.lopNguonId), homNay).tuCuoiKhoa);
+    const prNguon = nguonFt ? null : classProgressMany([v.lopNguonId]).get(v.lopNguonId);
+    const tuCuoiKhoa = v.boiCanh === 'cuoi-khoa' || (!nguonFt && mocKetKhoa(prNguon, homNay).tuCuoiKhoa);
+    /* OV-3b: hạn bàn giao — lớp FT 5 ngày; lớp thường Cuối khoá hết tuần Final và ≥ 2 ngày sau chốt; giữa khoá 2 / 3 ngày. */
+    const hanMoi = hanBanGiaoLenh({ nguonFt, boiCanh: v.boiCanh, tuanFinal: prNguon?.finalWeekStart ?? null, ngay: homNay });
     const ck = tuCuoiKhoa ? cuoiKhoaTheoHocVien(v.lopNguonId, dongs.filter((d) => hopLe.has(d.studentId)).map((d) => d.studentId)) : null;
     /*
      * PR-LCa: lớp nguồn thường — Lộ trình tiếp theo ở lớp này (Target Lên FT LCa-2 + Hướng cũ cho đồng bộ LCa-1) và khoá lớp thường đang
@@ -131,6 +133,8 @@ export function raLenh(p: Principal, v: {
     const failed: { studentId: number; message: string }[] = [];
     const hang: any[] = [];
     const daSua = new Set<number>();
+    /** OV-3b (mục 5): lệnh Cuối khoá lớp thường đã chốt bị đổi hướng / lớp chuyển đến → phiếu bàn giao cần làm lại. */
+    const lamLai: number[] = [];
     for (let d of dongs) {
       const loi = (message: string) => { failed.push({ studentId: d.studentId, message }); };
       if (!hopLe.has(d.studentId)) { loi('Học viên không thuộc lớp này.'); continue; }
@@ -162,9 +166,10 @@ export function raLenh(p: Principal, v: {
         }, { maTu });
         if (lech) { loi(lech); continue; }
       } else if (d.huong === 'fast_track' && !lopDich.is_fast_track) { loi('Lớp chuyển đến phải là Fast Track'); continue; }
-      const han = coPhieu(d.huong) ? hanBanGiao(homNay) : null;
+      const han = coPhieu(d.huong) ? hanMoi : null;
       const kck = d.mucTieu === 'KCK';
       if (cu) daSua.add(d.studentId);
+      if (cu && v.boiCanh === 'cuoi-khoa' && !nguonFt && coPhieu(d.huong) && (cu.huong !== d.huong || (cu.lop_dich_id ?? null) !== (lopDich?.id ?? null))) lamLai.push(d.studentId);
       hang.push([
         d.studentId, v.lopNguonId, lopDich?.id ?? null, d.huong, v.boiCanh, tuan, kck || d.mucTieu == null ? null : d.mucTieu, kck ? 1 : 0,
         d.ngayThi ?? null, d.huong === 'bao_luu' ? d.ngayXemLai ?? null : null, (d.lyDo ?? '').trim() || null, khac ? 1 : 0,
@@ -192,6 +197,9 @@ export function raLenh(p: Principal, v: {
       if (moi) writeAudit({ actorUserId: p.userId, action: 'lenh_chuyen.tao', entityType: 'class', entityId: nguon.id, entityLabel: nguon.code, after: { soEm: moi, theoHuong, boiCanh: v.boiCanh } });
       if (daSua.size) writeAudit({ actorUserId: p.userId, action: 'lenh_chuyen.sua', entityType: 'class', entityId: nguon.id, entityLabel: nguon.code, after: { soEm: daSua.size } });
       thongBaoSapNhan(p, nguon, [...new Set(hang.map((h) => h[2]).filter(Boolean))] as number[], dich, homNay);
+      /* OV-3b: chốt = xoá nháp của em đó, cùng giao dịch. */
+      if (!nguonFt) theoLo(hang.map((h) => h[0] as number), (lo, ph) => conn.prepare(`DELETE FROM lo_trinh_nhap WHERE class_id = ? AND student_id IN (${ph})`).run(v.lopNguonId, ...lo));
+      if (lamLai.length) phieuLamLai(p, nguon, lamLai, hanMoi);
       /* LCa-1 (Q1, R4): quyết định Cuối khoá lớp thường → Lộ trình tiếp theo theo quyết định + MT0 ngay, cùng giao dịch (sửa lệnh đi qua đây). */
       if (v.boiCanh === 'cuoi-khoa' && !nguonFt) {
         dongBoTuLenh(p, hang.map((h) => ({
@@ -207,6 +215,34 @@ export function raLenh(p: Principal, v: {
     }
     return { ok: hang.map((h) => h[0] as number), failed };
   });
+}
+
+/**
+ * OV-3b (mục 5): đổi hướng / lớp chuyển đến của lệnh đã chốt → phiếu cần làm lại: bỏ xác nhận GVCN (giữ nhận xét chung), dòng môn GVBM đánh dấu
+ * `lam_lai` (giữ chữ để điền sẵn), hạn tính lại; MỘT chuông "Cần làm" cho mỗi GV lớp nguồn (GVCN + GVBM) cho cả lần sửa. Gọi trong tx của `raLenh`.
+ */
+function phieuLamLai(p: Principal, nguon: any, sids: number[], han: { gvbm: string; gvcn: string }) {
+  const conn = db();
+  const luc = nowIso();
+  theoLo(sids, (lo, ph) => {
+    conn.prepare(
+      `UPDATE lenh_chuyen_lop SET han_gvbm = ?, han_gvcn = ?, xac_nhan_boi = NULL, xac_nhan_luc = NULL, xac_nhan_thay = 0, tu_dien = NULL, sua_luc = ?
+        WHERE trang_thai = 'cho' AND lop_nguon_id = ? AND student_id IN (${ph})`,
+    ).run(han.gvbm, han.gvcn, luc, nguon.id, ...lo);
+    conn.prepare(
+      `UPDATE ban_giao_mon SET lam_lai = 1 WHERE lenh_id IN (SELECT id FROM lenh_chuyen_lop WHERE trang_thai = 'cho' AND lop_nguon_id = ? AND student_id IN (${ph}))`,
+    ).run(nguon.id, ...lo);
+  });
+  const ten = sids.length === 1 ? (conn.prepare('SELECT full_name FROM students WHERE id = ?').get(sids[0]) as any)?.full_name ?? 'học viên' : `${sids.length} em`;
+  const gv = conn.prepare(`SELECT DISTINCT user_id FROM teacher_assignments WHERE class_id = ? AND status = 'active'`).all(nguon.id) as any[];
+  for (const { user_id: userId } of gv) {
+    if (userId === p.userId) continue;
+    notify({
+      userId, kind: 'lam_lai_ban_giao', title: `Cần làm lại bàn giao · ${ten} · ${nguon.code}`, body: 'Quản lý đổi lộ trình — phiếu cũ đã điền sẵn',
+      entityType: 'class', entityId: nguon.id, dedupKey: `lam_lai_ban_giao:${nguon.id}:${luc}`, duong: `/hoc-vien/lop/${nguon.id}?viec=ban-giao`,
+    });
+  }
+  writeAudit({ actorUserId: p.userId, action: 'ban_giao.lam_lai', entityType: 'class', entityId: nguon.id, entityLabel: nguon.code, after: { hocVien: sids } });
 }
 
 /** Q18: MỘT thông báo "Sắp nhận" mỗi lớp chuyển đến — GVCN lớp chuyển đến + Quản lý chi nhánh đích nếu khác chi nhánh. Đếm lại từ bảng nên ra lệnh thêm cùng ngày chỉ cập nhật số. */
@@ -691,30 +727,32 @@ export function demChuaCoLenh(classIds: readonly number[]): Map<number, number> 
 /**
  * VIỆC QUẢN LÝ "Chốt lộ trình · {lớp}" (PR-LCb, đặc tả 08/10 §1 — thay "Chốt lên FT" + "Chuyển tiếp lớp"). MỘT luật cho việc của `myWork`,
  * chỉ số `lop-chua-chot-len-ft` và dòng Cần xử lý. Mọi lớp thường đang mở (Pre FOU, FOU, BE, ELE) người xem sửa được (`class.edit`);
- * hạn = Chủ nhật trước tuần Final (`hanChotLenFt`, theo `final_week_override`); hiện từ 13 ngày trước hạn, KHÔNG hết hạn — quá hạn đỏ, không
- * chặn gì. Lớp không có tuần Final mà đã hết khoá → vẫn có việc, `han = null`. Xong khi MỌI em đang học có quyết định chuyển lớp đang chờ
- * (Xác nhận = ra lệnh); em chỉ có đề xuất GVCN chờ duyệt vẫn là chưa xong (đếm riêng). Một câu lớp + tiến độ lớp + một câu em theo lô.
+ * OV-3b: hiện từ thứ Hai tuần Final − 2, hạn = Chủ nhật tuần Final − 2 (`mocLoTrinh`, theo `final_week_override`); KHÔNG hết hạn — quá hạn đỏ,
+ * không chặn gì. Lớp không có tuần Final mà đã hết khoá → vẫn có việc, `han = null`. Xong khi MỌI em đang học có quyết định chuyển lớp đang chờ
+ * (Chốt = ra lệnh); em chỉ có đề xuất GVCN chờ duyệt vẫn là chưa xong (đếm riêng); `deXuat` = em có nháp. Một câu lớp + tiến độ lớp + một câu em theo lô.
+ * `lopId`: chỉ một lớp (thanh nhắc ở hồ sơ lớp).
  */
 export type ChotLoTrinh = DemChotLoTrinh & { classId: number; code: string; han: string | null };
 
-export function lopChoChotLoTrinh(p: Principal, branchId: number | null, today: string): ChotLoTrinh[] {
+export function lopChoChotLoTrinh(p: Principal, branchId: number | null, today: string, lopId?: number): ChotLoTrinh[] {
   /* Tổng quan gọi hai lần (chỉ số + dòng Cần xử lý) — nhớ trong request. */
-  return nho(`chot-lo-trinh:${p.userId}:${branchId ?? ''}:${today}`, () => tinhLopChoChotLoTrinh(p, branchId, today));
+  return nho(`chot-lo-trinh:${p.userId}:${branchId ?? ''}:${today}:${lopId ?? ''}`, () => tinhLopChoChotLoTrinh(p, branchId, today, lopId));
 }
 
-function tinhLopChoChotLoTrinh(p: Principal, branchId: number | null, today: string): ChotLoTrinh[] {
+function tinhLopChoChotLoTrinh(p: Principal, branchId: number | null, today: string, lopId?: number): ChotLoTrinh[] {
   const conn = db();
   const lop = conn.prepare(
     `SELECT c.id, c.code FROM classes c
-      WHERE c.status = 'active' AND c.is_fast_track = 0${branchId ? ' AND c.branch_id = ?' : ''}`,
-  ).all(...(branchId ? [branchId] : [])) as any[];
+      WHERE c.status = 'active' AND c.is_fast_track = 0${branchId ? ' AND c.branch_id = ?' : ''}${lopId ? ' AND c.id = ?' : ''}`,
+  ).all(...(branchId ? [branchId] : []), ...(lopId ? [lopId] : [])) as any[];
   const tienDo = classProgressMany(lop.map((c) => c.id as number));
   const toi = lop.flatMap((c) => {
     const pr = tienDo.get(c.id);
     /* Chương trình theo `classProgress` (programme_code, lớp cũ NULL thì theo `kind`) — như việc `placement` cũ. */
     if (!pr || !['PREFOU', 'FOU', 'BE', 'ELE'].includes(pr.programmeCode ?? '')) return [];
-    const han = pr.finalWeekStart ? hanChotLenFt(pr.finalWeekStart) : null;
-    const den = han ? today >= addDaysIso(han, -13) : mocKetKhoa(pr, today).hetKhoa;
+    const moc = pr.finalWeekStart ? mocLoTrinh(pr.finalWeekStart) : null;
+    const han = moc?.hanChot ?? null;
+    const den = moc ? today >= moc.nhacTu : mocKetKhoa(pr, today).hetKhoa;
     return den && can(p, PERMISSIONS.CLASS_EDIT, { classId: c.id }) ? [{ classId: c.id as number, code: c.code as string, han }] : [];
   });
   if (!toi.length) return [];
@@ -727,9 +765,8 @@ function tinhLopChoChotLoTrinh(p: Principal, branchId: number | null, today: str
                       EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.student_id = e.student_id AND l.trang_thai = 'cho') AS co_lenh,
                       EXISTS (SELECT 1 FROM yeu_cau_duyet y WHERE y.trang_thai = 'cho' AND y.loai = 'de_xuat_chuyen_lop'
                                 AND y.doi_tuong_loai = 'student:chuyen-lop' AND y.doi_tuong_id = e.student_id) AS cho_duyet,
-                      (lt.huong IS NOT NULL AND lt.huong != 'chua_quyet') AS co_huong
+                      EXISTS (SELECT 1 FROM lo_trinh_nhap n WHERE n.student_id = e.student_id AND n.class_id = e.class_id) AS co_huong
                  FROM enrollments e JOIN students s ON s.id = e.student_id
-                 LEFT JOIN lo_trinh_tiep_theo lt ON lt.student_id = e.student_id AND lt.class_id = e.class_id
                 WHERE e.status = 'active' AND e.class_id IN (${ph}) AND ${HV_DANG_HOC_SQL('s')}) x
         GROUP BY x.class_id`,
     ).all(...lo) as any[]) {

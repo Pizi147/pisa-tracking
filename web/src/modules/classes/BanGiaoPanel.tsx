@@ -96,7 +96,7 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload }: Chung) {
     } catch (er: any) { toast.push('error', er.message); }
   };
 
-  const chuaMon = em ? em.mon.filter((m) => !m.noiDung) : [];
+  const chuaMon = em ? em.mon.filter((m) => !m.noiDung || m.lamLai) : [];
   const dong = 'grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-3 gap-y-1 text-sm';
 
   return (
@@ -166,7 +166,8 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload }: Chung) {
                     <abbr title={m.ten} className="font-bold text-slate-300 no-underline">{m.ngan}</abbr>
                     <div className="min-w-0">
                       {m.noiDung ? (
-                        <span className="text-slate-200">{m.noiDung} <span className="text-slate-500">— {m.nguoiGhi}, {ngay(m.ghiLuc, homNay)}{m.dienThay ? ' (điền thay)' : ''} ✓</span></span>
+                        <span className="text-slate-200">{m.noiDung} <span className="text-slate-500">— {m.nguoiGhi}, {ngay(m.ghiLuc, homNay)}{m.dienThay ? ' (điền thay)' : ''}{m.lamLai ? '' : ' ✓'}</span>
+                          {m.lamLai && <> <Nhan tone="soon">Cần làm lại</Nhan></>}</span>
                       ) : em.xacNhan ? (
                         <span className="text-slate-500">GVBM chưa bàn giao</span>
                       ) : (
@@ -219,7 +220,8 @@ function BangGvbm({ dto, mon, lenhId, onClose, onDone, reload }: Chung & { mon: 
   const [chu, setChu] = useState<Record<number, string>>({});
   const [loi, setLoi] = useState<Record<number, string>>({});
   const [luu, setLuu] = useState<Record<number, boolean>>({});
-  const daCo = (e: PhieuEm) => !!e.mon.find((x) => x.ma === mon)?.noiDung;
+  const oMon = (e: PhieuEm) => e.mon.find((x) => x.ma === mon);
+  const daCo = (e: PhieuEm) => !!oMon(e)?.noiDung && !oMon(e)?.lamLai;
   const soDaCo = dto.ds.filter(daCo).length;
   const han = useMemo(() => dto.theoMon.find((t) => t.ma === mon)?.han ?? null, [dto, mon]);
 
@@ -230,9 +232,10 @@ function BangGvbm({ dto, mon, lenhId, onClose, onDone, reload }: Chung & { mon: 
     el?.focus();
   }, [lenhId]);
 
-  const ghi = async (e: PhieuEm) => {
-    const v = (chu[e.lenhId] ?? e.mon.find((x) => x.ma === mon)?.noiDung ?? '').trim();
-    if (!v || v === (e.mon.find((x) => x.ma === mon)?.noiDung ?? '')) return;
+  /** `giu`: phiếu cần làm lại (OV-3b) — lưu lại đúng chữ cũ cũng là xác nhận lại. */
+  const ghi = async (e: PhieuEm, giu = false) => {
+    const v = (chu[e.lenhId] ?? oMon(e)?.noiDung ?? '').trim();
+    if (!v || (v === (oMon(e)?.noiDung ?? '') && !giu)) return;
     try {
       await api.put(`/lenh-chuyen/${e.lenhId}/ban-giao-mon`, { mon, noiDung: v });
       setLoi((x) => { const { [e.lenhId]: _, ...con } = x; return con; });
@@ -269,6 +272,12 @@ function BangGvbm({ dto, mon, lenhId, onClose, onDone, reload }: Chung & { mon: 
                 {loi[e.lenhId] && <span role="alert" className="mt-0.5 block text-xs text-late">{loi[e.lenhId]}</span>}
                 {!loi[e.lenhId] && luu[e.lenhId] && <span className="mt-0.5 block text-xs text-ok">Đã lưu</span>}
                 {khoa && <span className="mt-0.5 block text-xs text-slate-500">GVCN đã xác nhận phiếu — không sửa thêm</span>}
+                {!khoa && oMon(e)?.lamLai && !luu[e.lenhId] && (
+                  <span className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                    <Nhan tone="soon">Cần làm lại</Nhan><span className="text-slate-400">Quản lý đổi lộ trình — sửa hoặc giữ câu cũ</span>
+                    <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => void ghi(e, true)}>Giữ và lưu</button>
+                  </span>
+                )}
               </span>
             </div>
           );

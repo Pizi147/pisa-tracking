@@ -114,6 +114,7 @@ export async function runPrCtTests(t: YThucTestKit) {
   const { fileURLToPath } = await import('node:url');
   const { default: SqliteDb } = await import('libsql');
   const { migratePrCt } = await import('../migrate/prCt.ts');
+  const { migratePrOv3b } = await import('../migrate/prOv3b.ts');
   const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
   const SCHEMA = fs.readFileSync(path.join(REPO, 'server/src/schema.sql'), 'utf8').replace(/\r\n/g, '\n');
   const cot = (db: any, bang: string) => (db.prepare(`PRAGMA table_info(${bang})`).all() as any[]).map((c) => `${c.name}:${c.type}:${c.notnull}:${c.pk}`);
@@ -137,6 +138,7 @@ export async function runPrCtTests(t: YThucTestKit) {
   check('CT (2b) · DB migrate có cột GIỐNG HỆT DB dựng từ schema.sql (tên, kiểu, NOT NULL, thứ tự) và cùng chỉ mục', () => {
     const m = truocCt();
     migratePrCt(m, []);
+    migratePrOv3b(m, []);   // OV-3b: + ban_giao_mon.lam_lai
     const moi = new SqliteDb(':memory:');
     moi.exec(SCHEMA);
     for (const b of ['lenh_chuyen_lop', 'ban_giao_mon']) {
@@ -183,6 +185,9 @@ export async function runPrCtTests(t: YThucTestKit) {
   const mondayNow = d.mondayOfDate(TODAY) as string;
   let seq = 0;
   const week: any = await import('../platform/week.ts');
+  const schedule: any = await import('../classes/schedule.ts');
+  /** OV-3b: hạn bàn giao lệnh Cuối khoá lớp thường = hết tuần Final, ≥ 2 ngày sau chốt (GVBM = GVCN). */
+  const hanCk = (lop: number) => d.hanBanGiaoLenh({ nguonFt: false, boiCanh: 'cuoi-khoa', tuanFinal: schedule.classProgress(lop).finalWeekStart, ngay: TODAY });
   const lopMoi = (o: { branchId?: number; kind: string; ft?: boolean; route?: string | null; tuanHienTai?: number }) => {
     seq += 1;
     const cn = (get('SELECT code FROM branches WHERE id = ?', o.branchId ?? MB)).code as string;
@@ -246,7 +251,7 @@ export async function runPrCtTests(t: YThucTestKit) {
     assert(r.ok.length === 7 && r.failed.length === 0, JSON.stringify(r));
     assert(!lenhCua(em[7]), 'em chưa chọn không có lệnh');
     const l = lenhCua(em[0]);
-    const h = d.hanBanGiao(TODAY);
+    const h = hanCk(nguon);
     assert(l.trang_thai === 'cho' && l.tuan_bat_dau === TUAN[0] && l.han_gvbm === h.gvbm && l.han_gvcn === h.gvcn && l.nguoi_ra_lenh === P.mbManager.userId, JSON.stringify(l));
     const kck = lenhCua(em[4]);
     assert(kck.khong_cam_ket === 1 && kck.muc_tieu === null && kck.ngay_thi === '2027-06', JSON.stringify(kck));
@@ -729,12 +734,12 @@ export async function runPrCtTests(t: YThucTestKit) {
   const em6 = Array.from({ length: 7 }, () => hocVien(n6, 'FOU', false).sid);
   ra(P.mbManager, n6, 'cuoi-khoa', em6.map((s) => dongCua(s, 'len_lop', d6)));
 
-  check('CT (6a) · GVCN: MỘT việc "Bàn giao 7 em · lớp" cho cả lớp; GVBM: MỘT việc mỗi môn; hạn theo <Han> (GVCN 3 ngày, GVBM 2 ngày, tính cả ngày ra quyết định)', () => {
+  check('CT (6a) · GVCN: MỘT việc "Bàn giao 7 em · lớp" cho cả lớp; GVBM: MỘT việc mỗi môn; hạn theo <Han> (OV-3b: hết tuần Final, ≥ 2 ngày sau chốt)', () => {
     const cn = viecBg(g6, n6);
     assert(cn.length === 1 && cn[0].tieuDe === `Bàn giao 7 em · ${get('SELECT code FROM classes WHERE id = ?', n6).code}`, JSON.stringify(cn.map((i: any) => i.tieuDe)));
-    assert(cn[0].key === `ban_giao:${n6}` && cn[0].due === d.hanBanGiao(TODAY).gvcn && cn[0].contextLabel.startsWith('GVCN · 0/7 đã xác nhận') && cn[0].href === `/hoc-vien/lop/${n6}?viec=ban-giao`, JSON.stringify(cn[0]));
+    assert(cn[0].key === `ban_giao:${n6}` && cn[0].due === hanCk(n6).gvcn && cn[0].contextLabel.startsWith('GVCN · 0/7 đã xác nhận') && cn[0].href === `/hoc-vien/lop/${n6}?viec=ban-giao`, JSON.stringify(cn[0]));
     const bm = viecBg(l6, n6);
-    assert(bm.length === 1 && bm[0].key === `ban_giao_mon:${n6}:listening` && bm[0].due === d.hanBanGiao(TODAY).gvbm && bm[0].contextLabel === 'GVBM · 0/7 em' && bm[0].href.endsWith('&mon=listening'), JSON.stringify(bm));
+    assert(bm.length === 1 && bm[0].key === `ban_giao_mon:${n6}:listening` && bm[0].due === hanCk(n6).gvbm && bm[0].contextLabel === 'GVBM · 0/7 em' && bm[0].href.endsWith('&mon=listening'), JSON.stringify(bm));
     assert(bm[0].tieuDe.startsWith('Bàn giao môn '), bm[0].tieuDe);
     assert(viecBg(P.mbManager, n6).length === 0 && viecBg(loadPrincipal(GV[4].userId), n6).length === 0, 'QL và GV không dạy lớp: không có việc bàn giao');
   });
@@ -764,7 +769,7 @@ export async function runPrCtTests(t: YThucTestKit) {
     const gvn = loadPrincipal(GV[4].userId);
     const [a, b] = [hocVien(n, 'FOU', false).sid, hocVien(n, 'FOU', false).sid];
     ra(P.mbManager, n, 'cuoi-khoa', [dongCua(a, 'len_lop', d6), dongCua(b, 'len_lop', d6)]);
-    const han = d.hanBanGiao(TODAY).gvcn;
+    const han = hanCk(n).gvcn;
     yc.quetYeuCau(han);
     assert(!theBl('bao_len_ban_giao', n), 'ngày thứ 3 (còn trong hạn): chưa có thẻ');
     yc.quetYeuCau(t.addDays(han, 1));
@@ -813,9 +818,9 @@ export async function runPrCtTests(t: YThucTestKit) {
     ganGv(cuoi, GV[3].userId, null, true);
     const ds = [hocVien(cuoi, 'FOU', false).sid, hocVien(cuoi, 'FOU', false).sid, hocVien(cuoi, 'FOU', false).sid];
     const pl = () => (myWork(P.mbManager) as any).items.find((i: any) => i.group === 'chot_len_ft' && i.classId === cuoi);
-    assert(pl().reason === '3 em chưa có hướng' && /^Chốt lộ trình · \S/.test(pl().tieuDe) && pl().count === 3 && pl().href === `/hoc-vien/lop/${cuoi}?viec=lo-trinh-ca-lop`, JSON.stringify(pl()));
+    assert(pl().reason === '3 em chưa chọn' && /^Chốt lộ trình · \S/.test(pl().tieuDe) && pl().count === 3 && pl().href === `/hoc-vien/lop/${cuoi}?viec=lo-trinh-ca-lop`, JSON.stringify(pl()));
     ra(P.mbManager, cuoi, 'cuoi-khoa', [dongCua(ds[0], 'len_lop', d6)]);
-    assert(pl().reason === '2 em chưa có hướng', pl().reason);   // R-B4: đã có em xác nhận → bỏ tiền tố tổng
+    assert(pl().reason === '2 em chưa chọn', pl().reason);   // R-B4: đã có em xác nhận → bỏ tiền tố tổng
     /* PR-VAI-a (Q27): GVCN không còn việc "Ghi lộ trình tiếp theo" — việc của Quản lý ("Chốt lộ trình", PR-LCb) đã phủ. */
     assert(!(myWork(loadPrincipal(GV[3].userId)) as any).items.some((i: any) => i.group === 'next_step'), 'GVCN không còn việc next_step');
     assert(pl() && pl().count === 2, 'việc của Quản lý còn, đúng 2 em');
@@ -904,13 +909,13 @@ export async function runPrCtTests(t: YThucTestKit) {
   const em7 = Array.from({ length: 7 }, () => hocVien(n7, 'FOU', false).sid);
   const daiCua = (who: any, lop: number) => classesSvc.classOverview(who, lop).dai;
 
-  check('CT (7a) · dải lớp nguồn dạng 1 "chưa lệnh": tới tuần Final Test còn 7 em chưa có lệnh → ketThucKhoa; QL có nút Chuyển tiếp lớp, GVCN / GVBM không', () => {
+  check('CT (7a) · OV-3b: thanh nhắc "Lộ trình tiếp theo" (chỉ QL, từ thứ Hai tuần Final − 2): 0/7 em đã chốt, quá hạn chốt; GVCN / GVBM không có thanh', () => {
     const q = daiCua(P.mbManager, n7);
-    assert(q.ketThucKhoa && q.ketThucKhoa.soChuaLenh === 7 && q.ketThucKhoa.tuanGoiY === TUAN[0] && q.ketThucKhoa.tuanKetThuc && q.ketThucKhoa.tuanCuoiKhoa, JSON.stringify(q.ketThucKhoa));
+    assert(q.loTrinh && q.loTrinh.tong === 7 && q.loTrinh.daChot === 0 && q.loTrinh.do === true && q.loTrinh.hanChot === d.mocLoTrinh(schedule.classProgress(n7).finalWeekStart).hanChot, JSON.stringify(q.loTrinh));
     assert(q.viewer.coTheRaLenh === true && q.viewer.coTheChuyenNhieuEm === false, JSON.stringify(q.viewer));
     assert(q.banGiao === null && q.sapNhan === null && q.banGiaoMon.length === 0, 'chưa lệnh → chưa có dải bàn giao');
     const g = daiCua(g7, n7);
-    assert(g.ketThucKhoa?.soChuaLenh === 7 && g.viewer.coTheRaLenh === false && g.viewer.laGvcn === true, 'GVCN thấy dải, không có nút');
+    assert(g.loTrinh === null && g.viewer.coTheRaLenh === false && g.viewer.laGvcn === true, 'GVCN không có thanh nhắc (việc của QL)');
     assert(daiCua(l7, n7).viewer.coTheRaLenh === false, 'GVBM không có nút');
   });
   ra(P.mbManager, n7, 'cuoi-khoa', em7.map((s) => dongCua(s, 'len_lop', d7)));
@@ -918,10 +923,10 @@ export async function runPrCtTests(t: YThucTestKit) {
   for (const l of lenh7.slice(0, 2)) { bg.ghiMon(l7, l.id, 'listening', 'Nghe ổn.'); bg.xacNhanBanGiao(g7, l.id, 'Em học đều, cần nhắc nộp bài đúng hạn.'); }
   check('CT (7b) · dải lớp nguồn dạng 2 "Bàn giao 2/7 em" (GVCN) và dạng 3 "Bàn giao môn L · 2/7 em" (GVBM); hết dải "chưa lệnh"', () => {
     const g = daiCua(g7, n7);
-    assert(g.banGiao.daXacNhan === 2 && g.banGiao.tong === 7 && g.banGiao.hanGvcn === d.hanBanGiao(TODAY).gvcn && g.ketThucKhoa === null, JSON.stringify(g.banGiao));
+    assert(g.banGiao.daXacNhan === 2 && g.banGiao.tong === 7 && g.banGiao.hanGvcn === hanCk(n7).gvcn && g.loTrinh === null, JSON.stringify(g.banGiao));
     assert(g.viewer.xacNhanDuoc === true && g.banGiaoMon.length === 0, 'GVCN không có dòng môn');
     const b = daiCua(l7, n7);
-    assert(b.banGiaoMon.length === 1 && b.banGiaoMon[0].mon === 'listening' && b.banGiaoMon[0].daGhi === 2 && b.banGiaoMon[0].tong === 7 && b.banGiaoMon[0].han === d.hanBanGiao(TODAY).gvbm, JSON.stringify(b.banGiaoMon));
+    assert(b.banGiaoMon.length === 1 && b.banGiaoMon[0].mon === 'listening' && b.banGiaoMon[0].daGhi === 2 && b.banGiaoMon[0].tong === 7 && b.banGiaoMon[0].han === hanCk(n7).gvbm, JSON.stringify(b.banGiaoMon));
     assert(b.viewer.xacNhanDuoc === false, 'GVBM không xác nhận');
     const q = daiCua(P.mbManager, n7);
     assert(q.banGiao.tong === 7 && q.viewer.xacNhanDuoc === false, 'QL: thấy tiến độ, chưa được xác nhận thay (còn hạn, có GVCN)');
@@ -934,7 +939,7 @@ export async function runPrCtTests(t: YThucTestKit) {
   });
   check('CT (7d) · lớp FT: coTheChuyenNhieuEm chỉ QL; lớp đã kết thúc không có dải', () => {
     const ft = lopMoi({ kind: 'FT', ft: true, route: 'LT1', tuanHienTai: 3 });
-    assert(daiCua(P.mbManager, ft).viewer.coTheChuyenNhieuEm === true && daiCua(P.mbManager, ft).ketThucKhoa === null, 'QL FT: chuyển nhiều em, không dải chưa lệnh');
+    assert(daiCua(P.mbManager, ft).viewer.coTheChuyenNhieuEm === true && daiCua(P.mbManager, ft).loTrinh === null, 'QL FT: chuyển nhiều em, không dải chưa lệnh');
     conn.prepare(`UPDATE classes SET status = 'finished' WHERE id = ?`).run(ft);
     assert(classesSvc.classOverview(P.admin, ft).dai === null, 'lớp đã kết thúc: dai null');
   });
@@ -985,12 +990,12 @@ export async function runPrCtTests(t: YThucTestKit) {
     const chuaCo = hocVien(lopMoi({ kind: 'FOU', tuanHienTai: 2 }), 'FOU', false).sid;
     assert(profileSvc.studentProfile(P.admin, chuaCo).dai === null, 'em chưa có lệnh');
   });
-  check('CT (7g) · số câu SQL của dải: daiHocVien ≤ 4, daiLop ≤ 4 (gồm 1–2 câu tra chi nhánh của `can()`; chưa tới Final Test)', () => {
+  check('CT (7g) · số câu SQL của dải: daiHocVien ≤ 4, daiLop ≤ 4 (gồm 1–2 câu tra chi nhánh của `can()`; chưa tới mốc nhắc Final − 2)', () => {
     const e = hocVien(n7, 'FOU', false).sid;
     ra(P.mbManager, n7, 'cuoi-khoa', [dongCua(e, 'len_lop', d7)]);
     const a = demTruyVan(() => { dai.daiHocVien(P.mbManager, e); });
     const giua = lopMoi({ kind: 'FOU', tuanHienTai: 3 });
-    const b = demTruyVan(() => { dai.daiLop(P.mbManager, giua, { pr: { phase: 'running', finalWeekStart: t.addDays(TODAY, 14), startWeekStart: TODAY, totalWeeks: 8 }, ft: false, ct: 'FOU' }); });
+    const b = demTruyVan(() => { dai.daiLop(P.mbManager, giua, { pr: { phase: 'running', finalWeekStart: t.addDays(TODAY, 21), startWeekStart: TODAY, totalWeeks: 8 }, ft: false, ct: 'FOU' }); });
     assert(a <= 4 && b <= 4, `daiHocVien ${a} câu, daiLop ${b} câu`);
   });
 

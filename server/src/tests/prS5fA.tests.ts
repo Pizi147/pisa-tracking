@@ -235,14 +235,14 @@ export async function runPrS5fATests(t: YThucTestKit) {
     assert(!/ketLuanFt\.nhan/.test(kl) && /chuHopKetLuan\(/.test(kl), 'KetLuanKhoa');
   });
 
-  check('S5F-a (9) · Quản lý dời Final Test sớm (tuần 6/8): tuần 8 (chặng "running") vẫn có dải Kết thúc khoá + việc QL (PR-LCb: "Chốt lộ trình", quá hạn)', () => {
+  check('S5F-a (9) · Quản lý dời Final Test sớm (tuần 6/8): tuần 8 (chặng "running") vẫn có thanh nhắc Lộ trình tiếp theo (OV-3b) + việc QL (PR-LCb: "Chốt lộ trình", quá hạn)', () => {
     const lop = lopMoi({ kind: 'FOU', tuanHienTai: 8 });
     conn.prepare('UPDATE classes SET final_week_override = 6 WHERE id = ?').run(lop);
     hocVien(lop, 'FOU', false);
     const pr = sched.classProgressMany([lop]).get(lop);
     assert(pr.phase === 'running', `chặng ${pr.phase}`);
     const x = dai.daiLop(P.mbManager, lop, { pr, ft: false, ct: 'FOU' });
-    assert(x.ketThucKhoa?.soChuaLenh === 1 && x.ketThucKhoa.do === true, JSON.stringify(x.ketThucKhoa));
+    assert(x.loTrinh?.tong === 1 && x.loTrinh.daChot === 0 && x.loTrinh.do === true, JSON.stringify(x.loTrinh));
     const viec = (myWork(P.mbManager, { nguoi: 'tat-ca' }) as any).items.find((i: any) => i.key === `chotft:${lop}`);
     assert(viec?.group === 'chot_len_ft' && viec.urgency === 'overdue', `việc: ${JSON.stringify(viec ?? null)}`);
   });
@@ -265,12 +265,12 @@ export async function runPrS5fATests(t: YThucTestKit) {
   const { migratePrCt } = await import('../migrate/prCt.ts');
   const { studentProfile } = await import('../students/profile.ts');
 
-  check('S5F-a (11) · cột "Hệ thống gợi ý" ghi HƯỚNG (Lên BE · Lên BE + bổ trợ · Quản lý cân nhắc · Học lại FOU), không "→ Pass"; hồ sơ lớp có dải Kết thúc khoá thì bỏ chip "cần xếp lớp tiếp"', () => {
+  check('S5F-a (11) · cột "Hệ thống gợi ý" ghi HƯỚNG (Lên BE · Lên BE + bổ trợ · Quản lý cân nhắc · Học lại FOU), không "→ Pass"; hồ sơ lớp có thanh Lộ trình tiếp theo (OV-3b) thì bỏ chip "cần xếp lớp tiếp"', () => {
     const h = (tyLe: number, truot: string[] = []) => d.goiYCuoiKhoa({ ct: 'FOU', tyLe, monTruot: truot }).nhanHuong;
     assert(h(0.8) === 'Lên BE' && h(0.65, ['reading']) === 'Lên BE + bổ trợ' && h(0.55, ['reading']) === 'Quản lý cân nhắc' && h(0.4) === 'Học lại FOU',
       [h(0.8), h(0.65, ['reading']), h(0.55, ['reading']), h(0.4)].join(' | '));
     assert(!/goiY\.nhanNgan/.test(src('web/src/modules/classes/TransitionPanel.tsx')), 'TransitionPanel không còn nhanNgan (→ Pass)');
-    assert(/ketThucKhoa \? ds\.filter\(\(x\) => x\.key !== 'xep-lop'\)/.test(src('web/src/modules/classes/DauTrangLop.tsx')), 'DauTrangLop bỏ chip xep-lop khi có dải');
+    assert(/loTrinh \? ds\.filter\(\(x\) => x\.key !== 'xep-lop'\)/.test(src('web/src/modules/classes/DauTrangLop.tsx')), 'DauTrangLop bỏ chip xep-lop khi có dải');
   });
 
   check('S5F-a (12) · migrate tạo bù chỉ mục thiếu · nguoiNhanCuaLop ≤ 3 câu cho cả lô · QL xác nhận thay theo hạn dòng CHƯA xác nhận · nút Xác nhận tắt khi nhận xét trống', () => {

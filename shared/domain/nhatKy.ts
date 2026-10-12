@@ -38,7 +38,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'request.approve': 'Duyệt yêu cầu', 'request.decline': 'Từ chối yêu cầu', 'request.answer': 'Trả lời Xin ý kiến', 'request.undo': 'Huỷ quyết định duyệt',
   'request.create': 'Gửi yêu cầu duyệt',
   'cuoi_khoa.quyet': 'Quản lý quyết hướng Final Test', 'cuoi_khoa.bo_tro_tao': 'Tạo bổ trợ miễn phí sau Final Test', 'cuoi_khoa.bo_tro_huy': 'Huỷ bổ trợ miễn phí (đổi quyết định)', 'cuoi_khoa.mini_test_dong': 'Đóng Mini Test (em chuyển Fast Track)',
-  'cuoi_khoa.mini_test': 'Ghi Mini Test', 'cuoi_khoa.ket_luan_ft': 'Kết luận kỳ vọng đầu ra lên FT', 'cuoi_khoa.ky_vong_lop': 'Kỳ vọng đầu ra cả lớp',
+  'cuoi_khoa.mini_test': 'Ghi Mini Test', 'cuoi_khoa.ket_luan_ft': 'Chốt Kết quả đầu ra lên FT', 'cuoi_khoa.ky_vong_lop': 'Kết quả đầu ra cả lớp', 'cuoi_khoa.de_xuat_kq': 'GVCN đề xuất Kết quả đầu ra', 'lo_trinh.nhap': 'Lưu nháp lộ trình', 'ban_giao.lam_lai': 'Bàn giao cần làm lại',
   'regular.score': 'Nhập điểm lớp thường', 'regular.score.override': 'Sửa điểm lớp thường',
   'score.lich_su': 'Nhập điểm MT cũ',
   'score.huy_vuot': 'Huỷ điểm do dời vượt',

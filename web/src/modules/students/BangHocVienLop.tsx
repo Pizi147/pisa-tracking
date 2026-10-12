@@ -65,7 +65,7 @@ export function BangHocVienLop({ lop, chiHien, sapXep, onDoi, soCot, the = false
   const { homNay } = useNgayNghiepVu();
   const thuong = lop.scoringMode === 'ratio';
   const { data, loading, error, reload } = useApi<DongRoster[]>(`/classes/${lop.id}/roster`, [lop.id]);
-  const tt = useThaoTacDongHocVien({ laLopThuong: thuong, quyen: lop.viewer, maLop: lop.code, onDone: () => { reload(); onDoi(); } });
+  const tt = useThaoTacDongHocVien({ laLopThuong: thuong, quyen: lop.viewer, maLop: lop.code, classId: lop.id, onDone: () => { reload(); onDoi(); } });
   const rows = useMemo(() => sapXepHocVien(
     (data ?? [])
       .filter((s) => !s.archived && (!chiHien || chiHien.has(s.id)))

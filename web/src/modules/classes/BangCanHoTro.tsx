@@ -57,7 +57,7 @@ export function BangCanHoTro({ classId, maLop, laLopThuong, quyen, onDoi, chuong
   const [chiToi, setChiToi] = useState<boolean | null>(null);
   const [moThem, setMoThem] = useState<Set<string>>(new Set());
   const tai = () => { trang.reload(); roster.reload(); onDoi(); };
-  const tt = useThaoTacDongHocVien({ laLopThuong, quyen, maLop, onDone: tai });
+  const tt = useThaoTacDongHocVien({ laLopThuong, quyen, maLop, classId, onDone: tai });
   const dienThoai = useDienThoai();
   const rosterTheoEm = useMemo(() => new Map((roster.data ?? []).map((s) => [s.id, s])), [roster.data]);
   const d = trang.data;

@@ -59,8 +59,40 @@ export function hanBanGiao(ngayRaLenh: string): { gvbm: string; gvcn: string } {
   return { gvbm: hanTheoNgay(ngayRaLenh, 2), gvcn: hanTheoNgay(ngayRaLenh, 3) };
 }
 
+/**
+ * OV-3b (đặc tả §3.1): mốc Lộ trình tiếp theo của lớp thường theo tuần Final (thứ Hai). Nhắc từ thứ Hai tuần Final − 2 · QL chốt trước hết
+ * Chủ nhật tuần Final − 2 · GV bàn giao trước hết Chủ nhật tuần Final. Final tuần 10 → nhắc từ tuần 8, chốt hết tuần 8, bàn giao hết tuần 10.
+ */
+export function mocLoTrinh(tuanFinal: string): { nhacTu: string; hanChot: string; hanBanGiao: string } {
+  const t = mondayOfDate(tuanFinal.slice(0, 10));
+  return { nhacTu: congNgay(t, -14), hanChot: congNgay(t, -8), hanBanGiao: congNgay(t, 6) };
+}
+
+/**
+ * Hạn bàn giao của MỘT lệnh, máy chủ + web cùng hàm. Lớp FT: 5 ngày tính cả ngày ra lệnh (GVBM = GVCN). Lớp thường Cuối khoá: hết tuần Final
+ * và ít nhất 2 ngày sau ngày chốt (GVBM = GVCN). Còn lại (giữa khoá lớp thường, lớp không có tuần Final): 2 / 3 ngày như cũ.
+ */
+export function hanBanGiaoLenh(o: { nguonFt: boolean; boiCanh: string; tuanFinal: string | null; ngay: string }): { gvbm: string; gvcn: string } {
+  if (o.nguonFt) { const h = hanTheoNgay(o.ngay, 5); return { gvbm: h, gvcn: h }; }
+  if (o.boiCanh !== 'cuoi-khoa' || !o.tuanFinal) return hanBanGiao(o.ngay);
+  const toiThieu = congNgay(o.ngay, 2), cuoi = mocLoTrinh(o.tuanFinal).hanBanGiao;
+  const h = toiThieu > cuoi ? toiThieu : cuoi;
+  return { gvbm: h, gvcn: h };
+}
+
 /** Mọi hướng có phiếu bàn giao trừ Dừng học hẳn (Q16). */
 export const coPhieu = (h: HuongLenh): boolean => h !== 'dung_hoc';
+/** OV-3b: bảng theo hướng của cách xem "Lộ trình tiếp theo" (Tạm dừng + Dừng học chung một bảng). */
+export type NhomLoTrinh = 'chua' | 'ft' | 'len' | 'hoc-lai' | 'dung';
+export const nhomLoTrinh = (h: HuongLenh | null): NhomLoTrinh =>
+  h === 'fast_track' ? 'ft' : h === 'len_lop' ? 'len' : h === 'hoc_lai' ? 'hoc-lai' : h === 'bao_luu' || h === 'dung_hoc' ? 'dung' : 'chua';
+/** Lọc nhanh — MỘT hàm cho số đếm và bảng. "Còn bàn giao" = lệnh có phiếu mà GVCN chưa xác nhận (kể cả phiếu cần làm lại). */
+export type LocLoTrinh = 'tat-ca' | 'chua-chot' | 'con-ban-giao';
+export function khopLocLoTrinh(e: { lenh: { huong: HuongLenh; banGiao: { xacNhan: boolean } } | null }, loc: LocLoTrinh): boolean {
+  if (loc === 'chua-chot') return !e.lenh;
+  if (loc === 'con-ban-giao') return !!e.lenh && coPhieu(e.lenh.huong) && !e.lenh.banGiao.xacNhan;
+  return true;
+}
 /** Tạm dừng học (bảo lưu) và Dừng học hẳn không có lớp chuyển đến. */
 export const canLopDich = (h: HuongLenh): boolean => h !== 'bao_luu' && h !== 'dung_hoc';
 
@@ -169,22 +201,21 @@ export function tomTatLenh(ds: readonly DongTomTatLenh[], homNay: string): strin
 
 /**
  * PR-LCb: số đếm của việc Quản lý "Chốt lộ trình · {lớp}". `tong` em đang học; `chuaLenh` em chưa có quyết định chuyển lớp đang chờ; trong
- * `chuaLenh`: `choDuyet` có đề xuất chuyển lớp của GVCN chờ duyệt, `deXuat` có hướng Lộ trình tiếp theo (≠ Chưa quyết), `chuaHuong` còn lại.
+ * `chuaLenh`: `choDuyet` có đề xuất chuyển lớp của GVCN chờ duyệt, `deXuat` có nháp của Quản lý (OV-3b), `chuaHuong` còn lại.
  */
 export type DemChotLoTrinh = { tong: number; chuaLenh: number; chuaHuong: number; deXuat: number; choDuyet: number };
 
 /**
- * Chữ dòng việc "Chốt lộ trình" (mockup cuối khoá 2 phần 1a + 4): "8 em · 2 em chưa có hướng · GVCN đã đề xuất 6" · "6 em · đủ hướng, chưa
- * xác nhận" · "1 em chưa xác nhận" · "1 em chờ duyệt đề xuất". Mọi em đều chưa có hướng → bỏ "{tong} em ·" (mockup "7 em chưa có hướng");
- * đã có em xác nhận cũng bỏ (R-B4: "7 em · 1 em chưa có hướng" dễ đọc nhầm là 7 em còn dở).
+ * Chữ dòng việc "Chốt lộ trình" (OV-3b): "8 em · 2 em chưa chọn · 6 nháp" · "6 em · đủ nháp, chưa chốt" · "1 em chưa chốt" · "1 em chờ duyệt
+ * đề xuất". Mọi em đều chưa chọn → bỏ "{tong} em ·"; đã có em chốt cũng bỏ (R-B4: "7 em · 1 em chưa chọn" dễ đọc nhầm là 7 em còn dở).
  */
 export function chuViecChotLoTrinh(x: DemChotLoTrinh): string {
   const conLai = x.chuaLenh - x.choDuyet;
   const chu = x.chuaHuong > 0
-    ? `${x.chuaHuong === x.tong || x.chuaLenh < x.tong ? '' : `${x.tong} em · `}${x.chuaHuong} em chưa có hướng${x.deXuat > 0 ? ` · GVCN đã đề xuất ${x.deXuat}` : ''}`
+    ? `${x.chuaHuong === x.tong || x.chuaLenh < x.tong ? '' : `${x.tong} em · `}${x.chuaHuong} em chưa chọn${x.deXuat > 0 ? ` · ${x.deXuat} nháp` : ''}`
     : conLai <= 0 ? ''
-    : x.deXuat === conLai && x.chuaLenh === x.tong ? `${x.tong} em · đủ hướng, chưa xác nhận`
-    : `${conLai} em chưa xác nhận`;
+    : x.deXuat === conLai && x.chuaLenh === x.tong ? `${x.tong} em · đủ nháp, chưa chốt`
+    : `${conLai} em chưa chốt`;
   return [chu, x.choDuyet > 0 ? `${x.choDuyet} em chờ duyệt đề xuất` : ''].filter(Boolean).join(' · ');
 }
 
@@ -198,8 +229,8 @@ export function trangThaiPhieu(x: { soMonDaGhi: number; soMon: number; daXacNhan
 // ---------------------------------------------------------------- dữ liệu các dải (máy chủ trả, web vẽ — mockup 20: A, E, H)
 
 export type DaiLop = {
-  /** Phía lớp NGUỒN (A). `ketThucKhoa`: lớp thường tới tuần Cuối khoá còn em chưa có lệnh. */
-  ketThucKhoa: { tuanCuoiKhoa: string | null; tuanKetThuc: string | null; soChuaLenh: number; do: boolean; tuanGoiY: string } | null;
+  /** Phía lớp NGUỒN (A). OV-3b `loTrinh`: lớp thường từ thứ Hai tuần Final − 2 còn em chưa chốt (chỉ Quản lý) — `do` = quá hạn chốt. */
+  loTrinh: { hanChot: string | null; tong: number; daChot: number; do: boolean } | null;
   banGiao: { daXacNhan: number; tong: number; hanGvcn: string | null } | null;
   banGiaoMon: { mon: string; monNgan: string; daGhi: number; tong: number; han: string | null }[];
   /** Phía lớp ĐÍCH (H). */
@@ -233,6 +264,8 @@ export type TuDien = {
 export type PhieuMon = {
   ma: string; ten: string; ngan: string; noiDung: string | null; nguoiGhi: string | null; ghiLuc: string | null; dienThay: boolean;
   gvbm: string[];
+  /** OV-3b: QL đổi hướng / lớp chuyển đến sau khi chốt — `noiDung` là chữ cũ điền sẵn, chưa tính là đã ghi. */
+  lamLai: boolean;
 };
 export type PhieuEm = {
   lenhId: number; studentId: number; ten: string; maHv: string; huong: string; trangThaiLenh: string;

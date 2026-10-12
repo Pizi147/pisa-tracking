@@ -924,6 +924,24 @@ await checkAsync(`PR-TOC · Thêm 35 em lớp FT (POST /intake/commit) ≤ ${TRA
   assert(r.n <= TRAN_GHI_LO.themHocVien35FT, `${r.n} câu > trần ${TRAN_GHI_LO.themHocVien35FT}`);
 });
 
+await checkAsync(`OV-3b · Lưu nháp lộ trình cả lớp thường (PUT /classes/:id/lo-trinh-nhap) ≤ ${TRAN_GHI_LO.luuNhapCaLop} câu SQL, không tăng theo số em`, async () => {
+  const sids = (conn.prepare(
+    `SELECT s.id FROM enrollments e JOIN students s ON s.id = e.student_id
+      WHERE e.class_id = ? AND e.status = 'active' AND s.status = 'active' AND s.archived_at IS NULL`).all(LOP_THUONG) as any[]).map((x) => x.id);
+  const luu = async (ids: number[]) => {
+    const truoc = soCauSql();
+    const r = await callHttp('QL', 'PUT', `/classes/${LOP_THUONG}/lo-trinh-nhap`, { items: ids.map((studentId) => ({ studentId, huong: 'len_lop', ghiChu: 'đo' })) });
+    return { ...r, n: soCauSql() - truoc };
+  };
+  const mot = await luu(sids.slice(0, 1));
+  const ca = await luu(sids);
+  conn.prepare('DELETE FROM lo_trinh_nhap WHERE class_id = ?').run(LOP_THUONG);
+  assert(ca.status === 200 && ca.json.ok.length + ca.json.failed.length === sids.length, `Lưu nháp: ${ca.status} ${JSON.stringify(ca.json).slice(0, 300)}`);
+  console.log(`      (đo: 1 em ${mot.n} câu, ${sids.length} em ${ca.n} câu)`);
+  assert(ca.n === mot.n, `số câu tăng theo số em: ${mot.n} → ${ca.n}`);
+  assert(ca.n <= TRAN_GHI_LO.luuNhapCaLop, `${ca.n} câu > trần ${TRAN_GHI_LO.luuNhapCaLop}`);
+});
+
 await checkAsync(`PR-TOC · Quyết định chuyển lớp cả lớp thường sang FT (POST /classes/:id/transition, PR-CT) ≤ ${TRAN_GHI_LO.raLenhCaLop} câu SQL`, async () => {
   const them = await callHttp('QL', 'POST', '/intake/commit', { classId: LOP_THUONG, rows: dongNhap('Tốc Độ Thường', 20, false), idempotencyKey: 'pr-toc-20' });
   assert(them.status === 200 && them.json.added === 20, `Chuẩn bị lớp thường 20 em: ${them.status} ${JSON.stringify(them.json)}`);

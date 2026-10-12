@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  PERMISSIONS, PROGRAMME_TEMPLATES, chuanHoaHuong, dienSanChuyenTiep, kiemDongChuyenTiep, tuanChonDuoc, kyHieuLop, soSanhLop, tachSoLop, luatDoiLop, nextStepsAfter, programmeOf, tuanHocTai, tuanKhoa,
+  NGUONG_KY_VONG, PERMISSIONS, PROGRAMME_TEMPLATES, boMonLich, chuanHoaHuong, maHocLai, tenMonNgan, dienSanChuyenTiep, kiemDongChuyenTiep, tuanChonDuoc, kyHieuLop, soSanhLop, tachSoLop, luatDoiLop, nextStepsAfter, programmeOf, tuanHocTai, tuanKhoa,
   type DongChuyenTiep, type Huong, type LoaiLop, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, isIsoDate, notFound } from '../util.ts';
@@ -11,12 +11,13 @@ import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { classProgress, classProgressMany } from './schedule.ts';
 import { setStudentStatus } from '../students/students.ts';
 import { apDungBaoLuuCaLop, apDungCaLop, dongLopNeuHet, type DongCaLop } from './luatLoTrinh.ts';
-import { tiepTheoTheoHocVien } from './loTrinhTiep.ts';
-import { coTheRaLenh } from './quyenChuyenLop.ts';
+import { nhapRowToView, tiepTheoTheoHocVien } from './loTrinhTiep.ts';
+import { coTheRaLenh, phanCongO } from './quyenChuyenLop.ts';
 import { standingFor } from '../students/standing.ts';
 import { cuoiKhoaTheoHocVien } from '../normal/cuoiKhoa.ts';
 import { HV_DANG_HOC_SQL, khoangTamDung } from '../students/tamDung.ts';
 import { mt0TheoHocVien } from '../fasttrack/mt0.ts';
+import { mt0TheoLop } from '../normal/kyVong.ts';
 
 /**
  * CHUYỂN TIẾP KHI MỘT LỚP HỌC HẾT CHƯƠNG TRÌNH — mục 6.1, đặc tả §3.9.2 (PR-LT thay khung cũ).
@@ -57,7 +58,8 @@ export function transitionPlan(p: Principal, classId: number) {
   ];
   /* PR-CT (màn I): lớp FT chuyển giữa lộ trình — lớp chuyển đến là mọi lớp FT còn chạy (mọi lộ trình), không lọc "quá nửa". */
   const ft = !!cls.is_fast_track;
-  const optionCodes = ft ? ['FT'] : [...new Set(options.map((o) => o.code))];
+  /* OV-3b: Học lại được xuống lộ trình dưới (BE → FOU) — lớp chuyển đến gồm cả chương trình thấp hơn. */
+  const optionCodes = ft ? ['FT'] : [...new Set([...options.map((o) => o.code), ...maHocLai(from)])];
   /* PR-LCa (LCa-7): panel gộp — GVCN (không ra lệnh) không nhận ứng viên / lớp mới / tuần, và không tính chúng (`goiYLopMoi` ghi kỳ). */
   const raLenhDuoc = coTheRaLenh(p, classId);
 
@@ -92,7 +94,9 @@ export function transitionPlan(p: Principal, classId: number) {
    */
   const lenhCho = new Map((conn.prepare(
     `SELECT l.id, l.student_id, l.huong, l.lop_dich_id, d.code AS lop_dich_ma, l.ngay_ra_lenh, l.tuan_bat_dau, l.muc_tieu, l.khong_cam_ket,
-            l.ngay_thi, l.ngay_xem_lai, l.ly_do, l.khac_goi_y, l.loi
+            l.ngay_thi, l.ngay_xem_lai, l.ly_do, l.khac_goi_y, l.loi, l.han_gvbm, l.han_gvcn, l.xac_nhan_luc,
+            (SELECT GROUP_CONCAT(b.mon) FROM ban_giao_mon b WHERE b.lenh_id = l.id AND b.lam_lai = 0) AS mon_xong,
+            EXISTS (SELECT 1 FROM ban_giao_mon b WHERE b.lenh_id = l.id AND b.lam_lai = 1) AS lam_lai
        FROM lenh_chuyen_lop l LEFT JOIN classes d ON d.id = l.lop_dich_id WHERE l.lop_nguon_id = ? AND l.trang_thai = 'cho'`,
   ).all(classId) as any[]).map((l) => [l.student_id as number, {
     id: l.id as number, huong: l.huong as string, lopDichId: (l.lop_dich_id ?? null) as number | null,
@@ -100,7 +104,41 @@ export function transitionPlan(p: Principal, classId: number) {
     mucTieu: l.khong_cam_ket ? 'KCK' : (l.muc_tieu ?? null) as number | 'KCK' | null, ngayThi: (l.ngay_thi ?? null) as string | null,
     ngayXemLai: (l.ngay_xem_lai ?? null) as string | null, lyDo: (l.ly_do ?? null) as string | null, khacGoiY: !!l.khac_goi_y,
     loi: (l.loi ?? null) as string | null,
+    /** OV-3b: cột Bàn giao — CN đã xác nhận, môn GVBM đã ghi (chưa tính dòng cần làm lại), hạn. */
+    banGiao: {
+      xacNhan: !!l.xac_nhan_luc, monXong: l.mon_xong ? String(l.mon_xong).split(',') : [], lamLai: !!l.lam_lai,
+      hanGvbm: (l.han_gvbm ?? null) as string | null, hanGvcn: (l.han_gvcn ?? null) as string | null,
+    },
   }]));
+  /* OV-3b: nháp — CHỈ người ra lệnh đọc (máy chủ không trả cho GV). Một câu cho cả lớp. */
+  const nhap = raLenhDuoc ? new Map((conn.prepare('SELECT * FROM lo_trinh_nhap WHERE class_id = ?').all(classId) as any[])
+    .map((r) => [r.student_id as number, nhapRowToView(r)])) : null;
+  /*
+   * OV-3b: Kết quả đầu ra — em có lệnh Lên FT đang chờ từ lớp FOU / BE / ELE: MT0 (≥ 3/4 kỹ năng, luật A) + gợi ý + đề xuất GVCN + kết quả QL chốt.
+   * Hai câu MT0 (`mt0TheoLop`) + một câu Lộ trình tiếp theo cho cả lớp.
+   */
+  const nguong = ft ? undefined : NGUONG_KY_VONG[cls.programme_code ?? ''];
+  const emKq = nguong === undefined ? [] : [...lenhCho].filter(([, l]) => l.huong === 'fast_track').map(([sid]) => sid);
+  const mt0Kq = emKq.length ? mt0TheoLop(emKq.map((sid) => ({ sid, lop: classId, ct: cls.programme_code }))) : new Map();
+  const kqLtt = new Map(emKq.length ? (conn.prepare(
+    `SELECT t.*, u.full_name AS de_xuat_ten FROM lo_trinh_tiep_theo t LEFT JOIN users u ON u.id = t.kq_de_xuat_boi
+      WHERE t.class_id = ? AND t.student_id IN (${emKq.map(() => '?').join(',')})`,
+  ).all(classId, ...emKq) as any[]).map((r) => [r.student_id as number, r]) : []);
+  const mang = (x: string | null) => { try { const v = JSON.parse(x ?? '[]'); return Array.isArray(v) ? v.map(String) : []; } catch { return []; } };
+  const kqdrCua = (sid: number) => {
+    if (!emKq.includes(sid)) return null;
+    const m = mt0Kq.get(sid), r = kqLtt.get(sid);
+    return {
+      nguong: nguong!, goiY: m?.goiY ?? null, mt0: m?.goiY ? { ...m.bands, overall: m.goiY.overall } : null,
+      deXuat: r && r.kq_de_xuat_dat !== null ? {
+        dat: !!r.kq_de_xuat_dat, nguyenNhan: r.kq_de_xuat_nguyen_nhan ?? null, mon: mang(r.kq_de_xuat_mon), ghiChu: r.kq_de_xuat_ghi_chu ?? null,
+        boi: (r.de_xuat_ten ?? null) as string | null, luc: (r.kq_de_xuat_luc ?? null) as string | null,
+      } : null,
+      chot: r && r.ky_vong_dat !== null ? {
+        dat: !!r.ky_vong_dat, nguyenNhan: r.ky_vong_nguyen_nhan ?? null, mon: mang(r.ky_vong_mon), ghiChu: r.ky_vong_ghi_chu ?? null,
+      } : null,
+    };
+  };
 
   /* Case đang mở + bài chưa làm — đọc theo lô, không hỏi lại theo từng em. */
   const caseRows = sids.length
@@ -202,15 +240,20 @@ export function transitionPlan(p: Principal, classId: number) {
       lenh: lenhCho.get(s.id) ?? null,
       /** PR-MT0: ô MT0 (mockup ⑥) — trạng thái + chip SOS hiển thị; không có MT0 → null. */
       mt0: mt0Em.get(s.id) ?? null,
+      ...(nhap ? { nhap: nhap.get(s.id) ?? null } : {}),
+      kqdr: kqdrCua(s.id),
     })),
+    /** OV-3b: môn của phiếu bàn giao lớp nguồn (cột Bàn giao: CN + từng môn). */
+    monBanGiao: ft ? [] : boMonLich(cls.programme_code ?? null).map((ma) => ({ ma, ngan: tenMonNgan(cls.programme_code ?? null, ma) })),
     /** Lớp này đã từng chuyển tiếp sang đâu chưa — để không mở hai lớp kế tiếp cho một lớp. */
     alreadyLinked: (conn
       .prepare('SELECT id, code FROM classes WHERE previous_class_id = ? ORDER BY id')
       .all(classId) as any[]).map((c) => ({ id: c.id, code: c.code })),
     canEdit: can(p, PERMISSIONS.CLASS_EDIT, { classId }),
-    /** PR-LCa (LCa-7): GVCN ghi Hướng (STUDENT_EDIT); Quản lý ra quyết định (`coTheRaLenh`). */
-    coTheGhiHuong: can(p, PERMISSIONS.STUDENT_EDIT, { classId }),
+    /** Quản lý ra quyết định + nháp (`coTheRaLenh`). OV-3b: GVCN thôi ghi Hướng; GVCN lớp đề xuất Kết quả đầu ra. */
     coTheRaLenh: raLenhDuoc,
+    laGvcn: !raLenhDuoc && phanCongO(conn, p.userId, classId).gvcn,
+    coTheChotKq: can(p, PERMISSIONS.REQUEST_APPROVE, { classId }),
     today: demoToday(),
   };
 }

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
@@ -8,12 +9,11 @@ import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { fmtBand } from '../../lib/format.ts';
 import {
   CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, NHAN_VIEC_QUAN_LY, mucQuanLyHocVien, type LopHocQuyen, type ViecQuanLy, dsLoi, docEmail,
-  cauMtSeDoi, tuanLich, GIAI_THICH_KCK, KCK,
+  cauMtSeDoi, tuanLich, GIAI_THICH_KCK, KCK, duongLoTrinhLop,
 } from '@shared/domain/index.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { hoanTacHangLoat } from './hangLoatEm.ts';
-import { LoTrinhTiepPanel } from './LoTrinhTiepPanel.tsx';
 import { ChuyenLopPanel } from './ChuyenLopPanel.tsx';
 import { XoaHocVienPanel } from './XoaHocVienPanel.tsx';
 import { DeXuatSuaPanel } from '../duyet/DeXuatSuaPanel.tsx';
@@ -53,7 +53,8 @@ export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempt
   const xong = () => { onDone(); onClose(); };
   const chung = { studentId: student.id, studentName: student.name, lop, onClose, onDone: xong };
   switch (viec) {
-    case 'lo-trinh-tiep': return <LoTrinhTiepPanel open {...chung} />;
+    /* OV-3b: mở hộp Lộ trình của em ở hồ sơ lớp › Lộ trình tiếp theo (một chỗ làm). */
+    case 'lo-trinh-tiep': return student.classId ? <Navigate to={duongLoTrinhLop(student.classId, student.id)} /> : null;
     case 'chuyen-lop': return <ChuyenLopPanel open cheDo="lenh" {...chung} />;
     case 'de-xuat-chuyen-lop': return <ChuyenLopPanel open cheDo="de-xuat" {...chung} />;
     case 'tam-dung': return <TrangThaiPanel {...chung} status="inactive" soViPhamMo={soViPhamMo} />;

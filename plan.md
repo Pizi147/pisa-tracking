@@ -314,6 +314,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 12/10/2026 | OV-3b (Opus 5.5) · `claude/zen-cray-fa7291` | Lộ trình tiếp theo: nháp chỉ QL (`lo_trinh_nhap`) → chốt = ra lệnh; GVCN thôi ghi Hướng; hạn nhắc / chốt Final − 2, bàn giao hết tuần Final ≥ 2 ngày, FT 5 ngày; đổi hướng/lớp đích → phiếu cần làm lại + chuông; KQĐR có FOU + GVCN đề xuất; cách xem bảng theo hướng thay PanelCuoiKhoa / PanelKyVong / LoTrinhTiepPanel |
 | 12/10/2026 | OV-1b (Opus 5.5) · `claude/tender-ramanujan-ffmcx1` | "-" trong tuần = Vắng chốt ngay (lần 1 dời, lần 2 huỷ), nhập bù / MT cũ = Không dự thi; Bỏ vắng; dòng lớp "phần của bạn" + một hàm đếm (`dauTruCuaO`); lượt huỷ hết phần thi; migrate `prOv1b` + `kiem-truoc-ov1b` (chỉ đọc) |
 | 11/10/2026 | OV-2a (Opus 5.5) · `claude/pr-ov2a-vai-quyen-oqmdnt` | Vai Admin / TVV / CX + 5 quyền (`student.edit_info`, `test.view`, `work.view`, `analysis.view`, `analysis.view_teacher`), migrate `prOv2`; Test/Công việc chặn theo đường; Admin chỉ Chấm điểm + Nhắc; góc nhìn lưu ở phiên + dải; Tổng quan TVV, "HV của tôi" |
 | 11/10/2026 | OV-3a (Opus 5.5) · `claude/pr-ov3a-ho-so-lop-vvqizj` | Hồ sơ lớp: nút cố định Nhập điểm · + Case · ⋯ nhóm (`menuHoSoLop`); panel Thông tin lớp 3 phần lưu riêng; bảng điểm cuối trang mở sẵn; Tổng hợp lớp thường bỏ Dự kiến thi, cột Lộ trình tiếp theo = lệnh Cuối khoá đã chốt; FT dòng Đầu vào |

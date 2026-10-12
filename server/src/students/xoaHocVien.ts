@@ -23,7 +23,7 @@ const CHI_ADMIN = 'Chỉ Quản trị hệ thống mới xoá được học vi�
 
 /** Bao đóng theo FK của `students` (37 bảng, PR-TK +2) — phép kiểm X1 so bằng đúng với đồ thị dựng từ PRAGMA. */
 export const BANG_CUA_HOC_VIEN: readonly string[] = [
-  'students', 'enrollments', 'learning_cycles', 'lo_trinh_tiep_theo', 'journey_events', 'teacher_estimates', 'cycle_target_revisions',
+  'students', 'enrollments', 'learning_cycles', 'lo_trinh_tiep_theo', 'lo_trinh_nhap', 'journey_events', 'teacher_estimates', 'cycle_target_revisions',
   'assessment_attempts', 'assessment_scores', 'attempt_skills', 'attempt_skill_skips', 'attempt_schedule_history', 'skill_move_requests',
   'sos_cases', 'case_interventions', 'case_followups', 'case_intervention_revisions', 'case_issues', 'case_sources', 'case_milestones',
   'sos_case_history', 'case_signals', 'task_students', 'task_case_links',
@@ -125,6 +125,7 @@ export const CAU_XOA_HOC_VIEN: readonly { bang: string; sql: string }[] = [
   { bang: 'y_thuc_khai_bac', sql: `DELETE FROM y_thuc_khai_bac WHERE student_id = ?1 OR chuoi_cycle_id IN (${Y})` },
   { bang: 'cycle_target_revisions', sql: `DELETE FROM cycle_target_revisions WHERE cycle_id IN (${Y})` },
   { bang: 'lo_trinh_tiep_theo', sql: 'DELETE FROM lo_trinh_tiep_theo WHERE student_id = ?1' },
+  { bang: 'lo_trinh_nhap', sql: 'DELETE FROM lo_trinh_nhap WHERE student_id = ?1' },   // OV-3b
   /* PR-TK: bản chụp lộ trình (bảng dòng lượt trước, bảng chính sau) — đứng trước learning_cycles / students */
   { bang: 'ban_chup_luot', sql: `DELETE FROM ban_chup_luot WHERE ban_chup_id IN (SELECT id FROM ban_chup_lo_trinh WHERE student_id = ?1 OR cycle_id IN (${Y}))` },
   { bang: 'ban_chup_lo_trinh', sql: `DELETE FROM ban_chup_lo_trinh WHERE student_id = ?1 OR cycle_id IN (${Y})` },

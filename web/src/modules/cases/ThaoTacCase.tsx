@@ -130,7 +130,7 @@ export type PaDeSua = {
 
 /** Nguồn của PA web tạo (dòng đầu Sửa PA): `null` = PA người tạo tay; '' = web tạo, không rõ nguồn. */
 function nguonWebTao(pa: PaDeSua): string | null {
-  if (pa.nguonTao === 'ky_vong') return 'theo Kỳ vọng đầu ra';
+  if (pa.nguonTao === 'ky_vong') return 'theo Kết quả đầu ra';
   if (!pa.nguonTao) return null;
   if (pa.kind === 'bo_tro') return 'theo Progress Test';
   if (pa.kind === 'bo_tro_mien_phi') return 'theo Final Test';

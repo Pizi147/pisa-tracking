@@ -2026,6 +2026,22 @@ api.put('/classes/:id/lo-trinh-tiep', requireAuth, wrap((req) => {
   return loTrinhTiepSvc.ghiLoTrinhTiepCaLop(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 
+/** OV-3b: nháp Lộ trình tiếp theo — chỉ Quản lý (`coTheRaLenh`); lô lỗi một phần (`failed`). Đọc nháp qua `GET /classes/:id/transition`. */
+api.put('/classes/:id/lo-trinh-nhap', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return loTrinhTiepSvc.luuNhap(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+api.delete('/classes/:id/lo-trinh-nhap/:studentId', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return loTrinhTiepSvc.xoaNhap(principalOf(req), pInt(req, 'id'), pInt(req, 'studentId'));
+}));
+
+/** OV-3b: GVCN lớp nguồn đề xuất Kết quả đầu ra (không chạy gì); Quản lý chốt ở `PUT /students/:id/ket-luan-ft`. */
+api.put('/students/:id/ket-qua-de-xuat', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return cuoiKhoaSvc.deXuatKetQua(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
 /** PR-KV (§3): panel "Kỳ vọng đầu ra · lớp" — em Lên FT của lớp BE/ELE + MT0 + gợi ý; Lưu một lần cả lớp (một tx). Chỉ Quản lý (`request.approve`). */
 api.get('/classes/:id/ky-vong', requireAuth, wrap((req) => {
   maybeSimulateReadError();
