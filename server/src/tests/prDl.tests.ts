@@ -527,7 +527,8 @@ export async function runPrDlTests(t: YThucTestKit) {
     const ss = doc('web/src/ui/SaveState.tsx');
     const hook = ss.slice(ss.indexOf('export function useBaoHopLyDoMo'), ss.indexOf('export function useTrangThaiLuuO'));
     assert(/useContext\(BaoDangLuuContext\)/.test(hook) && !/BaoLuuContext\b|useBaoLuu/.test(hook), 'chỉ báo qua BaoDangLuuContext');
-    assert(hook.includes('dangGui, dangGui ? 0 : 1)'), 'hộp đang gửi = đang lưu; mở mà chưa gửi = chưa lưu');   // sửa cuối (12): qua useBaoDangLuu
+    /* OV-4b: `chuaLuu` (mặc định true) — hộp nhập điểm chỉ báo "chưa lưu" khi đã gõ. */
+    assert(hook.includes('dangGui, dangGui || !chuaLuu ? 0 : 1)') && hook.includes('chuaLuu = true'), 'hộp đang gửi = đang lưu; mở mà chưa gửi = chưa lưu');   // sửa cuối (12): qua useBaoDangLuu
     const f = doc('web/src/modules/cham/DiemTheoLop.tsx');
     assert(/activeElement[\s\S]{0,160}\.blur\(\)[\s\S]{0,40}requestAnimationFrame\(\(\) => setXet/.test(f), 'blur rồi khung sau mới xét');
     assert(f.includes('role="alert"') && !f.includes('alertdialog'), 'hộp hỏi role="alert"');
