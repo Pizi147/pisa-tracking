@@ -159,7 +159,7 @@ export function DaiODiemLon({ cells, lich, result, lichSu, homNay, mo, onMo, sav
           </span>
           <span className="mt-1 block min-h-[1rem] truncate">
             {ketLuanOverall ?? <KetQuaDot phan="overall" coDiem={result.scoredRequired} yeuCau={result.required.length} dat={ketLuan}
-              sos={result.sosLevel ?? null}
+              sos={result.sosLevel ?? null} chot={result.chot}
               duoiKyVong={(result.verdicts ?? []).filter((x: any) => x.passed === false).map((x: any) => skillShort(x.skill))} />}
           </span>
         </div>

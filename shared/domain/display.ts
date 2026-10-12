@@ -126,6 +126,8 @@ export type AttemptProgressInput = {
   passed: boolean | null;
   /** Số kỹ năng dưới kỳ vọng ở các môn đã chấm; null khi chưa tính được. */
   sos: number | null;
+  /** OV-1c: lượt đã chốt (máy chủ `AttemptResult.chot`) — thiếu điểm mà đã chốt (kỹ năng dời / huỷ / Không dự thi) thì SOS không còn "tạm thời". Thiếu = `scored >= required`. */
+  chot?: boolean;
   /**
    * CHẾ ĐỘ CHỮ (PR-Qb, Q17) — `ielts` (mặc định, mọi nơi gọi cũ không đổi) nói "kỹ năng"/"kỳ
    * vọng"/"Overall" như FT; `ratio` nói "môn"/"đạt" như lớp thường, KHÔNG có khái niệm Overall
@@ -165,7 +167,7 @@ export type AttemptProgressView = {
  *       đếm bài nhập (W1/W2) thay vì kỹ năng — báo lỗi, không vẽ "1/5 kỹ năng" (MT-P02).
  */
 export function attemptProgressView(i: AttemptProgressInput): AttemptProgressView {
-  const { scored, required, passed, sos, cheDo = 'ielts', soMonChuaDat } = i;
+  const { scored, required, passed, sos, cheDo = 'ielts', soMonChuaDat, chot = scored >= required } = i;
   const ratio = cheDo === 'ratio';
   const donVi = ratio ? 'môn' : 'kỹ năng';
   const bad = (why: string): AttemptProgressView => ({
@@ -185,6 +187,7 @@ export function attemptProgressView(i: AttemptProgressInput): AttemptProgressVie
   if (scored === 0) return incomplete(`Chưa có điểm · 0/${required} ${donVi}`, 'muted');
 
   if (scored < required) {
+    if (sos !== null && sos > 0 && chot && !ratio) return incomplete(`SOS ${sos} · ${scored}/${required} ${donVi}`, 'danger');
     if (sos !== null && sos > 0) {
       /* Số tạm KHÔNG được nói như số cuối: mới chấm một phần, mức SOS còn có thể đổi khi đủ điểm. PR-N1 A2: chữ "tạm thời"
          nằm NGAY trong câu (không chỉ tooltip) + màu của mức SOS với viền nét đứt ở `KetQuaDot`. */

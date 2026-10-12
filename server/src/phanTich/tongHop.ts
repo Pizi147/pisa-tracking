@@ -28,9 +28,10 @@ import { CO_THE_KHONG_THEO_DOI, LA_CASE_SOS, UNCONFIRMED_PRESET } from '../cases
 
 export type PhanLoaiLuot = 'dat' | 'sos1' | 'sos2' | 'sos3' | 'chuaDu';
 
-/** Chưa đủ điểm → `chuaDu` (cột "Thiếu điểm", kể cả lượt đã tạm có mức SOS — PR-HK2 bỏ cột Tạm thời); đủ điểm → đạt/sos1/2/3. */
-export function phanLoaiLuot(ev: { sosLevel: number | null; complete: boolean }): PhanLoaiLuot {
-  if (!ev.complete) return 'chuaDu';
+/** Chưa CHỐT → `chuaDu` (cột "Thiếu điểm", kể cả lượt đã tạm có mức SOS — PR-HK2 bỏ cột Tạm thời); đã chốt (OV-1c: đủ điểm hoặc kỹ năng
+ *  thiếu đã dời / huỷ / Không dự thi) → đạt/sos1/2/3. `chot` thiếu (lớp thường) = `complete`. */
+export function phanLoaiLuot(ev: { sosLevel: number | null; complete: boolean; chot?: boolean }): PhanLoaiLuot {
+  if (!(ev.chot ?? ev.complete)) return 'chuaDu';
   if (ev.sosLevel === null) return 'chuaDu';
   if (ev.sosLevel === 0) return 'dat';
   if (ev.sosLevel === 1) return 'sos1';

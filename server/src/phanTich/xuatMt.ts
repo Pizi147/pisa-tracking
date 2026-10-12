@@ -102,7 +102,7 @@ const tieuChiCua = (scores: ScoreRow[], k: string) => {
 function dongFT(a: any, b: AttemptBundle): { d: DongFT; du: boolean } {
   const scores = b.scores.get(a.id) ?? [];
   const skillRows = b.skillRows.get(a.id) ?? [];
-  const r = resultOf(a, scores, b.skips.get(a.id) ?? []);
+  const r = resultOf(a, scores, b.skips.get(a.id) ?? [], skillRows);
   const kck = luotKck(a);
   const gvS = scores.find((s) => s.skill === 'speaking');
   const tuanKn = (k: string) => skillRows.find((x) => x.skill === k)?.period_code ?? null;

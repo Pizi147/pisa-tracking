@@ -2,7 +2,7 @@ import { suggestCaseOwner } from './owner.ts';
 import { db, tx } from '../db.ts';
 import {
   ENTRY_SKILL_LABEL,
-  SOS_LABEL, caseDedupKey, categoryOf, hanXacNhan, laMt0, luotSinhViec,
+  SOS_LABEL, SYSTEM_CLOSE_REASON_LABEL, caseDedupKey, categoryOf, hanXacNhan, laMt0, luotSinhViec,
   type CaseCategory, type EntrySkill, type MilestoneKind, type SosLevel,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -14,7 +14,8 @@ import { failingEntrySkills, type AttemptResult, type EntryBands } from '../fast
 import { weekStartOf } from '../fasttrack/attempts.ts';
 import { scoringModeOf } from '../fasttrack/skillSchedule.ts';
 import { announceAutoCase, createPresetPlan, isFastTrackMock, resyncUnconfirmedPresets } from './sosAuto.ts';
-import { UNCONFIRMED_PRESET, sosCaseState } from './sosState.ts';
+import { CO_THE_KHONG_THEO_DOI, PA_QUY_CHE_CHUA_GHI, UNCONFIRMED_PRESET, sosCaseState } from './sosState.ts';
+import { closeCasesBySystem } from './systemClose.ts';
 import { syncSosCoordination } from '../yThuc/phoiHop.ts';
 import { mondayOf } from '../platform/week.ts';
 import { ngayTaoLuot } from '../classes/schedule.ts';
@@ -318,6 +319,12 @@ export function addMilestone(input: {
 export function raiseSignalsForResult(p: Principal, attempt: any, result: AttemptResult) {
   if (result.sosLevel === null) return null;
   if (laMt0(attempt)) return null;   // MT0: SOS chỉ hiển thị (T5) — không tín hiệu / Case / PA / Phối hợp / thông báo
+  /*
+   * OV-1c (đặc tả 3.2): Mock FT CHƯA CHỐT = "SOS tạm thời" — không tín hiệu, Case, PA, Phối hợp, hạn, chuông. Lần xét đầu tiên lượt chốt
+   * (cùng giao dịch với thao tác làm lượt chốt) mới chạy phần dưới → hạn xác nhận tính từ ngày chốt. Hết chốt (Bỏ vắng, khôi phục phần
+   * thi) không gỡ gì đã sinh; chốt lại đi qua đúng nhánh "tín hiệu đã nối" nên không Case trùng.
+   */
+  if (!result.chot && isFastTrackMock(attempt, scoringModeOf(attempt))) return null;
   const conn = db();
   /*
    * PR-S3F #3 (Q29-1): lộ trình HIỆN TẠI của em là KCK (không cam kết) thì lượt có điểm một phần vẫn giữ `target_at_attempt` cũ
@@ -386,6 +393,8 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
     }
   }
 
+  /* OV-1c: còn kỹ năng dưới kỳ vọng mà mức 0 = Overall ≥ kỳ vọng → xoá SOS của chính lượt này. */
+  if (result.sosLevel === 0 && failing.length) xoaSosOverallDat(p.userId, attempt, result, failing);
   if (result.sosLevel === 0 || !failing.length) {
     return null;
   }
@@ -507,6 +516,55 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
       after: { level: result.sosLevel, skills: failing, signals: raised.length } });
   }
   return raised;
+}
+
+/**
+ * Case TỰ TẠO chưa ai đụng (OV-1c, mục 8 kế hoạch): chính lượt `attemptSql` mở (mốc `opened`), chưa nguyên nhân, không thẻ "Không cần theo
+ * dõi" chờ duyệt, mọi PA còn sống là PA quy chế máy gán chưa ghi gì. `sc` là bí danh `sos_cases`. Dùng chung xoá SOS và migrate `prOv1c`.
+ */
+export const CASE_CHUA_DUNG = (sc = 'sc', attemptSql = '?') => `(${sc}.status != 'done'
+  AND EXISTS (SELECT 1 FROM case_milestones m_o WHERE m_o.case_id = ${sc}.id AND m_o.kind = 'opened' AND m_o.attempt_id = ${attemptSql})
+  AND NOT EXISTS (SELECT 1 FROM case_issues ci_o WHERE ci_o.case_id = ${sc}.id AND ci_o.role = 'primary')
+  AND NOT ${CO_THE_KHONG_THEO_DOI(sc)}
+  AND NOT EXISTS (SELECT 1 FROM case_interventions iv_o WHERE iv_o.case_id = ${sc}.id AND iv_o.status != 'cancelled' AND NOT ${PA_QUY_CHE_CHUA_GHI('iv_o')}))`;
+
+/** Case đang mở của các kỹ năng `failing` đang theo lượt này (`attempt_id`, nối tín hiệu của lượt — CHỈ ĐỌC): `dong` = chưa ai đụng, `giu` = đã có người làm. Dùng chung với `kiem-truoc-ov1c`. */
+export function caseXoaSos(attemptId: number, failing: readonly string[]): { dong: number[]; giu: number[] } {
+  const cats = [...new Set(failing.map((k) => categoryOf(k)).filter(Boolean))] as string[];
+  if (!cats.length) return { dong: [], giu: [] };
+  const ds = db().prepare(
+    `SELECT DISTINCT sc.id, ${CASE_CHUA_DUNG('sc', '?')} AS chua_dung FROM case_signals g JOIN sos_cases sc ON sc.id = g.case_id
+      WHERE g.attempt_id = ? AND g.status = 'linked' AND sc.status != 'done' AND sc.attempt_id = g.attempt_id
+        AND sc.category IN (${cats.map(() => '?').join(',')}) ORDER BY sc.id`,
+  ).all(attemptId, attemptId, ...cats) as { id: number; chua_dung: number }[];
+  return { dong: ds.filter((c) => c.chua_dung).map((c) => c.id), giu: ds.filter((c) => !c.chua_dung).map((c) => c.id) };
+}
+
+/**
+ * XOÁ SOS (OV-1c, đặc tả 3.2.3): lượt đã chốt có Case, rồi kỹ năng dời có điểm và Overall thành ≥ kỳ vọng. Case của các kỹ năng còn dưới
+ * kỳ vọng nối với lượt này: chưa ai đụng → hệ thống đóng "Overall đạt" + thu hồi tín hiệu (trượt lại thì tín hiệu mở lại, sinh Case mới);
+ * đã có người làm → GIỮ, ghi mốc "Overall đã đạt" để GV tự đóng. Phối hợp còn chờ do `syncSosCoordination(…, 0)` bỏ. Chạy lặp vô hại.
+ * Gọi trong giao dịch của nơi gọi (`refreshOutcome`, migrate).
+ */
+export function xoaSosOverallDat(actor: number | null, attempt: any, result: AttemptResult, failing: readonly string[]) {
+  const conn = db();
+  const { dong, giu } = caseXoaSos(attempt.id, failing);
+  const on = demoToday();
+  if (dong.length) {
+    closeCasesBySystem({ actorUserId: actor, studentId: attempt.student_id, reason: 'overall_dat', on, caseIds: dong });
+    conn.prepare(
+      `UPDATE case_signals SET status = 'withdrawn', withdrawn_reason = ?, updated_at = ?
+        WHERE attempt_id = ? AND status = 'linked' AND case_id IN (${dong.map(() => '?').join(',')})`,
+    ).run(SYSTEM_CLOSE_REASON_LABEL.overall_dat, nowIso(), attempt.id, ...dong);
+  }
+  for (const id of giu) {
+    addMilestone({
+      caseId: id, kind: 'overall_dat', attemptId: attempt.id, attemptNo: attempt.attempt_no, band: result.overall, expectation: result.expectation,
+      occurredOn: on, note: `Overall ${result.overall} ≥ kỳ vọng ${result.expectation} — GV xem và tự đóng Case`, createdBy: actor,
+      dedupKey: `mt:${attempt.id}:${id}:overall_dat`,
+    });
+  }
+  return { dong, giu };
 }
 
 function recordChange(caseId: number, field: string, oldValue: string | null, newValue: string | null, actor: number | null) {

@@ -195,7 +195,8 @@ export async function runPrNvTests(t: YThucTestKit) {
   });
 
   check('NV-1 (f) · sắp hết giờ: mọi thẻ lỗi 503 "Chưa kịp nhắc", không chuông nào được ghi', () => {
-    const ids = theCho().slice(0, d.TRAN_HANG_LOAT).map((r) => r.id);
+    /* OV-1c: bộ demo đổi thứ tự thẻ — bỏ thẻ mà Quản trị là người phụ trách (tự nhắc là 403 trước mọi kiểm giờ, NV-1 (g)). */
+    const ids = theCho().filter((r) => r.du.ownerId !== P.admin.userId).slice(0, d.TRAN_HANG_LOAT).map((r) => r.id);
     xoaNhac();
     const r = chayVoiHan(Date.now() + 3000, () => yc.nhacNhieu(P.admin, ids));
     assert(r.ok.length === 0 && r.loi.length === ids.length && r.loi.every((l) => l.ma === 503 && /Chưa kịp nhắc/.test(l.loi)), JSON.stringify(r));

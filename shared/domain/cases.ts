@@ -233,6 +233,8 @@ export const MILESTONE_KINDS = [
   'nop_ke_hoach', 'ke_hoach_duyet', 'ke_hoach_tu_choi',
   /* PR-LUI-a2: Quản lý mở lại Case đã hoàn thành (PR-BV dùng chung mốc này khi nhập lại điểm). */
   'reopened',
+  /* OV-1c: Overall ≥ kỳ vọng sau khi kỹ năng dời có điểm — Case đã có người làm giữ, GV tự đóng. */
+  'overall_dat',
 ] as const;
 export type MilestoneKind = (typeof MILESTONE_KINDS)[number];
 export const MILESTONE_KIND_LABEL: Record<MilestoneKind, string> = {
@@ -251,6 +253,7 @@ export const MILESTONE_KIND_LABEL: Record<MilestoneKind, string> = {
   ke_hoach_duyet: 'Quản lý duyệt kế hoạch',
   ke_hoach_tu_choi: 'Quản lý từ chối kế hoạch',
   reopened: 'Mở lại',
+  overall_dat: 'Overall đã đạt',
 };
 
 /**
@@ -564,7 +567,7 @@ export const DISPOSITION_LABEL: Record<Disposition, string> = {
  * không tính. PA đã xong có kết quả thật trước đó VẪN tính hiệu quả (planning review 22/09, Q7). Lịch sử giữ nguyên.
  * Chữ "lớp thường" thay "Normal" theo đặc tả §2 (không viết "Normal" trên màn).
  */
-export const SYSTEM_CLOSE_REASONS = ['course_ended', 'moved_to_normal', 'moved_to_ft', 'luot_da_huy', 'ket_qua_huy', 'doi_quyet_dinh'] as const;
+export const SYSTEM_CLOSE_REASONS = ['course_ended', 'moved_to_normal', 'moved_to_ft', 'luot_da_huy', 'ket_qua_huy', 'doi_quyet_dinh', 'overall_dat', 'cho_chot_sos'] as const;
 export type SystemCloseReason = (typeof SYSTEM_CLOSE_REASONS)[number];
 export const SYSTEM_CLOSE_REASON_LABEL: Record<SystemCloseReason, string> = {
   course_ended: 'Học viên kết thúc khoá',
@@ -576,6 +579,10 @@ export const SYSTEM_CLOSE_REASON_LABEL: Record<SystemCloseReason, string> = {
   ket_qua_huy: 'Kết quả MT đã huỷ',
   /* PR-CT2 (§8): đổi / huỷ quyết định lộ trình sau khi bổ trợ Final đã sinh sớm, chưa ai đụng → Case do lần sinh đó mở đóng theo. */
   doi_quyet_dinh: 'Đổi quyết định lộ trình',
+  /* OV-1c (đặc tả 3.2): kỹ năng dời có điểm, Overall ≥ kỳ vọng → xoá SOS — Case tự tạo chưa ai đụng đóng theo. */
+  overall_dat: 'Overall đạt',
+  /* OV-1c (migrate `prOv1c`): Case sinh từ điểm đầu tiên theo luật cũ, lượt chưa chốt, chưa ai đụng — tạo lại lúc lượt chốt. */
+  cho_chot_sos: 'Chờ chốt SOS',
 };
 
 /**

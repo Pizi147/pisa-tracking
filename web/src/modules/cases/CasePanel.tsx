@@ -392,6 +392,8 @@ const MILESTONE_TITLE: Record<string, string> = {
   ke_hoach_tu_choi: 'Quản lý từ chối kế hoạch',
   /* PR-LUI-a2: Quản lý mở lại Case đã hoàn thành. */
   reopened: 'Mở lại',
+  /* OV-1c: Overall ≥ kỳ vọng sau khi kỹ năng dời có điểm — Case đã có người làm giữ, GV tự đóng. */
+  overall_dat: 'Overall đã đạt',
 };
 
 /** Điểm cô tự chấm: LUÔN có chữ "cô chấm" — một con số 6.5 đứng trơ sẽ bị đọc nhầm thành điểm mock. */

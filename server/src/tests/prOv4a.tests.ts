@@ -3,6 +3,7 @@
  * trong một giao dịch rồi cuộn lại (`thu`). Ca thật: Nguyễn Minh Ngọc · CP FT 131 · MT4 (nhóm 3 `kiem-du-lieu-mt`) dựng lại ở OV4a-5.
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { chotSan } from './luotThu.ts';
 
 export async function runPrOv4aTests(t: YThucTestKit) {
   const { check, assert, conn, P, TODAY, classId } = t;
@@ -53,6 +54,7 @@ export async function runPrOv4aTests(t: YThucTestKit) {
     const sid = r.studentIds[0] as number;
     const ds = all(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'mock' ORDER BY attempt_no`, sid).map((x) => x.id as number);
     [-1, 4, 8].forEach((w, i) => datTuan(ds[i], w));
+    chotSan(conn, ds[0]);   // OV-1c: MT1 chỉ có L/R — chốt sẵn để điểm dưới kỳ vọng sinh Case như ca gốc
     attempts.saveScore(P.lrTeacher, ds[0], 'listening', { band: 4 });
     attempts.saveScore(P.lrTeacher, ds[0], 'reading', { band: 4 });
     const cy = one('SELECT cycle_id FROM assessment_attempts WHERE id = ?', ds[0]).cycle_id;

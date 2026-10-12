@@ -282,7 +282,7 @@ function turnsOf(p: Principal, rows: any[]): CoordinationTurn[] {
     let skills = kyNang.get(attemptId) ?? [];
     let sosLevel: number | null = null, ketQua: CoordinationTurn['ketQua'] = null;
     let noiDungCua: ((daLamNgay: string | null) => string[]) | null = null;
-    if (laMock) sosLevel = resultOf(a, bundle.scores.get(a.id) ?? [], bundle.skips.get(a.id) ?? []).sosLevel;
+    if (laMock) sosLevel = resultOf(a, bundle.scores.get(a.id) ?? [], bundle.skips.get(a.id) ?? [], bundle.skillRows.get(a.id) ?? []).sosLevel;
     else {
       /* Lớp thường: KHÔNG có mức SOS — chữ kết quả qua `nhanKetQuaThuong`, đọc từ điểm đã nạp (không SQL, không `resultOf` FT). */
       const r = evaluateRegular(chuongTrinh.get(a.programme_code)?.skills ?? [], bundle.scores.get(a.id) ?? [], a.programme_code, nguongDatLop(a.class_id, nguongKhac));
@@ -565,7 +565,7 @@ export function phoiHopMetric(
   const ids: number[] = [];
   const byKind = { sos1: [] as number[], sos2: [] as number[], sos3: [] as number[] };
   for (const a of attempts) {
-    const level = resultOf(a, bundle.scores.get(a.id) ?? [], bundle.skips.get(a.id) ?? []).sosLevel;
+    const level = resultOf(a, bundle.scores.get(a.id) ?? [], bundle.skips.get(a.id) ?? [], bundle.skillRows.get(a.id) ?? []).sosLevel;
     if (level === null || level < 1) continue;
     const sum = coordinationSummary(statusByAttempt.get(a.id) ?? []);
     const khop = id === 'phoi-hop-luot-sos' || (id === 'phoi-hop-dang-xu-ly' && sum.pending > 0) || (id === 'phoi-hop-hoan-thanh' && sum.complete);

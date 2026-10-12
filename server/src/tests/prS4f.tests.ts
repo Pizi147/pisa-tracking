@@ -213,7 +213,7 @@ export async function runPrS4fTests(t: YThucTestKit) {
     const st = get('SELECT id FROM students WHERE full_name = ?', `S4F ${ten}`);
     const cy = get(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`, st.id);
     boLichTuTao(conn, cy.id);
-    const a = luotThu(conn, attemptsSvc.createAttempt, P.admin, { studentId: st.id, cycleId: cy.id, classId: FT, no: 1, periodId: weekSvc.ensurePeriod(weekSvc.mondayOf(t.TODAY)).id });
+    const a = luotThu(conn, attemptsSvc.createAttempt, P.admin, { chot: true, studentId: st.id, cycleId: cy.id, classId: FT, no: 1, periodId: weekSvc.ensurePeriod(weekSvc.mondayOf(t.TODAY)).id });
     return { sid: st.id as number, aid: a.id as number };
   };
   const nhapBand = (aid: number, skill: string, band: number) => attemptsSvc.saveScore(P.admin, aid, skill, {

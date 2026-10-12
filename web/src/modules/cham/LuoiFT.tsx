@@ -350,8 +350,9 @@ function SheetRow({ row, lop, active, cot, tuanDangXem, onReload, gvMacDinh, moS
               : row.result.complete ? <Level tone="ok">MT0 ✓</Level>
               : <Level tone="muted">{`Chờ ${row.result.required.length - row.result.scoredRequired} kỹ năng`}</Level>
           ) : (
-            <Level tone={row.result.evaluable ? sosTone(row.result.sosLevel) : 'muted'}>
-              {row.result.evaluable
+            /* OV-1c: lượt CHỐT (đủ điểm, hoặc kỹ năng thiếu đã dời / huỷ / Không dự thi) mới có mức SOS — cờ của máy chủ, không suy từ số ô. */
+            <Level tone={row.result.chot && row.result.sosLevel !== null ? sosTone(row.result.sosLevel) : 'muted'}>
+              {row.result.chot && row.result.sosLevel !== null
                 ? sosLabel(row.result.sosLevel)
                 : `Chờ ${row.result.required.length - row.result.scoredRequired} kỹ năng`}
             </Level>

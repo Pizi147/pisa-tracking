@@ -35,7 +35,7 @@ const TONE_MARK: Record<ProgressTone, string> = { muted: '', danger: '●', info
  * `phan="overall"` chỉ vẽ ô Overall (`Chưa đủ điểm` / `Đạt kỳ vọng` …) để bảng có một cột
  * Overall mà không phải tự dựng chữ.
  */
-export function KetQuaDot({ coDiem, yeuCau, dat, sos, phan = 'cau', cheDo, soMonChuaDat, duoiKyVong }: {
+export function KetQuaDot({ coDiem, yeuCau, dat, sos, phan = 'cau', cheDo, soMonChuaDat, duoiKyVong, chot }: {
   /** Số KỸ NĂNG (L/R/W/S) đã có điểm. */
   coDiem: number;
   /** Số KỸ NĂNG bắt buộc của đợt. */
@@ -44,6 +44,8 @@ export function KetQuaDot({ coDiem, yeuCau, dat, sos, phan = 'cau', cheDo, soMon
   dat: boolean | null;
   /** Số kỹ năng dưới kỳ vọng ở các môn đã chấm; `null` khi chưa tính được. */
   sos: number | null;
+  /** OV-1c: lượt đã chốt (máy chủ) — thiếu điểm mà đã chốt thì không "tạm thời". Bỏ trống = đủ điểm mới chốt. */
+  chot?: boolean;
   phan?: 'cau' | 'overall';
   /** `ratio` (lớp thường) nói "môn"/"đạt", không có "kỳ vọng"/"Overall" (Q17). Mặc định `ielts`. */
   cheDo?: 'ielts' | 'ratio';
@@ -52,16 +54,16 @@ export function KetQuaDot({ coDiem, yeuCau, dat, sos, phan = 'cau', cheDo, soMon
   /** PR-S4F #10: chip cạnh Overall — kỹ năng dưới kỳ vọng ("W", "L · S") thay cho "Chưa đạt kỳ vọng" chung chung. */
   duoiKyVong?: readonly string[];
 }) {
-  const v = attemptProgressView({ scored: coDiem, required: yeuCau, passed: dat, sos, cheDo, soMonChuaDat });
+  const v = attemptProgressView({ scored: coDiem, required: yeuCau, passed: dat, sos, cheDo, soMonChuaDat, chot });
   const tone: ProgressTone = phan === 'overall' && v.overall === 'incomplete' ? 'muted' : v.tone;
   /* ⚠ chỉ nghĩa quá hạn (G-4): số tạm thời dùng ◌ (viền đứt), không dùng ⚠. */
-  const mark = phan === 'overall' ? (v.passBadge ? '✓' : '') : tone === 'danger' && v.overall === 'incomplete' ? '◌' : TONE_MARK[tone];
+  const mark = phan === 'overall' ? (v.passBadge ? '✓' : '') : v.tamThoi ? '◌' : TONE_MARK[tone];
   const soMon = cheDo === 'ratio' ? (soMonChuaDat ?? sos) : sos;
   const mau = hoMau(tone, v.overall, soMon);
   return (
     <span
       data-overall={v.overall} data-pass-badge={v.passBadge} title={v.title}
-      className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium ${SCORE_CHIP[mau]} ${v.overall === 'incomplete' ? 'border-dashed' : ''}`}>
+      className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium ${SCORE_CHIP[mau]} ${v.overall === 'incomplete' && (tone !== 'danger' || v.tamThoi) ? 'border-dashed' : ''}`}>
       {mark && <span aria-hidden>{mark}</span>}
       {phan === 'overall'
         ? (v.overall === 'not-passed' && duoiKyVong?.length ? `Dưới kỳ vọng: ${duoiKyVong.join(' · ')}` : v.overallText)

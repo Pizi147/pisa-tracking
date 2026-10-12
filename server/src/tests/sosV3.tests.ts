@@ -299,7 +299,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
   };
   /** Tuần đã qua (không phải tương lai) — điểm nhập được ngay. PR-MT (T36): MT trước còn thiếu tạo trước, là MT lịch sử. */
   const PAST_WEEK = weekSvc.mondayOf(addDays(TODAY, -14));
-  const mkAttempt = (st: { id: number; cycleId: number }, no: number, weekStart: string = PAST_WEEK): any => luotThu(conn, attemptsSvc.createAttempt, P.admin, {
+  const mkAttempt = (st: { id: number; cycleId: number }, no: number, weekStart: string = PAST_WEEK): any => luotThu(conn, attemptsSvc.createAttempt, P.admin, { chot: true,
     studentId: st.id, cycleId: st.cycleId, classId: CLASS, no, periodId: weekSvc.ensurePeriod(weekStart).id });
   /*
    * RB-5 (PR-Rc1): sửa một ô đã có điểm nay phải kèm lý do. Hàm này vừa nhập lần đầu vừa sửa điểm nguồn, nên LUÔN gửi
@@ -413,7 +413,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     });
     const before = snap();
     scoreMt2(a); scoreMt2(a);                         // lưu lại y hệt, hai lần
-    enter(P.admin, a, 'listening', 7); enter(P.admin, a, 'reading', 7);  // nhập thêm kỹ năng đạt
+    enter(P.admin, a, 'listening', 7);  // nhập thêm kỹ năng đạt — OV-1c: chỉ L (thêm R thì đủ 4, Overall 6.5 ≥ kỳ vọng → xoá SOS, phép kiểm prOv1c)
     assert(snap() === before, `Chạy lặp làm đổi dữ liệu:\n  trước ${before}\n  sau   ${snap()}`);
     assert(milestonesOf(caseOf(st.id, 'speaking').id).map((m) => m.kind).join() === 'opened', 'Không được có mốc "Trượt lại" cho chính lượt đã mở case');
   });

@@ -104,7 +104,7 @@ export async function runPrPaTests(t: YThucTestKit) {
     const sid = get('SELECT id FROM students WHERE full_name = ?', 'PA SOS').id;
     const cy = get("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'", sid).id;
     boLichTuTao(conn, cy);
-    const a: any = luotThu(conn, attemptsSvc.createAttempt, P.admin, { studentId: sid, cycleId: cy, classId: cid, no: 1,
+    const a: any = luotThu(conn, attemptsSvc.createAttempt, P.admin, { chot: true, studentId: sid, cycleId: cy, classId: cid, no: 1,
       periodId: week.ensurePeriod(week.mondayOf(t.addDays(TODAY, -14))).id });
     attemptsSvc.saveScore(P.admin, a.id, 'listening', { rawScore: scoring.LISTENING_BY_RAW.indexOf(5) });
     const pa = all(`SELECT iv.* FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE sc.student_id = ? AND iv.preset = 1`, sid);
