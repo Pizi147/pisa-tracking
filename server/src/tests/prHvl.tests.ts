@@ -567,12 +567,11 @@ export async function runPrHvlTests(t: YThucTestKit) {
   check('PR-HVL (8) · web: bảng điểm FT bỏ Gọn/Đầy đủ, có nhánh MT lịch sử xám + nhãn, cột Theo dõi là ViecTiep bấm được; Lộ trình tiếp theo có Kết quả gần nhất, câu "Chỉ là dự định" hiện thẳng; Chuyển tiếp báo lỗi sau khi sửa/bấm', () => {
     const r = web('modules/students/ClassRoster.tsx');
     assert(!/Gọn|Đầy đủ/.test(r) && /lichSu/.test(r) && /NhanCu/.test(r) && /viecTiepTheo\[0\]/.test(r) && /<ViecTiep /.test(r), 'ClassRoster');  // PR-MTb T2 thay ChipLichSu → NhanCu
-    const lt = web('modules/students/LoTrinhTiepPanel.tsx');
-    assert(/Kết quả gần nhất/.test(lt) && /ketQuaGanNhat\(/.test(lt) && !/luat="Chỉ là dự định/.test(lt) && /Chỉ là dự định, chưa đổi lớp/.test(lt), 'LoTrinhTiepPanel');
+    /* OV-3b: LoTrinhTiepPanel đã xoá — Lộ trình tiếp theo một em nay là hộp Lộ trình ở bảng lớp (BangLoTrinhTiep). */
     const tp = web('modules/classes/TransitionPanel.tsx');
     assert(/useLoiForm\(\)/.test(tp) && /lf\.bam\(\)/.test(tp) && /daSua/.test(tp) && /Kết quả gần nhất/.test(tp) && /ketQuaGanNhat\(/.test(tp), 'TransitionPanel (PR-CT: lớp FT cột Kết quả gần nhất dùng ketQuaGanNhat)');
-    /* PR-CL C3: cột Final Test của lớp thường nay ở PanelCuoiKhoa. */
-    assert(/role="columnheader">Final Test</.test(web('modules/classes/PanelCuoiKhoa.tsx')), 'PanelCuoiKhoa: cột Final Test');
+    /* OV-3b: PanelCuoiKhoa đã xoá — cột Final của lớp thường nay ở cách xem "Lộ trình tiếp theo". */
+    assert(/'Final'/.test(web('modules/classes/BangLoTrinhTiep.tsx')), 'BangLoTrinhTiep: cột Final');
     assert(!/disabled=\{coLoi \|\| !data\?\.canEdit\}/.test(tp), 'nút Tiếp tục không được khoá vì lỗi (phải bấm được để hiện lỗi)');
   });
 

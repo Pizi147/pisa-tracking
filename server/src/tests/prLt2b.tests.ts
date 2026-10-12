@@ -480,7 +480,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ Task 7 · Kết luận lên FT (phủ định) + Cuối khoá dời quá hạn
-  check('LT2b (7) · Kết luận lên FT — PHỦ ĐỊNH: GVCN 403 · QL chi nhánh khác 403 · chưa đủ MT0 400 · em FOU 400 · Học viên không lý do 400 · Trung tâm không chọn kỹ năng (MT0 đạt hết) 400', () => {
+  check('LT2b (7) · Kết luận lên FT — PHỦ ĐỊNH: GVCN 403 · QL chi nhánh khác 403 · chưa đủ MT0 400 · em FOU chưa MT0 400 · Học viên không lý do 400 · Trung tâm không chọn kỹ năng (MT0 đạt hết) 400', () => {
     const be = taoLop('BE', 1);
     const s = be.sids[0];
     ghiDiem(be.luot.get(s)!, { [L]: 30, [R]: 30, [W]: 30, [S]: 30 });
@@ -492,7 +492,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, s, { dat: false, nguyenNhan: 'trung_tam' }), /kỹ năng/, 'Trung tâm, MT0 không kỹ năng dưới ngưỡng');
     assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, s, { dat: 'x' }), /Đạt hoặc Không đạt/, 'dat sai kiểu');
     const fou = taoLop('FOU', 1);
-    assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, fou.sids[0], { dat: true }), /BE\/ELE/, 'em FOU');
+    assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, fou.sids[0], { dat: true }), /Chờ MT0/, 'em FOU (OV-3b: FOU có Kết quả đầu ra) chưa có MT0');
     cuoiSvc.ghiKetLuanFt(P.mbManager, s, { dat: true });
     assert(cuoiKhoaMod.cuoiKhoaTheoHocVien(be.classId).get(s).ketLuanFt.dat === true, 'đọc lại kết luận');
   });
@@ -540,8 +540,8 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     const hl = dung('FOU', 0.45, [40, 45, 50, 45], ['listening']);
     assert(hl.nhan === 'Học lại FOU · Quản lý báo phụ huynh qua TVV' && hl.tone === 'bad', JSON.stringify(hl));
     const kv = dung('BE', 0.78, [80, 75, 78, 79], [], null, { dat: false, nguyenNhan: 'trung_tam', mon: ['reading', 'writing'] });
-    assert(kv.kyVong!.nhan === 'Kỳ vọng đầu ra (BE IELTS 4.0)' && kv.kyVong!.trangThai === 'Không đạt · Trung tâm · R, W' && kv.kyVong!.daDanhDau, JSON.stringify(kv.kyVong));
-    assert(dung('BE', 0.78, [80, 75, 78, 79], []).kyVong!.trangThai === 'Chưa đánh dấu' && dung('FOU', 0.78, [80, 75, 78, 79], []).kyVong === null, 'chưa đánh dấu · FOU không có kỳ vọng đầu ra');
+    assert(kv.kyVong!.nhan === 'Kết quả đầu ra (BE IELTS 4.0)' && kv.kyVong!.trangThai === 'Không đạt · Trung tâm · R, W' && kv.kyVong!.daDanhDau, JSON.stringify(kv.kyVong));
+    assert(dung('BE', 0.78, [80, 75, 78, 79], []).kyVong!.trangThai === 'Chưa đánh dấu' && dung('FOU', 0.78, [80, 75, 78, 79], []).kyVong?.nhan === 'Kết quả đầu ra (FOU IELTS > 3.5)', 'chưa đánh dấu · OV-3b: FOU có Kết quả đầu ra');
   });
   check('LT2b (9) · viecTiepCuaEm: việc "Ghi Mini Test" có hạn, xếp trước Case, bấm mở đúng Case/PA; cột Việc tiếp theo của lớp có việc cho GVCN', () => {
     const v = d.viecTiepCuaEm({ nhapDiem: null, cases: [], yThuc: null, homNay: TODAY, miniTest: { han: addDays(TODAY, 2), caseId: 5, paId: 9 } });

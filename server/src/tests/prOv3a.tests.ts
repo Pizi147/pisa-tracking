@@ -29,7 +29,7 @@ export async function runPrOv3aTests(t: YThucTestKit) {
     assert(JSON.stringify(nhom(thuong)) === JSON.stringify(['Lớp', 'Lộ trình', 'Công cụ', '—']), `thường ${nhom(thuong)}`);
     assert(JSON.stringify(nhom(ft)) === JSON.stringify(nhom(thuong)), `FT ${nhom(ft)}`);
     assert(JSON.stringify(thuong.map((x: any) => x.nhan)) === JSON.stringify(
-      ['Thông tin lớp', 'Sửa thông tin học viên', '+ Học viên', 'Lộ trình tiếp theo', 'Kỳ vọng đầu ra', 'Xuất Excel', 'Kết thúc lớp']), `thường ${thuong.map((x: any) => x.nhan)}`);
+      ['Thông tin lớp', 'Sửa thông tin học viên', '+ Học viên', 'Lộ trình tiếp theo', 'Xuất Excel', 'Kết thúc lớp']), `thường ${thuong.map((x: any) => x.nhan)}`);   // OV-3b: bỏ mục Kỳ vọng đầu ra (vào bảng Lộ trình tiếp theo)
     assert(JSON.stringify(ft.map((x: any) => x.nhan)) === JSON.stringify(
       ['Thông tin lớp', 'Sửa thông tin học viên', '+ Học viên', 'Chuyển tiếp lớp', 'Xuất Excel', 'Kết thúc lớp']), `FT ${ft.map((x: any) => x.nhan)}`);
     const bo = ['Điểm Test cả lớp', 'Điểm MT cả lớp', 'Sửa phân công', 'Lịch Test của lớp', 'Tuần khai giảng', 'Sửa thông tin lớp'];

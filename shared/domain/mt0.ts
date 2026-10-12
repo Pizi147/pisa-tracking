@@ -24,9 +24,6 @@ export const coMt0 = (ma: ProgrammeCode | string | null, huong: Huong | string):
 /** Hạn chấm MT0 = thứ Tư tuần sau tuần thi (= luật lớp thường, đặc tả §1; PR-CT2). Tính khi đọc nên không migrate. */
 export const hanChamMt0 = (tuanThi: string): string => addDaysIso(mondayOfDate(tuanThi.slice(0, 10)), 9);
 
-/** Hạn Chốt lộ trình (PR-LCb; trước là "Chốt lên FT") = Chủ nhật trước tuần Cuối khoá (FOU hết tuần 7, BE/ELE hết tuần 9, Pre FOU hết tuần 4). */
-export const hanChotLenFt = (tuanCuoiKhoa: string): string => addDaysIso(mondayOfDate(tuanCuoiKhoa.slice(0, 10)), -1);
-
 /** Tuần muộn nhất của MT0: thứ Hai tuần 2 FT; chưa có lộ trình FT thì tuần Cuối khoá + 14 ngày (tuần 1 FT = tuần ngay sau Final). */
 export function tuanMuonNhatMt0(o: { tuanBatDauFt: string | null; tuanCuoiKhoa: string | null }): string | null {
   if (o.tuanBatDauFt) return addDaysIso(mondayOfDate(o.tuanBatDauFt.slice(0, 10)), 7);

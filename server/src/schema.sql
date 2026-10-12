@@ -423,10 +423,26 @@ CREATE TABLE lo_trinh_tiep_theo (
   ky_vong_nguyen_nhan TEXT,                           -- 'trung_tam' | 'hoc_sinh'
   ky_vong_mon TEXT,                                   -- JSON ô chuẩn lớp cũ Quản lý chọn
   ky_vong_ghi_chu TEXT,                               -- Học sinh: phương án case-by-case
-  huong_gvcn TEXT,                                    -- PR-LCb: Hướng GVCN đề xuất (cột "Gợi ý · GVCN"); quyết định của QL không ghi đè
+  huong_gvcn TEXT,                                    -- PR-LCb: Hướng GVCN đề xuất (OV-3b: chỉ đọc lịch sử, không ghi nữa)
+  kq_de_xuat_dat INTEGER,                             -- OV-3b: GVCN đề xuất Kết quả đầu ra (1 đạt · 0 không đạt) — không chạy gì; QL chốt ở ky_vong_*
+  kq_de_xuat_nguyen_nhan TEXT, kq_de_xuat_mon TEXT, kq_de_xuat_ghi_chu TEXT,
+  kq_de_xuat_boi INTEGER REFERENCES users(id), kq_de_xuat_luc TEXT,
   UNIQUE (student_id, class_id)
 );
 CREATE INDEX idx_ltt_class ON lo_trinh_tiep_theo(class_id);
+
+/* OV-3b: NHÁP lộ trình tiếp theo của Quản lý — chỉ QL / Quản trị đọc; không lệnh, không MT0, không việc. Chốt (= ra lệnh) xoá nháp cùng giao dịch. */
+CREATE TABLE lo_trinh_nhap (
+  id INTEGER PRIMARY KEY,
+  student_id INTEGER NOT NULL REFERENCES students(id),
+  class_id INTEGER NOT NULL REFERENCES classes(id),
+  huong TEXT NOT NULL,
+  lop_dich_id INTEGER REFERENCES classes(id),
+  tuan TEXT, muc_tieu REAL, khong_cam_ket INTEGER NOT NULL DEFAULT 0, ngay_xem_lai TEXT, ghi_chu TEXT,
+  sua_boi INTEGER REFERENCES users(id), sua_luc TEXT NOT NULL,
+  UNIQUE (student_id, class_id)
+);
+CREATE INDEX idx_ltn_class ON lo_trinh_nhap(class_id);
 
 -- HÀNH TRÌNH HỌC. Đây là câu chuyện đọc được của một em, KHÔNG phải nhật ký kỹ thuật
 -- (nhật ký kỹ thuật nằm ở `audit_logs`). Chỉ ghi sự kiện có ý nghĩa với người đọc.
@@ -1875,6 +1891,7 @@ CREATE TABLE ban_giao_mon (
   mon TEXT NOT NULL,
   noi_dung TEXT NOT NULL,
   nguoi_ghi INTEGER NOT NULL REFERENCES users(id), dien_thay INTEGER NOT NULL DEFAULT 0, ghi_luc TEXT NOT NULL,
+  lam_lai INTEGER NOT NULL DEFAULT 0,   -- OV-3b: QL đổi hướng / lớp chuyển đến sau khi chốt → chữ cũ giữ để điền sẵn, GVBM ghi lại
   UNIQUE (lenh_id, mon)
 );
 

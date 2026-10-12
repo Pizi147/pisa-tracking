@@ -252,10 +252,10 @@ export const METRICS: readonly ChiSo[] = [
     thoiGian: 'hien-trang', khuTrung: 'Mỗi học viên chỉ đếm 1 lần', drilldown: '/metrics/hv-ft-xong-mt-cuoi-chua-mt-ke',
   },
   {
-    id: 'hv-len-ft-chua-ky-vong', ten: 'Học viên lên FT chưa kết luận kỳ vọng đầu ra',
-    cauHoi: 'Bao nhiêu em BE/ELE lên FT mà Quản lý chưa kết luận Đạt / Không đạt kỳ vọng đầu ra (Overall MT0)?',
+    id: 'hv-len-ft-chua-ky-vong', ten: 'Học viên lên FT chưa kết luận Kết quả đầu ra',
+    cauHoi: 'Bao nhiêu em FOU/BE/ELE lên FT mà Quản lý chưa kết luận Đạt / Không đạt Kết quả đầu ra (Overall MT0)?',
     donVi: 'hoc-vien',
-    tapDuDieuKien: 'Em có quyết định chuyển lớp hướng Fast Track (đang chờ hoặc đã chuyển) từ lớp BE/ELE, chưa có kết luận kỳ vọng đầu ra ở Lộ trình tiếp theo của lớp đó; lớp đó đã có ít nhất một em đủ điểm MT0 (em còn chờ MT0 vẫn đếm). Một việc Quản lý mỗi lớp.',
+    tapDuDieuKien: 'Em có quyết định chuyển lớp hướng Fast Track (đang chờ hoặc đã chuyển) từ lớp FOU/BE/ELE, chưa có kết luận Kết quả đầu ra ở Lộ trình tiếp theo của lớp đó; lớp đó đã có ít nhất một em đủ điểm MT0 (em còn chờ MT0 vẫn đếm). Một việc Quản lý mỗi lớp.',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi học viên chỉ đếm 1 lần', drilldown: '/metrics/hv-len-ft-chua-ky-vong',
   },
   /* PR-VAI-a (K1-05, Q6): gốc của "Case chưa có người phụ trách" — lớp có môn mà chưa ai dạy. Dòng Cần xử lý "Sửa phân công". */

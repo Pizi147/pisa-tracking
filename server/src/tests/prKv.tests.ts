@@ -82,7 +82,7 @@ export async function runPrKvTests(t: YThucTestKit) {
     assert(d.goiYKyVong('ELE', { listening: 5, reading: 5, writing: null, speaking: 5 })?.overall === 5, 'thiếu W: Overall trên 3 kỹ năng có band');
     assert(d.goiYKyVong('ELE', { listening: 5, reading: 5, writing: null, speaking: null }) === null, '2 kỹ năng → null');
     assert(d.goiYKyVong('ELE', { writing: null }) === null, 'không band nào → null');
-    assert(d.goiYKyVong('FOU', { listening: 5, reading: 5, writing: 5, speaking: 5 }) === null, 'FOU không có kỳ vọng');
+    assert(d.goiYKyVong('FOU', { listening: 5, reading: 5, writing: 5, speaking: 5 })?.dat === true, 'OV-3b: FOU có Kết quả đầu ra (Overall > 3.5)');
   });
 
   /* Lớp ELE + FT, 3 em Lên FT đã chuyển: A đạt, B trượt W S, C chưa có MT0. */

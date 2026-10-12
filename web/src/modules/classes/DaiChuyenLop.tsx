@@ -26,7 +26,7 @@ export function DaiLopChuyen({ dai, homNay, onChuyenTiep, onBanGiao }: {
   onBanGiao: (o: { lop?: number; mon?: string }) => void;
 }) {
   if (!dai) return null;
-  const kt = dai.ketThucKhoa;
+  const lt = dai.loTrinh;
   const v = dai.viewer;
   const h = homNay ?? '';
   return (
@@ -37,15 +37,10 @@ export function DaiLopChuyen({ dai, homNay, onChuyenTiep, onBanGiao }: {
           <b className="tabular-nums text-slate-100">{dai.chuaChuyenDuoc.n} em</b> · {dai.chuaChuyenDuoc.loi.replace(/\.$/, '')} · chọn tuần hoặc lớp chuyển đến mới, hoặc huỷ quyết định
         </Dai>
       )}
-      {kt && (
-        <Dai nhan="Kết thúc khoá" do={kt.do}
-          nut={(v.laGvcn || v.coTheRaLenh) ? <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={onChuyenTiep}>Lộ trình tiếp theo…</button> : undefined}>
-          {v.coTheRaLenh ? (
-            <>
-              {kt.tuanCuoiKhoa ? `Final Test xong tuần ${tuanLich(kt.tuanCuoiKhoa, h)} · ` : ''}
-              <b className="tabular-nums text-slate-100">{kt.soChuaLenh} em</b> chưa có quyết định chuyển lớp · lớp kế tiếp nên bắt đầu {tuanLich(kt.tuanGoiY, h)}
-            </>
-          ) : <>Chờ Quản lý quyết định chuyển lớp · <b className="tabular-nums text-slate-100">{kt.soChuaLenh} em</b></>}
+      {lt && (
+        <Dai nhan="Lộ trình tiếp theo" do={lt.do}
+          nut={<button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={onChuyenTiep}>Mở</button>}>
+          {lt.hanChot ? <>chốt trước hết <span className="tabular-nums">{tuanLich(lt.hanChot, h)}</span> · </> : ''}<b className="tabular-nums text-slate-100">{lt.daChot}/{lt.tong} em</b>
         </Dai>
       )}
       {dai.banGiao && (v.laGvcn || v.xacNhanDuoc) && (

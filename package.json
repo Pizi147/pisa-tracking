@@ -23,6 +23,7 @@
     "kiem-du-lieu-mt": "npm run build:server && node dist-server/server/src/ops/kiemDuLieuMt.js",
     "kiem-o-lop": "npm run build:server && node dist-server/server/src/ops/kiemOLop.js",
     "dem-bo-tro-trung": "npm run build:server && node dist-server/server/src/ops/demBoTroTrung.js",
+    "kiem-truoc-ov3b": "npm run build:server && node dist-server/server/src/ops/kiemTruocOv3b.js",
     "xoa-kho-tep": "npm run build:server && node dist-server/server/src/ops/xoaKhoTep.js",
     "build": "node scripts/goi-libsql-linux.mjs && tsc -p tsconfig.web.json --noEmit && npm run build:server && vite build",
     "typecheck": "tsc -p tsconfig.web.json --noEmit && tsc -p tsconfig.build.json --noEmit",

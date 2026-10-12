@@ -102,7 +102,7 @@ export async function runPrK26Tests(t: YThucTestKit) {
     migratePrK26(conn, lan2);
     assert(lan2.length === 0, `lần hai: ${lan2.join()}`);
   });
-  check('K26-2b · sau gộp: em hẹn xem lại tương lai không vào đỏ Hết khoá; em Chưa quyết không ngày vẫn được nhắc ở hai tuần cuối', () => {
+  check('K26-2b · sau gộp: em hẹn xem lại tương lai không vào đỏ Hết khoá; OV-3b: hồ sơ HV thôi nhắc ghi lộ trình (việc QL "Chốt lộ trình" thay)', () => {
     const l = taoLop('FOU', 9, 2);
     assert(schedule.classProgress(l.classId).canXepLop === 2, 'tiền đề: 2 em cần xếp');
     chen(l.sids[0], l.classId, 'xep_sau', addDays(TODAY, 14));
@@ -111,22 +111,23 @@ export async function runPrK26Tests(t: YThucTestKit) {
     assert(schedule.classProgress(l.classId).canXepLop === 1, `còn 1 em cần xếp: ${schedule.classProgress(l.classId).canXepLop}`);
     assert(schedule.classProgressMany([l.classId]).get(l.classId).canXepLop === 1, 'classProgressMany cùng số');
     const cur = (sid: number) => get(`SELECT * FROM enrollments WHERE student_id = ? AND status = 'active'`, sid);
-    assert(loTrinh.lopHocCua(P.admin, l.sids[1], cur(l.sids[1])).nhacLoTrinh === true, 'không ngày → vẫn nhắc');
-    assert(loTrinh.lopHocCua(P.admin, l.sids[0], cur(l.sids[0])).nhacLoTrinh === false, 'có hẹn ngày → không nhắc (như xep_sau cũ)');
+    assert(!('nhacLoTrinh' in loTrinh.lopHocCua(P.admin, l.sids[1], cur(l.sids[1]))), 'OV-3b: bỏ nhắc GVCN ghi lộ trình');
   });
   check('K26-2c · ghiLoTrinhTiep nhận xep_sau/chua_ro từ form cũ → lưu chua_quyet; hướng lạ → 400; ngày xem lại tuỳ chọn', () => {
     const l = taoLop('FOU', 3, 1);
     const gvcn = ganGVCN(l.classId, P.normalCoreTeacher.userId);
+    const ql = P.mbManager;   // OV-3b: chỉ Quản lý ghi Hướng
     const sid = l.sids[0];
-    loTrinh.ghiLoTrinhTiep(gvcn, sid, { huong: 'xep_sau' });
+    loTrinh.ghiLoTrinhTiep(ql, sid, { huong: 'xep_sau' });
     assert(banGhi(sid).huong === 'chua_quyet', 'xep_sau → chua_quyet');
-    loTrinh.ghiLoTrinhTiep(gvcn, sid, { huong: 'chua_ro' });
+    loTrinh.ghiLoTrinhTiep(ql, sid, { huong: 'chua_ro' });
     assert(banGhi(sid).huong === 'chua_quyet', 'chua_ro → chua_quyet');
-    assertThrows(() => loTrinh.ghiLoTrinhTiep(gvcn, sid, { huong: 'abc' }), /Hướng không hợp lệ/, 'hướng lạ');
-    const r = loTrinh.ghiLoTrinhTiep(gvcn, sid, { huong: 'chua_quyet', ngayXemLai: addDays(TODAY, 7) });
+    assertThrows(() => loTrinh.ghiLoTrinhTiep(ql, sid, { huong: 'abc' }), /Hướng không hợp lệ/, 'hướng lạ');
+    assertThrows(() => loTrinh.ghiLoTrinhTiep(gvcn, sid, { huong: 'len_lop' }), /Quản lý/, 'OV-3b: GVCN → 403');
+    const r = loTrinh.ghiLoTrinhTiep(ql, sid, { huong: 'chua_quyet', ngayXemLai: addDays(TODAY, 7) });
     assert(r.banGhi.ngayXemLai === addDays(TODAY, 7), `ngày xem lại: ${JSON.stringify(r.banGhi)}`);
-    assertThrows(() => loTrinh.ghiLoTrinhTiep(gvcn, sid, { huong: 'chua_quyet', ngayXemLai: '28/09' }), /Ngày xem lại/, 'ngày sai dạng');
-    loTrinh.ghiLoTrinhTiep(gvcn, sid, { huong: 'len_lop', ngayXemLai: addDays(TODAY, 7) });
+    assertThrows(() => loTrinh.ghiLoTrinhTiep(ql, sid, { huong: 'chua_quyet', ngayXemLai: '28/09' }), /Ngày xem lại/, 'ngày sai dạng');
+    loTrinh.ghiLoTrinhTiep(ql, sid, { huong: 'len_lop', ngayXemLai: addDays(TODAY, 7) });
     assert(banGhi(sid).ngay_xem_lai === null, 'hướng khác thì không giữ ngày xem lại');
   });
   check('K26-2d · applyTransition nhận xep_sau cũ → ghi chua_quyet; Chưa quyết thiếu ngày xem lại → lỗi dòng', () => {
@@ -148,6 +149,7 @@ export async function runPrK26Tests(t: YThucTestKit) {
   check('K26-3a · layLoTrinhTiep: em Final Test 55% → goiY.canQuanLy; 78% → len; 45% → hoc_lai; thiếu điểm → không gợi ý', () => {
     const l = taoLop('BE', 11, 4);
     const gvcn = ganGVCN(l.classId, P.normalCoreTeacher.userId);
+    const ql = P.mbManager;   // OV-3b: chỉ Quản lý ghi Hướng
     ghiCuoiKhoa(l.luot.get(l.sids[0])!, 22);   // 55%
     ghiCuoiKhoa(l.luot.get(l.sids[1])!, 31);   // 77,5%
     ghiCuoiKhoa(l.luot.get(l.sids[2])!, 18);   // 45%
@@ -157,31 +159,29 @@ export async function runPrK26Tests(t: YThucTestKit) {
     assert(g(2)?.huong === 'hoc_lai', '45%');
     assert(g(3) === null, 'chưa có điểm → không gợi ý');
     /* Review Focus 4: em 50–59% đã lưu hoc_lai → hướng đó nằm trong hai hướng đầu, không bị giấu trong "Hướng khác". */
-    loTrinh.ghiLoTrinhTiep(gvcn, l.sids[0], { huong: 'hoc_lai' });
+    loTrinh.ghiLoTrinhTiep(ql, l.sids[0], { huong: 'hoc_lai' });
     const r = loTrinh.layLoTrinhTiep(gvcn, l.sids[0]);
     const { dau } = d.xepHuongTheoGoiY(d.huongTiepKhaDung('BE'), r.cuoiKhoa.goiY);
     assert(dau.includes(r.banGhi.huong), `hướng đã lưu ${r.banGhi.huong} trong ${dau.join()}`);
   });
-  check('K26-3b · panel: xếp hướng bằng xepHuongTheoGoiY, chữ đề xuất cho Quản lý, "Hướng khác", chân S3 qua chan.daSua (PR-SL I1); bảng Chuyển tiếp điền sẵn đề xuất GVCN', () => {
-    const src = nguon('modules/students/LoTrinhTiepPanel.tsx');
-    for (const chu of ['xepHuongTheoGoiY(', 'Hướng bạn đề xuất (Quản lý quyết)', 'Lưu đề xuất', 'Hướng khác', 'daSua, huy: {', 'Hệ thống gợi ý']) {
-      assert(src.includes(chu), `thiếu ${chu}`);
-    }
+  check('K26-3b · OV-3b: panel một em (LoTrinhTiepPanel) thay bằng hộp Lộ trình ở bảng lớp — Lưu nháp · Chốt, không chữ cũ; nháp chỉ QL', () => {
+    assert(!fs.existsSync(new URL('../../../../web/src/modules/students/LoTrinhTiepPanel.tsx', import.meta.url)), 'panel cũ còn');
+    const src = nguon('modules/classes/BangLoTrinhTiep.tsx');
+    for (const chu of ['Lưu nháp', 'Chốt', 'Xoá nháp', 'Huỷ quyết định', 'lo-trinh-nhap']) assert(src.includes(chu), `thiếu ${chu}`);
     assert(!/Chưa rõ|Xếp sau/.test(src), 'còn chữ cũ');
-    /* PR-CL C3: lớp thường chuyển tiếp ở PanelCuoiKhoa (TransitionPanel chỉ lớp FT — FT không có Lộ trình tiếp theo). */
-    assert(/s\.loTrinhTiep/.test(nguon('modules/classes/PanelCuoiKhoa.tsx')), 'Chuyển tiếp lớp đọc Lộ trình tiếp theo để điền sẵn');
   });
 
   // ------------------------------------------------------------------ K26-4 · ghi lộ trình tiếp theo cả lớp
   const loi = (fn: () => unknown): any => { try { fn(); } catch (e) { return e; } return null; };
   const soBanGhi = (classId: number) => get('SELECT COUNT(*) n FROM lo_trinh_tiep_theo WHERE class_id = ?', classId).n as number;
-  check('K26-4a · ghiLoTrinhTiepCaLop: GVCN ghi 3 em một lần → 3 bản ghi + 3 dòng hành trình; giữ chi tiết đã lưu khi cùng hướng', () => {
+  check('K26-4a · ghiLoTrinhTiepCaLop: Quản lý (OV-3b; trước là GVCN) ghi 3 em một lần → 3 bản ghi + 3 dòng hành trình; giữ chi tiết đã lưu khi cùng hướng', () => {
     const l = taoLop('FOU', 8, 3);
     const gvcn = ganGVCN(l.classId, P.normalCoreTeacher.userId);
+    const ql = P.mbManager;   // OV-3b: chỉ Quản lý ghi Hướng
     const lopBe = intake.createClass(P.admin, { code: `MB K26-BE-${seq}`, branchId: MB, kind: 'BE', isFastTrack: false, startDate: thu2(1), startPeriodId: week.ensurePeriod(thu2(1)).id });
-    loTrinh.ghiLoTrinhTiep(gvcn, l.sids[0], { huong: 'len_lop', lopDuKienId: lopBe.id });
+    loTrinh.ghiLoTrinhTiep(ql, l.sids[0], { huong: 'len_lop', lopDuKienId: lopBe.id });
     const truoc = get(`SELECT COUNT(*) n FROM journey_events WHERE event_type = 'next_step' AND student_id IN (?,?,?)`, ...l.sids).n;
-    const r = loTrinh.ghiLoTrinhTiepCaLop(gvcn, l.classId, { items: [
+    const r = loTrinh.ghiLoTrinhTiepCaLop(ql, l.classId, { items: [
       { studentId: l.sids[0], huong: 'len_lop', ghiChu: 'Lên cùng nhóm' },
       { studentId: l.sids[1], huong: 'hoc_lai' },
       { studentId: l.sids[2], huong: 'xep_sau' },
@@ -191,25 +191,26 @@ export async function runPrK26Tests(t: YThucTestKit) {
     assert(sau - truoc === 3, `hành trình +${sau - truoc}`);
     assert(banGhi(l.sids[0]).lop_du_kien_id === lopBe.id && banGhi(l.sids[0]).ghi_chu === 'Lên cùng nhóm', `giữ lớp dự kiến: ${JSON.stringify(banGhi(l.sids[0]))}`);
     assert(banGhi(l.sids[2]).huong === 'chua_quyet', 'giá trị cũ → chua_quyet');
-    const bang = loTrinh.layLoTrinhTiepCaLop(gvcn, l.classId);
+    const bang = loTrinh.layLoTrinhTiepCaLop(ql, l.classId);
     assert(bang.coTheGhi && bang.hocVien.length === 3 && bang.hocVien.every((h: any) => h.banGhi), 'GET cả lớp đọc lại đủ');
   });
   check('K26-4a · tất cả hoặc không: em ngoài lớp / lớp dự kiến sai → 400 có studentId, 0 bản ghi mới; GVBM 403; 61 dòng 400; rỗng 400', () => {
     const l = taoLop('FOU', 8, 2);
     const gvcn = ganGVCN(l.classId, P.normalCoreTeacher.userId);
+    const ql = P.mbManager;   // OV-3b: chỉ Quản lý ghi Hướng
     const ngoai = taoLop('FOU', 8, 1).sids[0];
-    let e = loi(() => loTrinh.ghiLoTrinhTiepCaLop(gvcn, l.classId, { items: [{ studentId: l.sids[0], huong: 'hoc_lai' }, { studentId: ngoai, huong: 'hoc_lai' }] }));
+    let e = loi(() => loTrinh.ghiLoTrinhTiepCaLop(ql, l.classId, { items: [{ studentId: l.sids[0], huong: 'hoc_lai' }, { studentId: ngoai, huong: 'hoc_lai' }] }));
     assert(e?.status === 400 && e.details?.studentId === ngoai && soBanGhi(l.classId) === 0, `em ngoài lớp: ${e?.status} ${e?.message}`);
-    e = loi(() => loTrinh.ghiLoTrinhTiepCaLop(gvcn, l.classId, { items: [{ studentId: l.sids[0], huong: 'hoc_lai' }, { studentId: l.sids[1], huong: 'abc' }] }));
+    e = loi(() => loTrinh.ghiLoTrinhTiepCaLop(ql, l.classId, { items: [{ studentId: l.sids[0], huong: 'hoc_lai' }, { studentId: l.sids[1], huong: 'abc' }] }));
     assert(e?.status === 400 && e.details?.studentId === l.sids[1] && e.message.startsWith('Học viên K26-') && soBanGhi(l.classId) === 0,
       `dòng sai giữa chừng phải huỷ cả lô: ${e?.status} ${e?.message} · ${soBanGhi(l.classId)}`);
     conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, is_core, effective_from, status, created_at) VALUES (?, ?, 0, '2026-01-01', 'active', ?)`)
       .run(P.normalSubjectTeacher.userId, l.classId, new Date().toISOString());
     e = loi(() => loTrinh.ghiLoTrinhTiepCaLop(loadPrincipal(P.normalSubjectTeacher.userId), l.classId, { items: [{ studentId: l.sids[0], huong: 'hoc_lai' }] }));
     assert(e?.status === 403, `GVBM: ${e?.status} ${e?.message}`);
-    e = loi(() => loTrinh.ghiLoTrinhTiepCaLop(gvcn, l.classId, { items: Array.from({ length: 61 }, () => ({ studentId: l.sids[0], huong: 'hoc_lai' })) }));
+    e = loi(() => loTrinh.ghiLoTrinhTiepCaLop(ql, l.classId, { items: Array.from({ length: 61 }, () => ({ studentId: l.sids[0], huong: 'hoc_lai' })) }));
     assert(e?.status === 400 && /tối đa 60/.test(e.message), `61 dòng: ${e?.message}`);
-    assert(loi(() => loTrinh.ghiLoTrinhTiepCaLop(gvcn, l.classId, { items: [] }))?.status === 400, 'rỗng');
+    assert(loi(() => loTrinh.ghiLoTrinhTiepCaLop(ql, l.classId, { items: [] }))?.status === 400, 'rỗng');
     assert(soBanGhi(l.classId) === 0, 'không lưu gì');
   });
   check('K26-4b · GET cả lớp: số câu SQL không tăng theo số em (3 em vs 30 em)', () => {
@@ -231,16 +232,15 @@ export async function runPrK26Tests(t: YThucTestKit) {
   /* PR-LCb: bảng cả lớp gộp vào panel "Lộ trình tiếp theo" (PanelCuoiKhoa) — GVCN ghi trên cùng panel với Quản lý. */
   /* PR-OV3a: menu ⋯ dựng ở `menuHoSoLop` (shared), bỏ dấu "…" — kiểm hành vi thay cho khớp chữ nguồn. */
   const dm: any = await import('../../../shared/domain/index.ts');
-  check('K26-4c · hồ sơ lớp: mục ⋯ "Lộ trình tiếp theo" chỉ hiện khi có quyền ghi; panel cả lớp (PanelCuoiKhoa) lỗi theo dòng', () => {
+  check('K26-4c · hồ sơ lớp: mục ⋯ "Lộ trình tiếp theo" theo quyền; OV-3b: mở cách xem Lộ trình tiếp theo, chọn nhiều lô lỗi một phần giữ dòng lỗi + lý do', () => {
     const coMuc = (q: Record<string, boolean>) => dm.menuHoSoLop({
       thuong: true, chuongTrinh: 'FOU', soHocVien: 3, canEditProgress: false, canAssign: false, canAssignSubject: false, canAddStudents: false,
       coTheChuyenTiep: false, coTheChuyenNhieuEm: false, coTheXuatExcel: false, coTheMoLaiLop: false, coTheXoa: false, coTheKetThuc: false, ...q,
     }).some((m: any) => m.key === 'lo-trinh-ca-lop' && m.nhan === 'Lộ trình tiếp theo');
     assert(coMuc({ canAddStudents: true }) && coMuc({ coTheChuyenTiep: true }) && !coMuc({}), 'mục menu theo quyền ghi');
-    assert(/<PanelCuoiKhoa/.test(nguon('modules/classes/ClassOverviewPage.tsx')), 'panel');
-    const pn = nguon('modules/classes/PanelCuoiKhoa.tsx');
-    assert(pn.includes('details?.studentId') && pn.includes('rong="toan"') && /Lưu \$\{/.test(pn), 'lỗi theo dòng, panel toàn màn, nút Lưu n em');
-    assert(pn.includes("`GVCN: ${nhanH(huongGvcn)}`") && pn.includes("'GVCN: chưa đề xuất'"), 'Chuyển tiếp (PanelCuoiKhoa, PR-CL C3): dòng em vẫn hiện đề xuất GVCN');
+    assert(/'che-do': 'lo-trinh'/.test(nguon('modules/classes/ClassOverviewPage.tsx')), 'lối vào cũ mở cách xem mới');
+    const pn = nguon('modules/classes/BangLoTrinhTiep.tsx');
+    assert(pn.includes('r.failed.map((f) => [f.studentId, f.message])') && pn.includes('Chốt {chon.size} em'), 'lỗi theo dòng, nút Chốt n em');
   });
   /* Sau rà mã: Turso tính mỗi câu một lượt mạng — ghi cả lớp phải đọc + ghi theo lô, không N câu cho N em trong một giao dịch. */
   check('K26-4d · PUT cả lớp: số câu SQL như nhau với 3 em và 32 em; ngày xem lại đã qua, ghi chú quá dài → 400 có studentId', () => {

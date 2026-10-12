@@ -311,6 +311,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 12/10/2026 | OV-3b (Opus 5.5) · `claude/zen-cray-fa7291` | Lộ trình tiếp theo: nháp chỉ QL (`lo_trinh_nhap`) → chốt = ra lệnh; GVCN thôi ghi Hướng; hạn nhắc / chốt Final − 2, bàn giao hết tuần Final ≥ 2 ngày, FT 5 ngày; đổi hướng/lớp đích → phiếu cần làm lại + chuông; KQĐR có FOU + GVCN đề xuất; cách xem bảng theo hướng thay PanelCuoiKhoa / PanelKyVong / LoTrinhTiepPanel |
 | 11/10/2026 | OV-3a (Opus 5.5) · `claude/pr-ov3a-ho-so-lop-vvqizj` | Hồ sơ lớp: nút cố định Nhập điểm · + Case · ⋯ nhóm (`menuHoSoLop`); panel Thông tin lớp 3 phần lưu riêng; bảng điểm cuối trang mở sẵn; Tổng hợp lớp thường bỏ Dự kiến thi, cột Lộ trình tiếp theo = lệnh Cuối khoá đã chốt; FT dòng Đầu vào |
 | 11/10/2026 | OV-1a (Opus 5.5) · `pr-ov1a-mt0-nhap-diem` | MT0 lớp thường: máy chủ chặn ghi đúng/tổng, bảng tỷ lệ bỏ MT0; Điểm theo lớp có lượt MT0 (`?lop=&luot=`), Nhập điểm hồ sơ lớp mở đó; tab Lịch Test / Chấm Test; Phân tích mở tuần trước; `kiem-o-lop` + nhóm 6 `kiem-du-lieu-mt` (chỉ đọc) |
 | 11/10/2026 | Planning (Opus 5.5) · `claude/epic-lovelace-jq3mig` | Overhaul: 5 đợt hỏi + 3 mockup (2 bản) + đặc tả OV (12 PR) duyệt; tái hiện lỗi MT0 3.3 (bảng tỷ lệ nhận điểm MT0); rà soát + dọn plan.md (xoá 24 kế hoạch đã merge); kế hoạch OV-1a |

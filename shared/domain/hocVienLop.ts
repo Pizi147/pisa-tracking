@@ -278,8 +278,8 @@ export const MUC_MENU_DONG_NHAN: Record<MucMenuDong, string> = {
 /** Việc HIẾM của dòng (K2-30): kẻ vạch trước mục hiếm đầu tiên — tách khỏi việc hằng ngày (Ghi vi phạm · Case · Nhập điểm). */
 export const MUC_MENU_DONG_HIEM: readonly MucMenuDong[] = ['lo-trinh-tiep', 'chuyen-lop', 'de-xuat-chuyen-lop'];
 /**
- * Hai mục thuộc PR-LT (đợt 5). Đã có màn làm việc đúng luật §3.9 (`LoTrinhTiepPanel.tsx`,
- * `ChuyenLopPanel.tsx`) — panel gắn ở `web/src/modules/classes/thaoTacDongHocVien.tsx`.
+ * Hai mục thuộc PR-LT (đợt 5). "Lộ trình tiếp theo" (OV-3b: chỉ Quản lý) mở hộp Lộ trình của em ở bảng lớp (`duongLoTrinhLop`);
+ * "Chuyển lớp…" mở `ChuyenLopPanel.tsx` — gắn ở `web/src/modules/classes/thaoTacDongHocVien.tsx`.
  */
 export const MENU_DONG_CHO_PR_LT = { loTrinhTiepTheo: true, chuyenLop: true } as const;
 
@@ -294,7 +294,7 @@ export function mucMenuDongHocVien(i: {
   if (i.coTheGhiViPham) out.push('vi-pham');
   if (i.coTheBaoCase) out.push('case');
   if (i.coTheNhapDiem) out.push('nhap-diem');
-  if (bat.loTrinhTiepTheo && i.laLopThuong && i.coTheSuaHocVien) out.push('lo-trinh-tiep');
+  if (bat.loTrinhTiepTheo && i.laLopThuong && i.coTheChuyenLop) out.push('lo-trinh-tiep');
   if (bat.chuyenLop && i.coTheChuyenLop) out.push('chuyen-lop');
   else if (bat.chuyenLop && i.coTheDeXuatChuyenLop) out.push('de-xuat-chuyen-lop');
   return out;
@@ -525,7 +525,7 @@ export function sapEmCanHoTro<T extends { ten: string; cases: readonly { quaHan:
 
 // ---------------------------------------------------------------- menu ⋯ đầu hồ sơ lớp (PR-OV3a, M2 §1)
 
-export type ViecMenuLop = 'thong-tin' | 'sua-hoc-vien' | 'hoc-vien' | 'lo-trinh-ca-lop' | 'ky-vong' | 'chuyen-tiep' | 'xuat-mt' | 'mo-lai-lop' | 'xoa-lop' | 'ket-thuc-lop';
+export type ViecMenuLop = 'thong-tin' | 'sua-hoc-vien' | 'hoc-vien' | 'lo-trinh-ca-lop' | 'chuyen-tiep' | 'xuat-mt' | 'mo-lai-lop' | 'xoa-lop' | 'ket-thuc-lop';
 export type MucMenuLop = { key: ViecMenuLop; nhan: string; nhom: 'Lớp' | 'Lộ trình' | 'Công cụ' | null };
 /**
  * Menu ⋯ hồ sơ lớp — CÙNG thứ tự lớp thường và FT: Lớp → Lộ trình → Công cụ → (kẻ) Mở lại / Xoá / Kết thúc (`nhom` null). Mỗi mục giữ
@@ -542,7 +542,6 @@ export function menuHoSoLop(i: {
     ...m('sua-hoc-vien', 'Sửa thông tin học viên', 'Lớp', i.canAddStudents && i.soHocVien > 0),
     ...m('hoc-vien', '+ Học viên', 'Lớp', i.canAddStudents),
     ...m('lo-trinh-ca-lop', 'Lộ trình tiếp theo', 'Lộ trình', i.thuong && (i.coTheChuyenTiep || i.canAddStudents)),
-    ...m('ky-vong', 'Kỳ vọng đầu ra', 'Lộ trình', i.thuong && i.coTheChuyenTiep && ['BE', 'ELE'].includes(i.chuongTrinh ?? '')),
     ...m('chuyen-tiep', 'Chuyển tiếp lớp', 'Lộ trình', !i.thuong && i.coTheChuyenNhieuEm),
     ...m('xuat-mt', 'Xuất Excel', 'Công cụ', i.coTheXuatExcel),
     ...m('mo-lai-lop', 'Mở lại lớp', null, i.coTheMoLaiLop),
@@ -550,6 +549,10 @@ export function menuHoSoLop(i: {
     ...m('ket-thuc-lop', 'Kết thúc lớp', null, i.coTheKetThuc),
   ];
 }
+
+/** OV-3b: hồ sơ lớp › tab Học viên › "Lộ trình tiếp theo"; `em` → mở sẵn hộp Lộ trình của em đó (Quản lý). */
+export const duongLoTrinhLop = (classId: number, em?: number | null): string =>
+  `/hoc-vien/lop/${classId}?che-do=lo-trinh${em ? `&em=${em}` : ''}`;
 
 // ---------------------------------------------------------------- hồ sơ giáo viên (§3.12, Q2)
 

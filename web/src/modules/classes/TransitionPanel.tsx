@@ -29,7 +29,7 @@ const TEN_HUONG: Record<string, string> = { bao_luu: NHAN_KIEU['bao-luu'], dung_
 
 /**
  * CHUYỂN LỚP CẢ LỚP FT (PR-CT, §3.1f Q30-1, mockup 20 màn I) — Quản lý RA LỆNH: em nào · lớp chuyển đến · tuần bắt đầu. Web tự chuyển vào Thứ Hai
- * của tuần đó; tới lúc đó Quản lý sửa / huỷ quyết định được. Chỉ lớp FT (gộp / tách lớp, đổi lộ trình); lớp thường dùng `PanelCuoiKhoa` (PR-LCb, PR-CL C3).
+ * của tuần đó; tới lúc đó Quản lý sửa / huỷ quyết định được. Chỉ lớp FT (gộp / tách lớp, đổi lộ trình); lớp thường dùng cách xem "Lộ trình tiếp theo" ở tab Học viên (OV-3b).
  *
  * Hai bước: 1 Soạn (mỗi em một hàng với đúng ba quyết định — hướng, lớp chuyển đến, tuần) rồi 2 Xác nhận (tóm tắt bằng câu). "Gửi phần đã quyết
  * trước, quyết nốt sau": em chưa chọn KHÔNG có lệnh. Lối vào: hồ sơ lớp FT → ⋮ `Chuyển tiếp lớp…`.
