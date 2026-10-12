@@ -15,7 +15,7 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 | `docs/superpowers/specs/2026-10-11-overhaul-ux-workflow-design.md` | **Đặc tả Overhaul (OV)** — duyệt 11/10; nguồn chi tiết cho 12 PR OV-1a … OV-6b |
 | `docs/superpowers/plans/2026-10-11-pr-ov1a-dung-mt0-nhap-diem.md` | PR **OV-1a** (kế hoạch + prompt) |
 | `docs/superpowers/plans/2026-10-11-pr-ov6a-lich-sap-toi-gon.md` | PR **OV-6a** (kế hoạch + prompt, song song OV-1a) |
-| `docs/superpowers/plans/2026-10-11-pr-ov2a-vai-quyen-goc-nhin.md` | PR **OV-2a** (kế hoạch + prompt, song song OV-3a) |
+| `docs/superpowers/plans/2026-10-12-pr-ov2b-ho-so-hoc-vien.md` | PR **OV-2b** (kế hoạch + prompt, song song OV-3b, OV-1b) |
 | `docs/superpowers/plans/2026-10-11-pr-ov3b-lo-trinh-kqdr-ban-giao.md` | PR **OV-3b** (kế hoạch + prompt, song song OV-2a, OV-1b) |
 | `docs/superpowers/plans/2026-10-11-pr-ov1b-dau-tru-vang-dong-lop.md` | PR **OV-1b** (kế hoạch + prompt; chẩn đoán 5.2 từ log thật 11/10) |
 | `docs/superpowers/plans/2026-10-07-pr-en-tieng-anh.md` | PR-EN (sau toàn bộ OV — đếm lại chữ trước khi chạy) |
@@ -257,7 +257,7 @@ Xong: [x] kế hoạch, một dòng mục 11, CODE_MAP.md nếu thêm/xoá file.
 ### 9.1. Đợt 1 — OV-1a (#316) + OV-6a (#315, đã merge 11/10)
 
 ### 9.2. Đợt 2 — chạy SAU khi OV-1a merge, hai session song song
-- **OV-2a** — Opus 5.5 · XHigh (B: Opus 5.5 · High). Prompt cuối `docs/superpowers/plans/2026-10-11-pr-ov2a-vai-quyen-goc-nhin.md`. Cổng 4070/5243.
+- **OV-2a** — ✅ merge #322 (12/10). TVV xem Phân tích chi nhánh (trừ phần GV): chủ SP giữ như PR.
 - **OV-3a** — ✅ merge #320 (11/10).
 - Không chung file trừ `server/src/tests/run.ts` + `plan.md` (gộp dòng). PR nào xong trước merge trước; PR sau gộp main vào nhánh, chạy lại `npm run check` rồi mới merge.
 - `students.consultant_user_id` (migrate) chuyển sang OV-2a vì Tổng quan TVV cần; OV-2b chỉ làm ô chọn + "Ghi cũ".
@@ -266,6 +266,9 @@ Xong: [x] kế hoạch, một dòng mục 11, CODE_MAP.md nếu thêm/xoá file.
 
 - **OV-3b** (sau OV-3a #320) — Opus 5.5 · XHigh (B: Opus 5.5 · High). Prompt cuối `docs/superpowers/plans/2026-10-11-pr-ov3b-lo-trinh-kqdr-ban-giao.md`.
   Cổng 4100/5273. Song song OV-2a + OV-1b (ranh giới trong kế hoạch; `classes.ts` OV-2a sửa vài dòng → gộp main trước khi mở PR). Migrate `prOv3b` + lệnh chỉ đọc `kiem-truoc-ov3b` (chủ SP chạy trước deploy cuối OV).
+
+- **OV-2b** (sau OV-2a #322) — Opus 5.5 · High (B: Sonnet 5.5 · High). Prompt cuối `docs/superpowers/plans/2026-10-12-pr-ov2b-ho-so-hoc-vien.md`.
+  Cổng 4110/5283. Song song OV-3b + OV-1b; chạm đúng một file của OV-3b (`thaoTacDongHocVien.tsx`) → gộp main trước khi mở PR.
 
 Các PR OV sau: planning viết kế hoạch + prompt khi tới lượt (mục 5), ghi vào mục này.
 
