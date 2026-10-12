@@ -57,7 +57,7 @@ type Detail = {
   status: string; cancelReason: string | null; note: string | null;
   /** PR-HSM (K4 §4h): lượt đã huỷ — lý do, ai, khi. */
   huy: { lyDo: string | null; ai: string | null; khi: string } | null;
-  /** PR-OV4a: bản Huỷ cả lượt còn khôi phục được + câu chặn khi số MT đã được xếp lại. */
+  /** PR-OV4a: bản huỷ MT còn khôi phục được + câu chặn khi số MT đã được xếp lại. */
   khoiPhuc: { ban: unknown[]; chan: string | null };
   result: any; cells: Cell[]; skips: any[];
   /** PR-MT0: MT0 — chip SOS chỉ để nhìn (band ≤ Target − 2.0); không kỳ vọng, không Case. */
