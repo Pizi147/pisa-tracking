@@ -407,7 +407,7 @@ function HopLoTrinh({ classId, kh, em, ke, onDong, onXong }: {
   }, 'Đã huỷ quyết định');
   const btn = 'btn btn-sm min-h-[44px] sm:min-h-0';
   const final = em.cuoiKhoa?.tyLe;
-  /** Lệnh chuyển lớp giữa khoá: sửa ở Chuyển lớp…, ở đây chỉ xem / huỷ. */
+  /** Lệnh chuyển lớp (bối cảnh giua-khoa): sửa ở Chuyển lớp…, ở đây chỉ xem / huỷ. */
   const giuaKhoa = em.lenh?.huong === 'chuyen_lop';
 
   return (
@@ -440,7 +440,7 @@ function HopLoTrinh({ classId, kh, em, ke, onDong, onXong }: {
             <input className="field w-full" value={huy} maxLength={2000} autoFocus onChange={(e) => setHuy(e.target.value)} />
           </Truong>
         ) : giuaKhoa ? (
-          <p className="m-0 text-sm text-slate-300">Chuyển lớp giữa khoá{em.lenh?.lopDichMa ? ` → ${em.lenh.lopDichMa}` : ''} — sửa ở ⋯ Chuyển lớp của em.</p>
+          <p className="m-0 text-sm text-slate-300">Chuyển lớp{em.lenh?.lopDichMa ? ` → ${em.lenh.lopDichMa}` : ''} — sửa ở ⋯ Chuyển lớp… của em.</p>
         ) : (
           <>
             <div role="group" aria-label="Hướng" className="flex flex-wrap gap-1.5">
