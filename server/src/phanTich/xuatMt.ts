@@ -32,6 +32,8 @@ export function phamViXuatMt(p: Principal, homNay?: string): PhamViXuat {
   let tatCa = false; let laGv = false; const cn = new Set<number>();
   for (const g of p.grants) {
     if (!g.permissions.has(PERMISSIONS.ATTEMPT_VIEW)) continue;
+    /* PR-OV2a: vai không có khu Test (TVV, CX) không xuất kết quả Test; quyền cấp riêng giữ như cũ (mỗi grant riêng chỉ một quyền). */
+    if (!g.permissions.has(PERMISSIONS.TEST_VIEW) && g.roleKey !== 'granted') continue;
     if (g.roleKey === 'teacher') { laGv = true; continue; }          // GV: chỉ lớp mình là GVCN (dưới)
     if (g.branchId === null) tatCa = true; else cn.add(g.branchId);  // QL chi nhánh · Quản trị · quyền cấp riêng
   }

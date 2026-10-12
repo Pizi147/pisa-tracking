@@ -17,7 +17,7 @@ export type HocVienLuuTru = {
   id: number; studentCode: string; fullName: string; lopCuoi: string | null; chiNhanh: string | null; archivedAt: string;
   /** Nút "Bỏ lưu trữ" cuối dòng (chỉ Quản lý — cùng luật `archiveStudent`/`unarchiveStudent`, PLAN_WEEK). */
   coTheBoLuuTru: boolean;
-  /** PR-LUI-b: nút "Học lại" (cùng luật `hocLai`: `plan.week` của học viên). */
+  /** PR-LUI-b: nút "Học lại" (cùng luật `hocLai`: `cycle.edit` của học viên). */
   coTheHocLai: boolean;
   /** PR-TK: lộ trình đã đóng GẦN NHẤT của em (có bản chụp) — nút "Tổng kết" mở ngăn của lộ trình này; không có → không nút. */
   cycleIdCuoi: number | null;
@@ -105,8 +105,8 @@ export function danhSachLuuTru(p: Principal, f: { branchId?: number | null; q?: 
         id: s.id, studentCode: s.student_code, fullName: s.full_name,
         lopCuoi: lopCuoiCua.get(s.id)?.code ?? null, chiNhanh: lopCuoiCua.get(s.id)?.branchName ?? null,
         archivedAt: s.archived_at,
-        coTheBoLuuTru: can(p, PERMISSIONS.PLAN_WEEK, { studentId: s.id }),
-        coTheHocLai: can(p, PERMISSIONS.PLAN_WEEK, { studentId: s.id }),
+        coTheBoLuuTru: can(p, PERMISSIONS.CYCLE_EDIT, { studentId: s.id }),
+        coTheHocLai: can(p, PERMISSIONS.CYCLE_EDIT, { studentId: s.id }),
         cycleIdCuoi: cycleCuoi.get(s.id) ?? null,
       }));
   }

@@ -45,7 +45,9 @@ export function HoTroHocVienTab() {
   const [params, setParams] = useSearchParams();
   const macDinh = useChiNhanhMacDinh();
   const branchId = params.get('cn') ? Number(params.get('cn')) : macDinh;
-  const laQuanLy = !!session?.nav?.workOps;
+  /* PR-OV2a: Admin (`nav.workChamDiem`) xem + Nhắc việc Chấm điểm của GV như Quản lý, chỉ nhóm đó. */
+  const chiChamDiem = !!session?.nav?.workChamDiem;
+  const laQuanLy = !!session?.nav?.workOps || chiChamDiem;
   const nguoi = laQuanLy ? thamSoNguoi(params.get('nguoi')) : 'toi';
   const loc: LocNhanh = (LOC_NHANH as readonly string[]).includes(params.get('loc') ?? '') ? (params.get('loc') as LocNhanh) : 'tat-ca';
   /* PR-DUYET (K1-30): chip 4 nhóm `nhom=`; link cũ `loai=` (một loại việc) vẫn đọc — quy về nhóm chứa loại đó. */
@@ -172,9 +174,10 @@ export function HoTroHocVienTab() {
         {laQuanLy && data && (
           <>
             {/* Mặc định KHÔNG có `nguoi` trên URL là "tất cả" (`thamSoNguoi`) — "Của tôi" phải GHI rõ `nguoi=toi`. */}
-            <BoLocDoan ariaLabel="Việc của ai" value={nguoi === 'toi' ? 'toi' : 'tat-ca'}
+            {/* Admin không có việc của riêng mình ở đây — bỏ "Của tôi". */}
+            {!chiChamDiem && <BoLocDoan ariaLabel="Việc của ai" value={nguoi === 'toi' ? 'toi' : 'tat-ca'}
               onChange={(k) => setParam('nguoi', k === 'toi' ? 'toi' : null)}
-              muc={[{ key: 'toi', nhan: 'Của tôi' }, { key: 'tat-ca', nhan: 'Của GV (nhắc)', title: 'Việc của giáo viên trong phạm vi — Nhắc ngay trên dòng' }]} />
+              muc={[{ key: 'toi', nhan: 'Của tôi' }, { key: 'tat-ca', nhan: 'Của GV (nhắc)', title: 'Việc của giáo viên trong phạm vi — Nhắc ngay trên dòng' }]} />}
             <ChonPhuTrach chiChonGv value={nguoi}
               onChange={(v, name) => {
                 setParam('nguoi', v === 'tat-ca' ? null : String(v));
@@ -185,7 +188,7 @@ export function HoTroHocVienTab() {
         <BoLocDoan ariaLabel="Nhóm việc" value={nhom ?? 'tat-ca'}
           onChange={(k) => { const next = new URLSearchParams(params); next.delete('loai'); if (k === 'tat-ca') next.delete('nhom'); else next.set('nhom', k); setParams(next, { replace: true }); }}
           muc={[{ key: 'tat-ca', nhan: 'Tất cả', so: demNhom['tat-ca'] },
-            ...NHOM_VIEC.map((k) => ({ key: k, nhan: NHOM_VIEC_LABEL[k], so: demNhom[k] }))]} />
+            ...NHOM_VIEC.filter((k) => !chiChamDiem || k === 'cham-diem').map((k) => ({ key: k, nhan: NHOM_VIEC_LABEL[k], so: demNhom[k] }))]} />
         <BranchFilter branchId={branchId} onBranch={(id) => setParam('cn', id ? String(id) : null)} />
       </div>
 

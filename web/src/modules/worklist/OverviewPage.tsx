@@ -9,6 +9,7 @@ import { MetricTiles } from './MetricTiles.tsx';
 import { DaiChoDuyet, DiemDangChuY, KhoiCanXuLy } from './KhoiCanXuLy.tsx';
 import { ViecCuaToi, YeuCauCuaToi } from './ViecCuaToi.tsx';
 import { LopToiDay } from './LopToiDay.tsx';
+import { HocVienCuaToi } from './HocVienCuaToi.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
@@ -46,6 +47,22 @@ export default function OverviewPage({ tab: tabProp = 'tong-quan' }: { tab?: Tab
   // Chỉ hiện khi có mốc dữ liệu; không truyền "hôm nay" → dd/mm/yyyy (mockup)
   const duLieuDen = homNay ? `Dữ liệu đến ${ngay(homNay)}` : null;
 
+  /* PR-OV2a (mockup overhaul-3 §3): TVV — tab đầu là "Học viên của tôi", không có việc của Quản lý; Phân tích như vai có quyền xem. */
+  if (session?.nav?.hvCuaToi) {
+    return (
+      <div className="page space-y-4">
+        {canSeeBoard ? (
+          <div className="flex flex-wrap items-end justify-between gap-x-3 gap-y-2">
+            <HangTab ariaLabel="Tổng quan" value={tabProp} onChange={goTab}
+              tabs={(['tong-quan', 'phan-tich'] as const).map((k) => ({ key: k, label: k === 'tong-quan' ? 'Học viên của tôi' : TAB_TONG_QUAN_LABEL[k] }))} />
+            {tab === 'board' && <BranchFilter branchId={branchId} onBranch={setBranchId} />}
+          </div>
+        ) : <h1 className="m-0 text-lg font-semibold text-slate-100">Học viên của tôi</h1>}
+        {tab === 'board' ? <PhanTich /> : <HocVienCuaToi />}
+      </div>
+    );
+  }
+
   if (!canSeeBoard) {
     /*
      * GIÁO VIÊN (mockup 23 màn A/C): tầng 1 = Việc của tôi · hôm nay (+ Yêu cầu của tôi bên cạnh); tầng 3 = Lớp tôi dạy. Lời chào nói
@@ -81,8 +98,9 @@ export default function OverviewPage({ tab: tabProp = 'tong-quan' }: { tab?: Tab
       {tab === 'work' && (
         <>
           {/* ─────────────── tầng 1: việc chờ Quản lý quyết + việc đang trễ (gộp hai khung) */}
-          <DaiChoDuyet branchId={branchId} />
-          <KhoiCanXuLy branchId={branchId} />
+          {session?.nav?.workApprove && <DaiChoDuyet branchId={branchId} />}
+          {/* PR-OV2a: Cần xử lý là việc — CX (không có Công việc) chỉ xem Số liệu. */}
+          {session?.nav?.work && <KhoiCanXuLy branchId={branchId} />}
 
           {/* ─────────────── tầng 3: số theo khung */}
           <section aria-labelledby="so-lieu" className="space-y-3 pt-3">

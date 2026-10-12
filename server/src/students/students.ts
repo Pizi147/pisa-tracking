@@ -2,10 +2,11 @@ import { db, tx } from '../db.ts';
 import {
   ENTRY_SKILLS, JOURNEY_GROUP, NO_HANDOVER_NOTE, PERMISSIONS, canChoThiThat, coKetQuaCu, STUDENT_STATUSES, luatDoiLop, NGAY_SINH_TOI_THIEU, docEmail, docNgayNhap,
   type LoaiLop, type ProgrammeCode,
+  CHI_SUA_THONG_TIN,
 } from '../../../shared/domain/index.ts';
 import { luotSinhViecRow } from '../worklist/danhGia.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, chuTuDo, conflict, isIsoDate, kiemKieuO, normalizeName, notFound, nowIso, padCode } from '../util.ts';
+import { badRequest, chuTuDo, conflict, forbidden, isIsoDate, kiemKieuO, normalizeName, notFound, nowIso, padCode } from '../util.ts';
 import { can, classScopeSql, require_, scopeFor, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { NOT_UNCONFIRMED_PRESET } from '../cases/sosState.ts';
@@ -359,7 +360,7 @@ function targetCu(studentId: number, c?: any): string {
 const tenLoTrinh = (c: { route?: string | null; programme_code?: string | null } | null | undefined): string | null => (c ? c.route ?? c.programme_code ?? null : null);
 
 /**
- * HỌC LẠI (PR-LUI-b, chủ sản phẩm 06/10) — đường lui của "Kết thúc học", CHỈ Quản lý / Quản trị (`plan.week` của học viên). CHỌN ĐÍCH:
+ * HỌC LẠI (PR-LUI-b, chủ sản phẩm 06/10) — đường lui của "Kết thúc học", CHỈ Quản lý / Quản trị (`cycle.edit` của học viên; PR-OV2a: Admin có `plan.week` nhưng không học lại được). CHỌN ĐÍCH:
  *  (a) VỀ LỚP CŨ (`lopMoiId` trống): làm ngược đúng những gì `setStudentStatus(…, 'finished')` đã làm — về ghi danh `completed` mà CHÍNH lần đó đóng, lộ trình bị đóng LÚC ĐÓ
  *      (`abandoned`) chạy tiếp, ra khỏi Lưu trữ. Lộ trình đã đóng bằng Kết luận (`completed`) thì không có gì chạy tiếp → mở lộ trình MỚI ở lớp cũ. Lớp cũ đã kết thúc: `moLaiLop` = true
  *      thì mở lại lớp CÙNG giao dịch, không thì 400.
@@ -370,7 +371,7 @@ const tenLoTrinh = (c: { route?: string | null; programme_code?: string | null }
 export function hocLai(p: Principal, studentId: number, o: {
   date?: string; lyDo?: unknown; moLaiLop?: boolean; lopMoiId?: number | null; mucTieu?: number | string | null; thangThi?: string | null;
 } = {}) {
-  require_(p, PERMISSIONS.PLAN_WEEK, { studentId }, 'Chỉ Quản lý mới cho học viên học lại được.');
+  require_(p, PERMISSIONS.CYCLE_EDIT, { studentId }, 'Chỉ Quản lý mới cho học viên học lại được.');
   const conn = db();
   const s = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
   if (!s) throw notFound('Không tìm thấy học viên');
@@ -468,7 +469,7 @@ export function hocLai(p: Principal, studentId: number, o: {
  * chuông chuyển vào — CHỈ khi lộ trình mới chưa có điểm / dữ liệu nào (409, báo rõ, nếu đã có).
  */
 export function hoanTacHocLai(p: Principal, studentId: number) {
-  require_(p, PERMISSIONS.PLAN_WEEK, { studentId }, 'Chỉ Quản lý mới hoàn tác được việc Học lại.');
+  require_(p, PERMISSIONS.CYCLE_EDIT, { studentId }, 'Chỉ Quản lý mới hoàn tác được việc Học lại.');
   const conn = db();
   const s = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
   if (!s) throw notFound('Không tìm thấy học viên');
@@ -539,7 +540,7 @@ export function hoanTacHocLai(p: Principal, studentId: number) {
  * cái đóng từ trước giữ đóng. Chỉ khi Kết thúc học vẫn là việc trạng thái CUỐI. Lớp tự đóng vì lần đó thì mở lại. Khác `hocLai`: Case đóng được mở lại.
  */
 export function hoanTacKetThuc(p: Principal, studentId: number) {
-  require_(p, PERMISSIONS.PLAN_WEEK, { studentId }, 'Chỉ Quản lý mới hoàn tác được việc Kết thúc học.');
+  require_(p, PERMISSIONS.CYCLE_EDIT, { studentId }, 'Chỉ Quản lý mới hoàn tác được việc Kết thúc học.');
   const conn = db();
   const s = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
   if (!s) throw notFound('Không tìm thấy học viên');
@@ -566,7 +567,7 @@ export function hoanTacKetThuc(p: Principal, studentId: number) {
 
 /** GET /students/:id/hoc-lai/lop-dich — lớp cũ + lộ trình sẽ chạy tiếp (hay mở mới) + lớp ĐANG hoạt động để chọn "Sang lớp mới" (panel Học lại). Chỉ Quản lý / Quản trị của học viên. */
 export function lopChoHocLai(p: Principal, studentId: number) {
-  require_(p, PERMISSIONS.PLAN_WEEK, { studentId }, 'Chỉ Quản lý mới cho học viên học lại được.');
+  require_(p, PERMISSIONS.CYCLE_EDIT, { studentId }, 'Chỉ Quản lý mới cho học viên học lại được.');
   const conn = db();
   const nk = nhatKyKetThucGanNhat(studentId);
   const dong = conn.prepare(
@@ -595,7 +596,7 @@ export function lopChoHocLai(p: Principal, studentId: number) {
  * Lưu trữ chỉ ẩn khỏi danh sách mặc định: không đổi trạng thái, không xoá dữ liệu, không đóng việc còn dở. Chỉ em đã kết thúc học.
  */
 export function archiveStudent(p: Principal, studentId: number) {
-  require_(p, PERMISSIONS.PLAN_WEEK, { studentId }, 'Chỉ Quản lý mới lưu trữ được học viên.');
+  require_(p, PERMISSIONS.CYCLE_EDIT, { studentId }, 'Chỉ Quản lý mới lưu trữ được học viên.');
   const conn = db();
   const s = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
   if (!s) throw notFound('Không tìm thấy học viên');
@@ -609,7 +610,7 @@ export function archiveStudent(p: Principal, studentId: number) {
 }
 
 export function unarchiveStudent(p: Principal, studentId: number) {
-  require_(p, PERMISSIONS.PLAN_WEEK, { studentId }, 'Chỉ Quản lý mới bỏ lưu trữ được học viên.');
+  require_(p, PERMISSIONS.CYCLE_EDIT, { studentId }, 'Chỉ Quản lý mới bỏ lưu trữ được học viên.');
   const conn = db();
   const s = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
   if (!s) throw notFound('Không tìm thấy học viên');
@@ -645,8 +646,14 @@ export function chuanHoaSuaHoSo(patch: any) {
   return patch;
 }
 
+/** PR-OV2a: trường `student.edit_info` (Admin, TVV, CX) sửa được ở hồ sơ — gửi trường khác (ghi chú…) thì 403. */
+const TRUONG_THONG_TIN = new Set(['fullName', 'dob', 'email', 'consultantName']);
+
 export function updateStudent(p: Principal, studentId: number, patch: any) {
-  require_(p, PERMISSIONS.STUDENT_EDIT, { studentId });
+  if (!can(p, PERMISSIONS.STUDENT_EDIT, { studentId })) {
+    require_(p, PERMISSIONS.STUDENT_EDIT_INFO, { studentId });
+    if (Object.keys(patch ?? {}).some((k) => !TRUONG_THONG_TIN.has(k))) throw forbidden(CHI_SUA_THONG_TIN);
+  }
   const conn = db();
   const s = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
   if (!s) throw notFound();

@@ -18,6 +18,7 @@ import { migratePrSos } from './migrate/prSos.ts';
 import { migratePrYt4 } from './migrate/prYt4.ts';
 import { migratePrHsm } from './migrate/prHsm.ts';
 import { migratePrLt2a } from './migrate/prLt2a.ts';
+import { migratePrOv2 } from './migrate/prOv2.ts';
 import { migratePrLt2b } from './migrate/prLt2b.ts';
 import { migratePrCt } from './migrate/prCt.ts';
 import { migratePrPb2b } from './migrate/prPb2b.ts';
@@ -284,6 +285,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     /* PR-LC: quyết định Cuối khoá đang chờ → Lộ trình tiếp theo + MT0 theo quyết định (đổi dữ liệu, chạy lặp được). */ migratePrLc(conn, applied);
     /* PR-PA (§8): Số buổi PA / Kết quả + nhật ký Sửa PA (chỉ thêm cột) + điền bù Bổ trợ miễn phí, Tutor kỳ vọng. */ migratePrPa(conn, applied);
     /* PR-CT2 (SAU PR-PA): A điền bù Số buổi tuần này cho Kết quả cũ PA Tutor kỳ vọng (một lần, khoá demo_config) · B chạy PA bổ trợ còn chờ kế hoạch + đóng thẻ kế hoạch · C sinh bổ trợ Final cho lệnh lên đang chờ đã đủ điểm. */ migratePrCt2(conn, applied);
+    /* PR-OV2a: vai Admin / TVV / CX + students.consultant_user_id + demo_sessions.goc_nhin (chỉ thêm, chạy lặp được). */ migratePrOv2(conn, applied);
     /* PR-OV1b: dấu "-" cũ theo luật mới — nhập bù / MT cũ = Không dự thi, "-" trong tuần chưa chốt = vắng chốt ngay (đổi dữ liệu, chạy lặp được). */ migratePrOv1b(conn, applied);
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")

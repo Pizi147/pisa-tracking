@@ -8,6 +8,7 @@ import { PERMISSIONS, type NavQuyen } from '../../../shared/domain/index.ts';
 import { can, scopeFor, type Principal } from '../permissions.ts';
 import { canSeeBoard } from '../worklist/mgmttasks.ts';
 import { coPhamViXuat, phamViXuatMt } from '../phanTich/xuatMt.ts';
+import { phamViXemViec } from '../worklist/xemViec.ts';
 
 export function navOf(p: Principal): NavQuyen {
   const coPhamVi = (perm: string) => !scopeFor(p, perm).none;
@@ -15,15 +16,24 @@ export function navOf(p: Principal): NavQuyen {
   const meeting = coPhamVi(PERMISSIONS.MEETING_VIEW);
   const plan = coPhamVi(PERMISSIONS.PLAN_WEEK);
   const board = canSeeBoard(p);
+  /* PR-OV2a: Test và Công việc có quyền vào riêng — TVV, CX xem điểm / Case trong hồ sơ (`attempt.view`) mà không có hai khu này. */
+  const test = attempt && coPhamVi(PERMISSIONS.TEST_VIEW);
+  const viec = coPhamVi(PERMISSIONS.WORK_VIEW);
+  const support = viec && attempt;
+  const chamDiem = phamViXemViec(p) === 'cham-diem';
   return {
     overview: true,
     students: coPhamVi(PERMISSIONS.STUDENT_VIEW),
     admin: can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }),
-    analysis: meeting,
-    test: attempt, testGrade: attempt, testSchedule: attempt, testPlan: plan,
-    work: attempt || board || meeting,
-    workSupport: attempt, workOps: board, workReports: meeting,
-    workApprove: can(p, PERMISSIONS.REQUEST_APPROVE, { anyScope: true }), workRequests: attempt,
+    analysis: coPhamVi(PERMISSIONS.ANALYSIS_VIEW),
+    phanTichGv: coPhamVi(PERMISSIONS.ANALYSIS_VIEW_TEACHER),
+    hvCuaToi: p.roleKeys.includes('consultant'),
+    test, testGrade: test, testSchedule: test, testPlan: test && plan,
+    work: viec && (attempt || board || meeting),
+    workSupport: support, workOps: viec && board, workReports: viec && meeting,
+    /* Admin (chỉ nhóm Chấm điểm, `phamViXemViec`) không có Yêu cầu của tôi — không gửi yêu cầu nào. */
+    workApprove: viec && can(p, PERMISSIONS.REQUEST_APPROVE, { anyScope: true }), workRequests: support && !chamDiem,
+    workChamDiem: support && chamDiem,
     xuatMt: coPhamViXuat(phamViXuatMt(p)),
   };
 }

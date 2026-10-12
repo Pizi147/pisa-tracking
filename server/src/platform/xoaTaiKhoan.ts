@@ -33,11 +33,13 @@ export const COT_TRO_TAI_KHOAN: readonly { bang: string; cot: string; loai: Loai
   c('user_roles', 'user_id', TL, 'vai trò'), c('user_permissions', 'user_id', TL, 'quyền riêng'), c('user_emails', 'user_id', TL, 'email phụ'),
   c('user_skills', 'user_id', TL, 'kỹ năng'), c('user_prefs', 'user_id', TL, 'tuỳ chọn'), c('demo_sessions', 'user_id', TL, 'phiên đăng nhập'),
   c('teacher_assignments', 'user_id', TL, 'phân công'), c('notifications', 'user_id', TL, 'thông báo'), c('task_followers', 'user_id', TL, 'theo dõi công việc'),
-  /* dấu vết (65) */
+  /* dấu vết (66) */
   c('assessment_attempts', 'created_by', DV, 'lượt Test'), c('assessment_attempts', 'deadline_override_by', DV, 'lượt Test'),
   c('assessment_scores', 'entered_by', DV, 'điểm đã nhập'), c('assessment_scores', 'no_show_by', DV, 'điểm đã nhập'),
   c('assessment_scores', 'examiner_user_id', DV, 'điểm đã nhập'),
   c('attachments', 'uploaded_by', DV, 'tệp đính kèm'),
+  /* PR-OV2a: TVV phụ trách em — dấu vết (xoá mềm), KHÔNG thiết lập: thiết lập bị DELETE theo, sẽ xoá luôn học viên. */
+  c('students', 'consultant_user_id', DV, 'học viên phụ trách tư vấn'),
   c('attempt_schedule_history', 'actor_user_id', DV, 'lịch Test'), c('attempt_skill_skips', 'created_by', DV, 'lịch Test'),
   c('attempt_skills', 'scope_by', DV, 'lịch Test'), c('attempt_skills', 'sit_by', DV, 'lịch Test'), c('attempt_skills', 'deadline_override_by', DV, 'lịch Test'),
   c('audit_logs', 'actor_user_id', DV, 'nhật ký thao tác'),

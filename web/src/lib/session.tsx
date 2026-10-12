@@ -35,6 +35,15 @@ export type Session = {
   chiNhanhGoiY?: number | null;
   /** PR-PH: chỉ có ở web — lần tải lại phiên vừa lỗi mạng/máy chủ (phiên vẫn coi là còn). */
   loiKetNoi?: string;
+  /** PR-OV2a: menu Góc nhìn (QL / Quản trị nắm ≥ 2 vai); null = không có. */
+  gocNhin?: GocNhin | null;
+};
+
+export type GocNhin = {
+  /** Vai đang chọn; null = làm việc bằng mọi vai (vai gốc). */
+  dangChon: string | null;
+  vaiGoc: string;
+  coThe: { role: string; nhan: string; phamVi: string }[];
 };
 
 type Ctx = {
@@ -43,6 +52,8 @@ type Ctx = {
   reload: () => Promise<void>;
   switchAccount: (userId: number) => Promise<void>;
   signOut: () => Promise<void>;
+  /** PR-OV2a: đổi góc nhìn (null = về vai gốc) — máy chủ lưu ở phiên, tải lại toàn bộ dữ liệu theo quyền mới. */
+  doiGocNhin: (role: string | null) => Promise<void>;
   can: (permission: string) => boolean;
   /** Số chi nhánh người dùng được cấp — bộ lọc chi nhánh chỉ hiện khi > 1. */
   branchCount: number;
@@ -74,7 +85,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => { void reload(); }, [reload]);
   /* Q7: khung đã nhớ (CongTacKhung) theo người — đặt trước khi trang con đọc. */
-  datNguoiDungKhung(session?.user?.id ?? null);
+  datNguoiDungKhung(session?.user?.id ?? null, session?.gocNhin?.dangChon ?? null);
 
   const switchAccount = useCallback(async (userId: number) => {
     await api.post('/demo/session', { userId });
@@ -95,6 +106,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     navigate('/', { replace: true });
   }, [navigate, reload]);
 
+  const doiGocNhin = useCallback(async (role: string | null) => {
+    await api.put('/session/goc-nhin', { role });
+    /* Như đổi tài khoản: gỡ trang của góc nhìn cũ TRƯỚC khi bỏ dữ liệu nhớ — không thì trang cũ tải lại bằng quyền mới (403). */
+    setSession(null);
+    setLoading(true);
+    invalidateAll();
+    await reload();
+    navigate('/', { replace: true });
+  }, [navigate, reload]);
+
   /** Chỉ dùng để hiện/ẩn giao diện. Quyền thật luôn do API quyết định. */
   const can = useCallback(
     (permission: string) => !!session?.grants?.some((g) => g.permissions.includes(permission)),
@@ -108,8 +129,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [session]);
 
   const value = useMemo<Ctx>(
-    () => ({ session, loading, reload, switchAccount, signOut, can, branchCount }),
-    [session, loading, reload, switchAccount, signOut, can, branchCount],
+    () => ({ session, loading, reload, switchAccount, signOut, doiGocNhin, can, branchCount }),
+    [session, loading, reload, switchAccount, signOut, doiGocNhin, can, branchCount],
   );
   return <SessionCtx.Provider value={value}>{children}</SessionCtx.Provider>;
 }

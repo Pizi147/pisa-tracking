@@ -1,3 +1,4 @@
+import { hauToGocNhin } from '../../../ui/CongTacKhung.tsx';
 /**
  * LỚP NÀO ĐANG MỞ ở Lịch Test (PR-UX1 Q8). Mặc định theo `moSan` của máy chủ (GV: lớp còn bài của mình; QL: lớp còn
  * bài). Người xem đã tự bấm mở/thu lớp nào thì trình duyệt nhớ theo TUẦN, lần sau theo đó. `epMo` = lớp mở vì một lối
@@ -5,7 +6,7 @@
  * chung một máy không lẫn lớp đã mở của nhau (rà #92). PR-LT3: khoá hàng = `khoaHang` (kèm tuần thi của hàng) — hàng khối 2 và
  * khối 3 cùng lớp không lẫn nhau.
  */
-const khoa = (userId: number | null, periodId: number) => `lich-test-mo:${userId ?? 0}:${periodId}`;
+const khoa = (userId: number | null, periodId: number) => `lich-test-mo:${userId ?? 0}:${periodId}${hauToGocNhin()}`;
 
 export function docMo(userId: number | null, periodId: number): Record<string, boolean> {
   try { return JSON.parse(localStorage.getItem(khoa(userId, periodId)) ?? '{}') ?? {}; } catch { return {}; }

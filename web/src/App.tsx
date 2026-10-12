@@ -6,6 +6,7 @@ import { DemoBar } from './modules/platform/DemoBar.tsx';
 import { LA_BAN_CHINH } from './lib/banChinh.ts';
 import { Header } from './modules/platform/Header.tsx';
 import { Skeleton } from './ui/ui.tsx';
+import { useToast } from './ui/Toast.tsx';
 import { CHIP_TRON } from './ui/Nhan.tsx';
 import WelcomePage from './modules/platform/WelcomePage.tsx';
 import { NAV_RONG, duongMoi, khuVucCuaDuong, khuVucHienThi, type DemYeuCau, type KhuVuc, type KhuVucMuc } from '@shared/domain/index.ts';
@@ -91,7 +92,8 @@ function NutDay({ muc, active, so }: { muc: KhuVucMuc; active: boolean; so: SoBa
   );
 }
 export default function App() {
-  const { session, loading, reload } = useSession();
+  const { session, loading, reload, doiGocNhin } = useSession();
+  const toast = useToast();
   const location = useLocation();
   /* PR-PH / HK2: bấm "Thử lại" ở dải Mất kết nối → nút khoá, chữ "Đang thử…" tới khi tải xong. */
   const [dangThu, setDangThu] = useState(false);
@@ -130,6 +132,7 @@ export default function App() {
   const items = khuVucHienThi(nav);
   const dangO = khuVucCuaDuong(location.pathname);
   const banChinh = LA_BAN_CHINH || !!session.banChinh;
+  const gocNhin = session.gocNhin;
 
   return (
     <div className="h-full flex flex-col">
@@ -163,6 +166,21 @@ export default function App() {
           <Header />
         </div>
       </header>
+      {/* PR-OV2a (mockup overhaul-3 §2): đang ở một góc nhìn → dải mỏng luôn nói vai + phạm vi, có lối về vai gốc. */}
+      {gocNhin?.dangChon && (() => {
+        const vai = gocNhin.coThe.find((v) => v.role === gocNhin.dangChon);
+        const goc = gocNhin.coThe.find((v) => v.role === gocNhin.vaiGoc);
+        return (
+          <div role="status" className="shrink-0 flex items-center gap-x-2.5 gap-y-1 border-b px-4 sm:px-5 py-1.5 text-[12.5px] text-slate-300 min-w-0"
+            style={{ borderColor: 'rgb(var(--wait-line-rgb))', background: 'rgb(var(--wait-bg-rgb))' }}>
+            <b className="shrink-0 font-semibold" style={{ color: 'rgb(var(--wait-rgb))' }}>Góc nhìn: {vai?.nhan ?? gocNhin.dangChon}</b>
+            {vai?.phamVi && <span className="hidden sm:inline min-w-0 truncate" title={vai.phamVi}>· {vai.phamVi}</span>}
+            <span className="flex-1" />
+            <button type="button" className="shrink-0 min-h-[32px] max-sm:min-h-[44px] border-0 bg-transparent p-0 text-[12.5px] cursor-pointer text-[color:var(--accent)] hover:underline"
+              onClick={() => { doiGocNhin(null).catch((e) => toast.push('error', e instanceof Error ? e.message : 'Không đổi được góc nhìn.')); }}>Về {goc?.nhan ?? 'vai gốc'}</button>
+          </div>
+        );
+      })()}
 
       <main id="noi-dung" tabIndex={-1} className="relative flex-1 overflow-y-auto p-4 md:p-5 pb-20 md:pb-5 outline-none" key={location.pathname.split('/')[1]}>
         <Suspense fallback={<div className="p-8 max-w-4xl mx-auto"><Skeleton rows={8} /></div>}>

@@ -694,7 +694,7 @@ function quanLyCuaLop(classId: number | null): number[] {
     .prepare(
       `SELECT DISTINCT ur.user_id FROM user_roles ur
          JOIN roles r ON r.id = ur.role_id
-        WHERE r.key IN ('manager', 'system_admin')
+        WHERE r.key IN ('manager', 'system_admin', 'office_admin')   -- PR-OV2a: Admin xếp / dời lịch MT nên cũng nhận đề nghị dời
           AND ur.status = 'active'
           AND (ur.branch_id IS NULL OR ur.branch_id = ?)`,
     )

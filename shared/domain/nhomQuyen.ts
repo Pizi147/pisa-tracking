@@ -51,10 +51,16 @@ export const MO_TA_QUYEN: Record<PermissionKey, { nhom: NhomQuyenKey; moTa: stri
   'student.view': { nhom: 'hv_lop', moTa: 'Xem hồ sơ học viên.', phamVi: GV_LOP_MINH },
   'student.edit': { nhom: 'hv_lop', moTa: 'Sửa hồ sơ học viên, thêm học viên vào lớp, chuyển lớp.',
     phamVi: 'GV: chỉ GVCN, học viên lớp mình chủ nhiệm.' },
+  'student.edit_info': { nhom: 'hv_lop', moTa: 'Sửa thông tin học viên: họ tên, ngày sinh, email, TVV, dự kiến thi, điểm đầu vào.',
+    phamVi: 'GV: chỉ GVCN, học viên lớp mình chủ nhiệm.' },
   'cycle.edit': { nhom: 'hv_lop', moTa: 'Sửa Target và lộ trình của học viên.' },
+  'test.view': { nhom: 'lich_test', moTa: 'Vào Test: Lịch Test, Điểm theo lớp, Kế hoạch Test.', phamVi: GV_LOP_MINH },
   'request.approve': { nhom: 'duyet', moTa: 'Duyệt thẻ trong hộp Chờ duyệt.' },
   'meeting.view': { nhom: 'van_hanh', moTa: 'Xem tiến trình công việc và báo cáo.' },
   'meeting.edit': { nhom: 'van_hanh', moTa: 'Cập nhật báo cáo và ghi chú công việc.' },
+  'work.view': { nhom: 'van_hanh', moTa: 'Vào Công việc.' },
+  'analysis.view': { nhom: 'van_hanh', moTa: 'Xem Tổng quan số liệu và Phân tích.' },
+  'analysis.view_teacher': { nhom: 'van_hanh', moTa: 'Xem Phân tích theo giáo viên và hồ sơ giáo viên khác.' },
   'admin.config': { nhom: 'quan_tri', moTa: 'Quản trị phần mềm: tài khoản, vai trò, quyền và cấu hình.' },
 };
 
@@ -65,6 +71,7 @@ export const MO_TA_QUYEN: Record<PermissionKey, { nhom: NhomQuyenKey; moTa: stri
 export const QUYEN_SUY_RA_GV: { quyen: PermissionKey; ai: 'GV' | 'GVCN'; ghiChu: string }[] = [
   { quyen: PERMISSIONS.CLASS_ASSIGN_SUBJECT, ai: 'GVCN', ghiChu: 'Chỉ lớp chủ nhiệm, không đổi ô GVCN.' },
   { quyen: PERMISSIONS.STUDENT_EDIT, ai: 'GVCN', ghiChu: 'Chỉ học viên lớp chủ nhiệm.' },
+  { quyen: PERMISSIONS.STUDENT_EDIT_INFO, ai: 'GVCN', ghiChu: 'Chỉ học viên lớp chủ nhiệm.' },
   { quyen: PERMISSIONS.DISCIPLINE_MANAGE, ai: 'GVCN', ghiChu: 'Chỉ lớp chủ nhiệm.' },
   { quyen: PERMISSIONS.CASE_CLOSE, ai: 'GVCN', ghiChu: 'Case Ý thức lớp chủ nhiệm; Case học thuật chỉ môn mình dạy.' },
   { quyen: PERMISSIONS.SCHEDULE_MOVE, ai: 'GVCN', ghiChu: 'Mọi môn của lớp thường mình chủ nhiệm.' },
