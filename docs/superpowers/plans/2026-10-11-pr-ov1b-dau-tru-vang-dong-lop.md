@@ -1,4 +1,4 @@
-# PR OV-1b — Lỗi 5.2 (dữ liệu thật CP FT RF 01), dấu "-" = Vắng chốt ngay + Bỏ vắng, dòng lớp "phần của bạn"
+# [x] PR OV-1b — Lỗi 5.2 (dữ liệu thật CP FT RF 01), dấu "-" = Vắng chốt ngay + Bỏ vắng, dòng lớp "phần của bạn"
 
 Nguồn: đặc tả OV mục 3.3, 3.5, 6.5 (`docs/superpowers/specs/2026-10-11-overhaul-ux-workflow-design.md`); mockup đã duyệt
 `thiet-ke/mockup-overhaul-1-cong-viec-diem-mt-2026-10-11.html` (phần Lịch Test "phần của bạn", Vắng / Bỏ vắng). Rà: **sâu** (luồng chính, dữ liệu).

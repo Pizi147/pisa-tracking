@@ -275,7 +275,7 @@ export async function runPrLt3Tests(t: YThucTestKit) {
       assert(conn.prepare('SELECT 1 FROM notifications WHERE dedup_key = ?').get(`chamcheo:${LOP}:5:${pid(BON)}`), 'S Mock thi 4 tuần trước vẫn chuông');
       emMoi(5, HAI, true);
       don();
-      ops.chotVangDinhKy({ ngay: TODAY, chot: () => 0, chuyen: () => 0, daKhoiTao: () => true });
+      ops.chotVangDinhKy({ ngay: TODAY, chuyen: () => 0, daKhoiTao: () => true });
       assert(nhan().length > 0, 'lượt quét thứ Hai phải gọi chuông');
     } finally { don(); }
   });

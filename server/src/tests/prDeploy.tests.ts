@@ -410,7 +410,7 @@ export async function runPrDeployTests(t: YThucTestKit) {
 
   // ------------------------------------------------------------------ Task 3a · cron chot-vang trên DB mới từ init
   console.log('\nPR-DEPLOY · (3) Chốt an toàn: cron chot-vang trên DB mới');
-  check('DEPLOY-3a · chotVangDinhKy trên DB mới từ init (chưa lớp, chưa lệnh) → daChot 0, daChuyen 0, boQua null, không ném', () => {
+  check('DEPLOY-3a · chotVangDinhKy trên DB mới từ init (chưa lớp, chưa lệnh) → daChuyen 0, boQua null, không ném (OV-1b: không còn daChot)', () => {
     const f = dbInit();
     const js = pathToFileURL(pathMod.join(REPO, 'dist-server/server/src/ops/chotVangDinhKy.js')).href;
     const r = cp.spawnSync(process.execPath, ['--input-type=module', '-e', `const m = await import(${JSON.stringify(js)}); const k = await m.chotVangDinhKy({ ngay: '2026-10-05' }); console.log('@@' + JSON.stringify(k));`], {
@@ -418,7 +418,7 @@ export async function runPrDeployTests(t: YThucTestKit) {
     });
     assert(r.status === 0, `cron lỗi: ${String(r.stderr).slice(-400)}`);
     const k = JSON.parse(String(r.stdout).split('@@').pop()!.trim());
-    assert(k.daChot === 0 && k.daChuyen === 0 && k.boQua === null, JSON.stringify(k));
+    assert(k.daChuyen === 0 && k.boQua === null, JSON.stringify(k));
   });
 
   // ------------------------------------------------------------------ Task 4 · kiem-sau-init (chỉ đọc)

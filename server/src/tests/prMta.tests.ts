@@ -401,20 +401,19 @@ export async function runPrMtaTests(t: YThucTestKit) {
     assert(d.trangThaiTT({ batBuoc: true, tuanBatDau: '2026-09-07', coDiem: false, sit: 'cancelled', choDuyet: false, lichSu: false, homNay: '2026-09-16' }) === 'da-huy', 'không cờ → da-huy');
   });
 
-  check('MTa T3 (H2) · gõ "-" lần 2 + chốt (cũng là cron): S huỷ vắng, không đề nghị, không thẻ; QL 1 chuông, GVCN không; chốt lại không đổi', () => {
-    const a = emVangMot(-1);
+  check('MTa T3 (H2) · gõ "-" lần 2 trong tuần thi (OV-1b: chốt ngay): S huỷ vắng, không đề nghị, không thẻ; QL 1 chuông, GVCN không; gõ lại không đổi', () => {
+    const a = emVangMot(0);
     const theTruoc = (conn.prepare('SELECT COUNT(*) n FROM yeu_cau_duyet').get() as any).n;
     const chTruoc = chuong('huy_vang', QL.userId, a.m1);
     const gvTruoc = chuong('huy_vang', GVCN.userId, a.m1);
     attemptsSvc.saveScore(P.sTeacher, a.m1, 'speaking', { noShow: true });
-    absence.settleNoShows(TODAY);
     const k = kyNang(a.m1, 'speaking');
     assert(k.sit_status === 'cancelled' && k.huy_vang === 1, JSON.stringify(k));
     assert(soDeNghi(a.m1) === 0 && (conn.prepare('SELECT COUNT(*) n FROM yeu_cau_duyet').get() as any).n === theTruoc, 'có đề nghị / thẻ');
     assert(chuong('huy_vang', QL.userId, a.m1) === chTruoc + 1, 'chuông QL');
     assert(chuong('huy_vang', GVCN.userId, a.m1) === gvTruoc, 'GVCN không có chuông (09/10)');
-    absence.settleNoShows(TODAY);
-    assert(chuong('huy_vang', QL.userId, a.m1) === chTruoc + 1 && kyNang(a.m1, 'speaking').huy_vang === 1, 'chốt lại đổi');
+    assertThrows(() => attemptsSvc.saveScore(P.sTeacher, a.m1, 'speaking', { noShow: true }), /đã bị huỷ/, 'gõ lại "-" vào phần thi đã huỷ');
+    assert(chuong('huy_vang', QL.userId, a.m1) === chTruoc + 1 && kyNang(a.m1, 'speaking').huy_vang === 1, 'gõ lại đổi');
   });
 
   check('MTa T3 (H3) · Báo vắng lần 2 (không lý do) → như H2', () => {
@@ -712,7 +711,6 @@ export async function runPrMtaTests(t: YThucTestKit) {
     ].join();
     const truoc = dem3();
     attemptsSvc.saveScore(P.coreTeacher, cu.id, 'speaking', { noShow: true });
-    absence.settleNoShows(TODAY);
     const k = kyNang(cu.id, 'speaking');
     assert(diemCua(cu.id, 'speaking').no_show_period_id === k.planned_period_id, 'chưa ghi dấu');
     assert(k.sit_status === 'scheduled' && k.absence_move_count === 0 && k.week_start === t.addDays(tuanNay, -28), JSON.stringify(k));
@@ -738,7 +736,6 @@ export async function runPrMtaTests(t: YThucTestKit) {
     const tb = (conn.prepare('SELECT COUNT(*) n FROM notifications').get() as any).n;
     skillSch.setSkillWeek(QL, cu.id, 'listening', tuan(0).id, {});
     assert(luot(cu.id).lich_su === 0, 'tiền đề: lượt thành MT thường');
-    absence.settleNoShows(TODAY);
     const k = kyNang(cu.id, 'speaking');
     assert(k.sit_status === 'scheduled' && k.absence_move_count === 0 && k.week_start === t.addDays(tuanNay, -28), JSON.stringify(k));
     assert(!conn.prepare('SELECT 1 FROM skill_move_requests WHERE attempt_id = ?').get(cu.id), 'đề nghị dời');

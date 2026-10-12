@@ -105,8 +105,10 @@ export async function runPrDlTests(t: YThucTestKit) {
    * bộ demo: Kiều Thảo Nhi (MB FT 101, kết luận Học viên) nay có Case "Kỳ vọng đầu ra chưa đạt · Học viên · S" (§3 "vẫn tạo Case").
    * Chụp lại 08/10 (PR-MTGON): các bộ kiểm chạy trước (PR-MT, PR-XLMT, PR-LM, keHoachTest) đổi theo luật mới — Huỷ MT xoá điểm, Huỷ kỹ năng
    * lúc nào cũng được, dời vượt bị chặn (không còn bỏ lịch lượt sau) → dữ liệu MB FT 101 khác; `idsTuan` bên dưới vẫn đối chiếu độc lập.
+   * Chụp lại 12/10 (PR-OV1b): bộ PR-G trong run.ts viết lại theo luật "-" mới — so JSON hai bảng mã cũ / mã mới: chỉ lệch ở các lượt PR-G dựng
+   * ("-" trong tuần nay dời ngay thay vì vắng chờ QL; "-" nhập bù = Không dự thi rồi nhập điểm đè; W1 "-" một mình = Không dự thi), không trường nào khác.
    */
-  const ANH_CHUP = { tuan: 'ba3d46b8d1bc0d2f', moi: '540d059331b881c2' };
+  const ANH_CHUP = { tuan: '4885cd20bd6cc544', moi: 'd9dbdea8902f6607' };
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id

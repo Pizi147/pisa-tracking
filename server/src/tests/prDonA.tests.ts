@@ -213,12 +213,11 @@ export async function runPrDonATests(t: YThucTestKit) {
     });
   });
 
-  check('Dọn-a (2f) · #12 từ chối quyền trả 403 (không phải 400): dời / khôi phục / hiệu chỉnh vắng thi, đóng Case, việc Vận hành, người theo dõi', () => {
+  check('Dọn-a (2f) · #12 từ chối quyền trả 403 (không phải 400): dời / khôi phục vắng thi, đóng Case, việc Vận hành, người theo dõi (OV-1b bỏ hiệu chỉnh dấu trừ muộn)', () => {
     const luotMb = get(`SELECT id FROM assessment_attempts WHERE class_id = ? AND status != 'cancelled' ORDER BY id LIMIT 1`, classId('MB FT 101')).id;
     const ma: Record<string, number | string> = {
       requestAbsenceMove: maLoi(() => absence.requestAbsenceMove(P.cpManager, luotMb, ['listening'], {})),
       restoreCancelledSkill: maLoi(() => absence.restoreCancelledSkill(P.cpManager, luotMb, 'listening', week.ensurePeriod(tuanNay).id)),
-      resolveLateNoShow: maLoi(() => absence.resolveLateNoShow(P.cpManager, luotMb, 'listening', 'confirm')),
     };
     const yc = get(`SELECT r.id FROM skill_move_requests r JOIN assessment_attempts a ON a.id = r.attempt_id JOIN classes c ON c.id = a.class_id WHERE c.branch_id = ? LIMIT 1`, MB);
     if (yc) ma.decideAbsenceMove = maLoi(() => absence.decideAbsenceMove(P.cpManager, yc.id, { approve: false, note: 'Thử quyền' }));
