@@ -8,6 +8,7 @@ import { addDaysStr } from '../lib/format.ts';
 import { useSearchParams } from 'react-router-dom';
 import { chiNhanhMacDinh, coDichLienKet, mondayOfDate, ngay, tuanLich } from '@shared/domain/index.ts';
 import { LichNho } from './LichNho.tsx';
+import { hauToGocNhin } from './CongTacKhung.tsx';
 
 export type Period = { id: number; code: string; weekStart: string; weekEnd: string; range: string };
 export type Branch = { id: number; code: string; name: string };
@@ -206,7 +207,7 @@ export function WeekPicker({ periodId, onPeriod, label = 'Tuần', scope, cleara
 
 /* PR-NV (T9): MỘT giá trị nhớ cho mọi ô chi nhánh — id hoặc 'tat-ca', mỗi tài khoản một khoá (máy dùng chung). localStorage hỏng /
    bị chặn thì chạy như chưa nhớ gì. */
-const khoaChiNhanh = (uid: number | undefined) => `pisa.chiNhanh.${uid ?? 0}`;
+const khoaChiNhanh = (uid: number | undefined) => `pisa.chiNhanh.${uid ?? 0}${hauToGocNhin()}`;
 export function docChiNhanhDaNho(uid: number | undefined): number | 'tat-ca' | null {
   try {
     const v = localStorage.getItem(khoaChiNhanh(uid));

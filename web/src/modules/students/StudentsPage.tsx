@@ -122,7 +122,8 @@ export default function StudentsPage() {
   const chips = LOC_HOC_VIEN.filter((k) => { const c = LOC_HOC_VIEN_NHAN[k].can; return (!c || can(c)) && !(k === 'sos' && khung === 'thuong')
     && chipHienLoc(k, 'loc' in doc ? doc.loc : null); });
   const loc: LocHocVien = 'loc' in doc && chips.includes(doc.loc) ? doc.loc : 'tat-ca';
-  const dangLoc = loc !== 'tat-ca' || !!q.trim();
+  /* PR-OV2a: "HV của tôi" (TVV) — máy chủ chỉ gửi em mình; lọc như chip để mỗi lớp chỉ hiện các em đó. */
+  const dangLoc = loc !== 'tat-ca' || !!q.trim() || data?.phamVi.dangDung === 'cua-toi';
   const idsTheoLop = useMemo(() => {
     const m = new Map<number, Set<number>>();
     for (const h of data?.hocVien ?? []) {

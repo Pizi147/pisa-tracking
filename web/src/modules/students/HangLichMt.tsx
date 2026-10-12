@@ -27,7 +27,7 @@ export type HangMt = {
     ketQuaHuy?: KetQuaHuy | null;
   } | null;
 };
-export type BangLichMt = { hang: HangMt[]; soKeTiep: number; classId: number | null; studentId: number; coTheXep: boolean };
+export type BangLichMt = { hang: HangMt[]; soKeTiep: number; classId: number | null; studentId: number; coTheXep: boolean; coTheKhoiPhuc?: boolean };
 
 /** Tuần thật của lượt: một tuần, hoặc "W2 OCT – W3 OCT" khi R/L/W và Speaking tách tuần. */
 function tuanThat(l: NonNullable<HangMt['luot']>, homNay: string): string | null {
@@ -74,7 +74,7 @@ export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienD
     }
   }
   /* T2: lượt bị vượt có kết quả đã huỷ → Quản lý khôi phục được (⋯ chỉ có mục này khi có `ketQuaHuy`). */
-  if (l?.ketQuaHuy && bang.coTheXep) muc.push({ key: 'khoi-phuc-ket-qua', nhan: 'Khôi phục kết quả', onChon: () => setKhoiPhuc(true) });
+  if (l?.ketQuaHuy && bang.coTheKhoiPhuc) muc.push({ key: 'khoi-phuc-ket-qua', nhan: 'Khôi phục kết quả', onChon: () => setKhoiPhuc(true) });
   if (moHoSo) muc.push({ key: 'ho-so', nhan: 'Mở hồ sơ MT', onChon: moHoSo, keTruoc: muc.length > 0 });
 
   /* PR-MT0: hàng MT0 (số 0) không có tuần đề xuất — hiện tuần thật sớm nhất của nó. */

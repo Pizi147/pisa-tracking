@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from 'express';
 import crypto from 'node:crypto';
 import { db } from './db.ts';
 import { COT_PRINCIPAL, principalTuDong, type Principal } from './permissions.ts';
+import { coTheDoiGocNhin } from '../../shared/domain/index.ts';
 import { HttpError, nowIso } from './util.ts';
 
 /**
@@ -53,7 +54,7 @@ export function resolveSession(token: string | undefined): Principal | null {
    */
   const row = db()
     .prepare(
-      `SELECT s.created_at, s.last_seen_at, u.approval_state, u.status AS user_status, ${COT_PRINCIPAL}
+      `SELECT s.created_at, s.last_seen_at, s.goc_nhin, u.approval_state, u.status AS user_status, ${COT_PRINCIPAL}
          FROM demo_sessions s JOIN users u ON u.id = s.user_id WHERE s.token = ?`,
     )
     .get(token) as any;
@@ -67,7 +68,28 @@ export function resolveSession(token: string | undefined): Principal | null {
   if (Date.now() - Date.parse(row.last_seen_at ?? row.created_at) > GHI_LAI_MOC_DUNG_SAU_PHUT * 60_000) {
     db().prepare('UPDATE demo_sessions SET last_seen_at = ? WHERE token = ?').run(nowIso(), token);
   }
-  return principalTuDong(row);
+  return apGocNhin(principalTuDong(row), row.goc_nhin ?? null);
+}
+
+/**
+ * ĐỔI GÓC NHÌN (PR-OV2a, đặc tả OV mục 2): phiên đang chọn một vai → Principal CHỈ giữ grant của vai đó — mọi `can()` / `scopeFor()` phía
+ * sau tự đúng quyền vai đó, không phải ẩn nút. Bỏ quyền cấp riêng; góc nhìn không phải Giáo viên thì bỏ cả phân công (QL kiêm GV xem như
+ * QL thuần). Tài khoản không còn đủ điều kiện (bị gỡ vai đang chọn, còn một vai, không còn QL/Quản trị) → bỏ qua, về vai gốc.
+ */
+export function apGocNhin(p: Principal, gocNhin: string | null): Principal {
+  const vaiGoc = p.roleKeys;
+  /* Không ở góc nhìn nào → trả nguyên principal (không thêm trường): mọi chỗ đọc `p.vaiGoc ?? p.roleKeys`. */
+  if (!gocNhin || !coTheDoiGocNhin(vaiGoc) || !vaiGoc.includes(gocNhin)) return p;
+  return {
+    ...p, gocNhin, vaiGoc, roleKeys: [gocNhin],
+    grants: p.grants.filter((g) => g.roleKey === gocNhin),
+    assignments: gocNhin === 'teacher' ? p.assignments : [],
+  };
+}
+
+/** Ghi vai đang chọn vào phiên (null = về vai gốc). Kiểm điều kiện ở `PUT /session/goc-nhin`. */
+export function datGocNhin(token: string, gocNhin: string | null) {
+  db().prepare('UPDATE demo_sessions SET goc_nhin = ? WHERE token = ?').run(gocNhin, token);
 }
 
 /**

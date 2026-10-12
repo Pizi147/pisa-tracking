@@ -32,7 +32,7 @@ export function khoiPhucKetQua(p: Principal, attemptId: number, o: { lyDo?: stri
   const conn = db();
   const a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
   if (!a) throw notFound('Không tìm thấy lượt kiểm tra');
-  require_(p, PERMISSIONS.PLAN_WEEK, { classId: a.class_id, studentId: a.student_id }, 'Chỉ Quản lý mới khôi phục được kết quả MT.');
+  require_(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id, studentId: a.student_id }, 'Chỉ Quản lý mới khôi phục được kết quả MT.');
   const nhan = nhanDot(a.kind, a.attempt_no);
   const lyDo = o.lyDo?.trim() || null;
   return tx(() => {

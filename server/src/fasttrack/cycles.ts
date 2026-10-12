@@ -3,11 +3,12 @@ import { nho } from '../platform/nguCanhRequest.ts';
 import {
   BASELINE_SOURCES, CO_DIEM_SQL, CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, CYCLE_STATUSES, PERMISSIONS, soMtKeTiep, tuanLich,
   KCK, canNamGan, docNgayNhap, laKck, mondayOfDate, ngay, type ExamPlan, type LuotSo, type Route,
+  CHI_SUA_THONG_TIN,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
-import { badRequest, chuTuDo, isIsoDate, kiemKieuO, notFound, nowIso } from '../util.ts';
-import { require_, type Principal } from '../permissions.ts';
+import { badRequest, chuTuDo, forbidden, isIsoDate, kiemKieuO, notFound, nowIso } from '../util.ts';
+import { can as coQuyen, require_, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, mondayOf, periodById } from '../platform/week.ts';
 import { apLichMacDinh } from '../classes/schedule.ts';
@@ -215,7 +216,11 @@ export function docDiemXuatPhat(v: unknown): number {
 export function updateCycle(p: Principal, cycleId: number, patch: any) {
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
-  require_(p, PERMISSIONS.STUDENT_EDIT, { studentId: c.student_id });
+  if (!coQuyen(p, PERMISSIONS.STUDENT_EDIT, { studentId: c.student_id })) {
+    /* PR-OV2a: Admin, TVV, CX chỉ sửa dự kiến thi ở lộ trình (Target, tuần bắt đầu, ghi chú, trạng thái: 403). */
+    require_(p, PERMISSIONS.STUDENT_EDIT_INFO, { studentId: c.student_id });
+    if (Object.keys(patch ?? {}).some((k) => !['examDate', 'examMonth', 'examPeriodId'].includes(k))) throw forbidden(CHI_SUA_THONG_TIN);
+  }
   kiemKieuO(patch, ['startWeek', 'examDate', 'note'], [], (k) => ({ startWeek: 'Tuần bắt đầu', examDate: 'Dự kiến thi', note: 'Ghi chú' })[k] ?? k);
   /* PR-TOC: cận năm (năm nay −3 … +3) chỉ áp khi giá trị ĐỔI — lộ trình cũ gửi lại đúng giá trị đang lưu không bị chặn. */
   const can = canNamGan(demoToday());
@@ -387,8 +392,10 @@ export function setBaseline(p: Principal, cycleId: number, input: {
 }) {
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
-  require_(p, PERMISSIONS.STUDENT_EDIT, { studentId: c.student_id },
-    'Bạn không có quyền sửa điểm đầu vào của lộ trình này.');
+  /* PR-OV2a: điểm đầu vào thuộc "thông tin HV" — `student.edit_info` (Admin, TVV, CX) cũng sửa được. */
+  if (!coQuyen(p, PERMISSIONS.STUDENT_EDIT, { studentId: c.student_id })) {
+    require_(p, PERMISSIONS.STUDENT_EDIT_INFO, { studentId: c.student_id }, 'Bạn không có quyền sửa điểm đầu vào của lộ trình này.');
+  }
   const conn = db();
 
   if (input.source === null) {

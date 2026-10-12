@@ -4,13 +4,13 @@ import { db, isInitialised } from '../db.ts';
 import { laBanChinh } from '../moiTruong.ts';
 import {
   ENTRY_SKILLS, THEO_DONG, tenMonNgan, canNamGan, docBoLocXuatMt, kiemGhiRoKhac, laKhac, soSanhLop, transferReasonText,
-  PERMISSIONS, ROLE_LABEL, WORK_SCOPES, chuongTrinhTuThamSo, ctTuyChon, khoangTuThamSo, thamSoNguoi, tuDauKhoang,
+  PERMISSIONS, ROLE_LABEL, coTheDoiGocNhin, tenMon, WORK_SCOPES, chuongTrinhTuThamSo, ctTuyChon, khoangTuThamSo, thamSoNguoi, tuDauKhoang,
   type Role, type TheoDong, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
 import { HttpError, badRequest, chuTuDo, forbidden, isIsoDate, notFound, toInt } from '../util.ts';
-import { SESSION_COOKIE, createSession, destroySession, principalOf, requireAuth } from '../auth.ts';
-import { can, loadPrincipal, permissionSummary, require_, scopeFor } from '../permissions.ts';
+import { SESSION_COOKIE, createSession, datGocNhin, destroySession, principalOf, requireAuth } from '../auth.ts';
+import { can, loadPrincipal, permissionSummary, require_, scopeFor, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { navOf } from '../platform/nav.ts';
 import * as attachmentSvc from '../platform/attachments.ts';
@@ -90,12 +90,35 @@ import { metricResponse, metricSet, rowsFor } from '../worklist/metrics.ts';
 import { myWork, viecCuaNguoi } from '../worklist/mywork.ts';
 import { bangGvChiNhanh, hoSoGiaoVien, ketQuaHoSoGv, oHoSoGv, viecHoSoGv } from '../giaoVien/hoSo.ts';
 import { nhacViec, nhacViecLo } from '../worklist/nhacViec.ts';
+import { phamViXemViec } from '../worklist/xemViec.ts';
+import { hvCuaToi } from '../worklist/hvCuaToi.ts';
 import * as caseSvc from '../cases/cases.ts';
 import * as regularSvc from '../normal/regular.ts';
 import * as chamSvc from '../cham/canCham.ts';
 import * as diemTheoLuotSvc from '../cham/diemTheoLuot.ts';
 
 export const api = Router();
+
+/*
+ * PR-OV2a — TEST VÀ CÔNG VIỆC LÀ HAI KHU CÓ QUYỀN VÀO RIÊNG (`test.view`, `work.view`). TVV, CX có `attempt.view` để xem điểm / Case trong
+ * hồ sơ HV, lớp, lượt — nhưng không vào danh sách của Test (Lịch Test, Điểm theo lớp, Kế hoạch Test) hay Công việc. Chặn ở đây, một chỗ,
+ * theo đường; ghi điểm / xếp lịch vẫn tự kiểm quyền riêng. `/yeu-cau?studentId=` (đầu hồ sơ HV, hồ sơ lượt) không phải khu Công việc.
+ */
+const KHU_TEST = [/^\/cham\/lich-test\/?$/, /^\/diem-theo-lop(\/|$)/, /^\/ke-hoach-test(\/|$)/];
+const KHU_VIEC = [/^\/my-work(\/|$)/, /^\/mgmt-tasks(\/|$)/, /^\/meeting(\/|$)/, /^\/tasks(\/|$)/, /^\/signals\/?$/, /^\/yeu-cau\/dem\/?$/];
+api.use((req, _res, next) => {
+  const p = req.principal;
+  if (!p) { next(); return; }
+  /* Express so đường KHÔNG phân biệt hoa thường (`/MY-WORK` vẫn tới `/my-work`) — so bản chữ thường, không thì đổi chữ là lọt chặn. */
+  const duong = req.path.toLowerCase();
+  const laViec = KHU_VIEC.some((r) => r.test(duong)) || (/^\/yeu-cau\/?$/.test(duong) && req.method === 'GET' && !req.query.studentId);
+  const quyen = KHU_TEST.some((r) => r.test(duong)) ? PERMISSIONS.TEST_VIEW : laViec ? PERMISSIONS.WORK_VIEW : null;
+  if (quyen && !can(p, quyen, { anyScope: true })) {
+    next(forbidden(quyen === PERMISSIONS.TEST_VIEW ? 'Vai trò của bạn không có khu Test.' : 'Vai trò của bạn không có khu Công việc.'));
+    return;
+  }
+  next();
+});
 
 // ============================================================ Phiên demo
 
@@ -180,7 +203,55 @@ api.get('/demo/session', wrap((req) => {
     banChinh: laBanChinh(),
     /* PR-NV (T9): chi nhánh mặc định của ô chi nhánh khi người xem chưa tự chọn (null = Tất cả). */
     chiNhanhGoiY: hocVienLopSvc.goiYChiNhanh(p, demoToday()),
+    /* PR-OV2a: menu "Góc nhìn" — chỉ QL / Quản trị nắm ≥ 2 vai; null = không có menu. */
+    gocNhin: gocNhinCua(p),
   };
+}));
+
+/**
+ * PR-OV2a: dữ liệu menu Góc nhìn + dải "Góc nhìn: {vai} · {phạm vi} · Về {vai gốc}". Phạm vi đọc từ MỌI grant / phân công của tài khoản
+ * (principal của phiên đã lọc theo góc nhìn) — một lần đọc lại, chỉ cho người đổi được góc nhìn.
+ */
+function gocNhinCua(p: Principal) {
+  const vaiGoc = p.vaiGoc ?? p.roleKeys;
+  if (!coTheDoiGocNhin(vaiGoc)) return null;
+  const du = p.gocNhin ? loadPrincipal(p.userId) : p;
+  const lopIds = [...new Set(du.assignments.map((a) => a.classId))];
+  const lop = new Map<number, { code: string; ct: string | null }>();
+  if (lopIds.length) {
+    for (const r of db().prepare(`SELECT id, code, programme_code FROM classes WHERE id IN (${lopIds.map(() => '?').join(',')})`).all(...lopIds) as any[]) {
+      lop.set(r.id, { code: r.code, ct: r.programme_code ?? null });
+    }
+  }
+  const phamVi = (role: string) => {
+    if (role === 'teacher') {
+      const ds = [...new Set(du.assignments.map((a) => {
+        const l = lop.get(a.classId);
+        return l ? `${a.isCore ? 'GVCN' : tenMon(l.ct, a.skill ?? '')} ${l.code}` : null;
+      }).filter(Boolean))];
+      return ds.join(' · ') || 'chưa có lớp';
+    }
+    const cn = du.grants.filter((g) => g.roleKey === role).map((g) => g.branchName ?? 'Toàn hệ thống');
+    return [...new Set(cn)].join(' · ');
+  };
+  const goc = vaiGoc.includes('system_admin') ? 'system_admin' : 'manager';
+  return {
+    dangChon: p.gocNhin ?? null,
+    vaiGoc: goc,
+    coThe: vaiGoc.map((role) => ({ role, nhan: ROLE_LABEL[role as Role] ?? role, phamVi: phamVi(role) })),
+  };
+}
+
+/** PR-OV2a: đổi góc nhìn (`role` = vai đang nắm) hoặc về vai gốc (`role: null`). Máy chủ lọc quyền theo vai này ở MỌI request sau. */
+api.put('/session/goc-nhin', requireAuth, wrap((req) => {
+  const p = principalOf(req);
+  const role = req.body?.role ?? null;
+  if (role !== null && typeof role !== 'string') throw badRequest('Vai không hợp lệ.');
+  const vaiGoc = p.vaiGoc ?? p.roleKeys;
+  if (!coTheDoiGocNhin(vaiGoc)) throw forbidden('Chỉ Quản lý hoặc Quản trị hệ thống nắm từ hai vai trở lên mới đổi được góc nhìn.');
+  if (role !== null && !vaiGoc.includes(role)) throw forbidden('Tài khoản này không nắm vai đó.');
+  datGocNhin(req.sessionToken!, role);
+  return { ok: true, gocNhin: role };
 }));
 
 api.post('/demo/session', wrap((req, res) => {
@@ -392,7 +463,7 @@ api.get('/my-work', requireAuth, wrap((req) => {
   const nguoi = thamSoNguoi(qStr(req, 'nguoi'));
 
   if (nguoi === 'tat-ca') {
-    if (!can(p, PERMISSIONS.CASE_APPROVE, { anyScope: true })) throw forbidden('Bạn chỉ xem được việc của mình.');
+    if (!phamViXemViec(p)) throw forbidden('Bạn chỉ xem được việc của mình.');
     return nheMyWork(myWork(p, { branchId, nguoi: 'tat-ca' }));
   }
   if (typeof nguoi === 'number') return nheMyWork(viecCuaNguoi(p, nguoi, branchId));
@@ -1501,7 +1572,9 @@ api.get('/cycles/:id/suggested-mocks', requireAuth, wrap((req) => {
   require_(principalOf(req), PERMISSIONS.STUDENT_VIEW, { studentId: c.student_id }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
   /* PR-LM: lịch đề xuất ghép lượt thật (trạng thái, tuần từng kỹ năng, kỳ vọng) — panel Lộ trình xếp / dời / huỷ lịch / nhập điểm tại chỗ. */
   const bang = keHoachSvc.lichMtLoTrinh(c.id);
-  return { ...bang, coTheXep: can(principalOf(req), PERMISSIONS.PLAN_WEEK, { classId: bang.classId, studentId: c.student_id }) };
+  const ctx = { classId: bang.classId, studentId: c.student_id };
+  /* PR-OV2a: Admin xếp được lịch nhưng không khôi phục kết quả (`attempt.cancel`). */
+  return { ...bang, coTheXep: can(principalOf(req), PERMISSIONS.PLAN_WEEK, ctx), coTheKhoiPhuc: can(principalOf(req), PERMISSIONS.ATTEMPT_CANCEL, ctx) };
 }));
 
 /**
@@ -1618,6 +1691,11 @@ api.get('/tong-quan/diem-chu-y', requireAuth, wrap((req) => {
 }));
 
 /** Khối giáo viên (PR-VAI-a Q12): Lớp tôi dạy theo khung `ct=ft|thuong` — thay "Học viên cần hỗ trợ". */
+/* PR-OV2a: Tổng quan TVV — "Học viên của tôi" (chỉ đọc, chỉ em mình phụ trách tư vấn trong phạm vi xem). */
+api.get('/tong-quan/hv-cua-toi', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return hvCuaToi(principalOf(req));
+}));
 api.get('/tong-quan/lop-toi-day', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return tongQuanSvc.lopToiDay(principalOf(req), { ct: chuongTrinhTuThamSo(qStr(req, 'ct')) });

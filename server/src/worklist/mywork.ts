@@ -1,3 +1,4 @@
+import { phamViXemViec } from './xemViec.ts';
 import { db, theoLo } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
@@ -298,6 +299,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   const today = demoToday();
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   if (scope.none) return { summary: { total: 0, overdue: 0, today: 0 }, groups: [], scopeEmpty: true, xemNguoiKhac: false };
+  /* PR-OV2a: Admin chỉ có nhóm Chấm điểm (của mình và của GV trong phạm vi, để Nhắc). */
+  const xemViec = phamViXemViec(p);
+  if (xemViec === 'cham-diem') f = { ...f, chiNhom: new Set<WorkGroupKey>(['score']) };
 
   const conn = db();
   quetYeuCau(today);   // PR-DUYET (K5-17): thẻ chết tự đóng, Báo QL tự tạo — một lần mỗi request
@@ -324,7 +328,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * PR-Ra: "Tất cả trong phạm vi" (Q1) — chỉ người xem được người khác (Quản lý/Quản trị) mới
    * có chế độ này; GV luôn chỉ thấy việc của mình dù có gửi `nguoi=tat-ca` lên (chặn ở route).
    */
-  const xemNguoiKhac = can(p, PERMISSIONS.CASE_APPROVE, { anyScope: true });
+  const xemNguoiKhac = xemViec !== null;
   const tatCa = f.nguoi === 'tat-ca' && xemNguoiKhac;
 
   // ---------------------------------------------------------------- 1. nhập điểm
@@ -1305,10 +1309,12 @@ function ganKhung(items: WorkItem[], lopCua: (classId: number | null | undefined
  * không 403 khi hồ sơ GV trả 200.
  */
 export function viecCuaNguoi(p: Principal, nguoi: number, branchId?: number | null) {
-  if (!can(p, PERMISSIONS.CASE_APPROVE, { anyScope: true })) throw forbidden('Bạn chỉ xem được việc của mình.');
+  const xemViec = phamViXemViec(p);
+  if (!xemViec) throw forbidden('Bạn chỉ xem được việc của mình.');
   phamViHoSoGv(p, nguoi);
   const x = loadPrincipal(nguoi);
-  const w = myWork(x, { branchId }) as any;
+  /* PR-OV2a: Admin chỉ thấy nhóm Chấm điểm của GV. */
+  const w = myWork(x, { branchId, ...(xemViec === 'cham-diem' ? { chiNhom: new Set<WorkGroupKey>(['score']) } : {}) }) as any;
   napTruocPhamVi(w.items.map((it: any) => it.studentId));   // `can()` từng dòng bên dưới đọc bộ nhớ, không N+1
   /* Dòng không lớp/không HV là việc Vận hành ("mgmt") — không thuộc Hỗ trợ học viên, bỏ. */
   const items = w.items
