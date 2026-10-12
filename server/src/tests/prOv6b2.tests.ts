@@ -85,9 +85,12 @@ export async function runPrOv6b2Tests(t: YThucTestKit) {
     regular.sinhCheckpointKeTiep([lop.id], sau);
     assert(cps(sid2).length === 2 && chuaThi(sid2, sau) === 1, `qua tuần thi: ${JSON.stringify(cps(sid2))}`);
     /* Lớp của chương trình khác không đổi lịch. */
-    const conLai = JSON.stringify(all(`SELECT a.id, a.planned_period_id FROM assessment_attempts a JOIN classes c ON c.id = a.class_id
-      WHERE c.id != ? ORDER BY a.id`, lop.id));
-    assert(conLai === lichKhac, 'lịch lớp khác đổi');
+    const conLai = JSON.stringify(all(`SELECT a.id, a.planned_period_id FROM assessment_attempts a WHERE a.class_id IS NOT ? ORDER BY a.id`, lop.id));
+    if (conLai !== lichKhac) {
+      const truoc = new Map((JSON.parse(lichKhac) as any[]).map((r) => [r.id, r.planned_period_id]));
+      const lech = (JSON.parse(conLai) as any[]).filter((r) => truoc.get(r.id) !== r.planned_period_id).slice(0, 5);
+      assert(false, `lịch lớp khác đổi: ${JSON.stringify(lech.map((r) => ({ ...r, ...one('SELECT kind, class_id, attempt_no FROM assessment_attempts WHERE id = ?', r.id) })))}`);
+    }
   }));
 
   check('OV6b2-2 · tạo chương trình: mã sai dạng / trùng / môn ngoài danh sách / thiếu n tuần → 400; QL → 403; mã không sửa sau khi có lớp', () => thu(() => {

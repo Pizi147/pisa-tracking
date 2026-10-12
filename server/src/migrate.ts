@@ -1050,7 +1050,8 @@ function migrateSkillSchedule(conn: any, applied: string[]) {
       `SELECT a.id, a.planned_period_id, a.status
          FROM assessment_attempts a
         WHERE (SELECT COUNT(*) FROM attempt_skills ask WHERE ask.attempt_id = a.id) < 4${coCt
-          ? ` AND NOT EXISTS (SELECT 1 FROM classes c WHERE c.id = a.class_id AND c.programme_code = 'PREFOU')` : ''}`,
+          /* OV-6b2: cả chương trình Quản trị tạo (PET L+S R+W…) — bộ môn của nó không phải bốn ô L R W S. */
+          ? ` AND NOT EXISTS (SELECT 1 FROM classes c WHERE c.id = a.class_id AND c.programme_code IS NOT NULL AND c.programme_code NOT IN ('FT', 'FOU', 'BE', 'ELE'))` : ''}`,
     )
     .all() as any[];
   if (!attempts.length) return;

@@ -1,7 +1,7 @@
-import { programmeByCode } from '../normal/regular.ts';
+import { boMonCt } from '../normal/regular.ts';
 import { db, theoLo, tx } from '../db.ts';
 import {
-  NHAN_XET_TOI_THIEU, PERMISSIONS, kindCuaBac, nhanLoaiXuLy, boMonLich, programmeOf, coPhieu, kyNangPhuTrach, tenMon, tenMonNgan, trangThaiPhieu,
+  NHAN_XET_TOI_THIEU, PERMISSIONS, kindCuaBac, nhanLoaiXuLy, programmeOf, coPhieu, kyNangPhuTrach, tenMon, tenMonNgan, trangThaiPhieu,
 } from '../../../shared/domain/index.ts';
 import { badRequest, conflict, forbidden, notFound, nowIso } from '../util.ts';
 import { can, type Principal } from '../permissions.ts';
@@ -187,7 +187,7 @@ export function phieuBanGiao(p: Principal, f: { lopNguonId?: number; lenhId?: nu
   /* PR-S5F-a: phiếu đã chụp vẫn đọc dòng Kết quả MỚI của lớp thường (sửa điểm Cuối khoá sau khi xác nhận) — không giữ chữ cũ. */
   const ketQuaMoi = programmeOf(ct) && programmeOf(ct) !== 'FT' && thay.length > chuaXacNhan.length
     ? ketQuaTheoLo({ id: lopId, ct }, thay.filter((r) => r.xac_nhan_luc).map((r) => r.student_id as number)) : new Map<number, string>();
-  const bang = boMonLich(ct, programmeByCode(ct)?.skills);
+  const bang = boMonCt(ct);
   const gvbmCua = (ma: string) => gv.filter((r) => r.skill && kyNangPhuTrach(ct, ma).includes(r.skill)).map((r) => r.full_name as string);
   const monDs = bang.map((ma) => ({ ma, ten: tenMon(ct, ma), ngan: tenMonNgan(ct, ma) }));
 
@@ -248,7 +248,7 @@ export function ghiMon(p: Principal, lenhId: number, mon: string, noiDung: strin
   if (l.trang_thai === 'huy') throw badRequest('Quyết định chuyển lớp đã huỷ — không ghi bàn giao được.');
   if (!coPhieu(l.huong)) throw badRequest('Quyết định Dừng học hẳn không có phiếu bàn giao.');
   if (l.xac_nhan_luc) throw badRequest('Phiếu đã được xác nhận — không ghi thêm được.');
-  if (!boMonLich(l.ct, programmeByCode(l.ct)?.skills).includes(mon)) throw badRequest('Môn này không có ở lớp nguồn.');
+  if (!boMonCt(l.ct).includes(mon)) throw badRequest('Môn này không có ở lớp nguồn.');
   const text = String(noiDung ?? '').trim();
   if (!text) throw badRequest('Viết một câu bàn giao.');
   if (text.length > 300) throw badRequest('Câu bàn giao tối đa 300 ký tự.');
@@ -276,7 +276,7 @@ export function xacNhanBanGiao(p: Principal, lenhId: number, nhanXetChung: strin
     const conn = db();
     const tuDien = tuDienTheoLo({ id: l.lop_nguon_id, ct: l.ct }, [l]).get(l.id)!;
     const da = new Set((conn.prepare('SELECT mon FROM ban_giao_mon WHERE lenh_id = ? AND lam_lai = 0').all(lenhId) as any[]).map((r) => r.mon as string));
-    const chuaBanGiao = boMonLich(l.ct, programmeByCode(l.ct)?.skills).filter((m) => !da.has(m)).map((m) => tenMonNgan(l.ct, m));
+    const chuaBanGiao = boMonCt(l.ct).filter((m) => !da.has(m)).map((m) => tenMonNgan(l.ct, m));
     const luc = mocNghiepVu();
     const r = conn.prepare(
       `UPDATE lenh_chuyen_lop SET nhan_xet_chung = ?, tu_dien = ?, xac_nhan_boi = ?, xac_nhan_luc = ?, xac_nhan_thay = ?, sua_luc = ?
@@ -306,7 +306,7 @@ export function nhacGvbm(p: Principal, lenhId: number, mon: string): { soNguoi: 
   if (!coPhieu(l.huong) || l.trang_thai === 'huy') throw badRequest('Quyết định chuyển lớp này không có phiếu cần nhắc.');
   const q = quyenBanGiao(p, l, undefined, { ct: l.ct });
   if (!q.xacNhan) throw forbidden('Chỉ GVCN lớp nguồn nhắc được GVBM.');
-  if (!boMonLich(l.ct, programmeByCode(l.ct)?.skills).includes(mon)) throw badRequest('Môn này không có ở lớp nguồn.');
+  if (!boMonCt(l.ct).includes(mon)) throw badRequest('Môn này không có ở lớp nguồn.');
   const nguoi = db().prepare(
     `SELECT DISTINCT user_id, skill FROM teacher_assignments WHERE class_id = ? AND status = 'active' AND skill IS NOT NULL`,
   ).all(l.lop_nguon_id) as any[];
@@ -365,7 +365,7 @@ export function viecBanGiao(userId: number, branchId?: number | null): ViecBanGi
     const cua = lenh.filter((l) => l.lop_nguon_id === lopId);
     const chuaXn = cua.filter((l) => !l.xac_nhan_luc);
     if (!chuaXn.length) continue;
-    const mons = boMonLich(x.ct, programmeByCode(x.ct)?.skills);
+    const mons = boMonCt(x.ct);
     if (x.gvcn) {
       const thieu = mons.filter((m) => chuaXn.some((l) => !daGhi.has(`${l.id}:${m}`))).map((m) => tenMonNgan(x.ct, m));
       out.push({

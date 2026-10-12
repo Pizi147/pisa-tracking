@@ -4,7 +4,7 @@ import { addMilestone, caseKhacChuongTrinh, chuongTrinhCuaLop, followUntilAfter,
 import { dongBoBaoPh, monBaoPh } from '../yThuc/phoiHop.ts';
 import { raiseSignal, reconcileCorrectedSignals } from '../cases/signals.ts';
 import {
-  ATTEMPT_KIND_LABEL, ATTEMPT_KIND_SHORT, LIEN_TUC_SQL, PERMISSIONS, RATIO_PASS_THRESHOLD, boMonLich, boTroGiuaKhoa, chipCheckpoint, khoaBai, nhanBai,
+  ATTEMPT_KIND_LABEL, ATTEMPT_KIND_SHORT, LIEN_TUC_SQL, PERMISSIONS, laChuongTrinhGoc, RATIO_PASS_THRESHOLD, boMonLich, boTroGiuaKhoa, chipCheckpoint, khoaBai, nhanBai,
   caseCategoriesFor, categoryOf, goiYCuoiKhoa, kiemNhanXet, ngay, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanKeTiep, tuanLich,
   type AssessedSkill, type AttemptKind, type CaseCategory, type RatioOutcome, type SosLevel,
 } from '../../../shared/domain/index.ts';
@@ -86,6 +86,10 @@ export function programmeByCode(code: string | null | undefined): ProgrammeInfo 
   if (!code) return null;
   return allProgrammes().get(code) ?? null;
 }
+
+/** Bộ môn xếp lịch của chương trình (`boMonLich`): chương trình gốc theo mẫu (không đọc DB); mã Quản trị tạo (OV-6b2: PET L+S R+W) đọc bảng. */
+export const boMonCt = (ct: string | null | undefined): readonly string[] =>
+  boMonLich(ct, laChuongTrinhGoc(ct) ? null : programmeByCode(ct)?.skills);
 
 /**
  * PF1 + OV-6b1: cấu hình chương trình chụp vào lớp lúc tạo / đổi chương trình / đổi lộ trình — Quản trị sửa sau chỉ áp lớp mở sau.

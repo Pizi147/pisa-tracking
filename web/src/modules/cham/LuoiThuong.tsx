@@ -522,7 +522,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, active, tongCot, dien, onReloa
         );
       })}
       {laCp && (
-        <td className={`td py-1.5 text-right ${row.chip ? (row.chip.dat ? 'text-emerald-300' : 'text-amber-300') : 'text-slate-500'}`}>
+        <td className={`td py-1.5 text-right ${row.chip ? (row.chip.dat ? 'text-ok' : 'text-sos1') : 'text-slate-500'}`}>
           {row.result.tyLeTong != null ? `${Math.round(row.result.tyLeTong * 100)}%` : '—'}
         </td>
       )}

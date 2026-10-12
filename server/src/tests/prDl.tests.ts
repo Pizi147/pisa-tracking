@@ -107,8 +107,9 @@ export async function runPrDlTests(t: YThucTestKit) {
    * lúc nào cũng được, dời vượt bị chặn (không còn bỏ lịch lượt sau) → dữ liệu MB FT 101 khác; `idsTuan` bên dưới vẫn đối chiếu độc lập.
    * Chụp lại 12/10 (PR-OV1b): bộ PR-G trong run.ts viết lại theo luật "-" mới — so JSON hai bảng mã cũ / mã mới: chỉ lệch ở các lượt PR-G dựng
    * ("-" trong tuần nay dời ngay thay vì vắng chờ QL; "-" nhập bù = Không dự thi rồi nhập điểm đè; W1 "-" một mình = Không dự thi), không trường nào khác.
+   * Chụp lại 12/10 (OV-6b2): bộ demo thêm lớp MB PET 01 (5 lượt Checkpoint) → id lượt Ánh/Bình dời; MB FT 101 không đổi lượt nào (`idsTuan` vẫn đối chiếu).
    */
-  const ANH_CHUP = { tuan: '4885cd20bd6cc544', moi: 'd9dbdea8902f6607' };
+  const ANH_CHUP = { tuan: 'a26213d650228d31', moi: '9a13cae4db5e106a' };
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id
