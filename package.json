@@ -22,6 +22,7 @@
     "kiem-sau-init": "npm run build:server && node dist-server/server/src/ops/kiemSauInit.js",
     "kiem-du-lieu-mt": "npm run build:server && node dist-server/server/src/ops/kiemDuLieuMt.js",
     "kiem-o-lop": "npm run build:server && node dist-server/server/src/ops/kiemOLop.js",
+    "kiem-truoc-ov1b": "npm run build:server && node dist-server/server/src/ops/kiemTruocOv1b.js",
     "dem-bo-tro-trung": "npm run build:server && node dist-server/server/src/ops/demBoTroTrung.js",
     "kiem-truoc-ov3b": "npm run build:server && node dist-server/server/src/ops/kiemTruocOv3b.js",
     "xoa-kho-tep": "npm run build:server && node dist-server/server/src/ops/xoaKhoTep.js",

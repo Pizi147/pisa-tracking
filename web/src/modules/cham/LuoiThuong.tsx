@@ -240,9 +240,9 @@ export function useLuuThuong(attemptId: number, onReload: () => void, ct: string
     if (r && bat) {
       thongBaoVang(toast, `${attemptId}:${skill}`, tenMonNgan(ct, skill), tenHv, r.tuanMoi);   // K4: gõ "-" và nút Vắng cùng một thông báo
     } else if (r && r.moved) {
-      toast.push('ok', `Đã gỡ vắng ${tenMonNgan(ct, skill)}${tenHv ? ` · ${tenHv}` : ''} · về ${r.tuanMoi ?? 'tuần cũ'}`);
+      toast.push('ok', `Đã bỏ vắng ${tenMonNgan(ct, skill)}${tenHv ? ` · ${tenHv}` : ''} · về ${r.tuanMoi ?? 'tuần cũ'}`);
     } else if (r && r.giuLich) {
-      toast.push('ok', `Đã gỡ vắng ${tenMonNgan(ct, skill)}${tenHv ? ` · ${tenHv}` : ''} · giữ ${r.tuanMoi ?? 'tuần mới'}`);   // PR-BV: tuần mới đã có điểm
+      toast.push('ok', `Đã bỏ vắng ${tenMonNgan(ct, skill)}${tenHv ? ` · ${tenHv}` : ''} · giữ ${r.tuanMoi ?? 'tuần mới'}`);   // PR-BV: tuần mới đã có điểm
     }
     return r !== null;
   };

@@ -126,17 +126,22 @@ export function cauMtSeDoi(route: string | null, luot: readonly { attemptNo: num
 }
 
 /** Mốc đánh giá kế tiếp (K2-05, K2-31): lượt `planned`, không lịch sử, tuần từ thứ Hai tuần này trở đi — sớm nhất. */
-export function mocKeTiep<T extends { status: string; lich_su: number; weekStart: string | null; attempt_no: number }>(
+export function mocKeTiep<T extends { status: string; lich_su: number; weekStart: string | null; attempt_no: number; huyHet?: number | boolean }>(
   ds: T[], homNay: string,
 ): T | null {
   const tuanNay = mondayOfDate(homNay);
-  const con = ds.filter((x) => x.status === 'planned' && !x.lich_su && !!x.weekStart && x.weekStart.slice(0, 10) >= tuanNay);
+  /* OV-1b: lượt mọi phần thi đã huỷ (`huyHet`, `LUOT_HUY_HET_SQL`) không chiếm chỗ mốc kế tiếp. */
+  const con = ds.filter((x) => x.status === 'planned' && !x.lich_su && !x.huyHet && !!x.weekStart && x.weekStart.slice(0, 10) >= tuanNay);
   con.sort((a, b) => a.weekStart!.localeCompare(b.weekStart!) || a.attempt_no - b.attempt_no);
   return con[0] ?? null;
 }
 
+/** OV-1b: lượt có dòng kỹ năng mà KHÔNG còn kỹ năng bắt buộc nào chưa huỷ (mọi phần thi đã huỷ / bỏ khỏi đợt) — 1/0. */
+export const LUOT_HUY_HET_SQL = (a: string) => `(EXISTS (SELECT 1 FROM attempt_skills hk WHERE hk.attempt_id = ${a}.id)
+  AND NOT EXISTS (SELECT 1 FROM attempt_skills hk WHERE hk.attempt_id = ${a}.id AND hk.required = 1 AND hk.sit_status != 'cancelled'))`;
 /** Cùng luật `mocKeTiep` cho câu đếm theo lô (không N+1). Tham số `?` = thứ Hai của tuần này. */
-export const MOC_KE_TIEP_SQL = (a: string, rp: string) => `${a}.status = 'planned' AND ${a}.lich_su = 0 AND ${rp}.week_start >= ?`;
+export const MOC_KE_TIEP_SQL = (a: string, rp: string) =>
+  `${a}.status = 'planned' AND ${a}.lich_su = 0 AND NOT ${LUOT_HUY_HET_SQL(a)} AND ${rp}.week_start >= ?`;
 
 /** K2-05: em FT "có mốc đánh giá tiếp theo" = có mốc kế tiếp, HOẶC đã qua MT cuối của lịch mặc định và đã có ngày/tháng thi. */
 export function coMocTiepTheo(o: { coMoc: boolean; route: string | null; mtCuoi: number; coNgayThi: boolean }): boolean {

@@ -16,8 +16,8 @@ import {
   activeAt, can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, lopFtChoGvSpeaking, mySkills, scopeXemLuotCham, type Principal,
 } from '../permissions.ts';
 import {
-  ASSESSED_SKILLS, ATTEMPT_KIND_SHORT, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, CHAM_CHEO, LUOT_TINH_NO_SQL, PERMISSIONS, boMonLich, khoiCham, khungCua, laChamCheo, lopTuMo,
-  tenMonNgan, type Khung, nhanLopLichTest, noShowStateOf,
+  ASSESSED_SKILLS, ATTEMPT_KIND_SHORT, CHAM_CHEO, dauTruCuaO, LUOT_TINH_NO_SQL, PERMISSIONS, boMonLich, khoiCham, khungCua, laChamCheo, lopTuMo,
+  tenMonNgan, type Khung, nhanLopLichTest,
   soSanhLop, trangThaiChamLabel, type AssessedSkill, type AttemptKind, type LoaiNhanLop, type PhamViLichTest,
 } from '../../../shared/domain/index.ts';
 import { classScoreSheet, conBaiCanCham, listAttempts, type MonDoiLich } from '../fasttrack/attempts.ts';
@@ -358,7 +358,13 @@ export type LopLichTest = {
   /** Môn đánh giá có thi tuần này, thứ tự L · R · W · S. */
   kyNangTuan: string[];
   tong: number; daCham: number; conBai: number; conBaiCuaToi: number;
+  /** OV-1b (3.5): người có phân công — CHỈ ô của chính họ quá hạn; Quản lý / Quản trị (không phân công) — mọi ô. */
   han: string | null; quaHan: boolean;
+  /**
+   * OV-1b (3.5) "Phần của bạn": tách ô của người xem với ô của GV khác (kỹ năng đánh giá L R W S, số bài còn, số ngày quá hạn của phần người khác).
+   * `null` với người không có phân công (Quản lý, Quản trị) — họ thấy toàn bộ qua `nhan` như cũ.
+   */
+  phan: PhanCuaBan | null;
   nhan: { loai: LoaiNhanLop; chu: string };
   /** Tự mở khi vào trang (Q8): người có phân công — còn bài của mình; Quản lý — còn bài. */
   moSan: boolean;
@@ -368,6 +374,10 @@ export type LopLichTest = {
   choDuyetDoi: number;
   /** PR-LT3: tuần thi của hàng — khối 2 có hàng của tuần trước và của tuần cũ có hạn riêng (lưới mở đúng tuần đó). */
   periodId: number; weekStart: string;
+};
+export type PhanCuaBan = {
+  toi: { kyNang: string[]; con: number } | null;
+  khac: { kyNang: string[]; con: number; quaHanNgay: number | null } | null;
 };
 /** Dải số (PR-LT3 Q1): đã chấm x/y + còn phải chấm (khối 2 + 3 ở tuần hiện tại; tuần khác: khối 3) · quá hạn chấm (khối 1). */
 export type TongQuanLich = { daCham: number; tong: number; conPhaiCham: number; no: { bai: number; lop: number } };
@@ -400,29 +410,17 @@ type OiemLuu = {
 };
 
 /**
- * MỘT Ô NHẬP FT ĐÃ XONG CHƯA — có điểm, hoặc dấu "-" CÒN HIỆU LỰC ở chính tuần này. Cùng luật với `skillCells`
- * (`server/src/fasttrack/attempts.ts`, nơi badge "n bài chờ chấm" và khối Nợ đọc): `noShowStateOf`, cộng hai điều kiện
- * của việc chốt — quá Chủ nhật mà chưa chốt thì buổi phải `scheduled` và mọi ô nhập của buổi đều "-"; đã chốt mà Quản lý
- * đảo trạng thái thi (không còn `absent`) thì dấu cũ không sống lại. Lệch luật này là lệch số giữa Lịch Test và badge
- * (rà #92) — phép kiểm "còn phải chấm + Nợ = badge" giữ hai nơi khớp nhau.
+ * MỘT Ô NHẬP FT ĐÃ XONG CHƯA — có điểm, hoặc dấu "-" CÒN HIỆU LỰC ở chính tuần này. OV-1b: CÙNG MỘT HÀM với `skillCells`
+ * (`dauTruCuaO`, nơi badge "n bài chờ chấm" và khối Nợ đọc) — hàng lớp và ô đếm không còn hai bản chép của một luật.
  */
 function oFtXong(diem: OiemLuu[], nhap: string, v: { periodId: number; weekEnd: string | null; sitStatus: string; today: string }) {
   const row = diem.find((x) => x.skill === nhap);
   if (!row) return false;
   if (row.band !== null || row.raw_score !== null) return true;
-  let ns = noShowStateOf({
-    marked: !!row.no_show_period_id, hasScore: false, sameWeek: row.no_show_period_id === v.periodId,
-    weekEnd: v.weekEnd, today: v.today, enteredAfterWeekEnd: !!row.no_show_late, lateRule: C10_NHAP_DAU_TRU_TUAN_QUA_KHU,
-  }).state;
-  if (!row.no_show_settled_at && ns === 'khong-du-thi') {
-    const banCung = entrySkillsOf(assessedSkillOf(nhap) as AssessedSkill).filter((k) => k !== nhap).every((k) => {
-      const o = diem.find((x) => x.skill === k);
-      return !!o?.no_show_period_id && o.no_show_period_id === v.periodId && o.band === null && o.raw_score === null;
-    });
-    if (!(v.sitStatus === 'scheduled' && banCung)) ns = 'none';
-  }
-  if (row.no_show_settled_at && ns !== 'none' && !row.no_show_cu) ns = v.sitStatus === 'absent' ? 'khong-du-thi' : 'none';   // T23: "-" MT cũ giữ
-  return ns !== 'none';
+  return dauTruCuaO({
+    marked: !!row.no_show_period_id, hasScore: false, sameWeek: row.no_show_period_id === v.periodId, weekEnd: v.weekEnd, today: v.today,
+    settled: !!row.no_show_settled_at, cu: !!row.no_show_cu, sitStatus: v.sitStatus,
+  }).state !== 'none';
 }
 
 /** Ô nhập của một dòng lịch: Writing FT là hai ô W1, W2; còn lại một ô cùng tên môn. */
@@ -499,8 +497,10 @@ function hangLopTuan(
     return cuaToiNho.get(k)!;
   };
   type DongTam = Omit<DongLichTest, 'trangThai'> & { quaHan: boolean };
-  type LopTam = Omit<LopLichTest, 'dong' | 'nhan' | 'moSan' | 'daCham' | 'dotLabel' | 'kyNangTuan' | 'han' | 'choDuyetDoi' | 'periodId' | 'weekStart'> & {
+  type LopTam = Omit<LopLichTest, 'dong' | 'nhan' | 'moSan' | 'daCham' | 'dotLabel' | 'kyNangTuan' | 'han' | 'choDuyetDoi' | 'periodId' | 'weekStart' | 'phan'> & {
     dong: Map<string, DongTam>; _dot: string[]; _kn: Set<string>; _hanNo: string | null; _conKhongCheo: number;
+    /* OV-1b: phần của người xem / của GV khác. */
+    _toiKn: Set<string>; _toiQuaHan: boolean; _quaHanMoi: boolean; _khacKn: Set<string>; _khacCon: number; _khacTre: number | null;
   };
   const byLop = new Map<string, LopTam>();
   /* PR-MT: bài vắng tuần này có đề nghị dời chờ Quản lý — MỘT lần tra sổ đề nghị cho cả trang (không hỏi từng dòng). */
@@ -532,6 +532,7 @@ function hangLopTuan(
           ? `/nhap-diem/${r.class_id}?kind=${encodeURIComponent(r.kind)}`
           : `/nhap-diem/${r.class_id}?periodId=${periodId}`,
         dong: new Map(), _dot: [], _kn: new Set(), _hanNo: null, _conKhongCheo: 0,
+        _toiKn: new Set(), _toiQuaHan: false, _quaHanMoi: false, _khacKn: new Set(), _khacCon: 0, _khacTre: null,
       };
       byLop.set(khoa, lop);
     }
@@ -569,41 +570,60 @@ function hangLopTuan(
           : diem.some((x) => x.skill === nhap && (x.band !== null || x.raw_score !== null || x.no_show_period_id === periodId)),
       }));
     const con = cacO.filter((o) => !o.xong);
+    /* T18: Speaking Mock không là "bài của tôi" của ai (không "Chờ bạn chấm", không tự mở vì nó). */
+    const cuaToi = (nhap: string) => !laChamCheo(r.kind, nhap) && monCuaToi(r.class_id, nhap);
+    for (const o of cacO) if (cuaToi(o.nhap)) lop._toiKn.add(assessedSkillOf(o.nhap));
     d.soHv += 1;
     lop.tong += cacO.length;
     if (con.length) {
       d.conBai += con.length;
       lop.conBai += con.length;
-      /* T18: Speaking Mock không là "bài của tôi" của ai (không "Chờ bạn chấm", không tự mở vì nó). */
-      lop.conBaiCuaToi += con.filter((o) => !laChamCheo(r.kind, o.nhap) && monCuaToi(r.class_id, o.nhap)).length;
+      const toi = con.filter((o) => cuaToi(o.nhap)).length;
+      lop.conBaiCuaToi += toi;
       lop._conKhongCheo += con.filter((o) => !laChamCheo(r.kind, o.nhap)).length;
       /* Hạn theo đúng thứ tự của `viewSkill`: hạn riêng của môn → hạn riêng của đợt → hạn mặc định theo tuần môn. */
       const han = r.han_mon ?? r.han_dot ?? skillScoreDeadline(mode === 'ratio' ? 'ratio' : 'band', tuan.week_start, mt0);
       if (!lop._hanNo || han < lop._hanNo) lop._hanNo = han;
-      if (!chuaToiHan && quaHanNhapDiem(han, tuan.week_start, today)) {   // PR-UXF-a Q10
-        d.quaHan = true; lop.quaHan = true;
+      const tre = !chuaToiHan && quaHanNhapDiem(han, tuan.week_start, today);   // PR-UXF-a Q10
+      if (tre) { d.quaHan = true; lop._quaHanMoi = true; }
+      if (tre && toi) lop._toiQuaHan = true;
+      if (con.length > toi) {
+        for (const o of con) if (!cuaToi(o.nhap)) lop._khacKn.add(assessedSkillOf(o.nhap));
+        lop._khacCon += con.length - toi;
+        if (tre) lop._khacTre = Math.max(lop._khacTre ?? 0, Math.round((Date.parse(today.slice(0, 10)) - Date.parse(han.slice(0, 10))) / 86_400_000));
       }
     }
   }
 
   /* PR-UXF-a U1: lớp sắp theo `soSanhLop` (không theo chữ — "MB FT 10" không đứng trước "MB FT 9"). */
-  return [...byLop.values()].sort((a, b) => soSanhLop({ code: a.classCode }, { code: b.classCode })).map(({ dong, _dot, _kn, _hanNo, _conKhongCheo, ...l }) => ({
-    ...l,
-    dotLabel: _dot.join(', '),
-    kyNangTuan: [...new Set([..._kn].map((k) => assessedSkillOf(k)))].sort(theoThuTu),
-    daCham: l.tong - l.conBai,
-    han: _hanNo ?? skillScoreDeadline(l.mode === 'ratio' ? 'ratio' : 'band', tuan.week_start, l.kind === 'mt0'),
-    /* Chỉ còn ô Speaking Mock (không của ai) → "Chờ chấm" cả với người dạy lớp (T18). */
-    nhan: nhanLopLichTest({ conBai: l.conBai, conBaiCuaToi: l.conBaiCuaToi, chuaToiHan, coDayLop: lopCuaToi.has(l.classId) && _conKhongCheo > 0 }),
-    /* Tuần chưa tới thì chưa có gì để chấm — không tự mở. */
-    moSan: !chuaToiHan && lopTuMo({ conBai: l.conBai, conBaiCuaToi: l.conBaiCuaToi, coPhanCong }),
-    choDuyetDoi: l.mode === 'ielts_band' ? choDuyetCua.get(l.classId) ?? 0 : 0,
-    periodId, weekStart: String(tuan.week_start),
-    dong: [...dong.values()].map(({ quaHan, ...d }) => ({
-      ...d,
-      trangThai: trangThaiChamLabel({ conBai: d.conBai, tong: d.soHv, quaHan, chuaToiHan }),
-    })),
-  }));
+  return [...byLop.values()].sort((a, b) => soSanhLop({ code: a.classCode }, { code: b.classCode })).map(({
+    dong, _dot, _kn, _hanNo, _conKhongCheo, _toiKn, _toiQuaHan, _quaHanMoi, _khacKn, _khacCon, _khacTre, ...l
+  }) => {
+    /* OV-1b (3.5): nhãn "Quá hạn" của hàng = ô CỦA NGƯỜI XEM quá hạn (GV); Quản lý / Quản trị (xếp lịch được lớp) — mọi ô, như cũ. */
+    const phanRieng = coPhanCong && !can(p, PERMISSIONS.PLAN_WEEK, { classId: l.classId });
+    return {
+      ...l,
+      quaHan: phanRieng ? _toiQuaHan : _quaHanMoi,
+      phan: phanRieng ? {
+        toi: _toiKn.size ? { kyNang: [..._toiKn].sort(theoThuTu), con: l.conBaiCuaToi } : null,
+        khac: _khacCon ? { kyNang: [..._khacKn].sort(theoThuTu), con: _khacCon, quaHanNgay: _khacTre } : null,
+      } : null,
+      dotLabel: _dot.join(', '),
+      kyNangTuan: [...new Set([..._kn].map((k) => assessedSkillOf(k)))].sort(theoThuTu),
+      daCham: l.tong - l.conBai,
+      han: _hanNo ?? skillScoreDeadline(l.mode === 'ratio' ? 'ratio' : 'band', tuan.week_start, l.kind === 'mt0'),
+      /* Chỉ còn ô Speaking Mock (không của ai) → "Chờ chấm" cả với người dạy lớp (T18). */
+      nhan: nhanLopLichTest({ conBai: l.conBai, conBaiCuaToi: l.conBaiCuaToi, chuaToiHan, coDayLop: lopCuaToi.has(l.classId) && _conKhongCheo > 0 }),
+      /* Tuần chưa tới thì chưa có gì để chấm — không tự mở. */
+      moSan: !chuaToiHan && lopTuMo({ conBai: l.conBai, conBaiCuaToi: l.conBaiCuaToi, coPhanCong }),
+      choDuyetDoi: l.mode === 'ielts_band' ? choDuyetCua.get(l.classId) ?? 0 : 0,
+      periodId, weekStart: String(tuan.week_start),
+      dong: [...dong.values()].map(({ quaHan, ...d }) => ({
+        ...d,
+        trangThai: trangThaiChamLabel({ conBai: d.conBai, tong: d.soHv, quaHan, chuaToiHan }),
+      })),
+    };
+  });
 }
 
 /** PR-MT0: khung của một hàng Lịch Test — MT0 chấm band nhưng ở lớp thường, nên thuộc khung "Lớp thường". */

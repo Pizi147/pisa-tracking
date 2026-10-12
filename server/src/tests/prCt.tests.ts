@@ -528,17 +528,17 @@ export async function runPrCtTests(t: YThucTestKit) {
     assert(get(`SELECT status FROM learning_cycles WHERE id = ?`, g.cyc).status === 'completed', 'lộ trình cũ đóng');
     assert(get(`SELECT MIN(attempt_no) m FROM assessment_attempts WHERE cycle_id = ?`, moi.id).m === 1, 'MT đánh lại từ MT1');
   });
-  await checkAsync('CT (4j) · chotVangDinhKy trả daChuyen; lỗi chuyển lớp KHÔNG làm hỏng daChot', async () => {
+  await checkAsync('CT (4j) · chotVangDinhKy trả daChuyen; lỗi chuyển lớp không làm hỏng lượt quét (OV-1b: không còn chốt "-")', async () => {
     const chot: any = await import('../ops/chotVangDinhKy.ts');
     const nF = lopMoi({ kind: 'FOU', tuanHienTai: 9 });
     const dF = lopMoi({ kind: 'BE', tuanHienTai: 1 });
     const f = hocVien(nF, 'FOU', false).sid;
     ra(P.mbManager, nF, 'cuoi-khoa', [dongCua(f, 'len_lop', dF)]);
     setConfig('demo_date', THU_HAI);
-    const a = chot.chotVangDinhKy({ ngay: THU_HAI, chot: () => 7, daKhoiTao: () => true });
-    assert(a.daChot === 7 && a.daChuyen === 1 && enrHienTai(f).class_id === dF, JSON.stringify(a));
-    const b = chot.chotVangDinhKy({ ngay: THU_HAI, chot: () => 4, daKhoiTao: () => true, chuyen: () => { throw new Error('hỏng giả'); } });
-    assert(b.daChot === 4 && b.daChuyen === 0, JSON.stringify(b));
+    const a = chot.chotVangDinhKy({ ngay: THU_HAI, daKhoiTao: () => true });
+    assert(a.daChuyen === 1 && enrHienTai(f).class_id === dF, JSON.stringify(a));
+    const b = chot.chotVangDinhKy({ ngay: THU_HAI, daKhoiTao: () => true, chuyen: () => { throw new Error('hỏng giả'); } });
+    assert(b.boQua === null && b.daChuyen === 0, JSON.stringify(b));
     assert(chot.chotVangDinhKy({ ngay: THU_HAI, daKhoiTao: () => false }).daChuyen === 0, 'chưa khởi tạo: bỏ qua');
     setConfig('demo_date', t.TODAY);
   });

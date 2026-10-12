@@ -10,6 +10,7 @@ import { nhoTheoId } from '../platform/nguCanhRequest.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { programmeByCode } from '../normal/regular.ts';
 import { rutDeNghiDoi } from './absence.ts';
+import { entrySkillsOf } from './scoring.ts';
 import { classProgress } from '../classes/schedule.ts';
 import {
   effectiveSkillDeadline, mondayOf, quaHanNhapDiem, weekInfo, type ScoringMode,
@@ -894,6 +895,17 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
           WHERE id = ?`,
       )
       .run(periodId, vang ? 1 : 0, nowIso(), row.id);
+    /*
+     * OV-1b (ca thật 08/10): đổi tuần bằng tay = lịch mới — dấu "-" vắng của lịch cũ hết nghĩa, bỏ đi để ô ở tuần mới là ô cần nhập bình
+     * thường (không còn "scheduled ở tuần cũ + '-' đã chốt" → quá hạn giả). "Không dự thi" (`no_show_cu`) giữ. Lớp thường: "-" là chính lần dời.
+     */
+    if (!opts.ghiBuDau && scoringModeOf(attempt) !== 'ratio') {
+      const o = entrySkillsOf(row.skill as AssessedSkill);
+      conn.prepare(
+        `UPDATE assessment_scores SET no_show_period_id = NULL, no_show_by = NULL, no_show_at = NULL, no_show_late = 0, no_show_settled_at = NULL
+          WHERE attempt_id = ? AND skill IN (${o.map(() => '?').join(',')}) AND no_show_cu = 0 AND no_show_period_id IS NOT NULL`,
+      ).run(attemptId, ...o);
+    }
     logSchedule(attemptId, {
       action: vang ? 'skill_week_moved_absence' : 'skill_week_set',
       field: skill, oldValue: oldCode, newValue: period.code,

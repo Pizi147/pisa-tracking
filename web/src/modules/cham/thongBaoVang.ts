@@ -1,7 +1,7 @@
 /**
  * K4 "Vắng" (Q4 = B, chủ sản phẩm 07/10): MỘT thông báo ngắn, không nút, ở mọi đường ghi vắng — gõ "-" ở lưới lớp
  * thường / lưới FT / màn từng kỹ năng, và nút "Vắng" trên điện thoại. Không có "Hoàn tác": gỡ vắng = xoá "-" trong ô
- * (PR-BV, thông báo "Đã gỡ vắng …" nằm ở nơi gọi máy chủ vì cần tuần máy chủ trả về).
+ * (PR-BV, thông báo "Đã bỏ vắng …" nằm ở nơi gọi máy chủ vì cần tuần máy chủ trả về).
  * `khoa` = mã ô (vd `${attemptId}:${skill}`) — cùng ô thì thông báo mới thay cũ, hai ô liền nhau không nuốt nhau.
  * Lớp thường truyền `tuanMoi` (mã tuần môn dời tới, như `W3 OCT`); FT không dời nên bỏ trống.
  */

@@ -136,8 +136,11 @@ export const ATTEMPT_STATUS_LABEL: Record<AttemptStatus, string> = {
  * NHÃN LƯỢT CÓ TIẾN ĐỘ (F8, PR-HSM Q17): lượt đã có ≥ 1 kỹ năng mà còn thiếu thì không phải "Đã lên lịch" nữa —
  * "Đang chấm · 2/4". Dùng ở lưới FT và hồ sơ Mock (một hàm, một câu).
  */
-export function nhanLuot(status: string, coDiem: number, yeuCau: number): string {
+export function nhanLuot(status: string, coDiem: number, yeuCau: number,
+  /** OV-1b (ca thật 11/10): mọi kỹ năng bắt buộc đã huỷ phần thi / không còn kỹ năng nào — lượt không còn "Đã lên lịch". */
+  huyHet = false): string {
   if (status === 'cancelled') return ATTEMPT_STATUS_LABEL.cancelled;
+  if (huyHet && coDiem === 0 && status !== 'done') return 'Đã huỷ phần thi';
   if (status === 'done' || (yeuCau > 0 && coDiem >= yeuCau)) return ATTEMPT_STATUS_LABEL.done;
   if (coDiem > 0) return `Đang chấm · ${coDiem}/${yeuCau}`;
   return ATTEMPT_STATUS_LABEL[status as AttemptStatus] ?? status;
@@ -323,6 +326,25 @@ export function noShowStateOf(i: {
   }
   if (i.enteredAfterWeekEnd || i.today > end) return { state: 'khong-du-thi', effectiveOn: end, editableUntil: null };
   return { state: 'khong-co-bai', effectiveOn: null, editableUntil: end };
+}
+
+/**
+ * OV-1b (đặc tả OV 3.3, 3.5): DẤU "-" CỦA MỘT Ô FT CÒN HIỆU LỰC KHÔNG — MỘT luật cho ô nhập / badge / khối Nợ (`skillCells`) và hàng lớp
+ * Lịch Test (`oFtXong`), để hai nơi không lệch số. Không còn chốt cuối Chủ nhật: "-" có hiệu lực ngay khi ghi.
+ *   · "Không dự thi" (`cu`: nhập bù sau tuần thi, hoặc MT cũ) → luôn `khong-du-thi`.
+ *   · vắng đã chốt (`settled`) → còn hiệu lực khi kỹ năng còn `absent` (chờ Quản lý); Quản lý đã đổi kết luận thì dấu cũ không sống lại.
+ *   · chưa chốt (buổi Writing mới một task "-") → `khong-co-bai` trong tuần, `khong-du-thi` sau tuần.
+ */
+export function dauTruCuaO(i: {
+  marked: boolean; hasScore: boolean; sameWeek: boolean; weekEnd: string | null; today: string;
+  settled: boolean; cu: boolean; sitStatus: string;
+}): NoShowView {
+  const ns = noShowStateOf({ ...i, enteredAfterWeekEnd: false, lateRule: 'chot-ngay' });
+  if (ns.state === 'none') return ns;
+  const khongDuThi: NoShowView = { state: 'khong-du-thi', effectiveOn: i.weekEnd ? i.weekEnd.slice(0, 10) : null, editableUntil: null };
+  if (i.cu) return khongDuThi;
+  if (i.settled) return i.sitStatus === 'absent' ? khongDuThi : { state: 'none', effectiveOn: null, editableUntil: null };
+  return ns;
 }
 
 /** Gợi ý trong ô nhập điểm (rule book §17.1, TU_DIEN_VA_CHU §3). */

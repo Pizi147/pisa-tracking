@@ -26,7 +26,13 @@ export type LopLichTest = {
   chuongTrinh: string | null; boMon: string[];
   kind: string | null; dotLabel: string; kyNangTuan: string[];
   tong: number; daCham: number; conBai: number; conBaiCuaToi: number;
+  /** OV-1b (3.5): GV — chỉ ô của chính họ quá hạn; Quản lý / Quản trị — mọi ô. */
   han: string | null; quaHan: boolean;
+  /** OV-1b (3.5) "Phần của bạn" (kỹ năng L R W S); `null` với Quản lý / Quản trị — họ thấy toàn bộ qua `nhan`. */
+  phan: {
+    toi: { kyNang: string[]; con: number } | null;
+    khac: { kyNang: string[]; con: number; quaHanNgay: number | null } | null;
+  } | null;
   nhan: { loai: LoaiNhanLop; chu: string };
   moSan: boolean; hrefDayDu: string;
   /** Số bài vắng tuần này đang chờ Quản lý duyệt dời (PR-MT). */

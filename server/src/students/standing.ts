@@ -1,7 +1,7 @@
 import { db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import {
-  ASSESSED_SKILLS, CHUONG_TRINH_KHONG_CHIA_MON, PROGRAMME_TEMPLATES, REGULAR_SKILLS, SOS_LABEL, boMonLich, mocKeTiep, moiNhatTruoc, nhanBaiThuong } from '../../../shared/domain/index.ts';
+  ASSESSED_SKILLS, CHUONG_TRINH_KHONG_CHIA_MON, PROGRAMME_TEMPLATES, REGULAR_SKILLS, SOS_LABEL, boMonLich, mocKeTiep, LUOT_HUY_HET_SQL, moiNhatTruoc, nhanBaiThuong } from '../../../shared/domain/index.ts';
 import { entryBandsOf, loadBundle } from '../fasttrack/attempts.ts';
 import { evaluateAttempt, expectationFor } from '../fasttrack/scoring.ts';
 import { allProgrammes, evaluateRegular } from '../normal/regular.ts';
@@ -178,7 +178,7 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
   const cph = cycleIds.map(() => '?').join(',');
   const attempts = conn
     .prepare(
-      `SELECT a.*, pr.code AS period_code, pr.week_start AS weekStart, pr.week_end AS period_end,
+      `SELECT a.*, pr.code AS period_code, pr.week_start AS weekStart, pr.week_end AS period_end, ${LUOT_HUY_HET_SQL('a')} AS huyHet,
               EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id) AS _co_diem
          FROM assessment_attempts a
          LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
