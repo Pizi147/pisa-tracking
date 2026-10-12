@@ -521,7 +521,9 @@ export async function runPrDlTests(t: YThucTestKit) {
     const se = doc('web/src/modules/fasttrack/ScoreEntry.tsx');
     const hop = se.slice(se.indexOf('export function SuaDiemCoLyDo'));
     assert(/useBaoHopLyDoMo\(busy\)/.test(hop.slice(0, hop.indexOf('return ('))), 'SuaDiemCoLyDo phải gọi useBaoHopLyDoMo(busy)');
-    for (const ten of ['setHoiLyDo(true)', '<SuaTieuChi', 'setSua(']) assert(se.includes(ten), `mọi hộp lý do đi qua SuaDiemCoLyDo: ${ten}`);
+    assert(se.includes('setSua('), 'ô lớp thường có điểm: hộp lý do qua SuaDiemCoLyDo');
+    /* OV-4b: ô MT sửa trong hộp nhập điểm — hộp có chữ đã gõ = ô chưa lưu (cùng BaoDangLuuContext). */
+    assert(/useBaoHopLyDoMo\(busy, daGo\)/.test(doc('web/src/modules/fasttrack/HopNhapDiem.tsx')), 'hộp nhập điểm phải báo ô chưa lưu');
     const ss = doc('web/src/ui/SaveState.tsx');
     const hook = ss.slice(ss.indexOf('export function useBaoHopLyDoMo'), ss.indexOf('export function useTrangThaiLuuO'));
     assert(/useContext\(BaoDangLuuContext\)/.test(hook) && !/BaoLuuContext\b|useBaoLuu/.test(hook), 'chỉ báo qua BaoDangLuuContext');

@@ -23,6 +23,7 @@ import { HopThaoTacMt, THAO_TAC_CO_HOP } from '../fasttrack/HopThaoTacMt.tsx';
 import { NganLichSuBai } from './NganLichSuBai.tsx';
 import { DauLuu, DauO, VIEN_LOI } from './LuoiFT.tsx';
 import { DongThi } from './DongThi.tsx';
+import { NutNhanXet } from '../fasttrack/HopNhapDiem.tsx';
 
 type SkillResult = {
   skill: string; label: string;
@@ -35,6 +36,8 @@ type SkillSchedule = {
   periodCode: string | null; weekRange: string | null; weekStart: string | null;
   deadline: string | null; progress: string; sitStatus: string; overdue: boolean;
   noShow: boolean; movedFrom: string | null; movedFromStart: string | null; canEdit: boolean;
+  /** OV-4b: nhận xét của môn (nút "Nhận xét" cạnh ô). */
+  nhanXet?: string | null;
   /** PR-BV: người xem gỡ được dấu "-" lúc này. */
   goDau?: boolean;
   /** R11: đợt đã hoàn tất — khoá với người không có `PLAN_WEEK`/`SCORE_OVERRIDE`. */
@@ -183,7 +186,7 @@ export function tongPhoBien(rows: Row[], k: string): number | null {
 
 /* Độ rộng cột cố định (G-2) — màn hẹp hơn thì cuộn ngang trong thẻ (G-11). */
 const COT_HV = 220;
-const COT_MON = 136;
+const COT_MON = 190;   // OV-4b: +nút "Nhận xét" cạnh hai ô đúng/tổng
 const COT_KQ = 290;
 
 /**
@@ -250,8 +253,11 @@ export function useLuuThuong(attemptId: number, onReload: () => void, ct: string
   /** Gửi lại đúng lệnh đã hỏng của một ô / của mọi ô lỗi trên dòng. */
   const luuLai = (skill: string) => { const b = tt.hong.current.get(skill); if (b) void gui(skill, b); };
   const retry = () => { for (const k of [...tt.hong.current.keys()]) luuLai(k); };
+  /* OV-4b: nhận xét lưu riêng (hộp "Nhận xét"); lỗi ném ra để hộp giữ chữ đã gõ. */
+  const nhanXet = async (skill: string, v: string | null) => (await gui(skill, { nhanXet: v }, { nem: true })) !== null;
+
   return {
-    luu, dau, status: tt.status, lastError: tt.lastError, retry, o: tt.o, loi: tt.loi, luuLai, soLoi: tt.soLoi,
+    luu, dau, nhanXet, status: tt.status, lastError: tt.lastError, retry, o: tt.o, loi: tt.loi, luuLai, soLoi: tt.soLoi,
     loiNhap: tt.loiNhap, coGuiLai: tt.coGuiLai,
   };
 }
@@ -386,7 +392,7 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
   register: (col: number, el: HTMLInputElement | null) => void;
   onMove: (row: number, col: number, dr: number) => void;
 }) {
-  const { luu, dau, status, lastError, retry, o, loi, luuLai, soLoi, loiNhap, coGuiLai } = useLuuThuong(row.attemptId, onReload, sheet.programme.code, row.studentName);
+  const { luu, dau, nhanXet, status, lastError, retry, o, loi, luuLai, soLoi, loiNhap, coGuiLai } = useLuuThuong(row.attemptId, onReload, sheet.programme.code, row.studentName);
   const homNay = sheet.today;
   const ct = sheet.programme.code;
   const [hop, setHop] = useState<{ t: ThaoTac; k: string } | null>(null);
@@ -470,6 +476,12 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
           <td key={k} className={`td group py-1.5 text-right relative ${o[k] === 'loi' ? VIEN_LOI : ''}`} data-kn={k}
             data-trong={trong ? '1' : undefined} data-luu={o[k]}>
             <DauO tt={o[k]} loi={loi[k]} onLuuLai={() => luuLai(k)} />
+            <div className="flex items-start justify-end gap-1">
+            {canEdit && s && (
+              <NutNhanXet tenMon={tenMon(sheet.programme.code, k)} giaTri={s.nhanXet ?? null}
+                phu={[row.studentName, sheet.class.code, s.weekStart ? tuanLich(s.weekStart, homNay) : null].filter(Boolean).join(' · ')}
+                onLuu={(v) => nhanXet(k, v)} />
+            )}
             <ODiemThuong
               /* PR-BV (L2): đang xem đúng tuần có dấu "-" mà tuần mới đã có điểm — ô hiện "-" để gỡ được. */
               cell={{ ...cell, oTuanCu: !!tuanDangXem && s?.movedFromStart === tuanDangXem }}
@@ -490,6 +502,7 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
                 if (e.key === 'ArrowUp') { e.preventDefault(); onMove(rowIndex, ci, -1); }
               }}
             />
+            </div>
             {quaHan && (
               <div className="text-xs text-slate-400 leading-none mt-0.5"
                 title={`${tenMon(sheet.programme.code, k)}: hạn chấm ${ngay(s!.deadline, homNay)} đã qua`}>{quaHan}</div>

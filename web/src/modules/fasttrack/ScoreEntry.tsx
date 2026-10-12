@@ -3,17 +3,14 @@ import { createPortal } from 'react-dom';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { thongBaoVang } from '../cham/thongBaoVang.ts';
-import { KhungPanel } from '../../ui/KhungPanel.tsx';
-import { Info, SectionNote, Status } from '../../ui/ui.tsx';
+import { Info, Status } from '../../ui/ui.tsx';
 import { useBaoHopLyDoMo, useTrangThaiLuuO } from '../../ui/SaveState.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
-import { useSession } from '../../lib/session.tsx';
-import { DongGvCham, cungGvCham, gvChamPayload, gvChamThanhChon } from '../cham/GvCham.tsx';
+import type { gvChamPayload } from '../cham/GvCham.tsx';
 import {
-  BAI_CO_NHAN_XET, LOI_SO_CAU, NHAN_XET_TOI_DA, NO_SHOW_HINT, criteriaPatchFrom, demNguocSuaDau, oLuoiThuong,
-  rawPatchFrom, tieuChiCua, tieuChiNganCua, tuanLich, ENTRY_SKILL_SHORT, type EntrySkill, type NguoiChon,
+  oLuoiThuong, tuanLich, ENTRY_SKILL_SHORT, type EntrySkill,
 } from '@shared/domain/index.ts';
 
 export type Cell = {
@@ -53,8 +50,12 @@ export type Cell = {
    * PR-BV: dấu "-" ĐÃ CHỐT còn trên ô — ô hiện "-" (kèm `→ W3 SEP` khi đã dời) tới khi có điểm. Xoá "-" (tẩy ô + Lưu) = hết vắng,
    * máy chủ trả lịch như trước khi gõ. `goDuoc` = người xem gỡ được lúc này (QL mọi lúc; GV chấm / GVCN đến hết thứ Tư sau tuần gốc).
    */
-  daChot?: { doiSang: string | null; hanGo: string | null; goDuoc: boolean } | null;
-  /** PR-HSM (YC-13.5): nhận xét của bài nhập (W1/W2/S). */
+  daChot?: {
+    doiSang: string | null; hanGo: string | null; goDuoc: boolean;
+    /** OV-4b: lần vắng · lúc ghi "-" · người ghi (hộp ô Vắng). */
+    lan: number; ghiLuc: string | null; ghiBoi: string | null;
+  } | null;
+  /** PR-HSM (YC-13.5), OV-4b: nhận xét của bài nhập (L/R/W1/W2/S). */
   nhanXet?: string | null;
   /** PR-HSM (T39): GV chấm Speaking — tài khoản (`userId`) hoặc người ngoài (`userId: null`). */
   gvCham?: { userId: number | null; ten: string } | null;
@@ -69,7 +70,7 @@ export type SavePatch = {
   noShow?: boolean;
   /** RB-5 — lý do khi sửa một ô ĐÃ CÓ điểm chính thức (máy chủ đòi khi giá trị đổi hoặc bị xoá). */
   lyDo?: string;
-  /** PR-HSM: nhận xét W1/W2/S (`null` = xoá) — không phải điểm: không lý do, không đổi "Nhập bởi". */
+  /** PR-HSM, OV-4b: nhận xét (`null` = xoá) — không phải điểm: không lý do, không đổi "Nhập bởi". */
   nhanXet?: string | null;
   /** PR-HSM: GV chấm Speaking, dạng `nguoiThanhPayload` (`null` = xoá). */
   gvCham?: ReturnType<typeof gvChamPayload>;
@@ -79,13 +80,11 @@ export type SavePatch = {
 export type SaveOpts = { nem?: boolean };
 
 /** Ô đang hiện dấu "-": chưa chốt (`noShow`) hoặc đã chốt mà chưa có điểm (`daChot`, PR-BV). */
-const coDau = (cell: Cell) => !!cell.noShow || !!cell.daChot;
+export const coDau = (cell: Cell) => !!cell.noShow || !!cell.daChot;
 /** Ô KHÔNG nhận lệnh "-" mới: đang mang dấu của chính tuần này. "-" đã chốt mà bài đã dời (`doiSang`) là dấu tuần cũ — tuần mới vẫn báo vắng được. */
-const chanDau = (cell: Cell) => !!cell.noShow || (!!cell.daChot && !cell.daChot.doiSang);
+export const chanDau = (cell: Cell) => !!cell.noShow || (!!cell.daChot && !cell.daChot.doiSang);
 /** Ô sửa được ở lưới: quyền nhập thường, HOẶC gỡ được dấu "-" đã chốt (PR-BV — bài vắng / huỷ vắng vẫn xoá "-" được). */
-const suaDuoc = (cell: Cell) => (cell.canEdit && !lockedByNoShow(cell)) || !!cell.daChot?.goDuoc;
-/** PR-BV: người xem CHỈ gỡ được "-" đã chốt (không nhập điểm ô này) — ô chỉ nhận xoá (`OChiGoDau`). */
-const chiGoDau = (cell: Cell) => !(cell.canEdit && !lockedByNoShow(cell)) && !!cell.daChot?.goDuoc;
+export const suaDuoc = (cell: Cell) => (cell.canEdit && !lockedByNoShow(cell)) || !!cell.daChot?.goDuoc;
 
 /** Ô đã có điểm chính thức — sửa nó là hiệu chỉnh, phải qua `SuaDiemCoLyDo`. */
 export const coDiemChinhThuc = (cell: Cell) => cell.band !== null || cell.rawScore !== null;
@@ -101,14 +100,12 @@ export const KHOA_HOAN_TAT_HINT = 'Đợt này đã hoàn tất. Chỉ Quản l�
 export const VANG_HINT = 'Đã xác nhận vắng — Quản lý xếp lại bài trước khi nhập.';
 
 /** T10: gợi ý band ở tooltip ô L/R. */
-const GOI_Y_BAND = 'Band: 6.5 hoặc b6.';
-const BAND_HINT = 'Hoặc nhập thẳng band (6.5 hoặc b6) khi bốn tiêu chí để trống.';
 
 /** T10: ô Band của hộp tiêu chí — đầu vào là band đã lưu khi ô chỉ có band (bốn tiêu chí trống). */
-const bandBanDau = (cell: Cell) => (cell.band !== null && cell.criteria.every((v) => v === null) ? fmtBand(cell.band) : '');
+export const bandBanDau = (cell: Cell) => (cell.band !== null && cell.criteria.every((v) => v === null) ? fmtBand(cell.band) : '');
 
 /** Vì sao ô này chỉ đọc — MỘT câu cho ô số câu và ô tiêu chí. */
-const lyDoChiDoc = (cell: Cell) => (cell.daChot?.hanGo && !cell.daChot.goDuoc ? 'Quá hạn gỡ "-" — nhờ Quản lý.'   // PR-BV
+export const lyDoChiDoc = (cell: Cell) => (cell.daChot?.hanGo && !cell.daChot.goDuoc ? 'Quá hạn gỡ "-" — nhờ Quản lý.'   // PR-BV
   : cell.sitStatus === 'absent' ? VANG_HINT
   : lockedByNoShow(cell) ? 'Đã chốt — cần Quản lý hiệu chỉnh'
   : cell.khoa ? KHOA_HOAN_TAT_HINT : 'Bạn không được phân công kỹ năng này');
@@ -184,37 +181,6 @@ export function useSaveScore(attemptId: number, onSaved?: () => void, tenHv?: st
 }
 
 /**
- * DÒNG NHỎ DƯỚI Ô FT ĐANG MANG DẤU "-" (DS02, Q17). Còn trong cửa sổ sửa thì đếm ngược bằng chữ xám — không tô đỏ;
- * câu đầy đủ của máy chủ ("Không có bài · Có thể sửa đến hết Chủ nhật 20/09") nằm ở tooltip và ở cột Hạn nhập, nên
- * ô chỉ giữ MỘT dòng phụ (G-3). Đã chốt "Không dự thi" thì không còn gì để đếm: hiện đúng câu đã chốt.
- */
-function DongDau({ cell, onSave }: { cell: Cell; onSave?: (patch: SavePatch) => Promise<boolean> }) {
-  const { homNay } = useNgayNghiepVu();
-  /* PR-BV: "-" đã chốt và bài đã dời → dòng `→ W3 SEP` (tuần bài đang ở) + "Bỏ vắng" (OV-1b). */
-  if (cell.daChot?.doiSang) return <DongDaDoi cell={cell} onSave={onSave} />;
-  if (!cell.noShow) return null;
-  const dem = cell.noShow.state === 'khong-co-bai' ? demNguocSuaDau(cell.noShow.editableUntil ?? null, homNay) : null;
-  return (
-    <span className="block max-w-[6rem] truncate text-xs text-slate-400 leading-tight max-sm:max-w-none max-sm:whitespace-normal max-sm:text-right" title={cell.noShow.text}>
-      {dem ?? cell.noShow.text}
-    </span>
-  );
-}
-
-/** OV-1b (3.3): ô đã dời vì vắng — `→ W3 SEP` + nút "Bỏ vắng" (về tuần cũ, bộ đếm −1; cùng lệnh với xoá "-"). */
-function DongDaDoi({ cell, onSave }: { cell: Cell; onSave?: (patch: SavePatch) => Promise<boolean> }) {
-  return (
-    <span className="flex flex-col items-end text-xs tabular-nums text-slate-400 leading-tight">
-      <span className="whitespace-nowrap">→ {cell.daChot!.doiSang}</span>
-      {onSave && cell.daChot!.goDuoc && (
-        <button type="button" className="link min-h-[44px] whitespace-nowrap text-xs sm:min-h-0" aria-label={`Bỏ vắng ${skillLabel(cell.skill)} — về tuần cũ`}
-          onClick={() => void onSave({ noShow: false })}>Bỏ vắng</button>
-      )}
-    </span>
-  );
-}
-
-/**
  * NÚT "VẮNG" CỦA MÀN ĐIỆN THOẠI (`lon`, C2). Bàn phím số của iPhone (`inputMode="numeric"`/`"decimal"`) không có phím "-",
  * nên trên điện thoại lệnh "-" phải có một nút: bấm nút = gõ "-", đúng cùng một đường lưu — ghi ngay, toast có Hoàn tác
  * (Q11). Nút có chữ (dấu "−" trơ trọi không ai hiểu). `an` = ô này không nhận "-" lúc này (đã có điểm, đã mang dấu…) —
@@ -229,39 +195,6 @@ function NutDau({ title, an, tat, onBam }: { title: string; an: boolean; tat: bo
       onMouseDown={(e) => e.preventDefault()} onClick={onBam}>
       Vắng
     </button>
-  );
-}
-const NUT_DAU_FT = 'Không có bài — em có lịch mà không làm bài';
-
-/**
- * PR-BV: Ô CHỈ GỠ "-" — bài đang vắng / huỷ vắng, hoặc GVCN không chấm ô này: ô hiện "-" và chỉ nhận XOÁ (tẩy + Enter / rời ô = gỡ vắng).
- * Gõ số không vào ô (người xem không nhập điểm được ở đây). Máy chủ từ chối → ô về "-".
- */
-function OChiGoDau({ cell, onSave, lon }: { cell: Cell; onSave: (patch: SavePatch) => Promise<boolean>; lon: boolean }) {
-  const [con, setCon] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const go = async () => {
-    if (con || busy) return;
-    setBusy(true);
-    const ok = await onSave({ noShow: false });
-    setBusy(false);
-    if (!ok) setCon(true);
-  };
-  return (
-    <span className="inline-flex flex-col items-end gap-0.5">
-      <span className="inline-flex items-center gap-1.5">
-        <input className={`field ${lon ? 'w-[60px] h-11 text-base font-semibold' : 'w-16'} text-center tabular-nums`} value={con ? '-' : ''} disabled={busy}
-          title={'Chỉ gỡ được dấu "-": xoá rồi Enter.'} aria-label={`${skillLabel(cell.skill)} — dấu "-" đã chốt. Xoá để bỏ vắng`}
-          onChange={(e) => setCon(e.target.value.trim() !== '')}
-          onBlur={() => void go()}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') void go();
-            if (e.key === 'Escape') { e.preventDefault(); setCon(true); }
-          }} />
-        {lon && <ChoNutDau />}
-      </span>
-      <DongDau cell={cell} onSave={onSave} />
-    </span>
   );
 }
 
@@ -330,471 +263,6 @@ function useGoLaiDau(giaTri: string, khiGoLai: () => void, inputRef?: (el: HTMLI
 
 /** Lỗi máy chủ TỪ CHỐI (4xx: sai luật, thiếu quyền…) — thử lại y nguyên không bao giờ thành, nên không có "Thử lại". */
 export const laTuChoi = (e: any) => typeof e?.status === 'number' && e.status >= 400 && e.status < 500;
-
-/**
- * Ô nhập số câu đúng 0–40. Trống KHÁC 0: xoá ô là xoá điểm, không phải chấm 0.
- * `lon` = cỡ điện thoại (ô rộng 60px, cao 44px — chấm một kỹ năng một lúc); luật lưu, "-" và lý do y hệt.
- */
-export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false, onLoiNhap, tenHv }: {
-  cell: Cell;
-  onSave: (patch: SavePatch, opts?: SaveOpts) => Promise<boolean>;
-  inputRef?: (el: HTMLInputElement | null) => void;
-  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
-  lon?: boolean;
-  /** C9: báo câu lỗi nhập (hoặc `null`) lên dòng — dòng đếm vào "n ô chưa lưu". */
-  onLoiNhap?: (cau: string | null) => void;
-  /** Tên em cho toast "Đã ghi vắng … · {em}" (điện thoại). */
-  tenHv?: string;
-}) {
-  /* Bài đã báo "-" thì ô hiện đúng dấu '-' (không phải ô trống, không phải 0). T10: ô chỉ có band hiện `6.5` / `6.0` (có dấu chấm → đọc lại là band). */
-  const shown = () => (cell.rawScore !== null ? String(cell.rawScore) : cell.band !== null ? fmtBand(cell.band) : coDau(cell) ? '-' : '');
-  const [draft, setDraft] = useState(shown());
-  const [dirty, setDirty] = useState(false);
-  const [busy, setBusy] = useState(false);
-  /* RB-5: ô ĐÃ CÓ điểm mà con số đổi (hoặc bị xoá) thì không lưu thẳng — mở hộp lý do ngay tại ô. */
-  const [hoiLyDo, setHoiLyDo] = useState(false);
-  const [loi, setLoi] = useState<string | null>(null);
-  const idLoi = useId();
-  useBaoLoiNhap(loi, onLoiNhap);
-
-  useEffect(() => {
-    if (!dirty) setDraft(shown());
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `shown` chỉ đọc hai trường đã có trong danh sách
-  }, [cell.rawScore, cell.band, cell.noShow?.state, !!cell.daChot, dirty]);
-
-  const commit = async () => {
-    if (!dirty || busy || hoiLyDo) return;
-    const patch = rawPatchFrom(draft, cell);
-    if (!patch) { setLoi(LOI_SO_CAU); return; }     // "--", "abc"…: không gửi gì
-    setLoi(null);
-    /* Ô đã có điểm mà số đổi (kể cả đổi sang band, hay band đè lên số câu) → hộp lý do. */
-    if (coDiemChinhThuc(cell) && (('rawScore' in patch && patch.rawScore !== cell.rawScore)
-      || ('band' in patch && (cell.rawScore !== null || patch.band !== cell.band)))) {
-      setHoiLyDo(true);
-      return;
-    }
-    setBusy(true);
-    const ok = await onSave(patch);
-    setBusy(false);
-    if (ok) setDirty(false);       // lỗi thì giữ nguyên bản nháp để người dùng sửa và thử lại
-    /* Lệnh "-" không thành (máy chủ từ chối, hay lỗi mạng — "Thử lại" ở dòng gửi lại chính lệnh đó): ô về giá trị đã lưu. */
-    else if (patch.noShow !== undefined) { setDraft(shown()); setDirty(false); }
-  };
-  const huy = () => { setDraft(shown()); setDirty(false); setHoiLyDo(false); setLoi(null); };
-  /* FT không có "dời tiếp": gõ "-" lên ô đang là "-" chỉ không được thành "--". PR-BV: ô "-" tuần cũ đã dời → gõ lại "-" = vắng tuần mới. */
-  const goLai = useGoLaiDau(draft, () => { if (cell.daChot?.doiSang) void bamDau(); }, inputRef);
-  /* Nút − (điện thoại): đúng lệnh của gõ "-". Ô đã có điểm (sửa qua hộp tại ô) hoặc đã mang dấu thì không nhận. */
-  const nhanDau = !coDiemChinhThuc(cell) && !chanDau(cell);   // T23: MT cũ nhận "-" = không dự thi
-  const bamDau = async () => {
-    if (!nhanDau || busy || hoiLyDo) return;
-    setBusy(true);
-    const ok = await onSave({ noShow: true });
-    setBusy(false);
-    if (ok) setDirty(false);
-  };
-
-  if (chiGoDau(cell)) return <OChiGoDau cell={cell} onSave={onSave} lon={lon} />;
-  if (!suaDuoc(cell)) {
-    /* Điện thoại: dồn phải cả cụm — dòng đếm ngược "Còn 6 ngày để sửa" rộng hơn "-" + chỗ nút, dồn trái thì dòng này
-       lệch khỏi cột của các dòng khác. E5: ô chỉ đọc là CHỮ (không viền, không mờ); không có số thì "—", band trong ngoặc
-       chỉ khi có số câu; bài đã xác nhận vắng ghi "vắng" (E8). */
-    const vang = cell.sitStatus === 'absent' && cell.rawScore === null && !cell.daChot;   // 'absent' cả khi chờ duyệt dời; PR-BV: đã chốt thì hiện dấu
-    return (
-      <span className="inline-flex flex-col items-end gap-0.5">
-        <span className="inline-flex items-center gap-1.5">
-          <span className={`tabular-nums ${vang ? 'text-slate-500' : 'text-slate-300'}`} title={lyDoChiDoc(cell)}>
-            {vang ? 'vắng' : cell.rawScore === null ? (cell.band !== null ? fmtBand(cell.band) : coDau(cell) ? '-' : '—') : cell.rawScore}
-            {cell.rawScore !== null && <span className="text-slate-500 text-xs ml-1">({fmtBand(cell.band)})</span>}
-          </span>
-          {lon && <ChoNutDau />}
-        </span>
-        <DongDau cell={cell} onSave={onSave} />
-      </span>
-    );
-  }
-
-  const moi = draft.trim();
-  return (
-    <span className="inline-flex flex-col items-end gap-0.5">
-      <span className="inline-flex items-center gap-1.5">
-        <input
-          ref={goLai.gan}
-          aria-invalid={loi ? true : undefined}
-          aria-describedby={loi ? idLoi : undefined}
-          className={`field ${lon ? 'w-[60px] h-11 text-base font-semibold' : 'w-16'} text-center tabular-nums ${loi ? 'border-rose-400/70' : dirty ? 'border-amber-500/60' : ''}`}
-          inputMode="decimal"
-          value={draft}
-          disabled={busy}
-          title={loi ?? (coDiemChinhThuc(cell) ? `Đã có điểm — bấm để sửa. ${NO_SHOW_HINT}. ${GOI_Y_BAND}` : `${NO_SHOW_HINT}. ${GOI_Y_BAND}`)}
-          aria-label={`${skillLabel(cell.skill)} — số câu đúng. ${NO_SHOW_HINT}. ${GOI_Y_BAND}`}
-          onChange={(e) => { if (goLai.doi(e.target.value)) return; setDraft(e.target.value); setDirty(true); setLoi(null); }}
-          onBlur={commit}
-          onKeyDown={(e) => {
-            if (goLai.phim(e)) return;
-            if (e.key === 'Enter') { void commit(); }
-            /* Esc HUỶ ô đang sửa: trả về giá trị đã lưu, không gửi gì lên máy chủ. */
-            if (e.key === 'Escape' && dirty) { e.preventDefault(); huy(); }
-            onKeyDown?.(e);
-          }}
-        />
-        {/* Điện thoại: ô trống không ghi "—" cạnh nút "−" (trông như hai gạch). */}
-        <span className="tabular-nums text-slate-400 text-xs w-8">{coDau(cell) || (cell.rawScore === null && cell.band !== null) || (lon && cell.band === null) ? '' : fmtBand(cell.band)}</span>
-        {lon && <NutDau title={NUT_DAU_FT} an={!nhanDau} tat={busy} onBam={() => void bamDau()} />}
-      </span>
-      <DongLoiNhap id={idLoi} cau={loi} />
-      {!loi && <DongDau cell={cell} onSave={onSave} />}
-      {hoiLyDo && (
-        <SuaDiemCoLyDo
-          tieuDe={`Sửa ${skillLabel(cell.skill)}`}
-          moTaCu={cell.rawScore === null ? `Đang lưu: band ${fmtBand(cell.band)}` : `Đang lưu: ${cell.rawScore} câu đúng (band ${fmtBand(cell.band)})`}
-          loiGiaTri={moi === '' || (moi !== '-' && rawPatchFrom(moi, cell)) ? null : LOI_SO_CAU}
-          onDong={huy}
-          onLuu={async (lyDo) => {
-            const p = rawPatchFrom(draft, cell);
-            if (!p) return false;
-            const ok = await onSave({ ...p, lyDo }, { nem: true });
-            if (ok) { setDirty(false); setHoiLyDo(false); }
-            return ok;
-          }}
-        >
-          <label className="flex items-center gap-2">
-            <span className="text-xs text-slate-500 w-20">Giá trị mới</span>
-            <input className="field w-20 text-center tabular-nums py-1" inputMode="decimal" value={draft}
-              aria-label={`${skillLabel(cell.skill)} — số câu đúng mới`}
-              onChange={(e) => setDraft(e.target.value)} />
-            <span className="text-xs text-slate-500">{moi === '' ? 'huỷ điểm' : ''}</span>
-          </label>
-        </SuaDiemCoLyDo>
-      )}
-    </span>
-  );
-}
-
-/** Bốn tiêu chí mở trong khung riêng — bảng mặc định không bày 16 cột tiêu chí. `lon` = nút cỡ điện thoại (cao 44px). */
-export function CriteriaButton({ cell, onSave, buttonRef, lon = false, gvMacDinh = null, tenHv }: {
-  cell: Cell;
-  onSave: (patch: SavePatch, opts?: SaveOpts) => Promise<boolean>;
-  buttonRef?: (el: HTMLButtonElement | null) => void;
-  lon?: boolean;
-  /** GV chấm mặc định của cột S (`useGvChamCot`) — giá trị đầu của hộp tiêu chí khi ô chưa có GV chấm. */
-  gvMacDinh?: NguoiChon | null;
-  /** Tên em cho toast "Đã ghi vắng … · {em}" (điện thoại). */
-  tenHv?: string;
-}) {
-  const [open, setOpen] = useState(false);
-  const editable = suaDuoc(cell);
-  /* Ô đã có band: sửa là hiệu chỉnh → hộp lý do NGAY TẠI Ô (bốn tiêu chí nằm trong hộp), không mở khung lớn (G-8). */
-  const hieuChinh = coDiemChinhThuc(cell);
-  /* Nút − (điện thoại): bốn ô tiêu chí dùng bàn phím số thập phân — iPhone không gõ được "-". */
-  const [dangBao, setDangBao] = useState(false);
-  const nhanDau = editable && !hieuChinh && !chanDau(cell);   // T23: MT cũ nhận "-" = không dự thi
-  const bamDau = async () => {
-    if (!nhanDau || dangBao) return;
-    setDangBao(true);
-    await onSave({ noShow: true });
-    setDangBao(false);
-  };
-  if (chiGoDau(cell)) return <OChiGoDau cell={cell} onSave={onSave} lon={lon} />;
-  /* E5: ô không sửa được là CHỮ SỐ (không viền nút, không mờ) — cùng câu "vì sao" với ô số câu; vắng ghi "vắng". */
-  if (!editable) {
-    const vang = cell.sitStatus === 'absent' && cell.band === null && !cell.daChot;
-    return (
-      <span className="inline-flex flex-col items-end gap-0.5">
-        <span className="inline-flex items-center gap-1.5">
-          <span className={`tabular-nums ${vang ? 'text-slate-500' : 'text-slate-300'} ${lon ? 'text-base font-semibold' : ''}`} title={lyDoChiDoc(cell)}>
-            {vang ? 'vắng' : coDau(cell) ? '-' : fmtBand(cell.band)}
-          </span>
-          {lon && <ChoNutDau />}
-        </span>
-        <DongDau cell={cell} onSave={onSave} />
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex flex-col items-end gap-0.5">
-      <span className="inline-flex items-center gap-1.5">
-      <button
-        ref={buttonRef}
-        className={`btn ${lon ? 'min-h-[44px] min-w-[60px] justify-center text-base font-semibold' : 'btn-sm'} tabular-nums`}
-        onClick={() => setOpen(true)}
-        title={hieuChinh ? 'Sửa bốn tiêu chí đã chấm.' : `Mở bốn tiêu chí. ${NO_SHOW_HINT}`}
-      >
-        {coDau(cell) ? '-' : cell.band === null ? 'Nhập' : fmtBand(cell.band)}
-        {(coDau(cell) || cell.band !== null) && <span className="text-slate-500 text-xs">sửa</span>}
-      </button>
-      {lon && <NutDau title={NUT_DAU_FT} an={!nhanDau} tat={dangBao} onBam={() => void bamDau()} />}
-      </span>
-      <DongDau cell={cell} onSave={onSave} />
-      {open && !hieuChinh && <CriteriaModal cell={cell} onSave={onSave} onClose={() => setOpen(false)} gvMacDinh={gvMacDinh} />}
-      {open && hieuChinh && <SuaTieuChi cell={cell} onSave={onSave} onClose={() => setOpen(false)} />}
-    </span>
-  );
-}
-
-/** Hiệu chỉnh bốn tiêu chí của một ô đã có band: bốn ô số trong `SuaDiemCoLyDo`, band xem trước ngay dưới. */
-function SuaTieuChi({ cell, onSave, onClose }: {
-  cell: Cell; onSave: (patch: SavePatch, opts?: SaveOpts) => Promise<boolean>; onClose: () => void;
-}) {
-  const tc = tieuChiCua(cell.skill) ?? [], tcNgan = tieuChiNganCua(cell.skill) ?? [];
-  const [vals, setVals] = useState<string[]>(cell.criteria.map((v) => (v === null ? '' : String(v))));
-  const [bandText, setBandText] = useState(bandBanDau(cell));
-  const { dash, preview, patch, loi } = criteriaPatchFrom(vals, cell, bandText);
-  const doi = vals.some((v, i) => (v.trim() === '' ? null : Number(v)) !== cell.criteria[i]) || bandText.trim() !== bandBanDau(cell);
-  return (
-    <SuaDiemCoLyDo
-      tieuDe={`Sửa ${skillLabel(cell.skill)}`}
-      moTaCu={bandBanDau(cell) ? `Đang lưu: band ${fmtBand(cell.band)}` : `Đang lưu: band ${fmtBand(cell.band)} (${cell.criteria.map((v) => v ?? '—').join(' · ')})`}
-      loiGiaTri={!patch ? loi : dash ? 'Ô đã có điểm không nhận dấu "-".' : !doi ? 'Chưa đổi tiêu chí nào.' : null}
-      onDong={onClose}
-      onLuu={async (lyDo) => {
-        if (!patch) return false;
-        const ok = await onSave({ ...patch, lyDo }, { nem: true });
-        if (ok) onClose();
-        return ok;
-      }}
-    >
-      <div className="flex items-end gap-1.5">
-        {tc.map((label, i) => (
-          <label key={i} className="block" title={label}>
-            <span className="block text-xs text-slate-500">{tcNgan[i]}</span>
-            <input className="field w-12 text-center tabular-nums px-1 py-1" inputMode="decimal" value={vals[i] ?? ''}
-              aria-label={`${skillLabel(cell.skill)} — ${label}`}
-              onChange={(e) => setVals((v) => v.map((x, j) => (j === i ? e.target.value : x)))} />
-          </label>
-        ))}
-        <label className="block" title={BAND_HINT}>
-          <span className="block text-xs text-slate-500">Band</span>
-          <input className="field w-14 text-center tabular-nums px-1 py-1" inputMode="decimal" value={bandText}
-            aria-label={`${skillLabel(cell.skill)} — band`}
-            onChange={(e) => setBandText(e.target.value)} />
-        </label>
-        <span className="pb-1.5 text-xs tabular-nums text-slate-300" title="Band xem trước">→ {fmtBand(preview)}</span>
-      </div>
-    </SuaDiemCoLyDo>
-  );
-}
-
-export function CriteriaModal({ cell, onSave, onClose, gvMacDinh = null }: {
-  cell: Cell; onSave: (patch: SavePatch) => Promise<boolean>; onClose: () => void;
-  /** Speaking: GV chấm của cột (lớp × tuần) khi ô chưa có GV chấm riêng. */
-  gvMacDinh?: NguoiChon | null;
-}) {
-  const tc = tieuChiCua(cell.skill) ?? [], tcNgan = tieuChiNganCua(cell.skill) ?? [];
-  const { session } = useSession();
-  /* PR-HSM (T39): "+ Nhận xét" gập sẵn (mở sẵn khi đã có) · Speaking có dòng GV chấm · lưu MỘT lệnh, chỉ trường đã đổi. */
-  const coNhanXet = (BAI_CO_NHAN_XET as readonly string[]).includes(cell.skill);
-  const [moNx, setMoNx] = useState(!!cell.nhanXet);
-  const [nx, setNx] = useState(cell.nhanXet ?? '');
-  const laS = cell.skill === 'speaking';
-  const gvCu = gvChamThanhChon(cell.gvCham);
-  const gv0 = gvCu ?? gvMacDinh;
-  const [gv, setGv] = useState<NguoiChon | null>(gv0);
-  /* Bài đã báo "-" thì mở ra thấy '-' ở ô đầu — không phải bốn ô trống dễ nhầm với chưa nhập. */
-  const [vals0] = useState<string[]>(() => (
-    coDau(cell) && cell.criteria.every((v) => v === null)
-      ? ['-', '', '', '']
-      : cell.criteria.map((v) => (v === null ? '' : String(v)))
-  ));
-  const [vals, setVals] = useState<string[]>(vals0);
-  const [bandText, setBandText] = useState(bandBanDau(cell));
-  const [busy, setBusy] = useState(false);
-
-  /* Có '-' thì bỏ qua các ô số còn lại (xem `criteriaPatchFrom`). */
-  const { dash, preview, patch, loi } = criteriaPatchFrom(vals, cell, bandText);
-
-  const submit = async () => {
-    if (!patch || busy) return;
-    /* Không gõ gì mà Lưu: không gửi lệnh "-" nào (PR-BV — ô "-" đã chốt mở ra có sẵn "-"; Lưu nguyên không phải báo vắng tuần mới). */
-    if ('noShow' in patch && vals.every((v, i) => v === vals0[i]) && bandText === bandBanDau(cell)) { onClose(); return; }
-    /* Nhận xét / GV chấm đi kèm lệnh điểm; lệnh "-" (không có bài) thì không — máy chủ bỏ qua ở nhánh đó. */
-    const them: SavePatch = {};
-    if ('criteria' in patch || 'band' in patch) {
-      if (coNhanXet && nx.trim() !== (cell.nhanXet ?? '')) them.nhanXet = nx.trim() || null;
-      if (laS && !cungGvCham(gv, gvCu, session?.user?.id)) them.gvCham = gvChamPayload(gv);
-    }
-    setBusy(true);
-    const ok = await onSave({ ...patch, ...them });
-    setBusy(false);
-    if (ok) onClose();
-  };
-
-  const daSua = vals.some((v, i) => v !== vals0[i]) || bandText !== bandBanDau(cell) || nx !== (cell.nhanXet ?? '') || (laS && !cungGvCham(gv, gv0, session?.user?.id));
-
-  return (
-    /* I4 (PR-SL): khung panel chung, chân luật S3 (đã gõ ô nào / đổi nhận xét / GV chấm → "Huỷ thay đổi").
-       SL: Esc / bấm nền / ✕ khi ĐÃ gõ thì hỏi trước (mất bản nháp là mất công); nút "Huỷ thay đổi" ở chân là chủ ý bỏ → đóng thẳng. */
-    <KhungPanel tieuDe={`${skillLabel(cell.skill)} — bốn tiêu chí`} longTrong z="z-[60]"
-      onDong={() => { if (busy) return; if (daSua && !window.confirm('Bỏ các giá trị đã gõ?')) return; onClose(); }}
-      chan={{
-        daSua,
-        huy: { onClick: onClose, disabled: busy },
-        chinh: (
-          <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={submit} disabled={busy || !patch} title={patch ? undefined : loi ?? undefined}>
-            {busy ? 'Đang lưu…' : 'Lưu'}
-          </button>
-        ),
-      }}>
-      <div className="space-y-3 pt-3">
-        {tc.map((label, i) => (
-          <label key={i} className="flex items-center gap-3">
-            <span className="w-8 text-xs text-slate-500 shrink-0">{tcNgan[i]}</span>
-            <span className="flex-1 text-sm text-slate-300">{label}</span>
-            <input
-              className="field w-20 text-center tabular-nums"
-              inputMode="decimal"
-              value={vals[i] ?? ''}
-              title={NO_SHOW_HINT}
-              onChange={(e) => setVals((v) => v.map((x, j) => (j === i ? e.target.value : x)))}
-              /* T39: Enter ở ô tiêu chí là Lưu (không ở ô nhận xét — ở đó Enter xuống dòng). */
-              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void submit(); } }}
-            />
-          </label>
-        ))}
-        <label className="flex items-center gap-3" title={BAND_HINT}>
-          <span className="w-8 text-xs text-slate-500 shrink-0">Band</span>
-          <span className="flex-1" />
-          <input
-            className="field w-20 text-center tabular-nums"
-            inputMode="decimal"
-            value={bandText}
-            aria-label={`${skillLabel(cell.skill)} — band`}
-            onChange={(e) => setBandText(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void submit(); } }}
-          />
-        </label>
-        <div className="flex items-center justify-between border-t pt-3" style={{ borderColor: 'var(--line)' }}>
-          <span className="text-sm text-slate-400">Band kỹ năng</span>
-          <strong className="tabular-nums text-lg">{dash ? '-' : fmtBand(preview)}</strong>
-        </div>
-        {!patch && <p className="text-xs text-rose-300 m-0">{loi}</p>}
-        {laS && !dash && <DongGvCham value={gv} onChange={setGv} />}
-        {coNhanXet && !dash && (moNx ? (
-          <label className="block">
-            <span className="flex items-baseline justify-between text-xs text-slate-400">
-              <span>Nhận xét (không bắt buộc)</span>
-              {nx.length > 800 && <span className="tabular-nums">{nx.length}/{NHAN_XET_TOI_DA}</span>}
-            </span>
-            <textarea className="field mt-1 w-full text-sm" rows={3} maxLength={NHAN_XET_TOI_DA} value={nx}
-              onChange={(e) => setNx(e.target.value)} />
-          </label>
-        ) : (
-          <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-sm" onClick={() => setMoNx(true)}>
-            + Nhận xét
-          </button>
-        ))}
-        {dash && (
-          <p className="text-xs text-slate-300 m-0">
-            Sẽ lưu là <strong>Không có bài</strong> cho đúng bài này. Sửa lại được đến hết Chủ nhật của tuần thi;
-            còn nguyên khi hết Chủ nhật thì thành <strong>Không dự thi</strong>.
-          </p>
-        )}
-        <SectionNote>
-          {NO_SHOW_HINT}. Đủ bốn tiêu chí mới ra band. Để trống là chưa chấm, không phải điểm 0.
-          {(cell.skill === 'writing1' || cell.skill === 'writing2') &&
-            ' Band Writing của học viên = (Task 1 + Task 2 × 2) / 3, tính khi có cả hai task.'}
-        </SectionNote>
-      </div>
-    </KhungPanel>
-  );
-}
-
-/**
- * SỬA ĐIỂM NGAY TẠI DÒNG (PR-I Step 4): L/R một ô, W1/W2/S bốn ô tiêu chí, cùng `Lưu`/`Huỷ` ở đúng dòng đó — không mở
- * khung riêng. `Enter` lưu, `Esc` huỷ. '-' là lệnh "không có bài" như ở bảng cả lớp; dựng lệnh bằng CÙNG hàm
- * (`rawPatchFrom` · `criteriaPatchFrom`) nên hai nơi nhập không thể lệch luật.
- */
-export function InlineScoreEditor({ cell, onSave, onClose }: {
-  cell: Cell; onSave: (patch: SavePatch) => Promise<boolean>; onClose: () => void;
-}) {
-  const isRaw = cell.skill === 'listening' || cell.skill === 'reading';
-  const tc = tieuChiCua(cell.skill) ?? [], tcNgan = tieuChiNganCua(cell.skill) ?? [];
-  const [vals, setVals] = useState<string[]>(() => (isRaw
-    ? [cell.rawScore !== null ? String(cell.rawScore) : cell.band !== null ? fmtBand(cell.band) : coDau(cell) ? '-' : '']
-    : coDau(cell) && cell.criteria.every((v) => v === null)
-      ? ['-', '', '', '']
-      : cell.criteria.map((v) => (v === null ? '' : String(v)))));
-  const [busy, setBusy] = useState(false);
-  const [bandText, setBandText] = useState(isRaw ? '' : bandBanDau(cell));
-  const [lyDo, setLyDo] = useState('');
-  const vals0 = useRef(vals).current;     // chữ lúc mở — so để biết có phải hiệu chỉnh
-  const patchRaw = isRaw ? rawPatchFrom(vals[0], cell) : null;
-  const built = isRaw
-    ? { dash: vals[0].trim() === '-', preview: null as number | null, patch: patchRaw, loi: patchRaw ? null : LOI_SO_CAU }
-    : criteriaPatchFrom(vals, cell, bandText);
-  /*
-   * RB-5 → T7 + T22 (PR-MTa): ô ĐÃ CÓ điểm mà giá trị đổi (hoặc bị xoá trắng) thì hiện ô lý do ngay trong dòng — TUỲ CHỌN, không khoá Lưu.
-   * Lưu lại đúng số cũ không phải hiệu chỉnh nên không hiện.
-   */
-  const canLyDo = coDiemChinhThuc(cell) && !built.dash && (isRaw
-    ? vals[0].trim() !== vals0[0].trim()
-    : vals.some((v, i) => (v.trim() === '' ? null : Number(v)) !== cell.criteria[i]) || bandText.trim() !== bandBanDau(cell));
-  const loiLyDo = built.patch ? null : built.loi;
-
-  const submit = async () => {
-    if (busy || loiLyDo || !built.patch) return;
-    setBusy(true);
-    const ok = await onSave(canLyDo ? { ...built.patch, lyDo: lyDo.trim() } : built.patch);
-    setBusy(false);
-    if (ok) onClose();              // lỗi thì giữ nguyên bản nháp để sửa và thử lại
-  };
-  const setAt = (i: number, value: string) => setVals((v) => v.map((x, j) => (j === i ? value : x)));
-
-  return (
-    <div className="space-y-1.5"
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') { e.preventDefault(); void submit(); }
-        if (e.key === 'Escape') { e.preventDefault(); onClose(); }
-      }}>
-      <div className="flex flex-wrap items-end gap-2">
-        {isRaw ? (
-          <label className="block">
-            <span className="block text-xs text-slate-500">Số câu đúng</span>
-            <input autoFocus className="field w-20 text-center tabular-nums" inputMode="decimal" value={vals[0]}
-              title={`${NO_SHOW_HINT}. ${GOI_Y_BAND}`} aria-label={`${skillLabel(cell.skill)} — số câu đúng. ${NO_SHOW_HINT}. ${GOI_Y_BAND}`}
-              onChange={(e) => setAt(0, e.target.value)} />
-          </label>
-        ) : tc.map((label, i) => (
-          <label key={i} className="block" title={label}>
-            <span className="block text-xs text-slate-500">{tcNgan[i]}</span>
-            <input autoFocus={i === 0} className="field w-14 text-center tabular-nums" inputMode="decimal"
-              value={vals[i] ?? ''} aria-label={`${skillLabel(cell.skill)} — ${label}. ${NO_SHOW_HINT}`}
-              onChange={(e) => setAt(i, e.target.value)} />
-          </label>
-        ))}
-        {!isRaw && (
-          <label className="block" title={BAND_HINT}>
-            <span className="block text-xs text-slate-500">Band</span>
-            <input className="field w-14 text-center tabular-nums" inputMode="decimal" value={bandText}
-              aria-label={`${skillLabel(cell.skill)} — band`}
-              onChange={(e) => setBandText(e.target.value)} />
-          </label>
-        )}
-        {!isRaw && (
-          <span className="pb-1.5 text-sm tabular-nums text-slate-300">Band {built.dash ? '-' : fmtBand(built.preview)}</span>
-        )}
-        {canLyDo && (
-          <label className="block">
-            <span className="block text-xs text-slate-500">Lý do (tuỳ chọn)</span>
-            <input className="field w-56" value={lyDo} placeholder="Ví dụ: chấm lại bài, nhập nhầm"
-              aria-label="Lý do sửa điểm đã nhập" onChange={(e) => setLyDo(e.target.value)} />
-          </label>
-        )}
-        <span title={loiLyDo ?? undefined}>
-          <button type="button" className="btn btn-sm btn-primary" disabled={busy || !!loiLyDo}
-            title={loiLyDo ?? undefined} onClick={() => void submit()}>
-            {busy ? 'Đang lưu…' : 'Lưu'}
-          </button>
-        </span>
-        <button type="button" className="btn btn-sm" disabled={busy} onClick={onClose}>Đóng</button>
-      </div>
-      <p className="m-0 text-xs text-slate-500">
-        {built.dash
-          ? 'Sẽ lưu là Không có bài cho đúng bài này; sửa lại được đến hết Chủ nhật của tuần thi.'
-          : `${NO_SHOW_HINT}. Để trống là chưa chấm, không phải điểm 0.`} Enter để lưu · Esc để huỷ.
-      </p>
-    </div>
-  );
-}
 
 /**
  * HẠN CHẤM CỦA CHÍNH MÔN NÀY — không phải hạn của cả đợt.

@@ -21,7 +21,8 @@ import { DongThoiGianLuot } from './DongThoiGianLuot.tsx';
 import {
   DeadlinePill, KHOA_HOAN_TAT_HINT, lockedByNoShow, useSaveScore, type Cell, type SavePatch,
 } from './ScoreEntry.tsx';
-import { DaiODiemLon, type KyNangLon, type LichKn } from './ODiemLon.tsx';
+import { DaiODiemLon, type LichKn } from './ODiemLon.tsx';
+import { nguCanhChiTiet } from './HopNhapDiem.tsx';
 import { ONhanXet } from './NhanXet.tsx';
 import { NutGvCham, gvChamPayload, gvChamThanhChon } from '../cham/GvCham.tsx';
 import {
@@ -134,7 +135,7 @@ export default function MockDetailPage() {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [khoiPhucOpen, setKhoiPhucOpen] = useState(false);
   /* PR-HSM: ô lớn đang mở khung sửa — nút chính "Nhập điểm / Sửa điểm" của bảng dưới cũng mở đúng ô này. */
-  const [moO, setMoO] = useState<KyNangLon | null>(null);
+  const [moO, setMoO] = useState<string | null>(null);
   /*
    * G5 / E.4 (PR-VAI-b): `?kn=` — "MT2 · Speaking" ở hồ sơ HV mở thẳng ô Speaking + cuộn tới dải điểm, một lần khi dữ liệu có (như hồ sơ HV R7).
    * Đợt không có ô kỹ năng đó → không cuộn, không lỗi.
@@ -144,7 +145,7 @@ export default function MockDetailPage() {
   useEffect(() => {
     if (!data || !knUrl) return undefined;
     if (!data.cells.some((c) => (c.skill === 'writing1' || c.skill === 'writing2' ? 'writing' : c.skill) === knUrl)) return undefined;
-    setMoO(knUrl);
+    setMoO(knUrl === 'writing' ? 'writing1' : knUrl);
     return cuonOnDinh(() => document.getElementById('dai-diem'), null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [!!data, knUrl]);
@@ -230,7 +231,7 @@ export default function MockDetailPage() {
     d.period ? `${tuanLich(d.period.weekStart, homNay)} · ${d.period.range}` : 'Chưa chốt tuần',
     d.classCode, d.cycle.route ? `Lộ trình ${d.cycle.route}` : null, d.lichSu ? 'Nhập bù, không tính hạn' : null,
   ].filter(Boolean).join(' · ');
-  const moODiem = (k: KyNangLon) => { setMoO(k); document.getElementById('dai-diem')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  const moODiem = (k: string) => { setMoO(k); document.getElementById('dai-diem')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
 
   return (
     <div className="page space-y-4">
@@ -300,10 +301,10 @@ export default function MockDetailPage() {
       {/* B. NĂM Ô ĐIỂM LỚN — tầng 1 của màn; bấm ô là sửa tại chỗ (YC-13.7, YC-13.8). */}
       <div id="dai-diem" className="scroll-mt-4">
         <DaiODiemLon cells={d.cells} lich={d.skillSchedule as LichKn[]} result={d.result} lichSu={d.lichSu} homNay={homNay} ketLuanOverall={ketQuaMt0}
-          mo={moO} onMo={setMoO} save={save} />
+          mo={moO} onMo={setMoO} save={save} nguCanh={nguCanhChiTiet(d)} />
       </div>
 
-      {/* C. NHẬN XÉT W/S (YC-13.5) — không bắt buộc, không phải điểm. */}
+      {/* C. NHẬN XÉT 4 kỹ năng (YC-13.5, OV-4b) — không bắt buộc, không phải điểm. */}
       <KhoiNhanXet cells={d.cells} save={save} />
 
       <details className="rounded-lg border px-3 py-2" style={{ borderColor: 'var(--line)' }}>
@@ -409,7 +410,7 @@ function knHop(d: Detail): KnO {
 }
 
 /**
- * KHỐI NHẬN XÉT W/S (PR-HSM, YC-13.5, Q1). Nằm ở: Test › một lượt MT → ngay dưới dải ô điểm lớn.
+ * KHỐI NHẬN XÉT (PR-HSM, YC-13.5, Q1; OV-4b: thêm Listening · Reading). Nằm ở: Test › một lượt MT → ngay dưới dải ô điểm lớn.
  *
  * "Nhận xét Writing" có HAI phần Task 1 · Task 2 (hai task có thể hai GV — K4-31), mỗi phần ghi người nhập điểm của bài đó;
  * "Nhận xét Speaking" kèm GV chấm (đổi là lưu ngay). Người sửa được bài đó (`cell.canEdit`) gõ tại chỗ, lưu khi rời ô; người
@@ -432,14 +433,22 @@ function KhoiNhanXet({ cells, save }: { cells: Cell[]; save: (skill: string, pat
       </div>
     );
   };
+  /* OV-4b: Listening · Reading cũng có nhận xét. */
+  const lr = (['listening', 'reading'] as const).map((k) => ({ k, nx: phan(o(k), 'Nhận xét') })).filter((x) => x.nx);
   const w = [phan(o('writing1'), 'Task 1'), phan(o('writing2'), 'Task 2')].filter(Boolean);
   const s = o('speaking');
   const nxS = phan(s, 'Nhận xét');
   const coS = !!s && (sua(s) || !!s.nhanXet || !!s.gvCham);
-  if (!w.length && !coS) return null;
+  if (!lr.length && !w.length && !coS) return null;
   return (
     <Card title="Nhận xét">
       <div className="grid gap-x-6 gap-y-5 md:grid-cols-2">
+        {lr.map((x) => (
+          <section key={x.k} className="min-w-0 space-y-3">
+            <h3 className="m-0 text-sm font-semibold text-slate-200">Nhận xét {x.k === 'listening' ? 'Listening' : 'Reading'}</h3>
+            {x.nx}
+          </section>
+        ))}
         {w.length > 0 && (
           <section className="min-w-0 space-y-3">
             <h3 className="m-0 text-sm font-semibold text-slate-200">Nhận xét Writing</h3>
@@ -472,7 +481,7 @@ function KhoiNhanXet({ cells, save }: { cells: Cell[]; save: (skill: string, pat
  * menu dòng: nút ở đầu thẻ cuộn tới dòng thời gian của đợt.
  */
 function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory, onDoiLich }: {
-  d: Detail; onMoDiem: (k: KyNangLon) => void; onDone: () => void; onOpenHistory: () => void;
+  d: Detail; onMoDiem: (k: string) => void; onDone: () => void; onOpenHistory: () => void;
   /** PR-HOP1: "Xếp lịch" / "Dời lịch thi" một kỹ năng → hộp một đợt, dòng kỹ năng đó mở sẵn ô chọn tuần. */
   onDoiLich: (anchor: HTMLElement, k: KyNangKH) => void;
 }) {
@@ -505,7 +514,7 @@ function SkillWorkTable({ d, onMoDiem, onDone, onOpenHistory, onDoiLich }: {
     const chinh = laDiem(chinh0) && !canScore ? null : chinh0;
     const menu = ownsSchedule ? tat.menu : tat.menu.filter((x) => x === 'huy-diem');
     const chay = (t: ThaoTac) => {
-      if (laDiem(t)) onMoDiem(c.assessedSkill as KyNangLon);
+      if (laDiem(t)) onMoDiem(c.skill);
       else if (t === 'xep-lai') setMoveFor(r);
       else if (t === 'tra-loi-de-nghi') setDecideFor(r);
       else if ((t === 'doi-lich' || t === 'dat-lich') && d.classId !== null) onDoiLich(document.getElementById(`kn-${c.skill}`)!, r.skill as KyNangKH);
