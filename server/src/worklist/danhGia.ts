@@ -4,7 +4,7 @@ import { CHUONG_TRINH_KHONG_CHIA_MON, PERMISSIONS, luotSinhViec, moiNhatTruoc } 
 import { ngayTaoLuot } from '../classes/schedule.ts';
 import { classScopeSql, scopeFor, type Principal } from '../permissions.ts';
 import { loadBundle, resultOf, type AttemptBundle } from '../fasttrack/attempts.ts';
-import { allProgrammes, evaluateRegular, type ProgrammeInfo } from '../normal/regular.ts';
+import { allProgrammes, evaluateRegular, nguongDatLop, type ProgrammeInfo } from '../normal/regular.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 
 /**
@@ -49,6 +49,8 @@ export type AttemptEval = {
   /** MH7: lớp không chia môn (Pre FOU) — kết quả là % tổng (`tyLeTong`, đủ điểm mới có), không phải SOS. */
   khongChiaMon?: boolean;
   tyLeTong?: number | null;
+  /** OV-6b1: ngưỡng đạt của lớp (lớp thường) — dải Cuối khoá đọc cùng ngưỡng. */
+  nguong?: number;
 };
 
 /**
@@ -61,14 +63,14 @@ export function evaluateAttemptRow(
   const scores = bundle.scores.get(a.id) ?? [];
   const prog = a.programme_code ? programmes.get(a.programme_code) : null;
   if (prog?.scoringMode === 'ratio') {
-    const r = evaluateRegular(prog.skills, scores, prog.code);
+    const r = evaluateRegular(prog.skills, scores, prog.code, nguongDatLop(a.class_id));
     const skills: Record<string, SkillEval> = {};
     for (const s of r.skills) {
       skills[s.skill] = { evaluable: s.outcome !== 'missing', under: s.outcome === 'fail' };
     }
     return {
       complete: r.complete, scored: r.scored, required: r.required, sosLevel: r.sosLevel, provisional: r.provisional, skills,
-      khongChiaMon: CHUONG_TRINH_KHONG_CHIA_MON.includes(prog.code), tyLeTong: r.tyLeTong,
+      khongChiaMon: CHUONG_TRINH_KHONG_CHIA_MON.includes(prog.code), tyLeTong: r.tyLeTong, nguong: r.passThreshold,
     };
   }
   const r = resultOf(a, scores, bundle.skips.get(a.id) ?? []);

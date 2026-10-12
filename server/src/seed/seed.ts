@@ -22,7 +22,7 @@ import { buildHvlDemo } from './hvlSeed.ts';
 import { buildLt2aDemo } from './lt2aSeed.ts';
 import { buildLt2bDemo } from './lt2bSeed.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
-import { dienMocLop } from '../migrate/prLop.ts';
+import { dienBanChupLop } from '../migrate/prOv6b1.ts';
 import { napYeuCauTuNguonCu } from '../migrate/prDuyet.ts';
 import { buildDuyetDemo } from './duyetSeed.ts';
 import { buildCtDemo } from './ctSeed.ts';
@@ -206,7 +206,7 @@ export function runSeed() {
         assign(userId.get(c.core)!, null, true);
       }
     }
-    dienMocLop(conn);   // PF1: chụp số tuần vào lớp thường — seed không chạy migrate()
+    dienBanChupLop(conn);   // PF1 + OV-6b1: chụp số tuần, tuần MT, ngưỡng đạt vào lớp — seed không chạy migrate()
     /* PR-S5F-b: "Phụ trách được" (hồ sơ GV) đọc `user_skills` — GV demo khai đúng các kỹ năng đang được phân công. */
     conn.prepare(`INSERT OR IGNORE INTO user_skills (user_id, skill) SELECT DISTINCT user_id, skill FROM teacher_assignments WHERE skill IS NOT NULL`).run();
 

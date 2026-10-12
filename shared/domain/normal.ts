@@ -32,8 +32,8 @@ export const SCORING_MODE_LABEL: Record<ScoringMode, string> = {
  * Speaking của lớp thường chấm theo thang điểm, không đếm câu. Một cái tên chỉ đúng với
  * Listening và Reading thì hai môn kia phải gõ vào một ô mang tên sai.
  *
- * MỘT NGƯỠNG CHO TOÀN HỆ THỐNG. Nhập điểm, kết luận đợt, tín hiệu, hồ sơ, bảng lớp, bảng
- * tuần, báo cáo, bộ demo và kiểm thử đều đọc đúng hằng số này — không nơi nào gõ lại con số.
+ * NGƯỠNG MẶC ĐỊNH. OV-6b1: Quản trị đặt "Đạt từ" theo chương trình, chép vào lớp lúc tạo (`classes.nguong_dat`); máy chủ đọc
+ * ngưỡng của lớp qua `nguongDatLop` — hằng này là giá trị khi lớp chưa có bản chụp, không nơi nào gõ lại con số.
  */
 export const RATIO_PASS_THRESHOLD = 0.7;
 
@@ -181,7 +181,7 @@ export const PROGRAMME_TEMPLATES: Record<ProgrammeCode, ProgrammeTemplate> = {
   FT: {
     code: 'FT', name: 'Fast Track', weeks: null, scoringMode: 'ielts_band',
     skills: ENTRY_SKILLS,
-    checkpoints: [],   // MT theo mốc riêng của FT, xem MOCK_FT_STUDY_WEEK
+    checkpoints: [],   // MT theo tuần MT của lộ trình (`routes.lich_mt`, chép vào lớp — OV-6b1)
   },
   PREFOU: {
     code: 'PREFOU', name: 'Pre Foundation', weeks: 5, scoringMode: 'ratio',
@@ -221,7 +221,7 @@ export function programmeOf(kind: string | null | undefined): ProgrammeCode | nu
  */
 export type RatioOutcome = 'pass' | 'fail' | 'missing';
 
-export function ratioResult(score: number | null, total: number | null): {
+export function ratioResult(score: number | null, total: number | null, nguong: number = RATIO_PASS_THRESHOLD): {
   outcome: RatioOutcome; ratio: number | null;
 } {
   if (score === null || total === null) return { outcome: 'missing', ratio: null };
@@ -231,7 +231,7 @@ export function ratioResult(score: number | null, total: number | null): {
   const ratio = score / total;
   // Xét trên tỷ lệ chính xác. Làm tròn % để hiển thị rồi mới so là sai:
   // 23/40 = 57.5% hiển thị "58%" nhưng vẫn dưới ngưỡng.
-  return { outcome: ratio >= RATIO_PASS_THRESHOLD ? 'pass' : 'fail', ratio };
+  return { outcome: ratio >= nguong ? 'pass' : 'fail', ratio };
 }
 
 /** Số môn trượt → mức SOS. Dùng chung ngưỡng 1/2/≥3 với FT, chỉ khác cách sinh ra "trượt". */

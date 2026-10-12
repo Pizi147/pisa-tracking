@@ -213,15 +213,15 @@ export async function runPrLopTests(t: YThucTestKit) {
     try {
       const pf = sys.listProgrammes(P.admin).find((x: any) => x.code === 'PREFOU');
       assert(pf.weeks === 6 && JSON.stringify(pf.checkpoints) === '[{"kind":"final","studyWeek":6}]', JSON.stringify(pf));
-      assert(typeof r.lopGiuSoCu === 'number', JSON.stringify(r));
+      assert(r.ok === true, JSON.stringify(r));
     } finally {
       sys.saveProgramme(P.admin, { code: 'PREFOU', name: 'Pre Foundation', weeks: 5 });
     }
     const lt = sys.listRoutes(true).find((x: any) => x.code === 'RF');
-    assert(lt.kyVong === 'Mọi MT = Target' && lt.lichMt === 'Tuần 4 · 8', JSON.stringify(lt));
+    assert(JSON.stringify(lt.lichMt) === '[4,8]', JSON.stringify(lt));   // OV-6b1: tuần MT là cấu hình (số), không còn chữ chỉ đọc
     const src = docSach('web/src/modules/platform/CatalogAdmin.tsx');
     assert(!/\+ Thêm|loại lớp|btn-primary' : ''|ALL_SKILLS/i.test(src), 'CatalogAdmin còn chữ/nút cũ');
-    assert(/Lộ trình & chương trình/.test(docSach('web/src/modules/platform/AdminPage.tsx')), 'tên tab');
+    assert(/label: 'Chương trình'/.test(docSach('web/src/modules/platform/AdminPage.tsx')), 'tên tab');   // OV-6b1: đổi tên tab
   });
   check('LOP (10) · ô tìm đầu trang có nhóm Lớp; chữ mẫu tên lớp mới trong web + shared/domain (K1-43, T2)', () => {
     const h = docSach('web/src/modules/platform/Header.tsx');

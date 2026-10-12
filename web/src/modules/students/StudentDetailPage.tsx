@@ -633,7 +633,7 @@ function KetQuaThuongO({ a, ct }: { a: any; ct: string | null }) {
   const kq = nhanKetQuaThuong({
     kind: a.kind === 'final' ? 'final' : 'progress', ct, scored: a.scored, required: a.required,
     failedSkills: (a.skills ?? []).filter((s: any) => s.outcome === 'fail').map((s: any) => s.skill as string),
-    tyLeTong: a.tyLeTong ?? null, khongChiaMon,
+    tyLeTong: a.tyLeTong ?? null, khongChiaMon, nguong: a.passThreshold,
   });
   /* Lượt đã xong (`done`) mà thiếu môn = môn bị huỷ phần, không còn chờ → nói kết quả các môn đã chấm. */
   if (!khongChiaMon ? a.scored < a.required && a.status !== 'done' : a.sosLevel === null && a.scored === 0) {

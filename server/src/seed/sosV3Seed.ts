@@ -4,7 +4,7 @@ import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { LISTENING_BY_RAW, READING_BY_RAW } from '../fasttrack/scoring.ts';
 import { commitIntake } from '../classes/intake.ts';
 import { saveScore } from '../fasttrack/attempts.ts';
-import { issuesForTopic, tuanHocCuaMt, weeklyUpdateDue } from '../../../shared/domain/index.ts';
+import { issuesForTopic, lichMtGoc, tuanHocCuaMt, weeklyUpdateDue } from '../../../shared/domain/index.ts';
 import { guiKhongTheoDoi, xacNhanCase, xacNhanPaQuyChe } from '../cases/sosAuto.ts';
 import { duyetYeuCau, tuChoiYeuCau } from '../duyet/yeuCau.ts';
 import { confirmCoordination } from '../yThuc/phoiHop.ts';
@@ -49,7 +49,7 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
    */
   const addStudent = (fullName: string, no: number, weeksAgo: number) => {
     const tuanThi = mondayOf(addDays(DEMO_DATE, -7 * weeksAgo));
-    const startWeek = addDays(tuanThi, -7 * (tuanHocCuaMt('LT1', no) - 1));
+    const startWeek = addDays(tuanThi, -7 * (tuanHocCuaMt(lichMtGoc('LT1'), no) - 1));
     commitIntake(admin, { classId, rows: [{ fullName, target: 7, startWeek, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `sosv3-demo-${fullName}` } as any);
     const st = conn.prepare('SELECT id FROM students WHERE full_name = ?').get(fullName) as any;
     const cy = conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(st.id) as any;
@@ -178,7 +178,7 @@ export function buildKckDemo(ctx: BuildCtx): number {
   if (!classId) return 0;
   const admin = loadPrincipal(ctx.adminId);
   const tuanThi = mondayOf(addDays(DEMO_DATE, -7 * 2));
-  const startWeek = addDays(tuanThi, -7 * (tuanHocCuaMt('LT1', 1) - 1));
+  const startWeek = addDays(tuanThi, -7 * (tuanHocCuaMt(lichMtGoc('LT1'), 1) - 1));
   for (const [fullName, target] of [['Hồ Gia Hân', 'KCK'], ['Lê Minh Đức', '-']]) {
     commitIntake(admin, { classId, rows: [{ fullName, target, startWeek, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `kck-demo-${fullName}` } as any);
   }

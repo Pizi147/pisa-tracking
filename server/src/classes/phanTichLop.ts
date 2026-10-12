@@ -18,7 +18,7 @@ import { rowsFor, type MetricRow } from '../worklist/metrics.ts';
 import { badRequest } from '../util.ts';
 import { loadBundle } from '../fasttrack/attempts.ts';
 import { expectationFor } from '../fasttrack/scoring.ts';
-import { evaluateRegular, programmeByCode, type ProgrammeInfo } from '../normal/regular.ts';
+import { evaluateRegular, nguongDatLop, programmeByCode, type ProgrammeInfo } from '../normal/regular.ts';
 
 export type OPhanTich = { dat: number; tong: number };
 export type PhanTichLop = {
@@ -70,12 +70,12 @@ export function phanTichNhieuLop(classIds: readonly number[]): Map<number, PhanT
   for (const id of classIds) {
     const hv = hvCua.get(id) ?? [];
     const mucTieu = new Map<number, number | null>(hv.filter((h) => h.cycle_id).map((h) => [h.cycle_id, h.target_score ?? null]));
-    out.set(id, tinhMotLop(progCua.get(id) ?? null, hv.length, mucTieu, [...mucTieu.keys()].flatMap((c) => baiCua.get(c) ?? []), bundle));
+    out.set(id, tinhMotLop(progCua.get(id) ?? null, nguongDatLop(id), hv.length, mucTieu, [...mucTieu.keys()].flatMap((c) => baiCua.get(c) ?? []), bundle));
   }
   return out;
 }
 
-function tinhMotLop(prog: ProgrammeInfo | null, soHocVien: number, mucTieu: Map<number, number | null>, attempts: any[], bundle: ReturnType<typeof loadBundle>): PhanTichLop {
+function tinhMotLop(prog: ProgrammeInfo | null, nguong: number, soHocVien: number, mucTieu: Map<number, number | null>, attempts: any[], bundle: ReturnType<typeof loadBundle>): PhanTichLop {
   const thuong = prog?.scoringMode === 'ratio';
   const o: Record<string, OPhanTich> = {};
   const ds: PhanTichLop['ds'] = {};
@@ -93,14 +93,14 @@ function tinhMotLop(prog: ProgrammeInfo | null, soHocVien: number, mucTieu: Map<
       const r = danhGiaMon(a, bundle.scores.get(a.id) ?? [], prog, null);
       if (!r) continue;
       for (const x of r.mon) cong(`${x.skill}|${a.kind}`, x.dat, a.student_id);
-      /* K2-40: "Cả bài" = % tổng của bài (đủ điểm mới có) so với ngưỡng đạt chung — không viết số 0.7 thứ hai. */
-      if (!khongChiaMon && r.tyLeTong != null) cong(`ca-bai|${a.kind}`, r.tyLeTong >= RATIO_PASS_THRESHOLD, a.student_id);
+      /* K2-40: "Cả bài" = % tổng của bài (đủ điểm mới có) so với ngưỡng đạt của lớp lượt đó (OV-6b1) — không viết số 0.7 thứ hai. */
+      if (!khongChiaMon && r.tyLeTong != null) cong(`ca-bai|${a.kind}`, r.tyLeTong >= r.nguong, a.student_id);
     }
     return {
       loai: 'thuong',
       dong: [
         /* Pre FOU không có dòng này: dòng "Tổng hợp" của nó đã là % tổng. */
-        ...(khongChiaMon ? [] : [{ key: 'ca-bai', nhan: 'Cả bài', tenDayDu: `Cả bài — đạt khi % tổng ≥ ${Math.round(RATIO_PASS_THRESHOLD * 100)}%`, category: '', moRong: false }]),
+        ...(khongChiaMon ? [] : [{ key: 'ca-bai', nhan: 'Cả bài', tenDayDu: `Cả bài — đạt khi % tổng ≥ ${Math.round(nguong * 100)}%`, category: '', moRong: false }]),
         ...mon.map((k) => ({ key: k, nhan: tenMonNgan(prog?.code, k), tenDayDu: tenMon(prog?.code, k), category: categoryOf(k) ?? k })),
       ],
       /* K2-40, PF6: cột theo mốc của chương trình — Pre FOU chỉ Cuối khoá, một dòng Tổng hợp. */
@@ -132,19 +132,19 @@ function tinhMotLop(prog: ProgrammeInfo | null, soHocVien: number, mucTieu: Map<
  *   Lớp thường           Giữa / Cuối khoá: `evaluateRegular` (từ 70%) — chỉ môn đã đủ điểm (pass / fail); kèm % tổng cho dòng "Cả bài".
  * `null` = bài không chấm đạt ở đây (loại bài khác, hoặc không có kỳ vọng).
  */
-export function danhGiaMon(a: any, scores: readonly any[], prog: ProgrammeInfo | null, mucTieu: number | null): { mon: { skill: string; dat: boolean }[]; tyLeTong: number | null } | null {
+export function danhGiaMon(a: any, scores: readonly any[], prog: ProgrammeInfo | null, mucTieu: number | null): { mon: { skill: string; dat: boolean }[]; tyLeTong: number | null; nguong: number } | null {
   if (prog?.scoringMode === 'ratio') {
     if (a.kind !== 'progress' && a.kind !== 'final') return null;
-    const r = evaluateRegular([...(prog?.skills ?? REGULAR_SKILLS)], scores as any, prog?.code);
+    const r = evaluateRegular([...(prog?.skills ?? REGULAR_SKILLS)], scores as any, prog?.code, nguongDatLop(a.class_id));
     return {
       mon: r.skills.filter((x) => x.outcome === 'pass' || x.outcome === 'fail').map((x) => ({ skill: x.skill as string, dat: x.outcome === 'pass' })),
-      tyLeTong: r.tyLeTong ?? null,
+      tyLeTong: r.tyLeTong ?? null, nguong: r.passThreshold,
     };
   }
   if ((a.kind ?? 'mock') !== 'mock') return null;
   const kyVong = expectationFor(mucTieu, a.attempt_no, a.route);
   if (kyVong === null) return null;
-  return { mon: scores.filter((s) => s.band !== null && s.band !== undefined).map((s) => ({ skill: s.skill as string, dat: s.band >= kyVong })), tyLeTong: null };
+  return { mon: scores.filter((s) => s.band !== null && s.band !== undefined).map((s) => ({ skill: s.skill as string, dat: s.band >= kyVong })), tyLeTong: null, nguong: RATIO_PASS_THRESHOLD };
 }
 
 /**

@@ -10,7 +10,7 @@ import { demoToday } from '../demoConfig.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { countAttachments } from '../platform/attachments.ts';
 import { loadBundle, resultOf, routeCuaLuot } from '../fasttrack/attempts.ts';
-import { allProgrammes, evaluateRegular } from '../normal/regular.ts';
+import { allProgrammes, evaluateRegular, nguongDatKhacMacDinh, nguongDatLop } from '../normal/regular.ts';
 import { branchSql, checkClassInScope, classSql, statScope } from './thongKe.ts';
 import { canManageDiscipline, requireManageDiscipline, requireViewClass, requireViewStudent } from './access.ts';
 
@@ -273,6 +273,7 @@ function turnsOf(p: Principal, rows: any[]): CoordinationTurn[] {
     }
   }
   const chuongTrinh = allProgrammes();
+  const nguongKhac = nguongDatKhacMacDinh();
   const boBaoPh = monBoKhoiBaoPh(ids.filter((x) => (luot.get(x)?.kind ?? 'mock') !== 'mock'));
   for (const [attemptId, list] of byAttempt) {
     const a = luot.get(attemptId);
@@ -284,11 +285,11 @@ function turnsOf(p: Principal, rows: any[]): CoordinationTurn[] {
     if (laMock) sosLevel = resultOf(a, bundle.scores.get(a.id) ?? [], bundle.skips.get(a.id) ?? []).sosLevel;
     else {
       /* Lớp thường: KHÔNG có mức SOS — chữ kết quả qua `nhanKetQuaThuong`, đọc từ điểm đã nạp (không SQL, không `resultOf` FT). */
-      const r = evaluateRegular(chuongTrinh.get(a.programme_code)?.skills ?? [], bundle.scores.get(a.id) ?? [], a.programme_code);
+      const r = evaluateRegular(chuongTrinh.get(a.programme_code)?.skills ?? [], bundle.scores.get(a.id) ?? [], a.programme_code, nguongDatLop(a.class_id, nguongKhac));
       skills = r.skills.filter((x) => x.outcome === 'fail').map((x) => x.skill);
       const kq = ketQua = nhanKetQuaThuong({
         kind: a.kind, ct: a.programme_code ?? null, scored: r.scored, required: r.required, failedSkills: skills, tyLeTong: r.tyLeTong,
-        khongChiaMon: CHUONG_TRINH_KHONG_CHIA_MON.includes(a.programme_code),
+        khongChiaMon: CHUONG_TRINH_KHONG_CHIA_MON.includes(a.programme_code), nguong: r.passThreshold,
       });
       /* R5-4: Báo PH theo CASE — môn đã "Không cần theo dõi" / rút vì sửa điểm không nằm trong "môn khó khăn". Việc đã làm: chỉ môn đóng trước ngày làm. */
       const truot = skills;

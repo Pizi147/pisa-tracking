@@ -11,7 +11,7 @@
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { db, theoLo, tx } from '../db.ts';
 import {
-  CO_DIEM_SQL, KY_NANG_KE_HOACH, MT_TOI_DA, kiemTuanMt0, O_KE_HOACH, dotMtMoi, PERMISSIONS, boMonLich, kiemSoMtMoi, kiemTuanXep, laLichSu, lichMtMacDinh, viecXepMt, laVaoMuon, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang,
+  CO_DIEM_SQL, KY_NANG_KE_HOACH, MT_TOI_DA, kiemTuanMt0, O_KE_HOACH, dotMtMoi, PERMISSIONS, boMonLich, kiemSoMtMoi, kiemTuanXep, laLichSu, viecXepMt, laVaoMuon, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang,
   tuanKhoa as tuanKhoaCua,
   type BaiXemTruoc, type DongHangLoat, type KetQuaHuy, type KyNangKH, type LuotSo, type LuotXep, type OKyNang, ATTEMPT_KIND_SHORT } from '../../../shared/domain/index.ts';
 import { badRequest, notFound } from '../util.ts';
@@ -29,7 +29,7 @@ import { pendingMovesFor } from '../fasttrack/absence.ts';
 import { ketQuaHuyCua } from '../fasttrack/ketQuaHuy.ts';
 import { effectiveSkillDeadline, mondayOf } from '../platform/week.ts';
 import { writeAudit } from '../platform/audit.ts';
-import { classProgress, classProgressMany, suggestedMockWeeks, type SuggestedMock } from '../classes/schedule.ts';
+import { classProgress, classProgressMany, lichMtCua, suggestedMockWeeks, type SuggestedMock } from '../classes/schedule.ts';
 import { planRegularTests, programmeByCode, programmeOfClass } from '../normal/regular.ts';
 
 const KIND_NHAN: Record<'progress' | 'final', string> = { progress: ATTEMPT_KIND_SHORT.progress, final: ATTEMPT_KIND_SHORT.final };
@@ -330,7 +330,7 @@ export function luoiFT(p: Principal, classId: number, today: string = demoToday(
   })))]));
   /* T37: cột 1 … min(MT8, max(số lớn nhất còn hiệu lực, MT kế tiếp lớn nhất, lịch mặc định của lộ trình lớp)). */
   const soCot = Math.min(MT_TOI_DA, Math.max(
-    lichMtMacDinh(cls.route ?? null).length,
+    lichMtCua(cls.lich_mt, cls.route).length,
     ...attempts.filter((a) => a.status !== 'cancelled').map((a) => a.attempt_no as number),
     ...soKeTiepCua.values(),
   ));

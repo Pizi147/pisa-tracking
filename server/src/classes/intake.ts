@@ -2,7 +2,7 @@ import { chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
   CHO_TAO_PRE_FOU, ENTRY_SKILLS, PERMISSIONS, PROGRAMME_TEMPLATES, chuanHoaMaLop, ghepMaLop, khoaMaLopSql, kiemSoLop,
   moRongPhanCong, programmeOf, TOI_DA_DONG_TAO_LOP, type LoiDong, type Route, type SlotPhanCong,
-  KCK, NGAY_SINH_TOI_THIEU, canNamGan, laKck, docDongDan, docEmail, docNgayNhap, laDongTieuDe, laMtCu, nhanCotNhap, lichMtMacDinh, mtDaThiChuaQua, tuanBatDauMacDinh, tuanHocCuaMt, tuanLich, type CachDoc, type VanDeNhap,
+  KCK, NGAY_SINH_TOI_THIEU, canNamGan, laKck, docDongDan, docEmail, docNgayNhap, laDongTieuDe, laMtCu, nhanCotNhap, mtDaThiChuaQua, tuanBatDauMacDinh, tuanHocCuaMt, tuanLich, type CachDoc, type VanDeNhap,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { docSlots, ghiPhanCong, kiemTruocPhanCong } from './classes.ts';
@@ -13,6 +13,7 @@ import { can, require_, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { ensurePeriods, mondayOf, periodById } from '../platform/week.ts';
 import { taoMtMacDinhLo } from '../fasttrack/mtMacDinh.ts';
+import { lichMtCua } from './schedule.ts';
 
 /**
  * Thêm học viên hàng loạt.
@@ -193,7 +194,7 @@ export function previewIntake(
    */
   const classId = input.classId ?? input.defaultClassId ?? null;
   const cls = classId
-    ? (conn.prepare("SELECT id, code, route, start_date, programme_code, branch_id, status, is_fast_track FROM classes WHERE id = ?")
+    ? (conn.prepare("SELECT id, code, route, start_date, programme_code, branch_id, status, is_fast_track, lich_mt FROM classes WHERE id = ?")
         .get(classId) as any)
     : null;
   if (!cls) {
@@ -311,14 +312,15 @@ export function previewIntake(
      * thi cách tuần này ≥ 2 tuần (`laMtCu`). Em vào muộn mà để tuần khai giảng thì người nhập thấy ngay, trước khi lưu.
      */
     if (cls.is_fast_track && cls.route && startWeek) {
-      const soLuot = Math.max(lichMtMacDinh(cls.route).length, daThiToiMt ?? 0);
+      const lich = lichMtCua(cls.lich_mt, cls.route);
+      const soLuot = Math.max(lich.length, daThiToiMt ?? 0);
       const lichSu = Array.from({ length: soLuot }, (_, k) => k + 1).filter((n) =>
-        laMtCu(addDays(startWeek!, (tuanHocCuaMt(cls.route, n) - 1) * 7 + 6), homNay));
+        laMtCu(addDays(startWeek!, (tuanHocCuaMt(lich, n) - 1) * 7 + 6), homNay));
       if (lichSu.length) {
         luuY('startWeek', `Học từ ${tuanLich(startWeek)} — ${lichSu.length} MT sẽ là MT cũ (${lichSu.map((n) => 'MT' + n).join(', ')})`);
       }
       /* Rà #120 (PR-XLMT): đã thi tới MT d mà có MT ≤ d rơi vào tuần chưa qua → tuần bắt đầu để muộn quá, nhắc lùi. */
-      const chuaQua = daThiToiMt ? mtDaThiChuaQua(cls.route, startWeek, daThiToiMt, homNay) : [];
+      const chuaQua = daThiToiMt ? mtDaThiChuaQua(lich, startWeek, daThiToiMt, homNay) : [];
       if (chuaQua.length) {
         luuY('daThiToiMt', `Đã thi tới MT${daThiToiMt} nhưng ${chuaQua.map((n) => 'MT' + n).join(', ')} rơi vào tuần chưa qua — lùi Tuần bắt đầu về tuần em bắt đầu học thật`);
       }
@@ -579,15 +581,15 @@ export function createClass(p: Principal, input: {
          */
         `INSERT INTO classes (code, branch_id, kind, programme_code, route, is_fast_track,
                               start_date, start_period_id, previous_class_id, status, note, created_at,
-                              so_tuan, tuan_giua_khoa, tuan_cuoi_khoa)
-         VALUES (?,?,?,?,?,?,?,?,?, 'active', ?, ?, ?,?,?)`,
+                              so_tuan, tuan_giua_khoa, tuan_cuoi_khoa, lich_mt, nguong_dat)
+         VALUES (?,?,?,?,?,?,?,?,?, 'active', ?, ?, ?,?,?,?,?)`,
       )
       .run(code, input.branchId, (input.kind ?? 'FT').trim(),
            ct, input.route ?? null,
            input.isFastTrack ? 1 : 0, input.startDate ?? null, input.startPeriodId ?? null,
            input.previousClassId ?? null,
            input.note ?? null, nowIso(),
-           ...mocChupVaoLop(ct));   // PF1: lớp giữ số tuần lúc tạo — Quản trị sửa sau chỉ áp lớp mở sau
+           ...Object.values(mocChupVaoLop(ct, input.route)));   // PF1 + OV-6b1: lớp giữ cấu hình lúc tạo — Quản trị sửa sau chỉ áp lớp mở sau
     const id = Number(info.lastInsertRowid);
     /* Không khai kỹ năng thì lấy ĐÚNG bộ môn của chương trình lớp đó (bảng `programmes`, K5-45), không mặc định bộ FT. */
     const fallback = allProgrammes().get(ct ?? '')?.skills

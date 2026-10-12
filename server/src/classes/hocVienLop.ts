@@ -247,7 +247,7 @@ export function danhSachHocVienLop(
       isFastTrack: !!laFt.get(h.class_id),
       hasNextMilestone: h.status !== 'active' ? undefined
         : laFt.get(h.class_id)
-          ? coMocTiepTheo({ coMoc: h.so_moc_ke_tiep > 0, route: h.route ?? null, mtCuoi: h.mt_cuoi, coNgayThi: !!(h.exam_month || h.exam_period_id) })
+          ? coMocTiepTheo({ coMoc: h.so_moc_ke_tiep > 0, soMt: h.route ? tienDo.get(h.class_id)?.lichMt.length ?? 0 : 0, mtCuoi: h.mt_cuoi, coNgayThi: !!(h.exam_month || h.exam_period_id) })
           : coMocTiepTheoThuong({ soLuotKeHoach: h.so_luot_ke_hoach, coCuoiKhoa: !!h.co_cuoi_khoa }),
     });
     if (thieu.length) loc.push('thieu_tt');

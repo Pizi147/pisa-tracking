@@ -12,12 +12,12 @@ import { addDays, diffDays, notFound } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { diemCuaLuot, entryBandsOf, routeCuaLuot, scoresOf, skipsOf } from '../fasttrack/attempts.ts';
 import { assessedBands, evaluateAttempt, expectationFor } from '../fasttrack/scoring.ts';
-import { evaluateRegular, isRatioClass, isRatioCycle, programmeByCode, programmeCodeOfCycle, programmeOfClass } from '../normal/regular.ts';
+import { evaluateRegular, isRatioClass, nguongDatLop, isRatioCycle, programmeByCode, programmeCodeOfCycle, programmeOfClass } from '../normal/regular.ts';
 import { cycleById, cyclesOf, currentCycle, examPlanOf, targetRevisions } from '../fasttrack/cycles.ts';
 import { parseMetrics, skillSupportBoard } from '../cases/cases.ts';
 import { standingFor, standingLine } from './standing.ts';
 import { luotSinhViecRow } from '../worklist/danhGia.ts';
-import { missingForStudent, suggestedMockWeeks } from '../classes/schedule.ts';
+import { lichMtCua, missingForStudent, suggestedMockWeeks } from '../classes/schedule.ts';
 import { lopHocCua } from '../classes/loTrinhTiep.ts';
 import { daiHocVien } from '../classes/daiChuyenLop.ts';
 import { cuoiKhoaTheoHocVien, emConMiniTest, miniTestCuaHocVien, type EmCuoiKhoa } from '../normal/cuoiKhoa.ts';
@@ -75,7 +75,7 @@ export function typedResult(attempt: any, pre?: { scores: any[]; skips: Assessed
   if (attempt.kind !== 'mt0' && prog?.scoringMode === 'ratio') {   // PR-MT0: MT0 ở lớp thường vẫn band
     const rows = pre?.scores ?? db().prepare('SELECT skill, raw_score, raw_total FROM assessment_scores WHERE attempt_id = ?')
       .all(attempt.id) as any[];
-    const r = evaluateRegular(prog.skills, rows, prog.code);
+    const r = evaluateRegular(prog.skills, rows, prog.code, nguongDatLop(attempt.class_id));
     return { mode: 'ratio' as const, ratio: r, ft: null };
   }
   const r = evaluateAttempt(attempt.kind === 'mt0' ? null : attempt.target_at_attempt, attempt.attempt_no,   // PR-MT0: không kỳ vọng
@@ -532,7 +532,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   // — tránh gọi riêng `classProgressMany`/`isRatioClass` (bốn câu SQL cho một lớp) ở khối "khoa" dưới.
   const enrollments = conn
     .prepare(
-      `SELECT e.*, c.code AS class_code, c.kind AS class_kind, b.name AS branch_name,
+      `SELECT e.*, c.code AS class_code, c.kind AS class_kind, c.lich_mt AS lop_lich_mt, b.name AS branch_name,
               rp.week_start AS class_start_week
          FROM enrollments e JOIN classes c ON c.id = e.class_id JOIN branches b ON b.id = c.branch_id
          LEFT JOIN report_periods rp ON rp.id = c.start_period_id
@@ -863,6 +863,8 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       ? {
         id: selected.id, studentId, seq: selected.seq, route: selected.route, label: cycleLabel(selected),
         programmeCode: selected.programme_code, ratio: isRatioCycle(selected),
+        /* OV-6b1: tuần MT của lớp em đang học — web báo trước "MT sẽ dời" bằng đúng lịch này (`cauMtSeDoi`). */
+        lichMt: lichMtCua(enrollments.find((e) => e.status === 'active')?.lop_lich_mt, selected.route),
         target, khongCamKet: !!selected.khong_cam_ket, examPlan, startedAt: selected.started_at, endedAt: selected.ended_at,
         status: selected.status,
         /*

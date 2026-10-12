@@ -17,9 +17,6 @@ export function expectationDelta(attemptNo: number, route?: string | null): numb
   return attemptNo === 1 ? 1.0 : attemptNo === 2 ? 0.5 : 0;
 }
 
-/** Tuần HỌC của chương trình FT, chỉ dùng để gợi ý tuần lịch khi lập kế hoạch. */
-export const MOCK_FT_STUDY_WEEK: Record<number, number> = { 1: 6, 2: 12, 3: 16, 4: 20, 5: 24 };
-
 /**
  * LỚP FT CHỈ ĐỀ XUẤT SẴN BA LƯỢT.
  *

@@ -19,7 +19,7 @@ import { nguoiGiuKetQua } from '../cases/giuKetQua.ts';
 import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
 import { chotYeuCau, taoYeuCau } from '../duyet/yeuCau.ts';
 import { phanCongO } from '../classes/quyenChuyenLop.ts';
-import { allProgrammes, evaluateRegular } from './regular.ts';
+import { allProgrammes, evaluateRegular, nguongDatKhacMacDinh, nguongDatLop } from './regular.ts';
 import { emDaSangFt, kiemDongKyVong, mt0TheoLop, taoCaseKyVong, type DongCaseKyVong } from './kyVong.ts';
 
 /**
@@ -31,6 +31,8 @@ export type TyLeLuot = {
   /** Σ điểm / Σ tổng, CHƯA làm tròn; `null` khi chưa đủ môn. */
   tyLe: number | null; du: boolean; scored: number; required: number;
   ct: string | null; monTruot: string[]; kind: string;
+  /** OV-6b1: ngưỡng đạt của lớp của lượt — dải / gợi ý Cuối khoá đọc cùng ngưỡng. */
+  nguong: number;
   /** % từng môn (chưa làm tròn; null = chưa có điểm) — hộp Kết luận khoá ở hồ sơ HV. */
   mon: { skill: string; ratio: number | null }[];
 };
@@ -40,24 +42,25 @@ export function tyLeTongLo(attemptIds: readonly number[]): Map<number, TyLeLuot>
   const out = new Map<number, TyLeLuot>();
   if (!attemptIds.length) return out;
   const conn = db();
-  const luot = new Map<number, { kind: string; ct: string | null }>();
+  const luot = new Map<number, { kind: string; ct: string | null; lop: number | null }>();
   const diem = new Map<number, any[]>();
   theoLo([...new Set(attemptIds)], (lo, ph) => {
     for (const r of conn.prepare(
-      `SELECT a.id, a.kind, c.programme_code FROM assessment_attempts a LEFT JOIN classes c ON c.id = a.class_id WHERE a.id IN (${ph})`,
-    ).all(...lo) as any[]) luot.set(r.id, { kind: r.kind, ct: r.programme_code ?? null });
+      `SELECT a.id, a.kind, a.class_id, c.programme_code FROM assessment_attempts a LEFT JOIN classes c ON c.id = a.class_id WHERE a.id IN (${ph})`,
+    ).all(...lo) as any[]) luot.set(r.id, { kind: r.kind, ct: r.programme_code ?? null, lop: r.class_id ?? null });
     for (const r of conn.prepare(`SELECT attempt_id, skill, raw_score, raw_total FROM assessment_scores WHERE attempt_id IN (${ph})`).all(...lo) as any[]) {
       if (!diem.has(r.attempt_id)) diem.set(r.attempt_id, []);
       diem.get(r.attempt_id)!.push(r);
     }
   });
   const chuongTrinh = allProgrammes();
+  const nguongKhac = nguongDatKhacMacDinh();
   for (const [id, l] of luot) {
     const prog = l.ct ? chuongTrinh.get(l.ct) : null;
     if (!prog || prog.scoringMode !== 'ratio') continue;
-    const kq = evaluateRegular(prog.skills, diem.get(id) ?? [], prog.code);
+    const kq = evaluateRegular(prog.skills, diem.get(id) ?? [], prog.code, nguongDatLop(l.lop, nguongKhac));
     out.set(id, {
-      tyLe: kq.tyLeTong, du: kq.complete, scored: kq.scored, required: kq.required, ct: prog.code, kind: l.kind,
+      tyLe: kq.tyLeTong, du: kq.complete, nguong: kq.passThreshold, scored: kq.scored, required: kq.required, ct: prog.code, kind: l.kind,
       monTruot: kq.skills.filter((s) => s.outcome === 'fail').map((s) => s.skill),
       mon: kq.skills.map((s) => ({ skill: s.skill, ratio: s.ratio })),
     });
@@ -83,7 +86,7 @@ export function chuCuoiKhoaLo(classId: number, sids: readonly number[]): Map<num
     if (!x) continue;
     const h = chuHopKetLuan({
       ct: x.ct, tyLe: x.tyLe, scored: x.scored, required: x.required, mon: x.mon,
-      goiY: goiYCuoiKhoa({ ct: x.ct, tyLe: x.tyLe, monTruot: x.monTruot }), quyetDinh: null, ketLuanFt: null,
+      goiY: goiYCuoiKhoa({ ct: x.ct, tyLe: x.tyLe, monTruot: x.monTruot, nguong: x.nguong }), quyetDinh: null, ketLuanFt: null,
     });
     out.set(sid, h.phu ? `${h.chinh} (${h.phu})` : h.chinh);
   }
@@ -131,7 +134,7 @@ function tinhEmXetLai(p: Principal, branchId: number | null, today: string): Lop
   const theoLop = new Map<number, LopXetLai>();
   for (const l of lenh) {
     const t = tyLe.get(finalCua.get(l.student_id) ?? -1);
-    if (!t?.du || t.tyLe === null || !khongPhuHopLoTrinh(l.huong, t.tyLe)) continue;
+    if (!t?.du || t.tyLe === null || !khongPhuHopLoTrinh(l.huong, t.tyLe, t.nguong)) continue;
     if (!theoLop.has(l.lop_dich_id)) theoLop.set(l.lop_dich_id, { lopId: l.lop_dich_id, code: l.dich_code, em: [] });
     theoLop.get(l.lop_dich_id)!.em.push({ studentId: l.student_id, ten: l.full_name, huong: l.huong, tyLe: t.tyLe, lopHienTai: { id: l.lop_dich_id, code: l.dich_code } });
   }
@@ -188,7 +191,7 @@ export function cuoiKhoaTheoHocVien(classId: number, sids?: readonly number[], o
     const t = attemptId ? tyLe.get(attemptId) : undefined;
     out.set(sid, {
       attemptId, tyLe: t?.tyLe ?? null, scored: t?.scored ?? 0, required: t?.required ?? 0, monTruot: t?.monTruot ?? [], mon: t?.mon ?? [],
-      goiY: t ? goiYCuoiKhoa({ ct: t.ct, tyLe: t.tyLe, monTruot: t.monTruot }) : null,
+      goiY: t ? goiYCuoiKhoa({ ct: t.ct, tyLe: t.tyLe, monTruot: t.monTruot, nguong: t.nguong }) : null,
       ...ketLuanCuaDong(dinhKem.get(sid)),
     });
   }
@@ -281,7 +284,7 @@ export function sauChuyenCuoiKhoa(p: Principal, dongs: readonly DongSauChuyen[])
   for (const d of dongs) {
     const luot = luotCua.get(d.sid), t = luot ? tyLe.get(luot.id) : undefined, toCycle = moi.get(d.sid);
     if (!luot || !t || t.tyLe === null || !toCycle) continue;   // chưa đủ điểm (Q30-4) hoặc không thuộc lớp thường — điểm nhập sau áp ở `capNhatCuoiKhoaSauChuyen`
-    const goiY = goiYCuoiKhoa({ ct: t.ct, tyLe: t.tyLe, monTruot: t.monTruot });
+    const goiY = goiYCuoiKhoa({ ct: t.ct, tyLe: t.tyLe, monTruot: t.monTruot, nguong: t.nguong });
     if (!goiY) continue;
     /* (2) lên + có bổ trợ (60–69%, hoặc 50–59% Quản lý cho lên); BE/ELE sang FT thì không (PR-CT2, `coBoTroFinal`). */
     if ((d.huong === 'len_lop' || d.huong === 'fast_track') && goiY.boTroNeuLen && coBoTroFinal(t.ct, d.toFt)) {
@@ -516,7 +519,7 @@ export function dongBoCheTaiFinal(p: Principal, classId: number, sids?: readonly
   for (const [sid, x] of em) {
     const t = tyLe.get(x.a), l = lenh.get(sid), m = mt.get(sid);
     const du = !!t && t.tyLe !== null;
-    const b = du ? goiYCuoiKhoa({ ct: t!.ct, tyLe: t!.tyLe, monTruot: t!.monTruot })?.boTroNeuLen ?? null : null;
+    const b = du ? goiYCuoiKhoa({ ct: t!.ct, tyLe: t!.tyLe, monTruot: t!.monTruot, nguong: t!.nguong })?.boTroNeuLen ?? null : null;
     const can = !x.huy && !!b && !!l && (l.huong === 'len_lop' || l.huong === 'fast_track') && !l.is_fast_track;
     if (can && !m) {
       sinh.push({

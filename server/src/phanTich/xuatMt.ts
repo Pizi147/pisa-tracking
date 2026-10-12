@@ -10,7 +10,7 @@ import { badRequest, forbidden, nowIso } from '../util.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { demHienTai } from '../platform/nguCanhRequest.ts';
 import { loadBundle, resultOf, type AttemptBundle, type ScoreRow } from '../fasttrack/attempts.ts';
-import { allProgrammes, evaluateRegular } from '../normal/regular.ts';
+import { allProgrammes, evaluateRegular, nguongDatLop } from '../normal/regular.ts';
 import { luotKck } from '../worklist/danhGia.ts';
 
 /**
@@ -129,7 +129,7 @@ function dongFT(a: any, b: AttemptBundle): { d: DongFT; du: boolean } {
 function dongThuong(a: any, b: AttemptBundle, prog: { code: string; skills: string[] }): { d: DongThuong; du: boolean } {
   const scores = b.scores.get(a.id) ?? [];
   const skillRows = b.skillRows.get(a.id) ?? [];
-  const r = evaluateRegular(prog.skills, scores, prog.code);
+  const r = evaluateRegular(prog.skills, scores, prog.code, nguongDatLop(a.class_id));
   const d: DongThuong = {
     ma: a.student_code, ten: a.full_name, chiNhanh: a.branch_name ?? '', lop: a.class_code, bai: nhanDot(a.kind, null), tuan: a.tuan_code, tuanBd: a.week_start,
     mon: r.skills.map((m) => ({
@@ -139,7 +139,7 @@ function dongThuong(a: any, b: AttemptBundle, prog: { code: string; skills: stri
     tyLeTong: phanTram(r.tyLeTong),
     /* PR-LT2b: cùng luật `goiYCuoiKhoa` với lưới / hồ sơ HV — chỉ Cuối khoá đủ điểm. */
     huong: a.kind === 'final' && r.tyLeTong !== null
-      ? goiYCuoiKhoa({ ct: prog.code, tyLe: r.tyLeTong, monTruot: r.skills.filter((m) => m.outcome === 'fail').map((m) => m.skill) })?.nhanExcel ?? null : null,
+      ? goiYCuoiKhoa({ ct: prog.code, tyLe: r.tyLeTong, monTruot: r.skills.filter((m) => m.outcome === 'fail').map((m) => m.skill), nguong: r.passThreshold })?.nhanExcel ?? null : null,
     // T58: lớp thường không có SOS — `tamThoi: false`, không "SOS tạm thời" trong trạng thái.
     trangThai: trangThaiLuotXuat({
       coDiem: r.scored, yeuCau: r.required, du: r.complete, lichSu: !!a.lich_su,

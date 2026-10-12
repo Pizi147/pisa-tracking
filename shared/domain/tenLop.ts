@@ -1,5 +1,4 @@
 /** TÊN LỚP (T1, T2, L1, PF5): máy ghép `{CN} {ký hiệu} {số}`; người dùng chỉ chọn và gõ số. Một nguồn cho web + máy chủ + migrate. */
-import { lichMtMacDinh } from './lichMt.ts';
 export const THU_TU_KY_HIEU = ['FT', 'FT RF', 'Pre FOU', 'FOU', 'BE', 'ELE'] as const;
 export type KyHieuLop = (typeof THU_TU_KY_HIEU)[number];
 /** PF6: chỉ mở "Pre FOU" ở Tạo lớp khi PR-MON (một ô Tổng hợp) có trong cùng đợt deploy. PR-MON đổi dòng này thành `true`. */
@@ -70,14 +69,6 @@ export function tenMoiChoLopCu(l: { code: string; branchCode: string; programmeC
   if (r.kh !== kyHieuLop(l.programmeCode, l.route)) return { loi: 'lech-chuong-trinh' };
   return { moi: `${l.branchCode.toUpperCase()} ${r.kh} ${r.so}` };
 }
-
-/** Quản trị › Lộ trình & chương trình: hai cột CHỈ ĐỌC (K1-47). Chỉ là CHỮ HIỂN THỊ — lịch MT một nguồn: lichMt.ts (K1-49). */
-const lichMtHien = (route: string) => 'Tuần ' + lichMtMacDinh(route).join(' · ');
-export const LUAT_LO_TRINH_HIEN: Record<string, { kyVong: string; lichMt: string }> = {
-  LT1: { kyVong: '−1.0 · −0.5 · Target', lichMt: lichMtHien('LT1') },
-  LT2: { kyVong: '−1.0 · −0.5 · Target', lichMt: lichMtHien('LT2') },
-  RF: { kyVong: 'Mọi MT = Target', lichMt: lichMtHien('RF') },
-};
 
 // ==================================================================== PR-QU (C): tạo nhiều lớp một lần
 

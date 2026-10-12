@@ -18,7 +18,7 @@ import { nho } from '../platform/nguCanhRequest.ts';
 import { checkSkillWeekMove, ensureSkillRows, kiemDaToiTuanThi, loadSkillRows, setSkillWeek } from '../fasttrack/skillSchedule.ts';
 import { dotHoanTat, dotHoanTatMany, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
 import { canRequest, duocGoDau } from '../fasttrack/absence.ts';
-import { classProgress, classProgressMany } from '../classes/schedule.ts';
+import { classProgress, classProgressMany, lichMtCua } from '../classes/schedule.ts';
 import { baoLenCuoiKhoaDoiQuaHan, capNhatCuoiKhoaSauChuyen, dongBoCheTaiFinal } from './cuoiKhoa.ts';
 import { lamMoiDiemBanChup } from '../loTrinh/banChup.ts';
 
@@ -44,6 +44,8 @@ export type ProgrammeInfo = {
   active: boolean;
   skills: string[];
   checkpoints: { kind: AttemptKind; studyWeek: number }[];
+  /** OV-6b1: đạt từ (0.7 = 70 %) — chỉ chương trình đúng/tổng; null với FT. Chép vào lớp lúc tạo (`mocChupVaoLop`). */
+  nguongDat: number | null;
 };
 
 /**
@@ -65,7 +67,7 @@ export function allProgrammes(): Map<string, ProgrammeInfo> {
     for (const p of conn.prepare('SELECT * FROM programmes').all() as any[]) {
       out.set(p.code, {
         code: p.code, name: p.name, weeks: p.weeks, scoringMode: p.scoring_mode, active: p.status === 'active',
-        skills: [], checkpoints: [],
+        skills: [], checkpoints: [], nguongDat: p.nguong_dat ?? null,
       });
     }
     for (const r of conn.prepare('SELECT programme_code, skill FROM programme_skills ORDER BY seq, skill').all() as any[]) {
@@ -83,13 +85,22 @@ export function programmeByCode(code: string | null | undefined): ProgrammeInfo 
   return allProgrammes().get(code) ?? null;
 }
 
-/** PF1: số tuần + mốc Giữa/Cuối khoá chụp vào lớp lúc tạo / đổi chương trình (`classes.so_tuan`, `tuan_giua_khoa`, `tuan_cuoi_khoa`).
- *  Chương trình không có số tuần cố định (FT) → NULL cả ba. */
-export function mocChupVaoLop(code: string | null | undefined): [number | null, number | null, number | null] {
+/**
+ * PF1 + OV-6b1: cấu hình chương trình chụp vào lớp lúc tạo / đổi chương trình / đổi lộ trình — Quản trị sửa sau chỉ áp lớp mở sau.
+ *   lớp thường  số tuần + mốc Giữa/Cuối khoá + ngưỡng đạt (`so_tuan`, `tuan_giua_khoa`, `tuan_cuoi_khoa`, `nguong_dat`)
+ *   FT          tuần học của từng MT theo lộ trình (`lich_mt`, JSON) — ba cột số tuần NULL (FT không có số tuần cố định)
+ */
+export function mocChupVaoLop(code: string | null | undefined, route: string | null | undefined): {
+  so_tuan: number | null; tuan_giua_khoa: number | null; tuan_cuoi_khoa: number | null; lich_mt: string | null; nguong_dat: number | null;
+} {
   const prog = programmeByCode(code);
-  if (!prog?.weeks) return [null, null, null];
-  const moc = (k: AttemptKind) => prog.checkpoints.find((x) => x.kind === k)?.studyWeek ?? null;
-  return [prog.weeks, moc('progress'), moc('final')];
+  const moc = (k: AttemptKind) => prog?.checkpoints.find((x) => x.kind === k)?.studyWeek ?? null;
+  const coTuan = !!prog?.weeks;
+  return {
+    so_tuan: coTuan ? prog!.weeks : null, tuan_giua_khoa: coTuan ? moc('progress') : null, tuan_cuoi_khoa: coTuan ? moc('final') : null,
+    lich_mt: code === 'FT' ? JSON.stringify(lichMtCua(null, route ?? 'LT1')) : null,
+    nguong_dat: prog?.scoringMode === 'ratio' ? prog.nguongDat ?? RATIO_PASS_THRESHOLD : null,
+  };
 }
 
 export function programmeOfClass(classId: number): ProgrammeInfo | null {
@@ -182,10 +193,11 @@ export type RegularResult = {
  */
 export function evaluateRegular(
   skills: readonly string[], rows: { skill: string; raw_score: number | null; raw_total: number | null }[], ct?: string | null,
+  nguong: number = RATIO_PASS_THRESHOLD,   // OV-6b1: ngưỡng đạt của LỚP — `nguongDatLop(classId)`
 ): RegularResult {
   const results: RegularSkillResult[] = skills.map((skill) => {
     const row = rows.find((r) => r.skill === skill);
-    const { outcome, ratio } = ratioResult(row?.raw_score ?? null, row?.raw_total ?? null);
+    const { outcome, ratio } = ratioResult(row?.raw_score ?? null, row?.raw_total ?? null, nguong);
     return {
       skill,
       label: tenMon(ct, skill),
@@ -218,7 +230,7 @@ export function evaluateRegular(
     provisional: scored > 0 && !complete,
     failedCount,
     sosLevel,
-    passThreshold: RATIO_PASS_THRESHOLD,
+    passThreshold: nguong,
     tyLeTong: complete
       ? results.reduce((s, r) => s + (r.score ?? 0), 0) / results.reduce((s, r) => s + (r.total ?? 0), 0)
       : null,
@@ -245,7 +257,17 @@ export function regularResultOf(attemptId: number): RegularResult {
   const prog = a?.class_id ? programmeOfClass(a.class_id) : null;
   const rows = conn.prepare('SELECT skill, raw_score, raw_total FROM assessment_scores WHERE attempt_id = ?')
     .all(attemptId) as any[];
-  return evaluateRegular(prog?.skills ?? [], rows, prog?.code);
+  return evaluateRegular(prog?.skills ?? [], rows, prog?.code, nguongDatLop(a?.class_id));
+}
+
+/** Lớp có ngưỡng đạt khác 70 % — MỘT câu, nhớ trong request GET (thường rỗng: chỉ lớp mở sau khi Quản trị đổi "Đạt từ"). */
+export const nguongDatKhacMacDinh = (): Map<number, number> => nho('nguong-dat-lop', () => new Map(
+  (db().prepare(`SELECT id, nguong_dat FROM classes WHERE nguong_dat IS NOT NULL AND nguong_dat != ?`).all(RATIO_PASS_THRESHOLD) as any[])
+    .map((r) => [r.id as number, r.nguong_dat as number])));
+
+/** OV-6b1: ngưỡng đạt của lớp (bản chụp `classes.nguong_dat` lúc tạo lớp); không có lớp / thiếu → 70 %. Vòng lặp nhiều lượt: lấy Map một lần. */
+export function nguongDatLop(classId: number | null | undefined, ds: Map<number, number> = nguongDatKhacMacDinh()): number {
+  return (classId && ds.get(classId)) || RATIO_PASS_THRESHOLD;
 }
 
 // ---------------------------------------------------------------- lên lịch
@@ -991,10 +1013,10 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
     canPlan: can(p, PERMISSIONS.PLAN_WEEK, { classId }),
     /** PR-XLMT (K4-32): GVCN của lớp — menu ⋯ ô lưới (Báo vắng, Xếp lại bài vắng) theo `thaoTacKyNang`. Một lần cho cả bảng. */
     laGvcn: isCoreTeacherOf(p, classId, today),
-    passThreshold: RATIO_PASS_THRESHOLD,
+    passThreshold: nguongDatLop(classId),
     rows: attempts.map((a) => {
       const rows = byAttempt.get(a.id) ?? [];
-      const result = evaluateRegular(prog.skills, rows, prog.code);
+      const result = evaluateRegular(prog.skills, rows, prog.code, nguongDatLop(classId));
       const failing = result.skills.filter((s) => s.outcome === 'fail').map((s) => s.skill);
       const dongCases = casesOf(a.student_id, a.cycle_id ?? null, failing);
       const c = dongCases[0] ?? null;
@@ -1065,7 +1087,7 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
         status: a.status,
         result,
         /** PR-LT2b: hướng gợi ý Cuối khoá — chỉ dòng Cuối khoá đủ điểm (null còn lại). Cùng luật `goiYCuoiKhoa` với hồ sơ HV / Excel. */
-        goiY: a.kind === 'final' ? goiYCuoiKhoa({ ct: prog.code, tyLe: result.tyLeTong, monTruot: failing }) : null,
+        goiY: a.kind === 'final' ? goiYCuoiKhoa({ ct: prog.code, tyLe: result.tyLeTong, monTruot: failing, nguong: result.passThreshold }) : null,
         /** Các Case gắn với những môn CHƯA ĐẠT của chính dòng này (theo học viên + khoá + hạng mục). */
         cases: dongCases,
         caseId: c?.id ?? null, caseStatus: c?.status ?? null, caseLevel: c?.level ?? null,

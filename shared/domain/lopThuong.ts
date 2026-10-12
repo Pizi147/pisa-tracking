@@ -53,9 +53,11 @@ export function tenBaiThuong(
 export function nhanKetQuaThuong(r: {
   kind: 'progress' | 'final'; ct: string | null; scored: number; required: number;
   failedSkills: string[]; tyLeTong: number | null; khongChiaMon: boolean;
+  /** OV-6b1: ngưỡng đạt của lớp (`RegularResult.passThreshold`). */
+  nguong?: number;
 }): { chinh: string; phu: string | null; pct: string | null; dat: boolean | null } {
   const pct = r.tyLeTong != null ? `${Math.round(r.tyLeTong * 100)}%` : null;
-  if (r.khongChiaMon) return { chinh: pct ?? '—', phu: null, pct, dat: r.tyLeTong != null ? r.tyLeTong >= RATIO_PASS_THRESHOLD : null };
+  if (r.khongChiaMon) return { chinh: pct ?? '—', phu: null, pct, dat: r.tyLeTong != null ? r.tyLeTong >= (r.nguong ?? RATIO_PASS_THRESHOLD) : null };
   if (r.scored <= 0) return { chinh: '—', phu: null, pct: null, dat: null };
   const truot = r.failedSkills.length;
   const thieu = r.scored < r.required;

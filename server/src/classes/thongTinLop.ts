@@ -68,9 +68,11 @@ export function capNhatThongTinLop(
     moi.kind = chuongTrinh;
     moi.programme_code = chuongTrinh;
     moi.is_fast_track = chuongTrinh === 'FT' ? 1 : 0;
-    [moi.so_tuan, moi.tuan_giua_khoa, moi.tuan_cuoi_khoa] = mocChupVaoLop(chuongTrinh!);   // PF1: số tuần theo chương trình mới
   }
-  if (doiCt || doiLt) moi.route = route;
+  if (doiCt || doiLt) {
+    moi.route = route;
+    Object.assign(moi, mocChupVaoLop(chuongTrinh, route));   // PF1 + OV-6b1: số tuần, tuần MT, ngưỡng đạt theo chương trình / lộ trình mới
+  }
   if (soMoi !== null || doiCt || doiLt) {
     /* Tên theo mẫu (T1): FT ↔ FT RF, BE → FOU… đổi tên trong cùng UPDATE. Lớp cũ tên lạ (không tách được số) phải gõ số. */
     const so = soMoi ?? tachSoLop(c.code, cn);

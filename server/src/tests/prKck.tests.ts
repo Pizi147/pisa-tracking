@@ -26,7 +26,7 @@ export async function runPrKckTests(t: YThucTestKit) {
   /* Em mới ở MB FT 101 mà MT1 rơi đúng 2 tuần trước ngày demo — nhập điểm được ngay (như bộ demo SOS v3). */
   const them = (fullName: string, target: unknown) => {
     const tuanThi = d.mondayOfDate(t.addDays(demoToday(), -14));
-    const startWeek = t.addDays(tuanThi, -7 * (d.tuanHocCuaMt('LT1', 1) - 1));
+    const startWeek = t.addDays(tuanThi, -7 * (d.tuanHocCuaMt(d.lichMtGoc('LT1'), 1) - 1));
     intake.commitIntake(P.admin, { classId: ft, rows: [{ fullName, target, startWeek, email: 'kck@demo.test', dob: '2010-01-01' }], idempotencyKey: `kck-${fullName}` });
     const sid = hv(fullName).id;
     const mt1 = luot(sid)[0];

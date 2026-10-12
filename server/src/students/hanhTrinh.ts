@@ -193,7 +193,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
           khongChiaMon: r.skills.length === 1 && r.skills[0].skill === 'tong_hop', tyLe: r.tyLeTong,
           /* PR-LT2b: hướng gợi ý Cuối khoá (chỉ Cuối khoá đủ điểm) — cùng luật `goiYCuoiKhoa`. */
           goiY: a.kind === 'final' && a.class_programme
-            ? goiYCuoiKhoa({ ct: a.class_programme, tyLe: r.tyLeTong, monTruot: r.skills.filter((s) => s.outcome === 'fail').map((s) => s.skill as string) }) : null,
+            ? goiYCuoiKhoa({ ct: a.class_programme, tyLe: r.tyLeTong, monTruot: r.skills.filter((s) => s.outcome === 'fail').map((s) => s.skill as string), nguong: r.passThreshold }) : null,
         };
       }
       const r = t.ft!;
@@ -254,7 +254,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
         const s = t.ratio!.skills.find((x) => x.skill === kyNang);
         if (!s) continue;
         if (s.score === null) { choDiem(a, 'ratio'); continue; }
-        diem.push({ gt: s.score, tong: s.total, chuaDat: s.outcome === 'fail', attemptNo: a.attempt_no, kind: a.kind, maLop: a.class_code ?? null, kyVong: null, attemptId: a.id, classId: a.class_id ?? null });
+        diem.push({ gt: s.score, tong: s.total, chuaDat: s.outcome === 'fail', nguong: t.ratio!.passThreshold, attemptNo: a.attempt_no, kind: a.kind, maLop: a.class_code ?? null, kyVong: null, attemptId: a.id, classId: a.class_id ?? null });
       } else {
         const band = scoresByAttempt.get(a.id)?.find((x) => x.skill === kyNang)?.band ?? null;
         if (band === null) { choDiem(a, 'ielts'); continue; }

@@ -12,7 +12,7 @@ import { notFound } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { tinhLuot, type NguCanhLuot } from './banChup.ts';
 import { coTheNhapThiThat } from './thiThat.ts';
-import { programmeByCode } from '../normal/regular.ts';
+import { nguongDatLop, programmeByCode } from '../normal/regular.ts';
 
 type Tone = 'ok' | 'soon' | 'late' | 'muted';
 export type KetQuaGon = { chinh: string; tone: Tone; phu?: string };
@@ -46,11 +46,12 @@ function ketQuaSong(c: any, attempts: any[], scores: Map<number, any[]>): KetQua
   for (const a of [...attempts].reverse()) {
     const rows = scores.get(a.id) ?? [];
     if (a.status === 'cancelled' || !rows.some((r) => r.band !== null || r.raw_score !== null)) continue;
-    const t = tinhLuot(nc, a, a.target_at_attempt ?? null, rows, [], false);
+    const nguong = nguongDatLop(a.class_id);
+    const t = tinhLuot({ ...nc, nguong }, a, a.target_at_attempt ?? null, rows, [], false);
     if (laFt) {
       return { chinh: `MT${a.attempt_no} · ${t.overall !== null ? t.overall.toFixed(1) : '—'}`, tone: t.sos && t.sos > 0 ? 'soon' : 'ok', phu: t.sos && t.sos > 0 ? `SOS ${t.sos}` : undefined };
     }
-    if (t.tyLeTong !== null) return { chinh: phanTram(t.tyLeTong), tone: t.tyLeTong >= 0.7 ? 'ok' : 'soon' };
+    if (t.tyLeTong !== null) return { chinh: phanTram(t.tyLeTong), tone: t.tyLeTong >= nguong ? 'ok' : 'soon' };
   }
   return null;
 }
@@ -70,7 +71,7 @@ export function cacLoTrinh(p: Principal, studentId: number): DongCacLoTrinh[] {
   for (const b of conn.prepare('SELECT * FROM ban_chup_lo_trinh WHERE student_id = ? ORDER BY lan').all(studentId) as any[]) bc.set(b.cycle_id, b);
   const dangChay = cycles.filter((c) => c.status === 'active');
   const luot = dangChay.length ? conn.prepare(
-    `SELECT a.id, a.cycle_id, a.attempt_no, a.status, a.target_at_attempt FROM assessment_attempts a WHERE a.kind != 'mt0' AND a.cycle_id IN (${dangChay.map(() => '?').join(',')}) ORDER BY a.cycle_id, a.attempt_no, a.id`,
+    `SELECT a.id, a.cycle_id, a.attempt_no, a.status, a.target_at_attempt, a.class_id FROM assessment_attempts a WHERE a.kind != 'mt0' AND a.cycle_id IN (${dangChay.map(() => '?').join(',')}) ORDER BY a.cycle_id, a.attempt_no, a.id`,
   ).all(...dangChay.map((c) => c.id)) as any[] : [];
   const diem = new Map<number, any[]>();
   theoLo(luot.map((a) => a.id as number), (lo, ph) => {
