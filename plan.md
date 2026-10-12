@@ -322,6 +322,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 12/10/2026 | OV-4a (Opus 5.5) · `claude/peaceful-clarke-xsn9zr` | Huỷ cả lượt MT cất điểm + lịch + danh sách đóng vào `ket_qua_huy` (`huy_luot`, migrate `prOv4`), đóng Case sinh riêng / PA "Chưa đủ dữ liệu" / Phối hợp; Khôi phục lượt (`/reopen`) về nguyên trạng, chặn khi đã xếp MT mới, kèm bản dời vượt treo (ca MT4 Ngọc); ô "MT2 · Đã huỷ" ở Kế hoạch Test / Lộ trình; Admin không nút |
 | 12/10/2026 | Planning (Opus 5.5) · `claude/wonderful-shannon-f4exvc` | Kế hoạch + prompt OV-4a, OV-4b, OV-6b1, OV-3c, OV-1c, OV-6b2 (OV-4, OV-6b tách đôi); đợt 3 = OV-4a + OV-4b + OV-6b1; xoá 5 kế hoạch đã merge; 2 câu hỏi chủ SP (hạn SOS chốt, Dự kiến quay lại) |
 | 12/10/2026 | OV-2b (Opus 5.5) · `claude/upbeat-albattani-jaqvpm` | Hồ sơ HV: ⋯ Sửa thông tin · Chuyển lớp · Tạm dừng / Thôi học (một panel 2 tab) · Lưu trữ; Sửa thông tin có TVV chọn người ("Ghi cũ"), email + ngày sinh bắt buộc (thêm / sửa, cả lớp chỉ dòng có sửa), Target QL thẳng / GVCN đề xuất, điểm đầu vào L R W S; ⋯ dòng Sửa thông tin; Sửa cả lớp cột TVV |
 | 12/10/2026 | OV-3b (Opus 5.5) · `claude/zen-cray-fa7291` | Lộ trình tiếp theo: nháp chỉ QL (`lo_trinh_nhap`) → chốt = ra lệnh; GVCN thôi ghi Hướng; hạn nhắc / chốt Final − 2, bàn giao hết tuần Final ≥ 2 ngày, FT 5 ngày; đổi hướng/lớp đích → phiếu cần làm lại + chuông; KQĐR có FOU + GVCN đề xuất; cách xem bảng theo hướng thay PanelCuoiKhoa / PanelKyVong / LoTrinhTiepPanel |

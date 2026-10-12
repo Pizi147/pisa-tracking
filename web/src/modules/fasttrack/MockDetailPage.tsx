@@ -35,7 +35,7 @@ import {
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { TOOLTIP_TUAN_HOAN_TAT } from '../../ui/chu.ts';
-import { HopKhoiPhucKetQua } from '../test/keHoach/HopKhoiPhucKetQua.tsx';
+import { HopKhoiPhucKetQua, HopKhoiPhucMt } from '../test/keHoach/HopKhoiPhucKetQua.tsx';
 import type { KnO } from '../test/keHoach/kieu.ts';
 
 type Detail = {
@@ -57,6 +57,8 @@ type Detail = {
   status: string; cancelReason: string | null; note: string | null;
   /** PR-HSM (K4 §4h): lượt đã huỷ — lý do, ai, khi. */
   huy: { lyDo: string | null; ai: string | null; khi: string } | null;
+  /** PR-OV4a: bản huỷ MT còn khôi phục được + câu chặn khi số MT đã được xếp lại. */
+  khoiPhuc: { ban: unknown[]; chan: string | null };
   result: any; cells: Cell[]; skips: any[];
   /** PR-MT0: MT0 — chip SOS chỉ để nhìn (band ≤ Target − 2.0); không kỳ vọng, không Case. */
   mt0?: { sos: { skill: AssessedSkill; band: number }[] } | null;
@@ -133,6 +135,7 @@ export default function MockDetailPage() {
   const [deadlineOpen, setDeadlineOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [khoiPhucOpen, setKhoiPhucOpen] = useState(false);
+  const [khoiPhucLuot, setKhoiPhucLuot] = useState(false);
   /* PR-HSM: ô lớn đang mở khung sửa — nút chính "Nhập điểm / Sửa điểm" của bảng dưới cũng mở đúng ô này. */
   const [moO, setMoO] = useState<KyNangLon | null>(null);
   /*
@@ -208,8 +211,12 @@ export default function MockDetailPage() {
       hint: 'Một hạn chấm riêng cho mọi kỹ năng',
     }] : []),
     /* PR-MTb T8 (T2): lượt bị vượt có kết quả đã huỷ → Quản lý khôi phục. */
-    ...(d.viewer.canPlanWeek && !cancelled && d.ketQuaHuy ? [{
+    ...(d.viewer.canCancel && !cancelled && d.ketQuaHuy ? [{
       label: 'Khôi phục kết quả', onClick: () => setKhoiPhucOpen(true),
+    }] : []),
+    /* PR-OV4a: số MT đã xếp lại mà còn bản huỷ cũ → hộp nói rõ cách khôi phục (huỷ MT mới trước). */
+    ...(d.viewer.canCancel && !cancelled && d.khoiPhuc.ban.length ? [{
+      label: `Khôi phục MT${d.attemptNo} cũ`, onClick: () => setKhoiPhucLuot(true),
     }] : []),
     /* PR-MTGON (luật 4): Quản lý huỷ MT{n} mọi lượt, mọi lúc — xếp lại thì vẫn là MT{n}. */
     ...(d.viewer.huyLuot?.cachDuoc && !cancelled ? [{
@@ -217,13 +224,6 @@ export default function MockDetailPage() {
       hint: `Xếp lại thì vẫn là MT${d.attemptNo}`,
     }] : []),
   ];
-  /* Lượt đã huỷ: "Mở lại lượt" nằm ngay ở dải "Đã huỷ" trên cùng (K4 §4h), không giấu trong menu. */
-  const moLai = async () => {
-    try {
-      await api.post(`/attempts/${d.id}/reopen`);
-      invalidate('/attempts'); reload(); toast.push('ok', `Đã mở lại lượt MT${d.attemptNo}`);
-    } catch (e: any) { toast.push('error', e.message); }
-  };
   const coKhoa = d.cells.some((c) => c.khoa);
   const laRf = d.cycle.route === 'RF';
   const dong2 = [
@@ -242,9 +242,9 @@ export default function MockDetailPage() {
           <span className="min-w-0 break-words text-slate-400">
             {[d.huy?.lyDo ?? d.cancelReason, d.huy?.ai, d.huy ? fmtDate(d.huy.khi) : null].filter(Boolean).join(' · ')}
           </span>
-          {d.viewer.canCancel && (
-            <button type="button" className="btn btn-sm sm:ml-auto" onClick={() => void moLai()}>Mở lại lượt MT{d.attemptNo}</button>
-          )}
+          {d.viewer.canCancel ? (
+            <button type="button" className="btn btn-sm min-h-[44px] sm:ml-auto sm:min-h-0" onClick={() => setKhoiPhucLuot(true)}>Khôi phục MT{d.attemptNo}</button>
+          ) : <span className="text-xs text-slate-500 sm:ml-auto">Chỉ Quản lý khôi phục được lượt đã huỷ.</span>}
         </div>
       )}
 
@@ -344,12 +344,16 @@ export default function MockDetailPage() {
           onClose={() => setHopLich(null)} onSaved={reload} onHienDien={() => {}} />
       )}
       {deadlineOpen && <DeadlineModal onClose={() => setDeadlineOpen(false)} detail={d} onDone={reload} />}
+      {khoiPhucLuot && (
+        <HopKhoiPhucMt attemptId={d.id} attemptNo={d.attemptNo} onDong={() => setKhoiPhucLuot(false)} onXong={reload} z="z-50" />
+      )}
       {khoiPhucOpen && d.ketQuaHuy && (
         <HopKhoiPhucKetQua attemptId={d.id} nhan={`MT${d.attemptNo}`} ketQua={d.ketQuaHuy} onDong={() => setKhoiPhucOpen(false)} onXong={reload} />
       )}
       {d.viewer.huyLuot?.cachDuoc && (
         <HopHuyMt open={cancelOpen} onClose={() => setCancelOpen(false)} attemptId={d.id}
-          attemptNo={d.attemptNo} heQua={d.viewer.huyLuot} onDone={reload} />
+          attemptNo={d.attemptNo} heQua={d.viewer.huyLuot} onDone={reload}
+          phu={[d.student.name, d.classCode, d.period ? tuanLich(d.period.weekStart, homNay) : null].filter(Boolean).join(' · ')} />
       )}
     </div>
   );

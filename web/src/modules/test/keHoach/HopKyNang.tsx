@@ -5,8 +5,9 @@ import { api, invalidate } from '../../../lib/api.ts';
 import { useNgayNghiepVu } from '../../../ui/ngayNghiepVu.ts';
 import { addDaysStr } from '../../../lib/format.ts';
 import { useToast } from '../../../ui/Toast.tsx';
+import { useSession } from '../../../lib/session.tsx';
 import {
-  CAU_TUAN_DA_QUA, CHU_MUC_HOP, chipDongKyNang, duongDotTest, kiemTuanXep, menuHopKyNang, mondayOfDate,
+  CAU_TUAN_DA_QUA, CHU_MUC_HOP, PERMISSIONS, chipDongKyNang, duongDotTest, kiemTuanXep, menuHopKyNang, mondayOfDate,
   nhanTuanKhoa, tenMon, tenMonNgan, thaoTacKyNang, theoTuanChung, trangThaiTT, tuanDaSo, tuanLich, tuanMacDinhDotMoi,
   type BaiXemTruoc, type DongHangLoat, type KyNangKH, type MucHop, type OKyNang, type ThaoTac, type TrangThaiTT,
 } from '@shared/domain/index.ts';
@@ -58,6 +59,8 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
   /** `ca-luot` = nhật ký cả lượt (⋯ đầu hộp). */
   const [nhatKy, setNhatKy] = useState<KyNangKH | 'ca-luot' | null>(null);
   const [huyMt, setHuyMt] = useState(false);
+  /* PR-OV4a: "Huỷ MT{n}" chỉ Quản lý / Quản trị (`attempt.cancel`) — Admin mở được hộp xếp lịch nhưng không có nút Huỷ (máy chủ cũng 403). */
+  const coHuy = useSession().can(PERMISSIONS.ATTEMPT_CANCEL);
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
@@ -269,7 +272,7 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
   /* ⋯ đầu hộp (PR-HOP1): chữ y như nơi khác — "Huỷ MT{n}" (Hồ sơ MT), "Nhật ký" (⋯ dòng), "Mở hồ sơ MT" (Lộ trình). */
   const hoSo = attemptId !== null && dot.loai === 'ft' ? duongDotTest({ id: attemptId, kind: 'mock', classId }, null) : null;
   const mucDau = attemptId === null || dot.loai !== 'ft' ? [] : [
-    { key: 'huy-mt', nhan: `Huỷ MT${dot.attemptNo}`, nguyHiem: true, onChon: () => setHuyMt(true) },
+    ...(coHuy ? [{ key: 'huy-mt', nhan: `Huỷ MT${dot.attemptNo}`, nguyHiem: true, onChon: () => setHuyMt(true) }] : []),
     { key: 'nhat-ky', nhan: CHU_MUC_HOP['nhat-ky'], onChon: () => setNhatKy('ca-luot') },
     ...(hoSo && hoSo !== pathname ? [{ key: 'ho-so', nhan: 'Mở hồ sơ MT', onChon: () => { onClose(); navigate(hoSo); } }] : []),
   ];
@@ -343,7 +346,7 @@ export function HopKyNang({ anchor, tieuDe, loai, classId, studentId, dot, attem
         <NganLichSuBai attemptId={attemptId} skill={nhatKy === 'ca-luot' ? null : nhatKy} ct={ct} tenHv={tieuDe} trongHop onClose={() => setNhatKy(null)} />
       )}
       {huyMt && attemptId !== null && dot.loai === 'ft' && (
-        <HopHuyMt open attemptId={attemptId} attemptNo={dot.attemptNo} trongHop onClose={() => setHuyMt(false)} onDone={() => { onSaved(); onClose(); }} />
+        <HopHuyMt open attemptId={attemptId} attemptNo={dot.attemptNo} phu={tieuDe} trongHop onClose={() => setHuyMt(false)} onDone={() => { onSaved(); onClose(); }} />
       )}
     </div>,
     document.body,
