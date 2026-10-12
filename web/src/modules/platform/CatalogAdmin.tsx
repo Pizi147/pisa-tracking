@@ -328,7 +328,9 @@ function SuaChuongTrinh({ dong: d, onClose, onDone }: { dong: Dong; onClose: () 
             </span>
           </Field>
         ) : !moi && ct?.lapMoiTuan ? (
-          <p className="m-0 text-sm text-slate-400">Độ dài <span className="text-slate-200">Liên tục</span></p>
+          <dl className="m-0 grid grid-cols-[max-content_minmax(0,1fr)] gap-x-4 text-sm">
+            <dt className="text-slate-400">Độ dài</dt><dd className="m-0 text-slate-200">Liên tục</dd>
+          </dl>
         ) : ft && f.mt.length > 0 && (
           <p className="m-0 text-sm text-slate-400">Độ dài <span className="tabular-nums text-slate-200">{f.mt.at(-1) || '—'} tuần</span> · tới MT cuối</p>
         )}
