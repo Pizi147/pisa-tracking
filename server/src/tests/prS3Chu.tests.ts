@@ -164,7 +164,8 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
   });
   // ------------------------------------------------------------------ Task 4 · nút và hành động (nhóm D)
   khongCon('S3 (4) · Nút: thoát hộp là "Đóng" (không Thôi / Huỷ trần), Thao tác khác, Đánh dấu đã đọc, Nhập điểm, Thêm PA, Báo QL, Gửi Quản lý duyệt…', [
-    ['Thôi', /\bThôi\b/],
+    /* PR-OV2b: "Thôi học" là tên việc đã duyệt (mockup overhaul-2 §6), không phải nút thoát hộp. */
+    ['Thôi', /\bThôi\b(?! học)/],
     ['Huỷ (thoát hộp)', />Huỷ<|'Huỷ'|nhan: 'Huỷ'/],
     ['Thêm thao tác / Thao tác với lớp', /Thêm thao tác|Thao tác với lớp/],
     ['Đọc hết', /Đọc hết/],

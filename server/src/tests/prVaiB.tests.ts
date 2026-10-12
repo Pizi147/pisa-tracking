@@ -360,14 +360,14 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     }
   });
 
-  check('VAI-b (5) · mucQuanLyHocVien: chia nhóm Thông tin · Lộ trình · Lớp, dòng hệ quả, vạch đậm trước Tạm dừng/Kết thúc, vạch đỏ trước Xoá — TẬP MỤC theo quyền KHÔNG ĐỔI ở cả 5 vai', () => {
-    /* Bản tham chiếu: đúng luật chọn mục của bản cũ (trước PR-VAI-b) — chỉ thứ tự trong menu đổi theo nhóm. */
+  check('VAI-b (5) · mucQuanLyHocVien: dòng hệ quả, một vạch đậm sau bốn mục chính (PR-OV2b), vạch đỏ trước Xoá — TẬP MỤC theo quyền KHÔNG ĐỔI ở cả 5 vai', () => {
+    /* Bản tham chiếu: đúng luật chọn mục của bản cũ (trước PR-VAI-b); PR-OV2b gộp Tạm dừng + Kết thúc học thành một mục "Tạm dừng / Thôi học", bỏ chia nhóm. */
     const cu = (i: any): string[] => {
       const q = i.lopHoc?.quyen; const ratio = !!i.cycle?.ratio; const hoc = i.status === 'active'; const ds: string[] = [];
       if (i.canEdit) ds.push('info'); if (q?.ghiLoTrinhTiep) ds.push('lo-trinh-tiep'); if (i.canEdit && i.cycle && !ratio) ds.push('lo-trinh');
       if (i.deXuatSua && hoc) ds.push('de-xuat-sua'); if (q?.chuyenLop) ds.push('chuyen-lop'); if (q?.deXuatChuyenLop && hoc) ds.push('de-xuat-chuyen-lop');
-      if (i.canEdit && i.cycle && !ratio) ds.push('outcome'); if (q?.tamDung && hoc) ds.push('tam-dung'); if (q?.quayLai && !hoc && i.status === 'inactive') ds.push('quay-lai');
-      if (q?.ketThuc && i.status !== 'finished') ds.push('ket-thuc'); if (q?.luuTru) ds.push('luu-tru'); if (q?.boLuuTru) ds.push('bo-luu-tru'); if (i.coTheXoa) ds.push('xoa-hoc-vien');
+      if (i.canEdit && i.cycle && !ratio) ds.push('outcome'); if ((q?.tamDung && hoc) || (q?.ketThuc && i.status !== 'finished')) ds.push('tam-dung-thoi-hoc'); if (q?.quayLai && !hoc && i.status === 'inactive') ds.push('quay-lai');
+      if (q?.luuTru) ds.push('luu-tru'); if (q?.boLuuTru) ds.push('bo-luu-tru'); if (i.coTheXoa) ds.push('xoa-hoc-vien');
       return ds;
     };
     const ql = { ghiLoTrinhTiep: false, chuyenLop: true, tamDung: true, quayLai: true, ketThuc: true, luuTru: false, boLuuTru: false };
@@ -381,14 +381,12 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     for (const v of vai) {
       const moi = d.mucQuanLyHocVien(v) as any[];
       assert(JSON.stringify(moi.map((m) => m.key).sort()) === JSON.stringify(cu(v).sort()), `${v.ten}: tập mục đổi ${moi.map((m) => m.key)} ≠ ${cu(v)}`);
-      const nhom = moi.map((m) => ['thong-tin', 'lo-trinh', 'lop'].indexOf(m.nhom));
-      assert(nhom.every((x, i) => x >= 0 && (i === 0 || nhom[i - 1] <= x)), `${v.ten}: nhóm không liền: ${moi.map((m) => m.nhom)}`);
     }
     const qt = d.mucQuanLyHocVien(vai[0]) as any[];
     const m = (k: string) => qt.find((x) => x.key === k);
-    assert(m('chuyen-lop').phu === 'chọn lớp chuyển đến và tuần bắt đầu' && m('tam-dung').phu === 'mọi hạn của em dừng · giữ lớp, lộ trình'
-      && m('ket-thuc').phu === 'đóng lộ trình · hồ sơ chỉ xem' && m('xoa-hoc-vien').phu === 'chỉ Quản trị hệ thống thấy dòng này', JSON.stringify(qt));
-    assert(m('tam-dung').keTruoc === 'dam' && !m('ket-thuc').keTruoc && m('xoa-hoc-vien').keTruoc === 'do' && m('xoa-hoc-vien').nguyHiem, 'vạch đậm / đỏ');
+    assert(m('chuyen-lop').phu === 'chọn lớp chuyển đến và tuần bắt đầu' && m('tam-dung-thoi-hoc').phu === 'tạm dừng giữ lớp · thôi học đóng lộ trình'
+      && m('xoa-hoc-vien').phu === 'chỉ Quản trị hệ thống thấy dòng này', JSON.stringify(qt));
+    assert(m('lo-trinh').keTruoc === 'dam' && qt.filter((x) => x.keTruoc === 'dam').length === 1 && m('xoa-hoc-vien').keTruoc === 'do' && m('xoa-hoc-vien').nguyHiem, 'vạch đậm / đỏ');
     assert(!/▾/.test(fs.readFileSync(path.join(REPO, 'web/src/ui/Menu.tsx'), 'utf8')), 'Menu còn ký tự ▾ (phải SVG)');
   });
 
