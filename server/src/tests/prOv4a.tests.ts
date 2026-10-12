@@ -79,9 +79,13 @@ export async function runPrOv4aTests(t: YThucTestKit) {
     tinHieu: all('SELECT id, status, withdrawn_reason FROM case_signals WHERE student_id = ? ORDER BY id', sid),
     moc: all(`SELECT m.case_id, m.kind FROM case_milestones m JOIN sos_cases c ON c.id = m.case_id WHERE c.student_id = ? ORDER BY m.id`, sid),
   });
-  const lech = (x: any, y: any) => {
-    for (const k of Object.keys(x)) if (JSON.stringify(x[k]) !== JSON.stringify(y[k])) return `${k}: trước=${JSON.stringify(x[k]).slice(0, 300)} sau=${JSON.stringify(y[k]).slice(0, 300)}`;
-    return null;
+  /** Chỗ lệch đầu tiên (đường dẫn + hai bên) — báo lỗi đọc được. */
+  const lech = (x: any, y: any, duong = ''): string | null => {
+    if (JSON.stringify(x) === JSON.stringify(y)) return null;
+    if (x && y && typeof x === 'object' && typeof y === 'object') {
+      for (const k of new Set([...Object.keys(x), ...Object.keys(y)])) { const l = lech(x[k], y[k], `${duong}.${k}`); if (l) return l; }
+    }
+    return `${duong} trước=${JSON.stringify(x)?.slice(0, 300)} sau=${JSON.stringify(y)?.slice(0, 300)}`;
   };
   /** Điểm thẳng vào ô (lượt tương lai — nhập qua `saveScore` bị chặn "chưa tới tuần thi"). */
   const diemSql = (aid: number, skill: string, band: number) => conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, band) VALUES (?, ?, ?)').run(aid, skill, band);
@@ -238,6 +242,8 @@ export async function runPrOv4aTests(t: YThucTestKit) {
     const sai: string[] = [];
     let nang = { id: 0, n: 0 };
     for (const a of ds) {
+      /* Lượt còn bản dời vượt treo: Khôi phục đưa CẢ bản đó về (OV4a-5) — trạng thái sau khác trước là đúng ý, không so. */
+      if (one(`SELECT 1 x FROM ket_qua_huy WHERE attempt_id = ? AND loai = 'doi_vuot' AND khoi_phuc_luc IS NULL`, a.id)) continue;
       thu(() => {
         const truoc = chup(a.student_id, a.id);
         attempts.huyLuot(P.admin, a.id, { lyDo: 'Thử OV4a' });

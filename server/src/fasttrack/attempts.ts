@@ -1584,7 +1584,9 @@ export function reopenAttempt(p: Principal, attemptId: number, o: { banId?: numb
     soDiem += doiVuot;
     if (banId === null && !doiVuot && a.kind === 'mock') cau.push('Lượt huỷ trước 10/2026: không còn điểm để khôi phục.');
     logSchedule(attemptId, { action: 'reopened', reason: lyDo, actor: p.userId });
-    const tuan = ensureSkillRows(attemptId).filter((r) => r.required && r.sit_status !== 'cancelled' && r.week_start)
+    /* Đọc thẳng (không `ensureSkillRows`): lượt cũ thiếu dòng kỹ năng thì khôi phục không tự đẻ thêm dòng — trở lại đúng như trước. */
+    const tuan = (conn.prepare(`SELECT p.week_start FROM attempt_skills k JOIN report_periods p ON p.id = k.planned_period_id
+        WHERE k.attempt_id = ? AND k.required = 1 AND k.sit_status != 'cancelled'`).all(attemptId) as any[])
       .map((r) => String(r.week_start).slice(0, 10)).sort();
     const sai = tuan.length > 0 && (!!kiemVuot(attemptId, tuan[tuan.length - 1], tuan[0]).chan || [...new Set(tuan)].some((w) => checkWeekVsNeighbours({
       cycleId: a.cycle_id, attemptNo: a.attempt_no, excludeAttemptId: attemptId, newWeekStart: w, kind: a.kind,
