@@ -229,9 +229,15 @@ export async function runPrK26Tests(t: YThucTestKit) {
     assert(a === b && b <= 20, `3 em ${a} câu · 30 em ${b} câu`);
   });
   /* PR-LCb: bảng cả lớp gộp vào panel "Lộ trình tiếp theo" (PanelCuoiKhoa) — GVCN ghi trên cùng panel với Quản lý. */
-  check('K26-4c · hồ sơ lớp: mục ⋮ "Lộ trình tiếp theo…" chỉ hiện khi có quyền ghi; panel cả lớp (PanelCuoiKhoa) lỗi theo dòng', () => {
-    const dau = nguon('modules/classes/DauTrangLop.tsx') + nguon('modules/classes/ClassOverviewPage.tsx');
-    assert(dau.includes("nhan: 'Lộ trình tiếp theo…'") && /data\.viewer\.canAddStudents\) \? \[\{ key: 'lo-trinh-ca-lop'/.test(dau) && /<PanelCuoiKhoa/.test(dau), 'mục menu + panel');
+  /* PR-OV3a: menu ⋯ dựng ở `menuHoSoLop` (shared), bỏ dấu "…" — kiểm hành vi thay cho khớp chữ nguồn. */
+  const dm: any = await import('../../../shared/domain/index.ts');
+  check('K26-4c · hồ sơ lớp: mục ⋯ "Lộ trình tiếp theo" chỉ hiện khi có quyền ghi; panel cả lớp (PanelCuoiKhoa) lỗi theo dòng', () => {
+    const coMuc = (q: Record<string, boolean>) => dm.menuHoSoLop({
+      thuong: true, chuongTrinh: 'FOU', soHocVien: 3, canEditProgress: false, canAssign: false, canAssignSubject: false, canAddStudents: false,
+      coTheChuyenTiep: false, coTheChuyenNhieuEm: false, coTheXuatExcel: false, coTheMoLaiLop: false, coTheXoa: false, coTheKetThuc: false, ...q,
+    }).some((m: any) => m.key === 'lo-trinh-ca-lop' && m.nhan === 'Lộ trình tiếp theo');
+    assert(coMuc({ canAddStudents: true }) && coMuc({ coTheChuyenTiep: true }) && !coMuc({}), 'mục menu theo quyền ghi');
+    assert(/<PanelCuoiKhoa/.test(nguon('modules/classes/ClassOverviewPage.tsx')), 'panel');
     const pn = nguon('modules/classes/PanelCuoiKhoa.tsx');
     assert(pn.includes('details?.studentId') && pn.includes('rong="toan"') && /Lưu \$\{/.test(pn), 'lỗi theo dòng, panel toàn màn, nút Lưu n em');
     assert(pn.includes("`GVCN: ${nhanH(huongGvcn)}`") && pn.includes("'GVCN: chưa đề xuất'"), 'Chuyển tiếp (PanelCuoiKhoa, PR-CL C3): dòng em vẫn hiện đề xuất GVCN');

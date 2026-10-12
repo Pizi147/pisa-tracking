@@ -1,8 +1,8 @@
-import type { ExamPlan, GoiYCuoiKhoa, NguCanhDs, NhanYThucEm } from '@shared/domain/index.ts';
+import type { NguCanhDs, NhanYThucEm } from '@shared/domain/index.ts';
 import { Link } from 'react-router-dom';
-import { DauDuoi, Nhan } from '../../ui/Nhan.tsx';
+import { DauDuoi } from '../../ui/Nhan.tsx';
 import { useApi } from '../../lib/useApi.ts';
-import { Empty, ExamPlanText, Skeleton, TargetText } from '../../ui/ui.tsx';
+import { Empty, Skeleton, TargetText } from '../../ui/ui.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -22,16 +22,18 @@ type DongThuong = {
   id: number; studentCode: string; fullName: string; status: string; archived: boolean; moiVao?: boolean; skills: string[] | null;
   missing: { key: string; label: string; who: string }[];
   canhBaoYThuc: NhanYThucEm | null;
-  /** PR-DH (04/10): Target + Dự kiến thi của lớp thường (PR-NT) — chỉ để theo dõi, không so với điểm. */
+  /** PR-DH (04/10): Target của lớp thường (PR-NT) — chỉ để theo dõi, không so với điểm. PR-OV3a: bỏ cột Dự kiến thi. */
   cycle: { target: number | null; khongCamKet?: boolean } | null;
-  examPlan: ExamPlan;
   timeline: LuotThuong[];
   /** "Kết thúc vì" (Q18/Q22) — chỉ có ở bảng lớp ĐÃ KẾT THÚC. */
   ketThucVi?: string | null;
-  /** PR-UXF-a K2-12: % tổng + gợi ý hướng Cuối khoá — cùng hàm với panel Chuyển lớp (`cuoiKhoaTheoHocVien`). */
-  cuoiKhoa?: { tyLe: number | null; goiY: GoiYCuoiKhoa | null } | null;
+  /** PR-UXF-a K2-12: % tổng Cuối khoá — cùng hàm với panel Chuyển lớp (`cuoiKhoaTheoHocVien`). */
+  cuoiKhoa?: { tyLe: number | null } | null;
+  /** PR-OV3a: hướng Quản lý ĐÃ CHỐT (máy chủ `loTrinhDaChot`) — nháp / đề xuất GVCN / gợi ý tự tính không có ở đây. */
+  loTrinhChot?: { nhan: string; boTro: string | null; lopDich: string | null; tuan: string | null } | null;
 };
-const TIEU_DE_HUONG = 'Theo luật Final Test — Quản lý quyết ở panel Chuyển lớp';
+type LoTrinhChot = NonNullable<DongThuong['loTrinhChot']>;
+const TIEU_DE_LO_TRINH = 'Hướng Quản lý đã chốt (+ bổ trợ nếu có). Chưa chốt thì để trống — xem gợi ý ở panel Lộ trình tiếp theo.';
 
 /** Hồ sơ lớp cũ chưa gửi mốc: Giữa khoá + Cuối khoá như trước. */
 const MOC_MAC_DINH = ['progress', 'final'];
@@ -41,6 +43,7 @@ const MOC_MAC_DINH = ['progress', 'final'];
  * Nhóm cột theo MỐC của chương trình (FOU/BE/ELE Giữa khoá | Cuối khoá; Pre FOU chỉ Cuối khoá — K2-12), mỗi nhóm là bộ môn của
  * lớp, tên theo chương trình (FOU L R G+V P; Pre FOU một cột Tổng hợp + cột % — MH7). Ô `đúng/tổng`, đỏ nếu chưa đạt (dưới 70%). Chưa có điểm mà đã có lịch thì ghi
  * tuần thi (`W3 SEP`, G-6); chưa có lịch thì gạch. Thiếu điểm KHÁC chưa đạt: không tô đỏ.
+ * PR-OV3a (M2 §3, cách xem "Tổng hợp"): bỏ cột Dự kiến thi; cột cuối "Lộ trình tiếp theo" = hướng Quản lý đã chốt, chưa chốt → "Chưa chốt".
  */
 export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = null, moc = null, chon }: {
   classId: number; maLop?: string; quyen: QuyenDong; onDoi: () => void;
@@ -61,10 +64,9 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
   const ds: NguCanhDs = { loai: 'hoc-vien', ids: rows.map((s) => s.id), nhan: maLop ? `Lớp ${maLop}` : 'Lớp' };   // PR-DH: Trước/Sau theo thứ tự bảng
   const mon = rows[0].skills ?? [];
   const BAI = (moc?.length ? moc : MOC_MAC_DINH).map((kind) => ({ kind, nhan: ATTEMPT_KIND_SHORT[kind as AttemptKind] ?? kind }));
-  /* MH7: Pre FOU không chia môn — thêm cột % tổng sau cột Tổng hợp của mỗi mốc. K2-12: nhóm Cuối khoá mọi lớp thường có "% tổng" + "Hướng gợi ý". */
+  /* MH7: Pre FOU không chia môn — thêm cột % tổng sau cột Tổng hợp của mỗi mốc. K2-12: nhóm Cuối khoá mọi lớp thường có "% tổng". */
   const coPhanTram = CHUONG_TRINH_KHONG_CHIA_MON.includes(chuongTrinh ?? '');
-  const cotPhu = (kind: string) => [...(coPhanTram || kind === 'final' ? ['%'] : []), ...(kind === 'final' ? ['huong'] : [])];
-  const coCuoiKhoa = BAI.some((b) => b.kind === 'final');
+  const cotPhu = (kind: string) => (coPhanTram || kind === 'final' ? ['%'] : []);
   /** % của một mốc: Cuối khoá đọc % tổng máy chủ (cùng số với panel Chuyển lớp); mốc khác của Pre FOU tính từ ô Tổng hợp. */
   const phanTram = (s: DongThuong, kind: string, o: ODiem | null): number | null => (kind === 'final'
     ? s.cuoiKhoa?.tyLe ?? null
@@ -91,7 +93,6 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
             hanhDong={<MenuDong muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, true, s.timeline) })} />}
             dong={[
               { nhan: 'Target', noiDung: <TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /> },
-              { nhan: 'Dự kiến thi', noiDung: <ExamPlanText plan={s.examPlan} /> },
             ].concat(BAI.map((b) => {
               const t = s.timeline.find((x) => x.kind === b.kind) ?? null;
               const o = t?.ratios?.[mon[0]] ?? null;
@@ -111,7 +112,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
                   </span>
                 ),
               };
-            })).concat(coCuoiKhoa ? [{ nhan: 'Hướng gợi ý', noiDung: <OHuongGoiY goiY={s.cuoiKhoa?.goiY ?? null} /> }] : [])} />
+            })).concat([{ nhan: 'Lộ trình tiếp theo', noiDung: <OLoTrinh lt={s.loTrinhChot ?? null} homNay={homNay} /> }])} />
         ))}
         {tt.panels}
       </div>
@@ -120,20 +121,20 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
 
   return (
     <div className="card table-scroll bang-dinh xl:overflow-clip">
-      <table className={`w-full ${coCuoiKhoa ? 'min-w-[1040px]' : 'min-w-[920px]'} table-fixed text-sm`}>
+      <table className="w-full min-w-[1040px] table-fixed text-sm">
         <colgroup>
-          <col className="w-[19%]" /><col className="w-[6%]" /><col className="w-[9%]" />
-          {BAI.flatMap((b) => [...mon, ...cotPhu(b.kind)].map((k) => <col key={`${b.kind}-${k}`} className={k === 'huong' ? 'w-[10rem]' : undefined} />))}
-          <col className="w-12" />
+          <col className="w-[19%]" /><col className="w-[6%]" />
+          {BAI.flatMap((b) => [...mon, ...cotPhu(b.kind)].map((k) => <col key={`${b.kind}-${k}`} />))}
+          <col className="w-[11rem]" /><col className="w-12" />
         </colgroup>
         <thead>
           <tr>
             <th className="th sticky-col align-bottom" rowSpan={2}>{chon?.bat && <span className="mr-2 inline-flex align-middle"><OChonTatCa chon={chon} ids={rows.map((s) => s.id)} /></span>}Học viên</th>
             <th className="th text-right align-bottom" rowSpan={2} title="Điểm Target của lộ trình em đang học. KCK = không cam kết đầu ra. Lớp thường chỉ để theo dõi.">Target</th>
-            <th className="th align-bottom" rowSpan={2} title="Kỳ thi IELTS thật, ở đúng mức chắc chắn đang biết: tuần, hoặc mới có tháng, hoặc chưa xác định.">Dự kiến thi</th>
             {BAI.map((b) => (
               <th key={b.kind} className="th border-b text-center" colSpan={mon.length + cotPhu(b.kind).length} style={{ borderColor: 'var(--line)' }}>{b.nhan}</th>
             ))}
+            <th className="th align-bottom" rowSpan={2} title={TIEU_DE_LO_TRINH}>Lộ trình tiếp theo</th>
             <th className="th" rowSpan={2}><span className="sr-only">Thao tác</span></th>
           </tr>
           <tr>
@@ -142,7 +143,6 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
                 <th key={`${b.kind}-${k}`} className="th text-center"><abbr className="no-underline" title={tenMon(chuongTrinh, k)}>{tenMonNgan(chuongTrinh, k)}</abbr></th>
               )),
               ...(cotPhu(b.kind).includes('%') ? [<th key={`${b.kind}-%`} className="th text-right" title="Điểm đạt / tổng điểm cả bài">% tổng</th>] : []),
-              ...(b.kind === 'final' ? [<th key={`${b.kind}-huong`} className="th" title={TIEU_DE_HUONG}>Hướng gợi ý</th>] : []),
             ])}
           </tr>
         </thead>
@@ -161,7 +161,6 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
                 {s.ketThucVi && <span className="block mt-0.5 text-xs text-slate-400">{s.ketThucVi}</span>}
               </td>
               <td className="td text-right tabular-nums whitespace-nowrap"><TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /></td>
-              <td className="td whitespace-nowrap text-xs"><ExamPlanText plan={s.examPlan} /></td>
               {BAI.flatMap((b) => {
                 const t = s.timeline.find((x) => x.kind === b.kind) ?? null;
                 const o = t?.ratios?.[mon[0]] ?? null;
@@ -174,9 +173,9 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
                   ...(cotPhu(b.kind).includes('%') ? [(
                     <td key={`${b.kind}-%`} className="td text-right"><OPhanTram v={phanTram(s, b.kind, o)} /></td>
                   )] : []),
-                  ...(b.kind === 'final' ? [<td key={`${b.kind}-huong`} className="td"><OHuongGoiY goiY={s.cuoiKhoa?.goiY ?? null} /></td>] : []),
                 ];
               })}
+              <td className="td"><OLoTrinh lt={s.loTrinhChot ?? null} homNay={homNay} /></td>
               <td className="td text-center">
                 <MenuDong muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, true, s.timeline) })} />
               </td>
@@ -193,11 +192,16 @@ function OPhanTram({ v }: { v: number | null }) {
   return v === null ? <span className="text-slate-600">—</span> : <span className="text-[12px] tabular-nums text-slate-100">{Math.round(v * 100)}%</span>;
 }
 
-/** Chữ "Hướng gợi ý" — cùng chữ, cùng chip với cột Hệ thống gợi ý của panel Chuyển lớp (`goiY.nhanHuong`; 50–59 % chip "Quản lý cân nhắc"). */
-function OHuongGoiY({ goiY }: { goiY: GoiYCuoiKhoa | null }) {
-  if (!goiY) return <span className="text-slate-600" title="Hiện khi đủ điểm Final Test">—</span>;
-  if (goiY.canQuanLy) return <Nhan tone="soon" title={goiY.nhan}>Quản lý cân nhắc</Nhan>;
-  return <span className="text-[12px] text-slate-300" title={`${goiY.nhan} · ${TIEU_DE_HUONG}`}>{goiY.nhanHuong}</span>;
+/** Ô "Lộ trình tiếp theo" (M2 §3): dòng 1 hướng đã chốt (+ bổ trợ), dòng 2 số buổi · môn bổ trợ · lớp đích · tuần vào lớp. */
+function OLoTrinh({ lt, homNay }: { lt: LoTrinhChot | null; homNay: string }) {
+  if (!lt) return <span className="text-xs text-slate-500" title={TIEU_DE_LO_TRINH}>Chưa chốt</span>;
+  const phu = [lt.boTro, lt.lopDich, lt.tuan ? `từ ${tuanLich(lt.tuan, homNay)}` : null].filter(Boolean).join(' · ');
+  return (
+    <span className="block min-w-0 text-[12px] leading-snug">
+      <span className="block text-slate-100">{lt.nhan}</span>
+      {phu && <span className="block break-words tabular-nums text-slate-400">{phu}</span>}
+    </span>
+  );
 }
 
 function ODiemThuong({ o, tuan, homNay }: { o: ODiem | null; tuan: string | null; homNay: string }) {

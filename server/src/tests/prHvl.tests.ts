@@ -158,15 +158,9 @@ export async function runPrHvlTests(t: YThucTestKit) {
     eq(d.sapEmCanHoTro(em).map((x: any) => x.ten), ['Ánh Dương', 'Bùi Thảo Vy', 'An Bình', 'Đỗ Minh Khôi'], 'Thứ tự');
   });
 
-  check('PR-HVL (1) · K2-14 nutChinhDauTrang: lớp rỗng / Final Test lớp thường / nhập điểm / không nút', () => {
-    const g = { thuong: false, phase: 'running', needsPlacement: false, soHocVien: 8, coTheThemHv: true, coTheNhapDiem: false, coTheChuyenTiep: true, soEmChuyen: 0 };
-    eq(d.nutChinhDauTrang({ ...g, soHocVien: 0 }), { loai: 'them-hv', nhan: '+ Học viên' }, 'Lớp rỗng');
-    eq(d.nutChinhDauTrang({ ...g, thuong: true, phase: 'final_week', soEmChuyen: 6 }), { loai: null, nhan: '' }, 'PR-CT: Final Test lớp thường');
-    eq(d.nutChinhDauTrang({ ...g, thuong: true, phase: 'running', needsPlacement: true, soEmChuyen: 2 }).loai, null, 'PR-CT: cần xếp lớp — nút ở dải');
-    eq(d.nutChinhDauTrang({ ...g, thuong: true, phase: 'final_week', coTheChuyenTiep: false, coTheNhapDiem: true }).loai, 'nhap-diem', 'Không chuyển tiếp được → Nhập điểm');
-    eq(d.nutChinhDauTrang({ ...g, coTheNhapDiem: true }), { loai: 'nhap-diem', nhan: 'Nhập điểm' }, 'Nhập điểm');
-    eq(d.nutChinhDauTrang(g).loai, null, 'Không nút');
-    eq(d.nutChinhDauTrang({ ...g, thuong: false, phase: 'final_week' }).loai, null, 'FT không có "Chuyển tiếp lớp"');
+  /* PR-OV3a (M2 §1): bỏ nút chính theo chặng — đầu trang nút CỐ ĐỊNH Nhập điểm · + Case · ⋯ (thứ tự ⋯ kiểm ở prOv3a OV3a-1). */
+  check('PR-HVL (1) · K2-14 → OV3a: không còn nút chính theo chặng (nutChinhDauTrang đã gỡ)', () => {
+    assert(d.nutChinhDauTrang === undefined && typeof d.menuHoSoLop === 'function', 'nutChinhDauTrang còn / menuHoSoLop thiếu');
   });
 
   // ------------------------------------------------------------------ Task 2 · máy chủ: Case mở theo lô
@@ -547,9 +541,11 @@ export async function runPrHvlTests(t: YThucTestKit) {
     eq(ov.cuoiKhoa, { du: 0, tong: 2, canQl: 0 }, 'chưa em nào có điểm Final Test');
   });
 
-  check('PR-HVL (7) · web đầu hồ sơ lớp: một nút chính theo chặng, ⋮ có Tuần khai giảng / Lịch kiểm tra, LT bọc abbr; panel không còn "Lộ trình lớp" / "Mở từng em rồi bấm"; ô Progress Test ẩn với Pre FOU', () => {
+  /* PR-OV3a: nút cố định + menuHoSoLop; "Tuần khai giảng" / "Lịch Test của lớp" là phần của panel Thông tin lớp. */
+  check('PR-HVL (7) · web đầu hồ sơ lớp: nút cố định Nhập điểm · + Case · ⋯ (menuHoSoLop), Thông tin lớp có phần Tuần khai giảng / Lịch Test, LT bọc abbr; không "Lộ trình lớp" / "Mở từng em rồi bấm"; ô Progress Test ẩn với Pre FOU', () => {
     const dau = web('modules/classes/DauTrangLop.tsx'); const pn = web('modules/classes/ClassProgressPanel.tsx'); const pg = web('modules/classes/ClassOverviewPage.tsx');
-    assert(/nutChinhDauTrang\(/.test(dau) && /phu\.slice\(0, 2\)/.test(dau) && /'Tuần khai giảng'/.test(dau) && /ROUTE_NAME\[/.test(dau) && /<MenuDong kieu="chip" bieuTuong=\{`\+\$\{b\.an\.length\}`\}/.test(dau), 'DauTrangLop');
+    const tt = web('modules/classes/ThongTinLopPanel.tsx');
+    assert(/menuHoSoLop\(/.test(dau) && /onViec\('case'\)/.test(dau) && /'Tuần khai giảng'/.test(tt) && /ROUTE_NAME\[/.test(dau) && /<MenuDong kieu="chip" bieuTuong=\{`\+\$\{b\.an\.length\}`\}/.test(dau), 'DauTrangLop');
     assert(!/Lộ trình lớp/.test(dau + pn + pg) && !/Mở từng em rồi bấm/.test(pn), 'chữ cũ còn sót');
     assert(/data\.coGiuaKhoa &&/.test(pn) && /onChuyenTiep/.test(pn) && /tomTatMt/.test(pn) && /Đổi tuần khai giảng không dời lịch MT/.test(pn), 'ClassProgressPanel');
     assert(!/rgba\(242, 161, 161/.test(pn), 'khung hết khoá không còn tô đỏ');
