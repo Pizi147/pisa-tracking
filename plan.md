@@ -61,6 +61,7 @@ Kế hoạch các PR OV khác: planning viết **ngay trước khi giao** (theo 
   check xanh và GitHub báo mergeable clean.
 - **Rà sâu** (agent mẫu 10B: worktree, `npm run check`, gọi API bằng vai khác, bấm thử) CHỈ khi PR: đổi quyền · có thể mất dữ
   liệu / migrate · sửa luồng chính (xếp lịch, nhập điểm, huỷ, chuyển lớp) · ảnh thiếu hoặc đáng ngờ · logic máy chủ lớn.
+- PR có giao diện: planning chạy thêm `impeccable` **`audit`** (skill trong repo từ #329, 12/10) trên phần màn PR chạm, ghi lỗi vào tin nhắn sửa.
 - Rà xong: planning soạn **tin nhắn sửa** (file:dòng) để chủ sản phẩm dán vào session code; sửa xong rà lại phần đã sửa.
   Việc nhỏ còn lại → ghi vào mục 4 file này (không để mất).
 
