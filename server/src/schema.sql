@@ -1924,7 +1924,9 @@ CREATE TABLE ket_qua_huy (
   so_diem INTEGER NOT NULL,         -- số KỸ NĂNG có điểm (W1/W2 tính một)
   ly_do TEXT NOT NULL,
   huy_boi INTEGER REFERENCES users(id), huy_luc TEXT NOT NULL,
-  khoi_phuc_boi INTEGER REFERENCES users(id), khoi_phuc_luc TEXT, ly_do_khoi_phuc TEXT
+  khoi_phuc_boi INTEGER REFERENCES users(id), khoi_phuc_luc TEXT, ly_do_khoi_phuc TEXT,
+  loai TEXT NOT NULL DEFAULT 'doi_vuot',   -- PR-OV4a: 'doi_vuot' (dời vượt, PR-MTa) | 'huy_luot' (Huỷ cả lượt giữ điểm ẩn; lich_json = NGUYÊN dòng attempt_skills, so_diem = số ô có điểm)
+  dong_json TEXT                    -- PR-OV4a (huy_luot): { luot: dòng lượt trước huỷ, case: bản chụp Case đóng, pa: [{id,status}], phoiHop: [id], tinHieu: [id] }
 );
 CREATE INDEX idx_ket_qua_huy_attempt ON ket_qua_huy(attempt_id);
 

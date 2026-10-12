@@ -5,7 +5,8 @@
  * In bảng (HV · Mã · Lớp · Lượt · Vấn đề) theo 6 nhóm:
  *  1. Lượt MT 'planned' mà mọi kỹ năng bắt buộc đều đã huỷ phần thi hoặc không yêu cầu (lượt "xác sống").
  *  2. Hai lượt cùng lộ trình: tuần sớm nhất của MT(n+1) sớm hơn hoặc trùng tuần muộn nhất của MT(n).
- *  3. Kết quả huỷ (`ket_qua_huy`) chưa khôi phục mà lượt đã huỷ, hoặc lượt tạo SAU lúc huỷ (mồ côi).
+ *  3. Kết quả huỷ do DỜI VƯỢT (`ket_qua_huy` loại `doi_vuot`) chưa khôi phục mà lượt đã huỷ, hoặc lượt tạo SAU lúc huỷ (mồ côi). Bản cất do Huỷ cả
+ *     lượt (`huy_luot`, PR-OV4a) là cố ý — không báo. Lượt đã huỷ: "Khôi phục lượt" đưa điểm về (PR-OV4a).
  *  4. Nhật ký `score.huy_vuot` không còn dòng `ket_qua_huy` (điểm có thể đã mất do ghi dở).
  *  5. `assessment_attempts.planned_period_id` khác tuần muộn nhất của kỹ năng bắt buộc còn hiệu lực.
  *  6. (PR-OV1a) MT0 chưa huỷ có ô nhập kiểu đúng/tổng (không band) — nhập nhầm ở bảng lớp thường trước khi máy chủ chặn (lỗi 3.3).
@@ -22,7 +23,7 @@ export type DongKiem = { nhom: 1 | 2 | 3 | 4 | 5 | 6; luotId: number; hocVien: s
 export const TIEU_DE_NHOM: Record<DongKiem['nhom'], string> = {
   1: '1. Lượt MT "xác sống" (đang xếp lịch nhưng không còn kỹ năng bắt buộc nào hiệu lực)',
   2: '2. Thứ tự tuần giữa các lượt cùng lộ trình bị ngược / trùng',
-  3: '3. Kết quả MT đã huỷ chưa khôi phục mà lượt đã huỷ hoặc lượt tạo sau lúc huỷ (mồ côi)',
+  3: '3. Kết quả MT huỷ do dời vượt chưa khôi phục mà lượt đã huỷ hoặc lượt tạo sau lúc huỷ (mồ côi)',
   4: '4. Nhật ký huỷ điểm do dời vượt nhưng không còn kết quả đã huỷ (điểm có thể đã mất)',
   5: '5. Tuần của lượt khác tuần muộn nhất của kỹ năng bắt buộc còn hiệu lực',
   6: '6. MT0 có điểm nhập kiểu đúng/tổng (không band) — nhập nhầm ở bảng lớp thường',
@@ -82,15 +83,16 @@ export function kiemDuLieuMt(conn: any): DongKiem[] {
     }
   }
 
-  /* (3) Kết quả huỷ chưa khôi phục. */
+  /* (3) Kết quả huỷ do dời vượt chưa khôi phục. DB chưa migrate PR-OV4a (chưa cột `loai`) thì mọi dòng là dời vượt. */
+  const coLoai = !!conn.prepare(`SELECT 1 FROM pragma_table_info('ket_qua_huy') WHERE name = 'loai'`).get();
   const mo = conn.prepare(
     `SELECT ${COT_LUOT}, q.huy_luc AS huy_luc, a.created_at AS tao_luc
        FROM ket_qua_huy q JOIN assessment_attempts a ON a.id = q.attempt_id JOIN students s ON s.id = a.student_id
        LEFT JOIN classes c ON c.id = a.class_id LEFT JOIN report_periods p ON p.id = a.planned_period_id
-      WHERE q.khoi_phuc_luc IS NULL AND (a.status = 'cancelled' OR a.created_at > q.huy_luc)
+      WHERE ${coLoai ? `q.loai = 'doi_vuot' AND ` : ''}q.khoi_phuc_luc IS NULL AND (a.status = 'cancelled' OR a.created_at > q.huy_luc)
       ORDER BY q.id`).all() as (Luot & { huy_luc: string; tao_luc: string })[];
   for (const l of mo) {
-    ra.push(dong(3, l, l.status === 'cancelled' ? `Lượt đã huỷ nhưng kết quả huỷ (${l.huy_luc.slice(0, 10)}) chưa khôi phục`
+    ra.push(dong(3, l, l.status === 'cancelled' ? `Lượt đã huỷ nhưng kết quả huỷ (${l.huy_luc.slice(0, 10)}) chưa khôi phục — Quản lý "Khôi phục MT" để đưa điểm về`
       : `Lượt tạo ${l.tao_luc.slice(0, 10)} SAU lúc huỷ kết quả ${l.huy_luc.slice(0, 10)} — kết quả huỷ mồ côi`));
   }
 
