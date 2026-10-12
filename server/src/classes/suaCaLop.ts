@@ -95,7 +95,7 @@ function kiemLo(p: Principal, classId: number, input: DauVao) {
   }
   if (input.rows.length > TOI_DA_DONG_SUA_CA_LOP) throw badRequest(`Tối đa ${TOI_DA_DONG_SUA_CA_LOP} học viên một lần sửa.`);
   const conn = db();
-  const cls = conn.prepare('SELECT id, code, programme_code, lich_mt FROM classes WHERE id = ?').get(classId) as any;
+  const cls = conn.prepare('SELECT id, code, programme_code, lich_mt, route FROM classes WHERE id = ?').get(classId) as any;
   if (!cls) throw notFound('Không tìm thấy lớp');
   require_(p, PERMISSIONS.STUDENT_EDIT, { classId: cls.id }, `Lớp ${cls.code} nằm ngoài phạm vi bạn được cấp quyền.`);
   const cot = new Set<string>(cotLuoiNhap(laLopThuong(cls.programme_code ?? null)).map((c) => c.key));
@@ -166,7 +166,7 @@ function kiemLo(p: Principal, classId: number, input: DauVao) {
   const canhBaoMt: Array<{ studentId: number; cau: string }> = [];
   for (const x of doiTuan) {
     if (x.tuanMoi === (x.cuTuan != null ? tuanCu.get(x.cuTuan) : null)) continue;
-    const cau = cauMtSeDoi(lichMtCua(cls.lich_mt, x.c.route), luotOf.get(x.c.id) ?? [], x.tuanMoi!, demoToday());
+    const cau = cauMtSeDoi(lichMtCua(cls, x.c.route), luotOf.get(x.c.id) ?? [], x.tuanMoi!, demoToday());
     if (cau) canhBaoMt.push({ studentId: x.s.id, cau });
   }
   return { cls, dong, canhBaoMt };

@@ -63,6 +63,11 @@ export async function runPrOv6b1Tests(t: YThucTestKit) {
     const cy = one(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`, b).id;
     cycles.updateCycle(P.admin, cy, { startPeriodId: week.ensurePeriod(addDays(tuanNay, 7)).id });
     assert(tuanMt(b).join() === theoTuanHoc(addDays(tuanNay, 7), [6, 12, 16]).join(), `đổi tuần bắt đầu: ${tuanMt(b)}`);
+    /* Bản chụp là của LỘ TRÌNH LỚP: em mở lộ trình RF trong lớp LT1 [5,10,15] → lịch RF của cấu hình (4/8), không lấy lịch lớp. */
+    const rf = them(moi.id, 'OV6B RF trong lớp LT', tuanNay);
+    cycles.createCycle(P.admin, { studentId: rf, route: 'RF', targetScore: 6.5, startedAt: TODAY });
+    const bdRf = one(`SELECT p.week_start AS w FROM learning_cycles cy JOIN report_periods p ON p.id = cy.start_period_id WHERE cy.student_id = ? AND cy.status = 'active'`, rf).w;
+    assert(tuanMt(rf).join() === theoTuanHoc(bdRf, [4, 8]).join(), `em RF trong lớp LT1: ${tuanMt(rf)}`);
     /* Câu báo trước "MT sẽ dời" (web) đọc cùng bản chụp: hàm chung nhận danh sách tuần của lớp. */
     assert(d.tuanHocCuaMt([5, 10, 15], 2) === 10 && d.tuanHocCuaMt([5, 10, 15], 4) === 19 && d.tuanHocCuaMt([4, 8], 3) === 12, 'tuanHocCuaMt theo danh sách');
   }));

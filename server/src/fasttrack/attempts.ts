@@ -589,7 +589,7 @@ function ownersByClass(classIds: number[]): Map<number, Record<string, string>> 
 const ATTEMPT_SELECT = `
   SELECT a.*, s.full_name, s.student_code,
          cy.route, cy.target_score, cy.khong_cam_ket, cy.exam_month, cy.exam_period_id, cy.exam_date, cy.seq AS cycle_seq,
-         c.code AS class_code, c.programme_code, c.lich_mt AS lop_lich_mt, c.branch_id, b.name AS branch_name, b.code AS branch_code,
+         c.code AS class_code, c.programme_code, c.lich_mt AS lop_lich_mt, c.route AS lop_route, c.branch_id, b.name AS branch_name, b.code AS branch_code,
          pr.code AS period_code, pr.week_start AS period_start, pr.week_end AS period_end
     FROM assessment_attempts a
     JOIN students s ON s.id = a.student_id
@@ -1022,7 +1022,7 @@ export function attemptDetail(p: Principal, attemptId: number) {
     classId: a.class_id, classCode: a.class_code, branchId: a.branch_id, branchName: a.branch_name,
     attemptNo: a.attempt_no,
     targetAtAttempt: a.target_at_attempt,
-    studyWeekHint: a.route ? tuanHocCuaMt(lichMtCua(a.lop_lich_mt, a.route), a.attempt_no) : null,   // OV-6b1: theo lịch của lớp
+    studyWeekHint: a.route ? tuanHocCuaMt(lichMtCua({ lich_mt: a.lop_lich_mt, route: a.lop_route }, a.route), a.attempt_no) : null,   // OV-6b1: theo lịch của lớp
     /** PR-MT (T34): MT lịch sử — nhập bù, không hạn, không luồng vắng. */
     lichSu: !!a.lich_su,
     /*

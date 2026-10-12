@@ -532,7 +532,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   // — tránh gọi riêng `classProgressMany`/`isRatioClass` (bốn câu SQL cho một lớp) ở khối "khoa" dưới.
   const enrollments = conn
     .prepare(
-      `SELECT e.*, c.code AS class_code, c.kind AS class_kind, c.lich_mt AS lop_lich_mt, b.name AS branch_name,
+      `SELECT e.*, c.code AS class_code, c.kind AS class_kind, c.lich_mt, c.route, b.name AS branch_name,
               rp.week_start AS class_start_week
          FROM enrollments e JOIN classes c ON c.id = e.class_id JOIN branches b ON b.id = c.branch_id
          LEFT JOIN report_periods rp ON rp.id = c.start_period_id
@@ -864,7 +864,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
         id: selected.id, studentId, seq: selected.seq, route: selected.route, label: cycleLabel(selected),
         programmeCode: selected.programme_code, ratio: isRatioCycle(selected),
         /* OV-6b1: tuần MT của lớp em đang học — web báo trước "MT sẽ dời" bằng đúng lịch này (`cauMtSeDoi`). */
-        lichMt: lichMtCua(enrollments.find((e) => e.status === 'active')?.lop_lich_mt, selected.route),
+        lichMt: lichMtCua(enrollments.find((e) => e.status === 'active'), selected.route),
         target, khongCamKet: !!selected.khong_cam_ket, examPlan, startedAt: selected.started_at, endedAt: selected.ended_at,
         status: selected.status,
         /*

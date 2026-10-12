@@ -312,7 +312,7 @@ export function previewIntake(
      * thi cách tuần này ≥ 2 tuần (`laMtCu`). Em vào muộn mà để tuần khai giảng thì người nhập thấy ngay, trước khi lưu.
      */
     if (cls.is_fast_track && cls.route && startWeek) {
-      const lich = lichMtCua(cls.lich_mt, cls.route);
+      const lich = lichMtCua(cls, cls.route);
       const soLuot = Math.max(lich.length, daThiToiMt ?? 0);
       const lichSu = Array.from({ length: soLuot }, (_, k) => k + 1).filter((n) =>
         laMtCu(addDays(startWeek!, (tuanHocCuaMt(lich, n) - 1) * 7 + 6), homNay));

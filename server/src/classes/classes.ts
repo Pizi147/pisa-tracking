@@ -325,7 +325,7 @@ export function rosterIds(p: Principal, classId: number) {
 function hocVienCuaLop(p: Principal, classId: number, q?: string) {
   require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
   const conn = db();
-  const cls = conn.prepare('SELECT status, lich_mt FROM classes WHERE id = ?').get(classId) as any;
+  const cls = conn.prepare('SELECT status, lich_mt, route FROM classes WHERE id = ?').get(classId) as any;
   const finished = cls?.status === 'finished';
   const params: unknown[] = [classId];
   /*
@@ -352,7 +352,7 @@ function hocVienCuaLop(p: Principal, classId: number, q?: string) {
     params.push(`%${q.trim()}%`, `%${q.trim().toLowerCase()}%`, `%${q.trim().toUpperCase()}%`);
   }
   sql += ' ORDER BY s.archived_at IS NOT NULL, s.full_name';
-  return { conn, finished, lopLichMt: (cls?.lich_mt ?? null) as string | null, students: conn.prepare(sql).all(...params) as any[] };
+  return { conn, finished, lop: (cls ?? null) as { lich_mt: string | null; route: string | null } | null, students: conn.prepare(sql).all(...params) as any[] };
 }
 
 /**
@@ -360,7 +360,7 @@ function hocVienCuaLop(p: Principal, classId: number, q?: string) {
  * Mỗi em kèm tiến trình MT gọn để không phải mở chi tiết mới biết đang ở đâu.
  */
 export function classRoster(p: Principal, classId: number, q?: string) {
-  const { conn, finished, students, lopLichMt } = hocVienCuaLop(p, classId, q);
+  const { conn, finished, students, lop } = hocVienCuaLop(p, classId, q);
   if (!students.length) return [];
   const sids = students.map((s) => s.id);
   const ph = sids.map(() => '?').join(',');
@@ -676,7 +676,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
             soLuotKeHoach: timeline.filter((t) => t.status === 'planned').length,
             coCuoiKhoa: timeline.some((t) => t.kind === 'final' && t.status !== 'cancelled'),
           }) : coMocTiepTheo({
-            coMoc: !!mocFt, soMt: lichMtCua(lopLichMt, s.route).length, coNgayThi: !!(s.exam_month || s.exam_period_id),
+            coMoc: !!mocFt, soMt: lichMtCua(lop, s.route).length, coNgayThi: !!(s.exam_month || s.exam_period_id),
             mtCuoi: Math.max(0, ...timeline.filter((t) => t.status !== 'cancelled' && (t.status !== 'planned' || t.weekStart)).map((t) => t.attemptNo)),   // PR-LM: bỏ lượt đã huỷ lịch
           }))
           : undefined,

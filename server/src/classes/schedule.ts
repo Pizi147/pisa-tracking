@@ -34,12 +34,13 @@ const lichMtTheoRoute = () => nho('lich-mt-route', () => new Map(
   (db().prepare('SELECT code, lich_mt FROM routes').all() as any[]).map((r) => [r.code as string, docLichMt(r.lich_mt)] as const)));
 
 /**
- * TUẦN MT CỦA MỘT LỘ TRÌNH FT (OV-6b1) — bản chụp của lớp (`classes.lich_mt`, chép lúc tạo lớp: Quản trị sửa sau không đổi lịch lớp
- * đang chạy). Em chưa ở lớp FT nào (chưa có bản chụp) → cấu hình đang dùng của lộ trình. Không lộ trình (lớp thường) → rỗng.
+ * TUẦN MT CỦA MỘT LỘ TRÌNH FT (OV-6b1) — bản chụp của lớp em đang học (`classes.lich_mt`, chép lúc tạo lớp: Quản trị sửa sau không đổi
+ * lịch lớp đang chạy). Bản chụp là của LỘ TRÌNH LỚP: em khác lộ trình lớp (em RF trong lớp LT), hoặc chưa ở lớp FT nào → cấu hình đang
+ * dùng của lộ trình em (như luật cũ theo lộ trình). Không lộ trình (lớp thường) → rỗng.
  */
-export function lichMtCua(lopLichMt: string | null | undefined, route: string | null | undefined): number[] {
+export function lichMtCua(lop: { lich_mt?: string | null; route?: string | null } | null | undefined, route: string | null | undefined): number[] {
   if (!route) return [];
-  return docLichMt(lopLichMt) ?? lichMtTheoRoute().get(route) ?? lichMtGoc(route);
+  return (lop?.route === route ? docLichMt(lop.lich_mt) : null) ?? lichMtTheoRoute().get(route) ?? lichMtGoc(route);
 }
 
 export type SuggestedMock = {
@@ -90,11 +91,11 @@ function goiYLo(yc: readonly YeuCauLichMt[]): Map<number, { cy: any; lopId: numb
     }
   });
   /* Lớp đang học (ghi danh active mới nhất) + bản chụp tuần MT của lớp đó. */
-  const lopOf = new Map<number, { id: number; lichMt: string | null }>();
+  const lopOf = new Map<number, { id: number; lich_mt: string | null; route: string | null }>();
   theoLo([...new Set(co.map((y) => cyOf.get(y.cycleId).student_id as number))], (lo, ph) => {
-    for (const r of conn.prepare(`SELECT e.student_id, e.class_id, c.lich_mt FROM enrollments e JOIN classes c ON c.id = e.class_id
+    for (const r of conn.prepare(`SELECT e.student_id, e.class_id, c.lich_mt, c.route FROM enrollments e JOIN classes c ON c.id = e.class_id
         WHERE e.student_id IN (${ph}) AND e.status = 'active' ORDER BY e.id DESC`).all(...lo) as any[]) {
-      if (!lopOf.has(r.student_id)) lopOf.set(r.student_id, { id: r.class_id, lichMt: r.lich_mt });
+      if (!lopOf.has(r.student_id)) lopOf.set(r.student_id, { id: r.class_id, lich_mt: r.lich_mt, route: r.route });
     }
   });
 
@@ -102,7 +103,7 @@ function goiYLo(yc: readonly YeuCauLichMt[]): Map<number, { cy: any; lopId: numb
   const lich = co.filter((y) => startOf.has(cyOf.get(y.cycleId).start_period_id)).map((y) => {
     const cy = cyOf.get(y.cycleId);
     const start = startOf.get(cy.start_period_id)!;
-    const lich = lichMtCua(lopOf.get(cy.student_id)?.lichMt, cy.route);
+    const lich = lichMtCua(lopOf.get(cy.student_id), cy.route);
     const soLuot = Math.max(lich.length, y.daThiToiMt ?? 0);
     return { cy, luot: Array.from({ length: soLuot }, (_, i) => {
       const week = tuanHocCuaMt(lich, i + 1);
@@ -551,7 +552,7 @@ function computeProgress(
     weeksLeft, needsPlacement, placementOptions, activeStudents, canXepLop,
     label,
     coGiuaKhoa: defProgress !== null || c.progress_week_override !== null && c.progress_week_override !== undefined,
-    lichMt: code === 'FT' ? lichMtCua(c.lich_mt, c.route ?? 'LT1') : [],
+    lichMt: code === 'FT' ? lichMtCua(c, c.route ?? 'LT1') : [],
   };
 }
 
@@ -579,12 +580,13 @@ export function tomTatMt(classId: number): { soEm: number; coMocSapToi: number; 
 /**
  * HAI ĐIỀU KIỆN CỦA `tomTatMt`, tách thành hằng SQL để chỉ số `hv-ft-xong-mt-cuoi-chua-mt-ke` (PR-VAI-a Q8c) dùng ĐÚNG luật này.
  *   CO_MOC_KE_TIEP  — lộ trình có lượt mốc kế tiếp (`MOC_KE_TIEP_SQL`), MỘT tham số `?` = thứ Hai tuần này.
- *   XONG_MT_CUOI    — đã có lượt MT có điểm ở số thứ tự ≥ số MT trong lịch của lớp `c` (bản chụp `lich_mt`), tính cả MT lịch sử. Không tham số.
+ *   XONG_MT_CUOI    — đã có lượt MT có điểm ở số thứ tự ≥ số MT trong lịch của lớp `c` (bản chụp, cùng lộ trình) / của lộ trình em, tính cả MT lịch sử. Không tham số.
  */
 export const CO_MOC_KE_TIEP_SQL = (cy: string) => `EXISTS (SELECT 1 FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id
   WHERE a.cycle_id = ${cy}.id AND ${MOC_KE_TIEP_SQL('a', 'rp')})`;
 export const XONG_MT_CUOI_SQL = (cy: string, c: string) => `EXISTS (SELECT 1 FROM assessment_attempts a2 WHERE a2.cycle_id = ${cy}.id AND a2.kind = 'mock'
-  AND a2.attempt_no >= json_array_length(${c}.lich_mt) AND ${CO_DIEM_SQL('a2')})`;
+  AND a2.attempt_no >= (CASE WHEN ${c}.route = ${cy}.route THEN json_array_length(${c}.lich_mt)
+    ELSE (SELECT json_array_length(r.lich_mt) FROM routes r WHERE r.code = ${cy}.route) END) AND ${CO_DIEM_SQL('a2')})`;
 
 /**
  * PR-LTGON (luật 6): đổi mốc Progress/Final của lớp → bài chưa có điểm của các em đang học dời theo, không hỏi. Chỉ kỹ năng đang ở ĐÚNG tuần mốc cũ

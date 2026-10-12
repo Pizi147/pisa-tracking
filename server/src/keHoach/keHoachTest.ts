@@ -330,7 +330,7 @@ export function luoiFT(p: Principal, classId: number, today: string = demoToday(
   })))]));
   /* T37: cột 1 … min(MT8, max(số lớn nhất còn hiệu lực, MT kế tiếp lớn nhất, lịch mặc định của lộ trình lớp)). */
   const soCot = Math.min(MT_TOI_DA, Math.max(
-    lichMtCua(cls.lich_mt, cls.route).length,
+    lichMtCua(cls, cls.route).length,
     ...attempts.filter((a) => a.status !== 'cancelled').map((a) => a.attempt_no as number),
     ...soKeTiepCua.values(),
   ));

@@ -14,7 +14,7 @@ import { demoToday } from '../demoConfig.ts';
 import { addDays } from '../util.ts';
 import { bangLop, can, editableSkills, scopeFor, type Principal } from '../permissions.ts';
 import { listClassSummaries, lopTrongPhamVi, type ClassSummary } from './classes.ts';
-import { classProgressMany, missingForStudent } from './schedule.ts';
+import { classProgressMany, lichMtCua, missingForStudent } from './schedule.ts';
 import { standingFor } from '../students/standing.ts';
 import { listCases } from '../cases/cases.ts';
 import { allProgrammes } from '../normal/regular.ts';
@@ -135,7 +135,7 @@ export function danhSachHocVienLop(
   const hv = conn.prepare(
     `SELECT e.class_id, s.id, s.full_name, s.normalized_name, s.student_code, s.dob, s.status,
             cy.id AS cycle_id, cy.start_period_id, cy.exam_month, cy.target_score, cy.khong_cam_ket, cy.baseline_attempt_id, cy.baseline_score,
-            cy.route, cy.exam_period_id,
+            cy.route, cy.exam_period_id, c.lich_mt AS lop_lich_mt, c.route AS lop_route,
             (SELECT COUNT(*) FROM assessment_attempts a WHERE a.cycle_id = cy.id AND a.status = 'planned' AND a.kind != 'mt0') AS so_luot_ke_hoach,   /* PR-MT0: MT0 không đếm */
             EXISTS (SELECT 1 FROM assessment_attempts a WHERE a.cycle_id = cy.id AND a.kind = 'final' AND a.status != 'cancelled') AS co_cuoi_khoa,
             /* K2-05: FT đếm theo luật mốc kế tiếp (lichMt.ts) — MT lịch sử / tuần đã qua không phải "mốc tiếp theo". */
@@ -144,6 +144,7 @@ export function danhSachHocVienLop(
             (SELECT COALESCE(MAX(a.attempt_no), 0) FROM assessment_attempts a WHERE a.cycle_id = cy.id AND a.status != 'cancelled' AND a.kind != 'mt0'
               AND (a.status != 'planned' OR a.planned_period_id IS NOT NULL)) AS mt_cuoi   /* PR-LM: lượt đã huỷ lịch không phải "đã tới MT" */
        FROM enrollments e
+       JOIN classes c ON c.id = e.class_id
        JOIN students s ON s.id = e.student_id
        LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
       WHERE e.class_id IN (${ph}) AND e.status = 'active' AND s.archived_at IS NULL${dangDung === 'cua-toi' ? ' AND s.consultant_user_id = ?' : ''}`,
@@ -247,7 +248,7 @@ export function danhSachHocVienLop(
       isFastTrack: !!laFt.get(h.class_id),
       hasNextMilestone: h.status !== 'active' ? undefined
         : laFt.get(h.class_id)
-          ? coMocTiepTheo({ coMoc: h.so_moc_ke_tiep > 0, soMt: h.route ? tienDo.get(h.class_id)?.lichMt.length ?? 0 : 0, mtCuoi: h.mt_cuoi, coNgayThi: !!(h.exam_month || h.exam_period_id) })
+          ? coMocTiepTheo({ coMoc: h.so_moc_ke_tiep > 0, soMt: lichMtCua({ lich_mt: h.lop_lich_mt, route: h.lop_route }, h.route).length, mtCuoi: h.mt_cuoi, coNgayThi: !!(h.exam_month || h.exam_period_id) })
           : coMocTiepTheoThuong({ soLuotKeHoach: h.so_luot_ke_hoach, coCuoiKhoa: !!h.co_cuoi_khoa }),
     });
     if (thieu.length) loc.push('thieu_tt');
