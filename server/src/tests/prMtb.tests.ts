@@ -35,7 +35,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
   let dem = 0;
   /** Em mới ở MB FT 101: MT1, MT2, MT3 ở tuần `w` (mặc định T+1, T+6, T+9), chưa điểm — mẫu `emMoi` của prMta. */
   const emMoi = (w: [number, number, number] = [1, 6, 9]) => {
-    const r = intake.commitIntake(P.admin, { classId: LOP, rows: [{ fullName: `PRMTB Em ${++dem}`, target: 6.5, startWeek: tuanNay, email: 'hv@demo.test' }] });
+    const r = intake.commitIntake(P.admin, { classId: LOP, rows: [{ fullName: `PRMTB Em ${++dem}`, target: 6.5, startWeek: tuanNay, email: 'hv@demo.test', dob: '2010-01-01' }] });
     assert(r.added === 1, `thêm em: ${JSON.stringify(r.failed)}`);
     const sid = r.studentIds[0] as number;
     const ds = conn.prepare(`SELECT a.id FROM assessment_attempts a WHERE a.student_id = ? AND a.status != 'cancelled' ORDER BY a.attempt_no`).all(sid) as any[];

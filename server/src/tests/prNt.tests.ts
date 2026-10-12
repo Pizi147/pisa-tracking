@@ -20,10 +20,10 @@ export async function runPrNtTests(t: YThucTestKit) {
 
   check('NT-1 · previewIntake lớp thường: nhận Target/KCK/ngày/tháng thi; band + Đã thi tới MT vẫn "Bỏ qua"', () => {
     const pv = intake.previewIntake(P.admin, { classId: thuong, rows: [
-      { fullName: 'NT A', email: 'nt-a@demo.test', target: '6.5', examDate: '05/2027', baselineScore: '5', daThiToiMt: '2' },
-      { fullName: 'NT B', email: 'nt-b@demo.test', target: 'KCK', examDate: '15/06/2027' },
-      { fullName: 'NT C', email: 'nt-c@demo.test', target: '6.3' },
-      { fullName: 'NT D', email: 'nt-d@demo.test', examDate: '13/2027' },
+      { fullName: 'NT A', dob: '2010-01-01', email: 'nt-a@demo.test', target: '6.5', examDate: '05/2027', baselineScore: '5', daThiToiMt: '2' },
+      { fullName: 'NT B', dob: '2010-01-01', email: 'nt-b@demo.test', target: 'KCK', examDate: '15/06/2027' },
+      { fullName: 'NT C', dob: '2010-01-01', email: 'nt-c@demo.test', target: '6.3' },
+      { fullName: 'NT D', dob: '2010-01-01', email: 'nt-d@demo.test', examDate: '13/2027' },
     ] });
     const [a, b, c, dd] = pv.rows;
     assert(a.target === 6.5 && a.examDate === '2027-05', JSON.stringify(a));
@@ -38,8 +38,8 @@ export async function runPrNtTests(t: YThucTestKit) {
 
   check('NT-1 · commitIntake lớp thường ghi target_score / khong_cam_ket / exam_* lên learning_cycles', () => {
     const r = intake.commitIntake(P.admin, { classId: thuong, idempotencyKey: 'nt-1-ghi', rows: [
-      { fullName: 'NT Ghi 1', email: 'nt-ghi1@demo.test', target: '6', examDate: '20/05/2027' },
-      { fullName: 'NT Ghi 2', email: 'nt-ghi2@demo.test', target: 'KCK', examDate: '07/2027' },
+      { fullName: 'NT Ghi 1', dob: '2010-01-01', email: 'nt-ghi1@demo.test', target: '6', examDate: '20/05/2027' },
+      { fullName: 'NT Ghi 2', dob: '2010-01-01', email: 'nt-ghi2@demo.test', target: 'KCK', examDate: '07/2027' },
     ] });
     assert(r.added === 2, JSON.stringify(r));
     const cy = (email: string) => conn.prepare(`SELECT cy.* FROM learning_cycles cy JOIN students s ON s.id = cy.student_id WHERE s.email = ?`).get(email) as any;

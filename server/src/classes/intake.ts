@@ -252,6 +252,7 @@ export function previewIntake(
 
     const dob = docNgayNhap(r.dob, homNay, { toiThieu: NGAY_SINH_TOI_THIEU, toiDa: homNay });
     if (dob.loi) loi('dob', dob.loi);
+    else if (!dob.iso) loi('dob', 'Chưa điền');   // PR-OV2b: ngày sinh bắt buộc như email
 
     const email = docEmail(r.email);
     if (email.loi) loi('email', email.loi);

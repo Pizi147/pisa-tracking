@@ -314,6 +314,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 12/10/2026 | OV-2b (Opus 5.5) · `claude/upbeat-albattani-jaqvpm` | Hồ sơ HV: ⋯ Sửa thông tin · Chuyển lớp · Tạm dừng / Thôi học (một panel 2 tab) · Lưu trữ; Sửa thông tin có TVV chọn người ("Ghi cũ"), email + ngày sinh bắt buộc (thêm / sửa, cả lớp chỉ dòng có sửa), Target QL thẳng / GVCN đề xuất, điểm đầu vào L R W S; ⋯ dòng Sửa thông tin; Sửa cả lớp cột TVV |
 | 12/10/2026 | OV-3b (Opus 5.5) · `claude/zen-cray-fa7291` | Lộ trình tiếp theo: nháp chỉ QL (`lo_trinh_nhap`) → chốt = ra lệnh; GVCN thôi ghi Hướng; hạn nhắc / chốt Final − 2, bàn giao hết tuần Final ≥ 2 ngày, FT 5 ngày; đổi hướng/lớp đích → phiếu cần làm lại + chuông; KQĐR có FOU + GVCN đề xuất; cách xem bảng theo hướng thay PanelCuoiKhoa / PanelKyVong / LoTrinhTiepPanel |
 | 12/10/2026 | OV-1b (Opus 5.5) · `claude/tender-ramanujan-ffmcx1` | "-" trong tuần = Vắng chốt ngay (lần 1 dời, lần 2 huỷ), nhập bù / MT cũ = Không dự thi; Bỏ vắng; dòng lớp "phần của bạn" + một hàm đếm (`dauTruCuaO`); lượt huỷ hết phần thi; migrate `prOv1b` + `kiem-truoc-ov1b` (chỉ đọc) |
 | 11/10/2026 | OV-2a (Opus 5.5) · `claude/pr-ov2a-vai-quyen-oqmdnt` | Vai Admin / TVV / CX + 5 quyền (`student.edit_info`, `test.view`, `work.view`, `analysis.view`, `analysis.view_teacher`), migrate `prOv2`; Test/Công việc chặn theo đường; Admin chỉ Chấm điểm + Nhắc; góc nhìn lưu ở phiên + dải; Tổng quan TVV, "HV của tôi" |

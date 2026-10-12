@@ -123,7 +123,7 @@ export function nhanDangCot(dongDau: string[]): { cot: (CotNhap | null)[]; boQua
 
 export type CotLuoi = { key: CotNhap; nhan: string; batBuoc?: boolean; so?: boolean };
 const COT_DAU: CotLuoi[] = [
-  { key: 'fullName', nhan: 'Họ và tên', batBuoc: true }, { key: 'dob', nhan: 'Ngày sinh' }, { key: 'email', nhan: 'Email', batBuoc: true },
+  { key: 'fullName', nhan: 'Họ và tên', batBuoc: true }, { key: 'dob', nhan: 'Ngày sinh', batBuoc: true }, { key: 'email', nhan: 'Email', batBuoc: true },
 ];
 const COT_BAND: CotLuoi[] = [
   { key: 'baselineScore', nhan: 'Overall', so: true }, { key: 'entryListening', nhan: 'L', so: true },

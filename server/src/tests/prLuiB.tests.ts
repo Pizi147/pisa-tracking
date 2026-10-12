@@ -18,7 +18,7 @@ export async function runPrLuiBTests(t: YThucTestKit) {
     assert(keys({ hocLai: true, boLuuTru: true }, 'finished').join() === 'hoc-lai,bo-luu-tru', keys({ hocLai: true, boLuuTru: true }, 'finished').join());
     assert(!keys({}, 'finished').includes('hoc-lai'), 'không quyền thì không có Học lại');
     const m = d.mucQuanLyHocVien({ canEdit: false, cycle: null, status: 'finished', ...quyen({ hocLai: true }) })[0];
-    assert(m.nhan === 'Học lại' && m.nhom === 'lop' && m.phu === 'về lớp cũ · lộ trình chạy tiếp', JSON.stringify(m));
+    assert(m.nhan === 'Học lại' && m.phu === 'về lớp cũ · lộ trình chạy tiếp', JSON.stringify(m));
   });
 
   check('LUIb-2 · hằng làm nhiều học viên: việc ngược đối xứng, nhãn đủ, lô 8, trần xem trước 200', () => {

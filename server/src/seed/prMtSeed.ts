@@ -38,7 +38,7 @@ export function buildPrMtDemo(ctx: BuildCtx): { students: number } {
   const tuan = (n: number) => mondayOf(addDays(DEMO_DATE, 7 * n));   // thứ Hai của tuần cách tuần demo n tuần
 
   const them = (classId: number, ten: string, startWeek: string, target = 6.5) => {
-    commitIntake(admin, { classId, rows: [{ fullName: ten, target, startWeek, email: 'hv@demo.test' }], idempotencyKey: `prmt-demo-${ten}` } as any);
+    commitIntake(admin, { classId, rows: [{ fullName: ten, target, startWeek, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `prmt-demo-${ten}` } as any);
     const st = conn.prepare('SELECT id FROM students WHERE full_name = ?').get(ten) as any;
     const cy = conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(st.id) as any;
     return { id: st.id as number, cycleId: cy.id as number };

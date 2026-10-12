@@ -66,7 +66,7 @@ export async function runPrHsmTests(t: YThucTestKit) {
   };
   /** Em mới ở MB FT 101, MT1 tuần này (chưa hoàn tất) — dựng qua `commitIntake` + `createAttempt`. */
   const emMoiLop = (lop: string, ten: string) => {
-    intake.commitIntake(P.admin, { classId: classId(lop), rows: [{ fullName: `HSM ${ten}`, target: 6.5, email: 'hv@demo.test' }], idempotencyKey: `hsm-${ten}` });
+    intake.commitIntake(P.admin, { classId: classId(lop), rows: [{ fullName: `HSM ${ten}`, target: 6.5, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `hsm-${ten}` });
     const st = get('SELECT id FROM students WHERE full_name = ?', `HSM ${ten}`);
     const cy = get("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'", st.id);
     boLichTuTao(conn, cy.id);

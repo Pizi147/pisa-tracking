@@ -6,7 +6,7 @@ import { demoToday } from '../demoConfig.ts';
 import { chanGiaoDichNeuSapHetGio } from '../platform/hanGio.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { HttpError, badRequest, forbidden, kiemKieuO, notFound, nowIso } from '../util.ts';
-import { chuanHoaSuaHoSo, updateStudent } from '../students/students.ts';
+import { chuanHoaSuaHoSo, dsTvv, updateStudent } from '../students/students.ts';
 import {
   docDiemXuatPhat, docDuKienThi, docTarget, docTuanBatDau, reviseTarget, setBaseline, updateCycle,
 } from '../fasttrack/cycles.ts';
@@ -20,7 +20,7 @@ import { donKhoaGuiCu, laLopThuong } from './intake.ts';
  * điểm đầu vào (chủ sản phẩm 04/10: có Target + Dự kiến thi + Tuần bắt đầu).
  */
 export type DongSua = {
-  studentId: number; fullName?: string; dob?: string | null; email?: string | null; startWeek?: string;
+  studentId: number; fullName?: string; dob?: string | null; email?: string | null; consultantUserId?: number | null; startWeek?: string;
   examDate?: string | null; target?: number | string | null; baseline?: number | null;
 };
 type DauVao = { rows: DongSua[]; lyDoTarget?: string };
@@ -28,9 +28,9 @@ type DauVao = { rows: DongSua[]; lyDoTarget?: string };
 export const TOI_DA_DONG_SUA_CA_LOP = 60;
 /** Panel này không có nút "Đề xuất sửa" (khác `CHI_QL_SUA` của đường một em) — chỉ nói ai được đổi. */
 export const CHI_QL_DOI_TARGET = 'Chỉ Quản lý đổi được Target.';
-const HO_SO = ['fullName', 'dob', 'email'] as const;
+const HO_SO = ['fullName', 'dob', 'email', 'consultantUserId'] as const;
 const LO_TRINH = ['startWeek', 'examDate', 'target', 'baseline'] as const;
-const NHAN: Record<string, string> = { fullName: 'Họ tên', dob: 'Ngày sinh', email: 'Email', startWeek: 'Tuần bắt đầu', examDate: 'Dự kiến thi', target: 'Target', baseline: 'Điểm đầu vào' };
+const NHAN: Record<string, string> = { fullName: 'Họ tên', dob: 'Ngày sinh', email: 'Email', consultantUserId: 'TVV', startWeek: 'Tuần bắt đầu', examDate: 'Dự kiến thi', target: 'Target', baseline: 'Điểm đầu vào' };
 
 /**
  * Em ĐANG HỌC lớp `classId` (`ids` = chỉ những em này; `null` = cả lớp) + lộ trình hiện tại (đang chạy, seq lớn nhất — như
@@ -45,7 +45,7 @@ function emVaLoTrinh(classId: number, ids: number[] | null) {
         WHERE e.class_id = ? AND e.status = 'active'`).all(classId) as any[]).map((r) => r.id as number)
     : [...new Set(ids)];
   theoLo(dsEm, (lo, ph) => {
-    for (const s of conn.prepare(`SELECT s.id, s.full_name, s.dob, s.email FROM students s JOIN enrollments e ON e.student_id = s.id
+    for (const s of conn.prepare(`SELECT s.id, s.full_name, s.dob, s.email, s.consultant_user_id, s.consultant_name FROM students s JOIN enrollments e ON e.student_id = s.id
         WHERE e.class_id = ? AND e.status = 'active' AND s.id IN (${ph})`).all(classId, ...lo) as any[]) em.set(s.id, s);
     for (const c of conn.prepare(`SELECT * FROM learning_cycles WHERE student_id IN (${ph}) ORDER BY (status = 'active') ASC, seq ASC`)
       .all(...lo) as any[]) loTrinh.set(c.student_id, c);
@@ -59,7 +59,7 @@ function emVaLoTrinh(classId: number, ids: number[] | null) {
  */
 export function duLieuSuaCaLop(p: Principal, classId: number) {
   const conn = db();
-  const cls = conn.prepare('SELECT id, code, programme_code FROM classes WHERE id = ?').get(classId) as any;
+  const cls = conn.prepare('SELECT id, code, programme_code, branch_id FROM classes WHERE id = ?').get(classId) as any;
   if (!cls) throw notFound('Không tìm thấy lớp');
   require_(p, PERMISSIONS.STUDENT_EDIT, { classId: cls.id }, `Lớp ${cls.code} nằm ngoài phạm vi bạn được cấp quyền.`);
   const { em, loTrinh } = emVaLoTrinh(cls.id, null);
@@ -71,6 +71,7 @@ export function duLieuSuaCaLop(p: Principal, classId: number) {
     const c = loTrinh.get(s.id) ?? null;
     return {
       studentId: s.id as number, fullName: s.full_name as string, dob: (s.dob ?? null) as string | null, email: (s.email ?? null) as string | null,
+      consultantUserId: (s.consultant_user_id ?? null) as number | null, consultantName: (s.consultant_name ?? null) as string | null,
       coLoTrinh: !!c,
       startWeek: (c?.start_period_id != null ? tuan.get(c.start_period_id) ?? null : null) as string | null,
       examDate: (c ? c.exam_date ?? c.exam_month ?? null : null) as string | null,
@@ -81,6 +82,8 @@ export function duLieuSuaCaLop(p: Principal, classId: number) {
   return {
     lop: { id: cls.id as number, code: cls.code as string }, lopThuong: laLopThuong(cls.programme_code ?? null),
     coTheSuaTarget: can(p, PERMISSIONS.CYCLE_EDIT, { classId: cls.id }), rows,
+    /** PR-OV2b: ô chọn TVV — TVV cùng chi nhánh lớp lên trước. */
+    tvv: dsTvv(null, cls.branch_id ?? null),
   };
 }
 
@@ -106,7 +109,7 @@ function kiemLo(p: Principal, classId: number, input: DauVao) {
   const dong = input.rows.map((r, i) => {
     const s = em.get(ids[i]);
     if (!s) throw badRequest(`Học viên #${r.studentId} không thuộc lớp này.`);
-    kiemKieuO(r as Record<string, unknown>, ['fullName', 'dob', 'email', 'startWeek', 'examDate'], ['target', 'baseline'],
+    kiemKieuO(r as Record<string, unknown>, ['fullName', 'dob', 'email', 'startWeek', 'examDate'], ['target', 'baseline', 'consultantUserId'],
       (k) => `${s.full_name} · ${NHAN[k] ?? k}`);
     const c = loTrinh.get(s.id) ?? null;
     const issues: VanDeNhap[] = [];
@@ -129,6 +132,10 @@ function kiemLo(p: Principal, classId: number, input: DauVao) {
 
     const hoSo = Object.fromEntries(HO_SO.filter((k) => r[k] !== undefined).map((k) => [k, r[k]]));
     for (const k of Object.keys(hoSo)) thu(k, () => chuanHoaSuaHoSo({ [k]: hoSo[k] }));
+    /* PR-OV2b: CHỈ dòng có sửa phải đủ email + ngày sinh (em cũ thiếu mà không đụng tới thì không chặn). Ô gửi trống đã báo ở trên. */
+    if ([...HO_SO, ...LO_TRINH].some((k) => r[k] !== undefined)) {
+      for (const k of ['dob', 'email'] as const) if (r[k] === undefined && !s[k]) issues.push({ row: i + 1, field: k, message: 'Bắt buộc — em chưa có, điền khi sửa dòng này.', muc: 'loi' });
+    }
     if (LO_TRINH.some((k) => r[k] !== undefined) && !c) issues.push({ row: i + 1, field: 'studentId', message: 'Học viên chưa có lộ trình.', muc: 'loi' });
     let tuanMoi: string | undefined;
     if (c && r.startWeek !== undefined) tuanMoi = thu('startWeek', () => docTuanBatDau(c, r.startWeek));

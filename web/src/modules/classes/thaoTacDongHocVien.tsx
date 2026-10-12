@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { QuickReport } from '../cases/QuickReport.tsx';
 import { RecordViolationPanel } from '../yThuc/RecordViolationPanel.tsx';
 import { ChuyenLopPanel } from '../students/ChuyenLopPanel.tsx';
+import { SuaThongTinMotEm } from '../students/StudentManagePanel.tsx';
 import type { MucMenu } from '../../ui/MenuDong.tsx';
 import { MUC_MENU_DONG_HIEM, MUC_MENU_DONG_NHAN, duongHoSoHocVien, duongLoTrinhLop, mucMenuDongHocVien, type ViecTiepTheo } from '@shared/domain/index.ts';
 
@@ -49,7 +50,7 @@ export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone, maLop, class
   maLop?: string | null;
 }): { mucCua: (d: DongChoMenu) => MucMenu[]; panels: ReactNode } {
   const navigate = useNavigate();
-  const [mo, setMo] = useState<{ viec: 'case' | 'vi-pham' | 'chuyen-lop' | 'de-xuat-chuyen-lop'; id: number; ten: string } | null>(null);
+  const [mo, setMo] = useState<{ viec: 'case' | 'vi-pham' | 'sua-thong-tin' | 'chuyen-lop' | 'de-xuat-chuyen-lop'; id: number; ten: string } | null>(null);
 
   const mucCua = (d: DongChoMenu): MucMenu[] => mucMenuDongHocVien({
     laLopThuong, dangHoc: d.dangHoc,
@@ -77,6 +78,7 @@ export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone, maLop, class
         studentId={mo?.id ?? 0} studentName={mo?.ten} lop={maLop} onDone={xong} />
       <ChuyenLopPanel open={mo?.viec === 'chuyen-lop' || mo?.viec === 'de-xuat-chuyen-lop'} cheDo={mo?.viec === 'de-xuat-chuyen-lop' ? 'de-xuat' : 'lenh'} onClose={() => setMo(null)}
         studentId={mo?.id ?? 0} studentName={mo?.ten} lop={maLop} onDone={xong} />
+      {mo?.viec === 'sua-thong-tin' && <SuaThongTinMotEm studentId={mo.id} studentName={mo.ten} lop={maLop} onClose={() => setMo(null)} onDone={xong} />}
     </>
   );
   return { mucCua, panels };

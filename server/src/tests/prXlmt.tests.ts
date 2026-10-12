@@ -123,7 +123,7 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
 
   /** Thêm một em vào lớp FT, tuần bắt đầu tuần này → lịch MT mặc định (MT1 tuần học 6…). */
   const them = (lop: string, ten: string) => {
-    const r = intake.commitIntake(P.admin, { classId: classId(lop), rows: [{ fullName: ten, target: 6.5, startWeek: tuanNay, email: 'hv@demo.test' }] });
+    const r = intake.commitIntake(P.admin, { classId: classId(lop), rows: [{ fullName: ten, target: 6.5, startWeek: tuanNay, email: 'hv@demo.test', dob: '2010-01-01' }] });
     assert(r.added === 1, `thêm ${ten}: ${JSON.stringify(r.failed)}`);
     return r.studentIds[0] as number;
   };
@@ -368,7 +368,7 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
   });
 
   check('PR-XLMT (3) · Thêm HV: "Đã thi tới MT6" mà tuần bắt đầu = tuần này → lưu ý lùi Tuần bắt đầu (rà #120)', () => {
-    const pv = intake.previewIntake(P.admin, { classId: LOP1, rows: [{ fullName: 'XLMT Nhắc Lùi', email: 'a@b.vn', startWeek: tuanNay, daThiToiMt: '6' }] });
+    const pv = intake.previewIntake(P.admin, { classId: LOP1, rows: [{ fullName: 'XLMT Nhắc Lùi', dob: '2010-01-01', email: 'a@b.vn', startWeek: tuanNay, daThiToiMt: '6' }] });
     const y = pv.rows[0].issues.find((x: any) => x.field === 'daThiToiMt' && x.muc === 'luu_y');
     assert(/Đã thi tới MT6 nhưng MT1, MT2.* rơi vào tuần chưa qua/.test(y?.message ?? ''), JSON.stringify(pv.rows[0].issues));
   });

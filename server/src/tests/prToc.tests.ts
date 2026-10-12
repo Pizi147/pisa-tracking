@@ -47,9 +47,9 @@ export async function runPrTocTests(t: YThucTestKit) {
 
   check('TOC (1) · Thêm 3 em FT một lô: đủ lượt, 4 kỹ năng/lượt, 1 dòng nhật ký lịch/lượt, 1 hành trình + 1 audit/lộ trình; chạy lại không tạo trùng', () => {
     const r = intake.commitIntake(P.admin, { classId: ft, idempotencyKey: 'toc-1-lo', rows: [
-      { fullName: 'Tốc Lô Một', email: 'tl1@demo.test' },
-      { fullName: 'Tốc Lô Hai', email: 'tl2@demo.test', daThiToiMt: '5' },
-      { fullName: 'Tốc Lô Ba', email: 'tl3@demo.test', startWeek: '2026-09-28' },
+      { fullName: 'Tốc Lô Một', dob: '2010-01-01', email: 'tl1@demo.test' },
+      { fullName: 'Tốc Lô Hai', dob: '2010-01-01', email: 'tl2@demo.test', daThiToiMt: '5' },
+      { fullName: 'Tốc Lô Ba', dob: '2010-01-01', email: 'tl3@demo.test', startWeek: '2026-09-28' },
     ] });
     assert(r.added === 3 && r.mt.soEm === 3, JSON.stringify(r));
     const cyc = conn.prepare(`SELECT id, student_id FROM learning_cycles WHERE student_id IN (${r.studentIds.join(',')}) ORDER BY student_id`).all() as any[];
@@ -90,7 +90,7 @@ export async function runPrTocTests(t: YThucTestKit) {
   });
 
   check(`TOC (3) · Tuần bắt đầu, dự kiến thi trong năm nay −3 … +3 (${nam - 3}–${nam + 3}); ngoài khoảng là lỗi, kể cả tuần cả lô`, () => {
-    const pv = (r: any, extra: any = {}) => intake.previewIntake(P.admin, { classId: ft, rows: [{ fullName: 'Nk', email: 'nk@demo.test', ...r }], ...extra });
+    const pv = (r: any, extra: any = {}) => intake.previewIntake(P.admin, { classId: ft, rows: [{ fullName: 'Nk', dob: '2010-01-01', email: 'nk@demo.test', ...r }], ...extra });
     assert(!!loiO(pv({ startWeek: `05/01/${nam - 4}` }), 'startWeek'), 'tuần bắt đầu năm −4');
     assert(!!loiO(pv({ startWeek: `05/01/${nam + 4}` }), 'startWeek'), 'tuần bắt đầu năm +4');
     assert(loiO(pv({ startWeek: `05/01/${nam - 3}` }), 'startWeek') === null, 'năm −3 hợp lệ');
@@ -103,13 +103,13 @@ export async function runPrTocTests(t: YThucTestKit) {
 
   check('TOC (3) · Ô chữ không phải chuỗi → 400 (không 500, không lưu "[object Object]"); ô số nhận cả số', () => {
     for (const [k, v] of [['fullName', { a: 1 }], ['fullName', ['A']], ['email', 5], ['dob', true], ['startWeek', {}], ['consultant', []]] as const) {
-      ma400(() => intake.previewIntake(P.admin, { classId: ft, rows: [{ fullName: 'X', email: 'x@y.vn', [k]: v }] }), /Dòng 1/, `xem trước ${k}=${JSON.stringify(v)}`);
-      ma400(() => intake.commitIntake(P.admin, { classId: ft, rows: [{ fullName: 'X', email: 'x@y.vn', [k]: v }] }), /Dòng 1/, `ghi ${k}=${JSON.stringify(v)}`);
+      ma400(() => intake.previewIntake(P.admin, { classId: ft, rows: [{ fullName: 'X', dob: '2010-01-01', email: 'x@y.vn', [k]: v }] }), /Dòng 1/, `xem trước ${k}=${JSON.stringify(v)}`);
+      ma400(() => intake.commitIntake(P.admin, { classId: ft, rows: [{ fullName: 'X', dob: '2010-01-01', email: 'x@y.vn', [k]: v }] }), /Dòng 1/, `ghi ${k}=${JSON.stringify(v)}`);
     }
     ma400(() => intake.previewIntake(P.admin, { classId: ft, rows: { fullName: 'X' } }), /danh sách dòng/, 'rows không phải mảng');
     ma400(() => intake.previewIntake(P.admin, { classId: ft, rows: [null] }), /danh sách dòng/, 'dòng null');
     ma400(() => intake.previewIntake(P.admin, { classId: ft, rows: [{ target: { x: 1 } }] }), /Target|target/, 'ô số là object');
-    const pv = intake.previewIntake(P.admin, { classId: ft, rows: [{ fullName: 'Số', email: 's@y.vn', target: 6.5, baselineScore: 5, daThiToiMt: 2 }] });
+    const pv = intake.previewIntake(P.admin, { classId: ft, rows: [{ fullName: 'Số', dob: '2010-01-01', email: 's@y.vn', target: 6.5, baselineScore: 5, daThiToiMt: 2 }] });
     assert(pv.rows[0].target === 6.5 && pv.rows[0].baselineScore === 5 && pv.rows[0].daThiToiMt === 2, JSON.stringify(pv.rows[0]));
     assert(!conn.prepare(`SELECT id FROM students WHERE full_name LIKE '[object%'`).get(), 'có tên "[object …]" trong database');
   });
@@ -117,7 +117,7 @@ export async function runPrTocTests(t: YThucTestKit) {
   check('TOC (3) · Thêm vào lớp ngoài phạm vi → 403, không ghi gì', () => {
     let e: any = null;
     try {
-      intake.commitIntake(P.mbManager, { classId: classId('CP FT 110'), idempotencyKey: 'toc-3-pv', rows: [{ fullName: 'Tốc Ngoài', email: 'tn@demo.test' }] });
+      intake.commitIntake(P.mbManager, { classId: classId('CP FT 110'), idempotencyKey: 'toc-3-pv', rows: [{ fullName: 'Tốc Ngoài', dob: '2010-01-01', email: 'tn@demo.test' }] });
     } catch (x) { e = x; }
     assert(e?.status === 403, `phải 403: ${e?.status} ${e?.message}`);
     assert(!conn.prepare(`SELECT id FROM students WHERE full_name = 'Tốc Ngoài'`).get(), 'đã ghi học viên');
@@ -162,7 +162,7 @@ export async function runPrTocTests(t: YThucTestKit) {
          */
         let them = 0;
         for (let k = 0; k < 901; k += 200) {
-          const rows = Array.from({ length: Math.min(200, 901 - k) }, (_, i) => ({ fullName: `Lô Lớn ${k + i + 1}`, email: `ll${k + i + 1}@demo.test`, startWeek: '2026-09-28' }));
+          const rows = Array.from({ length: Math.min(200, 901 - k) }, (_, i) => ({ fullName: `Lô Lớn ${k + i + 1}`, dob: '2010-01-01', email: `ll${k + i + 1}@demo.test`, startWeek: '2026-09-28' }));
           them += intake.commitIntake(P.admin, { classId: ft, rows }).added;
         }
         const ds = `SELECT id FROM assessment_attempts WHERE student_id IN (SELECT id FROM students WHERE full_name LIKE 'Lô Lớn %')`;
@@ -177,7 +177,7 @@ export async function runPrTocTests(t: YThucTestKit) {
         assert(luot === 901 * 3 && kn === 901 * 3 * 4, `lượt ${luot}/${901 * 3}, kỹ năng ${kn}/${901 * 12}`);
         /* Lượt của lớp Pre FOU (một ô `tong_hop`, PR-MON): bộ môn theo chương trình lớp, đúng như ensureSkillRows. Đổi tạm lớp — cuộn lại. */
         conn.prepare(`UPDATE classes SET programme_code = 'PREFOU' WHERE id = ?`).run(classId('MB FOU 12'));
-        const th = intake.commitIntake(P.admin, { classId: classId('MB FOU 12'), rows: [{ fullName: 'Lô Lớn Thường', email: 'llt@demo.test' }] });
+        const th = intake.commitIntake(P.admin, { classId: classId('MB FOU 12'), rows: [{ fullName: 'Lô Lớn Thường', dob: '2010-01-01', email: 'llt@demo.test' }] });
         const cyTh = (conn.prepare('SELECT id FROM learning_cycles WHERE student_id = ?').get(th.studentIds[0]) as any).id;
         conn.prepare(`UPDATE learning_cycles SET route = 'LT1' WHERE id = ?`).run(cyTh);
         const [l1] = taoMtMacDinhLo([{ cycleId: cyTh }], { actorUserId: P.admin.userId }).get(cyTh)!;
@@ -193,7 +193,7 @@ export async function runPrTocTests(t: YThucTestKit) {
   check('TOC rà (3) · khoá idempotency gắn người + lớp: người khác / lớp khác gửi cùng khoá không nhận lại kết quả lô cũ', () => {
     const bcFt = (conn.prepare(`SELECT c.id FROM classes c JOIN branches b ON b.id = c.branch_id
       WHERE b.code = 'BC' AND c.is_fast_track = 1 AND c.status = 'active' ORDER BY c.id LIMIT 1`).get() as any).id;
-    const dong = (ten: string) => [{ fullName: ten, email: 'khoa@demo.test' }];
+    const dong = (ten: string) => [{ fullName: ten, dob: '2010-01-01', email: 'khoa@demo.test' }];
     const a = intake.commitIntake(P.admin, { classId: ft, idempotencyKey: 'toc-ra-3', rows: dong('Khoá A') });
     const a2 = intake.commitIntake(P.admin, { classId: ft, idempotencyKey: 'toc-ra-3', rows: dong('Khoá A') });
     assert(a.added === 1 && JSON.stringify(a2.studentIds) === JSON.stringify(a.studentIds), 'cùng người, cùng lớp: phải trả kết quả cũ');
@@ -217,7 +217,7 @@ export async function runPrTocTests(t: YThucTestKit) {
     await new Promise<void>((ok, loi) => { con.stdout!.once('data', () => ok()); con.once('exit', (c) => loi(new Error(`tiến trình con thoát sớm (${c})`))); });
     const xong = new Promise<void>((ok) => { if (con.exitCode !== null) ok(); else con.once('exit', () => ok()); });
     /* Lời gọi thứ hai: đọc khoá NGOÀI giao dịch chưa thấy (chưa COMMIT) → tx() chờ khoá → phải đọc lại và trả kết quả cũ. */
-    const r = intake.commitIntake(P.admin, { classId: ft, idempotencyKey: 'toc-ra-4', rows: [{ fullName: 'Song Song', email: 'ss@demo.test' }] });
+    const r = intake.commitIntake(P.admin, { classId: ft, idempotencyKey: 'toc-ra-4', rows: [{ fullName: 'Song Song', dob: '2010-01-01', email: 'ss@demo.test' }] });
     await xong;
     assert(JSON.stringify(r.studentIds) === '[-4]', `phải trả kết quả của lời gọi trước: ${JSON.stringify(r)}`);
     assert(!conn.prepare(`SELECT id FROM students WHERE full_name = 'Song Song'`).get(), 'lời gọi thứ hai vẫn ghi học viên');

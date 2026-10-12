@@ -178,7 +178,7 @@ export default function LuuTruPage() {
       {lam && <XemTruocHangLoatPanel viec={lam.viec} ids={lam.ids} onClose={() => setLam(null)} onDone={() => { chon.bo(); setLam(null); reload(); }} />}
       {hocLai && (
         <StudentManagePanel viec="hoc-lai" onClose={() => setHocLai(null)} student={{ id: hocLai.id, name: hocLai.fullName, classId: null }}
-          lop={hocLai.lopCuoi} cycle={null} attempts={[]} onDone={reload} />
+          lop={hocLai.lopCuoi} cycle={null} attempts={[]} onDone={reload} quyen={{ canEdit: false }} />
       )}
       {moLai && (
         <MoLaiLopPanel classId={moLai.id} classCode={moLai.code} chiNhanh={moLai.chiNhanh} ketThuc={moLai.finishedAt ? ngay(moLai.finishedAt) : null}

@@ -74,7 +74,7 @@ export async function runPrDlTests(t: YThucTestKit) {
   };
   /** Em mới ở MB FT 101: MT1 lịch sử + MT2 tuần này (cùng khuôn `emMoiLop` của prHsm). */
   const emMt2 = (ten: string) => {
-    intake.commitIntake(P.admin, { classId: LOP, rows: [{ fullName: `DL ${ten}`, target: 6.5, email: 'hv@demo.test' }], idempotencyKey: `dl-${ten}` });
+    intake.commitIntake(P.admin, { classId: LOP, rows: [{ fullName: `DL ${ten}`, target: 6.5, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `dl-${ten}` });
     const st = get('SELECT id FROM students WHERE full_name = ?', `DL ${ten}`);
     const cy = get("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'", st.id);
     boLichTuTao(conn, cy.id);
@@ -184,7 +184,7 @@ export async function runPrDlTests(t: YThucTestKit) {
   const tuanDoi = week.ensurePeriod(t.addDays(giuaA.week_start, 7));
   conn.prepare(`UPDATE attempt_skills SET planned_period_id = ? WHERE attempt_id = ? AND skill = 'reading'`).run(tuanDoi.id, giuaA.id);
   /* Em B vào lớp HÔM NAY (sau Giữa khoá): đường vào lớp thật tự xếp bài, bỏ mốc đã qua. */
-  intake.commitIntake(P.admin, { classId: lopT, rows: [{ fullName: 'DL3 Bảo', email: 'hv@demo.test' }], idempotencyKey: 'dl3-bao' });
+  intake.commitIntake(P.admin, { classId: lopT, rows: [{ fullName: 'DL3 Bảo', email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: 'dl3-bao' });
   const sidB = get(`SELECT id FROM students WHERE full_name = 'DL3 Bảo'`).id as number;
 
   check('DL-3 regularSheet(gvcn, lớp, "progress"): bài Progress Test đã qua có điểm cũ; lịch riêng của lớp vẫn ra đúng bài; em vào sau không có hàng', () => {
@@ -213,7 +213,7 @@ export async function runPrDlTests(t: YThucTestKit) {
   const { createApp } = await import('../app.ts');
   const { can } = await import('../permissions.ts');
   /* Em ở MB FT 101 KHÔNG có MT2: bỏ lịch tự tạo, chỉ MT1 lịch sử. */
-  intake.commitIntake(P.admin, { classId: LOP, rows: [{ fullName: 'DL Chi', target: 6.5, email: 'hv@demo.test' }], idempotencyKey: 'dl-chi' });
+  intake.commitIntake(P.admin, { classId: LOP, rows: [{ fullName: 'DL Chi', target: 6.5, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: 'dl-chi' });
   const chi = get(`SELECT id FROM students WHERE full_name = 'DL Chi'`).id as number;
   const cyChi = get("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'", chi).id;
   boLichTuTao(conn, cyChi);
@@ -290,7 +290,7 @@ export async function runPrDlTests(t: YThucTestKit) {
     check('DL-4 macDinh trên lớp dựng riêng: MT1 đủ, MT2 (tuần này) còn trống, MT3 (tuần sau) đủ → mt:2', () => {
       /* Lớp riêng: MB FT 101 bị các phép kiểm trước thay đổi tuỳ thứ tự chạy, nên không dùng làm mốc cho lượt mặc định. */
       const lop4 = intake.createClass(P.admin, { code: 'MB FT DL4', branchId: MB, kind: 'FT', route: 'LT1', startDate: tuanNay }).id as number;
-      intake.commitIntake(P.admin, { classId: lop4, rows: [{ fullName: 'DL4 Dung', target: 6.5, email: 'hv@demo.test' }], idempotencyKey: 'dl4-dung' });
+      intake.commitIntake(P.admin, { classId: lop4, rows: [{ fullName: 'DL4 Dung', target: 6.5, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: 'dl4-dung' });
       const st = get(`SELECT id FROM students WHERE full_name = 'DL4 Dung'`).id as number;
       const cy = get("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'", st).id;
       boLichTuTao(conn, cy);
@@ -314,7 +314,7 @@ export async function runPrDlTests(t: YThucTestKit) {
     check('DL-5 fix lịch sử theo từng em: lượt toàn lịch sử → lichSu; lượt lẫn → không; hàng bảng mang lichSu của em', () => {
       const lop5 = intake.createClass(P.admin, { code: 'MB FT DL5', branchId: MB, kind: 'FT', route: 'LT1', startDate: tuanNay }).id as number;
       const em = (ten: string) => {
-        intake.commitIntake(P.admin, { classId: lop5, rows: [{ fullName: ten, target: 6.5, email: 'hv@demo.test' }], idempotencyKey: `dl5-${ten}` });
+        intake.commitIntake(P.admin, { classId: lop5, rows: [{ fullName: ten, target: 6.5, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `dl5-${ten}` });
         const st = get('SELECT id FROM students WHERE full_name = ?', ten).id as number;
         const cy = get("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'", st).id;
         boLichTuTao(conn, cy);

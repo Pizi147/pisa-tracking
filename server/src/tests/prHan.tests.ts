@@ -32,7 +32,7 @@ export async function runPrHanTests(t: YThucTestKit) {
   const CLASS = t.classId('MB FT 101');
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const makeStudent = (name: string) => {
-    intake.commitIntake(P.admin, { classId: CLASS, rows: [{ fullName: `HAN ${name}`, target: 7, email: 'hv@demo.test' }], idempotencyKey: `han-${name}` });
+    intake.commitIntake(P.admin, { classId: CLASS, rows: [{ fullName: `HAN ${name}`, target: 7, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `han-${name}` });
     const st = get('SELECT id FROM students WHERE full_name = ?', `HAN ${name}`);
     const cy = get("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'", st.id);
     boLichTuTao(conn, cy.id);

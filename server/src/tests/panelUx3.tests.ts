@@ -355,15 +355,14 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     assert(d.duongHoSoHocVien(7) === '/hoc-vien/7', 'hồ sơ trơn');
   });
 
-  check('UX3 (6) · mucQuanLyHocVien: thứ tự PR-LT (Thông tin đầu, Lưu trữ cuối); HV đã kết thúc học không còn Tạm dừng/Kết thúc', () => {
+  check('UX3 (6) · mucQuanLyHocVien: thứ tự OV-2b (Sửa thông tin · Chuyển lớp · Tạm dừng / Thôi học · Lưu trữ, rồi mục khác); HV đã kết thúc học không còn Tạm dừng / Thôi học', () => {
     const q = { ghiLoTrinhTiep: true, chuyenLop: true, tamDung: true, quayLai: false, ketThuc: true, luuTru: true, boLuuTru: false };
     const ds = d.mucQuanLyHocVien({ canEdit: true, lopHoc: { quyen: q }, cycle: { ratio: false }, status: 'active' }).map((x: any) => x.key);
-    assert(ds[0] === 'info' && ds[ds.length - 1] === 'luu-tru', ds.join());
-    /* PR-VAI-b (K3-48): menu chia nhóm Thông tin · Lộ trình · Lớp — Kết luận lộ trình về nhóm Lộ trình, TRƯỚC Chuyển lớp (nhóm Lớp). */
-    assert(ds.indexOf('lo-trinh-tiep') < ds.indexOf('chuyen-lop') && ds.indexOf('outcome') < ds.indexOf('chuyen-lop'), ds.join());
+    /* PR-OV2b (mockup overhaul-2 §6): bốn mục chính trước, mục khác (Lộ trình tiếp theo, Lộ trình, Kết quả thi thật…) sau, giữ thứ tự cũ. */
+    assert(ds.slice(0, 4).join() === 'info,chuyen-lop,tam-dung-thoi-hoc,luu-tru' && ds.indexOf('lo-trinh-tiep') < ds.indexOf('outcome'), ds.join());
     const xong = d.mucQuanLyHocVien({ canEdit: true, lopHoc: { quyen: q }, cycle: null, status: 'finished' }).map((x: any) => x.key);
-    assert(!xong.includes('tam-dung') && !xong.includes('ket-thuc'), xong.join());
-    assert(d.mucQuanLyHocVien({ canEdit: true, lopHoc: null, cycle: null, status: 'active' }).map((x: any) => x.nhan).join() === 'Thông tin học viên', 'chỉ có Thông tin');
+    assert(!xong.includes('tam-dung-thoi-hoc'), xong.join());
+    assert(d.mucQuanLyHocVien({ canEdit: true, lopHoc: null, cycle: null, status: 'active' }).map((x: any) => x.nhan).join() === 'Sửa thông tin', 'chỉ có Sửa thông tin');
   });
 
   check('UX3 (3) · ChonNgay.tsx không đọc đồng hồ trình duyệt (new Date/Date.now) và không dựng ô lịch', () => {

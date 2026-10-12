@@ -191,7 +191,7 @@ export async function runPrDeployTests(t: YThucTestKit) {
   const taoEm = (lop: string) => {
     const ten = `DEPLOY HV ${++seq}`;
     const cid = classId(lop);
-    intake.commitIntake(P.admin, { classId: cid, rows: [{ fullName: ten, email: 'hv@demo.test' }], idempotencyKey: `deploy-${seq}` });
+    intake.commitIntake(P.admin, { classId: cid, rows: [{ fullName: ten, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `deploy-${seq}` });
     regular.planRegularTests(P.admin, cid);
     const st = get('SELECT id FROM students WHERE full_name = ?', ten);
     const luot = (kind: string, cls?: number) => get(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = ? ${cls ? 'AND class_id = ?' : ''} ORDER BY id DESC`, ...(cls ? [st.id, kind, cls] : [st.id, kind]))?.id as number | undefined;

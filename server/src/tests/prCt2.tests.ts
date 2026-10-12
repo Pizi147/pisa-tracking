@@ -25,7 +25,7 @@ export async function runPrCt2Tests(t: YThucTestKit) {
 
   check('CT2-0 · Kết quả PA Tutor 10 buổi: 2 buổi không người dạy → lưu, phu_trach_* NULL; loiKetQuaTuan không lỗi nguoi-day; tên ngoài 1 ký tự vẫn lỗi', () => {
     const cid = classId('MB FT 101');
-    intake.commitIntake(P.admin, { classId: cid, rows: [{ fullName: 'CT2 KQ', target: 7, email: 'hv@demo.test' }], idempotencyKey: 'ct2-kq' });
+    intake.commitIntake(P.admin, { classId: cid, rows: [{ fullName: 'CT2 KQ', target: 7, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: 'ct2-kq' });
     const sid = get('SELECT id FROM students WHERE full_name = ?', 'CT2 KQ').id;
     const c = cases.reportIssue(P.lrTeacher, {
       title: 'CT2 thử Kết quả', primaryCode: 'student.listening.technique', studentId: sid, topic: 'listening',
@@ -106,7 +106,7 @@ export async function runPrCt2Tests(t: YThucTestKit) {
   /** Thêm em vào lớp thường, xếp bài, nhập điểm Progress Test /20 → id em. */
   const emTruot = (ten: string, lop: string, diem: Record<string, number>) => {
     const cid = classId(lop);
-    intake.commitIntake(P.admin, { classId: cid, rows: [{ fullName: ten, email: 'hv@demo.test' }], idempotencyKey: `ct2-${ten}` });
+    intake.commitIntake(P.admin, { classId: cid, rows: [{ fullName: ten, email: 'hv@demo.test', dob: '2010-01-01' }], idempotencyKey: `ct2-${ten}` });
     regular.planRegularTests(P.admin, cid);
     const sid = get('SELECT id FROM students WHERE full_name = ?', ten).id as number;
     const pt = get(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'progress'`, sid).id as number;
