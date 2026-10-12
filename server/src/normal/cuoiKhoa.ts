@@ -19,7 +19,7 @@ import { nguoiGiuKetQua } from '../cases/giuKetQua.ts';
 import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
 import { chotYeuCau, taoYeuCau } from '../duyet/yeuCau.ts';
 import { phanCongO } from '../classes/quyenChuyenLop.ts';
-import { allProgrammes, evaluateRegular, nguongDatKhacMacDinh, nguongDatLop } from './regular.ts';
+import { allProgrammes, evaluateRegular } from './regular.ts';
 import { emDaSangFt, kiemDongKyVong, mt0TheoLop, taoCaseKyVong, type DongCaseKyVong } from './kyVong.ts';
 
 /**
@@ -42,23 +42,22 @@ export function tyLeTongLo(attemptIds: readonly number[]): Map<number, TyLeLuot>
   const out = new Map<number, TyLeLuot>();
   if (!attemptIds.length) return out;
   const conn = db();
-  const luot = new Map<number, { kind: string; ct: string | null; lop: number | null }>();
+  const luot = new Map<number, { kind: string; ct: string | null; nguong: number | null }>();
   const diem = new Map<number, any[]>();
   theoLo([...new Set(attemptIds)], (lo, ph) => {
     for (const r of conn.prepare(
-      `SELECT a.id, a.kind, a.class_id, c.programme_code FROM assessment_attempts a LEFT JOIN classes c ON c.id = a.class_id WHERE a.id IN (${ph})`,
-    ).all(...lo) as any[]) luot.set(r.id, { kind: r.kind, ct: r.programme_code ?? null, lop: r.class_id ?? null });
+      `SELECT a.id, a.kind, c.programme_code, c.nguong_dat FROM assessment_attempts a LEFT JOIN classes c ON c.id = a.class_id WHERE a.id IN (${ph})`,
+    ).all(...lo) as any[]) luot.set(r.id, { kind: r.kind, ct: r.programme_code ?? null, nguong: r.nguong_dat ?? null });
     for (const r of conn.prepare(`SELECT attempt_id, skill, raw_score, raw_total FROM assessment_scores WHERE attempt_id IN (${ph})`).all(...lo) as any[]) {
       if (!diem.has(r.attempt_id)) diem.set(r.attempt_id, []);
       diem.get(r.attempt_id)!.push(r);
     }
   });
   const chuongTrinh = allProgrammes();
-  const nguongKhac = nguongDatKhacMacDinh();
   for (const [id, l] of luot) {
     const prog = l.ct ? chuongTrinh.get(l.ct) : null;
     if (!prog || prog.scoringMode !== 'ratio') continue;
-    const kq = evaluateRegular(prog.skills, diem.get(id) ?? [], prog.code, nguongDatLop(l.lop, nguongKhac));
+    const kq = evaluateRegular(prog.skills, diem.get(id) ?? [], prog.code, l.nguong ?? undefined);   // OV-6b1: ngưỡng lớp đọc cùng câu
     out.set(id, {
       tyLe: kq.tyLeTong, du: kq.complete, nguong: kq.passThreshold, scored: kq.scored, required: kq.required, ct: prog.code, kind: l.kind,
       monTruot: kq.skills.filter((s) => s.outcome === 'fail').map((s) => s.skill),
