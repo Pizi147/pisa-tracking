@@ -90,3 +90,14 @@ export function mocChuBoTro(followupDue: string | null, homNay: string): string 
 
 /** Tên các môn của một nhóm theo `ct`, dạng `G+V, P` (dùng cho tiêu đề việc/thẻ). */
 export const tenNhomMon = (ct: string | null | undefined, skills: readonly string[]) => skills.map((s) => tenMonNgan(ct, s)).join(', ');
+
+/**
+ * OV-6b2 — KẾT QUẢ CHECKPOINT (PET, KET): đủ điểm mọi môn mới kết luận. Đạt mọi môn → "Đạt"; môn chưa đạt → chip "SOS · L+S" (chỉ để nhìn —
+ * KHÔNG Case / PA / việc, chủ SP 11/10). Chưa đủ điểm → null.
+ */
+export function chipCheckpoint(r: { complete: boolean; skills: readonly { skill: string; outcome: string }[] }, ct: string | null):
+  { chu: string; dat: boolean } | null {
+  if (!r.complete) return null;
+  const truot = r.skills.filter((s) => s.outcome === 'fail').map((s) => tenMonNgan(ct, s.skill));
+  return truot.length ? { chu: `SOS · ${truot.join(' ')}`, dat: false } : { chu: 'Đạt', dat: true };
+}

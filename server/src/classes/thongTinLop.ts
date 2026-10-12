@@ -38,7 +38,9 @@ export function capNhatThongTinLop(
   let chuongTrinh = cu;
   if (input.programmeCode !== undefined) {
     const pc = programmeOf(String(input.programmeCode ?? ''));
-    if (!pc) throw badRequest('Chương trình không hợp lệ.');
+    const prog = pc ? programmeByCode(pc) : null;   // OV-6b2: mã mới đọc bảng `programmes` (mã lạ không có trong bảng → không hợp lệ)
+    if (!pc || !prog) throw badRequest('Chương trình không hợp lệ.');
+    if (!prog.active && pc !== cu) throw badRequest(`Chương trình ${pc} đã ngừng dùng — chọn chương trình khác.`);
     if (pc === 'PREFOU' && !CHO_TAO_PRE_FOU && pc !== cu) throw badRequest('Lớp Pre FOU chưa mở — sẽ mở cùng đợt cập nhật hệ môn học.');
     chuongTrinh = pc;
   }

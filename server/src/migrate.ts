@@ -39,6 +39,7 @@ import { migratePrCt2 } from './migrate/prCt2.ts';
 import { migratePrOv3b } from './migrate/prOv3b.ts';
 import { migratePrOv4 } from './migrate/prOv4.ts';
 import { migratePrOv6b1 } from './migrate/prOv6b1.ts';
+import { migratePrOv6b2 } from './migrate/prOv6b2.ts';
 
 /**
  * Nâng cấp database ĐANG CÓ lên schema mới, không xoá dữ liệu. PR-SO (DEP-gỡ): nhánh nâng cấp từ mô hình `mock_attempts` (trước overhaul)
@@ -262,6 +263,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     /* PR-LOP: số tuần lớp, RF, Pre FOU, đổi tên lớp (T2, T78). */
     migratePrLop(conn, applied);
     /* OV-6b1 (ngay sau PR-LOP, TRƯỚC mọi bước có thể xếp lịch MT): tuần MT lộ trình + ngưỡng đạt vào cấu hình, bản chụp cho mọi lớp cũ. */ migratePrOv6b1(conn, applied);
+    /* OV-6b2 (ngay sau OV-6b1, TRƯỚC mọi bước gọi mã nghiệp vụ đọc `classes.moc_lap`): cột Checkpoint mỗi n tuần + chèn PET, KET. */ migratePrOv6b2(conn, applied);
     /* PR-DUYET: hộp Chờ duyệt (bảng yeu_cau_duyet + thẻ từ hai luồng cũ), tasks.assignee_name, notifications.duong. */
     migratePrDuyet(conn, applied);
     /* PR-MT: cột lich_su (MT lịch sử, T34). */ migratePrMt(conn, applied);

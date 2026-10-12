@@ -11,10 +11,10 @@
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { db, theoLo, tx } from '../db.ts';
 import {
-  CO_DIEM_SQL, KY_NANG_KE_HOACH, MT_TOI_DA, kiemTuanMt0, O_KE_HOACH, dotMtMoi, PERMISSIONS, boMonLich, kiemSoMtMoi, kiemTuanXep, laLichSu, viecXepMt, laVaoMuon, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang,
+  CO_DIEM_SQL, KY_NANG_KE_HOACH, khoaBai, nhanBai, nhanBaiThuong, MT_TOI_DA, kiemTuanMt0, O_KE_HOACH, dotMtMoi, PERMISSIONS, boMonLich, kiemSoMtMoi, kiemTuanXep, laLichSu, viecXepMt, laVaoMuon, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang,
   tuanKhoa as tuanKhoaCua,
   type BaiXemTruoc, type DongHangLoat, type KetQuaHuy, type KyNangKH, type LuotSo, type LuotXep, type OKyNang, ATTEMPT_KIND_SHORT } from '../../../shared/domain/index.ts';
-import { badRequest, notFound } from '../util.ts';
+import { addDays, badRequest, notFound } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { entrySkillsOf, expectationFor } from '../fasttrack/scoring.ts';
@@ -146,7 +146,7 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
           WHERE e.class_id IN (${phOf(thuongIds.length)}) AND ${HV_DANG_HOC_SQL('s')}
             AND NOT EXISTS (
               SELECT 1 FROM assessment_attempts a
-               WHERE a.student_id = s.id AND a.class_id = e.class_id AND a.kind IN ('progress', 'final') AND a.status != 'cancelled')
+               WHERE a.student_id = s.id AND a.class_id = e.class_id AND a.kind IN ('progress', 'final', 'checkpoint') AND a.status != 'cancelled')
           GROUP BY e.class_id`,
       )
       .all(...thuongIds) as any[]) hvChuaCoLich.set(r.class_id, r.n);
@@ -154,6 +154,7 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
   /** Lớp thường: `đang W8/8` (chương trình đi riêng ở `chuongTrinh`, hiện cạnh chi nhánh). */
   const tomTatThuong = (classId: number): string => {
     const pr = progressAll.get(classId);
+    if (pr?.mocLap && pr.currentWeek) return pr.currentWeek < 1 ? 'chưa khai giảng' : `đang tuần ${pr.currentWeek}`;   // OV-6b2: lớp liên tục
     if (!pr?.currentWeek || !pr.totalWeeks) return 'chưa có ngày khai giảng';
     if (pr.currentWeek < 1) return 'chưa khai giảng';
     if (pr.currentWeek > pr.totalWeeks) return 'đã hết khoá';
@@ -729,6 +730,8 @@ export function xepMoi(p: Principal, i: {
 // ---------------------------------------------------------------- lớp thường: lưới theo học viên × kỹ năng
 
 export type DotThuong = { attemptId: number | null; kn: Partial<Record<KyNangKH, OKyNang>> };
+/** Khoá cột của một bài lớp thường: `progress` / `final`; OV-6b2: Checkpoint n → `cp{n}`. */
+const cotCua = (a: { kind: string; attempt_no: number }) => (a.kind === 'checkpoint' ? `cp${a.attempt_no}` : a.kind);
 
 function docLopThuong(classId: number) {
   const cls = db().prepare('SELECT * FROM classes WHERE id = ?').get(classId) as any;
@@ -745,7 +748,7 @@ export function luoiThuong(p: Principal, classId: number) {
   const progress = classProgress(classId);
   const bo = boMonThuong(prog);
   /* K4-16, PF6: cột theo MỐC của chương trình — Pre FOU chỉ Cuối khoá. */
-  const kinds = prog.checkpoints.map((c) => c.kind).filter((k): k is 'progress' | 'final' => k === 'progress' || k === 'final');
+  const kinds: string[] = prog.checkpoints.map((c) => c.kind).filter((k) => k === 'progress' || k === 'final');
 
   const students = conn
     .prepare(
@@ -760,7 +763,7 @@ export function luoiThuong(p: Principal, classId: number) {
       `SELECT a.* FROM assessment_attempts a
          JOIN enrollments e ON e.student_id = a.student_id AND e.status = 'active' AND e.class_id = a.class_id
          JOIN students s ON s.id = a.student_id AND ${HV_DANG_HOC_SQL('s')}
-        WHERE a.class_id = ? AND a.kind IN ('progress', 'final') AND a.status != 'cancelled'
+        WHERE a.class_id = ? AND a.kind IN ('progress', 'final', 'checkpoint') AND a.status != 'cancelled'
         ORDER BY a.attempt_no DESC`,
     )
     .all(classId) as any[];
@@ -796,7 +799,10 @@ export function luoiThuong(p: Principal, classId: number) {
   };
 
   const theoEm = new Map<string, any>();
-  for (const a of attempts) { const key = `${a.student_id}:${a.kind}`; if (!theoEm.has(key)) theoEm.set(key, a); }
+  for (const a of attempts) { const key = `${a.student_id}:${cotCua(a)}`; if (!theoEm.has(key)) theoEm.set(key, a); }
+  /* OV-6b2: lớp liên tục — mỗi Checkpoint đã có của lớp một cột (số chung cả lớp, tuần học n × mỗi-n-tuần); không Progress / Final. */
+  const soCp = progress.mocLap ? [...new Set(attempts.filter((a) => a.kind === 'checkpoint').map((a) => a.attempt_no as number))].sort((x, y) => x - y) : [];
+  if (progress.mocLap) kinds.splice(0, kinds.length, ...soCp.map((n) => `cp${n}`));
   const homNay = demoToday();
   const ttMt0 = mt0TheoHocVien(mt0s.map((a) => a.student_id as number));
   const mt0Cua = new Map(mt0s.map((a) => {
@@ -808,7 +814,7 @@ export function luoiThuong(p: Principal, classId: number) {
     return [a.student_id as number, { attemptId: a.id as number, kn, khongDung: ttMt0.get(a.student_id)?.trangThai === 'khong_dung' }];
   }));
   const hang = students.map((s) => {
-    const dot = {} as Partial<Record<'progress' | 'final', DotThuong>>;
+    const dot: Record<string, DotThuong> = {};
     for (const kind of kinds) {
       const a = theoEm.get(`${s.id}:${kind}`);
       dot[kind] = a ? dotCua(a) : { attemptId: null, kn: {} };
@@ -819,14 +825,18 @@ export function luoiThuong(p: Principal, classId: number) {
   const nhanKhoa = (n: number | null) => (n && progress.totalWeeks ? tuanKhoaCua(n, progress.totalWeeks) : null);
   const hvChuaCoLich = students.filter((s) => kinds.every((k) => !theoEm.has(`${s.id}:${k}`))).length;
   const cw = progress.currentWeek;
+  const tuanCp = (n: number) => (progress.startWeekStart && progress.mocLap ? addDays(progress.startWeekStart, 7 * (n * progress.mocLap - 1)) : null);
   return {
     classId, classCode: cls.code as string, chuongTrinh: progress.programmeCode as string | null,
     khaiGiang: progress.startWeekStart, tongTuan: progress.totalWeeks,
-    tuanHienTai: cw && progress.totalWeeks ? (cw > progress.totalWeeks ? 'sau khoá' : cw >= 1 ? tuanKhoaCua(cw, progress.totalWeeks) : null) : null,
+    tuanHienTai: progress.mocLap ? (cw && cw >= 1 ? `tuần ${cw}` : null)
+      : cw && progress.totalWeeks ? (cw > progress.totalWeeks ? 'sau khoá' : cw >= 1 ? tuanKhoaCua(cw, progress.totalWeeks) : null) : null,
     hvChuaCoLich,
-    cot: kinds.map((kind) => (kind === 'progress'
-      ? { kind, nhan: KIND_NHAN.progress, deXuat: progress.progressWeekStart, nhanDeXuat: nhanKhoa(progress.progressWeek) }
-      : { kind, nhan: KIND_NHAN.final, deXuat: progress.finalWeekStart, nhanDeXuat: nhanKhoa(progress.finalWeek) })),
+    cot: progress.mocLap
+      ? soCp.map((n) => ({ kind: `cp${n}`, nhan: nhanBai(khoaBai('checkpoint', n)), deXuat: tuanCp(n), nhanDeXuat: `tuần ${n * progress.mocLap!}` }))
+      : kinds.map((kind) => (kind === 'progress'
+        ? { kind, nhan: KIND_NHAN.progress, deXuat: progress.progressWeekStart, nhanDeXuat: nhanKhoa(progress.progressWeek) }
+        : { kind, nhan: KIND_NHAN.final, deXuat: progress.finalWeekStart, nhanDeXuat: nhanKhoa(progress.finalWeek) })),
     /** Bộ môn của chương trình (Pre FOU `tong_hop`) — hộp kỹ năng lặp đúng bộ này. */
     boMon: bo,
     hang,
@@ -835,11 +845,12 @@ export function luoiThuong(p: Principal, classId: number) {
 
 /** Xếp MỚI một bài Giữa/Cuối khoá cho MỘT em: tạo bằng `planRegularTests` rồi đặt tuần từng kỹ năng — hỏng thì cuộn lại cả. */
 export function xepMoiThuong(p: Principal, i: {
-  classId: number; studentId: number; kind: 'progress' | 'final'; tuan: Partial<Record<KyNangKH, number>>; force?: boolean;
+  classId: number; studentId: number; kind: string; tuan: Partial<Record<KyNangKH, number>>; force?: boolean;
 }) {
   const conn = db();
   require_(p, PERMISSIONS.PLAN_WEEK, { classId: i.classId }, PLAN_MSG);
   const { prog } = docLopThuong(i.classId);
+  if (/^cp\d+$/.test(i.kind)) throw badRequest('Checkpoint tự xếp theo lịch lớp — bấm ô Checkpoint đã có để dời tuần.');
   if (i.kind !== 'progress' && i.kind !== 'final') throw badRequest('Cần chọn Progress Test hoặc Final Test.');
   const bo = boMonThuong(prog);
   const dangHoc = conn
@@ -860,7 +871,7 @@ export function xepMoiThuong(p: Principal, i: {
       if (kiem.blockers.length) throw badRequest(kiem.blockers.join(' '));
       if (kiem.warnings.length && !i.force) throw badRequest(`${kiem.warnings.join(' ')} ${CAU_XAC_NHAN}`);
     }
-    const ket = planRegularTests(p, i.classId, { studentIds: [i.studentId], kinds: [i.kind] });
+    const ket = planRegularTests(p, i.classId, { studentIds: [i.studentId], kinds: [i.kind as 'progress' | 'final'] });
     if (!ket.created) throw badRequest('Học viên đã có bài này rồi. Đổi tuần thay vì xếp mới.');
     const moi = conn
       .prepare(
@@ -882,7 +893,8 @@ function cycleThuong(studentId: number) {
 
 // ---------------------------------------------------------------- xếp lịch hàng loạt (R9, R9b) — theo từng kỹ năng
 
-type KindThuong = 'progress' | 'final';
+/** `progress` | `final`; OV-6b2: `cp{n}` = Checkpoint n (chỉ dời lượt đã có — Checkpoint tự sinh từng lượt). */
+type KindThuong = string;
 
 /** Lớp thường: phân loại MỘT em cho xem trước — KHÔNG ghi gì. Trả kèm `attemptId` (nếu đã có bài) để lưu. */
 function xetMotEmThuong(i: {
@@ -891,17 +903,19 @@ function xetMotEmThuong(i: {
   bo: readonly KyNangKH[];
 }): { dong: DongHangLoat; attemptId: number | null } {
   const conn = db();
-  const nhanDot = KIND_NHAN[i.kind];
+  const nhanDot = /^cp\d+$/.test(i.kind) ? nhanBai(khoaBai('checkpoint', Number(i.kind.slice(2)))) : KIND_NHAN[i.kind as 'progress' | 'final'];
   const co = i.bo.filter((k) => i.tuan[k]);
   const loi = (cau: string, bai: BaiXemTruoc[] = []) => ({
     dong: { studentId: i.studentId, ten: i.ten, hanhDong: 'loi' as const, bai, loi: cau }, attemptId: null as number | null,
   });
 
   const cycle = cycleThuong(i.studentId);
-  const existing = cycle
-    ? conn.prepare(`SELECT * FROM assessment_attempts WHERE cycle_id = ? AND kind = ?`).get(cycle.id, i.kind) as any
-    : null;
+  const cp = /^cp(\d+)$/.exec(i.kind);
+  const existing = !cycle ? null : cp
+    ? conn.prepare(`SELECT * FROM assessment_attempts WHERE cycle_id = ? AND kind = 'checkpoint' AND attempt_no = ? AND status != 'cancelled'`).get(cycle.id, Number(cp[1])) as any
+    : conn.prepare(`SELECT * FROM assessment_attempts WHERE cycle_id = ? AND kind = ?`).get(cycle.id, i.kind) as any;
 
+  if (!existing && cp) return loi(`Em chưa có ${nhanDot} — Checkpoint tự xếp theo lịch lớp.`);
   if (!existing) {
     /* Em chưa có bài: bài mới luôn tạo đủ dòng lịch (Q2) nên cần đủ bộ môn. */
     if (co.length < i.bo.length) return loi(`Em chưa có ${nhanDot} — ${cauThieuMon(i.bo).replace(/^C/, 'c')}`);
@@ -1048,7 +1062,8 @@ function xetMotEmFT(i: {
 
 export function xepHangLoat(p: Principal, i: {
   /** `'moi'` (PR-MTb, T13b): mỗi em xếp "MT mới" của riêng em — chỉ Fast Track. */
-  classId: number; attemptNo?: number | 'moi'; kind?: 'progress' | 'final'; studentIds: number[];
+  /** Lớp thường: `progress` | `final`; OV-6b2 lớp liên tục: `cp{n}` (Checkpoint n — chỉ dời lượt đã có, không tạo mới). */
+  classId: number; attemptNo?: number | 'moi'; kind?: string; studentIds: number[];
   tuan: Partial<Record<KyNangKH, number>>; force?: boolean; xemTruoc?: boolean;
   /** PR-MTb (Q3, chỉ Fast Track; thiếu = cả 4): kỹ năng được tick. Đợt TẠO MỚI: kỹ năng bỏ tick bị bỏ khỏi đợt (`required = 0`); đợt đã có: không xếp kỹ năng đó. */
   kyNang?: KyNangKH[];
@@ -1066,7 +1081,7 @@ export function xepHangLoat(p: Principal, i: {
   const laThuong = cls.mode === 'ratio';
   if (i.attemptNo && laThuong) throw badRequest('Lớp này là lớp thường — chọn Progress Test hoặc Final Test.');
   if (i.kind && !laThuong) throw badRequest('Lớp này là Fast Track — chọn MT.');
-  if (i.kind && i.kind !== 'progress' && i.kind !== 'final') throw badRequest('Cần chọn Progress Test hoặc Final Test.');
+  if (i.kind && i.kind !== 'progress' && i.kind !== 'final' && !/^cp[1-9]\d{0,4}$/.test(i.kind)) throw badRequest('Cần chọn Progress Test hoặc Final Test.');
   if (typeof i.attemptNo === 'number' && (i.attemptNo < 1 || i.attemptNo > MT_TOI_DA)) throw badRequest(`Tối đa MT${MT_TOI_DA} cho một lộ trình.`);
   if (i.kyNang !== undefined && !laThuong && (!Array.isArray(i.kyNang) || !i.kyNang.length)) throw badRequest('Chưa chọn kỹ năng nào.');
 
@@ -1141,10 +1156,10 @@ export function xepHangLoat(p: Principal, i: {
     }
   });
 
-  if (laThuong) baoGvcnDoiLichThuongLop(p, i.classId, i.kind!, soEmDoi, today);   // T11: một chuông cả lớp (bài mới tạo không tính)
+  if (laThuong) baoGvcnDoiLichThuongLop(p, i.classId, i.kind!.replace(/^cp(\d+)$/, 'checkpoint:$1'), soEmDoi, today);   // T11: một chuông cả lớp (bài mới tạo không tính)
   writeAudit({
     actorUserId: p.userId, action: 'ke_hoach.hang_loat', entityType: 'class', entityId: i.classId,
-    entityLabel: laThuong ? KIND_NHAN[i.kind!] : i.attemptNo === 'moi' ? 'MT mới' : `MT${i.attemptNo}`,
+    entityLabel: laThuong ? nhanBaiThuong(i.kind!.replace(/^cp(\d+)$/, 'checkpoint:$1')) : i.attemptNo === 'moi' ? 'MT mới' : `MT${i.attemptNo}`,
     before: null, after: { daLuu, loi: ketQua.filter((d) => d.hanhDong === 'loi').map((d) => ({ studentId: d.studentId, loi: d.loi })) },
   });
   return { dong: ketQua, daLuu };

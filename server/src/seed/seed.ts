@@ -1,4 +1,5 @@
 import { buildOv2aDemo } from './ov2aSeed.ts';
+import { buildPetDemo } from './petSeed.ts';
 import crypto from 'node:crypto';
 import { db, recreateSchema, tx } from '../db.ts';
 import {
@@ -177,7 +178,7 @@ export function runSeed() {
       classId.set(c.code, id);
       classBranch.set(c.code, c.branch);
 
-      const skills = programme ? PROGRAMME_TEMPLATES[programme].skills : ENTRY_SKILLS;
+      const skills = programme ? PROGRAMME_TEMPLATES[programme as keyof typeof PROGRAMME_TEMPLATES].skills : ENTRY_SKILLS;
       for (const skill of skills) {
         conn.prepare('INSERT INTO class_skills (class_id, skill, sessions_per_week) VALUES (?,?,?)')
           .run(id, skill, skill === 'writing1' || skill === 'writing2' ? 1 : 2);
@@ -283,6 +284,8 @@ export function runSeed() {
     buNgayPb2b(conn);
     /* PR-OV2a: tài khoản Admin · TVV · CX + em của TVV — CUỐI CÙNG để id người dùng cũ không đổi. */
     const ov2a = buildOv2aDemo(conn);
+    /* OV-6b2: lớp MB PET 01 (3 em, Checkpoint 1 một Đạt · một SOS) — sau OV-2a để id học viên / người dùng cũ không đổi. */
+    const pet = buildPetDemo(conn, { adminId, mbId: branchId.get('MB')!, userId });
 
     return {
       'Chi nhánh': BRANCHES.length,
@@ -292,6 +295,7 @@ export function runSeed() {
       'Người dùng': userSeq,
       'Giáo viên': TEACHERS.length,
       'Học viên của TVV demo (PR-OV2a)': ov2a.soHv,
+      'Học viên lớp PET demo (OV-6b2)': pet.soHv,
       'Học viên': counts.students,
       'Lộ trình': counts.cycles,
       'Lượt đánh giá': counts.attempts,

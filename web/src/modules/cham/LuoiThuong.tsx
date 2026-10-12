@@ -15,7 +15,7 @@ import { useTrangThaiLuuO } from '../../ui/SaveState.tsx';
 import { ODiemThuong, laTuChoi, type SaveOpts } from '../fasttrack/ScoreEntry.tsx';
 import { caseStatusLabel, sosTone } from '../../lib/format.ts';
 import {
-  ATTEMPT_KIND_SHORT, CHU_THAO_TAC, CHUONG_TRINH_KHONG_CHIA_MON, ketQuaThuong, maHocVienNgan, ngay, tenMon, tenMonNgan, thaoTacKyNang, trangThaiTT, tuanLich,
+  CHU_THAO_TAC, CHUONG_TRINH_KHONG_CHIA_MON, nhanBai, ketQuaThuong, maHocVienNgan, ngay, tenMon, tenMonNgan, thaoTacKyNang, trangThaiTT, tuanLich,
   type AttemptKind, type ThaoTac,
 } from '@shared/domain/index.ts';
 import { MenuDong } from '../../ui/MenuDong.tsx';
@@ -44,7 +44,10 @@ type SkillSchedule = {
   khoa?: boolean;
 };
 type Row = {
-  attemptId: number; kind: AttemptKind; kindLabel: string;
+  /** Khoá bài (`khoaBai`): `progress` / `final`; OV-6b2 Checkpoint kèm số (`checkpoint:2`). */
+  attemptId: number; kind: string; kindLabel: string;
+  /** OV-6b2: Checkpoint đủ điểm — chip "Đạt" / "SOS · L+S" (chỉ để nhìn, không Case). */
+  chip?: { chu: string; dat: boolean } | null;
   studentId: number; studentName: string; studentCode: string; studentStatus: string;
   periodCode: string | null; status: string;
   deadline: string | null; overdue: boolean;
@@ -116,7 +119,7 @@ export function kindsThuong(data: ThuongSheet | null | undefined): { kind: strin
   const co = new Set(data.rows.map((r) => r.kind as string));
   const thuTu = [...data.programme.checkpoints.map((c) => c.kind as string), ...co];
   return [...new Set(thuTu)].filter((k) => co.has(k))
-    .map((k) => ({ kind: k, label: ATTEMPT_KIND_SHORT[k as AttemptKind] ?? k }));
+    .map((k) => ({ kind: k, label: nhanBai(k) }));
 }
 
 /**
@@ -188,6 +191,8 @@ export function tongPhoBien(rows: Row[], k: string): number | null {
 const COT_HV = 220;
 const COT_MON = 190;   // OV-4b: +nút "Nhận xét" cạnh hai ô đúng/tổng
 const COT_KQ = 290;
+/** OV-6b2: cột "% tổng" của lưới Checkpoint. */
+const COT_PT = 84;
 
 /**
  * Lưu một ô của lưới lớp thường cho MỘT dòng — cùng dáng `useSaveScore` của FT: trạng thái lưu riêng TỪNG Ô,
@@ -298,7 +303,8 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
       invalidate('/regular'); invalidate('/classes');
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
-  const nutTao = data.canPlan && !anNutTao && (
+  /* OV-6b2: lớp liên tục (chương trình không có mốc cố định) — Checkpoint tự sinh, không nút tạo bài. */
+  const nutTao = data.canPlan && !anNutTao && data.programme.checkpoints.length > 0 && (
     <button className="btn btn-sm" onClick={plan} disabled={busy}>
       {busy ? 'Đang tạo…' : 'Tạo bài kiểm tra theo chương trình'}
     </button>
@@ -322,7 +328,9 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
       if (el) { el.focus(); el.select(); return; }
     }
   };
-  const rong = COT_HV + COT_MON * skills.length + COT_KQ;
+  /* OV-6b2 (mockup §6): lưới Checkpoint có thêm cột "% tổng" trước Kết quả. */
+  const laCp = data.rows.some((r) => r.kind.startsWith('checkpoint'));
+  const rong = COT_HV + COT_MON * skills.length + (laCp ? COT_PT : 0) + COT_KQ;
 
   return (
     <div>
@@ -331,6 +339,7 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
           <colgroup>
             <col style={{ width: COT_HV }} />
             {skills.map((k) => <col key={k} style={{ width: COT_MON }} />)}
+            {laCp && <col style={{ width: COT_PT }} />}
             <col style={{ width: COT_KQ }} />
           </colgroup>
           <thead>
@@ -362,6 +371,7 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
                   </th>
                 );
               })}
+              {laCp && <th className="th text-right align-bottom" title="Tổng điểm các môn / tổng số câu — khi đủ mọi môn.">% tổng</th>}
               <th className="th align-bottom"
                 title="Đạt từ 70% trở lên. Thiếu điểm khác chưa đạt: môn chưa chấm không bị tính là chưa đạt.">Kết quả</th>
             </tr>
@@ -369,7 +379,7 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
           <tbody>
             {data.rows.map((r, ri) => (
               <DongThuong
-                key={r.attemptId} row={r} rowIndex={ri} sheet={data}
+                key={r.attemptId} row={r} rowIndex={ri} sheet={data} laCp={laCp}
                 active={hv !== null && r.studentId === hv}
                 tongCot={soTong} dien={dien} onReload={onReload} tuanDangXem={tuanDangXem}
                 register={(ci, el) => { grid.current[ri] = grid.current[ri] ?? []; grid.current[ri][ci] = el; }}
@@ -384,8 +394,8 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
   );
 }
 
-function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tuanDangXem, register, onMove }: {
-  row: Row; rowIndex: number; sheet: ThuongSheet; active: boolean; tuanDangXem: string | null;
+function DongThuong({ row, rowIndex, sheet, laCp, active, tongCot, dien, onReload, tuanDangXem, register, onMove }: {
+  row: Row; rowIndex: number; sheet: ThuongSheet; laCp?: boolean; active: boolean; tuanDangXem: string | null;
   tongCot: (k: string) => number | null;
   dien: Record<string, { gt: number; lan: number }>;
   onReload: () => void;
@@ -511,6 +521,11 @@ function DongThuong({ row, rowIndex, sheet, active, tongCot, dien, onReload, tua
           </td>
         );
       })}
+      {laCp && (
+        <td className={`td py-1.5 text-right ${row.chip ? (row.chip.dat ? 'text-emerald-300' : 'text-amber-300') : 'text-slate-500'}`}>
+          {row.result.tyLeTong != null ? `${Math.round(row.result.tyLeTong * 100)}%` : '—'}
+        </td>
+      )}
       <td className="td py-1.5">
         <KetQua row={row} sheet={sheet} />
         {hopO}
@@ -554,7 +569,7 @@ function KetQua({ row, sheet }: { row: Row; sheet: ThuongSheet }) {
     }
     : row.goiY
       ? { chu: row.goiY.nhanNgan, tone: 'text-slate-500', title: `${row.goiY.nhan}${kq.phu ? ` — ${kq.phu}` : ''}` }
-    : kq.phu
+    : kq.phu && !row.chip
       ? {
         chu: `${kq.phu}${row.overdue ? ' · quá hạn' : ''}`, tone: row.overdue ? 'text-rose-300' : 'text-slate-500',
         title: `${kq.phu}${row.overdue ? ' — có môn đã quá hạn chấm' : ''}`,
@@ -565,7 +580,10 @@ function KetQua({ row, sheet }: { row: Row; sheet: ThuongSheet }) {
   /* N-1b: màu kết quả Test — Đạt xanh lá · 1 môn trượt vàng · 2 cam · ≥ 3 đỏ · chưa đủ điểm xám. Chỉ MÀU, không có chữ SOS (T58). */
   const tone = khongChiaMon ? (truot ? 'warn' : r.complete ? 'ok' : 'muted')
     : truot ? (r.sosLevel ? sosTone(r.sosLevel) : 'sos3') : r.complete ? 'ok' : 'muted';
-  const chinh = r.scored === 0
+  const chinh = row.chip
+    /* OV-6b2: Checkpoint đủ điểm — chip "Đạt" / "SOS · L+S" (chưa đạt chỉ chip, không Case). Chữ nói kết quả, màu chỉ đi kèm. */
+    ? <Level tone={row.chip.dat ? 'ok' : 'sos1'} title={chiTiet}>{row.chip.chu}</Level>
+    : r.scored === 0
     ? <span className="text-xs text-slate-500">{kq.chinh}</span>
     : (
       <Level tone={tone} title={chiTiet}>

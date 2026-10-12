@@ -276,7 +276,7 @@ export type DotRef = { cheDo: 'ielts' | 'ratio'; attemptNo: number; kind: string
 /** Nhãn một đợt: Fast Track `MT2`; lớp thường `Giữa khoá MB FOU 03` / `Cuối khoá` (không bao giờ chữ "MT"). */
 export function nhanDotTest(d: DotRef): string {
   if (d.cheDo === 'ielts') return `MT${d.attemptNo}`;
-  const kind = nhanBaiThuong(d.kind);
+  const kind = nhanBaiThuong(d.kind === 'checkpoint' ? `checkpoint:${d.attemptNo}` : d.kind);   // OV-6b2: "Checkpoint 2"
   return d.maLop ? `${kind} ${d.maLop}` : kind;
 }
 

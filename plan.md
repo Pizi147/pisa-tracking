@@ -317,6 +317,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 12/10/2026 | OV-6b2 (Opus 5.5) · `claude/wonderful-edison-mmer3n` | "+ Chương trình" (mã mới, môn L·R·W·S·L+S·R+W, số tuần hoặc liên tục + Checkpoint mỗi n tuần); PET, KET có sẵn (migrate `prOv6b2`); lớp `{CN} {MÃ} {số}`; Checkpoint sinh từng lượt; chưa đạt chỉ chip SOS; một cổng `laLienTuc` (không LTT / KQĐR / Cuối khoá / MT0 / Target) |
 | 12/10/2026 | OV-6b1 (Opus 5.5) · `claude/pensive-knuth-qt9uk0` | Quản trị › Chương trình: bảng + panel sửa (Tên, Đạt từ, số tuần, mốc / tuần MT LT1 LT2 RF), áp lớp mở sau; bản chụp `classes.lich_mt` + `nguong_dat`; tuần MT FT + ngưỡng đạt đọc bản chụp lớp; migrate `prOv6b1` điền mọi lớp cũ |
 | 12/10 | OV-4b `claude/peaceful-galileo-kc1jh5` · Opus 5.5 | Hộp nhập điểm MT chung (`HopNhapDiem`: L/R/W1/W2/S/MT0, Lưu · em tiếp, ô Vắng + Bỏ vắng, lỗi giữ chữ) thay CriteriaModal / InlineScoreEditor / ô gõ L/R; nhận xét 4 kỹ năng + lớp thường (nút Nhận xét). |
 | 12/10/2026 | OV-4a (Opus 5.5) · `claude/peaceful-clarke-xsn9zr` | Huỷ cả lượt MT cất điểm + lịch + danh sách đóng vào `ket_qua_huy` (`huy_luot`, migrate `prOv4`), đóng Case sinh riêng / PA "Chưa đủ dữ liệu" / Phối hợp; Khôi phục lượt (`/reopen`) về nguyên trạng, chặn khi đã xếp MT mới, kèm bản dời vượt treo (ca MT4 Ngọc); ô "MT2 · Đã huỷ" ở Kế hoạch Test / Lộ trình; Admin không nút |

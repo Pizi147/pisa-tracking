@@ -553,3 +553,13 @@ Dựng bằng hàm nghiệp vụ (`server/src/seed/pb2bSeed.ts`, `buildPb2bDemo`
 | HV tiến bộ | hàng Hương, Duyên | 3 em có MT1 (W4 AUG) — so MT2 W1 SEP từng kỹ năng |
 | FOU hai giáo viên | Lớp thường · 09/2026 | Bình `L · R · G+V · GVCN MB FOU 14`: L **5/5**, R **3/5**, W (G+V) **2/5**, S (P) "—"; Ngọc `P` chỉ có cột S (P) **4/4 · mẫu nhỏ**; ô Chấm điểm của Ngọc có 1 ô P trễ |
 | Phân công 2 ô | Hồ sơ lớp MB FOU 14 › ⋮ Sửa phân công | lưới 2 ô `L · R · G+V` và `P` + link **Tách từng môn**; hồ sơ GV Bình: vai `GVCN · L R G+V` |
+
+## 18. OV-6b2 — chương trình liên tục PET / KET (chỉ máy dev, 12/10/2026)
+
+Dựng bằng hàm nghiệp vụ (`server/src/seed/petSeed.ts`). Quản trị › Chương trình có sẵn **PET**, **KET** (L+S · R+W · đúng / tổng · đạt từ 70 % · liên tục · Checkpoint mỗi 6 tuần); nút **+ Chương trình** tạo mã mới.
+
+| Ở đâu | Thấy gì |
+|---|---|
+| Hồ sơ lớp **MB PET 01** (GVCN Trần Ngọc Hà · L+S Hà · R+W Lê Minh Khoa) | "PET · tuần 6"; không có Lộ trình tiếp theo / Chuyển tiếp lớp; 3 em |
+| Test › Điểm theo lớp › MB PET 01 · **Checkpoint 1** (W3 SEP) | Lâm Bảo Ngọc 48/60 · 61/80 → **Đạt**; Hồ Minh Quân 35/60 · 58/80 → **SOS · L+S** (không Case); Tạ Khánh Vy chưa có điểm — GVBM nhập thử |
+| Test › Kế hoạch Test › MB PET 01 | cột Checkpoint 1 (tuần 6) · Checkpoint 2 (tuần 12) — Checkpoint 2 chỉ có ở 2 em đã đủ điểm |

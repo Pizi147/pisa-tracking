@@ -587,8 +587,10 @@ api.post('/ke-hoach-test/hang-loat', requireAuth, wrap((req) => {
   });
 }));
 
-api.get('/ke-hoach-test/thuong/:classId', requireAuth, wrap((req) =>
-  keHoachSvc.luoiThuong(principalOf(req), pInt(req, 'classId'))));
+api.get('/ke-hoach-test/thuong/:classId', requireAuth, wrap((req) => {
+  regularSvc.quetCheckpoint(pInt(req, 'classId'));   // OV-6b2: lớp liên tục — Checkpoint kế tiếp cho em đã qua tuần thi
+  return keHoachSvc.luoiThuong(principalOf(req), pInt(req, 'classId'));
+}));
 
 /*
  * PHÂN TÍCH (PR-Pb, §3.3; PR-UX4) — Tổng hợp Test + SOS, Tổng hợp vấn đề HV, Hiệu quả PA, Ý thức, Bỏ quên.
@@ -879,9 +881,10 @@ api.get('/classes/:classId/cham', requireAuth, wrap((req) => {
   });
 }));
 
-/** PR-DL — Điểm theo lớp: các lượt của lớp (mã `mt:<n>` / `thuong:<kind>`) + lượt mở sẵn. Chỉ đọc. */
+/** PR-DL — Điểm theo lớp: các lượt của lớp (mã `mt:<n>` / `thuong:<kind>` / OV-6b2 `cp:<n>`) + lượt mở sẵn. */
 api.get('/classes/:classId/diem-theo-luot', requireAuth, wrap((req) => {
   maybeSimulateReadError();
+  regularSvc.quetCheckpoint(pInt(req, 'classId'));   // OV-6b2: lớp liên tục — Checkpoint kế tiếp cho em đã qua tuần thi
   return diemTheoLuotSvc.danhSachLuot(principalOf(req), pInt(req, 'classId'));
 }));
 

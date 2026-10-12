@@ -4,7 +4,7 @@ import { addMilestone, caseKhacChuongTrinh, chuongTrinhCuaLop, followUntilAfter,
 import { dongBoBaoPh, monBaoPh } from '../yThuc/phoiHop.ts';
 import { raiseSignal, reconcileCorrectedSignals } from '../cases/signals.ts';
 import {
-  ATTEMPT_KIND_LABEL, ATTEMPT_KIND_SHORT, PERMISSIONS, RATIO_PASS_THRESHOLD, boMonLich, boTroGiuaKhoa,
+  ATTEMPT_KIND_LABEL, ATTEMPT_KIND_SHORT, LIEN_TUC_SQL, PERMISSIONS, RATIO_PASS_THRESHOLD, boMonLich, boTroGiuaKhoa, chipCheckpoint, khoaBai, nhanBai,
   caseCategoriesFor, categoryOf, goiYCuoiKhoa, kiemNhanXet, ngay, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanKeTiep, tuanLich,
   type AssessedSkill, type AttemptKind, type CaseCategory, type RatioOutcome, type SosLevel,
 } from '../../../shared/domain/index.ts';
@@ -46,6 +46,8 @@ export type ProgrammeInfo = {
   checkpoints: { kind: AttemptKind; studyWeek: number }[];
   /** OV-6b1: đạt từ (0.7 = 70 %) — chỉ chương trình đúng/tổng; null với FT. Chép vào lớp lúc tạo (`mocChupVaoLop`). */
   nguongDat: number | null;
+  /** OV-6b2: chương trình liên tục — Checkpoint mỗi n tuần; null = có số tuần. Chép vào lớp lúc tạo (`classes.moc_lap`). */
+  lapMoiTuan: number | null;
 };
 
 /**
@@ -67,7 +69,7 @@ export function allProgrammes(): Map<string, ProgrammeInfo> {
     for (const p of conn.prepare('SELECT * FROM programmes').all() as any[]) {
       out.set(p.code, {
         code: p.code, name: p.name, weeks: p.weeks, scoringMode: p.scoring_mode, active: p.status === 'active',
-        skills: [], checkpoints: [], nguongDat: p.nguong_dat ?? null,
+        skills: [], checkpoints: [], nguongDat: p.nguong_dat ?? null, lapMoiTuan: p.lap_moi_tuan ?? null,
       });
     }
     for (const r of conn.prepare('SELECT programme_code, skill FROM programme_skills ORDER BY seq, skill').all() as any[]) {
@@ -92,6 +94,8 @@ export function programmeByCode(code: string | null | undefined): ProgrammeInfo 
  */
 export function mocChupVaoLop(code: string | null | undefined, route: string | null | undefined): {
   so_tuan: number | null; tuan_giua_khoa: number | null; tuan_cuoi_khoa: number | null; lich_mt: string | null; nguong_dat: number | null;
+  /** OV-6b2: Checkpoint mỗi n tuần (lớp liên tục). */
+  moc_lap: number | null;
 } {
   const prog = programmeByCode(code);
   const moc = (k: AttemptKind) => prog?.checkpoints.find((x) => x.kind === k)?.studyWeek ?? null;
@@ -100,6 +104,7 @@ export function mocChupVaoLop(code: string | null | undefined, route: string | n
     so_tuan: coTuan ? prog!.weeks : null, tuan_giua_khoa: coTuan ? moc('progress') : null, tuan_cuoi_khoa: coTuan ? moc('final') : null,
     lich_mt: code === 'FT' ? JSON.stringify(lichMtCua(null, route ?? 'LT1')) : null,
     nguong_dat: prog?.scoringMode === 'ratio' ? prog.nguongDat ?? RATIO_PASS_THRESHOLD : null,
+    moc_lap: prog?.scoringMode === 'ratio' && !prog.weeks ? prog.lapMoiTuan : null,
   };
 }
 
@@ -418,13 +423,13 @@ export function taoBaiThuongMacDinh(cycleIds: readonly number[], actorUserId: nu
   const lopThuong = [...ctLop].filter(([, ct]) => ct && chuongTrinh.get(ct)?.scoringMode === 'ratio').map(([id]) => id);
   if (!lopThuong.length) return [];
   const moc = classProgressMany(lopThuong);
-  const daCo = new Set<string>(), daCoId = new Set<number>(), soLuot = new Map<number, number>();
+  const daCo = new Set<string>(), soLuot = new Map<number, number>();
   theoLo(cys.map((c) => c.id as number), (lo, ph) => {
     for (const a of conn.prepare(`SELECT id, cycle_id, kind, attempt_no FROM assessment_attempts WHERE cycle_id IN (${ph})`).all(...lo) as any[]) {
-      daCo.add(`${a.cycle_id}:${a.kind}`); daCoId.add(a.id); soLuot.set(a.cycle_id, Math.max(soLuot.get(a.cycle_id) ?? 0, a.attempt_no));
+      daCo.add(`${a.cycle_id}:${a.kind}`); soLuot.set(a.cycle_id, Math.max(soLuot.get(a.cycle_id) ?? 0, a.attempt_no));
     }
   });
-  const moi: { cy: any; kind: 'progress' | 'final'; classId: number; week: string; no: number }[] = [];
+  const moi: LuotMoi[] = [];
   for (const cy of cys) {
     const classId = lopOf.get(cy.student_id);
     if (classId === undefined || !lopThuong.includes(classId)) continue;
@@ -435,24 +440,38 @@ export function taoBaiThuongMacDinh(cycleIds: readonly number[], actorUserId: nu
       if (!week || daCo.has(`${cy.id}:${kind}`) || addDays(week, 6) < ngayVao) continue;   // không tạo bài quá hạn
       const no = (soLuot.get(cy.id) ?? 0) + 1;
       soLuot.set(cy.id, no);
-      moi.push({ cy, kind, classId, week, no });
+      moi.push({ cycleId: cy.id, studentId: cy.student_id, kind, classId, week, no });
     }
   }
+  const ids = ghiLuotThuong(moi, ctLop, actorUserId, 'Tự xếp khi vào lớp');
+  /* OV-6b2: lớp liên tục (PET, KET…) không có Progress / Final — em vào lớp có Checkpoint kế tiếp. */
+  const lienTuc = lopThuong.filter((id) => moc.get(id)?.mocLap);
+  return lienTuc.length ? [...ids, ...sinhCheckpointKeTiep(lienTuc, ngayVao, actorUserId, cys.map((c) => c.id as number))] : ids;
+}
+
+type LuotMoi = { cycleId: number; studentId: number; kind: 'progress' | 'final' | 'checkpoint'; classId: number; week: string; no: number };
+
+/**
+ * GHI lượt lớp thường mới (trong tx của nơi gọi): lượt + dòng lịch từng môn (bộ môn theo chương trình lớp) + Hành trình. Số câu SQL không phụ thuộc
+ * số em (lô 900). `attempt_no` duy nhất theo lộ trình nên đọc lại id theo (lộ trình, số). Trả id theo đúng thứ tự `moi`.
+ */
+function ghiLuotThuong(moi: readonly LuotMoi[], ctLop: Map<number, string | null>, actorUserId: number | null, chiTiet: string): number[] {
   if (!moi.length) return [];
+  const conn = db();
   const tuan = ensurePeriods([...new Set(moi.map((m) => m.week))]);
   const now = nowIso();
   chenNhieuDong(
     'INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id, status, created_by, created_at)',
-    moi.map((m) => [m.cy.id, m.cy.student_id, m.no, m.kind, m.classId, tuan.get(m.week)!.id, 'planned', actorUserId, now]));
-  /* INSERT nhiều dòng không trả id → đọc lại: lượt mới là lượt của các lộ trình này chưa có trước đó (cùng giao dịch). */
+    moi.map((m) => [m.cycleId, m.studentId, m.no, m.kind, m.classId, tuan.get(m.week)!.id, 'planned', actorUserId, now]));
+  /* INSERT nhiều dòng không trả id → đọc lại theo (lộ trình, số lượt) — khoá duy nhất của bảng. */
   const idOf = new Map<string, number>();
-  theoLo([...new Set(moi.map((m) => m.cy.id as number))], (lo, ph) => {
-    for (const a of conn.prepare(`SELECT id, cycle_id, kind FROM assessment_attempts WHERE cycle_id IN (${ph})`).all(...lo) as any[]) {
-      if (!daCoId.has(a.id)) idOf.set(`${a.cycle_id}:${a.kind}`, a.id);
+  theoLo([...new Set(moi.map((m) => m.cycleId))], (lo, ph) => {
+    for (const a of conn.prepare(`SELECT id, cycle_id, attempt_no FROM assessment_attempts WHERE cycle_id IN (${ph})`).all(...lo) as any[]) {
+      idOf.set(`${a.cycle_id}:${a.attempt_no}`, a.id);
     }
   });
-  const ids = moi.map((m) => idOf.get(`${m.cy.id}:${m.kind}`)!);
-  /* = `ensureSkillRows` của lượt mới: bộ môn theo chương trình lớp (FOU/BE/ELE 4 môn, Pre FOU Tổng hợp), tuần theo lượt. Một câu mỗi chương trình. */
+  const ids = moi.map((m) => idOf.get(`${m.cycleId}:${m.no}`)!);
+  /* = `ensureSkillRows` của lượt mới: bộ môn theo chương trình lớp (FOU/BE/ELE 4 môn, Pre FOU Tổng hợp, PET L+S R+W), tuần theo lượt. Một câu mỗi chương trình. */
   const theoCt = new Map<string | null, { bo: readonly string[]; ids: number[] }>();
   moi.forEach((m, i) => {
     const ct = ctLop.get(m.classId) ?? null;
@@ -471,9 +490,84 @@ export function taoBaiThuongMacDinh(cycleIds: readonly number[], actorUserId: nu
   }
   chenNhieuDong(
     'INSERT INTO journey_events (student_id, cycle_id, event_type, event_date, title, detail, ref_table, ref_id, created_by, created_at)',
-    moi.map((m, i) => [m.cy.student_id, m.cy.id, 'mock_scheduled', m.week, `${ATTEMPT_KIND_LABEL[m.kind]} · ${tuan.get(m.week)!.code}`,
-      'Tự xếp khi vào lớp', 'assessment_attempts', ids[i], actorUserId, now]));
+    moi.map((m, i) => [m.studentId, m.cycleId, 'mock_scheduled', m.week,
+      `${m.kind === 'checkpoint' ? nhanBai(khoaBai(m.kind, m.no)) : ATTEMPT_KIND_LABEL[m.kind]} · ${tuan.get(m.week)!.code}`,
+      chiTiet, 'assessment_attempts', ids[i], actorUserId, now]));
   return ids;
+}
+
+/**
+ * OV-6b2 — CHECKPOINT KẾ TIẾP của lớp liên tục (PET, KET…): mỗi em LUÔN có đúng một Checkpoint kế tiếp chưa thi, không sinh trước hàng loạt.
+ * Checkpoint n ở tuần học n × `moc_lap` của LỚP (6, 12, 18…; số n chung cả lớp — Điểm theo lớp "Checkpoint 2"). Sinh lượt kế khi lượt cuối của em
+ * đã đủ điểm hoặc đã qua tuần thi (tuần muộn nhất của các môn — QL dời thì chờ theo); em mới vào (hoặc lượt kế đã qua) → Checkpoint đầu tiên còn
+ * tới. Gọi: em vào lớp (`taoBaiThuongMacDinh`), sau khi nhập điểm (`refreshRegularOutcome`), quét khi đọc (`quetCheckpoint`) và quét thứ Hai.
+ * Chạy lặp vô hại. `classIds` null = mọi lớp liên tục đang chạy; `cycleIds` = chỉ các lộ trình này. Trả id lượt mới.
+ */
+export function sinhCheckpointKeTiep(classIds: readonly number[] | null, homNay: string = demoToday(), actorUserId: number | null = null,
+  cycleIds?: readonly number[]): number[] {
+  const conn = db();
+  const lop: any[] = [];
+  const cauLop = `SELECT c.id, c.programme_code, c.moc_lap, rp.week_start FROM classes c JOIN report_periods rp ON rp.id = c.start_period_id
+    WHERE ${LIEN_TUC_SQL('c')} AND c.status = 'active'`;
+  if (classIds) theoLo([...new Set(classIds)], (lo, ph) => { lop.push(...(conn.prepare(`${cauLop} AND c.id IN (${ph})`).all(...lo) as any[])); });
+  else lop.push(...(conn.prepare(cauLop).all() as any[]));
+  if (!lop.length) return [];
+  const lopId = new Map(lop.map((c) => [c.id as number, c]));
+  const chon = cycleIds ? new Set(cycleIds) : null;
+  const em: { cycleId: number; studentId: number; classId: number }[] = [];
+  theoLo([...lopId.keys()], (lo, ph) => {
+    for (const r of conn.prepare(
+      `SELECT e.class_id, cy.id AS cycle_id, cy.student_id FROM enrollments e
+         JOIN students s ON s.id = e.student_id AND ${HV_DANG_HOC_SQL('s')}
+         JOIN learning_cycles cy ON cy.student_id = e.student_id AND cy.status = 'active' AND cy.route IS NULL
+        WHERE e.class_id IN (${ph}) AND e.status = 'active'`,
+    ).all(...lo) as any[]) if (!chon || chon.has(r.cycle_id)) em.push({ cycleId: r.cycle_id, studentId: r.student_id, classId: r.class_id });
+  });
+  if (!em.length) return [];
+  /* Lượt của các lộ trình: số đã dùng (khoá duy nhất) + Checkpoint cuối (số lớn nhất, còn hiệu lực) với tuần thi muộn nhất của môn còn thi. */
+  const daDung = new Map<number, Set<number>>();
+  const cuoi = new Map<number, { no: number; status: string; tuan: string | null }>();
+  theoLo([...new Set(em.map((e) => e.cycleId))], (lo, ph) => {
+    for (const a of conn.prepare(
+      `SELECT a.cycle_id, a.attempt_no, a.kind, a.status,
+              (SELECT MAX(rp.week_start) FROM attempt_skills k JOIN report_periods rp ON rp.id = k.planned_period_id
+                WHERE k.attempt_id = a.id AND k.required = 1 AND k.sit_status != 'cancelled') AS tuan
+         FROM assessment_attempts a WHERE a.cycle_id IN (${ph})`,
+    ).all(...lo) as any[]) {
+      (daDung.get(a.cycle_id) ?? daDung.set(a.cycle_id, new Set()).get(a.cycle_id)!).add(a.attempt_no);
+      if (a.kind !== 'checkpoint' || a.status === 'cancelled') continue;
+      const c = cuoi.get(a.cycle_id);
+      if (!c || a.attempt_no > c.no) cuoi.set(a.cycle_id, { no: a.attempt_no, status: a.status, tuan: a.tuan ?? null });
+    }
+  });
+  const moi: LuotMoi[] = [];
+  for (const e of em) {
+    const c = lopId.get(e.classId);
+    const tuanCua = (n: number) => addDays(c.week_start, 7 * (n * c.moc_lap - 1));
+    const truoc = cuoi.get(e.cycleId);
+    let n: number;
+    if (!truoc) n = 1;
+    else {
+      const xong = truoc.status === 'done' || (!!truoc.tuan && addDays(truoc.tuan, 6) < homNay);
+      if (!xong) continue;   // lượt cuối còn chờ thi / chờ điểm — không sinh thêm
+      n = truoc.no + 1;
+    }
+    while (addDays(tuanCua(n), 6) < homNay) n += 1;   // như bài lớp thường: không dựng lượt đã qua tuần thi
+    if (daDung.get(e.cycleId)?.has(n)) continue;      // số đã có lượt khác (lộ trình cũ chuyển sang) — không đè
+    moi.push({ cycleId: e.cycleId, studentId: e.studentId, kind: 'checkpoint', classId: e.classId, week: tuanCua(n), no: n });
+  }
+  return ghiLuotThuong(moi, new Map(lop.map((x) => [x.id as number, x.programme_code ?? null])), actorUserId, 'Tự xếp Checkpoint kế tiếp');
+}
+
+/**
+ * Quét khi đọc một lớp (như `quetLenhDenHan`): Điểm theo lớp / Kế hoạch Test của lớp liên tục sinh Checkpoint kế cho em đã qua tuần thi — lưới an toàn
+ * cạnh lượt quét thứ Hai. Một lần mỗi request; lớp không liên tục chỉ tốn 1 câu. Lỗi không làm hỏng trang đang đọc.
+ */
+export function quetCheckpoint(classId: number, homNay = demoToday()): void {
+  nho(`checkpoint:${classId}:${homNay}`, () => {
+    try { tx(() => sinhCheckpointKeTiep([classId], homNay)); } catch (e) { console.error('[checkpoint] quét khi đọc', e); }
+    return true;
+  });
 }
 
 // ---------------------------------------------------------------- nhập điểm
@@ -833,6 +927,8 @@ export function refreshRegularOutcome(p: Principal, attemptId: number) {
    */
   // Case mở ngay khi kết luận được, không chờ đủ điểm.
   if (r.sosLevel !== null) taoCaseGiuaKhoa(p, a, r);
+  /* OV-6b2: Checkpoint đủ điểm → em có Checkpoint kế tiếp (chưa đạt chỉ chip SOS — `taoCaseGiuaKhoa` chỉ nhận Giữa khoá FOU/BE/ELE). */
+  if (a.kind === 'checkpoint' && r.complete && a.class_id) sinhCheckpointKeTiep([a.class_id], demoToday(), p.userId, [a.cycle_id]);
   if (a.kind === 'progress') dongBoBaoPh(a, monBaoPh(a.id, r.skills.filter((x) => x.outcome === 'fail').map((x) => x.skill)));   // PR-UXF-b (R5-4): theo Case, bỏ môn "Không cần theo dõi"
   /*
    * PR-LT2b (Q30-4): Cuối khoá ĐỦ điểm mà em đã chuyển đi → luật Cuối khoá áp ở lộ trình mới. Không sinh tín hiệu / Case ở lớp cũ (T70).
@@ -919,7 +1015,9 @@ function taoCaseGiuaKhoa(p: Principal, a: any, r: RegularResult) {
  * Cho phép đặt TỔNG SỐ CÂU CHUNG cho cả lớp rồi sửa lại ở dòng có đề khác — cả lớp thường
  * làm cùng một đề, gõ lại "40" bốn mươi lần là bắt làm một việc máy đã biết.
  */
-export function regularSheet(p: Principal, classId: number, kind?: string, today: string = demoToday()) {
+export function regularSheet(p: Principal, classId: number, kind?: string, today: string = demoToday(),
+  /** OV-6b2: số Checkpoint (`kind = 'checkpoint'`); hoặc gửi thẳng khoá bài `checkpoint:2` ở `kind`. */
+  attemptNo?: number) {
   const conn = db();
   const cls = conn
     .prepare('SELECT c.*, b.name AS branch_name FROM classes c JOIN branches b ON b.id = c.branch_id WHERE c.id = ?')
@@ -935,7 +1033,10 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
   const params: unknown[] = [classId];
   /* PR-OV1a: MT0 chấm band — chỉ ở `chamSheet(kind: 'mt0')`, không bao giờ thành hàng của bảng tỷ lệ. */
   let where = `a.class_id = ? AND a.status != 'cancelled' AND a.kind != 'mt0'`;
+  const cp = /^checkpoint:(\d+)$/.exec(kind ?? '');
+  if (cp) { kind = 'checkpoint'; attemptNo = Number(cp[1]); }
   if (kind) { where += ' AND a.kind = ?'; params.push(kind); }
+  if (kind === 'checkpoint' && attemptNo) { where += ' AND a.attempt_no = ?'; params.push(attemptNo); }
 
   const attempts = conn
     .prepare(
@@ -1101,8 +1202,11 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
           const scored = row?.raw_score !== null && row?.raw_score !== undefined;
           return !scored && !!views.get(k)?.overdue;
         }),
-        kind: a.kind as AttemptKind,
-        kindLabel: ATTEMPT_KIND_LABEL[a.kind as AttemptKind] ?? a.kind,
+        /** Khoá bài (`khoaBai`): Progress / Final theo loại, Checkpoint kèm số (`checkpoint:2`) — lưới gom dòng theo khoá này. */
+        kind: khoaBai(a.kind, a.attempt_no),
+        kindLabel: a.kind === 'checkpoint' ? nhanBai(khoaBai(a.kind, a.attempt_no)) : ATTEMPT_KIND_LABEL[a.kind as AttemptKind] ?? a.kind,
+        /** OV-6b2: Checkpoint — chip "Đạt" / "SOS · L+S" (chưa đạt chỉ chip, không Case); null khi chưa đủ điểm hoặc bài khác. */
+        chip: a.kind === 'checkpoint' ? chipCheckpoint(result, prog.code) : null,
         studentId: a.student_id, studentName: a.full_name, studentCode: a.student_code,
         studentStatus: a.student_status,
         periodCode: a.period_code ?? null,

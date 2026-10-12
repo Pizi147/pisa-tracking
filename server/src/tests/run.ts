@@ -9241,6 +9241,9 @@ await runPrOv4bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 // ==================================================================== PR-OV6b1 (Quản trị › Chương trình: cấu hình, bản chụp lớp, tuần MT FT, ngưỡng đạt)
 const { runPrOv6b1Tests } = await import('./prOv6b1.tests.ts');
 await runPrOv6b1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-OV6b2 (chương trình mới: Liên tục, Checkpoint lặp, môn gộp + PET / KET)
+const { runPrOv6b2Tests } = await import('./prOv6b2.tests.ts');
+await runPrOv6b2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`
