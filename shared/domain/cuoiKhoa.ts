@@ -109,8 +109,8 @@ export function lichBoTro(x: { batDau: string; soTuan: 1 | 2 }): { ngayMiniTest:
 /** M-21: lên FT thì Writing của lớp thường → Writing 2 (FT tách W1/W2); các ô khác giữ, `tong_hop` giữ. */
 export const kyNangLopDich = (mon: string, denFt: boolean): string => (denFt && mon === 'writing' ? 'writing2' : mon);
 
-/** PR-KV (đặc tả 08/10 §3): Đạt kỳ vọng đầu ra = Overall MT0 ≥ ngưỡng của chương trình lớp nguồn. */
-export const NGUONG_KY_VONG: Readonly<Record<string, number>> = { BE: 4, ELE: 4.5 };
+/** PR-KV (đặc tả 08/10 §3): Đạt Kết quả đầu ra = Overall MT0 ≥ ngưỡng của chương trình lớp nguồn. OV-3b: FOU "Overall > 3.5" = ≥ 4 (Overall làm tròn 0.5). */
+export const NGUONG_KY_VONG: Readonly<Record<string, number>> = { FOU: 4, BE: 4, ELE: 4.5 };
 export type GoiYKyVong = { overall: number; dat: boolean; monTruot: RegularSkill[] };
 /**
  * Gợi ý điền sẵn từ band MT0 (L R W S): Overall = trung bình các kỹ năng CÓ band, làm tròn 0.5 (cần ≥ 3/4 kỹ năng có band — chủ SP 10/10; W có band khi đủ W1 + W2);
@@ -124,8 +124,8 @@ export function goiYKyVong(ct: string | null | undefined, bands: Partial<Record<
   return { overall, dat: overall >= nguong, monTruot: co.filter((k) => bands[k]! < nguong) };
 }
 
-/** BE IELTS 4.0 · ELE IELTS 4.5–5.0 (§6.4) — chỉ nhắc chữ, không lưu Placement. */
-const KY_VONG_DAU_RA: Record<string, string> = { BE: 'BE IELTS 4.0', ELE: 'ELE IELTS 4.5–5.0' };
+/** FOU IELTS > 3.5 · BE IELTS 4.0 · ELE IELTS 4.5–5.0 (§6.4, OV-3b) — chỉ nhắc chữ, không lưu Placement. */
+const KY_VONG_DAU_RA: Record<string, string> = { FOU: 'FOU IELTS > 3.5', BE: 'BE IELTS 4.0', ELE: 'ELE IELTS 4.5–5.0' };
 
 export type HopKetLuanVao = {
   ct: string | null; tyLe: number | null; scored: number; required: number;
@@ -143,7 +143,7 @@ export type HopKetLuan = {
   /** Dòng 2: MỘT nhãn trạng thái/hướng; null khi chưa đủ điểm. */
   nhan: string | null;
   tone: 'ok' | 'warn' | 'bad' | 'muted';
-  /** BE/ELE: dòng Kỳ vọng đầu ra (T49) — null với chương trình khác. */
+  /** FOU/BE/ELE: dòng Kết quả đầu ra (T49, OV-3b) — null với chương trình khác. */
   kyVong: { nhan: string; trangThai: string; daDanhDau: boolean } | null;
 };
 
@@ -152,7 +152,7 @@ export function chuHopKetLuan(x: HopKetLuanVao): HopKetLuan {
   const ct = programmeOf(x.ct);
   const kyVong = ct && KY_VONG_DAU_RA[ct]
     ? {
-      nhan: `Kỳ vọng đầu ra (${KY_VONG_DAU_RA[ct]})`,
+      nhan: `Kết quả đầu ra (${KY_VONG_DAU_RA[ct]})`,
       daDanhDau: x.ketLuanFt?.dat !== null && x.ketLuanFt?.dat !== undefined,
       trangThai: x.ketLuanFt?.dat === true ? 'Đạt'
         : x.ketLuanFt?.dat === false

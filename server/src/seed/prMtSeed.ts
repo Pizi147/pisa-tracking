@@ -5,7 +5,7 @@ import { LISTENING_BY_RAW, READING_BY_RAW } from '../fasttrack/scoring.ts';
 import { commitIntake } from '../classes/intake.ts';
 import { apDungMotDong } from '../classes/luatLoTrinh.ts';
 import { createAttempt, huyLuot, saveScore } from '../fasttrack/attempts.ts';
-import { decideAbsenceMove, requestAbsenceMove, settleNoShows, sweepExpiredMoves } from '../fasttrack/absence.ts';
+import { decideAbsenceMove, requestAbsenceMove, sweepExpiredMoves } from '../fasttrack/absence.ts';
 import { recomputeCompletionWeek, setSitStatus } from '../fasttrack/skillSchedule.ts';
 import type { BuildCtx } from './build.ts';
 import { DEMO_DATE } from './journeys.ts';
@@ -85,13 +85,13 @@ export function buildPrMtDemo(ctx: BuildCtx): { students: number } {
 
   // ---------------------------------------------------------------- D5 · dời do vắng
   const gvL = gv('listening');
-  /* Máy tự dời lần 1: "-" cả L R W S tuần trước → chốt sáng thứ Hai (hôm nay) → dời sang tuần này, báo GVCN + GVBM đúng kỹ năng. */
+  /* Tự dời lần 1: "-" cả L R W S trong tuần trước → chốt ngay (OV-1b) → dời sang tuần này, báo GVCN + GVBM đúng kỹ năng. */
   const diep = them(ft101, 'Hồ Ngọc Diệp', tuan(-6));
   const diepA = luot(diep.cycleId, 1); luotThuong(diepA);
   for (const [k, p] of [['listening', gvL], ['reading', gv('reading')], ['writing1', gv('writing1')], ['writing2', gv('writing2')], ['speaking', gv('speaking')]] as const) {
     saveScore(p, diepA.id, k, { noShow: true }, addDays(tuan(-1), 2));
   }
-  /* Lần 2 chờ Quản lý / đã duyệt: lần 1 đã dời từ tuần −2 sang tuần −1; "-" lại ở tuần −1 → chốt hôm nay → đề nghị lần 2. */
+  /* Lần 2: lần 1 đã dời từ tuần −2 sang tuần −1; "-" lại ở tuần −1 → chốt ngay → huỷ phần thi (vắng 2 lần, T3). */
   const chau = them(ft101, 'Ngô Bảo Châu', tuan(-7));
   const tam = them(ft101, 'Lý Thanh Tâm', tuan(-7));
   for (const st of [chau, tam]) {
@@ -99,7 +99,6 @@ export function buildPrMtDemo(ctx: BuildCtx): { students: number } {
     daDoiLan1(a, 'listening', tuan(-2), tuan(-1));
     saveScore(gvL, a.id, 'listening', { noShow: true }, addDays(tuan(-1), 2));
   }
-  settleNoShows(DEMO_DATE);
   const deNghi = conn.prepare(
     `SELECT r.id FROM skill_move_requests r JOIN assessment_attempts a ON a.id = r.attempt_id
       WHERE a.cycle_id = ? AND r.status = 'pending'`,

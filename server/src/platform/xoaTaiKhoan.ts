@@ -56,6 +56,7 @@ export const COT_TRO_TAI_KHOAN: readonly { bang: string; cot: string; loai: Loai
   c('discipline_measures', 'confirmed_by', DV, 'lần xử lý'), c('discipline_measures', 'created_by', DV, 'lần xử lý'),
   c('journey_events', 'created_by', DV, 'hành trình'), c('lo_trinh_tiep_theo', 'updated_by', DV, 'lộ trình tiếp theo'),
   c('lo_trinh_tiep_theo', 'quyet_boi', DV, 'lộ trình tiếp theo'), c('mini_test', 'ghi_boi', DV, 'Mini Test'),
+  c('lo_trinh_tiep_theo', 'kq_de_xuat_boi', DV, 'lộ trình tiếp theo'), c('lo_trinh_nhap', 'sua_boi', DV, 'nháp lộ trình'),   // OV-3b
   c('ket_qua_huy', 'huy_boi', DV, 'kết quả MT đã huỷ'), c('ket_qua_huy', 'khoi_phuc_boi', DV, 'kết quả MT đã huỷ'),
   c('measure_violations', 'added_by', DV, 'lần xử lý'),
   c('skill_move_requests', 'requested_by', DV, 'xin dời lịch'), c('skill_move_requests', 'decided_by', DV, 'xin dời lịch'),

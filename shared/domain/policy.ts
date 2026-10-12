@@ -96,12 +96,8 @@ export const C08_HAN_CHAM_NORMAL = 'chu-nhat-tuan-thi' as const;
 export const C09_DE_NGHI_DOI_LICH_HET_HAN = 'tu-choi-khi-het-han' as const;
 
 /**
- * C10 — ĐÃ CHỐT 20/09/2026, ĐÃ NỐI DÂY (`saveScore`, `settleNoShows`, `noShowStateOf`).
- * Nhập '-' cho một tuần ĐÃ KẾT THÚC từ trước: CHỐT NGAY, coi là không dự thi (ngày hiệu lực vẫn là cuối Chủ nhật của tuần
- * lịch của bài). Sau cuối tuần CHỈ Quản lý sửa được kết luận; quyết định mới GHI ĐÈ TRỰC TIẾP quyết định trước và thành
- * quyết định hiện hành — không có bước duyệt lại. Lịch sử thay đổi chỉ lưu ở nhật ký audit để truy vết, không hiển thị và
- * không tham gia luồng việc.
- *   'chot-ngay'         : coi là không dự thi ngay khi nhập.  ← đã chốt
- *   'cho-ql-hieu-chinh' : tạo một mục chờ Quản lý hiệu chỉnh — phương án cũ, còn code nhưng không dùng.
+ * C10 — ĐÃ CHỐT 20/09/2026; OV-1b (chủ SP 11/10, đặc tả OV 3.3) thay nghĩa: "-" nhập cho tuần ĐÃ KẾT THÚC = "Không dự thi" ngay khi
+ * nhập (`saveScore` → `no_show_cu`): trạng thái cuối, không dời, không tính lần vắng, không Case. Đường "chờ Quản lý hiệu chỉnh" đã bỏ;
+ * hằng số giữ để lịch sử quyết định vẫn tra được (`noShowStateOf` chỉ còn nhận 'chot-ngay' từ `dauTruCuaO`).
  */
 export const C10_NHAP_DAU_TRU_TUAN_QUA_KHU = 'chot-ngay' as const;

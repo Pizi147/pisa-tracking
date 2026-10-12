@@ -206,6 +206,7 @@ export async function runLenLopTests(t: YThucTestKit) {
   const migrateMod: any = await import('../migrate.ts');
   const migLt2b: any = await import('../migrate/prLt2b.ts');
   const migLcb: any = await import('../migrate/prLcb.ts');
+  const migOv3b: any = await import('../migrate/prOv3b.ts');
   const REPO = pathMod.resolve(fileURLToPath(new URL('../../../../', import.meta.url)));
   const SCHEMA = fsMod.readFileSync(pathMod.join(REPO, 'server/src/schema.sql'), 'utf8');
   const colsOf = (db: any, table: string): string[] =>
@@ -239,6 +240,7 @@ export async function runLenLopTests(t: YThucTestKit) {
     migrateMod.migrateLenLop(m, applied);
     migLt2b.migratePrLt2b(m, []);   // PR-LT2b thêm 6 cột vào cùng bảng
     migLcb.migratePrLcb(m, []);     // PR-LCb thêm cột huong_gvcn vào cùng bảng
+    migOv3b.migratePrOv3b(m, []);   // OV-3b thêm 6 cột kq_de_xuat_* vào cùng bảng
     assert(applied.length === 1 && /PR-LT/.test(applied[0]), `Phải báo đúng một dòng PR-LT: ${applied.join(' | ')}`);
     const fresh = new SqliteDb(':memory:');
     fresh.exec(SCHEMA);
@@ -340,11 +342,12 @@ export async function runLenLopTests(t: YThucTestKit) {
 
   const HV1 = 1; // seed: FOU→BE→FT, lộ trình đang chạy hiện tại là FT (hanhTrinh.tests.ts)
 
-  check('PR-LT (3) · PUT /students/:id/lo-trinh-tiep: GVCN lớp thường ghi được', () => {
+  check('PR-LT (3) · PUT /students/:id/lo-trinh-tiep: OV-3b — GVCN lớp thường → 403, Quản lý ghi được', () => {
     const cls = taoLopThuong3(3);
     const gvcn = ganGVCN3(cls, P.normalCoreTeacher.userId);
     const { sid } = taoHocVien3(cls, 'FOU');
-    const r = loTrinhTiepSvc.ghiLoTrinhTiep(gvcn, sid, { huong: 'len_lop' });
+    assertThrows(() => loTrinhTiepSvc.ghiLoTrinhTiep(gvcn, sid, { huong: 'len_lop' }), /Quản lý/, 'GVCN thôi ghi Hướng');
+    const r = loTrinhTiepSvc.ghiLoTrinhTiep(P.mbManager, sid, { huong: 'len_lop' });
     assert(r.banGhi?.huong === 'len_lop', `Phải ghi được: ${JSON.stringify(r.banGhi)}`);
   });
 
@@ -353,13 +356,12 @@ export async function runLenLopTests(t: YThucTestKit) {
     ganGVCN3(cls, P.normalCoreTeacher.userId);
     const { sid } = taoHocVien3(cls, 'FOU');
     assertThrows(() => loTrinhTiepSvc.ghiLoTrinhTiep(P.normalSubjectTeacher, sid, { huong: 'bao_luu', ghiChu: 'x' }),
-      /quyền/, 'GVBM không dạy lớp này phải bị chặn');
+      /Quản lý/, 'GVBM không dạy lớp này phải bị chặn');
   });
 
   check('PR-LT (3) · PUT /students/:id/lo-trinh-tiep: em đang học lớp FT → 400 (chỉ áp dụng lớp thường)', () => {
-    const enr = conn.prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active'`).get(HV1) as any;
-    const gvcnId = (conn.prepare(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 LIMIT 1`).get(enr.class_id) as any).user_id;
-    assertThrows(() => loTrinhTiepSvc.ghiLoTrinhTiep(loadPrincipal(gvcnId), HV1, { huong: 'len_lop' }),
+    /* OV-3b: chỉ Quản lý ghi — Quản trị đi qua quyền rồi gặp luật "chỉ lớp thường". */
+    assertThrows(() => loTrinhTiepSvc.ghiLoTrinhTiep(P.admin, HV1, { huong: 'len_lop' }),
       /lớp thường/, 'Lớp FT phải bị chặn 400');
   });
 
@@ -371,16 +373,16 @@ export async function runLenLopTests(t: YThucTestKit) {
     const mas = view.lopDuKien.map((l: any) => l.ma);
     assert(mas.includes('BE'), `Phải có bậc kế BE trong lớp dự kiến: ${mas.join(',')}`);
     assert(view.lopDuKien.some((l: any) => l.ft), `Phải có ít nhất một lớp Fast Track: ${JSON.stringify(view.lopDuKien)}`);
-    assert(view.coTheGhi === true, 'GVCN của lớp phải ghi được');
+    assert(view.coTheGhi === false && loTrinhTiepSvc.layLoTrinhTiep(P.mbManager, sid).coTheGhi === true, 'OV-3b: GVCN không ghi, Quản lý ghi');
     const viewGvbm = loTrinhTiepSvc.layLoTrinhTiep(P.normalSubjectTeacher, sid);
     assert(viewGvbm.coTheGhi === false, 'GVBM không kiêm GVCN thì không ghi được');
   });
 
   check('PR-LT (3) · classRoster: cột "tiếp theo" trả đúng mã bậc kế sau khi ghi Lộ trình tiếp theo len_lop', () => {
     const cls = taoLopThuong3(3);
-    const gvcn = ganGVCN3(cls, P.normalCoreTeacher.userId);
+    ganGVCN3(cls, P.normalCoreTeacher.userId);
     const { sid } = taoHocVien3(cls, 'FOU');
-    loTrinhTiepSvc.ghiLoTrinhTiep(gvcn, sid, { huong: 'len_lop' });
+    loTrinhTiepSvc.ghiLoTrinhTiep(P.mbManager, sid, { huong: 'len_lop' });
     const roster = classesSvc.classRoster(P.admin, cls) as any[];
     const row = roster.find((r) => r.id === sid);
     assert(row?.tiepTheo === 'BE', `tiepTheo: ${row?.tiepTheo}`);
@@ -396,7 +398,7 @@ export async function runLenLopTests(t: YThucTestKit) {
     const { sid: coLenh } = taoHocVien3(cls, 'FOU');
     conn.prepare(`INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, huong, boi_canh, tuan_bat_dau, nguoi_ra_lenh, ngay_ra_lenh, trang_thai, tao_luc)
       VALUES (?, ?, 'hoc_lai', 'cuoi-khoa', ?, ?, ?, 'cho', ?)`).run(coLenh, cls, mondayForWeek3(9), P.admin.userId, TODAY3, new Date().toISOString());
-    loTrinhTiepSvc.ghiLoTrinhTiep(gvcn, sid, { huong: 'chua_quyet', ghiChu: 'Chưa quyết' });
+    loTrinhTiepSvc.ghiLoTrinhTiep(P.mbManager, sid, { huong: 'chua_quyet', ghiChu: 'Chưa quyết' });
     const roster = classesSvc.classRoster(P.admin, cls) as any[];
     const row = roster.find((r) => r.id === sid);
     assert(row?.tiepTheo === null, `chua_quyet không hiện "tiếp theo": ${row?.tiepTheo}`);

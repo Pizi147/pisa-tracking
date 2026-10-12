@@ -175,7 +175,8 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     eq(d.mucMenuDongHocVien({ ...q, coTheGhiViPham: false, coTheNhapDiem: false }), ['case', 'sua-thong-tin', 'lo-trinh-tiep', 'chuyen-lop'], 'Theo quyền');
     eq(d.MUC_MENU_DONG_NHAN['vi-pham'], '+ Ghi vi phạm', 'Chữ');
     eq([...d.MUC_MENU_DONG_HIEM], ['sua-thong-tin', 'lo-trinh-tiep', 'chuyen-lop', 'de-xuat-chuyen-lop'], 'Việc hiếm (PR-CT thêm Đề xuất chuyển lớp…, PR-OV2b Sửa thông tin)');
-    eq(d.mucMenuDongHocVien({ ...q, coTheChuyenLop: false, coTheDeXuatChuyenLop: true }), ['vi-pham', 'case', 'nhap-diem', 'sua-thong-tin', 'lo-trinh-tiep', 'de-xuat-chuyen-lop'], 'GVCN: Đề xuất chuyển lớp… thay Chuyển lớp…');
+    /* OV-3b: GVCN thôi ghi Hướng — không có mục "Lộ trình tiếp theo" (chỉ Quản lý mở hộp Lộ trình ở bảng lớp). */
+    eq(d.mucMenuDongHocVien({ ...q, coTheChuyenLop: false, coTheDeXuatChuyenLop: true }), ['vi-pham', 'case', 'nhap-diem', 'sua-thong-tin', 'de-xuat-chuyen-lop'], 'GVCN: Đề xuất chuyển lớp… thay Chuyển lớp…');
     eq(d.mucMenuDongHocVien({ ...q, coTheChuyenLop: true, coTheDeXuatChuyenLop: true }).includes('de-xuat-chuyen-lop'), false, 'Quản lý chỉ thấy Chuyển lớp…');
   });
 

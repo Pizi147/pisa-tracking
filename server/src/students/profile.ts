@@ -4,7 +4,7 @@ import {
   ASSESSED_SKILLS, BASELINE_SOURCE_LABEL, CYCLE_OUTCOME_LABEL, ENTRY_SKILLS, kyNangSosMt0,
   ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, JOURNEY_GROUP, PERMISSIONS,
   caseHeadline, duongCase, issueLabel, caseCategoryLabel, categoryOf, fmtExamMonth, cauTomTat, ketQuaTestGanNhat, oHocThuat, oSapToi, oYThuc,
-  bacHoacNgoaiThang, nhanLoaiXuLy, programmeOf, tenBacKe, tenMonNgan, mocKeTiep, quaHan, studyWeekOf, tenMon, tuanHocTai, tuanLich,
+  bacHoacNgoaiThang, nhanLoaiXuLy, programmeOf, tenBacKe, tenMonNgan, mocKeTiep, LUOT_HUY_HET_SQL, quaHan, studyWeekOf, tenMon, tuanHocTai, tuanLich,
   type AssessedSkill, type EntrySkill, type InterventionKind, nhanBaiThuong, ATTEMPT_KIND_SHORT, soThuTuLuot } from '../../../shared/domain/index.ts';
 import { outcomeGroup } from '../cases/effectiveness.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -547,7 +547,8 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   const attemptRows = selected
     ? conn
       .prepare(
-        `SELECT a.*, c.code AS class_code, pr.code AS period_code, pr.week_start, pr.week_end AS period_end, (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route
+        `SELECT a.*, c.code AS class_code, pr.code AS period_code, pr.week_start, pr.week_end AS period_end, (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route,
+                ${LUOT_HUY_HET_SQL('a')} AS huyHet
            FROM assessment_attempts a
            LEFT JOIN classes c ON c.id = a.class_id
            LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
@@ -798,7 +799,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     /* PR-KV: BE/ELE — gợi ý kỳ vọng đầu ra theo MT0 (điền sẵn kỹ năng ở "Không đạt"), cùng hàm với panel cả lớp. */
     const kem = (r: any, x: EmCuoiKhoa | null, daChuyen: boolean) => (x ? {
       ...x, ct: r.programme_code ?? null, lop: r.code ?? null, daChuyen,
-      kyVongMt0: ['BE', 'ELE'].includes(r.programme_code) ? mt0TheoLop([{ sid: studentId, lop: r.class_id, ct: r.programme_code }]).get(studentId)?.goiY ?? null : null,
+      kyVongMt0: ['FOU', 'BE', 'ELE'].includes(r.programme_code) ? mt0TheoLop([{ sid: studentId, lop: r.class_id, ct: r.programme_code }]).get(studentId)?.goiY ?? null : null,
     } : null);
     const dang = !dangHoc.is_fast_track && isRatioClass(dangHoc.class_id) ? cuoiKhoaTheoHocVien(dangHoc.class_id, [studentId]).get(studentId) ?? null : null;
     if (dang && dang.scored > 0) return kem(dangHoc, dang, false);   // bài Final Test của lớp đang học đã có điểm

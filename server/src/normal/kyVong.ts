@@ -44,7 +44,7 @@ function emKyVong(o: { sc?: Scope; branchId?: number | null; classId?: number })
               CASE WHEN l.trang_thai = 'da_chuyen' THEN (SELECT e.class_id FROM enrollments e JOIN classes cf ON cf.id = e.class_id
                 WHERE e.student_id = l.student_id AND e.status = 'active' AND cf.is_fast_track = 1 ORDER BY e.id DESC LIMIT 1) END, l.lop_dich_id)
        LEFT JOIN lo_trinh_tiep_theo lt ON lt.student_id = l.student_id AND lt.class_id = l.lop_nguon_id
-      WHERE l.huong = 'fast_track' AND l.trang_thai IN ('cho', 'da_chuyen') AND c.programme_code IN ('BE', 'ELE') AND ${HV_DANG_HOC_SQL('s')}
+      WHERE l.huong = 'fast_track' AND l.trang_thai IN ('cho', 'da_chuyen') AND c.programme_code IN ('FOU', 'BE', 'ELE') AND ${HV_DANG_HOC_SQL('s')}
         AND ${cs.sql}${o.branchId ? ' AND c.branch_id = ?' : ''}${o.classId ? ' AND l.lop_nguon_id = ?' : ''}
       GROUP BY l.student_id`,
   ).all(...cs.params, ...(o.branchId ? [o.branchId] : []), ...(o.classId ? [o.classId] : [])) as any[];
@@ -109,11 +109,11 @@ export function lopKyVong(p: Principal, branchId: number | null): LopKyVong[] {
 /** Lớp nguồn BE/ELE + quyền Quản lý (`request.approve` ở lớp đó). */
 function lopNguon(p: Principal, classId: number): { id: number; code: string; ct: string } {
   /* PR-DON: quyền trước — người không quyền nhận 403 dù lớp có hay không (không dò được lớp tồn tại). */
-  if (!can(p, PERMISSIONS.REQUEST_APPROVE, { classId })) throw forbidden('Chỉ Quản lý mới đánh dấu được kỳ vọng đầu ra.');
+  if (!can(p, PERMISSIONS.REQUEST_APPROVE, { classId })) throw forbidden('Chỉ Quản lý mới chốt được Kết quả đầu ra.');
   const c = db().prepare('SELECT id, code, programme_code FROM classes WHERE id = ?').get(classId) as any;
   if (!c) throw notFound('Không tìm thấy lớp.');
   const ct = programmeOf(c.programme_code);
-  if (!ct || NGUONG_KY_VONG[ct] === undefined) throw badRequest('Chỉ lớp BE/ELE mới có kỳ vọng đầu ra.');
+  if (!ct || NGUONG_KY_VONG[ct] === undefined) throw badRequest('Chỉ lớp FOU/BE/ELE mới có Kết quả đầu ra.');
   return { id: c.id, code: c.code, ct };
 }
 

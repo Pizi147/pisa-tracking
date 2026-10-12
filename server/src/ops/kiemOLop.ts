@@ -7,6 +7,7 @@
  * `tru` = ≤ 5 dòng lịch sử lịch mới nhất của lượt (`attempt_schedule_history`), chỉ ghi ở dòng ô đầu tiên của lượt.
  *
  * Chạy: nạp TURSO_DATABASE_URL + TURSO_AUTH_TOKEN (TRIEN_KHAI.md §7.2) rồi `npm run kiem-o-lop -- "CP FT RF 01"`. Không có biến Turso → DB cục bộ.
+ * Windows PowerShell: `npm run … --` chèn `^` vào tên lớp có dấu cách → `npm run build:server` rồi `node dist-server/server/src/ops/kiemOLop.js "CP FT RF 01"`.
  * `IN (…)` chia lô `theoLo` (≤ 900 tham số); mọi tham số là số vị trí.
  */
 import { DB_PATH, closeDb, db, theoLo } from '../db.ts';
@@ -51,11 +52,12 @@ export function kiemOLop(conn: any, maLop: string): DongO[] {
     for (const sc of conn.prepare(
       `SELECT sc.*, p.code AS tuan_tru FROM assessment_scores sc LEFT JOIN report_periods p ON p.id = sc.no_show_period_id
         WHERE sc.attempt_id IN (${ph})`).all(...lo) as any[]) diem.set(`${sc.attempt_id}|${sc.skill}`, sc);
+    /* OV-1b: bí danh cột rõ ràng (log bản chính 11/10 in "undefined" ở cột thao tác — không tái hiện trên SQLite cục bộ); thiếu giá trị thì "?". */
     for (const h of conn.prepare(
-      `SELECT attempt_id, action, field, old_value, new_value, created_at FROM attempt_schedule_history
-        WHERE attempt_id IN (${ph}) ORDER BY id DESC`).all(...lo) as any[]) {
-      const ds = lichSu.get(h.attempt_id) ?? lichSu.set(h.attempt_id, []).get(h.attempt_id)!;
-      if (ds.length < LICH_SU_TOI_DA) ds.push(`${h.action}${h.field ? ` ${h.field}` : ''} · ${h.old_value ?? '∅'} → ${h.new_value ?? '∅'} · ${String(h.created_at).slice(0, 16)}`);
+      `SELECT h.attempt_id AS luot_id, h.action AS thao_tac, h.field AS truong, h.old_value AS cu, h.new_value AS moi, h.created_at AS luc
+         FROM attempt_schedule_history h WHERE h.attempt_id IN (${ph}) ORDER BY h.id DESC`).all(...lo) as any[]) {
+      const ds = lichSu.get(h.luot_id) ?? lichSu.set(h.luot_id, []).get(h.luot_id)!;
+      if (ds.length < LICH_SU_TOI_DA) ds.push(`${h.thao_tac ?? '?'}${h.truong ? ` ${h.truong}` : ''} · ${h.cu ?? '∅'} → ${h.moi ?? '∅'} · ${String(h.luc ?? '?').slice(0, 16)}`);
     }
   });
 

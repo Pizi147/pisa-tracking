@@ -1,5 +1,5 @@
 /**
- * HÀM ĐỊNH KỲ CỦA BẢN CHÍNH — chốt dấu "-" đầu thứ Hai (RB-1). Lịch ở `netlify.toml` (`[functions."chot-vang"]`). Không có logic
+ * HÀM ĐỊNH KỲ CỦA BẢN CHÍNH — quét sáng thứ Hai (RB-1: chuyển lớp tới hạn, chuông chấm chéo). Lịch ở `netlify.toml` (`[functions."chot-vang"]`). Không có logic
  * nghiệp vụ ở đây: mọi thứ ở `server/src/ops/chotVangDinhKy.ts`. Kết quả in ra log (Netlify › Logs › Functions › chot-vang).
  */
 import { chotVangDinhKy } from '../../server/src/ops/chotVangDinhKy.ts';

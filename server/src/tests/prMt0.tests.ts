@@ -109,7 +109,7 @@ export async function runPrMt0Tests(t: YThucTestKit) {
   // ------------------------------------------------------------------ MT0-1 · luật thuần
   check('MT0-1 · hạn chấm, hạn chốt, tuần muộn nhất, kiểm tuần, SOS hiển thị, trạng thái, nhãn', () => {
     assert(dm.hanChamMt0('2026-10-19') === '2026-10-28', dm.hanChamMt0('2026-10-19'));
-    assert(dm.hanChotLenFt('2026-10-19') === '2026-10-18', dm.hanChotLenFt('2026-10-19'));
+    assert(dm.mocLoTrinh('2026-10-19').hanChot === '2026-10-11', JSON.stringify(dm.mocLoTrinh('2026-10-19')));   // OV-3b: CN tuần Final − 2 (thay hanChotLenFt)
     assert(dm.tuanMuonNhatMt0({ tuanBatDauFt: '2026-10-26', tuanCuoiKhoa: '2026-10-19' }) === '2026-11-02', 'có FT');
     assert(dm.tuanMuonNhatMt0({ tuanBatDauFt: null, tuanCuoiKhoa: '2026-10-19' }) === '2026-11-02', 'chưa FT');
     assert(dm.tuanMuonNhatMt0({ tuanBatDauFt: null, tuanCuoiKhoa: null }) === null, 'không gì');
@@ -202,9 +202,10 @@ export async function runPrMt0Tests(t: YThucTestKit) {
     try { fn(); } finally { (conn as any).prepare = goc; }
     return n;
   };
-  check('MT0-3a/b · GVCN ghi Lên FT (Target 6.5) → đúng 1 MT0 tuần Final, 4 kỹ năng, 1 dòng hành trình; ghi lại → vẫn 1', () => {
+  check('MT0-3a/b · Quản lý (OV-3b; trước là GVCN) ghi Lên FT (Target 6.5) → đúng 1 MT0 tuần Final, 4 kỹ năng, 1 dòng hành trình; ghi lại → vẫn 1', () => {
     const l = taoLop('BE', 8, 1, 6);
-    const gvcn = ganGv(l.classId, gvKhac(4), null, true);
+    ganGv(l.classId, gvKhac(4), null, true);
+    const gvcn = QL;   // OV-3b: chỉ Quản lý ghi Hướng
     const sid = l.sids[0];
     const tuanFinal = schedule.classProgress(l.classId).finalWeekStart as string;
     const r = loTrinh.ghiLoTrinhTiep(gvcn, sid, { huong: 'fast_track', mucTieu: 6.5 });
@@ -409,18 +410,17 @@ export async function runPrMt0Tests(t: YThucTestKit) {
   const lenhCho = (sid: number, lop: number, huong: string) => conn.prepare(
     `INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, huong, boi_canh, tuan_bat_dau, nguoi_ra_lenh, ngay_ra_lenh, trang_thai, tao_luc)
      VALUES (?, ?, ?, 'cuoi-khoa', ?, ?, ?, 'cho', ?)`).run(sid, lop, huong, addDays(week.mondayOf(TODAY), 7), QL.userId, TODAY, new Date().toISOString());
-  check('MT0-6a/c · QL: lớp BE tuần 8 → "Chốt lộ trình · {lớp}", hạn = CN trước tuần Final; Chưa quyết vẫn còn; mọi em có hướng → "đủ hướng, chưa xác nhận"; đủ quyết định → tự hết', () => {
+  check('MT0-6a/c · QL: lớp BE tuần 8 → "Chốt lộ trình · {lớp}", hạn = CN tuần Final − 2 (OV-3b); nháp một em vẫn còn; mọi em có nháp → "đủ nháp, chưa chốt"; đủ quyết định → tự hết', () => {
     const l = taoLop('BE', 8, 2);
     const tuanFinal = schedule.classProgress(l.classId).finalWeekStart as string;
     const code = get('SELECT code FROM classes WHERE id = ?', l.classId).code;
     let v = viecChot(QL).filter((i: any) => i.classId === l.classId);
-    assert(v.length === 1 && v[0].tieuDe === `Chốt lộ trình · ${code}` && v[0].due === addDays(tuanFinal, -1) && v[0].urgency !== 'overdue', JSON.stringify(v));
-    loTrinh.ghiLoTrinhTiep(QL, l.sids[0], { huong: 'fast_track' });
-    loTrinh.ghiLoTrinhTiep(QL, l.sids[1], { huong: 'chua_quyet' });
-    assert(viecChot(QL).some((i: any) => i.classId === l.classId), 'còn em Chưa quyết → chưa xong');
-    loTrinh.ghiLoTrinhTiep(QL, l.sids[1], { huong: 'len_lop' });
+    assert(v.length === 1 && v[0].tieuDe === `Chốt lộ trình · ${code}` && v[0].due === addDays(tuanFinal, -8) && v[0].urgency !== 'overdue', JSON.stringify(v));
+    loTrinh.luuNhap(QL, l.classId, { items: [{ studentId: l.sids[0], huong: 'fast_track' }] });
+    assert(viecChot(QL).some((i: any) => i.classId === l.classId), 'còn em chưa có nháp → chưa xong');
+    loTrinh.luuNhap(QL, l.classId, { items: [{ studentId: l.sids[1], huong: 'len_lop' }] });
     v = viecChot(QL).filter((i: any) => i.classId === l.classId);
-    assert(v.length === 1 && v[0].reason === '2 em · đủ hướng, chưa xác nhận', `mọi em có hướng, chưa quyết định → còn: ${JSON.stringify(v.map((i: any) => i.reason))}`);
+    assert(v.length === 1 && v[0].reason === '2 em · đủ nháp, chưa chốt', `mọi em có nháp, chưa chốt → còn: ${JSON.stringify(v.map((i: any) => i.reason))}`);
     lenhCho(l.sids[0], l.classId, 'fast_track');
     lenhCho(l.sids[1], l.classId, 'len_lop');
     assert(!viecChot(QL).some((i: any) => i.classId === l.classId), 'mọi em có quyết định → tự hết');

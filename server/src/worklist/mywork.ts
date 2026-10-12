@@ -25,7 +25,7 @@ import { lopKyVong } from '../normal/kyVong.ts';
 import { phanCongDangHieuLuc } from './scoreDebt.ts';
 import { nguoiGiuKetQua } from '../cases/giuKetQua.ts';
 import { dienMocQuyChe } from '../cases/sosAuto.ts';
-import { settleNoShows, sweepExpiredMoves } from '../fasttrack/absence.ts';
+import { sweepExpiredMoves } from '../fasttrack/absence.ts';
 import { quetYeuCau } from '../duyet/yeuCau.ts';
 import { mtLichSuChuaNhap } from '../cham/canCham.ts';
 import { trangThaiYThuc, ungVienVaThe } from '../yThuc/trangThai.ts';
@@ -479,7 +479,6 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   /* ponytail: Nhắc (`chiNhom`) bỏ hai lời quét ghi này — GET kế tiếp quét; dòng Nhắc tra chỉ cần tồn tại, chưa từng phụ thuộc quét. */
   if (!f.chiNhom) {
     sweepExpiredMoves();
-    settleNoShows();
   }
 
   // ------------------------------------------- 2b. GHI KẾT QUẢ PA HẰNG TUẦN (K5-02, T75, §5.6) — một PA một dòng

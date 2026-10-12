@@ -259,7 +259,7 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
 
   const PANEL_UX3 = [
     'cases/QuickReport', 'cases/CasePanel', 'cases/CapNhatTuan', 'cases/ThaoTacCase', 'cases/SkillBoard',
-    'students/NganCase', 'students/ChuyenLopPanel', 'students/LoTrinhTiepPanel', 'students/StudentManagePanel',
+    'students/NganCase', 'students/ChuyenLopPanel', 'students/StudentManagePanel',   // OV-3b: LoTrinhTiepPanel đã xoá
     /* PR-YT4: bốn panel PA v3 → Xác nhận xử lý · Đã thực hiện · Khai bậc · Xem lần xử lý. */
     'yThuc/RecordViolationPanel', 'yThuc/XacNhanXuLyPanel', 'yThuc/DaThucHienPanel', 'yThuc/KhaiBacPanel', 'yThuc/XemXuLyPanel',
     'classes/TeacherAssignPanel',

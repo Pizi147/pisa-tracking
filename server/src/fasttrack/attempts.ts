@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
-  ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, duongDotTest, C10_NHAP_DAU_TRU_TUAN_QUA_KHU, ENTRY_SKILLS, ENTRY_SKILL_LABEL, MOCK_FT_STUDY_WEEK, NO_SHOW_OVERRIDDEN_NOTE,
-  BAI_CO_NHAN_XET, CHAM_CHEO, PERMISSIONS, awaitingScore, laChamCheo, cachHuyLuot, kiemBand, kiemNhanXet, kiemSoMtMoi, kyNangSosMt0, laMt0, laMtCu, ngay, noShowStateOf, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanLich,
+  ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_LABEL, MOCK_FT_STUDY_WEEK, NO_SHOW_OVERRIDDEN_NOTE,
+  BAI_CO_NHAN_XET, CHAM_CHEO, PERMISSIONS, awaitingScore, laChamCheo, cachHuyLuot, kiemBand, kiemNhanXet, kiemSoMtMoi, kyNangSosMt0, laMt0, laMtCu, ngay, dauTruCuaO, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanLich,
   type CachHuy,
   type AssessedSkill, type EntrySkill, type NoShowState, type PendingCell, type SkillProgress, type WorkScope,
 } from '../../../shared/domain/index.ts';
@@ -26,7 +26,7 @@ import {
   type SkillRow, type SkillScheduleView,
 } from './skillSchedule.ts';
 import {
-  CAU_QUA_HAN_GO, canRequest as canRequestAbsence, dauDaChot, duocGoDau, flagLateNoShow, goVangDaChot, pendingMove, rutDeNghiDoi, settleNoShows,
+  CAU_QUA_HAN_GO, canRequest as canRequestAbsence, chotVangNgay, dauDaChot, duocGoDau, goVangDaChot, pendingMove, rutDeNghiDoi,
 } from './absence.ts';
 import { raiseSignalsForResult, stepsFor } from '../cases/sos.ts';
 import { reconcileCorrectedSignals } from '../cases/signals.ts';
@@ -369,40 +369,15 @@ export function skillCells(
      * cũng là điểm thật, nên không dùng riêng `band`.
      */
     const hasScore = cellScored || (row?.raw_score ?? null) !== null;
-    let ns = noShowStateOf({
+    /* OV-1b: một luật với hàng lớp Lịch Test (`dauTruCuaO`) — "-" có hiệu lực ngay khi ghi, không chờ chốt cuối Chủ nhật. */
+    const ns = dauTruCuaO({
       marked: !!row?.no_show_period_id,
       hasScore,
       sameWeek: !!row?.no_show_period_id && row.no_show_period_id === view.periodId,
       weekEnd: view.weekEnd,
       today,
-      enteredAfterWeekEnd: !!row?.no_show_late,
-      lateRule: C10_NHAP_DAU_TRU_TUAN_QUA_KHU,
+      settled: !!row?.no_show_settled_at, cu: !!row?.no_show_cu, sitStatus: view.sitStatus,
     });
-    /*
-     * CHƯA CHỐT MÀ ĐÃ QUÁ CHỦ NHẬT: hàm thuần trả "không dự thi", nhưng việc chốt còn có điều kiện mà hàm thuần không biết —
-     * buổi vẫn phải `scheduled` và MỌI ô nhập của buổi đó đều là '-' (Writing: W1 "-" mà W2 có điểm thì buổi có người làm).
-     * Không đủ điều kiện thì `settleNoShows` sẽ không chốt, nên ô cũng KHÔNG được tự nhận "Không dự thi" (và bị khoá).
-     */
-    if (!row?.no_show_settled_at && ns.state === 'khong-du-thi') {
-      const partnersMarked = entrySkillsOf(assessed).filter((k) => k !== skill).every((k) => {
-        const o = rows.find((r) => r.skill === k);
-        return !!o?.no_show_period_id && o.no_show_period_id === view.periodId
-          && (o.band ?? null) === null && (o.raw_score ?? null) === null;
-      });
-      if (!(view.sitStatus === 'scheduled' && partnersMarked)) ns = { state: 'none', effectiveOn: null, editableUntil: null };
-    }
-    if (row?.no_show_cu && ns.state !== 'none') {
-      /* T23: "-" của MT cũ đã chốt cuối lúc ghi — luôn là "Không dự thi" của đúng tuần đó, không phải Quản lý đổi kết luận. */
-      ns = { state: 'khong-du-thi', effectiveOn: view.weekEnd ? view.weekEnd.slice(0, 10) : null, editableUntil: null };
-    } else if (row?.no_show_settled_at && ns.state !== 'none') {
-      /*
-       * ĐÃ CHỐT MỘT LẦN. Từ đó hiển thị theo trạng thái thi HIỆN TẠI: còn `absent` thì là không dự thi;
-       * Quản lý đã sửa trạng thái thi (đảo kết luận) thì dấu '-' cũ không được tự sống lại.
-       */
-      ns = view.sitStatus === 'absent'
-        ? { state: 'khong-du-thi', effectiveOn: view.weekEnd ? view.weekEnd.slice(0, 10) : null, editableUntil: null }
-        : { state: 'none', effectiveOn: null, editableUntil: null };
-    }
     const noShowNote = row?.no_show_settled_at && !row.no_show_cu && row.no_show_period_id === view.periodId && view.sitStatus !== 'absent'
       ? NO_SHOW_OVERRIDDEN_NOTE : null;
     const daChot = row?.no_show_settled_at && !row.no_show_cu && !hasScore && row.no_show_period_id && attempt.class_id
@@ -410,11 +385,16 @@ export function skillCells(
           const tuanGoc = row.no_show_week_start
             ?? (db().prepare('SELECT week_start FROM report_periods WHERE id = ?').get(row.no_show_period_id) as any).week_start as string;
           /* `editable` đã tính cho cả dòng — không hỏi quyền nhập lại cho từng ô (PR-TD: trần câu SQL). */
-          const loi = duocGoDau(p, { classId: attempt.class_id, skill, mode, tuanGocStart: tuanGoc, today, duocNhap: editable.includes(skill) });
+          /* OV-1b: bài đã dời vì vắng → "Bỏ vắng" không theo hạn tuần cũ; vắng 2 lần (huỷ phần thi) → chỉ Quản lý. */
+          const boVang = view.periodId !== row.no_show_period_id;
+          const loi = duocGoDau(p, {
+            classId: attempt.class_id, skill, mode, tuanGocStart: tuanGoc, today, duocNhap: editable.includes(skill),
+            boVang, daHuyPhan: view.sitStatus === 'cancelled',
+          });
           return {
-            doiSang: view.periodId !== row.no_show_period_id && view.weekStart ? tuanLich(view.weekStart, today) : null,
-            /* Chỉ người có quyền gỡ (trong khung) mới có hạn; Quản lý không hạn; người không có quyền: null. */
-            hanGo: can(p, PERMISSIONS.PLAN_WEEK, { classId: attempt.class_id }) || (loi && loi !== CAU_QUA_HAN_GO)
+            doiSang: boVang && view.weekStart ? tuanLich(view.weekStart, today) : null,
+            /* Chỉ người có quyền gỡ (trong khung) mới có hạn; Quản lý không hạn; người không có quyền / Bỏ vắng: null. */
+            hanGo: boVang || can(p, PERMISSIONS.PLAN_WEEK, { classId: attempt.class_id }) || (loi && loi !== CAU_QUA_HAN_GO)
               ? null : skillScoreDeadline(mode, tuanGoc),
             goDuoc: loi === null,
           };
@@ -977,7 +957,6 @@ export function scoreHistoryOf(attemptId: number) {
 }
 
 export function attemptDetail(p: Principal, attemptId: number) {
-  settleNoShows();
   const conn = db();
   const a = conn.prepare(`${ATTEMPT_SELECT} WHERE a.id = ?`).get(attemptId) as any;
   if (!a) throw notFound('Không tìm thấy lượt Mock Test');
@@ -1333,7 +1312,6 @@ function xoaDiemLuot(p: Principal, a: ReturnType<typeof loadAttempt>, lyDo: stri
   const thuong = !!ct;
   if (o.some((s) => !(thuong ? ct!.skills : ENTRY_SKILLS as readonly string[]).includes(s.skill))) throw badRequest('Kỹ năng không hợp lệ.');
   const today = demoToday();
-  settleNoShows(today);
   const hoanTat = dotHoanTat(a.id, today);
   /* R11 như `saveScore`: đợt đã hoàn tất thì chỉ người sửa được sau hoàn tất mới xoá điểm — kiểm một lần cho cả lượt, trước khi ghi. */
   if (hoanTat.hoanTat && (!a.class_id || !quyenSuaSauHoanTat(p, a.class_id, !!a.lich_su))) {
@@ -1644,8 +1622,8 @@ export function saveScore(
   if (!(ENTRY_SKILLS as readonly string[]).includes(skill)) throw badRequest('Kỹ năng không hợp lệ.');
   if (a.status === 'cancelled') throw badRequest('Lượt này đã huỷ, không nhập điểm được.');
   /*
-   * T23 (PR-MTa, thay K4-20): MT cũ nhận "-" = em không dự thi kỹ năng đó. Chỉ ghi dấu — `settleNoShows` bỏ qua lượt MT cũ
-   * (`lich_su = 0`), nên không tính lần vắng, không tự dời, không Case / thẻ / chuông; ô không còn đếm "còn trống".
+   * T23 (PR-MTa, thay K4-20): MT cũ nhận "-" = em không dự thi kỹ năng đó (`no_show_cu`) — không tính lần vắng, không tự dời,
+   * không Case / thẻ / chuông; ô không còn đếm "còn trống". OV-1b: "-" nhập bù sau tuần thi cũng vậy (nhánh "-" bên dưới).
    */
   /*
    * DẤU "-" CỦA LỚP THƯỜNG ĐI CỬA KHÁC (C08, chốt 21/09/2026 đêm). Ở lớp thường, "-" không phải lời khai chờ chốt
@@ -1663,7 +1641,6 @@ export function saveScore(
    */
   /* PR-BV: xoá "-" ĐÃ CHỐT (Mock) = trả như trước khi gõ — quyền / khung riêng (`duocGoDau`), đi trước R11 và chặn vắng / huỷ bên dưới. */
   if (patch.noShow === false) {
-    settleNoShows(today);
     const dau = dauDaChot(attemptId, skill);
     if (dau) return goVangDaChot(p, attemptId, skill, dau, today);
   }
@@ -1682,11 +1659,6 @@ export function saveScore(
     require_(p, PERMISSIONS.SCORE_EDIT, { classId: a.class_id, studentId: a.student_id, skill },
       'Bạn chỉ nhập được điểm của kỹ năng mình được phân công.');
   }
-  /*
-   * CHỐT TRƯỚC KHI ĐỌC LỊCH — "kể cả không ai mở web". Hàm chốt idempotent, nên gọi ở mọi đường đọc/ghi là
-   * cách thay cho một tác vụ nền. Làm ở đây để ô đã hết Chủ nhật mà còn '-' được nhìn đúng là `absent`.
-   */
-  settleNoShows(today);
   const assessed = assessedSkillOf(skill);
   const scheduleRow = ensureSkillRows(attemptId).find((r) => r.skill === assessed)!;
   if (!scheduleRow.required) {
@@ -1761,10 +1733,17 @@ export function saveScore(
         }
         /* Báo lại cùng một tuần là VÔ HẠI: không đổi gì, và không biến một dấu báo đúng hạn thành báo muộn. */
         if (existing?.no_show_period_id === scheduleRow.planned_period_id) return done();
-        /* T23 (rà #212): "-" ở MT cũ = chốt cuối "Không dự thi" ngay lúc ghi (`no_show_cu`, đã chốt) — lượt có thành MT thường sau đó
-         * (Quản lý dời kỹ năng khác) thì dấu này cũng không vào luồng vắng. */
-        const cu = a.lich_su ? 1 : 0;
-        const late = !cu && today > scheduleRow.week_end.slice(0, 10);
+        /*
+         * OV-1b (đặc tả 3.3): "-" CÓ TÁC DỤNG NGAY, không chờ hết Chủ nhật.
+         *   · MT cũ, hoặc nhập bù SAU tuần thi → "Không dự thi" (`no_show_cu`): trạng thái cuối, không dời, không tính lần vắng, không Case.
+         *   · trong tuần thi (Mock) → đủ mọi ô của buổi "-" (Writing: W1 + W2) thì chốt vắng ngay: lần 1 dời tuần sau, lần 2 huỷ phần thi.
+         * Ô `sat` mà không ô nào của buổi có điểm (điểm đã xoá — ca thật 09/10) vẫn nhận "-" như ô chưa thi.
+         */
+        if (scheduleRow.week_start && scheduleRow.week_start.slice(0, 10) > mondayOf(today)) {
+          throw badRequest(`Chưa tới tuần thi ${tuanLich(scheduleRow.week_start, today)} — muốn đổi tuần thì "Dời lịch thi".`);
+        }
+        const late = today > scheduleRow.week_end.slice(0, 10);
+        const cu = a.lich_su || late ? 1 : 0;
         const now = nowIso();
         if (existing) {
           conn
@@ -1784,14 +1763,9 @@ export function saveScore(
         }
         writeAudit({
           actorUserId: p.userId, action: 'score.no_show', entityType: 'assessment_attempt', entityId: attemptId,
-          entityLabel: skill, before, after: { noShow: true, week: scheduleRow.period_code, late },
+          entityLabel: skill, before, after: { noShow: true, week: scheduleRow.period_code, late, khongDuThi: !!cu },
         });
-        /* C10: tuần đã kết thúc → không tự chốt, tạo một mục chờ Quản lý hiệu chỉnh. */
-        if (late) {
-          /* C10 (đã chốt 20/09/2026): CHỐT NGAY. Phương án cũ (chờ Quản lý hiệu chỉnh) còn code nhưng không dùng. */
-          if ((C10_NHAP_DAU_TRU_TUAN_QUA_KHU as string) === 'chot-ngay') settleNoShows(today);
-          else flagLateNoShow(a, assessed, scheduleRow.period_code ?? '', p.userId);
-        }
+        if (!cu && a.kind === 'mock') chotVangNgay(conn, p, a, scheduleRow, today);
         return done();
       }
       /* patch.noShow === false: gỡ dấu trước khi tuần kết thúc. Sau chốt thì đã bị chặn ở kiểm `absent` phía trên. */
@@ -1982,10 +1956,8 @@ export function classScoreSheet(
   const cls = conn.prepare('SELECT c.*, b.name AS branch_name FROM classes c JOIN branches b ON b.id=c.branch_id WHERE c.id=?')
     .get(classId) as any;
   if (!cls) throw notFound('Không tìm thấy lớp');
-  /* Kiểm quyền TRƯỚC mọi truy vấn dữ liệu HV — kể cả việc chốt "không dự thi" ngay dưới (PR-DL). */
+  /* Kiểm quyền TRƯỚC mọi truy vấn dữ liệu HV (PR-DL). */
   requireXemLuotCham(p, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
-  /* Chốt "không dự thi" ở đường đọc — idempotent, thay cho tác vụ nền (PR-G). */
-  settleNoShows(today);
   /*
    * BẢNG NÀY LÀ BẢNG MOCK TEST. Lớp thường có bảng riêng (`regularSheet`): chấm theo số câu đúng/tổng số câu, bài tên
    * "Giữa khoá"/"Cuối khoá". Mở nhầm bảng là đọc sai cả kết quả — bảng này gọi mọi lượt là "MT{n}" và chấm theo band.

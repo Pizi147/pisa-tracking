@@ -194,9 +194,12 @@ export function phieuBanGiao(p: Principal, f: { lopNguonId?: number; lenhId?: nu
     const dong = dongMon.get(r.id) ?? new Map();
     const mon: PhieuMon[] = monDs.map((m) => {
       const x = dong.get(m.ma);
-      return { ...m, noiDung: x?.noi_dung ?? null, nguoiGhi: x?.ten_ghi ?? null, ghiLuc: x?.ghi_luc ?? null, dienThay: !!x?.dien_thay, gvbm: gvbmCua(m.ma) };
+      return {
+        ...m, noiDung: x?.noi_dung ?? null, nguoiGhi: x?.ten_ghi ?? null, ghiLuc: x?.ghi_luc ?? null, dienThay: !!x?.dien_thay, gvbm: gvbmCua(m.ma),
+        lamLai: !!x?.lam_lai,
+      };
     });
-    const daGhi = mon.filter((m) => m.noiDung).length;
+    const daGhi = mon.filter((m) => m.noiDung && !m.lamLai).length;
     const chup = r.tu_dien ? (JSON.parse(r.tu_dien) as { tuDien: TuDien; gvbmChuaBanGiao: string[] }) : null;
     return {
       lenhId: r.id, studentId: r.student_id, ten: r.full_name, maHv: r.student_code, huong: r.huong, trangThaiLenh: r.trang_thai,
@@ -206,7 +209,7 @@ export function phieuBanGiao(p: Principal, f: { lopNguonId?: number; lenhId?: nu
       tuDien: chup ? { ...chup.tuDien, ketQua: ketQuaMoi.get(r.student_id) ?? chup.tuDien.ketQua } : tuDien.get(r.id) ?? null, tuDienDaChup: !!chup,
       mon, nhanXetChung: r.nhan_xet_chung ?? null,
       xacNhan: r.xac_nhan_luc ? { boi: r.xn_ten ?? null, luc: r.xac_nhan_luc, thay: !!r.xac_nhan_thay } : null,
-      gvbmChuaBanGiao: chup?.gvbmChuaBanGiao ?? mon.filter((m) => !m.noiDung).map((m) => m.ngan),
+      gvbmChuaBanGiao: chup?.gvbmChuaBanGiao ?? mon.filter((m) => !m.noiDung || m.lamLai).map((m) => m.ngan),
     };
   });
 
@@ -218,7 +221,7 @@ export function phieuBanGiao(p: Principal, f: { lopNguonId?: number; lenhId?: nu
     tong: ds.length, daXacNhan: ds.filter((e) => e.xacNhan).length,
     hanGvcn: thay.filter((r) => !r.xac_nhan_luc).map((r) => r.han_gvcn as string | null).filter(Boolean).sort()[0] ?? null,
     theoMon: monDs.map((m) => ({
-      ma: m.ma, daGhi: ds.filter((e) => e.mon.find((x) => x.ma === m.ma)?.noiDung).length, tong: ds.length,
+      ma: m.ma, daGhi: ds.filter((e) => { const x = e.mon.find((y) => y.ma === m.ma); return !!x?.noiDung && !x.lamLai; }).length, tong: ds.length,
       han: thay.map((r) => r.han_gvbm as string | null).filter(Boolean).sort()[0] ?? null,
     })),
     ds,
@@ -251,7 +254,8 @@ export function ghiMon(p: Principal, lenhId: number, mon: string, noiDung: strin
   tx(() => {
     db().prepare(
       `INSERT INTO ban_giao_mon (lenh_id, mon, noi_dung, nguoi_ghi, dien_thay, ghi_luc) VALUES (?,?,?,?,?,?)
-       ON CONFLICT (lenh_id, mon) DO UPDATE SET noi_dung = excluded.noi_dung, nguoi_ghi = excluded.nguoi_ghi, dien_thay = excluded.dien_thay, ghi_luc = excluded.ghi_luc`,
+       ON CONFLICT (lenh_id, mon) DO UPDATE SET noi_dung = excluded.noi_dung, nguoi_ghi = excluded.nguoi_ghi, dien_thay = excluded.dien_thay, ghi_luc = excluded.ghi_luc,
+         lam_lai = 0`,
     ).run(lenhId, mon, text, p.userId, q.gvbmDungMon ? 0 : 1, mocNghiepVu());   // ngày nghiệp vụ (bản demo: ngày demo + giờ thật)
     writeAudit({ actorUserId: p.userId, action: 'ban_giao.ghi_mon', entityType: 'student', entityId: l.student_id, entityLabel: l.full_name, after: { lenhId, mon, dienThay: !q.gvbmDungMon } });
   });
@@ -270,7 +274,7 @@ export function xacNhanBanGiao(p: Principal, lenhId: number, nhanXetChung: strin
   tx(() => {
     const conn = db();
     const tuDien = tuDienTheoLo({ id: l.lop_nguon_id, ct: l.ct }, [l]).get(l.id)!;
-    const da = new Set((conn.prepare('SELECT mon FROM ban_giao_mon WHERE lenh_id = ?').all(lenhId) as any[]).map((r) => r.mon as string));
+    const da = new Set((conn.prepare('SELECT mon FROM ban_giao_mon WHERE lenh_id = ? AND lam_lai = 0').all(lenhId) as any[]).map((r) => r.mon as string));
     const chuaBanGiao = boMonLich(l.ct).filter((m) => !da.has(m)).map((m) => tenMonNgan(l.ct, m));
     const luc = mocNghiepVu();
     const r = conn.prepare(
@@ -353,7 +357,7 @@ export function viecBanGiao(userId: number, branchId?: number | null): ViecBanGi
   if (!lenh.length) return [];
   const daGhi = new Set<string>();   // `${lenhId}:${mon}`
   theoLo(lenh.map((l) => l.id as number), (lo, ph) => {
-    for (const r of conn.prepare(`SELECT lenh_id, mon FROM ban_giao_mon WHERE lenh_id IN (${ph})`).all(...lo) as any[]) daGhi.add(`${r.lenh_id}:${r.mon}`);
+    for (const r of conn.prepare(`SELECT lenh_id, mon FROM ban_giao_mon WHERE lam_lai = 0 AND lenh_id IN (${ph})`).all(...lo) as any[]) daGhi.add(`${r.lenh_id}:${r.mon}`);
   });
   const out: ViecBanGiao[] = [];
   for (const [lopId, x] of lop) {

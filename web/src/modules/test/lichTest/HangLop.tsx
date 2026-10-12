@@ -12,12 +12,33 @@ import { LuoiNhung } from './LuoiNhung.tsx';
  */
 function NhanLop({ l, chuaLuu = 0 }: { l: LopLichTest; chuaLuu?: number }) {
   if (chuaLuu > 0) return <Nhan tone="bad" title="Ô viền đỏ chưa lưu được — bấm Lưu lại ở ô đó.">{chuOChuaLuu(chuaLuu)}</Nhan>;
+  const mon = (ds: string[]) => ds.map((k) => tenMonNgan(l.chuongTrinh, k)).join(', ');
+  const { toi, khac } = l.phan ?? { toi: null, khac: null };
   return (
     <>
-      <Nhan tone={TONE_NHAN_LOP[l.nhan.loai]}>
-        {l.nhan.chu}
-        {l.nhan.loai === 'da-cham' && <span className="ml-1 font-normal" aria-hidden>✓</span>}
-      </Nhan>
+      {/* OV-1b (3.5, mockup overhaul-1 §4): GV thấy "phần của bạn" tách với phần GV khác — "Quá hạn" đỏ chỉ khi ô của chính mình. */}
+      {toi || khac ? (
+        <span className="flex flex-col gap-0.5 text-[12.5px] font-normal leading-tight">
+          {toi && (toi.con === 0
+            ? <span className="font-semibold text-ok">✓ {mon(toi.kyNang)} của bạn xong</span>
+            : (
+              <span className="flex flex-wrap items-center gap-1.5">
+                {l.quaHan && <Nhan tone="late">Quá hạn</Nhan>}
+                <span className="font-semibold text-slate-200">{mon(toi.kyNang)} của bạn: còn {toi.con} bài</span>
+              </span>
+            ))}
+          {khac && (
+            <span className="text-slate-500">
+              {mon(khac.kyNang)}: GV khác{khac.quaHanNgay !== null && <> · <b className="font-semibold text-late">⚠ quá hạn {khac.quaHanNgay} ngày</b></>}
+            </span>
+          )}
+        </span>
+      ) : (
+        <Nhan tone={TONE_NHAN_LOP[l.nhan.loai]}>
+          {l.nhan.chu}
+          {l.nhan.loai === 'da-cham' && <span className="ml-1 font-normal" aria-hidden>✓</span>}
+        </Nhan>
+      )}
       {/* PR-MT (YC-13.1): bài vắng tuần này đang chờ Quản lý duyệt dời lần 2 — dòng nhạt, không phải việc chấm. */}
       {l.choDuyetDoi > 0 && (
         <span className="block whitespace-nowrap text-xs text-wait" title="Đề nghị dời do vắng (từ lần 2) đang chờ Quản lý trả lời">
@@ -60,7 +81,8 @@ const TienDo = ({ l, nhat }: { l: LopLichTest; nhat: boolean }) => (
  * (không số ngày, không tô đỏ cả hàng). Hàng đã chấm xong không còn hạn.
  */
 function HanHang({ l, kieuQuaHan }: { l: LopLichTest; kieuQuaHan?: 'badge' }) {
-  if (kieuQuaHan !== 'badge') return <Han loai="nhap-diem" han={l.han} />;
+  /* OV-1b: hạn chỉ báo ⚠ khi ô của người xem quá hạn — phần GV khác nói ở cột "phần của bạn". */
+  if (kieuQuaHan !== 'badge') return <Han loai="nhap-diem" han={l.han} boTinHieu={!!l.phan && !l.quaHan} />;
   if (l.conBai === 0) return <span className="text-xs text-slate-600">—</span>;
   return (
     <span className="inline-flex flex-wrap items-center gap-x-1.5">

@@ -76,15 +76,15 @@ export async function runPrViecNhoTests(t: YThucTestKit) {
   });
   const viec = (lop: number) => mywork.myWork(QL, { branchId: MB }).groups.flatMap((g: any) => g.items).find((i: any) => i.group === 'chot_len_ft' && i.classId === lop);
 
-  check('VN5 · Chốt lộ trình (trước: Chốt lên FT): em chỉ có đề xuất GVCN chờ duyệt → chữ việc tách "n em chờ duyệt đề xuất" khỏi "m em chưa có hướng"; số đếm đúng', () => {
+  check('VN5 · Chốt lộ trình (trước: Chốt lên FT): em chỉ có đề xuất GVCN chờ duyệt → chữ việc tách "n em chờ duyệt đề xuất" khỏi "m em chưa chọn" (OV-3b: chữ mới); số đếm đúng', () => {
     const l = taoLop(3);
-    assert(viec(l.classId)?.reason === '3 em chưa có hướng', `trước đề xuất: ${viec(l.classId)?.reason}`);
+    assert(viec(l.classId)?.reason === '3 em chưa chọn', `trước đề xuất: ${viec(l.classId)?.reason}`);
     assert(deXuat(l.sids[0]) !== null, 'tạo đề xuất');
     const x = lenhSvc.lopChoChotLoTrinh(QL, MB, TODAY).find((r: any) => r.classId === l.classId);
     assert(x?.chuaLenh === 3 && x?.choDuyet === 1 && x?.chuaHuong === 2, JSON.stringify(x));
     const v = viec(l.classId);
     /* PR-LCb (chữ mới, mockup cuối khoá 2 phần 1a + 4): "{tổng} em · m em chưa có hướng · n em chờ duyệt đề xuất". */
-    assert(v?.reason === '3 em · 2 em chưa có hướng · 1 em chờ duyệt đề xuất' && v?.contextLabel === v?.reason && v?.count === 3, `${v?.reason} · count ${v?.count}`);
+    assert(v?.reason === '3 em · 2 em chưa chọn · 1 em chờ duyệt đề xuất' && v?.contextLabel === v?.reason && v?.count === 3, `${v?.reason} · count ${v?.count}`);
     deXuat(l.sids[1]); deXuat(l.sids[2]);
     assert(viec(l.classId)?.reason === '3 em chờ duyệt đề xuất', `chỉ còn đề xuất: ${viec(l.classId)?.reason}`);
   });

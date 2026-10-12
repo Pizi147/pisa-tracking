@@ -12,14 +12,12 @@ import { IntakePanel } from '../students/IntakePanel.tsx';
 import { SuaCaLopPanel } from '../students/SuaCaLopPanel.tsx';
 import { KetThucLopPanel, MoLaiLopPanel, XoaLopPanel } from './XoaKetThucLopPanel.tsx';
 import { TransitionPanel } from './TransitionPanel.tsx';
-import { PanelCuoiKhoa } from './PanelCuoiKhoa.tsx';
-import { PanelKyVong } from './PanelKyVong.tsx';
 import { BanGiaoPanel } from './BanGiaoPanel.tsx';
 import { ChuyenLopNhieuEm } from '../students/ChuyenLopPanel.tsx';
 import { DauTrangLop, type HoSoLop, type ViecDauTrang } from './DauTrangLop.tsx';
 import { ThongTinLopPanel } from './ThongTinLopPanel.tsx';
 import { NganXuatMt } from '../test/NganXuatMt.tsx';
-import { TabHocVienLop } from './TabHocVienLop.tsx';
+import { TabHocVienLop, type CheDoHocVien } from './TabHocVienLop.tsx';
 import { DiemTheoLop } from '../cham/DiemTheoLop.tsx';
 import { duongDiemTheoLuot, type DanhSachLuot } from '../cham/LuoiChamLop.tsx';
 import { MuiTen } from '../cases/SkillBoard.tsx';
@@ -37,7 +35,7 @@ export default function ClassOverviewPage() {
   const { classId } = useParams();
   const { homNay } = useNgayNghiepVu();
   const [params, setParams] = useSearchParams();
-  const cheDo: 'diem' | 'can-ho-tro' = params.get('che-do') === 'can-ho-tro' ? 'can-ho-tro' : 'diem';
+  const cheDo: CheDoHocVien = params.get('che-do') === 'can-ho-tro' ? 'can-ho-tro' : params.get('che-do') === 'lo-trinh' ? 'lo-trinh' : 'diem';
   const periods = usePeriods();
   const [periodId, setPeriodId] = useState<number | null>(null);
   const [viec, setViec] = useState<ViecDauTrang | null>(null);
@@ -75,12 +73,12 @@ export default function ClassOverviewPage() {
    */
   useEffect(() => {
     const v = params.get('viec');
-    /* PR-LCb: lớp thường — `?viec=lo-trinh-ca-lop` (việc QL "Chốt lộ trình · lớp") và `?viec=chuyen-tiep` (badge, Lịch Test, thẻ duyệt) cùng mở
-       panel "Lộ trình tiếp theo" cho Quản lý và GVCN; lớp FT `chuyen-tiep` vẫn panel Chuyển lớp (chỉ Quản lý). */
+    /* OV-3b: lớp thường — `?viec=lo-trinh-ca-lop` (việc QL "Chốt lộ trình · lớp"), `?viec=chuyen-tiep` (badge, Lịch Test, thẻ duyệt), `?viec=ky-vong`
+       (việc QL "Kết quả đầu ra") → tab Học viên › cách xem "Lộ trình tiếp theo"; lớp FT `chuyen-tiep` vẫn panel Chuyển lớp (chỉ Quản lý). */
     const thuongV = data?.programme?.scoringMode === 'ratio';
-    const moLtt = !!data && thuongV && (v === 'chuyen-tiep' || v === 'lo-trinh-ca-lop') && (data.viewer.coTheChuyenTiep || data.viewer.canAddStudents);
-    /* PR-KV: việc QL "Kỳ vọng đầu ra · lớp" → `?viec=ky-vong` (máy chủ trả 403 cho người không phải Quản lý). */
-    if (data && (moLtt || v === 'ky-vong' || (v === 'chuyen-tiep' && !thuongV && data.viewer.coTheChuyenTiep) || (v === 'phan-cong' && (data.viewer.canAssign || data.viewer.canAssignSubject)))) {
+    if (data && thuongV && (v === 'chuyen-tiep' || v === 'lo-trinh-ca-lop' || v === 'ky-vong')) {
+      doiThamSo({ viec: null, tab: null, 'che-do': 'lo-trinh' });
+    } else if (data && ((v === 'chuyen-tiep' && !thuongV && data.viewer.coTheChuyenTiep) || (v === 'phan-cong' && (data.viewer.canAssign || data.viewer.canAssignSubject)))) {
       setViec(v);
       doiThamSo({ viec: null });
     } else if (data && v === 'xet-lai') {
@@ -113,11 +111,16 @@ export default function ClassOverviewPage() {
 
   const thuong = data.programme?.scoringMode === 'ratio';
   const dong = () => setViec(null);
+  /* OV-3b: lớp thường — ⋯ Lộ trình tiếp theo / dải nhắc / Chuyển tiếp mở cách xem "Lộ trình tiếp theo" ở tab Học viên, không panel. */
+  const moViec = (v: ViecDauTrang) => {
+    if (thuong && (v === 'lo-trinh-ca-lop' || v === 'chuyen-tiep')) doiThamSo({ tab: null, 'che-do': 'lo-trinh' });
+    else setViec(v);
+  };
   const xong = () => { invalidate('/classes'); invalidate('/hoc-vien-lop'); reload(); };
 
   return (
     <div className="page space-y-4">
-      <DauTrangLop data={data} onViec={setViec}
+      <DauTrangLop data={data} onViec={moViec}
         onBanGiao={(o) => { setBg({ mon: o.mon ?? null, lenhId: null, lop: o.lop ?? null }); setViec('ban-giao'); }} />
 
       <HangTab ariaLabel="Hồ sơ lớp" value={tab}
@@ -126,7 +129,8 @@ export default function ClassOverviewPage() {
 
       {tab === 'tong-ket' && <TabTongKetLop classId={data.id} />}
       {tab === 'hoc-vien' && (
-        <TabHocVienLop lop={data} cheDo={cheDo} onCheDo={(m) => doiThamSo({ 'che-do': m === 'diem' ? null : m })}
+        <TabHocVienLop lop={data} cheDo={cheDo} onCheDo={(m) => doiThamSo({ 'che-do': m === 'diem' ? null : m, em: null })}
+          emMo={Number(params.get('em')) || null} onDaMoEm={() => doiThamSo({ em: null })}
           onDoi={xong} onThemHocVien={() => setViec('hoc-vien')}
           onSuaThongTin={data.viewer.canAddStudents && (data.summary?.studentCount ?? 0) > 0 ? () => setViec('sua-hoc-vien') : undefined} />
       )}
@@ -136,13 +140,11 @@ export default function ClassOverviewPage() {
       {data.viewer.coTheXemDiem && <KhoiDiemLop key={data.id} classId={data.id} thuong={thuong} mo={moDiem} onDoi={() => setMoDiem((m) => !m)} />}
 
       <TransitionPanel classId={data.id} open={viec === 'chuyen-tiep' && !thuong} onClose={dong} onDone={xong} />
-      {(viec === 'lo-trinh-ca-lop' || (viec === 'chuyen-tiep' && thuong)) && <PanelCuoiKhoa classId={data.id} onClose={dong} onDone={xong} />}
-      {viec === 'ky-vong' && <PanelKyVong classId={data.id} onClose={dong} onDone={xong} />}
       {xetLai && <ChuyenLopNhieuEm classId={data.id} onClose={() => setXetLai(false)} onDone={xong} />}
       {viec === 'ban-giao' && <BanGiaoPanel classId={bg.lop ?? data.id} mon={bg.mon} lenhId={bg.lenhId} onClose={dong} onDone={xong} />}
       {(viec === 'thong-tin' || viec === 'phan-cong') && (
         <ThongTinLopPanel lop={data} phan={viec === 'phan-cong' ? 'phan-cong' : null} onClose={dong} onDone={xong}
-          onChuyenTiep={data.viewer.coTheChuyenTiep ? () => setViec('chuyen-tiep') : undefined} />
+          onChuyenTiep={data.viewer.coTheChuyenTiep ? () => moViec('chuyen-tiep') : undefined} />
       )}
       {viec === 'xuat-mt' && (
         <NganXuatMt khung={thuong ? 'thuong' : 'ft'} lop={{ id: data.id, ma: data.code }} chiNhanh={data.branchId}

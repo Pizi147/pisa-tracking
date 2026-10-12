@@ -1,11 +1,11 @@
 import { db } from '../db.ts';
-import { boMonLich, kyNangPhuTrach, tenMonNgan, tuanChonDuoc } from '../../../shared/domain/index.ts';
+import { boMonLich, kyNangPhuTrach, mocLoTrinh, tenMonNgan } from '../../../shared/domain/index.ts';
 import { addDays } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import type { Principal } from '../permissions.ts';
 import type { DaiHocVien, DaiLop } from '../../../shared/domain/index.ts';
 import { mocKetKhoa, type TienDoMoc } from './schedule.ts';
-import { demChuaCoLenh } from './lenhChuyen.ts';
+import { lopChoChotLoTrinh } from './lenhChuyen.ts';
 import { coTheRaLenh, phanCongO } from './quyenChuyenLop.ts';
 
 /**
@@ -25,7 +25,7 @@ export function daiLop(p: Principal, classId: number, o: { pr: TienDoMoc; ft: bo
      UNION ALL SELECT 'dich', l.lop_nguon_id, n.code, l.trang_thai, l.tuan_bat_dau, l.xac_nhan_luc, NULL, NULL, NULL
        FROM lenh_chuyen_lop l JOIN classes n ON n.id = l.lop_nguon_id WHERE l.lop_dich_id = ? AND l.trang_thai = 'cho'
      UNION ALL SELECT 'mon', b.lenh_id, b.mon, NULL, NULL, NULL, NULL, NULL, NULL
-       FROM ban_giao_mon b WHERE b.lenh_id IN (SELECT id FROM lenh_chuyen_lop WHERE lop_nguon_id = ?)
+       FROM ban_giao_mon b WHERE b.lam_lai = 0 AND b.lenh_id IN (SELECT id FROM lenh_chuyen_lop WHERE lop_nguon_id = ?)
      UNION ALL SELECT 'gvcn', COUNT(*), NULL, NULL, NULL, NULL, NULL, NULL, NULL
        FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active'`,
   ).all(classId, classId, classId, classId) as any[];
@@ -58,18 +58,14 @@ export function daiLop(p: Principal, classId: number, o: { pr: TienDoMoc; ft: bo
       tuan: min(dich.map((r) => r.d))!, daXacNhan: dich.filter((r) => !!r.e).length,
     } : null;
 
-  let ketThucKhoa: DaiLop['ketThucKhoa'] = null;
-  const moc = o.ft ? null : mocKetKhoa(o.pr, homNay);   // PR-S5F-a: từ tuần Final Test (kể cả khi dời sớm), không theo chặng
-  if (moc?.tuCuoiKhoa) {
-    const so = demChuaCoLenh([classId]).get(classId) ?? 0;
-    if (so > 0) {
-      ketThucKhoa = { tuanCuoiKhoa: moc.tuanCuoiKhoa, tuanKetThuc: moc.tuanKetThuc, soChuaLenh: so, do: !!moc.tuanKetThuc && homNay >= moc.tuanKetThuc, tuanGoiY: tuanChonDuoc(homNay)[0] };
-    }
-  }
+  /* OV-3b: thanh nhắc "Lộ trình tiếp theo" (Quản lý, lớp thường) — CÙNG hàm với việc QL "Chốt lộ trình" (từ thứ Hai tuần Final − 2, còn em chưa chốt). */
+  const den = o.pr?.finalWeekStart ? homNay >= mocLoTrinh(o.pr.finalWeekStart).nhacTu : mocKetKhoa(o.pr, homNay).hetKhoa;   // lọc rẻ trước khi đếm
+  const chot = !o.ft && ra && den ? lopChoChotLoTrinh(p, null, homNay, classId)[0] : undefined;
+  const loTrinh: DaiLop['loTrinh'] = chot ? { hanChot: chot.han, tong: chot.tong, daChot: chot.tong - chot.chuaLenh, do: !!chot.han && homNay > chot.han } : null;
   /* PR-S5F-a: lệnh lỗi (kể cả Dừng học hẳn) — Quản lý thấy ngay ở hồ sơ lớp để sửa, không phải mở từng hồ sơ em. */
   const loi = ra ? rows.filter((r) => r.k === 'nguon' && r.c === 'cho' && r.h) : [];
   const chuaChuyenDuoc = loi.length ? { n: loi.length, loi: loi[0].h as string } : null;
-  return { ketThucKhoa, banGiao, banGiaoMon, sapNhan, chuaChuyenDuoc, viewer: { coTheRaLenh: ra, coTheChuyenNhieuEm: ra && o.ft, laGvcn: pc.gvcn, xacNhanDuoc: pc.gvcn || qlThay } };
+  return { loTrinh, banGiao, banGiaoMon, sapNhan, chuaChuyenDuoc, viewer: { coTheRaLenh: ra, coTheChuyenNhieuEm: ra && o.ft, laGvcn: pc.gvcn, xacNhanDuoc: pc.gvcn || qlThay } };
 }
 
 /** Hồ sơ HV (E): lệnh đang chờ hoặc đã chuyển ≤ 14 ngày (Q17) — 2 câu. */
@@ -78,7 +74,7 @@ export function daiHocVien(p: Principal, studentId: number): DaiHocVien | null {
   const homNay = demoToday();
   const l = conn.prepare(
     `SELECT l.*, n.code AS nguon, n.programme_code AS ct, d.code AS dich, u.full_name AS ra, xn.full_name AS xn_ten,
-            (SELECT GROUP_CONCAT(b.mon) FROM ban_giao_mon b WHERE b.lenh_id = l.id) AS mon_da_ghi
+            (SELECT GROUP_CONCAT(b.mon) FROM ban_giao_mon b WHERE b.lenh_id = l.id AND b.lam_lai = 0) AS mon_da_ghi
        FROM lenh_chuyen_lop l JOIN classes n ON n.id = l.lop_nguon_id LEFT JOIN classes d ON d.id = l.lop_dich_id
        LEFT JOIN users u ON u.id = l.nguoi_ra_lenh LEFT JOIN users xn ON xn.id = l.xac_nhan_boi
       WHERE l.student_id = ? AND (l.trang_thai = 'cho' OR (l.trang_thai = 'da_chuyen' AND l.tuan_bat_dau >= ?))

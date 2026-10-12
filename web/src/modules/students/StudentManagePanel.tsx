@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { Navigate } from 'react-router-dom';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
@@ -7,12 +8,11 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import {
   NHAN_VIEC_QUAN_LY, mucQuanLyHocVien, cacTabTrangThai, type LopHocQuyen, type ViecQuanLy, type TabTrangThai, dsLoi, docEmail,
-  cauMtSeDoi, tuanLich, GIAI_THICH_KCK, KCK, roundToHalf, type NguoiChon,
+  cauMtSeDoi, tuanLich, GIAI_THICH_KCK, KCK, roundToHalf, type NguoiChon, duongLoTrinhLop,
 } from '@shared/domain/index.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { hoanTacHangLoat } from './hangLoatEm.ts';
-import { LoTrinhTiepPanel } from './LoTrinhTiepPanel.tsx';
 import { ChuyenLopPanel } from './ChuyenLopPanel.tsx';
 import { XoaHocVienPanel } from './XoaHocVienPanel.tsx';
 import { DeXuatSuaPanel } from '../duyet/DeXuatSuaPanel.tsx';
@@ -54,7 +54,8 @@ export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempt
   const xong = () => { onDone(); onClose(); };
   const chung = { studentId: student.id, studentName: student.name, lop, onClose, onDone: xong };
   switch (viec) {
-    case 'lo-trinh-tiep': return <LoTrinhTiepPanel open {...chung} />;
+    /* OV-3b: mở hộp Lộ trình của em ở hồ sơ lớp › Lộ trình tiếp theo (một chỗ làm). */
+    case 'lo-trinh-tiep': return student.classId ? <Navigate to={duongLoTrinhLop(student.classId, student.id)} /> : null;
     case 'chuyen-lop': return <ChuyenLopPanel open cheDo="lenh" {...chung} />;
     case 'de-xuat-chuyen-lop': return <ChuyenLopPanel open cheDo="de-xuat" {...chung} />;
     case 'tam-dung-thoi-hoc': return <TamDungThoiHocPanel {...chung} tabs={cacTabTrangThai(lopHoc?.quyen, student.status)} soViPhamMo={soViPhamMo} />;

@@ -866,19 +866,6 @@ api.put('/attempts/:id/scores/:skill', requireAuth, wrap((req) => {
 }));
 
 /**
- * QUẢN LÝ HIỆU CHỈNH dấu '-' nhập cho tuần ĐÃ KẾT THÚC (C10): `{ decision: 'confirm' | 'reject' }`.
- * Không tự chốt và không âm thầm mở lại tuần đã chốt — chỉ Quản lý có quyền xếp lịch làm được việc này.
- */
-api.post('/attempts/:id/scores/:skill/no-show/resolve', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  const skill = String(req.params.skill);
-  if (!(ENTRY_SKILLS as readonly string[]).includes(skill)) throw badRequest('Kỹ năng không hợp lệ.');
-  const decision = req.body?.decision;
-  if (decision !== 'confirm' && decision !== 'reject') throw badRequest('Cần chọn xác nhận hoặc từ chối.');
-  return absenceSvc.resolveLateNoShow(principalOf(req), pInt(req, 'id'), skill, decision);
-}));
-
-/**
  * MỘT CỬA CHO BẢNG CHẤM (spec §3.5): máy chủ chọn đúng bảng theo loại lớp, giao diện không phải đoán. Mở
  * `/nhap-diem/:id` của một lớp thường thì đây là chỗ trả về lưới lớp thường.
  */
@@ -2037,6 +2024,22 @@ api.get('/classes/:id/lo-trinh-tiep', requireAuth, wrap((req) => {
 api.put('/classes/:id/lo-trinh-tiep', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return loTrinhTiepSvc.ghiLoTrinhTiepCaLop(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
+/** OV-3b: nháp Lộ trình tiếp theo — chỉ Quản lý (`coTheRaLenh`); lô lỗi một phần (`failed`). Đọc nháp qua `GET /classes/:id/transition`. */
+api.put('/classes/:id/lo-trinh-nhap', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return loTrinhTiepSvc.luuNhap(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+api.delete('/classes/:id/lo-trinh-nhap/:studentId', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return loTrinhTiepSvc.xoaNhap(principalOf(req), pInt(req, 'id'), pInt(req, 'studentId'));
+}));
+
+/** OV-3b: GVCN lớp nguồn đề xuất Kết quả đầu ra (không chạy gì); Quản lý chốt ở `PUT /students/:id/ket-luan-ft`. */
+api.put('/students/:id/ket-qua-de-xuat', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return cuoiKhoaSvc.deXuatKetQua(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 
 /** PR-KV (§3): panel "Kỳ vọng đầu ra · lớp" — em Lên FT của lớp BE/ELE + MT0 + gợi ý; Lưu một lần cả lớp (một tx). Chỉ Quản lý (`request.approve`). */

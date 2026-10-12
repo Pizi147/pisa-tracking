@@ -54,7 +54,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
 }) {
   const { homNay } = useNgayNghiepVu();
   const { data, loading, error, reload } = useApi<DongThuong[]>(`/classes/${classId}/roster`, [classId]);
-  const tt = useThaoTacDongHocVien({ laLopThuong: true, quyen, maLop, onDone: () => { reload(); onDoi(); } });
+  const tt = useThaoTacDongHocVien({ laLopThuong: true, quyen, maLop, classId, onDone: () => { reload(); onDoi(); } });
   const dienThoai = useDienThoai();
 
   if (error) return <p className="m-0 text-xs text-rose-200">{error.message}</p>;

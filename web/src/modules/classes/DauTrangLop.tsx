@@ -88,8 +88,8 @@ export function DauTrangLop({ data, onViec, onBanGiao }: {
     soChuaLoTrinhTiep: s?.soChuaLoTrinhTiep ?? 0,
     chuongTrinh: data.programme?.code ?? null,
   });
-  /* PR-S5F-a (mockup 20): lớp đã có dải "Kết thúc khoá" thì bỏ chip "n HV cần xếp lớp tiếp" — hai chỗ nói cùng một việc. */
-  const boXep = (ds: BadgeLop[]) => (data.dai?.ketThucKhoa ? ds.filter((x) => x.key !== 'xep-lop') : ds);
+  /* PR-S5F-a (mockup 20): lớp đã có dải "Lộ trình tiếp theo" (OV-3b) thì bỏ chip "n HV cần xếp lớp tiếp" — hai chỗ nói cùng một việc. */
+  const boXep = (ds: BadgeLop[]) => (data.dai?.loTrinh ? ds.filter((x) => x.key !== 'xep-lop') : ds);
   const b0 = { hien: boXep(bGoc.hien), an: boXep(bGoc.an) };
   /* DH: nhãn chặng chỉ là chữ — không vào menu "+n" (mục bấm không làm gì); nếu bị ẩn thì hiện thẳng ở hàng. */
   const b = { hien: [...b0.hien, ...b0.an.filter((x) => x.key === 'chang')], an: b0.an.filter((x) => x.key !== 'chang') };

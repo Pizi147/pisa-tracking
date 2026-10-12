@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Han } from '../../ui/Han.tsx';
@@ -6,8 +7,7 @@ import { Level, NutChon } from '../../ui/ui.tsx';
 import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { LoTrinhTiepPanel } from './LoTrinhTiepPanel.tsx';
-import { REGULAR_SKILLS, chuHopKetLuan, dsLoi, ngay, tenMon, tenMonNgan, type GoiYCuoiKhoa } from '@shared/domain/index.ts';
+import { REGULAR_SKILLS, chuHopKetLuan, dsLoi, duongLoTrinhLop, ngay, tenMon, tenMonNgan, type GoiYCuoiKhoa } from '@shared/domain/index.ts';
 
 /** `studentProfile().cuoiKhoa` — cùng hình với `EmCuoiKhoa` của máy chủ. */
 export type CuoiKhoaEm = {
@@ -15,7 +15,7 @@ export type CuoiKhoaEm = {
   mon: { skill: string; ratio: number | null }[]; goiY: GoiYCuoiKhoa | null;
   quyetDinh: { huong: string; luc: string } | null;
   ketLuanFt: { dat: boolean | null; nguyenNhan: 'trung_tam' | 'hoc_sinh' | null; mon: string[]; ghiChu: string | null } | null;
-  /** PR-KV: gợi ý kỳ vọng đầu ra theo MT0 (BE/ELE) — kỹ năng điền sẵn ở "Không đạt". */
+  /** PR-KV: gợi ý Kết quả đầu ra theo MT0 (FOU/BE/ELE) — kỹ năng điền sẵn ở "Không đạt". */
   kyVongMt0?: { monTruot: string[] } | null;
   /** PR-S5F-a: lớp của bài Cuối khoá (có thể là lớp em VỪA RỜI — `daChuyen`). */
   ct?: string | null; lop?: string | null; daChuyen?: boolean;
@@ -30,21 +30,20 @@ const TONE = { ok: 'ok', warn: 'warn', bad: 'sos3', muted: 'muted' } as const;
 /**
  * HỘP "KẾT LUẬN KHOÁ" (PR-LT2b, K3 §4b, K3-43, T49) — Nằm ở: Hồ sơ HV → tab Học thuật → ngay trên bảng "Tiến độ và hỗ trợ theo kỹ năng"
  * (chỉ em đang học lớp thường đã có điểm Cuối khoá). Dòng 1: % Cuối khoá (tầng 1) + % từng môn · dòng 2: MỘT nhãn hướng/trạng thái ·
- * BE/ELE: dòng Kỳ vọng đầu ra (Quản lý: Đạt / Không đạt) · nút phụ Lộ trình tiếp theo. Không có nút "Chuyển tiếp" — việc chuyển ở PR-CT.
+ * FOU/BE/ELE: dòng Kết quả đầu ra (Quản lý: Đạt / Không đạt) · nút phụ Lộ trình tiếp theo (OV-3b: sang bảng lớp, mở hộp của em). Không có nút "Chuyển tiếp" — việc chuyển ở PR-CT.
  */
-export function KetLuanKhoa({ studentId, studentName, lop, ct, cuoiKhoa, coTheKetLuan, onDoi }: {
-  studentId: number; studentName: string; lop: string | null; ct: string | null;
+export function KetLuanKhoa({ studentId, studentName, lop, classId, ct, cuoiKhoa, coTheKetLuan, onDoi }: {
+  studentId: number; studentName: string; lop: string | null; classId: number | null; ct: string | null;
   cuoiKhoa: CuoiKhoaEm; coTheKetLuan: boolean; onDoi: () => void;
 }) {
   const { homNay } = useNgayNghiepVu();
-  const [moLoTrinh, setMoLoTrinh] = useState(false);
   const [moKhongDat, setMoKhongDat] = useState(false);
   const toast = useToast();
   const h = chuHopKetLuan({ ct, ...cuoiKhoa, homNay });
   const danhDauDat = async () => {
     try {
       await api.put(`/students/${studentId}/ket-luan-ft`, { dat: true });
-      invalidate('/students'); toast.push('ok', 'Đã ghi: đạt kỳ vọng đầu ra'); onDoi();
+      invalidate('/students'); toast.push('ok', 'Đã chốt: đạt Kết quả đầu ra'); onDoi();
     } catch (e: any) { toast.push('error', e.message); }
   };
   return (
@@ -68,12 +67,11 @@ export function KetLuanKhoa({ studentId, studentName, lop, ct, cuoiKhoa, coTheKe
           )}
         </div>
       )}
-      {!cuoiKhoa.daChuyen && (
+      {!cuoiKhoa.daChuyen && classId && (
         <div>
-          <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setMoLoTrinh(true)}>Lộ trình tiếp theo</button>
+          <Link className="btn btn-sm min-h-[44px] sm:min-h-0" to={duongLoTrinhLop(classId, studentId)}>Lộ trình tiếp theo</Link>
         </div>
       )}
-      <LoTrinhTiepPanel open={moLoTrinh} onClose={() => setMoLoTrinh(false)} studentId={studentId} studentName={studentName} lop={lop} onDone={onDoi} />
       {moKhongDat && (
         <PanelKhongDat studentId={studentId} studentName={studentName} lop={lop} ct={ct} monTruot={cuoiKhoa.kyVongMt0?.monTruot ?? []}
           ban={cuoiKhoa.ketLuanFt} onDong={() => setMoKhongDat(false)} onXong={() => { setMoKhongDat(false); onDoi(); }} />
@@ -82,7 +80,7 @@ export function KetLuanKhoa({ studentId, studentName, lop, ct, cuoiKhoa, coTheKe
   );
 }
 
-/** Ô "Không đạt kỳ vọng đầu ra": nguyên nhân Trung tâm / Học viên · kỹ năng · lý do (Học viên, bắt buộc) — cùng luật panel cả lớp (PR-KV). */
+/** Ô "Không đạt Kết quả đầu ra": nguyên nhân Trung tâm / Học viên · kỹ năng · lý do (Học viên, bắt buộc) — cùng luật panel cả lớp (PR-KV). */
 function PanelKhongDat({ studentId, studentName, lop, ct, monTruot, ban, onDong, onXong }: {
   studentId: number; studentName: string; lop: string | null; ct: string | null; monTruot: string[];
   ban: CuoiKhoaEm['ketLuanFt']; onDong: () => void; onXong: () => void;
@@ -107,13 +105,13 @@ function PanelKhongDat({ studentId, studentName, lop, ct, monTruot, ban, onDong,
         dat: false, nguyenNhan: nn, mon, ...(nn === 'hoc_sinh' ? { ghiChu: ghiChu.trim() } : {}),
       });
       invalidate('/students'); invalidate('/cases'); invalidate('/my-work');
-      toast.push('ok', r?.taoCaseTutor ? `Đã ghi — tạo ${r.taoCaseTutor} Case` : 'Đã ghi kết luận kỳ vọng đầu ra');
+      toast.push('ok', r?.taoCaseTutor ? `Đã ghi — tạo ${r.taoCaseTutor} Case` : 'Đã ghi Kết quả đầu ra');
       if (r?.luuY) toast.push('info', r.luuY);
       onXong();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
   return (
-    <KhungPanel tieuDe="Không đạt kỳ vọng đầu ra" hocVien={studentName} lop={lop} onDong={onDong}
+    <KhungPanel tieuDe="Không đạt Kết quả đầu ra" hocVien={studentName} lop={lop} onDong={onDong}
       chan={{ conThieu: lf.conThieu(loi), chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>Lưu</button> }}>
       <Khoi tieuDe="Nguyên nhân">
         <div {...lf.o(loi, 'nguyen-nhan')} tabIndex={-1} role="radiogroup" aria-label="Nguyên nhân" className="grid grid-cols-2 gap-2 outline-none">

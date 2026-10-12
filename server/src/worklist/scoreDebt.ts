@@ -2,7 +2,6 @@ import { THAM_SO_TOI_DA, db, theoLo } from '../db.ts';
 import { LUOT_TINH_NO_SQL, boMonLich, laChamCheo } from '../../../shared/domain/index.ts';
 import type { Principal } from '../permissions.ts';
 import { loadBundle, regularSkillViews, skillCells } from '../fasttrack/attempts.ts';
-import { settleNoShows } from '../fasttrack/absence.ts';
 import { scoringModeOf } from '../fasttrack/skillSchedule.ts';
 import { allProgrammes } from '../normal/regular.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
@@ -47,8 +46,6 @@ export function phanCongDangHieuLuc(classIds: readonly number[], ngay: string): 
 
 export function scoreDebtCells(p: Principal, today: string, branchIds: number[] | null): DebtCell[] {
   if (Array.isArray(branchIds) && branchIds.length === 0) return [];
-  /* Chốt "không dự thi" trước khi đọc — cùng khuôn với `classScoreSheet`; hàm idempotent. */
-  settleNoShows(today);
   const conn = db();
   /* PR-MT (M3, K4-01): MT lịch sử không bao giờ là nợ — bỏ từ câu SQL (phủ Theo giáo viên, bai-qua-han-nhap-diem, Tổng quan). */
   /* PR-UXF-a T65 → PR-S6F-a Q2: em không đang học (Tạm dừng, Kết thúc học, lưu trữ) không sinh nợ điểm. Hồ sơ HV vẫn hiện ô (đường riêng). */

@@ -143,6 +143,13 @@ export type DongChuyenTiep = {
 };
 
 /** Câu lỗi đầu tiên tìm thấy, hoặc `null` khi dòng hợp lệ. Dùng cả ở máy chủ (Task 5) và web (Task 7, việc mờ nút). */
+/** OV-3b: Học lại = cùng chương trình hoặc xuống lộ trình dưới trên thang lớp thường (BE → BE, FOU, Pre FOU). */
+export function maHocLai(ma: ProgrammeCode | null): ProgrammeCode[] {
+  const ds: ProgrammeCode[] = [];
+  for (let m = ma; m && m !== 'FT'; m = (Object.keys(NORMAL_LADDER) as ProgrammeCode[]).find((k) => NORMAL_LADDER[k] === m) ?? null) ds.push(m);
+  return ds;
+}
+
 export function kiemDongChuyenTiep(dong: DongChuyenTiep, ctx: { maTu: ProgrammeCode | null }): string | null {
   if (!dong.huong) return 'Thiếu hướng';
   if (dong.huong === 'len_lop' || dong.huong === 'fast_track' || dong.huong === 'hoc_lai') {
@@ -151,8 +158,8 @@ export function kiemDongChuyenTiep(dong: DongChuyenTiep, ctx: { maTu: ProgrammeC
       if (dong.huong === 'len_lop' && (dong.toClass.ft || dong.toClass.ma !== NORMAL_LADDER[ctx.maTu as ProgrammeCode])) {
         return 'Lớp chuyển đến phải là chương trình kế tiếp';
       }
-      if (dong.huong === 'hoc_lai' && (dong.toClass.ft || dong.toClass.ma !== ctx.maTu)) {
-        return 'Lớp chuyển đến phải cùng chương trình để học lại';
+      if (dong.huong === 'hoc_lai' && (dong.toClass.ft || !dong.toClass.ma || !maHocLai(ctx.maTu).includes(dong.toClass.ma))) {
+        return 'Lớp chuyển đến phải cùng hoặc thấp hơn chương trình đang học để học lại';
       }
       if (dong.huong === 'fast_track' && !dong.toClass.ft) return 'Lớp chuyển đến phải là Fast Track';
     }

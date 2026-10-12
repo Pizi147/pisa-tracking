@@ -596,7 +596,7 @@ export async function runPrClTests(t: YThucTestKit) {
     }
   });
 
-  await checkAsync('CL-w2 · web: ChuyenLopPanel một ô gõ tên lớp (ChonNguoi ds + phuLopDich), không <select / ChonThang / PATCH, khối Khi chuyển từ máy chủ; nhiều em qua /transfer; ClassOverviewPage ?viec=xet-lai; PanelCuoiKhoa dùng phuLopDich', async () => {
+  await checkAsync('CL-w2 · web: ChuyenLopPanel một ô gõ tên lớp (ChonNguoi ds + phuLopDich), không <select / ChonThang / PATCH, khối Khi chuyển từ máy chủ; nhiều em qua /transfer; ClassOverviewPage ?viec=xet-lai', async () => {
     const fs = await import('node:fs');
     const path = await import('node:path');
     const { fileURLToPath } = await import('node:url');
@@ -608,9 +608,7 @@ export async function runPrClTests(t: YThucTestKit) {
     assert(/export function ChuyenLopNhieuEm/.test(s) && /xet-lai-lo-trinh/.test(s) && /chonGuiNhieuEm\(/.test(s) && /TOI_DA_NHIEU_EM/.test(s), 'thiếu panel nhiều em');
     assert(/ponytail:/.test(s), 'nhiều em: chú thích ponytail (mỗi em một lời gọi)');
     assert(/v === 'xet-lai'/.test(doc('web/src/modules/classes/ClassOverviewPage.tsx')), 'ClassOverviewPage chưa mở ?viec=xet-lai');
-    const ck = doc('web/src/modules/classes/PanelCuoiKhoa.tsx');
-    assert(/phuLopDich\(/.test(ck), 'PanelCuoiKhoa chưa dùng phuLopDich');
-    /* C3 (T4): lớp thường dùng PanelCuoiKhoa — TransitionPanel chỉ còn lớp FT; OTuan, OMt0 vẫn export cho PanelCuoiKhoa / ChuyenLopPanel. */
+    /* OV-3b: PanelCuoiKhoa đã xoá (lớp thường dùng cách xem "Lộ trình tiếp theo"); TransitionPanel chỉ còn lớp FT; OTuan, OMt0 vẫn export cho BangLoTrinhTiep / ChuyenLopPanel. */
     const tp = doc('web/src/modules/classes/TransitionPanel.tsx');
     assert(!/cheDo|LUOI_THUONG|NORMAL_LADDER|deXuatGvcn|loTrinhTiep|Hệ thống gợi ý|Dự kiến thi|kieu="thang"|chuHopKetLuan|'Lên FT'|ATTEMPT_KIND_SHORT|[^.\w]ft \?|!ft\b/.test(tp), 'TransitionPanel còn nhánh lớp thường');
     assert(/export function OTuan/.test(tp) && /export function OMt0/.test(tp) && /'Chuyển lớp FT'/.test(tp) && /'Đổi lộ trình'/.test(tp), 'TransitionPanel FT: thiếu OTuan / OMt0 / hai hướng FT');
