@@ -475,24 +475,27 @@ export async function runPrMtTests(t: YThucTestKit) {
   const lich = (skill: string) => conn.prepare(
     `SELECT ask.sit_status, ask.absence_move_count AS lan, p.week_start AS tuan FROM attempt_skills ask
        JOIN report_periods p ON p.id = ask.planned_period_id WHERE ask.attempt_id = ? AND ask.skill = ?`).get(a8.id, skill) as any;
-  check('PR-MT (8) · GVBM gõ "-" L R W1 W2 tuần 07/09 → chốt thứ Hai → MÁY tự dời sang tuần kế tiếp, vắng lần 1; báo GVCN + GVBM đúng kỹ năng (Q-A, K4-03)', () => {
+  check('PR-MT (8) · GVBM gõ "-" L R W1 W2 trong tuần 07/09 → chốt ngay (OV-1b) → tự dời sang tuần kế tiếp, vắng lần 1; báo GVCN + GVBM đúng kỹ năng (trừ người vừa gõ)', () => {
     attemptsSvc.saveScore(P.lrTeacher, a8.id, 'listening', { noShow: true }, '2026-09-09');
     attemptsSvc.saveScore(P.lrTeacher, a8.id, 'reading', { noShow: true }, '2026-09-09');
     attemptsSvc.saveScore(P.w1Teacher, a8.id, 'writing1', { noShow: true }, '2026-09-09');
     attemptsSvc.saveScore(P.w2Teacher, a8.id, 'writing2', { noShow: true }, '2026-09-09');
-    absence.settleNoShows(TODAY);
     for (const k of ['listening', 'reading', 'writing']) {
       const l = lich(k);
       assert(l.sit_status === 'scheduled' && l.lan === 1 && l.tuan === '2026-09-14', `${k}: ${JSON.stringify(l)}`);
     }
-    const tb = conn.prepare(`SELECT body FROM notifications WHERE user_id = ? AND entity_id = ? AND body LIKE 'Đã tự dời Writing%'`).get(P.w2Teacher.userId, a8.id) as any;
+    /* GV W1 (gõ "-" trước, chưa đủ buổi) được báo; GV W2 vừa gõ "-" làm buổi đủ thì đã thấy ngay ở ô — không chuông. */
+    const tb = conn.prepare(`SELECT body FROM notifications WHERE user_id = ? AND entity_id = ? AND body LIKE 'Đã tự dời Writing%'`).get(P.w1Teacher.userId, a8.id) as any;
     assert(tb?.body === 'Đã tự dời Writing của PRMT Em Vắng · MT1 sang W3 SEP (vắng lần 1).', JSON.stringify(tb));
+    if (P.w1Teacher.userId !== P.w2Teacher.userId) {
+      assert(!conn.prepare(`SELECT 1 FROM notifications WHERE user_id = ? AND entity_id = ? AND body LIKE 'Đã tự dời Writing%'`).get(P.w2Teacher.userId, a8.id),
+        'người vừa gõ "-" không cần chuông');
+    }
     assert(conn.prepare(`SELECT 1 FROM audit_logs WHERE action = 'attempt.absence_auto_move' AND entity_id = ?`).get(a8.id), 'thiếu nhật ký máy tự dời');
   });
   // PR-MTa T3 thay K4-28 lần 2: vắng lần 2 → kỹ năng huỷ (vắng 2 lần), không tự tạo đề nghị; GVCN "Xin dời" mới tạo đề nghị chờ QL.
   check('PR-MT (8) · Lần 2 → huỷ (vắng 2 lần); QL Xin dời → đề nghị chờ QL: hạn hết CN tuần gửi, tuần đích = tuần chưa bắt đầu gần nhất (PR-MTa T3, T42)', () => {
     attemptsSvc.saveScore(P.lrTeacher, a8.id, 'listening', { noShow: true }, '2026-09-16');
-    absence.settleNoShows('2026-09-21');
     assert(lich('listening').sit_status === 'cancelled', 'vắng lần 2 phải huỷ kỹ năng');
     absence.xinDoi(P.mbManager, a8.id, 'listening', { today: '2026-09-21' });
     const r = conn.prepare(`SELECT r.*, p.week_start AS dich FROM skill_move_requests r JOIN report_periods p ON p.id = r.to_period_id
@@ -615,9 +618,8 @@ export async function runPrMtTests(t: YThucTestKit) {
     const k = conn.prepare(`SELECT k.id, rp.week_end, rp.code FROM attempt_skills k JOIN report_periods rp ON rp.id = k.planned_period_id
       WHERE k.attempt_id = ? AND k.skill = 'listening'`).get(a.id) as any;
     const sc = conn.prepare(`SELECT id FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`).get(a.id) as any;
-    absence.settleNoShows(TODAY);   // tiến trình 1: chốt + máy tự dời sang tuần kế tiếp (bài về "scheduled")
+    /* tiến trình 1: "-" ở trên đã chốt ngay + tự dời sang tuần kế tiếp (bài về "scheduled") */
     const lai = absence.settleGroup(conn, a.id, k.id, 'listening', k.week_end, k.code, [sc.id], null, 'Không dự thi', TODAY);   // tiến trình 2, danh sách cũ
-    absence.settleNoShows(TODAY);   // chạy lại: vô hại
     const l = conn.prepare('SELECT sit_status, absence_move_count AS lan FROM attempt_skills WHERE id = ?').get(k.id) as any;
     assert(lai === false && l.sit_status === 'scheduled' && l.lan === 1, JSON.stringify({ lai, l }));
     assert(!conn.prepare(`SELECT 1 FROM skill_move_requests WHERE attempt_id = ? AND status = 'pending'`).get(a.id), 'đề nghị "lần 2" giả');

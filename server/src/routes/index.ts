@@ -795,19 +795,6 @@ api.put('/attempts/:id/scores/:skill', requireAuth, wrap((req) => {
 }));
 
 /**
- * QUẢN LÝ HIỆU CHỈNH dấu '-' nhập cho tuần ĐÃ KẾT THÚC (C10): `{ decision: 'confirm' | 'reject' }`.
- * Không tự chốt và không âm thầm mở lại tuần đã chốt — chỉ Quản lý có quyền xếp lịch làm được việc này.
- */
-api.post('/attempts/:id/scores/:skill/no-show/resolve', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  const skill = String(req.params.skill);
-  if (!(ENTRY_SKILLS as readonly string[]).includes(skill)) throw badRequest('Kỹ năng không hợp lệ.');
-  const decision = req.body?.decision;
-  if (decision !== 'confirm' && decision !== 'reject') throw badRequest('Cần chọn xác nhận hoặc từ chối.');
-  return absenceSvc.resolveLateNoShow(principalOf(req), pInt(req, 'id'), skill, decision);
-}));
-
-/**
  * MỘT CỬA CHO BẢNG CHẤM (spec §3.5): máy chủ chọn đúng bảng theo loại lớp, giao diện không phải đoán. Mở
  * `/nhap-diem/:id` của một lớp thường thì đây là chỗ trả về lưới lớp thường.
  */

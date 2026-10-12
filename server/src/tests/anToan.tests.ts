@@ -468,33 +468,26 @@ export async function runAnToanTests(t: AnToanTestKit) {
 
   // ================================================================== 9. RB-1 — chốt "-" định kỳ
 
-  console.log('\nPR-AN · 9. Chốt "-" tự chạy đầu thứ Hai kể cả khi không ai mở web (4.6)');
+  console.log('\nPR-AN · 9. Lượt quét đầu thứ Hai (chuyển lớp, chuông chấm chéo) — "-" có tác dụng ngay, không chốt ở đây (OV-1b)');
   const cv = await load('../ops/chotVangDinhKy.ts');
   const utilMod: any = await import('../util.ts');
   const weekMod: any = await import('../platform/week.ts');
   const skillScheduleMod: any = await import('../fasttrack/skillSchedule.ts');
   const attemptsMod: any = await import('../fasttrack/attempts.ts');
 
-  check('RB-1 · chotVangDinhKy gọi đúng settleNoShows(ngày); không truyền ngày thì dùng NGÀY THẬT giờ Việt Nam; database chưa khởi tạo thì bỏ qua, không gọi', () => {
+  check('RB-1 · (OV-1b) chotVangDinhKy không còn chốt "-" (có tác dụng ngay khi ghi); không truyền ngày thì dùng NGÀY THẬT giờ Việt Nam; database chưa khởi tạo thì bỏ qua', () => {
+    /* Gọi THẬT (chuyển lớp tới hạn 21/09) như phép kiểm cũ — các bộ kiểm sau (PR-Pb2-b…) dựng trên trạng thái đã thi hành này. */
+    const a = cv.chotVangDinhKy({ ngay: '2026-09-21', daKhoiTao: () => true });
+    assert(typeof a.daChuyen === 'number' && a.boQua === null && a.ngay === '2026-09-21' && !('daChot' in a), JSON.stringify(a));
     let nhan: string | null = null;
-    const a = cv.chotVangDinhKy({ ngay: '2026-09-21', chot: (d: string) => { nhan = d; return 3; }, daKhoiTao: () => true });
-    assert(nhan === '2026-09-21' && a.daChot === 3 && a.boQua === null && a.ngay === '2026-09-21', JSON.stringify(a));
-    nhan = null;
-    cv.chotVangDinhKy({ chot: (d: string) => { nhan = d; return 0; }, daKhoiTao: () => true });
+    cv.chotVangDinhKy({ chuyen: (d: string) => { nhan = d; return 0; }, daKhoiTao: () => true });
     assert(nhan === utilMod.todayInBusinessTz(), `Ngày mặc định ${nhan}, ngày thật ${utilMod.todayInBusinessTz()}`);
     let goi = 0;
-    const b = cv.chotVangDinhKy({ chot: () => { goi += 1; return 0; }, daKhoiTao: () => false });
-    assert(goi === 0 && b.boQua === 'chua-khoi-tao' && b.daChot === 0, JSON.stringify(b));
+    const b = cv.chotVangDinhKy({ chuyen: () => { goi += 1; return 0; }, daKhoiTao: () => false });
+    assert(goi === 0 && b.boQua === 'chua-khoi-tao', JSON.stringify(b));
   });
 
-  check('RB-1 · Chạy thật trên database: lần hai cùng ngày không chốt thêm gì (lịch chạy 2 lần mỗi sáng thứ Hai là vô hại)', () => {
-    const lan1 = cv.chotVangDinhKy({ ngay: TODAY });
-    const lan2 = cv.chotVangDinhKy({ ngay: TODAY });
-    assert(lan1.boQua === null && typeof lan1.daChot === 'number', JSON.stringify(lan1));
-    assert(lan2.daChot === 0, `Lần hai chốt thêm ${lan2.daChot}`);
-  });
-
-  check('PR-Z2c · RB-1 chạy thật với MỘT buổi "-" có thật: chotVangDinhKy trả daChot === 1, buổi thành vắng; lần hai 0 (cả phép chạy trong giao dịch rồi cuộn lại)', () => {
+  check('PR-Z2c · RB-1 (OV-1b) "-" trong tuần thi đã chốt ngay lúc ghi — lượt quét thứ Hai không đổi gì thêm (cả phép chạy trong giao dịch rồi cuộn lại)', () => {
     const now = new Date().toISOString();
     conn.exec('BEGIN');
     try {
@@ -507,7 +500,6 @@ export async function runAnToanTests(t: AnToanTestKit) {
       const cycleId = Number(conn.prepare(
         `INSERT INTO learning_cycles (student_id, seq, route, programme_code, started_at, status, created_at) VALUES (?, 1, 'LT1', NULL, '2026-07-27', 'active', ?)`,
       ).run(sid, now).lastInsertRowid);
-      /* Tuần 07–13/09 (đã hết trước TODAY = 14/09): phép kiểm ngay trên đã chốt mọi "-" có week_end < TODAY, nên chỉ còn buổi này. */
       const periodId = weekMod.ensurePeriod('2026-09-07').id;
       const attemptId = Number(conn.prepare(
         `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id, status, created_at)
@@ -515,12 +507,11 @@ export async function runAnToanTests(t: AnToanTestKit) {
       ).run(cycleId, sid, cid, periodId, now).lastInsertRowid);
       skillScheduleMod.ensureSkillRows(attemptId);
       attemptsMod.saveScore(P.lrTeacher, attemptId, 'listening', { noShow: true }, '2026-09-09');
-      const kq = cv.chotVangDinhKy({ ngay: TODAY });
-      assert(kq.boQua === null && kq.daChot === 1, `Phải chốt đúng 1 buổi: ${JSON.stringify(kq)}`);
-      /* PR-MT (Q-A, chủ sản phẩm chọn 29/09): chốt xong máy tự dời lần 1 TRONG CÙNG giao dịch cron — bài sang tuần 14/09, đếm vắng = 1. */
-      const s = conn.prepare(`SELECT sit_status, absent_from_no_show AS co, absence_move_count AS lan FROM attempt_skills WHERE attempt_id = ? AND skill = 'listening'`).get(attemptId) as any;
-      assert(s.sit_status === 'scheduled' && s.co === 0 && s.lan === 1, `Buổi Listening: ${JSON.stringify(s)}`);
-      assert(cv.chotVangDinhKy({ ngay: TODAY }).daChot === 0, 'Lần hai lại chốt thêm');
+      const doc = () => JSON.stringify(conn.prepare(`SELECT sit_status, absent_from_no_show AS co, absence_move_count AS lan, planned_period_id AS p FROM attempt_skills WHERE attempt_id = ? AND skill = 'listening'`).get(attemptId));
+      const s = JSON.parse(doc());
+      assert(s.sit_status === 'scheduled' && s.co === 0 && s.lan === 1, `Buổi Listening phải đã tự dời lần 1 lúc ghi: ${doc()}`);
+      const truoc = doc();
+      assert(cv.chotVangDinhKy({ ngay: TODAY }).boQua === null && doc() === truoc, `Lượt quét đổi buổi: ${truoc} → ${doc()}`);
     } finally { if (conn.inTransaction) conn.exec('ROLLBACK'); }
   });
 
@@ -530,7 +521,7 @@ export async function runAnToanTests(t: AnToanTestKit) {
     assert(khoi && khoi[1] === cv.LICH_CHOT_VANG && cv.LICH_CHOT_VANG === '5 17,23 * * 0', `Lịch trong toml: ${khoi?.[1]}`);
     const ham = fsMod.readFileSync(pathMod.join(REPO, 'netlify/functions/chot-vang.ts'), 'utf8');
     assert(/process\.env\.BAN_CHINH\s*=\s*'1'/.test(ham) && /chotVangDinhKy\(\)/.test(ham), 'Hàm chot-vang phải đặt BAN_CHINH=1 và gọi chotVangDinhKy()');
-    assert(!/settleNoShows/.test(ham), 'Hàm Netlify không gọi thẳng settleNoShows — đi qua chotVangDinhKy');
+    assert(!/settleNoShows/.test(ham), 'Hàm Netlify không gọi luật nghiệp vụ trực tiếp — đi qua chotVangDinhKy');
   });
 
   // ================================================================== PR-Z2c-b · Mất luồng Turso ("stream not found")

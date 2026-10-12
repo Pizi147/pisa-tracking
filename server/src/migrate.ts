@@ -30,6 +30,7 @@ import { migratePrTk } from './migrate/prTk.ts';
 import { migratePrMta } from './migrate/prMta.ts';
 import { migratePrLuiA1 } from './migrate/prLuiA1.ts';
 import { migratePrLuiA2 } from './migrate/prLuiA2.ts';
+import { migratePrOv1b } from './migrate/prOv1b.ts';
 import { migratePrLc } from './migrate/prLc.ts';
 import { migratePrLcb } from './migrate/prLcb.ts';
 import { migratePrPa } from './migrate/prPa.ts';
@@ -283,6 +284,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     /* PR-LC: quyết định Cuối khoá đang chờ → Lộ trình tiếp theo + MT0 theo quyết định (đổi dữ liệu, chạy lặp được). */ migratePrLc(conn, applied);
     /* PR-PA (§8): Số buổi PA / Kết quả + nhật ký Sửa PA (chỉ thêm cột) + điền bù Bổ trợ miễn phí, Tutor kỳ vọng. */ migratePrPa(conn, applied);
     /* PR-CT2 (SAU PR-PA): A điền bù Số buổi tuần này cho Kết quả cũ PA Tutor kỳ vọng (một lần, khoá demo_config) · B chạy PA bổ trợ còn chờ kế hoạch + đóng thẻ kế hoạch · C sinh bổ trợ Final cho lệnh lên đang chờ đã đủ điểm. */ migratePrCt2(conn, applied);
+    /* PR-OV1b: dấu "-" cũ theo luật mới — nhập bù / MT cũ = Không dự thi, "-" trong tuần chưa chốt = vắng chốt ngay (đổi dữ liệu, chạy lặp được). */ migratePrOv1b(conn, applied);
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());

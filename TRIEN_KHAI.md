@@ -117,7 +117,7 @@ Mỗi khối lệnh có token: dòng đầu `Set-PSReadLineOption -HistorySaveSt
 | 7 | Kiểm database | cùng cửa sổ: `npm run kiem-sau-init`, rồi **ĐÓNG cửa sổ** | dòng cuối `[kiem-sau-init] Đạt.`; thấy 5 chi nhánh (tên có dấu), 1 tài khoản | `CÓ VẤN ĐỀ: …` → chụp gửi session, chưa làm bước 8 |
 | 8 | Netlify dùng token mới | cửa sổ mới, mục 6 với URL + **token mới** (`netlify env:set … --context production`, hỏi overwrite gõ `y`); rồi hai lệnh `netlify env:get` của mục 6 | production in `libsql://pisatracking-pizi147…`; deploy-preview in `libsql://pisatracking-demo-…` | sai một trong hai → **dừng**, chụp gửi session |
 | 9 | Lên chính thức + kiểm + nhập dữ liệu | `netlify deploy --build` (bản nháp, đăng nhập **tài khoản demo**, bấm thử vài trang) rồi `netlify deploy --build --prod`; mở `https://<tên-site>.netlify.app`, đăng nhập quản trị mới; mở `https://<tên-site>.netlify.app/api/demo/accounts`; rồi mục 9 | **không** có nút "Vào nhanh"; ngày là **hôm nay**; `/api/demo/accounts` báo `Không tìm thấy endpoint`; Quản trị thấy 5 chi nhánh. Tạo tài khoản QL/GV → lớp + phân công → học viên (email bắt buộc) | lỗi → chụp gửi session (**không còn bản cũ để quay lại** — dữ liệu cũ đã xoá ở bước 3) |
-| 10 | **Thứ Hai đầu tiên** xem cron | Netlify › site › **Logs** › **Functions** › **chot-vang** | dòng `[chot-vang] {"ngay":"<Thứ Hai đó>","daChot":…,"daChuyen":…,"boQua":null,…}` lúc ~00:05 và ~06:05 | không có dòng nào / `"boQua":"chua-khoi-tao"` / `[chot-vang] lỗi` → chụp gửi session |
+| 10 | **Thứ Hai đầu tiên** xem cron | Netlify › site › **Logs** › **Functions** › **chot-vang** | dòng `[chot-vang] {"ngay":"<Thứ Hai đó>","daChuyen":…,"boQua":null,…}` lúc ~00:05 và ~06:05 | không có dòng nào / `"boQua":"chua-khoi-tao"` / `[chot-vang] lỗi` → chụp gửi session |
 
 **Khối 5 — xoá kho tệp** (Site ID và Personal access token: bảng cuối mục 10):
 
@@ -638,11 +638,11 @@ tệp"*.
 >
 > Báo lỗi ở bước nào → dừng, chụp màn hình gửi session code, **chưa** làm mục 7.
 
-### 11.3. Chốt dấu "-" tự động mỗi sáng thứ Hai
+### 11.3. Lượt quét tự động mỗi sáng thứ Hai
 
-Bạn **không cần làm gì**. Mỗi sáng thứ Hai lúc 00:05 và 06:05, máy chủ tự chốt các bài còn dấu "-" của tuần trước thành
-"Không dự thi" — kể cả khi không ai mở web. Muốn xem nó có chạy không: trang Netlify của site › **Logs** › **Functions** ›
-**chot-vang** — mỗi lần chạy có một dòng bắt đầu bằng `[chot-vang]`. Không thấy dòng nào sau một sáng thứ Hai → gửi session thiết kế.
+Bạn **không cần làm gì**. Từ OV-1b dấu "-" có tác dụng ngay khi gõ (trong tuần thi = Vắng, sau tuần thi = Không dự thi), không còn chốt sáng
+thứ Hai. Lượt quét `chot-vang` (00:05 và 06:05 thứ Hai) giữ cho hai việc dưới. Muốn xem nó có chạy không: trang Netlify của site › **Logs** ›
+**Functions** › **chot-vang** — mỗi lần chạy có một dòng bắt đầu bằng `[chot-vang]`. Không thấy dòng nào sau một sáng thứ Hai → gửi session thiết kế.
 
 Cùng lượt sáng thứ Hai này, web **tự chuyển lớp** cho các lệnh chuyển lớp của Quản lý có tuần bắt đầu là hôm đó (trường `daChuyen` trong dòng log). Lượt nào lỡ thì lần mở web đầu tiên trong tuần cũng chuyển nốt, với ngày hiệu lực vẫn là thứ Hai.
 
@@ -651,6 +651,12 @@ Cùng lượt sáng thứ Hai này, web **tự chuyển lớp** cho các lệnh 
 Nạp `TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN` như mục 7.2 (database cần xem), rồi chạy `npm run kiem-du-lieu-mt`. Lệnh chỉ đọc, không sửa gì.
 Nó in 5 bảng (lượt "xác sống", tuần ngược / trùng, kết quả huỷ mồ côi, điểm huỷ mất dấu, tuần lượt lệch kỹ năng); dòng cuối `Không thấy vấn đề.` là sạch.
 Có dòng nào → chụp cả cửa sổ gửi session code, đừng tự sửa.
+
+**Xem trạng thái từng ô của một lớp** (CHỈ ĐỌC): `npm run kiem-o-lop -- "CP FT RF 01"`. Trên **Windows PowerShell** lệnh `npm run … --` chèn `^`
+vào tên lớp có dấu cách — chạy hai lệnh: `npm run build:server` rồi `node dist-server/server/src/ops/kiemOLop.js "CP FT RF 01"`.
+
+**Trước deploy cuối OV** (CHỈ ĐỌC): `npm run kiem-truoc-ov1b` — in mọi ô "-" cũ mà migrate sẽ đổi theo luật mới (em · mã · lớp · lượt · ô ·
+trước → sau). Chụp gửi planning trước khi deploy.
 
 ---
 

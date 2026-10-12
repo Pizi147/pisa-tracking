@@ -250,6 +250,8 @@ function SheetRow({ row, rowIndex, active, cot, tuanDangXem, onReload, gvMacDinh
 }) {
   const { save, status, lastError, retry, o, loi, luuLai, soLoi, loiNhap, coGuiLai } = useSaveScore(row.attemptId, onReload, row.studentName);
   const cellOf = (skill: string) => row.cells.find((c) => c.skill === skill);
+  /* OV-1b: mọi phần thi đã huỷ / bỏ khỏi đợt — lượt không còn "Đã lên lịch". */
+  const huyHet = row.cells.every((c) => !c.required || c.progress === 'cancelled');
   const oKhacTuan = (s: string, cell: Cell) => (
     <td key={s} className="td py-1.5 text-right text-slate-500" data-kn={s} title={`${skillLabel(s)}: thi tuần ${tuanLich(cell.weekStart)}`}>
       {tuanLich(cell.weekStart)}
@@ -279,8 +281,8 @@ function SheetRow({ row, rowIndex, active, cot, tuanDangXem, onReload, gvMacDinh
       {cot.mt && <td className="td py-1.5 whitespace-nowrap" title={`Mock Test lượt ${row.attemptNo}`}>MT{row.attemptNo}</td>}
       {cot.trangThai && (
         <td className="td py-1.5 whitespace-nowrap text-xs text-slate-400">
-          <Status kind={row.status === 'done' ? 'done' : row.status === 'cancelled' ? 'idle' : 'doing'}>
-            {nhanLuot(row.status, row.result.scoredRequired, row.result.required.length)}
+          <Status kind={row.status === 'done' ? 'done' : row.status === 'cancelled' || huyHet ? 'idle' : 'doing'}>
+            {nhanLuot(row.status, row.result.scoredRequired, row.result.required.length, huyHet)}
           </Status>
         </td>
       )}

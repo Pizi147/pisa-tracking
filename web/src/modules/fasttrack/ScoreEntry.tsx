@@ -137,7 +137,7 @@ export function useSaveScore(attemptId: number, onSaved?: () => void, tenHv?: st
       const r = await api.put<any>(`/attempts/${attemptId}/scores/${skill}`, patch);
       /* PR-BV: xoá "-" đã chốt — máy chủ trả tuần bài về / giữ (mockup bản 2). */
       if (r?.goVang?.tuanVe) {
-        toast.push('ok', `Đã gỡ vắng ${ENTRY_SKILL_SHORT[skill as EntrySkill]}${tenHv ? ` · ${tenHv}` : ''} · ${r.goVang.giuLich ? 'giữ' : 'về'} ${r.goVang.tuanVe}`);
+        toast.push('ok', `Đã bỏ vắng ${ENTRY_SKILL_SHORT[skill as EntrySkill]}${tenHv ? ` · ${tenHv}` : ''} · ${r.goVang.giuLich ? 'giữ' : 'về'} ${r.goVang.tuanVe}`);
       }
       invalidate('/attempts');
       invalidate('/tong-quan');
@@ -188,15 +188,28 @@ export function useSaveScore(attemptId: number, onSaved?: () => void, tenHv?: st
  * câu đầy đủ của máy chủ ("Không có bài · Có thể sửa đến hết Chủ nhật 20/09") nằm ở tooltip và ở cột Hạn nhập, nên
  * ô chỉ giữ MỘT dòng phụ (G-3). Đã chốt "Không dự thi" thì không còn gì để đếm: hiện đúng câu đã chốt.
  */
-function DongDau({ cell }: { cell: Cell }) {
+function DongDau({ cell, onSave }: { cell: Cell; onSave?: (patch: SavePatch) => Promise<boolean> }) {
   const { homNay } = useNgayNghiepVu();
-  /* PR-BV: "-" đã chốt và bài đã dời → một dòng `→ W3 SEP` (tuần bài đang ở). */
-  if (cell.daChot?.doiSang) return <span className="block text-xs tabular-nums text-slate-400 leading-tight">→ {cell.daChot.doiSang}</span>;
+  /* PR-BV: "-" đã chốt và bài đã dời → dòng `→ W3 SEP` (tuần bài đang ở) + "Bỏ vắng" (OV-1b). */
+  if (cell.daChot?.doiSang) return <DongDaDoi cell={cell} onSave={onSave} />;
   if (!cell.noShow) return null;
   const dem = cell.noShow.state === 'khong-co-bai' ? demNguocSuaDau(cell.noShow.editableUntil ?? null, homNay) : null;
   return (
     <span className="block max-w-[6rem] truncate text-xs text-slate-400 leading-tight max-sm:max-w-none max-sm:whitespace-normal max-sm:text-right" title={cell.noShow.text}>
       {dem ?? cell.noShow.text}
+    </span>
+  );
+}
+
+/** OV-1b (3.3): ô đã dời vì vắng — `→ W3 SEP` + nút "Bỏ vắng" (về tuần cũ, bộ đếm −1; cùng lệnh với xoá "-"). */
+function DongDaDoi({ cell, onSave }: { cell: Cell; onSave?: (patch: SavePatch) => Promise<boolean> }) {
+  return (
+    <span className="flex flex-col items-end text-xs tabular-nums text-slate-400 leading-tight">
+      <span className="whitespace-nowrap">→ {cell.daChot!.doiSang}</span>
+      {onSave && cell.daChot!.goDuoc && (
+        <button type="button" className="link min-h-[44px] whitespace-nowrap text-xs sm:min-h-0" aria-label={`Bỏ vắng ${skillLabel(cell.skill)} — về tuần cũ`}
+          onClick={() => void onSave({ noShow: false })}>Bỏ vắng</button>
+      )}
     </span>
   );
 }
@@ -238,7 +251,7 @@ function OChiGoDau({ cell, onSave, lon }: { cell: Cell; onSave: (patch: SavePatc
     <span className="inline-flex flex-col items-end gap-0.5">
       <span className="inline-flex items-center gap-1.5">
         <input className={`field ${lon ? 'w-[60px] h-11 text-base font-semibold' : 'w-16'} text-center tabular-nums`} value={con ? '-' : ''} disabled={busy}
-          title={'Chỉ gỡ được dấu "-": xoá rồi Enter.'} aria-label={`${skillLabel(cell.skill)} — dấu "-" đã chốt. Xoá để gỡ vắng`}
+          title={'Chỉ gỡ được dấu "-": xoá rồi Enter.'} aria-label={`${skillLabel(cell.skill)} — dấu "-" đã chốt. Xoá để bỏ vắng`}
           onChange={(e) => setCon(e.target.value.trim() !== '')}
           onBlur={() => void go()}
           onKeyDown={(e) => {
@@ -247,7 +260,7 @@ function OChiGoDau({ cell, onSave, lon }: { cell: Cell; onSave: (patch: SavePatc
           }} />
         {lon && <ChoNutDau />}
       </span>
-      <DongDau cell={cell} />
+      <DongDau cell={cell} onSave={onSave} />
     </span>
   );
 }
@@ -395,7 +408,7 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false, 
           </span>
           {lon && <ChoNutDau />}
         </span>
-        <DongDau cell={cell} />
+        <DongDau cell={cell} onSave={onSave} />
       </span>
     );
   }
@@ -429,7 +442,7 @@ export function RawScoreInput({ cell, onSave, inputRef, onKeyDown, lon = false, 
         {lon && <NutDau title={NUT_DAU_FT} an={!nhanDau} tat={busy} onBam={() => void bamDau()} />}
       </span>
       <DongLoiNhap id={idLoi} cau={loi} />
-      {!loi && <DongDau cell={cell} />}
+      {!loi && <DongDau cell={cell} onSave={onSave} />}
       {hoiLyDo && (
         <SuaDiemCoLyDo
           tieuDe={`Sửa ${skillLabel(cell.skill)}`}
@@ -493,7 +506,7 @@ export function CriteriaButton({ cell, onSave, buttonRef, lon = false, gvMacDinh
           </span>
           {lon && <ChoNutDau />}
         </span>
-        <DongDau cell={cell} />
+        <DongDau cell={cell} onSave={onSave} />
       </span>
     );
   }
@@ -511,7 +524,7 @@ export function CriteriaButton({ cell, onSave, buttonRef, lon = false, gvMacDinh
       </button>
       {lon && <NutDau title={NUT_DAU_FT} an={!nhanDau} tat={dangBao} onBam={() => void bamDau()} />}
       </span>
-      <DongDau cell={cell} />
+      <DongDau cell={cell} onSave={onSave} />
       {open && !hieuChinh && <CriteriaModal cell={cell} onSave={onSave} onClose={() => setOpen(false)} gvMacDinh={gvMacDinh} />}
       {open && hieuChinh && <SuaTieuChi cell={cell} onSave={onSave} onClose={() => setOpen(false)} />}
     </span>
@@ -1197,7 +1210,7 @@ export function ODiemThuong({
     return (
       <span className="inline-flex flex-col items-end gap-0.5">
         <input ref={inputRef} className={oSo} inputMode="numeric" value={conDau ? '-' : ''} disabled={busy} title={tieuDe}
-          aria-label={`${tenMon} — dấu "-" tuần này. Xoá để gỡ vắng`}
+          aria-label={`${tenMon} — dấu "-" tuần này. Xoá để bỏ vắng`}
           onChange={(e) => setConDau(e.target.value.trim() !== '')}
           onBlur={goNgay}
           onKeyDown={(e) => {
