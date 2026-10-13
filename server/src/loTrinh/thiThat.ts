@@ -1,10 +1,10 @@
 /**
  * KẾT QUẢ THI THẬT (PR-TK, TK-K) — GVCN nhập điểm IELTS em báo về: L, R, W, S + ngày thi, hoặc "Không thi". OVR và Đạt / Chưa đạt Target do MÁY tính
  * (`ketQuaThiThat`, so với Target; lộ trình đã đóng thì so với Target trong BẢN CHỤP — Target lúc đóng). Không còn ô chọn kết luận tay.
- * Mỗi lần lưu: làm mới bản chụp mới nhất (lộ trình đã đóng), nhật ký, và em Kết thúc học FT chờ kết quả thì tự vào Lưu trữ khi hết chờ (TK-L).
+ * Mỗi lần lưu: làm mới bản chụp mới nhất (lộ trình đã đóng) + nhật ký. OV-8a: KHÔNG tự Lưu trữ nữa — có kết quả thì Quản lý chọn Bước tiếp (`buocTiep.ts`).
  */
 import { THAM_SO_TOI_DA, db, theoLo, tx } from '../db.ts';
-import { PERMISSIONS, canChoThiThat, coKetQuaCu, diemThiHopLe, duongHoSoHocVien, mocNhacThiThat, tuanLich } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, diemThiHopLe, duongHoSoHocVien, mocNhacThiThat, tuanLich } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, type Principal } from '../permissions.ts';
@@ -87,26 +87,8 @@ export function datKetQuaThiThat(p: Principal, cycleId: number, input: NhapThiTh
     });
     writeAudit({ actorUserId: p.userId, action: 'cycle.thi_that', entityType: 'learning_cycle', entityId: cycleId,
       before: { ...cu, ngayThi: c.thi_that_ngay ?? null, khongThi: !!c.thi_that_khong_thi }, after: { ...ghi, ngayThi: ngayLuu, khongThi, ovr: kq.ovr, ketLuan: kq.ketLuan } });
-    tuLuuTruKhiHetCho(p, c.student_id, c.id, khongThi ? 'Không thi' : 'Có kết quả thi thật');
     return cycleById(cycleId);
   });
-}
-
-/**
- * TK-L: em đã Kết thúc học mà CHƯA vào Lưu trữ vì lộ trình FT còn "Chờ kết quả thi thật" → hết chờ (đủ 4 kỹ năng hoặc "Không thi") thì tự vào Lưu trữ,
- * cùng giao dịch. Chỉ khi em đang `finished` và chưa lưu trữ; nhật ký `student.archive` ghi lý do.
- */
-export function tuLuuTruKhiHetCho(p: Principal, studentId: number, cycleId: number, lyDo: string): boolean {
-  const conn = db();
-  const s = conn.prepare('SELECT status, archived_at, student_code FROM students WHERE id = ?').get(studentId) as any;
-  if (!s || s.status !== 'finished' || s.archived_at) return false;
-  const c = cycleById(cycleId);
-  if (!c || canChoThiThat({ laFt: !!c.route, cu: coKetQuaCu(c), l: c.thi_that_l ?? null, r: c.thi_that_r ?? null, w: c.thi_that_w ?? null, s: c.thi_that_s ?? null, khongThi: !!c.thi_that_khong_thi })) return false;
-  const on = demoToday();
-  conn.prepare('UPDATE students SET archived_at = ? WHERE id = ?').run(on, studentId);
-  writeAudit({ actorUserId: p.userId, action: 'student.archive', entityType: 'student', entityId: studentId, entityLabel: s.student_code,
-    before: { archivedAt: null }, after: { archivedAt: on, lyDo } });
-  return true;
 }
 
 // ------------------------------------------------------------------ việc nhắc "Cập nhật kết quả thi thật"

@@ -33,7 +33,7 @@ const NHOM_CUA_TIEN_TO: Record<string, WorkGroupKey> = {
   score: 'score', week: 'missing_data', target: 'missing_data', 'lich-su': 'missing_data', moc: 'missing_data',
   action: 'ghi_ket_qua_pa', ban_giao: 'ban_giao', ban_giao_mon: 'ban_giao', support: 'no_plan',
   cause: 'cause', xnpa: 'xac_nhan_pa', baoph: 'phoi_hop', phoi_hop_sos: 'phoi_hop_sos', minitest: 'mini_test',
-  owner: 'no_owner', khai_bac: 'khai_bac', yt_xu_ly: 'yt_xu_ly', yt_xem: 'yt_xem', yt_thuc_hien: 'yt_thuc_hien', kyvong: 'ky_vong_dau_ra', thi_that: 'thi_that',
+  owner: 'no_owner', khai_bac: 'khai_bac', yt_xu_ly: 'yt_xu_ly', yt_xem: 'yt_xem', yt_thuc_hien: 'yt_thuc_hien', kyvong: 'ky_vong_dau_ra', thi_that: 'thi_that', buoc_tiep: 'buoc_tiep',
   mgmt: 'mgmt', chotft: 'chot_len_ft', xetlai: 'xet_lai_lo_trinh',   // PR-LCb: = Chốt lộ trình (khoá `class:` của "Chuyển tiếp lớp" đã bỏ)
 };
 /** Tập nhóm cho các khoá; có tiền tố lạ → undefined (dựng đủ). */

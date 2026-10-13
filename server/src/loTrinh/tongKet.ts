@@ -12,6 +12,7 @@ import { notFound } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { tinhLuot, type NguCanhLuot } from './banChup.ts';
 import { coTheNhapThiThat } from './thiThat.ts';
+import { trangThaiBuocTiep } from './buocTiep.ts';
 import { nguongDatLop, programmeByCode } from '../normal/regular.ts';
 
 type Tone = 'ok' | 'soon' | 'late' | 'muted';
@@ -161,6 +162,8 @@ export function tongKetLoTrinh(p: Principal, cycleId: number) {
           coTheNhap: !khongCoThi && coTheNhapThiThat(p, { id: cycleId, student_id: c.student_id }) }
       : { loai: 'thuong' as const, tyLe: b.ty_le_cuoi_khoa as number | null, dai: b.dai_cuoi_khoa as string | null, kyVongDat: kqdr ? kqdr.dat : null, kqdr },
     huongTiep: { khoa: b.huong_tiep as string, nhan: nhanHuong(b.huong_tiep) },
+    /** OV-8a: mục Bước tiếp (FT có kết quả thi thật) — null khi không có. */
+    buocTiep: laFt ? trangThaiBuocTiep(p, cycleId) : null,
     luot,
   };
 }

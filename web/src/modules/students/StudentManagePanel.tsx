@@ -8,7 +8,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import {
   NHAN_VIEC_QUAN_LY, mucQuanLyHocVien, cacTabTrangThai, type LopHocQuyen, type ViecQuanLy, type TabTrangThai, dsLoi, docEmail,
-  cauMtSeDoi, tuanLich, GIAI_THICH_KCK, KCK, roundToHalf, type NguoiChon, duongLoTrinhLop,
+  cauMtSeDoi, tuanLich, GIAI_THICH_KCK, KCK, roundToHalf, type NguoiChon, duongLoTrinhLop, BUOC_TIEP_NHAN,
 } from '@shared/domain/index.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -250,12 +250,18 @@ type DuLieuHocLai = { lopCu: { id: number; code: string; daKetThuc: boolean; ft:
  * HỌC LẠI (PR-LUI-b, chủ sản phẩm 06/10) — đường lui của Kết thúc học, chỉ Quản lý / Quản trị. CHỌN ĐÍCH: `Về lớp cũ` (lộ trình cũ chạy tiếp; lớp cũ đã kết thúc thì
  * mở lại cùng lúc) hoặc `Sang lớp mới` (chọn lớp đang học, mở lộ trình mới, lộ trình cũ giữ ở Hành trình; sang Fast Track từ lớp thường phải có Target).
  * Lý do tuỳ chọn. Hoàn tác = `hoan-tac-hoc-lai` (máy chủ trả học viên về đúng trạng thái sau Kết thúc học; lộ trình mới đã có dữ liệu thì từ chối kèm câu rõ).
+ * OV-8a: `buocTiep` = Bước tiếp sau thi (ngăn Tổng kết) — gửi `/cycles/:id/buoc-tiep`; "Học tiếp lộ trình mới" chỉ có Sang lớp mới; về lớp cũ luôn là lộ trình MỚI
+ * (lộ trình đã thi không chạy tiếp). `doi` = đang đổi lựa chọn cũ (không có Hoàn tác trên thông báo — Sửa lại ở mục Bước tiếp).
  */
-function HocLaiPanel({ studentId, studentName, lop, onClose, onDone }: ChungViec) {
+export function HocLaiPanel({ studentId, studentName, lop, onClose, onDone, buocTiep, chong }: ChungViec & {
+  buocTiep?: { cycleId: number; chon: 'hoc_tiep' | 'hoc_lai'; doi: boolean }; chong?: boolean;
+}) {
   const toast = useToast();
   const lf = useLoiForm();
   const { data, error, reload } = useApi<DuLieuHocLai>(`/students/${studentId}/hoc-lai/lop-dich`, [studentId]);
-  const [dich, setDich] = useState<'cu' | 'moi'>('cu');
+  const chiLopMoi = buocTiep?.chon === 'hoc_tiep';
+  const tieuDe = buocTiep ? BUOC_TIEP_NHAN[buocTiep.chon] : NHAN_VIEC['hoc-lai'];
+  const [dich, setDich] = useState<'cu' | 'moi'>(chiLopMoi ? 'moi' : 'cu');
   const [lopMoiId, setLopMoiId] = useState<number | ''>('');
   const [targetGo, setTargetGo] = useState<string | null>(null);   // null = chưa gõ → dùng Target cũ khi FT → FT
   const [thi, setThi] = useState('');
@@ -279,10 +285,28 @@ function HocLaiPanel({ studentId, studentName, lop, onClose, onDone }: ChungViec
     if (loi.length) return;
     setBusy(true);
     try {
-      await api.post(`/students/${studentId}/hoc-lai`, {
+      const than = {
         date: ngayHl || undefined, lyDo: lyDo.trim() || undefined, moLaiLop: true,
         ...(dich === 'moi' ? { lopMoiId, mucTieu: canTarget && target.trim() ? (target.trim().toUpperCase() === KCK ? KCK : Number(target)) : undefined, thangThi: thi || undefined } : {}),
-      });
+      };
+      const lamMoi = ['/students', '/classes', '/hoc-vien-lop', '/cases', '/lo-trinh', '/my-work'];
+      if (buocTiep) {
+        await api.post(`/cycles/${buocTiep.cycleId}/buoc-tiep`, { ...than, chon: buocTiep.chon });
+        for (const k of lamMoi) invalidate(k);
+        const chu = `Đã chọn ${tieuDe} cho ${studentName}${lopMoi ? ` · ${lopMoi.code}` : ''}`;
+        if (buocTiep.doi) toast.push('ok', chu);
+        else {
+          toast.hoanTac(chu, async () => {
+            try { await api.del(`/cycles/${buocTiep.cycleId}/buoc-tiep`); } catch (e: any) { toast.push('error', e.message); return; }
+            for (const k of lamMoi) invalidate(k);
+            toast.push('ok', 'Đã hoàn tác');
+            onDone();
+          }, { key: `buoc-tiep:${buocTiep.cycleId}` });
+        }
+        onDone();
+        return;
+      }
+      await api.post(`/students/${studentId}/hoc-lai`, than);
       for (const k of ['/students', '/classes', '/hoc-vien-lop', '/cases']) invalidate(k);
       toast.hoanTac(`Đã cho ${studentName} học lại${lopMoi ? ` · ${lopMoi.code}` : ''}`, async () => {
         const r = await hoanTacHangLoat('hoc-lai', [studentId]);
@@ -296,23 +320,26 @@ function HocLaiPanel({ studentId, studentName, lop, onClose, onDone }: ChungViec
   };
 
   return (
-    <KhungPanel tieuDe={NHAN_VIEC['hoc-lai']} hocVien={studentName} lop={lop} onDong={onClose}
+    <KhungPanel tieuDe={tieuDe} hocVien={studentName} lop={lop} longTrong={chong} z={chong ? 'z-[60]' : undefined} onDong={onClose}
       chan={{
-        daSua: !!lyDo.trim() || !!ngayHl || dich === 'moi',
+        daSua: !!lyDo.trim() || !!ngayHl || (dich === 'moi' && !chiLopMoi) || lopMoiId !== '',
         conThieu: lf.conThieu(loi),
-        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy || !data || !!chan}>Học lại</button>,
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy || !data || !!chan}>{buocTiep ? tieuDe : 'Học lại'}</button>,
       }}>
       {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
         : !data ? <Skeleton rows={4} /> : (
-          <Khoi tieuDe="Học lại">
+          <Khoi tieuDe={tieuDe}>
             {chan ? <p className="m-0 text-sm text-late">{chan}</p> : null}
-            <span role="group" aria-label="Học lại" className="flex flex-wrap gap-1.5">
-              <NutChon chon={dich === 'cu'} onClick={() => setDich('cu')}>Về lớp cũ</NutChon>
-              <NutChon chon={dich === 'moi'} onClick={() => setDich('moi')}>Sang lớp mới</NutChon>
-            </span>
+            {buocTiep?.doi && <p className="m-0 text-[12.5px] text-slate-400">Lựa chọn cũ được hoàn tác trước (lớp / lộ trình mới chưa có điểm thì gỡ).</p>}
+            {!chiLopMoi && (
+              <span role="group" aria-label={tieuDe} className="flex flex-wrap gap-1.5">
+                <NutChon chon={dich === 'cu'} onClick={() => setDich('cu')}>Về lớp cũ</NutChon>
+                <NutChon chon={dich === 'moi'} onClick={() => setDich('moi')}>Sang lớp mới</NutChon>
+              </span>
+            )}
             {dich === 'cu' ? (
               <ul className="m-0 list-none space-y-1 p-0 text-sm text-slate-200">
-                <li>Về lớp {data.lopCu?.code}</li><li>{data.loTrinh.chayTiep ? 'Lộ trình chạy tiếp' : 'Lộ trình mới'}{data.loTrinh.ten ? ` · ${data.loTrinh.ten}` : ''}</li><li>Ra khỏi Lưu trữ</li>
+                <li>Về lớp {data.lopCu?.code}</li><li>{data.loTrinh.chayTiep && !buocTiep ? 'Lộ trình chạy tiếp' : 'Lộ trình mới'}{data.loTrinh.ten ? ` · ${data.loTrinh.ten}` : ''}</li><li>Ra khỏi Lưu trữ</li>
                 {data.lopCu?.daKetThuc && <li className="text-soon">Mở lại lớp {data.lopCu.code}</li>}
               </ul>
             ) : (
