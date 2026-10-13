@@ -378,6 +378,8 @@ export function nhanGhim(a: {
   cheDo: 'ielts' | 'ratio'; attemptNo: number; kind: string;
   overall: number | null; sosLevel: number | null;
   soDat: number | null; soYeuCau: number; soCoDiem: number;
+  /** OV-1c: lượt FT đã chốt (máy chủ) — thiếu điểm mà đã chốt thì ghim theo mức SOS, không "đang chấm". Thiếu = đủ điểm mới chốt. */
+  chot?: boolean;
   maLop?: string | null; kyNangChuaDat?: string[]; kyVong?: number | null; tuan?: string; homNay?: string;
   /** MH7: Pre FOU không chia môn — ghim là `Cuối · 68%` (đủ điểm mới có `tyLe`), không SOS. */
   khongChiaMon?: boolean; tyLe?: number | null;
@@ -395,7 +397,7 @@ export function nhanGhim(a: {
     const tuan = a.tuan ? tuanLich(a.tuan, a.homNay) : null;
     if (a.kind === 'mt0' && a.nhanNgan && a.nhanNgan !== so) return { chu: a.nhanNgan, gon: so, day: ghep(a.nhanNgan, tuan), mau: 'tam', hai: [so, ''] };
     if (a.soCoDiem === 0) return { chu: mt, gon: so, day: ghep(mt, tuan, a.lichSu ? 'nhập bù, không tính hạn' : 'chưa có điểm'), mau: 'tam', hai: [so, ''] };
-    if (a.soCoDiem < a.soYeuCau) {
+    if (a.soCoDiem < a.soYeuCau && !a.chot) {
       return { chu: `${mt} · đang chấm`, gon: so, day: ghep(mt, tuan, `đang chấm ${a.soCoDiem}/${a.soYeuCau} kỹ năng`), mau: 'tam', hai: [so, `${a.soCoDiem}/${a.soYeuCau}`] };
     }
     const band = a.overall != null ? a.overall.toFixed(1) : '—';

@@ -658,6 +658,10 @@ vào tên lớp có dấu cách — chạy hai lệnh: `npm run build:server` r�
 **Trước deploy cuối OV** (CHỈ ĐỌC): `npm run kiem-truoc-ov1b` — in mọi ô "-" cũ mà migrate sẽ đổi theo luật mới (em · mã · lớp · lượt · ô ·
 trước → sau). Chụp gửi planning trước khi deploy.
 
+**Trước deploy cuối OV** (CHỈ ĐỌC): `npm run kiem-truoc-ov1c` — in mọi Case SOS Mock Test mà migrate `prOv1c` sẽ đổi theo luật chốt (em · mã ·
+lớp · lượt · Case · việc): lượt chưa chốt có Case chưa ai đụng → "Đóng · Chờ chốt SOS" (máy tạo lại lúc lượt chốt); lượt đã chốt mà Overall ≥ kỳ vọng →
+"Đóng · Overall đạt" hoặc "Giữ · ghi mốc Overall đã đạt" (Case đã có người làm). Chụp gửi planning trước khi deploy.
+
 ---
 
 ## 12. Bảng tra — mọi tên biến dùng trong file này

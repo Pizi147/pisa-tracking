@@ -1,5 +1,6 @@
 /** PHÉP KIỂM PR-KCK (Q29-1) — Target "không cam kết": nhập, không SOS, không việc Điền target, đổi target ↔ KCK, quyền. Harness do `run.ts` truyền vào. */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { chotSan } from './luotThu.ts';
 
 export async function runPrKckTests(t: YThucTestKit) {
   const { check, assert, conn, P } = t;
@@ -112,6 +113,7 @@ export async function runPrKckTests(t: YThucTestKit) {
 
   check('KCK (3) · đổi target → KCK: lượt chưa điểm bỏ kỳ vọng, lượt có điểm giữ, Case SOS đang mở giữ; KCK → target: lượt chưa điểm lấy target mới', () => {
     const x = them('KCK Đổi Qua Lại', '6.5');
+    chotSan(conn, x.mt1.id);                                              // OV-1c: MT1 thiếu W — chốt sẵn để L/R/S sinh Case
     cham(x.mt1.id, 4);                                                    // MT1 kỳ vọng 5.5 → SOS
     const caseMo = n(`SELECT COUNT(*) n FROM sos_cases WHERE student_id = ? AND status != 'done'`, x.sid);
     assert(caseMo > 0, 'chuẩn bị: MT1 phải sinh Case');

@@ -330,7 +330,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
   /* OV-4b (mockup overhaul-1 §3): ô có điểm ghi band ("5.0"; L/R "14 · 4.5"), bỏ chữ "sửa". */
   check('C23 · J9: ô FT chưa có điểm ghi "Nhập" (không "— sửa"); ô có điểm ghi band; đầu cột S ghi "GV chấm: tên thật" + title có tên', () => {
     const s = doc('web/src/modules/fasttrack/HopNhapDiem.tsx');
-    assert(/\{chu \?\? 'Nhập'\}/.test(s), 'ô trống chưa ghi "Nhập"');
+    assert(/chu \?\? 'Nhập'\}/.test(s), 'ô trống chưa ghi "Nhập"');
     assert(/if \(c\.band !== null\) return fmtBand\(c\.band\);/.test(s), 'ô có điểm phải ghi band');
     assert(/<NutGvCham nhan="GV chấm S" value=/.test(doc('web/src/modules/cham/LuoiFT.tsx')) && /<NutGvCham hang nhan="GV chấm S" value=/.test(doc('web/src/modules/cham/MotKyNang.tsx')), 'đầu cột S dùng NutGvCham (luôn ghi "GV chấm: tên thật")');
     assert(/title=\{`GV chấm Speaking: \$\{ten/.test(doc('web/src/modules/cham/GvCham.tsx')), 'GvCham: title phải ghi tên (phòng khi tên dài)');

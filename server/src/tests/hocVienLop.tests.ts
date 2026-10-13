@@ -288,12 +288,13 @@ export async function runHocVienLopTests(t: YThucTestKit) {
   check('PR-Qa · §3.6 FT: standingFor trả Overall, kỳ vọng CỦA ĐỢT ĐÓ và kỹ năng dưới kỳ vọng', () => {
     const a = taoHocVien({ cid: LOP_FT, ft: true, target: 6.5 });
     const at = themLuot({ ...a, cid: LOP_FT, no: 2, kind: 'mock', weekStart: '2026-09-07' });
-    bandFT(at, { listening: 5.0, reading: 6.0, writing1: 6.0, writing2: 6.0, speaking: 6.0 });
+    /* OV-1c: L 4.5 (không 5.0) — Overall 6.0 = kỳ vọng là không SOS; nay Overall 5.5 dưới kỳ vọng nên còn SOS 1. */
+    bandFT(at, { listening: 4.5, reading: 6.0, writing1: 6.0, writing2: 6.0, speaking: 6.0 });
     const s = standingMod.standingFor([a.sid]).get(a.sid);
-    eq([s.expectation, s.overall], [6, 6], 'MT2: kỳ vọng 6.5 − 0.5; Overall (5+6+6+6)/4 = 5.75 → 6.0');
-    eq(s.belowSkills, [{ skill: 'listening', band: 5 }], 'Chỉ L dưới kỳ vọng');
+    eq([s.expectation, s.overall], [6, 5.5], 'MT2: kỳ vọng 6.5 − 0.5; Overall (4.5+6+6+6)/4 = 5.625 → 5.5');
+    eq(s.belowSkills, [{ skill: 'listening', band: 4.5 }], 'Chỉ L dưới kỳ vọng');
     eq(s.failedSkills, [], 'FT không có môn đúng/tổng');
-    eq(d.ketQuaGanNhat(s), { chinh: '6.0', lech: null, dat: false, sos: 'SOS 1', dong1: 'MT2 · kỳ vọng 6.0', dong2: 'Không đạt: L' }, 'Chữ cột');
+    eq(d.ketQuaGanNhat(s), { chinh: '5.5', lech: '−0.5', dat: false, sos: 'SOS 1', dong1: 'MT2 · kỳ vọng 6.0', dong2: 'Không đạt: L' }, 'Chữ cột');
   });
 
   check('PR-Qa · §3.6 lớp thường: standingFor trả môn chưa đạt kèm đúng/tổng', () => {

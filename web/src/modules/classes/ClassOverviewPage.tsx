@@ -35,7 +35,8 @@ export default function ClassOverviewPage() {
   const { classId } = useParams();
   const { homNay } = useNgayNghiepVu();
   const [params, setParams] = useSearchParams();
-  const cheDo: CheDoHocVien = params.get('che-do') === 'can-ho-tro' ? 'can-ho-tro' : params.get('che-do') === 'lo-trinh' ? 'lo-trinh' : 'diem';
+  const cheDoUrl = params.get('che-do');
+  const cheDo: CheDoHocVien = cheDoUrl === 'can-ho-tro' || cheDoUrl === 'lo-trinh' || cheDoUrl === 'ket-qua' ? cheDoUrl : 'diem';
   const periods = usePeriods();
   const [periodId, setPeriodId] = useState<number | null>(null);
   const [viec, setViec] = useState<ViecDauTrang | null>(null);

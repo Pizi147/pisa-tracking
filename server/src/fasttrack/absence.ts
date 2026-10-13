@@ -502,6 +502,7 @@ export function decideAbsenceMove(p: Principal, requestId: number, input: {
       if (row.huy_vang) khongMockLaiNoi(p, req.attempt_id, req.skill, note);
       else cancelPart(conn, p.userId, attempt, row, requestId, 'Quản lý từ chối đề nghị dời lịch.');
       chotYeuCau(conn, { loai: 'lich_thi', doiTuongLoai: 'skill_move', doiTuongId: requestId }, 'tu_choi', { nguoiDuyet: p.userId, lyDo: note });
+      refreshOutcome(p, req.attempt_id);   // OV-1c: huỷ phần thi = kỹ năng thiếu đã xong
       return { ok: true, status: 'declined', cancelled: true };
     }
 
@@ -537,6 +538,7 @@ export function decideAbsenceMove(p: Principal, requestId: number, input: {
       )
       .run(p.userId, nowIso(), note, target.id, nowIso(), requestId);
     chotYeuCau(conn, { loai: 'lich_thi', doiTuongLoai: 'skill_move', doiTuongId: requestId }, 'duyet', { nguoiDuyet: p.userId, lyDo: note });
+    refreshOutcome(p, req.attempt_id);   // OV-1c: dời tuần = kỹ năng thiếu đã xong
     return { ok: true, status: 'approved', week: target.code, warnings: check.warnings };
   });
 }
@@ -547,6 +549,7 @@ export function decideAbsenceMove(p: Principal, requestId: number, input: {
  * Quét này chạy khi có người mở màn hình liên quan, vì bản demo không có tiến trình nền.
  * Không huỷ ngay lúc vừa gửi đề nghị: khoảng chờ là có thật, và nó là của Quản lý.
  */
+/* OV-1c: không xét chốt ở đây — hết hạn đưa kỹ năng `absent` (đã là chốt, `kyNangXongThieu`) sang `cancelled` (vẫn chốt): Case đã sinh lúc vắng. */
 export function sweepExpiredMoves(): number {
   const conn = db();
   const today = demoToday();
@@ -677,6 +680,7 @@ export function restoreCancelledSkill(p: Principal, attemptId: number, skill: st
     });
     const cw = recomputeCompletionWeek(attemptId, p.userId);
     tinhLaiMtCu(attemptId, demoToday());
+    refreshOutcome(p, attemptId);   // OV-1c: khôi phục phần thi có thể làm lượt hết chốt (Case đã có giữ nguyên)
     writeAudit({
       actorUserId: p.userId, action: 'attempt.restore_part', entityType: 'assessment_attempt',
       entityId: attemptId, entityLabel: `${attemptId} · ${skill}`,
@@ -971,6 +975,7 @@ export function baoVang(p: Principal, attemptId: number, skill: string, lyDo: st
       }
     }
     settleGroup(conn, attemptId, row.id, skill, row.week_end!, row.period_code ?? '', ids, p.userId, lyDo?.trim() ? `Báo vắng: ${lyDo.trim()}` : 'Báo vắng', today);
+    refreshOutcome(p, attemptId);   // OV-1c: vắng = kỹ năng thiếu đã xong → lượt có thể chốt
     const sau = ensureSkillRows(attemptId).find((r) => r.skill === skill)!;
     return { daDoi: sau.sit_status === 'scheduled', tuanMoi: sau.week_start, choDuyet: !!pendingMove(attemptId, skill), huyVang: !!sau.huy_vang };
   });

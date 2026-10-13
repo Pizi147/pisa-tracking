@@ -4,6 +4,7 @@ import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { LISTENING_BY_RAW, READING_BY_RAW } from '../fasttrack/scoring.ts';
 import { commitIntake } from '../classes/intake.ts';
 import { saveScore } from '../fasttrack/attempts.ts';
+import { baoVang } from '../fasttrack/absence.ts';
 import { issuesForTopic, lichMtGoc, tuanHocCuaMt, weeklyUpdateDue } from '../../../shared/domain/index.ts';
 import { guiKhongTheoDoi, xacNhanCase, xacNhanPaQuyChe } from '../cases/sosAuto.ts';
 import { duyetYeuCau, tuChoiYeuCau } from '../duyet/yeuCau.ts';
@@ -28,6 +29,8 @@ import { DEMO_DATE } from './journeys.ts';
  *   (7) đã xác nhận Case, PA còn chờ xác nhận   Bùi Thảo Vy · Speaking
  * D8 — hạn PA: Khôi · Speaking hạn hết T2 ĐÚNG ngày demo · Lý Minh Châu · Reading quá hạn 1 tuần · Hoàng Bảo Ngọc · Listening ở TUẦN MỐC
  * (Ghi kết quả cuối).
+ * OV-1c — Case chỉ sinh khi lượt CHỐT: Khôi, Lan, Vy đủ 4 kỹ năng · Bảo, Ngọc chốt nhờ Speaking "Không dự thi" · Châu chốt nhờ Speaking vắng
+ * dời tuần. Thêm Đặng Thu Hà (xoá SOS). Chỉ MỘT em mới: phép kiểm tốc độ nhân ×3 bộ demo, lô 400 em (`chuongTrinh.ts`) sát ngưỡng.
  */
 export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number; coordination: number } {
   const { conn } = ctx;
@@ -69,6 +72,13 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
     skill === 'listening' ? { rawScore: LISTENING_BY_RAW.indexOf(band) }
     : skill === 'reading' ? { rawScore: READING_BY_RAW.indexOf(band) }
     : { criteria: [band, band, band, band] });
+  /** OV-1c: kỹ năng còn thiếu = "Không dự thi" ("-" nhập sau tuần thi) → lượt chốt. */
+  const khongDuThi = (a: any, skill: string) => saveScore(admin, a.id, skill, { noShow: true });
+  /** OV-1c: GVCN báo vắng TRONG tuần thi (thứ Tư) → máy dời tuần sau → lượt chốt. */
+  const vangDoi = (a: any, st: { periodId: number }, skill: string) => {
+    const ws = (conn.prepare('SELECT week_start FROM report_periods WHERE id = ?').get(st.periodId) as any).week_start as string;
+    baoVang(gvcn, a.id, skill, 'Em ốm, phụ huynh đã báo', addDays(ws, 2));
+  };
   const caseOf = (sid: number, category: string) => conn.prepare('SELECT * FROM sos_cases WHERE student_id = ? AND category = ? ORDER BY id DESC').get(sid, category) as any;
   const actionOf = (attemptId: number, kind: string) => conn.prepare('SELECT * FROM sos_coordination_actions WHERE attempt_id = ? AND kind = ?').get(attemptId, kind) as any;
   /* PR-SOS: Quản lý chi nhánh (duyệt / từ chối thẻ) — không có thì Quản trị. */
@@ -93,6 +103,7 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
   const khoi = addStudent('Đỗ Minh Khôi', 2, 2);
   const khoiA = attempt(khoi);
   score(khoiA, 'writing1', 7); score(khoiA, 'writing2', 5.5); score(khoiA, 'speaking', 5);        // kỳ vọng MT2 6.5: W2 và Speaking dưới
+  score(khoiA, 'listening', 6.5); score(khoiA, 'reading', 6.5);                                    // OV-1c: đủ 4 kỹ năng → chốt (Overall 6.0)
   const khoiSp = caseOf(khoi.id, 'speaking');
   xacNhan(activeTeacher('speaking'), khoiSp.id, 'speaking', 'Em nói ngắn, ngập ngừng ở Part 2, thiếu ý mở rộng.');   // D7 (6)
   xacNhanPa(activeTeacher('speaking'), khoiSp.id, 'Tự học Speaking: ghi âm Part 2 mỗi ngày, GVBM nghe và chữa thứ Sáu.');
@@ -116,6 +127,7 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
   const lan = addStudent('Vũ Ngọc Lan', 1, 3);
   const lanA = attempt(lan);
   score(lanA, 'listening', 5); score(lanA, 'reading', 5); score(lanA, 'speaking', 5);            // kỳ vọng MT1 6.0: ba kỹ năng dưới → SOS3
+  score(lanA, 'writing1', 6); score(lanA, 'writing2', 6);                                          // OV-1c: đủ 4 kỹ năng → chốt (Overall 5.5)
   /* D7 (5): GVBM gửi "Không cần theo dõi" → Quản lý duyệt → Case + PA quy chế huỷ. (3): Reading gửi, chưa ai duyệt. (1): Listening còn hạn. */
   const lanSp = caseOf(lan.id, 'speaking');
   guiKhongTheoDoi(activeTeacher('speaking'), lanSp.id, { reasonCode: 'single_incident' });
@@ -127,21 +139,26 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
   // ---------------------------------------------------------------- Bùi Thảo Vy — MT3 · SOS1 (lượt hoàn thành)
   const vy = addStudent('Bùi Thảo Vy', 3, 1);
   const vyA = attempt(vy);
-  score(vyA, 'speaking', 5);                                                                       // kỳ vọng MT3 7.0: chỉ Speaking dưới → SOS1
+  for (const k of ['listening', 'reading', 'writing1', 'writing2']) score(vyA, k, 7);
+  score(vyA, 'speaking', 5);                                                                       // kỳ vọng MT3 7.0: chỉ Speaking dưới → SOS1 (Overall 6.5)
   const vySp = caseOf(vy.id, 'speaking');
   xacNhan(activeTeacher('speaking'), vySp.id, 'speaking', 'Em phát âm cuối từ chưa rõ, mất điểm Pronunciation.');   // D7 (7): PA còn chờ xác nhận
   for (const kind of ['talk_student', 'talk_family']) confirmCoordination(gvcn, actionOf(vyA.id, kind).id, { performedOn: addDays(DEMO_DATE, -1) });
 
   // ---------------------------------------------------------------- D7 (4): Trịnh Gia Bảo — MT1 · Listening, Quản lý từ chối "không theo dõi"
   const bao = addStudent('Trịnh Gia Bảo', 1, 3);
-  score(attempt(bao), 'listening', 5);
+  const baoA = attempt(bao);
+  score(baoA, 'listening', 5); score(baoA, 'reading', 6); score(baoA, 'writing1', 6); score(baoA, 'writing2', 6);
+  khongDuThi(baoA, 'speaking');                                                                    // OV-1c: chốt nhờ "Không dự thi"
   const baoL = caseOf(bao.id, 'listening');
   guiKhongTheoDoi(activeTeacher('listening'), baoL.id, { reasonCode: 'single_incident' });
   tuChoiYeuCau(quanLy, theKtd(baoL.id), 'Em trượt Listening hai lượt liền — cần theo dõi');
 
   // ---------------------------------------------------------------- D8: Lý Minh Châu — MT2 · Reading, PA quy chế quá hạn 1 tuần
   const chau = addStudent('Lý Minh Châu', 2, 2);
-  score(attempt(chau), 'reading', 5.5);
+  const chauA = attempt(chau);
+  score(chauA, 'reading', 5.5); score(chauA, 'listening', 6.5); score(chauA, 'writing1', 6.5); score(chauA, 'writing2', 6.5);
+  vangDoi(chauA, chau, 'speaking');                                                                // OV-1c: chốt nhờ Speaking vắng dời tuần
   const chauR = caseOf(chau.id, 'reading');
   xacNhan(activeTeacher('reading'), chauR.id, 'reading', 'Em sai dạng Matching Headings ở cả ba passage.');
   xacNhanPa(activeTeacher('reading'), chauR.id, 'Tự học Reading: hai bài Matching Headings mỗi tuần, cô Hà chữa.');
@@ -149,12 +166,22 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
 
   // ---------------------------------------------------------------- D8: Hoàng Bảo Ngọc — MT1 · Listening, PA quy chế ở TUẦN MỐC (Ghi kết quả cuối)
   const ngoc = addStudent('Hoàng Bảo Ngọc', 1, 5);
-  score(attempt(ngoc), 'listening', 5.5);
+  const ngocA = attempt(ngoc);
+  score(ngocA, 'listening', 5.5); score(ngocA, 'reading', 6); score(ngocA, 'writing1', 6); score(ngocA, 'writing2', 6);
+  khongDuThi(ngocA, 'speaking');                                                                   // OV-1c: chốt nhờ "Không dự thi"
   const ngocL = caseOf(ngoc.id, 'listening');
   xacNhan(activeTeacher('listening'), ngocL.id, 'listening', 'Em sót số và tên riêng ở Part 1–2.');
   xacNhanPa(activeTeacher('listening'), ngocL.id, 'Tự học Listening: nghe chép Part 1 mỗi ngày, gửi cô Hà thứ Năm.');
   /* Mốc quy chế Chủ nhật tuần này (20/09) < hạn hết T2 21/09 → lần ghi này là lần cuối. */
   hanPa(ngocL.id, addDays(DEMO_DATE, -28), weeklyUpdateDue(DEMO_DATE), addDays(DEMO_DATE, 6));
+
+  // ---------------------------------------------------------------- OV-1c: xoá SOS (SOS tạm thời / Overall ≥ kỳ vọng: dùng em demo sẵn có — DEMO.md mục 9)
+  /* Đặng Thu Hà — MT1 L 5 R/W 6.5, Speaking vắng dời → chốt, Case Listening; Speaking tuần mới 6.5 → Overall 6.0 ≥ 6.0 → xoá SOS (Case đóng "Overall đạt"). */
+  const ha = addStudent('Đặng Thu Hà', 1, 3);
+  const haA = attempt(ha);
+  score(haA, 'listening', 5); for (const k of ['reading', 'writing1', 'writing2']) score(haA, k, 6.5);
+  vangDoi(haA, ha, 'speaking');
+  score(haA, 'speaking', 6.5);
 
   const n = (sql: string, ...a: unknown[]) => (conn.prepare(sql).get(...a) as any).n as number;
   const ids = [khoi.id, lan.id, vy.id, bao.id, chau.id, ngoc.id];

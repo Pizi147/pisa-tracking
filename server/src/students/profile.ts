@@ -5,7 +5,7 @@ import {
   ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, JOURNEY_GROUP, PERMISSIONS,
   caseHeadline, duongCase, issueLabel, caseCategoryLabel, categoryOf, fmtExamMonth, cauTomTat, ketQuaTestGanNhat, oHocThuat, oSapToi, oYThuc,
   bacHoacNgoaiThang, nhanLoaiXuLy, programmeOf, tenBacKe, tenMonNgan, mocKeTiep, LUOT_HUY_HET_SQL, quaHan, studyWeekOf, tenMon, tuanHocTai, tuanLich,
-  type AssessedSkill, type EntrySkill, type InterventionKind, nhanBaiThuong, ATTEMPT_KIND_SHORT, soThuTuLuot, laChuongTrinhGoc, laLienTuc, type ProgrammeCode } from '../../../shared/domain/index.ts';
+  type AssessedSkill, type EntrySkill, type InterventionKind, kyNangXongThieu, nhanBaiThuong, ATTEMPT_KIND_SHORT, soThuTuLuot, laChuongTrinhGoc, laLienTuc, type ProgrammeCode } from '../../../shared/domain/index.ts';
 import { outcomeGroup } from '../cases/effectiveness.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, diffDays, notFound } from '../util.ts';
@@ -24,6 +24,7 @@ import { cuoiKhoaTheoHocVien, emConMiniTest, miniTestCuaHocVien, type EmCuoiKhoa
 import { mt0TheoLop } from '../normal/kyVong.ts';
 import { quyenBoTro } from '../cases/boTro.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
+import { loadSkillRows } from '../fasttrack/skillSchedule.ts';
 import { activeClassOf, canManageDiscipline } from '../yThuc/access.ts';
 import { dongHocVien, khoangTamDung } from './tamDung.ts';
 import { viecCuaHocVien } from './viecHocVien.ts';
@@ -70,7 +71,9 @@ function cycleLabel(c: any): string {
  * một bảng trống — sai mà trông như thiếu dữ liệu.
  */
 /** `pre`: danh sách gọi cho NHIỀU lượt nạp sẵn điểm / phạm vi / chương trình bằng vài câu (không hỏi lại theo từng lượt). */
-export function typedResult(attempt: any, pre?: { scores: any[]; skips: AssessedSkill[]; prog: ReturnType<typeof programmeOfClass> }) {
+/** `kyNang`: dòng `attempt_skills` đã nạp (OV-1c, xét chốt); bỏ trống → `loadSkillRows` (nhớ trong request GET). */
+export function typedResult(attempt: any, pre?: { scores: any[]; skips: AssessedSkill[]; prog: ReturnType<typeof programmeOfClass> },
+  kyNang?: Parameters<typeof kyNangXongThieu>[0]) {
   const prog = pre ? pre.prog : attempt.class_id ? programmeOfClass(attempt.class_id) : null;
   if (attempt.kind !== 'mt0' && prog?.scoringMode === 'ratio') {   // PR-MT0: MT0 ở lớp thường vẫn band
     const rows = pre?.scores ?? db().prepare('SELECT skill, raw_score, raw_total FROM assessment_scores WHERE attempt_id = ?')
@@ -78,8 +81,10 @@ export function typedResult(attempt: any, pre?: { scores: any[]; skips: Assessed
     const r = evaluateRegular(prog.skills, rows, prog.code, nguongDatLop(attempt.class_id));
     return { mode: 'ratio' as const, ratio: r, ft: null };
   }
+  const scores = pre?.scores ?? scoresOf(attempt.id);
   const r = evaluateAttempt(attempt.kind === 'mt0' ? null : attempt.target_at_attempt, attempt.attempt_no,   // PR-MT0: không kỳ vọng
-    entryBandsOf(pre?.scores ?? scoresOf(attempt.id)), pre?.skips ?? skipsOf(attempt.id), routeCuaLuot(attempt));
+    entryBandsOf(scores), pre?.skips ?? skipsOf(attempt.id), routeCuaLuot(attempt),
+    kyNangXongThieu(kyNang ?? loadSkillRows([attempt.id]).get(attempt.id) ?? [], scores));
   return { mode: 'ielts' as const, ratio: null, ft: r };
 }
 
@@ -405,7 +410,7 @@ function boOVaCau(i: {
       dau: dauDot(a), ratio, sos: kq.sos, dat: kq.dat, overall: a.overall ?? null, kck,
       soDat: ratio ? (a.skills ?? []).filter((x: any) => x.outcome === 'pass').length : 0, soMon: a.required,
       monTruot: ratio ? (a.skills ?? []).filter((x: any) => x.outcome === 'fail').map((x: any) => tenMonNgan(ct, x.skill)) : [],
-      phanTram: kq.phanTram, coDiem: kq.coDiem,
+      phanTram: kq.phanTram, coDiem: kq.coDiem, chot: kq.chot,
     } : null,
     hoTro: board.rows.filter((r) => r.cases.some((c: any) => c.status !== 'done')).map((r) => r.label as string),
     viec: [...viec.cuaBan, ...viec.nguoiKhac].map((v) => ({ loai: v.loai, chu: v.chu, quaHanNgay: v.quaHanNgay, kyNangTen: v.kyNang ? tenKn.get(v.kyNang) ?? null : null })),
@@ -573,9 +578,9 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
    * dòng lịch nào (dữ liệu cũ) không nạp sẵn phạm vi: `skipsOf` tự đọc bảng cũ như trước.
    */
   const kyNangCua = new Map<number, any[]>();
+  const lichCua = new Map<number, any[]>();
   if (attemptRows.length) {
     const ids = attemptRows.map((a) => a.id);
-    const lichCua = new Map<number, any[]>();
     theoLo(ids, (lo, ph) => {
       for (const r of conn.prepare(`SELECT attempt_id, skill, required, sit_status, absence_move_count FROM attempt_skills WHERE attempt_id IN (${ph})`)
         .all(...lo) as any[]) lichCua.set(r.attempt_id, [...(lichCua.get(r.attempt_id) ?? []), r]);
@@ -590,7 +595,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
 
   const homNayHs = demoToday();
   const attempts = attemptRows.map((a) => {
-    const t = typedResult(a);
+    const t = typedResult(a, undefined, lichCua.get(a.id) ?? []);
     const c = caseByAttempt.get(a.id) ?? null;
     const base = {
       id: a.id, attemptNo: a.attempt_no, kind: a.kind, status: a.status, lichSu: !!a.lich_su, planSource: a.plan_source ?? null,
@@ -618,7 +623,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     return {
       ...base, expectation: r.expectation, bands: r.bands, overall: r.overall, evaluable: r.evaluable, skills: null,
       scored: r.scoredRequired, required: r.required.length,
-      complete: r.complete, provisional: r.provisional,
+      complete: r.complete, chot: r.chot, provisional: r.provisional,
       sosLevel: r.sosLevel, scopeNote: r.scopeNote,
       ...(mt0 ? { sosMt0: kyNangSosMt0(r.bands, a.target_at_attempt ?? null) } : {}),
     };

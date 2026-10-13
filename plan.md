@@ -13,8 +13,6 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 | File chi tiết | Dùng cho |
 |---|---|
 | `docs/superpowers/specs/2026-10-11-overhaul-ux-workflow-design.md` | **Đặc tả Overhaul (OV)** — duyệt 11/10; nguồn chi tiết cho 12 PR OV-1a … OV-6b |
-| `docs/superpowers/plans/2026-10-12-pr-ov3c-kqdr-lop-truoc-ft.md` | PR **OV-3c** KQ lớp trước ở FT (chen slot trống đầu tiên) |
-| `docs/superpowers/plans/2026-10-12-pr-ov1c-sos-mt-chot.md` | PR **OV-1c** SOS MT tạm → chốt → xoá (sau OV-4a) |
 | `docs/superpowers/plans/2026-10-12-pr-ov6b2-pet-ket.md` | PR **OV-6b2** chương trình mới + PET/KET (sau OV-6b1) |
 | `docs/superpowers/plans/2026-10-07-pr-en-tieng-anh.md` | PR-EN (sau toàn bộ OV — đếm lại chữ trước khi chạy) |
 | `docs/superpowers/plans/2026-10-07-pr-sotay-so-tay-moi.md` | PR-SOTAY (cuối cùng) |
@@ -179,7 +177,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
   quy trình (lộ trình → bàn giao → KQĐR, SOS MT, dấu "-", huỷ/khôi phục), giao diện, **12 PR OV-1a … OV-6b** + phụ thuộc, tiêu chí nghiệm thu.
 - Mockup bản 2 (góp ý 11/10 đã áp): `thiet-ke/mockup-overhaul-{1,2,3}-*-2026-10-11.html`.
 - Quyết định: mục 3 (các dòng 11/10). Thứ tự, model, prompt: mục 5, 6, 9.
-- **Tình trạng 12/10 (tối):** đã merge OV-1a, 1b, 2a, 2b, 3a, 3b, 6a, **4a #332, 4b #333, 6b1 #331**. Còn: OV-3c, OV-1c, OV-6b2 (kế hoạch sẵn, chạy được ngay — 3 session), OV-5 (planning đang viết).
+- **Tình trạng 13/10:** đã merge thêm OV-4a #332, 4b #333, 6b1 #331, **1c #335, 3c #337** (main xanh). Còn: OV-6b2 #336 (đang sửa), OV-5 (planning viết).
   OV-4 và OV-6b của đặc tả **tách đôi** (mỗi nửa một vùng mã, rà riêng). Thứ tự + song song: mục 5; prompt: mục 9.3.
 - **Chủ SP trả lời 12/10:** (1) hạn khi SOS MT chốt = luật hiện có (5 ngày, SOS 3 = 3 ngày), tính từ ngày chốt; (2) **không làm** ô "Dự kiến quay lại" (mục 3).
 
@@ -199,6 +197,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - Case Học viên (KQĐR "Không đạt · Học viên") mang kỹ năng đầu tiên — KV, chủ SP xem khi rà OV-3b.
 - Hồ sơ GV › Việc đang có đếm từng việc (`items`), lệch badge Công việc (đếm dòng) — GOP; **OV-5 làm cùng**.
 - CT2: `huyNhieuLenh` / khôi phục nhiều lệnh ~25 câu/em — thêm phép đo 8 em, vượt thì gom lô (**OV-3b** chạm lệnh chuyển); giới hạn tự ghi (đổi lớp đích / tuần mà giữ quyết định không sinh lại bộ; Pre FOU Người dạy trống; sinh từ ô điểm cuối thì người xác nhận = người nhập).
+- **MT0 lớp thường đã nhập band vẫn là việc "Nhập điểm MT0"** (lỗi có sẵn, OV-3c phát hiện): `listAttempts` (`server/src/fasttrack/attempts.ts` ~655) đi nhánh lớp thường cho `kind = 'mt0'` → đòi `raw_score`; lệch Nợ điểm (`scoringModeOf` đã coi mt0 là band). Sửa: bỏ mt0 khỏi nhánh `regularSkills` — **OV-1c / OV-4b** (vùng `fasttrack/*`).
+- **Bộ demo không thêm được lượt MT nào** (OV-3c đo 12/10): `tocDo.run.ts` PR-TD Task5(2) — demo có 299 lượt, ×3 = 897 sát lô 900 tham số (`theoLo`); thêm ≥ 2 lượt (vd một em chuyển vào FT, tự sinh lịch MT) → QT `/tong-quan/chi-nhanh`, `/my-work` thêm 6–8 câu (một lô nữa) → đỏ. Vì vậy OV-3c không seed đợt FOU / nhiều đợt (MB FT 104) — planning chọn: nới phép đo theo số lô, hoặc chấp nhận +1 lô. Kèm: thêm seed làm dời id → chụp lại băm DL-2 (`prDl.tests.ts`).
 - Sổ tay lỗi thời ("Nộp kế hoạch bổ trợ", "Đánh dấu kỳ vọng đầu ra") → PR-SOTAY.
 
 ## 5. Đợt chạy, thứ tự merge, deploy (chủ SP 11/10)
@@ -268,9 +268,7 @@ Xong: [x] kế hoạch, một dòng mục 11, CODE_MAP.md nếu thêm/xoá file.
 | PR | Prompt | Model (B) | Cổng | Khi nào |
 |---|---|---|---|---|
 | OV-4a #332 · OV-4b #333 · OV-6b1 #331 | ✅ merge 12/10 | | | |
-| **OV-3c** | `docs/superpowers/plans/2026-10-12-pr-ov3c-kqdr-lop-truoc-ft.md` | Opus 5.5 · High (Sonnet 5.5 · High) | 4150/5323 | ngay |
-| **OV-1c** | `docs/superpowers/plans/2026-10-12-pr-ov1c-sos-mt-chot.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4160/5333 | ngay |
-| **OV-6b2** | `docs/superpowers/plans/2026-10-12-pr-ov6b2-pet-ket.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4170/5343 | ngay |
+| **OV-3c** | **OV-1c** | **OV-6b2** #336 | `docs/superpowers/plans/2026-10-12-pr-ov6b2-pet-ket.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4170/5343 | đang sửa: PR-TD Task5(2) đỏ sau gộp OV-1c (demo ×3 vượt lô 900) |
 - OV-3c + OV-1c + OV-6b2 chạy cùng lúc được (không chung vùng chính; chung `routes/index.ts`, `run.ts`, `plan.md` → gộp main trước khi mở PR).
 - Rà sâu (mục 1.3): OV-4a, OV-4b, OV-1c, OV-6b1, OV-6b2. OV-3c rà mặc định.
 - PR OV-5: planning đang viết (OV-4b đã merge). Cổng tiếp theo: 4180/5353.
@@ -318,6 +316,8 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
 | 12/10/2026 | OV-6b2 (Opus 5.5) · `claude/wonderful-edison-mmer3n` | "+ Chương trình" (mã mới, môn L·R·W·S·L+S·R+W, số tuần hoặc liên tục + Checkpoint mỗi n tuần); PET, KET có sẵn (migrate `prOv6b2`); lớp `{CN} {MÃ} {số}`; Checkpoint sinh từng lượt; chưa đạt chỉ chip SOS; một cổng `laLienTuc` (không LTT / KQĐR / Cuối khoá / MT0 / Target) |
+| 12/10/2026 | OV-1c (Opus 5.5) · `claude/dazzling-albattani-24iilg` | SOS MT tạm thời → chốt → xoá: cờ `chot` (`kyNangXongThieu`: dời / huỷ / Không dự thi), chưa chốt không Case; Overall ≥ kỳ vọng = không SOS; xoá SOS đóng "Overall đạt" / giữ + mốc; mọi màn đọc `chot`; migrate `prOv1c` + `kiem-truoc-ov1c`; seed demo chốt; ô điểm lưới theo mockup (vắng tím 2 dòng · trống viền đứt · huỷ viền chấm) + chip "SOS tạm · a/4" |
+| 12/10/2026 | OV-3c (Opus 5.5) · `claude/festive-wright-jzy4xv` | Hồ sơ lớp FT › Học viên › "Kết quả đầu ra" (`?che-do=ket-qua`, số đợt ở nút): mỗi chương trình nguồn một bảng, nhóm theo đợt, hiện 4 tuần, chỉ QL đã chốt, Admin 403; Hành trình có dòng Kết quả đầu ra; không seed mới (demo MB FT 101 — xem mục 4) |
 | 12/10/2026 | OV-6b1 (Opus 5.5) · `claude/pensive-knuth-qt9uk0` | Quản trị › Chương trình: bảng + panel sửa (Tên, Đạt từ, số tuần, mốc / tuần MT LT1 LT2 RF), áp lớp mở sau; bản chụp `classes.lich_mt` + `nguong_dat`; tuần MT FT + ngưỡng đạt đọc bản chụp lớp; migrate `prOv6b1` điền mọi lớp cũ |
 | 12/10 | OV-4b `claude/peaceful-galileo-kc1jh5` · Opus 5.5 | Hộp nhập điểm MT chung (`HopNhapDiem`: L/R/W1/W2/S/MT0, Lưu · em tiếp, ô Vắng + Bỏ vắng, lỗi giữ chữ) thay CriteriaModal / InlineScoreEditor / ô gõ L/R; nhận xét 4 kỹ năng + lớp thường (nút Nhận xét). |
 | 12/10/2026 | OV-4a (Opus 5.5) · `claude/peaceful-clarke-xsn9zr` | Huỷ cả lượt MT cất điểm + lịch + danh sách đóng vào `ket_qua_huy` (`huy_luot`, migrate `prOv4`), đóng Case sinh riêng / PA "Chưa đủ dữ liệu" / Phối hợp; Khôi phục lượt (`/reopen`) về nguyên trạng, chặn khi đã xếp MT mới, kèm bản dời vượt treo (ca MT4 Ngọc); ô "MT2 · Đã huỷ" ở Kế hoạch Test / Lộ trình; Admin không nút |

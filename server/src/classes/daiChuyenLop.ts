@@ -8,13 +8,14 @@ import type { DaiHocVien, DaiLop } from '../../../shared/domain/index.ts';
 import { mocKetKhoa, type TienDoMoc } from './schedule.ts';
 import { lopChoChotLoTrinh } from './lenhChuyen.ts';
 import { coTheRaLenh, phanCongO } from './quyenChuyenLop.ts';
+import { EM_KQDR_FT_SQL, KQDR_HIEN_NGAY, laChiAdmin } from '../normal/kyVong.ts';
 
 /**
  * DỮ LIỆU CÁC DẢI của mockup 20 — chỉ ĐỌC, cho hồ sơ lớp (A · H) và hồ sơ học viên (E). Chữ do web dựng từ các trường này (mã tuần qua `tuanLich`).
  * Nút theo QUYỀN ở `viewer`/`nut`: web không tự đoán vai (máy chủ vẫn kiểm lại ở từng đường).
  */
 
-/** Hồ sơ lớp: tối đa 3 câu (phân công · lệnh nguồn/đích/dòng môn/GVCN gộp một UNION · đếm chưa lệnh khi tới Cuối khoá). */
+/** Hồ sơ lớp: tối đa 3 câu (phân công · lệnh nguồn/đích/dòng môn/GVCN/số đợt KQĐR gộp một UNION · đếm chưa lệnh khi tới Cuối khoá). */
 export function daiLop(p: Principal, classId: number, o: { pr: TienDoMoc; ft: boolean; ct: string | null }): DaiLop {
   const conn = db();
   const homNay = demoToday();
@@ -28,8 +29,9 @@ export function daiLop(p: Principal, classId: number, o: { pr: TienDoMoc; ft: bo
      UNION ALL SELECT 'mon', b.lenh_id, b.mon, NULL, NULL, NULL, NULL, NULL, NULL
        FROM ban_giao_mon b WHERE b.lam_lai = 0 AND b.lenh_id IN (SELECT id FROM lenh_chuyen_lop WHERE lop_nguon_id = ?)
      UNION ALL SELECT 'gvcn', COUNT(*), NULL, NULL, NULL, NULL, NULL, NULL, NULL
-       FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active'`,
-  ).all(classId, classId, classId, classId) as any[];
+       FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active'
+     UNION ALL SELECT 'kqdr', COUNT(DISTINCT substr(e.started_at, 1, 10)), NULL, NULL, NULL, NULL, NULL, NULL, NULL ${EM_KQDR_FT_SQL}`,
+  ).all(classId, classId, classId, classId, classId, addDays(homNay, -KQDR_HIEN_NGAY)) as any[];
   const min = (xs: (string | null)[]) => xs.filter((x): x is string => !!x).sort()[0] ?? null;
 
   const nguon = rows.filter((r) => r.k === 'nguon' && r.b !== 'dung_hoc');
@@ -66,7 +68,9 @@ export function daiLop(p: Principal, classId: number, o: { pr: TienDoMoc; ft: bo
   /* PR-S5F-a: lệnh lỗi (kể cả Dừng học hẳn) — Quản lý thấy ngay ở hồ sơ lớp để sửa, không phải mở từng hồ sơ em. */
   const loi = ra ? rows.filter((r) => r.k === 'nguon' && r.c === 'cho' && r.h) : [];
   const chuaChuyenDuoc = loi.length ? { n: loi.length, loi: loi[0].h as string } : null;
-  return { loTrinh, banGiao, banGiaoMon, sapNhan, chuaChuyenDuoc, viewer: { coTheRaLenh: ra, coTheChuyenNhieuEm: ra && o.ft, laGvcn: pc.gvcn, xacNhanDuoc: pc.gvcn || qlThay } };
+  /* OV-3c: số đợt "Kết quả đầu ra" lớp FT còn trong 4 tuần — 0 thì web ẩn cách xem (Admin luôn 0, máy chủ chặn đường đọc). */
+  const kqdrDot = laChiAdmin(p) ? 0 : rows.find((r) => r.k === 'kqdr')?.a ?? 0;   // đường đọc kiểm `attempt.view`; ở đây không gọi `can()` (thêm câu tra chi nhánh)
+  return { loTrinh, banGiao, kqdrDot, banGiaoMon, sapNhan, chuaChuyenDuoc, viewer: { coTheRaLenh: ra, coTheChuyenNhieuEm: ra && o.ft, laGvcn: pc.gvcn, xacNhanDuoc: pc.gvcn || qlThay } };
 }
 
 /** Hồ sơ HV (E): lệnh đang chờ hoặc đã chuyển ≤ 14 ngày (Q17) — 2 câu. */

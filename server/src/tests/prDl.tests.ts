@@ -92,8 +92,9 @@ export async function runPrDlTests(t: YThucTestKit) {
    * làm lệch băm thì chụp lại bằng mã trước refactor (`git show 666dcfbf:server/src/fasttrack/attempts.ts`), không sửa cho khớp.
    */
   const bam = (x: unknown) => createHash('sha256')
-    /* PR-BV: ô thêm `daChot` ("-" đã chốt, phép kiểm riêng prBv V13) — bỏ khỏi băm để ảnh chụp cũ vẫn chứng minh mọi trường khác không lệch. */
-    .update(JSON.stringify(x, (k, v) => (k.endsWith('At') || k === 'chuNhatCuoi' || k === 'daChot' ? undefined : v))).digest('hex').slice(0, 16);
+    /* PR-BV: ô thêm `daChot` ("-" đã chốt, phép kiểm riêng prBv V13) — bỏ khỏi băm để ảnh chụp cũ vẫn chứng minh mọi trường khác không lệch.
+       OV-1c: kết quả lượt thêm `chot` (phép kiểm riêng prOv1c) — bỏ khỏi băm như trên. */
+    .update(JSON.stringify(x, (k, v) => (k.endsWith('At') || k === 'chuNhatCuoi' || k === 'daChot' || k === 'chot' ? undefined : v))).digest('hex').slice(0, 16);
   /*
    * Chụp lại 06/10 (PR-MTa): T1 đổi cờ MT cũ của lượt seed (tuần trước nay là MT thường) và các phép kiểm chạy trước (PR-MT, PR-XLMT, PR-LM)
    * đổi dữ liệu MB FT 101. Không chụp được bằng mã 666dcfbf (gọi `kiemLyDo` đã bỏ ở T7) — băm của mã hiện tại; khẳng định `idsTuan` bên dưới
@@ -107,9 +108,10 @@ export async function runPrDlTests(t: YThucTestKit) {
    * lúc nào cũng được, dời vượt bị chặn (không còn bỏ lịch lượt sau) → dữ liệu MB FT 101 khác; `idsTuan` bên dưới vẫn đối chiếu độc lập.
    * Chụp lại 12/10 (PR-OV1b): bộ PR-G trong run.ts viết lại theo luật "-" mới — so JSON hai bảng mã cũ / mã mới: chỉ lệch ở các lượt PR-G dựng
    * ("-" trong tuần nay dời ngay thay vì vắng chờ QL; "-" nhập bù = Không dự thi rồi nhập điểm đè; W1 "-" một mình = Không dự thi), không trường nào khác.
-   * Chụp lại 12/10 (OV-6b2): bộ demo thêm lớp MB PET 01 (5 lượt Checkpoint) → id lượt Ánh/Bình dời; MB FT 101 không đổi lượt nào (`idsTuan` vẫn đối chiếu).
+   * Chụp lại 12/10 (PR-OV1c): bộ demo SOS MB FT 101 nay nhập đủ / chốt lượt (Khôi, Lan, Vy đủ 4 kỹ năng; Bảo, Ngọc "Không dự thi"; Châu, Đặng Thu Hà
+   * vắng dời) và luật Overall ≥ kỳ vọng = không SOS đổi `sosLevel` / `provisional`; cờ `chot` mới bỏ khỏi băm.
    */
-  const ANH_CHUP = { tuan: 'a26213d650228d31', moi: '9a13cae4db5e106a' };
+  const ANH_CHUP = { tuan: '6b378182db22e8ac', moi: '1c9c68b44cb2bb94' };
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id

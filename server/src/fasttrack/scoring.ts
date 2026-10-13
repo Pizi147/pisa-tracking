@@ -132,7 +132,12 @@ export type AttemptResult = {
   /** Đủ điểm MỌI kỹ năng bắt buộc VÀ đã biết kỳ vọng — kết luận cuối cùng. */
   evaluable: boolean;
   /**
-   * Đã kết luận được nhưng CHƯA đủ điểm mọi kỹ năng, nên mức SOS còn có thể tăng.
+   * OV-1c: mọi kỹ năng bắt buộc có band HOẶC phần thiếu đã là cuối (`kyNangXongThieu`: dời tuần / huỷ phần thi / Không dự thi).
+   * Chỉ lượt chốt mới sinh Case / PA / Phối hợp / hạn (`raiseSignalsForResult`); mọi màn đọc cờ này, không tự suy từ số ô.
+   */
+  chot: boolean;
+  /**
+   * Đã kết luận được nhưng CHƯA CHỐT (OV-1c), nên mức SOS còn có thể đổi.
    * Giao diện phải ghi rõ điều này thay vì hiện một con số trông như đã chốt.
    */
   provisional: boolean;
@@ -160,6 +165,8 @@ export function evaluateAttempt(
   entry: EntryBands,
   skippedSkills: readonly string[] = [],
   route?: string | null,
+  /** OV-1c: kỹ năng bắt buộc thiếu band mà đã xong (`kyNangXongThieu`). Bỏ trống = chốt khi đủ điểm. */
+  xongThieu: readonly string[] = [],
 ): AttemptResult {
   const expectation = expectationFor(target, attemptNo, route);
   const bands = assessedBands(entry);
@@ -206,9 +213,8 @@ export function evaluateAttempt(
    * kỹ năng và chỉ chờ chấm, còn một bài kiểm tra lớp thường có thể thiếu môn vì em vắng
    * buổi đó — hai chuyện khác nhau, nên kết luận tạm thời mang nghĩa khác nhau.
    */
-  const sosLevel: SosLevel | null =
-    failedCount === null ? null : failedCount === 0 ? 0 : failedCount === 1 ? 1 : failedCount === 2 ? 2 : 3;
-  const provisional = canConclude && !complete;
+  const chot = required.length > 0 && verdicts.every((v) => !v.required || v.band !== null || xongThieu.includes(v.skill));
+  const provisional = canConclude && !chot;
 
   /*
    * Overall IELTS chỉ có nghĩa khi lượt này thực sự đánh giá đủ BỐN kỹ năng.
@@ -219,11 +225,15 @@ export function evaluateAttempt(
   const overall = skipped.length === 0 && all.every((b) => b !== null)
     ? roundToHalf((all as number[]).reduce((a, b) => a + b, 0) / 4)
     : null;
+  /* OV-1c (đặc tả 3.2): Overall tính được và ≥ kỳ vọng → không SOS, kể cả có kỹ năng dưới kỳ vọng (`failedCount` vẫn đếm để tra lại). */
+  const overallDat = overall !== null && expectation !== null && overall >= expectation;
+  const sosLevel: SosLevel | null = failedCount === null ? null
+    : overallDat || failedCount === 0 ? 0 : failedCount === 1 ? 1 : failedCount === 2 ? 2 : 3;
 
   return {
     expectation, bands, verdicts, required, skipped,
     scoredRequired, complete, evaluable, failedCount, sosLevel, overall,
-    provisional,
+    chot, provisional,
     /*
      * Ở danh sách chỉ cần con số. "Đánh giá trên 3 kỹ năng" là một câu giải thích, và giải
      * thích thuộc về màn chi tiết — ở overview nó chỉ làm dòng dài ra và khó quét.

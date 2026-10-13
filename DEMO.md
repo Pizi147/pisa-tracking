@@ -166,6 +166,17 @@ tuần mốc → `Ghi kết quả cuối` (GVCN Hà). Không còn Case đóng ki
 
 Ba mức SOS khác nhau (1 · 2 · 3) đều có mặt. Bộ demo Ý thức (mục 1) dùng *xoá thẳng*: vi phạm đã xoá (Trần Thu Hà) chỉ còn dấu vết ở `audit_logs`.
 
+**OV-1c — SOS MT tạm thời → chốt → xoá** (Case chỉ sinh khi lượt CHỐT: đủ điểm, hoặc kỹ năng thiếu đã dời tuần / huỷ / Không dự thi)
+
+| Ca | Học viên | Bạn sẽ thấy |
+|---|---|---|
+| SOS tạm thời | **Nguyễn Minh An** · MT3 (mới có L, R) | Chip `SOS 2 tạm thời · 2/4 kỹ năng` viền đứt — lượt chưa chốt không sinh Case, PA, Phối hợp, chuông |
+| Chốt đủ điểm có SOS | **Đỗ Minh Khôi**, **Vũ Ngọc Lan**, **Bùi Thảo Vy** | Đủ 4 kỹ năng, Overall dưới kỳ vọng → Case như D7 |
+| Chốt nhờ kỹ năng dời | **Lý Minh Châu** · MT2 | Speaking vắng → dời tuần sau; chip `SOS 1 · 3/4 kỹ năng` (không "tạm thời"), Case Reading |
+| Chốt nhờ "Không dự thi" | **Trịnh Gia Bảo**, **Hoàng Bảo Ngọc** · MT1 | Speaking "Không dự thi" → lượt chốt, Case Listening |
+| Overall ≥ kỳ vọng | **Lê Quang Huy** · MT1, MT2 | Listening dưới kỳ vọng nhưng Overall đạt → chip `Đạt`, không SOS; Case Listening đã có người làm giữ + mốc `Overall đã đạt` |
+| Xoá SOS | **Đặng Thu Hà** · MT1 | Speaking vắng dời → chốt, Case Listening; Speaking tuần mới 6.5 → Overall 6.0 ≥ kỳ vọng → Case đóng "Overall đạt" |
+
 ## 9b. PR-KCK — Target "không cam kết" (chỉ máy dev)
 
 Hai em mới ở **MB FT 101**, thêm qua chính luồng Thêm học viên (`buildKckDemo` trong `server/src/seed/sosV3Seed.ts`). Ô Target gõ `KCK`,
@@ -188,7 +199,7 @@ Dựng bằng chính các hàm nghiệp vụ (`server/src/seed/prMtSeed.ts`), sa
 | Kịch bản | Học viên | Bạn sẽ thấy |
 |---|---|---|
 | D1 · lớp RF | **Phan Gia Hân** (MB FT RF 12) | Mới vào: MT1 W2 OCT (tuần học 4), MT2 W1 NOV (tuần học 8) |
-| D1 · RF có SOS | **Đặng Quốc Bảo** (MB FT RF 12) | MT1 kỳ vọng **= target 6.5** (không trừ); L R 6.0 → SOS 2 → PA quy chế `Tutor · đến lúc thi`, Phối hợp theo hàng MT4 |
+| D1 · RF có SOS | **Đặng Quốc Bảo** (MB FT RF 12) | MT1 kỳ vọng **= target 6.5** (không trừ); L R 5.5 → SOS 2 (Overall 6.0) → PA quy chế `Tutor · đến lúc thi`, Phối hợp theo hàng MT4 |
 | D2/D3 · HS cũ | **Lê Minh Khang** (MB FT 101) | Thêm hôm nay, bắt đầu 17 tuần trước: MT1–MT3 nhãn `lịch sử`. MT2 đã nhập SOS 2 — **không** Case (ngoài 4 tuần). MT3 (2 tuần trước) chưa nhập — GVCN Hà nhập thử ở Lịch Test (dòng nhắc cuối trang) → ra Case |
 | D5 · máy tự dời | **Hồ Ngọc Diệp** | "-" cả bốn kỹ năng tuần trước → chốt sáng thứ Hai → máy dời sang tuần này (vắng lần 1); chuông GVCN + GVBM "Đã tự dời …" |
 | D5 · chờ duyệt lần 2 | **Ngô Bảo Châu** | Listening vắng lần 2 → đề nghị chờ Quản lý, hạn hết CN 20/09, tuần đích W4 SEP; Lịch Test hàng lớp `vắng · chờ Quản lý duyệt dời` |

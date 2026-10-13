@@ -525,7 +525,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
       }
 
       const skips = bundle.skips.get(a.id) ?? [];
-      const result = resultOf(a, scores, skips);
+      const result = resultOf(a, scores, skips, bundle.skillRows.get(a.id) ?? []);
       const cells = skillCells(p, a, scores, skips, today, bundle.skillRows.get(a.id),
         hoanTatOf.get(a.id) ?? { hoanTat: false, chuNhatCuoi: null });
       return {

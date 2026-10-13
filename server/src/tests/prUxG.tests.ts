@@ -26,12 +26,13 @@ export async function runPrUxGTests(t: YThucTestKit) {
     const du = cau({ ...KQ, coDiem: 4 })[0];
     assert(du.chu === 'MT3 SOS 1: đang hỗ trợ Speaking' && du.tone === 'sos1', JSON.stringify(du));
   });
-  check('G1b · mọi hồ sơ FT có lượt chưa đủ điểm mà có SOS: banner và ô Kết quả gần nhất đều có "tạm thời"; không hồ sơ nào trả "SOS n" trơn', () => {
+  check('G1b · mọi hồ sơ FT có lượt chưa chốt mà có SOS: banner và ô Kết quả gần nhất đều có "tạm thời"; không hồ sơ nào trả "SOS n" trơn', () => {
     let coTam = 0;
     for (const { id } of conn.prepare(`SELECT id FROM students`).all() as { id: number }[]) {
       const dh = (studentProfile(P.admin, id) as any).dauHoSo;
       const kq = dh?.o?.ketQua?.kq;
-      if (!kq || dh.o.ketQua.ratio || dh.o.ketQua.kck || !kq.sos || kq.coDiem >= kq.yeuCau) continue;   // KCK không có SOS trên câu
+      /* KCK không có SOS trên câu. OV-1c: "tạm thời" = lượt CHƯA CHỐT (cờ máy chủ), không còn = thiếu điểm (chốt nhờ kỹ năng dời thì không tạm). */
+      if (!kq || dh.o.ketQua.ratio || dh.o.ketQua.kck || !kq.sos || kq.chot) continue;
       coTam++;
       const banner = dh.tomTat.find((m: any) => /SOS \d/.test(m.chu));
       assert(banner && /SOS \d tạm thời/.test(banner.chu), `em ${id}: banner "${banner?.chu}" thiếu "tạm thời" (${kq.coDiem}/${kq.yeuCau}) ${JSON.stringify(dh.tomTat)}`);
