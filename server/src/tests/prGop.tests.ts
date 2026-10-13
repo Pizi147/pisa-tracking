@@ -75,24 +75,26 @@ export async function runPrGopTests(t: YThucTestKit) {
     assert(ftCause.length === 1 && ftCause[0].con.length === 2 && ftCause[0].key === 'gop:cause:10:u7:mock2:reading', 'Xác nhận nguyên nhân FT: gộp theo kỹ năng + lượt');
   });
 
-  check('GOP-1d · dòng đã gom sẵn (Nhập điểm theo bài) cùng lớp → một dòng "n việc", con tên theo việc', () => {
+  /* OV-11c (TE-4): dòng gộp Nhập điểm một đơn vị "bài" (Σ bài của các việc con). */
+  check('GOP-1d · dòng đã gom sẵn (Nhập điểm theo bài) cùng lớp → một dòng "n bài", con tên theo việc', () => {
     const ds = [
       v({ key: 'score:1', group: 'score', studentId: null, studentName: 'Lớp MB FT 101', count: 6, tieuDe: 'Nhập điểm L, R', phu: 'L, R', contextLabel: 'MT2' }),
       v({ key: 'score:2', group: 'score', studentId: null, studentName: 'Lớp MB FT 101', count: 3, tieuDe: 'Nhập điểm W', phu: 'W', contextLabel: 'MT3' }),
     ];
     const [g] = d.gopViecTheoLop(ds, nhan);
-    assert(g.tieuDe === 'Nhập điểm · MB FOU 15 · 2 việc', `tiêu đề: ${g.tieuDe}`);
-    assert(g.actionLabel === '2 việc', g.actionLabel);
+    assert(g.tieuDe === 'Nhập điểm · MB FOU 15 · 9 bài', `tiêu đề: ${g.tieuDe}`);
+    assert(g.actionLabel === '9 bài', g.actionLabel);
     assert(g.con[0].conTen === 'L, R · MT2' && g.con[0].conPhu === '6 HV', `${g.con[0].conTen} / ${g.con[0].conPhu}`);
   });
 
-  check('GOP-1e · hai việc của CÙNG một em (hai PA) → "2 việc", không "2 em"', () => {
+  /* OV-11c (CV-17): dòng gom một đơn vị "em" — đếm em KHÁC NHAU (một em hai PA = 1 em; hai việc vẫn ở danh sách con). */
+  check('GOP-1e · hai việc của CÙNG một em (hai PA) → "1 em", danh sách con vẫn hai việc', () => {
     const ds = [
       v({ key: 'action:1', group: 'ghi_ket_qua_pa', studentId: 5, studentName: 'Ngọc', tieuDe: 'Kết quả PA Writing', phu: 'Writing' }),
       v({ key: 'action:2', group: 'ghi_ket_qua_pa', studentId: 5, studentName: 'Ngọc', tieuDe: 'Kết quả PA Speaking', phu: 'Speaking' }),
     ];
     const [g] = d.gopViecTheoLop(ds, nhan);
-    assert(g.tieuDe === 'Kết quả PA · MB FOU 15 · 2 việc' && g.actionLabel === '2 việc', `${g.tieuDe} / ${g.actionLabel}`);
+    assert(g.tieuDe === 'Kết quả PA · MB FOU 15 · 1 em' && g.actionLabel === '1 em' && g.con.length === 2, `${g.tieuDe} / ${g.actionLabel}`);
     assert(g.con[0].conTen === 'Ngọc', 'con vẫn mang tên em');
   });
 

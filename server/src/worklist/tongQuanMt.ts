@@ -53,7 +53,7 @@ export function tongQuanMt(p: Principal, f: { branchId?: number | null } = {}): 
     luotTuanNay: { so: tuanDau?.ft.mockStudents ?? 0, soLop: tuanDau?.ft.mockClasses.length ?? 0 },
     oChuaNhap: {
       so: demPhamVi(dong, true).so,
-      quaHan: demPhamVi(dong.filter((d) => khopLocNhanh(d, 'qua-han', today)), true).so,
+      quaHan: demPhamVi(dong.filter((d) => khopLocNhanh(d, 'qua-han', today)), true, { loc: 'qua-han', homNay: today }).so,   // OV-11c: chỉ bài quá hạn
     },
     deNghiDoi: lich.lop.reduce((n, l) => n + l.choDuyetDoi, 0),
     chuaXepLich: keHoach.lop.filter((l) => l.loai === 'ft').reduce((n, l) => n + l.chuaCoLichTiep, 0),

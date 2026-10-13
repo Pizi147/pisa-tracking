@@ -796,22 +796,18 @@ export async function runPrCtTests(t: YThucTestKit) {
     yc.quetYeuCau(TODAY);
     assert(theBl('bao_len_ban_giao', n2).trang_thai === 'tu_dong', 'lệnh huỷ → thẻ tự đóng');
   });
-  check('CT (6e) · Báo QL "Lớp hết khoá còn em chưa có lệnh": sinh khi lớp thường hết tuần kết thúc, một thẻ/lớp, đóng khi đủ lệnh; lớp chưa hết không có', () => {
+  /* OV-11c (CV-9, Q7): lớp thường không còn thẻ "Lớp hết khoá · chưa có quyết định chuyển lớp" — việc "Chốt lộ trình" của QL đã phủ (một việc một chỗ). */
+  check('CT (6e) · lớp thường hết khoá còn em chưa có lệnh: KHÔNG sinh thẻ Báo QL (việc Chốt lộ trình phủ, OV-11c Q7); ra đủ lệnh vẫn không thẻ', () => {
     const het = lopMoi({ kind: 'FOU', tuanHienTai: 9 });
     const chua = lopMoi({ kind: 'FOU', tuanHienTai: 8 });
     const [h1, h2] = [hocVien(het, 'FOU', false).sid, hocVien(het, 'FOU', false).sid];
     hocVien(chua, 'FOU', false);
     yc.quetYeuCau(TODAY);
-    yc.quetYeuCau(TODAY);
-    const the = theBl('bao_len_chua_lenh', het);
-    assert(the && the.trang_thai === 'cho' && !theBl('bao_len_chua_lenh', chua), 'chỉ lớp đã hết');
-    assert(get(`SELECT COUNT(*) n FROM yeu_cau_duyet WHERE loai = 'bao_len_chua_lenh' AND doi_tuong_id = ?`, het).n === 1, 'một thẻ mỗi lớp');
+    assert(!theBl('bao_len_chua_lenh', het) && !theBl('bao_len_chua_lenh', chua), 'lớp thường không còn thẻ Lớp hết khoá');
     ra(P.mbManager, het, 'cuoi-khoa', [dongCua(h1, 'len_lop', d6)]);
-    yc.quetYeuCau(TODAY);
-    assert(theBl('bao_len_chua_lenh', het).trang_thai === 'cho', 'còn 1 em chưa có lệnh');
     ra(P.mbManager, het, 'cuoi-khoa', [dongCua(h2, 'len_lop', d6)]);
     yc.quetYeuCau(TODAY);
-    assert(theBl('bao_len_chua_lenh', het).trang_thai === 'tu_dong', 'đủ lệnh → thẻ tự đóng');
+    assert(!theBl('bao_len_chua_lenh', het), 'vẫn không thẻ');
   });
   /* PR-LCb: việc QL là "Chốt lộ trình · {lớp}" (thay "Chuyển tiếp lớp") — vẫn đếm em CHƯA CÓ LỆNH, hết khi đủ lệnh. */
   check('CT (6f) · việc của Quản lý: từ tuần Final Test đếm em CHƯA CÓ LỆNH ("Chốt lộ trình"); GVCN hết đếm em đã có lệnh vào "chưa có lộ trình tiếp theo"', () => {
@@ -1004,14 +1000,15 @@ export async function runPrCtTests(t: YThucTestKit) {
   console.log('\nPR-CT · Bộ demo chuyển lớp và bàn giao (6 kịch bản + 1 lệnh đã chuyển)');
   const lopMa = (ma: string) => get('SELECT id FROM classes WHERE code = ?', ma)?.id as number | undefined;
   const emCua = (ten: string) => get('SELECT id FROM students WHERE full_name = ?', ten)?.id as number;
-  check('CT (8a) · kịch bản 1 — MB FOU 21: 6 em, chưa lệnh nào, đủ dải điểm + 1 em thiếu điểm P; dải đỏ (đã hết tuần kết thúc), thẻ Báo QL "Lớp hết khoá còn em chưa có lệnh"', () => {
+  check('CT (8a) · kịch bản 1 — MB FOU 21: 6 em, chưa lệnh nào, đủ dải điểm + 1 em thiếu điểm P; dải đỏ (đã hết tuần kết thúc), không thẻ Báo QL "Lớp hết khoá" (OV-11c Q7)', () => {
     const id = lopMa('MB FOU 21');
     assert(id, 'thiếu lớp MB FOU 21');
     assert(all(`SELECT 1 FROM enrollments WHERE class_id = ? AND status = 'active'`, id).length === 6, '6 em');
     assert(get(`SELECT COUNT(*) n FROM lenh_chuyen_lop WHERE lop_nguon_id = ?`, id).n === 0, 'chưa có lệnh');
     const nam = emCua('Phan Quang Nam CT');
     assert(get(`SELECT COUNT(*) n FROM assessment_scores s JOIN assessment_attempts a ON a.id = s.attempt_id WHERE a.student_id = ? AND a.kind = 'final' AND s.raw_score IS NOT NULL`, nam).n === 3, 'Nam thiếu điểm P (3/4 môn)');
-    assert(get(`SELECT COUNT(*) n FROM yeu_cau_duyet WHERE loai = 'bao_len_chua_lenh' AND doi_tuong_id = ?`, id).n === 1, 'thẻ Báo QL chưa lệnh');
+    /* OV-11c (Q7): lớp thường không còn thẻ "Lớp hết khoá" — việc Chốt lộ trình của QL phủ. */
+    assert(get(`SELECT COUNT(*) n FROM yeu_cau_duyet WHERE loai = 'bao_len_chua_lenh' AND doi_tuong_id = ? AND trang_thai = 'cho'`, id).n === 0, 'không thẻ Báo QL chưa lệnh');
   });
   check('CT (8b) · kịch bản 2–3 — MB FOU 22: 4 em lên MB BE 09 (một em thiếu điểm P vẫn có lệnh) + 1 tạm dừng học (bảo lưu); GVBM đã ghi 3 môn cho cả 4 em, còn thiếu P; GVCN chưa xác nhận', () => {
     const id = lopMa('MB FOU 22'), be09 = lopMa('MB BE 09');

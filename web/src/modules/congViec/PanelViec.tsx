@@ -1,3 +1,4 @@
+import { type ReactNode, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { invalidate } from '../../lib/api.ts';
@@ -84,6 +85,23 @@ export function PanelViec({ it, onDong, onDaLam, onTiep }: {
 function PanelNhapDiem({ it, onDong, onDaLam }: { it: WorkItem; onDong: () => void; onDaLam: () => void }) {
   const { data, error, reload } = useApi<BangTheoLuot>(duongDiemTheoLuot(it.classId!, it.luot!), [it.classId, it.luot]);
   const daLuu = () => { reload(); onDaLam(); };
+  /* OV-11c (CV-6): em của việc lên đầu; phần còn lại của lớp gập "Cả lớp (n)". Kỹ năng giữ như lúc mở (`kn` ban đầu). */
+  const em = new Set(it.studentId !== null ? [it.studentId] : it.emIds ?? []);
+  const [kn] = useState(it.kn ?? null);
+  const tach = <S extends { rows: { studentId: number }[] }>(d: S, ve: (x: S) => ReactNode) => {
+    const viec = d.rows.filter((r) => em.has(r.studentId));
+    if (!viec.length || viec.length === d.rows.length) return ve(d);
+    const khac = d.rows.filter((r) => !em.has(r.studentId));
+    return (
+      <>
+        {ve({ ...d, rows: viec })}
+        <details className="border-t" style={{ borderColor: 'var(--line)' }}>
+          <summary className="min-h-[44px] cursor-pointer px-4 py-3 text-[13px] text-slate-300 sm:min-h-0 sm:py-2">Cả lớp ({khac.length})</summary>
+          {ve({ ...d, rows: khac })}
+        </details>
+      </>
+    );
+  };
   const ngCanh = (
     <span className="flex flex-wrap items-center gap-x-1.5">
       <Link className="link" to={`/test/diem-lop?lop=${it.classId}&luot=${encodeURIComponent(it.luot!)}`}>
@@ -99,8 +117,8 @@ function PanelNhapDiem({ it, onDong, onDaLam }: { it: WorkItem; onDong: () => vo
           : (
             <div className="-mx-4">
               {data.mode === 'ielts_band' && data.ft
-                ? <MotKyNang mode="ielts_band" data={data.ft} kn={it.kn ?? null} onReload={daLuu} />
-                : data.thuong ? <MotKyNang mode="ratio" data={data.thuong} kn={it.kn ?? null} onReload={daLuu} anNutTao /> : null}
+                ? tach(data.ft, (d) => <MotKyNang mode="ielts_band" data={d} kn={kn} onReload={daLuu} />)
+                : data.thuong ? tach(data.thuong, (d) => <MotKyNang mode="ratio" data={d} kn={kn} onReload={daLuu} anNutTao />) : null}
             </div>
           )}
     </KhungPanel>

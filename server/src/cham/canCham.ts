@@ -112,7 +112,7 @@ const kyNangLabelOf = (mode: CheDo, kyNang: string[], ct: string | null) =>
   (mode === 'ratio' && kyNang.length >= 4 ? `${kyNang.length} môn` : kyNang.map((k) => tenMonNgan(ct, k)).join(', '));
 
 /** Một dòng nhắc "MT lịch sử chưa nhập" của một lớp (K2-32). */
-export type NhacLichSu = { classId: number; classCode: string; soEm: number; href: string };
+export type NhacLichSu = { classId: number; classCode: string; soEm: number; emIds: number[]; href: string };
 
 /**
  * K2-32 — LƯỢT MT LỊCH SỬ CÒN THIẾU ĐIỂM, gom theo lớp: một dòng nhắc MỜ ở Lịch Test và một việc xám ở Việc cần làm (không số đỏ,
@@ -145,7 +145,7 @@ export function mtLichSuChuaNhap(p: Principal, o: { classIds?: number[] | null; 
     theoLop.set(r.class_id, l);
   }
   return [...theoLop].map(([classId, l]) => ({
-    classId, classCode: l.classCode, soEm: l.em.size, href: `/nhap-diem/${classId}${l.periodId ? `?periodId=${l.periodId}` : ''}`,
+    classId, classCode: l.classCode, soEm: l.em.size, emIds: [...l.em], href: `/nhap-diem/${classId}${l.periodId ? `?periodId=${l.periodId}` : ''}`,
   })).sort((a, b) => soSanhLop({ code: a.classCode }, { code: b.classCode }));   // PR-UXF-a U1
 }
 

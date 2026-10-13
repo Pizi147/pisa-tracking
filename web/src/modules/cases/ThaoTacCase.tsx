@@ -74,7 +74,7 @@ export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quay
         needsApproval: deXuat,
         idempotencyKey: khoa.current,
       });
-      invalidate('/cases'); invalidate('/students'); invalidate('/tong-quan');
+      invalidate('/cases'); invalidate('/students'); invalidate('/tong-quan'); invalidate('/my-work');   // OV-11c (CV-2): việc Thêm PA hết ở Công việc
       toast.push('ok', deXuat ? 'Đã gửi Quản lý duyệt' : 'Đã ghi lại');
       onSaved();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }

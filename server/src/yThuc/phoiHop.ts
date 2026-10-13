@@ -347,9 +347,13 @@ export function coordinationOfClass(p: Principal, classId: number, opts: { inclu
  */
 export function myCoordinationLines(p: Principal) {
   const today = demoToday();
-  const classIds = [...new Set(p.assignments
+  return dongPhoiHopLop([...new Set(p.assignments
     .filter((a) => a.isCore && a.effectiveFrom <= today && (!a.effectiveTo || a.effectiveTo >= today))
-    .map((a) => a.classId))];
+    .map((a) => a.classId))]);
+}
+
+/** OV-11c (CV-8): cùng dòng Phối hợp SOS cho một tập lớp bất kỳ — "Của GV" của Quản lý dựng dòng của mọi GVCN trong phạm vi, cùng luật đếm. */
+export function dongPhoiHopLop(classIds: number[]) {
   const lines: Array<{ classId: number; className: string; pendingCount: number; text: string }> = [];
   if (!classIds.length) return lines;
   /* MỘT lượt đọc cho MỌI lớp mình chủ nhiệm (số câu không tăng theo số lớp — PR-LT2a thêm hai lớp demo làm lộ N+1 theo lớp), rồi chia lại theo lớp em đang học.
