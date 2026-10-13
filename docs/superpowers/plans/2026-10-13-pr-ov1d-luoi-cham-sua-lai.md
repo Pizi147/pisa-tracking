@@ -15,6 +15,7 @@ Không mockup mới (ô / hàng theo mẫu sẵn có: nút ô "Vắng → W3 OCT
 1. Ô đã dời vì vắng ở lưới tuần gốc: hiện nút ô **"Vắng → W3 OCT"** (cùng mẫu ô `daChot` ở Điểm theo lớp), bấm mở **hộp nhập điểm** có **Bỏ vắng** / Lưu điểm — đúng
    quyền `duocGoDau` hiện có (GV đúng kỹ năng / GVCN / QL; vắng lần 2 chỉ QL "Khôi phục phần thi"). Người không có quyền: ô chỉ đọc kèm chữ "Đã dời sang W3 OCT".
    Ô dời vì lý do khác (dời tay, đổi lịch) giữ như nay.
+   **KHÔNG thêm nút mới**: dùng lại đúng ô + hộp nhập điểm + nút Bỏ vắng sẵn có (OV-1b / OV-4b) — sửa là để ô ở lưới tuần gốc mở được cái đang có, không làm đường thứ hai.
 2. Em không còn đang học (`HV_DANG_HOC_SQL` — **cùng một điều kiện** với số đếm): hàng **mờ**, ô **chỉ đọc**, cột Kết quả **"Đã kết thúc học"** / **"Lưu trữ"**
    (không "Chờ n kỹ năng", không SOS tạm). Máy chủ chặn ghi điểm cho em này (400 câu rõ: "Em đã kết thúc học — Học lại / Bỏ lưu trữ trước khi nhập điểm").
    Em Học lại / Bỏ lưu trữ → hàng trở lại bình thường. Không huỷ lượt, không xoá điểm cũ.
