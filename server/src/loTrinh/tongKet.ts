@@ -27,7 +27,7 @@ const toneDai = (dai: string | null): Tone => (dai === 'dat' ? 'ok' : dai ? 'soo
 function ketQuaBanChup(b: any): KetQuaGon | null {
   if (b.route) {
     if (b.ly_do === 'chuyen_lop') return null;   // đóng vì chuyển lớp: em không đi thi
-    const k = ketQuaThiThat({ l: b.thi_that_l, r: b.thi_that_r, w: b.thi_that_w, s: b.thi_that_s, khongThi: !!b.thi_that_khong_thi }, b.khong_cam_ket ? null : b.target);
+    const k = ketQuaThiThat({ l: b.thi_that_l, r: b.thi_that_r, w: b.thi_that_w, s: b.thi_that_s, khongThi: !!b.thi_that_khong_thi }, b.target);   // OV-9: KCK giữ Target
     if (b.thi_that_ovr !== null && b.thi_that_ovr !== undefined) {
       const phu = b.ket_luan === 'reached' ? 'Đạt Target' : b.ket_luan === 'not_reached' ? 'Chưa đạt Target' : undefined;
       return { chinh: `Thi thật ${b.thi_that_ovr.toFixed(1)}`, tone: b.ket_luan === 'reached' ? 'ok' : b.ket_luan === 'not_reached' ? 'late' : 'muted', phu };
@@ -43,7 +43,7 @@ function ketQuaBanChup(b: any): KetQuaGon | null {
 function ketQuaSong(c: any, attempts: any[], scores: Map<number, any[]>): KetQuaGon | null {
   const laFt = !!c.route;
   const ct = laFt ? null : programmeByCode(c.programme_code);
-  const nc: NguCanhLuot = { laFt, route: c.route ?? null, mon: laFt ? [...ASSESSED_SKILLS] : [...(ct?.skills ?? [])], maCt: ct?.code ?? c.programme_code ?? null };
+  const nc: NguCanhLuot = { laFt, route: c.route ?? null, mon: laFt ? [...ASSESSED_SKILLS] : [...(ct?.skills ?? [])], maCt: ct?.code ?? c.programme_code ?? null, kck: !!c.khong_cam_ket };
   for (const a of [...attempts].reverse()) {
     const rows = scores.get(a.id) ?? [];
     if (a.status === 'cancelled' || !rows.some((r) => r.band !== null || r.raw_score !== null)) continue;
@@ -146,14 +146,14 @@ export function tongKetLoTrinh(p: Principal, cycleId: number) {
     : b.ky_vong_dat === null || b.ky_vong_dat === undefined ? null : { dat: !!b.ky_vong_dat, nguyenNhan: null, mon: [] as string[] };
   const khongCoThi = laFt && b.ly_do === 'chuyen_lop';
   const daCoKq = laFt && (b.thi_that_ovr !== null || b.ket_luan === 'reached' || b.ket_luan === 'not_reached');
-  const kq = laFt ? ketQuaThiThat({ l: b.thi_that_l, r: b.thi_that_r, w: b.thi_that_w, s: b.thi_that_s, khongThi: !!b.thi_that_khong_thi }, b.khong_cam_ket ? null : b.target) : null;
+  const kq = laFt ? ketQuaThiThat({ l: b.thi_that_l, r: b.thi_that_r, w: b.thi_that_w, s: b.thi_that_s, khongThi: !!b.thi_that_khong_thi }, b.target) : null;
   return {
     hocVien: { id: hv.id as number, ten: hv.full_name as string },
     loTrinhId: cycleId, ten: tenLoTrinh(b), loai: laFt ? 'ft' as const : 'thuong' as const, programmeCode: b.programme_code as string | null,
     lop: b.class_code as string | null, gvcn: b.gvcn_ten as string | null, dauVao: b.dau_vao as number | null,
-    target: b.khong_cam_ket ? null : b.target as number | null, khongCamKet: !!b.khong_cam_ket,
+    target: b.target as number | null, khongCamKet: !!b.khong_cam_ket,
     thoiGian: khoangTuan(b.bat_dau_ngay, b.dong_ngay, homNay), lyDo: b.ly_do as LyDoDong, lyDoNhan: LY_DO_DONG_NHAN[b.ly_do as LyDoDong] ?? null,
-    dich: { target: b.khong_cam_ket ? null : b.target as number | null, thiDuKien: b.thi_du_kien_nhan as string | null },
+    dich: { target: b.target as number | null, thiDuKien: b.thi_du_kien_nhan as string | null },
     ketQua: laFt
       ? { loai: 'ft' as const, ovr: b.thi_that_ovr as number | null, l: b.thi_that_l, r: b.thi_that_r, w: b.thi_that_w, s: b.thi_that_s, ngay: b.thi_that_ngay as string | null,
           khongThi: !!b.thi_that_khong_thi, khongCoThi,
@@ -196,7 +196,7 @@ export function tongKetLop(p: Principal, classId: number) {
     const b = bcCua.get(h.id);
     if (!b) return { studentId: h.id as number, ten: h.ten as string, loTrinhId: null as number | null, roiSom: true, dauVao: null, target: null, soLuot: 0, luotCuoi: null, thiThat: null, ketLuan: null, huongTiep: null, giuaKhoa: null, cuoiKhoa: null };
     const luot = gomLuot(luotCua.get(b.id) ?? [], b.programme_code, !!b.route, homNay);
-    const goc = { studentId: h.id as number, ten: h.ten as string, loTrinhId: b.cycle_id as number | null, roiSom: false, dauVao: b.dau_vao as number | null, target: (b.khong_cam_ket ? null : b.target) as number | null };
+    const goc = { studentId: h.id as number, ten: h.ten as string, loTrinhId: b.cycle_id as number | null, roiSom: false, dauVao: b.dau_vao as number | null, target: b.target as number | null };
     if (b.route) {
       const dd = luotDaiDien(luot.map((x) => ({ ...x, huy: x.trangThai === 'cancelled' })));
       const k = (n: string) => dd?.kyNang.find((x) => x.k === n)?.diem ?? null;

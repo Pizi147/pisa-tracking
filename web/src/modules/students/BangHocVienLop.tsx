@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Empty, ExamPlanText, Level, Skeleton, TargetText } from '../../ui/ui.tsx';
+import { ChipDuoiKck } from '../../ui/KetQuaDot.tsx';
 import { QuaHan } from '../../ui/Nhan.tsx';
 import { DanhSachViecTiep } from '../../ui/ViecTiep.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
@@ -213,8 +214,9 @@ function KetQuaOHocVien({ k, standing, thuong }: { k: ReturnType<typeof ketQuaGa
     <>
       <span className="flex flex-wrap items-center gap-x-1.5">
         <span className="text-sm font-bold tabular-nums text-slate-100">{k.chinh}</span>
-        {k.lech && <span className="text-xs font-semibold tabular-nums text-bad" title={`Dưới kỳ vọng ${k.lech.replace('−', '')}`}>{k.lech}</span>}
+        {k.lech && <span className={`text-xs font-semibold tabular-nums ${k.kckDuoi ? 'text-slate-400' : 'text-bad'}`} title={`Dưới kỳ vọng ${k.lech.replace('−', '')}`}>{k.lech}</span>}
         {k.dat && <span className="text-[11px] text-slate-400" title={thuong ? 'Đạt mọi môn' : 'Đạt kỳ vọng'}>✓</span>}
+        {k.kckDuoi && <ChipDuoiKck />}
         {k.sos && (
           <Level tone={sosTone(standing?.sosLevel ?? null)} dut={k.sosTamThoi}
             title={k.sosTamThoi ? 'Tạm thời: chưa đủ điểm các môn' : undefined}>{k.sos}{k.sosTamThoi ? ' tạm thời' : ''}</Level>

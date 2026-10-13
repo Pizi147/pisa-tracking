@@ -67,7 +67,7 @@ import { boSungYeuCau, chotYeuCau, taoYeuCau, theCuaDoiTuong } from '../duyet/ye
  */
 export function caseTitleOf(c: {
   id: number; category?: string | null; topic?: string | null;
-  origin_kind?: string | null; sos_level?: number | null; title?: string | null;
+  origin_kind?: string | null; sos_level?: number | null; title?: string | null; kck?: number | null;
 }): string {
   /*
    * TÊN NGƯỜI TẠO ĐẶT THẮNG TÊN SUY RA. Case tạo tay có tên riêng vì không có gì để suy;
@@ -91,7 +91,7 @@ export function caseTitleOf(c: {
   /* PR-SOS T21: Case SOS Fast Track = `[MT1] {phần giữa} [SOS 3]`; phần giữa người sửa được (`title`), mặc định `{kỹ năng} không đạt`. */
   if (c.origin_kind === 'mock' && (latest?.kind ?? 'mock') === 'mock') {
     const cat = c.category ?? categoryOf(c.topic);
-    return tenCaseSos({ mt: latest?.attempt_no ?? null, giua: own || `${cat ? tenMon(ctTen, cat) : caseCategoryLabel(cat)} không đạt`, sos: c.sos_level ?? null });
+    return tenCaseSos({ mt: latest?.attempt_no ?? null, giua: own || `${cat ? tenMon(ctTen, cat) : caseCategoryLabel(cat)} không đạt`, sos: c.sos_level ?? null, kck: c.kck });
   }
   /* PR-LT2a T58: Case tự tạo từ Giữa khoá lớp thường = `[Giữa khoá] G+V không đạt` — không MT, không SOS. */
   if (c.origin_kind === 'mock' && (latest?.kind === 'progress' || latest?.kind === 'final')) {
@@ -1860,6 +1860,8 @@ export function caseDetail(p: Principal, caseId: number) {
       .map((k) => ({ code: k, label: tenMon(ctCase, k) })),
     /** Số kỹ năng dưới kỳ vọng của CẢ LƯỢT. NULL với vấn đề giáo viên báo — không phải SOS 0. */
     sosLevel: c.sos_level,
+    /** OV-9: Case nhẹ của em KCK — chip trung tính "Dưới kỳ vọng · KCK", không hạn, không PA quy chế. */
+    kck: !!c.kck,
     /**
      * Mức độ ưu tiên. Vấn đề sinh từ điểm không ghi mức vào database (hai thang cố tình tách nhau);
      * suy từ SOS lúc hiển thị. Từ vòng 5 mức độ ưu tiên KHÔNG còn quyết định hạn — hạn là chu kỳ
@@ -1912,7 +1914,7 @@ export function caseDetail(p: Principal, caseId: number) {
     /** PR-SOS (T21, §7.3, K3-07): tên Case SOS ba phần · MỘT nhãn trạng thái · MỘT việc tiếp — Ngăn Case chọn nút chính theo đây. */
     tenSos: c.origin_kind === 'mock' && (c.attempt_kind ?? 'mock') === 'mock'
       ? { mt: (conn.prepare('SELECT MAX(attempt_no) n FROM case_milestones WHERE case_id = ?').get(caseId) as any)?.n ?? c.attempt_no ?? null,
-          giua: tenGiuaCua(c), sos: c.sos_level ?? null }
+          giua: tenGiuaCua(c), sos: c.sos_level ?? null, kck: !!c.kck }
       : null,
     ...(() => {
       const st = sosSt;
@@ -2014,6 +2016,8 @@ export type MappedCase = {
   homeClassId: number | null; homeBranchId: number | null;
   attemptId: number | null; attemptNo: number | null;
   sosLevel: number | null; urgency: string | null;
+  /** OV-9: Case nhẹ của em KCK — không mức SOS, không hạn, không PA quy chế. */
+  kck: boolean;
   summary: string | null; headline: string;
   /** Tên Case tự sinh theo mốc mới nhất — "MT2 - Listening dưới kỳ vọng". */
   title: string;
@@ -2214,7 +2218,7 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
       /* Lớp thường và lớp FT chấm khác nhau, nên bộ lọc loại lớp là bộ lọc ĐẦU TIÊN. */
       classKind: (r.class_is_ft ? 'ft' : 'normal') as 'ft' | 'normal',
       attemptId: r.attempt_id, attemptNo: r.attempt_no, attemptKind: r.attempt_kind ?? null,
-      sosLevel: r.sos_level, urgency: r.urgency,
+      sosLevel: r.sos_level, kck: !!r.kck, urgency: r.urgency,
       summary: r.summary,
       headline: caseHeadline({
         summary: r.summary, originKind: r.origin_kind, sosLevel: r.sos_level, attemptNo: r.attempt_no,
@@ -2439,7 +2443,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
   const scoreRows = conn
     .prepare(
       `SELECT a.attempt_no, a.id AS attempt_id, a.kind, rp.code AS period_code, a.target_at_attempt, a.class_id,
-              (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route,
+              (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route, (SELECT cy.khong_cam_ket FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS cy_kck,
               sc.skill, sc.band, sc.raw_score, sc.raw_total
          FROM assessment_attempts a
          JOIN assessment_scores sc ON sc.attempt_id = a.id
@@ -2944,7 +2948,7 @@ function caseCardOf(p: Principal, caseId: number, c: any, soBangChung: Map<numbe
     sos,
     /** PR-SOS (T21): tên Case SOS tách ba phần để giao diện vẽ chip `[MT1]` + phần giữa + chip `[SOS 3]` — null với Case tay / lớp thường. */
     tenSos: c.origin_kind === 'mock' && attempts.every((x) => (x.attemptKind ?? 'mock') === 'mock')
-      ? { mt: attempts.length ? Math.max(...attempts.map((x) => x.attemptNo)) : null, giua: tenGiuaCua(c), sos: c.sos_level ?? null } : null,
+      ? { mt: attempts.length ? Math.max(...attempts.map((x) => x.attemptNo)) : null, giua: tenGiuaCua(c), sos: c.sos_level ?? null, kck: !!c.kck } : null,
     /** PR-SOS (§7.3, K3-07): MỘT nhãn trạng thái + MỘT việc tiếp của Case — bảng kỹ năng, Ngăn Case, đầu hồ sơ đọc chung. */
     trangThaiV4: trangThaiCaseV4(v4, today),
     viecTiep,

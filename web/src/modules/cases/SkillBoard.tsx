@@ -14,7 +14,7 @@ import { DongXinYKien, type XinYKien } from './DongXinYKien.tsx';
 import { KhongTheoDoiForm } from '../yThuc/CaseSosControls.tsx';
 import type { BoTro } from './CasePanel.tsx';
 import {
-  ATTEMPT_KIND_SHORT, OUTCOME_MARK, OUTCOME_TONE, chuKetQuaPa, chuTamDung, coNguoiDay, nhanNguoiDay, duongDotTest, chuKhoangPa, dangChay, deadlineView, tienDoCase, tuanLich, viecTiepHang, viecTiepPhuongAn,
+  ATTEMPT_KIND_SHORT, GIAI_THICH_KCK, OUTCOME_MARK, OUTCOME_TONE, chuKetQuaPa, chuTamDung, coNguoiDay, nhanNguoiDay, duongDotTest, chuKhoangPa, dangChay, deadlineView, tienDoCase, tuanLich, viecTiepHang, viecTiepPhuongAn,
   type AttemptKind, type DeadlineKind, type DeadlineView, type TrangThai, type TrangThaiCaseV4,
 } from '@shared/domain/index.ts';
 
@@ -77,7 +77,7 @@ type CaseCard = {
     choDuyetKhongTheoDoi: { hanDuyet: string | null } | null; coPaChoXacNhan: boolean;
   };
   /** PR-SOS (T21): `[MT1]` + phần giữa + `[SOS 3]` — null với Case tay / lớp thường. */
-  tenSos: { mt: number | null; giua: string; sos: number | null } | null;
+  tenSos: { mt: number | null; giua: string; sos: number | null; kck?: boolean } | null;
   /** PR-LT2a: khối PA Bổ trợ Giữa khoá — người xem nộp được kế hoạch không, kế hoạch đang ở đâu. */
   boTro?: BoTro | null;
   /** PR-SOS (§7.3, K3-07): MỘT nhãn trạng thái + MỘT việc tiếp (máy chủ tính bằng `sosV4.ts`). */
@@ -112,7 +112,7 @@ export type Row = {
   /** PR-VAI-b (G5): id lượt của `bandAttemptNo` — liên kết hồ sơ Mock cuộn tới kỹ năng. */
   bandAttemptId?: number | null;
   expectation: number | null; missed: boolean | null;
-  /** PR-S3F #5: lộ trình KCK (không cam kết) — `missed` null vì không có kỳ vọng, KHÔNG phải "đạt". */
+  /** PR-S3F #5 + OV-9: lộ trình có dấu KCK — có Target thì có kỳ vọng (dưới kỳ vọng tô trung tính); chưa có Target thì `missed` null, KHÔNG phải "đạt". */
   kck?: boolean;
   /** Còn thiếu bao nhiêu để đạt kỳ vọng CỦA CHÍNH ĐỢT ĐÓ — đây là dấu ± hiện mặc định. */
   gap: number | null;
@@ -337,12 +337,14 @@ function CotCase({ row }: { row: Row }) {
 const CHIP_SOS: Record<number, string> = { 1: 'bg-sos1-bg text-sos1', 2: 'bg-sos2-bg text-sos2', 3: 'bg-sos3-bg text-sos3' };
 export function TenCase({ c }: { c: Pick<CaseCard, 'title' | 'tenSos'> }) {
   if (!c.tenSos) return <>{c.title}</>;
-  const { mt, giua, sos } = c.tenSos;
+  const { mt, giua, sos, kck } = c.tenSos;
   return (
     <span className="inline-flex min-w-0 max-w-full items-center gap-1.5">
       {mt && <span className="shrink-0 rounded border border-[color:var(--line-strong)] px-1 text-[11px] font-semibold leading-4 text-slate-300 tabular-nums">MT{mt}</span>}
       <span className="min-w-0 truncate max-sm:whitespace-normal max-sm:overflow-visible max-sm:break-words">{giua}</span>
-      {sos ? <span className={`shrink-0 rounded px-1 text-xs font-bold leading-4 tabular-nums ${CHIP_SOS[sos] ?? ''}`}>SOS {sos}</span> : null}
+      {/* OV-9: Case nhẹ của em KCK — chip trung tính, không SOS, không đỏ. */}
+      {kck ? <span className="shrink-0 rounded border border-[color:var(--line-strong)] px-1 text-[11px] font-semibold leading-4 text-slate-300" title={GIAI_THICH_KCK}>KCK</span>
+        : sos ? <span className={`shrink-0 rounded px-1 text-xs font-bold leading-4 tabular-nums ${CHIP_SOS[sos] ?? ''}`}>SOS {sos}</span> : null}
     </span>
   );
 }
@@ -633,7 +635,7 @@ export function DongMt({ row }: { row: Row }) {
         : `MT${row.bandAttemptNo}`) : ''}
       {row.ratio
         ? (row.missed === false ? ' · đạt' : row.missed === true ? ' · chưa đạt' : '')
-        : row.kck ? ' · KCK' : row.expectation !== null ? ` · kỳ vọng ${fmtBand(row.expectation)}` : ''}
+        : `${row.expectation !== null ? ` · kỳ vọng ${fmtBand(row.expectation)}` : ''}${row.kck ? ' · KCK' : ''}`}
     </>
   );
 }
@@ -660,7 +662,7 @@ function scoreToneFamily(row: Row): ScoreTone {
     return row.missed ? 'rose' : 'emerald';
   }
   if (row.expectation === null) return 'slate';
-  if (row.band < row.expectation) return 'rose';
+  if (row.band < row.expectation) return row.kck ? 'slate' : 'rose';   // OV-9: em KCK dưới kỳ vọng — không đỏ
   if (row.band === row.expectation) return 'sky';
   return 'emerald';
 }

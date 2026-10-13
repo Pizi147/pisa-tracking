@@ -21,6 +21,8 @@ import type { WorkItem } from '../worklist/WorkList.tsx';
 type PaNhom = { id: number; kind: string; description: string | null; soBuoi: number | null; performer: string | null; performerUserId: number | null; mocChu: string; ten: string };
 type EmNhom = {
   caseId: number; studentId: number; ten: string; band: number | null; raw: number | null; total: number | null; kyVong: number | null;
+  /** OV-9: Case nhẹ của em KCK — không SOS, không hạn. */
+  kck?: boolean;
   sos: number | null; pa: PaNhom | null; lamRieng: boolean; cho: boolean;
 };
 /** `GET /cases/xac-nhan-nhom?ids=` (`nhomXacNhan`, server/src/cases/xacNhanNhom.ts). */
@@ -194,9 +196,9 @@ export function XacNhanNhomPanel({ it, onDong, onDaLuu, onTiep }: {
                           {knNgan} {diem(e)}{e.kyVong !== null ? ` · kỳ vọng ${fmtBand(e.kyVong)}` : ''}{e.lamRieng ? ' · làm riêng' : ''}
                         </span>
                       </span>
-                      <span className={`hidden text-right tabular-nums sm:block ${e.kyVong !== null && e.band !== null && e.band < e.kyVong - 1 ? 'font-bold text-bad' : ''}`}>{diem(e)}</span>
+                      <span className={`hidden text-right tabular-nums sm:block ${!e.kck && e.kyVong !== null && e.band !== null && e.band < e.kyVong - 1 ? 'font-bold text-bad' : ''}`}>{diem(e)}</span>
                       <span className="hidden text-right tabular-nums sm:block">{e.kyVong !== null ? fmtBand(e.kyVong) : ''}</span>
-                      <span>{e.sos ? <Level tone={toneTheoNhan(`SOS ${e.sos}`, 'info')}>SOS {e.sos}</Level> : null}</span>
+                      <span>{e.kck ? <Level tone="muted">KCK</Level> : e.sos ? <Level tone={toneTheoNhan(`SOS ${e.sos}`, 'info')}>SOS {e.sos}</Level> : null}</span>
                       <span className="hidden text-xs text-slate-400 sm:block">{e.lamRieng ? <span title={e.pa ? `PA theo quy chế: ${e.pa.ten} · ${e.pa.mocChu}` : undefined}>làm riêng</span> : '—'}</span>
                     </li>
                   );

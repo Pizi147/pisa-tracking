@@ -24,7 +24,8 @@ const bangMot = (b: boolean | null | undefined) => (b === null || b === undefine
 
 /** Ngữ cảnh ĐÃ ĐÓNG BĂNG của lộ trình — đủ để tính lại điểm một lượt mà không đọc hồ sơ hiện tại (TK-5). */
 /** `nguong` = ngưỡng đạt của lớp (OV-6b1, `nguongDatLop`); thiếu → 70 %. */
-export type NguCanhLuot = { laFt: boolean; route: string | null; mon: string[]; maCt: string | null; nguong?: number };
+/** `kck` (OV-9): lộ trình có dấu KCK — dưới kỳ vọng không SOS, kết quả "chưa đạt". */
+export type NguCanhLuot = { laFt: boolean; route: string | null; mon: string[]; maCt: string | null; nguong?: number; kck?: boolean };
 
 export type DongLuotTinh = {
   kyNang: string; batBuoc: number | null; boQua: number | null; diem: number | null; diemTho: number | null; diemTong: number | null; dat: number | null;
@@ -54,7 +55,7 @@ export function tinhLuot(
   }
   const entry: Record<string, number | null> = {};
   for (const r of diemRows) entry[r.skill] = r.band ?? null;
-  const res = evaluateAttempt(target, a.attempt_no, entry, skips, nc.route);
+  const res = evaluateAttempt(target, a.attempt_no, entry, skips, nc.route, [], !!nc.kck);
   const dong: DongLuotTinh[] = ASSESSED_SKILLS.map((k: AssessedSkill) => {
     const v = res.verdicts.find((x) => x.skill === k)!;
     const t = k === 'listening' || k === 'reading' ? diemRows.find((r) => r.skill === k) : null;
@@ -64,7 +65,7 @@ export function tinhLuot(
   for (const k of KY_NANG_THO) {
     dong.push({ kyNang: k, batBuoc: bangMot(wReq), boQua: bangMot(!wReq), diem: entry[k] ?? null, diemTho: null, diemTong: null, dat: null });
   }
-  return { kyVong: res.expectation, overall: res.overall, tyLeTong: null, sos: huy ? null : res.sosLevel, ketQua: ketQuaTu(huy, res.sosLevel), dong };
+  return { kyVong: res.expectation, overall: res.overall, tyLeTong: null, sos: huy ? null : res.sosLevel, ketQua: !huy && res.kckDuoi ? 'chua_dat' : ketQuaTu(huy, res.sosLevel), dong };
 }
 
 const cot = (n: number) => Array(n).fill('?').join(',');
@@ -94,7 +95,7 @@ export function thiThatCuaCycle(c: {
 }): { ovr: number | null; ketLuan: 'reached' | 'not_reached' | 'unknown' } {
   if (!c.laFt) return { ovr: null, ketLuan: 'unknown' };
   if (c.khongThi || [c.l, c.r, c.w, c.s].some((x) => x !== null)) {
-    const k = ketQuaThiThat({ l: c.l, r: c.r, w: c.w, s: c.s, khongThi: c.khongThi }, c.khongCamKet ? null : c.target);
+    const k = ketQuaThiThat({ l: c.l, r: c.r, w: c.w, s: c.s, khongThi: c.khongThi }, c.target)   /* OV-9: KCK giữ Target — so như thường */;
     return { ovr: k.ovr, ketLuan: k.ketLuan };
   }
   /* Dữ liệu CŨ (trước PR-TK): chỉ có Overall + kết luận chọn tay — chép nguyên, bốn kỹ năng để trống. */
@@ -179,7 +180,7 @@ function ghiMotLo(conn: any, ids: number[], o: BanChupVao): number[] {
     const maCt = c.programme_code ?? (laFt ? null : luot.map((a) => lopTheoId.get(a.class_id)?.programme_code).find(Boolean) ?? null);
     const ct = ctCua(maCt);
     const mon: string[] = laFt ? [...ASSESSED_SKILLS] : [...(ct?.skills ?? [])];
-    const nc: NguCanhLuot = { laFt, route: c.route ?? null, mon, maCt: ct?.code ?? maCt, nguong: nguongDatLop(lopId, nguongKhac) };
+    const nc: NguCanhLuot = { laFt, route: c.route ?? null, mon, maCt: ct?.code ?? maCt, nguong: nguongDatLop(lopId, nguongKhac), kck: !!c.khong_cam_ket };
     const gvcn = gvcnCua(lopId, o.ngay);
 
     // điểm đầu vào: nhập tay, hoặc bài đánh giá làm căn cứ
@@ -259,7 +260,7 @@ export function lamMoiDiemBanChup(conn: any, attemptIds: number[]): void {
     if (!bc) continue;
     const cu = conn.prepare('SELECT * FROM ban_chup_luot WHERE ban_chup_id = ? AND attempt_id = ?').all(bc.id, a.id) as any[];
     if (!cu.length || cu[0].trang_thai === 'cancelled') continue;   // PR-VN5: lượt vừa huỷ vẫn ghi một lần để bản chụp thành `cancelled`
-    const nc: NguCanhLuot = { laFt: !!bc.route, route: bc.route ?? null, mon: JSON.parse(bc.mon_json ?? '[]'), maCt: bc.programme_code ?? null, nguong: nguongDatLop(bc.class_id) };
+    const nc: NguCanhLuot = { laFt: !!bc.route, route: bc.route ?? null, mon: JSON.parse(bc.mon_json ?? '[]'), maCt: bc.programme_code ?? null, nguong: nguongDatLop(bc.class_id), kck: !!bc.khong_cam_ket };
     const rows = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ?').all(a.id) as any[];
     const boQua = cu.filter((r) => r.bo_qua === 1 && (ASSESSED_SKILLS as readonly string[]).includes(r.ky_nang)).map((r) => r.ky_nang as string);
     const t = tinhLuot(nc, a, cu[0].target_luc_thi ?? null, rows, boQua, false);

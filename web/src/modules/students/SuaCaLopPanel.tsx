@@ -7,7 +7,7 @@ import { ConfirmDialog } from '../../ui/Drawer.tsx';
 import { ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
-import { KCK, LO_LUU_SUA_CA_LOP, chiaLo, laKck, type VanDeNhap } from '@shared/domain/index.ts';
+import { KCK, LO_LUU_SUA_CA_LOP, chiaLo, chuTargetKck, chuanOTarget, tachKck, type VanDeNhap } from '@shared/domain/index.ts';
 import { ChonNguoi, type NguoiTrongDs } from '../../ui/PeoplePicker.tsx';
 
 type Cot = 'fullName' | 'dob' | 'email' | 'consultantUserId' | 'startWeek' | 'examDate' | 'target' | 'baseline';
@@ -32,12 +32,15 @@ const RONG_LUU_Y = 150;
 const O_LO_TRINH = new Set<Cot>(['startWeek', 'examDate', 'target', 'baseline']);
 const moiKhoa = () => `suacalop-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 const chuGoc = (d: DongGoc, k: Cot) => (d[k] === null || d[k] === undefined ? '' : String(d[k]));
-/** Ô số (Target, điểm đầu vào) nhận dấu phẩy; "6,50" = "6.5" (không tính là đã sửa). */
+/** Ô số (Target, điểm đầu vào) nhận dấu phẩy; "6,50" = "6.5" (không tính là đã sửa). OV-9: Target "6,5 kck" = "6.5 KCK". */
 const chuan = (k: Cot, v: string) => {
   const t = v.trim();
   if ((k !== 'target' && k !== 'baseline') || !t) return t;
-  const n = Number(t.replace(',', '.'));
-  return Number.isFinite(n) ? String(n) : t;
+  const { so, kck } = k === 'target' ? tachKck(t) : { so: t, kck: false };
+  const s = String(so ?? '');
+  const n = Number(s.replace(',', '.'));
+  const goc = s && Number.isFinite(n) ? String(n) : s;
+  return kck ? chuTargetKck(goc || null, true) : goc;
 };
 
 /**
@@ -191,7 +194,7 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                     {cot.map((c) => (
                       <Th key={c.key} align={c.so ? 'right' : 'left'}
                         className={c.key === 'fullName' ? 'sticky-col' : ''}
-                        hint={c.key === 'target' && !d.coTheSuaTarget ? 'Chỉ Quản lý đổi Target' : c.key === 'target' ? `Band 0–9, bước 0,5. Gõ ${KCK} nếu em không cam kết đầu ra.` : undefined}>
+                        hint={c.key === 'target' && !d.coTheSuaTarget ? 'Chỉ Quản lý đổi Target' : c.key === 'target' ? `Band 0–9, bước 0,5. Em không cam kết đầu ra: thêm ${KCK} (ví dụ 6.5 ${KCK}).` : undefined}>
                         {c.nhan}
                       </Th>
                     ))}
@@ -237,7 +240,7 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                                       type={c.key === 'email' ? 'email' : 'text'} autoComplete="off"
                                       inputMode={c.key === 'baseline' ? 'decimal' : c.key === 'email' ? 'email' : undefined}
                                       onChange={(e) => datO(r.studentId, c.key, e.target.value)}
-                                      onBlur={c.key === 'target' ? (e) => { if (laKck(e.target.value) && e.target.value !== KCK) datO(r.studentId, 'target', KCK); } : undefined} />
+                                      onBlur={c.key === 'target' ? (e) => { const v = chuanOTarget(e.target.value); if (v !== e.target.value) datO(r.studentId, 'target', v); } : undefined} />
                                   )}
                                 </span>
                                 {daSuaO && (

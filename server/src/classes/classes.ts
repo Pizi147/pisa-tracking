@@ -194,7 +194,7 @@ function listClassSummariesThat(p: Principal, f: { branchId?: number; classId?: 
     .prepare(
       `SELECT a.id, a.class_id, a.status, a.planned_period_id, a.kind,   -- PR-LT3 T18: \`skillCells\` đọc loại lượt (Speaking Mock chấm chéo)
               a.deadline_override, a.target_at_attempt, a.attempt_no, a.lich_su,
-              (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route,
+              (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route, (SELECT cy.khong_cam_ket FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS cy_kck,
               pr.week_start AS period_start, pr.week_end AS period_end
          FROM assessment_attempts a
          JOIN students s ON s.id = a.student_id AND ${HV_DANG_HOC_SQL('s')}   -- PR-S6F-a Q2: badge cùng tập Nợ điểm
@@ -366,7 +366,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
   const ph = sids.map(() => '?').join(',');
   const attempts = conn
     .prepare(
-      `SELECT a.*, cy.seq AS cycle_seq, cy.route, pr.code AS period_code, pr.week_start
+      `SELECT a.*, cy.seq AS cycle_seq, cy.route, cy.khong_cam_ket AS cy_kck, pr.code AS period_code, pr.week_start
          FROM assessment_attempts a
          JOIN learning_cycles cy ON cy.id = a.cycle_id
          LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
@@ -633,6 +633,8 @@ export function classRoster(p: Principal, classId: number, q?: string) {
       standingLine: standing.has(s.id) ? standingLine(standing.get(s.id)!) : null,
       /** Giữ tên cũ cho các màn đang đọc, nhưng nay lấy từ KẾT QUẢ BÀI chứ không từ case. */
       sosLevel: standing.get(s.id)?.sosLevel ?? null,
+      /** OV-9: em KCK dưới kỳ vọng — chip trung tính, không SOS. */
+      kckDuoi: !!standing.get(s.id)?.kckDuoi,
       provisional: !!standing.get(s.id)?.provisional,
       openCases: openCaseCount.get(s.id) ?? 0,
       /** Case còn mở từ lớp/chương trình TRƯỚC — việc phải bàn giao, không phải mức SOS ở đây. */

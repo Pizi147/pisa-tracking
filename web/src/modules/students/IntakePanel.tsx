@@ -7,7 +7,7 @@ import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { Field, Outcome, Th } from '../../ui/ui.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import {
-  KCK, cotLuoiNhap, dsLoi, duongDotTest, laKck, nhanCotNhap, tuanBatDauMacDinh, type CachDoc, type CotNhap, type VanDeNhap,
+  chuanOTarget, cotLuoiNhap, dsLoi, duongDotTest, nhanCotNhap, tuanBatDauMacDinh, type CachDoc, type CotNhap, type VanDeNhap,
 } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
@@ -29,13 +29,13 @@ const dongTrong = (r: Row) => Object.values(r).every((v) => !String(v ?? '').tri
 const RONG: Partial<Record<CotNhap, number>> = {
   /* I3 (PR-SL): "Overall" và chữ mẫu "dd/mm/yyyy" không bị cắt. */
   fullName: 170, dob: 116, email: 190, baselineScore: 72, entryListening: 48, entryReading: 48, entryWriting: 48,
-  entrySpeaking: 48, target: 60, examDate: 104, daThiToiMt: 104, startWeek: 172,
+  entrySpeaking: 48, target: 80, examDate: 104, daThiToiMt: 104, startWeek: 172,   // OV-9: Target 80 cho "6.5 KCK"
 };
 const GOI_Y_COT: Partial<Record<CotNhap, string>> = {
   dob: 'Gõ dd/mm/yyyy.',
   baselineScore: 'Con số trên phiếu điểm chính thức. Nhập độc lập với bốn môn — không phải trung bình cộng.',
   entryWriting: 'Writing TỔNG trên phiếu điểm — không chia W1/W2.',
-  target: `Band 0–9, bước 0,5. Gõ KCK (hoặc -) nếu em không cam kết đầu ra: không kỳ vọng MT, không tính SOS. Bỏ trống = chưa có Target. Lớp thường: chỉ để theo dõi.`,
+  target: `Band 0–9, bước 0,5. Em không cam kết đầu ra: thêm KCK (ví dụ 6.5 KCK; chưa có Target thì gõ KCK) — vẫn có kỳ vọng MT, không tính SOS. Bỏ trống = chưa có Target. Lớp thường: chỉ để theo dõi.`,
   examDate: 'Gõ dd/mm/yyyy nếu đã biết ngày, mm/yyyy nếu mới biết tháng.',
   daThiToiMt: 'Em cũ đã thi tới MT mấy ngoài web — web tạo sẵn các lượt đó là MT cũ để nhập điểm bù. Bỏ trống = em mới.',
   startWeek: 'Theo tuần chọn ở đầu panel; đổi riêng từng dòng được.',
@@ -316,7 +316,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
                                 aria-invalid={loiO || undefined}
                                 aria-label={nhan}
                                 onChange={(e) => setCell(i, c.key, e.target.value)}
-                                onBlur={c.key === 'target' ? (e) => { if (laKck(e.target.value) && e.target.value !== KCK) setCell(i, 'target', KCK); } : undefined}
+                                onBlur={c.key === 'target' ? (e) => { const v = chuanOTarget(e.target.value); if (v !== e.target.value) setCell(i, 'target', v); } : undefined}
                               />
                             )}
                           </td>
@@ -364,7 +364,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
           </button>
           {/* I3: lời nhắc tách hai dòng ngắn. */}
           <div className="text-xs text-slate-400">
-            <p className="m-0">Ô trống hoặc “-” = chưa có, không phải 0. Riêng Target: “-” hoặc KCK = không cam kết.</p>
+            <p className="m-0">Ô trống hoặc “-” = chưa có, không phải 0. Riêng Target: thêm KCK = không cam kết (6.5 KCK), “-” = KCK chưa có Target.</p>
             <p className="m-0">Em đã có hồ sơ thì dùng Chuyển lớp, không tạo mới.</p>
           </div>
         </div>

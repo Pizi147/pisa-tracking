@@ -39,7 +39,7 @@ function TheGon({ row, onMoCase }: { row: SkillBoardRow; onMoCase: (caseId: numb
   const [mo, setMo] = useState(false);
   if (mo) return <TheKyNang row={row} onMoCase={onMoCase} onGap={() => setMo(false)} />;
   const diem = row.band === null ? null : row.ratio && row.total ? `${row.score}/${row.total}` : fmtBand(row.band);
-  const phu = row.band === null ? 'chưa có điểm' : row.ratio ? (row.missed === false ? 'đạt' : '') : row.gap !== null ? gapText(row.gap) : row.kck ? 'KCK' : '';
+  const phu = row.band === null ? 'chưa có điểm' : row.ratio ? (row.missed === false ? 'đạt' : '') : row.gap !== null ? `${gapText(row.gap)}${row.kck ? ' · KCK' : ''}` : row.kck ? 'KCK' : '';
   return (
     <button type="button" aria-expanded={false} onClick={() => setMo(true)}
       className="flex min-h-[44px] w-full items-center gap-2 rounded-[10px] border bg-[color:var(--surface)] px-3 text-left" style={{ borderColor: 'var(--line)' }}>

@@ -20,6 +20,7 @@ import { migratePrHsm } from './migrate/prHsm.ts';
 import { migratePrLt2a } from './migrate/prLt2a.ts';
 import { migratePrOv2 } from './migrate/prOv2.ts';
 import { migratePrOv8b } from './migrate/prOv8b.ts';
+import { migratePrOv9 } from './migrate/prOv9.ts';
 import { migratePrLt2b } from './migrate/prLt2b.ts';
 import { migratePrCt } from './migrate/prCt.ts';
 import { migratePrPb2b } from './migrate/prPb2b.ts';
@@ -249,6 +250,7 @@ function migrateCaseEngine(applied: string[], skipped: string[]) {
     migrateLegacyDisciplineCases(conn, applied);
     /* Sau cùng của các bước cấu trúc: rulebook v3 (PR-T) thêm cột/bảng trên những bảng mà các bước trên đã dựng đủ. */
     migrateSosV3(conn, applied);
+    /* PR-OV9 (ngay sau rulebook v3, TRƯỚC mọi bước dùng `LA_CASE_SOS`): cột sos_cases.kck — Case nhẹ của em KCK (chỉ thêm cột). */ migratePrOv9(conn, applied);
     migrateDeleteInvalidViolations(conn, applied);
     /* PR-S1: hai cột của luật máy chủ (S16/S17, S11). */
     migrateLuatMayChu(conn, applied);

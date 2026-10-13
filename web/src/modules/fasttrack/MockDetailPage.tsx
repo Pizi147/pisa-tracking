@@ -286,7 +286,7 @@ export default function MockDetailPage() {
         {/* Rà #119: `sosLevel` (chặn trần 3) — `failedCount` 4 môn từng ra "SOS 4". */}
         {/* PR-MT0 (planning 07/10): MT0 không có kỳ vọng — đủ điểm thì chỉ `MT0 ✓` / chip SOS, không câu "chưa có kỳ vọng". */}
         {ketQuaMt0 ?? <KetQuaDot coDiem={d.result.scoredRequired} yeuCau={d.result.required.length} dat={passed}
-          sos={d.result.sosLevel ?? null} chot={d.result.chot} />}
+          sos={d.result.sosLevel ?? null} chot={d.result.chot} kckDuoi={d.result.kckDuoi} />}
         {d.mt0 ? (!ketQuaMt0 && d.mt0.sos.map((x) => <Nhan key={x.skill} tone="bad">{chipSosMt0(x)}</Nhan>)) : (
           <span className="text-sm text-slate-400 tabular-nums">
             Kỳ vọng {fmtBand(d.result.expectation)}{laRf && d.result.expectation !== null ? ' = Target' : ''}
@@ -324,7 +324,7 @@ export default function MockDetailPage() {
           </Info>
           <Info label="Dự kiến thi"><ExamPlanText plan={d.cycle.examPlan} /></Info>
           <Info label="Target tại thời điểm đánh giá">
-            <TargetText band={d.targetAtAttempt} kck={d.targetAtAttempt === null && d.cycle.khongCamKet} />
+            <TargetText band={d.targetAtAttempt} kck={d.cycle.khongCamKet} />
           </Info>
           {d.studyWeekHint && (
             <Info label="Mốc gợi ý" title="Tuần học của chương trình và mã tuần lịch là hai khái niệm khác nhau.">

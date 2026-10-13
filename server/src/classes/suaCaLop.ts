@@ -1,6 +1,6 @@
 import { db, theoLo, tx } from '../db.ts';
 import {
-  CO_DIEM_SQL, KCK, PERMISSIONS, TOI_DA_LUU_SUA_CA_LOP, cauMtSeDoi, cotLuoiNhap, type VanDeNhap,
+  CO_DIEM_SQL, chuTargetKck, PERMISSIONS, TOI_DA_LUU_SUA_CA_LOP, cauMtSeDoi, cotLuoiNhap, type VanDeNhap,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { chanGiaoDichNeuSapHetGio } from '../platform/hanGio.ts';
@@ -76,7 +76,7 @@ export function duLieuSuaCaLop(p: Principal, classId: number) {
       coLoTrinh: !!c,
       startWeek: (c?.start_period_id != null ? tuan.get(c.start_period_id) ?? null : null) as string | null,
       examDate: (c ? c.exam_date ?? c.exam_month ?? null : null) as string | null,
-      target: (c ? (c.khong_cam_ket ? KCK : c.target_score ?? null) : null) as number | string | null,
+      target: (c ? (c.khong_cam_ket ? chuTargetKck(c.target_score ?? null, true) : c.target_score ?? null) : null) as number | string | null,   // OV-9: "6.5 KCK"
       baseline: (c?.baseline_score ?? null) as number | null,
     };
   }).sort((a, b) => a.fullName.localeCompare(b.fullName, 'vi'));

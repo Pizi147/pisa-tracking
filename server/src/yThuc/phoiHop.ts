@@ -9,7 +9,7 @@ import { badRequest, isIsoDate, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { countAttachments } from '../platform/attachments.ts';
-import { loadBundle, resultOf, routeCuaLuot } from '../fasttrack/attempts.ts';
+import { kckCuaLuot, loadBundle, resultOf, routeCuaLuot } from '../fasttrack/attempts.ts';
 import { allProgrammes, evaluateRegular, nguongDatKhacMacDinh, nguongDatLop } from '../normal/regular.ts';
 import { branchSql, checkClassInScope, classSql, statScope } from './thongKe.ts';
 import { canManageDiscipline, requireManageDiscipline, requireViewClass, requireViewStudent } from './access.ts';
@@ -100,8 +100,9 @@ export function syncSosCoordination(attempt: { id: number; student_id: number; a
  * `removed · system_sos_changed` (như P03); trượt lại → hồi. Việc đã `done` không bao giờ bị đụng. Chạy lặp không sinh dòng thứ hai.
  * `monTruot`: mã kỹ năng đang trượt của bài (từ `regularResultOf`).
  */
-export function dongBoBaoPh(attempt: { id: number; student_id: number; class_id?: number | null }, monTruot: string[]) {
+export function dongBoBaoPh(attempt: { id: number; student_id: number; class_id?: number | null; cycle_id?: number | null }, monTruot: string[]) {
   const conn = db();
+  if (kckCuaLuot(attempt)) monTruot = [];   // OV-9: em KCK — Case nhẹ, không Báo PH (việc chưa làm tự rút như hết môn trượt)
   const now = nowIso();
   const row = conn.prepare(`SELECT * FROM sos_coordination_actions WHERE attempt_id = ? AND kind = 'bao_ph_tvv'`).get(attempt.id) as any;
   if (!monTruot.length) {
@@ -169,7 +170,7 @@ export const monBaoPh = (attemptId: number, monTruot: string[]): string[] => mon
  */
 export function dongBoBaoPhCuaBai(attemptId: number) {
   const conn = db();
-  const a = conn.prepare(`SELECT id, student_id, class_id, kind FROM assessment_attempts WHERE id = ?`).get(attemptId) as any;
+  const a = conn.prepare(`SELECT id, student_id, class_id, kind, cycle_id FROM assessment_attempts WHERE id = ?`).get(attemptId) as any;
   if (!a || a.kind !== 'progress') return;
   const mon = (conn.prepare(`SELECT DISTINCT skill FROM case_signals WHERE attempt_id = ? AND status != 'withdrawn' AND skill IS NOT NULL ORDER BY id`).all(attemptId) as any[]).map((r) => r.skill as string);
   dongBoBaoPh(a, monBaoPh(attemptId, mon));
@@ -251,7 +252,7 @@ function turnsOf(p: Principal, rows: any[]): CoordinationTurn[] {
   for (let i = 0; i < ids.length; i += 400) {
     const lo = ids.slice(i, i + 400); const q = lo.map(() => '?').join(',');
     for (const a of conn.prepare(`SELECT a.*, s.full_name, s.student_code, c.code AS class_code, c.programme_code,
-        (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route FROM assessment_attempts a
+        (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route, (SELECT cy.khong_cam_ket FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS cy_kck FROM assessment_attempts a
         JOIN students s ON s.id = a.student_id LEFT JOIN classes c ON c.id = a.class_id WHERE a.id IN (${q})`).all(...lo) as any[]) luot.set(a.id, a);
     for (const r of conn.prepare(`SELECT attempt_id, skill FROM case_signals WHERE attempt_id IN (${q}) AND status != 'withdrawn' AND skill IS NOT NULL
         ORDER BY id`).all(...lo) as any[]) {
@@ -570,7 +571,7 @@ export function phoiHopMetric(
   const args = [...b.args, ...cl.args, ...(f.from ? [f.from] : []), ...(f.to ? [f.to] : [])];
   const attempts = db()
     .prepare(
-      `SELECT DISTINCT a.*, (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route FROM assessment_attempts a
+      `SELECT DISTINCT a.*, (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route, (SELECT cy.khong_cam_ket FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS cy_kck FROM assessment_attempts a
          JOIN sos_coordination_actions x ON x.attempt_id = a.id
          LEFT JOIN classes c ON c.id = a.class_id
          LEFT JOIN report_periods rp ON rp.id = a.planned_period_id

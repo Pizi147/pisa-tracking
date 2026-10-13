@@ -5,6 +5,7 @@ import { ViecTiep } from '../../ui/ViecTiep.tsx';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Empty, ExamPlanText, Level, Outcome, Skeleton, TargetText, Th } from '../../ui/ui.tsx';
+import { ChipDuoiKck } from '../../ui/KetQuaDot.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
@@ -52,6 +53,8 @@ type RosterRow = {
   cycle: { id: number; seq: number; route: string | null; target: number | null; khongCamKet?: boolean } | null;
   standingLine: string | null;
   sosLevel: number | null; provisional: boolean;
+  /** OV-9: em KCK dưới kỳ vọng — chip trung tính "Dưới kỳ vọng · KCK". */
+  kckDuoi?: boolean;
   openCases: number; handoverCases: number; examPlan: ExamPlan;
   latest: Timeline | null; next: Timeline | null; timeline: Timeline[];
   history: HistoryRow[];
@@ -310,12 +313,13 @@ export function ClassRoster({ classId, maLop, quyen, onDoi, onAddStudents, chon 
 /**
  * KẾT LUẬN DƯỚI TÊN — dựng từ ba trường có sẵn (sosLevel · provisional · status), không gọi thêm máy chủ:
  *   SOS {n} · tạm thời (vàng) · SOS {n} (vàng) · Đạt kỳ vọng (xám; thêm "· tạm thời" khi mới có một phần điểm)
- *   · Chưa có kết quả (xám) · Không tính SOS (xám, em Target KCK) · Đã kết thúc (xám).
+ *   · Chưa có kết quả (xám) · Dưới kỳ vọng · KCK (trung tính, OV-9) · Không tính SOS (xám, em KCK chưa có Target) · Đã kết thúc (xám).
  */
 function KetLuan({ row }: { row: RosterRow }) {
   const xam = `${CHIP_VUONG} border-muted-line bg-muted-bg text-muted`;
   if (row.status !== 'active') return <span className={xam}>{row.ketThucVi ?? 'Đã kết thúc'}</span>;
-  /* Q29-1: em KCK có điểm vẫn không có kỳ vọng — nói rõ "không tính SOS", không để đọc thành "chưa chấm". */
+  if (row.kckDuoi) return <ChipDuoiKck />;
+  /* Q29-1: em KCK chưa có Target có điểm vẫn không có kỳ vọng — nói rõ "không tính SOS", không để đọc thành "chưa chấm". */
   if (row.sosLevel === null && row.cycle?.khongCamKet) return <span className={xam} title={GIAI_THICH_KCK}>Không tính SOS</span>;
   if (row.sosLevel === null) return <span className={xam}>Chưa có kết quả</span>;
   const tamThoi = row.provisional ? ' · tạm thời' : '';

@@ -20,6 +20,7 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 | `docs/superpowers/plans/2026-10-13-pr-ov10b-tvv-cx-lien-he.md` | PR **OV-10b** Liên hệ (SĐT em, phụ huynh) + Học viên & Lớp, hồ sơ HV / lớp theo vai |
 | `docs/superpowers/plans/2026-10-13-pr-ov10c-tong-quan-theo-vai.md` | PR **OV-10c** Tổng quan theo vai (Admin Mock Test · TVV · CX Số liệu) |
 | `docs/superpowers/plans/2026-10-13-pr-ov1d-luoi-cham-sua-lai.md` | PR **OV-1d** lưới chấm FT: ô dời vì vắng bấm được (Bỏ vắng), em đã kết thúc học không báo chờ |
+| `docs/superpowers/plans/2026-10-13-pr-ov4c-ovr-chi-mt-cu.md` | PR **OV-4c** W / S: Band tự tính, nhập Band thẳng chỉ MT cũ |
 | `docs/superpowers/plans/2026-10-07-pr-en-tieng-anh.md` | PR-EN (sau toàn bộ OV — đếm lại chữ trước khi chạy) |
 | `docs/superpowers/plans/2026-10-07-pr-sotay-so-tay-moi.md` | PR-SOTAY (cuối cùng) |
 
@@ -293,7 +294,8 @@ Xong: [x] kế hoạch, một dòng mục 11, CODE_MAP.md nếu thêm/xoá file.
 | **OV-10c** | `docs/superpowers/plans/2026-10-13-pr-ov10c-tong-quan-theo-vai.md` | Opus 5.5 · High (Sonnet 5.5 · High) | 4270/5443 | sau OV-8b merge |
 | **OV-10b** | `docs/superpowers/plans/2026-10-13-pr-ov10b-tvv-cx-lien-he.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4260/5433 | sau OV-9 + OV-10a merge |
 | **OV-1d** | `docs/superpowers/plans/2026-10-13-pr-ov1d-luoi-cham-sua-lai.md` | Opus 5.5 · High (Sonnet 5.5 · High) | 4280/5453 | khi có máy trống (≤ 3 cùng lúc) |
-- OV-8b rà sâu + `/security-review` (TVV KHÔNG được `cycle.edit`; bước tiếp sau thi vẫn chỉ QL). Sau OV-8b: **OV-9 + OV-10a + OV-10c chạy cùng lúc** (3 máy); OV-10b sau OV-9 + OV-10a (chung ô Sửa thông tin, đầu hồ sơ). Rà sâu: OV-9, OV-10a, OV-10b (+ `/security-review`). Cổng tiếp theo: 4290/5463.
+| **OV-4c** | `docs/superpowers/plans/2026-10-13-pr-ov4c-ovr-chi-mt-cu.md` | Sonnet 5.5 · High (Opus 5.5 · High) | 4290/5463 | sau OV-1d merge |
+- OV-8b rà sâu + `/security-review` (TVV KHÔNG được `cycle.edit`; bước tiếp sau thi vẫn chỉ QL). Sau OV-8b: **OV-9 + OV-10a + OV-10c chạy cùng lúc** (3 máy); OV-10b sau OV-9 + OV-10a (chung ô Sửa thông tin, đầu hồ sơ). Rà sâu: OV-9, OV-10a, OV-10b (+ `/security-review`). Cổng tiếp theo: 4300/5473.
 
 ## 10. Mẫu giao việc cho agent (session planning dùng)
 
@@ -339,6 +341,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 |---|---|---|
 | 13/10/2026 | OV-1d (Opus 5.5) · `claude/pr-ov1d-luoi-cham-joijqa` | Lưới chấm FT: ô đã dời vì vắng ở lưới tuần gốc là nút "Vắng → W3 OCT" mở hộp Bỏ vắng (không quyền: "Đã dời sang …"); em đã Kết thúc học / Lưu trữ hàng mờ, ô chỉ đọc, Kết quả "Đã kết thúc học" / "Lưu trữ", `saveScore` chặn 400 (em Tạm dừng vẫn nhập, chủ SP 13/10) (`prOv1d.tests`) |
 | 13/10/2026 | OV-10a (Sonnet 5.5) · `claude/stoic-cori-kmj3bl` | Nút / link đúng quyền TVV · CX · Admin: ẩn "+ Case cho {kỹ năng}", Nhập điểm lượt MT, Chọn nhiều HV, Huỷ kỹ năng / Đưa lại / Dời hạn chấm, ô tích kỹ năng, link Test / Công việc, góc Ý thức, "Đề xuất sửa" khi không có quyền; tên GV là link cho Admin; tab Admin "Chấm điểm"; không nới quyền máy chủ (`prOv10a.tests`) |
+| 13/10/2026 | OV-9 (Opus 5.5) · `claude/gallant-mayer-dkd8it` | KCK nhẹ: KCK là dấu riêng, Target giữ (ô tích KCK; lưới / dán Excel "6.5 KCK"); em KCK có kỳ vọng, dưới kỳ vọng → chip "Dưới kỳ vọng · KCK" + Case nhẹ `sos_cases.kck` (không PA quy chế / Bổ trợ, không hạn, không Phối hợp / Báo PH / chuông; Overall đạt tự đóng; bỏ KCK → lượt sau SOS thường); lệnh chuyển / LTT / bản chụp mang Target + KCK; migrate `prOv9` (chỉ thêm cột) |
 | 13/10/2026 | OV-8b (Opus 5.5) · `claude/happy-fermat-7tqtgh` | Quyền TVV / CX: quyền hẹp `student.edit_more` (migrate `prOv8b`, một lần) — Target sửa thẳng có lý do, Ghi chú, Tạm dừng / Quay lại / Thôi học + Hoàn tác, kết quả thi thật; ô TVV chỉ cùng chi nhánh (máy chủ 400); học thuật gọi thẳng → 403 (`prOv8b.tests`) |
 | 13/10/2026 | OV-8a (Opus 5.5) · `claude/pr-ov8a-buoc-tiep-sau-thi-rdlok4` | Bước tiếp sau thi: có kết quả thi thật không tự Lưu trữ nữa → việc QL "Chọn bước tiếp sau thi" (+7 ngày); mục Bước tiếp ở ngăn Tổng kết: Kết thúc (Lưu trữ) · Học tiếp lộ trình mới · Học lại (panel Học lại), gợi ý theo Target, đổi = hoàn tác cái cũ, mốc Hành trình; migrate `prOv8a` |
 | 13/10/2026 | OV-7b (Opus 5.5) · `claude/affectionate-edison-avs75c` | Sửa sau khi lưu 2/2: sửa lần ghi Kết quả PA gần nhất (người ghi + QL; giữ lựa chọn = sửa chữ, đổi = đảo hệ quả cũ + ghi lại, một giao dịch; nhóm bổ trợ, Mini Test, PA thay, thẻ Xin hỗ trợ); Sửa Xem lại tại chỗ; GV đã hoàn thành Case Mở lại được; "Sửa xác nhận" |

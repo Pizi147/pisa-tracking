@@ -76,13 +76,15 @@ export async function runPrKckTests(t: YThucTestKit) {
     assert(cy(trong.sid).khong_cam_ket === 0, 'ô trống không phải KCK');
   });
 
-  check('KCK (4) · không việc "Điền target", không "Thiếu thông tin" target; ô trống vẫn có việc', () => {
+  /* OV-9 (chủ SP 13/10): KCK là DẤU RIÊNG, Target giữ — em KCK chưa có Target cũng thiếu Target như em thường (đổi ý phép kiểm cũ "không việc Điền target"). */
+  check('KCK (4) → OV-9 · em KCK chưa có Target vẫn có việc "Điền target" + "Thiếu thông tin" target (như ô trống); có Target thì không', () => {
     const keys = new Set((myWork(P.coreTeacher, { nguoi: 'toi' }).items ?? []).map((i: any) => i.key));
-    assert(!keys.has(`target:${han.sid}`) && !keys.has(`target:${duc.sid}`), 'em KCK còn việc Điền target');
+    assert(keys.has(`target:${han.sid}`) && keys.has(`target:${duc.sid}`), 'em KCK chưa có Target mất việc Điền target');
     assert(keys.has(`target:${trong.sid}`), 'em trống target mất việc Điền target');
     const thieu = (c: any) => missingForStudent({ cycle: { start_period_id: 1, exam_month: '2027-01', baseline: true, ...c },
       student: null, isFastTrack: true }).map((m: any) => m.key);
-    assert(!thieu({ target_score: null, khong_cam_ket: 1 }).includes('target'), 'KCK bị tính thiếu target');
+    assert(thieu({ target_score: null, khong_cam_ket: 1 }).includes('target'), 'KCK chưa có Target không báo thiếu');
+    assert(!thieu({ target_score: 6.5, khong_cam_ket: 1 }).includes('target'), 'KCK có Target bị tính thiếu');
     assert(thieu({ target_score: null, khong_cam_ket: 0 }).includes('target'), 'trống mà không báo thiếu');
   });
 

@@ -3,7 +3,7 @@ import multer from 'multer';
 import { db, isInitialised } from '../db.ts';
 import { laBanChinh } from '../moiTruong.ts';
 import {
-  ENTRY_SKILLS, THEO_DONG, tenMonNgan, canNamGan, docBoLocXuatMt, kiemGhiRoKhac, laKhac, soSanhLop, transferReasonText,
+  ENTRY_SKILLS, THEO_DONG, ghepMucTieu, tenMonNgan, canNamGan, docBoLocXuatMt, kiemGhiRoKhac, laKhac, soSanhLop, transferReasonText,
   PERMISSIONS, ROLE_LABEL, coTheDoiGocNhin, tenMon, WORK_SCOPES, chuongTrinhTuThamSo, ctTuyChon, khoangTuThamSo, thamSoNguoi, tuDauKhoang,
   type Role, type TheoDong, type WorkScope,
 } from '../../../shared/domain/index.ts';
@@ -2065,7 +2065,7 @@ api.post('/students/:id/transfer', requireAuth, wrap((req) => {
     /* R-C3 (M3: Target / KCK chỉ khi lệnh cũ và hướng mới đều Lên FT): sửa lệnh `cho` mà không gửi Target / Dự kiến thi → giữ giá trị của lệnh (không ghi đè lặng lẽ bằng Target khoá / trống). */
     const cu = db().prepare(`SELECT huong, muc_tieu, khong_cam_ket, ngay_thi FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho'`).get(sid) as any;
     const vang = (v: unknown) => v === undefined || v === null || v === '';
-    const mucTieuGui = vang(mucTieu) && cu?.huong === 'fast_track' && huong === 'fast_track' ? (cu.khong_cam_ket ? 'KCK' : cu.muc_tieu ?? undefined) : mucTieu;
+    const mucTieuGui = vang(mucTieu) && cu?.huong === 'fast_track' && huong === 'fast_track' ? (ghepMucTieu(cu.muc_tieu, cu.khong_cam_ket) ?? undefined) : mucTieu;
     const ngayThiGui = vang(req.body?.ngayThi ?? thangThi) && cu ? cu.ngay_thi ?? undefined : req.body?.ngayThi ?? thangThi;
     const r = lenhSvc.raLenh(principalOf(req), {
       lopNguonId: enr.class_id, boiCanh, tuanChung: req.body?.tuan ?? effectiveDate ?? null,

@@ -211,6 +211,18 @@ export function routeCuaLuot(attempt: any): string | null {
     (db().prepare('SELECT route FROM learning_cycles WHERE id = ?').get(attempt.cycle_id) as any)?.route ?? null);
 }
 
+/**
+ * OV-9: dấu KCK của lượt = `learning_cycles.khong_cam_ket` HIỆN TẠI của lộ trình lượt (như số liệu PR-KCK: bỏ KCK thì lượt lại tính SOS). Hàng đã JOIN
+ * `cy.khong_cam_ket` (`khong_cam_ket` / `cy_kck`) thì dùng luôn; không thì một câu, nhớ theo `cycle_id` trong request (mẫu `routeCuaLuot`).
+ */
+export function kckCuaLuot(attempt: any): boolean {
+  if ('cy_kck' in attempt) return !!attempt.cy_kck;
+  if ('khong_cam_ket' in attempt) return !!attempt.khong_cam_ket;
+  if (!attempt.cycle_id) return false;
+  return nho(`kck:${attempt.cycle_id}`, () =>
+    !!(db().prepare('SELECT khong_cam_ket k FROM learning_cycles WHERE id = ?').get(attempt.cycle_id) as any)?.k);
+}
+
 /** `skillRows` bỏ trống → `loadSkillRows` (nhớ trong request GET; danh sách đã nạp ở `loadBundle` không hỏi lại). */
 export function resultOf(attempt: any, rows?: ScoreRow[], skips?: AssessedSkill[], skillRows?: SkillRow[]): AttemptResult {
   const scores = rows ?? scoresOf(attempt.id);
@@ -221,6 +233,7 @@ export function resultOf(attempt: any, rows?: ScoreRow[], skips?: AssessedSkill[
     skips ?? skipsOf(attempt.id),
     routeCuaLuot(attempt),
     kyNangXongThieu(skillRows ?? loadSkillRows([attempt.id]).get(attempt.id) ?? [], scores),
+    kckCuaLuot(attempt),
   );
 }
 

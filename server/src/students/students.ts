@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import {
-  ENTRY_SKILLS, JOURNEY_GROUP, NO_HANDOVER_NOTE, PERMISSIONS, STUDENT_STATUSES, luatDoiLop, NGAY_SINH_TOI_THIEU, docEmail, docNgayNhap,
+  ENTRY_SKILLS, JOURNEY_GROUP, chuTargetKck, NO_HANDOVER_NOTE, PERMISSIONS, STUDENT_STATUSES, luatDoiLop, NGAY_SINH_TOI_THIEU, docEmail, docNgayNhap,
   type LoaiLop, type ProgrammeCode,
   CHI_SUA_THONG_TIN,
 } from '../../../shared/domain/index.ts';
@@ -111,7 +111,7 @@ export function listStudents(p: Principal, f: { q?: string; branchId?: number; c
 export function latestResult(studentId: number) {
   const attempts = db()
     .prepare(
-      `SELECT a.*, cy.seq AS cycle_seq, cy.route, pr.week_end AS period_end FROM assessment_attempts a
+      `SELECT a.*, cy.seq AS cycle_seq, cy.route, cy.khong_cam_ket, pr.week_end AS period_end FROM assessment_attempts a
          JOIN learning_cycles cy ON cy.id = a.cycle_id LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
         WHERE a.student_id = ? AND a.status != 'cancelled' AND a.kind != 'mt0'   /* PR-MT0: MT0 không là "kết quả gần nhất" */
         ORDER BY cy.seq DESC, a.attempt_no DESC`,
@@ -120,11 +120,11 @@ export function latestResult(studentId: number) {
   const homNay = demoToday();
   for (const a of attempts) {
     if (!luotSinhViecRow(a, homNay)) continue;   // M-14: MT lịch sử ngoài 4 tuần không phải "kết quả gần nhất"
-    const r = evaluateAttempt(a.target_at_attempt, a.attempt_no, entryBandsOf(scoresOf(a.id)), skipsOf(a.id), a.route);
+    const r = evaluateAttempt(a.target_at_attempt, a.attempt_no, entryBandsOf(scoresOf(a.id)), skipsOf(a.id), a.route, [], !!a.khong_cam_ket);
     if (r.evaluable) {
       return {
         attemptId: a.id, attemptNo: a.attempt_no, route: a.route, cycleSeq: a.cycle_seq,
-        overall: r.overall, sosLevel: r.sosLevel, expectation: r.expectation, scopeNote: r.scopeNote,
+        overall: r.overall, sosLevel: r.sosLevel, kckDuoi: r.kckDuoi, expectation: r.expectation, scopeNote: r.scopeNote,
       };
     }
   }
@@ -356,7 +356,7 @@ function viecTrangThaiCuoi(studentId: number): { action: string; before: any; af
 }
 function targetCu(studentId: number, c?: any): string {
   const cy = c ?? db().prepare('SELECT * FROM learning_cycles WHERE student_id = ? ORDER BY seq DESC LIMIT 1').get(studentId) as any;
-  return cy?.khong_cam_ket ? 'KCK' : cy?.target_score != null ? String(cy.target_score) : '';
+  return chuTargetKck(cy?.target_score ?? null, !!cy?.khong_cam_ket);   // OV-9: "6.5 KCK" · "KCK" · "6.5" · ""
 }
 const tenLoTrinh = (c: { route?: string | null; programme_code?: string | null } | null | undefined): string | null => (c ? c.route ?? c.programme_code ?? null : null);
 
@@ -584,7 +584,7 @@ export function lopChoHocLai(p: Principal, studentId: number) {
   return {
     lopCu: enr ? { id: enr.class_id as number, code: enr.code as string, daKetThuc: enr.class_status === 'finished', ft: !!enr.is_fast_track } : null,
     /** `chayTiep`: lộ trình bị Kết thúc học đóng chạy tiếp; không có (đã đóng bằng Kết luận) thì Học lại về lớp cũ mở lộ trình MỚI — tên là của lộ trình đó. */
-    /* `target`: Target của lộ trình gần nhất ('KCK' = không cam kết, '' = chưa có) — Học lại FT → FT máy chủ GIỮ Target này, web điền sẵn chứ không bắt nhập lại. */
+    /* `target`: Target của lộ trình gần nhất ("6.5 KCK" / 'KCK' = có dấu KCK, '' = chưa có) — Học lại FT → FT máy chủ GIỮ Target này, web điền sẵn chứ không bắt nhập lại. */
     loTrinh: { chayTiep: dongBoi.length > 0, ten: tenLoTrinh(dongBoi[0]) ?? tenLoTrinh(enr), target: targetCu(studentId, dongBoi[0]) },
     ...danhSachLopDich(enr?.class_id ?? -1, true),
   };

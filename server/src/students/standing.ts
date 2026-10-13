@@ -1,7 +1,7 @@
 import { db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import {
-  ASSESSED_SKILLS, CHUONG_TRINH_KHONG_CHIA_MON, PROGRAMME_TEMPLATES, REGULAR_SKILLS, SOS_LABEL, boMonLich, mocKeTiep, LUOT_HUY_HET_SQL, kyNangXongThieu, moiNhatTruoc, nhanBaiThuong } from '../../../shared/domain/index.ts';
+  ASSESSED_SKILLS, CHUONG_TRINH_KHONG_CHIA_MON, PROGRAMME_TEMPLATES, REGULAR_SKILLS, SOS_LABEL, DUOI_KY_VONG_KCK, boMonLich, mocKeTiep, LUOT_HUY_HET_SQL, kyNangXongThieu, moiNhatTruoc, nhanBaiThuong } from '../../../shared/domain/index.ts';
 import { entryBandsOf, loadBundle } from '../fasttrack/attempts.ts';
 import { evaluateAttempt, expectationFor } from '../fasttrack/scoring.ts';
 import { allProgrammes, evaluateRegular, nguongDatLop } from '../normal/regular.ts';
@@ -54,6 +54,8 @@ export type Standing = {
    * đạt kỳ vọng ở mọi kỹ năng.
    */
   sosLevel: number | null;
+  /** OV-9: em KCK dưới kỳ vọng — `sosLevel` null (không SOS), chip trung tính "Dưới kỳ vọng · KCK". */
+  kckDuoi: boolean;
   /** Mới có một phần điểm: kết luận ở trên còn đổi được khi các kỹ năng còn lại vào điểm. */
   provisional: boolean;
   scored: number;
@@ -98,7 +100,9 @@ export function standingLine(s: Standing): string {
   const ratio = s.mode === 'ratio';
   const unit = ratio ? 'môn' : 'kỹ năng';
   let head: string;
-  if (s.sosLevel === null) {
+  if (s.kckDuoi) {
+    head = `${s.attemptLabel}: ${DUOI_KY_VONG_KCK}`;   // OV-9: không SOS
+  } else if (s.sosLevel === null) {
     head = s.attemptId === null
       ? (ratio ? 'Chưa có kết quả trong khoá này' : 'Chưa có kết quả trong lộ trình này')
       : `${s.attemptLabel}: chưa đủ điểm để kết luận`;
@@ -126,7 +130,7 @@ export function standingLine(s: Standing): string {
 const EMPTY = (studentId: number, cycleId: number | null): Standing => ({
   studentId, cycleId, mode: null,
   attemptId: null, attemptNo: null, attemptKind: null, attemptClassId: null, attemptLabel: null, periodCode: null,
-  sosLevel: null, provisional: false, scored: 0, required: 0, failed: null,
+  sosLevel: null, kckDuoi: false, provisional: false, scored: 0, required: 0, failed: null,
   overall: null, expectation: null, belowSkills: [], failedSkills: [], chuongTrinh: null, khongChiaMon: false, tyLeTong: null,
   nextAttemptNo: null, nextAttemptLabel: null, nextPeriodCode: null, nextWeekStart: null, nextKyVong: null, nhanLuotChuaXep: null,
   openCases: 0, handoverCases: 0,
@@ -260,7 +264,7 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
          * Target sau này. */
         a.target_at_attempt ?? cycle.target_score ?? null, a.attempt_no,
         entryBandsOf(scores as any), skips.map((x: any) => x.skill ?? x), a.route ?? cycle.route,
-        kyNangXongThieu(bundle.skillRows.get(a.id) ?? [], scores as any),
+        kyNangXongThieu(bundle.skillRows.get(a.id) ?? [], scores as any), !!cycle.khong_cam_ket,
       );
       /* PR-S4F #11: lượt chưa có kỹ năng nào ĐỦ điểm (chỉ W1 lẻ, chỉ dòng nhận xét) không nói được gì — xuống lượt cũ hơn. */
       if ((rr ? rr.scored : ri!.scoredRequired) === 0) continue;
@@ -287,6 +291,7 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
       } else {
         const r = ri!;
         s.sosLevel = r.sosLevel;
+        s.kckDuoi = r.kckDuoi;
         s.provisional = r.provisional;
         s.scored = r.scoredRequired;
         s.required = r.required.length;

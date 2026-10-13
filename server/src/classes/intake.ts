@@ -2,7 +2,7 @@ import { chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
   CHO_TAO_PRE_FOU, ENTRY_SKILLS, PERMISSIONS, PROGRAMME_TEMPLATES, chuanHoaMaLop, ghepMaLop, khoaMaLopSql, kiemSoLop,
   moRongPhanCong, programmeOf, laLienTuc, type ProgrammeCode, TOI_DA_DONG_TAO_LOP, type LoiDong, type Route, type SlotPhanCong,
-  KCK, NGAY_SINH_TOI_THIEU, canNamGan, laKck, docDongDan, docEmail, docNgayNhap, laDongTieuDe, laMtCu, nhanCotNhap, mtDaThiChuaQua, tuanBatDauMacDinh, tuanHocCuaMt, tuanLich, type CachDoc, type VanDeNhap,
+  NGAY_SINH_TOI_THIEU, canNamGan, chuTargetKck, chuanOTarget, hienTargetKck, tachKck, docDongDan, docEmail, docNgayNhap, laDongTieuDe, laMtCu, nhanCotNhap, mtDaThiChuaQua, tuanBatDauMacDinh, tuanHocCuaMt, tuanLich, type CachDoc, type VanDeNhap,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { docSlots, ghiPhanCong, kiemTruocPhanCong } from './classes.ts';
@@ -75,6 +75,9 @@ export type RowIssue = VanDeNhap;
 
 /** Ô chữ / ô số (nhận cả số từ lưới) của một dòng nhập — cho `kiemKieuO` (PR-TOC). */
 const COT_CHU = ['fullName', 'classCode', 'dob', 'email', 'examDate', 'startWeek', 'route', 'consultant'] as const;
+/** OV-9: ô Target đã qua xem trước ("6.5 KCK" / "KCK" / số) → Target + dấu KCK để ghi lộ trình. */
+const targetCua = (v: unknown) => { const t = tachKck(v); return { so: t.so === '' || t.so == null ? null : Number(t.so), kck: t.kck }; };
+
 const COT_SO = ['baselineScore', 'entryListening', 'entryReading', 'entryWriting', 'entrySpeaking', 'target', 'daThiToiMt'] as const;
 
 export type IntakePreview = {
@@ -159,7 +162,8 @@ export function parsePaste(text: string, o: { classId?: number | null; coTieuDe?
     cot.forEach((k, i) => { const v = cells[i]; if (k && v !== undefined && v !== '') (row as any)[k] = v; });
     /* Ô tuần của lưới là ô ngày thống nhất (giá trị ISO) — đổi sẵn chữ dán đọc được; đọc không được thì giữ chữ để xem trước báo lỗi. */
     if (row.startWeek) { const w = docNgayNhap(row.startWeek, homNay); if (w.iso) row.startWeek = mondayOf(w.iso); }
-    if (laKck(row.target)) row.target = KCK;    // Q29-1: '-' / "không cam kết" hiện thống nhất là KCK trên lưới
+    /* Q29-1 + OV-9: '-' / "không cam kết" hiện thống nhất là KCK trên lưới; "6.5 kck" → "6.5 KCK" (Target + dấu KCK). */
+    if (typeof row.target === 'string') row.target = chuanOTarget(row.target);
     if (Object.keys(row).length) rows.push(row);
   }
   return { rows, cotBoQua: cach.boQua, cach };
@@ -273,14 +277,17 @@ export function previewIntake(
       else band[key] = v;
     }
 
-    let target: number | typeof KCK | null = null;
-    if (laKck(r.target)) target = KCK;          // Q29-1: KCK / '-' = không cam kết (khác ô trống = chưa có)
-    else {
-      const t = bandOf(r.target);
-      if (t === 'invalid') loi('target', 'Gõ band 0–9, bước 0,5 (ví dụ 6.5), hoặc KCK nếu em không cam kết');
+    /* Q29-1 + OV-9: KCK là dấu riêng, Target giữ — "6.5 KCK" / "KCK" (/ '-') / "6.5"; trống = chưa có. Lưới giữ chữ "6.5 KCK". */
+    let target: number | string | null = null;
+    {
+      const tk = tachKck(r.target);
+      const t = bandOf(tk.so as any);
+      if (t === 'invalid') loi('target', 'Gõ band 0–9, bước 0,5 (ví dụ 6.5), thêm KCK nếu em không cam kết (ví dụ 6.5 KCK)');
       /* Lớp thường không có kỳ vọng MT → trống Target không cần nhắc. */
-      else if (t === null) { if (!ratio) luuY('target', 'Chưa có — vẫn thêm được, bổ sung sau để tính kỳ vọng. Em không cam kết đầu ra thì gõ KCK'); }
-      else target = t;
+      else {
+        if (t === null && !ratio && !tk.kck) luuY('target', 'Chưa có — vẫn thêm được, bổ sung sau để tính kỳ vọng. Em không cam kết đầu ra thì thêm KCK');
+        target = tk.kck ? chuTargetKck(t, true) : t;
+      }
     }
 
     let examDate: string | undefined;
@@ -496,8 +503,8 @@ export function commitIntake(
           const examDate = examDateOf(r);
           /* TUẦN BẮT ĐẦU HỌC lấy từ ô của dòng, hoặc mặc định của cả lô (mục 12.1). */
           /* OV-6b2: lớp liên tục không có Target (cột Target của file bỏ qua). */
-          const tg = laLienTuc(cls) ? null : r.target;
-          return [sids[i], 1, route, cls.programme_code ?? null, tg === KCK ? null : tg ?? null, tg === KCK ? 1 : 0,
+          const tg = laLienTuc(cls) ? null : targetCua(r.target);
+          return [sids[i], 1, route, cls.programme_code ?? null, tg?.so ?? null, tg?.kck ? 1 : 0,
             thi ? thi.slice(0, 7) : null,
             examDate, examDate ? tuan.get(mondayOf(examDate))!.id : null,
             ovr, hasEntry ? 'entrance' : null, ...bands,
@@ -513,7 +520,7 @@ export function commitIntake(
       chenNhieuDong(
         'INSERT INTO journey_events (student_id, event_type, event_date, title, detail, ref_table, ref_id, created_by, created_at)',
         ok.map((r, i) => [sids[i], 'cycle_start', startWeek(r), route ? `Bắt đầu lộ trình ${route}` : 'Bắt đầu khoá học',
-          laLienTuc(cls) ? null : r.target ? `Target ${r.target}` : 'Chưa có Target', 'learning_cycles', cycOf.get(sids[i]), p.userId, now]));
+          laLienTuc(cls) ? null : r.target ? `Target ${hienTargetKck(targetCua(r.target).so, targetCua(r.target).kck)}` : 'Chưa có Target', 'learning_cycles', cycOf.get(sids[i]), p.userId, now]));
 
       /* M1: lịch MT mặc định tạo ngay, MT đã qua là MT lịch sử (T33, T34). Tuần do hệ thống tính, không lấy từ file dán. */
       if (cls.is_fast_track && route) {

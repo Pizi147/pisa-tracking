@@ -278,8 +278,10 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     chet: {
       sql: `EXISTS (SELECT 1 FROM students s WHERE s.id = y.hoc_vien_id AND (s.status != 'active' OR s.archived_at IS NOT NULL))
          OR (y.doi_tuong_loai = 'student:target' AND EXISTS (SELECT 1 FROM learning_cycles lc WHERE lc.student_id = y.hoc_vien_id
-               AND lc.status = 'active' AND (json_extract(y.du_lieu, '$.moi') = 'KCK' AND lc.khong_cam_ket = 1
-                 OR json_extract(y.du_lieu, '$.moi') != 'KCK' AND lc.target_score = CAST(json_extract(y.du_lieu, '$.moi') AS REAL))))
+               AND lc.status = 'active' AND (CASE WHEN json_extract(y.du_lieu, '$.moi') LIKE '%KCK'   /* OV-9: "6.5 KCK" / "KCK" = Target + dấu */
+                 THEN lc.khong_cam_ket = 1 AND COALESCE(lc.target_score, -1)
+                   = COALESCE(CAST(NULLIF(TRIM(REPLACE(json_extract(y.du_lieu, '$.moi'), 'KCK', '')), '') AS REAL), -1)
+                 ELSE lc.khong_cam_ket = 0 AND lc.target_score = CAST(json_extract(y.du_lieu, '$.moi') AS REAL) END)))
          OR (y.doi_tuong_loai = 'student:lo-trinh' AND EXISTS (SELECT 1 FROM learning_cycles lc WHERE lc.student_id = y.hoc_vien_id
                AND lc.status = 'active' AND lc.route = json_extract(y.du_lieu, '$.moi')))`,
       lyDo: 'Học viên không còn học hoặc thông tin đã được sửa',
