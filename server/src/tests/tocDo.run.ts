@@ -190,6 +190,8 @@ const USER: Record<Vai, number> = {
 const QL_CP = userByRole('manager', 'CP');
 
 const server = createApp().listen(0);
+/* Giữa hai lượt gọi có đoạn đo đồng bộ dài (nhân dữ liệu, vòng mọi vai) > 5 s mặc định: máy chủ đóng kết nối giữ sống, fetch kế tiếp dùng lại → ECONNRESET. */
+server.keepAliveTimeout = 120_000;
 const port = (server.address() as any).port as number;
 
 function urlFor(mau: string): string {
