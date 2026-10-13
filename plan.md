@@ -1,6 +1,6 @@
 # PISA Progress — Kế hoạch duy nhất
 
-Cập nhật: **12/10/2026** (session planning: sau #326, viết kế hoạch OV-1c, OV-4, OV-3c, OV-6b; việc chính = Overhaul OV, đặc tả `docs/superpowers/specs/2026-10-11-overhaul-ux-workflow-design.md`).
+Cập nhật: **14/10/2026** (session planning: rà soát cuối toàn web → đặc tả `docs/superpowers/specs/2026-10-14-ra-soat-cuoi-truoc-en-design.md` + 9 kế hoạch **OV-11a…i**; OV-1e #366 rà sâu đạt).
 File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, `PROMPT_BAN_GIAO_PLANNING.md`,
 `docs/superpowers/plans/2026-10-03-lo-trinh-tong-hop-viec-chua-lam.md`. Bản cũ còn trong git: `git show 575e898d:plan.md`.
 
@@ -12,6 +12,9 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 
 | File chi tiết | Dùng cho |
 |---|---|
+| `docs/superpowers/specs/2026-10-14-ra-soat-cuoi-truoc-en-design.md` | **Rà soát cuối trước PR-EN (OV-11)** 14/10 — lỗi chặn, quyết định planning Q1–Q15, phát hiện → PR; phụ lục báo cáo từng khu `2026-10-14-ra-soat/` (bước tái hiện) |
+| `docs/superpowers/plans/2026-10-14-pr-ov11{a…i}-*.md` | 9 kế hoạch **OV-11a…i** (đợt 1: a, b, c · đợt 2: d, e, f · đợt 3: g, h, i) — prompt cuối mỗi file |
+| `docs/superpowers/plans/2026-10-14-pr-ov1e-giu-lich-thi-lai.md` | OV-1e — PR #366 (xoá khi merge) |
 | `docs/superpowers/specs/2026-10-11-overhaul-ux-workflow-design.md` | **Đặc tả Overhaul (OV)** — duyệt 11/10; nguồn chi tiết cho 12 PR OV-1a … OV-6b |
 | `thiet-ke/mockup-vai-tvv-admin-cx-2026-10-13.html` | Mockup **hiển thị theo vai** TVV / Admin / CX — **đã duyệt 13/10** (OV-10a/b/c) |
 | `docs/superpowers/plans/2026-10-07-pr-en-tieng-anh.md` | PR-EN (sau toàn bộ OV — đếm lại chữ trước khi chạy) |
@@ -175,6 +178,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 | 13/10 | **KCK nhẹ**: KCK là dấu riêng, Target giữ; em KCK dưới kỳ vọng → không SOS, chip xám, Case nhẹ cho GV (không PA quy chế, không hạn, không Phối hợp / báo QL) | OV-9 |
 | 13/10 | **Hiển thị theo vai** (mockup duyệt): TVV / CX / Admin thấy cột, khối, Tổng quan theo việc của vai; nút / link chỉ hiện khi máy chủ cho làm. QL, GVCN, GVBM không đổi | OV-10a/b/c |
 | 13/10 | **Liên hệ**: SĐT em + phụ huynh (tên, quan hệ, SĐT); **mọi vai xem**, **không bắt nhập**, chỉ nhập ở hồ sơ HV + Sửa cả lớp (hồ sơ lớp), thường TVV nhập; GV không thấy ô nhập; không tính "Thiếu thông tin" | OV-10b |
+| 14/10 | **Planning tự quyết khi chủ SP vắng (chủ SP đổi được)** — chi tiết + lý do: đặc tả rà soát mục 3. Q1 lớp thường "-" nhập bù → dời sang **tuần sau của tuần hiện tại** · Q2 "Báo vắng" sau tuần thi = Không dự thi (một luật với "-") · Q3 "Thiếu thông tin" một hàm, **tính ngày sinh** (không email) · Q4 lớp đã kết thúc: **chỉ QL** sửa điểm; hồ sơ Lưu trữ **khoá** · Q5 "xong MT" = đủ điểm bắt buộc · Q6 "Của GV" gồm mọi việc của GV (cả Bàn giao) · Q7 bỏ thẻ "Lớp hết khoá · chưa có quyết định chuyển lớp" ở lớp thường · Q8 KCK chụp theo lượt lúc chốt · Q9 chuông lọc theo góc nhìn · Q10 hạn Thêm PA giữ, một hàm · Q11 em Kết thúc học chưa Lưu trữ hiện mờ ở lớp cuối · Q12 Lưu trữ bỏ ô tích, có Hoàn tác · Q13 GV dời môn lớp thường: giữ như nay (chỉ QL có nút) | OV-11a…i |
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
@@ -183,8 +187,10 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
   quy trình (lộ trình → bàn giao → KQĐR, SOS MT, dấu "-", huỷ/khôi phục), giao diện, **12 PR OV-1a … OV-6b** + phụ thuộc, tiêu chí nghiệm thu.
 - Mockup bản 2 (góp ý 11/10 đã áp): `thiet-ke/mockup-overhaul-{1,2,3}-*-2026-10-11.html`.
 - Quyết định: mục 3 (các dòng 11/10). Thứ tự, model, prompt: mục 5, 6, 9.
-- **Tình trạng 13/10 (đêm): ĐÃ MERGE HẾT OV** (tới OV-10b #363); đã chạy 3 lệnh chỉ đọc trên bản chính. Bàn giao: `docs/superpowers/plans/2026-10-14-ban-giao-planning.md`.
-  Việc tiếp: **OV-1e** (giữ lịch thi lại trong migrate `prOv1b`) + rà soát cuối (OV-11x) → chạy lại `kiem-truoc-ov1b` → **deploy MỘT lần** → PR-EN → PR-SOTAY → deploy lần 2.
+- **Tình trạng 13/10 (đêm): ĐÃ MERGE HẾT OV** (tới OV-10b #363); đã chạy 3 lệnh chỉ đọc trên bản chính (kết quả: `git show 1b06b42:docs/superpowers/plans/2026-10-14-ban-giao-planning.md`).
+- **14/10: OV-1e #366 rà sâu đạt** (check xanh trên bản gộp main) — chờ chủ SP bảo merge. **Rà soát cuối toàn web xong** → 9 PR **OV-11a…i** (mục 5, 9.3).
+  Việc tiếp: merge #366 → chủ SP chạy lại `kiem-truoc-ov1b` (bản chính) → OV-11 đợt 1 → 2 → 3 → **deploy MỘT lần** → PR-EN → PR-SOTAY → deploy lần 2.
+  **Sau deploy:** chủ SP đổi mã Turso (mã bản chính lộ trong chat 13/10): tạo mã mới ở Turso → cập nhật `TURSO_AUTH_TOKEN` trên Netlify → thu hồi mã cũ.
   OV-4 và OV-6b của đặc tả **tách đôi** (mỗi nửa một vùng mã, rà riêng). Thứ tự + song song: mục 5; prompt: mục 9.3.
 - **Chủ SP trả lời 12/10:** (1) hạn khi SOS MT chốt = luật hiện có (5 ngày, SOS 3 = 3 ngày), tính từ ngày chốt; (2) **không làm** ô "Dự kiến quay lại" (mục 3).
 
@@ -197,12 +203,9 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - **PR-NC** thống kê nghiên cứu: xem lại tháng 12 (cần 2–3 tháng dữ liệu).
 
 ### Ghi chú không chặn còn mở (kiểm lại khi PR đụng tới; đã bỏ mục DON #308, VN3 #302, NO-CT2-KV #290 đã xử lý)
-- **OV-5a** (đã ghi trong kế hoạch): đổi tiêu đề việc "Kỳ vọng đầu ra · {lớp}" → "Kết quả đầu ra" (`server/src/worklist/mywork.ts:1127`, nhóm `:181-182` thêm FOU > 3.5; phép kiểm `prKv.tests.ts:102`). **Không** đổi tiêu đề Case "Kỳ vọng đầu ra…" (chống trùng dùng `LIKE`).
-- OV-1c giữ trạng thái lượt `done` = đủ điểm: Tổng hợp vẫn đếm lượt chốt-mà-thiếu là "Thiếu điểm" — xem lại khi rà OV-1c.
 - Hồ sơ MT: lượt không có `classId` → "Dời lịch thi cả đợt" không mở gì (hiếm) — HOP1.
 - `suggestCaseOwner` chạy theo (lớp FT, kỹ năng): lô 500 em nhiều lớp có thể > 200 câu — KV; **OV-3b chạm KQĐR thì đo lại**.
 - Case Học viên (KQĐR "Không đạt · Học viên") mang kỹ năng đầu tiên — KV, chủ SP xem khi rà OV-3b.
-- Hồ sơ GV › Việc đang có đếm từng việc (`items`), lệch badge Công việc (đếm dòng) — GOP; **OV-5 làm cùng**.
 - CT2: `huyNhieuLenh` / khôi phục nhiều lệnh ~25 câu/em — thêm phép đo 8 em, vượt thì gom lô (**OV-3b** chạm lệnh chuyển); giới hạn tự ghi (đổi lớp đích / tuần mà giữ quyết định không sinh lại bộ; Pre FOU Người dạy trống; sinh từ ô điểm cuối thì người xác nhận = người nhập).
 - **MT0 lớp thường đã nhập band vẫn là việc "Nhập điểm MT0"** (lỗi có sẵn, OV-3c phát hiện): `listAttempts` (`server/src/fasttrack/attempts.ts` ~655) đi nhánh lớp thường cho `kind = 'mt0'` → đòi `raw_score`; lệch Nợ điểm (`scoringModeOf` đã coi mt0 là band). Sửa: bỏ mt0 khỏi nhánh `regularSkills` — **OV-1c / OV-4b** (vùng `fasttrack/*`).
 - **Bộ demo không thêm được lượt MT nào** (OV-3c đo 12/10): `tocDo.run.ts` PR-TD Task5(2) — demo có 299 lượt, ×3 = 897 sát lô 900 tham số (`theoLo`); thêm ≥ 2 lượt (vd một em chuyển vào FT, tự sinh lịch MT) → QT `/tong-quan/chi-nhanh`, `/my-work` thêm 6–8 câu (một lô nữa) → đỏ. Vì vậy OV-3c không seed đợt FOU / nhiều đợt (MB FT 104) — planning chọn: nới phép đo theo số lô, hoặc chấp nhận +1 lô. Kèm: thêm seed làm dời id → chụp lại băm DL-2 (`prDl.tests.ts`).
@@ -211,6 +214,13 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 ## 5. Đợt chạy, thứ tự merge, deploy (chủ SP 11/10)
 
 Chạy **từng PR một** theo phụ thuộc (đặc tả mục 5). Song song chỉ khi hai PR không chung file (planning ghi rõ trong prompt).
+
+**OV-11 (14/10, đặc tả rà soát cuối):** mỗi đợt 3 PR không chung file; đợt sau bắt đầu khi đợt trước merge hết (đọc main mới nhất).
+| Đợt | PR | Rà |
+|---|---|---|
+| 1 (ngay) | **OV-11a** vắng · thi bù · hộp nhập điểm · **OV-11b** Quản trị · tài khoản · **OV-11c** Công việc · Chờ duyệt | sâu · sâu + `/security-review` · sâu |
+| 2 | **OV-11d** hồ sơ HV · Case · **OV-11e** Lịch Test · Điểm theo lớp · huỷ/khôi phục · KCK theo lượt (migrate `prOv11e`) · **OV-11f** Tổng quan · chuông | sâu + `/security-review` · sâu · mặc định |
+| 3 | **OV-11g** Học viên & Lớp · hồ sơ lớp · **OV-11h** Phân tích · PET · **OV-11i** giao diện chung (a11y, 375) | mặc định (sâu mục quyền ghi điểm) · mặc định · mặc định |
 
 | Bước | PR | Chạy sau | Song song được với |
 |---|---|---|---|
@@ -232,6 +242,8 @@ Bản chính hiện chạy **#285**; các lệnh chỉ đọc (`kiem-du-lieu-mt`
 `prOv1b` (**đổi dữ liệu**: dấu "-" cũ — xem `kiem-truoc-ov1b`) · `prOv4` (chỉ thêm cột `ket_qua_huy`) · `prOv1c` (**đổi dữ liệu**: Case SOS MT cũ — xem `kiem-truoc-ov1c`) ·
 `prOv8a` (chỉ thêm 4 cột `buoc_tiep*` vào `learning_cycles`) · `prOv8b` (thêm quyền `student.edit_more` cho TVV / CX) · `prOv9` (chỉ thêm cột `sos_cases.kck`) ·
 `prOv10b` (chỉ thêm 4 cột liên hệ vào `students`). **Đủ 11 migrate** (đối chiếu `git diff --name-status #285..main -- server/src/migrate/`).
+**Thêm từ OV-11:** `prOv11e` (thêm cột KCK theo lượt + điền lượt đã chốt) → **12 migrate**; `prOv1b` sửa thêm ở OV-1e (#366) và OV-11e (ô giữ lịch thi lại bền khi chạy lại).
+OV-11d để câu SELECT đếm "lộ trình đã đóng mà em còn ghi danh" trong mô tả PR — planning chạy trên bản chính trước deploy.
 OV-3b đổi Lộ trình đề xuất GVCN → nháp: xem `kiem-truoc-ov3b`. Ba lệnh chỉ đọc chạy được NGAY.
 
 ## 6. Model, effort, skill cho từng PR (OV)
@@ -284,8 +296,16 @@ Xong: [x] kế hoạch, một dòng mục 11, CODE_MAP.md nếu thêm/xoá file.
 | OV-1c #335 · OV-3c #337 · OV-6b2 #336 | ✅ merge 12–13/10 | | | |
 | OV-5a #343 · OV-5b #342 · OV-7a #344 · OV-7b #347 · OV-8a #348 | ✅ merge 13/10 | | | |
 | OV-8b #352 · OV-10a #355 · OV-9 #356 · OV-1d #357 · OV-2c #360 · OV-10c #361 · OV-4c #362 · OV-10b #363 | ✅ merge 13/10 — **hết OV** | | | |
-| **OV-1e** | `docs/superpowers/plans/2026-10-14-pr-ov1e-giu-lich-thi-lai.md` | Opus 5.5 · High (Sonnet 5.5 · High) | 4310/5483 | ngay — trước deploy |
-| **OV-10c** | **OV-10b** | **OV-1d** | **OV-4c** | **OV-2c** - OV-8b rà sâu + `/security-review` (TVV KHÔNG được `cycle.edit`; bước tiếp sau thi vẫn chỉ QL). Sau OV-8b: **OV-9 + OV-10a + OV-10c chạy cùng lúc** (3 máy); OV-10b sau OV-9 + OV-10a (chung ô Sửa thông tin, đầu hồ sơ). Rà sâu: OV-9, OV-10a, OV-10b (+ `/security-review`). Cổng tiếp theo: 4320/5493.
+| **OV-1e** #366 | `docs/superpowers/plans/2026-10-14-pr-ov1e-giu-lich-thi-lai.md` | Opus 5.5 | — | ✅ rà sâu đạt 14/10, check xanh — **chờ chủ SP bảo merge** |
+| **OV-11a** | `docs/superpowers/plans/2026-10-14-pr-ov11a-vang-thi-bu-hop-diem.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4320/5493 | đợt 1 — ngay |
+| **OV-11b** | `docs/superpowers/plans/2026-10-14-pr-ov11b-quan-tri-tai-khoan.md` | Opus 5.5 · High (Sonnet 5.5 · High) | 4321/5494 | đợt 1 — ngay |
+| **OV-11c** | `docs/superpowers/plans/2026-10-14-pr-ov11c-cong-viec-cho-duyet.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4322/5495 | đợt 1 — ngay |
+| **OV-11d** | `docs/superpowers/plans/2026-10-14-pr-ov11d-ho-so-hv-case.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4323/5496 | đợt 2 |
+| **OV-11e** | `docs/superpowers/plans/2026-10-14-pr-ov11e-lich-test-diem-lop-huy-kck.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4324/5497 | đợt 2 |
+| **OV-11f** | `docs/superpowers/plans/2026-10-14-pr-ov11f-tong-quan-chuong.md` | Opus 5.5 · High (Sonnet 5.5 · High) | 4325/5498 | đợt 2 |
+| **OV-11g** | `docs/superpowers/plans/2026-10-14-pr-ov11g-hoc-vien-lop.md` | Opus 5.5 · High (Sonnet 5.5 · High) | 4326/5499 | đợt 3 |
+| **OV-11h** | `docs/superpowers/plans/2026-10-14-pr-ov11h-phan-tich-pet.md` | Opus 5.5 · High (Sonnet 5.5 · High) | 4327/5500 | đợt 3 |
+| **OV-11i** | `docs/superpowers/plans/2026-10-14-pr-ov11i-giao-dien-chung.md` | Opus 5.5 · High (Sonnet 5.5 · High) | 4328/5501 | đợt 3 |
 
 ## 10. Mẫu giao việc cho agent (session planning dùng)
 
@@ -329,6 +349,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 14/10/2026 | Planning (Opus 5.5) · `claude/ra-soat-cuoi-truoc-en` | Rà OV-1e #366 sâu (check xanh; rủi ro deploy 2 → OV-11e); rà soát cuối toàn web: 7 khu × 9 vai (Playwright, DB riêng) + impeccable audit 14/20 + critique 26–27/40; 7 lỗi chặn; đặc tả + phụ lục + 9 kế hoạch OV-11a…i (3 đợt); quyết định Q1–Q15 |
 | 13/10/2026 | OV-4c (Sonnet 5.5) · `claude/sleepy-dijkstra-vys22n` | W1 / W2 / S: ô Band chỉ đọc, hiện ngay khi gõ 4 tiêu chí (thiếu → "—"; band cũ nhập thẳng vẫn hiện, gõ tiêu chí thì thay); nhập Band thẳng chỉ MT cũ + MT0; `saveScore` 400 band thẳng ở lượt thường (`band: null` xoá vẫn nhận; L/R không đổi) (`prOv4c.tests`; T10 cũ ở prMta / prMtb đổi đúng ý) |
 | 13/10/2026 | OV-10b (Opus 5.5) · `claude/awesome-fermi-w8cfmt` | Liên hệ SĐT em + phụ huynh (migrate `prOv10b`, kiểm máy chủ, nhật ký; mọi vai đọc, GV không thấy ô nhập; không tính Thiếu thông tin); Học viên & Lớp TVV / CX mỗi em một dòng nhóm theo lớp (`/hoc-vien-lop/theo-vai`, chip = `chipHocVien`, CX mặc định Cần chú ý), Admin Lượt MT · Ô chưa nhập; hồ sơ HV Đang xử lý + nút vai; hồ sơ lớp Phụ huynh · Thông tin lớp (đọc) (`prOv10b.tests`) |
 | 13/10/2026 | OV-1d (Opus 5.5) · `claude/pr-ov1d-luoi-cham-joijqa` | Lưới chấm FT: ô đã dời vì vắng ở lưới tuần gốc là nút "Vắng → W3 OCT" mở hộp Bỏ vắng (không quyền: "Đã dời sang …"); em đã Kết thúc học / Lưu trữ hàng mờ, Kết quả "Đã kết thúc học" / "Lưu trữ", ô không là việc; chỉ Lưu trữ chỉ đọc + `saveScore` 400 (Kết thúc học nhập bù được — PR-TK; Tạm dừng như đang học; chủ SP 13/10) (`prOv1d.tests`) |
