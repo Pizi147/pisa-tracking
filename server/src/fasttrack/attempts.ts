@@ -2168,7 +2168,7 @@ export function classScoreSheet(
         /* OV-1d: em không còn đang học — ô chỉ đọc, không việc / quá hạn, không Bỏ vắng (máy chủ cũng chặn ở `saveScore`). */
         cells: ngung ? cells.map((c) => ({ ...c, canEdit: false, viec: false, overdue: false, lyDoKhoa: ngung.cau,
           daChot: c.daChot && { ...c.daChot, goDuoc: false, hanGo: null } })) : cells,
-        ngungHoc: ngung?.nhan ?? null,
+        ...(ngung ? { ngungHoc: ngung.nhan } : {}),
         result: resultOf(a, scores, skips, bundle.skillRows.get(a.id) ?? []),
         /* PR-MT0: chip SOS chỉ để nhìn (band ≤ Target − 2.0) thay cho mức SOS. */
         ...(laMt0(a) ? { mt0Sos: kyNangSosMt0(resultOf(a, scores, skips).bands, a.target_at_attempt ?? null) } : {}),

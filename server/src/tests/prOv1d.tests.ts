@@ -99,7 +99,7 @@ export async function runPrOv1dTests(t: YThucTestKit) {
       xoaNho();
     }
     const r = hang(a, QL, W, THU6);
-    assert(r.ngungHoc === null && r.cells.some((c: any) => c.canEdit), 'em học lại: hàng bình thường');
+    assert(!r.ngungHoc && r.cells.some((c: any) => c.canEdit), 'em học lại: hàng bình thường');
     attempts.saveScore(QL, a, 'listening', { rawScore: 30 }, THU6);
     assert(one(`SELECT raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, a).raw_score === 30, 'học lại: ghi được');
   }));

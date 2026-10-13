@@ -110,7 +110,7 @@ export const bandBanDau = (cell: Cell) => (cell.band !== null && cell.criteria.e
 export const lyDoChiDoc = (cell: Cell) => cell.lyDoKhoa ?? (cell.daChot?.hanGo && !cell.daChot.goDuoc ? 'Quá hạn gỡ "-" — nhờ Quản lý.'   // PR-BV
   : cell.sitStatus === 'absent' ? VANG_HINT
   : lockedByNoShow(cell) ? 'Đã chốt — cần Quản lý hiệu chỉnh'
-  : cell.khoa ? KHOA_HOAN_TAT_HINT : 'Bạn không được phân công kỹ năng này'));
+  : cell.khoa ? KHOA_HOAN_TAT_HINT : 'Bạn không được phân công kỹ năng này');
 
 /**
  * Lưu điểm một kỹ năng. Khi lỗi, giữ nguyên giá trị người dùng vừa gõ để họ bấm lại,
