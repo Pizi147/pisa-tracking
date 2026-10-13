@@ -2,7 +2,7 @@ import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
   CHUONG_TRINH_KHONG_CHIA_MON, boMonLich, CLASS_PHASE_LABEL, CO_DIEM_SQL, MOC_KE_TIEP_SQL, PERMISSIONS, docLichMt, kiemSoMtMoi, laMtCu, lichMtGoc, tuanHocCuaMt, tuanLich,
-  PROGRAMME_TEMPLATES, kyHieuLop, nextStepsAfter, programmeOf, studyWeekOf,
+  PROGRAMME_TEMPLATES, kyHieuLop, laLienTuc, nextStepsAfter, programmeOf, studyWeekOf,
   type ClassPhase, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, notFound, nowIso } from '../util.ts';
@@ -313,7 +313,7 @@ export function applySuggestedMockWeeks(p: Principal, cycleId: number): { create
 // ==================================================================== lớp thường
 
 export type ClassProgress = {
-  programmeCode: ProgrammeCode | null;
+  programmeCode: string | null;
   programmeName: string | null;
   /** Tổng số tuần của chương trình. NULL với lớp FT — FT không có số tuần cố định. */
   totalWeeks: number | null;
@@ -355,6 +355,8 @@ export type ClassProgress = {
   coGiuaKhoa: boolean;
   /** OV-6b1: tuần học của từng MT (bản chụp của lớp FT); lớp thường rỗng. */
   lichMt: number[];
+  /** OV-6b2: lớp liên tục — Checkpoint mỗi n tuần (bản chụp `classes.moc_lap`); null = lớp có số tuần. */
+  mocLap: number | null;
 };
 
 /**
@@ -535,6 +537,9 @@ function computeProgress(
     label = parts.join(' · ');
   } else if (code === 'FT') {
     label = c.route ? `Fast Track · ${c.route}` : 'Fast Track';
+  } else if (laLienTuc(c)) {
+    /* OV-6b2: lớp liên tục — "PET · tuần 6", không "/tổng", không chặng (không bao giờ hết khoá). */
+    label = [kyHieuLop(code, null) ?? prog?.name ?? '', currentWeek !== null ? `tuần ${currentWeek}` : 'chưa khai tuần bắt đầu'].join(' · ');
   }
 
   return {
@@ -553,6 +558,7 @@ function computeProgress(
     label,
     coGiuaKhoa: defProgress !== null || c.progress_week_override !== null && c.progress_week_override !== undefined,
     lichMt: code === 'FT' ? lichMtCua(c, c.route ?? 'LT1') : [],
+    mocLap: c.moc_lap ?? null,
   };
 }
 
@@ -805,7 +811,7 @@ export function missingForClasses(classIds: number[]): Map<number, { items: Miss
     const prog = code ? (programmes ??= allProgrammes()).get(code) ?? null : null;
     const items: MissingInfo[] = [];
     /* Lớp FT không cần tuần bắt đầu của LỚP — lịch MT đi theo từng em. */
-    if ((c.so_tuan ?? prog?.weeks) && !c.start_period_id) items.push(miss('class_start_week'));
+    if (((c.so_tuan ?? prog?.weeks) || laLienTuc(c)) && !c.start_period_id) items.push(miss('class_start_week'));   // OV-6b2: lớp liên tục cũng cần (Checkpoint đếm từ đây)
 
     const assigned = byClass.get(c.id) ?? [];
     const have = new Set(assigned.map((a) => a.skill));

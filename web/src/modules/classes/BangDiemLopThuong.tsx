@@ -11,11 +11,11 @@ import { CanhBaoYThuc } from './CanhBaoYThuc.tsx';
 import { nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from './thaoTacDongHocVien.tsx';
 import { OChon, OChonTatCa, type ChonNhieu } from '../students/chonNhieuHocVien.tsx';
 import { MoiVao } from './DaiChuyenLop.tsx';
-import { ATTEMPT_KIND_SHORT, CHUONG_TRINH_KHONG_CHIA_MON, maHocVienNgan, mondayOfDate, tenMon, tenMonNgan, tuanLich, type AttemptKind } from '@shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, CHUONG_TRINH_KHONG_CHIA_MON, khoaBai, maHocVienNgan, mondayOfDate, nhanBai, tenMon, tenMonNgan, tuanLich, type AttemptKind } from '@shared/domain/index.ts';
 
 type ODiem = { score: number | null; total: number | null; outcome: string };
 type LuotThuong = {
-  id: number; kind: string; kindLabel: string; myPending: string[]; overdueSkills: number;
+  id: number; kind: string; kindLabel: string; myPending: string[]; overdueSkills: number; attemptNo: number;
   ratios: Record<string, ODiem> | null; tuanMon: Record<string, string | null> | null;
 };
 type DongThuong = {
@@ -45,12 +45,14 @@ const MOC_MAC_DINH = ['progress', 'final'];
  * tuần thi (`W3 SEP`, G-6); chưa có lịch thì gạch. Thiếu điểm KHÁC chưa đạt: không tô đỏ.
  * PR-OV3a (M2 §3, cách xem "Tổng hợp"): bỏ cột Dự kiến thi; cột cuối "Lộ trình tiếp theo" = hướng Quản lý đã chốt, chưa chốt → "Chưa chốt".
  */
-export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = null, moc = null, chon }: {
+export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = null, moc = null, chon, lienTuc = false }: {
   classId: number; maLop?: string; quyen: QuyenDong; onDoi: () => void;
   /** PR-LUI-b: "Chọn nhiều học viên" — bật thì mỗi dòng / thẻ có ô chọn (Quản lý / Quản trị). */
   chon?: ChonNhieu;
   /** Mã chương trình lớp (MH2) và mốc kiểm tra của chương trình (`progress`/`final`). */
   chuongTrinh?: string | null; moc?: string[] | null;
+  /** OV-6b2: lớp liên tục (PET, KET…) — cột theo Checkpoint, không Target, không Lộ trình tiếp theo. */
+  lienTuc?: boolean;
 }) {
   const { homNay } = useNgayNghiepVu();
   const { data, loading, error, reload } = useApi<DongThuong[]>(`/classes/${classId}/roster`, [classId]);
@@ -63,14 +65,24 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
   if (!rows.length) return <Empty title="Lớp chưa có học viên" />;
   const ds: NguCanhDs = { loai: 'hoc-vien', ids: rows.map((s) => s.id), nhan: maLop ? `Lớp ${maLop}` : 'Lớp' };   // PR-DH: Trước/Sau theo thứ tự bảng
   const mon = rows[0].skills ?? [];
-  const BAI = (moc?.length ? moc : MOC_MAC_DINH).map((kind) => ({ kind, nhan: ATTEMPT_KIND_SHORT[kind as AttemptKind] ?? kind }));
-  /* MH7: Pre FOU không chia môn — thêm cột % tổng sau cột Tổng hợp của mỗi mốc. K2-12: nhóm Cuối khoá mọi lớp thường có "% tổng". */
+  /* OV-6b2: lớp liên tục — mỗi Checkpoint đã có một nhóm cột (khoá `checkpoint:n`), 4 Checkpoint gần nhất.
+     shortcut: chỉ 4 Checkpoint gần nhất ở Tổng hợp (đủ ở Test › Điểm theo lớp), thêm cuộn / chọn khi chủ SP cần xem cả năm. */
+  const cp = lienTuc ? [...new Set(rows.flatMap((s) => s.timeline.filter((t) => t.kind === 'checkpoint').map((t) => t.attemptNo)))].sort((a, b) => a - b).slice(-4) : [];
+  const BAI = lienTuc ? cp.map((n) => ({ kind: khoaBai('checkpoint', n), nhan: nhanBai(khoaBai('checkpoint', n)) }))
+    : (moc?.length ? moc : MOC_MAC_DINH).map((kind) => ({ kind, nhan: ATTEMPT_KIND_SHORT[kind as AttemptKind] ?? kind }));
+  const luotCua = (s: DongThuong, kind: string) => s.timeline.find((x) => khoaBai(x.kind, x.attemptNo) === kind) ?? null;
+  /* MH7: Pre FOU không chia môn — thêm cột % tổng sau cột Tổng hợp của mỗi mốc. K2-12: nhóm Cuối khoá mọi lớp thường có "% tổng"; Checkpoint cũng có. */
   const coPhanTram = CHUONG_TRINH_KHONG_CHIA_MON.includes(chuongTrinh ?? '');
-  const cotPhu = (kind: string) => (coPhanTram || kind === 'final' ? ['%'] : []);
-  /** % của một mốc: Cuối khoá đọc % tổng máy chủ (cùng số với panel Chuyển lớp); mốc khác của Pre FOU tính từ ô Tổng hợp. */
-  const phanTram = (s: DongThuong, kind: string, o: ODiem | null): number | null => (kind === 'final'
-    ? s.cuoiKhoa?.tyLe ?? null
-    : o && o.score !== null && o.total ? o.score / o.total : null);
+  const cotPhu = (kind: string) => (coPhanTram || kind === 'final' || kind.startsWith('checkpoint') ? ['%'] : []);
+  /** % của một mốc: Cuối khoá đọc % tổng máy chủ (cùng số với panel Chuyển lớp); Checkpoint = Σ điểm / Σ tổng khi đủ mọi môn; Pre FOU từ ô Tổng hợp. */
+  const phanTram = (s: DongThuong, kind: string, o: ODiem | null): number | null => {
+    if (kind === 'final') return s.cuoiKhoa?.tyLe ?? null;
+    if (kind.startsWith('checkpoint')) {
+      const ds = mon.map((k) => luotCua(s, kind)?.ratios?.[k] ?? null);
+      return ds.every((x) => x && x.score !== null && x.total) ? ds.reduce((a, x) => a + x!.score!, 0) / ds.reduce((a, x) => a + x!.total!, 0) : null;
+    }
+    return o && o.score !== null && o.total ? o.score / o.total : null;
+  };
 
   /* D2: điện thoại (< 640 px) — mỗi em một thẻ, mỗi MỐC một dòng: "Giữa khoá · L 14/20 · R … · %". */
   if (dienThoai) {
@@ -91,10 +103,10 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
               </>
             )}
             hanhDong={<MenuDong muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, true, s.timeline) })} />}
-            dong={[
+            dong={(lienTuc ? [] : [
               { nhan: 'Target', noiDung: <TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /> },
-            ].concat(BAI.map((b) => {
-              const t = s.timeline.find((x) => x.kind === b.kind) ?? null;
+            ]).concat(BAI.map((b) => {
+              const t = luotCua(s, b.kind);
               const o = t?.ratios?.[mon[0]] ?? null;
               return {
                 nhan: b.nhan,
@@ -123,18 +135,18 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
     <div className="card table-scroll bang-dinh xl:overflow-clip">
       <table className="w-full min-w-[1040px] table-fixed text-sm">
         <colgroup>
-          <col className="w-[19%]" /><col className="w-[6%]" />
+          <col className="w-[19%]" />{!lienTuc && <col className="w-[6%]" />}
           {BAI.flatMap((b) => [...mon, ...cotPhu(b.kind)].map((k) => <col key={`${b.kind}-${k}`} />))}
-          <col className="w-[11rem]" /><col className="w-12" />
+          {!lienTuc && <col className="w-[11rem]" />}<col className="w-12" />
         </colgroup>
         <thead>
           <tr>
             <th className="th sticky-col align-bottom" rowSpan={2}>{chon?.bat && <span className="mr-2 inline-flex align-middle"><OChonTatCa chon={chon} ids={rows.map((s) => s.id)} /></span>}Học viên</th>
-            <th className="th text-right align-bottom" rowSpan={2} title="Điểm Target của lộ trình em đang học. KCK = không cam kết đầu ra. Lớp thường chỉ để theo dõi.">Target</th>
+            {!lienTuc && <th className="th text-right align-bottom" rowSpan={2} title="Điểm Target của lộ trình em đang học. KCK = không cam kết đầu ra. Lớp thường chỉ để theo dõi.">Target</th>}
             {BAI.map((b) => (
               <th key={b.kind} className="th border-b text-center" colSpan={mon.length + cotPhu(b.kind).length} style={{ borderColor: 'var(--line)' }}>{b.nhan}</th>
             ))}
-            <th className="th align-bottom" rowSpan={2} title={TIEU_DE_LO_TRINH}>Lộ trình tiếp theo</th>
+            {!lienTuc && <th className="th align-bottom" rowSpan={2} title={TIEU_DE_LO_TRINH}>Lộ trình tiếp theo</th>}
             <th className="th" rowSpan={2}><span className="sr-only">Thao tác</span></th>
           </tr>
           <tr>
@@ -160,9 +172,9 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
                 </span>
                 {s.ketThucVi && <span className="block mt-0.5 text-xs text-slate-400">{s.ketThucVi}</span>}
               </td>
-              <td className="td text-right tabular-nums whitespace-nowrap"><TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /></td>
+              {!lienTuc && <td className="td text-right tabular-nums whitespace-nowrap"><TargetText band={s.cycle?.target} kck={s.cycle?.khongCamKet} /></td>}
               {BAI.flatMap((b) => {
-                const t = s.timeline.find((x) => x.kind === b.kind) ?? null;
+                const t = luotCua(s, b.kind);
                 const o = t?.ratios?.[mon[0]] ?? null;
                 return [
                   ...mon.map((k) => (
@@ -175,7 +187,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
                   )] : []),
                 ];
               })}
-              <td className="td"><OLoTrinh lt={s.loTrinhChot ?? null} homNay={homNay} /></td>
+              {!lienTuc && <td className="td"><OLoTrinh lt={s.loTrinhChot ?? null} homNay={homNay} /></td>}
               <td className="td text-center">
                 <MenuDong muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, true, s.timeline) })} />
               </td>

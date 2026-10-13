@@ -31,7 +31,9 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, onCheDo, onDoi, onThemHocV
   /** PR-SL: mở panel Sửa thông tin học viên (cả lớp) — chỉ truyền khi người xem sửa được học viên của lớp. */
   onSuaThongTin?: () => void;
 }) {
+  /* OV-6b2: lớp liên tục (PET, KET…) — không cách xem Lộ trình tiếp theo. */
   const thuong = lop.programme?.scoringMode === 'ratio';
+  const coLoTrinh = thuong && !lop.lienTuc;
   const soDot = lop.dai?.kqdrDot ?? 0;
   const cheDo: CheDoHocVien = cheDoUrl === 'ket-qua' && !soDot ? 'diem' : cheDoUrl;
   const quyen: QuyenDong = {
@@ -47,7 +49,7 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, onCheDo, onDoi, onThemHocV
     <div className="space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <BoLocDoan ariaLabel="Cách xem" value={cheDo} onChange={doiCheDo}
-          muc={[{ key: 'diem', nhan: 'Tổng hợp' }, ...(thuong ? [{ key: 'lo-trinh' as const, nhan: 'Lộ trình tiếp theo' }] : []), { key: 'can-ho-tro', nhan: 'Cần hỗ trợ' },
+          muc={[{ key: 'diem', nhan: 'Tổng hợp' }, ...(coLoTrinh ? [{ key: 'lo-trinh' as const, nhan: 'Lộ trình tiếp theo' }] : []), { key: 'can-ho-tro', nhan: 'Cần hỗ trợ' },
             ...(soDot ? [{ key: 'ket-qua' as const, nhan: 'Kết quả đầu ra', so: `${soDot} đợt` }] : [])]} />
         <span className="flex flex-wrap items-center gap-2">
           {onSuaThongTin && <button type="button" className="btn btn-ghost btn-sm min-h-[44px] sm:min-h-0" onClick={onSuaThongTin}>Sửa thông tin</button>}
@@ -57,7 +59,7 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, onCheDo, onDoi, onThemHocV
           )}
         </span>
       </div>
-      {cheDo === 'lo-trinh' && thuong
+      {cheDo === 'lo-trinh' && coLoTrinh
         ? <BangLoTrinhTiep classId={lop.id} quyen={quyen} onDoi={onDoi} emMo={emMo} onDaMoEm={() => onDaMoEm?.()} />
         : cheDo === 'ket-qua'
         ? <BangKqdrLopFt classId={lop.id} />
@@ -65,7 +67,7 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, onCheDo, onDoi, onThemHocV
         ? <BangCanHoTro classId={lop.id} maLop={lop.code} laLopThuong={thuong} quyen={quyen} onDoi={onDoi} chuongTrinh={lop.programme?.code ?? null} />
         : thuong
           ? <BangDiemLopThuong classId={lop.id} maLop={lop.code} quyen={quyen} onDoi={onDoi} chon={coTheChon ? chon : undefined}
-              chuongTrinh={lop.programme?.code ?? null} moc={lop.programme?.checkpoints ?? null} />
+              chuongTrinh={lop.programme?.code ?? null} moc={lop.programme?.checkpoints ?? null} lienTuc={!!lop.lienTuc} />
           : <ClassRoster classId={lop.id} maLop={lop.code} quyen={quyen} onDoi={onDoi} chon={coTheChon ? chon : undefined}
               onAddStudents={lop.viewer.canAddStudents ? onThemHocVien : undefined} />}
       {coTheChon && (

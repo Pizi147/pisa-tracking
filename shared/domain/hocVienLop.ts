@@ -4,7 +4,7 @@
  * Mọi quyết định "hiện chữ gì, hiện mấy cái, xếp thế nào" của hai màn nằm ở đây để kiểm được bằng harness máy chủ (web không có bộ
  * kiểm thử). Component React chỉ vẽ.
  */
-import { PROGRAMME_TEMPLATES, programmeOf, skillShort, tenMon, tenMonNgan } from './normal.ts';
+import { PROGRAMME_TEMPLATES, programmeOf, type ProgrammeCode, skillShort, tenMon, tenMonNgan } from './normal.ts';
 import { deadlineView } from './display.ts';
 import { goiYCuoiKhoa } from './cuoiKhoa.ts';
 import type { ViecTiepCase } from './sosV4.ts';
@@ -191,6 +191,7 @@ export function khoaLopThuong(i: {
   let tuan: string | null = null;
   if (i.tuanHienTai !== null && i.tuanHienTai < 1) tuan = 'chưa khai giảng';
   else if (i.tuanHienTai !== null && i.tongTuan) tuan = tuanKhoa(Math.min(i.tuanHienTai, i.tongTuan), i.tongTuan);
+  else if (i.tuanHienTai !== null) tuan = `tuần ${i.tuanHienTai}`;   // OV-6b2: lớp liên tục — không "/tổng"
   // Thứ tự ưu tiên dòng phụ (PR-LT): tiếp theo đã ghi › nhắc chưa ghi › kết thúc khoá.
   /* PR-DH (D1): cờ "chưa có quyết định chuyển lớp" luôn hiện khi em thuộc số trên badge lớp — kể cả khi đã ghi lộ trình tiếp theo. */
   const co = i.nhacLoTrinh ? CHU_CHUYEN_LOP.chua.toLowerCase() : null;
@@ -468,7 +469,8 @@ export const SO_CASE_HIEN_MOI_HANG = 2;
 function khuonHang(ct: string | null): { khoa: string; kyNang: readonly string[] }[] {
   const c = programmeOf(ct);
   if (c === 'PREFOU') return [{ khoa: 'tong_hop', kyNang: ['tong_hop'] }];
-  if (c && c !== 'FT') return PROGRAMME_TEMPLATES[c].skills.map((k) => ({ khoa: k, kyNang: [k] }));
+  /* OV-6b2: chương trình Quản trị tạo (PET…) không có mẫu — mọi Case vào hàng "Chung" (Checkpoint không sinh Case theo môn). */
+  if (c && c !== 'FT') return (PROGRAMME_TEMPLATES[c as ProgrammeCode]?.skills ?? []).map((k) => ({ khoa: k, kyNang: [k] }));
   return [
     { khoa: 'listening', kyNang: ['listening'] }, { khoa: 'reading', kyNang: ['reading'] },
     { khoa: 'writing', kyNang: ['writing', 'writing1', 'writing2'] }, { khoa: 'speaking', kyNang: ['speaking'] },
@@ -542,6 +544,8 @@ export type MucMenuLop = { key: ViecMenuLop; nhan: string; nhom: 'Lớp' | 'Lộ
  */
 export function menuHoSoLop(i: {
   thuong: boolean; chuongTrinh: string | null; soHocVien: number;
+  /** OV-6b2: lớp liên tục (PET, KET…) — không có Lộ trình tiếp theo. */
+  lienTuc?: boolean;
   canEditProgress: boolean; canAssign: boolean; canAssignSubject: boolean; canAddStudents: boolean; coTheChuyenTiep: boolean;
   coTheChuyenNhieuEm: boolean; coTheXuatExcel: boolean; coTheMoLaiLop: boolean; coTheXoa: boolean; coTheKetThuc: boolean;
 }): MucMenuLop[] {
@@ -550,7 +554,7 @@ export function menuHoSoLop(i: {
     ...m('thong-tin', 'Thông tin lớp', 'Lớp', i.canEditProgress || i.canAssign || i.canAssignSubject),
     ...m('sua-hoc-vien', 'Sửa thông tin học viên', 'Lớp', i.canAddStudents && i.soHocVien > 0),
     ...m('hoc-vien', '+ Học viên', 'Lớp', i.canAddStudents),
-    ...m('lo-trinh-ca-lop', 'Lộ trình tiếp theo', 'Lộ trình', i.thuong && (i.coTheChuyenTiep || i.canAddStudents)),
+    ...m('lo-trinh-ca-lop', 'Lộ trình tiếp theo', 'Lộ trình', i.thuong && !i.lienTuc && (i.coTheChuyenTiep || i.canAddStudents)),
     ...m('chuyen-tiep', 'Chuyển tiếp lớp', 'Lộ trình', !i.thuong && i.coTheChuyenNhieuEm),
     ...m('xuat-mt', 'Xuất Excel', 'Công cụ', i.coTheXuatExcel),
     ...m('mo-lai-lop', 'Mở lại lớp', null, i.coTheMoLaiLop),

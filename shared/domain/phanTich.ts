@@ -13,7 +13,7 @@ import {
 import { mondayOfDate } from './week.ts';
 import { type ChuongTrinh } from './tongQuan.ts';
 import type { TrangThaiCaseV4 } from './sosV4.ts';
-import { nhanBaiThuong } from './normal.ts';
+import { khoaBai, nhanBai, nhanBaiThuong } from './normal.ts';
 
 // ------------------------------------------------------------------ góc nhìn (Q1, Q16)
 
@@ -128,18 +128,20 @@ export const THEO_DONG_DANH_TU: Record<TheoDong, string> = {
 /** Đợt của một lượt — FT theo số lần thi (MT1…MT5), lớp thường theo mốc Giữa khoá / Cuối khoá. */
 export function nhanDot(kind: string, attemptNo: number | null): string {
   if (kind === 'progress' || kind === 'final') return nhanBaiThuong(kind);
+  if (kind.startsWith('checkpoint')) return nhanBai(kind === 'checkpoint' ? khoaBai(kind, attemptNo) : kind);   // OV-6b2
   return `MT${attemptNo ?? '?'}`;
 }
 /** Khoá ổn định của một đợt — dùng để gom dòng con và để sắp thứ tự (`thuTuDot`). */
 export function khoaDot(kind: string, attemptNo: number | null): string {
   if (kind === 'progress') return 'giua';
   if (kind === 'final') return 'cuoi';
+  if (kind === 'checkpoint') return `cp:${attemptNo ?? 0}`;
   return `mt:${attemptNo ?? 0}`;
 }
 /** K1-21: `mt:n` → n (tới MT8 và hơn); Giữa/Cuối khoá đứng sau mọi MT; khoá lạ xếp cuối. */
 export function thuTuDot(khoa: string): number {
-  const n = khoa.startsWith('mt:') ? Number(khoa.slice(3)) : NaN;
-  return khoa === 'giua' ? 1000 : khoa === 'cuoi' ? 1001 : Number.isInteger(n) && n > 0 ? n : 9999;
+  const n = khoa.startsWith('mt:') || khoa.startsWith('cp:') ? Number(khoa.slice(3)) : NaN;
+  return khoa === 'giua' ? 1000 : khoa === 'cuoi' ? 1001 : Number.isInteger(n) && n > 0 ? n + (khoa.startsWith('cp:') ? 2000 : 0) : 9999;
 }
 
 // ------------------------------------------------------------------ cột bảng Tổng hợp (P10, Q14, Q17, Q18)

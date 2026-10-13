@@ -5,7 +5,7 @@ import {
   ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, JOURNEY_GROUP, PERMISSIONS,
   caseHeadline, duongCase, issueLabel, caseCategoryLabel, categoryOf, fmtExamMonth, cauTomTat, ketQuaTestGanNhat, oHocThuat, oSapToi, oYThuc,
   bacHoacNgoaiThang, nhanLoaiXuLy, programmeOf, tenBacKe, tenMonNgan, mocKeTiep, LUOT_HUY_HET_SQL, quaHan, studyWeekOf, tenMon, tuanHocTai, tuanLich,
-  type AssessedSkill, type EntrySkill, type InterventionKind, kyNangXongThieu, nhanBaiThuong, ATTEMPT_KIND_SHORT, soThuTuLuot } from '../../../shared/domain/index.ts';
+  type AssessedSkill, type EntrySkill, type InterventionKind, kyNangXongThieu, nhanBaiThuong, ATTEMPT_KIND_SHORT, soThuTuLuot, laChuongTrinhGoc, laLienTuc, type ProgrammeCode } from '../../../shared/domain/index.ts';
 import { outcomeGroup } from '../cases/effectiveness.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, diffDays, notFound } from '../util.ts';
@@ -443,7 +443,7 @@ function boOVaCau(i: {
           dau: dauDot(nextA), attemptNo: nextA.attemptNo, tuan: nextA.weekStart ?? null, soPhan: nextA.required, final: nextA.kind === 'final',
           kyVong: nextA.mode === 'ratio' || kck ? null : expectationFor(selected?.target_score ?? null, nextA.attemptNo, selected?.route ?? null),
         } : null,
-        ratio: !!nextA ? nextA.mode === 'ratio' : i.cuoiKhoaDang, kck, bacKe: pc && pc !== 'FT' ? tenBacKe(pc) : null, homNay: today,
+        ratio: !!nextA ? nextA.mode === 'ratio' : i.cuoiKhoaDang, kck, bacKe: pc && pc !== 'FT' && laChuongTrinhGoc(pc) ? tenBacKe(pc as ProgrammeCode) : null, homNay: today,
         tamDung: s.status === 'inactive',
       }),
       attemptId: nextA?.id ?? null,
@@ -486,8 +486,10 @@ function dongThongTin(i: {
   };
   let thiIelts: string | null = null;
   if (khoa) {
-    if (khoa.tuanHienTai !== null && khoa.tuanHienTai >= 1 && khoa.tongTuan) {
-      tuanHoc = { tuan: Math.min(khoa.tuanHienTai, khoa.tongTuan), tong: khoa.tongTuan, dangDung: !!dangDung };
+    if (khoa.tuanHienTai !== null && khoa.tuanHienTai >= 1) {
+      /* OV-6b2: lớp liên tục (không số tuần) — "tuần học n", không "/tổng". */
+      tuanHoc = khoa.tongTuan ? { tuan: Math.min(khoa.tuanHienTai, khoa.tongTuan), tong: khoa.tongTuan, dangDung: !!dangDung }
+        : { tuan: khoa.tuanHienTai, tong: null, dangDung: !!dangDung };
     }
     const tuanCk = i.tuanCuoiKhoa ?? khoa.tuanKetThuc;
     if (tuanCk) thiDuKien = { nhan: ATTEMPT_KIND_SHORT.final, gt: tuanLich(tuanCk, today) };
@@ -795,7 +797,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     /* MỘT câu: lớp đang học + lớp thường vừa rời (nếu có). PR-S5F-a: vừa chuyển (lên lớp / học lại / sang FT) mà lớp đang học chưa có điểm Cuối khoá
        → vẫn thấy % Cuối khoá của lớp thường vừa rời (hộp Kết luận khoá; kỳ vọng đầu ra BE/ELE — Quản lý đánh dấu được cả sau khi em đã sang FT). */
     const ds = db().prepare(
-      `SELECT e.class_id, e.status, c.code, c.programme_code, c.is_fast_track FROM enrollments e JOIN classes c ON c.id = e.class_id
+      `SELECT e.class_id, e.status, c.code, c.programme_code, c.is_fast_track, c.moc_lap FROM enrollments e JOIN classes c ON c.id = e.class_id
         WHERE e.student_id = ? AND (e.status = 'active' OR (e.status = 'transferred' AND c.is_fast_track = 0))
         ORDER BY e.status = 'active' DESC, e.ended_at DESC, e.id DESC LIMIT 2`,
     ).all(studentId) as any[];
@@ -806,7 +808,8 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       ...x, ct: r.programme_code ?? null, lop: r.code ?? null, daChuyen,
       kyVongMt0: ['FOU', 'BE', 'ELE'].includes(r.programme_code) ? mt0TheoLop([{ sid: studentId, lop: r.class_id, ct: r.programme_code }]).get(studentId)?.goiY ?? null : null,
     } : null);
-    const dang = !dangHoc.is_fast_track && isRatioClass(dangHoc.class_id) ? cuoiKhoaTheoHocVien(dangHoc.class_id, [studentId]).get(studentId) ?? null : null;
+    /* OV-6b2: lớp liên tục không có Cuối khoá. */
+    const dang = !dangHoc.is_fast_track && !laLienTuc(dangHoc) && isRatioClass(dangHoc.class_id) ? cuoiKhoaTheoHocVien(dangHoc.class_id, [studentId]).get(studentId) ?? null : null;
     if (dang && dang.scored > 0) return kem(dangHoc, dang, false);   // bài Final Test của lớp đang học đã có điểm
     const cu = ds.find((r) => r.status === 'transferred');
     const x = cu && isRatioClass(cu.class_id) ? cuoiKhoaTheoHocVien(cu.class_id, [studentId], { daRoi: true }).get(studentId) ?? null : null;

@@ -1,7 +1,7 @@
 import { chenNhieuDong, db, tx } from '../db.ts';
 import { HV_DANG_HOC_SQL, dongHocVien } from '../students/tamDung.ts';
 import {
-  NORMAL_LADDER, PERMISSIONS, canLopDich, maHocLai, chuanHoaHuong, kiemDongChuyenTiep, nhanHuong, nhanTiepTheo, soSanhLop, tuanHopLe,
+  CAU_LIEN_TUC, NORMAL_LADDER, PERMISSIONS, canLopDich, laLienTuc, maHocLai, chuanHoaHuong, kiemDongChuyenTiep, nhanHuong, nhanTiepTheo, soSanhLop, tuanHopLe,
   type Huong, type HuongLenh, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { badRequest, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -28,11 +28,13 @@ type BanGhiLoTrinh = {
   huongGvcn: Huong | null;
 };
 const CHI_QL = 'Chỉ Quản lý ghi lộ trình tiếp theo.';
+/** Lộ trình tiếp theo chỉ của lớp thường CÓ SỐ TUẦN — không FT, không lớp liên tục (OV-6b2: PET, KET…). */
+const coLoTrinhTiep = (c: { is_fast_track?: number | null; moc_lap?: number | null }) => !c.is_fast_track && !laLienTuc(c);
 
 function enrollmentDangHoc(studentId: number): any {
   return db()
     .prepare(
-      `SELECT e.*, c.code, c.programme_code, c.is_fast_track, c.branch_id FROM enrollments e
+      `SELECT e.*, c.code, c.programme_code, c.is_fast_track, c.branch_id, c.moc_lap FROM enrollments e
          JOIN classes c ON c.id = e.class_id
         WHERE e.student_id = ? AND e.status = 'active' LIMIT 1`,
     )
@@ -59,7 +61,7 @@ export function layLoTrinhTiep(p: Principal, studentId: number) {
   if (!enr) return { lop: null, banGhi: null, lopDuKien: [] as LopDuKien[], coTheGhi: false, ketQua: null, cuoiKhoa: null, mt0: null };
 
   const ma = (enr.programme_code ?? null) as ProgrammeCode | null;
-  const laLopThuong = !enr.is_fast_track;
+  const laLopThuong = coLoTrinhTiep(enr);
   const maKe = laLopThuong ? (NORMAL_LADDER[ma as ProgrammeCode] ?? null) : null;
   const banGhi = banGhiRowToView(
     conn.prepare('SELECT * FROM lo_trinh_tiep_theo WHERE student_id = ? AND class_id = ?').get(studentId, enr.class_id),
@@ -237,6 +239,7 @@ export function ghiLoTrinhTiep(p: Principal, studentId: number, input: GhiVao) {
   if (!enr) throw badRequest('Học viên không đang học lớp nào.');
   if (!coTheRaLenh(p, enr.class_id)) throw forbidden(CHI_QL);
   if (enr.is_fast_track) throw badRequest('Lộ trình tiếp theo chỉ áp dụng cho lớp thường.');
+  if (laLienTuc(enr)) throw badRequest(CAU_LIEN_TUC.loTrinhTiep);
   const cu = conn.prepare('SELECT ngay_xem_lai, lop_du_kien_id FROM lo_trinh_tiep_theo WHERE student_id = ? AND class_id = ?').get(studentId, enr.class_id) as any;
   const dong = kiemDong(studentId, enr, input, docLopDuKien([input.lopDuKienId]), cu?.ngay_xem_lai ?? null, cu?.lop_du_kien_id ?? null);
   tx(() => { chanQlDaQuyet(enr.class_id, [dong]); ghiCacDong(p, [dong]); });
@@ -247,9 +250,10 @@ export function ghiLoTrinhTiep(p: Principal, studentId: number, input: GhiVao) {
 export const GHI_CA_LOP_TOI_DA = 60;
 
 function lopThuongCua(classId: number): any {
-  const cls = db().prepare('SELECT id, code, programme_code, is_fast_track, branch_id FROM classes WHERE id = ?').get(classId) as any;
+  const cls = db().prepare('SELECT id, code, programme_code, is_fast_track, branch_id, moc_lap FROM classes WHERE id = ?').get(classId) as any;
   if (!cls) throw notFound('Không tìm thấy lớp');
   if (cls.is_fast_track) throw badRequest('Lộ trình tiếp theo chỉ áp dụng cho lớp thường.');
+  if (laLienTuc(cls)) throw badRequest(CAU_LIEN_TUC.loTrinhTiep);
   return cls;
 }
 
@@ -374,8 +378,8 @@ export function lopHocCua(p: Principal, studentId: number, current: any): {
   let tiepTheo: string | null = null;
   let laLopThuong = false;
   if (current) {
-    const cls = conn.prepare('SELECT programme_code, is_fast_track FROM classes WHERE id = ?').get(current.class_id) as any;
-    laLopThuong = !cls?.is_fast_track;
+    const cls = conn.prepare('SELECT programme_code, is_fast_track, moc_lap FROM classes WHERE id = ?').get(current.class_id) as any;
+    laLopThuong = !!cls && coLoTrinhTiep(cls);
     if (laLopThuong) {
       const banGhi = conn
         .prepare('SELECT huong FROM lo_trinh_tiep_theo WHERE student_id = ? AND class_id = ?')

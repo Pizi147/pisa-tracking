@@ -130,39 +130,44 @@ export type AttemptBundle = {
   }>;
 };
 
+/** Đọc theo lô 900 tham số (SQLite / Turso) → dòng gom theo `attempt_id` — dạng `nhoTheoId` cần. */
+function docTheoLo<T extends { attempt_id: number }>(ids: number[], sql: (ph: string) => string): Map<number, T[]> {
+  const out = new Map<number, T[]>();
+  for (let i = 0; i < ids.length; i += 900) {
+    const chunk = ids.slice(i, i + 900);
+    for (const r of db().prepare(sql(chunk.map(() => '?').join(','))).all(...chunk) as T[]) {
+      if (!out.has(r.attempt_id)) out.set(r.attempt_id, []);
+      out.get(r.attempt_id)!.push(r);
+    }
+  }
+  return out;
+}
+
 export function loadBundle(attemptIds: number[]): AttemptBundle {
   const bundle: AttemptBundle = { scores: new Map(), skips: new Map(), skillRows: new Map(), cases: new Map() };
   if (!attemptIds.length) return bundle;
   bundle.skillRows = loadSkillRows(attemptIds);
   bundle.scores = diemCuaLuot(attemptIds);
-  const conn = db();
-  // SQLite giới hạn số tham số của một câu lệnh (999 ở bản cũ), nên chia lô thay vì nối một danh sách dài. PR-MT: 400 → 900 —
-  // mỗi em FT nay có sẵn 3 MT từ ngày đầu (M1), lô 400 làm danh sách chi nhánh tách thêm lô sớm.
-  for (let i = 0; i < attemptIds.length; i += 900) {
-    const chunk = attemptIds.slice(i, i + 900);
-    const ph = chunk.map(() => '?').join(',');
-    /*
-     * Phạm vi lấy từ bảng lịch kỹ năng khi đợt đã có; đợt cũ chưa di trú thì đọc bảng
-     * ngoại lệ cũ. Danh sách là màn CHỈ ĐỌC nên không tự tạo dòng ở đây (mục 18.1).
-     */
-    for (const id of chunk) {
-      const rows = bundle.skillRows.get(id);
-      if (rows?.length) bundle.skips.set(id, skippedSkillsOf(rows));
-    }
-    for (const r of conn
-      .prepare(`SELECT attempt_id, skill FROM attempt_skill_skips WHERE attempt_id IN (${ph})`)
-      .all(...chunk) as any[]) {
-      if (bundle.skillRows.get(r.attempt_id)?.length) continue;
-      if (!bundle.skips.has(r.attempt_id)) bundle.skips.set(r.attempt_id, []);
-      bundle.skips.get(r.attempt_id)!.push(r.skill as AssessedSkill);
-    }
-    for (const r of conn
-      .prepare(
-        /*
-         * Một lượt nay sinh NHIỀU vấn đề (mỗi kỹ năng một cái), nên gộp lại thành một dòng
-         * tóm tắt cho lượt: mức cao nhất, và mốc mới nhất đã thực sự xảy ra.
-         */
-        `SELECT c.attempt_id, MIN(c.id) AS id,
+  for (const id of attemptIds) {
+    const rows = bundle.skillRows.get(id);
+    if (rows?.length) bundle.skips.set(id, skippedSkillsOf(rows));
+  }
+  /*
+   * Phạm vi lấy từ bảng lịch kỹ năng khi đợt đã có; đợt cũ chưa di trú thì đọc bảng ngoại lệ cũ. Danh sách là màn CHỈ ĐỌC nên không tự tạo
+   * dòng ở đây (mục 18.1). OV-6b2: hai câu dưới nhớ THEO LƯỢT trong request GET (`nhoTheoId`, như lịch kỹ năng và điểm) — một trang gọi
+   * `loadBundle` hai lần cùng tập lượt không đọc lại, nên mỗi lô 900 lượt thêm đúng một câu mỗi bảng.
+   */
+  for (const [id, rows] of nhoTheoId('skip-cu:', attemptIds, (ids) => docTheoLo<{ attempt_id: number; skill: string }>(ids,
+    (ph) => `SELECT attempt_id, skill FROM attempt_skill_skips WHERE attempt_id IN (${ph})`))) {
+    if (bundle.skillRows.get(id)?.length) continue;
+    bundle.skips.set(id, rows.map((r) => r.skill as AssessedSkill));
+  }
+  /*
+   * Một lượt nay sinh NHIỀU vấn đề (mỗi kỹ năng một cái), nên gộp lại thành một dòng tóm tắt cho lượt: mức cao nhất, và mốc mới nhất đã thực
+   * sự xảy ra. Người dùng phải nhìn một lượt là biết đã được làm hay chưa; không có gì thì nói thẳng "chưa có follow-up".
+   */
+  for (const [id, [r]] of nhoTheoId('case-luot:', attemptIds, (ids) => docTheoLo<any>(ids,
+    (ph) => `SELECT c.attempt_id, MIN(c.id) AS id,
                 MAX(c.sos_level) AS sos_level,
                 MIN(CASE c.status WHEN 'open' THEN 0 WHEN 'in_progress' THEN 1 ELSE 2 END) AS st,
                 MAX(iv.done_on) AS last_done
@@ -172,21 +177,14 @@ export function loadBundle(attemptIds: number[]): AttemptBundle {
                FROM case_interventions WHERE status != 'cancelled' GROUP BY case_id
            ) iv ON iv.case_id = c.id
           WHERE c.attempt_id IN (${ph})
-          GROUP BY c.attempt_id`,
-      )
-      .all(...chunk) as any[]) {
-      /*
-       * Người dùng phải nhìn một lượt là biết đã được làm hay chưa. Mốc là lần hỗ trợ gần
-       * nhất đã thực sự xảy ra; không có gì thì nói thẳng "chưa có follow-up".
-       */
-      const status = r.st === 0 ? 'open' : r.st === 1 ? 'in_progress' : 'done';
-      bundle.cases.set(r.attempt_id, {
-        id: r.id, status, sos_level: r.sos_level,
-        followUp: r.last_done
-          ? `Đã hỗ trợ · ${String(r.last_done).slice(8, 10)}/${String(r.last_done).slice(5, 7)}`
-          : null,
-      });
-    }
+          GROUP BY c.attempt_id`))) {
+    const status = r.st === 0 ? 'open' : r.st === 1 ? 'in_progress' : 'done';
+    bundle.cases.set(id, {
+      id: r.id, status, sos_level: r.sos_level,
+      followUp: r.last_done
+        ? `Đã hỗ trợ · ${String(r.last_done).slice(8, 10)}/${String(r.last_done).slice(5, 7)}`
+        : null,
+    });
   }
   return bundle;
 }

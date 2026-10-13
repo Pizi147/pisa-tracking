@@ -8,7 +8,7 @@
  * Dải xét trên tỷ lệ CHƯA làm tròn: 0.595 là 50–59, 0.6 là 60–69, 0.6999 là 60–69, 0.7 là Pass. Làm tròn chỉ để hiện.
  * Hướng gợi ý KHÔNG lưu (sửa điểm thì gợi ý đổi theo); Quản lý quyết ở màn Chuyển lớp (Q30-3: không còn thẻ duyệt).
  */
-import { CHUONG_TRINH_KHONG_CHIA_MON, RATIO_PASS_THRESHOLD, REGULAR_SKILLS, programmeOf, tenMonNgan, type RegularSkill } from './normal.ts';
+import { CHUONG_TRINH_KHONG_CHIA_MON, RATIO_PASS_THRESHOLD, REGULAR_SKILLS, laChuongTrinhGoc, programmeOf, tenMonNgan, type RegularSkill } from './normal.ts';
 import { roundToHalf } from './tongKetLoTrinh.ts';
 import { NORMAL_LADDER } from './fasttrack.ts';
 import type { ProgrammeCode } from './normal.ts';
@@ -77,8 +77,9 @@ function boTro(ct: ProgrammeCode, dai: '50_59' | '60_69', monTruot: readonly str
 
 /** `null` khi chưa đủ điểm (không gợi ý, không đoán) hoặc không phải lớp thường. `monTruot` = ô chuẩn của lớp cũ dưới ngưỡng; `nguong` = ngưỡng đạt của lớp. */
 export function goiYCuoiKhoa(x: { ct: string | null; tyLe: number | null; monTruot: readonly string[]; nguong?: number }): GoiYCuoiKhoa | null {
-  const ct = programmeOf(x.ct);
-  if (!ct || ct === 'FT' || x.tyLe === null || !Number.isFinite(x.tyLe)) return null;
+  /* OV-6b2: chỉ chương trình có bậc kế (FOU/BE/ELE/Pre FOU) — chương trình Quản trị tạo không có luật % Cuối khoá. */
+  const ct = programmeOf(x.ct) as ProgrammeCode | null;
+  if (!ct || ct === 'FT' || !laChuongTrinhGoc(ct) || x.tyLe === null || !Number.isFinite(x.tyLe)) return null;
   const dai = daiCuoiKhoa(x.tyLe, x.nguong);
   const ke = tenBacKe(ct);
   const chung = { dai, tyLe: x.tyLe };
@@ -149,7 +150,7 @@ export type HopKetLuan = {
 
 /** Chữ hộp "Kết luận khoá" ở hồ sơ HV (K3 §4b, K3-43) — MỘT hàm, sáu trạng thái: thiếu môn · Pass · lên + bổ trợ · QL cân nhắc · QL đã quyết · học lại. */
 export function chuHopKetLuan(x: HopKetLuanVao): HopKetLuan {
-  const ct = programmeOf(x.ct);
+  const ct = programmeOf(x.ct) as ProgrammeCode | null;   // có gợi ý (`x.goiY`) chỉ khi là chương trình gốc — xem `goiYCuoiKhoa`
   const kyVong = ct && KY_VONG_DAU_RA[ct]
     ? {
       nhan: `Kết quả đầu ra (${KY_VONG_DAU_RA[ct]})`,

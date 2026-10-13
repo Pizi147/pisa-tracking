@@ -58,13 +58,15 @@ export type CaseCategory = (typeof CASE_CATEGORIES)[number];
  * Kỹ năng ngoài danh sách → ném lỗi, không để trùng id.
  * ponytail: ≤ 10 kỹ năng (hệ số 10); thêm kỹ năng thứ 11 thì đổi hệ số.
  */
+/** Ô điểm của một bài: các hạng mục Case + OV-6b2 môn gộp L+S, R+W (không phải hạng mục Case — Checkpoint không sinh Case). Thứ tự cố định: id đã phát ra không đổi. */
+const KY_NANG_BAI: readonly string[] = [...CASE_CATEGORIES, 'listening_speaking', 'reading_writing'];
 export function baiId(attemptId: number, skill: string): number {
-  const k = (CASE_CATEGORIES as readonly string[]).indexOf(skill);
+  const k = KY_NANG_BAI.indexOf(skill);
   if (k < 0) throw new Error(`baiId: kỹ năng lạ "${skill}"`);
   return attemptId * 10 + k;
 }
 /** Ngược của `baiId`. */
-export const tachBaiId = (id: number): { attemptId: number; skill: string } => ({ attemptId: Math.floor(id / 10), skill: CASE_CATEGORIES[id % 10] });
+export const tachBaiId = (id: number): { attemptId: number; skill: string } => ({ attemptId: Math.floor(id / 10), skill: KY_NANG_BAI[id % 10] });
 
 export const CASE_CATEGORY_LABEL: Record<CaseCategory, string> = {
   listening: 'Listening',

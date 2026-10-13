@@ -1,7 +1,8 @@
-import { isInitialised } from '../db.ts';
+import { isInitialised, tx } from '../db.ts';
 import { thiHanhLenhDenHan } from '../classes/lenhChuyen.ts';
 import { todayInBusinessTz } from '../util.ts';
 import { baoChamCheoQuaHan } from '../cham/chamCheo.ts';
+import { sinhCheckpointKeTiep } from '../normal/regular.ts';
 
 /**
  * QUÉT ĐỊNH KỲ SÁNG THỨ HAI (RB-1, PR-AN): thi hành quyết định chuyển lớp tới hạn + chuông "Speaking quá hạn chấm". Netlify gọi hàm `chot-vang`
@@ -28,5 +29,7 @@ export function chotVangDinhKy(o: {
   try { daChuyen = (o.chuyen ?? ((n) => thiHanhLenhDenHan(n).daChuyen))(ngay); } catch (e) { console.error('[chot-vang] chuyển lớp', e); }
   /* PR-LT3 (T18, D3): chuông "Speaking quá hạn chấm" cho GVBM Speaking + GVCN — cùng lượt quét thứ Hai; lỗi không làm hỏng lượt quét. */
   try { baoChamCheoQuaHan(ngay); } catch (e) { console.error('[chot-vang] chuông chấm chéo', e); }
+  /* OV-6b2: lớp liên tục — em đã qua tuần thi Checkpoint (chưa đủ điểm) có Checkpoint kế tiếp; lỗi không làm hỏng lượt quét. */
+  try { tx(() => sinhCheckpointKeTiep(null, ngay)); } catch (e) { console.error('[chot-vang] checkpoint', e); }
   return { ngay, daChuyen, boQua: null, ms: Date.now() - batDau };
 }

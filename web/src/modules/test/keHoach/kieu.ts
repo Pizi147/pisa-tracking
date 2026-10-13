@@ -1,6 +1,6 @@
 import {
   KY_NANG_KE_HOACH, gomChip, tenMonNgan, tuanLich,
-  type KyNangKH, type OKyNang, ATTEMPT_KIND_SHORT } from '@shared/domain/index.ts';
+  type KyNangKH, type OKyNang, nhanBai } from '@shared/domain/index.ts';
 
 /** Kiểu dữ liệu của Kế hoạch Test phía web — khớp `server/src/keHoach/keHoachTest.ts`. */
 
@@ -22,7 +22,8 @@ export type HangFT = { studentId: number; ten: string; ma: string; cycleId?: num
 export type LuoiFTData = { classId: number; classCode: string; cot: number[]; hang: HangFT[] };
 
 export type DotThuong = { attemptId: number | null; kn: KnO };
-export type KindThuong = 'progress' | 'final';
+/** `progress` | `final`; OV-6b2 lớp liên tục: `cp{n}` = Checkpoint n. */
+export type KindThuong = string;
 export type CotThuong = { kind: KindThuong; nhan: string; deXuat: string | null; nhanDeXuat: string | null };
 export type HangThuong = {
   studentId: number; ten: string; ma: string; dot: Partial<Record<KindThuong, DotThuong>>;
@@ -39,7 +40,9 @@ export type LuoiThuongData = {
 /** Một đợt của lớp: FT = MT{n}, lớp thường = Giữa khoá / Cuối khoá. */
 export type DotChon = { loai: 'ft'; attemptNo: number } | { loai: 'thuong'; kind: KindThuong };
 
-export const nhanDot = (d: DotChon): string => (d.loai === 'ft' ? `MT${d.attemptNo}` : ATTEMPT_KIND_SHORT[d.kind]);
+export const nhanDot = (d: DotChon): string => (d.loai === 'ft' ? `MT${d.attemptNo}` : nhanBai(khoaBaiThuong(d.kind)));
+/** Khoá cột Kế hoạch (`cp2`) → khoá bài của máy chủ (`checkpoint:2`); Progress / Final giữ nguyên. */
+export const khoaBaiThuong = (kind: string): string => kind.replace(/^cp(\d+)$/, 'checkpoint:$1');
 export const khoaDot = (d: DotChon): string => (d.loai === 'ft' ? `mt${d.attemptNo}` : d.kind);
 /** Phần định danh đợt trong body gửi máy chủ (`/xep-moi`, `/hang-loat`). */
 export const thanDot = (d: DotChon) => (d.loai === 'ft' ? { attemptNo: d.attemptNo } : { kind: d.kind });

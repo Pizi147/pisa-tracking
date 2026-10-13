@@ -1,5 +1,6 @@
+import { boMonCt } from '../normal/regular.ts';
 import { db } from '../db.ts';
-import { boMonLich, kyNangPhuTrach, mocLoTrinh, tenMonNgan } from '../../../shared/domain/index.ts';
+import { kyNangPhuTrach, mocLoTrinh, tenMonNgan } from '../../../shared/domain/index.ts';
 import { addDays } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import type { Principal } from '../permissions.ts';
@@ -47,7 +48,7 @@ export function daiLop(p: Principal, classId: number, o: { pr: TienDoMoc; ft: bo
     daGhi.get(r.b)!.add(r.a);
   }
   const banGiaoMon = chuaXn.length
-    ? boMonLich(o.ct).filter((m) => kyNangPhuTrach(o.ct, m).some((k) => pc.kyNang.has(k))).map((m) => ({
+    ? boMonCt(o.ct).filter((m) => kyNangPhuTrach(o.ct, m).some((k) => pc.kyNang.has(k))).map((m) => ({
       mon: m, monNgan: tenMonNgan(o.ct, m), daGhi: nguon.filter((r) => daGhi.get(m)?.has(r.a)).length, tong: nguon.length,
       han: min(chuaXn.filter((r) => !daGhi.get(m)?.has(r.a)).map((r) => r.g)),
     }))
@@ -88,7 +89,7 @@ export function daiHocVien(p: Principal, studentId: number): DaiHocVien | null {
   const pc = phanCongO(conn, p.userId, l.lop_nguon_id);
   const ra = coTheRaLenh(p, l.lop_nguon_id);
   const daGhi = new Set<string>(String(l.mon_da_ghi ?? '').split(',').filter(Boolean));
-  const mons = boMonLich(l.ct);
+  const mons = boMonCt(l.ct);
   const phieu = l.huong !== 'dung_hoc';
   const qlThay = ra && (!!l.han_gvcn && homNay > l.han_gvcn);   // lớp không GVCN được `daiLop` xử lý ở phía lớp; ở đây chỉ quá hạn
   const nut: DaiHocVien['nut'] = [];
