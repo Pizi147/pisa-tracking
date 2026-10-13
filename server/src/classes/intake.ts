@@ -257,11 +257,10 @@ export function previewIntake(
 
     const dob = docNgayNhap(r.dob, homNay, { toiThieu: NGAY_SINH_TOI_THIEU, toiDa: homNay });
     if (dob.loi) loi('dob', dob.loi);
-    else if (!dob.iso) loi('dob', 'Chưa điền');   // PR-OV2b: ngày sinh bắt buộc như email
+    else if (!dob.iso) loi('dob', 'Chưa điền');   // PR-OV2b: ngày sinh bắt buộc (email thì không — PR-OV2c)
 
     const email = docEmail(r.email);
     if (email.loi) loi('email', email.loi);
-    else if (!email.email) loi('email', 'Chưa điền');
 
     /*
      * OVR, BỐN BAND, ĐÃ THI TỚI MT — chỉ Fast Track. Lớp thường có dữ liệu ở đây là do file trộn: bỏ qua có báo (Q4),

@@ -48,7 +48,7 @@ export function HocVienCuaToi() {
         <O nhan="Dưới kỳ vọng" so={data.duoiKyVong} donVi={`/ ${data.tong} em`} phu="MT gần nhất" />
         <O nhan="Có Case đang mở" so={data.caseMo} donVi="em" phu={data.caseMoiTuan ? `${data.caseMoiTuan} Case mới tuần này` : 'Không có Case mới tuần này'} />
         <O nhan="Sắp thi IELTS" so={data.sapThi} donVi="em" phu="trong 6 tuần tới" />
-        <O nhan="Thiếu thông tin" so={data.thieuTt} donVi="em" phu="email / ngày sinh" />
+        <O nhan="Thiếu thông tin" so={data.thieuTt} donVi="em" phu="ngày sinh" />
       </div>
       <section className="card" aria-labelledby="can-chu-y">
         <div className="flex flex-wrap items-baseline gap-x-2 px-4 pt-3 pb-2">

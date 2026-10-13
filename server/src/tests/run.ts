@@ -9234,6 +9234,9 @@ await runPrOv2aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 // ==================================================================== PR-OV2b (hồ sơ HV: Sửa thông tin, TVV, email + ngày sinh, Target, điểm đầu vào)
 const { runPrOv2bTests } = await import('./prOv2b.tests.ts');
 await runPrOv2bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-OV2c (email học viên không bắt buộc)
+const { runPrOv2cTests } = await import('./prOv2c.tests.ts');
+await runPrOv2cTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV3b (Lộ trình nháp / chốt, hạn, bàn giao làm lại, Kết quả đầu ra)
 const { runPrOv3bTests } = await import('./prOv3b.tests.ts');
 await runPrOv3bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
