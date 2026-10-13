@@ -33,6 +33,8 @@ export async function runPrOv1bTests(t: YThucTestKit) {
   const WS = '2026-11-02', WS1 = '2026-11-09';
   const TRONG = '2026-11-04', BU = '2026-11-11';
   const W = week.ensurePeriod(WS).id as number, W1 = week.ensurePeriod(WS1).id as number;
+  /* OV-1e: tuần trước W (W4 OCT) và tuần sau W1 (W3 NOV) — lịch thi lại đã qua / tuần sau so với hôm nay `BU`. */
+  const W0 = week.ensurePeriod('2026-10-26').id as number, W2 = week.ensurePeriod('2026-11-16').id as number;
 
   /* Lượt MT CUỐI của mỗi em đang học MB FT 101 — không có lượt sau để luật thứ tự đợt (T15) chặn lần dời. */
   const luot = all(
@@ -198,15 +200,23 @@ export async function runPrOv1bTests(t: YThucTestKit) {
   }));
 
   /* ---------------------------------------------------------------- migrate prOv1b: dựng đúng trạng thái cũ của 4 ca */
+  const ghiDau = (a: number, s: string, pid: number, o2: { late: number; settled: string | null }) => conn.prepare(
+    `INSERT INTO assessment_scores (attempt_id, skill, no_show_period_id, no_show_at, no_show_late, no_show_settled_at) VALUES (?,?,?,?,?,?)`,
+  ).run(a, s, pid, '2026-11-11T03:00:00.000Z', o2.late, o2.settled);
+  const lichSu = (a: number, action: string, field: string, actor: number | null) => conn.prepare(
+    `INSERT INTO attempt_schedule_history (attempt_id, action, field, actor_user_id, created_at) VALUES (?,?,?,?,?)`,
+  ).run(a, action, field, actor, '2026-11-11T04:00:00.000Z');
+  /** "-" nhập bù ở tuần `tru`, đã chốt luật cũ, máy dời Listening sang tuần `doi` (vắng 1, không ai quyết định sau đó). */
+  const buDaDoiSang = (a: number, tru: number, doi: number) => {
+    ghiDau(a, 'listening', tru, { late: 1, settled: '2026-11-11T03:00:00.000Z' });
+    lichSu(a, 'skill_no_show_settled', 'listening', null);
+    lichSu(a, 'skill_week_moved_absence', 'listening', null);
+    conn.prepare(`UPDATE attempt_skills SET planned_period_id = ?, absence_move_count = 1 WHERE attempt_id = ? AND skill = 'listening'`).run(doi, a);
+  };
+
   const dungCaCu = () => {
     const [thao, phuong, chuaChot, buDaDoi] = luot;
     for (const a of luot) dung(a);
-    const ghiDau = (a: number, s: string, pid: number, o2: { late: number; settled: string | null }) => conn.prepare(
-      `INSERT INTO assessment_scores (attempt_id, skill, no_show_period_id, no_show_at, no_show_late, no_show_settled_at) VALUES (?,?,?,?,?,?)`,
-    ).run(a, s, pid, '2026-11-11T03:00:00.000Z', o2.late, o2.settled);
-    const lichSu = (a: number, action: string, field: string, actor: number | null) => conn.prepare(
-      `INSERT INTO attempt_schedule_history (attempt_id, action, field, actor_user_id, created_at) VALUES (?,?,?,?,?)`,
-    ).run(a, action, field, actor, '2026-11-11T04:00:00.000Z');
     /* Thảo: 5 ô "-" nhập bù đã chốt luật cũ (vắng 1, máy dời W2) rồi người dùng dời cả lượt về W1 → scheduled ở tuần đã qua. */
     for (const s of ['listening', 'reading', 'writing1', 'writing2', 'speaking']) ghiDau(thao, s, W, { late: 1, settled: '2026-11-11T03:00:00.000Z' });
     for (const s of ['listening', 'reading', 'writing', 'speaking']) {
@@ -220,11 +230,8 @@ export async function runPrOv1bTests(t: YThucTestKit) {
     for (const s of ['listening', 'reading']) ghiDau(phuong, s, W, { late: 1, settled: null });
     /* "-" trong tuần chưa chốt (luật cũ chờ Chủ nhật) — migrate chốt theo luật mới: vắng lần 1, dời W2. */
     ghiDau(chuaChot, 'listening', W, { late: 0, settled: null });
-    /* "-" nhập bù đã chốt và máy đã dời (không ai quyết định sau đó) → Không dự thi, về tuần cũ, bộ đếm −1. */
-    ghiDau(buDaDoi, 'listening', W, { late: 1, settled: '2026-11-11T03:00:00.000Z' });
-    lichSu(buDaDoi, 'skill_no_show_settled', 'listening', null);
-    lichSu(buDaDoi, 'skill_week_moved_absence', 'listening', null);
-    conn.prepare(`UPDATE attempt_skills SET planned_period_id = ?, absence_move_count = 1 WHERE attempt_id = ? AND skill = 'listening'`).run(W1, buDaDoi);
+    /* "-" nhập bù đã chốt và máy đã dời sang tuần ĐÃ QUA (không ai quyết định sau đó) → Không dự thi, về tuần cũ, bộ đếm −1. */
+    buDaDoiSang(buDaDoi, W0, W);
     xoaNho();
     return { thao, phuong, chuaChot, buDaDoi };
   };
@@ -249,9 +256,47 @@ export async function runPrOv1bTests(t: YThucTestKit) {
     assert(ky(ca.chuaChot, 'listening').planned_period_id === W1 && ky(ca.chuaChot, 'listening').absence_move_count === 1, `chưa chốt: ${JSON.stringify(ky(ca.chuaChot, 'listening'))}`);
     /* Nhập bù đã dời bởi máy → về W1, bộ đếm 0, Không dự thi. */
     const k = ky(ca.buDaDoi, 'listening');
-    assert(k.planned_period_id === W && k.absence_move_count === 0 && dau(ca.buDaDoi, 'listening').no_show_cu === 1, `bù đã dời: ${JSON.stringify(k)}`);
+    assert(k.planned_period_id === W0 && k.absence_move_count === 0 && dau(ca.buDaDoi, 'listening').no_show_cu === 1, `bù đã dời: ${JSON.stringify(k)}`);
     const lan2: string[] = [];
     assert(migratePrOv1b(conn, lan2, BU).length === 0 && lan2.length === 0, `chạy lần hai còn đổi: ${lan2.join(' | ')}`);
+  }));
+
+  check('OV1e · "-" nhập bù đã chốt, máy dời sang tuần hiện tại / tuần sau → migrate GIỮ lịch thi lại (lịch, lần vắng, "-"); tuần đã qua → như cũ; kiem-truoc khớp; chạy lại không đổi', () => thu(() => {
+    const [nay, sau, qua] = luot;
+    for (const a of luot) dung(a);
+    buDaDoiSang(nay, W, W1);    // BU = thứ Tư W2 NOV → W1 là tuần hiện tại
+    buDaDoiSang(sau, W, W2);
+    buDaDoiSang(qua, W0, W);
+    xoaNho();
+    const anh = (a: number) => JSON.stringify([ky(a, 'listening'), dau(a, 'listening')]);
+    const truocNay = anh(nay), truocSau = anh(sau);
+    const truoc = kiemTruocOv1b(conn, BU);
+    const applied: string[] = [];
+    const doi = migratePrOv1b(conn, applied, BU);
+    /* Giữ nguyên từng cột: tuần thi lại, lần vắng 1, "-" đã chốt chưa là Không dự thi. */
+    assert(anh(nay) === truocNay, `tuần hiện tại đã đổi:\n${truocNay}\n${anh(nay)}`);
+    assert(anh(sau) === truocSau, `tuần sau đã đổi:\n${truocSau}\n${anh(sau)}`);
+    assert(ky(nay, 'listening').planned_period_id === W1 && ky(nay, 'listening').absence_move_count === 1 && dau(nay, 'listening').no_show_cu === 0, 'tiền đề ca giữ');
+    /* Lịch đã qua → như cũ: Không dự thi, về tuần "-", bộ đếm 0. */
+    const kq = ky(qua, 'listening');
+    assert(kq.planned_period_id === W0 && kq.absence_move_count === 0 && dau(qua, 'listening').no_show_cu === 1, `tuần đã qua: ${JSON.stringify(kq)}`);
+    /* Báo cáo: dòng "giữ lịch thi lại <mã tuần>" cho hai ca giữ, ở cả migrate lẫn kiem-truoc (cùng danh sách). */
+    const dongCua = (ds: any[], a: number) => ds.find((d) => d.attemptId === a && d.o === 'listening');
+    for (const [a, ws] of [[nay, WS1], [sau, '2026-11-16']] as const) {
+      const ma = dm.tuanLich(ws);
+      assert(dongCua(doi, a)?.sau === `giữ lịch thi lại ${ma}`, `migrate ${a}: ${JSON.stringify(dongCua(doi, a))}`);
+      assert(dongCua(truoc, a)?.sau === `giữ lịch thi lại ${ma}`, `kiem-truoc ${a}: ${JSON.stringify(dongCua(truoc, a))}`);
+      assert(applied.some((l) => l.includes(`giữ lịch thi lại ${ma}`)), `báo cáo thiếu dòng giữ ${ma}: ${applied.join(' | ')}`);
+    }
+    assert(/^Không dự thi/.test(dongCua(doi, qua)?.sau ?? '') && dongCua(truoc, qua)?.sau === dongCua(doi, qua)?.sau, `ca đã qua: ${JSON.stringify(dongCua(truoc, qua))}`);
+    /* Cùng danh sách ô (cột "sau" của buổi C có sẵn trong seed ở bản chỉ đọc ghi luật — khác bản thật, đã nêu ở đầu prOv1b.ts). */
+    const khoa = (ds: any[]) => ds.map((d) => `${d.attemptId}:${d.o}`).sort().join(',');
+    assert(khoa(truoc) === khoa(doi), `kiem-truoc ≠ migrate:\n${khoa(truoc)}\n${khoa(doi)}`);
+    /* Chạy lại: không ghi gì; chỉ còn hai dòng giữ. */
+    const n0 = one('SELECT total_changes() n').n;
+    const lan2 = migratePrOv1b(conn, [], BU);
+    assert(one('SELECT total_changes() n').n === n0, 'chạy lần hai đã ghi DB');
+    assert(lan2.every((d: any) => d.sau.startsWith('giữ lịch thi lại')) && dongCua(lan2, nay) && dongCua(lan2, sau), `lần hai: ${khoa(lan2)}`);
   }));
 
   check('OV1b-9 · kiem-o-lop: dòng lịch sử lịch ghi đúng tên thao tác, không "undefined"', () => thu(() => {
