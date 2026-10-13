@@ -25,7 +25,7 @@ import {
 import { NutNhanXet, ODiemMt } from '../fasttrack/HopNhapDiem.tsx';
 import { GOI_Y_COT_MT, NutGvCham, useGvChamCot } from './GvCham.tsx';
 import { DongThi, nhanKyNangFt } from './DongThi.tsx';
-import { DauLuu, DauO, LuoiFT, VIEN_LOI, khacTuanFt, khopKn, nutTuanGoc, oTrongFt, type FtSheet, type HangMo } from './LuoiFT.tsx';
+import { DauLuu, DauO, LuoiFT, VIEN_LOI, chiConHuy, khacTuanFt, khopKn, nutTuanGoc, oTrongFt, type FtSheet, type HangMo } from './LuoiFT.tsx';
 import {
   LuoiThuong, ketQuaCua, lichCua, oThuong, tongPhoBien, useLuuThuong, type ThuongSheet,
 } from './LuoiThuong.tsx';
@@ -175,6 +175,8 @@ function MotKyNangFt({ data, onReload, kn, hv, hangMo, tuanDangXem }: {
     return { k, cuaMinh: minh.has(k), daNhap: cs.filter((c) => c.band !== null || !!c.noShow).length, tong: cs.length };
   });
   const nhieuMt = new Set(data.rows.map((r) => r.attemptNo)).size > 1;
+  /* OV-11a (TE-12): cùng bộ lọc lưới máy tính — hàng chỉ còn ô "Đã huỷ" ở tuần đang xem không hiện. */
+  const rows = data.rows.filter((r) => !chiConHuy(r, tuanDangXem));
 
   return (
     <div>
@@ -184,12 +186,12 @@ function MotKyNangFt({ data, onReload, kn, hv, hangMo, tuanDangXem }: {
         <NutGvCham hang nhan="GV chấm S" value={gvCot} onChange={setGvCot} goiY={data.period ? undefined : GOI_Y_COT_MT} />
       )}
       <ul className="m-0 p-0 list-none">
-        {data.rows.map((r, i) => (
+        {rows.map((r, i) => (
           <DongFt key={r.attemptId} row={r} k={chon} nhieuMt={nhieuMt} lop={data.classCode} tuanDangXem={tuanDangXem} tuanXem={tuanXem}
             active={hv !== null && r.studentId === hv} onReload={onReload} gvMacDinh={gvCot}
             mo={mo === r.attemptId && moChon === chon} onMo={(m) => { setMo(m ? r.attemptId : null); setMoChon(chon); }}
             onTiep={() => {
-              const ke = data.rows.slice(i + 1).find((x) => { const c = oCua(x, chon); return !x.ngungHoc && !!c && suaDuoc(c) && !khac(c); });
+              const ke = rows.slice(i + 1).find((x) => { const c = oCua(x, chon); return !x.ngungHoc && !!c && suaDuoc(c) && !khac(c); });
               setMo(ke?.attemptId ?? null);
             }} />
         ))}

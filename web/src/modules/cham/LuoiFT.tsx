@@ -59,7 +59,7 @@ export const nutTuanGoc = (c: Cell) => !!c.daChot?.doiSang && suaDuoc(c);
 /**
  * OV-11a (TE-12): hàng chỉ còn ô "Đã huỷ" ở tuần đang xem, không ô nào khác để nhập / Bỏ vắng — không có việc gì, ẩn khỏi lưới theo tuần.
  */
-const chiConHuy = (r: FtSheet['rows'][number], tuanDangXem: string | null) => !!tuanDangXem
+export const chiConHuy = (r: FtSheet['rows'][number], tuanDangXem: string | null) => !!tuanDangXem
   && r.cells.some((c) => c.required && c.progress === 'cancelled' && c.weekStart === tuanDangXem)
   && !r.cells.some((c) => c.required && c.progress !== 'cancelled' && (!khacTuanFt(c, tuanDangXem) || nutTuanGoc(c)));
 
