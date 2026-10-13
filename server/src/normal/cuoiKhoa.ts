@@ -1,6 +1,6 @@
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
-  NGUONG_KY_VONG, NGUONG_MINI_TEST, PERMISSIONS, caseDedupKey, categoryOf, chuHopKetLuan, coBoTroFinal, khongPhuHopLoTrinh, chuMonTruot, goiYCuoiKhoa, kyHieuLop, kyNangLopDich, lichBoTro, ngay, tenMon, weeklyUpdateDue,
+  CASE_OUTCOME_LABEL, NGUONG_KY_VONG, NGUONG_MINI_TEST, PERMISSIONS, laPaBoTro, caseDedupKey, categoryOf, chuHopKetLuan, coBoTroFinal, khongPhuHopLoTrinh, chuMonTruot, goiYCuoiKhoa, kyHieuLop, kyNangLopDich, lichBoTro, ngay, tenMon, weeklyUpdateDue,
   type BoTroMienPhi, type GoiYCuoiKhoa, type RegularSkill,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -608,6 +608,17 @@ export function capNhatCuoiKhoaSauChuyen(p: Principal, a: { id: number; student_
 // ==================================================================== Mini Test (§6.3, T47, T61, M-05, K1-41)
 
 
+/**
+ * OV-11c (CV-4): nhóm bổ trợ có Mini Test CHỜ ghi — Công việc và chỉ số `pa-can-cap-nhat` bỏ dòng Kết quả PA của nhóm (việc là "Ghi Mini Test").
+ * Chỉ hỏi khi có PA bổ trợ trong tập (không thêm câu cho người không có).
+ */
+export function nhomMiniTestCho(rows: readonly { kind: string; nhom_bo_tro: string | null }[]): Set<string> {
+  const nhom = [...new Set(rows.filter((r) => laPaBoTro(r.kind) && r.nhom_bo_tro).map((r) => r.nhom_bo_tro as string))];
+  if (!nhom.length) return new Set();
+  return new Set((db().prepare(`SELECT DISTINCT nhom_bo_tro FROM mini_test WHERE ty_le IS NULL AND nhom_bo_tro IN (${nhom.map(() => '?').join(',')})`)
+    .all(...nhom) as any[]).map((r) => r.nhom_bo_tro as string));
+}
+
 /** Kiểm đầu vào Mini Test: 0–100 (lưu 0–1), ngày ≤ hôm nay và không trước `ngày dự kiến − 14`. */
 export function kiemMiniTest(mt: { ngay_du_kien: string }, x: { tyLe?: unknown; ngay?: unknown }): { tyLe: number; ngay: string } {
   const pt = typeof x.tyLe === 'string' && x.tyLe.trim() !== '' ? Number(x.tyLe.replace(',', '.')) : x.tyLe;
@@ -618,15 +629,22 @@ export function kiemMiniTest(mt: { ngay_du_kien: string }, x: { tyLe?: unknown; 
   return { tyLe: pt / 100, ngay: x.ngay };
 }
 
+/**
+ * OV-11c (CV-13): kết quả Case khi Mini Test đạt = ĐÚNG mức GV vừa chọn ở Kết quả cuối — hai bảng mã khác nghĩa: kết quả PA `improved` = "Tiến bộ rõ"
+ * → Case `much_better`; PA `partial` → Case `improved` ("Tiến bộ một phần"). Không có mức (ghi Mini Test ở hồ sơ) hay mức khác → "Tiến bộ một phần".
+ */
+const caseTuMucPa = (muc: string | null | undefined): 'much_better' | 'improved' => (muc === 'improved' ? 'much_better' : 'improved');
+
 /** Hoàn thành Case bằng hệ thống (Mini Test ≥ 70%): chỉ khi MỌI PA của Case đã khép. Trả true nếu đã đóng. */
-function hoanThanhCaseMiniTest(conn: any, caseId: number, p: Principal, ghiChu: string, ngayDong: string): boolean {
+function hoanThanhCaseMiniTest(conn: any, caseId: number, p: Principal, ghiChu: string, ngayDong: string, mucPa?: string | null): boolean {
   const con = conn.prepare(`SELECT 1 FROM case_interventions WHERE case_id = ? AND status IN ('planned', 'started')`).get(caseId);
   if (con) return false;
+  const kq = caseTuMucPa(mucPa);
   conn.prepare(
-    `UPDATE sos_cases SET outcome = 'improved', outcome_note = ?, outcome_decision = 'end', outcome_by = ?, outcome_at = ?, status = 'done', closed_by = ?, closed_at = ?,
+    `UPDATE sos_cases SET outcome = ?, outcome_note = ?, outcome_decision = 'end', outcome_by = ?, outcome_at = ?, status = 'done', closed_by = ?, closed_at = ?,
             disposition = COALESCE(disposition, 'action'), updated_at = ? WHERE id = ? AND status != 'done'`,
-  ).run(ghiChu, p.userId, nowIso(), p.userId, ngayDong, nowIso(), caseId);
-  addMilestone({ caseId, kind: 'closed', occurredOn: ngayDong, note: `Tiến bộ — ${ghiChu}`, createdBy: p.userId, dedupKey: `outcome:${caseId}:${ngayDong}:end` });
+  ).run(kq, ghiChu, p.userId, nowIso(), p.userId, ngayDong, nowIso(), caseId);
+  addMilestone({ caseId, kind: 'closed', occurredOn: ngayDong, note: `${CASE_OUTCOME_LABEL[kq]} — ${ghiChu}`, createdBy: p.userId, dedupKey: `outcome:${caseId}:${ngayDong}:end` });
   return true;
 }
 
@@ -634,7 +652,7 @@ function hoanThanhCaseMiniTest(conn: any, caseId: number, p: Principal, ghiChu: 
  * GHI MINI TEST — MỘT hàm cho mọi đường (K1-41). Chạy TRONG tx của nơi gọi (`updateResult` lần ghi cuối, hoặc `ghiMiniTest`).
  * ≥ 70% → mọi Case của nhóm tự Hoàn thành (Q5). < 70% → Case để mở + thẻ Báo QL cho Quản lý (thông báo do `taoYeuCau`). Trả `dat`.
  */
-export function ghiMiniTestTrongTx(conn: any, p: Principal, mt: any, x: { tyLe: number; ngay: string }): { dat: boolean } {
+export function ghiMiniTestTrongTx(conn: any, p: Principal, mt: any, x: { tyLe: number; ngay: string }, mucPa?: string | null): { dat: boolean } {
   conn.prepare('UPDATE mini_test SET ty_le = ?, ngay_lam = ?, ghi_boi = ?, ghi_luc = ? WHERE id = ?').run(x.tyLe, x.ngay, p.userId, nowIso(), mt.id);
   const dat = x.tyLe >= NGUONG_MINI_TEST;
   const cases = (conn.prepare(
@@ -642,7 +660,7 @@ export function ghiMiniTestTrongTx(conn: any, p: Principal, mt: any, x: { tyLe: 
   ).all(mt.nhom_bo_tro) as any[]).map((r) => r.id as number);
   const phanTram = Math.round(x.tyLe * 100);
   if (dat) {
-    for (const id of cases) hoanThanhCaseMiniTest(conn, id, p, `Mini Test ${phanTram}% ≥ 70%`, x.ngay);
+    for (const id of cases) hoanThanhCaseMiniTest(conn, id, p, `Mini Test ${phanTram}% ≥ 70%`, x.ngay, mucPa);
     chotYeuCau(conn, { loai: 'bao_len_mini_test', doiTuongLoai: 'mini_test', doiTuongId: mt.id }, 'tu_dong', { lyDo: 'Mini Test đã đạt' });
   } else if (cases.length) {
     const lopId = (conn.prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1`).get(mt.student_id) as any)?.class_id ?? null;

@@ -17,7 +17,7 @@ import { CongTacKhung, khungDaNho, nhoKhung, type KhungLoc } from '../../ui/Cong
 import { KhungTaiCho } from '../../ui/KhungPanel.tsx';
 import { PanelViec, lamTaiCho } from './PanelViec.tsx';
 import {
-  LOC_NHANH_LABEL, NHOM_VIEC, NHOM_VIEC_LABEL, TRAN_HANG_LOAT, demLocNhanh, demNhomChip, demPhamVi, gomNhomViec, khopLocNhanh, lapNhacTatCa, nhomViecCua,
+  LOC_NHANH_LABEL, NHOM_VIEC, NHOM_VIEC_LABEL, TRAN_HANG_LOAT, demLocNhanh, demNhomChip, demPhamVi, gomNhomViec, khoaGopCua, khopLocNhanh, lapNhacTatCa, nhomViecCua,
   tomTatKetQuaHangLoat, LOC_NHANH, type LocNhanh, type NhomViec as MaNhomViec,
 } from '@shared/domain/index.ts';
 
@@ -107,7 +107,20 @@ export function HoTroHocVienTab() {
   useEffect(() => { setGiu(new Map()); }, [url]);   // đổi người xem / chi nhánh = nguồn khác: bỏ giữ chỗ của nguồn cũ
   const conTrenMayChu = useMemo(() => new Set(phang(tatCaViec).map((x) => x.key)), [tatCaViec]);
   const xong = useMemo(() => new Set([...giu.keys()].filter((k) => !conTrenMayChu.has(k))), [giu, conTrenMayChu]);
-  const hienThi = useMemo(() => [...tatCaViec, ...[...giu.values()].filter((x) => xong.has(x.key))], [tatCaViec, giu, xong]);
+  /* OV-11c (CV-7): em vừa xong của một dòng gộp (lớp × loại việc) đứng lại TRONG dòng gộp đó (mờ + gạch), không rơi thành dòng riêng cuối nhóm. */
+  const hienThi = useMemo(() => {
+    const giuXong = [...giu.values()].filter((x) => xong.has(x.key));
+    const vaoDong = new Map<string, WorkItem[]>();
+    const le: WorkItem[] = [];
+    for (const x of giuXong) {
+      const k = khoaGopCua(x as any);
+      if (k && tatCaViec.some((d) => d.key === k && d.con)) vaoDong.set(k, [...(vaoDong.get(k) ?? []), x]);
+      else le.push(x);
+    }
+    const ds = vaoDong.size ? tatCaViec.map((d) => (vaoDong.has(d.key)
+      ? { ...d, con: [...d.con!, ...vaoDong.get(d.key)!.map((x) => ({ ...x, conTen: (x as any).conTen ?? x.studentName, conPhu: (x as any).conPhu ?? '' }))] } : d)) : tatCaViec;
+    return [...ds, ...le];
+  }, [tatCaViec, giu, xong]);
 
   const theoKhung = (ds: WorkItem[]) => (khung === 'tat-ca' ? ds : ds.filter((it) => !it.khung || it.khung === khung));
   const items = useMemo(() => theoKhung(tatCaViec), [tatCaViec, khung]);   // eslint-disable-line react-hooks/exhaustive-deps
@@ -117,19 +130,35 @@ export function HoTroHocVienTab() {
   const cuoiItems = useMemo(() => (nhom ? locItems.filter((it) => nhomViecCua(it.group) === nhom) : locItems), [locItems, nhom]);
   /* PR-UXF-a F5: hàng Nhóm việc đếm bằng hàm thuần chung (`demNhomChip`) — "Tất cả" = Σ nhóm = ô "Tất cả" của hạn khi không lọc. */
   const demNhom = useMemo(() => demNhomChip(items, loc, homNay), [items, loc, homNay]);
-  /* Danh sách vẽ: cùng bộ lọc, cộng dòng đã làm giữ chỗ. */
-  const dsNhom = useMemo(() => gomNhomViec(theoKhung(hienThi)
-    .filter((it) => khopLocNhanh(it, loc, homNay) && (!nhom || nhomViecCua(it.group) === nhom))), [hienThi, khung, loc, nhom, homNay]);   // eslint-disable-line react-hooks/exhaustive-deps
-  const phamVi = useMemo(() => demPhamVi(cuoiItems, nhom === 'cham-diem' || chiChamDiem), [cuoiItems, nhom, chiChamDiem]);
-  /* Đang lọc thì kết quả đã ít — mở hết luôn, không bắt bấm thêm một lần gập/mở nữa. */
-  const moHet = loc !== 'tat-ca' || !!nhom;
-
-  // ------------------------------------------------------------------ việc đang mở ở panel (URL `viec`)
   /* `viec` trỏ tới việc không có panel (đường cũ, gõ tay) → như chưa chọn. */
   const chon = useMemo(() => {
     const x = viec ? phang(hienThi).find((y) => y.key === viec) ?? [...giu.values()].find((y) => y.key === viec) ?? null : null;
     return x && lamTaiCho(x) ? x : null;
   }, [viec, hienThi, giu]);
+  /*
+   * Danh sách vẽ: cùng bộ lọc, cộng dòng đã làm giữ chỗ. OV-11c (CV-3): đang mở panel thì GIỮ THỨ TỰ lúc mở — dòng xong / làm một phần (hạn đổi) đứng
+   * đúng chỗ cũ, không sắp lại theo hạn mới, không rơi sau "Xem thêm"; việc mới (không có ở lần vẽ trước) xuống cuối nhóm. Đóng panel / đổi lọc thì sắp lại.
+   * Số đầu nhóm (CV-15) chỉ từ máy chủ (`cuoiItems`) — dòng giữ chỗ chỉ để vẽ.
+   */
+  const thuTuCu = useRef<{ khoa: string; vt: Map<string, number> } | null>(null);
+  const khoaLoc = `${url}|${khung}|${loc}|${nhom ?? ''}`;
+  const dsNhom = useMemo(() => {
+    const goc = gomNhomViec(theoKhung(hienThi).filter((it) => khopLocNhanh(it, loc, homNay) && (!nhom || nhomViecCua(it.group) === nhom)));
+    const dem = new Map(gomNhomViec(cuoiItems).map((g) => [g.key, g]));
+    const ds = goc.map((g) => ({ ...g, n: dem.get(g.key)?.n ?? 0, quaHan: dem.get(g.key)?.quaHan ?? 0, homNay: dem.get(g.key)?.homNay ?? 0 }));
+    const cu = thuTuCu.current;
+    if (!chon || !cu || cu.khoa !== khoaLoc) {
+      thuTuCu.current = { khoa: khoaLoc, vt: new Map(ds.flatMap((g) => g.items).map((x, i) => [x.key, i])) };
+      return ds;
+    }
+    const vt = (x: WorkItem) => cu.vt.get(x.key) ?? Number.MAX_SAFE_INTEGER;
+    return ds.map((g) => ({ ...g, items: [...g.items].sort((a, b) => vt(a) - vt(b)) }));
+  }, [hienThi, cuoiItems, khung, loc, nhom, homNay, chon, khoaLoc]);   // eslint-disable-line react-hooks/exhaustive-deps
+  const phamVi = useMemo(() => demPhamVi(cuoiItems, nhom === 'cham-diem' || chiChamDiem, { loc, homNay }), [cuoiItems, nhom, chiChamDiem, loc, homNay]);
+  /* Đang lọc thì kết quả đã ít — mở hết luôn, không bắt bấm thêm một lần gập/mở nữa. */
+  const moHet = loc !== 'tat-ca' || !!nhom;
+
+  // ------------------------------------------------------------------ việc đang mở ở panel (URL `viec`)
   /* Thứ tự "việc tiếp": đúng thứ tự đang vẽ; dòng gộp thường đi vào từng em; bỏ việc mở trang và việc đã xong. */
   const thuTu = useMemo(() => dsNhom.flatMap((g) => g.items.flatMap((x) => (x.con && !x.gopThem ? x.con : [x]))).filter((x) => lamTaiCho(x)), [dsNhom]);
   /* Địa chỉ (không `viec`) lúc mở panel bằng một bước lịch sử — đóng chỉ lùi khi bộ lọc chưa đổi, không thì mất lựa chọn lọc vừa bấm. */
@@ -188,9 +217,12 @@ export function HoTroHocVienTab() {
   useEffect(() => { setNhacLoi(new Set()); }, [url]);
   const [dangNhacHet, setDangNhacHet] = useState(false);
   const khoaNhac = (key: string, ownerId: number) => `${ownerId}|${key}`;
+  /* OV-11c (TQ-1): đang lọc hạn thì dòng gộp nhắc đúng các việc con khớp lọc — lọc Quá hạn chỉ nhắc bài quá hạn. */
+  const nhacNguon = useMemo(() => (loc === 'tat-ca' ? cuoiItems
+    : cuoiItems.flatMap((x) => (x.con && !x.gopThem ? x.con.filter((c) => khopLocNhanh(c, loc, homNay)) : [x]))), [cuoiItems, loc, homNay]);
   const nhacHet = useMemo(
-    () => lapNhacTatCa(cuoiItems.filter((it) => !it.nhac || !nhacLoi.has(khoaNhac(it.key, it.nhac.ownerId)))),
-    [cuoiItems, nhacLoi],
+    () => lapNhacTatCa(nhacNguon.filter((it) => !it.nhac || !nhacLoi.has(khoaNhac(it.key, it.nhac.ownerId)))),
+    [nhacNguon, nhacLoi],
   );
   const coNutNhacHet = laQuanLy && nguoi !== 'toi' && nhacHet.tong > 0;
 
@@ -206,7 +238,7 @@ export function HoTroHocVienTab() {
       setData((prev) => (prev ? {
         ...prev,
         dong: prev.dong.map((x) => {
-          const l = x.nhac ? luc.get(khoaNhac(x.key, x.nhac.ownerId)) : undefined;
+          const l = x.nhac ? luc.get(khoaNhac(x.key, x.nhac.ownerId)) ?? x.con?.map((c) => luc.get(khoaNhac(c.key, x.nhac!.ownerId))).find(Boolean) : undefined;
           return l ? { ...x, nhac: { ...x.nhac!, daNhacLuc: l } } : x;
         }),
       } : prev) as Work);
@@ -313,22 +345,7 @@ export function HoTroHocVienTab() {
       </div>
       <ConfirmDialog open={hoiNhac} onClose={() => setHoiNhac(false)} onConfirm={() => void nhacTatCa()}
         title={`Nhắc ${nhacHet.gui.length} việc · ${nhacHet.gv.length} GV?`} confirmLabel={`Nhắc ${nhacHet.gv.length} GV`}
-        body={
-          <>
-            {/* Quá 6 GV: 5 dòng đầu + "và k GV khác" (mockup phần 1 ②). */}
-            <ul className="m-0 list-none rounded-lg border p-0 tabular-nums" style={{ borderColor: 'var(--line)' }}>
-              {(nhacHet.gv.length > 6 ? nhacHet.gv.slice(0, 5) : nhacHet.gv).map((g, i) => (
-                <li key={g.ownerId} className={`flex gap-2 px-2.5 py-1.5 ${i ? 'border-t' : ''}`} style={{ borderColor: 'var(--line)' }}>
-                  <span className="min-w-0 flex-1 break-words text-slate-200">{g.ten}</span><span className="whitespace-nowrap">{g.so} việc</span>
-                </li>
-              ))}
-              {nhacHet.gv.length > 6 && (
-                <li className="border-t px-2.5 py-1.5 text-slate-400" style={{ borderColor: 'var(--line)' }}>và {nhacHet.gv.length - 5} GV khác</li>
-              )}
-            </ul>
-            {nhacHet.boQua > 0 && <p className="mb-0 mt-2 text-xs text-slate-400">Bỏ qua {nhacHet.boQua} việc đã nhắc hôm nay.</p>}
-          </>
-        } />
+        body={<DsGvNhac gv={nhacHet.gv} boQua={nhacHet.boQua} />} />
 
       {/* ───────────────────────────────────────────────── danh sách trái · panel phải */}
       <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:items-start lg:gap-3.5 xl:grid-cols-[560px_minmax(0,1fr)]">
@@ -336,7 +353,7 @@ export function HoTroHocVienTab() {
           {loading && !data && <Card><Skeleton rows={8} /></Card>}
           {data && data.scopeEmpty && <Card><Empty title="Bạn chưa được cấp phạm vi nào" /></Card>}
           {data && !data.scopeEmpty && dsNhom.length === 0 && (
-            <Card><Empty title="Không có việc nào khớp bộ lọc" action={coLoc ? <button type="button" className="btn btn-sm" onClick={xoaLoc}>Xoá lọc</button> : undefined} /></Card>
+            <Card><Empty title={coLoc ? 'Không có việc nào khớp bộ lọc' : 'Không có việc nào'} action={coLoc ? <button type="button" className="btn btn-sm" onClick={xoaLoc}>Xoá lọc</button> : undefined} /></Card>
           )}
           {data && !data.scopeEmpty && dsNhom.length > 0 && (
             <Card bodyClass="p-0">
@@ -367,5 +384,22 @@ export function HoTroHocVienTab() {
       */}
       <NganViecVanHanh taskId={moViec} onClose={() => setParam('mo-viec', null)} onDone={() => invalidate('/my-work')} />
     </div>
+  );
+}
+
+/** Thân hộp hỏi lại "Nhắc tất cả" — MỘT mẫu cho Hỗ trợ học viên và Chờ duyệt › Nhắc việc (OV-11c, CV-14). Quá 6 GV: 5 dòng đầu + "và k GV khác". */
+export function DsGvNhac({ gv, boQua }: { gv: readonly { ownerId: number; ten: string; so: number }[]; boQua: number }) {
+  return (
+    <>
+      <ul className="m-0 list-none rounded-lg border p-0 tabular-nums" style={{ borderColor: 'var(--line)' }}>
+        {(gv.length > 6 ? gv.slice(0, 5) : gv).map((g, i) => (
+          <li key={g.ownerId} className={`flex gap-2 px-2.5 py-1.5 ${i ? 'border-t' : ''}`} style={{ borderColor: 'var(--line)' }}>
+            <span className="min-w-0 flex-1 break-words text-slate-200">{g.ten}</span><span className="whitespace-nowrap">{g.so} việc</span>
+          </li>
+        ))}
+        {gv.length > 6 && <li className="border-t px-2.5 py-1.5 text-slate-400" style={{ borderColor: 'var(--line)' }}>và {gv.length - 5} GV khác</li>}
+      </ul>
+      {boQua > 0 && <p className="mb-0 mt-2 text-xs text-slate-400">Bỏ qua {boQua} việc đã nhắc hôm nay.</p>}
+    </>
   );
 }

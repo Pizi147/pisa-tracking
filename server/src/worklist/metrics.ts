@@ -12,6 +12,7 @@ import { isYThucMetric, yThucMetric, YTHUC_METRIC_IDS } from '../yThuc/thongKe.t
 import { PHOI_HOP_METRIC_IDS, isPhoiHopMetric, phoiHopMetric } from '../yThuc/phoiHop.ts';
 import { locTheoChuongTrinh } from './chuongTrinh.ts';
 import { scoreDebtCells } from './scoreDebt.ts';
+import { nhomMiniTestCho } from '../normal/cuoiKhoa.ts';
 import { nguoiGiuKetQua } from '../cases/giuKetQua.ts';
 import { assessedSkillOf } from '../fasttrack/scoring.ts';
 import { CO_MOC_KE_TIEP_SQL, XONG_MT_CUOI_SQL, missingForClasses } from '../classes/schedule.ts';
@@ -411,7 +412,7 @@ function overdueUpdatePlans(caseIds: number[], today: string): { ids: number[]; 
       .all(...chunk, today) as any[]);
   }
   /* PR-PA (§8): người giữ việc — cùng hàm với Công việc (2b) và quyền ghi Kết quả. */
-  const daiDien = daiDienNhomBoTro(rows).sort((a, b) => a.id - b.id);
+  const daiDien = daiDienNhomBoTro(rows, nhomMiniTestCho(rows)).sort((a, b) => a.id - b.id);   // OV-11c (CV-4): cùng tập với Công việc
   const giu = nguoiGiuKetQua(daiDien.map((r) => ({ id: r.id, topic: r.topic ?? null, nhomBoTro: r.nhom_bo_tro ?? null, classId: r.class_id ?? null, ownerUserId: r.owner_user_id ?? null })), today);
   const ids: number[] = [];
   const chiTiet: NonNullable<MetricResult['chiTiet']> = new Map();

@@ -19,7 +19,7 @@ export type ThamSoHoSo = {
   giaiDoan?: 'thuong' | 'ft';
   loTrinh?: number;
   /** Việc mở sẵn trong ngăn Case: `ghi-ket-qua` (cần `caseId` + `paId`). PR-CT2: bỏ `ke-hoach` (Nộp kế hoạch bổ trợ) — liên kết cũ bỏ qua tham số. */
-  viec?: 'ghi-ket-qua' | 'thi-that';
+  viec?: 'ghi-ket-qua' | 'thi-that' | 'them-pa';   // OV-11c (TQ-5): Thêm PA mở thẳng Case
   /** Tab con của Ý thức & Phối hợp (PR-LT2a): `phoi-hop` — Việc Báo phụ huynh qua TVV mở thẳng thẻ Phối hợp. */
   sub?: 'phoi-hop';
   /** PR-UXF-b (Q10): hồ sơ cuộn tới một khối — `ket-luan-khoa` (hộp Kết luận khoá, `id="ket-luan-khoa"`). */
@@ -113,7 +113,7 @@ export function docThamSoHoSo(get: (k: string) => string | null): ThamSoHoSo {
   const loTrinh = soNguyenDuong(get('lo-trinh'));
   if (loTrinh !== undefined) o.loTrinh = loTrinh;
   const viec = get('viec');
-  if (viec === 'ghi-ket-qua' || viec === 'thi-that') o.viec = viec;
+  if (viec === 'ghi-ket-qua' || viec === 'thi-that' || viec === 'them-pa') o.viec = viec;
   if (get('sub') === 'phoi-hop') o.sub = 'phoi-hop';
   if (get('muc') === 'ket-luan-khoa') o.muc = 'ket-luan-khoa';
   if (get('mo') === 'lo-trinh') o.mo = 'lo-trinh';

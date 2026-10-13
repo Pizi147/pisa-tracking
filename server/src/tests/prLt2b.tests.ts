@@ -430,7 +430,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     const mt = conn.prepare('SELECT * FROM mini_test WHERE id = ?').get(x.mt.id) as any;
     assert(mt.ty_le === 0.72 && mt.ngay_lam === TODAY && mt.ghi_boi === P.mbManager.userId, JSON.stringify(mt));
     assert(x.pa.every((p) => (conn.prepare('SELECT status, closed_reason FROM case_interventions WHERE id = ?').get(p.id) as any).status === 'completed'), 'mọi PA của nhóm phải khép');
-    assert(x.cases.every((c) => { const r = conn.prepare('SELECT status, outcome FROM sos_cases WHERE id = ?').get(c.id) as any; return r.status === 'done' && r.outcome === 'improved'; }), 'Case tự Hoàn thành');
+    assert(x.cases.every((c) => { const r = conn.prepare('SELECT status, outcome FROM sos_cases WHERE id = ?').get(c.id) as any; return r.status === 'done' && r.outcome === 'much_better'; }), 'Case tự Hoàn thành, kết quả = mức GV chọn (OV-11c CV-13: PA Tiến bộ rõ → Case Tiến bộ rõ)');
     assert(!conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_mini_test' AND doi_tuong_id = ?`).get(x.mt.id), 'đạt thì không thẻ');
     assertThrows(() => ghiCuoi(P.mbManager, x.pa[1].id, { tyLe: 72, ngay: TODAY }), /đã kết thúc/, 'PA đã khép không ghi lại');
   });

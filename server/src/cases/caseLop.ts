@@ -8,7 +8,7 @@
  */
 import { db } from '../db.ts';
 import {
-  INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, URGENCY_LABEL, mocChuPa, planDueDate, tenCaseSos, tenPaViecTiep, trangThaiCaseV4, viecTiepCuaCase,
+  INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, URGENCY_LABEL, mocChuPa, hanThemPa, tenCaseSos, tenPaViecTiep, trangThaiCaseV4, viecTiepCuaCase,
   type InterventionKind, type ViecTiepCase,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -93,7 +93,7 @@ export function chiTietCaseMo(cases: readonly MappedCase[]): Map<number, CaseChi
       choDuyetKhongTheoDoi: !!s.choDuyetKhongTheoDoi, coPaChoXacNhan: s.coPaChoXacNhan, hanXacNhan: s.dueOn,
       lyDoHeThong: g.system_close_reason ? SYSTEM_CLOSE_REASON_LABEL[g.system_close_reason as keyof typeof SYSTEM_CLOSE_REASON_LABEL] ?? null : null,
     };
-    const hanLapPa = c.originKind === 'mock' ? null : planDueDate(String(c.detectedAt ?? homNay).slice(0, 10), c.urgency);
+    const hanLapPa = hanThemPa({ detected_at: c.detectedAt, urgency: c.urgency, sos_level: c.sosLevel, kck: c.kck });   // OV-11c (HV-14): cùng hàm với Công việc
     const viecTiep = viecTiepCuaCase(v4, cua(paTheoCase, c.id).map((iv, i) => ({
       id: pas[i].id, ten: tenPaViecTiep(iv.kind, iv.description), batBuoc: pas[i].batBuoc, choXacNhan: pas[i].choXacNhan, xong: pas[i].xong,
       actionDue: iv.action_due ?? null, followupDue: iv.followup_due ?? null, choDuyet: pas[i].choDuyet,

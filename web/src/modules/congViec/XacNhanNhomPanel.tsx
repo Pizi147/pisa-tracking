@@ -13,7 +13,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { FormPa, NgayKhoa, OKhoa } from '../cases/FormPa.tsx';
 import { KhongTheoDoiForm } from '../yThuc/CaseSosControls.tsx';
 import {
-  datLaiNguoi, dsLoi, duongHoSoHocVien, issuesForTopic, khacNguoi, kiemGhiRoKhac, laKhac, loiFormPa, ngay, nguoiCuaPa, nguoiMacDinh, paMoi, paPayload,
+  datLaiNguoi, dsLoi, duongHoSoHocVien, issuesForTopic, khacNguoi, kiemGhiRoKhac, laKhac, loiFormPa, nguoiCuaPa, nguoiMacDinh, paMoi, paPayload,
   tuanLich, type GiaTriPa,
 } from '@shared/domain/index.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
@@ -58,6 +58,7 @@ export function XacNhanNhomPanel({ it, onDong, onDaLuu, onTiep }: {
   const [loiGui, setLoiGui] = useState<string | null>(null);
   const [daLuu, setDaLuu] = useState<{ soEm: number; tenPa: string | null; ngay: string } | null>(null);
   const [khongTheoDoi, setKhongTheoDoi] = useState<number | null>(null);
+  const [daGuiQl, setDaGuiQl] = useState(false);
   const lf = useLoiForm();
 
   const cho = (data?.em ?? []).filter((e) => e.cho);
@@ -163,7 +164,13 @@ export function XacNhanNhomPanel({ it, onDong, onDaLuu, onTiep }: {
       <div className="space-y-4 pt-3">
         {daLuu && (
           <p role="status" className="m-0 inline-flex flex-wrap items-center gap-1.5 rounded-lg border border-ok-line px-3 py-2 text-[13px] text-ok" style={{ background: 'var(--surface)' }}>
-            ✓ Đã xác nhận {daLuu.soEm} em{daLuu.tenPa ? ` · PA ${daLuu.tenPa} chạy từ ${ngay(daLuu.ngay, homNay)}` : ''}
+            ✓ Đã xác nhận {daLuu.soEm} em{daLuu.tenPa ? ` · PA ${daLuu.tenPa} chạy từ ${tuanLich(daLuu.ngay, homNay)}` : ''}
+          </p>
+        )}
+        {daGuiQl && (
+          /* OV-11c (CV-17d): Không cần theo dõi → Gửi Quản lý duyệt — thân panel nói rõ đã gửi (không chỉ toast). */
+          <p role="status" className="m-0 inline-flex flex-wrap items-center gap-1.5 rounded-lg border border-ok-line px-3 py-2 text-[13px] text-ok" style={{ background: 'var(--surface)' }}>
+            ✓ Đã gửi QL duyệt
           </p>
         )}
         {loiGui && <p role="alert" className="m-0 rounded-lg border border-bad-line bg-bad-bg px-3 py-2 text-[13px] text-slate-200">{loiGui}</p>}
@@ -250,7 +257,7 @@ export function XacNhanNhomPanel({ it, onDong, onDaLuu, onTiep }: {
                     </select>
                   </label>
                 )}
-                <KhongTheoDoiForm key={khongTheoDoi} caseId={khongTheoDoi} onClose={() => setKhongTheoDoi(null)} onDone={() => { onDaLuu(); reload(); }} />
+                <KhongTheoDoiForm key={khongTheoDoi} caseId={khongTheoDoi} onClose={() => setKhongTheoDoi(null)} onDone={() => { setDaGuiQl(true); onDaLuu(); reload(); }} />
               </section>
             )}
           </>
