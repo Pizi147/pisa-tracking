@@ -14,6 +14,8 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 |---|---|
 | `docs/superpowers/specs/2026-10-11-overhaul-ux-workflow-design.md` | **Đặc tả Overhaul (OV)** — duyệt 11/10; nguồn chi tiết cho 12 PR OV-1a … OV-6b |
 | `docs/superpowers/plans/2026-10-12-pr-ov6b2-pet-ket.md` | PR **OV-6b2** chương trình mới + PET/KET (sau OV-6b1) |
+| `docs/superpowers/plans/2026-10-13-pr-ov5a-cong-viec-tai-cho.md` | PR **OV-5a** Công việc làm tại chỗ (song song OV-5b) |
+| `docs/superpowers/plans/2026-10-13-pr-ov5b-quay-lai.md` | PR **OV-5b** Quay lại toàn hệ thống (song song OV-5a) |
 | `docs/superpowers/plans/2026-10-07-pr-en-tieng-anh.md` | PR-EN (sau toàn bộ OV — đếm lại chữ trước khi chạy) |
 | `docs/superpowers/plans/2026-10-07-pr-sotay-so-tay-moi.md` | PR-SOTAY (cuối cùng) |
 
@@ -177,7 +179,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
   quy trình (lộ trình → bàn giao → KQĐR, SOS MT, dấu "-", huỷ/khôi phục), giao diện, **12 PR OV-1a … OV-6b** + phụ thuộc, tiêu chí nghiệm thu.
 - Mockup bản 2 (góp ý 11/10 đã áp): `thiet-ke/mockup-overhaul-{1,2,3}-*-2026-10-11.html`.
 - Quyết định: mục 3 (các dòng 11/10). Thứ tự, model, prompt: mục 5, 6, 9.
-- **Tình trạng 13/10:** đã merge thêm OV-4a #332, 4b #333, 6b1 #331, **1c #335, 3c #337** (main xanh). Còn: OV-6b2 #336 (đang sửa), OV-5 (planning viết).
+- **Tình trạng 13/10:** đã merge thêm OV-4a #332, 4b #333, 6b1 #331, **1c #335, 3c #337** (main xanh). Còn: OV-6b2 #336 (đang sửa), **OV-5a + OV-5b** (kế hoạch sẵn, chạy ngay, song song OV-6b2). OV-5 của đặc tả tách đôi.
   OV-4 và OV-6b của đặc tả **tách đôi** (mỗi nửa một vùng mã, rà riêng). Thứ tự + song song: mục 5; prompt: mục 9.3.
 - **Chủ SP trả lời 12/10:** (1) hạn khi SOS MT chốt = luật hiện có (5 ngày, SOS 3 = 3 ngày), tính từ ngày chốt; (2) **không làm** ô "Dự kiến quay lại" (mục 3).
 
@@ -190,7 +192,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - **PR-NC** thống kê nghiên cứu: xem lại tháng 12 (cần 2–3 tháng dữ liệu).
 
 ### Ghi chú không chặn còn mở (kiểm lại khi PR đụng tới; đã bỏ mục DON #308, VN3 #302, NO-CT2-KV #290 đã xử lý)
-- **OV-5**: đổi tiêu đề việc "Kỳ vọng đầu ra · {lớp}" → "Kết quả đầu ra" (`server/src/worklist/mywork.ts:1127`, nhóm `:181-182` thêm FOU > 3.5; phép kiểm `prKv.tests.ts:102`). **Không** đổi tiêu đề Case "Kỳ vọng đầu ra…" (chống trùng dùng `LIKE`).
+- **OV-5a** (đã ghi trong kế hoạch): đổi tiêu đề việc "Kỳ vọng đầu ra · {lớp}" → "Kết quả đầu ra" (`server/src/worklist/mywork.ts:1127`, nhóm `:181-182` thêm FOU > 3.5; phép kiểm `prKv.tests.ts:102`). **Không** đổi tiêu đề Case "Kỳ vọng đầu ra…" (chống trùng dùng `LIKE`).
 - OV-1c giữ trạng thái lượt `done` = đủ điểm: Tổng hợp vẫn đếm lượt chốt-mà-thiếu là "Thiếu điểm" — xem lại khi rà OV-1c.
 - Hồ sơ MT: lượt không có `classId` → "Dời lịch thi cả đợt" không mở gì (hiếm) — HOP1.
 - `suggestCaseOwner` chạy theo (lớp FT, kỹ năng): lô 500 em nhiều lớp có thể > 200 câu — KV; **OV-3b chạm KQĐR thì đo lại**.
@@ -271,7 +273,9 @@ Xong: [x] kế hoạch, một dòng mục 11, CODE_MAP.md nếu thêm/xoá file.
 | **OV-3c** | **OV-1c** | **OV-6b2** #336 | `docs/superpowers/plans/2026-10-12-pr-ov6b2-pet-ket.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4170/5343 | đang sửa: PR-TD Task5(2) đỏ sau gộp OV-1c (demo ×3 vượt lô 900) |
 - OV-3c + OV-1c + OV-6b2 chạy cùng lúc được (không chung vùng chính; chung `routes/index.ts`, `run.ts`, `plan.md` → gộp main trước khi mở PR).
 - Rà sâu (mục 1.3): OV-4a, OV-4b, OV-1c, OV-6b1, OV-6b2. OV-3c rà mặc định.
-- PR OV-5: planning đang viết (OV-4b đã merge). Cổng tiếp theo: 4180/5353.
+| **OV-5a** | `docs/superpowers/plans/2026-10-13-pr-ov5a-cong-viec-tai-cho.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4180/5353 | ngay |
+| **OV-5b** | `docs/superpowers/plans/2026-10-13-pr-ov5b-quay-lai.md` | Opus 5.5 · High (Sonnet 5.5 · High) | 4190/5363 | ngay |
+- OV-5a + OV-5b + OV-6b2 chạy cùng lúc (ranh giới trong kế hoạch). Rà sâu OV-5a. Sau cùng: liệt kê migrate mới (#286 → hết OV) + nhắc chủ SP chạy lệnh kiểm trước deploy. Cổng tiếp theo: 4200/5373.
 
 ## 10. Mẫu giao việc cho agent (session planning dùng)
 
