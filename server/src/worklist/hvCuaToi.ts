@@ -92,7 +92,7 @@ export function hvCuaToi(p: Principal): HvCuaToi {
     caseMo: new Set(caseMo.map((c) => c.sid)).size,
     caseMoiTuan: caseMo.filter((c) => (c.created_at ?? '').slice(0, 10) >= dauTuan).length,
     sapThi: [...em.values()].filter(sapThi).length,
-    thieuTt: [...em.values()].filter((r) => !r.email || !r.dob).length,
+    thieuTt: [...em.values()].filter((r) => !r.dob).length,
     canChuY,
   };
 }

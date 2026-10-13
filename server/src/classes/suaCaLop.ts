@@ -135,9 +135,9 @@ function kiemLo(p: Principal, classId: number, input: DauVao) {
     for (const k of Object.keys(hoSo)) thu(k, () => chuanHoaSuaHoSo({ [k]: hoSo[k] }));
     /* OV-8b: TVV cùng chi nhánh (lớp đang học = chi nhánh của em) — báo ở xem trước, cùng câu với hồ sơ. */
     if (hoSo.consultantUserId != null && Number(hoSo.consultantUserId) !== s.consultant_user_id) thu('consultantUserId', () => kiemTvvCungChiNhanh(Number(hoSo.consultantUserId), cls.branch_id));
-    /* PR-OV2b: CHỈ dòng có sửa phải đủ email + ngày sinh (em cũ thiếu mà không đụng tới thì không chặn). Ô gửi trống đã báo ở trên. */
+    /* PR-OV2b: CHỈ dòng có sửa phải đủ ngày sinh (em cũ thiếu mà không đụng tới thì không chặn); email không bắt buộc (PR-OV2c). Ô gửi trống đã báo ở trên. */
     if ([...HO_SO, ...LO_TRINH].some((k) => r[k] !== undefined)) {
-      for (const k of ['dob', 'email'] as const) if (r[k] === undefined && !s[k]) issues.push({ row: i + 1, field: k, message: 'Bắt buộc — em chưa có, điền khi sửa dòng này.', muc: 'loi' });
+      if (r.dob === undefined && !s.dob) issues.push({ row: i + 1, field: 'dob', message: 'Bắt buộc — em chưa có, điền khi sửa dòng này.', muc: 'loi' });
     }
     if (LO_TRINH.some((k) => r[k] !== undefined) && !c) issues.push({ row: i + 1, field: 'studentId', message: 'Học viên chưa có lộ trình.', muc: 'loi' });
     let tuanMoi: string | undefined;

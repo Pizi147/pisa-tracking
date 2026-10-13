@@ -88,7 +88,7 @@ export async function runPrNhapTests(t: YThucTestKit) {
     assert(g.cotBoQua.join() === 'Ghi chú', JSON.stringify(g.cotBoQua));
   });
 
-  check('NHAP (3) · xem trước FT: ngày không có thật, thiếu email, dự kiến thi tháng, lộ trình theo lớp', () => {
+  check('NHAP (3) · xem trước FT: ngày không có thật, thiếu ngày sinh (email không bắt buộc), dự kiến thi tháng, lộ trình theo lớp', () => {
     const pv = intake.previewIntake(P.admin, { classId: ft, rows: [
       { fullName: 'A', dob: '31/02/2010', email: 'a@b.vn' },
       { fullName: 'B' },
@@ -98,7 +98,7 @@ export async function runPrNhapTests(t: YThucTestKit) {
     ] });
     const [a, b, c, dd, e] = pv.rows;
     assert(a.issues.some((i: any) => i.field === 'dob' && i.muc === 'loi' && i.message === 'Ngày không có thật'), JSON.stringify(a.issues));
-    assert(b.issues.some((i: any) => i.field === 'email' && i.muc === 'loi'), JSON.stringify(b.issues));
+    assert(b.issues.some((i: any) => i.field === 'dob' && i.muc === 'loi') && !b.issues.some((i: any) => i.field === 'email'), JSON.stringify(b.issues));   // PR-OV2c: thiếu email không còn lỗi, ngày sinh vẫn lỗi
     assert(c.examDate === '2027-05' && !c.issues.some((i: any) => i.muc === 'loi'), JSON.stringify(c));
     assert(dd.issues.some((i: any) => i.field === 'route' && i.muc === 'luu_y' && /LT1/.test(i.message)), JSON.stringify(dd.issues));
     assert(e.issues.some((i: any) => i.field === 'examDate' && i.muc === 'loi'), 'tháng 13 phải lỗi');
@@ -157,11 +157,10 @@ export async function runPrNhapTests(t: YThucTestKit) {
     t.assertThrows(() => students.updateStudent(P.coreTeacher, sid, { dob: '31/02/2010' }), /Ngày không có thật/, 'ngày sinh 31/02');
     t.assertThrows(() => students.updateStudent(P.coreTeacher, sid, { email: 'abc' }), /Email/, 'email sai dạng');
     t.assertThrows(() => students.updateStudent(P.coreTeacher, sid, { fullName: '  ' }), /Họ tên/, 'họ tên trống');
-    /* PR-OV2b: email + ngày sinh bắt buộc khi sửa — xoá trống email là lỗi, không ghi gì (trước đây: trống → NULL). */
-    t.assertThrows(() => students.updateStudent(P.coreTeacher, sid, { email: '', dob: '12/05/2010' }), /Email: bắt buộc/, 'xoá trống email');
-    students.updateStudent(P.coreTeacher, sid, { dob: '12/05/2010' });
+    /* PR-OV2c: email không bắt buộc — xoá trống = NULL (PR-OV2b từng chặn). */
+    students.updateStudent(P.coreTeacher, sid, { email: '', dob: '12/05/2010' });
     const s = conn.prepare('SELECT email, dob FROM students WHERE id = ?').get(sid) as any;
-    assert(s.email === 'moi.email@gmail.com' && s.dob === '2010-05-12', JSON.stringify(s));
+    assert(s.email === null && s.dob === '2010-05-12', JSON.stringify(s));
 
     const cy = () => conn.prepare(`SELECT lc.*, sp.week_start AS sw FROM learning_cycles lc
                                      LEFT JOIN report_periods sp ON sp.id = lc.start_period_id WHERE lc.student_id = ?`).get(sid) as any;
