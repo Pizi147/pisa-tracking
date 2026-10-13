@@ -13,9 +13,7 @@ File này **thay** cho: `plan.md` cũ (mục 0–24), `PROMPT_SESSION_CODE.md`, 
 | File chi tiết | Dùng cho |
 |---|---|
 | `docs/superpowers/specs/2026-10-11-overhaul-ux-workflow-design.md` | **Đặc tả Overhaul (OV)** — duyệt 11/10; nguồn chi tiết cho 12 PR OV-1a … OV-6b |
-| `docs/superpowers/plans/2026-10-13-pr-ov5a-cong-viec-tai-cho.md` | PR **OV-5a** Công việc làm tại chỗ (song song OV-5b) |
-| `docs/superpowers/plans/2026-10-13-pr-ov5b-quay-lai.md` | PR **OV-5b** Quay lại toàn hệ thống (song song OV-5a) |
-| `docs/superpowers/plans/2026-10-13-pr-ov7a-sua-sau-luu.md` | PR **OV-7a** Sửa sau khi lưu 1/2 (bàn giao, Ý thức, Phối hợp, Mini Test, rút đề xuất) |
+| `docs/superpowers/plans/2026-10-13-pr-ov7a-sua-sau-luu.md` | ✅ OV-7a #344 đã merge — giữ file vì OV-7b đọc mục "Luật chung" |
 | `docs/superpowers/plans/2026-10-13-pr-ov7b-sua-case-pa.md` | PR **OV-7b** Sửa sau khi lưu 2/2 (Case, PA) — sau OV-5a |
 | `docs/superpowers/plans/2026-10-07-pr-en-tieng-anh.md` | PR-EN (sau toàn bộ OV — đếm lại chữ trước khi chạy) |
 | `docs/superpowers/plans/2026-10-07-pr-sotay-so-tay-moi.md` | PR-SOTAY (cuối cùng) |
@@ -181,7 +179,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
   quy trình (lộ trình → bàn giao → KQĐR, SOS MT, dấu "-", huỷ/khôi phục), giao diện, **12 PR OV-1a … OV-6b** + phụ thuộc, tiêu chí nghiệm thu.
 - Mockup bản 2 (góp ý 11/10 đã áp): `thiet-ke/mockup-overhaul-{1,2,3}-*-2026-10-11.html`.
 - Quyết định: mục 3 (các dòng 11/10). Thứ tự, model, prompt: mục 5, 6, 9.
-- **Tình trạng 13/10:** đã merge thêm OV-4a #332, 4b #333, 6b1 #331, 1c #335, 3c #337, **6b2 #336** (main xanh). Còn: **OV-5a + OV-5b + OV-7a** (chạy ngay, song song) → **OV-7b** (sau OV-5a). OV-7 = yêu cầu chủ SP 13/10 "sửa sau khi lưu".
+- **Tình trạng 13/10 (chiều):** đã merge hết OV trừ **OV-7b** (chạy ngay): 1a 1b 1c 2a 2b 3a 3b 3c 4a 4b 5a #343 5b #342 6a 6b1 6b2 7a #344. Sau OV-7b: **deploy MỘT lần** (mục 5 "Deploy") → PR-EN → PR-SOTAY → deploy lần 2.
   OV-4 và OV-6b của đặc tả **tách đôi** (mỗi nửa một vùng mã, rà riêng). Thứ tự + song song: mục 5; prompt: mục 9.3.
 - **Chủ SP trả lời 12/10:** (1) hạn khi SOS MT chốt = luật hiện có (5 ngày, SOS 3 = 3 ngày), tính từ ngày chốt; (2) **không làm** ô "Dự kiến quay lại" (mục 3).
 
@@ -224,6 +222,10 @@ Tối đa **3 session cùng lúc**; PR nào merge xong thì mở PR kế tiếp 
 Trước deploy planning liệt kê migrate mới (từ #286 tới hết OV) + câu đếm chỉ đọc cho từng migrate. Sau deploy: mục 4 "Sau deploy".
 Bản chính hiện chạy **#285**; các lệnh chỉ đọc (`kiem-du-lieu-mt`, `dem-bo-tro-trung`, `kiem-o-lop`) chạy từ máy chủ SP với biến Turso, không cần deploy.
 **Trước deploy cuối OV** chủ SP chạy (chỉ đọc, bản chính): `kiem-truoc-ov1b`, `kiem-truoc-ov3b`, `kiem-truoc-ov1c` (khi OV-1c merge) — Windows: nạp `TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN`, `npm run build:server`, rồi `node dist-server/server/src/ops/<tên>.js`; planning nhắc khi tới lúc.
+**Migrate mới từ bản chính (#285) tới hết OV** (chạy theo thứ tự trong `migrate.ts`, tập dượt trên bản sao — `DEPLOY_2026-10.md` mục C):
+`prOv6b1`, `prOv6b2` (chỉ thêm cột + bản chụp lịch lớp + chèn PET/KET) · `prOv2` (vai mới, chỉ thêm) · `prOv3b` (bảng nháp lộ trình, chỉ thêm + chép Hướng GVCN) ·
+`prOv1b` (**đổi dữ liệu**: dấu "-" cũ — xem `kiem-truoc-ov1b`) · `prOv4` (chỉ thêm cột `ket_qua_huy`) · `prOv1c` (**đổi dữ liệu**: Case SOS MT cũ — xem `kiem-truoc-ov1c`).
+OV-3b đổi Lộ trình đề xuất GVCN → nháp: xem `kiem-truoc-ov3b`. Ba lệnh chỉ đọc chạy được NGAY (không cần chờ OV-7b).
 
 ## 6. Model, effort, skill cho từng PR (OV)
 Chọn model ở ô chọn model **trước khi dán prompt**. **Không Fable**; không Haiku. Người rà: session planning (Opus 5.5).
@@ -274,11 +276,9 @@ Xong: [x] kế hoạch, một dòng mục 11, CODE_MAP.md nếu thêm/xoá file.
 | OV-4a #332 · OV-4b #333 · OV-6b1 #331 | ✅ merge 12/10 | | | |
 | **OV-3c** | **OV-1c** | **OV-6b2** #336 - OV-3c + OV-1c + OV-6b2 chạy cùng lúc được (không chung vùng chính; chung `routes/index.ts`, `run.ts`, `plan.md` → gộp main trước khi mở PR).
 - Rà sâu (mục 1.3): OV-4a, OV-4b, OV-1c, OV-6b1, OV-6b2. OV-3c rà mặc định.
-| **OV-5a** | `docs/superpowers/plans/2026-10-13-pr-ov5a-cong-viec-tai-cho.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4180/5353 | ngay |
-| **OV-5b** | `docs/superpowers/plans/2026-10-13-pr-ov5b-quay-lai.md` | Opus 5.5 · High (Sonnet 5.5 · High) | 4190/5363 | ngay |
-| **OV-7a** | `docs/superpowers/plans/2026-10-13-pr-ov7a-sua-sau-luu.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4200/5373 | ngay |
-| **OV-7b** | `docs/superpowers/plans/2026-10-13-pr-ov7b-sua-case-pa.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4210/5383 | sau OV-5a merge |
-- OV-5a + OV-5b + OV-7a chạy cùng lúc (ranh giới trong kế hoạch). Rà sâu OV-5a, OV-7a, OV-7b. Sau cùng: liệt kê migrate mới (#286 → hết OV) + nhắc chủ SP chạy lệnh kiểm trước deploy. Cổng tiếp theo: 4220/5393.
+| **OV-5a** | **OV-5b** | OV-5a #343 · OV-5b #342 · OV-7a #344 | ✅ merge 13/10 | | | |
+| **OV-7b** | `docs/superpowers/plans/2026-10-13-pr-ov7b-sua-case-pa.md` | Opus 5.5 · XHigh (Opus 5.5 · High) | 4210/5383 | ngay |
+- Rà sâu OV-7b. Migrate + lệnh kiểm trước deploy: mục 5. Cổng tiếp theo: 4220/5393.
 
 ## 10. Mẫu giao việc cho agent (session planning dùng)
 
