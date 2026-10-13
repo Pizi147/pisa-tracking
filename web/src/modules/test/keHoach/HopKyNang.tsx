@@ -367,7 +367,8 @@ function DongKyNangHop({ k, o, khoa, moi, loai, d, noiBat, khaiGiang, tongTuan, 
   khaiGiang?: string | null; tongTuan?: number | null; onTick: (v: boolean) => void; onTuan: (t: Tuan) => void; goc: string | null;
 }) {
   /* Lớp thường luôn đủ bộ môn — không có ô tích (Q3). OV-10a: bỏ / đưa lại kỹ năng cần `attempt.skip_skill` (Admin không có → không ô tích, máy chủ 403). */
-  const coTick = loai === 'ft' && useSession().can(PERMISSIONS.ATTEMPT_SKIP_SKILL);
+  const { can } = useSession();
+  const coTick = loai === 'ft' && can(PERMISSIONS.ATTEMPT_SKIP_SKILL);
   const bo = !d.tick;
   const nhanTuan = loai === 'thuong' && d.weekStart ? nhanTuanKhoa(d.weekStart, khaiGiang ?? null, tongTuan ?? null) : null;
   const coDiem = !moi && o?.khoa === 'đã có điểm';
