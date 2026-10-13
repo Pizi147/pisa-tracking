@@ -157,7 +157,8 @@ function SuaChuongTrinh({ dong: d, onClose, onDone }: { dong: Dong; onClose: () 
   const ct = d.loai === 'ct' ? d.ct : null;
   const thuong = moi || ct?.scoringMode === 'ratio';
   const coGiuaKhoa = !!ct && moc(ct, 'progress') !== null;
-  /* Môn sửa được: chương trình mới (chưa lưu) hoặc chương trình Quản trị tạo chưa có lớp nào. */
+  /* Môn sửa được: chương trình mới (chưa lưu) hoặc chương trình Quản trị tạo chưa có lớp nào.
+     OV-11b (QT-7): chương trình đó sửa như lúc tạo — thêm / bỏ Progress, Số tuần ↔ Liên tục; có lớp thì khoá như cũ. */
   const suaMon = moi || (!!ct && !ct.goc && !ct.coLop);
   const [f, setF] = useState(() => ({
     ma: '',
@@ -166,9 +167,9 @@ function SuaChuongTrinh({ dong: d, onClose, onDone }: { dong: Dong; onClose: () 
     nguong: ct?.nguongDat != null ? String(ct.nguongDat) : moi ? '70' : '',
     lienTuc: moi || !!ct?.lapMoiTuan,
     lap: ct?.lapMoiTuan ? String(ct.lapMoiTuan) : '6',
-    soTuan: ct?.weeks ? String(ct.weeks) : moi ? '10' : '',
+    soTuan: ct?.weeks ? String(ct.weeks) : suaMon ? '10' : '',
     progress: ct ? String(moc(ct, 'progress') ?? '') : '',
-    final: ct ? String(moc(ct, 'final') ?? '') : moi ? '10' : '',
+    final: ct && moc(ct, 'final') !== null ? String(moc(ct, 'final')) : suaMon ? '10' : '',
     mt: d.loai === 'ft' ? d.lt.lichMt.map(String) : [],
     conDung: d.loai === 'moi' || conDung(d),
   }));
@@ -178,8 +179,8 @@ function SuaChuongTrinh({ dong: d, onClose, onDone }: { dong: Dong; onClose: () 
   const lf = useLoiForm();
   const doi = (patch: Partial<typeof f>) => { setLoiMay(null); setF({ ...f, ...patch }); };
   /* Có số tuần: chương trình có mốc cố định (gốc, hoặc mới chọn "Số tuần"). */
-  const coSoTuan = moi ? !f.lienTuc : !!ct?.weeks;
-  const lapDuoc = moi ? f.lienTuc : !!ct?.lapMoiTuan;
+  const coSoTuan = suaMon ? !f.lienTuc : !!ct?.weeks;
+  const lapDuoc = suaMon ? f.lienTuc : !!ct?.lapMoiTuan;
 
   /* Kiểm sớm dưới ô — cùng luật máy chủ (`sysconfig.ts`). */
   const loi: LoiTruong[] = [...dsLoi([{ khoa: 'ten', nhan: 'Tên', toiThieu: 1 }], { ten: f.ten })];
@@ -199,7 +200,7 @@ function SuaChuongTrinh({ dong: d, onClose, onDone }: { dong: Dong; onClose: () 
     if (!Number.isInteger(n) || n < 1 || n > 52) loi.push({ khoa: 'moc', nhan: 'Mốc Test', lyDo: 'Lặp mỗi 1–52 tuần' });
   } else if (coSoTuan) {
     const p = f.progress.trim() ? soNguyen(f.progress) : null; const fi = soNguyen(f.final);
-    const canGiua = coGiuaKhoa || (moi && p !== null);
+    const canGiua = suaMon ? p !== null : coGiuaKhoa;
     if (!Number.isInteger(soTuan) || soTuan < 1 || soTuan > 104) loi.push({ khoa: 'so-tuan', nhan: 'Độ dài', lyDo: 'Từ 1 đến 104 tuần' });
     else if ((canGiua && !(p !== null && p >= 1 && p <= soTuan)) || !(fi >= 1 && fi <= soTuan)) loi.push({ khoa: 'moc', nhan: 'Mốc Test', lyDo: `Tuần từ 1 đến ${soTuan}` });
     else if (canGiua && p !== null && p >= fi) loi.push({ khoa: 'moc', nhan: 'Mốc Test', lyDo: 'Progress phải trước Final' });
@@ -219,6 +220,12 @@ function SuaChuongTrinh({ dong: d, onClose, onDone }: { dong: Dong; onClose: () 
       } else if (d.loai === 'moi') {
         await api.put('/admin/programmes', {
           taoMoi: true, code: f.ma, name: f.ten, skills: f.mon, scoringMode: 'ratio', nguongDat, status: f.conDung ? 'active' : 'inactive',
+          ...(f.lienTuc ? { weeks: null, lapMoiTuan: Number(f.lap) }
+            : { weeks: soTuan, progressWeek: f.progress.trim() ? Number(f.progress) : null, finalWeek: Number(f.final) }),
+        });
+      } else if (suaMon) {
+        await api.put('/admin/programmes', {
+          code: d.ct.code, name: f.ten, skills: f.mon, nguongDat, status: f.conDung ? 'active' : 'inactive',
           ...(f.lienTuc ? { weeks: null, lapMoiTuan: Number(f.lap) }
             : { weeks: soTuan, progressWeek: f.progress.trim() ? Number(f.progress) : null, finalWeek: Number(f.final) }),
         });
@@ -303,7 +310,7 @@ function SuaChuongTrinh({ dong: d, onClose, onDone }: { dong: Dong; onClose: () 
           </Field>
         )}
 
-        {moi && (
+        {suaMon && (
           <Field as="div" label="Độ dài" loi={lf.loiCua(loi, 'so-tuan')}>
             <span className="flex flex-wrap items-center gap-2">
               <PhanDoan nhan="Độ dài" giaTri={f.lienTuc ? 'lien-tuc' : 'so-tuan'} onChon={(v) => doi({ lienTuc: v === 'lien-tuc' })}
@@ -318,7 +325,7 @@ function SuaChuongTrinh({ dong: d, onClose, onDone }: { dong: Dong; onClose: () 
             </span>
           </Field>
         )}
-        {!moi && ct?.weeks ? (
+        {!suaMon && ct?.weeks ? (
           <Field label="Độ dài" loi={lf.loiCua(loi, 'so-tuan')}>
             <span className="flex items-center gap-2">
               <input inputMode="numeric" className={oSo} {...lf.o(loi, 'so-tuan')} value={f.soTuan}
@@ -327,7 +334,7 @@ function SuaChuongTrinh({ dong: d, onClose, onDone }: { dong: Dong; onClose: () 
               <span className="text-slate-400">tuần</span>
             </span>
           </Field>
-        ) : !moi && ct?.lapMoiTuan ? (
+        ) : !suaMon && ct?.lapMoiTuan ? (
           <dl className="m-0 grid grid-cols-[max-content_minmax(0,1fr)] gap-x-4 text-sm">
             <dt className="text-slate-400">Độ dài</dt><dd className="m-0 text-slate-200">Liên tục</dd>
           </dl>
@@ -335,9 +342,9 @@ function SuaChuongTrinh({ dong: d, onClose, onDone }: { dong: Dong; onClose: () 
           <p className="m-0 text-sm text-slate-400">Độ dài <span className="tabular-nums text-slate-200">{f.mt.at(-1) || '—'} tuần</span> · tới MT cuối</p>
         )}
 
-        {(ft || ct?.weeks || lapDuoc || moi) && (
+        {(ft || ct?.weeks || lapDuoc || suaMon) && (
           <Field as="div" label="Mốc Test" loi={lf.loiCua(loi, 'moc')}>
-            {moi && (
+            {suaMon && (
               <span className="mb-2 block">
                 <PhanDoan nhan="Mốc Test" giaTri={f.lienTuc ? 'lap' : 'co-dinh'} onChon={(v) => doi({ lienTuc: v === 'lap' })}
                   muc={[{ v: 'co-dinh', nhan: 'Tuần cố định' }, { v: 'lap', nhan: 'Lặp mỗi n tuần' }]} />
@@ -372,16 +379,16 @@ function SuaChuongTrinh({ dong: d, onClose, onDone }: { dong: Dong; onClose: () 
               </span>
             ) : (
               <span className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                {(coGiuaKhoa || moi) && (
+                {(coGiuaKhoa || suaMon) && (
                   <span className="flex items-center gap-1.5">
                     <span className="text-slate-400">Progress tuần</span>
                     <input inputMode="numeric" aria-label="Tuần Progress Test" className="field w-16 tabular-nums" {...lf.o(loi, 'moc')}
-                      placeholder={moi ? '—' : undefined} value={f.progress} onChange={(e) => doi({ progress: e.target.value })} />
+                      placeholder={suaMon ? '—' : undefined} value={f.progress} onChange={(e) => doi({ progress: e.target.value })} />
                   </span>
                 )}
                 <span className="flex items-center gap-1.5">
                   <span className="text-slate-400">Final tuần</span>
-                  <input inputMode="numeric" aria-label="Tuần Final Test" className="field w-16 tabular-nums" {...(coGiuaKhoa || moi ? {} : lf.o(loi, 'moc'))}
+                  <input inputMode="numeric" aria-label="Tuần Final Test" className="field w-16 tabular-nums" {...(coGiuaKhoa || suaMon ? {} : lf.o(loi, 'moc'))}
                     aria-invalid={!!lf.loiCua(loi, 'moc')} value={f.final} onChange={(e) => doi({ final: e.target.value })} />
                 </span>
               </span>

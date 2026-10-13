@@ -1,3 +1,5 @@
+import { tenMonNgan } from './normal.ts';
+
 /**
  * NHÃN TIẾNG VIỆT CHO NHẬT KÝ THAY ĐỔI (PR-N1, UX-A A7): Quản trị › Nhật ký không hiện mã máy (`attempt.cancel_part`).
  * Mã mới chưa có nhãn → "Thao tác hệ thống" (mã thô vẫn ở `title` cho người cần tra). Phép kiểm N1 (11) quét mọi
@@ -60,6 +62,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'task.create': 'Tạo công việc', 'task.update': 'Cập nhật công việc',
   'unit_report.link_task': 'Nối công việc vào báo cáo', 'unit_report.save': 'Lưu báo cáo đơn vị', 'unit_report.unlink_task': 'Bỏ công việc khỏi báo cáo',
   'user.delete': 'Xoá tài khoản', 'user_approved': 'Duyệt tài khoản', 'user_declined': 'Từ chối tài khoản', 'user_created': 'Tạo tài khoản',
+  'user_info_set': 'Sửa thông tin tài khoản', 'programme_created': 'Thêm chương trình', 'programme_updated': 'Sửa chương trình', 'route_updated': 'Sửa lộ trình FT',
   'user_roles_set': 'Đổi vai tài khoản', 'user_permissions_set': 'Đổi quyền tài khoản', 'user_skills_set': 'Sửa kỹ năng tài khoản', 'password_reset': 'Đặt lại mật khẩu',
   'violation.delete': 'Xoá vi phạm', 'violation.edit': 'Sửa vi phạm', 'violation.record': 'Ghi vi phạm',
   'work.remind': 'Nhắc việc',
@@ -67,4 +70,10 @@ const NHAN_NHAT_KY: Record<string, string> = {
 
 export function nhanHanhDongNhatKy(ma: string): string {
   return NHAN_NHAT_KY[ma] ?? 'Thao tác hệ thống';
+}
+
+/** OV-11b (QT-5): đối tượng "PET · reading_writing" (mã môn thô, ghi ở đường điểm lớp thường) → "PET · R+W"; nhãn khác giữ nguyên. */
+export function nhanDoiTuongNhatKy(nhan: string): string {
+  const m = /^(\S+) · ([a-z][a-z0-9_]*)$/.exec(nhan);
+  return m ? `${m[1]} · ${tenMonNgan(m[1], m[2])}` : nhan;
 }

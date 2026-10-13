@@ -15,7 +15,9 @@ const cnKhop = (cn: string, g: { branchCode: string | null }) =>
   cn === 'tat-ca' || (cn === 'toan-he-thong' ? g.branchCode === null : g.branchCode === cn);
 
 function thuocPhanLoai(u: TaiKhoanLoc, pl: string): boolean {
-  return pl === 'chua-vai' ? u.roles.length === 0 : pl === 'chua-email' ? !u.email : pl === 'chua-ky-nang' ? u.skills.length === 0 : true;
+  /* OV-11b (QT-10d): "Chưa có kỹ năng" chỉ đếm người dạy (vai Giáo viên) — kỹ năng không có nghĩa với QT / TVV / CX / Admin. */
+  return pl === 'chua-vai' ? u.roles.length === 0 : pl === 'chua-email' ? !u.email
+    : pl === 'chua-ky-nang' ? u.skills.length === 0 && u.roles.some((g) => g.role === 'teacher') : true;
 }
 
 export function locTaiKhoan<T extends TaiKhoanLoc>(rows: T[], loc: BoLocTaiKhoan): T[] {

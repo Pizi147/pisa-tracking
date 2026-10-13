@@ -177,6 +177,9 @@ export function xemXoaTaiKhoan(p: Principal, userId: number): XemXoaTaiKhoan {
           + (SELECT COUNT(*) FROM tasks WHERE assignee_user_id = ?1 AND completed_at IS NULL) AS n`,
   ).get(userId) as { n: number }).n;
   if (viec > 0) canhBao.push(`Còn ${viec} Case/việc đang giao cho người này — đổi người phụ trách sau khi xoá.`);
+  /* OV-11b (QT-10e): TVV đang phụ trách học viên (chưa lưu trữ) — xoá thì các em không còn TVV. */
+  const soHv = (conn.prepare('SELECT COUNT(*) n FROM students WHERE consultant_user_id = ?1 AND archived_at IS NULL').get(userId) as { n: number }).n;
+  if (soHv > 0) canhBao.push(`${soHv} học viên sẽ không còn TVV.`);
   return {
     id: u.id, ten: u.full_name, email: u.email,
     vai: u.vai ? u.vai.split(',') : [], chiNhanh: u.chi_nhanh ? u.chi_nhanh.split(',') : [],

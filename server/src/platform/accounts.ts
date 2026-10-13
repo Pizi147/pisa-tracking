@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { db, tx } from '../db.ts';
-import { ENTRY_SKILLS, PERMISSIONS, duocCapRieng, lyDoCamCapRieng } from '../../../shared/domain/index.ts';
+import { ENTRY_SKILLS, PERMISSIONS, duocCapRieng, lyDoCamCapRieng, roleLabel } from '../../../shared/domain/index.ts';
 import { badRequest, chuTuDo, conflict, forbidden, notFound, nowIso, padCode } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { notify, writeAudit } from './audit.ts';
@@ -136,9 +136,9 @@ export function register(input: {
   const phone = chuTuDo(input.phone, 'Điện thoại', 20);
   const note = chuTuDo(input.note, 'Ghi chú', 500);
 
-  if (conn.prepare('SELECT 1 FROM users WHERE email = ?').get(email)) {
-    throw badRequest('Email này đã có tài khoản. Đăng nhập, hoặc nhờ Quản trị hệ thống đặt lại mật khẩu.');
-  }
+  const daCo = conn.prepare('SELECT approval_state FROM users WHERE email = ?').get(email) as any;
+  if (daCo?.approval_state === 'declined') throw badRequest('Email này đã đăng ký và không được duyệt — liên hệ Quản trị.');   // OV-11b QT-4
+  if (daCo) throw badRequest('Email này đã có tài khoản. Đăng nhập, hoặc nhờ Quản trị hệ thống đặt lại mật khẩu.');
   const codes = (input.branches ?? []).map((c) => String(c).trim().toUpperCase()).filter(Boolean);
   const known = new Set((conn.prepare('SELECT code FROM branches').all() as any[]).map((b) => b.code));
   for (const c of codes) if (!known.has(c)) throw badRequest(`Không có chi nhánh mã "${c}".`);
@@ -204,24 +204,25 @@ export function pendingQueue(p: Principal) {
 /**
  * DUYỆT một đăng ký. Người duyệt sửa được danh sách chi nhánh trước khi bấm duyệt (mục 7.1)
  * — đó là cả lý do có bước duyệt: người đăng ký khai theo ý mình, trung tâm mới là nơi quyết.
+ * OV-11b (QT-4): nhận cả đăng ký đã "Không duyệt" — nút "Duyệt lại" ở Tài khoản, đường lui khi từ chối nhầm.
  */
 export function approve(p: Principal, userId: number, o: {
   role?: string; branches?: string[];
 }) {
   require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, 'Chỉ Quản trị hệ thống duyệt được tài khoản.');
   const conn = db();
-  const user = conn.prepare("SELECT * FROM users WHERE id = ? AND approval_state = 'pending'").get(userId) as any;
+  const user = conn.prepare("SELECT * FROM users WHERE id = ? AND approval_state IN ('pending', 'declined') AND status = 'active'").get(userId) as any;
   if (!user) throw notFound('Không tìm thấy đăng ký nào đang chờ duyệt.');
   const role = o.role ?? 'teacher';
   const codes = (o.branches ?? JSON.parse(user.requested_branches ?? '[]')).map((c: string) => String(c).toUpperCase());
-  if (!codes.length) throw badRequest('Chọn ít nhất một chi nhánh cho tài khoản này.');
+  kiemChiNhanh([{ role, branches: codes }]);
 
   return tx(() => {
     grantRole(conn, userId, role, codes);
     conn
       .prepare(
         `UPDATE users SET approval_state = 'approved', approved_by = ?, approved_at = ?,
-                          requested_branches = ? WHERE id = ?`,
+                          requested_branches = ?, decline_reason = NULL WHERE id = ?`,
       )
       .run(p.userId, nowIso(), JSON.stringify(codes), userId);
     writeAudit({
@@ -249,6 +250,16 @@ export function decline(p: Principal, userId: number, reason: string) {
 }
 
 /* ------------------------------------------------------------------ tạo và cấp vai */
+
+/** Vai không cần chi nhánh: Quản trị luôn toàn hệ thống; CX bỏ trống chi nhánh = toàn hệ thống (PR-OV2a). */
+const VAI_TOAN_HE_THONG = ['system_admin', 'cx'];
+
+/** OV-11b (QT-1): vai khác Quản trị / CX mà chưa chọn chi nhánh → 400, không bỏ im lặng (trước đây tạo tài khoản không vai mà báo xong). */
+function kiemChiNhanh(roles: { role: string; branches?: string[] }[]) {
+  for (const r of roles) {
+    if (!VAI_TOAN_HE_THONG.includes(r.role) && !(r.branches ?? []).length) throw badRequest(`Chọn chi nhánh cho vai ${roleLabel(r.role)}.`);
+  }
+}
 
 function grantRole(conn: any, userId: number, roleKey: string, branchCodes: string[]) {
   /* PR-OV2a: vai đã bỏ (`branch_admin`) chỉ để đọc lịch sử — không giao mới. */
@@ -301,9 +312,10 @@ export function createAccount(p: Principal, input: {
   const fullName = chuTuDo(input.fullName, 'Họ tên', 100) ?? '';   // PR-Dọn (Q4, quét #23)
   if (!fullName) throw badRequest('Nhập họ tên.');
   if (conn.prepare('SELECT 1 FROM users WHERE email = ?').get(email)) {
-    throw badRequest('Email này đã có tài khoản.');
+    throw conflict('Email này đã có tài khoản.');   // OV-11b (QT-10a): 409 như Sửa thông tin — web hiện dưới ô Email
   }
   if (!input.roles?.length) throw badRequest('Cấp ít nhất một vai trò.');
+  kiemChiNhanh(input.roles);
 
   return tx(() => {
     const { hash, salt } = hashPassword(password);
@@ -325,13 +337,38 @@ export function createAccount(p: Principal, input: {
   });
 }
 
-/** Cấp thêm hoặc thu hồi vai của một tài khoản đã có. */
+/**
+ * Cấp thêm hoặc thu hồi vai của một tài khoản đã có.
+ * OV-11b: chưa duyệt → 400 (QT-4, trước đây báo "Đã lưu" mà người đó vẫn không vào được); không tự gỡ vai Quản trị của mình, không gỡ
+ * Quản trị cuối cùng (QT-2 — như Xoá tài khoản, `xoaTaiKhoan.ts`); tập vai không đổi → không đóng / chèn, không ghi nhật ký (QT-3).
+ */
 export function setRoles(p: Principal, userId: number, roles: { role: string; branches: string[] }[]) {
   require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, 'Chỉ Quản trị hệ thống đổi được vai trò.');
   const conn = db();
   const user = conn.prepare('SELECT * FROM users WHERE id = ?').get(userId) as any;
   if (!user) throw notFound('Không tìm thấy tài khoản.');
   if (user.status === 'deleted') throw badRequest('Tài khoản đã xoá.');   // PR-XOA: xoá mềm là khoá hẳn
+  if (user.approval_state === 'declined') throw badRequest('Chưa duyệt — bấm Duyệt lại.');
+  if (user.approval_state !== 'approved') throw badRequest('Chưa duyệt — duyệt ở Đăng ký chờ duyệt.');
+  if (!Array.isArray(roles)) throw badRequest('Danh sách vai không hợp lệ.');
+  roles = roles.map((r) => ({ role: String(r?.role ?? ''), branches: (r?.branches ?? []).map((c) => String(c).trim().toUpperCase()) }));
+  kiemChiNhanh(roles);
+  const cu = conn.prepare(
+    `SELECT r.key, b.code FROM user_roles ur JOIN roles r ON r.id = ur.role_id LEFT JOIN branches b ON b.id = ur.branch_id
+      WHERE ur.user_id = ? AND ur.status = 'active'`,
+  ).all(userId) as { key: string; code: string | null }[];
+  if (cu.some((g) => g.key === 'system_admin') && !roles.some((r) => r.role === 'system_admin')) {
+    if (userId === p.userId) throw badRequest('Không tự gỡ vai Quản trị hệ thống của chính mình.');
+    const soQtKhac = (conn.prepare(
+      `SELECT COUNT(DISTINCT u2.id) n FROM users u2 JOIN user_roles ur ON ur.user_id = u2.id JOIN roles r ON r.id = ur.role_id
+        WHERE r.key = 'system_admin' AND ur.status = 'active' AND u2.status = 'active' AND u2.id != ?`,
+    ).get(userId) as any).n;
+    if (!soQtKhac) throw badRequest('Đây là Quản trị hệ thống cuối cùng.');
+  }
+  const khoa = (ds: string[]) => [...new Set(ds)].sort().join('|');
+  const truoc = khoa(cu.map((g) => `${g.key}:${g.code ?? ''}`));
+  const sau = khoa(roles.flatMap((r) => (r.role === 'system_admin' || !r.branches.length ? [`${r.role}:`] : r.branches.map((c) => `${r.role}:${c}`))));
+  if (truoc === sau) return { ok: true };
   /*
    * KHÔNG XOÁ DÒNG CŨ, chỉ đóng lại. Điểm đã nhập và mọi bản ghi khác đều trỏ tới `user_id`;
    * xoá grant là xoá căn cứ để đọc lại "lúc đó ai được phép làm việc này".
@@ -569,6 +606,10 @@ export function listAccounts(p: Principal) {
   return users.map((u) => ({
     id: u.id, code: u.code, fullName: u.full_name, email: u.email, phone: u.phone,
     title: u.title, status: u.status, approvalState: u.approval_state,
+    /** OV-11b (QT-4): lý do "Không duyệt" — chip ở dòng tài khoản. */
+    declineReason: u.approval_state === 'declined' ? u.decline_reason : null,
+    /** Chi nhánh người đăng ký tự khai — hộp "Duyệt lại" chọn sẵn. */
+    requestedBranches: u.approval_state === 'declined' ? JSON.parse(u.requested_branches ?? '[]') as string[] : [],
     /** PR-XOA: tài khoản xoá mềm (`status = 'deleted'`) — màn quản trị để ở nút lọc "Đã xoá". */
     deletedAt: u.deleted_at ?? null,
     hasPassword: !!u.password_hash,

@@ -6,10 +6,11 @@ import { api } from '../../lib/api.ts';
 import { Info } from '../../ui/ui.tsx';
 import { CongTacGiaoDien } from '../../ui/CongTacGiaoDien.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
-import { roleLabel, skillShort } from '../../lib/format.ts';
+import { skillShort } from '../../lib/format.ts';
 import { buocDanhSach, chuanHoaMaLop, duongThongBao, maHocVienNgan, ngayTheoGioVN, noiDenThongBao, nhomThongBao, thoiGianThongBao } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useToast } from '../../ui/Toast.tsx';
+import { nhanPhamVi } from '@shared/domain/index.ts';
 
 type SearchHit = { id: number; studentCode: string; fullName: string; classCode: string | null };
 
@@ -299,10 +300,10 @@ export function Header() {
 
             <div className="label">Phạm vi được cấp</div>
             <ul className="space-y-1 mb-3 list-none p-0">
-              {(session?.grants ?? []).map((g) => (
-                <li key={g.id} className="text-xs text-slate-300 flex items-center gap-1">
-                  <Info>{roleLabel(g.role)}</Info>
-                  <span className="text-slate-500">{g.branchName ?? 'Toàn hệ thống'}</span>
+              {/* OV-11b (QT-6): quyền cấp riêng có tên ("Cấp riêng: … · Monbay"), không mã "granted"; mọi grant cấp riêng cùng id -1 → key theo chỉ số. */}
+              {(session?.grants ?? []).map((g, i) => (
+                <li key={i} className="text-xs text-slate-300 flex items-center gap-1 [&>span]:whitespace-normal">
+                  <Info>{nhanPhamVi(g)}</Info>
                 </li>
               ))}
             </ul>

@@ -8,6 +8,7 @@ import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { fmtDate, skillLabel } from '../../lib/format.ts';
 import { ChonKyNang } from './ProfilePage.tsx';
+import { useSession } from '../../lib/session.tsx';
 import {
   BO_LOC_TAI_KHOAN_TRONG, KY_NANG_TAI_KHOAN, PERMISSION_LABEL, PHAN_LOAI_TAI_KHOAN, ROLES, ROLE_LABEL, coQuyenCapRieng, docBoLocTaiKhoan, dsLoi, duocCapRieng,
   ghiBoLocTaiKhoan, locTaiKhoan, ngay, nhomTaiKhoan, phanLoaiTaiKhoan, roleLabel, type BoLocTaiKhoan, type LoiTruong, type Role,
@@ -24,6 +25,8 @@ type Account = {
   title: string | null; status: string; approvalState: string; hasPassword: boolean;
   /** PR-XOA: tài khoản xoá mềm (`status = 'deleted'`). */
   deletedAt: string | null;
+  /** OV-11b (QT-4): `approvalState = 'declined'` — lý do + chi nhánh tự khai (hộp Duyệt lại). */
+  declineReason: string | null; requestedBranches: string[];
   roles: RoleGrant[]; skills: string[]; extraEmails: string[];
   extra: { permission: string; name: string; branchCode: string | null }[];
 };
@@ -49,6 +52,7 @@ export function AccountsAdmin() {
   const [loc, setLoc] = useState<'dang-dung' | 'da-xoa'>('dang-dung');
   const [xoaId, setXoaId] = useState<number | null>(null);
   const [suaTt, setSuaTt] = useState<Account | null>(null);
+  const [duyetLai, setDuyetLai] = useState<Account | null>(null);
   /* PR-BC L3: bộ lọc nhớ trong URL (gửi link là mở đúng bộ lọc). Hook đặt TRƯỚC mọi `return` sớm (Rules of Hooks). */
   const [params, setParams] = useSearchParams();
   const [dongNhom, setDongNhom] = useState<Set<string>>(new Set());
@@ -65,7 +69,7 @@ export function AccountsAdmin() {
     return (
       <Forbidden
         message="Phần này chỉ dành cho Quản trị hệ thống."
-        hint="Tài khoản của bạn không có quyền quản trị phần mềm. Đây là quản trị PHẦN MỀM, khác với Admin chi nhánh là nhân sự văn phòng."
+        hint="Tài khoản của bạn không có quyền quản trị phần mềm."
       />
     );
   }
@@ -94,7 +98,8 @@ export function AccountsAdmin() {
   const xoaLoc = () => datParams(ghiBoLocTaiKhoan(BO_LOC_TAI_KHOAN_TRONG));
   const nhom = nhomTheo ? nhomTaiKhoan(rows, nhomTheo, new Map((branches.data ?? []).map((b) => [b.code, b.name])), roleLabel, loc3) : null;
   const hang = (u: Account, key: string | number) => (
-    <HangTaiKhoan key={key} u={u} hienQuyenRieng={hienQuyenRieng} onSua={() => setEditing(u)} onSuaTt={() => setSuaTt(u)} onXoa={() => setXoaId(u.id)} />
+    <HangTaiKhoan key={key} u={u} hienQuyenRieng={hienQuyenRieng} onSua={() => setEditing(u)} onSuaTt={() => setSuaTt(u)} onXoa={() => setXoaId(u.id)}
+      onDuyetLai={() => setDuyetLai(u)} />
   );
   const pending = accounts.data?.pending ?? [];
   const reload = () => { accounts.reload(); invalidate('/demo/accounts'); };
@@ -111,7 +116,7 @@ export function AccountsAdmin() {
           <ul className="divide-y list-none p-0 m-0" style={{ borderColor: 'var(--line)' }}>
             {pending.map((u) => (
               <PendingRow key={u.id} user={u} branches={branches.data ?? []}
-                onDone={() => { reload(); toast.push('ok', 'Đã xử lý đăng ký'); }} />
+                onDone={(msg) => { reload(); toast.push('ok', msg); }} />
             ))}
           </ul>
         )}
@@ -139,7 +144,8 @@ export function AccountsAdmin() {
             <option value="tat-ca">Vai trò: Tất cả</option>
             {ROLES.map((r) => <option key={r} value={r}>{roleLabel(r)}</option>)}
           </select>
-          <span className="flex min-w-0 max-w-full items-center gap-1.5">
+          {/* OV-11b (QT-9): 375 — nhãn lên trên, nút đoạn đủ một hàng (không cắt "S"). */}
+          <span className="flex min-w-0 max-w-full items-center gap-1.5 max-sm:w-full max-sm:flex-col max-sm:items-start">
             <span className="shrink-0 whitespace-nowrap text-xs text-slate-400">Kỹ năng</span>
             <BoLocDoan ariaLabel="Lọc kỹ năng" value={loc3.kyNang} onChange={(k) => datLoc({ kyNang: k })}
               muc={[{ key: 'tat-ca', nhan: 'Tất cả' }, ...KY_NANG_TAI_KHOAN.map((k) => ({ key: k, nhan: k, title: skillLabel(k) }))]} />
@@ -195,9 +201,7 @@ export function AccountsAdmin() {
         </div>
         <div className="p-3">
           <SectionNote>
-            Một người mang được <strong>nhiều vai ở nhiều chi nhánh</strong>: Quản lý được giảng dạy, Admin CN thì
-            không, và Giáo viên có thể kiêm vai Quản lý. Gỡ vai <strong>không xoá</strong> dòng cũ mà đóng nó lại,
-            nên báo cáo cũ đọc lại vẫn thấy đúng ai được phép làm gì lúc đó.
+            Một người mang được <strong>nhiều vai ở nhiều chi nhánh</strong> (QL kiêm GV được). QT hoặc QL nắm ≥ 2 vai thì đổi được góc nhìn.
           </SectionNote>
         </div>
       </Card>
@@ -213,6 +217,16 @@ export function AccountsAdmin() {
       {suaTt && (
         <SuaThongTinPanel account={suaTt} onClose={() => setSuaTt(null)} onDone={() => { setSuaTt(null); reload(); }} />
       )}
+      {duyetLai && (
+        <KhungPanel tieuDe="Duyệt lại" hocVien={duyetLai.fullName} onDong={() => setDuyetLai(null)}>
+          <ul className="m-0 list-none p-0 pt-1">
+            <PendingRow duyetLai branches={branches.data ?? []}
+              user={{ id: duyetLai.id, code: duyetLai.code, fullName: duyetLai.fullName, email: duyetLai.email ?? '', phone: duyetLai.phone,
+                branches: duyetLai.requestedBranches, note: duyetLai.declineReason ? `Không duyệt: ${duyetLai.declineReason}` : null, createdAt: '', skills: duyetLai.skills }}
+              onDone={(msg) => { setDuyetLai(null); reload(); toast.push('ok', msg); }} />
+          </ul>
+        </KhungPanel>
+      )}
       {xoaId !== null && (
         <XoaTaiKhoanPanel userId={xoaId} onClose={() => setXoaId(null)} onDone={() => { setXoaId(null); reload(); }} />
       )}
@@ -225,9 +239,10 @@ const NHAN_PHAN_LOAI: Record<(typeof PHAN_LOAI_TAI_KHOAN)[number], string> = {
 };
 
 /** Một hàng của bảng Tài khoản — tách ra để dùng chung cho bảng phẳng và bảng nhóm (PR-BC L3); markup giữ nguyên. */
-function HangTaiKhoan({ u, hienQuyenRieng, onSua, onSuaTt, onXoa }: {
-  u: Account; hienQuyenRieng: boolean; onSua: () => void; onSuaTt: () => void; onXoa: () => void;
+function HangTaiKhoan({ u, hienQuyenRieng, onSua, onSuaTt, onXoa, onDuyetLai }: {
+  u: Account; hienQuyenRieng: boolean; onSua: () => void; onSuaTt: () => void; onXoa: () => void; onDuyetLai: () => void;
 }) {
+  const khongDuyet = u.approvalState === 'declined';
   return (
     <tr className={u.status === 'deleted' ? 'opacity-60' : 'row-hover'}>
       <td className="td sticky-col whitespace-nowrap">
@@ -237,13 +252,15 @@ function HangTaiKhoan({ u, hienQuyenRieng, onSua, onSuaTt, onXoa }: {
       <td className="td text-xs text-slate-300">{u.email ?? <span className="text-rose-200">chưa có</span>}</td>
       <td className="td">
         <span className="flex flex-wrap gap-1">
-          {u.roles.length === 0 && <span className="text-xs text-slate-500">chưa có vai trò</span>}
+          {khongDuyet && <Info pending title={u.declineReason ?? undefined}>Không duyệt</Info>}
+          {u.roles.length === 0 && !khongDuyet && <span className="text-xs text-slate-500">chưa có vai trò</span>}
           {u.roles.map((g, i) => (
             <Info key={i}>
               {roleLabel(g.role) || g.roleName} · {g.branchName ?? 'Toàn hệ thống'}
             </Info>
           ))}
         </span>
+        {khongDuyet && u.declineReason && <span className="mt-0.5 block text-xs text-slate-400">{u.declineReason}</span>}
       </td>
       {hienQuyenRieng && (
         <td className="td">
@@ -263,7 +280,9 @@ function HangTaiKhoan({ u, hienQuyenRieng, onSua, onSuaTt, onXoa }: {
           <span className="text-xs text-slate-500">Đã xoá {ngay(u.deletedAt)}</span>
         ) : (
           <span className="inline-flex items-center gap-1.5">
-            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onSua}>Sửa</button>
+            {khongDuyet
+              ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onDuyetLai}>Duyệt lại</button>
+              : <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onSua}>Sửa</button>}
             <MenuDong nhan="Thao tác khác" muc={[
               { key: 'sua-tt', nhan: 'Sửa thông tin', onChon: onSuaTt },
               { key: 'xoa', nhan: 'Xoá tài khoản', nguyHiem: true, keTruoc: true, onChon: onXoa },
@@ -275,9 +294,12 @@ function HangTaiKhoan({ u, hienQuyenRieng, onSua, onSuaTt, onXoa }: {
   );
 }
 
-/** Một đăng ký đang chờ. Người duyệt SỬA ĐƯỢC chi nhánh trước khi bấm duyệt (mục 7.1). */
-function PendingRow({ user, branches, onDone }: {
-  user: Pending; branches: Branch[]; onDone: () => void;
+/**
+ * Một đăng ký đang chờ. Người duyệt SỬA ĐƯỢC chi nhánh trước khi bấm duyệt (mục 7.1).
+ * OV-11b: `duyetLai` = cùng hộp cho tài khoản đã "Không duyệt" (QT-4) — không có nút Không duyệt. CX duyệt được không chọn chi nhánh (= toàn hệ thống).
+ */
+function PendingRow({ user, branches, onDone, duyetLai }: {
+  user: Pending; branches: Branch[]; onDone: (msg: string) => void; duyetLai?: boolean;
 }) {
   const toast = useToast();
   const [picked, setPicked] = useState<Set<string>>(new Set(user.branches));
@@ -286,10 +308,11 @@ function PendingRow({ user, branches, onDone }: {
   const [declining, setDeclining] = useState(false);
   const [reason, setReason] = useState('');
 
-  const act = async (fn: () => Promise<unknown>) => {
+  const act = async (fn: () => Promise<unknown>, msg: string) => {
     setBusy(true);
-    try { await fn(); onDone(); } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+    try { await fn(); onDone(msg); } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
+  const cnChon = branches.filter((b) => picked.has(b.code)).map((b) => b.code).join(', ') || 'Toàn hệ thống';
 
   return (
     <li className="px-4 py-3">
@@ -297,7 +320,7 @@ function PendingRow({ user, branches, onDone }: {
         <div className="min-w-0">
           <div className="text-sm text-slate-100">{user.fullName}</div>
           <div className="text-xs text-slate-500">
-            {user.email}{user.phone ? ` · ${user.phone}` : ''} · đăng ký {fmtDate(user.createdAt)}
+            {user.email}{user.phone ? ` · ${user.phone}` : ''}{user.createdAt ? ` · đăng ký ${fmtDate(user.createdAt)}` : ''}
           </div>
           {user.note && <div className="text-xs text-slate-400 mt-1">“{user.note}”</div>}
           {user.skills.length > 0 && (
@@ -307,16 +330,17 @@ function PendingRow({ user, branches, onDone }: {
           )}
         </div>
         <div className="flex flex-wrap gap-2">
-          <select className="field w-36" value={role} onChange={(e) => setRole(e.target.value)}>
+          <select className="field w-36" aria-label="Vai trò" value={role} onChange={(e) => setRole(e.target.value)}>
             {ROLES.filter((r) => r !== 'system_admin').map((r) => (
               <option key={r} value={r}>{ROLE_LABEL[r as Role]}</option>
             ))}
           </select>
-          <button className="btn btn-sm btn-primary" disabled={busy || picked.size === 0}
-            onClick={() => act(() => api.post(`/admin/accounts/${user.id}/approve`, { role, branches: [...picked] }))}>
+          <button className="btn btn-sm btn-primary" disabled={busy || (picked.size === 0 && role !== 'cx')}
+            onClick={() => act(() => api.post(`/admin/accounts/${user.id}/approve`, { role, branches: [...picked] }),
+              `Đã duyệt ${user.fullName} · ${roleLabel(role)} · ${cnChon}`)}>
             Duyệt
           </button>
-          <button className="btn btn-sm" disabled={busy} onClick={() => setDeclining((v) => !v)}>Không duyệt</button>
+          {!duyetLai && <button className="btn btn-sm" disabled={busy} onClick={() => setDeclining((v) => !v)}>Không duyệt</button>}
         </div>
       </div>
 
@@ -343,7 +367,7 @@ function PendingRow({ user, branches, onDone }: {
             <input className="field w-full" value={reason} onChange={(e) => setReason(e.target.value)} />
           </label>
           <button className="btn btn-sm" disabled={busy || !reason.trim()}
-            onClick={() => act(() => api.post(`/admin/accounts/${user.id}/decline`, { reason }))}>
+            onClick={() => act(() => api.post(`/admin/accounts/${user.id}/decline`, { reason }), `Đã từ chối ${user.fullName}`)}>
             Gửi từ chối
           </button>
         </div>
@@ -357,7 +381,10 @@ function AccountDialog({ account, branches, onClose, onDone }: {
   account?: Account; branches: Branch[]; onClose: () => void; onDone: () => void;
 }) {
   const toast = useToast();
+  const { session } = useSession();
   const editing = !!account;
+  /* OV-11b (QT-2): dòng vai Quản trị của chính mình khoá "Gỡ" + ô chọn vai (máy chủ cũng chặn). */
+  const qtCuaMinh = !!account && account.id === session?.user?.id && account.roles.some((g) => g.role === 'system_admin');
   const [form, setForm] = useState({
     fullName: account?.fullName ?? '', email: account?.email ?? '', password: '',
     phone: account?.phone ?? '', title: account?.title ?? '',
@@ -394,7 +421,11 @@ function AccountDialog({ account, branches, onClose, onDone }: {
   const run = async (fn: () => Promise<unknown>, msg: string) => {
     setBusy(true);
     try { await fn(); toast.push('ok', msg); onDone(); }
-    catch (e: any) { toast.push('error', e.message); }
+    catch (e: any) {
+      /* OV-11b (QT-10a): trùng email (409) → lỗi dưới ô Email như Sửa thông tin. */
+      if (e?.status === 409 && !editing) { setTrung(email); lf.bam(); document.getElementById(lf.oId('email'))?.focus(); }
+      else toast.push('error', e.message);
+    }
     finally { setBusy(false); }
   };
 
@@ -411,11 +442,16 @@ function AccountDialog({ account, branches, onClose, onDone }: {
   /* Báo sớm dưới ô — máy chủ vẫn kiểm đủ (`checkEmail`, `checkPassword`, "Cấp ít nhất một vai trò"). */
   const lf = useLoiForm();
   const email = form.email.trim().toLowerCase();
+  const [trung, setTrung] = useState<string | null>(null);
   const loi: LoiTruong[] = [
     ...(!editing ? dsLoi([{ khoa: 'ho-ten', nhan: 'Họ và tên', toiThieu: 1 }], { 'ho-ten': form.fullName }) : []),
-    ...(!editing && !email.endsWith('.pisa@gmail.com') ? [{ khoa: 'email', nhan: 'Email đăng nhập', lyDo: email ? 'Phải có đuôi .pisa@gmail.com' : 'Chưa điền' }] : []),
+    ...(!editing && !email.endsWith('.pisa@gmail.com') ? [{ khoa: 'email', nhan: 'Email đăng nhập', lyDo: email ? 'Phải có đuôi .pisa@gmail.com' : 'Chưa điền' }]
+      : !editing && trung === email ? [{ khoa: 'email', nhan: 'Email đăng nhập', lyDo: 'Đã có tài khoản dùng email này' }] : []),
     ...(!editing && form.password.length < 6 ? [{ khoa: 'mat-khau', nhan: 'Mật khẩu ban đầu', lyDo: `Cần ít nhất 6 ký tự (đang có ${form.password.length})` }] : []),
     ...(!editing && payloadRoles().length === 0 ? [{ khoa: 'vai-tro', nhan: 'Vai trò', lyDo: 'Cấp ít nhất một vai trò' }] : []),
+    /* OV-11b (QT-1): vai (trừ Quản trị, CX) chưa chọn chi nhánh — máy chủ cũng chặn 400. */
+    ...grants.flatMap((g, i) => (g.role && g.role !== 'system_admin' && g.role !== 'cx' && g.branches.size === 0
+      ? [{ khoa: `vai-${i}`, nhan: 'Vai trò', lyDo: `Chọn chi nhánh cho vai ${roleLabel(g.role)}` }] : [])),
     ...(editing && newPassword && newPassword.length < 6 ? [{ khoa: 'mat-khau-moi', nhan: 'Đặt lại mật khẩu', lyDo: `Cần ít nhất 6 ký tự (đang có ${newPassword.length})` }] : []),
     ...(editing && thieuPhamVi.length ? [{ khoa: 'quyen-rieng', nhan: 'Quyền cấp riêng', lyDo: `Chưa chọn phạm vi cho: ${thieuPhamVi.map((k) => PERMISSION_LABEL[k] ?? k).join(', ')}` }] : []),
     ...(quyenDoi ? dsLoi([{ khoa: 'ly-do-quyen', nhan: 'Lý do đổi quyền', toiThieu: 1 }], { 'ly-do-quyen': lyDoQuyen.trim() }) : []),
@@ -426,7 +462,8 @@ function AccountDialog({ account, branches, onClose, onDone }: {
     if (loi.length > 0 || busy) return undefined;
     if (editing) {
       return run(async () => {
-        await api.put(`/admin/accounts/${account!.id}/roles`, { roles: payloadRoles() });
+        /* OV-11b (QT-3): chỉ gửi khi vai đổi — không "đặt lại vai" + dòng nhật ký giả mỗi lần sửa kỹ năng / mật khẩu. */
+        if (khoaVai(grants) !== vaiGoc) await api.put(`/admin/accounts/${account!.id}/roles`, { roles: payloadRoles() });
         /* Chỉ gửi khi tập quyền đổi: mỗi lần gửi là một dòng nhật ký kèm lý do. Lỗi thì giữ nguyên lựa chọn trên form để bấm Lưu lại. */
         if (quyenDoi) await api.put(`/admin/accounts/${account!.id}/permissions`, { items: extra, lyDo: lyDoQuyen.trim() });
         if (newPassword) await api.post(`/admin/accounts/${account!.id}/password`, { password: newPassword });
@@ -483,9 +520,13 @@ function AccountDialog({ account, branches, onClose, onDone }: {
           </div>
           <div className="space-y-2" {...lf.o(loi, 'vai-tro')}>
             {lf.loiCua(loi, 'vai-tro') && <p className="m-0 text-xs text-late">{lf.loiCua(loi, 'vai-tro')}</p>}
-            {grants.map((g, i) => (
-              <div key={i} className="surface-2 rounded-lg p-2.5 flex flex-wrap items-center gap-2">
-                <select className="field w-44" value={g.role}
+            {grants.map((g, i) => {
+              const khoaQt = qtCuaMinh && g.role === 'system_admin';
+              const loiVai = lf.loiCua(loi, `vai-${i}`);
+              return (
+              <div key={i} className="surface-2 rounded-lg p-2.5">
+              <div className="flex flex-wrap items-center gap-2" {...lf.o(loi, `vai-${i}`)} tabIndex={-1}>
+                <select className="field w-44" aria-label="Vai trò" value={g.role} disabled={khoaQt}
                   onChange={(e) => setGrants(grants.map((x, j) => (j === i ? { ...x, role: e.target.value } : x)))}>
                   {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABEL[r as Role]}</option>)}
                 </select>
@@ -511,10 +552,14 @@ function AccountDialog({ account, branches, onClose, onDone }: {
                     </NutChon>
                   ))}
                 </>)}
-                <button className="btn btn-sm btn-ghost ml-auto" type="button"
+                <button className="btn btn-sm btn-ghost ml-auto" type="button" disabled={khoaQt}
                   onClick={() => setGrants(grants.filter((_, j) => j !== i))}>Gỡ</button>
               </div>
-            ))}
+              {khoaQt && <p className="m-0 mt-1.5 text-xs text-slate-400">Không tự gỡ vai Quản trị của mình</p>}
+              {loiVai && <p className="m-0 mt-1.5 text-xs text-late">{loiVai}</p>}
+              </div>
+              );
+            })}
           </div>
         </div>
 

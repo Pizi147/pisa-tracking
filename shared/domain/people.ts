@@ -203,6 +203,16 @@ export const PERMISSION_LABEL: Record<string, string> = {
   'cycle.edit': 'Sửa Target, lộ trình học viên',
 };
 
+/**
+ * OV-11b (QT-6): chip "Phạm vi được cấp" — menu Tài khoản và Hồ sơ cá nhân dùng chung. Quyền cấp riêng (grant `granted`, máy chủ
+ * `permissions.ts` gộp vào `grants`) → "Cấp riêng: {tên quyền} · {phạm vi}"; vai → "{vai} · {phạm vi}".
+ */
+export function nhanPhamVi(g: { role: string; permissions: readonly string[]; branchName: string | null }): string {
+  const phamVi = g.branchName ?? 'Toàn hệ thống';
+  if (g.role !== 'granted') return `${roleLabel(g.role)} · ${phamVi}`;
+  return `Cấp riêng: ${g.permissions.map((k) => PERMISSION_LABEL[k] ?? k).join(', ')} · ${phamVi}`;
+}
+
 /** Sự kiện hành trình học viên. Bộ lọc chỉ có 3 lựa chọn, xem JOURNEY_FILTERS. */
 
 // ==================================================================== bộ lọc học viên
