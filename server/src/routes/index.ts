@@ -1891,6 +1891,24 @@ api.post('/interventions/:id/result', requireAuth, wrap((req) => {
   return caseSvc.updateResult(principalOf(req), pInt(req, 'id'), req.body ?? {});   // PR-CT2: Người dạy tuần này không bắt buộc; dịch vụ chỉ kiểm định dạng khi có
 }));
 
+/**
+ * OV-7b: SỬA LẦN GHI KẾT QUẢ PA GẦN NHẤT — GET điền sẵn form (PA như trước lần ghi, giá trị cũ, câu chặn); POST cùng thân `/interventions/:id/result`:
+ * giữ lựa chọn = sửa chữ, đổi lựa chọn = đảo hệ quả cũ + ghi lại (một giao dịch). Người đã ghi + Quản lý.
+ */
+api.get('/followups/:id/sua', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return caseSvc.moSuaKetQua(principalOf(req), pInt(req, 'id'));
+}));
+api.post('/followups/:id/sua', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSvc.suaKetQua(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+/** OV-7b: sửa "Xem lại sau hỗ trợ" lần mới nhất (kết quả quan sát, ghi chú, ngày) — người đã ghi + Quản lý. */
+api.patch('/followups/:id', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSvc.suaXemLai(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
 /** PR-PA (§8): SỬA PA — cùng form Thêm PA; Loại khoá; quyền như Kết quả. */
 api.patch('/interventions/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -1906,7 +1924,7 @@ api.post('/cases/:id/outcome', requireAuth, wrap((req) => {
   return caseSvc.closeCaseOutcome(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
 
-/** PR-LUI-a2: Quản lý / Quản trị mở lại Case đã hoàn thành — một bấm. */
+/** PR-LUI-a2: Quản lý / Quản trị mở lại Case đã hoàn thành — một bấm. OV-7b: cả người đã hoàn thành Case (GV). */
 api.post('/cases/:id/mo-lai', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return caseSvc.moLaiCase(principalOf(req), pInt(req, 'id'));

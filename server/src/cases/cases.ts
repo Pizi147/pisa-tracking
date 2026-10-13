@@ -33,7 +33,7 @@ import { activeClassOf } from '../yThuc/access.ts';
 import { isRatioCycle, nguongDatLop, programmeCodeOfCycle } from '../normal/regular.ts';
 import { suggestCaseOwner } from './owner.ts';
 import { caseKhacChuongTrinh, chuongTrinhCuaLop } from './sos.ts';
-import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
+import { LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, dongBoTrangThaiCaseLo, sosCaseState } from './sosState.ts';
 import { PLAN_DECISIONS, coNguoiDay, decisionToStep, duongDotTest, kiemSoBuoiTuan, soBuoiTu, tuanLich, type PlanDecision } from '../../../shared/domain/index.ts';
 import { chenPa } from './taoPa.ts';
 import { nguoiGiuKetQua } from './giuKetQua.ts';
@@ -274,14 +274,15 @@ export function setFollowUntil(p: Principal, caseId: number, date: string | null
 }
 
 /**
- * MỞ LẠI CASE ĐÃ HOÀN THÀNH (PR-LUI-a2, chủ sản phẩm 06/10) — chỉ Quản lý / Quản trị, một bấm, không lý do. Kết luận cũ ở lại trong mốc
+ * MỞ LẠI CASE ĐÃ HOÀN THÀNH (PR-LUI-a2, chủ sản phẩm 06/10) — Quản lý / Quản trị, và (OV-7b) người đã hoàn thành Case nếu còn quyền hoàn thành
+ * (`coTheMoLaiCase`); một bấm, không lý do. Kết luận cũ ở lại trong mốc
  * `closed` + nhật ký; PA đã khép KHÔNG sống lại. Khoá chống trùng đã nhả cho Case mới cùng hạng mục → chặn (mở Case mới đó). Case hệ thống đóng
  * (em kết thúc học…) đi đường riêng của nó (`moLaiCaseHeThongDong`).
  */
 export function moLaiCase(p: Principal, caseId: number) {
   const conn = db();
   const c = loadCase(caseId);
-  require_(p, PERMISSIONS.CASE_APPROVE, { classId: c.class_id, studentId: c.eff_student_id }, 'Chỉ Quản lý mở lại được Case.');
+  if (!coTheMoLaiCase(p, c)) throw forbidden('Chỉ Quản lý hoặc người đã hoàn thành Case mở lại được.');
   if (c.status !== 'done') throw badRequest('Case này chưa hoàn thành.');
   const chan = chanMoLai(c);
   if (chan) throw badRequest(chan.loi);
@@ -315,6 +316,11 @@ export function moLaiCase(p: Principal, caseId: number) {
   });
 }
 
+/** OV-7b: ai mở lại được — Quản lý trong phạm vi, hoặc người đã hoàn thành Case (ai lưu được thì sửa được) khi vẫn còn quyền hoàn thành. */
+function coTheMoLaiCase(p: Principal, c: any): boolean {
+  return can(p, PERMISSIONS.CASE_APPROVE, { classId: c.class_id, studentId: c.eff_student_id })
+    || (c.closed_by != null && c.closed_by === p.userId && canCloseCase(p, c));
+}
 /** Khoá chống trùng của Case nếu được mở lại (null = Case song song / không khoá). */
 function chanMoLaiKhoa(c: any): string | null {
   return c.parallel ? null : caseDedupKey({ category: c.category ?? categoryOf(c.topic), studentId: c.eff_student_id, cycleId: c.eff_cycle_id });
@@ -1638,7 +1644,7 @@ export function caseDetail(p: Principal, caseId: number) {
   const conn = db();
   const c = loadCase(caseId);
   /* PR-PA (§8): người giữ việc Kết quả của một PA trong Case xem được Case (vd. chủ Case khi lớp mới chưa phân công môn). */
-  const ivCuaCase = conn.prepare('SELECT id, nhom_bo_tro, status FROM case_interventions WHERE case_id = ?').all(caseId) as any[];
+  const ivCuaCase = conn.prepare('SELECT id, nhom_bo_tro, status, closed_reason FROM case_interventions WHERE case_id = ?').all(caseId) as any[];
   const giu = giuCuaCase(c, ivCuaCase);
   /* Chỉ PA đang chạy mở quyền xem — PA đã khép / huỷ thì người giữ việc (vd. chủ Case dự phòng) không còn việc ở đây. */
   if (!ivCuaCase.some((iv) => (iv.status === 'planned' || iv.status === 'started') && giu.get(iv.id) === p.userId)) {
@@ -1767,13 +1773,22 @@ export function caseDetail(p: Principal, caseId: number) {
       xinYKien: theCuaPa.find((y) => y.doiTuongId === iv.id && y.loai === 'xin_y_kien' && y.trangThai !== 'tu_dong') ?? null,
     }));
 
-  const followups = (conn
+  const dongFu = conn
     .prepare(
       `SELECT f.*, u.full_name AS observer_name, pt.full_name AS phu_trach_account FROM case_followups f
          LEFT JOIN users u ON u.id = f.observer_user_id LEFT JOIN users pt ON pt.id = f.phu_trach_user_id
         WHERE f.case_id = ? ORDER BY f.observed_on DESC, f.id DESC`,
     )
-    .all(caseId) as any[]).map((f) => ({
+    .all(caseId) as any[];
+  /* OV-7b: "Sửa" — lần ghi Kết quả mới nhất của mỗi PA / lần Xem lại mới nhất của Case; người đã ghi + Quản lý; Case chưa hoàn thành. */
+  const quanLyCase = can(p, PERMISSIONS.CASE_APPROVE, { classId: c.class_id, studentId: c.eff_student_id });
+  const khoaSua = (f: any) => (f.next_step ? `pa:${f.intervention_id}` : f.metrics ? null : 'xem-lai');   // dòng điểm tự chấm lúc kết luận: không sửa
+  /* PA còn đúng trạng thái lần ghi để lại (cùng luật `nguCanhSuaKetQua`) — PA khép bằng đường khác (Mini Test ở hồ sơ, dữ liệu cũ) thì không hiện nút. */
+  const paCua = new Map(ivCuaCase.map((r) => [r.id as number, r]));
+  const khopPa = (f: any) => !f.next_step || paKhopLanGhi(f.next_step, paCua.get(f.intervention_id));
+  const moiNhat = new Map<string | null, number>();
+  for (const f of dongFu) moiNhat.set(khoaSua(f), Math.max(moiNhat.get(khoaSua(f)) ?? 0, f.id));
+  const followups = dongFu.map((f) => ({
       id: f.id, interventionId: f.intervention_id, observedOn: f.observed_on,
       observerName: f.observer_name ?? null, outcome: f.outcome, note: f.note,
       evidenceAttemptId: f.evidence_attempt_id,
@@ -1787,6 +1802,8 @@ export function caseDetail(p: Principal, caseId: number) {
       /* PR-PA (§8): Người dạy tuần này (cột cũ `phu_trach_*` — PR-LUI-a2) + Số buổi tuần này. Dòng cũ null. */
       nguoiDay: (f.phu_trach_account ?? f.phu_trach_ten ?? null) as string | null,
       soBuoi: (f.so_buoi ?? null) as number | null,
+      suaDuoc: c.status !== 'done' && (f.observer_user_id === p.userId || quanLyCase)
+        && khoaSua(f) !== null && moiNhat.get(khoaSua(f)) === f.id && khopPa(f),
     }));
 
   /* PR-DEPLOY (0b-3): chương trình GỐC của Case (lúc mở) trước, rồi mới tới chương trình lộ trình — Case "G+V" của em đã lên BE vẫn ghi "G+V", bộ nguyên nhân của FOU. */
@@ -1928,9 +1945,9 @@ export function caseDetail(p: Principal, caseId: number) {
     viewer: {
       canEdit: can(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c)),
       canClose: canCloseCase(p, c),
-      canApprove: can(p, PERMISSIONS.CASE_APPROVE, { classId: c.class_id, studentId: c.eff_student_id }),
+      canApprove: quanLyCase,
       /* PR-LUI-a2: Mở lại (Case đã hoàn thành) · Sửa · Xoá Case (QL/QT, Case báo tay chưa có PA ghi kết quả) · Kỹ năng khoá khi đã có PA. */
-      coTheMoLai: c.status === 'done' && can(p, PERMISSIONS.CASE_APPROVE, { classId: c.class_id, studentId: c.eff_student_id }) && !chanMoLai(c),
+      coTheMoLai: c.status === 'done' && coTheMoLaiCase(p, c) && !chanMoLai(c),
       coTheSua: suaDuoc && !(sosSt.fromSos && !sosSt.hasCause),
       /** Ô "Tên Case" của panel Sửa Case: tên riêng, hoặc phần giữa mặc định của Case SOS / Giữa khoá. */
       tenSua: suaDuoc ? (c.title ?? tenGiuaCua(c)) as string : null,
@@ -3122,7 +3139,12 @@ export function updateResult(p: Principal, interventionId: number, input: {
   nguoiDay?: { performerUserId?: number | null; performerName?: string | null } | null;
   /** PR-PA (§8): Số buổi tuần này — bắt buộc khi PA có Số buổi, số nguyên 0–60 (0 = em nghỉ). */
   soBuoi?: unknown;
-}) {
+}, opts: {
+  /** OV-7b (`suaKetQua`): nơi gọi tự trả Case — bỏ `caseDetail` trong giao dịch. */
+  khongTraCase?: boolean;
+  /** OV-7b: thẻ Xin ý kiến đang chờ là của CHÍNH lần ghi đang sửa — nơi gọi tự viết lại, không nối "Bổ sung" + chuông lần hai. */
+  giuYeuCau?: boolean;
+} = {}) {
   const conn = db();
   const iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(interventionId) as any;
   if (!iv) throw notFound('Không tìm thấy phương án.');
@@ -3224,24 +3246,10 @@ export function updateResult(p: Principal, interventionId: number, input: {
     ? conn.prepare('SELECT * FROM mini_test WHERE nhom_bo_tro = ? AND ty_le IS NULL').get(iv.nhom_bo_tro) as any : null;
   if (mtDong && !input.miniTest) throw badRequest('Kết quả cuối của bổ trợ miễn phí thì nhập Mini Test (% và ngày làm).');
   const mtGhi = mtDong ? kiemMiniTest(mtDong, input.miniTest!) : null;
-  const remainingIssue = String(input.remainingIssue ?? '').trim() || null;
-  if (remainingIssue && remainingIssue.length > 300) throw badRequest('Vấn đề còn tồn / Ghi chú tối đa 300 ký tự.');
-  /* PR-PA (§8): PA có Số buổi → Số buổi tuần này bắt buộc (0–60). PA không Số buổi: không lưu số.
-     PR-CT2: Người dạy tuần này KHÔNG bắt buộc; có thì vẫn kiểm (tài khoản đang làm việc / tên ngoài). */
-  const coDem = iv.so_buoi != null;
-  const loiTuan = coDem ? kiemSoBuoiTuan(input.soBuoi) : null;
-  if (loiTuan) throw badRequest(`Số buổi tuần này: ${loiTuan}.`);
-  const soBuoiTuan = coDem ? soBuoiTu(input.soBuoi) : null;
-  const nguoiDay = coNguoiDay(iv.kind)
-    ? chuanHoaNguoiThucHien(p, input.nguoiDay ?? {}, { nhom: 'nhan_vien', batBuoc: false, nhan: 'Người dạy tuần này' }) : null;
+  const { remainingIssue, soBuoiTuan, nguoiDay, metrics } = chuKetQuaTuan(p, iv, c, input);
   /* Điều chỉnh: chuẩn hoá TRƯỚC giao dịch; sai thì không ghi gì. Số buổi mới ≥ đã dạy SAU tuần này. */
   const adjustPatch = nextStep === 'adjust'
     ? chuanHoaDieuChinh(p, iv, input.adjust, observedOn, daDayCua(interventionId) + (soBuoiTuan ?? 0)) : null;
-  const metrics = normalizeMetrics(input.metrics);
-  if (input.evidenceAttemptId) {
-    const a = conn.prepare('SELECT student_id FROM assessment_attempts WHERE id = ?').get(input.evidenceAttemptId) as any;
-    if (!a || a.student_id !== c.eff_student_id) throw badRequest('Bằng chứng không thuộc học viên này.');
-  }
 
   return tx(() => {
     const cycleNo = iv.cycle_no ?? 1;
@@ -3355,7 +3363,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
         ...doiTuong, hocVienId: c.eff_student_id, lopId: c.class_id ?? null, nguoiXin: p.userId,
         lyDo: decisionNote, duLieu: { followupId },
       });
-      if (moi === null) boSungYeuCau(conn, doiTuong, { lyDo: decisionNote, duLieu: { followupId }, ngay: observedOn });
+      if (moi === null && !opts.giuYeuCau) boSungYeuCau(conn, doiTuong, { lyDo: decisionNote, duLieu: { followupId }, ngay: observedOn });
     }
 
     dongBoTrangThaiCase(iv.case_id);
@@ -3370,13 +3378,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
       studentId: c.eff_student_id, cycleId: c.eff_cycle_id,
       eventType: 'followup', eventDate: observedOn,
       title: `Kết quả sau hỗ trợ: ${outcomeLabelFor(input.outcome)}`,
-      detail: [
-        INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] ?? iv.kind,
-        NEXT_STEP_LABEL[nextStep as NextStep],
-        note || null,
-        decisionNote ? `${nextStep === 'adjust' || nextStep === 'propose' ? 'Lý do' : 'Ghi chú'}: ${decisionNote}` : null,
-        remainingIssue ? `Còn tồn: ${remainingIssue}` : null,
-      ].filter(Boolean).join(' · '),
+      detail: chiTietKetQua(iv.kind, nextStep, note, decisionNote, remainingIssue),
       refTable: 'case_followups', refId: followupId, createdBy: p.userId,
       dedupKey: `followup:${followupId}`,
     });
@@ -3386,7 +3388,379 @@ export function updateResult(p: Principal, interventionId: number, input: {
       entityLabel: iv.description ?? iv.kind,
       after: { outcome: input.outcome, mode, nextStep, late: !!late, cycleNo, remainingIssue, decisionNote, adjust: adjustPatch },
     });
-    return caseDetail(p, iv.case_id);
+    return opts.khongTraCase ? null : caseDetail(p, iv.case_id);
+  });
+}
+
+/** Phần chữ của một lần ghi Kết quả — Vấn đề còn tồn, Số buổi / Người dạy tuần này, điểm tự chấm, bằng chứng. Ghi lần đầu và Sửa chữ (OV-7b) dùng chung. */
+function chuKetQuaTuan(p: Principal, iv: any, c: any, input: {
+  remainingIssue?: string | null; soBuoi?: unknown; metrics?: unknown; evidenceAttemptId?: number | null;
+  nguoiDay?: { performerUserId?: number | null; performerName?: string | null } | null;
+}) {
+  const remainingIssue = String(input.remainingIssue ?? '').trim() || null;
+  if (remainingIssue && remainingIssue.length > 300) throw badRequest('Vấn đề còn tồn / Ghi chú tối đa 300 ký tự.');
+  /* PR-PA (§8): PA có Số buổi → Số buổi tuần này bắt buộc (0–60). PA không Số buổi: không lưu số.
+     PR-CT2: Người dạy tuần này KHÔNG bắt buộc; có thì vẫn kiểm (tài khoản đang làm việc / tên ngoài). */
+  const coDem = iv.so_buoi != null;
+  const loiTuan = coDem ? kiemSoBuoiTuan(input.soBuoi) : null;
+  if (loiTuan) throw badRequest(`Số buổi tuần này: ${loiTuan}.`);
+  const soBuoiTuan = coDem ? soBuoiTu(input.soBuoi) : null;
+  const nguoiDay = coNguoiDay(iv.kind)
+    ? chuanHoaNguoiThucHien(p, input.nguoiDay ?? {}, { nhom: 'nhan_vien', batBuoc: false, nhan: 'Người dạy tuần này' }) : null;
+  const metrics = normalizeMetrics(input.metrics);
+  if (input.evidenceAttemptId) {
+    const a = db().prepare('SELECT student_id FROM assessment_attempts WHERE id = ?').get(input.evidenceAttemptId) as any;
+    if (!a || a.student_id !== c.eff_student_id) throw badRequest('Bằng chứng không thuộc học viên này.');
+  }
+  return { remainingIssue, soBuoiTuan, nguoiDay, metrics };
+}
+
+/** Dòng chi tiết Hành trình của một lần ghi Kết quả (ghi lần đầu và Sửa chữ dùng chung). */
+function chiTietKetQua(kind: string, nextStep: string, note: string, decisionNote: string | null, remainingIssue: string | null): string {
+  return [
+    INTERVENTION_KIND_LABEL[kind as InterventionKind] ?? kind,
+    NEXT_STEP_LABEL[nextStep as NextStep],
+    note || null,
+    decisionNote ? `${nextStep === 'adjust' || nextStep === 'propose' ? 'Lý do' : 'Ghi chú'}: ${decisionNote}` : null,
+    remainingIssue ? `Còn tồn: ${remainingIssue}` : null,
+  ].filter(Boolean).join(' · ');
+}
+
+// ---------------------------------------------------------------- OV-7b · Sửa sau khi lưu: Kết quả PA gần nhất · Xem lại sau hỗ trợ
+
+type VaoKetQua = Parameters<typeof updateResult>[2];
+
+/** PA còn đúng trạng thái mà lần ghi Kết quả (gần nhất) để lại — khép bằng đường khác (Mini Test ở hồ sơ, huỷ) thì lần ghi đó không đảo được nữa. */
+function paKhopLanGhi(nextStep: string, pa: { status: string; closed_reason?: string | null } | undefined): boolean {
+  if (!pa) return false;
+  if (nextStep === 'complete') return pa.status === 'completed' && (pa.closed_reason === 'done' || pa.closed_reason === 'het_moc');
+  if (nextStep === 'propose') return pa.status === 'completed' && pa.closed_reason === 'superseded';
+  return pa.status === 'started';
+}
+/** Quyết định (nút web) của một lần ghi Kết quả. `null` = "Kết quả cuối" PA quy chế / bổ trợ (không có khối Quyết định). */
+function quyetDinhCuaLanGhi(f: any, iv: any): PlanDecision | null {
+  if (f.next_step === 'adjust') return 'adjust';
+  if (f.next_step === 'propose') return 'replace';
+  if (f.next_step === 'ask_manager') return 'ask_manager';
+  if (f.next_step === 'complete') return iv.closed_reason === 'het_moc' ? null : 'end';
+  return 'keep';   // continue · monitor (dòng cũ)
+}
+/** Đuôi `boSungYeuCau` nối vào thẻ Xin ý kiến đang chờ khi lần ghi này hỏi tiếp. */
+const duoiBoSung = (f: { observed_on: string; decision_note: string | null }) =>
+  `\nBổ sung ${f.observed_on.slice(8, 10)}/${f.observed_on.slice(5, 7)}: ${f.decision_note ?? ''}`;
+const anhLanGhi = (f: any) => ({
+  followupId: f.id, observedOn: f.observed_on, outcome: f.outcome, nextStep: f.next_step, note: f.note, decisionNote: f.decision_note,
+  remainingIssue: f.remaining_issue, soBuoi: f.so_buoi, nguoiDay: f.phu_trach_user_id ?? f.phu_trach_ten ?? null,
+});
+
+/**
+ * NGỮ CẢNH SỬA MỘT LẦN GHI KẾT QUẢ PA (OV-7b) — chỉ đọc + kiểm. 403: không phải người đã ghi / Quản lý. 400 (không sửa được gì): không phải lần gần
+ * nhất của PA (cả nhóm bổ trợ), Case đã hoàn thành (trừ Case do chính Mini Test của lần này đóng), PA đã đổi bằng đường khác. `chanDoi`: lý do không
+ * ĐỔI được lựa chọn (PA thay thế đã chạy / Quản lý đã trả lời) — sửa chữ vẫn được. Bổ trợ nhóm: dòng chép sang PA anh em (cùng ngày, chữ, lựa chọn,
+ * người ghi; mới nhất của PA mình) là CÙNG một lần — dòng chính = id nhỏ nhất (`chepKetQuaNhom` chèn sau dòng chính).
+ */
+function nguCanhSuaKetQua(p: Principal, followupId: number) {
+  const conn = db();
+  const f = conn.prepare('SELECT * FROM case_followups WHERE id = ?').get(followupId) as any;
+  if (!f || !f.intervention_id || !f.next_step) throw notFound('Không tìm thấy lần ghi kết quả PA.');
+  const cF = loadCase(f.case_id);
+  if (f.observer_user_id !== p.userId && !can(p, PERMISSIONS.CASE_APPROVE, { classId: cF.class_id, studentId: cF.eff_student_id })) {
+    throw forbidden('Chỉ người đã ghi lần này hoặc Quản lý sửa được.');
+  }
+  if (conn.prepare('SELECT 1 FROM case_followups WHERE intervention_id = ? AND id > ? LIMIT 1').get(f.intervention_id, f.id)) {
+    throw badRequest('Chỉ sửa được lần ghi gần nhất của PA — lần này đã có lần ghi sau.');
+  }
+  const ivF = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(f.intervention_id) as any;
+  const dong: any[] = ivF.nhom_bo_tro
+    ? conn.prepare(`SELECT f2.* FROM case_followups f2 JOIN case_interventions i2 ON i2.id = f2.intervention_id
+        WHERE i2.nhom_bo_tro = ? AND f2.observed_on = ? AND f2.outcome IS ? AND f2.note IS ? AND f2.next_step = ? AND f2.observer_user_id IS ?
+          AND NOT EXISTS (SELECT 1 FROM case_followups f3 WHERE f3.intervention_id = f2.intervention_id AND f3.id > f2.id) ORDER BY f2.id`)
+      .all(ivF.nhom_bo_tro, f.observed_on, f.outcome, f.note, f.next_step, f.observer_user_id) as any[]
+    : [f];
+  const chinh = dong[0];
+  const ph = dong.map(() => '?').join(',');
+  if (ivF.nhom_bo_tro && conn.prepare(`SELECT 1 FROM case_followups f2 JOIN case_interventions i2 ON i2.id = f2.intervention_id
+      WHERE i2.nhom_bo_tro = ? AND f2.id > ? AND f2.id NOT IN (${ph}) LIMIT 1`).get(ivF.nhom_bo_tro, chinh.id, ...dong.map((r) => r.id))) {
+    throw badRequest('PA cùng nhóm bổ trợ đã có lần ghi sau — chỉ sửa được lần ghi gần nhất.');
+  }
+  const ivs = new Map<number, any>((conn.prepare(`SELECT * FROM case_interventions WHERE id IN (${ph})`)
+    .all(...dong.map((r) => r.intervention_id)) as any[]).map((r) => [r.id as number, r]));
+  const iv = ivs.get(chinh.intervention_id);
+  /* Kết quả cuối bổ trợ miễn phí đã ghi Mini Test (`ghiMiniTestTrongTx`) — sửa thì Mini Test về "chưa ghi" rồi ghi lại. */
+  const mt = chinh.next_step === 'complete' && iv.kind === 'bo_tro_mien_phi' && iv.closed_reason === 'het_moc' && iv.nhom_bo_tro
+    ? (conn.prepare('SELECT * FROM mini_test WHERE nhom_bo_tro = ? AND ty_le IS NOT NULL').get(iv.nhom_bo_tro) as any) ?? null : null;
+  const caseCua = new Map<number, any>([[cF.id, cF]]);
+  for (const r of dong) {
+    const pa = ivs.get(r.intervention_id);
+    if (!caseCua.has(r.case_id)) caseCua.set(r.case_id, loadCase(r.case_id));
+    const c = caseCua.get(r.case_id);
+    if (c.status === 'done' && !(mt && String(c.outcome_note ?? '').startsWith('Mini Test '))) {
+      throw badRequest('Case đã hoàn thành — bấm Mở lại trước khi sửa kết quả.');
+    }
+    if (!paKhopLanGhi(r.next_step, pa)) {
+      throw badRequest(pa.status === 'cancelled' ? 'PA đã huỷ — không sửa kết quả được.'
+        : 'PA đã đổi trạng thái sau lần ghi này (vd đã khép khi ghi Mini Test) — lần ghi này không sửa được nữa.');
+    }
+  }
+  /* Thay PA: PA mới đã chạy (có kết quả) hoặc Quản lý đã trả lời đề xuất → không bỏ được lựa chọn Thay. */
+  const paMoi = chinh.next_step === 'propose' && iv.superseded_by
+    ? (conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(iv.superseded_by) as any) ?? null : null;
+  let chanDoi: string | null = null;
+  if (paMoi && conn.prepare('SELECT 1 FROM case_followups WHERE intervention_id = ? LIMIT 1').get(paMoi.id)) {
+    chanDoi = 'PA thay thế đã có kết quả — chỉ sửa được chữ. Muốn bỏ Thay PA thì nhờ Quản lý xoá PA mới trước.';
+  } else if (paMoi && (paMoi.approval_state === 'approved' || paMoi.approval_state === 'declined')) {
+    chanDoi = `Quản lý đã ${paMoi.approval_state === 'approved' ? 'duyệt' : 'từ chối'} PA thay thế — chỉ sửa được chữ; ghi kết quả tuần mới ở PA mới.`;
+  }
+  /* Xin hỗ trợ QL: thẻ của CHÍNH lần này (`du_lieu.followupId`). Đang chờ → viết lại thẳng thẻ; Quản lý đã trả lời → không đổi được. */
+  let the: any = null;
+  if (chinh.next_step === 'ask_manager') {
+    const y = conn.prepare(`SELECT * FROM yeu_cau_duyet WHERE loai = 'xin_y_kien' AND doi_tuong_loai = 'intervention' AND doi_tuong_id = ?
+      ORDER BY id DESC LIMIT 1`).get(iv.id) as any;
+    let fid: unknown = null;
+    try { fid = JSON.parse(y?.du_lieu ?? '{}').followupId; } catch { /* du_lieu hỏng — không phải thẻ của lần này */ }
+    if (y && fid === chinh.id && y.trang_thai === 'cho') the = y;
+    else if (y && fid === chinh.id && y.trang_thai !== 'tu_dong') chanDoi = 'Quản lý đã trả lời câu hỏi Xin hỗ trợ — chỉ sửa được chữ; ghi kết quả tuần mới nếu cần.';
+  }
+  /* Câu hỏi lần này NỐI vào thẻ của lần trước ("Bổ sung dd/mm: …") → phần trước giữ lại khi viết lại / bỏ câu hỏi. */
+  const lyDoTruoc = the && the.ly_do !== chinh.decision_note && String(the.ly_do ?? '').endsWith(duoiBoSung(chinh))
+    ? String(the.ly_do).slice(0, -duoiBoSung(chinh).length) : null;
+  return { f, ivF, chinh, dong, ivs, iv, c: caseCua.get(chinh.case_id) ?? loadCase(chinh.case_id), mt, paMoi, the, lyDoTruoc, chanDoi,
+    quyetDinh: quyetDinhCuaLanGhi(chinh, iv) };
+}
+type NguCanhSua = ReturnType<typeof nguCanhSuaKetQua>;
+
+/**
+ * SỬA LẦN GHI KẾT QUẢ PA GẦN NHẤT (OV-7b; chủ SP 13/10) — người đã ghi + Quản lý, cùng thân `POST /interventions/:id/result`. Giữ lựa chọn (kết quả,
+ * quyết định, ngày) và không gửi lại Điều chỉnh / PA thay / Mini Test = SỬA CHỮ: cập nhật dòng, không đảo gì. Còn lại: ĐẢO hệ quả lần cũ (`daoKetQua`)
+ * rồi chạy `updateResult` lần mới — MỘT giao dịch; người ghi giữ như cũ (Quản lý sửa hộ). Nhật ký `case.result.edit` (trước → sau).
+ */
+export function suaKetQua(p: Principal, followupId: number, input: VaoKetQua) {
+  const conn = db();
+  const khoaTep: string[] = [];
+  /* Đọc + kiểm TRONG giao dịch ghi: hai người sửa cùng lúc thì người sau đọc đúng trạng thái người trước để lại (lần ghi cũ đã thay → 404). */
+  const caseId = tx(() => {
+    const x = nguCanhSuaKetQua(p, followupId);
+    const { chinh, iv } = x;
+    const vao: VaoKetQua = {
+      ...input, observedOn: input.observedOn ?? chinh.observed_on,
+      completedOn: input.completedOn ?? (x.quyetDinh === 'end' ? iv.completed_date : undefined),
+    };
+    const giuLuaChon = input.outcome === chinh.outcome && (input.decision ?? null) === x.quyetDinh && vao.observedOn === chinh.observed_on
+      && (x.quyetDinh !== 'end' || vao.completedOn === iv.completed_date)
+      && input.adjust == null && input.newPlan == null && input.miniTest == null;
+    if (giuLuaChon) { suaChuKetQua(p, x, vao); return x.f.case_id as number; }
+    if (x.chanDoi) throw badRequest(x.chanDoi);
+    daoKetQua(conn, p, x, khoaTep);
+    const truocMax = (conn.prepare('SELECT COALESCE(MAX(id), 0) m FROM case_followups').get() as any).m as number;
+    updateResult(p, iv.id, vao, { khongTraCase: true, giuYeuCau: !!x.the });
+    const moi = conn.prepare('SELECT * FROM case_followups WHERE intervention_id = ? ORDER BY id DESC LIMIT 1').get(iv.id) as any;
+    /* Quản lý sửa hộ: lần ghi vẫn là của người đã ghi (họ còn sửa tiếp được); ai sửa nằm ở nhật ký. */
+    if (chinh.observer_user_id !== p.userId) {
+      conn.prepare('UPDATE case_followups SET observer_user_id = ? WHERE id > ? AND observer_user_id = ?').run(chinh.observer_user_id, truocMax, p.userId);
+    }
+    if (x.the) {
+      if (moi.next_step === 'ask_manager') {
+        let du: Record<string, unknown> = {};
+        try { du = JSON.parse(x.the.du_lieu ?? '{}'); } catch { du = {}; }
+        conn.prepare('UPDATE yeu_cau_duyet SET ly_do = ?, du_lieu = ? WHERE id = ?')
+          .run(x.lyDoTruoc ? `${x.lyDoTruoc}${duoiBoSung(moi)}` : moi.decision_note, JSON.stringify({ ...du, followupId: moi.id }), x.the.id);
+      } else if (x.lyDoTruoc) {
+        conn.prepare('UPDATE yeu_cau_duyet SET ly_do = ? WHERE id = ?').run(x.lyDoTruoc, x.the.id);
+      } else {
+        chotYeuCau(conn, { loai: 'xin_y_kien', doiTuongLoai: 'intervention', doiTuongId: iv.id }, 'tu_dong',
+          { nguoiDuyet: p.userId, lyDo: 'Giáo viên sửa kết quả — bỏ Xin hỗ trợ' });
+      }
+    }
+    /* Báo QL Mini Test của lần cũ còn chờ mà lần mới không ghi Mini Test (ngày ghi sửa về trước mốc) → tự đóng. */
+    if (x.mt && (conn.prepare('SELECT ty_le FROM mini_test WHERE id = ?').get(x.mt.id) as any)?.ty_le == null) {
+      chotYeuCau(conn, { loai: 'bao_len_mini_test', doiTuongLoai: 'mini_test', doiTuongId: x.mt.id }, 'tu_dong', { lyDo: 'Kết quả cuối đã sửa' });
+    }
+    writeAudit({ actorUserId: p.userId, action: 'case.result.edit', entityType: 'case_intervention', entityId: iv.id,
+      entityLabel: iv.description ?? iv.kind, before: anhLanGhi(chinh), after: anhLanGhi(moi) });
+    return x.f.case_id as number;
+  });
+  xoaTepSauGiaoDich(khoaTep);
+  return caseDetail(p, caseId);
+}
+
+/**
+ * ĐẢO hệ quả của một lần ghi Kết quả (dòng chính + dòng chép nhóm) — TRONG giao dịch của `suaKetQua`, sau khi `nguCanhSuaKetQua` đã kiểm. Theo mẫu Huỷ
+ * quyết định PA: Điều chỉnh (nội dung PA về bản trước, bỏ dòng lịch sử) · Thay PA (xoá PA mới chưa chạy + thẻ của nó) · Mini Test về "chưa ghi" (Case do
+ * nó đóng mở lại) · PA về trạng thái ngay trước lần ghi (đợt, hạn) · bỏ dòng kết quả + mốc Hành trình · trạng thái Case. Thẻ Xin hỗ trợ: nơi gọi xử lý.
+ */
+function daoKetQua(conn: any, p: Principal, x: NguCanhSua, khoaTep: string[]): void {
+  const ids = x.dong.map((r) => r.id as number);
+  const ph = ids.map(() => '?').join(',');
+  const now = nowIso();
+  /* Điều chỉnh: chỉ ô chưa ai đổi sau lần ghi (Sửa PA sau đó được giữ). Mọi CASE so với giá trị CŨ của dòng — SQLite đọc dòng trước khi ghi. */
+  for (const r of conn.prepare(`SELECT * FROM case_intervention_revisions WHERE followup_id IN (${ph})`).all(...ids) as any[]) {
+    conn.prepare(`UPDATE case_interventions SET
+        description = CASE WHEN description IS ? THEN ? ELSE description END,
+        performer_user_id = CASE WHEN performer_user_id IS ? AND performer_name IS ? THEN ? ELSE performer_user_id END,
+        performer_name = CASE WHEN performer_user_id IS ? AND performer_name IS ? THEN ? ELSE performer_name END,
+        followup_due = CASE WHEN followup_due IS ? THEN ? ELSE followup_due END,
+        so_buoi = CASE WHEN so_buoi IS ? THEN ? ELSE so_buoi END
+      WHERE id = ?`).run(r.new_description, r.old_description,
+      r.new_performer_user_id, r.new_performer_name, r.old_performer_user_id,
+      r.new_performer_user_id, r.new_performer_name, r.old_performer_name,
+      r.new_followup_due, r.old_followup_due, r.new_so_buoi, r.old_so_buoi, r.intervention_id);
+  }
+  conn.prepare(`DELETE FROM case_intervention_revisions WHERE followup_id IN (${ph})`).run(...ids);
+  /* Thay PA: PA mới chưa chạy (đã kiểm) xoá hẳn như Xoá PA; thẻ Đề xuất PA của nó tự đóng, không báo người sửa. */
+  if (x.paMoi) {
+    chotYeuCau(conn, { doiTuongLoai: 'intervention', doiTuongId: x.paMoi.id }, 'tu_dong', { nguoiDuyet: p.userId, lyDo: 'Giáo viên sửa kết quả — bỏ Thay PA' });
+    for (const r of conn.prepare(`SELECT url FROM attachments WHERE kind = 'file' AND owner_type = 'case_intervention' AND owner_id = ?`)
+      .all(x.paMoi.id) as any[]) khoaTep.push(r.url);
+    for (const sql of CAU_XOA_PA) conn.prepare(sql).run(x.paMoi.id);
+  }
+  /* Mini Test về "chưa ghi"; Case do chính nó đóng mở lại (bỏ mốc đóng). Thẻ Báo QL để `ghiMiniTestTrongTx` lần mới viết lại / đóng. */
+  if (x.mt) {
+    for (const c of conn.prepare(`SELECT DISTINCT sc.id, sc.closed_at FROM case_interventions i JOIN sos_cases sc ON sc.id = i.case_id
+        WHERE i.nhom_bo_tro = ? AND sc.status = 'done' AND sc.outcome_note LIKE 'Mini Test %≥ 70%'`).all(x.mt.nhom_bo_tro) as any[]) {
+      conn.prepare(`UPDATE sos_cases SET status = 'open', outcome = NULL, outcome_note = NULL, outcome_decision = NULL, outcome_by = NULL, outcome_at = NULL,
+          closed_by = NULL, closed_at = NULL, updated_at = ? WHERE id = ?`).run(now, c.id);
+      conn.prepare('DELETE FROM case_milestones WHERE dedup_key = ?').run(`outcome:${c.id}:${c.closed_at}:end`);
+    }
+    conn.prepare('UPDATE mini_test SET ty_le = NULL, ngay_lam = NULL, ghi_boi = NULL, ghi_luc = NULL WHERE id = ?').run(x.mt.id);
+  }
+  /* PA về ngay trước lần ghi: Kết thúc / Thay → đang chạy (đợt, hạn không đổi lúc đó); chu kỳ mới → đợt, hạn của chính lần ghi. */
+  for (const r of x.dong) {
+    const pa = x.ivs.get(r.intervention_id);
+    if (r.next_step === 'complete' || r.next_step === 'propose') {
+      conn.prepare(`UPDATE case_interventions SET status = 'started', completed_date = NULL, closed_reason = NULL, superseded_by = NULL, updated_at = ? WHERE id = ?`)
+        .run(now, pa.id);
+    } else {
+      // shortcut: ngày mở đợt trước = ngày ghi lần trước (đợt đầu: ngày bắt đầu PA) — PA chạy từ ngày duyệt / xác nhận khác ngày bắt đầu lệch vài ngày, chỉ hiển thị; cần đúng tuyệt đối thì chụp PA vào nhật ký lúc ghi.
+      const truoc = conn.prepare('SELECT observed_on FROM case_followups WHERE intervention_id = ? AND id < ? ORDER BY id DESC LIMIT 1').get(pa.id, r.id) as any;
+      conn.prepare(`UPDATE case_interventions SET status = 'started', cycle_no = ?, action_due = ?, cycle_started_on = ?, updated_at = ? WHERE id = ?`)
+        .run(r.cycle_no ?? 1, r.cycle_due ?? null, truoc?.observed_on ?? pa.started_date ?? null, now, pa.id);
+    }
+  }
+  conn.prepare(`DELETE FROM journey_events WHERE ref_table = 'case_followups' AND ref_id IN (${ph})`).run(...ids);
+  conn.prepare(`DELETE FROM case_followups WHERE id IN (${ph})`).run(...ids);
+  dongBoTrangThaiCaseLo([...new Set(x.dong.map((r) => r.case_id as number))]);
+}
+
+/**
+ * Sửa CHỮ của một lần ghi (giữ lựa chọn): dòng chính + dòng chép, lý do Điều chỉnh, câu hỏi thẻ Xin hỗ trợ đang chờ, chi tiết Hành trình. Không đảo gì,
+ * không chuông. Gọi TRONG giao dịch của `suaKetQua`.
+ */
+function suaChuKetQua(p: Principal, x: NguCanhSua, vao: VaoKetQua): void {
+  const conn = db();
+  const { chinh, iv } = x;
+  kiemQuyenPa(p, iv, x.c);   // cùng quyền như lúc ghi (đường đảo kiểm qua `updateResult`)
+  const note = (vao.note ?? '').trim();
+  if (note.length < 8) throw badRequest('Ghi chú phải nói rõ quan sát được gì — ít nhất 8 ký tự.');
+  const decisionNote = String(vao.decisionNote ?? '').trim() || null;
+  if ((chinh.next_step === 'adjust' || chinh.next_step === 'propose') && !decisionNote) throw badRequest('Điều chỉnh hoặc thay phương án thì phải ghi Lý do.');
+  if (chinh.next_step === 'ask_manager' && (decisionNote ?? '').length < 8) {
+    throw badRequest('Xin hỗ trợ Quản lý thì ghi rõ cần Quản lý giúp gì, ít nhất 8 ký tự.');
+  }
+  if (x.quyetDinh === null && chinh.outcome === 'insufficient' && !decisionNote) throw badRequest('"Chưa đủ dữ liệu" ở lần ghi cuối thì ghi Lý do.');
+  if (chinh.next_step === 'ask_manager' && !x.the && x.chanDoi && decisionNote !== chinh.decision_note) {
+    throw badRequest('Quản lý đã trả lời câu hỏi Xin hỗ trợ — không sửa được câu hỏi.');
+  }
+  const t = chuKetQuaTuan(p, iv, x.c, vao);
+  const sau = { ...chinh, note, decision_note: decisionNote, remaining_issue: t.remainingIssue, so_buoi: t.soBuoiTuan,
+    phu_trach_user_id: t.nguoiDay?.userId ?? null, phu_trach_ten: t.nguoiDay?.name ?? null };
+  const doi = (['note', 'decision_note', 'remaining_issue', 'so_buoi', 'phu_trach_user_id', 'phu_trach_ten'] as const)
+    .some((k) => (sau[k] ?? null) !== (chinh[k] ?? null)) || vao.metrics !== undefined || vao.evidenceAttemptId !== undefined;
+  if (!doi) return;
+  const ids = x.dong.map((r) => r.id as number);
+  const ph = ids.map(() => '?').join(',');
+  conn.prepare(`UPDATE case_followups SET note = ?, decision_note = ?, remaining_issue = ?, so_buoi = ?, phu_trach_user_id = ?, phu_trach_ten = ?,
+      metrics = CASE WHEN ? = 1 THEN ? ELSE metrics END, evidence_attempt_id = CASE WHEN ? = 1 THEN ? ELSE evidence_attempt_id END
+    WHERE id IN (${ph})`)
+    .run(note, decisionNote, t.remainingIssue, t.soBuoiTuan, sau.phu_trach_user_id, sau.phu_trach_ten,
+      vao.metrics !== undefined ? 1 : 0, t.metrics ? JSON.stringify(t.metrics) : null,
+      vao.evidenceAttemptId !== undefined ? 1 : 0, vao.evidenceAttemptId ?? null, ...ids);
+  if (chinh.next_step === 'adjust') conn.prepare(`UPDATE case_intervention_revisions SET reason = ? WHERE followup_id IN (${ph})`).run(decisionNote, ...ids);
+  if (x.the && decisionNote !== chinh.decision_note) {
+    conn.prepare('UPDATE yeu_cau_duyet SET ly_do = ? WHERE id = ?')
+      .run(x.lyDoTruoc ? `${x.lyDoTruoc}${duoiBoSung({ observed_on: chinh.observed_on, decision_note: decisionNote })}` : decisionNote, x.the.id);
+  }
+  conn.prepare(`UPDATE journey_events SET detail = ? WHERE ref_table = 'case_followups' AND ref_id = ?`)
+    .run(chiTietKetQua(iv.kind, chinh.next_step, note, decisionNote, t.remainingIssue), chinh.id);
+  writeAudit({ actorUserId: p.userId, action: 'case.result.edit', entityType: 'case_intervention', entityId: iv.id,
+    entityLabel: iv.description ?? iv.kind, before: anhLanGhi(chinh), after: anhLanGhi(sau) });
+}
+
+/**
+ * ĐIỀN SẴN form Sửa kết quả (OV-7b) — PA như NGAY TRƯỚC lần ghi (đợt, hạn, nội dung trước Điều chỉnh, Đã dạy trừ tuần này), giá trị đã ghi (kể cả nội
+ * dung Điều chỉnh, PA thay, Mini Test), `chan` = câu chặn đổi lựa chọn. Quyền + chặn như `suaKetQua`.
+ */
+export function moSuaKetQua(p: Principal, followupId: number) {
+  const conn = db();
+  const x = nguCanhSuaKetQua(p, followupId);
+  const { f, ivF: iv } = x;
+  const ten = (id: number | null) => (id ? (conn.prepare('SELECT full_name FROM users WHERE id = ?').get(id) as any)?.full_name ?? null : null);
+  const rev = conn.prepare('SELECT * FROM case_intervention_revisions WHERE followup_id = ? LIMIT 1').get(f.id) as any;
+  const truoc = rev
+    ? { description: rev.old_description, performerUserId: rev.old_performer_user_id, performer: ten(rev.old_performer_user_id) ?? rev.old_performer_name,
+        soBuoi: rev.old_so_buoi, followupDue: rev.old_followup_due }
+    : { description: iv.description, performerUserId: iv.performer_user_id, performer: ten(iv.performer_user_id) ?? iv.performer_name,
+        soBuoi: iv.so_buoi, followupDue: iv.followup_due };
+  const doiDot = f.next_step !== 'complete' && f.next_step !== 'propose';
+  const daDay = Number((conn.prepare('SELECT COALESCE(SUM(so_buoi), 0) n FROM case_followups WHERE intervention_id = ? AND id != ?').get(iv.id, f.id) as any).n);
+  const pm = x.paMoi;
+  return {
+    followupId: f.id as number, caseId: f.case_id as number, chan: x.chanDoi,
+    pa: {
+      id: iv.id as number, kind: iv.kind as string, description: (truoc.description ?? null) as string | null, performer: (truoc.performer ?? null) as string | null,
+      performerUserId: (truoc.performerUserId ?? null) as number | null,
+      actionDue: (doiDot ? f.cycle_due : iv.action_due) ?? null as string | null, cycleNo: (doiDot ? f.cycle_no : iv.cycle_no) ?? 1,
+      batBuoc: iv.preset === 1, lanCuoi: x.quyetDinh === null,
+      mocChu: iv.preset === 1
+        ? mocChuPa({ span: iv.moc_quy_che ?? null, followupDue: truoc.followupDue ?? null, mtKe: mtKeTheoPa(iv.case_id)(iv), daXacNhan: !!iv.confirmed_at }, demoToday())
+        : null,
+      soBuoi: (truoc.soBuoi ?? null) as number | null, daDay,
+    },
+    giaTri: {
+      outcome: f.outcome as string, note: (f.note ?? '') as string, remainingIssue: (f.remaining_issue ?? '') as string, decision: x.quyetDinh,
+      decisionNote: (f.decision_note ?? '') as string, observedOn: f.observed_on as string,
+      completedOn: (x.quyetDinh === 'end' ? iv.completed_date : null) as string | null, soBuoi: (f.so_buoi ?? null) as number | null,
+      nguoiDay: f.phu_trach_user_id ? { userId: f.phu_trach_user_id as number, ten: ten(f.phu_trach_user_id) ?? `#${f.phu_trach_user_id}` }
+        : f.phu_trach_ten ? { userId: null, ten: f.phu_trach_ten as string } : null,
+      miniTest: x.mt ? { tyLe: Math.round(x.mt.ty_le * 1000) / 10, ngay: x.mt.ngay_lam as string } : null,
+      adjust: rev ? { description: rev.new_description as string | null, soBuoi: rev.new_so_buoi as number | null, performerUserId: rev.new_performer_user_id as number | null,
+        performer: (ten(rev.new_performer_user_id) ?? rev.new_performer_name ?? null) as string | null } : null,
+      newPlan: pm ? { kind: pm.kind as string, description: pm.description as string | null, soBuoi: pm.so_buoi as number | null,
+        performerUserId: pm.performer_user_id as number | null, performer: (ten(pm.performer_user_id) ?? pm.performer_name ?? null) as string | null } : null,
+    },
+  };
+}
+
+/**
+ * SỬA "XEM LẠI SAU HỖ TRỢ" lần mới nhất của Case (OV-7b, `recordFollowUp`) — người đã ghi + Quản lý, tại chỗ: kết quả quan sát, ghi chú, ngày.
+ * Hành trình cùng dòng đổi chữ; nhật ký `case.followup.edit` trước → sau. Case đã hoàn thành: Mở lại trước.
+ */
+export function suaXemLai(p: Principal, followupId: number, input: { outcome?: string | null; note?: string | null; observedOn?: string | null }) {
+  const conn = db();
+  const f = conn.prepare('SELECT * FROM case_followups WHERE id = ?').get(followupId) as any;
+  if (!f || f.next_step || f.metrics) throw notFound('Không tìm thấy lần xem lại.');
+  const c = loadCase(f.case_id);
+  if (f.observer_user_id !== p.userId && !can(p, PERMISSIONS.CASE_APPROVE, { classId: c.class_id, studentId: c.eff_student_id })) {
+    throw forbidden('Chỉ người đã ghi lần xem lại này hoặc Quản lý sửa được.');
+  }
+  require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c), 'Bạn không có quyền ghi nhận theo dõi cho Case này.');   // cùng quyền như `recordFollowUp`
+  if (c.status === 'done') throw badRequest('Case đã hoàn thành — bấm Mở lại trước khi sửa.');
+  if (conn.prepare('SELECT 1 FROM case_followups WHERE case_id = ? AND next_step IS NULL AND metrics IS NULL AND id > ? LIMIT 1').get(f.case_id, f.id)) {
+    throw badRequest('Chỉ sửa được lần xem lại gần nhất.');
+  }
+  const outcome = input.outcome === undefined ? f.outcome : input.outcome || null;
+  if (outcome && !(FOLLOWUP_OUTCOMES as readonly string[]).includes(outcome)) throw badRequest('Kết quả quan sát không hợp lệ.');
+  const note = input.note === undefined ? f.note : chuTuDo(input.note, 'Ghi chú', 2000);
+  const observedOn = input.observedOn ?? f.observed_on;
+  if (!isIsoDate(observedOn)) throw badRequest('Ngày quan sát không hợp lệ.');
+  if (observedOn > demoToday()) throw badRequest('Không ghi được ngày quan sát ở tương lai.');
+  if (outcome === f.outcome && note === f.note && observedOn === f.observed_on) return caseDetail(p, f.case_id);
+  return tx(() => {
+    conn.prepare('UPDATE case_followups SET outcome = ?, note = ?, observed_on = ? WHERE id = ?').run(outcome, note, observedOn, f.id);
+    conn.prepare(`UPDATE journey_events SET title = ?, detail = ?, event_date = ? WHERE ref_table = 'case_followups' AND ref_id = ?`)
+      .run(`Xem lại sau hỗ trợ${outcome ? `: ${outcome}` : ''}`, note, observedOn, f.id);
+    writeAudit({ actorUserId: p.userId, action: 'case.followup.edit', entityType: 'case_followup', entityId: f.id, entityLabel: caseTitleOf(c),
+      before: { outcome: f.outcome, note: f.note, observedOn: f.observed_on }, after: { outcome, note, observedOn } });
+    return caseDetail(p, f.case_id);
   });
 }
 
