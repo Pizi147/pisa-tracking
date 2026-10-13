@@ -9279,6 +9279,9 @@ await runPrOv8bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 // ==================================================================== PR-OV9 (KCK nhẹ: dấu riêng, Target giữ, Case nhẹ không hạn / PA / Phối hợp)
 const { runPrOv9Tests } = await import('./prOv9.tests.ts');
 await runPrOv9Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== PR-OV10a (nút / link đúng quyền: TVV · CX · Admin)
+const { runPrOv10aTests } = await import('./prOv10a.tests.ts');
+await runPrOv10aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 console.log(`\n${'='.repeat(60)}`);
 console.log(failures.length === 0
   ? `TẤT CẢ ${passed} KIỂM TRA ĐỀU ĐẠT`

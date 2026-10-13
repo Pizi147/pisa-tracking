@@ -114,6 +114,8 @@ const TAB_CONG_VIEC: readonly TabCongViec[] = ['cho-duyet', 'ho-tro', 'yeu-cau',
 export const TAB_CONG_VIEC_LABEL: Record<TabCongViec, string> = {
   'cho-duyet': 'Chờ duyệt', 'ho-tro': 'Hỗ trợ học viên', 'yeu-cau': 'Yêu cầu của tôi', 'van-hanh': 'Vận hành', 'bao-cao': 'Báo cáo đơn vị',
 };
+/** OV-10a: Admin (`workChamDiem`) chỉ có nhóm Chấm điểm + Nhắc — tab đầu ghi "Chấm điểm", không "Hỗ trợ học viên". */
+export const nhanTabCongViec = (k: TabCongViec, nav: NavQuyen): string => (k === 'ho-tro' && nav.workChamDiem ? 'Chấm điểm' : TAB_CONG_VIEC_LABEL[k]);
 export const DUONG_TAB_CONG_VIEC: Record<TabCongViec, string> = {
   'cho-duyet': '/cong-viec/cho-duyet', 'ho-tro': '/cong-viec', 'yeu-cau': '/cong-viec/yeu-cau',
   'van-hanh': '/cong-viec/van-hanh', 'bao-cao': '/cong-viec/bao-cao',

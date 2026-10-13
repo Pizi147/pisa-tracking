@@ -291,7 +291,7 @@ export default function StudentDetailPage() {
                 loading={board.loading} error={board.error} onRetry={board.reload}
                 selected={skillPick}
                 onPick={setSkillPick}
-                onReport={() => setReportOpen(true)}
+                onReport={data.viewer.canReport && !data.lopHoc?.chiXem ? () => setReportOpen(true) : undefined}
                 onChanged={() => { board.reload(); reload(); }}
                 onMoCase={(caseId, o) => setOpenCase({ caseId, paId: o?.paId, viec: o?.viec })}
                 tamDungTu={board.data?.tamDungTu ?? null} />
@@ -365,7 +365,7 @@ export default function StudentDetailPage() {
           studentName={data.fullName}
           ratio={!!cy.ratio}
           canEditCycle={!!data.viewer.canEditCycle}
-          onDeXuatSua={() => { dongPlan(); setViecQuanLy('de-xuat-sua'); }}
+          onDeXuatSua={data.viewer.coTheDeXuatSua ? () => { dongPlan(); setViecQuanLy('de-xuat-sua'); } : undefined}
           onClose={dongPlan}
           onDone={reload}
         />

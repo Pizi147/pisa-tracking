@@ -8,6 +8,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, invalidate } from '../../lib/api.ts';
+import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { thongBaoVang } from './thongBaoVang.ts';
 import { Empty, Info, Level, Status } from '../../ui/ui.tsx';
@@ -15,7 +16,7 @@ import { useTrangThaiLuuO } from '../../ui/SaveState.tsx';
 import { ODiemThuong, laTuChoi, type SaveOpts } from '../fasttrack/ScoreEntry.tsx';
 import { caseStatusLabel, sosTone } from '../../lib/format.ts';
 import {
-  CHU_THAO_TAC, CHUONG_TRINH_KHONG_CHIA_MON, nhanBai, ketQuaThuong, maHocVienNgan, ngay, tenMon, tenMonNgan, thaoTacKyNang, trangThaiTT, tuanLich,
+  CHU_THAO_TAC, CHUONG_TRINH_KHONG_CHIA_MON, PERMISSIONS, nhanBai, ketQuaThuong, maHocVienNgan, ngay, tenMon, tenMonNgan, thaoTacKyNang, trangThaiTT, tuanLich,
   type AttemptKind, type ThaoTac,
 } from '@shared/domain/index.ts';
 import { MenuDong } from '../../ui/MenuDong.tsx';
@@ -404,6 +405,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, active, tongCot, dien, onReloa
 }) {
   const { luu, dau, nhanXet, status, lastError, retry, o, loi, luuLai, soLoi, loiNhap, coGuiLai } = useLuuThuong(row.attemptId, onReload, sheet.programme.code, row.studentName);
   const homNay = sheet.today;
+  const { can } = useSession();
   const ct = sheet.programme.code;
   const [hop, setHop] = useState<{ t: ThaoTac; k: string } | null>(null);
   const [lichSu, setLichSu] = useState<string | null>(null);
@@ -416,7 +418,8 @@ function DongThuong({ row, rowIndex, sheet, laCp, active, tongCot, dien, onReloa
     const s = lichCua(row, k);
     const coDiem = (ketQuaCua(row, k)?.score ?? null) !== null;
     const tt = trangThaiTT({ batBuoc: true, tuanBatDau: s?.weekStart ?? null, coDiem, sit: s?.sitStatus ?? null, choDuyet: false, lichSu: false, homNay });
-    const tat = thaoTacKyNang(tt, { nhapDiem: s?.canEdit ?? false, quanLy: sheet.canPlan, gvcn: !!sheet.laGvcn, laFt: false, dotHoanTat: !!row.hoanTat });
+    const tat = thaoTacKyNang(tt, { nhapDiem: s?.canEdit ?? false, quanLy: sheet.canPlan, gvcn: !!sheet.laGvcn, laFt: false, dotHoanTat: !!row.hoanTat,
+      huy: can(PERMISSIONS.ATTEMPT_SKIP_SKILL), han: can(PERMISSIONS.DEADLINE_OVERRIDE) });
     const ds = [...(tat.chinh && THAO_TAC_CO_HOP.includes(tat.chinh) ? [tat.chinh] : []), ...tat.menu];
     return (
       <span className="absolute right-0.5 top-0.5 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100">

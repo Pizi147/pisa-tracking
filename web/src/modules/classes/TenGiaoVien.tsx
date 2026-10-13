@@ -8,7 +8,7 @@ import { duongHoSoGiaoVien, laVaiQuanLy } from '@shared/domain/index.ts';
  */
 export function TenGiaoVien({ id, ten }: { id: number | null; ten: string }) {
   const { session } = useSession();
-  const den = duongHoSoGiaoVien(id, { userId: session?.user?.id ?? 0, laQuanLy: laVaiQuanLy(session?.roles) });
+  const den = duongHoSoGiaoVien(id, { userId: session?.user?.id ?? 0, laQuanLy: laVaiQuanLy(session?.roles) || !!session?.nav?.phanTichGv });   // OV-10a: Admin (`analysis.view_teacher`) mở được hồ sơ GV như QL
   return den
     ? <Link className="link" to={den}>{ten}</Link>
     : <span className="text-slate-200">{ten}</span>;
